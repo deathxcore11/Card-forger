@@ -1,3 +1,4 @@
+import { openScanCamera, transformPhoto } from "./scan-camera.js";
 // Cardforge controller: persistence, routing, sheets and every user action.
 // Screens live in views.js; deck/collection math in core.js, planner.js,
 // strategy.js, deck-flow.js and insights.js.
@@ -3052,20 +3053,45 @@ let ocrLoading;
 C.scanFile = (t) => {
   const f = t.files[0],
     s = S.ui.scan;
-  if (!f) return;
+  if (!f || s.busy) return;
   if (!f.type.startsWith("image/")) return toast("Choose a photo.");
   if (s.url) URL.revokeObjectURL(s.url);
-  Object.assign(s, { file: f, url: URL.createObjectURL(f), text: "", match: null, cands: [], guess: "", read: "", status: "Photo ready. Reading it…" });
+  Object.assign(s, { file: f, url: URL.createObjectURL(f), text: "", match: null, cands: [], guess: "", read: "", insets: {}, status: "Photo ready. Crop out the background if needed, then read." });
   render();
-  A.scanRead();
 };
 C.scanCrop = (t) => (S.ui.scan.crop = t.checked ? "title" : "full");
 A.scanClear = () => {
   const s = S.ui.scan;
+  if (s.busy) return;
   if (s.url) URL.revokeObjectURL(s.url);
   Object.assign(s, { file: null, url: null, text: "", match: null, cands: [], guess: "", read: "", status: "" });
   render();
 };
+C.scanLanguage = t => { S.ui.scan.language = t.value === "jpn" ? "jpn" : "eng"; };
+I.scanInset = t => {
+  const s = S.ui.scan;
+  (s.insets ||= {})[t.dataset.side] = Number(t.value);
+  const box = $("#scanCropBox");
+  if (box) box.style.inset = ["top", "right", "bottom", "left"].map(k => (s.insets[k] || 0) + "%").join(" ");
+};
+A.scanCamera = async () => {
+  if (S.ui.scan.busy) return toast("Wait for the current scan to finish.");
+  try { await openScanCamera(blob => C.scanFile({ files: [blob] })); }
+  catch (e) { S.ui.scan.status = e.message; render(); }
+};
+const editScanPhoto = async rotate => {
+  const s = S.ui.scan;
+  if (!s.url || s.busy) return;
+  s.busy = true;
+  try {
+    const blob = await transformPhoto(s.url, rotate ? {} : s.insets, rotate);
+    URL.revokeObjectURL(s.url);
+    Object.assign(s, { file: blob, url: URL.createObjectURL(blob), insets: {}, text: "", match: null, cands: [], guess: "", read: "", status: "Photo adjusted. Tap Read again." });
+  } catch (e) { s.status = e.message; }
+  finally { s.busy = false; render(); }
+};
+A.scanRotate = () => editScanPhoto(true);
+A.scanApplyCrop = () => editScanPhoto(false);
 function loadOCR() {
   if (window.Tesseract) return Promise.resolve(window.Tesseract);
   if (!ocrLoading)
@@ -3095,18 +3121,18 @@ A.scanRead = async () => {
       image.onerror = () => bad(Error("Couldn’t open that photo."));
       image.src = s.url;
     });
-    const G = T.game(),
-      // Yu-Gi-Oh! and Pokémon need the whole card: the codes sit under the art and at the bottom.
-      part = G === "mtg" && s.crop === "title" ? 0.22 : 1,
-      ratio = Math.min(1, 1400 / image.naturalWidth),
-      canvas = document.createElement("canvas");
-    canvas.width = Math.round(image.naturalWidth * ratio);
-    canvas.height = Math.round(image.naturalHeight * ratio * part);
-    const ctx = canvas.getContext("2d");
-    ctx.filter = "grayscale(1) contrast(1.4)";
-    ctx.drawImage(image, 0, 0, image.naturalWidth, image.naturalHeight * part, 0, 0, canvas.width, canvas.height);
+    const G = T.game(), part = G === "mtg" && s.crop === "title" ? 0.22 : 1;
+    const makeRegion = (top, height) => {
+      const canvas = document.createElement("canvas"), ratio = Math.min(2, 1600 / image.naturalWidth);
+      canvas.width = Math.round(image.naturalWidth * ratio);
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * height * ratio));
+      const ctx = canvas.getContext("2d");
+      ctx.filter = "grayscale(1) contrast(1.25)";
+      ctx.drawImage(image, 0, image.naturalHeight * top, image.naturalWidth, image.naturalHeight * height, 0, 0, canvas.width, canvas.height);
+      return canvas;
+    };
     const Tess = await loadOCR();
-    worker = await Tess.createWorker("eng", 1, {
+    worker = await Tess.createWorker(s.language || "eng", 1, {
       workerPath: new URL("vendor/worker.min.js", location.href).href,
       workerBlobURL: false,
       logger: (m) => {
@@ -3114,7 +3140,12 @@ A.scanRead = async () => {
         if ($("#scanStatus")) $("#scanStatus").textContent = s.status;
       },
     });
-    s.text = (await worker.recognize(canvas)).data.text || "";
+    // Prefer the title region; footer codes follow it. Full-card text is only
+    // a fallback. User cropping matters for uploaded photos with backgrounds.
+    const title = (await worker.recognize(makeRegion(0, 0.20))).data.text || "";
+    const footer = part === 1 ? (await worker.recognize(makeRegion(0.78, 0.22))).data.text || "" : "";
+    const full = part === 1 ? (await worker.recognize(makeRegion(0, 1))).data.text || "" : "";
+    s.text = [title, footer, full].filter(Boolean).join("\n");
     if (G !== "mtg") {
       s.status = "Matching…";
       if ($("#scanStatus")) $("#scanStatus").textContent = s.status;
@@ -3135,14 +3166,18 @@ A.scanRead = async () => {
     const names = scanNames(s.text);
     s.status = names.length ? "Read it. Confirm the match below." : "Couldn’t read a name — try again with less glare, or type it.";
     if (names.length) {
-      s.busy = false;
-      await A.scanMatch({ dataset: { name: names[0] } });
+      for (const name of names.slice(0, 3)) {
+        s.match = await resolve(name, true, false).catch(() => null);
+        if (s.match) break;
+      }
+      s.status = s.match ? "Check the picture, set and number before adding." : "No match. Crop closer to the card or type its name.";
     }
   } catch (e) {
     s.status = e.message;
   } finally {
     if (worker) await worker.terminate().catch(() => {});
     s.busy = false;
+    if (s.language === "jpn" && s.text && !s.match && !s.cands?.length) s.status = "Japanese text was read, but the lookup database uses English names. Enter the English name and confirm the number; Japanese printing identification is not supported yet.";
     if (S.ui.view === "scan") render();
   }
 };

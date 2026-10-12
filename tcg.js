@@ -1,3 +1,4 @@
+import { scanControls } from "./scan-camera.js";
 // Yu-Gi-Oh! and Pokémon: collection, search, sets and deck building, sharing one
 // set of screens. Each game's data, rules and formats come from its adapter.
 import { S, uid } from "./store.js";
@@ -579,14 +580,15 @@ export function tcgScan() {
   return `<div class="page-head"><h1>Scan a card</h1></div>
   <section class="panel">
     ${s.url ? `<img class="scan-preview" src="${s.url}" alt="Card photo">` : `<div class="scan-drop"><b>One ${esc(G.short)} card, flat and well lit</b><span class="muted small">Fill the frame and keep the ${g === "ygo" ? "name and the set code under the art (like LOB-EN001)" : "name and the number at the bottom (like 053/128)"} sharp. Avoid foil glare.</span></div>`}
-    <div class="actions wrap"><label class="btn">📷 Camera<input type="file" accept="image/*" capture="environment" data-change="scanFile" hidden></label><label class="btn ghost">Upload<input type="file" accept="image/*" data-change="scanFile" hidden></label>${s.url ? `<button class="btn ghost" data-act="scanClear">Clear</button><button class="btn" data-act="scanRead" ${s.busy ? "disabled" : ""}>${s.busy ? "Reading…" : "Read again"}</button>` : ""}</div>
+    ${scanControls(s)}
+    ${s.url ? `<button class="btn" data-act="scanRead" ${s.busy ? "disabled" : ""}>${s.busy ? "Reading…" : "Read again"}</button>` : ""}
     <p class="muted small" id="scanStatus" role="status">${esc(s.status)}</p>
   </section>
   ${
     s.url || s.cands?.length
       ? `<section class="panel"><h3>Confirm the card</h3>
       <div class="searchbar"><input id="scanName" value="${esc(s.guess || "")}" placeholder="Card name${g === "ygo" ? " or set code" : ""}" data-enter="tScanFind" aria-label="Card name"><button class="btn ghost" data-act="tScanFind">Find</button></div>
-      ${s.read ? `<p class="small muted">Read: ${esc(s.read)}</p>` : ""}
+      ${s.read ? `<details><summary>Recognition details</summary><p class="small muted">${esc(s.read)}</p></details>` : ""}
       ${
         s.cands?.length
           ? `<div class="card-grid">${s.cands
@@ -603,7 +605,7 @@ export function tcgScan() {
       }</section>`
       : ""
   }
-  <p class="foot">Text recognition runs on your phone; only the name and codes are looked up online. The first scan downloads the reader (~5 MB).</p>`;
+  <p class="foot">Text recognition runs on your phone; only the name and codes are looked up online. The first scan downloads the reader and selected language files; download size varies.</p>`;
 }
 
 // Yu-Gi-Oh!: the set a card comes from, like Magic and Pokémon — your printing if you own one,
@@ -1505,7 +1507,7 @@ export function registerTcg(c) {
       }
     }
     s.cands = cands;
-    s.status = cands.length ? (cands[0].why.startsWith("Set code") || cands[0].why.startsWith("Passcode") || cands[0].why.includes("#") ? "Found the exact printing. Check it matches your card." : "Check the picture matches your card.") : "Couldn’t match it — type the name or code.";
+    s.status = cands.length ? (cands[0].why.startsWith("Set code") || cands[0].why.startsWith("Passcode") || cands[0].why.includes("#") ? "Found candidates from the code or number. Confirm the set, number and finish." : "Check the picture matches your card.") : "Couldn’t match it — type the name or code.";
   };
   A.tScanFind = async () => {
     const q = (document.querySelector("#scanName")?.value || "").trim();

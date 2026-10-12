@@ -1,3 +1,9 @@
+3.8.1 — Scanner capture and recognition fixes
+
+Live camera with red/amber/green guide-edge, exposure, detail and stability checks. Green indicates capture readiness, not identification. Manual capture remains available. Camera tracks stop on close, navigation or hiding the app.
+Uploaded photos can be cropped and rotated before reading; title and footer OCR are prioritized. Noisy prefixes such as snce1 Eldegoss are removed. Japanese OCR can read text, but exact Japanese printing lookup is not yet supported by the English catalog. Candidates always require user confirmation.
+These lightweight checks do not provide perspective correction or artwork recognition. They need calibration on real phones, foil cards and holders.
+
 CARDFORGE 3.8 UPDATE — SET ROWS FOR EVERY GAME, CLEANER SYMBOLS
 
 - Yu-Gi-Oh! cards now show the set they come from, like Magic and Pokémon: the booster/product
