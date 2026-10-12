@@ -60,6 +60,8 @@ export function normalizeTopdeck(raw, { format, days }) {
   const seen = new Set();
   for (const t of Array.isArray(raw) ? raw : []) {
     if (!t?.TID || seen.has(t.TID)) continue;
+    // Team events list one standing per team (a "players" roster) — not single decks, so skip them.
+    if ((t.standings || []).some((x) => Array.isArray(x?.players))) continue;
     seen.add(t.TID);
     const standings = Array.isArray(t.standings) ? t.standings : [],
       cut = Math.max(8, Number(t.topCut) || 0),
@@ -68,6 +70,7 @@ export function normalizeTopdeck(raw, { format, days }) {
     cov.players += standings.length;
     events.push({ id: t.TID, name: t.tournamentName || "Tournament", date: t.startDate ? new Date(t.startDate * 1000).toISOString().slice(0, 10) : "", players: standings.length, topCut: Number(t.topCut) || 0, url });
     standings.slice(0, cut).forEach((s, i) => {
+      // Bulk results list players in finishing order; "standing" is present on single-event reads.
       const rank = Number(s.standing) || i + 1;
       cov.topSlots++;
       const fromObj = parseDeckObj(s.deckObj),

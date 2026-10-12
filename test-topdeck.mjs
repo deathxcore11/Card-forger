@@ -25,4 +25,11 @@ assert.equal(d.decks[0].record, "5-1");
 assert.equal(d.archetypes[0].name, "Burn");
 assert.equal(d.archetypes[0].lists, 5);
 assert.ok(Math.abs(d.archetypes[0].share - 5 / 6) < 1e-9, "share is of published top-cut lists");
+// Spec example shape (bulk: no "standing" field, order = placement) and team events skipped.
+const bulk = normalizeTopdeck([{ TID: "w", tournamentName: "Weekly EDH", startDate: 1627844461, format: "EDH", topCut: 8, standings: [{ name: "Player Name", decklist: "~~Commanders~~\nAtraxa, Grand Unifier\n~~Mainboard~~\n1 Sol Ring", wins: 4, draws: 1, losses: 0 }] }, { TID: "team", tournamentName: "2HG", standings: [{ name: "Team A", players: [{ id: "1", name: "A" }] }] }], { format: "EDH", days: 30 });
+assert.equal(bulk.decks.length, 1);
+assert.equal(bulk.decks[0].place, "1st");
+assert.equal(bulk.decks[0].commander, "Atraxa, Grand Unifier");
+assert.equal(bulk.decks[0].record, "4-0-1");
+assert.equal(bulk.coverage.events, 1, "team events aren't counted as decks");
 console.log("PASS: TopDeck lists (text, structured, links), top-cut only, duplicates dropped, coverage counts and archetype share.");
