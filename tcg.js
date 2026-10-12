@@ -523,6 +523,7 @@ export function tcgCardSheet(c, sctx = {}) {
   <div class="cs-hero ${g}">${heroSrc ? `<img class="cs-art" src="${esc(heroSrc)}" alt="${esc(c.name)}" referrerpolicy="no-referrer" onerror="${heroFallback ? `if(!this.dataset.f){this.dataset.f=1;this.src='${esc(heroFallback)}'}else ` : ""}this.remove()">` : ""}<div class="cs-shade"></div></div>
   <div class="cs-title"><div><h2>${esc(c.name)}</h2><p class="type-line">${esc(c.typeLine || "")}</p></div>${gameEmblems(c)}</div>
   <div class="cs-meta">
+    ${g === "ygo" ? ygoSetRow(c) : ""}
     ${c.set ? `<button class="cd-set" data-act="tSet" data-id="${esc(c.set.id)}">${pkSetSymbol(c.set, "pks big")}<div><b>${esc(c.set.name)} <span class="set-go">›</span></b><small>#${esc(c.set.number || "")}${c.set.total ? "/" + c.set.total : ""}${c.rarity ? ` · ${pkRarity(c.rarity)} ${esc(c.rarity)}` : ""}</small></div></button>` : c.archetype ? `<button class="cd-set" data-act="tArchetype" data-name="${esc(c.archetype)}"><div><b>${esc(c.archetype)} <span class="set-go">›</span></b><small>Archetype · ${c.sets?.length || 0} printings</small></div></button>` : ""}
     <div class="cd-prices"><button class="price-pill" data-act="cardTab" data-tab="prices"><small>Market</small><b>${p.usd !== null && p.usd !== undefined ? usd(p.usd) : c.brief ? "…" : "New"}</b><span class="buy-hint">Prices ›</span></button>${p.eur ? `<button class="price-pill" data-act="cardTab" data-tab="prices"><small>Cardmarket</small><b>€${p.eur.toFixed(2)}</b></button>` : ""}</div>
   </div>
@@ -603,6 +604,27 @@ export function tcgScan() {
       : ""
   }
   <p class="foot">Text recognition runs on your phone; only the name and codes are looked up online. The first scan downloads the reader (~5 MB).</p>`;
+}
+
+// Yu-Gi-Oh!: the set a card comes from, like Magic and Pokémon — your printing if you own one,
+// otherwise its first release. Tapping opens the whole set's card list.
+let ygoSetDates = null;
+const ygoSetIndex = () => {
+  if (ygoSetDates) return ygoSetDates;
+  try {
+    const list = ui("ygo").sets.list.length ? ui("ygo").sets.list : JSON.parse(localStorage.getItem("cardforge-ygo-sets-v1") || "null")?.list || [];
+    if (list.length) ygoSetDates = new Map(list.map((x) => [x.name, x]));
+  } catch {}
+  return ygoSetDates || new Map();
+};
+function ygoSetRow(c) {
+  if (!c.sets?.length) return "";
+  const idx = ygoSetIndex(),
+    mine = gs("ygo").collection.find((e) => e.cardId === c.id && e.printing),
+    dated = c.sets.map((s) => ({ ...s, date: idx.get(s.name)?.date || "" })),
+    pick = (mine && dated.find((s) => s.code === mine.printing)) || dated.filter((s) => s.date).sort((a, b) => a.date.localeCompare(b.date))[0] || dated[0],
+    prefix = String(pick.code).split("-")[0];
+  return `<button class="cd-set" data-act="tSetByName" data-name="${esc(pick.name)}"><img class="ygo-pack" src="https://images.ygoprodeck.com/images/sets/${esc(encodeURIComponent(prefix))}.jpg" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ygo-pack none',textContent:'${esc(prefix)}'}))"><div><b>${esc(pick.name)} <span class="set-go">›</span></b><small>${ygoPrintBadge(pick)} ${esc(pick.rarity || "")}${pick.date ? " · " + esc(pick.date.slice(0, 4)) : ""}${mine ? " · your printing" : c.sets.length > 1 ? ` · first of ${c.sets.length} printings` : ""}</small></div></button>`;
 }
 
 /* ---------- collection ---------- */
@@ -1374,6 +1396,9 @@ export function registerTcg(c) {
     try {
       const card = await ensureCard(G, id);
       if (S.ui.sheetCtx === sctx) openSheet(tcgCardSheet(card, sctx), sctx, document.querySelector("#sheetBody").scrollTop);
+      // The set row shows a card's first release; that needs the set list's dates (loaded once).
+      if (G === "ygo" && !ygoSetIndex().size)
+        loadSets("ygo").then(() => S.ui.sheetCtx === sctx && openSheet(tcgCardSheet(cardOf(G, id), sctx), sctx, document.querySelector("#sheetBody").scrollTop)).catch(() => {});
     } catch (e) {
       if (S.ui.sheetCtx === sctx) openSheet(`<div class="sheet-head"><h2>Couldn’t load card</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="note warn">${esc(e.message)}</div>`, sctx);
     }

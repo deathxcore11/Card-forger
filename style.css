@@ -881,10 +881,13 @@ body[data-game="ygo"] #content .card-grid .card-img { aspect-ratio: 59 / 86; }
 
 /* ---------- Pokémon set & rarity symbols ---------- */
 /* The symbols are dark ink on transparent, so they sit on a small light chip like on a printed card. */
-img.pks, img.pkr { display: inline-block; vertical-align: middle; object-fit: contain; background: #f4f1e8; border-radius: 4px; padding: 1px; box-sizing: content-box; }
-img.pks { width: 14px; height: 14px; }
-img.pkr { width: auto; height: 10px; max-width: 26px; padding: 2px 3px; }
-img.pks.big { width: 34px; height: 34px; padding: 4px; border-radius: 8px; flex: 0 0 auto; }
+img.pks, img.pkr { display: inline-block; vertical-align: middle; object-fit: contain; background: none; }
+/* The symbols are dark ink on transparent: invert the lightness and rotate hues back, so black
+   becomes white (like Magic's set icons) and the few colored ones keep their color family. */
+img.pks, img.pkr.ink { filter: invert(1) hue-rotate(180deg) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5)); }
+img.pks { width: 16px; height: 16px; }
+img.pkr { width: auto; height: 11px; max-width: 28px; }
+img.pks.big { width: 34px; height: 34px; flex: 0 0 auto; }
 h1 img.pks.big { width: 28px; height: 28px; margin-right: 4px; }
 .cd-set small img.pkr { height: 9px; }
 
@@ -988,3 +991,12 @@ a.pp.buy { color: var(--gold); }
 .arch.has-art .arch-icons { min-height: 0; }
 .arch.has-art b { text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8); }
 .arch.has-art small { color: rgba(255, 255, 255, 0.85); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8); }
+
+/* Yu-Gi-Oh! set row: the booster/product art as the set's emblem */
+.ygo-pack { width: 34px; height: 48px; object-fit: cover; border-radius: 4px; flex: 0 0 auto; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5); }
+.ygo-pack.none { display: grid; place-items: center; font-size: 9px; font-weight: 800; background: var(--surface-2); color: var(--muted); }
+/* Magic set badges use the same rarity gradients as the big set icons */
+.set-badge .set-icon { background: #d9dce2; }
+.set-badge.r-uncommon .set-icon { background: linear-gradient(135deg, #8a9aa8, #e6eef4 50%, #7d8b96); }
+.set-badge.r-rare .set-icon { background: linear-gradient(135deg, #8d6d2b, #f5d78a 50%, #9b7a33); }
+.set-badge.r-mythic .set-icon { background: linear-gradient(135deg, #b4421c, #ffb15e 50%, #c2471b); }

@@ -1,3 +1,13 @@
+CARDFORGE 3.8 UPDATE — SET ROWS FOR EVERY GAME, CLEANER SYMBOLS
+
+- Yu-Gi-Oh! cards now show the set they come from, like Magic and Pokémon: the booster/product
+  art, set name, set code and rarity, year, and whether it's your printing or the first of N.
+  Tap it to open that set's complete card list.
+- Pokémon set and rarity symbols are now see-through (white on the dark theme, like Magic's set
+  icons) instead of sitting on white chips; colored rarity stars keep their colors. TCGdex's own
+  symbols are used as a fallback if they come back online (their symbol files currently 404).
+- Magic set badges use the same rarity colors as the big set icons (silver, gold, mythic orange).
+
 CARDFORGE 3.7 UPDATE — MAGIC META DECKS (NO KEY NEEDED) AND ART TILES
 
 - Magic → Decks → Meta decks now works out of the box, like Yu-Gi-Oh! and Pokémon:

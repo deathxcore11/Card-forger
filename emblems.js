@@ -111,14 +111,17 @@ const symImg = (kind, slug, label, fallback, cls) =>
 export function pkSetSymbol(set, cls = "pks") {
   if (!set?.id) return "";
   const slug = set.id in PK_SET_SLUG ? PK_SET_SLUG[set.id] : slugify(set.name);
-  return slug ? symImg("s", slug, set.name || "", "", cls) : "";
+  // Last resort: TCGdex's own symbol (its symbol files 404 today, but this picks them up if they return).
+  const tcgdex = set.symbol ? `<img class="${cls}" src="${esc(set.symbol)}.png" alt="" loading="lazy" onerror="this.remove()">` : "";
+  return slug ? symImg("s", slug, set.name || "", tcgdex, cls) : tcgdex;
 }
 const PK_RARITY_SLUG = { "rare holo": "rare", "holo rare": "rare" };
 const PK_RARITY_FILES = new Set(["ace-spec-rare", "black-white-rare", "common", "double-rare", "hyper-rare", "illustration-rare", "mega-attack-rare", "mega-hyper-rare", "rare", "shiny-rare", "shiny-ultra-rare", "special-illustration-rare", "ultra-rare", "uncommon"]);
 export function pkRarity(r) {
   if (!r) return "";
   const slug = PK_RARITY_SLUG[r.toLowerCase()] || slugify(r);
-  return PK_RARITY_FILES.has(slug) ? symImg("r", slug, r, pkRarityMark(r), "pkr") : pkRarityMark(r);
+  // Common/Uncommon/Rare marks are black ink; they get recolored for the dark theme (see .pkr.ink).
+  return PK_RARITY_FILES.has(slug) ? symImg("r", slug, r, pkRarityMark(r), /^(common|uncommon|rare)$/.test(slug) ? "pkr ink" : "pkr") : pkRarityMark(r);
 }
 
 /* ---------- set badges ---------- */

@@ -42,7 +42,7 @@ export function normalizePtcg(c) {
     stats,
     rarity: c.rarity || "",
     illustrator: c.illustrator || "",
-    set: c.set ? { id: c.set.id, name: c.set.name, number: c.localId, total: c.set.cardCount?.official } : null,
+    set: c.set ? { id: c.set.id, name: c.set.name, number: c.localId, total: c.set.cardCount?.official, symbol: c.set.symbol || "" } : null,
     sets: c.set ? [{ code: c.set.id + " " + c.localId, name: c.set.name, rarity: c.rarity, price: best?.usd ?? null }] : [],
     variants,
     prices: { usd: best?.usd ?? null, eur: n(cm.trend) ?? n(cm.avg), others: [], source: "TCGplayer market (USD) · Cardmarket trend (EUR)", updated: tp.updated || cm.updated || null },
