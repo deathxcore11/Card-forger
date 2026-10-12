@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { scanNamesFor, ygoSetCodes, ygoPasscodes, ptcgNumbers, mtgCollector, guideQuality } from "./scan.js";
+import { scanNamesFor, ygoSetCodes, ygoPasscodes, ptcgNumbers, mtgCollector, guideQuality, scanCandidateMatches } from "./scan.js";
 import { scanControls, openScanCamera, transformPhoto } from "./scan-camera.js";
 
 const ygo = "Blue-Eyes White Dragon\n[DRAGON/NORMAL]\nThis legendary dragon is a powerful engine of destruction.\nATK/3000 DEF/2500\nLOB-EN0O1\n89631139\n1st Edition";
@@ -63,3 +63,13 @@ finishPermission({ getTracks: () => [{ stop() { trackStopped = true; } }] });
 await starting;
 assert.equal(trackStopped, true, "late camera stream released after close");
 console.log("PASS: noisy title regression, capture-quality states, scanner controls and camera close lifecycle.");
+
+assert.equal(scanCandidateMatches({ name: "Swellow" }, "wel"), false);
+assert.equal(scanCandidateMatches({ name: "Wellspring Mask Ogerpon" }, "wel"), false);
+assert.equal(scanCandidateMatches({ name: "Mew" }, "Mew"), true, "short real names remain valid");
+assert.equal(scanCandidateMatches({ name: "Mewtwo" }, "Mewtwo GX"), false, "suffix identifies a different card");
+const gx = { name: "Mewtwo-GX", set: { number: "78", total: 73 } };
+assert.equal(scanCandidateMatches(gx, "Mewtwo GX", [{ num: "078", total: "73" }]), true);
+assert.equal(scanCandidateMatches(gx, "Mewtwo GX", [{ num: "78", total: "100" }]), false, "set total matters");
+assert.equal(scanCandidateMatches(gx, "Mewtwo GX", [{ num: "79", total: "73" }]), false);
+console.log("PASS: partial OCR rejection, real short names, GX suffix and exact collector number/set total.");

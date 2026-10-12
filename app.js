@@ -20,7 +20,7 @@ import { parseDeckImport, acquireMissing } from "./deck-flow.js";
 import { completionPlan, commanderTheme } from "./planner.js";
 import { sourceCredit, mtgjsonDeck, collectionIdeas, upgradeSuggestions, applyUpgradeSwaps } from "./strategy.js";
 import { searchQuery, scanNames } from "./catalog-tools.js";
-import { mtgCollector } from "./scan.js";
+import { mtgCollector, scanCandidateMatches } from "./scan.js";
 import { newGame, proxyList, proxySheetHTML } from "./extras.js";
 import { sharePayload, encodeShare, decodeShare } from "./share.js";
 import { FORMATS, formatOf, hasCommander, canLead, sizeLabel } from "./formats.js";
@@ -3143,9 +3143,14 @@ A.scanRead = async () => {
     // Prefer the title region; footer codes follow it. Full-card text is only
     // a fallback. User cropping matters for uploaded photos with backgrounds.
     const title = (await worker.recognize(makeRegion(0, 0.20))).data.text || "";
+    // A second, tighter title pass helps logos and small Pokémon names.
+    // Sparse-text segmentation keeps the title separate from BASIC and HP.
+    await worker.setParameters({ tessedit_pageseg_mode: "11" });
+    const titleRetry = G === "ptcg" ? (await worker.recognize(makeRegion(0.025, 0.10))).data.text || "" : "";
+    await worker.setParameters({ tessedit_pageseg_mode: "3" });
     const footer = part === 1 ? (await worker.recognize(makeRegion(0.78, 0.22))).data.text || "" : "";
     const full = part === 1 ? (await worker.recognize(makeRegion(0, 1))).data.text || "" : "";
-    s.text = [title, footer, full].filter(Boolean).join("\n");
+    s.text = [title, titleRetry, footer, full].filter(Boolean).join("\n");
     if (G !== "mtg") {
       s.status = "Matching…";
       if ($("#scanStatus")) $("#scanStatus").textContent = s.status;
@@ -3167,7 +3172,8 @@ A.scanRead = async () => {
     s.status = names.length ? "Read it. Confirm the match below." : "Couldn’t read a name — try again with less glare, or type it.";
     if (names.length) {
       for (const name of names.slice(0, 3)) {
-        s.match = await resolve(name, true, false).catch(() => null);
+        const candidate = await resolve(name, false, false).catch(() => null);
+        s.match = scanCandidateMatches(candidate, name) ? candidate : null;
         if (s.match) break;
       }
       s.status = s.match ? "Check the picture, set and number before adding." : "No match. Crop closer to the card or type its name.";

@@ -73,17 +73,17 @@ Each web address keeps its own storage. A collection saved on the Cloudflare add
 Cardforge works fully without accounts. Signing in adds a private copy of your workspace in your
 account so it follows you to other devices. It's off until a key is added to `config.js`.
 
-One-time setup in the Supabase dashboard (project `noxfmbwuytnbvfgukpiv`):
+Database migrations are applied to the current project. For a fresh project, run both SQL files in `supabase/migrations`. Remaining sign-in setup in the Supabase dashboard (project `noxfmbwuytnbvfgukpiv`):
 
-1. **SQL Editor →** paste and run `supabase/migrations/20261012000000_cardforge_accounts.sql`.
-   It creates `profiles` and `workspaces`, both with row-level security (each user can only read
-   and write their own row) and no access for signed-out visitors.
+1. **Authentication → Email / SMTP →** configure a mail provider for public signups. The default Supabase mail service restricts recipients and is not suitable for a public app.
 2. **Authentication → URL Configuration →** set *Site URL* to your Cardforge address
-   (e.g. `https://cardforge2.<you>.workers.dev`) and add the same address to *Redirect URLs*.
+   `https://cardforge2.deathxcore11.workers.dev/` and add that exact URL to *Redirect URLs*.
 3. **Authentication → Providers →** Email is on by default. For Google, enable it and paste a
    Google OAuth client ID and secret (Google Cloud Console → Credentials → OAuth client → Web).
 4. **Project Settings → API Keys →** copy the **publishable** key (`sb_publishable_…`, or the
    legacy `anon` key) into `config.js`. Never use the `service_role`/secret key in the app.
+
+Google OAuth must allow `https://noxfmbwuytnbvfgukpiv.supabase.co/auth/v1/callback` as an authorized redirect URI. Google is currently disabled in this project; it needs credentials before the app can offer it. Do not put the Google client secret in frontend code.
 
 How sync behaves: the app always saves on the device first, then pushes to the account a few
 seconds later. Every write is checked against the revision the device last saw, so two devices

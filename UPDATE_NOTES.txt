@@ -1,3 +1,7 @@
+3.8.2 — Reliable scans, private accounts and collectible editions
+Automatic scans reject unrelated substring results and validate Pokémon collector numbers against set totals. Added a second title OCR pass. Created private Supabase profiles/workspaces with authenticated grants and RLS. Email/Google provider settings are separate from database setup.
+Pokémon uses detailed available variants even when prices are absent, including Shadowless, First Edition and promo stamps. Exact unpriced versions no longer inherit generic prices. Yu-Gi-Oh! collections preserve edition and rarity separately. Existing Pokémon card caches refresh to the new version schema.
+
 3.8.1 — Scanner capture and recognition fixes
 
 Live camera with red/amber/green guide-edge, exposure, detail and stability checks. Green indicates capture readiness, not identification. Manual capture remains available. Camera tracks stop on close, navigation or hiding the app.

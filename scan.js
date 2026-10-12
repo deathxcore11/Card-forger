@@ -106,3 +106,12 @@ export function mtgCollector(text) {
     set = t.match(/\b([A-Z0-9]{3,5})\s*[•·*.+°-]\s*(?:EN|ES|FR|DE|IT|PT|JA|JP)\b/)?.[1] || "";
   return num && set ? { set: set.toLowerCase(), number: num } : null;
 }
+
+// Automatic recognition must not turn a substring search into identification.
+// Ignore punctuation/spacing, but preserve GX/ex/V and other meaningful words.
+export const scanNameKey = name => String(name || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+export function scanCandidateMatches(card, name, numbers = []) {
+  if (!card || scanNameKey(card.name) !== scanNameKey(name)) return false;
+  if (!numbers.length) return true;
+  return numbers.some(n => Number(card.set?.number) === Number(n.num) && Number(card.set?.total) === Number(n.total));
+}

@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { normalizeYgo, validateYgo, ygoLimit, ygoLegality, YGO_FORMATS } from "./ygo.js";
 import { normalizePtcg, validatePtcg, PTCG_FORMATS } from "./ptcg.js";
-import { parseLines, parseYdk, ptcglName } from "./tcg.js";
+import { parseLines, parseYdk, ptcglName, entryPrice, tcgAddSheet } from "./tcg.js";
 
 const F = (list, id) => list.find((f) => f.id === id);
 // ---- Yu-Gi-Oh!
@@ -90,3 +90,24 @@ import { buildYgo, buildPtcg } from "./tcgbuild.js";
   assert.equal(mine.cost, 0);
 }
 console.log("PASS: Yu-Gi-Oh! and Pokémon generators — legal 40/60-card lists, Forbidden staples skipped, budgets respected.");
+
+// Variant availability must survive missing marketplace prices.
+const vintage = normalizePtcg({ id:"base1-4", name:"Charizard", category:"Pokemon", set:{id:"base1",name:"Base Set"}, variants:{firstEdition:true,holo:true}, pricing:{tcgplayer:{holofoil:{marketPrice:900}}}, variants_detailed:[
+ {variantId:"regular",type:"holo",subtype:"unlimited",pricing:{tcgplayer:{holofoil:{marketPrice:900}}}},
+ {variantId:"first",type:"holo",subtype:"shadowless",stamp:["1st-edition"]},
+ {variantId:"shadowless",type:"holo",subtype:"shadowless"},
+ {variantId:"copyright",type:"holo",subtype:"1999-2000-copyright"}
+] });
+assert.equal(vintage.variants.find(v=>v.key === "detail:first").usd,null);
+assert.match(tcgAddSheet(vintage),/First Edition · Shadowless/);
+assert.match(tcgAddSheet(vintage),/1999 2000 Copyright/);
+assert.equal(entryPrice(vintage,{variant:"detail:first"}),null,"never use Unlimited price for unpriced First Edition");
+assert.equal(entryPrice(vintage,{variant:"detail:shadowless"}),null);
+assert.equal(entryPrice(vintage,{variant:"holofoil"}),900,"existing finish keys retained");
+assert.equal(entryPrice(vintage,{variant:"old-unknown-version"}),null);
+const modern = normalizePtcg({id:"swsh3-136",name:"Furret",variants:{normal:true,reverse:true},variants_detailed:[{variantId:"n",type:"normal",pricing:{tcgplayer:{normal:{marketPrice:0.27},"reverse-holofoil":{marketPrice:0.43}}}},{variantId:"r",type:"reverse",pricing:{tcgplayer:{normal:{marketPrice:0.27},"reverse-holofoil":{marketPrice:0.43}}}}]});
+assert.equal(entryPrice(modern,{variant:"normal"}),0.27);
+assert.equal(entryPrice(modern,{variant:"reverse-holofoil"}),0.43);
+assert.equal(entryPrice(dm,{edition:"1st-edition"}),null,"YGO generic price is not edition-specific");
+assert.match(tcgAddSheet(dm),/First Edition/);
+console.log("PASS: collectible versions without prices, Shadowless/First Edition isolation, modern reverse holo and YGO editions.");

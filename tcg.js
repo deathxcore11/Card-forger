@@ -11,7 +11,7 @@ import { buildYgo, buildPtcg, YGO_STAPLES, PTCG_STAPLES, PTCG_SUPPORT_BASICS, en
 import { ygoSource, ygoImageDirect, YGO_TYPES, YGO_ATTRIBUTES, YGO_RACES, YGO_SPELL_KINDS, YGO_TRAP_KINDS } from "./ygo.js";
 import { ptcgSource, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES } from "./ptcg.js";
 import { loadMeta, metaState, ptcgIcon } from "./meta.js";
-import { scanNamesFor, ygoSetCodes, ygoPasscodes, ptcgNumbers } from "./scan.js";
+import { scanNamesFor, scanCandidateMatches, ygoSetCodes, ygoPasscodes, ptcgNumbers } from "./scan.js";
 import { adaptList, ownedDraft, engineOf, similarLists, swapPool, costToFinish, unpricedCopies } from "./adapt.js";
 export { metaState, similarLists };
 
@@ -61,7 +61,7 @@ const remember = (card) => {
 // Full card with prices no older than a day.
 export async function ensureCard(g, id, force = false) {
   const c = cache[g][id];
-  if (c && !c.brief && !force && Date.now() - new Date(c.fetchedAt).getTime() < PRICE_TTL) return c;
+  if (c && !c.brief && (g !== "ptcg" || c.variantSchema === 2) && !force && Date.now() - new Date(c.fetchedAt).getTime() < PRICE_TTL) return c;
   try {
     return remember(await SOURCES[g].get(id));
   } catch (e) {
@@ -71,7 +71,7 @@ export async function ensureCard(g, id, force = false) {
 }
 // Load details for many cards, a few at a time, calling `tick` as they arrive.
 export async function ensureMany(g, ids, tick = () => {}, force = false) {
-  const queue = [...new Set(ids)].filter((id) => force || !cache[g][id] || cache[g][id].brief || Date.now() - new Date(cache[g][id].fetchedAt).getTime() > PRICE_TTL);
+  const queue = [...new Set(ids)].filter((id) => force || !cache[g][id] || cache[g][id].brief || (g === "ptcg" && cache[g][id].variantSchema !== 2) || Date.now() - new Date(cache[g][id].fetchedAt).getTime() > PRICE_TTL);
   let done = 0;
   const worker = async () => {
     while (queue.length) {
@@ -123,15 +123,16 @@ export function collectionValue(g, s = S.state) {
   return { total, unpriced, copies };
 }
 // Price for the exact printing/variant when known (Yu-Gi-Oh! set price, Pokémon variant).
-function entryPrice(c, e) {
+export function entryPrice(c, e) {
   if (!c) return null;
+  if (c.game === "ygo" && e.edition) return null; // source prices do not distinguish editions
   if (c.game === "ygo" && e.printing) {
     const s = c.sets?.find((x) => x.code === e.printing && x.rarity === (e.rarity || x.rarity));
     if (s?.price) return s.price;
   }
   if (c.game === "ptcg" && e.variant) {
     const v = c.variants?.find((x) => x.key === e.variant);
-    if (v?.usd) return v.usd;
+    return v?.usd ?? null; // never substitute Unlimited for Shadowless/First Edition
   }
   return price(c);
 }
@@ -565,6 +566,7 @@ export function tcgAddSheet(c, preset = "") {
     <label>Copies<input id="tQty" type="number" min="1" max="999" value="1"></label>
     <label>Condition<select id="tCond">${options(["Near Mint", "Lightly Played", "Moderately Played", "Heavily Played", "Damaged"].map((x) => [x, x]), "Near Mint")}</select></label>
     ${opts.length ? `<label class="span2">${g === "ygo" ? "Printing (set code · rarity)" : "Version"}<select id="tPrint">${options([["", g === "ygo" ? "Not sure / any printing" : "Not sure"], ...opts], opts.some((o) => o[0] === preset) ? preset : "")}</select></label>` : ""}
+    ${g === "ygo" ? `<label class="span2">Edition<select id="tEdition">${options([["", "Not sure"], ["1st-edition", "First Edition"], ["unlimited", "Unlimited"], ["limited", "Limited Edition"]], "")}</select></label><p class="foot span2">Set prices do not distinguish editions. An edition-specific value stays unknown; verify it with the seller.</p>` : `<p class="foot span2">Versions without a price are still collectible. The source image may represent a different edition; confirm stamps and borders yourself.</p>`}
     <label class="span2">Where it lives<input id="tLoc" maxlength="100" placeholder="Binder, deck box…"></label>
   </div>
   <button class="btn block" data-act="tOwnSave" data-id="${esc(c.id)}">Add to collection</button>`;
@@ -658,7 +660,7 @@ export function tcgCollection() {
   <div class="list">${rows
     .map(({ e, c }) => {
       const p = entryPrice(c, e);
-      return `<div class="lot"><button class="lot-art" data-act="tCard" data-id="${esc(e.cardId)}">${imgTag(c)}</button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(e.cardId)}">${esc(e.name)}</button><span class="lot-sub">${rowBadges(c)}${esc(setLabel({ e, c }) || "")}${e.printing ? " · " + esc(e.printing) : ""}${e.rarity ? " · " + esc(e.rarity) : ""}${e.variant ? " · " + esc(c?.variants?.find((v) => v.key === e.variant)?.label || e.variant) : ""}${e.condition && e.condition !== "Near Mint" ? " · " + esc(e.condition) : ""}</span></div><div class="lot-side"><span class="price">${p === null ? "—" : usd(p * e.qty)}</span><span class="stepper"><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="-1" aria-label="One fewer">−</button><b>${e.qty}</b><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="1" aria-label="One more">＋</button></span></div></div>`;
+      return `<div class="lot"><button class="lot-art" data-act="tCard" data-id="${esc(e.cardId)}">${imgTag(c)}</button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(e.cardId)}">${esc(e.name)}</button><span class="lot-sub">${rowBadges(c)}${esc(setLabel({ e, c }) || "")}${e.printing ? " · " + esc(e.printing) : ""}${e.rarity ? " · " + esc(e.rarity) : ""}${e.variant ? " · " + esc(c?.variants?.find((v) => v.key === e.variant)?.label || e.variantLabel || e.variant) : ""}${e.edition ? " · " + esc({"1st-edition":"First Edition",unlimited:"Unlimited",limited:"Limited Edition"}[e.edition] || e.edition) : ""}${e.condition && e.condition !== "Near Mint" ? " · " + esc(e.condition) : ""}</span></div><div class="lot-side"><span class="price">${p === null ? "—" : usd(p * e.qty)}</span><span class="stepper"><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="-1" aria-label="One fewer">−</button><b>${e.qty}</b><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="1" aria-label="One more">＋</button></span></div></div>`;
     })
     .join("")}</div>`
   : empty(`No ${esc(GAMES[g].short)} cards yet`, "Search for a card and tap “Add to collection”, or import a list.", `<button class="btn" data-act="go" data-to="#search">Find cards</button><button class="btn ghost" data-act="tImportColl">Paste a list</button>`)}
@@ -1488,7 +1490,7 @@ export function registerTcg(c) {
       for (const n of names.slice(0, 2)) {
         if (cands.length >= 6) break;
         const r = await SOURCES.ygo.search({ q: n, size: 6 }).catch(() => ({ cards: [] }));
-        r.cards.forEach((card) => add(card, card.name.toLowerCase() === n.toLowerCase() ? "Name match" : "Similar name"));
+        r.cards.filter(card => manual || scanCandidateMatches(card, n)).forEach((card) => add(card, manual ? "Search result — confirm the card" : "Exact name — confirm the printing"));
       }
     } else {
       const nums = manual ? [] : ptcgNumbers(text);
@@ -1496,18 +1498,22 @@ export function registerTcg(c) {
       for (const n of names.slice(0, 3)) {
         for (const x of nums) {
           const hits = await SOURCES.ptcg.byNameNumber(n, x.num).catch(() => []);
-          for (const h of hits) add(await ensureCard("ptcg", h.id).catch(() => null), `Card #${x.num}/${x.total}`);
+          for (const h of hits) {
+            const card = await ensureCard("ptcg", h.id).catch(() => null);
+            if (scanCandidateMatches(card, n, [x])) add(card, `Name and card #${x.num}/${x.total}`);
+          }
         }
       }
       for (const n of names.slice(0, 2)) {
         if (cands.length >= 6) break;
         const r = await SOURCES.ptcg.search({ q: n, size: 8 }).catch(() => ({ cards: [] }));
-        const full = await Promise.all(r.cards.slice(0, 6 - cands.length).map((b) => ensureCard("ptcg", b.id).catch(() => null)));
-        full.forEach((card) => add(card, "Name match — check the number"));
+        const plausible = r.cards.filter(card => manual || scanCandidateMatches(card, n));
+        const full = await Promise.all(plausible.slice(0, 6 - cands.length).map((b) => ensureCard("ptcg", b.id).catch(() => null)));
+        full.filter(card => manual || scanCandidateMatches(card, n, nums)).forEach((card) => add(card, manual ? "Search result — confirm the set and number" : "Exact name — confirm the set and finish"));
       }
     }
     s.cands = cands;
-    s.status = cands.length ? (cands[0].why.startsWith("Set code") || cands[0].why.startsWith("Passcode") || cands[0].why.includes("#") ? "Found candidates from the code or number. Confirm the set, number and finish." : "Check the picture matches your card.") : "Couldn’t match it — type the name or code.";
+    s.status = cands.length ? (cands[0].why.startsWith("Set code") || cands[0].why.startsWith("Passcode") || cands[0].why.includes("#") ? "Found candidates from the code or number. Confirm the set, number and finish." : "Check the picture matches your card.") : "No reliable match. Crop to the card, reduce glare and retry, or type its full name. Partial text is not identification.";
   };
   A.tScanFind = async () => {
     const q = (document.querySelector("#scanName")?.value || "").trim();
@@ -1523,12 +1529,14 @@ export function registerTcg(c) {
       card = cardOf(G, t.dataset.id),
       qty = Math.max(1, Math.min(999, Math.floor(Number(document.querySelector("#tQty").value) || 1))),
       pr = document.querySelector("#tPrint")?.value || "",
-      [printing, rarity] = G === "ygo" && pr ? pr.split("|") : ["", ""];
+      [printing, rarity] = G === "ygo" && pr ? pr.split("|") : ["", ""],
+      edition = G === "ygo" ? document.querySelector("#tEdition")?.value || "" : "",
+      variantLabel = G === "ptcg" ? card.variants?.find(v => v.key === pr)?.label || pr : "";
     await mutate(
       (st) => {
-        const same = st.collection.find((e) => e.cardId === card.id && (e.printing || "") === printing && (e.variant || "") === (G === "ptcg" ? pr : "") && e.condition === document.querySelector("#tCond").value);
+        const same = st.collection.find((e) => e.cardId === card.id && (e.printing || "") === printing && (e.variant || "") === (G === "ptcg" ? pr : "") && (e.edition || "") === edition && (e.rarity || "") === rarity && e.condition === document.querySelector("#tCond").value);
         if (same) same.qty += qty;
-        else st.collection.push({ id: uid(), cardId: card.id, name: card.name, key: SOURCES[G].ownKey(card), qty, printing, rarity, variant: G === "ptcg" ? pr : "", condition: document.querySelector("#tCond").value, location: document.querySelector("#tLoc").value.trim().slice(0, 100), addedAt: new Date().toISOString() });
+        else st.collection.push({ id: uid(), cardId: card.id, name: card.name, key: SOURCES[G].ownKey(card), qty, printing, rarity, edition, variantLabel, variant: G === "ptcg" ? pr : "", condition: document.querySelector("#tCond").value, location: document.querySelector("#tLoc").value.trim().slice(0, 100), addedAt: new Date().toISOString() });
       },
       { msg: `Added ${qty}× ${card.name}.` },
     );
@@ -1572,10 +1580,10 @@ export function registerTcg(c) {
   };
   A.tExportColl = () => {
     const G = g(),
-      rows = [["Quantity", "Name", "Set", "Printing", "Rarity/Version", "Condition", "Price USD"]];
+      rows = [["Quantity", "Name", "Set", "Printing", "Rarity/Version", "Edition", "Condition", "Price USD"]];
     for (const e of gs(G).collection) {
       const card = cardOf(G, e.cardId);
-      rows.push([e.qty, e.name, setLabel({ e, c: card }), e.printing || card?.set?.number || "", e.rarity || e.variant || "", e.condition || "", entryPrice(card, e) ?? ""]);
+      rows.push([e.qty, e.name, setLabel({ e, c: card }), e.printing || card?.set?.number || "", e.rarity || e.variantLabel || e.variant || "", e.edition || "", e.condition || "", entryPrice(card, e) ?? ""]);
     }
     download(`Cardforge_${GAMES[G].short.replace(/\W/g, "")}_collection.csv`, rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n") + "\n", "text/csv");
   };

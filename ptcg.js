@@ -10,12 +10,37 @@ export const ptcgImage = (base, size = "low") => (base ? `${base}/${size}.webp` 
 const RULE_BOX = /\b(ex|EX|GX|V|VMAX|VSTAR|V-UNION|BREAK|LV\.X|Prism Star|◇|Tera)\b/;
 const VARIANT_LABEL = { normal: "Normal", holofoil: "Holofoil", "reverse-holofoil": "Reverse holo", "1st-edition": "1st Edition", "1st-edition-holofoil": "1st Ed. holo", unlimited: "Unlimited", "unlimited-holofoil": "Unlimited holo" };
 
+// Availability is independent of price. Detailed records include Shadowless,
+// stamped promos, copyright runs and other versions omitted by pricing alone.
+export function pokemonVariants(c) {
+  const legacy = Object.entries(c.pricing?.tcgplayer || {}).filter(([,v]) => v && typeof v === "object" && "marketPrice" in v)
+    .map(([key,v]) => ({ key, label: VARIANT_LABEL[key] || key, usd: n(v.marketPrice) ?? n(v.midPrice), low:n(v.lowPrice), mid:n(v.midPrice), market:n(v.marketPrice), productId:v.productId }));
+  const out = new Map();
+  const title = value => String(value).split("-").map(x => x.charAt(0).toUpperCase()+x.slice(1)).join(" ");
+  for (const d of c.variants_detailed || []) {
+    const first = d.stamp?.includes("1st-edition"), finish = { holo:"holofoil", reverse:"reverse-holofoil", normal:"normal" }[d.type];
+    const special = d.subtype && d.subtype !== "unlimited" || (d.stamp || []).some(x => x !== "1st-edition") || d.size && d.size !== "standard";
+    const wanted = first ? [d.type === "holo" ? "1st-edition-holofoil" : "1st-edition"] : d.subtype === "unlimited" || c.variants?.firstEdition ? [d.type === "holo" ? "unlimited-holofoil" : "unlimited", finish] : [finish];
+    const bucket = wanted.find(k => d.pricing?.tcgplayer?.[k]);
+    const q = bucket ? d.pricing.tcgplayer[bucket] : {};
+    const key = !special && bucket ? bucket : "detail:" + (d.variantId || JSON.stringify([d.type,d.subtype,d.stamp,d.size]));
+    const label = [first ? "First Edition" : "", d.subtype ? title(d.subtype) : "", ...(d.stamp || []).filter(x => x !== "1st-edition").map(title), d.size && d.size !== "standard" ? title(d.size) : "", {holo:"Holofoil",reverse:"Reverse Holo",normal:"Normal"}[d.type] || title(d.type || "Version")].filter(Boolean).join(" · ");
+    out.set(key, { key, label, usd:n(q.marketPrice) ?? n(q.midPrice), low:n(q.lowPrice), mid:n(q.midPrice), market:n(q.marketPrice), productId:q.productId || d.thirdParty?.tcgplayer, cmProduct:d.thirdParty?.cardmarket, detailed:true });
+  }
+  for (const v of legacy) if (!out.has(v.key)) out.set(v.key,v);
+  // Older/incomplete responses still expose version availability flags.
+  for (const [flag,key,label] of [["normal","normal","Normal"],["holo","holofoil","Holofoil"],["reverse","reverse-holofoil","Reverse Holo"]]) {
+    if (c.variants?.[flag] && ![...out.values()].some(v => v.key === key || v.label.endsWith(label))) out.set(key,{key,label,usd:null});
+  }
+  if (c.variants?.firstEdition && ![...out.values()].some(v => /First Edition|1st Ed/i.test(v.label))) out.set("firstEdition",{key:"firstEdition",label:"First Edition · finish unconfirmed",usd:null});
+  if (c.variants?.wPromo && ![...out.values()].some(v => /W Promo/i.test(v.label))) out.set("wPromo",{key:"wPromo",label:"W Promo",usd:null});
+  return [...out.values()];
+}
+
 export function normalizePtcg(c) {
   const tp = c.pricing?.tcgplayer || {},
     cm = c.pricing?.cardmarket || {},
-    variants = Object.entries(tp)
-      .filter(([k, v]) => v && typeof v === "object" && "marketPrice" in v)
-      .map(([k, v]) => ({ key: k, label: VARIANT_LABEL[k] || k, usd: n(v.marketPrice) ?? n(v.midPrice), low: n(v.lowPrice), mid: n(v.midPrice), high: n(v.highPrice), market: n(v.marketPrice), productId: v.productId })),
+    variants = pokemonVariants(c),
     best = variants.find((v) => v.key === "normal" && v.usd) || variants.find((v) => v.usd) || null,
     stats = [];
   if (c.hp) stats.push(["HP", c.hp]);
@@ -34,6 +59,7 @@ export function normalizePtcg(c) {
   ].filter(Boolean).join("\n\n");
   return {
     game: "ptcg",
+    variantSchema: 2,
     id: c.id,
     name: c.name,
     category: c.category || "Pokemon",
