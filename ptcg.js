@@ -15,7 +15,7 @@ export function normalizePtcg(c) {
     cm = c.pricing?.cardmarket || {},
     variants = Object.entries(tp)
       .filter(([k, v]) => v && typeof v === "object" && "marketPrice" in v)
-      .map(([k, v]) => ({ key: k, label: VARIANT_LABEL[k] || k, usd: n(v.marketPrice) ?? n(v.midPrice), productId: v.productId })),
+      .map(([k, v]) => ({ key: k, label: VARIANT_LABEL[k] || k, usd: n(v.marketPrice) ?? n(v.midPrice), low: n(v.lowPrice), mid: n(v.midPrice), high: n(v.highPrice), market: n(v.marketPrice), productId: v.productId })),
     best = variants.find((v) => v.key === "normal" && v.usd) || variants.find((v) => v.usd) || null,
     stats = [];
   if (c.hp) stats.push(["HP", c.hp]);
@@ -37,7 +37,7 @@ export function normalizePtcg(c) {
     id: c.id,
     name: c.name,
     category: c.category || "Pokemon",
-    typeLine: [c.category === "Pokemon" ? "Pokémon" : c.category, c.stage, c.trainerType, c.energyType && c.energyType + " Energy", c.types?.join("/")].filter(Boolean).join(" · "),
+    typeLine: [c.category === "Pokemon" ? "Pokémon" : c.category, c.stage?.replace(/^Stage(\d)/, "Stage $1"), c.trainerType, c.energyType && c.energyType + " Energy", c.types?.join("/")].filter(Boolean).join(" · "),
     text,
     stats,
     rarity: c.rarity || "",
@@ -46,9 +46,15 @@ export function normalizePtcg(c) {
     sets: c.set ? [{ code: c.set.id + " " + c.localId, name: c.set.name, rarity: c.rarity, price: best?.usd ?? null }] : [],
     variants,
     prices: { usd: best?.usd ?? null, eur: n(cm.trend) ?? n(cm.avg), others: [], source: "TCGplayer market (USD) · Cardmarket trend (EUR)", updated: tp.updated || cm.updated || null },
+    cardmarket: { low: n(cm.low), avg: n(cm.avg), trend: n(cm.trend), avg30: n(cm.avg30), holoLow: n(cm["low-holo"]), holoAvg: n(cm["avg-holo"]), holoTrend: n(cm["trend-holo"]) },
     cmProduct: cm.idProduct || null,
     legal: { standard: !!c.legal?.standard, expanded: !!c.legal?.expanded },
     regulationMark: c.regulationMark || "",
+    stage: c.stage || "",
+    evolveFrom: c.evolveFrom || "",
+    types: c.types || [],
+    attackCosts: [...new Set((c.attacks || []).flatMap((a) => a.cost || []).filter((x) => x !== "Colorless"))],
+    energyType: c.energyType || "",
     basicEnergy: c.category === "Energy" && c.energyType === "Normal",
     basicPokemon: c.category === "Pokemon" && c.stage === "Basic",
     aceSpec: /ACE SPEC/i.test(c.rarity || ""),

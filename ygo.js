@@ -37,6 +37,9 @@ export function normalizeYgo(c) {
     text: c.pend_desc ? `[Pendulum] ${c.pend_desc}\n\n${c.monster_desc || c.desc}` : c.desc || "",
     stats,
     extra: EXTRA.has(c.frameType),
+    frame: c.frameType || "",
+    level: c.level ?? c.linkval ?? null,
+    atk: c.atk ?? null,
     archetype: c.archetype || "",
     sets: (c.card_sets || []).map((s) => ({ code: s.set_code, name: s.set_name, rarity: s.set_rarity, price: num(s.set_price) })),
     prices: {
@@ -49,6 +52,8 @@ export function normalizeYgo(c) {
     pools: misc.formats || [],
     released: misc.tcg_date || misc.ocg_date || "",
     image: ygoImage(c.id),
+    art: `img/ygo/a/${encodeURIComponent(c.id)}.jpg`,
+    artDirect: `https://images.ygoprodeck.com/images/cards_cropped/${encodeURIComponent(c.id)}.jpg`,
     imageLarge: ygoImage(c.id, false),
     url: c.ygoprodeck_url || "",
     fetchedAt: new Date().toISOString(),
@@ -115,8 +120,17 @@ export function validateYgo(deck, cardOf, f) {
 export const YGO_TYPES = ["Effect Monster", "Normal Monster", "Ritual Effect Monster", "Fusion Monster", "Synchro Monster", "XYZ Monster", "Link Monster", "Pendulum Effect Monster", "Spell Card", "Trap Card"];
 export const YGO_ATTRIBUTES = ["DARK", "LIGHT", "EARTH", "WATER", "FIRE", "WIND", "DIVINE"];
 
+export const looseName = (q) =>
+  String(q)
+    .trim()
+    .split(/[\s\-'’,.:!&]+/)
+    .filter(Boolean)
+    .join("%");
+
 async function get(path, params) {
-  const r = await fetch(API + path + (params ? "?" + new URLSearchParams(params) : ""), { headers: { Accept: "application/json" } });
+  // "%" in a fuzzy name is a wildcard for YGOPRODeck, so it must not be escaped.
+  const qs = params ? Object.entries(params).map(([k, v]) => k + "=" + (k === "fname" ? String(v).split("%").map(encodeURIComponent).join("%") : encodeURIComponent(v))).join("&") : "";
+  const r = await fetch(API + path + (qs ? "?" + qs : ""), { headers: { Accept: "application/json" } });
   const d = await r.json().catch(() => ({}));
   if (!r.ok || d.error) {
     if (/No card matching/i.test(d.error || "")) return { data: [], meta: { total_rows: 0 } };
@@ -128,12 +142,15 @@ async function get(path, params) {
 export const ygoSource = {
   game: "ygo",
   formats: YGO_FORMATS,
-  async search({ q = "", type = "", attribute = "", format = "", set = "", sort = "name", page = 0, size = 60 }) {
+  async search({ q = "", type = "", attribute = "", format = "", set = "", archetype = "", sort = "name", page = 0, size = 60 }) {
     const p = { num: size, offset: page * size, misc: "yes", sort: sort === "new" ? "new" : "name" };
-    if (q.trim()) p.fname = q.trim();
+    // Names use hyphens, apostrophes and commas inconsistently ("Blue-Eyes", "Ash Blossom & Joyous Spring"),
+    // so match each word in order, whatever sits between them.
+    if (q.trim()) p.fname = looseName(q);
     if (type) p.type = type;
     if (attribute) p.attribute = attribute;
     if (set) p.cardset = set;
+    if (archetype) p.archetype = archetype;
     const pool = { TCG: "tcg", GOAT: "goat", "Speed Duel": "speed duel", "Master Duel": "master duel", "Duel Links": "duel links", Edison: "edison" }[YGO_FORMATS.find((x) => x.id === format)?.pool];
     if (pool) p.format = pool;
     const d = await get("/cardinfo.php", p);
@@ -143,6 +160,16 @@ export const ygoSource = {
     const d = await get("/cardinfo.php", { id, misc: "yes" });
     if (!d.data?.[0]) throw Error("Card not found.");
     return normalizeYgo(d.data[0]);
+  },
+  // Every card on a banlist ("tcg", "ocg" or "goat").
+  async banlist(list) {
+    const d = await get("/cardinfo.php", { banlist: list, misc: "yes", sort: "name" });
+    return (d.data || []).map(normalizeYgo);
+  },
+  async byNames(names) {
+    if (!names.length) return [];
+    const d = await get("/cardinfo.php", { name: names.join("|"), misc: "yes" });
+    return (d.data || []).map(normalizeYgo);
   },
   async byName(name) {
     const d = await get("/cardinfo.php", { name, misc: "yes" });

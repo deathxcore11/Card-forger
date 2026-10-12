@@ -6,12 +6,13 @@ const MONTH = 60 * 60 * 24 * 30;
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    const m = url.pathname.match(/^\/img\/ygo\/(s\/)?(\d{1,12})\.jpg$/);
+    const m = url.pathname.match(/^\/img\/ygo\/(s\/|a\/)?(\d{1,12})\.jpg$/);
     if (!m) return env.ASSETS.fetch(request);
     const cache = caches.default;
     const hit = await cache.match(request);
     if (hit) return hit;
-    const src = `https://images.ygoprodeck.com/images/cards${m[1] ? "_small" : ""}/${m[2]}.jpg`;
+    const folder = m[1] === "s/" ? "cards_small" : m[1] === "a/" ? "cards_cropped" : "cards";
+    const src = `https://images.ygoprodeck.com/images/${folder}/${m[2]}.jpg`;
     const upstream = await fetch(src, { cf: { cacheEverything: true, cacheTtl: MONTH } });
     if (!upstream.ok) return new Response("Image not found", { status: 404 });
     const res = new Response(upstream.body, { headers: { "Content-Type": "image/jpeg", "Cache-Control": `public, max-age=${MONTH}, immutable` } });

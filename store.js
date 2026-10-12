@@ -59,6 +59,7 @@ export const S = {
     compare: [null, null],
     finder: { basics: true, precons: [], cacheLoaded: false, busy: false, msg: "", max: "", colors: "", sort: "cost", q: "", limit: 12 },
     shared: { code: "", deck: null, error: "" },
+    rules: { list: "", busy: false, error: "", data: {} },
     build: { seed: "", format: "", results: {}, busy: false, msg: "", error: false, openTier: null, custom: "", fillDeck: null, avail: null },
     sets: { list: [], busy: false, error: "", q: "", all: false },
     set: { code: "", info: null, cards: [], total: 0, busy: false, loaded: false, error: "", q: "", filter: "all", rarity: "all", sort: "number", limit: 120 },
@@ -91,7 +92,7 @@ const KEEP = [
   "loyalty", "legalities", "prices", "set", "set_name", "collector_number", "rarity",
   "edhrec_rank", "scryfall_uri", "finishes", "layout", "checkedAt",
   "flavor_text", "artist", "released_at", "set_type", "full", "promo", "frame_effects",
-  "border_color", "full_art", "reserved", "penny_rank", "game_changer", "purchase_uris",
+  "border_color", "full_art", "reserved", "penny_rank", "game_changer", "purchase_uris", "rulings_uri",
 ];
 export function slim(c) {
   if (!c || typeof c !== "object") return c;

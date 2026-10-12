@@ -769,3 +769,73 @@ body { background-attachment: fixed; }
 .set-logo.big { width: 120px; height: 64px; }
 #content .card-grid .card-img { aspect-ratio: 63 / 88; object-fit: cover; }
 body[data-game="ygo"] #content .card-grid .card-img { aspect-ratio: 59 / 86; }
+
+/* ---------- 3.1: art-first card page ---------- */
+.sheet-head.overlay { position: sticky; top: 0; z-index: 4; background: transparent; padding: 10px 0 0; margin-bottom: -58px; pointer-events: none; }
+.sheet-head.overlay .icon { pointer-events: auto; background: rgba(10, 12, 16, 0.55); border-color: rgba(255, 255, 255, 0.18); color: #fff; backdrop-filter: blur(8px); }
+.cs-hero { position: relative; margin: -8px calc(var(--gutter) * -1) 0; height: 240px; overflow: hidden; background: var(--surface-2); }
+@media (min-width: 700px) { .cs-hero { height: 300px; border-radius: 22px 22px 0 0; } }
+.cs-art { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; display: block; }
+.cs-hero.ptcg .cs-art { object-position: center 22%; transform: scale(1.35); transform-origin: center 20%; }
+.cs-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, transparent 30%, transparent 55%, var(--bg) 100%); }
+.cs-title { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-top: -36px; position: relative; z-index: 2; }
+.cs-title h2 { font-size: 24px; line-height: 1.1; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6); }
+.cs-title .type-line { margin: 4px 0 0; color: var(--text); font-weight: 600; font-size: 14px; }
+.cs-title .mana img.ms { width: 22px !important; height: 22px !important; }
+.cs-meta { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin: 12px 0 4px; }
+.cs-meta .cd-set { flex: 1 1 200px; margin: 0; }
+.cs-tabs { position: sticky; top: 52px; z-index: 3; display: flex; gap: 6px; overflow-x: auto; padding: 10px 0; margin: 10px 0 6px; background: var(--bg); scrollbar-width: none; }
+.cs-tabs::-webkit-scrollbar { display: none; }
+.cs-tabs button { flex: none; min-height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 700; font-size: 14px; }
+.cs-tabs button.on { background: var(--gold); color: var(--gold-ink); border-color: var(--gold); }
+.cs-panel { animation: fade 0.15s ease-out; }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.cs-card { display: grid; grid-template-columns: minmax(0, 42%) 1fr; gap: 14px; align-items: start; margin: 6px 0 12px; }
+.cs-card-side { display: grid; gap: 8px; min-width: 0; }
+.cs-card-side .stat-grid { margin: 0; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
+.src-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+.price-table { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; margin: 8px 0; }
+.pt-head, .pt-row { display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(var(--cols, 3), minmax(0, 1fr)); gap: 6px; padding: 10px 12px; align-items: center; font-size: 14px; }
+.pt-head { background: var(--surface-2); font-size: 12.5px; color: var(--muted); }
+.pt-head b { color: var(--text); text-align: right; }
+.pt-head b.foil { color: #ff9f68; }
+.pt-row { border-top: 1px solid var(--line); }
+.pt-row > span:not(.pt-label) { text-align: right; font-variant-numeric: tabular-nums; }
+.pt-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.rulings { list-style: none; padding: 0; margin: 4px 0; display: grid; gap: 8px; }
+.rulings li { padding: 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
+.rulings p { margin: 0 0 4px; }
+
+/* ---------- rules reference ---------- */
+.rules-table td { vertical-align: top; font-size: 13.5px; }
+.rules-list details { border-top: 1px solid var(--line); padding: 10px 0; }
+.rules-list details:first-child { border-top: 0; }
+.rules-list summary { cursor: pointer; }
+.rules-list p { margin: 8px 0 0; color: var(--text); line-height: 1.55; }
+.ban-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.ban-item { display: grid; grid-template-columns: 44px 1fr; gap: 8px; align-items: center; padding: 6px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); text-align: left; font-size: 13px; min-width: 0; cursor: pointer; }
+.ban-item img { width: 44px; height: 32px; object-fit: cover; border-radius: 4px; }
+.ban-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Home art banner ---------- */
+.home-hero { position: relative; margin: -8px calc(var(--gutter) * -1) 14px; min-height: 300px; display: flex; align-items: flex-end; overflow: hidden; background: var(--surface-2); }
+@media (min-width: 900px) { .home-hero { margin: 0 0 16px; border-radius: 22px; min-height: 340px; } }
+.hh-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 30%; }
+.home-hero.ptcg .hh-art { object-position: center 25%; transform: scale(1.25); transform-origin: center 30%; }
+.hh-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.25) 40%, var(--bg) 100%); }
+.hh-body { position: relative; z-index: 1; width: 100%; padding: 0 var(--gutter) 16px; }
+.hh-body .eyebrow { color: rgba(255, 255, 255, 0.85); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6); }
+.hh-body h1 { font-size: 30px; text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7); margin-bottom: 12px; }
+.hh-search { display: flex; gap: 8px; }
+.hh-search input { flex: 1; min-width: 0; min-height: 48px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(15, 17, 21, 0.72); backdrop-filter: blur(10px); color: #fff; padding: 0 14px; font-size: 16px; }
+.hh-search .btn { min-height: 48px; }
+.hh-credit { margin-top: 10px; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.15); color: #fff; border-radius: 999px; padding: 6px 12px; font-size: 12.5px; cursor: pointer; backdrop-filter: blur(6px); }
+.binders { margin-top: 0; }
+.binder { min-height: 76px; padding: 10px; }
+/* compact start checklist */
+.start h2 { font-size: 17px; }
+.step p.muted { font-size: 12.5px; margin: 2px 0 0; }
+.step .actions { margin-top: 6px; }
+.small-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)) !important; }
+.version { padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.comp .meter { grid-template-columns: 80px 1fr 32px; }

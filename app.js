@@ -22,6 +22,7 @@ import { sharePayload, encodeShare, decodeShare } from "./share.js";
 import { FORMATS, formatOf, hasCommander, canLead, sizeLabel } from "./formats.js";
 import { buildTiers, formatsFor, themeQuery, BUDGET_TIERS } from "./builder.js";
 import * as T from "./tcg.js";
+import { rulesPage } from "./rules.js";
 import { GAMES, GAME_ICON } from "./games.js";
 import { initCloud, cloudInfo, statusLabel, scheduleSync, signInGoogle, signInEmail, signOut, saveProfile, resolvePending, syncNow } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact } from "./insights.js";
@@ -322,6 +323,12 @@ async function openShared(code) {
     if (sh.code !== code) return;
     sh.deck = deck;
     render();
+    if (deck.game) {
+      // Yu-Gi-Oh! / Pokémon: load every card by id, then redraw.
+      await T.ensureMany(deck.game, ["main", "extra", "side"].flatMap((z) => (deck.zones[z] || []).map((r) => r.cardId)), () => S.ui.view === "shared" && render());
+      if (S.ui.view === "shared") render();
+      return;
+    }
     const r = await resolveNames(deck.cards.map((c) => c.name).concat(deck.commander || []));
     if (r.total && S.ui.view === "shared") render();
   } catch (e) {
@@ -385,6 +392,12 @@ function refreshSheet() {
   const ctx = S.ui.sheetCtx;
   if (!ctx || !$("#sheet").open) return;
   if (ctx.type === "idea") return openIdea(ctx.i);
+  if (ctx.type === "tbuild") {
+    const top = $("#sheetBody").scrollTop;
+    $("#sheetBody").innerHTML = T.tcgBuildSheet();
+    $("#sheetBody").scrollTop = top;
+    return;
+  }
   if (ctx.type === "tcard") {
     const c = T.cardOf(ctx.game, ctx.id),
       top = $("#sheetBody").scrollTop;
@@ -442,7 +455,7 @@ const LEGACY = {
   wishlist: "collection/wishlist", compare: "search", playtest: "deck/active/playtest",
   guides: "deck/active/engine", sources: "settings",
 };
-const VIEWS = ["home", "search", "collection", "decks", "deck", "scan", "settings", "sets", "set", "shared", "tdeck"];
+const VIEWS = ["home", "search", "collection", "decks", "deck", "scan", "settings", "sets", "set", "shared", "tdeck", "rules"];
 
 function parseHash() {
   let h = decodeURIComponent(location.hash.slice(1) || "home");
@@ -510,6 +523,15 @@ function render() {
     scan: () => `<div class="page-head"><h1>Scan</h1></div><section class="empty"><h3>Scanning reads Magic card names for now</h3><p>For ${esc(GAMES[g].short)}, search by name instead — it’s quick and matches the exact card.</p><div class="actions center"><button class="btn" data-act="go" data-to="#search">Search cards</button></div></section>`,
   };
   if (g !== "mtg" && ui.view === "deck") ui.view = "decks";
+  if (ui.view === "home") setTimeout(() => heroArt(g), 0);
+  if (ui.view === "rules") {
+    $("#content").innerHTML = rulesPage(g, ui.rules[g] || (ui.rules[g] = { list: "", busy: false, error: "", data: {} }));
+    return;
+  }
+  if (ui.view === "shared" && ui.shared.deck?.game) {
+    $("#content").innerHTML = T.tcgSharedPage(ui.shared.deck);
+    return;
+  }
   $("#content").innerHTML = (g !== "mtg" && tcgViews[ui.view] ? tcgViews[ui.view] : views[ui.view] || V.home)();
   if (g !== "mtg") {
     const SU = T.ui(g).sets;
@@ -559,7 +581,7 @@ const C = {}; // change handlers
 const I = {}; // input handlers
 
 // Yu-Gi-Oh! and Pokémon actions (tcg.js).
-setTimeout(() => Object.assign(tcgCtx, { A, C, I, commit, render, openSheet, closeSheet, toast, go, download, copyText, busy, rerenderKeepingFocus, writeRecord }) && T.registerTcg(tcgCtx), 0);
+setTimeout(() => Object.assign(tcgCtx, { A, C, I, commit, render, openSheet, closeSheet, refreshSheet, toast, go, download, copyText, busy, rerenderKeepingFocus, writeRecord }) && T.registerTcg(tcgCtx), 0);
 
 document.addEventListener("click", (e) => {
   const t = e.target.closest("[data-act]");
@@ -634,6 +656,7 @@ A.menu = () =>
     <button data-act="go" data-to="#collection/wishlist">♡ Wishlist</button>
     <button data-act="go" data-to="#collection/value">$ Collection value</button>
     <button data-act="go" data-to="#decks/inspiration">✧ Find decks I can almost build</button>
+    <button data-act="go" data-to="#rules">📖 Rules & banned lists</button>
     <button data-act="go" data-to="#sets">◈ Browse every set</button>
     <button data-act="compareOpen">⇄ Compare two cards</button>
   </div>`);
@@ -1119,6 +1142,98 @@ function rerenderKeepingFocus() {
   }
 }
 
+/* ---------- home search & art ---------- */
+A.homeSearch = () => {
+  const q = ($("#homeQ")?.value || "").trim();
+  if (T.isTcg()) {
+    T.ui().search.q = q;
+    go("#search");
+    if (q) A.tSearch();
+  } else {
+    S.ui.db.term = q;
+    go("#search");
+    if (q) A.dbSearch();
+  }
+};
+// Load today's banner art, then swap just the banner in place.
+function heroArt(g) {
+  T.loadHero(g, () => api("/cards/random?" + new URLSearchParams({ q: "game:paper is:hires (rarity:mythic or rarity:rare) -is:digital" })))
+    .then((fresh) => {
+      if (!fresh || S.ui.view !== "home" || T.game() !== g) return;
+      const el = $("#homeHero");
+      if (el && !el.querySelector(".hh-art")) render();
+    })
+    .catch(() => {});
+}
+
+/* ---------- rules reference ---------- */
+A.rulesList = async (t) => {
+  const g = T.game(),
+    R = (S.ui.rules[g] ||= { list: "", busy: false, error: "", data: {} }),
+    id = t.dataset.id;
+  R.list = id;
+  if (R.data[id] || R.busy) return render();
+  R.busy = true;
+  R.error = "";
+  render();
+  try {
+    if (g === "ygo") {
+      const cards = await T.SOURCES.ygo.banlist(id),
+        word = { banned: "Forbidden", limited: "Limited", semi: "Semi-Limited" };
+      for (const c of cards) T.cache.ygo[c.id] = c;
+      R.data[id] = cards.filter((c) => c.ban?.[id]).map((c) => ({ id: c.id, name: c.name, status: word[c.ban[id]], image: c.image }));
+    } else {
+      const rows = [];
+      let path = "/cards/search?" + new URLSearchParams({ q: `banned:${id} or restricted:${id}`, unique: "cards", order: "name" });
+      for (let page = 0; path && page < 5; page++) {
+        const d = await api(path).catch((e) => (/didn’t match|No cards/i.test(e.message) ? { data: [] } : Promise.reject(e)));
+        for (const c of d.data || []) {
+          cacheCard(c);
+          rows.push({ name: c.name, status: c.legalities?.[id] === "restricted" ? "Restricted" : "Banned", image: c.image_uris?.art_crop || c.card_faces?.[0]?.image_uris?.art_crop || "" });
+        }
+        path = d.has_more && d.next_page ? new URL(d.next_page).pathname + new URL(d.next_page).search : null;
+      }
+      R.data[id] = rows;
+    }
+  } catch (e) {
+    R.error = "Couldn’t load the list: " + e.message;
+  } finally {
+    R.busy = false;
+    render();
+  }
+};
+
+/* ---------- card page tabs ---------- */
+A.cardTab = async (t) => {
+  const ctx = S.ui.sheetCtx;
+  if (!ctx) return;
+  ctx.tab = t.dataset.tab;
+  for (const b of $$("#sheetBody .cs-tabs [data-tab]")) {
+    const on = b.dataset.tab === ctx.tab;
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-selected", on);
+  }
+  for (const p of $$("#sheetBody .cs-panel")) p.hidden = p.dataset.tab !== ctx.tab;
+  $("#sheetBody .cs-tabs")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  // Official rulings load the first time the tab opens.
+  if (ctx.tab === "rulings" && ctx.type === "card" && !ctx.rulings) {
+    const c = ctx.print || meta(ctx.name);
+    try {
+      const r = await api("/cards/" + encodeURIComponent(c.id) + "/rulings");
+      ctx.rulings = r.data || [];
+    } catch {
+      ctx.rulings = [];
+    }
+    if (S.ui.sheetCtx === ctx) refreshSheet();
+  }
+};
+A.priceSource = (t) => {
+  const ctx = S.ui.sheetCtx;
+  if (!ctx) return;
+  ctx.source = t.dataset.src;
+  refreshSheet();
+};
+
 /* ---------- buy this card ---------- */
 A.buyCard = async (t) => {
   let back = S.ui.sheetCtx?.type === "card" && $("#sheet").open ? S.ui.sheetCtx : null;
@@ -1152,7 +1267,11 @@ function backToCard(scrollTo) {
   if (scrollTo) $(scrollTo, $("#sheetBody"))?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 A.buyBack = () => backToCard();
-A.buyCompare = () => backToCard(".prints");
+A.buyCompare = () => {
+  const ctx = S.ui.sheetCtx;
+  if (ctx?.back) ctx.back.tab = "versions";
+  backToCard(".cs-tabs");
+};
 
 /* ---------- deck review ---------- */
 A.deckReview = () => {

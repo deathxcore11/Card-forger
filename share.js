@@ -23,7 +23,24 @@ export function sharePayload(deck, { author = "", about = "" } = {}) {
 }
 
 // Turn a decoded payload back into a deck object; rejects anything malformed.
+// Yu-Gi-Oh! and Pokémon decks travel by card id, per zone (main/extra/side).
+export function sharePayloadTcg(game, deck, { author = "", about = "" } = {}) {
+  const z = (rows) => (rows || []).slice(0, MAX_CARDS).map((r) => [String(r.cardId), r.qty, clean(r.name, 150)]);
+  return { v: 2, g: game, n: clean(deck.name, 100), f: clean(deck.format, 40), a: clean(author, 60), d: clean(about, 1500), z: { m: z(deck.zones?.main), e: z(deck.zones?.extra), s: z(deck.zones?.side) } };
+}
+function tcgDeckFromPayload(p) {
+  if (!["ygo", "ptcg"].includes(p.g) || !p.z || typeof p.z !== "object") throw Error("This share link is damaged or incomplete.");
+  const zone = (rows) => {
+    if (!Array.isArray(rows) || rows.length > MAX_CARDS) throw Error("This share link is damaged or incomplete.");
+    return rows.map((r) => ({ cardId: clean(r?.[0], 40), qty: Number(r?.[1]), name: clean(r?.[2], 150) })).filter((r) => r.cardId && Number.isInteger(r.qty) && r.qty > 0 && r.qty <= 99);
+  };
+  const zones = { main: zone(p.z.m), extra: zone(p.z.e || []), side: zone(p.z.s || []) };
+  if (!zones.main.length && !zones.extra.length) throw Error("This share link has no cards.");
+  return { game: p.g, name: clean(p.n, 100) || "Shared deck", format: clean(p.f, 40), author: clean(p.a, 60), about: clean(p.d, 1500), zones };
+}
+
 export function deckFromPayload(p) {
+  if (p?.v === 2) return tcgDeckFromPayload(p);
   if (!p || p.v !== 1 || !Array.isArray(p.l) || !p.l.length || p.l.length > MAX_CARDS) throw Error("This share link is damaged or incomplete.");
   const cards = p.l.map((x) => (Array.isArray(x) ? { name: clean(x[0], 150), qty: Number(x[1]) } : { name: clean(x, 150), qty: 1 }));
   if (cards.some((c) => !c.name || !Number.isInteger(c.qty) || c.qty < 1 || c.qty > 250)) throw Error("This share link has an invalid card line.");

@@ -53,3 +53,33 @@ assert.equal(ptcglName("Pikachu ex SVI 63"), "Pikachu ex");
 assert.equal(ptcglName("Nest Ball"), "Nest Ball");
 assert.deepEqual(parseYdk("#created by x\n#main\n46986414\n46986414\n#extra\n98502113\n!side\n55144522\n"), { main: ["46986414", "46986414"], extra: ["98502113"], side: ["55144522"] });
 console.log("PASS: Yu-Gi-Oh! (Forbidden/Limited/Semi, Traditional, Extra Deck, card pools) and Pokémon (60 cards, 4 by name, ACE SPEC, Radiant, legality, GLC) rules; .ydk and PTCGL parsing.");
+
+// ---- generators
+import { buildYgo, buildPtcg } from "./tcgbuild.js";
+{
+  const mk = (id, name, o = {}) => ({ ...ygo(id, name, o), level: o.level ?? 4 });
+  const seed = mk("10", "Blue-Eyes White Dragon", { level: 8 });
+  const arch = [seed, ...Array.from({ length: 8 }, (_, i) => mk("a" + i, "BE Support " + i)), mk("x1", "BE Fusion", { type: "Fusion Monster", frame: "fusion" })];
+  const staples = [pot, ...Array.from({ length: 12 }, (_, i) => mk("s" + i, "Staple " + i, { type: "Spell Card" }))];
+  const r = buildYgo({ f: tcg, seed, archetype: arch, staples, limit: ygoLimit, legal: ygoLegality, owned: () => 0, price: (c) => c.prices.usd, budget: 1000 });
+  assert.equal(r.total, 40);
+  assert.ok(!r.zones.main.some((x) => x.name === "Pot of Greed"), "forbidden staple skipped");
+  assert.ok(r.zones.extra.some((x) => x.name === "BE Fusion") && !r.zones.main.some((x) => x.name === "BE Fusion"));
+  assert.deepEqual(validateYgo(r.zones ? { zones: r.zones } : r, (id) => [...arch, ...staples].find((c) => c.id === id), tcg), []);
+  const poor = buildYgo({ f: tcg, seed, archetype: arch, staples, limit: ygoLimit, legal: ygoLegality, owned: () => 0, price: (c) => c.prices.usd, budget: 0 });
+  assert.equal(poor.cost, 0);
+  assert.ok(poor.warnings.length);
+}
+{
+  const b = pk("p1", "Charmander", {}), s1 = { ...pk("p2", "Charmeleon", { stage: "Stage1" }), stage: "Stage1" }, s2 = { ...pk("p3", "Charizard ex", { stage: "Stage2" }), stage: "Stage2" };
+  const tr = Array.from({ length: 12 }, (_, i) => ({ card: pk("t" + i, "Trainer " + i, { cat: "Trainer", stage: null }), want: 4 }));
+  const fire = pk("e1", "Basic Fire Energy", { cat: "Energy", stage: null, energy: "Normal" });
+  const r = buildPtcg({ line: [{ card: b, want: 4 }, { card: s1, want: 2 }, { card: s2, want: 3 }], trainers: tr, energy: [fire], owned: (c) => (c.basicEnergy ? 99 : 0), price: () => 0.5, budget: 1000 });
+  assert.equal(r.total, 60);
+  assert.equal(r.zones.main.find((x) => x.name === "Basic Fire Energy").qty, 9);
+  assert.equal(r.zones.main.find((x) => x.name === "Charmander").qty, 4);
+  const cheap = buildPtcg({ line: [{ card: b, want: 4 }], trainers: tr, energy: [fire], owned: (c) => (c.basicEnergy ? 99 : 0), price: () => 0.5, budget: 5 });
+  assert.ok(cheap.cost <= 5);
+  assert.equal(cheap.total, 60, "energy fills the rest when the budget runs out");
+}
+console.log("PASS: Yu-Gi-Oh! and Pokémon generators — legal 40/60-card lists, Forbidden staples skipped, budgets respected.");

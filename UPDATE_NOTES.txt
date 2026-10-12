@@ -1,3 +1,30 @@
+CARDFORGE 3.1 UPDATE — ART-FIRST, EQUAL FEATURES FOR ALL THREE GAMES
+
+- Art-first card pages (all games): full-width artwork header, name and cost over the art, set and
+  price pills, the card text, then tabs: Overview · Versions · Prices · Rulings · Legality.
+  · Magic prices switch between TCGplayer (USD), Cardmarket (EUR) and Cardhoarder (MTGO), with
+    Regular / Foil / Etched columns. Official rulings load from Scryfall.
+  · Pokémon prices show TCGplayer Low / Mid / Market per version and Cardmarket Low / Average / Trend.
+  · Yu-Gi-Oh! prices from TCGplayer, Cardmarket, eBay, Amazon and CoolStuffInc, plus every
+    printing's set price. Rulings open in the official databases (they aren't published as data).
+- Home: a big art banner (your deck's lead card, or a card of the day) with search right on it,
+  then the game switcher and shortcuts — including Rules & banned lists, Sets and Find decks.
+- Rules & banned lists for every game: each format's deck rules, a plain-language core-rules
+  reference, live Magic banned/restricted lists for any format and the live Yu-Gi-Oh! Forbidden &
+  Limited lists (TCG, OCG, GOAT), plus links to the official rulebooks.
+- Yu-Gi-Oh! and Pokémon now match Magic's deck tools:
+  · Build decks around any card at five budgets — Yu-Gi-Oh! from the card's archetype plus legal
+    staples; Pokémon from the full evolution line, support Basics, legal Trainer staples and the
+    right Energy (exactly 60).
+  · Deck tabs: Cards · Insights · Playtest · Versions. Insights: Monster/Spell/Trap or
+    Pokémon/Trainer/Energy balance, Yu-Gi-Oh! level chart and opening-hand odds going first/second
+    with "starter" odds, Pokémon mulligan chance, missing evolutions, Energy your attacks need, draw
+    and Prize odds. Playtest: sample hands with each game's rules (Pokémon mulligans and Prizes).
+    Versions: snapshots with what changed and restore.
+  · Share links (anyone can open, match against their collection and make their own version),
+    wishlist with live prices, archetype search, "see every printing".
+- Fixed: Yu-Gi-Oh! search now ignores hyphens and punctuation ("Blue eyes white dragon" works).
+
 CARDFORGE 3.0 UPDATE — MAGIC, YU-GI-OH! AND POKÉMON
 
 - Three games, kept separate. Switch with the game button in the header or the three "binders" on
