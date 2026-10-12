@@ -10,7 +10,8 @@ import { buildYgo, buildPtcg, YGO_STAPLES, PTCG_STAPLES, PTCG_SUPPORT_BASICS, en
 import { ygoSource, ygoImageDirect, YGO_TYPES, YGO_ATTRIBUTES, YGO_RACES, YGO_SPELL_KINDS, YGO_TRAP_KINDS } from "./ygo.js";
 import { ptcgSource, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES } from "./ptcg.js";
 import { loadMeta, metaState, ptcgIcon } from "./meta.js";
-export { metaState };
+import { adaptList, ownedDraft, engineOf, similarLists, swapPool, costToFinish } from "./adapt.js";
+export { metaState, similarLists };
 
 export const SOURCES = { ygo: ygoSource, ptcg: ptcgSource };
 // (exported for the rules page)
@@ -690,49 +691,59 @@ function metaView(g) {
   <p class="foot">${g === "ygo" ? "Lists from YGOPRODeck’s Tournament Meta Decks (WCQ Regionals, YCS and more)." : "Top 8 lists from the biggest recent Standard events on Limitless."} “Owned” matches your collection${g === "ptcg" ? " by card name; basic Energy counts as owned" : ""}.</p>`;
 }
 
-export function tcgMetaSheet(g, d) {
-  const m = ownedMap(g),
-    o = metaOwned(g, d, m);
-  let body;
-  if (g === "ygo") {
-    const zone = (title, list) => {
-      const counts = new Map();
-      for (const id of list) counts.set(id, (counts.get(id) || 0) + 1);
-      return list.length
-        ? `<p class="list-head">${title} <span class="muted">${list.length}</span></p><div class="list compact">${[...counts]
-            .map(([id, qty]) => {
-              const card = cardOf("ygo", id),
-                own = Math.min(qty, m.get("id:" + id) || 0);
-              return `<button class="mini-row" data-act="tCard" data-id="${esc(id)}"><span class="ellip">${qty}× ${card ? `${ygoEmblems(card)} ${esc(card.name)}` : "…"}</span><span class="small ${own >= qty ? "ok-text" : "muted"}">${own >= qty ? "✓ owned" : own ? `${own}/${qty}` : price(card) !== null ? usd(price(card) * qty) : ""}</span></button>`;
-            })
-            .join("")}</div>`
-        : "";
-    };
-    body = zone("Main Deck", d.main) + zone("Extra Deck", d.extra) + zone("Side Deck", d.side);
+/* ---------- closest proven deck (shared by all three games) ---------- */
+// spec: { g, title, sub, evidence, sourceUrl, sourceLabel, attribution, rows, lists, generic(key),
+//         load(keys, status) → fills prices/owned, save(rows, label), cardAttrs(row) }
+export const proven = { spec: null, mode: "original", budget: 0, busy: false, msg: "" };
+const PROVEN_BUDGETS = [25, 50, 100, 200, 400];
+export function provenModel(spec) {
+  const others = spec.lists || [],
+    similar = similarLists(spec.rows, others),
+    engine = engineOf(spec.rows, similar, spec.generic || (() => false)),
+    pool = swapPool(spec.rows, similar),
+    full = costToFinish(spec.rows);
+  return { similar, engine, pool, full };
+}
+export function provenSheetHtml() {
+  const base = proven.spec;
+  if (!base) return "";
+  const spec = { ...base, rows: base.rowsFn ? base.rowsFn() : base.rows, lists: base.listsFn ? base.listsFn() : base.lists };
+  proven.current = spec;
+  const M = provenModel(spec),
+    mode = proven.mode,
+    chips = PROVEN_BUDGETS.filter((b) => b < M.full),
+    budget = chips.includes(proven.budget) ? proven.budget : chips.filter((b) => b <= M.full / 2).at(-1) ?? chips[0] ?? 0,
+    total = spec.rows.reduce((a, r) => a + r.qty, 0),
+    have = spec.rows.reduce((a, r) => a + Math.min(r.qty, r.owned || 0), 0),
+    unpriced = spec.rows.filter((r) => (r.price === null || r.price === undefined) && r.qty > (r.owned || 0)).length,
+    row = (r, extra = "") =>
+      `<button class="mini-row" ${spec.cardAttrs ? spec.cardAttrs(r) : ""}><span class="ellip">${r.qty}× ${esc(r.name)}${r.swappedIn ? ` <span class="tag">swap</span>` : ""}${M.engine.has(r.key) && mode !== "draft" ? ` <span class="tag ok">engine</span>` : ""}</span><span class="small ${r.owned >= r.qty ? "ok-text" : "muted"}">${extra || (r.owned >= r.qty ? "✓ owned" : r.owned ? `${r.owned}/${r.qty} · ${r.price != null ? usd((r.qty - r.owned) * r.price) : "—"}` : r.price != null ? usd(r.qty * r.price) : "—")}</span></button>`;
+  let body = "";
+  if (mode === "original") {
+    body = `<div class="list compact">${spec.rows.map((r) => row(r)).join("")}</div>`;
+  } else if (mode === "budget") {
+    const a = adaptList({ rows: spec.rows, pool: M.pool, engine: M.engine, budget, similarCount: M.similar.length });
+    proven.last = a;
+    body = `${chips.length ? `<div class="fmt-chips">${chips.map((b) => `<button class="chip pick ${b === budget ? "on" : ""}" data-act="provenBudget" data-b="${b}">≤ ${usd(b, 0)}</button>`).join("")}</div>` : `<p class="small ok-text">This list already costs little to finish — no adaptation needed.</p>`}
+      <div class="note ${a.open ? "warn" : ""}"><b>${a.open ? `Draft — ${a.open} slot${a.open === 1 ? "" : "s"} open` : "Budget adaptation"}</b> · ${usd(M.full, 0)} → <b>${usd(a.cost, 0)}</b> to finish · ${a.swaps.length} change${a.swaps.length === 1 ? "" : "s"}<br>${a.fits ? "" : a.engineCost >= a.cost / 2 ? `<small><b>Can’t reach ${usd(budget, 0)} without breaking the deck:</b> its engine alone costs ${usd(a.engineCost, 0)} to finish${a.engineTop.length ? ` (${a.engineTop.map((r) => `${esc(r.name)} ${usd(Math.max(0, r.qty - (r.owned || 0)) * (r.price ?? 0), 0)}`).join(", ")})` : ""}.</small><br>` : `<small><b>Stopped at ${usd(a.cost, 0)}:</b> the remaining cards are cheap or have no cheaper card of the same type in similar lists.</small><br>`}<small>An adaptation of a tournament list — the cheaper version hasn’t been tested in an event.${M.similar.length ? ` Swaps come from ${M.similar.length} similar list${M.similar.length === 1 ? "" : "s"}.` : " No similar lists in the data, so expensive cards are left as open slots."}</small></div>
+      ${a.swaps.length ? `<p class="list-head">Changes</p><ul class="swaps">${a.swaps.map((s) => `<li><span class="bad-text">−${s.qty} ${esc(s.out)}</span> ${s.in ? `→ <span class="ok-text">+${s.qty} ${esc(s.in)}</span>` : "→ <b>open slot</b>"} <small class="muted">saves ${usd(s.saved, 0)} · ${esc(s.why)}</small></li>`).join("")}</ul>` : ""}
+      ${M.engine.size ? `<p class="small muted">Kept the engine: ${esc(spec.rows.filter((r) => M.engine.has(r.key)).map((r) => r.name).slice(0, 8).join(", "))}${M.engine.size > 8 ? "…" : ""}</p>` : ""}
+      <p class="list-head">Adapted list</p><div class="list compact">${a.rows.map((r) => row(r)).join("")}</div>`;
   } else {
-    const byName = new Map();
-    for (const e of gs(g).collection) byName.set(e.name.toLowerCase(), (byName.get(e.name.toLowerCase()) || 0) + e.qty);
-    body = ["Pokemon", "Trainer", "Energy"]
-      .map((k) => {
-        const rows = d.list.filter((r) => r.kind === k);
-        return rows.length
-          ? `<p class="list-head">${k === "Pokemon" ? "Pokémon" : k} <span class="muted">${rows.reduce((a, r) => a + r.qty, 0)}</span></p><div class="list compact">${rows
-              .map((r) => {
-                const own = isBasicEnergyName(r.name) ? r.qty : Math.min(r.qty, byName.get(r.name.toLowerCase()) || 0);
-                return `<button class="mini-row" data-act="tOtherPrintings" data-name="${esc(r.name)}"><span class="ellip">${r.qty}× ${esc(r.name)} <small class="muted">${esc(r.set)} ${esc(r.number)}</small></span><span class="small ${own >= r.qty ? "ok-text" : "muted"}">${own >= r.qty ? "✓ owned" : own ? `${own}/${r.qty}` : ""}</span></button>`;
-              })
-              .join("")}</div>`
-          : "";
-      })
-      .join("");
+    const d = ownedDraft(spec.rows);
+    body = `<div class="note ${d.open ? "warn" : ""}"><b>${d.open ? `Draft — ${d.open} slot${d.open === 1 ? "" : "s"} open` : "Ready — you own every card"}</b>${d.open ? ` · you own ${total - d.open} of ${total}` : ""}</div>
+      ${d.rows.length ? `<p class="list-head">Cards you own <span class="muted">${total - d.open}</span></p><div class="list compact">${d.rows.map((r) => row(r, "✓ owned")).join("")}</div>` : `<p class="muted small">You don’t own any cards from this list yet.</p>`}
+      ${d.open ? `<p class="list-head">To finish · cheapest first <span class="muted">${usd(d.cost, 0)}${d.unpriced ? ` + ${d.unpriced} unpriced` : ""}</span></p><div class="list compact">${d.missing.map((r) => row({ ...r, owned: 0 })).join("")}</div>` : ""}`;
   }
-  return `<div class="sheet-head"><h2>${esc(d.name)}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
-  <p class="muted small">🏆 ${esc(d.place)} · ${esc(d.event)}${d.players ? ` · ${d.players} players` : ""}${d.player ? ` · ${esc(d.player)}` : ""}${d.date ? ` · ${esc(d.date)}` : ""}</p>
-  <div class="kpis small"><div class="kpi"><b>${Math.round(o.pct * 100)}%</b><span>you own</span></div><div class="kpi"><b>${o.have}/${o.total}</b><span>cards</span></div><div class="kpi"><b>${o.cost !== null ? usd(o.cost, 0) : "—"}</b><span>to finish</span></div></div>
-  <div class="actions wrap"><button class="btn" data-act="tMetaSave" data-key="${esc(d.key)}">Save as my deck</button><button class="btn ghost" data-act="tMetaBuild" data-key="${esc(d.key)}">⚒ Budget versions</button>${d.url ? `<a class="btn ghost" href="${esc(d.url)}" target="_blank" rel="noopener noreferrer">Source ↗</a>` : ""}</div>
-  <p class="small muted" id="metaStatus" role="status"></p>
+  return `<div class="sheet-head"><h2>${esc(spec.title)}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
+  <p class="muted small">🏆 ${spec.sub}</p>
+  <p class="evidence small">${spec.evidence}</p>
+  <div class="kpis small"><div class="kpi"><b>${total ? Math.round((have / total) * 100) : 0}%</b><span>you own</span></div><div class="kpi"><b>${have}/${total}</b><span>cards</span></div><div class="kpi"><b>${usd(M.full, 0)}${unpriced ? "+" : ""}</b><span>to finish</span></div></div>
+  ${segmented("provenMode", mode, [["original", "Original"], ["budget", "Budget adaptation"], ["draft", "My cards draft"]])}
+  ${proven.busy ? `<p class="muted small" role="status">${esc(proven.msg)}</p>` : proven.msg ? `<p class="small warn-text" role="status">${esc(proven.msg)}</p>` : ""}
   ${body}
-  <p class="foot">“Budget versions” builds around this deck’s signature cards at every budget, starting with the cards you own.</p>`;
+  <div class="actions wrap sheet-actions"><button class="btn" data-act="provenSave">${mode === "original" ? "Save original list" : mode === "budget" ? "Save adaptation" : "Save draft"}</button>${spec.sourceUrl ? `<a class="btn ghost" href="${esc(spec.sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(spec.sourceLabel || "Source")} ↗</a>` : ""}${spec.extraActions || ""}</div>
+  ${spec.attribution ? `<p class="foot">${spec.attribution}</p>` : ""}`;
 }
 
 export function tcgPickSheet() {
@@ -984,6 +995,14 @@ export function tcgSet() {
 
 /* ---------- deck generator sheet ---------- */
 
+// An incomplete version is a draft: say so, and name the cheapest way to finish it.
+export function draftPath(tiers, i, label) {
+  const t = tiers[i],
+    open = t.size - t.total;
+  if (open <= 0) return "";
+  const next = tiers.findIndex((x, j) => j !== i && x.total >= x.size && (x.budget ?? Infinity) > (t.budget ?? -1));
+  return `<p class="small draft-path">To finish: ${next >= 0 ? `the “${esc(label(tiers[next]))}” version fills every slot for ${usd(tiers[next].cost)}` : `add ${open} card${open === 1 ? "" : "s"} you own, or raise the budget`}.</p>`;
+}
 export const TCG_TIERS = { ygo: [0, 25, 50, 100, 250, Infinity], ptcg: [0, 25, 50, 100, 200, Infinity] };
 const tierName = (t) => (t.meta ? "Tournament list" : t.budget === 0 ? "Your cards only" : t.budget === Infinity ? "No budget limit" : "Up to $" + t.budget);
 const buildable = (g, c) => (c ? formatsOf(g).filter((f) => SOURCES[g].legality(c, f) !== "not_legal" && SOURCES[g].limit(c, f) > 0 && (g === "ygo" || c.category === "Pokemon")) : []);
@@ -1001,13 +1020,15 @@ export function tcgBuildSheet() {
   <p class="muted small">${g === "ygo" ? "Builds a legal deck from the archetype, then adds the hand traps, draw and removal today’s tournament decks play most — your cards first, at each budget, plus a recent tournament list when one plays your card." : "Builds the evolution line, adds the Trainers and support Pokémon today’s top decks play, and the Energy your attacks need — your cards first, at each budget, plus a recent tournament list when one plays your card. Basic Energy is assumed owned."}</p>
   <div class="fmt-chips">${fmts.map((f) => `<button class="chip pick ${f.id === B.format ? "on" : ""}" data-act="tBuildFormat" data-format="${f.id}">${esc(f.name)}</button>`).join("") || `<span class="muted small">${g === "ptcg" ? "Pick a Pokémon (not a Trainer or Energy) to build around." : "This card isn’t legal in any format."}</span>`}</div>
   ${B.busy ? `<p class="muted small" role="status">${esc(B.msg || "Building…")}</p>` : B.msg ? `<p class="small ${B.error ? "warn-text" : "muted"}" role="status">${esc(B.msg)}</p>` : ""}
+  ${!B.busy && B.evidence ? `<p class="evidence small">${esc(B.evidence)}</p>` : ""}
   ${tiers ? `<div class="tiers">${tiers.map((t, i) => {
     const owned = t.zones.main.concat(t.zones.extra).reduce((a, r) => a + Math.min(r.qty, ownedOf(g, cardOf(g, r.cardId))), 0),
       open = B.openTier === i,
       issues = SOURCES[g].validate({ zones: t.zones }, (id) => cardOf(g, id), formatOf(g, B.format));
-    return `<article class="tier ${open ? "on" : ""} ${t.meta ? "meta" : ""}"><div class="row between"><b>${t.meta ? `🏆 ${esc(t.label)}` : tierName(t)}</b><span class="chip ${issues.length ? "warn" : "ok"}">${issues.length ? issues.length + " to fix" : "Legal"}</span></div>
+    return `<article class="tier ${open ? "on" : ""} ${t.meta ? "meta" : ""}"><div class="row between"><b>${t.total < t.size ? `Draft — ${t.size - t.total} slot${t.size - t.total === 1 ? "" : "s"} open · ` : ""}${t.meta ? `🏆 ${esc(t.label)}` : tierName(t)}</b><span class="chip ${issues.length ? "warn" : "ok"}">${issues.length ? issues.length + " to fix" : "Legal"}</span></div>
       <div class="tier-stats"><span><b>${usd(t.cost)}</b> to buy</span><span><b>${t.total}/${t.size}</b> ${g === "ygo" ? "main" : "cards"}</span>${g === "ygo" ? `<span><b>${t.zones.extra.reduce((a, r) => a + r.qty, 0)}</b> extra</span>` : ""}<span><b>${t.total ? Math.round((owned / t.total) * 100) : 0}%</b> owned</span></div>
-      ${t.warnings.map((w) => `<p class="small warn-text">${esc(w)}</p>`).join("")}
+      ${t.warnings.filter((w) => !/slots? still open/.test(w)).map((w) => `<p class="small warn-text">${esc(w)}</p>`).join("")}
+      ${draftPath(tiers, i, tierName)}
       ${open ? `<div class="card-grid small-grid">${t.zones.main.concat(t.zones.extra).map((r) => `<button class="grid-card" data-act="tCard" data-id="${esc(r.cardId)}">${imgTag(cardOf(g, r.cardId))}${tileBadges(cardOf(g, r.cardId))}<span class="grid-meta"><span class="ellip">${r.qty}× ${esc(r.name)}</span><span>${esc(r.why || "")}</span></span></button>`).join("")}</div>` : ""}
       <div class="actions wrap"><button class="btn ghost small" data-act="tTier" data-i="${i}">${open ? "Hide cards" : "See the cards"}</button><button class="btn small" data-act="tTierSave" data-i="${i}">Save as deck</button></div></article>`;
   }).join("")}</div>` : ""}
@@ -1575,6 +1596,7 @@ export function registerTcg(c) {
     B.busy = true;
     B.error = false;
     B.openTier = null;
+    B.evidence = "";
     c.refreshSheet();
     try {
       const m = ownedMap(G),
@@ -1588,8 +1610,27 @@ export function registerTcg(c) {
         const archs = [...new Set(seeds.map((x) => x.archetype).filter(Boolean))].slice(0, 3);
         status(archs.length ? `Loading ${archs.join(", ")}…` : "Loading…");
         const arch = (await Promise.all(archs.map((a) => SOURCES.ygo.search({ archetype: a, size: 100 }).then((r) => r.cards).catch(() => [])))).flat().map(remember);
-        status("Loading staples from current tournament decks…");
-        const staples = (await ygoMetaStaples(meta, new Set(arch.map((x) => x.id)))) || (await SOURCES.ygo.byNames(YGO_STAPLES).catch(() => [])).map(remember).sort((a, b) => YGO_STAPLES.indexOf(a.name) - YGO_STAPLES.indexOf(b.name));
+        // Staples: what tournament lists playing these cards run, else the format's most played.
+        const poolIds = new Set(arch.map((x) => x.id)),
+          seedIds = new Set(seeds.map((x) => x.id)),
+          matching = (meta?.decks || []).filter((d) => [...d.main, ...d.extra].some((id) => seedIds.has(id) || poolIds.has(id)));
+        let staples = null;
+        if (matching.length >= 2) {
+          status(`Loading staples from ${matching.length} tournament lists that play ${archs[0] || seed.name}…`);
+          const freq = new Map();
+          for (const d of matching) for (const id of new Set(d.main)) if (!poolIds.has(id) && !seedIds.has(id)) freq.set(id, (freq.get(id) || 0) + 1);
+          const ids = [...freq].filter(([, n]) => n / matching.length >= 0.25).sort((a, b) => b[1] - a[1]).map(([id]) => id).slice(0, 30);
+          const need = ids.filter((id) => !cardOf("ygo", id));
+          if (need.length) (await SOURCES.ygo.byIds(need).catch(() => [])).forEach(remember);
+          staples = ids.map((id) => cardOf("ygo", id)).filter(Boolean);
+          B.evidence = `Staples from ${matching.length} tournament lists that play ${archs[0] || seed.name}.`;
+        }
+        if (!staples?.length) {
+          status("Loading staples from current tournament decks…");
+          staples = await ygoMetaStaples(meta, poolIds);
+          B.evidence = staples ? `No recent tournament list plays ${archs[0] || seed.name}, so staples are the format’s most played generic cards — check they suit the engine.` : "";
+        }
+        if (!staples?.length) staples = (await SOURCES.ygo.byNames(YGO_STAPLES).catch(() => [])).map(remember).sort((a, b) => YGO_STAPLES.indexOf(a.name) - YGO_STAPLES.indexOf(b.name));
         results = TCG_TIERS.ygo.map((budget) => ({ budget, ...buildYgo({ f, seed, seeds, archetype: arch, staples, limit: SOURCES.ygo.limit, legal: SOURCES.ygo.legality, owned, price: priceOf, budget }) }));
       } else {
         const line = [];
@@ -1610,8 +1651,18 @@ export function registerTcg(c) {
           }
         }
         const chosen = seeds.filter((x) => x.category === "Trainer").map((card) => ({ card, want: f.copies === 1 ? 1 : Math.min(4, Math.max(2, owned(card))) }));
-        const metaT = ptcgMetaTrainers(meta),
-          wanted = [...(line.some((x) => x.card.stage === "Stage2") ? [["Rare Candy", 4]] : []), ...(metaT.length >= 8 ? metaT : PTCG_STAPLES)].filter(([n]) => !chosen.some((x) => x.card.name === n));
+        const lineNames = new Set(line.map((x) => x.card.name.toLowerCase())),
+          matching = (meta?.decks || []).filter((d) => d.list.some((r) => r.kind === "Pokemon" && lineNames.has(r.name.toLowerCase())) && seeds.some((x) => d.list.some((r) => r.name.toLowerCase() === x.name.toLowerCase())));
+        let metaT = ptcgMetaTrainers(meta);
+        if (matching.length >= 2) {
+          const freq = new Map();
+          for (const d of matching) for (const r of d.list) if (r.kind === "Trainer") freq.set(r.name, { n: (freq.get(r.name)?.n || 0) + 1, copies: (freq.get(r.name)?.copies || 0) + r.qty });
+          const own = [...freq].filter(([, v]) => v.n / matching.length >= 0.3).sort((a, b) => b[1].n - a[1].n).map(([name, v]) => [name, Math.max(1, Math.min(4, Math.round(v.copies / v.n)))]);
+          // Top up a short list with the format's most played Trainers.
+          metaT = [...own, ...metaT.filter(([n]) => !own.some(([m]) => m === n))].slice(0, Math.max(own.length, 18));
+          B.evidence = `Trainers from ${matching.length} Top 8 lists that play ${seed.name}.`;
+        } else B.evidence = metaT.length >= 8 ? `No recent Top 8 list plays ${seed.name}, so Trainers are the format’s most played — check they suit the deck.` : "";
+        const wanted = [...(line.some((x) => x.card.stage === "Stage2") && !metaT.some(([n]) => n === "Rare Candy") ? [["Rare Candy", 4]] : []), ...(metaT.length >= 8 ? metaT : PTCG_STAPLES)].filter(([n]) => !chosen.some((x) => x.card.name === n));
         status(`Finding Trainers ${metaT.length >= 8 ? "today’s top decks play" : "staples"} legal in ${f.name}…`);
         const got = await inBatches(wanted, 6, ([n, want]) => ptcgBest(n, f).then((card) => (card ? { card, want: f.copies === 1 ? 1 : want } : null)));
         const trainers = [...chosen, ...got.filter(Boolean)];
@@ -1632,7 +1683,7 @@ export function registerTcg(c) {
         results.unshift({ budget: null, label: `Tournament list · ${mt.place}, ${mt.event}`, meta: mt.key, zones, cost, total: zones.main.reduce((a, r) => a + r.qty, 0), size: G === "ygo" ? f.main[0] : 60, warnings: [] });
       }
       B.results[B.format] = results;
-      B.msg = `${results.length} versions${mt ? ", including a recent tournament list" : ""}${meta ? " · staples from current tournament decks" : ""}.`;
+      B.msg = `${results.length} versions${mt ? ", including a recent tournament list" : ""}.`;
     } catch (e) {
       B.msg = e.message;
       B.error = true;
@@ -1712,40 +1763,150 @@ export function registerTcg(c) {
     }
   };
   A.tMetaRefresh = () => c.loadMeta(g(), true);
-  A.tMetaDeck = async (t) => {
-    const G = g(),
-      d = metaState(G).data?.decks.find((x) => x.key === t.dataset.key);
-    if (!d) return;
-    const sctx = { type: "tmeta", key: d.key };
-    openSheet(tcgMetaSheet(G, d), sctx);
-    if (G === "ygo") {
-      const need = [...new Set([...d.main, ...d.extra, ...d.side])].filter((id) => !cardOf("ygo", id));
-      if (need.length) {
-        (await SOURCES.ygo.byIds(need).catch(() => [])).forEach(remember);
-        if (S.ui.sheetCtx === sctx) openSheet(tcgMetaSheet(G, d), sctx, document.querySelector("#sheetBody").scrollTop);
-      }
+  // ----- closest proven deck -----
+  const refreshProven = () => S.ui.sheetCtx?.type === "proven" && openSheet(provenSheetHtml(), S.ui.sheetCtx, document.querySelector("#sheetBody")?.scrollTop || 0);
+  c.refreshProven = refreshProven;
+  c.openProven = async (spec) => {
+    Object.assign(proven, { spec, mode: "original", budget: 0, busy: true, msg: "Loading prices…", last: null });
+    const sctx = { type: "proven", key: spec.key };
+    openSheet(provenSheetHtml(), sctx);
+    try {
+      await spec.load?.((m) => {
+        proven.msg = m;
+        const el = document.querySelector("#sheetBody [role=status]");
+        if (el) el.textContent = m;
+      });
+      proven.msg = "";
+    } catch (e) {
+      proven.msg = "Some prices couldn’t load: " + e.message;
+    } finally {
+      proven.busy = false;
+      if (S.ui.sheetCtx === sctx) refreshProven();
     }
   };
-  A.tMetaSave = async (t) => {
-    const G = g(),
-      d = metaState(G).data?.decks.find((x) => x.key === t.dataset.key),
-      status = (m) => {
-        const el = document.querySelector("#metaStatus");
-        if (el) el.textContent = m;
-      };
-    if (!d) return;
+  A.provenMode = (t) => {
+    proven.mode = t.dataset.id;
+    refreshProven();
+  };
+  A.provenBudget = (t) => {
+    proven.budget = Number(t.dataset.b);
+    refreshProven();
+  };
+  A.provenSave = async (t) => {
+    const spec = proven.current;
+    if (!spec) return;
+    const rows = proven.mode === "budget" ? proven.last?.rows || spec.rows : proven.mode === "draft" ? ownedDraft(spec.rows).rows : spec.rows,
+      label = proven.mode === "budget" ? "budget adaptation" : proven.mode === "draft" ? "my cards draft" : "original";
+    if (!rows.length) return toast("Nothing to save yet — you don’t own any of these cards.");
     const done = busy(t, "Saving…");
     try {
-      const { zones, missed } = await metaZones(G, d, status);
-      const deck = { id: uid(), name: `${d.name} · ${d.place}, ${d.event}`.slice(0, 100), format: G === "ygo" ? "tcg" : "standard", zones, createdAt: new Date().toISOString(), source: { kind: "Tournament list", author: d.player, url: d.url } };
-      await mutate((st) => st.decks.push(deck), { msg: missed.length ? `Saved. ${missed.length} not found: ${missed.slice(0, 3).join(", ")}` : "Saved to your decks. It shows what you own and what’s left to buy." });
-      closeSheet();
-      go("#tdeck/" + deck.id);
+      await spec.save(rows, label);
     } catch (e) {
-      status(e.message);
+      toast(e.message);
     } finally {
       done();
     }
+  };
+
+  const pkByName = new Map();
+  const tcgProvenSpec = (G, d) => {
+    const meta = metaState(G).data,
+      m = ownedMap(G),
+      genericKeys = new Set((meta?.top || []).filter((x) => x.pct >= 30).map((x) => (G === "ygo" ? x.id : x.name)));
+    let rowsOf, save, load, evidence, attribution;
+    if (G === "ygo") {
+      rowsOf = (deck) => {
+        const counts = new Map();
+        for (const id of [...deck.main, ...deck.extra]) counts.set(id, (counts.get(id) || 0) + 1);
+        return [...counts].map(([id, qty]) => {
+          const card = cardOf("ygo", id);
+          return { key: id, name: card?.name || "Card " + id, qty, kind: card ? (card.extra ? "Extra" : card.category) : "?", price: card ? price(card) : null, owned: m.get("id:" + id) || 0, zone: card?.extra ? "extra" : "main", core: !!card?.archetype, group: card?.archetype || "" };
+        });
+      };
+      load = async (status) => {
+        const need = [...new Set(meta.decks.flatMap((x) => [...x.main, ...x.extra]))].filter((id) => !cardOf("ygo", id));
+        if (need.length) {
+          status(`Loading ${need.length} cards…`);
+          (await SOURCES.ygo.byIds(need)).forEach(remember);
+        }
+      };
+      save = async (rows, label) => {
+        const zones = { main: [], extra: [], side: [] };
+        for (const r of rows) zones[r.zone === "extra" ? "extra" : "main"].push({ cardId: r.key, name: r.name, qty: r.qty });
+        const deck = { id: uid(), name: `${d.name} · ${label}`.slice(0, 100), format: "tcg", zones, createdAt: new Date().toISOString(), source: { kind: label === "original" ? "Tournament list" : "Adapted tournament list", author: d.player, url: d.url } };
+        await mutate((st) => st.decks.push(deck), { msg: `Saved “${deck.name}”.` });
+        closeSheet();
+        go("#tdeck/" + deck.id);
+      };
+      evidence = `Tournament-backed · Advanced (TCG) · ${esc(d.place)} at ${esc(d.event)}${d.players ? ` (${d.players} players)` : ""} · compared with ${meta.decks.length} recent top lists`;
+      attribution = `Decklists from <a href="https://ygoprodeck.com/category/format/tournament%20meta%20decks" target="_blank" rel="noopener">YGOPRODeck Tournament Meta Decks</a>. Prices are TCGplayer market estimates.`;
+    } else {
+      const byName = new Map();
+      for (const e of gs(G).collection) byName.set(e.name.toLowerCase(), (byName.get(e.name.toLowerCase()) || 0) + e.qty);
+      rowsOf = (deck) =>
+        deck.list.map((r) => {
+          const basic = isBasicEnergyName(r.name),
+            card = pkByName.get(r.name);
+          return { key: r.name, name: r.name, qty: r.qty, kind: r.kind, price: basic ? 0 : card ? price(card) : null, owned: basic ? r.qty : byName.get(r.name.toLowerCase()) || 0, core: r.kind === "Pokemon" };
+        });
+      const resolve = async (names, status) => {
+        const std = formatOf("ptcg", "standard"),
+          any = formatOf("ptcg", "unlimited"),
+          todo = [...new Set(names)].filter((n) => !pkByName.has(n));
+        let i = 0;
+        await inBatches(todo, 6, async (n) => {
+          const card = isBasicEnergyName(n) ? await ptcgBest(energyName(n.replace(/^Basic /, "").replace(/ Energy$/, "")), any) : (await ptcgBest(n, std)) || (await SOURCES.ptcg.byName(n).catch(() => null));
+          pkByName.set(n, card ? remember(card) : null);
+          status(`Matching cards ${++i}/${todo.length}…`);
+        });
+      };
+      load = async (status) => {
+        const sim = similarLists(rowsOf(d), meta.decks.map(rowsOf));
+        await resolve([...d.list.map((r) => r.name), ...swapPool(rowsOf(d), sim).map((r) => r.name)], status);
+      };
+      save = async (rows, label) => {
+        await resolve(rows.map((r) => r.name), () => {});
+        const zones = { main: [], extra: [], side: [] },
+          missed = [];
+        for (const r of rows) {
+          const card = pkByName.get(r.name);
+          if (!card) missed.push(r.name);
+          else {
+            const row = zones.main.find((x) => x.cardId === card.id);
+            if (row) row.qty += r.qty;
+            else zones.main.push({ cardId: card.id, name: card.name, qty: r.qty });
+          }
+        }
+        const deck = { id: uid(), name: `${d.name} · ${label}`.slice(0, 100), format: "standard", zones, createdAt: new Date().toISOString(), source: { kind: label === "original" ? "Tournament list" : "Adapted tournament list", author: d.player, url: d.url } };
+        await mutate((st) => st.decks.push(deck), { msg: missed.length ? `Saved. Not found: ${missed.slice(0, 3).join(", ")}` : `Saved “${deck.name}”.` });
+        closeSheet();
+        go("#tdeck/" + deck.id);
+      };
+      evidence = `Tournament-backed · Standard · ${esc(d.place)} at ${esc(d.event)} (${d.players} players) · compared with ${meta.decks.length} Top 8 lists from ${meta.events?.length || "recent"} events in the last 21 days`;
+      attribution = `Decklists from <a href="https://play.limitlesstcg.com" target="_blank" rel="noopener">Limitless</a>. Prices are TCGplayer market estimates; basic Energy counts as owned.`;
+    }
+    return {
+      g: G,
+      key: d.key,
+      title: d.name,
+      sub: `${esc(d.place)} · ${esc(d.event)}${d.players ? ` · ${d.players} players` : ""}${d.player ? ` · ${esc(d.player)}` : ""}${d.date ? ` · ${esc(d.date)}` : ""}`,
+      evidence,
+      attribution,
+      sourceUrl: d.url,
+      sourceLabel: G === "ygo" ? "YGOPRODeck" : "Limitless",
+      rowsFn: () => rowsOf(d),
+      listsFn: () => meta.decks.map(rowsOf),
+      generic: (k) => genericKeys.has(k),
+      load,
+      save,
+      cardAttrs: (r) => (G === "ygo" ? `data-act="tCard" data-id="${esc(r.key)}"` : pkByName.get(r.name) ? `data-act="tCard" data-id="${esc(pkByName.get(r.name).id)}"` : `data-act="tOtherPrintings" data-name="${esc(r.name)}"`),
+      extraActions: `<button class="btn ghost" data-act="tMetaBuild" data-key="${esc(d.key)}">⚒ Build around it</button>`,
+    };
+  };
+  A.tMetaDeck = (t) => {
+    const G = g(),
+      d = metaState(G).data?.decks.find((x) => x.key === t.dataset.key);
+    if (d) c.openProven(tcgProvenSpec(G, d));
   };
   // Budget versions of a tournament deck: build around its signature cards.
   A.tMetaBuild = async (t) => {

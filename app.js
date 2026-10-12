@@ -1,6 +1,7 @@
 // Cardforge controller: persistence, routing, sheets and every user action.
 // Screens live in views.js; deck/collection math in core.js, planner.js,
 // strategy.js, deck-flow.js and insights.js.
+import { metaState, loadMeta as loadMetaData, MTG_META_FORMATS } from "./meta.js";
 import { nextFact } from "./facts.js";
 import { S, STORAGE, CATALOG_RECORD, RECOVERY, blank, uid, meta, inv, deckById, currentDeck, priceOf, cacheCard, slim } from "./store.js";
 import { $, $$, esc, usd, img, cardImage, options, segmented, customBudget, registerSetIcons } from "./ui.js";
@@ -393,6 +394,7 @@ function refreshSheet() {
   const ctx = S.ui.sheetCtx;
   if (!ctx || !$("#sheet").open) return;
   if (ctx.type === "idea") return openIdea(ctx.i);
+  if (ctx.type === "proven") return tcgCtx.refreshProven?.();
   if (ctx.type === "tbuild") {
     const top = $("#sheetBody").scrollTop;
     $("#sheetBody").innerHTML = T.tcgBuildSheet();
@@ -563,6 +565,7 @@ function render() {
     });
   }
   if (ui.view === "decks" && ui.decksTab === "inspiration" && !ui.finder.cacheLoaded) loadPreconCache();
+  if (ui.view === "decks" && ui.decksTab === "inspiration") loadMtgMeta();
   if (ui.view === "sets" && !ui.sets.list.length && !ui.sets.busy && !ui.sets.error) loadSetIndex(true);
   if (ui.view === "set" && !ui.set.loaded && !ui.set.busy && !ui.set.error) loadSet(ui.set.code);
   if (ui.view === "decks" && ui.decksTab === "ideas" && !ui.ideas.cache.length && !ui.ideas.busy && !ui.ideas.ran) {
@@ -2521,6 +2524,74 @@ I.refSearch = (t) => {
   el.focus();
   el.setSelectionRange(el.value.length, el.value.length);
 };
+// ----- Magic tournament results (TopDeck.gg via the Worker) -----
+const mtgMetaFormat = () => (S.ui.mtgMeta ||= { format: "Modern" }).format;
+function loadMtgMeta(force = false) {
+  const key = "mtg:" + mtgMetaFormat(),
+    M = metaState(key);
+  if (M.busy || (!force && (M.data || M.error) && (M.data ? Date.now() - M.at < 12 * 3600e3 : true))) return;
+  loadMetaData(key, force)
+    .then(async (data) => {
+      render();
+      // Card data (prices, art, types) for the lists on screen.
+      const names = [...new Set(data.decks.slice(0, 30).flatMap((d) => [...d.commanders, ...d.main].map((r) => r.name)))];
+      if ((await resolveNames(names)).total) render();
+    })
+    .catch(() => render());
+  setTimeout(render, 0);
+}
+A.mtgMetaFormat = (t) => {
+  S.ui.mtgMeta = { format: t.dataset.id };
+  render();
+  loadMtgMeta();
+};
+A.mtgMetaReload = () => loadMtgMeta(true);
+A.mtgProven = (t) => {
+  const fmt = mtgMetaFormat(),
+    data = metaState("mtg:" + fmt).data,
+    d = data?.decks.find((x) => x.key === t.dataset.key);
+  if (!d) return;
+  const appFormat = fmt === "EDH" ? "Commander" : fmt,
+    kindOf = (name) => {
+      const tl = meta(name)?.type_line || meta(name)?.card_faces?.[0]?.type_line || "";
+      return /Land/.test(tl) ? "land" : /Creature/.test(tl) ? "creature" : tl ? "spell" : "card";
+    },
+    rowsOf = (deck) => [...deck.commanders.map((r) => ({ ...r, commander: true })), ...deck.main].map((r) => ({ key: key(r.name), name: r.name, qty: r.qty, kind: r.commander ? "commander" : kindOf(r.name), price: meta(r.name) ? Number(meta(r.name).prices?.usd ?? meta(r.name).prices?.usd_foil) || (/^(Plains|Island|Swamp|Mountain|Forest|Wastes)$/.test(r.name) ? 0 : null) : null, owned: inv(r.name).owned, core: r.commander })),
+    all = data.decks.map(rowsOf),
+    seen = new Map();
+  for (const l of all) for (const k of new Set(l.map((r) => r.key))) seen.set(k, (seen.get(k) || 0) + 1);
+  const label = (MTG_META_FORMATS.find((f) => f[0] === fmt) || [fmt, fmt])[1];
+  tcgCtx.openProven({
+    g: "mtg",
+    key: d.key,
+    title: d.name,
+    sub: `${esc(d.place)} · ${esc(d.event)} · ${d.players} players${d.player ? " · " + esc(d.player) : ""}${d.record ? " · " + esc(d.record) : ""}${d.date ? " · " + esc(d.date) : ""}`,
+    evidence: `Tournament-backed · ${esc(label)} · last ${data.days} days · compared with ${data.decks.length} top-cut lists from ${data.coverage?.events || 0} events`,
+    attribution: `Data provided by <a href="https://topdeck.gg" target="_blank" rel="noopener">TopDeck.gg</a>. Prices are Scryfall’s TCGplayer estimates.`,
+    sourceUrl: d.eventUrl || d.url,
+    sourceLabel: "TopDeck.gg event",
+    rowsFn: () => rowsOf(d),
+    listsFn: () => data.decks.map(rowsOf),
+    // Format staples played across unrelated decks aren't this deck's engine.
+    generic: (k) => (seen.get(k) || 0) / Math.max(1, data.decks.length) >= 0.3,
+    load: async (status) => {
+      const sim = T.similarLists(rowsOf(d), data.decks.map(rowsOf));
+      await resolveNames([...rowsOf(d), ...sim.flat()].map((r) => r.name), status);
+    },
+    save: async (rows, labelText) => {
+      const commander = rows.find((r) => r.kind === "commander")?.name || "";
+      const deck = withSnapshot({ id: uid(), name: `${d.name} · ${labelText}`.slice(0, 100), format: appFormat, commander, strategy: "Auto", budget: S.state.settings.budget ?? 25, locked: false, cards: rows.map((r) => ({ name: r.name, qty: r.qty })), versions: [], source: sourceCredit({ kind: labelText === "original" ? "Tournament list" : "Adapted tournament list", author: d.player, website: "TopDeck.gg", url: d.eventUrl || d.url, description: `${d.place} at ${d.event} (${d.players} players).` }) }, labelText === "original" ? "From TopDeck.gg" : "Adapted from a tournament list");
+      await commit((s) => {
+        s.decks.push(deck);
+        s.activeDeck = deck.id;
+      }, { msg: `Saved “${deck.name}”.` });
+      closeSheet();
+      go(`#deck/${deck.id}/cards`);
+    },
+    cardAttrs: (r) => `data-act="card" data-name="${esc(r.name)}"`,
+  });
+};
+
 A.copyRef = async (t) => {
   const r = S.state.references.find((x) => x.id === t.dataset.id),
     d = withSnapshot({ ...structuredClone(r), id: uid(), name: r.name + " · my version", locked: false, versions: [] }, "From " + (r.source?.author || r.source?.website || "inspiration"));

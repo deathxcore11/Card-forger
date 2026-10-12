@@ -914,3 +914,13 @@ h1 img.pks.big { width: 28px; height: 28px; margin-right: 4px; }
 .seed-strip { display: flex; }
 .seed-strip .mini-art, .seed-strip .img-missing { width: 34px !important; height: 48px !important; border-radius: 4px !important; margin-right: -12px; box-shadow: 0 0 0 2px var(--bg); }
 .tier.meta { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 7%, var(--surface)); }
+
+/* ---------- evidence, drafts, adaptations ---------- */
+.evidence { color: var(--muted); border-left: 3px solid var(--gold); padding: 4px 8px; margin: 6px 0; background: color-mix(in srgb, var(--gold) 6%, transparent); border-radius: 0 6px 6px 0; }
+.draft-path { color: var(--warn); margin: 4px 0; }
+.swaps { list-style: none; padding: 0; margin: 4px 0 10px; display: grid; gap: 6px; font-size: 13px; }
+.swaps li { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.swaps small { display: block; margin-top: 2px; }
+.sheet-actions { margin-top: 12px; }
+.mini-row .tag { font-size: 10px; padding: 0 5px; vertical-align: middle; color: var(--muted); background: var(--surface-2); }
+.mini-row .tag.ok { color: var(--good); background: rgba(111, 210, 154, 0.12); }

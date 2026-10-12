@@ -33,7 +33,8 @@ export async function loadMeta(g, force = false) {
   if (!force && M.data && Date.now() - M.at < TTL) return M.data;
   M.busy = true;
   M.error = "";
-  M.promise = (g === "ygo" ? ygoMeta() : ptcgMeta())
+  M.code = "";
+  M.promise = (g.startsWith("mtg:") ? mtgMeta(g.slice(4)) : g === "ygo" ? ygoMeta() : ptcgMeta())
     .then((data) => {
       M.data = data;
       M.at = Date.now();
@@ -42,6 +43,7 @@ export async function loadMeta(g, force = false) {
     })
     .catch((e) => {
       M.error = e.message || "Couldn’t load the current meta.";
+      M.code = e.code || "";
       if (!M.data) throw e;
       return M.data;
     })
@@ -49,6 +51,23 @@ export async function loadMeta(g, force = false) {
       M.busy = false;
     });
   return M.promise;
+}
+
+/* ---------- Magic (TopDeck.gg, through the Worker) ---------- */
+
+export const MTG_META_FORMATS = [["Standard", "Standard"], ["Pioneer", "Pioneer"], ["Modern", "Modern"], ["Legacy", "Legacy"], ["Vintage", "Vintage"], ["Pauper", "Pauper"], ["Premodern", "Premodern"], ["EDH", "Commander"]];
+export async function mtgMeta(format, days = 30) {
+  let r;
+  try {
+    r = await fetch(`api/meta/mtg?format=${encodeURIComponent(format)}&days=${days}`, { headers: { Accept: "application/json" } });
+  } catch {
+    throw Error("Couldn’t reach the site’s tournament service. Check your connection.");
+  }
+  const body = await r.json().catch(() => null);
+  if (!body) throw Object.assign(Error("Magic tournament results load on your published site (they come through the Cloudflare Worker)."), { code: "no_worker" });
+  if (body.error === "not_configured") throw Object.assign(Error(body.message), { code: "not_configured" });
+  if (!r.ok) throw Error(body.message || "TopDeck.gg is unavailable right now.");
+  return body;
 }
 
 /* ---------- Yu-Gi-Oh! ---------- */

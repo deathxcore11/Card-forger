@@ -4,7 +4,8 @@ Your Magic: The Gathering, Yu-Gi-Oh! and Pokémon collections, decks, upgrades a
 
 ## What it does
 
-- **Live meta decks (Yu-Gi-Oh! from YGOPRODeck, Pokémon from Limitless), deck ideas and builds from any number of your cards, and one Home layout for all three games** *(new in 3.3)*.
+- **Tournament-backed decks for all three games — Magic via TopDeck.gg, Yu-Gi-Oh! via YGOPRODeck, Pokémon via Limitless — with the original list, a budget adaptation that keeps the engine, and a draft from your own cards** *(new in 3.4)*.
+- **Deck ideas and builds from any number of your cards, and one Home layout for all three games**.
 - **Game emblems, random cards & decks, full filters/sorting and “Did you know?” card facts for all three games**.
 - **Art-first card pages, rules & banned lists, and equal deck tools for all three games**.
 - **Three games** *(new in 3.0)*: Magic (Scryfall), Yu-Gi-Oh! (YGOPRODeck) and Pokémon (TCGdex), each with its own collection, decks, formats, sets and daily prices. Switch from the header or Home.
@@ -46,7 +47,22 @@ The site is plain static files, so there is no build step.
 
 **Option B, manual zip upload.** Export a backup in Settings first, then upload the site files to the same Worker as before (see `START_HERE.txt`).
 
+### Magic tournament results (TopDeck.gg)
+
+Magic's **Decks → Find decks → Tournament results** comes from the free [TopDeck.gg API](https://topdeck.gg/docs/tournaments-v2) through the Worker, so the key never reaches the browser.
+
+1. Create a free API key at topdeck.gg (API docs → **Get API Key**).
+2. Cloudflare → Workers & Pages → `cardforge2` → Settings → **Variables and Secrets** → add a **Secret** named `TOPDECK_KEY` (or run `npx wrangler secret put TOPDECK_KEY`).
+3. Check what TopDeck actually returns for each format:
+   `node scripts/topdeck-coverage.mjs --site https://<your-site>` (or `TOPDECK_KEY=… node scripts/topdeck-coverage.mjs` locally).
+
+The Worker caches each format for 12 hours, refreshes the main formats daily (cron in `wrangler.jsonc`), and keeps serving the last good data (marked as such) if TopDeck is down. TopDeck requires the visible "Data provided by TopDeck.gg" credit, which the app shows wherever the data appears. Only top-cut lists are used, so shares mean "share of published top-cut lists" — not overall popularity or win rate. Yu-Gi-Oh! (YGOPRODeck) and Pokémon (Limitless) need no key.
+
 ### GitHub Pages (free second address)
+
+GitHub Pages serves only static files, so the Worker features (Yu-Gi-Oh! card-image cache, Yu-Gi-Oh! meta, Magic tournament results) work on the Cloudflare address only.
+
+
 
 In GitHub go to Settings → Pages → Source → **GitHub Actions**. The `Publish to GitHub Pages` workflow then deploys the default branch to `https://<user>.github.io/Card-forger/` on every push.
 
@@ -88,6 +104,8 @@ uploading or replacing anything. Signing out leaves the data on the device.
 | `tcgbuild.js` | Yu-Gi-Oh! and Pokémon deck generators |
 | `emblems.js` | Yu-Gi-Oh! attribute/level/Spell-Trap emblems, Pokémon energy symbols, set and rarity badges (Pokémon set/rarity symbol images from [pokesymbols.com](https://pokesymbols.com)) |
 | `meta.js` | Live tournament meta: YGOPRODeck Tournament Meta Decks (via the Worker) and Limitless Pokémon events |
+| `topdeck.js`, `scripts/topdeck-coverage.mjs` | TopDeck.gg normalizer (used by the Worker) and the per-format coverage report |
+| `adapt.js` | Closest proven deck: similar lists, engine detection, budget adaptation with reasons, owned-card draft |
 | `facts.js` | “Did you know?” facts built from each card’s data |
 | `games.js`, `tcg.js`, `ygo.js`, `ptcg.js` | Yu-Gi-Oh! and Pokémon: data adapters, rules and screens |
 | `worker.js` | Cloudflare Worker: serves the site and caches Yu-Gi-Oh! card images, Pokémon set/rarity symbols and the Yu-Gi-Oh! tournament meta |

@@ -1,3 +1,28 @@
+CARDFORGE 3.4 UPDATE — TOURNAMENT-BACKED DECKS FOR ALL THREE GAMES
+
+- Magic tournament results (TopDeck.gg): Decks → Find decks → Tournament results for Standard,
+  Pioneer, Modern, Legacy, Vintage, Pauper, Premodern and Commander. Recent top-cut lists from
+  events with 16+ players, matched against your cards. Needs a free TopDeck.gg API key stored as
+  the Worker secret TOPDECK_KEY (see README → Magic tournament results). Until then the panel
+  shows the three setup steps.
+  · The Worker keeps the key private, caches 12 hours, refreshes daily, and serves the last good
+    data (marked) during outages. scripts/topdeck-coverage.mjs reports per format: events,
+    players, top-cut slots, usable lists, structured lists, link-only and missing lists.
+- Closest proven deck (all three games): open any tournament list to get
+  · Original — the list exactly as it placed, with event, placement, players and source link.
+  · Budget adaptation — keeps the engine (archetype cards, the Pokémon line, the commander and
+    cards most similar lists play) and swaps pricey support cards for cheaper ones of the same
+    type that similar lists play, with the reason and saving for each. Never brings in another
+    archetype, never cuts a card to save pennies, and says plainly when the engine itself is the
+    cost. Labelled as an adaptation that hasn't been tested in an event.
+  · My cards draft — the copies you own, open slots, and the cheapest cards to finish.
+- Generator staples now come from tournament lists that play your archetype / Pokémon (with
+  the number of lists shown); the format-wide staples are only a labelled fallback.
+- Incomplete versions are labelled "Draft — N slots open" with a concrete way to finish (the
+  budget version that completes it, or how many cards to add) — in all three games.
+- Evidence lines everywhere: format, time window, number of events/lists, source and update time.
+  Shares are "share of published top-cut lists" — never presented as popularity or win rate.
+
 CARDFORGE 3.3 UPDATE — META DECKS, BUILD FROM YOUR CARDS, ONE HOME FOR ALL GAMES
 
 - One Home for all three games: art banner and search, game switcher, the same "Start here"

@@ -1,5 +1,6 @@
 // Screen renderers. Each returns HTML for #content; interaction is wired by
 // data-act / data-change / data-input attributes handled centrally in app.js.
+import { metaState, MTG_META_FORMATS } from "./meta.js";
 import { factBox, factsFor } from "./facts.js";
 import { S, meta, inv, deckById, currentDeck, priceOf } from "./store.js";
 import {
@@ -20,7 +21,7 @@ import {
 import { bracketEstimate, manaBase, isOut, deckReview, explainSwap } from "./extras.js";
 import { buildability, rankBuildable } from "./share.js";
 import { formatsFor } from "./builder.js";
-import { gameBinders, homeHero, quickTiles, randomTools } from "./tcg.js";
+import { gameBinders, homeHero, quickTiles, randomTools, draftPath } from "./tcg.js";
 import { FORMATS as ALL_FORMATS, formatOf, hasCommander, canLead, legalityIn, LEGALITY_WORD, sizeLabel } from "./formats.js";
 import { cloudInfo, summarize } from "./cloud.js";
 
@@ -405,7 +406,7 @@ export function setPage() {
 
 const tierLabel = (t) => (t.budget ? `Up to $${t.budget}${t.upTo ? "–" + t.upTo : ""}` : "Your cards only");
 
-function tierCard(t, i, mode) {
+function tierCard(t, i, mode, tierList = null) {
   const p = engineProfile({ format: t.format, commander: t.commander, cards: t.cards }, S.catalog),
     shown = S.ui.build.openTier === i,
     groups = {};
@@ -415,10 +416,11 @@ function tierCard(t, i, mode) {
     (groups[g] = groups[g] || []).push(r);
   }
   return `<article class="tier ${shown ? "on" : ""}">
-    <div class="row between"><b>${esc(tierLabel(t))}</b><span class="chip">${esc(t.format)}</span></div>
+    <div class="row between"><b>${t.total < t.size ? `Draft — ${t.size - t.total} slot${t.size - t.total === 1 ? "" : "s"} open · ` : ""}${esc(tierLabel(t))}</b><span class="chip">${esc(t.format)}</span></div>
     <div class="tier-stats"><span><b>${usd(t.cost)}</b> to buy</span><span><b>${t.total}/${t.size}</b> cards</span><span><b>${t.total ? Math.round((t.owned / t.total) * 100) : 0}%</b> owned</span><span><b>${p.score}</b> engine</span></div>
     ${bar(t.total ? t.owned / t.total : 0, "thin")}
     ${t.warnings.map((w) => `<p class="small warn-text">${esc(w)}</p>`).join("")}
+    ${tierList ? draftPath(tierList, i, tierLabel) : ""}
     ${shown ? ["Creatures", "Spells", "Lands", "Other"].filter((g) => groups[g]).map((g) => `<p class="list-head">${g} <span class="muted">${groups[g].reduce((a, r) => a + r.qty, 0)}</span></p><div class="list compact">${groups[g].sort((a, b) => b.qty - a.qty || a.name.localeCompare(b.name)).map((r) => { const free = Math.min(r.qty, S.ui.build.avail?.(r.name) ?? 0), basic = isBasic(meta(r.name)) || /^(Plains|Island|Swamp|Mountain|Forest|Wastes)$/.test(r.name); return `<button class="mini-row" data-act="card" data-name="${esc(r.name)}"><span class="ellip">${r.qty}× ${esc(r.name)} <small class="muted">${esc(r.why || "")}</small></span><span class="small ${basic || free >= r.qty ? "ok-text" : "warn-text"}">${basic ? "basic" : free >= r.qty ? "owned" : `buy ${r.qty - free}`}</span></button>`; }).join("")}</div>`).join("") : ""}
     <div class="actions wrap"><button class="btn ghost small" data-act="tierToggle" data-i="${i}">${shown ? "Hide list" : "See all " + t.total + " cards"}</button>${mode === "fill" ? `<button class="btn small" data-act="tierApply" data-i="${i}">Use this version</button>` : `<button class="btn small" data-act="tierSave" data-i="${i}">Save as deck</button>`}</div>
   </article>`;
@@ -435,7 +437,7 @@ export function buildSheet() {
   <div class="fmt-chips">${fmts.map((f) => `<button class="chip pick ${f.name === B.format ? "on" : ""}" data-act="buildFormat" data-format="${esc(f.name)}">${esc(f.name)}</button>`).join("") || '<span class="muted small">This card isn’t legal in any constructed format.</span>'}</div>
   <label class="custom-budget">Also build at $<input id="buildCustom" type="number" min="0" max="100000" step="1" value="${esc(B.custom ?? "")}" placeholder="any amount" data-change="buildCustom"></label>
   ${B.busy ? `<p class="muted small" role="status">${esc(B.msg || "Building…")}</p>` : B.msg ? `<p class="small ${B.error ? "warn-text" : "muted"}" role="status">${esc(B.msg)}</p>` : ""}
-  ${tiers ? `<div class="tiers">${tiers.map((t, i) => tierCard(t, i, "build")).join("")}</div>${tiers.length > 1 ? `<button class="btn ghost block" data-act="tierSaveAll">Save all ${tiers.length} versions</button>` : ""}` : ""}
+  ${tiers ? `<div class="tiers">${tiers.map((t, i) => tierCard(t, i, "build", tiers)).join("")}</div>${tiers.length > 1 ? `<button class="btn ghost block" data-act="tierSaveAll">Save all ${tiers.length} versions</button>` : ""}` : ""}
   <p class="foot">Picks favor your cards, the build-around card’s themes and creature types, removal and card draw, a playable curve, and cards widely played (EDHREC rank). It’s a strong starting list, not a tuned tournament deck. Prices are Scryfall estimates; legality comes from Scryfall’s current data.</p>`;
 }
 
@@ -447,7 +449,7 @@ function fillAnyPanel(d, fm, count) {
   <div class="actions"><button class="btn" data-act="fillAny" ${B.busy ? "disabled" : ""}>${B.busy && B.fillDeck === d.id ? "Building…" : tiers ? "↻ Rebuild" : "Build versions"}</button></div>
   ${B.fillDeck === d.id && B.msg ? `<p class="small muted" role="status">${esc(B.msg)}</p>` : ""}
   </section>
-  ${tiers ? `<div class="tiers">${tiers.map((t, i) => tierCard(t, i, "fill")).join("")}</div>` : ""}`;
+  ${tiers ? `<div class="tiers">${tiers.map((t, i) => tierCard(t, i, "fill", tiers)).join("")}</div>` : ""}`;
 }
 
 /* ---------- Buy this card ---------- */
@@ -705,11 +707,51 @@ function ideasView() {
   }`;
 }
 
+// Recent tournament results (TopDeck.gg via the site's Worker), matched against your cards.
+function tournamentPanel() {
+  const fmt = S.ui.mtgMeta?.format || "Modern",
+    M = metaState("mtg:" + fmt),
+    data = M.data,
+    label = (MTG_META_FORMATS.find((f) => f[0] === fmt) || [fmt, fmt])[1],
+    chips = `<div class="fmt-chips">${MTG_META_FORMATS.map(([id, name]) => `<button class="chip pick ${id === fmt ? "on" : ""}" data-act="mtgMetaFormat" data-id="${esc(id)}">${esc(name)}</button>`).join("")}</div>`,
+    credit = `<p class="foot">Data provided by <a href="https://topdeck.gg" target="_blank" rel="noopener">TopDeck.gg</a>.</p>`;
+  let body;
+  if (!data && M.busy) body = `<p class="muted small">Loading recent ${esc(label)} results…</p>`;
+  else if (!data && M.code === "not_configured")
+    body = `<div class="note"><b>Almost ready.</b> Magic tournament results come from TopDeck.gg, which needs a free API key on your Cloudflare Worker:<ol class="small"><li>Create a key at <a href="https://topdeck.gg/docs/tournaments-v2" target="_blank" rel="noopener">topdeck.gg → API → Get API Key</a>.</li><li>Cloudflare → Workers → <b>cardforge2</b> → Settings → Variables and Secrets → add a <b>Secret</b> named <code>TOPDECK_KEY</code>.</li><li>Reload this page.</li></ol></div>`;
+  else if (!data && M.error) body = `<div class="note warn">${esc(M.error)} <button class="link" data-act="mtgMetaReload">Try again</button></div>`;
+  else if (!data) body = `<p class="muted small">Loading…</p>`;
+  else {
+    const c = data.coverage || {},
+      decks = data.decks.slice(0, 30);
+    body = `<p class="evidence small">Tournament-backed · ${esc(label)} · last ${data.days} days · ${c.events} event${c.events === 1 ? "" : "s"} with 16+ players · ${data.decks.length} top-cut list${data.decks.length === 1 ? "" : "s"}${c.topSlots > c.withList ? ` (${c.topSlots - c.withList} of ${c.topSlots} top-cut slots had no published list)` : ""} · updated ${esc(new Date(data.fetchedAt || M.at).toLocaleDateString([], { month: "short", day: "numeric" }))}${data.stale ? " · <span class=\"warn-text\">showing the last good data</span>" : ""}</p>
+      ${
+        data.decks.length
+          ? `<p class="list-head">${fmt === "EDH" ? "Commanders" : "Decks"} in top cuts <span class="muted">share of published top-cut lists</span></p><div class="arch-grid">${data.archetypes
+              .slice(0, 8)
+              .map((a) => `<button class="arch" data-act="mtgProven" data-key="${esc(a.best)}"><b class="ellip">${esc(a.name)}</b><small>${a.lists} list${a.lists === 1 ? "" : "s"} · ${Math.round(a.share * 100)}%</small>${bar(a.share / (data.archetypes[0]?.share || 1))}</button>`)
+              .join("")}</div>
+      <p class="list-head">Recent top-cut lists</p><div class="list">${decks
+        .map((d) => {
+          const names = [...d.commanders, ...d.main],
+            total = names.reduce((a, r) => a + r.qty, 0),
+            have = names.reduce((a, r) => a + Math.min(r.qty, inv(r.name).owned), 0),
+            cost = names.reduce((a, r) => a + Math.max(0, r.qty - inv(r.name).owned) * (Number(meta(r.name)?.prices?.usd) || 0), 0),
+            priced = names.every((r) => meta(r.name));
+          return `<button class="meta-row" data-act="mtgProven" data-key="${esc(d.key)}"><span class="meta-art">${img(art(meta((d.commanders[0] || d.main.find((r) => !/^(Plains|Island|Swamp|Mountain|Forest)$/.test(r.name)) || d.main[0])?.name)), d.name, "mini-art")}</span><span class="meta-main"><b class="ellip">${esc(d.name)}</b><small class="muted ellip">${esc(d.place)} · ${esc(d.event)} · ${d.players} players${d.record ? " · " + esc(d.record) : ""}</small><span class="meta-own">${bar(total ? have / total : 0)}<small>${total ? Math.round((have / total) * 100) : 0}% owned${priced && have < total ? ` · ${usd(cost, 0)} to finish` : ""}</small></span></span></button>`;
+        })
+        .join("")}</div>`
+          : `<p class="muted small">No ${esc(label)} events with published lists in the last ${data.days} days. Try another format.</p>`
+      }`;
+  }
+  return `<section class="panel"><h3>Tournament results</h3><p class="muted small">Real recent lists that placed, matched against your cards. Open one for the original list, a budget adaptation that keeps its engine, or a draft from the cards you own.</p>${chips}${body}${credit}</section>`;
+}
+
 function inspirationView() {
   const st = S.state,
     q = S.ui.q.ref.toLowerCase(),
     refs = (st.references || []).filter((d) => [d.name, d.commander, d.source?.author, d.source?.website].some((v) => (v || "").toLowerCase().includes(q)));
-  return `${finderPanel()}
+  return `${tournamentPanel()}${finderPanel()}
   <h2 class="section-title">Saved decks</h2><p class="muted">Save decks you admire — community lists, shared links or precons — with credit to the creator. Match them to your cards and build your own version.</p>
   <div class="toolbar"><button class="btn" data-act="importReference">↥ Save a deck idea</button>${(st.references || []).length > 3 ? `<input type="search" value="${esc(S.ui.q.ref)}" placeholder="Search saved ideas…" data-input="refSearch">` : ""}</div>
   <div class="deck-grid">${refs

@@ -11,3 +11,5 @@ ROADMAP.md
 *.zip
 supabase
 worker.js
+topdeck.js
+scripts
