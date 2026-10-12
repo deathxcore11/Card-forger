@@ -1,3 +1,24 @@
+CARDFORGE 3.5 UPDATE — CLEARER PATH, BETTER SEARCH, UNDO, ONE LOOK
+
+- Home adapts to where you are: one "Next step" card — Add your collection → Discover decks your
+  cards support → Continue your deck (cards, missing copies, cost to finish, next thing to fix).
+  The 3-step guide shows only for brand-new users and can be hidden. Returning users get a
+  shorter banner and a compact game switch instead of the big tiles.
+- Search (all games): every active filter is a removable chip with "Clear all" (no more hidden
+  "Filters · on"); price low→high and high→low; "Show: cards I own / don't own"; saved searches.
+  Magic: everyday filters first, advanced in their own section; "Card color" is now separate
+  from "Commander identity within"; "Only cards that fit <your deck>"; plain words that match no
+  card name ("draw a card") search the rules text instead, and say so.
+- Undo: removing or lowering cards in a deck or collection, applying upgrade swaps, moving cards
+  to/from the Side Deck and deleting a deck show an Undo button.
+- Money: cut cards' value is labelled "reference only — never subtracted from what you spend";
+  Find decks says "Assumes you have N basic lands — not counted from your collection".
+- One look across games: Yu-Gi-Oh! and Pokémon Versions use Magic's rows (card art, set mark,
+  code and rarity, Buy for that exact printing, price box). Tournament decks open with a big art
+  header and a thumbnail on every card. Build tiles show the full card name with the reason under it.
+- Phones: page headers no longer push the page sideways at 360px/320px (checked on every main
+  screen in all three games).
+
 CARDFORGE 3.4 UPDATE — TOURNAMENT-BACKED DECKS FOR ALL THREE GAMES
 
 - Magic tournament results (TopDeck.gg): Decks → Find decks → Tournament results for Standard,

@@ -1,10 +1,12 @@
 export function searchQuery(
   name,
-  { color = "", type = "", format = "", maxPrice = "", rarity = "", mv = "", set = "" } = {},
+  { color = "", cardColor = "", type = "", format = "", maxPrice = "", rarity = "", mv = "", set = "" } = {},
 ) {
   const parts = ["game:paper"];
   if (name.trim()) parts.push(name.trim());
   if (color) parts.push("id<=" + color);
+  // Card color (what's printed), separate from Commander color identity above.
+  if (cardColor) parts.push(cardColor === "M" ? "c:m" : cardColor === "C" ? "c:c" : "c:" + cardColor.toLowerCase());
   if (type) parts.push("t:" + type);
   if (format) parts.push("legal:" + format);
   if (rarity) parts.push("r:" + rarity);

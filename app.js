@@ -80,7 +80,10 @@ function save() {
 }
 
 // Transactional change: mutate a copy, validate, write, then swap in.
-async function commit(fn, { msg = "", recovery = false, rerender = true, enrich = true } = {}) {
+// The state before the last undoable change (deck edits, removals, deletions).
+let lastUndo = null;
+async function commit(fn, { msg = "", recovery = false, rerender = true, enrich = true, undo = "" } = {}) {
+  const before = undo ? structuredClone(stripCache(S.state)) : null;
   const next = structuredClone(stripCache(S.state));
   const out = fn(next);
   const valid = normalize(next);
@@ -95,7 +98,10 @@ async function commit(fn, { msg = "", recovery = false, rerender = true, enrich 
     render();
     refreshSheet();
   }
-  if (msg) toast(msg);
+  if (undo) {
+    lastUndo = { state: before, label: undo };
+    toast(msg || undo, { undo: true });
+  } else if (msg) toast(msg);
   if (enrich) setTimeout(autoEnrich, 50);
   return out;
 }
@@ -364,12 +370,13 @@ async function loadPreconCache() {
    ========================================================= */
 
 let toastTimer;
-function toast(text) {
+function toast(text, { undo = false } = {}) {
   const t = $("#toast");
-  t.textContent = text;
+  t.innerHTML = `<span>${esc(text)}</span>${undo ? `<button class="toast-undo" data-act="undo">Undo</button>` : ""}`;
+  t.classList.toggle("has-action", undo);
   t.classList.add("show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove("show"), 3800);
+  toastTimer = setTimeout(() => t.classList.remove("show", "has-action"), undo ? 7000 : 3800);
 }
 
 function openSheet(html, ctx = null, scrollTop = 0) {
@@ -1566,7 +1573,7 @@ A.qty = async (t) => {
     x.qty = Math.max(0, x.qty + delta);
     x.reserved = Math.min(x.reserved || 0, x.qty);
     s.collection = s.collection.filter((y) => y.qty > 0);
-  });
+  }, delta < 0 ? { undo: e.qty + delta <= 0 ? `Removed ${e.name} from your collection.` : `−1 ${e.name}` } : {});
 };
 I.collSearch = (t) => {
   S.ui.q.coll = t.value;
@@ -2075,7 +2082,7 @@ A.deckMenu = () => {
     { type: "deckMenu" },
   );
 };
-const editDeck = (fn, opts) => {
+const editDeck = (fn, opts = {}) => {
   const id = currentDeck().id;
   return commit((s) => {
     const i = s.decks.findIndex((x) => x.id === id);
@@ -2113,7 +2120,7 @@ A.deckDelete = async () => {
   await commit((s) => {
     s.decks = s.decks.filter((x) => x.id !== d.id);
     if (s.activeDeck === d.id) s.activeDeck = s.decks[0]?.id || null;
-  }, { msg: "Deck deleted." });
+  }, { undo: `Deleted ${d.name}.` });
   closeSheet();
   go("#decks");
 };
@@ -2145,10 +2152,10 @@ A.deckQty = async (t) => {
   const row = d.cards.find((c) => key(c.name) === key(name));
   if (!row) return;
   if (delta < 0 && row.qty === 1 && key(name) === key(d.commander)) return toast("That’s your commander.");
-  await editDeck((x) => mergeDeckCard(x, name, delta));
+  await editDeck((x) => mergeDeckCard(x, name, delta), delta < 0 ? { undo: `−1 ${name}` } : {});
 };
 A.deckRemove = async (t) => {
-  await editDeck((d) => ({ ...d, cards: d.cards.filter((c) => key(c.name) !== key(t.dataset.name)) }), { msg: "Removed from deck." });
+  await editDeck((d) => ({ ...d, cards: d.cards.filter((c) => key(c.name) !== key(t.dataset.name)) }), { undo: `Removed ${t.dataset.name}.` });
   closeSheet();
 };
 I.deckSearch = (t) => {
@@ -2255,9 +2262,89 @@ A.acqConfirm = async (t) => {
    ========================================================= */
 
 I.dbTerm = (t) => (S.ui.db.term = t.value);
-C.dbFilter = (t) => (S.ui.db.filters[t.dataset.field] = t.value);
+// Filters apply straight away once there's something to search for; "Show" only re-filters the page.
+const dbHasQuery = () => {
+  const f = S.ui.db.filters;
+  return !!(S.ui.db.term.trim() || f.color || f.cardColor || f.type || f.rarity || f.mv || f.set || f.format);
+};
+C.dbFilter = (t) => {
+  const f = S.ui.db.filters;
+  f[t.dataset.field] = t.value;
+  if (["format", "color"].includes(t.dataset.field)) delete f.fits;
+  if (t.dataset.field === "own") return render();
+  if (dbHasQuery()) dbSearch();
+  else render();
+};
+A.dbChip = (t) => {
+  const f = S.ui.db.filters,
+    k = t.dataset.field;
+  if (k === "fits") {
+    delete f.fits;
+    f.format = "";
+    f.color = "";
+  } else f[k] = "";
+  if (k === "own" || !dbHasQuery()) {
+    if (!dbHasQuery()) Object.assign(S.ui.db, { results: [], total: 0, next: null });
+    return render();
+  }
+  dbSearch();
+};
+A.dbClear = () => {
+  S.ui.db.filters = { color: "", type: "", format: "", maxPrice: "" };
+  if (S.ui.db.term.trim()) dbSearch();
+  else {
+    Object.assign(S.ui.db, { results: [], total: 0, next: null });
+    render();
+  }
+};
+// Cards that fit the active deck: its format's legality and its commander's color identity.
+A.dbFitDeck = () => {
+  const d = currentDeck(),
+    f = formatOf(d),
+    comm = d.commander ? meta(d.commander) : null,
+    F = S.ui.db.filters;
+  F.format = f.legality || "";
+  F.color = comm ? (comm.color_identity?.length ? comm.color_identity.join("") : "C") : "";
+  F.fits = d.name.slice(0, 24);
+  dbSearch();
+};
+A.dbSave = () => {
+  const db = S.ui.db,
+    chips = V.mtgFilterChips(db.filters).filter(([k]) => k !== "sort"),
+    label = [db.term.trim() && `“${db.term.trim().slice(0, 24)}”`, ...chips.map(([, l]) => l)].filter(Boolean).join(" · ").slice(0, 60) || "Search",
+    list = T.savedSearches("mtg").filter((x) => x.label !== label);
+  T.setSavedSearches("mtg", [{ label, term: db.term, filters: structuredClone(db.filters) }, ...list]);
+  toast("Search saved.");
+  render();
+};
+A.dbSaved = (t) => {
+  const x = T.savedSearches("mtg")[Number(t.dataset.i)];
+  if (!x) return;
+  S.ui.db.term = x.term || "";
+  S.ui.db.filters = { color: "", type: "", format: "", maxPrice: "", ...x.filters };
+  dbSearch();
+};
+A.dbSavedDel = (t) => {
+  const list = T.savedSearches("mtg");
+  list.splice(Number(t.dataset.i), 1);
+  T.setSavedSearches("mtg", list);
+  render();
+};
 A.dbSearch = () => dbSearch();
 A.dbMore = () => dbSearch(true);
+A.undo = async () => {
+  if (!lastUndo) return toast("Nothing to undo.");
+  const { state, label } = lastUndo;
+  lastUndo = null;
+  const valid = normalize(structuredClone(state));
+  valid.lastSavedAt = new Date().toISOString();
+  await writeRecords([[STORAGE, valid]]);
+  S.state = valid;
+  afterLocalSave();
+  render();
+  refreshSheet();
+  toast(`Undone: ${label.replace(/\.$/, "")}.`);
+};
 A.nextFact = (t) => nextFact(t);
 A.dbRandom = async () => {
   if(S.ui.db.busy)return;
@@ -2310,10 +2397,20 @@ async function dbSearch(next = false, random = false) {
       d = await api(u.pathname + u.search);
     } else {
       const F = db.filters;
-      if (!db.term.trim() && !F.color && !F.type && !F.rarity && !F.mv && !F.set) throw Error("Type a card name or pick a filter.");
+      if (!dbHasQuery()) throw Error("Type a card name or pick a filter.");
       const syntax = /[:<>=]/.test(db.term),
-        order = F.sort || (syntax ? "edhrec" : "name");
-      d = await api("/cards/search?" + new URLSearchParams({ q: searchQuery(db.term, F), unique: "cards", order, dir: ["usd", "released", "rarity"].includes(order) ? "desc" : "auto" }));
+        order = F.sort === "usdAsc" ? "usd" : F.sort || (syntax ? "edhrec" : "name");
+      const run = (term) => api("/cards/search?" + new URLSearchParams({ q: searchQuery(term, F), unique: "cards", order, dir: F.sort === "usdAsc" ? "asc" : ["usd", "released", "rarity"].includes(order) ? "desc" : "auto" }));
+      db.note = "";
+      try {
+        d = await run(db.term);
+      } catch (e) {
+        // Plain words that match no card name ("draw a card"): look in the rules text instead.
+        const words = db.term.trim();
+        if (syntax || !words.includes(" ") || !/didn.t match any cards|no cards found/i.test(e.message)) throw e;
+        d = await run(`o:"${words.replace(/"/g, "")}"`);
+        db.note = `No card names match “${words}”, so these are cards whose text says it.`;
+      }
     }
     for (const c of d.data) cacheCard(c);
     db.results = next ? [...db.results, ...d.data] : d.data;
@@ -2589,6 +2686,11 @@ A.mtgProven = (t) => {
       go(`#deck/${deck.id}/cards`);
     },
     cardAttrs: (r) => `data-act="card" data-name="${esc(r.name)}"`,
+    imageFor: (r) => meta(r.name)?.image_uris?.small || meta(r.name)?.card_faces?.[0]?.image_uris?.small || "",
+    heroFor: (rows) => {
+      const c = meta((rows.find((r) => r.kind === "commander") || rows.find((r) => r.kind === "creature") || rows.find((r) => r.kind !== "land") || rows[0])?.name);
+      return c?.image_uris?.art_crop || c?.card_faces?.[0]?.image_uris?.art_crop || "";
+    },
   });
 };
 
@@ -2824,12 +2926,11 @@ A.upApply = async () => {
       `${budgetLabel} upgrade · ${swaps.length} swap${swaps.length > 1 ? "s" : ""}`,
       { spent: result.spent },
     );
-  }, { rerender: false });
+  }, { rerender: false, undo: `Applied ${swaps.length} swap${swaps.length > 1 ? "s" : ""}. Here’s your before → after.` });
   U.plans = {};
   U.selected = new Set();
   S.ui.versions = { a: beforeId, b: "current" };
   go(`#deck/${d.id}/versions`);
-  toast("Swaps applied. Here’s your before → after.");
 };
 
 /* Versions */

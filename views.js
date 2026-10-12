@@ -21,7 +21,7 @@ import {
 import { bracketEstimate, manaBase, isOut, deckReview, explainSwap } from "./extras.js";
 import { buildability, rankBuildable } from "./share.js";
 import { formatsFor } from "./builder.js";
-import { gameBinders, homeHero, quickTiles, randomTools, draftPath } from "./tcg.js";
+import { gameBinders, gameSwitch, homeHero, quickTiles, randomTools, draftPath, nextCard, startHidden, savedSearches } from "./tcg.js";
 import { FORMATS as ALL_FORMATS, formatOf, hasCommander, canLead, legalityIn, LEGALITY_WORD, sizeLabel } from "./formats.js";
 import { cloudInfo, summarize } from "./cloud.js";
 
@@ -59,32 +59,20 @@ export function home() {
     active = deckById(st.activeDeck),
     others = st.decks.filter((d) => d !== active).slice(-8).reverse(),
     onboarding = !(st.collection.length && st.decks.length);
-  // New users get one guided panel; the regular shortcuts and empty states would only repeat it.
-  if (onboarding)
-    return `${homeHero("mtg", "Let’s build from your cards.", mtgDeckArt(active))}${gameBinders("mtg")}
+  const fresh = !st.collection.length && !st.decks.length,
+    lead = active || st.decks.at(-1);
+  // One next step for where you are; the 3-step guide only for brand-new users (and it can be hidden).
+  return `${homeHero("mtg", copies ? "Welcome back." : "Let’s build from your cards.", mtgDeckArt(active), !fresh)}${gameSwitch("mtg")}
   ${st.example ? `<div class="note warn">Example data is loaded. Reset it in Settings before adding real cards.</div>` : ""}
-  ${startPath()}
-  ${active ? `<div class="section-head"><h2>Continue building</h2></div>${deckTile(active, true)}` : ""}
-  ${randomTools("mtg")}
-  ${quickTiles("mtg")}
-  ${glossary()}`;
-  return `${homeHero("mtg", copies ? "Welcome back." : "Let’s build from your cards.", mtgDeckArt(active))}${gameBinders("mtg")}
-  ${st.example ? `<div class="note warn">Example data is loaded. Reset it in Settings before adding real cards.</div>` : ""}
-  <div class="kpis">
+  ${fresh && !startHidden("mtg") ? startPath() : mtgNext(lead, copies)}
+  ${onboarding ? "" : `<div class="kpis">
     <button class="kpi" data-act="go" data-to="#collection/value"><b>${usd(value.total, 0)}</b><span>collection value${change !== null ? ` <em class="${change >= 0 ? "up" : "down"}">${signed(change, (x) => usd(x, 0))}</em>` : ""}</span></button>
     <button class="kpi" data-act="go" data-to="#collection"><b>${copies}</b><span>cards owned</span></button>
     <button class="kpi" data-act="go" data-to="#decks"><b>${st.decks.length}</b><span>decks</span></button>
-  </div>
+  </div>`}
+  ${others.length ? `<div class="section-head"><h2>Deck shelf</h2><button class="link" data-act="go" data-to="#decks">All decks →</button></div><div class="shelf">${others.map((d) => deckTile(d)).join("")}</div>` : ""}
   ${randomTools("mtg")}
   ${quickTiles("mtg")}
-  ${active ? `<div class="section-head"><h2>Continue building</h2></div>${deckTile(active, true)}` : ""}
-  ${
-    others.length
-      ? `<div class="section-head"><h2>Deck shelf</h2><button class="link" data-act="go" data-to="#decks">All decks →</button></div><div class="shelf">${others.map((d) => deckTile(d)).join("")}</div>`
-      : !active
-        ? empty("Your shelf is empty", "Import a list from Moxfield, Archidekt or ManaBox. Cardforge matches it against your collection and shows the gap.", `<button class="btn" data-act="importDeck">Import a deck</button><button class="btn ghost" data-act="newDeck">Start from a commander</button>`)
-        : ""
-  }
   ${
     value.spare.length && value.spareValue > 0
       ? `<button class="banner" data-act="go" data-to="#collection/value"><span><b>${usd(value.spareValue, 0)}</b> sits in ${sumQty(value.spare)} cards no deck uses</span><span class="muted">Trade binder →</span></button>`
@@ -108,6 +96,23 @@ function mtgDeckArt(d) {
 }
 
 // Three steps for a new visitor; disappears once they have cards and a deck.
+function mtgNext(d, copies) {
+  if (!d && !copies)
+    return nextCard({ title: "Add your collection", text: "Paste a list or upload a ManaBox, Moxfield, Archidekt or CSV export — or scan cards with your camera. Then Cardforge shows what you can build.", actions: `<button class="btn" data-act="importCollection">↥ Import a list</button><button class="btn ghost" data-act="go" data-to="#scan">▧ Scan</button><button class="btn ghost" data-act="loadExample">Explore an example</button>` });
+  if (!d)
+    return nextCard({ title: "Discover decks your cards support", text: `${copies} cards in your collection. See the commanders they support and the decks — precons, shared lists and tournament results — you can almost build.`, actions: `<button class="btn" data-act="go" data-to="#decks/ideas">✧ Deck ideas</button><button class="btn ghost" data-act="go" data-to="#decks/inspiration">🏆 Find decks</button>` });
+  const t = totalsFor(d),
+    f = formatOf(d),
+    r = deckReview(d, S.catalog, S.state.collection, S.state.decks);
+  return nextCard({
+    eyebrow: "Continue your deck",
+    title: esc(d.name),
+    art: coverOf(d),
+    stats: [[`${t.copies}/${f.size}`, f.name], [`${t.missing}`, "missing copies"], [`${usd(t.pricedGap, 0)}${t.unpriced ? "+" : ""}`, "to finish"], [r.length ? `${r.length}` : "✓", r.length ? "to review" : "reviewed"]],
+    text: r.length ? `Next: ${esc(r[0].title)}` : t.missing ? "Nothing to review — get the missing copies to finish." : t.copies < f.size ? `${f.size - t.copies} slots still open.` : "Complete. Playtest it or start another.",
+    actions: `<button class="btn" data-act="go" data-to="#deck/${esc(d.id)}/cards">Open deck</button>${r.length ? `<button class="btn ghost" data-act="go" data-to="#deck/${esc(d.id)}/cards">Review ${r.length}</button>` : ""}${t.missing ? `<button class="btn ghost" data-act="go" data-to="#deck/${esc(d.id)}/shop">Shop missing</button>` : ""}`,
+  });
+}
 function startPath() {
   const st = S.state,
     hasCards = st.collection.length > 0,
@@ -117,7 +122,7 @@ function startPath() {
     done
       ? `<li class="step done"><span class="step-n" aria-hidden="true">✓</span><div><b>${title}</b></div></li>`
       : `<li class="step"><span class="step-n" aria-hidden="true">${n}</span><div><b>${title}</b><p class="muted small">${text}</p><div class="actions wrap">${actions}</div></div></li>`;
-  return `<section class="panel start"><p class="eyebrow">Start here · about 5 minutes</p><h2>Three steps to your first deck</h2><ol class="steps">
+  return `<section class="panel start"><div class="row between"><p class="eyebrow">Start here · about 5 minutes</p><button class="link small" data-act="hideStart" data-game="mtg">Hide</button></div><h2>Three steps to your first deck</h2><ol class="steps">
     ${step(1, hasCards, "Add the cards you own", "Paste a list or upload a ManaBox, Moxfield, Archidekt or CSV export. Or scan cards with your camera.", `<button class="btn small" data-act="importCollection">↥ Import collection</button><button class="btn ghost small" data-act="go" data-to="#scan">▧ Scan</button><button class="link small" data-act="loadExample">Try an example collection</button>`)}
     ${step(2, hasDeck, "Pick a deck to aim for", "Import a list you like, start from a commander, or browse precons and shared decks to see what you can almost build.", `<button class="btn small" data-act="go" data-to="#decks/inspiration">✧ Find decks I can almost build</button><button class="btn ghost small" data-act="importDeck">Import a deck</button>`)}
     ${step(3, false, "See what’s missing and what it costs", "Each deck shows what you own, what you need, the price to finish, and a review of anything off.", hasDeck ? `<button class="btn small" data-act="go" data-to="#deck/active/cards">Open my deck</button>` : `<span class="muted small">Unlocks after step 2.</span>`)}
@@ -146,33 +151,72 @@ export function deckTile(d, wide = false) {
 
 /* ---------- Search ---------- */
 
+const COLOR_ID = [["W", "White"], ["U", "Blue"], ["B", "Black"], ["R", "Red"], ["G", "Green"], ["WU", "Azorius WU"], ["UB", "Dimir UB"], ["BR", "Rakdos BR"], ["RG", "Gruul RG"], ["GW", "Selesnya GW"], ["WB", "Orzhov WB"], ["UR", "Izzet UR"], ["BG", "Golgari BG"], ["RW", "Boros RW"], ["GU", "Simic GU"], ["WUBRG", "All five"], ["C", "Colorless"]];
+const MTG_SORTS = [["", "Best match"], ["name", "Name"], ["usdAsc", "Price: low to high"], ["usd", "Price: high to low"], ["released", "Newest"], ["cmc", "Mana value"], ["edhrec", "Most played (EDHREC)"], ["rarity", "Rarity"]];
+// Every active filter as a removable chip, so nothing restricts results invisibly.
+export function mtgFilterChips(f) {
+  const L = (list, v) => (list.find((x) => x[0] === v) || [v, v])[1],
+    chips = [];
+  if (f.fits) chips.push(["fits", `Fits ${f.fits}`]);
+  if (f.format) chips.push(["format", `Legal in ${ALL_FORMATS.find((x) => x.legality === f.format)?.name || f.format}`]);
+  if (f.color) chips.push(["color", `Identity within ${L(COLOR_ID, f.color)}`]);
+  if (f.cardColor) chips.push(["cardColor", `Color: ${{ W: "White", U: "Blue", B: "Black", R: "Red", G: "Green", M: "Multicolor", C: "Colorless" }[f.cardColor]}`]);
+  if (f.type) chips.push(["type", f.type]);
+  if (f.rarity) chips.push(["rarity", f.rarity[0].toUpperCase() + f.rarity.slice(1)]);
+  if (f.mv) chips.push(["mv", `Mana value ${f.mv}`]);
+  if (f.set) chips.push(["set", `Set ${f.set.toUpperCase()}`]);
+  if (f.maxPrice) chips.push(["maxPrice", `Under ${usd(Number(f.maxPrice))}`]);
+  if (f.own) chips.push(["own", f.own === "owned" ? "Owned" : "Not owned"]);
+  if (f.sort) chips.push(["sort", `Sort: ${L(MTG_SORTS, f.sort)}`]);
+  return chips;
+}
+export const chipRow = (chips, act, clearAct) =>
+  chips.length ? `<div class="filter-chips" aria-label="Active filters">${chips.map(([k, l]) => `<button class="fchip" data-act="${act}" data-field="${esc(k)}" aria-label="Remove ${esc(l)}">${esc(l)} <span aria-hidden="true">×</span></button>`).join("")}<button class="link small" data-act="${clearAct}">Clear all</button></div>` : "";
+export const savedRow = (list, runAct, delAct) =>
+  list.length ? `<div class="saved-searches"><span class="muted small">Saved:</span>${list.map((x, i) => `<span class="schip"><button data-act="${runAct}" data-i="${i}">${esc(x.label)}</button><button data-act="${delAct}" data-i="${i}" aria-label="Delete saved search ${esc(x.label)}">×</button></span>`).join("")}</div>` : "";
+
 export function search() {
   const db = S.ui.db,
-    f = db.filters;
+    f = db.filters,
+    deck = currentDeck(),
+    chips = mtgFilterChips(f),
+    shown = db.results.filter((c) => (f.own === "owned" ? inv(c.name).owned > 0 : f.own === "missing" ? !inv(c.name).owned : true));
   return `<div class="page-head"><h1>Search cards</h1><span class="row"><button class="btn ghost small" data-act="go" data-to="#sets">◈ Browse sets</button><button class="btn ghost small" data-act="dbRandom">🎲 Random card</button></span></div>
-  <div class="searchbar"><input id="dbTerm" type="search" value="${esc(db.term)}" placeholder="Name, or Scryfall syntax like t:angel o:draw" data-input="dbTerm" data-enter="dbSearch" aria-label="Search all cards" autocomplete="off"><button class="btn" data-act="dbSearch" ${db.busy ? "disabled" : ""}>${db.busy ? "…" : "Search"}</button></div>
-  <details class="filters" ${f.color || f.type || f.maxPrice || f.rarity || f.mv || f.set || f.sort ? "open" : ""}><summary>Filters${f.color || f.type || f.maxPrice || f.format || f.rarity || f.mv || f.set ? " · on" : ""}</summary><div class="grid2">
-    <label>Fits colors<select data-change="dbFilter" data-field="color">${options([["", "Any"], ["W", "White"], ["U", "Blue"], ["B", "Black"], ["R", "Red"], ["G", "Green"], ["WU", "Azorius WU"], ["UB", "Dimir UB"], ["BR", "Rakdos BR"], ["RG", "Gruul RG"], ["GW", "Selesnya GW"], ["WB", "Orzhov WB"], ["UR", "Izzet UR"], ["BG", "Golgari BG"], ["RW", "Boros RW"], ["GU", "Simic GU"], ["C", "Colorless"]], f.color)}</select></label>
+  <div class="searchbar"><input id="dbTerm" type="search" value="${esc(db.term)}" placeholder="Card name, or words like “draw a card”" data-input="dbTerm" data-enter="dbSearch" aria-label="Search all cards" autocomplete="off"><button class="btn" data-act="dbSearch" ${db.busy ? "disabled" : ""}>${db.busy ? "…" : "Search"}</button></div>
+  ${chipRow(chips, "dbChip", "dbClear")}
+  ${savedRow(savedSearches("mtg"), "dbSaved", "dbSavedDel")}
+  <details class="filters"><summary>Filters${chips.length ? ` · ${chips.length} on` : ""}</summary>
+    <p class="list-head">Everyday</p><div class="grid2">
+    <label>Show<select data-change="dbFilter" data-field="own">${options([["", "All cards"], ["owned", "Cards I own"], ["missing", "Cards I don’t own"]], f.own || "")}</select></label>
+    <label>Max price $<input type="number" min="0" step="0.5" value="${esc(f.maxPrice)}" data-change="dbFilter" data-field="maxPrice" placeholder="Any"></label>
     <label>Type<select data-change="dbFilter" data-field="type">${options([["", "Any"], ...["creature", "instant", "sorcery", "artifact", "enchantment", "land", "planeswalker", "legendary creature"].map((x) => [x, x])], f.type)}</select></label>
-    <label>Legal in<select data-change="dbFilter" data-field="format">${options([["", "Any format"], ...ALL_FORMATS.filter((x) => x.legality).map((x) => [x.legality, x.name])], f.format)}</select></label>
+    <label>Sort<select data-change="dbFilter" data-field="sort">${options(MTG_SORTS, f.sort || "")}</select></label>
+    ${deck ? `<button class="btn ghost small span2" data-act="dbFitDeck">Only cards that fit “${esc(deck.name.slice(0, 28))}”</button>` : ""}
+    </div>
+    <p class="list-head">Colors &amp; format</p><div class="grid2">
+    <label>Card color<select data-change="dbFilter" data-field="cardColor">${options([["", "Any"], ["W", "White"], ["U", "Blue"], ["B", "Black"], ["R", "Red"], ["G", "Green"], ["M", "Multicolor"], ["C", "Colorless"]], f.cardColor || "")}</select></label>
+    <label title="Commander rules: every mana symbol on the card must be within these colors">Commander identity within<select data-change="dbFilter" data-field="color">${options([["", "Any"], ...COLOR_ID], f.color)}</select></label>
+    <label class="span2">Legal in<select data-change="dbFilter" data-field="format">${options([["", "Any format"], ...ALL_FORMATS.filter((x) => x.legality).map((x) => [x.legality, x.name])], f.format)}</select></label>
+    </div>
+    <details class="advanced"><summary>Advanced</summary><div class="grid2">
     <label>Rarity<select data-change="dbFilter" data-field="rarity">${options([["", "Any"], ["common", "Common"], ["uncommon", "Uncommon"], ["rare", "Rare"], ["mythic", "Mythic"], ["special", "Special"]], f.rarity || "")}</select></label>
     <label>Mana value<select data-change="dbFilter" data-field="mv">${options([["", "Any"], ...["0", "1", "2", "3", "4", "5", "6", "7+"].map((x) => [x, x])], f.mv || "")}</select></label>
-    <label>Set code<input value="${esc(f.set || "")}" placeholder="e.g. FDN" maxlength="6" data-change="dbFilter" data-field="set" autocapitalize="characters"></label>
-    <label>Sort<select data-change="dbFilter" data-field="sort">${options([["", "Best match"], ["name", "Name"], ["usd", "Price: high to low"], ["released", "Newest"], ["cmc", "Mana value"], ["edhrec", "Most played (EDHREC)"], ["rarity", "Rarity"]], f.sort || "")}</select></label>
-    <label class="span2">Max price $<input type="number" min="0" step="0.5" value="${esc(f.maxPrice)}" data-change="dbFilter" data-field="maxPrice" placeholder="Any"></label>
-  </div><p class="foot">Change filters, then tap Search.</p></details>
-  <div class="row between"><span class="muted small">${db.results.length ? `${db.total.toLocaleString()} cards` : "Live from Scryfall"}</span></div>
-  ${db.error ? `<div class="note warn">${esc(db.error)}</div>` : ""}
+    <label class="span2">Set code<input value="${esc(f.set || "")}" placeholder="e.g. FDN" maxlength="6" data-change="dbFilter" data-field="set" autocapitalize="characters"></label>
+    </div><p class="foot">The search box also takes Scryfall syntax, e.g. <code>t:angel o:draw id&lt;=w</code>.</p></details>
+  </details>
+  <div class="row between"><span class="muted small">${db.results.length ? `${db.total.toLocaleString()} cards${f.own ? ` · ${shown.length} ${f.own === "owned" ? "owned" : "not owned"} on this page` : ""}` : "Live from Scryfall"}</span>${db.term.trim() || chips.length ? `<button class="link small" data-act="dbSave">☆ Save this search</button>` : ""}</div>
+  ${db.error ? `<div class="note warn">${esc(db.error)}</div>` : db.note && db.results.length ? `<p class="small muted">${esc(db.note)}</p>` : ""}
+  ${f.own && db.results.length && !shown.length ? `<p class="small muted">None of the cards on this page are ${f.own === "owned" ? "in your collection" : "missing from your collection"}. ${db.next ? "Load more, or " : ""}<button class="link small" data-act="dbChip" data-field="own">show all</button>.</p>` : ""}
   ${
     db.results.length
-      ? `<div class="card-grid">${db.results
+      ? `<div class="card-grid">${shown
           .map((c) => {
             const own = inv(c.name).owned;
             return `<button class="grid-card" data-act="card" data-name="${esc(c.name)}">${img(cardImage(c), c.name, "card-img")}<span class="grid-meta"><span class="ellip">${esc(c.name)} ${setBadge(c)}</span><span>${usd(c.prices?.usd ?? c.prices?.usd_foil)}</span></span>${own ? `<span class="owned-badge">×${own}</span>` : ""}</button>`;
           })
           .join("")}</div>${db.next ? `<button class="btn ghost block" data-act="dbMore" ${db.busy ? "disabled" : ""}>Load more</button>` : ""}`
-      : `<div class="hints"><p class="muted small">Try:</p>${["t:angel id<=w", "o:\"draw a card\" id<=w usd<1", "t:legendary t:creature id=r", "is:commander o:token"]
-          .map((q) => `<button class="chip" data-act="dbTry" data-q="${esc(q)}">${esc(q)}</button>`)
+      : `<div class="hints"><p class="muted small">Try:</p>${[["Cheap card draw", "o:\"draw a card\" usd<1"], ["Angels", "t:angel"], ["Red legends", "t:legendary t:creature id=r"], ["Token makers", "o:\"create\" o:token"]]
+          .map(([l, q]) => `<button class="chip" data-act="dbTry" data-q="${esc(q)}">${esc(l)}</button>`)
           .join("")}</div>`
   }`;
 }
@@ -820,7 +864,7 @@ function finderPanel() {
         <small class="muted ellip">${colorDots(meta(x.deck.commander))} ${esc(x.deck.commander || "")}</small>
         <div class="row between small"><span><b>${pct(sc.ratio)}</b> owned · need ${sc.missing}</span><span><b>${sc.missing ? usd(sc.cost) : "$0"}</b>${sc.unknown ? ` <span class="muted">+ ${sc.unknown} unknown</span>` : ""} to finish</span></div>
         ${bar(sc.ratio, "thin")}
-        ${sc.skipped ? `<small class="muted">Plus ${sc.skipped} basic lands, assumed owned</small>` : ""}
+        ${sc.skipped ? `<small class="warn-text">Assumes you have ${sc.skipped} basic lands — not counted from your collection</small>` : ""}
         ${sc.missing ? `<details><summary class="small">Missing cards${top ? ` · priciest: ${top}` : ""}</summary><div class="list compact">${sc.need.map((n) => `<button class="mini-row" data-act="card" data-name="${esc(n.name)}"><span class="ellip">${n.qty > 1 ? n.qty + "× " : ""}${esc(n.name)}</span><span class="small">${n.price === null ? "Unknown" : usd(n.price * n.qty)}</span></button>`).join("")}</div></details>` : `<p class="small ok-text">You own every card.</p>`}
         <div class="actions wrap"><button class="btn small" data-act="finderBuild" data-kind="${x.kind}" data-id="${esc(x.id)}">Make my version</button>${x.kind === "precon" ? `<button class="btn ghost small" data-act="finderSave" data-id="${esc(x.id)}">Save</button>` : ""}</div>
       </div></article>`;
@@ -1204,7 +1248,7 @@ function impactCells(a, b, { cost = null, trade = null } = {}) {
     a.synergyLabel ? cell("Synergy", a.counts.Synergy, b.counts.Synergy) : "",
     cell("Avg MV", a.avg === null ? 0 : Number(a.avg.toFixed(2)), b.avg === null ? 0 : Number(b.avg.toFixed(2)), false),
     cost !== null ? `<div class="imp"><small>Spend</small><b>${usd(cost)}</b></div>` : "",
-    trade !== null ? `<div class="imp"><small>Cuts’ est. value</small><b>${usd(trade)}</b></div>` : "",
+    trade !== null ? `<div class="imp" title="For reference only — not subtracted from what you spend"><small>Cut cards’ value (ref.)</small><b>${usd(trade)}</b></div>` : "",
   ].join("");
 }
 
@@ -1215,7 +1259,7 @@ function swapPanel(d) {
   return `<section class="panel"><p class="eyebrow">${sumQty(d.cards) < 100 ? "Step 2" : "Upgrade lab"}</p><h2>One-for-one upgrades</h2><p class="muted small">Pick a budget. Cardforge proposes cuts and replacements and explains each trade-off: what the deck gains, what it gives up, and what it costs to buy. These are rules of thumb from card text — you know your playgroup best.</p>
   <div class="chips">${[0, 10, 25, 50, 100].map((n) => `<button class="chip pick ${U.budget === n ? "on" : ""}" data-act="upBudget" data-v="${n}">${n ? "$" + n : "My cards ($0)"}</button>`).join("")}</div>
   <label class="custom-budget">Custom upgrade budget ($)<input type="number" min="0" max="100000" step="0.01" value="${U.budget}" data-change="upCustom" aria-label="Custom upgrade budget"></label>
-  <label class="check small"><input type="checkbox" data-change="upTrade" ${U.tradeIn ? "checked" : ""}> Show what the cut cards are worth (if you plan to sell or trade them)</label>
+  <label class="check small"><input type="checkbox" data-change="upTrade" ${U.tradeIn ? "checked" : ""}> Show what the cut cards are worth (reference only — never subtracted from what you spend)</label>
   <div class="row between"><label class="check"><input type="checkbox" data-change="upSimple" ${U.simple ? "checked" : ""}> Prefer simpler cards</label><button class="btn" data-act="upRun" ${U.busy ? "disabled" : ""}>${U.busy ? "Working…" : Object.keys(plans).length ? "↻ Refresh" : "Find upgrades"}</button></div>
   <p class="muted small" role="status" id="upMsg">${esc(U.msg)}</p>
   ${Object.keys(plans).length ? budgetLadder(d, plans) : ""}
@@ -1255,7 +1299,7 @@ function swapResults(d, plan) {
       return `<article class="swap ${sel.has(i) ? "on" : ""}">
         <label class="swap-check"><input type="checkbox" data-change="upPick" data-i="${i}" ${sel.has(i) ? "checked" : ""}> Use this swap</label>
         <div class="swap-pair">
-          <button class="swap-card out" data-act="card" data-name="${esc(s.cut)}">${img(art(cut), s.cut, "swap-art")}<small>OUT</small><b>${esc(s.cut)}</b><span class="swap-mana">${manaCost(cut)}</span>${showTrade ? `<span class="muted small">est. value ${usd(imp.cutValue)}</span>` : ""}</button>
+          <button class="swap-card out" data-act="card" data-name="${esc(s.cut)}">${img(art(cut), s.cut, "swap-art")}<small>OUT</small><b>${esc(s.cut)}</b><span class="swap-mana">${manaCost(cut)}</span>${showTrade ? `<span class="muted small">ref. value ${usd(imp.cutValue)}</span>` : ""}</button>
           <span class="swap-arrow" aria-hidden="true">→</span>
           <button class="swap-card in" data-act="card" data-name="${esc(s.add)}">${img(art(add), s.add, "swap-art")}<small>IN</small><b>${esc(s.add)}</b><span class="swap-mana">${manaCost(add)}</span><span class="small">${s.owned ? '<b class="ok-text">You own a free copy</b>' : `Buy for <b>${usd(s.cost)}</b>`}</span></button>
         </div>
