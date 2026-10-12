@@ -16,6 +16,7 @@ import {
   engineProfile, engineRoles, goldfish, scoreGrade, diffCards, deckValue,
   collectionValue, lotPrice, swapImpact, applySwapsToCards, cardSig,
 } from "./insights.js";
+import { bracketEstimate, manaBase, basicName, isOut } from "./extras.js";
 
 /* ---------- shared deck math ---------- */
 
@@ -591,6 +592,7 @@ function deckEngine(d) {
     colors = Object.keys(p.pips).filter((k) => p.pips[k] > 0 || p.sources[k] > 0);
   return `<section class="panel score-panel">${ring(p.score)}<div><p class="eyebrow">Engine score</p><h2>${scoreGrade(p.score)}</h2><p class="muted small">How well the deck covers the ingredients most Commander decks need: lands, ramp, draw, answers, synergy and a castable curve. It is a build-health check, not a win-rate prediction.</p></div></section>
   ${p.unknown ? `<div class="note warn">${p.unknown} cards have no card data yet, so they aren’t counted. <button class="link" data-act="refreshDeck">Load card data</button></div>` : ""}
+  ${d.format === "Commander" ? bracketPanel(d) : ""}
   <section class="panel"><h3>Ingredients</h3>${p.parts
     .map((x) => {
       const low = x.ratio < 0.75;
@@ -605,6 +607,7 @@ function deckEngine(d) {
           .join("")}</section>`
       : ""
   }
+  ${manaBasePanel(d, p)}
   <section class="panel"><div class="row between"><h3>Test games</h3><span class="muted small">${g ? g.games.toLocaleString() + " simulated" : ""}</span></div>
   ${g ? goldfishTable(g) + `<p class="foot">Solitaire “goldfish” games: shuffle, mulligan 0–1 or 6–7 land hands, play a land and cast what you can for ${g.turns} turns. No opponents; colors are ignored. Useful for comparing versions of the same deck.</p>` : `<p class="muted">Add at least 20 cards with card data to simulate games.</p>`}
   </section>
@@ -613,6 +616,40 @@ function deckEngine(d) {
     .map(([r, l]) => `<p class="small"><b>${r}:</b> ${l.map((n) => `<button class="link" data-act="card" data-name="${esc(n)}" data-deck="${esc(d.id)}">${esc(n)}</button>`).join(", ")}</p>`)
     .join("") || '<p class="muted small">No roles recognized yet.</p>'}</details>
   <details class="panel" ${issues.length ? "" : ""}><summary><b>Rules checks</b> <span class="chip ${issues.length ? "warn" : "ok"}">${issues.length ? issues.length + " to fix" : "pass"}</span></summary><ul class="issues">${issues.slice(0, 40).map((i) => `<li>${esc(i.text)}</li>`).join("") || "<li>Color identity, legality and copy limits pass.</li>"}</ul><p class="foot">Single commander only. Legality comes from cached card data — refresh before an event.</p></details>`;
+}
+
+const nameLinks = (names, d) =>
+  names.map((n) => `<button class="link" data-act="card" data-name="${esc(n)}" data-deck="${esc(d.id)}">${esc(n)}</button>`).join(", ");
+
+function bracketPanel(d) {
+  const b = bracketEstimate(d, S.catalog),
+    f = b.found,
+    line = (label, list, hint = "") =>
+      list.length ? `<p class="small"><b>${label} (${list.length}):</b> ${nameLinks([...new Set(list)], d)}${hint ? ` <span class="muted">${hint}</span>` : ""}</p>` : "";
+  return `<section class="panel bracket-panel"><div class="bracket-head"><span class="bracket-num b${b.bracket}" aria-hidden="true">${b.bracket}</span><div><p class="eyebrow">Commander bracket estimate</p><h2>Bracket ${b.bracket} · ${esc(b.name)}</h2><p class="muted small">${esc(b.text)}</p></div></div>
+  <div class="bracket-scale" role="img" aria-label="Bracket ${b.bracket} of 5">${[1, 2, 3, 4, 5].map((n) => `<span class="${n === b.bracket ? "on" : n < b.bracket ? "past" : ""}">${n}</span>`).join("")}</div>
+  <p class="small">${b.reasons.length ? "Why: " + esc(b.reasons.join(" · ")) + "." : "No Game Changers, mass land denial or stacked tutors and extra turns found."}${b.lower.length ? ` To reach bracket ${b.bracket - 1}: ${esc(b.lower.join(", "))}.` : ""}</p>
+  ${b.unknown ? `<p class="small warn-text">${b.unknown} cards have no card data yet and weren’t checked.</p>` : ""}
+  <details><summary class="small"><b>What Cardforge counted</b></summary>
+    ${line("Game Changers", f.gameChangers)}${line("Tutors", f.tutors)}${line("Extra turns", f.extraTurns)}${line("Mass land denial", f.landDenial)}${line("Fast mana", f.fastMana, "(not a bracket rule, but it speeds a deck up)")}
+    ${Object.values(f).every((l) => !l.length) ? '<p class="muted small">Nothing flagged.</p>' : ""}
+  </details>
+  <p class="foot">A floor from card text, not a verdict. Two-card infinite combos and how you play the deck also count, so use this to start your Rule 0 talk.</p></section>`;
+}
+
+function manaBasePanel(d, p) {
+  const m = manaBase(d, S.catalog, p.pips);
+  if (!m.lands) return "";
+  const rows = m.changes
+    .map((x) => {
+      const diff = x.want - x.now;
+      return `<div class="mb-row"><i class="pip pip-${x.color}">${x.color}</i><span>${esc(x.land)}</span><span class="num">${x.now}</span><span class="num muted">→</span><span class="num"><b>${x.want}</b></span><span class="num small ${diff ? (diff > 0 ? "up" : "down") : "muted"}">${diff ? signed(diff) : "ok"}</span></div>`;
+    })
+    .join("");
+  return `<section class="panel"><div class="row between"><h3>Mana base</h3><span class="muted small">${m.lands} lands · ${m.basicCount} basic</span></div>
+  ${m.basicCount && rows ? `<p class="muted small">Your ${m.basicCount} basics split by the colored mana symbols in your spells.</p><div class="mb-table"><div class="mb-row head"><span></span><span>Basic</span><span class="num">Now</span><span></span><span class="num">Suggested</span><span></span></div>${rows}</div>${m.off ? "" : '<p class="small ok-text">Your basics already match your spells.</p>'}` : '<p class="muted small">No basic lands in this list, so there is nothing to rebalance.</p>'}
+  ${m.tapped.length ? `<p class="small ${m.tooManyTapped ? "warn-text" : "muted"}">${m.tapped.length} land${m.tapped.length > 1 ? "s" : ""} always enter tapped${m.tooManyTapped ? " — that’s a lot; each one can cost you a turn-one or turn-two play" : ""}: ${nameLinks([...new Set(m.tapped)], d)}</p>` : ""}
+  </section>`;
 }
 
 export function goldfishTable(g, b = null) {
@@ -838,7 +875,7 @@ function deckPlaytest(d) {
     notes = S.state.notes.filter((n) => n.deckId === d.id).slice().reverse(),
     wins = notes.filter((n) => n.result === "Win").length,
     losses = notes.filter((n) => n.result === "Loss").length;
-  return `<section class="panel"><div class="row between"><h3>Opening hand</h3><span class="muted small">${odds === null ? "" : pct(odds) + " of hands have 3+ lands"}</span></div>
+  return `${lifePanel()}<section class="panel"><div class="row between"><h3>Opening hand</h3><span class="muted small">${odds === null ? "" : pct(odds) + " of hands have 3+ lands"}</span></div>
   <div class="actions"><button class="btn" data-act="draw7" ${total < 7 ? "disabled" : ""}>${hand ? "New hand" : "Draw 7"}</button><button class="btn ghost" data-act="mull" ${hand ? "" : "disabled"}>Mulligan</button><button class="btn ghost" data-act="drawOne" ${hand?.library.length ? "" : "disabled"}>Draw a card</button></div>
   ${hand ? `<p class="small">${hand.hand.filter((n) => isLand(meta(n))).length} lands · turn ${Math.max(1, hand.hand.length - 6)}${hand.mulls ? ` · mulligan ${hand.mulls} (bottom ${hand.mulls})` : ""}</p><div class="hand">${hand.hand.map((n) => `<button class="hand-card" data-act="card" data-name="${esc(n)}">${img(cardImage(meta(n)), n, "card-img")}</button>`).join("")}</div>` : `<p class="muted small">${total < 7 ? "Add more cards to draw a hand." : "The commander stays in the command zone."}</p>`}
   </section>
@@ -847,6 +884,26 @@ function deckPlaytest(d) {
   <p class="foot">Games are tagged with the current deck version, so Versions can show real results next to the simulations.</p>
   ${notes.map((n) => `<div class="note-row"><span class="chip ${n.result === "Win" ? "ok" : n.result === "Loss" ? "warn" : ""}">${esc(n.result)}</span><span class="ellip small">${esc(n.date)}${n.turn ? " · T" + n.turn : ""} ${n.note ? "· " + esc(n.note) : ""}</span><button class="link small danger" data-act="deleteNote" data-id="${n.id}" aria-label="Delete game">✕</button></div>`).join("")}
   </section>`;
+}
+
+function lifePanel() {
+  const g = S.ui.life;
+  if (!g)
+    return `<section class="panel"><div class="row between"><h3>Life tracker</h3><span class="muted small">Commander damage · poison · turns</span></div>
+    <div class="actions wrap">${[2, 3, 4, 5, 6].map((n) => `<button class="btn ${n === 4 ? "" : "ghost"} small" data-act="lifeStart" data-n="${n}">${n} players</button>`).join("")}</div></section>`;
+  return `<section class="panel life"><div class="row between"><h3>Turn ${g.turn}</h3><div class="row"><button class="btn ghost small" data-act="lifeTurn" data-delta="-1" aria-label="Previous turn">−</button><button class="btn small" data-act="lifeTurn" data-delta="1">Next turn</button></div></div>
+  <div class="life-grid n${g.players.length}">${g.players
+    .map((pl, i) => {
+      const out = isOut(pl),
+        step = (field, delta, label) => `<button data-act="lifeAdj" data-i="${i}" data-field="${field}" data-delta="${delta}" aria-label="${label}">${delta > 0 ? "+" : "−"}${Math.abs(delta) === 1 ? "" : Math.abs(delta)}</button>`;
+      return `<div class="life-card ${out ? "out" : ""} ${i ? "" : "me"}"><input class="life-name" value="${esc(pl.name)}" data-change="lifeName" data-i="${i}" aria-label="Player name" maxlength="24">
+      <div class="life-main">${step("life", -5, "Lose 5 life")}${step("life", -1, "Lose 1 life")}<b class="life-total" aria-live="polite">${pl.life}</b>${step("life", 1, "Gain 1 life")}${step("life", 5, "Gain 5 life")}</div>
+      <div class="life-sub"><span>⚔ ${step("cmd", -1, "Remove commander damage")}<b class="${pl.cmd >= 15 ? "warn-text" : ""}">${pl.cmd}</b>${step("cmd", 1, "Add commander damage")}</span><span>☠ ${step("poison", -1, "Remove poison")}<b class="${pl.poison >= 7 ? "warn-text" : ""}">${pl.poison}</b>${step("poison", 1, "Add poison")}</span></div>
+      ${out ? `<span class="chip warn life-out">Out</span>` : ""}</div>`;
+    })
+    .join("")}</div>
+  <p class="foot">⚔ is commander damage taken and also comes off life; 21 from one commander is lethal. ☠ is poison; 10 is lethal.</p>
+  <div class="actions wrap"><button class="btn small" data-act="lifeLog" data-result="Win">I won · log it</button><button class="btn ghost small" data-act="lifeLog" data-result="Loss">I lost · log it</button><button class="btn ghost small danger" data-act="lifeEnd">End without logging</button></div></section>`;
 }
 
 /* Shop */
@@ -865,7 +922,7 @@ function deckShop(d, t) {
     })
     .join("")}</div>
   <section class="panel">${costBlock(sub, total, d.budget, "deck budget")}${t.unpriced ? `<p class="small warn-text">${t.unpriced} copies have no price and aren’t included.</p>` : ""}
-  <div class="actions wrap"><button class="btn" data-act="copyShopping" data-src="deck">Copy list</button><a class="btn ghost" href="https://www.tcgplayer.com/massentry" target="_blank" rel="noopener">TCGplayer Mass Entry ↗</a><button class="btn ghost" data-act="exportMissing">↓ .txt</button><button class="btn ghost" data-act="acquire">I got cards</button></div>
+  <div class="actions wrap"><button class="btn" data-act="copyShopping" data-src="deck">Copy list</button><a class="btn ghost" href="https://www.tcgplayer.com/massentry" target="_blank" rel="noopener">TCGplayer Mass Entry ↗</a><button class="btn ghost" data-act="exportMissing">↓ .txt</button><button class="btn ghost" data-act="acquire">I got cards</button><button class="btn ghost" data-act="proxies" data-scope="missing">🖨 Print proxies of missing</button></div>
   <p class="foot">Tap a card → Printings to price a specific edition. Reference prices from Scryfall; check the seller’s condition and shipping.</p></section>`;
 }
 

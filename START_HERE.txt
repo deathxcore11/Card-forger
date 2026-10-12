@@ -1,3 +1,6 @@
+CARDFORGE 2.2 — see UPDATE_NOTES.txt for what's new. README.md explains automatic
+publishing from GitHub; the manual ZIP steps below still work.
+
 CARDFORGE 2.0 — CLEANER LAYOUT + DECK ENGINE UPDATE
 
 HOW TO UPDATE YOUR LIVE SITE (same as before)

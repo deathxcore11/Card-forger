@@ -1,0 +1,11 @@
+// Cloudflare Workers config. Lets Cloudflare build and deploy this repo straight
+// from GitHub (Workers & Pages → your Worker → Settings → Builds → Connect).
+// Keep "name" equal to your existing Worker so the site address — and the
+// collection saved in your browser for that address — stay the same.
+{
+  "name": "weathered-lake-9660",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./"
+  }
+}

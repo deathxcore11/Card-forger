@@ -1,3 +1,21 @@
+CARDFORGE 2.2 UPDATE
+
+- Commander bracket estimate (Deck → Engine). Shows the lowest bracket (1–5) the list fits by
+  Game Changers, tutors, extra turns and mass land denial, what Cardforge counted, and what to
+  cut to drop a bracket. It's a starting point for Rule 0 talks: two-card combos and play style
+  aren't detected.
+- Mana base helper (Deck → Engine). Suggests a basic-land split from the colored mana symbols in
+  your spells and lists lands that always enter tapped.
+- Life tracker (Deck → Playtest). 2–6 players at 40 life (20 for 60-card decks), commander damage
+  (also comes off life, 21 is lethal), poison (10 is lethal) and a turn counter. "I won / I lost"
+  saves the game to the deck's log with the ending turn.
+- Proxy print sheet (Deck → Shop, or ⋯ menu for the whole deck). 9 cards per page at real card
+  size for playtesting. Basic lands are skipped.
+- Publishing: the project now lives on GitHub with automatic tests. Cloudflare can deploy straight
+  from GitHub (see README.md); GitHub Pages is available as a second address.
+
+Developer checks: npm test
+
 CARDFORGE 2.1 UPDATE — October 12, 2026
 
 - Opening a deck idea now builds a proposed full deck with lands and missing cards. The default purchase budget is your workspace budget (normally $25); you can change it.

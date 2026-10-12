@@ -17,6 +17,7 @@ import { parseDeckImport, acquireMissing } from "./deck-flow.js";
 import { completionPlan, commanderTheme } from "./planner.js";
 import { sourceCredit, mtgjsonDeck, collectionIdeas, upgradeSuggestions, applyUpgradeSwaps } from "./strategy.js";
 import { searchQuery, scanNames } from "./catalog-tools.js";
+import { newGame, proxyList, proxySheetHTML } from "./extras.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact } from "./insights.js";
 
 /* =========================================================
@@ -1254,6 +1255,7 @@ A.deckMenu = () => {
       <button data-act="deckCopy">⧉ Copy decklist</button>
       <button data-act="deckExport">↓ Download decklist (.txt)</button>
       <button data-act="refreshDeck">⟳ Refresh card data & prices</button>
+      <button data-act="proxies" data-scope="all">🖨 Print playtest proxies (whole deck)</button>
       <button data-act="deckBought">✓ I bought this deck — add all cards to my collection</button>
       <button data-act="deckDup">⧉ Duplicate deck</button>
       <button data-act="importDeck">↥ Re-import / replace list</button>
@@ -1988,6 +1990,67 @@ A.logGame = async () => {
   await commit((s) => {
     s.notes.push({ id: uid(), deckId: d.id, sig: cardSig(d.cards), date: new Date().toLocaleDateString(), author: "", table: "", result: $("#logResult").value, turn: Number($("#logTurn").value) || null, note: $("#logNote").value.trim().slice(0, 1000) });
   }, { msg: "Game saved." });
+};
+
+/* ---------- life tracker ---------- */
+A.lifeStart = (t) => {
+  S.ui.life = newGame(Number(t.dataset.n) || 4, currentDeck()?.format === "Commander" ? 40 : 20);
+  render();
+};
+A.lifeTurn = (t) => {
+  const g = S.ui.life;
+  if (g) g.turn = Math.max(1, g.turn + Number(t.dataset.delta));
+  render();
+};
+A.lifeAdj = (t) => {
+  const pl = S.ui.life?.players[Number(t.dataset.i)];
+  if (!pl) return;
+  const field = t.dataset.field,
+    delta = Number(t.dataset.delta),
+    before = pl[field];
+  pl[field] = field === "life" ? before + delta : Math.max(0, before + delta);
+  // Commander damage is also life loss.
+  if (field === "cmd") pl.life -= pl.cmd - before;
+  render();
+};
+C.lifeName = (t) => {
+  const pl = S.ui.life?.players[Number(t.dataset.i)];
+  if (pl) pl.name = t.value.trim().slice(0, 24) || pl.name;
+};
+A.lifeEnd = () => {
+  if (!confirm("End this game without logging it?")) return;
+  S.ui.life = null;
+  render();
+};
+A.lifeLog = async (t) => {
+  const d = currentDeck(),
+    g = S.ui.life;
+  if (!g) return;
+  const opp = g.players.slice(1).map((p) => p.name).join(", ");
+  S.ui.life = null;
+  await commit((s) => {
+    s.notes.push({ id: uid(), deckId: d.id, sig: cardSig(d.cards), date: new Date().toLocaleDateString(), author: "", table: opp, result: t.dataset.result, turn: g.turn, note: `${g.players.length}-player game vs ${opp}`.slice(0, 1000) });
+  }, { msg: "Game saved to the log." });
+};
+
+/* ---------- proxies ---------- */
+A.proxies = (t) => {
+  const d = currentDeck() || deckById(S.ui.sheetCtx?.deckId);
+  if (!d) return;
+  const all = t.dataset.scope === "all",
+    rows = all ? aggregateCards(d.cards) : V.rowsFor(d).filter((r) => r.missing).map((r) => ({ name: r.name, qty: r.missing })),
+    cards = proxyList(rows, S.catalog);
+  if (!cards.length) return toast(all ? "No non-basic cards to print." : "Nothing missing — no proxies needed.");
+  const html = proxySheetHTML(`${d.name} — ${all ? "deck" : "missing cards"} proxies`, cards),
+    w = window.open("", "_blank");
+  if (w) {
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  } else {
+    download(fileSafe(d.name) + "_proxies.html", html, "text/html");
+    toast("Pop-up blocked — downloaded the proxy sheet instead. Open it and print.");
+  }
 };
 A.deleteNote = async (t) => commit((s) => (s.notes = s.notes.filter((n) => n.id !== t.dataset.id)));
 

@@ -542,3 +542,39 @@ button.tag { border: 0; cursor: pointer; text-align: left; }
 /* 2.1: random discoveries and inline set badges */
 .random-tools{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}.set-badge{display:inline-flex;align-items:center;gap:4px;vertical-align:middle;margin-left:5px;padding:2px 5px;border:1px solid var(--line,#394034);border-radius:5px;background:#252b25;color:#d9d3bc;font-size:9px;line-height:1.4;font-weight:600;letter-spacing:.035em;white-space:nowrap}.set-badge .set-icon{width:12px;height:12px;display:inline-block;flex:0 0 auto;background:currentColor;mask-image:var(--icon);mask-size:contain;mask-repeat:no-repeat;mask-position:center;-webkit-mask-image:var(--icon);-webkit-mask-size:contain;-webkit-mask-repeat:no-repeat;-webkit-mask-position:center}.set-badge.r-uncommon{color:#bbced1}.set-badge.r-rare{color:#d2b271}.set-badge.r-mythic{color:#ef9674}.set-badge.unknown{color:#929a90}.lot-name .set-badge{font-size:8px}.grid-set{position:absolute;right:5px;top:5px}.grid-set .set-badge{background:#111c}.pick-main .ellip b{white-space:normal}.lot-name{flex-wrap:wrap}.idea-actions .btn:disabled{opacity:.5;pointer-events:none}@media(max-width:600px){.random-tools .btn{flex:1;font-size:12px}.set-badge{padding:1px 4px;font-size:8px}.set-badge .set-icon{width:10px;height:10px}}
 .custom-budget{display:block;margin:14px 0;font-size:12px;color:var(--muted,#abb2a6)}.custom-budget input{display:block;max-width:220px;margin-top:7px}.custom-budget-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:14px 0}.custom-budget-row label{flex:1;min-width:150px;font-size:12px}.custom-budget-row input{display:block;width:100%;margin-top:6px}
+
+/* ---------- 2.2: bracket estimate, mana base, life tracker ---------- */
+.bracket-head { display: flex; gap: 14px; align-items: center; }
+.bracket-num { flex: none; width: 58px; height: 58px; border-radius: 16px; display: grid; place-items: center; font: 800 30px/1 Manrope, sans-serif; background: var(--surface-2); border: 1px solid var(--line); }
+.bracket-num.b2 { color: var(--good); }
+.bracket-num.b3 { color: var(--gold); }
+.bracket-num.b4, .bracket-num.b5 { color: var(--bad); }
+.bracket-scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin: 12px 0 8px; }
+.bracket-scale span { text-align: center; font-size: 12px; font-weight: 700; padding: 4px 0; border-radius: 6px; background: var(--surface-2); color: var(--faint); }
+.bracket-scale span.past { color: var(--muted); }
+.bracket-scale span.on { background: var(--gold); color: var(--gold-ink); }
+.bracket-panel details { margin: 6px 0; }
+.bracket-panel summary { cursor: pointer; }
+
+.mb-table { margin: 8px 0; }
+.mb-row { display: grid; grid-template-columns: 28px 1fr 44px 18px 72px 44px; gap: 6px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.mb-row.head { border-top: 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); padding-bottom: 2px; }
+.mb-row .num { text-align: right; }
+
+.life-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 8px 0; }
+.life-grid.n3 > :first-child, .life-grid.n5 > :first-child { grid-column: 1 / -1; }
+@media (min-width: 900px) { .life-grid.n3, .life-grid.n6 { grid-template-columns: repeat(3, minmax(0, 1fr)); } .life-grid.n3 > :first-child { grid-column: auto; } }
+.life-card { min-width: 0; position: relative; background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 10px 6px; text-align: center; transition: opacity 0.2s; }
+.life-card.me { border-color: rgba(232, 185, 91, 0.55); }
+.life-card.out { opacity: 0.5; }
+.life-name { width: 100%; background: transparent; border: 0; text-align: center; font-weight: 700; color: var(--muted); padding: 2px; border-radius: 6px; }
+.life-name:focus { background: var(--surface); color: var(--text); }
+.life-main { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 3px; margin: 4px 0; }
+.life-total { order: -1; flex-basis: 100%; margin: 2px 0 6px; font: 800 40px/1 Manrope, sans-serif; font-variant-numeric: tabular-nums; }
+.life-card button { min-width: 32px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-weight: 700; padding: 0 4px; }
+.life-card button:active { background: var(--gold); color: var(--gold-ink); }
+.life-sub { display: flex; flex-wrap: wrap; justify-content: space-around; gap: 6px; font-size: 13px; color: var(--muted); }
+.life-sub span { display: inline-flex; align-items: center; gap: 4px; }
+.life-sub button { min-width: 28px; height: 28px; }
+.life-sub b { min-width: 2ch; color: var(--text); font-variant-numeric: tabular-nums; }
+.life-out { position: absolute; top: 8px; right: 8px; }
