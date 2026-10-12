@@ -1490,6 +1490,30 @@ export function scan(scanNames) {
 
 const when = (iso) => (iso ? new Date(iso).toLocaleString() : "never");
 
+export function signedOutAccount(a, mode = "login") {
+  const selected = ["login","signup","reset"].includes(mode) ? mode : "login";
+  return `<section class="panel account auth-card"><div class="settings-card-heading"><span class="settings-icon" aria-hidden="true">◈</span><div><p class="eyebrow">PRIVATE SYNC</p><h2>Your account</h2></div></div><p class="muted small">Keep your collection and decks with you across devices.</p>
+  ${a.providers.google ? `<button class="btn ghost block" data-act="signGoogle">Continue with Google</button><div class="auth-divider"><span>or use email</span></div>` : ""}
+  ${a.authNotice ? `<p class="note warn" role="alert">${esc(a.authNotice)}</p>` : ""}
+  ${a.providers.email ? `<nav class="auth-tabs" role="tablist" aria-label="Account access">${[["login","Log in"],["signup","Create account"]].map(([id,label]) => `<button role="tab" id="authTab-${id}" aria-controls="auth-${id}" aria-selected="${selected === id}" data-act="authTab" data-mode="${id}">${label}</button>`).join("")}</nav>
+  <div id="auth-login" class="auth-pane" role="tabpanel" aria-labelledby="authTab-login" ${selected === "login" ? "" : "hidden"}>
+    <label class="field">Email address<input id="signEmail" type="email" autocomplete="username" placeholder="you@example.com" aria-label="Login email address"></label>
+    <label class="field">Password<input id="signPassword" type="password" autocomplete="current-password" placeholder="Your password" data-enter="signPassword"></label>
+    <button class="btn block" data-act="signPassword">Log in</button>
+    <button class="link auth-secondary" data-act="authTab" data-mode="reset">Forgot password?</button>
+    <details class="settings-disclosure"><summary>Email me a link instead</summary><p class="foot">Use the login email above. Open the link in this browser.</p><button class="btn ghost block" data-act="signEmail">Send sign-in link</button></details>
+  </div>
+  <div id="auth-signup" class="auth-pane" role="tabpanel" aria-labelledby="authTab-signup" ${selected === "signup" ? "" : "hidden"}>
+    <label class="field">Email address<input id="signupEmail" type="email" autocomplete="email" placeholder="you@example.com" aria-label="Account email address"></label>
+    <label class="field">Password<input id="signupPassword" type="password" autocomplete="new-password" minlength="8" placeholder="At least 8 characters"></label>
+    <label class="field">Confirm password<input id="signupConfirm" type="password" autocomplete="new-password" placeholder="Enter it again" data-enter="createAccount"></label>
+    <button class="btn block" data-act="createAccount">Create account</button><p class="foot">We’ll email you a confirmation link.</p>
+  </div>
+  <div id="auth-reset" class="auth-pane" ${selected === "reset" ? "" : "hidden"}><h3>Reset your password</h3><p class="muted small">Enter your account email to request a reset link.</p><label class="field">Email address<input id="resetEmail" type="email" autocomplete="email" placeholder="you@example.com" data-enter="forgotPassword"></label><button class="btn block" data-act="forgotPassword">Send reset link</button><button class="link auth-secondary" data-act="authTab" data-mode="login">Back to log in</button></div>` : `<p class="muted small">Email sign-in is disabled for this site.</p>`}
+  <p class="auth-privacy"><span aria-hidden="true">◇</span> Your collection is private. Device saving works without an account.</p>
+  <details class="settings-disclosure"><summary>Help with email links</summary><p class="foot">Check your spam folder and open links in the requesting browser. If no email arrives, the site’s email-delivery service may need configuration.</p></details></section>`;
+}
+
 export function accountPanel() {
   const a = cloudInfo();
   if (!a.configured)
@@ -1498,18 +1522,7 @@ export function accountPanel() {
     return `<section class="panel account"><h3>Account</h3><p class="muted small">${a.status.state === "error" ? esc(a.status.msg) : "Connecting…"}</p></section>`;
   if (a.recoveringPassword && a.user)
     return `<section class="panel account"><h3>Choose a new password</h3><p class="muted small">Your reset link was accepted. Set a password for your Cardforge account.</p><label class="field">New password<input id="resetPassword" type="password" autocomplete="new-password" minlength="8"></label><label class="field">Confirm password<input id="resetConfirm" type="password" autocomplete="new-password" data-enter="finishPasswordReset"></label><button class="btn block" data-act="finishPasswordReset">Save new password</button><button class="link small" data-act="signOut">Cancel and sign out</button></section>`;
-  if (!a.user)
-    return `<section class="panel account"><p class="eyebrow">Optional</p><h3>Sign in to save across devices</h3>
-    <p class="muted small">Your collection and decks sync privately to your account — only you can see them. You can keep using Cardforge without signing in; your data stays on this device either way.</p>
-    ${a.providers.google ? `<button class="btn block" data-act="signGoogle">Continue with Google</button>` : ""}
-    ${a.authNotice ? `<p class="note warn" role="alert">${esc(a.authNotice)}</p>` : ""}
-    ${a.providers.email ? `<label class="field">Email<input id="signEmail" type="email" autocomplete="username" placeholder="you@example.com" aria-label="Email address"></label>
-    <label class="field">Password<input id="signPassword" type="password" autocomplete="current-password" aria-label="Password" data-enter="signPassword"></label>
-    <button class="btn block" data-act="signPassword">Log in</button>
-    <button class="link small" data-act="forgotPassword">Forgot password?</button>
-    <details class="account-signup"><summary>Create an account</summary><p class="foot">Use the email above, then choose a password of at least 8 characters.</p><label class="field">New password<input id="signupPassword" type="password" autocomplete="new-password" minlength="8"></label><label class="field">Confirm password<input id="signupConfirm" type="password" autocomplete="new-password" data-enter="createAccount"></label><button class="btn block" data-act="createAccount">Create account</button></details>
-    <details><summary class="small">Email me a sign-in link instead</summary><button class="btn ghost" data-act="signEmail">Email me a link</button></details>` : `<p class="muted small">Email sign-in is disabled for this site.</p>`}
-    <p class="foot">Confirmation and reset emails require working email delivery. Open emailed links in the same browser you used here. Your cards stay on this device; you choose which copy to keep if your account has different data.</p></section>`;
+  if (!a.user) return signedOutAccount(a, S.ui.authMode || "login");
   const pr = a.profile || {},
     st = a.status,
     label = { synced: "Synced", syncing: "Syncing…", error: "Sync paused", decide: "Needs your decision", offline: "Offline — will sync when you’re back online", local: "Synced" }[st.state] || "Synced";
@@ -1546,23 +1559,17 @@ export function syncDecideSheet(p, local) {
 }
 
 export function settings() {
-  const st = S.state;
-  return `<div class="page-head"><h1>Settings & backup</h1></div>
-  ${accountPanel()}
-  <section class="panel"><h3>Backup</h3><p class="muted small">${cloudInfo().user ? "Your collection is saved on this device and synced to your account. Backup files are still a good idea before big changes." : "Your collection lives in this browser on this website address. Export a backup before switching phones or browsers — or sign in above to sync."}</p>
-  <div class="actions wrap"><button class="btn" data-act="exportBackup">↓ Export backup</button><label class="btn ghost">Restore backup<input type="file" accept=".json" data-change="restoreBackup" hidden></label><label class="btn ghost">Check a backup<input type="file" accept=".json" data-change="checkBackup" hidden></label></div>
-  <p id="backupCheck" class="muted small"></p>
-  <p class="small">Last saved: ${esc(st.lastSavedAt ? new Date(st.lastSavedAt).toLocaleString() : "not yet")}</p>
-  <button class="link" data-act="undoRestore">Restore the automatic recovery copy</button></section>
-  <section class="panel"><h3>Storage</h3><p id="storageDetail" class="muted small">Checking…</p><button class="btn ghost" data-act="persist">Ask the browser to keep my data</button></section>
-  <section class="panel"><h3>Install</h3><p class="muted small">In Chrome on Android: ⋮ menu → <b>Add to Home screen</b> / <b>Install app</b>. Your collection and decks work offline; searches and prices need internet.</p><button class="btn ghost" data-act="install">Install Cardforge</button></section>
-  <section class="panel"><h3>Data sources</h3><ul class="sources">
-    <li><b>Scryfall</b> — card data, images and reference USD prices (live).</li>
-    <li><b>MTGJSON</b> — precon product lists.</li>
-    <li><b>ManaBox, Moxfield, Archidekt, TCGplayer, Deckbox</b> — import their text or CSV exports.</li>
-    <li><b>TCGplayer Mass Entry</b> — paste shopping lists to buy.</li>
-  </ul><p class="foot">Engine score, upgrade picks and test games are transparent rules and simulations based on card text, not AI predictions or win rates. Magic: The Gathering © Wizards of the Coast. Cardforge is an independent fan tool.</p></section>
-  <section class="panel"><h3>Start over</h3><p class="muted small">Keeps one recovery copy on this device. Export a backup first.</p><div class="actions wrap"><button class="btn ghost danger" data-act="reset">Start empty</button><button class="btn ghost" data-act="loadExample">Load example data</button></div></section>`;
+  const st = S.state, tab = ["account","backup","app"].includes(S.ui.settingsTab) ? S.ui.settingsTab : "account";
+  const saved = esc(st.lastSavedAt ? new Date(st.lastSavedAt).toLocaleString() : "Not yet");
+  return `<div class="settings-page"><header class="settings-header"><p class="eyebrow">YOUR WORKSPACE</p><h1>Settings</h1><p class="muted">Your account, your data, your preferences.</p></header>
+  <nav class="settings-tabs" role="tablist" aria-label="Settings sections">${[["account","Account"],["backup","Backup & data"],["app","App & sources"]].map(([id,label]) => `<button id="settingsTab-${id}" role="tab" aria-controls="settings-${id}" aria-selected="${id===tab}" data-act="settingsTab" data-id="${id}">${label}</button>`).join("")}</nav>
+  <div id="settings-account" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-account" ${tab === "account" ? "" : "hidden"}><div class="settings-account-layout">${accountPanel()}<aside class="settings-aside"><span class="settings-status-dot"></span><b>Saved on this device</b><p class="muted small">${cloudInfo().user ? "Your account adds a private cloud copy." : "You can keep building without signing in."}</p><span class="small muted">Last saved<br>${saved}</span><button class="link" data-act="settingsTab" data-id="backup">Manage backups →</button></aside></div></div>
+  <div id="settings-backup" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-backup" ${tab === "backup" ? "" : "hidden"}><section class="panel settings-card"><div class="settings-card-heading"><span class="settings-icon" aria-hidden="true">↓</span><div><p class="eyebrow">YOUR DATA</p><h2>Keep a backup</h2></div></div><p class="muted small">Download a copy of your collection, decks and settings.</p><button class="btn" data-act="exportBackup">Download backup</button><p class="foot">Last saved: ${saved}</p><details class="settings-disclosure"><summary>Restore or check a backup</summary><div class="actions wrap"><label class="btn ghost">Restore file<input type="file" accept=".json" data-change="restoreBackup" hidden></label><label class="btn ghost">Check file<input type="file" accept=".json" data-change="checkBackup" hidden></label></div><p id="backupCheck" class="muted small" role="status"></p><button class="link" data-act="undoRestore">Use the automatic recovery copy</button></details></section>
+  <section class="panel settings-card"><h3>Device storage</h3><p id="storageDetail" class="muted small">Checking…</p><button class="btn ghost" data-act="persist">Keep data on this device</button></section>
+  <details class="settings-disclosure settings-danger"><summary>Start over or load examples</summary><p class="foot">Export a backup first. One recovery copy is kept on this device.</p><div class="actions wrap"><button class="btn ghost danger" data-act="reset">Start empty</button><button class="btn ghost" data-act="loadExample">Load example data</button></div></details></div>
+  <div id="settings-app" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-app" ${tab === "app" ? "" : "hidden"}><section class="panel settings-card"><div class="settings-card-heading"><span class="settings-icon" aria-hidden="true">＋</span><div><p class="eyebrow">TAKE IT WITH YOU</p><h2>Install Cardforge</h2></div></div><p class="muted small">Open it from your home screen. Saved collections and decks work offline.</p><button class="btn" data-act="install">Install app</button><details class="settings-disclosure"><summary>Android installation help</summary><p class="foot">In Chrome, open ⋮ → Add to Home screen or Install app. Searches and updated prices need internet.</p></details></section>
+  <details class="settings-disclosure settings-source"><summary>Card databases & prices</summary><ul class="sources"><li><b>Magic:</b> Scryfall card data, images and reference prices; MTGJSON precon lists.</li><li><b>Pokémon:</b> TCGdex card data and images, with supplied TCGplayer and Cardmarket prices.</li><li><b>Yu-Gi-Oh!:</b> YGOPRODeck card data, alternate art, printings and reference prices.</li><li><b>Imports:</b> Supported text and CSV exports from deck and collection tools.</li></ul><p class="foot">Prices are estimates; check edition, condition and shipping with the seller.</p></details>
+  <details class="settings-disclosure settings-source"><summary>About Cardforge</summary><p class="foot">Deck scores, upgrades and test games use card rules and simulations; they aren’t guaranteed win rates. Cardforge is an independent fan tool. Trading cards and artwork belong to their respective rights holders.</p><span class="settings-version">Version 3.8.6</span></details></div></div>`;
 }
 
 /* ---------- Deck idea sheet ---------- */

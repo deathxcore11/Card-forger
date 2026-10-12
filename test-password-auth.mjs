@@ -21,3 +21,17 @@ assert.match(authError({code:'email_not_confirmed'}),/Confirm your email/);
 assert.match(authError({code:'email_address_not_authorized'}),/SMTP/);
 assert.match(authError({code:'flow_state_not_found'}),/same browser/);
 console.log('PASS: password login/signup/reset Auth calls, validation, redirects and actionable errors; no live email sent.');
+
+const { signedOutAccount } = await import('./views.js');
+const signup = signedOutAccount({providers:{email:true,google:false}},'signup');
+const signupPane = signup.match(/<div id="auth-signup"[\s\S]*?<\/div>/)?.[0];
+assert.ok(signupPane,'signup is a separate panel');
+assert.match(signupPane,/id="signupEmail" type="email"/,'signup has its own email field');
+assert.match(signupPane,/id="signupPassword"/);
+assert.match(signupPane,/id="signupConfirm"/);
+assert.doesNotMatch(signupPane,/ hidden/,'active signup panel is visible');
+assert.match(signup, /id="auth-login"[^>]* hidden/,'login fields hidden while signing up');
+const reset = signedOutAccount({providers:{email:true,google:false}},'reset');
+assert.match(reset, /id="resetEmail" type="email"/,'reset has an independent email field');
+assert.match(reset, /data-enter="forgotPassword"/);
+console.log('PASS: independent signup/reset email fields and focused auth panels.');

@@ -1046,3 +1046,41 @@ dialog.sheet { overflow: hidden; }
 .account-signup { margin:18px 0; padding:12px; border:1px solid var(--line); border-radius:12px; }
 .account-signup summary { cursor:pointer; font-weight:600; }
 .account input[type="password"] { min-height:44px; }
+
+/* Settings: one focused task per tab, with secondary controls tucked away. */
+.settings-page { max-width:960px; margin:0 auto; }
+.settings-header { margin:8px 0 26px; }
+.settings-header h1 { margin:4px 0 8px; font-size:clamp(28px,4vw,40px); letter-spacing:-.03em; }
+.settings-header p { margin:0; }
+.settings-tabs,.auth-tabs { display:flex; gap:4px; padding:5px; background:var(--surface-2); border:1px solid var(--line); border-radius:14px; }
+.settings-tabs { margin-bottom:24px; width:fit-content; max-width:100%; }
+.settings-tabs button,.auth-tabs button { border:0; padding:12px 18px; border-radius:10px; background:transparent; color:var(--muted); font-weight:650; cursor:pointer; min-height:44px; }
+.settings-tabs button[aria-selected="true"],.auth-tabs button[aria-selected="true"] { background:var(--surface); color:var(--text); box-shadow:0 2px 8px #0002; }
+.settings-pane[hidden],.auth-pane[hidden] { display:none !important; }
+.settings-account-layout { display:grid; grid-template-columns:minmax(0,600px) minmax(180px,1fr); align-items:start; gap:28px; }
+.settings-page .panel { margin:0 0 18px; border-radius:20px; padding:26px; }
+.settings-card-heading { display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+.settings-card-heading h2 { margin:3px 0 0; font-size:23px; }
+.settings-card-heading .eyebrow { margin:0; font-size:10px; }
+.settings-icon { display:grid; place-items:center; width:44px; height:44px; border:1px solid var(--line); border-radius:13px; color:var(--gold); background:var(--surface-2); flex:none; font-size:24px; }
+.auth-tabs { margin:24px 0 20px; }
+.auth-tabs button { flex:1; padding:10px; }
+.auth-pane .field { display:grid; gap:8px; margin-bottom:17px; font-size:13px; font-weight:600; }
+.auth-pane input { width:100%; min-height:48px; padding:12px 14px; border-radius:11px; }
+.auth-pane .btn.block { margin-top:8px; min-height:48px; }
+.auth-secondary { display:block; margin:16px auto; font-size:13px; }
+.auth-privacy { padding-top:20px; margin:20px 0 0; border-top:1px solid var(--line); font-size:12px; line-height:1.6; color:var(--muted); }
+.auth-divider { display:flex; align-items:center; gap:12px; margin:20px 0; color:var(--muted); font-size:11px; }
+.auth-divider:before,.auth-divider:after { content:""; height:1px; background:var(--line); flex:1; }
+.settings-disclosure { border-top:1px solid var(--line); padding:17px 0; margin-top:18px; }
+.settings-disclosure summary { cursor:pointer; font-size:13px; color:var(--muted); }
+.settings-disclosure[open] summary { color:var(--text); margin-bottom:14px; }
+.settings-disclosure .actions { margin-top:14px; }
+.settings-danger,.settings-source { border:1px solid var(--line); padding:20px; border-radius:16px; }
+.settings-danger summary { color:var(--bad); }
+.settings-aside { display:grid; gap:12px; padding:26px 4px; }
+.settings-aside p { margin:0; line-height:1.6; }
+.settings-aside .link { text-align:left; margin-top:8px; }
+.settings-status-dot { width:8px; height:8px; border-radius:50%; background:var(--good); }
+.settings-version { color:var(--muted); font-size:12px; }
+@media(max-width:700px) { .settings-account-layout { grid-template-columns:1fr; gap:0; } .settings-aside { border:1px solid var(--line); border-radius:16px; padding:18px; } .settings-page .panel { padding:20px; } .settings-tabs { width:100%; } .settings-tabs button { flex:1; padding:10px 8px; font-size:12px; } }

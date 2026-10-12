@@ -1,3 +1,6 @@
+3.8.6 — Focused settings and complete signup form
+Settings is separated into Account, Backup & data, and App & sources. Login and signup have separate tabs and independent email fields. Password reset has its own email screen. Restore, source details and start-over controls are collapsed by default.
+
 3.8.5 — Email and password accounts
 Added login, signup with confirmation, forgot-password emails, verified recovery flow and setting a password for an existing account. Passwords are submitted only to Supabase Auth and are not stored in Cardforge workspaces. Google and email-link sign-in remain available when enabled. Email delivery and allowed redirects must be configured in Supabase.
 

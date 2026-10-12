@@ -923,6 +923,23 @@ A.tierApply = async (t) => {
 };
 
 /* ---------- account ---------- */
+A.settingsTab = (t) => {
+  const tab = t.dataset.id;
+  if (!["account","backup","app"].includes(tab)) return;
+  S.ui.settingsTab = tab;
+  for (const pane of document.querySelectorAll(".settings-pane")) pane.hidden = pane.id !== "settings-" + tab;
+  for (const button of document.querySelectorAll('[data-act="settingsTab"][role="tab"]')) button.setAttribute("aria-selected",String(button.dataset.id === tab));
+};
+A.authTab = (t) => {
+  const mode = t.dataset.mode;
+  if (!["login","signup","reset"].includes(mode)) return;
+  S.ui.authMode = mode;
+  const email = $("#signEmail")?.value || "", field = mode === "signup" ? $("#signupEmail") : mode === "reset" ? $("#resetEmail") : null;
+  if (field && !field.value) field.value = email;
+  for (const pane of document.querySelectorAll(".auth-pane")) pane.hidden = pane.id !== "auth-" + mode;
+  for (const button of document.querySelectorAll('[data-act="authTab"][role="tab"]')) button.setAttribute("aria-selected",String(button.dataset.mode === mode));
+  document.querySelector("#auth-" + mode + " input")?.focus();
+};
 A.signGoogle = async (t) => {
   const done = busy(t, "Opening Google…");
   try {
@@ -948,13 +965,13 @@ A.signPassword = async (t) => {
   finally { if ($("#signPassword")) $("#signPassword").value = ""; done(); }
 };
 A.createAccount = async (t) => {
-  const email = $("#signEmail")?.value.trim() || "", password = $("#signupPassword")?.value || "", confirmPassword = $("#signupConfirm")?.value || "";
+  const email = $("#signupEmail")?.value.trim() || "", password = $("#signupPassword")?.value || "", confirmPassword = $("#signupConfirm")?.value || "";
   const done = busy(t?.tagName === "BUTTON" ? t : $('[data-act="createAccount"]'), "Creating account…");
   try { const data = await createAccount(email,password,confirmPassword); render(); toast(data?.session ? "Account created. You’re signed in." : "Check your email to confirm your account. If you already have an account, log in or reset your password."); }
   finally { for (const id of ["signupPassword","signupConfirm"]) if ($("#"+id)) $("#"+id).value = ""; done(); }
 };
 A.forgotPassword = async (t) => {
-  const email = $("#signEmail")?.value.trim() || "", done = busy(t,"Sending…");
+  const email = $("#resetEmail")?.value.trim() || "", done = busy(t,"Sending…");
   try { await requestPasswordReset(email); toast("If an account exists for that email, a reset link will arrive. Open it in this browser."); } finally { done(); }
 };
 A.accountResetPassword = async (t) => {
@@ -3364,7 +3381,7 @@ async function boot() {
   render();
   $("#app").classList.add("ready");
   initCloud({
-    passwordRecovery: () => go("#settings"),
+    passwordRecovery: () => { S.ui.settingsTab = "account"; go("#settings"); },
     getState: () => stripCache(S.state),
     // Replace this device's workspace with the account copy.
     apply: async (data) => {
