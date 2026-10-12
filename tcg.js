@@ -5,7 +5,7 @@ import { esc, usd, empty, bar, options, segmented } from "./ui.js";
 import { GAMES, GAME_ICON, GAME_IDS, blankGame, gameOf } from "./games.js";
 import { sharePayloadTcg, encodeShare } from "./share.js";
 import { factBox, factsFor } from "./facts.js";
-import { ygoEmblems, energyIcon, attackLine, tcgSetBadge, ygoPrintBadge, pkRarity } from "./emblems.js";
+import { ygoEmblems, energyIcon, attackLine, tcgSetBadge, ygoPrintBadge, pkRarity, pkSetSymbol } from "./emblems.js";
 import { buildYgo, buildPtcg, YGO_STAPLES, PTCG_STAPLES, PTCG_SUPPORT_BASICS, energyName } from "./tcgbuild.js";
 import { ygoSource, ygoImageDirect, YGO_TYPES, YGO_ATTRIBUTES, YGO_RACES, YGO_SPELL_KINDS, YGO_TRAP_KINDS } from "./ygo.js";
 import { ptcgSource, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES } from "./ptcg.js";
@@ -83,7 +83,8 @@ export async function ensureMany(g, ids, tick = () => {}, force = false) {
 const price = (c) => c?.prices?.usd ?? null;
 // Emblems shown on a card: Yu-Gi-Oh! Level/Attribute or Spell/Trap property; Pokémon energy type.
 export const gameEmblems = (c) => (!c || c.brief ? "" : c.game === "ygo" ? ygoEmblems(c) : `<span class="emblems">${(c.types || []).map((t) => energyIcon(t)).join("")}${c.hp ? `<span class="hp">HP ${esc(c.hp)}</span>` : ""}</span>`);
-const tileBadges = (c) => (!c || c.brief ? "" : `<span class="tile-emb">${gameEmblems(c)}</span>${tcgSetBadge(c) ? `<span class="tile-set">${tcgSetBadge(c)}</span>` : ""}`);
+// Search tiles stay light: the type emblem plus set/rarity symbols. HP and codes are on the card page.
+const tileBadges = (c) => (!c || c.brief ? "" : `<span class="tile-emb">${c.game === "ygo" ? ygoEmblems(c) : `<span class="emblems">${(c.types || []).map((t) => energyIcon(t)).join("")}</span>`}</span>${tcgSetBadge(c, true) ? `<span class="tile-set">${tcgSetBadge(c, true)}</span>` : ""}`);
 const rowBadges = (c) => (!c || c.brief ? "" : `${gameEmblems(c)}${tcgSetBadge(c)} `);
 const imgTag = (c, cls = "card-img", large = false) => {
   if (!c) return `<span class="${cls} img-missing" aria-hidden="true">◇</span>`;
@@ -377,7 +378,7 @@ export function tcgCardSheet(c, sctx = {}) {
             .join("")}</div><p class="foot">${c.sets.length} printings. Tap one to see the whole set.</p>`
         : `<p class="muted small">No printings listed.</p>`
       : c.set
-        ? `<div class="list compact"><button class="mini-row" data-act="tSet" data-id="${esc(c.set.id)}"><span class="ellip"><b>${esc(c.set.name)}</b> · #${esc(c.set.number || "")} <small class="muted">${esc(c.rarity || "")}</small></span><span class="small">${usd(p.usd)}</span></button></div><p class="foot">Pokémon reprints are separate cards with their own number. <button class="link small" data-act="tOtherPrintings" data-name="${esc(c.name)}">See every “${esc(c.name)}” →</button></p>`
+        ? `<div class="list compact"><button class="mini-row" data-act="tSet" data-id="${esc(c.set.id)}"><span class="ellip">${pkSetSymbol(c.set)} <b>${esc(c.set.name)}</b> · #${esc(c.set.number || "")} <small class="muted">${esc(c.rarity || "")}</small></span><span class="small">${usd(p.usd)}</span></button></div><p class="foot">Pokémon reprints are separate cards with their own number. <button class="link small" data-act="tOtherPrintings" data-name="${esc(c.name)}">See every “${esc(c.name)}” →</button></p>`
         : "";
   const prices =
     g === "ptcg"
@@ -397,7 +398,7 @@ export function tcgCardSheet(c, sctx = {}) {
   <div class="cs-hero ${g}">${heroSrc ? `<img class="cs-art" src="${esc(heroSrc)}" alt="${esc(c.name)}" referrerpolicy="no-referrer" onerror="${heroFallback ? `if(!this.dataset.f){this.dataset.f=1;this.src='${esc(heroFallback)}'}else ` : ""}this.remove()">` : ""}<div class="cs-shade"></div></div>
   <div class="cs-title"><div><h2>${esc(c.name)}</h2><p class="type-line">${esc(c.typeLine || "")}</p></div>${gameEmblems(c)}</div>
   <div class="cs-meta">
-    ${c.set ? `<button class="cd-set" data-act="tSet" data-id="${esc(c.set.id)}"><div><b>${esc(c.set.name)} <span class="set-go">›</span></b><small>#${esc(c.set.number || "")}${c.set.total ? "/" + c.set.total : ""}${c.rarity ? " · " + esc(c.rarity) : ""}</small></div></button>` : c.archetype ? `<button class="cd-set" data-act="tArchetype" data-name="${esc(c.archetype)}"><div><b>${esc(c.archetype)} <span class="set-go">›</span></b><small>Archetype · ${c.sets?.length || 0} printings</small></div></button>` : ""}
+    ${c.set ? `<button class="cd-set" data-act="tSet" data-id="${esc(c.set.id)}">${pkSetSymbol(c.set, "pks big")}<div><b>${esc(c.set.name)} <span class="set-go">›</span></b><small>#${esc(c.set.number || "")}${c.set.total ? "/" + c.set.total : ""}${c.rarity ? ` · ${pkRarity(c.rarity)} ${esc(c.rarity)}` : ""}</small></div></button>` : c.archetype ? `<button class="cd-set" data-act="tArchetype" data-name="${esc(c.archetype)}"><div><b>${esc(c.archetype)} <span class="set-go">›</span></b><small>Archetype · ${c.sets?.length || 0} printings</small></div></button>` : ""}
     <div class="cd-prices"><button class="price-pill" data-act="cardTab" data-tab="prices"><small>Market</small><b>${p.usd !== null && p.usd !== undefined ? usd(p.usd) : c.brief ? "…" : "New"}</b><span class="buy-hint">Prices ›</span></button>${p.eur ? `<button class="price-pill" data-act="cardTab" data-tab="prices"><small>Cardmarket</small><b>€${p.eur.toFixed(2)}</b></button>` : ""}</div>
   </div>
   ${g === "ptcg" && !c.brief ? pokemonText(c) : c.text ? `<section class="cd-text"><p class="oracle">${esc(c.text)}</p>${c.illustrator ? `<div class="small muted right">🖌 ${esc(c.illustrator)}</div>` : ""}</section>` : ""}
@@ -697,9 +698,10 @@ export function tcgSets() {
   ${U.busy && !U.list.length ? `<p class="muted center pad">Loading every set…</p>` : ""}
   <div class="set-list">${list
     .slice(0, U.limit)
-    .map((s) => `<button class="set-row" data-act="tSet" data-id="${esc(s.id)}">${s.image ? `<img class="set-logo" src="${esc(s.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<span class="set-row-main"><b class="ellip">${esc(s.name)}</b><small class="muted">${esc(s.code)}${s.series ? " · " + esc(s.series) : ""}${s.date ? " · " + esc(s.date) : ""}</small></span><span class="set-row-count">${owned.get(s.id) ? `<b class="ok-text">${owned.get(s.id)}</b>/` : ""}${s.count}</span></button>`)
+    .map((s) => `<button class="set-row" data-act="tSet" data-id="${esc(s.id)}">${s.image ? `<img class="set-logo" src="${esc(s.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<span class="set-row-main"><b class="ellip">${g === "ptcg" ? pkSetSymbol(s) + " " : ""}${esc(s.name)}</b><small class="muted">${esc(s.code)}${s.series ? " · " + esc(s.series) : ""}${s.date ? " · " + esc(s.date) : ""}</small></span><span class="set-row-count">${owned.get(s.id) ? `<b class="ok-text">${owned.get(s.id)}</b>/` : ""}${s.count}</span></button>`)
     .join("")}</div>
-  ${list.length > U.limit ? `<button class="btn ghost block" data-act="tSetsMore">Show more · ${list.length - U.limit} left</button>` : ""}`;
+  ${list.length > U.limit ? `<button class="btn ghost block" data-act="tSetsMore">Show more · ${list.length - U.limit} left</button>` : ""}
+  ${g === "ptcg" ? `<p class="foot">Set and rarity symbols from <a href="https://pokesymbols.com" target="_blank" rel="noopener">pokesymbols.com</a>.</p>` : ""}`;
 }
 function ownedBySet(g) {
   const m = new Map();
@@ -722,7 +724,7 @@ export function tcgSet() {
   if (U.filter !== "all") list = list.filter((c) => (U.filter === "owned" ? own(c) : !own(c)));
   if (U.sort === "price") list = [...list].sort((a, b) => (price(b) ?? -1) - (price(a) ?? -1));
   else if (U.sort === "name") list = [...list].sort((a, b) => a.name.localeCompare(b.name));
-  return `<div class="set-hero">${info?.image ? `<img class="set-logo big" src="${esc(info.image)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<div class="set-hero-main"><button class="link small" data-act="go" data-to="#sets">← All sets</button><h1>${esc(info?.name || U.id)}</h1><p class="muted small">${info ? `${esc(info.code)}${info.series ? " · " + esc(info.series) : ""}${info.date ? " · " + esc(info.date) : ""} · ${info.count} cards` : ""}</p></div></div>
+  return `<div class="set-hero">${info?.image ? `<img class="set-logo big" src="${esc(info.image)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<div class="set-hero-main"><button class="link small" data-act="go" data-to="#sets">← All sets</button><h1>${g === "ptcg" && info ? pkSetSymbol(info, "pks big") + " " : ""}${esc(info?.name || U.id)}</h1><p class="muted small">${info ? `${esc(info.code)}${info.series ? " · " + esc(info.series) : ""}${info.date ? " · " + esc(info.date) : ""} · ${info.count} cards` : ""}</p></div></div>
   ${U.error ? `<div class="note warn">${esc(U.error)}</div>` : ""}
   ${U.cards.length ? `<div class="panel tight"><div class="row between"><span>You own <b>${ownedCount}</b> of ${U.cards.length}</span><b>${Math.round((ownedCount / U.cards.length) * 100)}%</b></div>${bar(ownedCount / U.cards.length, "good")}</div>` : ""}
   <div class="set-controls">${segmented("tSetFilter", U.filter, [["all", "All"], ["owned", "Owned"], ["missing", "Missing"]])}<select data-change="tSetSort" aria-label="Sort">${options([["number", "Set order"], ["price", "Price: high to low"], ["name", "Name"]], U.sort)}</select></div>

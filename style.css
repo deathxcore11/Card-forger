@@ -878,3 +878,12 @@ body[data-game="ygo"] #content .card-grid .card-img { aspect-ratio: 59 / 86; }
 .fact-label{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-bottom:3px}
 .fact p{margin:0 0 4px;font-size:14px;line-height:1.45}
 .fact .link{padding:0}
+
+/* ---------- Pokémon set & rarity symbols ---------- */
+/* The symbols are dark ink on transparent, so they sit on a small light chip like on a printed card. */
+img.pks, img.pkr { display: inline-block; vertical-align: middle; object-fit: contain; background: #f4f1e8; border-radius: 4px; padding: 1px; box-sizing: content-box; }
+img.pks { width: 14px; height: 14px; }
+img.pkr { width: auto; height: 10px; max-width: 26px; padding: 2px 3px; }
+img.pks.big { width: 34px; height: 34px; padding: 4px; border-radius: 8px; flex: 0 0 auto; }
+h1 img.pks.big { width: 28px; height: 28px; margin-right: 4px; }
+.cd-set small img.pkr { height: 9px; }

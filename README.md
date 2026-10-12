@@ -85,10 +85,10 @@ uploading or replacing anything. Signing out leaves the data on the device.
 | `builder.js` | Deck generator for every format |
 | `rules.js` | Rules reference and live banned lists |
 | `tcgbuild.js` | Yu-Gi-Oh! and Pokémon deck generators |
-| `emblems.js` | Yu-Gi-Oh! attribute/level/Spell-Trap emblems, Pokémon energy symbols, set and rarity badges |
+| `emblems.js` | Yu-Gi-Oh! attribute/level/Spell-Trap emblems, Pokémon energy symbols, set and rarity badges (Pokémon set/rarity symbol images from [pokesymbols.com](https://pokesymbols.com)) |
 | `facts.js` | “Did you know?” facts built from each card’s data |
 | `games.js`, `tcg.js`, `ygo.js`, `ptcg.js` | Yu-Gi-Oh! and Pokémon: data adapters, rules and screens |
-| `worker.js` | Cloudflare Worker: serves the site and caches Yu-Gi-Oh! card images |
+| `worker.js` | Cloudflare Worker: serves the site and caches Yu-Gi-Oh! card images and Pokémon set/rarity symbols |
 | `formats.js` | Rules for all 22 formats |
 | `extras.js` | Bracket estimate, mana base, proxy sheets and life tracker |
 | `core.js`, `planner.js`, `strategy.js`, `deck-flow.js`, `confidence.js`, `catalog-tools.js` | Rules, import, planning and catalog logic |

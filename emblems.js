@@ -88,10 +88,37 @@ const PK_RARITY = [
   [/Promo/i, "PR", ""],
   [/Rare/i, "★", ""],
 ];
-export function pkRarity(r) {
-  if (!r) return "";
+const pkRarityMark = (r) => {
   const hit = PK_RARITY.find(([re]) => re.test(r));
   return hit ? `<span class="rar ${hit[2]}" title="${esc(r)}">${hit[1]}</span>` : "";
+};
+
+/* ---------- Pokémon set & rarity symbols (images from pokesymbols.com) ---------- */
+// Served through the site's Worker (cached 30 days); falls back to pokesymbols.com directly,
+// then to the drawn mark, so a missing or brand-new symbol never leaves a broken image.
+const slugify = (x) =>
+  String(x || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+// TCGdex set ids whose symbol file isn't simply the set's name ("" = the set has no symbol).
+const PK_SET_SLUG = {"basep": "_promo", "wp": "_promo", "ecard1": "expedition", "ex1": "ruby-and-sapphire-fixed", "ex6": "firered-leafgreen", "np": "_promo", "pop1": "pop-1", "pop2": "pop-2", "pop3": "pop-3", "pop4": "pop-4", "pop5": "pop-5", "pop6": "pop-6", "pop7": "pop-7", "pop8": "pop-8", "pop9": "pop-9", "tk-dp-m": "diamond-and-pearl-trainer-kit-manaphy", "tk-dp-l": "diamond-and-pearl-trainer-kit-lucario", "tk-hs-g": "heartgold-and-soulsilver-trainer-kit-gyarados", "tk-hs-r": "heartgold-and-soulsilver-trainer-kit-raichu", "tk-bw-z": "black-and-white-trainer-kit-zoroark", "tk-bw-e": "black-and-white-trainer-kit-excadrill", "tk-xy-p": "xy-trainer-kit-libre-pikachu", "tk-sm-l": "sun-and-moon-trainer-kit-lycanroc", "tk-sm-r": "sun-and-moon-trainer-kit-raichu", "dpp": "_promo", "hgssp": "_promo", "bwp": "_promo", "2011bw": "mcdonalds-collection-2011", "2012bw": "mcdonalds-collection-2012", "2014xy": "mcdonalds-collection-2014", "2015xy": "mcdonalds-collection-2015", "2016xy": "mcdonalds-collection-2016", "2017sm": "mcdonalds-collection-2017", "2018sm": "mcdonalds-collection-2018", "2019sm": "mcdonalds-collection-2019", "2021swsh": "mcdonalds-collection-2021", "2022swsh": "mcdonalds-collection-2022", "2023sv": "mcdonalds-collection-2023", "2024sv": "mcdonalds-collection-dragon-discovery-2024", "xyp": "_promo", "xy2": "xy-flashfire", "g1": "xy-generations", "xy10": "xy-fates-collide", "xy11": "xy-steam-siege", "xy12": "xy-evolutions", "smp": "_promo", "swshp": "_promo", "fut2020": "fustal-promos", "swsh3.5": "champions-path", "swsh4.5sv": "shining-fates", "cel25cc": "celebrations", "swsh9tg": "brilliant-stars", "swsh10tg": "astral-radiance", "swsh11tg": "lost-origin", "swsh12tg": "silver-tempest", "swsh12.5gg": "crown-zenith", "svp": "_promo", "sve": "scarlet-and-violet-energies", "mep": "_promo", "base1": ""};
+const symImg = (kind, slug, label, fallback, cls) =>
+  `<img class="${cls}" src="img/pks/${kind}/${slug}.png" data-direct="https://pokesymbols.com/images/tcg/${kind === "s" ? "sets/symbols" : "rarities"}/${slug}.png" data-fb="${esc(fallback)}" alt="${esc(label)}" title="${esc(label)}" loading="lazy" decoding="async" onerror="if(!this.dataset.f){this.dataset.f=1;this.src=this.dataset.direct}else{this.outerHTML=this.dataset.fb}">`;
+export function pkSetSymbol(set, cls = "pks") {
+  if (!set?.id) return "";
+  const slug = set.id in PK_SET_SLUG ? PK_SET_SLUG[set.id] : slugify(set.name);
+  return slug ? symImg("s", slug, set.name || "", "", cls) : "";
+}
+const PK_RARITY_SLUG = { "rare holo": "rare", "holo rare": "rare" };
+const PK_RARITY_FILES = new Set(["ace-spec-rare", "black-white-rare", "common", "double-rare", "hyper-rare", "illustration-rare", "mega-attack-rare", "mega-hyper-rare", "rare", "shiny-rare", "shiny-ultra-rare", "special-illustration-rare", "ultra-rare", "uncommon"]);
+export function pkRarity(r) {
+  if (!r) return "";
+  const slug = PK_RARITY_SLUG[r.toLowerCase()] || slugify(r);
+  return PK_RARITY_FILES.has(slug) ? symImg("r", slug, r, pkRarityMark(r), "pkr") : pkRarityMark(r);
 }
 
 /* ---------- set badges ---------- */
@@ -104,11 +131,14 @@ export const ygoRarityCode = (r) => (YGO_RARITY_CODE.find(([re]) => re.test(r ||
 const rarityTone = (code) => (/ScR|QCR|StR|GR|CR|UtR|PScR|PlScR/.test(code) ? "secret" : /UR|GUR/.test(code) ? "ultra" : /SR/.test(code) ? "super" : /^R$/.test(code) ? "rare" : "common");
 
 // One small badge: set code + rarity, colored by rarity.
-export function tcgSetBadge(c) {
+// compact: symbols only (for the small search tiles); the full badge adds the set code and number.
+export function tcgSetBadge(c, compact = false) {
   if (!c) return "";
   if (c.game === "ptcg") {
-    const code = c.setCode || (c.set?.id || "").toUpperCase();
-    return code ? `<span class="tset" title="${esc(c.set?.name || "")}${c.rarity ? " · " + esc(c.rarity) : ""}">${pkRarity(c.rarity)}<b>${esc(code)}</b>${c.set?.number ? `<small>${esc(c.set.number)}</small>` : ""}</span>` : "";
+    const code = c.setCode || (c.set?.id || "").toUpperCase(),
+      sym = pkSetSymbol(c.set);
+    if (compact && sym) return `<span class="tset" title="${esc(c.set?.name || "")} #${esc(c.set?.number || "")}${c.rarity ? " · " + esc(c.rarity) : ""}">${sym}${pkRarity(c.rarity)}</span>`;
+    return code ? `<span class="tset" title="${esc(c.set?.name || "")}${c.rarity ? " · " + esc(c.rarity) : ""}">${sym}${pkRarity(c.rarity)}<b>${esc(code)}</b>${c.set?.number ? `<small>${esc(c.set.number)}</small>` : ""}</span>` : "";
   }
   const s = c.sets?.[0];
   if (!s) return "";

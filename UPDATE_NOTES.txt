@@ -1,5 +1,10 @@
 CARDFORGE 3.2 UPDATE — EMBLEMS, RANDOM, FILTERS AND CARD FACTS
 
+- Pokémon set and rarity symbols (from pokesymbols.com) on search tiles, card pages, the
+  Versions tab and the sets list. They're cached by the Cloudflare Worker for 30 days; new sets
+  pick up their symbol automatically, and a missing one falls back to the drawn rarity mark.
+- Search tiles are lighter: just the type emblem plus set/rarity symbols (HP and codes are on
+  the card page).
 - Game emblems: Yu-Gi-Oh! cards show their Attribute (DARK, LIGHT, …), Level stars, Rank or LINK,
   and Spell/Trap kind (Quick-Play, Continuous, Field, Counter…). Pokémon cards show their energy
   type, HP, attack costs as energy symbols, Weakness/Resistance/Retreat and rarity marks. Set and
