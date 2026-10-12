@@ -18,6 +18,7 @@ import { completionPlan, commanderTheme } from "./planner.js";
 import { sourceCredit, mtgjsonDeck, collectionIdeas, upgradeSuggestions, applyUpgradeSwaps } from "./strategy.js";
 import { searchQuery, scanNames } from "./catalog-tools.js";
 import { newGame, proxyList, proxySheetHTML } from "./extras.js";
+import { sharePayload, encodeShare, decodeShare } from "./share.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact } from "./insights.js";
 
 /* =========================================================
@@ -54,7 +55,7 @@ function save() {
   setSaveStatus("Saving…");
   saveCatalogSoon();
   return writeRecord(STORAGE, stripCache(S.state))
-    .then(() => (setSaveStatus("Saved", "ok"), true))
+    .then(() => (setSaveStatus("Saved on this device", "ok"), true))
     .catch(() => {
       setSaveStatus("Not saved", "bad");
       toast("Couldn’t save on this device. Export a backup from Settings.");
@@ -72,7 +73,7 @@ async function commit(fn, { msg = "", recovery = false, rerender = true, enrich 
   if (recovery) records.unshift([RECOVERY, stripCache(S.state)]);
   await writeRecords(records);
   S.state = valid;
-  setSaveStatus("Saved", "ok");
+  setSaveStatus("Saved on this device", "ok");
   saveCatalogSoon();
   if (rerender) {
     render();
@@ -298,6 +299,45 @@ async function loadSet(code) {
 }
 
 /* =========================================================
+   Shared deck links and the "almost build" finder
+   ========================================================= */
+async function openShared(code) {
+  const sh = S.ui.shared;
+  Object.assign(sh, { code, deck: null, error: "" });
+  try {
+    const deck = await decodeShare(code);
+    if (sh.code !== code) return;
+    sh.deck = deck;
+    render();
+    const r = await resolveNames(deck.cards.map((c) => c.name).concat(deck.commander || []));
+    if (r.total && S.ui.view === "shared") render();
+  } catch (e) {
+    if (sh.code === code) sh.error = e.message;
+    if (S.ui.view === "shared") render();
+  }
+}
+// Link back to a shared deck for attribution; very long links fall back to the site address.
+const sharedSourceURL = () => (location.href.length <= 2000 ? location.href : location.origin + location.pathname);
+
+const PRECON_RECORD = "cardforge-precons-v1";
+async function loadPreconCache() {
+  const F = S.ui.finder;
+  F.cacheLoaded = true;
+  try {
+    const rec = await readRecord(PRECON_RECORD);
+    if (rec?.decks?.length) {
+      F.precons = rec.decks;
+      render();
+      const names = rec.decks.flatMap((d) => d.cards.map((c) => c.name)).filter((n) => !meta(n));
+      if (names.length && navigator.onLine) {
+        await resolveNames(names);
+        if (S.ui.view === "decks") render();
+      }
+    }
+  } catch {}
+}
+
+/* =========================================================
    Toast, sheet, download
    ========================================================= */
 
@@ -376,7 +416,7 @@ const LEGACY = {
   wishlist: "collection/wishlist", compare: "search", playtest: "deck/active/playtest",
   guides: "deck/active/engine", sources: "settings",
 };
-const VIEWS = ["home", "search", "collection", "decks", "deck", "scan", "settings", "sets", "set"];
+const VIEWS = ["home", "search", "collection", "decks", "deck", "scan", "settings", "sets", "set", "shared"];
 
 function parseHash() {
   let h = decodeURIComponent(location.hash.slice(1) || "home");
@@ -387,6 +427,7 @@ function parseHash() {
     prev = ui.view + ui.deckId;
   ui.view = VIEWS.includes(v) ? v : "home";
   if (ui.view === "collection" && ["cards", "value", "wishlist"].includes(a)) ui.collTab = a;
+  if (ui.view === "shared" && a !== ui.shared.code) openShared(a);
   if (ui.view === "set") {
     if (!a) ui.view = "sets";
     else if (a.toLowerCase() !== ui.set.code) ui.set = { ...ui.set, code: a.toLowerCase(), info: null, cards: [], total: 0, loaded: false, error: "", q: "", filter: "all", rarity: "all", limit: 120 };
@@ -426,7 +467,7 @@ function render() {
   document.body.dataset.view = ui.view;
   const views = {
     home: V.home, search: V.search, collection: V.collection, decks: V.decks,
-    deck: V.deckPage, scan: () => V.scan(scanNames), settings: V.settings, sets: V.setsPage, set: V.setPage,
+    deck: V.deckPage, scan: () => V.scan(scanNames), settings: V.settings, sets: V.setsPage, set: V.setPage, shared: V.sharedPage,
   };
   $("#content").innerHTML = views[ui.view]();
   if (ui.view === "settings") storageDetail();
@@ -437,6 +478,7 @@ function render() {
       if (r.total) render();
     });
   }
+  if (ui.view === "decks" && ui.decksTab === "inspiration" && !ui.finder.cacheLoaded) loadPreconCache();
   if (ui.view === "sets" && !ui.sets.list.length && !ui.sets.busy && !ui.sets.error) loadSetIndex(true);
   if (ui.view === "set" && !ui.set.loaded && !ui.set.busy && !ui.set.error) loadSet(ui.set.code);
   if (ui.view === "decks" && ui.decksTab === "ideas" && !ui.ideas.cache.length && !ui.ideas.busy && !ui.ideas.ran) {
@@ -531,7 +573,7 @@ A.menu = () =>
     <button data-act="exportBackup">↓ Export backup now</button>
     <button data-act="go" data-to="#collection/wishlist">♡ Wishlist</button>
     <button data-act="go" data-to="#collection/value">$ Collection value</button>
-    <button data-act="go" data-to="#decks/inspiration">✧ Deck inspiration & precons</button>
+    <button data-act="go" data-to="#decks/inspiration">✧ Find decks I can almost build</button>
     <button data-act="go" data-to="#sets">◈ Browse every set</button>
     <button data-act="compareOpen">⇄ Compare two cards</button>
   </div>`);
@@ -615,6 +657,129 @@ A.setCommander = async (t) => {
   const c = await resolve(name, true);
   if (!commanderEligible(c)) return toast(c.name + " can’t be a commander.");
   await editDeck((d) => ({ ...d, commander: c.name, name: d.name === "Imported deck" ? c.name.split(",")[0] + " deck" : d.name, cards: d.cards.some((x) => key(x.name) === key(c.name)) ? d.cards : [{ name: c.name, qty: 1 }, ...d.cards] }), { msg: c.name + " is now your commander." });
+};
+
+/* ---------- finder ---------- */
+C.finderMax = (t) => {
+  S.ui.finder.max = t.value === "" ? "" : String(Math.max(0, Number(t.value) || 0));
+  render();
+};
+C.finderColors = (t) => {
+  S.ui.finder.colors = t.value;
+  render();
+};
+C.finderSort = (t) => {
+  S.ui.finder.sort = t.value;
+  render();
+};
+I.finderSearch = (t) => {
+  S.ui.finder.q = t.value;
+  rerenderKeepingFocus();
+};
+A.finderMore = () => {
+  S.ui.finder.limit += 12;
+  render();
+};
+// Download the next 10 Commander precons from MTGJSON and keep just their card lists.
+A.finderPrecons = async () => {
+  const F = S.ui.finder,
+    P = S.ui.precon;
+  if (F.busy) return;
+  F.busy = true;
+  F.msg = "Loading the precon list…";
+  render();
+  try {
+    if (!P.index.length) {
+      const j = await fetchJSON("https://mtgjson.com/api/v5/DeckList.json");
+      P.index = (j.data || []).filter((d) => typeof d.fileName === "string" && typeof d.name === "string");
+    }
+    const have = new Set(F.precons.map((p) => p.file)),
+      next = P.index
+        .filter((d) => d.type === "Commander Deck" && !have.has(d.fileName) && /^[A-Za-z0-9_.-]+$/.test(d.fileName))
+        .sort((a, b) => String(b.releaseDate || "").localeCompare(String(a.releaseDate || "")))
+        .slice(0, 10);
+    if (!next.length) F.msg = "You’ve checked every Commander precon.";
+    let i = 0;
+    for (const d of next) {
+      F.msg = `Checking ${++i}/${next.length}: ${d.name}…`;
+      render();
+      try {
+        const p = mtgjsonDeck(await fetchJSON("https://mtgjson.com/api/v5/decks/" + d.fileName.replace(/\.json$/, "") + ".json"));
+        F.precons.push({ file: d.fileName, name: p.name || d.name, commander: p.commander, released: d.releaseDate || "", format: "Commander", cards: p.cards.map((c) => ({ name: c.name, qty: c.qty })) });
+      } catch {}
+    }
+    F.msg = "Loading prices…";
+    render();
+    await resolveNames(F.precons.flatMap((p) => p.cards.map((c) => c.name)));
+    await writeRecord(PRECON_RECORD, { at: new Date().toISOString(), decks: F.precons }).catch(() => {});
+    F.msg = next.length ? `${F.precons.length} precons checked` : F.msg;
+  } catch (e) {
+    F.msg = "Couldn’t reach MTGJSON (" + e.message + ")";
+  } finally {
+    F.busy = false;
+    render();
+  }
+};
+const preconCredit = (p) => sourceCredit({ url: "https://mtgjson.com/api/v5/decks/" + p.file, author: "Wizards of the Coast", kind: "MTGJSON precon", description: "Preconstructed deck list from MTGJSON." });
+async function makeMyVersion(base, source, label) {
+  const d = withSnapshot({ id: uid(), name: base.name + " · my version", format: base.format || "Commander", commander: base.commander || "", strategy: base.strategy || "Auto", budget: base.budget ?? S.state.settings.budget ?? 25, locked: false, about: base.about || "", source, cards: base.cards.map((c) => ({ name: c.name, qty: c.qty })), versions: [] }, label);
+  await commit((s) => {
+    s.decks.push(d);
+    s.activeDeck = d.id;
+  }, { msg: "Your version is ready. Your collection is unchanged." });
+  go(`#deck/${d.id}/cards`);
+}
+A.finderBuild = async (t) => {
+  if (t.dataset.kind === "saved") return A.copyRef(t);
+  const p = S.ui.finder.precons.find((x) => x.file === t.dataset.id);
+  if (p) await makeMyVersion(p, preconCredit(p), "From precon " + p.name);
+};
+A.finderSave = async (t) => {
+  const p = S.ui.finder.precons.find((x) => x.file === t.dataset.id);
+  if (!p) return;
+  await commit((s) => (s.references = [...(s.references || []), { id: uid(), name: p.name, format: "Commander", commander: p.commander, strategy: "Auto", locked: false, source: preconCredit(p), cards: p.cards }]), { msg: "Saved to your decks to watch." });
+};
+
+/* ---------- shared decks ---------- */
+const sharedCredit = (d) => sourceCredit({ url: sharedSourceURL(), author: d.author, description: d.about, kind: "Shared deck" });
+A.sharedBuild = async () => {
+  const d = S.ui.shared.deck;
+  if (d) await makeMyVersion(d, sharedCredit(d), "From a deck shared by " + (d.author || "a player"));
+};
+A.sharedSave = async () => {
+  const d = S.ui.shared.deck;
+  if (!d) return;
+  if ((S.state.references || []).some((r) => r.source?.url === sharedSourceURL())) return toast("Already in your saved decks.");
+  await commit((s) => (s.references = [...(s.references || []), { id: uid(), name: d.name, format: d.format, commander: d.commander, strategy: d.strategy, about: d.about, locked: false, source: sharedCredit(d), cards: d.cards }]), { msg: "Saved — find it under Decks → Find decks." });
+};
+A.sharedCopy = () => S.ui.shared.deck && copyText(exportDeck(S.ui.shared.deck.cards), "Decklist copied.");
+A.deckShare = () => {
+  const d = currentDeck();
+  if (d) openSheet(V.shareSheet(d), { type: "share", deckId: d.id });
+};
+A.shareMake = async () => {
+  const ctx = S.ui.sheetCtx,
+    author = $("#shareAuthor").value.trim().slice(0, 60),
+    about = $("#shareAbout").value.trim().slice(0, 1500);
+  await commit(
+    (s) => {
+      s.settings.authorName = author;
+      const d = s.decks.find((x) => x.id === ctx.deckId);
+      if (d) d.about = about;
+    },
+    { rerender: false, enrich: false },
+  );
+  const d = deckById(ctx.deckId),
+    link = location.origin + location.pathname + "#shared/" + (await encodeShare(sharePayload(d, { author, about })));
+  ctx.link = link;
+  openSheet(V.shareSheet(d, link), ctx, $("#sheetBody").scrollTop);
+};
+A.shareCopy = () => copyText(S.ui.sheetCtx?.link || "", "Link copied — paste it anywhere.");
+A.shareNative = async () => {
+  const d = deckById(S.ui.sheetCtx?.deckId);
+  try {
+    await navigator.share({ title: d?.name || "Cardforge deck", text: "Check out my deck on Cardforge", url: S.ui.sheetCtx.link });
+  } catch {}
 };
 
 /* ---------- sets ---------- */
@@ -1468,6 +1633,7 @@ A.deckMenu = () => {
       <button data-act="deckCopy">⧉ Copy decklist</button>
       <button data-act="deckExport">↓ Download decklist (.txt)</button>
       <button data-act="refreshDeck">⟳ Refresh card data & prices</button>
+      <button data-act="deckShare">🔗 Share this deck (link)</button>
       <button data-act="proxies" data-scope="all">🖨 Print playtest proxies (whole deck)</button>
       <button data-act="deckBought">✓ I bought this deck — add all cards to my collection</button>
       <button data-act="deckDup">⧉ Duplicate deck</button>

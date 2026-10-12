@@ -7,7 +7,7 @@ import {
 } from "./ui.js";
 import {
   cardKey as key, sumQty, rulesText, typeText, isLand, validateDeck,
-  atLeastLands, aggregateCards, commanderEligible,
+  atLeastLands, aggregateCards, commanderEligible, isBasic,
 } from "./core.js";
 import { deckComparison, comparisonTotals } from "./deck-flow.js";
 import { printingState } from "./confidence.js";
@@ -17,6 +17,7 @@ import {
   collectionValue, lotPrice, swapImpact, applySwapsToCards, cardSig,
 } from "./insights.js";
 import { bracketEstimate, manaBase, isOut, deckReview } from "./extras.js";
+import { buildability, rankBuildable } from "./share.js";
 
 /* ---------- shared deck math ---------- */
 
@@ -56,6 +57,7 @@ export function home() {
     <h1>${copies ? "Welcome back." : "Let’s build from your cards."}</h1>
   </section>
   ${st.example ? `<div class="note warn">Example data is loaded. Reset it in Settings before adding real cards.</div>` : ""}
+  ${startPath()}
   <div class="kpis">
     <button class="kpi" data-act="go" data-to="#collection/value"><b>${usd(value.total, 0)}</b><span>collection value${change !== null ? ` <em class="${change >= 0 ? "up" : "down"}">${signed(change, (x) => usd(x, 0))}</em>` : ""}</span></button>
     <button class="kpi" data-act="go" data-to="#collection"><b>${copies}</b><span>cards owned</span></button>
@@ -88,6 +90,21 @@ export function home() {
     <dt>Engine score</dt><dd>A 0–100 build-health check of those ingredients plus synergy and curve. It is not a win rate.</dd>
     <dt>Owned vs. deck</dt><dd>A deck is a plan. Your collection is what you physically own. Importing a deck never adds cards to your collection.</dd>
   </dl></details>`;
+}
+
+// Three steps for a new visitor; disappears once they have cards and a deck.
+function startPath() {
+  const st = S.state,
+    hasCards = st.collection.length > 0,
+    hasDeck = st.decks.length > 0;
+  if (hasCards && hasDeck) return "";
+  const step = (n, done, title, text, actions) =>
+    `<li class="step ${done ? "done" : ""}"><span class="step-n" aria-hidden="true">${done ? "✓" : n}</span><div><b>${title}</b><p class="muted small">${text}</p>${done ? "" : `<div class="actions wrap">${actions}</div>`}</div></li>`;
+  return `<section class="panel start"><p class="eyebrow">Start here · about 5 minutes</p><h2>Three steps to your first deck</h2><ol class="steps">
+    ${step(1, hasCards, "Add the cards you own", "Paste a list or upload a ManaBox, Moxfield, Archidekt or CSV export. Or scan cards with your camera.", `<button class="btn small" data-act="importCollection">↥ Import collection</button><button class="btn ghost small" data-act="go" data-to="#scan">▧ Scan</button><button class="link small" data-act="loadExample">Try an example collection</button>`)}
+    ${step(2, hasDeck, "Pick a deck to aim for", "Import a list you like, start from a commander, or browse precons and shared decks to see what you can almost build.", `<button class="btn small" data-act="go" data-to="#decks/inspiration">✧ Find decks I can almost build</button><button class="btn ghost small" data-act="importDeck">Import a deck</button>`)}
+    ${step(3, false, "See what’s missing and what it costs", "Each deck shows what you own, what you need, the price to finish, and a review of anything off.", hasDeck ? `<button class="btn small" data-act="go" data-to="#deck/active/cards">Open my deck</button>` : `<span class="muted small">Unlocks after step 2.</span>`)}
+  </ol><p class="foot">Everything is saved on this device. Export a backup in Settings any time.</p></section>`;
 }
 
 export function deckTile(d, wide = false) {
@@ -537,7 +554,7 @@ export function costBlock(sub, total, budget, label) {
 export function decks() {
   const tab = S.ui.decksTab;
   return `<div class="page-head"><h1>Decks</h1><div class="head-actions"><button class="btn small" data-act="importDeck">↥ Import</button><button class="btn small ghost" data-act="newDeck">＋ New</button></div></div>
-  ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Inspiration"]])}<div class="random-tools"><button class="btn ghost small" data-act="randomDeck">🎲 Random deck</button></div>
+  ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Find decks"]])}<div class="random-tools"><button class="btn ghost small" data-act="randomDeck">🎲 Random deck</button></div>
   ${tab === "ideas" ? ideasView() : tab === "inspiration" ? inspirationView() : myDecks()}`;
 }
 
@@ -573,7 +590,9 @@ function ideasView() {
           .join("")}</div>${visible.length > I.limit ? `<button class="btn ghost block" data-act="ideasMore">Show more</button>` : ""}`
       : I.cache.length
         ? `<p class="muted">No ideas match this filter.</p>`
-        : empty("Find what your cards want to be", "Analysis loads card data for your whole collection in a few batched requests, then tries every legendary creature you own as a commander.")
+        : !S.state.collection.length
+          ? empty("Ideas come from your cards", "Add your collection and Cardforge finds the commanders and strategies it already supports. No collection yet? Try the example, or browse decks you can almost build.", `<button class="btn" data-act="importCollection">↥ Import collection</button><button class="btn ghost" data-act="loadExample">Try example collection</button><button class="btn ghost" data-act="go" data-to="#decks/inspiration">✧ Explore starter decks</button>`)
+          : empty("Find what your cards want to be", "Analysis loads card data for your whole collection in a few batched requests, then tries every legendary creature you own as a commander.")
   }`;
 }
 
@@ -581,7 +600,8 @@ function inspirationView() {
   const st = S.state,
     q = S.ui.q.ref.toLowerCase(),
     refs = (st.references || []).filter((d) => [d.name, d.commander, d.source?.author, d.source?.website].some((v) => (v || "").toLowerCase().includes(q)));
-  return `<p class="muted">Save decks you admire — community lists or precons — with credit to the creator. Match them to your cards and build your own version.</p>
+  return `${finderPanel()}
+  <h2 class="section-title">Saved decks</h2><p class="muted">Save decks you admire — community lists, shared links or precons — with credit to the creator. Match them to your cards and build your own version.</p>
   <div class="toolbar"><button class="btn" data-act="importReference">↥ Save a deck idea</button>${(st.references || []).length > 3 ? `<input type="search" value="${esc(S.ui.q.ref)}" placeholder="Search saved ideas…" data-input="refSearch">` : ""}</div>
   <div class="deck-grid">${refs
     .map((d) => {
@@ -590,6 +610,137 @@ function inspirationView() {
     })
     .join("")}</div>
   <section class="panel"><h3>Precons</h3><p class="muted small">Find a preconstructed Commander deck by product name (MTGJSON), preview it against your collection, then save it.</p><div class="toolbar"><button class="btn ghost" data-act="loadPrecons" ${S.ui.precon.busy ? "disabled" : ""}>${S.ui.precon.index.length ? "Reload list" : "Load precon list"}</button>${S.ui.precon.index.length ? `<input type="search" value="${esc(S.ui.q.precon)}" placeholder="Product or deck name…" data-input="preconSearch">` : ""}</div>${S.ui.precon.msg ? `<p class="muted small">${esc(S.ui.precon.msg)}</p>` : ""}<div id="preconList">${preconList()}</div></section>`;
+}
+
+/* ---------- Decks I can almost build ---------- */
+
+// Free copies per card (owned minus copies reserved or locked in assembled decks), computed once.
+function availability() {
+  const owned = new Map(),
+    held = new Map();
+  for (const e of S.state.collection) {
+    const k = key(e.name);
+    owned.set(k, (owned.get(k) || 0) + e.qty);
+    held.set(k, (held.get(k) || 0) + (e.reserved || 0));
+  }
+  for (const d of S.state.decks) if (d.locked) for (const c of d.cards) held.set(key(c.name), (held.get(key(c.name)) || 0) + c.qty);
+  return (name) => Math.max(0, (owned.get(key(name)) || 0) - (held.get(key(name)) || 0));
+}
+
+const basic = (n) => isBasic(meta(n));
+
+export function finderCandidates() {
+  const avail = availability(),
+    out = [];
+  for (const d of S.state.references || [])
+    out.push({ kind: "saved", id: d.id, deck: d, source: d.source?.kind === "Shared deck" ? `Shared by ${d.source.author || "a player"}` : d.source?.kind === "MTGJSON precon" ? "Precon" : d.source?.author ? `by ${d.source.author}` : "Saved deck" });
+  const savedNames = new Set((S.state.references || []).map((d) => key(d.name)));
+  for (const p of S.ui.finder.precons) if (!savedNames.has(key(p.name))) out.push({ kind: "precon", id: p.file, deck: p, source: `Precon · ${p.released?.slice(0, 4) || ""}` });
+  for (const x of out) {
+    x.score = buildability(x.deck, avail, (n) => priceOf(n), basic);
+    x.identity = meta(x.deck.commander)?.color_identity || [];
+  }
+  return out;
+}
+
+function finderPanel() {
+  const F = S.ui.finder,
+    all = finderCandidates(),
+    list = rankBuildable(all, { maxCost: F.max === "" ? null : Number(F.max), query: F.q, colors: F.colors, sort: F.sort }),
+    noCards = !S.state.collection.length;
+  return `<section class="panel finder"><p class="eyebrow">Find decks</p><h2>Decks you can almost build</h2>
+  <p class="muted small">Precons, shared decks and decks you’ve saved, ranked by what it would cost to finish them from your collection. Copies locked in assembled decks don’t count as free, and basic lands aren’t counted.${noCards ? " <b>Add your collection first</b> — until then every card counts as missing." : ""}</p>
+  <div class="finder-controls">
+    <label>Max to finish $<input type="number" min="0" step="5" value="${esc(F.max)}" placeholder="Any" data-change="finderMax"></label>
+    <label>Colors<select data-change="finderColors">${options([["", "Any"], ["W", "White"], ["U", "Blue"], ["B", "Black"], ["R", "Red"], ["G", "Green"]], F.colors)}</select></label>
+    <label>Sort<select data-change="finderSort">${options([["cost", "Cheapest to finish"], ["owned", "Most owned"]], F.sort)}</select></label>
+    <label class="span-all">Commander or deck<input type="search" value="${esc(F.q)}" placeholder="e.g. Atraxa, tokens" data-input="finderSearch" autocomplete="off"></label>
+  </div>
+  <div class="row between wrap"><span class="muted small">${all.length ? `${list.length} of ${all.length} decks` : "No decks checked yet"}${F.msg ? " · " + esc(F.msg) : ""}</span><button class="btn ghost small" data-act="finderPrecons" ${F.busy ? "disabled" : ""}>${F.busy ? "Checking…" : F.precons.length ? "Check 10 more precons" : "Check the 10 newest precons"}</button></div>
+  <div class="finder-list">${list
+    .slice(0, F.limit)
+    .map((x) => {
+      const sc = x.score,
+        top = sc.need.slice(0, 3).map((n) => esc(n.name)).join(", ");
+      return `<article class="finder-item"><div class="finder-art">${img(art(meta(x.deck.commander)) || art(meta(x.deck.cards[0]?.name)), x.deck.name)}</div><div class="finder-main">
+        <div class="row between"><b class="ellip">${esc(x.deck.name)}</b><span class="chip">${esc(x.source)}</span></div>
+        <small class="muted ellip">${colorDots(meta(x.deck.commander))} ${esc(x.deck.commander || "")}</small>
+        <div class="row between small"><span><b>${pct(sc.ratio)}</b> owned · need ${sc.missing}</span><span><b>${sc.missing ? usd(sc.cost) : "$0"}</b>${sc.unknown ? ` <span class="muted">+ ${sc.unknown} unknown</span>` : ""} to finish</span></div>
+        ${bar(sc.ratio, "thin")}
+        ${sc.missing ? `<details><summary class="small">Missing cards${top ? ` · priciest: ${top}` : ""}</summary><div class="list compact">${sc.need.map((n) => `<button class="mini-row" data-act="card" data-name="${esc(n.name)}"><span class="ellip">${n.qty > 1 ? n.qty + "× " : ""}${esc(n.name)}</span><span class="small">${n.price === null ? "Unknown" : usd(n.price * n.qty)}</span></button>`).join("")}</div></details>` : `<p class="small ok-text">You own every card.</p>`}
+        <div class="actions wrap"><button class="btn small" data-act="finderBuild" data-kind="${x.kind}" data-id="${esc(x.id)}">Make my version</button>${x.kind === "precon" ? `<button class="btn ghost small" data-act="finderSave" data-id="${esc(x.id)}">Save</button>` : ""}</div>
+      </div></article>`;
+    })
+    .join("")}</div>
+  ${list.length > F.limit ? `<button class="btn ghost block" data-act="finderMore">Show more</button>` : ""}
+  ${all.length && !list.length ? `<p class="muted small">No decks match — raise the price limit or clear the filters.</p>` : ""}
+  <p class="foot">Prices are Scryfall estimates; “unknown” means no current price. Making your version copies the list with credit to its source — your collection doesn’t change.</p></section>`;
+}
+
+/* ---------- Shared deck page (#shared/…) ---------- */
+
+export function sharedPage() {
+  const sh = S.ui.shared;
+  if (sh.error) return empty("Can’t open this deck", esc(sh.error), `<button class="btn" data-act="go" data-to="#home">Go home</button>`);
+  if (!sh.deck) return `<p class="muted center pad">Opening shared deck…</p>`;
+  const d = { ...sh.deck, id: "shared" },
+    avail = availability(),
+    sc = buildability(d, avail, (n) => priceOf(n), basic),
+    p = engineProfile(d, S.catalog),
+    br = d.format === "Commander" ? bracketEstimate(d, S.catalog) : null,
+    v = validateDeck(d, S.catalog, [], []),
+    rules = v.issues.filter((i) => i.kind !== "unverified"),
+    target = d.format === "Commander" ? 100 : 60,
+    g = goldfishFor(d),
+    lands = p.counts.Lands,
+    nonCmd = sumQty(d.cards.filter((c) => d.format !== "Commander" || key(c.name) !== key(d.commander))),
+    odds = nonCmd >= 7 ? atLeastLands(nonCmd, lands, 7, 3) : null,
+    groups = {};
+  for (const c of aggregateCards(d.cards)) {
+    const m = meta(c.name),
+      t = key(c.name) === key(d.commander) ? "Commander" : !m ? "Unresolved" : isLand(m) ? "Lands" : (["Creature", "Planeswalker", "Artifact", "Enchantment", "Instant", "Sorcery", "Battle"].find((x) => typeText(m).includes(x)) || "Other") + "s";
+    (groups[t] = groups[t] || []).push(c);
+  }
+  const order = ["Commander", "Creatures", "Planeswalkers", "Artifacts", "Enchantments", "Instants", "Sorcerys", "Battles", "Others", "Lands", "Unresolved"];
+  return `<section class="deck-hero">${img(art(meta(d.commander)) || art(meta(d.cards[0]?.name)), d.name, "hero-art")}<div class="hero-shade"></div>
+    <div class="hero-body"><div class="row between"><button class="icon light" data-act="go" data-to="#home" aria-label="Home">←</button><span class="chip dark">Shared deck</span></div>
+      <h1>${esc(d.name)}</h1>
+      <p>${colorDots(meta(d.commander))} ${esc(d.commander || d.format)}${d.author ? ` · by <b>${esc(d.author)}</b>` : ""}</p>
+      <div class="hero-stats"><span><b class="${sumQty(d.cards) === target ? "" : "warn-text"}">${sumQty(d.cards)}/${target}</b>cards</span><span><b>${p.score}</b>engine</span>${br ? `<span><b>${br.bracket}</b>bracket est.</span>` : ""}<span><b>${d.budget !== null ? usd(d.budget, 0) : "—"}</b>budget</span></div>
+    </div></section>
+  <div class="actions wrap share-actions"><button class="btn" data-act="sharedBuild">Make my version</button><button class="btn ghost" data-act="sharedSave">Save to Inspiration</button><button class="btn ghost" data-act="sharedCopy">Copy list</button></div>
+  ${d.about ? `<section class="panel"><h3>About this deck</h3><p class="about">${esc(d.about)}</p><p class="foot">Written by ${esc(d.author || "the person who shared it")}.</p></section>` : ""}
+  <section class="panel"><div class="row between"><h3>Match against my collection</h3><span class="chip ${sc.missing ? "" : "ok"}">${pct(sc.ratio)} owned</span></div>
+    ${S.state.collection.length ? `<div class="kpis small"><div class="kpi"><b>${sc.owned}</b><span>you own</span></div><div class="kpi"><b>${sc.missing}</b><span>missing</span></div><div class="kpi"><b>${usd(sc.cost, 0)}</b><span>to finish${sc.unknown ? ` · ${sc.unknown} unknown` : ""}</span></div></div>${bar(sc.ratio, "good")}` : `<p class="muted small">Add your collection to see what you already own. <button class="link" data-act="importCollection">Import collection</button></p>`}
+    <p class="foot">Counts only your free copies and leaves out basic lands${sc.skipped ? ` (${sc.skipped} here)` : ""}. The person who shared this can’t see your collection, and their link doesn’t include theirs.</p></section>
+  <section class="panel"><h3>Automated checks</h3>
+    <ul class="checks">
+      <li class="${rules.length ? "bad-text" : "ok-text"}">${rules.length ? `● ${rules.length} rules issue${rules.length > 1 ? "s" : ""}: ${esc(rules.slice(0, 3).map((i) => i.text).join(" "))}` : "✓ Card count, colors, legality and copy limits pass"}</li>
+      <li>Lands <b>${lands}</b> · ramp <b>${p.counts.Ramp}</b> · draw <b>${p.counts.Draw}</b> · removal <b>${p.counts.Removal}</b> · average mana value <b>${p.avg === null ? "—" : p.avg.toFixed(2)}</b></li>
+      ${odds !== null ? `<li>${pct(odds)} of opening hands have 3+ lands</li>` : ""}
+      ${g ? `<li>Test games: ${pct(g.landsBy4)} hit 4 lands by turn 4${g.commander ? ` · commander on curve ${pct(g.commander.onCurve ?? 0)}` : ""}</li>` : ""}
+      ${br ? `<li>Bracket estimate <b>${br.bracket} · ${esc(br.name)}</b>${br.reasons.length ? ` (${esc(br.reasons.join(", "))})` : ""}</li>` : ""}
+    </ul><p class="foot">Calculated by Cardforge from the list and card text — simulations and estimates, not win rates.</p></section>
+  <section class="panel"><h3>Full list</h3>${order
+    .filter((t) => groups[t])
+    .map((t) => `<p class="list-head">${t === "Sorcerys" ? "Sorceries" : t} <span class="muted">${sumQty(groups[t])}</span></p><div class="list compact">${groups[t]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((c) => {
+        const have = Math.min(c.qty, avail(c.name));
+        return `<button class="mini-row" data-act="card" data-name="${esc(c.name)}"><span class="row ellip">${manaCost(meta(c.name))}<span class="ellip">${c.qty > 1 ? c.qty + "× " : ""}${esc(c.name)}</span></span><span class="small ${S.state.collection.length ? (have >= c.qty ? "ok-text" : "warn-text") : "muted"}">${S.state.collection.length ? (have >= c.qty ? "owned" : "need " + (c.qty - have)) : usd(priceOf(c.name))}</span></button>`;
+      })
+      .join("")}</div>`)
+    .join("")}</section>`;
+}
+
+export function shareSheet(d, link = "") {
+  return `<div class="sheet-head"><h2>Share this deck</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
+  <p class="muted small">Anyone with the link can view the list, match it against their own collection and make their own version. No account needed.</p>
+  <label class="field">Shown as creator<input id="shareAuthor" maxlength="60" value="${esc(S.state.settings.authorName || "")}" placeholder="Your name or handle"></label>
+  <label class="field">About this deck <span class="muted small">(optional)</span><textarea id="shareAbout" rows="5" maxlength="1500" placeholder="How it wins, what to keep in an opening hand, weak spots, budget swaps…">${esc(d.about || "")}</textarea></label>
+  <div class="note"><b>What’s shared:</b> deck name, commander, format, focus, budget, your note and the card list.<br><b>Never shared:</b> your collection, which cards you own, values or play log.</div>
+  <button class="btn block" data-act="shareMake">${link ? "Update link" : "Create link"}</button>
+  ${link ? `<div class="share-link"><input id="shareLink" readonly value="${esc(link)}" aria-label="Share link"><div class="actions wrap"><button class="btn" data-act="shareCopy">Copy link</button>${typeof navigator !== "undefined" && navigator.share ? `<button class="btn ghost" data-act="shareNative">Share…</button>` : ""}<a class="btn ghost" href="${esc(link)}" target="_blank" rel="noopener">Preview ↗</a></div><p class="foot">${link.length.toLocaleString()} characters. The link holds the list itself, so changes you make later need a new link.</p></div>` : ""}`;
 }
 
 export function preconList() {

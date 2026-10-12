@@ -57,6 +57,8 @@ export const S = {
     ideas: { busy: false, ownedOnly: true, filter: "all", limit: 12, msg: "", cache: [], sig: "" },
     precon: { index: [], busy: false, msg: "" },
     compare: [null, null],
+    finder: { precons: [], cacheLoaded: false, busy: false, msg: "", max: "", colors: "", sort: "cost", q: "", limit: 12 },
+    shared: { code: "", deck: null, error: "" },
     sets: { list: [], busy: false, error: "", q: "", all: false },
     set: { code: "", info: null, cards: [], total: 0, busy: false, loaded: false, error: "", q: "", filter: "all", rarity: "all", sort: "number", limit: 120 },
     sheetCtx: null,

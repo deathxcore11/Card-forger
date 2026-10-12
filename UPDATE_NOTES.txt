@@ -1,3 +1,23 @@
+CARDFORGE 2.5 UPDATE
+
+- Start here. New visitors get a three-step path on Home (add your cards → pick a deck to aim for →
+  see what's missing). Steps tick off as you go and the panel disappears once you have both.
+- Ideas no longer dead-ends with an empty collection: Import collection, Try example collection, or
+  Explore starter decks.
+- "Saved on this device" in the header (tap it for backup options), so it's clear where your data lives.
+- Find decks I can almost build (Decks → Find decks). Ranks precons, shared decks and decks you've
+  saved by the cost to finish them from YOUR collection. Filter by max price, color and commander;
+  sort by cheapest or most owned. Each result lists its missing cards with prices ("unknown" when
+  there's no price) and a "Make my version" button that copies it with credit. Precons come from
+  MTGJSON, 10 at a time ("Check 10 more precons"), and are remembered on this device. Copies locked in
+  assembled decks don't count as free; basic lands aren't counted.
+- Share a deck with a link (deck ⋯ → Share this deck). Anyone can open it — no account, no app
+  install — and see the commander art, your name as creator, your "about this deck" note, automated
+  checks (rules, land/ramp/draw/removal counts, opening-hand odds, test games, bracket estimate),
+  the full list, and how much of it THEY already own and what it would cost them. "Make my version"
+  and "Save" keep your credit. The link contains only the deck; never your collection, ownership,
+  values or play log.
+
 CARDFORGE 2.4 UPDATE
 
 - Official mana symbols everywhere. Mana costs, color identity, color balance, the mana base table

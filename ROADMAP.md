@@ -28,3 +28,14 @@
 ## Next for the new features
 - Per-opponent commander damage (one counter per enemy commander), and partner support in the bracket check.
 - Combo detection from Commander Spellbook to complete the bracket estimate.
+
+## Accounts & community (needs a backend)
+Plan: keep Cloudflare hosting, add Supabase (auth + Postgres with row-level security + avatar storage).
+1. Accounts & sync — Google/email sign-in, guest mode stays, import local data with preview and
+   duplicate handling, private by default, conflict detection between devices.
+2. Public deck library — publish a chosen deck version (the 2.5 share-link format is the payload),
+   browse without signing in, bookmarks, "Find decks I can almost build" across the public library.
+3. Community — comments tied to a published version, separate signals (helpful, beginner-friendly,
+   budget-friendly, self-reported games), reporting and moderation. Results don't carry over when a
+   deck is substantially edited.
+Needed from the owner: a Supabase project URL + public anon key, and Google OAuth enabled.

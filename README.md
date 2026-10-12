@@ -13,6 +13,8 @@ Your Magic: The Gathering collection, decks, upgrades and deck analysis in one i
 - **Buy this card** *(new in 2.3)*: tap any price for direct store links to that exact printing, an honestly labeled estimate, and cheaper printings.
 - **Set pages** *(new in 2.4)*: tap any set badge for every printing in that set, with what you own, search, rarity and price sorting. "Browse sets" lists every paper set live from Scryfall.
 - **Official mana symbols** *(new in 2.4)* in costs, color identity and rules text.
+- **Find decks I can almost build** *(new in 2.5)*: precons, shared and saved decks ranked by what it costs to finish them from your collection.
+- **Share links** *(new in 2.5)*: send a deck to anyone as a link. They can match it to their own collection and make their version, with credit to you. No account needed, and your collection is never included.
 - **Upgrade lab**: budget ladder with engine gain per dollar, slot filling, and before/after comparisons.
 - **Versions**: automatic snapshots, so you can compare any two versions of a deck.
 - **Playtest**: opening hands and mulligans, a game log tagged with the deck version, and a **life tracker** *(new in 2.2)* for 2–6 players with commander damage, poison and turns.
