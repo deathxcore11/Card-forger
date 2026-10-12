@@ -18,6 +18,7 @@ import {
 } from "./insights.js";
 import { bracketEstimate, manaBase, isOut, deckReview, explainSwap } from "./extras.js";
 import { buildability, rankBuildable } from "./share.js";
+import { cloudInfo, summarize } from "./cloud.js";
 
 /* ---------- shared deck math ---------- */
 
@@ -1278,10 +1279,62 @@ export function scan(scanNames) {
 
 /* ---------- Settings ---------- */
 
+/* ---------- Account ---------- */
+
+const when = (iso) => (iso ? new Date(iso).toLocaleString() : "never");
+
+export function accountPanel() {
+  const a = cloudInfo();
+  if (!a.configured)
+    return `<section class="panel account"><h3>Account</h3><p class="muted small">Accounts aren’t switched on for this site yet, so everything is saved on this device. Export a backup to move it to another phone or computer.</p></section>`;
+  if (!a.ready)
+    return `<section class="panel account"><h3>Account</h3><p class="muted small">${a.status.state === "error" ? esc(a.status.msg) : "Connecting…"}</p></section>`;
+  if (!a.user)
+    return `<section class="panel account"><p class="eyebrow">Optional</p><h3>Sign in to save across devices</h3>
+    <p class="muted small">Your collection and decks sync privately to your account — only you can see them. You can keep using Cardforge without signing in; your data stays on this device either way.</p>
+    <button class="btn block" data-act="signGoogle">Continue with Google</button>
+    <div class="searchbar email-row"><input id="signEmail" type="email" autocomplete="email" placeholder="you@example.com" aria-label="Email address" data-enter="signEmail"><button class="btn ghost" data-act="signEmail">Email me a link</button></div>
+    <p class="foot">We’ll email a one-time sign-in link — no password. Signing in never deletes what’s on this device: if your account already has data, you choose which copy to keep, and the other is saved as a backup file.</p></section>`;
+  const pr = a.profile || {},
+    st = a.status,
+    label = { synced: "Synced", syncing: "Syncing…", error: "Sync paused", decide: "Needs your decision", offline: "Offline — will sync when you’re back online", local: "Synced" }[st.state] || "Synced";
+  return `<section class="panel account"><div class="account-head">${pr.avatar_url ? `<img class="avatar" src="${esc(pr.avatar_url)}" alt="" referrerpolicy="no-referrer">` : `<span class="avatar">${esc((pr.display_name || a.user.email || "?").slice(0, 1).toUpperCase())}</span>`}<div><b>${esc(pr.display_name || a.user.email)}</b><small class="muted">${esc(a.user.email || "")}${pr.username ? " · @" + esc(pr.username) : ""}</small></div></div>
+    <div class="sync-line ${st.state}"><span><b>${label}</b>${st.state === "synced" && st.at ? ` · ${esc(when(st.at))}` : ""}</span><button class="btn ghost small" data-act="syncNow">Sync now</button></div>
+    ${st.state === "error" && st.msg ? `<p class="small bad-text">${esc(st.msg)} Your cards are still saved on this device.</p>` : ""}
+    ${a.pending ? `<button class="btn block" data-act="syncDecide">Choose which copy to keep</button>` : ""}
+    <details><summary class="small"><b>Profile</b></summary>
+      <label class="field">Display name<input id="pfName" maxlength="60" value="${esc(pr.display_name || "")}"></label>
+      <label class="field">Username <span class="muted small">(for sharing later)</span><input id="pfUser" maxlength="30" value="${esc(pr.username || "")}" placeholder="letters, numbers, _"></label>
+      <label class="field">Bio<textarea id="pfBio" rows="2" maxlength="500">${esc(pr.bio || "")}</textarea></label>
+      <button class="btn small" data-act="saveProfile">Save profile</button>
+    </details>
+    <p class="foot">Private: only you can read your account copy. Cards and decks are saved on this device first, then synced a few seconds later.</p>
+    <button class="link small" data-act="signOut">Sign out</button> <span class="muted small">— your data stays on this device.</span></section>`;
+}
+
+// Shown when both this device and the account have data, or when they changed separately.
+export function syncDecideSheet(p, local) {
+  const L = summarize(local),
+    C = p.cloud ? summarize(p.cloud.data) : null,
+    side = (title, x, extra) => `<div class="sync-side"><p class="eyebrow">${title}</p><b>${x.copies.toLocaleString()} cards</b><span class="small">${x.names.toLocaleString()} different · ${x.decks} decks · ${x.wishlist} wishlist</span><span class="small muted">${extra}</span></div>`;
+  if (p.kind === "offer")
+    return `<div class="sheet-head"><h2>Save this device to your account?</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
+    <p class="muted small">Your account is empty. Upload what’s on this device so it’s available everywhere you sign in.</p>
+    ${side("This device", L, "Saved " + when(L.saved))}
+    <div class="actions"><button class="btn" data-act="syncChoice" data-choice="device">Upload to my account</button><button class="btn ghost" data-act="syncChoice" data-choice="later">Not now</button></div>
+    <p class="foot">Nothing on this device is removed.</p>`;
+  return `<div class="sheet-head"><h2>${p.kind === "conflict" ? "Changed in two places" : "Which copy should we keep?"}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
+  <p class="muted small">${p.kind === "conflict" ? "Your account was updated on another device while this device also had changes. Pick one copy to keep." : "This device and your account both have cards, and they’re different."} The copy you don’t keep is downloaded as a backup file, so nothing is lost. Cardforge doesn’t merge copies automatically, so cards are never counted twice.</p>
+  <div class="sync-compare">${side("This device", L, "Saved " + when(L.saved))}${C ? side("Your account", C, "Saved " + when(p.cloud.updated_at) + (p.cloud.device ? " · " + esc(p.cloud.device) : "")) : ""}</div>
+  <div class="actions wrap"><button class="btn" data-act="syncChoice" data-choice="account">Keep the account copy</button><button class="btn ghost" data-act="syncChoice" data-choice="device">Keep this device’s copy</button></div>
+  <button class="link small" data-act="syncChoice" data-choice="later">Decide later (sync stays paused)</button>`;
+}
+
 export function settings() {
   const st = S.state;
   return `<div class="page-head"><h1>Settings & backup</h1></div>
-  <section class="panel"><h3>Backup</h3><p class="muted small">Your collection lives in this browser on this website address. Export a backup before switching phones or browsers.</p>
+  ${accountPanel()}
+  <section class="panel"><h3>Backup</h3><p class="muted small">${cloudInfo().user ? "Your collection is saved on this device and synced to your account. Backup files are still a good idea before big changes." : "Your collection lives in this browser on this website address. Export a backup before switching phones or browsers — or sign in above to sync."}</p>
   <div class="actions wrap"><button class="btn" data-act="exportBackup">↓ Export backup</button><label class="btn ghost">Restore backup<input type="file" accept=".json" data-change="restoreBackup" hidden></label><label class="btn ghost">Check a backup<input type="file" accept=".json" data-change="checkBackup" hidden></label></div>
   <p id="backupCheck" class="muted small"></p>
   <p class="small">Last saved: ${esc(st.lastSavedAt ? new Date(st.lastSavedAt).toLocaleString() : "not yet")}</p>

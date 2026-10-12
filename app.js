@@ -19,6 +19,7 @@ import { sourceCredit, mtgjsonDeck, collectionIdeas, upgradeSuggestions, applyUp
 import { searchQuery, scanNames } from "./catalog-tools.js";
 import { newGame, proxyList, proxySheetHTML } from "./extras.js";
 import { sharePayload, encodeShare, decodeShare } from "./share.js";
+import { initCloud, cloudInfo, statusLabel, scheduleSync, signInGoogle, signInEmail, signOut, saveProfile, resolvePending, syncNow } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact } from "./insights.js";
 
 /* =========================================================
@@ -40,6 +41,14 @@ function setSaveStatus(text, cls = "") {
   }
 }
 
+// Saved locally; when signed in, the account copy follows a few seconds later.
+function afterLocalSave() {
+  if (cloudInfo().user) {
+    setSaveStatus(...statusLabel());
+    scheduleSync();
+  } else setSaveStatus("Saved on this device", "ok");
+}
+
 let catalogTimer;
 function saveCatalogSoon() {
   if (!S.catalogDirty) return;
@@ -55,7 +64,7 @@ function save() {
   setSaveStatus("Saving…");
   saveCatalogSoon();
   return writeRecord(STORAGE, stripCache(S.state))
-    .then(() => (setSaveStatus("Saved on this device", "ok"), true))
+    .then(() => (afterLocalSave(), true))
     .catch(() => {
       setSaveStatus("Not saved", "bad");
       toast("Couldn’t save on this device. Export a backup from Settings.");
@@ -73,7 +82,7 @@ async function commit(fn, { msg = "", recovery = false, rerender = true, enrich 
   if (recovery) records.unshift([RECOVERY, stripCache(S.state)]);
   await writeRecords(records);
   S.state = valid;
-  setSaveStatus("Saved on this device", "ok");
+  afterLocalSave();
   saveCatalogSoon();
   if (rerender) {
     render();
@@ -569,7 +578,7 @@ A.deckTab = (t) => {
 };
 A.menu = () =>
   openSheet(`<div class="sheet-head"><h2>More</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="menu-list">
-    <button data-act="go" data-to="#settings">⚙ Settings & backup</button>
+    <button data-act="go" data-to="#settings">${cloudInfo().user ? "👤 Account, sync & backup" : cloudInfo().configured ? "👤 Sign in · settings & backup" : "⚙ Settings & backup"}</button>
     <button data-act="exportBackup">↓ Export backup now</button>
     <button data-act="go" data-to="#collection/wishlist">♡ Wishlist</button>
     <button data-act="go" data-to="#collection/value">$ Collection value</button>
@@ -657,6 +666,54 @@ A.setCommander = async (t) => {
   const c = await resolve(name, true);
   if (!commanderEligible(c)) return toast(c.name + " can’t be a commander.");
   await editDeck((d) => ({ ...d, commander: c.name, name: d.name === "Imported deck" ? c.name.split(",")[0] + " deck" : d.name, cards: d.cards.some((x) => key(x.name) === key(c.name)) ? d.cards : [{ name: c.name, qty: 1 }, ...d.cards] }), { msg: c.name + " is now your commander." });
+};
+
+/* ---------- account ---------- */
+A.signGoogle = async (t) => {
+  const done = busy(t, "Opening Google…");
+  try {
+    await signInGoogle();
+  } finally {
+    done();
+  }
+};
+A.signEmail = async (t) => {
+  const email = $("#signEmail")?.value.trim() || "",
+    done = busy(t?.tagName === "BUTTON" ? t : $('[data-act="signEmail"]'), "Sending…");
+  try {
+    await signInEmail(email);
+    toast("Check your email for the sign-in link. It opens Cardforge signed in.");
+  } finally {
+    done();
+  }
+};
+A.signOut = async () => {
+  if (!confirm("Sign out? Your cards stay on this device; they just stop syncing.")) return;
+  await signOut();
+  render();
+  toast("Signed out. Your data is still on this device.");
+};
+A.syncNow = () => syncNow();
+A.syncDecide = () => {
+  const p = cloudInfo().pending;
+  if (p) openSheet(V.syncDecideSheet(p, stripCache(S.state)), { type: "sync" });
+};
+A.syncChoice = async (t) => {
+  const c = t.dataset.choice;
+  if (c === "device" && cloudInfo().pending?.cloud && !confirm("Replace your account copy with this device’s? The account copy is downloaded as a backup first.")) return;
+  closeSheet();
+  await resolvePending(c);
+  render();
+  if (c === "account") toast("Loaded your account copy. This device’s previous data was downloaded as a backup.");
+};
+A.saveProfile = async (t) => {
+  const done = busy(t, "Saving…");
+  try {
+    await saveProfile({ display_name: $("#pfName").value, username: $("#pfUser").value, bio: $("#pfBio").value });
+    toast("Profile saved.");
+  } finally {
+    done();
+  }
 };
 
 /* ---------- finder ---------- */
@@ -2673,6 +2730,26 @@ async function boot() {
   loadSetIndex(); // cached set symbols first; refreshes from Scryfall every few days
   render();
   $("#app").classList.add("ready");
+  initCloud({
+    getState: () => stripCache(S.state),
+    // Replace this device's workspace with the account copy.
+    apply: async (data) => {
+      const valid = normalize(data);
+      await writeRecord(STORAGE, valid);
+      S.state = valid;
+      render();
+      setTimeout(autoEnrich, 200);
+    },
+    backup: async (state, label, file) => {
+      await writeRecord(RECOVERY, state).catch(() => {});
+      if (file) download(`Cardforge_Backup_${fileSafe(label)}_${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(backupEnvelope(state)), "application/json");
+    },
+    status: ([text, cls]) => setSaveStatus(text, cls),
+    changed: () => {
+      if (S.ui.view === "settings") render();
+    },
+    decide: (p) => openSheet(V.syncDecideSheet(p, stripCache(S.state)), { type: "sync" }),
+  }).catch(() => {});
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
   window.addEventListener("online", () => {
     setSaveStatus("Online", "ok");

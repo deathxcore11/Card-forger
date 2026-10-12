@@ -693,3 +693,15 @@ img.ms.inline { width: 1.05em !important; height: 1.05em !important; }
 .swap-why .lose span { color: var(--warn); }
 .swap-why .same span { color: var(--muted); }
 .swap-choose { margin: 8px 0 0; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); }
+
+/* ---------- 2.7: accounts ---------- */
+.account-head { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+.account-head div { display: grid; min-width: 0; }
+.avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex: none; display: grid; place-items: center; background: var(--surface-2); font-weight: 800; }
+.sync-line { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); margin: 8px 0; font-size: 14px; }
+.sync-line.synced b { color: var(--good); }
+.sync-line.error b, .sync-line.decide b { color: var(--bad); }
+.email-row { margin-top: 10px; }
+.sync-compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
+.sync-side { display: grid; gap: 2px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.sync-side b { font-size: 18px; }

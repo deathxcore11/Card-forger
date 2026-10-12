@@ -46,6 +46,29 @@ In GitHub go to Settings → Pages → Source → **GitHub Actions**. The `Publi
 
 Each web address keeps its own storage. A collection saved on the Cloudflare address won't appear on the GitHub Pages address until you restore a backup there.
 
+## Accounts (optional, Supabase)
+
+Cardforge works fully without accounts. Signing in adds a private copy of your workspace in your
+account so it follows you to other devices. It's off until a key is added to `config.js`.
+
+One-time setup in the Supabase dashboard (project `noxfmbwuytnbvfgukpiv`):
+
+1. **SQL Editor →** paste and run `supabase/migrations/20261012000000_cardforge_accounts.sql`.
+   It creates `profiles` and `workspaces`, both with row-level security (each user can only read
+   and write their own row) and no access for signed-out visitors.
+2. **Authentication → URL Configuration →** set *Site URL* to your Cardforge address
+   (e.g. `https://cardforge2.<you>.workers.dev`) and add the same address to *Redirect URLs*.
+3. **Authentication → Providers →** Email is on by default. For Google, enable it and paste a
+   Google OAuth client ID and secret (Google Cloud Console → Credentials → OAuth client → Web).
+4. **Project Settings → API Keys →** copy the **publishable** key (`sb_publishable_…`, or the
+   legacy `anon` key) into `config.js`. Never use the `service_role`/secret key in the app.
+
+How sync behaves: the app always saves on the device first, then pushes to the account a few
+seconds later. Every write is checked against the revision the device last saw, so two devices
+never silently overwrite each other — if both changed, you choose which copy to keep and the other
+is downloaded as a backup file. The first sign-in on a device with existing data asks before
+uploading or replacing anything. Signing out leaves the data on the device.
+
 ## Files
 
 | File | Purpose |
@@ -57,6 +80,8 @@ Each web address keeps its own storage. A collection saved on the Cloudflare add
 | `extras.js` | Bracket estimate, mana base, proxy sheets and life tracker |
 | `core.js`, `planner.js`, `strategy.js`, `deck-flow.js`, `confidence.js`, `catalog-tools.js` | Rules, import, planning and catalog logic |
 | `store.js`, `storage.js`, `ui.js` | Shared state, IndexedDB storage and HTML helpers |
+| `cloud.js`, `config.js`, `supabase/` | Optional accounts and cloud sync |
+| `share.js` | Share links and the "almost build" finder |
 | `sw.js`, `manifest.webmanifest` | Offline support and install-as-app |
 | `test-*.mjs` | Tests (`npm test`) |
 

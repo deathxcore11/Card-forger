@@ -1,3 +1,18 @@
+CARDFORGE 2.7 UPDATE — ACCOUNTS (READY, SWITCHED OFF UNTIL THE KEY IS ADDED)
+
+- Optional sign-in (Google or an emailed link) under Settings. Your workspace syncs privately to
+  your account; guests keep using device storage exactly as before.
+- Header shows where your data is: "Saved on this device", "Syncing…", "Synced to your account",
+  "Saved on this device · sync paused" or "Sync needs your decision".
+- First sign-in never overwrites anything: an empty account gets a preview before uploading; if both
+  the device and the account have different data, you choose which copy to keep and the other is
+  downloaded as a backup file. Cards are never merged twice.
+- Changes made on another device are picked up when you return to the app. If both devices changed
+  while out of sync, Cardforge asks instead of guessing.
+- Profile: display name, username and bio (photo comes from Google).
+- Database: supabase/migrations/…_cardforge_accounts.sql with row-level security on every table.
+  See README → Accounts for the four setup steps.
+
 CARDFORGE 2.6 UPDATE
 
 - Fixed: huge mana symbols in the Upgrade lab (they also made the whole page wider than the phone).
