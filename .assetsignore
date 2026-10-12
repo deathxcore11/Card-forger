@@ -8,3 +8,4 @@ package.json
 *.mjs
 README.md
 ROADMAP.md
+*.zip
