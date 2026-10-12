@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { normalizeYgo, validateYgo, ygoLimit, ygoLegality, YGO_FORMATS } from "./ygo.js";
 import { normalizePtcg, validatePtcg, PTCG_FORMATS } from "./ptcg.js";
-import { parseLines, parseYdk, ptcglName, entryPrice, tcgAddSheet } from "./tcg.js";
+import { parseLines, parseYdk, ptcglName, entryPrice, tcgAddSheet, variantArtwork, variantArtThumb } from "./tcg.js";
 
 const F = (list, id) => list.find((f) => f.id === id);
 // ---- Yu-Gi-Oh!
@@ -111,3 +111,20 @@ assert.equal(entryPrice(modern,{variant:"reverse-holofoil"}),0.43);
 assert.equal(entryPrice(dm,{edition:"1st-edition"}),null,"YGO generic price is not edition-specific");
 assert.match(tcgAddSheet(dm),/First Edition/);
 console.log("PASS: collectible versions without prices, Shadowless/First Edition isolation, modern reverse holo and YGO editions.");
+
+const reference = variantArtwork({name:"Charizard",id:"base1-4",image:"https://example.test/reference.webp"},{label:"First Edition Shadowless"});
+assert.equal(reference.exact,false);
+assert.match(reference.label,/Reference art/);
+const exact = variantArtwork({image:"https://example.test/reference.webp"},{image:"https://example.test/first.webp",imageLarge:"https://example.test/first-large.webp"});
+assert.equal(exact.exact,true);
+assert.equal(exact.image,"https://example.test/first.webp");
+const thumb = variantArtThumb({name:"Charizard",id:"base1-4",image:"https://example.test/reference.webp"},{key:"first",label:"First Edition"});
+assert.match(thumb,/data-act="tVariantArt"/);
+assert.match(thumb,/Reference art/);
+assert.match(thumb,/Image unavailable/);
+const alt = normalizeYgo({id:1,name:"Example",card_images:[{id:1},{id:2}]});
+assert.deepEqual(alt.artworks.map(a=>a.id),["1","2"],"all source artwork preserved");
+assert.match(alt.artworks[1].image,/2[.]jpg$/);
+const supplied = normalizePtcg({id:"base1-4",name:"Charizard",variants_detailed:[{variantId:"first",type:"holo",stamp:["1st-edition"],image:"https://example.test/first"}]});
+assert.equal(supplied.variants[0].image,"https://example.test/first/low.webp");
+console.log("PASS: exact-vs-reference variant art, unavailable-image label, YGO alternate artwork and Pokémon supplied images.");

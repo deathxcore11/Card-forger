@@ -358,13 +358,13 @@ function printList(prints, shown, name, chosen) {
   if (!prints.length) return `<p class="muted small">No paper printings found.</p>`;
   return `<div class="print-list">${prints
     .map((p, i) => {
-      const fin = ["nonfoil", "foil", "etched"].filter((f) => priceOfFinish(p, f));
+      const fin = ["nonfoil", "foil", "etched"].filter((f) => p.finishes?.includes(f) || priceOfFinish(p, f));
       return `<div class="print ${p.id === shown.id ? "on" : ""}">
         <button class="print-main" data-act="viewPrint" data-i="${i}">${img(p.image_uris?.small || p.card_faces?.[0]?.image_uris?.small, p.set_name, "print-thumb")}<span class="print-name">${setIcon(p.set, p.rarity, 16)}<span class="ellip"><b>${esc(p.set_name)}</b><small>${esc(p.set.toUpperCase())} #${esc(p.collector_number)} · ${esc((p.released_at || "").slice(0, 4))}${p.promo ? " · promo" : ""}${p.full_art ? " · full art" : ""}${(p.frame_effects || []).includes("showcase") ? " · showcase" : ""}${(p.frame_effects || []).includes("extendedart") ? " · extended" : ""}${p.border_color === "borderless" ? " · borderless" : ""}</small></span></span></button>
         <span class="print-prices"><button class="pp buy" data-act="buyCard" data-i="${i}" data-finish="${fin[0] || "nonfoil"}" aria-label="Buy the ${esc(p.set_name)} printing">Buy</button>${fin.length ? fin.map((f) => `<button class="pp ${chosen?.id === p.id && chosen?.finish === f ? "on" : ""}" data-act="choosePrint" data-i="${i}" data-finish="${f}" data-name="${esc(name)}" title="Use this price for shopping"><small>${f === "nonfoil" ? "reg" : f}</small>${usd(priceOfFinish(p, f))}</button>`).join("") : '<span class="muted small">—</span>'}</span>
       </div>`;
     })
-    .join("")}</div><p class="foot">Tap a printing to see its art, flavor text and artist. Tap a price to use it for your shopping totals, or Buy for store links to that exact printing.</p>`;
+    .join("")}</div><p class="foot">Each thumbnail is the source image for that printing; foil and etched surface effects may not be pictured. Tap a printing to see its art, flavor text and artist. Tap a price to use it for your shopping totals, or Buy for store links to that exact printing.</p>`;
 }
 
 /* ---------- Sets ---------- */

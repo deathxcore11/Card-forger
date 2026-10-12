@@ -61,7 +61,7 @@ const remember = (card) => {
 // Full card with prices no older than a day.
 export async function ensureCard(g, id, force = false) {
   const c = cache[g][id];
-  if (c && !c.brief && (g !== "ptcg" || c.variantSchema === 2) && !force && Date.now() - new Date(c.fetchedAt).getTime() < PRICE_TTL) return c;
+  if (c && !c.brief && (g !== "ptcg" || c.variantSchema === 3) && (g !== "ygo" || c.artSchema === 1) && !force && Date.now() - new Date(c.fetchedAt).getTime() < PRICE_TTL) return c;
   try {
     return remember(await SOURCES[g].get(id));
   } catch (e) {
@@ -71,7 +71,7 @@ export async function ensureCard(g, id, force = false) {
 }
 // Load details for many cards, a few at a time, calling `tick` as they arrive.
 export async function ensureMany(g, ids, tick = () => {}, force = false) {
-  const queue = [...new Set(ids)].filter((id) => force || !cache[g][id] || cache[g][id].brief || (g === "ptcg" && cache[g][id].variantSchema !== 2) || Date.now() - new Date(cache[g][id].fetchedAt).getTime() > PRICE_TTL);
+  const queue = [...new Set(ids)].filter((id) => force || !cache[g][id] || cache[g][id].brief || (g === "ptcg" && cache[g][id].variantSchema !== 3) || (g === "ygo" && cache[g][id].artSchema !== 1) || Date.now() - new Date(cache[g][id].fetchedAt).getTime() > PRICE_TTL);
   let done = 0;
   const worker = async () => {
     while (queue.length) {
@@ -98,6 +98,17 @@ const imgTag = (c, cls = "card-img", large = false) => {
   const fallback = c.game === "ygo" ? ygoImageDirect(c.id, !large) : "";
   return `<img class="${cls}" src="${esc(src)}" alt="${esc(c.name)}" loading="lazy" referrerpolicy="no-referrer" onerror="${fallback ? `if(!this.dataset.f){this.dataset.f=1;this.src='${esc(fallback)}'}else ` : ""}this.remove()">`;
 };
+
+// A printed variant can share art, but that is not proof of its stamp/finish.
+export function variantArtwork(card, variant = {}) {
+  const exact = !!variant.image;
+  return { image:variant.image || card.image || "", imageLarge:variant.imageLarge || variant.image || card.imageLarge || card.image || "", imageId:variant.id || card.id, exact,
+    label:exact ? "Variant image" : "Reference art · exact version image unavailable" };
+}
+export function variantArtThumb(card, variant = {}, attrs = "") {
+  const a = variantArtwork(card,variant), fail = "this.hidden=true;this.parentElement.classList.add('art-unavailable')", onerror = card.game === "ygo" ? `if(!this.dataset.f){this.dataset.f=1;this.src='${esc(ygoImageDirect(a.imageId))}'}else{${fail}}` : fail;
+  return `<button class="variant-art" data-act="tVariantArt" data-id="${esc(card.id)}" ${attrs} aria-label="View ${esc(variant.label || card.name)} artwork"><span class="variant-art-frame">${a.image ? `<img src="${esc(a.image)}" alt="${esc(card.name)} — ${esc(a.label)}" loading="lazy" referrerpolicy="no-referrer" onerror="${onerror}">` : ""}<span class="art-unavailable-label">Image unavailable</span></span></button>`;
+}
 
 /* ---------- ownership & value ---------- */
 
@@ -486,6 +497,7 @@ export function tcgCardSheet(c, sctx = {}) {
     ${decks.length ? `<div class="inline-pick"><select id="tToDeck" aria-label="Deck">${options(decks.map((d) => [d.id, d.name]), deck?.id || decks.at(-1).id)}</select><button class="btn ghost" data-act="tAddToDeck" data-id="${esc(c.id)}">Add to deck</button></div>` : `<button class="btn ghost" data-act="tNewDeck">Start a deck</button>`}
     ${factBox(factsFor(c), c.id)}`;
   // Same art-first rows as Magic's Versions: thumbnail, set mark, set name, code, Buy, price box.
+  const artworkGallery = g === "ygo" && c.artworks?.length ? `<section class="variant-gallery"><h3>Available artwork</h3><p class="foot">These are the source’s artwork scans. Set code, rarity and edition are not mapped to individual images.</p><div class="artwork-grid">${c.artworks.map((a,i) => `<div class="artwork-item">${variantArtThumb(c,a,`data-art="${esc(a.id)}"`)}<span>${esc(a.label)} ${i+1}</span></div>`).join("")}</div></section>` : "";
   const thumb = `<img class="print-thumb" src="${esc(c.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" ${g === "ygo" ? `onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${esc(ygoImageDirect(c.id))}'}else this.remove()"` : `onerror="this.remove()"`}>`;
   const versions =
     g === "ygo"
@@ -495,17 +507,17 @@ export function tcgCardSheet(c, sctx = {}) {
             .sort((a, b) => (b.price ?? -1) - (a.price ?? -1))
             .map(
               (s) => `<div class="print">
-        <button class="print-main" data-act="tSetByName" data-name="${esc(s.name)}">${thumb}<span class="print-name"><span class="ellip"><b>${esc(s.name)}</b><small>${ygoPrintBadge(s)} ${esc(s.rarity || "")}</small></span></span></button>
+        <button class="print-main" data-act="tSetByName" data-name="${esc(s.name)}">${thumb}<span class="print-name"><span class="ellip"><b>${esc(s.name)}</b><small>${ygoPrintBadge(s)} ${esc(s.rarity || "")} · reference art</small></span></span></button>
         <span class="print-prices"><a class="pp buy" href="https://www.tcgplayer.com/search/yugioh/product?productLineName=yugioh&q=${encodeURIComponent(s.code)}" target="_blank" rel="noopener noreferrer" aria-label="Buy the ${esc(s.code)} printing">Buy</a><span class="pp"><small>market</small>${s.price ? usd(s.price) : "—"}</span></span>
       </div>`,
             )
-            .join("")}</div><p class="foot">${c.sets.length} printings, priciest first. Tap a printing to open its whole set, or Buy for that exact printing.</p>`
-        : `<p class="muted small">No printings listed.</p>`
+            .join("")}</div><p class="foot">${c.sets.length} printings, priciest first. Thumbnails are reference art; inspect the seller’s edition and rarity. Tap a printing to open its set.</p>${artworkGallery}`
+        : `<p class="muted small">No printings listed.</p>${artworkGallery}`
       : c.set
         ? `<div class="print-list"><div class="print on">
         <button class="print-main" data-act="tSet" data-id="${esc(c.set.id)}">${thumb}<span class="print-name">${pkSetSymbol(c.set)}<span class="ellip"><b>${esc(c.set.name)}</b><small>${esc((c.set.id || "").toUpperCase())} #${esc(c.set.number || "")}${c.set.total ? "/" + c.set.total : ""} · ${pkRarity(c.rarity)} ${esc(c.rarity || "")}</small></span></span></button>
         <span class="print-prices"><a class="pp buy" href="${esc(SOURCES.ptcg.buy(c)[0]?.[1] || "#")}" target="_blank" rel="noopener noreferrer">Buy</a><span class="pp"><small>reference</small>${usd(p.usd)}</span></span>
-      </div></div><div class="list compact">${(c.variants || []).map(v => `<div class="mini-row"><span><b>${esc(v.label)}</b><small class="muted"> · ${v.usd == null ? "Price unavailable" : usd(v.usd)}</small></span><span class="row">${v.productId ? `<a class="link small" href="https://www.tcgplayer.com/product/${encodeURIComponent(v.productId)}" target="_blank" rel="noopener noreferrer">Seller ↗</a>` : ""}<button class="btn ghost small" data-act="tOwn" data-id="${esc(c.id)}" data-print="${esc(v.key)}" aria-label="Add ${esc(v.label)}">＋ Add</button></span></div>`).join("")}</div><p class="foot">Confirm edition and finish on the seller’s listing; some product pages group versions. An unavailable price is not $0.</p><p class="foot">Pokémon reprints are separate cards with their own number. <button class="link small" data-act="tOtherPrintings" data-name="${esc(c.name)}">See every “${esc(c.name)}” →</button></p>`
+      </div></div><div class="list compact">${(c.variants || []).map(v => `<div class="variant-row">${variantArtThumb(c,v,`data-variant="${esc(v.key)}"`)}<div class="variant-copy"><b>${esc(v.label)}</b><small class="muted">${esc(variantArtwork(c,v).label)}</small><span>${v.usd == null ? "Price unavailable" : usd(v.usd)}</span></div><span class="variant-actions">${v.productId ? `<a class="link small" href="https://www.tcgplayer.com/product/${encodeURIComponent(v.productId)}" target="_blank" rel="noopener noreferrer">Seller ↗</a>` : ""}<button class="btn ghost small" data-act="tOwn" data-id="${esc(c.id)}" data-print="${esc(v.key)}" aria-label="Add ${esc(v.label)}">＋ Add</button></span></div>`).join("")}</div><p class="foot">Confirm edition and finish on the seller’s listing; some product pages group versions. An unavailable price is not $0.</p><p class="foot">Pokémon reprints are separate cards with their own number. <button class="link small" data-act="tOtherPrintings" data-name="${esc(c.name)}">See every “${esc(c.name)}” →</button></p>`
         : "";
   const prices =
     g === "ptcg"
@@ -1458,6 +1470,14 @@ export function registerTcg(c) {
     } finally {
       randomBusy = false;
     }
+  };
+  A.tVariantArt = (t) => {
+    const card = cardOf(g(),t.dataset.id);
+    if (!card) return;
+    const v = t.dataset.art ? card.artworks?.find(a => a.id === t.dataset.art) : card.variants?.find(v => v.key === t.dataset.variant);
+    const a = variantArtwork(card,v || {});
+    const chosen = { ...card, id:a.imageId, image:a.image, imageLarge:a.imageLarge };
+    openSheet(`<div class="sheet-head"><h2>${esc(card.name)}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p>${esc(v?.label || "Card artwork")}</p><div class="variant-art-large">${imgTag(chosen,"card-img",true)}</div><p class="foot">${esc(a.label)}${card.game === "ygo" ? " · The source does not map this artwork to a specific set code or edition." : " · Confirm stamps, borders and finish on your physical card."}</p>`,{type:"variant-art",id:card.id});
   };
   A.tOwn = (t) => {
     const card = cardOf(g(), t.dataset.id);

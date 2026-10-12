@@ -1,3 +1,6 @@
+3.8.4 — Artwork for collectible versions
+Pokémon versions now have full-card thumbnails and enlarged previews, using exact variant images when supplied and labeled reference art otherwise. Yu-Gi-Oh! preserves every source alternate artwork in a gallery; printing thumbnails are labeled as reference art. Magic printing thumbnails remain exact, and available finishes remain visible even without prices.
+
 3.8.3 — Complete collectible version labels
 Versions shows every available edition/finish with its full label, price availability, seller link when supplied and a preset Add button.
 

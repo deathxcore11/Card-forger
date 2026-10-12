@@ -25,7 +25,7 @@ export function pokemonVariants(c) {
     const q = bucket ? d.pricing.tcgplayer[bucket] : {};
     const key = !special && bucket ? bucket : "detail:" + (d.variantId || JSON.stringify([d.type,d.subtype,d.stamp,d.size]));
     const label = [first ? "First Edition" : "", d.subtype ? title(d.subtype) : "", ...(d.stamp || []).filter(x => x !== "1st-edition").map(title), d.size && d.size !== "standard" ? title(d.size) : "", {holo:"Holofoil",reverse:"Reverse Holo",normal:"Normal"}[d.type] || title(d.type || "Version")].filter(Boolean).join(" · ");
-    out.set(key, { key, label, usd:n(q.marketPrice) ?? n(q.midPrice), low:n(q.lowPrice), mid:n(q.midPrice), market:n(q.marketPrice), productId:q.productId || d.thirdParty?.tcgplayer, cmProduct:d.thirdParty?.cardmarket, detailed:true });
+    out.set(key, { key, label, usd:n(q.marketPrice) ?? n(q.midPrice), low:n(q.lowPrice), mid:n(q.midPrice), market:n(q.marketPrice), productId:q.productId || d.thirdParty?.tcgplayer, cmProduct:d.thirdParty?.cardmarket, detailed:true, image: typeof d.image === "string" ? (/[.](?:webp|png|jpe?g)(?:[?]|$)/i.test(d.image) ? d.image : ptcgImage(d.image)) : "", imageLarge: typeof d.image === "string" ? (/[.](?:webp|png|jpe?g)(?:[?]|$)/i.test(d.image) ? d.image : ptcgImage(d.image,"high")) : "" });
   }
   for (const v of legacy) if (!out.has(v.key)) out.set(v.key,v);
   // Older/incomplete responses still expose version availability flags.
@@ -59,7 +59,7 @@ export function normalizePtcg(c) {
   ].filter(Boolean).join("\n\n");
   return {
     game: "ptcg",
-    variantSchema: 2,
+    variantSchema: 3,
     id: c.id,
     name: c.name,
     category: c.category || "Pokemon",

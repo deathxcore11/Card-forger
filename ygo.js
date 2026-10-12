@@ -30,6 +30,8 @@ export function normalizeYgo(c) {
   const misc = c.misc_info?.[0] || {};
   return {
     game: "ygo",
+    artSchema: 1,
+    artworks: (c.card_images || []).map(a => ({ id:String(a.id), image:ygoImage(a.id), imageLarge:ygoImage(a.id,false), label:String(a.id) === String(c.id) ? "Default artwork" : "Alternate artwork" })),
     id: String(c.id),
     name: c.name,
     category,
