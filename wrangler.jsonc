@@ -5,7 +5,10 @@
 {
   "name": "cardforge2",
   "compatibility_date": "2026-10-01",
+  // Static files are served directly; worker.js only handles /img/ygo/… (cached card images).
+  "main": "worker.js",
   "assets": {
-    "directory": "./"
+    "directory": "./",
+    "binding": "ASSETS"
   }
 }

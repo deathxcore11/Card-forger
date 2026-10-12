@@ -19,6 +19,7 @@ import {
 import { bracketEstimate, manaBase, isOut, deckReview, explainSwap } from "./extras.js";
 import { buildability, rankBuildable } from "./share.js";
 import { formatsFor } from "./builder.js";
+import { gameBinders } from "./tcg.js";
 import { FORMATS as ALL_FORMATS, formatOf, hasCommander, canLead, legalityIn, LEGALITY_WORD, sizeLabel } from "./formats.js";
 import { cloudInfo, summarize } from "./cloud.js";
 
@@ -58,13 +59,13 @@ export function home() {
     onboarding = !(st.collection.length && st.decks.length);
   // New users get one guided panel; the regular shortcuts and empty states would only repeat it.
   if (onboarding)
-    return `<section class="hero"><p class="eyebrow">Your Magic workbench</p><h1>Let’s build from your cards.</h1></section>
+    return `${gameBinders("mtg")}<section class="hero"><p class="eyebrow">Your Magic workbench</p><h1>Let’s build from your cards.</h1></section>
   ${st.example ? `<div class="note warn">Example data is loaded. Reset it in Settings before adding real cards.</div>` : ""}
   ${startPath()}
   ${active ? `<div class="section-head"><h2>Continue building</h2></div>${deckTile(active, true)}` : ""}
   <div class="random-tools"><button class="btn ghost" data-act="dbRandom">🎲 Random card</button><button class="btn ghost" data-act="randomDeck">🎲 Random deck</button></div>
   ${glossary()}`;
-  return `<section class="hero">
+  return `${gameBinders("mtg")}<section class="hero">
     <p class="eyebrow">Your Magic workbench</p>
     <h1>${copies ? "Welcome back." : "Let’s build from your cards."}</h1>
   </section>

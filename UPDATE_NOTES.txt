@@ -1,3 +1,27 @@
+CARDFORGE 3.0 UPDATE — MAGIC, YU-GI-OH! AND POKÉMON
+
+- Three games, kept separate. Switch with the game button in the header or the three "binders" on
+  Home. Each game has its own collection, decks, sets and formats, and its own color (gold for Magic,
+  violet for Yu-Gi-Oh!, red for Pokémon), so you always know which binder you're in. Everything is
+  in one saved workspace, so backups and account sync cover all three.
+- Yu-Gi-Oh! (data and daily prices from YGOPRODeck): search with card type, attribute, format and
+  max-price filters; card details with stats, every printing with its set rarity and price, and
+  TCGplayer, Cardmarket, eBay, Amazon and CoolStuffInc prices; collection by printing; decks with
+  Main/Extra/Side zones checked against Advanced (TCG), Traditional, OCG, GOAT, Edison, Master Duel,
+  Speed Duel and Duel Links (Forbidden/Limited/Semi-Limited, deck sizes, Extra Deck placement,
+  card pools); .ydk import and export; all 1,000+ sets with completion.
+- Pokémon (data and daily prices from TCGdex): search by name, card type, energy type, format and
+  max price, newest printings first; card details with attacks, abilities, weakness, retreat,
+  regulation mark and prices per version (normal, holo, reverse); decks checked for Standard,
+  Expanded, Unlimited and Gym Leader Challenge (exactly 60, 4 by name, ACE SPEC and Radiant limits,
+  a Basic Pokémon, rotation); Pokémon TCG Live list import/export; every set with completion.
+  Pokémon TCG Pocket (digital) cards are left out.
+- Both: owned vs. missing per deck, cost to finish, shopping list copy, price refresh (prices
+  older than a day refresh automatically when you look at them), CSV export, paste-a-list import.
+- Yu-Gi-Oh! images are served through this site's own cached image route, as YGOPRODeck asks
+  (worker.js), with the original address as a fallback.
+- Not yet for Yu-Gi-Oh!/Pokémon: deck generator, upgrade lab, card scanning and share links.
+
 CARDFORGE 2.9 UPDATE — BUILD DECKS IN ANY FORMAT
 
 - "⚒ Build decks" on any card: pick a format the card is legal in (Standard, Pioneer, Modern,

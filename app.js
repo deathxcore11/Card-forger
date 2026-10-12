@@ -21,6 +21,8 @@ import { newGame, proxyList, proxySheetHTML } from "./extras.js";
 import { sharePayload, encodeShare, decodeShare } from "./share.js";
 import { FORMATS, formatOf, hasCommander, canLead, sizeLabel } from "./formats.js";
 import { buildTiers, formatsFor, themeQuery, BUDGET_TIERS } from "./builder.js";
+import * as T from "./tcg.js";
+import { GAMES, GAME_ICON } from "./games.js";
 import { initCloud, cloudInfo, statusLabel, scheduleSync, signInGoogle, signInEmail, signOut, saveProfile, resolvePending, syncNow } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact } from "./insights.js";
 
@@ -383,6 +385,13 @@ function refreshSheet() {
   const ctx = S.ui.sheetCtx;
   if (!ctx || !$("#sheet").open) return;
   if (ctx.type === "idea") return openIdea(ctx.i);
+  if (ctx.type === "tcard") {
+    const c = T.cardOf(ctx.game, ctx.id),
+      top = $("#sheetBody").scrollTop;
+    if (c) $("#sheetBody").innerHTML = T.tcgCardSheet(c, ctx);
+    $("#sheetBody").scrollTop = top;
+    return;
+  }
   if (ctx.type === "build") {
     const top = $("#sheetBody").scrollTop;
     $("#sheetBody").innerHTML = V.buildSheet();
@@ -433,7 +442,7 @@ const LEGACY = {
   wishlist: "collection/wishlist", compare: "search", playtest: "deck/active/playtest",
   guides: "deck/active/engine", sources: "settings",
 };
-const VIEWS = ["home", "search", "collection", "decks", "deck", "scan", "settings", "sets", "set", "shared"];
+const VIEWS = ["home", "search", "collection", "decks", "deck", "scan", "settings", "sets", "set", "shared", "tdeck"];
 
 function parseHash() {
   let h = decodeURIComponent(location.hash.slice(1) || "home");
@@ -445,7 +454,11 @@ function parseHash() {
   ui.view = VIEWS.includes(v) ? v : "home";
   if (ui.view === "collection" && ["cards", "value", "wishlist"].includes(a)) ui.collTab = a;
   if (ui.view === "shared" && a !== ui.shared.code) openShared(a);
-  if (ui.view === "set") {
+  if (ui.view === "tdeck") ui.tdeckId = a;
+  if (ui.view === "set" && T.isTcg()) {
+    if (!a) ui.view = "sets";
+    else ui.tsetId = a;
+  } else if (ui.view === "set") {
     if (!a) ui.view = "sets";
     else if (a.toLowerCase() !== ui.set.code) ui.set = { ...ui.set, code: a.toLowerCase(), info: null, cards: [], total: 0, loaded: false, error: "", q: "", filter: "all", rarity: "all", limit: 120 };
   }
@@ -482,11 +495,36 @@ function render() {
   const ui = S.ui;
   for (const b of $$("[data-nav]")) b.classList.toggle("on", b.dataset.nav === (ui.view === "deck" ? "decks" : ui.view === "set" || ui.view === "sets" ? "search" : ui.view));
   document.body.dataset.view = ui.view;
+  const g = T.game();
+  document.body.dataset.game = g;
+  const pill = $("#gamePill");
+  if (pill) pill.innerHTML = `${GAME_ICON[g]}<span>${esc(GAMES[g].short)}</span><span aria-hidden="true">▾</span>`;
   const views = {
     home: V.home, search: V.search, collection: V.collection, decks: V.decks,
     deck: V.deckPage, scan: () => V.scan(scanNames), settings: V.settings, sets: V.setsPage, set: V.setPage, shared: V.sharedPage,
   };
-  $("#content").innerHTML = views[ui.view]();
+  // Yu-Gi-Oh! and Pokémon share their own screens; Magic keeps its full set.
+  const tcgViews = {
+    home: T.tcgHome, search: T.tcgSearch, collection: T.tcgCollection, decks: T.tcgDecks, tdeck: () => T.tcgDeck(ui.tdeckId), sets: T.tcgSets, set: T.tcgSet,
+    deck: T.tcgDecks,
+    scan: () => `<div class="page-head"><h1>Scan</h1></div><section class="empty"><h3>Scanning reads Magic card names for now</h3><p>For ${esc(GAMES[g].short)}, search by name instead — it’s quick and matches the exact card.</p><div class="actions center"><button class="btn" data-act="go" data-to="#search">Search cards</button></div></section>`,
+  };
+  if (g !== "mtg" && ui.view === "deck") ui.view = "decks";
+  $("#content").innerHTML = (g !== "mtg" && tcgViews[ui.view] ? tcgViews[ui.view] : views[ui.view] || V.home)();
+  if (g !== "mtg") {
+    const SU = T.ui(g).sets;
+    if (ui.view === "sets" && !SU.list.length && !SU.busy && !SU.error) setTimeout(() => tcgCtx.loadSets?.(g), 0);
+    if (ui.view === "set" && ui.tsetId && T.ui(g).set.id !== ui.tsetId) setTimeout(() => tcgCtx.openSet?.(ui.tsetId), 0);
+    // Load card data and prices for what's on screen.
+    const ids = ui.view === "collection" ? T.gs(g).collection.map((e) => e.cardId) : ui.view === "tdeck" ? (T.gs(g).decks.find((d) => d.id === ui.tdeckId)?.zones ? ["main", "extra", "side"].flatMap((z) => T.gs(g).decks.find((d) => d.id === ui.tdeckId).zones[z].map((r) => r.cardId)) : []) : ui.view === "home" || ui.view === "decks" ? T.gs(g).decks.flatMap((d) => (d.zones.main || []).slice(0, 1).map((r) => r.cardId)) : [];
+    const missing = ids.filter((id) => !T.cardOf(g, id));
+    const k = g + ui.view + missing.length;
+    if (missing.length && navigator.onLine && !autoLoaded.has(k)) {
+      autoLoaded.add(k);
+      T.ensureMany(g, missing, () => {}).then(() => render());
+    }
+    return;
+  }
   if (ui.view === "settings") storageDetail();
   const deck = ui.view === "deck" ? currentDeck() : null;
   if (deck && navigator.onLine && !autoLoaded.has(deck.id) && deck.cards.some((c) => !meta(c.name))) {
@@ -504,6 +542,8 @@ function render() {
   }
 }
 
+const tcgCtx = {};
+
 window.addEventListener("hashchange", () => {
   const changed = parseHash();
   render();
@@ -517,6 +557,9 @@ window.addEventListener("hashchange", () => {
 const A = {}; // click actions
 const C = {}; // change handlers
 const I = {}; // input handlers
+
+// Yu-Gi-Oh! and Pokémon actions (tcg.js).
+setTimeout(() => Object.assign(tcgCtx, { A, C, I, commit, render, openSheet, closeSheet, toast, go, download, copyText, busy, rerenderKeepingFocus, writeRecord }) && T.registerTcg(tcgCtx), 0);
 
 document.addEventListener("click", (e) => {
   const t = e.target.closest("[data-act]");
@@ -2910,6 +2953,7 @@ async function boot() {
     const cat = await readRecord(CATALOG_RECORD);
     if (cat && typeof cat === "object") Object.assign(S.catalog, cat);
   } catch {}
+  await T.loadCache(readRecord);
   const saved = await readRecord(STORAGE);
   if (saved) {
     if (saved.cache && typeof saved.cache === "object" && Object.keys(saved.cache).length) {

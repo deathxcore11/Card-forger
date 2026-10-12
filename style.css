@@ -726,3 +726,46 @@ img.ms.inline { width: 1.05em !important; height: 1.05em !important; }
 .tier .actions { margin-top: 8px; }
 .tier .mini-row small { margin-left: 4px; }
 .tier .mini-row > span:last-child { white-space: nowrap; flex: none; }
+
+/* ---------- 3.0: three games ---------- */
+body[data-game="ygo"] { --gold: #b99bff; --gold-ink: #150a2c; background: radial-gradient(120% 60% at 50% -10%, rgba(120, 80, 220, 0.16), transparent 60%) var(--bg); }
+body[data-game="ptcg"] { --gold: #ff7566; --gold-ink: #fff; background: radial-gradient(120% 60% at 50% -10%, rgba(230, 60, 50, 0.14), transparent 60%) var(--bg); }
+body[data-game="mtg"] { background: radial-gradient(120% 60% at 50% -10%, rgba(232, 185, 91, 0.07), transparent 60%) var(--bg); }
+body { background-attachment: fixed; }
+.game-pill { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; margin-left: 4px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 700; font-size: 13.5px; white-space: nowrap; }
+.game-pill svg { width: 16px; height: 16px; color: var(--gold); flex: none; }
+.game-pill span:last-child { color: var(--muted); font-size: 11px; }
+@media (max-width: 420px) { .brand span:not(.mark) { display: none; } .save-status { max-width: 30vw; } }
+.binders { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 4px 0 14px; }
+.binder { position: relative; display: grid; gap: 2px; justify-items: start; text-align: left; padding: 12px; min-height: 92px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; overflow: hidden; transition: border-color 0.15s, transform 0.1s; }
+.binder:active { transform: scale(0.98); }
+.binder::after { content: ""; position: absolute; inset: auto -20% -60% 40%; height: 120%; border-radius: 50%; opacity: 0.18; filter: blur(18px); }
+.binder.b-mtg::after { background: #e8b95b; } .binder.b-ygo::after { background: #8b5cf6; } .binder.b-ptcg::after { background: #ef4444; }
+.binder.b-mtg .binder-icon { color: #e8b95b; } .binder.b-ygo .binder-icon { color: #b99bff; } .binder.b-ptcg .binder-icon { color: #ff7566; }
+.binder-icon svg { width: 22px; height: 22px; }
+.binder b { font: 800 15px Manrope, sans-serif; }
+.binder small { color: var(--muted); font-size: 11.5px; }
+.binder.on { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset; }
+.tdeck-list { display: grid; gap: 8px; }
+@media (min-width: 700px) { .tdeck-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tdeck { display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center; padding: 10px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--text); text-align: left; cursor: pointer; min-width: 0; }
+.tdeck-art, .tdeck .img-missing { width: 64px; height: 88px; object-fit: cover; border-radius: 6px; }
+.tdeck-body { display: grid; gap: 2px; min-width: 0; }
+.tdeck-body small { color: var(--muted); font-size: 12.5px; }
+.tdeck-body .tag { justify-self: start; margin-top: 2px; }
+.tag.ok { color: var(--good); background: rgba(111, 210, 154, 0.12); }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; margin: 12px 0; }
+.stat-grid div { display: grid; padding: 8px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); min-width: 0; }
+.stat-grid small { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+.stat-grid b { overflow-wrap: anywhere; }
+.right { text-align: right; }
+.cd-text .oracle { white-space: pre-wrap; }
+.deck-add { margin: 12px 0 6px; }
+.add-results { display: grid; gap: 4px; padding: 8px; margin-bottom: 10px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); }
+.add-results .mini-row { display: grid; grid-template-columns: 40px 1fr auto; gap: 8px; align-items: center; }
+.add-results .mini-art, .add-results .img-missing { width: 40px; height: 56px; object-fit: cover; border-radius: 4px; }
+.issues-panel { border-color: rgba(240, 138, 126, 0.4); }
+.set-logo { width: 72px; height: 32px; object-fit: contain; flex: none; }
+.set-logo.big { width: 120px; height: 64px; }
+#content .card-grid .card-img { aspect-ratio: 63 / 88; object-fit: cover; }
+body[data-game="ygo"] #content .card-grid .card-img { aspect-ratio: 59 / 86; }

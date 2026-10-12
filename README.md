@@ -1,9 +1,10 @@
 # Cardforge
 
-Your Magic: The Gathering collection, decks, upgrades and deck analysis in one installable web app. It runs entirely in the browser with no account and no server. Your cards are saved on your device, and card data and prices come live from [Scryfall](https://scryfall.com).
+Your Magic: The Gathering, Yu-Gi-Oh! and Pokémon collections, decks, upgrades and deck analysis in one installable web app. It runs entirely in the browser with no account and no server. Your cards are saved on your device, and card data and prices come live from [Scryfall](https://scryfall.com).
 
 ## What it does
 
+- **Three games** *(new in 3.0)*: Magic (Scryfall), Yu-Gi-Oh! (YGOPRODeck) and Pokémon (TCGdex), each with its own collection, decks, formats, sets and daily prices. Switch from the header or Home.
 - **Deck generator** *(new in 2.9)*: build a complete, legal deck around any card in any format, at several budgets, using your cards first.
 - **Every format** *(new in 2.8)*: 22 formats from Standard to Oathbreaker, each with its own deck size, copy limits, commander rules and Scryfall banned/restricted list.
 - **Collection**: add cards one at a time, from a list, or by photo scan. Track daily value, see value by color, and keep a trade binder of cards no deck uses.
@@ -80,6 +81,8 @@ uploading or replacing anything. Signing out leaves the data on the device.
 | `views.js` | Every screen |
 | `insights.js` | Engine score, goldfish sim, versions and value math |
 | `builder.js` | Deck generator for every format |
+| `games.js`, `tcg.js`, `ygo.js`, `ptcg.js` | Yu-Gi-Oh! and Pokémon: data adapters, rules and screens |
+| `worker.js` | Cloudflare Worker: serves the site and caches Yu-Gi-Oh! card images |
 | `formats.js` | Rules for all 22 formats |
 | `extras.js` | Bracket estimate, mana base, proxy sheets and life tracker |
 | `core.js`, `planner.js`, `strategy.js`, `deck-flow.js`, `confidence.js`, `catalog-tools.js` | Rules, import, planning and catalog logic |

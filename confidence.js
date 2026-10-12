@@ -393,6 +393,16 @@ export function migrateWorkspace(input) {
     s.printings && typeof s.printings === "object" ? s.printings : {};
   s.importHistory = Array.isArray(s.importHistory) ? s.importHistory : [];
   s.settings = { shipping: 4.99, tax: 0, budget: 25, ...s.settings };
+  // Yu-Gi-Oh! and Pokémon live beside Magic in the same workspace.
+  s.tcg = s.tcg && typeof s.tcg === "object" ? s.tcg : {};
+  for (const g of ["ygo", "ptcg"]) {
+    const x = s.tcg[g] && typeof s.tcg[g] === "object" ? s.tcg[g] : {};
+    s.tcg[g] = {
+      collection: Array.isArray(x.collection) ? x.collection.filter((e) => e && typeof e.cardId === "string" && Number.isInteger(e.qty) && e.qty > 0) : [],
+      decks: Array.isArray(x.decks) ? x.decks.filter((d) => d && typeof d.id === "string").map((d) => ({ ...d, zones: { main: d.zones?.main || [], extra: d.zones?.extra || [], side: d.zones?.side || [] } })) : [],
+      wishlist: Array.isArray(x.wishlist) ? x.wishlist : [],
+    };
+  }
   s.collection = (s.collection || []).map((e) => ({
     ...e,
     language: e.language || "en",
