@@ -1,3 +1,6 @@
+3.8.3 — Complete collectible version labels
+Versions shows every available edition/finish with its full label, price availability, seller link when supplied and a preset Add button.
+
 3.8.2 — Reliable scans, private accounts and collectible editions
 Automatic scans reject unrelated substring results and validate Pokémon collector numbers against set totals. Added a second title OCR pass. Created private Supabase profiles/workspaces with authenticated grants and RLS. Email/Google provider settings are separate from database setup.
 Pokémon uses detailed available variants even when prices are absent, including Shadowless, First Edition and promo stamps. Exact unpriced versions no longer inherit generic prices. Yu-Gi-Oh! collections preserve edition and rarity separately. Existing Pokémon card caches refresh to the new version schema.
