@@ -192,6 +192,16 @@ export const ygoSource = {
     const d = await get("/cardinfo.php", { name: names.join("|"), misc: "yes" });
     return (d.data || []).map(normalizeYgo);
   },
+  // Many cards by passcode, 50 per request.
+  async byIds(list) {
+    const out = [],
+      uniq = [...new Set(list.map(String))];
+    for (let i = 0; i < uniq.length; i += 50) {
+      const d = await get("/cardinfo.php", { id: uniq.slice(i, i + 50).join(","), misc: "yes" });
+      out.push(...(d.data || []).map(normalizeYgo));
+    }
+    return out;
+  },
   async byName(name) {
     const d = await get("/cardinfo.php", { name, misc: "yes" });
     return d.data?.[0] ? normalizeYgo(d.data[0]) : null;

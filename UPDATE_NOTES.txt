@@ -1,3 +1,25 @@
+CARDFORGE 3.3 UPDATE — META DECKS, BUILD FROM YOUR CARDS, ONE HOME FOR ALL GAMES
+
+- One Home for all three games: art banner and search, game switcher, the same "Start here"
+  steps, random card/deck, and the same shortcuts in the same order (Find cards, Deck ideas,
+  Meta decks / Find decks, Import, Add cards, Sets, Collection, Rules). Scan stays Magic-only.
+- Meta decks (Yu-Gi-Oh! and Pokémon): what's winning right now, live.
+  · Yu-Gi-Oh!: YGOPRODeck Tournament Meta Decks (recent WCQ Regionals, YCS…) and the most
+    played cards, through the Cloudflare Worker (cached 6 hours).
+  · Pokémon: the biggest recent Standard events on Limitless — archetype shares, Top 8 lists
+    and the most played cards.
+  · Every list shows how much you own and (Yu-Gi-Oh!) what it costs to finish. Save it as your
+    deck, or make "Budget versions" built around its signature cards.
+- Decks now have the same tabs in every game: My decks · Ideas · Meta decks (Find decks in Magic).
+- Ideas from your collection: the archetypes / Pokémon families you own, ranked by how many you
+  have and how much they're played right now, plus the tournament decks you're closest to.
+- Build from one card, ten, or your whole collection: "Use my whole collection" or "Pick cards
+  to build around". The generator now fills with what current tournament decks play (hand
+  traps and staples, Trainers and support Pokémon), adds a "No budget limit" version, and a
+  real tournament list when one plays your card.
+- "Your cards only" now really uses the cards you own (it used to come out empty), and Pokémon
+  budgets no longer pad the deck with 40 Energy — open slots are listed instead.
+
 CARDFORGE 3.2 UPDATE — EMBLEMS, RANDOM, FILTERS AND CARD FACTS
 
 - Pokémon set and rarity symbols (from pokesymbols.com) on search tiles, card pages, the

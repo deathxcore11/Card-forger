@@ -4,7 +4,8 @@ Your Magic: The Gathering, Yu-Gi-Oh! and Pokémon collections, decks, upgrades a
 
 ## What it does
 
-- **Game emblems, random cards & decks, full filters/sorting and “Did you know?” card facts for all three games** *(new in 3.2)*.
+- **Live meta decks (Yu-Gi-Oh! from YGOPRODeck, Pokémon from Limitless), deck ideas and builds from any number of your cards, and one Home layout for all three games** *(new in 3.3)*.
+- **Game emblems, random cards & decks, full filters/sorting and “Did you know?” card facts for all three games**.
 - **Art-first card pages, rules & banned lists, and equal deck tools for all three games**.
 - **Three games** *(new in 3.0)*: Magic (Scryfall), Yu-Gi-Oh! (YGOPRODeck) and Pokémon (TCGdex), each with its own collection, decks, formats, sets and daily prices. Switch from the header or Home.
 - **Deck generator** *(new in 2.9)*: build a complete, legal deck around any card in any format, at several budgets, using your cards first.
@@ -86,9 +87,10 @@ uploading or replacing anything. Signing out leaves the data on the device.
 | `rules.js` | Rules reference and live banned lists |
 | `tcgbuild.js` | Yu-Gi-Oh! and Pokémon deck generators |
 | `emblems.js` | Yu-Gi-Oh! attribute/level/Spell-Trap emblems, Pokémon energy symbols, set and rarity badges (Pokémon set/rarity symbol images from [pokesymbols.com](https://pokesymbols.com)) |
+| `meta.js` | Live tournament meta: YGOPRODeck Tournament Meta Decks (via the Worker) and Limitless Pokémon events |
 | `facts.js` | “Did you know?” facts built from each card’s data |
 | `games.js`, `tcg.js`, `ygo.js`, `ptcg.js` | Yu-Gi-Oh! and Pokémon: data adapters, rules and screens |
-| `worker.js` | Cloudflare Worker: serves the site and caches Yu-Gi-Oh! card images and Pokémon set/rarity symbols |
+| `worker.js` | Cloudflare Worker: serves the site and caches Yu-Gi-Oh! card images, Pokémon set/rarity symbols and the Yu-Gi-Oh! tournament meta |
 | `formats.js` | Rules for all 22 formats |
 | `extras.js` | Bracket estimate, mana base, proxy sheets and life tracker |
 | `core.js`, `planner.js`, `strategy.js`, `deck-flow.js`, `confidence.js`, `catalog-tools.js` | Rules, import, planning and catalog logic |

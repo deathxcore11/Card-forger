@@ -9,6 +9,8 @@ import { ygoEmblems, energyIcon, attackLine, tcgSetBadge, ygoPrintBadge, pkRarit
 import { buildYgo, buildPtcg, YGO_STAPLES, PTCG_STAPLES, PTCG_SUPPORT_BASICS, energyName } from "./tcgbuild.js";
 import { ygoSource, ygoImageDirect, YGO_TYPES, YGO_ATTRIBUTES, YGO_RACES, YGO_SPELL_KINDS, YGO_TRAP_KINDS } from "./ygo.js";
 import { ptcgSource, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES } from "./ptcg.js";
+import { loadMeta, metaState, ptcgIcon } from "./meta.js";
+export { metaState };
 
 export const SOURCES = { ygo: ygoSource, ptcg: ptcgSource };
 // (exported for the rules page)
@@ -239,6 +241,43 @@ export async function loadHero(g, mtgRandom) {
 
 /* ---------- home ---------- */
 
+// The same shortcuts, in the same order, for every game.
+export function quickTiles(g) {
+  const mtg = g === "mtg",
+    tile = (act, to, icon, title, sub, cls = "") => `<button class="quick-btn ${cls}" data-act="${act}" ${to ? `data-to="${to}"` : ""}><span>${icon}</span><b>${title}</b><small>${sub}</small></button>`;
+  return `<div class="quick">
+    ${tile("go", "#search", "⌕", "Find cards", "Search, filter by set, type, format and price", "primary")}
+    ${tile("go", "#decks/ideas", "✧", "Deck ideas", mtg ? "Commanders your cards support" : "Build from one card, ten, or your whole collection")}
+    ${tile("go", "#decks/inspiration", "🏆", mtg ? "Find decks" : "Meta decks", mtg ? "Precons & shared decks you can almost build" : "Today’s tournament decks, with what you own")}
+    ${tile(mtg ? "importDeck" : "tImport", "", "↥", "Import a deck", mtg ? "Moxfield, Archidekt, ManaBox or text" : g === "ygo" ? ".ydk file or a text list" : "Pokémon TCG Live list or text")}
+    ${tile(mtg ? "addCard" : "tImportColl", "", "＋", "Add cards", "One card or a whole list")}
+    ${tile("go", "#sets", "◈", "Browse sets", "Every set, newest first, with your completion")}
+    ${tile("go", "#collection", "▦", "Collection & wishlist", "Value, sets, prices, wishlist")}
+    ${tile("go", "#rules", "📖", "Rules & banlists", mtg ? "Every format, core rules, live bans" : g === "ygo" ? "Formats, core rules, Forbidden & Limited" : "Formats, core rules, official rules")}
+    ${mtg ? tile("go", "#scan", "▧", "Scan a card", "Photo → match → confirm") : ""}
+  </div>`;
+}
+export const randomTools = (g) =>
+  g === "mtg"
+    ? `<div class="random-tools"><button class="btn ghost" data-act="dbRandom">🎲 Random card</button><button class="btn ghost" data-act="randomDeck">🎲 Random deck</button></div>`
+    : `<div class="random-tools"><button class="btn ghost" data-act="tRandomCard">🎲 Random card</button><button class="btn ghost" data-act="tRandomDeck">🎲 Random deck</button></div>`;
+// "Start here" for a game with no cards or no decks yet (Magic has its own in views.js).
+function tcgStartPath(g) {
+  const st = gs(g),
+    hasCards = st.collection.length > 0,
+    hasDeck = st.decks.length > 0;
+  if (hasCards && hasDeck) return "";
+  const step = (n, done, title, text, actions) =>
+    done
+      ? `<li class="step done"><span class="step-n" aria-hidden="true">✓</span><div><b>${title}</b></div></li>`
+      : `<li class="step"><span class="step-n" aria-hidden="true">${n}</span><div><b>${title}</b><p class="muted small">${text}</p><div class="actions wrap">${actions}</div></div></li>`;
+  return `<section class="panel start"><p class="eyebrow">Start here · about 5 minutes</p><h2>Three steps to your first deck</h2><ol class="steps">
+    ${step(1, hasCards, "Add the cards you own", `Paste a list (one card per line, like “3 ${g === "ygo" ? "Ash Blossom & Joyous Spring" : "Ultra Ball"}”) or search and add cards one by one.`, `<button class="btn small" data-act="tImportColl">↥ Paste a list</button><button class="btn ghost small" data-act="go" data-to="#search">⌕ Find cards</button>`)}
+    ${step(2, hasDeck, "Pick a deck to aim for", `Copy a tournament deck, build from your own cards at any budget, or import a list.`, `<button class="btn small" data-act="go" data-to="#decks/inspiration">🏆 Meta decks I can almost build</button><button class="btn ghost small" data-act="go" data-to="#decks/ideas">✧ Ideas from my cards</button><button class="btn ghost small" data-act="tImport">Import a deck</button>`)}
+    ${step(3, false, "See what’s missing and what it costs", "Each deck shows what you own, what you need, the price to finish, and anything that breaks the format’s rules.", hasDeck ? `<button class="btn small" data-act="go" data-to="#tdeck/${esc(st.decks.at(-1).id)}">Open my deck</button>` : `<span class="muted small">Unlocks after step 2.</span>`)}
+  </ol><p class="foot">Everything is saved on this device. Export a backup in Settings any time.</p></section>`;
+}
+
 export function tcgHome() {
   const g = game(),
     G = GAMES[g],
@@ -248,24 +287,19 @@ export function tcgHome() {
   const lead = st.decks.at(-1),
     leadCard = lead ? cardOf(g, (lead.zones.main || [])[0]?.cardId) : null,
     deckArt = leadCard ? { id: leadCard.id, name: leadCard.name, art: g === "ygo" ? leadCard.art : leadCard.imageLarge, artDirect: g === "ygo" ? leadCard.artDirect : "", deck: true } : null;
-  return `${homeHero(g, v.copies ? "Your binder" : "Start your binder", deckArt)}
+  const onboarding = !(st.collection.length && st.decks.length);
+  return `${homeHero(g, v.copies ? "Welcome back." : "Start your binder.", deckArt)}
   ${gameBinders(g)}
-  <p class="muted small">${esc(G.tagline)}. Card data and daily prices from ${esc(G.source)}.</p>
-  <div class="kpis">
+  ${tcgStartPath(g)}
+  ${onboarding ? "" : `<div class="kpis">
     <button class="kpi" data-act="go" data-to="#collection"><b>${usd(v.total, 0)}</b><span>collection value${v.unpriced ? ` · ${v.unpriced} unpriced` : ""}</span></button>
     <button class="kpi" data-act="go" data-to="#collection"><b>${v.copies}</b><span>cards owned</span></button>
     <button class="kpi" data-act="go" data-to="#decks"><b>${st.decks.length}</b><span>decks</span></button>
-  </div>
-  <div class="random-tools"><button class="btn ghost" data-act="tRandomCard">🎲 Random card</button><button class="btn ghost" data-act="tRandomDeck">🎲 Random deck</button></div>
-  <div class="quick">
-    <button class="quick-btn primary" data-act="go" data-to="#search"><span>⌕</span><b>Find cards</b><small>Search, filter by set, type, format and price</small></button>
-    <button class="quick-btn" data-act="tNewDeck"><span>＋</span><b>New deck</b><small>${esc(formatsOf(g).slice(0, 3).map((f) => f.name).join(", "))}…</small></button>
-    <button class="quick-btn" data-act="tImport"><span>↥</span><b>Import a deck</b><small>${g === "ygo" ? ".ydk file or a text list" : "Pokémon TCG Live list or text"}</small></button>
-    <button class="quick-btn" data-act="go" data-to="#sets"><span>◈</span><b>Browse sets</b><small>Every set, newest first, with your completion</small></button>
-    <button class="quick-btn" data-act="go" data-to="#collection"><span>▦</span><b>Collection & wishlist</b><small>Value, sets, prices, wishlist</small></button>
-    <button class="quick-btn" data-act="go" data-to="#rules"><span>📖</span><b>Rules & banlists</b><small>Formats, core rules, ${g === "ygo" ? "Forbidden & Limited" : "official rules"}</small></button>
-  </div>
-  ${recent.length ? `<div class="section-head"><h2>Your decks</h2><button class="link" data-act="go" data-to="#decks">All decks →</button></div><div class="tdeck-list">${recent.map((d) => deckTile(g, d)).join("")}</div>` : empty("No decks yet", `Start a ${esc(G.short)} deck from scratch or import a list. Cardforge checks it against the format’s rules and your collection.`, `<button class="btn" data-act="tNewDeck">New deck</button><button class="btn ghost" data-act="tImport">Import</button>`)}`;
+  </div>`}
+  ${randomTools(g)}
+  ${quickTiles(g)}
+  ${recent.length ? `<div class="section-head"><h2>Your decks</h2><button class="link" data-act="go" data-to="#decks">All decks →</button></div><div class="tdeck-list">${recent.map((d) => deckTile(g, d)).join("")}</div>` : ""}
+  <p class="muted small">${esc(G.tagline)}. Card data and daily prices from ${esc(G.source)}.</p>`;
 }
 
 function deckTile(g, d) {
@@ -498,10 +532,222 @@ const setLabel = ({ e, c }) => (c?.game === "ptcg" ? c?.set?.name || "" : (c?.se
 
 export function tcgDecks() {
   const g = game(),
-    st = gs(g);
+    st = gs(g),
+    tab = ["ideas", "inspiration"].includes(S.ui.decksTab) ? S.ui.decksTab : "mine";
   return `<div class="page-head"><h1>Decks</h1><div class="row"><button class="btn small" data-act="tImport">↥ Import</button><button class="btn ghost small" data-act="tNewDeck">＋ New</button></div></div>
+  ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Meta decks"]])}
   <div class="random-tools"><button class="btn ghost small" data-act="tRandomDeck">🎲 Random deck</button><button class="btn ghost small" data-act="tRandomCard">🎲 Random card</button></div>
-  ${st.decks.length ? `<div class="tdeck-list">${st.decks.slice().reverse().map((d) => deckTile(g, d)).join("")}</div>` : empty("No decks yet", `Pick a format and start adding cards — Cardforge checks deck size, copy limits and the banlist as you go.`, `<button class="btn" data-act="tNewDeck">New deck</button><button class="btn ghost" data-act="tImport">Import a list</button>`)}`;
+  ${tab === "ideas" ? ideasView(g) : tab === "inspiration" ? metaView(g) : st.decks.length ? `<div class="tdeck-list">${st.decks.slice().reverse().map((d) => deckTile(g, d)).join("")}</div>` : empty("No decks yet", `Pick a format and start adding cards, build from cards you own in Ideas, or copy a tournament deck from Meta decks.`, `<button class="btn" data-act="decksTab" data-id="ideas">✧ Ideas from my cards</button><button class="btn ghost" data-act="decksTab" data-id="inspiration">🏆 Meta decks</button>`)}`;
+}
+
+/* ---------- meta & ideas ---------- */
+
+const isBasicEnergyName = (n) => /^(Basic )?(Grass|Fire|Water|Lightning|Psychic|Fighting|Darkness|Metal) Energy$/i.test(n);
+// How much of a tournament list you already own, and (Yu-Gi-Oh!) what the rest costs.
+export function metaOwned(g, d, m = ownedMap(g)) {
+  let have = 0,
+    total = 0,
+    cost = 0,
+    unpriced = 0;
+  if (g === "ygo") {
+    const counts = new Map();
+    for (const id of [...d.main, ...d.extra]) counts.set(id, (counts.get(id) || 0) + 1);
+    for (const [id, qty] of counts) {
+      const own = Math.min(qty, m.get("id:" + id) || 0),
+        card = cardOf("ygo", id);
+      have += own;
+      total += qty;
+      if (qty > own) {
+        if (price(card) === null) unpriced++;
+        else cost += (qty - own) * price(card);
+      }
+    }
+    return { have, total, pct: total ? have / total : 0, cost: unpriced > 3 ? null : cost };
+  }
+  const byName = new Map();
+  for (const e of gs(g).collection) byName.set(e.name.toLowerCase(), (byName.get(e.name.toLowerCase()) || 0) + e.qty);
+  for (const r of d.list) {
+    total += r.qty;
+    have += isBasicEnergyName(r.name) ? r.qty : Math.min(r.qty, byName.get(r.name.toLowerCase()) || 0);
+  }
+  return { have, total, pct: total ? have / total : 0, cost: null };
+}
+
+const familyOf = (name) =>
+  String(name)
+    .replace(/^(Mega|Radiant|Shining|Dark|Light|Alolan|Galarian|Hisuian|Paldean)\s+/i, "")
+    .replace(/^\S+'s\s+/, "")
+    .replace(/\s+(ex|EX|GX|V|VMAX|VSTAR|V-UNION|BREAK|LV\.X|δ|Prime|LEGEND|[XY])$/u, "")
+    .trim();
+const flatName = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+// Groups in your collection that could anchor a deck: archetypes (Yu-Gi-Oh!) or Pokémon
+// families (Pokémon), strongest first, with how often they show up in current tournament decks.
+export function collectionGroups(g) {
+  const st = gs(g),
+    meta = metaState(g).data,
+    groups = new Map();
+  for (const e of st.collection) {
+    const card = cardOf(g, e.cardId);
+    if (!card || card.brief) continue;
+    let key = "";
+    if (g === "ygo") key = card.archetype;
+    else if (card.category === "Pokemon") {
+      // Walk back to the Basic you own (Dragapult ex → Drakloak → Dreepy) so a family stays together.
+      let root = card,
+        hops = 0;
+      while (root.evolveFrom && hops++ < 3) {
+        const prev = st.collection.map((x) => cardOf(g, x.cardId)).find((x) => x && x.name === root.evolveFrom);
+        if (!prev) break;
+        root = prev;
+      }
+      key = familyOf(root.name);
+    }
+    if (!key) continue;
+    const x = groups.get(key) || { key, name: key, ids: [], names: new Set(), copies: 0, value: 0, cover: card, stage: -1 };
+    x.names.add(familyOf(card.name));
+    // Name the family after its most evolved card you own.
+    const stage = { Basic: 0, Stage1: 1, Stage2: 2 }[card.stage] ?? 0;
+    if (g === "ptcg" && stage > x.stage) {
+      x.stage = stage;
+      x.name = familyOf(card.name);
+    }
+    if (!x.ids.includes(card.id)) x.ids.push(card.id);
+    x.copies += e.qty;
+    x.value += (price(card) || 0) * e.qty;
+    if ((price(card) || 0) > (price(x.cover) || 0)) x.cover = card;
+    groups.set(key, x);
+  }
+  for (const x of groups.values()) {
+    if (g === "ygo") {
+      const n = (meta?.decks || []).filter((d) => d.name.toLowerCase().includes(x.name.toLowerCase())).length;
+      x.metaText = n ? `In ${n} of ${meta.decks.length} recent top decks` : "";
+      x.score = x.ids.length + x.copies / 3 + n * 2;
+    } else {
+      const fam = [...x.names].map(flatName),
+        share = (meta?.archetypes || []).filter((a) => a.icons.some((i) => fam.includes(flatName(i.split("-")[0]))) || fam.some((f) => flatName(a.name).includes(f))).reduce((a, b) => a + b.share, 0);
+      x.metaText = share ? `${Math.round(share * 1000) / 10}% of players at recent events` : "";
+      x.score = x.ids.length * 2 + x.copies / 2 + share * 100;
+    }
+  }
+  return [...groups.values()].filter((x) => x.ids.length >= (g === "ygo" ? 2 : 1)).sort((a, b) => b.score - a.score);
+}
+
+const metaStatus = (g, M) =>
+  M.busy && !M.data
+    ? `<p class="muted small center pad">Loading what’s winning right now…</p>`
+    : M.error && !M.data
+      ? `<div class="note warn">${esc(M.error)} <button class="link" data-act="tMetaRefresh">Try again</button></div>`
+      : "";
+
+function metaDeckRow(g, d, m) {
+  const o = metaOwned(g, d, m),
+    cover = g === "ygo" ? cardOf("ygo", d.cover) : null;
+  return `<button class="meta-row" data-act="tMetaDeck" data-key="${esc(d.key)}">
+    <span class="meta-art">${g === "ygo" ? (cover ? imgTag(cover, "mini-art") : `<img class="mini-art" src="${esc(ygoImageDirect(d.cover))}" alt="" loading="lazy" referrerpolicy="no-referrer">`) : d.icons.map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("")}</span>
+    <span class="meta-main"><b class="ellip">${esc(d.name)}</b><small class="muted ellip">${esc(d.place)} · ${esc(d.event)}${d.players ? ` · ${d.players} players` : ""}</small>
+      <span class="meta-own">${bar(o.pct)}<small>${Math.round(o.pct * 100)}% owned${o.cost !== null && o.pct < 1 ? ` · ${usd(o.cost, 0)} to finish` : ""}</small></span></span></button>`;
+}
+
+function ideasView(g) {
+  const st = gs(g),
+    M = metaState(g),
+    m = ownedMap(g),
+    groups = collectionGroups(g),
+    closest = (M.data?.decks || [])
+      .map((d) => ({ d, o: metaOwned(g, d, m) }))
+      .sort((a, b) => b.o.pct - a.o.pct)
+      .slice(0, 5);
+  if (!st.collection.length)
+    return `${empty("Ideas come from your cards", `Add the ${esc(GAMES[g].short)} cards you own and Cardforge finds the ${g === "ygo" ? "archetypes" : "Pokémon"} they support, matches them against today’s tournament decks, and builds lists at every budget.`, `<button class="btn" data-act="tImportColl">↥ Paste a list</button><button class="btn ghost" data-act="go" data-to="#search">Find cards</button><button class="btn ghost" data-act="decksTab" data-id="inspiration">🏆 Meta decks</button>`)}`;
+  return `<section class="panel build-own"><h3>Build from my cards</h3><p class="muted small">One card, ten or your whole binder — Cardforge keeps your cards, fills gaps with what today’s tournament decks play, and shows every budget from “cards I own” to “no limit”.</p>
+    <div class="actions wrap"><button class="btn" data-act="tBuildAuto">⚒ Use my whole collection</button><button class="btn ghost" data-act="tPickSeeds">☑ Pick cards to build around</button></div></section>
+  ${groups.length ? `<div class="section-head"><h2>${g === "ygo" ? "Archetypes you own" : "Pokémon you can build around"}</h2></div><div class="list">${groups
+    .slice(0, 12)
+    .map((x) => `<div class="lot idea-row"><button class="lot-art" data-act="tCard" data-id="${esc(x.cover.id)}">${imgTag(x.cover)}</button><div class="lot-info"><b class="lot-name">${esc(x.name)}</b><span class="lot-sub">${x.ids.length} card${x.ids.length === 1 ? "" : "s"} · ${x.copies} cop${x.copies === 1 ? "y" : "ies"}${x.metaText ? ` · <span class="ok-text">${esc(x.metaText)}</span>` : ""}</span></div><div class="lot-side"><button class="btn small" data-act="tBuildMulti" data-ids="${esc(x.ids.join(","))}">⚒ Build</button></div></div>`)
+    .join("")}</div>` : `<p class="muted small">Loading your cards’ details… If this stays empty, open your Collection once so Cardforge can read them.</p>`}
+  <div class="section-head"><h2>Tournament decks you’re closest to</h2><button class="link" data-act="decksTab" data-id="inspiration">All meta decks →</button></div>
+  ${metaStatus(g, M)}${closest.length ? `<div class="list">${closest.map(({ d }) => metaDeckRow(g, d, m)).join("")}</div>` : ""}`;
+}
+
+function metaView(g) {
+  const M = metaState(g),
+    m = ownedMap(g),
+    data = M.data;
+  if (!data) return metaStatus(g, M) || `<p class="muted small center pad">Loading what’s winning right now…</p>`;
+  const top = data.top.slice(0, 12);
+  return `<p class="muted small">${esc(data.source)} · updated ${esc(new Date(M.at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }))} <button class="link small" data-act="tMetaRefresh">⟳ Refresh</button></p>
+  ${M.error ? `<p class="small warn-text">${esc(M.error)}</p>` : ""}
+  <div class="section-head"><h2>Top decks right now</h2></div>
+  <div class="arch-grid">${data.archetypes
+    .slice(0, 8)
+    .map((a) => `<button class="arch" data-act="tMetaDeck" data-key="${esc(a.best)}" ${a.best ? "" : "disabled"}><span class="arch-icons">${g === "ptcg" ? a.icons.map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("") : ""}</span><b class="ellip">${esc(a.name)}</b><small>${g === "ptcg" ? `${(a.share * 100).toFixed(1)}% of players · ${a.top8} in Top 8` : `${a.count} top finish${a.count === 1 ? "" : "es"}`}</small>${bar(a.share / (data.archetypes[0]?.share || 1))}</button>`)
+    .join("")}</div>
+  <div class="section-head"><h2>Most played cards</h2></div>
+  <div class="chips wrap">${top.map((t) => `<button class="chip" ${g === "ygo" ? `data-act="tCard" data-id="${esc(t.id)}"` : `data-act="tOtherPrintings" data-name="${esc(t.name)}"`}>${esc(t.name)} <span class="muted">${Math.round(t.pct)}%</span></button>`).join("")}</div>
+  <div class="section-head"><h2>Recent top lists</h2></div>
+  <div class="list">${data.decks.slice(0, 40).map((d) => metaDeckRow(g, d, m)).join("")}</div>
+  <p class="foot">${g === "ygo" ? "Lists from YGOPRODeck’s Tournament Meta Decks (WCQ Regionals, YCS and more)." : "Top 8 lists from the biggest recent Standard events on Limitless."} “Owned” matches your collection${g === "ptcg" ? " by card name; basic Energy counts as owned" : ""}.</p>`;
+}
+
+export function tcgMetaSheet(g, d) {
+  const m = ownedMap(g),
+    o = metaOwned(g, d, m);
+  let body;
+  if (g === "ygo") {
+    const zone = (title, list) => {
+      const counts = new Map();
+      for (const id of list) counts.set(id, (counts.get(id) || 0) + 1);
+      return list.length
+        ? `<p class="list-head">${title} <span class="muted">${list.length}</span></p><div class="list compact">${[...counts]
+            .map(([id, qty]) => {
+              const card = cardOf("ygo", id),
+                own = Math.min(qty, m.get("id:" + id) || 0);
+              return `<button class="mini-row" data-act="tCard" data-id="${esc(id)}"><span class="ellip">${qty}× ${card ? `${ygoEmblems(card)} ${esc(card.name)}` : "…"}</span><span class="small ${own >= qty ? "ok-text" : "muted"}">${own >= qty ? "✓ owned" : own ? `${own}/${qty}` : price(card) !== null ? usd(price(card) * qty) : ""}</span></button>`;
+            })
+            .join("")}</div>`
+        : "";
+    };
+    body = zone("Main Deck", d.main) + zone("Extra Deck", d.extra) + zone("Side Deck", d.side);
+  } else {
+    const byName = new Map();
+    for (const e of gs(g).collection) byName.set(e.name.toLowerCase(), (byName.get(e.name.toLowerCase()) || 0) + e.qty);
+    body = ["Pokemon", "Trainer", "Energy"]
+      .map((k) => {
+        const rows = d.list.filter((r) => r.kind === k);
+        return rows.length
+          ? `<p class="list-head">${k === "Pokemon" ? "Pokémon" : k} <span class="muted">${rows.reduce((a, r) => a + r.qty, 0)}</span></p><div class="list compact">${rows
+              .map((r) => {
+                const own = isBasicEnergyName(r.name) ? r.qty : Math.min(r.qty, byName.get(r.name.toLowerCase()) || 0);
+                return `<button class="mini-row" data-act="tOtherPrintings" data-name="${esc(r.name)}"><span class="ellip">${r.qty}× ${esc(r.name)} <small class="muted">${esc(r.set)} ${esc(r.number)}</small></span><span class="small ${own >= r.qty ? "ok-text" : "muted"}">${own >= r.qty ? "✓ owned" : own ? `${own}/${r.qty}` : ""}</span></button>`;
+              })
+              .join("")}</div>`
+          : "";
+      })
+      .join("");
+  }
+  return `<div class="sheet-head"><h2>${esc(d.name)}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
+  <p class="muted small">🏆 ${esc(d.place)} · ${esc(d.event)}${d.players ? ` · ${d.players} players` : ""}${d.player ? ` · ${esc(d.player)}` : ""}${d.date ? ` · ${esc(d.date)}` : ""}</p>
+  <div class="kpis small"><div class="kpi"><b>${Math.round(o.pct * 100)}%</b><span>you own</span></div><div class="kpi"><b>${o.have}/${o.total}</b><span>cards</span></div><div class="kpi"><b>${o.cost !== null ? usd(o.cost, 0) : "—"}</b><span>to finish</span></div></div>
+  <div class="actions wrap"><button class="btn" data-act="tMetaSave" data-key="${esc(d.key)}">Save as my deck</button><button class="btn ghost" data-act="tMetaBuild" data-key="${esc(d.key)}">⚒ Budget versions</button>${d.url ? `<a class="btn ghost" href="${esc(d.url)}" target="_blank" rel="noopener noreferrer">Source ↗</a>` : ""}</div>
+  <p class="small muted" id="metaStatus" role="status"></p>
+  ${body}
+  <p class="foot">“Budget versions” builds around this deck’s signature cards at every budget, starting with the cards you own.</p>`;
+}
+
+export function tcgPickSheet() {
+  const g = game(),
+    st = gs(g),
+    seen = new Set(),
+    rows = st.collection
+      .map((e) => ({ e, c: cardOf(g, e.cardId) }))
+      .filter(({ c }) => c && !c.brief && !seen.has(c.id) && seen.add(c.id) && !c.basicEnergy)
+      .sort((a, b) => a.c.name.localeCompare(b.c.name));
+  return `<div class="sheet-head"><h2>Pick cards to build around</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
+  <p class="muted small">Choose one card or many. ${g === "ygo" ? "Their archetypes (up to 3) form the deck’s core." : "Each Pokémon brings its evolution line (up to 3 lines); Trainers you pick are included."}</p>
+  <input type="search" class="block" placeholder="Filter your cards" data-input="tSeedQ" aria-label="Filter your cards" autocomplete="off">
+  <div class="list compact seed-list">${rows.map(({ c, e }) => `<label class="seed-row mini-row" data-name="${esc(c.name.toLowerCase())}"><span class="row"><input type="checkbox" value="${esc(c.id)}" data-change="tSeedToggle">${imgTag(c, "seed-thumb")}<span class="ellip">${esc(c.name)}</span></span><small class="muted">×${e.qty}</small></label>`).join("") || `<p class="muted small">Your cards are still loading — open your Collection once, then try again.</p>`}</div>
+  <div class="sheet-foot"><button class="btn block" id="seedGo" data-act="tSeedGo" data-ids="" disabled>Pick cards to build around</button></div>`;
 }
 
 export function tcgDeck(id) {
@@ -738,7 +984,8 @@ export function tcgSet() {
 
 /* ---------- deck generator sheet ---------- */
 
-export const TCG_TIERS = { ygo: [0, 25, 50, 100, 250], ptcg: [0, 25, 50, 100, 200] };
+export const TCG_TIERS = { ygo: [0, 25, 50, 100, 250, Infinity], ptcg: [0, 25, 50, 100, 200, Infinity] };
+const tierName = (t) => (t.meta ? "Tournament list" : t.budget === 0 ? "Your cards only" : t.budget === Infinity ? "No budget limit" : "Up to $" + t.budget);
 const buildable = (g, c) => (c ? formatsOf(g).filter((f) => SOURCES[g].legality(c, f) !== "not_legal" && SOURCES[g].limit(c, f) > 0 && (g === "ygo" || c.category === "Pokemon")) : []);
 
 export function tcgBuildSheet() {
@@ -748,21 +995,23 @@ export function tcgBuildSheet() {
     fmts = buildable(g, seed),
     tiers = B.results[B.format];
   return `<div class="sheet-head"><h2>Build decks</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
-  <div class="build-seed">${imgTag(seed, "mini-art")}<div><small class="muted">Built around</small><b>${esc(seed?.name || "")}</b><small class="muted">${esc(seed?.archetype ? "Archetype: " + seed.archetype : seed?.typeLine || "")}</small></div><span></span></div>
-  <p class="muted small">${g === "ygo" ? "Builds a legal deck from the card’s archetype, then adds widely played staples (hand traps, draw, removal) that are legal in the format — your cards first, at each budget." : "Builds the full evolution line, adds Trainer staples that are legal in the format, and fills with the Energy your attacks need — your cards first, at each budget. Basic Energy is assumed owned."}</p>
+  ${(B.seeds?.length || 1) > 1
+    ? `<div class="build-seed multi"><div class="seed-strip">${B.seeds.slice(0, 8).map((id) => imgTag(cardOf(g, id), "mini-art")).join("")}</div><div><small class="muted">Built around</small><b>${B.seeds.length} of your cards</b><small class="muted">${esc([...new Set(B.seeds.map((id) => cardOf(g, id)?.archetype || "").filter(Boolean))].slice(0, 3).join(", ") || seed?.name || "")}</small></div></div>`
+    : `<div class="build-seed">${imgTag(seed, "mini-art")}<div><small class="muted">Built around</small><b>${esc(seed?.name || "")}</b><small class="muted">${esc(seed?.archetype ? "Archetype: " + seed.archetype : seed?.typeLine || "")}</small></div><span></span></div>`}
+  <p class="muted small">${g === "ygo" ? "Builds a legal deck from the archetype, then adds the hand traps, draw and removal today’s tournament decks play most — your cards first, at each budget, plus a recent tournament list when one plays your card." : "Builds the evolution line, adds the Trainers and support Pokémon today’s top decks play, and the Energy your attacks need — your cards first, at each budget, plus a recent tournament list when one plays your card. Basic Energy is assumed owned."}</p>
   <div class="fmt-chips">${fmts.map((f) => `<button class="chip pick ${f.id === B.format ? "on" : ""}" data-act="tBuildFormat" data-format="${f.id}">${esc(f.name)}</button>`).join("") || `<span class="muted small">${g === "ptcg" ? "Pick a Pokémon (not a Trainer or Energy) to build around." : "This card isn’t legal in any format."}</span>`}</div>
   ${B.busy ? `<p class="muted small" role="status">${esc(B.msg || "Building…")}</p>` : B.msg ? `<p class="small ${B.error ? "warn-text" : "muted"}" role="status">${esc(B.msg)}</p>` : ""}
   ${tiers ? `<div class="tiers">${tiers.map((t, i) => {
     const owned = t.zones.main.concat(t.zones.extra).reduce((a, r) => a + Math.min(r.qty, ownedOf(g, cardOf(g, r.cardId))), 0),
       open = B.openTier === i,
       issues = SOURCES[g].validate({ zones: t.zones }, (id) => cardOf(g, id), formatOf(g, B.format));
-    return `<article class="tier ${open ? "on" : ""}"><div class="row between"><b>${t.budget ? "Up to $" + t.budget : "Your cards only"}</b><span class="chip ${issues.length ? "warn" : "ok"}">${issues.length ? issues.length + " to fix" : "Legal"}</span></div>
+    return `<article class="tier ${open ? "on" : ""} ${t.meta ? "meta" : ""}"><div class="row between"><b>${t.meta ? `🏆 ${esc(t.label)}` : tierName(t)}</b><span class="chip ${issues.length ? "warn" : "ok"}">${issues.length ? issues.length + " to fix" : "Legal"}</span></div>
       <div class="tier-stats"><span><b>${usd(t.cost)}</b> to buy</span><span><b>${t.total}/${t.size}</b> ${g === "ygo" ? "main" : "cards"}</span>${g === "ygo" ? `<span><b>${t.zones.extra.reduce((a, r) => a + r.qty, 0)}</b> extra</span>` : ""}<span><b>${t.total ? Math.round((owned / t.total) * 100) : 0}%</b> owned</span></div>
       ${t.warnings.map((w) => `<p class="small warn-text">${esc(w)}</p>`).join("")}
       ${open ? `<div class="card-grid small-grid">${t.zones.main.concat(t.zones.extra).map((r) => `<button class="grid-card" data-act="tCard" data-id="${esc(r.cardId)}">${imgTag(cardOf(g, r.cardId))}${tileBadges(cardOf(g, r.cardId))}<span class="grid-meta"><span class="ellip">${r.qty}× ${esc(r.name)}</span><span>${esc(r.why || "")}</span></span></button>`).join("")}</div>` : ""}
       <div class="actions wrap"><button class="btn ghost small" data-act="tTier" data-i="${i}">${open ? "Hide cards" : "See the cards"}</button><button class="btn small" data-act="tTierSave" data-i="${i}">Save as deck</button></div></article>`;
   }).join("")}</div>` : ""}
-  <p class="foot">Strong starting lists from simple, transparent rules — not tuned tournament decks. Prices are daily market estimates.</p>`;
+  <p class="foot">Generated lists follow simple, transparent rules and lean on what current tournament decks play; the tournament list is the real one. Prices are daily market estimates.</p>`;
 }
 
 /* ---------- shared deck page (#shared/… for Yu-Gi-Oh! and Pokémon) ---------- */
@@ -1238,6 +1487,80 @@ export function registerTcg(c) {
     }
     return null;
   };
+  const inBatches = async (items, n, fn) => {
+    const out = [];
+    for (let i = 0; i < items.length; i += n) out.push(...(await Promise.all(items.slice(i, i + n).map(fn))));
+    return out;
+  };
+  const metaFor = (G) => loadMeta(G).catch(() => null);
+  // Generic cards the current tournament decks play most (outside the deck's own archetype).
+  const ygoMetaStaples = async (meta, pool) => {
+    const top = (meta?.top || []).filter((t) => t.pct >= 10 && !pool.has(t.id)).slice(0, 36);
+    if (top.length < 8) return null;
+    const have = top.filter((t) => cardOf("ygo", t.id)),
+      need = top.filter((t) => !cardOf("ygo", t.id)).map((t) => t.id);
+    if (need.length) (await SOURCES.ygo.byIds(need).catch(() => [])).forEach(remember);
+    void have;
+    return top.map((t) => cardOf("ygo", t.id)).filter(Boolean);
+  };
+  const ptcgMetaTrainers = (meta) => (meta?.top || []).filter((t) => t.kind === "Trainer" && t.pct >= 25).slice(0, 24).map((t) => [t.name, Math.max(1, Math.min(4, Math.round(t.avg)))]);
+  const ptcgMetaBasics = (meta) => (meta?.top || []).filter((t) => t.kind === "Pokemon" && t.pct >= 35).map((t) => t.name);
+  const BASIC_TYPES = /^(Grass|Fire|Water|Lightning|Psychic|Fighting|Darkness|Metal) Energy$/;
+  // A tournament list → deck zones of real card ids.
+  const metaZones = async (G, d, status = () => {}) => {
+    const zones = { main: [], extra: [], side: [] },
+      put = (z, card, qty) => {
+        const row = zones[z].find((r) => r.cardId === card.id);
+        if (row) row.qty += qty;
+        else zones[z].push({ cardId: card.id, name: card.name, qty });
+      };
+    if (G === "ygo") {
+      const need = [...new Set([...d.main, ...d.extra, ...d.side])].filter((id) => !cardOf("ygo", id));
+      if (need.length) {
+        status(`Loading ${need.length} cards…`);
+        (await SOURCES.ygo.byIds(need)).forEach(remember);
+      }
+      for (const z of ["main", "extra", "side"]) for (const id of d[z]) if (cardOf("ygo", id)) put(z, cardOf("ygo", id), 1);
+      return { zones, missed: [] };
+    }
+    const std = formatOf("ptcg", "standard"),
+      any = formatOf("ptcg", "unlimited"),
+      missed = [];
+    let n = 0;
+    const got = await inBatches(d.list, 6, async (x) => {
+      const card = BASIC_TYPES.test(x.name) ? await ptcgBest(energyName(x.name.replace(/ Energy$/, "")), any) : (await ptcgBest(x.name, std)) || (await SOURCES.ptcg.byName(x.name).catch(() => null));
+      status(`Matching cards ${++n}/${d.list.length}…`);
+      if (!card) missed.push(x.name);
+      return card ? { card: remember(card), qty: x.qty } : null;
+    });
+    for (const r of got.filter(Boolean)) put("main", r.card, r.qty);
+    return { zones, missed };
+  };
+  const bestMetaDeckFor = (G, meta, seeds) => {
+    const names = seeds.map((s) => s.name.toLowerCase()),
+      hits = (d) => (G === "ygo" ? seeds.filter((s) => d.main.includes(s.id) || d.extra.includes(s.id)).length : d.list.filter((r) => names.includes(r.name.toLowerCase())).length);
+    return (meta?.decks || [])
+      .map((d) => ({ d, n: hits(d) }))
+      .filter((x) => x.n)
+      .sort((a, b) => b.n - a.n || a.d.rank - b.d.rank)[0]?.d;
+  };
+  // One evolution line; the first (main) line gets more copies.
+  const lineFor = async (seed, f, main) => {
+    const line = [],
+      w = main ? [4, 2, 3, 4] : [3, 2, 2, 2];
+    if (seed.stage === "Stage2") {
+      const s1 = await ptcgBest(seed.evolveFrom, f),
+        b = s1?.evolveFrom ? await ptcgBest(s1.evolveFrom, f) : null;
+      if (b) line.push({ card: b, want: w[0] });
+      if (s1) line.push({ card: s1, want: w[1] });
+      line.push({ card: seed, want: w[2] });
+    } else if (seed.stage === "Stage1") {
+      const b = await ptcgBest(seed.evolveFrom, f);
+      if (b) line.push({ card: b, want: w[0] });
+      line.push({ card: seed, want: w[3] });
+    } else line.push({ card: seed, want: seed.ruleBox ? Math.min(3, w[0]) : w[0] });
+    return f.copies === 1 ? line.map((x) => ({ ...x, want: 1 })) : line;
+  };
   const runTBuild = async () => {
     const B = S.ui.tbuild,
       G = B.game,
@@ -1256,57 +1579,60 @@ export function registerTcg(c) {
     try {
       const m = ownedMap(G),
         owned = (card) => ownedOf(G, card, m),
-        priceOf = (card) => price(card);
+        priceOf = (card) => price(card),
+        seeds = (B.seeds || [B.seed]).map((id) => cardOf(G, id)).filter(Boolean);
+      status("Checking what tournament decks play right now…");
+      const meta = await metaFor(G);
       let results = [];
       if (G === "ygo") {
-        status("Loading the archetype…");
-        const arch = seed.archetype ? (await SOURCES.ygo.search({ archetype: seed.archetype, size: 100 })).cards.map(remember) : [];
-        status("Loading staples…");
-        const staples = (await SOURCES.ygo.byNames(YGO_STAPLES).catch(() => [])).map(remember).sort((a, b) => YGO_STAPLES.indexOf(a.name) - YGO_STAPLES.indexOf(b.name));
-        results = TCG_TIERS.ygo.map((budget) => ({ budget, ...buildYgo({ f, seed, archetype: arch, staples, limit: SOURCES.ygo.limit, legal: SOURCES.ygo.legality, owned, price: priceOf, budget }) }));
+        const archs = [...new Set(seeds.map((x) => x.archetype).filter(Boolean))].slice(0, 3);
+        status(archs.length ? `Loading ${archs.join(", ")}…` : "Loading…");
+        const arch = (await Promise.all(archs.map((a) => SOURCES.ygo.search({ archetype: a, size: 100 }).then((r) => r.cards).catch(() => [])))).flat().map(remember);
+        status("Loading staples from current tournament decks…");
+        const staples = (await ygoMetaStaples(meta, new Set(arch.map((x) => x.id)))) || (await SOURCES.ygo.byNames(YGO_STAPLES).catch(() => [])).map(remember).sort((a, b) => YGO_STAPLES.indexOf(a.name) - YGO_STAPLES.indexOf(b.name));
+        results = TCG_TIERS.ygo.map((budget) => ({ budget, ...buildYgo({ f, seed, seeds, archetype: arch, staples, limit: SOURCES.ygo.limit, legal: SOURCES.ygo.legality, owned, price: priceOf, budget }) }));
       } else {
-        status("Finding the evolution line…");
         const line = [];
-        const ruleBoxBasic = seed.stage === "Basic" && seed.ruleBox;
-        if (seed.stage === "Stage2") {
-          const s1 = await ptcgBest(seed.evolveFrom, f),
-            b = s1?.evolveFrom ? await ptcgBest(s1.evolveFrom, f) : null;
-          if (b) line.push({ card: b, want: 4 });
-          if (s1) line.push({ card: s1, want: 2 });
-          line.push({ card: seed, want: 3 });
-        } else if (seed.stage === "Stage1") {
-          const b = await ptcgBest(seed.evolveFrom, f);
-          if (b) line.push({ card: b, want: 4 });
-          line.push({ card: seed, want: 4 });
-        } else {
-          line.push({ card: seed, want: ruleBoxBasic ? 3 : 4 });
+        for (const [i, p] of seeds.filter((x) => x.category === "Pokemon").slice(0, 3).entries()) {
+          status(`Finding the evolution line for ${p.name}…`);
+          for (const x of await lineFor(p, f, i === 0)) if (!line.some((y) => y.card.id === x.card.id)) line.push(x);
         }
-        // Enough Basic Pokémon (about 10) that most opening hands have one.
+        // Enough Basic Pokémon (about 10) that most opening hands have one — the meta's favourites first.
         status("Adding support Pokémon…");
         let basics = line.filter((x) => x.card.basicPokemon).reduce((a, x) => a + x.want, 0);
-        for (const n of PTCG_SUPPORT_BASICS) {
+        for (const n of [...new Set([...ptcgMetaBasics(meta), ...PTCG_SUPPORT_BASICS])]) {
           if (basics >= 10) break;
           const card = await ptcgBest(n, f);
-          if (card?.basicPokemon) {
+          if (card?.basicPokemon && !line.some((y) => y.card.id === card.id)) {
             const want = f.copies === 1 ? 1 : Math.min(2, 10 - basics);
             line.push({ card, want });
             basics += want;
           }
         }
-        status("Finding Trainer staples legal in " + f.name + "…");
-        const wanted = [...(line.some((x) => x.card.stage === "Stage2") ? [["Rare Candy", 4]] : []), ...PTCG_STAPLES],
-          trainers = [];
-        for (let i = 0; i < wanted.length; i += 6) {
-          const got = await Promise.all(wanted.slice(i, i + 6).map(([n, want]) => ptcgBest(n, f).then((card) => (card ? { card, want: f.copies === 1 ? 1 : want } : null))));
-          trainers.push(...got.filter(Boolean));
-          status(`Finding Trainer staples… ${trainers.length} legal so far`);
-        }
+        const chosen = seeds.filter((x) => x.category === "Trainer").map((card) => ({ card, want: f.copies === 1 ? 1 : Math.min(4, Math.max(2, owned(card))) }));
+        const metaT = ptcgMetaTrainers(meta),
+          wanted = [...(line.some((x) => x.card.stage === "Stage2") ? [["Rare Candy", 4]] : []), ...(metaT.length >= 8 ? metaT : PTCG_STAPLES)].filter(([n]) => !chosen.some((x) => x.card.name === n));
+        status(`Finding Trainers ${metaT.length >= 8 ? "today’s top decks play" : "staples"} legal in ${f.name}…`);
+        const got = await inBatches(wanted, 6, ([n, want]) => ptcgBest(n, f).then((card) => (card ? { card, want: f.copies === 1 ? 1 : want } : null)));
+        const trainers = [...chosen, ...got.filter(Boolean)];
         const types = [...new Set(line.flatMap((x) => x.card.attackCosts || []))].filter((t) => t in { Grass: 1, Fire: 1, Water: 1, Lightning: 1, Psychic: 1, Fighting: 1, Darkness: 1, Metal: 1 });
         const energy = (await Promise.all((types.length ? types : (seed.types || []).slice(0, 1)).slice(0, 2).map((t) => ptcgBest(energyName(t), formatOf("ptcg", "unlimited"))))).filter(Boolean);
         results = TCG_TIERS.ptcg.map((budget) => ({ budget, ...buildPtcg({ line, trainers, energy, owned: (card) => (card.basicEnergy ? 99 : owned(card)), price: priceOf, budget }) }));
       }
+      // A recent tournament list that plays your card(s), as its own version.
+      const mt = meta && f.id === (G === "ygo" ? "tcg" : "standard") ? bestMetaDeckFor(G, meta, seeds) : null;
+      if (mt) {
+        status("Loading a tournament list that plays it…");
+        const { zones } = await metaZones(G, mt, status),
+          rows = [...zones.main, ...zones.extra],
+          cost = rows.reduce((a, r) => {
+            const card = cardOf(G, r.cardId);
+            return a + Math.max(0, r.qty - (card?.basicEnergy ? 99 : owned(card))) * (price(card) ?? 0);
+          }, 0);
+        results.unshift({ budget: null, label: `Tournament list · ${mt.place}, ${mt.event}`, meta: mt.key, zones, cost, total: zones.main.reduce((a, r) => a + r.qty, 0), size: G === "ygo" ? f.main[0] : 60, warnings: [] });
+      }
       B.results[B.format] = results;
-      B.msg = `${results.length} versions at different budgets.`;
+      B.msg = `${results.length} versions${mt ? ", including a recent tournament list" : ""}${meta ? " · staples from current tournament decks" : ""}.`;
     } catch (e) {
       B.msg = e.message;
       B.error = true;
@@ -1315,13 +1641,32 @@ export function registerTcg(c) {
       c.refreshSheet();
     }
   };
-  A.tBuild = async (t) => {
-    const G = g(),
-      card = await ensureCard(G, t.dataset.id),
-      fmts = buildable(G, card);
-    S.ui.tbuild = { game: G, seed: card.id, format: fmts[0]?.id || "", results: {}, busy: false, msg: fmts.length ? "" : "", openTier: null };
+  const openBuild = (G, ids, metaKey = "") => {
+    const cards = ids.map((id) => cardOf(G, id)).filter(Boolean);
+    // Pokémon decks are built around Pokémon; put them first.
+    cards.sort((a, b) => (G === "ptcg" ? (b.category === "Pokemon") - (a.category === "Pokemon") : 0));
+    const fmts = buildable(G, cards[0]);
+    S.ui.tbuild = { game: G, seed: cards[0]?.id, seeds: cards.map((x) => x.id), format: fmts[0]?.id || "", results: {}, busy: false, msg: "", openTier: null, metaKey };
     openSheet(tcgBuildSheet(), { type: "tbuild" });
     if (fmts.length) runTBuild();
+  };
+  A.tBuild = async (t) => {
+    const G = g(),
+      card = await ensureCard(G, t.dataset.id);
+    openBuild(G, [card.id]);
+  };
+  // Build around several cards at once (e.g. everything you own from one archetype).
+  A.tBuildMulti = async (t) => {
+    const G = g(),
+      ids = String(t.dataset.ids || "").split(",").filter(Boolean).slice(0, 60);
+    if (!ids.length) return toast("Pick at least one card.");
+    const done = busy(t, "Loading…");
+    try {
+      await ensureMany(G, ids.slice(0, 12));
+      openBuild(G, ids);
+    } finally {
+      done();
+    }
   };
   A.tBuildFormat = (t) => {
     const B = S.ui.tbuild;
@@ -1339,8 +1684,121 @@ export function registerTcg(c) {
     const B = S.ui.tbuild,
       tier = B.results[B.format][Number(t.dataset.i)],
       seed = cardOf(B.game, B.seed),
-      d = { id: uid(), name: `${seed.name} · ${formatOf(B.game, B.format).name} · ${tier.budget ? "$" + tier.budget : "my cards"}`, format: B.format, zones: structuredClone(tier.zones), createdAt: new Date().toISOString(), source: { kind: "Generated" } };
+      many = (B.seeds?.length || 1) > 1 ? ` + ${B.seeds.length - 1} more` : "",
+      d = { id: uid(), name: `${seed.name}${many} · ${formatOf(B.game, B.format).name} · ${tierName(tier).toLowerCase()}`, format: B.format, zones: structuredClone(tier.zones), createdAt: new Date().toISOString(), source: { kind: tier.meta ? "Tournament list" : "Generated" } };
     await mutate((st) => st.decks.push(d), { msg: `Saved “${d.name}” to your decks.` });
+  };
+
+  // ----- meta decks & ideas -----
+  let metaCardsLoading = false;
+  // Load the meta (and, for Yu-Gi-Oh!, the cards in it, for names and prices).
+  c.loadMeta = async (G, force = false) => {
+    const M = metaState(G);
+    if (M.busy) return;
+    const p = loadMeta(G, force).catch(() => null);
+    setTimeout(render, 0);
+    const data = await p;
+    render();
+    if (G === "ygo" && data && !metaCardsLoading) {
+      const need = [...new Set(data.decks.flatMap((d) => [...d.main, ...d.extra]))].filter((id) => !cardOf("ygo", id));
+      if (need.length) {
+        metaCardsLoading = true;
+        try {
+          (await SOURCES.ygo.byIds(need)).forEach(remember);
+        } catch {}
+        metaCardsLoading = false;
+        if (S.ui.view === "decks" && game() === "ygo") render();
+      }
+    }
+  };
+  A.tMetaRefresh = () => c.loadMeta(g(), true);
+  A.tMetaDeck = async (t) => {
+    const G = g(),
+      d = metaState(G).data?.decks.find((x) => x.key === t.dataset.key);
+    if (!d) return;
+    const sctx = { type: "tmeta", key: d.key };
+    openSheet(tcgMetaSheet(G, d), sctx);
+    if (G === "ygo") {
+      const need = [...new Set([...d.main, ...d.extra, ...d.side])].filter((id) => !cardOf("ygo", id));
+      if (need.length) {
+        (await SOURCES.ygo.byIds(need).catch(() => [])).forEach(remember);
+        if (S.ui.sheetCtx === sctx) openSheet(tcgMetaSheet(G, d), sctx, document.querySelector("#sheetBody").scrollTop);
+      }
+    }
+  };
+  A.tMetaSave = async (t) => {
+    const G = g(),
+      d = metaState(G).data?.decks.find((x) => x.key === t.dataset.key),
+      status = (m) => {
+        const el = document.querySelector("#metaStatus");
+        if (el) el.textContent = m;
+      };
+    if (!d) return;
+    const done = busy(t, "Saving…");
+    try {
+      const { zones, missed } = await metaZones(G, d, status);
+      const deck = { id: uid(), name: `${d.name} · ${d.place}, ${d.event}`.slice(0, 100), format: G === "ygo" ? "tcg" : "standard", zones, createdAt: new Date().toISOString(), source: { kind: "Tournament list", author: d.player, url: d.url } };
+      await mutate((st) => st.decks.push(deck), { msg: missed.length ? `Saved. ${missed.length} not found: ${missed.slice(0, 3).join(", ")}` : "Saved to your decks. It shows what you own and what’s left to buy." });
+      closeSheet();
+      go("#tdeck/" + deck.id);
+    } catch (e) {
+      status(e.message);
+    } finally {
+      done();
+    }
+  };
+  // Budget versions of a tournament deck: build around its signature cards.
+  A.tMetaBuild = async (t) => {
+    const G = g(),
+      d = metaState(G).data?.decks.find((x) => x.key === t.dataset.key);
+    if (!d) return;
+    const done = busy(t, "Loading…");
+    try {
+      const { zones } = await metaZones(G, d);
+      const meta = metaState(G).data,
+        common = new Set((meta?.top || []).filter((x) => x.pct >= 25).map((x) => (G === "ygo" ? x.id : x.name))),
+        sig = zones.main
+          .map((r) => cardOf(G, r.cardId))
+          .filter((card) => card && !common.has(G === "ygo" ? card.id : card.name) && (G === "ygo" ? card.archetype : card.category === "Pokemon"))
+          .slice(0, 8);
+      if (!sig.length) throw Error("Couldn’t find this deck’s signature cards.");
+      closeSheet();
+      openBuild(G, sig.map((x) => x.id), d.key);
+    } catch (e) {
+      toast(e.message);
+    } finally {
+      done();
+    }
+  };
+  // Build from the cards you own: your strongest group, or the cards you pick.
+  A.tBuildAuto = (t) => {
+    const top = collectionGroups(g())[0];
+    if (!top) return toast("Add some cards to your collection first.");
+    t.dataset.ids = top.ids.join(",");
+    A.tBuildMulti(t);
+  };
+  A.tPickSeeds = () => {
+    S.ui.seedPick = new Set();
+    openSheet(tcgPickSheet(), { type: "tpick" });
+  };
+  C.tSeedToggle = (t) => {
+    const set = (S.ui.seedPick ||= new Set());
+    if (t.checked) set.add(t.value);
+    else set.delete(t.value);
+    const b = document.querySelector("#seedGo");
+    if (b) {
+      b.textContent = set.size ? `⚒ Build with ${set.size} card${set.size === 1 ? "" : "s"}` : "Pick cards to build around";
+      b.dataset.ids = [...set].join(",");
+      b.disabled = !set.size;
+    }
+  };
+  I.tSeedQ = (t) => {
+    const q = t.value.trim().toLowerCase();
+    for (const row of document.querySelectorAll(".seed-row")) row.hidden = !!q && !row.dataset.name.includes(q);
+  };
+  A.tSeedGo = (t) => {
+    closeSheet();
+    A.tBuildMulti(t);
   };
   A.tShareCopy = () => copyText(S.ui.sheetCtx?.link || "", "Link copied.");
   A.tShareNative = async () => {

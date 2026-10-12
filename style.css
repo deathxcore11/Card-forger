@@ -887,3 +887,30 @@ img.pkr { width: auto; height: 10px; max-width: 26px; padding: 2px 3px; }
 img.pks.big { width: 34px; height: 34px; padding: 4px; border-radius: 8px; flex: 0 0 auto; }
 h1 img.pks.big { width: 28px; height: 28px; margin-right: 4px; }
 .cd-set small img.pkr { height: 9px; }
+
+/* ---------- Meta decks & ideas (Yu-Gi-Oh!, Pokémon) ---------- */
+.meta-row { display: grid; grid-template-columns: 64px 1fr; gap: 10px; align-items: center; width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: inherit; text-align: left; cursor: pointer; margin-bottom: 8px; }
+.meta-row:hover { border-color: var(--gold); }
+.meta-art { display: flex; gap: 2px; align-items: center; justify-content: center; min-height: 44px; }
+.meta-art .mini-art { width: 64px; height: 46px; }
+.meta-main { display: grid; gap: 2px; min-width: 0; }
+.meta-own { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+.meta-own small { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.pk-icon { width: 30px; height: 30px; object-fit: contain; image-rendering: auto; }
+.arch-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.arch { display: grid; gap: 3px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: inherit; text-align: left; cursor: pointer; min-width: 0; }
+.arch:hover { border-color: var(--gold); }
+.arch small { color: var(--muted); font-size: 11px; }
+.arch-icons { display: flex; gap: 2px; min-height: 30px; }
+.build-own h3 { margin: 0 0 4px; }
+.idea-row .lot-side { align-self: center; }
+.seed-list { max-height: 52vh; overflow: auto; margin: 8px 0; }
+.seed-row { cursor: pointer; }
+.seed-row input { width: 18px; height: 18px; flex: 0 0 auto; accent-color: var(--gold); }
+.seed-thumb { width: 28px; height: 40px; object-fit: cover; border-radius: 3px; flex: 0 0 auto; }
+.seed-row .row { gap: 8px; min-width: 0; flex-wrap: nowrap; }
+.sheet-foot { position: sticky; bottom: 0; padding: 8px 0 4px; background: linear-gradient(transparent, var(--bg) 30%); }
+.build-seed.multi { grid-template-columns: auto 1fr; }
+.seed-strip { display: flex; }
+.seed-strip .mini-art, .seed-strip .img-missing { width: 34px !important; height: 48px !important; border-radius: 4px !important; margin-right: -12px; box-shadow: 0 0 0 2px var(--bg); }
+.tier.meta { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 7%, var(--surface)); }

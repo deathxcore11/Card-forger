@@ -20,7 +20,7 @@ import {
 import { bracketEstimate, manaBase, isOut, deckReview, explainSwap } from "./extras.js";
 import { buildability, rankBuildable } from "./share.js";
 import { formatsFor } from "./builder.js";
-import { gameBinders, homeHero } from "./tcg.js";
+import { gameBinders, homeHero, quickTiles, randomTools } from "./tcg.js";
 import { FORMATS as ALL_FORMATS, formatOf, hasCommander, canLead, legalityIn, LEGALITY_WORD, sizeLabel } from "./formats.js";
 import { cloudInfo, summarize } from "./cloud.js";
 
@@ -64,7 +64,8 @@ export function home() {
   ${st.example ? `<div class="note warn">Example data is loaded. Reset it in Settings before adding real cards.</div>` : ""}
   ${startPath()}
   ${active ? `<div class="section-head"><h2>Continue building</h2></div>${deckTile(active, true)}` : ""}
-  <div class="random-tools"><button class="btn ghost" data-act="dbRandom">🎲 Random card</button><button class="btn ghost" data-act="randomDeck">🎲 Random deck</button></div>
+  ${randomTools("mtg")}
+  ${quickTiles("mtg")}
   ${glossary()}`;
   return `${homeHero("mtg", copies ? "Welcome back." : "Let’s build from your cards.", mtgDeckArt(active))}${gameBinders("mtg")}
   ${st.example ? `<div class="note warn">Example data is loaded. Reset it in Settings before adding real cards.</div>` : ""}
@@ -73,15 +74,8 @@ export function home() {
     <button class="kpi" data-act="go" data-to="#collection"><b>${copies}</b><span>cards owned</span></button>
     <button class="kpi" data-act="go" data-to="#decks"><b>${st.decks.length}</b><span>decks</span></button>
   </div>
-  <div class="random-tools"><button class="btn ghost" data-act="dbRandom">🎲 Random card</button><button class="btn ghost" data-act="randomDeck">🎲 Random deck</button></div>
-  <div class="quick">
-    <button class="quick-btn primary" data-act="importDeck"><span>↥</span><b>Import a deck</b><small>See what you own and what’s missing</small></button>
-    <button class="quick-btn" data-act="addCard"><span>＋</span><b>Add cards</b><small>One card or a whole list</small></button>
-    <button class="quick-btn" data-act="go" data-to="#decks/ideas"><span>✧</span><b>Deck ideas</b><small>Commanders your cards support</small></button>
-    <button class="quick-btn" data-act="go" data-to="#scan"><span>▧</span><b>Scan a card</b><small>Photo → match → confirm</small></button>
-    <button class="quick-btn" data-act="go" data-to="#decks/inspiration"><span>✧</span><b>Find decks</b><small>Precons & shared decks you can almost build</small></button>
-    <button class="quick-btn" data-act="go" data-to="#rules"><span>📖</span><b>Rules & banned lists</b><small>Every format, core rules, live bans</small></button>
-  </div>
+  ${randomTools("mtg")}
+  ${quickTiles("mtg")}
   ${active ? `<div class="section-head"><h2>Continue building</h2></div>${deckTile(active, true)}` : ""}
   ${
     others.length

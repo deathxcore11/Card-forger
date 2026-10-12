@@ -68,6 +68,9 @@ import { buildYgo, buildPtcg } from "./tcgbuild.js";
   assert.deepEqual(validateYgo(r.zones ? { zones: r.zones } : r, (id) => [...arch, ...staples].find((c) => c.id === id), tcg), []);
   const poor = buildYgo({ f: tcg, seed, archetype: arch, staples, limit: ygoLimit, legal: ygoLegality, owned: () => 0, price: (c) => c.prices.usd, budget: 0 });
   assert.equal(poor.cost, 0);
+  const mine = buildYgo({ f: tcg, seed, seeds: [arch[1], arch[2]], archetype: arch, staples, limit: ygoLimit, legal: ygoLegality, owned: (c) => ([seed, arch[1], arch[2]].includes(c) ? 2 : 0), price: (c) => c.prices.usd, budget: 0 });
+  assert.equal(mine.total, 6, "a $0 budget uses every owned copy of the chosen cards");
+  assert.equal(mine.cost, 0);
   assert.ok(poor.warnings.length);
 }
 {
@@ -80,6 +83,10 @@ import { buildYgo, buildPtcg } from "./tcgbuild.js";
   assert.equal(r.zones.main.find((x) => x.name === "Charmander").qty, 4);
   const cheap = buildPtcg({ line: [{ card: b, want: 4 }], trainers: tr, energy: [fire], owned: (c) => (c.basicEnergy ? 99 : 0), price: () => 0.5, budget: 5 });
   assert.ok(cheap.cost <= 5);
-  assert.equal(cheap.total, 60, "energy fills the rest when the budget runs out");
+  assert.equal(cheap.zones.main.find((x) => x.name === "Basic Fire Energy").qty, 14, "Energy tops up to 14 at most, not to 60");
+  assert.ok(cheap.total < 60 && cheap.warnings.some((w) => /slots still open/.test(w)), "the open slots are reported");
+  const mine = buildPtcg({ line: [{ card: b, want: 4 }], trainers: tr, energy: [fire], owned: (c) => (c.basicEnergy ? 99 : c === b ? 4 : 0), price: () => 0.5, budget: 0 });
+  assert.equal(mine.zones.main.find((x) => x.name === "Charmander").qty, 4, "a $0 budget still uses the cards you own");
+  assert.equal(mine.cost, 0);
 }
 console.log("PASS: Yu-Gi-Oh! and Pokémon generators — legal 40/60-card lists, Forbidden staples skipped, budgets respected.");

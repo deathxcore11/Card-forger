@@ -23,6 +23,8 @@ export const energyName = (t) => `Basic ${TYPE_ENERGY[t] || t} Energy`;
 
 // Shared budget-aware picker: take up to `want` copies, fewer if money runs out.
 function picker({ owned, price, budget, filler = 0.15 }) {
+  // With no budget there's nothing to save for: just use the cards you own.
+  if (!budget) filler = 0;
   let spent = 0;
   const used = new Map();
   return {
@@ -56,21 +58,23 @@ const add = (m, c, n, why) => {
 
 /**
  * Yu-Gi-Oh!: an archetype core plus legal staples.
- * opts: f (format), seed, archetype (cards), staples (cards), limit(card, f), legal(card, f),
- *       owned(card), price(card), budget
+ * opts: f (format), seed, seeds (extra must-include cards), archetype (cards), staples (cards),
+ *       limit(card, f), legal(card, f), owned(card), price(card), budget
  */
-export function buildYgo({ f, seed, archetype = [], staples = [], limit, legal, owned, price, budget }) {
-  const ok = (c) => legal(c, f) !== "not_legal" && limit(c, f) > 0,
+export function buildYgo({ f, seed, seeds = [], archetype = [], staples = [], limit, legal, owned, price, budget }) {
+  const picks = [seed, ...seeds.filter((c) => c.id !== seed.id)],
+    isSeed = (c) => picks.some((x) => x.id === c.id),
+    ok = (c) => legal(c, f) !== "not_legal" && limit(c, f) > 0,
     pick = picker({ owned, price, budget, filler: 0.25 }),
     main = new Map(),
     extra = new Map(),
     target = f.main[0],
     count = (m) => rowsOf(m).reduce((a, r) => a + r.qty, 0),
     lvl = (c) => (c.category === "Monster" ? (c.level || 4) : 0),
-    order = (c) => (c.id === seed.id ? -1 : c.category === "Monster" ? (lvl(c) <= 4 ? 0 : 3) : c.category === "Spell" ? 1 : 2);
+    order = (c) => (isSeed(c) ? -1 : c.category === "Monster" ? (lvl(c) <= 4 ? 0 : 3) : c.category === "Spell" ? 1 : 2);
   // Balanced core: archetype monsters first, then the archetype's own Spells and Traps, then staples.
-  const core = archetype.filter((c) => ok(c) && !c.extra).sort((a, b) => order(a) - order(b) || (b.atk || 0) - (a.atk || 0));
-  if (!seed.extra && ok(seed) && !core.some((c) => c.id === seed.id)) core.unshift(seed);
+  const core = archetype.filter((c) => ok(c) && !c.extra && !isSeed(c)).sort((a, b) => order(a) - order(b) || (b.atk || 0) - (a.atk || 0));
+  core.unshift(...picks.filter((c) => !c.extra && ok(c)));
   const monsters = core.filter((c) => c.category === "Monster"),
     support = core.filter((c) => c.category !== "Monster"),
     monsterCap = Math.min(target - 18, 18),
@@ -78,19 +82,19 @@ export function buildYgo({ f, seed, archetype = [], staples = [], limit, legal, 
   for (const [list, cap] of [[monsters, monsterCap], [support, supportCap]])
     for (const c of list) {
       if (count(main) >= cap) break;
-      const want = Math.min(limit(c, f), c.id === seed.id || order(c) < 2 ? 3 : 2, cap - count(main));
-      add(main, c, pick.take(c, want, target - count(main) - want), c.id === seed.id ? "Your build-around card" : c.category === "Monster" ? "Archetype monster" : "Archetype " + c.category.toLowerCase());
+      const want = Math.min(limit(c, f), isSeed(c) ? (picks.length > 6 ? Math.max(1, owned(c)) : 3) : order(c) < 2 ? 3 : 2, cap - count(main));
+      add(main, c, pick.take(c, want, target - count(main) - want), isSeed(c) ? "Your build-around card" : c.category === "Monster" ? "Archetype monster" : "Archetype " + c.category.toLowerCase());
     }
-  for (const c of staples.filter(ok)) {
+  for (const c of staples.filter((c) => ok(c) && !main.has(c.id))) {
     if (count(main) >= target) break;
     const want = Math.min(limit(c, f), 3, target - count(main));
     add(main, c, pick.take(c, want, target - count(main) - want), "Staple");
   }
-  const ex = archetype.filter((c) => ok(c) && c.extra);
-  if (seed.extra && ok(seed) && !ex.some((c) => c.id === seed.id)) ex.unshift(seed);
+  const ex = archetype.filter((c) => ok(c) && c.extra && !isSeed(c));
+  ex.unshift(...picks.filter((c) => c.extra && ok(c)));
   for (const c of ex) {
     if (count(extra) >= f.extra) break;
-    add(extra, c, pick.take(c, Math.min(limit(c, f), c.id === seed.id ? 2 : 1, f.extra - count(extra))), c.id === seed.id ? "Your build-around card" : "Archetype Extra Deck");
+    add(extra, c, pick.take(c, Math.min(limit(c, f), isSeed(c) ? 2 : 1, f.extra - count(extra))), isSeed(c) ? "Your build-around card" : "Archetype Extra Deck");
   }
   const total = count(main),
     warnings = [];
@@ -115,8 +119,8 @@ export function buildPtcg({ line = [], trainers = [], energy = [], owned, price,
     const n = Math.min(want, room);
     add(deck, card, pick.take(card, n, 60 - count() - n), "Trainer staple");
   }
-  // Basic Energy is cheap and unlimited: fill to 60, split across the types the attacks need.
-  let left = 60 - count();
+  // Basic Energy is cheap and unlimited: fill toward 60 (at most 14), split across the types the attacks need.
+  let left = Math.min(60 - count(), Math.max(energyTarget, 14));
   energy.forEach((e, i) => {
     const n = Math.round(left / (energy.length - i));
     add(deck, e, n, "Basic Energy");
