@@ -1,3 +1,20 @@
+CARDFORGE 2.6 UPDATE
+
+- Fixed: huge mana symbols in the Upgrade lab (they also made the whole page wider than the phone).
+  Symbols are now locked to icon size everywhere.
+- Upgrade lab swaps show full card names and explain the actual trade-off from the two cards: what
+  the deck gains (with its count vs. the usual guideline), what it gives up, the mana value change,
+  and whether it matters to your commander's creature type — plus a one-line "choose this if…".
+  A gain is only called a benefit while the deck is under the guideline for it.
+- Smarter suggestions: a creature-type match alone can no longer replace a card that provides ramp,
+  draw, interaction or protection, and losing a job the deck is short on is penalized more heavily.
+- Purchase cost is shown on its own. "Net after trade-in" is gone; the cut cards' estimated value only
+  appears if you tick "Show what the cut cards are worth", and is never subtracted from the cost.
+- Home for new users shows just the guided steps (no repeated import buttons); finished steps
+  collapse to a single line.
+- Find decks: "Assume I have basic lands" switch (on by default); the basic land count is listed
+  separately on each result.
+
 CARDFORGE 2.5 UPDATE
 
 - Start here. New visitors get a three-step path on Home (add your cards → pick a deck to aim for →

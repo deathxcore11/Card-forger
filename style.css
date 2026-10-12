@@ -349,10 +349,10 @@ table.metrics { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .swap-check { font-size: 13.5px; color: var(--text); font-weight: 600; display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
 .swap-pair { display: grid; grid-template-columns: 1fr 24px 1fr; gap: 6px; align-items: center; }
 .swap-card { display: grid; gap: 3px; padding: 0; border: 0; background: none; text-align: left; min-width: 0; }
-.swap-card img, .swap-card .img-missing { width: 100%; height: 74px; object-fit: cover; border-radius: 10px; display: block; }
+.swap-card .swap-art, .swap-card .img-missing { width: 100%; height: 74px; object-fit: cover; border-radius: 10px; display: block; }
 .swap-card small { font-size: 10.5px; font-weight: 800; letter-spacing: 0.12em; }
 .swap-card.out small { color: var(--bad); } .swap-card.in small { color: var(--good); }
-.swap-card b { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.swap-card b { font-size: 13.5px; line-height: 1.25; overflow-wrap: anywhere; }
 .swap-arrow { text-align: center; color: var(--muted); }
 .swap-facts { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--muted); margin-top: 10px; }
 .swap-facts b { color: var(--text); }
@@ -461,7 +461,7 @@ svg.line { width: 100%; height: 120px; display: block; margin: 10px 0 4px; }
   .card-detail { grid-template-columns: 220px 1fr; }
   .deck-hero, .hero-body { min-height: 290px; }
   .swap-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .swap-card img, .swap-card .img-missing { height: 96px; }
+  .swap-card .swap-art, .swap-card .img-missing { height: 96px; }
   .deck-body[data-tab="engine"], .deck-body[data-tab="versions"] { columns: 2; column-gap: 14px; }
   .deck-body[data-tab="engine"] > *, .deck-body[data-tab="versions"] > * { break-inside: avoid; margin-top: 0; }
   .hand { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
@@ -678,3 +678,18 @@ h2.year { margin: 18px 0 8px; color: var(--muted); font-size: 15px; }
 .share-link input { width: 100%; font-size: 12px; }
 .field { display: grid; gap: 4px; margin: 8px 0; }
 .field textarea, .field input { width: 100%; }
+
+/* ---------- 2.6: compact symbols everywhere, clearer swaps ---------- */
+/* Mana symbols are always icon-sized, whatever container they land in. */
+img.ms { width: 18px !important; height: 18px !important; max-width: none !important; min-width: 0; object-fit: contain; flex: none; display: inline-block; }
+img.ms.inline { width: 1.05em !important; height: 1.05em !important; }
+.cd-text .mana img.ms, .meter.two img.ms, .mb-row img.ms { width: 20px !important; height: 20px !important; }
+.mana, .dots { flex-wrap: wrap; row-gap: 2px; }
+.swap-mana { min-height: 20px; }
+.swap-why { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13.5px; }
+.swap-why li { display: grid; grid-template-columns: 16px 1fr; gap: 4px; }
+.swap-why li span { font-weight: 800; text-align: center; }
+.swap-why .gain span { color: var(--good); }
+.swap-why .lose span { color: var(--warn); }
+.swap-why .same span { color: var(--muted); }
+.swap-choose { margin: 8px 0 0; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); }

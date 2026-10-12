@@ -1,7 +1,7 @@
 // Pure tests for extras.js: bracket estimate, mana base, proxies, life tracker.
 import assert from "node:assert/strict";
 import { cardKey } from "./core.js";
-import { deckReview, bracketEstimate, isTutor, isMassLandDenial, entersTapped, splitBasics, manaBase, proxyList, proxySheetHTML, newGame, isOut } from "./extras.js";
+import { explainSwap, deckReview, bracketEstimate, isTutor, isMassLandDenial, entersTapped, splitBasics, manaBase, proxyList, proxySheetHTML, newGame, isOut } from "./extras.js";
 
 const card = (name, type, oracle = "", extra = {}) => ({ name, type_line: type, oracle_text: oracle, color_identity: [], legalities: { commander: "legal" }, ...extra });
 const cat = (...cs) => Object.fromEntries(cs.map((c) => [cardKey(c.name), c]));
@@ -81,5 +81,37 @@ assert.ok(isOut({ life: 5, poison: 10, cmd: 0 }));
   assert.ok(r2.every((x) => x.level === "warn"));
 }
 
+// Swap explanations come from the two cards, not a template.
+{
+  const giada = card("Giada", "Legendary Creature — Angel", "Each other Angel you control enters with additional +1/+1 counters.");
+  const draw = card("Phyrexian Arena", "Enchantment", "At the beginning of your upkeep, you draw a card and you lose 1 life.", { cmc: 3 });
+  const angel = card("Serra Angel", "Creature — Angel", "Flying, vigilance", { cmc: 5 });
+  const e = explainSwap(draw, angel, giada, { Draw: 7 }, { Draw: 10 });
+  assert.deepEqual(e.loses, ["Draw"]);
+  assert.match(e.lines.map((l) => l.text).join(" "), /Loses card draw \(card draw 7 → 6\)/);
+  assert.match(e.lines.map((l) => l.text).join(" "), /Is an Angel, which your commander cares about/);
+  assert.match(e.choose, /theme or curve/);
+  const ramp = card("Arcane Signet", "Artifact", "{T}: Add one mana of any color in your commander's color identity.", { cmc: 2 });
+  const e2 = explainSwap(angel, ramp, giada, { Ramp: 6 }, { Ramp: 10 });
+  assert.deepEqual(e2.gains, ["Ramp"]);
+  assert.match(e2.lines.map((l) => l.text).join(" "), /mana value 5 → 2/);
+}
+
+console.log("PASS: swap explanations name real gains, losses and curve changes.");
 console.log("PASS: deck review levels, empty slots vs. missing cards, guideline gating.");
 console.log("PASS: bracket estimate, tutor/land-denial detection, tapped lands, basic split, proxy sheet and life tracker.");
+
+// Upgrade engine: a creature-type match alone never replaces a card that does a real job.
+{
+  const { upgradeSuggestions } = await import("./strategy.js");
+  const leader = card("Giada, Font of Hope", "Legendary Creature — Angel", "Flying, vigilance. Each other Angel you control enters with an additional +1/+1 counter.", { color_identity: ["W"], cmc: 2 });
+  const arena = card("Divine Visitation", "Enchantment", "At the beginning of your upkeep, draw a card.", { color_identity: ["W"], cmc: 4, prices: { usd: "1" } });
+  const angel = card("Plain Angel", "Creature — Angel", "Flying", { color_identity: ["W"], cmc: 4, prices: { usd: "0.5" } });
+  const filler = Array.from({ length: 30 }, (_, i) => card("Filler " + i, "Creature — Human", "", { color_identity: ["W"], cmc: 3 }));
+  const plains = card("Plains", "Basic Land — Plains", "", { color_identity: [] });
+  const catalog = cat(leader, arena, angel, plains, ...filler);
+  const deck = { id: "g", format: "Commander", commander: leader.name, strategy: "Auto", cards: [{ name: leader.name, qty: 1 }, { name: arena.name, qty: 1 }, ...filler.map((f) => ({ name: f.name, qty: 1 })), { name: "Plains", qty: 36 }] };
+  const plan = upgradeSuggestions(deck, [], [], catalog, { budget: 25 });
+  assert.ok(!plan.swaps.some((s) => s.cut === arena.name && s.add === angel.name), "theme-only swap must not cut a draw card");
+}
+console.log("PASS: theme-only upgrades never cut a card that provides ramp, draw, interaction or protection.");

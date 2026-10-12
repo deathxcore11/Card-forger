@@ -668,6 +668,10 @@ C.finderColors = (t) => {
   S.ui.finder.colors = t.value;
   render();
 };
+C.finderBasics = (t) => {
+  S.ui.finder.basics = t.checked;
+  render();
+};
 C.finderSort = (t) => {
   S.ui.finder.sort = t.value;
   render();
@@ -2279,6 +2283,10 @@ A.upRun = async () => {
     saveCatalogSoon();
     render();
   }
+};
+C.upTrade = (t) => {
+  S.ui.upgrade.tradeIn = t.checked;
+  render();
 };
 C.upPick = (t) => {
   const U = S.ui.upgrade,

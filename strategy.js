@@ -94,7 +94,7 @@ export function fitExplanation(c, comm, stats, strategy = "Auto") {
     ),
     focus = r.includes(strategy) && strategy !== "Auto",
     score =
-      (tribal ? 9 : 0) +
+      (tribal ? 5 : 0) +
       needed.length * 7 +
       r.filter((x) => theme.roles.includes(x)).length * 3 +
       (focus ? 4 : 0) +
@@ -250,18 +250,20 @@ export function upgradeSuggestions(
       const cut = data.row,
         old = data.old,
         cf = data.fit,
-        uniqueLost = cf.roles.filter(
-          (role) =>
-            targetRoles[role] &&
-            (stats.counts[role] || 0) <= targetRoles[role] &&
-            !af.roles.includes(role),
-        ),
+        // Every core job the cut does that the new card doesn't. Losing one the deck is
+        // short on costs more than losing one it has plenty of.
+        lost = cf.roles.filter((role) => targetRoles[role] && !af.roles.includes(role)),
+        lostScarce = lost.filter((role) => (stats.counts[role] || 0) <= targetRoles[role]),
+        gainsJob = af.roles.some((role) => targetRoles[role] && !cf.roles.includes(role)),
         improvement =
           af.score -
           cf.score -
-          uniqueLost.length * 5 +
+          lostScarce.length * 9 -
+          (lost.length - lostScarce.length) * 4 +
           (simple ? (cf.complexity.weight - af.complexity.weight) * 2 : 0);
       if (improvement < 2) continue;
+      // A creature-type match alone never justifies cutting a card that does a real job.
+      if (lost.length && !gainsJob) continue;
       const gainRole = af.reasons.length
           ? af.reasons.join(", ")
           : "lower curve or stronger recognized utility",

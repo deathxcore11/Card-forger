@@ -16,7 +16,7 @@ import {
   engineProfile, engineRoles, goldfish, scoreGrade, diffCards, deckValue,
   collectionValue, lotPrice, swapImpact, applySwapsToCards, cardSig,
 } from "./insights.js";
-import { bracketEstimate, manaBase, isOut, deckReview } from "./extras.js";
+import { bracketEstimate, manaBase, isOut, deckReview, explainSwap } from "./extras.js";
 import { buildability, rankBuildable } from "./share.js";
 
 /* ---------- shared deck math ---------- */
@@ -51,13 +51,21 @@ export function home() {
     prev = hist.length > 1 ? hist[hist.length - 2] : null,
     change = prev ? value.total - prev.total : null,
     active = deckById(st.activeDeck),
-    others = st.decks.filter((d) => d !== active).slice(-8).reverse();
+    others = st.decks.filter((d) => d !== active).slice(-8).reverse(),
+    onboarding = !(st.collection.length && st.decks.length);
+  // New users get one guided panel; the regular shortcuts and empty states would only repeat it.
+  if (onboarding)
+    return `<section class="hero"><p class="eyebrow">Your Magic workbench</p><h1>Let’s build from your cards.</h1></section>
+  ${st.example ? `<div class="note warn">Example data is loaded. Reset it in Settings before adding real cards.</div>` : ""}
+  ${startPath()}
+  ${active ? `<div class="section-head"><h2>Continue building</h2></div>${deckTile(active, true)}` : ""}
+  <div class="random-tools"><button class="btn ghost" data-act="dbRandom">🎲 Random card</button><button class="btn ghost" data-act="randomDeck">🎲 Random deck</button></div>
+  ${glossary()}`;
   return `<section class="hero">
     <p class="eyebrow">Your Magic workbench</p>
     <h1>${copies ? "Welcome back." : "Let’s build from your cards."}</h1>
   </section>
   ${st.example ? `<div class="note warn">Example data is loaded. Reset it in Settings before adding real cards.</div>` : ""}
-  ${startPath()}
   <div class="kpis">
     <button class="kpi" data-act="go" data-to="#collection/value"><b>${usd(value.total, 0)}</b><span>collection value${change !== null ? ` <em class="${change >= 0 ? "up" : "down"}">${signed(change, (x) => usd(x, 0))}</em>` : ""}</span></button>
     <button class="kpi" data-act="go" data-to="#collection"><b>${copies}</b><span>cards owned</span></button>
@@ -83,14 +91,16 @@ export function home() {
       ? `<button class="banner" data-act="go" data-to="#collection/value"><span><b>${usd(value.spareValue, 0)}</b> sits in ${sumQty(value.spare)} cards no deck uses</span><span class="muted">Trade binder →</span></button>`
       : ""
   }
-  <details class="glossary"><summary>New to Commander? 60-second glossary</summary><dl>
+  ${glossary()}`;
+}
+
+const glossary = () => `<details class="glossary"><summary>New to Commander? 60-second glossary</summary><dl>
     <dt>100 cards, one copy each</dt><dd>Your commander plus 99 others. Basic lands are the main exception to the one-copy rule.</dd>
     <dt>Color identity</dt><dd>Every card must fit inside your commander’s colors.</dd>
     <dt>Ramp · Draw · Removal</dt><dd>Extra mana, more cards, and answers to threats. Most decks want about 10 · 10 · 8 of them.</dd>
     <dt>Engine score</dt><dd>A 0–100 build-health check of those ingredients plus synergy and curve. It is not a win rate.</dd>
     <dt>Owned vs. deck</dt><dd>A deck is a plan. Your collection is what you physically own. Importing a deck never adds cards to your collection.</dd>
   </dl></details>`;
-}
 
 // Three steps for a new visitor; disappears once they have cards and a deck.
 function startPath() {
@@ -99,7 +109,9 @@ function startPath() {
     hasDeck = st.decks.length > 0;
   if (hasCards && hasDeck) return "";
   const step = (n, done, title, text, actions) =>
-    `<li class="step ${done ? "done" : ""}"><span class="step-n" aria-hidden="true">${done ? "✓" : n}</span><div><b>${title}</b><p class="muted small">${text}</p>${done ? "" : `<div class="actions wrap">${actions}</div>`}</div></li>`;
+    done
+      ? `<li class="step done"><span class="step-n" aria-hidden="true">✓</span><div><b>${title}</b></div></li>`
+      : `<li class="step"><span class="step-n" aria-hidden="true">${n}</span><div><b>${title}</b><p class="muted small">${text}</p><div class="actions wrap">${actions}</div></div></li>`;
   return `<section class="panel start"><p class="eyebrow">Start here · about 5 minutes</p><h2>Three steps to your first deck</h2><ol class="steps">
     ${step(1, hasCards, "Add the cards you own", "Paste a list or upload a ManaBox, Moxfield, Archidekt or CSV export. Or scan cards with your camera.", `<button class="btn small" data-act="importCollection">↥ Import collection</button><button class="btn ghost small" data-act="go" data-to="#scan">▧ Scan</button><button class="link small" data-act="loadExample">Try an example collection</button>`)}
     ${step(2, hasDeck, "Pick a deck to aim for", "Import a list you like, start from a commander, or browse precons and shared decks to see what you can almost build.", `<button class="btn small" data-act="go" data-to="#decks/inspiration">✧ Find decks I can almost build</button><button class="btn ghost small" data-act="importDeck">Import a deck</button>`)}
@@ -627,7 +639,8 @@ function availability() {
   return (name) => Math.max(0, (owned.get(key(name)) || 0) - (held.get(key(name)) || 0));
 }
 
-const basic = (n) => isBasic(meta(n));
+// "Assume I have basic lands" (on by default): basics are left out of cost and ownership, and shown separately.
+const basic = (n) => S.ui.finder.basics && isBasic(meta(n));
 
 export function finderCandidates() {
   const avail = availability(),
@@ -649,11 +662,12 @@ function finderPanel() {
     list = rankBuildable(all, { maxCost: F.max === "" ? null : Number(F.max), query: F.q, colors: F.colors, sort: F.sort }),
     noCards = !S.state.collection.length;
   return `<section class="panel finder"><p class="eyebrow">Find decks</p><h2>Decks you can almost build</h2>
-  <p class="muted small">Precons, shared decks and decks you’ve saved, ranked by what it would cost to finish them from your collection. Copies locked in assembled decks don’t count as free, and basic lands aren’t counted.${noCards ? " <b>Add your collection first</b> — until then every card counts as missing." : ""}</p>
+  <p class="muted small">Precons, shared decks and decks you’ve saved, ranked by what it would cost to finish them from your collection. Copies locked in assembled decks don’t count as free.${noCards ? " <b>Add your collection first</b> — until then every card counts as missing." : ""}</p>
   <div class="finder-controls">
     <label>Max to finish $<input type="number" min="0" step="5" value="${esc(F.max)}" placeholder="Any" data-change="finderMax"></label>
     <label>Colors<select data-change="finderColors">${options([["", "Any"], ["W", "White"], ["U", "Blue"], ["B", "Black"], ["R", "Red"], ["G", "Green"]], F.colors)}</select></label>
     <label>Sort<select data-change="finderSort">${options([["cost", "Cheapest to finish"], ["owned", "Most owned"]], F.sort)}</select></label>
+    <label class="check span-all"><input type="checkbox" data-change="finderBasics" ${F.basics ? "checked" : ""}> Assume I have basic lands <span class="muted">(lands are listed separately)</span></label>
     <label class="span-all">Commander or deck<input type="search" value="${esc(F.q)}" placeholder="e.g. Atraxa, tokens" data-input="finderSearch" autocomplete="off"></label>
   </div>
   <div class="row between wrap"><span class="muted small">${all.length ? `${list.length} of ${all.length} decks` : "No decks checked yet"}${F.msg ? " · " + esc(F.msg) : ""}</span><button class="btn ghost small" data-act="finderPrecons" ${F.busy ? "disabled" : ""}>${F.busy ? "Checking…" : F.precons.length ? "Check 10 more precons" : "Check the 10 newest precons"}</button></div>
@@ -667,6 +681,7 @@ function finderPanel() {
         <small class="muted ellip">${colorDots(meta(x.deck.commander))} ${esc(x.deck.commander || "")}</small>
         <div class="row between small"><span><b>${pct(sc.ratio)}</b> owned · need ${sc.missing}</span><span><b>${sc.missing ? usd(sc.cost) : "$0"}</b>${sc.unknown ? ` <span class="muted">+ ${sc.unknown} unknown</span>` : ""} to finish</span></div>
         ${bar(sc.ratio, "thin")}
+        ${sc.skipped ? `<small class="muted">Plus ${sc.skipped} basic lands, assumed owned</small>` : ""}
         ${sc.missing ? `<details><summary class="small">Missing cards${top ? ` · priciest: ${top}` : ""}</summary><div class="list compact">${sc.need.map((n) => `<button class="mini-row" data-act="card" data-name="${esc(n.name)}"><span class="ellip">${n.qty > 1 ? n.qty + "× " : ""}${esc(n.name)}</span><span class="small">${n.price === null ? "Unknown" : usd(n.price * n.qty)}</span></button>`).join("")}</div></details>` : `<p class="small ok-text">You own every card.</p>`}
         <div class="actions wrap"><button class="btn small" data-act="finderBuild" data-kind="${x.kind}" data-id="${esc(x.id)}">Make my version</button>${x.kind === "precon" ? `<button class="btn ghost small" data-act="finderSave" data-id="${esc(x.id)}">Save</button>` : ""}</div>
       </div></article>`;
@@ -712,7 +727,7 @@ export function sharedPage() {
   ${d.about ? `<section class="panel"><h3>About this deck</h3><p class="about">${esc(d.about)}</p><p class="foot">Written by ${esc(d.author || "the person who shared it")}.</p></section>` : ""}
   <section class="panel"><div class="row between"><h3>Match against my collection</h3><span class="chip ${sc.missing ? "" : "ok"}">${pct(sc.ratio)} owned</span></div>
     ${S.state.collection.length ? `<div class="kpis small"><div class="kpi"><b>${sc.owned}</b><span>you own</span></div><div class="kpi"><b>${sc.missing}</b><span>missing</span></div><div class="kpi"><b>${usd(sc.cost, 0)}</b><span>to finish${sc.unknown ? ` · ${sc.unknown} unknown` : ""}</span></div></div>${bar(sc.ratio, "good")}` : `<p class="muted small">Add your collection to see what you already own. <button class="link" data-act="importCollection">Import collection</button></p>`}
-    <p class="foot">Counts only your free copies and leaves out basic lands${sc.skipped ? ` (${sc.skipped} here)` : ""}. The person who shared this can’t see your collection, and their link doesn’t include theirs.</p></section>
+    <p class="foot">Counts only your free copies${sc.skipped ? ` and assumes you have the ${sc.skipped} basic lands (change this under Decks → Find decks)` : ""}. The person who shared this can’t see your collection, and their link doesn’t include theirs.</p></section>
   <section class="panel"><h3>Automated checks</h3>
     <ul class="checks">
       <li class="${rules.length ? "bad-text" : "ok-text"}">${rules.length ? `● ${rules.length} rules issue${rules.length > 1 ? "s" : ""}: ${esc(rules.slice(0, 3).map((i) => i.text).join(" "))}` : "✓ Card count, colors, legality and copy limits pass"}</li>
@@ -1041,7 +1056,7 @@ function impactCells(a, b, { cost = null, trade = null } = {}) {
     a.synergyLabel ? cell("Synergy", a.counts.Synergy, b.counts.Synergy) : "",
     cell("Avg MV", a.avg === null ? 0 : Number(a.avg.toFixed(2)), b.avg === null ? 0 : Number(b.avg.toFixed(2)), false),
     cost !== null ? `<div class="imp"><small>Spend</small><b>${usd(cost)}</b></div>` : "",
-    trade !== null ? `<div class="imp"><small>Net after trade-in</small><b>${usd(trade)}</b></div>` : "",
+    trade !== null ? `<div class="imp"><small>Cuts’ est. value</small><b>${usd(trade)}</b></div>` : "",
   ].join("");
 }
 
@@ -1049,9 +1064,10 @@ function swapPanel(d) {
   const U = S.ui.upgrade,
     plans = U.deckId === d.id ? U.plans : {},
     plan = plans[U.budget];
-  return `<section class="panel"><p class="eyebrow">${sumQty(d.cards) < 100 ? "Step 2" : "Upgrade lab"}</p><h2>One-for-one upgrades</h2><p class="muted small">Pick a budget. Cardforge proposes cuts and replacements, then shows exactly what each swap does to the engine and what it costs after trading in the cut card.</p>
+  return `<section class="panel"><p class="eyebrow">${sumQty(d.cards) < 100 ? "Step 2" : "Upgrade lab"}</p><h2>One-for-one upgrades</h2><p class="muted small">Pick a budget. Cardforge proposes cuts and replacements and explains each trade-off: what the deck gains, what it gives up, and what it costs to buy. These are rules of thumb from card text — you know your playgroup best.</p>
   <div class="chips">${[0, 10, 25, 50, 100].map((n) => `<button class="chip pick ${U.budget === n ? "on" : ""}" data-act="upBudget" data-v="${n}">${n ? "$" + n : "My cards ($0)"}</button>`).join("")}</div>
   <label class="custom-budget">Custom upgrade budget ($)<input type="number" min="0" max="100000" step="0.01" value="${U.budget}" data-change="upCustom" aria-label="Custom upgrade budget"></label>
+  <label class="check small"><input type="checkbox" data-change="upTrade" ${U.tradeIn ? "checked" : ""}> Show what the cut cards are worth (if you plan to sell or trade them)</label>
   <div class="row between"><label class="check"><input type="checkbox" data-change="upSimple" ${U.simple ? "checked" : ""}> Prefer simpler cards</label><button class="btn" data-act="upRun" ${U.busy ? "disabled" : ""}>${U.busy ? "Working…" : Object.keys(plans).length ? "↻ Refresh" : "Find upgrades"}</button></div>
   <p class="muted small" role="status" id="upMsg">${esc(U.msg)}</p>
   ${Object.keys(plans).length ? budgetLadder(d, plans) : ""}
@@ -1073,24 +1089,31 @@ function budgetLadder(d, plans) {
 }
 
 function swapResults(d, plan) {
-  const base = engineProfile(d, S.catalog).score,
-    sel = S.ui.upgrade.selected;
+  const p = engineProfile(d, S.catalog),
+    base = p.score,
+    targets = Object.fromEntries(p.parts.map((x) => [x.key, x.target])),
+    sel = S.ui.upgrade.selected,
+    showTrade = S.ui.upgrade.tradeIn,
+    comm = meta(d.commander);
   if (!plan.swaps.length)
-    return `<section class="panel">${empty("No clear upgrades at this budget", "Try a higher budget, or load card data for your collection so owned cards can be suggested.")}</section>`;
+    return `<section class="panel">${empty("No clear upgrades at this budget", "Nothing in reach improves the deck without giving up something it relies on. Try a higher budget, or load card data for your collection so owned cards can be suggested.")}</section>`;
+  const sign = { gain: "+", lose: "−", same: "=" };
   return `<div class="swap-list">${plan.swaps
     .map((s, i) => {
       const add = meta(s.add),
         cut = meta(s.cut),
-        imp = swapImpact(d, s, S.catalog, base);
+        imp = swapImpact(d, s, S.catalog, base),
+        why = explainSwap(cut, add, comm, p.counts, targets);
       return `<article class="swap ${sel.has(i) ? "on" : ""}">
         <label class="swap-check"><input type="checkbox" data-change="upPick" data-i="${i}" ${sel.has(i) ? "checked" : ""}> Use this swap</label>
         <div class="swap-pair">
-          <button class="swap-card out" data-act="card" data-name="${esc(s.cut)}">${img(art(cut), s.cut)}<small>OUT</small><b>${esc(s.cut)}</b><span>${manaCost(cut)}</span><span class="muted small">worth ${usd(imp.cutValue)}</span></button>
-          <span class="swap-arrow">→</span>
-          <button class="swap-card in" data-act="card" data-name="${esc(s.add)}">${img(art(add), s.add)}<small>IN</small><b>${esc(s.add)}</b><span>${manaCost(add)}</span><span class="small">${s.owned ? '<b class="ok-text">You own it</b>' : usd(s.cost)}</span></button>
+          <button class="swap-card out" data-act="card" data-name="${esc(s.cut)}">${img(art(cut), s.cut, "swap-art")}<small>OUT</small><b>${esc(s.cut)}</b><span class="swap-mana">${manaCost(cut)}</span>${showTrade ? `<span class="muted small">est. value ${usd(imp.cutValue)}</span>` : ""}</button>
+          <span class="swap-arrow" aria-hidden="true">→</span>
+          <button class="swap-card in" data-act="card" data-name="${esc(s.add)}">${img(art(add), s.add, "swap-art")}<small>IN</small><b>${esc(s.add)}</b><span class="swap-mana">${manaCost(add)}</span><span class="small">${s.owned ? '<b class="ok-text">You own a free copy</b>' : `Buy for <b>${usd(s.cost)}</b>`}</span></button>
         </div>
-        <div class="swap-facts"><span>Engine <b class="${imp.delta > 0 ? "up" : imp.delta < 0 ? "down" : ""}">${signed(imp.delta)}</b></span><span>Cost <b>${usd(s.cost)}</b></span><span>Net after trade-in <b>${usd(imp.net)}</b></span><span>${esc(s.complexity)}</span></div>
-        <p class="small muted">${esc(s.reason.replace(/ Review the cut’s unique abilities before replacing it\./, ""))}</p>
+        <ul class="swap-why">${why.lines.map((l) => `<li class="${l.kind}"><span aria-hidden="true">${sign[l.kind]}</span>${esc(l.text)}</li>`).join("")}</ul>
+        <p class="swap-choose small">${esc(why.choose)}</p>
+        <div class="swap-facts"><span>Engine score <b class="${imp.delta > 0 ? "up" : ""}">${base} → ${base + imp.delta}</b></span><span>${s.owned ? "Cost <b>$0</b>" : `Cost <b>${usd(s.cost)}</b>`}</span><span class="chip">${esc(s.complexity === "Straightforward" ? "Simple to play" : s.complexity)}</span></div>
       </article>`;
     })
     .join("")}</div>
@@ -1104,7 +1127,7 @@ export function upgradeSummary(d, plan) {
     spend = sel.reduce((a, s) => a + (s.cost || 0), 0),
     trade = sel.reduce((a, s) => a + (priceOf(s.cut) ?? 0), 0);
   if (!sel.length) return `<p class="small center">Tick the swaps you like to see before → after.</p>`;
-  return `<p class="eyebrow">Before → after · ${sel.length} swap${sel.length > 1 ? "s" : ""}</p><div class="impact">${impactCells(before, after, { cost: spend, trade: spend - trade })}</div><div class="actions"><button class="btn ghost small" data-act="upExport">↓ Buy list</button><button class="btn small" data-act="upApply">Apply ${sel.length}</button></div>`;
+  return `<p class="eyebrow">Before → after · ${sel.length} swap${sel.length > 1 ? "s" : ""}</p><div class="impact">${impactCells(before, after, { cost: spend, trade: S.ui.upgrade.tradeIn ? trade : null })}</div><div class="actions"><button class="btn ghost small" data-act="upExport">↓ Buy list</button><button class="btn small" data-act="upApply">Apply ${sel.length}</button></div>`;
 }
 
 /* Versions */

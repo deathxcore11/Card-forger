@@ -1,7 +1,8 @@
 // Deck extras: Commander bracket estimate, mana base helper, proxy sheet and
 // life tracker state. Pure functions over the card catalog; no network calls.
 import { cardKey, rulesText, typeText, isLand, isBasic, aggregateCards, validateDeck } from "./core.js";
-import { engineProfile } from "./insights.js";
+import { engineProfile, engineRoles } from "./insights.js";
+import { commanderTheme } from "./planner.js";
 
 /* ---------- Commander bracket estimate ---------- */
 
@@ -284,4 +285,47 @@ export function deckReview(deck, catalog, collection = [], decks = []) {
       out.push({ level: "warn", heuristic: true, title: "Basic lands don’t match your spells’ colors", detail: "The split of basics is noticeably different from the colored mana symbols in your spells.", action: { act: "deckTab", id: "engine", label: "See suggested split" } });
   }
   return out.sort((a, b) => (a.level === b.level ? 0 : a.level === "bad" ? -1 : 1));
+}
+
+/* ---------- Upgrade swap explanation ---------- */
+
+const ROLE_WORD = { Ramp: "ramp", Draw: "card draw", Removal: "removal", Wipe: "a board wipe", Protection: "protection" };
+const ROLE_WHY = { Ramp: "getting ahead on mana", Draw: "refilling your hand", Removal: "answering threats", Wipe: "resetting a losing board", Protection: "keeping your key pieces alive" };
+const list = (xs) => (xs.length < 2 ? xs.join("") : xs.slice(0, -1).join(", ") + " and " + xs.at(-1));
+
+// Plain-language trade-off for one swap, built only from the two cards and the deck's counts.
+export function explainSwap(cutCard, addCard, commander, counts = {}, targets = {}) {
+  const cutRoles = engineRoles(cutCard),
+    addRoles = engineRoles(addCard),
+    gains = addRoles.filter((r) => !cutRoles.includes(r)),
+    loses = cutRoles.filter((r) => !addRoles.includes(r)),
+    keeps = addRoles.filter((r) => cutRoles.includes(r)),
+    tribe = commander ? commanderTheme(commander).tribe : null,
+    isTribe = (c) => !!tribe && new RegExp("\\b" + tribe + "s?\\b", "i").test(typeText(c)),
+    mvCut = Number(cutCard?.cmc) || 0,
+    mvAdd = Number(addCard?.cmc) || 0,
+    lines = [];
+  // A gain only counts as a real benefit while the deck is under the usual guideline for it.
+  const short = (r) => targets[r] === undefined || counts[r] === undefined || counts[r] < targets[r],
+    needed = gains.filter(short),
+    extra = gains.filter((r) => !short(r)),
+    themeGain = tribe && isTribe(addCard) && !isTribe(cutCard),
+    themeLoss = tribe && isTribe(cutCard) && !isTribe(addCard),
+    an = (w) => (/^[AEIOU]/i.test(w) ? "an " : "a ") + w,
+    count = (r, d) => (counts[r] !== undefined ? ` (${ROLE_WORD[r]} ${counts[r]} → ${counts[r] + d}${d > 0 && targets[r] ? (short(r) ? `, guideline ~${targets[r]}` : `; already at the ~${targets[r]} guideline`) : ""})` : "");
+  if (needed.length) lines.push({ kind: "gain", text: `Adds ${list(needed.map((r) => ROLE_WORD[r]))}${needed.map((r) => count(r, 1)).join("")}.` });
+  if (extra.length) lines.push({ kind: "same", text: `Also adds ${list(extra.map((r) => ROLE_WORD[r]))}${extra.map((r) => count(r, 1)).join("")}.` });
+  if (loses.length) lines.push({ kind: "lose", text: `Loses ${list(loses.map((r) => ROLE_WORD[r]))}${loses.map((r) => count(r, -1)).join("")}.` });
+  if (keeps.length) lines.push({ kind: "same", text: `Both provide ${list(keeps.map((r) => ROLE_WORD[r]))}.` });
+  if (mvAdd !== mvCut) lines.push({ kind: mvAdd < mvCut ? "gain" : "lose", text: mvAdd < mvCut ? `Cheaper to cast: mana value ${mvCut} → ${mvAdd}.` : `Costs more to cast: mana value ${mvCut} → ${mvAdd}.` });
+  if (themeGain) lines.push({ kind: "gain", text: `Is ${an(tribe)}, which your commander cares about.` });
+  if (themeLoss) lines.push({ kind: "lose", text: `The cut is ${an(tribe)} and your commander cares about those; the new card isn’t.` });
+  let choose;
+  if (needed.length && loses.length) choose = `Choose this if ${ROLE_WHY[needed[0]]} matters more to you than ${ROLE_WHY[loses[0]]}.`;
+  else if (needed.length && themeLoss) choose = `Choose this if ${ROLE_WHY[needed[0]]} matters more to you than one more ${tribe} on the battlefield.`;
+  else if (needed.length) choose = `Fills a gap without giving up anything the deck counts on.`;
+  else if (loses.length) choose = `Only worth it for the theme or curve — you give up ${ROLE_WORD[loses[0]]}.`;
+  else if (extra.length) choose = `A small benefit: the deck already has enough ${ROLE_WORD[extra[0]]} by the usual guideline${themeLoss ? `, and you lose ${an(tribe)}` : ""}.`;
+  else choose = mvAdd < mvCut ? "Same jobs, cheaper to cast — helps you play more each turn." : "A theme choice: no change to ramp, draw, removal or protection.";
+  return { gains, loses, lines, choose };
 }
