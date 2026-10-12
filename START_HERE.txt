@@ -1,0 +1,46 @@
+CARDFORGE 2.0 — CLEANER LAYOUT + DECK ENGINE UPDATE
+
+HOW TO UPDATE YOUR LIVE SITE (same as before)
+1. On your current live site: Settings → Export backup (keep the file safe).
+2. Cloudflare → Workers & Pages → weathered-lake-9660 → upload this ZIP as the
+   new static assets (index.html must be at the root).
+3. Publish to the SAME Worker URL. A different address = a different, empty storage.
+4. Open the site and pull down to refresh (or close/reopen the installed app twice
+   so the new service worker takes over). Your collection and decks load automatically.
+   Restore the backup only if something looks wrong.
+
+WHAT CHANGED
+- 5 tabs only: Home · Search · Collection · Decks · Scan. Settings sit behind ⚙.
+- One deck page with tabs: Cards · Engine · Upgrade lab · Versions · Playtest · Shop.
+- Engine score (0–100) with ingredient bars, mana curve, color balance and
+  "find cards for this gap" buttons.
+- Goldfish simulator: 1,000 seeded test games (land drops, commander on curve,
+  ramp by T3, mana used). Same shuffles for every version → fair comparisons.
+- Versions: auto-saved before imports, upgrades, slot filling, restores, swaps.
+  Pick any two to see engine, roles, curve, value, cost, test games and real W–L.
+- Upgrade lab: budget ladder ($0/$10/$25/$50/$100) with engine gain per dollar,
+  trade-in value of each cut, and a live before → after panel.
+- Collection value: daily value history chart, value by color, most valuable cards,
+  and a trade binder (owned cards no deck uses).
+- Card sheet: compare any two cards (and the engine effect of swapping them),
+  pick a printing's price, links to Scryfall/EDHREC/TCGplayer/Card Kingdom/Cardmarket.
+- Game log tags each game with the exact deck version it was played with.
+
+FILES
+index.html / style.css            the shell and all styling
+app.js                            actions, routing, saving, Scryfall calls
+views.js                          every screen
+insights.js                       engine score, goldfish sim, versions, value math
+store.js / ui.js                  shared state and small HTML helpers
+core.js planner.js strategy.js deck-flow.js confidence.js catalog-tools.js storage.js
+                                  the original rules/import/storage logic (kept, reformatted)
+
+DATA SAFETY
+Same storage key as before (cardforge-v2). Card data now lives in its own record
+(cardforge-catalog-v1) so saving is faster on phones. Backups exported by the old
+version restore fine in this one.
+
+LIMITS
+Engine score, upgrade picks and test games are transparent rules and simulations
+based on card text — not AI predictions or win rates. Prices are Scryfall reference
+estimates. Single commander only (no partners/backgrounds yet).

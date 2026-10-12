@@ -1,0 +1,41 @@
+TURN CARDFORGE INTO AN ANDROID APK (about 15 minutes, free, no coding)
+
+Cardforge is already an installable web app (manifest + offline service worker).
+PWABuilder (made by Microsoft) wraps it as a real Android app that uses Chrome's
+engine. The app reads the same storage as your website, so your collection comes along.
+
+1. Upload this zip to your Cloudflare Worker first, as usual.
+2. If the site is behind Cloudflare Access (a login wall), PWABuilder can't read it.
+   Switch Access off for the site while you do step 3.
+3. On a computer, open https://www.pwabuilder.com and paste your site URL
+   (e.g. https://weathered-lake-9660.<you>.workers.dev). Click Start.
+4. Choose Package for stores → Android → Generate Package.
+   Options: Package ID e.g. com.randall.cardforge, App name Cardforge,
+   Display mode Standalone, Orientation Default (lets the Fold rotate).
+   Leave the "Signing key: New" option on.
+5. Download the zip. Inside are:
+     *.apk              ← install this on your Fold
+     *.aab              ← only needed for the Google Play Store
+     signing.keystore + signing-key-info.txt  ← KEEP THESE SAFE (needed for updates)
+     assetlinks.json    ← see step 7
+6. Copy the .apk to your phone and tap it.
+   Allow "Install unknown apps" for My Files / Chrome when Android asks.
+7. To hide the browser address bar inside the app: add the downloaded assetlinks.json
+   to your Cloudflare site at  /.well-known/assetlinks.json  (make a folder named
+   .well-known next to index.html, put the file inside, re-upload). Reopen the app.
+
+UPDATING LATER
+Upload a new site zip to Cloudflare as usual. The app picks it up automatically.
+You only rebuild the APK if you change the app name or icon.
+
+FOLD 8 ULTRA
+The layout responds to the screen you're using:
+- Cover screen: compact single column, shorter deck header.
+- Inner screen: two-column card lists and a side-by-side Engine/Versions view,
+  with the bottom tabs centred for your thumbs.
+- Landscape: shorter header and compact tabs.
+Unfolding or folding the phone switches layouts instantly, without reloading.
+
+BACK UP FIRST
+Export a backup from Settings before you start. Website and app normally share
+storage, but if the app opens empty, use Settings → Restore backup.

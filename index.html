@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<meta name="description" content="Cardforge — your Magic collection, decks, upgrades and deck engine analysis in one place.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Manrope:wght@600;700;800&display=swap">
+<link rel="stylesheet" href="style.css">
+<title>Cardforge</title>
+</head>
+<body data-view="home">
+<div id="app">
+  <header class="topbar">
+    <a class="brand" href="#home" aria-label="Cardforge home"><span class="mark">C</span><span>Cardforge</span></a>
+    <nav class="top-nav" aria-label="Main">
+      <button data-act="go" data-to="#home" data-nav="home">Home</button>
+      <button data-act="go" data-to="#search" data-nav="search">Search</button>
+      <button data-act="go" data-to="#collection" data-nav="collection">Collection</button>
+      <button data-act="go" data-to="#decks" data-nav="decks">Decks</button>
+      <button data-act="go" data-to="#scan" data-nav="scan">Scan</button>
+    </nav>
+    <span id="saveStatus" class="save-status" role="status"></span>
+    <button class="icon" data-act="menu" aria-label="Settings and more">⚙</button>
+  </header>
+  <main id="content"><p class="muted center pad">Loading your cards…</p></main>
+  <nav class="bottom-nav" aria-label="Main">
+    <button data-act="go" data-to="#home" data-nav="home"><span aria-hidden="true">⌂</span>Home</button>
+    <button data-act="go" data-to="#search" data-nav="search"><span aria-hidden="true">⌕</span>Search</button>
+    <button data-act="go" data-to="#collection" data-nav="collection"><span aria-hidden="true">▦</span>Collection</button>
+    <button data-act="go" data-to="#decks" data-nav="decks"><span aria-hidden="true">▣</span>Decks</button>
+    <button data-act="go" data-to="#scan" data-nav="scan"><span aria-hidden="true">▧</span>Scan</button>
+  </nav>
+</div>
+<dialog id="sheet" class="sheet" aria-label="Details"><div id="sheetBody"></div></dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
