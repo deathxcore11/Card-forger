@@ -1,3 +1,22 @@
+CARDFORGE 2.8 UPDATE — EVERY FORMAT
+
+- Build decks for 22 formats: Standard, Pioneer, Modern, Legacy, Vintage, Pauper, Premodern,
+  Old School, Penny Dreadful · Commander, Duel Commander, PreDH, Pauper Commander, Oathbreaker ·
+  Brawl, Standard Brawl, Historic, Timeless, Alchemy, Gladiator (MTG Arena) · 60-card casual and
+  Limited (40-card).
+- Each format uses its real rules: deck size (exact for Commander-style, a minimum for 60-card
+  formats), copy limits (4, singleton, or any number in Limited), who can lead the deck (legendary
+  creature, planeswalker for Oathbreaker, creature for Pauper Commander) and starting life.
+- Banned, restricted and not-legal cards are checked against that format's own list from Scryfall,
+  so ban updates arrive without an app update. Deck rows show "Banned", "Not legal" or "Restricted";
+  Deck review lists them; Vintage restricted cards are limited to one copy.
+- Card details show legality in the main formats, "All formats" for the rest, and a line for the
+  deck you opened it from (e.g. "✓ Legal in Modern").
+- Pick the format when creating or importing a deck, or change it later in the deck's ⋯ menu (or
+  tap the format chip). Imports without a commander switch from Commander automatically.
+- Search → "Legal in" covers every format; non-Commander decks get a "Find Modern cards →" shortcut.
+- The Upgrade lab's suggestions and the bracket estimate remain Commander-only for now.
+
 CARDFORGE 2.7 UPDATE — ACCOUNTS (READY, SWITCHED OFF UNTIL THE KEY IS ADDED)
 
 - Optional sign-in (Google or an emailed link) under Settings. Your workspace syncs privately to

@@ -4,6 +4,7 @@ Your Magic: The Gathering collection, decks, upgrades and deck analysis in one i
 
 ## What it does
 
+- **Every format** *(new in 2.8)*: 22 formats from Standard to Oathbreaker, each with its own deck size, copy limits, commander rules and Scryfall banned/restricted list.
 - **Collection**: add cards one at a time, from a list, or by photo scan. Track daily value, see value by color, and keep a trade binder of cards no deck uses.
 - **Decks**: import from Moxfield, Archidekt, ManaBox or MTGJSON. See what you own, what's missing and what it costs to finish.
 - **Engine score**: a 0–100 build-health check covering lands, ramp, draw, removal, synergy and curve, with 1,000 seeded goldfish test games.
@@ -77,6 +78,7 @@ uploading or replacing anything. Signing out leaves the data on the device.
 | `app.js` | Actions, routing, saving and Scryfall calls |
 | `views.js` | Every screen |
 | `insights.js` | Engine score, goldfish sim, versions and value math |
+| `formats.js` | Rules for all 22 formats |
 | `extras.js` | Bracket estimate, mana base, proxy sheets and life tracker |
 | `core.js`, `planner.js`, `strategy.js`, `deck-flow.js`, `confidence.js`, `catalog-tools.js` | Rules, import, planning and catalog logic |
 | `store.js`, `storage.js`, `ui.js` | Shared state, IndexedDB storage and HTML helpers |

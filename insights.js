@@ -1,3 +1,4 @@
+import { hasCommander, isCommanderLike, formatOf } from "./formats.js";
 // Deck engine analysis, goldfish simulation, version comparison and collection value.
 // Pure functions: no DOM, no network. Everything here is a transparent heuristic,
 // not a win-rate prediction.
@@ -166,10 +167,12 @@ const HINTS = {
 };
 
 export function engineProfile(deck, catalog) {
-  const fmt = deck.format === "Commander" ? "Commander" : "60-card casual",
-    targets = TARGETS[fmt],
+  const fmt = isCommanderLike(deck) ? "Commander" : "60-card casual",
+    size = formatOf(deck).size,
+    // 60-card targets, scaled for 40-card Limited and other non-60 sizes.
+    targets = fmt === "Commander" || size === 60 ? TARGETS[fmt] : Object.fromEntries(Object.entries(TARGETS[fmt]).map(([k, v]) => [k, k === "Curve" ? v : Math.max(1, Math.round((v * size) / 60))])),
     commander = catalog[cardKey(deck.commander)],
-    syn = fmt === "Commander" ? synergyTest(commander) : null,
+    syn = hasCommander(deck) ? synergyTest(commander) : null,
     counts = {
       Lands: 0,
       Ramp: 0,
@@ -309,7 +312,7 @@ function rng(seed) {
 
 export function goldfish(deck, catalog, { games = 1000, turns = 6, seed = 7 } = {}) {
   const commanderCard =
-      deck.format === "Commander" ? catalog[cardKey(deck.commander)] : null,
+      hasCommander(deck) ? catalog[cardKey(deck.commander)] : null,
     library = [];
   for (const row of aggregateCards(deck.cards)) {
     if (commanderCard && cardKey(row.name) === cardKey(commanderCard.name))
@@ -327,7 +330,7 @@ export function goldfish(deck, catalog, { games = 1000, turns = 6, seed = 7 } = 
   if (library.length < 20) return null;
   const random = rng(seed),
     cmdCmc = commanderCard ? Number(commanderCard.cmc) || 0 : null,
-    freeMull = deck.format === "Commander" ? 1 : 0;
+    freeMull = hasCommander(deck) ? 1 : 0;
   let mulls = 0,
     landsBy4 = 0,
     screw3 = 0,

@@ -19,6 +19,7 @@ import { sourceCredit, mtgjsonDeck, collectionIdeas, upgradeSuggestions, applyUp
 import { searchQuery, scanNames } from "./catalog-tools.js";
 import { newGame, proxyList, proxySheetHTML } from "./extras.js";
 import { sharePayload, encodeShare, decodeShare } from "./share.js";
+import { FORMATS, formatOf, hasCommander, canLead, sizeLabel } from "./formats.js";
 import { initCloud, cloudInfo, statusLabel, scheduleSync, signInGoogle, signInEmail, signOut, saveProfile, resolvePending, syncNow } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact } from "./insights.js";
 
@@ -663,9 +664,17 @@ A.flipFace = () => {
 A.setCommander = async (t) => {
   const name = t?.dataset?.name || $("#cmdName")?.value.trim();
   if (!name) return toast("Tap a card or type a name.");
-  const c = await resolve(name, true);
-  if (!commanderEligible(c)) return toast(c.name + " can’t be a commander.");
+  const c = await resolve(name, true),
+    fm = formatOf(currentDeck());
+  if (!canLead(c, fm)) return toast(`${c.name} can’t lead a ${fm.name} deck.`);
   await editDeck((d) => ({ ...d, commander: c.name, name: d.name === "Imported deck" ? c.name.split(",")[0] + " deck" : d.name, cards: d.cards.some((x) => key(x.name) === key(c.name)) ? d.cards : [{ name: c.name, qty: 1 }, ...d.cards] }), { msg: c.name + " is now your commander." });
+};
+
+// Search pre-filtered to cards legal in this deck's format.
+A.formatSearch = () => {
+  const f = formatOf(currentDeck());
+  S.ui.db.filters = { color: "", type: "", format: f.legality || "", maxPrice: "" };
+  go("#search");
 };
 
 /* ---------- account ---------- */
@@ -1479,19 +1488,42 @@ A.impApply = async () => {
    Decks: create, import, menu, edit
    ========================================================= */
 
+// Every format, grouped (Constructed · Commander · Arena · Casual).
+function formatSelect(id, current) {
+  const groups = [...new Set(FORMATS.map((f) => f.group))];
+  return `<select id="${id}" data-format-select>${groups.map((g) => `<optgroup label="${g}">${FORMATS.filter((f) => f.group === g).map((f) => `<option value="${esc(f.name)}" ${formatOf(current).name === f.name ? "selected" : ""}>${esc(f.name)}</option>`).join("")}</optgroup>`).join("")}</select>`;
+}
+const formatInfo = (name) => {
+  const f = formatOf(name);
+  return `${esc(sizeLabel(f))}${f.commander ? " · led by " + (f.commander === "planeswalker" ? "a planeswalker" : f.commander === "creature" ? "a creature" : "a legendary creature") : ""} · ${f.life} life${f.legality ? " · banned list checked" : ""}${f.note ? " · " + esc(f.note) : ""}`;
+};
+// Show or hide the commander field as the format changes.
+document.addEventListener("change", (e) => {
+  if (!e.target.matches?.("[data-format-select]")) return;
+  const f = formatOf(e.target.value),
+    row = e.target.id === "ndFormat" ? $("#ndCommanderRow") : e.target.id === "dImpFormat" ? $("#dImpCommanderRow") : null;
+  if (row) {
+    row.hidden = !f.commander;
+    const label = row.firstChild;
+    if (label && label.nodeType === 3) label.textContent = f.commander === "planeswalker" ? "Oathbreaker" : "Commander";
+  }
+  if (e.target.id === "ndFormat" && $("#ndFormatInfo")) $("#ndFormatInfo").innerHTML = formatInfo(f.name);
+});
+
 A.newDeck = (t) => {
   const commander = t?.dataset?.commander || "";
   openSheet(
     `<div class="sheet-head"><h2>New deck</h2><button class="icon" data-act="closeSheet">✕</button></div>
     <div class="grid2">
-      <label class="span2">Commander<input id="ndCommander" value="${esc(commander)}" placeholder="e.g. Giada, Font of Hope" autocomplete="off"></label>
+      <label class="span2">Format${formatSelect("ndFormat", "Commander")}</label>
+      <p class="span2 muted small" id="ndFormatInfo">${formatInfo("Commander")}</p>
+      <label class="span2" id="ndCommanderRow">Commander<input id="ndCommander" value="${esc(commander)}" placeholder="e.g. Giada, Font of Hope" autocomplete="off"></label>
       <label class="span2">Deck name<input id="ndName" maxlength="100" placeholder="Optional"></label>
-      <label>Format<select id="ndFormat">${options([["Commander", "Commander"], ["60-card casual", "60-card casual"]], "Commander")}</select></label>
       <label>Budget $<input id="ndBudget" type="number" min="0" value="${S.state.settings.budget || 25}"></label>
     </div>
     <p id="ndError" class="error" role="alert"></p>
     <button class="btn block" data-act="newDeckSave">Create deck</button>
-    <p class="muted small">Single commander only (partners and backgrounds aren’t supported yet).</p>`,
+    <p class="muted small">Commander formats: single commander only (partners and backgrounds aren’t supported yet).</p>`,
     { type: "newDeck" },
   );
 };
@@ -1501,10 +1533,11 @@ A.newDeckSave = async (t) => {
     cn = $("#ndCommander").value.trim();
   try {
     let c = null;
-    if (format === "Commander") {
-      if (!cn) throw Error("Enter a commander.");
+    const fm = formatOf(format);
+    if (fm.commander) {
+      if (!cn) throw Error(fm.commander === "planeswalker" ? "Enter your Oathbreaker (a planeswalker)." : "Enter a commander.");
       c = await resolve(cn, true);
-      if (!commanderEligible(c)) throw Error(c.name + " can’t be a commander.");
+      if (!canLead(c, fm)) throw Error(`${c.name} can’t lead a ${fm.name} deck.`);
     }
     const d = {
       id: uid(),
@@ -1522,8 +1555,8 @@ A.newDeckSave = async (t) => {
       s.activeDeck = d.id;
     });
     closeSheet();
-    go(`#deck/${d.id}/${c ? "upgrade" : "cards"}`);
-    toast(c ? "Deck created. Fill the open slots from your collection here." : "Deck created.");
+    go(`#deck/${d.id}/${c && format === "Commander" ? "upgrade" : "cards"}`);
+    toast(c && format === "Commander" ? "Deck created. Fill the open slots from your collection here." : `${formatOf(format).name} deck created.`);
   } catch (e) {
     $("#ndError").textContent = e.message;
   } finally {
@@ -1542,8 +1575,8 @@ function deckImportSheet(preset = {}) {
     <label class="btn ghost file">Upload a file<input type="file" accept=".txt,.csv,.json,.dek" data-change="dImpFile" hidden></label>
     <div class="grid2">
       <label>Deck name<input id="dImpName" maxlength="100" value="${esc(preset.name || "Imported deck")}"></label>
-      <label>Commander<input id="dImpCommander" value="${esc(preset.commander || "")}" placeholder="Read from the list"></label>
-      <label>Format<select id="dImpFormat">${options([["Commander", "Commander"], ["60-card casual", "60-card casual"]], preset.format || "Commander")}</select></label>
+      <label>Format${formatSelect("dImpFormat", preset.format || "Commander")}</label>
+      <label id="dImpCommanderRow">Commander<input id="dImpCommander" value="${esc(preset.commander || "")}" placeholder="Read from the list"></label>
       <label>Save as<select id="dImpDest">${options([["new", "New deck"], ...(currentDeck() ? [["replace", "Replace " + currentDeck().name.slice(0, 24)]] : []), ["library", "Idea (inspiration)"]], preset.destination || "new")}</select></label>
     </div>
     <details class="more" ${preset.url ? "open" : ""}><summary>Credit the creator (optional)</summary><div class="grid2"><label class="span2">Original link<input id="dImpURL" type="url" value="${esc(preset.url || "")}" placeholder="https://moxfield.com/decks/…"></label><label>Author<input id="dImpAuthor" maxlength="100" value="${esc(preset.author || "")}"></label><label>Kind<select id="dImpKind">${options(["User export", "Community deck", "Purchased precon", "MTGJSON precon"].map((x) => [x, x]), preset.kind || "User export")}</select></label><label class="span2">Notes<textarea id="dImpDesc" rows="2" maxlength="3000">${esc(preset.description || "")}</textarea></label></div></details>
@@ -1575,7 +1608,7 @@ function dImpCandidate() {
     id: $("#dImpDest").value === "replace" ? currentDeck()?.id : "preview",
     name: $("#dImpName").value.trim() || "Imported deck",
     format,
-    commander: format === "Commander" ? $("#dImpCommander").value.trim() : "",
+    commander: hasCommander(format) ? $("#dImpCommander").value.trim() : "",
     strategy: "Auto",
     budget: S.state.settings.budget || 25,
     locked: false,
@@ -1614,13 +1647,19 @@ A.dImpPreview = async () => {
     if (dImp.cards.length > 1000) throw Error("That’s more than 1000 different cards — use collection import instead.");
     if (dImp.name && $("#dImpName").value === "Imported deck") $("#dImpName").value = dImp.name;
     if (!$("#dImpCommander").value && dImp.commander) $("#dImpCommander").value = dImp.commander;
+    // A list without a commander that's around 60 cards isn't a Commander deck; let the user pick the exact format.
+    if (!dImp.commander && $("#dImpFormat").value === "Commander" && sumQty(dImp.cards) <= 80) {
+      $("#dImpFormat").value = sumQty(dImp.cards) <= 45 ? "Limited (40-card)" : "60-card casual";
+      $("#dImpFormat").dispatchEvent(new Event("change", { bubbles: true }));
+      $("#dImpStatus").textContent = "No commander found — set to " + $("#dImpFormat").value + ". Pick Standard, Modern or another format above to check legality.";
+    }
     dImpBusy = true;
     const btn = busy($("#dImpPreviewBtn"), "Loading…");
     drawDeckImport();
     const r = await resolveNames(dImp.cards.map((c) => c.name), (m) => ($("#dImpStatus").textContent = m));
     // A list without a commander section: guess a legendary creature if there's exactly one.
-    if (!$("#dImpCommander").value && $("#dImpFormat").value === "Commander") {
-      const legends = dImp.cards.filter((c) => commanderEligible(meta(c.name)));
+    if (!$("#dImpCommander").value && hasCommander($("#dImpFormat").value)) {
+      const legends = dImp.cards.filter((c) => canLead(meta(c.name), formatOf($("#dImpFormat").value)));
       if (legends.length === 1) $("#dImpCommander").value = meta(legends[0].name).name;
     }
     $("#dImpStatus").textContent = r.failed.length ? `${r.failed.length} names weren’t found.` : "Matched against your collection.";
@@ -1643,7 +1682,7 @@ A.dImpSave = async (t) => {
     if (d.name === "Imported deck" && d.commander) d.name = d.commander.split(",")[0] + " deck";
     if (d.commander) {
       const c = await resolve(d.commander, true);
-      if (!commanderEligible(c)) throw Error(c.name + " can’t be a commander.");
+      if (!canLead(c, formatOf(d))) throw Error(`${c.name} can’t lead a ${formatOf(d).name} deck.`);
       d.commander = c.name;
       if (!d.cards.some((x) => key(x.name) === key(c.name))) d.cards.unshift({ name: c.name, qty: 1 });
     }
@@ -1686,7 +1725,7 @@ A.deckMenu = () => {
   const d = currentDeck();
   openSheet(
     `<div class="sheet-head"><h2>Deck options</h2><button class="icon" data-act="closeSheet">✕</button></div>
-    <div class="grid2"><label class="span2">Name<input id="dmName" maxlength="100" value="${esc(d.name)}"></label><label>Budget $<input id="dmBudget" type="number" min="0" value="${d.budget ?? 25}"></label><label>Focus<select id="dmStrategy">${options(["Auto", "Tokens", "Dragons", "Graveyard", "Spells", "Artifacts", "Lifegain", "Landfall", "Creature"].map((x) => [x, x]), d.strategy || "Auto")}</select></label></div>
+    <div class="grid2"><label class="span2">Name<input id="dmName" maxlength="100" value="${esc(d.name)}"></label><label class="span2">Format${formatSelect("dmFormat", d.format)}</label><label>Budget $<input id="dmBudget" type="number" min="0" value="${d.budget ?? 25}"></label><label>Focus<select id="dmStrategy">${options(["Auto", "Tokens", "Dragons", "Graveyard", "Spells", "Artifacts", "Lifegain", "Landfall", "Creature"].map((x) => [x, x]), d.strategy || "Auto")}</select></label></div>
     <button class="btn block" data-act="deckSaveInfo">Save</button>
     <label class="check toggle"><input type="checkbox" data-change="deckLock" ${d.locked ? "checked" : ""}> <span><b>Assembled</b> — reserve these copies so other decks don’t count them as free</span></label>
     <div class="menu-list">
@@ -1712,7 +1751,8 @@ const editDeck = (fn, opts) => {
   }, opts);
 };
 A.deckSaveInfo = async () => {
-  await editDeck((d) => ({ ...d, name: $("#dmName").value.trim() || d.name, budget: Math.max(0, Number($("#dmBudget").value) || 0), strategy: $("#dmStrategy").value }), { msg: "Saved." });
+  const format = formatOf($("#dmFormat")?.value).name;
+  await editDeck((d) => ({ ...d, name: $("#dmName").value.trim() || d.name, budget: Math.max(0, Number($("#dmBudget").value) || 0), strategy: $("#dmStrategy").value, format, commander: hasCommander(format) ? d.commander : "" }), { msg: "Saved." });
   closeSheet();
 };
 C.deckLock = (t) => editDeck((d) => ({ ...d, locked: t.checked }), { msg: t.checked ? "Copies reserved for this deck." : "Reservation released." });
@@ -2412,7 +2452,7 @@ A.deleteVer = async (t) => {
 
 /* Playtest */
 
-const library = (d) => d.cards.filter((c) => d.format !== "Commander" || key(c.name) !== key(d.commander));
+const library = (d) => d.cards.filter((c) => !hasCommander(d) || key(c.name) !== key(d.commander));
 A.draw7 = () => {
   const d = currentDeck();
   S.ui.hand = { ...drawHand(library(d)), deckId: d.id, mulls: 0 };
@@ -2438,7 +2478,7 @@ A.logGame = async () => {
 
 /* ---------- life tracker ---------- */
 A.lifeStart = (t) => {
-  S.ui.life = newGame(Number(t.dataset.n) || 4, currentDeck()?.format === "Commander" ? 40 : 20);
+  S.ui.life = newGame(Number(t.dataset.n) || 4, formatOf(currentDeck()).life);
   render();
 };
 A.lifeTurn = (t) => {

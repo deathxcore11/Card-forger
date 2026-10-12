@@ -2,6 +2,7 @@
 // A shared deck travels entirely inside the link (#shared/<data>): no server,
 // no account, and nothing about the sharer's collection, ownership or value.
 import { cardKey, aggregateCards } from "./core.js";
+import { formatOf, isFormatName } from "./formats.js";
 
 const MAX_CARDS = 400;
 const clean = (s, n) => String(s ?? "").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, n);
@@ -12,7 +13,7 @@ export function sharePayload(deck, { author = "", about = "" } = {}) {
     v: 1,
     n: clean(deck.name, 100),
     c: clean(deck.commander, 150),
-    f: deck.format === "Commander" ? "C" : "60",
+    f: deck.format === "Commander" ? "C" : deck.format === "60-card casual" ? "60" : clean(deck.format, 40),
     s: clean(deck.strategy && deck.strategy !== "Auto" ? deck.strategy : "", 40),
     b: Number.isFinite(Number(deck.budget)) ? Number(deck.budget) : null,
     a: clean(author, 60),
@@ -29,7 +30,7 @@ export function deckFromPayload(p) {
   return {
     name: clean(p.n, 100) || "Shared deck",
     commander: clean(p.c, 150),
-    format: p.f === "C" ? "Commander" : "60-card casual",
+    format: p.f === "C" ? "Commander" : p.f === "60" ? "60-card casual" : isFormatName(p.f) ? formatOf(p.f).name : "60-card casual",
     strategy: clean(p.s, 40) || "Auto",
     budget: Number.isFinite(Number(p.b)) && p.b !== null ? Number(p.b) : null,
     author: clean(p.a, 60),

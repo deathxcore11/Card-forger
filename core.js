@@ -1,3 +1,5 @@
+import { formatOf, canLead, legalityIn } from "./formats.js";
+
 export const cardKey = (s) =>
   String(s || "")
     .normalize("NFKC")
@@ -117,20 +119,23 @@ export function cardPrice(c, finish = "nonfoil") {
     : null;
 }
 export function validateDeck(deck, catalog, entries, decks = []) {
-  const issues = [],
-    target = deck.format === "Commander" ? 100 : 60,
+  const f = formatOf(deck),
+    issues = [],
+    target = f.size,
     count = sumQty(deck.cards),
-    comm = catalog[cardKey(deck.commander)];
-  if (count !== target)
+    comm = f.commander ? catalog[cardKey(deck.commander)] : null;
+  if (f.exact ? count !== target : count < target)
     issues.push({
       kind: "count",
-      text: `${count}/${target} cards. ${count < target ? target - count + " slots remain." : count - target + " cards over."}`,
+      text: f.exact
+        ? `${count}/${target} cards. ${count < target ? target - count + " slots remain." : count - target + " cards over."}`
+        : `${count} cards. ${f.name} needs at least ${target}; ${target - count} to go.`,
     });
-  if (deck.format === "Commander") {
-    if (!commanderEligible(comm))
+  if (f.commander) {
+    if (!canLead(comm, f))
       issues.push({
         kind: "commander",
-        text: "Choose a verified eligible single commander.",
+        text: f.commander === "planeswalker" ? "Choose a planeswalker as your Oathbreaker." : `Choose a card that can lead a ${f.name} deck.`,
       });
     if (!deck.cards.some((c) => cardKey(c.name) === cardKey(deck.commander)))
       issues.push({
@@ -147,46 +152,38 @@ export function validateDeck(deck, catalog, entries, decks = []) {
       });
       continue;
     }
-    if (deck.format === "Commander") {
-      if (comm && !identityFits(m, comm))
-        issues.push({
-          kind: "color",
-          text: c.name + ": outside commander color identity.",
-        });
-      if (m.legalities?.commander !== "legal")
-        issues.push({
-          kind: "legality",
-          text:
-            c.name +
-            ": Commander legality is " +
-            (m.legalities?.commander || "unknown") +
-            ".",
-        });
-      const exception = rulesText(m).match(
-        /(?:any number|up to (\w+)) of cards named/i,
-      );
-      if (c.qty > 1 && !isBasic(m) && !exception)
-        issues.push({
-          kind: "singleton",
-          text: c.name + ": singleton limit exceeded.",
-        });
-      if (exception && exception[1]) {
-        const limits = { nine: 9, seven: 7 };
-        if (limits[exception[1]] && c.qty > limits[exception[1]])
-          issues.push({
-            kind: "singleton",
-            text: c.name + ": printed copy limit exceeded.",
-          });
-      }
-    } else if (
-      c.qty > 4 &&
-      !isBasic(m) &&
-      !/any number of cards named/i.test(rulesText(m))
-    )
+    if (f.commander && comm && !identityFits(m, comm))
+      issues.push({
+        kind: "color",
+        text: c.name + ": outside commander color identity.",
+      });
+    const legal = legalityIn(m, f);
+    if (legal === "banned" || legal === "not_legal")
+      issues.push({
+        kind: "legality",
+        text: c.name + ": " + (legal === "banned" ? "banned" : "not legal") + " in " + f.name + ".",
+      });
+    if (legal === "restricted" && c.qty > 1)
       issues.push({
         kind: "copies",
-        text: c.name + ": more than four copies.",
+        text: c.name + ": restricted in " + f.name + " — one copy only.",
       });
+    const exception = rulesText(m).match(
+      /(?:any number|up to (\w+)) of cards named/i,
+    );
+    if (c.qty > f.copies && !isBasic(m) && !exception)
+      issues.push({
+        kind: f.copies === 1 ? "singleton" : "copies",
+        text: c.name + (f.copies === 1 ? ": singleton limit exceeded." : `: more than ${f.copies} copies.`),
+      });
+    if (exception && exception[1]) {
+      const limits = { nine: 9, seven: 7 };
+      if (limits[exception[1]] && c.qty > limits[exception[1]])
+        issues.push({
+          kind: "singleton",
+          text: c.name + ": printed copy limit exceeded.",
+        });
+    }
   }
   const missing = gaps(deck, entries, decks).reduce((a, c) => a + c.missing, 0);
   return {

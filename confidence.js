@@ -1,3 +1,4 @@
+import { isFormatName } from "./formats.js";
 import { cardKey, aggregateCards, cardPrice } from "./core.js";
 const canon = (s) => String(s ?? "").trim();
 const header = (s) =>
@@ -435,7 +436,7 @@ export function validateWorkspace(input) {
       typeof d.id !== "string" ||
       typeof d.name !== "string" ||
       !Array.isArray(d.cards) ||
-      !["Commander", "60-card casual"].includes(d.format)
+      !isFormatName(d.format)
     )
       throw Error("Invalid reference deck.");
     for (const c of d.cards)
@@ -455,7 +456,7 @@ export function validateWorkspace(input) {
       did.has(d.id) ||
       typeof d.name !== "string" ||
       !Array.isArray(d.cards) ||
-      !["Commander", "60-card casual"].includes(d.format)
+      !isFormatName(d.format)
     )
       throw Error("Invalid deck record.");
     did.add(d.id);

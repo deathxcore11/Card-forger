@@ -3,6 +3,7 @@
 import { cardKey, rulesText, typeText, isLand, isBasic, aggregateCards, validateDeck } from "./core.js";
 import { engineProfile, engineRoles } from "./insights.js";
 import { commanderTheme } from "./planner.js";
+import { formatOf } from "./formats.js";
 
 /* ---------- Commander bracket estimate ---------- */
 
@@ -238,7 +239,8 @@ export const isOut = (p) => p.life <= 0 || p.poison >= 10 || p.cmd >= 21;
 export function deckReview(deck, catalog, collection = [], decks = []) {
   const v = validateDeck(deck, catalog, collection, decks),
     out = [],
-    commander = deck.format === "Commander",
+    f = formatOf(deck),
+    commander = !!f.commander,
     names = (kind) => v.issues.filter((i) => i.kind === kind).map((i) => i.text.split(": ")[0]),
     group = (kind, level, one, many, why) => {
       const list = names(kind);
@@ -246,23 +248,24 @@ export function deckReview(deck, catalog, collection = [], decks = []) {
         out.push({ level, title: list.length === 1 ? one : many.replace("#", list.length), detail: why, cards: list, action: { act: "deckTab", id: "cards", label: "Review cards" } });
     };
   if (v.issues.some((i) => i.kind === "commander"))
-    out.push({ level: "bad", title: "No eligible commander set", detail: "Without a commander Cardforge can’t check colors, synergy or upgrades.", action: { act: "deckTab", id: "upgrade", label: "Choose commander" } });
-  if (v.count !== v.target) {
+    out.push({ level: "bad", title: f.commander === "planeswalker" ? "No Oathbreaker set" : "No eligible commander set", detail: "Without one Cardforge can’t check colors, synergy or upgrades.", action: { act: "deckTab", id: "upgrade", label: "Choose commander" } });
+  const countIssue = v.issues.find((i) => i.kind === "count");
+  if (countIssue) {
     const short = v.count < v.target,
       n = Math.abs(v.target - v.count);
     out.push({
       level: "warn",
-      title: `${v.count}/${v.target} cards`,
+      title: f.exact ? `${v.count}/${v.target} cards` : `${v.count} cards — ${f.name} needs ${v.target}+`,
       detail: short
         ? `${n} empty slot${n > 1 ? "s" : ""} in the list. (Separate from cards you still need to buy — those are in Buy.)`
         : `${n} card${n > 1 ? "s" : ""} over the ${v.target}-card limit.`,
-      action: short ? { act: "deckTab", id: "upgrade", label: `Fill ${n} slot${n > 1 ? "s" : ""}` } : { act: "deckTab", id: "cards", label: "Choose cuts" },
+      action: short ? (deck.format === "Commander" ? { act: "deckTab", id: "upgrade", label: `Fill ${n} slot${n > 1 ? "s" : ""}` } : { act: "formatSearch", label: `Find ${f.name} cards` }) : { act: "deckTab", id: "cards", label: "Choose cuts" },
     });
   }
   group("color", "bad", "1 card is outside your commander’s colors", "# cards are outside your commander’s colors", "Every card must fit the commander’s color identity.");
-  group("legality", "bad", "1 card isn’t legal in Commander", "# cards aren’t legal in Commander", "Banned or not legal according to the latest card data.");
-  group("singleton", "bad", "1 card has too many copies", "# cards have too many copies", "Commander allows one copy of each card except basic lands and cards that say otherwise.");
-  group("copies", "bad", "1 card has more than four copies", "# cards have more than four copies", "60-card formats allow four copies except basic lands.");
+  group("legality", "bad", `1 card isn’t legal in ${f.name}`, `# cards aren’t legal in ${f.name}`, `Banned or not legal in ${f.name} according to Scryfall’s latest card data.`);
+  group("singleton", "bad", "1 card has too many copies", "# cards have too many copies", `${f.name} allows one copy of each card except basic lands and cards that say otherwise.`);
+  group("copies", "bad", "1 card has too many copies", "# cards have too many copies", f.legality === "vintage" ? "Vintage allows four copies, and one of each restricted card." : `${f.name} allows ${f.copies} copies except basic lands.`);
   const unknown = names("unverified");
   if (unknown.length)
     out.push({ level: "warn", title: `${unknown.length} card${unknown.length > 1 ? "s have" : " has"} no card data`, detail: "They can’t be checked or counted until they’re looked up. Check spelling if a refresh doesn’t fix it.", cards: unknown, action: { act: "refreshDeck", label: "Load card data" } });
@@ -274,7 +277,7 @@ export function deckReview(deck, catalog, collection = [], decks = []) {
       if (part.key === "Lands") {
         const diff = part.count - part.target;
         if (Math.abs(diff) >= 4)
-          out.push({ level: "warn", heuristic: true, title: `${part.count} lands`, detail: `Most ${commander ? "Commander" : "60-card"} decks run about ${part.target}. ${diff < 0 ? "Fewer lands means more missed land drops." : "Extra lands means fewer spells to draw."}`, action: { act: "deckTab", id: "engine", label: "See test games" } });
+          out.push({ level: "warn", heuristic: true, title: `${part.count} lands`, detail: `Most ${f.size}-card decks run about ${part.target}. ${diff < 0 ? "Fewer lands means more missed land drops." : "Extra lands means fewer spells to draw."}`, action: { act: "deckTab", id: "engine", label: "See test games" } });
       } else if (["Ramp", "Draw", "Removal"].includes(part.key) && part.ratio < 0.75)
         out.push({ level: "warn", heuristic: true, title: `Light on ${part.key.toLowerCase()}`, detail: `${part.count} found; a common guideline is about ${part.target}. ${part.hint}`, action: { act: "findRole", role: part.key, label: `Find ${part.key.toLowerCase()} cards` } });
     }

@@ -705,3 +705,10 @@ img.ms.inline { width: 1.05em !important; height: 1.05em !important; }
 .sync-compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
 .sync-side { display: grid; gap: 2px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
 .sync-side b { font-size: 18px; }
+
+/* ---------- 2.8: formats ---------- */
+.fmt-chip { cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.15); }
+.tag.bad { background: rgba(240, 138, 126, 0.15); color: var(--bad); }
+.more-legal { margin: 6px 0; }
+.more-legal summary { cursor: pointer; }
+.deck-legal { margin: 8px 0 4px; font-weight: 600; }

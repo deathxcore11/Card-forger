@@ -18,6 +18,7 @@ import {
 } from "./insights.js";
 import { bracketEstimate, manaBase, isOut, deckReview, explainSwap } from "./extras.js";
 import { buildability, rankBuildable } from "./share.js";
+import { FORMATS as ALL_FORMATS, formatOf, hasCommander, canLead, legalityIn, LEGALITY_WORD, sizeLabel } from "./formats.js";
 import { cloudInfo, summarize } from "./cloud.js";
 
 /* ---------- shared deck math ---------- */
@@ -125,12 +126,12 @@ export function deckTile(d, wide = false) {
     p = engineProfile(d, S.catalog),
     v = deckValue(d.cards, S.catalog, S.state.priceChoices),
     cover = coverOf(d),
-    target = d.format === "Commander" ? 100 : 60,
+    target = formatOf(d).size,
     owned = t.copies ? t.covered / t.copies : 0;
   return `<button class="deck-tile ${wide ? "wide" : ""}" data-act="go" data-to="#deck/${esc(d.id)}">
     <span class="tile-art">${img(cover, d.name)}</span>
     <span class="tile-shade"></span>
-    <span class="tile-top"><span class="chip dark">${esc(d.format === "Commander" ? "Commander" : "60-card")}</span>${colorDots(meta(d.commander))}</span>
+    <span class="tile-top"><span class="chip dark">${esc(formatOf(d).name)}</span>${colorDots(meta(d.commander))}</span>
     <span class="tile-body">
       <b>${esc(d.name)}</b>
       <small>${esc(d.commander || "No commander")} · ${t.copies}/${target}</small>
@@ -150,7 +151,7 @@ export function search() {
   <details class="filters" ${f.color || f.type || f.maxPrice ? "open" : ""}><summary>Filters${f.color || f.type || f.maxPrice || f.format ? " · on" : ""}</summary><div class="grid2">
     <label>Fits colors<select data-change="dbFilter" data-field="color">${options([["", "Any"], ["W", "White"], ["U", "Blue"], ["B", "Black"], ["R", "Red"], ["G", "Green"], ["WU", "Azorius WU"], ["UB", "Dimir UB"], ["BR", "Rakdos BR"], ["RG", "Gruul RG"], ["GW", "Selesnya GW"], ["WB", "Orzhov WB"], ["UR", "Izzet UR"], ["BG", "Golgari BG"], ["RW", "Boros RW"], ["GU", "Simic GU"], ["C", "Colorless"]], f.color)}</select></label>
     <label>Type<select data-change="dbFilter" data-field="type">${options([["", "Any"], ...["creature", "instant", "sorcery", "artifact", "enchantment", "land", "planeswalker", "legendary creature"].map((x) => [x, x])], f.type)}</select></label>
-    <label>Legal in<select data-change="dbFilter" data-field="format">${options([["", "Any format"], ["commander", "Commander"], ["standard", "Standard"], ["pioneer", "Pioneer"], ["modern", "Modern"], ["pauper", "Pauper"], ["legacy", "Legacy"]], f.format)}</select></label>
+    <label>Legal in<select data-change="dbFilter" data-field="format">${options([["", "Any format"], ...ALL_FORMATS.filter((x) => x.legality).map((x) => [x.legality, x.name])], f.format)}</select></label>
     <label>Max price $<input type="number" min="0" step="0.5" value="${esc(f.maxPrice)}" data-change="dbFilter" data-field="maxPrice" placeholder="Any"></label>
   </div></details>
   <div class="row between"><span class="muted small">${db.results.length ? `${db.total.toLocaleString()} cards` : "Live from Scryfall"}</span></div>
@@ -172,7 +173,15 @@ export function search() {
 /* ---------- Card sheet ---------- */
 
 const RARITY = { common: "Common", uncommon: "Uncommon", rare: "Rare", mythic: "Mythic", special: "Special", bonus: "Bonus" };
-const FORMATS = [["commander", "Commander"], ["standard", "Standard"], ["pioneer", "Pioneer"], ["modern", "Modern"], ["legacy", "Legacy"], ["vintage", "Vintage"], ["pauper", "Pauper"], ["brawl", "Brawl"]];
+// Legality chips on a card: the common paper formats up front, everything else one tap away.
+function deckLegalLine(c, deck) {
+  const f = formatOf(deck),
+    l = legalityIn(c, f);
+  if (!l) return "";
+  return `<p class="small deck-legal ${l === "legal" ? "ok-text" : l === "restricted" ? "warn-text" : "bad-text"}">${l === "legal" ? "✓" : l === "restricted" ? "▲" : "●"} ${esc(LEGALITY_WORD[l])} in ${esc(f.name)} <span class="muted">(${esc(deck.name)})</span>${l === "restricted" ? " — one copy only" : ""}</p>`;
+}
+const MAIN_LEGAL = ["standard", "pioneer", "modern", "legacy", "vintage", "pauper", "commander", "brawl"];
+const legalChip = (f, legal) => `<span class="lg ${legal[f.legality] === "legal" ? "yes" : legal[f.legality] === "restricted" ? "res" : legal[f.legality] === "banned" ? "ban" : "no"}" title="${esc(f.name)}: ${esc(LEGALITY_WORD[legal[f.legality]] || "Not legal")}">${esc(f.name)}${legal[f.legality] === "banned" ? " · banned" : legal[f.legality] === "restricted" ? " · 1 copy" : ""}</span>`;
 
 export const setIcon = (code, rarity = "common", size = 18) =>
   code
@@ -232,7 +241,9 @@ export function cardSheet(c, ctx = {}) {
     .join("")}
   ${!c.full ? `<p class="muted small center" id="cardLoading">Loading flavor text and printings…</p>` : ""}
   <div class="chips">${roles.map((r) => `<span class="chip role-${r.toLowerCase()}">${r}</span>`).join("")}${c.edhrec_rank ? `<span class="chip">EDHREC #${Number(c.edhrec_rank).toLocaleString()}</span>` : ""}${c.reserved ? `<span class="chip">Reserved List</span>` : ""}${c.game_changer ? `<span class="chip warn">Game Changer</span>` : ""}</div>
-  <div class="legal">${FORMATS.map(([k, l]) => `<span class="lg ${legal[k] === "legal" ? "yes" : legal[k] === "restricted" ? "res" : legal[k] === "banned" ? "ban" : "no"}">${l}</span>`).join("")}</div>
+  ${deck ? deckLegalLine(c, deck) : ""}
+  <div class="legal">${ALL_FORMATS.filter((f) => MAIN_LEGAL.includes(f.legality)).map((f) => legalChip(f, legal)).join("")}</div>
+  <details class="more-legal"><summary class="small muted">All formats</summary><div class="legal">${ALL_FORMATS.filter((f) => f.legality && !MAIN_LEGAL.includes(f.legality)).map((f) => legalChip(f, legal)).join("")}</div></details>
   <p class="small own-line">${i.owned ? `<b class="ok-text">You own ${i.owned}</b> · ${i.available} free${i.reserved ? ` · ${i.reserved} reserved` : ""}` : "Not in your collection"}${inDecks.length ? ` · in ${inDecks.map((d) => esc(d.name)).join(", ")}` : ""}</p>
   ${
     row
@@ -704,12 +715,13 @@ export function sharedPage() {
     sc = buildability(d, avail, (n) => priceOf(n), basic),
     p = engineProfile(d, S.catalog),
     br = d.format === "Commander" ? bracketEstimate(d, S.catalog) : null,
+    fm = formatOf(d),
     v = validateDeck(d, S.catalog, [], []),
     rules = v.issues.filter((i) => i.kind !== "unverified"),
-    target = d.format === "Commander" ? 100 : 60,
+    target = fm.size,
     g = goldfishFor(d),
     lands = p.counts.Lands,
-    nonCmd = sumQty(d.cards.filter((c) => d.format !== "Commander" || key(c.name) !== key(d.commander))),
+    nonCmd = sumQty(d.cards.filter((c) => !fm.commander || key(c.name) !== key(d.commander))),
     odds = nonCmd >= 7 ? atLeastLands(nonCmd, lands, 7, 3) : null,
     groups = {};
   for (const c of aggregateCards(d.cards)) {
@@ -721,7 +733,7 @@ export function sharedPage() {
   return `<section class="deck-hero">${img(art(meta(d.commander)) || art(meta(d.cards[0]?.name)), d.name, "hero-art")}<div class="hero-shade"></div>
     <div class="hero-body"><div class="row between"><button class="icon light" data-act="go" data-to="#home" aria-label="Home">←</button><span class="chip dark">Shared deck</span></div>
       <h1>${esc(d.name)}</h1>
-      <p>${colorDots(meta(d.commander))} ${esc(d.commander || d.format)}${d.author ? ` · by <b>${esc(d.author)}</b>` : ""}</p>
+      <p>${fm.commander ? colorDots(meta(d.commander)) + " " + esc(d.commander || "") + " · " : ""}<span class="chip dark">${esc(fm.name)}</span>${d.author ? ` · by <b>${esc(d.author)}</b>` : ""}</p>
       <div class="hero-stats"><span><b class="${sumQty(d.cards) === target ? "" : "warn-text"}">${sumQty(d.cards)}/${target}</b>cards</span><span><b>${p.score}</b>engine</span>${br ? `<span><b>${br.bracket}</b>bracket est.</span>` : ""}<span><b>${d.budget !== null ? usd(d.budget, 0) : "—"}</b>budget</span></div>
     </div></section>
   <div class="actions wrap share-actions"><button class="btn" data-act="sharedBuild">Make my version</button><button class="btn ghost" data-act="sharedSave">Save to Inspiration</button><button class="btn ghost" data-act="sharedCopy">Copy list</button></div>
@@ -779,14 +791,15 @@ export function deckPage() {
   const t = totalsFor(d),
     p = engineProfile(d, S.catalog),
     v = deckValue(d.cards, S.catalog, S.state.priceChoices),
-    target = d.format === "Commander" ? 100 : 60,
+    fm = formatOf(d),
+    target = fm.size,
     tab = S.ui.deckTab,
     tabs = [["cards", "Cards"], ["engine", "Engine"], ["upgrade", "Upgrade lab"], ["versions", "Versions"], ["playtest", "Playtest"], ["shop", t.missing ? `Shop · ${t.missing}` : "Shop"]];
   return `<section class="deck-hero">${img(coverOf(d), d.name, "hero-art")}<div class="hero-shade"></div>
     <div class="hero-body">
       <div class="row between"><button class="icon light" data-act="go" data-to="#decks" aria-label="Back to decks">←</button><button class="icon light" data-act="deckMenu" aria-label="Deck options">⋯</button></div>
       <h1>${esc(d.name)}</h1>
-      <p>${colorDots(meta(d.commander))} ${esc(d.commander || d.format)}${d.locked ? ' · <span class="chip dark">Assembled</span>' : ""}</p>
+      <p>${fm.commander ? colorDots(meta(d.commander)) + " " + esc(d.commander || "No commander yet") + " · " : ""}<button class="chip dark fmt-chip" data-act="deckMenu" title="${esc(sizeLabel(fm))}${fm.note ? " · " + esc(fm.note) : ""}">${esc(fm.name)}</button>${d.locked ? ' · <span class="chip dark">Assembled</span>' : ""}</p>
       ${reviewBadge(d)}
       <div class="hero-stats">
         <span><b class="${t.copies === target ? "" : "warn-text"}">${t.copies}/${target}</b>cards</span>
@@ -797,7 +810,7 @@ export function deckPage() {
     </div>
   </section>
   <nav class="tabs" role="tablist">${tabs.map(([id, l]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="deckTab" data-id="${id}">${l}</button>`).join("")}</nav>
-  ${d.format === "Commander" && !commanderEligible(meta(d.commander)) && tab !== "upgrade" ? `<button class="note warn block-note" data-act="deckTab" data-id="upgrade">⚠ No commander set — tap to choose one so upgrades and synergy work.</button>` : ""}
+  ${fm.commander && !canLead(meta(d.commander), fm) && tab !== "upgrade" ? `<button class="note warn block-note" data-act="deckTab" data-id="upgrade">⚠ No ${fm.commander === "planeswalker" ? "Oathbreaker" : "commander"} set — tap to choose one so colors and synergy are checked.</button>` : ""}
   <div class="deck-body" data-tab="${tab}">${{ cards: deckCards, engine: deckEngine, upgrade: deckUpgrade, versions: deckVersions, playtest: deckPlaytest, shop: deckShop }[tab](d, t)}</div>`;
 }
 
@@ -825,7 +838,7 @@ export function deckReviewSheet(d) {
     </div></div>`,
     )
     .join("")}</div>`
-      : `<div class="empty"><div class="empty-mark" aria-hidden="true">✓</div><h3>Nothing to review</h3><p>Card count, colors, legality and copy limits pass${sumQty(d.cards) >= (d.format === "Commander" ? 90 : 54) ? ", and land, ramp, draw and removal counts are in normal ranges" : ""}.</p></div>`
+      : `<div class="empty"><div class="empty-mark" aria-hidden="true">✓</div><h3>Nothing to review</h3><p>Card count, colors, legality and copy limits pass${sumQty(d.cards) >= formatOf(d).size * 0.9 ? ", and land, ramp, draw and removal counts are in normal ranges" : ""}.</p></div>`
   }
   <p class="foot">Rules checks use cached card data — refresh before an event. Guidelines are common deckbuilding rules of thumb, not requirements; plenty of good decks break them on purpose.</p>`;
 }
@@ -833,9 +846,9 @@ export function deckReviewSheet(d) {
 const CATS = ["Commander", "Creatures", "Planeswalkers", "Artifacts", "Enchantments", "Instants", "Sorceries", "Battles", "Lands", "Unresolved"];
 
 function deckCards(d, t) {
-  const target = d.format === "Commander" ? 100 : 60;
+  const target = formatOf(d).size;
   return `<div class="add-row"><input id="deckAddName" placeholder="Add a card by name" data-enter="deckAdd" aria-label="Card name to add" autocomplete="off"><button class="btn" data-act="deckAdd">Add</button></div>
-  <div class="cover-line"><span><b>${t.covered}</b>/${t.copies} owned${t.missing ? ` · <b>${t.missing}</b> missing · <b>${usd(t.pricedGap)}</b>${t.unpriced ? "+" : ""} to finish` : " · everything owned ✓"}</span>${t.copies < target ? `<button class="link" data-act="deckTab" data-id="upgrade">Fill ${target - t.copies} slots →</button>` : ""}</div>
+  <div class="cover-line"><span><b>${t.covered}</b>/${t.copies} owned${t.missing ? ` · <b>${t.missing}</b> missing · <b>${usd(t.pricedGap)}</b>${t.unpriced ? "+" : ""} to finish` : " · everything owned ✓"}</span>${t.copies < target ? (d.format === "Commander" ? `<button class="link" data-act="deckTab" data-id="upgrade">Fill ${target - t.copies} slots →</button>` : `<button class="link" data-act="formatSearch">Find ${esc(formatOf(d).name)} cards →</button>`) : ""}</div>
   ${bar(t.copies ? t.covered / t.copies : 0)}
   <div class="toolbar"><input type="search" value="${esc(S.ui.q.deck)}" placeholder="Search this deck" data-input="deckSearch" aria-label="Search deck"><select data-change="deckFilter" aria-label="Show">${options([["all", "All"], ["missing", "Missing"], ["owned", "Owned"], ["unresolved", "Unresolved"]], S.ui.deckFilter)}</select><select data-change="deckSort" aria-label="Group by">${options([["type", "By type"], ["mv", "By mana value"], ["role", "By role"], ["price", "By price"]], S.ui.deckSort)}</select><button class="icon" data-act="deckGrid" aria-label="Toggle grid">${S.ui.deckGrid ? "☰" : "▦"}</button></div>
   <div id="deckList">${deckList(d)}</div>
@@ -885,13 +898,19 @@ export function deckList(d = currentDeck()) {
   return html || `<p class="muted center pad">No cards match.</p>`;
 }
 
+// Flags a card that breaks the deck's format: banned, not legal, or restricted.
+function legalTag(c, d) {
+  const l = c ? legalityIn(c, formatOf(d)) : null;
+  return l === "banned" ? '<span class="tag bad">Banned</span>' : l === "not_legal" ? '<span class="tag bad">Not legal</span>' : l === "restricted" ? '<span class="tag warn">Restricted</span>' : "";
+}
+
 function deckRow(r, d) {
   const c = meta(r.name),
     ok = r.missing === 0;
   return `<div class="lot deck-row ${ok ? "" : "short"}">
     <button class="lot-art" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(d.id)}">${img(art(c), r.name)}<span class="art-price">${usd(r.price)}</span></button>
     <div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(d.id)}">${esc(r.name)} ${setBadge(c)}</button>
-      <span class="lot-sub">${manaCost(c) || (c ? "" : '<span class="tag warn">Unresolved</span>')}</span>
+      <span class="lot-sub">${manaCost(c) || (c ? "" : '<span class="tag warn">Unresolved</span>')}${legalTag(c, d)}</span>
       <span class="own ${ok ? "yes" : "no"}">${ok ? "Owned" : r.covered ? `${r.covered}/${r.qty} owned · need ${r.missing}` : "Need " + r.missing}${r.reserved ? ` · ${r.reserved} in other decks` : ""}</span>
     </div>
     <div class="lot-side">${r.category === "Commander" ? `<span class="chip">Commander</span>` : `<span class="stepper"><button data-act="deckQty" data-name="${esc(r.name)}" data-delta="-1" aria-label="One fewer ${esc(r.name)}">−</button><b>${r.qty}</b><button data-act="deckQty" data-name="${esc(r.name)}" data-delta="1" aria-label="One more ${esc(r.name)}">＋</button></span>`}</div>
@@ -1005,18 +1024,20 @@ export function goldfishTable(g, b = null) {
 /* Upgrade lab */
 
 export function commanderPicker(d) {
-  const legends = aggregateCards(d.cards).map((c) => meta(c.name)).filter((c) => c && commanderEligible(c));
+  const fm = formatOf(d),
+    legends = aggregateCards(d.cards).map((c) => meta(c.name)).filter((c) => c && canLead(c, fm));
   return `<section class="panel pick-commander"><p class="eyebrow">One quick step</p><h2>Which card is your commander?</h2><p class="muted small">This deck doesn’t have a commander set, so Cardforge can’t tell your colors. Tap it below.</p>
   ${legends.length ? `<div class="list compact">${legends.map((c) => `<button class="mini-row" data-act="setCommander" data-name="${esc(c.name)}"><span class="row">${img(art(c), c.name, "mini-art")}<span class="ellip"><b>${esc(c.name)}</b></span></span>${colorDots(c)}</button>`).join("")}</div>` : `<p class="small">No legendary creatures were found in this list.</p>`}
   <div class="searchbar"><input id="cmdName" placeholder="Or type the commander’s name" data-enter="setCommander"><button class="btn ghost" data-act="setCommander">Set</button></div></section>`;
 }
 
 function deckUpgrade(d) {
-  const target = d.format === "Commander" ? 100 : 60,
+  const fm = formatOf(d),
+    target = fm.size,
     count = sumQty(d.cards);
+  if (fm.commander && !canLead(meta(d.commander), fm)) return commanderPicker(d);
   if (d.format !== "Commander")
-    return `<div class="note">Upgrade suggestions currently support single-commander decks. You can still use Versions and Engine for 60-card decks.</div>`;
-  if (!commanderEligible(meta(d.commander))) return commanderPicker(d);
+    return `<div class="note">The Upgrade lab’s card suggestions are built for Commander so far. For ${esc(fm.name)}, the Engine tab, Deck review and legality checks all follow ${esc(fm.name)} rules — and Search → “Legal in ${esc(fm.name)}” finds cards to add.</div>`;
   return `${count < target ? fillPanel(d, target - count) : ""}${swapPanel(d)}`;
 }
 
@@ -1198,7 +1219,7 @@ function deckVersions(d) {
 /* Playtest */
 
 function deckPlaytest(d) {
-  const cards = d.cards.filter((c) => d.format !== "Commander" || key(c.name) !== key(d.commander)),
+  const cards = d.cards.filter((c) => !hasCommander(d) || key(c.name) !== key(d.commander)),
     p = engineProfile(d, S.catalog),
     total = sumQty(cards),
     odds = total >= 7 ? atLeastLands(total, p.counts.Lands, 7, 3) : null,
