@@ -1,3 +1,19 @@
+CARDFORGE 2.3 UPDATE
+
+- Deck review badge. Under each deck's name: "▲ 3 to review" (amber) or "● 2 to review" (red when a
+  rule is broken). Tap it for one list: card count (empty slots, kept separate from cards you still
+  need to buy), cards outside your colors, illegal cards, too many copies, cards with no data, and,
+  once the list is nearly complete, guideline checks for lands, ramp, draw, removal and tapped lands.
+  Each item shows its evidence, says whether it's a Rule or a Guideline, and has a fix button.
+- Buy this card. Tap any price in a card's details, a printing's "Buy" button, or a price in the
+  Shop tab. Shows the exact printing (set, number, language, finish), the Scryfall estimate with its
+  date (plus the Cardmarket euro trend when available), direct "View listing" links for that exact
+  printing on TCGplayer and Cardmarket, clearly labeled name searches, "Compare cheaper printings",
+  and a separate "Add to collection" button. Opening a store never changes your collection. Stock,
+  shipping and seller prices are only shown on the seller's site.
+- Smoother popups. The page behind no longer scrolls, focus returns to the button you tapped when a
+  popup closes, and going back from "Buy this card" returns you to the same spot in the card details.
+
 CARDFORGE 2.2 UPDATE
 
 - Commander bracket estimate (Deck → Engine). Shows the lowest bracket (1–5) the list fits by

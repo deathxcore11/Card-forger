@@ -86,7 +86,7 @@ const KEEP = [
   "loyalty", "legalities", "prices", "set", "set_name", "collector_number", "rarity",
   "edhrec_rank", "scryfall_uri", "finishes", "layout", "checkedAt",
   "flavor_text", "artist", "released_at", "set_type", "full", "promo", "frame_effects",
-  "border_color", "full_art", "reserved", "penny_rank", "game_changer",
+  "border_color", "full_art", "reserved", "penny_rank", "game_changer", "purchase_uris",
 ];
 export function slim(c) {
   if (!c || typeof c !== "object") return c;

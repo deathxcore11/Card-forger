@@ -1,6 +1,7 @@
 // Deck extras: Commander bracket estimate, mana base helper, proxy sheet and
 // life tracker state. Pure functions over the card catalog; no network calls.
-import { cardKey, rulesText, typeText, isLand, isBasic, aggregateCards } from "./core.js";
+import { cardKey, rulesText, typeText, isLand, isBasic, aggregateCards, validateDeck } from "./core.js";
+import { engineProfile } from "./insights.js";
 
 /* ---------- Commander bracket estimate ---------- */
 
@@ -227,3 +228,60 @@ export function newGame(players = 4, life = 40) {
 
 // A player is out at 0 life, 10 poison or 21 commander damage from one commander.
 export const isOut = (p) => p.life <= 0 || p.poison >= 10 || p.cmd >= 21;
+
+/* ---------- Deck review ---------- */
+
+// One list of things worth a look, each with its evidence and a next step.
+// level "bad" = a confirmed rules problem; "warn" = worth reviewing.
+// heuristic = based on common deckbuilding guidelines, not on the rules.
+export function deckReview(deck, catalog, collection = [], decks = []) {
+  const v = validateDeck(deck, catalog, collection, decks),
+    out = [],
+    commander = deck.format === "Commander",
+    names = (kind) => v.issues.filter((i) => i.kind === kind).map((i) => i.text.split(": ")[0]),
+    group = (kind, level, one, many, why) => {
+      const list = names(kind);
+      if (list.length)
+        out.push({ level, title: list.length === 1 ? one : many.replace("#", list.length), detail: why, cards: list, action: { act: "deckTab", id: "cards", label: "Review cards" } });
+    };
+  if (v.issues.some((i) => i.kind === "commander"))
+    out.push({ level: "bad", title: "No eligible commander set", detail: "Without a commander Cardforge can’t check colors, synergy or upgrades.", action: { act: "deckTab", id: "upgrade", label: "Choose commander" } });
+  if (v.count !== v.target) {
+    const short = v.count < v.target,
+      n = Math.abs(v.target - v.count);
+    out.push({
+      level: "warn",
+      title: `${v.count}/${v.target} cards`,
+      detail: short
+        ? `${n} empty slot${n > 1 ? "s" : ""} in the list. (Separate from cards you still need to buy — those are in Buy.)`
+        : `${n} card${n > 1 ? "s" : ""} over the ${v.target}-card limit.`,
+      action: short ? { act: "deckTab", id: "upgrade", label: `Fill ${n} slot${n > 1 ? "s" : ""}` } : { act: "deckTab", id: "cards", label: "Choose cuts" },
+    });
+  }
+  group("color", "bad", "1 card is outside your commander’s colors", "# cards are outside your commander’s colors", "Every card must fit the commander’s color identity.");
+  group("legality", "bad", "1 card isn’t legal in Commander", "# cards aren’t legal in Commander", "Banned or not legal according to the latest card data.");
+  group("singleton", "bad", "1 card has too many copies", "# cards have too many copies", "Commander allows one copy of each card except basic lands and cards that say otherwise.");
+  group("copies", "bad", "1 card has more than four copies", "# cards have more than four copies", "60-card formats allow four copies except basic lands.");
+  const unknown = names("unverified");
+  if (unknown.length)
+    out.push({ level: "warn", title: `${unknown.length} card${unknown.length > 1 ? "s have" : " has"} no card data`, detail: "They can’t be checked or counted until they’re looked up. Check spelling if a refresh doesn’t fix it.", cards: unknown, action: { act: "refreshDeck", label: "Load card data" } });
+
+  // Guideline checks only make sense once the list is close to complete.
+  if (v.count >= v.target * 0.9) {
+    const p = engineProfile(deck, catalog);
+    for (const part of p.parts) {
+      if (part.key === "Lands") {
+        const diff = part.count - part.target;
+        if (Math.abs(diff) >= 4)
+          out.push({ level: "warn", heuristic: true, title: `${part.count} lands`, detail: `Most ${commander ? "Commander" : "60-card"} decks run about ${part.target}. ${diff < 0 ? "Fewer lands means more missed land drops." : "Extra lands means fewer spells to draw."}`, action: { act: "deckTab", id: "engine", label: "See test games" } });
+      } else if (["Ramp", "Draw", "Removal"].includes(part.key) && part.ratio < 0.75)
+        out.push({ level: "warn", heuristic: true, title: `Light on ${part.key.toLowerCase()}`, detail: `${part.count} found; a common guideline is about ${part.target}. ${part.hint}`, action: { act: "findRole", role: part.key, label: `Find ${part.key.toLowerCase()} cards` } });
+    }
+    const m = manaBase(deck, catalog, p.pips);
+    if (m.tooManyTapped)
+      out.push({ level: "warn", heuristic: true, title: `${m.tapped.length} lands always enter tapped`, detail: "Each can cost you a play in the early turns.", cards: [...new Set(m.tapped)], action: { act: "deckTab", id: "engine", label: "See mana base" } });
+    else if (m.basicCount >= 6 && m.off)
+      out.push({ level: "warn", heuristic: true, title: "Basic lands don’t match your spells’ colors", detail: "The split of basics is noticeably different from the colored mana symbols in your spells.", action: { act: "deckTab", id: "engine", label: "See suggested split" } });
+  }
+  return out.sort((a, b) => (a.level === b.level ? 0 : a.level === "bad" ? -1 : 1));
+}

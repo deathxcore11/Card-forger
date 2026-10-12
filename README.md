@@ -9,6 +9,8 @@ Your Magic: The Gathering collection, decks, upgrades and deck analysis in one i
 - **Engine score**: a 0–100 build-health check covering lands, ramp, draw, removal, synergy and curve, with 1,000 seeded goldfish test games.
 - **Commander bracket estimate** *(new in 2.2)*: the lowest bracket (1–5) your list fits, based on Game Changers, tutors, extra turns and mass land denial, plus what to cut to drop a bracket.
 - **Mana base helper** *(new in 2.2)*: suggests how to split your basics using the colored symbols in your spells, and flags lands that always enter tapped.
+- **Deck review** *(new in 2.3)*: one badge per deck ("3 to review") that opens every rules problem and guideline worth a look, each with its evidence and a fix button.
+- **Buy this card** *(new in 2.3)*: tap any price for direct store links to that exact printing, an honestly labeled estimate, and cheaper printings.
 - **Upgrade lab**: budget ladder with engine gain per dollar, slot filling, and before/after comparisons.
 - **Versions**: automatic snapshots, so you can compare any two versions of a deck.
 - **Playtest**: opening hands and mulligans, a game log tagged with the deck version, and a **life tracker** *(new in 2.2)* for 2–6 players with commander damage, poison and turns.

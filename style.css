@@ -578,3 +578,38 @@ button.tag { border: 0; cursor: pointer; text-align: left; }
 .life-sub button { min-width: 28px; height: 28px; }
 .life-sub b { min-width: 2ch; color: var(--text); font-variant-numeric: tabular-nums; }
 .life-out { position: absolute; top: 8px; right: 8px; }
+
+/* ---------- 2.3: deck review, buy sheet, sheet behavior ---------- */
+html.sheet-open, html.sheet-open body { overflow: hidden; }
+#sheetBody { overscroll-behavior: contain; }
+
+.review-badge { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 6px 12px; min-height: 34px; border-radius: 999px; font-size: 13px; font-weight: 700; border: 1px solid rgba(255, 255, 255, 0.18); background: rgba(0, 0, 0, 0.5); color: #fff; backdrop-filter: blur(6px); }
+.review-badge.warn { color: var(--warn); border-color: rgba(242, 198, 109, 0.5); }
+.review-badge.bad { color: var(--bad); border-color: rgba(240, 138, 126, 0.55); }
+.review-badge.ok { color: var(--good); }
+.review-list { display: grid; gap: 8px; margin: 10px 0; }
+.review-item { display: grid; grid-template-columns: 22px 1fr; gap: 8px; padding: 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
+.review-item.warn { border-left: 3px solid var(--warn); }
+.review-item.bad { border-left: 3px solid var(--bad); }
+.review-icon { font-size: 13px; padding-top: 2px; }
+.review-item.warn .review-icon { color: var(--warn); }
+.review-item.bad .review-icon { color: var(--bad); }
+.review-main { min-width: 0; }
+.review-main .btn { margin-top: 6px; }
+
+button.price-pill { cursor: pointer; font: inherit; text-align: left; transition: border-color 0.15s, transform 0.1s; }
+button.price-pill:hover { border-color: var(--gold); }
+button.price-pill:active { transform: scale(0.98); }
+.price-pill .buy-hint { display: block; font-size: 11px; color: var(--gold); font-weight: 700; margin-top: 2px; }
+.price-pill.unknown b { color: var(--muted); }
+.pp.buy { color: var(--gold); }
+.buy-link { background: none; border: 0; padding: 6px 0; font: inherit; font-weight: 700; color: var(--text); cursor: pointer; min-height: 36px; }
+.buy-link:hover { color: var(--gold); }
+.buy-card { display: flex; gap: 12px; align-items: center; margin: 4px 0 12px; }
+.buy-thumb { width: 64px; border-radius: 6px; flex: none; }
+.buy-id { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.buy-id b { font: 800 17px Manrope, sans-serif; }
+.buy-price { font: 800 22px Manrope, sans-serif; }
+.buy-est p { margin-top: 4px; }
+a.store { text-decoration: none; color: var(--text); min-height: 48px; }
+.links.research { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 14px 0 4px; }

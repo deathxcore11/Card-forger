@@ -1,7 +1,7 @@
 // Pure tests for extras.js: bracket estimate, mana base, proxies, life tracker.
 import assert from "node:assert/strict";
 import { cardKey } from "./core.js";
-import { bracketEstimate, isTutor, isMassLandDenial, entersTapped, splitBasics, manaBase, proxyList, proxySheetHTML, newGame, isOut } from "./extras.js";
+import { deckReview, bracketEstimate, isTutor, isMassLandDenial, entersTapped, splitBasics, manaBase, proxyList, proxySheetHTML, newGame, isOut } from "./extras.js";
 
 const card = (name, type, oracle = "", extra = {}) => ({ name, type_line: type, oracle_text: oracle, color_identity: [], legalities: { commander: "legal" }, ...extra });
 const cat = (...cs) => Object.fromEntries(cs.map((c) => [cardKey(c.name), c]));
@@ -59,4 +59,27 @@ assert.ok(!isOut(g.players[0]));
 assert.ok(isOut({ life: 5, poison: 0, cmd: 21 }));
 assert.ok(isOut({ life: 5, poison: 10, cmd: 0 }));
 
+// Deck review: rules problems are "bad", guidelines are "warn", empty slots are not missing cards.
+{
+  const leader = card("Leader", "Legendary Creature", "", { color_identity: ["G"] });
+  const red = card("Bolt", "Instant", "Bolt deals 3 damage.", { color_identity: ["R"] });
+  const banned = card("Bad Card", "Artifact", "", { legalities: { commander: "banned" } });
+  const d = { id: "r", format: "Commander", commander: "Leader", cards: [{ name: "Leader", qty: 1 }, { name: "Bolt", qty: 1 }, { name: "Bad Card", qty: 1 }, { name: "Mystery", qty: 1 }] };
+  const r = deckReview(d, cat(leader, red, banned));
+  const titles = r.map((x) => x.title).join(" | ");
+  assert.match(titles, /4\/100 cards/);
+  assert.match(r.find((x) => /4\/100/.test(x.title)).detail, /96 empty slots/);
+  assert.match(titles, /outside your commander’s colors/);
+  assert.match(titles, /isn’t legal/);
+  assert.match(titles, /no card data/);
+  assert.equal(r[0].level, "bad");
+  // Guideline checks wait until the list is nearly complete.
+  assert.ok(!r.some((x) => x.heuristic));
+  const full = { ...d, cards: [{ name: "Leader", qty: 1 }, { name: "Forest", qty: 99 }] };
+  const r2 = deckReview(full, cat(leader, card("Forest", "Basic Land — Forest", "", { produced_mana: ["G"] })));
+  assert.ok(r2.some((x) => x.heuristic && /99 lands/.test(x.title)));
+  assert.ok(r2.every((x) => x.level === "warn"));
+}
+
+console.log("PASS: deck review levels, empty slots vs. missing cards, guideline gating.");
 console.log("PASS: bracket estimate, tutor/land-denial detection, tapped lands, basic split, proxy sheet and life tracker.");

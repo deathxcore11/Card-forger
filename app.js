@@ -241,13 +241,19 @@ function toast(text) {
   toastTimer = setTimeout(() => t.classList.remove("show"), 3800);
 }
 
-function openSheet(html, ctx = null) {
+function openSheet(html, ctx = null, scrollTop = 0) {
   S.ui.sheetCtx = ctx;
   $("#sheetBody").innerHTML = html;
   const dlg = $("#sheet");
-  if (!dlg.open) dlg.showModal();
-  $("#sheetBody").scrollTop = 0;
+  if (!dlg.open) {
+    // Remember what opened the sheet so focus can return there, and stop the page behind from scrolling.
+    sheetReturn = document.activeElement;
+    document.documentElement?.classList.add("sheet-open");
+    dlg.showModal();
+  }
+  $("#sheetBody").scrollTop = scrollTop;
 }
+let sheetReturn = null;
 function closeSheet() {
   const dlg = $("#sheet");
   if (dlg.open) dlg.close();
@@ -257,6 +263,12 @@ function refreshSheet() {
   const ctx = S.ui.sheetCtx;
   if (!ctx || !$("#sheet").open) return;
   if (ctx.type === "idea") return openIdea(ctx.i);
+  if (ctx.type === "buy" || ctx.type === "review") {
+    const top = $("#sheetBody").scrollTop;
+    $("#sheetBody").innerHTML = ctx.type === "buy" ? V.buySheet(ctx) : V.deckReviewSheet(deckById(ctx.deckId) || currentDeck());
+    $("#sheetBody").scrollTop = top;
+    return;
+  }
   if (ctx.type === "card") {
     const c = meta(ctx.name),
       top = $("#sheetBody").scrollTop;
@@ -399,7 +411,18 @@ document.addEventListener("keydown", (e) => {
 $("#sheet").addEventListener("click", (e) => {
   if (e.target.id === "sheet") closeSheet();
 });
-$("#sheet").addEventListener("close", () => (S.ui.sheetCtx = null));
+$("#sheet").addEventListener("close", () => {
+  S.ui.sheetCtx = null;
+  document.documentElement?.classList.remove("sheet-open");
+  // Return focus to the button that opened the sheet, or its re-rendered twin.
+  const back = sheetReturn;
+  sheetReturn = null;
+  if (back?.isConnected) back.focus({ preventScroll: true });
+  else if (back?.dataset?.act) {
+    const sel = `[data-act="${back.dataset.act}"]` + (back.dataset.name ? `[data-name="${CSS.escape(back.dataset.name)}"]` : "");
+    document.querySelector(sel)?.focus({ preventScroll: true });
+  }
+});
 
 const busy = (btn, text) => {
   if (!btn) return () => {};
@@ -480,6 +503,7 @@ async function loadCardExtras(ctx) {
       path = d.has_more && d.next_page ? new URL(d.next_page).pathname + new URL(d.next_page).search : null;
     }
     ctx.prints = prints;
+    ctx.pricesAt = new Date().toISOString();
     S.ui.prints = prints;
     if (still()) refreshSheet();
   } catch (e) {
@@ -510,6 +534,47 @@ A.setCommander = async (t) => {
   const c = await resolve(name, true);
   if (!commanderEligible(c)) return toast(c.name + " can’t be a commander.");
   await editDeck((d) => ({ ...d, commander: c.name, name: d.name === "Imported deck" ? c.name.split(",")[0] + " deck" : d.name, cards: d.cards.some((x) => key(x.name) === key(c.name)) ? d.cards : [{ name: c.name, qty: 1 }, ...d.cards] }), { msg: c.name + " is now your commander." });
+};
+
+/* ---------- buy this card ---------- */
+A.buyCard = async (t) => {
+  let back = S.ui.sheetCtx?.type === "card" && $("#sheet").open ? S.ui.sheetCtx : null;
+  const backScroll = back ? $("#sheetBody").scrollTop : 0;
+  let print;
+  if (back) {
+    print = t.dataset.i !== undefined && back.prints ? back.prints[Number(t.dataset.i)] : back.print || meta(back.name);
+  } else {
+    const c = meta(t.dataset.name) || (await resolve(t.dataset.name, true));
+    back = { type: "card", name: c.name, deckId: t.dataset.deck || null };
+    print = c;
+  }
+  const fromPrints = back.prints && back.prints.includes(print);
+  const ctx = { type: "buy", name: back.name, deckId: back.deckId, print, finish: t.dataset.finish || "nonfoil", asOf: fromPrints ? back.pricesAt : print?.checkedAt, back, backScroll };
+  openSheet(V.buySheet(ctx), ctx);
+};
+A.buyFinish = (t) => {
+  const ctx = S.ui.sheetCtx;
+  if (ctx?.type !== "buy") return;
+  ctx.finish = t.dataset.finish;
+  refreshSheet();
+};
+function backToCard(scrollTo) {
+  const ctx = S.ui.sheetCtx;
+  if (ctx?.type !== "buy") return;
+  const back = ctx.back,
+    c = meta(back.name);
+  if (!c) return closeSheet();
+  openSheet(V.cardSheet(c, back), back, ctx.backScroll);
+  if (!back.prints) loadCardExtras(back);
+  if (scrollTo) $(scrollTo, $("#sheetBody"))?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+A.buyBack = () => backToCard();
+A.buyCompare = () => backToCard(".prints");
+
+/* ---------- deck review ---------- */
+A.deckReview = () => {
+  const d = currentDeck();
+  if (d) openSheet(V.deckReviewSheet(d), { type: "review", deckId: d.id });
 };
 
 A.compareOpen = () => openSheet(V.compareSheet(), { type: "compare" });

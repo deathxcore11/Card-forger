@@ -16,7 +16,7 @@ import {
   engineProfile, engineRoles, goldfish, scoreGrade, diffCards, deckValue,
   collectionValue, lotPrice, swapImpact, applySwapsToCards, cardSig,
 } from "./insights.js";
-import { bracketEstimate, manaBase, basicName, isOut } from "./extras.js";
+import { bracketEstimate, manaBase, isOut, deckReview } from "./extras.js";
 
 /* ---------- shared deck math ---------- */
 
@@ -149,6 +149,7 @@ export const setIcon = (code, rarity = "common", size = 18) =>
     ? `<span class="set-icon r-${esc(rarity || "common")}" style="--icon:url('https://svgs.scryfall.io/sets/${esc(String(code).toLowerCase())}.svg');width:${size}px;height:${size}px" title="${esc(String(code).toUpperCase())} · ${esc(RARITY[rarity] || rarity || "")}" aria-hidden="true"></span>`
     : "";
 
+const FINISH = { nonfoil: "Regular", foil: "Foil", etched: "Etched" };
 const priceOfFinish = (p, f) => p?.prices?.[f === "nonfoil" ? "usd" : "usd_" + f] ?? null;
 
 function facesOf(c) {
@@ -181,8 +182,8 @@ export function cardSheet(c, ctx = {}) {
       <div class="cd-set">${setIcon(shown.set, shown.rarity, 26)}<div><b>${esc(shown.set_name || (shown.set || "").toUpperCase())}</b><small>${esc((shown.set || "").toUpperCase())} #${esc(shown.collector_number || "?")} · ${esc(RARITY[shown.rarity] || shown.rarity || "")}${shown.released_at ? " · " + esc(shown.released_at.slice(0, 4)) : ""}</small></div></div>
       <div class="cd-prices">${
         finishes.length
-          ? finishes.map((f) => `<span class="price-pill ${f}"><small>${f === "nonfoil" ? "Regular" : f === "foil" ? "Foil" : "Etched"}</small><b>${usd(priceOfFinish(shown, f))}</b></span>`).join("")
-          : `<span class="muted small">No USD price for this printing</span>`
+          ? finishes.map((f) => `<button class="price-pill ${f}" data-act="buyCard" data-finish="${f}" aria-label="Buy ${esc(FINISH[f])} — estimated ${usd(priceOfFinish(shown, f))}"><small>${FINISH[f]}</small><b>${usd(priceOfFinish(shown, f))}</b><span class="buy-hint">Buy ›</span></button>`).join("")
+          : `<button class="price-pill unknown" data-act="buyCard" data-finish="nonfoil"><small>Price</small><b>Unknown</b><span class="buy-hint">Find sellers ›</span></button>`
       }</div>
       ${prints ? `<p class="small muted">Across ${prints.length} printings: <b class="ok-text">${usd(cheapest(prints))}</b> cheapest · <b>${usd(dearest(prints))}</b> priciest</p>` : ""}
       ${chosen ? `<p class="small">Your shopping price: <b>${usd(chosen.price)}</b> · ${esc(chosen.label)}</p>` : ""}
@@ -219,13 +220,11 @@ export function cardSheet(c, ctx = {}) {
   <section class="prints"><div class="row between"><h3>All printings & prices</h3>${prints ? `<span class="muted small">${prints.length}</span>` : ""}</div>
     ${prints ? printList(prints, shown, name, chosen) : `<p class="muted small">Loading…</p>`}
   </section>
-  <details class="more"><summary>Research & buy</summary><div class="links">
+  <div class="links research"><span class="muted small">Research</span>
     <a href="${esc(c.scryfall_uri || "https://scryfall.com/search?q=" + encodeURIComponent(name))}" target="_blank" rel="noopener">Scryfall ↗</a>
     <a href="https://edhrec.com/cards/${esc(name.toLowerCase().split(" // ")[0].replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""))}" target="_blank" rel="noopener">EDHREC ↗</a>
-    <a href="https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=${encodeURIComponent(name)}" target="_blank" rel="noopener">TCGplayer ↗</a>
-    <a href="https://www.cardkingdom.com/catalog/search?filter%5Bname%5D=${encodeURIComponent(name)}" target="_blank" rel="noopener">Card Kingdom ↗</a>
-    <a href="https://www.cardmarket.com/en/Magic/Products/Search?searchString=${encodeURIComponent(name)}" target="_blank" rel="noopener">Cardmarket ↗</a>
-  </div></details>`;
+    <button class="link" data-act="buyCard">Where to buy ›</button>
+  </div>`;
 }
 
 const allPrices = (prints) => prints.flatMap((p) => ["nonfoil", "foil", "etched"].map((f) => Number(priceOfFinish(p, f))).filter((x) => x > 0));
@@ -239,10 +238,57 @@ function printList(prints, shown, name, chosen) {
       const fin = ["nonfoil", "foil", "etched"].filter((f) => priceOfFinish(p, f));
       return `<div class="print ${p.id === shown.id ? "on" : ""}">
         <button class="print-main" data-act="viewPrint" data-i="${i}">${img(p.image_uris?.small || p.card_faces?.[0]?.image_uris?.small, p.set_name, "print-thumb")}<span class="print-name">${setIcon(p.set, p.rarity, 16)}<span class="ellip"><b>${esc(p.set_name)}</b><small>${esc(p.set.toUpperCase())} #${esc(p.collector_number)} · ${esc((p.released_at || "").slice(0, 4))}${p.promo ? " · promo" : ""}${p.full_art ? " · full art" : ""}${(p.frame_effects || []).includes("showcase") ? " · showcase" : ""}${(p.frame_effects || []).includes("extendedart") ? " · extended" : ""}${p.border_color === "borderless" ? " · borderless" : ""}</small></span></span></button>
-        <span class="print-prices">${fin.length ? fin.map((f) => `<button class="pp ${chosen?.id === p.id && chosen?.finish === f ? "on" : ""}" data-act="choosePrint" data-i="${i}" data-finish="${f}" data-name="${esc(name)}" title="Use this price for shopping"><small>${f === "nonfoil" ? "reg" : f}</small>${usd(priceOfFinish(p, f))}</button>`).join("") : '<span class="muted small">—</span>'}</span>
+        <span class="print-prices"><button class="pp buy" data-act="buyCard" data-i="${i}" data-finish="${fin[0] || "nonfoil"}" aria-label="Buy the ${esc(p.set_name)} printing">Buy</button>${fin.length ? fin.map((f) => `<button class="pp ${chosen?.id === p.id && chosen?.finish === f ? "on" : ""}" data-act="choosePrint" data-i="${i}" data-finish="${f}" data-name="${esc(name)}" title="Use this price for shopping"><small>${f === "nonfoil" ? "reg" : f}</small>${usd(priceOfFinish(p, f))}</button>`).join("") : '<span class="muted small">—</span>'}</span>
       </div>`;
     })
-    .join("")}</div><p class="foot">Tap a printing to see its art, flavor text and artist. Tap a price to use it for your shopping totals.</p>`;
+    .join("")}</div><p class="foot">Tap a printing to see its art, flavor text and artist. Tap a price to use it for your shopping totals, or Buy for store links to that exact printing.</p>`;
+}
+
+/* ---------- Buy this card ---------- */
+
+const STORES_EXACT = { tcgplayer: "TCGplayer", cardmarket: "Cardmarket" };
+const nameSearch = (name) => [
+  ["TCGplayer", "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=" + encodeURIComponent(name)],
+  ["Card Kingdom", "https://www.cardkingdom.com/catalog/search?filter%5Bname%5D=" + encodeURIComponent(name)],
+  ["Cardmarket", "https://www.cardmarket.com/en/Magic/Products/Search?searchString=" + encodeURIComponent(name)],
+];
+
+export function buySheet(ctx) {
+  const p = ctx.print || meta(ctx.name) || { name: ctx.name },
+    name = ctx.name,
+    have = ["nonfoil", "foil", "etched"].filter((f) => (p.finishes || ["nonfoil"]).includes(f) || priceOfFinish(p, f)),
+    finish = have.includes(ctx.finish) ? ctx.finish : have[0] || "nonfoil",
+    est = priceOfFinish(p, finish),
+    eur = p.prices?.[finish === "nonfoil" ? "eur" : "eur_" + finish] ?? null,
+    asOf = ctx.asOf || p.checkedAt,
+    exact = Object.entries(STORES_EXACT).filter(([k]) => p.purchase_uris?.[k]),
+    prints = ctx.back?.prints || [],
+    low = cheapest(prints),
+    i = inv(name);
+  return `<div class="sheet-head"><button class="icon" data-act="buyBack" aria-label="Back to card details">←</button><h2>Buy this card</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
+  <div class="buy-card">${img(p.image_uris?.small || p.card_faces?.[0]?.image_uris?.small, name, "buy-thumb")}<div class="buy-id">
+    <b>${esc(name)}</b>
+    <span class="small">${p.set ? setIcon(p.set, p.rarity, 14) : ""} ${esc(p.set_name || "Printing not recorded")}</span>
+    <span class="small muted">${p.set ? `${esc(p.set.toUpperCase())} #${esc(p.collector_number || "?")} · ` : ""}${esc((p.lang || "en").toUpperCase())} · ${esc(FINISH[finish])}</span>
+  </div></div>
+  ${have.length > 1 ? `<div class="seg" role="tablist" aria-label="Finish">${have.map((f) => `<button role="tab" aria-selected="${f === finish}" class="${f === finish ? "on" : ""}" data-act="buyFinish" data-finish="${f}">${FINISH[f]}</button>`).join("")}</div>` : ""}
+  <section class="panel tight buy-est"><div class="row between"><span class="muted small">Estimated price</span><b class="buy-price">${est === null ? "Unknown" : usd(est)}</b></div>
+    <p class="small muted">${est === null ? "Scryfall has no current USD price for this printing and finish." : `Scryfall reference price (USD, ${esc(FINISH[finish].toLowerCase())})`}${eur !== null ? ` · Cardmarket trend €${esc(Number(eur).toFixed(2))}` : ""}${asOf ? ` · as of ${esc(new Date(asOf).toLocaleDateString())}` : ""}. Sellers set their own prices, condition and shipping — check the listing.</p>
+  </section>
+  <h3>This exact printing</h3>
+  ${
+    exact.length
+      ? `<div class="list compact">${exact.map(([k, label]) => `<a class="mini-row store" href="${esc(p.purchase_uris[k])}" target="_blank" rel="noopener noreferrer"><span><b>${label}</b><small class="muted"> · ${esc(p.set ? p.set.toUpperCase() + " #" + p.collector_number : "this printing")}</small></span><span class="btn ghost small">View listing ↗</span></a>`).join("")}</div>${finish !== "nonfoil" ? `<p class="foot">Choose ${esc(FINISH[finish].toLowerCase())} on the listing page.</p>` : ""}`
+      : `<p class="muted small">No direct listing link for this printing. Use a name search below, then pick the set.</p>`
+  }
+  <h3>Search by card name</h3>
+  <p class="foot">These show every printing, not just this one.</p>
+  <div class="links">${nameSearch(name).map(([l, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${l} ↗</a>`).join("")}</div>
+  <div class="actions wrap">
+    <button class="btn ghost" data-act="buyCompare">Compare cheaper printings${low !== null && est !== null && low < est ? ` · from ${usd(low)}` : ""}</button>
+    <button class="btn" data-act="own" data-name="${esc(name)}">＋ Add to collection</button>
+  </div>
+  <p class="foot">${i.owned ? `You own ${i.owned}. ` : ""}Opening a store never changes your collection — use “Add to collection” after the card arrives. Stock and shipping are only on the seller’s site.</p>`;
 }
 
 /* ---------- Compare two cards ---------- */
@@ -494,6 +540,7 @@ export function deckPage() {
       <div class="row between"><button class="icon light" data-act="go" data-to="#decks" aria-label="Back to decks">←</button><button class="icon light" data-act="deckMenu" aria-label="Deck options">⋯</button></div>
       <h1>${esc(d.name)}</h1>
       <p>${colorDots(meta(d.commander))} ${esc(d.commander || d.format)}${d.locked ? ' · <span class="chip dark">Assembled</span>' : ""}</p>
+      ${reviewBadge(d)}
       <div class="hero-stats">
         <span><b class="${t.copies === target ? "" : "warn-text"}">${t.copies}/${target}</b>cards</span>
         <span><b>${t.copies ? Math.round((t.covered / t.copies) * 100) : 0}%</b>owned</span>
@@ -505,6 +552,35 @@ export function deckPage() {
   <nav class="tabs" role="tablist">${tabs.map(([id, l]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="deckTab" data-id="${id}">${l}</button>`).join("")}</nav>
   ${d.format === "Commander" && !commanderEligible(meta(d.commander)) && tab !== "upgrade" ? `<button class="note warn block-note" data-act="deckTab" data-id="upgrade">⚠ No commander set — tap to choose one so upgrades and synergy work.</button>` : ""}
   <div class="deck-body" data-tab="${tab}">${{ cards: deckCards, engine: deckEngine, upgrade: deckUpgrade, versions: deckVersions, playtest: deckPlaytest, shop: deckShop }[tab](d, t)}</div>`;
+}
+
+function reviewBadge(d) {
+  const r = deckReview(d, S.catalog, S.state.collection, S.state.decks),
+    bad = r.some((x) => x.level === "bad");
+  return r.length
+    ? `<button class="review-badge ${bad ? "bad" : "warn"}" data-act="deckReview">${bad ? "●" : "▲"} ${r.length} to review</button>`
+    : `<button class="review-badge ok" data-act="deckReview">✓ Nothing to review</button>`;
+}
+
+export function deckReviewSheet(d) {
+  const r = deckReview(d, S.catalog, S.state.collection, S.state.decks);
+  return `<div class="sheet-head"><h2>Deck review</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
+  ${
+    r.length
+      ? `<p class="muted small">${r.length} thing${r.length > 1 ? "s" : ""} worth a look in ${esc(d.name)}. <span class="bad-text">●</span> breaks a rule · <span class="warn-text">▲</span> worth reviewing.</p>
+  <div class="review-list">${r
+    .map(
+      (x) => `<div class="review-item ${x.level}"><span class="review-icon" aria-hidden="true">${x.level === "bad" ? "●" : "▲"}</span><div class="review-main">
+      <div class="row between"><b>${esc(x.title)}</b><span class="chip">${x.level === "bad" ? "Rule" : x.heuristic ? "Guideline" : "Check"}</span></div>
+      <p class="small muted">${esc(x.detail)}</p>
+      ${x.cards?.length ? `<p class="small">${x.cards.slice(0, 8).map((n) => `<button class="link" data-act="card" data-name="${esc(n)}" data-deck="${esc(d.id)}">${esc(n)}</button>`).join(", ")}${x.cards.length > 8 ? ` +${x.cards.length - 8} more` : ""}</p>` : ""}
+      ${x.action ? `<button class="btn ghost small" data-act="${x.action.act}"${x.action.id ? ` data-id="${x.action.id}"` : ""}${x.action.role ? ` data-role="${x.action.role}"` : ""}>${esc(x.action.label)} →</button>` : ""}
+    </div></div>`,
+    )
+    .join("")}</div>`
+      : `<div class="empty"><div class="empty-mark" aria-hidden="true">✓</div><h3>Nothing to review</h3><p>Card count, colors, legality and copy limits pass${sumQty(d.cards) >= (d.format === "Commander" ? 90 : 54) ? ", and land, ramp, draw and removal counts are in normal ranges" : ""}.</p></div>`
+  }
+  <p class="foot">Rules checks use cached card data — refresh before an event. Guidelines are common deckbuilding rules of thumb, not requirements; plenty of good decks break them on purpose.</p>`;
 }
 
 const CATS = ["Commander", "Creatures", "Planeswalkers", "Artifacts", "Enchantments", "Instants", "Sorceries", "Battles", "Lands", "Unresolved"];
@@ -918,7 +994,7 @@ function deckShop(d, t) {
     .sort((a, b) => (b.price ?? -1) - (a.price ?? -1))
     .map((r) => {
       const c = meta(r.name);
-      return `<div class="lot"><button class="lot-art" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(d.id)}">${img(art(c), r.name)}</button><div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(d.id)}">${esc(r.name)}</button><span class="lot-sub">Need ${r.missing}${S.state.priceChoices?.[key(r.name)] ? " · " + esc(S.state.priceChoices[key(r.name)].label) : ""}</span></div><div class="lot-side"><span class="price">${usd(r.price === null ? null : r.price * r.missing)}</span></div></div>`;
+      return `<div class="lot"><button class="lot-art" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(d.id)}">${img(art(c), r.name)}</button><div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(d.id)}">${esc(r.name)}</button><span class="lot-sub">Need ${r.missing}${S.state.priceChoices?.[key(r.name)] ? " · " + esc(S.state.priceChoices[key(r.name)].label) : ""}</span></div><div class="lot-side"><button class="price buy-link" data-act="buyCard" data-name="${esc(r.name)}" data-deck="${esc(d.id)}" aria-label="Buy ${esc(r.name)}">${r.price === null ? "Unknown" : usd(r.price * r.missing)} ›</button></div></div>`;
     })
     .join("")}</div>
   <section class="panel">${costBlock(sub, total, d.budget, "deck budget")}${t.unpriced ? `<p class="small warn-text">${t.unpriced} copies have no price and aren’t included.</p>` : ""}
