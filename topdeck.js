@@ -7,7 +7,7 @@ export const TOPDECK_API = "https://topdeck.gg/api/v2/tournaments";
 // TopDeck format names (case sensitive) the site may ask for.
 export const TOPDECK_FORMATS = ["Standard", "Pioneer", "Modern", "Legacy", "Vintage", "Pauper", "Premodern", "EDH", "Pauper EDH", "Duel Commander", "Canadian Highlander"];
 // Formats warmed by the daily schedule and listed in the coverage report.
-export const WARM_FORMATS = ["Standard", "Pioneer", "Modern", "Legacy", "Vintage", "Pauper", "Premodern", "EDH"];
+export const WARM_FORMATS = ["Standard", "Pioneer", "Modern", "Legacy", "Vintage", "Pauper", "Premodern", "Duel Commander", "EDH"];
 
 const SECTION = /^~~\s*(.+?)\s*~~$/;
 const ZONE = (s) => (/command/i.test(s) ? "commanders" : /side/i.test(s) ? "side" : /companion/i.test(s) ? "side" : "main");

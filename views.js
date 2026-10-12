@@ -100,7 +100,7 @@ function mtgNext(d, copies) {
   if (!d && !copies)
     return nextCard({ title: "Add your collection", text: "Paste a list or upload a ManaBox, Moxfield, Archidekt or CSV export — or scan cards with your camera. Then Cardforge shows what you can build.", actions: `<button class="btn" data-act="importCollection">↥ Import a list</button><button class="btn ghost" data-act="go" data-to="#scan">▧ Scan</button><button class="btn ghost" data-act="loadExample">Explore an example</button>` });
   if (!d)
-    return nextCard({ title: "Discover decks your cards support", text: `${copies} cards in your collection. See the commanders they support and the decks — precons, shared lists and tournament results — you can almost build.`, actions: `<button class="btn" data-act="go" data-to="#decks/ideas">✧ Deck ideas</button><button class="btn ghost" data-act="go" data-to="#decks/inspiration">🏆 Find decks</button>` });
+    return nextCard({ title: "Discover decks your cards support", text: `${copies} cards in your collection. See the commanders they support and the decks — precons, shared lists and tournament results — you can almost build.`, actions: `<button class="btn" data-act="go" data-to="#decks/ideas">✧ Deck ideas</button><button class="btn ghost" data-act="go" data-to="#decks/inspiration">🏆 Meta decks</button>` });
   const t = totalsFor(d),
     f = formatOf(d),
     r = deckReview(d, S.catalog, S.state.collection, S.state.decks);
@@ -709,7 +709,7 @@ export function costBlock(sub, total, budget, label) {
 export function decks() {
   const tab = S.ui.decksTab;
   return `<div class="page-head"><h1>Decks</h1><div class="head-actions"><button class="btn small" data-act="importDeck">↥ Import</button><button class="btn small ghost" data-act="newDeck">＋ New</button></div></div>
-  ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Find decks"]])}<div class="random-tools"><button class="btn ghost small" data-act="randomDeck">🎲 Random Commander deck</button><button class="btn ghost small" data-act="buildRandom" data-format="Standard">⚒ Random deck · any format</button></div>
+  ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Meta decks"]])}<div class="random-tools"><button class="btn ghost small" data-act="randomDeck">🎲 Random Commander deck</button><button class="btn ghost small" data-act="buildRandom" data-format="Standard">⚒ Random deck · any format</button></div>
   ${tab === "ideas" ? ideasView() : tab === "inspiration" ? inspirationView() : myDecks()}`;
 }
 
@@ -751,44 +751,55 @@ function ideasView() {
   }`;
 }
 
-// Recent tournament results (TopDeck.gg via the site's Worker), matched against your cards.
+// Recent tournament results through the site's Worker: Magic Online (constructed), EDHTop16 (Commander),
+// TopDeck.gg when a key is set. Matched against your cards.
+const scryArt = (name) => (name ? `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}&format=image&version=art_crop` : "");
+const SOURCE_CREDIT = {
+  "Magic Online (official decklists)": `Decklists from <a href="https://www.mtgo.com/decklists" target="_blank" rel="noopener">Magic Online</a> (Wizards of the Coast).`,
+  "EDHTop16 (competitive Commander)": `Data from <a href="https://edhtop16.com" target="_blank" rel="noopener">EDHTop16</a>, powered by <a href="https://topdeck.gg" target="_blank" rel="noopener">TopDeck.gg</a>.`,
+  "TopDeck.gg": `Data provided by <a href="https://topdeck.gg" target="_blank" rel="noopener">TopDeck.gg</a>.`,
+};
 function tournamentPanel() {
   const fmt = S.ui.mtgMeta?.format || "Modern",
     M = metaState("mtg:" + fmt),
     data = M.data,
+    edh = fmt === "EDH",
     label = (MTG_META_FORMATS.find((f) => f[0] === fmt) || [fmt, fmt])[1],
-    chips = `<div class="fmt-chips">${MTG_META_FORMATS.map(([id, name]) => `<button class="chip pick ${id === fmt ? "on" : ""}" data-act="mtgMetaFormat" data-id="${esc(id)}">${esc(name)}</button>`).join("")}</div>`,
-    credit = `<p class="foot">Data provided by <a href="https://topdeck.gg" target="_blank" rel="noopener">TopDeck.gg</a>.</p>`;
+    chips = `<div class="fmt-chips">${MTG_META_FORMATS.map(([id, name]) => `<button class="chip pick ${id === fmt ? "on" : ""}" data-act="mtgMetaFormat" data-id="${esc(id)}">${esc(name)}</button>`).join("")}</div>`;
   let body;
   if (!data && M.busy) body = `<p class="muted small">Loading recent ${esc(label)} results…</p>`;
-  else if (!data && M.code === "not_configured")
-    body = `<div class="note"><b>Almost ready.</b> Magic tournament results come from TopDeck.gg, which needs a free API key on your Cloudflare Worker:<ol class="small"><li>Create a key at <a href="https://topdeck.gg/docs/tournaments-v2" target="_blank" rel="noopener">topdeck.gg → API → Get API Key</a>.</li><li>Cloudflare → Workers → <b>cardforge2</b> → Settings → Variables and Secrets → add a <b>Secret</b> named <code>TOPDECK_KEY</code>.</li><li>Reload this page.</li></ol></div>`;
   else if (!data && M.error) body = `<div class="note warn">${esc(M.error)} <button class="link" data-act="mtgMetaReload">Try again</button></div>`;
   else if (!data) body = `<p class="muted small">Loading…</p>`;
   else {
     const c = data.coverage || {},
-      decks = data.decks.slice(0, 30);
-    body = `<p class="evidence small">Tournament-backed · ${esc(label)} · last ${data.days} days · ${c.events} event${c.events === 1 ? "" : "s"} with 16+ players · ${data.decks.length} top-cut list${data.decks.length === 1 ? "" : "s"}${c.topSlots > c.withList ? ` (${c.topSlots - c.withList} of ${c.topSlots} top-cut slots had no published list)` : ""} · updated ${esc(new Date(data.fetchedAt || M.at).toLocaleDateString([], { month: "short", day: "numeric" }))}${data.stale ? " · <span class=\"warn-text\">showing the last good data</span>" : ""}</p>
+      decks = data.decks.slice(0, 30),
+      when = new Date(data.fetchedAt || M.at).toLocaleDateString([], { month: "short", day: "numeric" });
+    body = `<p class="evidence small">Tournament-backed · ${esc(label)} · ${edh ? "last month" : `last ${data.days} days`} · ${c.events} event${c.events === 1 ? "" : "s"}${c.players ? ` · ${c.players.toLocaleString()} players` : ""} · ${data.decks.length} list${data.decks.length === 1 ? "" : "s"} · ${esc(data.source)} · updated ${esc(when)}${data.stale ? " · <span class=\"warn-text\">showing the last good data</span>" : ""}<br>${esc(data.shareNote || "Shares are of the published lists shown here — not overall popularity or win rate.")}${data.labelNote ? " " + esc(data.labelNote) : ""}</p>
       ${
-        data.decks.length
-          ? `<p class="list-head">${fmt === "EDH" ? "Commanders" : "Decks"} in top cuts <span class="muted">share of published top-cut lists</span></p><div class="arch-grid">${data.archetypes
+        data.decks.length || data.archetypes.length
+          ? `<div class="section-head"><h2>${edh ? "Top commanders" : "Top decks right now"}</h2><button class="link small" data-act="mtgMetaReload">⟳ Refresh</button></div><div class="arch-grid">${data.archetypes
               .slice(0, 8)
-              .map((a) => `<button class="arch" data-act="mtgProven" data-key="${esc(a.best)}"><b class="ellip">${esc(a.name)}</b><small>${a.lists} list${a.lists === 1 ? "" : "s"} · ${Math.round(a.share * 100)}%</small>${bar(a.share / (data.archetypes[0]?.share || 1))}</button>`)
+              .map((a) => {
+                const art = a.art || scryArt(a.cover);
+                return `<button class="arch ${art ? "has-art" : ""}" data-act="mtgProven" data-key="${esc(a.best)}" ${a.best ? "" : "disabled"}>${art ? `<img class="arch-art" src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<span class="arch-icons"></span><b class="clamp2">${esc(a.name)}</b><small>${edh ? `${(a.share * 100).toFixed(1)}% of entries · ${a.conversion !== null ? Math.round(a.conversion * 100) + "% top-cut rate" : ""}` : `${a.lists} list${a.lists === 1 ? "" : "s"} · ${Math.round(a.share * 100)}%`}</small>${bar(a.share / (data.archetypes[0]?.share || 1))}</button>`;
+              })
               .join("")}</div>
-      <p class="list-head">Recent top-cut lists</p><div class="list">${decks
+      <div class="section-head"><h2>Recent top lists</h2></div><div class="list">${decks
         .map((d) => {
           const names = [...d.commanders, ...d.main],
             total = names.reduce((a, r) => a + r.qty, 0),
             have = names.reduce((a, r) => a + Math.min(r.qty, inv(r.name).owned), 0),
             cost = names.reduce((a, r) => a + Math.max(0, r.qty - inv(r.name).owned) * (Number(meta(r.name)?.prices?.usd) || 0), 0),
-            priced = names.every((r) => meta(r.name));
-          return `<button class="meta-row" data-act="mtgProven" data-key="${esc(d.key)}"><span class="meta-art">${img(art(meta((d.commanders[0] || d.main.find((r) => !/^(Plains|Island|Swamp|Mountain|Forest)$/.test(r.name)) || d.main[0])?.name)), d.name, "mini-art")}</span><span class="meta-main"><b class="ellip">${esc(d.name)}</b><small class="muted ellip">${esc(d.place)} · ${esc(d.event)} · ${d.players} players${d.record ? " · " + esc(d.record) : ""}</small><span class="meta-own">${bar(total ? have / total : 0)}<small>${total ? Math.round((have / total) * 100) : 0}% owned${priced && have < total ? ` · ${usd(cost, 0)} to finish` : ""}</small></span></span></button>`;
+            priced = names.every((r) => meta(r.name) || r.land),
+            cover = d.art || scryArt(d.cover);
+          return `<button class="meta-row" data-act="mtgProven" data-key="${esc(d.key)}"><span class="meta-art">${cover ? `<img class="mini-art" src="${esc(cover)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}</span><span class="meta-main"><b class="ellip">${esc(d.name)}</b><small class="muted ellip">${esc(d.place)} · ${esc(d.event)}${d.players ? ` · ${d.players} players` : ""}${d.record ? " · " + esc(d.record) : ""}</small><span class="meta-own">${bar(total ? have / total : 0)}<small>${total ? Math.round((have / total) * 100) : 0}% owned${priced && have < total ? ` · ${usd(cost, 0)} to finish` : ""}</small></span></span></button>`;
         })
         .join("")}</div>`
-          : `<p class="muted small">No ${esc(label)} events with published lists in the last ${data.days} days. Try another format.</p>`
-      }`;
+          : `<p class="muted small">No ${esc(label)} events with published lists recently. Try another format.</p>`
+      }
+      <p class="foot">${SOURCE_CREDIT[data.source] || ""}</p>`;
   }
-  return `<section class="panel"><h3>Tournament results</h3><p class="muted small">Real recent lists that placed, matched against your cards. Open one for the original list, a budget adaptation that keeps its engine, or a draft from the cards you own.</p>${chips}${body}${credit}</section>`;
+  return `<section class="panel"><h3>Tournament results</h3><p class="muted small">Real recent lists that placed, matched against your cards. Open one for the original list, a budget adaptation that keeps its engine, or a draft from the cards you own.</p>${chips}${body}</section>`;
 }
 
 function inspirationView() {

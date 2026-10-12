@@ -2654,7 +2654,7 @@ A.mtgProven = (t) => {
       const tl = meta(name)?.type_line || meta(name)?.card_faces?.[0]?.type_line || "";
       return /Land/.test(tl) ? "land" : /Creature/.test(tl) ? "creature" : tl ? "spell" : "card";
     },
-    rowsOf = (deck) => [...deck.commanders.map((r) => ({ ...r, commander: true })), ...deck.main].map((r) => ({ key: key(r.name), name: r.name, qty: r.qty, kind: r.commander ? "commander" : kindOf(r.name), price: meta(r.name) ? Number(meta(r.name).prices?.usd ?? meta(r.name).prices?.usd_foil) || (/^(Plains|Island|Swamp|Mountain|Forest|Wastes)$/.test(r.name) ? 0 : null) : null, owned: inv(r.name).owned, core: r.commander })),
+    rowsOf = (deck) => [...deck.commanders.map((r) => ({ ...r, commander: true })), ...deck.main].map((r) => ({ key: key(r.name), name: r.name, qty: r.qty, kind: r.commander ? "commander" : r.land ? "land" : kindOf(r.name), price: meta(r.name) ? Number(meta(r.name).prices?.usd ?? meta(r.name).prices?.usd_foil) || (/^(Plains|Island|Swamp|Mountain|Forest|Wastes)$/.test(r.name) ? 0 : null) : null, owned: inv(r.name).owned, core: r.commander })),
     all = data.decks.map(rowsOf),
     seen = new Map();
   for (const l of all) for (const k of new Set(l.map((r) => r.key))) seen.set(k, (seen.get(k) || 0) + 1);
@@ -2664,10 +2664,10 @@ A.mtgProven = (t) => {
     key: d.key,
     title: d.name,
     sub: `${esc(d.place)} · ${esc(d.event)} · ${d.players} players${d.player ? " · " + esc(d.player) : ""}${d.record ? " · " + esc(d.record) : ""}${d.date ? " · " + esc(d.date) : ""}`,
-    evidence: `Tournament-backed · ${esc(label)} · last ${data.days} days · compared with ${data.decks.length} top-cut lists from ${data.coverage?.events || 0} events`,
-    attribution: `Data provided by <a href="https://topdeck.gg" target="_blank" rel="noopener">TopDeck.gg</a>. Prices are Scryfall’s TCGplayer estimates.`,
-    sourceUrl: d.eventUrl || d.url,
-    sourceLabel: "TopDeck.gg event",
+    evidence: `Tournament-backed · ${esc(label)} · ${fmt === "EDH" ? "last month" : `last ${data.days} days`} · compared with ${data.decks.length} lists from ${data.coverage?.events || 0} events · ${esc(data.source)}`,
+    attribution: `${{ "Magic Online (official decklists)": `Decklist from <a href="https://www.mtgo.com/decklists" target="_blank" rel="noopener">Magic Online</a> (Wizards of the Coast).`, "EDHTop16 (competitive Commander)": `Data from <a href="https://edhtop16.com" target="_blank" rel="noopener">EDHTop16</a>, powered by TopDeck.gg.` }[data.source] || `Data provided by <a href="https://topdeck.gg" target="_blank" rel="noopener">TopDeck.gg</a>.`} Prices are Scryfall’s TCGplayer estimates.`,
+    sourceUrl: d.url || d.eventUrl,
+    sourceLabel: data.source.startsWith("Magic Online") ? "Magic Online event" : data.source.startsWith("EDHTop16") ? "Decklist" : "TopDeck.gg event",
     rowsFn: () => rowsOf(d),
     listsFn: () => data.decks.map(rowsOf),
     // Format staples played across unrelated decks aren't this deck's engine.
@@ -2689,8 +2689,9 @@ A.mtgProven = (t) => {
     cardAttrs: (r) => `data-act="card" data-name="${esc(r.name)}"`,
     imageFor: (r) => meta(r.name)?.image_uris?.small || meta(r.name)?.card_faces?.[0]?.image_uris?.small || "",
     heroFor: (rows) => {
+      if (d.art) return d.art;
       const c = meta((rows.find((r) => r.kind === "commander") || rows.find((r) => r.kind === "creature") || rows.find((r) => r.kind !== "land") || rows[0])?.name);
-      return c?.image_uris?.art_crop || c?.card_faces?.[0]?.image_uris?.art_crop || "";
+      return c?.image_uris?.art_crop || c?.card_faces?.[0]?.image_uris?.art_crop || (d.cover ? `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(d.cover)}&format=image&version=art_crop` : "");
     },
   });
 };

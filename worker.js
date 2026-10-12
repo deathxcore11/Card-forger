@@ -1,4 +1,5 @@
 import { TOPDECK_API, TOPDECK_FORMATS, WARM_FORMATS, normalizeTopdeck, topdeckBody } from "./topdeck.js";
+import { MTGO_SLUGS, MTGO_INDEX, mtgoEventSlugs, parseMtgoEvent, normalizeMtgo, EDHTOP16_API, edhtop16Query, normalizeEdhtop16 } from "./mtgmeta.js";
 // Cloudflare Worker: serves the static site, plus a cached image route for
 // Yu-Gi-Oh! card art and Pokémon set/rarity symbols (from pokesymbols.com). Each image
 // is fetched once and kept in Cloudflare's cache for 30 days instead of being hotlinked.
@@ -31,7 +32,39 @@ const json = (body, status = 200, maxAge = 0) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", "Cache-Control": maxAge ? `public, max-age=${maxAge}` : "no-store" } });
 const mtgKey = (format, days, kind = "fresh") => new Request(`https://cardforge.cache/mtg/${kind}/${encodeURIComponent(format)}/${days}`);
 
+const UA = { "User-Agent": "Cardforge deck helper (cached, a few requests a day)" };
+// Keyless sources first: Magic Online's official decklists, EDHTop16 for Commander.
+async function fetchMtgo(format, days) {
+  const idx = await fetch(MTGO_INDEX, { headers: UA });
+  if (!idx.ok) throw Error("Magic Online decklists unavailable (" + idx.status + ")");
+  const slugs = mtgoEventSlugs(await idx.text(), format, { days });
+  if (!slugs.length) throw Error("No recent Magic Online events for " + format);
+  const pages = await Promise.all(slugs.map((x) => fetch("https://www.mtgo.com/decklist/" + x.slug, { headers: UA }).then((r) => (r.ok ? r.text() : "")).then(parseMtgoEvent).catch(() => null)));
+  return { ...normalizeMtgo(pages.filter(Boolean), { format, days }), fetchedAt: new Date().toISOString() };
+}
+async function fetchEdhtop16() {
+  const r = await fetch(EDHTOP16_API, { method: "POST", headers: { ...UA, "Content-Type": "application/json" }, body: JSON.stringify(edhtop16Query()) });
+  if (!r.ok) throw Error("EDHTop16 unavailable (" + r.status + ")");
+  return { ...normalizeEdhtop16(await r.json()), fetchedAt: new Date().toISOString() };
+}
 async function fetchMtg(env, format, days) {
+  if (format === "EDH") {
+    try {
+      return await fetchEdhtop16();
+    } catch (e) {
+      if (!env.TOPDECK_KEY) throw e;
+    }
+  } else if (MTGO_SLUGS[format]) {
+    try {
+      return await fetchMtgo(format, Math.min(days, 14));
+    } catch (e) {
+      if (!env.TOPDECK_KEY) throw e;
+    }
+  }
+  if (!env.TOPDECK_KEY) throw Object.assign(Error("This format needs a TopDeck.gg API key on the Worker (secret TOPDECK_KEY)."), { notConfigured: true });
+  return fetchTopdeck(env, format, days);
+}
+async function fetchTopdeck(env, format, days) {
   const r = await fetch(TOPDECK_API, { method: "POST", headers: { Authorization: env.TOPDECK_KEY, "Content-Type": "application/json" }, body: JSON.stringify(topdeckBody(format, days)) });
   if (!r.ok) throw Error(r.status === 401 ? "TopDeck rejected the API key" : r.status === 429 ? "TopDeck rate limit reached" : "TopDeck error " + r.status);
   return { ...normalizeTopdeck(await r.json(), { format, days }), fetchedAt: new Date().toISOString() };
@@ -56,9 +89,9 @@ async function mtgMeta(env, format, days, ctx, { force = false } = {}) {
   }
 }
 async function mtgRoute(url, env, ctx) {
-  if (!env.TOPDECK_KEY) return json({ error: "not_configured", message: "Magic tournament data needs a TopDeck.gg API key on the Worker (secret TOPDECK_KEY)." }, 503);
   const days = [7, 14, 30, 60, 90].includes(Number(url.searchParams.get("days"))) ? Number(url.searchParams.get("days")) : 30;
   if (url.pathname === "/api/meta/mtg/coverage") {
+    if (!env.TOPDECK_KEY) return json({ error: "not_configured", message: "The TopDeck.gg coverage report needs the TOPDECK_KEY secret. Magic Online and EDHTop16 data work without it." }, 503);
     const rows = [];
     for (const f of WARM_FORMATS) {
       try {
@@ -71,18 +104,17 @@ async function mtgRoute(url, env, ctx) {
     return json({ source: "TopDeck.gg", days, participantMin: 16, checkedAt: new Date().toISOString(), formats: rows });
   }
   const format = url.searchParams.get("format") || "";
-  if (!TOPDECK_FORMATS.includes(format)) return json({ error: "unknown_format", formats: TOPDECK_FORMATS }, 400);
+  if (!TOPDECK_FORMATS.includes(format) && !MTGO_SLUGS[format]) return json({ error: "unknown_format", formats: [...new Set([...Object.keys(MTGO_SLUGS), ...TOPDECK_FORMATS])] }, 400);
   try {
     return json(await mtgMeta(env, format, days, ctx), 200, 600);
   } catch (e) {
-    return json({ error: "upstream", message: e.message }, 502);
+    return e.notConfigured ? json({ error: "not_configured", message: e.message }, 503) : json({ error: "upstream", message: e.message }, 502);
   }
 }
 
 export default {
   // Daily refresh of the popular formats, so visitors rarely wait on TopDeck.
   async scheduled(event, env, ctx) {
-    if (!env.TOPDECK_KEY) return;
     for (const f of WARM_FORMATS) {
       try {
         await mtgMeta(env, f, 30, null, { force: true });

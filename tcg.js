@@ -313,7 +313,7 @@ export function quickTiles(g) {
   return `<div class="quick">
     ${tile("go", "#search", "⌕", "Find cards", "Search, filter by set, type, format and price", "primary")}
     ${tile("go", "#decks/ideas", "✧", "Deck ideas", mtg ? "Commanders your cards support" : "Build from one card, ten, or your whole collection")}
-    ${tile("go", "#decks/inspiration", "🏆", mtg ? "Find decks" : "Meta decks", mtg ? "Precons & shared decks you can almost build" : "Today’s tournament decks, with what you own")}
+    ${tile("go", "#decks/inspiration", "🏆", "Meta decks", mtg ? "Tournament decks, precons and shared lists, with what you own" : "Today’s tournament decks, with what you own")}
     ${tile(mtg ? "importDeck" : "tImport", "", "↥", "Import a deck", mtg ? "Moxfield, Archidekt, ManaBox or text" : g === "ygo" ? ".ydk file or a text list" : "Pokémon TCG Live list or text")}
     ${tile(mtg ? "addCard" : "tImportColl", "", "＋", "Add cards", "One card or a whole list")}
     ${tile("go", "#sets", "◈", "Browse sets", "Every set, newest first, with your completion")}
@@ -809,7 +809,11 @@ function metaView(g) {
   <div class="section-head"><h2>Top decks right now</h2></div>
   <div class="arch-grid">${data.archetypes
     .slice(0, 8)
-    .map((a) => `<button class="arch" data-act="tMetaDeck" data-key="${esc(a.best)}" ${a.best ? "" : "disabled"}><span class="arch-icons">${g === "ptcg" ? a.icons.map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("") : ""}</span><b class="ellip">${esc(a.name)}</b><small>${g === "ptcg" ? `${(a.share * 100).toFixed(1)}% of players · ${a.top8} in Top 8` : `${a.count} top finish${a.count === 1 ? "" : "es"}`}</small>${bar(a.share / (data.archetypes[0]?.share || 1))}</button>`)
+    .map((a) => {
+      const best = data.decks.find((d) => d.key === a.best),
+        art = g === "ygo" && best?.cover ? `https://images.ygoprodeck.com/images/cards_cropped/${encodeURIComponent(best.cover)}.jpg` : "";
+      return `<button class="arch ${art ? "has-art" : ""}" data-act="tMetaDeck" data-key="${esc(a.best)}" ${a.best ? "" : "disabled"}>${art ? `<img class="arch-art" src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<span class="arch-icons">${g === "ptcg" ? a.icons.map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("") : ""}</span><b class="ellip">${esc(a.name)}</b><small>${g === "ptcg" ? `${(a.share * 100).toFixed(1)}% of players · ${a.top8} in Top 8` : `${a.count} top finish${a.count === 1 ? "" : "es"}`}</small>${bar(a.share / (data.archetypes[0]?.share || 1))}</button>`;
+    })
     .join("")}</div>
   <div class="section-head"><h2>Most played cards</h2></div>
   <div class="chips wrap">${top.map((t) => `<button class="chip" ${g === "ygo" ? `data-act="tCard" data-id="${esc(t.id)}"` : `data-act="tOtherPrintings" data-name="${esc(t.name)}"`}>${esc(t.name)} <span class="muted">${Math.round(t.pct)}%</span></button>`).join("")}</div>

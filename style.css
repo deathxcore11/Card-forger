@@ -978,3 +978,13 @@ a.pp.buy { color: var(--gold); }
 .grid-meta.stacked small { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .clamp2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* "Top decks" tiles with the deck's key card art (all games) */
+.arch { position: relative; overflow: hidden; }
+.arch.has-art { min-height: 132px; align-content: end; border-color: color-mix(in srgb, var(--gold) 25%, var(--line)); }
+.arch-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 30%; opacity: 0.9; }
+.arch.has-art::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.35) 45%, var(--surface) 92%); z-index: 1; }
+.arch.has-art > :not(.arch-art) { position: relative; z-index: 2; }
+.arch.has-art .arch-icons { min-height: 0; }
+.arch.has-art b { text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8); }
+.arch.has-art small { color: rgba(255, 255, 255, 0.85); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8); }

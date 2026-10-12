@@ -1,54 +1,74 @@
-// The Worker's /api/meta/mtg route with TopDeck stubbed: missing key, fresh fetch, cache,
-// outage fallback to the last good result, bad formats, and the coverage report.
+// The Worker's /api/meta/mtg route with every source stubbed: Magic Online and EDHTop16 work
+// without a key; TopDeck covers the rest when TOPDECK_KEY is set. Cache, outages, bad formats.
 import assert from "node:assert/strict";
 
 const store = new Map();
 globalThis.caches = { default: { match: async (r) => store.get(r.url)?.clone(), put: async (r, res) => void store.set(r.url, res.clone()) } };
-let calls = 0,
+let calls = { topdeck: 0, mtgo: 0, edh: 0 },
   down = false,
   lastBody = null;
-const realFetch = globalThis.fetch;
+const day = new Date().toISOString().slice(0, 10);
+const mtgoEvent = JSON.stringify({ event_id: "1", description: "Pioneer Challenge 32", starttime: day + " 15:00:00.0", type: "TOURNAMENT", site_name: "pioneer-challenge-32-" + day + "1", player_count: { players: "60" }, standings: [{ loginid: "7", rank: "1" }], final_rank: [{ loginid: "7", rank: "1" }], winloss: [{ loginid: "7", wins: "7", losses: "1" }], decklists: [{ loginid: "7", player: "Ana", main_deck: [{ qty: "4", card_attributes: { card_name: "Thoughtseize", card_type: "SORCRY" } }, { qty: "4", card_attributes: { card_name: "Fable of the Mirror-Breaker", card_type: "ENCHMT" } }, { qty: "20", card_attributes: { card_name: "Swamp", card_type: "LAND  " } }], sideboard_deck: [] }] });
 globalThis.fetch = async (url, init = {}) => {
-  if (String(url).startsWith("https://topdeck.gg/")) {
-    calls++;
+  url = String(url);
+  if (url.startsWith("https://topdeck.gg/")) {
+    calls.topdeck++;
     lastBody = JSON.parse(init.body);
     assert.equal(init.headers.Authorization, "test-key", "the key goes in the Authorization header");
     if (down) return new Response("{}", { status: 500 });
-    return new Response(JSON.stringify([{ TID: "t1", tournamentName: "Pioneer Weekly", startDate: 1760000000, topCut: 8, standings: [{ name: "A", standing: 1, archetype: "Rakdos Midrange", decklist: "~~Mainboard~~\n4 Thoughtseize\n~~Sideboard~~\n2 Duress" }] }]), { status: 200 });
+    return new Response(JSON.stringify([{ TID: "t1", tournamentName: "Highlander Weekly", startDate: 1760000000, topCut: 8, standings: [{ name: "A", standing: 1, archetype: "Jeskai Control", decklist: "~~Mainboard~~\n1 Counterspell" }] }]));
   }
-  return realFetch(url, init);
+  if (url === "https://www.mtgo.com/decklists") {
+    calls.mtgo++;
+    if (down) return new Response("", { status: 503 });
+    return new Response(`<a href="/decklist/pioneer-challenge-32-${day}1">x</a>`);
+  }
+  if (url.startsWith("https://www.mtgo.com/decklist/")) return new Response(`<script>window.MTGO.decklists.data = ${mtgoEvent};\n</script>`);
+  if (url.startsWith("https://edhtop16.com/")) {
+    calls.edh++;
+    return new Response(JSON.stringify({ data: { commanders: { edges: [{ node: { name: "Kinnan, Bonder Prodigy", stats: { count: 100, topCuts: 30, metaShare: 0.03, conversionRate: 0.3 }, cards: [{ imageUrls: ["art.jpg"] }], entries: { edges: [{ node: { standing: 1, wins: 5, losses: 1, draws: 0, maindeck: [{ name: "Kinnan, Bonder Prodigy", type: "Creature" }, { name: "Sol Ring", type: "Artifact" }, { name: "Island", type: "Basic Land — Island" }], player: { name: "P" }, tournament: { name: "cEDH Open", TID: "c1", size: 64, tournamentDate: day } } }] } } }] } } }));
+  }
+  throw Error("unexpected " + url);
 };
 const worker = (await import("./worker.js")).default;
 const ctx = { waitUntil: (p) => p };
 const get = (path, env) => worker.fetch(new Request("https://site.test" + path), env, ctx);
+const noKey = { ASSETS: { fetch: () => new Response("asset") } },
+  env = { ...noKey, TOPDECK_KEY: "test-key" };
 
-let r = await get("/api/meta/mtg?format=Pioneer", {});
-assert.equal(r.status, 503, "no key → clearly not configured");
-assert.equal((await r.json()).error, "not_configured");
-
-const env = { TOPDECK_KEY: "test-key", ASSETS: { fetch: () => new Response("asset") } };
-r = await get("/api/meta/mtg?format=Pioneer&days=30", env);
-assert.equal(r.status, 200);
-let d = await r.json();
-assert.equal(d.decks[0].name, "Rakdos Midrange");
-assert.equal(d.coverage.withList, 1);
-assert.deepEqual([lastBody.game, lastBody.format, lastBody.last, lastBody.participantMin], ["Magic: The Gathering", "Pioneer", 30, 16]);
+// No key needed for Magic Online formats or Commander.
+let d = await (await get("/api/meta/mtg?format=Pioneer", noKey)).json();
+assert.equal(d.source, "Magic Online (official decklists)");
+assert.equal(d.decks[0].place, "1st");
+assert.equal(d.decks[0].record, "7-1");
+assert.match(d.decks[0].name, /Fable of the Mirror-Breaker|Thoughtseize/, "named by its key cards");
+assert.ok(d.decks[0].main.find((r) => r.name === "Swamp").land);
+d = await (await get("/api/meta/mtg?format=EDH", noKey)).json();
+assert.equal(d.archetypes[0].name, "Kinnan, Bonder Prodigy");
+assert.equal(d.decks[0].commander, "Kinnan, Bonder Prodigy");
+assert.ok(!d.decks[0].main.some((r) => r.name === "Kinnan, Bonder Prodigy"), "the commander isn't counted twice");
 await new Promise((res) => setTimeout(res, 10));
+await get("/api/meta/mtg?format=Pioneer", noKey);
+assert.equal(calls.mtgo, 1, "second request is served from cache");
 
-await get("/api/meta/mtg?format=Pioneer&days=30", env);
-assert.equal(calls, 1, "second request is served from cache");
+// Formats only TopDeck covers need the key.
+let r = await get("/api/meta/mtg?format=Canadian%20Highlander", noKey);
+assert.equal(r.status, 503);
+assert.equal((await r.json()).error, "not_configured");
+r = await get("/api/meta/mtg?format=Canadian%20Highlander&days=30", env);
+assert.equal(r.status, 200);
+assert.equal((await r.json()).decks[0].name, "Jeskai Control");
+assert.deepEqual([lastBody.game, lastBody.format, lastBody.last, lastBody.participantMin], ["Magic: The Gathering", "Canadian Highlander", 30, 16]);
 
-// Fresh copy expires; TopDeck is down → last good result, marked stale.
+// Outage: the last good result is served, marked stale.
 for (const k of [...store.keys()]) if (k.includes("/fresh/")) store.delete(k);
 down = true;
-d = await (await get("/api/meta/mtg?format=Pioneer&days=30", env)).json();
+d = await (await get("/api/meta/mtg?format=Pioneer", noKey)).json();
 assert.equal(d.stale, true);
 assert.equal(d.decks.length, 1, "keeps showing the last good data during an outage");
-
-r = await get("/api/meta/mtg?format=Bogus", env);
-assert.equal(r.status, 400);
 down = false;
-const cov = await (await get("/api/meta/mtg/coverage?days=30", env)).json();
-assert.ok(cov.formats.length >= 6 && cov.formats.every((f) => "events" in f || "error" in f));
-assert.equal((await get("/index.html", env).then((x) => x.text())), "asset", "other paths still serve the site");
-console.log("PASS: Worker TopDeck route — not-configured 503, key header, 12h cache, stale fallback during outages, format check, coverage report.");
+
+assert.equal((await get("/api/meta/mtg?format=Bogus", env)).status, 400);
+assert.equal((await get("/api/meta/mtg/coverage", noKey)).status, 503, "the TopDeck coverage report needs the key");
+assert.equal(await get("/index.html", env).then((x) => x.text()), "asset", "other paths still serve the site");
+console.log("PASS: Worker Magic meta — Magic Online and EDHTop16 without a key, TopDeck fallback with it, cache, stale fallback, format check.");

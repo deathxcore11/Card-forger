@@ -47,9 +47,9 @@ The site is plain static files, so there is no build step.
 
 **Option B, manual zip upload.** Export a backup in Settings first, then upload the site files to the same Worker as before (see `START_HERE.txt`).
 
-### Magic tournament results (TopDeck.gg)
+### Magic tournament results
 
-Magic's **Decks → Find decks → Tournament results** comes from the free [TopDeck.gg API](https://topdeck.gg/docs/tournaments-v2) through the Worker, so the key never reaches the browser.
+Magic's **Decks → Meta decks** works without any setup: constructed formats come from Wizards' official [Magic Online decklists](https://www.mtgo.com/decklists) and Commander from [EDHTop16](https://edhtop16.com), both fetched and cached by the Worker (`mtgmeta.js`). Optionally, add a free [TopDeck.gg API](https://topdeck.gg/docs/tournaments-v2) key as a fallback and for extra formats:
 
 1. Create a free API key at topdeck.gg (API docs → **Get API Key**).
 2. Cloudflare → Workers & Pages → `cardforge2` → Settings → **Variables and Secrets** → add a **Secret** named `TOPDECK_KEY` (or run `npx wrangler secret put TOPDECK_KEY`).
@@ -104,6 +104,7 @@ uploading or replacing anything. Signing out leaves the data on the device.
 | `tcgbuild.js` | Yu-Gi-Oh! and Pokémon deck generators |
 | `emblems.js` | Yu-Gi-Oh! attribute/level/Spell-Trap emblems, Pokémon energy symbols, set and rarity badges (Pokémon set/rarity symbol images from [pokesymbols.com](https://pokesymbols.com)) |
 | `meta.js` | Live tournament meta: YGOPRODeck Tournament Meta Decks (via the Worker) and Limitless Pokémon events |
+| `mtgmeta.js` | Magic Online and EDHTop16 normalizers (used by the Worker), archetype naming by key cards |
 | `topdeck.js`, `scripts/topdeck-coverage.mjs` | TopDeck.gg normalizer (used by the Worker) and the per-format coverage report |
 | `adapt.js` | Closest proven deck: similar lists, engine detection, budget adaptation with reasons, owned-card draft |
 | `facts.js` | “Did you know?” facts built from each card’s data |

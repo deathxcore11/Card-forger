@@ -1,3 +1,19 @@
+CARDFORGE 3.7 UPDATE — MAGIC META DECKS (NO KEY NEEDED) AND ART TILES
+
+- Magic → Decks → Meta decks now works out of the box, like Yu-Gi-Oh! and Pokémon:
+  · Standard, Pioneer, Modern, Legacy, Vintage, Pauper, Premodern and Duel Commander from
+    Wizards' official Magic Online decklists (Challenges with placements and records, plus
+    League 5-0 lists) from the last 14 days.
+  · Commander (cEDH) from EDHTop16: top commanders by share of entries and top-cut rate, with
+    full top-cut decklists from real events (powered by TopDeck.gg).
+  · Every list opens as a tournament deck: original, budget adaptation, or a draft from your cards.
+  · MTGO doesn't label archetypes, so decks are named after their key cards
+    (e.g. "Guide of Souls · Goblin Bombardment"); the evidence line says so.
+  · The Worker fetches a few pages per format, caches 12 hours, refreshes daily, and keeps the
+    last good data during outages. A TopDeck.gg key is now optional (fallback / extra formats).
+- "Top decks right now" tiles show the deck's key card art for Magic and Yu-Gi-Oh!
+  (Pokémon keeps its Pokémon icons). Magic's tab is now called "Meta decks" in every game.
+
 CARDFORGE 3.6 UPDATE — SCAN FOR ALL THREE GAMES
 
 - Scan works for Yu-Gi-Oh! and Pokémon too, with the same screen as Magic. The phone reads the
