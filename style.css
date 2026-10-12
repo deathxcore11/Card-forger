@@ -1000,3 +1000,11 @@ a.pp.buy { color: var(--gold); }
 .set-badge.r-uncommon .set-icon { background: linear-gradient(135deg, #8a9aa8, #e6eef4 50%, #7d8b96); }
 .set-badge.r-rare .set-icon { background: linear-gradient(135deg, #8d6d2b, #f5d78a 50%, #9b7a33); }
 .set-badge.r-mythic .set-icon { background: linear-gradient(135deg, #b4421c, #ffb15e 50%, #c2471b); }
+
+/* One scrolling area per sheet: the dialog never scrolls itself, and lists inside don't either. */
+dialog.sheet { overflow: hidden; }
+#sheetBody { box-sizing: border-box; max-height: 92vh; }
+.print-list { max-height: none !important; overflow: visible !important; }
+/* Tournament decks: a shorter banner so the list starts sooner */
+.cs-hero.compact { height: 150px; }
+.facts-list { margin: 6px 0; padding-left: 18px; display: grid; gap: 2px; font-size: 13px; }

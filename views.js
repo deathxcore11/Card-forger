@@ -774,7 +774,11 @@ function tournamentPanel() {
     const c = data.coverage || {},
       decks = data.decks.slice(0, 30),
       when = new Date(data.fetchedAt || M.at).toLocaleDateString([], { month: "short", day: "numeric" });
-    body = `<p class="evidence small">Tournament-backed · ${esc(label)} · ${edh ? "last month" : `last ${data.days} days`} · ${c.events} event${c.events === 1 ? "" : "s"}${c.players ? ` · ${c.players.toLocaleString()} players` : ""} · ${data.decks.length} list${data.decks.length === 1 ? "" : "s"} · ${esc(data.source)} · updated ${esc(when)}${data.stale ? " · <span class=\"warn-text\">showing the last good data</span>" : ""}<br>${esc(data.shareNote || "Shares are of the published lists shown here — not overall popularity or win rate.")}${data.labelNote ? " " + esc(data.labelNote) : ""}</p>
+    const counts =
+      c.challenges !== undefined
+        ? `${c.challenges} Challenge${c.challenges === 1 ? "" : "s"} (${c.players.toLocaleString()} entries, ${c.challengeLists} ranked lists published)${c.leagues ? ` + ${c.leagueLists} League 5-0 lists from ${c.leagues} League${c.leagues === 1 ? "" : "s"} (field size not published)` : ""}`
+        : `${c.events} event${c.events === 1 ? "" : "s"}${c.players ? ` · ${c.players.toLocaleString()} entries` : ""} · ${data.decks.length} published list${data.decks.length === 1 ? "" : "s"}`;
+    body = `<p class="evidence small">Tournament-backed · ${esc(label)} · ${edh ? "last month" : `last ${data.days} days`} · ${counts} · ${esc(data.source)} · updated ${esc(when)}${data.stale ? " · <span class=\"warn-text\">showing the last good data</span>" : ""}<br>${esc(data.shareNote || "Shares are of the published lists shown here — not overall popularity or win rate.")}${data.labelNote ? " " + esc(data.labelNote) : ""}</p>
       ${
         data.decks.length || data.archetypes.length
           ? `<div class="section-head"><h2>${edh ? "Top commanders" : "Top decks right now"}</h2><button class="link small" data-act="mtgMetaReload">⟳ Refresh</button></div><div class="arch-grid">${data.archetypes

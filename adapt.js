@@ -7,7 +7,12 @@
 // Works for any game: rows/pool use a `key` (card id or name), `kind` (card type) and `price`.
 
 const need = (r) => Math.max(0, r.qty - (r.owned || 0));
+const unknown = (r) => r.price === null || r.price === undefined;
+// Known prices only; unpriced copies are counted separately and never treated as free.
 export const costToFinish = (rows) => rows.reduce((a, r) => a + need(r) * (r.price ?? 0), 0);
+export const unpricedCopies = (rows) => rows.reduce((a, r) => a + (unknown(r) ? need(r) : 0), 0);
+// Cards per type, to show what an adaptation changes (lands, creatures, Trainers…).
+export const kindCounts = (rows) => rows.reduce((m, r) => ((m[r.kind] = (m[r.kind] || 0) + r.qty), m), {});
 const sum = (rows) => rows.reduce((a, r) => a + r.qty, 0);
 
 // Lists that share most of their cards with this one (same deck, other pilots).
@@ -55,7 +60,7 @@ export function swapPool(rows, similar) {
  * rows: [{ key, name, qty, kind, price, owned, core? }]  pool: [{ key, name, kind, price, lists, owned? }]
  * Swaps the most expensive non-engine copies you still need until the cost to finish fits the budget.
  */
-export function adaptList({ rows, pool = [], engine = new Set(), budget, similarCount = 0, minOpen = 3 }) {
+export function adaptList({ rows, pool = [], engine = new Set(), budget, similarCount = 0, minOpen = 3, keepKinds = ["land", "Energy"] }) {
   const groups = new Set(rows.map((r) => r.group).filter(Boolean)),
     out = rows.map((r) => ({ ...r })),
     swaps = [],
@@ -70,6 +75,8 @@ export function adaptList({ rows, pool = [], engine = new Set(), budget, similar
         // (copies you already own are free).
         .filter((p) => p.kind === r.kind && (!p.group || groups.has(p.group)) && !used.has(p.key) && p.price !== null && p.price !== undefined && Math.max(0, n - (p.owned || 0)) * p.price <= n * r.price * 0.5)
         .sort((a, b) => (b.owned || 0) - (a.owned || 0) || b.lists - a.lists || a.price - b.price)[0];
+    // The mana base is never cut into open slots: a land only gives way to a cheaper land.
+    if (!sub && keepKinds.includes(r.kind)) continue;
     r.qty -= n;
     if (sub) {
       used.add(sub.key);
@@ -79,12 +86,26 @@ export function adaptList({ rows, pool = [], engine = new Set(), budget, similar
   }
   const rowsOut = out.filter((r) => r.qty > 0),
     engineRows = rowsOut.filter((r) => engine.has(r.key) && need(r) > 0).sort((a, b) => need(b) * (b.price ?? 0) - need(a) * (a.price ?? 0));
-  return { rows: rowsOut, swaps, cost: costToFinish(rowsOut), open: Math.max(0, sum(rows) - sum(rowsOut)), fits: costToFinish(rowsOut) <= budget + 1e-6, engineCost: costToFinish(engineRows), engineTop: engineRows.slice(0, 3) };
+  const open = Math.max(0, sum(rows) - sum(rowsOut)),
+    unpriced = unpricedCopies(rowsOut);
+  return {
+    rows: rowsOut,
+    swaps,
+    cost: costToFinish(rowsOut),
+    unpriced,
+    open,
+    // "Fits" only when every copy to buy has a price and no slot is left open.
+    fits: !unpriced && !open && costToFinish(rowsOut) <= budget + 1e-6,
+    underBudget: costToFinish(rowsOut) <= budget + 1e-6,
+    kinds: { before: kindCounts(rows), after: kindCounts(rowsOut) },
+    engineCost: costToFinish(engineRows),
+    engineTop: engineRows.slice(0, 3),
+  };
 }
 
 // Only the copies you own; what's missing, cheapest first, as the path to a full deck.
 export function ownedDraft(rows) {
   const have = rows.filter((r) => r.owned > 0).map((r) => ({ ...r, qty: Math.min(r.qty, r.owned) })),
     missing = rows.filter((r) => need(r) > 0).map((r) => ({ ...r, qty: need(r) })).sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
-  return { rows: have, open: sum(rows) - sum(have), missing, cost: costToFinish(rows), unpriced: missing.filter((r) => r.price === null || r.price === undefined).length };
+  return { rows: have, open: sum(rows) - sum(have), missing, cost: costToFinish(rows), unpriced: unpricedCopies(rows) };
 }

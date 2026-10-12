@@ -22,9 +22,18 @@ const swap = a.swaps.find((s) => s.out === "Pricey Removal");
 assert.equal(swap.in, "Budget Removal", "swapped for a cheaper card of the same type from similar lists");
 assert.match(swap.why, /2 of 2 similar lists/);
 assert.ok(a.cost < full);
-const land = a.swaps.find((s) => s.out === "Fetch Land");
-assert.ok(!land || land.in === null, "a land is never replaced by a non-land");
+assert.ok(!a.swaps.some((s) => s.out === "Fetch Land"), "lands are never cut into open slots (no cheaper land in similar lists)");
 assert.equal(a.rows.reduce((x, r) => x + r.qty, 0) + a.open, 36, "every slot is either filled or reported open");
+assert.equal(a.kinds.before.land, a.kinds.after.land, "the mana base is unchanged");
+// Unknown prices are never free, and a list with unpriced copies can't claim to fit the budget.
+{
+  const rows = [R("Steam Vents", 4, "land", null), R("Bolt", 4, "spell", 1)];
+  const x = adaptList({ rows, pool: [], engine: new Set(), budget: 100 });
+  assert.equal(x.unpriced, 4);
+  assert.equal(x.cost, 4);
+  assert.equal(x.fits, false, "can't confirm it fits with 4 unpriced copies");
+  assert.equal(x.underBudget, true);
+}
 
 const d = ownedDraft(list);
 assert.deepEqual(d.rows.map((r) => r.key), ["Cheap Burn"]);

@@ -101,7 +101,9 @@ const groupShare = (decks) => {
 export function normalizeMtgo(events, { format, days }) {
   const decks = [],
     evs = [],
-    cov = { events: 0, players: 0, topSlots: 0, withList: 0, structured: 0, linkOnly: 0, missing: 0 };
+    // Challenges have a field size and ranked lists; Leagues only publish 5-0 lists (no field size).
+    cov = { events: 0, players: 0, topSlots: 0, withList: 0, structured: 0, linkOnly: 0, missing: 0, challenges: 0, challengeLists: 0, leagues: 0, leagueLists: 0 };
+  const seenLists = new Set();
   for (const e of events) {
     if (!e?.decklists) continue;
     const league = e.type !== "TOURNAMENT" || /league/i.test(e.description || ""),
@@ -111,12 +113,21 @@ export function normalizeMtgo(events, { format, days }) {
       rankOf = new Map([...(e.standings || []), ...(e.final_rank || [])].map((s) => [String(s.loginid), Number(s.rank)])),
       wl = new Map((e.winloss || []).map((w) => [String(w.loginid), w]));
     for (const s of e.final_rank || []) rankOf.set(String(s.loginid), Number(s.rank));
+    if (evs.some((x) => x.id === e.event_id)) continue;
     cov.events++;
-    cov.players += players;
-    evs.push({ id: e.event_id, name: e.description || "MTGO event", date, players, url });
+    if (league) cov.leagues++;
+    else {
+      cov.challenges++;
+      cov.players += players;
+    }
+    evs.push({ id: e.event_id, name: e.description || "MTGO event", date, players: league ? 0 : players, league, url });
     for (const dl of e.decklists) {
-      const main = cards(dl.main_deck);
-      if (!main.length) continue;
+      const main = cards(dl.main_deck),
+        listKey = e.event_id + ":" + dl.loginid;
+      if (!main.length || seenLists.has(listKey)) continue;
+      seenLists.add(listKey);
+      if (league) cov.leagueLists++;
+      else cov.challengeLists++;
       cov.topSlots++;
       cov.withList++;
       cov.structured++;
@@ -131,7 +142,7 @@ export function normalizeMtgo(events, { format, days }) {
         event: e.description || "MTGO event",
         eventId: e.event_id,
         date,
-        players,
+        players: league ? 0 : players,
         rank,
         place: league ? "5-0 League" : placeLabel(rank),
         player: dl.player || "",

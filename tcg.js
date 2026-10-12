@@ -11,7 +11,7 @@ import { ygoSource, ygoImageDirect, YGO_TYPES, YGO_ATTRIBUTES, YGO_RACES, YGO_SP
 import { ptcgSource, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES } from "./ptcg.js";
 import { loadMeta, metaState, ptcgIcon } from "./meta.js";
 import { scanNamesFor, ygoSetCodes, ygoPasscodes, ptcgNumbers } from "./scan.js";
-import { adaptList, ownedDraft, engineOf, similarLists, swapPool, costToFinish } from "./adapt.js";
+import { adaptList, ownedDraft, engineOf, similarLists, swapPool, costToFinish, unpricedCopies } from "./adapt.js";
 export { metaState, similarLists };
 
 export const SOURCES = { ygo: ygoSource, ptcg: ptcgSource };
@@ -868,7 +868,7 @@ export function provenSheetHtml() {
     budget = chips.includes(proven.budget) ? proven.budget : chips.filter((b) => b <= M.full / 2).at(-1) ?? chips[0] ?? 0,
     total = spec.rows.reduce((a, r) => a + r.qty, 0),
     have = spec.rows.reduce((a, r) => a + Math.min(r.qty, r.owned || 0), 0),
-    unpriced = spec.rows.filter((r) => (r.price === null || r.price === undefined) && r.qty > (r.owned || 0)).length,
+    unpriced = unpricedCopies(spec.rows),
     thumb = (r) => {
       const u = spec.imageFor?.(r);
       return u ? `<img class="row-thumb" src="${esc(u)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'row-thumb img-missing'}))">` : `<span class="row-thumb img-missing" aria-hidden="true"></span>`;
@@ -882,7 +882,20 @@ export function provenSheetHtml() {
     const a = adaptList({ rows: spec.rows, pool: M.pool, engine: M.engine, budget, similarCount: M.similar.length });
     proven.last = a;
     body = `${chips.length ? `<div class="fmt-chips">${chips.map((b) => `<button class="chip pick ${b === budget ? "on" : ""}" data-act="provenBudget" data-b="${b}">≤ ${usd(b, 0)}</button>`).join("")}</div>` : `<p class="small ok-text">This list already costs little to finish — no adaptation needed.</p>`}
-      <div class="note ${a.open ? "warn" : ""}"><b>${a.open ? `Draft — ${a.open} slot${a.open === 1 ? "" : "s"} open` : "Budget adaptation"}</b> · ${usd(M.full, 0)} → <b>${usd(a.cost, 0)}</b> to finish · ${a.swaps.length} change${a.swaps.length === 1 ? "" : "s"}<br>${a.fits ? "" : a.engineCost >= a.cost / 2 ? `<small><b>Can’t reach ${usd(budget, 0)} without breaking the deck:</b> its engine alone costs ${usd(a.engineCost, 0)} to finish${a.engineTop.length ? ` (${a.engineTop.map((r) => `${esc(r.name)} ${usd(Math.max(0, r.qty - (r.owned || 0)) * (r.price ?? 0), 0)}`).join(", ")})` : ""}.</small><br>` : `<small><b>Stopped at ${usd(a.cost, 0)}:</b> the remaining cards are cheap or have no cheaper card of the same type in similar lists.</small><br>`}<small>An adaptation of a tournament list — the cheaper version hasn’t been tested in an event.${M.similar.length ? ` Swaps come from ${M.similar.length} similar list${M.similar.length === 1 ? "" : "s"}.` : " No similar lists in the data, so expensive cards are left as open slots."}</small></div>
+      ${(() => {
+        const cards = a.rows.reduce((x, r) => x + r.qty, 0),
+          KIND = { land: "Lands", creature: "Creatures", spell: "Other spells", commander: "Commander", Monster: "Monsters", Spell: "Spells", Trap: "Traps", Extra: "Extra Deck", Pokemon: "Pokémon", Trainer: "Trainers", Energy: "Energy", card: "Other" },
+          changed = Object.keys({ ...a.kinds.before, ...a.kinds.after }).filter((k) => (a.kinds.before[k] || 0) !== (a.kinds.after[k] || 0)),
+          status = a.open ? `Draft — ${a.open} slot${a.open === 1 ? "" : "s"} still required` : a.unpriced ? "Budget adaptation — total not confirmed" : a.fits ? `Budget adaptation — fits ${usd(budget, 0)}` : "Budget adaptation — over budget";
+        return `<div class="note ${a.fits ? "" : "warn"}"><b>${status}</b>
+          <ul class="facts-list">
+            <li>${cards}/${total} cards${a.open ? ` · <b>${a.open} slot${a.open === 1 ? "" : "s"} open</b>` : ""}</li>
+            <li>${usd(a.cost, 0)} known subtotal${a.unpriced ? ` · <b>${a.unpriced} cop${a.unpriced === 1 ? "y" : "ies"} unpriced</b> — complete purchase cost unavailable` : ""} <span class="muted">(was ${usd(M.full, 0)})</span></li>
+            <li>${changed.length ? changed.map((k) => `${KIND[k] || k} ${a.kinds.before[k] || 0} → ${a.kinds.after[k] || 0}`).join(" · ") : "Same card-type mix as the original"} · lands are never cut</li>
+          </ul>
+          ${!a.underBudget ? (a.engineCost >= a.cost / 2 ? `<small><b>Can’t reach ${usd(budget, 0)} without breaking the deck:</b> its engine alone costs ${usd(a.engineCost, 0)} to finish${a.engineTop.length ? ` (${a.engineTop.map((r) => `${esc(r.name)} ${usd(Math.max(0, r.qty - (r.owned || 0)) * (r.price ?? 0), 0)}`).join(", ")})` : ""}.</small><br>` : `<small><b>Stopped at ${usd(a.cost, 0)}:</b> the remaining cards are cheap, lands, or have no cheaper card of the same type in similar lists.</small><br>`) : ""}
+          <small>An adaptation of a tournament list — not tested in an event. ${M.similar.length ? `Swaps come from ${M.similar.length} similar list${M.similar.length === 1 ? "" : "s"}.` : "No similar lists in the data, so expensive cards are left as open slots."} <b>Not checked:</b> ${spec.g === "mtg" ? "mana colors, " : ""}opening-hand consistency and card roles after the swaps.</small></div>`;
+      })()}
       ${a.swaps.length ? `<p class="list-head">Changes</p><ul class="swaps">${a.swaps.map((s) => `<li><span class="bad-text">−${s.qty} ${esc(s.out)}</span> ${s.in ? `→ <span class="ok-text">+${s.qty} ${esc(s.in)}</span>` : "→ <b>open slot</b>"} <small class="muted">saves ${usd(s.saved, 0)} · ${esc(s.why)}</small></li>`).join("")}</ul>` : ""}
       ${M.engine.size ? `<p class="small muted">Kept the engine: ${esc(spec.rows.filter((r) => M.engine.has(r.key)).map((r) => r.name).slice(0, 8).join(", "))}${M.engine.size > 8 ? "…" : ""}</p>` : ""}
       <p class="list-head">Adapted list</p><div class="list compact">${a.rows.map((r) => row(r)).join("")}</div>`;
@@ -894,10 +907,10 @@ export function provenSheetHtml() {
   }
   const hero = spec.heroFor?.(spec.rows);
   return `<div class="sheet-head overlay"><span></span><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
-  <div class="cs-hero ${spec.g}">${hero ? `<img class="cs-art" src="${esc(hero)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<div class="cs-shade"></div></div>
+  <div class="cs-hero compact ${spec.g}">${hero ? `<img class="cs-art" src="${esc(hero)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<div class="cs-shade"></div></div>
   <div class="cs-title"><div><h2>${esc(spec.title)}</h2><p class="type-line">🏆 ${spec.sub}</p></div></div>
   <p class="evidence small">${spec.evidence}</p>
-  <div class="kpis small"><div class="kpi"><b>${total ? Math.round((have / total) * 100) : 0}%</b><span>you own</span></div><div class="kpi"><b>${have}/${total}</b><span>cards</span></div><div class="kpi"><b>${usd(M.full, 0)}${unpriced ? "+" : ""}</b><span>to finish</span></div></div>
+  <div class="kpis small"><div class="kpi"><b>${total ? Math.round((have / total) * 100) : 0}%</b><span>you own</span></div><div class="kpi"><b>${have}/${total}</b><span>cards</span></div><div class="kpi"><b>${usd(M.full, 0)}</b><span>${unpriced ? `known · ${unpriced} cop${unpriced === 1 ? "y" : "ies"} unpriced` : "to finish"}</span></div></div>
   ${segmented("provenMode", mode, [["original", "Original"], ["budget", "Budget adaptation"], ["draft", "My cards draft"]])}
   ${proven.busy ? `<p class="muted small" role="status">${esc(proven.msg)}</p>` : proven.msg ? `<p class="small warn-text" role="status">${esc(proven.msg)}</p>` : ""}
   ${body}
