@@ -613,3 +613,36 @@ button.price-pill:active { transform: scale(0.98); }
 .buy-est p { margin-top: 4px; }
 a.store { text-decoration: none; color: var(--text); min-height: 48px; }
 .links.research { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 14px 0 4px; }
+
+/* ---------- 2.4: official symbols, sets ---------- */
+.ms { width: 17px; height: 17px; vertical-align: -3px; display: inline-block; border-radius: 50%; box-shadow: -1px 1px 0 rgba(0, 0, 0, 0.55); }
+.ms.inline { width: 1.05em; height: 1.05em; vertical-align: -0.18em; margin: 0 1px; box-shadow: -0.5px 0.5px 0 rgba(0, 0, 0, 0.4); }
+.mana .ms + .ms, .dots .ms + .ms { margin-left: 1px; }
+.cd-text .mana .ms { width: 19px; height: 19px; }
+.meter.two .ms, .mb-row .ms { width: 20px; height: 20px; }
+#sheetBody { overflow-x: hidden; }
+
+.set-badge[data-act] { cursor: pointer; }
+.set-badge[data-act]:hover { border-color: var(--gold); }
+button.cd-set { background: none; border: 1px solid transparent; border-radius: 12px; padding: 6px; margin: -6px; text-align: left; color: inherit; cursor: pointer; }
+button.cd-set:hover { border-color: var(--line); background: var(--surface); }
+.set-go { color: var(--gold); }
+.set-icon.big { width: 30px; height: 30px; flex: none; }
+.set-icon.huge { width: 64px; height: 64px; flex: none; }
+.set-hero { display: flex; gap: 16px; align-items: center; margin: 4px 0 12px; }
+.set-hero-main { min-width: 0; }
+.set-hero h1 { margin: 2px 0; }
+.set-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 4px; }
+.set-controls select { min-height: 40px; }
+.set-grid .grid-card.own { outline: 2px solid rgba(111, 210, 154, 0.55); outline-offset: -2px; }
+.owned-badge.other { background: var(--surface-2); color: var(--muted); font-size: 10.5px; }
+h2.year { margin: 18px 0 8px; color: var(--muted); font-size: 15px; }
+.set-list { display: grid; gap: 6px; }
+@media (min-width: 700px) { .set-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.set-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); text-align: left; cursor: pointer; }
+.set-row:hover { border-color: var(--gold); }
+.set-row-main { display: grid; min-width: 0; flex: 1; }
+.set-row-count { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.set-controls .seg { flex: 1 1 100%; }
+.set-controls select { flex: 1 1 40%; min-width: 0; }
+@media (min-width: 700px) { .set-controls .seg { flex: 0 0 auto; } }

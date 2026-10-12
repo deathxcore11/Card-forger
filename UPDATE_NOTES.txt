@@ -1,3 +1,20 @@
+CARDFORGE 2.4 UPDATE
+
+- Official mana symbols everywhere. Mana costs, color identity, color balance, the mana base table
+  and card rules text ({T}, {G}, {2} …) now use the real Magic symbol artwork from Scryfall instead of
+  lettered circles. If a symbol can't load (offline), its {W}-style text shows instead.
+- Set pages. Tap any set badge — in deck rows, search results, the collection, or the set name in a
+  card's details — to see every printing in that set as a clean card-image grid, in set order. Shows
+  how many you own (green outline and ×count for exact printings, "other ed." if you own a different
+  printing), and lets you search, filter Owned/Missing, filter by rarity and sort by price. Tap a card
+  for its details, Buy links and "I own this", which now pre-fills that exact set and collector number.
+- All sets. Search → "Browse sets" (or ⚙ → Browse every set) lists every paper set, newest first,
+  grouped by year, with promos/tokens/extras behind a switch. The list comes live from Scryfall and
+  refreshes every few days, so new sets show up as soon as Scryfall adds them.
+- Correct set symbols. Set icons now come from Scryfall's set list, which fixes missing symbols for
+  Secret Lair, The List, promos and similar sets.
+- Card popups can no longer scroll sideways.
+
 CARDFORGE 2.3 UPDATE
 
 - Deck review badge. Under each deck's name: "▲ 3 to review" (amber) or "● 2 to review" (red when a

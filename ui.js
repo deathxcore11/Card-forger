@@ -39,23 +39,28 @@ export function img(url, alt, cls = "") {
     : `<span class="${cls} img-missing" aria-hidden="true">◇</span>`;
 }
 
-const PIP = { W: "W", U: "U", B: "B", R: "R", G: "G", C: "C" };
+// Official mana and card symbols, served by Scryfall (same artwork as the cards).
+// {2/W} → 2W.svg, {W/U/P} → WUP.svg, {T} → T.svg. If an icon can't load, its {text} shows instead.
+const SYMBOL_FILE = { "½": "HALF", "∞": "INFINITY" };
+export const symbolUrl = (t) =>
+  "https://svgs.scryfall.io/card-symbols/" + encodeURIComponent(SYMBOL_FILE[t] || String(t).replace(/\//g, "").toUpperCase()) + ".svg";
+export const sym = (t, cls = "") =>
+  `<img class="ms ${cls}" src="${symbolUrl(t)}" alt="{${esc(t)}}" title="{${esc(t)}}" loading="lazy" decoding="async" onerror="this.replaceWith(this.alt)">`;
+
 export function manaCost(c) {
   const cost = c?.mana_cost || c?.card_faces?.[0]?.mana_cost || "";
   const parts = cost.match(/\{[^}]+\}/g) || [];
   if (!parts.length) return "";
-  return `<span class="mana" aria-label="Mana cost ${esc(cost)}">${parts
-    .map((p) => {
-      const t = p.slice(1, -1).replace("/", "");
-      const cls = t.length === 1 && PIP[t] ? "pip-" + t : /^[WUBRG]{2}$|^[WUBRG]P$/.test(t) ? "pip-" + t[0] : "pip-N";
-      return `<i class="pip ${cls}">${esc(t.length > 2 ? t.slice(0, 2) : t)}</i>`;
-    })
-    .join("")}</span>`;
+  return `<span class="mana" role="img" aria-label="Mana cost ${esc(cost)}">${parts.map((p) => sym(p.slice(1, -1))).join("")}</span>`;
 }
+
+// Rules text with {T}, {W}, {2} … drawn as symbols. Escapes everything else.
+export const symbolText = (text) =>
+  esc(text).replace(/\{([^}\s]{1,8})\}/g, (_, t) => sym(t, "inline"));
 
 export function colorDots(c) {
   const id = c?.color_identity?.length ? c.color_identity : ["C"];
-  return `<span class="dots">${id.map((v) => `<i class="pip pip-${v}">${v}</i>`).join("")}</span>`;
+  return `<span class="dots" role="img" aria-label="Color identity ${esc(id.join(""))}">${id.map((v) => sym(v)).join("")}</span>`;
 }
 
 export const segmented = (name, current, items) =>
@@ -115,11 +120,19 @@ export const empty = (title, text, actions = "") =>
   `<section class="empty"><div class="empty-mark" aria-hidden="true">◇</div><h3>${title}</h3><p>${text}</p>${actions ? `<div class="actions center">${actions}</div>` : ""}</section>`;
 
 // A visible set code survives offline or when the expansion symbol cannot load.
+// Set symbols: Scryfall's official icon for each set (from /sets), falling back to the code's own file.
+let SET_ICONS = {};
+export const registerSetIcons = (map) => (SET_ICONS = map || {});
+export const setIconUrl = (code) => {
+  const k = String(code || "").toLowerCase();
+  return SET_ICONS[k] || `https://svgs.scryfall.io/sets/${encodeURIComponent(k)}.svg`;
+};
+
 export function setBadge(c, {physical=false, unspecified=false} = {}) {
   const code=String(c?.set || '').trim().toUpperCase();
   if(unspecified || !/^[A-Z0-9]{2,8}$/.test(code))return '<span class="set-badge unknown" title="Physical set not specified">SET ?</span>';
   const title=(physical?'Physical printing: ':'Reference printing: ')+(c.set_name||code)+(c.collector_number?' #'+c.collector_number:'');
-  return `<span class="set-badge r-${esc(c.rarity||'common')}" title="${esc(title)}" aria-label="${esc(title)}"><span class="set-icon" style="--icon:url('https://svgs.scryfall.io/sets/${code.toLowerCase()}.svg')" aria-hidden="true"></span><span>${esc(code)}</span></span>`;
+  return `<span class="set-badge r-${esc(c.rarity||'common')}" data-act="set" data-code="${esc(code.toLowerCase())}" role="link" title="${esc(title)} — tap to see the whole set" aria-label="${esc(title)}"><span class="set-icon" style="--icon:url('${esc(setIconUrl(code))}')" aria-hidden="true"></span><span>${esc(code)}</span></span>`;
 }
 
 export function customBudget(value) {

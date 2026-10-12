@@ -3,7 +3,7 @@
 import { S, meta, inv, deckById, currentDeck, priceOf } from "./store.js";
 import {
   esc, usd, pct, signed, art, cardImage, img, manaCost, colorDots, segmented,
-  options, bar, ring, curveChart, lineChart, empty, setBadge,
+  options, bar, ring, curveChart, lineChart, empty, setBadge, sym, symbolText, setIconUrl,
 } from "./ui.js";
 import {
   cardKey as key, sumQty, rulesText, typeText, isLand, validateDeck,
@@ -115,7 +115,7 @@ export function deckTile(d, wide = false) {
 export function search() {
   const db = S.ui.db,
     f = db.filters;
-  return `<div class="page-head"><h1>Search cards</h1><button class="btn ghost small" data-act="dbRandom">🎲 Random card</button></div>
+  return `<div class="page-head"><h1>Search cards</h1><span class="row"><button class="btn ghost small" data-act="go" data-to="#sets">◈ Browse sets</button><button class="btn ghost small" data-act="dbRandom">🎲 Random card</button></span></div>
   <div class="searchbar"><input id="dbTerm" type="search" value="${esc(db.term)}" placeholder="Name, or Scryfall syntax like t:angel o:draw" data-input="dbTerm" data-enter="dbSearch" aria-label="Search all cards" autocomplete="off"><button class="btn" data-act="dbSearch" ${db.busy ? "disabled" : ""}>${db.busy ? "…" : "Search"}</button></div>
   <details class="filters" ${f.color || f.type || f.maxPrice ? "open" : ""}><summary>Filters${f.color || f.type || f.maxPrice || f.format ? " · on" : ""}</summary><div class="grid2">
     <label>Fits colors<select data-change="dbFilter" data-field="color">${options([["", "Any"], ["W", "White"], ["U", "Blue"], ["B", "Black"], ["R", "Red"], ["G", "Green"], ["WU", "Azorius WU"], ["UB", "Dimir UB"], ["BR", "Rakdos BR"], ["RG", "Gruul RG"], ["GW", "Selesnya GW"], ["WB", "Orzhov WB"], ["UR", "Izzet UR"], ["BG", "Golgari BG"], ["RW", "Boros RW"], ["GU", "Simic GU"], ["C", "Colorless"]], f.color)}</select></label>
@@ -123,7 +123,7 @@ export function search() {
     <label>Legal in<select data-change="dbFilter" data-field="format">${options([["", "Any format"], ["commander", "Commander"], ["standard", "Standard"], ["pioneer", "Pioneer"], ["modern", "Modern"], ["pauper", "Pauper"], ["legacy", "Legacy"]], f.format)}</select></label>
     <label>Max price $<input type="number" min="0" step="0.5" value="${esc(f.maxPrice)}" data-change="dbFilter" data-field="maxPrice" placeholder="Any"></label>
   </div></details>
-  <div class="row between"><span class="muted small">${db.results.length ? `${db.total.toLocaleString()} cards` : "Live from Scryfall"}</span><button class="btn ghost small" data-act="dbRandom">🎲 Random card</button></div>
+  <div class="row between"><span class="muted small">${db.results.length ? `${db.total.toLocaleString()} cards` : "Live from Scryfall"}</span></div>
   ${db.error ? `<div class="note warn">${esc(db.error)}</div>` : ""}
   ${
     db.results.length
@@ -146,7 +146,7 @@ const FORMATS = [["commander", "Commander"], ["standard", "Standard"], ["pioneer
 
 export const setIcon = (code, rarity = "common", size = 18) =>
   code
-    ? `<span class="set-icon r-${esc(rarity || "common")}" style="--icon:url('https://svgs.scryfall.io/sets/${esc(String(code).toLowerCase())}.svg');width:${size}px;height:${size}px" title="${esc(String(code).toUpperCase())} · ${esc(RARITY[rarity] || rarity || "")}" aria-hidden="true"></span>`
+    ? `<span class="set-icon r-${esc(rarity || "common")}" style="--icon:url('${esc(setIconUrl(code))}');width:${size}px;height:${size}px" title="${esc(String(code).toUpperCase())} · ${esc(RARITY[rarity] || rarity || "")}" aria-hidden="true"></span>`
     : "";
 
 const FINISH = { nonfoil: "Regular", foil: "Foil", etched: "Etched" };
@@ -179,7 +179,7 @@ export function cardSheet(c, ctx = {}) {
       ${imgFaces?.length > 1 ? `<button class="btn ghost small block" data-act="flipFace">↻ Flip to ${esc(imgFaces[face ? 0 : 1].name)}</button>` : ""}
     </div>
     <div class="cd-info">
-      <div class="cd-set">${setIcon(shown.set, shown.rarity, 26)}<div><b>${esc(shown.set_name || (shown.set || "").toUpperCase())}</b><small>${esc((shown.set || "").toUpperCase())} #${esc(shown.collector_number || "?")} · ${esc(RARITY[shown.rarity] || shown.rarity || "")}${shown.released_at ? " · " + esc(shown.released_at.slice(0, 4)) : ""}</small></div></div>
+      <button class="cd-set" data-act="set" data-code="${esc(shown.set || "")}" ${shown.set ? "" : "disabled"} aria-label="See every card in ${esc(shown.set_name || "this set")}">${setIcon(shown.set, shown.rarity, 26)}<div><b>${esc(shown.set_name || (shown.set || "").toUpperCase())} <span class="set-go">›</span></b><small>${esc((shown.set || "").toUpperCase())} #${esc(shown.collector_number || "?")} · ${esc(RARITY[shown.rarity] || shown.rarity || "")}${shown.released_at ? " · " + esc(shown.released_at.slice(0, 4)) : ""}</small></div></button>
       <div class="cd-prices">${
         finishes.length
           ? finishes.map((f) => `<button class="price-pill ${f}" data-act="buyCard" data-finish="${f}" aria-label="Buy ${esc(FINISH[f])} — estimated ${usd(priceOfFinish(shown, f))}"><small>${FINISH[f]}</small><b>${usd(priceOfFinish(shown, f))}</b><span class="buy-hint">Buy ›</span></button>`).join("")
@@ -194,7 +194,7 @@ export function cardSheet(c, ctx = {}) {
       (f) => `<section class="cd-text">
       <div class="row between"><b>${esc(f.name)}</b>${manaCost(f)}</div>
       <p class="type-line">${esc(f.type_line || typeText(shown))}</p>
-      ${f.oracle_text ? `<p class="oracle">${esc(f.oracle_text)}</p>` : ""}
+      ${f.oracle_text ? `<p class="oracle">${symbolText(f.oracle_text)}</p>` : ""}
       ${f.flavor_text ? `<p class="flavor">${esc(f.flavor_text)}</p>` : ""}
       <div class="row between small muted">${f.power !== undefined && f.power !== null ? `<span class="pt">${esc(f.power)}/${esc(f.toughness)}</span>` : shown.loyalty ? `<span class="pt">Loyalty ${esc(shown.loyalty)}</span>` : "<span></span>"}${f.artist || shown.artist ? `<span>🖌 ${esc(f.artist || shown.artist)}</span>` : ""}</div>
     </section>`,
@@ -242,6 +242,86 @@ function printList(prints, shown, name, chosen) {
       </div>`;
     })
     .join("")}</div><p class="foot">Tap a printing to see its art, flavor text and artist. Tap a price to use it for your shopping totals, or Buy for store links to that exact printing.</p>`;
+}
+
+/* ---------- Sets ---------- */
+
+const SET_TYPES = {
+  expansion: "Expansion", core: "Core set", masters: "Masters", commander: "Commander", draft_innovation: "Draft innovation",
+  funny: "Un-set", starter: "Starter", box: "Box set", duel_deck: "Duel Decks", from_the_vault: "From the Vault",
+  spellbook: "Spellbook", premium_deck: "Premium deck", arsenal: "Arsenal", planechase: "Planechase", archenemy: "Archenemy",
+  masterpiece: "Masterpiece", promo: "Promo", token: "Tokens", memorabilia: "Memorabilia", alchemy: "Alchemy", minigame: "Minigame", treasure_chest: "Treasure chest", vanguard: "Vanguard",
+};
+const MAIN_TYPES = new Set(["expansion", "core", "masters", "commander", "draft_innovation", "funny", "starter", "box", "duel_deck", "from_the_vault", "spellbook", "premium_deck", "arsenal", "planechase", "archenemy"]);
+
+// Owned copies by exact printing (SET#number) across the collection.
+function ownedPrintings() {
+  const m = new Map();
+  for (const e of S.state.collection)
+    if (e.set && e.collectorNumber) {
+      const k = String(e.set).toLowerCase() + "#" + String(e.collectorNumber).toLowerCase();
+      m.set(k, (m.get(k) || 0) + (Number(e.qty) || 0));
+    }
+  return m;
+}
+
+export function setsPage() {
+  const st = S.ui.sets,
+    q = st.q.trim().toLowerCase(),
+    list = st.list.filter((x) => !x.digital && (st.all || MAIN_TYPES.has(x.set_type)) && (!q || x.name.toLowerCase().includes(q) || x.code === q)),
+    years = new Map();
+  for (const x of list) {
+    const y = (x.released_at || "Upcoming").slice(0, 4);
+    if (!years.has(y)) years.set(y, []);
+    years.get(y).push(x);
+  }
+  return `<div class="page-head"><h1>All sets</h1></div>
+  <div class="searchbar"><input type="search" value="${esc(st.q)}" placeholder="Find a set by name or code" data-input="setsSearch" aria-label="Find a set" autocomplete="off"></div>
+  <div class="row between"><span class="muted small">${st.list.length ? `${list.length.toLocaleString()} sets · updated from Scryfall` : ""}</span><label class="check small"><input type="checkbox" data-change="setsAll" ${st.all ? "checked" : ""}> Promos, tokens & extras</label></div>
+  ${st.error ? `<div class="note warn">${esc(st.error)} <button class="link" data-act="setsReload">Try again</button></div>` : ""}
+  ${!st.list.length && st.busy ? `<p class="muted center pad">Loading every set…</p>` : ""}
+  ${[...years]
+    .map(([y, xs]) => `<h2 class="year">${esc(y)}</h2><div class="set-list">${xs.map((x) => `<button class="set-row" data-act="set" data-code="${esc(x.code)}"><span class="set-icon big" style="--icon:url('${esc(x.icon || setIconUrl(x.code))}')" aria-hidden="true"></span><span class="set-row-main"><b class="ellip">${esc(x.name)}</b><small class="muted">${esc(x.code.toUpperCase())} · ${esc(SET_TYPES[x.set_type] || x.set_type)} · ${esc(x.released_at || "")}</small></span><span class="set-row-count">${x.card_count}</span></button>`).join("")}</div>`)
+    .join("")}
+  ${st.list.length && !list.length ? empty("No sets match", "Try another name, or include promos and extras.") : ""}`;
+}
+
+export function setPage() {
+  const st = S.ui.set,
+    info = st.info,
+    owned = ownedPrintings(),
+    q = st.q.trim().toLowerCase(),
+    ownedOf = (c) => owned.get(c.set + "#" + String(c.collector_number).toLowerCase()) || 0,
+    price = (c) => Number(c.prices?.usd ?? c.prices?.usd_foil ?? c.prices?.usd_etched ?? NaN),
+    all = st.cards,
+    ownedCount = all.filter((c) => ownedOf(c)).length;
+  let list = all.filter((c) => (!q || c.name.toLowerCase().includes(q)) && (st.rarity === "all" || c.rarity === st.rarity) && (st.filter === "all" || (st.filter === "owned" ? ownedOf(c) : !ownedOf(c))));
+  if (st.sort === "price") list = list.slice().sort((a, b) => (price(b) || -1) - (price(a) || -1));
+  else if (st.sort === "name") list = list.slice().sort((a, b) => a.name.localeCompare(b.name));
+  const rarities = [...new Set(all.map((c) => c.rarity))];
+  return `<div class="set-hero">${info ? `<span class="set-icon huge" style="--icon:url('${esc(info.icon_svg_uri || setIconUrl(info.code))}')" aria-hidden="true"></span>` : ""}
+    <div class="set-hero-main"><button class="link small" data-act="go" data-to="#sets">← All sets</button>
+      <h1>${esc(info?.name || st.code.toUpperCase())}</h1>
+      <p class="muted small">${info ? `${esc(info.code.toUpperCase())} · ${esc(SET_TYPES[info.set_type] || info.set_type || "")} · ${esc(info.released_at || "")} · ${info.card_count} cards` : ""}</p>
+    </div></div>
+  ${st.error ? `<div class="note warn">${esc(st.error)} <button class="link" data-act="setReload">Try again</button></div>` : ""}
+  ${all.length ? `<div class="panel tight"><div class="row between"><span>You own <b>${ownedCount}</b> of ${all.length} printings</span><b>${pct(all.length ? ownedCount / all.length : 0)}</b></div>${bar(all.length ? ownedCount / all.length : 0, "good")}</div>` : ""}
+  <div class="searchbar"><input type="search" value="${esc(st.q)}" placeholder="Search this set" data-input="setSearch" aria-label="Search this set" autocomplete="off"></div>
+  <div class="set-controls">${segmented("setFilter", st.filter, [["all", "All"], ["owned", "Owned"], ["missing", "Missing"]])}
+    <select data-change="setRarity" aria-label="Rarity">${options([["all", "All rarities"], ...["common", "uncommon", "rare", "mythic", "special", "bonus"].filter((r) => rarities.includes(r)).map((r) => [r, RARITY[r]])], st.rarity)}</select>
+    <select data-change="setSort" aria-label="Sort">${options([["number", "Set order"], ["price", "Price: high to low"], ["name", "Name"]], st.sort)}</select></div>
+  <p class="muted small">${st.busy ? `Loading ${all.length ? all.length + " of " + (st.total || "…") : ""} cards…` : all.length ? `${list.length.toLocaleString()} match · prices are Scryfall estimates` : ""}</p>
+  <div class="card-grid set-grid">${list
+    .slice(0, st.limit)
+    .map((c) => {
+      const i = all.indexOf(c),
+        n = ownedOf(c),
+        other = !n && inv(c.name).owned;
+      return `<button class="grid-card ${n ? "own" : ""}" data-act="card" data-name="${esc(c.name)}" data-set-i="${i}">${img(cardImage(c, "normal"), c.name, "card-img")}<span class="grid-meta"><span class="ellip">#${esc(c.collector_number)} ${esc(c.name)}</span><span>${Number.isFinite(price(c)) ? usd(price(c)) : "—"}</span></span>${n ? `<span class="owned-badge">×${n}</span>` : other ? `<span class="owned-badge other" title="You own a different printing">other ed.</span>` : ""}</button>`;
+    })
+    .join("")}</div>
+  ${list.length > st.limit ? `<button class="btn ghost block" data-act="setMore">Show more · ${(list.length - st.limit).toLocaleString()} left</button>` : ""}
+  ${!st.busy && st.loaded && !list.length ? empty("No cards match", "Change the filters above.") : ""}`;
 }
 
 /* ---------- Buy this card ---------- */
@@ -679,7 +759,7 @@ function deckEngine(d) {
   ${
     colors.length
       ? `<section class="panel"><h3>Color balance</h3><p class="muted small">Share of colored mana symbols in your spells vs. share of lands that make that color.</p>${colors
-          .map((k) => `<div class="meter two"><span><i class="pip pip-${k}">${k}</i></span><span class="pair">${bar(colorTotal ? p.pips[k] / colorTotal : 0, "c-" + k)}${bar(srcTotal ? p.sources[k] / srcTotal : 0, "c-" + k + " faint")}</span><b class="small">${pct(colorTotal ? p.pips[k] / colorTotal : 0)} need · ${pct(srcTotal ? p.sources[k] / srcTotal : 0)} make</b></div>`)
+          .map((k) => `<div class="meter two"><span>${sym(k)}</span><span class="pair">${bar(colorTotal ? p.pips[k] / colorTotal : 0, "c-" + k)}${bar(srcTotal ? p.sources[k] / srcTotal : 0, "c-" + k + " faint")}</span><b class="small">${pct(colorTotal ? p.pips[k] / colorTotal : 0)} need · ${pct(srcTotal ? p.sources[k] / srcTotal : 0)} make</b></div>`)
           .join("")}</section>`
       : ""
   }
@@ -719,7 +799,7 @@ function manaBasePanel(d, p) {
   const rows = m.changes
     .map((x) => {
       const diff = x.want - x.now;
-      return `<div class="mb-row"><i class="pip pip-${x.color}">${x.color}</i><span>${esc(x.land)}</span><span class="num">${x.now}</span><span class="num muted">→</span><span class="num"><b>${x.want}</b></span><span class="num small ${diff ? (diff > 0 ? "up" : "down") : "muted"}">${diff ? signed(diff) : "ok"}</span></div>`;
+      return `<div class="mb-row">${sym(x.color)}<span>${esc(x.land)}</span><span class="num">${x.now}</span><span class="num muted">→</span><span class="num"><b>${x.want}</b></span><span class="num small ${diff ? (diff > 0 ? "up" : "down") : "muted"}">${diff ? signed(diff) : "ok"}</span></div>`;
     })
     .join("");
   return `<section class="panel"><div class="row between"><h3>Mana base</h3><span class="muted small">${m.lands} lands · ${m.basicCount} basic</span></div>

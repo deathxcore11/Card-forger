@@ -2,7 +2,7 @@
 // Screens live in views.js; deck/collection math in core.js, planner.js,
 // strategy.js, deck-flow.js and insights.js.
 import { S, STORAGE, CATALOG_RECORD, RECOVERY, blank, uid, meta, inv, deckById, currentDeck, priceOf, cacheCard, slim } from "./store.js";
-import { $, $$, esc, usd, img, cardImage, options, segmented, customBudget } from "./ui.js";
+import { $, $$, esc, usd, img, cardImage, options, segmented, customBudget, registerSetIcons } from "./ui.js";
 import * as V from "./views.js";
 import { readRecord, writeRecord, writeRecords, persistenceStatus, requestPersistence } from "./storage.js";
 import {
@@ -229,6 +229,75 @@ async function autoEnrich() {
 }
 
 /* =========================================================
+   Sets: index of every set (cached a few days) and full set lists
+   ========================================================= */
+const SET_INDEX = "cardforge-sets-v1";
+async function loadSetIndex(force = false) {
+  const ui = S.ui.sets;
+  let cached = null;
+  try {
+    cached = JSON.parse(localStorage.getItem(SET_INDEX) || "null");
+  } catch {}
+  if (cached?.sets?.length) {
+    ui.list = cached.sets;
+    registerSetIcons(Object.fromEntries(cached.sets.map((x) => [x.code, x.icon])));
+  }
+  const fresh = cached && Date.now() - cached.at < 3 * 864e5;
+  if ((fresh && !force) || (fresh && ui.list.length) || !navigator.onLine || ui.busy) return;
+  ui.busy = true;
+  ui.error = "";
+  try {
+    const r = await api("/sets"),
+      sets = (r.data || []).map((x) => ({ code: x.code, name: x.name, released_at: x.released_at || "", set_type: x.set_type, card_count: x.card_count, digital: !!x.digital, icon: x.icon_svg_uri }));
+    ui.list = sets;
+    registerSetIcons(Object.fromEntries(sets.map((x) => [x.code, x.icon])));
+    try {
+      localStorage.setItem(SET_INDEX, JSON.stringify({ at: Date.now(), sets }));
+    } catch {}
+  } catch (e) {
+    if (!ui.list.length) ui.error = e.message;
+  } finally {
+    ui.busy = false;
+    // Redraw with the official set symbols, unless the user is typing somewhere.
+    if (!document.activeElement?.matches?.("input:not([data-input=setsSearch]), textarea, select")) render();
+  }
+}
+
+// Every printing in a set, straight from Scryfall, so new sets appear as soon as Scryfall has them.
+const setCache = new Map();
+async function loadSet(code) {
+  const st = S.ui.set;
+  if (setCache.has(code)) {
+    Object.assign(st, setCache.get(code), { loaded: true, busy: false });
+    return render();
+  }
+  st.busy = true;
+  st.error = "";
+  try {
+    st.info = await api("/sets/" + encodeURIComponent(code));
+    render();
+    let path = "/cards/search?" + new URLSearchParams({ q: "e:" + code, unique: "prints", order: "set", dir: "asc", include_extras: "true", include_variations: "true" });
+    for (let page = 0; path && page < 30 && S.ui.set.code === code; page++) {
+      const d = await api(path);
+      st.total = d.total_cards || st.total;
+      st.cards.push(...(d.data || []).map((c) => slim(c)));
+      path = d.has_more && d.next_page ? new URL(d.next_page).pathname + new URL(d.next_page).search : null;
+      if (S.ui.view === "set") render();
+    }
+    if (S.ui.set.code === code) {
+      st.loaded = true;
+      setCache.set(code, { info: st.info, cards: st.cards, total: st.total });
+    }
+  } catch (e) {
+    st.error = st.cards.length ? "Some cards didn’t load: " + e.message : e.message;
+    st.loaded = !!st.cards.length;
+  } finally {
+    st.busy = false;
+    if (S.ui.view === "set") render();
+  }
+}
+
+/* =========================================================
    Toast, sheet, download
    ========================================================= */
 
@@ -307,7 +376,7 @@ const LEGACY = {
   wishlist: "collection/wishlist", compare: "search", playtest: "deck/active/playtest",
   guides: "deck/active/engine", sources: "settings",
 };
-const VIEWS = ["home", "search", "collection", "decks", "deck", "scan", "settings"];
+const VIEWS = ["home", "search", "collection", "decks", "deck", "scan", "settings", "sets", "set"];
 
 function parseHash() {
   let h = decodeURIComponent(location.hash.slice(1) || "home");
@@ -318,6 +387,10 @@ function parseHash() {
     prev = ui.view + ui.deckId;
   ui.view = VIEWS.includes(v) ? v : "home";
   if (ui.view === "collection" && ["cards", "value", "wishlist"].includes(a)) ui.collTab = a;
+  if (ui.view === "set") {
+    if (!a) ui.view = "sets";
+    else if (a.toLowerCase() !== ui.set.code) ui.set = { ...ui.set, code: a.toLowerCase(), info: null, cards: [], total: 0, loaded: false, error: "", q: "", filter: "all", rarity: "all", limit: 120 };
+  }
   if (ui.view === "decks") ui.decksTab = ["mine", "ideas", "inspiration"].includes(a) ? a : "mine";
   if (ui.view === "deck") {
     const id = !a || a === "active" ? S.state.activeDeck : a;
@@ -349,11 +422,11 @@ function go(hash) {
 const autoLoaded = new Set();
 function render() {
   const ui = S.ui;
-  for (const b of $$("[data-nav]")) b.classList.toggle("on", b.dataset.nav === (ui.view === "deck" ? "decks" : ui.view));
+  for (const b of $$("[data-nav]")) b.classList.toggle("on", b.dataset.nav === (ui.view === "deck" ? "decks" : ui.view === "set" || ui.view === "sets" ? "search" : ui.view));
   document.body.dataset.view = ui.view;
   const views = {
     home: V.home, search: V.search, collection: V.collection, decks: V.decks,
-    deck: V.deckPage, scan: () => V.scan(scanNames), settings: V.settings,
+    deck: V.deckPage, scan: () => V.scan(scanNames), settings: V.settings, sets: V.setsPage, set: V.setPage,
   };
   $("#content").innerHTML = views[ui.view]();
   if (ui.view === "settings") storageDetail();
@@ -364,6 +437,8 @@ function render() {
       if (r.total) render();
     });
   }
+  if (ui.view === "sets" && !ui.sets.list.length && !ui.sets.busy && !ui.sets.error) loadSetIndex(true);
+  if (ui.view === "set" && !ui.set.loaded && !ui.set.busy && !ui.set.error) loadSet(ui.set.code);
   if (ui.view === "decks" && ui.decksTab === "ideas" && !ui.ideas.cache.length && !ui.ideas.busy && !ui.ideas.ran) {
     ui.ideas.ran = true;
     setTimeout(() => buildIdeas(), 30);
@@ -457,6 +532,7 @@ A.menu = () =>
     <button data-act="go" data-to="#collection/wishlist">♡ Wishlist</button>
     <button data-act="go" data-to="#collection/value">$ Collection value</button>
     <button data-act="go" data-to="#decks/inspiration">✧ Deck inspiration & precons</button>
+    <button data-act="go" data-to="#sets">◈ Browse every set</button>
     <button data-act="compareOpen">⇄ Compare two cards</button>
   </div>`);
 
@@ -468,6 +544,11 @@ A.card = async (t) => {
   S.ui.sheetBack = S.ui.sheetCtx?.type === "idea" && $("#sheet").open ? { type: "idea", i: S.ui.sheetCtx.i } : null;
   const name = t.dataset.name,
     ctx = { type: "card", name, deckId: t.dataset.deck || (S.ui.view === "deck" ? currentDeck()?.id : null), random: !!t.dataset.random };
+  const print = t.dataset.setI !== undefined ? S.ui.set.cards[Number(t.dataset.setI)] : null;
+  if (print) {
+    if (!meta(name)) cacheCard(print);
+    ctx.print = print;
+  }
   let c = meta(name);
   if (!c) {
     openSheet(`<div class="sheet-head"><h2>${esc(name)}</h2><button class="icon" data-act="closeSheet">✕</button></div><p class="muted">Loading card data…</p>`, ctx);
@@ -535,6 +616,70 @@ A.setCommander = async (t) => {
   if (!commanderEligible(c)) return toast(c.name + " can’t be a commander.");
   await editDeck((d) => ({ ...d, commander: c.name, name: d.name === "Imported deck" ? c.name.split(",")[0] + " deck" : d.name, cards: d.cards.some((x) => key(x.name) === key(c.name)) ? d.cards : [{ name: c.name, qty: 1 }, ...d.cards] }), { msg: c.name + " is now your commander." });
 };
+
+/* ---------- sets ---------- */
+A.set = (t) => {
+  const code = t.dataset.code;
+  if (!code) return;
+  closeSheet();
+  go("#set/" + encodeURIComponent(code.toLowerCase()));
+};
+I.setsSearch = (t) => {
+  S.ui.sets.q = t.value;
+  rerenderKeepingFocus();
+};
+C.setsAll = (t) => {
+  S.ui.sets.all = t.checked;
+  render();
+};
+A.setsReload = () => {
+  S.ui.sets.error = "";
+  loadSetIndex(true);
+};
+A.setReload = () => {
+  setCache.delete(S.ui.set.code);
+  Object.assign(S.ui.set, { info: null, cards: [], loaded: false, error: "" });
+  render();
+};
+I.setSearch = (t) => {
+  S.ui.set.q = t.value;
+  S.ui.set.limit = 120;
+  rerenderKeepingFocus();
+};
+A.setFilter = (t) => {
+  S.ui.set.filter = t.dataset.id;
+  S.ui.set.limit = 120;
+  render();
+};
+C.setRarity = (t) => {
+  S.ui.set.rarity = t.value;
+  S.ui.set.limit = 120;
+  render();
+};
+A.setMore = () => {
+  S.ui.set.limit += 240;
+  render();
+};
+C.setSort = (t) => {
+  S.ui.set.sort = t.value;
+  render();
+};
+// Re-render a list while the user types, keeping the cursor in the search box.
+function rerenderKeepingFocus() {
+  const el = document.activeElement,
+    sel = el?.dataset?.input,
+    pos = el?.selectionStart;
+  render();
+  if (sel) {
+    const again = $(`[data-input="${sel}"]`);
+    if (again) {
+      again.focus();
+      try {
+        again.setSelectionRange(pos, pos);
+      } catch {}
+    }
+  }
+}
 
 /* ---------- buy this card ---------- */
 A.buyCard = async (t) => {
@@ -688,12 +833,12 @@ function addSheet(entry = null, preset = {}) {
     <div id="addPreview">${lookup ? addPreview(lookup) : '<p class="muted small">Look up the card, check the picture, then save.</p>'}</div>
     <div class="grid2">
       <label>Copies<input id="addQty" type="number" min="1" max="100000" value="${entry?.qty || preset.qty || 1}"></label>
-      <label>Finish<select id="addFinish">${options([["nonfoil", "Nonfoil"], ["foil", "Foil"], ["etched", "Etched"]], entry?.finish || "nonfoil")}</select></label>
+      <label>Finish<select id="addFinish">${options([["nonfoil", "Nonfoil"], ["foil", "Foil"], ["etched", "Etched"]], entry?.finish || preset.finish || "nonfoil")}</select></label>
       <label>Condition<select id="addCondition">${options(["Near Mint", "Lightly Played", "Moderately Played", "Heavily Played", "Damaged"].map((x) => [x, x]), entry?.condition || "Near Mint")}</select></label>
       <label>Language<select id="addLanguage">${options([["en", "English"], ["ja", "Japanese"], ["de", "German"], ["fr", "French"], ["es", "Spanish"], ["it", "Italian"], ["pt", "Portuguese"], ["ru", "Russian"], ["ko", "Korean"], ["zhs", "Chinese (S)"], ["zht", "Chinese (T)"]], entry?.language || "en")}</select></label>
       <label class="span2">Where it lives<input id="addLocation" maxlength="100" placeholder="Binder A, red box…" value="${esc(entry?.location || preset.location || "")}"></label>
     </div>
-    <details class="more" ${entry?.set ? "open" : ""}><summary>Exact printing (optional)</summary><div class="grid2"><label>Set code<input id="addSet" placeholder="e.g. CMM" value="${esc(entry?.set || "")}"></label><label>Collector #<input id="addNumber" value="${esc(entry?.collectorNumber || "")}"></label></div><p class="muted small">Leave blank if unsure — Cardforge never guesses an edition.</p></details>
+    <details class="more" ${entry?.set || preset.set ? "open" : ""}><summary>Exact printing (optional)</summary><div class="grid2"><label>Set code<input id="addSet" placeholder="e.g. CMM" value="${esc(entry?.set || preset.set || "")}"></label><label>Collector #<input id="addNumber" value="${esc(entry?.collectorNumber || preset.number || "")}"></label></div><p class="muted small">Leave blank if unsure — Cardforge never guesses an edition.</p></details>
     <p id="addError" class="error" role="alert"></p>
     <div class="actions"><button class="btn" data-act="addSave" ${lookup ? "" : "disabled"} id="addSaveBtn">${entry ? "Save changes" : "Add to collection"}</button><button class="link small" data-act="addSaveRaw">Save without lookup</button>${entry ? `<button class="link small danger" data-act="addDelete">Delete</button>` : ""}</div>`,
     S.ui.sheetCtx,
@@ -706,10 +851,13 @@ A.addCard = () => addSheet();
 A.addMode = (t) => (t.dataset.id === "list" ? importCollectionSheet() : addSheet());
 A.editLot = (t) => addSheet(S.state.collection.find((e) => e.id === t.dataset.id));
 A.own = async (t) => {
-  const name = t.dataset.name,
-    d = S.ui.sheetCtx?.deckId ? deckById(S.ui.sheetCtx.deckId) : null,
-    row = d ? V.rowsFor(d).find((r) => key(r.name) === key(name)) : null;
-  addSheet(null, { card: meta(name), name, qty: row?.missing || 1 });
+  const ctx = S.ui.sheetCtx,
+    name = t.dataset.name,
+    d = ctx?.deckId ? deckById(ctx.deckId) : null,
+    row = d ? V.rowsFor(d).find((r) => key(r.name) === key(name)) : null,
+    // The printing being looked at (card details or Buy sheet), so the copy is saved as that edition.
+    print = ctx?.print && key(ctx.print.name) === key(name) ? ctx.print : null;
+  addSheet(null, { card: print || meta(name), name, qty: row?.missing || 1, set: print?.set?.toUpperCase(), number: print?.collector_number, finish: ctx?.type === "buy" ? ctx.finish : null });
 };
 A.addLookup = async () => {
   const name = $("#addName").value.trim();
@@ -2348,6 +2496,7 @@ async function boot() {
   trackValue();
   await save();
   parseHash();
+  loadSetIndex(); // cached set symbols first; refreshes from Scryfall every few days
   render();
   $("#app").classList.add("ready");
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});

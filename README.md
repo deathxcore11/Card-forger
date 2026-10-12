@@ -11,6 +11,8 @@ Your Magic: The Gathering collection, decks, upgrades and deck analysis in one i
 - **Mana base helper** *(new in 2.2)*: suggests how to split your basics using the colored symbols in your spells, and flags lands that always enter tapped.
 - **Deck review** *(new in 2.3)*: one badge per deck ("3 to review") that opens every rules problem and guideline worth a look, each with its evidence and a fix button.
 - **Buy this card** *(new in 2.3)*: tap any price for direct store links to that exact printing, an honestly labeled estimate, and cheaper printings.
+- **Set pages** *(new in 2.4)*: tap any set badge for every printing in that set, with what you own, search, rarity and price sorting. "Browse sets" lists every paper set live from Scryfall.
+- **Official mana symbols** *(new in 2.4)* in costs, color identity and rules text.
 - **Upgrade lab**: budget ladder with engine gain per dollar, slot filling, and before/after comparisons.
 - **Versions**: automatic snapshots, so you can compare any two versions of a deck.
 - **Playtest**: opening hands and mulligans, a game log tagged with the deck version, and a **life tracker** *(new in 2.2)* for 2–6 players with commander damage, poison and turns.
