@@ -19,6 +19,7 @@ import { parseDeckImport, acquireMissing } from "./deck-flow.js";
 import { completionPlan, commanderTheme } from "./planner.js";
 import { sourceCredit, mtgjsonDeck, collectionIdeas, upgradeSuggestions, applyUpgradeSwaps } from "./strategy.js";
 import { searchQuery, scanNames } from "./catalog-tools.js";
+import { mtgCollector } from "./scan.js";
 import { newGame, proxyList, proxySheetHTML } from "./extras.js";
 import { sharePayload, encodeShare, decodeShare } from "./share.js";
 import { FORMATS, formatOf, hasCommander, canLead, sizeLabel } from "./formats.js";
@@ -530,7 +531,7 @@ function render() {
   const tcgViews = {
     home: T.tcgHome, search: T.tcgSearch, collection: T.tcgCollection, decks: T.tcgDecks, tdeck: () => T.tcgDeck(ui.tdeckId), sets: T.tcgSets, set: T.tcgSet,
     deck: T.tcgDecks,
-    scan: () => `<div class="page-head"><h1>Scan</h1></div><section class="empty"><h3>Scanning reads Magic card names for now</h3><p>For ${esc(GAMES[g].short)}, search by name instead — it’s quick and matches the exact card.</p><div class="actions center"><button class="btn" data-act="go" data-to="#search">Search cards</button></div></section>`,
+    scan: T.tcgScan,
   };
   if (g !== "mtg" && ui.view === "deck") ui.view = "decks";
   if (ui.view === "home") setTimeout(() => heroArt(g), 0);
@@ -3053,7 +3054,7 @@ C.scanFile = (t) => {
   if (!f) return;
   if (!f.type.startsWith("image/")) return toast("Choose a photo.");
   if (s.url) URL.revokeObjectURL(s.url);
-  Object.assign(s, { file: f, url: URL.createObjectURL(f), text: "", match: null, status: "Photo ready. Tap “Read name”." });
+  Object.assign(s, { file: f, url: URL.createObjectURL(f), text: "", match: null, cands: [], guess: "", read: "", status: "Photo ready. Reading it…" });
   render();
   A.scanRead();
 };
@@ -3061,7 +3062,7 @@ C.scanCrop = (t) => (S.ui.scan.crop = t.checked ? "title" : "full");
 A.scanClear = () => {
   const s = S.ui.scan;
   if (s.url) URL.revokeObjectURL(s.url);
-  Object.assign(s, { file: null, url: null, text: "", match: null, status: "" });
+  Object.assign(s, { file: null, url: null, text: "", match: null, cands: [], guess: "", read: "", status: "" });
   render();
 };
 function loadOCR() {
@@ -3093,7 +3094,9 @@ A.scanRead = async () => {
       image.onerror = () => bad(Error("Couldn’t open that photo."));
       image.src = s.url;
     });
-    const part = s.crop === "title" ? 0.22 : 1,
+    const G = T.game(),
+      // Yu-Gi-Oh! and Pokémon need the whole card: the codes sit under the art and at the bottom.
+      part = G === "mtg" && s.crop === "title" ? 0.22 : 1,
       ratio = Math.min(1, 1400 / image.naturalWidth),
       canvas = document.createElement("canvas");
     canvas.width = Math.round(image.naturalWidth * ratio);
@@ -3101,8 +3104,8 @@ A.scanRead = async () => {
     const ctx = canvas.getContext("2d");
     ctx.filter = "grayscale(1) contrast(1.4)";
     ctx.drawImage(image, 0, 0, image.naturalWidth, image.naturalHeight * part, 0, 0, canvas.width, canvas.height);
-    const T = await loadOCR();
-    worker = await T.createWorker("eng", 1, {
+    const Tess = await loadOCR();
+    worker = await Tess.createWorker("eng", 1, {
       workerPath: new URL("vendor/worker.min.js", location.href).href,
       workerBlobURL: false,
       logger: (m) => {
@@ -3111,6 +3114,23 @@ A.scanRead = async () => {
       },
     });
     s.text = (await worker.recognize(canvas)).data.text || "";
+    if (G !== "mtg") {
+      s.status = "Matching…";
+      if ($("#scanStatus")) $("#scanStatus").textContent = s.status;
+      await tcgCtx.scanMatchText(s.text);
+      return;
+    }
+    // Magic: the set code and collector number at the bottom give the exact printing.
+    const at = part === 1 ? mtgCollector(s.text) : null;
+    if (at) {
+      const c = await api(`/cards/${encodeURIComponent(at.set)}/${encodeURIComponent(at.number)}`).catch(() => null);
+      if (c?.name) {
+        cacheCard(c);
+        s.match = c;
+        s.status = `Found the exact printing: ${c.set_name} #${c.collector_number}. Check it matches your card.`;
+        return;
+      }
+    }
     const names = scanNames(s.text);
     s.status = names.length ? "Read it. Confirm the match below." : "Couldn’t read a name — try again with less glare, or type it.";
     if (names.length) {

@@ -10,6 +10,7 @@ import { buildYgo, buildPtcg, YGO_STAPLES, PTCG_STAPLES, PTCG_SUPPORT_BASICS, en
 import { ygoSource, ygoImageDirect, YGO_TYPES, YGO_ATTRIBUTES, YGO_RACES, YGO_SPELL_KINDS, YGO_TRAP_KINDS } from "./ygo.js";
 import { ptcgSource, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES } from "./ptcg.js";
 import { loadMeta, metaState, ptcgIcon } from "./meta.js";
+import { scanNamesFor, ygoSetCodes, ygoPasscodes, ptcgNumbers } from "./scan.js";
 import { adaptList, ownedDraft, engineOf, similarLists, swapPool, costToFinish } from "./adapt.js";
 export { metaState, similarLists };
 
@@ -553,7 +554,7 @@ function pokemonText(c) {
 const tabs = (tab, items) => `<nav class="cs-tabs" role="tablist">${items.map(([id, label]) => `<button role="tab" aria-selected="${id === tab}" class="${id === tab ? "on" : ""}" data-act="cardTab" data-tab="${id}">${label}</button>`).join("")}</nav>`;
 const panel = (id, tab, html) => `<div class="cs-panel" data-tab="${id}" ${id === tab ? "" : "hidden"}>${html}</div>`;
 
-export function tcgAddSheet(c) {
+export function tcgAddSheet(c, preset = "") {
   const g = c.game,
     opts = g === "ygo" ? c.sets?.map((s) => [s.code + "|" + s.rarity, `${s.code} · ${s.rarity}${s.price ? " · " + usd(s.price) : ""}`]) || [] : c.variants?.map((v) => [v.key, `${v.label}${v.usd ? " · " + usd(v.usd) : ""}`]) || [];
   return `<div class="sheet-head"><h2>Add to collection</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
@@ -561,10 +562,47 @@ export function tcgAddSheet(c) {
   <div class="grid2">
     <label>Copies<input id="tQty" type="number" min="1" max="999" value="1"></label>
     <label>Condition<select id="tCond">${options(["Near Mint", "Lightly Played", "Moderately Played", "Heavily Played", "Damaged"].map((x) => [x, x]), "Near Mint")}</select></label>
-    ${opts.length ? `<label class="span2">${g === "ygo" ? "Printing (set code · rarity)" : "Version"}<select id="tPrint">${options([["", g === "ygo" ? "Not sure / any printing" : "Not sure"], ...opts], "")}</select></label>` : ""}
+    ${opts.length ? `<label class="span2">${g === "ygo" ? "Printing (set code · rarity)" : "Version"}<select id="tPrint">${options([["", g === "ygo" ? "Not sure / any printing" : "Not sure"], ...opts], opts.some((o) => o[0] === preset) ? preset : "")}</select></label>` : ""}
     <label class="span2">Where it lives<input id="tLoc" maxlength="100" placeholder="Binder, deck box…"></label>
   </div>
   <button class="btn block" data-act="tOwnSave" data-id="${esc(c.id)}">Add to collection</button>`;
+}
+
+/* ---------- scan (Yu-Gi-Oh!, Pokémon) ---------- */
+
+export function tcgScan() {
+  const g = game(),
+    s = S.ui.scan,
+    G = GAMES[g],
+    m = ownedMap(g);
+  return `<div class="page-head"><h1>Scan a card</h1></div>
+  <section class="panel">
+    ${s.url ? `<img class="scan-preview" src="${s.url}" alt="Card photo">` : `<div class="scan-drop"><b>One ${esc(G.short)} card, flat and well lit</b><span class="muted small">Fill the frame and keep the ${g === "ygo" ? "name and the set code under the art (like LOB-EN001)" : "name and the number at the bottom (like 053/128)"} sharp. Avoid foil glare.</span></div>`}
+    <div class="actions wrap"><label class="btn">📷 Camera<input type="file" accept="image/*" capture="environment" data-change="scanFile" hidden></label><label class="btn ghost">Upload<input type="file" accept="image/*" data-change="scanFile" hidden></label>${s.url ? `<button class="btn ghost" data-act="scanClear">Clear</button><button class="btn" data-act="scanRead" ${s.busy ? "disabled" : ""}>${s.busy ? "Reading…" : "Read again"}</button>` : ""}</div>
+    <p class="muted small" id="scanStatus" role="status">${esc(s.status)}</p>
+  </section>
+  ${
+    s.url || s.cands?.length
+      ? `<section class="panel"><h3>Confirm the card</h3>
+      <div class="searchbar"><input id="scanName" value="${esc(s.guess || "")}" placeholder="Card name${g === "ygo" ? " or set code" : ""}" data-enter="tScanFind" aria-label="Card name"><button class="btn ghost" data-act="tScanFind">Find</button></div>
+      ${s.read ? `<p class="small muted">Read: ${esc(s.read)}</p>` : ""}
+      ${
+        s.cands?.length
+          ? `<div class="card-grid">${s.cands
+              .map(({ id, print, why }) => {
+                const c = cardOf(g, id);
+                if (!c) return "";
+                const own = ownedOf(g, c, m);
+                return `<div class="grid-card scan-cand"><button class="scan-pick" data-act="tCard" data-id="${esc(c.id)}">${imgTag(c)}${tileBadges(c)}</button><span class="grid-meta stacked"><b class="clamp2">${esc(c.name)}</b><small>${esc(why)}${own ? ` · you own ${own}` : ""}</small></span><button class="btn small block" data-act="tOwn" data-id="${esc(c.id)}" data-print="${esc(print || "")}">＋ Add</button></div>`;
+              })
+              .join("")}</div><p class="foot">Exact matches from the ${g === "ygo" ? "set code or passcode" : "card number"} come first. Tap the art to check the details.</p>`
+          : s.url && !s.busy
+            ? `<p class="muted small">No match yet — type the name above.</p>`
+            : ""
+      }</section>`
+      : ""
+  }
+  <p class="foot">Text recognition runs on your phone; only the name and codes are looked up online. The first scan downloads the reader (~5 MB).</p>`;
 }
 
 /* ---------- collection ---------- */
@@ -1377,7 +1415,64 @@ export function registerTcg(c) {
   };
   A.tOwn = (t) => {
     const card = cardOf(g(), t.dataset.id);
-    if (card) openSheet(tcgAddSheet(card), { type: "tadd", id: card.id });
+    if (card) openSheet(tcgAddSheet(card, t.dataset.print || ""), { type: "tadd", id: card.id });
+  };
+  // Turn the photo's text into candidate cards: exact printing codes first, then names.
+  c.scanMatchText = async (text, manual = "") => {
+    const G = g(),
+      s = S.ui.scan,
+      cands = [],
+      seen = new Set(),
+      add = (card, why, print = "") => {
+        if (!card || seen.has(card.id) || cands.length >= 6) return;
+        seen.add(card.id);
+        remember(card);
+        cands.push({ id: card.id, why, print });
+      };
+    const names = manual ? [manual] : scanNamesFor(G, text);
+    s.guess = manual || names[0] || "";
+    if (G === "ygo") {
+      const codes = ygoSetCodes(manual || text),
+        pass = manual ? [] : ygoPasscodes(text);
+      s.read = [...codes, ...pass, ...names.slice(0, 2)].join(" · ");
+      for (const code of codes) {
+        const info = await fetch("https://db.ygoprodeck.com/api/v7/cardsetsinfo.php?setcode=" + encodeURIComponent(code)).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+        if (info?.id) add(await ensureCard("ygo", String(info.id)).catch(() => null), `Set code ${code}`, `${info.set_code}|${info.set_rarity}`);
+      }
+      for (const id of pass) add(await ensureCard("ygo", id).catch(() => null), "Passcode " + id);
+      for (const n of names.slice(0, 3)) add(await SOURCES.ygo.byName(n).catch(() => null), "Exact name");
+      for (const n of names.slice(0, 2)) {
+        if (cands.length >= 6) break;
+        const r = await SOURCES.ygo.search({ q: n, size: 6 }).catch(() => ({ cards: [] }));
+        r.cards.forEach((card) => add(card, card.name.toLowerCase() === n.toLowerCase() ? "Name match" : "Similar name"));
+      }
+    } else {
+      const nums = manual ? [] : ptcgNumbers(text);
+      s.read = [...nums.map((x) => `${x.num}/${x.total}`), ...names.slice(0, 2)].join(" · ");
+      for (const n of names.slice(0, 3)) {
+        for (const x of nums) {
+          const hits = await SOURCES.ptcg.byNameNumber(n, x.num).catch(() => []);
+          for (const h of hits) add(await ensureCard("ptcg", h.id).catch(() => null), `Card #${x.num}/${x.total}`);
+        }
+      }
+      for (const n of names.slice(0, 2)) {
+        if (cands.length >= 6) break;
+        const r = await SOURCES.ptcg.search({ q: n, size: 8 }).catch(() => ({ cards: [] }));
+        const full = await Promise.all(r.cards.slice(0, 6 - cands.length).map((b) => ensureCard("ptcg", b.id).catch(() => null)));
+        full.forEach((card) => add(card, "Name match — check the number"));
+      }
+    }
+    s.cands = cands;
+    s.status = cands.length ? (cands[0].why.startsWith("Set code") || cands[0].why.startsWith("Passcode") || cands[0].why.includes("#") ? "Found the exact printing. Check it matches your card." : "Check the picture matches your card.") : "Couldn’t match it — type the name or code.";
+  };
+  A.tScanFind = async () => {
+    const q = (document.querySelector("#scanName")?.value || "").trim();
+    if (!q) return toast("Type the card name.");
+    const s = S.ui.scan;
+    s.status = "Looking it up…";
+    render();
+    await c.scanMatchText(q, q);
+    render();
   };
   A.tOwnSave = async (t) => {
     const G = g(),

@@ -182,6 +182,16 @@ export const ptcgSource = {
     if (!d) throw Error("Card not found.");
     return normalizePtcg(d);
   },
+  // Exact printing from a scan: name plus collector number (053 or 53).
+  async byNameNumber(name, num) {
+    const tries = [...new Set([num, String(Number(num)), String(Number(num)).padStart(3, "0")])];
+    for (const n of tries) {
+      const d = (await get("/cards", { name, localId: n })) || [];
+      const hits = d.map(brief).filter((c) => !c.pocket);
+      if (hits.length) return hits;
+    }
+    return [];
+  },
   async byName(name) {
     const d = (await get("/cards", { name: "eq:" + name, "sort:field": "id", "sort:order": "DESC", "pagination:itemsPerPage": 20 })) || [];
     const hit = d.map(brief).find((c) => !c.pocket);

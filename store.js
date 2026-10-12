@@ -48,7 +48,7 @@ export const S = {
       busy: false,
       error: "",
     },
-    scan: { file: null, url: null, text: "", match: null, busy: false, status: "", crop: "title" },
+    scan: { file: null, url: null, text: "", match: null, busy: false, status: "", crop: "full", cands: [], guess: "", read: "" },
     hand: null,
     gold: new Map(),
     fill: { deckId: null, plan: null, busy: false, msg: "", budget: 25, lands: 36, owned: true, simple: true },

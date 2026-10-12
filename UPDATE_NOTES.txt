@@ -1,3 +1,17 @@
+CARDFORGE 3.6 UPDATE — SCAN FOR ALL THREE GAMES
+
+- Scan works for Yu-Gi-Oh! and Pokémon too, with the same screen as Magic. The phone reads the
+  card (offline text recognition), then Cardforge looks up the exact printing first:
+  · Yu-Gi-Oh!: the set code under the art (e.g. LOB-EN001 → that printing and rarity, preselected
+    when you add it) or the 8-digit passcode; then the exact name, then similar names.
+  · Pokémon: name + collector number (e.g. 053/128 → that exact card); then same-name cards.
+  · Magic: set code + collector number from the bottom line (e.g. M21 162 → Core Set 2021 #162);
+    otherwise by name. "Name only" is still there as the faster option.
+- Copes with common phone misreads: the Pokémon "ex" logo read as @X, the slash in 053/128 read
+  as 7, stray letters after a name, "M21 + EN" instead of "M21 • EN".
+- Candidates show as art tiles with why they matched ("Set code …", "Card #053/128", "Exact
+  name", "Similar name"), how many you own, and an Add button.
+
 CARDFORGE 3.5 UPDATE — CLEARER PATH, BETTER SEARCH, UNDO, ONE LOOK
 
 - Home adapts to where you are: one "Next step" card — Add your collection → Discover decks your
