@@ -58,7 +58,8 @@ export function decideSync({ cloud, meta, userId, local }) {
 
 /* ---------- runtime ---------- */
 
-let client = null,
+let providers = { email: true }, // sign-in methods enabled on the project
+  client = null,
   user = null,
   profile = null,
   hooks = null,
@@ -106,7 +107,16 @@ export function statusLabel() {
   );
 }
 
-export const cloudInfo = () => ({ configured: cloudConfigured(), ready: !!client, user, profile, status: { ...status }, pending, meta: readMeta() });
+export const cloudInfo = () => ({ configured: cloudConfigured(), ready: !!client, user, profile, providers, status: { ...status }, pending, meta: readMeta() });
+
+// Turn backend errors into something a player can act on.
+function friendly(e) {
+  const m = String(e?.message || e || "");
+  if (e?.code === "PGRST205" || /schema cache|relation .* does not exist/i.test(m)) return "Your account storage isn’t set up yet (the database tables are missing).";
+  if (/JWT|token|session/i.test(m)) return "Your sign-in expired. Sign in again to resume syncing.";
+  if (/Failed to fetch|NetworkError|network/i.test(m)) return "Couldn’t reach the account service. Check your connection.";
+  return m || "Something went wrong while syncing.";
+}
 
 export async function initCloud(h) {
   hooks = h;
@@ -120,6 +130,16 @@ export async function initCloud(h) {
     hooks.changed();
     return;
   }
+  // Which sign-in buttons to show (public endpoint; failures just keep the email option).
+  fetch(SUPABASE.url + "/auth/v1/settings", { headers: { apikey: SUPABASE.key } })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((d) => {
+      if (d?.external) {
+        providers = { email: d.external.email !== false, google: !!d.external.google };
+        hooks.changed();
+      }
+    })
+    .catch(() => {});
   client.auth.onAuthStateChange((event, session) => {
     const next = session?.user || null;
     if (next?.id === user?.id) return;
@@ -200,7 +220,7 @@ export async function startSync() {
       action = decideSync({ cloud, meta, userId: user.id, local });
     await act(action, cloud, local);
   } catch (e) {
-    setStatus("error", e.message || String(e));
+    setStatus("error", friendly(e));
   }
 }
 
@@ -291,7 +311,7 @@ async function pushNow(first = false) {
     writeMeta({ userId: user.id, revision: row.revision, sig });
     setStatus("synced");
   } catch (e) {
-    setStatus("error", e.message || String(e));
+    setStatus("error", friendly(e));
   } finally {
     pushing = false;
   }

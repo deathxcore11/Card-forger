@@ -1313,7 +1313,7 @@ export function accountPanel() {
   if (!a.user)
     return `<section class="panel account"><p class="eyebrow">Optional</p><h3>Sign in to save across devices</h3>
     <p class="muted small">Your collection and decks sync privately to your account — only you can see them. You can keep using Cardforge without signing in; your data stays on this device either way.</p>
-    <button class="btn block" data-act="signGoogle">Continue with Google</button>
+    ${a.providers.google ? `<button class="btn block" data-act="signGoogle">Continue with Google</button>` : ""}
     <div class="searchbar email-row"><input id="signEmail" type="email" autocomplete="email" placeholder="you@example.com" aria-label="Email address" data-enter="signEmail"><button class="btn ghost" data-act="signEmail">Email me a link</button></div>
     <p class="foot">We’ll email a one-time sign-in link — no password. Signing in never deletes what’s on this device: if your account already has data, you choose which copy to keep, and the other is saved as a backup file.</p></section>`;
   const pr = a.profile || {},

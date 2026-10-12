@@ -5,5 +5,5 @@
 // Leave `key` empty to run Cardforge without accounts (device storage only).
 export const SUPABASE = {
   url: "https://noxfmbwuytnbvfgukpiv.supabase.co",
-  key: "",
+  key: "sb_publishable_TpEfTlAdziX6ALSZLA7U_A_tBKKHcAz",
 };
