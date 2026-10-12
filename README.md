@@ -30,7 +30,7 @@ The site is plain static files, so there is no build step.
 
 ### Cloudflare (your current site)
 
-**Option A, automatic from GitHub (recommended).** In Cloudflare go to Workers & Pages → `weathered-lake-9660` → Settings → Builds → **Connect**. Pick this repository and branch, and leave the build command empty. The deploy command is `npx wrangler deploy`. From then on, every push deploys automatically. `wrangler.jsonc` keeps the Worker name the same, so your site address and saved collection don't change. `.assetsignore` keeps tests and config files off the live site.
+**Option A, automatic from GitHub (recommended).** In Cloudflare go to Workers & Pages → `cardforge2` → Settings → Builds → **Connect**. Pick this repository and branch, and leave the build command empty. The deploy command is `npx wrangler deploy`. From then on, every push deploys automatically. `wrangler.jsonc` keeps the Worker name the same, so your site address and saved collection don't change. `.assetsignore` keeps tests and config files off the live site.
 
 **Option B, manual zip upload.** Export a backup in Settings first, then upload the site files to the same Worker as before (see `START_HERE.txt`).
 

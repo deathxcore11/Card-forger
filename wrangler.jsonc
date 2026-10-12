@@ -3,7 +3,7 @@
 // Keep "name" equal to your existing Worker so the site address — and the
 // collection saved in your browser for that address — stay the same.
 {
-  "name": "weathered-lake-9660",
+  "name": "cardforge2",
   "compatibility_date": "2026-10-01",
   "assets": {
     "directory": "./"
