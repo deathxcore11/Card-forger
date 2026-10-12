@@ -178,7 +178,7 @@ export function completionPlan(
       );
     add(commander, "Your selected commander.");
   }
-  const spellPool = pool.filter((c) => !isLand(c));
+  const spellPool = [...new Map(pool.filter((c) => !isLand(c)).map(c => [cardKey(c.name), c])).values()];
   while (count() < 100 && stats().lands < landTarget) {
     const colored = commander.color_identity || [],
       colorBasics = {
@@ -259,6 +259,18 @@ export function completionPlan(
       })
       .sort((a, b) => b.score - a.score || a.c.name.localeCompare(b.c.name));
     if (!ranked.length) break;
+    // Reserve enough money for the cheapest remaining unique spells instead
+    // of spending the entire budget on the first high-scoring card.
+    const need = 100 - count(), costs = ranked.map(x => ({name: x.c.name, cost: stock(x.c) > 0 ? 0 : cardPrice(x.c)})).sort((a,b) => a.cost - b.cost);
+    if (costs.length >= need && Number.isFinite(totalCost())) {
+      const cheapest = costs.slice(0, need), sum = cheapest.reduce((n,x) => n + x.cost, 0), included = new Set(cheapest.map(x => x.name));
+      const affordable = ranked.filter(x => {
+        const price = stock(x.c) > 0 ? 0 : cardPrice(x.c);
+        const reserve = included.has(x.c.name) ? sum - price : sum - cheapest.at(-1).cost;
+        return totalCost() + price + reserve <= budget + .000001;
+      });
+      if (affordable.length) ranked = affordable;
+    }
     add(ranked[0].c, ranked[0].reason);
   }
   const cost = totalCost();

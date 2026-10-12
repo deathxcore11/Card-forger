@@ -1,0 +1,17 @@
+CARDFORGE 2.1 UPDATE — October 12, 2026
+
+- Opening a deck idea now builds a proposed full deck with lands and missing cards. The default purchase budget is your workspace budget (normally $25); you can change it.
+- Save entire deck includes every listed card and all basic-land quantities. No automatic ownership changes.
+- Custom budgets in suggestions, slot filling and upgrades support values above $100 (up to the app's $100,000 validation limit).
+- A dollar budget is separate from Commander's 100 total cards. Lands count toward those 100 cards.
+- The planner reserves money for the remaining spells rather than using the budget on an early expensive recommendation. Owned-only mode remains available and can be incomplete.
+- Random Card buttons on Home and Search. Random Deck buttons on Home and Decks; previews require review before saving.
+- Set badges include readable set codes and rarity-colored symbols in card rows, grids and suggestions. Draft/search badges identify reference printings. Collection entries without a recorded set show SET ? rather than inventing a physical edition.
+
+UPDATE YOUR EXISTING SITE
+Export a backup first. Replace the static website assets using your established deployment method, preserving the existing website address. This ZIP does not automatically deploy your Cloudflare Worker. Keep your backup until the updated app is working.
+
+VERIFICATION
+Module syntax, asset references and ZIP integrity checked. Pure-model tests and a Node DOM/action harness passed: full 100-card generation with 36 lands, spending above $100, budget reservation, random actions, custom-budget controls, save-entire-deck behavior and ownership isolation. Browser layout, external API access and set-icon loading still require real-device checks. Live lookups need internet; failed lookups or insufficient funds are shown as incomplete decks, never fabricated cards.
+
+Developer checks: node test-update.mjs; node test-actions.mjs.

@@ -3,7 +3,7 @@
 import { S, meta, inv, deckById, currentDeck, priceOf } from "./store.js";
 import {
   esc, usd, pct, signed, art, cardImage, img, manaCost, colorDots, segmented,
-  options, bar, ring, curveChart, lineChart, empty,
+  options, bar, ring, curveChart, lineChart, empty, setBadge,
 } from "./ui.js";
 import {
   cardKey as key, sumQty, rulesText, typeText, isLand, validateDeck,
@@ -60,6 +60,7 @@ export function home() {
     <button class="kpi" data-act="go" data-to="#collection"><b>${copies}</b><span>cards owned</span></button>
     <button class="kpi" data-act="go" data-to="#decks"><b>${st.decks.length}</b><span>decks</span></button>
   </div>
+  <div class="random-tools"><button class="btn ghost" data-act="dbRandom">🎲 Random card</button><button class="btn ghost" data-act="randomDeck">🎲 Random deck</button></div>
   <div class="quick">
     <button class="quick-btn primary" data-act="importDeck"><span>↥</span><b>Import a deck</b><small>See what you own and what’s missing</small></button>
     <button class="quick-btn" data-act="addCard"><span>＋</span><b>Add cards</b><small>One card or a whole list</small></button>
@@ -113,7 +114,7 @@ export function deckTile(d, wide = false) {
 export function search() {
   const db = S.ui.db,
     f = db.filters;
-  return `<div class="page-head"><h1>Search cards</h1></div>
+  return `<div class="page-head"><h1>Search cards</h1><button class="btn ghost small" data-act="dbRandom">🎲 Random card</button></div>
   <div class="searchbar"><input id="dbTerm" type="search" value="${esc(db.term)}" placeholder="Name, or Scryfall syntax like t:angel o:draw" data-input="dbTerm" data-enter="dbSearch" aria-label="Search all cards" autocomplete="off"><button class="btn" data-act="dbSearch" ${db.busy ? "disabled" : ""}>${db.busy ? "…" : "Search"}</button></div>
   <details class="filters" ${f.color || f.type || f.maxPrice ? "open" : ""}><summary>Filters${f.color || f.type || f.maxPrice || f.format ? " · on" : ""}</summary><div class="grid2">
     <label>Fits colors<select data-change="dbFilter" data-field="color">${options([["", "Any"], ["W", "White"], ["U", "Blue"], ["B", "Black"], ["R", "Red"], ["G", "Green"], ["WU", "Azorius WU"], ["UB", "Dimir UB"], ["BR", "Rakdos BR"], ["RG", "Gruul RG"], ["GW", "Selesnya GW"], ["WB", "Orzhov WB"], ["UR", "Izzet UR"], ["BG", "Golgari BG"], ["RW", "Boros RW"], ["GU", "Simic GU"], ["C", "Colorless"]], f.color)}</select></label>
@@ -128,7 +129,7 @@ export function search() {
       ? `<div class="card-grid">${db.results
           .map((c) => {
             const own = inv(c.name).owned;
-            return `<button class="grid-card" data-act="card" data-name="${esc(c.name)}">${img(cardImage(c), c.name, "card-img")}<span class="grid-meta"><span class="ellip">${esc(c.name)}</span><span>${usd(c.prices?.usd ?? c.prices?.usd_foil)}</span></span>${own ? `<span class="owned-badge">×${own}</span>` : ""}</button>`;
+            return `<button class="grid-card" data-act="card" data-name="${esc(c.name)}">${img(cardImage(c), c.name, "card-img")}<span class="grid-meta"><span class="ellip">${esc(c.name)} ${setBadge(c)}</span><span>${usd(c.prices?.usd ?? c.prices?.usd_foil)}</span></span>${own ? `<span class="owned-badge">×${own}</span>` : ""}</button>`;
           })
           .join("")}</div>${db.next ? `<button class="btn ghost block" data-act="dbMore" ${db.busy ? "disabled" : ""}>Load more</button>` : ""}`
       : `<div class="hints"><p class="muted small">Try:</p>${["t:angel id<=w", "o:\"draw a card\" id<=w usd<1", "t:legendary t:creature id=r", "is:commander o:token"]
@@ -330,7 +331,7 @@ export function collectionList() {
         unit = lotPrice(e, S.catalog, st.printings);
       return `<div class="lot">
         <button class="lot-art" data-act="card" data-name="${esc(e.name)}" aria-label="Open ${esc(e.name)}">${img(art(c), e.name)}</button>
-        <div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(e.name)}">${esc(e.name)}</button>
+        <div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(e.name)}">${esc(e.name)} ${setBadge(e.printingVerified ? c : {set:e.set,set_name:e.setName,collector_number:e.collectorNumber}, {physical:true,unspecified:!e.set&&!e.printingVerified})}</button>
           <span class="lot-sub">${manaCost(c)}<span>${esc((e.set || e.setName || "Any printing").toUpperCase())}${e.collectorNumber ? " #" + esc(e.collectorNumber) : ""}${e.finish !== "nonfoil" ? ` · <b class="foil">${esc(e.finish)}</b>` : ""}${e.condition && e.condition !== "Near Mint" ? " · " + esc(e.condition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></span>
           ${e.lookupFailed ? `<button class="tag warn" data-act="editLot" data-id="${e.id}">Not found — tap to fix name</button>` : !c ? `<span class="tag muted">Looking up…</span>` : ""}
         </div>
@@ -409,7 +410,7 @@ export function costBlock(sub, total, budget, label) {
 export function decks() {
   const tab = S.ui.decksTab;
   return `<div class="page-head"><h1>Decks</h1><div class="head-actions"><button class="btn small" data-act="importDeck">↥ Import</button><button class="btn small ghost" data-act="newDeck">＋ New</button></div></div>
-  ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Inspiration"]])}
+  ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Inspiration"]])}<div class="random-tools"><button class="btn ghost small" data-act="randomDeck">🎲 Random deck</button></div>
   ${tab === "ideas" ? ideasView() : tab === "inspiration" ? inspirationView() : myDecks()}`;
 }
 
@@ -440,7 +441,7 @@ function ideasView() {
           .slice(0, I.limit)
           .map((i) => {
             const idx = I.cache.indexOf(i);
-            return `<article class="idea"><button class="idea-art" data-act="openIdea" data-i="${idx}" aria-label="See the full ${esc(i.commander.name)} deck">${img(art(i.commander), i.commander.name)}<span class="chip dark">${esc(i.plan)}</span><span class="chip dark see">See all 100 cards →</span></button><div class="idea-body"><button class="idea-title" data-act="openIdea" data-i="${idx}">${esc(i.commander.name)}</button><small>${esc(i.reason)}</small><div class="row between small"><span><b>${i.available}</b>/100 from your cards</span><span>${i.themeCards} on-plan</span></div>${bar(i.available / 100, "thin")}<div class="actions"><button class="btn small" data-act="openIdea" data-i="${idx}">View deck</button><button class="btn small ghost" data-act="saveIdea" data-i="${idx}">Save as deck</button></div></div></article>`;
+            return `<article class="idea"><button class="idea-art" data-act="openIdea" data-i="${idx}" aria-label="See the full ${esc(i.commander.name)} deck">${img(art(i.commander), i.commander.name)}<span class="chip dark">${esc(i.plan)}</span><span class="chip dark see">${i.slots === 100 ? "View all 100 cards →" : "Build a full 100-card deck →"}</span></button><div class="idea-body"><button class="idea-title" data-act="openIdea" data-i="${idx}">${esc(i.commander.name)}</button><small>${esc(i.reason)}</small><div class="row between small"><span><b>${i.available}</b>/100 from your cards</span><span>${i.themeCards} on-plan</span></div>${bar(i.available / 100, "thin")}<div class="actions"><button class="btn small" data-act="openIdea" data-i="${idx}">View deck</button><button class="btn small ghost" data-act="saveIdea" data-i="${idx}">Save as deck</button></div></div></article>`;
           })
           .join("")}</div>${visible.length > I.limit ? `<button class="btn ghost block" data-act="ideasMore">Show more</button>` : ""}`
       : I.cache.length
@@ -565,7 +566,7 @@ function deckRow(r, d) {
     ok = r.missing === 0;
   return `<div class="lot deck-row ${ok ? "" : "short"}">
     <button class="lot-art" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(d.id)}">${img(art(c), r.name)}<span class="art-price">${usd(r.price)}</span></button>
-    <div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(d.id)}">${esc(r.name)}</button>
+    <div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(d.id)}">${esc(r.name)} ${setBadge(c)}</button>
       <span class="lot-sub">${manaCost(c) || (c ? "" : '<span class="tag warn">Unresolved</span>')}</span>
       <span class="own ${ok ? "yes" : "no"}">${ok ? "Owned" : r.covered ? `${r.covered}/${r.qty} owned · need ${r.missing}` : "Need " + r.missing}${r.reserved ? ` · ${r.reserved} in other decks` : ""}</span>
     </div>
@@ -575,7 +576,7 @@ function deckRow(r, d) {
 
 function deckGridCard(r) {
   const c = meta(r.name);
-  return `<button class="grid-card ${r.missing ? "short" : ""}" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(currentDeck().id)}">${img(cardImage(c), r.name, "card-img")}<span class="grid-meta"><span>${r.qty > 1 ? r.qty + "× " : ""}${r.missing ? "need " + r.missing : "owned"}</span><span>${usd(r.price)}</span></span></button>`;
+  return `<button class="grid-card ${r.missing ? "short" : ""}" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(currentDeck().id)}">${img(cardImage(c), r.name, "card-img")}<span class="grid-set">${setBadge(c)}</span><span class="grid-meta"><span>${r.qty > 1 ? r.qty + "× " : ""}${r.missing ? "need " + r.missing : "owned"}</span><span>${usd(r.price)}</span></span></button>`;
 }
 
 /* Engine */
@@ -664,6 +665,7 @@ function fillPanel(d, open) {
     plan = F.deckId === d.id ? F.plan : null;
   return `<section class="panel"><p class="eyebrow">Step 1</p><h2>Fill ${open} open slots</h2><p class="muted small">Keeps every card you chose. Adds lands and the ingredients your deck is short on, preferring cards you own. The budget covers cards you’d have to buy.</p>
   <div class="chips">${[0, 10, 25, 50, 100].map((n) => `<button class="chip pick ${F.budget === n ? "on" : ""}" data-act="fillBudget" data-v="${n}">${n ? "$" + n : "Owned only"}</button>`).join("")}</div>
+  <label class="custom-budget">Custom purchase budget ($)<input type="number" min="0" max="100000" step="0.01" value="${F.budget}" data-change="fillCustom" aria-label="Custom slot-filling budget"></label>
   <div class="grid2"><label>Target lands<input type="number" min="30" max="42" value="${F.lands}" data-change="fill" data-field="lands"></label><label class="check"><input type="checkbox" data-change="fill" data-field="simple" ${F.simple ? "checked" : ""}> Prefer simpler cards</label></div>
   <button class="btn block" data-act="fillRun" ${F.busy ? "disabled" : ""}>${F.busy ? "Working…" : "Recommend cards"}</button>
   <p class="muted small" role="status" id="fillMsg">${esc(F.msg)}</p>
@@ -705,6 +707,7 @@ function swapPanel(d) {
     plan = plans[U.budget];
   return `<section class="panel"><p class="eyebrow">${sumQty(d.cards) < 100 ? "Step 2" : "Upgrade lab"}</p><h2>One-for-one upgrades</h2><p class="muted small">Pick a budget. Cardforge proposes cuts and replacements, then shows exactly what each swap does to the engine and what it costs after trading in the cut card.</p>
   <div class="chips">${[0, 10, 25, 50, 100].map((n) => `<button class="chip pick ${U.budget === n ? "on" : ""}" data-act="upBudget" data-v="${n}">${n ? "$" + n : "My cards ($0)"}</button>`).join("")}</div>
+  <label class="custom-budget">Custom upgrade budget ($)<input type="number" min="0" max="100000" step="0.01" value="${U.budget}" data-change="upCustom" aria-label="Custom upgrade budget"></label>
   <div class="row between"><label class="check"><input type="checkbox" data-change="upSimple" ${U.simple ? "checked" : ""}> Prefer simpler cards</label><button class="btn" data-act="upRun" ${U.busy ? "disabled" : ""}>${U.busy ? "Working…" : Object.keys(plans).length ? "↻ Refresh" : "Find upgrades"}</button></div>
   <p class="muted small" role="status" id="upMsg">${esc(U.msg)}</p>
   ${Object.keys(plans).length ? budgetLadder(d, plans) : ""}
@@ -714,7 +717,7 @@ function swapPanel(d) {
 
 function budgetLadder(d, plans) {
   const base = engineProfile(d, S.catalog).score;
-  return `<table class="metrics ladder"><thead><tr><th>Budget</th><th class="num">Swaps</th><th class="num">Spend</th><th class="num">Engine</th><th class="num">Per $</th></tr></thead><tbody>${[0, 10, 25, 50, 100]
+  return `<table class="metrics ladder"><thead><tr><th>Budget</th><th class="num">Swaps</th><th class="num">Spend</th><th class="num">Engine</th><th class="num">Per $</th></tr></thead><tbody>${Object.keys(plans).map(Number).sort((a,b)=>a-b)
     .filter((b) => plans[b])
     .map((b) => {
       const p = plans[b],
@@ -919,15 +922,19 @@ export function ideaSheet(idea, deck, open, sel) {
   <div class="idea-hero">${img(art(idea.commander), idea.commander.name)}<span class="chip dark">${esc(idea.plan)}</span></div>
   <div class="impact"><div class="imp"><small>Cards</small><b>${t.copies}/100</b></div><div class="imp"><small>You own</small><b>${t.covered}</b></div><div class="imp"><small>To buy</small><b>${usd(t.pricedGap, 0)}</b></div><div class="imp"><small>Engine</small><b>${p.score}</b></div></div>
   <p class="eyebrow">Build it with</p>
+  <button class="btn block" data-act="ideaSaveAll" ${open.busy ? "disabled" : ""}>Save entire ${t.copies}-card deck, including lands</button>
+  ${t.copies < 100 ? `<div class="note warn">${100-t.copies} slots remain. Increase the budget or retry card data; this is not a complete 100-card list yet.</div>` : ""}
   <div class="chips">${[0, 25, 50, 100].map((n) => `<button class="chip pick ${open.budget === n ? "on" : ""}" data-act="ideaBudget" data-v="${n}" ${open.busy ? "disabled" : ""}>${n ? "+ $" + n + " of new cards" : "Only my cards"}</button>`).join("")}</div>
-  <p class="muted small" id="ideaMsg" role="status">${esc(open.busy ? open.msg || "Working…" : open.msg || (open.budget ? "" : "Every card below is one you own. Pick a budget to fill gaps with cards to buy."))}</p>
+  <div class="custom-budget-row"><label>Custom purchase budget ($)<input id="ideaCustomBudget" type="number" min="0" max="100000" step="0.01" value="${open.budget}" ${open.busy?"disabled":""}></label><button class="btn ghost" data-act="ideaCustomBudget" ${open.busy?"disabled":""}>Build with this budget</button></div>
+  <p class="foot">Dollar budget and deck size are different: lands are included in the 100-card deck. Shipping and tax are separate.</p>
+  <p class="muted small" id="ideaMsg" role="status">${esc(open.busy ? open.msg || "Working…" : open.msg || (open.budget ? "" : "Owned-only starters can be incomplete. Choose a purchase budget to build the full deck, including lands."))}</p>
   <div class="row between sel-bar"><span class="small" id="ideaSelCount">${sel.size ? sel.size + " selected" : "Tick cards to act on them"}</span><span class="row"><button class="link small" data-act="ideaSelect" data-mode="missing">Missing</button><button class="link small" data-act="ideaSelect" data-mode="all">All</button><button class="link small" data-act="ideaSelect" data-mode="none">None</button></span></div>
   ${[...byCat]
     .filter(([, l]) => l.length)
     .map(
       ([cat, list]) => `<details class="group" open><summary><span>${esc(cat)} <em>${sumQty(list)}</em></span><span class="muted small">${usd(list.reduce((a, r) => a + (r.price ?? 0) * r.qty, 0))}</span></summary><div class="list compact">${list
         .sort((a, b) => (meta(a.name)?.cmc ?? 99) - (meta(b.name)?.cmc ?? 99) || a.name.localeCompare(b.name))
-        .map((r) => `<div class="pick-row ${r.missing ? "short" : ""}"><input type="checkbox" data-change="ideaPick" data-name="${esc(r.name)}" ${sel.has(r.name) ? "checked" : ""} aria-label="Select ${esc(r.name)}"><button class="pick-main" data-act="card" data-name="${esc(r.name)}">${img(art(meta(r.name)), r.name, "mini-art")}<span class="ellip"><b>${r.qty > 1 ? r.qty + "× " : ""}${esc(r.name)}</b><small class="${r.missing ? "warn-text" : "ok-text"}">${r.missing ? "Need " + r.missing : "Owned"}</small></span></button><span class="pick-side">${manaCost(meta(r.name))}<b>${usd(r.price)}</b></span></div>`)
+        .map((r) => `<div class="pick-row ${r.missing ? "short" : ""}"><input type="checkbox" data-change="ideaPick" data-name="${esc(r.name)}" ${sel.has(r.name) ? "checked" : ""} aria-label="Select ${esc(r.name)}"><button class="pick-main" data-act="card" data-name="${esc(r.name)}">${img(art(meta(r.name)), r.name, "mini-art")}<span class="ellip"><b>${r.qty > 1 ? r.qty + "× " : ""}${esc(r.name)} ${setBadge(meta(r.name))}</b><small class="${r.missing ? "warn-text" : "ok-text"}">${r.missing ? "Need " + r.missing : "Owned"}</small></span></button><span class="pick-side">${manaCost(meta(r.name))}<b>${usd(r.price)}</b></span></div>`)
         .join("")}</div></details>`,
     )
     .join("")}

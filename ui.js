@@ -113,3 +113,17 @@ export function lineChart(points, { height = 120 } = {}) {
 
 export const empty = (title, text, actions = "") =>
   `<section class="empty"><div class="empty-mark" aria-hidden="true">◇</div><h3>${title}</h3><p>${text}</p>${actions ? `<div class="actions center">${actions}</div>` : ""}</section>`;
+
+// A visible set code survives offline or when the expansion symbol cannot load.
+export function setBadge(c, {physical=false, unspecified=false} = {}) {
+  const code=String(c?.set || '').trim().toUpperCase();
+  if(unspecified || !/^[A-Z0-9]{2,8}$/.test(code))return '<span class="set-badge unknown" title="Physical set not specified">SET ?</span>';
+  const title=(physical?'Physical printing: ':'Reference printing: ')+(c.set_name||code)+(c.collector_number?' #'+c.collector_number:'');
+  return `<span class="set-badge r-${esc(c.rarity||'common')}" title="${esc(title)}" aria-label="${esc(title)}"><span class="set-icon" style="--icon:url('https://svgs.scryfall.io/sets/${code.toLowerCase()}.svg')" aria-hidden="true"></span><span>${esc(code)}</span></span>`;
+}
+
+export function customBudget(value) {
+ const text=String(value??'').trim(), amount=Number(text);
+ if(!text || !Number.isFinite(amount) || amount<0 || amount>100000)throw Error('Enter a dollar budget from $0 to $100,000.');
+ return Math.round(amount*100)/100;
+}

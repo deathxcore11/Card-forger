@@ -2,7 +2,7 @@
 // Screens live in views.js; deck/collection math in core.js, planner.js,
 // strategy.js, deck-flow.js and insights.js.
 import { S, STORAGE, CATALOG_RECORD, RECOVERY, blank, uid, meta, inv, deckById, currentDeck, priceOf, cacheCard, slim } from "./store.js";
-import { $, $$, esc, usd, img, cardImage, options, segmented } from "./ui.js";
+import { $, $$, esc, usd, img, cardImage, options, segmented, customBudget } from "./ui.js";
 import * as V from "./views.js";
 import { readRecord, writeRecord, writeRecords, persistenceStatus, requestPersistence } from "./storage.js";
 import {
@@ -1444,7 +1444,32 @@ I.dbTerm = (t) => (S.ui.db.term = t.value);
 C.dbFilter = (t) => (S.ui.db.filters[t.dataset.field] = t.value);
 A.dbSearch = () => dbSearch();
 A.dbMore = () => dbSearch(true);
-A.dbRandom = () => dbSearch(false, true);
+A.dbRandom = async () => {
+  if(S.ui.db.busy)return;
+  S.ui.db.busy=true;
+  try{const c=cacheCard(await api("/cards/random?"+new URLSearchParams({q:"game:paper"})));saveCatalogSoon();await A.card({dataset:{name:c.name,random:"1"}});}
+  finally{S.ui.db.busy=false;}
+};
+let randomDeckBusy=false,lastRandomCommander="";
+A.randomDeck=async()=>{
+  if(randomDeckBusy)return;
+  randomDeckBusy=true;
+  toast("Choosing a random Commander deck idea…");
+  try{
+    const candidates=S.ui.ideas.cache.filter(i=>i.commander.name!==lastRandomCommander);
+    let index;
+    if(candidates.length){const choice=candidates[Math.floor(Math.random()*candidates.length)];index=S.ui.ideas.cache.indexOf(choice);}
+    else{
+      const c=cacheCard(await api("/cards/random?"+new URLSearchParams({q:"game:paper legal:commander is:commander"})));
+      if(!commanderEligible(c))throw Error("This random card is not a supported single commander. Try again.");
+      const own=inv(c.name),deck={id:"random:"+c.id,name:c.name+" · random idea",format:"Commander",commander:c.name,strategy:"Auto",budget:25,locked:false,cards:[{name:c.name,qty:1}]};
+      S.ui.ideas.cache.push({commander:c,deck,plan:"Random",owned:own.owned,available:Math.min(1,own.available),slots:1,open:99,themeCards:0,reason:"Random legal commander; review the generated plan",difficulty:"Review sequencing"});index=S.ui.ideas.cache.length-1;
+    }
+    lastRandomCommander=S.ui.ideas.cache[index].commander.name;
+    S.ui.ideas.open=null;S.ui.ideas.sel=new Set();openIdea(index);
+    saveCatalogSoon();
+  }finally{randomDeckBusy=false;}
+};
 A.dbTry = (t) => {
   S.ui.db.term = t.dataset.q;
   dbSearch();
@@ -1544,9 +1569,13 @@ function ideaDeck() {
 }
 function openIdea(i) {
   const I2 = S.ui.ideas;
-  if (I2.open?.i !== i) I2.open = { i, budget: 0, custom: null, busy: false, msg: "" };
+  if (I2.open?.i !== i) I2.open = { i, budget: I2.defaultBudget ?? S.state.settings.budget ?? 25, custom: null, busy: false, initialized: false, msg: "Loading a complete proposed deck, including lands…" };
   I2.sel = I2.sel && I2.open.i === i ? I2.sel : new Set();
   openSheet(V.ideaSheet(I2.cache[i], ideaDeck(), I2.open, I2.sel), { type: "idea", i });
+  if (!I2.open.initialized) {
+    I2.open.initialized = true;
+    queueMicrotask(() => { if(S.ui.sheetCtx?.type === "idea" && I2.open?.i === i) safely(A.ideaBudget({dataset:{v:String(I2.open.budget)}})); });
+  }
 }
 A.openIdea = (t) => {
   S.ui.ideas.sel = new Set();
@@ -1557,6 +1586,13 @@ A.sheetBack = () => {
   S.ui.sheetBack = null;
   if (b?.type === "idea") openIdea(b.i);
 };
+A.ideaCustomBudget = async () => {
+ const value=customBudget($("#ideaCustomBudget").value);
+ S.ui.ideas.defaultBudget=value;
+ await A.ideaBudget({dataset:{v:String(value)}});
+};
+C.fillCustom = (t) => {S.ui.fill.budget=customBudget(t.value);S.ui.fill.plan=null;render();};
+C.upCustom = (t) => {S.ui.upgrade.budget=customBudget(t.value);S.ui.upgrade.selected=new Set();render();};
 A.ideaBudget = async (t) => {
   const I2 = S.ui.ideas,
     o = I2.open,
@@ -1564,6 +1600,7 @@ A.ideaBudget = async (t) => {
     budget = Number(t.dataset.v);
   o.budget = budget;
   I2.sel = new Set();
+  if (o.busy) return;
   if (!budget) {
     o.custom = null;
     return openIdea(o.i);
@@ -1572,21 +1609,21 @@ A.ideaBudget = async (t) => {
   o.msg = "Finding cards to buy…";
   openIdea(o.i);
   try {
-    const base = { ...idea.deck, id: "idea-preview", cards: [{ name: idea.commander.name, qty: 1 }] };
-    await loadCandidates(base, Math.min(budget, 20), (m) => {
+    const base = { ...idea.deck, budget, id: "idea-preview", cards: [{ name: idea.commander.name, qty: 1 }] };
+    await loadCandidates(base, budget, (m) => {
       o.msg = m;
       const el = $("#ideaMsg");
       if (el) el.textContent = m;
     });
     const plan = completionPlan(base, S.state.collection, S.state.decks, S.catalog, { budget, landTarget: 36, preferOwned: true, simple: false });
-    o.custom = { ...idea.deck, cards: plan.deck.cards };
-    o.msg = `${usd(plan.cost || 0)} of new cards picked${plan.open ? ` · ${plan.open} slots still open` : ""}.`;
+    o.custom = { ...idea.deck, budget, cards: plan.deck.cards };
+    o.msg = `${usd(plan.cost)} of new cards picked${plan.open ? ` · ${plan.open} slots still open` : ""}.`;
   } catch (e) {
     o.msg = e.message;
   } finally {
     o.busy = false;
     saveCatalogSoon();
-    if (S.ui.sheetCtx?.type === "idea") openIdea(o.i);
+    if (S.ui.sheetCtx?.type === "idea" && S.ui.ideas.open === o) openIdea(o.i);
   }
 };
 C.ideaPick = (t) => {
@@ -1608,6 +1645,7 @@ const ideaPicked = () => {
   return aggregateCards(d.cards).filter((c) => sel.has(c.name));
 };
 A.ideaSaveAll = async () => {
+  if(S.ui.ideas.open?.busy)return toast("Wait for the full deck preview.");
   const idea = S.ui.ideas.cache[S.ui.ideas.open.i],
     d = withSnapshot({ ...structuredClone(ideaDeck()), id: uid(), name: idea.commander.name.split(",")[0] + " · " + idea.plan, versions: [] }, "Started from a deck idea");
   await commit((s) => {
@@ -1656,15 +1694,12 @@ A.ideaBuy = () => {
   if (!list.length) return toast("You already own everything selected.");
   copyText(exportDeck(list), `${sumQty(list)} cards copied — paste into TCGplayer Mass Entry.`);
 };
-A.saveIdea = async (t) => {
-  const idea = S.ui.ideas.cache[Number(t.dataset.i)],
-    d = withSnapshot({ ...structuredClone(idea.deck), id: uid(), versions: [] }, "Starter from my collection");
-  await commit((s) => {
-    s.decks.push(d);
-    s.activeDeck = d.id;
-  }, { msg: "Saved. Use the Upgrade lab to fill the rest." });
-  go(`#deck/${d.id}/cards`);
+A.saveIdea = (t) => {
+  S.ui.ideas.sel = new Set();
+  openIdea(Number(t.dataset.i));
+  toast("Review the full list, then save the entire deck including lands.");
 };
+
 I.refSearch = (t) => {
   S.ui.q.ref = t.value;
   render();
@@ -1749,14 +1784,16 @@ async function loadCandidates(d, cap, progress) {
       ["protection", "-t:land (o:indestructible or o:hexproof)"],
       [theme.tribe ? theme.tribe.toLowerCase() + "s" : "creatures", theme.tribe ? "t:" + theme.tribe : "t:creature cmc<=4"],
       ["lands", "t:land -t:basic (o:\"add {\" )"],
+      ["budget creatures", "t:creature usd<=0.50"],
+      ["budget support", "-t:land usd<=0.35"],
     ];
   let loaded = 0,
     failed = 0;
   for (const [label, q] of queries) {
     progress(`Finding ${label}…`);
     try {
-      const r = await api("/cards/search?" + new URLSearchParams({ q: `${base} ${q}`, unique: "cards", order: "edhrec" }));
-      for (const c of r.data.slice(0, 60)) {
+      const r = await api("/cards/search?" + new URLSearchParams({ q: `${base} ${q}`, unique: "cards", order: label.startsWith("budget") ? "usd" : "edhrec", dir:"asc" }));
+      for (const c of r.data.slice(0, label.startsWith("budget") ? 140 : 60)) {
         cacheCard(c);
         loaded++;
       }
@@ -1794,7 +1831,7 @@ A.fillRun = async () => {
   };
   try {
     await resolveNames([...d.cards.map((c) => c.name), ...S.state.collection.map((c) => c.name)], msg);
-    const c = await loadCandidates(d, Math.min(F.budget || 0.5, 15), msg);
+    const c = await loadCandidates(d, F.budget || 0.5, msg);
     F.plan = completionPlan(d, S.state.collection, S.state.decks, S.catalog, { budget: F.budget, landTarget: F.lands, preferOwned: true, simple: F.simple });
     F.plan.base = JSON.stringify(d.cards);
     F.msg = `${c.loaded} candidates checked. ${F.plan.open ? F.plan.open + " slots still open — try a bigger budget." : "Review, then add."}`;
@@ -1843,9 +1880,9 @@ A.upRun = async () => {
     const r = await resolveNames([...d.cards.map((c) => c.name), ...S.state.collection.map((c) => c.name)], msg);
     const unresolved = d.cards.filter((c) => !meta(c.name));
     if (unresolved.length) throw Error("Fix unrecognized cards first: " + unresolved.slice(0, 3).map((c) => c.name).join(", "));
-    const c = await loadCandidates(d, 50, msg);
+    const c = await loadCandidates(d, Math.max(50, U.budget), msg);
     const baseScore = engineProfile(d, S.catalog).score;
-    for (const b of [0, 10, 25, 50, 100]) {
+    for (const b of [...new Set([0, 10, 25, 50, 100, U.budget])]) {
       const plan = upgradeSuggestions(d, S.state.collection, S.state.decks, S.catalog, { budget: b, simple: U.simple, maxSwaps: 8 });
       // Drop swaps that would lower the engine score; keep neutral ones (they may fit the theme better).
       plan.swaps = plan.swaps.filter((s) => swapImpact(d, s, S.catalog, baseScore).delta >= 0);
