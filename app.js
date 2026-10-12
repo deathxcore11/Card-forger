@@ -1,6 +1,7 @@
 // Cardforge controller: persistence, routing, sheets and every user action.
 // Screens live in views.js; deck/collection math in core.js, planner.js,
 // strategy.js, deck-flow.js and insights.js.
+import { nextFact } from "./facts.js";
 import { S, STORAGE, CATALOG_RECORD, RECOVERY, blank, uid, meta, inv, deckById, currentDeck, priceOf, cacheCard, slim } from "./store.js";
 import { $, $$, esc, usd, img, cardImage, options, segmented, customBudget, registerSetIcons } from "./ui.js";
 import * as V from "./views.js";
@@ -2248,6 +2249,7 @@ I.dbTerm = (t) => (S.ui.db.term = t.value);
 C.dbFilter = (t) => (S.ui.db.filters[t.dataset.field] = t.value);
 A.dbSearch = () => dbSearch();
 A.dbMore = () => dbSearch(true);
+A.nextFact = (t) => nextFact(t);
 A.dbRandom = async () => {
   if(S.ui.db.busy)return;
   S.ui.db.busy=true;
@@ -2298,9 +2300,11 @@ async function dbSearch(next = false, random = false) {
       if (u.origin !== "https://api.scryfall.com") throw Error("Unexpected link.");
       d = await api(u.pathname + u.search);
     } else {
-      if (!db.term.trim() && !db.filters.color && !db.filters.type) throw Error("Type a card name or pick a filter.");
-      const syntax = /[:<>=]/.test(db.term);
-      d = await api("/cards/search?" + new URLSearchParams({ q: searchQuery(db.term, db.filters), unique: "cards", order: syntax ? "edhrec" : "name" }));
+      const F = db.filters;
+      if (!db.term.trim() && !F.color && !F.type && !F.rarity && !F.mv && !F.set) throw Error("Type a card name or pick a filter.");
+      const syntax = /[:<>=]/.test(db.term),
+        order = F.sort || (syntax ? "edhrec" : "name");
+      d = await api("/cards/search?" + new URLSearchParams({ q: searchQuery(db.term, F), unique: "cards", order, dir: ["usd", "released", "rarity"].includes(order) ? "desc" : "auto" }));
     }
     for (const c of d.data) cacheCard(c);
     db.results = next ? [...db.results, ...d.data] : d.data;

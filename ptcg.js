@@ -51,6 +51,16 @@ export function normalizePtcg(c) {
     legal: { standard: !!c.legal?.standard, expanded: !!c.legal?.expanded },
     regulationMark: c.regulationMark || "",
     stage: c.stage || "",
+    hp: c.hp || null,
+    abilities: (c.abilities || []).map((a) => ({ type: a.type || "Ability", name: a.name, effect: a.effect || "" })),
+    attacks: (c.attacks || []).map((a) => ({ cost: a.cost || [], name: a.name, damage: a.damage ?? "", effect: a.effect || "" })),
+    effect: c.effect || "",
+    weak: (c.weaknesses || []).map((w) => ({ type: w.type, value: w.value || "" })),
+    resist: (c.resistances || []).map((w) => ({ type: w.type, value: w.value || "" })),
+    retreat: c.retreat ?? null,
+    dexId: c.dexId || [],
+    printVariants: Object.entries(c.variants || {}).filter(([, v]) => v === true).map(([k]) => k),
+    flavor: c.description || "",
     evolveFrom: c.evolveFrom || "",
     types: c.types || [],
     attackCosts: [...new Set((c.attacks || []).flatMap((a) => a.cost || []).filter((x) => x !== "Colorless"))],
@@ -130,20 +140,31 @@ function setRank() {
     }));
 }
 
+// Physical-card rarities (TCG Pocket's diamond/star/crown rarities are left out).
+export const PTCG_RARITIES = ["Common", "Uncommon", "Rare", "Rare Holo", "Double rare", "Ultra Rare", "Illustration rare", "Special illustration rare", "Hyper rare", "Mega Hyper Rare", "ACE SPEC Rare", "Shiny rare", "Shiny Ultra Rare", "Black White Rare", "Secret Rare", "Radiant Rare", "Amazing Rare", "Holo Rare V", "Holo Rare VMAX", "Holo Rare VSTAR", "Full Art Trainer", "Classic Collection", "Rare PRIME", "Rare Holo LV.X", "LEGEND", "Promo"];
+export const PTCG_STAGES = [["Basic", "Basic"], ["Stage1", "Stage 1"], ["Stage2", "Stage 2"], ["MEGA", "Mega"], ["VMAX", "VMAX"], ["VSTAR", "VSTAR"], ["V-UNION", "V-UNION"], ["BREAK", "BREAK"], ["LEVEL-UP", "LV.X"], ["RESTORED", "Restored"], ["Baby", "Baby"]];
 export const PTCG_TYPES = ["Grass", "Fire", "Water", "Lightning", "Psychic", "Fighting", "Darkness", "Metal", "Dragon", "Colorless", "Fairy"];
+
+let standardPokemon = null,
+  randomSets = null;
 
 export const ptcgSource = {
   game: "ptcg",
   formats: PTCG_FORMATS,
   // TCGdex can't sort by release date, so fetch every match once, order it by each
   // set's real release order, and page through it here.
-  async search({ q = "", category = "", type = "", set = "", sort = "new", page = 0, size = 48 }) {
-    if (!q.trim() && !set && !type) throw Error("Type a card name, or pick an energy type or a set.");
-    const p = {};
+  async search({ q = "", category = "", type = "", set = "", rarity = "", stage = "", hp = "", format = "", sort = "new", page = 0, size = 48 }) {
+    if (!q.trim() && !set && !type && !rarity && !stage) throw Error("Type a card name, or pick an energy type, rarity, stage or set.");
+    const p = {},
+      legal = PTCG_FORMATS.find((f) => f.id === format)?.legal;
     if (q.trim()) p.name = q.trim();
     if (category) p.category = category;
     if (type) p.types = type;
     if (set) p["set.id"] = set;
+    if (rarity) p.rarity = "eq:" + rarity;
+    if (stage) p.stage = "eq:" + stage;
+    if (Number(hp) > 0) p.hp = "gte:" + Number(hp);
+    if (legal) p["legal." + legal] = "true";
     const key = JSON.stringify(p);
     if (!searchCache.has(key)) {
       const [d, rank] = await Promise.all([get("/cards", p), setRank()]);
@@ -176,6 +197,30 @@ export const ptcgSource = {
     return out
       .map((x, i) => ({ ...x, order: i }))
       .sort((a, b) => String(b.seriesDate).localeCompare(String(a.seriesDate)) || b.order - a.order);
+  },
+  // A random card: a random set (weighted by size), then a random card in it.
+  async random() {
+    randomSets ||= this.sets().catch((e) => ((randomSets = null), Promise.reject(e)));
+    const sets = (await randomSets).filter((x) => x.count > 0),
+      total = sets.reduce((a, x) => a + x.count, 0);
+    for (let i = 0; i < 4; i++) {
+      let r = Math.random() * total,
+        set = sets[0];
+      for (const x of sets) if ((r -= x.count) < 0) {
+        set = x;
+        break;
+      }
+      const cards = (await this.setCards(set)).filter((c) => !c.pocket);
+      if (cards.length) return this.get(cards[Math.floor(Math.random() * cards.length)].id);
+    }
+    throw Error("Couldn’t pick a random card. Try again.");
+  },
+  // A random Pokémon that is legal in Standard, to build a deck around.
+  async randomPokemon() {
+    standardPokemon ||= get("/cards", { "legal.standard": "true", category: "Pokemon" }).then((d) => (d || []).filter((c) => !isPocket(c))).catch((e) => ((standardPokemon = null), Promise.reject(e)));
+    const list = await standardPokemon;
+    if (!list.length) throw Error("Couldn’t load Standard Pokémon. Try again.");
+    return this.get(list[Math.floor(Math.random() * list.length)].id);
   },
   async setCards(set) {
     const d = await get("/sets/" + encodeURIComponent(set.id));

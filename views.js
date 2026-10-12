@@ -1,5 +1,6 @@
 // Screen renderers. Each returns HTML for #content; interaction is wired by
 // data-act / data-change / data-input attributes handled centrally in app.js.
+import { factBox, factsFor } from "./facts.js";
 import { S, meta, inv, deckById, currentDeck, priceOf } from "./store.js";
 import {
   esc, usd, pct, signed, art, cardImage, img, manaCost, colorDots, segmented,
@@ -155,12 +156,16 @@ export function search() {
     f = db.filters;
   return `<div class="page-head"><h1>Search cards</h1><span class="row"><button class="btn ghost small" data-act="go" data-to="#sets">◈ Browse sets</button><button class="btn ghost small" data-act="dbRandom">🎲 Random card</button></span></div>
   <div class="searchbar"><input id="dbTerm" type="search" value="${esc(db.term)}" placeholder="Name, or Scryfall syntax like t:angel o:draw" data-input="dbTerm" data-enter="dbSearch" aria-label="Search all cards" autocomplete="off"><button class="btn" data-act="dbSearch" ${db.busy ? "disabled" : ""}>${db.busy ? "…" : "Search"}</button></div>
-  <details class="filters" ${f.color || f.type || f.maxPrice ? "open" : ""}><summary>Filters${f.color || f.type || f.maxPrice || f.format ? " · on" : ""}</summary><div class="grid2">
+  <details class="filters" ${f.color || f.type || f.maxPrice || f.rarity || f.mv || f.set || f.sort ? "open" : ""}><summary>Filters${f.color || f.type || f.maxPrice || f.format || f.rarity || f.mv || f.set ? " · on" : ""}</summary><div class="grid2">
     <label>Fits colors<select data-change="dbFilter" data-field="color">${options([["", "Any"], ["W", "White"], ["U", "Blue"], ["B", "Black"], ["R", "Red"], ["G", "Green"], ["WU", "Azorius WU"], ["UB", "Dimir UB"], ["BR", "Rakdos BR"], ["RG", "Gruul RG"], ["GW", "Selesnya GW"], ["WB", "Orzhov WB"], ["UR", "Izzet UR"], ["BG", "Golgari BG"], ["RW", "Boros RW"], ["GU", "Simic GU"], ["C", "Colorless"]], f.color)}</select></label>
     <label>Type<select data-change="dbFilter" data-field="type">${options([["", "Any"], ...["creature", "instant", "sorcery", "artifact", "enchantment", "land", "planeswalker", "legendary creature"].map((x) => [x, x])], f.type)}</select></label>
     <label>Legal in<select data-change="dbFilter" data-field="format">${options([["", "Any format"], ...ALL_FORMATS.filter((x) => x.legality).map((x) => [x.legality, x.name])], f.format)}</select></label>
-    <label>Max price $<input type="number" min="0" step="0.5" value="${esc(f.maxPrice)}" data-change="dbFilter" data-field="maxPrice" placeholder="Any"></label>
-  </div></details>
+    <label>Rarity<select data-change="dbFilter" data-field="rarity">${options([["", "Any"], ["common", "Common"], ["uncommon", "Uncommon"], ["rare", "Rare"], ["mythic", "Mythic"], ["special", "Special"]], f.rarity || "")}</select></label>
+    <label>Mana value<select data-change="dbFilter" data-field="mv">${options([["", "Any"], ...["0", "1", "2", "3", "4", "5", "6", "7+"].map((x) => [x, x])], f.mv || "")}</select></label>
+    <label>Set code<input value="${esc(f.set || "")}" placeholder="e.g. FDN" maxlength="6" data-change="dbFilter" data-field="set" autocapitalize="characters"></label>
+    <label>Sort<select data-change="dbFilter" data-field="sort">${options([["", "Best match"], ["name", "Name"], ["usd", "Price: high to low"], ["released", "Newest"], ["cmc", "Mana value"], ["edhrec", "Most played (EDHREC)"], ["rarity", "Rarity"]], f.sort || "")}</select></label>
+    <label class="span2">Max price $<input type="number" min="0" step="0.5" value="${esc(f.maxPrice)}" data-change="dbFilter" data-field="maxPrice" placeholder="Any"></label>
+  </div><p class="foot">Change filters, then tap Search.</p></details>
   <div class="row between"><span class="muted small">${db.results.length ? `${db.total.toLocaleString()} cards` : "Live from Scryfall"}</span></div>
   ${db.error ? `<div class="note warn">${esc(db.error)}</div>` : ""}
   ${
@@ -252,6 +257,7 @@ export function cardSheet(c, ctx = {}) {
       ${ctx.random ? `<button class="btn ghost" data-act="dbRandom">🎲 Another</button>` : ""}
     </div>
     ${S.state.decks.length ? `<div class="inline-pick"><select id="toDeck" aria-label="Deck to add to">${options(S.state.decks.map((d) => [d.id, d.name]), deck?.id || S.state.activeDeck)}</select><button class="btn ghost" data-act="addToDeck" data-name="${esc(name)}">Add to deck</button></div>` : ""}
+    ${factBox(factsFor(c, prints), c.oracle_id || name)}
     <div class="links research"><span class="muted small">Research</span>
       <a href="${esc(c.scryfall_uri || "https://scryfall.com/search?q=" + encodeURIComponent(name))}" target="_blank" rel="noopener">Scryfall ↗</a>
       <a href="https://edhrec.com/cards/${esc(name.toLowerCase().split(" // ")[0].replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""))}" target="_blank" rel="noopener">EDHREC ↗</a>

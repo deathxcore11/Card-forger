@@ -1,12 +1,15 @@
 export function searchQuery(
   name,
-  { color = "", type = "", format = "", maxPrice = "" } = {},
+  { color = "", type = "", format = "", maxPrice = "", rarity = "", mv = "", set = "" } = {},
 ) {
   const parts = ["game:paper"];
   if (name.trim()) parts.push(name.trim());
   if (color) parts.push("id<=" + color);
   if (type) parts.push("t:" + type);
   if (format) parts.push("legal:" + format);
+  if (rarity) parts.push("r:" + rarity);
+  if (mv !== "" && /^\d+\+?$/.test(mv)) parts.push(mv.endsWith("+") ? "mv>=" + parseInt(mv, 10) : "mv=" + mv);
+  if (/^[a-z0-9]{2,6}$/i.test(set.trim())) parts.push("s:" + set.trim().toLowerCase());
   if (
     maxPrice !== "" &&
     Number.isFinite(Number(maxPrice)) &&

@@ -38,6 +38,9 @@ export function normalizeYgo(c) {
     stats,
     extra: EXTRA.has(c.frameType),
     frame: c.frameType || "",
+    attribute: c.attribute || "",
+    race: c.race || "",
+    misc: { tcgDate: misc.tcg_date || "", ocgDate: misc.ocg_date || "", views: misc.views || 0, mdRarity: misc.md_rarity || "", formats: misc.formats || [] },
     level: c.level ?? c.linkval ?? null,
     atk: c.atk ?? null,
     archetype: c.archetype || "",
@@ -119,6 +122,9 @@ export function validateYgo(deck, cardOf, f) {
 
 export const YGO_TYPES = ["Effect Monster", "Normal Monster", "Ritual Effect Monster", "Fusion Monster", "Synchro Monster", "XYZ Monster", "Link Monster", "Pendulum Effect Monster", "Spell Card", "Trap Card"];
 export const YGO_ATTRIBUTES = ["DARK", "LIGHT", "EARTH", "WATER", "FIRE", "WIND", "DIVINE"];
+export const YGO_RACES = ["Aqua", "Beast", "Beast-Warrior", "Cyberse", "Dinosaur", "Divine-Beast", "Dragon", "Fairy", "Fiend", "Fish", "Illusion", "Insect", "Machine", "Plant", "Psychic", "Pyro", "Reptile", "Rock", "Sea Serpent", "Spellcaster", "Thunder", "Warrior", "Winged Beast", "Wyrm", "Zombie"];
+export const YGO_SPELL_KINDS = ["Normal", "Quick-Play", "Continuous", "Equip", "Field", "Ritual"];
+export const YGO_TRAP_KINDS = ["Normal", "Continuous", "Counter"];
 
 export const looseName = (q) =>
   String(q)
@@ -139,11 +145,16 @@ async function get(path, params) {
   return d;
 }
 
+let randomTotal = 14000,
+  archetypes = null;
+
 export const ygoSource = {
   game: "ygo",
   formats: YGO_FORMATS,
-  async search({ q = "", type = "", attribute = "", format = "", set = "", archetype = "", sort = "name", page = 0, size = 60 }) {
-    const p = { num: size, offset: page * size, misc: "yes", sort: sort === "new" ? "new" : "name" };
+  async search({ q = "", type = "", attribute = "", race = "", level = "", format = "", set = "", archetype = "", sort = "name", page = 0, size = 60 }) {
+    // YGOPRODeck sorts stats low to high only, so "high to low" pages from the end and reverses.
+    const desc = /^(atk|def|level)Desc$/.test(sort),
+      p = { num: size, offset: page * size, misc: "yes", sort: desc ? sort.slice(0, -4) : ["new", "atk", "def", "level"].includes(sort) ? sort : "name" };
     // Names use hyphens, apostrophes and commas inconsistently ("Blue-Eyes", "Ash Blossom & Joyous Spring"),
     // so match each word in order, whatever sits between them.
     if (q.trim()) p.fname = looseName(q);
@@ -152,7 +163,17 @@ export const ygoSource = {
     if (set) p.cardset = set;
     if (archetype) p.archetype = archetype;
     const pool = { TCG: "tcg", GOAT: "goat", "Speed Duel": "speed duel", "Master Duel": "master duel", "Duel Links": "duel links", Edison: "edison" }[YGO_FORMATS.find((x) => x.id === format)?.pool];
+    if (race) p.race = race;
+    if (level) p.level = level;
     if (pool) p.format = pool;
+    if (desc) {
+      const total = (await get("/cardinfo.php", { ...p, num: 1, offset: 0 })).meta?.total_rows || 0,
+        end = Math.max(0, total - page * size),
+        start = Math.max(0, end - size);
+      if (!end) return { cards: [], total, more: false };
+      const d = await get("/cardinfo.php", { ...p, num: end - start, offset: start });
+      return { cards: (d.data || []).map(normalizeYgo).reverse(), total, more: start > 0 };
+    }
     const d = await get("/cardinfo.php", p);
     return { cards: (d.data || []).map(normalizeYgo), total: d.meta?.total_rows ?? (d.data || []).length, more: !!d.meta?.rows_remaining };
   },
@@ -174,6 +195,27 @@ export const ygoSource = {
   async byName(name) {
     const d = await get("/cardinfo.php", { name, misc: "yes" });
     return d.data?.[0] ? normalizeYgo(d.data[0]) : null;
+  },
+  // A random real card (no tokens or Skill cards), from a random offset in the full list.
+  async random() {
+    for (let i = 0; i < 4; i++) {
+      const d = await get("/cardinfo.php", { num: 1, offset: Math.floor(Math.random() * randomTotal), sort: "id", misc: "yes" });
+      if (d.meta?.total_rows) randomTotal = d.meta.total_rows;
+      const c = d.data?.[0];
+      if (c && !/token|skill/i.test(c.frameType || c.type || "")) return normalizeYgo(c);
+    }
+    throw Error("Couldn’t pick a random card. Try again.");
+  },
+  // Cards of a random archetype with enough members to build around.
+  async randomArchetype() {
+    archetypes ||= get("/archetypes.php").then((d) => (Array.isArray(d) ? d : []).map((a) => a.archetype_name)).catch((e) => ((archetypes = null), Promise.reject(e)));
+    const names = await archetypes;
+    for (let i = 0; i < 5; i++) {
+      const name = names[Math.floor(Math.random() * names.length)];
+      const r = await this.search({ archetype: name, size: 100 });
+      if (r.cards.filter((c) => c.category === "Monster" && !c.extra).length >= 3) return { name, cards: r.cards };
+    }
+    throw Error("Couldn’t find a random archetype. Try again.");
   },
   async sets() {
     const d = await fetch(API + "/cardsets.php").then((r) => r.json());

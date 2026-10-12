@@ -1,3 +1,21 @@
+CARDFORGE 3.2 UPDATE — EMBLEMS, RANDOM, FILTERS AND CARD FACTS
+
+- Game emblems: Yu-Gi-Oh! cards show their Attribute (DARK, LIGHT, …), Level stars, Rank or LINK,
+  and Spell/Trap kind (Quick-Play, Continuous, Field, Counter…). Pokémon cards show their energy
+  type, HP, attack costs as energy symbols, Weakness/Resistance/Retreat and rarity marks. Set and
+  rarity badges (e.g. LOB · UR, SV8 · ★★) appear on search tiles, collection rows and decks.
+- Random card and random deck for all three games. Yu-Gi-Oh! random decks start from a random
+  archetype; Pokémon random decks from a random Standard-legal Pokémon. "Another" re-rolls.
+- More filters and sorting:
+  · Magic: rarity, mana value, set code, and sort by price, newest, mana value, EDHREC or rarity.
+  · Yu-Gi-Oh!: monster type (or Spell/Trap kind), Level/Rank, and sort by ATK, DEF or Level.
+  · Pokémon: rarity, stage, minimum HP and Standard/Expanded legality, straight from the database.
+  · Collections: filter by kind (Monster/Spell/Trap/Extra Deck, attribute, Pokémon/Trainer/Energy,
+    energy type) and rarity; sort by rarity.
+- "Did you know?" on every card page: one short fact from the card's real data — first printing,
+  OCG→TCG release gap, number of printings, artist, Reserved List, banlist status, Pokédex number,
+  regulation mark and more. "Another fact" shows the next one.
+
 CARDFORGE 3.1 UPDATE — ART-FIRST, EQUAL FEATURES FOR ALL THREE GAMES
 
 - Art-first card pages (all games): full-width artwork header, name and cost over the art, set and

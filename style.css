@@ -839,3 +839,42 @@ body[data-game="ygo"] #content .card-grid .card-img { aspect-ratio: 59 / 86; }
 .small-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)) !important; }
 .version { padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
 .comp .meter { grid-template-columns: 80px 1fr 32px; }
+
+/* ---------- emblems ---------- */
+.emb { width: 20px; height: 20px; flex: none; vertical-align: middle; }
+.emb.sm { width: 16px; height: 16px; }
+.emblems { display: inline-flex; align-items: center; gap: 4px; flex: none; vertical-align: middle; }
+.cs-title .emblems .emb { width: 28px; height: 28px; }
+.cs-title .emblems { gap: 6px; }
+.lvl { display: inline-flex; align-items: center; gap: 2px; font-weight: 800; font-size: 13px; }
+.lvl .emb.star { width: 16px; height: 16px; }
+.cs-title .lvl { font-size: 18px; } .cs-title .lvl .emb.star { width: 22px; height: 22px; }
+.link-mark { font-size: 9px; font-weight: 900; letter-spacing: 0.06em; padding: 1px 4px; border-radius: 4px; background: #1d4fa5; color: #fff; margin-right: 3px; }
+.hp { font-weight: 800; font-size: 13px; margin-left: 2px; }
+.cs-title .hp { font-size: 18px; }
+.costs { display: inline-flex; gap: 2px; margin-right: 6px; }
+.tset { display: inline-flex; align-items: center; gap: 3px; padding: 1px 6px; border-radius: 6px; font-size: 11px; font-weight: 700; background: var(--surface-2); border: 1px solid var(--line); color: var(--text); vertical-align: middle; white-space: nowrap; }
+.tset small { font-size: 10px; color: var(--muted); font-weight: 700; }
+.tset.super small { color: #9ad0ff; } .tset.ultra small { color: #ffd166; } .tset.secret small { color: #ff8fd8; } .tset.rare small { color: #cfd6e0; }
+.rar { font-size: 11px; color: var(--muted); letter-spacing: -1px; }
+.rar.gold { color: #f2c94c; } .rar.ace { color: #ff7eb6; } .rar.shiny { color: #9ad0ff; }
+.tile-emb { position: absolute; top: 6px; left: 6px; display: flex; gap: 3px; padding: 3px 5px; border-radius: 999px; background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(4px); color: #fff; }
+.tile-emb:empty, .tile-emb:has(.emblems:empty) { display: none; }
+.tile-emb .emb { width: 16px; height: 16px; } .tile-emb .lvl, .tile-emb .hp { font-size: 11px; color: #fff; }
+.tile-set { position: absolute; top: 6px; right: 6px; }
+.lot-sub .emblems { margin-right: 4px; } .lot-sub .emblems .emb { width: 16px; height: 16px; }
+.lot-sub .tset { margin-right: 4px; }
+.cd-text.pk .pk-ability { padding: 8px 10px; border-radius: 10px; background: rgba(220, 60, 60, 0.12); margin-bottom: 8px; }
+.pk-tag { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.06em; color: #ff8a7a; }
+.pk-ability p, .pk-attack p { margin: 4px 0 0; }
+.pk-attack { padding: 8px 0; border-top: 1px solid var(--line); }
+.pk-attack:first-of-type { border-top: 0; }
+.dmg { font: 800 18px Manrope, sans-serif; }
+.pk-strip { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.pk-strip span { display: inline-flex; align-items: center; gap: 3px; }
+
+/* ---------- Did you know? ---------- */
+.fact{margin:14px 0 4px;padding:10px 12px;border-left:3px solid var(--gold);border-radius:8px;background:color-mix(in srgb,var(--gold) 8%,transparent)}
+.fact-label{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-bottom:3px}
+.fact p{margin:0 0 4px;font-size:14px;line-height:1.45}
+.fact .link{padding:0}
