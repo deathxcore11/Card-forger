@@ -1496,12 +1496,20 @@ export function accountPanel() {
     return `<section class="panel account"><h3>Account</h3><p class="muted small">Accounts aren’t switched on for this site yet, so everything is saved on this device. Export a backup to move it to another phone or computer.</p></section>`;
   if (!a.ready)
     return `<section class="panel account"><h3>Account</h3><p class="muted small">${a.status.state === "error" ? esc(a.status.msg) : "Connecting…"}</p></section>`;
+  if (a.recoveringPassword && a.user)
+    return `<section class="panel account"><h3>Choose a new password</h3><p class="muted small">Your reset link was accepted. Set a password for your Cardforge account.</p><label class="field">New password<input id="resetPassword" type="password" autocomplete="new-password" minlength="8"></label><label class="field">Confirm password<input id="resetConfirm" type="password" autocomplete="new-password" data-enter="finishPasswordReset"></label><button class="btn block" data-act="finishPasswordReset">Save new password</button><button class="link small" data-act="signOut">Cancel and sign out</button></section>`;
   if (!a.user)
     return `<section class="panel account"><p class="eyebrow">Optional</p><h3>Sign in to save across devices</h3>
     <p class="muted small">Your collection and decks sync privately to your account — only you can see them. You can keep using Cardforge without signing in; your data stays on this device either way.</p>
     ${a.providers.google ? `<button class="btn block" data-act="signGoogle">Continue with Google</button>` : ""}
-    <div class="searchbar email-row"><input id="signEmail" type="email" autocomplete="email" placeholder="you@example.com" aria-label="Email address" data-enter="signEmail"><button class="btn ghost" data-act="signEmail">Email me a link</button></div>
-    <p class="foot">We’ll email a one-time sign-in link — no password. Signing in never deletes what’s on this device: if your account already has data, you choose which copy to keep, and the other is saved as a backup file.</p></section>`;
+    ${a.authNotice ? `<p class="note warn" role="alert">${esc(a.authNotice)}</p>` : ""}
+    ${a.providers.email ? `<label class="field">Email<input id="signEmail" type="email" autocomplete="username" placeholder="you@example.com" aria-label="Email address"></label>
+    <label class="field">Password<input id="signPassword" type="password" autocomplete="current-password" aria-label="Password" data-enter="signPassword"></label>
+    <button class="btn block" data-act="signPassword">Log in</button>
+    <button class="link small" data-act="forgotPassword">Forgot password?</button>
+    <details class="account-signup"><summary>Create an account</summary><p class="foot">Use the email above, then choose a password of at least 8 characters.</p><label class="field">New password<input id="signupPassword" type="password" autocomplete="new-password" minlength="8"></label><label class="field">Confirm password<input id="signupConfirm" type="password" autocomplete="new-password" data-enter="createAccount"></label><button class="btn block" data-act="createAccount">Create account</button></details>
+    <details><summary class="small">Email me a sign-in link instead</summary><button class="btn ghost" data-act="signEmail">Email me a link</button></details>` : `<p class="muted small">Email sign-in is disabled for this site.</p>`}
+    <p class="foot">Confirmation and reset emails require working email delivery. Open emailed links in the same browser you used here. Your cards stay on this device; you choose which copy to keep if your account has different data.</p></section>`;
   const pr = a.profile || {},
     st = a.status,
     label = { synced: "Synced", syncing: "Syncing…", error: "Sync paused", decide: "Needs your decision", offline: "Offline — will sync when you’re back online", local: "Synced" }[st.state] || "Synced";
@@ -1516,7 +1524,7 @@ export function accountPanel() {
       <button class="btn small" data-act="saveProfile">Save profile</button>
     </details>
     <p class="foot">Private: only you can read your account copy. Cards and decks are saved on this device first, then synced a few seconds later.</p>
-    <button class="link small" data-act="signOut">Sign out</button> <span class="muted small">— your data stays on this device.</span></section>`;
+    <button class="link small" data-act="accountResetPassword">Reset / set password</button> · <button class="link small" data-act="signOut">Sign out</button> <span class="muted small">— your data stays on this device.</span></section>`;
 }
 
 // Shown when both this device and the account have data, or when they changed separately.

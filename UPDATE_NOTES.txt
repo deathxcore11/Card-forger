@@ -1,3 +1,6 @@
+3.8.5 — Email and password accounts
+Added login, signup with confirmation, forgot-password emails, verified recovery flow and setting a password for an existing account. Passwords are submitted only to Supabase Auth and are not stored in Cardforge workspaces. Google and email-link sign-in remain available when enabled. Email delivery and allowed redirects must be configured in Supabase.
+
 3.8.4 — Artwork for collectible versions
 Pokémon versions now have full-card thumbnails and enlarged previews, using exact variant images when supplied and labeled reference art otherwise. Yu-Gi-Oh! preserves every source alternate artwork in a gallery; printing thumbnails are labeled as reference art. Magic printing thumbnails remain exact, and available finishes remain visible even without prices.
 

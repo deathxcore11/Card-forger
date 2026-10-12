@@ -1042,3 +1042,7 @@ dialog.sheet { overflow: hidden; }
 .artwork-item .variant-art-frame { width:100px; height:140px; }
 .variant-gallery { margin-top:20px; }
 @media (max-width:480px) { .variant-row { grid-template-columns:64px minmax(0,1fr); gap:10px; } .variant-art-frame { width:64px; height:90px; } .variant-actions { grid-column:2; justify-content:flex-start; } .variant-row > .variant-art { grid-row:1 / span 2; align-self:start; } }
+
+.account-signup { margin:18px 0; padding:12px; border:1px solid var(--line); border-radius:12px; }
+.account-signup summary { cursor:pointer; font-weight:600; }
+.account input[type="password"] { min-height:44px; }

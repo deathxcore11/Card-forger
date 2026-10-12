@@ -28,7 +28,7 @@ import { buildTiers, formatsFor, themeQuery, BUDGET_TIERS } from "./builder.js";
 import * as T from "./tcg.js";
 import { rulesPage } from "./rules.js";
 import { GAMES, GAME_ICON } from "./games.js";
-import { initCloud, cloudInfo, statusLabel, scheduleSync, signInGoogle, signInEmail, signOut, saveProfile, resolvePending, syncNow } from "./cloud.js";
+import { initCloud, cloudInfo, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, saveProfile, resolvePending, syncNow } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact } from "./insights.js";
 
 /* =========================================================
@@ -940,6 +940,32 @@ A.signEmail = async (t) => {
   } finally {
     done();
   }
+};
+A.signPassword = async (t) => {
+  const email = $("#signEmail")?.value.trim() || "", password = $("#signPassword")?.value || "";
+  const done = busy(t?.tagName === "BUTTON" ? t : $('[data-act="signPassword"]'), "Logging in…");
+  try { await signInPassword(email,password); render(); toast("Signed in. Your private account is ready."); }
+  finally { if ($("#signPassword")) $("#signPassword").value = ""; done(); }
+};
+A.createAccount = async (t) => {
+  const email = $("#signEmail")?.value.trim() || "", password = $("#signupPassword")?.value || "", confirmPassword = $("#signupConfirm")?.value || "";
+  const done = busy(t?.tagName === "BUTTON" ? t : $('[data-act="createAccount"]'), "Creating account…");
+  try { const data = await createAccount(email,password,confirmPassword); render(); toast(data?.session ? "Account created. You’re signed in." : "Check your email to confirm your account. If you already have an account, log in or reset your password."); }
+  finally { for (const id of ["signupPassword","signupConfirm"]) if ($("#"+id)) $("#"+id).value = ""; done(); }
+};
+A.forgotPassword = async (t) => {
+  const email = $("#signEmail")?.value.trim() || "", done = busy(t,"Sending…");
+  try { await requestPasswordReset(email); toast("If an account exists for that email, a reset link will arrive. Open it in this browser."); } finally { done(); }
+};
+A.accountResetPassword = async (t) => {
+  const email = cloudInfo().user?.email || "", done = busy(t,"Sending…");
+  try { await requestPasswordReset(email); toast("Check your email for a password-reset link. Open it in this browser."); } finally { done(); }
+};
+A.finishPasswordReset = async (t) => {
+  const password = $("#resetPassword")?.value || "", confirmPassword = $("#resetConfirm")?.value || "";
+  const done = busy(t?.tagName === "BUTTON" ? t : $('[data-act="finishPasswordReset"]'),"Saving…");
+  try { await finishPasswordReset(password,confirmPassword); render(); toast("Password saved. You’re signed in."); }
+  finally { for (const id of ["resetPassword","resetConfirm"]) if ($("#"+id)) $("#"+id).value = ""; done(); }
 };
 A.signOut = async () => {
   if (!confirm("Sign out? Your cards stay on this device; they just stop syncing.")) return;
@@ -3338,6 +3364,7 @@ async function boot() {
   render();
   $("#app").classList.add("ready");
   initCloud({
+    passwordRecovery: () => go("#settings"),
     getState: () => stripCache(S.state),
     // Replace this device's workspace with the account copy.
     apply: async (data) => {

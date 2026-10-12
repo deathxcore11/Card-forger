@@ -85,6 +85,8 @@ Database migrations are applied to the current project. For a fresh project, run
 
 Google OAuth must allow `https://noxfmbwuytnbvfgukpiv.supabase.co/auth/v1/callback` as an authorized redirect URI. Google is currently disabled in this project; it needs credentials before the app can offer it. Do not put the Google client secret in frontend code.
 
+Account UI: Settings offers email/password login, Create account, Forgot password, Google when enabled, and optional magic links. Email confirmation and password recovery require SMTP. Recovery links must be opened in the requesting browser for PKCE verification. A Supabase PASSWORD_RECOVERY event opens the new-password screen; no password is written into workspace storage.
+
 How sync behaves: the app always saves on the device first, then pushes to the account a few
 seconds later. Every write is checked against the revision the device last saw, so two devices
 never silently overwrite each other — if both changed, you choose which copy to keep and the other

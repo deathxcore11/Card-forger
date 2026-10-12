@@ -1,0 +1,25 @@
+// Passwords go only to Supabase Auth. Never persist them in app state or logs.
+export const validEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+export function validateNewPassword(password, confirm) {
+  if (typeof password !== "string" || password.length < 8) throw Error("Use a password with at least 8 characters.");
+  if (password !== confirm) throw Error("The passwords don’t match.");
+}
+export function authError(error) {
+  const code = error?.code || "", message = String(error?.message || error || "");
+  if (code === "invalid_credentials") return "Email or password is incorrect. Try again or use Forgot password.";
+  if (code === "email_not_confirmed") return "Confirm your email before logging in. Check your inbox and spam folder.";
+  if (code === "email_address_not_authorized") return "Email delivery isn’t configured for this address yet. The site owner needs to set up Supabase SMTP.";
+  if (/rate_limit|over_email_send_rate_limit/.test(code)) return "Too many requests. Wait before trying again.";
+  if (/otp_expired|flow_state_expired|bad_code_verifier|flow_state_not_found/.test(code)) return "This sign-in or reset link expired, or was opened in a different browser. Request a new link and open it in the same browser.";
+  return message || "Sign-in failed. Please try again.";
+}
+export function createPasswordAuth(auth, redirectTo) {
+  const emailCheck = email => { if (!validEmail(email)) throw Error("Enter a valid email address."); };
+  const result = async promise => { const response = await promise; if (response.error) throw Error(authError(response.error)); return response.data; };
+  return {
+    async login(email,password) { emailCheck(email); if (!password) throw Error("Enter your password."); return result(auth.signInWithPassword({email,password})); },
+    async signup(email,password,confirm) { emailCheck(email); validateNewPassword(password,confirm); return result(auth.signUp({email,password,options:{emailRedirectTo:redirectTo()}})); },
+    async reset(email) { emailCheck(email); return result(auth.resetPasswordForEmail(email,{redirectTo:redirectTo()})); },
+    async update(password,confirm) { validateNewPassword(password,confirm); return result(auth.updateUser({password})); },
+  };
+}
