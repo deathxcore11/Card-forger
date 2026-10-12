@@ -18,6 +18,7 @@ import {
 } from "./insights.js";
 import { bracketEstimate, manaBase, isOut, deckReview, explainSwap } from "./extras.js";
 import { buildability, rankBuildable } from "./share.js";
+import { formatsFor } from "./builder.js";
 import { FORMATS as ALL_FORMATS, formatOf, hasCommander, canLead, legalityIn, LEGALITY_WORD, sizeLabel } from "./formats.js";
 import { cloudInfo, summarize } from "./cloud.js";
 
@@ -254,7 +255,7 @@ export function cardSheet(c, ctx = {}) {
     <button class="btn" data-act="own" data-name="${esc(name)}">＋ I own this</button>
     <button class="btn ghost" data-act="wish" data-name="${esc(name)}">♡ Wishlist</button>
     <button class="btn ghost" data-act="compareFrom" data-name="${esc(name)}">⇄ Compare</button>
-    ${commanderEligible(c) ? `<button class="btn ghost" data-act="newDeck" data-commander="${esc(name)}">Build around</button>` : ""}
+    ${isLand(c) ? "" : `<button class="btn ghost" data-act="buildFrom" data-name="${esc(name)}">⚒ Build decks</button>`}
     ${ctx.random ? `<button class="btn ghost" data-act="dbRandom">🎲 Another</button>` : ""}
   </div>
   ${S.state.decks.length ? `<div class="inline-pick"><select id="toDeck" aria-label="Deck to add to">${options(S.state.decks.map((d) => [d.id, d.name]), deck?.id || S.state.activeDeck)}</select><button class="btn ghost" data-act="addToDeck" data-name="${esc(name)}">Add to deck</button></div>` : ""}
@@ -363,6 +364,55 @@ export function setPage() {
     .join("")}</div>
   ${list.length > st.limit ? `<button class="btn ghost block" data-act="setMore">Show more · ${(list.length - st.limit).toLocaleString()} left</button>` : ""}
   ${!st.busy && st.loaded && !list.length ? empty("No cards match", "Change the filters above.") : ""}`;
+}
+
+/* ---------- Deck generator (every format) ---------- */
+
+const tierLabel = (t) => (t.budget ? `Up to $${t.budget}${t.upTo ? "–" + t.upTo : ""}` : "Your cards only");
+
+function tierCard(t, i, mode) {
+  const p = engineProfile({ format: t.format, commander: t.commander, cards: t.cards }, S.catalog),
+    shown = S.ui.build.openTier === i,
+    groups = {};
+  for (const r of t.cards) {
+    const c = meta(r.name),
+      g = !c ? "Other" : isLand(c) ? "Lands" : /\bCreature\b/.test(typeText(c)) ? "Creatures" : "Spells";
+    (groups[g] = groups[g] || []).push(r);
+  }
+  return `<article class="tier ${shown ? "on" : ""}">
+    <div class="row between"><b>${esc(tierLabel(t))}</b><span class="chip">${esc(t.format)}</span></div>
+    <div class="tier-stats"><span><b>${usd(t.cost)}</b> to buy</span><span><b>${t.total}/${t.size}</b> cards</span><span><b>${t.total ? Math.round((t.owned / t.total) * 100) : 0}%</b> owned</span><span><b>${p.score}</b> engine</span></div>
+    ${bar(t.total ? t.owned / t.total : 0, "thin")}
+    ${t.warnings.map((w) => `<p class="small warn-text">${esc(w)}</p>`).join("")}
+    ${shown ? ["Creatures", "Spells", "Lands", "Other"].filter((g) => groups[g]).map((g) => `<p class="list-head">${g} <span class="muted">${groups[g].reduce((a, r) => a + r.qty, 0)}</span></p><div class="list compact">${groups[g].sort((a, b) => b.qty - a.qty || a.name.localeCompare(b.name)).map((r) => { const free = Math.min(r.qty, S.ui.build.avail?.(r.name) ?? 0), basic = isBasic(meta(r.name)) || /^(Plains|Island|Swamp|Mountain|Forest|Wastes)$/.test(r.name); return `<button class="mini-row" data-act="card" data-name="${esc(r.name)}"><span class="ellip">${r.qty}× ${esc(r.name)} <small class="muted">${esc(r.why || "")}</small></span><span class="small ${basic || free >= r.qty ? "ok-text" : "warn-text"}">${basic ? "basic" : free >= r.qty ? "owned" : `buy ${r.qty - free}`}</span></button>`; }).join("")}</div>`).join("") : ""}
+    <div class="actions wrap"><button class="btn ghost small" data-act="tierToggle" data-i="${i}">${shown ? "Hide list" : "See all " + t.total + " cards"}</button>${mode === "fill" ? `<button class="btn small" data-act="tierApply" data-i="${i}">Use this version</button>` : `<button class="btn small" data-act="tierSave" data-i="${i}">Save as deck</button>`}</div>
+  </article>`;
+}
+
+export function buildSheet() {
+  const B = S.ui.build,
+    seed = meta(B.seed),
+    fmts = seed ? formatsFor(seed, ALL_FORMATS) : [],
+    tiers = B.results[B.format] || null;
+  return `<div class="sheet-head"><h2>Build decks</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
+  <div class="build-seed">${img(art(seed), B.seed, "mini-art")}<div><small class="muted">Built around</small><b>${esc(B.seed)}</b>${seed ? colorDots(seed) : ""}</div><button class="btn ghost small" data-act="buildRandom" data-format="${esc(B.format)}">🎲 Random card</button></div>
+  <p class="muted small">Pick a format. Cardforge builds a complete, legal deck at each budget — using your cards first, then the best-fitting affordable cards it can find. Basic lands are assumed owned.</p>
+  <div class="fmt-chips">${fmts.map((f) => `<button class="chip pick ${f.name === B.format ? "on" : ""}" data-act="buildFormat" data-format="${esc(f.name)}">${esc(f.name)}</button>`).join("") || '<span class="muted small">This card isn’t legal in any constructed format.</span>'}</div>
+  <label class="custom-budget">Also build at $<input id="buildCustom" type="number" min="0" max="100000" step="1" value="${esc(B.custom ?? "")}" placeholder="any amount" data-change="buildCustom"></label>
+  ${B.busy ? `<p class="muted small" role="status">${esc(B.msg || "Building…")}</p>` : B.msg ? `<p class="small ${B.error ? "warn-text" : "muted"}" role="status">${esc(B.msg)}</p>` : ""}
+  ${tiers ? `<div class="tiers">${tiers.map((t, i) => tierCard(t, i, "build")).join("")}</div>${tiers.length > 1 ? `<button class="btn ghost block" data-act="tierSaveAll">Save all ${tiers.length} versions</button>` : ""}` : ""}
+  <p class="foot">Picks favor your cards, the build-around card’s themes and creature types, removal and card draw, a playable curve, and cards widely played (EDHREC rank). It’s a strong starting list, not a tuned tournament deck. Prices are Scryfall estimates; legality comes from Scryfall’s current data.</p>`;
+}
+
+function fillAnyPanel(d, fm, count) {
+  const B = S.ui.build,
+    tiers = B.fillDeck === d.id ? B.results.__fill : null;
+  return `<section class="panel"><p class="eyebrow">${esc(fm.name)}</p><h2>${count < fm.size ? `Fill ${fm.size - count} open slots` : "Rebuild around this list"}</h2>
+  <p class="muted small">Keeps every card you chose, then completes the deck with ${esc(fm.name)}-legal cards in its colors — your cards first, then the best affordable ones. One version per budget.</p>
+  <div class="actions"><button class="btn" data-act="fillAny" ${B.busy ? "disabled" : ""}>${B.busy && B.fillDeck === d.id ? "Building…" : tiers ? "↻ Rebuild" : "Build versions"}</button></div>
+  ${B.fillDeck === d.id && B.msg ? `<p class="small muted" role="status">${esc(B.msg)}</p>` : ""}
+  </section>
+  ${tiers ? `<div class="tiers">${tiers.map((t, i) => tierCard(t, i, "fill")).join("")}</div>` : ""}`;
 }
 
 /* ---------- Buy this card ---------- */
@@ -578,7 +628,7 @@ export function costBlock(sub, total, budget, label) {
 export function decks() {
   const tab = S.ui.decksTab;
   return `<div class="page-head"><h1>Decks</h1><div class="head-actions"><button class="btn small" data-act="importDeck">↥ Import</button><button class="btn small ghost" data-act="newDeck">＋ New</button></div></div>
-  ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Find decks"]])}<div class="random-tools"><button class="btn ghost small" data-act="randomDeck">🎲 Random deck</button></div>
+  ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Find decks"]])}<div class="random-tools"><button class="btn ghost small" data-act="randomDeck">🎲 Random Commander deck</button><button class="btn ghost small" data-act="buildRandom" data-format="Standard">⚒ Random deck · any format</button></div>
   ${tab === "ideas" ? ideasView() : tab === "inspiration" ? inspirationView() : myDecks()}`;
 }
 
@@ -639,7 +689,7 @@ function inspirationView() {
 /* ---------- Decks I can almost build ---------- */
 
 // Free copies per card (owned minus copies reserved or locked in assembled decks), computed once.
-function availability() {
+export function availability() {
   const owned = new Map(),
     held = new Map();
   for (const e of S.state.collection) {
@@ -1036,8 +1086,7 @@ function deckUpgrade(d) {
     target = fm.size,
     count = sumQty(d.cards);
   if (fm.commander && !canLead(meta(d.commander), fm)) return commanderPicker(d);
-  if (d.format !== "Commander")
-    return `<div class="note">The Upgrade lab’s card suggestions are built for Commander so far. For ${esc(fm.name)}, the Engine tab, Deck review and legality checks all follow ${esc(fm.name)} rules — and Search → “Legal in ${esc(fm.name)}” finds cards to add.</div>`;
+  if (d.format !== "Commander") return fillAnyPanel(d, fm, count);
   return `${count < target ? fillPanel(d, target - count) : ""}${swapPanel(d)}`;
 }
 

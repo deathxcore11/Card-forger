@@ -1,11 +1,11 @@
 {
   "name": "cardforge",
-  "version": "2.8.1",
+  "version": "2.9.0",
   "private": true,
   "type": "module",
   "description": "Cardforge — Magic: The Gathering collection, decks, upgrades and deck engine analysis. A static, offline-capable web app.",
   "scripts": {
-    "test": "node test-update.mjs && node test-actions.mjs && node test-extras.mjs && node test-share.mjs && node test-cloud.mjs && node test-formats.mjs",
+    "test": "node test-update.mjs && node test-actions.mjs && node test-extras.mjs && node test-share.mjs && node test-cloud.mjs && node test-formats.mjs && node test-builder.mjs",
     "start": "npx --yes http-server -p 8080 -c-1 ."
   }
 }

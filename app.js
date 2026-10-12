@@ -20,6 +20,7 @@ import { searchQuery, scanNames } from "./catalog-tools.js";
 import { newGame, proxyList, proxySheetHTML } from "./extras.js";
 import { sharePayload, encodeShare, decodeShare } from "./share.js";
 import { FORMATS, formatOf, hasCommander, canLead, sizeLabel } from "./formats.js";
+import { buildTiers, formatsFor, themeQuery, BUDGET_TIERS } from "./builder.js";
 import { initCloud, cloudInfo, statusLabel, scheduleSync, signInGoogle, signInEmail, signOut, saveProfile, resolvePending, syncNow } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact } from "./insights.js";
 
@@ -382,6 +383,12 @@ function refreshSheet() {
   const ctx = S.ui.sheetCtx;
   if (!ctx || !$("#sheet").open) return;
   if (ctx.type === "idea") return openIdea(ctx.i);
+  if (ctx.type === "build") {
+    const top = $("#sheetBody").scrollTop;
+    $("#sheetBody").innerHTML = V.buildSheet();
+    $("#sheetBody").scrollTop = top;
+    return;
+  }
   if (ctx.type === "buy" || ctx.type === "review") {
     const top = $("#sheetBody").scrollTop;
     $("#sheetBody").innerHTML = ctx.type === "buy" ? V.buySheet(ctx) : V.deckReviewSheet(deckById(ctx.deckId) || currentDeck());
@@ -675,6 +682,159 @@ A.formatSearch = () => {
   const f = formatOf(currentDeck());
   S.ui.db.filters = { color: "", type: "", format: f.legality || "", maxPrice: "" };
   go("#search");
+};
+
+/* ---------- deck generator (every format) ---------- */
+const poolCache = new Set();
+// Fetch the cards a generator can choose from: format-legal, in the deck's colors.
+async function loadFormatPool(f, colors, seed, progress) {
+  const ci = colors.filter((c) => c !== "C").join("").toLowerCase() || "c",
+    fq = f.legality ? "f:" + f.legality : "game:paper",
+    theme = seed ? themeQuery(seed) : "",
+    key = f.id + "|" + ci + "|" + theme;
+  if (poolCache.has(key)) return;
+  const queries = [
+    ...(theme ? [["cards for its theme", `${fq} id<=${ci} -t:land ${theme}`]] : []),
+    ["the format’s staples", `${fq} id<=${ci} -t:land`],
+    ["budget picks", `${fq} id<=${ci} -t:land usd<=0.5`],
+    ...(ci.length > 1 ? [["lands", `${fq} id<=${ci} t:land -t:basic`]] : []),
+  ];
+  for (const [label, q] of queries) {
+    progress(`Finding ${label}…`);
+    try {
+      const r = await api("/cards/search?" + new URLSearchParams({ q, unique: "cards", order: "edhrec" }));
+      for (const c of r.data || []) cacheCard(c);
+    } catch {}
+  }
+  for (const b of colors.map((c) => ({ W: "Plains", U: "Island", B: "Swamp", R: "Mountain", G: "Forest", C: "Wastes" })[c]).filter(Boolean)) await resolve(b).catch(() => {});
+  saveCatalogSoon();
+  poolCache.add(key);
+}
+const tierList = () => [...new Set([...BUDGET_TIERS, ...(S.ui.build.custom !== "" && Number.isFinite(Number(S.ui.build.custom)) ? [Math.max(0, Number(S.ui.build.custom))] : [])])].sort((a, b) => a - b);
+const buildMsg = (m) => {
+  S.ui.build.msg = m;
+  const el = $("#sheetBody [role=status]");
+  if (el) el.textContent = m;
+};
+async function runBuild() {
+  const B = S.ui.build,
+    f = formatOf(B.format),
+    seed = meta(B.seed);
+  if (!seed || B.busy) return;
+  B.busy = true;
+  B.error = false;
+  B.openTier = null;
+  refreshSheet();
+  try {
+    const colors = seed.color_identity?.length ? seed.color_identity : ["C"];
+    await loadFormatPool(f, colors, seed, buildMsg);
+    buildMsg("Building versions…");
+    B.avail = V.availability();
+    B.results[f.name] = buildTiers({ format: f.name, seeds: [seed], catalog: S.catalog, available: B.avail, price: (c) => priceOf(c.name) }, tierList());
+    B.msg = `${B.results[f.name].length} versions of a ${f.name} deck around ${seed.name}.`;
+  } catch (e) {
+    B.msg = e.message;
+    B.error = true;
+  } finally {
+    B.busy = false;
+    refreshSheet();
+  }
+}
+A.buildFrom = async (t) => {
+  const c = meta(t.dataset.name) || (await resolve(t.dataset.name, true)),
+    B = S.ui.build,
+    options = formatsFor(c, FORMATS),
+    ctxDeck = deckById(S.ui.sheetCtx?.deckId),
+    deckFmt = ctxDeck ? formatOf(ctxDeck).name : "";
+  Object.assign(B, { seed: c.name, results: {}, msg: "", openTier: null, format: (options.find((f) => f.name === deckFmt) || options[0])?.name || "" });
+  openSheet(V.buildSheet(), { type: "build" });
+  if (B.format) runBuild();
+};
+A.buildFormat = (t) => {
+  const B = S.ui.build;
+  B.format = t.dataset.format;
+  B.openTier = null;
+  if (B.results[B.format]) refreshSheet();
+  else runBuild();
+};
+C.buildCustom = (t) => {
+  const B = S.ui.build;
+  B.custom = t.value === "" ? "" : String(Math.max(0, Math.min(100000, Number(t.value) || 0)));
+  B.results = {};
+  runBuild();
+};
+// A random build-around card that's legal (and can lead, if needed) in the chosen format.
+A.buildRandom = async (t) => {
+  const B = S.ui.build,
+    f = formatOf(t.dataset.format || B.format || "Standard"),
+    lead = f.commander === "planeswalker" ? " t:planeswalker" : f.commander ? " is:commander" : "",
+    q = `${f.legality ? "f:" + f.legality : "game:paper"} -t:land -t:basic${lead}`;
+  if (!$("#sheet").open || S.ui.sheetCtx?.type !== "build") {
+    Object.assign(B, { seed: "", results: {}, msg: "Picking a random card…", format: f.name });
+    openSheet(V.buildSheet(), { type: "build" });
+  }
+  const c = cacheCard(await api("/cards/random?" + new URLSearchParams({ q })));
+  Object.assign(B, { seed: c.name, results: {}, format: f.name, openTier: null });
+  runBuild();
+};
+A.tierToggle = (t) => {
+  const B = S.ui.build,
+    i = Number(t.dataset.i);
+  B.openTier = B.openTier === i ? null : i;
+  if (S.ui.sheetCtx?.type === "build") refreshSheet();
+  else render();
+};
+function generatedDeck(t, seedName) {
+  return withSnapshot({ id: uid(), name: `${seedName.split(",")[0]} · ${t.format} · ${t.budget ? "$" + t.budget : "my cards"}`, format: t.format, commander: t.commander, strategy: "Auto", budget: t.budget, locked: false, cards: t.cards.map((r) => ({ name: r.name, qty: r.qty })), versions: [], source: sourceCredit({ kind: "Generated", description: `Generated by Cardforge around ${seedName} with a $${t.budget} budget.` }) }, "Generated");
+}
+A.tierSave = async (t) => {
+  const B = S.ui.build,
+    tier = B.results[B.format]?.[Number(t.dataset.i)];
+  if (!tier) return;
+  const d = generatedDeck(tier, B.seed);
+  await commit((s) => s.decks.push(d), { msg: `Saved “${d.name}”. Find it in My decks.` });
+};
+A.tierSaveAll = async () => {
+  const B = S.ui.build,
+    tiers = B.results[B.format] || [];
+  const ds = tiers.map((t) => generatedDeck(t, B.seed));
+  await commit((s) => s.decks.push(...ds), { msg: `Saved ${ds.length} decks to My decks.` });
+};
+// Non-Commander decks: complete the current list at several budgets.
+A.fillAny = async () => {
+  const d = currentDeck(),
+    B = S.ui.build,
+    f = formatOf(d);
+  if (B.busy) return;
+  Object.assign(B, { busy: true, fillDeck: d.id, msg: "Loading card data…", openTier: null });
+  render();
+  try {
+    await resolveNames(d.cards.map((c) => c.name));
+    const spells = aggregateCards(d.cards).map((r) => ({ r, c: meta(r.name) })).filter((x) => x.c && !isLand(x.c)).sort((a, b) => b.r.qty - a.r.qty),
+      lead = hasCommander(d) ? meta(d.commander) : null,
+      seeds = [...(lead ? [lead] : []), ...spells.slice(0, 4).map((x) => x.c)].filter(Boolean),
+      colors = lead ? lead.color_identity || [] : [...new Set(spells.flatMap((x) => x.c.color_identity || []))];
+    if (!seeds.length) throw Error("Add at least one non-land card first — the deck is built around it.");
+    await loadFormatPool(f, colors.length ? colors : ["C"], seeds[0], (m) => {
+      B.msg = m;
+      render();
+    });
+    B.avail = V.availability();
+    B.results.__fill = buildTiers({ format: f.name, seeds, base: d.cards, catalog: S.catalog, available: B.avail, price: (c) => priceOf(c.name), colors: colors.length ? colors : null, commander: lead }, tierList());
+    B.msg = "Each version keeps your cards and completes the deck. Pick one to apply — the current list is saved in Versions first.";
+  } catch (e) {
+    B.msg = e.message;
+  } finally {
+    B.busy = false;
+    render();
+  }
+};
+A.tierApply = async (t) => {
+  const tier = S.ui.build.results.__fill?.[Number(t.dataset.i)];
+  if (!tier) return;
+  await editDeck((d) => withSnapshot({ ...withSnapshot(d, "Before filling"), cards: tier.cards.map((r) => ({ name: r.name, qty: r.qty })) }, `Filled at ${tier.budget ? "$" + tier.budget : "$0"}`), { msg: "Deck updated. The previous list is in Versions." });
+  S.ui.build.results.__fill = null;
+  render();
 };
 
 /* ---------- account ---------- */

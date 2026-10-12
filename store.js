@@ -59,6 +59,7 @@ export const S = {
     compare: [null, null],
     finder: { basics: true, precons: [], cacheLoaded: false, busy: false, msg: "", max: "", colors: "", sort: "cost", q: "", limit: 12 },
     shared: { code: "", deck: null, error: "" },
+    build: { seed: "", format: "", results: {}, busy: false, msg: "", error: false, openTier: null, custom: "", fillDeck: null, avail: null },
     sets: { list: [], busy: false, error: "", q: "", all: false },
     set: { code: "", info: null, cards: [], total: 0, busy: false, loaded: false, error: "", q: "", filter: "all", rarity: "all", sort: "number", limit: 120 },
     sheetCtx: null,

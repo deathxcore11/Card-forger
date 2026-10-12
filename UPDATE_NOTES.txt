@@ -1,3 +1,20 @@
+CARDFORGE 2.9 UPDATE — BUILD DECKS IN ANY FORMAT
+
+- "⚒ Build decks" on any card: pick a format the card is legal in (Standard, Pioneer, Modern,
+  Legacy, Vintage, Pauper, Premodern, Old School, Historic, Timeless, Alchemy, Gladiator, casual —
+  and Commander-family formats when the card can lead) and Cardforge builds a complete, legal deck
+  around it at every budget: your cards only ($0), $10, $25, $50, $100, plus any amount you type.
+- Each version shows what it costs to buy, how much you already own, its engine score, and the full
+  list with why each card is there ("shares a creature type", "removal", "you own it"…). Save one,
+  or save every version at once.
+- Picks: your cards first, then the build-around card's themes and creature types, removal and card
+  draw, a playable curve, and widely played cards — kept in the card's colors, legal in the format,
+  playsets in 60-card formats and singleton where required. Money is reserved so the whole deck gets
+  finished; any slot it can't fill is reported, never invented.
+- Decks → "⚒ Random deck · any format" picks a random legal card and builds around it.
+- Upgrade lab for non-Commander decks: "Fill N open slots" keeps your cards and completes the deck at
+  each budget; applying one saves the old list in Versions.
+
 CARDFORGE 2.8 UPDATE — EVERY FORMAT
 
 - Build decks for 22 formats: Standard, Pioneer, Modern, Legacy, Vintage, Pauper, Premodern,
