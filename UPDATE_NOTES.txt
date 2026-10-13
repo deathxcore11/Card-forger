@@ -1,3 +1,12 @@
+3.33.4 — Every tier border animates
+- Fixed: most card borders looked still. Purple and orange weren't moving at all, and grey,
+  green and blue moved too subtly to see. All borders now animate with a method every browser
+  supports, each tier in its own way, on a seamless loop:
+  grey, a slow silver gleam; green, two emerald glints; blue, a crisp sheen running the other
+  way; purple, holo colours flowing upward with a breathing glow; gold, a bright glint racing
+  across with a shimmering glow; orange, two fire layers moving against each other with a
+  flickering glow. Same in big-card, small-card and text views.
+
 3.33.3 — Badges on deck pages
 - Deck pages in big-card view now show the same badges on each card as everywhere else (type,
   set and rarity, deck-building value) for all three games, so you can tell at a glance what a

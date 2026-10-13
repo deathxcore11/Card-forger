@@ -2345,3 +2345,69 @@ img[data-tier="t5"] { animation: tier-fire-ring 2.4s ease-in-out infinite; }
 #content.view-gallery .display-list .lot .lot-art .tile-chrome { display: block; }
 #content.view-gallery .display-list .lot .art-price { left: auto; right: 9px; bottom: auto; top: 9px; z-index: 3; font-size: 11px; padding: 2px 7px; border-radius: 99px; background: rgba(8, 10, 16, .78); }
 #content.view-gallery .display-list .deck-row:not([data-tier]) .lot-art .tile-chrome, #content.view-gallery .display-list .lot[data-tier="tn"] .lot-art .tile-chrome { left: 0; right: 0; top: 0; }
+
+/* ===== Gallery frames v3: every tier visibly alive, each in its own way, all seamless ===== */
+/* One animation on the frame (the rotation); glows pulse on the card row instead. */
+#content.view-gallery .display-list .lot[data-tier="t0"]:not(.wanted) .lot-art { background: conic-gradient(from var(--ring), #6f7780 0%, #6f7780 38%, #dfe5ea 46%, #ffffff 50%, #dfe5ea 54%, #6f7780 62%, #6f7780 100%); animation: ring-spin 7s linear infinite; }
+#content.view-gallery .display-list .lot[data-tier="t1"]:not(.wanted) .lot-art { background: conic-gradient(from var(--ring), #1f8a50 0%, #2fae68 20%, #b9ffd6 25%, #2fae68 30%, #1f8a50 50%, #2fae68 70%, #b9ffd6 75%, #2fae68 80%, #1f8a50 100%); animation: ring-spin 6s linear infinite; }
+#content.view-gallery .display-list .lot[data-tier="t2"]:not(.wanted) .lot-art { background: conic-gradient(from var(--ring), #1d5fb0 0%, #2f7fe0 15%, #d6f0ff 20%, #2f7fe0 25%, #1d5fb0 33%, #2f7fe0 48%, #d6f0ff 53%, #2f7fe0 58%, #1d5fb0 66%, #2f7fe0 81%, #d6f0ff 86%, #2f7fe0 91%, #1d5fb0 100%); animation: ring-spin 5s linear infinite reverse; }
+#content.view-gallery .display-list .lot[data-tier="t3"]:not(.wanted) .lot-art { background: conic-gradient(from var(--ring), #b46cff, #6fd0ff, #ff7ad9, #ffe27a, #7dffb2, #b46cff); animation: ring-spin 4s linear infinite; }
+#content.view-gallery .display-list .lot[data-tier="t4"]:not(.wanted) .lot-art { background: conic-gradient(from var(--ring), #9a6f08 0%, #ffd34d 18%, #fffbe6 25%, #ffd34d 32%, #9a6f08 50%, #ffd34d 68%, #fffbe6 75%, #ffd34d 82%, #9a6f08 100%); animation: ring-spin 3.2s linear infinite; }
+#content.view-gallery .display-list .lot[data-tier="t5"]:not(.wanted) .lot-art { background: conic-gradient(from var(--ring), #a3330a, #ff7a1a, #ffe0a0, #ff5a10, #a3330a, #ff9a3a, #fff0c0, #ff5a10, #a3330a); animation: ring-spin 2.2s linear infinite; }
+/* Glows: purple breathes, gold shimmers, orange flickers (symmetric, so the loop never jumps). */
+#content.view-gallery .display-list .lot[data-tier="t3"]:not(.wanted) { animation: glow-purple 3s ease-in-out infinite alternate; }
+#content.view-gallery .display-list .lot[data-tier="t4"]:not(.wanted) { animation: glow-gold 2.4s ease-in-out infinite alternate; }
+#content.view-gallery .display-list .lot[data-tier="t5"]:not(.wanted) { animation: glow-fire 1.1s ease-in-out infinite alternate; }
+#content.view-gallery .display-list .lot:is([data-tier="t3"], [data-tier="t4"], [data-tier="t5"]):not(.wanted) { box-shadow: none !important; }
+#content.view-gallery .display-list .lot:is([data-tier="t3"], [data-tier="t4"], [data-tier="t5"]):not(.wanted) .lot-art { box-shadow: var(--glow, none), 0 10px 24px -14px rgba(0,0,0,.8); }
+@property --glow-a { syntax: "<length>"; inherits: true; initial-value: 10px; }
+#content.view-gallery .display-list .lot[data-tier="t3"]:not(.wanted) { --glow: 0 0 var(--glow-a) -2px #b46cff; }
+#content.view-gallery .display-list .lot[data-tier="t4"]:not(.wanted) { --glow: 0 0 var(--glow-a) -2px #ffd34d; }
+#content.view-gallery .display-list .lot[data-tier="t5"]:not(.wanted) { --glow: 0 0 var(--glow-a) 0 #ff6a14; }
+@keyframes glow-purple { from { --glow-a: 8px; } to { --glow-a: 26px; } }
+@keyframes glow-gold { from { --glow-a: 10px; } to { --glow-a: 24px; } }
+@keyframes glow-fire { from { --glow-a: 14px; } to { --glow-a: 32px; } }
+
+/* ===== Tier borders v4: animated with plain background-position (works in every browser).
+   Each pattern tile slides exactly one tile per loop, so the loop is seamless. ===== */
+.tierfx-reset {}
+:is(#content.view-gallery .display-list .lot:not(.wanted) .lot-art, :is(.view-symbols, .view-compact) .display-list .lot[data-tier]::before) { --ring: 0deg; }
+/* Grey: a slow silver gleam passing along the edge. */
+#content.view-gallery .display-list .lot[data-tier="t0"]:not(.wanted) .lot-art,
+:is(.view-symbols, .view-compact) .display-list .lot[data-tier="t0"]::before { background: linear-gradient(90deg, #6f7780 0 38%, #e9eef2 50%, #6f7780 62% 100%) 0 0 / 320px 100% repeat-x; animation: fx-x320 7s linear infinite; }
+/* Green: two soft emerald glints and a gentle pulse. */
+#content.view-gallery .display-list .lot[data-tier="t1"]:not(.wanted) .lot-art,
+:is(.view-symbols, .view-compact) .display-list .lot[data-tier="t1"]::before { background: linear-gradient(90deg, #1f8a50 0%, #2fae68 20%, #c4ffde 25%, #2fae68 30%, #1f8a50 50%, #2fae68 70%, #c4ffde 75%, #2fae68 80%, #1f8a50 100%) 0 0 / 260px 100% repeat-x; animation: fx-x260 5s linear infinite, fx-pulse 2.6s ease-in-out infinite alternate; }
+/* Blue: a crisp electric sheen running the other way. */
+#content.view-gallery .display-list .lot[data-tier="t2"]:not(.wanted) .lot-art,
+:is(.view-symbols, .view-compact) .display-list .lot[data-tier="t2"]::before { background: linear-gradient(90deg, #1d5fb0 0%, #2f7fe0 30%, #e2f4ff 45%, #7fc3ff 50%, #2f7fe0 65%, #1d5fb0 100%) 0 0 / 200px 100% repeat-x; animation: fx-x200r 3.6s linear infinite; }
+/* Purple: holographic colours flowing upward through the frame. */
+#content.view-gallery .display-list .lot[data-tier="t3"]:not(.wanted) .lot-art,
+:is(.view-symbols, .view-compact) .display-list .lot[data-tier="t3"]::before { background: linear-gradient(180deg, #b46cff, #6fd0ff, #ff7ad9, #ffe27a, #7dffb2, #b46cff) 0 0 / 100% 360px repeat-y; animation: fx-y360 4.5s linear infinite; }
+/* Gold: a bright glint racing across a gold frame. */
+#content.view-gallery .display-list .lot[data-tier="t4"]:not(.wanted) .lot-art,
+:is(.view-symbols, .view-compact) .display-list .lot[data-tier="t4"]::before { background: linear-gradient(90deg, #9a6f08 0%, #e2b53a 30%, #ffd34d 42%, #fffbe6 50%, #ffd34d 58%, #e2b53a 70%, #9a6f08 100%) 0 0 / 240px 100% repeat-x; animation: fx-x240 2.4s linear infinite; }
+/* Orange: fire, two layers moving against each other, and a flickering glow. */
+#content.view-gallery .display-list .lot[data-tier="t5"]:not(.wanted) .lot-art,
+:is(.view-symbols, .view-compact) .display-list .lot[data-tier="t5"]::before {
+  background: linear-gradient(90deg, rgba(255,240,190,0) 0%, rgba(255,240,190,.85) 50%, rgba(255,240,190,0) 100%) 0 0 / 160px 100% repeat-x,
+              linear-gradient(180deg, #a3330a 0%, #ff7a1a 25%, #ffb050 50%, #ff5a10 75%, #a3330a 100%) 0 0 / 100% 140px repeat-y;
+  animation: fx-fire 1.6s linear infinite; }
+#content.view-gallery .display-list .lot:is([data-tier="t3"], [data-tier="t4"], [data-tier="t5"]):not(.wanted) { animation: none; }
+#content.view-gallery .display-list .lot[data-tier="t3"]:not(.wanted) .lot-art { animation: fx-y360 4.5s linear infinite, fx-glow-p 3s ease-in-out infinite alternate; }
+#content.view-gallery .display-list .lot[data-tier="t4"]:not(.wanted) .lot-art { animation: fx-x240 2.4s linear infinite, fx-glow-g 2.4s ease-in-out infinite alternate; }
+#content.view-gallery .display-list .lot[data-tier="t5"]:not(.wanted) .lot-art { animation: fx-fire 1.6s linear infinite, fx-glow-f 0.9s ease-in-out infinite alternate; }
+@keyframes fx-x320 { to { background-position: 320px 0; } }
+@keyframes fx-x260 { to { background-position: 260px 0; } }
+@keyframes fx-x200r { to { background-position: -200px 0; } }
+@keyframes fx-y360 { to { background-position: 0 -360px; } }
+@keyframes fx-x240 { to { background-position: 240px 0; } }
+@keyframes fx-fire { to { background-position: 160px 0, 0 -140px; } }
+@keyframes fx-pulse { from { filter: brightness(.9); } to { filter: brightness(1.15); } }
+@keyframes fx-glow-p { from { box-shadow: 0 0 8px -2px #b46cff, 0 10px 24px -14px rgba(0,0,0,.8); } to { box-shadow: 0 0 26px 0 #b46cff, 0 10px 24px -14px rgba(0,0,0,.8); } }
+@keyframes fx-glow-g { from { box-shadow: 0 0 10px -2px #ffd34d, 0 10px 24px -14px rgba(0,0,0,.8); } to { box-shadow: 0 0 24px 0 #ffd34d, 0 10px 24px -14px rgba(0,0,0,.8); } }
+@keyframes fx-glow-f { from { box-shadow: 0 0 12px 0 #ff6a14, 0 10px 24px -14px rgba(0,0,0,.8); } to { box-shadow: 0 0 32px 2px #ff4a08, 0 10px 24px -14px rgba(0,0,0,.8); } }
+/* The green pulse uses filter; keep it on the frame only (the art sits on top, unfiltered). */
+#content.view-gallery .display-list .lot[data-tier="t1"]:not(.wanted) .lot-art { animation: fx-x260 5s linear infinite; }
+#content.view-gallery .display-list .lot[data-tier="t1"]:not(.wanted) .lot-art { box-shadow: 0 0 14px -6px #2fae68, 0 10px 24px -14px rgba(0,0,0,.8); }
+@media (prefers-reduced-motion: reduce) { #content .display-list .lot .lot-art, #content .display-list .lot::before { animation: none !important; } }
