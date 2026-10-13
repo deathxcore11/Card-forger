@@ -1,3 +1,9 @@
+3.28.0 — Shared price history, binder page curl, sign-up fixes
+- Price history now grows on the server: the Cloudflare Worker records the daily price of every tracked Magic and Yu-Gi-Oh! card (cards you own or open) into Supabase, so charts fill in toward 6 months and a year, even for cards you haven't opened lately. Charts have 1M / 3M / 6M / 1Y / All ranges and show where coverage starts; missing days are never invented. Your own on-device checks are merged in. Each chart keeps one printing, finish, source and currency.
+  One-time setup: run supabase/migrations/20261013000000_price_history.sql in Supabase → SQL Editor, and add the Worker secret SUPABASE_SERVICE_KEY (Supabase → Project Settings → API keys → secret key). Without it, everything else works and recording is skipped.
+- Binders: dragging a page now lifts it like a real binder page, with a curl shadow, and reveals the actual next (or previous) page underneath. Let go past a third (or flick) to turn it; otherwise it settles back.
+- Sign-up: “Resend confirmation email” button, and a clear message when the email already has an account (Supabase silently sends nothing in that case).
+
 3.27.0 — Deck Power: every game and format judged on its own terms
 - New Deck Power rating (0–100) on every deck tile, deck header and a new Power tab, for all three games.
 - Magic Standard, Pioneer, Modern and other 60-card formats are no longer scored with Commander targets (36 lands, 10 ramp, board wipes, commander synergy). They're judged like competitive constructed decks: lands vs. curve (Frank Karsten's formula), 3–4-of consistency, interaction and threats for the deck's plan (aggro, midrange, control, ramp), card flow, color sources and themes such as landfall.

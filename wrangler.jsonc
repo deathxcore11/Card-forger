@@ -9,7 +9,8 @@
   "main": "worker.js",
   // Daily refresh of Magic tournament data (TopDeck.gg). Add the API key once with:
   //   npx wrangler secret put TOPDECK_KEY   (or Workers → cardforge2 → Settings → Variables and Secrets)
-  "triggers": { "crons": ["17 6 * * *"] },
+  // Second trigger: record shared price history (needs the SUPABASE_SERVICE_KEY secret).
+  "triggers": { "crons": ["17 6 * * *", "41 7 * * *"] },
   "assets": {
     "directory": "./",
     "binding": "ASSETS"

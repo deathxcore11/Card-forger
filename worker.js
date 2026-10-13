@@ -1,4 +1,5 @@
 import {magicSetArtwork} from "./set-art.js";
+import { watchRoute, historyRoute, recordDailyPrices } from "./pricefeed.js";
 import { TOPDECK_API, TOPDECK_FORMATS, WARM_FORMATS, normalizeTopdeck, topdeckBody } from "./topdeck.js";
 import { MTGO_SLUGS, MTGO_INDEX, mtgoEventSlugs, parseMtgoEvent, normalizeMtgo, EDHTOP16_API, edhtop16Query, normalizeEdhtop16 } from "./mtgmeta.js";
 // Cloudflare Worker: serves the static site, plus a cached image route for
@@ -144,9 +145,18 @@ export function assetLinks(apps = ANDROID_APPS) {
   return new Response(JSON.stringify(body), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=3600", "Access-Control-Allow-Origin": "*" } });
 }
 
+export const PRICE_CRON = "41 7 * * *";
+
 export default {
   // Daily refresh of the popular formats, so visitors rarely wait on TopDeck.
   async scheduled(event, env, ctx) {
+    // Separate trigger for shared price history (each run has its own request budget).
+    if (event?.cron === PRICE_CRON) {
+      try {
+        await recordDailyPrices(env);
+      } catch {}
+      return;
+    }
     for (const f of WARM_FORMATS) {
       try {
         await mtgMeta(env, f, 30, null, { force: true });
@@ -165,6 +175,8 @@ export default {
     }
     if (url.pathname === "/.well-known/assetlinks.json") return assetLinks();
     if (url.pathname === "/api/lens") return lensUpload(request, url);
+    if (url.pathname === "/api/prices/watch") return watchRoute(request, env);
+    if (url.pathname === "/api/prices/history") return historyRoute(url, env, ctx);
     if (url.pathname === "/api/meta/mtg" || url.pathname === "/api/meta/mtg/coverage") return mtgRoute(url, env, ctx);
     if (url.pathname === "/api/meta/ygo/decks" || url.pathname === "/api/meta/ygo/top") return ygoMeta(url, ctx);
     const m = url.pathname.match(/^\/img\/ygo\/(s\/|a\/)?(\d{1,12})\.jpg$/),

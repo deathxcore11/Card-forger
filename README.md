@@ -51,6 +51,24 @@ The site is plain static files, so there is no build step.
 
 **Option B, manual zip upload.** Export a backup in Settings first, then upload the site files to the same Worker as before (see `START_HERE.txt`).
 
+### Shared price history (one-time setup)
+
+1. Supabase → **SQL Editor** → paste and run `supabase/migrations/20261013000000_price_history.sql`.
+2. Supabase → Project Settings → **API keys** → copy the **secret** key.
+3. Cloudflare → Workers & Pages → `cardforge2` → Settings → **Variables and Secrets** → add a **Secret** named `SUPABASE_SERVICE_KEY` with that key.
+
+The Worker then records daily prices at 07:41 UTC for every tracked Magic and Yu-Gi-Oh! card (about 2,250 Magic and 300 Yu-Gi-Oh! cards per day on Cloudflare's free plan; raise `PRICE_BATCHES` / `YGO_PRICE_BATCHES` variables on a paid plan).
+
+### Sign-up emails not arriving
+
+Supabase's built-in email sender only delivers to members of your Supabase team, and only a few emails per hour. For real users:
+
+1. Create a free account at an email service such as [Resend](https://resend.com) and verify a sending domain.
+2. Supabase → Authentication → **Emails → SMTP Settings** → enable custom SMTP with Resend's host, port, user and password (or install the Resend integration).
+3. Supabase → Authentication → **URL Configuration**: set **Site URL** to your site (e.g. `https://cardforge2.deathxcore11.workers.dev`) and add it to **Redirect URLs**.
+
+To skip confirmation entirely while testing: Authentication → Sign In / Providers → Email → turn off **Confirm email**.
+
 ### Magic tournament results
 
 Magic's **Decks → Meta decks** works without any setup: constructed formats come from Wizards' official [Magic Online decklists](https://www.mtgo.com/decklists) and Commander from [EDHTop16](https://edhtop16.com), both fetched and cached by the Worker (`mtgmeta.js`). Optionally, add a free [TopDeck.gg API](https://topdeck.gg/docs/tournaments-v2) key as a fallback and for extra formats:

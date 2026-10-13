@@ -20,6 +20,7 @@ export function createPasswordAuth(auth, redirectTo) {
   return {
     async login(email,password) { emailCheck(email); if (!password) throw Error("Enter your password."); return result(auth.signInWithPassword({email,password})); },
     async signup(email,password,confirm) { emailCheck(email); validateNewPassword(password,confirm); return result(auth.signUp({email,password,options:{emailRedirectTo:redirectTo()}})); },
+    async resend(email) { emailCheck(email); return result(auth.resend({type:"signup",email,options:{emailRedirectTo:redirectTo()}})); },
     async reset(email) { emailCheck(email); return result(auth.resetPasswordForEmail(email,{redirectTo:redirectTo()})); },
     async update(password,confirm) { validateNewPassword(password,confirm); return result(auth.updateUser({password})); },
   };

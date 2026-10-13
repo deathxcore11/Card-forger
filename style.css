@@ -1980,3 +1980,13 @@ nav [data-nav] { position: relative; }
 .chip.bad-chip { color: #ffb3a8; }
 .chip.ok-chip { color: #a6f0c4; }
 .tcg-tile .tile-card-art.cropped { transform: none; object-position: 50% 35%; }
+
+/* Binder: the next/previous page lies underneath and is revealed as you drag the page. */
+.stash-open-book > .stash-under, .stash-open-book > .stash-pocket-page { grid-column: 2; grid-row: 1; }
+.stash-under { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 8px; border-radius: 6px; background: linear-gradient(160deg, #1f2631, #171c24); z-index: 1; pointer-events: none; filter: brightness(calc(0.45 + var(--reveal, 0) * 0.55)); }
+.stash-under[hidden] { display: none; }
+.stash-pocket-page { z-index: 2; }
+.stash-pocket-page.turning::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 7; opacity: calc(var(--turn, 0) * 1.4); background: linear-gradient(90deg, #0000 0%, #0000 35%, #0006 70%, #000b 100%); }
+.stash-pocket-page.turning[style*="right center"]::after { background: linear-gradient(270deg, #0000 0%, #0000 35%, #0006 70%, #000b 100%); }
+.stash-pocket-page.turning { box-shadow: calc(var(--turn, 0) * -18px) 6px 22px #000a; }
+@media (max-width: 520px) { .stash-under { gap: 6px; } }

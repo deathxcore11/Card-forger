@@ -14,5 +14,6 @@ worker.js
 topdeck.js
 scripts
 mtgmeta.js
+pricefeed.js
 
 set-art.js

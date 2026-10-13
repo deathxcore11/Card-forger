@@ -39,6 +39,7 @@ import { attachSuggest } from "./suggest.js";
 import { shouldTour, openTour } from "./tour.js";
 import { haptic, hapticFor, flyToCollection, countUp, ripple, setHaptics, attachGestures } from "./feel.js";
 import { alertSheet, setAlert, onAlert, alertText, priceSeries } from "./pricehist.js";
+import { onSharedPrices, watchCards } from "./sharedprices.js";
 import { mtgCollector, nameCandidates, textPhrases } from "./scan.js";
 import { registerScanner, scanView } from "./scancam.js";
 import { newGame, proxyList, proxySheetHTML } from "./extras.js";
@@ -50,7 +51,7 @@ import { rulesPage } from "./rules.js";
 import { GAMES, GAME_ICON, GAME_COLOR } from "./games.js";
 import { ICON, actionIcon, decorateGlyphs } from "./icons.js";
 import { openZoom, scryfallHi } from "./zoom.js";
-import { initCloud, cloudInfo, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, saveProfile, resolvePending, syncNow } from "./cloud.js";
+import { initCloud, cloudInfo, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, saveProfile, resolvePending, syncNow, resendConfirmation } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact } from "./insights.js";
 
 /* =========================================================
@@ -1416,7 +1417,13 @@ A.createAccount = t => runAuth(t,"Creating account…",async()=>{
  const email=$("#signupEmail")?.value.trim() || "",password=$("#signupPassword")?.value || "",confirm=$("#signupConfirm")?.value || "";
  const data=await createAccount(email,password,confirm);
  if(data?.session)return "Account created. You’re signed in.";
- return "Check your inbox and spam for the confirmation email, then return to Log in. If you already registered, log in or reset your password.";
+ // Supabase hides existing accounts: an already-registered email comes back with no identities and no email is sent.
+ if(data?.user && Array.isArray(data.user.identities) && !data.user.identities.length)return "That email already has an account. Log in, or use Forgot password.";
+ return "Check your inbox and spam for the confirmation email (sender: Supabase Auth unless the site uses its own mail service). Nothing after a few minutes? Tap “Resend confirmation email”.";
+});
+A.resendConfirm = t => runAuth(t,"Sending…",async()=>{
+ await resendConfirmation($("#signupEmail")?.value.trim() || $("#signEmail")?.value.trim() || "");
+ return "Confirmation email sent again. Check spam and promotions too. Still nothing? The site's email service needs setting up (Supabase → Authentication → SMTP).";
 });
 A.forgotPassword = t => runAuth(t,"Sending…",async()=>{
  await requestPasswordReset($("#resetEmail")?.value.trim() || "");return "If an account exists, a reset link will arrive. Open it in this browser.";
@@ -3888,7 +3895,22 @@ function trackValue() {
   S.state.valueHistory = recordValuePoint(S.state.valueHistory, v.total, v.copies);
 }
 
+// Shared daily prices arrive in the background: redraw whichever price chart is open.
+onSharedPrices(() => {
+  const ctx = S.ui.sheetCtx;
+  if (!ctx || !$("#sheet")?.open) return;
+  if (ctx.type === "market") A.marketRange?.({ dataset: { range: ctx.range || "30" } });
+  else if (["card", "tcard", "buy"].includes(ctx.type)) refreshSheet();
+});
+// Owned Magic and Yu-Gi-Oh! cards get daily server-side price history (sent at most every 20 days).
+function watchCollectionPrices() {
+  try {
+    watchCards("mtg", S.state.collection.map((e) => e.printingId || meta(e.name)?.id).filter(Boolean));
+    watchCards("ygo", (S.state.tcg?.ygo?.collection || []).map((e) => e.cardId).filter(Boolean));
+  } catch {}
+}
 async function boot() {
+  setTimeout(watchCollectionPrices, 8000);
   try {
     const r = await fetch("catalog.json");
     if (r.ok) {

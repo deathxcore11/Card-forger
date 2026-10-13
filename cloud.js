@@ -194,6 +194,7 @@ function passwordAuth() {
 export const signInPassword = (email,password) => passwordAuth().login(email,password);
 export const createAccount = (email,password,confirm) => passwordAuth().signup(email,password,confirm);
 export const requestPasswordReset = email => passwordAuth().reset(email);
+export const resendConfirmation = email => passwordAuth().resend(email);
 export async function finishPasswordReset(password,confirm) {
   if (!recoveringPassword || !user) throw Error("Open the password-reset email first. Request a fresh link if it has expired.");
   await passwordAuth().update(password,confirm);
