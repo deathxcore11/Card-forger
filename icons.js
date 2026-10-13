@@ -4,6 +4,7 @@
 const svg = (body, cls = "") => `<svg class="ico ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
 
 export const ICON = {
+  back: svg(`<path d="M14.5 6 8.5 12l6 6"/>`),
   home: svg(`<path d="M3.5 10.6 12 4l8.5 6.6"/><path d="M5.6 9.2V19a1 1 0 0 0 1 1h10.8a1 1 0 0 0 1-1V9.2"/><path d="M10 20v-5.2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V20"/>`),
   search: svg(`<circle cx="10.8" cy="10.8" r="6.3"/><path d="m15.6 15.6 4.6 4.6"/>`),
   // A binder with a card in its pocket.
@@ -40,7 +41,7 @@ const ACTION = {
   minus: svg(`<path d="M5 12h14"/>`),
   close: svg(`<path d="m6.5 6.5 11 11M17.5 6.5l-11 11"/>`),
   more: svg(`<circle cx="6" cy="12" r="1.1" fill="currentColor"/><circle cx="12" cy="12" r="1.1" fill="currentColor"/><circle cx="18" cy="12" r="1.1" fill="currentColor"/>`),
-  back: svg(`<path d="M14.5 6 8.5 12l6 6"/>`),
+  back: ICON.back,
   check: ICON.check,
   // Build a deck: a stack of cards with a plus.
   build: svg(`<rect x="4" y="6.5" width="10.5" height="14" rx="1.8"/><path d="M7.5 6.5V5a1.6 1.6 0 0 1 1.6-1.6h8.3A1.6 1.6 0 0 1 19 5v11.4a1.6 1.6 0 0 1-1.6 1.6h-2.9" stroke-opacity=".6"/><path d="M9.25 10.5v6M6.25 13.5h6"/>`),
