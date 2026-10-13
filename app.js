@@ -3408,7 +3408,7 @@ A.deleteNote = async (t) => commit((s) => (s.notes = s.notes.filter((n) => n.id 
    ========================================================= */
 
 // Matching for the scanner (Magic). The scanner itself lives in scancam.js and is shared by all games.
-async function mtgScanMatch(read, lang, manual = false) {
+async function mtgScanMatch(read, lang, manual = false, prefs = {}) {
   const out = [],
     seen = new Set(),
     tried = [],
@@ -3434,7 +3434,14 @@ async function mtgScanMatch(read, lang, manual = false) {
   for (const n of manual ? [read.name] : nameCandidates("mtg", read.name || read.full)) {
     if (out.length >= 3) break;
     tried.push(n);
-    const c = await api("/cards/named?" + new URLSearchParams({ fuzzy: n })).catch(() => null);
+    // Lock set: look the name up in that set first.
+    const locked = prefs.lockSet ? await api("/cards/named?" + new URLSearchParams({ fuzzy: n, set: prefs.lockSet })).catch(() => null) : null;
+    let c = locked || (await api("/cards/named?" + new URLSearchParams({ fuzzy: n })).catch(() => null));
+    // Ignore promos: prefer the regular printing of the same card.
+    if (c && prefs.ignorePromos && (c.promo || c.set_type === "promo")) {
+      const r = await api("/cards/search?" + new URLSearchParams({ q: `!"${c.name}" -is:promo -st:promo`, order: "released", dir: "desc" })).catch(() => null);
+      if (r?.data?.[0]) c = r.data[0];
+    }
     // A short fragment ("wel") is not identification: closest-spelling hits need a real word.
     if (c?.name && (key(c.name) === key(n) || manual || key(n).length >= 5)) push(c, key(c.name) === key(n) ? "Name match" : `Closest name to “${n}”`, false);
   }
@@ -3449,13 +3456,37 @@ async function mtgScanAdd(cand) {
     { undo: `Added 1 × ${c.name}${cand.exact ? ` (${c.set.toUpperCase()} #${c.collector_number})` : ""}.` },
   );
 }
+// Save a whole scan session at once (one undo), with each row's finish, condition, language and quantity.
+async function mtgScanAddMany(items) {
+  const n = items.reduce((t, x) => t + x.qty, 0);
+  await commit(
+    (s) => {
+      for (const it of items) {
+        const c = it.cand.card;
+        s.collection.push({ id: uid(), name: c.name, qty: it.qty, set: c.set.toUpperCase(), setName: c.set_name, collectorNumber: c.collector_number, finish: it.finish || "nonfoil", language: it.lang || c.lang || "en", condition: it.condition || "Near Mint", location: it.location || "", reserved: 0, printingId: it.cand.exact ? c.id : null, oracleId: c.oracle_id, printingVerified: !!it.cand.exact, nameVerified: true, raw: { acquisition: "Scanned" } });
+      }
+    },
+    { undo: `Added ${n} scanned card${n === 1 ? "" : "s"}.` },
+  );
+}
+const mtgScanPrice = (cand, finish) => {
+  const p = cand.card?.prices || {},
+    v = finish === "foil" ? p.usd_foil : finish === "etched" ? p.usd_etched : p.usd;
+  return v == null || v === "" ? null : Number(v);
+};
 const scanCtx = {
   A,
   C,
+  openSheet: (...x) => openSheet(...x),
+  closeSheet: () => closeSheet(),
+  addMany: (g, items) => (g === "mtg" ? mtgScanAddMany(items) : tcgCtx.scanAddMany(items)),
+  priceOf: (g, cand, finish) => (g === "mtg" ? mtgScanPrice(cand, finish) : tcgCtx.scanPrice?.(cand, finish) ?? null),
+  setOf: (g, cand) => (g === "mtg" ? cand.card?.set || "" : g === "ygo" ? String(cand.print || "").split("|")[0].split("-")[0] : cand.card?.set?.id || ""),
+  numberOf: (g, cand) => (g === "mtg" ? cand.card?.collector_number || "" : g === "ygo" ? String(cand.print || "").split("|")[0] : cand.card?.set?.number || ""),
   render: () => render(),
   toast: (m) => toast(m),
   game: () => T.game(),
-  match: (g, read, lang, manual, status) => (g === "mtg" ? mtgScanMatch(read, lang, manual) : tcgCtx.scanMatch(read, lang, manual, status)),
+  match: (g, read, lang, manual, status, prefs = {}) => (g === "mtg" ? mtgScanMatch(read, lang, manual, prefs) : tcgCtx.scanMatch(read, lang, manual, status)),
   add: (g, c) => (g === "mtg" ? mtgScanAdd(c) : tcgCtx.scanAdd(c)),
   details: (g, c) => (g === "mtg" ? A.card({ dataset: { name: c.name } }) : A.tCard({ dataset: { id: c.id } })),
 };

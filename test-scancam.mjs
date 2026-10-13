@@ -26,4 +26,11 @@ assert.equal(st(ok, frame({ dx: 30 })).msg, "Hold steady", "moving → amber");
 assert.equal(st(ok, ok, 0).state, "amber", "not green on the first steady frame");
 assert.equal(st(ok, ok, 5).state, "green", "steady, sharp, aligned → green");
 for (const s of [st(ok, ok, 5), st(frame({ card: false }))]) assert.ok(s.msg && s.icon, "every state has words and an icon, not just a colour");
+{
+  const { visibleGuide } = await import("./scancam.js");
+  // Landscape feed shown in a portrait box: the guide stays inside the visible middle.
+  const g = visibleGuide(1920, 1080, 360, 560), k = Math.max(360 / 1920, 560 / 1080), visW = 360 / k;
+  assert.ok(g.x >= (1920 - visW) / 2 - 0.5 && g.x + g.w <= (1920 + visW) / 2 + 0.5, "guide fits the visible width");
+  assert.ok(Math.abs(g.w / g.h - 63 / 88) < 0.01, "card-shaped");
+}
 console.log("PASS: scan guide — red (no card / off-frame / dark), amber (blur, glare, motion), green only when steady.");

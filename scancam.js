@@ -8,6 +8,7 @@
 import { S } from "./store.js";
 import { esc } from "./ui.js";
 import { nameCandidates } from "./scan.js";
+import { FINISHES, CONDITIONS, LANGS, QTYS, loadPrefs, savePrefs, loadSession, saveSession, addToSession, itemKey, sessionCount, sessionValue, sessionUnpriced, sessionText, feedback } from "./scansession.js";
 
 const CARD = 63 / 88; // card width / height
 // Where the name and the identifying code sit on each game's card (fractions of the card).
@@ -100,6 +101,16 @@ export function guideState(m, steady = 0) {
 }
 
 // Where the guide sits in a video/image of size vw×vh (same rule for the overlay and the crop).
+// The guide in video pixels, sized to the part of the video that is visible on screen (the box
+// crops the feed with object-fit: cover). cw/ch: the box size; omit them to use the whole frame.
+export function visibleGuide(vw, vh, cw = 0, ch = 0) {
+  if (!cw || !ch) return guideRect(vw, vh);
+  const k = Math.max(cw / vw, ch / vh),
+    visW = Math.min(vw, cw / k),
+    visH = Math.min(vh, ch / k),
+    g = guideRect(visW, visH);
+  return { x: g.x + (vw - visW) / 2, y: g.y + (vh - visH) / 2, w: g.w, h: g.h };
+}
 export function guideRect(vw, vh, fill = 0.86) {
   let gh = vh * fill,
     gw = gh * CARD;
@@ -183,40 +194,95 @@ export const scanLang = () => {
   }
 };
 
+// Finishes this printing actually comes in (Magic: Scryfall finishes; Pokémon: its variants).
+export function finishesFor(g, cand) {
+  const all = FINISHES[g].map((x) => x[0]),
+    card = cand?.card || {};
+  const have = g === "mtg" ? card.finishes : g === "ptcg" ? (card.variants || []).map((v) => v.key).filter((k) => all.includes(k)) : null;
+  const ok = have?.length ? all.filter((f) => have.includes(f)) : all;
+  return ok.length ? ok : all;
+}
+const money = (v) => (v == null ? "—" : "$" + Number(v).toFixed(2));
+const label = (list, v) => (list.find((x) => (Array.isArray(x) ? x[0] : x) === v) || [v, v])[1] ?? v;
+
+// The defaults every scan uses: finish, condition, card language and quantity. Tap to change.
+function defaultsPill(g, p) {
+  return `<div class="scan-defaults" role="group" aria-label="Defaults for scanned cards">
+    <button data-act="scanCycle" data-k="finish" title="Finish">${esc(label(FINISHES[g], p.finish))}</button>
+    <button data-act="scanCycle" data-k="condition" title="Condition">${esc(label(CONDITIONS, p.condition))}</button>
+    <button data-act="scanCycle" data-k="lang" title="Card language">${esc(label(LANGS, p.lang))}</button>
+    <button data-act="scanCycle" data-k="qty" title="Copies per scan">+${p.qty}</button></div>`;
+}
+
+function sessionPanel(g, p, list) {
+  const n = sessionCount(list),
+    v = sessionValue(list),
+    unp = sessionUnpriced(list);
+  return `<section class="panel scan-session" aria-label="Scanned cards">
+    <div class="ss-head"><div><b>${n} card${n === 1 ? "" : "s"} scanned</b>${p.showValue && n ? `<small>${money(v)}${unp ? ` + ${unp} unpriced` : ""}</small>` : ""}</div>
+      ${n ? `<button class="btn small" data-act="sessCommit">＋ Save to collection</button>` : ""}</div>
+    <div class="searchbar ss-add"><input id="scanName" placeholder="Add by name${g === "ygo" ? " or set code" : ""}" data-enter="scanFind" aria-label="Add a card by name"><button class="btn ghost small" data-act="scanFind">Find</button></div>
+    ${
+      n
+        ? `<div class="ss-list">${list
+            .map((x) => {
+              const k = esc(itemKey(x));
+              return `<div class="ss-row">${x.image ? `<img src="${esc(x.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<span class="ss-noimg"></span>`}
+          <span class="ss-txt"><b>${esc(x.name)}</b><small>${esc([x.setCode && String(x.setCode).toUpperCase(), x.number && "#" + x.number].filter(Boolean).join(" "))} · ${esc(label(CONDITIONS, x.condition))} · ${esc(label(LANGS, x.lang))}</small></span>
+          ${finishesFor(g, x.cand).length > 1 ? `<button class="ss-chip" data-act="sessFinish" data-k="${k}" title="Tap to change finish">${esc(label(FINISHES[g], x.finish))}</button>` : `<span class="ss-chip fixed" title="Only printed in this finish">${esc(label(FINISHES[g], x.finish))}</span>`}
+          <span class="ss-qty"><button data-act="sessQty" data-k="${k}" data-d="-1" aria-label="One fewer">−</button><b>${x.qty}</b><button data-act="sessQty" data-k="${k}" data-d="1" aria-label="One more">＋</button></span>
+          ${p.showValue ? `<span class="ss-price">${money(x.price == null ? null : x.price * x.qty)}</span>` : ""}</div>`;
+            })
+            .join("")}</div>
+        <div class="ss-foot"><input id="sessLoc" value="${esc(p.location || "")}" placeholder="Binder or box (optional)" aria-label="Where these cards go"><button class="btn ghost small" data-act="sessCopy">⧉ Copy list</button><button class="link small danger" data-act="sessClear">Clear</button></div>`
+        : `<p class="muted small">Scanned cards collect here. Check them, change finish or copies, then save them all at once.</p>`
+    }</section>`;
+}
+
 export function scanView(g, gameName) {
   const s = S.ui.scan,
+    p = loadPrefs(g),
+    list = loadSession(g),
     live = (s.mode || "live") === "live",
     tips = { mtg: "the name at the top and the set code + number at the bottom", ygo: "the name, the set code under the art (like LOB-EN001) and the passcode", ptcg: "the name and the number at the bottom (like 053/128)" }[g];
   const cands = (s.cands || [])
     .map(
       (c, i) => `<article class="scan-cand2 ${c.exact ? "exact" : ""}">${c.image ? `<img src="${esc(c.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<div class="sc-body"><b>${esc(c.name)}</b><small>${esc(c.sub || "")}</small><span class="tag ${c.exact ? "ok" : ""}">${esc(c.why)}</span>${c.owned ? `<small class="muted">You own ${c.owned}</small>` : ""}
-        <div class="actions wrap"><button class="btn small" data-act="scanAdd" data-i="${i}">＋ Add 1</button><button class="btn ghost small" data-act="scanDetails" data-i="${i}">Details</button></div></div></article>`,
+        <div class="actions wrap"><button class="btn small" data-act="scanAdd" data-i="${i}">＋ Add to list</button><button class="btn ghost small" data-act="scanDetails" data-i="${i}">Details</button></div></div></article>`,
     )
     .join("");
-  return `<div class="page-head"><h1>Scan a card</h1></div>
+  const rail = `<div class="cam-rail">${s.torchCap ? `<button class="${s.torch ? "on" : ""}" data-act="scanTorch" aria-pressed="${!!s.torch}" aria-label="Flashlight">${TORCH}</button>` : ""}<button class="${p.quick ? "on" : ""}" data-act="scanQuick" aria-pressed="${p.quick}" aria-label="Quick mode: exact matches are added without asking">${BOLT}</button><button data-act="scanSettings" aria-label="Scanner settings">${GEAR}</button><button data-act="scanStop" aria-label="Stop camera">${STOP}</button></div>`;
+  return `<div class="page-head"><h1>Scan</h1>${p.lockSet ? `<span class="tag">Set locked: ${esc(p.lockSet.toUpperCase())}</span>` : ""}</div>
   <div class="seg" role="tablist"><button role="tab" class="${live ? "on" : ""}" aria-selected="${live}" data-act="scanMode" data-id="live">Live camera</button><button role="tab" class="${live ? "" : "on"}" aria-selected="${!live}" data-act="scanMode" data-id="photo">Photo</button></div>
   <section class="panel scan-panel">
     ${
       live
-        ? `<div class="cam-wrap" id="camWrap">${s.camOn ? `<div id="camSlot"></div><div class="cam-guide ${esc(s.guide?.state || "red")}" id="camGuide"></div><div class="cam-status ${esc(s.guide?.state || "red")}" id="camStatus" role="status" aria-live="polite"><span aria-hidden="true">${esc(s.guide?.icon || "▢")}</span> ${esc(s.guide?.msg || "Starting camera…")}</div>` : `<div class="scan-drop"><b>Hold one ${esc(gameName)} card inside the frame</b><span class="muted small">On a plain, contrasting surface, all four corners visible, no glare. Keep ${tips} sharp.</span><button class="btn" data-act="scanStart">📷 Start camera</button></div>`}</div>
-      ${s.camOn ? `<div class="actions wrap"><button class="btn" id="scanCaptureBtn" data-act="scanCapture">Capture</button><label class="check small"><input type="checkbox" data-change="scanAuto" ${s.auto !== false ? "checked" : ""}> Capture automatically when ready</label><button class="btn ghost small" data-act="scanStop">Stop</button></div>` : ""}`
+        ? `<div class="cam-wrap ${s.camOn ? "immersive" : ""}" id="camWrap">${s.camOn ? `<div id="camSlot"></div><div class="cam-guide ${esc(s.guide?.state || "red")}" id="camGuide"></div><div class="cam-status ${esc(s.guide?.state || "red")}" id="camStatus" role="status" aria-live="polite"><span aria-hidden="true">${esc(s.guide?.icon || "▢")}</span> ${esc(s.guide?.msg || "Starting camera…")}</div>${rail}<div class="scan-flash" id="scanFlash" aria-live="polite"></div>${defaultsPill(g, p)}` : `<div class="scan-drop"><b>Hold one ${esc(gameName)} card inside the frame</b><span class="muted small">On a plain, contrasting surface, all four corners visible, no glare. Keep ${tips} sharp.</span><button class="btn" data-act="scanStart">📷 Start camera</button></div>`}</div>
+      ${s.camOn ? `<div class="actions wrap scan-under"><button class="btn" id="scanCaptureBtn" data-act="scanCapture">Capture</button><label class="check small"><input type="checkbox" data-change="scanAuto" ${s.auto !== false ? "checked" : ""}> Capture automatically</label></div>` : defaultsPill(g, p)}`
         : `<div class="actions wrap"><label class="btn">📷 Take photo<input type="file" accept="image/*" capture="environment" data-change="scanFile" hidden></label><label class="btn ghost">Upload<input type="file" accept="image/*" data-change="scanFile" hidden></label></div>
       ${s.url ? `<p class="muted small">Drag a box around the card to crop. Rotate if it’s sideways.</p><div class="crop-wrap" id="cropWrap"><img id="cropImg" src="${s.url}" alt="Your photo"><div class="crop-box" id="cropBox"></div></div>
-      <div class="actions wrap"><button class="btn ghost small" data-act="scanRotate">↻ Rotate</button><button class="btn ghost small" data-act="scanCropReset">Whole photo</button><button class="btn" data-act="scanRead" ${s.busy ? "disabled" : ""}>${s.busy ? "Reading…" : "Read card"}</button></div>` : ""}`
+      <div class="actions wrap"><button class="btn ghost small" data-act="scanRotate">↻ Rotate</button><button class="btn ghost small" data-act="scanCropReset">Whole photo</button><button class="btn" data-act="scanRead" ${s.busy ? "disabled" : ""}>${s.busy ? "Reading…" : "Read card"}</button></div>` : ""}
+      ${defaultsPill(g, p)}`
     }
-    <div class="row between wrap"><label class="small">Card language <select data-change="scanLang">${[["eng", "English"], ["jpn+eng", "Japanese (+ English)"]].map(([v, l]) => `<option value="${v}" ${scanLang() === v ? "selected" : ""}>${l}</option>`).join("")}</select></label>${s.lastAdded ? `<span class="small ok-text">✓ ${esc(s.lastAdded)}</span>` : ""}</div>
     <p class="muted small" id="scanStatus" role="status">${esc(s.status || "")}</p>
   </section>
   ${
     s.cands?.length || (s.read && !s.busy)
       ? `<section class="panel"><h3>${s.cands?.length ? (s.cands[0].exact ? "Found it — check the printing" : "Which card is it?") : "No match yet"}</h3>
-      ${cands ? `<div class="scan-cands">${cands}</div>` : `<p class="muted small">Type the name instead, or try again with the card flat and the name sharp.</p>`}
-      <div class="searchbar"><input id="scanName" value="${esc(s.guess || "")}" placeholder="Not right? Type the name${g === "ygo" ? " or set code" : ""}" data-enter="scanFind" aria-label="Card name"><button class="btn ghost" data-act="scanFind">Find</button></div>
+      ${cands ? `<div class="scan-cands">${cands}</div>` : `<p class="muted small">Type the name below, or try again with the card flat and the name sharp.</p>`}
       <details class="trouble"><summary>Troubleshooting</summary><p class="small muted">Name strip read as: <code>${esc((s.read?.name || "").slice(0, 120)) || "—"}</code><br>Code strip read as: <code>${esc((s.read?.code || "").replace(/\s+/g, " ").slice(0, 120)) || "—"}</code><br>Names tried: ${esc((s.tried || []).join(" · ") || "—")}</p></details></section>`
       : ""
   }
-  <p class="foot">Green means a good picture, not a confirmed card — you always confirm before anything is added. Text recognition runs on your phone; only names and codes are looked up online. The first scan downloads the reader (~5 MB${scanLang() !== "eng" ? ", plus Japanese" : ""}).</p>`;
+  ${sessionPanel(g, p, list)}
+  <p class="foot">${p.quick ? "Quick mode: exact matches (set code and number) go straight to the list; anything less sure asks you first." : "Every scan asks you to confirm before it goes on the list."} Text recognition runs on your phone; only names and codes are looked up online. The first scan downloads the reader (~5 MB${scanLang() !== "eng" ? ", plus Japanese" : ""}).</p>`;
 }
+
+// Rail icons (drawn, same family as the app).
+const ico = (b) => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${b}</svg>`;
+const TORCH = ico(`<path d="M8 3h8l-1 5H9z"/><path d="M9 8h6v3l-1.5 2v8h-3v-8L9 11z"/><path d="M12 15v2"/>`);
+const BOLT = ico(`<path d="M13.5 3 6 13.5h5.5L10 21l8-11h-5.5z"/>`);
+const GEAR = ico(`<circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.5 1.5M16.5 16.5 18 18M6 18l1.5-1.5M16.5 7.5 18 6"/>`);
+const STOP = ico(`<rect x="6.5" y="6.5" width="11" height="11" rx="2"/>`);
 
 /* ---------- controller ---------- */
 
@@ -246,6 +312,29 @@ const sigDiff = (a, b) => (a && b ? a.reduce((x, v, i) => x + Math.abs(v - b[i])
 export function registerScanner(ctx) {
   const { A, C, render, toast, game, match, add, details } = ctx,
     s = () => S.ui.scan;
+  const prefs = () => loadPrefs(game());
+  // Put a candidate on the scan list with the current defaults (finish falls back if the card
+  // doesn't come in that finish).
+  const toSession = (c) => {
+    const G = game(),
+      p = prefs(),
+      fins = finishesFor(G, c),
+      finish = fins.includes(p.finish) ? p.finish : fins[0];
+    const item = { id: c.card?.id || c.id, name: c.name, image: c.image || c.card?.image || "", setCode: ctx.setOf(G, c), number: ctx.numberOf(G, c), finish, condition: p.condition, lang: p.lang, qty: p.qty, price: ctx.priceOf(G, c, finish), cand: { id: c.id, name: c.name, image: c.image, sub: c.sub, exact: c.exact, print: c.print, card: c.card } };
+    saveSession(G, addToSession(loadSession(G), item));
+    feedback("ok", p);
+    s().lastAdded = `+${item.qty} ${c.name}${item.price != null && p.showValue ? ` · $${(item.price * item.qty).toFixed(2)}` : ""}`;
+    flash(s().lastAdded);
+    return item;
+  };
+  const flash = (msg) => {
+    const el = document.getElementById("scanFlash");
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.remove("show");
+    void el.offsetWidth;
+    el.classList.add("show");
+  };
   let videoEl = null;
   const setStatus = (m) => {
     s().status = m;
@@ -273,11 +362,24 @@ export function registerScanner(ctx) {
     try {
       st.read = await readCard(card, G, scanLang(), setStatus);
       setStatus("Matching…");
-      const r = await match(G, st.read, scanLang(), false, setStatus);
-      st.cands = r.cands;
+      const p = prefs(),
+        r = await match(G, st.read, scanLang(), false, setStatus, p);
+      // Lock set: candidates from the locked set first.
+      if (p.lockSet) r.cands.sort((a, b) => (ctx.setOf(G, b).toLowerCase() === p.lockSet.toLowerCase()) - (ctx.setOf(G, a).toLowerCase() === p.lockSet.toLowerCase()));
       st.tried = r.tried;
       st.guess = r.cands[0]?.name || nameCandidates(G, st.read.name || st.read.full)[0] || "";
-      st.status = r.cands.length ? (r.cands[0].exact ? "Found the exact printing — check it and tap Add." : "Check the picture matches your card, then tap Add.") : "Couldn’t match it — type the name below.";
+      if (p.quick && r.cands[0]?.exact) {
+        // Quick mode: an exact printing goes straight on the list; wait for the next card.
+        const it = toSession(r.cands[0]);
+        st.cands = [];
+        st.read = null;
+        st.status = `Added ${it.name} — swap in the next card.`;
+        lockMsg = "Added — swap in the next card";
+      } else {
+        st.cands = r.cands;
+        if (!r.cands.length) feedback("fail", p);
+        st.status = r.cands.length ? (r.cands[0].exact ? "Found the exact printing — check it and add it." : "Not sure which printing — pick the right one.") : "Couldn’t match it — type the name below.";
+      }
     } catch (e) {
       st.status = e.message;
     } finally {
@@ -290,7 +392,7 @@ export function registerScanner(ctx) {
   const loop = () => {
     const v = document.getElementById("scanVideo");
     if (!v || !v.videoWidth) return;
-    const g = guideRect(v.videoWidth, v.videoHeight),
+    const g = visibleGuide(v.videoWidth, v.videoHeight, v.clientWidth, v.clientHeight),
       margin = 0.1,
       sx = Math.max(0, g.x - g.w * margin),
       sy = Math.max(0, g.y - g.h * margin),
@@ -334,8 +436,15 @@ export function registerScanner(ctx) {
     const v = document.getElementById("scanVideo"),
       guide = document.getElementById("camGuide");
     if (!v || !guide || !v.videoWidth) return;
-    const g = guideRect(v.videoWidth, v.videoHeight);
-    Object.assign(guide.style, { left: (g.x / v.videoWidth) * 100 + "%", top: (g.y / v.videoHeight) * 100 + "%", width: (g.w / v.videoWidth) * 100 + "%", height: (g.h / v.videoHeight) * 100 + "%" });
+    const g = visibleGuide(v.videoWidth, v.videoHeight, v.clientWidth, v.clientHeight),
+      W = v.clientWidth,
+      H = v.clientHeight;
+    // The video fills its box with object-fit: cover, so map video pixels → screen pixels the
+    // same way: scale to cover, centered. The guide then sits exactly over the captured area.
+    const k = Math.max(W / v.videoWidth, H / v.videoHeight),
+      ox = (W - v.videoWidth * k) / 2,
+      oy = (H - v.videoHeight * k) / 2;
+    Object.assign(guide.style, { left: ox + g.x * k + "px", top: oy + g.y * k + "px", width: g.w * k + "px", height: g.h * k + "px" });
   };
   // One <video> for the whole session, moved into each fresh render, so playback never restarts.
   const attach = () => {
@@ -346,6 +455,7 @@ export function registerScanner(ctx) {
       Object.assign(videoEl, { id: "scanVideo", muted: true, autoplay: true, playsInline: true });
       videoEl.setAttribute("playsinline", "");
       videoEl.onloadedmetadata = placeGuide;
+      window.addEventListener("resize", placeGuide);
     }
     if (slot) slot.replaceWith(videoEl);
     const v = videoEl;
@@ -358,7 +468,7 @@ export function registerScanner(ctx) {
   const capture = () => {
     const v = document.getElementById("scanVideo");
     if (!v?.videoWidth || s().busy) return;
-    const g = guideRect(v.videoWidth, v.videoHeight),
+    const g = visibleGuide(v.videoWidth, v.videoHeight, v.clientWidth, v.clientHeight),
       c = document.createElement("canvas"),
       k = Math.min(1, 900 / g.w);
     c.width = Math.round(g.w * k);
@@ -374,11 +484,16 @@ export function registerScanner(ctx) {
     if (!navigator.mediaDevices?.getUserMedia) return toast("This browser can’t open the camera here — use Photo instead.");
     try {
       const ticket = ++camTicket,
-        got = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+        cam = prefs().camera,
+        got = await navigator.mediaDevices
+          .getUserMedia({ video: { ...(cam ? { deviceId: { exact: cam } } : { facingMode: { ideal: "environment" } }), width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false })
+          .catch((e) => (cam ? navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false }) : Promise.reject(e)));
       // Closed, switched to Photo or left the page while the permission prompt was open: release it.
       if (ticket !== camTicket || s().mode === "photo" || S.ui.view !== "scan") return got.getTracks().forEach((t) => t.stop());
       stream = got;
       s().camOn = true;
+      s().torch = false;
+      s().torchCap = !!got.getVideoTracks()[0]?.getCapabilities?.().torch;
       s().status = "";
       render();
     } catch (e) {
@@ -503,8 +618,7 @@ export function registerScanner(ctx) {
   A.scanAdd = async (t) => {
     const c = s().cands?.[Number(t.dataset.i)];
     if (!c) return;
-    await add(game(), c);
-    s().lastAdded = `Added 1 × ${c.name}`;
+    toSession(c);
     // The same card still sitting in front of the camera won't be captured again.
     if (s().lastCard) {
       lockSig = sigOf(s().lastCard);
@@ -512,12 +626,123 @@ export function registerScanner(ctx) {
     }
     s().cands = [];
     s().read = null;
-    s().status = s().camOn ? "Added. Swap in the next card." : "Added. Take the next photo.";
+    s().status = s().camOn ? "On the list. Swap in the next card." : "On the list. Take the next photo.";
     render();
   };
   A.scanDetails = (t) => {
     const c = s().cands?.[Number(t.dataset.i)];
     if (c) details(game(), c);
+  };
+
+  /* ---------- scan session controls ---------- */
+  const CYCLE = { finish: () => FINISHES[game()].map((x) => x[0]), condition: () => CONDITIONS.map((x) => x[0]), lang: () => LANGS.map((x) => x[0]), qty: () => QTYS };
+  A.scanCycle = (t) => {
+    const k = t.dataset.k,
+      opts = CYCLE[k]?.();
+    if (!opts) return;
+    const cur = prefs()[k],
+      next = opts[(opts.indexOf(cur) + 1) % opts.length];
+    savePrefs(game(), { [k]: next });
+    render();
+  };
+  A.scanQuick = () => {
+    const p = savePrefs(game(), { quick: !prefs().quick });
+    toast(p.quick ? "Quick mode on — exact matches are added without asking." : "Quick mode off — you confirm every scan.");
+    render();
+  };
+  A.scanTorch = async () => {
+    const track = stream?.getVideoTracks()[0];
+    if (!track) return;
+    try {
+      await track.applyConstraints({ advanced: [{ torch: !s().torch }] });
+      s().torch = !s().torch;
+    } catch {
+      toast("This camera's flashlight can't be controlled from the browser.");
+    }
+    render();
+  };
+  const settingsSheet = (cams = []) => {
+    const p = prefs(),
+      G = game(),
+      chk = (k, label, help = "") => `<label class="check ss-set"><input type="checkbox" data-change="scanPref" data-k="${k}" ${p[k] ? "checked" : ""}><span><b>${label}</b>${help ? `<small>${help}</small>` : ""}</span></label>`;
+    return `<div class="sheet-head"><h2>Scanner settings</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
+      <label class="field">Camera<select data-change="scanPref" data-k="camera"><option value="">Back camera (automatic)</option>${cams.map((c, i) => `<option value="${esc(c.deviceId)}" ${p.camera === c.deviceId ? "selected" : ""}>${esc(c.label || "Camera " + (i + 1))}</option>`).join("")}</select></label>
+      ${chk("quick", "Quick mode", "Exact matches (set code and number) go straight on the list; anything less sure asks first.")}
+      <label class="field">Lock set<input data-change="scanPref" data-k="lockSet" value="${esc(p.lockSet)}" placeholder="${G === "mtg" ? "Set code, e.g. WOE" : G === "ygo" ? "Set code, e.g. LOB" : "Set id, e.g. sv1"}" autocapitalize="characters"><small class="muted">Sorting one set? Matches from it come first${G === "mtg" ? ", and names are looked up in it" : ""}.</small></label>
+      ${G === "mtg" ? chk("ignorePromos", "Ignore promos", "Prefer the regular printing when a name match lands on a promo.") : ""}
+      ${chk("preferFoil", "Prefer foil", "Start new scans as foil (you can still tap the finish).")}
+      ${chk("sounds", "Sounds", "A short chime for each card added, a low tone when nothing matched.")}
+      ${chk("haptics", "Vibration", "A tap on each card added.")}
+      ${chk("showValue", "Show prices and total value")}
+      <label class="field">Text recognition language<select data-change="scanLang">${[["eng", "English"], ["jpn+eng", "Japanese (+ English)"]].map(([v, l]) => `<option value="${v}" ${scanLang() === v ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+      <details class="settings-disclosure"><summary>Scanning tips</summary><ul class="guide-list small"><li>Plain, contrasting surface; one card at a time.</li><li>Fill the frame; keep the name and the bottom code sharp.</li><li>Tilt slightly or use the flashlight off-axis to kill foil glare.</li><li>Sorting a single set? Lock it for faster, surer matches.</li><li>Quick mode + automatic capture: just swap cards; listen for the chime.</li></ul></details>`;
+  };
+  A.scanSettings = async () => {
+    ctx.openSheet(settingsSheet(), { type: "scan-settings" });
+    try {
+      const cams = (await navigator.mediaDevices?.enumerateDevices?.() || []).filter((d) => d.kind === "videoinput");
+      if (cams.length && document.querySelector("#sheet[open]")) ctx.openSheet(settingsSheet(cams), { type: "scan-settings" });
+    } catch {}
+  };
+  C.scanPref = (t) => {
+    const k = t.dataset.k,
+      v = t.type === "checkbox" ? t.checked : k === "lockSet" ? t.value.trim().toLowerCase() : t.value;
+    const before = prefs();
+    savePrefs(game(), { [k]: v, ...(k === "preferFoil" && v !== before.preferFoil ? { finish: v ? FINISHES[game()][1][0] : FINISHES[game()][0][0] } : {}) });
+    if (k === "camera" && stream) {
+      stopCamera();
+      A.scanStart();
+    }
+    render();
+  };
+  // Session list
+  const editRow = (k, fn) => {
+    const G = game(),
+      list = loadSession(G),
+      it = list.find((x) => itemKey(x) === k);
+    if (!it) return;
+    fn(it, list);
+    saveSession(G, list.filter((x) => x.qty > 0));
+    render();
+  };
+  A.sessQty = (t) => editRow(t.dataset.k, (it) => (it.qty = Math.max(0, it.qty + Number(t.dataset.d))));
+  A.sessFinish = (t) =>
+    editRow(t.dataset.k, (it, list) => {
+      const G = game(),
+        opts = finishesFor(G, it.cand);
+      it.finish = opts[(opts.indexOf(it.finish) + 1) % opts.length];
+      it.price = ctx.priceOf(G, it.cand, it.finish);
+      // Merge with an identical row if the change made one.
+      const twin = list.find((x) => x !== it && itemKey(x) === itemKey(it));
+      if (twin) {
+        twin.qty += it.qty;
+        it.qty = 0;
+      }
+    });
+  A.sessCommit = async () => {
+    const G = game(),
+      list = loadSession(G);
+    if (!list.length) return;
+    const location = (document.getElementById("sessLoc")?.value || "").trim().slice(0, 100);
+    savePrefs(G, { location });
+    await ctx.addMany(G, list.map((x) => ({ ...x, location })));
+    saveSession(G, []);
+    toast(`Saved ${sessionCount(list)} card${sessionCount(list) === 1 ? "" : "s"} to your collection${location ? ` · ${location}` : ""}.`);
+    render();
+  };
+  A.sessCopy = async () => {
+    const text = sessionText(loadSession(game()));
+    try {
+      await navigator.clipboard.writeText(text);
+      toast("List copied — paste it into Moxfield, ManaBox or a message.");
+    } catch {
+      toast("Couldn't copy — your browser blocked the clipboard.");
+    }
+  };
+  A.sessClear = () => {
+    if (!confirm("Clear the scanned list? Cards already saved to your collection stay there.")) return;
+    saveSession(game(), []);
+    render();
   };
 
   // Called after every render of the scan screen (the page HTML is rebuilt on render).

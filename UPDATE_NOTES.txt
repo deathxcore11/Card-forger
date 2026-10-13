@@ -1,3 +1,22 @@
+3.17.0 — Scan sessions: set it once, scan fast, review, save
+- Defaults pill over the camera: finish (Magic Normal/Foil/Etched, Pokémon Normal/Holo/Reverse,
+  Yu-Gi-Oh! Unlimited/1st Ed.), condition (NM…DMG), card language and copies per scan (+1…+4).
+  Tap any of them to change it. If a printing doesn't exist in that finish, it uses one it does.
+- Quick mode (lightning button): an exact match (set code + number) goes straight onto the scan
+  list with a chime and a tap of vibration — no Add button per card. Anything less sure still
+  asks. One capture per card: swap the card and it scans the next one.
+- Scan list under the camera: every card with thumbnail, set and number, condition, language,
+  a finish chip (only finishes that printing comes in), copies stepper and price; running count
+  and total value (unpriced copies counted separately). Identical scans stack. "Add by name" adds
+  cards by hand. Save to collection with an optional binder/box — one tap, one undo. Copy list
+  exports in the Moxfield/ManaBox import format. The list survives a reload.
+- Camera rail: flashlight (where the browser allows it), quick mode, settings, stop.
+- Scanner settings: camera picker, quick mode, lock set (Magic also looks names up in that set),
+  ignore promos (Magic), prefer foil, sounds, vibration, show prices/total, text-recognition
+  language, scanning tips.
+- Taller camera that fills its frame; the guide is sized to what's visible on screen and matches
+  exactly what's captured.
+
 3.16.1 — View switch on every card list
 - Set pages (all three games) and wishlists now have the gallery / compact / list switch next to
   their card count, like Search, Collection and decks. Set pages start in gallery view; each

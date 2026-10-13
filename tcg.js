@@ -1621,6 +1621,27 @@ export function registerTcg(c) {
     }
     return { cands: out, tried };
   };
+  // Save a whole scan session at once: Pokémon finish → variant, Yu-Gi-Oh! finish → edition.
+  c.scanAddMany = async (items) => {
+    const G = g(),
+      n = items.reduce((a, x) => a + x.qty, 0);
+    await mutate(
+      (st) => {
+        for (const it of items) {
+          const card = it.cand.card,
+            [printing, rarity] = it.cand.print ? it.cand.print.split("|") : ["", ""];
+          st.collection.push({ id: uid(), cardId: card.id, name: card.name, key: SOURCES[G].ownKey(card), qty: it.qty, printing, rarity, variant: G === "ptcg" && it.finish && it.finish !== "normal" ? it.finish : "", variantLabel: G === "ptcg" ? card.variants?.find((v) => v.key === it.finish)?.label || "" : "", edition: G === "ygo" && it.finish === "1st-edition" ? "1st-edition" : "", condition: it.condition || "Near Mint", language: it.lang || "en", location: it.location || "", addedAt: new Date().toISOString(), source: "scan" });
+        }
+      },
+      { undo: `Added ${n} scanned card${n === 1 ? "" : "s"}.` },
+    );
+  };
+  c.scanPrice = (cand, finish) => {
+    const card = cand.card;
+    if (!card) return null;
+    const v = card.variants?.find((x) => x.key === finish);
+    return v?.usd ?? price(card) ?? null;
+  };
   c.scanAdd = async (cand) => {
     const G = g(),
       card = cand.card,
