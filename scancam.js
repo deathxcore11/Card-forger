@@ -351,7 +351,7 @@ export function scanView(g, gameName) {
       : ""
   }
   ${sessionPanel(g, p, list)}
-  <p class="foot">${p.quick ? "Quick mode is on, so cards it’s sure about are added for you." : "You confirm each card before it’s added."} Scanning runs on your phone. The first scan downloads about 5 MB${scanLang() !== "eng" ? ", plus Japanese" : ""}.</p>`;
+  <p class="foot">${p.quick ? "Quick mode is on, so cards it’s sure about are added for you." : "You confirm each card before it’s added."} Finish uses your scan defaults; foil and reverse holo are not detected automatically. Scanning runs on your phone. The first scan downloads about 5 MB${scanLang() !== "eng" ? ", plus Japanese" : ""}.</p>`;
 }
 
 // Like Promise.allSettled, but at most `n` at a time (60 pictures at once overwhelm a phone's connection).
