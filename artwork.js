@@ -2,7 +2,11 @@ import {esc} from './ui.js';
 // English set + collector-number matches only. No name-based art substitutions.
 export function pokemonFallback(c){
  const id=String(c?.id||''),set=String(c?.set?.id || id.slice(0,id.lastIndexOf('-'))).toLowerCase(),code={svp:'SVP',swshp:'SWSH'}[set];
- const raw=String(c?.set?.number || id.slice(id.lastIndexOf('-')+1)).replace(/^SWSH/i,'');
+ const collector=String(c?.set?.number || id.slice(id.lastIndexOf('-')+1));
+ // Verified historical set IDs use different naming between the two catalogues.
+ if(set==='sm3.5' && /^\d{1,3}$/.test(collector) && Number(collector)>0)return `https://images.pokemontcg.io/sm35/${Number(collector)}_hires.png`;
+ if(set==='smp' && /^SM\d{1,3}$/i.test(collector))return `https://images.pokemontcg.io/smp/${collector.toUpperCase()}_hires.png`;
+ const raw=collector.replace(/^SWSH/i,'');
  if(!code||!/^\d{1,3}$/.test(raw)||Number(raw)<1)return '';
  return `https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpci/${code}/${code}_${String(Number(raw)).padStart(3,'0')}_R_EN.png`;
 }

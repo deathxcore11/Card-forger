@@ -1,5 +1,5 @@
 3.19.0 — Set presentation, exact promo artwork and browsing Back
-Verified: full regression suite, exact SVP promo artwork, and Foundations product metadata.
+Verified: full regression suite, exact SVP and Sun & Moon promo artwork, Shining Legends Mewtwo GX artwork, and Foundations product metadata.
 - Built on 3.18.0, preserving scanner sessions, cross-game scanning, glass styling, emblems and saved views.
 - Set rows keep Pokémon’s logo/symbol layout. Yu-Gi-Oh! pack images are larger, with readable wrapping titles and set-code marks. Magic adds lazy-loaded product packaging from verified MTGJSON product IDs through the cached Worker; sets without product imagery retain their genuine symbol.
 - Pokémon English SVP/SWSH promos have collector-number matched Limitless image fallbacks, including SVP 205/216. Missing images are retried before showing unavailable; no different-printing substitution or price change. Existing full image URLs are preserved.

@@ -14,3 +14,6 @@ assert.equal(trail.push({ctx:a,html:'card',scroll:125},a),false);trail.push({ctx
 const set={code:'FDN',sealedProduct:[{name:'Foundations Collector Booster Box',identifiers:{tcgplayerProductId:'123'}},{name:'Foundations Play Booster Box',identifiers:{tcgplayerProductId:'456'}}]};assert.equal(selectSetProduct(set).identifiers.tcgplayerProductId,'456');
 let requests=0;const fetcher=async()=>{requests++;return new Response(JSON.stringify({data:[set]}));};assert.equal((await magicSetArtwork('fdn',fetcher)).url,'https://tcgplayer-cdn.tcgplayer.com/product/456_200w.jpg');await magicSetArtwork('FDN',fetcher);assert.equal(requests,1);assert.equal(await magicSetArtwork('../bad',fetcher),null);assert.equal(selectSetProduct({}),null);
 console.log('PASS: exact promo matching, image retry/exhaustion, no invented artwork, same-sheet refresh isolation, scroll/deck back stack, auth exclusion, verified product IDs and shared catalogue caching.');
+
+assert.equal(pokemonFallback({id:"sm3.5-78"}),"https://images.pokemontcg.io/sm35/78_hires.png");
+assert.equal(pokemonFallback({id:"smp-SM196"}),"https://images.pokemontcg.io/smp/SM196_hires.png");
