@@ -1,3 +1,12 @@
+3.25.1 — Foldables get the tablet layout
+- Foldable inner screens (Galaxy Z Fold, Pixel Fold, the coming iPhone Fold and similar: about
+  680+ wide and roughly square) now get the tablet layout instead of a stretched phone: two-column
+  card pages with the art pinned on the left, and a Home with the game cards across the top and
+  the start steps beside the quick tools.
+- Tablets in portrait (800+ wide) get the same.
+- Devices that report a fold down the middle (screen spanning) put the card art on one side of
+  the fold and the details on the other.
+
 3.25.0 — Gestures, search suggestions, welcome tour, accessibility, tablets
 - Gestures: swipe a card sheet down to close it, swipe a collection row left to remove one copy
   (with Undo), and pull the collection down from the top to refresh prices.
