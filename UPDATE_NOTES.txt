@@ -1,3 +1,21 @@
+3.24.0 — Feel and polish
+- Haptics on everything: a light tick on tabs and switches, a tap on buttons, a double beat when a
+  card is added or saved, a warning buzz when something is removed. Works on Android; on iPhone it
+  uses the system tap (iOS 18 or later). Settings → App & sources → Vibration turns it off.
+- Motion: an added card flies into the Collection tab, which pops to catch it. Pages glide in,
+  card grids deal in like a hand, sheets spring up, buttons ripple from your finger, tabs settle,
+  toasts spring up and draw a check, and collection totals count up. All of it follows your
+  phone's "Reduce motion" setting.
+- Loading: shimmering card placeholders while searches load, instead of a blank page. Busy card
+  databases are retried quietly before showing an error.
+- Fixed: the title bar of sheets (like Build decks) let scrolled content show through and blocked
+  taps on buttons beneath it. "See the cards" now scrolls to the opened list.
+- Shorter, plainer help text across the app.
+- Missing prices say why ("No price yet": common for new or rarely sold cards) instead of "—".
+- Consistency: Magic's Decks and Collection headers match the other games; empty collections no
+  longer show $0 tiles; icon-only header buttons on small phones.
+- Second Pokémon price source is now asked one card at a time so it never gets overloaded.
+
 3.23.1 — Instant scanning for Magic, and safer matches
 - Magic joins the instant-scan index: 49,088 card pictures (every unique artwork).
 - Tested on blurred, tilted, glare-covered photos of random cards from all three games: the right

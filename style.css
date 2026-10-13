@@ -1848,3 +1848,10 @@ nav [data-nav] { position: relative; }
 .tier.on .card-grid > *:nth-child(3) { animation-delay: 0.08s; }
 .tier.on .card-grid > *:nth-child(n + 4) { animation-delay: 0.12s; }
 @media (prefers-reduced-motion: reduce) { .tier.on .card-grid > * { animation: none; } }
+.price-gap { margin: 6px 0 0; }
+.cd-prices .price-gap { flex-basis: 100%; }
+/* Narrow phones: tool buttons in page headers go icon-only so the row fits on one line. */
+@media (max-width: 420px) {
+  .page-head .head-actions .tool-btn span { display: none; }
+  .page-head .head-actions .tool-btn { padding-inline: 10px; }
+}

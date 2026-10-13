@@ -68,7 +68,18 @@ export function applyFallbackPrices(c, hit) {
   if (c.sets?.[0]) c.sets[0].price = c.prices.usd;
   return true;
 }
-async function fillPrices(c) {
+// One lookup at a time with a short gap (a list of unpriced cards must not flood the service),
+// and each card asked at most once per session.
+let fillChain = Promise.resolve();
+const fillAsked = new Set();
+function fillPrices(c) {
+  if (fillAsked.has(c.id)) return Promise.resolve();
+  fillAsked.add(c.id);
+  const run = fillChain.then(() => fillPricesNow(c)).catch(() => {}).then(() => new Promise((ok) => setTimeout(ok, 250)));
+  fillChain = run;
+  return run;
+}
+async function fillPricesNow(c) {
   const num = String(c.set?.number || "").replace(/^0+(?=\d)/, "");
   if (!c.name || !num) return;
   const u = "https://api.pokemontcg.io/v2/cards?" + new URLSearchParams({ q: `name:"${c.name.replace(/"/g, "")}" number:${num}`, select: "name,number,set,tcgplayer", pageSize: "20" });
@@ -254,7 +265,7 @@ export const ptcgSource = {
     const c = normalizePtcg(d);
     // No price from TCGdex (common for new sets): ask the Pokémon TCG API, which also carries
     // TCGplayer market prices.
-    if (c.prices.usd == null) await fillPrices(c).catch(() => {});
+    if (c.prices.usd == null) fillPrices(c);
     return c;
   },
   // Exact printing from a scan: name plus collector number (053 or 53).

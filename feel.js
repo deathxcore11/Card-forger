@@ -108,7 +108,7 @@ export function countUp(root = document) {
     el.dataset.counted = "1";
     const target = Number(el.dataset.count),
       money = el.dataset.money === "1",
-      dec = money ? 2 : 0,
+      dec = el.dataset.count.includes(".") ? 2 : 0,
       fmt = (v) => (money ? "$" : "") + v.toLocaleString(undefined, { minimumFractionDigits: dec, maximumFractionDigits: dec });
     if (!Number.isFinite(target) || target <= 0) continue;
     const t0 = performance.now(),

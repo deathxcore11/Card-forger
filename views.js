@@ -77,7 +77,7 @@ export function home() {
   ${st.example ? `<div class="note warn">Example data is loaded. Reset it in Settings before adding real cards.</div>` : ""}
   ${fresh && !startHidden("mtg") ? startPath() : mtgNext(lead, copies)}
   ${onboarding ? "" : `<div class="kpis">
-    <button class="kpi" data-act="go" data-to="#collection/value"><b>${usd(value.total, 0)}</b><span>collection value${change !== null ? ` <em class="${change >= 0 ? "up" : "down"}">${signed(change, (x) => usd(x, 0))}</em>` : ""}</span></button>
+    <button class="kpi" data-act="go" data-to="#collection/value"><b data-count="${Math.round(value.total)}" data-money="1">${usd(value.total, 0)}</b><span>collection value${change !== null ? ` <em class="${change >= 0 ? "up" : "down"}">${signed(change, (x) => usd(x, 0))}</em>` : ""}</span></button>
     <button class="kpi" data-act="go" data-to="#collection"><b>${copies}</b><span>cards owned</span></button>
     <button class="kpi" data-act="go" data-to="#decks"><b>${st.decks.length}</b><span>decks</span></button>
   </div>`}
@@ -191,7 +191,7 @@ export function search() {
     deck = currentDeck(),
     chips = mtgFilterChips(f),
     shown = db.results.filter((c) => (f.own === "owned" ? inv(c.name).owned > 0 : f.own === "missing" ? !inv(c.name).owned : true));
-  return `<div class="page-head"><h1>Search cards</h1>${viewControl("mtg","search")}<span class="row"><button class="btn ghost small tool-btn" data-act="compareOpen">${actionIcon("compare")}<span>Compare</span></button><button class="btn ghost small" data-act="go" data-to="#sets">◈ Browse sets</button><button class="btn ghost small" data-act="dbRandom">🎲 Random card</button></span></div>
+  return `<div class="page-head"><h1>Search cards</h1>${viewControl("mtg","search")}<span class="row"><button class="btn ghost small tool-btn" data-act="compareOpen" aria-label="Compare cards">${actionIcon("compare")}<span>Compare</span></button><button class="btn ghost small" data-act="go" data-to="#sets">◈ Browse sets</button><button class="btn ghost small" data-act="dbRandom">🎲 Random card</button></span></div>
   <div class="searchbar"><input id="dbTerm" type="search" value="${esc(db.term)}" placeholder="Card name, or words like “draw a card”" data-input="dbTerm" data-enter="dbSearch" aria-label="Search all cards" autocomplete="off"><button class="btn" data-act="dbSearch" ${db.busy ? "disabled" : ""}>${db.busy ? "…" : "Search"}</button></div>
   ${chipRow(chips, "dbChip", "dbClear")}
   ${savedRow(savedSearches("mtg"), "dbSaved", "dbSavedDel")}
@@ -371,7 +371,7 @@ export function cardSheet(c, ctx = {}) {
     <div class="cd-prices">${
       finishes.length
         ? finishes.map((f) => `<button class="price-pill ${f}" data-act="buyCard" data-finish="${f}" aria-label="Buy ${esc(FINISH[f])} — estimated ${usd(priceOfFinish(shown, f))}"><small>${FINISH[f]}</small><b>${usd(priceOfFinish(shown, f))}</b><span class="buy-hint">Buy ›</span></button>`).join("")
-        : `<button class="price-pill unknown" data-act="buyCard" data-finish="nonfoil"><small>Price</small><b>Unknown</b><span class="buy-hint">Find sellers ›</span></button>`
+        : `<button class="price-pill unknown" data-act="buyCard" data-finish="nonfoil"><small>Price</small><b>No price yet</b><span class="buy-hint">Find sellers ›</span></button><p class="price-gap small muted">Stores haven't priced this printing yet. Common for new or rarely sold cards.</p>`
     }</div>
   </div>
   ${priceHistoryHtml("mtg", shown.id, name)}
@@ -410,7 +410,7 @@ function printList(prints, shown, name, chosen) {
         <span class="print-prices"><button class="pp buy" data-act="buyCard" data-i="${i}" data-finish="${fin[0] || "nonfoil"}" aria-label="Buy the ${esc(p.set_name)} printing">Buy</button>${fin.length ? fin.map((f) => `<button class="pp ${chosen?.id === p.id && chosen?.finish === f ? "on" : ""}" data-act="choosePrint" data-i="${i}" data-finish="${f}" data-name="${esc(name)}" title="Use this price for shopping"><small>${f === "nonfoil" ? "reg" : f}</small>${usd(priceOfFinish(p, f))}</button>`).join("") : '<span class="muted small">—</span>'}</span>
       </div>`;
     })
-    .join("")}</div><p class="foot">Each thumbnail is the source image for that printing; foil and etched surface effects may not be pictured. Tap a printing to see its art, flavor text and artist. Tap a price to use it for your shopping totals, or Buy for store links to that exact printing.</p>`;
+    .join("")}</div><p class="foot">Tap a printing for its art and details, or a price to use it. Foil effects may not show in the picture.</p>`;
 }
 
 /* ---------- Sets ---------- */
@@ -524,12 +524,12 @@ export function buildSheet() {
     tiers = B.results[B.format] || null;
   return `<div class="sheet-head"><h2>Build decks</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   <div class="build-seed">${img(art(seed), B.seed, "mini-art")}<div><small class="muted">Built around</small><b>${esc(B.seed)}</b>${seed ? colorDots(seed) : ""}</div><button class="btn ghost small" data-act="buildRandom" data-format="${esc(B.format)}">🎲 Random card</button></div>
-  <p class="muted small">Pick a format. CardStashy builds a complete, legal deck at each budget — using your cards first, then the best-fitting affordable cards it can find. Basic lands are assumed owned.</p>
+  <p class="muted small">Pick a format for a complete, legal deck at each budget, using your cards first. Basic lands count as owned.</p>
   <div class="fmt-chips">${fmts.map((f) => `<button class="chip pick ${f.name === B.format ? "on" : ""}" data-act="buildFormat" data-format="${esc(f.name)}">${esc(f.name)}</button>`).join("") || '<span class="muted small">This card isn’t legal in any constructed format.</span>'}</div>
   <label class="custom-budget">Also build at $<input id="buildCustom" type="number" min="0" max="100000" step="1" value="${esc(B.custom ?? "")}" placeholder="any amount" data-change="buildCustom"></label>
   ${B.busy ? `<p class="muted small" role="status">${esc(B.msg || "Building…")}</p>` : B.msg ? `<p class="small ${B.error ? "warn-text" : "muted"}" role="status">${esc(B.msg)}</p>` : ""}
   ${tiers ? `<div class="tiers">${tiers.map((t, i) => tierCard(t, i, "build", tiers)).join("")}</div>${tiers.length > 1 ? `<button class="btn ghost block" data-act="tierSaveAll">Save all ${tiers.length} versions</button>` : ""}` : ""}
-  <p class="foot">Picks favor your cards, the build-around card’s themes and creature types, removal and card draw, a playable curve, and cards widely played (EDHREC rank). It’s a strong starting list, not a tuned tournament deck. Prices are Scryfall estimates; legality comes from Scryfall’s current data.</p>`;
+  <p class="foot">Built from your cards first, then popular, well-curved picks. A strong start, not a tuned tournament list.</p>`;
 }
 
 function fillAnyPanel(d, fm, count) {
@@ -639,7 +639,7 @@ function collectionCards() {
   if (!st.collection.length)
     return empty("Start with the cards in front of you", "Add one card, scan it, or import a ManaBox / Moxfield / CSV export. Nothing counts as owned until you add it.", `<button class="btn" data-act="addCard">Add a card</button><button class="btn ghost" data-act="importCollection">Import a list</button>`);
   const value = collectionValue(st.collection, S.catalog, st.printings, []);
-  return `<p class="summary-line"><b>${sumQty(st.collection)}</b> copies · <b>${new Set(st.collection.map((e) => key(e.name))).size}</b> names · <b>${usd(value.total, 0)}</b>${value.unpriced ? ` <span class="muted">(${value.unpriced} unpriced)</span>` : ""}</p>
+  return `<p class="summary-line"><b>${sumQty(st.collection)}</b> copies · <b>${new Set(st.collection.map((e) => key(e.name))).size}</b> names · <b data-count="${Math.round(value.total)}" data-money="1">${usd(value.total, 0)}</b>${value.unpriced ? ` <span class="muted">(${value.unpriced} unpriced)</span>` : ""}</p>
   ${mtgTradeAdvice()}
   <div class="toolbar"><input type="search" value="${esc(S.ui.q.coll)}" placeholder="Search name, set, binder…" data-input="collSearch" aria-label="Search collection"><select data-change="collSort" aria-label="Sort">${options([["name", "A–Z"], ["value", "Value ↓"], ["impact", "Deck-building value"], ["recent", "Recent"], ["color", "Color"], ["mv", "Mana value"]], S.ui.collSort)}</select><select data-change="collFilter" aria-label="Filter">${options([["all", "All"], ["meta", "★ Meta & staples"], ["spare", "Not in a deck"], ["review", "Printing to review"], ["foil", "Foils"], ["unpriced", "Unpriced"]], S.ui.collFilter)}</select></div>
   <div id="collList">${collectionList()}</div>`;
@@ -721,7 +721,7 @@ function collectionValueView() {
     maxColor = Math.max(1, ...Object.values(v.colors));
   if (!st.collection.length) return empty("No value to track yet", "Add cards and CardStashy records your collection value once a day so you can watch it change.");
   return `<section class="panel">
-    <div class="row between"><div><p class="eyebrow">Estimated value</p><p class="big">${usd(v.total)}</p><p class="muted small">${v.copies} copies${v.unpriced ? ` · ${v.unpriced} without a price` : ""}${first && first.total && first.date !== new Date().toISOString().slice(0, 10) ? ` · ${signed(v.total - first.total, (x) => usd(x))} since ${esc(first.date)}` : ""}</p></div><button class="btn ghost small" data-act="refreshPrices">↻ Refresh prices</button></div>
+    <div class="row between"><div><p class="eyebrow">Estimated value</p><p class="big" data-count="${v.total.toFixed(2)}" data-money="1">${usd(v.total)}</p><p class="muted small">${v.copies} copies${v.unpriced ? ` · ${v.unpriced} without a price` : ""}${first && first.total && first.date !== new Date().toISOString().slice(0, 10) ? ` · ${signed(v.total - first.total, (x) => usd(x))} since ${esc(first.date)}` : ""}</p></div><button class="btn ghost small" data-act="refreshPrices">↻ Refresh prices</button></div>
     ${lineChart(hist)}
   </section>
   <section class="panel"><h3>By color</h3>${Object.entries(v.colors)
@@ -779,7 +779,7 @@ export function costBlock(sub, total, budget, label) {
 export function decks() {
   const tab = S.ui.decksTab;
   return `<div class="page-head"><h1>Decks</h1><div class="head-actions"><button class="btn small" data-act="importDeck">↥ Import</button><button class="btn small ghost" data-act="newDeck">＋ New</button></div></div>
-  ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Meta decks"]])}<div class="random-tools"><button class="btn ghost small" data-act="randomDeck">🎲 Random Commander deck</button><button class="btn ghost small" data-act="buildRandom" data-format="Standard">⚒ Random deck · any format</button></div>
+  ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Meta decks"]])}<div class="random-tools"><button class="btn ghost small" data-act="randomDeck" aria-label="Random Commander deck">🎲 Random Commander</button><button class="btn ghost small" data-act="buildRandom" data-format="Standard" aria-label="Random deck in any format">⚒ Random deck</button></div>
   ${tab === "ideas" ? ideasView() : tab === "inspiration" ? inspirationView() : myDecks()}`;
 }
 
@@ -873,7 +873,7 @@ function tournamentPanel() {
       }
       <p class="foot">${SOURCE_CREDIT[data.source] || ""}</p>`;
   }
-  return `<section class="panel"><h3>Tournament results</h3><p class="muted small">Real recent lists that placed, matched against your cards. Open one for the original list, a budget adaptation that keeps its engine, or a draft from the cards you own.</p>${chips}${body}</section>`;
+  return `<section class="panel"><h3>Tournament results</h3><p class="muted small">Recent tournament lists, matched against your cards. Open one for the original, a budget version, or a draft from your cards.</p>${chips}${body}</section>`;
 }
 
 function inspirationView() {
@@ -930,7 +930,7 @@ function finderPanel() {
     list = rankBuildable(all, { maxCost: F.max === "" ? null : Number(F.max), query: F.q, colors: F.colors, sort: F.sort }),
     noCards = !S.state.collection.length;
   return `<section class="panel finder"><p class="eyebrow">Find decks</p><h2>Decks you can almost build</h2>
-  <p class="muted small">Precons, shared decks and decks you’ve saved, ranked by what it would cost to finish them from your collection. Copies locked in assembled decks don’t count as free.${noCards ? " <b>Add your collection first</b> — until then every card counts as missing." : ""}</p>
+  <p class="muted small">Decks ranked by what it costs to finish them from your collection.${noCards ? " <b>Add your collection first</b>, until then every card counts as missing." : ""}</p>
   <div class="finder-controls">
     <label>Max to finish $<input type="number" min="0" step="5" value="${esc(F.max)}" placeholder="Any" data-change="finderMax"></label>
     <label>Colors<select data-change="finderColors">${options([["", "Any"], ["W", "White"], ["U", "Blue"], ["B", "Black"], ["R", "Red"], ["G", "Green"]], F.colors)}</select></label>
@@ -957,7 +957,7 @@ function finderPanel() {
     .join("")}</div>
   ${list.length > F.limit ? `<button class="btn ghost block" data-act="finderMore">Show more</button>` : ""}
   ${all.length && !list.length ? `<p class="muted small">No decks match — raise the price limit or clear the filters.</p>` : ""}
-  <p class="foot">Prices are Scryfall estimates; “unknown” means no current price. Making your version copies the list with credit to its source — your collection doesn’t change.</p></section>`;
+  <p class="foot">Prices are Scryfall estimates. Making your own copy doesn't change your collection.</p></section>`;
 }
 
 /* ---------- Shared deck page (#shared/…) ---------- */
@@ -1095,7 +1095,7 @@ export function deckReviewSheet(d) {
     .join("")}</div>`
       : `<div class="empty"><div class="empty-mark" aria-hidden="true">✓</div><h3>Nothing to review</h3><p>Card count, colors, legality and copy limits pass${sumQty(d.cards) >= formatOf(d).size * 0.9 ? ", and land, ramp, draw and removal counts are in normal ranges" : ""}.</p></div>`
   }
-  <p class="foot">Rules checks use cached card data — refresh before an event. Guidelines are common deckbuilding rules of thumb, not requirements; plenty of good decks break them on purpose.</p>`;
+  <p class="foot">Refresh before an event. Guidelines are rules of thumb, not requirements.</p>`;
 }
 
 const CATS = ["Commander", "Creatures", "Planeswalkers", "Artifacts", "Enchantments", "Instants", "Sorceries", "Battles", "Lands", "Unresolved"];
@@ -1326,7 +1326,7 @@ function deckUpgrade(d) {
 function fillPanel(d, open) {
   const F = S.ui.fill,
     plan = F.deckId === d.id ? F.plan : null;
-  return `<section class="panel"><p class="eyebrow">Step 1</p><h2>Fill ${open} open slots</h2><p class="muted small">Keeps every card you chose. Adds lands and the ingredients your deck is short on, preferring cards you own. The budget covers cards you’d have to buy.</p>
+  return `<section class="panel"><p class="eyebrow">Step 1</p><h2>Fill ${open} open slots</h2><p class="muted small">Keeps your picks and fills what the deck is short on, cards you own first. Budget covers what you'd buy.</p>
   <div class="chips">${[0, 10, 25, 50, 100].map((n) => `<button class="chip pick ${F.budget === n ? "on" : ""}" data-act="fillBudget" data-v="${n}">${n ? "$" + n : "Owned only"}</button>`).join("")}</div>
   <label class="custom-budget">Custom purchase budget ($)<input type="number" min="0" max="100000" step="0.01" value="${F.budget}" data-change="fillCustom" aria-label="Custom slot-filling budget"></label>
   <div class="grid2"><label>Target lands<input type="number" min="30" max="42" value="${F.lands}" data-change="fill" data-field="lands"></label><label class="check"><input type="checkbox" data-change="fill" data-field="simple" ${F.simple ? "checked" : ""}> Prefer simpler cards</label></div>
@@ -1368,7 +1368,7 @@ function swapPanel(d) {
   const U = S.ui.upgrade,
     plans = U.deckId === d.id ? U.plans : {},
     plan = plans[U.budget];
-  return `<section class="panel"><p class="eyebrow">${sumQty(d.cards) < 100 ? "Step 2" : "Upgrade lab"}</p><h2>One-for-one upgrades</h2><p class="muted small">Pick a budget. CardStashy proposes cuts and replacements and explains each trade-off: what the deck gains, what it gives up, and what it costs to buy. These are rules of thumb from card text — you know your playgroup best.</p>
+  return `<section class="panel"><p class="eyebrow">${sumQty(d.cards) < 100 ? "Step 2" : "Upgrade lab"}</p><h2>One-for-one upgrades</h2><p class="muted small">Pick a budget to see suggested swaps, what each one changes, and what it costs.</p>
   <div class="chips">${[0, 10, 25, 50, 100].map((n) => `<button class="chip pick ${U.budget === n ? "on" : ""}" data-act="upBudget" data-v="${n}">${n ? "$" + n : "My cards ($0)"}</button>`).join("")}</div>
   <label class="custom-budget">Custom upgrade budget ($)<input type="number" min="0" max="100000" step="0.01" value="${U.budget}" data-change="upCustom" aria-label="Custom upgrade budget"></label>
   <label class="check small"><input type="checkbox" data-change="upTrade" ${U.tradeIn ? "checked" : ""}> Show what the cut cards are worth (reference only — never subtracted from what you spend)</label>
@@ -1650,7 +1650,7 @@ export function settings() {
   <details class="settings-disclosure settings-danger"><summary>Start over or load examples</summary><p class="foot">Export a backup first. One recovery copy is kept on this device.</p><div class="actions wrap"><button class="btn ghost danger" data-act="reset">Start empty</button><button class="btn ghost" data-act="loadExample">Load example data</button></div></details></div>
   <div id="settings-app" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-app" ${tab === "app" ? "" : "hidden"}><section class="panel settings-card"><div class="settings-card-heading"><div><p class="eyebrow">APPEARANCE</p><h2>Glass &amp; art backdrop</h2></div></div><label class="check"><input type="checkbox" data-change="setGlass" ${(() => { try { return localStorage.getItem("cardstashy-glass") !== "off"; } catch { return true; } })() ? "checked" : ""}> Frosted glass panels over a blurred copy of the game's featured art</label><p class="foot">Turn it off for plain solid panels (a little lighter on older phones).</p><label class="check"><input type="checkbox" data-change="setHaptics" ${hapticsOn() ? "checked" : ""}> Vibration when you tap, add or remove cards</label><p class="foot">On iPhone this uses the system tap (iOS 18 or later). Animations follow your phone’s “Reduce motion” setting.</p></section><section class="panel settings-card"><div class="settings-card-heading"><span class="settings-icon" aria-hidden="true">＋</span><div><p class="eyebrow">TAKE IT WITH YOU</p><h2>Install CardStashy</h2></div></div><p class="muted small">Open it from your home screen. Saved collections and decks work offline.</p><button class="btn" data-act="install">Install app</button><details class="settings-disclosure"><summary>Android installation help</summary><p class="foot">In Chrome, open ⋮ → Add to Home screen or Install app. Searches and updated prices need internet.</p></details></section>
   <details class="settings-disclosure settings-source"><summary>Card databases & prices</summary><ul class="sources"><li><b>Magic:</b> Scryfall card data, images and reference prices; MTGJSON precon lists.</li><li><b>Pokémon:</b> TCGdex card data and images, with supplied TCGplayer and Cardmarket prices.</li><li><b>Yu-Gi-Oh!:</b> YGOPRODeck card data, alternate art, printings and reference prices.</li><li><b>Imports:</b> Supported text and CSV exports from deck and collection tools.</li></ul><p class="foot">Prices are estimates; check edition, condition and shipping with the seller.</p></details>
-  <details class="settings-disclosure settings-source"><summary>About CardStashy</summary><p class="foot">Deck scores, upgrades and test games use card rules and simulations; they aren’t guaranteed win rates. CardStashy is an independent fan tool. Trading cards and artwork belong to their respective rights holders.</p><span class="settings-version">Version 3.10.0</span></details></div></div>`;
+  <details class="settings-disclosure settings-source"><summary>About CardStashy</summary><p class="foot">Scores and test games are estimates, not win rates. CardStashy is an independent fan app; cards and art belong to their owners.</p><span class="settings-version">Version 3.10.0</span></details></div></div>`;
 }
 
 /* ---------- Deck idea sheet ---------- */
@@ -1682,7 +1682,7 @@ export function ideaSheet(idea, deck, open, sel) {
     )
     .join("")}
   ${S.state.decks.length ? `<div class="inline-pick"><select id="ideaDeckPick" aria-label="Deck">${options(S.state.decks.map((x) => [x.id, x.name]), S.state.activeDeck)}</select><button class="btn ghost" data-act="ideaToDeck">Add ticked to deck</button></div>` : ""}
-  <p class="foot">Nothing is bought or added until you tap a button. “Buy” copies only cards you don’t own (all missing ones if nothing is ticked) for TCGplayer Mass Entry.</p>
+  <p class="foot">Nothing changes until you tap a button. Buy sends only the cards you don't own to TCGplayer.</p>
   <div class="idea-actions">
     <button class="btn small" data-act="ideaSaveAll">Save as deck</button>
     <span class="row"><button class="btn ghost small" data-act="ideaBuy" title="Copy buy list">🛒 Buy</button><button class="btn ghost small" data-act="ideaWish" title="Add ticked to wishlist">♡</button><button class="btn ghost small" data-act="ideaOwn" title="I own the ticked cards">＋ Own</button></span>
