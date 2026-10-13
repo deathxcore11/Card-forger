@@ -1,3 +1,13 @@
+3.32.2 — Animated tier frames, new price bands, Deck Power calibration
+- Tier bands by one card's price: grey under $2, green $2–$10, blue $10–$50, purple $50–$200,
+  gold $200–$1,000, orange over $1,000.
+- Collection gallery cards get a thick tier frame. Purple frames swirl like a holo, gold frames
+  shine, orange frames flicker and glitter. Follows "Reduce motion".
+- Deck Power calibration: off-meta lists now land in casual territory (capped at 62, labelled
+  Rogue · casual tier). Yu-Gi-Oh! decks built to summon from the Extra Deck (Xyz, Rank-Up,
+  Fusion, Synchro, Link) are heavily penalised for an incomplete Extra Deck, and an empty Side
+  Deck counts against tournament readiness.
+
 3.32.1 — Cleaner collection gallery, price tiers
 - Collection gallery looks like search again: the full card with its emblems on the art, name
   and price underneath, no boxes. A thin ring shows the card's tier.

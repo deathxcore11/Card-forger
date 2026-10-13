@@ -1,5 +1,6 @@
 // Card tiers: one colour scale for all three games, by market price so it means the same thing
-// everywhere: grey under $1, green $1+, blue $5+, purple $20+, gold $100+, orange $1,000+.
+// everywhere: grey under $2, green $2–$10, blue $10–$50, purple $50–$200, gold $200–$1,000,
+// orange over $1,000.
 export const TIERS = [
   { key: "t0", label: "Common", color: "#9aa3ad" },
   { key: "t1", label: "Uncommon", color: "#4fd18b" },
@@ -9,12 +10,15 @@ export const TIERS = [
   { key: "t5", label: "Grail", color: "#ff7a1a" },
 ];
 
-export const BANDS = [0, 1, 5, 20, 100, 1000];
+// Upper limits of each band (inclusive): grey < $2, green ≤ $10, blue ≤ $50, purple ≤ $200,
+// gold ≤ $1,000, orange above.
+export const BANDS = [2, 10, 50, 200, 1000];
 export function priceTier(p) {
   const v = Number(p);
   if (!(v > 0)) return 0;
-  let i = 0;
-  while (i < BANDS.length - 1 && v >= BANDS[i + 1]) i++;
+  if (v < BANDS[0]) return 0;
+  let i = 1;
+  while (i < BANDS.length && v > BANDS[i]) i++;
   return i;
 }
 

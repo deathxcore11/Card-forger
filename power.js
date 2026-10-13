@@ -91,7 +91,7 @@ export function tcgPower(g, d, f, cardOf) {
     sig = g + "|" + d.id + "|" + d.format + "|" + JSON.stringify(d.zones) + "|" + (M?.at || 0);
   return memo(sig, () => {
     const rows = [];
-    for (const zone of ["main", "extra"]) for (const r of d.zones?.[zone] || []) rows.push({ zone, qty: r.qty, c: cardOf(r.cardId), id: r.cardId, name: r.name });
+    for (const zone of ["main", "extra", "side"]) for (const r of d.zones?.[zone] || []) rows.push({ zone, qty: r.qty, c: cardOf(r.cardId), id: r.cardId, name: r.name });
     const base = g === "ygo" ? ygoPower(rows, f) : ptcgPower(rows.filter((r) => r.zone === "main"), f);
     let match = null, mineMap = null, metaDecks = [];
     const data = M?.data;
@@ -148,7 +148,7 @@ export function tcgPower(g, d, f, cardOf) {
 
 /* ---------- Rendering ---------- */
 
-export const powerChip = (p) => `<span class="power-chip p-${p.score >= 80 ? "hi" : p.score >= 60 ? "mid" : "lo"}" title="Deck Power ${p.score}/100 · ${esc(powerGrade(p.score))}"><em>${p.score}</em> power</span>`;
+export const powerChip = (p) => `<span class="power-chip p-${p.score >= 80 ? "hi" : p.score >= 60 ? "mid" : "lo"}" title="Deck Power ${p.score}/100 · ${esc(powerGrade(p.score, p.from))}"><em>${p.score}</em> power</span>`;
 
 export function powerPanel(p, { loadAct = "", findAct = "", cardAct = () => "" } = {}) {
   const m = p.match,
@@ -174,7 +174,7 @@ export function powerPanel(p, { loadAct = "", findAct = "", cardAct = () => "" }
       : c.from === "build"
         ? `<div class="pw-field"><b>Not compared with the field yet</b><p class="small">${p.metaBusy ? "Loading tournament results…" : `Until it's compared with recent tournament decks, the rating is the build check only and is capped at ${BUILD_CAP}.`}</p></div>`
         : c.from === "rogue"
-          ? `<div class="pw-field warn"><b>Off-meta list</b><p class="small">No deck that placed in the last ${c.lists} tournament lists shares at least a third of these cards. ${Math.round((c.played || 0) * 100)}% of your cards see tournament play at all. It's capped at 74 until a list like it puts up results: on paper it can look fine and still be outclassed.</p>${unplayed}${field}</div>`
+          ? `<div class="pw-field warn"><b>Off-meta list</b><p class="small">No deck that placed in the last ${c.lists} tournament lists shares at least a third of these cards. ${Math.round((c.played || 0) * 100)}% of your cards see tournament play at all. It's capped at 62 (casual tier) until a list like it puts up results: on paper it can look fine and still be outclassed.</p>${unplayed}${field}</div>`
           : c.from === "commander"
             ? ""
             : `<div class="pw-field ok"><b>Proven archetype</b><p class="small">${Math.round((c.played || 0) * 100)}% of your cards appear in placing lists. The rating leans on how this archetype actually performs.</p>${unplayed}${field}</div>`;
@@ -211,7 +211,7 @@ export function powerPanel(p, { loadAct = "", findAct = "", cardAct = () => "" }
         .join("")}</section>`
     : "";
   const profile = p.profile?.length ? `<div class="pw-profile">${p.profile.map(([k, v]) => `<span><b>${esc(String(v))}</b>${esc(k)}</span>`).join("")}</div>` : "";
-  return `<section class="panel score-panel power">${ring(p.score)}<div><p class="eyebrow">Deck Power</p><h2>${esc(powerGrade(p.score))}</h2><p class="small"><b>${esc(p.plan)}</b></p><p class="muted small">${esc(p.lens)}</p>${top ? `<p class="pw-headline small">Biggest gain: <b>${esc(top.label)}</b> (+${pts(top.lost)} pts available)</p>` : ""}</div>${profile}</section>
+  return `<section class="panel score-panel power">${ring(p.score)}<div><p class="eyebrow">Deck Power</p><h2>${esc(powerGrade(p.score, p.from))}</h2><p class="small"><b>${esc(p.plan)}</b></p><p class="muted small">${esc(p.lens)}</p>${top ? `<p class="pw-headline small">Biggest gain: <b>${esc(top.label)}</b> (+${pts(top.lost)} pts available)</p>` : ""}</div>${profile}</section>
   <section class="panel pw-weak"><div class="row between"><h3>Weaknesses</h3><span class="muted small">${R.weak.length ? `${R.weak.length} found, biggest first` : "none"}</span></div>${weak}</section>
   ${R.strong.length ? `<section class="panel pw-strong"><h3>Strengths</h3><div class="pw-chips">${R.strong.map((x) => `<span class="pw-chip"><b>${esc(x.label)}</b> ${esc(String(x.count))}</span>`).join("")}</div></section>` : ""}
   ${sims}

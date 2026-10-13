@@ -16,7 +16,8 @@ import { simulate, poolOf, has as hasTag, countTag, atLeastOne, allIn, evidence 
 const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
 const lc = (s) => String(s || "").toLowerCase();
 
-export function powerGrade(score) {
+export function powerGrade(score, from = "") {
+  if (from === "rogue") return score >= 55 ? "Rogue · casual tier" : "Casual";
   return score >= 90 ? "Tournament-ready" : score >= 80 ? "Competitive" : score >= 68 ? "Solid" : score >= 55 ? "Playable" : score >= 40 ? "Rough" : "Unfinished";
 }
 
@@ -256,7 +257,12 @@ export function ygoPower(rows, f = {}) {
     { ...part("Bricks", "Dead draws", q(bricks) + q(garnets), "≤ 2", 1 - Math.max(0, q(bricks) + q(garnets) - 2) / 6, 6, "Cards that do nothing when drawn: big monsters you can't summon, or cards meant to be sent from the Deck."),
       cards: evidence([...bricks, ...garnets]), why: `${q(bricks) + q(garnets)} cards are dead in hand. ${P(S("brick"))} of hands have two of them and no starter.` },
   ];
-  if (f.extra) parts.push({ ...part("Extra", "Extra Deck", E, f.extra, E / f.extra, 6, "A full Extra Deck gives you more lines and answers."), why: `${f.extra - E} Extra Deck slot${f.extra - E === 1 ? "" : "s"} empty: free lines and outs you aren't using.` });
+  // Decks whose main deck summons from the Extra Deck (Xyz, Rank-Up, Fusion, Synchro, Link) are
+  // crippled without one; for them an empty Extra Deck is a major hole, not a minor gap.
+  const needsExtra = main.some((r) => /xyz|rank-up|fusion summon|synchro|link summon|extra deck/.test(t(r))),
+    sideN = rows.filter((r) => r.zone === "side").reduce((a, r) => a + r.qty, 0);
+  if (f.extra) parts.push({ ...part("Extra", "Extra Deck", E, f.extra, (E / f.extra) ** (needsExtra ? 1.5 : 1), needsExtra ? 16 : 6, needsExtra ? "This deck's engine summons from the Extra Deck, so a full one is the deck." : "A full Extra Deck gives you more lines and answers."), cards: evidence(extra), why: needsExtra ? `Only ${E} of ${f.extra} Extra Deck cards, but the main deck is built to summon from it (Xyz, Rank-Up, Fusion, Synchro or Link). Without backups and generic Extra Deck tools, one negate or a missing piece ends the turn.` : `${f.extra - E} Extra Deck slot${f.extra - E === 1 ? "" : "s"} empty: free lines and outs you aren't using.` });
+  if (f.side) parts.push({ ...part("Side", "Side Deck", sideN, f.side, Math.min(1, sideN / f.side), 4, "Fifteen cards to swap in for games 2 and 3 against the decks you expect."), why: sideN ? `${sideN} of ${f.side} Side Deck cards: fewer answers to bring in after game 1.` : "No Side Deck. Tournament matches are best of three; without one you can't adapt for games 2 and 3." });
   const roles = new Map(),
     LABEL = { starter: "Starter", extender: "Extender", handtrap: "Hand trap", negate: "Negate", breaker: "Breaker", draw: "Draw", brick: "Brick", garnet: "Dead draw" };
   for (const r of main) roles.set(String(r.id ?? r.c.id ?? r.c.name), [...tag.get(r)].map((k) => LABEL[k]));
@@ -482,7 +488,7 @@ export function metaMatch(mine, metaDecks, archetypes = []) {
 //   • anything else (rogue or off-meta) → its build, pulled toward how much of it the field
 //     actually plays, and capped at 74: "Competitive" has to be earned with results.
 // mine: Map(key→qty) of non-basic cards. decks: the placing lists for this game and format.
-export const BUILD_CAP = 70, ROGUE_CAP = 74;
+export const BUILD_CAP = 70, ROGUE_CAP = 62;
 export function metaContext({ build, mine, decks = [], match = null, loaded = false, formatOk = true, archetypes = [] }) {
   if (!loaded || !formatOk || !decks.length)
     return { score: Math.min(build, BUILD_CAP), from: "build", capped: build > BUILD_CAP, reason: !loaded ? "unloaded" : !formatOk ? "format" : "empty" };
@@ -506,7 +512,9 @@ export function metaContext({ build, mine, decks = [], match = null, loaded = fa
       score = Math.round(build * (1 - k) * 0.5 + Math.min(build, ROGUE_CAP) * (1 - k) * 0.5 + match.metaScore * k);
     return { score: Math.min(100, score), from: k >= 0.75 ? "meta" : "mixed", presence, played, unplayed, field, lists };
   }
-  const rogue = Math.round(Math.min(ROGUE_CAP, build * 0.55 + (30 + 44 * presence) * 0.45));
+  // Off-meta: mostly what the field says about these cards, then how well it's built. A pile of
+  // staples around an engine nobody plays lands in casual territory (about 45–60).
+  const rogue = Math.round(Math.min(ROGUE_CAP, build * 0.45 + (20 + 40 * presence) * 0.55));
   return { score: Math.min(rogue, build), from: "rogue", capped: build > rogue, presence, played, unplayed, field, lists };
 }
 

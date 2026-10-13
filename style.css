@@ -2187,3 +2187,52 @@ details.ingredient[open] > summary b { color: var(--accent); }
 #content.view-gallery .display-list .lot.wanted .lot-sub .want-chip { font-size: 11px; }
 #content.view-gallery .display-list .lot.wanted .lot-side .price { font-size: 14px; }
 #content.view-gallery .display-list .lot.wanted .want-x { width: 28px; height: 28px; font-size: 16px; flex: none; }
+
+/* ===== Tier effects on collection cards: thicker ring; purple swirls, gold shines, orange glitters ===== */
+#content.view-gallery .display-list .lot:not(.wanted) .lot-art { box-shadow: 0 0 0 3px var(--tier, #9aa3ad), 0 10px 24px -14px rgba(0,0,0,.8); isolation: isolate; }
+#content.view-gallery .display-list .lot[data-tier="t0"]:not(.wanted) .lot-art { box-shadow: 0 0 0 3px #8b939c, 0 10px 24px -14px rgba(0,0,0,.8); }
+#content.view-gallery .display-list .lot[data-tier="t2"]:not(.wanted) .lot-art { box-shadow: 0 0 0 3px var(--tier), 0 0 18px -4px var(--tier), 0 10px 24px -14px rgba(0,0,0,.8); }
+#content.view-gallery .display-list .lot:is([data-tier="t3"], [data-tier="t4"], [data-tier="t5"]):not(.wanted) .lot-art::after { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; border-radius: inherit; }
+/* Purple: a slow holographic swirl over the card and a breathing glow. */
+#content.view-gallery .display-list .lot[data-tier="t3"]:not(.wanted) .lot-art { animation: tier-breathe 3.2s ease-in-out infinite; }
+#content.view-gallery .display-list .lot[data-tier="t3"]:not(.wanted) .lot-art::after { background: conic-gradient(from var(--swirl), rgba(180,108,255,.0), rgba(180,108,255,.38), rgba(80,200,255,.30), rgba(255,110,220,.32), rgba(180,108,255,.0)); mix-blend-mode: color-dodge; opacity: .55; animation: tier-swirl 7s linear infinite; }
+/* Gold: a bright shine that sweeps across every few seconds. */
+#content.view-gallery .display-list .lot[data-tier="t4"]:not(.wanted) .lot-art { box-shadow: 0 0 0 3px var(--tier), 0 0 22px -4px var(--tier), 0 10px 24px -14px rgba(0,0,0,.8); }
+#content.view-gallery .display-list .lot[data-tier="t4"]:not(.wanted) .lot-art::after { background: linear-gradient(115deg, transparent 35%, rgba(255,240,180,.0) 40%, rgba(255,246,200,.75) 50%, rgba(255,214,90,.0) 60%, transparent 65%); background-size: 250% 100%; mix-blend-mode: overlay; animation: tier-shine 3.4s cubic-bezier(.45,.05,.3,1) infinite; }
+/* Orange: glitter that twinkles, and a fiery glow that flickers. */
+#content.view-gallery .display-list .lot[data-tier="t5"]:not(.wanted) .lot-art { animation: tier-fire 2.4s ease-in-out infinite; }
+#content.view-gallery .display-list .lot[data-tier="t5"]:not(.wanted) .lot-art::after {
+  background:
+    radial-gradient(circle, #fff 0 1px, transparent 1.6px) 0 0 / 23px 29px,
+    radial-gradient(circle, #ffd27a 0 1.2px, transparent 2px) 9px 13px / 31px 37px,
+    radial-gradient(circle, #fff3 0 1.5px, transparent 2.4px) 17px 5px / 41px 33px,
+    linear-gradient(125deg, rgba(255,140,40,.0) 30%, rgba(255,170,60,.28) 50%, rgba(255,90,30,.0) 70%) 0 0 / 260% 100%;
+  mix-blend-mode: screen; animation: tier-glitter 2.2s steps(6) infinite, tier-shine 3s ease-in-out infinite; }
+@property --swirl { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@keyframes tier-swirl { to { --swirl: 360deg; } }
+@keyframes tier-breathe { 50% { box-shadow: 0 0 0 3px var(--tier), 0 0 26px -2px var(--tier), 0 10px 24px -14px rgba(0,0,0,.8); } 0%, 100% { box-shadow: 0 0 0 3px var(--tier), 0 0 12px -6px var(--tier), 0 10px 24px -14px rgba(0,0,0,.8); } }
+@keyframes tier-shine { 0% { background-position: 130% 0; } 55%, 100% { background-position: -130% 0; } }
+@keyframes tier-glitter { 0% { opacity: .9; filter: hue-rotate(0deg); } 33% { opacity: .45; } 66% { opacity: 1; filter: hue-rotate(-15deg); } 100% { opacity: .6; } }
+@keyframes tier-fire { 0%, 100% { box-shadow: 0 0 0 3px #ff7a1a, 0 0 18px -4px #ff7a1a, 0 10px 24px -14px rgba(0,0,0,.8); } 50% { box-shadow: 0 0 0 3px #ffa040, 0 0 30px 0 #ff5a10, 0 10px 24px -14px rgba(0,0,0,.8); } }
+/* Orange glitter drifts: shift the sparkle layers so they don't sit still. */
+#content.view-gallery .display-list .lot[data-tier="t5"]:not(.wanted) .lot-art::after { animation: tier-glitter 2.2s steps(6) infinite, tier-drift 6s linear infinite; }
+@keyframes tier-drift { to { background-position: 23px -29px, -22px 50px, 58px -28px, -130% 0; } }
+@media (prefers-reduced-motion: reduce) { #content.view-gallery .display-list .lot .lot-art, #content.view-gallery .display-list .lot .lot-art::after { animation: none !important; } }
+#content.view-gallery .display-list .lot { overflow: visible; }
+#content.view-gallery .display-list .lot:not(.wanted) .lot-art { outline: 3px solid var(--tier, #8b939c); outline-offset: -1px; }
+#content.view-gallery .display-list .lot[data-tier="t0"]:not(.wanted) .lot-art { outline-color: #8b939c; }
+#content.view-gallery .display-list .lot[data-tier="t5"]:not(.wanted) .lot-art { animation: tier-fire 2.4s ease-in-out infinite, tier-fire-ring 2.4s ease-in-out infinite; }
+@keyframes tier-fire-ring { 50% { outline-color: #ffb050; } }
+#content.view-gallery .display-list .lot[data-tier="t4"]:not(.wanted) .lot-art { animation: tier-gold-ring 3.4s ease-in-out infinite; }
+@keyframes tier-gold-ring { 50% { outline-color: #fff0b0; } }
+/* Tier frame: a solid 5px band of the tier colour around the card (padding, so nothing covers it). */
+#content.view-gallery .display-list .lot:not(.wanted) .lot-art { outline: 0; padding: 5px; border-radius: 12px; background: var(--tier, #8b939c); }
+#content.view-gallery .display-list .lot[data-tier="t0"]:not(.wanted) .lot-art { background: linear-gradient(160deg, #a7afb8, #6f7780); }
+#content.view-gallery .display-list .lot[data-tier="t1"]:not(.wanted) .lot-art { background: linear-gradient(160deg, #7be3a8, #2fae68); }
+#content.view-gallery .display-list .lot[data-tier="t2"]:not(.wanted) .lot-art { background: linear-gradient(160deg, #8cc6ff, #2f7fe0); }
+#content.view-gallery .display-list .lot[data-tier="t3"]:not(.wanted) .lot-art { background: conic-gradient(from var(--swirl), #b46cff, #6fd0ff, #ff7ad9, #b46cff); animation: tier-swirl 6s linear infinite, tier-breathe 3.2s ease-in-out infinite; }
+#content.view-gallery .display-list .lot[data-tier="t4"]:not(.wanted) .lot-art { background: linear-gradient(115deg, #b8860b 0%, #ffd34d 30%, #fff6c9 45%, #ffd34d 60%, #b8860b 100%) 0 0 / 300% 100%; animation: tier-shine 3.4s cubic-bezier(.45,.05,.3,1) infinite; }
+#content.view-gallery .display-list .lot[data-tier="t5"]:not(.wanted) .lot-art { background: linear-gradient(115deg, #c2410c 0%, #ff7a1a 30%, #ffd08a 45%, #ff7a1a 60%, #c2410c 100%) 0 0 / 300% 100%; animation: tier-shine 2.6s ease-in-out infinite, tier-fire 2.4s ease-in-out infinite; }
+#content.view-gallery .display-list .lot:not(.wanted) .lot-art > img, #content.view-gallery .display-list .lot:not(.wanted) .lot-art > .img-missing { border-radius: 7px; position: relative; z-index: 1; }
+#content.view-gallery .display-list .lot:not(.wanted) .lot-art::after { inset: 5px; border-radius: 7px; }
+#content.view-gallery .display-list .lot:not(.wanted) .lot-art .tile-chrome { left: 5px; right: 5px; top: 5px; }
