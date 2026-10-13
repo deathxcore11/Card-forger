@@ -1,3 +1,14 @@
+3.23.1 — Instant scanning for Magic, and safer matches
+- Magic joins the instant-scan index: 49,088 card pictures (every unique artwork).
+- Tested on blurred, tilted, glare-covered photos of random cards from all three games: the right
+  card every time, the exact printing in 21 of 22, about two seconds each.
+- "Found it" now needs a clear picture match. A weak look-alike is offered as a choice, never
+  added on its own in Quick mode.
+- Better auto-crop for cards with dark art, and a sturdier match when the photo includes a sliver
+  of table around the card.
+- Pokémon cards show what the regulation mark means for you (playable in Standard, Expanded only,
+  or not tournament legal), with a short explanation.
+
 3.23.0 — Instant scanning, price history and alerts, Compare for every game
 - Instant scanning: the app now recognises a card from its artwork, not just its text. Every
   card picture in all three games (about 85,000) has a tiny fingerprint in an index that loads

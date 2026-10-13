@@ -185,13 +185,21 @@ export function findCardBox(data, W, H) {
       const i = px(x, y);
       return Math.abs(data[i] - med[0]) + Math.abs(data[i + 1] - med[1]) + Math.abs(data[i + 2] - med[2]) > 60;
     };
+  // Longest run of card-like rows (or columns). Short gaps are bridged: dark art the colour of
+  // the table can make a few rows look like background.
   const run = (n, m, at) => {
-    let best = [0, -1], start = -1;
+    const gap = Math.max(2, Math.round(n * 0.03));
+    let best = [0, -1], start = -1, lastIn = -1;
     for (let a = 0; a <= n; a++) {
       let k = 0;
       if (a < n) for (let b = 0; b < m; b++) k += at(a, b) ? 1 : 0;
-      if (a < n && k / m > 0.2) { if (start < 0) start = a; }
-      else if (start >= 0) { if (a - start > best[1] - best[0]) best = [start, a]; start = -1; }
+      if (a < n && k / m > 0.2) {
+        if (start < 0) start = a;
+        lastIn = a;
+      } else if (start >= 0 && (a === n || a - lastIn > gap)) {
+        if (lastIn + 1 - start > best[1] - best[0]) best = [start, lastIn + 1];
+        start = -1;
+      }
     }
     return best;
   };
@@ -402,6 +410,17 @@ const loadImage = (url) =>
   });
 const sigDiff = (a, b) => (a && b ? a.reduce((x, v, i) => x + Math.abs(v - b[i]), 0) / a.length : 255);
 
+// The capture with a fraction trimmed from every side.
+export function insetCanvas(src, f) {
+  if (!f) return src;
+  const c = document.createElement("canvas"),
+    x = Math.round(src.width * f),
+    y = Math.round(src.height * f);
+  c.width = src.width - 2 * x;
+  c.height = src.height - 2 * y;
+  c.getContext("2d").drawImage(src, x, y, c.width, c.height, 0, 0, c.width, c.height);
+  return c;
+}
 // Instant-scan index (scanidx/, built by scripts/build-scan-index.py): one fingerprint per card
 // picture. Loaded once per game when the scanner is used; the service worker keeps it.
 const IDX = {};
@@ -471,12 +490,17 @@ export function registerScanner(ctx) {
   const lookArt = async (card, g) => {
     const idx = await loadIndex(g);
     if (!idx) return null;
-    const near = nearest(hashCanvas(card, g), idx.bin, 10),
+    // Hash the capture as it is and slightly tighter (a crop with a sliver of table around it
+    // shifts the fingerprint); each index entry keeps its best distance over the versions.
+    const near = nearest([0, 0.02, 0.035, 0.05].map((f) => hashCanvas(insetCanvas(card, f), g)), idx.bin, 24),
       scan = fingerprintCanvas(card, g),
       fps = await settleLimited(near, ([i]) => fingerprintUrl(indexThumb(g, idx.ids[i]), g), 6),
-      ranked = near.map(([i], k) => ({ id: idx.ids[i][0], score: fps[k].value ? likeness(scan, fps[k].value) : -1 })).sort((a, b) => b.score - a.score),
+      dmin = near[0]?.[1] ?? 0,
+      // Picture likeness, minus a little for every step the index put it further away: the index
+      // distance is the sharper signal between look-alikes, the likeness catches index misses.
+      ranked = near.map(([i, dist], k) => ({ id: idx.ids[i][0], like: fps[k].value ? likeness(scan, fps[k].value) : -1, score: fps[k].value ? likeness(scan, fps[k].value) - 0.03 * (dist - dmin) : -1 })).sort((a, b) => b.score - a.score),
       [a, b] = ranked;
-    return a && a.score > 0 ? { g, id: a.id, score: a.score, sure: a.score >= 0.55 && (!b || a.score - b.score >= 0.05) } : null;
+    return a && a.score > 0 ? { g, id: a.id, score: a.score, sure: a.like >= 0.5 && a.score >= 0.5 && (!b || a.score - b.score >= 0.05) } : null;
   };
   const artFirst = async (card, G) => {
     let best = null;
@@ -489,7 +513,8 @@ export function registerScanner(ctx) {
     const cand = await ctx.candById(best.g, indexCardId(best.g, best.id), "Artwork match", false);
     if (!cand) return null;
     const picked = await pickPrinting(best.g, card, cand).catch(() => null);
-    const cands = picked?.length ? picked : [cand];
+    // A printing is only "found" when the index match itself was clear.
+    const cands = (picked?.length ? picked : [cand]).map((c) => (best.sure ? c : { ...c, exact: false, why: "Closest artwork" }));
     return { g: best.g, sure: best.sure, exact: !!cands[0].exact, r: { cands, tried: [cand.name], picked: true } };
   };
   // Which printing: the only one there is, or the one whose artwork and frame match the scan.
@@ -499,9 +524,12 @@ export function registerScanner(ctx) {
     if (!prints?.length) return null;
     const scan = fingerprintCanvas(card, g);
     if (prints.length === 1) {
-      const c = await ctx.candOf(g, prints[0], "The only printing", true),
-        fp = await fingerprintUrl(prints[0].thumb, g).catch(() => null);
-      if (c) c.artScore = fp ? likeness(scan, fp) : null;
+      // The only printing — but only "found" if the picture agrees (a weak look-alike isn't proof).
+      const fp = await fingerprintUrl(prints[0].thumb, g).catch(() => null),
+        score = fp ? likeness(scan, fp) : null,
+        agrees = score == null || score >= 0.55,
+        c = await ctx.candOf(g, prints[0], agrees ? "The only printing" : "Closest artwork", agrees);
+      if (c) c.artScore = score;
       return c ? [c] : null;
     }
     const fps = await settleLimited(prints.slice(0, 60), (x) => fingerprintUrl(x.thumb, g), 6),

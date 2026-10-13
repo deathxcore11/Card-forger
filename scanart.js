@@ -138,18 +138,23 @@ export function scanHash(data, g = "mtg") {
 const POP = Uint8Array.from({ length: 256 }, (_, i) => i.toString(2).replace(/0/g, "").length);
 // Distance from a scan to record i of an index: differing art bits count fully, whole-card bits
 // half, and a big shift in the art's average colour adds a little.
-export function nearest(hash, bin, k = 12) {
-  const n = Math.floor(bin.length / REC),
+// Several hashes of the same capture (slightly different crops): each record keeps its best.
+export function nearest(hashes, bin, k = 12) {
+  const hs = hashes instanceof Uint8Array ? [hashes] : hashes,
+    n = Math.floor(bin.length / REC),
     best = [];
   for (let i = 0; i < n; i++) {
     const o = i * REC;
-    let a = 0, f = 0;
-    for (let j = 0; j < 8; j++) {
-      a += POP[hash[j] ^ bin[o + j]];
-      f += POP[hash[8 + j] ^ bin[o + 8 + j]];
+    let dist = Infinity;
+    for (const hash of hs) {
+      let a = 0, f = 0;
+      for (let j = 0; j < 8; j++) {
+        a += POP[hash[j] ^ bin[o + j]];
+        f += POP[hash[8 + j] ^ bin[o + 8 + j]];
+      }
+      const c = (Math.abs(hash[16] - bin[o + 16]) + Math.abs(hash[17] - bin[o + 17]) + Math.abs(hash[18] - bin[o + 18])) / 24;
+      dist = Math.min(dist, a + f * 0.5 + c);
     }
-    const c = (Math.abs(hash[16] - bin[o + 16]) + Math.abs(hash[17] - bin[o + 17]) + Math.abs(hash[18] - bin[o + 18])) / 24,
-      dist = a + f * 0.5 + c;
     if (best.length < k || dist < best[best.length - 1][1]) {
       best.push([i, dist]);
       best.sort((x, y) => x[1] - y[1]);
