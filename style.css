@@ -1726,3 +1726,9 @@ body.glass .topbar { background: rgba(12, 14, 19, 0.58); }
 .auto-browse-status { min-height:28px;display:grid;place-items:center;margin:8px 0;color:var(--muted);font-size:12px; }
 .card-grid > .grid-card { content-visibility:auto;contain-intrinsic-size:auto 280px; }
 .view-compact .card-grid > .grid-card,.view-symbols .card-grid > .grid-card { contain-intrinsic-size:auto 70px; }
+
+.binder-empty-state { padding:28px 20px;margin-top:20px;border:1px dashed var(--line);border-radius:16px;text-align:center; }
+.binder-empty-state h3 { margin:0 0 8px; }.binder-empty-state p { max-width:340px;margin:0 auto 18px; }
+.pocket-image .img-missing { position:absolute;inset:0;display:grid;place-content:center;gap:6px;color:var(--muted);font-size:12px;text-align:center; }
+.pocket-image .img-missing small { font-size:10px; }
+.pocket-image .binder-card-art { -webkit-user-drag:none;user-select:none; }

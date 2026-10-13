@@ -1,3 +1,9 @@
+3.21.0 — User-created binders and resilient binder artwork
+- No automatic starter, Unsorted, or location binders. Existing user-created binders are preserved; other locations remain in the collection.
+- Binder pockets and clear covers use exact card/printing artwork fallbacks, including Shining Legends and Classic Collection cached records.
+- Create a named binder directly in the collection-location picker while saving a card or moving selected entries. A box/location alone does not create a binder.
+- Binder options inside the binder expose rename, matching rules, cover color, background and Delete binder with Undo. Cards are never deleted with the binder. Saving edits returns to the binder. New physical binders default to their named location; filtered binder views remain available.
+
 3.20.1 — Automatic browsing and exact Classic Collection art
 - Search, set cards, set catalogues and collections load the next batch near the bottom in all three games. Buttons remain only for unsupported browsers and retrying failures.
 - Failed Pokémon search pages are retried without skipping a page; disabled, detached and already-fired scroll triggers do not dispatch duplicate loads.

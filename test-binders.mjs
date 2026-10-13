@@ -8,7 +8,7 @@ assert.equal((page.match(/class="stash-pocket"/g)||[]).length,9,'only nine entri
 assert.match(page,/Card 9/); assert.doesNotMatch(page,/data-name="Card 0"/);
 assert.match(binderPage(rows,'Favorites',2),/page 3 of 3/);
 assert.match(binderPage([],'Empty'),/No cards here yet/);
-assert.match(binderShelf(rows,'mtg'),/data-location="Favorites"/);
+assert.doesNotMatch(binderShelf(rows,'mtg'),/class="stash-binder|Your first binder|Unsorted cards/);assert.match(binderShelf(rows,'mtg'),/No binders yet/);
 assert.match(binderPage([{game:'mtg',entry:{name:'<unsafe>',qty:1}}],'<unsafe>'),/&lt;unsafe&gt;/);
 console.log('PASS: binder grouping, ownership totals, nine-pocket pagination, empty binders and escaped labels.');
 
@@ -60,10 +60,13 @@ console.log('PASS: game-aware binder filters, overlapping ownership, fluid edge 
 const {binderFavorites,coverImages,binderCover,MAX_FAVORITES}=await import('./binders.js');
 assert.deepEqual(binderFavorites({featured:'a'}),['a'],'older single-feature binders keep their cover card');
 assert.equal(binderFavorites({favorites:Array.from({length:12},(_,i)=>'f'+i)}).length,MAX_FAVORITES);
-const pics=Array.from({length:12},(_,i)=>({entry:{id:'c'+i,name:'C'+i},image:'img'+i}));
-assert.deepEqual(coverImages(pics,['c7']).map(x=>x.image),['img7'],'one star fills the cover');
+const pics=Array.from({length:12},(_,i)=>({entry:{id:'c'+i,name:'C'+i},image:'https://example.test/img'+i}));
+assert.deepEqual(coverImages(pics,['c7']).map(x=>x.image),['https://example.test/img7'],'one star fills the cover');
 assert.equal(coverImages(pics,['c1','c2','c3']).length,4,'two to four stars show a 2×2 window');
 assert.equal(coverImages(pics,['c1','c2','c3','c4','c5','c6']).length,9,'five or more show a full 3×3 page');
-assert.equal(coverImages(pics,['c9','c1','c2'])[0].image,'img9','starred cards come first, in star order');
+assert.equal(coverImages(pics,['c9','c1','c2'])[0].image,'https://example.test/img9','starred cards come first, in star order');
 assert.match(binderCover({title:'T',subtitle:'s',images:coverImages(pics,['c1','c2'])}),/stash-window w4/);
 console.log('PASS: swipe anywhere with click guard, rubber band, scroll-safe, keyboard turns, and up to nine starred cover cards.');
+
+const gx={game:'ptcg',entry:{id:'gx',cardId:'sm3.5-78',name:'Mewtwo GX',qty:1,location:'Favorites'},card:{game:'ptcg',id:'sm3.5-78',name:'Mewtwo GX',image:''}};
+const shelf=binderShelf([gx],'ptcg',[{id:'explicit',game:'ptcg',title:'Favorites',rule:'location',value:'Favorites'}]);assert.match(shelf,/sm35\/78_hires.png/);assert.match(shelf,/data-binder="explicit"/);assert.match(binderPage([gx],'Favorites',0,'next',{id:'explicit'}),/sm35\/78_hires.png/);assert.match(binderPage([gx],'Favorites',0,'next',{id:'explicit'}),/Binder options/);

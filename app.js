@@ -871,7 +871,7 @@ function showBinder(data,direction="next",keepScroll=false) {
 }
 A.openBinder = t => {
   const game=t.dataset.game, b=binderById(t.dataset.binder);
-  if (!["mtg","ptcg","ygo"].includes(game) || game !== T.game() || b && b.game!==game) return;
+  if (!["mtg","ptcg","ygo"].includes(game) || game !== T.game() || !b || b.game!==game) return;
   showBinder({type:"binder",game,location:t.dataset.location || "",binder:b?.id || "",page:0});
 };
 A.binderPage = t => {
@@ -884,30 +884,40 @@ A.binderPage = t => {
   if(S.ui.sheetCtx?.page!==data.page) animateTurn($("#sheetBody"),leaf,page<data.page?-1:1,t.how||{});
 };
 function binderEditor(b=null) {
-  const game=b?.game || T.game(), value=b?.value || "";
-  openSheet(`<div class="sheet-head"><h2>${b?"Customize binder":"New binder"}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><label class="field">Binder name<input id="binderTitle" maxlength="60" value="${esc(b?.title || "")}" placeholder="Fire Pokémon, rare finds, land library…"></label><label class="field">Cards to include<select id="binderRule" data-change="binderRule">${options([["all","All my cards"],["set","A specific set"],["rare","Rare cards and above"],["rarity","An exact rarity"],["type","Card type"],["color","Color / energy / attribute"],["location","A collection location"]],b?.rule || "all")}</select></label><label class="field" id="binderValueLabel">Filter value<input id="binderValue" maxlength="100" value="${esc(value)}" placeholder="e.g. base1, Rare, Fire, Land, W, LIGHT"></label><p id="binderFilterHint" class="foot">Set: use its code (Pokémon base1, Magic FDN, Yu-Gi-Oh! LOB). Type examples: Land, Creature, Trainer, Spell. Color examples: Fire, Water, W, U, B, R, G, DARK.</p><label class="field">Cover color<input id="binderColor" type="color" value="${esc(b?.color || BINDER_COLORS[(S.state.settings.binders || []).length % BINDER_COLORS.length])}"></label><label class="field">Background image URL (optional)<input id="binderBackground" type="url" value="${esc(b?.background?.startsWith("https:")?b.background:"")}" placeholder="https://…"></label><input id="binderBgData" type="hidden" value="${esc(b?.background?.startsWith("data:")?b.background:"")}"><label class="btn ghost file">Upload cover image<input type="file" accept="image/jpeg,image/png,image/webp" data-change="binderImage" hidden></label><span id="binderImageStatus" class="muted small">${b?.background?.startsWith("data:")?"Uploaded cover saved":""}</span><button class="link small" data-act="clearBinderImage">Clear image</button><p class="foot">Use an HTTPS image link or upload a photo. Star an owned card inside the binder to place it in the cover’s clear pocket.</p><button class="btn block" data-act="saveBinder" data-binder="${esc(b?.id || "")}" data-game="${esc(game)}">Save binder</button>${b?`<button class="link danger" data-act="removeBinder" data-binder="${esc(b.id)}">Remove this binder view</button>`:""}`,{type:"binder-editor",id:b?.id || ""});
-  const rule=$("#binderRule").value;$("#binderValueLabel").hidden=["all","rare"].includes(rule);
+  const game=b?.game || T.game(), value=b?.value || "", returnPage=S.ui.sheetCtx?.type === "binder"?S.ui.sheetCtx.page:0;
+  openSheet(`<div class="sheet-head"><h2>${b?"Binder settings":"New binder"}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><label class="field">Binder name<input id="binderTitle" maxlength="60" value="${esc(b?.title || "")}" placeholder="Fire Pokémon, rare finds, land library…"></label><label class="field">Cards to include<select id="binderRule" data-change="binderRule">${options([["all","All my cards"],["set","A specific set"],["rare","Rare cards and above"],["rarity","An exact rarity"],["type","Card type"],["color","Color / energy / attribute"],["location","Cards placed in this binder"]],b?.rule || "location")}</select></label><label class="field" id="binderValueLabel"><span id="binderValueCaption">Filter value</span><input id="binderValue" maxlength="100" value="${esc(value)}" placeholder="e.g. base1, Rare, Fire, Land, W, LIGHT"></label><p id="binderFilterHint" class="foot">Set: use its code (Pokémon base1, Magic FDN, Yu-Gi-Oh! LOB). Type examples: Land, Creature, Trainer, Spell. Color examples: Fire, Water, W, U, B, R, G, DARK.</p><details class="binder-appearance"><summary>Cover appearance</summary><label class="field">Cover color<input id="binderColor" type="color" value="${esc(b?.color || BINDER_COLORS[(S.state.settings.binders || []).length % BINDER_COLORS.length])}"></label><label class="field">Background image URL (optional)<input id="binderBackground" type="url" value="${esc(b?.background?.startsWith("https:")?b.background:"")}" placeholder="https://…"></label><input id="binderBgData" type="hidden" value="${esc(b?.background?.startsWith("data:")?b.background:"")}"><label class="btn ghost file">Upload cover image<input type="file" accept="image/jpeg,image/png,image/webp" data-change="binderImage" hidden></label><span id="binderImageStatus" class="muted small">${b?.background?.startsWith("data:")?"Uploaded cover saved":""}</span><button class="link small" data-act="clearBinderImage">Clear image</button><p class="foot">Use an HTTPS image link or upload a photo. Star an owned card inside the binder to place it in the cover’s clear pocket.</p></details><button class="btn block" data-act="saveBinder" data-binder="${esc(b?.id || "")}" data-game="${esc(game)}">Save binder</button>${b?`<button class="link danger" data-act="removeBinder" data-binder="${esc(b.id)}">Delete binder</button><p class="foot">Your cards stay in the collection.</p>`:""}`,{type:"binder-editor",id:b?.id || "",returnPage});
+  C.binderRule($("#binderRule"));
 }
 A.newBinder = ()=>binderEditor();
 A.editBinder = t => {const b=binderById(t.dataset.binder);if(b)binderEditor(b);};
-C.binderRule = t => {$("#binderValueLabel").hidden=["all","rare"].includes(t.value);};
+C.binderRule = t => {
+ $("#binderValueLabel").hidden=["all","rare"].includes(t.value);
+ const hints={location:["Location name (optional)","Leave blank to use the binder name. Assign cards here using Where it lives."],set:["Set code","Use the exact set code: Pokémon base1, Magic FDN, or Yu-Gi-Oh! LOB."],type:["Card type","Examples: Land, Creature, Trainer or Spell."],color:["Color / energy / attribute","Examples: Fire, Water, W, U, B, R, G or DARK."],rarity:["Rarity","Use the exact rarity name shown on your cards."]};
+ if($("#binderValueCaption"))$("#binderValueCaption").textContent=(hints[t.value]||["Filter value"])[0];
+ if($("#binderFilterHint")){ $("#binderFilterHint").hidden=!hints[t.value];$("#binderFilterHint").textContent=hints[t.value]?.[1]||""; }
+};
 C.binderImage = async t => {
   const file=t.files?.[0];if(!file)return;if(file.size>10*1024*1024)throw Error("Choose an image under 10 MB.");
   const bitmap=await createImageBitmap(file);try{const canvas=document.createElement("canvas"),ratio=Math.min(1,800/Math.max(bitmap.width,bitmap.height));canvas.width=Math.round(bitmap.width*ratio);canvas.height=Math.round(bitmap.height*ratio);canvas.getContext("2d").drawImage(bitmap,0,0,canvas.width,canvas.height);const image=canvas.toDataURL("image/jpeg",.7);if(image.length>350000)throw Error("That cover is too large. Try a simpler or smaller image.");if(!$("#binderBgData"))return;$("#binderBgData").value=image;$("#binderBackground").value="";$("#binderImageStatus").textContent="Cover image ready · saved when you save the binder";}finally{bitmap.close();}
 };
 A.clearBinderImage = ()=>{if($("#binderBgData"))$("#binderBgData").value="";if($("#binderBackground"))$("#binderBackground").value="";if($("#binderImageStatus"))$("#binderImageStatus").textContent="";};
 A.saveBinder = async t => {
-  const title=$("#binderTitle").value.trim(),rule=$("#binderRule").value,game=t.dataset.game,value=rule==='set'?(game==='ygo'?$("#binderValue").value.trim().toUpperCase():$("#binderValue").value.trim().toLowerCase()):$("#binderValue").value.trim(),color=$("#binderColor").value,background=$("#binderBgData")?.value || $("#binderBackground").value.trim();
+  const title=$("#binderTitle").value.trim(),rule=$("#binderRule").value,game=t.dataset.game,value=rule==='set'?(game==='ygo'?$("#binderValue").value.trim().toUpperCase():$("#binderValue").value.trim().toLowerCase()):$("#binderValue").value.trim() || (rule === "location"?title:""),color=$("#binderColor").value,background=$("#binderBgData")?.value || $("#binderBackground").value.trim();
   if(!title)throw Error("Give your binder a name.");
   if(!["all","rare"].includes(rule)&&!value)throw Error("Enter the set, rarity, type, color or location to match.");
   if(!/^#[0-9a-f]{6}$/i.test(color))throw Error("Choose a valid cover color.");
   if(background && !background.startsWith("data:")){let url;try{url=new URL(background);}catch{throw Error("Use a valid HTTPS image URL.");}if(url.protocol!=="https:")throw Error("Background images must use HTTPS.");}
   if(background.startsWith("data:") && (!/^data:image\/(?:jpeg|png|webp);base64,[a-z0-9+/=]+$/i.test(background) || background.length>350000)) throw Error("Choose a smaller JPEG, PNG or WebP cover image.");
   const old=binderById(t.dataset.binder), b={id:old?.id || uid(),game,title,rule,value,color,background,featured:old?.featured || "",favorites:binderFavorites(old)};
-  await commit(st=>{st.settings.binders ||= [];const at=st.settings.binders.findIndex(x=>x.id===b.id);if(at<0)st.settings.binders.push(b);else st.settings.binders[at]=b;},{rerender:false});
-  closeSheet(); if(game==="mtg")S.ui.collTab="binders";else T.ui(game).coll.tab="binders";go("#collection/binders");render();toast("Binder saved. Owned quantities are unchanged.");
+  const returnPage=S.ui.sheetCtx?.returnPage || 0;
+  await commit(st=>{st.settings.binders ||= [];if(b.rule === "location")rememberLocation(st,game,b.value);const at=st.settings.binders.findIndex(x=>x.id===b.id);if(at<0)st.settings.binders.push(b);else st.settings.binders[at]=b;},{rerender:false});
+  closeSheet(); if(game==="mtg")S.ui.collTab="binders";else T.ui(game).coll.tab="binders";go("#collection/binders");render();if(old)setTimeout(()=>{if(T.game()===game)showBinder({type:"binder",game,binder:b.id,page:returnPage});},0);toast("Binder saved. Owned quantities are unchanged.");
 };
-A.removeBinder = async t => {await commit(st=>{st.settings.binders=(st.settings.binders || []).filter(b=>b.id!==t.dataset.binder);},{rerender:false});closeSheet();render();toast("Binder view removed. Your cards remain in the collection.");};
+A.removeBinder = async t => {
+ const b=binderById(t.dataset.binder);if(!b || b.game!==T.game())return;
+ await commit(st=>{st.settings.binders=(st.settings.binders || []).filter(x=>x.id!==b.id);},{rerender:false,enrich:false,undo:`Deleted binder “${b.title}”. Your cards stay in the collection.`});
+ closeSheet();render();
+};
 A.featureBinderCard = async t => {
   const data=S.ui.sheetCtx,b=binderById(data?.binder);if(!b)return;
   const rows=binderRows(b.game).filter(r=>binderMatches(r,b)),id=t.dataset.entry;if(!rows.some(r=>r.entry.id===id))return;
@@ -1827,7 +1837,7 @@ async function saveLot(unverified) {
     } else if (!unverified) e.nameVerified = true;
     await commit(
       (s) => {
-        e.location=rememberLocation(s,"mtg",e.location);
+        e.location=rememberLocation(s,"mtg",e.location,{createBinder:$("#addLocationPicker")?.value === "binder:new"});
         s.collection = editing ? s.collection.map((x) => (x.id === e.id ? e : x)) : [...s.collection, e];
         s.example = false;
         s.printings = { ...s.printings, ...(S.pendingPrintings || {}) };
@@ -2633,7 +2643,7 @@ A.acqConfirm = async (t) => {
     const extra = { finish: $("#acqFinish").value, condition: $("#acqCond").value, language: "en" };
     await commit(
       (s) => {
-        for(const p of picked)p.location=rememberLocation(s,"mtg",p.location);
+        for(const p of picked)p.location=rememberLocation(s,"mtg",p.location,{createBinder:$("#acqLocPicker")?.value === "binder:new"});
         if (acqMode === "purchase") {
           for (const p of picked) {
             if (!Number.isInteger(p.qty) || p.qty < 1) throw Error("Check the quantity for " + p.name);

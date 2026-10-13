@@ -1665,7 +1665,7 @@ export function registerTcg(c) {
       variantLabel = G === "ptcg" ? card.variants?.find(v => v.key === pr)?.label || pr : "";
     await mutate(
       (st,state) => {
-        const location=rememberLocation(state,G,document.querySelector("#tLoc").value);
+        const location=rememberLocation(state,G,document.querySelector("#tLoc").value,{createBinder:document.querySelector("#tLocPicker")?.value === "binder:new"});
         const same = st.collection.find((e) => e.cardId === card.id && (e.printing || "") === printing && (e.variant || "") === (G === "ptcg" ? pr : "") && (e.edition || "") === edition && (e.rarity || "") === rarity && e.condition === document.querySelector("#tCond").value && String(e.location || "").trim() === location);
         if (same) same.qty += qty;
         else st.collection.push({ id: uid(), cardId: card.id, name: card.name, key: SOURCES[G].ownKey(card), qty, printing, rarity, edition, variantLabel, variant: G === "ptcg" ? pr : "", condition: document.querySelector("#tCond").value, location, addedAt: new Date().toISOString() });

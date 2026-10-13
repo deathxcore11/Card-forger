@@ -28,3 +28,5 @@ for(const game of ['ygo','ptcg']){
  const restored=validateWorkspace(JSON.parse(JSON.stringify(S.state)));assert.equal(restored.settings.lastLocation[game],'Deck');assert.deepEqual(savedLocations(restored,game),['Box','Deck']);
 }
 console.log('PASS: reusable per-game locations, edit preservation, escaping, new-name controls, persistence and real add actions separating identical cards in different boxes.');
+
+const binderState=blank();rememberLocation(binderState,'ptcg','Blue box');assert.equal((binderState.settings.binders || []).length,0);rememberLocation(binderState,'ptcg','Fire binder',{createBinder:true});rememberLocation(binderState,'ptcg','fire binder',{createBinder:true});assert.equal(binderState.settings.binders.length,1);assert.equal(binderState.settings.binders[0].rule,'location');assert.equal(binderState.settings.binders[0].game,'ptcg');assert.match(locationPicker(binderState,'ptcg','loc'),/Create a binder/);assert.match(locationPicker(binderState,'ptcg','loc'),/Fire binder · binder/);const restoredBinder=validateWorkspace(JSON.parse(JSON.stringify(binderState)));assert.equal(restoredBinder.settings.binders.length,1);
