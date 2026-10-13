@@ -2037,3 +2037,47 @@ nav [data-nav] { position: relative; }
 .tdiff.over { color: #f5b335; background: rgba(245, 179, 53, 0.14); }
 .tdiff.under { color: #8fb8ff; background: rgba(143, 184, 255, 0.14); }
 .trade-empty { color: var(--muted); font-size: 14px; padding: 12px; border-radius: 12px; border: 1px dashed var(--line); }
+
+/* Deck Power: weaknesses, simulation, breakdown */
+.power .pw-headline { margin-top: 6px; color: var(--text); }
+.pw-profile { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.pw-profile span { flex: 1 1 72px; display: grid; gap: 2px; padding: 8px 10px; border-radius: 10px; background: color-mix(in srgb, var(--text) 5%, transparent); font-size: .78rem; color: var(--muted); }
+.pw-profile b { font-size: 1.05rem; color: var(--text); }
+.pw-issue { padding: 12px 0 12px 14px; border-left: 3px solid color-mix(in srgb, var(--warn, #e0a240) 55%, transparent); margin: 10px 0; }
+.pw-issue.major { border-left-color: var(--bad, #e5534b); }
+.pw-issue.mid { border-left-color: var(--warn, #e0a240); }
+.pw-issue p { margin: 4px 0; line-height: 1.45; }
+.pw-issue-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.pw-lost { flex: none; font-variant-numeric: tabular-nums; font-weight: 700; font-size: .85rem; color: var(--bad, #e5534b); }
+.pw-issue:not(.major) .pw-lost { color: var(--warn, #e0a240); }
+.pw-cards { font-size: .82rem; line-height: 1.6; color: var(--muted); }
+.pw-cards .link { font-size: inherit; padding: 0; min-height: 0; }
+.pw-fix { color: var(--muted); font-style: italic; }
+.pw-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.pw-chip { padding: 6px 10px; border-radius: 999px; font-size: .8rem; background: color-mix(in srgb, var(--good, #3fb68b) 14%, transparent); color: var(--text); }
+.pw-chip b { color: var(--good, #3fb68b); font-weight: 650; }
+.pw-sim { padding: 10px 0; border-top: 1px solid var(--line); display: grid; gap: 5px; }
+.pw-sim:first-of-type { border-top: 0; }
+.pw-sim b { font-variant-numeric: tabular-nums; font-size: 1.05rem; }
+.pw-sim.ok b { color: var(--good, #3fb68b); }
+.pw-sim.near b { color: var(--warn, #e0a240); }
+.pw-sim.bad b { color: var(--bad, #e5534b); }
+.pw-track { position: relative; height: 6px; border-radius: 99px; background: color-mix(in srgb, var(--text) 9%, transparent); }
+.pw-fill { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: currentColor; transition: width .6s cubic-bezier(.2,.8,.2,1); }
+.pw-sim.ok .pw-fill { color: var(--good, #3fb68b); }
+.pw-sim.near .pw-fill { color: var(--warn, #e0a240); }
+.pw-sim.bad .pw-fill { color: var(--bad, #e5534b); }
+.pw-goal { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--text); border-radius: 2px; opacity: .7; }
+details.ingredient { border-top: 1px solid var(--line); padding: 8px 0; }
+details.ingredient > summary { list-style: none; cursor: pointer; display: grid; gap: 6px; }
+details.ingredient > summary::-webkit-details-marker { display: none; }
+details.ingredient[open] > summary b { color: var(--accent); }
+.role-chips { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-left: 6px; vertical-align: middle; }
+.role-chip { font-size: .68rem; padding: 2px 7px; border-radius: 99px; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--text); white-space: nowrap; }
+.odds-name { font-weight: 600; text-align: left; padding: 0; min-height: 0; }
+.score-panel.power { flex-wrap: wrap; }
+.score-panel.power > div:not(.pw-profile) { flex: 1 1 180px; min-width: 0; }
+.pw-profile { flex: 1 1 100%; }
+.pw-profile span { flex: 1 1 56px; }
+.metrics td .role-chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 0; padding: 0; }
+.metrics td .role-chips .role-chip { display: inline-block; margin: 0; padding: 2px 7px; }

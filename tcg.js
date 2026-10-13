@@ -1160,14 +1160,14 @@ const pctTxt = (x) => Math.round(x * 100) + "%";
 function deckInsights(g, d, f, s) {
   const main = (d.zones.main || []).map((r) => ({ r, c: cardOf(g, r.cardId) })),
     N = main.reduce((a, x) => a + x.r.qty, 0),
-    top = [...s.rows].filter((x) => x.c && price(x.c)).sort((a, b) => price(b.c) - price(a.c)).slice(0, 5),
-    starters = new Set(d.starters || []);
+    top = [...s.rows].filter((x) => x.c && price(x.c)).sort((a, b) => price(b.c) - price(a.c)).slice(0, 5);
   if (!N) return `<p class="muted pad">Add cards to see composition and odds.</p>`;
   const pw = tcgPower(g, d, f, (x) => cardOf(g, x)),
-    powerHtml = powerPanel(pw, { loadAct: `data-act="tMetaRefresh"`, cardAct: (x) => (g === "ygo" ? `data-act="tCard" data-id="${esc(x.key)}"` : `data-act="tDeckFindName" data-name="${esc(x.name)}"`) });
+    powerHtml = powerPanel(pw, { loadAct: `data-act="tMetaRefresh"`, cardAct: (x) => (x.id || g === "ygo" ? `data-act="tCard" data-id="${esc(x.id || x.key)}"` : `data-act="tDeckFindName" data-name="${esc(x.name)}"`) });
   const bars = (items) => `<div class="comp">${items.map(([label, n, total, note]) => `<div class="meter"><span>${esc(label)}</span>${bar(total ? n / total : 0)}<b>${n}</b></div>${note ? `<p class="foot">${note}</p>` : ""}`).join("")}</div>`;
-  const oddsRow = (x, hands) => `<tr><td><label class="check"><input type="checkbox" data-change="tStarter" data-deck="${esc(d.id)}" data-id="${esc(x.r.cardId)}" ${starters.has(x.r.cardId) ? "checked" : ""}> ${esc(x.r.name)}</label></td><td class="num">${x.r.qty}</td>${hands.map((n) => `<td class="num">${pctTxt(atLeastOne(N, x.r.qty, n))}</td>`).join("")}</tr>`;
-  const starterK = main.filter((x) => starters.has(x.r.cardId)).reduce((a, x) => a + x.r.qty, 0);
+  // Each card's role comes from the Deck Power engine, so the table shows why a card matters.
+  const roleChips = (id) => (pw.roles?.get(String(id)) || []).map((r) => `<span class="role-chip">${esc(r)}</span>`).join(""),
+    oddsRow = (x, hands) => `<tr><td><button class="link odds-name" data-act="tCard" data-id="${esc(x.r.cardId)}">${esc(x.r.name)}</button><span class="role-chips">${roleChips(x.r.cardId)}</span></td><td class="num">${x.r.qty}</td>${hands.map((n) => `<td class="num">${pctTxt(atLeastOne(N, x.r.qty, n))}</td>`).join("")}</tr>`;
   const valuePanel = `<section class="panel"><h3>Most valuable cards</h3><div class="list compact">${top.map((x) => `<button class="mini-row" data-act="tCard" data-id="${esc(x.r.cardId)}"><span class="ellip">${x.r.qty}× ${esc(x.r.name)}</span><span class="small">${usd(price(x.c) * x.r.qty)}</span></button>`).join("") || '<p class="muted small">No prices yet.</p>'}</div><p class="foot">Deck value ${usd(s.value)} · ${usd(s.buy)} still to buy.</p></section>`;
   if (g === "ygo") {
     const kind = (c) => c?.category || "Monster",
@@ -1182,10 +1182,9 @@ function deckInsights(g, d, f, s) {
     return `${powerHtml}<section class="panel"><h3>Main Deck · ${N} cards</h3>${bars([["Monsters", count("Monster"), N], ["Spells", count("Spell"), N], ["Traps", count("Trap"), N]])}
       ${Object.keys(extraKinds).length ? `<p class="small">Extra Deck: ${Object.entries(extraKinds).map(([k, n]) => `${n} ${esc(k[0].toUpperCase() + k.slice(1))}`).join(" · ")}</p>` : ""}</section>
     <section class="panel"><h3>Monster levels</h3>${levelChart(levels)}<p class="foot">Level 5–6 monsters need 1 Tribute, 7+ need 2, unless their text says otherwise.</p></section>
-    <section class="panel"><div class="row between"><h3>Opening-hand odds</h3>${starterK ? `<span class="chip ok">${pctTxt(atLeastOne(N, starterK, 5))} to open a starter</span>` : ""}</div>
-      <p class="muted small">Chance to draw at least one copy. Going first you draw 5; going second you draw 6 on your first turn. Tick your <b>starters</b> (cards that begin your combo) to see the chance of opening one of them.</p>
-      <table class="metrics"><thead><tr><th>Card</th><th class="num">Copies</th><th class="num">First (5)</th><th class="num">Second (6)</th></tr></thead><tbody>${main.sort((a, b) => b.r.qty - a.r.qty || a.r.name.localeCompare(b.r.name)).map((x) => oddsRow(x, [5, 6])).join("")}</tbody></table>
-      ${starterK ? `<p class="small">With ${starterK} starter${starterK > 1 ? "s" : ""}: <b>${pctTxt(atLeastOne(N, starterK, 5))}</b> going first, <b>${pctTxt(atLeastOne(N, starterK, 6))}</b> going second. ${N > 40 ? `At 40 cards it would be ${pctTxt(atLeastOne(40, starterK, 5))}.` : ""}</p>` : ""}
+    <section class="panel"><h3>Card by card</h3>
+      <p class="muted small">Chance to draw at least one copy (exact odds). Going first you draw 5; going second, 6. Labels show each card's job in the deck; the hand simulation above combines them.</p>
+      <table class="metrics"><thead><tr><th>Card</th><th class="num">Qty</th><th class="num" title="Going first: 5 cards">1st (5)</th><th class="num" title="Going second: 6 cards">2nd (6)</th></tr></thead><tbody>${main.sort((a, b) => b.r.qty - a.r.qty || a.r.name.localeCompare(b.r.name)).map((x) => oddsRow(x, [5, 6])).join("")}</tbody></table>
     </section>${valuePanel}`;
   }
   // Pokémon
@@ -1203,8 +1202,8 @@ function deckInsights(g, d, f, s) {
     ${broken.length ? `<div class="note warn">${broken.map((x) => `${esc(x.r.name)} evolves from <b>${esc(x.c.evolveFrom)}</b>, which isn’t in the deck${x.c.stage === "Stage2" && hasCandy ? " (Rare Candy can skip it, but you still need the Basic)" : ""}.`).join("<br>")}</div>` : `<p class="small ok-text">✓ Every evolution has the card it evolves from.</p>`}
     ${needTypes.length ? `<div class="note warn">Attacks need ${needTypes.map(esc).join(", ")} Energy, but the deck has no basic ${needTypes.map(esc).join("/")} Energy.</div>` : ""}
   </section>
-  <section class="panel"><h3>Draw odds</h3><p class="muted small">Chance to have at least one copy in your opening 7. Six cards go to your Prizes — a single copy is prized about ${pctTxt(6 / Math.max(N, 1))} of games.</p>
-    <table class="metrics"><thead><tr><th>Card</th><th class="num">Copies</th><th class="num">Opening 7</th><th class="num">By turn 2 (9)</th></tr></thead><tbody>${main.sort((a, b) => b.r.qty - a.r.qty || a.r.name.localeCompare(b.r.name)).filter((x) => !x.c?.basicEnergy).map((x) => oddsRow(x, [7, 9])).join("")}</tbody></table></section>${valuePanel}`;
+  <section class="panel"><h3>Card by card</h3><p class="muted small">Chance to have at least one copy (exact odds). Six cards go to your Prizes, so a single copy is prized about ${pctTxt(6 / Math.max(N, 1))} of games. Labels show each card's job in the deck.</p>
+    <table class="metrics"><thead><tr><th>Card</th><th class="num">Qty</th><th class="num" title="Opening hand of 7">In 7</th><th class="num" title="By turn 2: 9 cards">By T2</th></tr></thead><tbody>${main.sort((a, b) => b.r.qty - a.r.qty || a.r.name.localeCompare(b.r.name)).filter((x) => !x.c?.basicEnergy).map((x) => oddsRow(x, [7, 9])).join("")}</tbody></table></section>${valuePanel}`;
 }
 function levelChart(levels) {
   const max = Math.max(1, ...levels);

@@ -95,3 +95,17 @@ assert.equal(pt.stats.N, 60);
 assert.ok(pt.score >= 75, `a proper Pokémon list rates well (got ${pt.score})`);
 assert.ok(!pt.parts.some((x) => /Ramp|Lands|Interaction/.test(x.key)), "Pokémon uses its own ingredients");
 console.log(`PASS: Pokémon judged on Basics, draw, search and gust (${pt.score}).`);
+
+// Detail: simulated hands, ranked weaknesses with the cards behind them, card roles.
+import { review, simulate, poolOf, allIn } from "./deckaudit.js";
+assert.ok(pt.sims.length >= 4 && pt.sims.every((x) => x.p >= 0 && x.p <= 1), "Pokémon hand simulation");
+assert.ok(pt.parts.find((x) => x.key === "Gust").cards.some((c) => c.name === "Boss's Orders" && c.qty === 3), "gust evidence lists the real cards");
+const weakDeck = ptcgPower([{ qty: 4, c: pk("Pikachu", { category: "Pokemon", basicPokemon: true }) }, { qty: 56, c: pk("Fire Energy", { category: "Energy", basicEnergy: true }) }], {});
+const rv = review(weakDeck.parts);
+assert.ok(rv.weak.length >= 4 && rv.weak[0].lost >= rv.weak.at(-1).lost, "weaknesses ranked by points lost");
+assert.ok(rv.weak.every((x) => x.why), "every weakness says why in plain words");
+assert.ok(y1.sims.find((x) => /starter \+/.test(x.label)).p > 0.4 && y2.sims[0].p === 0);
+assert.ok(Math.abs(simulate(poolOf([{ qty: 4, tags: new Set(["x"]) }, { qty: 36, tags: new Set() }]), (a) => ({ hit: a.slice(0, 5).some((c) => c.tags.has("x")) })).hit - 0.427) < 0.03, "simulation matches exact odds");
+assert.ok(Math.abs(allIn(60, 1, 6) - 0.1) < 1e-9);
+assert.ok(p.sims.find((x) => /Keepable/.test(x.label)).p > 0.7);
+console.log("PASS: weaknesses ranked with reasons and cards, seeded hand simulations match exact odds.");

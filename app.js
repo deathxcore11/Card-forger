@@ -1733,6 +1733,8 @@ A.cardTab = async (t) => {
     p.hidden = p.dataset.tab !== ctx.tab;
     if (!p.hidden) { p.classList.remove("tab-enter"); void p.offsetWidth; p.classList.add("tab-enter"); }
   }
+  // The Trade tab is built on demand (it reads your whole collection), so draw it now.
+  if (ctx.tab === "trade" && !$('#sheetBody .cs-panel[data-tab="trade"]')) refreshSheet();
   // The Play guide looks up cards that pair well the first time it's opened.
   if (ctx.tab === "guide") {
     if (ctx.type === "card") mtgGuideLoad(meta(ctx.name));

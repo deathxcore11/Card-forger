@@ -1,3 +1,22 @@
+3.31.0 — Deck Power that shows its work
+- Deck Power now lists every weakness, biggest first, with the points it costs, a plain reason
+  with your real numbers, and the exact cards it counted. Strengths are listed too.
+- 3,000 shuffled games of your exact list: Pokémon (mulligans, turn-1 draw or search, draw
+  Supporter on turn 1, main attacker ready by turn 2, Energy on turn 1, key cards stuck in
+  Prizes), Yu-Gi-Oh! (open a starter, starter plus interaction, going-second interaction, bricks)
+  and Magic (keepable 7s, land drops on time, flood, a turn-2 play, interaction in hand). Each
+  shows the target competitive lists hit.
+- Pokémon now also checks Supporter count, switching, recovery, Energy acceleration, ACE SPEC and
+  Radiant limits, too much Energy, and evolution line shapes (4-3-3, or 4-2-3 with Rare Candy).
+  Yu-Gi-Oh! also checks engine vs non-engine, going-second hands and cards that are dead in hand.
+- Score breakdown: points earned out of points possible for every ingredient; tap one to see
+  the cards behind it.
+- The odds table no longer has unexplained checkboxes. Each card shows its job (Starter, Hand
+  trap, Draw, Search, Gust, Main attacker…) instead.
+- Fixed: the Trade tab was blank unless it was already open when the card loaded. When nothing
+  you own is close in value, it now shows the closest bundle you can put together.
+- Fixed: binder covers showed "★&nbsp;1" and "1 copies".
+
 3.30.0 — A calmer collection and a Trade tab on every card
 - Collection: one slim line with the value (tap it for the Value tab), the card count and a
   refresh button, then search and a single row of small filter pills. The trade advice box moved

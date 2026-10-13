@@ -43,7 +43,26 @@ export function tradeMatches({ target, owned = [], wish = [] }) {
         .sort((a, b) => Math.abs(a.diff) - Math.abs(b.diff))
         .slice(0, 5)
     : [];
-  return { price: p, singles, pairs: shownPairs, asks };
+  // Nothing close? Build the nearest bundle (up to 4 cards, highest value first) so the tab
+  // still says what you could put together and how far short it falls.
+  let closest = null;
+  if (!singles.length && !shownPairs.length && mine.length) {
+    const items = [], left = new Map(mine.map((x) => [x.key, x.qty || 1]));
+    let total = 0;
+    for (const x of [...mine].sort((a, b) => b.price - a.price))
+      while (items.length < 4 && left.get(x.key) > 0 && total + x.price <= p * 1.1) {
+        items.push(x);
+        left.set(x.key, left.get(x.key) - 1);
+        total += x.price;
+      }
+    if (!items.length) {
+      const x = [...mine].sort((a, b) => Math.abs(a.price - p) - Math.abs(b.price - p))[0];
+      items.push(x);
+      total = x.price;
+    }
+    closest = { items, total, diff: total - p };
+  }
+  return { price: p, singles, pairs: shownPairs, asks, closest };
 }
 
 // The Trade tab. Each item: { key, name, price, art (html), open (attrs that open the card) }.
@@ -54,10 +73,11 @@ export function tradePanel(target, owned, wish) {
   const row = (b) =>
     `<div class="trade-row">${b.items.map((x) => `<button class="trade-card" ${x.open} aria-label="Open ${esc(x.name)}">${x.art}<span>${esc(x.name)}</span><small>${money(x.price)}</small></button>`).join(`<span class="trade-plus" aria-hidden="true">+</span>`)}<div class="trade-total"><b>${money(b.total)}</b>${diff(b.diff)}</div></div>`;
   const block = (title, sub, list, emptyText) => `<div class="trade-block"><h3>${title}</h3><p class="muted small">${sub}</p>${list.length ? list.map(row).join("") : `<p class="trade-empty">${emptyText}</p>`}</div>`;
-  const offers = [...m.singles, ...m.pairs];
+  const offers = [...m.singles, ...m.pairs],
+    near = m.closest ? `<div class="trade-block"><h3>Closest you can get</h3><p class="muted small">Nothing you own matches it on its own or as a pair. Your best bundle${m.closest.items.length > 1 ? ` of ${m.closest.items.length} cards` : ""}:</p>${row(m.closest)}</div>` : "";
   return `<section class="trade">
     <div class="trade-head"><span class="muted small">Worth about</span><b>${money(m.price)}</b></div>
-    ${block("Offer from your cards", "Cards you own worth about the same, alone or as a pair.", offers, owned.length ? "Nothing in your collection is close in value yet." : "Add cards to your collection to see what you could offer.")}
+    ${near || block("Offer from your cards", "Cards you own worth about the same, alone or as a pair.", offers, "Add cards to your collection to see what you could offer.")}
     ${target.owned ? block("Ask for from your wishlist", "You own this one. These cards you want are worth about the same.", m.asks, wish.length ? "Nothing on your wishlist is close in value." : "Add cards to your wishlist to see fair swaps for this one.") : ""}
     <p class="foot">Values are daily market estimates. Condition, edition and the other trader decide the real deal.</p>
   </section>`;

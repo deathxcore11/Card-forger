@@ -2,6 +2,7 @@
 // format, matches the list against cached tournament results, and renders the panel/badges.
 import { S } from "./store.js";
 import { esc, ring, bar, pct } from "./ui.js";
+import { review } from "./deckaudit.js";
 import { cardKey } from "./core.js";
 import { engineProfile } from "./insights.js";
 import { formatOf, isCommanderLike } from "./formats.js";
@@ -47,7 +48,26 @@ export function mtgPower(d) {
     let base;
     if (isCommanderLike(d)) {
       const p = engineProfile(d, S.catalog);
-      base = { score: p.score, parts: p.parts.map((x) => ({ ...x, fix: ["Ramp", "Draw", "Removal", "Wipe", "Protection", "Synergy"].includes(x.key) ? x.key : "" })), plan: p.archetype, lens: "Commander lens: lands, ramp, draw, answers, synergy with your commander and curve.", unknown: p.unknown };
+      const hands = mtgConstructedPower(d, S.catalog, cardKey, formatOf(d).size),
+        why = {
+          Lands: `${p.counts.Lands} lands. Commander decks usually want ${p.parts.find((x) => x.key === "Lands")?.target ?? 36}–38 so you hit land drops every turn.`,
+          Ramp: `${p.counts.Ramp} ramp pieces. About 10 gets your commander and big spells out a turn or two early.`,
+          Draw: `${p.counts.Draw} draw sources. Without ~10, you run out of cards by the midgame against three opponents.`,
+          Removal: `${p.counts.Removal} targeted answers. The table's best threat needs an answer from you too.`,
+          Wipe: `${p.counts.Wipe} board wipes. Two or three reset a board you've fallen behind on.`,
+          Protection: `${p.counts.Protection} protection pieces for your commander and key permanents.`,
+          Curve: `Average cost ${p.avg?.toFixed(2) ?? "—"}. Above 3.0, the early turns are slow.`,
+        };
+      base = {
+        score: p.score,
+        parts: p.parts.map((x) => ({ ...x, fix: ["Ramp", "Draw", "Removal", "Wipe", "Protection", "Synergy"].includes(x.key) ? x.key : "", why: why[x.key] || (x.key === "Synergy" ? `${x.count} cards support your commander's plan; about ${x.target} makes it come together.` : ""), cards: (p.byRole?.[x.key] || []).map((name) => ({ name, qty: 1 })) })),
+        plan: p.archetype,
+        lens: "Commander lens: lands, ramp, draw, answers, synergy with your commander and curve.",
+        unknown: p.unknown,
+        sims: hands.sims,
+        roles: hands.roles,
+        profile: [["Lands", p.counts.Lands], ["Ramp", p.counts.Ramp], ["Draw", p.counts.Draw], ["Removal", p.counts.Removal], ["Avg cost", p.avg?.toFixed(2) ?? "—"]],
+      };
     } else base = mtgConstructedPower(d, S.catalog, cardKey, formatOf(d).size);
     let match = null;
     if (M?.data?.decks?.length) {
@@ -137,12 +157,35 @@ export function powerPanel(p, { loadAct = "", findAct = "", cardAct = () => "" }
     : p.metaKey
       ? `<div class="meta-match"><p class="small">${p.metaBusy ? "Loading tournament results…" : "Compare this list with recent tournament winners to see which archetype it is, how it placed, and what it’s missing."}</p>${loadAct && !p.metaBusy ? `<button class="btn small" ${loadAct}>Compare with tournament decks</button>` : ""}</div>`
       : "";
-  return `<section class="panel score-panel power">${ring(p.score)}<div><p class="eyebrow">Deck Power</p><h2>${esc(powerGrade(p.score))}</h2><p class="small"><b>${esc(p.plan)}</b></p><p class="muted small">${esc(p.lens)} A build-health and tournament-evidence rating, not a win rate.</p></div></section>
+  const R = review(p.parts),
+    pts = (x) => (Math.round(x * 10) / 10).toFixed(1).replace(/\.0$/, ""),
+    pctx = (x) => Math.round(x * 100) + "%",
+    cardList = (x) => (x.cards?.length ? `<p class="pw-cards">${x.cards.map((c) => `<button class="link small" ${cardAct(c)}>${esc(c.name)}${c.qty > 1 ? ` ×${c.qty}` : ""}</button>`).join(", ")}</p>` : ""),
+    top = R.weak[0];
+  const weak = R.weak.length
+    ? R.weak
+        .map((x) => `<div class="pw-issue ${x.lost >= 6 ? "major" : x.lost >= 3 ? "mid" : ""}"><div class="pw-issue-top"><b>${esc(x.label)}</b><span class="pw-lost">−${pts(x.lost)} pts</span></div><p>${esc(x.why || x.hint)}</p><p class="pw-have muted small">Now <b>${esc(String(x.count))}</b> · aim for <b>${esc(String(x.target))}</b></p>${cardList(x)}${x.fix && findAct && x.fix.length < 14 ? `<button class="btn ghost small" ${findAct(x)}>Find ${esc(x.fix.toLowerCase())} cards</button>` : x.fix && x.fix.length >= 14 ? `<p class="pw-fix small">${esc(x.fix)}</p>` : ""}</div>`)
+        .join("")
+    : `<p class="small ok-text">Nothing loses real points. What's left is matchup tuning and your sideboard.</p>`;
+  const sims = p.sims?.length
+    ? `<section class="panel pw-sims"><div class="row between"><h3>3,000 shuffles of this list</h3><span class="muted small">same list, same numbers</span></div><p class="muted small">Every number below comes from shuffling your exact list and dealing real opening hands with this game's rules, not from estimates.</p>${p.sims
+        .map((x) => {
+          const ok = x.lower ? x.p <= x.target : x.p >= x.target,
+            close = x.lower ? x.p <= x.target * 1.6 : x.p >= x.target * 0.85;
+          return `<div class="pw-sim ${ok ? "ok" : close ? "near" : "bad"}"><div class="row between"><span>${esc(x.label)}${x.note ? `<small class="muted"> · ${esc(x.note)}</small>` : ""}</span><b>${pctx(x.p)}</b></div><div class="pw-track"><span class="pw-fill" style="width:${Math.min(100, x.p * 100)}%"></span><i class="pw-goal" style="left:${Math.min(100, x.target * 100)}%" title="Target ${pctx(x.target)}"></i></div><small class="muted">${x.lower ? "Aim for under" : "Aim for"} ${pctx(x.target)}</small></div>`;
+        })
+        .join("")}</section>`
+    : "";
+  const profile = p.profile?.length ? `<div class="pw-profile">${p.profile.map(([k, v]) => `<span><b>${esc(String(v))}</b>${esc(k)}</span>`).join("")}</div>` : "";
+  return `<section class="panel score-panel power">${ring(p.score)}<div><p class="eyebrow">Deck Power</p><h2>${esc(powerGrade(p.score))}</h2><p class="small"><b>${esc(p.plan)}</b></p><p class="muted small">${esc(p.lens)}</p>${top ? `<p class="pw-headline small">Biggest gain: <b>${esc(top.label)}</b> (+${pts(top.lost)} pts available)</p>` : ""}</div>${profile}</section>
+  <section class="panel pw-weak"><div class="row between"><h3>Weaknesses</h3><span class="muted small">${R.weak.length ? `${R.weak.length} found, biggest first` : "none"}</span></div>${weak}</section>
+  ${R.strong.length ? `<section class="panel pw-strong"><h3>Strengths</h3><div class="pw-chips">${R.strong.map((x) => `<span class="pw-chip"><b>${esc(x.label)}</b> ${esc(String(x.count))}</span>`).join("")}</div></section>` : ""}
+  ${sims}
   ${metaBox ? `<section class="panel">${metaBox}</section>` : ""}
-  <section class="panel"><h3>What the rating looks at</h3>${p.parts
+  <section class="panel"><div class="row between"><h3>Score breakdown</h3><span class="muted small">${p.score}/100</span></div><p class="muted small">Each ingredient is worth a share of 100 points, weighted by how much it decides games in this format. A build-health and tournament-evidence rating, not a win rate.</p>${R.scored
     .map((x) => {
       const low = x.ratio < 0.75;
-      return `<div class="ingredient"><div class="row between"><span><b>${esc(x.label)}</b> <span class="muted small">${esc(x.hint)}</span></span><span class="${low ? "warn-text" : ""}">${esc(String(x.count))}<span class="muted">/${esc(String(x.target))}</span></span></div>${bar(x.ratio, low ? "warn" : "good")}${low && x.fix && findAct ? `<button class="link small" ${findAct(x)}>Find ${esc(x.fix.toLowerCase())} cards →</button>` : ""}</div>`;
+      return `<details class="ingredient"><summary><div class="row between"><span><b>${esc(x.label)}</b> <span class="muted small">${esc(String(x.count))} / ${esc(String(x.target))}</span></span><span class="${low ? "warn-text" : ""}"><b>${pts(x.earned)}</b><span class="muted">/${pts(x.max)}</span></span></div>${bar(x.ratio, low ? "warn" : "good")}</summary><p class="small muted">${esc(x.hint)}</p>${cardList(x) || `<p class="small muted">No cards counted here.</p>`}</details>`;
     })
     .join("")}</section>`;
 }
