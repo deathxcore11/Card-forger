@@ -1956,3 +1956,10 @@ nav [data-nav] { position: relative; }
 
 .cs-panel.tab-enter { animation:sheet-step-in .18s ease-out; }
 @media(prefers-reduced-motion:reduce) { .cs-panel.tab-enter { animation:none; } }
+
+.cmp-effects { text-align:left; font-size:13px; margin:10px 0; width:100%; }
+.cmp-effects summary { color:var(--muted); cursor:pointer; }
+.cmp-effects p { white-space:pre-line; line-height:1.55; padding-top:8px; }
+
+.cam-status { white-space:normal; overflow:visible; text-overflow:clip; text-align:center; line-height:1.3; width:max-content; max-width:calc(100% - 24px); border-radius:18px; }
+.cam-status .cam-dot { flex:none; }

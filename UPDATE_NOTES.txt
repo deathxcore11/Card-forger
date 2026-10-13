@@ -1,3 +1,10 @@
+3.26.1 — Comparison facts, distinct action icons, and scanner false-match guards
+- Scanning searches only the selected game. An unrelated game's artwork score cannot replace its candidates or switch the app. Weak matches are discarded; close look-alikes and distant fingerprints require confirmation. A sole printing without a successful image check is not treated as an exact artwork match.
+- Camera guidance wraps on small screens instead of clipping the instruction.
+- Every action has its own SVG: heart, card stack, fanned deck, ring binder, and two-card comparison. Render tests reject missing and duplicate action icons.
+- Yu-Gi-Oh! Compare includes DEF (including old cached cards), distinguishes Link rating from Rank/Level, and does not guess Normal Summon permissions from level alone.
+- Pokémon Compare labels printed damage and treats conditional attacks as effect-dependent instead of claiming a guaranteed damage advantage. Expandable effects/restrictions keep both sides readable.
+
 3.26.0 — Card actions, visual Compare, and safer touch browsing
 - Hold a card (or right-click / Shift+F10) for Compare, Add to collection, Add to deck, Wishlist and Binder actions across all three games.
 - Compare now selects two visible cards while you browse/search. A small cancelable tray keeps the first card visible. Duplicate picks and cross-game comparisons are guarded.

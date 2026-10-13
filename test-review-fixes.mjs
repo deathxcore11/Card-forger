@@ -10,3 +10,11 @@ const p={id:'pokemon',prices:{usd:3},variants:[{key:'holofoil',usd:3}]};assert.n
 const {quoteModel,quoteDiscrepancy,quoteWarning}=await import('./workbench-ui.js');assert.equal(quoteModel('ptcg',p,'holofoil').value,3,'real USD field is read');assert.notEqual(quoteModel('ptcg',p,'holofoil').key,quoteModel('ptcg',{...p,variants:[{key:'holofoil',usd:3,fallback:true}]},'holofoil').key);
 assert.equal(quoteDiscrepancy({prices:{usd:824.69,eur:6.89}}),true);assert.equal(quoteDiscrepancy({prices:{usd:10,eur:8}}),false);assert.equal(quoteDiscrepancy({prices:{usd:null,eur:8}}),false);assert.match(quoteWarning({prices:{usd:824.69,eur:6.89}}),/not a verified like-for-like deal/);
 console.log('PASS: recognition outage retry, safe catalogue entities, quote finish/source isolation, variant prices and discrepancy warning.');
+
+const {acceptArtMatch}=await import('./scancam.js');
+assert.equal(acceptArtMatch('ptcg',{g:'mtg',score:1,like:1,distance:0,margin:1}),null,'Palkia must never be replaced by a Magic artwork guess');
+assert.equal(acceptArtMatch('ptcg',{g:'ptcg',score:.55,like:.8,distance:12,margin:.2}),null,'weak guesses are discarded');
+assert.equal(acceptArtMatch('ptcg',{g:'ptcg',score:.8,like:.8,distance:12,margin:.01}).sure,false,'look-alike tie needs confirmation');
+assert.equal(acceptArtMatch('ptcg',{g:'ptcg',score:.8,like:.8,distance:35,margin:.2}).sure,false,'distant fingerprint cannot auto-add');
+assert.equal(acceptArtMatch('ptcg',{g:'ptcg',score:.9,like:.9,distance:7,margin:.2}).sure,true);
+console.log('PASS: selected-game lock, weak visual rejection, tie/distance confidence gates.');

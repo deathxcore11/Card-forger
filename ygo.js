@@ -45,6 +45,8 @@ export function normalizeYgo(c) {
     misc: { tcgDate: misc.tcg_date || "", ocgDate: misc.ocg_date || "", views: misc.views || 0, mdRarity: misc.md_rarity || "", formats: misc.formats || [] },
     level: c.level ?? c.linkval ?? null,
     atk: c.atk ?? null,
+    def: c.linkval === undefined ? c.def ?? null : null,
+    link: c.linkval ?? null,
     archetype: c.archetype || "",
     sets: (c.card_sets || []).map((s) => ({ code: s.set_code, name: s.set_name, rarity: s.set_rarity, price: num(s.set_price) })),
     prices: {

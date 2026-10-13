@@ -60,7 +60,7 @@ export const likeness = (a, b) => 0.7 * dot(a.art, b.art) + 0.3 * dot(a.full, b.
 export function rankPrintings(scan, prints) {
   const ranked = prints.map((p) => ({ ...p, score: likeness(scan, p.fp) })).sort((a, b) => b.score - a.score),
     [a, b] = ranked;
-  const sure = !!a && a.score >= 0.55 && (!b || a.score - b.score >= 0.06);
+  const sure = !!a && a.score >= 0.72 && (!b || a.score - b.score >= 0.10);
   return { ranked, best: a || null, sure };
 }
 

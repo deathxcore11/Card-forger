@@ -344,7 +344,7 @@ export function scanView(g, gameName) {
   ${
     s.cands?.length || (s.read && !s.busy)
       ? `<section class="panel"><h3>${s.cands?.length ? (s.cands[0].exact ? "Is this your card?" : "Which one is it?") : "Couldn’t find it"}</h3>
-      ${s.foundIn && s.cands?.length ? `<p class="scan-other" style="--game-color:${GAME_HUE[s.foundIn]}"><b>This is a ${esc(GAME_LABEL[s.foundIn])} card.</b> Adding it switches the app to ${esc(GAME_LABEL[s.foundIn])}${/[!.]$/.test(GAME_LABEL[s.foundIn]) ? "" : "."}</p>` : ""}
+      ${s.foundIn && s.cands?.length ? `<p class="scan-other" style="--game-color:${GAME_HUE[s.foundIn]}"><b>Possible ${esc(GAME_LABEL[s.foundIn])} match · not confirmed.</b> Check the picture and selected game before adding${/[!.]$/.test(GAME_LABEL[s.foundIn]) ? "" : "."}</p>` : ""}
       ${cands ? `<div class="scan-cands">${cands}</div>` : `<p class="muted small">Move closer so the card fills the frame and the name is sharp. Or look it up with Google Lens, or type the name.</p>`}
       ${s.lastCard ? `<div class="actions wrap"><button class="btn ghost small scan-lens" data-act="scanLens">${LENS} Search with Google Lens</button>${s.lensUrl ? `<a class="btn small" href="${esc(s.lensUrl)}" target="_blank" rel="noopener">Open Lens results</a>` : ""}</div>` : ""}
       <details class="trouble"><summary>Troubleshooting</summary><p class="small muted">Name strip read as: <code>${esc((s.read?.name || "").slice(0, 120)) || "—"}</code><br>Code strip read as: <code>${esc((s.read?.code || "").replace(/\s+/g, " ").slice(0, 120)) || "—"}</code><br>Names tried: ${esc((s.tried || []).join(" · ") || "—")}</p></details></section>`
@@ -437,6 +437,11 @@ export function indexThumb(g, [id, path]) {
   if (g === "ptcg") return `https://assets.tcgdex.net/en/${path}/low.webp`;
   return `img/ygo/s/${id.split(":")[0]}.jpg`;
 }
+// Layout fingerprints from different games are not comparable. A weak guess is never proof.
+export function acceptArtMatch(selectedGame, match) {
+  if (!match || match.g !== selectedGame || !Number.isFinite(match.score) || match.score < 0.62) return null;
+  return { ...match, sure: match.like >= 0.72 && match.score >= 0.72 && match.distance <= 20 && match.margin >= 0.10 };
+}
 // The card id the rest of the app uses for an index entry.
 export const indexCardId = (g, id) => (g === "ygo" ? id.split(":")[1] : id);
 
@@ -485,8 +490,7 @@ export function registerScanner(ctx) {
   ctx.stopCamera = stopCamera;
 
   // Instant path: find the picture in the index (milliseconds), confirm the closest few with a
-  // detailed comparison, then settle the printing. Other games are checked only when the
-  // current game has no clear match.
+  // detailed comparison, then settle the printing inside the game the user selected.
   const lookArt = async (card, g) => {
     const idx = await loadIndex(g);
     if (!idx) return null;
@@ -500,21 +504,16 @@ export function registerScanner(ctx) {
       // distance is the sharper signal between look-alikes, the likeness catches index misses.
       ranked = near.map(([i, dist], k) => ({ id: idx.ids[i][0], like: fps[k].value ? likeness(scan, fps[k].value) : -1, score: fps[k].value ? likeness(scan, fps[k].value) - 0.03 * (dist - dmin) : -1 })).sort((a, b) => b.score - a.score),
       [a, b] = ranked;
-    return a && a.score > 0 ? { g, id: a.id, score: a.score, sure: a.like >= 0.5 && a.score >= 0.5 && (!b || a.score - b.score >= 0.05) } : null;
+    return a && a.score > 0 ? { g, id:a.id, score:a.score, like:a.like, distance:near.find(([i])=>idx.ids[i][0]===a.id)?.[1] ?? Infinity, margin:b ? a.score-b.score : 1 } : null;
   };
   const artFirst = async (card, G) => {
-    let best = null;
-    for (const g of [G, ...["mtg", "ptcg", "ygo"].filter((x) => x !== G)]) {
-      const r = await lookArt(card, g).catch(() => null);
-      if (r && (!best || r.score > best.score)) best = r;
-      if (best?.sure) break;
-    }
-    if (!best || best.score < 0.5) return null;
+    const best = acceptArtMatch(G, await lookArt(card,G).catch(() => null));
+    if (!best) return null;
     const cand = await ctx.candById(best.g, indexCardId(best.g, best.id), "Artwork match", false);
     if (!cand) return null;
     const picked = await pickPrinting(best.g, card, cand).catch(() => null);
     // A printing is only "found" when the index match itself was clear.
-    const cands = (picked?.length ? picked : [cand]).map((c) => (best.sure ? c : { ...c, exact: false, why: "Closest artwork" }));
+    const cands = (picked?.length ? picked : [cand]).map((c) => (best.sure ? c : { ...c, exact: false, why: "Possible artwork match · confirm the name" }));
     return { g: best.g, sure: best.sure, exact: !!cands[0].exact, r: { cands, tried: [cand.name], picked: true } };
   };
   // Which printing: the only one there is, or the one whose artwork and frame match the scan.
@@ -527,7 +526,7 @@ export function registerScanner(ctx) {
       // The only printing — but only "found" if the picture agrees (a weak look-alike isn't proof).
       const fp = await fingerprintUrl(prints[0].thumb, g).catch(() => null),
         score = fp ? likeness(scan, fp) : null,
-        agrees = score == null || score >= 0.55,
+        agrees = score != null && score >= 0.72,
         c = await ctx.candOf(g, prints[0], agrees ? "The only printing" : "Closest artwork", agrees);
       if (c) c.artScore = score;
       return c ? [c] : null;
@@ -561,7 +560,7 @@ export function registerScanner(ctx) {
         score = picked?.[0]?.artScore ?? -1;
       if (picked?.length && (!best || score > best.score)) best = { picked, score, n };
     }
-    if (!best || best.score < 0.35) return r;
+    if (!best || best.score < 0.62) return r;
     return { cands: best.picked.map((c) => ({ ...c, why: c.exact ? "Found from its text and artwork" : "Found from its text" })), tried: [...r.tried, best.n], picked: true };
   };
   const st0 = () => s();
@@ -585,22 +584,13 @@ export function registerScanner(ctx) {
       if (sure(r2) || !r.cands.length) r = { cands: r2.cands.length ? r2.cands : r.cands, tried: [...r.tried, ...r2.tried] };
       // Still no name: find the card from its other text (rules, flavour, attack names).
       if (!sure(r)) r = await fromText(G, full, r, p, card);
-      // Still unsure: maybe it's another game's card.
+      // Keep the selected game authoritative. Another game's OCR is only a hint,
+      // never permission to replace candidates with a different catalogue.
       const other = detectGame(`${st.read.name}\n${st.read.code}\n${full}`);
-      if (!sure(r) && other && other !== G) {
-        setStatus(`This looks like a ${GAME_LABEL[other]} card. Checking…`);
-        const ro = await readCard(card, other, scanLang(), setStatus),
-          wo = { name: [...anchoredNames(other, full), ro.name, full].join("\n"), code: `${ro.code}\n${full}`, full };
-        let r3 = await match(other, wo, scanLang(), false, setStatus, {});
-        if (!sure(r3)) r3 = await fromText(other, full, r3, {}, card);
-        if (r3.cands.length && (sure(r3) || !r.cands.length)) {
-          st.foundIn = other;
-          r = { cands: r3.cands, tried: [...r.tried, ...r3.tried] };
-        }
-      }
+      if (!sure(r) && other && other !== G) setStatus(`Could not confirm this as a ${GAME_LABEL[G]} card. Check the game selector.`);
     }
     // The artwork had a likely card the reading couldn't beat: offer it.
-    if (fast?.r.cands.length && !sure(r)) {
+    if (fast?.g === G && fast?.r.cands.length && !sure(r)) {
       if (fast.g !== G) st.foundIn = fast.g;
       return fast.r;
     }
