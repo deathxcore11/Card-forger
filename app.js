@@ -30,6 +30,8 @@ import { parseDeckImport, acquireMissing } from "./deck-flow.js";
 import { completionPlan, commanderTheme } from "./planner.js";
 import { sourceCredit, mtgjsonDeck, collectionIdeas, upgradeSuggestions, applyUpgradeSwaps } from "./strategy.js";
 import { searchQuery, rankByName } from "./catalog-tools.js";
+import { promptInstall, dismissInstall, onInstallable, isIOS } from "./install.js";
+import { alertSheet, setAlert, onAlert, alertText, priceSeries } from "./pricehist.js";
 import { mtgCollector, nameCandidates, textPhrases } from "./scan.js";
 import { registerScanner, scanView } from "./scancam.js";
 import { newGame, proxyList, proxySheetHTML } from "./extras.js";
@@ -3577,6 +3579,7 @@ const scanCtx = {
   add: (g, c) => (g === "mtg" ? mtgScanAdd(c) : tcgCtx.scanAdd(c)),
   byText: (g, full) => (g === "mtg" ? mtgScanByText(textPhrases(full, 12), full) : tcgCtx.scanByText?.(g, full) ?? []),
   printings: (g, cand) => (g === "mtg" ? mtgScanPrintings(cand) : tcgCtx.scanPrintings?.(g, cand) ?? []),
+  candById: async (g, id, why, exact) => (g === "mtg" ? api("/cards/" + encodeURIComponent(id)).then((c) => mtgScanCand(c, why, exact)).catch(() => null) : tcgCtx.scanCandById?.(g, id, why, exact) ?? null),
   candOf: async (g, p, why, exact) => (g === "mtg" ? (p.card ? mtgScanCand(p.card, why, exact) : null) : tcgCtx.scanCandById?.(g, p.id, why, exact) ?? null),
   details: (g, c) => (g === "mtg" ? A.card({ dataset: { name: c.name } }) : A.tCard({ dataset: { id: c.id } })),
 };
@@ -3657,17 +3660,45 @@ A.persist = async () => {
   toast((await requestPersistence()) ? "The browser will keep your data. Still export backups." : "The browser declined. Export backups regularly.");
   storageDetail();
 };
-let installPrompt = null;
-window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault();
-  installPrompt = e;
-});
 A.install = async () => {
-  if (installPrompt) {
-    await installPrompt.prompt();
-    installPrompt = null;
-  } else toast("Use your browser menu → Add to Home screen.");
+  if (!(await promptInstall())) toast(isIOS() ? "In Safari, tap Share, then Add to Home Screen." : "Use your browser menu, then Add to Home screen.");
+  if (S.ui.view === "home") render();
 };
+// Price alerts (all games).
+A.priceAlert = (t) => {
+  const { game: g, id, name } = t.dataset;
+  openSheet(alertSheet(g, id, name || "This card", priceSeries(g, id).at(-1)?.[1] ?? null), { type: "alert" });
+};
+A.priceAlertSave = async (t) => {
+  const { game: g, id, name } = t.dataset,
+    num = (x) => (x === "" || x == null || !(Number(x) > 0) ? null : Math.round(Number(x) * 100) / 100),
+    below = num($("#alertBelow")?.value),
+    above = num($("#alertAbove")?.value);
+  if (below == null && above == null) return toast("Enter a price to watch for.");
+  setAlert(g, id, name, { below, above });
+  // Ask once, while the tap counts as permission to ask.
+  if (globalThis.Notification?.permission === "default") await Notification.requestPermission().catch(() => {});
+  closeSheet();
+  toast("Alert saved. You'll hear about it when prices update.");
+  render();
+};
+A.priceAlertClear = (t) => {
+  setAlert(t.dataset.game, t.dataset.id, "", {});
+  closeSheet();
+  toast("Alert removed.");
+  render();
+};
+onAlert((f) => {
+  toast(alertText(f));
+  try {
+    if (globalThis.Notification?.permission === "granted") new Notification("CardStashy price alert", { body: alertText(f), icon: "icon-192.png", tag: `${f.game}:${f.id}` });
+  } catch {}
+});
+A.installLater = () => {
+  dismissInstall();
+  render();
+};
+onInstallable(() => S.ui.view === "home" && render());
 async function storageDetail() {
   const s = await persistenceStatus(),
     el = $("#storageDetail");
@@ -3679,6 +3710,7 @@ async function storageDetail() {
    ========================================================= */
 
 function trackValue() {
+  for (const g of ["ptcg", "ygo"]) T.trackTcgValue?.(g);
   const v = collectionValue(S.state.collection, S.catalog, S.state.printings, []);
   if (!S.state.collection.length) return;
   S.state.valueHistory = recordValuePoint(S.state.valueHistory, v.total, v.copies);

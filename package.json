@@ -1,11 +1,11 @@
 {
   "name": "cardstashy",
-  "version": "3.22.0",
+  "version": "3.23.0",
   "private": true,
   "type": "module",
   "description": "CardStashy — Magic: The Gathering collection, decks, upgrades and deck engine analysis. A static, offline-capable web app.",
   "scripts": {
-    "test": "node test-update.mjs && node test-actions.mjs && node test-extras.mjs && node test-share.mjs && node test-cloud.mjs && node test-password-auth.mjs && node test-binders.mjs && node test-locations.mjs && node test-smoke.mjs && node test-workbench.mjs && node test-art-navigation.mjs && node test-set-catalog.mjs && node test-auto-browse.mjs && node test-formats.mjs && node test-builder.mjs && node test-deck-safety.mjs && node test-tcg.mjs && node test-topdeck.mjs && node test-worker.mjs && node test-adapt.mjs && node test-scan.mjs && node test-scancam.mjs && node test-importance.mjs && node test-guide.mjs && node test-pairing.mjs && node test-scansession.mjs && node test-scandetect.mjs && node test-search-rank.mjs",
+    "test": "node test-update.mjs && node test-actions.mjs && node test-extras.mjs && node test-share.mjs && node test-cloud.mjs && node test-password-auth.mjs && node test-binders.mjs && node test-locations.mjs && node test-smoke.mjs && node test-workbench.mjs && node test-art-navigation.mjs && node test-set-catalog.mjs && node test-auto-browse.mjs && node test-formats.mjs && node test-builder.mjs && node test-deck-safety.mjs && node test-tcg.mjs && node test-topdeck.mjs && node test-worker.mjs && node test-adapt.mjs && node test-scan.mjs && node test-scancam.mjs && node test-importance.mjs && node test-guide.mjs && node test-pairing.mjs && node test-scansession.mjs && node test-scandetect.mjs && node test-search-rank.mjs && node test-preload.mjs && node test-install.mjs && node test-compare.mjs && node test-scanart.mjs && node test-pricehist.mjs",
     "start": "npx --yes http-server -p 8080 -c-1 ."
   }
 }

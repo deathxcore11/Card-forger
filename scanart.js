@@ -90,3 +90,92 @@ export function fingerprintUrl(url, g) {
   p.catch(() => fpCache.delete(url));
   return p;
 }
+
+/* ---------- instant scan index (mirror of scripts/build-scan-index.py) ---------- */
+// Per picture, 19 bytes: art pHash (8), whole-card pHash (8), art mean RGB (3).
+export const HW = 192, HH = 268, REC = 19;
+const N = 32,
+  COS = Array.from({ length: 8 }, (_, u) => Float64Array.from({ length: N }, (_, x) => Math.cos((Math.PI * (2 * x + 1) * u) / (2 * N))));
+// 63 low DCT frequencies (DC left out) above/below their median → 8 bytes, last bit unused.
+export function phash(m) {
+  // m: N×N grey values, row-major. Only the 8×8 low-frequency corner is needed.
+  const rows = Array.from({ length: 8 }, (_, u) => {
+    const r = new Float64Array(N);
+    for (let x = 0; x < N; x++) {
+      let s = 0;
+      for (let y = 0; y < N; y++) s += COS[u][y] * m[y * N + x];
+      r[x] = s;
+    }
+    return r;
+  });
+  const d = [];
+  for (let u = 0; u < 8; u++)
+    for (let v = 0; v < 8; v++) {
+      let s = 0;
+      for (let x = 0; x < N; x++) s += rows[u][x] * COS[v][x];
+      d.push(s);
+    }
+  d.shift();
+  const med = [...d].sort((a, b) => a - b)[31],
+    out = new Uint8Array(8);
+  d.forEach((x, k) => {
+    if (x > med) out[k >> 3] |= 0x80 >> (k & 7);
+  });
+  return out;
+}
+// Fingerprint of a card already scaled to HW×HH RGBA pixels.
+export function scanHash(data, g = "mtg") {
+  const art = ART[g] || ART.mtg,
+    mean = grid(data, HW, HH, art, 1, 1, true);
+  const out = new Uint8Array(REC);
+  out.set(phash(grid(data, HW, HH, art, N, N, false)), 0);
+  out.set(phash(grid(data, HW, HH, [0, 0, 1, 1], N, N, false)), 8);
+  out[16] = Math.round(mean[0]);
+  out[17] = Math.round(mean[1]);
+  out[18] = Math.round(mean[2]);
+  return out;
+}
+const POP = Uint8Array.from({ length: 256 }, (_, i) => i.toString(2).replace(/0/g, "").length);
+// Distance from a scan to record i of an index: differing art bits count fully, whole-card bits
+// half, and a big shift in the art's average colour adds a little.
+export function nearest(hash, bin, k = 12) {
+  const n = Math.floor(bin.length / REC),
+    best = [];
+  for (let i = 0; i < n; i++) {
+    const o = i * REC;
+    let a = 0, f = 0;
+    for (let j = 0; j < 8; j++) {
+      a += POP[hash[j] ^ bin[o + j]];
+      f += POP[hash[8 + j] ^ bin[o + 8 + j]];
+    }
+    const c = (Math.abs(hash[16] - bin[o + 16]) + Math.abs(hash[17] - bin[o + 17]) + Math.abs(hash[18] - bin[o + 18])) / 24,
+      dist = a + f * 0.5 + c;
+    if (best.length < k || dist < best[best.length - 1][1]) {
+      best.push([i, dist]);
+      best.sort((x, y) => x[1] - y[1]);
+      if (best.length > k) best.pop();
+    }
+  }
+  return best;
+}
+// A canvas (the captured card) scaled smoothly to HW×HH: halve step by step so small text and
+// edges average out like the index builder's box filter, instead of aliasing.
+export function hashCanvas(src, g) {
+  let cur = src, w = src.width, h = src.height;
+  while (w / 2 >= HW * 1.5) {
+    w = Math.round(w / 2);
+    h = Math.round(h / 2);
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    c.getContext("2d").drawImage(cur, 0, 0, w, h);
+    cur = c;
+  }
+  const c = document.createElement("canvas");
+  c.width = HW;
+  c.height = HH;
+  const x = c.getContext("2d", { willReadFrequently: true });
+  x.imageSmoothingQuality = "high";
+  x.drawImage(cur, 0, 0, HW, HH);
+  return scanHash(x.getImageData(0, 0, HW, HH).data, g);
+}

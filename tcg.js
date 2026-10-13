@@ -1,3 +1,6 @@
+import { recordPrice, priceHistoryHtml, alertsPanel } from "./pricehist.js";
+import { lineChart } from "./ui.js";
+import { installNudge } from "./install.js";
 import { rankByName } from "./catalog-tools.js";
 import {setRowContent} from './set-list-ui.js';
 import {artworkHTML,artworkSources} from "./artwork.js";
@@ -12,7 +15,8 @@ import { tileChrome } from "./tiles.js";
 import { S, uid } from "./store.js";
 import { esc, usd, empty, bar, options, segmented } from "./ui.js";
 import { GAMES, GAME_ICON, GAME_COLOR, GAME_IDS, blankGame, gameOf } from "./games.js";
-import { ICON } from "./icons.js";
+import { ICON, actionIcon } from "./icons.js";
+import { tcgCompareSheet } from "./tcgcompare.js";
 import { sharePayloadTcg, encodeShare } from "./share.js";
 import { factBox, factsFor } from "./facts.js";
 import { ygoEmblems, energyIcon, attackLine, tcgSetBadge, ygoPrintBadge, pkRarity, pkSetSymbol } from "./emblems.js";
@@ -65,6 +69,7 @@ export async function loadCache(readRecord) {
 const remember = (card) => {
   const prev = cache[card.game][card.id];
   if (card.brief && prev && !prev.brief) return prev;
+  if (!card.brief) recordPrice(card.game, card.id, card.prices?.usd ?? null, card.name);
   cache[card.game][card.id] = card;
   saveCacheSoon();
   return card;
@@ -384,7 +389,7 @@ export function tcgHome() {
   const onboarding = !(st.collection.length && st.decks.length),
     fresh = !st.collection.length && !st.decks.length;
   return `${homeHero(g, v.copies ? "Welcome back." : "Let’s build from your cards.", deckArt, !fresh)}
-  ${gameSwitch(g)}
+  ${gameSwitch(g)}${installNudge(v.copies)}
   ${fresh && !startHidden(g) ? tcgStartPath(g) : tcgNext(g)}
   ${onboarding ? "" : `<div class="kpis">
     <button class="kpi" data-act="go" data-to="#collection"><b>${usd(v.total, 0)}</b><span>collection value${v.unpriced ? ` · ${v.unpriced} unpriced` : ""}</span></button>
@@ -446,7 +451,7 @@ export function tcgSearch() {
       ...(U.own ? [["own", U.own === "owned" ? "Owned" : "Not owned"]] : []),
       ...(U.sort && U.sort !== (g === "ygo" ? "name" : "new") ? [["sort", `Sort: ${L(sorts, U.sort)}`]] : []),
     ];
-  return `<div class="page-head"><h1>Search ${esc(GAMES[g].short)}</h1>${viewControl(g,"search")}<span class="row"><button class="btn ghost small" data-act="go" data-to="#sets">◈ Browse sets</button><button class="btn ghost small" data-act="tRandomCard">🎲 Random card</button></span></div>
+  return `<div class="page-head"><h1>Search ${esc(GAMES[g].short)}</h1>${viewControl(g,"search")}<span class="row"><button class="btn ghost small tool-btn" data-act="tCompareOpen">${actionIcon("compare")}<span>Compare</span></button><button class="btn ghost small" data-act="go" data-to="#sets">◈ Browse sets</button><button class="btn ghost small" data-act="tRandomCard">🎲 Random card</button></span></div>
   <div class="searchbar"><input type="search" value="${esc(U.q)}" placeholder="${g === "ygo" ? "Card name, e.g. Dark Magician" : "Card name, e.g. Charizard"}" data-input="tQ" data-enter="tSearch" aria-label="Search cards" autocomplete="off"><button class="btn" data-act="tSearch" ${U.busy ? "disabled" : ""}>${U.busy ? "…" : "Search"}</button></div>
   ${chips.length ? `<div class="filter-chips" aria-label="Active filters">${chips.map(([k, l]) => `<button class="fchip" data-act="tChip" data-field="${esc(k)}" aria-label="Remove ${esc(l)}">${esc(l)} <span aria-hidden="true">×</span></button>`).join("")}<button class="link small" data-act="tClear">Clear all</button></div>` : ""}
   ${savedSearches(g).length ? `<div class="saved-searches"><span class="muted small">Saved:</span>${savedSearches(g).map((x, i) => `<span class="schip"><button data-act="tSaved" data-i="${i}">${esc(x.label)}</button><button data-act="tSavedDel" data-i="${i}" aria-label="Delete saved search ${esc(x.label)}">×</button></span>`).join("")}</div>` : ""}
@@ -503,10 +508,12 @@ export function tcgCardSheet(c, sctx = {}) {
         ${deck ? `<p class="small deck-legal ${SOURCES[g].legality(c, f) === "legal" ? "ok-text" : "bad-text"}">${SOURCES[g].legality(c, f) === "legal" ? "✓ Legal" : "● Not allowed"} in ${esc(f.name)} <span class="muted">(${esc(deck.name)})</span></p>` : ""}
         ${c.stats?.length ? `<div class="stat-grid">${c.stats.filter(([k]) => g !== "ptcg" || !["HP", "Type", "Weakness", "Resistance", "Retreat"].includes(k)).map(([k, v]) => `<div><small>${esc(k)}</small><b>${esc(String(v))}</b></div>`).join("")}</div>` : ""}
       </div></div>
+    ${priceHistoryHtml(g, c.id, c.name)}
     <div class="actions wrap">
       <button class="btn" data-act="tOwn" data-id="${esc(c.id)}">＋ Add to collection</button>
       <button class="btn ghost" data-act="tWish" data-id="${esc(c.id)}">${wished ? "♥ On wishlist" : "♡ Wishlist"}</button>
       <button class="btn ghost" data-act="tBuild" data-id="${esc(c.id)}">⚒ Build decks</button>
+      <button class="btn ghost" data-act="tCompareFrom" data-id="${esc(c.id)}">⇄ Compare</button>
       ${sctx.random ? `<button class="btn ghost" data-act="tRandomCard">🎲 Another</button>` : ""}
     </div>
     ${decks.length ? `<div class="inline-pick"><select id="tToDeck" aria-label="Deck">${options(decks.map((d) => [d.id, d.name]), deck?.id || decks.at(-1).id)}</select><button class="btn ghost" data-act="tAddToDeck" data-id="${esc(c.id)}">Add to deck</button></div>` : `<button class="btn ghost" data-act="tNewDeck">Start a deck</button>`}
@@ -650,6 +657,40 @@ function ygoSetRow(c) {
 
 /* ---------- collection ---------- */
 
+// Collection value over time (one point a day, kept on this device), top cards and alerts.
+const VALUE_KEY = (g) => `cardstashy-value-hist-${g}`;
+export function trackTcgValue(g, v = collectionValue(g)) {
+  if (!gs(g).collection.length) return [];
+  let h = [];
+  try {
+    h = JSON.parse(localStorage.getItem(VALUE_KEY(g)) || "[]");
+  } catch {}
+  const day = new Date().toISOString().slice(0, 10);
+  h = h.filter((x) => x.date !== day);
+  h.push({ date: day, total: Math.round(v.total * 100) / 100, copies: v.copies });
+  h = h.slice(-365);
+  try {
+    localStorage.setItem(VALUE_KEY(g), JSON.stringify(h));
+  } catch {}
+  return h;
+}
+function tcgValueView(g) {
+  const st = gs(g),
+    v = collectionValue(g),
+    hist = trackTcgValue(g, v),
+    m = new Map();
+  for (const e of st.collection) {
+    const c = cardOf(g, e.cardId), p = entryPrice(c, e);
+    if (p != null) m.set(e.id, { e, c, each: p, total: p * e.qty });
+  }
+  const top = [...m.values()].sort((a, b) => b.total - a.total).slice(0, 10);
+  const tabs = segmented("tCollTab", "value", [["cards", "Cards"], ["binders", "Binders"], ["value", "Value"], ["wishlist", `Wishlist · ${st.wishlist.length}`]]);
+  if (!st.collection.length) return `<div class="page-head"><h1>Collection</h1></div>${tabs}<section class="empty"><h3>No value to track yet</h3><p>Add cards and CardStashy records your collection value once a day so you can watch it change.</p></section>${alertsPanel(g)}`;
+  return `<div class="page-head"><h1>Collection</h1></div>${tabs}
+  <section class="panel"><p class="eyebrow">Estimated value</p><p class="big">${usd(v.total)}</p><p class="muted small">${v.copies} cards${v.unpriced ? ` · ${v.unpriced} without a price` : ""}</p>${lineChart(hist)}</section>
+  <section class="panel"><h3>Most valuable</h3><div class="list compact">${top.map((x) => `<button class="mini-row" data-act="tCard" data-id="${esc(x.e.cardId)}"><span class="ellip">${x.e.qty > 1 ? x.e.qty + "× " : ""}${esc(x.e.name)}</span><b>${usd(x.total)}</b></button>`).join("")}</div></section>
+  ${alertsPanel(g)}`;
+}
 export function tcgCollection() {
   const g = game(),
     U = ui(g).coll,
@@ -669,9 +710,10 @@ export function tcgCollection() {
   const val = (x) => (entryPrice(x.c, x.e) ?? -1) * x.e.qty;
   rows.sort(U.sort === "impact" ? (a, b) => impactScore(g, b.c) - impactScore(g, a.c) || val(b) - val(a) : U.sort === "name" ? (a, b) => a.e.name.localeCompare(b.e.name) : U.sort === "recent" ? (a, b) => String(b.e.addedAt).localeCompare(String(a.e.addedAt)) : U.sort === "set" ? (a, b) => setLabel(a).localeCompare(setLabel(b)) || a.e.name.localeCompare(b.e.name) : U.sort === "rarity" ? (a, b) => rarityOf(a).localeCompare(rarityOf(b)) || a.e.name.localeCompare(b.e.name) : (a, b) => val(b) - val(a));
   if (U.tab === "wishlist") return tcgWishlist(g);
-  if (U.tab === "binders") return `<div class="page-head"><h1>Collection</h1><button class="btn ghost small" data-act="go" data-to="#search">＋ Add cards</button></div>${segmented("tCollTab","binders",[["cards","Cards"],["binders","Binders"],["wishlist",`Wishlist · ${st.wishlist.length}`]])}${binderShelf(st.collection.map(entry=>({entry,card:cardOf(g,entry.cardId),image:cardOf(g,entry.cardId)?.variants?.find(v=>v.key===entry.variant)?.image || cardOf(g,entry.cardId)?.image || "",game:g})),g,S.state.settings.binders || [])}`;
+  if (U.tab === "value") return tcgValueView(g);
+  if (U.tab === "binders") return `<div class="page-head"><h1>Collection</h1><button class="btn ghost small" data-act="go" data-to="#search">＋ Add cards</button></div>${segmented("tCollTab","binders",[["cards","Cards"],["binders","Binders"],["value","Value"],["wishlist",`Wishlist · ${st.wishlist.length}`]])}${binderShelf(st.collection.map(entry=>({entry,card:cardOf(g,entry.cardId),image:cardOf(g,entry.cardId)?.variants?.find(v=>v.key===entry.variant)?.image || cardOf(g,entry.cardId)?.image || "",game:g})),g,S.state.settings.binders || [])}`;
   return `<div class="page-head"><h1>Collection</h1><div class="head-actions">${viewControl(g,"collection")}${selectionControl(g)}<button class="btn ghost small" data-act="go" data-to="#search">＋ Add cards</button></div></div>
-  ${segmented("tCollTab", "cards", [["cards", "Cards"], ["binders", "Binders"], ["wishlist", `Wishlist · ${st.wishlist.length}`]])}
+  ${segmented("tCollTab", "cards", [["cards", "Cards"], ["binders", "Binders"], ["value", "Value"], ["wishlist", `Wishlist · ${st.wishlist.length}`]])}
   <div class="kpis small"><div class="kpi"><b>${usd(v.total, 0)}</b><span>estimated value</span></div><div class="kpi"><b>${v.copies}</b><span>cards</span></div><div class="kpi"><b>${st.collection.length}</b><span>entries</span></div></div>
   ${st.collection.length ? tcgTradeAdvice(g) : ""}
   ${st.collection.length ? `<div class="toolbar"><input type="search" value="${esc(U.q)}" placeholder="Search your cards" data-input="tCollQ" aria-label="Search collection"><select data-change="tCollSet" aria-label="Set">${options([["", "All sets"], ...setNames.map((x) => [x, x])], U.set)}</select><select data-change="tCollKind" data-field="kind" aria-label="Kind">${options([["", "All kinds"], ...kinds], U.kind)}</select>${rarities.length > 1 ? `<select data-change="tCollKind" data-field="rarity" aria-label="Rarity">${options([["", "All rarities"], ...rarities.map((x) => [x, x])], U.rarity)}</select>` : ""}<select data-change="tCollSort" aria-label="Sort">${options([["value", "Value"], ["impact", "Deck-building value"], ["name", "Name"], ["set", "Set"], ["rarity", "Rarity"], ["recent", "Recently added"]], U.sort)}</select></div>
@@ -703,7 +745,7 @@ function tcgWishlist(g) {
     rows = st.wishlist.map((w) => ({ w, c: cardOf(g, w.cardId) })),
     total = rows.reduce((a, x) => a + (price(x.c) ?? 0) * (x.w.qty || 1), 0);
   return `<div class="page-head"><h1>Collection</h1><button class="btn ghost small" data-act="go" data-to="#search">＋ Find cards</button></div>
-  ${segmented("tCollTab", "wishlist", [["cards", "Cards"], ["binders", "Binders"], ["wishlist", `Wishlist · ${st.wishlist.length}`]])}
+  ${segmented("tCollTab", "wishlist", [["cards", "Cards"], ["binders", "Binders"], ["value", "Value"], ["wishlist", `Wishlist · ${st.wishlist.length}`]])}
   ${rows.length ? `<div class="kpis small"><div class="kpi"><b>${rows.length}</b><span>cards wanted</span></div><div class="kpi"><b>${usd(total, 0)}</b><span>to buy them all</span></div><div class="kpi"><b>${rows.filter((x) => (price(x.c) ?? 1e9) <= 1).length}</b><span>under $1</span></div></div>
   <div class="list-bar"><span class="muted small">${rows.length} wanted</span>${viewControl(g, "wishlist")}</div><div class="list display-list">${rows
     .sort((a, b) => (price(b.c) ?? -1) - (price(a.c) ?? -1))
@@ -1539,6 +1581,28 @@ export function registerTcg(c) {
     const a = variantArtwork(card,v || {});
     const chosen = { ...card, id:a.imageId, image:a.image, imageLarge:a.imageLarge };
     openSheet(`<div class="sheet-head"><h2>${esc(card.name)}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p>${esc(v?.label || "Card artwork")}</p><div class="variant-art-large">${imgTag(chosen,"card-img",true)}</div><p class="foot">${esc(a.label)}${card.game === "ygo" ? " · The source does not map this artwork to a specific set code or edition." : " · Confirm stamps, borders and finish on your physical card."}</p>`,{type:"variant-art",id:card.id});
+  };
+  // Compare two cards (same as Magic's Compare).
+  const cmp = () => (ui().compare ||= [null, null]);
+  A.tCompareOpen = () => openSheet(tcgCompareSheet(g(), cmp()), { type: "tcompare" });
+  A.tCompareFrom = (t) => {
+    ui().compare = [cardOf(g(), t.dataset.id) || null, null];
+    A.tCompareOpen();
+  };
+  A.tCompareClear = (t) => {
+    cmp()[Number(t.dataset.i)] = null;
+    A.tCompareOpen();
+  };
+  A.tCompareLookup = async (t) => {
+    const i = Number(t.dataset.i),
+      G = g(),
+      q = (document.getElementById("tcmp" + i)?.value || "").trim();
+    if (!q) return;
+    const r = await SOURCES[G].search({ q, size: 20 }).catch(() => null),
+      hit = rankByName(r?.cards || [], q)[0];
+    if (!hit) return toast("No card with that name.");
+    cmp()[i] = (await ensureCard(G, hit.id).catch(() => null)) || hit;
+    A.tCompareOpen();
   };
   A.tOwn = (t) => {
     const card = cardOf(g(), t.dataset.id);

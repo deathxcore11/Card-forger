@@ -8,7 +8,7 @@
 import { S } from "./store.js";
 import { esc } from "./ui.js";
 import { nameCandidates, detectGame, anchoredNames, scanNameKey } from "./scan.js";
-import { fingerprintCanvas, fingerprintUrl, rankPrintings, likeness } from "./scanart.js";
+import { fingerprintCanvas, fingerprintUrl, rankPrintings, likeness, hashCanvas, nearest } from "./scanart.js";
 import { artworkHTML, artworkSources } from "./artwork.js";
 import { openZoom } from "./zoom.js";
 import { FINISHES, CONDITIONS, LANGS, QTYS, loadPrefs, savePrefs, loadSession, saveSession, addToSession, itemKey, sessionCount, sessionValue, sessionUnpriced, sessionText, feedback } from "./scansession.js";
@@ -206,9 +206,14 @@ export function findCardBox(data, W, H) {
 }
 
 // Read the name strip and the code strip separately; the whole card only as a fallback.
-export async function readCard(card, g, lang, progress = () => {}) {
+export async function readCard(card, g, lang, progress = () => {}, { codeOnly = false } = {}) {
   const w = await getWorker(lang, progress),
     L = LAYOUT[g] || LAYOUT.mtg;
+  // The artwork already named the card: only the set code / number is needed.
+  if (codeOnly) {
+    progress("Reading the set code…");
+    return { name: "", code: [await recog(w, regionCanvas(card, L.code, 3)), L.pass ? await recog(w, regionCanvas(card, L.pass, 3)) : ""].join("\n"), full: "" };
+  }
   progress("Reading the name…");
   let name = await recog(w, regionCanvas(card, L.name, 2.5));
   // Light letters on a dark banner (full-art, GX, foils) read better inverted.
@@ -397,6 +402,25 @@ const loadImage = (url) =>
   });
 const sigDiff = (a, b) => (a && b ? a.reduce((x, v, i) => x + Math.abs(v - b[i]), 0) / a.length : 255);
 
+// Instant-scan index (scanidx/, built by scripts/build-scan-index.py): one fingerprint per card
+// picture. Loaded once per game when the scanner is used; the service worker keeps it.
+const IDX = {};
+export function loadIndex(g) {
+  return (IDX[g] ||= (async () => {
+    const [b, t] = await Promise.all([fetch(`scanidx/${g}.bin`).then((r) => (r.ok ? r.arrayBuffer() : null)), fetch(`scanidx/${g}-ids.txt`).then((r) => (r.ok ? r.text() : null))]);
+    if (!b || !t) return null;
+    return { bin: new Uint8Array(b), ids: t.split("\n").filter(Boolean).map((l) => l.split("\t")) };
+  })().catch(() => null));
+}
+// A small picture of index entry [id, path] that allows reading pixels (for the close comparison).
+export function indexThumb(g, [id, path]) {
+  if (g === "mtg") return `https://cards.scryfall.io/small/front/${id[0]}/${id[1]}/${id}.jpg`;
+  if (g === "ptcg") return `https://assets.tcgdex.net/en/${path}/low.webp`;
+  return `img/ygo/s/${id.split(":")[0]}.jpg`;
+}
+// The card id the rest of the app uses for an index entry.
+export const indexCardId = (g, id) => (g === "ygo" ? id.split(":")[1] : id);
+
 export function registerScanner(ctx) {
   const { A, C, render, toast, game, match, add, details } = ctx,
     s = () => S.ui.scan;
@@ -441,6 +465,33 @@ export function registerScanner(ctx) {
   };
   ctx.stopCamera = stopCamera;
 
+  // Instant path: find the picture in the index (milliseconds), confirm the closest few with a
+  // detailed comparison, then settle the printing. Other games are checked only when the
+  // current game has no clear match.
+  const lookArt = async (card, g) => {
+    const idx = await loadIndex(g);
+    if (!idx) return null;
+    const near = nearest(hashCanvas(card, g), idx.bin, 10),
+      scan = fingerprintCanvas(card, g),
+      fps = await settleLimited(near, ([i]) => fingerprintUrl(indexThumb(g, idx.ids[i]), g), 6),
+      ranked = near.map(([i], k) => ({ id: idx.ids[i][0], score: fps[k].value ? likeness(scan, fps[k].value) : -1 })).sort((a, b) => b.score - a.score),
+      [a, b] = ranked;
+    return a && a.score > 0 ? { g, id: a.id, score: a.score, sure: a.score >= 0.55 && (!b || a.score - b.score >= 0.05) } : null;
+  };
+  const artFirst = async (card, G) => {
+    let best = null;
+    for (const g of [G, ...["mtg", "ptcg", "ygo"].filter((x) => x !== G)]) {
+      const r = await lookArt(card, g).catch(() => null);
+      if (r && (!best || r.score > best.score)) best = r;
+      if (best?.sure) break;
+    }
+    if (!best || best.score < 0.5) return null;
+    const cand = await ctx.candById(best.g, indexCardId(best.g, best.id), "Artwork match", false);
+    if (!cand) return null;
+    const picked = await pickPrinting(best.g, card, cand).catch(() => null);
+    const cands = picked?.length ? picked : [cand];
+    return { g: best.g, sure: best.sure, exact: !!cands[0].exact, r: { cands, tried: [cand.name], picked: true } };
+  };
   // Which printing: the only one there is, or the one whose artwork and frame match the scan.
   // Unsure → the three closest pictures to choose from.
   const pickPrinting = async (g, card, cand) => {
@@ -486,6 +537,47 @@ export function registerScanner(ctx) {
     return { cands: best.picked.map((c) => ({ ...c, why: c.exact ? "Found from its text and artwork" : "Found from its text" })), tried: [...r.tried, best.n], picked: true };
   };
   const st0 = () => s();
+  // Reading path: name strip, set code, the whole card, the card's other text, other games.
+  const readFlow = async (card, G, p, fast) => {
+    const st = s();
+    st.read = await readCard(card, G, scanLang(), setStatus);
+    setStatus("Matching…");
+    let r = await match(G, st.read, scanLang(), false, setStatus, p);
+    // A sure match is an exact printing or a name read letter for letter; a closest spelling
+    // ("MAGICIAN" → Zacian) is only a guess and gets a second look.
+    const sure = (x) => x.cands.some((c) => c.exact || x.tried.some((t) => scanNameKey(t) === scanNameKey(c.name)));
+    // Not sure: read the whole card and look for the name wherever it sits
+    // (a card in the corner of a photo, a screenshot, an unusual frame), and check the game.
+    if (!sure(r)) {
+      const full = st.read.full || (await readFull(card, scanLang(), setStatus));
+      st.read.full = full;
+      const wide = { name: [...anchoredNames(G, full), st.read.name, full].join("\n"), code: st.read.code, full };
+      setStatus("Reading the whole card…");
+      const r2 = await match(G, wide, scanLang(), false, setStatus, p);
+      if (sure(r2) || !r.cands.length) r = { cands: r2.cands.length ? r2.cands : r.cands, tried: [...r.tried, ...r2.tried] };
+      // Still no name: find the card from its other text (rules, flavour, attack names).
+      if (!sure(r)) r = await fromText(G, full, r, p, card);
+      // Still unsure: maybe it's another game's card.
+      const other = detectGame(`${st.read.name}\n${st.read.code}\n${full}`);
+      if (!sure(r) && other && other !== G) {
+        setStatus(`This looks like a ${GAME_LABEL[other]} card. Checking…`);
+        const ro = await readCard(card, other, scanLang(), setStatus),
+          wo = { name: [...anchoredNames(other, full), ro.name, full].join("\n"), code: `${ro.code}\n${full}`, full };
+        let r3 = await match(other, wo, scanLang(), false, setStatus, {});
+        if (!sure(r3)) r3 = await fromText(other, full, r3, {}, card);
+        if (r3.cands.length && (sure(r3) || !r.cands.length)) {
+          st.foundIn = other;
+          r = { cands: r3.cands, tried: [...r.tried, ...r3.tried] };
+        }
+      }
+    }
+    // The artwork had a likely card the reading couldn't beat: offer it.
+    if (fast?.r.cands.length && !sure(r)) {
+      if (fast.g !== G) st.foundIn = fast.g;
+      return fast.r;
+    }
+    return r;
+  };
   const process = async (card) => {
     const st = s(),
       G = game();
@@ -504,38 +596,25 @@ export function registerScanner(ctx) {
     render();
     try {
       st.foundIn = "";
-      st.read = await readCard(card, G, scanLang(), setStatus);
-      setStatus("Matching…");
       const p = prefs();
-      let r = await match(G, st.read, scanLang(), false, setStatus, p);
-      // A sure match is an exact printing or a name read letter for letter; a closest spelling
-      // ("MAGICIAN" → Zacian) is only a guess and gets a second look.
-      const sure = (x) => x.cands.some((c) => c.exact || x.tried.some((t) => scanNameKey(t) === scanNameKey(c.name)));
-      // Not sure: read the whole card and look for the name wherever it sits
-      // (a card in the corner of a photo, a screenshot, an unusual frame), and check the game.
-      if (!sure(r)) {
-        const full = st.read.full || (await readFull(card, scanLang(), setStatus));
-        st.read.full = full;
-        const wide = { name: [...anchoredNames(G, full), st.read.name, full].join("\n"), code: st.read.code, full };
-        setStatus("Reading the whole card…");
-        const r2 = await match(G, wide, scanLang(), false, setStatus, p);
-        if (sure(r2) || !r.cands.length) r = { cands: r2.cands.length ? r2.cands : r.cands, tried: [...r.tried, ...r2.tried] };
-        // Still no name: find the card from its other text (rules, flavour, attack names).
-        if (!sure(r)) r = await fromText(G, full, r, p, card);
-        // Still unsure: maybe it's another game's card.
-        const other = detectGame(`${st.read.name}\n${st.read.code}\n${full}`);
-        if (!sure(r) && other && other !== G) {
-          setStatus(`This looks like a ${GAME_LABEL[other]} card. Checking…`);
-          const ro = await readCard(card, other, scanLang(), setStatus),
-            wo = { name: [...anchoredNames(other, full), ro.name, full].join("\n"), code: `${ro.code}\n${full}`, full };
-          let r3 = await match(other, wo, scanLang(), false, setStatus, {});
-          if (!sure(r3)) r3 = await fromText(other, full, r3, {}, card);
-          if (r3.cands.length && (sure(r3) || !r.cands.length)) {
-            st.foundIn = other;
-            r = { cands: r3.cands, tried: [...r.tried, ...r3.tried] };
-          }
-        }
-      }
+      setStatus("Looking at the artwork…");
+      const fast = await artFirst(card, G).catch(() => null);
+      let r;
+      if (fast?.exact) {
+        // The picture settled it: no reading needed.
+        r = fast.r;
+        st.read = { name: "", code: "", full: "" };
+        if (fast.g !== G) st.foundIn = fast.g;
+      } else if (fast?.sure) {
+        // Card known, printing not: read just the set code at the bottom.
+        const FG = fast.g;
+        st.read = await readCard(card, FG, scanLang(), setStatus, { codeOnly: true });
+        st.read.name = fast.r.cands[0].name;
+        const rc = await match(FG, st.read, scanLang(), false, setStatus, FG === G ? p : {});
+        const hit = rc.cands.find((c) => c.exact && scanNameKey(c.name) === scanNameKey(fast.r.cands[0].name));
+        r = hit ? { cands: [hit], tried: rc.tried, picked: true } : fast.r;
+        if (FG !== G) st.foundIn = FG;
+      } else r = await readFlow(card, G, p, fast);
       // The picture picks the printing: compare the scan with every printing of the best name.
       if (r.cands.length && !r.cands[0].exact && !r.picked) {
         setStatus("Comparing the artwork…");

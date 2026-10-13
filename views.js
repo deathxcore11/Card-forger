@@ -1,3 +1,5 @@
+import { priceHistoryHtml, alertsPanel } from "./pricehist.js";
+import { installNudge } from "./install.js";
 import {setRowContent} from './set-list-ui.js';
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
 import { ICON, actionIcon } from "./icons.js";
@@ -69,7 +71,7 @@ export function home() {
   const fresh = !st.collection.length && !st.decks.length,
     lead = active || st.decks.at(-1);
   // One next step for where you are; the 3-step guide only for brand-new users (and it can be hidden).
-  return `${homeHero("mtg", copies ? "Welcome back." : "Let’s build from your cards.", mtgDeckArt(active), !fresh)}${gameSwitch("mtg")}
+  return `${homeHero("mtg", copies ? "Welcome back." : "Let’s build from your cards.", mtgDeckArt(active), !fresh)}${gameSwitch("mtg")}${installNudge(copies)}
   ${st.example ? `<div class="note warn">Example data is loaded. Reset it in Settings before adding real cards.</div>` : ""}
   ${fresh && !startHidden("mtg") ? startPath() : mtgNext(lead, copies)}
   ${onboarding ? "" : `<div class="kpis">
@@ -369,6 +371,7 @@ export function cardSheet(c, ctx = {}) {
         : `<button class="price-pill unknown" data-act="buyCard" data-finish="nonfoil"><small>Price</small><b>Unknown</b><span class="buy-hint">Find sellers ›</span></button>`
     }</div>
   </div>
+  ${priceHistoryHtml("mtg", shown.id, name)}
   ${faces
     .map(
       (f, n) => `<section class="cd-text">
@@ -723,6 +726,7 @@ function collectionValueView() {
     .sort((a, b) => b[1] - a[1])
     .map(([k, x]) => `<div class="meter"><span>${colorNames[k]}</span>${bar(x / maxColor, "c-" + k)}<b>${usd(x, 0)}</b></div>`)
     .join("")}</section>
+  ${alertsPanel("mtg")}
   <section class="panel"><h3>Most valuable</h3><div class="list compact">${v.top
     .map((t) => `<button class="mini-row" data-act="card" data-name="${esc(t.entry.name)}"><span class="ellip">${t.entry.qty > 1 ? t.entry.qty + "× " : ""}${esc(t.entry.name)}${t.entry.finish !== "nonfoil" ? ` <b class="foil">${esc(t.entry.finish)}</b>` : ""}</span><b>${usd(t.value)}</b></button>`)
     .join("")}</div></section>

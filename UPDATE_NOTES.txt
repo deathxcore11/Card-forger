@@ -1,3 +1,26 @@
+3.23.0 — Instant scanning, price history and alerts, Compare for every game
+- Instant scanning: the app now recognises a card from its artwork, not just its text. Every
+  card picture in all three games (about 85,000) has a tiny fingerprint in an index that loads
+  once and works offline. A scan finds the closest pictures in milliseconds, confirms them with
+  a detailed comparison and, when the art pins the exact printing, adds it without reading any
+  text (and without downloading the 5 MB reader). When printings share the art, only the set
+  code is read. Cards from another game are recognised the same way.
+- Price history on every card page: a small chart and the change since you first saw it.
+  A point is saved when the price moves, so it stays small on your phone.
+- Price alerts: "tell me when it drops below $X" or "rises above $X". You get a message (and a
+  phone notification if you allow it) when prices update. All alerts are listed under
+  Collection, then Value.
+- Pokémon and Yu-Gi-Oh! now have a Value tab like Magic: value over time, most valuable cards and
+  alerts. Value is recorded once a day when you open the app.
+- Compare for Pokémon and Yu-Gi-Oh!: two cards side by side (HP, best attack, cheapest attack,
+  retreat, weakness, or ATK/DEF, Level, Attribute, Type, and price) with the differences
+  written out. From Search or any card page.
+- Second price source for Pokémon: when TCGdex has no price, the Pokémon TCG API's TCGplayer
+  price for the same set and number is used.
+- Faster first load: the app's files download in parallel instead of one after another.
+- Install nudge on Home (after your first visit or once you have cards): one tap on Android,
+  Share → Add to Home Screen steps on iPhone. "Not now" hides it for a month.
+
 3.22.0 — The scanner picks the exact printing, and finds cards it can't read
 - Artwork matching: once it knows the card, the scanner compares your photo with every printing
   of it and picks the one that matches, picture and frame. A card with only one printing is

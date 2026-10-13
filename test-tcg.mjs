@@ -128,3 +128,17 @@ assert.match(alt.artworks[1].image,/2[.]jpg$/);
 const supplied = normalizePtcg({id:"base1-4",name:"Charizard",variants_detailed:[{variantId:"first",type:"holo",stamp:["1st-edition"],image:"https://example.test/first"}]});
 assert.equal(supplied.variants[0].image,"https://example.test/first/low.webp");
 console.log("PASS: exact-vs-reference variant art, unavailable-image label, YGO alternate artwork and Pokémon supplied images.");
+
+// Second Pokémon price source fills only what TCGdex left empty, for the same set only.
+{
+  const { applyFallbackPrices } = await import("./ptcg.js");
+  const c = { name: "Pikachu", set: { name: "30th Celebration", number: "023" }, variants: [{ key: "normal", label: "Normal", usd: null }, { key: "reverse-holofoil", label: "Reverse holo", usd: null }], prices: { usd: null }, sets: [{ price: null }] };
+  assert.equal(applyFallbackPrices(c, { tcgplayer: { updatedAt: "2026/10/12", prices: { normal: { market: 3.5 }, reverseHolofoil: { market: 6 } } } }), true);
+  assert.equal(c.prices.usd, 3.5);
+  assert.equal(c.variants[1].usd, 6);
+  assert.match(c.prices.source, /Pokémon TCG API/);
+  assert.equal(c.sets[0].price, 3.5);
+  const none = { name: "X", variants: [{ key: "normal", usd: null }], prices: { usd: null } };
+  assert.equal(applyFallbackPrices(none, { tcgplayer: { prices: {} } }), false);
+  console.log("PASS: Pokémon fallback prices fill empty versions only.");
+}

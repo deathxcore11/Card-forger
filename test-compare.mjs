@@ -1,0 +1,20 @@
+// Pokémon / Yu-Gi-Oh! Compare: facts per side and plain differences.
+import assert from "node:assert/strict";
+const { compareFacts, compareLines, topDamage } = await import("./tcgcompare.js");
+const a = { name: "Pikachu", category: "Pokemon", hp: 60, stage: "Basic", types: ["Lightning"], retreat: 1, attacks: [{ cost: ["Lightning"], damage: "20" }], prices: { usd: 0.5 } };
+const b = { name: "Raichu", category: "Pokemon", hp: 120, stage: "Stage1", types: ["Lightning"], retreat: 2, attacks: [{ cost: ["Lightning", "Colorless"], damage: "30" }, { cost: ["Lightning", "Lightning", "Colorless"], damage: "120+" }], prices: { usd: 2 } };
+assert.equal(topDamage(b), 120);
+const lines = compareLines("ptcg", a, b).join(" ");
+assert.match(lines, /Raichu has 60 more HP/);
+assert.match(lines, /100 more damage/);
+assert.match(lines, /cheapest attack needs 2 Energy \(vs 1\)/);
+assert.match(lines, /costs \$1\.50 more/);
+assert.ok(compareFacts("ptcg", b).some(([k, v]) => k === "Best attack" && v === "120+"));
+const dm = { name: "Dark Magician", atk: 2500, def: 2100, level: 7, attribute: "DARK", race: "Spellcaster", typeLine: "Normal Monster", prices: { usd: 0.3 } };
+const gem = { name: "Gemini Elf", atk: 1900, def: 900, level: 4, attribute: "EARTH", race: "Spellcaster", typeLine: "Gemini Monster", prices: { usd: 0.3 } };
+const y = compareLines("ygo", dm, gem).join(" ");
+assert.match(y, /Gemini Elf has 600 less ATK/);
+assert.match(y, /Level 4 vs 7, so it can be Normal Summoned without a Tribute/);
+assert.ok(!/costs/.test(y), "same price: no price line");
+assert.deepEqual(compareLines("ygo", dm, null), []);
+console.log("PASS: Pokémon and Yu-Gi-Oh! compare.");

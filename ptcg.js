@@ -39,6 +39,44 @@ export function pokemonVariants(c) {
   return [...out.values()];
 }
 
+// Second price source: the Pokémon TCG API's TCGplayer prices for the same card — same name,
+// same collector number and the same set name, or nothing (never another printing's price).
+const PTCG_API_KEYS = { normal: "normal", holofoil: "holofoil", reverseHolofoil: "reverse-holofoil", "1stEditionHolofoil": "1st-edition-holofoil", "1stEditionNormal": "1st-edition", unlimitedHolofoil: "unlimited-holofoil", unlimitedNormal: "unlimited" };
+const setKey = (x) => String(x || "").toLowerCase().replace(/pok[eé]mon|[^a-z0-9]/g, "");
+export function applyFallbackPrices(c, hit) {
+  const tp = hit?.tcgplayer?.prices || {};
+  let filled = false;
+  for (const [k, v] of Object.entries(tp)) {
+    const usd = n(v?.market) ?? n(v?.mid);
+    if (usd == null) continue;
+    const key = PTCG_API_KEYS[k] || k,
+      variant = c.variants?.find((x) => x.key === key);
+    if (variant && variant.usd == null) {
+      variant.usd = usd;
+      variant.fallback = true;
+      filled = true;
+    } else if (!variant && !c.variants?.some((x) => x.usd != null)) {
+      (c.variants ||= []).push({ key, label: VARIANT_LABEL[key] || key, usd, fallback: true });
+      filled = true;
+    }
+  }
+  if (!filled) return false;
+  const best = c.variants.find((v) => v.key === "normal" && v.usd) || c.variants.find((v) => v.usd);
+  c.prices.usd = best?.usd ?? null;
+  c.prices.source = "TCGplayer market (USD, via the Pokémon TCG API)";
+  c.prices.updated = hit.tcgplayer?.updatedAt || c.prices.updated;
+  if (c.sets?.[0]) c.sets[0].price = c.prices.usd;
+  return true;
+}
+async function fillPrices(c) {
+  const num = String(c.set?.number || "").replace(/^0+(?=\d)/, "");
+  if (!c.name || !num) return;
+  const u = "https://api.pokemontcg.io/v2/cards?" + new URLSearchParams({ q: `name:"${c.name.replace(/"/g, "")}" number:${num}`, select: "name,number,set,tcgplayer", pageSize: "20" });
+  const d = await fetch(u, { signal: AbortSignal.timeout?.(8000) }).then((r) => (r.ok ? r.json() : null));
+  const hit = (d?.data || []).find((x) => setKey(x.set?.name) === setKey(c.set?.name));
+  if (hit) applyFallbackPrices(c, hit);
+}
+
 export function normalizePtcg(c) {
   const tp = c.pricing?.tcgplayer || {},
     cm = c.pricing?.cardmarket || {},
@@ -213,7 +251,11 @@ export const ptcgSource = {
   async get(id) {
     const d = await get("/cards/" + encodeURIComponent(id));
     if (!d) throw Error("Card not found.");
-    return normalizePtcg(d);
+    const c = normalizePtcg(d);
+    // No price from TCGdex (common for new sets): ask the Pokémon TCG API, which also carries
+    // TCGplayer market prices.
+    if (c.prices.usd == null) await fillPrices(c).catch(() => {});
+    return c;
   },
   // Exact printing from a scan: name plus collector number (053 or 53).
   // Pokémon that evolve from this one (TCGdex filters on evolveFrom), one per name.

@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-v77";
+const CACHE = "cardforge-shell-v78";
 const ASSETS = [
   "./",
   "./index.html",
@@ -25,6 +25,9 @@ const ASSETS = [
   "./core.js",
   "./catalog-tools.js",
   "./scanart.js",
+  "./install.js",
+  "./tcgcompare.js",
+  "./pricehist.js",
   "./storage.js",
   "./extras.js",
   "./share.js",
@@ -79,6 +82,23 @@ self.addEventListener("activate", (e) =>
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET" || url.origin !== self.location.origin) return;
+  // The instant-scan index is large and changes rarely: serve the saved copy at once and refresh
+  // it in the background.
+  if (url.pathname.includes("/scanidx/")) {
+    e.respondWith(
+      caches.open(CACHE).then(async (c) => {
+        const hit = await c.match(e.request),
+          fresh = fetch(e.request)
+            .then((r) => {
+              if (r.ok) c.put(e.request, r.clone());
+              return r;
+            })
+            .catch(() => hit);
+        return hit || fresh;
+      }),
+    );
+    return;
+  }
   if (e.request.mode === "navigate") {
     e.respondWith(
       fetch(e.request)
