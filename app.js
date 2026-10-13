@@ -962,6 +962,19 @@ attachCardGestures({onHold:t=>safely(cardQuickMenu(t)),onPick:t=>safely(pickComp
 document.addEventListener("pointerdown", ripple, { passive: true });
 attachGestures({ closeSheet: () => closeSheet() });
 attachTilt();
+// One rule for every card frame: a row or tile without its own tier takes it from its card
+// picture, which always carries that exact printing's price (ui.js tierRing).
+let tierQueued = false;
+const tierSync = () => {
+  tierQueued = false;
+  for (const el of document.querySelectorAll(".lot:not([data-tier]), .grid-card:not([data-tier])")) {
+    const i = el.querySelector("img[data-tier]");
+    if (!i) continue;
+    el.dataset.tier = i.dataset.tier;
+    el.style.setProperty("--tier", i.style.getPropertyValue("--tier"));
+  }
+};
+new MutationObserver(() => { if (!tierQueued) { tierQueued = true; requestAnimationFrame(tierSync); } }).observe(document.body, { childList: true, subtree: true });
 attachSuggest();
 document.addEventListener("submit",e=>{
  const form=e.target.closest?.('[data-auth-action]');if(!form)return;

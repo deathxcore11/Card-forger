@@ -1,3 +1,8 @@
+3.33.1 — Tier frames everywhere read the card's own price
+- Fixed: some card frames (Magic deck pages, shared decks, deck ideas) showed grey whatever the
+  price, e.g. Ba Sing Se at $4.76. Every card row and tile now takes its tier from that exact
+  printing's price; cards with no price yet get no frame.
+
 3.33.0 — Goldfish: every deck played out 1,000 times
 - Deck Power now plays your exact list out 1,000 times with each game's turn rules and shows
   what the hands actually do:

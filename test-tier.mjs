@@ -8,3 +8,9 @@ assert.equal(tierOf("ygo", "Common", 150).label, "Epic");
 assert.equal(tierOf("ygo", "Common", 350).label, "Legendary");
 console.log("PASS: price-band tiers per card, identical across games.");
 assert.equal(tierOf("ptcg", "", null).key, "tn", "no price → no tier frame");
+// Magic thumbnails read the printing's price from the card object (Ba Sing Se $4.76 → green).
+import { cardImage, img } from "./ui.js";
+const basing = { name: "Ba Sing Se", prices: { usd: "4.76" }, image_uris: { normal: "https://example/ba.jpg" } };
+assert.match(img(cardImage(basing), basing.name), /data-tier="t1"/);
+assert.doesNotMatch(img("https://example/unknown.jpg", "x"), /data-tier/, "unknown price → no ring");
+console.log("PASS: card thumbnails take their tier from that printing's own price.");
