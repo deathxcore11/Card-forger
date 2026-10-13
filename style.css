@@ -1990,3 +1990,6 @@ nav [data-nav] { position: relative; }
 .stash-pocket-page.turning[style*="right center"]::after { background: linear-gradient(270deg, #0000 0%, #0000 35%, #0006 70%, #000b 100%); }
 .stash-pocket-page.turning { box-shadow: calc(var(--turn, 0) * -18px) 6px 22px #000a; }
 @media (max-width: 520px) { .stash-under { gap: 6px; } }
+.upgrade-row { gap: 10px; }
+.upgrade-row .ellip small { display: block; }
+.upgrade-side { display: flex; align-items: center; gap: 8px; flex: none; }

@@ -3895,6 +3895,8 @@ function trackValue() {
   S.state.valueHistory = recordValuePoint(S.state.valueHistory, v.total, v.copies);
 }
 
+// Background loads in game modules ask for a redraw.
+globalThis.addEventListener?.("cardstashy-rerender", () => render());
 // Shared daily prices arrive in the background: redraw whichever price chart is open.
 onSharedPrices(() => {
   const ctx = S.ui.sheetCtx;

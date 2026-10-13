@@ -1065,8 +1065,8 @@ export function tcgDeck(id) {
     <button class="review-badge ${issues.length ? "bad" : "ok"}" data-act="tIssues" data-deck="${esc(d.id)}">${issues.length ? `● ${issues.length} to fix` : s.total ? "✓ Legal in " + esc(f.name) : "Add cards to check legality"}</button>
     <div class="hero-stats"><span><b>${zoneCount("main")}</b>${g === "ygo" ? "main" : "/60 cards"}</span><span><b>${s.total ? Math.round((s.owned / s.total) * 100) : 0}%</b>owned</span><span><b>${usd(s.buy, 0)}${s.unknown ? "+" : ""}</b>to finish${s.unknown ? " · some unpriced" : ""}</span>${s.total ? `<button data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="insights"><b>${tcgPower(g, d, f, (x) => cardOf(g, x)).score}</b>power</button>` : ""}</div>
   </div></section>
-  <nav class="tabs" role="tablist">${[["cards", "Cards"], ["insights", "Power"], ["playtest", "Playtest"], ["versions", "Versions"]].map(([id, l]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="${id}">${l}</button>`).join("")}</nav>
-  <div class="deck-body">${tab === "insights" ? deckInsights(g, d, f, s) : tab === "playtest" ? deckPlaytest(g, d, f) : tab === "versions" ? deckVersions(g, d) : deckCardsTab(g, d, f, s, issues)}</div>`;
+  <nav class="tabs" role="tablist">${[["cards", "Cards"], ["insights", "Power"], ["upgrade", "Upgrade lab"], ["playtest", "Playtest"], ["versions", "Versions"]].map(([id, l]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="${id}">${l}</button>`).join("")}</nav>
+  <div class="deck-body">${tab === "insights" ? deckInsights(g, d, f, s) : tab === "upgrade" ? deckUpgradeTab(g, d, f, s) : tab === "playtest" ? deckPlaytest(g, d, f) : tab === "versions" ? deckVersions(g, d) : deckCardsTab(g, d, f, s, issues)}</div>`;
 }
 
 // Meta / staple tally for the deck, and owned staples that could replace no-emblem cards.
@@ -1225,6 +1225,39 @@ export function diffZones(a, b) {
   }
   return { added, removed };
 }
+/* ----- Upgrade lab (Pokémon / Yu-Gi-Oh!): what placing lists of the same archetype play ----- */
+const upgradeLoads = new Set();
+function deckUpgradeTab(g, d, f, s) {
+  if (!s.total) return `<p class="muted pad">Add cards first; the Upgrade lab compares your list with tournament decks.</p>`;
+  const pw = tcgPower(g, d, f, (x) => cardOf(g, x)),
+    m = ownedMap(g),
+    U = pw.upgrades,
+    meta = metaState(g).data,
+    cardFor = (x) => (g === "ygo" ? cardOf(g, x.key) : null),
+    addBtn = (x) => (g === "ygo" ? `data-act="tDeckAdd" data-id="${esc(x.key)}" data-deck="${esc(d.id)}"` : `data-act="tDeckAddName" data-name="${esc(x.name)}" data-deck="${esc(d.id)}"`),
+    row = (x, extra) => {
+      const c = cardFor(x), p = c ? price(c) : null, own = c ? ownedOf(g, c, m) : 0;
+      return `<div class="mini-row upgrade-row">${c ? imgTag(c, "mini-art") : `<span class="mini-art img-missing">◇</span>`}<span class="ellip"><b>${esc(x.name)}</b><small class="muted">${extra}</small></span><span class="upgrade-side">${p != null ? `<small>${usd(p)}</small>` : ""}${own ? `<small class="ok-text">own ${own}</small>` : ""}<button class="btn small" ${addBtn(x)}>＋ Add</button></span></div>`;
+    };
+  // Yu-Gi-Oh! suggestions arrive as card ids: load their pictures and prices once.
+  if (g === "ygo") {
+    const want = [...(U?.adds || []).map((x) => x.key), ...((meta?.top || []).slice(0, 30).map((x) => String(x.id)))].filter((id) => id && !cardOf(g, id) && !upgradeLoads.has(id));
+    if (want.length) { want.forEach((id) => upgradeLoads.add(id)); ensureMany(g, want).then(() => globalThis.dispatchEvent?.(new Event("cardstashy-rerender"))); }
+  }
+  if (!pw.metaLoaded) return `<section class="panel"><h3>Upgrade lab</h3><p class="muted small">Load recent tournament decks to see what lists like yours play.</p><button class="btn" data-act="tMetaRefresh">Load tournament decks</button></section>`;
+  const staples = g === "ygo" ? (meta?.top || []).filter((x) => x.pct >= 20) : (meta?.top || []).filter((x) => x.kind === "Trainer" && x.pct >= 30);
+  const inDeck = new Set([...(d.zones.main || []), ...(d.zones.extra || [])].flatMap((r) => [String(r.cardId), (cardOf(g, r.cardId)?.name || r.name || "").toLowerCase()]));
+  const stapleRows = staples.filter((x) => !inDeck.has(String(x.id || "")) && !inDeck.has(String(x.name).toLowerCase())).slice(0, 12)
+    .map((x) => row({ key: String(x.id || x.name), name: x.name }, `${Math.round(x.pct)}% of tournament decks · usually ${Math.max(1, Math.round(x.avg || 1))}`)).join("");
+  const addCost = U ? U.adds.reduce((a, x) => { const c = cardFor(x), p = c ? price(c) : null, own = c ? ownedOf(g, c, m) : 0; return a + (p != null ? p * Math.max(0, x.need - own) : 0); }, 0) : 0;
+  return `<section class="panel"><p class="eyebrow">Upgrade lab</p><h2>${U ? `Make it play like ${esc(pw.match.archetype)}` : "Format staples"}</h2>
+    <p class="muted small">${U ? `Compared with ${U.lists} placing ${esc(pw.match.archetype)} list${U.lists === 1 ? "" : "s"} (your list is ${Math.round(pw.match.sim * 100)}% the same). Power now: <b>${pw.score}</b>.` : "Your list doesn’t closely match a tournament archetype yet, so here are the cards most tournament decks in this format play."}</p></section>
+  ${U && U.adds.length ? `<section class="panel"><div class="row between"><h3>Add · played by most ${esc(pw.match.archetype)} lists</h3>${addCost ? `<span class="small">≈ ${usd(addCost, 0)} to buy</span>` : ""}</div><div class="list compact">${U.adds.map((x) => row(x, `${Math.round(x.share * 100)}% of lists · they run ${x.typical}, you run ${x.have}`)).join("")}</div></section>` : ""}
+  ${U && U.cuts.length ? `<section class="panel"><h3>Consider cutting</h3><p class="muted small">Cards few or none of the placing lists play. Keep them if they’re part of your own plan.</p><div class="list compact">${U.cuts.map((x) => `<div class="mini-row"><span class="ellip">${x.qty}× ${esc(x.name)}</span><small class="muted">${Math.round(x.share * 100)}% of lists</small></div>`).join("")}</div></section>` : ""}
+  ${stapleRows ? `<section class="panel"><h3>${U ? "Format staples you’re not playing" : "Most-played cards"}</h3><div class="list compact">${stapleRows}</div></section>` : ""}
+  <p class="foot">From ${esc(meta?.source || "recent tournament results")}. Adding a card changes the deck only; it never adds to your collection. Save a version first to compare Power before and after.</p>`;
+}
+
 function deckVersions(g, d) {
   const vs = (d.versions || []).slice().reverse();
   return `<section class="panel"><div class="row between"><h3>Versions</h3><button class="btn small" data-act="tSnap" data-deck="${esc(d.id)}">Save a version now</button></div>
@@ -1233,6 +1266,7 @@ function deckVersions(g, d) {
       const df = diffZones(v.zones, d.zones),
         n = ["main", "extra", "side"].reduce((a, z) => a + (v.zones[z] || []).reduce((b, r) => b + r.qty, 0), 0);
       return `<div class="version"><div class="row between"><b>${esc(v.label)}</b><small class="muted">${esc(new Date(v.at).toLocaleString())} · ${n} cards</small></div>
+        ${(() => { try { const f = formatOf(g, d.format), a = tcgPower(g, { ...d, zones: v.zones, id: d.id + ":v" + v.id }, f, (x) => cardOf(g, x)).score, b = tcgPower(g, d, f, (x) => cardOf(g, x)).score; return `<p class="small">Power then <b>${a}</b> → now <b class="${b > a ? "up" : b < a ? "down" : ""}">${b}</b></p>`; } catch { return ""; } })()}
         <p class="small">${df.added.length || df.removed.length ? `Since then: <span class="up">+${df.added.reduce((a, r) => a + r.qty, 0)}</span> <span class="down">−${df.removed.reduce((a, r) => a + r.qty, 0)}</span>` : "Same as now."}</p>
         ${df.added.length || df.removed.length ? `<details class="small"><summary>What changed</summary>${df.added.map((r) => `<div class="up">+${r.qty} ${esc(r.name)}</div>`).join("")}${df.removed.map((r) => `<div class="down">−${r.qty} ${esc(r.name)}</div>`).join("")}</details>` : ""}
         <div class="actions"><button class="btn ghost small" data-act="tRestore" data-deck="${esc(d.id)}" data-id="${esc(v.id)}">Restore</button><button class="link small danger" data-act="tDelVersion" data-deck="${esc(d.id)}" data-id="${esc(v.id)}">Delete</button></div></div>`;
@@ -1976,6 +2010,15 @@ export function registerTcg(c) {
       A2.busy = false;
       render();
     }
+  };
+  // Upgrade lab (Pokémon lists only carry names): find the exact card, then add it.
+  A.tDeckAddName = async (t) => {
+    const G = g(),
+      r = await SOURCES[G].search({ q: t.dataset.name, size: 8 }).catch(() => ({ cards: [] })),
+      hit = r.cards.find((x) => x.name.toLowerCase() === String(t.dataset.name).toLowerCase()) || r.cards[0];
+    if (!hit) return toast("Couldn’t find that card right now.");
+    const card = await ensureCard(G, hit.id).catch(() => remember(hit));
+    await mutate((st) => addToDeck(st, t.dataset.deck, card), { msg: `${card.name} added.` });
   };
   // From the Power panel: look up a card the tournament list plays, ready to add.
   A.tDeckFindName = async (t) => {

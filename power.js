@@ -6,7 +6,7 @@ import { cardKey } from "./core.js";
 import { engineProfile } from "./insights.js";
 import { formatOf, isCommanderLike } from "./formats.js";
 import { metaState, MTG_META_FORMATS } from "./meta.js";
-import { mtgConstructedPower, ygoPower, ptcgPower, metaMatch, blend, powerGrade, placeText } from "./deckpower.js";
+import { mtgConstructedPower, ygoPower, ptcgPower, metaMatch, blend, powerGrade, placeText, archetypeUpgrades } from "./deckpower.js";
 
 const cache = new Map();
 const memo = (sig, fn) => {
@@ -70,10 +70,11 @@ export function tcgPower(g, d, f, cardOf) {
     const rows = [];
     for (const zone of ["main", "extra"]) for (const r of d.zones?.[zone] || []) rows.push({ zone, qty: r.qty, c: cardOf(r.cardId), id: r.cardId, name: r.name });
     const base = g === "ygo" ? ygoPower(rows, f) : ptcgPower(rows.filter((r) => r.zone === "main"), f);
-    let match = null;
+    let match = null, mineMap = null, metaDecks = [];
     const data = M?.data;
     if (data?.decks?.length) {
       const mine = new Map(), nameOf = new Map();
+      mineMap = mine;
       if (g === "ygo") {
         for (const r of rows) mine.set(String(r.id), (mine.get(String(r.id)) || 0) + r.qty);
         const decks = data.decks.map((x) => {
@@ -81,6 +82,7 @@ export function tcgPower(g, d, f, cardOf) {
           for (const id of [...(x.main || []), ...(x.extra || [])]) m.set(String(id), (m.get(String(id)) || 0) + 1);
           return { key: x.key, name: x.name, archetype: x.name, rank: x.rank || 99, place: x.place, event: x.event, date: x.date, url: x.url, rows: m, labels: new Map([...m.keys()].map((id) => [id, cardOf(id)?.name || "Card " + id])) };
         });
+        metaDecks = decks;
         match = metaMatch(mine, decks, data.archetypes || []);
       } else {
         const nk = (n) => String(n || "").toLowerCase();
@@ -99,13 +101,21 @@ export function tcgPower(g, d, f, cardOf) {
           }
           return { key: x.key, name: x.name, archetype: x.archetype, rank: x.rank || 99, place: x.place, event: x.event, date: x.date, url: x.url, rows: m, labels };
         });
+        metaDecks = decks;
         match = metaMatch(mine, decks, (data.archetypes || []).map((a) => ({ ...a, name: a.id })));
         if (match) match.archetype = data.archetypes?.find((a) => a.id === match.archetype)?.name || match.deck.name;
       }
       if (match) match.extra = match.extra.map((x) => ({ ...x, name: g === "ygo" ? cardOf(x.key)?.name || x.key : nameOf.get(x.key) || x.key }));
     }
     const b = blend(base.score, match);
-    return { ...base, heuristic: base.score, score: b.score, from: b.from, match, metaKey: g, metaLoaded: !!data, metaBusy: !!M?.busy, game: g };
+    // Upgrades from lists of the same archetype (only when the match is real).
+    let upgrades = null;
+    if (match && match.sim >= 0.25 && mineMap) {
+      const arch = match.deck.archetype || match.deck.name;
+      upgrades = archetypeUpgrades(mineMap, metaDecks.filter((x) => (x.archetype || x.name) === arch));
+      upgrades.cuts = upgrades.cuts.map((x) => ({ ...x, name: match.extra.find((e) => e.key === x.key)?.name || (g === "ygo" ? cardOf(x.key)?.name : x.key) || x.key }));
+    }
+    return { ...base, heuristic: base.score, score: b.score, from: b.from, match, upgrades, metaKey: g, metaLoaded: !!data, metaBusy: !!M?.busy, game: g };
   });
 }
 

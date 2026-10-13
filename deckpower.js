@@ -268,3 +268,35 @@ export function blend(heur, match) {
 }
 
 export const placeText = (r) => (r <= 1 ? "1st" : r === 2 ? "2nd" : r <= 4 ? "Top 4" : r <= 8 ? "Top 8" : r <= 16 ? "Top 16" : r <= 32 ? "Top 32" : "5-0 league / listed");
+
+/* ======================= Tournament upgrades ======================= */
+
+// What lists of the same archetype play that this list doesn't (and what it plays that they don't).
+// mine: Map(key→qty). lists: placing decks of the matched archetype (rows: Map(key→qty), labels).
+export function archetypeUpgrades(mine, lists) {
+  if (!lists?.length) return { lists: 0, adds: [], cuts: [] };
+  const stats = new Map();
+  for (const d of lists)
+    for (const [k, n] of d.rows) {
+      const s = stats.get(k) || { key: k, name: d.labels?.get(k) || k, lists: 0, copies: 0 };
+      s.lists++;
+      s.copies += n;
+      stats.set(k, s);
+    }
+  const adds = [],
+    cuts = [];
+  for (const s of stats.values()) {
+    const share = s.lists / lists.length,
+      typical = Math.max(1, Math.round(s.copies / s.lists)),
+      have = mine.get(s.key) || 0;
+    if (share >= 0.4 && have < typical) adds.push({ key: s.key, name: s.name, share, typical, have, need: typical - have });
+  }
+  for (const [k, n] of mine) {
+    const s = stats.get(k),
+      share = s ? s.lists / lists.length : 0;
+    if (share < 0.15) cuts.push({ key: k, qty: n, share });
+  }
+  adds.sort((a, b) => b.share - a.share || b.need - a.need);
+  cuts.sort((a, b) => a.share - b.share || b.qty - a.qty);
+  return { lists: lists.length, adds: adds.slice(0, 24), cuts: cuts.slice(0, 16) };
+}
