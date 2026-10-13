@@ -24,6 +24,7 @@ import { buildYgo, buildPtcg, YGO_STAPLES, PTCG_STAPLES, PTCG_SUPPORT_BASICS, en
 import { ygoSource, ygoImageDirect, YGO_TYPES, YGO_ATTRIBUTES, YGO_RACES, YGO_SPELL_KINDS, YGO_TRAP_KINDS } from "./ygo.js";
 import { ptcgSource, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES } from "./ptcg.js";
 import { loadMeta, metaState, ptcgIcon, allCachedMeta, cleanName } from "./meta.js";
+import { tcgPower, powerPanel, powerChip } from "./power.js";
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
 import { rankPairs, ygoTags, ptcgTags } from "./pairing.js";
 import { nameCandidates, scanCandidateMatches, ygoSetCodes, ygoPasscodes, ptcgNumbers, similarity, scanNameKey, textPhrases, attackNames } from "./scan.js";
@@ -407,16 +408,35 @@ export function tcgHome() {
     <button class="kpi" data-act="go" data-to="#decks"><b>${st.decks.length}</b><span>decks</span></button>
   </div>`}
   ${quickTiles(g)}
-  ${recent.length ? `<div class="section-head"><h2>Your decks</h2><button class="link" data-act="go" data-to="#decks">All decks →</button></div><div class="tdeck-list">${recent.map((d) => deckTile(g, d)).join("")}</div>` : ""}
+  ${recent.length ? `<div class="section-head"><h2>Your decks</h2><button class="link" data-act="go" data-to="#decks">All decks →</button></div><div class="deck-grid">${recent.map((d) => deckTile(g, d)).join("")}</div>` : ""}
   <p class="muted small">${esc(G.tagline)}. Card data and daily prices from ${esc(G.source)}.</p>`;
 }
 
+// Yu-Gi-Oh! has true artwork crops (through the Worker's image cache, then the source).
+const ygoCropArt = (c) => {
+  const urls = [`img/ygo/a/${encodeURIComponent(c.id)}.jpg`, `https://images.ygoprodeck.com/images/cards_cropped/${encodeURIComponent(c.id)}.jpg`, c.imageLarge || c.image].filter(Boolean);
+  return `<img class="tile-card-art cropped" src="${esc(urls[0])}" data-art-sources="${esc(JSON.stringify(urls))}" data-art-index="0" alt="${esc(c.name)}" loading="lazy" referrerpolicy="no-referrer">`;
+};
 function deckTile(g, d) {
   const s = deckStats(g, d),
     f = formatOf(g, d.format),
     cover = cardOf(g, (d.zones.main || [])[0]?.cardId),
-    issues = SOURCES[g].validate(d, (id) => cardOf(g, id), f);
-  return `<button class="tdeck" data-act="go" data-to="#tdeck/${esc(d.id)}">${imgTag(cover, "tdeck-art")}<span class="tdeck-body"><b class="ellip">${esc(d.name)}</b><small>${esc(f.name)} · ${s.total} cards</small><small>${s.total ? Math.round((s.owned / s.total) * 100) : 0}% owned · ${usd(s.buy, 0)} to finish</small>${issues.length ? `<span class="tag bad">${issues.length} to fix</span>` : s.total ? `<span class="tag ok">Legal</span>` : ""}</span></button>`;
+    issues = SOURCES[g].validate(d, (id) => cardOf(g, id), f),
+    main = (d.zones.main || []).reduce((a, r) => a + r.qty, 0),
+    owned = s.total ? s.owned / s.total : 0,
+    pw = s.total ? tcgPower(g, d, f, (id) => cardOf(g, id)) : null;
+  // Same art tile as Magic decks: card art, format chip, power, owned, value, cost to finish.
+  return `<button class="deck-tile tcg-tile tile-${g}" data-act="go" data-to="#tdeck/${esc(d.id)}">
+    <span class="tile-art">${g === "ygo" && cover ? ygoCropArt(cover) : imgTag(cover, "tile-card-art", true)}</span>
+    <span class="tile-shade"></span>
+    <span class="tile-top"><span class="chip dark">${esc(f.name)}</span>${issues.length ? `<span class="chip dark bad-chip">${issues.length} to fix</span>` : s.total ? `<span class="chip dark ok-chip">Legal</span>` : ""}</span>
+    <span class="tile-body">
+      <b>${esc(d.name)}</b>
+      <small>${esc(pw?.plan || GAMES[g].short)} · ${main}${g === "ygo" ? " main" : "/60"}</small>
+      <span class="tile-stats">${pw ? powerChip(pw) : ""}<span><em>${Math.round(owned * 100)}%</em> owned</span><span><em>${usd(s.value, 0)}</em> value</span>${s.total - s.owned ? `<span><em>${usd(s.buy, 0)}</em> to finish</span>` : ""}</span>
+      ${bar(owned, "thin")}
+    </span>
+  </button>`;
 }
 
 /* ---------- search ---------- */
@@ -777,7 +797,7 @@ export function tcgDecks() {
   return `<div class="page-head"><h1>Decks</h1><div class="row"><button class="btn small" data-act="tImport">↥ Import</button><button class="btn ghost small" data-act="tNewDeck">＋ New</button></div></div>
   ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Meta decks"]])}
   <div class="random-tools"><button class="btn ghost small" data-act="tRandomDeck">🎲 Random deck</button><button class="btn ghost small" data-act="tRandomCard">🎲 Random card</button></div>
-  ${tab === "ideas" ? ideasView(g) : tab === "inspiration" ? metaView(g) : st.decks.length ? `<div class="tdeck-list">${st.decks.slice().reverse().map((d) => deckTile(g, d)).join("")}</div>` : empty("No decks yet", `Pick a format and start adding cards, build from cards you own in Ideas, or copy a tournament deck from Meta decks.`, `<button class="btn" data-act="decksTab" data-id="ideas">✧ Ideas from my cards</button><button class="btn ghost" data-act="decksTab" data-id="inspiration">🏆 Meta decks</button>`)}`;
+  ${tab === "ideas" ? ideasView(g) : tab === "inspiration" ? metaView(g) : st.decks.length ? `<div class="deck-grid">${st.decks.slice().reverse().map((d) => deckTile(g, d)).join("")}</div>` : empty("No decks yet", `Pick a format and start adding cards, build from cards you own in Ideas, or copy a tournament deck from Meta decks.`, `<button class="btn" data-act="decksTab" data-id="ideas">✧ Ideas from my cards</button><button class="btn ghost" data-act="decksTab" data-id="inspiration">🏆 Meta decks</button>`)}`;
 }
 
 /* ---------- meta & ideas ---------- */
@@ -1043,9 +1063,9 @@ export function tcgDeck(id) {
     <div class="row between"><button class="icon light" data-act="go" data-to="#decks" aria-label="Back">←</button><button class="icon light" data-act="tDeckMenu" data-id="${esc(d.id)}" aria-label="Deck options">⋯</button></div>
     <h1>${esc(d.name)}</h1><p><button class="chip dark fmt-chip" data-act="tDeckMenu" data-id="${esc(d.id)}">${esc(GAMES[g].short)} · ${esc(f.name)}</button></p>
     <button class="review-badge ${issues.length ? "bad" : "ok"}" data-act="tIssues" data-deck="${esc(d.id)}">${issues.length ? `● ${issues.length} to fix` : s.total ? "✓ Legal in " + esc(f.name) : "Add cards to check legality"}</button>
-    <div class="hero-stats"><span><b>${zoneCount("main")}</b>${g === "ygo" ? "main" : "/60 cards"}</span><span><b>${s.total ? Math.round((s.owned / s.total) * 100) : 0}%</b>owned</span><span><b>${usd(s.buy, 0)}${s.unknown ? "+" : ""}</b>to finish${s.unknown ? " · some unpriced" : ""}</span></div>
+    <div class="hero-stats"><span><b>${zoneCount("main")}</b>${g === "ygo" ? "main" : "/60 cards"}</span><span><b>${s.total ? Math.round((s.owned / s.total) * 100) : 0}%</b>owned</span><span><b>${usd(s.buy, 0)}${s.unknown ? "+" : ""}</b>to finish${s.unknown ? " · some unpriced" : ""}</span>${s.total ? `<button data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="insights"><b>${tcgPower(g, d, f, (x) => cardOf(g, x)).score}</b>power</button>` : ""}</div>
   </div></section>
-  <nav class="tabs" role="tablist">${[["cards", "Cards"], ["insights", "Insights"], ["playtest", "Playtest"], ["versions", "Versions"]].map(([id, l]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="${id}">${l}</button>`).join("")}</nav>
+  <nav class="tabs" role="tablist">${[["cards", "Cards"], ["insights", "Power"], ["playtest", "Playtest"], ["versions", "Versions"]].map(([id, l]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="${id}">${l}</button>`).join("")}</nav>
   <div class="deck-body">${tab === "insights" ? deckInsights(g, d, f, s) : tab === "playtest" ? deckPlaytest(g, d, f) : tab === "versions" ? deckVersions(g, d) : deckCardsTab(g, d, f, s, issues)}</div>`;
 }
 
@@ -1123,6 +1143,8 @@ function deckInsights(g, d, f, s) {
     top = [...s.rows].filter((x) => x.c && price(x.c)).sort((a, b) => price(b.c) - price(a.c)).slice(0, 5),
     starters = new Set(d.starters || []);
   if (!N) return `<p class="muted pad">Add cards to see composition and odds.</p>`;
+  const pw = tcgPower(g, d, f, (x) => cardOf(g, x)),
+    powerHtml = powerPanel(pw, { loadAct: `data-act="tMetaRefresh"`, cardAct: (x) => (g === "ygo" ? `data-act="tCard" data-id="${esc(x.key)}"` : `data-act="tDeckFindName" data-name="${esc(x.name)}"`) });
   const bars = (items) => `<div class="comp">${items.map(([label, n, total, note]) => `<div class="meter"><span>${esc(label)}</span>${bar(total ? n / total : 0)}<b>${n}</b></div>${note ? `<p class="foot">${note}</p>` : ""}`).join("")}</div>`;
   const oddsRow = (x, hands) => `<tr><td><label class="check"><input type="checkbox" data-change="tStarter" data-deck="${esc(d.id)}" data-id="${esc(x.r.cardId)}" ${starters.has(x.r.cardId) ? "checked" : ""}> ${esc(x.r.name)}</label></td><td class="num">${x.r.qty}</td>${hands.map((n) => `<td class="num">${pctTxt(atLeastOne(N, x.r.qty, n))}</td>`).join("")}</tr>`;
   const starterK = main.filter((x) => starters.has(x.r.cardId)).reduce((a, x) => a + x.r.qty, 0);
@@ -1137,7 +1159,7 @@ function deckInsights(g, d, f, s) {
       const fr = (cardOf(g, r.cardId)?.frame || "other").replace("_pendulum", "");
       extraKinds[fr] = (extraKinds[fr] || 0) + r.qty;
     }
-    return `<section class="panel"><h3>Main Deck · ${N} cards</h3>${bars([["Monsters", count("Monster"), N], ["Spells", count("Spell"), N], ["Traps", count("Trap"), N]])}
+    return `${powerHtml}<section class="panel"><h3>Main Deck · ${N} cards</h3>${bars([["Monsters", count("Monster"), N], ["Spells", count("Spell"), N], ["Traps", count("Trap"), N]])}
       ${Object.keys(extraKinds).length ? `<p class="small">Extra Deck: ${Object.entries(extraKinds).map(([k, n]) => `${n} ${esc(k[0].toUpperCase() + k.slice(1))}`).join(" · ")}</p>` : ""}</section>
     <section class="panel"><h3>Monster levels</h3>${levelChart(levels)}<p class="foot">Level 5–6 monsters need 1 Tribute, 7+ need 2, unless their text says otherwise.</p></section>
     <section class="panel"><div class="row between"><h3>Opening-hand odds</h3>${starterK ? `<span class="chip ok">${pctTxt(atLeastOne(N, starterK, 5))} to open a starter</span>` : ""}</div>
@@ -1155,7 +1177,7 @@ function deckInsights(g, d, f, s) {
     energyTypes = new Set(main.filter((x) => x.c?.category === "Energy").flatMap((x) => (x.c.basicEnergy ? [x.r.name.replace(/^Basic | Energy$/g, "")] : ["Special"]))),
     needTypes = [...new Set(main.flatMap((x) => x.c?.attackCosts || []))].filter((t) => !energyTypes.has(t)),
     mull = 1 - atLeastOne(N, basics, 7);
-  return `<section class="panel"><h3>${N} cards</h3>${bars([["Pokémon", cat("Pokemon"), N], ["Trainers", cat("Trainer"), N], ["Energy", cat("Energy"), N]])}<p class="foot">Many competitive decks run roughly 12–20 Pokémon, 30–40 Trainers and 8–14 Energy — a guideline, not a rule.</p></section>
+  return `${powerHtml}<section class="panel"><h3>${N} cards</h3>${bars([["Pokémon", cat("Pokemon"), N], ["Trainers", cat("Trainer"), N], ["Energy", cat("Energy"), N]])}<p class="foot">Many competitive decks run roughly 12–20 Pokémon, 30–40 Trainers and 8–14 Energy — a guideline, not a rule.</p></section>
   <section class="panel"><h3>Opening hand</h3>
     <p><b>${basics}</b> Basic Pokémon → <b class="${mull > 0.2 ? "warn-text" : "ok-text"}">${pctTxt(mull)}</b> chance an opening 7 has none (a mulligan; your opponent may draw a card).</p>
     ${broken.length ? `<div class="note warn">${broken.map((x) => `${esc(x.r.name)} evolves from <b>${esc(x.c.evolveFrom)}</b>, which isn’t in the deck${x.c.stage === "Stage2" && hasCandy ? " (Rare Candy can skip it, but you still need the Basic)" : ""}.`).join("<br>")}</div>` : `<p class="small ok-text">✓ Every evolution has the card it evolves from.</p>`}
@@ -1954,6 +1976,14 @@ export function registerTcg(c) {
       A2.busy = false;
       render();
     }
+  };
+  // From the Power panel: look up a card the tournament list plays, ready to add.
+  A.tDeckFindName = async (t) => {
+    const G = g();
+    ui(G).deckAdd.q = t.dataset.name || "";
+    if (S.ui.tdeckId) (S.ui.tdeckTab ||= {})[S.ui.tdeckId] = "cards";
+    await A.tDeckFind();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
   A.tDeckAddClose = () => {
     ui().deckAdd.results = [];

@@ -14,6 +14,7 @@ import { binderPage, binderMatches, BINDER_COLORS, attachBinderDrag, animateTurn
 // Screens live in views.js; deck/collection math in core.js, planner.js,
 // strategy.js, deck-flow.js and insights.js.
 import { metaState, loadMeta as loadMetaData, MTG_META_FORMATS, allCachedMeta } from "./meta.js";
+import { mtgMetaKey } from "./power.js";
 import { playedAlongside } from "./guide.js";
 import { mtgPairQueries, rankPairs, edhPop } from "./pairing.js";
 import { nextFact } from "./facts.js";
@@ -772,9 +773,9 @@ function render() {
     const SU = T.ui(g).sets;
     if (ui.view === "sets" && !SU.list.length && !SU.busy && !SU.error) setTimeout(() => tcgCtx.loadSets?.(g), 0);
     if (ui.view === "set" && ui.tsetId && T.ui(g).set.id !== ui.tsetId) setTimeout(() => tcgCtx.openSet?.(ui.tsetId), 0);
-    // Ideas and Meta decks need the current tournament meta.
+    // Ideas, Meta decks and Deck Power need the current tournament meta.
     const MS = T.metaState(g);
-    if (ui.view === "decks" && ["ideas", "inspiration"].includes(ui.decksTab) && !MS.busy && (!MS.data || Date.now() - MS.at > 12 * 3600e3) && !autoLoaded.has("meta" + g + MS.at)) {
+    if ((ui.view === "tdeck" || (ui.view === "decks" && ["ideas", "inspiration", "mine"].includes(ui.decksTab))) && !MS.busy && (!MS.data || Date.now() - MS.at > 12 * 3600e3) && !autoLoaded.has("meta" + g + MS.at)) {
       autoLoaded.add("meta" + g + MS.at);
       setTimeout(() => tcgCtx.loadMeta?.(g), 0);
     }
@@ -789,6 +790,15 @@ function render() {
     return;
   }
   const deck = ui.view === "deck" ? currentDeck() : null;
+  // Deck Power compares constructed lists with recent tournament decks for the same format.
+  const mk = deck ? mtgMetaKey(deck) : null;
+  if (mk && navigator.onLine && !autoLoaded.has("meta" + mk)) {
+    const MS = metaState(mk);
+    if (!MS.busy && (!MS.data || Date.now() - MS.at > 12 * 3600e3)) {
+      autoLoaded.add("meta" + mk);
+      loadMetaData(mk).then(() => render()).catch(() => {});
+    }
+  }
   if (deck && navigator.onLine && !autoLoaded.has(deck.id) && deck.cards.some((c) => !meta(c.name))) {
     autoLoaded.add(deck.id);
     resolveNames(deck.cards.map((c) => c.name)).then((r) => {
@@ -2640,6 +2650,11 @@ C.setGlass = (t) => {
 A.zoomCard = (t) =>
   openZoom({ src: t.dataset.src, hi: t.dataset.hi || (/scryfall\.io/.test(t.dataset.src) ? scryfallHi(t.dataset.src) : ""), art: t.dataset.art, alt: t.dataset.name || "Card", fallback: t.dataset.fallback || "" });
 // Card sheet Meta tab: fetch tournament results, then redraw the open sheet.
+A.deckMetaLoad = (t) => {
+  const p = loadMetaData(t.dataset.key).catch(() => toast("Couldn’t load tournament results right now."));
+  render();
+  p.finally(() => render());
+};
 A.cardMetaLoad = (t) => {
   const k = t.dataset.key;
   const p = loadMetaData(k).catch(() => toast("Couldn’t load tournament results right now."));

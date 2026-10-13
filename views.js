@@ -12,6 +12,7 @@ import { binderShelf } from "./binders.js";
 // Screen renderers. Each returns HTML for #content; interaction is wired by
 // data-act / data-change / data-input attributes handled centrally in app.js.
 import { metaState, MTG_META_FORMATS, allCachedMeta } from "./meta.js";
+import { mtgPower, powerPanel, powerChip } from "./power.js";
 import { factBox, factsFor } from "./facts.js";
 import { S, meta, inv, deckById, currentDeck, priceOf } from "./store.js";
 import {
@@ -152,8 +153,8 @@ export function deckTile(d, wide = false) {
     <span class="tile-top"><span class="chip dark">${esc(formatOf(d).name)}</span>${colorDots(meta(d.commander))}</span>
     <span class="tile-body">
       <b>${esc(d.name)}</b>
-      <small>${esc(d.commander || "No commander")} · ${t.copies}/${target}</small>
-      <span class="tile-stats"><span><em>${p.score}</em> engine</span><span><em>${Math.round(owned * 100)}%</em> owned</span><span><em>${usd(v.total, 0)}</em> value</span>${t.missing ? `<span><em>${usd(t.pricedGap, 0)}</em> to finish</span>` : ""}</span>
+      <small>${esc(formatOf(d).commander ? d.commander || "No commander yet" : mtgPower(d).plan)} · ${t.copies}/${target}</small>
+      <span class="tile-stats">${powerChip(mtgPower(d))}<span><em>${Math.round(owned * 100)}%</em> owned</span><span><em>${usd(v.total, 0)}</em> value</span>${t.missing ? `<span><em>${usd(t.pricedGap, 0)}</em> to finish</span>` : ""}</span>
       ${bar(owned, "thin")}
     </span>
   </button>`;
@@ -508,7 +509,7 @@ function tierCard(t, i, mode, tierList = null) {
   }
   return `<article class="tier ${shown ? "on" : ""}">
     <div class="row between"><b>${t.total < t.size ? `Draft — ${t.size - t.total} slot${t.size - t.total === 1 ? "" : "s"} open · ` : ""}${esc(tierLabel(t))}</b><span class="chip">${esc(t.format)}</span></div>
-    <div class="tier-stats"><span><b>${usd(t.cost)}</b> to buy</span><span><b>${t.total}/${t.size}</b> cards</span><span><b>${t.total ? Math.round((t.owned / t.total) * 100) : 0}%</b> owned</span><span><b>${p.score}</b> engine</span></div>
+    <div class="tier-stats"><span><b>${usd(t.cost)}</b> to buy</span><span><b>${t.total}/${t.size}</b> cards</span><span><b>${t.total ? Math.round((t.owned / t.total) * 100) : 0}%</b> owned</span><span><b>${p.score}</b> build score</span></div>
     ${bar(t.total ? t.owned / t.total : 0, "thin")}
     ${t.warnings.map((w) => `<p class="small warn-text">${esc(w)}</p>`).join("")}
     ${tierList ? draftPath(tierList, i, tierLabel) : ""}
@@ -990,7 +991,7 @@ export function sharedPage() {
     <div class="hero-body"><div class="row between"><button class="icon light" data-act="go" data-to="#home" aria-label="Home">←</button><span class="chip dark">Shared deck</span></div>
       <h1>${esc(d.name)}</h1>
       <p>${fm.commander ? colorDots(meta(d.commander)) + " " + esc(d.commander || "") + " · " : ""}<span class="chip dark">${esc(fm.name)}</span>${d.author ? ` · by <b>${esc(d.author)}</b>` : ""}</p>
-      <div class="hero-stats"><span><b class="${(fm.exact ? sumQty(d.cards) === target : sumQty(d.cards) >= target) ? "" : "warn-text"}">${sumQty(d.cards)}/${target}</b>cards</span><span><b>${p.score}</b>engine</span>${br ? `<span><b>${br.bracket}</b>bracket est.</span>` : ""}<span><b>${d.budget !== null ? usd(d.budget, 0) : "—"}</b>budget</span></div>
+      <div class="hero-stats"><span><b class="${(fm.exact ? sumQty(d.cards) === target : sumQty(d.cards) >= target) ? "" : "warn-text"}">${sumQty(d.cards)}/${target}</b>cards</span><span><b>${mtgPower(d).score}</b>power</span>${br ? `<span><b>${br.bracket}</b>bracket est.</span>` : ""}<span><b>${d.budget !== null ? usd(d.budget, 0) : "—"}</b>budget</span></div>
     </div></section>
   <div class="actions wrap share-actions"><button class="btn" data-act="sharedBuild">Make my version</button><button class="btn ghost" data-act="sharedSave">Save to Inspiration</button><button class="btn ghost" data-act="sharedCopy">Copy list</button></div>
   ${d.about ? `<section class="panel"><h3>About this deck</h3><p class="about">${esc(d.about)}</p><p class="foot">Written by ${esc(d.author || "the person who shared it")}.</p></section>` : ""}
@@ -1050,7 +1051,7 @@ export function deckPage() {
     fm = formatOf(d),
     target = fm.size,
     tab = S.ui.deckTab,
-    tabs = [["cards", "Cards"], ["engine", "Engine"], ["upgrade", "Upgrade lab"], ["versions", "Versions"], ["playtest", "Playtest"], ["shop", t.missing ? `Shop · ${t.missing}` : "Shop"]];
+    tabs = [["cards", "Cards"], ["engine", "Power"], ["upgrade", "Upgrade lab"], ["versions", "Versions"], ["playtest", "Playtest"], ["shop", t.missing ? `Shop · ${t.missing}` : "Shop"]];
   return `<section class="deck-hero">${img(coverOf(d), d.name, "hero-art")}<div class="hero-shade"></div>
     <div class="hero-body">
       <div class="row between"><button class="icon light" data-act="go" data-to="#decks" aria-label="Back to decks">←</button><button class="icon light" data-act="deckMenu" aria-label="Deck options">⋯</button></div>
@@ -1061,6 +1062,7 @@ export function deckPage() {
         <span><b class="${(fm.exact ? t.copies === target : t.copies >= target) ? "" : "warn-text"}">${t.copies}/${target}</b>cards</span>
         <span><b>${t.copies ? Math.round((t.covered / t.copies) * 100) : 0}%</b>owned</span>
         <span><b>${usd(t.pricedGap, 0)}${t.unpriced ? "+" : ""}</b>to finish${t.unpriced ? " · some unpriced" : ""}</span>
+        <button data-act="deckTab" data-id="engine"><b>${mtgPower(d).score}</b>power</button>
       </div>
     </div>
   </section>
@@ -1215,16 +1217,10 @@ function deckEngine(d) {
     colorTotal = Object.values(p.pips).reduce((a, b) => a + b, 0),
     srcTotal = Object.values(p.sources).reduce((a, b) => a + b, 0),
     colors = Object.keys(p.pips).filter((k) => p.pips[k] > 0 || p.sources[k] > 0);
-  return `<section class="panel score-panel">${ring(p.score)}<div><p class="eyebrow">Engine score</p><h2>${scoreGrade(p.score)}</h2><p class="muted small">${esc(p.archetype)} lens: checks mana, card flow, interaction and curve against this plan. Aggro skips ramp and board-wipe targets. This is a build-health heuristic, not a win-rate or tournament-tier prediction.</p></div></section>
+  const pw = mtgPower(d);
+  return `${powerPanel(pw, { loadAct: pw.metaKey ? `data-act="deckMetaLoad" data-key="${esc(pw.metaKey)}"` : "", findAct: (x) => `data-act="findRole" data-role="${esc(x.fix)}"`, cardAct: (x) => `data-act="card" data-name="${esc(x.name)}"` })}
   ${p.unknown ? `<div class="note warn">${p.unknown} cards have no card data yet, so they aren’t counted. <button class="link" data-act="refreshDeck">Load card data</button></div>` : ""}
-  ${d.format === "Commander" ? bracketPanel(d) : ""}
-  <section class="panel"><h3>Ingredients</h3>${p.parts
-    .map((x) => {
-      const low = x.ratio < 0.75;
-      return `<div class="ingredient"><div class="row between"><span><b>${esc(x.label)}</b> <span class="muted small">${esc(x.hint)}</span></span><span class="${low ? "warn-text" : ""}">${esc(String(x.count))}<span class="muted">/${esc(String(x.target))}</span></span></div>${bar(x.ratio, low ? "warn" : "good")}${low && ["Ramp", "Draw", "Removal", "Wipe", "Protection", "Synergy"].includes(x.key) ? `<button class="link small" data-act="findRole" data-role="${x.key}">Find ${x.key.toLowerCase()} cards in your colors →</button>` : ""}</div>`;
-    })
-    .join("")}</section>
-  <section class="panel"><div class="row between"><h3>Mana curve</h3><span class="muted small">avg ${p.avg === null ? "—" : p.avg.toFixed(2)} · ${p.counts.Lands} lands</span></div>${curveChart(p.curve)}</section>
+  ${d.format === "Commander" ? bracketPanel(d) : ""}  <section class="panel"><div class="row between"><h3>Mana curve</h3><span class="muted small">avg ${p.avg === null ? "—" : p.avg.toFixed(2)} · ${p.counts.Lands} lands</span></div>${curveChart(p.curve)}</section>
   ${
     colors.length
       ? `<section class="panel"><h3>Color balance</h3><p class="muted small">Share of colored mana symbols in your spells vs. share of lands that make that color.</p>${colors
@@ -1650,7 +1646,7 @@ export function settings() {
   <details class="settings-disclosure settings-danger"><summary>Start over or load examples</summary><p class="foot">Export a backup first. One recovery copy is kept on this device.</p><div class="actions wrap"><button class="btn ghost danger" data-act="reset">Start empty</button><button class="btn ghost" data-act="loadExample">Load example data</button></div></details></div>
   <div id="settings-app" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-app" ${tab === "app" ? "" : "hidden"}><section class="panel settings-card"><div class="settings-card-heading"><div><p class="eyebrow">APPEARANCE</p><h2>Glass &amp; art backdrop</h2></div></div><label class="check"><input type="checkbox" data-change="setGlass" ${(() => { try { return localStorage.getItem("cardstashy-glass") !== "off"; } catch { return true; } })() ? "checked" : ""}> Frosted glass panels over a blurred copy of the game's featured art</label><p class="foot">Turn it off for plain solid panels (a little lighter on older phones).</p><label class="check"><input type="checkbox" data-change="setHaptics" ${hapticsOn() ? "checked" : ""}> Vibration when you tap, add or remove cards</label><p class="foot">On iPhone this uses the system tap (iOS 18 or later). Animations follow your phone’s “Reduce motion” setting.</p></section><section class="panel settings-card"><div class="settings-card-heading"><span class="settings-icon" aria-hidden="true">＋</span><div><p class="eyebrow">TAKE IT WITH YOU</p><h2>Install CardStashy</h2></div></div><p class="muted small">Open it from your home screen. Saved collections and decks work offline.</p><button class="btn" data-act="install">Install app</button><details class="settings-disclosure"><summary>Android installation help</summary><p class="foot">In Chrome, open ⋮ → Add to Home screen or Install app. Searches and updated prices need internet.</p></details></section>
   <details class="settings-disclosure settings-source"><summary>Card databases & prices</summary><ul class="sources"><li><b>Magic:</b> Scryfall card data, images and reference prices; MTGJSON precon lists.</li><li><b>Pokémon:</b> TCGdex card data and images, with supplied TCGplayer and Cardmarket prices.</li><li><b>Yu-Gi-Oh!:</b> YGOPRODeck card data, alternate art, printings and reference prices.</li><li><b>Imports:</b> Supported text and CSV exports from deck and collection tools.</li></ul><p class="foot">Prices are estimates; check edition, condition and shipping with the seller.</p></details>
-  <details class="settings-disclosure settings-source"><summary>About CardStashy</summary><p class="foot">Scores and test games are estimates, not win rates. CardStashy is an independent fan app; cards and art belong to their owners.</p><span class="settings-version">Version 3.26.1</span></details></div></div>`;
+  <details class="settings-disclosure settings-source"><summary>About CardStashy</summary><p class="foot">Scores and test games are estimates, not win rates. CardStashy is an independent fan app; cards and art belong to their owners.</p><span class="settings-version">Version 3.27.0</span></details></div></div>`;
 }
 
 /* ---------- Deck idea sheet ---------- */

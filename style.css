@@ -1963,3 +1963,20 @@ nav [data-nav] { position: relative; }
 
 .cam-status { white-space:normal; overflow:visible; text-overflow:clip; text-align:center; line-height:1.3; width:max-content; max-width:calc(100% - 24px); border-radius:18px; }
 .cam-status .cam-dot { flex:none; }
+
+/* ---------- Deck Power (all games) ---------- */
+.power-chip { display: inline-flex; align-items: baseline; gap: 3px; }
+.power-chip em { font-style: normal; font-weight: 800; font-size: 13px; padding: 0 6px; border-radius: 6px; }
+.power-chip.p-hi em { background: rgba(111, 210, 154, 0.25); color: #a6f0c4; }
+.power-chip.p-mid em { background: rgba(232, 185, 91, 0.25); color: #ffd98a; }
+.power-chip.p-lo em { background: rgba(240, 138, 126, 0.25); color: #ffb3a8; }
+.meta-match { display: grid; gap: 6px; }
+.meta-match.hit { border-left: 3px solid var(--good, #6fd29a); padding-left: 10px; }
+.meta-match .link.small { padding: 0; }
+/* Pokémon / Yu-Gi-Oh! tiles use the full card picture: frame the artwork area. */
+.tcg-tile .tile-card-art, .tcg-tile .tile-art .img-missing { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 24%; transform: scale(1.35); transform-origin: 50% 22%; }
+.tile-ygo .tile-card-art { object-position: 50% 30%; transform: scale(1.55); transform-origin: 50% 32%; }
+.tcg-tile .tile-art { position: absolute; inset: 0; overflow: hidden; }
+.chip.bad-chip { color: #ffb3a8; }
+.chip.ok-chip { color: #a6f0c4; }
+.tcg-tile .tile-card-art.cropped { transform: none; object-position: 50% 35%; }

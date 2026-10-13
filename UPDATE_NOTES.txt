@@ -1,3 +1,12 @@
+3.27.0 — Deck Power: every game and format judged on its own terms
+- New Deck Power rating (0–100) on every deck tile, deck header and a new Power tab, for all three games.
+- Magic Standard, Pioneer, Modern and other 60-card formats are no longer scored with Commander targets (36 lands, 10 ramp, board wipes, commander synergy). They're judged like competitive constructed decks: lands vs. curve (Frank Karsten's formula), 3–4-of consistency, interaction and threats for the deck's plan (aggro, midrange, control, ramp), card flow, color sources and themes such as landfall.
+- Commander decks keep the Commander engine score.
+- Yu-Gi-Oh! is judged on 40-card focus, starter odds, extenders, hand traps and negates, board breakers, 3-of consistency, archetype focus, dead draws and Extra Deck use.
+- Pokémon is judged on Basic count (mulligan odds), draw Supporters/Abilities, search Items, gust, 4-of consistency, Energy fit and complete evolution lines.
+- Tournament evidence: the list is matched against recent placing decks for the same game and format (MTGO, YGOPRODeck, Limitless). A close copy of a proven list is rated on its results: archetype, share of the field and best finish. It also shows the cards the tournament list plays that yours doesn't.
+- Pokémon and Yu-Gi-Oh! decks now use the same art tiles as Magic, with power, owned %, value and cost to finish.
+
 3.26.1 — Comparison facts, distinct action icons, and scanner false-match guards
 - Scanning searches only the selected game. An unrelated game's artwork score cannot replace its candidates or switch the app. Weak matches are discarded; close look-alikes and distant fingerprints require confirmation. A sole printing without a successful image check is not treated as an exact artwork match.
 - Camera guidance wraps on small screens instead of clipping the instruction.
