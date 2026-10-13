@@ -450,7 +450,7 @@ export function tcgSearch() {
   ${U.f.archetype ? `<p class="small">Archetype: <b>${esc(U.f.archetype)}</b> <button class="link small" data-act="tFilterClear" data-field="archetype">✕ clear</button></p>` : ""}
   ${
     list.length
-      ? `<div class="row between"><p class="muted small">${U.total ? U.total.toLocaleString() : list.length + (U.more ? "+" : "")} cards · daily market prices · “new” = no price yet</p><button class="link small" data-act="tSaveSearch">☆ Save this search</button></div><div class="card-grid">${list
+      ? `<div class="row between"><p class="muted small">${U.total ? U.total.toLocaleString() : list.length + (U.more ? "+" : "")} cards · daily market prices · “—” = price unavailable</p><button class="link small" data-act="tSaveSearch">☆ Save this search</button></div><div class="card-grid">${list
           .map((c) => {
             const own = ownedOf(g, c, m),
               p = price(c);
