@@ -1,3 +1,4 @@
+import {pokemonFallback} from "./artwork.js";
 // Pokémon TCG adapter. Data: TCGdex (api.tcgdex.net) — every physical card and set,
 // Standard/Expanded legality, regulation marks, and daily TCGplayer (USD) and
 // Cardmarket (EUR) prices per variant. Pokémon TCG Pocket (digital) cards are excluded.
@@ -5,7 +6,7 @@ const API = "https://api.tcgdex.net/v2/en";
 
 const isPocket = (c) => /\/tcgp\//.test(c?.image || "") || c?.set?.id?.startsWith?.("A") && /^[A-Z]\d/.test(c.set.id) || /^P-A/.test(c?.id || "");
 const n = (v) => (typeof v === "number" && v > 0 ? v : null);
-export const ptcgImage = (base, size = "low") => (base ? `${base}/${size}.webp` : "");
+export const ptcgImage = (base, size = "low") => (base ? /\.(webp|png|jpe?g)(?:\?|$)/i.test(base) ? base : `${base}/${size}.webp` : "");
 
 const RULE_BOX = /\b(ex|EX|GX|V|VMAX|VSTAR|V-UNION|BREAK|LV\.X|Prism Star|◇|Tera)\b/;
 const VARIANT_LABEL = { normal: "Normal", holofoil: "Holofoil", "reverse-holofoil": "Reverse holo", "1st-edition": "1st Edition", "1st-edition-holofoil": "1st Ed. holo", unlimited: "Unlimited", "unlimited-holofoil": "Unlimited holo" };
@@ -96,15 +97,15 @@ export function normalizePtcg(c) {
     aceSpec: /ACE SPEC/i.test(c.rarity || ""),
     radiant: /^Radiant /.test(c.name),
     ruleBox: c.category === "Pokemon" && RULE_BOX.test(c.name),
-    image: ptcgImage(c.image, "low"),
-    imageLarge: ptcgImage(c.image, "high"),
+    image: ptcgImage(c.image, "low") || pokemonFallback(c),
+    imageLarge: ptcgImage(c.image, "high") || pokemonFallback(c),
     pocket: isPocket(c),
     fetchedAt: new Date().toISOString(),
   };
 }
 
 // A search hit before details load (no price yet).
-const brief = (c) => ({ game: "ptcg", id: c.id, name: c.name, image: ptcgImage(c.image, "low"), imageLarge: ptcgImage(c.image, "high"), brief: true, prices: {}, sets: [], stats: [], pocket: isPocket(c) });
+const brief = (c) => ({ game: "ptcg", id: c.id, name: c.name, image: ptcgImage(c.image, "low") || pokemonFallback(c), imageLarge: ptcgImage(c.image, "high") || pokemonFallback(c), brief: true, prices: {}, sets: [], stats: [], pocket: isPocket(c) });
 
 export const PTCG_FORMATS = [
   { id: "standard", name: "Standard", legal: "standard", copies: 4 },

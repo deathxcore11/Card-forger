@@ -1,3 +1,4 @@
+import {magicSetArtwork} from "./set-art.js";
 import { TOPDECK_API, TOPDECK_FORMATS, WARM_FORMATS, normalizeTopdeck, topdeckBody } from "./topdeck.js";
 import { MTGO_SLUGS, MTGO_INDEX, mtgoEventSlugs, parseMtgoEvent, normalizeMtgo, EDHTOP16_API, edhtop16Query, normalizeEdhtop16 } from "./mtgmeta.js";
 // Cloudflare Worker: serves the static site, plus a cached image route for
@@ -123,6 +124,14 @@ export default {
   },
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    const setImage=url.pathname.match(/^\/img\/mtg-set\/([a-z0-9]{2,8})\.jpg$/i);
+    if(setImage){
+      const hit=await caches.default.match(request);if(hit)return hit;
+      try{const art=await magicSetArtwork(setImage[1]);if(!art)return new Response('No product artwork',{status:404,headers:{'Cache-Control':'public, max-age=3600'}});
+        const upstream=await fetch(art.url,{signal:AbortSignal.timeout(15000)});if(!upstream.ok)return new Response('Product artwork unavailable',{status:404});
+        const res=new Response(upstream.body,{headers:{'Content-Type':upstream.headers.get('Content-Type')||'image/jpeg','Cache-Control':`public, max-age=${MONTH}`,'X-Art-Source':'MTGJSON / TCGplayer'}});ctx.waitUntil(caches.default.put(request,res.clone()));return res;
+      }catch{return new Response('Product artwork unavailable',{status:503});}
+    }
     if (url.pathname === "/api/meta/mtg" || url.pathname === "/api/meta/mtg/coverage") return mtgRoute(url, env, ctx);
     if (url.pathname === "/api/meta/ygo/decks" || url.pathname === "/api/meta/ygo/top") return ygoMeta(url, ctx);
     const m = url.pathname.match(/^\/img\/ygo\/(s\/|a\/)?(\d{1,12})\.jpg$/),

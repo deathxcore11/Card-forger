@@ -1,3 +1,5 @@
+import {SheetHistory,BROWSE_TYPES} from "./sheet-history.js";
+import {handleArtworkError} from "./artwork.js";
 import {modeFor,registerWorkbench,quoteModel,recordQuote} from "./workbench-ui.js";
 import { locationPicker, rememberLocation, chooseLocation } from "./collection-locations.js";
 import { captureAuthFields, restoreAuthFields, authFeedback } from "./auth-form.js";
@@ -456,7 +458,33 @@ function toast(text, { undo = false } = {}) {
 }
 
 let binderDragCleanup = null;
+const sheetTrail=new SheetHistory(), routeTrail=[];
+let restoringSheet=false,pendingRoute=null;
+function sheetSnapshot(){
+ const ctx=S.ui.sheetCtx;if(!ctx||!BROWSE_TYPES.has(ctx.type))return null;
+ return {ctx,html:$("#sheetBody").innerHTML,scroll:$("#sheetBody").scrollTop,route:location.hash,game:T.game(),pageScroll:window.scrollY,
+   proven:ctx.type === "proven"?{...T.proven}:null,build:ctx.type === "tbuild"?{...T.ui(T.game()).build}:null};
+}
+function restoreSheet(snapshot){
+ if(snapshot.proven)Object.assign(T.proven,snapshot.proven);
+ if(snapshot.build)Object.assign(T.ui(snapshot.game).build,snapshot.build);
+ restoringSheet=true;openSheet(snapshot.html,snapshot.ctx,snapshot.scroll);restoringSheet=false;
+}
+function wireSheetBack(){
+ const head=$("#sheetBody")?.querySelector?.(".sheet-head");if(!head)return;
+ let button=head.querySelector('[data-history-back]');
+ if(!sheetTrail.length){if(button){if(button.dataset.originalAct){button.dataset.act=button.dataset.originalAct;button.setAttribute("aria-label",button.dataset.originalLabel||"Back");delete button.dataset.historyBack;delete button.dataset.originalAct;delete button.dataset.originalLabel;}else button.remove();}return;}
+ if(!button){button=head.querySelector('[data-act="buyBack"],[data-act="marketBack"],[data-act="sheetBack"]');if(button){button.dataset.originalAct=button.dataset.act;button.dataset.originalLabel=button.getAttribute("aria-label")||"Back";}else{button=document.createElement("button");button.className="icon";button.innerHTML=ICON.back;head.prepend(button);}button.dataset.act="sheetHistoryBack";button.dataset.historyBack="1";button.setAttribute("aria-label","Back to previous card or deck");}
+}
+
+function wireRouteBack(){
+ const main=$("#content");if(!main||!routeTrail.length||main.querySelector?.('[data-act="routeHistoryBack"]'))return;
+ const saved=routeTrail.at(-1);if(saved.game!==T.game()){routeTrail.length=0;return;}
+ const button=document.createElement("button");button.className="link browse-return";button.dataset.act="routeHistoryBack";button.textContent="← Back to "+(saved.ctx.name || "previous card or deck");main.prepend(button);
+}
 function openSheet(html, ctx = null, scrollTop = 0) {
+  if(!restoringSheet && $("#sheet").open)sheetTrail.push(sheetSnapshot(),ctx);
+  pendingRoute=null;
   binderDragCleanup?.(); binderDragCleanup=null;
   S.ui.sheetCtx = ctx;
   $("#sheetBody").innerHTML = html;
@@ -469,6 +497,7 @@ function openSheet(html, ctx = null, scrollTop = 0) {
   }
   $("#sheetBody").scrollTop = scrollTop;
   sheetScrolled();
+  wireSheetBack();
   if (!sheetScrollWired) {
     sheetScrollWired = true;
     $("#sheetBody").addEventListener?.("scroll", sheetScrolled, { passive: true });
@@ -506,7 +535,10 @@ function sheetScrolled() {
   }
   head.classList.toggle("scrolled", on);
 }
-function closeSheet() {
+function closeSheet(rememberRoute=true) {
+  pendingRoute=rememberRoute && $("#sheet").open ? sheetSnapshot() : null;
+  if(pendingRoute)pendingRoute.at=Date.now();
+  sheetTrail.clear();
   binderDragCleanup?.(); binderDragCleanup=null;
   const dlg = $("#sheet");
   if (dlg.open) dlg.close();
@@ -627,6 +659,7 @@ function parseHash() {
 }
 
 function go(hash) {
+  if(pendingRoute && Date.now()-pendingRoute.at<500 && pendingRoute.route!==hash && pendingRoute.game===T.game()){routeTrail.push(pendingRoute);if(routeTrail.length>12)routeTrail.shift();}pendingRoute=null;
   if (location.hash === hash) render();
   else location.hash = hash;
 }
@@ -781,6 +814,7 @@ $("#sheet").addEventListener("click", (e) => {
   if (e.target.id === "sheet") closeSheet();
 });
 $("#sheet").addEventListener("close", () => {
+  sheetTrail.clear();
   binderDragCleanup?.(); binderDragCleanup=null;
   S.ui.sheetCtx = null;
   document.documentElement?.classList.remove("sheet-open");
@@ -813,7 +847,14 @@ A.go = (t) => {
   closeSheet();
   go(t.dataset.to);
 };
-A.closeSheet = closeSheet;
+A.closeSheet = () => closeSheet(false);
+A.sheetHistoryBack=()=>{const saved=sheetTrail.pop();if(saved)restoreSheet(saved);};
+A.routeHistoryBack=()=>{const saved=routeTrail.pop();if(!saved || saved.game!==T.game())return;closeSheet(false);go(saved.route);setTimeout(()=>{if(location.hash!==saved.route)return;restoreSheet(saved);window.scrollTo(0,saved.pageScroll);},0);};
+document.addEventListener?.("error",handleArtworkError,true);
+if(typeof MutationObserver !== "undefined"){
+ new MutationObserver(()=>wireSheetBack()).observe($("#sheetBody"),{childList:true,subtree:true});
+ new MutationObserver(()=>wireRouteBack()).observe($("#content"),{childList:true});
+}
 function binderRows(game, location = null) {
   const collection = game === "mtg" ? S.state.collection : T.gs(game).collection;
   return collection.filter(entry=>location === null || String(entry.location || "").trim()===location).map(entry=>{

@@ -14,3 +14,5 @@ worker.js
 topdeck.js
 scripts
 mtgmeta.js
+
+set-art.js
