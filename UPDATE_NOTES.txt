@@ -1,3 +1,15 @@
+3.9.3 — See-through binders and real page turns
+- Binder covers are clear, tinted acrylic: you see the cards inside through the cover.
+- Star up to 9 cards in a binder to show them on its cover (1 star = one big card, 2–4 = a 2×2
+  window, 5–9 = a full 3×3 page). Starred pockets glow; the count shows on the shelf and inside.
+  Binders with no stars show their first cards. Older binders keep their single cover card.
+- Pages turn like a real binder: swipe anywhere on the page and it follows your finger around the
+  rings; let go past a third (or flick) to turn, otherwise it settles back. Back / Next buttons,
+  the ← → keys and the page corner animate the same turn. Page dots show where you are.
+- Taps still open cards (a swipe never opens the card under your finger); vertical scrolling never
+  turns a page; the first and last page only stretch a little. With "reduce motion" on, pages
+  slide and fade instead of flipping.
+
 3.9.2 — A real scanner, and numbers you can trust
 
 Scanner (all three games, one shared screen):

@@ -9,18 +9,33 @@ export function binderGroups(rows) {
   }
   return [...groups.values()].sort((a,b)=>a.title.localeCompare(b.title));
 }
-export function binderCover({title,subtitle,game='mtg',image='',attrs='',hint='Open binder',color='',background=''}) {
-  return `<button class="stash-binder stash-${esc(game)}" ${color ? `style="--binder:${esc(color)};--binder-light:#ddd2fa"` : ""} ${attrs}><span class="stash-book" aria-hidden="true"><span class="stash-pages"><i></i><i></i><i></i></span><span class="stash-cover">${background ? `<img class="stash-custom-background" src="${esc(background)}" alt="" loading="lazy" onerror="this.hidden=true">` : ""}<span class="stash-spine"></span><span class="stash-foil"></span><span class="stash-emblem">${image ? `<img src="${esc(image)}" alt="" loading="lazy" onerror="this.hidden=true">` : '<img src="icon.svg" alt="">'}</span><span class="stash-cover-title">${esc(title)}</span></span></span><span class="stash-binder-label"><b>${esc(title)}</b><small>${esc(subtitle)}</small><span class="stash-open-hint">${esc(hint)}</span></span></button>`;
+// Up to nine starred cards show through the clear cover, like the first page of a real binder.
+export const MAX_FAVORITES = 9;
+export const binderFavorites = (b) => [...new Set([...(Array.isArray(b?.favorites) ? b.favorites : []), ...(b?.featured && !(b?.favorites || []).length ? [b.featured] : [])])].slice(0, MAX_FAVORITES);
+// Cover art: starred cards first, then the first cards with pictures to fill a 1 / 2×2 / 3×3 window.
+export function coverImages(rows, favorites = []) {
+  const byId = new Map(rows.map((r) => [r.entry?.id, r])),
+    starred = favorites.map((id) => byId.get(id)).filter((r) => r?.image),
+    rest = rows.filter((r) => r.image && !favorites.includes(r.entry?.id)),
+    want = starred.length > 4 ? 9 : starred.length > 1 ? 4 : starred.length === 1 ? 1 : 4,
+    picked = [...starred, ...rest].slice(0, want);
+  return picked.map((r) => ({ image: r.image, name: r.entry?.name || "", starred: favorites.includes(r.entry?.id) }));
+}
+export function binderCover({title,subtitle,game='mtg',images=[],image='',attrs='',hint='Open binder',color='',background=''}) {
+  const art = images.length ? images : image ? [{ image, name: '' }] : [];
+  const n = art.length > 4 ? 9 : art.length > 1 ? 4 : 1;
+  return `<button class="stash-binder stash-${esc(game)}" ${color ? `style="--binder:${esc(color)}"` : ""} ${attrs}><span class="stash-book" aria-hidden="true"><span class="stash-pages"></span><span class="stash-cover clear">${background ? `<img class="stash-custom-background" src="${esc(background)}" alt="" loading="lazy" onerror="this.hidden=true">` : ""}<span class="stash-window w${n}">${art.length ? Array.from({length:n},(_,i)=>art[i]?`<span class="stash-slot${art[i].starred?' starred':''}"><img src="${esc(art[i].image)}" alt="" loading="lazy" onerror="this.hidden=true"></span>`:`<span class="stash-slot empty"></span>`).join("") : `<span class="stash-slot empty only"><img src="icon.svg" alt=""></span>`}</span><span class="stash-spine"></span><span class="stash-sheen"></span><span class="stash-cover-title">${esc(title)}</span></span></span><span class="stash-binder-label"><b>${esc(title)}</b><small>${esc(subtitle)}</small><span class="stash-open-hint">${esc(hint)}</span></span></button>`;
 }
 export function binderShelf(rows,game,custom=[]) {
   const groups=binderGroups(rows), customs=customBinderGroups(rows,custom,game);
-  return `<section class="binder-shelf"><div class="row between"><div><p class="eyebrow">YOUR CARD SHELF</p><h2>Your binders</h2></div><button class="btn small" data-act="newBinder" data-game="${esc(game)}">＋ New binder</button></div><p class="muted small">Create a filtered binder or browse your collection locations.</p><div class="stash-shelf">${customs.map(b=>binderCover({title:b.title,subtitle:`${b.copies} copies · ${b.rows.length} entries`,game,color:b.color,background:b.background || "",image:b.rows.find(r=>r.entry.id===b.featured)?.image || b.rows.find(r=>r.image)?.image || "",attrs:`data-act="openBinder" data-game="${esc(game)}" data-binder="${esc(b.id)}"`})).join("")}${(groups.length?groups:customs.length?[]:[{id:'',title:'Your first binder',rows:[],copies:0}]).map(group=>binderCover({title:group.title,subtitle:`${group.copies} copies · ${group.rows.length} entries`,game,image:group.rows.find(r=>r.image)?.image || '',attrs:`data-act="openBinder" data-game="${esc(game)}" data-location="${esc(group.id)}"`})).join('')}</div></section>`;
+  return `<section class="binder-shelf"><div class="row between"><div><p class="eyebrow">YOUR CARD SHELF</p><h2>Your binders</h2></div><button class="btn small" data-act="newBinder" data-game="${esc(game)}">＋ New binder</button></div><p class="muted small">Create a filtered binder or browse your collection locations. Star up to ${MAX_FAVORITES} cards inside a binder to show them on its cover.</p><div class="stash-shelf">${customs.map(b=>{const fav=binderFavorites(b);return binderCover({title:b.title,subtitle:`${b.copies} copies · ${b.rows.length} entries${fav.length?` · ★&nbsp;${fav.length}`:""}`,game,color:b.color,background:b.background || "",images:coverImages(b.rows,fav),attrs:`data-act="openBinder" data-game="${esc(game)}" data-binder="${esc(b.id)}"`});}).join("")}${(groups.length?groups:customs.length?[]:[{id:'',title:'Your first binder',rows:[],copies:0}]).map(group=>binderCover({title:group.title,subtitle:`${group.copies} copies · ${group.rows.length} entries`,game,images:coverImages(group.rows),attrs:`data-act="openBinder" data-game="${esc(game)}" data-location="${esc(group.id)}"`})).join('')}</div></section>`;
 }
 export function binderPage(rows,title,page=0,direction='next',binder=null) {
-  const pages=Math.max(1,Math.ceil(rows.length/9)), at=Math.max(0,Math.min(pages-1,Number(page)||0)), shown=rows.slice(at*9,at*9+9);
-  return `<div class="sheet-head"><div><p class="eyebrow">CARDSTASHY BINDER</p><h2>${esc(title)}</h2></div><button class="icon" data-act="closeSheet" aria-label="Close binder">✕</button></div><div class="stash-page-tools">${binder?`<button class="btn ghost small" data-act="editBinder" data-binder="${esc(binder.id)}">Customize</button>`:""}<span>${rows.length} entries · page ${at+1} of ${pages}</span><span class="row"><button class="btn ghost small" data-act="binderPage" data-page="${at-1}" ${at===0?'disabled':''} aria-label="Previous binder page">←</button><button class="btn ghost small" data-act="binderPage" data-page="${at+1}" ${at===pages-1?'disabled':''} aria-label="Next binder page">→</button></span></div><section ${binder?.color?`style="border-color:${esc(binder.color)}"`:""} class="stash-open-book" aria-label="Binder page ${at+1}"><div class="stash-rings" aria-hidden="true"><i></i><i></i><i></i></div><div class="stash-pocket-page" data-direction="${esc(direction)}">${Array.from({length:9},(_,i)=>{const row=shown[i]; return row ? `<div class="stash-pocket"><button class="pocket-open" data-act="${row.game==='mtg'?'card':'tCard'}" ${row.game==='mtg'?`data-name="${esc(row.entry.name)}"`:`data-id="${esc(row.entry.cardId)}"`} aria-label="${esc(row.entry.name)}, ${row.entry.qty} copies"><span class="pocket-image">${row.image?`<img src="${esc(row.image)}" alt="${esc(row.entry.name)}" loading="lazy" onerror="this.hidden=true;this.parentElement.classList.add('missing')">`:''}<span class="pocket-placeholder">Image unavailable</span><span class="pocket-glint"></span></span><span class="pocket-caption"><b>${esc(row.entry.name)}</b><small>${esc(row.version || '')}</small></span><span class="pocket-qty">×${row.entry.qty}</span></button>${binder?`<button class="pocket-star ${binder.featured===row.entry.id?"on":""}" data-act="featureBinderCard" data-entry="${esc(row.entry.id)}" aria-label="Feature ${esc(row.entry.name)} on binder cover" aria-pressed="${binder.featured===row.entry.id}">★</button>`:""}</div>`:`<div class="stash-pocket empty-pocket" aria-label="Empty pocket"><span aria-hidden="true">◇</span></div>`;}).join('')}<button class="binder-page-edge previous" data-page-edge="-1" ${at===0?'disabled':''} aria-label="Drag left page edge, or press Enter, to turn back"></button><button class="binder-page-edge next" data-page-edge="1" ${at===pages-1?'disabled':''} aria-label="Drag right page edge, or press Enter, to turn forward"></button></div></section>${!rows.length?'<p class="muted center">No cards here yet. Add cards to your collection to fill these pockets.</p>':''}${binder?.rule==='set'?`<button class="btn ghost small" data-act="go" data-to="#set/${encodeURIComponent(binder.value)}">View set checklist & missing cards →</button>`:""}<p class="foot">Drag a page edge to turn it. ${binder?"Star a card to put it on this binder’s cover. ":""}Each pocket represents a collection entry. Tap a card for details; quantity badges show copies owned.</p>`;
+  const pages=Math.max(1,Math.ceil(rows.length/9)), at=Math.max(0,Math.min(pages-1,Number(page)||0)), shown=rows.slice(at*9,at*9+9), fav=binder?binderFavorites(binder):[];
+  const pocket=row=>{const on=fav.includes(row.entry.id);return `<div class="stash-pocket${on?" starred":""}"><button class="pocket-open" data-act="${row.game==='mtg'?'card':'tCard'}" ${row.game==='mtg'?`data-name="${esc(row.entry.name)}"`:`data-id="${esc(row.entry.cardId)}"`} aria-label="${esc(row.entry.name)}, ${row.entry.qty} copies"><span class="pocket-image">${row.image?`<img src="${esc(row.image)}" alt="${esc(row.entry.name)}" loading="lazy" draggable="false" onerror="this.hidden=true;this.parentElement.classList.add('missing')">`:''}<span class="pocket-placeholder">Image unavailable</span><span class="pocket-glint"></span></span><span class="pocket-caption"><b>${esc(row.entry.name)}</b><small>${esc(row.version || '')}</small></span><span class="pocket-qty">×${row.entry.qty}</span></button>${binder?`<button class="pocket-star ${on?"on":""}" data-act="featureBinderCard" data-entry="${esc(row.entry.id)}" aria-label="${on?"Remove":"Show"} ${esc(row.entry.name)} ${on?"from":"on"} the binder cover" aria-pressed="${on}">★</button>`:""}</div>`;};
+  const dots=pages>1&&pages<=12?`<span class="stash-dots" aria-hidden="true">${Array.from({length:pages},(_,i)=>`<i class="${i===at?"on":""}"></i>`).join("")}</span>`:"";
+  return `<div class="sheet-head"><div><p class="eyebrow">CARDSTASHY BINDER</p><h2>${esc(title)}</h2></div><button class="icon" data-act="closeSheet" aria-label="Close binder">✕</button></div><div class="stash-page-tools">${binder?`<button class="btn ghost small" data-act="editBinder" data-binder="${esc(binder.id)}">Customize</button>`:"<span></span>"}<span class="stash-page-count">${rows.length} entries · page ${at+1} of ${pages}${binder?` · ★ ${fav.length}/${MAX_FAVORITES} on cover`:""}</span></div><section ${binder?.color?`style="--binder:${esc(binder.color)}"`:""} class="stash-open-book" aria-label="Binder page ${at+1} of ${pages}"><div class="stash-rings" aria-hidden="true"><i></i><i></i><i></i></div><div class="stash-pocket-page" data-direction="${esc(direction)}">${Array.from({length:9},(_,i)=>shown[i]?pocket(shown[i]):`<div class="stash-pocket empty-pocket" aria-label="Empty pocket"><span aria-hidden="true">◇</span></div>`).join('')}<button class="binder-page-edge previous" data-page-edge="-1" ${at===0?'disabled':''} aria-label="Turn to the previous page"></button><button class="binder-page-edge next" data-page-edge="1" ${at===pages-1?'disabled':''} aria-label="Turn to the next page"><span class="page-curl" aria-hidden="true"></span></button></div></section><div class="stash-turn-bar"><button class="btn ghost" data-act="binderPage" data-page="${at-1}" ${at===0?'disabled':''} aria-label="Previous binder page">‹ Back</button>${dots}<button class="btn ghost" data-act="binderPage" data-page="${at+1}" ${at===pages-1?'disabled':''} aria-label="Next binder page">Next ›</button></div>${!rows.length?'<p class="muted center">No cards here yet. Add cards to your collection to fill these pockets.</p>':''}${binder?.rule==='set'?`<button class="btn ghost small" data-act="go" data-to="#set/${encodeURIComponent(binder.value)}">View set checklist & missing cards →</button>`:""}<p class="foot">Swipe the page (or use ← →) to turn it. ${binder?`Star up to ${MAX_FAVORITES} cards to show them through the cover. `:""}Each pocket is one collection entry; tap a card for details.</p>`;
 }
-
 export const BINDER_COLORS=['#805b24','#176b69','#634198','#942f4c','#285ba4','#36794c','#b1652d','#586778'];
 export function binderMatches(row,binder) {
   const c=row.card || {}, e=row.entry, value=String(binder.value || '').toLowerCase().trim();
@@ -37,23 +52,96 @@ export function binderMatches(row,binder) {
 export function customBinderGroups(rows,binders,game) {
   return (Array.isArray(binders)?binders:[]).filter(b=>b && b.game===game).map(b=>{const matched=rows.filter(r=>binderMatches(r,b));return {...b,rows:matched,copies:matched.reduce((a,r)=>a+(Number(r.entry.qty)||0),0)};});
 }
-// Edge dragging uses continuous progress, not repeated click animations.
+const prefersReduced = (view) => !!view?.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+// The page turn: forward, the old page swings over the rings and away; back, the previous page
+// swings in from the rings onto the stack. Called right after the new page is rendered.
+export function animateTurn(root, oldPage, dir, { dragged = false } = {}) {
+  const book = root?.querySelector?.('.stash-open-book'), page = book?.querySelector('.stash-pocket-page');
+  if (!book || !page || !page.animate) return;
+  const view = root.ownerDocument?.defaultView;
+  if (prefersReduced(view)) { page.animate([{ opacity: 0, transform: `translateX(${dir * 24}px)` }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'ease-out' }); return; }
+  if (dragged) { page.animate([{ opacity: .35, filter: 'brightness(.6)' }, { opacity: 1, filter: 'none' }], { duration: 260, easing: 'ease-out' }); return; }
+  if (!oldPage) return;
+  const leaf = oldPage.cloneNode(true);
+  leaf.classList.add('stash-leaf');
+  leaf.querySelectorAll('button').forEach((b) => (b.tabIndex = -1));
+  leaf.setAttribute('aria-hidden', 'true');
+  Object.assign(leaf.style, { position: 'absolute', left: page.offsetLeft + 'px', top: page.offsetTop + 'px', width: page.offsetWidth + 'px', height: page.offsetHeight + 'px', margin: '0', animation: 'none' });
+  const shade = (el, from, to) => { const s = el.ownerDocument.createElement('span'); s.className = 'stash-turn-shade'; el.append(s); s.animate([{ opacity: from }, { opacity: to }], { duration: 560, easing: 'ease-in-out', fill: 'forwards' }); return s; };
+  if (dir > 0) {
+    // Old page on top, lifting from the right edge and folding over the rings.
+    leaf.style.zIndex = '5'; leaf.style.transformOrigin = 'left center';
+    book.append(leaf);
+    shade(page, .55, 0);
+    shade(leaf, 0, .5);
+    leaf.animate([{ transform: 'rotateY(0deg)' }, { transform: 'rotateY(-35deg) skewY(-2deg)', offset: .3 }, { transform: 'rotateY(-180deg)' }], { duration: 560, easing: 'cubic-bezier(.3,.1,.2,1)', fill: 'forwards' }).finished.then(() => leaf.remove(), () => leaf.remove());
+  } else {
+    // Old page stays underneath; the previous page swings back in from the rings.
+    leaf.style.zIndex = '0'; book.append(leaf);
+    page.style.zIndex = '5'; page.style.transformOrigin = 'left center';
+    shade(leaf, 0, .55);
+    page.animate([{ transform: 'rotateY(-180deg)' }, { transform: 'rotateY(-145deg) skewY(2deg)', offset: .3 }, { transform: 'rotateY(0deg)' }], { duration: 560, easing: 'cubic-bezier(.3,.1,.2,1)' }).finished.then(() => { leaf.remove(); page.style.zIndex = ''; }, () => leaf.remove());
+  }
+}
+
+// Swipe anywhere on the page to turn it: the page follows your finger, past a third (or a flick)
+// it turns, otherwise it settles back. Taps still open cards; the edges and ← → keys turn too.
 export function attachBinderDrag(root,onTurn) {
   const page=root.querySelector('.stash-pocket-page'); if (!page) return ()=>{};
-  let drag=null,timer=null,disposed=false;
-  const view=root.ownerDocument?.defaultView || window, reduced=!!view.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  const reset=()=>{page.style.transition='transform 180ms ease, opacity 180ms ease';page.style.transform='rotateY(0deg)';page.style.opacity='1';};
+  let drag=null,timer=null,disposed=false,swallowClick=false;
+  const view=root.ownerDocument?.defaultView || window, reduced=prefersReduced(view);
+  const can=dir=>{const edge=root.querySelector(`[data-page-edge="${dir}"]`);return !!edge && !edge.disabled;};
+  const reset=()=>{page.style.transition='transform 220ms ease, opacity 220ms ease';page.style.transform='rotateY(0deg)';page.style.opacity='1';};
   const down=e=>{
-    const edge=e.target.closest?.('[data-page-edge]'); if(!edge || edge.disabled || drag || disposed || timer) return;
-    const dir=Number(edge.dataset.pageEdge);
-    drag={id:e.pointerId,x:e.clientX,start:Date.now(),dir,width:Math.max(1,page.getBoundingClientRect().width),progress:0,moved:0};
-    page.style.animation='none';page.style.transition='none';page.style.transformOrigin=dir===1?'left center':'right center';
-    edge.setPointerCapture?.(e.pointerId);e.preventDefault();
+    if(drag || disposed || timer || (e.button!==undefined && e.button!==0)) return;
+    if(!e.target.closest?.('.stash-pocket-page,[data-page-edge]')) return;
+    if(e.target.closest?.('.pocket-star')) return;
+    const edge=e.target.closest?.('[data-page-edge]');
+    drag={id:e.pointerId,x:e.clientX,y:e.clientY,start:Date.now(),dir:edge?Number(edge.dataset.pageEdge):0,edge:!!edge,width:Math.max(1,page.getBoundingClientRect().width),progress:0,moved:0,live:false};
+    if(edge){edge.setPointerCapture?.(e.pointerId);e.preventDefault();}
   };
-  const move=e=>{if(!drag || e.pointerId!==drag.id)return;const distance=(drag.x-e.clientX)*drag.dir;drag.moved=Math.abs(e.clientX-drag.x);drag.progress=Math.max(0,Math.min(.96,distance/drag.width));page.style.transform=reduced?'none':`rotateY(${-drag.dir*drag.progress*170}deg)`;page.style.opacity=reduced?'1':String(1-drag.progress*.45);e.preventDefault();};
-  const up=e=>{if(!drag || e.pointerId!==drag.id)return;const d=drag;drag=null;const elapsed=Math.max(1,Date.now()-d.start), tap=d.moved<6&&elapsed<450, flick=d.progress*d.width/elapsed>.45&&d.progress*d.width>30;
-    if(e.type!=='pointercancel'&&(tap||d.progress>.22||flick)) {if(reduced){onTurn(d.dir);return;}page.style.transition='transform 180ms ease, opacity 180ms ease';page.style.transform=`rotateY(${-d.dir*170}deg)`;page.style.opacity='.15';timer=setTimeout(()=>{timer=null;if(!disposed&&root.isConnected!==false)onTurn(d.dir);},180);} else reset();};
-  const keyboard=e=>{const edge=e.target.closest?.('[data-page-edge]');if(edge&&!edge.disabled&&e.detail===0&&!drag&&!timer)onTurn(Number(edge.dataset.pageEdge));};
-  root.addEventListener('pointerdown',down);root.addEventListener('click',keyboard);view.addEventListener('pointermove',move,{passive:false});view.addEventListener('pointerup',up);view.addEventListener('pointercancel',up);
-  return ()=>{disposed=true;clearTimeout(timer);drag=null;root.removeEventListener('pointerdown',down);root.removeEventListener('click',keyboard);view.removeEventListener('pointermove',move);view.removeEventListener('pointerup',up);view.removeEventListener('pointercancel',up);};
+  const move=e=>{
+    if(!drag || e.pointerId!==drag.id)return;
+    const dx=e.clientX-drag.x, dy=(e.clientY??drag.y)-drag.y;
+    drag.moved=Math.max(drag.moved,Math.abs(dx));
+    if(!drag.live){
+      // Only a sideways swipe turns pages; vertical movement scrolls the sheet.
+      if(Math.abs(dx)<10 || Math.abs(dx)<Math.abs(dy)){ if(Math.abs(dy)>12 && !drag.edge) drag=null; return; }
+      if(!drag.dir) drag.dir=dx<0?1:-1;
+      drag.live=true;
+      page.style.animation='none';page.style.transition='none';page.style.transformOrigin=drag.dir===1?'left center':'right center';
+    }
+    const allowed=can(drag.dir), distance=-dx*drag.dir;
+    // Rubber band at the first and last page.
+    drag.progress=allowed?Math.max(0,Math.min(.96,distance/drag.width)):Math.max(0,Math.min(.08,distance/drag.width/6));
+    page.style.transform=reduced?`translateX(${-drag.dir*drag.progress*40}px)`:`rotateY(${-drag.dir*drag.progress*170}deg)`;
+    page.style.opacity=reduced?String(1-drag.progress*.6):String(1-drag.progress*.35);
+    e.preventDefault?.();
+  };
+  const up=e=>{
+    if(!drag || e.pointerId!==drag.id)return;
+    const d=drag;drag=null;
+    const elapsed=Math.max(1,Date.now()-d.start), tap=d.moved<6&&elapsed<450, flick=d.progress*d.width/elapsed>.45&&d.progress*d.width>30;
+    if(d.live) swallowClick=true;
+    if(!d.live && !(d.edge && tap)) return;
+    const dir=d.dir;
+    if(e.type==='pointercancel' || !can(dir) || !(d.edge&&tap || d.progress>.3 || flick)) return reset();
+    if(d.edge && tap && !d.live) return onTurn(dir);
+    if(reduced){page.style.transition='none';page.style.transform='none';onTurn(dir,{dragged:true});return;}
+    page.style.transition='transform 200ms ease-in, opacity 200ms ease-in';page.style.transform=`rotateY(${-dir*178}deg)`;page.style.opacity='.1';
+    timer=setTimeout(()=>{timer=null;if(!disposed&&root.isConnected!==false)onTurn(dir,{dragged:true});},200);
+  };
+  // After a swipe, the click that follows must not open the card under the finger.
+  const click=e=>{
+    if(swallowClick){swallowClick=false;e.preventDefault?.();e.stopPropagation?.();return;}
+    const edge=e.target.closest?.('[data-page-edge]');if(edge&&!edge.disabled&&e.detail===0&&!drag&&!timer)onTurn(Number(edge.dataset.pageEdge));
+  };
+  const key=e=>{
+    if(drag||timer||/^(INPUT|SELECT|TEXTAREA)$/.test(e.target?.tagName||''))return;
+    const dir=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0;
+    if(dir&&can(dir)){e.preventDefault?.();onTurn(dir);}
+  };
+  root.addEventListener('pointerdown',down);root.addEventListener('click',click,true);view.addEventListener('pointermove',move,{passive:false});view.addEventListener('pointerup',up);view.addEventListener('pointercancel',up);view.addEventListener('keydown',key);
+  return ()=>{disposed=true;clearTimeout(timer);drag=null;root.removeEventListener('pointerdown',down);root.removeEventListener('click',click,true);view.removeEventListener('pointermove',move);view.removeEventListener('pointerup',up);view.removeEventListener('pointercancel',up);view.removeEventListener('keydown',key);};
 }

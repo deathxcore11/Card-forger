@@ -1,7 +1,7 @@
 import { captureAuthFields, restoreAuthFields, authFeedback } from "./auth-form.js";
 import { formatUpgrades, applyFormatSwap } from "./format-upgrades.js";
 import { cutToTarget } from "./deck-safety.js";
-import { binderPage, binderMatches, BINDER_COLORS, attachBinderDrag } from "./binders.js";
+import { binderPage, binderMatches, BINDER_COLORS, attachBinderDrag, animateTurn, binderFavorites, MAX_FAVORITES } from "./binders.js";
 // CardStashy controller: persistence, routing, sheets and every user action.
 // Screens live in views.js; deck/collection math in core.js, planner.js,
 // strategy.js, deck-flow.js and insights.js.
@@ -398,7 +398,7 @@ function openSheet(html, ctx = null, scrollTop = 0) {
     dlg.showModal();
   }
   $("#sheetBody").scrollTop = scrollTop;
-  if (ctx?.type === "binder") binderDragCleanup = attachBinderDrag($("#sheetBody"),delta=>A.binderPage({dataset:{page:String(ctx.page+delta)}}));
+  if (ctx?.type === "binder") binderDragCleanup = attachBinderDrag($("#sheetBody"),(delta,how)=>A.binderPage({dataset:{page:String(ctx.page+delta)},how}));
 }
 let sheetReturn = null;
 function closeSheet() {
@@ -705,17 +705,25 @@ function binderRows(game, location = null) {
   });
 }
 const binderById = id => (S.state.settings.binders || []).find(b=>b.id===id);
-function showBinder(data,direction="next") {
+function showBinder(data,direction="next",keepScroll=false) {
   const b=binderById(data.binder), rows=b?binderRows(b.game).filter(r=>binderMatches(r,b)):binderRows(data.game,data.location);
   data.page=Math.max(0,Math.min(Math.max(0,Math.ceil(rows.length/9)-1),data.page));
-  openSheet(binderPage(rows,b?.title || data.location || "Unsorted cards",data.page,direction,b),data);
+  openSheet(binderPage(rows,b?.title || data.location || "Unsorted cards",data.page,direction,b),data,keepScroll?$("#sheetBody").scrollTop:0);
 }
 A.openBinder = t => {
   const game=t.dataset.game, b=binderById(t.dataset.binder);
   if (!["mtg","ptcg","ygo"].includes(game) || game !== T.game() || b && b.game!==game) return;
   showBinder({type:"binder",game,location:t.dataset.location || "",binder:b?.id || "",page:0});
 };
-A.binderPage = t => { const data=S.ui.sheetCtx; if(data?.type!=="binder")return;const page=Number(t.dataset.page)||0;showBinder({...data,page},page<data.page?"previous":"next"); };
+A.binderPage = t => {
+  const data=S.ui.sheetCtx; if(data?.type!=="binder")return;
+  const page=Number(t.dataset.page)||0, old=$("#sheetBody .stash-pocket-page");
+  // Finish a turn still in flight before starting the next one.
+  $("#sheetBody").querySelectorAll(".stash-leaf").forEach(x=>x.remove());
+  const leaf=old?.cloneNode(true);
+  showBinder({...data,page},page<data.page?"previous":"next",true);
+  if(S.ui.sheetCtx?.page!==data.page) animateTurn($("#sheetBody"),leaf,page<data.page?-1:1,t.how||{});
+};
 function binderEditor(b=null) {
   const game=b?.game || T.game(), value=b?.value || "";
   openSheet(`<div class="sheet-head"><h2>${b?"Customize binder":"New binder"}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><label class="field">Binder name<input id="binderTitle" maxlength="60" value="${esc(b?.title || "")}" placeholder="Fire Pokémon, rare finds, land library…"></label><label class="field">Cards to include<select id="binderRule" data-change="binderRule">${options([["all","All my cards"],["set","A specific set"],["rare","Rare cards and above"],["rarity","An exact rarity"],["type","Card type"],["color","Color / energy / attribute"],["location","A collection location"]],b?.rule || "all")}</select></label><label class="field" id="binderValueLabel">Filter value<input id="binderValue" maxlength="100" value="${esc(value)}" placeholder="e.g. base1, Rare, Fire, Land, W, LIGHT"></label><p id="binderFilterHint" class="foot">Set: use its code (Pokémon base1, Magic FDN, Yu-Gi-Oh! LOB). Type examples: Land, Creature, Trainer, Spell. Color examples: Fire, Water, W, U, B, R, G, DARK.</p><label class="field">Cover color<input id="binderColor" type="color" value="${esc(b?.color || BINDER_COLORS[(S.state.settings.binders || []).length % BINDER_COLORS.length])}"></label><label class="field">Background image URL (optional)<input id="binderBackground" type="url" value="${esc(b?.background?.startsWith("https:")?b.background:"")}" placeholder="https://…"></label><input id="binderBgData" type="hidden" value="${esc(b?.background?.startsWith("data:")?b.background:"")}"><label class="btn ghost file">Upload cover image<input type="file" accept="image/jpeg,image/png,image/webp" data-change="binderImage" hidden></label><span id="binderImageStatus" class="muted small">${b?.background?.startsWith("data:")?"Uploaded cover saved":""}</span><button class="link small" data-act="clearBinderImage">Clear image</button><p class="foot">Use an HTTPS image link or upload a photo. Star an owned card inside the binder to place it in the cover’s clear pocket.</p><button class="btn block" data-act="saveBinder" data-binder="${esc(b?.id || "")}" data-game="${esc(game)}">Save binder</button>${b?`<button class="link danger" data-act="removeBinder" data-binder="${esc(b.id)}">Remove this binder view</button>`:""}`,{type:"binder-editor",id:b?.id || ""});
@@ -736,12 +744,20 @@ A.saveBinder = async t => {
   if(!/^#[0-9a-f]{6}$/i.test(color))throw Error("Choose a valid cover color.");
   if(background && !background.startsWith("data:")){let url;try{url=new URL(background);}catch{throw Error("Use a valid HTTPS image URL.");}if(url.protocol!=="https:")throw Error("Background images must use HTTPS.");}
   if(background.startsWith("data:") && (!/^data:image\/(?:jpeg|png|webp);base64,[a-z0-9+/=]+$/i.test(background) || background.length>350000)) throw Error("Choose a smaller JPEG, PNG or WebP cover image.");
-  const old=binderById(t.dataset.binder), b={id:old?.id || uid(),game,title,rule,value,color,background,featured:old?.featured || ""};
+  const old=binderById(t.dataset.binder), b={id:old?.id || uid(),game,title,rule,value,color,background,featured:old?.featured || "",favorites:binderFavorites(old)};
   await commit(st=>{st.settings.binders ||= [];const at=st.settings.binders.findIndex(x=>x.id===b.id);if(at<0)st.settings.binders.push(b);else st.settings.binders[at]=b;},{rerender:false});
   closeSheet(); if(game==="mtg")S.ui.collTab="binders";else T.ui(game).coll.tab="binders";go("#collection/binders");render();toast("Binder saved. Owned quantities are unchanged.");
 };
 A.removeBinder = async t => {await commit(st=>{st.settings.binders=(st.settings.binders || []).filter(b=>b.id!==t.dataset.binder);},{rerender:false});closeSheet();render();toast("Binder view removed. Your cards remain in the collection.");};
-A.featureBinderCard = async t => {const data=S.ui.sheetCtx,b=binderById(data?.binder);if(!b)return;const rows=binderRows(b.game).filter(r=>binderMatches(r,b));if(!rows.some(r=>r.entry.id===t.dataset.entry))return;await commit(st=>{const target=st.settings.binders.find(x=>x.id===b.id);target.featured=target.featured===t.dataset.entry?"":t.dataset.entry;},{rerender:false});render();showBinder({...data});};
+A.featureBinderCard = async t => {
+  const data=S.ui.sheetCtx,b=binderById(data?.binder);if(!b)return;
+  const rows=binderRows(b.game).filter(r=>binderMatches(r,b)),id=t.dataset.entry;if(!rows.some(r=>r.entry.id===id))return;
+  const fav=binderFavorites(b),on=fav.includes(id);
+  if(!on&&fav.length>=MAX_FAVORITES)return toast(`A cover shows up to ${MAX_FAVORITES} cards. Unstar one first.`);
+  await commit(st=>{const target=st.settings.binders.find(x=>x.id===b.id);target.favorites=on?fav.filter(x=>x!==id):[...fav,id];target.featured=target.favorites[0]||"";},{rerender:false});
+  render();showBinder({...data},"next",true);
+  toast(on?"Removed from the cover.":`On the cover · ${fav.length+1}/${MAX_FAVORITES}`);
+};
 A.collTab = (t) => go("#collection/" + t.dataset.id);
 A.decksTab = (t) => go("#decks/" + t.dataset.id);
 A.deckTab = (t) => {

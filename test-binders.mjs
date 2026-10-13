@@ -23,9 +23,9 @@ assert.equal(customBinderGroups([fire],[{id:'a',game:'ptcg',rule:'all'},{id:'b',
 assert.equal(fire.entry.qty,4,'overlapping views do not change ownership');
 const listeners=new Map(), rootListeners=new Map(), pageNode={style:{},getBoundingClientRect:()=>({width:300})};
 const view={addEventListener:(t,f)=>listeners.set(t,f),removeEventListener:t=>listeners.delete(t),matchMedia:()=>({matches:false})};
-const root={isConnected:true,ownerDocument:{defaultView:view},querySelector:()=>pageNode,addEventListener:(t,f)=>rootListeners.set(t,f),removeEventListener:t=>rootListeners.delete(t)};
+const root={isConnected:true,ownerDocument:{defaultView:view},querySelector:s=>/page-edge/.test(s)?edge:pageNode,addEventListener:(t,f)=>rootListeners.set(t,f),removeEventListener:t=>rootListeners.delete(t)};
 const edge={disabled:false,dataset:{pageEdge:'1'},setPointerCapture(){}};
-const pointer=(type,x)=>({type,clientX:x,pointerId:1,target:{closest:()=>edge},preventDefault(){}});
+const pointer=(type,x,target={closest:s=>/page-edge|pocket-page/.test(s)?edge:null})=>({type,clientX:x,clientY:0,pointerId:1,target,preventDefault(){}});
 let turned=0;const cleanup=attachBinderDrag(root,delta=>turned+=delta);
 rootListeners.get('pointerdown')(pointer('pointerdown',300));listeners.get('pointermove')(pointer('pointermove',180));
 assert.match(pageNode.style.transform,/rotateY\(-68deg\)/,'page follows pointer movement continuously');
@@ -33,3 +33,37 @@ listeners.get('pointercancel')(pointer('pointercancel',180));assert.equal(pageNo
 rootListeners.get('pointerdown')(pointer('pointerdown',300));listeners.get('pointermove')(pointer('pointermove',100));listeners.get('pointerup')(pointer('pointerup',100));
 await new Promise(resolve=>setTimeout(resolve,210));assert.equal(turned,1,'release commits a sufficiently dragged turn');cleanup();assert.equal(listeners.size,0,'closing binder releases drag listeners');
 console.log('PASS: game-aware binder filters, overlapping ownership, fluid edge progress, cancel/release and cleanup.');
+
+// Swipe anywhere on the page (not only the edge), direction from the swipe; taps still open cards.
+{
+  const listeners=new Map(), rootListeners=new Map(), pageNode={style:{},getBoundingClientRect:()=>({width:300})};
+  const view={addEventListener:(t,f)=>listeners.set(t,f),removeEventListener:t=>listeners.delete(t),matchMedia:()=>({matches:false})};
+  const edges={'1':{disabled:false},'-1':{disabled:true}};
+  const root={isConnected:true,ownerDocument:{defaultView:view},querySelector:s=>{const m=s.match(/page-edge="(-?1)"/);return m?edges[m[1]]:pageNode;},addEventListener:(t,f)=>rootListeners.set(t,f),removeEventListener:t=>rootListeners.delete(t)};
+  const pocket={closest:s=>/pocket-page/.test(s)?{}:null};
+  const ev=(type,x,y=0)=>({type,clientX:x,clientY:y,pointerId:2,button:0,target:pocket,preventDefault(){},stopPropagation(){}});
+  const turns=[];const off=attachBinderDrag(root,(d,how)=>turns.push([d,how]));
+  rootListeners.get('pointerdown')(ev('pointerdown',250));listeners.get('pointermove')(ev('pointermove',120));listeners.get('pointerup')(ev('pointerup',120));
+  await new Promise(r=>setTimeout(r,230));
+  assert.deepEqual(turns,[[1,{dragged:true}]],'a left swipe from the middle of the page turns forward');
+  let blocked=false;rootListeners.get('click')({target:pocket,preventDefault(){blocked=true;},stopPropagation(){}});
+  assert.equal(blocked,true,'the click after a swipe does not open the card under the finger');
+  rootListeners.get('pointerdown')(ev('pointerdown',100));listeners.get('pointermove')(ev('pointermove',260));
+  assert.ok(Number(pageNode.style.transform.match(/-?[\d.]+/)[0])<=15,'swiping back on the first page only rubber-bands');
+  listeners.get('pointerup')(ev('pointerup',260));assert.equal(turns.length,1,'no turn before the first page');
+  rootListeners.get('pointerdown')(ev('pointerdown',100,0));listeners.get('pointermove')(ev('pointermove',104,80));listeners.get('pointerup')(ev('pointerup',104,80));
+  assert.equal(turns.length,1,'vertical scrolling never turns a page');
+  listeners.get('keydown')({key:'ArrowRight',target:{tagName:'DIV'},preventDefault(){}});
+  assert.deepEqual(turns[1],[1,undefined],'the → key turns forward');
+  off();
+}
+const {binderFavorites,coverImages,binderCover,MAX_FAVORITES}=await import('./binders.js');
+assert.deepEqual(binderFavorites({featured:'a'}),['a'],'older single-feature binders keep their cover card');
+assert.equal(binderFavorites({favorites:Array.from({length:12},(_,i)=>'f'+i)}).length,MAX_FAVORITES);
+const pics=Array.from({length:12},(_,i)=>({entry:{id:'c'+i,name:'C'+i},image:'img'+i}));
+assert.deepEqual(coverImages(pics,['c7']).map(x=>x.image),['img7'],'one star fills the cover');
+assert.equal(coverImages(pics,['c1','c2','c3']).length,4,'two to four stars show a 2×2 window');
+assert.equal(coverImages(pics,['c1','c2','c3','c4','c5','c6']).length,9,'five or more show a full 3×3 page');
+assert.equal(coverImages(pics,['c9','c1','c2'])[0].image,'img9','starred cards come first, in star order');
+assert.match(binderCover({title:'T',subtitle:'s',images:coverImages(pics,['c1','c2'])}),/stash-window w4/);
+console.log('PASS: swipe anywhere with click guard, rubber band, scroll-safe, keyboard turns, and up to nine starred cover cards.');
