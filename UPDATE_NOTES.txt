@@ -1,3 +1,9 @@
+3.33.5 — One card design on search, set and shared-deck pages
+- Search results, set checklists and shared decks now use the same card design as your
+  collection, in all three games and all three views: big cards get the animated tier frame,
+  small-card and text rows get the full animated tier outline with the badges (type, set and
+  rarity, deck-building value) under the name and the price in the tier colour.
+
 3.33.4 — Every tier border animates
 - Fixed: most card borders looked still. Purple and orange weren't moving at all, and grey,
   green and blue moved too subtly to see. All borders now animate with a method every browser

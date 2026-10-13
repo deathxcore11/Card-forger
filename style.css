@@ -2411,3 +2411,41 @@ img[data-tier="t5"] { animation: tier-fire-ring 2.4s ease-in-out infinite; }
 #content.view-gallery .display-list .lot[data-tier="t1"]:not(.wanted) .lot-art { animation: fx-x260 5s linear infinite; }
 #content.view-gallery .display-list .lot[data-tier="t1"]:not(.wanted) .lot-art { box-shadow: 0 0 14px -6px #2fae68, 0 10px 24px -14px rgba(0,0,0,.8); }
 @media (prefers-reduced-motion: reduce) { #content .display-list .lot .lot-art, #content .display-list .lot::before { animation: none !important; } }
+
+/* ===== Search, set and shared-deck grids: the same card design as collection rows (all games) ===== */
+/* List views (small card and text): a row with the art, name + price, and the badges under the name. */
+:is(.view-compact, .view-symbols) .card-grid > .grid-card { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "img meta" "img chrome"; align-items: center; column-gap: 12px; row-gap: 6px; padding: 10px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
+.view-symbols .card-grid > .grid-card { grid-template-columns: minmax(0, 1fr); grid-template-areas: "meta" "chrome"; }
+:is(.view-compact, .view-symbols) .card-grid > .grid-card > img, :is(.view-compact, .view-symbols) .card-grid > .grid-card > .img-missing { grid-area: img; }
+:is(.view-compact, .view-symbols) .card-grid > .grid-card > img[data-tier] { outline: 0; box-shadow: none; animation: none; }
+:is(.view-compact, .view-symbols) .card-grid .grid-meta { grid-area: meta; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; min-width: 0; }
+:is(.view-compact, .view-symbols) .card-grid .grid-meta > span:first-child { font-weight: 650; font-size: 15px; }
+:is(.view-compact, .view-symbols) .card-grid .grid-meta > span:last-child { font-weight: 700; color: color-mix(in srgb, var(--tier, #9aa3ad) 70%, var(--text)); }
+:is(.view-compact, .view-symbols) .card-grid .tile-chrome { grid-area: chrome; display: flex !important; flex-wrap: wrap; align-items: center; gap: 6px; position: static; aspect-ratio: auto; pointer-events: none; }
+:is(.view-compact, .view-symbols) .card-grid .tile-chrome > * { position: static !important; inset: auto !important; height: 24px; padding: 0 8px !important; border-radius: 99px; background: color-mix(in srgb, var(--text) 7%, transparent) !important; }
+:is(.view-compact, .view-symbols) .card-grid .tile-chrome .tset { color: var(--text); }
+:is(.view-compact, .view-symbols) .card-grid .owned-badge { position: absolute; right: 10px; bottom: 8px; }
+/* The tier outline around the whole row, animated exactly like collection rows. */
+:is(.view-compact, .view-symbols) .card-grid > .grid-card[data-tier]:not([data-tier="tn"]) { border-color: transparent; }
+:is(.view-compact, .view-symbols) .card-grid > .grid-card[data-tier]:not([data-tier="tn"])::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 2px; pointer-events: none; -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+:is(.view-compact, .view-symbols) .card-grid > .grid-card[data-tier="t0"]::before { background: linear-gradient(90deg, #6f7780 0 38%, #e9eef2 50%, #6f7780 62% 100%) 0 0 / 320px 100% repeat-x; animation: fx-x320 7s linear infinite; }
+:is(.view-compact, .view-symbols) .card-grid > .grid-card[data-tier="t1"]::before { background: linear-gradient(90deg, #1f8a50 0%, #2fae68 20%, #c4ffde 25%, #2fae68 30%, #1f8a50 50%, #2fae68 70%, #c4ffde 75%, #2fae68 80%, #1f8a50 100%) 0 0 / 260px 100% repeat-x; animation: fx-x260 5s linear infinite; }
+:is(.view-compact, .view-symbols) .card-grid > .grid-card[data-tier="t2"]::before { background: linear-gradient(90deg, #1d5fb0 0%, #2f7fe0 30%, #e2f4ff 45%, #7fc3ff 50%, #2f7fe0 65%, #1d5fb0 100%) 0 0 / 200px 100% repeat-x; animation: fx-x200r 3.6s linear infinite; }
+:is(.view-compact, .view-symbols) .card-grid > .grid-card[data-tier="t3"]::before { padding: 2.5px; background: linear-gradient(180deg, #b46cff, #6fd0ff, #ff7ad9, #ffe27a, #7dffb2, #b46cff) 0 0 / 100% 360px repeat-y; animation: fx-y360 4.5s linear infinite; }
+:is(.view-compact, .view-symbols) .card-grid > .grid-card[data-tier="t4"]::before { padding: 2.5px; background: linear-gradient(90deg, #9a6f08 0%, #e2b53a 30%, #ffd34d 42%, #fffbe6 50%, #ffd34d 58%, #e2b53a 70%, #9a6f08 100%) 0 0 / 240px 100% repeat-x; animation: fx-x240 2.4s linear infinite; }
+:is(.view-compact, .view-symbols) .card-grid > .grid-card[data-tier="t5"]::before { padding: 3px; background: linear-gradient(90deg, rgba(255,240,190,0) 0%, rgba(255,240,190,.85) 50%, rgba(255,240,190,0) 100%) 0 0 / 160px 100% repeat-x, linear-gradient(180deg, #a3330a 0%, #ff7a1a 25%, #ffb050 50%, #ff5a10 75%, #a3330a 100%) 0 0 / 100% 140px repeat-y; animation: fx-fire 1.6s linear infinite; }
+:is(.view-compact, .view-symbols) .card-grid > .grid-card[data-tier="t5"] { animation: ring-glow 1.8s ease-in-out infinite alternate; }
+
+/* Big-card view: the card sits in an animated 5px tier frame (padding + background on the image). */
+.view-gallery .card-grid > .grid-card[data-tier]:not([data-tier="tn"]) > img.card-img, .card-grid:not(.small-grid) > .grid-card[data-tier]:not([data-tier="tn"]) > img.card-img { padding: 5px; border-radius: 12px; outline: 0; box-shadow: 0 10px 24px -14px rgba(0,0,0,.8); }
+.card-grid > .grid-card[data-tier] > img.card-img { outline: 0 !important; }
+.card-grid > .grid-card[data-tier="t0"] > img.card-img { background: linear-gradient(90deg, #6f7780 0 38%, #e9eef2 50%, #6f7780 62% 100%) 0 0 / 320px 100% repeat-x; animation: fx-x320 7s linear infinite; }
+.card-grid > .grid-card[data-tier="t1"] > img.card-img { background: linear-gradient(90deg, #1f8a50 0%, #2fae68 20%, #c4ffde 25%, #2fae68 30%, #1f8a50 50%, #2fae68 70%, #c4ffde 75%, #2fae68 80%, #1f8a50 100%) 0 0 / 260px 100% repeat-x; animation: fx-x260 5s linear infinite; }
+.card-grid > .grid-card[data-tier="t2"] > img.card-img { background: linear-gradient(90deg, #1d5fb0 0%, #2f7fe0 30%, #e2f4ff 45%, #7fc3ff 50%, #2f7fe0 65%, #1d5fb0 100%) 0 0 / 200px 100% repeat-x; animation: fx-x200r 3.6s linear infinite; }
+.card-grid > .grid-card[data-tier="t3"] > img.card-img { background: linear-gradient(180deg, #b46cff, #6fd0ff, #ff7ad9, #ffe27a, #7dffb2, #b46cff) 0 0 / 100% 360px repeat-y; animation: fx-y360 4.5s linear infinite, fx-glow-p 3s ease-in-out infinite alternate; }
+.card-grid > .grid-card[data-tier="t4"] > img.card-img { background: linear-gradient(90deg, #9a6f08 0%, #e2b53a 30%, #ffd34d 42%, #fffbe6 50%, #ffd34d 58%, #e2b53a 70%, #9a6f08 100%) 0 0 / 240px 100% repeat-x; animation: fx-x240 2.4s linear infinite, fx-glow-g 2.4s ease-in-out infinite alternate; }
+.card-grid > .grid-card[data-tier="t5"] > img.card-img { background: linear-gradient(90deg, rgba(255,240,190,0) 0%, rgba(255,240,190,.85) 50%, rgba(255,240,190,0) 100%) 0 0 / 160px 100% repeat-x, linear-gradient(180deg, #a3330a 0%, #ff7a1a 25%, #ffb050 50%, #ff5a10 75%, #a3330a 100%) 0 0 / 100% 140px repeat-y; animation: fx-fire 1.6s linear infinite, fx-glow-f .9s ease-in-out infinite alternate; }
+:is(.view-compact, .view-symbols) .card-grid > .grid-card > img.card-img { padding: 0 !important; background: none !important; animation: none !important; box-shadow: none !important; }
+.card-grid > .grid-card[data-tier]:not([data-tier="tn"]) > .tile-chrome { left: 5px; right: 5px; top: 5px; }
+:is(.view-compact, .view-symbols) .card-grid > .grid-card > .tile-chrome { left: auto; right: auto; top: auto; }
+@media (prefers-reduced-motion: reduce) { .card-grid > .grid-card::before, .card-grid > .grid-card > img.card-img, .card-grid > .grid-card { animation: none !important; } }
