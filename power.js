@@ -3,6 +3,7 @@
 import { S } from "./store.js";
 import { esc, ring, bar, pct } from "./ui.js";
 import { review } from "./deckaudit.js";
+import { mtgGoldfish } from "./goldfish.js";
 import { cardKey } from "./core.js";
 import { engineProfile } from "./insights.js";
 import { formatOf, isCommanderLike } from "./formats.js";
@@ -66,6 +67,7 @@ export function mtgPower(d) {
         unknown: p.unknown,
         sims: hands.sims,
         roles: hands.roles,
+        goldfish: mtgGoldfish((d.cards || []).map((r) => ({ qty: r.qty, c: S.catalog[cardKey(r.name)] })).filter((r) => r.c && cardKey(r.c.name) !== cardKey(d.commander)), { size: formatOf(d).size, commander: S.catalog[cardKey(d.commander)] || null }),
         profile: [["Lands", p.counts.Lands], ["Ramp", p.counts.Ramp], ["Draw", p.counts.Draw], ["Removal", p.counts.Removal], ["Avg cost", p.avg?.toFixed(2) ?? "—"]],
       };
     } else base = mtgConstructedPower(d, S.catalog, cardKey, formatOf(d).size);
@@ -210,11 +212,24 @@ export function powerPanel(p, { loadAct = "", findAct = "", cardAct = () => "" }
         })
         .join("")}</section>`
     : "";
+  const g = p.goldfish,
+    pc = (x) => Math.round(x * 100) + "%",
+    gold = g
+      ? `<section class="panel pw-gold"><div class="row between"><h3>Played out ${g.runs.toLocaleString()} times</h3><span class="muted small">goldfish · no opponent</span></div>
+      <p class="pw-gold-head">${esc(g.headline)}</p>
+      ${g.turnDist ? `<div class="pw-turns" role="img" aria-label="${esc(g.turnDist.label)}">${g.turnDist.d.map((x, i) => `<div class="pw-turn"><i class="pw-bar" style="height:${Math.round(Math.max(3, (x / Math.max(...g.turnDist.d)) * 86))}px"></i><small>${i === g.turnDist.maxT ? "later" : "T" + (i + 1)}</small><em>${x >= 0.01 ? pc(x) : ""}</em></div>`).join("")}</div><p class="muted small center">${esc(g.turnDist.label)}</p>` : ""}
+      ${g.outcomes ? `<div class="pw-outcomes">${g.outcomes.map((o) => `<div class="pw-out ${o.kind}"><div class="row between"><span>${esc(o.label)}</span><b>${pc(o.p)}</b></div><div class="pw-track"><span class="pw-fill" style="width:${o.p * 100}%"></span></div></div>`).join("")}</div>` : ""}
+      <div class="pw-gmetrics">${g.metrics.map((m) => { const v = m.pct ? pc(m.value) : m.value.toFixed(1), ok = m.bad ? m.value <= m.good : m.value >= m.good; return `<span class="${ok ? "ok" : "bad"}"><b>${v}</b>${esc(m.label)}${m.note ? `<small> ${esc(m.note)}</small>` : ""}</span>`; }).join("")}</div>
+      <div class="pw-plan"><p><b>How it wins</b>${esc(g.winCon)}</p><p><b>Late game</b>${esc(g.endgame)}</p></div>
+      ${g.samples.map((x, i) => `<details class="pw-sample" ${i === 0 ? "open" : ""}><summary>${esc(x.title)}</summary>${x.hand ? `<p class="pw-hand">${x.hand.map((n) => `<span>${esc(n)}</span>`).join("")}</p>` : ""}<ol>${x.log.map((l) => `<li><b>${g.game === "ygo" ? "" : "T" + l.t}</b>${esc(l.text)}${l.total != null && l.total ? `<small> · ${l.total} total</small>` : ""}</li>`).join("")}</ol></details>`).join("")}
+      <p class="foot">Solitaire test of this exact list with each game's turn rules. It shows raw speed and consistency; real games add your opponent's interaction.</p></section>`
+      : "";
   const profile = p.profile?.length ? `<div class="pw-profile">${p.profile.map(([k, v]) => `<span><b>${esc(String(v))}</b>${esc(k)}</span>`).join("")}</div>` : "";
   return `<section class="panel score-panel power">${ring(p.score)}<div><p class="eyebrow">Deck Power</p><h2>${esc(powerGrade(p.score, p.from))}</h2><p class="small"><b>${esc(p.plan)}</b></p><p class="muted small">${esc(p.lens)}</p>${top ? `<p class="pw-headline small">Biggest gain: <b>${esc(top.label)}</b> (+${pts(top.lost)} pts available)</p>` : ""}</div>${profile}</section>
   <section class="panel pw-weak"><div class="row between"><h3>Weaknesses</h3><span class="muted small">${R.weak.length ? `${R.weak.length} found, biggest first` : "none"}</span></div>${weak}</section>
   ${R.strong.length ? `<section class="panel pw-strong"><h3>Strengths</h3><div class="pw-chips">${R.strong.map((x) => `<span class="pw-chip"><b>${esc(x.label)}</b> ${esc(String(x.count))}</span>`).join("")}</div></section>` : ""}
   ${sims}
+  ${gold}
   ${fieldBox || metaBox ? `<section class="panel"><h3>Against the meta</h3>${fieldBox}${metaBox}</section>` : ""}
   <section class="panel"><div class="row between"><h3>Score breakdown</h3><span class="muted small">build ${p.heuristic}/100</span></div><p class="muted small">How well the list is built, before the field is considered. Each ingredient is worth a share of 100 points, weighted by how much it decides games in this format. ${p.heuristic !== p.score ? `Deck Power is <b>${p.score}</b> after weighing it against the meta (above).` : ""}</p>${R.scored
     .map((x) => {

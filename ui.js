@@ -1,3 +1,4 @@
+import { tierOf } from "./tier.js";
 // Small HTML helpers shared by every screen.
 export const $ = (s, root = document) => root.querySelector(s);
 export const $$ = (s, root = document) => [...root.querySelectorAll(s)];
@@ -23,19 +24,38 @@ export const pct = (n, digits = 0) =>
 export const signed = (n, fmt = (x) => String(x)) =>
   n > 0 ? "+" + fmt(n) : n < 0 ? "−" + fmt(Math.abs(n)) : "±0";
 
+// Every card picture remembers its card's price, so any thumbnail drawn from it wears the same
+// price-tier ring (tier.js) wherever it appears in the app.
+const priceByUrl = new Map();
+const remember = (url, c) => {
+  const p = c?.prices?.usd ?? c?.prices?.usd_foil ?? c?.prices?.usd_etched;
+  if (url && p != null && priceByUrl.size < 20000) priceByUrl.set(url, Number(p));
+  return url;
+};
+export const rememberPrice = (url, price) => (url && price != null && priceByUrl.set(url, Number(price)), url);
+export const tierRing = (url, cls = "") => {
+  if (!url || /\b(?:cs-art|hero-art|hh-art|zoom|cover|nc-)/.test(cls)) return "";
+  const p = priceByUrl.get(url);
+  if (p == null) return "";
+  const t = tierOf("", "", p);
+  return ` data-tier="${t.key}" style="--tier:${t.color}"`;
+};
 export const art = (c) =>
-  c?.image_uris?.art_crop ||
-  c?.card_faces?.[0]?.image_uris?.art_crop ||
-  c?.image_uris?.normal ||
-  c?.card_faces?.[0]?.image_uris?.normal ||
-  "";
+  remember(
+    c?.image_uris?.art_crop ||
+      c?.card_faces?.[0]?.image_uris?.art_crop ||
+      c?.image_uris?.normal ||
+      c?.card_faces?.[0]?.image_uris?.normal ||
+      "",
+    c,
+  );
 
 export const cardImage = (c, size = "normal") =>
-  c?.image_uris?.[size] || c?.card_faces?.[0]?.image_uris?.[size] || "";
+  remember(c?.image_uris?.[size] || c?.card_faces?.[0]?.image_uris?.[size] || "", c);
 
 export function img(url, alt, cls = "") {
   return url
-    ? `<img class="${cls}" src="${esc(url)}" alt="${esc(alt)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.insertAdjacentHTML('afterend','<span class=&quot;${cls} img-missing&quot; role=&quot;img&quot; aria-label=&quot;Artwork unavailable&quot;>◇<small>Art unavailable</small></span>')">`
+    ? `<img class="${cls}" src="${esc(url)}"${tierRing(url, cls)} alt="${esc(alt)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.insertAdjacentHTML('afterend','<span class=&quot;${cls} img-missing&quot; role=&quot;img&quot; aria-label=&quot;Artwork unavailable&quot;>◇<small>Art unavailable</small></span>')">`
     : `<span class="${cls} img-missing" role="img" aria-label="Artwork unavailable">◇<small>Art unavailable</small></span>`;
 }
 

@@ -1,5 +1,5 @@
 import {POKEMON_SET_ART,POKEMON_CARD_ART} from './pokemon-set-art.js';
-import {esc} from './ui.js';
+import {esc,tierRing,rememberPrice} from './ui.js';
 // English set + collector-number matches only. No name-based art substitutions.
 export function pokemonFallback(c){
  const id=String(c?.id||''),set=String(c?.set?.id || id.slice(0,id.lastIndexOf('-'))).toLowerCase(),code={svp:'SVP',swshp:'SWSH'}[set];
@@ -26,7 +26,8 @@ export function artworkSources(c,large=false){
 export function artworkHTML(c,cls='card-img',large=false){
  const urls=artworkSources(c,large),fallback=`<span class="${cls} img-missing" role="img" aria-label="Artwork unavailable">◇<small>Art unavailable</small></span>`;
  if(!urls.length)return fallback;
- return `<img class="${cls}" src="${esc(urls[0])}" data-art-sources="${esc(JSON.stringify(urls))}" data-art-index="0" alt="${esc(c.name)}" loading="lazy" referrerpolicy="no-referrer">`;
+ rememberPrice(urls[0],c?.prices?.usd);
+ return `<img class="${cls}" src="${esc(urls[0])}"${tierRing(urls[0],cls)} data-art-sources="${esc(JSON.stringify(urls))}" data-art-index="0" alt="${esc(c.name)}" loading="lazy" referrerpolicy="no-referrer">`;
 }
 export function handleArtworkError(e){
  const image=e.target;if(!image?.dataset?.artSources)return;

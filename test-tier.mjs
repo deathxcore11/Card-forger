@@ -7,3 +7,4 @@ assert.equal(tierOf("mtg", "mythic", 1200).label, "Grail");
 assert.equal(tierOf("ygo", "Common", 150).label, "Epic");
 assert.equal(tierOf("ygo", "Common", 350).label, "Legendary");
 console.log("PASS: price-band tiers per card, identical across games.");
+assert.equal(tierOf("ptcg", "", null).key, "tn", "no price → no tier frame");

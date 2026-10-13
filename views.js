@@ -1206,8 +1206,9 @@ function legalTag(c, d) {
 
 function deckRow(r, d) {
   const c = meta(r.name),
-    ok = r.missing === 0;
-  return `<div class="lot deck-row ${ok ? "" : "short"}">
+    ok = r.missing === 0,
+    t = tierOf("mtg", c?.rarity, r.price);
+  return `<div class="lot deck-row ${ok ? "" : "short"}" data-tier="${t.key}" style="${tierStyle(t)}">
     <button class="lot-art" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(d.id)}">${img(cardImage(c), r.name)}<span class="art-price">${usd(r.price)}</span></button>
     <div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(d.id)}">${esc(r.name)} ${setBadge(c)}</button>
       <span class="lot-sub">${manaCost(c) || (c ? "" : '<span class="tag warn">Unresolved</span>')}${legalTag(c, d)}</span>

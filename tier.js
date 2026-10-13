@@ -43,8 +43,10 @@ export function rarityTier(game, rarity) {
 }
 
 // Price decides the tier. Printed rarity (rarityTier) is kept for labels and filters only.
+// No known price → no tier (no frame), never a misleading grey.
+export const NO_TIER = { key: "tn", label: "No price yet", color: "transparent" };
 export function tierOf(game, rarity, price) {
-  return TIERS[priceTier(price)];
+  return Number(price) > 0 ? TIERS[priceTier(price)] : NO_TIER;
 }
 
 // Attributes for a card element: the tier class and its colour.

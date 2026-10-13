@@ -12,6 +12,7 @@
 // Pure functions. Not a win-rate prediction.
 
 import { simulate, poolOf, has as hasTag, countTag, atLeastOne, allIn, evidence } from "./deckaudit.js";
+import { mtgGoldfish, ptcgGoldfish, ygoGoldfish } from "./goldfish.js";
 
 const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
 const lc = (s) => String(s || "").toLowerCase();
@@ -134,6 +135,12 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
   }, { depth: 14 });
   const Sx = (k) => sim[k] || 0, Pc = (x) => Math.round(x * 100) + "%";
   parts.push({ ...part("Keep", "Keepable opening hands", Pc(Sx("keep")), "85%+", Sx("keep") / 0.85, 10, `Share of opening 7s with ${lo}–${hi} lands.`), why: `${Pc(1 - Sx("keep"))} of opening hands have too few or too many lands and should be mulliganed.` });
+  // Goldfish: play it out turn by turn; aggro and midrange are judged on speed, control on mana use.
+  const gold = mtgGoldfish(known.map((r) => ({ qty: r.qty, c: r.c })), { size, plan });
+  if (gold) {
+    const ctl = plan === "Control";
+    parts.push({ ...part("Goldfish", ctl ? "Goldfish: mana use" : "Goldfish speed", ctl ? Math.round(gold.metrics[0].value * 100) + "%" : gold.turnDist && gold.speed != null ? `turn ${gold.headline.match(/turn (\d+)/)?.[1] || "10+"}` : "—", ctl ? "75%+" : `turn ${{ Aggro: 5, Midrange: 6, Ramp: 6 }[plan] || 6}`, ctl ? gold.metrics[0].value / 0.75 : gold.speed, 10, "1,000 games played out against an empty board: how fast the deck actually closes."), why: gold.headline });
+  }
   const names = (re) => evidence(spells.filter((r) => re.test(text(r.c))));
   const ev = { Mana: evidence(lands), Interaction: evidence(spells.filter((r) => M.removal.test(text(r.c)) || M.counter.test(text(r.c)) || M.discard.test(text(r.c)) || M.wipe.test(text(r.c)))), Flow: names(M.draw), Threats: evidence(spells.filter((r) => /Creature|Planeswalker/.test(type(r.c)))), Consistency: evidence(spells.filter((r) => r.qty <= 2 && !legendary(r.c))), Curve: evidence(spells.filter((r) => Number(r.c.cmc) >= 5)) };
   const whyOf = {
@@ -155,6 +162,7 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
   return {
     score: finish(parts),
     parts,
+    goldfish: gold,
     sims: [
       { label: "Keepable opening 7", p: Sx("keep"), target: 0.85, note: `${lo}–${hi} lands` },
       { label: "3rd land drop on time", p: Sx("t3"), target: 0.8, note: "3+ lands in 9 cards (on the draw)" },
@@ -263,12 +271,15 @@ export function ygoPower(rows, f = {}) {
     sideN = rows.filter((r) => r.zone === "side").reduce((a, r) => a + r.qty, 0);
   if (f.extra) parts.push({ ...part("Extra", "Extra Deck", E, f.extra, (E / f.extra) ** (needsExtra ? 1.5 : 1), needsExtra ? 16 : 6, needsExtra ? "This deck's engine summons from the Extra Deck, so a full one is the deck." : "A full Extra Deck gives you more lines and answers."), cards: evidence(extra), why: needsExtra ? `Only ${E} of ${f.extra} Extra Deck cards, but the main deck is built to summon from it (Xyz, Rank-Up, Fusion, Synchro or Link). Without backups and generic Extra Deck tools, one negate or a missing piece ends the turn.` : `${f.extra - E} Extra Deck slot${f.extra - E === 1 ? "" : "s"} empty: free lines and outs you aren't using.` });
   if (f.side) parts.push({ ...part("Side", "Side Deck", sideN, f.side, Math.min(1, sideN / f.side), 4, "Fifteen cards to swap in for games 2 and 3 against the decks you expect."), why: sideN ? `${sideN} of ${f.side} Side Deck cards: fewer answers to bring in after game 1.` : "No Side Deck. Tournament matches are best of three; without one you can't adapt for games 2 and 3." });
+  const gold = ygoGoldfish(main.map((r) => ({ qty: r.qty, c: r.c, tags: tag.get(r) })), extra.map((r) => ({ qty: r.qty, c: r.c })));
+  if (gold) parts.push({ ...part("Goldfish", "Plays through interruption", Math.round(gold.metrics[0].value * 100) + "%", "65%+", gold.speed, 8, "1,000 opening hands read like a player would: can it start, and keep going after a hand trap?"), why: gold.headline });
   const roles = new Map(),
     LABEL = { starter: "Starter", extender: "Extender", handtrap: "Hand trap", negate: "Negate", breaker: "Breaker", draw: "Draw", brick: "Brick", garnet: "Dead draw" };
   for (const r of main) roles.set(String(r.id ?? r.c.id ?? r.c.name), [...tag.get(r)].map((k) => LABEL[k]));
   return {
     score: finish(parts),
     parts,
+    goldfish: gold,
     plan: lead ? lead[0] + " engine" : "Unfocused",
     unknown,
     stats: { N, E, starters: q(starters), extenders: q(extenders), handtraps: q(hts), negates: q(negs), startOdds: S("open"), engine: q(engine), nonEngine: q(nonEngine) },
@@ -414,6 +425,8 @@ export function ptcgPower(rows, f = {}) {
       why: q(aces) > 1 ? `${q(aces)} ACE SPEC cards: only 1 is allowed.` : "No ACE SPEC. Every deck may play one, and most play one." },
   ];
   if (q(radiants) > 1) parts.push({ ...part("Radiant", "Radiant limit", q(radiants), "≤ 1", 0, 6, "Only one Radiant Pokémon per deck."), why: `${q(radiants)} Radiant Pokémon: only 1 is allowed.` });
+  const gold = ptcgGoldfish(main.map((r) => ({ qty: r.qty, c: r.c })), { attacker: mainAtk?.c.name, line });
+  if (gold) parts.push({ ...part("Goldfish", "Goldfish speed", gold.headline.match(/turn (\d+)/)?.[1] ? `turn ${gold.headline.match(/turn (\d+)/)[1]}` : "6+", "turn 2", gold.speed, 10, "1,000 games played out: draw, search, bench, evolve, attach, attack, until the main attacker swings."), why: gold.headline });
   const LABEL = { basic: "Basic", supporter: "Supporter", draw: "Draw", search: "Search", gust: "Gust", switch: "Switch", pivot: "Free retreat", recovery: "Recovery", accel: "Accel", disrupt: "Disruption", candy: "Candy", energy: "" };
   const roles = new Map();
   for (const r of main) roles.set(String(r.id ?? r.c.id ?? r.c.name), [...(r === mainAtk ? ["Main attacker"] : []), ...[...tag.get(r)].map((k) => LABEL[k]).filter(Boolean)]);
@@ -421,6 +434,7 @@ export function ptcgPower(rows, f = {}) {
   return {
     score: finish(parts),
     parts,
+    goldfish: gold,
     plan: mainAtk ? mainAtk.c.name + (line ? ` · ${line.text} line` : "") : "Pokémon deck",
     stats: { N, basics, pokemon, trainers, energy, mull },
     unknown,

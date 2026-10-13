@@ -2236,3 +2236,50 @@ details.ingredient[open] > summary b { color: var(--accent); }
 #content.view-gallery .display-list .lot:not(.wanted) .lot-art > img, #content.view-gallery .display-list .lot:not(.wanted) .lot-art > .img-missing { border-radius: 7px; position: relative; z-index: 1; }
 #content.view-gallery .display-list .lot:not(.wanted) .lot-art::after { inset: 5px; border-radius: 7px; }
 #content.view-gallery .display-list .lot:not(.wanted) .lot-art .tile-chrome { left: 5px; right: 5px; top: 5px; }
+
+/* ===== One look for every card thumbnail in the app: a price-tier ring drawn inside the edge ===== */
+img[data-tier] { outline: 2px solid var(--tier); outline-offset: -2px; border-radius: 6px; }
+img[data-tier="t0"] { outline-color: #8b939c; }
+img[data-tier]:is([data-tier="t3"], [data-tier="t4"], [data-tier="t5"]) { box-shadow: 0 0 12px -3px var(--tier); }
+img[data-tier="t4"] { animation: tier-gold-ring 3.4s ease-in-out infinite; }
+img[data-tier="t5"] { animation: tier-fire-ring 2.4s ease-in-out infinite; }
+:is(.card-grid .grid-card, .grid-card) img.card-img[data-tier] { outline-width: 3px; outline-offset: -3px; border-radius: 4.6% / 3.3%; }
+/* The collection gallery draws its own animated frame. */
+#content.view-gallery .display-list .lot .lot-art > img[data-tier] { outline: 0; box-shadow: none; animation: none; }
+.lot.wanted img[data-tier] { outline-style: dashed; }
+@media (prefers-reduced-motion: reduce) { img[data-tier] { animation: none !important; } }
+.card-grid .grid-card[data-tier] .card-img { box-shadow: none; }
+.card-grid .grid-card:is([data-tier="t3"], [data-tier="t4"], [data-tier="t5"]) .card-img { box-shadow: 0 0 16px -4px var(--tier); }
+
+/* Deck Power: goldfish panel */
+.pw-gold-head { font-weight: 600; line-height: 1.45; margin: 4px 0 12px; }
+.pw-turns { display: flex; align-items: flex-end; gap: 4px; height: 120px; padding: 18px 0 0; }
+.pw-turn { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; position: relative; gap: 4px; }
+.pw-turn span { display: block; width: 100%; max-width: 30px; border-radius: 6px 6px 2px 2px; background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 45%, transparent)); transition: height .6s cubic-bezier(.2,.8,.2,1); }
+.pw-turn small { font-size: 10px; color: var(--muted); }
+.pw-turn em { position: absolute; top: -2px; font-style: normal; font-size: 10px; font-weight: 700; color: var(--text); }
+.pw-outcomes { display: grid; gap: 8px; margin: 8px 0 12px; }
+.pw-out .pw-fill { color: var(--good, #3fb68b); }
+.pw-out.fragile .pw-fill { color: var(--warn, #e0a240); }
+.pw-out.interOnly .pw-fill { color: #4aa3ff; }
+.pw-out.brick .pw-fill { color: var(--bad, #e5534b); }
+.pw-gmetrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin: 12px 0; }
+.pw-gmetrics span { display: grid; gap: 2px; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--text) 5%, transparent); font-size: .8rem; color: var(--muted); border-left: 3px solid var(--good, #3fb68b); }
+.pw-gmetrics span.bad { border-left-color: var(--warn, #e0a240); }
+.pw-gmetrics b { font-size: 1.1rem; color: var(--text); }
+.pw-plan { display: grid; gap: 8px; margin: 12px 0; }
+.pw-plan p { margin: 0; line-height: 1.45; }
+.pw-plan b { display: block; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+.pw-sample { border-top: 1px solid var(--line); padding: 10px 0; }
+.pw-sample summary { cursor: pointer; font-weight: 650; }
+.pw-sample ol { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.pw-sample li { display: grid; grid-template-columns: 32px 1fr; gap: 8px; font-size: .88rem; line-height: 1.4; }
+.pw-sample li b { color: var(--accent); }
+.pw-hand { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+.pw-hand span { font-size: .78rem; padding: 3px 9px; border-radius: 99px; background: color-mix(in srgb, var(--accent) 14%, transparent); }
+/* Cards with no tier (no price known) get no frame rather than a misleading grey one. */
+#content.view-gallery .display-list .lot:not([data-tier]) .lot-art { padding: 0; background: var(--surface-2); box-shadow: none; animation: none; }
+#content.view-gallery .display-list .lot[data-tier="tn"] .lot-art { padding: 0; background: var(--surface-2); box-shadow: none; animation: none; }
+.display-list .lot[data-tier="tn"]::before { display: none; }
+.pw-turn .pw-bar { display: block; width: 100%; max-width: 30px; border-radius: 6px 6px 2px 2px; background: linear-gradient(180deg, var(--accent, #e8b85a), color-mix(in srgb, var(--accent, #e8b85a) 40%, transparent)); }
+.pw-turn em { top: -16px; } .pw-turns { padding-top: 22px; height: 130px; }

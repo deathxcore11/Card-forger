@@ -1,3 +1,23 @@
+3.33.0 — Goldfish: every deck played out 1,000 times
+- Deck Power now plays your exact list out 1,000 times with each game's turn rules and shows
+  what the hands actually do:
+  • Magic: lands, mana, spells cast greedily, combat every turn. The turn the goldfish dies, mana
+    used on turns 1–4, curve-outs, top end, flood and screw, and which cards deal the damage.
+    Commander: the turn your commander lands and damage by turn 6.
+  • Pokémon: draw, search (Nest Ball, Ultra Ball, Poffin), bench, evolve, Rare Candy, one Energy
+    a turn plus acceleration, until the main attacker swings. First-attack turn chart, attacks
+    in the first 6 turns, dead turns and mulligans.
+  • Yu-Gi-Oh!: every 5-card hand read like a player would: full combo plus a hand trap, combo
+    with a backup line, folds to one hand trap, interaction only, or brick.
+  • How it wins (its real damage sources or bosses), its late game, and narrated sample games:
+    a typical one and a bad draw, turn by turn with real card names.
+  • Speed counts in the score ("Goldfish speed" / "Plays through interruption").
+- Tier bands: grey under $2, green $2–$10, blue $10–$50, purple $50–$200, gold $200–$1,000,
+  orange over $1,000, always from that exact printing's price.
+- Every card thumbnail in the app (lists, meta decks, deck pages, search) now wears the same
+  price-tier ring. Deck rows get tier frames too. Cards with no price yet get no frame instead of
+  grey.
+
 3.32.2 — Animated tier frames, new price bands, Deck Power calibration
 - Tier bands by one card's price: grey under $2, green $2–$10, blue $10–$50, purple $50–$200,
   gold $200–$1,000, orange over $1,000.
