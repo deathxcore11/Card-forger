@@ -187,7 +187,8 @@ export const ptcgSource = {
     const tries = [...new Set([num, String(Number(num)), String(Number(num)).padStart(3, "0")])];
     for (const n of tries) {
       const d = (await get("/cards", { name, localId: n })) || [];
-      const hits = d.map(brief).filter((c) => !c.pocket);
+      // TCGdex matches localId loosely ("053" also finds "SWSH153"); keep exact numbers only.
+      const hits = d.map(brief).filter((c) => !c.pocket && tries.includes(c.id.slice(c.id.lastIndexOf("-") + 1)));
       if (hits.length) return hits;
     }
     return [];

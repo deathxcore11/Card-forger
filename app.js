@@ -18,8 +18,9 @@ import {
 import { parseDeckImport, acquireMissing } from "./deck-flow.js";
 import { completionPlan, commanderTheme } from "./planner.js";
 import { sourceCredit, mtgjsonDeck, collectionIdeas, upgradeSuggestions, applyUpgradeSwaps } from "./strategy.js";
-import { searchQuery, scanNames } from "./catalog-tools.js";
-import { mtgCollector } from "./scan.js";
+import { searchQuery } from "./catalog-tools.js";
+import { mtgCollector, nameCandidates } from "./scan.js";
+import { registerScanner, scanView } from "./scancam.js";
 import { newGame, proxyList, proxySheetHTML } from "./extras.js";
 import { sharePayload, encodeShare, decodeShare } from "./share.js";
 import { FORMATS, formatOf, hasCommander, canLead, sizeLabel } from "./formats.js";
@@ -517,6 +518,8 @@ function go(hash) {
 const autoLoaded = new Set();
 function render() {
   const ui = S.ui;
+  // The scanner keeps its camera stream across renders (or stops it when you leave the page).
+  setTimeout(() => scanCtx.afterRender?.(), 0);
   for (const b of $$("[data-nav]")) b.classList.toggle("on", b.dataset.nav === (ui.view === "deck" ? "decks" : ui.view === "set" || ui.view === "sets" ? "search" : ui.view));
   document.body.dataset.view = ui.view;
   const g = T.game();
@@ -525,13 +528,13 @@ function render() {
   if (pill) pill.innerHTML = `${GAME_ICON[g]}<span>${esc(GAMES[g].short)}</span><span aria-hidden="true">▾</span>`;
   const views = {
     home: V.home, search: V.search, collection: V.collection, decks: V.decks,
-    deck: V.deckPage, scan: () => V.scan(scanNames), settings: V.settings, sets: V.setsPage, set: V.setPage, shared: V.sharedPage,
+    deck: V.deckPage, scan: () => scanView("mtg", "Magic"), settings: V.settings, sets: V.setsPage, set: V.setPage, shared: V.sharedPage,
   };
   // Yu-Gi-Oh! and Pokémon share their own screens; Magic keeps its full set.
   const tcgViews = {
     home: T.tcgHome, search: T.tcgSearch, collection: T.tcgCollection, decks: T.tcgDecks, tdeck: () => T.tcgDeck(ui.tdeckId), sets: T.tcgSets, set: T.tcgSet,
     deck: T.tcgDecks,
-    scan: T.tcgScan,
+    scan: () => scanView(g, GAMES[g].short),
   };
   if (g !== "mtg" && ui.view === "deck") ui.view = "decks";
   if (ui.view === "home") setTimeout(() => heroArt(g), 0);
@@ -3048,118 +3051,58 @@ A.deleteNote = async (t) => commit((s) => (s.notes = s.notes.filter((n) => n.id 
    Scan
    ========================================================= */
 
-let ocrLoading;
-C.scanFile = (t) => {
-  const f = t.files[0],
-    s = S.ui.scan;
-  if (!f) return;
-  if (!f.type.startsWith("image/")) return toast("Choose a photo.");
-  if (s.url) URL.revokeObjectURL(s.url);
-  Object.assign(s, { file: f, url: URL.createObjectURL(f), text: "", match: null, cands: [], guess: "", read: "", status: "Photo ready. Reading it…" });
-  render();
-  A.scanRead();
-};
-C.scanCrop = (t) => (S.ui.scan.crop = t.checked ? "title" : "full");
-A.scanClear = () => {
-  const s = S.ui.scan;
-  if (s.url) URL.revokeObjectURL(s.url);
-  Object.assign(s, { file: null, url: null, text: "", match: null, cands: [], guess: "", read: "", status: "" });
-  render();
-};
-function loadOCR() {
-  if (window.Tesseract) return Promise.resolve(window.Tesseract);
-  if (!ocrLoading)
-    ocrLoading = new Promise((ok, bad) => {
-      const el = document.createElement("script");
-      el.src = "vendor/tesseract.min.js";
-      el.onload = () => ok(window.Tesseract);
-      el.onerror = () => {
-        ocrLoading = null;
-        bad(Error("Text reader couldn’t load. Type the name instead."));
-      };
-      document.head.appendChild(el);
-    });
-  return ocrLoading;
-}
-A.scanRead = async () => {
-  const s = S.ui.scan;
-  if (!s.file || s.busy) return;
-  s.busy = true;
-  s.status = "Loading text reader…";
-  render();
-  let worker;
-  try {
-    const image = new Image();
-    await new Promise((ok, bad) => {
-      image.onload = ok;
-      image.onerror = () => bad(Error("Couldn’t open that photo."));
-      image.src = s.url;
-    });
-    const G = T.game(),
-      // Yu-Gi-Oh! and Pokémon need the whole card: the codes sit under the art and at the bottom.
-      part = G === "mtg" && s.crop === "title" ? 0.22 : 1,
-      ratio = Math.min(1, 1400 / image.naturalWidth),
-      canvas = document.createElement("canvas");
-    canvas.width = Math.round(image.naturalWidth * ratio);
-    canvas.height = Math.round(image.naturalHeight * ratio * part);
-    const ctx = canvas.getContext("2d");
-    ctx.filter = "grayscale(1) contrast(1.4)";
-    ctx.drawImage(image, 0, 0, image.naturalWidth, image.naturalHeight * part, 0, 0, canvas.width, canvas.height);
-    const Tess = await loadOCR();
-    worker = await Tess.createWorker("eng", 1, {
-      workerPath: new URL("vendor/worker.min.js", location.href).href,
-      workerBlobURL: false,
-      logger: (m) => {
-        s.status = m.status + (typeof m.progress === "number" ? " · " + Math.round(m.progress * 100) + "%" : "");
-        if ($("#scanStatus")) $("#scanStatus").textContent = s.status;
-      },
-    });
-    s.text = (await worker.recognize(canvas)).data.text || "";
-    if (G !== "mtg") {
-      s.status = "Matching…";
-      if ($("#scanStatus")) $("#scanStatus").textContent = s.status;
-      await tcgCtx.scanMatchText(s.text);
-      return;
-    }
-    // Magic: the set code and collector number at the bottom give the exact printing.
-    const at = part === 1 ? mtgCollector(s.text) : null;
-    if (at) {
-      const c = await api(`/cards/${encodeURIComponent(at.set)}/${encodeURIComponent(at.number)}`).catch(() => null);
+// Matching for the scanner (Magic). The scanner itself lives in scancam.js and is shared by all games.
+async function mtgScanMatch(read, lang, manual = false) {
+  const out = [],
+    seen = new Set(),
+    tried = [],
+    push = (c, why, exact) => {
+      if (!c?.name || seen.has(c.id) || out.length >= 3) return;
+      seen.add(c.id);
+      cacheCard(c);
+      out.push({ id: c.id, name: c.name, image: c.image_uris?.normal || c.card_faces?.[0]?.image_uris?.normal || "", sub: `${c.set_name} · ${c.set.toUpperCase()} #${c.collector_number}`, why, exact, owned: inv(c.name).owned, card: c });
+    };
+  // The set code + collector number at the bottom identify the exact printing.
+  const at = manual ? null : mtgCollector(`${read.code}\n${read.full}`);
+  if (at) {
+    tried.push(`${at.set.toUpperCase()} #${at.number}`);
+    for (const l of lang.includes("jpn") ? ["ja", ""] : [""]) {
+      const c = await api(`/cards/${encodeURIComponent(at.set)}/${encodeURIComponent(at.number)}${l ? "/" + l : ""}`).catch(() => null);
       if (c?.name) {
-        cacheCard(c);
-        s.match = c;
-        s.status = `Found the exact printing: ${c.set_name} #${c.collector_number}. Check it matches your card.`;
-        return;
+        push(c, `Set ${at.set.toUpperCase()} #${at.number}`, true);
+        break;
       }
     }
-    const names = scanNames(s.text);
-    s.status = names.length ? "Read it. Confirm the match below." : "Couldn’t read a name — try again with less glare, or type it.";
-    if (names.length) {
-      s.busy = false;
-      await A.scanMatch({ dataset: { name: names[0] } });
-    }
-  } catch (e) {
-    s.status = e.message;
-  } finally {
-    if (worker) await worker.terminate().catch(() => {});
-    s.busy = false;
-    if (S.ui.view === "scan") render();
   }
-};
-A.scanPick = (t) => A.scanMatch(t);
-A.scanMatch = async (t) => {
-  const s = S.ui.scan,
-    name = (t?.dataset?.name || $("#scanName")?.value || "").trim();
-  if (!name) return toast("Type the card name.");
-  try {
-    s.match = await resolve(name, true, false);
-    s.status = "Check the picture matches your card.";
-  } catch (e) {
-    s.match = null;
-    s.status = e.message;
+  // Then plausible names from the name strip, one at a time (never the whole noisy string).
+  for (const n of manual ? [read.name] : nameCandidates("mtg", read.name || read.full)) {
+    if (out.length >= 3) break;
+    tried.push(n);
+    const c = await api("/cards/named?" + new URLSearchParams({ fuzzy: n })).catch(() => null);
+    if (c?.name) push(c, key(c.name) === key(n) ? "Name match" : `Closest name to “${n}”`, false);
   }
-  if (S.ui.view === "scan") render();
+  return { cands: out, tried };
+}
+async function mtgScanAdd(cand) {
+  const c = cand.card;
+  await commit(
+    (s) => {
+      s.collection.push({ id: uid(), name: c.name, qty: 1, set: c.set.toUpperCase(), setName: c.set_name, collectorNumber: c.collector_number, finish: "nonfoil", language: c.lang || "en", condition: "Near Mint", location: "", reserved: 0, printingId: cand.exact ? c.id : null, oracleId: c.oracle_id, printingVerified: !!cand.exact, nameVerified: true, raw: { acquisition: "Scanned" } });
+    },
+    { undo: `Added 1 × ${c.name}${cand.exact ? ` (${c.set.toUpperCase()} #${c.collector_number})` : ""}.` },
+  );
+}
+const scanCtx = {
+  A,
+  C,
+  render: () => render(),
+  toast: (m) => toast(m),
+  game: () => T.game(),
+  match: (g, read, lang, manual, status) => (g === "mtg" ? mtgScanMatch(read, lang, manual) : tcgCtx.scanMatch(read, lang, manual, status)),
+  add: (g, c) => (g === "mtg" ? mtgScanAdd(c) : tcgCtx.scanAdd(c)),
+  details: (g, c) => (g === "mtg" ? A.card({ dataset: { name: c.name } }) : A.tCard({ dataset: { id: c.id } })),
 };
+registerScanner(scanCtx);
 
 /* =========================================================
    Settings & backup

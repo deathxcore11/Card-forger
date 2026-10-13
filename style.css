@@ -1008,3 +1008,30 @@ dialog.sheet { overflow: hidden; }
 /* Tournament decks: a shorter banner so the list starts sooner */
 .cs-hero.compact { height: 150px; }
 .facts-list { margin: 6px 0; padding-left: 18px; display: grid; gap: 2px; font-size: 13px; }
+
+/* ---------- scanner ---------- */
+.scan-panel .seg { margin-bottom: 10px; }
+.cam-wrap { position: relative; overflow: hidden; border-radius: 14px; background: #000; margin-bottom: 10px; }
+.cam-wrap video { display: block; width: 100%; height: auto; }
+.cam-wrap .scan-drop { margin: 0; }
+/* The card-shaped guide; everything outside it is shaded. Colour + words show the state. */
+.cam-guide { position: absolute; border: 3px solid #e5484d; border-radius: 12px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45); transition: border-color 0.15s; pointer-events: none; }
+.cam-guide.amber { border-color: #f5a524; }
+.cam-guide.green { border-color: #30c48d; border-width: 4px; }
+.cam-status { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); display: inline-flex; gap: 8px; align-items: center; max-width: 92%; padding: 8px 14px; border-radius: 999px; font-weight: 700; font-size: 14px; color: #fff; background: rgba(20, 20, 24, 0.85); border: 2px solid #e5484d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cam-status.amber { border-color: #f5a524; }
+.cam-status.green { border-color: #30c48d; background: rgba(16, 70, 50, 0.9); }
+/* The crop area is exactly the photo (no letterbox), so box fractions = photo fractions. */
+.crop-wrap { position: relative; touch-action: none; user-select: none; margin: 6px auto 10px; border-radius: 12px; overflow: hidden; width: fit-content; max-width: 100%; }
+.crop-wrap img { display: block; max-width: 100%; max-height: 70vh; width: auto; height: auto; pointer-events: none; }
+.crop-box { position: absolute; border: 2px dashed var(--gold); box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45); pointer-events: none; }
+.scan-cands { display: grid; gap: 10px; margin: 8px 0 12px; }
+.scan-cand2 { display: grid; grid-template-columns: 96px 1fr; gap: 12px; padding: 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.scan-cand2.exact { border-color: color-mix(in srgb, var(--good) 55%, var(--line)); }
+.scan-cand2 img { width: 96px; border-radius: 6px; }
+.sc-body { display: grid; gap: 4px; align-content: start; min-width: 0; }
+.sc-body b { font-size: 16px; }
+.sc-body small { color: var(--muted); }
+.sc-body .tag { justify-self: start; }
+details.trouble summary { font-size: 13px; color: var(--muted); cursor: pointer; }
+details.trouble code { word-break: break-word; }

@@ -10,7 +10,7 @@ import { buildYgo, buildPtcg, YGO_STAPLES, PTCG_STAPLES, PTCG_SUPPORT_BASICS, en
 import { ygoSource, ygoImageDirect, YGO_TYPES, YGO_ATTRIBUTES, YGO_RACES, YGO_SPELL_KINDS, YGO_TRAP_KINDS } from "./ygo.js";
 import { ptcgSource, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES } from "./ptcg.js";
 import { loadMeta, metaState, ptcgIcon } from "./meta.js";
-import { scanNamesFor, ygoSetCodes, ygoPasscodes, ptcgNumbers } from "./scan.js";
+import { nameCandidates, ygoSetCodes, ygoPasscodes, ptcgNumbers, similarity } from "./scan.js";
 import { adaptList, ownedDraft, engineOf, similarLists, swapPool, costToFinish, unpricedCopies } from "./adapt.js";
 export { metaState, similarLists };
 
@@ -567,43 +567,6 @@ export function tcgAddSheet(c, preset = "") {
     <label class="span2">Where it lives<input id="tLoc" maxlength="100" placeholder="Binder, deck box…"></label>
   </div>
   <button class="btn block" data-act="tOwnSave" data-id="${esc(c.id)}">Add to collection</button>`;
-}
-
-/* ---------- scan (Yu-Gi-Oh!, Pokémon) ---------- */
-
-export function tcgScan() {
-  const g = game(),
-    s = S.ui.scan,
-    G = GAMES[g],
-    m = ownedMap(g);
-  return `<div class="page-head"><h1>Scan a card</h1></div>
-  <section class="panel">
-    ${s.url ? `<img class="scan-preview" src="${s.url}" alt="Card photo">` : `<div class="scan-drop"><b>One ${esc(G.short)} card, flat and well lit</b><span class="muted small">Fill the frame and keep the ${g === "ygo" ? "name and the set code under the art (like LOB-EN001)" : "name and the number at the bottom (like 053/128)"} sharp. Avoid foil glare.</span></div>`}
-    <div class="actions wrap"><label class="btn">📷 Camera<input type="file" accept="image/*" capture="environment" data-change="scanFile" hidden></label><label class="btn ghost">Upload<input type="file" accept="image/*" data-change="scanFile" hidden></label>${s.url ? `<button class="btn ghost" data-act="scanClear">Clear</button><button class="btn" data-act="scanRead" ${s.busy ? "disabled" : ""}>${s.busy ? "Reading…" : "Read again"}</button>` : ""}</div>
-    <p class="muted small" id="scanStatus" role="status">${esc(s.status)}</p>
-  </section>
-  ${
-    s.url || s.cands?.length
-      ? `<section class="panel"><h3>Confirm the card</h3>
-      <div class="searchbar"><input id="scanName" value="${esc(s.guess || "")}" placeholder="Card name${g === "ygo" ? " or set code" : ""}" data-enter="tScanFind" aria-label="Card name"><button class="btn ghost" data-act="tScanFind">Find</button></div>
-      ${s.read ? `<p class="small muted">Read: ${esc(s.read)}</p>` : ""}
-      ${
-        s.cands?.length
-          ? `<div class="card-grid">${s.cands
-              .map(({ id, print, why }) => {
-                const c = cardOf(g, id);
-                if (!c) return "";
-                const own = ownedOf(g, c, m);
-                return `<div class="grid-card scan-cand"><button class="scan-pick" data-act="tCard" data-id="${esc(c.id)}">${imgTag(c)}${tileBadges(c)}</button><span class="grid-meta stacked"><b class="clamp2">${esc(c.name)}</b><small>${esc(why)}${own ? ` · you own ${own}` : ""}</small></span><button class="btn small block" data-act="tOwn" data-id="${esc(c.id)}" data-print="${esc(print || "")}">＋ Add</button></div>`;
-              })
-              .join("")}</div><p class="foot">Exact matches from the ${g === "ygo" ? "set code or passcode" : "card number"} come first. Tap the art to check the details.</p>`
-          : s.url && !s.busy
-            ? `<p class="muted small">No match yet — type the name above.</p>`
-            : ""
-      }</section>`
-      : ""
-  }
-  <p class="foot">Text recognition runs on your phone; only the name and codes are looked up online. The first scan downloads the reader (~5 MB).</p>`;
 }
 
 // Yu-Gi-Oh!: the set a card comes from, like Magic and Pokémon — your printing if you own one,
@@ -1459,63 +1422,104 @@ export function registerTcg(c) {
     const card = cardOf(g(), t.dataset.id);
     if (card) openSheet(tcgAddSheet(card, t.dataset.print || ""), { type: "tadd", id: card.id });
   };
-  // Turn the photo's text into candidate cards: exact printing codes first, then names.
-  c.scanMatchText = async (text, manual = "") => {
+  // Every card name for a game, kept on the device (two weeks) for spelling-tolerant scan matching.
+  // Downloaded only when a scanned name doesn't match exactly.
+  const NAMES_KEY = (G) => `cardforge-names-${G}-v1`;
+  let nameIdx = {};
+  const nameIndex = async (G, status = () => {}) => {
+    if (nameIdx[G]) return nameIdx[G];
+    try {
+      const c = JSON.parse(localStorage.getItem(NAMES_KEY(G)) || "null");
+      if (c?.list?.length && Date.now() - c.at < 14 * 864e5) return (nameIdx[G] = c.list);
+    } catch {}
+    status(`Downloading the ${GAMES[G].short} card name list (once, ~3 MB)…`);
+    const list =
+      G === "ygo"
+        ? [...new Set(((await (await fetch("https://db.ygoprodeck.com/api/v7/cardinfo.php")).json()).data || []).map((x) => x.name))]
+        : [...new Set(((await (await fetch("https://api.tcgdex.net/v2/en/cards")).json()) || []).filter((x) => !/^(A\d|P-A)/.test(x.id)).map((x) => x.name))];
+    nameIdx[G] = list;
+    try {
+      localStorage.setItem(NAMES_KEY(G), JSON.stringify({ at: Date.now(), list }));
+    } catch {}
+    return list;
+  };
+  const closestNames = (list, n, k = 3) =>
+    list
+      .map((name) => ({ name, sc: similarity(name, n) }))
+      .filter((x) => x.sc >= 0.6)
+      .sort((a, b) => b.sc - a.sc)
+      .slice(0, k)
+      .map((x) => x.name);
+
+  // Scanner matching (the scanner itself is scancam.js): exact printing codes first, then names.
+  c.scanMatch = async (read, lang, manual = false, status = () => {}) => {
     const G = g(),
-      s = S.ui.scan,
-      cands = [],
+      out = [],
       seen = new Set(),
-      add = (card, why, print = "") => {
-        if (!card || seen.has(card.id) || cands.length >= 6) return;
+      tried = [],
+      m = ownedMap(G),
+      push = (card, why, exact, print = "") => {
+        if (!card || seen.has(card.id) || out.length >= 3) return;
         seen.add(card.id);
         remember(card);
-        cands.push({ id: card.id, why, print });
+        const ps = G === "ygo" && print ? card.sets?.find((x) => `${x.code}|${x.rarity}` === print) : null;
+        out.push({ id: card.id, name: card.name, image: G === "ygo" ? ygoImageDirect(card.id, false) : card.imageLarge, sub: G === "ygo" ? (ps ? `${ps.name} · ${ps.code} · ${ps.rarity}` : card.typeLine) : `${card.set?.name || ""} · #${card.set?.number || ""}${card.set?.total ? "/" + card.set.total : ""} · ${card.rarity || ""}`, why, exact, print, owned: ownedOf(G, card, m), card });
       };
-    const names = manual ? [manual] : scanNamesFor(G, text);
-    s.guess = manual || names[0] || "";
+    const all = `${read.code}\n${read.full}`,
+      names = manual ? [read.name] : nameCandidates(G, read.name || read.full);
     if (G === "ygo") {
-      const codes = ygoSetCodes(manual || text),
-        pass = manual ? [] : ygoPasscodes(text);
-      s.read = [...codes, ...pass, ...names.slice(0, 2)].join(" · ");
-      for (const code of codes) {
+      // Japanese/other-region codes (DUNE-JP001) also try the English printing (DUNE-EN001).
+      const codes = ygoSetCodes(manual ? read.name : all).flatMap((c) => [c, c.replace(/-([A-Z]{1,2})(\d{3})$/, "-EN$2")]).filter((c, i, a) => a.indexOf(c) === i);
+      for (const code of codes.slice(0, 4)) {
+        tried.push(code);
         const info = await fetch("https://db.ygoprodeck.com/api/v7/cardsetsinfo.php?setcode=" + encodeURIComponent(code)).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-        if (info?.id) add(await ensureCard("ygo", String(info.id)).catch(() => null), `Set code ${code}`, `${info.set_code}|${info.set_rarity}`);
+        if (info?.id) push(await ensureCard("ygo", String(info.id)).catch(() => null), `Set code ${info.set_code}`, true, `${info.set_code}|${info.set_rarity}`);
       }
-      for (const id of pass) add(await ensureCard("ygo", id).catch(() => null), "Passcode " + id);
-      for (const n of names.slice(0, 3)) add(await SOURCES.ygo.byName(n).catch(() => null), "Exact name");
-      for (const n of names.slice(0, 2)) {
-        if (cands.length >= 6) break;
-        const r = await SOURCES.ygo.search({ q: n, size: 6 }).catch(() => ({ cards: [] }));
-        r.cards.forEach((card) => add(card, card.name.toLowerCase() === n.toLowerCase() ? "Name match" : "Similar name"));
+      if (!manual) for (const id of ygoPasscodes(all)) push(await ensureCard("ygo", id).catch(() => null), "Passcode " + id, false);
+      for (const n of names) {
+        if (out.length >= 3) break;
+        tried.push(n);
+        push(await SOURCES.ygo.byName(n).catch(() => null), "Name match", false);
+      }
+      // Misread names ("DAR MACICTAN" → Dark Magician): closest spellings from the full name list.
+      const misread = names.filter((x) => x.replace(/[^a-z]/gi, "").length >= 5).slice(0, 2);
+      if (!out.length && misread.length) {
+        const list = await nameIndex("ygo", status).catch(() => []);
+        for (const n of misread) for (const name of closestNames(list, n)) if (out.length < 3) push(await SOURCES.ygo.byName(name).catch(() => null), `Closest name to “${n}”`, false);
       }
     } else {
-      const nums = manual ? [] : ptcgNumbers(text);
-      s.read = [...nums.map((x) => `${x.num}/${x.total}`), ...names.slice(0, 2)].join(" · ");
-      for (const n of names.slice(0, 3)) {
+      const nums = manual ? [] : ptcgNumbers(all);
+      for (const n of names.slice(0, 3))
         for (const x of nums) {
-          const hits = await SOURCES.ptcg.byNameNumber(n, x.num).catch(() => []);
-          for (const h of hits) add(await ensureCard("ptcg", h.id).catch(() => null), `Card #${x.num}/${x.total}`);
+          tried.push(`${n} #${x.num}`);
+          for (const h of await SOURCES.ptcg.byNameNumber(n, x.num).catch(() => [])) push(await ensureCard("ptcg", h.id).catch(() => null), `Card #${x.num}/${x.total}`, true);
         }
-      }
-      for (const n of names.slice(0, 2)) {
-        if (cands.length >= 6) break;
-        const r = await SOURCES.ptcg.search({ q: n, size: 8 }).catch(() => ({ cards: [] }));
-        const full = await Promise.all(r.cards.slice(0, 6 - cands.length).map((b) => ensureCard("ptcg", b.id).catch(() => null)));
-        full.forEach((card) => add(card, "Name match — check the number"));
+      for (const n of names) {
+        if (out.length >= 3) break;
+        tried.push(n);
+        // Exact-ish names first; for misreads, search the first word's start and rank by spelling.
+        let hits = (await SOURCES.ptcg.search({ q: n, size: 6 }).catch(() => ({ cards: [] }))).cards;
+        if (!hits.length && n.replace(/[^a-z]/gi, "").length >= 5) {
+          const list = await nameIndex("ptcg", status).catch(() => []);
+          for (const name of closestNames(list, n, 2)) hits.push(...(await SOURCES.ptcg.search({ q: name, size: 4 }).catch(() => ({ cards: [] }))).cards.filter((b) => b.name === name));
+        }
+        for (const b of hits.slice(0, 3 - out.length)) push(await ensureCard("ptcg", b.id).catch(() => null), "Name match — check the number", false);
       }
     }
-    s.cands = cands;
-    s.status = cands.length ? (cands[0].why.startsWith("Set code") || cands[0].why.startsWith("Passcode") || cands[0].why.includes("#") ? "Found the exact printing. Check it matches your card." : "Check the picture matches your card.") : "Couldn’t match it — type the name or code.";
+    return { cands: out, tried };
   };
-  A.tScanFind = async () => {
-    const q = (document.querySelector("#scanName")?.value || "").trim();
-    if (!q) return toast("Type the card name.");
-    const s = S.ui.scan;
-    s.status = "Looking it up…";
-    render();
-    await c.scanMatchText(q, q);
-    render();
+  c.scanAdd = async (cand) => {
+    const G = g(),
+      card = cand.card,
+      [printing, rarity] = cand.print ? cand.print.split("|") : ["", ""];
+    await mutate(
+      (st) => {
+        st.collection.push({ id: uid(), cardId: card.id, name: card.name, key: SOURCES[G].ownKey(card), qty: 1, printing, rarity, variant: "", condition: "Near Mint", location: "", addedAt: new Date().toISOString(), source: "scan" });
+      },
+      { undo: `Added 1 × ${card.name}${printing ? ` (${printing})` : ""}.` },
+    );
   };
+
   A.tOwnSave = async (t) => {
     const G = g(),
       card = cardOf(G, t.dataset.id),

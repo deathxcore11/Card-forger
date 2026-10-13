@@ -1,3 +1,33 @@
+CARDFORGE 3.9 UPDATE — A REAL SCANNER, AND NUMBERS YOU CAN TRUST
+
+Scanner (all three games, one shared screen):
+- Live camera inside Cardforge with a card-shaped guide and a status that always uses words:
+  red "Move the whole card inside the frame" / "Too dark", amber "Hold steady", "Tilt slightly to
+  reduce glare", "Line all four edges up", green "Ready to capture". Green means a good picture,
+  not a confirmed card. It captures automatically when green (can be turned off), once per card.
+- Photo mode with drag-to-crop and rotate (rotates the actual photo, so the crop is exact).
+- Reads the name strip and the code strip separately, using each game's card layout, instead of
+  the whole photo; the whole card is only a fallback.
+- Name matching tries clean candidates ("snce1 Eldegoss" → "Eldegoss"), never the whole noisy read.
+  Misreads are matched by spelling ("DAR MACICTAN" → Dark Magician) using each game's name list,
+  downloaded once and kept on the phone. Magic uses Scryfall's fuzzy matching.
+- Exact printings first: Magic set + collector number (incl. Japanese printings), Yu-Gi-Oh! set
+  code (Japanese/other-region codes also try the English printing) or passcode, Pokémon name +
+  number. Up to three candidates with pictures and why each matched; "Add 1" with Undo; raw text
+  in a Troubleshooting section. Card language: English or Japanese (+ English).
+- Tested on a simulated phone camera and real card images: exact printing found for Magic
+  (M21 #162) and Pokémon (Pikachu ex #053/128); Dark Magician from a misread name. Thresholds
+  should be tuned with real phone photos (sleeves, foils, lighting).
+
+Correctness:
+- Budget adaptations: unpriced copies are counted and shown, never treated as $0; "fits the
+  budget" only when every copy is priced and no slot is open ("complete purchase cost
+  unavailable" otherwise); lands/Energy are never cut into open slots; card-type counts before →
+  after; a "Not checked" line (mana colors, opening-hand consistency, card roles).
+- Magic Online counts separate Challenges (entries, ranked lists) from Leagues (5-0 lists, no
+  field size); duplicate events and lists are dropped.
+- Sheets have one scroll area; tournament decks use a shorter banner.
+
 CARDFORGE 3.8 UPDATE — SET ROWS FOR EVERY GAME, CLEANER SYMBOLS
 
 - Yu-Gi-Oh! cards now show the set they come from, like Magic and Pokémon: the booster/product

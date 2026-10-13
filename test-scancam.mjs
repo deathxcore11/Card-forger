@@ -1,0 +1,29 @@
+// The scanner's guide: red / amber / green from frame checks, on synthetic grey frames.
+import assert from "node:assert/strict";
+globalThis.localStorage = { getItem: () => null, setItem: () => {} };
+const { frameMetrics, guideState, guideRect } = await import("./scancam.js");
+const W = 120, H = 160, g = guideRect(W, H, 0.8);
+const rnd = (x, y) => ((Math.sin(x * 12.9898 + y * 78.233) * 43758.5453) % 1 + 1) % 1;
+const frame = ({ card = true, dx = 0, blur = false, glare = false, dark = false } = {}) => {
+  const a = new Float32Array(W * H).fill(dark ? 20 : 70);
+  if (card)
+    for (let y = Math.round(g.y); y < g.y + g.h; y++)
+      for (let x = Math.round(g.x + dx); x < g.x + dx + g.w && x < W; x++) {
+        // Text-like ink: short random strokes inside the card, not long straight lines.
+        const ink = !blur && y > g.y + 6 && y < g.y + g.h - 6 && x > g.x + dx + 5 && x < g.x + dx + g.w - 5 && rnd(x - Math.round(dx), y) < 0.35;
+        a[y * W + x] = dark ? 30 : glare && y < g.y + g.h * 0.45 && x < g.x + g.w * 0.6 ? 255 : ink ? 60 : 225;
+      }
+  return a;
+};
+const st = (f, prev, steady = 5) => guideState(frameMetrics(f, W, H, g, prev), steady);
+const ok = frame();
+assert.equal(st(frame({ card: false })).state, "red", "no card → red");
+assert.equal(st(frame({ dx: 30 })).state, "red", "card off to the side → red");
+assert.equal(st(frame({ dark: true })).msg, "Too dark — find more light");
+assert.equal(st(frame({ blur: true })).state, "amber", "blurry → amber");
+assert.match(st(frame({ glare: true })).msg, /glare/, "glare → amber with a glare tip");
+assert.equal(st(ok, frame({ dx: 30 })).msg, "Hold steady", "moving → amber");
+assert.equal(st(ok, ok, 0).state, "amber", "not green on the first steady frame");
+assert.equal(st(ok, ok, 5).state, "green", "steady, sharp, aligned → green");
+for (const s of [st(ok, ok, 5), st(frame({ card: false }))]) assert.ok(s.msg && s.icon, "every state has words and an icon, not just a colour");
+console.log("PASS: scan guide — red (no card / off-frame / dark), amber (blur, glare, motion), green only when steady.");

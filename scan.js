@@ -4,7 +4,7 @@
 const clean = (s) =>
   s
     // The Pokémon "ex" logo often reads as @X / €X / eX.
-    .replace(/\s*[@€©]\s*X\b|\s*\beX\b/g, " ex")
+    .replace(/\s*[@€©]\s*[X?x×]?(?![A-Za-z])|\s*\beX\b/g, " ex")
     .replace(/\{[^}]*\}/g, "")
     .replace(/[|©®™]/g, " ")
     .replace(/\s+[0-9][0-9\s]*$/, "")
@@ -62,6 +62,51 @@ export function ptcgNumbers(text) {
 export function mtgCollector(text) {
   const t = String(text).toUpperCase(),
     num = t.match(/(?<![\d/])0*(\d{1,4})\s?\/\s?\d{2,4}(?![\d/])/)?.[1] || t.match(/\b[CURMLST]\s+0*(\d{1,4})\b/)?.[1] || "",
-    set = t.match(/\b([A-Z0-9]{3,5})\s*[•·*.+°-]\s*(?:EN|ES|FR|DE|IT|PT|JA|JP)\b/)?.[1] || "";
+    // The dot between set code and language reads as almost anything ("M21 + EN", "M21 « EN", "M21 EN").
+    set = t.match(/\b([A-Z0-9]{3,5})\s*[^A-Z0-9\s]{0,2}\s*(?:EN|ES|FR|DE|IT|PT|JA|JP)\b/)?.[1] || "";
   return num && set ? { set: set.toLowerCase(), number: num } : null;
 }
+
+// Plausible card names in a noisy name strip, best first: the cleaned line, then the line without
+// junk tokens (anything with digits or symbols, "snce1"), then shorter runs of real words.
+// The matcher tries them in order instead of searching the whole OCR string.
+export function nameCandidates(g, text, max = 6) {
+  const out = [],
+    push = (s) => {
+      s = s.replace(/\s+/g, " ").trim();
+      if (s.length >= 3 && (s.match(/[A-Za-z]/g) || []).length >= 3 && !out.includes(s)) out.push(s);
+    };
+  for (const name of scanNamesFor(g, text)) {
+    const tokens = name.split(" "),
+      words = tokens.filter((w) => /^[A-Za-z][A-Za-z'’,.\-&!]*$/.test(w) && (w.length > 2 || /^(of|the|a|an|to|in|on|ex|EX|GX|V)$/i.test(w)));
+    // Junk-free first when the line had junk; the raw line is only a fallback.
+    if (words.length < tokens.length) push(words.join(" "));
+    push(name);
+    // Drop a leading/trailing fragment at a time ("Ase Eldegoss Hk" → "Eldegoss").
+    for (let n = words.length - 1; n >= 1; n--) for (let i = 0; i + n <= words.length; i++) push(words.slice(i, i + n).join(" "));
+    if (out.length >= max) break;
+  }
+  return out.slice(0, max);
+}
+
+// How alike two names are, 0–1 (letters only, case-insensitive), for ranking near-miss reads.
+export function similarity(a, b) {
+  const x = String(a).toLowerCase().replace(/[^a-z0-9]/g, ""),
+    y = String(b).toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (!x || !y) return 0;
+  let prev = Array.from({ length: y.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= x.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= y.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (x[i - 1] === y[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return 1 - prev[y.length] / Math.max(x.length, y.length);
+}
+// A forgiving search pattern for a misread name: the first letters of each word ("DAR MACICTAN" → "DAR MAC").
+export const prefixQuery = (name, n = 3) =>
+  String(name)
+    .split(/\s+/)
+    .filter((w) => /[a-z]{2}/i.test(w))
+    .slice(0, 3)
+    .map((w) => w.slice(0, n))
+    .join(" ");
