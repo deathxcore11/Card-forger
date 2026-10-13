@@ -1,4 +1,4 @@
-import { recordPrice } from "./pricehist.js";
+import { recordCardPrice } from "./pricehist.js";
 // Shared in-memory store. `S.state` is the saved workspace, `S.catalog` the card-data
 // cache, `S.ui` is screen state that is never saved.
 import { cardKey, inventory, cardPrice } from "./core.js";
@@ -124,7 +124,7 @@ export function slim(c) {
 
 export function cacheCard(c, aliases = []) {
   const copy = slim({ ...c, checkedAt: new Date().toISOString() });
-  if (c.id) recordPrice("mtg", c.id, c.prices?.usd ?? c.prices?.usd_foil ?? c.prices?.usd_etched ?? null, c.name);
+  if (c.id) recordCardPrice("mtg", c);
   S.catalog[cardKey(c.name)] = copy;
   for (const a of aliases) S.catalog[cardKey(a)] = copy;
   for (const f of c.card_faces || [])

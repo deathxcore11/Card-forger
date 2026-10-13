@@ -1,10 +1,10 @@
-import { recordPrice, priceHistoryHtml, alertsPanel } from "./pricehist.js";
+import { recordCardPrice, trackedQuote, priceHistoryHtml, alertsPanel } from "./pricehist.js";
 import { lineChart, skeletonGrid } from "./ui.js";
 import { installNudge } from "./install.js";
 import { rankByName } from "./catalog-tools.js";
 import {setRowContent} from './set-list-ui.js';
 import {artworkHTML,artworkSources} from "./artwork.js";
-import {viewControl,selectionControl,selectionMark,selectionTray,historyPanel,quoteModel,priceOverview} from "./workbench-ui.js";
+import {viewControl,selectionControl,selectionMark,selectionTray,historyPanel,quoteModel,priceOverview,quoteWarning} from "./workbench-ui.js";
 import { locationPicker, rememberLocation } from "./collection-locations.js";
 import { zoneCountLabel } from "./deck-safety.js";
 import { binderShelf } from "./binders.js";
@@ -69,7 +69,7 @@ export async function loadCache(readRecord) {
 const remember = (card) => {
   const prev = cache[card.game][card.id];
   if (card.brief && prev && !prev.brief) return prev;
-  if (!card.brief) recordPrice(card.game, card.id, card.prices?.usd ?? null, card.name);
+  if (!card.brief) recordCardPrice(card.game, card);
   cache[card.game][card.id] = card;
   saveCacheSoon();
   return card;
@@ -519,7 +519,7 @@ export function tcgCardSheet(c, sctx = {}) {
         ${deck ? `<p class="small deck-legal ${SOURCES[g].legality(c, f) === "legal" ? "ok-text" : "bad-text"}">${SOURCES[g].legality(c, f) === "legal" ? "✓ Legal" : "● Not allowed"} in ${esc(f.name)} <span class="muted">(${esc(deck.name)})</span></p>` : ""}
         ${c.stats?.length ? `<div class="stat-grid">${c.stats.filter(([k]) => g !== "ptcg" || !["HP", "Type", "Weakness", "Resistance", "Retreat"].includes(k)).map(([k, v]) => statCell(c, k, v)).join("")}</div>${c.regulationMark ? regulationHelp(c) : ""}` : ""}
       </div></div>
-    ${priceHistoryHtml(g, c.id, c.name)}
+    ${quoteWarning(c)}${priceHistoryHtml(g, trackedQuote(g,c)?.id, c.name, trackedQuote(g,c)?.label)}
     <div class="actions wrap">
       <button class="btn" data-act="tOwn" data-id="${esc(c.id)}">＋ Add to collection</button>
       <button class="btn ghost" data-act="tWish" data-id="${esc(c.id)}">${wished ? "♥ On wishlist" : "♡ Wishlist"}</button>
@@ -733,7 +733,7 @@ export function tcgCollection() {
   <div class="list display-list">${rows.slice(0,U.limit || 120)
     .map(({ e, c }) => {
       const p = entryPrice(c, e);
-      return `<div class="lot">${selectionMark(g,e.id)}<button class="lot-art" data-act="tCard" data-id="${esc(e.cardId)}" aria-label="Open ${esc(e.name)}">${imgTag(c)}</button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(e.cardId)}">${esc(e.name)}${rowEmblem(g, c)}</button><span class="lot-sub">${rowBadges(c)}${esc(setLabel({ e, c }) || "")}${e.printing ? " · " + esc(e.printing) : ""}${e.rarity ? " · " + esc(e.rarity) : ""}${e.variant ? " · " + esc(c?.variants?.find((v) => v.key === e.variant)?.label || e.variantLabel || e.variant) : ""}${e.edition ? " · " + esc({"1st-edition":"First Edition",unlimited:"Unlimited",limited:"Limited Edition"}[e.edition] || e.edition) : ""}${e.condition && e.condition !== "Near Mint" ? " · " + esc(e.condition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></div><div class="lot-side"><button class="price link" data-act="marketOpen" data-game="${g}" data-id="${esc(e.cardId)}" data-finish="${esc(e.variant||"reference")}" aria-label="Price history and sellers for ${esc(e.name)}">${p === null ? "—" : usd(p * e.qty)}</button><span class="stepper"><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="-1" aria-label="One fewer">−</button><b>${e.qty}</b><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="1" aria-label="One more">＋</button></span></div></div>`;
+      return `<div class="lot">${selectionMark(g,e.id)}<button class="lot-art" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${imgTag(c)}</button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem(g, c)}</button><span class="lot-sub">${rowBadges(c)}${esc(setLabel({ e, c }) || "")}${e.printing ? " · " + esc(e.printing) : ""}${e.rarity ? " · " + esc(e.rarity) : ""}${e.variant ? " · " + esc(c?.variants?.find((v) => v.key === e.variant)?.label || e.variantLabel || e.variant) : ""}${e.edition ? " · " + esc({"1st-edition":"First Edition",unlimited:"Unlimited",limited:"Limited Edition"}[e.edition] || e.edition) : ""}${e.condition && e.condition !== "Near Mint" ? " · " + esc(e.condition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></div><div class="lot-side"><button class="price link" data-act="marketOpen" data-game="${g}" data-id="${esc(e.cardId)}" data-finish="${esc(e.variant||"reference")}" aria-label="Price history and sellers for ${esc(e.name)}">${p === null ? "—" : usd(p * e.qty)}</button><span class="stepper"><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="-1" aria-label="One fewer">−</button><b>${e.qty}</b><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="1" aria-label="One more">＋</button></span></div></div>`;
     })
     .join("")}</div>${selectionTray(g)}${!rows.length ? empty("No matching cards", "Try a different search or filter.") : ""}${rows.length > (U.limit || 120) ? `<button class="btn ghost block" data-act="tCollMore">Load more · ${rows.length-(U.limit || 120)} remaining</button>` : ""}`
   : empty(`No ${esc(GAMES[g].short)} cards yet`, "Search for a card and tap “Add to collection”, or import a list.", `<button class="btn" data-act="go" data-to="#search">Find cards</button><button class="btn ghost" data-act="tImportColl">Paste a list</button>`)}

@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+globalThis.localStorage={getItem:()=>null,setItem(){}};
+const {loadIndex}=await import('./scancam.js');let calls=0,healthy=false;
+globalThis.fetch=async()=>{calls++;if(!healthy)throw Error('temporary outage');return {ok:true,arrayBuffer:async()=>new ArrayBuffer(19),text:async()=> 'card\tpath'};};
+assert.equal(await loadIndex('ptcg'),null);healthy=true;assert.ok(await loadIndex('ptcg'));assert.equal(calls,4,'failed index is retried after network restoration');
+const {catalogueText,setRowContent}=await import('./set-list-ui.js');assert.equal(catalogueText('Legendary 5D&apos;s Decks'),"Legendary 5D's Decks");assert.match(setRowContent({name:'&lt;script&gt;',code:'A',count:1}),/&lt;script&gt;/);assert.doesNotMatch(setRowContent({name:'&lt;script&gt;',code:'A'}),/<script>/);
+const {trackedQuote}=await import('./pricehist.js');
+const a=trackedQuote('mtg',{id:'same',prices:{usd:1}}),b=trackedQuote('mtg',{id:'same',prices:{usd:null,usd_foil:3}});assert.notEqual(a.id,b.id,'foil cannot overwrite regular history');
+const p={id:'pokemon',prices:{usd:3},variants:[{key:'holofoil',usd:3}]};assert.notEqual(trackedQuote('ptcg',p).id,trackedQuote('ptcg',{...p,variants:[{key:'holofoil',usd:3,fallback:true}]}).id,'sources stay isolated');
+const {quoteModel,quoteDiscrepancy,quoteWarning}=await import('./workbench-ui.js');assert.equal(quoteModel('ptcg',p,'holofoil').value,3,'real USD field is read');assert.notEqual(quoteModel('ptcg',p,'holofoil').key,quoteModel('ptcg',{...p,variants:[{key:'holofoil',usd:3,fallback:true}]},'holofoil').key);
+assert.equal(quoteDiscrepancy({prices:{usd:824.69,eur:6.89}}),true);assert.equal(quoteDiscrepancy({prices:{usd:10,eur:8}}),false);assert.equal(quoteDiscrepancy({prices:{usd:null,eur:8}}),false);assert.match(quoteWarning({prices:{usd:824.69,eur:6.89}}),/not a verified like-for-like deal/);
+console.log('PASS: recognition outage retry, safe catalogue entities, quote finish/source isolation, variant prices and discrepancy warning.');

@@ -1,3 +1,14 @@
+3.26.0 — Card actions, visual Compare, and safer touch browsing
+- Hold a card (or right-click / Shift+F10) for Compare, Add to collection, Add to deck, Wishlist and Binder actions across all three games.
+- Compare now selects two visible cards while you browse/search. A small cancelable tray keeps the first card visible. Duplicate picks and cross-game comparisons are guarded.
+- Deck/binder destinations use named action rows. Moving an existing entry to a binder preserves its copies, printing and condition, with Undo; adding an unowned card still asks you to confirm its physical details.
+- Touch movement and cancelled gestures cancel holds and suppress accidental clicks. Autocomplete picks on release, not touch-down.
+- Brief sheet/tab transitions use the existing visual system and respect Reduce motion.
+- Failed recognition-index downloads can retry after the network returns.
+- Provider entities in set names display as readable text and remain safely escaped; singular set counts say “card”.
+- Overview price history and alerts separate printing, finish, currency and source. Legacy unscoped observations remain on-device but are not merged into new scoped series.
+- Pokémon finish quotes read the actual USD field. Source discrepancies get a verification notice without inventing or replacing upstream prices. Alerts explicitly describe foreground checks, not background monitoring.
+
 3.25.1 — Foldables get the tablet layout
 - Foldable inner screens (Galaxy Z Fold, Pixel Fold, the coming iPhone Fold and similar: about
   680+ wide and roughly square) now get the tablet layout instead of a stretched phone: two-column

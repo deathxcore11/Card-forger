@@ -427,9 +427,9 @@ const IDX = {};
 export function loadIndex(g) {
   return (IDX[g] ||= (async () => {
     const [b, t] = await Promise.all([fetch(`scanidx/${g}.bin`).then((r) => (r.ok ? r.arrayBuffer() : null)), fetch(`scanidx/${g}-ids.txt`).then((r) => (r.ok ? r.text() : null))]);
-    if (!b || !t) return null;
+    if (!b || !t) throw Error("Recognition index unavailable");
     return { bin: new Uint8Array(b), ids: t.split("\n").filter(Boolean).map((l) => l.split("\t")) };
-  })().catch(() => null));
+  })().catch(() => { delete IDX[g]; return null; }));
 }
 // A small picture of index entry [id, path] that allows reading pixels (for the close comparison).
 export function indexThumb(g, [id, path]) {

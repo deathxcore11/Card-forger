@@ -1,3 +1,6 @@
+import {attachCardGestures, CompareSelection} from './card-actions.js';
+import {tcgCompareSheet} from './tcgcompare.js';
+import {artworkHTML} from './artwork.js';
 import {attachAutomaticBrowse} from './auto-browse.js';
 import {SheetHistory,BROWSE_TYPES} from "./sheet-history.js";
 import {handleArtworkError} from "./artwork.js";
@@ -488,7 +491,7 @@ function toast(text, { undo = false } = {}) {
   toastTimer = setTimeout(() => t.classList.remove("show", "has-action"), undo ? 7000 : 3800);
 }
 
-let binderDragCleanup = null;
+let binderDragCleanup = null, lastSheetStep = "";
 const sheetTrail=new SheetHistory(), routeTrail=[];
 let restoringSheet=false,pendingRoute=null;
 function sheetSnapshot(){
@@ -517,8 +520,15 @@ function openSheet(html, ctx = null, scrollTop = 0) {
   if(!restoringSheet && $("#sheet").open)sheetTrail.push(sheetSnapshot(),ctx);
   pendingRoute=null;
   binderDragCleanup?.(); binderDragCleanup=null;
+  const stepKey = [ctx?.type,ctx?.tab,ctx?.id || ctx?.name,ctx?.finish].join(":");
   S.ui.sheetCtx = ctx;
   $("#sheetBody").innerHTML = html;
+  if (lastSheetStep && lastSheetStep !== stepKey) {
+    $("#sheetBody").classList.remove("sheet-step");
+    void $("#sheetBody").offsetWidth;
+    $("#sheetBody").classList.add("sheet-step");
+  }
+  lastSheetStep = stepKey;
   const dlg = $("#sheet");
   if (!dlg.open) {
     // Remember what opened the sheet so focus can return there, and stop the page behind from scrolling.
@@ -748,8 +758,9 @@ function render() {
   if(!cloudInfo().user)restoreAuthFields(document,authFields);
   const displayArea=["deck","tdeck"].includes(ui.view)?"deck":ui.view === "search"?"search":ui.view === "set"?"set":ui.view === "collection" && (g === "mtg" ? ui.collTab === "wishlist" : T.ui(g).coll.tab === "wishlist")?"wishlist":ui.view === "collection" && (g === "mtg" ? ui.collTab === "cards" : !T.ui(g).coll.tab || T.ui(g).coll.tab === "cards")?"collection":null;
   $("#content").className=displayArea ? "view-"+modeFor(g,displayArea) : "";
+  if (comparison.active && comparison.game !== g) { comparison.cancel(); updateCompareTray(); }
   // A new page (not a refresh of the same one) glides in; totals count up.
-  const pageKey = [g, ui.view, ui.collTab, ui.decksTab, g === "mtg" ? "" : T.ui(g).coll.tab].join(":");
+  const pageKey = [g, ui.view, ui.collTab, ui.decksTab, ui.deckTab, g === "mtg" ? "" : T.ui(g).coll.tab, g === "mtg" ? "" : ui.tdeckTab?.[ui.tdeckId]].join(":");
   if (pageKey !== lastPageKey) {
     lastPageKey = pageKey;
     $("#content").classList.add("page-enter");
@@ -818,7 +829,7 @@ registerWorkbench({A,C,commit,render,openSheet,closeSheet,refreshSheet,toast,
 });
 
 // Yu-Gi-Oh! and Pokémon actions (tcg.js).
-setTimeout(() => Object.assign(tcgCtx, { A, C, I, commit, render, openSheet, closeSheet, refreshSheet, toast, go, download, copyText, busy, rerenderKeepingFocus, writeRecord }) && T.registerTcg(tcgCtx), 0);
+setTimeout(() => Object.assign(tcgCtx, { A, C, I, commit, render, openSheet, closeSheet, refreshSheet, toast, go, download, copyText, busy, rerenderKeepingFocus, writeRecord }) && (T.registerTcg(tcgCtx), registerCardMenus()), 0);
 
 document.addEventListener("click", (e) => {
   const t = e.target.closest("[data-act]");
@@ -831,6 +842,104 @@ document.addEventListener("click", (e) => {
   haptic(hapticFor(t.dataset.act, t));
   safely(fn(t, e));
 });
+const comparison = new CompareSelection();
+let quickCard = null, compareBusy = false;
+function updateCompareTray() {
+  let tray = document.querySelector("#compareTray");
+  if (!comparison.active) { tray?.remove(); document.body.classList.remove("choosing-compare"); return; }
+  if (!tray) { tray = document.createElement("aside"); tray.id = "compareTray"; tray.className = "compare-tray"; tray.setAttribute("aria-label", "Choose cards to compare"); document.body.append(tray); }
+  document.body.classList.add("choosing-compare");
+  const first = comparison.cards[0];
+  tray.innerHTML = `<div>${first ? artworkHTML(first,"compare-thumb") : ICON.compare}<span><b>${first ? esc(first.name) : "Compare cards"}</b><small>${first ? "Tap another card to compare" : "Tap your first card"}</small></span></div><button class="icon" data-act="cancelCardCompare" aria-label="Cancel comparison">${ICON.close || "✕"}</button>`;
+}
+async function resolveActionCard(t) {
+  const game = T.game(), dataset = {...t.dataset};
+  let card;
+  if (game === "mtg") {
+    const entry = S.state.collection.find(e => e.id === dataset.entry);
+    card = entry?.printingVerified ? S.state.printings?.[entry.printingId] : null;
+    card ||= dataset.setI !== undefined ? S.ui.set.cards[Number(dataset.setI)] : meta(dataset.name);
+    card ||= await resolve(dataset.name, true);
+  } else card = await T.ensureCard(game, dataset.id);
+  if (T.game() !== game) return null;
+  return {game,card,dataset};
+}
+function startCardCompare(game, first = null) {
+  comparison.start(game,first); closeSheet(false); updateCompareTray();
+  if (!["search","set","collection","deck","tdeck"].includes(S.ui.view)) go("#search");
+  toast(first ? "Tap the second card. Scroll normally to find it." : "Tap two cards to compare. You can browse or search.");
+}
+async function pickCompareCard(t) {
+  if (compareBusy) return; compareBusy = true;
+  try {
+    const ref = await resolveActionCard(t); if (!ref) return;
+    const result = comparison.pick(ref.game,ref.card);
+    if (result === "duplicate") return toast("Choose a different card for the second slot.");
+    updateCompareTray();
+    if (result === "ready") {
+      if (ref.game === "mtg") { S.ui.compare = [...comparison.cards]; openSheet(V.compareSheet(),{type:"compare"}); }
+      else { T.ui(ref.game).compare = [...comparison.cards]; openSheet(tcgCompareSheet(ref.game,comparison.cards),{type:"tcompare"}); }
+    }
+  } finally { compareBusy = false; }
+}
+async function cardQuickMenu(t) {
+  const ref = await resolveActionCard(t); if (!ref) return;
+  quickCard = ref; haptic("tap");
+  const st = ref.game === "mtg" ? S.state : T.gs(ref.game);
+  const wished = st.wishlist.some(w => ref.game === "mtg" ? key(w.name) === key(ref.card.name) : w.cardId === ref.card.id);
+  openSheet(`<div class="sheet-head"><h2>Card actions</h2><button class="icon" data-act="closeSheet" aria-label="Close">${ICON.close || "✕"}</button></div><div class="quick-card-heading">${artworkHTML(ref.card,"quick-card-thumb")}<div><b>${esc(ref.card.name)}</b><small>${esc(ref.card.set_name || ref.card.set?.name || ref.card.typeLine || "")}</small></div></div><div class="card-action-list"><button data-act="quickCompare">${ICON.compare}<span>Compare<small>${comparison.active && comparison.cards.length ? "Use as the second card" : "Choose another card while browsing"}</small></span></button><button data-act="quickOwn">${ICON.collection}<span>Add to collection</span></button><button data-act="quickDeck">${ICON.decks}<span>Add to deck</span></button><button data-act="quickWish">${ICON.heart || ICON.collection}<span>${wished && ref.game !== "mtg" ? "Remove from wishlist" : "Add to wishlist"}</span></button><button data-act="quickBinder">${ICON.collection}<span>${ref.dataset.entry ? "Move to binder" : "Add to binder"}</span></button></div>`,{type:"card-actions",game:ref.game,id:ref.card.id});
+}
+function registerCardMenus() {
+  A.cancelCardCompare = () => { comparison.cancel(); updateCompareTray(); };
+  A.compareOpen = A.tCompareOpen = () => startCardCompare(T.game());
+  A.compareReset = () => startCardCompare("mtg");
+  A.compareFrom = async t => { const ref = await resolveActionCard(t); if(ref)startCardCompare(ref.game,ref.card); };
+  A.tCompareFrom = A.compareFrom;
+  A.tCompareClear = t => { const G=T.game(), other=T.ui(G).compare?.[1-Number(t.dataset.i)]; startCardCompare(G,other); };
+  A.quickCompare = () => {
+    if (!quickCard || quickCard.game !== T.game()) return;
+    if (comparison.active && comparison.game === quickCard.game) { closeSheet(false); return safely(pickCompareCard({dataset:quickCard.dataset})); }
+    startCardCompare(quickCard.game,quickCard.card);
+  };
+  A.quickOwn = () => {
+    if (!quickCard || quickCard.game !== T.game()) return;
+    const {game,card} = quickCard;
+    if (game === "mtg") addSheet(null,{card,name:card.name,set:card.set,number:card.collector_number});
+    else A.tOwn({dataset:{id:card.id}});
+  };
+  A.quickWish = async () => {
+    if (!quickCard || quickCard.game !== T.game()) return;
+    const {game,card} = quickCard;
+    await A[game === "mtg" ? "wish" : "tWish"]({dataset:{name:card.name,id:card.id}}); closeSheet(false);
+  };
+  A.quickDeck = () => {
+    if (!quickCard || quickCard.game !== T.game()) return;
+    const decks=(quickCard.game === "mtg" ? S.state : T.gs(quickCard.game)).decks;
+    openSheet(`<div class="sheet-head"><h2>Add to deck</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p class="muted small">${esc(quickCard.card.name)} · Choose a deck</p><div class="card-action-list">${decks.map(d=>`<button data-act="quickDeckSave" data-deck="${esc(d.id)}"><span>${esc(d.name)}<small>${esc(d.format || "")}</small></span>${ICON.next || "›"}</button>`).join("")}</div>${!decks.length?'<p>Create your first deck, then add cards from this menu.</p>':''}<button class="btn ghost" data-act="${quickCard.game === "mtg" ? "newDeck" : "tNewDeck"}">Create a deck</button>`,{type:"card-deck-picker"});
+  };
+  A.quickDeckSave = async t => {
+    if (!quickCard || quickCard.game !== T.game()) return;
+    const {game,card}=quickCard;
+    await A[game === "mtg" ? "addToDeck" : "tDeckAdd"]({dataset:{name:card.name,id:card.id,deck:t.dataset.deck}}); closeSheet(false);
+  };
+  A.quickBinder = () => {
+    if (!quickCard || quickCard.game !== T.game()) return;
+    const binders=(S.state.settings.binders || []).filter(b=>b.game===quickCard.game && b.rule==="location");
+    openSheet(`<div class="sheet-head"><h2>${quickCard.dataset.entry ? "Move to binder" : "Add to binder"}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p class="muted small">Choose a physical binder for ${esc(quickCard.card.name)}. Filtered binders include matching cards automatically.</p><div class="card-action-list">${binders.map(b=>`<button data-act="quickBinderSave" data-binder="${esc(b.id)}"><span class="binder-swatch" style="--binder-color:${/^#[a-f0-9]{6}$/i.test(b.color)?b.color:'#7d75bb'}"></span><span>${esc(b.title)}</span></button>`).join("")}</div><button class="btn ghost" data-act="quickBinderNew">Create a binder</button>`,{type:"card-binder-picker"});
+  };
+  A.quickBinderSave = async t => {
+    if (!quickCard || quickCard.game !== T.game()) return;
+    const {game,card,dataset}=quickCard,b=(S.state.settings.binders || []).find(b=>b.id===t.dataset.binder && b.game===game && b.rule==="location"); if(!b)return;
+    if (dataset.entry) {
+      await commit(s=>{const st=game==="mtg"?s:s.tcg[game],e=st.collection.find(e=>e.id===dataset.entry);if(!e)throw Error("This collection entry no longer exists.");e.location=rememberLocation(s,game,b.value);},{undo:"Moved card to binder",msg:`Moved to ${b.title}.`});closeSheet(false);return;
+    }
+    A.quickOwn(); const picker=document.querySelector(game==="mtg"?"#addLocationPicker":"#tLocPicker");
+    if(picker){picker.value="location:"+b.value;chooseLocation(picker);}
+  };
+  A.quickBinderNew = () => { A.quickOwn(); const picker=document.querySelector(quickCard.game==="mtg"?"#addLocationPicker":"#tLocPicker");if(picker){picker.value="binder:new";chooseLocation(picker);} };
+}
+attachCardGestures({onHold:t=>safely(cardQuickMenu(t)),onPick:t=>safely(pickCompareCard(t)),choosing:()=>comparison.active});
+
 document.addEventListener("pointerdown", ripple, { passive: true });
 attachGestures({ closeSheet: () => closeSheet() });
 attachSuggest();
@@ -1603,7 +1712,10 @@ A.cardTab = async (t) => {
     b.classList.toggle("on", on);
     b.setAttribute("aria-selected", on);
   }
-  for (const p of $$("#sheetBody .cs-panel")) p.hidden = p.dataset.tab !== ctx.tab;
+  for (const p of $$("#sheetBody .cs-panel")) {
+    p.hidden = p.dataset.tab !== ctx.tab;
+    if (!p.hidden) { p.classList.remove("tab-enter"); void p.offsetWidth; p.classList.add("tab-enter"); }
+  }
   // The Play guide looks up cards that pair well the first time it's opened.
   if (ctx.tab === "guide") {
     if (ctx.type === "card") mtgGuideLoad(meta(ctx.name));
@@ -1769,7 +1881,7 @@ A.wish = async (t) => {
 };
 
 A.addToDeck = async (t) => {
-  const id = $("#toDeck")?.value,
+  const id = t.dataset.deck || $("#toDeck")?.value,
     d = deckById(id),
     name = t.dataset.name;
   if (!d) return;
@@ -3720,7 +3832,7 @@ A.priceAlertSave = async (t) => {
   // Ask once, while the tap counts as permission to ask.
   if (globalThis.Notification?.permission === "default") await Notification.requestPermission().catch(() => {});
   closeSheet();
-  toast("Alert saved. You'll hear about it when prices update.");
+  toast("Alert saved. Checked while you use the app; no background monitoring.");
   render();
 };
 A.priceAlertClear = (t) => {

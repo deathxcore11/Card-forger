@@ -53,6 +53,8 @@ const close = () => {
   box = null;
   active = -1;
   input?.setAttribute("aria-expanded", "false");
+  input?.removeAttribute("aria-activedescendant");
+  ticket++;
 };
 function show(items, recent) {
   if (!input?.isConnected || !items.length) return close();
@@ -66,7 +68,12 @@ function show(items, recent) {
       const b = e.target.closest("[data-pick]");
       if (!b) return;
       e.preventDefault();
-      pick(b.dataset.pick);
+      // Keep focus while the user decides whether to tap or scroll.
+      // Selection happens on click (release), never on pointerdown.
+    });
+    box.addEventListener("click", e => {
+      const b = e.target.closest("[data-pick]");
+      if (b) { e.preventDefault(); pick(b.dataset.pick); }
     });
   }
   const r = input.getBoundingClientRect();
@@ -132,5 +139,6 @@ export function attachSuggest() {
       input.setAttribute("aria-activedescendant", "sg" + active);
     } else if (e.key === "Escape") close();
   }, true);
+  document.addEventListener("pointerdown", e => { if (box && !box.contains(e.target) && e.target !== input) close(); }, { passive: true });
   window.addEventListener("scroll", () => box && close(), { passive: true });
 }

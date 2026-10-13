@@ -1,6 +1,6 @@
 import { hapticsOn } from "./feel.js";
 import { skeletonGrid } from "./ui.js";
-import { priceHistoryHtml, alertsPanel } from "./pricehist.js";
+import { trackedQuote, priceHistoryHtml, alertsPanel } from "./pricehist.js";
 import { installNudge } from "./install.js";
 import {setRowContent} from './set-list-ui.js';
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
@@ -374,7 +374,7 @@ export function cardSheet(c, ctx = {}) {
         : `<button class="price-pill unknown" data-act="buyCard" data-finish="nonfoil"><small>Price</small><b>No price yet</b><span class="buy-hint">Find sellers ›</span></button><p class="price-gap small muted">Stores haven't priced this printing yet. Common for new or rarely sold cards.</p>`
     }</div>
   </div>
-  ${priceHistoryHtml("mtg", shown.id, name)}
+  ${priceHistoryHtml("mtg", trackedQuote("mtg",shown)?.id, name, trackedQuote("mtg",shown)?.label)}
   ${faces
     .map(
       (f, n) => `<section class="cd-text">
@@ -698,8 +698,8 @@ export function collectionList() {
       const c = (e.printingVerified && st.printings?.[e.printingId]) || meta(e.name),
         unit = lotPrice(e, S.catalog, st.printings);
       return `<div class="lot">${selectionMark("mtg",e.id)}
-        <button class="lot-art" data-act="card" data-name="${esc(e.name)}" aria-label="Open ${esc(e.name)}">${img(cardImage(c), e.name)}</button>
-        <div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(e.name)}">${esc(e.name)}${rowEmblem("mtg", c)} ${setBadge(e.printingVerified ? c : {set:e.set,set_name:e.setName,collector_number:e.collectorNumber}, {physical:true,unspecified:!e.set&&!e.printingVerified})}</button>
+        <button class="lot-art" data-act="card" data-name="${esc(e.name)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${img(cardImage(c), e.name)}</button>
+        <div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(e.name)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem("mtg", c)} ${setBadge(e.printingVerified ? c : {set:e.set,set_name:e.setName,collector_number:e.collectorNumber}, {physical:true,unspecified:!e.set&&!e.printingVerified})}</button>
           <span class="lot-sub">${manaCost(c)}<span>${esc((e.set || e.setName || "Any printing").toUpperCase())}${e.collectorNumber ? " #" + esc(e.collectorNumber) : ""}${e.finish !== "nonfoil" ? ` · <b class="foil">${esc(e.finish)}</b>` : ""}${e.condition && e.condition !== "Near Mint" ? " · " + esc(e.condition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></span>
           ${e.lookupFailed ? `<button class="tag warn" data-act="editLot" data-id="${e.id}">Not found — tap to fix name</button>` : !c ? `<span class="tag muted">Looking up…</span>` : ""}
         </div>
