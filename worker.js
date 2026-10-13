@@ -132,6 +132,18 @@ export async function lensUpload(request, url, fetchImpl = fetch) {
   return json({ url: loc });
 }
 
+// Android app (a Trusted Web Activity built with PWABuilder or Bubblewrap): Android shows this
+// site full-screen inside the app only when this file names the app and its signing key. Add the
+// package name and the SHA-256 fingerprint(s) from the packaging step; empty means no app yet.
+export const ANDROID_APPS = [
+  // { package: "dev.cardstashy.app", sha256: ["AA:BB:…"] },
+];
+export function assetLinks(apps = ANDROID_APPS) {
+  if (!apps.length) return new Response("No Android app registered yet.", { status: 404 });
+  const body = apps.map((a) => ({ relation: ["delegate_permission/common.handle_all_urls"], target: { namespace: "android_app", package_name: a.package, sha256_cert_fingerprints: a.sha256 } }));
+  return new Response(JSON.stringify(body), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=3600", "Access-Control-Allow-Origin": "*" } });
+}
+
 export default {
   // Daily refresh of the popular formats, so visitors rarely wait on TopDeck.
   async scheduled(event, env, ctx) {
@@ -151,6 +163,7 @@ export default {
         const res=new Response(upstream.body,{headers:{'Content-Type':upstream.headers.get('Content-Type')||'image/jpeg','Cache-Control':`public, max-age=${MONTH}`,'X-Art-Source':'MTGJSON / TCGplayer'}});ctx.waitUntil(caches.default.put(request,res.clone()));return res;
       }catch{return new Response('Product artwork unavailable',{status:503});}
     }
+    if (url.pathname === "/.well-known/assetlinks.json") return assetLinks();
     if (url.pathname === "/api/lens") return lensUpload(request, url);
     if (url.pathname === "/api/meta/mtg" || url.pathname === "/api/meta/mtg/coverage") return mtgRoute(url, env, ctx);
     if (url.pathname === "/api/meta/ygo/decks" || url.pathname === "/api/meta/ygo/top") return ygoMeta(url, ctx);

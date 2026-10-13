@@ -86,3 +86,15 @@ console.log("PASS: Worker Magic meta — Magic Online and EDHTop16 without a key
   assert.equal((await lensUpload(req(), url, async () => new Response(null, { status: 302, headers: { Location: "https://evil.example/" } }))).status, 502);
   console.log("PASS: Lens upload proxy — same-site only, images only, Google links only.");
 }
+
+// Android app link file: 404 until an app is registered, then the Digital Asset Links format.
+{
+  const { assetLinks } = await import("./worker.js");
+  assert.equal(assetLinks([]).status, 404);
+  const r = assetLinks([{ package: "dev.cardstashy.app", sha256: ["AA:BB"] }]);
+  const j = await r.json();
+  assert.equal(j[0].target.package_name, "dev.cardstashy.app");
+  assert.deepEqual(j[0].target.sha256_cert_fingerprints, ["AA:BB"]);
+  assert.deepEqual(j[0].relation, ["delegate_permission/common.handle_all_urls"]);
+  console.log("PASS: Android asset links file.");
+}
