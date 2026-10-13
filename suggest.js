@@ -35,6 +35,8 @@ export async function suggestNames(g, q, fetcher = fetch) {
   } catch {
     names = [];
   }
+  // "Sol Ring // Sol Ring" (art cards, oversized reprints) is the same card twice.
+  names = names.filter((n) => !/^(.+) \/\/ \1$/.test(n));
   const low = q.toLowerCase(),
     uniq = [...new Set(names)].sort((a, b) => (b.toLowerCase().startsWith(low) - a.toLowerCase().startsWith(low)) || a.length - b.length).slice(0, 7);
   cache.set(k, uniq);
