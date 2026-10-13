@@ -17,7 +17,7 @@ export const TAG_LABEL = {
   artifact: "artifacts", enchantment: "enchantments", token: "tokens", counters: "+1/+1 counters", spell: "cheap instants & sorceries",
   discard: "discarding", mill: "a stocked graveyard", lifegain: "life gain", sac_outlet: "a sacrifice outlet", fodder: "creatures to sacrifice",
   etb: "enters effects", blink: "flicker", extra_land: "extra land drops", evasive: "evasive creatures", ramp: "extra mana", big: "big spells",
-  tuner: "a Tuner", evolution: "Evolution Pokémon", basic: "Basic Pokémon", stage2: "Stage 2 Pokémon", supporter: "Supporters", rulebox: "Pokémon ex / V",
+  tuner: "Tuner", evolution: "Evolution Pokémon", basic: "Basic Pokémon", stage2: "Stage 2 Pokémon", supporter: "Supporters", rulebox: "Pokémon ex / V",
   tool: "Pokémon Tools", evolve_trigger: "evolve-trigger Abilities", switching: "switching", energy_accel: "Energy acceleration", searcher: "deck search",
 };
 
@@ -26,6 +26,9 @@ const words = (s) => String(s || "").toLowerCase();
 
 /* ---------- Magic ---------- */
 
+// Creature subtypes after the dash: "Creature — Human Artificer" → Human, Artificer.
+const creatureTypes = (type) => (/Creature|Tribal|Kindred/.test(type) ? (type.split("—")[1] || "").trim().split(/\s+/).filter(Boolean) : []);
+const NOT_TYPES = new Set(["Each", "Other", "Target", "Nontoken", "Token", "Legendary", "Attacking", "Blocking", "Creature", "Noncreature", "Artifact", "Enchantment", "Instant", "Sorcery", "Land", "Planeswalker", "Return", "Exile", "Destroy", "When", "Whenever", "All", "Tapped", "Untapped", "Your", "Their", "Choose", "Put", "Copy", "Cast", "Search", "Draw", "Discard", "Create", "Sacrifice", "This", "That", "Those", "These", "Another", "Up", "Any", "Basic", "Snow", "Equipped", "Enchanted", "Commander", "Historic", "Permanent", "Spell", "Card", "Colorless", "White", "Blue", "Black", "Red", "Green", "Multicolored", "Monocolored"]);
 export function mtgTags(c) {
   const faces = c?.card_faces?.length ? c.card_faces : [c || {}],
     t = words(faces.map((f) => f.oracle_text || "").join("\n")),
@@ -49,6 +52,7 @@ export function mtgTags(c) {
     creature && ["Flying", "Hexproof", "Menace", "Shroud"].some((k) => kw.has(k)) && "evasive",
     /add \{/.test(t) && !/Land/.test(type) && "ramp",
     (Number(c?.cmc) >= 6 || /\{x\}/.test(words(c?.mana_cost))) && "big",
+    ...creatureTypes(type).map((s) => "sub:" + s),
   );
   const needs = set(
     /whenever (an|another) artifact[^.]*enters|for each artifact|artifacts? you control|affinity for artifacts|improvise|metalcraft/.test(t) && "artifact",
@@ -65,6 +69,8 @@ export function mtgTags(c) {
     /landfall|whenever a land[^.]*enters/.test(t) && "extra_land",
     /equipped creature|enchant creature/.test(t) && "evasive",
     Number(c?.cmc) >= 6 && "ramp",
+    // Tribal payoffs: "other Elves you control", "Human spells".
+    ...[...new Set([...(faces.map((f) => f.oracle_text || "").join(" ").matchAll(/\b([A-Z][a-z]+?)s? (?:you control|creatures?|spells?|cards?)\b/g))].map((m) => m[1]))].filter((s) => s.length > 2 && !NOT_TYPES.has(s)).map((s) => "sub:" + s),
   );
   return { provides, needs };
 }
@@ -86,12 +92,18 @@ export const MTG_NEED_Q = {
   ramp: '(cmc>=6 or o:"{X}") -t:land', big: '(o:"add {" or o:"search your library for a basic land") cmc<=3 -t:land',
 };
 // Up to three Scryfall searches: cards that give it what it needs, then payoffs for what it provides.
-export function mtgPairQueries(c, tags = mtgTags(c), max = 3) {
+export function mtgPairQueries(c, tags = mtgTags(c), max = 4) {
   const id = (c.color_identity || []).join("") || "c",
     tail = ` id<=${id} -!"${String(c.name).split(" // ")[0]}" -t:basic`,
     out = [];
-  for (const n of tags.needs) if (MTG_PROVIDE_Q[n]) out.push({ tag: n, side: "needs", q: MTG_PROVIDE_Q[n] + tail });
+  for (const n of tags.needs) {
+    if (MTG_PROVIDE_Q[n]) out.push({ tag: n, side: "needs", q: MTG_PROVIDE_Q[n] + tail });
+    else if (n.startsWith("sub:")) out.push({ tag: n, side: "needs", q: `t:"${n.slice(4)}"` + tail });
+  }
   for (const p of tags.provides) if (MTG_NEED_Q[p] && !["big", "ramp", "evasive", "etb"].includes(p)) out.push({ tag: p, side: "provides", q: MTG_NEED_Q[p] + tail });
+  // Payoffs for its creature type ("other Elves you control get +1/+1").
+  const sub = [...tags.provides].find((p) => p.startsWith("sub:"));
+  if (sub) out.push({ tag: sub, side: "provides", q: `(o:"${sub.slice(4)}s you control" or o:"other ${sub.slice(4)}" or o:"${sub.slice(4)} spells" or o:"${sub.slice(4)} creatures")` + tail });
   return out.slice(0, max);
 }
 
@@ -127,7 +139,7 @@ export function ptcgTags(c) {
     trainer = String(c?.typeLine || "").match(/Supporter|Item|Stadium|Tool/i)?.[0] || "";
   const provides = set(
     // A Pokémon's own type is a weak hint (see rankPairs); Energy cards provide the type.
-    ...(c?.category === "Pokemon" ? [] : (c?.types || []).map((x) => "type:" + x)),
+    ...(c?.category === "Pokemon" ? (c.types || []).map((x) => "ptype:" + x) : (c?.types || []).map((x) => "type:" + x)),
     c?.category === "Energy" && c.energyType === "Normal" && /^(?:Basic )?(\w+) Energy$/.exec(c.name || "")?.[1] && "type:" + /^(?:Basic )?(\w+) Energy$/.exec(c.name)[1],
     /Stage[12]/.test(c?.stage || "") && "evolution",
     c?.stage === "Stage2" && "stage2",
@@ -136,13 +148,15 @@ export function ptcgTags(c) {
     trainer === "Supporter" && "supporter",
     trainer === "Tool" && "tool",
     /when you play this pokémon from your hand to evolve/.test(t) && "evolve_trigger",
-    /switch/.test(t) && c?.category === "Trainer" && "switching",
+    // Switching your own Pokémon (not gusting the opponent's).
+    c?.category === "Trainer" && /switch (your active|this pokémon|out your)|your active pokémon with 1 of your benched|switch it with 1 of your benched/.test(t) && "switching",
     /attach[^.]*energy[^.]*from your (deck|discard|hand)/.test(t) && "energy_accel",
     /search your deck/.test(t) && "searcher",
     c?.name && "name:" + c.name,
   );
   const needs = set(
-    ...PK_TYPES.filter((x) => new RegExp(`\\b${x} (Energy|Pokémon)`).test(all) && !(c?.types || []).includes(x)).map((x) => "type:" + x),
+    ...PK_TYPES.filter((x) => new RegExp(`\\b${x} Energy`).test(all) && !(c?.types || []).includes(x)).map((x) => "type:" + x),
+    ...(c?.category !== "Pokemon" ? PK_TYPES.filter((x) => new RegExp(`\\b${x} Pokémon`).test(all)).map((x) => "ptype:" + x) : []),
     ...(c?.category === "Pokemon" ? (c.attacks || []).flatMap((a) => a.cost || []).filter((x) => x !== "Colorless").map((x) => "type:" + x) : []),
     /devolve|evolved pokémon|evolution pokémon/.test(t) && "evolution",
     /devolve/.test(t) && "evolve_trigger",
@@ -160,13 +174,17 @@ export function ptcgTags(c) {
 
 /* ---------- Scoring ---------- */
 
+// Broad categories (any Evolution Pokémon, any DARK monster, any Basic) are real but loose links:
+// they score 1 and land in the "Also works with" tier unless something specific links the cards.
+const WEAK = (n) => /^(evolution|basic|ptype:|attr:|race:)/.test(n);
+
 const textOf = (game, c) =>
   (game === "mtg" ? (c?.card_faces?.length ? c.card_faces.map((f) => f.oracle_text || "").join("\n") : c?.oracle_text || "") : [c?.effect, ...(c?.abilities || []).map((a) => a.effect), ...(c?.attacks || []).map((a) => a.effect)].join("\n")).toLowerCase();
 
 export const tagsFor = (game, c) => (game === "mtg" ? mtgTags(c) : game === "ygo" ? ygoTags(c) : ptcgTags(c));
 const label = (tag) => {
   const [k, v] = tag.split(":");
-  if (v) return k === "attr" ? `${v} monsters` : k === "race" ? `${v} monsters` : k === "type" ? `${v} type` : k === "arch" ? `“${v}”` : k === "named" ? `“${v}”` : k === "name" ? v : v;
+  if (v) return k === "ptype" ? `${v} Pokémon` : k === "sub" ? `${v} creatures` : k === "attr" ? `${v} monsters` : k === "race" ? `${v} monsters` : k === "type" ? `${v} type` : k === "arch" ? `“${v}”` : k === "named" ? `“${v}”` : k === "name" ? v : v;
   return TAG_LABEL[tag] || tag;
 };
 
@@ -189,11 +207,11 @@ export function rankPairs(game, target, cands, { max = 9 } = {}) {
     const gives = [...T.needs].filter((n) => C.provides.has(n) || (n.startsWith("named:") && (c.name.includes(n.slice(6)) || c.archetype === n.slice(6))));
     const uses = [...C.needs].filter((n) => T.provides.has(n) || (n.startsWith("named:") && (tName.includes(n.slice(6)) || target.archetype === n.slice(6))));
     for (const n of gives) {
-      score += n.startsWith("named:") ? 2 + 3 : n.startsWith("name:") ? 4 + 3 : 3;
+      score += WEAK(n) ? 1 : n.startsWith("named:") ? 2 + 3 : n.startsWith("name:") ? 4 + 3 : 3;
       reasons.push(n.startsWith("name:") ? `evolution line — it evolves from ${n.slice(5)}` : n.startsWith("named:") ? `named in its text` : n.startsWith("type:") ? `${n.slice(5)} Energy for its attacks` : `gives it ${label(n)}`);
     }
     for (const n of uses) {
-      score += n.startsWith("name:") ? 4 + 2 : n.startsWith("named:") ? 2 + 2 : 2;
+      score += WEAK(n) ? 1 : n.startsWith("name:") ? 4 + 2 : n.startsWith("named:") ? 2 + 2 : 2;
       reasons.push(n.startsWith("name:") ? `evolution line — evolves from it` : n.startsWith("named:") ? `its text names this card` : `uses its ${label(n)}`);
     }
     // Cards that name each other in their rules text belong together.
@@ -221,6 +239,7 @@ export function rankPairs(game, target, cands, { max = 9 } = {}) {
       score += 5;
       reasons.push("evolution line");
     }
+    if (x.why) reasons.push(x.why);
     if (x.lift) {
       score += Math.min(7, x.lift / 10);
       reasons.push(`played with it in tournaments (${Math.round(x.share)}% of its lists)`);
@@ -232,11 +251,19 @@ export function rankPairs(game, target, cands, { max = 9 } = {}) {
     }
     // A card needs a real link — a fit, the archetype or tournament pairing. Popularity and
     // ownership only break ties between linked cards.
-    const linked = gives.length || uses.length || x.line || reasons.some((r) => /names|named/.test(r)) || (game === "ygo" && target.archetype && c.archetype === target.archetype) || x.lift >= 5;
-    if (!linked || score < 2) continue;
-    out.push({ card: c, score: Math.round(score * 10) / 10, reasons, source: x.source || "" });
+    const strong = [...gives, ...uses].some((n) => !WEAK(n)),
+      weakOnly = !strong && (gives.length || uses.length);
+    const linked = strong || weakOnly || x.line || x.fallback || reasons.some((r) => /names|named/.test(r)) || (game === "ygo" && target.archetype && c.archetype === target.archetype) || x.lift >= 5;
+    if (!linked || (score < 2 && !x.fallback && !weakOnly)) continue;
+    out.push({ card: c, score: Math.round(score * 10) / 10, reasons, source: x.source || "", fallback: !strong && !x.line && !(x.lift >= 5) && !reasons.some((r) => /names|named|archetype/.test(r)) && (!!x.fallback || !!weakOnly), loose: !!weakOnly && !x.fallback });
   }
-  return out.sort((a, b) => b.score - a.score).slice(0, max);
+  // Real links first, then labeled fallbacks.
+  // At most five loose links, so labeled staples still get room.
+  let loose = 0;
+  return out
+    .sort((a, b) => a.fallback - b.fallback || b.score - a.score)
+    .filter((p) => !(p.fallback && p.loose) || ++loose <= 5)
+    .slice(0, max);
 }
 
 // EDHREC rank → 0–2 popularity points (rank 1 ≈ 2, rank 10,000 ≈ 0.4).

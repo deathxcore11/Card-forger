@@ -153,13 +153,15 @@ let randomTotal = 14000,
 export const ygoSource = {
   game: "ygo",
   formats: YGO_FORMATS,
-  async search({ q = "", type = "", attribute = "", race = "", level = "", format = "", set = "", archetype = "", sort = "name", page = 0, size = 60 }) {
+  async search({ q = "", text = "", type = "", attribute = "", race = "", level = "", format = "", set = "", archetype = "", sort = "name", page = 0, size = 60 }) {
     // YGOPRODeck sorts stats low to high only, so "high to low" pages from the end and reverses.
     const desc = /^(atk|def|level)Desc$/.test(sort),
       p = { num: size, offset: page * size, misc: "yes", sort: desc ? sort.slice(0, -4) : ["new", "atk", "def", "level"].includes(sort) ? sort : "name" };
     // Names use hyphens, apostrophes and commas inconsistently ("Blue-Eyes", "Ash Blossom & Joyous Spring"),
     // so match each word in order, whatever sits between them.
     if (q.trim()) p.fname = looseName(q);
+    // Card text search (used by the Play guide: cards that name this card or support its race).
+    if (text) p.desc = text;
     if (type) p.type = type;
     if (attribute) p.attribute = attribute;
     if (set) p.cardset = set;

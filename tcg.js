@@ -1828,6 +1828,10 @@ export function registerTcg(c) {
           jobs = [];
         if (card.archetype) jobs.push(SOURCES.ygo.search({ archetype: card.archetype, size: 30 }));
         for (const q of T.quoted.slice(0, 2)) jobs.push(SOURCES.ygo.search({ archetype: q, size: 20 }), SOURCES.ygo.search({ q, size: 12 }));
+        // Cards whose text names this card, and support for its race and attribute.
+        jobs.push(SOURCES.ygo.search({ text: card.name, size: 24 }));
+        if (card.category === "Monster" && card.race) jobs.push(SOURCES.ygo.search({ text: card.race, size: 24 }));
+        if (card.category === "Monster" && card.attribute) jobs.push(SOURCES.ygo.search({ text: card.attribute, size: 24 }));
         const need = [...T.needs].find((n) => n.startsWith("race:") || n.startsWith("attr:"));
         if (need) jobs.push(SOURCES.ygo.search(need.startsWith("race:") ? { race: need.slice(5), size: 30 } : { attribute: need.slice(5), size: 30 }));
         for (const r of await Promise.all(jobs.map((j) => j.catch(() => ({ cards: [] }))))) for (const x of r.cards) add(x);
@@ -1836,6 +1840,15 @@ export function registerTcg(c) {
         for (const x of got || []) {
           const a = al.cards.find((y) => y.id === String(x.id));
           add(x, { lift: Math.max(0, (a?.share || 0) - (a?.overall || 0)), share: a?.share || 0 });
+        }
+        // Fallback: the format's most-played cards (hand traps, generic staples) go in almost any deck.
+        if (rankPairs("ygo", card, cands).filter((x) => !x.fallback).length < 4) {
+          const top = (metaState("ygo").data?.top || []).slice(0, 12);
+          const staples = top.length ? await SOURCES.ygo.byIds(top.map((x) => x.id)).catch(() => []) : [];
+          for (const x of staples || []) {
+            const tp = top.find((y) => String(y.id) === String(x.id));
+            add(x, { fallback: true, why: `format staple — in ${Math.round(tp?.pct || 0)}% of top decks` });
+          }
         }
       } else {
         const T = ptcgTags(card),
@@ -1860,13 +1873,27 @@ export function registerTcg(c) {
         if (type) briefs.push(...(await SOURCES.ptcg.search({ type: type.slice(5), category: "Pokemon", format: "standard", size: 10 }).catch(() => ({ cards: [] }))).cards);
         const alBriefs = (await Promise.all(al.cards.slice(0, 8).map((x) => byName(x.name)))).map((b, i) => b && { b, a: al.cards[i] }).filter(Boolean);
         const full = async (b) => (b.brief ? await ensureCard("ptcg", b.id).catch(() => null) : b);
-        for (const b of (await Promise.all(briefs.slice(0, 20).map(full)))) add(b, { line: !!b && line.has(b.name) });
+        // Trainers that support its type ("Psychic Pokémon"), and — for cards that need Evolution
+        // Pokémon (Devolution Spray, Rare Candy…) — recent Evolution Pokémon, checked for Abilities.
+        const legal = card.legal?.standard ? "standard" : card.legal?.expanded ? "expanded" : "";
+        if (card.category === "Pokemon") for (const ty of (card.types || []).slice(0, 1)) briefs.push(...(await SOURCES.ptcg.mentioning(`${ty} Pokémon`).catch(() => [])).slice(0, 8));
+        if (T.needs.has("evolution") || T.needs.has("evolve_trigger") || T.needs.has("stage2")) {
+          const [s1, s2] = await Promise.all([SOURCES.ptcg.byStage("Stage1", legal).catch(() => []), SOURCES.ptcg.byStage("Stage2", legal).catch(() => [])]);
+          briefs.push(...(T.needs.has("stage2") ? [] : s1.slice(0, 12)), ...s2.slice(0, 12));
+        }
+        for (const b of (await Promise.all(briefs.slice(0, 44).map(full)))) add(b, { line: !!b && line.has(b.name) });
         for (const { b, a } of alBriefs) add(await full(b), { lift: Math.max(0, a.share - a.overall), share: a.share });
+        // Fallback: the most-played Trainers in recent tournament decks fit almost any deck.
+        if (rankPairs("ptcg", card, cands).filter((x) => !x.fallback).length < 4) {
+          const top = (metaState("ptcg").data?.top || []).filter((x) => x.kind === "Trainer" && x.name !== card.name).slice(0, 8);
+          const hits = (await Promise.all(top.map((x) => byName(x.name)))).map((b, i) => b && { b, x: top[i] }).filter(Boolean);
+          for (const { b, x } of hits) add(await full(b), { fallback: true, why: `format staple — in ${Math.round(x.pct)}% of top decks` });
+        }
       }
     } catch {}
-    const ranked = rankPairs(G, card, cands);
+    const ranked = rankPairs(G, card, cands, { max: 10 });
     S.ui.guide[k] = {
-      cards: ranked.map((p) => ({ name: p.card.name, image: p.card.image || "", attrs: `data-act="tCard" data-id="${esc(p.card.id)}"`, reasons: p.reasons, score: p.score })),
+      cards: ranked.map((p) => ({ name: p.card.name, image: p.card.image || "", attrs: `data-act="tCard" data-id="${esc(p.card.id)}"`, reasons: p.reasons, score: p.score, fallback: p.fallback })),
       note: ranked.length ? "Ranked by how well they fit (what each card needs and gives), tournament pairings and what you own." : "No strong pairings found yet — check the cards played alongside it, or Build decks around it.",
     };
     c.refreshSheet?.();

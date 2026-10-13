@@ -56,4 +56,10 @@ assert.deepEqual(Object.fromEntries(ml.limits), { Modern: "Not legal", Legacy: "
 assert.equal(Object.fromEntries(cardRules("mtg", { name: "Relentless Rats", type_line: "Creature", oracle_text: "A deck can have any number of cards named Relentless Rats.", legalities: { modern: "legal" } }).limits).Modern, "Any number");
 const yl = cardRules("ygo", { name: "Pot of Greed", category: "Spell", typeLine: "Normal Spell", ban: { tcg: "banned", ocg: "banned", goat: "limited" }, pools: [] });
 assert.deepEqual(yl.limits.slice(0, 3).map((x) => x[1]), ["Forbidden", "Forbidden", "1 (Limited)"]);
+// Loose links (any Evolution Pokémon) are kept in the "also works with" tier; gusting isn't switching.
+const meta2 = { name: "Metapod", category: "Pokemon", stage: "Stage1", evolveFrom: "Caterpie", types: ["Grass"], attacks: [] };
+const loose = rankPairs("ptcg", spray, [{ card: meta2 }]);
+assert.equal(loose.length, 1); assert.equal(loose[0].fallback, true, "a generic Evolution Pokémon is a loose link");
+assert.equal(ptcgTags({ name: "Boss's Orders", category: "Trainer", typeLine: "Trainer · Supporter", effect: "Switch in 1 of your opponent's Benched Pokémon to the Active Spot." }).provides.has("switching"), false);
+assert.equal(ptcgTags({ name: "Switch", category: "Trainer", typeLine: "Trainer · Item", effect: "Switch your Active Pokémon with 1 of your Benched Pokémon." }).provides.has("switching"), true);
 console.log("PASS: pairing — needs/provides tags per game, named cards & archetypes, evolution lines & evolve triggers, lift/owned reasons; rules — copies per format (banned/restricted/ACE SPEC/Rule Box/basics) and turn rules.");

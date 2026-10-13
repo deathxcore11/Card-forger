@@ -218,6 +218,11 @@ export const ptcgSource = {
     const d = await get("/cards", { evolveFrom: name, "pagination:itemsPerPage": 40 });
     return firstPerName((d || []).map(brief).filter((c) => !c.pocket));
   },
+  // Evolution Pokémon of a stage, newest first, legal in a format (for the Play guide's broader search).
+  async byStage(stage, legal = "") {
+    const d = await get("/cards", { stage, ...(legal ? { ["legal." + legal]: "true" } : {}), "sort:field": "updated", "sort:order": "DESC", "pagination:itemsPerPage": 40 });
+    return firstPerName((d || []).map(brief).filter((c) => !c.pocket));
+  },
   // Cards whose rules text mentions this name (Trainer effects and Pokémon attacks), one per name.
   async mentioning(name) {
     const d = await get("/cards", { effect: "like:" + name, "pagination:itemsPerPage": 40 });

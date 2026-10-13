@@ -1,3 +1,17 @@
+3.13.1 — Pairings for every card in all three games
+- "Cards that pair well" now finds something for every card, in three tiers:
+  1. Real links (what it needs/gives, cards that name it, archetype, evolution line, tournament
+     partners) — scored, with reasons.
+  2. Broader searches: Magic creature-type payoffs ("other Elves you control") and tribal
+     members; Yu-Gi-Oh! cards whose text names it or supports its race/attribute (YGOPRODeck
+     text search); Pokémon Trainers that support its type, and recent Evolution Pokémon for cards
+     like Devolution Spray and Rare Candy.
+  3. "Also works with" / "Good in most decks": loose links (any Evolution Pokémon, any DARK
+     monster) and labeled format staples — Magic: the most-played cards in its colors; Yu-Gi-Oh!
+     and Pokémon: the most-played cards in recent top decks.
+- Fixes: gust cards (Boss's Orders) no longer count as switching; clearer labels ("Elf creatures",
+  "uses its Tuner").
+
 3.13.0 — Card rules per format, and a real pairing algorithm
 - Play guide → "Rules for this card": the turn rules for its kind of card and how many copies each
   format allows, from the card's own legality/banlist data.

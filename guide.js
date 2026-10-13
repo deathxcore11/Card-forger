@@ -275,10 +275,19 @@ export function guideHtml(game, card, g, opts = {}) {
   ${when.length ? `<section class="guide-sec"><h3>How and when to play it</h3><ul class="guide-list">${when.slice(0, 7).map((t) => `<li>${esc(t)}</li>`).join("")}</ul></section>` : ""}
   ${syn.length ? `<section class="guide-sec"><h3>Synergies</h3><ul class="guide-list">${syn.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></section>` : ""}
   ${al?.cards?.length ? `<section class="guide-sec"><h3>Played alongside it <span class="muted small">in ${al.lists} tournament list${al.lists === 1 ? "" : "s"} · partners first</span></h3><div class="list compact">${al.cards.map((x) => `<button class="mini-row" ${opts.alongsideAttrs(x)}><span class="ellip">${esc(opts.alongsideName(x))}</span><span class="small muted">${Math.round(x.share)}% of them${x.overall < x.share - 5 ? ` · ${Math.round(x.overall)}% overall` : ""}</span></button>`).join("")}</div></section>` : ""}
-  ${opts.complements !== undefined ? `<section class="guide-sec"><h3>Cards that pair well</h3>${opts.complementsLoading ? `<p class="muted small">Finding cards that work with it…</p>` : opts.complements?.length ? `<div class="pair-list">${opts.complements.map((x) => `<button class="pair-row" ${x.attrs}>${x.image ? `<img src="${esc(x.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<span class="pair-noimg"></span>`}<span class="pair-txt"><b>${esc(x.name)}</b>${x.reasons?.length ? `<small>${esc(x.reasons.slice(0, 3).join(" · "))}</small>` : ""}</span>${x.score ? `<span class="pair-score" title="Pairing score">${x.score}</span>` : ""}</button>`).join("")}</div>${opts.complementsNote ? `<p class="foot">${esc(opts.complementsNote)}</p>` : ""}` : `<p class="muted small">${esc(opts.complementsNote || "Nothing specific found.")}</p>`}</section>` : ""}
+  ${opts.complements !== undefined ? `<section class="guide-sec"><h3>Cards that pair well</h3>${opts.complementsLoading ? `<p class="muted small">Finding cards that work with it…</p>` : opts.complements?.length ? pairGroups(opts.complements) + (opts.complementsNote ? `<p class="foot">${esc(opts.complementsNote)}</p>` : "") : `<p class="muted small">${esc(opts.complementsNote || "Nothing specific found.")}</p>`}</section>` : ""}
   ${rulesHtml(opts.rules)}
   ${opts.extra || ""}
   <p class="foot">This guide is generated from the card's rules text, its stats and the tournament lists on this device — a starting point, not expert strategy.</p>`;
+}
+
+// Real pairings first; fallbacks (format staples, popular in its colors) under their own heading.
+const pairRow = (x) => `<button class="pair-row ${x.fallback ? "fallback" : ""}" ${x.attrs}>${x.image ? `<img src="${esc(x.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<span class="pair-noimg"></span>`}<span class="pair-txt"><b>${esc(x.name)}</b>${x.reasons?.length ? `<small>${esc(x.reasons.slice(0, 3).join(" · "))}</small>` : ""}</span>${x.score && !x.fallback ? `<span class="pair-score" title="Pairing score">${x.score}</span>` : ""}</button>`;
+function pairGroups(list) {
+  const best = list.filter((x) => !x.fallback),
+    also = list.filter((x) => x.fallback);
+  return `${best.length ? `<div class="pair-list">${best.map(pairRow).join("")}</div>` : `<p class="muted small">No direct synergies in its text or tournament lists.</p>`}
+    ${also.length ? `<p class="list-head">${best.length ? "Also works with" : "Good in most decks"}</p><div class="pair-list">${also.map(pairRow).join("")}</div>` : ""}`;
 }
 
 function rulesHtml(r) {

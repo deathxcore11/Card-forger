@@ -2339,9 +2339,18 @@ async function mtgGuideLoad(c) {
     const card = meta(x.name);
     if (card) cands.push({ card, lift: Math.max(0, x.share - x.overall), share: x.share, pop: edhPop(card.edhrec_rank), owned: inv(card.name).owned > 0 });
   }
+  // Fallback for cards with few links: the most-played cards in its colors (every card gets some).
+  if (rankPairs("mtg", c, cands).filter((x) => !x.fallback).length < 4) {
+    const id = (c.color_identity || []).join("") || "c",
+      r = await api("/cards/search?" + new URLSearchParams({ q: `id<=${id} -t:basic -!"${c.name.split(" // ")[0]}" ${/Land/.test(c.type_line || "") ? "" : "-t:land"}`, order: "edhrec", unique: "cards" })).catch(() => null);
+    for (const x of (r?.data || []).slice(0, 12)) {
+      cacheCard(x);
+      cands.push({ card: x, pop: edhPop(x.edhrec_rank), owned: inv(x.name).owned > 0, fallback: true, why: `staple in its colors${x.edhrec_rank ? ` (EDHREC #${Number(x.edhrec_rank).toLocaleString()})` : ""}` });
+    }
+  }
   const ranked = rankPairs("mtg", c, cands);
   S.ui.guide[k] = {
-    cards: ranked.map((p) => ({ name: p.card.name, image: p.card.image_uris?.small || p.card.card_faces?.[0]?.image_uris?.small || "", attrs: `data-act="card" data-name="${esc(p.card.name)}"`, reasons: p.reasons, score: p.score })),
+    cards: ranked.map((p) => ({ name: p.card.name, image: p.card.image_uris?.small || p.card.card_faces?.[0]?.image_uris?.small || "", attrs: `data-act="card" data-name="${esc(p.card.name)}"`, reasons: p.reasons, score: p.score, fallback: p.fallback })),
     note: ranked.length ? "Ranked by how well they fit (what each card needs and gives), tournament pairings, popularity and what you own." : results.some((r) => !r) ? "Couldn’t reach Scryfall right now." : "No strong pairings found in its text — try Build decks around it.",
   };
   refreshSheet();
