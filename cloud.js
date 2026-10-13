@@ -1,3 +1,4 @@
+import { timedFetch } from "./auth-form.js";
 // Accounts and cloud saving (Supabase). Device storage stays the source the app
 // works from; the account holds a private copy that follows you to other devices.
 // Writes are revision-checked, so two devices never silently overwrite each other.
@@ -125,7 +126,7 @@ export async function initCloud(h) {
   if (!cloudConfigured()) return;
   try {
     const { createClient } = await import(/* @vite-ignore */ LIB);
-    client = createClient(SUPABASE.url, SUPABASE.key, { auth: { flowType: "pkce", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true } });
+    client = createClient(SUPABASE.url, SUPABASE.key, { global: { fetch: timedFetch }, auth: { flowType: "pkce", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true } });
   } catch {
     status.state = "error";
     status.msg = "Couldn’t load the account service. Your cards are still saved on this device.";
@@ -137,7 +138,7 @@ export async function initCloud(h) {
     .then((r) => (r.ok ? r.json() : null))
     .then((d) => {
       if (d?.external) {
-        providers = { email: d.external.email !== false, google: !!d.external.google };
+        providers = { email: d.external.email !== false, google: !!d.external.google, confirmationRequired: d.mailer_autoconfirm !== true, signup: d.disable_signup !== true };
         hooks.changed();
       }
     })

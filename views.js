@@ -1500,18 +1500,21 @@ export function signedOutAccount(a, mode = "login") {
   ${a.providers.google ? `<button class="btn ghost block" data-act="signGoogle">Continue with Google</button><div class="auth-divider"><span>or use email</span></div>` : ""}
   ${a.authNotice ? `<p class="note warn" role="alert">${esc(a.authNotice)}</p>` : ""}
   ${a.providers.email ? `<nav class="auth-tabs" role="tablist" aria-label="Account access">${[["login","Log in"],["signup","Create account"]].map(([id,label]) => `<button role="tab" id="authTab-${id}" aria-controls="auth-${id}" aria-selected="${selected === id}" data-act="authTab" data-mode="${id}">${label}</button>`).join("")}</nav>
+  <div id="authFeedback" class="auth-feedback ${esc(S.ui.authFeedback?.tone || "error")}" role="alert" aria-live="polite" ${S.ui.authFeedback?.message ? "" : "hidden"}>${esc(S.ui.authFeedback?.message || "")}</div>
   <div id="auth-login" class="auth-pane" role="tabpanel" aria-labelledby="authTab-login" ${selected === "login" ? "" : "hidden"}>
-    <label class="field">Email address<input id="signEmail" type="email" autocomplete="username" placeholder="you@example.com" aria-label="Login email address"></label>
-    <label class="field">Password<input id="signPassword" type="password" autocomplete="current-password" placeholder="Your password" data-enter="signPassword"></label>
-    <button class="btn block" data-act="signPassword">Log in</button>
+    <form data-auth-action="signPassword">
+    <label class="field">Email address<input id="signEmail" name="email" required type="email" autocomplete="username" placeholder="you@example.com" aria-label="Login email address"></label>
+    <label class="field">Password<input id="signPassword" name="password" required type="password" autocomplete="current-password" placeholder="Your password"></label>
+    <button class="btn block" type="submit">Log in</button></form>
     <button class="link auth-secondary" data-act="authTab" data-mode="reset">Forgot password?</button>
     <details class="settings-disclosure"><summary>Email me a link instead</summary><p class="foot">Use the login email above. Open the link in this browser.</p><button class="btn ghost block" data-act="signEmail">Send sign-in link</button></details>
   </div>
   <div id="auth-signup" class="auth-pane" role="tabpanel" aria-labelledby="authTab-signup" ${selected === "signup" ? "" : "hidden"}>
-    <label class="field">Email address<input id="signupEmail" type="email" autocomplete="email" placeholder="you@example.com" aria-label="Account email address"></label>
-    <label class="field">Password<input id="signupPassword" type="password" autocomplete="new-password" minlength="8" placeholder="At least 8 characters"></label>
-    <label class="field">Confirm password<input id="signupConfirm" type="password" autocomplete="new-password" placeholder="Enter it again" data-enter="createAccount"></label>
-    <button class="btn block" data-act="createAccount">Create account</button><p class="foot">We’ll email you a confirmation link.</p>
+    <form data-auth-action="createAccount">
+    <label class="field">Email address<input id="signupEmail" name="email" required type="email" autocomplete="email" placeholder="you@example.com" aria-label="Account email address"></label>
+    <label class="field">Password<input id="signupPassword" name="password" required type="password" autocomplete="new-password" minlength="8" placeholder="At least 8 characters"></label>
+    <label class="field">Confirm password<input id="signupConfirm" name="password_confirmation" required type="password" autocomplete="new-password" placeholder="Enter it again"></label>
+    <button class="btn block" type="submit">Create account</button></form><p class="foot">${a.providers.confirmationRequired===false ? "Create your account, then start syncing." : "Confirm your email to finish registering. Your browser saving a password does not mean registration succeeded."}</p>
   </div>
   <div id="auth-reset" class="auth-pane" ${selected === "reset" ? "" : "hidden"}><h3>Reset your password</h3><p class="muted small">Enter your account email to request a reset link.</p><label class="field">Email address<input id="resetEmail" type="email" autocomplete="email" placeholder="you@example.com" data-enter="forgotPassword"></label><button class="btn block" data-act="forgotPassword">Send reset link</button><button class="link auth-secondary" data-act="authTab" data-mode="login">Back to log in</button></div>` : `<p class="muted small">Email sign-in is disabled for this site.</p>`}
   <p class="auth-privacy"><span aria-hidden="true">◇</span> Your collection is private. Device saving works without an account.</p>
@@ -1573,7 +1576,7 @@ export function settings() {
   <details class="settings-disclosure settings-danger"><summary>Start over or load examples</summary><p class="foot">Export a backup first. One recovery copy is kept on this device.</p><div class="actions wrap"><button class="btn ghost danger" data-act="reset">Start empty</button><button class="btn ghost" data-act="loadExample">Load example data</button></div></details></div>
   <div id="settings-app" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-app" ${tab === "app" ? "" : "hidden"}><section class="panel settings-card"><div class="settings-card-heading"><span class="settings-icon" aria-hidden="true">＋</span><div><p class="eyebrow">TAKE IT WITH YOU</p><h2>Install CardStashy</h2></div></div><p class="muted small">Open it from your home screen. Saved collections and decks work offline.</p><button class="btn" data-act="install">Install app</button><details class="settings-disclosure"><summary>Android installation help</summary><p class="foot">In Chrome, open ⋮ → Add to Home screen or Install app. Searches and updated prices need internet.</p></details></section>
   <details class="settings-disclosure settings-source"><summary>Card databases & prices</summary><ul class="sources"><li><b>Magic:</b> Scryfall card data, images and reference prices; MTGJSON precon lists.</li><li><b>Pokémon:</b> TCGdex card data and images, with supplied TCGplayer and Cardmarket prices.</li><li><b>Yu-Gi-Oh!:</b> YGOPRODeck card data, alternate art, printings and reference prices.</li><li><b>Imports:</b> Supported text and CSV exports from deck and collection tools.</li></ul><p class="foot">Prices are estimates; check edition, condition and shipping with the seller.</p></details>
-  <details class="settings-disclosure settings-source"><summary>About CardStashy</summary><p class="foot">Deck scores, upgrades and test games use card rules and simulations; they aren’t guaranteed win rates. CardStashy is an independent fan tool. Trading cards and artwork belong to their respective rights holders.</p><span class="settings-version">Version 3.9.0</span></details></div></div>`;
+  <details class="settings-disclosure settings-source"><summary>About CardStashy</summary><p class="foot">Deck scores, upgrades and test games use card rules and simulations; they aren’t guaranteed win rates. CardStashy is an independent fan tool. Trading cards and artwork belong to their respective rights holders.</p><span class="settings-version">Version 3.9.1</span></details></div></div>`;
 }
 
 /* ---------- Deck idea sheet ---------- */

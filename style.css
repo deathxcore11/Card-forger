@@ -1160,3 +1160,39 @@ dialog.sheet { overflow: hidden; }
 
 /* Native hidden state must win over component display rules. */
 [hidden]{display:none !important;}
+
+.auth-feedback{padding:12px 14px;margin:0 0 16px;border:1px solid var(--line);border-radius:8px;font-size:13px;line-height:1.6;}.auth-feedback.error{color:#ffb8b8;background:#542b2b33;border-color:#a3515166;}.auth-feedback.success{color:#9ee1bd;background:#1b4b3033;border-color:#47835f66;}
+
+/* Modern collection binders: restrained materials, clear corners and real card artwork. */
+.stash-shelf{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px;padding:18px 0;}
+.stash-binder{padding:12px 10px;border-radius:10px;gap:14px;perspective:1100px;}
+.stash-book{width:156px;height:208px;transform:rotateY(-8deg);filter:drop-shadow(4px 8px 8px #0004);}
+.stash-pages{inset:3px -3px 3px 11px;border-radius:3px 6px 6px 3px;background:repeating-linear-gradient(90deg,#bcc1c8 0 1px,#e1e4e9 1px 3px);}
+.stash-pages i{display:none;}
+.stash-cover{padding:19px 13px 15px 22px;border-radius:3px 7px 7px 3px;background:var(--binder);box-shadow:inset 0 0 0 1px #ffffff22,inset 1px 0 2px #ffffff18;justify-content:center;}
+.stash-spine{left:6px;width:9px;border-left:1px solid #ffffff18;border-right:1px solid #0005;background:#0002;}
+.stash-foil{opacity:.035;background:linear-gradient(115deg,transparent 40%,#fff 51%,transparent 63%);}
+.stash-emblem{width:100%;height:146px;padding:7px;border:1px solid #ffffff33;border-radius:3px;background:#10141924;box-shadow:0 1px 2px #0002;}
+.stash-emblem img{object-fit:contain;}
+.stash-emblem img[src="icon.svg"]{width:54px;height:54px;opacity:.7;}
+.stash-cover-title{font-size:10px;font-weight:600;letter-spacing:.025em;line-height:1.4;margin-top:10px;color:#fff;}
+.stash-custom-background{opacity:.8;}
+.stash-binder-label b{font-size:14px;font-weight:650;line-height:1.45;}
+.stash-binder-label small{font-size:12px;}
+.stash-open-hint{font-size:11px;color:var(--muted);}
+.stash-binder:hover .stash-book,.stash-binder:focus-visible .stash-book{transform:rotateY(-4deg) translateY(-4px);}
+.stash-binder:hover .stash-cover,.stash-binder:focus-visible .stash-cover{transform:rotateY(-16deg);}
+.stash-open-book{border-radius:8px;background:#181c23;border:1px solid #3b424d;padding-top:12px;padding-bottom:12px;box-shadow:inset 2px 0 8px #0003;}
+.stash-pocket{border-radius:3px;padding:4px;border-color:#69778555;background:#ffffff03;box-shadow:inset 0 1px 0 #ffffff12;}
+.pocket-image{border-radius:2px;background:#101319;}
+.pocket-glint{background:linear-gradient(115deg,transparent 48%,#ffffff08 50%,transparent 52%);}
+.pocket-star{bottom:31px;right:6px;border-radius:5px;width:28px;height:28px;background:#171c23e8;border-color:#ffffff33;}
+.stash-rings i{height:12px;width:22px;border-width:3px;border-radius:5px;}
+.binder-page-edge{width:24px;border-radius:2px;}
+.brand .mark{border-radius:7px;background:transparent;box-shadow:none;}
+.game-choice-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0;}
+.game-choice{display:grid;grid-template-columns:28px minmax(0,1fr) 12px;align-items:center;gap:12px;text-align:left;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);padding:16px 12px;cursor:pointer;min-height:72px;}
+.game-choice[aria-pressed="true"]{border-color:var(--accent);background:var(--surface-2);}
+.game-choice-icon svg{width:25px;height:25px;}.game-choice b,.game-choice small{display:block;}.game-choice b{font-size:13px;}.game-choice small{font-size:11px;color:var(--muted);margin-top:5px;}.game-choice-check{color:var(--accent);}
+@media(max-width:540px){.stash-shelf{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}.stash-shelf .stash-book{width:125px;height:175px;}.stash-shelf .stash-emblem{height:119px;}.stash-cover{padding:13px 9px 12px 17px;}.stash-cover-title{font-size:9px;margin-top:8px;}.game-choice-list{grid-template-columns:1fr;gap:8px;}.game-choice{padding:12px 14px;min-height:62px;}.stash-page-tools{flex-wrap:wrap;gap:8px;}}
+@media(prefers-reduced-motion:reduce){.stash-binder:hover .stash-book,.stash-binder:focus-visible .stash-book,.stash-binder:hover .stash-cover,.stash-binder:focus-visible .stash-cover{transform:none;}}

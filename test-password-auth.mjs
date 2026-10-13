@@ -26,7 +26,7 @@ const { signedOutAccount } = await import('./views.js');
 const signup = signedOutAccount({providers:{email:true,google:false}},'signup');
 const signupPane = signup.match(/<div id="auth-signup"[\s\S]*?<\/div>/)?.[0];
 assert.ok(signupPane,'signup is a separate panel');
-assert.match(signupPane,/id="signupEmail" type="email"/,'signup has its own email field');
+assert.match(signupPane,/id="signupEmail"[^>]*type="email"/,'signup has its own email field');
 assert.match(signupPane,/id="signupPassword"/);
 assert.match(signupPane,/id="signupConfirm"/);
 assert.doesNotMatch(signupPane,/ hidden/,'active signup panel is visible');
@@ -34,4 +34,14 @@ assert.match(signup, /id="auth-login"[^>]* hidden/,'login fields hidden while si
 const reset = signedOutAccount({providers:{email:true,google:false}},'reset');
 assert.match(reset, /id="resetEmail" type="email"/,'reset has an independent email field');
 assert.match(reset, /data-enter="forgotPassword"/);
+assert.match(signup,/form data-auth-action="createAccount"/);
+assert.match(signup,/type="submit"/);
+assert.match(signup,/id="authFeedback"/);
 console.log('PASS: independent signup/reset email fields and focused auth panels.');
+
+const {captureAuthFields,restoreAuthFields,authFeedback,timedFetch}=await import('./auth-form.js');
+const nodes=new Map([['#signupEmail',{value:'test@example.com'}],['#signupPassword',{value:'temporary test fixture'}],['#authFeedback',{textContent:'',hidden:true}]]);const root={querySelector:s=>nodes.get(s)};
+const fields=captureAuthFields(root);nodes.get('#signupPassword').value='';restoreAuthFields(root,fields);assert.equal(nodes.get('#signupPassword').value,'temporary test fixture');
+authFeedback(root,'An actionable error');assert.equal(nodes.get('#authFeedback').hidden,false);assert.equal(nodes.get('#authFeedback').textContent,'An actionable error');
+await assert.rejects(timedFetch('test',{},3,(_,o)=>new Promise((resolve,reject)=>o.signal.addEventListener('abort',()=>reject(Error('aborted'))))),/too long/);
+console.log('PASS: native auth forms, render-local field preservation, persistent inline feedback and bounded request timeout.');

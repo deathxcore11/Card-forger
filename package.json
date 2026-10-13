@@ -1,6 +1,6 @@
 {
   "name": "cardstashy",
-  "version": "3.9.0",
+  "version": "3.9.1",
   "private": true,
   "type": "module",
   "description": "CardStashy — Magic: The Gathering collection, decks, upgrades and deck engine analysis. A static, offline-capable web app.",

@@ -1,5 +1,5 @@
 import { zoneCountLabel } from "./deck-safety.js";
-import { binderShelf, binderCover } from "./binders.js";
+import { binderShelf } from "./binders.js";
 import { scanControls } from "./scan-camera.js";
 // Yu-Gi-Oh! and Pokémon: collection, search, sets and deck building, sharing one
 // set of screens. Each game's data, rules and formats come from its adapter.
@@ -181,11 +181,11 @@ function deckStats(g, d) {
 /* ---------- shared pieces ---------- */
 
 export function gameBinders(active = game()) {
-  return `<section class="binders" aria-label="Your games">${GAME_IDS.map((g) => {
+  return `<section class="game-choice-list" aria-label="Your games">${GAME_IDS.map((g) => {
     const v = g === "mtg" ? null : collectionValue(g),
       mtgCopies = g === "mtg" ? S.state.collection.reduce((a, e) => a + e.qty, 0) : 0,
       decks = g === "mtg" ? S.state.decks.length : gs(g).decks.length;
-    return binderCover({title:GAMES[g].short,subtitle:`${g === "mtg" ? mtgCopies : v.copies} cards · ${decks} decks`,game:g,hint:"Choose game",attrs:`data-act="setGame" data-game="${g}" aria-pressed="${g === active}"`});
+    return `<button class="game-choice" data-act="setGame" data-game="${g}" aria-pressed="${g===active}"><span class="game-choice-icon">${GAME_ICON[g]}</span><span><b>${esc(GAMES[g].short)}</b><small>${g === "mtg" ? mtgCopies : v.copies} cards · ${decks} decks</small></span><span class="game-choice-check" aria-hidden="true">${g===active ? "✓" : ""}</span></button>`;
   }).join("")}</section>`;
 }
 

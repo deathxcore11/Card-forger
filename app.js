@@ -1,3 +1,4 @@
+import { captureAuthFields, restoreAuthFields, authFeedback } from "./auth-form.js";
 import { formatUpgrades, applyFormatSwap } from "./format-upgrades.js";
 import { cutToTarget } from "./deck-safety.js";
 import { binderPage, binderMatches, BINDER_COLORS, attachBinderDrag } from "./binders.js";
@@ -539,6 +540,7 @@ function attachBrowseObserver() {
   document.querySelectorAll('[data-act="setMore"], [data-act="tSetMore"]').forEach(b=>browseObserver.observe(b));
 }
 function render() {
+  const authFields=S.ui.view === "settings" && !cloudInfo().user ? captureAuthFields(document) : [];
   browseObserver?.disconnect();
   const ui = S.ui;
   for (const b of $$("[data-nav]")) b.classList.toggle("on", b.dataset.nav === (ui.view === "deck" ? "decks" : ui.view === "set" || ui.view === "sets" ? "search" : ui.view));
@@ -568,6 +570,7 @@ function render() {
     return;
   }
   $("#content").innerHTML = (g !== "mtg" && tcgViews[ui.view] ? tcgViews[ui.view] : views[ui.view] || V.home)();
+  if(!cloudInfo().user)restoreAuthFields(document,authFields);
   attachBrowseObserver();
   if (ui.view === "settings") storageDetail();
   if (g !== "mtg") {
@@ -634,6 +637,10 @@ document.addEventListener("click", (e) => {
   if (t.tagName === "A" && t.getAttribute("href")) return;
   e.preventDefault();
   safely(fn(t, e));
+});
+document.addEventListener("submit",e=>{
+ const form=e.target.closest?.('[data-auth-action]');if(!form)return;
+ e.preventDefault();const action=A[form.dataset.authAction];if(action)safely(action(form.querySelector('button[type="submit"]')));
 });
 document.addEventListener("change", (e) => {
   const t = e.target.closest("[data-change]");
@@ -1019,6 +1026,7 @@ A.authTab = (t) => {
   const mode = t.dataset.mode;
   if (!["login","signup","reset"].includes(mode)) return;
   S.ui.authMode = mode;
+  S.ui.authFeedback=null;authFeedback(document,"");
   const email = $("#signEmail")?.value || "", field = mode === "signup" ? $("#signupEmail") : mode === "reset" ? $("#resetEmail") : null;
   if (field && !field.value) field.value = email;
   for (const pane of document.querySelectorAll(".auth-pane")) pane.hidden = pane.id !== "auth-" + mode;
@@ -1043,22 +1051,27 @@ A.signEmail = async (t) => {
     done();
   }
 };
-A.signPassword = async (t) => {
-  const email = $("#signEmail")?.value.trim() || "", password = $("#signPassword")?.value || "";
-  const done = busy(t?.tagName === "BUTTON" ? t : $('[data-act="signPassword"]'), "Logging in…");
-  try { await signInPassword(email,password); render(); toast("Signed in. Your private account is ready."); }
-  finally { if ($("#signPassword")) $("#signPassword").value = ""; done(); }
-};
-A.createAccount = async (t) => {
-  const email = $("#signupEmail")?.value.trim() || "", password = $("#signupPassword")?.value || "", confirmPassword = $("#signupConfirm")?.value || "";
-  const done = busy(t?.tagName === "BUTTON" ? t : $('[data-act="createAccount"]'), "Creating account…");
-  try { const data = await createAccount(email,password,confirmPassword); render(); toast(data?.session ? "Account created. You’re signed in." : "Check your email to confirm your account. If you already have an account, log in or reset your password."); }
-  finally { for (const id of ["signupPassword","signupConfirm"]) if ($("#"+id)) $("#"+id).value = ""; done(); }
-};
-A.forgotPassword = async (t) => {
-  const email = $("#resetEmail")?.value.trim() || "", done = busy(t,"Sending…");
-  try { await requestPasswordReset(email); toast("If an account exists for that email, a reset link will arrive. Open it in this browser."); } finally { done(); }
-};
+let authSubmitting=false;
+async function runAuth(t,loading,action) {
+ if(authSubmitting)return;authSubmitting=true;authFeedback(document,"");S.ui.authFeedback=null;
+ const done=busy(t,loading);
+ try{const message=await action();for(const id of ["signPassword","signupPassword","signupConfirm"]){const field=$("#"+id);if(field)field.value="";}S.ui.authFeedback={message,tone:"success"};render();authFeedback(document,message,"success");}
+ catch(e){const message=e.message || "Couldn’t connect. Please try again.";S.ui.authFeedback={message,tone:"error"};authFeedback(document,message,"error");}
+ finally{authSubmitting=false;done();}
+}
+A.signPassword = t => runAuth(t,"Logging in…",async()=>{
+ const email=$("#signEmail")?.value.trim() || "",password=$("#signPassword")?.value || "";
+ await signInPassword(email,password);return "Signed in. Your private account is ready.";
+});
+A.createAccount = t => runAuth(t,"Creating account…",async()=>{
+ const email=$("#signupEmail")?.value.trim() || "",password=$("#signupPassword")?.value || "",confirm=$("#signupConfirm")?.value || "";
+ const data=await createAccount(email,password,confirm);
+ if(data?.session)return "Account created. You’re signed in.";
+ return "Check your inbox and spam for the confirmation email, then return to Log in. If you already registered, log in or reset your password.";
+});
+A.forgotPassword = t => runAuth(t,"Sending…",async()=>{
+ await requestPasswordReset($("#resetEmail")?.value.trim() || "");return "If an account exists, a reset link will arrive. Open it in this browser.";
+});
 A.accountResetPassword = async (t) => {
   const email = cloudInfo().user?.email || "", done = busy(t,"Sending…");
   try { await requestPasswordReset(email); toast("Check your email for a password-reset link. Open it in this browser."); } finally { done(); }

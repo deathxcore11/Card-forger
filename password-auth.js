@@ -6,11 +6,12 @@ export function validateNewPassword(password, confirm) {
 }
 export function authError(error) {
   const code = error?.code || "", message = String(error?.message || error || "");
-  if (code === "invalid_credentials") return "Email or password is incorrect. Try again or use Forgot password.";
+  if (code === "invalid_credentials" || /invalid login credentials/i.test(message)) return "Email or password is incorrect. Try again or use Forgot password.";
   if (code === "email_not_confirmed") return "Confirm your email before logging in. Check your inbox and spam folder.";
   if (code === "email_address_not_authorized") return "Email delivery isn’t configured for this address yet. The site owner needs to set up Supabase SMTP.";
   if (/rate_limit|over_email_send_rate_limit/.test(code)) return "Too many requests. Wait before trying again.";
   if (/otp_expired|flow_state_expired|bad_code_verifier|flow_state_not_found/.test(code)) return "This sign-in or reset link expired, or was opened in a different browser. Request a new link and open it in the same browser.";
+  if (/fetch|network|load failed/i.test(message)) return "Couldn’t reach the account service. Check your connection and try again.";
   return message || "Sign-in failed. Please try again.";
 }
 export function createPasswordAuth(auth, redirectTo) {
