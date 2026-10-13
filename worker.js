@@ -136,7 +136,7 @@ export async function lensUpload(request, url, fetchImpl = fetch) {
 // site full-screen inside the app only when this file names the app and its signing key. Add the
 // package name and the SHA-256 fingerprint(s) from the packaging step; empty means no app yet.
 export const ANDROID_APPS = [
-  // { package: "dev.cardstashy.app", sha256: ["AA:BB:…"] },
+  { package: "dev.workers.deathxcore11.cardforge2.twa", sha256: ["89:18:F5:EC:D8:0C:08:48:7D:D0:84:9E:A7:84:BF:2A:02:07:0F:5E:D0:B0:AD:82:D3:83:CF:42:2F:60:5D:65"] },
 ];
 export function assetLinks(apps = ANDROID_APPS) {
   if (!apps.length) return new Response("No Android app registered yet.", { status: 404 });
