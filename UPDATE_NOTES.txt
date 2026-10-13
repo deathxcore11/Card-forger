@@ -1,3 +1,17 @@
+3.15.0 — New icons, a sharper shell, and tap-to-zoom cards
+- One drawn icon family (icons.js) replaces the text symbols: Home, Search, Collection (binder),
+  Decks (fanned hand), Scan (viewfinder), Settings (sliders), dropdown chevrons and checkmarks.
+- New game marks in each game's signature color: a planeswalker-style spark (Magic, ember), an eye
+  in a pyramid (Yu-Gi-Oh!, gold) and a capture ball (Pokémon, red). Game choices show them in
+  tinted chips that light up and glow when active; the game pill carries the game's color.
+- The brand mark is now a live save/sync light: green when saved or synced, spinning while saving,
+  red if something failed. On phones it replaces the "Saved on this device" text.
+- Glass header and bottom bar with a game-colored edge; the active tab gets a soft pill.
+- Tap any card image on a card page (all three games) to open it full screen: Magic loads the
+  745×1040 original, Yu-Gi-Oh! the 813×1185 scan; pinch or double-tap to zoom into the text,
+  drag to pan, Card/Art toggle (Magic, Yu-Gi-Oh!), +/−/Fit buttons, swipe down / tap outside /
+  ✕ / Esc to close.
+
 3.14.0 — Stress-tested synergy tags
 Measured on real samples (875 Magic, 731 Yu-Gi-Oh!, 202 Pokémon cards) before shipping; scripts in
 scripts/stress-synergy.mjs and scripts/stress-ideas.mjs.

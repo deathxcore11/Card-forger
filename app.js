@@ -35,7 +35,9 @@ import { FORMATS, formatOf, hasCommander, canLead, sizeLabel } from "./formats.j
 import { buildTiers, formatsFor, themeQuery, BUDGET_TIERS } from "./builder.js";
 import * as T from "./tcg.js";
 import { rulesPage } from "./rules.js";
-import { GAMES, GAME_ICON } from "./games.js";
+import { GAMES, GAME_ICON, GAME_COLOR } from "./games.js";
+import { ICON } from "./icons.js";
+import { openZoom, scryfallHi } from "./zoom.js";
 import { initCloud, cloudInfo, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, saveProfile, resolvePending, syncNow } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact } from "./insights.js";
 
@@ -56,6 +58,23 @@ function setSaveStatus(text, cls = "") {
     el.textContent = text;
     el.className = "save-status " + cls;
   }
+  // The brand mark doubles as the save/sync light: syncing spins, problems turn red.
+  const mark = $(".brand .mark");
+  if (mark) {
+    mark.dataset.state = cls === "bad" ? "bad" : /sync|sav|upload/i.test(text) && !/synced|saved/i.test(text) ? "busy" : cls === "ok" || /synced|saved/i.test(text) ? "ok" : "";
+    mark.title = text;
+  }
+}
+// Shell icons are drawn once from icons.js so the nav, settings and brand share one style.
+function decorateShell() {
+  for (const b of $$(".bottom-nav [data-nav]")) {
+    const span = b.querySelector("span");
+    if (span && ICON[b.dataset.nav]) span.innerHTML = ICON[b.dataset.nav];
+  }
+  const gear = $('.topbar [data-act="menu"]');
+  if (gear) gear.innerHTML = ICON.settings;
+  const mark = $(".brand .mark");
+  if (mark) mark.innerHTML = ICON.sync;
 }
 
 // Saved locally; when signed in, the account copy follows a few seconds later.
@@ -590,7 +609,8 @@ function render() {
   const g = T.game();
   document.body.dataset.game = g;
   const pill = $("#gamePill");
-  if (pill) pill.innerHTML = `${GAME_ICON[g]}<span>${esc(GAMES[g].short)}</span><span aria-hidden="true">▾</span>`;
+  document.body.style?.setProperty("--game-color", GAME_COLOR[g]);
+  if (pill) pill.innerHTML = `<span class="pill-mark">${GAME_ICON[g]}</span><span>${esc(GAMES[g].short)}</span>${ICON.chevron}`;
   const views = {
     home: V.home, search: V.search, collection: V.collection, decks: V.decks,
     deck: V.deckPage, scan: () => scanView("mtg", "Magic"), settings: V.settings, sets: V.setsPage, set: V.setPage, shared: V.sharedPage,
@@ -2355,6 +2375,9 @@ async function mtgGuideLoad(c) {
   };
   refreshSheet();
 }
+// Tap a card image: full-screen, high-resolution, zoomable.
+A.zoomCard = (t) =>
+  openZoom({ src: t.dataset.src, hi: t.dataset.hi || (/scryfall\.io/.test(t.dataset.src) ? scryfallHi(t.dataset.src) : ""), art: t.dataset.art, alt: t.dataset.name || "Card", fallback: t.dataset.fallback || "" });
 // Card sheet Meta tab: fetch tournament results, then redraw the open sheet.
 A.cardMetaLoad = (t) => {
   const k = t.dataset.key;
@@ -3516,6 +3539,7 @@ async function boot() {
   await save();
   parseHash();
   loadSetIndex(); // cached set symbols first; refreshes from Scryfall every few days
+  decorateShell();
   render();
   $("#app").classList.add("ready");
   initCloud({

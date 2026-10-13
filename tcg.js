@@ -8,7 +8,8 @@ import { tileChrome } from "./tiles.js";
 // set of screens. Each game's data, rules and formats come from its adapter.
 import { S, uid } from "./store.js";
 import { esc, usd, empty, bar, options, segmented } from "./ui.js";
-import { GAMES, GAME_ICON, GAME_IDS, blankGame, gameOf } from "./games.js";
+import { GAMES, GAME_ICON, GAME_COLOR, GAME_IDS, blankGame, gameOf } from "./games.js";
+import { ICON } from "./icons.js";
 import { sharePayloadTcg, encodeShare } from "./share.js";
 import { factBox, factsFor } from "./facts.js";
 import { ygoEmblems, energyIcon, attackLine, tcgSetBadge, ygoPrintBadge, pkRarity, pkSetSymbol } from "./emblems.js";
@@ -191,7 +192,7 @@ export function gameBinders(active = game()) {
     const v = g === "mtg" ? null : collectionValue(g),
       mtgCopies = g === "mtg" ? S.state.collection.reduce((a, e) => a + e.qty, 0) : 0,
       decks = g === "mtg" ? S.state.decks.length : gs(g).decks.length;
-    return `<button class="game-choice" data-act="setGame" data-game="${g}" aria-pressed="${g===active}"><span class="game-choice-icon">${GAME_ICON[g]}</span><span><b>${esc(GAMES[g].short)}</b><small>${g === "mtg" ? mtgCopies : v.copies} cards · ${decks} decks</small></span><span class="game-choice-check" aria-hidden="true">${g===active ? "✓" : ""}</span></button>`;
+    return `<button class="game-choice gc-${g}" style="--game-color:${GAME_COLOR[g]}" data-act="setGame" data-game="${g}" aria-pressed="${g===active}"><span class="game-choice-icon">${GAME_ICON[g]}</span><span><b>${esc(GAMES[g].short)}</b><small>${g === "mtg" ? mtgCopies : v.copies} cards · ${decks} decks</small></span><span class="game-choice-check" aria-hidden="true">${g===active ? ICON.check : ""}</span></button>`;
   }).join("")}</section>`;
 }
 
@@ -268,7 +269,7 @@ export async function loadHero(g, mtgRandom) {
 export function gameSwitch(active = game()) {
   const used = GAME_IDS.some((g) => (g === "mtg" ? S.state.collection.length || S.state.decks.length : gs(g).collection.length || gs(g).decks.length));
   if (!used) return gameBinders(active);
-  return `<nav class="game-switch" aria-label="Game">${GAME_IDS.map((g) => `<button class="gs-${g} ${g === active ? "on" : ""}" data-act="setGame" data-game="${g}" aria-pressed="${g === active}">${GAME_ICON[g]}<span>${esc(GAMES[g].short)}</span></button>`).join("")}</nav>`;
+  return `<nav class="game-switch" aria-label="Game">${GAME_IDS.map((g) => `<button class="gs-${g} ${g === active ? "on" : ""}" style="--game-color:${GAME_COLOR[g]}" data-act="setGame" data-game="${g}" aria-pressed="${g === active}">${GAME_ICON[g]}<span>${esc(GAMES[g].short)}</span></button>`).join("")}</nav>`;
 }
 // Saved searches, per game, on this device.
 const SAVED_KEY = "cardforge-saved-searches-v1";
@@ -490,7 +491,7 @@ export function tcgCardSheet(c, sctx = {}) {
     heroSrc = g === "ygo" ? c.art || c.imageLarge : c.imageLarge || c.image,
     heroFallback = g === "ygo" ? c.artDirect || "" : "";
   const overview = `
-    <div class="cs-card"><div class="cd-img">${imgTag(c, "card-img", true)}</div>
+    <div class="cs-card"><div class="cd-img"><button class="cd-zoom" data-act="zoomCard" data-src="${esc(c.imageLarge || c.image || "")}" data-hi="${esc(g === "ygo" ? ygoImageDirect(c.id, false) : c.imageLarge || "")}" data-fallback="${esc(g === "ygo" ? ygoImageDirect(c.id, false) : "")}" data-art="${esc(g === "ygo" ? c.artDirect || "" : "")}" data-name="${esc(c.name)}" aria-label="Enlarge ${esc(c.name)}">${imgTag(c, "card-img", true)}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button></div>
       <div class="cs-card-side">
         <p class="small own-line">${own ? `<b class="ok-text">You own ${own}</b>` : "Not in your collection"}</p>
         ${deck ? `<p class="small deck-legal ${SOURCES[g].legality(c, f) === "legal" ? "ok-text" : "bad-text"}">${SOURCES[g].legality(c, f) === "legal" ? "✓ Legal" : "● Not allowed"} in ${esc(f.name)} <span class="muted">(${esc(deck.name)})</span></p>` : ""}
