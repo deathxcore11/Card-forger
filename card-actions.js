@@ -1,3 +1,4 @@
+import {actionIcon} from './icons.js';
 // A hold is deliberate; a scroll is never a card selection.
 export const HOLD_MS = 480, MOVE_PX = 10;
 export function moved(start, event) {
@@ -58,4 +59,15 @@ export function attachCardGestures({ onHold, onPick, choosing, root = document }
     const card = e.target.closest?.('[data-act="card"], [data-act="tCard"]');
     if (card) { e.preventDefault(); onHold(card); }
   });
+}
+
+export function cardActionButtons({game, wished=false, existing=false, second=false}={}) {
+  const actions = [
+    ['quickCompare','compare','Compare',second ? 'Use as the second card' : 'Choose another card while browsing'],
+    ['quickOwn','cardStack','Add to collection'],
+    ['quickDeck','decks','Add to deck'],
+    ['quickWish','heart',wished && game !== 'mtg' ? 'Remove from wishlist' : 'Add to wishlist'],
+    ['quickBinder','binder',existing ? 'Move to binder' : 'Add to binder'],
+  ];
+  return `<div class="card-action-list">${actions.map(([act,icon,label,hint])=>`<button data-act="${act}">${actionIcon(icon)}<span>${label}${hint?`<small>${hint}</small>`:''}</span></button>`).join('')}</div>`;
 }

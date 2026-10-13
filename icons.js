@@ -37,6 +37,10 @@ export const GAME_COLOR = { mtg: "#f08a5d", ygo: "#f5b335", ptcg: "#ef5350" };
 /* ---------- Action icons: replace emoji and stock symbols everywhere ---------- */
 
 const ACTION = {
+  // Inventory: three straight cards. Binder: cover, spine and visible rings.
+  cardStack: svg(`<rect x="8" y="7" width="12" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M5 6h3M11 11h6M11 15h4"/>`),
+  binder: svg(`<rect x="5" y="3" width="15" height="18" rx="2"/><path d="M9 3v18M3 7h4M3 12h4M3 17h4"/><rect x="12" y="7" width="5" height="8" rx="1"/>`),
+  decks: ICON.decks,
   plus: svg(`<path d="M12 5v14M5 12h14"/>`),
   minus: svg(`<path d="M5 12h14"/>`),
   close: svg(`<path d="m6.5 6.5 11 11M17.5 6.5l-11 11"/>`),

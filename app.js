@@ -1,4 +1,4 @@
-import {attachCardGestures, CompareSelection} from './card-actions.js';
+import {attachCardGestures, CompareSelection, cardActionButtons} from './card-actions.js';
 import {tcgCompareSheet} from './tcgcompare.js';
 import {artworkHTML} from './artwork.js';
 import {attachAutomaticBrowse} from './auto-browse.js';
@@ -47,7 +47,7 @@ import { buildTiers, formatsFor, themeQuery, BUDGET_TIERS } from "./builder.js";
 import * as T from "./tcg.js";
 import { rulesPage } from "./rules.js";
 import { GAMES, GAME_ICON, GAME_COLOR } from "./games.js";
-import { ICON, decorateGlyphs } from "./icons.js";
+import { ICON, actionIcon, decorateGlyphs } from "./icons.js";
 import { openZoom, scryfallHi } from "./zoom.js";
 import { initCloud, cloudInfo, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, saveProfile, resolvePending, syncNow } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact } from "./insights.js";
@@ -850,7 +850,7 @@ function updateCompareTray() {
   if (!tray) { tray = document.createElement("aside"); tray.id = "compareTray"; tray.className = "compare-tray"; tray.setAttribute("aria-label", "Choose cards to compare"); document.body.append(tray); }
   document.body.classList.add("choosing-compare");
   const first = comparison.cards[0];
-  tray.innerHTML = `<div>${first ? artworkHTML(first,"compare-thumb") : ICON.compare}<span><b>${first ? esc(first.name) : "Compare cards"}</b><small>${first ? "Tap another card to compare" : "Tap your first card"}</small></span></div><button class="icon" data-act="cancelCardCompare" aria-label="Cancel comparison">${ICON.close || "✕"}</button>`;
+  tray.innerHTML = `<div>${first ? artworkHTML(first,"compare-thumb") : actionIcon("compare")}<span><b>${first ? esc(first.name) : "Compare cards"}</b><small>${first ? "Tap another card to compare" : "Tap your first card"}</small></span></div><button class="icon" data-act="cancelCardCompare" aria-label="Cancel comparison">${actionIcon("close")}</button>`;
 }
 async function resolveActionCard(t) {
   const game = T.game(), dataset = {...t.dataset};
@@ -887,7 +887,7 @@ async function cardQuickMenu(t) {
   quickCard = ref; haptic("tap");
   const st = ref.game === "mtg" ? S.state : T.gs(ref.game);
   const wished = st.wishlist.some(w => ref.game === "mtg" ? key(w.name) === key(ref.card.name) : w.cardId === ref.card.id);
-  openSheet(`<div class="sheet-head"><h2>Card actions</h2><button class="icon" data-act="closeSheet" aria-label="Close">${ICON.close || "✕"}</button></div><div class="quick-card-heading">${artworkHTML(ref.card,"quick-card-thumb")}<div><b>${esc(ref.card.name)}</b><small>${esc(ref.card.set_name || ref.card.set?.name || ref.card.typeLine || "")}</small></div></div><div class="card-action-list"><button data-act="quickCompare">${ICON.compare}<span>Compare<small>${comparison.active && comparison.cards.length ? "Use as the second card" : "Choose another card while browsing"}</small></span></button><button data-act="quickOwn">${ICON.collection}<span>Add to collection</span></button><button data-act="quickDeck">${ICON.decks}<span>Add to deck</span></button><button data-act="quickWish">${ICON.heart || ICON.collection}<span>${wished && ref.game !== "mtg" ? "Remove from wishlist" : "Add to wishlist"}</span></button><button data-act="quickBinder">${ICON.collection}<span>${ref.dataset.entry ? "Move to binder" : "Add to binder"}</span></button></div>`,{type:"card-actions",game:ref.game,id:ref.card.id});
+  openSheet(`<div class="sheet-head"><h2>Card actions</h2><button class="icon" data-act="closeSheet" aria-label="Close">${actionIcon("close")}</button></div><div class="quick-card-heading">${artworkHTML(ref.card,"quick-card-thumb")}<div><b>${esc(ref.card.name)}</b><small>${esc(ref.card.set_name || ref.card.set?.name || ref.card.typeLine || "")}</small></div></div>${cardActionButtons({game:ref.game,wished,existing:!!ref.dataset.entry,second:comparison.active && comparison.cards.length>0})}`,{type:"card-actions",game:ref.game,id:ref.card.id});
 }
 function registerCardMenus() {
   A.cancelCardCompare = () => { comparison.cancel(); updateCompareTray(); };
@@ -915,7 +915,7 @@ function registerCardMenus() {
   A.quickDeck = () => {
     if (!quickCard || quickCard.game !== T.game()) return;
     const decks=(quickCard.game === "mtg" ? S.state : T.gs(quickCard.game)).decks;
-    openSheet(`<div class="sheet-head"><h2>Add to deck</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p class="muted small">${esc(quickCard.card.name)} · Choose a deck</p><div class="card-action-list">${decks.map(d=>`<button data-act="quickDeckSave" data-deck="${esc(d.id)}"><span>${esc(d.name)}<small>${esc(d.format || "")}</small></span>${ICON.next || "›"}</button>`).join("")}</div>${!decks.length?'<p>Create your first deck, then add cards from this menu.</p>':''}<button class="btn ghost" data-act="${quickCard.game === "mtg" ? "newDeck" : "tNewDeck"}">Create a deck</button>`,{type:"card-deck-picker"});
+    openSheet(`<div class="sheet-head"><h2>Add to deck</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p class="muted small">${esc(quickCard.card.name)} · Choose a deck</p><div class="card-action-list">${decks.map(d=>`<button data-act="quickDeckSave" data-deck="${esc(d.id)}"><span>${esc(d.name)}<small>${esc(d.format || "")}</small></span>${ICON.back}</button>`).join("")}</div>${!decks.length?'<p>Create your first deck, then add cards from this menu.</p>':''}<button class="btn ghost" data-act="${quickCard.game === "mtg" ? "newDeck" : "tNewDeck"}">Create a deck</button>`,{type:"card-deck-picker"});
   };
   A.quickDeckSave = async t => {
     if (!quickCard || quickCard.game !== T.game()) return;

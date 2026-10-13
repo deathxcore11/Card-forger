@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { CompareSelection, attachCardGestures, moved } from './card-actions.js';
+import { CompareSelection, attachCardGestures, moved, cardActionButtons } from './card-actions.js';
 assert.equal(moved({x:0,y:0},{clientX:0,clientY:30}),true);
 assert.equal(moved({x:0,y:0},{clientX:3,clientY:4}),false);
 const c=new CompareSelection();c.start('ptcg',{id:'a',name:'A'});
@@ -20,3 +20,14 @@ fire('pointerdown');fire('pointercancel');fire('click');assert.equal(picked,1,'c
 fire('keydown',{key:'F10',shiftKey:true});assert.equal(held,2,'keyboard action menu');
 globalThis.setTimeout=oldSet;globalThis.clearTimeout=oldClear;
 console.log('PASS: hold menu, movement/cancellation guard, keyboard access, distinct same-game comparison.');
+
+for (const game of ['mtg','ptcg','ygo']) {
+ const html=cardActionButtons({game});
+ assert.equal((html.match(/<svg /g)||[]).length,5,'every action has a real SVG');
+ assert.doesNotMatch(html,/undefined|null/);
+ const icons=[...html.matchAll(/(<svg[\s\S]*?<\/svg>)/g)].map(x=>x[1]);
+ assert.equal(new Set(icons).size,5,'collection, binder, wishlist, deck and compare are visually distinct');
+ assert.match(html,/Add to wishlist/);
+}
+assert.match(cardActionButtons({existing:true}),/Move to binder/);
+console.log('PASS: five distinct action icons across all games; no undefined menu labels.');
