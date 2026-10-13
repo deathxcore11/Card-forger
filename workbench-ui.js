@@ -3,7 +3,7 @@ import {esc,usd,img,cardImage,options} from './ui.js';
 import {locationPicker,rememberLocation} from './collection-locations.js';
 import {actionIcon} from './icons.js';
 export const MODES=['gallery','compact','symbols'];
-export const modeFor=(game,area)=>S.state.settings.displayModes?.[game]?.[area] || (area==='search'?'gallery':'compact');
+export const modeFor=(game,area)=>S.state.settings.displayModes?.[game]?.[area] || (['search','set'].includes(area)?'gallery':'compact');
 // One-tap view switch: three drawn icons, the current one highlighted.
 export const viewControl=(game,area)=>{const cur=modeFor(game,area);return `<div class="view-switch" role="radiogroup" aria-label="Card view">${MODES.map(m=>`<button role="radio" aria-checked="${m===cur}" class="${m===cur?'on':''}" data-act="viewSave" data-mode="${m}" data-game="${game}" data-area="${area}" title="${VIEW_LABEL[m]}" aria-label="${VIEW_LABEL[m]} view">${actionIcon({gallery:'viewGallery',compact:'viewCompact',symbols:'viewSymbols'}[m])}</button>`).join('')}</div>`;};
 const VIEW_LABEL={gallery:'Gallery',compact:'Compact',symbols:'List'};
@@ -47,7 +47,7 @@ export function priceOverview(game,card,ctx={},sellerLinks=[]){
 }
 export function registerWorkbench({A,C,commit,render,openSheet,closeSheet,refreshSheet,toast,getCard,getGame,links,zoneFor,ownKey}){
  A.viewChoose=t=>{const game=t.dataset.game,area=t.dataset.area;openSheet(`<div class="sheet-head"><h2>Your card view</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p class="muted">Same cards and details. Choose how you browse them.</p><div class="view-options">${MODES.map(mode=>`<button class="view-option ${mode===modeFor(game,area)?'on':''}" data-act="viewSave" data-mode="${mode}" data-game="${game}" data-area="${area}"><span class="view-preview preview-${mode}" aria-hidden="true">${actionIcon({gallery:'viewGallery',compact:'viewCompact',symbols:'viewSymbols'}[mode])}</span><b>${{gallery:'Gallery',compact:'Compact',symbols:'Symbols'}[mode]}</b><small>${{gallery:'Full card artwork, with details beneath',compact:'Small cards beside readable rows',symbols:'Names, set badges and emblems'}[mode]}</small></button>`).join('')}</div>`,{type:'view-choice'});};
- A.viewSave=async t=>{if(!MODES.includes(t.dataset.mode)||!['mtg','ptcg','ygo'].includes(t.dataset.game)||!['collection','deck','search'].includes(t.dataset.area))return;await commit(s=>{((s.settings.displayModes ||= {})[t.dataset.game] ||= {})[t.dataset.area]=t.dataset.mode},{enrich:false});closeSheet();};
+ A.viewSave=async t=>{if(!MODES.includes(t.dataset.mode)||!['mtg','ptcg','ygo'].includes(t.dataset.game)||!['collection','deck','search','set','wishlist'].includes(t.dataset.area))return;await commit(s=>{((s.settings.displayModes ||= {})[t.dataset.game] ||= {})[t.dataset.area]=t.dataset.mode},{enrich:false});closeSheet();};
  A.batchStart=t=>{const b=selectionState(t.dataset.game);b.active=!b.active;b.ids=[];render();};
  A.batchClear=t=>{selectionState(t.dataset.game).ids=[];render();};
  C.batchToggle=t=>{const b=selectionState(t.dataset.game);b.ids=b.ids.filter(id=>id!==t.dataset.id);if(t.checked)b.ids.push(t.dataset.id);render();};

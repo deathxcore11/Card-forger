@@ -1,3 +1,9 @@
+3.16.1 — View switch on every card list
+- Set pages (all three games) and wishlists now have the gallery / compact / list switch next to
+  their card count, like Search, Collection and decks. Set pages start in gallery view; each
+  list remembers its own choice per game.
+- Compact and list views no longer draw the gallery's corner badges over small thumbnails.
+
 3.16.0 — Glass and art
 - Frosted glass look: panels, stat tiles, list rows, buttons, inputs and tabs are translucent with
   a light top edge and a faint sheen; the header, bottom bar and card sheets are real frosted glass.

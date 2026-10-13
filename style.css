@@ -1582,3 +1582,9 @@ body.glass .home-hero { -webkit-mask-image: linear-gradient(180deg, #000 70%, tr
 .quick-btn span .gl.lone .ico { width: 20px; height: 20px; color: var(--gold); }
 body.glass .bottom-nav { background: rgba(12, 14, 19, 0.74); }
 body.glass .topbar { background: rgba(12, 14, 19, 0.58); }
+
+/* A view switch above every card list. */
+.list-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 0 10px; }
+.list-bar > p, .list-bar > span { margin: 0; }
+.list-bar .view-switch button { width: 36px; height: 30px; }
+.view-compact .card-grid .tile-chrome, .view-symbols .card-grid .tile-chrome { display: none; }

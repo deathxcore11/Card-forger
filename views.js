@@ -472,7 +472,7 @@ export function setPage() {
   <div class="set-controls">${segmented("setFilter", st.filter, [["all", "All"], ["owned", "Owned"], ["missing", "Missing"]])}
     <select data-change="setRarity" aria-label="Rarity">${options([["all", "All rarities"], ...["common", "uncommon", "rare", "mythic", "special", "bonus"].filter((r) => rarities.includes(r)).map((r) => [r, RARITY[r]])], st.rarity)}</select>
     <select data-change="setSort" aria-label="Sort">${options([["number", "Set order"], ["price", "Price: high to low"], ["name", "Name"]], st.sort)}</select></div>
-  <p class="muted small">${st.busy ? `Loading ${all.length ? all.length + " of " + (st.total || "…") : ""} cards…` : all.length ? `${list.length.toLocaleString()} match · prices are Scryfall estimates` : ""}</p>
+  <div class="list-bar"><p class="muted small">${st.busy ? `Loading ${all.length ? all.length + " of " + (st.total || "…") : ""} cards…` : all.length ? `${list.length.toLocaleString()} match · prices are Scryfall estimates` : ""}</p>${viewControl("mtg", "set")}</div>
   <div class="card-grid set-grid">${list
     .slice(0, st.limit)
     .map((c) => {
@@ -746,7 +746,7 @@ function wishlistView() {
   return `<div class="searchbar"><input id="wishName" placeholder="Add a card to your wishlist" data-enter="wishAdd" aria-label="Wishlist card"><button class="btn" data-act="wishAdd">Add</button></div>
   ${
     items.length
-      ? `<div class="list">${items
+      ? `<div class="list-bar"><span class="muted small">${items.length} wanted</span>${viewControl("mtg", "wishlist")}</div><div class="list display-list">${items
           .map((w) => {
             const c = meta(w.name),
               p = priceOf(w.name, w.finish);
