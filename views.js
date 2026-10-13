@@ -1,3 +1,4 @@
+import {viewControl,selectionControl,selectionMark,selectionTray,historyPanel,quoteModel,priceOverview} from "./workbench-ui.js";
 import { binderShelf } from "./binders.js";
 // Screen renderers. Each returns HTML for #content; interaction is wired by
 // data-act / data-change / data-input attributes handled centrally in app.js.
@@ -181,7 +182,7 @@ export function search() {
     deck = currentDeck(),
     chips = mtgFilterChips(f),
     shown = db.results.filter((c) => (f.own === "owned" ? inv(c.name).owned > 0 : f.own === "missing" ? !inv(c.name).owned : true));
-  return `<div class="page-head"><h1>Search cards</h1><span class="row"><button class="btn ghost small" data-act="compareOpen">Compare cards</button><button class="btn ghost small" data-act="go" data-to="#sets">◈ Browse sets</button><button class="btn ghost small" data-act="dbRandom">🎲 Random card</button></span></div>
+  return `<div class="page-head"><h1>Search cards</h1>${viewControl("mtg","search")}<span class="row"><button class="btn ghost small" data-act="compareOpen">Compare cards</button><button class="btn ghost small" data-act="go" data-to="#sets">◈ Browse sets</button><button class="btn ghost small" data-act="dbRandom">🎲 Random card</button></span></div>
   <div class="searchbar"><input id="dbTerm" type="search" value="${esc(db.term)}" placeholder="Card name, or words like “draw a card”" data-input="dbTerm" data-enter="dbSearch" aria-label="Search all cards" autocomplete="off"><button class="btn" data-act="dbSearch" ${db.busy ? "disabled" : ""}>${db.busy ? "…" : "Search"}</button></div>
   ${chipRow(chips, "dbChip", "dbClear")}
   ${savedRow(savedSearches("mtg"), "dbSaved", "dbSavedDel")}
@@ -302,7 +303,7 @@ export function cardSheet(c, ctx = {}) {
       <a href="https://edhrec.com/cards/${esc(name.toLowerCase().split(" // ")[0].replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""))}" target="_blank" rel="noopener">EDHREC ↗</a>
       <button class="link" data-act="buyCard">Where to buy ›</button>
     </div>`;
-  const pricesTab = `
+  const pricesTab = `${priceOverview("mtg",shown,ctx,Object.entries(shown.purchase_uris||{}))}<details class="market-details"><summary>Market details · sources & finishes</summary>
     <div class="src-row" role="tablist" aria-label="Price source">${MTG_SOURCES.map(([id, label]) => `<button class="chip pick ${id === src[0] ? "on" : ""}" data-act="priceSource" data-src="${id}">${esc(label)}</button>`).join("")}</div>
     <div class="price-table" style="--cols:${Object.keys(src[3]).length}"><div class="pt-head"><span></span>${Object.keys(src[3]).map((f) => `<b class="${f}">${FINISH[f]}</b>`).join("")}</div>
       <div class="pt-row"><span class="pt-label">${esc(shown.set_name || "This printing")} <small class="muted">${esc((shown.set || "").toUpperCase())} #${esc(shown.collector_number || "?")}</small></span>${Object.values(src[3]).map((k) => `<span>${money(shown.prices?.[k], src[2])}</span>`).join("")}</div>
@@ -310,7 +311,7 @@ export function cardSheet(c, ctx = {}) {
     <p class="foot">${esc(src[1])} ${src[2] === "TIX" ? "price for Magic Online tickets" : "market estimate"} from Scryfall, updated daily${shown.checkedAt ? " · checked " + esc(new Date(shown.checkedAt).toLocaleDateString()) : ""}. Condition prices (NM, LP…) and stock are on the store’s page.</p>
     ${prints ? `<p class="small">Across ${prints.length} printings: <b class="ok-text">${usd(cheapest(prints))}</b> cheapest · <b>${usd(dearest(prints))}</b> priciest <button class="link small" data-act="cardTab" data-tab="versions">Compare all →</button></p>` : ""}
     ${chosen ? `<p class="small">Your shopping price: <b>${usd(chosen.price)}</b> · ${esc(chosen.label)}</p>` : ""}
-    <div class="actions wrap"><button class="btn" data-act="buyCard" data-finish="${finishes[0] || "nonfoil"}">Buy this printing ›</button>${shown.purchase_uris?.[src[0]] ? `<a class="btn ghost" href="${esc(shown.purchase_uris[src[0]])}" target="_blank" rel="noopener noreferrer">${esc(src[1])} listing ↗</a>` : ""}</div>`;
+    <div class="actions wrap"><button class="btn" data-act="buyCard" data-finish="${finishes[0] || "nonfoil"}">Buy this printing ›</button>${shown.purchase_uris?.[src[0]] ? `<a class="btn ghost" href="${esc(shown.purchase_uris[src[0]])}" target="_blank" rel="noopener noreferrer">${esc(src[1])} listing ↗</a>` : ""}</div></details>`;
   const rulings = ctx.rulings
     ? ctx.rulings.length
       ? `<ul class="rulings">${ctx.rulings.map((r) => `<li><p>${symbolText(r.comment)}</p><small class="muted">${esc(r.source === "wotc" ? "Wizards of the Coast" : "Scryfall")} · ${esc(r.published_at || "")}</small></li>`).join("")}</ul>`
@@ -530,6 +531,7 @@ export function buySheet(ctx) {
   <section class="panel tight buy-est"><div class="row between"><span class="muted small">Estimated price</span><b class="buy-price">${est === null ? "Unknown" : usd(est)}</b></div>
     <p class="small muted">${est === null ? "Scryfall has no current USD price for this printing and finish." : `Scryfall reference price (USD, ${esc(FINISH[finish].toLowerCase())})`}${eur !== null ? ` · Cardmarket trend €${esc(Number(eur).toFixed(2))}` : ""}${asOf ? ` · as of ${esc(new Date(asOf).toLocaleDateString())}` : ""}. Sellers set their own prices, condition and shipping — check the listing.</p>
   </section>
+  ${historyPanel(quoteModel("mtg",p,finish),ctx.range || "30")}
   <h3>This exact printing</h3>
   ${
     exact.length
@@ -581,7 +583,7 @@ export function compareSheet() {
 
 export function collection() {
   const tab = S.ui.collTab;
-  return `<div class="page-head"><h1>Collection</h1><div class="head-actions"><button class="btn small" data-act="addCard">＋ Add</button><button class="icon" data-act="collMenu" aria-label="More collection actions">⋯</button></div></div>
+  return `<div class="page-head"><h1>Collection</h1><div class="head-actions">${S.ui.collTab === "cards" ? viewControl("mtg","collection")+selectionControl("mtg") : ""}<button class="btn small" data-act="addCard">＋ Add</button><button class="icon" data-act="collMenu" aria-label="More collection actions">⋯</button></div></div>
   ${segmented("collTab", tab, [["cards", "Cards"], ["binders", "Binders"], ["value", "Value"], ["wishlist", "Wishlist"]])}
   ${tab === "binders" ? binderShelf(S.state.collection.map(entry => { const c=(entry.printingVerified && S.state.printings?.[entry.printingId]) || meta(entry.name); return {entry,card:c,image:cardImage(c),game:"mtg"}; }),"mtg",S.state.settings.binders || []) : tab === "value" ? collectionValueView() : tab === "wishlist" ? wishlistView() : collectionCards()}`;
 }
@@ -627,23 +629,23 @@ export function collectionList() {
   const total = list.length;
   list = list.slice(0, S.ui.collLimit);
   if (!total) return `<p class="muted center pad">No cards match.</p>`;
-  return `<div class="list">${list
+  return `<div class="list display-list">${list
     .map((e) => {
       const c = (e.printingVerified && st.printings?.[e.printingId]) || meta(e.name),
         unit = lotPrice(e, S.catalog, st.printings);
-      return `<div class="lot">
-        <button class="lot-art" data-act="card" data-name="${esc(e.name)}" aria-label="Open ${esc(e.name)}">${img(art(c), e.name)}</button>
+      return `<div class="lot">${selectionMark("mtg",e.id)}
+        <button class="lot-art" data-act="card" data-name="${esc(e.name)}" aria-label="Open ${esc(e.name)}">${img(cardImage(c), e.name)}</button>
         <div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(e.name)}">${esc(e.name)} ${setBadge(e.printingVerified ? c : {set:e.set,set_name:e.setName,collector_number:e.collectorNumber}, {physical:true,unspecified:!e.set&&!e.printingVerified})}</button>
           <span class="lot-sub">${manaCost(c)}<span>${esc((e.set || e.setName || "Any printing").toUpperCase())}${e.collectorNumber ? " #" + esc(e.collectorNumber) : ""}${e.finish !== "nonfoil" ? ` · <b class="foil">${esc(e.finish)}</b>` : ""}${e.condition && e.condition !== "Near Mint" ? " · " + esc(e.condition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></span>
           ${e.lookupFailed ? `<button class="tag warn" data-act="editLot" data-id="${e.id}">Not found — tap to fix name</button>` : !c ? `<span class="tag muted">Looking up…</span>` : ""}
         </div>
-        <div class="lot-side"><span class="price">${usd(unit === null ? null : unit * e.qty)}</span>
+        <div class="lot-side"><button class="price link" data-act="buyCard" data-name="${esc(e.name)}" data-lot="${esc(e.id)}" data-finish="${esc(e.finish||"nonfoil")}" aria-label="Price history and sellers for ${esc(e.name)}">${usd(unit === null ? null : unit * e.qty)}</button>
           <span class="stepper"><button data-act="qty" data-id="${e.id}" data-delta="-1" aria-label="Remove one">−</button><b>${e.qty}</b><button data-act="qty" data-id="${e.id}" data-delta="1" aria-label="Add one">＋</button></span>
           <button class="link small" data-act="editLot" data-id="${e.id}">Edit</button>
         </div>
       </div>`;
     })
-    .join("")}</div>${total > list.length ? `<button class="btn ghost block" data-act="collMore">Show more (${total - list.length})</button>` : ""}`;
+    .join("")}</div>${selectionTray("mtg")}${total > list.length ? `<button class="btn ghost block" data-act="collMore">Show more (${total - list.length})</button>` : ""}`;
 }
 
 function collectionValueView() {
@@ -991,10 +993,9 @@ export function deckPage() {
       <p>${fm.commander ? colorDots(meta(d.commander)) + " " + esc(d.commander || "No commander yet") + " · " : ""}<button class="chip dark fmt-chip" data-act="deckMenu" title="${esc(sizeLabel(fm))}${fm.note ? " · " + esc(fm.note) : ""}">${esc(fm.name)}</button>${d.locked ? ' · <span class="chip dark">Assembled</span>' : ""}</p>
       ${reviewBadge(d)}
       <div class="hero-stats">
-        <span><b class="${(fmt.exact ? t.copies === target : t.copies >= target) ? "" : "warn-text"}">${t.copies}/${target}</b>cards</span>
+        <span><b class="${(fm.exact ? t.copies === target : t.copies >= target) ? "" : "warn-text"}">${t.copies}/${target}</b>cards</span>
         <span><b>${t.copies ? Math.round((t.covered / t.copies) * 100) : 0}%</b>owned</span>
-        <span><b>${usd(v.total, 0)}</b>value</span>
-        <button data-act="deckTab" data-id="engine"><b>${p.score}</b>engine</button>
+        <span><b>${usd(t.pricedGap, 0)}${t.unpriced ? "+" : ""}</b>to finish${t.unpriced ? " · some unpriced" : ""}</span>
       </div>
     </div>
   </section>
@@ -1036,10 +1037,10 @@ const CATS = ["Commander", "Creatures", "Planeswalkers", "Artifacts", "Enchantme
 
 function deckCards(d, t) {
   const target = formatOf(d).size;
-  return `<div class="add-row"><input id="deckAddName" placeholder="Add a card by name" data-enter="deckAdd" aria-label="Card name to add" autocomplete="off"><button class="btn" data-act="deckAdd">Add</button></div>
+  return `${viewControl("mtg","deck")}<div class="add-row"><input id="deckAddName" placeholder="Add a card by name" data-enter="deckAdd" aria-label="Card name to add" autocomplete="off"><button class="btn" data-act="deckAdd">Add</button></div>
   <div class="cover-line"><span><b>${t.covered}</b>/${t.copies} owned${t.missing ? ` · <b>${t.missing}</b> missing · <b>${usd(t.pricedGap)}</b>${t.unpriced ? "+" : ""} to finish` : " · everything owned ✓"}</span>${t.copies < target ? (d.format === "Commander" ? `<button class="link" data-act="deckTab" data-id="upgrade">Fill ${target - t.copies} slots →</button>` : `<button class="link" data-act="formatSearch">Find ${esc(formatOf(d).name)} cards →</button>`) : ""}</div>
   ${bar(t.copies ? t.covered / t.copies : 0)}
-  <div class="toolbar"><input type="search" value="${esc(S.ui.q.deck)}" placeholder="Search this deck" data-input="deckSearch" aria-label="Search deck"><select data-change="deckFilter" aria-label="Show">${options([["all", "All"], ["missing", "Missing"], ["owned", "Owned"], ["unresolved", "Unresolved"]], S.ui.deckFilter)}</select><select data-change="deckSort" aria-label="Group by">${options([["type", "By type"], ["mv", "By mana value"], ["role", "By role"], ["price", "By price"]], S.ui.deckSort)}</select><button class="icon" data-act="deckGrid" aria-label="Toggle grid">${S.ui.deckGrid ? "☰" : "▦"}</button></div>
+  <div class="toolbar"><input type="search" value="${esc(S.ui.q.deck)}" placeholder="Search this deck" data-input="deckSearch" aria-label="Search deck"><select data-change="deckFilter" aria-label="Show">${options([["all", "All"], ["missing", "Missing"], ["owned", "Owned"], ["unresolved", "Unresolved"]], S.ui.deckFilter)}</select><select data-change="deckSort" aria-label="Group by">${options([["type", "By type"], ["mv", "By mana value"], ["role", "By role"], ["price", "By price"]], S.ui.deckSort)}</select></div>
   <div id="deckList">${deckList(d)}</div>
   ${t.missing ? `<div class="sticky-bar"><span><b>${t.missing}</b> to get · ${usd(t.pricedGap, 0)}</span><span><button class="btn ghost small" data-act="deckTab" data-id="shop">Shop</button><button class="btn small" data-act="acquire">I got cards</button></span></div>` : ""}`;
 }
@@ -1081,7 +1082,7 @@ export function deckList(d = currentDeck()) {
     .filter(([, list]) => list.length)
     .map(([g, list]) => {
       const val = list.reduce((a, r) => a + (r.price ?? 0) * r.qty, 0);
-      return `<details class="group" open><summary><span>${esc(g)} <em>${sumQty(list)}</em></span><span class="muted small">${usd(val)}</span></summary><div class="${S.ui.deckGrid ? "card-grid" : "list"}">${list.map((r) => (S.ui.deckGrid ? deckGridCard(r) : deckRow(r, d))).join("")}</div></details>`;
+      return `<details class="group" open><summary><span>${esc(g)} <em>${sumQty(list)}</em></span><span class="muted small">${usd(val)}</span></summary><div class="list display-list">${list.map((r) => deckRow(r,d)).join("")}</div></details>`;
     })
     .join("");
   return html || `<p class="muted center pad">No cards match.</p>`;
@@ -1097,7 +1098,7 @@ function deckRow(r, d) {
   const c = meta(r.name),
     ok = r.missing === 0;
   return `<div class="lot deck-row ${ok ? "" : "short"}">
-    <button class="lot-art" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(d.id)}">${img(art(c), r.name)}<span class="art-price">${usd(r.price)}</span></button>
+    <button class="lot-art" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(d.id)}">${img(cardImage(c), r.name)}<span class="art-price">${usd(r.price)}</span></button>
     <div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(d.id)}">${esc(r.name)} ${setBadge(c)}</button>
       <span class="lot-sub">${manaCost(c) || (c ? "" : '<span class="tag warn">Unresolved</span>')}${legalTag(c, d)}</span>
       <span class="own ${ok ? "yes" : "no"}">${ok ? "Owned" : r.covered ? `${r.covered}/${r.qty} owned · need ${r.missing}` : "Need " + r.missing}${r.reserved ? ` · ${r.reserved} in other decks` : ""}</span>
@@ -1556,7 +1557,7 @@ export function settings() {
   <details class="settings-disclosure settings-danger"><summary>Start over or load examples</summary><p class="foot">Export a backup first. One recovery copy is kept on this device.</p><div class="actions wrap"><button class="btn ghost danger" data-act="reset">Start empty</button><button class="btn ghost" data-act="loadExample">Load example data</button></div></details></div>
   <div id="settings-app" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-app" ${tab === "app" ? "" : "hidden"}><section class="panel settings-card"><div class="settings-card-heading"><span class="settings-icon" aria-hidden="true">＋</span><div><p class="eyebrow">TAKE IT WITH YOU</p><h2>Install CardStashy</h2></div></div><p class="muted small">Open it from your home screen. Saved collections and decks work offline.</p><button class="btn" data-act="install">Install app</button><details class="settings-disclosure"><summary>Android installation help</summary><p class="foot">In Chrome, open ⋮ → Add to Home screen or Install app. Searches and updated prices need internet.</p></details></section>
   <details class="settings-disclosure settings-source"><summary>Card databases & prices</summary><ul class="sources"><li><b>Magic:</b> Scryfall card data, images and reference prices; MTGJSON precon lists.</li><li><b>Pokémon:</b> TCGdex card data and images, with supplied TCGplayer and Cardmarket prices.</li><li><b>Yu-Gi-Oh!:</b> YGOPRODeck card data, alternate art, printings and reference prices.</li><li><b>Imports:</b> Supported text and CSV exports from deck and collection tools.</li></ul><p class="foot">Prices are estimates; check edition, condition and shipping with the seller.</p></details>
-  <details class="settings-disclosure settings-source"><summary>About CardStashy</summary><p class="foot">Deck scores, upgrades and test games use card rules and simulations; they aren’t guaranteed win rates. CardStashy is an independent fan tool. Trading cards and artwork belong to their respective rights holders.</p><span class="settings-version">Version 3.9.5</span></details></div></div>`;
+  <details class="settings-disclosure settings-source"><summary>About CardStashy</summary><p class="foot">Deck scores, upgrades and test games use card rules and simulations; they aren’t guaranteed win rates. CardStashy is an independent fan tool. Trading cards and artwork belong to their respective rights holders.</p><span class="settings-version">Version 3.10.0</span></details></div></div>`;
 }
 
 /* ---------- Deck idea sheet ---------- */

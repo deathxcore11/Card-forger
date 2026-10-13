@@ -1,3 +1,4 @@
+import {modeFor,registerWorkbench,quoteModel,recordQuote} from "./workbench-ui.js";
 import { locationPicker, rememberLocation, chooseLocation } from "./collection-locations.js";
 import { captureAuthFields, restoreAuthFields, authFeedback } from "./auth-form.js";
 import { formatUpgrades, applyFormatSwap } from "./format-upgrades.js";
@@ -564,6 +565,7 @@ function render() {
   };
   if (g !== "mtg" && ui.view === "deck") ui.view = "decks";
   if (ui.view === "home") setTimeout(() => heroArt(g), 0);
+  $("#content").className="";
   if (ui.view === "rules") {
     $("#content").innerHTML = rulesPage(g, ui.rules[g] || (ui.rules[g] = { list: "", busy: false, error: "", data: {} }));
     return;
@@ -574,6 +576,8 @@ function render() {
   }
   $("#content").innerHTML = (g !== "mtg" && tcgViews[ui.view] ? tcgViews[ui.view] : views[ui.view] || V.home)();
   if(!cloudInfo().user)restoreAuthFields(document,authFields);
+  const displayArea=["deck","tdeck"].includes(ui.view)?"deck":ui.view === "search"?"search":ui.view === "collection" && (g === "mtg" ? ui.collTab === "cards" : !T.ui(g).coll.tab || T.ui(g).coll.tab === "cards")?"collection":null;
+  $("#content").className=displayArea ? "view-"+modeFor(g,displayArea) : "";
   attachBrowseObserver();
   if (ui.view === "settings") storageDetail();
   if (g !== "mtg") {
@@ -629,6 +633,12 @@ const A = {}; // click actions
 const C = {}; // change handlers
 C.chooseLocation = t => chooseLocation(t);
 const I = {}; // input handlers
+registerWorkbench({A,C,commit,render,openSheet,closeSheet,refreshSheet,toast,
+ getGame:T.game,
+ getCard:(g,e)=>g === "mtg" ? (e.printingVerified && S.state.printings?.[e.printingId]) || meta(e.name) : T.cardOf(g,e.cardId),
+ links:(g,c)=>g === "mtg" ? Object.entries(c.purchase_uris||{}).map(([name,url])=>[name,url]) : T.SOURCES[g].buy(c),
+ zoneFor:(g,c)=>T.SOURCES[g].zoneFor(c),ownKey:(g,c)=>T.SOURCES[g].ownKey(c)
+});
 
 // Yu-Gi-Oh! and Pokémon actions (tcg.js).
 setTimeout(() => Object.assign(tcgCtx, { A, C, I, commit, render, openSheet, closeSheet, refreshSheet, toast, go, download, copyText, busy, rerenderKeepingFocus, writeRecord }) && T.registerTcg(tcgCtx), 0);
@@ -1395,6 +1405,11 @@ A.cardTab = async (t) => {
   }
   for (const p of $$("#sheetBody .cs-panel")) p.hidden = p.dataset.tab !== ctx.tab;
   $("#sheetBody .cs-tabs")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  if(ctx.tab === "prices" && ["card","tcard"].includes(ctx.type)){
+    const g=ctx.type === "card"?"mtg":ctx.game,c=ctx.type === "card"?ctx.print||meta(ctx.name):T.cardOf(g,ctx.id);
+    await commit(s=>recordQuote(s,quoteModel(g,c,ctx.priceFinish || (g === "mtg"?(c?.finishes?.includes("nonfoil")?"nonfoil":c?.finishes?.[0]||"nonfoil"):"reference"))),{rerender:false,enrich:false});
+    if(S.ui.sheetCtx === ctx)refreshSheet();
+  }
   // Official rulings load the first time the tab opens.
   if (ctx.tab === "rulings" && ctx.type === "card" && !ctx.rulings) {
     const c = ctx.print || meta(ctx.name);
@@ -1419,7 +1434,8 @@ A.buyCard = async (t) => {
   let back = S.ui.sheetCtx?.type === "card" && $("#sheet").open ? S.ui.sheetCtx : null;
   const backScroll = back ? $("#sheetBody").scrollTop : 0;
   let print;
-  if (back) {
+  if(t.dataset.lot){const lot=S.state.collection.find(e=>e.id === t.dataset.lot); if(!lot)return; print=(lot.printingVerified && S.state.printings?.[lot.printingId]) || meta(lot.name); back={type:"card",name:lot.name};}
+  else if (back) {
     print = t.dataset.i !== undefined && back.prints ? back.prints[Number(t.dataset.i)] : back.print || meta(back.name);
   } else {
     const c = meta(t.dataset.name) || (await resolve(t.dataset.name, true));
@@ -1428,13 +1444,15 @@ A.buyCard = async (t) => {
   }
   const fromPrints = back.prints && back.prints.includes(print);
   const ctx = { type: "buy", name: back.name, deckId: back.deckId, print, finish: t.dataset.finish || "nonfoil", asOf: fromPrints ? back.pricesAt : print?.checkedAt, back, backScroll };
+  await commit(s=>recordQuote(s,quoteModel("mtg",print,ctx.finish)),{rerender:false,enrich:false});
   openSheet(V.buySheet(ctx), ctx);
 };
-A.buyFinish = (t) => {
+A.buyFinish = async (t) => {
   const ctx = S.ui.sheetCtx;
   if (ctx?.type !== "buy") return;
   ctx.finish = t.dataset.finish;
-  refreshSheet();
+  await commit(s=>recordQuote(s,quoteModel("mtg",ctx.print,ctx.finish)),{rerender:false,enrich:false});
+  if(S.ui.sheetCtx === ctx) refreshSheet();
 };
 function backToCard(scrollTo) {
   const ctx = S.ui.sheetCtx;

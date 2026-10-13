@@ -1,3 +1,12 @@
+3.10.0 — Shared card views, market windows and collection selection
+- Gallery, Compact and Symbols views share one chooser in Search, Collection cards and Deck cards for Magic, Pokémon and Yu-Gi-Oh!. Preferences are saved per game and screen in the workspace and follow normal account sync.
+- Prices tabs share Selected version, Price history and Find sellers sections. Detailed source tables, finish prices and previous actions are retained under Market details. Pokémon finishes and Yu-Gi-Oh! edition limitations remain explicit.
+- Price snapshots begin when a Prices tab/window opens. Separate printing/finish/source/currency series; no past history invented, no unknown values converted to zero. Up to 300 recently viewed series, 365 daily observations each. 30/90/all-recorded ranges and recorded-day inspector. No paid API or new service setup required.
+- Collection Select cards opens checkboxes and a contextual tray: Move, Add to deck, Wishlist, Compare (up to four). Saved location picker and per-game deck choices; writes support Undo. Adding cards to a draft does not change ownership.
+- Deck banners prioritize card count, ownership and cost to finish, with incomplete pricing labelled. Rules details open from the existing review badge.
+- Corrected a Magic deck renderer variable discovered by the new actual-render test.
+- Tests cover price/finish separation, unknown quotes, daily observation replacement, shared pricing sections, persisted views and real batch actions for every game, including ownership preservation.
+
 3.9.5 — Smoke-test hardening and quieter Home
 - Same three primary Home shortcuts and onboarding actions across all games. Imports, sets, rules, scan and random tools remain in an expandable tools section.
 - Pokémon / Yu-Gi-Oh! collections render 120 entries at a time; filtering and sorting use the full collection. Search also finds locations and sets, and empty results explain what to try.

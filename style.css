@@ -1261,3 +1261,55 @@ details.trouble code { word-break: break-word; }
 .img-missing small { font-size: 11px; color: #aab2c1; }
 .lot-sub { overflow-wrap: anywhere; }
 @media (prefers-reduced-motion: reduce) { .home-tools * { animation: none !important; } }
+/* Shared card browsing: quiet controls, three density levels, contextual actions. */
+.head-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.view-options { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.view-option { display:grid; gap:12px; text-align:left; padding:18px; border:1px solid var(--line,#303744); border-radius:16px; background:var(--surface); color:inherit; cursor:pointer; }
+.view-option.on { border-color:var(--gold); box-shadow:inset 0 0 0 1px var(--gold); }
+.view-option small { line-height:1.5; color:var(--muted,#aab2c1); }
+.view-preview { display:grid; place-content:center; min-height:90px; background:linear-gradient(145deg,#303847,#171c24); border-radius:10px; font-size:26px; white-space:pre-line; color:#c5cede; }
+.view-symbols .display-list .lot-art { width:32px; min-width:32px; height:40px; background:none; }
+.view-symbols .display-list .lot-art > img,.view-symbols .display-list .lot-art > .img-missing,.view-symbols .display-list .art-price { display:none; }
+.view-symbols .display-list .lot-art::before { content:'◈'; color:var(--gold); font-size:22px; }
+.view-symbols .display-list .lot { padding:10px 8px; min-height:60px; }
+.view-gallery .display-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:16px; background:none; border:none; }
+.view-gallery .display-list .lot { position:relative; display:flex; flex-direction:column; align-items:stretch; padding:10px; gap:10px; border:1px solid var(--line,#303744); border-radius:16px; background:var(--surface); min-width:0; }
+.view-gallery .display-list .lot-art { width:100%; height:auto; aspect-ratio:63/88; border-radius:10px; overflow:hidden; }
+.view-gallery .display-list .lot-art img { width:100%; height:100%; object-fit:contain; }
+.view-gallery .display-list .lot-art .img-missing { width:100%; height:100%; }
+.view-gallery .display-list .lot-side { width:100%; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:6px; }
+.view-gallery .display-list .lot-info { width:100%; }
+.view-gallery .display-list .lot-name { white-space:normal; }
+.view-gallery .display-list .lot-sub { flex-wrap:wrap; font-size:11px; line-height:1.5; }
+.view-compact .card-grid,.view-symbols .card-grid { display:flex; flex-direction:column; gap:8px; }
+.view-compact .card-grid > .grid-card,.view-symbols .card-grid > .grid-card { display:flex; align-items:center; flex-wrap:wrap; gap:12px; text-align:left; padding:10px; min-height:60px; }
+.view-compact .card-grid > .grid-card > img { width:48px; height:67px; object-fit:contain; border-radius:5px; }
+.view-compact .card-grid .grid-meta,.view-symbols .card-grid .grid-meta { flex:1; min-width:120px; padding:0; }
+.view-symbols .card-grid > .grid-card > .card-img { display:none; }
+.view-compact .card-grid .owned-badge,.view-symbols .card-grid .owned-badge { position:static; }
+.batch-mark { flex:none; align-self:center; padding:6px; }
+.batch-mark input { width:20px; height:20px; accent-color:var(--gold); }
+.view-gallery .batch-mark { position:absolute; top:12px; left:12px; z-index:2; background:#161b24e8; border-radius:8px; }
+.batch-tray { position:sticky; bottom:18px; z-index:15; display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px; padding:14px; margin:20px 0; border:1px solid var(--line,#465060); border-radius:18px; background:#1b2230f5; backdrop-filter:blur(16px); box-shadow:0 12px 35px #0006; }
+.batch-compare { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:16px; }
+.batch-compare article { min-width:0; padding:12px; background:var(--surface); border-radius:14px; }
+.batch-compare img { width:100%; max-height:230px; object-fit:contain; }
+.batch-compare p { font-size:13px; line-height:1.6; overflow-wrap:anywhere; }
+.market-panel { padding:18px; margin:18px 0; border:1px solid var(--line,#303744); border-radius:18px; background:linear-gradient(145deg,#202735,#151b25); }
+.market-chart { width:100%; height:160px; color:var(--gold); margin-top:16px; }
+.market-card { display:flex; align-items:center; gap:16px; }
+.market-card img { width:90px; border-radius:8px; }
+.history-inspector { margin:12px 0; font-size:12px; color:var(--muted,#aab2c1); }
+.market-panel summary { cursor:pointer; margin-top:14px; }
+@media(max-width:700px) { .view-options { grid-template-columns:1fr; } .view-option { grid-template-columns:72px 1fr; gap:8px 14px; } .view-preview { grid-row:span 2; min-height:72px; font-size:20px; } .batch-tray { bottom:100px; } .view-gallery .display-list { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; } .page-head { flex-wrap:wrap; gap:12px; } .head-actions .btn { font-size:12px; } }
+@media(prefers-reduced-motion:reduce) { .view-option,.batch-tray { transition:none; } }
+.price-version { display:grid; gap:8px; padding:16px; border:1px solid var(--line,#303744); border-radius:14px; }
+.market-details { border-top:1px solid var(--line,#303744); margin-top:24px; padding-top:14px; }
+.market-details > summary { cursor:pointer; font-weight:600; font-size:13px; }
+.market-details[open] > summary { margin-bottom:18px; }
+.view-compact .display-list .lot-art { height:80px; width:58px; }
+.view-compact .display-list .lot-art img { object-fit:contain; }
+.view-compact .card-grid .tile-emb,.view-symbols .card-grid .tile-emb,
+.view-compact .card-grid .tile-set,.view-symbols .card-grid .tile-set,
+.view-compact .card-grid .grid-set,.view-symbols .card-grid .grid-set { position:static; max-width:160px; background:transparent; padding:0; }
+.view-control { margin-bottom:8px; }
