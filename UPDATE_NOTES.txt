@@ -1,3 +1,16 @@
+3.25.0 — Gestures, search suggestions, welcome tour, accessibility, tablets
+- Gestures: swipe a card sheet down to close it, swipe a collection row left to remove one copy
+  (with Undo), and pull the collection down from the top to refresh prices.
+- Search suggestions in all three games: card names as you type, and your recent searches when
+  the box is empty. Arrow keys and Enter work too.
+- A three-card welcome tour for brand-new users (add your cards, see the decks they make, watch
+  what they're worth). Shown once; Skip any time.
+- Accessibility: an automated WCAG A/AA check of every main page in all three games now passes:
+  brighter footnote text and dark text on Pokémon's coral buttons.
+- Status marks (legal, warning, rule problem, commander damage, poison) are drawn icons instead
+  of text symbols.
+- Tablets and landscape: card pages use two columns with the art pinned on the left.
+
 3.24.0 — Feel and polish
 - Haptics on everything: a light tick on tabs and switches, a tap on buttons, a double beat when a
   card is added or saved, a warning buzz when something is removed. Works on Android; on iPhone it

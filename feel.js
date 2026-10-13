@@ -134,3 +134,113 @@ export function ripple(e) {
   void b.offsetWidth;
   b.classList.add("rippling");
 }
+
+/* ---------- gestures (touch) ---------- */
+// Swipe a sheet down to close it; swipe a collection row left to remove one copy; pull the
+// collection down from the top to refresh prices. Each gesture only presses the button that
+// already does that job, so undo and feedback stay the same.
+export function attachGestures({ closeSheet }) {
+  if (typeof document === "undefined" || !("ontouchstart" in globalThis)) return;
+  const sheet = document.getElementById("sheet"),
+    body = document.getElementById("sheetBody"),
+    content = document.getElementById("content");
+
+  // Sheet: drag down from the title bar, or anywhere when already scrolled to the top.
+  let sh = null;
+  sheet?.addEventListener("touchstart", (e) => {
+    const t = e.touches[0],
+      onHead = e.target.closest?.(".sheet-head");
+    if (e.touches.length !== 1 || (!onHead && body.scrollTop > 2) || e.target.closest?.("input, textarea, select, .zoom-stage")) return (sh = null);
+    sh = { y: t.clientY, x: t.clientX, dy: 0, live: false };
+  }, { passive: true });
+  sheet?.addEventListener("touchmove", (e) => {
+    if (!sh) return;
+    const t = e.touches[0],
+      dy = t.clientY - sh.y,
+      dx = Math.abs(t.clientX - sh.x);
+    if (!sh.live && (dy < 8 || dx > dy)) return;
+    sh.live = true;
+    sh.dy = Math.max(0, dy);
+    sheet.style.transition = "none";
+    sheet.style.transform = `translateY(${sh.dy * 0.9}px)`;
+  }, { passive: true });
+  sheet?.addEventListener("touchend", () => {
+    if (!sh?.live) return (sh = null);
+    const close = sh.dy > 110;
+    sheet.style.transition = "transform .24s cubic-bezier(.2,.8,.2,1)";
+    sheet.style.transform = close ? "translateY(100%)" : "";
+    if (close) {
+      haptic("tick");
+      setTimeout(() => {
+        closeSheet();
+        sheet.style.transform = sheet.style.transition = "";
+      }, 200);
+    } else setTimeout(() => (sheet.style.transition = ""), 260);
+    sh = null;
+  });
+
+  // Rows and pull-to-refresh on the page.
+  let row = null,
+    pull = null;
+  const ptr = document.createElement("div");
+  ptr.className = "ptr";
+  ptr.setAttribute("aria-hidden", "true");
+  ptr.innerHTML = `<svg viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4h-4"/></svg>`;
+  document.body.append(ptr);
+  content?.addEventListener("touchstart", (e) => {
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0],
+      lot = e.target.closest?.(".lot");
+    row = lot && lot.querySelector('[data-delta="-1"]') ? { el: lot, x: t.clientX, y: t.clientY, dx: 0, live: false } : null;
+    pull = window.scrollY <= 0 && document.querySelector('[data-act="refreshPrices"], [data-act="tRefreshPrices"]') ? { y: t.clientY, dy: 0 } : null;
+  }, { passive: true });
+  content?.addEventListener("touchmove", (e) => {
+    const t = e.touches[0];
+    if (row) {
+      const dx = t.clientX - row.x,
+        dy = Math.abs(t.clientY - row.y);
+      if (!row.live && (Math.abs(dx) < 10 || dy > Math.abs(dx))) {
+        if (dy > 12) row = null;
+      } else {
+        row.live = true;
+        pull = null;
+        row.dx = Math.min(0, Math.max(-140, dx));
+        row.el.classList.add("swiping");
+        row.el.style.transform = `translateX(${row.dx}px)`;
+        row.el.classList.toggle("swipe-armed", row.dx < -90);
+      }
+    }
+    if (pull) {
+      pull.dy = Math.max(0, t.clientY - pull.y);
+      if (pull.dy > 6 && window.scrollY <= 0) {
+        const k = Math.min(1, pull.dy / 90);
+        ptr.style.opacity = String(k);
+        ptr.style.transform = `translate(-50%, ${Math.min(70, pull.dy * 0.6)}px) rotate(${pull.dy * 3}deg)`;
+        ptr.classList.toggle("armed", k >= 1);
+      }
+    }
+  }, { passive: true });
+  content?.addEventListener("touchend", () => {
+    if (row?.live) {
+      const el = row.el,
+        go = row.dx < -90;
+      el.style.transition = "transform .22s cubic-bezier(.2,.8,.2,1)";
+      el.style.transform = "";
+      setTimeout(() => {
+        el.style.transition = "";
+        el.classList.remove("swiping", "swipe-armed");
+      }, 240);
+      if (go) el.querySelector('[data-delta="-1"]')?.click();
+    }
+    row = null;
+    if (pull) {
+      const go = pull.dy > 90;
+      ptr.classList.add("done");
+      ptr.style.opacity = "0";
+      ptr.style.transform = "translate(-50%, 0)";
+      setTimeout(() => ptr.classList.remove("done", "armed"), 300);
+      if (go) document.querySelector('[data-act="refreshPrices"], [data-act="tRefreshPrices"]')?.click();
+      pull = null;
+    }
+  });
+}

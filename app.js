@@ -31,7 +31,9 @@ import { completionPlan, commanderTheme } from "./planner.js";
 import { sourceCredit, mtgjsonDeck, collectionIdeas, upgradeSuggestions, applyUpgradeSwaps } from "./strategy.js";
 import { searchQuery, rankByName } from "./catalog-tools.js";
 import { promptInstall, dismissInstall, onInstallable, isIOS } from "./install.js";
-import { haptic, hapticFor, flyToCollection, countUp, ripple, setHaptics } from "./feel.js";
+import { attachSuggest } from "./suggest.js";
+import { shouldTour, openTour } from "./tour.js";
+import { haptic, hapticFor, flyToCollection, countUp, ripple, setHaptics, attachGestures } from "./feel.js";
 import { alertSheet, setAlert, onAlert, alertText, priceSeries } from "./pricehist.js";
 import { mtgCollector, nameCandidates, textPhrases } from "./scan.js";
 import { registerScanner, scanView } from "./scancam.js";
@@ -830,6 +832,8 @@ document.addEventListener("click", (e) => {
   safely(fn(t, e));
 });
 document.addEventListener("pointerdown", ripple, { passive: true });
+attachGestures({ closeSheet: () => closeSheet() });
+attachSuggest();
 document.addEventListener("submit",e=>{
  const form=e.target.closest?.('[data-auth-action]');if(!form)return;
  e.preventDefault();const action=A[form.dataset.authAction];if(action)safely(action(form.querySelector('button[type="submit"]')));
@@ -3790,6 +3794,12 @@ async function boot() {
   loadSetIndex(); // cached set symbols first; refreshes from Scryfall every few days
   decorateShell();
   render();
+  // First visit: a three-card welcome tour (never again once closed).
+  {
+    const cards = S.state.collection.length + ["ptcg", "ygo"].reduce((n, g) => n + T.gs(g).collection.length, 0),
+      decks = S.state.decks.length + ["ptcg", "ygo"].reduce((n, g) => n + T.gs(g).decks.length, 0);
+    if (shouldTour({ cards, decks }) && !location.hash.startsWith("#shared")) setTimeout(() => openTour({ game: T.game() }), 600);
+  }
   $("#app").classList.add("ready");
   initCloud({
     passwordRecovery: () => { S.ui.settingsTab = "account"; go("#settings"); },
