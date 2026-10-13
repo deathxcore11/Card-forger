@@ -1493,3 +1493,25 @@ dialog.zoom.zoomed .zoom-stage { cursor: grab; }
 dialog.zoom.zoomed .zoom-hint { opacity: 0; }
 html.zoom-open, html.zoom-open body { overflow: hidden; }
 .game-pill .pill-mark .ico { color: color-mix(in srgb, var(--game-color) 65%, #fff); }
+
+/* Drawn icons that replace emoji in buttons and labels. */
+.gl { display: inline-flex; vertical-align: -0.2em; margin-right: 0.4em; }
+.gl .ico { width: 1.2em; height: 1.2em; }
+.gl.lone { margin: 0; vertical-align: middle; }
+.gl.lone .ico { width: 20px; height: 20px; }
+.btn .gl .ico { stroke-width: 2; }
+.empty-mark .ico { width: 44px; height: 44px; color: var(--game-color, var(--gold)); filter: drop-shadow(0 0 12px color-mix(in srgb, var(--game-color, var(--gold)) 40%, transparent)); }
+
+/* Scanner, camera off: a centered card-shaped viewfinder with game-colored corner brackets. */
+.cam-wrap:has(.scan-drop) { background: radial-gradient(90% 70% at 50% 40%, color-mix(in srgb, var(--game-color) 10%, transparent), transparent 70%), var(--surface); }
+.cam-wrap .scan-drop { position: relative; margin: 14px auto; border: 0; max-height: 420px; width: min(100%, 300px); padding: 28px 22px; gap: 12px;
+  background:
+    linear-gradient(var(--game-color), var(--game-color)) top left / 26px 3px no-repeat, linear-gradient(var(--game-color), var(--game-color)) top left / 3px 26px no-repeat,
+    linear-gradient(var(--game-color), var(--game-color)) top right / 26px 3px no-repeat, linear-gradient(var(--game-color), var(--game-color)) top right / 3px 26px no-repeat,
+    linear-gradient(var(--game-color), var(--game-color)) bottom left / 26px 3px no-repeat, linear-gradient(var(--game-color), var(--game-color)) bottom left / 3px 26px no-repeat,
+    linear-gradient(var(--game-color), var(--game-color)) bottom right / 26px 3px no-repeat, linear-gradient(var(--game-color), var(--game-color)) bottom right / 3px 26px no-repeat;
+  border-radius: 6px; }
+.cam-wrap .scan-drop::before { content: ""; position: absolute; inset: 10px; border-radius: 4.75% / 3.5%; border: 1px dashed color-mix(in srgb, var(--game-color) 35%, transparent); pointer-events: none; }
+.cam-wrap .scan-drop > * { position: relative; }
+.cam-status .gl.lone .ico { width: 18px; height: 18px; }
+.btn .gl, .chip .gl, .seg button .gl { margin-right: 0.15em; }

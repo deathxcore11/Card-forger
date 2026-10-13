@@ -1,3 +1,15 @@
+3.15.1 — No more emoji icons
+- Every emoji and stock symbol on buttons, labels, menus and the scanner is replaced at render
+  time by a drawn icon from the same family (icons.js) — Build decks, Deck ideas, Meta decks
+  (trophy), Compare, Wishlist (heart), Import/Export, Refresh, Flip, Copy, Share link, Print,
+  Camera, Save search (bookmark), View (grid), Versions (history), Buy (bag), Close, More, and
+  the live scanner's states (frame, too dark, hold steady, glare, focus, ready).
+- Lore-aware where the games have it: Random is a d20 in Magic (the life-counter die), a six-sided
+  die in Yu-Gi-Oh! (dice cards), and a coin in Pokémon (coin flips); Browse sets is a sealed
+  booster pack; empty screens show the game's own mark instead of a ◇.
+- Scanner: the camera-off frame is centered, card-shaped, with game-colored corner brackets
+  (it used to sit off to the left of a black box).
+
 3.15.0 — New icons, a sharper shell, and tap-to-zoom cards
 - One drawn icon family (icons.js) replaces the text symbols: Home, Search, Collection (binder),
   Decks (fanned hand), Scan (viewfinder), Settings (sliders), dropdown chevrons and checkmarks.

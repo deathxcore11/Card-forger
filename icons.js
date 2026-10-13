@@ -32,3 +32,97 @@ export const GAME_MARK = {
 
 // Signature color per game (the mark, its chip and its glow).
 export const GAME_COLOR = { mtg: "#f08a5d", ygo: "#f5b335", ptcg: "#ef5350" };
+
+/* ---------- Action icons: replace emoji and stock symbols everywhere ---------- */
+
+const ACTION = {
+  plus: svg(`<path d="M12 5v14M5 12h14"/>`),
+  minus: svg(`<path d="M5 12h14"/>`),
+  close: svg(`<path d="m6.5 6.5 11 11M17.5 6.5l-11 11"/>`),
+  more: svg(`<circle cx="6" cy="12" r="1.1" fill="currentColor"/><circle cx="12" cy="12" r="1.1" fill="currentColor"/><circle cx="18" cy="12" r="1.1" fill="currentColor"/>`),
+  back: svg(`<path d="M14.5 6 8.5 12l6 6"/>`),
+  check: ICON.check,
+  // Build a deck: a stack of cards with a plus.
+  build: svg(`<rect x="4" y="6.5" width="10.5" height="14" rx="1.8"/><path d="M7.5 6.5V5a1.6 1.6 0 0 1 1.6-1.6h8.3A1.6 1.6 0 0 1 19 5v11.4a1.6 1.6 0 0 1-1.6 1.6h-2.9" stroke-opacity=".6"/><path d="M9.25 10.5v6M6.25 13.5h6"/>`),
+  // Deck ideas: a card with a spark.
+  ideas: svg(`<rect x="4" y="5" width="11" height="15" rx="1.8"/><path d="M18.5 3.5v4M16.5 5.5h4M19 11.5l.8 1.7 1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8z"/>`),
+  trophy: svg(`<path d="M8 4h8v5.5a4 4 0 0 1-8 0z"/><path d="M8 6H5.2a.7.7 0 0 0-.7.8A4 4 0 0 0 8 10.3M16 6h2.8a.7.7 0 0 1 .7.8 4 4 0 0 1-3.5 3.5"/><path d="M12 13.5V17M8.5 20h7l-.8-3H9.3z"/>`),
+  compare: svg(`<rect x="3" y="5" width="7.5" height="11" rx="1.4"/><rect x="13.5" y="8" width="7.5" height="11" rx="1.4"/><path d="M12 2.8v2.4M12 18.8v2.4" stroke-opacity=".55"/>`),
+  heart: svg(`<path d="M12 19.5s-7.5-4.3-7.5-9.7A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.5 2.5c0 5.4-7.5 9.7-7.5 9.7z"/>`),
+  heartOn: svg(`<path d="M12 19.5s-7.5-4.3-7.5-9.7A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.5 2.5c0 5.4-7.5 9.7-7.5 9.7z" fill="currentColor"/>`),
+  import: svg(`<path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4.5 14v4.5a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5V14"/>`),
+  export: svg(`<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5"/><path d="M4.5 14v4.5a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5V14"/>`),
+  refresh: svg(`<path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4h-4"/>`),
+  // Flip / rotate: a card turning over.
+  flip: svg(`<rect x="7" y="4" width="10" height="14" rx="1.6"/><path d="M3.5 13.5a8.5 8.5 0 0 0 15.4 3.6M20.5 10.5A8.5 8.5 0 0 0 5.1 6.9" stroke-opacity=".7"/><path d="m18.6 13.8.3 3.3 3.2-.6M5.4 10.2l-.3-3.3-3.2.6" stroke-opacity=".7"/>`),
+  copy: svg(`<rect x="8" y="8" width="11.5" height="12" rx="1.8"/><path d="M15.5 8V5.8A1.8 1.8 0 0 0 13.7 4H6.3a1.8 1.8 0 0 0-1.8 1.8v8.4A1.8 1.8 0 0 0 6.3 16H8"/>`),
+  link: svg(`<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>`),
+  print: svg(`<path d="M7 8V3.5h10V8"/><rect x="3.5" y="8" width="17" height="8" rx="1.8"/><path d="M7 13.5h10V20.5H7z"/>`),
+  camera: svg(`<path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2.3l1.4-2h5.6l1.4 2h2.3A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="12.8" r="3.4"/>`),
+  // Sets: a sealed booster pack with crimped ends.
+  pack: svg(`<path d="M6 4.5h12l-1 2 1 2v8l-1 2 1 2H6l1-2-1-2v-8l1-2z"/><path d="M8.5 11h7M8.5 14h4.5" stroke-opacity=".6"/>`),
+  bookmark: svg(`<path d="M7 4h10v16l-5-3.6L7 20z"/>`),
+  bookmarkOn: svg(`<path d="M7 4h10v16l-5-3.6L7 20z" fill="currentColor"/>`),
+  grid: svg(`<rect x="4" y="4" width="6.5" height="7" rx="1.2"/><rect x="13.5" y="4" width="6.5" height="7" rx="1.2"/><rect x="4" y="13" width="6.5" height="7" rx="1.2"/><rect x="13.5" y="13" width="6.5" height="7" rx="1.2"/>`),
+  history: svg(`<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9"/><path d="M4.5 4.8V9h4.2M12 8v4.3l2.8 1.7"/>`),
+  bag: svg(`<path d="M5.5 8h13l-1 12h-11z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/>`),
+  pick: svg(`<rect x="4" y="4" width="16" height="16" rx="2.5"/><path d="m8 12.3 2.7 2.7L16 9.6"/>`),
+  warn: svg(`<path d="M12 4 21 19.5H3z"/><path d="M12 10v4.2"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>`),
+  brush: svg(`<path d="M19.5 4.5 11 13"/><path d="M11 13c-2.5-.4-4.5 1.3-4.5 3.6 0 1.1-.8 2.2-2 2.4 3.9 1.6 8.6.1 8.6-3.8z"/>`),
+  share: svg(`<circle cx="6.5" cy="12" r="2.3"/><circle cx="17.5" cy="6" r="2.3"/><circle cx="17.5" cy="18" r="2.3"/><path d="m8.6 10.9 6.8-3.7M8.6 13.1l6.8 3.7"/>`),
+  search: ICON.search,
+  scan: ICON.scan,
+  // Scanner guide states.
+  frame: svg(`<path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/>`),
+  dark: svg(`<path d="M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5z"/>`),
+  hand: svg(`<path d="M8 12V6.2a1.4 1.4 0 0 1 2.8 0V11M10.8 10.5V4.9a1.4 1.4 0 0 1 2.8 0v5.6M13.6 10.5V6a1.4 1.4 0 0 1 2.8 0v6.2M16.4 9.5a1.4 1.4 0 0 1 2.8 0V14a6.5 6.5 0 0 1-6.5 6.5h-.6a6 6 0 0 1-5-2.7l-2.2-3.4a1.4 1.4 0 0 1 2.3-1.6L8 13.5"/>`),
+  glare: svg(`<circle cx="12" cy="12" r="3.6"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M5.6 18.4l1.6-1.6M16.8 7.2l1.6-1.6"/>`),
+  focus: svg(`<circle cx="12" cy="12" r="7.5" stroke-dasharray="3 2.6"/><circle cx="12" cy="12" r="2.5"/>`),
+};
+
+// Random, in each game's own idiom: Magic's d20 life counter, Yu-Gi-Oh!'s six-sided die
+// (dice cards), Pokémon's coin flip.
+const RANDOM = {
+  mtg: svg(`<path d="M12 2.8 20 7.4v9.2L12 21.2 4 16.6V7.4z"/><path d="M12 2.8 8 9.6h8zM8 9.6l-4 7M16 9.6l4 7M8 9.6 12 16.6l4-7M12 16.6v4.6M4 16.6l8 0 8 0" stroke-opacity=".6"/>`),
+  ygo: svg(`<rect x="4" y="4" width="16" height="16" rx="3.2"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor" stroke="none"/>`),
+  ptcg: svg(`<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="6" stroke-opacity=".5"/><path d="M9.7 9v6M14.3 9v6M9.7 12h4.6"/>`),
+};
+
+// Leading symbols (followed by a space) and lone symbols in buttons → icons.
+const LEAD = { "🎲": "random", "⚒": "build", "✧": "ideas", "🏆": "trophy", "⇄": "compare", "♡": "heart", "♥": "heartOn", "＋": "plus", "+": "plus", "↥": "import", "↓": "export", "⟳": "refresh", "↻": "flip", "⧉": "copy", "🔗": "link", "🖨": "print", "📷": "camera", "◈": "pack", "☆": "bookmark", "▦": "grid", "◷": "history", "🛒": "bag", "⌕": "search", "☑": "pick", "⚠": "warn", "🖌": "brush", "✓": "check", "←": "back", "‹": "back", "▧": "scan" };
+const ALONE = { "◐": "dark", "▢": "frame", "✋": "hand", "☀": "glare", "◎": "focus", "✓": "check", "✕": "close", "⋯": "more", "−": "minus", "＋": "plus", "←": "back", "⟳": "refresh", "↻": "flip" };
+const iconFor = (name, game) => (name === "random" ? RANDOM[game] || RANDOM.mtg : ACTION[name]);
+
+/**
+ * Replace emoji / stock-symbol icons inside `root` with drawn icons. Safe to run repeatedly:
+ * replaced text no longer starts with a symbol. Empty-state ◇ marks become the game's own mark.
+ */
+export function decorateGlyphs(root, game = "mtg") {
+  if (!root?.querySelectorAll) return;
+  for (const el of root.querySelectorAll(".empty-mark:not([data-ic])")) {
+    el.dataset.ic = "1";
+    el.innerHTML = GAME_MARK[game] || GAME_MARK.mtg;
+  }
+  const walker = root.ownerDocument.createTreeWalker(root, 4 /* text */);
+  const hits = [];
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    const p = n.parentElement;
+    if (!p || p.closest("script, style, textarea, input, select, option, svg, .no-ic, .oracle, .flavor, .rulings, pre, code")) continue;
+    const s = n.data;
+    const lone = s.trim().replace(/\uFE0F/g, "");
+    if (ALONE[lone] && p.closest("button, a, .icon, .cam-status") && p.childNodes.length === 1) hits.push([n, ALONE[lone], "", true]);
+    else {
+      const m = s.match(/^(\s*)(\S)\uFE0F?[ \u00a0](?=\S)/u);
+      if (m && LEAD[m[2]] && p.closest("button, a, summary, .tag, .chip, .small, .foot, small, span, h3, p")) hits.push([n, LEAD[m[2]], s.slice(m[0].length), false, m[1]]);
+    }
+  }
+  for (const [n, name, rest, lone, pad] of hits) {
+    const icon = iconFor(name, game);
+    if (!icon) continue;
+    const span = root.ownerDocument.createElement("span");
+    span.className = "gl" + (lone ? " lone" : "");
+    span.innerHTML = icon;
+    n.parentNode.insertBefore(span, n);
+    n.data = lone ? "" : (pad || "") + rest;
+  }
+}

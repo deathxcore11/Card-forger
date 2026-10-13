@@ -36,7 +36,7 @@ import { buildTiers, formatsFor, themeQuery, BUDGET_TIERS } from "./builder.js";
 import * as T from "./tcg.js";
 import { rulesPage } from "./rules.js";
 import { GAMES, GAME_ICON, GAME_COLOR } from "./games.js";
-import { ICON } from "./icons.js";
+import { ICON, decorateGlyphs } from "./icons.js";
 import { openZoom, scryfallHi } from "./zoom.js";
 import { initCloud, cloudInfo, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, saveProfile, resolvePending, syncNow } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact } from "./insights.js";
@@ -65,6 +65,18 @@ function setSaveStatus(text, cls = "") {
     mark.title = text;
   }
 }
+// Emoji / stock symbols in any template become drawn icons (icons.js), right after each change.
+let glyphQueued = false;
+const glyphObserver = typeof MutationObserver !== "undefined" ? new MutationObserver(() => {
+  if (glyphQueued) return;
+  glyphQueued = true;
+  requestAnimationFrame(() => {
+    glyphQueued = false;
+    const g = document.body.dataset.game || "mtg";
+    decorateGlyphs($("#app"), g);
+    decorateGlyphs($("#sheetBody"), g);
+  });
+}) : null;
 // Shell icons are drawn once from icons.js so the nav, settings and brand share one style.
 function decorateShell() {
   for (const b of $$(".bottom-nav [data-nav]")) {
@@ -75,6 +87,7 @@ function decorateShell() {
   if (gear) gear.innerHTML = ICON.settings;
   const mark = $(".brand .mark");
   if (mark) mark.innerHTML = ICON.sync;
+  glyphObserver?.observe(document.body, { childList: true, subtree: true });
 }
 
 // Saved locally; when signed in, the account copy follows a few seconds later.
