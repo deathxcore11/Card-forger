@@ -36,3 +36,11 @@ export function handleArtworkError(e){
  image.hidden=true;if(image.dataset.artMissing)return;image.dataset.artMissing='1';
  image.insertAdjacentHTML('afterend',`<span class="${esc(image.className)} img-missing" role="img" aria-label="Artwork unavailable">◇<small>Art unavailable</small></span>`);
 }
+// Pokémon cards have no separate art image, so crop the card picture to its art window (the
+// same framing Magic's art crops and Yu-Gi-Oh!'s artwork give). The window keeps its shape and
+// covers whatever box it sits in.
+export function pokemonArtCrop(c, cls = "", src = "") {
+  const urls = src ? [src, ...artworkSources(c, true).filter((u) => u !== src)] : artworkSources(c, true);
+  if (!urls.length) return `<span class="${cls} pk-crop img-missing" role="img" aria-label="Artwork unavailable">◇</span>`;
+  return `<span class="${cls} pk-crop" aria-hidden="true"><span class="pk-win"><img src="${esc(urls[0])}" data-art-sources="${esc(JSON.stringify(urls))}" data-art-index="0" alt="" loading="lazy" referrerpolicy="no-referrer"></span></span>`;
+}

@@ -17,18 +17,21 @@ export class CompareSelection {
   }
 }
 export function attachCardGestures({ onHold, onPick, choosing, root = document }) {
-  let press = null, timer = null;
-  const clear = () => { clearTimeout(timer); timer = null; };
+  let press = null, timer = null, cue = null, cued = null;
+  // A short press shows the card sinking and a ring filling, so a hold feels intentional.
+  const clear = () => { clearTimeout(timer); clearTimeout(cue); timer = cue = null; cued?.classList.remove('holding'); cued = null; };
   root.addEventListener('pointerdown', e => {
     clear();
     if (e.button !== 0 || e.isPrimary === false) { press = null; return; }
     const card = e.target.closest?.('[data-act="card"], [data-act="tCard"]');
     press = { x: e.clientX, y: e.clientY, id: e.pointerId, card, moved: false, held: false };
     if (!card) return;
-    const original = press;
+    const original = press, art = card.matches?.('.lot-art, .grid-card, .deck-tile, .tile') ? card : null;
+    if (art) cue = setTimeout(() => { if (press === original && !press.moved) (cued = art).classList.add('holding'); }, 140);
     timer = setTimeout(() => {
       if (press !== original || press.moved || !card.isConnected) return;
       press.held = true;
+      cued?.classList.remove('holding'); cued = null;
       onHold(card);
     }, HOLD_MS);
   }, { passive: true });

@@ -188,7 +188,9 @@ export function ygoPower(rows, f = {}) {
   // rows: [{ c, qty, zone, id? }]
   const main = rows.filter((r) => r.zone === "main" && r.c),
     extra = rows.filter((r) => r.zone === "extra" && r.c),
-    N = main.reduce((a, r) => a + r.qty, 0),
+    Nall = rows.filter((r) => r.zone === "main").reduce((a, r) => a + r.qty, 0),
+    unknown = Nall - main.reduce((a, r) => a + r.qty, 0),
+    N = main.reduce((a, r) => a + r.qty, 0) + unknown,
     E = extra.reduce((a, r) => a + r.qty, 0),
     t = (r) => lc(r.c.text),
     nm = (r) => lc(r.c.name),
@@ -262,6 +264,7 @@ export function ygoPower(rows, f = {}) {
     score: finish(parts),
     parts,
     plan: lead ? lead[0] + " engine" : "Unfocused",
+    unknown,
     stats: { N, E, starters: q(starters), extenders: q(extenders), handtraps: q(hts), negates: q(negs), startOdds: S("open"), engine: q(engine), nonEngine: q(nonEngine) },
     profile: [["Engine", `${q(engine)} cards`], ["Non-engine", `${q(nonEngine)} cards`], ["Starters", q(starters)], ["Hand traps", q(hts)], ["Extra Deck", `${E}/${f.extra || 15}`]],
     sims: [
@@ -291,7 +294,9 @@ const SUPPORTER = /^(?:iono|professor's research|boss's orders|lillie's determin
 
 export function ptcgPower(rows, f = {}) {
   const main = rows.filter((r) => r.c),
-    N = main.reduce((a, r) => a + r.qty, 0),
+    unknown = rows.filter((r) => !r.c).reduce((a, r) => a + r.qty, 0),
+    // Size counts every card in the list, even ones whose details haven't loaded yet.
+    N = main.reduce((a, r) => a + r.qty, 0) + unknown,
     lcText = (r) => lc(r.c.effect || r.c.text || ""),
     abil = (r) => (r.c.abilities || []).map((a) => lc(a.effect)).join(" "),
     isTrainer = (r) => r.c.category === "Trainer",
@@ -412,6 +417,7 @@ export function ptcgPower(rows, f = {}) {
     parts,
     plan: mainAtk ? mainAtk.c.name + (line ? ` · ${line.text} line` : "") : "Pokémon deck",
     stats: { N, basics, pokemon, trainers, energy, mull },
+    unknown,
     profile: [["Pokémon", pokemon], ["Trainers", trainers], ["Energy", energy], ["Supporters", q(sups)], ["Prize plan", multi >= 4 ? "Two-prize attackers" : ruleBox.length ? "Mixed" : "Single-prize"]],
     sims: [
       { label: "Mulligan", p: mull, target: 0.15, lower: true, note: "no Basic in opening 7 (exact)" },
@@ -467,6 +473,41 @@ export function metaMatch(mine, metaDecks, archetypes = []) {
     metaScore = Math.round(72 + 28 * clamp(0.55 * finishQ + 0.45 * clamp(share / 0.12))),
     weight = clamp((best.sim - 0.35) / 0.45);
   return { sim: best.sim, deck: best.deck, archetype: best.deck.archetype || best.deck.name, share, bestRank, lists: sameArch.length, missing: missing.slice(0, 10), extra: extra.slice(0, 10), metaScore, weight };
+}
+
+// Deck Power is always judged against the field, never in a vacuum. A list can be built well
+// and still be outclassed by every deck people actually win with. So:
+//   • no tournament data for this game/format yet → build check only, capped at 70 ("Solid");
+//   • a close copy of a placing archetype → mostly that archetype's results (finish, share);
+//   • anything else (rogue or off-meta) → its build, pulled toward how much of it the field
+//     actually plays, and capped at 74: "Competitive" has to be earned with results.
+// mine: Map(key→qty) of non-basic cards. decks: the placing lists for this game and format.
+export const BUILD_CAP = 70, ROGUE_CAP = 74;
+export function metaContext({ build, mine, decks = [], match = null, loaded = false, formatOk = true, archetypes = [] }) {
+  if (!loaded || !formatOk || !decks.length)
+    return { score: Math.min(build, BUILD_CAP), from: "build", capped: build > BUILD_CAP, reason: !loaded ? "unloaded" : !formatOk ? "format" : "empty" };
+  // How much of this list the field plays: each card's share of placing lists, weighted by copies.
+  const lists = decks.length,
+    seen = new Map();
+  for (const d of decks) for (const k of d.rows.keys()) seen.set(k, (seen.get(k) || 0) + 1);
+  let tot = 0, w = 0;
+  const unplayed = [];
+  for (const [k, n] of mine) {
+    const rate = (seen.get(k) || 0) / lists;
+    tot += Math.min(1, rate / 0.25) * n;
+    w += n;
+    if (!rate) unplayed.push({ key: k, qty: n });
+  }
+  const presence = w ? tot / w : 0,
+    played = w ? 1 - unplayed.reduce((a, x) => a + x.qty, 0) / w : 0,
+    field = [...archetypes].sort((a, b) => (b.share || 0) - (a.share || 0)).slice(0, 4);
+  if (match && match.sim >= 0.35) {
+    const k = clamp((match.sim - 0.35) / 0.45),
+      score = Math.round(build * (1 - k) * 0.5 + Math.min(build, ROGUE_CAP) * (1 - k) * 0.5 + match.metaScore * k);
+    return { score: Math.min(100, score), from: k >= 0.75 ? "meta" : "mixed", presence, played, unplayed, field, lists };
+  }
+  const rogue = Math.round(Math.min(ROGUE_CAP, build * 0.55 + (30 + 44 * presence) * 0.45));
+  return { score: Math.min(rogue, build), from: "rogue", capped: build > rogue, presence, played, unplayed, field, lists };
 }
 
 export function blend(heur, match) {

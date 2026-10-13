@@ -6,6 +6,7 @@ import { installNudge } from "./install.js";
 import {setRowContent} from './set-list-ui.js';
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
 import { ICON, actionIcon } from "./icons.js";
+import { tierOf, tierAttrs, tierStyle, tierGem } from "./tier.js";
 import { emblemChips, rowEmblem, hasEmblem, impactScore, tradeAdvice, tradeAdviceHtml, deckEmblems, deckEmblemHtml, cardMetaUsage, cardMetaTab } from "./importance.js";
 import { tileChrome } from "./tiles.js";
 import {viewControl,selectionControl,selectionMark,selectionTray,historyPanel,quoteModel,priceOverview} from "./workbench-ui.js";
@@ -225,7 +226,7 @@ export function search() {
       ? `<div class="card-grid">${shown
           .map((c) => {
             const own = inv(c.name).owned;
-            return `<button class="grid-card" data-act="card" data-name="${esc(c.name)}">${img(cardImage(c), c.name, "card-img")}${tileChrome("mtg", c)}<span class="grid-meta"><span class="ellip">${esc(c.name)} ${setBadge(c)}</span><span>${usd(c.prices?.usd ?? c.prices?.usd_foil)}</span></span>${own ? `<span class="owned-badge">×${own}</span>` : ""}</button>`;
+            return `<button class="grid-card" data-act="card" data-name="${esc(c.name)}" ${tierAttrs(tierOf("mtg", c.rarity, c.prices?.usd ?? c.prices?.usd_foil))}>${img(cardImage(c), c.name, "card-img")}${tileChrome("mtg", c)}<span class="grid-meta"><span class="ellip">${esc(c.name)} ${setBadge(c)}</span><span>${usd(c.prices?.usd ?? c.prices?.usd_foil)}</span></span>${own ? `<span class="owned-badge">×${own}</span>` : ""}</button>`;
           })
           .join("")}</div>${db.next ? `<button class="btn ghost block" data-act="dbMore" ${db.busy ? "disabled" : ""}>Load more</button>` : ""}`
       : `<div class="hints"><p class="muted small">Try:</p>${[["Cheap card draw", "o:\"draw a card\" usd<1"], ["Angels", "t:angel"], ["Red legends", "t:legendary t:creature id=r"], ["Token makers", "o:\"create\" o:token"]]
@@ -506,7 +507,7 @@ export function setPage() {
       const i = all.indexOf(c),
         n = ownedOf(c),
         other = !n && inv(c.name).owned;
-      return `<button class="grid-card ${n ? "own" : ""}" data-act="card" data-name="${esc(c.name)}" data-set-i="${i}">${img(cardImage(c, "normal"), c.name, "card-img")}${tileChrome("mtg", c)}<span class="grid-meta"><span class="ellip">#${esc(c.collector_number)} ${esc(c.name)}</span><span>${Number.isFinite(price(c)) ? usd(price(c)) : "—"}</span></span>${n ? `<span class="owned-badge">×${n}</span>` : other ? `<span class="owned-badge other" title="You own a different printing">other ed.</span>` : ""}</button>`;
+      return `<button class="grid-card ${n ? "own" : ""}" data-act="card" data-name="${esc(c.name)}" data-set-i="${i}" ${tierAttrs(tierOf("mtg", c.rarity, c.prices?.usd ?? c.prices?.usd_foil))}>${img(cardImage(c, "normal"), c.name, "card-img")}${tileChrome("mtg", c)}<span class="grid-meta"><span class="ellip">#${esc(c.collector_number)} ${esc(c.name)}</span><span>${Number.isFinite(price(c)) ? usd(price(c)) : "—"}</span></span>${n ? `<span class="owned-badge">×${n}</span>` : other ? `<span class="owned-badge other" title="You own a different printing">other ed.</span>` : ""}</button>`;
     })
     .join("")}</div>
   ${list.length > st.limit ? `<button class="btn ghost block" data-act="setMore">Show more · ${(list.length - st.limit).toLocaleString()} left</button>` : ""}
@@ -650,17 +651,20 @@ export function compareSheet() {
 export function collection() {
   const tab = S.ui.collTab;
   return `<div class="page-head"><h1>Collection</h1><div class="head-actions">${S.ui.collTab === "cards" ? viewControl("mtg","collection")+selectionControl("mtg") : ""}<button class="btn small" data-act="addCard">＋ Add</button><button class="icon" data-act="collMenu" aria-label="More collection actions">⋯</button></div></div>
-  ${segmented("collTab", tab, [["cards", "Cards"], ["binders", "Binders"], ["value", "Value"], ["wishlist", "Wishlist"]])}
-  ${tab === "binders" ? binderShelf(S.state.collection.map(entry => { const c=(entry.printingVerified && S.state.printings?.[entry.printingId]) || meta(entry.name); return {entry,card:c,image:cardImage(c),game:"mtg"}; }),"mtg",S.state.settings.binders || []) : tab === "value" ? collectionValueView() : tab === "wishlist" ? wishlistView() : collectionCards()}`;
+  ${segmented("collTab", tab === "wishlist" ? "cards" : tab, [["cards", "Cards"], ["binders", "Binders"], ["value", "Value"]])}
+  ${tab === "binders" ? binderShelf(S.state.collection.map(entry => { const c=(entry.printingVerified && S.state.printings?.[entry.printingId]) || meta(entry.name); return {entry,card:c,image:cardImage(c),game:"mtg"}; }),"mtg",S.state.settings.binders || []) : tab === "value" ? collectionValueView() : collectionCards(tab === "wishlist")}`;
 }
 
-function collectionCards() {
+function collectionCards(wantedOnly = false) {
   const st = S.state;
-  if (!st.collection.length)
+  if (wantedOnly) S.ui.collFilter = "wanted";
+  const wanted = wishlistItems();
+  if (!st.collection.length && !wanted.length)
     return empty("Start with the cards in front of you", "Add one card, scan it, or import a ManaBox / Moxfield / CSV export. Nothing counts as owned until you add it.", `<button class="btn" data-act="addCard">Add a card</button><button class="btn ghost" data-act="importCollection">Import a list</button>`);
   const value = collectionValue(st.collection, S.catalog, st.printings, []);
-  return `<p class="summary-line"><b>${sumQty(st.collection)}</b> copies · <b>${new Set(st.collection.map((e) => key(e.name))).size}</b> names · <b data-count="${Math.round(value.total)}" data-money="1">${usd(value.total, 0)}</b>${value.unpriced ? ` <span class="muted">(${value.unpriced} unpriced)</span>` : ""}</p>
-  <div class="toolbar"><input type="search" value="${esc(S.ui.q.coll)}" placeholder="Search name, set, binder…" data-input="collSearch" aria-label="Search collection"><select data-change="collSort" aria-label="Sort">${options([["name", "A–Z"], ["value", "Value ↓"], ["impact", "Deck-building value"], ["recent", "Recent"], ["color", "Color"], ["mv", "Mana value"]], S.ui.collSort)}</select><select data-change="collFilter" aria-label="Filter">${options([["all", "All"], ["meta", "★ Meta & staples"], ["spare", "Not in a deck"], ["review", "Printing to review"], ["foil", "Foils"], ["unpriced", "Unpriced"]], S.ui.collFilter)}</select></div>
+  return `<p class="summary-line"><b>${sumQty(st.collection)}</b> copies · <b>${new Set(st.collection.map((e) => key(e.name))).size}</b> names · <b data-count="${Math.round(value.total)}" data-money="1">${usd(value.total, 0)}</b>${value.unpriced ? ` <span class="muted">(${value.unpriced} unpriced)</span>` : ""}${wanted.length ? ` · <b>${wanted.length}</b> wanted` : ""}</p>
+  <div class="searchbar want-add"><input id="wishName" placeholder="Add a card you want" data-enter="wishAdd" data-suggest="mtg" aria-label="Add a card to your wishlist"><button class="btn ghost" data-act="wishAdd">${actionIcon("heart")}<span>Want</span></button></div>
+  <div class="toolbar"><input type="search" value="${esc(S.ui.q.coll)}" placeholder="Search name, set, binder…" data-input="collSearch" aria-label="Search collection"><select data-change="collSort" aria-label="Sort">${options([["name", "A–Z"], ["value", "Value ↓"], ["impact", "Deck-building value"], ["recent", "Recent"], ["color", "Color"], ["mv", "Mana value"]], S.ui.collSort)}</select><select data-change="collFilter" aria-label="Filter">${options([["all", "Owned + wanted"], ["owned", "Owned only"], ["wanted", "Wanted"], ["meta", "★ Meta & staples"], ["spare", "Not in a deck"], ["review", "Printing to review"], ["foil", "Foils"], ["unpriced", "Unpriced"]], S.ui.collFilter)}</select></div>
   <div id="collList">${collectionList()}</div>`;
 }
 
@@ -696,7 +700,12 @@ export function collectionList() {
     }
     return true;
   });
-  const val = (e) => (lotPrice(e, S.catalog, st.printings) ?? -1) * e.qty,
+  // Wanted cards (wishlist copies you don't own yet) sit in the same list, greyed out.
+  const f = S.ui.collFilter;
+  if (f === "wanted") list = [];
+  if (f === "all" || f === "wanted" || !f)
+    list = list.concat(wishlistItems().filter((w) => !q || w.name.toLowerCase().includes(q)).map((w, i) => ({ id: "w:" + w.id, name: w.name, qty: 0, wanted: w })));
+  const val = (e) => (e.wanted ? priceOf(e.name, e.wanted.finish) ?? -1 : (lotPrice(e, S.catalog, st.printings) ?? -1) * e.qty),
     colorRank = (e) => {
       const id = meta(e.name)?.color_identity || [];
       return id.length > 1 ? 6 : id.length ? "WUBRG".indexOf(id[0]) : 5;
@@ -704,7 +713,7 @@ export function collectionList() {
   list.sort((a, b) =>
     S.ui.collSort === "value" ? val(b) - val(a)
     : S.ui.collSort === "impact" ? impactScore("mtg", meta(b.name)) - impactScore("mtg", meta(a.name)) || val(b) - val(a)
-    : S.ui.collSort === "recent" ? order.get(b.id) - order.get(a.id)
+    : S.ui.collSort === "recent" ? (order.get(b.id) ?? -1) - (order.get(a.id) ?? -1)
     : S.ui.collSort === "color" ? colorRank(a) - colorRank(b) || a.name.localeCompare(b.name)
     : S.ui.collSort === "mv" ? (meta(a.name)?.cmc ?? 99) - (meta(b.name)?.cmc ?? 99) || a.name.localeCompare(b.name)
     : a.name.localeCompare(b.name),
@@ -712,12 +721,19 @@ export function collectionList() {
   const total = list.length;
   list = list.slice(0, S.ui.collLimit);
   if (!total) return `<p class="muted center pad">No cards match.</p>`;
-  return `<div class="list display-list">${list
-    .map((e) => {
+  return `<div class="list display-list deal">${list
+    .map((e, i) => {
+      if (e.wanted) {
+        const c = meta(e.name),
+          p = priceOf(e.name, e.wanted.finish);
+        const t = tierOf("mtg", c?.rarity, p);
+        return `<div class="lot wanted" data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}"><button class="lot-art" data-act="card" data-name="${esc(e.name)}" aria-label="Open ${esc(e.name)} (wanted, not owned)">${img(cardImage(c), e.name)}${c ? tileChrome("mtg", c) : ""}<span class="want-tag" aria-hidden="true">${actionIcon("heart")}Wanted</span></button><div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(e.name)}">${esc(e.name)}</button><span class="lot-sub"><span class="want-chip">${e.wanted.need > 1 ? `Need ${e.wanted.need}` : "Not owned"}</span>${manaCost(c)}${S.state.decks.some((d) => d.cards.some((x) => key(x.name) === key(e.name))) ? "<span>In a deck</span>" : ""}</span></div><div class="lot-side"><span class="price">${usd(p === null ? null : p * e.wanted.need)}</span><span class="want-actions"><button class="btn small want-got" data-act="own" data-name="${esc(e.name)}">＋ Got it</button><button class="want-x" data-act="wishRemove" data-id="${esc(e.wanted.id)}" aria-label="Remove ${esc(e.name)} from wishlist">×</button></span></div></div>`;
+      }
       const c = (e.printingVerified && st.printings?.[e.printingId]) || meta(e.name),
         unit = lotPrice(e, S.catalog, st.printings);
-      return `<div class="lot">${selectionMark("mtg",e.id)}
-        <button class="lot-art" data-act="card" data-name="${esc(e.name)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${img(cardImage(c), e.name)}</button>
+      const t = tierOf("mtg", c?.rarity, unit);
+      return `<div class="lot" data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}">${selectionMark("mtg",e.id)}
+        <button class="lot-art" data-act="card" data-name="${esc(e.name)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${img(cardImage(c), e.name)}${c ? tileChrome("mtg", c) : ""}${tierGem(t)}</button>
         <div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(e.name)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem("mtg", c)} ${setBadge(e.printingVerified ? c : {set:e.set,set_name:e.setName,collector_number:e.collectorNumber}, {physical:true,unspecified:!e.set&&!e.printingVerified})}</button>
           <span class="lot-sub">${manaCost(c)}<span>${esc((e.set || e.setName || "Any printing").toUpperCase())}${e.collectorNumber ? " #" + esc(e.collectorNumber) : ""}${e.finish !== "nonfoil" ? ` · <b class="foil">${esc(e.finish)}</b>` : ""}${e.condition && e.condition !== "Near Mint" ? " · " + esc(e.condition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></span>
           ${e.lookupFailed ? `<button class="tag warn" data-act="editLot" data-id="${e.id}">Not found — tap to fix name</button>` : !c ? `<span class="tag muted">Looking up…</span>` : ""}
@@ -764,26 +780,6 @@ export function wishlistItems() {
   return S.state.wishlist
     .map((w) => ({ ...w, need: Math.max(0, w.qty - inv(w.name).available) }))
     .filter((w) => w.need > 0);
-}
-
-function wishlistView() {
-  const items = wishlistItems(),
-    st = S.state,
-    sub = items.reduce((a, w) => a + (priceOf(w.name, w.finish) ?? 0) * w.need, 0),
-    total = (sub + (items.length ? Number(st.settings.shipping) : 0)) * (1 + Number(st.settings.tax) / 100);
-  return `<div class="searchbar"><input id="wishName" placeholder="Add a card to your wishlist" data-enter="wishAdd" aria-label="Wishlist card"><button class="btn" data-act="wishAdd">Add</button></div>
-  ${
-    items.length
-      ? `<div class="list-bar"><span class="muted small">${items.length} wanted</span>${viewControl("mtg", "wishlist")}</div><div class="list display-list">${items
-          .map((w) => {
-            const c = meta(w.name),
-              p = priceOf(w.name, w.finish);
-            return `<div class="lot"><button class="lot-art" data-act="card" data-name="${esc(w.name)}">${img(art(c), w.name)}</button><div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(w.name)}">${esc(w.name)}</button><span class="lot-sub">Need ${w.need}${S.state.decks.some((d) => d.cards.some((x) => key(x.name) === key(w.name))) ? " · used in a deck" : ""}</span></div><div class="lot-side"><span class="price">${usd(p === null ? null : p * w.need)}</span><button class="link small danger" data-act="wishRemove" data-id="${w.id}">Remove</button></div></div>`;
-          })
-          .join("")}</div>
-        <section class="panel">${costBlock(sub, total, st.settings.budget, "wishlist budget")}<div class="actions wrap"><button class="btn" data-act="copyShopping" data-src="wish">Copy list</button><a class="btn ghost" href="https://www.tcgplayer.com/massentry" target="_blank" rel="noopener">TCGplayer Mass Entry ↗</a></div></section>`
-      : empty("Nothing on your wishlist", "Add cards you want. Copies you already own are subtracted automatically.")
-  }`;
 }
 
 export function costBlock(sub, total, budget, label) {

@@ -109,3 +109,15 @@ assert.ok(Math.abs(simulate(poolOf([{ qty: 4, tags: new Set(["x"]) }, { qty: 36,
 assert.ok(Math.abs(allIn(60, 1, 6) - 0.1) < 1e-9);
 assert.ok(p.sims.find((x) => /Keepable/.test(x.label)).p > 0.7);
 console.log("PASS: weaknesses ranked with reasons and cards, seeded hand simulations match exact odds.");
+
+// Always judged against the field: no data → capped; off-meta → capped lower; proven → can top out.
+import { metaContext } from "./deckpower.js";
+const mineM = new Map([["a", 4], ["b", 4], ["z", 4]]);
+const fieldDecks = [1, 2, 3, 4].map((i) => ({ rows: new Map([["a", 4], ["b", 4], ["c", 4]]), rank: i }));
+assert.equal(metaContext({ build: 95, mine: mineM, loaded: false }).score, 70, "no tournament data: build only, capped");
+assert.equal(metaContext({ build: 95, mine: mineM, loaded: true, formatOk: false, decks: fieldDecks }).reason, "format");
+const rogueCtx = metaContext({ build: 95, mine: new Map([["x", 4], ["y", 4]]), loaded: true, decks: fieldDecks });
+assert.ok(rogueCtx.from === "rogue" && rogueCtx.score <= 74 && rogueCtx.unplayed.length === 2, `off-meta list is capped (${rogueCtx.score})`);
+const proven = metaContext({ build: 90, mine: mineM, loaded: true, decks: fieldDecks, match: { sim: 0.95, metaScore: 96 } });
+assert.ok(proven.score >= 90 && proven.from === "meta", `a copy of a placing list can rate tournament-ready (${proven.score})`);
+console.log(`PASS: rated against the field: unloaded 70, off-meta ${rogueCtx.score}, proven ${proven.score}.`);

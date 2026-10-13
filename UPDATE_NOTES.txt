@@ -1,3 +1,22 @@
+3.32.0 — Wanted cards in your collection, card tiers, and Deck Power judged against the meta
+- The Wishlist tab is gone: cards you want now sit in your collection, greyed out in a dashed
+  "empty sleeve" with a Wanted tag. Touch one and its colour peeks through. "Got it" adds it
+  with the usual details; × drops it. A Show filter picks Owned + wanted, Owned or Wanted.
+  Same for Magic, Pokémon and Yu-Gi-Oh!.
+- Card tiers for all three games, from real rarity and market price (whichever is higher):
+  grey, green, blue, purple, gold, and orange for cards over $1,000. Gallery cards get a tier
+  frame and a crest; gold and orange frames have a slow foil sweep. List rows get a tier rail.
+  Search and set tiles use the same colours.
+- Gallery cards show their emblems on the art again: type, set and rarity, deck-building value.
+- Cards deal in when you open the collection, lean toward your finger with a holographic shine,
+  and the hold menu flips the card up like a pack opening. Holding a card shows a ring filling.
+- Deck Power is always judged against the field, not in a vacuum: a list with no tournament data
+  for its format is capped at 70; an off-meta list is capped at 74 and shows which of its cards
+  no placing deck plays and the decks to beat; only close copies of placing archetypes can reach
+  Competitive and Tournament-ready. Tournament results load automatically when Power opens.
+- Fixed: Deck Power counted only cards whose details had loaded (56 of 60).
+- Pokémon art on Home, deck pages and deck tiles is cropped to the artwork, like the other games.
+
 3.31.0 — Deck Power that shows its work
 - Deck Power now lists every weakness, biggest first, with the points it costs, a plain reason
   with your real numbers, and the exact cards it counted. Strengths are listed too.

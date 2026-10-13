@@ -2081,3 +2081,96 @@ details.ingredient[open] > summary b { color: var(--accent); }
 .pw-profile span { flex: 1 1 56px; }
 .metrics td .role-chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 0; padding: 0; }
 .metrics td .role-chips .role-chip { display: inline-block; margin: 0; padding: 2px 7px; }
+
+/* Pokémon art crop: the card picture framed to its art window, covering the box like an art crop */
+.pk-crop { container-type: size; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+.pk-crop .pk-win { position: relative; overflow: hidden; flex: none; aspect-ratio: 1.68; width: max(100cqw, 168cqh); }
+.pk-crop .pk-win img { position: absolute; left: 0; top: 0; width: 122%; max-width: none; height: auto; transform: translate(-9%, -10.8%); }
+.home-hero.ptcg .hh-art.pk-crop { transform: none; position: absolute; inset: 0; width: 100%; height: 100%; }
+.tile-art .tile-pk { position: absolute; inset: 0; width: 100%; height: 100%; }
+.nc-art:has(.nc-pk) { background: none; }
+.nc-art .nc-pk { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* ===== Card tiers: rarity + price, one colour scale for all three games ===== */
+[data-tier] { --tier: #9aa3ad; }
+.tier-gem { position: absolute; top: 6px; right: 6px; z-index: 3; display: inline-flex; align-items: center; gap: 5px; height: 20px; padding: 0 8px 0 6px; border-radius: 99px; font-size: 9.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: #fff; background: rgba(8, 10, 16, .72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tier) 55%, transparent); pointer-events: none; }
+.tier-gem i { width: 8px; height: 8px; transform: rotate(45deg); border-radius: 2px; background: var(--tier); box-shadow: 0 0 8px var(--tier); }
+[data-tier="t0"] .tier-gem { display: none; }
+/* List views: a slim tier rail and a ring around the art. */
+.display-list .lot[data-tier] { position: relative; }
+.display-list .lot[data-tier]::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--tier); opacity: .9; }
+.display-list .lot[data-tier="t0"]::before { opacity: .35; }
+.display-list .lot[data-tier] .lot-art { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--tier) 75%, transparent); }
+.display-list .lot[data-tier] .lot-side .price { color: color-mix(in srgb, var(--tier) 70%, var(--text)); }
+.display-list .lot .tile-chrome, .display-list .lot .tier-gem { display: none; }
+/* Gallery: the card pops in a frame of its tier colour, emblems on the art. */
+.view-gallery .display-list .lot[data-tier] { border-color: color-mix(in srgb, var(--tier) 45%, var(--line)); box-shadow: 0 14px 34px -18px color-mix(in srgb, var(--tier) 80%, transparent), inset 0 1px 0 rgba(255,255,255,.04); background: radial-gradient(120% 60% at 50% 0%, color-mix(in srgb, var(--tier) 14%, transparent), transparent 70%), var(--surface); }
+.view-gallery .display-list .lot[data-tier]::before { display: none; }
+.view-gallery .display-list .lot .tile-chrome, .view-gallery .display-list .lot .tier-gem { display: inline-flex; }
+.view-gallery .display-list .lot .tile-chrome { display: block; }
+.view-gallery .display-list .lot[data-tier] .lot-art { overflow: visible; box-shadow: 0 0 0 2px var(--tier), 0 0 18px -2px color-mix(in srgb, var(--tier) 70%, transparent); }
+.view-gallery .display-list .lot[data-tier] .lot-art img { border-radius: 10px; }
+.view-gallery .display-list .lot[data-tier="t0"] .lot-art { box-shadow: 0 0 0 1px color-mix(in srgb, var(--tier) 50%, transparent); }
+/* Legendary and Grail: a slow foil sweep around the frame. */
+@property --spin { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.view-gallery .display-list .lot:is([data-tier="t4"], [data-tier="t5"]) { border-color: transparent; background: radial-gradient(120% 60% at 50% 0%, color-mix(in srgb, var(--tier) 16%, transparent), transparent 70%) padding-box, var(--surface) padding-box, conic-gradient(from var(--spin), var(--tier), #fff6, var(--tier), color-mix(in srgb, var(--tier) 30%, #000), var(--tier)) border-box; border: 1.5px solid transparent; animation: tier-spin 6s linear infinite; }
+.view-gallery .display-list .lot[data-tier="t5"] { box-shadow: 0 0 0 1px #ff7a1a55, 0 18px 44px -14px #ff7a1acc; }
+@keyframes tier-spin { to { --spin: 360deg; } }
+/* Search and set tiles get the same frame. */
+.card-grid .grid-card[data-tier] .card-img { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--tier) 80%, transparent), 0 10px 26px -14px var(--tier); }
+.card-grid .grid-card[data-tier="t0"] .card-img { box-shadow: 0 0 0 1px color-mix(in srgb, var(--tier) 40%, transparent); }
+.card-grid .grid-card[data-tier] .grid-meta span:last-child { color: color-mix(in srgb, var(--tier) 70%, var(--text)); }
+
+/* ===== Wanted cards (the wishlist, inside the collection) ===== */
+.lot.wanted { border-style: dashed; background: repeating-linear-gradient(135deg, transparent 0 9px, color-mix(in srgb, var(--text) 3.5%, transparent) 9px 10px), var(--surface); }
+.lot.wanted .lot-art img { filter: grayscale(1) brightness(.6) contrast(1.05); opacity: .8; transition: filter .45s ease, opacity .45s ease; }
+.lot.wanted .lot-art::after { content: ""; position: absolute; inset: 0; z-index: 2; border-radius: inherit; border: 1.5px dashed color-mix(in srgb, var(--text) 40%, transparent); background: linear-gradient(160deg, rgba(255,255,255,.16), transparent 42%); pointer-events: none; }
+.lot.wanted:is(:hover, .peek) .lot-art img { filter: none; opacity: 1; }
+.lot.wanted .lot-name { color: color-mix(in srgb, var(--text) 72%, transparent); }
+.lot.wanted .lot-side .price { color: var(--muted); }
+.view-gallery .display-list .lot.wanted[data-tier] { border: 1.5px dashed color-mix(in srgb, var(--tier) 40%, var(--line)); animation: none; background: repeating-linear-gradient(135deg, transparent 0 9px, color-mix(in srgb, var(--text) 3.5%, transparent) 9px 10px), var(--surface); box-shadow: none; }
+.view-gallery .display-list .lot.wanted .lot-art { box-shadow: none; }
+.want-tag { position: absolute; left: 50%; bottom: 8px; z-index: 3; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 99px; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; background: rgba(10, 10, 16, .82); color: #ff8fa3; box-shadow: inset 0 0 0 1px #ff8fa355; }
+.want-tag svg { width: 12px; height: 12px; fill: currentColor; }
+.display-list:not(.view-gallery *) .want-tag { font-size: 0; padding: 3px; bottom: 3px; gap: 0; }
+.view-gallery .display-list .want-tag { font-size: 10px; padding: 3px 9px; gap: 4px; bottom: 8px; }
+.view-gallery .display-list .lot.wanted .tile-chrome { opacity: .55; }
+.want-chip { display: inline-block; font-size: 11px; font-weight: 700; color: #ff8fa3; background: rgba(255, 120, 150, .12); padding: 1px 8px; border-radius: 99px; margin-right: 6px; }
+.want-actions { display: inline-flex; align-items: center; gap: 6px; }
+.want-got { min-height: 32px; padding: 4px 11px; }
+.want-x { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: none; color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer; }
+.want-add { margin: 4px 0 10px; }
+.want-add .btn svg { width: 16px; height: 16px; }
+
+/* ===== Motion: cards are dealt in on a new page, lean toward your finger with a holo shine ===== */
+@media (prefers-reduced-motion: no-preference) {
+  #content.page-enter .display-list.deal .lot { animation: deal-in .58s cubic-bezier(.2, .9, .25, 1.12) backwards; animation-delay: calc(var(--i, 0) * 34ms); transform-origin: 50% 90%; }
+  #content.page-enter .view-gallery .display-list.deal .lot:is([data-tier="t4"], [data-tier="t5"]) { animation: deal-in .58s cubic-bezier(.2, .9, .25, 1.12) backwards calc(var(--i, 0) * 34ms), tier-spin 6s linear infinite; }
+  @keyframes deal-in { from { opacity: 0; transform: perspective(800px) translateY(22px) rotateX(22deg) rotateY(-12deg) scale(.92); } }
+  :is(.lot-art, .cd-img, .tile-art, .quick-card-thumb) { transition: transform .35s cubic-bezier(.2, .8, .2, 1); }
+  .tilting { transform: perspective(700px) rotateX(var(--ty, 0deg)) rotateY(var(--tx, 0deg)) scale(1.035); transition: transform .08s linear; z-index: 4; }
+  .lot-art.tilting::before, .cd-img.tilting::before, .tile-art.tilting::before { content: ""; position: absolute; inset: 0; z-index: 3; border-radius: inherit; pointer-events: none; mix-blend-mode: color-dodge; opacity: .55; background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,.55), transparent 42%), linear-gradient(115deg, transparent 20%, rgba(255, 0, 170, .28) 36%, rgba(0, 220, 255, .28) 50%, rgba(255, 240, 0, .24) 64%, transparent 80%); background-size: 100% 100%, 220% 220%; background-position: 0 0, var(--mx, 50%) var(--my, 50%); }
+  .view-symbols .lot-art.tilting::before { content: '◈'; mix-blend-mode: normal; background: none; opacity: 1; position: static; }
+  /* Hold menu: the card flips up out of the pack. */
+  .quick-card-thumb { animation: pocket-pop .6s cubic-bezier(.2, 1.35, .35, 1) both; transform-origin: 50% 60%; box-shadow: 0 12px 30px -10px rgba(0,0,0,.7); }
+  @keyframes pocket-pop { 0% { opacity: 0; transform: perspective(700px) rotateY(160deg) translateY(30px) scale(.55); } 60% { opacity: 1; transform: perspective(700px) rotateY(-12deg) translateY(-6px) scale(1.06); } 100% { transform: none; } }
+  .card-action-list > button { animation: menu-rise .42s cubic-bezier(.2, .9, .3, 1.1) backwards; }
+  .card-action-list > button:nth-child(2) { animation-delay: 40ms; } .card-action-list > button:nth-child(3) { animation-delay: 80ms; } .card-action-list > button:nth-child(4) { animation-delay: 120ms; } .card-action-list > button:nth-child(5) { animation-delay: 160ms; }
+  @keyframes menu-rise { from { opacity: 0; transform: translateY(14px) scale(.97); } }
+  /* While you hold a card, it sinks a little and a ring fills, so you know the menu is coming. */
+  .holding { transform: scale(.96); transition: transform .45s ease; }
+  .holding::after { content: ""; position: absolute; inset: -3px; z-index: 5; border-radius: 12px; pointer-events: none; border: 2px solid var(--accent); animation: hold-ring .48s linear forwards; }
+  @keyframes hold-ring { from { opacity: 0; clip-path: inset(0 100% 0 0); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
+}
+.quick-card-heading .quick-card-thumb { width: 86px; height: 120px; border-radius: 9px; }
+.pw-field { padding: 12px 14px; border-radius: 12px; margin-bottom: 12px; background: color-mix(in srgb, var(--text) 5%, transparent); border-left: 3px solid var(--muted); }
+.pw-field.warn { border-left-color: var(--warn, #e0a240); }
+.pw-field.ok { border-left-color: var(--good, #3fb68b); }
+.pw-field p { margin: 6px 0 0; line-height: 1.45; }
+/* Emblem icons on collection cards keep their own size (card-art image rules don't apply). */
+.lot-art .tile-chrome img, .lot-art .tile-chrome .img-missing { width: 15px !important; height: 15px !important; object-fit: contain !important; display: inline-block; border-radius: 0 !important; }
+.lot-art .tile-chrome img.pkr { width: auto !important; height: 10px !important; }
+.lot-art .tile-chrome .ygo-pack { width: auto !important; }
+/* The tier gem sits on the top edge of the frame like a crest, clear of the card's own text. */
+.view-gallery .display-list .lot .tier-gem { top: -10px; right: auto; left: 50%; transform: translateX(-50%); height: 20px; }
+.view-gallery .display-list .lot .lot-art > img { position: relative; z-index: 1; }

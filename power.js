@@ -7,7 +7,7 @@ import { cardKey } from "./core.js";
 import { engineProfile } from "./insights.js";
 import { formatOf, isCommanderLike } from "./formats.js";
 import { metaState, MTG_META_FORMATS } from "./meta.js";
-import { mtgConstructedPower, ygoPower, ptcgPower, metaMatch, blend, powerGrade, placeText, archetypeUpgrades } from "./deckpower.js";
+import { mtgConstructedPower, ygoPower, ptcgPower, metaMatch, metaContext, powerGrade, placeText, archetypeUpgrades, BUILD_CAP } from "./deckpower.js";
 
 const cache = new Map();
 const memo = (sig, fn) => {
@@ -69,15 +69,18 @@ export function mtgPower(d) {
         profile: [["Lands", p.counts.Lands], ["Ramp", p.counts.Ramp], ["Draw", p.counts.Draw], ["Removal", p.counts.Removal], ["Avg cost", p.avg?.toFixed(2) ?? "—"]],
       };
     } else base = mtgConstructedPower(d, S.catalog, cardKey, formatOf(d).size);
-    let match = null;
+    let match = null, ctx;
+    const mine = new Map();
+    for (const r of d.cards) if (!BASICS.test(r.name)) mine.set(cardKey(r.name), (mine.get(cardKey(r.name)) || 0) + r.qty);
     if (M?.data?.decks?.length) {
-      const mine = new Map();
-      for (const r of d.cards) if (!BASICS.test(r.name)) mine.set(cardKey(r.name), (mine.get(cardKey(r.name)) || 0) + r.qty);
-      match = metaMatch(mine, mtgMetaDecks(M.data), M.data.archetypes || []);
+      const decks = mtgMetaDecks(M.data);
+      match = metaMatch(mine, decks, M.data.archetypes || []);
       if (match) match.extra = match.extra.map((x) => ({ ...x, name: d.cards.find((c) => cardKey(c.name) === x.key)?.name || x.key }));
-    }
-    const b = blend(base.score, match);
-    return { ...base, heuristic: base.score, score: b.score, from: b.from, match, metaKey: mk, metaLoaded: !!M?.data, metaBusy: !!M?.busy, game: "mtg" };
+      ctx = metaContext({ build: base.score, mine, decks, match, loaded: true, archetypes: (M.data.archetypes || []).map((a) => ({ name: a.name, share: a.share })) });
+      ctx.unplayed = ctx.unplayed.map((x) => ({ ...x, name: d.cards.find((c) => cardKey(c.name) === x.key)?.name || x.key }));
+    } else if (isCommanderLike(d)) ctx = { score: base.score, from: "commander" };
+    else ctx = metaContext({ build: base.score, mine, loaded: !!M?.data, formatOk: !!mk });
+    return { ...base, heuristic: base.score, score: ctx.score, from: ctx.from, ctx, match, metaKey: mk, metaLoaded: !!M?.data, metaBusy: !!M?.busy, game: "mtg", formatName: formatOf(d).name };
   });
 }
 
@@ -127,7 +130,11 @@ export function tcgPower(g, d, f, cardOf) {
       }
       if (match) match.extra = match.extra.map((x) => ({ ...x, name: g === "ygo" ? cardOf(x.key)?.name || x.key : nameOf.get(x.key) || x.key }));
     }
-    const b = blend(base.score, match);
+    // The field this deck is judged against: Pokémon data is Standard, Yu-Gi-Oh! data is TCG Advanced.
+    const formatOk = g === "ptcg" ? (d.format || "standard") === "standard" : ["tcg", "traditional"].includes(d.format || "tcg");
+    const ctx = metaContext({ build: base.score, mine: mineMap || new Map(), decks: formatOk ? metaDecks : [], match: formatOk ? match : null, loaded: !!data, formatOk, archetypes: (data?.archetypes || []).map((a) => ({ name: a.name || a.id, share: a.share })) });
+    if (ctx.unplayed) ctx.unplayed = ctx.unplayed.map((x) => ({ ...x, name: g === "ygo" ? cardOf(x.key)?.name || x.key : rows.find((r) => String(r.c?.name || r.name).toLowerCase() === x.key)?.c?.name || x.key, id: g === "ygo" ? x.key : rows.find((r) => String(r.c?.name || r.name).toLowerCase() === x.key)?.id }));
+    if (!formatOk) match = null;
     // Upgrades from lists of the same archetype (only when the match is real).
     let upgrades = null;
     if (match && match.sim >= 0.25 && mineMap) {
@@ -135,7 +142,7 @@ export function tcgPower(g, d, f, cardOf) {
       upgrades = archetypeUpgrades(mineMap, metaDecks.filter((x) => (x.archetype || x.name) === arch));
       upgrades.cuts = upgrades.cuts.map((x) => ({ ...x, name: match.extra.find((e) => e.key === x.key)?.name || (g === "ygo" ? cardOf(x.key)?.name : x.key) || x.key }));
     }
-    return { ...base, heuristic: base.score, score: b.score, from: b.from, match, upgrades, metaKey: g, metaLoaded: !!data, metaBusy: !!M?.busy, game: g };
+    return { ...base, heuristic: base.score, score: ctx.score, from: ctx.from, ctx, match, upgrades, metaKey: formatOk ? g : null, metaLoaded: !!data, metaBusy: !!M?.busy, game: g, formatName: f?.name || d.format };
   });
 }
 
@@ -155,9 +162,36 @@ export function powerPanel(p, { loadAct = "", findAct = "", cardAct = () => "" }
         ${m.weight > 0 ? `<p class="foot">Because your list is ${Math.round(m.sim * 100)}% the same as proven placing decks, the rating leans on that tournament evidence (build check alone: ${p.heuristic}).</p>` : `<p class="foot">Not close enough to any placing list to use tournament results; this rating is the build check only.</p>`}
       </div>`
     : p.metaKey
-      ? `<div class="meta-match"><p class="small">${p.metaBusy ? "Loading tournament results…" : "Compare this list with recent tournament winners to see which archetype it is, how it placed, and what it’s missing."}</p>${loadAct && !p.metaBusy ? `<button class="btn small" ${loadAct}>Compare with tournament decks</button>` : ""}</div>`
+      ? `<div class="meta-match"><p class="small">${p.metaBusy ? "Loading tournament results…" : "Compare this list with recent tournament winners to see which archetype it is, how it placed, and what it’s missing."}</p>${loadAct && !p.metaBusy ? `<button class="btn small" ${loadAct} data-autoload-meta="${esc(p.metaKey)}">Compare with tournament decks</button>` : ""}</div>`
       : "";
-  const R = review(p.parts),
+  // Where this list stands in the field it would actually face.
+  const c = p.ctx || {},
+    field = c.field?.length ? `<p class="small"><b>Decks to beat:</b> ${c.field.map((a) => `${esc(a.name)}${a.share ? ` <span class="muted">${pct(a.share)}</span>` : ""}`).join(" · ")}</p>` : "",
+    unplayed = c.unplayed?.length ? `<p class="small"><b>Not in any placing list:</b> ${c.unplayed.slice(0, 10).map((x) => `<button class="link small" ${cardAct(x)}>${esc(x.name)}${x.qty > 1 ? ` ×${x.qty}` : ""}</button>`).join(", ")}</p>` : "";
+  const fieldBox =
+    c.from === "build" && c.reason === "format"
+      ? `<div class="pw-field warn"><b>No tournament results for ${esc(p.formatName || "this format")}</b><p class="small">There's no placing-deck data for this format, so the rating is the build check only and is capped at ${BUILD_CAP}. A list can be built well and still lose to everything people actually play.</p></div>`
+      : c.from === "build"
+        ? `<div class="pw-field"><b>Not compared with the field yet</b><p class="small">${p.metaBusy ? "Loading tournament results…" : `Until it's compared with recent tournament decks, the rating is the build check only and is capped at ${BUILD_CAP}.`}</p></div>`
+        : c.from === "rogue"
+          ? `<div class="pw-field warn"><b>Off-meta list</b><p class="small">No deck that placed in the last ${c.lists} tournament lists shares at least a third of these cards. ${Math.round((c.played || 0) * 100)}% of your cards see tournament play at all. It's capped at 74 until a list like it puts up results: on paper it can look fine and still be outclassed.</p>${unplayed}${field}</div>`
+          : c.from === "commander"
+            ? ""
+            : `<div class="pw-field ok"><b>Proven archetype</b><p class="small">${Math.round((c.played || 0) * 100)}% of your cards appear in placing lists. The rating leans on how this archetype actually performs.</p>${unplayed}${field}</div>`;
+  const R = review(p.parts);
+  // The field comes first: points lost because the list isn't proven against what wins.
+  if (p.ctx && p.heuristic - p.score >= 1) {
+    const c = p.ctx;
+    R.weak.unshift({
+      label: c.from === "rogue" ? "Outclassed by the meta" : c.from === "mixed" ? "Strays from the proven list" : "Not tested against the field",
+      lost: p.heuristic - p.score,
+      count: c.from === "rogue" ? `${Math.round((c.played || 0) * 100)}% played` : c.from === "mixed" ? `${Math.round((p.match?.sim || 0) * 100)}% same` : "no data",
+      target: c.from === "rogue" ? "a placing archetype" : c.from === "mixed" ? "75%+ same cards" : "tournament data",
+      why: c.from === "rogue" ? "Built on its own terms it scores well, but no deck like it is placing, and part of it isn't played anywhere. Decks that are winning right now are faster or more consistent." : c.from === "mixed" ? `It's a version of ${p.match?.archetype || "a placing deck"}, but changes enough that those results only partly apply.` : c.reason === "format" ? `No placing-deck data for ${p.formatName || "this format"}, so it can't be checked against the field.` : "Compare it with recent tournament decks to see if it holds up.",
+      cards: (c.unplayed || []).slice(0, 10),
+    });
+  }
+  const _ = 0,
     pts = (x) => (Math.round(x * 10) / 10).toFixed(1).replace(/\.0$/, ""),
     pctx = (x) => Math.round(x * 100) + "%",
     cardList = (x) => (x.cards?.length ? `<p class="pw-cards">${x.cards.map((c) => `<button class="link small" ${cardAct(c)}>${esc(c.name)}${c.qty > 1 ? ` ×${c.qty}` : ""}</button>`).join(", ")}</p>` : ""),
@@ -181,8 +215,8 @@ export function powerPanel(p, { loadAct = "", findAct = "", cardAct = () => "" }
   <section class="panel pw-weak"><div class="row between"><h3>Weaknesses</h3><span class="muted small">${R.weak.length ? `${R.weak.length} found, biggest first` : "none"}</span></div>${weak}</section>
   ${R.strong.length ? `<section class="panel pw-strong"><h3>Strengths</h3><div class="pw-chips">${R.strong.map((x) => `<span class="pw-chip"><b>${esc(x.label)}</b> ${esc(String(x.count))}</span>`).join("")}</div></section>` : ""}
   ${sims}
-  ${metaBox ? `<section class="panel">${metaBox}</section>` : ""}
-  <section class="panel"><div class="row between"><h3>Score breakdown</h3><span class="muted small">${p.score}/100</span></div><p class="muted small">Each ingredient is worth a share of 100 points, weighted by how much it decides games in this format. A build-health and tournament-evidence rating, not a win rate.</p>${R.scored
+  ${fieldBox || metaBox ? `<section class="panel"><h3>Against the meta</h3>${fieldBox}${metaBox}</section>` : ""}
+  <section class="panel"><div class="row between"><h3>Score breakdown</h3><span class="muted small">build ${p.heuristic}/100</span></div><p class="muted small">How well the list is built, before the field is considered. Each ingredient is worth a share of 100 points, weighted by how much it decides games in this format. ${p.heuristic !== p.score ? `Deck Power is <b>${p.score}</b> after weighing it against the meta (above).` : ""}</p>${R.scored
     .map((x) => {
       const low = x.ratio < 0.75;
       return `<details class="ingredient"><summary><div class="row between"><span><b>${esc(x.label)}</b> <span class="muted small">${esc(String(x.count))} / ${esc(String(x.target))}</span></span><span class="${low ? "warn-text" : ""}"><b>${pts(x.earned)}</b><span class="muted">/${pts(x.max)}</span></span></div>${bar(x.ratio, low ? "warn" : "good")}</summary><p class="small muted">${esc(x.hint)}</p>${cardList(x) || `<p class="small muted">No cards counted here.</p>`}</details>`;

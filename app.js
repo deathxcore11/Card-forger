@@ -37,7 +37,7 @@ import { searchQuery, rankByName } from "./catalog-tools.js";
 import { promptInstall, dismissInstall, onInstallable, isIOS } from "./install.js";
 import { attachSuggest } from "./suggest.js";
 import { shouldTour, openTour } from "./tour.js";
-import { haptic, hapticFor, flyToCollection, countUp, ripple, setHaptics, attachGestures } from "./feel.js";
+import { haptic, hapticFor, flyToCollection, countUp, ripple, setHaptics, attachGestures, attachTilt } from "./feel.js";
 import { alertSheet, setAlert, onAlert, alertText, priceSeries } from "./pricehist.js";
 import { onSharedPrices, watchCards } from "./sharedprices.js";
 import { mtgCollector, nameCandidates, textPhrases } from "./scan.js";
@@ -719,6 +719,7 @@ function attachBrowseObserver() {
  });
 }
 
+const autoMeta = new Set();
 let lastPageKey = "";
 function render() {
   const authFields=S.ui.view === "settings" && !cloudInfo().user ? captureAuthFields(document) : [];
@@ -769,6 +770,13 @@ function render() {
     setTimeout(() => countUp($("#content")), 60);
   }
   attachBrowseObserver();
+  // Deck Power needs the field: load tournament results once per format, the first time a
+  // Power tab opens without them.
+  const metaBtn = $("#content [data-autoload-meta]");
+  if (metaBtn && !autoMeta.has(metaBtn.dataset.autoloadMeta)) {
+    autoMeta.add(metaBtn.dataset.autoloadMeta);
+    setTimeout(() => metaBtn.isConnected && metaBtn.click(), 50);
+  }
   if (ui.view === "settings") storageDetail();
   if (g !== "mtg") {
     const SU = T.ui(g).sets;
@@ -953,6 +961,7 @@ attachCardGestures({onHold:t=>safely(cardQuickMenu(t)),onPick:t=>safely(pickComp
 
 document.addEventListener("pointerdown", ripple, { passive: true });
 attachGestures({ closeSheet: () => closeSheet() });
+attachTilt();
 attachSuggest();
 document.addEventListener("submit",e=>{
  const form=e.target.closest?.('[data-auth-action]');if(!form)return;

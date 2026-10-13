@@ -244,3 +244,54 @@ export function attachGestures({ closeSheet }) {
     }
   });
 }
+
+/* ---------- card tilt (TCG Pocket style) ---------- */
+// Card art leans toward your finger or cursor, with a holographic shine that follows it.
+// Touch: only while pressing (a press that turns into a scroll lets go at once).
+const TILT = ".lot-art, .cd-img, .tile-art, .scan-cand2 .sc-img, .quick-card-thumb";
+export function attachTilt(root = typeof document === "undefined" ? null : document) {
+  if (!root || reduced()) return;
+  let el = null;
+  const set = (e) => {
+    const r = el.getBoundingClientRect(),
+      x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)),
+      y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+    el.style.setProperty("--tx", `${(x - 0.5) * 16}deg`);
+    el.style.setProperty("--ty", `${(0.5 - y) * 16}deg`);
+    el.style.setProperty("--mx", `${x * 100}%`);
+    el.style.setProperty("--my", `${y * 100}%`);
+  };
+  const end = () => {
+    if (!el) return;
+    el.classList.remove("tilting");
+    el.closest(".lot")?.classList.remove("peek");
+    el = null;
+  };
+  root.addEventListener("pointerover", (e) => {
+    if (e.pointerType !== "mouse") return;
+    const t = e.target.closest?.(TILT);
+    if (t && t !== el && !t.closest(".view-symbols")) {
+      end();
+      el = t;
+      el.classList.add("tilting");
+    }
+  }, { passive: true });
+  root.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse") return;
+    const t = e.target.closest?.(TILT);
+    if (!t || t.closest(".view-symbols")) return;
+    end();
+    el = t;
+    el.classList.add("tilting");
+    el.closest(".lot.wanted")?.classList.add("peek");
+    set(e);
+  }, { passive: true });
+  root.addEventListener("pointermove", (e) => {
+    if (!el) return;
+    if (e.pointerType === "mouse" && !el.contains(e.target)) return end();
+    set(e);
+  }, { passive: true });
+  for (const ev of ["pointerup", "pointercancel"]) root.addEventListener(ev, (e) => e.pointerType !== "mouse" && setTimeout(end, 260), { passive: true });
+  root.addEventListener("pointerout", (e) => e.pointerType === "mouse" && el && !el.contains(e.relatedTarget) && end(), { passive: true });
+  root.addEventListener("scroll", end, { passive: true, capture: true });
+}
