@@ -1,3 +1,8 @@
+3.20.1 — Automatic browsing and exact Classic Collection art
+- Search, set cards, set catalogues and collections load the next batch near the bottom in all three games. Buttons remain only for unsupported browsers and retrying failures.
+- Failed Pokémon search pages are retried without skipping a page; disabled, detached and already-fired scroll triggers do not dispatch duplicate loads.
+- Celebrations Classic Collection art uses explicit card records. TCGdex CC022 is Mewtwo EX, whose actual image ID is cel25c-54_A, not an inferred ordinal filename. Existing cached references are corrected in the renderer.
+
 3.20.0 — Complete set catalogue and consistent set shelves
 - Pokémon uses the full live set catalogue, so a failed series enrichment request cannot hide sets. Refresh sets is available in every game.
 - Exact set-ID artwork fallback covers Crown Zenith Galarian Gallery, Best of Game and other verified English catalogue matches; gallery collector prefixes are preserved.

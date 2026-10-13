@@ -1,3 +1,4 @@
+import {attachAutomaticBrowse} from './auto-browse.js';
 import {SheetHistory,BROWSE_TYPES} from "./sheet-history.js";
 import {handleArtworkError} from "./artwork.js";
 import {modeFor,registerWorkbench,quoteModel,recordQuote} from "./workbench-ui.js";
@@ -665,21 +666,20 @@ function go(hash) {
 }
 
 const autoLoaded = new Set();
-let browseObserver=null;
+let browseCleanup=null;
 function attachBrowseObserver() {
-  browseObserver?.disconnect();
-  if(!("IntersectionObserver" in window))return;
-  browseObserver=new IntersectionObserver(entries=>{
-    const target=entries.find(e=>e.isIntersecting)?.target;
-    if(!target?.isConnected || target.disabled)return;
-    browseObserver.disconnect();
-    const action=A[target.dataset.act];if(action)safely(action(target));
-  },{rootMargin:"400px"});
-  document.querySelectorAll('[data-act="setMore"], [data-act="tSetMore"]').forEach(b=>browseObserver.observe(b));
+ browseCleanup?.();
+ browseCleanup=attachAutomaticBrowse($("#content"),{
+  Observer:typeof IntersectionObserver === "undefined"?null:IntersectionObserver,
+  dispatch:button=>A[button.dataset.act]?.(button),
+  blocked:()=>!!document.querySelector?.('dialog[open]'),
+  errorFor:action=>action === "dbMore"?S.ui.db.error:action === "setMore"?S.ui.set.error:action === "tMore"?T.ui(T.game()).search.error:action === "tSetMore"?T.ui(T.game()).set.error:action === "tSetsMore"?T.ui(T.game()).sets.error:false
+ });
 }
+
 function render() {
   const authFields=S.ui.view === "settings" && !cloudInfo().user ? captureAuthFields(document) : [];
-  browseObserver?.disconnect();
+  browseCleanup?.();
   const ui = S.ui;
   // The scanner keeps its camera stream across renders (or stops it when you leave the page).
   setTimeout(() => scanCtx.afterRender?.(), 0);

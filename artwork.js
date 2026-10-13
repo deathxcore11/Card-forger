@@ -1,8 +1,9 @@
-import {POKEMON_SET_ART} from './pokemon-set-art.js';
+import {POKEMON_SET_ART,POKEMON_CARD_ART} from './pokemon-set-art.js';
 import {esc} from './ui.js';
 // English set + collector-number matches only. No name-based art substitutions.
 export function pokemonFallback(c){
  const id=String(c?.id||''),set=String(c?.set?.id || id.slice(0,id.lastIndexOf('-'))).toLowerCase(),code={svp:'SVP',swshp:'SWSH'}[set];
+ if(POKEMON_CARD_ART[id])return POKEMON_CARD_ART[id];
  const collector=String(c?.set?.number || id.slice(id.lastIndexOf('-')+1));
  // Verified historical set IDs use different naming between the two catalogues.
  if(set==='sm3.5' && /^\d{1,3}$/.test(collector) && Number(collector)>0)return `https://images.pokemontcg.io/sm35/${Number(collector)}_hires.png`;
@@ -19,7 +20,7 @@ export function pokemonFallback(c){
 }
 export function artworkSources(c,large=false){
  if(!c)return [];
- const urls=c.game==='ptcg'?[large?c.imageLarge:c.image,large?c.image:c.imageLarge,pokemonFallback(c)]:c.game==='ygo'?[large?c.imageLarge:c.image,`https://images.ygoprodeck.com/images/cards${large?'':'_small'}/${encodeURIComponent(c.id)}.jpg`]:[c.image_uris?.normal,c.card_faces?.[0]?.image_uris?.normal];
+ const urls=c.game==='ptcg'?[POKEMON_CARD_ART[c.id],large?c.imageLarge:c.image,large?c.image:c.imageLarge,pokemonFallback(c)]:c.game==='ygo'?[large?c.imageLarge:c.image,`https://images.ygoprodeck.com/images/cards${large?'':'_small'}/${encodeURIComponent(c.id)}.jpg`]:[c.image_uris?.normal,c.card_faces?.[0]?.image_uris?.normal];
  return [...new Set(urls.filter(u=>typeof u==='string'&&(/^(https?:\/\/|img\/)/.test(u))))];
 }
 export function artworkHTML(c,cls='card-img',large=false){

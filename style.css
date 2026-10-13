@@ -1722,3 +1722,7 @@ body.glass .topbar { background: rgba(12, 14, 19, 0.58); }
 .set-catalog-toolbar > .check { grid-column:1/-1; }
 .set-hero h1 { overflow-wrap:anywhere; }
 @media(max-width:480px){.set-hero .set-logo.big{width:82px;height:58px;}.set-hero h1{font-size:28px;line-height:1.2;}.list-bar > p{font-size:12px;line-height:1.4;}}
+
+.auto-browse-status { min-height:28px;display:grid;place-items:center;margin:8px 0;color:var(--muted);font-size:12px; }
+.card-grid > .grid-card { content-visibility:auto;contain-intrinsic-size:auto 280px; }
+.view-compact .card-grid > .grid-card,.view-symbols .card-grid > .grid-card { contain-intrinsic-size:auto 70px; }

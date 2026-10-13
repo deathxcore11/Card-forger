@@ -1381,9 +1381,11 @@ export function registerTcg(c) {
   };
   I.tQ = (t) => (ui().search.q = t.value);
   A.tSearch = () => runSearch();
-  A.tMore = () => {
-    ui().search.page++;
-    runSearch(true);
+  A.tMore = async () => {
+    const U=ui().search;if(U.busy)return;
+    const previous=U.page;U.page++;
+    await runSearch(true);
+    if(U.error)U.page=previous; // A retry requests the failed page, never skips cards.
   };
   C.tFilter = (t) => {
     const U = ui().search;
