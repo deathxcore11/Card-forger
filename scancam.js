@@ -252,7 +252,9 @@ export function registerScanner(ctx) {
     const el = document.getElementById("scanStatus");
     if (el) el.textContent = m;
   };
+  let camTicket = 0;
   const stopCamera = () => {
+    camTicket++;
     clearInterval(loopTimer);
     loopTimer = 0;
     stream?.getTracks().forEach((t) => t.stop());
@@ -371,7 +373,11 @@ export function registerScanner(ctx) {
   A.scanStart = async () => {
     if (!navigator.mediaDevices?.getUserMedia) return toast("This browser can’t open the camera here — use Photo instead.");
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+      const ticket = ++camTicket,
+        got = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+      // Closed, switched to Photo or left the page while the permission prompt was open: release it.
+      if (ticket !== camTicket || s().mode === "photo" || S.ui.view !== "scan") return got.getTracks().forEach((t) => t.stop());
+      stream = got;
       s().camOn = true;
       s().status = "";
       render();

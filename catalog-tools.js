@@ -1,3 +1,4 @@
+import { scanNamesFor } from "./scan.js";
 export function searchQuery(
   name,
   { color = "", cardColor = "", type = "", format = "", maxPrice = "", rarity = "", mv = "", set = "" } = {},
@@ -20,33 +21,7 @@ export function searchQuery(
     parts.push("usd<=" + Number(maxPrice));
   return parts.join(" ");
 }
-export function scanNames(text) {
-  const ignore =
-    /^(?:creature|legendary|artifact|enchantment|instant|sorcery|land|planeswalker|battle|token|flying|haste|trample|vigilance|copyright|illustration|wizards|the gathering)\b/i;
-  return [
-    ...new Set(
-      String(text)
-        .split(/\r?\n/)
-        .map((s) =>
-          s
-            .replace(/\{[^}]*\}/g, "")
-            .replace(/[|©®™]/g, " ")
-            .replace(/\s+[0-9][0-9\s]*$/, "")
-            .replace(/^[^A-Za-z]+/, "")
-            .replace(/[^A-Za-z0-9 ,.'’\-]/g, " ")
-            .replace(/\s+/g, " ")
-            .trim(),
-        )
-        .filter(
-          (s) =>
-            s.length >= 4 &&
-            s.length <= 65 &&
-            /[a-z]/i.test(s) &&
-            !ignore.test(s),
-        ),
-    ),
-  ].slice(0, 5);
-}
+export const scanNames = (text) => scanNamesFor("mtg", text);
 export function cardLinks(card) {
   const name = encodeURIComponent(card.name);
   return [

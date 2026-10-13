@@ -1,3 +1,4 @@
+import { functionalIn } from "./deck-safety.js";
 // Format-aware deck generator: builds a full, legal deck around one or more
 // seed cards, preferring cards you own and staying inside a purchase budget.
 // Works for every constructed format in formats.js (60-card, singleton and
@@ -35,7 +36,7 @@ export function scoreCard(c, seedTags, seedSubs, { free = 0, size = 60 } = {}) {
   const r = roles(c),
     e = engineRoles(c),
     cmc = Number(c.cmc) || 0,
-    rank = c.edhrec_rank || c.penny_rank || null;
+    rank = size >= 100 ? c.edhrec_rank || null : null;
   let s = 0;
   s += r.filter((x) => seedTags.includes(x)).length * 3;
   s += subtypes(c).filter((x) => seedSubs.includes(x)).length * 4;
@@ -65,7 +66,7 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
     lead = f.commander ? commander || seeds.find((s) => canLead(s, f)) : null;
   if (f.commander && !lead) throw Error(`${f.name} decks need a card that can lead them (${f.commander === "planeswalker" ? "a planeswalker" : "a legendary creature"}).`);
   const legalStatus = (c) => legalityIn(c, f),
-    isLegal = (c) => !f.legality || ["legal", "restricted"].includes(legalStatus(c)),
+    isLegal = (c) => functionalIn(c,f) && (!f.legality || ["legal", "restricted"].includes(legalStatus(c))),
     maxCopies = (c) => (isBasic(c) || /any number of cards named/i.test(rulesText(c)) ? Infinity : legalStatus(c) === "restricted" ? 1 : f.copies);
   // Colors: the leader's identity, else the seeds', else the base list's.
   let deckColors = colors || (lead ? ident(lead) : [...new Set([...seeds, ...base.map((b) => catalog[cardKey(b.name)])].flatMap(ident))]);
@@ -93,9 +94,12 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
     count = () => [...rows.values()].reduce((a, r) => a + r.qty, 0),
     landsIn = () => [...rows.values()].filter((r) => isLand(catalog[cardKey(r.name)])).reduce((a, r) => a + r.qty, 0);
 
+  if (sumQty(base)>size) throw Error(`This list has ${sumQty(base)} cards. Review ${sumQty(base)-size} cuts before building to the ${size}-card target.`);
   // Keep everything already in the list.
   for (const b of aggregateCards(base)) {
     const c = catalog[cardKey(b.name)];
+    if(c && !isLegal(c))throw Error(`${b.name} is illegal or nonfunctional in ${f.name}. Replace it before completing the list.`);
+    if(c && b.qty>maxCopies(c))throw Error(`${b.name} exceeds this format’s copy limit. Review your list first.`);
     put(c || { name: b.name }, b.qty, "Already in your list");
   }
   const landTarget = Math.max(f.commander && size >= 100 ? 36 : Math.round(size * 0.4) - (f.commander ? 1 : 0), landsIn()),
@@ -170,8 +174,8 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
   const dualCap = deckColors.length > 1 ? Math.round(landTarget * 0.4) : 0;
   for (const c of landPool) {
     const duals = landsIn() - [...rows.values()].filter((r) => isBasic(catalog[cardKey(r.name)])).reduce((a, r) => a + r.qty, 0);
-    if (duals >= dualCap || landsIn() >= landTarget) break;
-    const n = Math.min(f.copies === 1 ? 1 : 4, dualCap - duals, landTarget - landsIn()),
+    if (duals >= dualCap || landsIn() >= landTarget || count() >= size) break;
+    const n = Math.min(f.copies === 1 ? 1 : 4, dualCap - duals, landTarget - landsIn(), size-count()),
       extra = costFor(c, qtyOf(c), qtyOf(c) + n);
     if (extra !== Infinity && spent + extra <= budget + 1e-6) {
       spent += extra;
@@ -196,6 +200,7 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
   const cards = [...rows.values()].filter((r) => r.qty > 0),
     total = sumQty(cards),
     open = Math.max(0, size - total);
+  if(total>size)throw Error("Generated deck exceeds its target; no version was applied.");
   if (open) warnings.push(`${open} slots still open — raise the budget or add more cards to your collection.`);
   if (unknown) warnings.push(`${unknown} card${unknown > 1 ? "s have" : " has"} no current price.`);
   const owned = cards.reduce((a, r) => a + Math.min(r.qty, isBasic(catalog[cardKey(r.name)]) || BASIC_NAMES.has(r.name) ? r.qty : available(r.name)), 0);

@@ -1,7 +1,10 @@
+import { timedFetch } from "./auth-form.js";
 // Accounts and cloud saving (Supabase). Device storage stays the source the app
 // works from; the account holds a private copy that follows you to other devices.
 // Writes are revision-checked, so two devices never silently overwrite each other.
 import { SUPABASE } from "./config.js";
+import { createPasswordAuth, authError } from "./password-auth.js";
+let recoveringPassword = false, authNotice = "";
 
 const LIB = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/+esm";
 const META = "cardforge-cloud-v1";
@@ -107,7 +110,7 @@ export function statusLabel() {
   );
 }
 
-export const cloudInfo = () => ({ configured: cloudConfigured(), ready: !!client, user, profile, providers, status: { ...status }, pending, meta: readMeta() });
+export const cloudInfo = () => ({ configured: cloudConfigured(), ready: !!client, user, profile, providers, status: { ...status }, pending, recoveringPassword, authNotice, meta: readMeta() });
 
 // Turn backend errors into something a player can act on.
 function friendly(e) {
@@ -123,7 +126,7 @@ export async function initCloud(h) {
   if (!cloudConfigured()) return;
   try {
     const { createClient } = await import(/* @vite-ignore */ LIB);
-    client = createClient(SUPABASE.url, SUPABASE.key, { auth: { flowType: "pkce", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true } });
+    client = createClient(SUPABASE.url, SUPABASE.key, { global: { fetch: timedFetch }, auth: { flowType: "pkce", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true } });
   } catch {
     status.state = "error";
     status.msg = "Couldn’t load the account service. Your cards are still saved on this device.";
@@ -135,22 +138,32 @@ export async function initCloud(h) {
     .then((r) => (r.ok ? r.json() : null))
     .then((d) => {
       if (d?.external) {
-        providers = { email: d.external.email !== false, google: !!d.external.google };
+        providers = { email: d.external.email !== false, google: !!d.external.google, confirmationRequired: d.mailer_autoconfirm !== true, signup: d.disable_signup !== true };
         hooks.changed();
       }
     })
     .catch(() => {});
   client.auth.onAuthStateChange((event, session) => {
+    if (event === "PASSWORD_RECOVERY" && session?.user) {
+      recoveringPassword = true;
+      setTimeout(() => { hooks.passwordRecovery?.(); hooks.changed(); }, 0);
+    }
     const next = session?.user || null;
+    if (!next || (next.id !== user?.id && event !== "PASSWORD_RECOVERY")) recoveringPassword = false;
     if (next?.id === user?.id) return;
     user = next;
     profile = null;
     if (user) setTimeout(() => startSync(), 0);
     else setStatus("local");
   });
-  const { data } = await client.auth.getSession();
+  const { data, error } = await client.auth.getSession();
+  const callbackError = new URLSearchParams(location.search).get("error_description");
+  if (error || callbackError) {
+    authNotice = authError(error || callbackError);
+    hooks.passwordRecovery?.(); hooks.changed();
+  }
   // Remove the one-time sign-in code from the address bar.
-  if (/[?&]code=/.test(location.search)) history.replaceState(null, "", location.pathname + location.hash);
+  if (/[?&](?:code|error|error_description)=/.test(location.search)) history.replaceState(null, "", location.pathname + location.hash);
   if (data?.session?.user && !user) {
     user = data.session.user;
     startSync();
@@ -165,21 +178,38 @@ const redirectTo = () => location.origin + location.pathname;
 export async function signInGoogle() {
   if (!client) throw Error("Accounts aren’t available right now.");
   const { error } = await client.auth.signInWithOAuth({ provider: "google", options: { redirectTo: redirectTo() } });
-  if (error) throw error;
+  if (error) throw Error(authError(error));
 }
 export async function signInEmail(email) {
   if (!client) throw Error("Accounts aren’t available right now.");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw Error("Enter a valid email address.");
   const { error } = await client.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo() } });
-  if (error) throw error;
+  if (error) throw Error(authError(error));
+}
+function passwordAuth() {
+  if (!client) throw Error("Accounts aren’t available right now.");
+  authNotice = "";
+  return createPasswordAuth(client.auth, redirectTo);
+}
+export const signInPassword = (email,password) => passwordAuth().login(email,password);
+export const createAccount = (email,password,confirm) => passwordAuth().signup(email,password,confirm);
+export const requestPasswordReset = email => passwordAuth().reset(email);
+export async function finishPasswordReset(password,confirm) {
+  if (!recoveringPassword || !user) throw Error("Open the password-reset email first. Request a fresh link if it has expired.");
+  await passwordAuth().update(password,confirm);
+  recoveringPassword = false;
+  hooks.changed();
 }
 export async function signOut() {
   if (!client) return;
   await flushPush().catch(() => {});
-  await client.auth.signOut();
+  const { error } = await client.auth.signOut();
+  if (error) throw Error(authError(error));
   user = null;
   profile = null;
   pending = null;
+  recoveringPassword = false;
+  authNotice = "";
   setStatus("local");
 }
 

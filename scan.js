@@ -29,11 +29,52 @@ export function scanNamesFor(g, text) {
     ...new Set(
       String(text)
         .split(/\r?\n/)
-        .map((s) => (g === "ptcg" ? s.replace(/\bHP\s*\d+.*$/i, "") : s))
+        .map((s) => (g === "ptcg" ? s.replace(/^\s*(?:BASIC|STAGE\s*[12])\s+/i, "").replace(/\bHP\s*\d+.*$/i, "") : s))
+        // Keep suffixes (ex/GX/V) but remove mixed digit/text OCR fragments
+        // before a title: "snce1 Eldegoss". Do not strip legitimate words.
+        .map((s) => s.replace(/^(?:\s*[A-Za-z]*\d+[A-Za-z]*\s+)+(?=[A-Za-z])/g, ""))
         .map(clean)
         .filter((s) => s.length >= 3 && s.length <= 60 && /[a-z]/i.test(s) && !ignore.test(s) && (s.match(/[A-Za-z]/g) || []).length >= 3),
     ),
   ].slice(0, 5);
+}
+
+// Quality feedback is a capture aid, never a claim that a card was identified.
+// All four guide edges must have contrast. Interior detail, exposure and
+// multiple stable frames are checked separately by the camera controller.
+export function guideQuality({ data, width, height }, box) {
+  const gray = (x, y) => {
+    const i = (Math.max(0, Math.min(height - 1, y)) * width + Math.max(0, Math.min(width - 1, x))) * 4;
+    return (data[i] + data[i + 1] + data[i + 2]) / 3;
+  };
+  const { x, y, w, h } = box;
+  const edge = (horizontal, at, start, length) => {
+    let hits = 0;
+    for (let k = 1; k <= 20; k++) {
+      const p = Math.round(start + length * k / 21);
+      let best = 0;
+      for (let d = -5; d <= 5; d++) {
+        const a = horizontal ? gray(p, at + d - 2) : gray(at + d - 2, p);
+        const b = horizontal ? gray(p, at + d + 2) : gray(at + d + 2, p);
+        best = Math.max(best, Math.abs(a - b));
+      }
+      if (best > 20) hits++;
+    }
+    return hits / 20;
+  };
+  const edges = [edge(true, y, x, w), edge(true, y + h, x, w), edge(false, x, y, h), edge(false, x + w, y, h)];
+  let detail = 0, exposure = 0, bright = 0, count = 0;
+  for (let yy = y + 8; yy < y + h - 8; yy += 3) for (let xx = x + 8; xx < x + w - 8; xx += 3) {
+    const v = gray(xx, yy);
+    exposure += v; bright += v > 248 ? 1 : 0;
+    detail += Math.abs(v - gray(xx + 1, yy)) + Math.abs(v - gray(xx, yy + 1)); count++;
+  }
+  if (!count) return { state: "red", text: "Move the whole card inside the guide." };
+  if (Math.min(...edges) < 0.55) return { state: "red", text: "Align all four card edges with the guide. Use a contrasting background." };
+  if (exposure / count < 40) return { state: "amber", text: "More light needed." };
+  if (bright / count > 0.18) return { state: "amber", text: "Bright areas detected. Check for glare." };
+  if (detail / count < 7) return { state: "amber", text: "Move closer or wait for focus." };
+  return { state: "green", text: "Image checks passed. Confirm the card after capture." };
 }
 
 // Yu-Gi-Oh! set codes: LOB-EN001, MP23-EN125, RA03-EN016 (OCR often reads O for 0 in the number).
@@ -110,3 +151,11 @@ export const prefixQuery = (name, n = 3) =>
     .slice(0, 3)
     .map((w) => w.slice(0, n))
     .join(" ");
+// Automatic recognition must not turn a substring search into identification.
+// Ignore punctuation/spacing, but preserve GX/ex/V and other meaningful words.
+export const scanNameKey = name => String(name || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+export function scanCandidateMatches(card, name, numbers = []) {
+  if (!card || scanNameKey(card.name) !== scanNameKey(name)) return false;
+  if (!numbers.length) return true;
+  return numbers.some(n => Number(card.set?.number) === Number(n.num) && Number(card.set?.total) === Number(n.total));
+}

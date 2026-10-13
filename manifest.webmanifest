@@ -1,6 +1,6 @@
 {
-  "name": "Cardforge \u2014 Magic Workbench",
-  "short_name": "Cardforge",
+  "name": "CardStashy \u2014 Your Card Collection",
+  "short_name": "CardStashy",
   "start_url": "./#home",
   "scope": "./",
   "display": "standalone",
@@ -36,5 +36,5 @@
     "games",
     "utilities"
   ],
-  "description": "Your Magic: The Gathering collection, decks, upgrades and deck engine analysis."
+  "description": "Magic, Pok\u00e9mon and Yu-Gi-Oh! collections, binders and deck building."
 }

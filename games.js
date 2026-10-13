@@ -1,4 +1,4 @@
-// The card games Cardforge supports. Magic uses the original, fully featured
+// The card games CardStashy supports. Magic uses the original, fully featured
 // screens; Yu-Gi-Oh! and Pokémon share one set of screens driven by an adapter
 // (ygo.js, ptcg.js) that knows each game's data source, rules and formats.
 export const GAMES = {

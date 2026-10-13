@@ -1,4 +1,8 @@
-# Cardforge
+CardStashy is the renamed Cardforge app. Existing browser/IndexedDB keys, backup formats, Supabase project, GitHub repository and Cloudflare Worker URL intentionally remain unchanged so existing data stays accessible.
+
+Animated binders live in Collection → Binders for all three games. They group collection entries by the existing location field, display nine entries per page and do not add or duplicate owned cards. Empty locations appear as Unsorted cards. Animations respect prefers-reduced-motion.
+
+# CardStashy
 
 Your Magic: The Gathering, Yu-Gi-Oh! and Pokémon collections, decks, upgrades and deck analysis in one installable web app. It runs entirely in the browser with no account and no server. Your cards are saved on your device, and card data and prices come live from [Scryfall](https://scryfall.com).
 
@@ -73,17 +77,19 @@ Each web address keeps its own storage. A collection saved on the Cloudflare add
 Cardforge works fully without accounts. Signing in adds a private copy of your workspace in your
 account so it follows you to other devices. It's off until a key is added to `config.js`.
 
-One-time setup in the Supabase dashboard (project `noxfmbwuytnbvfgukpiv`):
+Database migrations are applied to the current project. For a fresh project, run both SQL files in `supabase/migrations`. Remaining sign-in setup in the Supabase dashboard (project `noxfmbwuytnbvfgukpiv`):
 
-1. **SQL Editor →** paste and run `supabase/migrations/20261012000000_cardforge_accounts.sql`.
-   It creates `profiles` and `workspaces`, both with row-level security (each user can only read
-   and write their own row) and no access for signed-out visitors.
+1. **Authentication → Email / SMTP →** configure a mail provider for public signups. The default Supabase mail service restricts recipients and is not suitable for a public app.
 2. **Authentication → URL Configuration →** set *Site URL* to your Cardforge address
-   (e.g. `https://cardforge2.<you>.workers.dev`) and add the same address to *Redirect URLs*.
+   `https://cardforge2.deathxcore11.workers.dev/` and add that exact URL to *Redirect URLs*.
 3. **Authentication → Providers →** Email is on by default. For Google, enable it and paste a
    Google OAuth client ID and secret (Google Cloud Console → Credentials → OAuth client → Web).
 4. **Project Settings → API Keys →** copy the **publishable** key (`sb_publishable_…`, or the
    legacy `anon` key) into `config.js`. Never use the `service_role`/secret key in the app.
+
+Google OAuth must allow `https://noxfmbwuytnbvfgukpiv.supabase.co/auth/v1/callback` as an authorized redirect URI. Google is currently disabled in this project; it needs credentials before the app can offer it. Do not put the Google client secret in frontend code.
+
+Account UI: Settings offers email/password login, Create account, Forgot password, Google when enabled, and optional magic links. Email confirmation and password recovery require SMTP. Recovery links must be opened in the requesting browser for PKCE verification. A Supabase PASSWORD_RECOVERY event opens the new-password screen; no password is written into workspace storage.
 
 How sync behaves: the app always saves on the device first, then pushes to the account a few
 seconds later. Every write is checked against the revision the device last saw, so two devices
@@ -124,3 +130,7 @@ uploading or replacing anything. Signing out leaves the data on the device.
 Engine score, bracket estimates, upgrade picks and test games are transparent rules and simulations based on card text. They are not AI predictions or win rates. The bracket estimate can't detect two-card combos or how a deck is played. Prices are Scryfall reference estimates. Only single commanders are supported (no partners or backgrounds yet).
 
 Card data and images © Wizards of the Coast, provided by Scryfall. Cardforge is unofficial Fan Content and isn't approved or endorsed by Wizards.
+
+## 3.9 safeguards and browsing
+
+Magic completion respects its target, rejects known illegal/nonfunctional retained cards, and offers reviewed cuts for oversized lists without treating every >60 list as illegal. Completed non-Commander decks can preview conservative same-role spell swaps; each applies one copy in and one out, with a saved version. Scores measure heuristic build health, including an aggro lens, rather than win rate. Pokémon card-name lookups use the persistent catalog first and deduplicate in-flight requests; six workers keep source load bounded. Set pages progressively load more cards near the viewport, retaining an accessible button fallback.

@@ -14,7 +14,7 @@ async function database() {
         dbPromise = null;
         reject(
           Error(
-            "Local database is blocked. Close other Cardforge tabs and retry.",
+            "Local database is blocked. Close other CardStashy tabs and retry.",
           ),
         );
       }, 5000);

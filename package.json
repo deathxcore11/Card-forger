@@ -1,11 +1,11 @@
 {
-  "name": "cardforge",
-  "version": "3.9.0",
+  "name": "cardstashy",
+  "version": "3.9.2",
   "private": true,
   "type": "module",
-  "description": "Cardforge — Magic: The Gathering collection, decks, upgrades and deck engine analysis. A static, offline-capable web app.",
+  "description": "CardStashy — Magic: The Gathering collection, decks, upgrades and deck engine analysis. A static, offline-capable web app.",
   "scripts": {
-    "test": "node test-update.mjs && node test-actions.mjs && node test-extras.mjs && node test-share.mjs && node test-cloud.mjs && node test-formats.mjs && node test-builder.mjs && node test-tcg.mjs && node test-topdeck.mjs && node test-worker.mjs && node test-adapt.mjs && node test-scan.mjs && node test-scancam.mjs",
+    "test": "node test-update.mjs && node test-actions.mjs && node test-extras.mjs && node test-share.mjs && node test-cloud.mjs && node test-password-auth.mjs && node test-binders.mjs && node test-formats.mjs && node test-builder.mjs && node test-deck-safety.mjs && node test-tcg.mjs && node test-topdeck.mjs && node test-worker.mjs && node test-adapt.mjs && node test-scan.mjs && node test-scancam.mjs",
     "start": "npx --yes http-server -p 8080 -c-1 ."
   }
 }

@@ -1,3 +1,4 @@
+import { binderShelf } from "./binders.js";
 // Screen renderers. Each returns HTML for #content; interaction is wired by
 // data-act / data-change / data-input attributes handled centrally in app.js.
 import { metaState, MTG_META_FORMATS } from "./meta.js";
@@ -98,7 +99,7 @@ function mtgDeckArt(d) {
 // Three steps for a new visitor; disappears once they have cards and a deck.
 function mtgNext(d, copies) {
   if (!d && !copies)
-    return nextCard({ title: "Add your collection", text: "Paste a list or upload a ManaBox, Moxfield, Archidekt or CSV export — or scan cards with your camera. Then Cardforge shows what you can build.", actions: `<button class="btn" data-act="importCollection">↥ Import a list</button><button class="btn ghost" data-act="go" data-to="#scan">▧ Scan</button><button class="btn ghost" data-act="loadExample">Explore an example</button>` });
+    return nextCard({ title: "Add your collection", text: "Paste a list or upload a ManaBox, Moxfield, Archidekt or CSV export — or scan cards with your camera. Then CardStashy shows what you can build.", actions: `<button class="btn" data-act="importCollection">↥ Import a list</button><button class="btn ghost" data-act="go" data-to="#scan">▧ Scan</button><button class="btn ghost" data-act="loadExample">Explore an example</button>` });
   if (!d)
     return nextCard({ title: "Discover decks your cards support", text: `${copies} cards in your collection. See the commanders they support and the decks — precons, shared lists and tournament results — you can almost build.`, actions: `<button class="btn" data-act="go" data-to="#decks/ideas">✧ Deck ideas</button><button class="btn ghost" data-act="go" data-to="#decks/inspiration">🏆 Meta decks</button>` });
   const t = totalsFor(d),
@@ -181,7 +182,7 @@ export function search() {
     deck = currentDeck(),
     chips = mtgFilterChips(f),
     shown = db.results.filter((c) => (f.own === "owned" ? inv(c.name).owned > 0 : f.own === "missing" ? !inv(c.name).owned : true));
-  return `<div class="page-head"><h1>Search cards</h1><span class="row"><button class="btn ghost small" data-act="go" data-to="#sets">◈ Browse sets</button><button class="btn ghost small" data-act="dbRandom">🎲 Random card</button></span></div>
+  return `<div class="page-head"><h1>Search cards</h1><span class="row"><button class="btn ghost small" data-act="compareOpen">Compare cards</button><button class="btn ghost small" data-act="go" data-to="#sets">◈ Browse sets</button><button class="btn ghost small" data-act="dbRandom">🎲 Random card</button></span></div>
   <div class="searchbar"><input id="dbTerm" type="search" value="${esc(db.term)}" placeholder="Card name, or words like “draw a card”" data-input="dbTerm" data-enter="dbSearch" aria-label="Search all cards" autocomplete="off"><button class="btn" data-act="dbSearch" ${db.busy ? "disabled" : ""}>${db.busy ? "…" : "Search"}</button></div>
   ${chipRow(chips, "dbChip", "dbClear")}
   ${savedRow(savedSearches("mtg"), "dbSaved", "dbSavedDel")}
@@ -357,13 +358,13 @@ function printList(prints, shown, name, chosen) {
   if (!prints.length) return `<p class="muted small">No paper printings found.</p>`;
   return `<div class="print-list">${prints
     .map((p, i) => {
-      const fin = ["nonfoil", "foil", "etched"].filter((f) => priceOfFinish(p, f));
+      const fin = ["nonfoil", "foil", "etched"].filter((f) => p.finishes?.includes(f) || priceOfFinish(p, f));
       return `<div class="print ${p.id === shown.id ? "on" : ""}">
         <button class="print-main" data-act="viewPrint" data-i="${i}">${img(p.image_uris?.small || p.card_faces?.[0]?.image_uris?.small, p.set_name, "print-thumb")}<span class="print-name">${setIcon(p.set, p.rarity, 16)}<span class="ellip"><b>${esc(p.set_name)}</b><small>${esc(p.set.toUpperCase())} #${esc(p.collector_number)} · ${esc((p.released_at || "").slice(0, 4))}${p.promo ? " · promo" : ""}${p.full_art ? " · full art" : ""}${(p.frame_effects || []).includes("showcase") ? " · showcase" : ""}${(p.frame_effects || []).includes("extendedart") ? " · extended" : ""}${p.border_color === "borderless" ? " · borderless" : ""}</small></span></span></button>
         <span class="print-prices"><button class="pp buy" data-act="buyCard" data-i="${i}" data-finish="${fin[0] || "nonfoil"}" aria-label="Buy the ${esc(p.set_name)} printing">Buy</button>${fin.length ? fin.map((f) => `<button class="pp ${chosen?.id === p.id && chosen?.finish === f ? "on" : ""}" data-act="choosePrint" data-i="${i}" data-finish="${f}" data-name="${esc(name)}" title="Use this price for shopping"><small>${f === "nonfoil" ? "reg" : f}</small>${usd(priceOfFinish(p, f))}</button>`).join("") : '<span class="muted small">—</span>'}</span>
       </div>`;
     })
-    .join("")}</div><p class="foot">Tap a printing to see its art, flavor text and artist. Tap a price to use it for your shopping totals, or Buy for store links to that exact printing.</p>`;
+    .join("")}</div><p class="foot">Each thumbnail is the source image for that printing; foil and etched surface effects may not be pictured. Tap a printing to see its art, flavor text and artist. Tap a price to use it for your shopping totals, or Buy for store links to that exact printing.</p>`;
 }
 
 /* ---------- Sets ---------- */
@@ -465,7 +466,7 @@ function tierCard(t, i, mode, tierList = null) {
     ${bar(t.total ? t.owned / t.total : 0, "thin")}
     ${t.warnings.map((w) => `<p class="small warn-text">${esc(w)}</p>`).join("")}
     ${tierList ? draftPath(tierList, i, tierLabel) : ""}
-    ${shown ? ["Creatures", "Spells", "Lands", "Other"].filter((g) => groups[g]).map((g) => `<p class="list-head">${g} <span class="muted">${groups[g].reduce((a, r) => a + r.qty, 0)}</span></p><div class="list compact">${groups[g].sort((a, b) => b.qty - a.qty || a.name.localeCompare(b.name)).map((r) => { const free = Math.min(r.qty, S.ui.build.avail?.(r.name) ?? 0), basic = isBasic(meta(r.name)) || /^(Plains|Island|Swamp|Mountain|Forest|Wastes)$/.test(r.name); return `<button class="mini-row" data-act="card" data-name="${esc(r.name)}"><span class="ellip">${r.qty}× ${esc(r.name)} <small class="muted">${esc(r.why || "")}</small></span><span class="small ${basic || free >= r.qty ? "ok-text" : "warn-text"}">${basic ? "basic" : free >= r.qty ? "owned" : `buy ${r.qty - free}`}</span></button>`; }).join("")}</div>`).join("") : ""}
+    ${shown ? ["Creatures", "Spells", "Lands", "Other"].filter((g) => groups[g]).map((g) => `<p class="list-head">${g} <span class="muted">${groups[g].reduce((a, r) => a + r.qty, 0)}</span></p><div class="list compact">${groups[g].sort((a, b) => b.qty - a.qty || a.name.localeCompare(b.name)).map((r) => { const free = Math.min(r.qty, S.ui.build.avail?.(r.name) ?? 0), basic = isBasic(meta(r.name)) || /^(Plains|Island|Swamp|Mountain|Forest|Wastes)$/.test(r.name); return `<button class="mini-row upgrade-card-row" data-act="card" data-name="${esc(r.name)}">${img(art(meta(r.name)),r.name,"mini-art")}<span class="ellip">${r.qty}× ${esc(r.name)} <small class="muted">${esc(r.why === "Already in your list" ? "Kept in this version" : r.why || "")}</small></span><span class="small ${basic || free >= r.qty ? "ok-text" : "warn-text"}">${basic ? "basic" : free >= r.qty ? "✓ Owned" : `Need ${r.qty - free}`}</span></button>`; }).join("")}</div>`).join("") : ""}
     <div class="actions wrap"><button class="btn ghost small" data-act="tierToggle" data-i="${i}">${shown ? "Hide list" : "See all " + t.total + " cards"}</button>${mode === "fill" ? `<button class="btn small" data-act="tierApply" data-i="${i}">Use this version</button>` : `<button class="btn small" data-act="tierSave" data-i="${i}">Save as deck</button>`}</div>
   </article>`;
 }
@@ -477,7 +478,7 @@ export function buildSheet() {
     tiers = B.results[B.format] || null;
   return `<div class="sheet-head"><h2>Build decks</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   <div class="build-seed">${img(art(seed), B.seed, "mini-art")}<div><small class="muted">Built around</small><b>${esc(B.seed)}</b>${seed ? colorDots(seed) : ""}</div><button class="btn ghost small" data-act="buildRandom" data-format="${esc(B.format)}">🎲 Random card</button></div>
-  <p class="muted small">Pick a format. Cardforge builds a complete, legal deck at each budget — using your cards first, then the best-fitting affordable cards it can find. Basic lands are assumed owned.</p>
+  <p class="muted small">Pick a format. CardStashy builds a complete, legal deck at each budget — using your cards first, then the best-fitting affordable cards it can find. Basic lands are assumed owned.</p>
   <div class="fmt-chips">${fmts.map((f) => `<button class="chip pick ${f.name === B.format ? "on" : ""}" data-act="buildFormat" data-format="${esc(f.name)}">${esc(f.name)}</button>`).join("") || '<span class="muted small">This card isn’t legal in any constructed format.</span>'}</div>
   <label class="custom-budget">Also build at $<input id="buildCustom" type="number" min="0" max="100000" step="1" value="${esc(B.custom ?? "")}" placeholder="any amount" data-change="buildCustom"></label>
   ${B.busy ? `<p class="muted small" role="status">${esc(B.msg || "Building…")}</p>` : B.msg ? `<p class="small ${B.error ? "warn-text" : "muted"}" role="status">${esc(B.msg)}</p>` : ""}
@@ -488,9 +489,12 @@ export function buildSheet() {
 function fillAnyPanel(d, fm, count) {
   const B = S.ui.build,
     tiers = B.fillDeck === d.id ? B.results.__fill : null;
-  return `<section class="panel"><p class="eyebrow">${esc(fm.name)}</p><h2>${count < fm.size ? `Fill ${fm.size - count} open slots` : "Rebuild around this list"}</h2>
+  return `<section class="panel"><p class="eyebrow">${esc(fm.name)}</p><h2>${count < fm.size ? `Fill ${fm.size - count} open slots` : "Complete this list"}</h2>
   <p class="muted small">Keeps every card you chose, then completes the deck with ${esc(fm.name)}-legal cards in its colors — your cards first, then the best affordable ones. One version per budget.</p>
-  <div class="actions"><button class="btn" data-act="fillAny" ${B.busy ? "disabled" : ""}>${B.busy && B.fillDeck === d.id ? "Building…" : tiers ? "↻ Rebuild" : "Build versions"}</button></div>
+  ${count > fm.size ? `<div class="notice warn">${count - fm.size} cards above the ${fm.size}-card consistency target. <button class="btn ghost small" data-act="reviewTrim">Review cuts</button></div>` : ""}
+  ${count === fm.size ? `<button class="btn" data-act="suggestFormatUpgrades" ${B.busy ? "disabled" : ""}>Find paired upgrades</button><p class="muted small">Same-role spell swaps within your $${esc(d.budget ?? 25)} purchase budget. Suggestions are heuristics, not measured win rates.</p>` : ""}
+  ${B.fillDeck === d.id && B.formatSwaps?.length ? `<div class="list">${B.formatSwaps.map((swap,i)=>`<article class="panel"><div class="swap-art-pair"><div>${img(art(meta(swap.cardOut)),swap.cardOut,"mini-art")}<small class="muted">OUT</small><b>${esc(swap.cardOut)}</b></div><span aria-hidden="true">→</span><div>${img(art(meta(swap.cardIn)),swap.cardIn,"mini-art")}<small class="ok-text">IN</small><b>${esc(swap.cardIn)}</b></div></div><p class="small muted">${esc(swap.reason)}</p><button class="btn ghost small" data-act="applyFormatUpgrade" data-i="${i}">Swap 1 copy · ${usd(swap.cost)} to buy</button></article>`).join("")}</div>` : ""}
+  <div class="actions"><button class="btn" data-act="fillAny" ${B.busy || count > fm.size ? "disabled" : ""}>${B.busy && B.fillDeck === d.id ? "Building…" : tiers ? "↻ Rebuild" : "Build versions"}</button></div>
   ${B.fillDeck === d.id && B.msg ? `<p class="small muted" role="status">${esc(B.msg)}</p>` : ""}
   </section>
   ${tiers ? `<div class="tiers">${tiers.map((t, i) => tierCard(t, i, "fill", tiers)).join("")}</div>` : ""}`;
@@ -579,8 +583,8 @@ export function compareSheet() {
 export function collection() {
   const tab = S.ui.collTab;
   return `<div class="page-head"><h1>Collection</h1><div class="head-actions"><button class="btn small" data-act="addCard">＋ Add</button><button class="icon" data-act="collMenu" aria-label="More collection actions">⋯</button></div></div>
-  ${segmented("collTab", tab, [["cards", "Cards"], ["value", "Value"], ["wishlist", "Wishlist"]])}
-  ${tab === "value" ? collectionValueView() : tab === "wishlist" ? wishlistView() : collectionCards()}`;
+  ${segmented("collTab", tab, [["cards", "Cards"], ["binders", "Binders"], ["value", "Value"], ["wishlist", "Wishlist"]])}
+  ${tab === "binders" ? binderShelf(S.state.collection.map(entry => { const c=(entry.printingVerified && S.state.printings?.[entry.printingId]) || meta(entry.name); return {entry,card:c,image:cardImage(c),game:"mtg"}; }),"mtg",S.state.settings.binders || []) : tab === "value" ? collectionValueView() : tab === "wishlist" ? wishlistView() : collectionCards()}`;
 }
 
 function collectionCards() {
@@ -650,7 +654,7 @@ function collectionValueView() {
     first = hist[0],
     colorNames = { W: "White", U: "Blue", B: "Black", R: "Red", G: "Green", Multi: "Multicolor", Colorless: "Colorless" },
     maxColor = Math.max(1, ...Object.values(v.colors));
-  if (!st.collection.length) return empty("No value to track yet", "Add cards and Cardforge records your collection value once a day so you can watch it change.");
+  if (!st.collection.length) return empty("No value to track yet", "Add cards and CardStashy records your collection value once a day so you can watch it change.");
   return `<section class="panel">
     <div class="row between"><div><p class="eyebrow">Estimated value</p><p class="big">${usd(v.total)}</p><p class="muted small">${v.copies} copies${v.unpriced ? ` · ${v.unpriced} without a price` : ""}${first && first.total && first.date !== new Date().toISOString().slice(0, 10) ? ` · ${signed(v.total - first.total, (x) => usd(x))} since ${esc(first.date)}` : ""}</p></div><button class="btn ghost small" data-act="refreshPrices">↻ Refresh prices</button></div>
     ${lineChart(hist)}
@@ -746,7 +750,7 @@ function ideasView() {
       : I.cache.length
         ? `<p class="muted">No ideas match this filter.</p>`
         : !S.state.collection.length
-          ? empty("Ideas come from your cards", "Add your collection and Cardforge finds the commanders and strategies it already supports. No collection yet? Try the example, or browse decks you can almost build.", `<button class="btn" data-act="importCollection">↥ Import collection</button><button class="btn ghost" data-act="loadExample">Try example collection</button><button class="btn ghost" data-act="go" data-to="#decks/inspiration">✧ Explore starter decks</button>`)
+          ? empty("Ideas come from your cards", "Add your collection and CardStashy finds the commanders and strategies it already supports. No collection yet? Try the example, or browse decks you can almost build.", `<button class="btn" data-act="importCollection">↥ Import collection</button><button class="btn ghost" data-act="loadExample">Try example collection</button><button class="btn ghost" data-act="go" data-to="#decks/inspiration">✧ Explore starter decks</button>`)
           : empty("Find what your cards want to be", "Analysis loads card data for your whole collection in a few batched requests, then tries every legendary creature you own as a commander.")
   }`;
 }
@@ -920,7 +924,7 @@ export function sharedPage() {
     <div class="hero-body"><div class="row between"><button class="icon light" data-act="go" data-to="#home" aria-label="Home">←</button><span class="chip dark">Shared deck</span></div>
       <h1>${esc(d.name)}</h1>
       <p>${fm.commander ? colorDots(meta(d.commander)) + " " + esc(d.commander || "") + " · " : ""}<span class="chip dark">${esc(fm.name)}</span>${d.author ? ` · by <b>${esc(d.author)}</b>` : ""}</p>
-      <div class="hero-stats"><span><b class="${sumQty(d.cards) === target ? "" : "warn-text"}">${sumQty(d.cards)}/${target}</b>cards</span><span><b>${p.score}</b>engine</span>${br ? `<span><b>${br.bracket}</b>bracket est.</span>` : ""}<span><b>${d.budget !== null ? usd(d.budget, 0) : "—"}</b>budget</span></div>
+      <div class="hero-stats"><span><b class="${(fm.exact ? sumQty(d.cards) === target : sumQty(d.cards) >= target) ? "" : "warn-text"}">${sumQty(d.cards)}/${target}</b>cards</span><span><b>${p.score}</b>engine</span>${br ? `<span><b>${br.bracket}</b>bracket est.</span>` : ""}<span><b>${d.budget !== null ? usd(d.budget, 0) : "—"}</b>budget</span></div>
     </div></section>
   <div class="actions wrap share-actions"><button class="btn" data-act="sharedBuild">Make my version</button><button class="btn ghost" data-act="sharedSave">Save to Inspiration</button><button class="btn ghost" data-act="sharedCopy">Copy list</button></div>
   ${d.about ? `<section class="panel"><h3>About this deck</h3><p class="about">${esc(d.about)}</p><p class="foot">Written by ${esc(d.author || "the person who shared it")}.</p></section>` : ""}
@@ -934,7 +938,7 @@ export function sharedPage() {
       ${odds !== null ? `<li>${pct(odds)} of opening hands have 3+ lands</li>` : ""}
       ${g ? `<li>Test games: ${pct(g.landsBy4)} hit 4 lands by turn 4${g.commander ? ` · commander on curve ${pct(g.commander.onCurve ?? 0)}` : ""}</li>` : ""}
       ${br ? `<li>Bracket estimate <b>${br.bracket} · ${esc(br.name)}</b>${br.reasons.length ? ` (${esc(br.reasons.join(", "))})` : ""}</li>` : ""}
-    </ul><p class="foot">Calculated by Cardforge from the list and card text — simulations and estimates, not win rates.</p></section>
+    </ul><p class="foot">Calculated by CardStashy from the list and card text — simulations and estimates, not win rates.</p></section>
   <section class="panel"><h3>Full list</h3>${order
     .filter((t) => groups[t])
     .map((t) => `<p class="list-head">${t === "Sorcerys" ? "Sorceries" : t} <span class="muted">${sumQty(groups[t])}</span></p><div class="list compact">${groups[t]
@@ -1118,7 +1122,7 @@ function deckEngine(d) {
     colorTotal = Object.values(p.pips).reduce((a, b) => a + b, 0),
     srcTotal = Object.values(p.sources).reduce((a, b) => a + b, 0),
     colors = Object.keys(p.pips).filter((k) => p.pips[k] > 0 || p.sources[k] > 0);
-  return `<section class="panel score-panel">${ring(p.score)}<div><p class="eyebrow">Engine score</p><h2>${scoreGrade(p.score)}</h2><p class="muted small">How well the deck covers the ingredients most Commander decks need: lands, ramp, draw, answers, synergy and a castable curve. It is a build-health check, not a win-rate prediction.</p></div></section>
+  return `<section class="panel score-panel">${ring(p.score)}<div><p class="eyebrow">Engine score</p><h2>${scoreGrade(p.score)}</h2><p class="muted small">${esc(p.archetype)} lens: checks mana, card flow, interaction and curve against this plan. Aggro skips ramp and board-wipe targets. This is a build-health heuristic, not a win-rate or tournament-tier prediction.</p></div></section>
   ${p.unknown ? `<div class="note warn">${p.unknown} cards have no card data yet, so they aren’t counted. <button class="link" data-act="refreshDeck">Load card data</button></div>` : ""}
   ${d.format === "Commander" ? bracketPanel(d) : ""}
   <section class="panel"><h3>Ingredients</h3>${p.parts
@@ -1158,7 +1162,7 @@ function bracketPanel(d) {
   <div class="bracket-scale" role="img" aria-label="Bracket ${b.bracket} of 5">${[1, 2, 3, 4, 5].map((n) => `<span class="${n === b.bracket ? "on" : n < b.bracket ? "past" : ""}">${n}</span>`).join("")}</div>
   <p class="small">${b.reasons.length ? "Why: " + esc(b.reasons.join(" · ")) + "." : "No Game Changers, mass land denial or stacked tutors and extra turns found."}${b.lower.length ? ` To reach bracket ${b.bracket - 1}: ${esc(b.lower.join(", "))}.` : ""}</p>
   ${b.unknown ? `<p class="small warn-text">${b.unknown} cards have no card data yet and weren’t checked.</p>` : ""}
-  <details><summary class="small"><b>What Cardforge counted</b></summary>
+  <details><summary class="small"><b>What CardStashy counted</b></summary>
     ${line("Game Changers", f.gameChangers)}${line("Tutors", f.tutors)}${line("Extra turns", f.extraTurns)}${line("Mass land denial", f.landDenial)}${line("Fast mana", f.fastMana, "(not a bracket rule, but it speeds a deck up)")}
     ${Object.values(f).every((l) => !l.length) ? '<p class="muted small">Nothing flagged.</p>' : ""}
   </details>
@@ -1212,7 +1216,7 @@ export function goldfishTable(g, b = null) {
 export function commanderPicker(d) {
   const fm = formatOf(d),
     legends = aggregateCards(d.cards).map((c) => meta(c.name)).filter((c) => c && canLead(c, fm));
-  return `<section class="panel pick-commander"><p class="eyebrow">One quick step</p><h2>Which card is your commander?</h2><p class="muted small">This deck doesn’t have a commander set, so Cardforge can’t tell your colors. Tap it below.</p>
+  return `<section class="panel pick-commander"><p class="eyebrow">One quick step</p><h2>Which card is your commander?</h2><p class="muted small">This deck doesn’t have a commander set, so CardStashy can’t tell your colors. Tap it below.</p>
   ${legends.length ? `<div class="list compact">${legends.map((c) => `<button class="mini-row" data-act="setCommander" data-name="${esc(c.name)}"><span class="row">${img(art(c), c.name, "mini-art")}<span class="ellip"><b>${esc(c.name)}</b></span></span>${colorDots(c)}</button>`).join("")}</div>` : `<p class="small">No legendary creatures were found in this list.</p>`}
   <div class="searchbar"><input id="cmdName" placeholder="Or type the commander’s name" data-enter="setCommander"><button class="btn ghost" data-act="setCommander">Set</button></div></section>`;
 }
@@ -1271,7 +1275,7 @@ function swapPanel(d) {
   const U = S.ui.upgrade,
     plans = U.deckId === d.id ? U.plans : {},
     plan = plans[U.budget];
-  return `<section class="panel"><p class="eyebrow">${sumQty(d.cards) < 100 ? "Step 2" : "Upgrade lab"}</p><h2>One-for-one upgrades</h2><p class="muted small">Pick a budget. Cardforge proposes cuts and replacements and explains each trade-off: what the deck gains, what it gives up, and what it costs to buy. These are rules of thumb from card text — you know your playgroup best.</p>
+  return `<section class="panel"><p class="eyebrow">${sumQty(d.cards) < 100 ? "Step 2" : "Upgrade lab"}</p><h2>One-for-one upgrades</h2><p class="muted small">Pick a budget. CardStashy proposes cuts and replacements and explains each trade-off: what the deck gains, what it gives up, and what it costs to buy. These are rules of thumb from card text — you know your playgroup best.</p>
   <div class="chips">${[0, 10, 25, 50, 100].map((n) => `<button class="chip pick ${U.budget === n ? "on" : ""}" data-act="upBudget" data-v="${n}">${n ? "$" + n : "My cards ($0)"}</button>`).join("")}</div>
   <label class="custom-budget">Custom upgrade budget ($)<input type="number" min="0" max="100000" step="0.01" value="${U.budget}" data-change="upCustom" aria-label="Custom upgrade budget"></label>
   <label class="check small"><input type="checkbox" data-change="upTrade" ${U.tradeIn ? "checked" : ""}> Show what the cut cards are worth (reference only — never subtracted from what you spend)</label>
@@ -1471,18 +1475,42 @@ function deckShop(d, t) {
 
 const when = (iso) => (iso ? new Date(iso).toLocaleString() : "never");
 
+export function signedOutAccount(a, mode = "login") {
+  const selected = ["login","signup","reset"].includes(mode) ? mode : "login";
+  return `<section class="panel account auth-card"><div class="settings-card-heading"><span class="settings-icon" aria-hidden="true">◈</span><div><p class="eyebrow">PRIVATE SYNC</p><h2>Your account</h2></div></div><p class="muted small">Keep your collection and decks with you across devices.</p>
+  ${a.providers.google ? `<button class="btn ghost block" data-act="signGoogle">Continue with Google</button><div class="auth-divider"><span>or use email</span></div>` : ""}
+  ${a.authNotice ? `<p class="note warn" role="alert">${esc(a.authNotice)}</p>` : ""}
+  ${a.providers.email ? `<nav class="auth-tabs" role="tablist" aria-label="Account access">${[["login","Log in"],["signup","Create account"]].map(([id,label]) => `<button role="tab" id="authTab-${id}" aria-controls="auth-${id}" aria-selected="${selected === id}" data-act="authTab" data-mode="${id}">${label}</button>`).join("")}</nav>
+  <div id="authFeedback" class="auth-feedback ${esc(S.ui.authFeedback?.tone || "error")}" role="alert" aria-live="polite" ${S.ui.authFeedback?.message ? "" : "hidden"}>${esc(S.ui.authFeedback?.message || "")}</div>
+  <div id="auth-login" class="auth-pane" role="tabpanel" aria-labelledby="authTab-login" ${selected === "login" ? "" : "hidden"}>
+    <form data-auth-action="signPassword">
+    <label class="field">Email address<input id="signEmail" name="email" required type="email" autocomplete="username" placeholder="you@example.com" aria-label="Login email address"></label>
+    <label class="field">Password<input id="signPassword" name="password" required type="password" autocomplete="current-password" placeholder="Your password"></label>
+    <button class="btn block" type="submit">Log in</button></form>
+    <button class="link auth-secondary" data-act="authTab" data-mode="reset">Forgot password?</button>
+    <details class="settings-disclosure"><summary>Email me a link instead</summary><p class="foot">Use the login email above. Open the link in this browser.</p><button class="btn ghost block" data-act="signEmail">Send sign-in link</button></details>
+  </div>
+  <div id="auth-signup" class="auth-pane" role="tabpanel" aria-labelledby="authTab-signup" ${selected === "signup" ? "" : "hidden"}>
+    <form data-auth-action="createAccount">
+    <label class="field">Email address<input id="signupEmail" name="email" required type="email" autocomplete="email" placeholder="you@example.com" aria-label="Account email address"></label>
+    <label class="field">Password<input id="signupPassword" name="password" required type="password" autocomplete="new-password" minlength="8" placeholder="At least 8 characters"></label>
+    <label class="field">Confirm password<input id="signupConfirm" name="password_confirmation" required type="password" autocomplete="new-password" placeholder="Enter it again"></label>
+    <button class="btn block" type="submit">Create account</button></form><p class="foot">${a.providers.confirmationRequired===false ? "Create your account, then start syncing." : "Confirm your email to finish registering. Your browser saving a password does not mean registration succeeded."}</p>
+  </div>
+  <div id="auth-reset" class="auth-pane" ${selected === "reset" ? "" : "hidden"}><h3>Reset your password</h3><p class="muted small">Enter your account email to request a reset link.</p><label class="field">Email address<input id="resetEmail" type="email" autocomplete="email" placeholder="you@example.com" data-enter="forgotPassword"></label><button class="btn block" data-act="forgotPassword">Send reset link</button><button class="link auth-secondary" data-act="authTab" data-mode="login">Back to log in</button></div>` : `<p class="muted small">Email sign-in is disabled for this site.</p>`}
+  <p class="auth-privacy"><span aria-hidden="true">◇</span> Your collection is private. Device saving works without an account.</p>
+  <details class="settings-disclosure"><summary>Help with email links</summary><p class="foot">Check your spam folder and open links in the requesting browser. If no email arrives, the site’s email-delivery service may need configuration.</p></details></section>`;
+}
+
 export function accountPanel() {
   const a = cloudInfo();
   if (!a.configured)
     return `<section class="panel account"><h3>Account</h3><p class="muted small">Accounts aren’t switched on for this site yet, so everything is saved on this device. Export a backup to move it to another phone or computer.</p></section>`;
   if (!a.ready)
     return `<section class="panel account"><h3>Account</h3><p class="muted small">${a.status.state === "error" ? esc(a.status.msg) : "Connecting…"}</p></section>`;
-  if (!a.user)
-    return `<section class="panel account"><p class="eyebrow">Optional</p><h3>Sign in to save across devices</h3>
-    <p class="muted small">Your collection and decks sync privately to your account — only you can see them. You can keep using Cardforge without signing in; your data stays on this device either way.</p>
-    ${a.providers.google ? `<button class="btn block" data-act="signGoogle">Continue with Google</button>` : ""}
-    <div class="searchbar email-row"><input id="signEmail" type="email" autocomplete="email" placeholder="you@example.com" aria-label="Email address" data-enter="signEmail"><button class="btn ghost" data-act="signEmail">Email me a link</button></div>
-    <p class="foot">We’ll email a one-time sign-in link — no password. Signing in never deletes what’s on this device: if your account already has data, you choose which copy to keep, and the other is saved as a backup file.</p></section>`;
+  if (a.recoveringPassword && a.user)
+    return `<section class="panel account"><h3>Choose a new password</h3><p class="muted small">Your reset link was accepted. Set a password for your CardStashy account.</p><label class="field">New password<input id="resetPassword" type="password" autocomplete="new-password" minlength="8"></label><label class="field">Confirm password<input id="resetConfirm" type="password" autocomplete="new-password" data-enter="finishPasswordReset"></label><button class="btn block" data-act="finishPasswordReset">Save new password</button><button class="link small" data-act="signOut">Cancel and sign out</button></section>`;
+  if (!a.user) return signedOutAccount(a, S.ui.authMode || "login");
   const pr = a.profile || {},
     st = a.status,
     label = { synced: "Synced", syncing: "Syncing…", error: "Sync paused", decide: "Needs your decision", offline: "Offline — will sync when you’re back online", local: "Synced" }[st.state] || "Synced";
@@ -1497,7 +1525,7 @@ export function accountPanel() {
       <button class="btn small" data-act="saveProfile">Save profile</button>
     </details>
     <p class="foot">Private: only you can read your account copy. Cards and decks are saved on this device first, then synced a few seconds later.</p>
-    <button class="link small" data-act="signOut">Sign out</button> <span class="muted small">— your data stays on this device.</span></section>`;
+    <button class="link small" data-act="accountResetPassword">Reset / set password</button> · <button class="link small" data-act="signOut">Sign out</button> <span class="muted small">— your data stays on this device.</span></section>`;
 }
 
 // Shown when both this device and the account have data, or when they changed separately.
@@ -1512,30 +1540,24 @@ export function syncDecideSheet(p, local) {
     <div class="actions"><button class="btn" data-act="syncChoice" data-choice="device">Upload to my account</button><button class="btn ghost" data-act="syncChoice" data-choice="later">Not now</button></div>
     <p class="foot">Nothing on this device is removed.</p>`;
   return `<div class="sheet-head"><h2>${p.kind === "conflict" ? "Changed in two places" : "Which copy should we keep?"}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
-  <p class="muted small">${p.kind === "conflict" ? "Your account was updated on another device while this device also had changes. Pick one copy to keep." : "This device and your account both have cards, and they’re different."} The copy you don’t keep is downloaded as a backup file, so nothing is lost. Cardforge doesn’t merge copies automatically, so cards are never counted twice.</p>
+  <p class="muted small">${p.kind === "conflict" ? "Your account was updated on another device while this device also had changes. Pick one copy to keep." : "This device and your account both have cards, and they’re different."} The copy you don’t keep is downloaded as a backup file, so nothing is lost. CardStashy doesn’t merge copies automatically, so cards are never counted twice.</p>
   <div class="sync-compare">${side("This device", L, "Saved " + when(L.saved))}${C ? side("Your account", C, "Saved " + when(p.cloud.updated_at) + (p.cloud.device ? " · " + esc(p.cloud.device) : "")) : ""}</div>
   <div class="actions wrap"><button class="btn" data-act="syncChoice" data-choice="account">Keep the account copy</button><button class="btn ghost" data-act="syncChoice" data-choice="device">Keep this device’s copy</button></div>
   <button class="link small" data-act="syncChoice" data-choice="later">Decide later (sync stays paused)</button>`;
 }
 
 export function settings() {
-  const st = S.state;
-  return `<div class="page-head"><h1>Settings & backup</h1></div>
-  ${accountPanel()}
-  <section class="panel"><h3>Backup</h3><p class="muted small">${cloudInfo().user ? "Your collection is saved on this device and synced to your account. Backup files are still a good idea before big changes." : "Your collection lives in this browser on this website address. Export a backup before switching phones or browsers — or sign in above to sync."}</p>
-  <div class="actions wrap"><button class="btn" data-act="exportBackup">↓ Export backup</button><label class="btn ghost">Restore backup<input type="file" accept=".json" data-change="restoreBackup" hidden></label><label class="btn ghost">Check a backup<input type="file" accept=".json" data-change="checkBackup" hidden></label></div>
-  <p id="backupCheck" class="muted small"></p>
-  <p class="small">Last saved: ${esc(st.lastSavedAt ? new Date(st.lastSavedAt).toLocaleString() : "not yet")}</p>
-  <button class="link" data-act="undoRestore">Restore the automatic recovery copy</button></section>
-  <section class="panel"><h3>Storage</h3><p id="storageDetail" class="muted small">Checking…</p><button class="btn ghost" data-act="persist">Ask the browser to keep my data</button></section>
-  <section class="panel"><h3>Install</h3><p class="muted small">In Chrome on Android: ⋮ menu → <b>Add to Home screen</b> / <b>Install app</b>. Your collection and decks work offline; searches and prices need internet.</p><button class="btn ghost" data-act="install">Install Cardforge</button></section>
-  <section class="panel"><h3>Data sources</h3><ul class="sources">
-    <li><b>Scryfall</b> — card data, images and reference USD prices (live).</li>
-    <li><b>MTGJSON</b> — precon product lists.</li>
-    <li><b>ManaBox, Moxfield, Archidekt, TCGplayer, Deckbox</b> — import their text or CSV exports.</li>
-    <li><b>TCGplayer Mass Entry</b> — paste shopping lists to buy.</li>
-  </ul><p class="foot">Engine score, upgrade picks and test games are transparent rules and simulations based on card text, not AI predictions or win rates. Magic: The Gathering © Wizards of the Coast. Cardforge is an independent fan tool.</p></section>
-  <section class="panel"><h3>Start over</h3><p class="muted small">Keeps one recovery copy on this device. Export a backup first.</p><div class="actions wrap"><button class="btn ghost danger" data-act="reset">Start empty</button><button class="btn ghost" data-act="loadExample">Load example data</button></div></section>`;
+  const st = S.state, tab = ["account","backup","app"].includes(S.ui.settingsTab) ? S.ui.settingsTab : "account";
+  const saved = esc(st.lastSavedAt ? new Date(st.lastSavedAt).toLocaleString() : "Not yet");
+  return `<div class="settings-page"><header class="settings-header"><p class="eyebrow">YOUR WORKSPACE</p><h1>Settings</h1><p class="muted">Your account, your data, your preferences.</p></header>
+  <nav class="settings-tabs" role="tablist" aria-label="Settings sections">${[["account","Account"],["backup","Backup & data"],["app","App & sources"]].map(([id,label]) => `<button id="settingsTab-${id}" role="tab" aria-controls="settings-${id}" aria-selected="${id===tab}" data-act="settingsTab" data-id="${id}">${label}</button>`).join("")}</nav>
+  <div id="settings-account" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-account" ${tab === "account" ? "" : "hidden"}><div class="settings-account-layout">${accountPanel()}<aside class="settings-aside"><span class="settings-status-dot"></span><b>Saved on this device</b><p class="muted small">${cloudInfo().user ? "Your account adds a private cloud copy." : "You can keep building without signing in."}</p><span class="small muted">Last saved<br>${saved}</span><button class="link" data-act="settingsTab" data-id="backup">Manage backups →</button></aside></div></div>
+  <div id="settings-backup" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-backup" ${tab === "backup" ? "" : "hidden"}><section class="panel settings-card"><div class="settings-card-heading"><span class="settings-icon" aria-hidden="true">↓</span><div><p class="eyebrow">YOUR DATA</p><h2>Keep a backup</h2></div></div><p class="muted small">Download a copy of your collection, decks and settings.</p><button class="btn" data-act="exportBackup">Download backup</button><p class="foot">Last saved: ${saved}</p><details class="settings-disclosure"><summary>Restore or check a backup</summary><div class="actions wrap"><label class="btn ghost">Restore file<input type="file" accept=".json" data-change="restoreBackup" hidden></label><label class="btn ghost">Check file<input type="file" accept=".json" data-change="checkBackup" hidden></label></div><p id="backupCheck" class="muted small" role="status"></p><button class="link" data-act="undoRestore">Use the automatic recovery copy</button></details></section>
+  <section class="panel settings-card"><h3>Device storage</h3><p id="storageDetail" class="muted small">Checking…</p><button class="btn ghost" data-act="persist">Keep data on this device</button></section>
+  <details class="settings-disclosure settings-danger"><summary>Start over or load examples</summary><p class="foot">Export a backup first. One recovery copy is kept on this device.</p><div class="actions wrap"><button class="btn ghost danger" data-act="reset">Start empty</button><button class="btn ghost" data-act="loadExample">Load example data</button></div></details></div>
+  <div id="settings-app" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-app" ${tab === "app" ? "" : "hidden"}><section class="panel settings-card"><div class="settings-card-heading"><span class="settings-icon" aria-hidden="true">＋</span><div><p class="eyebrow">TAKE IT WITH YOU</p><h2>Install CardStashy</h2></div></div><p class="muted small">Open it from your home screen. Saved collections and decks work offline.</p><button class="btn" data-act="install">Install app</button><details class="settings-disclosure"><summary>Android installation help</summary><p class="foot">In Chrome, open ⋮ → Add to Home screen or Install app. Searches and updated prices need internet.</p></details></section>
+  <details class="settings-disclosure settings-source"><summary>Card databases & prices</summary><ul class="sources"><li><b>Magic:</b> Scryfall card data, images and reference prices; MTGJSON precon lists.</li><li><b>Pokémon:</b> TCGdex card data and images, with supplied TCGplayer and Cardmarket prices.</li><li><b>Yu-Gi-Oh!:</b> YGOPRODeck card data, alternate art, printings and reference prices.</li><li><b>Imports:</b> Supported text and CSV exports from deck and collection tools.</li></ul><p class="foot">Prices are estimates; check edition, condition and shipping with the seller.</p></details>
+  <details class="settings-disclosure settings-source"><summary>About CardStashy</summary><p class="foot">Deck scores, upgrades and test games use card rules and simulations; they aren’t guaranteed win rates. CardStashy is an independent fan tool. Trading cards and artwork belong to their respective rights holders.</p><span class="settings-version">Version 3.9.1</span></details></div></div>`;
 }
 
 /* ---------- Deck idea sheet ---------- */

@@ -101,3 +101,11 @@ create trigger profiles_touch before update on public.profiles
 -- No access at all for signed-out visitors.
 revoke all on public.workspaces from anon;
 revoke all on public.profiles from anon;
+
+-- RLS limits rows; grants are still required for signed-in API access.
+revoke all on public.profiles, public.workspaces from authenticated;
+grant usage on schema public to authenticated;
+grant select, insert, update on public.profiles to authenticated;
+grant select, insert, update, delete on public.workspaces to authenticated;
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+revoke execute on function public.touch_updated_at() from public, anon, authenticated;

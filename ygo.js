@@ -30,6 +30,8 @@ export function normalizeYgo(c) {
   const misc = c.misc_info?.[0] || {};
   return {
     game: "ygo",
+    artSchema: 1,
+    artworks: (c.card_images || []).map(a => ({ id:String(a.id), image:ygoImage(a.id), imageLarge:ygoImage(a.id,false), label:String(a.id) === String(c.id) ? "Default artwork" : "Alternate artwork" })),
     id: String(c.id),
     name: c.name,
     category,
@@ -259,7 +261,7 @@ export const ygoSource = {
   // .ydk is the standard file used by YGOPRODeck, EDOPro and Master Duel deck tools.
   exportText(deck) {
     const ids = (zone) => (deck.zones[zone] || []).flatMap((r) => Array(r.qty).fill(r.cardId));
-    return ["#created by Cardforge", "#main", ...ids("main"), "#extra", ...ids("extra"), "!side", ...ids("side")].join("\n") + "\n";
+    return ["#created by CardStashy", "#main", ...ids("main"), "#extra", ...ids("extra"), "!side", ...ids("side")].join("\n") + "\n";
   },
   exportExt: "ydk",
 };

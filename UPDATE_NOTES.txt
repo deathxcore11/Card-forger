@@ -1,7 +1,7 @@
-CARDFORGE 3.9 UPDATE — A REAL SCANNER, AND NUMBERS YOU CAN TRUST
+3.9.2 — A real scanner, and numbers you can trust
 
 Scanner (all three games, one shared screen):
-- Live camera inside Cardforge with a card-shaped guide and a status that always uses words:
+- Live camera inside CardStashy with a card-shaped guide and a status that always uses words:
   red "Move the whole card inside the frame" / "Too dark", amber "Hold steady", "Tilt slightly to
   reduce glare", "Line all four edges up", green "Ready to capture". Green means a good picture,
   not a confirmed card. It captures automatically when green (can be turned off), once per card.
@@ -14,7 +14,9 @@ Scanner (all three games, one shared screen):
 - Exact printings first: Magic set + collector number (incl. Japanese printings), Yu-Gi-Oh! set
   code (Japanese/other-region codes also try the English printing) or passcode, Pokémon name +
   number. Up to three candidates with pictures and why each matched; "Add 1" with Undo; raw text
-  in a Troubleshooting section. Card language: English or Japanese (+ English).
+  in a Troubleshooting section. Automatic reads
+  only accept whole-name matches (a fragment like "wel" is not Swellow); closing the camera while
+  the permission prompt is open releases it. Card language: English or Japanese (+ English).
 - Tested on a simulated phone camera and real card images: exact printing found for Magic
   (M21 #162) and Pokémon (Pikachu ex #053/128); Dark Magician from a misread name. Thresholds
   should be tuned with real phone photos (sleeves, foils, lighting).
@@ -27,6 +29,39 @@ Correctness:
 - Magic Online counts separate Challenges (entries, ranked lists) from Leagues (5-0 lists, no
   field size); duplicate events and lists are dropped.
 - Sheets have one scroll area; tournament decks use a shorter banner.
+
+3.9.1 — Modern collection binders and robust account forms
+Binders are only inside Collection → Binders for each game. The game chooser uses compact buttons. Binder covers have simpler materials, sharper corners, clear pockets with uncropped card art, and fluid page-edge dragging. The app icon is a restrained flat card stack.
+Email/password login and signup use native forms with correct autocomplete and submit behavior. Background renders preserve in-progress fields in render-local memory only. Failed attempts retain inputs and show persistent inline errors; successful attempts clear passwords. Account requests time out with an actionable message. Email confirmation remains enforced. Registering, confirming email and logging in are distinct steps; the browser’s Save password prompt is not an account-creation confirmation.
+Verification: the live password endpoint responds correctly to invalid test credentials, without creating an account or sending email. Existing users’ passwords were not read, changed or used. Full user login and external email delivery still require user verification; this release does not claim SMTP is configured.
+
+3.9.0 — CardStashy and animated binders
+New binder icon, app name, install icons and visible branding. Create per-game binders filtered by set, rarity, type, color/energy, or location. Covers have automatic/custom colors, image uploads or HTTPS backgrounds, and a starred owned-card cover pocket. Page-edge pointer dragging follows your finger, with release/snap-back and reduced-motion support. Settings gear now opens the focused Account page directly. Collection locations appear as animated binder covers in every game, with nine-pocket pages, card details and page-turn transitions. Storage identifiers and the existing site URL are preserved for collection/backup compatibility. Reduced-motion preference disables animation. Also fixed the device-storage readout for non-Magic games.
+Deck safeguards: full base lists no longer get extra lands; oversized Magic lists have reviewed consistency cuts and version snapshots. Non-Commander fills reject Commander-dependent mana sources, known illegality and copy-limit violations. Complete constructed lists get conservative same-role, lower-mana spell swaps that preserve the card count. Aggro-aware build-health scoring does not demand ramp/wipes from low-curve Aura/creature decks, and EDHREC rank is no longer used to rank 60-card spells. Yu-Gi-Oh! additions honor Main/Extra/Side bounds, card zones and per-name banlist limits; valid 40–60 builds no longer look like overflow.
+Browsing/performance: set pages load the next visible batch automatically, with a manual fallback. Upgrade lists show art and compact ownership labels. Pokémon name resolution reuses cached matches, deduplicates simultaneous lookups and keeps a bounded six-worker queue moving. Mana-symbol tooltips/accessibility labels use full color names. Off-screen card paint is deferred where supported; this is not full DOM virtualization.
+Limits: swaps are heuristic review aids, not proven tournament improvements. No guaranteed scan accuracy, live shipping/cart optimizer, new server-side pre-resolved meta database, or measured Arena win rates are claimed. Set binders filter owned entries and link to the existing set checklist.
+
+3.8.6 — Focused settings and complete signup form
+Settings is separated into Account, Backup & data, and App & sources. Login and signup have separate tabs and independent email fields. Password reset has its own email screen. Restore, source details and start-over controls are collapsed by default.
+
+3.8.5 — Email and password accounts
+Added login, signup with confirmation, forgot-password emails, verified recovery flow and setting a password for an existing account. Passwords are submitted only to Supabase Auth and are not stored in Cardforge workspaces. Google and email-link sign-in remain available when enabled. Email delivery and allowed redirects must be configured in Supabase.
+
+3.8.4 — Artwork for collectible versions
+Pokémon versions now have full-card thumbnails and enlarged previews, using exact variant images when supplied and labeled reference art otherwise. Yu-Gi-Oh! preserves every source alternate artwork in a gallery; printing thumbnails are labeled as reference art. Magic printing thumbnails remain exact, and available finishes remain visible even without prices.
+
+3.8.3 — Complete collectible version labels
+Versions shows every available edition/finish with its full label, price availability, seller link when supplied and a preset Add button.
+
+3.8.2 — Reliable scans, private accounts and collectible editions
+Automatic scans reject unrelated substring results and validate Pokémon collector numbers against set totals. Added a second title OCR pass. Created private Supabase profiles/workspaces with authenticated grants and RLS. Email/Google provider settings are separate from database setup.
+Pokémon uses detailed available variants even when prices are absent, including Shadowless, First Edition and promo stamps. Exact unpriced versions no longer inherit generic prices. Yu-Gi-Oh! collections preserve edition and rarity separately. Existing Pokémon card caches refresh to the new version schema.
+
+3.8.1 — Scanner capture and recognition fixes
+
+Live camera with red/amber/green guide-edge, exposure, detail and stability checks. Green indicates capture readiness, not identification. Manual capture remains available. Camera tracks stop on close, navigation or hiding the app.
+Uploaded photos can be cropped and rotated before reading; title and footer OCR are prioritized. Noisy prefixes such as snce1 Eldegoss are removed. Japanese OCR can read text, but exact Japanese printing lookup is not yet supported by the English catalog. Candidates always require user confirmation.
+These lightweight checks do not provide perspective correction or artwork recognition. They need calibration on real phones, foil cards and holders.
 
 CARDFORGE 3.8 UPDATE — SET ROWS FOR EVERY GAME, CLEANER SYMBOLS
 

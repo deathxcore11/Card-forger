@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { scanNamesFor, ygoSetCodes, ygoPasscodes, ptcgNumbers, mtgCollector } from "./scan.js";
+import { scanNamesFor, ygoSetCodes, ygoPasscodes, ptcgNumbers, mtgCollector, guideQuality, scanCandidateMatches } from "./scan.js";
 
 const ygo = "Blue-Eyes White Dragon\n[DRAGON/NORMAL]\nThis legendary dragon is a powerful engine of destruction.\nATK/3000 DEF/2500\nLOB-EN0O1\n89631139\n1st Edition";
 assert.deepEqual(ygoSetCodes(ygo), ["LOB-EN001"], "set code, with O read as 0");
@@ -33,3 +33,31 @@ assert.ok(similarity("DAR MACICTAN", "Dark Magician") > 0.65 && similarity("DAR 
 assert.equal(prefixQuery("DAR MACICTAN"), "DAR MAC");
 assert.equal(scanNamesFor("ptcg", "5 Pikachu@?  _~")[0], "Pikachu ex", "the ex logo read as @? still means ex");
 console.log("PASS: near-miss names — similarity ranking and forgiving prefix search.");
+
+assert.equal(scanNamesFor("ptcg", "snce1 Eldegoss\nHP90")[0], "Eldegoss", "real noisy phone title");
+assert.equal(scanNamesFor("ptcg", "BASIC Mewtwo GX HP190")[0], "Mewtwo GX");
+assert.equal(scanNamesFor("ptcg", "Stage 1 Eldegoss HP90")[0], "Eldegoss");
+assert.equal(scanNamesFor("ygo", "Blue-Eyes White Dragon")[0], "Blue-Eyes White Dragon", "legitimate name is preserved");
+const width = 320, height = 448, box = { x: 45, y: 63, w: 230, h: 322 };
+const image = value => ({ width, height, data: new Uint8ClampedArray(width * height * 4).fill(value) });
+assert.equal(guideQuality(image(120), box).state, "red", "blank frame never gives green");
+const card = image(10);
+for (let y = box.y; y <= box.y + box.h; y++) for (let x = box.x; x <= box.x + box.w; x++) {
+  const v = (x % 4 < 2 && y % 4 < 2) ? 120 : 200;
+  card.data.fill(v, (y * width + x) * 4, (y * width + x) * 4 + 3);
+}
+assert.equal(guideQuality(card, box).state, "green", "aligned detailed synthetic card passes capture checks");
+const blurred = image(10);
+for (let y = box.y; y <= box.y + box.h; y++) for (let x = box.x; x <= box.x + box.w; x++) blurred.data.fill(120, (y * width + x) * 4, (y * width + x) * 4 + 3);
+assert.equal(guideQuality(blurred, box).state, "amber", "aligned flat image lacks focus/detail");
+console.log("PASS: noisy title regression and capture-quality states.");
+
+assert.equal(scanCandidateMatches({ name: "Swellow" }, "wel"), false);
+assert.equal(scanCandidateMatches({ name: "Wellspring Mask Ogerpon" }, "wel"), false);
+assert.equal(scanCandidateMatches({ name: "Mew" }, "Mew"), true, "short real names remain valid");
+assert.equal(scanCandidateMatches({ name: "Mewtwo" }, "Mewtwo GX"), false, "suffix identifies a different card");
+const gx = { name: "Mewtwo-GX", set: { number: "78", total: 73 } };
+assert.equal(scanCandidateMatches(gx, "Mewtwo GX", [{ num: "078", total: "73" }]), true);
+assert.equal(scanCandidateMatches(gx, "Mewtwo GX", [{ num: "78", total: "100" }]), false, "set total matters");
+assert.equal(scanCandidateMatches(gx, "Mewtwo GX", [{ num: "79", total: "73" }]), false);
+console.log("PASS: partial OCR rejection, real short names, GX suffix and exact collector number/set total.");

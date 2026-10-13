@@ -1,10 +1,14 @@
-// Cardforge controller: persistence, routing, sheets and every user action.
+import { captureAuthFields, restoreAuthFields, authFeedback } from "./auth-form.js";
+import { formatUpgrades, applyFormatSwap } from "./format-upgrades.js";
+import { cutToTarget } from "./deck-safety.js";
+import { binderPage, binderMatches, BINDER_COLORS, attachBinderDrag } from "./binders.js";
+// CardStashy controller: persistence, routing, sheets and every user action.
 // Screens live in views.js; deck/collection math in core.js, planner.js,
 // strategy.js, deck-flow.js and insights.js.
 import { metaState, loadMeta as loadMetaData, MTG_META_FORMATS } from "./meta.js";
 import { nextFact } from "./facts.js";
 import { S, STORAGE, CATALOG_RECORD, RECOVERY, blank, uid, meta, inv, deckById, currentDeck, priceOf, cacheCard, slim } from "./store.js";
-import { $, $$, esc, usd, img, cardImage, options, segmented, customBudget, registerSetIcons } from "./ui.js";
+import { $, $$, esc, usd, img, art, cardImage, options, segmented, customBudget, registerSetIcons } from "./ui.js";
 import * as V from "./views.js";
 import { readRecord, writeRecord, writeRecords, persistenceStatus, requestPersistence } from "./storage.js";
 import {
@@ -28,7 +32,7 @@ import { buildTiers, formatsFor, themeQuery, BUDGET_TIERS } from "./builder.js";
 import * as T from "./tcg.js";
 import { rulesPage } from "./rules.js";
 import { GAMES, GAME_ICON } from "./games.js";
-import { initCloud, cloudInfo, statusLabel, scheduleSync, signInGoogle, signInEmail, signOut, saveProfile, resolvePending, syncNow } from "./cloud.js";
+import { initCloud, cloudInfo, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, saveProfile, resolvePending, syncNow } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact } from "./insights.js";
 
 /* =========================================================
@@ -381,7 +385,9 @@ function toast(text, { undo = false } = {}) {
   toastTimer = setTimeout(() => t.classList.remove("show", "has-action"), undo ? 7000 : 3800);
 }
 
+let binderDragCleanup = null;
 function openSheet(html, ctx = null, scrollTop = 0) {
+  binderDragCleanup?.(); binderDragCleanup=null;
   S.ui.sheetCtx = ctx;
   $("#sheetBody").innerHTML = html;
   const dlg = $("#sheet");
@@ -392,9 +398,11 @@ function openSheet(html, ctx = null, scrollTop = 0) {
     dlg.showModal();
   }
   $("#sheetBody").scrollTop = scrollTop;
+  if (ctx?.type === "binder") binderDragCleanup = attachBinderDrag($("#sheetBody"),delta=>A.binderPage({dataset:{page:String(ctx.page+delta)}}));
 }
 let sheetReturn = null;
 function closeSheet() {
+  binderDragCleanup?.(); binderDragCleanup=null;
   const dlg = $("#sheet");
   if (dlg.open) dlg.close();
   S.ui.sheetCtx = null;
@@ -452,7 +460,7 @@ async function copyText(text, msg) {
     await navigator.clipboard.writeText(text);
     toast(msg);
   } catch {
-    download("Cardforge_List.txt", text + "\n");
+    download("CardStashy_List.txt", text + "\n");
     toast("Clipboard blocked — downloaded as a text file instead.");
   }
 }
@@ -477,7 +485,10 @@ function parseHash() {
   const ui = S.ui,
     prev = ui.view + ui.deckId;
   ui.view = VIEWS.includes(v) ? v : "home";
-  if (ui.view === "collection" && ["cards", "value", "wishlist"].includes(a)) ui.collTab = a;
+  if (ui.view === "collection" && ["cards", "binders", "value", "wishlist"].includes(a)) {
+    ui.collTab = a;
+    if(T.isTcg() && ["cards","binders","wishlist"].includes(a))T.ui().coll.tab=a;
+  }
   if (ui.view === "shared" && a !== ui.shared.code) openShared(a);
   if (ui.view === "tdeck") ui.tdeckId = a;
   if (ui.view === "set" && T.isTcg()) {
@@ -516,7 +527,21 @@ function go(hash) {
 }
 
 const autoLoaded = new Set();
+let browseObserver=null;
+function attachBrowseObserver() {
+  browseObserver?.disconnect();
+  if(!("IntersectionObserver" in window))return;
+  browseObserver=new IntersectionObserver(entries=>{
+    const target=entries.find(e=>e.isIntersecting)?.target;
+    if(!target?.isConnected || target.disabled)return;
+    browseObserver.disconnect();
+    const action=A[target.dataset.act];if(action)safely(action(target));
+  },{rootMargin:"400px"});
+  document.querySelectorAll('[data-act="setMore"], [data-act="tSetMore"]').forEach(b=>browseObserver.observe(b));
+}
 function render() {
+  const authFields=S.ui.view === "settings" && !cloudInfo().user ? captureAuthFields(document) : [];
+  browseObserver?.disconnect();
   const ui = S.ui;
   // The scanner keeps its camera stream across renders (or stops it when you leave the page).
   setTimeout(() => scanCtx.afterRender?.(), 0);
@@ -547,6 +572,9 @@ function render() {
     return;
   }
   $("#content").innerHTML = (g !== "mtg" && tcgViews[ui.view] ? tcgViews[ui.view] : views[ui.view] || V.home)();
+  if(!cloudInfo().user)restoreAuthFields(document,authFields);
+  attachBrowseObserver();
+  if (ui.view === "settings") storageDetail();
   if (g !== "mtg") {
     const SU = T.ui(g).sets;
     if (ui.view === "sets" && !SU.list.length && !SU.busy && !SU.error) setTimeout(() => tcgCtx.loadSets?.(g), 0);
@@ -567,7 +595,6 @@ function render() {
     }
     return;
   }
-  if (ui.view === "settings") storageDetail();
   const deck = ui.view === "deck" ? currentDeck() : null;
   if (deck && navigator.onLine && !autoLoaded.has(deck.id) && deck.cards.some((c) => !meta(c.name))) {
     autoLoaded.add(deck.id);
@@ -613,6 +640,10 @@ document.addEventListener("click", (e) => {
   e.preventDefault();
   safely(fn(t, e));
 });
+document.addEventListener("submit",e=>{
+ const form=e.target.closest?.('[data-auth-action]');if(!form)return;
+ e.preventDefault();const action=A[form.dataset.authAction];if(action)safely(action(form.querySelector('button[type="submit"]')));
+});
 document.addEventListener("change", (e) => {
   const t = e.target.closest("[data-change]");
   if (t && C[t.dataset.change]) safely(C[t.dataset.change](t, e));
@@ -632,6 +663,7 @@ $("#sheet").addEventListener("click", (e) => {
   if (e.target.id === "sheet") closeSheet();
 });
 $("#sheet").addEventListener("close", () => {
+  binderDragCleanup?.(); binderDragCleanup=null;
   S.ui.sheetCtx = null;
   document.documentElement?.classList.remove("sheet-open");
   // Return focus to the button that opened the sheet, or its re-rendered twin.
@@ -664,23 +696,59 @@ A.go = (t) => {
   go(t.dataset.to);
 };
 A.closeSheet = closeSheet;
+function binderRows(game, location = null) {
+  const collection = game === "mtg" ? S.state.collection : T.gs(game).collection;
+  return collection.filter(entry=>location === null || String(entry.location || "").trim()===location).map(entry=>{
+    const c = game === "mtg" ? (entry.printingVerified && S.state.printings?.[entry.printingId]) || meta(entry.name) : T.cardOf(game,entry.cardId);
+    const variant = c?.variants?.find(v=>v.key===entry.variant);
+    return {entry,card:c,game,image:game === "mtg" ? cardImage(c) : variant?.image || c?.image || "",version:variant?.label || entry.variantLabel || [entry.set || c?.set?.id,entry.finish,entry.edition].filter(Boolean).join(" · ")};
+  });
+}
+const binderById = id => (S.state.settings.binders || []).find(b=>b.id===id);
+function showBinder(data,direction="next") {
+  const b=binderById(data.binder), rows=b?binderRows(b.game).filter(r=>binderMatches(r,b)):binderRows(data.game,data.location);
+  data.page=Math.max(0,Math.min(Math.max(0,Math.ceil(rows.length/9)-1),data.page));
+  openSheet(binderPage(rows,b?.title || data.location || "Unsorted cards",data.page,direction,b),data);
+}
+A.openBinder = t => {
+  const game=t.dataset.game, b=binderById(t.dataset.binder);
+  if (!["mtg","ptcg","ygo"].includes(game) || game !== T.game() || b && b.game!==game) return;
+  showBinder({type:"binder",game,location:t.dataset.location || "",binder:b?.id || "",page:0});
+};
+A.binderPage = t => { const data=S.ui.sheetCtx; if(data?.type!=="binder")return;const page=Number(t.dataset.page)||0;showBinder({...data,page},page<data.page?"previous":"next"); };
+function binderEditor(b=null) {
+  const game=b?.game || T.game(), value=b?.value || "";
+  openSheet(`<div class="sheet-head"><h2>${b?"Customize binder":"New binder"}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><label class="field">Binder name<input id="binderTitle" maxlength="60" value="${esc(b?.title || "")}" placeholder="Fire Pokémon, rare finds, land library…"></label><label class="field">Cards to include<select id="binderRule" data-change="binderRule">${options([["all","All my cards"],["set","A specific set"],["rare","Rare cards and above"],["rarity","An exact rarity"],["type","Card type"],["color","Color / energy / attribute"],["location","A collection location"]],b?.rule || "all")}</select></label><label class="field" id="binderValueLabel">Filter value<input id="binderValue" maxlength="100" value="${esc(value)}" placeholder="e.g. base1, Rare, Fire, Land, W, LIGHT"></label><p id="binderFilterHint" class="foot">Set: use its code (Pokémon base1, Magic FDN, Yu-Gi-Oh! LOB). Type examples: Land, Creature, Trainer, Spell. Color examples: Fire, Water, W, U, B, R, G, DARK.</p><label class="field">Cover color<input id="binderColor" type="color" value="${esc(b?.color || BINDER_COLORS[(S.state.settings.binders || []).length % BINDER_COLORS.length])}"></label><label class="field">Background image URL (optional)<input id="binderBackground" type="url" value="${esc(b?.background?.startsWith("https:")?b.background:"")}" placeholder="https://…"></label><input id="binderBgData" type="hidden" value="${esc(b?.background?.startsWith("data:")?b.background:"")}"><label class="btn ghost file">Upload cover image<input type="file" accept="image/jpeg,image/png,image/webp" data-change="binderImage" hidden></label><span id="binderImageStatus" class="muted small">${b?.background?.startsWith("data:")?"Uploaded cover saved":""}</span><button class="link small" data-act="clearBinderImage">Clear image</button><p class="foot">Use an HTTPS image link or upload a photo. Star an owned card inside the binder to place it in the cover’s clear pocket.</p><button class="btn block" data-act="saveBinder" data-binder="${esc(b?.id || "")}" data-game="${esc(game)}">Save binder</button>${b?`<button class="link danger" data-act="removeBinder" data-binder="${esc(b.id)}">Remove this binder view</button>`:""}`,{type:"binder-editor",id:b?.id || ""});
+  const rule=$("#binderRule").value;$("#binderValueLabel").hidden=["all","rare"].includes(rule);
+}
+A.newBinder = ()=>binderEditor();
+A.editBinder = t => {const b=binderById(t.dataset.binder);if(b)binderEditor(b);};
+C.binderRule = t => {$("#binderValueLabel").hidden=["all","rare"].includes(t.value);};
+C.binderImage = async t => {
+  const file=t.files?.[0];if(!file)return;if(file.size>10*1024*1024)throw Error("Choose an image under 10 MB.");
+  const bitmap=await createImageBitmap(file);try{const canvas=document.createElement("canvas"),ratio=Math.min(1,800/Math.max(bitmap.width,bitmap.height));canvas.width=Math.round(bitmap.width*ratio);canvas.height=Math.round(bitmap.height*ratio);canvas.getContext("2d").drawImage(bitmap,0,0,canvas.width,canvas.height);const image=canvas.toDataURL("image/jpeg",.7);if(image.length>350000)throw Error("That cover is too large. Try a simpler or smaller image.");if(!$("#binderBgData"))return;$("#binderBgData").value=image;$("#binderBackground").value="";$("#binderImageStatus").textContent="Cover image ready · saved when you save the binder";}finally{bitmap.close();}
+};
+A.clearBinderImage = ()=>{if($("#binderBgData"))$("#binderBgData").value="";if($("#binderBackground"))$("#binderBackground").value="";if($("#binderImageStatus"))$("#binderImageStatus").textContent="";};
+A.saveBinder = async t => {
+  const title=$("#binderTitle").value.trim(),rule=$("#binderRule").value,game=t.dataset.game,value=rule==='set'?(game==='ygo'?$("#binderValue").value.trim().toUpperCase():$("#binderValue").value.trim().toLowerCase()):$("#binderValue").value.trim(),color=$("#binderColor").value,background=$("#binderBgData")?.value || $("#binderBackground").value.trim();
+  if(!title)throw Error("Give your binder a name.");
+  if(!["all","rare"].includes(rule)&&!value)throw Error("Enter the set, rarity, type, color or location to match.");
+  if(!/^#[0-9a-f]{6}$/i.test(color))throw Error("Choose a valid cover color.");
+  if(background && !background.startsWith("data:")){let url;try{url=new URL(background);}catch{throw Error("Use a valid HTTPS image URL.");}if(url.protocol!=="https:")throw Error("Background images must use HTTPS.");}
+  if(background.startsWith("data:") && (!/^data:image\/(?:jpeg|png|webp);base64,[a-z0-9+/=]+$/i.test(background) || background.length>350000)) throw Error("Choose a smaller JPEG, PNG or WebP cover image.");
+  const old=binderById(t.dataset.binder), b={id:old?.id || uid(),game,title,rule,value,color,background,featured:old?.featured || ""};
+  await commit(st=>{st.settings.binders ||= [];const at=st.settings.binders.findIndex(x=>x.id===b.id);if(at<0)st.settings.binders.push(b);else st.settings.binders[at]=b;},{rerender:false});
+  closeSheet(); if(game==="mtg")S.ui.collTab="binders";else T.ui(game).coll.tab="binders";go("#collection/binders");render();toast("Binder saved. Owned quantities are unchanged.");
+};
+A.removeBinder = async t => {await commit(st=>{st.settings.binders=(st.settings.binders || []).filter(b=>b.id!==t.dataset.binder);},{rerender:false});closeSheet();render();toast("Binder view removed. Your cards remain in the collection.");};
+A.featureBinderCard = async t => {const data=S.ui.sheetCtx,b=binderById(data?.binder);if(!b)return;const rows=binderRows(b.game).filter(r=>binderMatches(r,b));if(!rows.some(r=>r.entry.id===t.dataset.entry))return;await commit(st=>{const target=st.settings.binders.find(x=>x.id===b.id);target.featured=target.featured===t.dataset.entry?"":t.dataset.entry;},{rerender:false});render();showBinder({...data});};
 A.collTab = (t) => go("#collection/" + t.dataset.id);
 A.decksTab = (t) => go("#decks/" + t.dataset.id);
 A.deckTab = (t) => {
   closeSheet();
   go("#deck/" + currentDeck().id + "/" + t.dataset.id);
 };
-A.menu = () =>
-  openSheet(`<div class="sheet-head"><h2>More</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="menu-list">
-    <button data-act="go" data-to="#settings">${cloudInfo().user ? "👤 Account, sync & backup" : cloudInfo().configured ? "👤 Sign in · settings & backup" : "⚙ Settings & backup"}</button>
-    <button data-act="exportBackup">↓ Export backup now</button>
-    <button data-act="go" data-to="#collection/wishlist">♡ Wishlist</button>
-    <button data-act="go" data-to="#collection/value">$ Collection value</button>
-    <button data-act="go" data-to="#decks/inspiration">✧ Find decks I can almost build</button>
-    <button data-act="go" data-to="#rules">📖 Rules & banned lists</button>
-    <button data-act="go" data-to="#sets">◈ Browse every set</button>
-    <button data-act="compareOpen">⇄ Compare two cards</button>
-  </div>`);
+A.menu = () => { closeSheet(); S.ui.settingsTab="account"; go("#settings"); };
 
 /* =========================================================
    Card sheet, compare, printings
@@ -872,7 +940,7 @@ A.tierToggle = (t) => {
   else render();
 };
 function generatedDeck(t, seedName) {
-  return withSnapshot({ id: uid(), name: `${seedName.split(",")[0]} · ${t.format} · ${t.budget ? "$" + t.budget : "my cards"}`, format: t.format, commander: t.commander, strategy: "Auto", budget: t.budget, locked: false, cards: t.cards.map((r) => ({ name: r.name, qty: r.qty })), versions: [], source: sourceCredit({ kind: "Generated", description: `Generated by Cardforge around ${seedName} with a $${t.budget} budget.` }) }, "Generated");
+  return withSnapshot({ id: uid(), name: `${seedName.split(",")[0]} · ${t.format} · ${t.budget ? "$" + t.budget : "my cards"}`, format: t.format, commander: t.commander, strategy: "Auto", budget: t.budget, locked: false, cards: t.cards.map((r) => ({ name: r.name, qty: r.qty })), versions: [], source: sourceCredit({ kind: "Generated", description: `Generated by CardStashy around ${seedName} with a $${t.budget} budget.` }) }, "Generated");
 }
 A.tierSave = async (t) => {
   const B = S.ui.build,
@@ -888,6 +956,29 @@ A.tierSaveAll = async () => {
   await commit((s) => s.decks.push(...ds), { msg: `Saved ${ds.length} decks to My decks.` });
 };
 // Non-Commander decks: complete the current list at several budgets.
+A.suggestFormatUpgrades = async () => {
+ const d=currentDeck(),B=S.ui.build,f=formatOf(d);if(B.busy)return;
+ B.busy=true;B.fillDeck=d.id;B.msg="Finding same-role, lower-cost spells…";render();
+ try{await resolveNames(d.cards.map(r=>r.name));const seeds=d.cards.map(r=>meta(r.name)).filter(c=>c&&!isLand(c));const colors=[...new Set(seeds.flatMap(c=>c.color_identity||[]))];
+ await loadFormatPool(f,colors.length?colors:["C"],seeds[0],m=>{B.msg=m;render();});
+ B.formatSwaps=formatUpgrades(d,S.catalog,{budget:Number.isFinite(Number(d.budget))?Number(d.budget):25,available:V.availability(),price:c=>priceOf(c.name)});B.swapSignature=JSON.stringify(d.cards);
+ B.msg=B.formatSwaps.length?"Review each trade-off. Applying one swap preserves your card count and saves the previous version.":"No conservative same-role swaps found. Try a wider card pool; a lower mana value alone does not prove an upgrade.";
+ }catch(e){B.msg=e.message;}finally{B.busy=false;render();}
+};
+A.applyFormatUpgrade = async t => {
+ const B=S.ui.build,d=currentDeck(),swap=B.formatSwaps?.[Number(t.dataset.i)];if(!swap||B.fillDeck!==d.id||B.swapSignature!==JSON.stringify(d.cards))throw Error("Your deck changed. Refresh suggestions first.");
+ const cards=applyFormatSwap(d,swap,S.catalog);await editDeck(d=>withSnapshot({...withSnapshot(d,"Before suggested swap"),cards},"Reviewed spell swap"),{msg:"One card in, one card out. Previous list saved in Versions."});B.formatSwaps=null;render();
+};
+A.reviewTrim = async () => {
+  const d=currentDeck(); await resolveNames(d.cards.map(r=>r.name));
+  const review=cutToTarget(d,S.catalog);
+  openSheet(`<div class="sheet-head"><h2>Review consistency cuts</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p class="muted">${review.total} → ${review.target} cards. Constructed Magic can allow more than 60. These are curve-based suggestions, not a tournament verdict.</p><div class="list">${review.cuts.map(r=>`<div class="mini-row">${img(art(meta(r.name)),r.name,"mini-art")}<span>${r.qty}× ${esc(r.name)}<small class="muted">${esc(r.reason)}</small></span></div>`).join("")}</div><button class="btn block" data-act="applyTrim" data-deck="${esc(d.id)}">Apply reviewed cuts</button>`,{type:"trim",deck:d.id,signature:JSON.stringify(d.cards),review});
+};
+A.applyTrim = async t => {
+  const ctx=S.ui.sheetCtx, d=currentDeck();
+  if(ctx?.type!=="trim" || ctx.deck!==d.id || ctx.signature!==JSON.stringify(d.cards))throw Error("The deck changed. Review the cuts again.");
+  await editDeck(d=>withSnapshot({...withSnapshot(d,"Before consistency cuts"),cards:ctx.review.cards},"Consistency cuts"),{msg:"Cuts applied. Your previous list is saved in Versions."});closeSheet();
+};
 A.fillAny = async () => {
   const d = currentDeck(),
     B = S.ui.build,
@@ -925,6 +1016,25 @@ A.tierApply = async (t) => {
 };
 
 /* ---------- account ---------- */
+A.settingsTab = (t) => {
+  const tab = t.dataset.id;
+  if (!["account","backup","app"].includes(tab)) return;
+  S.ui.settingsTab = tab;
+  if (tab === "backup") storageDetail();
+  for (const pane of document.querySelectorAll(".settings-pane")) pane.hidden = pane.id !== "settings-" + tab;
+  for (const button of document.querySelectorAll('[data-act="settingsTab"][role="tab"]')) button.setAttribute("aria-selected",String(button.dataset.id === tab));
+};
+A.authTab = (t) => {
+  const mode = t.dataset.mode;
+  if (!["login","signup","reset"].includes(mode)) return;
+  S.ui.authMode = mode;
+  S.ui.authFeedback=null;authFeedback(document,"");
+  const email = $("#signEmail")?.value || "", field = mode === "signup" ? $("#signupEmail") : mode === "reset" ? $("#resetEmail") : null;
+  if (field && !field.value) field.value = email;
+  for (const pane of document.querySelectorAll(".auth-pane")) pane.hidden = pane.id !== "auth-" + mode;
+  for (const button of document.querySelectorAll('[data-act="authTab"][role="tab"]')) button.setAttribute("aria-selected",String(button.dataset.mode === mode));
+  document.querySelector("#auth-" + mode + " input")?.focus();
+};
 A.signGoogle = async (t) => {
   const done = busy(t, "Opening Google…");
   try {
@@ -938,10 +1048,41 @@ A.signEmail = async (t) => {
     done = busy(t?.tagName === "BUTTON" ? t : $('[data-act="signEmail"]'), "Sending…");
   try {
     await signInEmail(email);
-    toast("Check your email for the sign-in link. It opens Cardforge signed in.");
+    toast("Check your email for the sign-in link. It opens CardStashy signed in.");
   } finally {
     done();
   }
+};
+let authSubmitting=false;
+async function runAuth(t,loading,action) {
+ if(authSubmitting)return;authSubmitting=true;authFeedback(document,"");S.ui.authFeedback=null;
+ const done=busy(t,loading);
+ try{const message=await action();for(const id of ["signPassword","signupPassword","signupConfirm"]){const field=$("#"+id);if(field)field.value="";}S.ui.authFeedback={message,tone:"success"};render();authFeedback(document,message,"success");}
+ catch(e){const message=e.message || "Couldn’t connect. Please try again.";S.ui.authFeedback={message,tone:"error"};authFeedback(document,message,"error");}
+ finally{authSubmitting=false;done();}
+}
+A.signPassword = t => runAuth(t,"Logging in…",async()=>{
+ const email=$("#signEmail")?.value.trim() || "",password=$("#signPassword")?.value || "";
+ await signInPassword(email,password);return "Signed in. Your private account is ready.";
+});
+A.createAccount = t => runAuth(t,"Creating account…",async()=>{
+ const email=$("#signupEmail")?.value.trim() || "",password=$("#signupPassword")?.value || "",confirm=$("#signupConfirm")?.value || "";
+ const data=await createAccount(email,password,confirm);
+ if(data?.session)return "Account created. You’re signed in.";
+ return "Check your inbox and spam for the confirmation email, then return to Log in. If you already registered, log in or reset your password.";
+});
+A.forgotPassword = t => runAuth(t,"Sending…",async()=>{
+ await requestPasswordReset($("#resetEmail")?.value.trim() || "");return "If an account exists, a reset link will arrive. Open it in this browser.";
+});
+A.accountResetPassword = async (t) => {
+  const email = cloudInfo().user?.email || "", done = busy(t,"Sending…");
+  try { await requestPasswordReset(email); toast("Check your email for a password-reset link. Open it in this browser."); } finally { done(); }
+};
+A.finishPasswordReset = async (t) => {
+  const password = $("#resetPassword")?.value || "", confirmPassword = $("#resetConfirm")?.value || "";
+  const done = busy(t?.tagName === "BUTTON" ? t : $('[data-act="finishPasswordReset"]'),"Saving…");
+  try { await finishPasswordReset(password,confirmPassword); render(); toast("Password saved. You’re signed in."); }
+  finally { for (const id of ["resetPassword","resetConfirm"]) if ($("#"+id)) $("#"+id).value = ""; done(); }
 };
 A.signOut = async () => {
   if (!confirm("Sign out? Your cards stay on this device; they just stop syncing.")) return;
@@ -1095,7 +1236,7 @@ A.shareCopy = () => copyText(S.ui.sheetCtx?.link || "", "Link copied — paste i
 A.shareNative = async () => {
   const d = deckById(S.ui.sheetCtx?.deckId);
   try {
-    await navigator.share({ title: d?.name || "Cardforge deck", text: "Check out my deck on Cardforge", url: S.ui.sheetCtx.link });
+    await navigator.share({ title: d?.name || "CardStashy deck", text: "Check out my deck on CardStashy", url: S.ui.sheetCtx.link });
   } catch {}
 };
 
@@ -1416,7 +1557,7 @@ function addSheet(entry = null, preset = {}) {
       <label>Language<select id="addLanguage">${options([["en", "English"], ["ja", "Japanese"], ["de", "German"], ["fr", "French"], ["es", "Spanish"], ["it", "Italian"], ["pt", "Portuguese"], ["ru", "Russian"], ["ko", "Korean"], ["zhs", "Chinese (S)"], ["zht", "Chinese (T)"]], entry?.language || "en")}</select></label>
       <label class="span2">Where it lives<input id="addLocation" maxlength="100" placeholder="Binder A, red box…" value="${esc(entry?.location || preset.location || "")}"></label>
     </div>
-    <details class="more" ${entry?.set || preset.set ? "open" : ""}><summary>Exact printing (optional)</summary><div class="grid2"><label>Set code<input id="addSet" placeholder="e.g. CMM" value="${esc(entry?.set || preset.set || "")}"></label><label>Collector #<input id="addNumber" value="${esc(entry?.collectorNumber || preset.number || "")}"></label></div><p class="muted small">Leave blank if unsure — Cardforge never guesses an edition.</p></details>
+    <details class="more" ${entry?.set || preset.set ? "open" : ""}><summary>Exact printing (optional)</summary><div class="grid2"><label>Set code<input id="addSet" placeholder="e.g. CMM" value="${esc(entry?.set || preset.set || "")}"></label><label>Collector #<input id="addNumber" value="${esc(entry?.collectorNumber || preset.number || "")}"></label></div><p class="muted small">Leave blank if unsure — CardStashy never guesses an edition.</p></details>
     <p id="addError" class="error" role="alert"></p>
     <div class="actions"><button class="btn" data-act="addSave" ${lookup ? "" : "disabled"} id="addSaveBtn">${entry ? "Save changes" : "Add to collection"}</button><button class="link small" data-act="addSaveRaw">Save without lookup</button>${entry ? `<button class="link small danger" data-act="addDelete">Delete</button>` : ""}</div>`,
     S.ui.sheetCtx,
@@ -1604,7 +1745,7 @@ A.collMenu = () =>
     <button data-act="refreshPrices">$ Refresh all prices</button>
     <button data-act="verifyAll">✓ Verify exact printings</button>
   </div><p class="muted small" id="collMenuMsg"></p>`);
-A.exportCSV = () => download("Cardforge_Collection.csv", exportCollectionCSV(S.state.collection), "text/csv");
+A.exportCSV = () => download("CardStashy_Collection.csv", exportCollectionCSV(S.state.collection), "text/csv");
 A.retryLookups = async () => {
   await commit((s) => s.collection.forEach((e) => delete e.lookupFailed), { msg: "Looking cards up again…" });
 };
@@ -1688,7 +1829,7 @@ A.copyShopping = (t) => {
 };
 A.exportMissing = () => {
   const d = currentDeck();
-  download(`Cardforge_${fileSafe(d.name)}_missing.txt`, exportDeck(missingList(d)) + "\n");
+  download(`CardStashy_${fileSafe(d.name)}_missing.txt`, exportDeck(missingList(d)) + "\n");
 };
 
 /* =========================================================
@@ -1774,7 +1915,7 @@ C.impPrinting = (t) => {
   }
   drawImport();
 };
-A.impErrors = () => download("Cardforge_Import_Errors.csv", importErrorsCSV(impDraft.errors), "text/csv");
+A.impErrors = () => download("CardStashy_Import_Errors.csv", importErrorsCSV(impDraft.errors), "text/csv");
 A.impVerify = async () => {
   if (!impDraft || impBusy) return;
   impBusy = true;
@@ -2107,7 +2248,7 @@ A.snapshot = async () => {
   toast((currentDeck().versions || []).length > before ? "Version saved." : "No changes since the last version.");
 };
 A.deckCopy = () => copyText(exportDeck(currentDeck().cards), "Decklist copied.");
-A.deckExport = () => download(`Cardforge_${fileSafe(currentDeck().name)}.txt`, exportDeck(currentDeck().cards) + "\n");
+A.deckExport = () => download(`CardStashy_${fileSafe(currentDeck().name)}.txt`, exportDeck(currentDeck().cards) + "\n");
 A.deckDup = async () => {
   const d = currentDeck(),
     copy = { ...structuredClone(d), id: uid(), name: d.name + " (copy)", locked: false };
@@ -2710,7 +2851,7 @@ A.copyRef = async (t) => {
 };
 A.exportRef = (t) => {
   const r = S.state.references.find((x) => x.id === t.dataset.id);
-  download(`Cardforge_${fileSafe(r.name)}.txt`, exportDeck(r.cards) + "\n");
+  download(`CardStashy_${fileSafe(r.name)}.txt`, exportDeck(r.cards) + "\n");
 };
 A.deleteRef = async (t) => {
   if (!confirm("Remove this saved idea?")) return;
@@ -3079,7 +3220,8 @@ async function mtgScanMatch(read, lang, manual = false) {
     if (out.length >= 3) break;
     tried.push(n);
     const c = await api("/cards/named?" + new URLSearchParams({ fuzzy: n })).catch(() => null);
-    if (c?.name) push(c, key(c.name) === key(n) ? "Name match" : `Closest name to “${n}”`, false);
+    // A short fragment ("wel") is not identification: closest-spelling hits need a real word.
+    if (c?.name && (key(c.name) === key(n) || manual || key(n).length >= 5)) push(c, key(c.name) === key(n) ? "Name match" : `Closest name to “${n}”`, false);
   }
   return { cands: out, tried };
 }
@@ -3118,7 +3260,7 @@ function backupPayload() {
   return JSON.stringify({ ...backupEnvelope(stripCache(S.state)), cache });
 }
 A.exportBackup = () => {
-  download("Cardforge_Backup_" + new Date().toISOString().slice(0, 10) + ".json", backupPayload(), "application/json");
+  download("CardStashy_Backup_" + new Date().toISOString().slice(0, 10) + ".json", backupPayload(), "application/json");
   toast("Backup downloaded. Keep it somewhere safe (Drive, email to yourself…).");
 };
 async function readBackup(file) {
@@ -3230,7 +3372,7 @@ async function boot() {
     try {
       const legacy = JSON.parse(localStorage.getItem("cardforge-v1"));
       if (legacy?.sample === false && legacy.collection)
-        S.state.collection = Object.values(legacy.collection).filter((c) => c.qty > 0).map((c) => ({ id: uid(), name: c.name, qty: c.qty, set: "", collectorNumber: "", finish: "nonfoil", condition: "Near Mint", language: "en", location: "Earlier Cardforge", reserved: c.reserved || 0, printingVerified: false, raw: {} }));
+        S.state.collection = Object.values(legacy.collection).filter((c) => c.qty > 0).map((c) => ({ id: uid(), name: c.name, qty: c.qty, set: "", collectorNumber: "", finish: "nonfoil", condition: "Near Mint", language: "en", location: "Earlier CardStashy", reserved: c.reserved || 0, printingVerified: false, raw: {} }));
     } catch {}
   }
   trackValue();
@@ -3240,6 +3382,7 @@ async function boot() {
   render();
   $("#app").classList.add("ready");
   initCloud({
+    passwordRecovery: () => { S.ui.settingsTab = "account"; go("#settings"); },
     getState: () => stripCache(S.state),
     // Replace this device's workspace with the account copy.
     apply: async (data) => {
@@ -3251,7 +3394,7 @@ async function boot() {
     },
     backup: async (state, label, file) => {
       await writeRecord(RECOVERY, state).catch(() => {});
-      if (file) download(`Cardforge_Backup_${fileSafe(label)}_${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(backupEnvelope(state)), "application/json");
+      if (file) download(`CardStashy_Backup_${fileSafe(label)}_${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(backupEnvelope(state)), "application/json");
     },
     status: ([text, cls]) => setSaveStatus(text, cls),
     changed: () => {
@@ -3269,5 +3412,5 @@ async function boot() {
 }
 
 boot().catch((e) => {
-  $("#content").innerHTML = `<section class="empty"><h3>Cardforge couldn’t open your saved data</h3><p>${esc(e.message)}</p><p class="muted small">Nothing was deleted. Close other Cardforge tabs and retry.</p><button class="btn" onclick="location.reload()">Retry</button></section>`;
+  $("#content").innerHTML = `<section class="empty"><h3>CardStashy couldn’t open your saved data</h3><p>${esc(e.message)}</p><p class="muted small">Nothing was deleted. Close other CardStashy tabs and retry.</p><button class="btn" onclick="location.reload()">Retry</button></section>`;
 });
