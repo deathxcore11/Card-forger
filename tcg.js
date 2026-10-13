@@ -16,7 +16,7 @@ import { ygoEmblems, energyIcon, attackLine, tcgSetBadge, ygoPrintBadge, pkRarit
 import { buildYgo, buildPtcg, YGO_STAPLES, PTCG_STAPLES, PTCG_SUPPORT_BASICS, energyName } from "./tcgbuild.js";
 import { ygoSource, ygoImageDirect, YGO_TYPES, YGO_ATTRIBUTES, YGO_RACES, YGO_SPELL_KINDS, YGO_TRAP_KINDS } from "./ygo.js";
 import { ptcgSource, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES } from "./ptcg.js";
-import { loadMeta, metaState, ptcgIcon, allCachedMeta } from "./meta.js";
+import { loadMeta, metaState, ptcgIcon, allCachedMeta, cleanName } from "./meta.js";
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
 import { rankPairs, ygoTags, ptcgTags } from "./pairing.js";
 import { nameCandidates, scanCandidateMatches, ygoSetCodes, ygoPasscodes, ptcgNumbers, similarity } from "./scan.js";
@@ -827,7 +827,7 @@ function metaDeckRow(g, d, m) {
     cover = g === "ygo" ? cardOf("ygo", d.cover) : null;
   return `<button class="meta-row" data-act="tMetaDeck" data-key="${esc(d.key)}">
     <span class="meta-art">${g === "ygo" ? (cover ? imgTag(cover, "mini-art") : `<img class="mini-art" src="${esc(ygoImageDirect(d.cover))}" alt="" loading="lazy" referrerpolicy="no-referrer">`) : d.icons.map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("")}</span>
-    <span class="meta-main"><b class="ellip">${esc(d.name)}</b><small class="muted ellip">${esc(d.place)} · ${esc(d.event)}${d.players ? ` · ${d.players} players` : ""}</small>
+    <span class="meta-main"><b class="ellip">${esc(d.name)}</b><small class="muted ellip">${esc(d.place)} · ${esc(cleanName(d.event))}${d.players ? ` · ${d.players} players` : ""}</small>
       <span class="meta-own">${bar(o.pct)}<small>${Math.round(o.pct * 100)}% owned${o.cost !== null && o.pct < 1 ? ` · ${usd(o.cost, 0)} to finish` : ""}</small></span></span></button>`;
 }
 
@@ -2384,7 +2384,7 @@ export function registerTcg(c) {
         closeSheet();
         go("#tdeck/" + deck.id);
       };
-      evidence = `Tournament-backed · Advanced (TCG) · ${esc(d.place)} at ${esc(d.event)}${d.players ? ` (${d.players} players)` : ""} · compared with ${meta.decks.length} recent top lists`;
+      evidence = `Tournament-backed · Advanced (TCG) · ${esc(d.place)} at ${esc(cleanName(d.event))}${d.players ? ` (${d.players} players)` : ""} · compared with ${meta.decks.length} recent top lists`;
       attribution = `Decklists from <a href="https://ygoprodeck.com/category/format/tournament%20meta%20decks" target="_blank" rel="noopener">YGOPRODeck Tournament Meta Decks</a>. Prices are TCGplayer market estimates.`;
     } else {
       const byName = new Map();
@@ -2428,14 +2428,14 @@ export function registerTcg(c) {
         closeSheet();
         go("#tdeck/" + deck.id);
       };
-      evidence = `Tournament-backed · Standard · ${esc(d.place)} at ${esc(d.event)} (${d.players} players) · compared with ${meta.decks.length} Top 8 lists from ${meta.events?.length || "recent"} events in the last 21 days`;
+      evidence = `Tournament-backed · Standard · ${esc(d.place)} at ${esc(cleanName(d.event))} (${d.players} players) · compared with ${meta.decks.length} Top 8 lists from ${meta.events?.length || "recent"} events in the last 21 days`;
       attribution = `Decklists from <a href="https://play.limitlesstcg.com" target="_blank" rel="noopener">Limitless</a>. Prices are TCGplayer market estimates; basic Energy counts as owned.`;
     }
     return {
       g: G,
       key: d.key,
       title: d.name,
-      sub: `${esc(d.place)} · ${esc(d.event)}${d.players ? ` · ${d.players} players` : ""}${d.player ? ` · ${esc(d.player)}` : ""}${d.date ? ` · ${esc(d.date)}` : ""}`,
+      sub: `${esc(d.place)} · ${esc(cleanName(d.event))}${d.players ? ` · ${d.players} players` : ""}${d.player ? ` · ${esc(d.player)}` : ""}${d.date ? ` · ${esc(d.date)}` : ""}`,
       evidence,
       attribution,
       sourceUrl: d.url,

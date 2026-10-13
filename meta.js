@@ -120,7 +120,7 @@ export async function ygoMeta() {
     .map((d) => ({
       key: "ygo:" + d.deckNum,
       name: d.deck_name || "Tournament deck",
-      event: d.tournamentName || "",
+      event: cleanName(d.tournamentName),
       place: d.tournamentPlacement || "",
       rank: PLACE[d.tournamentPlacement] || 99,
       players: Number(d.tournamentPlayerCount) || 0,
@@ -151,6 +151,9 @@ export async function ygoMeta() {
 }
 
 /* ---------- Pokémon ---------- */
+
+// Organizers decorate event names with emoji ("🏆Moujii's Dojo🏆"); show the plain name.
+export const cleanName = (s) => String(s || "").replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, "").replace(/\s{2,}/g, " ").trim();
 
 const LIMITLESS = "https://play.limitlesstcg.com/api";
 const lim = async (path) => {
@@ -183,7 +186,7 @@ export async function ptcgMeta() {
         const rows = [];
         for (const [kind, key] of [["Pokemon", "pokemon"], ["Trainer", "trainer"], ["Energy", "energy"]])
           for (const c of p.decklist[key] || []) rows.push({ qty: c.count, name: c.name, set: c.set || "", number: c.number || "", kind });
-        const d = { key: "ptcg:" + t.id + ":" + p.placing, name: p.deck.name, archetype: p.deck.id, icons: p.deck.icons || [], event: t.name, place: p.placing === 1 ? "Winner" : p.placing === 2 ? "Runner-Up" : "Top " + (p.placing <= 4 ? 4 : 8), rank: p.placing, players: t.players, player: p.name || "", date: t.date?.slice(0, 10) || "", list: rows, url: `https://play.limitlesstcg.com/tournament/${t.id}/player/${encodeURIComponent(p.player || "")}/decklist` };
+        const d = { key: "ptcg:" + t.id + ":" + p.placing, name: p.deck.name, archetype: p.deck.id, icons: p.deck.icons || [], event: cleanName(t.name), place: p.placing === 1 ? "Winner" : p.placing === 2 ? "Runner-Up" : "Top " + (p.placing <= 4 ? 4 : 8), rank: p.placing, players: t.players, player: p.name || "", date: t.date?.slice(0, 10) || "", list: rows, url: `https://play.limitlesstcg.com/tournament/${t.id}/player/${encodeURIComponent(p.player || "")}/decklist` };
         decks.push(d);
         if (!a.best || d.rank < a.best.rank) a.best = d;
       }
@@ -200,7 +203,7 @@ export async function ptcgMeta() {
   return {
     game: "ptcg",
     source: "Limitless — " + events.length + " recent Standard events, " + players + " players",
-    events: events.map((t) => ({ name: t.name, players: t.players, date: t.date?.slice(0, 10) })),
+    events: events.map((t) => ({ name: cleanName(t.name), players: t.players, date: t.date?.slice(0, 10) })),
     decks: decks.sort((a, b) => a.rank - b.rank || b.players - a.players),
     archetypes: [...arch.values()].filter((a) => a.id !== "other").sort((a, b) => b.count - a.count).map((a) => ({ id: a.id, name: a.name, icons: a.icons, count: a.count, top8: a.top8, share: a.count / Math.max(1, players), best: a.best?.key || "" })),
     top: [...cards.values()].map((c) => ({ name: c.name, kind: c.kind, pct: (c.decks / Math.max(1, decks.length)) * 100, avg: c.copies / c.decks })).sort((a, b) => b.pct - a.pct),

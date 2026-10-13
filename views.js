@@ -1,5 +1,5 @@
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
-import { ICON } from "./icons.js";
+import { ICON, actionIcon } from "./icons.js";
 import { emblemChips, rowEmblem, hasEmblem, impactScore, tradeAdvice, tradeAdviceHtml, deckEmblems, deckEmblemHtml, cardMetaUsage, cardMetaTab } from "./importance.js";
 import { tileChrome } from "./tiles.js";
 import {viewControl,selectionControl,selectionMark,selectionTray,historyPanel,quoteModel,priceOverview} from "./workbench-ui.js";
@@ -186,7 +186,7 @@ export function search() {
     deck = currentDeck(),
     chips = mtgFilterChips(f),
     shown = db.results.filter((c) => (f.own === "owned" ? inv(c.name).owned > 0 : f.own === "missing" ? !inv(c.name).owned : true));
-  return `<div class="page-head"><h1>Search cards</h1>${viewControl("mtg","search")}<span class="row"><button class="btn ghost small" data-act="compareOpen">Compare cards</button><button class="btn ghost small" data-act="go" data-to="#sets">◈ Browse sets</button><button class="btn ghost small" data-act="dbRandom">🎲 Random card</button></span></div>
+  return `<div class="page-head"><h1>Search cards</h1>${viewControl("mtg","search")}<span class="row"><button class="btn ghost small tool-btn" data-act="compareOpen">${actionIcon("compare")}<span>Compare</span></button><button class="btn ghost small" data-act="go" data-to="#sets">◈ Browse sets</button><button class="btn ghost small" data-act="dbRandom">🎲 Random card</button></span></div>
   <div class="searchbar"><input id="dbTerm" type="search" value="${esc(db.term)}" placeholder="Card name, or words like “draw a card”" data-input="dbTerm" data-enter="dbSearch" aria-label="Search all cards" autocomplete="off"><button class="btn" data-act="dbSearch" ${db.busy ? "disabled" : ""}>${db.busy ? "…" : "Search"}</button></div>
   ${chipRow(chips, "dbChip", "dbClear")}
   ${savedRow(savedSearches("mtg"), "dbSaved", "dbSavedDel")}

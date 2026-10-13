@@ -1515,3 +1515,17 @@ html.zoom-open, html.zoom-open body { overflow: hidden; }
 .cam-wrap .scan-drop > * { position: relative; }
 .cam-status .gl.lone .ico { width: 18px; height: 18px; }
 .btn .gl, .chip .gl, .seg button .gl { margin-right: 0.15em; }
+
+/* Toolbar: one-tap view switch and icon tool buttons. */
+.empty-mark { display: none; }
+.view-switch { display: inline-flex; padding: 3px; gap: 2px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
+.view-switch button { display: grid; place-items: center; width: 40px; height: 34px; border: 0; border-radius: 9px; background: none; color: var(--muted); cursor: pointer; transition: background 0.15s, color 0.15s; }
+.view-switch button .ico { width: 20px; height: 20px; }
+.view-switch button.on { background: color-mix(in srgb, var(--gold) 18%, var(--surface-2)); color: var(--gold); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 35%, transparent); }
+.view-switch button:not(.on):hover { color: var(--text); }
+.tool-btn { display: inline-flex; align-items: center; gap: 7px; }
+.tool-btn .ico { width: 18px; height: 18px; color: var(--gold); }
+.tool-btn.on { border-color: color-mix(in srgb, var(--gold) 50%, transparent); background: color-mix(in srgb, var(--gold) 12%, var(--surface)); }
+.view-preview .ico { width: 34px; height: 34px; color: var(--gold); }
+.head-actions { align-items: center; }
+.actions + label, .actions + .field, .actions + .scan-language { margin-top: 14px; display: block; }

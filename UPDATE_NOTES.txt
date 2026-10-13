@@ -1,3 +1,10 @@
+3.15.2 — Cleaner toolbars
+- View is now a one-tap switch of three drawn icons (gallery, compact, list) instead of a
+  "▦ View · Gallery" button that opened a sheet. Select and Compare are icon buttons.
+- Missed icons fixed: "Take photo" (label buttons are now covered) and the 🏆 emoji organizers put
+  in tournament names (removed from names, including ones already cached on the phone).
+- Empty screens no longer show a big game mark — the header and theme already say which game.
+
 3.15.1 — No more emoji icons
 - Every emoji and stock symbol on buttons, labels, menus and the scanner is replaced at render
   time by a drawn icon from the same family (icons.js) — Build decks, Deck ideas, Meta decks

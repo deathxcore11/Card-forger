@@ -72,6 +72,11 @@ const ACTION = {
   share: svg(`<circle cx="6.5" cy="12" r="2.3"/><circle cx="17.5" cy="6" r="2.3"/><circle cx="17.5" cy="18" r="2.3"/><path d="m8.6 10.9 6.8-3.7M8.6 13.1l6.8 3.7"/>`),
   search: ICON.search,
   scan: ICON.scan,
+  // Card views: gallery (cards in a grid), compact (thumbnail + text rows), symbols (list).
+  viewGallery: svg(`<rect x="3.5" y="3.5" width="7.5" height="10.5" rx="1.3"/><rect x="13" y="3.5" width="7.5" height="10.5" rx="1.3"/><path d="M3.5 17.5h7.5M13 17.5h7.5M3.5 20.5h5M13 20.5h5" stroke-opacity=".6"/>`),
+  viewCompact: svg(`<rect x="3.5" y="4" width="5" height="7" rx="1"/><rect x="3.5" y="13" width="5" height="7" rx="1"/><path d="M11 6h9.5M11 9h6M11 15h9.5M11 18h6" />`),
+  viewSymbols: svg(`<circle cx="5" cy="6" r="1.4"/><circle cx="5" cy="12" r="1.4"/><circle cx="5" cy="18" r="1.4"/><path d="M9 6h11.5M9 12h11.5M9 18h11.5"/>`),
+  select: svg(`<rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.6"/><path d="m5.4 7.4 1.5 1.5 2.6-2.8"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="1.6"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="1.6"/><path d="m5.4 16.9 1.5 1.5 2.6-2.8"/><rect x="13" y="13" width="7.5" height="7.5" rx="1.6"/>`),
   // Scanner guide states.
   frame: svg(`<path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/>`),
   dark: svg(`<path d="M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5z"/>`),
@@ -91,6 +96,7 @@ const RANDOM = {
 // Leading symbols (followed by a space) and lone symbols in buttons → icons.
 const LEAD = { "🎲": "random", "⚒": "build", "✧": "ideas", "🏆": "trophy", "⇄": "compare", "♡": "heart", "♥": "heartOn", "＋": "plus", "+": "plus", "↥": "import", "↓": "export", "⟳": "refresh", "↻": "flip", "⧉": "copy", "🔗": "link", "🖨": "print", "📷": "camera", "◈": "pack", "☆": "bookmark", "▦": "grid", "◷": "history", "🛒": "bag", "⌕": "search", "☑": "pick", "⚠": "warn", "🖌": "brush", "✓": "check", "←": "back", "‹": "back", "▧": "scan" };
 const ALONE = { "◐": "dark", "▢": "frame", "✋": "hand", "☀": "glare", "◎": "focus", "✓": "check", "✕": "close", "⋯": "more", "−": "minus", "＋": "plus", "←": "back", "⟳": "refresh", "↻": "flip" };
+export const actionIcon = (name) => ACTION[name] || "";
 const iconFor = (name, game) => (name === "random" ? RANDOM[game] || RANDOM.mtg : ACTION[name]);
 
 /**
@@ -99,10 +105,6 @@ const iconFor = (name, game) => (name === "random" ? RANDOM[game] || RANDOM.mtg 
  */
 export function decorateGlyphs(root, game = "mtg") {
   if (!root?.querySelectorAll) return;
-  for (const el of root.querySelectorAll(".empty-mark:not([data-ic])")) {
-    el.dataset.ic = "1";
-    el.innerHTML = GAME_MARK[game] || GAME_MARK.mtg;
-  }
   const walker = root.ownerDocument.createTreeWalker(root, 4 /* text */);
   const hits = [];
   for (let n = walker.nextNode(); n; n = walker.nextNode()) {
@@ -113,7 +115,7 @@ export function decorateGlyphs(root, game = "mtg") {
     if (ALONE[lone] && p.closest("button, a, .icon, .cam-status") && p.childNodes.length === 1) hits.push([n, ALONE[lone], "", true]);
     else {
       const m = s.match(/^(\s*)(\S)\uFE0F?[ \u00a0](?=\S)/u);
-      if (m && LEAD[m[2]] && p.closest("button, a, summary, .tag, .chip, .small, .foot, small, span, h3, p")) hits.push([n, LEAD[m[2]], s.slice(m[0].length), false, m[1]]);
+      if (m && LEAD[m[2]] && p.closest("button, a, label, summary, .tag, .chip, .small, .foot, small, span, h3, p")) hits.push([n, LEAD[m[2]], s.slice(m[0].length), false, m[1]]);
     }
   }
   for (const [n, name, rest, lone, pad] of hits) {
