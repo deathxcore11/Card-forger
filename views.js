@@ -1,4 +1,5 @@
 import { hapticsOn } from "./feel.js";
+import { tradePanel } from "./trade.js";
 import { skeletonGrid } from "./ui.js";
 import { trackedQuote, priceHistoryHtml, alertsPanel } from "./pricehist.js";
 import { installNudge } from "./install.js";
@@ -387,14 +388,32 @@ export function cardSheet(c, ctx = {}) {
     )
     .join("")}
   ${!c.full ? `<p class="muted small center" id="cardLoading">Loading flavor text and printings…</p>` : ""}
-  ${cardTabs(tab, [["overview", "Overview"], ["meta", "Meta"], ["guide", "Play guide"], ["versions", `Versions${prints ? " · " + prints.length : ""}`], ["prices", "Prices"], ["rulings", "Rulings"], ["legal", "Legality"]])}
+  ${cardTabs(tab, [["overview", "Overview"], ["meta", "Meta"], ["guide", "Play guide"], ["versions", `Versions${prints ? " · " + prints.length : ""}`], ["prices", "Prices"], ["trade", "Trade"], ["rulings", "Rulings"], ["legal", "Legality"]])}
   ${cardPanel("overview", tab, overview)}
   ${cardPanel("meta", tab, mtgCardMeta(c))}
   ${cardPanel("guide", tab, mtgCardGuide(c))}
   ${cardPanel("versions", tab, `<section class="prints">${prints ? printList(prints, shown, name, chosen) : `<p class="muted small">Loading every printing…</p>`}</section>`)}
   ${cardPanel("prices", tab, pricesTab)}
+  ${tab === "trade" ? cardPanel("trade", tab, mtgTradePanel(name, shown)) : ""}
   ${cardPanel("rulings", tab, rulings)}
   ${cardPanel("legal", tab, legality)}`;
+}
+
+// Trade tab: fair swaps from your collection and wishlist (trade.js).
+function mtgTradePanel(name, shown) {
+  const st = S.state,
+    byName = new Map();
+  for (const e of st.collection) {
+    const k = key(e.name),
+      p = lotPrice(e, S.catalog, st.printings);
+    const x = byName.get(k) || { key: k, name: e.name, price: p, qty: 0, art: img(cardImage(meta(e.name)), e.name, "mini-art"), open: `data-act="card" data-name="${esc(e.name)}"` };
+    x.qty += e.qty;
+    if (p != null && (x.price == null || p > x.price)) x.price = p;
+    byName.set(k, x);
+  }
+  const wish = st.wishlist.map((w) => ({ key: key(w.name), name: w.name, price: priceOf(w.name), art: img(cardImage(meta(w.name)), w.name, "mini-art"), open: `data-act="card" data-name="${esc(w.name)}"` }));
+  const p = Number(priceOfFinish(shown, "nonfoil")) || priceOf(name);
+  return tradePanel({ key: key(name), name, price: p > 0 ? p : null, owned: inv(name).owned > 0 }, [...byName.values()], wish);
 }
 
 const allPrices = (prints) => prints.flatMap((p) => ["nonfoil", "foil", "etched"].map((f) => Number(priceOfFinish(p, f))).filter((x) => x > 0));
@@ -641,7 +660,6 @@ function collectionCards() {
     return empty("Start with the cards in front of you", "Add one card, scan it, or import a ManaBox / Moxfield / CSV export. Nothing counts as owned until you add it.", `<button class="btn" data-act="addCard">Add a card</button><button class="btn ghost" data-act="importCollection">Import a list</button>`);
   const value = collectionValue(st.collection, S.catalog, st.printings, []);
   return `<p class="summary-line"><b>${sumQty(st.collection)}</b> copies · <b>${new Set(st.collection.map((e) => key(e.name))).size}</b> names · <b data-count="${Math.round(value.total)}" data-money="1">${usd(value.total, 0)}</b>${value.unpriced ? ` <span class="muted">(${value.unpriced} unpriced)</span>` : ""}</p>
-  ${mtgTradeAdvice()}
   <div class="toolbar"><input type="search" value="${esc(S.ui.q.coll)}" placeholder="Search name, set, binder…" data-input="collSearch" aria-label="Search collection"><select data-change="collSort" aria-label="Sort">${options([["name", "A–Z"], ["value", "Value ↓"], ["impact", "Deck-building value"], ["recent", "Recent"], ["color", "Color"], ["mv", "Mana value"]], S.ui.collSort)}</select><select data-change="collFilter" aria-label="Filter">${options([["all", "All"], ["meta", "★ Meta & staples"], ["spare", "Not in a deck"], ["review", "Printing to review"], ["foil", "Foils"], ["unpriced", "Unpriced"]], S.ui.collFilter)}</select></div>
   <div id="collList">${collectionList()}</div>`;
 }
@@ -730,6 +748,7 @@ function collectionValueView() {
     .sort((a, b) => b[1] - a[1])
     .map(([k, x]) => `<div class="meter"><span>${colorNames[k]}</span>${bar(x / maxColor, "c-" + k)}<b>${usd(x, 0)}</b></div>`)
     .join("")}</section>
+  ${mtgTradeAdvice()}
   ${alertsPanel("mtg")}
   <section class="panel"><h3>Most valuable</h3><div class="list compact">${v.top
     .map((t) => `<button class="mini-row" data-act="card" data-name="${esc(t.entry.name)}"><span class="ellip">${t.entry.qty > 1 ? t.entry.qty + "× " : ""}${esc(t.entry.name)}${t.entry.finish !== "nonfoil" ? ` <b class="foil">${esc(t.entry.finish)}</b>` : ""}</span><b>${usd(t.value)}</b></button>`)

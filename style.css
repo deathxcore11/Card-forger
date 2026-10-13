@@ -1993,3 +1993,47 @@ nav [data-nav] { position: relative; }
 .upgrade-row { gap: 10px; }
 .upgrade-row .ellip small { display: block; }
 .upgrade-side { display: flex; align-items: center; gap: 8px; flex: none; }
+/* ================= Collection: calm header, tidy rows ================= */
+/* One slim line: the value (tap for the Value tab), the count, a refresh button. */
+.coll-summary { display: flex; align-items: center; gap: 10px; margin: 14px 0 10px; }
+.coll-summary .cs-value { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 10px; padding: 0; border: 0; background: none; color: inherit; text-align: left; cursor: pointer; font: inherit; }
+.coll-summary .cs-value b { font: 800 28px/1.1 Manrope, system-ui, sans-serif; letter-spacing: -0.02em; }
+.coll-summary .cs-value span { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.coll-summary .icon .ico, .coll-summary .icon svg { width: 20px; height: 20px; }
+/* Search on top, filters as a single row of small pills that scrolls sideways. */
+.coll-tools { display: grid; gap: 8px; margin-bottom: 12px; }
+.coll-tools input[type="search"] { width: 100%; }
+.filter-pills { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 2px; mask-image: linear-gradient(90deg, #000 88%, transparent); }
+.filter-pills::-webkit-scrollbar { display: none; }
+.filter-pills select { flex: none; width: auto; max-width: 62vw; min-height: 36px; padding: 6px 30px 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; background-position: right 10px center; }
+/* Rows: details wrap onto a second line instead of being cut; a slimmer stepper. */
+.display-list .lot { grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; }
+.display-list .lot-name { font-size: 16px; line-height: 1.25; text-align: left; }
+.display-list .lot-sub { flex-wrap: wrap; white-space: normal; overflow: visible; row-gap: 4px; line-height: 1.35; }
+.display-list .lot-sub > span:last-child { overflow: visible; }
+.display-list .lot-sub .tset, .display-list .lot-sub .set-badge, .display-list .lot-sub .emblems { flex: none; }
+.display-list .lot-side { align-self: stretch; align-content: space-between; gap: 6px; }
+.display-list .lot-side .stepper { gap: 2px; padding: 2px; }
+.display-list .lot-side .stepper button { width: 30px; height: 30px; min-height: 30px; }
+.display-list .lot-side .stepper b { min-width: 18px; font-size: 14px; }
+@media (max-width: 380px) { .display-list .lot { grid-template-columns: 52px minmax(0, 1fr) auto; } .display-list .lot-name { font-size: 15px; } }
+
+/* Trade tab */
+.trade { display: grid; gap: 14px; }
+.trade-head { display: flex; align-items: baseline; gap: 10px; }
+.trade-head b { font: 800 26px/1 Manrope, system-ui, sans-serif; }
+.trade-block h3 { margin: 0; }
+.trade-block > p { margin: 2px 0 10px; }
+.trade-row { display: flex; align-items: center; gap: 8px; padding: 10px; margin-bottom: 8px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
+.trade-card { flex: 1; min-width: 0; display: grid; grid-template-columns: 44px 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: center; padding: 0; border: 0; background: none; color: inherit; text-align: left; font: inherit; cursor: pointer; }
+.trade-card .mini-art, .trade-card img { grid-row: span 2; width: 44px; aspect-ratio: 63 / 88; object-fit: cover; border-radius: 4px; }
+.trade-card span { font-weight: 700; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trade-card small { color: var(--muted); font-size: 12px; }
+.trade-plus { color: var(--muted); font-weight: 800; }
+.trade-total { flex: none; display: grid; justify-items: end; gap: 2px; }
+.trade-total b { font-size: 15px; }
+.tdiff { font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 99px; }
+.tdiff.even { color: var(--good); background: color-mix(in srgb, var(--good) 15%, transparent); }
+.tdiff.over { color: #f5b335; background: rgba(245, 179, 53, 0.14); }
+.tdiff.under { color: #8fb8ff; background: rgba(143, 184, 255, 0.14); }
+.trade-empty { color: var(--muted); font-size: 14px; padding: 12px; border-radius: 12px; border: 1px dashed var(--line); }

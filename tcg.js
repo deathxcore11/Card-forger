@@ -17,12 +17,13 @@ import { esc, usd, empty, bar, options, segmented } from "./ui.js";
 import { GAMES, GAME_ICON, GAME_COLOR, GAME_IDS, blankGame, gameOf } from "./games.js";
 import { ICON, actionIcon } from "./icons.js";
 import { tcgCompareSheet } from "./tcgcompare.js";
+import { tradePanel } from "./trade.js";
 import { sharePayloadTcg, encodeShare } from "./share.js";
 import { factBox, factsFor } from "./facts.js";
 import { ygoEmblems, energyIcon, attackLine, tcgSetBadge, ygoPrintBadge, pkRarity, pkSetSymbol } from "./emblems.js";
 import { buildYgo, buildPtcg, YGO_STAPLES, PTCG_STAPLES, PTCG_SUPPORT_BASICS, energyName } from "./tcgbuild.js";
 import { ygoSource, ygoImageDirect, YGO_TYPES, YGO_ATTRIBUTES, YGO_RACES, YGO_SPELL_KINDS, YGO_TRAP_KINDS } from "./ygo.js";
-import { ptcgSource, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES } from "./ptcg.js";
+import { ptcgSource, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES, plainText } from "./ptcg.js";
 import { loadMeta, metaState, ptcgIcon, allCachedMeta, cleanName } from "./meta.js";
 import { tcgPower, powerPanel, powerChip } from "./power.js";
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
@@ -120,6 +121,25 @@ export function variantArtThumb(card, variant = {}, attrs = "") {
   const a = variantArtwork(card,variant),
     urls = [...new Set([variant.image, a.image, ...artworkSources(card), card.game === "ygo" ? ygoImageDirect(a.imageId) : ""].filter(Boolean))];
   return `<button class="variant-art" data-act="tVariantArt" data-id="${esc(card.id)}" ${attrs} aria-label="View ${esc(variant.label || card.name)} artwork"><span class="variant-art-frame">${urls.length ? `<img src="${esc(urls[0])}" data-art-sources="${esc(JSON.stringify(urls))}" data-art-index="0" alt="${esc(card.name)} — ${esc(a.label)}" loading="lazy" referrerpolicy="no-referrer">` : `<span class="art-unavailable-label">Image unavailable</span>`}</span></button>`;
+}
+
+// Trade tab: fair swaps from your collection and wishlist (trade.js).
+function tcgTradePanel(g, c, own) {
+  const st = gs(g),
+    byId = new Map();
+  for (const e of st.collection) {
+    const card = cardOf(g, e.cardId),
+      p = entryPrice(card, e);
+    const x = byId.get(e.cardId) || { key: e.cardId, name: e.name, price: p, qty: 0, art: imgTag(card, "mini-art"), open: `data-act="tCard" data-id="${esc(e.cardId)}"` };
+    x.qty += e.qty;
+    if (p != null && (x.price == null || p > x.price)) x.price = p;
+    byId.set(e.cardId, x);
+  }
+  const wish = st.wishlist.map((w) => {
+    const card = cardOf(g, w.cardId);
+    return { key: w.cardId, name: w.name, price: price(card), art: imgTag(card, "mini-art"), open: `data-act="tCard" data-id="${esc(w.cardId)}"` };
+  });
+  return tradePanel({ key: c.id, name: c.name, price: price(c), owned: own > 0 }, [...byId.values()], wish);
 }
 
 // A stat on the card page. The regulation mark gets what it means for you, not just a letter.
@@ -597,11 +617,12 @@ export function tcgCardSheet(c, sctx = {}) {
     ${p.usd == null && !p.eur && !c.brief ? `<p class="price-gap small muted">Stores haven't listed a price for this card yet. That's normal for new sets and rarely sold cards; it fills in when sales start.</p>` : ""}
   </div>
   ${g === "ptcg" && !c.brief ? pokemonText(c) : c.text ? `<section class="cd-text"><p class="oracle">${esc(c.text)}</p>${c.illustrator ? `<div class="small muted right">🖌 ${esc(c.illustrator)}</div>` : ""}</section>` : ""}
-  ${tabs(tab, [["overview", "Overview"], ["meta", "Meta"], ["guide", "Play guide"], ["versions", "Versions"], ["prices", "Prices"], ["rulings", "Rulings"], ["legal", "Legality"]])}
+  ${tabs(tab, [["overview", "Overview"], ["meta", "Meta"], ["guide", "Play guide"], ["versions", "Versions"], ["prices", "Prices"], ["trade", "Trade"], ["rulings", "Rulings"], ["legal", "Legality"]])}
   ${panel("overview", tab, overview)}
   ${panel("meta", tab, tcgCardMeta(g, c))}
   ${panel("guide", tab, tcgCardGuide(g, c))}
   ${panel("versions", tab, versions)}
+  ${tab === "trade" ? panel("trade", tab, tcgTradePanel(g, c, own)) : ""}
   ${panel("prices", tab, priceOverview(g,c,sctx,SOURCES[g].buy(c)) + `<details class="market-details"><summary>Market details · sources & finishes</summary>` + prices + `<p class="foot">${esc(p.source || "")}${p.updated ? " · updated " + esc(new Date(p.updated).toLocaleDateString()) : c.fetchedAt ? " · checked " + esc(new Date(c.fetchedAt).toLocaleDateString()) : ""}. Condition prices and stock are on the store’s page.</p>` + buy + `</details>`)}
   ${panel("rulings", tab, rulings)}
   ${panel("legal", tab, legal)}`;
@@ -639,9 +660,9 @@ function pokemonText(c) {
     c.retreat !== null && c.retreat !== undefined && c.category === "Pokemon" ? `<span>Retreat ${c.retreat ? Array(c.retreat).fill(energyIcon("Colorless", "sm")).join("") : "0"}</span>` : "",
   ].filter(Boolean);
   return `<section class="cd-text pk">
-    ${(c.abilities || []).map((a) => `<div class="pk-ability"><span class="pk-tag">${esc(a.type)}</span> <b>${esc(a.name)}</b><p>${esc(a.effect)}</p></div>`).join("")}
-    ${(c.attacks || []).map((a) => `<div class="pk-attack"><div class="row between"><span class="row">${attackLine(a.cost)}<b>${esc(a.name)}</b></span>${a.damage !== "" ? `<b class="dmg">${esc(a.damage)}</b>` : ""}</div>${a.effect ? `<p>${esc(a.effect)}</p>` : ""}</div>`).join("")}
-    ${c.effect ? `<p class="oracle">${esc(c.effect)}</p>` : ""}
+    ${(c.abilities || []).map((a) => `<div class="pk-ability"><span class="pk-tag">${esc(a.type)}</span> <b>${esc(a.name)}</b><p>${esc(plainText(a.effect))}</p></div>`).join("")}
+    ${(c.attacks || []).map((a) => `<div class="pk-attack"><div class="row between"><span class="row">${attackLine(a.cost)}<b>${esc(a.name)}</b></span>${a.damage !== "" ? `<b class="dmg">${esc(a.damage)}</b>` : ""}</div>${a.effect ? `<p>${esc(plainText(a.effect))}</p>` : ""}</div>`).join("")}
+    ${c.effect ? `<p class="oracle">${esc(plainText(c.effect))}</p>` : ""}
     ${!c.attacks?.length && !c.abilities?.length && !c.effect && c.text ? `<p class="oracle">${esc(c.text)}</p>` : ""}
     ${strip.length ? `<div class="pk-strip">${strip.join("")}</div>` : ""}
     ${c.flavor ? `<p class="flavor">${esc(c.flavor)}</p>` : ""}
@@ -721,6 +742,7 @@ function tcgValueView(g) {
   return `<div class="page-head"><h1>Collection</h1></div>${tabs}
   <section class="panel"><p class="eyebrow">Estimated value</p><p class="big" data-count="${v.total.toFixed(2)}" data-money="1">${usd(v.total)}</p><p class="muted small">${v.copies} cards${v.unpriced ? ` · ${v.unpriced} without a price` : ""}</p>${lineChart(hist)}</section>
   <section class="panel"><h3>Most valuable</h3><div class="list compact">${top.map((x) => `<button class="mini-row" data-act="tCard" data-id="${esc(x.e.cardId)}"><span class="ellip">${x.e.qty > 1 ? x.e.qty + "× " : ""}${esc(x.e.name)}</span><b>${usd(x.total)}</b></button>`).join("")}</div></section>
+  ${tcgTradeAdvice(g)}
   ${alertsPanel(g)}`;
 }
 export function tcgCollection() {
@@ -746,10 +768,8 @@ export function tcgCollection() {
   if (U.tab === "binders") return `<div class="page-head"><h1>Collection</h1><button class="btn ghost small" data-act="go" data-to="#search">＋ Add cards</button></div>${segmented("tCollTab","binders",[["cards","Cards"],["binders","Binders"],["value","Value"],["wishlist",`Wishlist · ${st.wishlist.length}`]])}${binderShelf(st.collection.map(entry=>({entry,card:cardOf(g,entry.cardId),image:cardOf(g,entry.cardId)?.variants?.find(v=>v.key===entry.variant)?.image || cardOf(g,entry.cardId)?.image || "",game:g})),g,S.state.settings.binders || [])}`;
   return `<div class="page-head"><h1>Collection</h1><div class="head-actions">${viewControl(g,"collection")}${selectionControl(g)}<button class="btn ghost small" data-act="go" data-to="#search">＋ Add cards</button></div></div>
   ${segmented("tCollTab", "cards", [["cards", "Cards"], ["binders", "Binders"], ["value", "Value"], ["wishlist", `Wishlist · ${st.wishlist.length}`]])}
-  ${st.collection.length ? `<div class="kpis small"><div class="kpi"><b data-count="${Math.round(v.total)}" data-money="1">${usd(v.total, 0)}</b><span>estimated value</span></div><div class="kpi"><b>${v.copies}</b><span>cards</span></div><div class="kpi"><b>${st.collection.length}</b><span>entries</span></div></div>` : ""}
-  ${st.collection.length ? tcgTradeAdvice(g) : ""}
-  ${st.collection.length ? `<div class="toolbar"><input type="search" value="${esc(U.q)}" placeholder="Search your cards" data-input="tCollQ" aria-label="Search collection"><select data-change="tCollSet" aria-label="Set">${options([["", "All sets"], ...setNames.map((x) => [x, x])], U.set)}</select><select data-change="tCollKind" data-field="kind" aria-label="Kind">${options([["", "All kinds"], ...kinds], U.kind)}</select>${rarities.length > 1 ? `<select data-change="tCollKind" data-field="rarity" aria-label="Rarity">${options([["", "All rarities"], ...rarities.map((x) => [x, x])], U.rarity)}</select>` : ""}<select data-change="tCollSort" aria-label="Sort">${options([["value", "Value"], ["impact", "Deck-building value"], ["name", "Name"], ["set", "Set"], ["rarity", "Rarity"], ["recent", "Recently added"]], U.sort)}</select></div>
-  <div class="row between"><span class="muted small">${Math.min(rows.length,U.limit || 120)} of ${rows.length} entries${v.unpriced ? ` · ${v.unpriced} without a price` : ""}</span><button class="btn ghost small" data-act="tRefreshPrices">⟳ Refresh prices</button></div>
+  ${st.collection.length ? `<div class="coll-summary"><button class="cs-value" data-act="tCollTab" data-id="value" aria-label="See collection value"><b data-count="${Math.round(v.total)}" data-money="1">${usd(v.total, 0)}</b><span>${v.copies} card${v.copies === 1 ? "" : "s"}${Math.min(rows.length, U.limit || 120) < rows.length ? ` · showing ${Math.min(rows.length, U.limit || 120)} of ${rows.length}` : rows.length !== st.collection.length ? ` · showing ${rows.length} of ${st.collection.length}` : ""}${v.unpriced ? ` · ${v.unpriced} unpriced` : ""}</span></button><button class="icon" data-act="tRefreshPrices" aria-label="Refresh prices">${actionIcon("refresh")}</button></div>` : ""}
+  ${st.collection.length ? `<div class="coll-tools"><input type="search" value="${esc(U.q)}" placeholder="Search your cards" data-input="tCollQ" aria-label="Search collection"><div class="filter-pills"><select data-change="tCollSet" aria-label="Set">${options([["", "All sets"], ...setNames.map((x) => [x, x])], U.set)}</select><select data-change="tCollKind" data-field="kind" aria-label="Kind">${options([["", "All kinds"], ...kinds], U.kind)}</select>${rarities.length > 1 ? `<select data-change="tCollKind" data-field="rarity" aria-label="Rarity">${options([["", "All rarities"], ...rarities.map((x) => [x, x])], U.rarity)}</select>` : ""}<select data-change="tCollSort" aria-label="Sort">${options([["value", "Value"], ["impact", "Deck-building value"], ["name", "Name"], ["set", "Set"], ["rarity", "Rarity"], ["recent", "Recently added"]], U.sort)}</select></div></div>
   <div class="list display-list">${rows.slice(0,U.limit || 120)
     .map(({ e, c }) => {
       const p = entryPrice(c, e);

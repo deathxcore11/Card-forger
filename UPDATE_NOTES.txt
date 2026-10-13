@@ -1,3 +1,14 @@
+3.30.0 — A calmer collection and a Trade tab on every card
+- Collection: one slim line with the value (tap it for the Value tab), the card count and a
+  refresh button, then search and a single row of small filter pills. The trade advice box moved
+  to the Value tab.
+- Collection rows no longer cut off the set badge, rarity or set name: details wrap neatly onto
+  a second line and the − / + control is slimmer. Applies to all three games and views.
+- New Trade tab on every card (all three games): cards you own worth about the same (within 15%),
+  pairs of your cards that add up to it (within 10%), and, if you own the card, wishlist cards
+  you could ask for in return. Each suggestion shows how far over or under it is.
+- Fixed: newer Pokémon cards showed bits of code in their attack text.
+
 3.29.0 — Upgrade lab for Pokémon and Yu-Gi-Oh!
 - Pokémon and Yu-Gi-Oh! decks get an Upgrade lab like Magic's. It compares your list with every placing list of the same archetype: the cards most of them play that you don't (how many lists play each, how many copies, price, whether you own it, one-tap Add), cards few of them play (consider cutting), and format staples you're missing.
 - Versions show Deck Power then and now, so you can see whether a change helped.

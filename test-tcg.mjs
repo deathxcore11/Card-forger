@@ -142,3 +142,8 @@ console.log("PASS: exact-vs-reference variant art, unavailable-image label, YGO 
   assert.equal(applyFallbackPrices(none, { tcgplayer: { prices: {} } }), false);
   console.log("PASS: Pokémon fallback prices fill empty versions only.");
 }
+{
+  const { plainText } = await import("./ptcg.js");
+  assert.equal(plainText('Discard a <span class="energy-symbol Fire" title="Fire">Fire</span> Energy'), "Discard a Fire Energy");
+  console.log("PASS: Pokémon card text keeps the words, drops the markup.");
+}

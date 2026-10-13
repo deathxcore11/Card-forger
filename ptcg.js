@@ -88,6 +88,9 @@ async function fillPricesNow(c) {
   if (hit) applyFallbackPrices(c, hit);
 }
 
+// Newer TCGdex text carries markup for energy symbols ("<span class=\"energy-symbol Fire\" …>Fire</span>"):
+// keep the words, drop the tags.
+export const plainText = (t) => String(t ?? "").replace(/<span[^>]*\btitle="([^"]+)"[^>]*>[^<]*<\/span>/gi, "$1").replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&");
 export function normalizePtcg(c) {
   const tp = c.pricing?.tcgplayer || {},
     cm = c.pricing?.cardmarket || {},
@@ -103,10 +106,10 @@ export function normalizePtcg(c) {
   if (c.retreat !== undefined) stats.push(["Retreat", c.retreat]);
   if (c.regulationMark) stats.push(["Regulation", c.regulationMark]);
   const text = [
-    ...(c.abilities || []).map((a) => `${a.type || "Ability"}: ${a.name}\n${a.effect || ""}`),
-    ...(c.attacks || []).map((a) => `[${(a.cost || []).join(" · ") || "—"}] ${a.name}${a.damage ? " — " + a.damage : ""}${a.effect ? "\n" + a.effect : ""}`),
-    c.effect || "",
-    c.description && !c.attacks ? c.description : "",
+    ...(c.abilities || []).map((a) => `${a.type || "Ability"}: ${a.name}\n${plainText(a.effect)}`),
+    ...(c.attacks || []).map((a) => `[${(a.cost || []).join(" · ") || "—"}] ${a.name}${a.damage ? " — " + a.damage : ""}${a.effect ? "\n" + plainText(a.effect) : ""}`),
+    plainText(c.effect),
+    c.description && !c.attacks ? plainText(c.description) : "",
   ].filter(Boolean).join("\n\n");
   return {
     game: "ptcg",
@@ -129,9 +132,9 @@ export function normalizePtcg(c) {
     regulationMark: c.regulationMark || "",
     stage: c.stage || "",
     hp: c.hp || null,
-    abilities: (c.abilities || []).map((a) => ({ type: a.type || "Ability", name: a.name, effect: a.effect || "" })),
-    attacks: (c.attacks || []).map((a) => ({ cost: a.cost || [], name: a.name, damage: a.damage ?? "", effect: a.effect || "" })),
-    effect: c.effect || "",
+    abilities: (c.abilities || []).map((a) => ({ type: a.type || "Ability", name: a.name, effect: plainText(a.effect) })),
+    attacks: (c.attacks || []).map((a) => ({ cost: a.cost || [], name: a.name, damage: a.damage ?? "", effect: plainText(a.effect) })),
+    effect: plainText(c.effect),
     weak: (c.weaknesses || []).map((w) => ({ type: w.type, value: w.value || "" })),
     resist: (c.resistances || []).map((w) => ({ type: w.type, value: w.value || "" })),
     retreat: c.retreat ?? null,
