@@ -1,3 +1,9 @@
+3.33.3 — Badges on deck pages
+- Deck pages in big-card view now show the same badges on each card as everywhere else (type,
+  set and rarity, deck-building value) for all three games, so you can tell at a glance what a
+  card is and where it's from. The price moves to the top-right corner. Only the full card on a
+  card's own page goes without badges, since that page already shows everything.
+
 3.33.2 — Tier outlines on every view, seamless animation
 - Text view: the placeholder diamond is gone; the whole row outline is the card's tier colour.
   Small-card view uses the same full outline. Same in all three games, everywhere these lists

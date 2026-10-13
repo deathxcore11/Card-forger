@@ -2341,3 +2341,7 @@ img[data-tier="t5"] { animation: tier-fire-ring 2.4s ease-in-out infinite; }
 @keyframes tier-twinkle { from { opacity: .45; } to { opacity: 1; } }
 @keyframes tier-drift2 { to { background-position: 23px -29px, -22px 50px, 58px -28px; } }
 @media (prefers-reduced-motion: reduce) { .display-list .lot::before, .display-list .lot, .display-list .lot .lot-art, .display-list .lot .lot-art::after { animation: none !important; } }
+/* Gallery cards on deck pages: badges on the art like everywhere else; the price moves to the free top-right corner. */
+#content.view-gallery .display-list .lot .lot-art .tile-chrome { display: block; }
+#content.view-gallery .display-list .lot .art-price { left: auto; right: 9px; bottom: auto; top: 9px; z-index: 3; font-size: 11px; padding: 2px 7px; border-radius: 99px; background: rgba(8, 10, 16, .78); }
+#content.view-gallery .display-list .deck-row:not([data-tier]) .lot-art .tile-chrome, #content.view-gallery .display-list .lot[data-tier="tn"] .lot-art .tile-chrome { left: 0; right: 0; top: 0; }
