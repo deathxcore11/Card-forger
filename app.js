@@ -587,7 +587,7 @@ function render() {
       setTimeout(() => tcgCtx.loadMeta?.(g), 0);
     }
     // Load card data and prices for what's on screen.
-    const ids = ui.view === "collection" || (ui.view === "decks" && ui.decksTab === "ideas") ? T.gs(g).collection.map((e) => e.cardId) : ui.view === "tdeck" ? (T.gs(g).decks.find((d) => d.id === ui.tdeckId)?.zones ? ["main", "extra", "side"].flatMap((z) => T.gs(g).decks.find((d) => d.id === ui.tdeckId).zones[z].map((r) => r.cardId)) : []) : ui.view === "home" || ui.view === "decks" ? T.gs(g).decks.flatMap((d) => (d.zones.main || []).slice(0, 1).map((r) => r.cardId)) : [];
+    const ids = ui.view === "collection" && (!T.ui(g).coll.tab || T.ui(g).coll.tab === "cards") ? [...document.querySelectorAll(".lot-art[data-id]")].map(e=>e.dataset.id) : ui.view === "collection" || (ui.view === "decks" && ui.decksTab === "ideas") ? T.gs(g).collection.map((e) => e.cardId) : ui.view === "tdeck" ? (T.gs(g).decks.find((d) => d.id === ui.tdeckId)?.zones ? ["main", "extra", "side"].flatMap((z) => T.gs(g).decks.find((d) => d.id === ui.tdeckId).zones[z].map((r) => r.cardId)) : []) : ui.view === "home" || ui.view === "decks" ? T.gs(g).decks.flatMap((d) => (d.zones.main || []).slice(0, 1).map((r) => r.cardId)) : [];
     const missing = ids.filter((id) => !T.cardOf(g, id));
     const k = g + ui.view + missing.length;
     if (missing.length && navigator.onLine && !autoLoaded.has(k)) {

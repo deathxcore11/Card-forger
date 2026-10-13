@@ -72,7 +72,6 @@ export function home() {
     <button class="kpi" data-act="go" data-to="#decks"><b>${st.decks.length}</b><span>decks</span></button>
   </div>`}
   ${others.length ? `<div class="section-head"><h2>Deck shelf</h2><button class="link" data-act="go" data-to="#decks">All decks →</button></div><div class="shelf">${others.map((d) => deckTile(d)).join("")}</div>` : ""}
-  ${randomTools("mtg")}
   ${quickTiles("mtg")}
   ${
     value.spare.length && value.spareValue > 0
@@ -124,8 +123,8 @@ function startPath() {
       ? `<li class="step done"><span class="step-n" aria-hidden="true">✓</span><div><b>${title}</b></div></li>`
       : `<li class="step"><span class="step-n" aria-hidden="true">${n}</span><div><b>${title}</b><p class="muted small">${text}</p><div class="actions wrap">${actions}</div></div></li>`;
   return `<section class="panel start"><div class="row between"><p class="eyebrow">Start here · about 5 minutes</p><button class="link small" data-act="hideStart" data-game="mtg">Hide</button></div><h2>Three steps to your first deck</h2><ol class="steps">
-    ${step(1, hasCards, "Add the cards you own", "Paste a list or upload a ManaBox, Moxfield, Archidekt or CSV export. Or scan cards with your camera.", `<button class="btn small" data-act="importCollection">↥ Import collection</button><button class="btn ghost small" data-act="go" data-to="#scan">▧ Scan</button><button class="link small" data-act="loadExample">Try an example collection</button>`)}
-    ${step(2, hasDeck, "Pick a deck to aim for", "Import a list you like, start from a commander, or browse precons and shared decks to see what you can almost build.", `<button class="btn small" data-act="go" data-to="#decks/inspiration">✧ Find decks I can almost build</button><button class="btn ghost small" data-act="importDeck">Import a deck</button>`)}
+    ${step(1, hasCards, "Add the cards you own", "Paste a list or upload a ManaBox, Moxfield, Archidekt or CSV export. Or scan cards with your camera.", `<button class="btn small" data-act="importCollection">Add my cards</button>`)}
+    ${step(2, hasDeck, "Pick a deck to aim for", "Import a list you like, start from a commander, or browse precons and shared decks to see what you can almost build.", `<button class="btn small" data-act="go" data-to="#decks/ideas">Find deck ideas</button>`)}
     ${step(3, false, "See what’s missing and what it costs", "Each deck shows what you own, what you need, the price to finish, and a review of anything off.", hasDeck ? `<button class="btn small" data-act="go" data-to="#deck/active/cards">Open my deck</button>` : `<span class="muted small">Unlocks after step 2.</span>`)}
   </ol><p class="foot">Everything is saved on this device. Export a backup in Settings any time.</p></section>`;
 }
@@ -992,7 +991,7 @@ export function deckPage() {
       <p>${fm.commander ? colorDots(meta(d.commander)) + " " + esc(d.commander || "No commander yet") + " · " : ""}<button class="chip dark fmt-chip" data-act="deckMenu" title="${esc(sizeLabel(fm))}${fm.note ? " · " + esc(fm.note) : ""}">${esc(fm.name)}</button>${d.locked ? ' · <span class="chip dark">Assembled</span>' : ""}</p>
       ${reviewBadge(d)}
       <div class="hero-stats">
-        <span><b class="${t.copies === target ? "" : "warn-text"}">${t.copies}/${target}</b>cards</span>
+        <span><b class="${(fmt.exact ? t.copies === target : t.copies >= target) ? "" : "warn-text"}">${t.copies}/${target}</b>cards</span>
         <span><b>${t.copies ? Math.round((t.covered / t.copies) * 100) : 0}%</b>owned</span>
         <span><b>${usd(v.total, 0)}</b>value</span>
         <button data-act="deckTab" data-id="engine"><b>${p.score}</b>engine</button>
@@ -1557,7 +1556,7 @@ export function settings() {
   <details class="settings-disclosure settings-danger"><summary>Start over or load examples</summary><p class="foot">Export a backup first. One recovery copy is kept on this device.</p><div class="actions wrap"><button class="btn ghost danger" data-act="reset">Start empty</button><button class="btn ghost" data-act="loadExample">Load example data</button></div></details></div>
   <div id="settings-app" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-app" ${tab === "app" ? "" : "hidden"}><section class="panel settings-card"><div class="settings-card-heading"><span class="settings-icon" aria-hidden="true">＋</span><div><p class="eyebrow">TAKE IT WITH YOU</p><h2>Install CardStashy</h2></div></div><p class="muted small">Open it from your home screen. Saved collections and decks work offline.</p><button class="btn" data-act="install">Install app</button><details class="settings-disclosure"><summary>Android installation help</summary><p class="foot">In Chrome, open ⋮ → Add to Home screen or Install app. Searches and updated prices need internet.</p></details></section>
   <details class="settings-disclosure settings-source"><summary>Card databases & prices</summary><ul class="sources"><li><b>Magic:</b> Scryfall card data, images and reference prices; MTGJSON precon lists.</li><li><b>Pokémon:</b> TCGdex card data and images, with supplied TCGplayer and Cardmarket prices.</li><li><b>Yu-Gi-Oh!:</b> YGOPRODeck card data, alternate art, printings and reference prices.</li><li><b>Imports:</b> Supported text and CSV exports from deck and collection tools.</li></ul><p class="foot">Prices are estimates; check edition, condition and shipping with the seller.</p></details>
-  <details class="settings-disclosure settings-source"><summary>About CardStashy</summary><p class="foot">Deck scores, upgrades and test games use card rules and simulations; they aren’t guaranteed win rates. CardStashy is an independent fan tool. Trading cards and artwork belong to their respective rights holders.</p><span class="settings-version">Version 3.9.4</span></details></div></div>`;
+  <details class="settings-disclosure settings-source"><summary>About CardStashy</summary><p class="foot">Deck scores, upgrades and test games use card rules and simulations; they aren’t guaranteed win rates. CardStashy is an independent fan tool. Trading cards and artwork belong to their respective rights holders.</p><span class="settings-version">Version 3.9.5</span></details></div></div>`;
 }
 
 /* ---------- Deck idea sheet ---------- */

@@ -1,3 +1,13 @@
+3.9.5 — Smoke-test hardening and quieter Home
+- Same three primary Home shortcuts and onboarding actions across all games. Imports, sets, rules, scan and random tools remain in an expandable tools section.
+- Pokémon / Yu-Gi-Oh! collections render 120 entries at a time; filtering and sorting use the full collection. Search also finds locations and sets, and empty results explain what to try.
+- Imports use six concurrent lookups and reuse duplicate-name requests. Invalid quantities and oversized text are rejected. Unmatched cards block saving with a correction message; closing the sheet or switching game prevents a later commit. Text Main/Extra/Side headers are retained.
+- Unknown prices show a dash; unavailable artwork has an explicit placeholder. No alternate-version artwork is fabricated.
+- Pokémon tournament ownership counts recorded Energy instead of assuming it is owned. Incomplete YGO totals aren't presented as a full price to finish.
+- Constructed Magic lists above the minimum no longer receive the exact-count warning style.
+- All regression tests pass, including a new 10,000-entry fixture, bounded imports, missing-card rejection and cancellation tests.
+- Limits: live camera accuracy, email delivery and real cross-device account sessions still require real-device/user testing. TCG CSV backup restoration remains unsupported; the importer now explains this instead of treating CSV rows as card names.
+
 3.9.4 — Reusable collection locations
 All three games now offer a location dropdown when adding cards: reuse existing binder/deck/box names, choose Unsorted, or type a new name. Successful saves remember names and the last-used location per game; editing a Magic entry keeps that entry’s current location. Imported collection locations also appear in the menu. This changes physical storage labels, not deck contents.
 Pokémon and Yu-Gi-Oh! now keep matching cards in different locations as separate collection entries; additions to the same printing/condition/location still combine copies.

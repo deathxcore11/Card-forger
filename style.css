@@ -1252,3 +1252,12 @@ details.trouble code { word-break: break-word; }
 @media(prefers-reduced-motion:reduce){.page-curl{animation:none;}}
 
 .location-picker{display:grid;gap:8px;min-width:0;}.location-picker>label{font-weight:600;font-size:13px;}.location-picker select,.location-picker input{width:100%;min-height:46px;}.location-picker>small{font-size:11px;line-height:1.45;font-weight:400;}
+
+/* Quiet shared Home tools, with artwork retained in the primary shortcuts. */
+.home-tools { margin: 20px 0; border: 1px solid var(--line,#30343d); border-radius: 16px; padding: 16px; }
+.home-tools > summary { cursor: pointer; font-weight: 600; min-height: 28px; }
+.home-tools[open] > summary { margin-bottom: 16px; }
+.img-missing { display: grid; place-content: center; text-align: center; gap: 6px; background: linear-gradient(145deg,#252a35,#171b22); }
+.img-missing small { font-size: 11px; color: #aab2c1; }
+.lot-sub { overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) { .home-tools * { animation: none !important; } }

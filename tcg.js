@@ -35,7 +35,7 @@ export const ui = (g = game()) =>
     search: { q: "", f: {}, sort: g === "ygo" ? "name" : "new", maxPrice: "", page: 0, results: [], more: false, busy: false, error: "", ran: false },
     sets: { list: [], busy: false, error: "", q: "", limit: 80 },
     set: { id: "", info: null, cards: [], busy: false, error: "", filter: "all", sort: "number", limit: 120 },
-    coll: { q: "", sort: "value", set: "", kind: "", rarity: "" },
+    coll: { limit: 120, q: "", sort: "value", set: "", kind: "", rarity: "" },
     deckAdd: { q: "", results: [], busy: false },
   });
 
@@ -94,11 +94,12 @@ export const gameEmblems = (c) => (!c || c.brief ? "" : c.game === "ygo" ? ygoEm
 const tileBadges = (c) => (!c || c.brief ? "" : `<span class="tile-emb">${c.game === "ygo" ? ygoEmblems(c) : `<span class="emblems">${(c.types || []).map((t) => energyIcon(t)).join("")}</span>`}</span>${tcgSetBadge(c, true) ? `<span class="tile-set">${tcgSetBadge(c, true)}</span>` : ""}`);
 const rowBadges = (c) => (!c || c.brief ? "" : `${gameEmblems(c)}${tcgSetBadge(c)} `);
 const imgTag = (c, cls = "card-img", large = false) => {
-  if (!c) return `<span class="${cls} img-missing" aria-hidden="true">◇</span>`;
+  if (!c) return `<span class="${cls} img-missing" role="img" aria-label="Artwork unavailable">◇<small>Art unavailable</small></span>`;
   const src = large ? c.imageLarge || c.image : c.image;
-  if (!src) return `<span class="${cls} img-missing" aria-hidden="true">◇</span>`;
+  if (!src) return `<span class="${cls} img-missing" role="img" aria-label="Artwork unavailable">◇<small>Art unavailable</small></span>`;
   const fallback = c.game === "ygo" ? ygoImageDirect(c.id, !large) : "";
-  return `<img class="${cls}" src="${esc(src)}" alt="${esc(c.name)}" loading="lazy" referrerpolicy="no-referrer" onerror="${fallback ? `if(!this.dataset.f){this.dataset.f=1;this.src='${esc(fallback)}'}else ` : ""}this.remove()">`;
+  const fail=`this.hidden=true;this.insertAdjacentHTML('afterend','<span class=&quot;${cls} img-missing&quot; role=&quot;img&quot; aria-label=&quot;Artwork unavailable&quot;>◇<small>Art unavailable</small></span>')`;
+  return `<img class="${cls}" src="${esc(src)}" alt="${esc(c.name)}" loading="lazy" referrerpolicy="no-referrer" onerror="${fallback ? `if(!this.dataset.f){this.dataset.f=1;this.src='${esc(fallback)}'}else{${fail}}` : fail}">`;
 };
 
 // A printed variant can share art, but that is not proof of its stamp/finish.
@@ -327,15 +328,16 @@ export function quickTiles(g) {
     tile = (act, to, icon, title, sub, cls = "") => `<button class="quick-btn ${cls}" data-act="${act}" ${to ? `data-to="${to}"` : ""}><span>${icon}</span><b>${title}</b><small>${sub}</small></button>`;
   return `<div class="quick">
     ${tile("go", "#search", "⌕", "Find cards", "Search, filter by set, type, format and price", "primary")}
-    ${tile("go", "#decks/ideas", "✧", "Deck ideas", mtg ? "Commanders your cards support" : "Build from one card, ten, or your whole collection")}
-    ${tile("go", "#decks/inspiration", "🏆", "Meta decks", mtg ? "Tournament decks, precons and shared lists, with what you own" : "Today’s tournament decks, with what you own")}
+    ${tile("go", "#decks/ideas", "✧", "Deck ideas", mtg ? "Commanders your cards support" : "Build from your collection")}
+    ${tile("go", "#collection", "▦", "Collection", "Your cards, binders and wishlist")}
+    </div><details class="home-tools"><summary>More tools · imports, sets & inspiration</summary><div class="quick">${tile("go", "#decks/inspiration", "🏆", "Meta decks", mtg ? "Tournament decks, precons and shared lists, with what you own" : "Today’s tournament decks, with what you own")}
     ${tile(mtg ? "importDeck" : "tImport", "", "↥", "Import a deck", mtg ? "Moxfield, Archidekt, ManaBox or text" : g === "ygo" ? ".ydk file or a text list" : "Pokémon TCG Live list or text")}
     ${tile(mtg ? "addCard" : "tImportColl", "", "＋", "Add cards", "One card or a whole list")}
     ${tile("go", "#sets", "◈", "Browse sets", "Every set, newest first, with your completion")}
-    ${tile("go", "#collection", "▦", "Collection & wishlist", "Value, sets, prices, wishlist")}
+
     ${tile("go", "#rules", "📖", "Rules & banlists", mtg ? "Every format, core rules, live bans" : g === "ygo" ? "Formats, core rules, Forbidden & Limited" : "Formats, core rules, official rules")}
-    ${mtg ? tile("go", "#scan", "▧", "Scan a card", "Photo → match → confirm") : ""}
-  </div>`;
+    ${tile("go", "#scan", "▧", "Scan a card", "Photo → match → confirm")}
+  </div>${randomTools(g)}</details>`;
 }
 export const randomTools = (g) =>
   g === "mtg"
@@ -352,8 +354,8 @@ function tcgStartPath(g) {
       ? `<li class="step done"><span class="step-n" aria-hidden="true">✓</span><div><b>${title}</b></div></li>`
       : `<li class="step"><span class="step-n" aria-hidden="true">${n}</span><div><b>${title}</b><p class="muted small">${text}</p><div class="actions wrap">${actions}</div></div></li>`;
   return `<section class="panel start"><div class="row between"><p class="eyebrow">Start here · about 5 minutes</p><button class="link small" data-act="hideStart" data-game="${g}">Hide</button></div><h2>Three steps to your first deck</h2><ol class="steps">
-    ${step(1, hasCards, "Add the cards you own", `Paste a list (one card per line, like “3 ${g === "ygo" ? "Ash Blossom & Joyous Spring" : "Ultra Ball"}”) or search and add cards one by one.`, `<button class="btn small" data-act="tImportColl">↥ Paste a list</button><button class="btn ghost small" data-act="go" data-to="#search">⌕ Find cards</button>`)}
-    ${step(2, hasDeck, "Pick a deck to aim for", `Copy a tournament deck, build from your own cards at any budget, or import a list.`, `<button class="btn small" data-act="go" data-to="#decks/inspiration">🏆 Meta decks I can almost build</button><button class="btn ghost small" data-act="go" data-to="#decks/ideas">✧ Ideas from my cards</button><button class="btn ghost small" data-act="tImport">Import a deck</button>`)}
+    ${step(1, hasCards, "Add the cards you own", `Paste a list (one card per line, like “3 ${g === "ygo" ? "Ash Blossom & Joyous Spring" : "Ultra Ball"}”) or search and add cards one by one.`, `<button class="btn small" data-act="tImportColl">Add my cards</button>`)}
+    ${step(2, hasDeck, "Pick a deck to aim for", `Copy a tournament deck, build from your own cards at any budget, or import a list.`, `<button class="btn small" data-act="go" data-to="#decks/ideas">Find deck ideas</button>`)}
     ${step(3, false, "See what’s missing and what it costs", "Each deck shows what you own, what you need, the price to finish, and anything that breaks the format’s rules.", hasDeck ? `<button class="btn small" data-act="go" data-to="#tdeck/${esc(st.decks.at(-1).id)}">Open my deck</button>` : `<span class="muted small">Unlocks after step 2.</span>`)}
   </ol><p class="foot">Everything is saved on this device. Export a backup in Settings any time.</p></section>`;
 }
@@ -369,7 +371,7 @@ export function tcgHome() {
     deckArt = leadCard ? { id: leadCard.id, name: leadCard.name, art: g === "ygo" ? leadCard.art : leadCard.imageLarge, artDirect: g === "ygo" ? leadCard.artDirect : "", deck: true } : null;
   const onboarding = !(st.collection.length && st.decks.length),
     fresh = !st.collection.length && !st.decks.length;
-  return `${homeHero(g, v.copies ? "Welcome back." : "Start your binder.", deckArt, !fresh)}
+  return `${homeHero(g, v.copies ? "Welcome back." : "Let’s build from your cards.", deckArt, !fresh)}
   ${gameSwitch(g)}
   ${fresh && !startHidden(g) ? tcgStartPath(g) : tcgNext(g)}
   ${onboarding ? "" : `<div class="kpis">
@@ -377,7 +379,6 @@ export function tcgHome() {
     <button class="kpi" data-act="go" data-to="#collection"><b>${v.copies}</b><span>cards owned</span></button>
     <button class="kpi" data-act="go" data-to="#decks"><b>${st.decks.length}</b><span>decks</span></button>
   </div>`}
-  ${randomTools(g)}
   ${quickTiles(g)}
   ${recent.length ? `<div class="section-head"><h2>Your decks</h2><button class="link" data-act="go" data-to="#decks">All decks →</button></div><div class="tdeck-list">${recent.map((d) => deckTile(g, d)).join("")}</div>` : ""}
   <p class="muted small">${esc(G.tagline)}. Card data and daily prices from ${esc(G.source)}.</p>`;
@@ -453,7 +454,7 @@ export function tcgSearch() {
           .map((c) => {
             const own = ownedOf(g, c, m),
               p = price(c);
-            return `<button class="grid-card" data-act="tCard" data-id="${esc(c.id)}">${imgTag(c)}${tileBadges(c)}<span class="grid-meta"><span class="ellip">${esc(c.name)}</span><span>${c.brief ? "…" : p === null ? "new" : usd(p)}</span></span>${own ? `<span class="owned-badge">×${own}</span>` : ""}</button>`;
+            return `<button class="grid-card" data-act="tCard" data-id="${esc(c.id)}">${imgTag(c)}${tileBadges(c)}<span class="grid-meta"><span class="ellip">${esc(c.name)}</span><span>${c.brief ? "…" : p === null ? "—" : usd(p)}</span></span>${own ? `<span class="owned-badge">×${own}</span>` : ""}</button>`;
           })
           .join("")}</div>${U.more ? `<button class="btn ghost block" data-act="tMore" ${U.busy ? "disabled" : ""}>Load more</button>` : ""}`
       : U.ran && !U.busy
@@ -541,7 +542,7 @@ export function tcgCardSheet(c, sctx = {}) {
   <div class="cs-meta">
     ${g === "ygo" ? ygoSetRow(c) : ""}
     ${c.set ? `<button class="cd-set" data-act="tSet" data-id="${esc(c.set.id)}">${pkSetSymbol(c.set, "pks big")}<div><b>${esc(c.set.name)} <span class="set-go">›</span></b><small>#${esc(c.set.number || "")}${c.set.total ? "/" + c.set.total : ""}${c.rarity ? ` · ${pkRarity(c.rarity)} ${esc(c.rarity)}` : ""}</small></div></button>` : c.archetype ? `<button class="cd-set" data-act="tArchetype" data-name="${esc(c.archetype)}"><div><b>${esc(c.archetype)} <span class="set-go">›</span></b><small>Archetype · ${c.sets?.length || 0} printings</small></div></button>` : ""}
-    <div class="cd-prices"><button class="price-pill" data-act="cardTab" data-tab="prices"><small>Market</small><b>${p.usd !== null && p.usd !== undefined ? usd(p.usd) : c.brief ? "…" : "New"}</b><span class="buy-hint">Prices ›</span></button>${p.eur ? `<button class="price-pill" data-act="cardTab" data-tab="prices"><small>Cardmarket</small><b>€${p.eur.toFixed(2)}</b></button>` : ""}</div>
+    <div class="cd-prices"><button class="price-pill" data-act="cardTab" data-tab="prices"><small>Market</small><b>${p.usd !== null && p.usd !== undefined ? usd(p.usd) : c.brief ? "…" : "—"}</b><span class="buy-hint">Prices ›</span></button>${p.eur ? `<button class="price-pill" data-act="cardTab" data-tab="prices"><small>Cardmarket</small><b>€${p.eur.toFixed(2)}</b></button>` : ""}</div>
   </div>
   ${g === "ptcg" && !c.brief ? pokemonText(c) : c.text ? `<section class="cd-text"><p class="oracle">${esc(c.text)}</p>${c.illustrator ? `<div class="small muted right">🖌 ${esc(c.illustrator)}</div>` : ""}</section>` : ""}
   ${tabs(tab, [["overview", "Overview"], ["versions", "Versions"], ["prices", "Prices"], ["rulings", "Rulings"], ["legal", "Legality"]])}
@@ -617,7 +618,7 @@ export function tcgCollection() {
     q = U.q.trim().toLowerCase();
   let rows = st.collection.map((e) => ({ e, c: cardOf(g, e.cardId) }));
   const setNames = [...new Set(rows.map((x) => setLabel(x)).filter(Boolean))].sort();
-  if (q) rows = rows.filter((x) => x.e.name.toLowerCase().includes(q));
+  if (q) rows = rows.filter((x) => [x.e.name,x.e.location,setLabel(x)].join(" ").toLowerCase().includes(q));
   if (U.set) rows = rows.filter((x) => setLabel(x) === U.set);
   const rarityOf = (x) => x.e.rarity || x.c?.rarity || "",
     rarities = [...new Set(st.collection.map((e) => rarityOf({ e, c: cardOf(g, e.cardId) })).filter(Boolean))].sort(),
@@ -628,18 +629,18 @@ export function tcgCollection() {
   const val = (x) => (entryPrice(x.c, x.e) ?? -1) * x.e.qty;
   rows.sort(U.sort === "name" ? (a, b) => a.e.name.localeCompare(b.e.name) : U.sort === "recent" ? (a, b) => String(b.e.addedAt).localeCompare(String(a.e.addedAt)) : U.sort === "set" ? (a, b) => setLabel(a).localeCompare(setLabel(b)) || a.e.name.localeCompare(b.e.name) : U.sort === "rarity" ? (a, b) => rarityOf(a).localeCompare(rarityOf(b)) || a.e.name.localeCompare(b.e.name) : (a, b) => val(b) - val(a));
   if (U.tab === "wishlist") return tcgWishlist(g);
-  if (U.tab === "binders") return `<div class="page-head"><h1>Collection</h1><button class="btn ghost small" data-act="go" data-to="#search">＋ Add cards</button></div>${segmented("tCollTab","binders",[["cards","My cards"],["binders","Binders"],["wishlist",`Wishlist · ${st.wishlist.length}`]])}${binderShelf(st.collection.map(entry=>({entry,card:cardOf(g,entry.cardId),image:cardOf(g,entry.cardId)?.variants?.find(v=>v.key===entry.variant)?.image || cardOf(g,entry.cardId)?.image || "",game:g})),g,S.state.settings.binders || [])}`;
+  if (U.tab === "binders") return `<div class="page-head"><h1>Collection</h1><button class="btn ghost small" data-act="go" data-to="#search">＋ Add cards</button></div>${segmented("tCollTab","binders",[["cards","Cards"],["binders","Binders"],["wishlist",`Wishlist · ${st.wishlist.length}`]])}${binderShelf(st.collection.map(entry=>({entry,card:cardOf(g,entry.cardId),image:cardOf(g,entry.cardId)?.variants?.find(v=>v.key===entry.variant)?.image || cardOf(g,entry.cardId)?.image || "",game:g})),g,S.state.settings.binders || [])}`;
   return `<div class="page-head"><h1>Collection</h1><button class="btn ghost small" data-act="go" data-to="#search">＋ Add cards</button></div>
-  ${segmented("tCollTab", "cards", [["cards", "My cards"], ["binders", "Binders"], ["wishlist", `Wishlist · ${st.wishlist.length}`]])}
+  ${segmented("tCollTab", "cards", [["cards", "Cards"], ["binders", "Binders"], ["wishlist", `Wishlist · ${st.wishlist.length}`]])}
   <div class="kpis small"><div class="kpi"><b>${usd(v.total, 0)}</b><span>estimated value</span></div><div class="kpi"><b>${v.copies}</b><span>cards</span></div><div class="kpi"><b>${st.collection.length}</b><span>entries</span></div></div>
   ${st.collection.length ? `<div class="toolbar"><input type="search" value="${esc(U.q)}" placeholder="Search your cards" data-input="tCollQ" aria-label="Search collection"><select data-change="tCollSet" aria-label="Set">${options([["", "All sets"], ...setNames.map((x) => [x, x])], U.set)}</select><select data-change="tCollKind" data-field="kind" aria-label="Kind">${options([["", "All kinds"], ...kinds], U.kind)}</select>${rarities.length > 1 ? `<select data-change="tCollKind" data-field="rarity" aria-label="Rarity">${options([["", "All rarities"], ...rarities.map((x) => [x, x])], U.rarity)}</select>` : ""}<select data-change="tCollSort" aria-label="Sort">${options([["value", "Value"], ["name", "Name"], ["set", "Set"], ["rarity", "Rarity"], ["recent", "Recently added"]], U.sort)}</select></div>
-  <div class="row between"><span class="muted small">${rows.length} shown${v.unpriced ? ` · ${v.unpriced} without a price` : ""}</span><button class="btn ghost small" data-act="tRefreshPrices">⟳ Refresh prices</button></div>
-  <div class="list">${rows
+  <div class="row between"><span class="muted small">${Math.min(rows.length,U.limit || 120)} of ${rows.length} entries${v.unpriced ? ` · ${v.unpriced} without a price` : ""}</span><button class="btn ghost small" data-act="tRefreshPrices">⟳ Refresh prices</button></div>
+  <div class="list">${rows.slice(0,U.limit || 120)
     .map(({ e, c }) => {
       const p = entryPrice(c, e);
-      return `<div class="lot"><button class="lot-art" data-act="tCard" data-id="${esc(e.cardId)}">${imgTag(c)}</button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(e.cardId)}">${esc(e.name)}</button><span class="lot-sub">${rowBadges(c)}${esc(setLabel({ e, c }) || "")}${e.printing ? " · " + esc(e.printing) : ""}${e.rarity ? " · " + esc(e.rarity) : ""}${e.variant ? " · " + esc(c?.variants?.find((v) => v.key === e.variant)?.label || e.variantLabel || e.variant) : ""}${e.edition ? " · " + esc({"1st-edition":"First Edition",unlimited:"Unlimited",limited:"Limited Edition"}[e.edition] || e.edition) : ""}${e.condition && e.condition !== "Near Mint" ? " · " + esc(e.condition) : ""}</span></div><div class="lot-side"><span class="price">${p === null ? "—" : usd(p * e.qty)}</span><span class="stepper"><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="-1" aria-label="One fewer">−</button><b>${e.qty}</b><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="1" aria-label="One more">＋</button></span></div></div>`;
+      return `<div class="lot"><button class="lot-art" data-act="tCard" data-id="${esc(e.cardId)}">${imgTag(c)}</button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(e.cardId)}">${esc(e.name)}</button><span class="lot-sub">${rowBadges(c)}${esc(setLabel({ e, c }) || "")}${e.printing ? " · " + esc(e.printing) : ""}${e.rarity ? " · " + esc(e.rarity) : ""}${e.variant ? " · " + esc(c?.variants?.find((v) => v.key === e.variant)?.label || e.variantLabel || e.variant) : ""}${e.edition ? " · " + esc({"1st-edition":"First Edition",unlimited:"Unlimited",limited:"Limited Edition"}[e.edition] || e.edition) : ""}${e.condition && e.condition !== "Near Mint" ? " · " + esc(e.condition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></div><div class="lot-side"><span class="price">${p === null ? "—" : usd(p * e.qty)}</span><span class="stepper"><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="-1" aria-label="One fewer">−</button><b>${e.qty}</b><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="1" aria-label="One more">＋</button></span></div></div>`;
     })
-    .join("")}</div>`
+    .join("")}</div>${!rows.length ? empty("No matching cards", "Try a different search or filter.") : ""}${rows.length > (U.limit || 120) ? `<button class="btn ghost block" data-act="tCollMore">Load more · ${rows.length-(U.limit || 120)} remaining</button>` : ""}`
   : empty(`No ${esc(GAMES[g].short)} cards yet`, "Search for a card and tap “Add to collection”, or import a list.", `<button class="btn" data-act="go" data-to="#search">Find cards</button><button class="btn ghost" data-act="tImportColl">Paste a list</button>`)}
   ${st.collection.length ? `<div class="actions wrap"><button class="btn ghost small" data-act="tImportColl">↥ Paste a list</button><button class="btn ghost small" data-act="tExportColl">↓ Export CSV</button></div>` : ""}`;
 }
@@ -648,7 +649,7 @@ function tcgWishlist(g) {
     rows = st.wishlist.map((w) => ({ w, c: cardOf(g, w.cardId) })),
     total = rows.reduce((a, x) => a + (price(x.c) ?? 0) * (x.w.qty || 1), 0);
   return `<div class="page-head"><h1>Collection</h1><button class="btn ghost small" data-act="go" data-to="#search">＋ Find cards</button></div>
-  ${segmented("tCollTab", "wishlist", [["cards", "My cards"], ["binders", "Binders"], ["wishlist", `Wishlist · ${st.wishlist.length}`]])}
+  ${segmented("tCollTab", "wishlist", [["cards", "Cards"], ["binders", "Binders"], ["wishlist", `Wishlist · ${st.wishlist.length}`]])}
   ${rows.length ? `<div class="kpis small"><div class="kpi"><b>${rows.length}</b><span>cards wanted</span></div><div class="kpi"><b>${usd(total, 0)}</b><span>to buy them all</span></div><div class="kpi"><b>${rows.filter((x) => (price(x.c) ?? 1e9) <= 1).length}</b><span>under $1</span></div></div>
   <div class="list">${rows
     .sort((a, b) => (price(b.c) ?? -1) - (price(a.c) ?? -1))
@@ -693,13 +694,15 @@ export function metaOwned(g, d, m = ownedMap(g)) {
         else cost += (qty - own) * price(card);
       }
     }
-    return { have, total, pct: total ? have / total : 0, cost: unpriced > 3 ? null : cost };
+    return { have, total, pct: total ? have / total : 0, cost: unpriced ? null : cost };
   }
   const byName = new Map();
   for (const e of gs(g).collection) byName.set(e.name.toLowerCase(), (byName.get(e.name.toLowerCase()) || 0) + e.qty);
   for (const r of d.list) {
     total += r.qty;
-    have += isBasicEnergyName(r.name) ? r.qty : Math.min(r.qty, byName.get(r.name.toLowerCase()) || 0);
+    const name=r.name.toLowerCase().replace(/^basic /, "");
+    const owned=isBasicEnergyName(r.name) ? [...byName].filter(([n])=>n.replace(/^basic /, "") === name).reduce((n,[,qty])=>n+qty,0) : byName.get(name) || 0;
+    have += Math.min(r.qty,owned);
   }
   return { have, total, pct: total ? have / total : 0, cost: null };
 }
@@ -1214,12 +1217,17 @@ export function tcgSharedPage(sd) {
 /* ---------- import parsing ---------- */
 
 export function parseLines(text) {
-  const out = [];
+  if(String(text).length > 2e6) throw Error("Use a list under 2 MB.");
+  if(/^Quantity,Name,/i.test(String(text).trim())) throw Error("This is a collection backup CSV. Keep it for reference; paste quantity and card-name lines here.");
+  const out = []; let zone = null;
   for (const raw of String(text).split(/\r?\n/)) {
     const line = raw.trim();
+    const header=line.match(/^\[?(main(?:board| deck)?|extra(?: deck)?|side(?:board| deck)?)\]?:?$/i);
+    if(header){zone=header[1].toLowerCase().startsWith("side")?"side":header[1].toLowerCase().startsWith("extra")?"extra":"main";continue;}
     if (!line || /^(#|\/\/|Pokémon:|Pokemon:|Trainer:|Energy:|Total Cards)/i.test(line)) continue;
     const m = line.match(/^(\d+)\s*x?\s+(.+?)$/i);
-    out.push(m ? { qty: Number(m[1]), name: m[2].trim() } : { qty: 1, name: line });
+    const row=m ? { qty: Number(m[1]), name: m[2].trim() } : { qty: 1, name: line };
+    if(zone) row.zone=zone; out.push(row);
   }
   return out;
 }
@@ -1575,19 +1583,24 @@ export function registerTcg(c) {
       if (e.qty < 1) st.collection = st.collection.filter((x) => x !== e);
     }, delta < 0 ? { undo: `−1 ${gs(g()).collection.find((x) => x.id === t.dataset.id)?.name || "card"}` } : {});
   };
+  A.tCollMore = () => { ui().coll.limit = (ui().coll.limit || 120) + 120; render(); };
   I.tCollQ = (t) => {
+    ui().coll.limit = 120;
     ui().coll.q = t.value;
     c.rerenderKeepingFocus();
   };
   C.tCollSet = (t) => {
+    ui().coll.limit = 120;
     ui().coll.set = t.value;
     render();
   };
   C.tCollKind = (t) => {
+    ui().coll.limit = 120;
     ui().coll[t.dataset.field] = t.value;
     render();
   };
   C.tCollSort = (t) => {
+    ui().coll.limit = 120;
     ui().coll.sort = t.value;
     render();
   };
@@ -2386,34 +2399,47 @@ export function registerTcg(c) {
     const f = t.files[0];
     if (!f) return;
     if (f.size > 2e6) return toast("Use a file under 2 MB.");
-    document.querySelector("#tImpText").value = await f.text();
-    document.querySelector("#tImpName").value = f.name.replace(/\.[^.]+$/, "");
+    const token=S.ui.sheetCtx, text=await f.text();
+    if(S.ui.sheetCtx !== token) return;
+    const input=document.querySelector("#tImpText"), name=document.querySelector("#tImpName");
+    if(input) input.value=text;
+    if(name) name.value=f.name.replace(/\.[^.]+$/, "");
   };
   // Resolve "qty name" lines to cards; returns { rows: [{card, qty}], missed: [name] }.
-  const resolveLines = async (G, lines, status) => {
-    const rows = [],
-      missed = [];
-    let i = 0;
-    for (const l of lines) {
-      status(`Matching ${++i}/${lines.length}…`);
-      const name = G === "ptcg" ? ptcglName(l.name) : l.name;
-      try {
-        const card = /^[a-z0-9.]+-[A-Za-z0-9]+$/.test(name) && G === "ptcg" ? await ensureCard(G, name) : await SOURCES[G].byName(name);
-        if (card) rows.push({ card: remember(card), qty: l.qty });
-        else missed.push(name);
-      } catch {
-        missed.push(name);
+  const resolveLines = async (G, lines, status, active) => {
+    if (lines.some(l => !Number.isSafeInteger(l.qty) || l.qty < 1 || l.qty > 100000)) throw Error("Use a positive whole-number quantity for each card.");
+    const results = new Array(lines.length), pending = new Map(); let next = 0, completed = 0;
+    await Promise.all(Array.from({length:Math.min(6,lines.length)},async()=>{
+      while(next < lines.length && active()) {
+        const i=next++, l=lines[i], name=G === "ptcg" ? ptcglName(l.name) : l.name;
+        if(!pending.has(name)) pending.set(name,(async()=>{
+          const cached=Object.values(cache[G]).find(c=>!c.brief && c.name === name);
+          return cached || (/^[a-z0-9.]+-[A-Za-z0-9]+$/.test(name) && G === "ptcg" ? ensureCard(G,name) : SOURCES[G].byName(name));
+        })().catch(()=>null));
+        const card=await pending.get(name); results[i]=card ? {card:remember(card),qty:l.qty,zone:l.zone} : {missing:name};
+        status(`Matching ${++completed}/${lines.length}…`);
       }
-    }
-    return { rows, missed };
+    }));
+    if(!active()) throw Error("Import cancelled.");
+    return {rows:results.filter(r=>r?.card),missed:results.filter(r=>r?.missing).map(r=>r.missing)};
+  };
+  const importGuard = (G) => {
+    const token=S.ui.sheetCtx, node=document.querySelector("#tImpStatus");
+    const active=()=>S.ui.sheetCtx === token && g() === G;
+    return {active,status:m=>{if(active() && node) node.textContent=m;}};
+  };
+  const requireComplete = (rows, missed) => {
+    if(missed.length) throw Error(`Nothing saved: ${missed.length} unmatched entries. Correct these names and retry: ${missed.slice(0,5).join(", ")}`);
+    if(!rows.length) throw Error("No cards matched. Nothing saved.");
   };
   A.tImpDeck = async (t) => {
     const G = g(),
       text = document.querySelector("#tImpText").value,
-      status = (m) => (document.querySelector("#tImpStatus").textContent = m),
+      {status,active} = importGuard(G),
       done = busy(t, "Importing…");
     try {
       const d = { id: uid(), name: document.querySelector("#tImpName").value.trim().slice(0, 100) || "Imported deck", format: document.querySelector("#tImpFormat").value, zones: { main: [], extra: [], side: [] }, createdAt: new Date().toISOString() };
+      if(text.length > 2e6) throw Error("Use a list under 2 MB.");
       const ydk = G === "ygo" ? parseYdk(text) : null;
       let missed = [];
       if (ydk) {
@@ -2434,17 +2460,17 @@ export function registerTcg(c) {
       } else {
         const lines = parseLines(text);
         if (!lines.length) throw Error("Paste a list first.");
-        const r = await resolveLines(G, lines, status);
+        const r = await resolveLines(G, lines, status, active);
         missed = r.missed;
-        let zone = null;
-        for (const { card, qty } of r.rows) {
-          const z = SOURCES[G].zoneFor(card);
+        for (const { card, qty, zone } of r.rows) {
+          const z = zone || SOURCES[G].zoneFor(card);
           const row = (d.zones[z] ||= []).find((x) => x.cardId === card.id);
           if (row) row.qty += qty;
           else d.zones[z].push({ cardId: card.id, name: card.name, qty });
-          void zone;
         }
       }
+      if(!active()) return;
+      requireComplete(Object.values(d.zones).flat(), missed);
       await mutate((st) => st.decks.push(d), { msg: missed.length ? `Imported. ${missed.length} not found: ${missed.slice(0, 3).join(", ")}` : "Deck imported. Your collection is unchanged." });
       closeSheet();
       go("#tdeck/" + d.id);
@@ -2456,12 +2482,15 @@ export function registerTcg(c) {
   };
   A.tImpColl = async (t) => {
     const G = g(),
-      lines = parseLines(document.querySelector("#tImpText").value),
-      status = (m) => (document.querySelector("#tImpStatus").textContent = m),
+      text = document.querySelector("#tImpText").value,
+      {status,active} = importGuard(G),
       done = busy(t, "Importing…");
     try {
+      const lines=parseLines(text);
       if (!lines.length) throw Error("Paste a list first.");
-      const r = await resolveLines(G, lines, status);
+      const r = await resolveLines(G, lines, status, active);
+      if(!active()) return;
+      requireComplete(r.rows,r.missed);
       await mutate((st) => {
         for (const { card, qty } of r.rows) st.collection.push({ id: uid(), cardId: card.id, name: card.name, key: SOURCES[G].ownKey(card), qty, printing: "", rarity: "", variant: "", condition: "Near Mint", location: "", addedAt: new Date().toISOString() });
       }, { msg: `Added ${r.rows.length} cards.${r.missed.length ? ` Not found: ${r.missed.slice(0, 3).join(", ")}` : ""}` });

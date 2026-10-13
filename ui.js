@@ -35,8 +35,8 @@ export const cardImage = (c, size = "normal") =>
 
 export function img(url, alt, cls = "") {
   return url
-    ? `<img class="${cls}" src="${esc(url)}" alt="${esc(alt)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`
-    : `<span class="${cls} img-missing" aria-hidden="true">◇</span>`;
+    ? `<img class="${cls}" src="${esc(url)}" alt="${esc(alt)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.insertAdjacentHTML('afterend','<span class=&quot;${cls} img-missing&quot; role=&quot;img&quot; aria-label=&quot;Artwork unavailable&quot;>◇<small>Art unavailable</small></span>')">`
+    : `<span class="${cls} img-missing" role="img" aria-label="Artwork unavailable">◇<small>Art unavailable</small></span>`;
 }
 
 // Official mana and card symbols, served by Scryfall (same artwork as the cards).
