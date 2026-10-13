@@ -18,7 +18,7 @@ export const TAG_LABEL = {
   discard: "discarding", mill: "a stocked graveyard", lifegain: "life gain", sac_outlet: "a sacrifice outlet", fodder: "creatures to sacrifice",
   etb: "enters effects", blink: "flicker", extra_land: "extra land drops", evasive: "evasive creatures", ramp: "extra mana", big: "big spells",
   tuner: "Tuner", evolution: "Evolution Pokémon", basic: "Basic Pokémon", stage2: "Stage 2 Pokémon", supporter: "Supporters", rulebox: "Pokémon ex / V",
-  tool: "Pokémon Tools", evolve_trigger: "evolve-trigger Abilities", switching: "switching", energy_accel: "Energy acceleration", searcher: "deck search",
+  tool: "Pokémon Tools", special_energy: "Special Energy", stadium: "Stadiums", ability: "Pokémon with Abilities", fossil: "Fossils", ritualspell: "a Ritual Spell", fusionspell: "a Fusion Spell", evolve_trigger: "evolve-trigger Abilities", switching: "switching", energy_accel: "Energy acceleration", searcher: "deck search",
 };
 
 const set = (...xs) => new Set(xs.filter(Boolean));
@@ -111,6 +111,7 @@ export function mtgPairQueries(c, tags = mtgTags(c), max = 4) {
 
 const ATTRS = ["LIGHT", "DARK", "WATER", "FIRE", "EARTH", "WIND", "DIVINE"];
 const RACES = ["Spellcaster", "Dragon", "Zombie", "Warrior", "Beast-Warrior", "Beast", "Winged Beast", "Fiend", "Fairy", "Insect", "Dinosaur", "Reptile", "Fish", "Sea Serpent", "Aqua", "Pyro", "Thunder", "Rock", "Plant", "Machine", "Psychic", "Wyrm", "Cyberse", "Illusion", "Divine-Beast"];
+const frameOf = (c) => ((c?.typeLine || "").match(/Ritual|Fusion|Synchro|Xyz|Link|Pendulum|Flip|Spirit|Gemini|Toon|Union|Normal/i) || [""])[0].toLowerCase();
 export function ygoTags(c) {
   const text = String(c?.text || ""),
     quoted = [...text.matchAll(/"([^"]{3,40})"/g)].map((m) => m[1]).filter((q) => q !== c?.name);
@@ -120,12 +121,28 @@ export function ygoTags(c) {
     /tuner/i.test(c?.typeLine || "") && "tuner",
     c?.archetype && "arch:" + c.archetype,
     c?.category !== "Monster" && c?.category && "kind:" + c.category,
+    // Mechanics from the card frame.
+    c?.category === "Monster" && frameOf(c) && "frame:" + frameOf(c),
+    c?.category === "Monster" && !c.extra && Number(c.level) && "level:" + Number(c.level),
+    /Ritual Spell/.test(c?.typeLine || "") && "ritualspell",
+    c?.category === "Spell" && /Fusion Summon/.test(text) && "fusionspell",
   );
   const needs = set(
     ...ATTRS.filter((a) => new RegExp(`\\b${a}\\b`).test(text) && a !== c?.attribute).map((a) => "attr:" + a),
     ...RACES.filter((r) => new RegExp(`\\b${r}\\b`).test(text) && r !== c?.race).map((r) => "race:" + r),
     /\bTuner\b/.test(text) && !/tuner/i.test(c?.typeLine || "") && "tuner",
     ...quoted.map((q) => "named:" + q),
+    frameOf(c) === "ritual" && "ritualspell",
+    frameOf(c) === "fusion" && "fusionspell",
+    frameOf(c) === "synchro" && "tuner",
+    frameOf(c) === "xyz" && Number(c.level) && "level:" + Number(c.level),
+    /Ritual Spell/.test(c?.typeLine || "") && "frame:ritual",
+    c?.category === "Spell" && /Fusion Summon/.test(text) && "frame:fusion",
+    /\bNormal Monsters?\b/.test(text) && "frame:normal",
+    /\bToon\b/.test(text) && frameOf(c) !== "toon" && "frame:toon",
+    /\bGemini\b/.test(text) && frameOf(c) !== "gemini" && "frame:gemini",
+    /\bPendulum\b/.test(text) && frameOf(c) !== "pendulum" && "frame:pendulum",
+    /\bFLIP\b/.test(text) && c?.category !== "Monster" && "frame:flip",
   );
   return { provides, needs, quoted };
 }
@@ -133,6 +150,8 @@ export function ygoTags(c) {
 /* ---------- Pokémon ---------- */
 
 const PK_TYPES = ["Grass", "Fire", "Water", "Lightning", "Psychic", "Fighting", "Darkness", "Metal", "Dragon", "Fairy", "Colorless"];
+const isBasicEnergy = (c) => c?.basicEnergy || /^(Basic )?(Grass|Fire|Water|Lightning|Psychic|Fighting|Darkness|Metal|Fairy) Energy$/.test(c?.name || "");
+const ownerOf = (name) => String(name || "").match(/^([A-Z][\w.]+(?: [A-Z][\w.]+)?)'s /)?.[1] || "";
 export function ptcgTags(c) {
   const all = [c?.effect, ...(c?.abilities || []).map((a) => a.effect), ...(c?.attacks || []).map((a) => a.effect)].join("\n"),
     t = words(all),
@@ -140,7 +159,7 @@ export function ptcgTags(c) {
   const provides = set(
     // A Pokémon's own type is a weak hint (see rankPairs); Energy cards provide the type.
     ...(c?.category === "Pokemon" ? (c.types || []).map((x) => "ptype:" + x) : (c?.types || []).map((x) => "type:" + x)),
-    c?.category === "Energy" && c.energyType === "Normal" && /^(?:Basic )?(\w+) Energy$/.exec(c.name || "")?.[1] && "type:" + /^(?:Basic )?(\w+) Energy$/.exec(c.name)[1],
+    c?.category === "Energy" && isBasicEnergy(c) && "type:" + /^(?:Basic )?(\w+) Energy$/.exec(c.name)[1],
     /Stage[12]/.test(c?.stage || "") && "evolution",
     c?.stage === "Stage2" && "stage2",
     c?.category === "Pokemon" && c?.stage === "Basic" && "basic",
@@ -153,6 +172,12 @@ export function ptcgTags(c) {
     /attach[^.]*energy[^.]*from your (deck|discard|hand)/.test(t) && "energy_accel",
     /search your deck/.test(t) && "searcher",
     c?.name && "name:" + c.name,
+    c?.category === "Energy" && !isBasicEnergy(c) && "special_energy",
+    /Stadium/.test(c?.typeLine || "") && "stadium",
+    c?.category === "Pokemon" && (c.abilities || []).length && "ability",
+    /fossil/i.test(c?.name || "") && "fossil",
+    // Named groups: "Team Rocket's …", "Misty's …".
+    ownerOf(c?.name) && "group:" + ownerOf(c.name),
   );
   const needs = set(
     ...PK_TYPES.filter((x) => new RegExp(`\\b${x} Energy`).test(all) && !(c?.types || []).includes(x)).map((x) => "type:" + x),
@@ -168,6 +193,11 @@ export function ptcgTags(c) {
     c?.category === "Pokemon" && Number(c.retreat) >= 3 && "switching",
     c?.category === "Pokemon" && (c.attacks || []).some((a) => (a.cost || []).length >= 3) && "energy_accel",
     c?.evolveFrom && "name:" + c.evolveFrom,
+    /special energy/.test(t) && "special_energy",
+    /stadium/.test(t) && !/Stadium/.test(c?.typeLine || "") && "stadium",
+    /pokémon (with|that has) an ability/.test(t) && "ability",
+    /\bfossil\b/.test(t) && "fossil",
+    ...[...all.matchAll(/\b([A-Z][\w.]+(?: [A-Z][\w.]+)?)'s Pokémon\b/g)].map((m) => "group:" + m[1]),
   );
   return { provides, needs };
 }
@@ -176,7 +206,7 @@ export function ptcgTags(c) {
 
 // Broad categories (any Evolution Pokémon, any DARK monster, any Basic) are real but loose links:
 // they score 1 and land in the "Also works with" tier unless something specific links the cards.
-const WEAK = (n) => /^(evolution|basic|ptype:|attr:|race:)/.test(n);
+const WEAK = (n) => /^(evolution|basic|ptype:|attr:|race:|level:|fusionspell|frame:(fusion|normal|pendulum|flip))/.test(n);
 
 const textOf = (game, c) =>
   (game === "mtg" ? (c?.card_faces?.length ? c.card_faces.map((f) => f.oracle_text || "").join("\n") : c?.oracle_text || "") : [c?.effect, ...(c?.abilities || []).map((a) => a.effect), ...(c?.attacks || []).map((a) => a.effect)].join("\n")).toLowerCase();
@@ -184,7 +214,7 @@ const textOf = (game, c) =>
 export const tagsFor = (game, c) => (game === "mtg" ? mtgTags(c) : game === "ygo" ? ygoTags(c) : ptcgTags(c));
 const label = (tag) => {
   const [k, v] = tag.split(":");
-  if (v) return k === "ptype" ? `${v} Pokémon` : k === "sub" ? `${v} creatures` : k === "attr" ? `${v} monsters` : k === "race" ? `${v} monsters` : k === "type" ? `${v} type` : k === "arch" ? `“${v}”` : k === "named" ? `“${v}”` : k === "name" ? v : v;
+  if (v) return k === "frame" ? `${v[0].toUpperCase() + v.slice(1)} monsters` : k === "level" ? `Level ${v} monsters` : k === "group" ? `${v}'s cards` : k === "ptype" ? `${v} Pokémon` : k === "sub" ? `${v} creatures` : k === "attr" ? `${v} monsters` : k === "race" ? `${v} monsters` : k === "type" ? `${v} type` : k === "arch" ? `“${v}”` : k === "named" ? `“${v}”` : k === "name" ? v : v;
   return TAG_LABEL[tag] || tag;
 };
 
@@ -192,8 +222,8 @@ const label = (tag) => {
  * target: the card. cands: [{ card, lift?: points, pop?: 0–2, owned?: bool, source? }]
  * Returns the best `max`, each with { card, score, reasons[] }.
  */
-export function rankPairs(game, target, cands, { max = 9 } = {}) {
-  const T = tagsFor(game, target),
+export function rankPairs(game, target, cands, { max = 9, tagsFn = tagsFor } = {}) {
+  const T = tagsFn(game, target),
     tName = String(target?.name || ""),
     seen = new Set(),
     out = [];
@@ -201,7 +231,7 @@ export function rankPairs(game, target, cands, { max = 9 } = {}) {
     const c = x.card;
     if (!c?.name || c.name === tName || seen.has(c.name)) continue;
     seen.add(c.name);
-    const C = tagsFor(game, c),
+    const C = tagsFn(game, c),
       reasons = [];
     let score = 0;
     const gives = [...T.needs].filter((n) => C.provides.has(n) || (n.startsWith("named:") && (c.name.includes(n.slice(6)) || c.archetype === n.slice(6))));
@@ -227,6 +257,10 @@ export function rankPairs(game, target, cands, { max = 9 } = {}) {
         reasons.push("named in its text");
       }
     } else if (T.quoted?.includes(c.name)) score += 3;
+    if (game === "ptcg" && ownerOf(tName) && ownerOf(tName) === ownerOf(c.name)) {
+      score += 3;
+      reasons.push(`both ${ownerOf(tName)}'s cards`);
+    }
     if (game === "ptcg" && target.category === "Pokemon" && c.category === "Pokemon" && (c.types || []).some((x) => (target.types || []).includes(x))) {
       score += 1;
       reasons.push(`same type (${(c.types || []).find((x) => (target.types || []).includes(x))})`);
@@ -253,9 +287,9 @@ export function rankPairs(game, target, cands, { max = 9 } = {}) {
     // ownership only break ties between linked cards.
     const strong = [...gives, ...uses].some((n) => !WEAK(n)),
       weakOnly = !strong && (gives.length || uses.length);
-    const linked = strong || weakOnly || x.line || x.fallback || reasons.some((r) => /names|named/.test(r)) || (game === "ygo" && target.archetype && c.archetype === target.archetype) || x.lift >= 5;
+    const linked = strong || weakOnly || x.line || x.fallback || reasons.some((r) => /names|named|^both /.test(r)) || (game === "ygo" && target.archetype && c.archetype === target.archetype) || x.lift >= 5;
     if (!linked || (score < 2 && !x.fallback && !weakOnly)) continue;
-    out.push({ card: c, score: Math.round(score * 10) / 10, reasons, source: x.source || "", fallback: !strong && !x.line && !(x.lift >= 5) && !reasons.some((r) => /names|named|archetype/.test(r)) && (!!x.fallback || !!weakOnly), loose: !!weakOnly && !x.fallback });
+    out.push({ card: c, score: Math.round(score * 10) / 10, reasons, source: x.source || "", fallback: !strong && !x.line && !(x.lift >= 5) && !reasons.some((r) => /names|named|archetype|^both /.test(r)) && (!!x.fallback || !!weakOnly), loose: !!weakOnly && !x.fallback });
   }
   // Real links first, then labeled fallbacks.
   // At most five loose links, so labeled staples still get room.

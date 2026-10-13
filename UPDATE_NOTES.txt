@@ -1,3 +1,23 @@
+3.14.0 — Stress-tested synergy tags
+Measured on real samples (875 Magic, 731 Yu-Gi-Oh!, 202 Pokémon cards) before shipping; scripts in
+scripts/stress-synergy.mjs and scripts/stress-ideas.mjs.
+- Roles from card structure (biggest win): every Pokémon gets its job — Main attacker, Early
+  attacker, Support Pokémon, Pivot / starter, Evolution step; Yu-Gi-Oh! Normal/Flip/Tuner/boss/beater
+  monsters and Equip/Field/Continuous/Counter/Quick-Play/Ritual cards; Magic efficient attackers,
+  blockers, evasive threats and mana/fixing lands; basic vs Special Energy.
+  Cards with a role: Magic 75%→90%, Yu-Gi-Oh! 56%→90%, Pokémon 31%→95%.
+- Mechanic tags from card data: Yu-Gi-Oh! Ritual ↔ Ritual Spell, Fusion ↔ Fusion Spell (loose),
+  Synchro ↔ Tuner, Xyz ↔ same-Level monsters (loose), Normal/Toon/Gemini/Pendulum/Flip support;
+  Pokémon Special Energy, Stadiums, Tools, Abilities, Fossils. Loose links show under "Also works
+  with". Yu-Gi-Oh! cards with ≥3 pairings: 20%→80% (strong + also works with).
+- Named groups: Team Rocket's and other trainer-owned cards pair with each other.
+- Interaction roles: artifact/enchantment/graveyard hate, bounce, tempo, copy, steal, burn, battle
+  tricks, Tool/Energy removal, Energy movement; more removal wordings (tuck, shuffle away).
+- Fixes: Devolution Spray no longer also shows "Evolution support"; old basic Energy cards
+  without a type label are no longer treated as Special Energy.
+- Skipped after testing: tournament-only "packages" (only 3% of Yu-Gi-Oh! and 23% of Pokémon cards
+  appear in recent top lists; "Played alongside" already covers them).
+
 3.13.1 — Pairings for every card in all three games
 - "Cards that pair well" now finds something for every card, in three tiers:
   1. Real links (what it needs/gives, cards that name it, archetype, evolution line, tournament

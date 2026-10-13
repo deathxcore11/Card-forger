@@ -16,7 +16,7 @@ const BASIC = /^(?:snow-covered )?(?:plains|island|swamp|mountain|forest|wastes)
 const MTG_RULES = [
   ["counter", /counter target (spell|activated|ability)/, "Counterspell", "Stops a spell or ability before it resolves.", "Keep mana open on your opponent's turn and save it for the spell that would beat you — a sweeper, a bomb or a combo piece. If they play around it, use your mana at the end of their turn instead.", "", ""],
   ["wipe", /(destroy|exile) all|deals \d+ damage to each (creature|player)|all creatures get -/, "Board wipe", "Clears many creatures at once.", "Wait until your opponent has committed more to the board than you have. Hold back your own creatures the turn before you cast it.", "Pairs with indestructible or hexproof creatures, planeswalkers, and cards that return creatures afterward.", "o:indestructible t:creature"],
-  ["removal", /(destroy|exile) target (creature|permanent|artifact|enchantment|planeswalker|nonland)|deals \d+ damage to (any target|target creature)|target creature gets -\d+\/-\d+|fights? (another )?target/, "Removal", "Answers one threat.", "Save it for the threat that matters most — a creature that wins games, draws cards or makes combos work — rather than the first thing you see.", "", ""],
+  ["removal", /(destroy|exile) (up to \w+ )?target (creature|permanent|artifact|enchantment|planeswalker|nonland)|deals \d+ damage to (any target|target creature)|target creature gets -\d+\/-\d+|fights? (another )?target|put target [^.]* on (the )?(top|bottom) of (its|their) owner's library|shuffles it into (their|its owner's) library/, "Removal", "Answers one threat.", "Save it for the threat that matters most — a creature that wins games, draws cards or makes combos work — rather than the first thing you see.", "", ""],
   ["tutor", /search your library for an? (?!basic land|land)[^.]*card/, "Tutor", "Finds a specific card from your deck.", "Fetch whatever solves your current problem: removal when behind, a finisher when ahead, a combo piece when you can win.", "Best with a few powerful cards worth finding.", ""],
   ["ramp", /add \{|search your library for (a|up to \w+) (basic )?lands?|put (a|up to \w+) lands? card|additional land/, "Ramp", "Gives you more mana sooner.", "Play it early (turns 1–3) so you can cast your expensive cards a turn or two ahead of schedule.", "Pairs with expensive spells and cards with big mana costs or X costs.", "(cmc>=6 or o:\"{X}\") -t:land"],
   ["loot", /discard a card[^.]*\. if you do, draw|draw a card, then discard|draw (two|three) cards, then discard/, "Card filtering", "Swaps cards you don't need for new ones.", "Discard extra lands late in the game and keep lands early. It also fills your graveyard on purpose.", "Pairs with madness, flashback and graveyard cards — what you discard can still be used.", "(keyword:madness or keyword:flashback or o:\"from your graveyard\")"],
@@ -34,7 +34,11 @@ const MTG_RULES = [
   ["equip", /equipped creature|equip \{/, "Equipment", "Makes a creature stronger.", "Put it on evasive or hard-to-kill creatures. It stays when the creature dies.", "Pairs with flying or hexproof creatures.", "(keyword:flying or keyword:hexproof) t:creature cmc<=3"],
   ["aura", /enchant creature/, "Aura", "Boosts or controls one creature.", "Put it on a creature with hexproof or ward if you can — if the creature dies, the Aura goes too.", "Pairs with hexproof creatures and enchantment rewards.", "keyword:hexproof t:creature"],
   ["protect", /(hexproof|indestructible|protection from)[^.]*until end of turn|gains? (hexproof|indestructible)/, "Protection", "Saves your creatures.", "Hold it until your opponent targets your best creature or casts a board wipe.", "", ""],
-  ["trick", /^(?=[\s\S]*instant)[\s\S]*target creature (you control )?gets \+\d/, "Combat trick", "A surprise boost during combat.", "Cast it after blockers are declared so your opponent can't react.", "", ""],
+  ["hate", /destroy (up to \w+ )?target (artifact|enchantment)s?|exile (target|all|each)[^.]*cards? from (a|target|all|each)[^.]*graveyards?|exile target player's graveyard/, "Hate / answer", "Answers a specific kind of card (artifacts, enchantments or graveyards).", "Side it in or hold it for decks that rely on that kind of card.", "", ""],
+  ["bounce", /return target [^.]* to (its|their) owner's hand/, "Bounce", "Returns a card to its owner's hand.", "Bounce tokens or freshly-buffed creatures for the most value, or reset your own enters effects.", "", ""],
+  ["tapper", /tap target (creature|permanent)|can't (attack|block) (this turn|until)/, "Tempo", "Taps or stops blockers/attackers for a turn.", "Use it the turn you swing for lethal or to survive a big attack.", "", ""],
+  ["copy", /copy (target|that|any number of target)[^.]*(spell|ability)/, "Copy", "Copies spells or abilities.", "Hold it for your own biggest spell, or to copy your opponent's removal back at them.", "", ""],
+  ["trick", /^(?=[\s\S]*instant)[\s\S]*(target creature (you control )?gets \+\d|(attacking |)creatures you control get \+\d|attacking creatures get \+\d)/, "Combat trick", "A surprise boost during combat.", "Cast it after blockers are declared so your opponent can't react.", "", ""],
 ];
 const MTG_KEYWORDS = {
   Flying: "Flying — only creatures with flying or reach can block it, so it's a reliable attacker.",
@@ -92,6 +96,9 @@ const YGO_RULES = [
   ["gy", /if this card is (sent|in) (to )?the (gy|graveyard)|banish this card from your (gy|graveyard)/, "GY effect", "Works from the Graveyard too.", "Getting it destroyed or discarded is fine — plan to use its GY effect afterward.", ""],
   ["protect", /cannot be destroyed|unaffected by|cannot be targeted/, "Protection", "Hard to remove.", "A safe place to put your strongest effects or equips.", ""],
   ["draw", /draw (1|2|one|two|\w+) cards?/, "Draw", "Draws cards.", "Use it early to dig for starters and hand traps.", ""],
+  ["steal", /take control of/, "Steal", "Takes control of an opponent's monster.", "Take their best monster, then use it as material or Tribute so they don't get it back.", ""],
+  ["burn", /inflict \d+ damage/, "Burn", "Deals damage directly to Life Points.", "Use it to finish a duel when your opponent is low, or to chip in damage while you defend.", ""],
+  ["trick", /gains? \d+ ATK|change [^.]* battle position|negate the attack/, "Battle trick", "Changes the outcome of a battle.", "Hold it until your opponent attacks or until you need to push through a stronger monster.", ""],
 ];
 function ygoGuide(c) {
   const text = String(c.text || "").toLowerCase(),
@@ -124,8 +131,10 @@ const PTCG_RULES = [
   ["disrupt", /your opponent (shuffles|discards|reveals)|discard (an|\d+) energy from your opponent|your opponent's active pokémon is now/, "Disruption", "Slows your opponent.", "Use it when your opponent has just set up — it costs them a turn.", ""],
   ["gust", /switch in 1 of your opponent's benched|your opponent switches/, "Gust", "Pulls an opponent's Benched Pokémon forward.", "Use it to Knock Out a key support Pokémon or one about to evolve.", ""],
   ["devolve", /devolve/, "Devolve", "Turns one of your evolved Pokémon back into an earlier stage and returns the Evolution card to your hand.", "Use it to replay an Evolution whose Ability triggers “when you play this Pokémon from your hand to evolve”, or to pull a valuable Evolution card back to hand. Damage counters stay on the Pokémon — if the lower stage has less HP, it can be Knocked Out.", "Pairs with Evolution Pokémon that have evolve-trigger Abilities."],
-  ["evolve", /evolves from that pokémon|skipping the stage 1|search your deck for[^.]*evolves from|evolution card/, "Evolution support", "Helps you evolve faster or find Evolution cards.", "Use it on the turn you want your Stage 2 out — usually turn 2 when you're going second.", "Pairs with Stage 2 Pokémon."],
+  ["evolve", /evolves from that pokémon|skipping the stage 1|search your deck for[^.]*(evolves from|evolution)/, "Evolution support", "Helps you evolve faster or find Evolution cards.", "Use it on the turn you want your Stage 2 out — usually turn 2 when you're going second.", "Pairs with Stage 2 Pokémon."],
   ["spread", /put \d+ damage counters on[^.]*bench|damage to each of your opponent's/, "Spread damage", "Damages several Pokémon at once.", "Spread damage sets up multiple Knock Outs next turn — aim at Benched Pokémon with low HP.", ""],
+  ["removal", /discard (a|an|all|\d+) (pokémon tools?|special energy|stadium)|discard (a|an|\d+) energy from (1 of )?your opponent|discard all pokémon tools/, "Tool / Energy removal", "Removes your opponent's Tools, Special Energy, Stadiums or Energy.", "Use it right before you attack, so they can't re-attach in time.", ""],
+  ["move", /move (a|an|\d+|all) [^.]*energy/, "Energy movement", "Moves Energy between your Pokémon.", "Move Energy to the attacker that can take a Knock Out this turn, or off a Pokémon about to be Knocked Out.", ""],
   ["recover", /from your discard pile into your hand|shuffle[^.]* from your discard pile into your deck/, "Recovery", "Gets cards back from the discard pile.", "Save it for later in the game when key cards are gone.", ""],
 ];
 function ptcgGuide(c) {
@@ -150,9 +159,60 @@ function ptcgGuide(c) {
   return { roles, tips };
 }
 
+// Roles from a card's stats and structure, for cards whose text alone doesn't say (vanilla
+// creatures, Normal monsters, Pokémon whose job is attacking).
+function structuralRoles(game, c) {
+  const R = (id, label, what, when) => ({ id, label, what, when, syn: "" });
+  if (game === "ptcg" && c.category === "Pokemon") {
+    const dmg = Math.max(0, ...(c.attacks || []).map((a) => parseInt(a.damage, 10) || 0)),
+      ability = (c.abilities || []).length,
+      rulebox = /\b(ex|EX|GX|V|VMAX|VSTAR)\b/.test(c.name || "");
+    if (dmg >= 120 || (rulebox && dmg >= 90)) return [R("attacker", "Main attacker", `Hits for up to ${dmg} — built to take Knock Outs.`, "Power it up over a couple of turns (spread Energy across turns) and keep it safe on the Bench until it can attack.")];
+    if (ability && dmg < 90) return [R("support", "Support Pokémon", "Its Ability helps the rest of your deck more than its attacks do.", "Bench it early and use its Ability every turn; avoid putting it Active.")];
+    if (c.stage !== "Basic" || (c.stage === "Basic" && dmg < 60 && !ability && (c.retreat ?? 2) >= 1)) {
+      if (c.stage === "Basic" && (c.retreat ?? 2) <= 1 && dmg < 60) return [R("pivot", "Pivot / starter", "A cheap Basic to start Active and retreat out of.", "Start with it Active, then retreat into your real attacker once it's ready.")];
+      if (dmg < 90) return [R("step", "Evolution step", "Mostly a stepping stone toward its evolution.", "Bench it early so it can evolve next turn; don't spend Energy on its attacks unless you must.")];
+    }
+    return [R("attacker", dmg >= 60 ? "Early attacker" : "Attacker", `Attacks for up to ${dmg}.`, "Use it to take early Prize cards or to trade with your opponent's smaller Pokémon.")];
+  }
+  if (game === "ygo") {
+    const tl = c.typeLine || "", atk = Number(c.atk) || 0, lvl = Number(c.level) || 0;
+    if (c.category === "Monster") {
+      if (c.extra) return [R("boss", atk >= 2500 ? "Boss monster" : "Extra Deck monster", `An Extra Deck ${(tl.match(/Fusion|Synchro|Xyz|Link/) || ["monster"])[0]}${atk ? ` with ${atk} ATK` : ""}.`, "Summon it once your combo has the right materials; it's usually your end-of-turn board.")];
+      if (/Normal/.test(tl)) return [R("normal", "Normal monster", `A vanilla Level ${lvl} monster${atk ? ` with ${atk} ATK` : ""}.`, "Its value comes from support cards that name Normal monsters, its archetype, or as material.")];
+      if (/tuner/i.test(tl)) return [R("material", "Tuner / material", "A Tuner for Synchro Summons.", "Pair it with non-Tuner monsters whose Levels add up to your Synchro monster's Level.")];
+      if (/Flip/.test(tl)) return [R("flip", "Flip monster", "Its effect triggers when it's flipped face-up.", "Set it face-down; it activates when flipped by an attack or by your card effects.")];
+      return [R("beater", atk >= 2000 ? "Beater" : "Material / utility monster", atk >= 2000 ? `${atk} ATK beats most monsters in battle.` : `A Level ${lvl} monster — useful as material for Xyz/Link summons.`, atk >= 2000 ? "Summon it to pressure Life Points or to clear weaker monsters." : "Use it as Tribute or Extra Deck material once its effect has done its job.")];
+    }
+    const kind = (tl.match(/Equip|Field|Continuous|Counter|Quick-Play|Ritual/) || [""])[0];
+    if (kind) return [R(kind.toLowerCase(), kind + (c.category === "Trap" ? " Trap" : " Spell"), { Equip: "Attaches to a monster to change it.", Field: "Changes the field for both players.", Continuous: "Keeps working while face-up.", Counter: "Responds to your opponent's actions.", "Quick-Play": "Can be used in response, even on your opponent's turn (if Set).", Ritual: "Ritual Summons a Ritual monster." }[kind], { Equip: "Equip it to the monster that benefits most; it leaves if that monster does.", Field: "Play it early to get value every turn.", Continuous: "Play it before the turns you need it working.", Counter: "Set it and keep it for your opponent's key play.", "Quick-Play": "Set it to surprise your opponent during their turn.", Ritual: "Keep it with the Ritual monster and tributes it needs." }[kind])];
+  }
+  if (game === "ptcg" && c.category === "Energy") {
+    const basic = c.basicEnergy || /^(Basic )?\w+ Energy$/.test(c.name || "") && !c.effect;
+    return [basic ? R("energy", "Basic Energy", "Powers attacks of its type.", "Attach one per turn to the Pokémon that will attack next; run as many as your attackers need (usually 8–14).") : R("special", "Special Energy", "Energy with an extra effect.", "Attach it where its effect matters most; watch for cards that discard Special Energy.")];
+  }
+  if (game === "mtg" && /Land/.test(c.type_line || "")) {
+    const t = (c.oracle_text || "").toLowerCase();
+    return [R("mana", /any color|two colors|\{[wubrg]\} or \{[wubrg]\}|search your library/.test(t) ? "Mana fixing" : "Mana", /any color|search your library/.test(t) ? "Makes more than one color of mana." : "A source of mana.", "Play a land every turn you can; fixing lands matter most in decks with two or more colors.")];
+  }
+  if (game === "mtg" && /Creature/.test(c.type_line || c.card_faces?.[0]?.type_line || "")) {
+    const f = c.card_faces?.[0] || c, p = Number(f.power) || 0, t = Number(f.toughness) || 0, cmc = Number(c.cmc) || 0,
+      kw = c.keywords || [];
+    if (["Flying", "Menace", "Trample", "Shadow", "Fear", "Intimidate"].some((k) => kw.includes(k))) return [R("evasive", "Evasive threat", "Hard to block, so it keeps hitting.", "Attack every turn; it's a good target for pump spells and Equipment.")];
+    if (p >= cmc + 1) return [R("beater", "Efficient attacker", `A ${p}/${t} for ${cmc} — above-curve power.`, "Play it on curve and attack early.")];
+    if (t >= p + 2) return [R("blocker", "Blocker", `A ${p}/${t} — better at defending than attacking.`, "Keep it back to hold off attackers while your plan comes together.")];
+    return [R("body", "Creature", `A ${p}/${t} for ${cmc}.`, "Judge it against the other creatures you could play at this cost.")];
+  }
+  return [];
+}
+
 export function playGuide(game, card) {
   if (!card) return { roles: [], tips: [] };
-  return game === "mtg" ? mtgGuide(card) : game === "ygo" ? ygoGuide(card) : ptcgGuide(card);
+  const g = game === "mtg" ? mtgGuide(card) : game === "ygo" ? ygoGuide(card) : ptcgGuide(card);
+  // Pokémon always get their battlefield job; others only when their text gave no role.
+  if (game === "ptcg" && card.category === "Pokemon") g.roles = [...structuralRoles(game, card), ...g.roles];
+  else if (!g.roles.length) g.roles = structuralRoles(game, card);
+  return g;
 }
 
 /* ---------- Pairs well: cards seen alongside it in tournament lists ---------- */

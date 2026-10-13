@@ -42,4 +42,12 @@ assert.deepEqual(playedAlongside("ptcg", { name: "Crispin" }, lift).cards.map((x
 const html = guideHtml("ptcg", { name: "Crispin" }, tr, { alongside: al, alongsideAttrs: () => "", alongsideName: (x) => x.name, complements: [], complementsLoading: false, complementsNote: "x" });
 assert.match(html, /How and when to play it/); assert.match(html, /Played alongside it/); assert.match(html, /Rare Candy/); assert.match(html, /not expert strategy/);
 assert.doesNotMatch(guideHtml("mtg", { name: "<b>" }, { roles: [], tips: ["a <script>"] }, {}), /<script>/);
+// Structural roles: every Pokémon gets its battlefield job; vanilla cards and Energy get roles.
+assert.equal(playGuide("ptcg", { name: "Charizard ex", category: "Pokemon", stage: "Stage2", attacks: [{ name: "Burning Darkness", cost: ["Fire", "Fire"], damage: "180+" }], abilities: [{ name: "Infernal Reign", effect: "When you play this Pokémon from your hand to evolve 1 of your Pokémon during your turn, you may search your deck for up to 3 Basic Fire Energy cards and attach them to your Pokémon in any way you like. Then, shuffle your deck." }] }).roles[0].label, "Main attacker");
+assert.equal(playGuide("ptcg", { name: "Pidgey", category: "Pokemon", stage: "Basic", retreat: 1, attacks: [{ name: "Gust", damage: "10" }] }).roles[0].id, "pivot");
+assert.equal(playGuide("ptcg", { name: "Fire Energy", category: "Energy", basicEnergy: true }).roles[0].label, "Basic Energy");
+assert.equal(playGuide("ygo", { name: "Blue-Eyes White Dragon", category: "Monster", typeLine: "Normal Monster", level: 8, atk: 3000, text: "" }).roles[0].label, "Normal monster");
+assert.equal(playGuide("mtg", { name: "Ordinary Bear", type_line: "Creature — Bear", cmc: 2, power: "2", toughness: "2", oracle_text: "" }).roles[0].label, "Creature");
+assert.equal(playGuide("mtg", { name: "Chaos Warp", type_line: "Instant", cmc: 3, oracle_text: "The owner of target permanent shuffles it into their library, then reveals the top card of their library." }).roles[0].id, "removal");
+assert.deepEqual(playGuide("ptcg", { name: "Devolution Spray", category: "Trainer", typeLine: "Trainer · Item", effect: "Devolve 1 of your evolved Pokémon and put the highest Stage Evolution card on it into your hand. (That Pokémon can't evolve this turn.)" }).roles.map((r) => r.id), ["devolve"]);
 console.log("PASS: play guide — roles, timing and keyword tips (Magic), hand traps & tributes (Yu-Gi-Oh!), evolution/Rule Box/Supporter (Pokémon), played-alongside, escaping.");

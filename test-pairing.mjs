@@ -62,4 +62,14 @@ const loose = rankPairs("ptcg", spray, [{ card: meta2 }]);
 assert.equal(loose.length, 1); assert.equal(loose[0].fallback, true, "a generic Evolution Pokémon is a loose link");
 assert.equal(ptcgTags({ name: "Boss's Orders", category: "Trainer", typeLine: "Trainer · Supporter", effect: "Switch in 1 of your opponent's Benched Pokémon to the Active Spot." }).provides.has("switching"), false);
 assert.equal(ptcgTags({ name: "Switch", category: "Trainer", typeLine: "Trainer · Item", effect: "Switch your Active Pokémon with 1 of your Benched Pokémon." }).provides.has("switching"), true);
+// Mechanics and named groups (ideas 2 and 3 of the stress test).
+const ritual = { name: "Black Luster Soldier", category: "Monster", typeLine: "Ritual Monster", level: 8, text: "You can Ritual Summon this card with \"Black Luster Ritual\"." };
+const rspell = { name: "Chaos Form", category: "Spell", typeLine: "Ritual Spell", text: "This card can be used to Ritual Summon any \"Chaos\" or \"Black Luster Soldier\" Ritual Monster." };
+assert.match(rankPairs("ygo", ritual, [{ card: rspell }])[0].reasons.join(" "), /Ritual Spell/);
+const xyz = { name: "Number 39: Utopia", category: "Monster", typeLine: "Xyz Effect Monster", extra: true, level: 4, text: "2 Level 4 monsters" };
+const l4 = rankPairs("ygo", xyz, [{ card: { name: "Some Level 4", category: "Monster", typeLine: "Effect Monster", level: 4, text: "" } }]);
+assert.equal(l4[0]?.fallback, true, "any same-Level monster for an Xyz is a loose link");
+const archer = { name: "Team Rocket's Archer", category: "Trainer", typeLine: "Trainer · Supporter", effect: "You can use this card only if you have Team Rocket's Pokémon in play." };
+assert.match(rankPairs("ptcg", archer, [{ card: { name: "Team Rocket's Wobbuffet", category: "Pokemon", stage: "Basic", types: ["Psychic"], attacks: [] } }])[0].reasons.join(" "), /Team Rocket/);
+assert.equal(ptcgTags({ name: "Lightning Energy", category: "Energy" }).provides.has("special_energy"), false, "old basic Energy without energyType isn't Special");
 console.log("PASS: pairing — needs/provides tags per game, named cards & archetypes, evolution lines & evolve triggers, lift/owned reasons; rules — copies per format (banned/restricted/ACE SPEC/Rule Box/basics) and turn rules.");

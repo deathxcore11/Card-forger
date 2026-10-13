@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-v60";
+const CACHE = "cardforge-shell-v61";
 const ASSETS = [
   "./",
   "./index.html",
