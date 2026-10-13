@@ -2,6 +2,7 @@ import {viewControl,selectionControl,selectionMark,selectionTray,historyPanel,qu
 import { locationPicker, rememberLocation } from "./collection-locations.js";
 import { zoneCountLabel } from "./deck-safety.js";
 import { binderShelf } from "./binders.js";
+import { tileEmblem, emblemChips, rowEmblem } from "./importance.js";
 // Yu-Gi-Oh! and Pokémon: collection, search, sets and deck building, sharing one
 // set of screens. Each game's data, rules and formats come from its adapter.
 import { S, uid } from "./store.js";
@@ -92,7 +93,7 @@ const price = (c) => c?.prices?.usd ?? null;
 // Emblems shown on a card: Yu-Gi-Oh! Level/Attribute or Spell/Trap property; Pokémon energy type.
 export const gameEmblems = (c) => (!c || c.brief ? "" : c.game === "ygo" ? ygoEmblems(c) : `<span class="emblems">${(c.types || []).map((t) => energyIcon(t)).join("")}${c.hp ? `<span class="hp">HP ${esc(c.hp)}</span>` : ""}</span>`);
 // Search tiles stay light: the type emblem plus set/rarity symbols. HP and codes are on the card page.
-const tileBadges = (c) => (!c || c.brief ? "" : `<span class="tile-emb">${c.game === "ygo" ? ygoEmblems(c) : `<span class="emblems">${(c.types || []).map((t) => energyIcon(t)).join("")}</span>`}</span>${tcgSetBadge(c, true) ? `<span class="tile-set">${tcgSetBadge(c, true)}</span>` : ""}`);
+const tileBadges = (c) => (!c || c.brief ? "" : `${tileEmblem(c.game, c)}<span class="tile-emb">${c.game === "ygo" ? ygoEmblems(c) : `<span class="emblems">${(c.types || []).map((t) => energyIcon(t)).join("")}</span>`}</span>${tcgSetBadge(c, true) ? `<span class="tile-set">${tcgSetBadge(c, true)}</span>` : ""}`);
 const rowBadges = (c) => (!c || c.brief ? "" : `${gameEmblems(c)}${tcgSetBadge(c)} `);
 const imgTag = (c, cls = "card-img", large = false) => {
   if (!c) return `<span class="${cls} img-missing" role="img" aria-label="Artwork unavailable">◇<small>Art unavailable</small></span>`;
@@ -540,6 +541,7 @@ export function tcgCardSheet(c, sctx = {}) {
   return `<div class="sheet-head overlay"><span></span><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   <div class="cs-hero ${g}">${heroSrc ? `<img class="cs-art" src="${esc(heroSrc)}" alt="${esc(c.name)}" referrerpolicy="no-referrer" onerror="${heroFallback ? `if(!this.dataset.f){this.dataset.f=1;this.src='${esc(heroFallback)}'}else ` : ""}this.remove()">` : ""}<div class="cs-shade"></div></div>
   <div class="cs-title"><div><h2>${esc(c.name)}</h2><p class="type-line">${esc(c.typeLine || "")}</p></div>${gameEmblems(c)}</div>
+  ${emblemChips(g, c)}
   <div class="cs-meta">
     ${g === "ygo" ? ygoSetRow(c) : ""}
     ${c.set ? `<button class="cd-set" data-act="tSet" data-id="${esc(c.set.id)}">${pkSetSymbol(c.set, "pks big")}<div><b>${esc(c.set.name)} <span class="set-go">›</span></b><small>#${esc(c.set.number || "")}${c.set.total ? "/" + c.set.total : ""}${c.rarity ? ` · ${pkRarity(c.rarity)} ${esc(c.rarity)}` : ""}</small></div></button>` : c.archetype ? `<button class="cd-set" data-act="tArchetype" data-name="${esc(c.archetype)}"><div><b>${esc(c.archetype)} <span class="set-go">›</span></b><small>Archetype · ${c.sets?.length || 0} printings</small></div></button>` : ""}
@@ -837,7 +839,8 @@ const PROVEN_BUDGETS = [25, 50, 100, 200, 400];
 export function provenModel(spec) {
   const others = spec.lists || [],
     similar = similarLists(spec.rows, others),
-    engine = engineOf(spec.rows, similar, spec.generic || (() => false)),
+    // The mana base isn't the engine: lands still only give way to cheaper lands (adaptList keepKinds).
+    engine = engineOf(spec.rows.filter((r) => r.kind !== "land"), similar, spec.generic || (() => false)),
     pool = swapPool(spec.rows, similar),
     full = costToFinish(spec.rows);
   return { similar, engine, pool, full };
@@ -859,7 +862,7 @@ export function provenSheetHtml() {
       return u ? `<img class="row-thumb" src="${esc(u)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'row-thumb img-missing'}))">` : `<span class="row-thumb img-missing" aria-hidden="true"></span>`;
     },
     row = (r, extra = "") =>
-      `<button class="mini-row art-row" ${spec.cardAttrs ? spec.cardAttrs(r) : ""}>${thumb(r)}<span class="ellip">${r.qty}× ${esc(r.name)}${r.swappedIn ? ` <span class="tag">swap</span>` : ""}${M.engine.has(r.key) && mode !== "draft" ? ` <span class="tag ok">engine</span>` : ""}</span><span class="small ${r.owned >= r.qty ? "ok-text" : "muted"}">${extra || (r.owned >= r.qty ? "✓ owned" : r.owned ? `${r.owned}/${r.qty} · ${r.price != null ? usd((r.qty - r.owned) * r.price) : "—"}` : r.price != null ? usd(r.qty * r.price) : "—")}</span></button>`;
+      `<button class="mini-row art-row" ${spec.cardAttrs ? spec.cardAttrs(r) : ""}>${thumb(r)}<span class="ellip">${r.qty}× ${esc(r.name)}${r.swappedIn ? ` <span class="tag">swap</span>` : ""}${M.engine.has(r.key) && mode !== "draft" ? ` <span class="tag ok">engine</span>` : ""}${rowEmblem(spec.g, { name: r.name, id: r.key })}</span><span class="small ${r.owned >= r.qty ? "ok-text" : "muted"}">${extra || (r.owned >= r.qty ? "✓ owned" : r.owned ? `${r.owned}/${r.qty} · ${r.price != null ? usd((r.qty - r.owned) * r.price) : "—"}` : r.price != null ? usd(r.qty * r.price) : "—")}</span></button>`;
   let body = "";
   if (mode === "original") {
     body = `<div class="list compact">${spec.rows.map((r) => row(r)).join("")}</div>`;

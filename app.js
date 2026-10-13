@@ -400,9 +400,44 @@ function openSheet(html, ctx = null, scrollTop = 0) {
     dlg.showModal();
   }
   $("#sheetBody").scrollTop = scrollTop;
+  sheetScrolled();
+  if (!sheetScrollWired) {
+    sheetScrollWired = true;
+    $("#sheetBody").addEventListener?.("scroll", sheetScrolled, { passive: true });
+  }
   if (ctx?.type === "binder") binderDragCleanup = attachBinderDrag($("#sheetBody"),(delta,how)=>A.binderPage({dataset:{page:String(ctx.page+delta)},how}));
 }
-let sheetReturn = null;
+// Emblems (meta staple, flexible staple…) come from cached tournament data. Fetch the current
+// game's data quietly in the background once per session if it's missing or older than 12 hours.
+const warmed = new Set();
+function warmEmblems() {
+  const g = T.game(),
+    k = g === "mtg" ? "mtg:" + mtgMetaFormat() : g;
+  if (warmed.has(k)) return;
+  warmed.add(k);
+  const M = metaState(k);
+  if (M.busy || (M.data && Date.now() - M.at < 12 * 3600e3)) return;
+  setTimeout(() => loadMetaData(k).then(() => {
+    // Show the new emblems unless the person is typing or has a sheet open.
+    if (!document.querySelector("input:focus, textarea:focus") && !$("#sheet").open) render();
+  }).catch(() => {}), 2500);
+}
+let sheetReturn = null,
+  sheetScrollWired = false;
+// Past the hero art, the floating ✕ gets a solid bar with the title, so it never sits on top of text.
+function sheetScrolled() {
+  const body = $("#sheetBody"),
+    head = body?.querySelector?.(".sheet-head.overlay");
+  if (!head) return;
+  const on = body.scrollTop > 110;
+  if (on && !head.querySelector(".sh-title")) {
+    const t = document.createElement("b");
+    t.className = "sh-title";
+    t.textContent = body.querySelector("h2")?.textContent || "";
+    head.firstElementChild?.after(t);
+  }
+  head.classList.toggle("scrolled", on);
+}
 function closeSheet() {
   binderDragCleanup?.(); binderDragCleanup=null;
   const dlg = $("#sheet");
@@ -547,6 +582,7 @@ function render() {
   const ui = S.ui;
   // The scanner keeps its camera stream across renders (or stops it when you leave the page).
   setTimeout(() => scanCtx.afterRender?.(), 0);
+  warmEmblems();
   for (const b of $$("[data-nav]")) b.classList.toggle("on", b.dataset.nav === (ui.view === "deck" ? "decks" : ui.view === "set" || ui.view === "sets" ? "search" : ui.view));
   document.body.dataset.view = ui.view;
   const g = T.game();

@@ -25,6 +25,16 @@ const writeCache = (g, data) => {
   } catch {}
 };
 
+// Bumped whenever new tournament data arrives, so derived views (emblems) recompute.
+let version = 0;
+export const metaVersion = () => version;
+// Every cached dataset (all games, every Magic format looked at): { key: { at, data } }.
+export const allCachedMeta = () => {
+  const all = readCache();
+  for (const [g, M] of Object.entries(state)) if (M.data && (!all[g] || all[g].at < M.at)) all[g] = { at: M.at, data: M.data };
+  return all;
+};
+
 export const metaState = (g) => (state[g] ||= { data: readCache()[g]?.data || null, at: readCache()[g]?.at || 0, busy: false, error: "" });
 
 export async function loadMeta(g, force = false) {
@@ -39,6 +49,7 @@ export async function loadMeta(g, force = false) {
       M.data = data;
       M.at = Date.now();
       writeCache(g, data);
+      version++;
       return data;
     })
     .catch((e) => {

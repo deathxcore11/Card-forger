@@ -1,11 +1,11 @@
 {
   "name": "cardstashy",
-  "version": "3.10.0",
+  "version": "3.10.1",
   "private": true,
   "type": "module",
   "description": "CardStashy — Magic: The Gathering collection, decks, upgrades and deck engine analysis. A static, offline-capable web app.",
   "scripts": {
-    "test": "node test-update.mjs && node test-actions.mjs && node test-extras.mjs && node test-share.mjs && node test-cloud.mjs && node test-password-auth.mjs && node test-binders.mjs && node test-locations.mjs && node test-smoke.mjs && node test-workbench.mjs && node test-formats.mjs && node test-builder.mjs && node test-deck-safety.mjs && node test-tcg.mjs && node test-topdeck.mjs && node test-worker.mjs && node test-adapt.mjs && node test-scan.mjs && node test-scancam.mjs",
+    "test": "node test-update.mjs && node test-actions.mjs && node test-extras.mjs && node test-share.mjs && node test-cloud.mjs && node test-password-auth.mjs && node test-binders.mjs && node test-locations.mjs && node test-smoke.mjs && node test-workbench.mjs && node test-formats.mjs && node test-builder.mjs && node test-deck-safety.mjs && node test-tcg.mjs && node test-topdeck.mjs && node test-worker.mjs && node test-adapt.mjs && node test-scan.mjs && node test-scancam.mjs && node test-importance.mjs",
     "start": "npx --yes http-server -p 8080 -c-1 ."
   }
 }

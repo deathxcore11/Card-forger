@@ -1,3 +1,17 @@
+3.10.1 — Deck-building emblems and phone fixes
+- Cards now carry a small hex emblem when they matter for deck building, from the tournament data
+  CardStashy already caches (it loads quietly in the background, refreshed every 12 hours):
+  gold "Meta staple" (in 25%+ of recent top lists), silver "Meta card" (8%+), blue "Flexible
+  staple" (played in 3+ different decks), purple "Commander staple" (EDHREC top 250, Magic) and
+  "Tournament played". Tiles show the strongest one; the card page lists each with its numbers
+  (e.g. "60% of recent Modern top lists"). Basic lands and basic Energy never get one, and with
+  fewer than 10 lists no meta claim is made.
+- Sheets: once you scroll past the art, the close button sits in a solid title bar instead of
+  floating over text.
+- Proven decks: lands are no longer labeled "engine" (and expensive fetch lands can now be swapped
+  for cheaper lands in budget adaptations).
+- Versions rows on phones: set name and number get the full width; Buy and price go underneath.
+
 3.10.0 — Shared card views, market windows and collection selection
 - Gallery, Compact and Symbols views share one chooser in Search, Collection cards and Deck cards for Magic, Pokémon and Yu-Gi-Oh!. Preferences are saved per game and screen in the workspace and follow normal account sync.
 - Prices tabs share Selected version, Price history and Find sellers sections. Detailed source tables, finish prices and previous actions are retained under Market details. Pokémon finishes and Yu-Gi-Oh! edition limitations remain explicit.
