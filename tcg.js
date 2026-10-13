@@ -1613,6 +1613,7 @@ export function registerTcg(c) {
 
   A.tCollTab = (t) => {
     ui().coll.tab = t.dataset.id;
+    go("#collection/" + t.dataset.id);
     render();
   };
   A.tWish = async (t) => {

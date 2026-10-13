@@ -484,7 +484,10 @@ function parseHash() {
   const ui = S.ui,
     prev = ui.view + ui.deckId;
   ui.view = VIEWS.includes(v) ? v : "home";
-  if (ui.view === "collection" && ["cards", "binders", "value", "wishlist"].includes(a)) ui.collTab = a;
+  if (ui.view === "collection" && ["cards", "binders", "value", "wishlist"].includes(a)) {
+    ui.collTab = a;
+    if(T.isTcg() && ["cards","binders","wishlist"].includes(a))T.ui().coll.tab=a;
+  }
   if (ui.view === "shared" && a !== ui.shared.code) openShared(a);
   if (ui.view === "tdeck") ui.tdeckId = a;
   if (ui.view === "set" && T.isTcg()) {
