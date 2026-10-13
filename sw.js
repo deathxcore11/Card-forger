@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-v44";
+const CACHE = "cardforge-shell-v45";
 const ASSETS = [
   "./",
   "./index.html",
@@ -6,6 +6,9 @@ const ASSETS = [
   "./app.js",
   "./store.js",
   "./ui.js",
+  "./binders.js",
+  "./deck-safety.js",
+  "./format-upgrades.js",
   "./views.js",
   "./insights.js",
   "./strategy.js",

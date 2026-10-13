@@ -166,13 +166,24 @@ const HINTS = {
   Curve: "Lower average cost = more plays per turn.",
 };
 
+export function detectArchetype(deck,catalog) {
+ if(isCommanderLike(deck))return null;
+ let auras=0,cheapCreatures=0,creatures=0,nonland=0,mv=0;
+ for(const r of aggregateCards(deck.cards)){const c=catalog[cardKey(r.name)];if(!c||isLand(c))continue;nonland+=r.qty;mv+=(Number(c.cmc)||0)*r.qty;if(/Aura/.test(typeText(c)))auras+=r.qty;if(/Creature/.test(typeText(c))){creatures+=r.qty;if(Number(c.cmc)<=2)cheapCreatures+=r.qty;}}
+ const avg=nonland?mv/nonland:Infinity;
+ if(auras>=8&&creatures>=8&&avg<=2.5)return {label:"Aura aggro",test:c=>/Aura|Creature/.test(typeText(c))};
+ if(cheapCreatures>=20&&avg<=2.5)return {label:"Low-curve creature aggro",test:c=>/Creature/.test(typeText(c))&&Number(c.cmc)<=3};
+ return null;
+}
+
 export function engineProfile(deck, catalog) {
   const fmt = isCommanderLike(deck) ? "Commander" : "60-card casual",
     size = formatOf(deck).size,
     // 60-card targets, scaled for 40-card Limited and other non-60 sizes.
-    targets = fmt === "Commander" || size === 60 ? TARGETS[fmt] : Object.fromEntries(Object.entries(TARGETS[fmt]).map(([k, v]) => [k, k === "Curve" ? v : Math.max(1, Math.round((v * size) / 60))])),
+    archetype = detectArchetype(deck,catalog),
+    targets = fmt === "Commander" || size === 60 ? {...TARGETS[fmt]} : Object.fromEntries(Object.entries(TARGETS[fmt]).map(([k, v]) => [k, k === "Curve" ? v : Math.max(1, Math.round((v * size) / 60))])),
     commander = catalog[cardKey(deck.commander)],
-    syn = hasCommander(deck) ? synergyTest(commander) : null,
+    syn = hasCommander(deck) ? synergyTest(commander) : archetype,
     counts = {
       Lands: 0,
       Ramp: 0,
@@ -193,6 +204,7 @@ export function engineProfile(deck, catalog) {
       Protection: [],
       Synergy: [],
     };
+  if(archetype)Object.assign(targets,{Lands:Math.round(size/3),Ramp:0,Draw:2,Wipe:0,Protection:4,Synergy:Math.round(size*.4)});
   let nonland = 0,
     mvTotal = 0,
     unknown = 0,
@@ -237,7 +249,7 @@ export function engineProfile(deck, catalog) {
   const avg = nonland ? mvTotal / nonland : null,
     parts = [];
   for (const k of Object.keys(targets)) {
-    if (k === "Synergy" && !syn) continue;
+    if ((k === "Synergy" && !syn) || targets[k]===0) continue;
     const target = targets[k],
       count = counts[k],
       ratio =
@@ -282,6 +294,8 @@ export function engineProfile(deck, catalog) {
     total,
     nonland,
     synergyLabel: syn?.label || null,
+    archetype: archetype?.label || (fmt === "Commander" ? "Commander role balance" : "General constructed role balance"),
+    scoreKind: "Build-health heuristic; not a win rate",
   };
 }
 

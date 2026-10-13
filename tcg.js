@@ -1,3 +1,5 @@
+import { zoneCountLabel } from "./deck-safety.js";
+import { binderShelf, binderCover } from "./binders.js";
 import { scanControls } from "./scan-camera.js";
 // Yu-Gi-Oh! and Pokémon: collection, search, sets and deck building, sharing one
 // set of screens. Each game's data, rules and formats come from its adapter.
@@ -183,7 +185,7 @@ export function gameBinders(active = game()) {
     const v = g === "mtg" ? null : collectionValue(g),
       mtgCopies = g === "mtg" ? S.state.collection.reduce((a, e) => a + e.qty, 0) : 0,
       decks = g === "mtg" ? S.state.decks.length : gs(g).decks.length;
-    return `<button class="binder b-${g} ${g === active ? "on" : ""}" data-act="setGame" data-game="${g}" aria-pressed="${g === active}"><span class="binder-icon">${GAME_ICON[g]}</span><b>${esc(GAMES[g].short)}</b><small>${g === "mtg" ? mtgCopies : v.copies} cards · ${decks} deck${decks === 1 ? "" : "s"}</small></button>`;
+    return binderCover({title:GAMES[g].short,subtitle:`${g === "mtg" ? mtgCopies : v.copies} cards · ${decks} decks`,game:g,hint:"Choose game",attrs:`data-act="setGame" data-game="${g}" aria-pressed="${g === active}"`});
   }).join("")}</section>`;
 }
 
@@ -301,7 +303,7 @@ function tcgNext(g) {
   const st = gs(g),
     lead = st.decks.at(-1);
   if (!st.collection.length && !st.decks.length)
-    return nextCard({ title: "Add your collection", text: `Paste a list of the ${esc(GAMES[g].short)} cards you own, or search and add them one by one. Then Cardforge shows what you can build.`, actions: `<button class="btn" data-act="tImportColl">↥ Paste a list</button><button class="btn ghost" data-act="go" data-to="#search">⌕ Find cards</button><button class="btn ghost" data-act="go" data-to="#decks/inspiration">🏆 Browse meta decks</button>` });
+    return nextCard({ title: "Add your collection", text: `Paste a list of the ${esc(GAMES[g].short)} cards you own, or search and add them one by one. Then CardStashy shows what you can build.`, actions: `<button class="btn" data-act="tImportColl">↥ Paste a list</button><button class="btn ghost" data-act="go" data-to="#search">⌕ Find cards</button><button class="btn ghost" data-act="go" data-to="#decks/inspiration">🏆 Browse meta decks</button>` });
   if (!lead)
     return nextCard({ title: "Discover decks your cards support", text: `${st.collection.reduce((a, e) => a + e.qty, 0)} cards in your binder. See the ${g === "ygo" ? "archetypes" : "Pokémon"} you can build around and the tournament decks you’re closest to.`, actions: `<button class="btn" data-act="go" data-to="#decks/ideas">✧ Deck ideas from my cards</button><button class="btn ghost" data-act="go" data-to="#decks/inspiration">🏆 Meta decks</button>` });
   const s = deckStats(g, lead),
@@ -664,8 +666,9 @@ export function tcgCollection() {
   const val = (x) => (entryPrice(x.c, x.e) ?? -1) * x.e.qty;
   rows.sort(U.sort === "name" ? (a, b) => a.e.name.localeCompare(b.e.name) : U.sort === "recent" ? (a, b) => String(b.e.addedAt).localeCompare(String(a.e.addedAt)) : U.sort === "set" ? (a, b) => setLabel(a).localeCompare(setLabel(b)) || a.e.name.localeCompare(b.e.name) : U.sort === "rarity" ? (a, b) => rarityOf(a).localeCompare(rarityOf(b)) || a.e.name.localeCompare(b.e.name) : (a, b) => val(b) - val(a));
   if (U.tab === "wishlist") return tcgWishlist(g);
+  if (U.tab === "binders") return `<div class="page-head"><h1>Collection</h1><button class="btn ghost small" data-act="go" data-to="#search">＋ Add cards</button></div>${segmented("tCollTab","binders",[["cards","My cards"],["binders","Binders"],["wishlist",`Wishlist · ${st.wishlist.length}`]])}${binderShelf(st.collection.map(entry=>({entry,card:cardOf(g,entry.cardId),image:cardOf(g,entry.cardId)?.variants?.find(v=>v.key===entry.variant)?.image || cardOf(g,entry.cardId)?.image || "",game:g})),g,S.state.settings.binders || [])}`;
   return `<div class="page-head"><h1>Collection</h1><button class="btn ghost small" data-act="go" data-to="#search">＋ Add cards</button></div>
-  ${segmented("tCollTab", "cards", [["cards", "My cards"], ["wishlist", `Wishlist · ${st.wishlist.length}`]])}
+  ${segmented("tCollTab", "cards", [["cards", "My cards"], ["binders", "Binders"], ["wishlist", `Wishlist · ${st.wishlist.length}`]])}
   <div class="kpis small"><div class="kpi"><b>${usd(v.total, 0)}</b><span>estimated value</span></div><div class="kpi"><b>${v.copies}</b><span>cards</span></div><div class="kpi"><b>${st.collection.length}</b><span>entries</span></div></div>
   ${st.collection.length ? `<div class="toolbar"><input type="search" value="${esc(U.q)}" placeholder="Search your cards" data-input="tCollQ" aria-label="Search collection"><select data-change="tCollSet" aria-label="Set">${options([["", "All sets"], ...setNames.map((x) => [x, x])], U.set)}</select><select data-change="tCollKind" data-field="kind" aria-label="Kind">${options([["", "All kinds"], ...kinds], U.kind)}</select>${rarities.length > 1 ? `<select data-change="tCollKind" data-field="rarity" aria-label="Rarity">${options([["", "All rarities"], ...rarities.map((x) => [x, x])], U.rarity)}</select>` : ""}<select data-change="tCollSort" aria-label="Sort">${options([["value", "Value"], ["name", "Name"], ["set", "Set"], ["rarity", "Rarity"], ["recent", "Recently added"]], U.sort)}</select></div>
   <div class="row between"><span class="muted small">${rows.length} shown${v.unpriced ? ` · ${v.unpriced} without a price` : ""}</span><button class="btn ghost small" data-act="tRefreshPrices">⟳ Refresh prices</button></div>
@@ -683,7 +686,7 @@ function tcgWishlist(g) {
     rows = st.wishlist.map((w) => ({ w, c: cardOf(g, w.cardId) })),
     total = rows.reduce((a, x) => a + (price(x.c) ?? 0) * (x.w.qty || 1), 0);
   return `<div class="page-head"><h1>Collection</h1><button class="btn ghost small" data-act="go" data-to="#search">＋ Find cards</button></div>
-  ${segmented("tCollTab", "wishlist", [["cards", "My cards"], ["wishlist", `Wishlist · ${st.wishlist.length}`]])}
+  ${segmented("tCollTab", "wishlist", [["cards", "My cards"], ["binders", "Binders"], ["wishlist", `Wishlist · ${st.wishlist.length}`]])}
   ${rows.length ? `<div class="kpis small"><div class="kpi"><b>${rows.length}</b><span>cards wanted</span></div><div class="kpi"><b>${usd(total, 0)}</b><span>to buy them all</span></div><div class="kpi"><b>${rows.filter((x) => (price(x.c) ?? 1e9) <= 1).length}</b><span>under $1</span></div></div>
   <div class="list">${rows
     .sort((a, b) => (price(b.c) ?? -1) - (price(a.c) ?? -1))
@@ -825,13 +828,13 @@ function ideasView(g) {
       .sort((a, b) => b.o.pct - a.o.pct)
       .slice(0, 5);
   if (!st.collection.length)
-    return `${empty("Ideas come from your cards", `Add the ${esc(GAMES[g].short)} cards you own and Cardforge finds the ${g === "ygo" ? "archetypes" : "Pokémon"} they support, matches them against today’s tournament decks, and builds lists at every budget.`, `<button class="btn" data-act="tImportColl">↥ Paste a list</button><button class="btn ghost" data-act="go" data-to="#search">Find cards</button><button class="btn ghost" data-act="decksTab" data-id="inspiration">🏆 Meta decks</button>`)}`;
-  return `<section class="panel build-own"><h3>Build from my cards</h3><p class="muted small">One card, ten or your whole binder — Cardforge keeps your cards, fills gaps with what today’s tournament decks play, and shows every budget from “cards I own” to “no limit”.</p>
+    return `${empty("Ideas come from your cards", `Add the ${esc(GAMES[g].short)} cards you own and CardStashy finds the ${g === "ygo" ? "archetypes" : "Pokémon"} they support, matches them against today’s tournament decks, and builds lists at every budget.`, `<button class="btn" data-act="tImportColl">↥ Paste a list</button><button class="btn ghost" data-act="go" data-to="#search">Find cards</button><button class="btn ghost" data-act="decksTab" data-id="inspiration">🏆 Meta decks</button>`)}`;
+  return `<section class="panel build-own"><h3>Build from my cards</h3><p class="muted small">One card, ten or your whole binder — CardStashy keeps your cards, fills gaps with what today’s tournament decks play, and shows every budget from “cards I own” to “no limit”.</p>
     <div class="actions wrap"><button class="btn" data-act="tBuildAuto">⚒ Use my whole collection</button><button class="btn ghost" data-act="tPickSeeds">☑ Pick cards to build around</button></div></section>
   ${groups.length ? `<div class="section-head"><h2>${g === "ygo" ? "Archetypes you own" : "Pokémon you can build around"}</h2></div><div class="list">${groups
     .slice(0, 12)
     .map((x) => `<div class="lot idea-row"><button class="lot-art" data-act="tCard" data-id="${esc(x.cover.id)}">${imgTag(x.cover)}</button><div class="lot-info"><b class="lot-name">${esc(x.name)}</b><span class="lot-sub">${x.ids.length} card${x.ids.length === 1 ? "" : "s"} · ${x.copies} cop${x.copies === 1 ? "y" : "ies"}${x.metaText ? ` · <span class="ok-text">${esc(x.metaText)}</span>` : ""}</span></div><div class="lot-side"><button class="btn small" data-act="tBuildMulti" data-ids="${esc(x.ids.join(","))}">⚒ Build</button></div></div>`)
-    .join("")}</div>` : `<p class="muted small">Loading your cards’ details… If this stays empty, open your Collection once so Cardforge can read them.</p>`}
+    .join("")}</div>` : `<p class="muted small">Loading your cards’ details… If this stays empty, open your Collection once so CardStashy can read them.</p>`}
   <div class="section-head"><h2>Tournament decks you’re closest to</h2><button class="link" data-act="decksTab" data-id="inspiration">All meta decks →</button></div>
   ${metaStatus(g, M)}${closest.length ? `<div class="list">${closest.map(({ d }) => metaDeckRow(g, d, m)).join("")}</div>` : ""}`;
 }
@@ -1214,7 +1217,7 @@ export function tcgBuildSheet() {
       open = B.openTier === i,
       issues = SOURCES[g].validate({ zones: t.zones }, (id) => cardOf(g, id), formatOf(g, B.format));
     return `<article class="tier ${open ? "on" : ""} ${t.meta ? "meta" : ""}"><div class="row between"><b>${t.total < t.size ? `Draft — ${t.size - t.total} slot${t.size - t.total === 1 ? "" : "s"} open · ` : ""}${t.meta ? `🏆 ${esc(t.label)}` : tierName(t)}</b><span class="chip ${issues.length ? "warn" : "ok"}">${issues.length ? issues.length + " to fix" : "Legal"}</span></div>
-      <div class="tier-stats"><span><b>${usd(t.cost)}</b> to buy</span><span><b>${t.total}/${t.size}</b> ${g === "ygo" ? "main" : "cards"}</span>${g === "ygo" ? `<span><b>${t.zones.extra.reduce((a, r) => a + r.qty, 0)}</b> extra</span>` : ""}<span><b>${t.total ? Math.round((owned / t.total) * 100) : 0}%</b> owned</span></div>
+      <div class="tier-stats"><span><b>${usd(t.cost)}</b> to buy</span><span><b>${esc(zoneCountLabel(g,t.total,formatOf(g,B.format)))}</b></span>${g === "ygo" ? `<span><b>${t.zones.extra.reduce((a, r) => a + r.qty, 0)}</b> extra</span>` : ""}<span><b>${t.total ? Math.round((owned / t.total) * 100) : 0}%</b> owned</span></div>
       ${t.warnings.filter((w) => !/slots? still open/.test(w)).map((w) => `<p class="small warn-text">${esc(w)}</p>`).join("")}
       ${draftPath(tiers, i, tierName)}
       ${open ? `<div class="card-grid small-grid">${t.zones.main.concat(t.zones.extra).map((r) => `<button class="grid-card" data-act="tCard" data-id="${esc(r.cardId)}">${imgTag(cardOf(g, r.cardId))}${tileBadges(cardOf(g, r.cardId))}<span class="grid-meta stacked"><b class="clamp2">${r.qty}× ${esc(r.name)}</b><small>${esc(r.why || "")}</small></span></button>`).join("")}</div>` : ""}
@@ -1605,7 +1608,7 @@ export function registerTcg(c) {
       const card = cardOf(G, e.cardId);
       rows.push([e.qty, e.name, setLabel({ e, c: card }), e.printing || card?.set?.number || "", e.rarity || e.variantLabel || e.variant || "", e.edition || "", e.condition || "", entryPrice(card, e) ?? ""]);
     }
-    download(`Cardforge_${GAMES[G].short.replace(/\W/g, "")}_collection.csv`, rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n") + "\n", "text/csv");
+    download(`CardStashy_${GAMES[G].short.replace(/\W/g, "")}_collection.csv`, rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n") + "\n", "text/csv");
   };
 
   A.tCollTab = (t) => {
@@ -1655,7 +1658,14 @@ export function registerTcg(c) {
   const addToDeck = (st, deckId, card, zone, n = 1) => {
     const d = st.decks.find((x) => x.id === deckId);
     if (!d) return null;
+    if (!card) throw Error("Load the card’s details before adding it.");
     zone = zone || SOURCES[g()].zoneFor(card);
+    const f=formatOf(g(),d.format), limit=SOURCES[g()].limit(card,f), totalCopies=["main","extra","side"].reduce((a,z)=>a+(d.zones[z] || []).filter(r=>r.name===card.name).reduce((a,r)=>a+r.qty,0),0), cap=g()==="ygo"?(zone==="main"?f.main[1]:f[zone]):60;
+    if(g()==="ygo" && zone==="extra" && !card.extra)throw Error("Only Extra Deck monsters belong in this zone.");
+    if(g()==="ygo" && zone==="main" && card.extra) throw Error("This monster belongs in the Extra Deck.");
+    if(limit===0)throw Error("This card is forbidden in the selected format.");
+    if(totalCopies+n>limit)throw Error(`This format allows ${limit} copies of ${card.name}.`);
+    if((d.zones[zone] || []).reduce((a,r)=>a+r.qty,0)+n>cap)throw Error(`${zone} deck is full (${cap} cards maximum). Make a cut before adding.`);
     const list = (d.zones[zone] ||= []),
       row = list.find((r) => r.cardId === card.id);
     if (row) row.qty += n;
@@ -1702,6 +1712,7 @@ export function registerTcg(c) {
         list = d?.zones[t.dataset.zone] || [],
         row = list.find((r) => r.cardId === t.dataset.id);
       if (!row) return;
+      if(delta>0) { addToDeck(st,d.id,cardOf(g(),row.cardId),t.dataset.zone,delta); return; }
       row.qty += delta;
       if (row.qty < 1) d.zones[t.dataset.zone] = list.filter((r) => r !== row);
     }, delta < 0 ? { undo: `−1 ${cardOf(g(), t.dataset.id)?.name || "card"}` } : {});
@@ -1820,19 +1831,26 @@ export function registerTcg(c) {
     go("#tdeck/" + d.id);
   };
   // ----- deck generator -----
-  const ptcgBest = async (name, f) => {
-    const r = await SOURCES.ptcg.search({ q: name, size: 12 }).catch(() => ({ cards: [] }));
-    const exact = r.cards.filter((x) => x.name.toLowerCase() === name.toLowerCase()).slice(0, 4);
-    for (const b of exact) {
-      const c = await ensureCard("ptcg", b.id).catch(() => null);
-      if (c && SOURCES.ptcg.legality(c, f) === "legal") return c;
-    }
-    return null;
+  const nameLookups=new Map();
+  const ptcgBest = (name,f) => {
+    const key=name.toLowerCase()+"|"+f.id;
+    if(nameLookups.has(key))return nameLookups.get(key);
+    const task=(async()=>{
+      const cached=Object.values(cache.ptcg).filter(c=>!c.brief && c.name.toLowerCase()===name.toLowerCase() && SOURCES.ptcg.legality(c,f)==="legal").sort((a,b)=>(a.prices?.usd ?? Infinity)-(b.prices?.usd ?? Infinity));
+      if(cached.length)return await ensureCard("ptcg",cached[0].id).catch(()=>cached[0]);
+      const r=await SOURCES.ptcg.search({q:name,size:24}).catch(()=>({cards:[]}));
+      const exact=r.cards.filter(x=>x.name.toLowerCase()===name.toLowerCase()).slice(0,8);
+      for(const b of exact){const c=await ensureCard("ptcg",b.id).catch(()=>null);if(c&&SOURCES.ptcg.legality(c,f)==="legal")return c;}
+      return null;
+    })();
+    nameLookups.set(key,task);task.finally(()=>nameLookups.delete(key));return task;
   };
-  const inBatches = async (items, n, fn) => {
-    const out = [];
-    for (let i = 0; i < items.length; i += n) out.push(...(await Promise.all(items.slice(i, i + n).map(fn))));
-    return out;
+  // Sliding six-worker queue: one slow lookup doesn't block the next batch.
+  const inBatches = async (items,n,fn) => {
+    const out=new Array(items.length);let next=0;
+    await Promise.all(Array.from({length:Math.min(n,items.length)},async()=>{
+      while(next<items.length){const i=next++;out[i]=await fn(items[i]);}
+    }));return out;
   };
   const metaFor = (G) => loadMeta(G).catch(() => null);
   // Generic cards the current tournament decks play most (outside the deck's own archetype).

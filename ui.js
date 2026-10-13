@@ -44,8 +44,9 @@ export function img(url, alt, cls = "") {
 const SYMBOL_FILE = { "½": "HALF", "∞": "INFINITY" };
 export const symbolUrl = (t) =>
   "https://svgs.scryfall.io/card-symbols/" + encodeURIComponent(SYMBOL_FILE[t] || String(t).replace(/\//g, "").toUpperCase()) + ".svg";
+export const symbolName = t => ({W:"White mana",U:"Blue mana",B:"Black mana",R:"Red mana",G:"Green mana",C:"Colorless mana",T:"Tap",Q:"Untap",X:"Variable mana",S:"Snow mana",E:"Energy counter",P:"Phyrexian mana"}[t] || (/^\d+$/.test(t) ? `${t} generic mana` : t.includes("/") ? t.split("/").map(symbolName).join(" or ") : `Symbol ${t}`));
 export const sym = (t, cls = "") =>
-  `<img class="ms ${cls}" src="${symbolUrl(t)}" alt="{${esc(t)}}" title="{${esc(t)}}" loading="lazy" decoding="async" onerror="this.replaceWith(this.alt)">`;
+  `<img class="ms ${cls}" src="${symbolUrl(t)}" alt="${esc(symbolName(t))}" title="${esc(symbolName(t))}" loading="lazy" decoding="async" onerror="this.replaceWith(this.alt)">`;
 
 export function manaCost(c) {
   const cost = c?.mana_cost || c?.card_faces?.[0]?.mana_cost || "";
@@ -100,7 +101,7 @@ export function curveChart(a, b = null, labels = ["0", "1", "2", "3", "4", "5", 
 
 export function lineChart(points, { height = 120 } = {}) {
   if (points.length < 2)
-    return `<p class="muted small">The chart starts after a second day of tracking. Value is recorded once per day when you open Cardforge.</p>`;
+    return `<p class="muted small">The chart starts after a second day of tracking. Value is recorded once per day when you open CardStashy.</p>`;
   const w = 320,
     h = height,
     pad = 6,

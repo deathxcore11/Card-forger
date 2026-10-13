@@ -1,4 +1,4 @@
-// Every deck format Cardforge builds for, with its deck-construction rules.
+// Every deck format CardStashy builds for, with its deck-construction rules.
 // `legality` is the Scryfall legalities key (banned/restricted lists come from
 // Scryfall's card data, so they stay current without app updates).
 //   size     – required deck size; `exact` means exactly that many, otherwise a minimum

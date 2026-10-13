@@ -17,7 +17,7 @@ async function ygoMeta(url, ctx) {
   const key = new Request("https://cardforge.cache/" + encodeURIComponent(src));
   const hit = await caches.default.match(key);
   if (hit) return hit;
-  const upstream = await fetch(src, { headers: { Accept: "application/json", "User-Agent": "Cardforge (deck helper)" } });
+  const upstream = await fetch(src, { headers: { Accept: "application/json", "User-Agent": "CardStashy (deck helper)" } });
   if (!upstream.ok) return new Response(JSON.stringify({ error: "Meta source unavailable" }), { status: 502, headers: { "Content-Type": "application/json" } });
   const res = new Response(await upstream.text(), { headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${META_TTL}` } });
   ctx.waitUntil(caches.default.put(key, res.clone()));
@@ -32,7 +32,7 @@ const json = (body, status = 200, maxAge = 0) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", "Cache-Control": maxAge ? `public, max-age=${maxAge}` : "no-store" } });
 const mtgKey = (format, days, kind = "fresh") => new Request(`https://cardforge.cache/mtg/${kind}/${encodeURIComponent(format)}/${days}`);
 
-const UA = { "User-Agent": "Cardforge deck helper (cached, a few requests a day)" };
+const UA = { "User-Agent": "CardStashy deck helper (cached, a few requests a day)" };
 // Keyless sources first: Magic Online's official decklists, EDHTop16 for Commander.
 async function fetchMtgo(format, days) {
   const idx = await fetch(MTGO_INDEX, { headers: UA });

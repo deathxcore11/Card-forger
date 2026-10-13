@@ -63,7 +63,7 @@ export function isMassLandDenial(c) {
 export const isFastMana = (c) => !!c && FAST_MANA.has(cardKey(c.name));
 
 export const BRACKETS = {
-  1: { name: "Exhibition", text: "Theme first, winning second. Decided by intent, so Cardforge never assigns it on its own." },
+  1: { name: "Exhibition", text: "Theme first, winning second. Decided by intent, so CardStashy never assigns it on its own." },
   2: { name: "Core", text: "About a modern precon: no Game Changers, no mass land denial, no chained extra turns, few tutors." },
   3: { name: "Upgraded", text: "Stronger than a precon: up to three Game Changers, no mass land denial, extra turns not chained." },
   4: { name: "Optimized", text: "Anything legal: more than three Game Changers, mass land denial or lots of extra turns." },
@@ -248,7 +248,7 @@ export function deckReview(deck, catalog, collection = [], decks = []) {
         out.push({ level, title: list.length === 1 ? one : many.replace("#", list.length), detail: why, cards: list, action: { act: "deckTab", id: "cards", label: "Review cards" } });
     };
   if (v.issues.some((i) => i.kind === "commander"))
-    out.push({ level: "bad", title: f.commander === "planeswalker" ? "No Oathbreaker set" : "No eligible commander set", detail: "Without one Cardforge can’t check colors, synergy or upgrades.", action: { act: "deckTab", id: "upgrade", label: "Choose commander" } });
+    out.push({ level: "bad", title: f.commander === "planeswalker" ? "No Oathbreaker set" : "No eligible commander set", detail: "Without one CardStashy can’t check colors, synergy or upgrades.", action: { act: "deckTab", id: "upgrade", label: "Choose commander" } });
   const countIssue = v.issues.find((i) => i.kind === "count");
   if (countIssue) {
     const short = v.count < v.target,

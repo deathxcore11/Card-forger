@@ -1,4 +1,8 @@
-# Cardforge
+CardStashy is the renamed Cardforge app. Existing browser/IndexedDB keys, backup formats, Supabase project, GitHub repository and Cloudflare Worker URL intentionally remain unchanged so existing data stays accessible.
+
+Animated binders live in Collection → Binders for all three games. They group collection entries by the existing location field, display nine entries per page and do not add or duplicate owned cards. Empty locations appear as Unsorted cards. Animations respect prefers-reduced-motion.
+
+# CardStashy
 
 Your Magic: The Gathering, Yu-Gi-Oh! and Pokémon collections, decks, upgrades and deck analysis in one installable web app. It runs entirely in the browser with no account and no server. Your cards are saved on your device, and card data and prices come live from [Scryfall](https://scryfall.com).
 
@@ -126,3 +130,7 @@ uploading or replacing anything. Signing out leaves the data on the device.
 Engine score, bracket estimates, upgrade picks and test games are transparent rules and simulations based on card text. They are not AI predictions or win rates. The bracket estimate can't detect two-card combos or how a deck is played. Prices are Scryfall reference estimates. Only single commanders are supported (no partners or backgrounds yet).
 
 Card data and images © Wizards of the Coast, provided by Scryfall. Cardforge is unofficial Fan Content and isn't approved or endorsed by Wizards.
+
+## 3.9 safeguards and browsing
+
+Magic completion respects its target, rejects known illegal/nonfunctional retained cards, and offers reviewed cuts for oversized lists without treating every >60 list as illegal. Completed non-Commander decks can preview conservative same-role spell swaps; each applies one copy in and one out, with a saved version. Scores measure heuristic build health, including an aggro lens, rather than win rate. Pokémon card-name lookups use the persistent catalog first and deduplicate in-flight requests; six workers keep source load bounded. Set pages progressively load more cards near the viewport, retaining an accessible button fallback.

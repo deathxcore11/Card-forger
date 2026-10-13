@@ -261,7 +261,7 @@ export const ygoSource = {
   // .ydk is the standard file used by YGOPRODeck, EDOPro and Master Duel deck tools.
   exportText(deck) {
     const ids = (zone) => (deck.zones[zone] || []).flatMap((r) => Array(r.qty).fill(r.cardId));
-    return ["#created by Cardforge", "#main", ...ids("main"), "#extra", ...ids("extra"), "!side", ...ids("side")].join("\n") + "\n";
+    return ["#created by CardStashy", "#main", ...ids("main"), "#extra", ...ids("extra"), "!side", ...ids("side")].join("\n") + "\n";
   },
   exportExt: "ydk",
 };

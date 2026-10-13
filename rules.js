@@ -78,7 +78,7 @@ export function rulesPage(g, R) {
   return `<div class="page-head"><h1>${esc(G.short)} rules</h1></div>
   <p class="muted small">A quick reference in plain language. The official documents linked below always win if anything differs.</p>
   <section class="panel"><h3>Formats</h3><table class="metrics rules-table"><thead><tr><th>Format</th><th>Deck</th><th class="num">${g === "ptcg" ? "" : "Life"}</th></tr></thead><tbody>${formatTable(g)}</tbody></table>
-  ${g === "ptcg" ? `<p class="foot">Standard rotates each year by regulation mark; Cardforge reads each card’s current Standard/Expanded legality from TCGdex.</p>` : g === "ygo" ? `<p class="foot">Speed Duel and Duel Links start at 4000 LP.</p>` : ""}</section>
+  ${g === "ptcg" ? `<p class="foot">Standard rotates each year by regulation mark; CardStashy reads each card’s current Standard/Expanded legality from TCGdex.</p>` : g === "ygo" ? `<p class="foot">Speed Duel and Duel Links start at 4000 LP.</p>` : ""}</section>
   <section class="panel"><h3>Core rules</h3><div class="rules-list">${CORE[g].map(([t, x]) => `<details><summary><b>${esc(t)}</b></summary><p>${esc(x)}</p></details>`).join("")}</div></section>
   ${
     lists.length
