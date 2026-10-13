@@ -15,7 +15,8 @@ import { ygoEmblems, energyIcon, attackLine, tcgSetBadge, ygoPrintBadge, pkRarit
 import { buildYgo, buildPtcg, YGO_STAPLES, PTCG_STAPLES, PTCG_SUPPORT_BASICS, energyName } from "./tcgbuild.js";
 import { ygoSource, ygoImageDirect, YGO_TYPES, YGO_ATTRIBUTES, YGO_RACES, YGO_SPELL_KINDS, YGO_TRAP_KINDS } from "./ygo.js";
 import { ptcgSource, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES } from "./ptcg.js";
-import { loadMeta, metaState, ptcgIcon } from "./meta.js";
+import { loadMeta, metaState, ptcgIcon, allCachedMeta } from "./meta.js";
+import { playGuide, playedAlongside, guideHtml } from "./guide.js";
 import { nameCandidates, scanCandidateMatches, ygoSetCodes, ygoPasscodes, ptcgNumbers, similarity } from "./scan.js";
 import { adaptList, ownedDraft, engineOf, similarLists, swapPool, costToFinish, unpricedCopies } from "./adapt.js";
 export { metaState, similarLists };
@@ -549,13 +550,26 @@ export function tcgCardSheet(c, sctx = {}) {
     <div class="cd-prices"><button class="price-pill" data-act="marketOpen" data-game="${g}" data-id="${esc(c.id)}"><small>Market</small><b>${p.usd !== null && p.usd !== undefined ? usd(p.usd) : c.brief ? "…" : "—"}</b><span class="buy-hint">Prices ›</span></button>${p.eur ? `<button class="price-pill" data-act="cardTab" data-tab="prices"><small>Cardmarket</small><b>€${p.eur.toFixed(2)}</b></button>` : ""}</div>
   </div>
   ${g === "ptcg" && !c.brief ? pokemonText(c) : c.text ? `<section class="cd-text"><p class="oracle">${esc(c.text)}</p>${c.illustrator ? `<div class="small muted right">🖌 ${esc(c.illustrator)}</div>` : ""}</section>` : ""}
-  ${tabs(tab, [["overview", "Overview"], ["meta", "Meta"], ["versions", "Versions"], ["prices", "Prices"], ["rulings", "Rulings"], ["legal", "Legality"]])}
+  ${tabs(tab, [["overview", "Overview"], ["meta", "Meta"], ["guide", "Play guide"], ["versions", "Versions"], ["prices", "Prices"], ["rulings", "Rulings"], ["legal", "Legality"]])}
   ${panel("overview", tab, overview)}
   ${panel("meta", tab, tcgCardMeta(g, c))}
+  ${panel("guide", tab, tcgCardGuide(g, c))}
   ${panel("versions", tab, versions)}
   ${panel("prices", tab, priceOverview(g,c,sctx,SOURCES[g].buy(c)) + `<details class="market-details"><summary>Market details · sources & finishes</summary>` + prices + `<p class="foot">${esc(p.source || "")}${p.updated ? " · updated " + esc(new Date(p.updated).toLocaleDateString()) : c.fetchedAt ? " · checked " + esc(new Date(c.fetchedAt).toLocaleDateString()) : ""}. Condition prices and stock are on the store’s page.</p>` + buy + `</details>`)}
   ${panel("rulings", tab, rulings)}
   ${panel("legal", tab, legal)}`;
+}
+// The card's Play guide tab: what it does, when to play it, synergies and cards that pair well.
+function tcgCardGuide(g, c) {
+  const cache = S.ui.guide?.[g + ":" + c.id];
+  return guideHtml(g, c, playGuide(g, c), {
+    alongside: playedAlongside(g, c, allCachedMeta()),
+    alongsideAttrs: (x) => (g === "ygo" ? `data-act="tCard" data-id="${esc(x.id)}"` : `data-act="tFindName" data-name="${esc(x.name)}"`),
+    alongsideName: (x) => (g === "ygo" ? cardOf(g, x.id)?.name || "Card #" + x.id : x.name),
+    complements: cache?.cards || [],
+    complementsLoading: !cache || cache.loading,
+    complementsNote: cache?.note || "",
+  });
 }
 // The card's Meta tab: where it's played, the tournament decks that play it, and decks to build around it.
 function tcgCardMeta(g, c) {
@@ -1780,6 +1794,47 @@ export function registerTcg(c) {
     const G = g(),
       card = await ensureCard(G, t.dataset.id).catch(() => cardOf(G, t.dataset.id));
     await mutate((st) => addToDeck(st, t.dataset.deck, card), { msg: `${card.name} added.` });
+  };
+  // Open a card from a name (Play guide lists from tournament decks, which only carry names).
+  A.tFindName = async (t) => {
+    const G = g(),
+      r = await SOURCES[G].search({ q: t.dataset.name, size: 8 }).catch(() => ({ cards: [] })),
+      hit = r.cards.find((x) => x.name.toLowerCase() === t.dataset.name.toLowerCase()) || r.cards[0];
+    if (hit) A.tCard({ dataset: { id: hit.id } });
+    else toast("Couldn’t find that card right now.");
+  };
+  // Play guide: cards that pair well — the archetype (Yu-Gi-Oh!) or the evolution line (Pokémon).
+  c.guideLoad = async (G, card) => {
+    const k = G + ":" + card.id;
+    S.ui.guide ||= {};
+    if (S.ui.guide[k]) return;
+    S.ui.guide[k] = { loading: true };
+    const tile = (x) => ({ name: x.name, image: x.image || "", attrs: `data-act="tCard" data-id="${esc(x.id)}"` });
+    let cards = [],
+      note = "";
+    try {
+      if (G === "ygo") {
+        if (card.archetype) {
+          const r = await SOURCES.ygo.search({ archetype: card.archetype, size: 24 });
+          cards = r.cards.filter((x) => x.id !== card.id).slice(0, 9).map(tile);
+          note = `Other “${card.archetype}” cards — the archetype is built to work together.`;
+        } else note = "No archetype — see the cards played alongside it above.";
+      } else {
+        const names = [];
+        if (card.evolveFrom) names.push(card.evolveFrom);
+        if (card.stage === "Stage2") names.push("Rare Candy");
+        for (const n of names) {
+          const r = await SOURCES.ptcg.search({ q: n, size: 8 }).catch(() => ({ cards: [] }));
+          const hit = r.cards.find((x) => x.name === n);
+          if (hit) cards.push(tile(hit));
+        }
+        note = cards.length ? (card.stage === "Stage2" ? "Its evolution line, and Rare Candy to skip the Stage 1." : "The Pokémon it evolves from.") : "Check the cards played alongside it in tournament lists above.";
+      }
+    } catch {
+      note = "Couldn’t look up related cards right now.";
+    }
+    S.ui.guide[k] = { cards, note };
+    c.refreshSheet?.();
   };
   A.tDeckEmbSwap = async (t) => {
     const G = g(),

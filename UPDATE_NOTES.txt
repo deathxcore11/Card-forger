@@ -1,3 +1,17 @@
+3.12.0 — Play guide for every card
+- New "Play guide" tab on every card page in all three games:
+  · What it does — its roles (removal, counterspell, ramp, hand trap, searcher, Supporter…).
+  · How and when to play it — timing and scenarios: when to hold it, what to target, which turn
+    it usually comes down, what its keywords mean in play (Magic), tributes/Tuner/Extra Deck
+    summoning (Yu-Gi-Oh!), evolution, Rare Candy, Rule Box prizes, retreat, Energy planning (Pokémon).
+  · Synergies — the kinds of cards that make it better.
+  · Played alongside it — cards that tournament lists run with it, partners first (cards much
+    more common with it than in decks overall, so generic staples don't crowd them out).
+  · Cards that pair well — Magic: cards that feed its main synergy within its colors, most played
+    first; Yu-Gi-Oh!: the rest of its archetype; Pokémon: its evolution line (and Rare Candy).
+- Generated from the card's rules text, stats and cached tournament lists; labeled as a starting
+  point, not expert strategy.
+
 3.11.0 — Emblems everywhere: tiles, collection, decks and a Meta tab
 - One tile layout in all three games: what the card is top-left (Magic color identity, Pokémon
   energy type, Yu-Gi-Oh! level + attribute; three icons at most), where it's from bottom-left

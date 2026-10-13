@@ -8,6 +8,7 @@ import { binderPage, binderMatches, BINDER_COLORS, attachBinderDrag, animateTurn
 // Screens live in views.js; deck/collection math in core.js, planner.js,
 // strategy.js, deck-flow.js and insights.js.
 import { metaState, loadMeta as loadMetaData, MTG_META_FORMATS } from "./meta.js";
+import { mtgComplementQuery } from "./guide.js";
 import { nextFact } from "./facts.js";
 import { S, STORAGE, CATALOG_RECORD, RECOVERY, blank, uid, meta, inv, deckById, currentDeck, priceOf, cacheCard, slim } from "./store.js";
 import { $, $$, esc, usd, img, art, cardImage, options, segmented, customBudget, registerSetIcons } from "./ui.js";
@@ -1440,6 +1441,11 @@ A.cardTab = async (t) => {
     b.setAttribute("aria-selected", on);
   }
   for (const p of $$("#sheetBody .cs-panel")) p.hidden = p.dataset.tab !== ctx.tab;
+  // The Play guide looks up cards that pair well the first time it's opened.
+  if (ctx.tab === "guide") {
+    if (ctx.type === "card") mtgGuideLoad(meta(ctx.name));
+    else if (ctx.type === "tcard") tcgCtx.guideLoad?.(ctx.game, T.cardOf(ctx.game, ctx.id));
+  }
   $("#sheetBody .cs-tabs")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   if(ctx.tab === "prices" && ["card","tcard"].includes(ctx.type)){
     const g=ctx.type === "card"?"mtg":ctx.game,c=ctx.type === "card"?ctx.print||meta(ctx.name):T.cardOf(g,ctx.id);
@@ -2312,6 +2318,28 @@ A.deckSaveInfo = async () => {
   await editDeck((d) => ({ ...d, name: $("#dmName").value.trim() || d.name, budget: Math.max(0, Number($("#dmBudget").value) || 0), strategy: $("#dmStrategy").value, format, commander: hasCommander(format) ? d.commander : "" }), { msg: "Saved." });
   closeSheet();
 };
+// Play guide (Magic): cards that feed this card's main synergy, in its colors, most played first.
+async function mtgGuideLoad(c) {
+  if (!c) return;
+  const k = "mtg:" + c.name;
+  S.ui.guide ||= {};
+  if (S.ui.guide[k]) return;
+  S.ui.guide[k] = { loading: true };
+  const q = mtgComplementQuery(c);
+  let cards = [],
+    note = "";
+  if (!q) note = "No specific synergy found in its text — see the cards played alongside it, or Build decks around it.";
+  else {
+    const r = await api("/cards/search?" + new URLSearchParams({ q: q.q, order: "edhrec", unique: "cards" })).catch(() => null);
+    cards = (r?.data || []).slice(0, 9).map((x) => {
+      cacheCard(x);
+      return { name: x.name, image: x.image_uris?.small || x.card_faces?.[0]?.image_uris?.small || "", attrs: `data-act="card" data-name="${esc(x.name)}"` };
+    });
+    note = r ? `For its ${q.label.toLowerCase()} side, within its colors — most played first.` : "Couldn’t reach Scryfall right now.";
+  }
+  S.ui.guide[k] = { cards, note };
+  refreshSheet();
+}
 // Card sheet Meta tab: fetch tournament results, then redraw the open sheet.
 A.cardMetaLoad = (t) => {
   const k = t.dataset.key;

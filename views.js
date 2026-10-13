@@ -1,10 +1,11 @@
+import { playGuide, playedAlongside, guideHtml } from "./guide.js";
 import { emblemChips, rowEmblem, hasEmblem, impactScore, tradeAdvice, tradeAdviceHtml, deckEmblems, deckEmblemHtml, cardMetaUsage, cardMetaTab } from "./importance.js";
 import { tileChrome } from "./tiles.js";
 import {viewControl,selectionControl,selectionMark,selectionTray,historyPanel,quoteModel,priceOverview} from "./workbench-ui.js";
 import { binderShelf } from "./binders.js";
 // Screen renderers. Each returns HTML for #content; interaction is wired by
 // data-act / data-change / data-input attributes handled centrally in app.js.
-import { metaState, MTG_META_FORMATS } from "./meta.js";
+import { metaState, MTG_META_FORMATS, allCachedMeta } from "./meta.js";
 import { factBox, factsFor } from "./facts.js";
 import { S, meta, inv, deckById, currentDeck, priceOf } from "./store.js";
 import {
@@ -262,6 +263,20 @@ const MTG_SOURCES = [
 ];
 const money = (v, cur) => (v === null || v === undefined || v === "" ? "—" : cur === "USD" ? usd(v) : cur === "EUR" ? "€" + Number(v).toFixed(2) : Number(v).toFixed(2) + " tix");
 
+// The card's Play guide tab: what it does, when to play it, synergies and cards that pair well.
+function mtgCardGuide(c) {
+  const g = playGuide("mtg", c),
+    cache = S.ui.guide?.["mtg:" + c.name];
+  return guideHtml("mtg", c, g, {
+    alongside: playedAlongside("mtg", c, allCachedMeta()),
+    alongsideAttrs: (x) => `data-act="card" data-name="${esc(x.name)}"`,
+    alongsideName: (x) => x.name,
+    complements: cache?.cards || [],
+    complementsLoading: !cache || cache.loading,
+    complementsNote: cache?.note || "",
+  });
+}
+
 // The card's Meta tab: where it's played, the decks that play it, and decks to build around it.
 function mtgCardMeta(c) {
   const fmt = S.ui.mtgMeta?.format || "Modern",
@@ -362,9 +377,10 @@ export function cardSheet(c, ctx = {}) {
     )
     .join("")}
   ${!c.full ? `<p class="muted small center" id="cardLoading">Loading flavor text and printings…</p>` : ""}
-  ${cardTabs(tab, [["overview", "Overview"], ["meta", "Meta"], ["versions", `Versions${prints ? " · " + prints.length : ""}`], ["prices", "Prices"], ["rulings", "Rulings"], ["legal", "Legality"]])}
+  ${cardTabs(tab, [["overview", "Overview"], ["meta", "Meta"], ["guide", "Play guide"], ["versions", `Versions${prints ? " · " + prints.length : ""}`], ["prices", "Prices"], ["rulings", "Rulings"], ["legal", "Legality"]])}
   ${cardPanel("overview", tab, overview)}
   ${cardPanel("meta", tab, mtgCardMeta(c))}
+  ${cardPanel("guide", tab, mtgCardGuide(c))}
   ${cardPanel("versions", tab, `<section class="prints">${prints ? printList(prints, shown, name, chosen) : `<p class="muted small">Loading every printing…</p>`}</section>`)}
   ${cardPanel("prices", tab, pricesTab)}
   ${cardPanel("rulings", tab, rulings)}
