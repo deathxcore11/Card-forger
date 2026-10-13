@@ -1,5 +1,5 @@
 import { recordPrice, priceHistoryHtml, alertsPanel } from "./pricehist.js";
-import { lineChart } from "./ui.js";
+import { lineChart, skeletonGrid } from "./ui.js";
 import { installNudge } from "./install.js";
 import { rankByName } from "./catalog-tools.js";
 import {setRowContent} from './set-list-ui.js';
@@ -475,9 +475,10 @@ export function tcgSearch() {
   ${U.error ? `<div class="note warn">${esc(U.error)}</div>` : ""}
   ${U.f.set ? `<p class="small">Set: <b>${esc(U.f.setName || U.f.set)}</b> <button class="link small" data-act="tFilterClear" data-field="set">✕ clear</button></p>` : ""}
   ${U.f.archetype ? `<p class="small">Archetype: <b>${esc(U.f.archetype)}</b> <button class="link small" data-act="tFilterClear" data-field="archetype">✕ clear</button></p>` : ""}
+  ${U.busy && !list.length ? skeletonGrid() : ""}
   ${
     list.length
-      ? `<div class="row between"><p class="muted small">${U.total ? U.total.toLocaleString() : list.length + (U.more ? "+" : "")} cards · daily market prices · “—” = price unavailable</p><button class="link small" data-act="tSaveSearch">☆ Save this search</button></div><div class="card-grid">${list
+      ? `<div class="row between"><p class="muted small">${U.total ? U.total.toLocaleString() : list.length + (U.more ? "+" : "")} cards · daily market prices</p><button class="link small" data-act="tSaveSearch">☆ Save this search</button></div><div class="card-grid">${list
           .map((c) => {
             const own = ownedOf(g, c, m),
               p = price(c);
@@ -2440,6 +2441,14 @@ export function registerTcg(c) {
       i = Number(t.dataset.i);
     B.openTier = B.openTier === i ? null : i;
     c.refreshSheet();
+    // Bring the opened list into view so it's clear what happened.
+    if (B.openTier === i)
+      requestAnimationFrame(() => {
+        const tier = document.querySelectorAll("#sheetBody .tier")[i],
+          body = document.getElementById("sheetBody"),
+          head = body?.querySelector(".sheet-head");
+        if (tier && body) body.scrollTo({ top: body.scrollTop + tier.getBoundingClientRect().top - body.getBoundingClientRect().top - (head?.offsetHeight || 64) - 8, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+      });
   };
   A.tTierSave = async (t) => {
     const B = S.ui.tbuild,

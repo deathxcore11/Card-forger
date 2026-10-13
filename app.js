@@ -31,6 +31,7 @@ import { completionPlan, commanderTheme } from "./planner.js";
 import { sourceCredit, mtgjsonDeck, collectionIdeas, upgradeSuggestions, applyUpgradeSwaps } from "./strategy.js";
 import { searchQuery, rankByName } from "./catalog-tools.js";
 import { promptInstall, dismissInstall, onInstallable, isIOS } from "./install.js";
+import { haptic, hapticFor, flyToCollection, countUp, ripple, setHaptics } from "./feel.js";
 import { alertSheet, setAlert, onAlert, alertText, priceSeries } from "./pricehist.js";
 import { mtgCollector, nameCandidates, textPhrases } from "./scan.js";
 import { registerScanner, scanView } from "./scancam.js";
@@ -179,6 +180,14 @@ async function commit(fn, { msg = "", recovery = false, rerender = true, enrich 
     render();
     refreshSheet();
   }
+  // Feel it: a removal buzzes twice, anything else gets the success beat; an added card flies
+  // into Collection from where you tapped.
+  const said = msg || undo;
+  if (said) {
+    const removed = /^(−|-|Removed|Deleted|Cleared|Undid)/.test(said);
+    haptic(removed ? "warn" : "success");
+    if (/^Added\b/.test(said)) flyToCollection(lastActTarget);
+  }
   if (undo) {
     lastUndo = { state: before, label: undo };
     toast(msg || undo, { undo: true });
@@ -192,19 +201,31 @@ const safely = (p) => Promise.resolve(p).catch((e) => toast(e.message || String(
    Card data (Scryfall)
    ========================================================= */
 
-let apiChain = Promise.resolve();
+let apiChain = Promise.resolve(),
+  lastActTarget = null;
 function api(path, options = {}) {
   const op = async () => {
     await new Promise((r) => setTimeout(r, 110));
     const ctl = new AbortController(),
       timer = setTimeout(() => ctl.abort(), 16000);
     try {
-      const r = await fetch("https://api.scryfall.com" + path, {
-        ...options,
-        headers: { Accept: "application/json", ...options.headers },
-        signal: ctl.signal,
-      });
-      const d = await r.json();
+      // Busy (429) or a dropped connection: wait a moment and try again, twice, before giving up.
+      let r, d;
+      for (let attempt = 0; ; attempt++) {
+        try {
+          r = await fetch("https://api.scryfall.com" + path, {
+            ...options,
+            headers: { Accept: "application/json", ...options.headers },
+            signal: ctl.signal,
+          });
+          if ((r.status === 429 || r.status >= 500) && attempt < 2) throw Object.assign(Error("busy"), { retry: true });
+          d = await r.json();
+          break;
+        } catch (e) {
+          if (e.name === "AbortError" || attempt >= 2) throw e.retry ? Error("The card database is busy. Try again in a moment.") : e;
+          await new Promise((ok) => setTimeout(ok, attempt ? 1500 : 600));
+        }
+      }
       if (!r.ok) throw Error(d.details || "Card database unavailable.");
       return d;
     } catch (e) {
@@ -451,9 +472,14 @@ async function loadPreconCache() {
    ========================================================= */
 
 let toastTimer;
+const TOAST_OK = `<svg class="toast-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m7.5 12.5 3 3 6-6.5"/></svg>`;
 function toast(text, { undo = false } = {}) {
-  const t = $("#toast");
-  t.innerHTML = `<span>${esc(text)}</span>${undo ? `<button class="toast-undo" data-act="undo">Undo</button>` : ""}`;
+  const t = $("#toast"),
+    ok = /^(Added|Saved|On the list|Alert saved|Copied|List copied|Switched|Moved|Updated|\+)/.test(text);
+  t.innerHTML = `${ok ? TOAST_OK : ""}<span>${esc(text)}</span>${undo ? `<button class="toast-undo" data-act="undo">Undo</button>` : ""}`;
+  t.classList.toggle("ok", ok);
+  t.classList.remove("show");
+  void t.offsetWidth;
   t.classList.toggle("has-action", undo);
   t.classList.add("show");
   clearTimeout(toastTimer);
@@ -679,6 +705,7 @@ function attachBrowseObserver() {
  });
 }
 
+let lastPageKey = "";
 function render() {
   const authFields=S.ui.view === "settings" && !cloudInfo().user ? captureAuthFields(document) : [];
   browseCleanup?.();
@@ -719,6 +746,13 @@ function render() {
   if(!cloudInfo().user)restoreAuthFields(document,authFields);
   const displayArea=["deck","tdeck"].includes(ui.view)?"deck":ui.view === "search"?"search":ui.view === "set"?"set":ui.view === "collection" && (g === "mtg" ? ui.collTab === "wishlist" : T.ui(g).coll.tab === "wishlist")?"wishlist":ui.view === "collection" && (g === "mtg" ? ui.collTab === "cards" : !T.ui(g).coll.tab || T.ui(g).coll.tab === "cards")?"collection":null;
   $("#content").className=displayArea ? "view-"+modeFor(g,displayArea) : "";
+  // A new page (not a refresh of the same one) glides in; totals count up.
+  const pageKey = [g, ui.view, ui.collTab, ui.decksTab, g === "mtg" ? "" : T.ui(g).coll.tab].join(":");
+  if (pageKey !== lastPageKey) {
+    lastPageKey = pageKey;
+    $("#content").classList.add("page-enter");
+    setTimeout(() => countUp($("#content")), 60);
+  }
   attachBrowseObserver();
   if (ui.view === "settings") storageDetail();
   if (g !== "mtg") {
@@ -791,8 +825,11 @@ document.addEventListener("click", (e) => {
   if (!fn) return;
   if (t.tagName === "A" && t.getAttribute("href")) return;
   e.preventDefault();
+  lastActTarget = t;
+  haptic(hapticFor(t.dataset.act, t));
   safely(fn(t, e));
 });
+document.addEventListener("pointerdown", ripple, { passive: true });
 document.addEventListener("submit",e=>{
  const form=e.target.closest?.('[data-auth-action]');if(!form)return;
  e.preventDefault();const action=A[form.dataset.authAction];if(action)safely(action(form.querySelector('button[type="submit"]')));
@@ -3694,6 +3731,10 @@ onAlert((f) => {
     if (globalThis.Notification?.permission === "granted") new Notification("CardStashy price alert", { body: alertText(f), icon: "icon-192.png", tag: `${f.game}:${f.id}` });
   } catch {}
 });
+C.setHaptics = (t) => {
+  setHaptics(t.checked);
+  if (t.checked) haptic("success");
+};
 A.installLater = () => {
   dismissInstall();
   render();

@@ -28,6 +28,7 @@ const ASSETS = [
   "./install.js",
   "./tcgcompare.js",
   "./pricehist.js",
+  "./feel.js",
   "./storage.js",
   "./extras.js",
   "./share.js",

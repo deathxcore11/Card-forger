@@ -141,3 +141,6 @@ export function customBudget(value) {
  if(!text || !Number.isFinite(amount) || amount<0 || amount>100000)throw Error('Enter a dollar budget from $0 to $100,000.');
  return Math.round(amount*100)/100;
 }
+
+// Placeholder cards while results load: the layout appears at once and fills in.
+export const skeletonGrid = (n = 6) => `<div class="card-grid skeleton-grid" aria-busy="true" aria-label="Loading cards">${Array.from({ length: n }, () => `<div class="skel-card"><span class="skel-img"></span><span class="skel-line"></span><span class="skel-line short"></span></div>`).join("")}</div>`;
