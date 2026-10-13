@@ -1,3 +1,12 @@
+3.33.2 — Tier outlines on every view, seamless animation
+- Text view: the placeholder diamond is gone; the whole row outline is the card's tier colour.
+  Small-card view uses the same full outline. Same in all three games, everywhere these lists
+  appear (collection, deck pages, wanted cards).
+- Every tier animates differently on a seamless loop: grey has a faint gleam travelling around,
+  green breathes, blue's sheen circles, purple swirls holo colours, gold has a glint chasing
+  around, orange burns with a flickering glow. Gallery frames use the same loops (no more sweep
+  that restarts), orange glitter drifts without a visible jump. Off with "Reduce motion".
+
 3.33.1 — Tier frames everywhere read the card's own price
 - Fixed: some card frames (Magic deck pages, shared decks, deck ideas) showed grey whatever the
   price, e.g. Ba Sing Se at $4.76. Every card row and tile now takes its tier from that exact

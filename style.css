@@ -2283,3 +2283,61 @@ img[data-tier="t5"] { animation: tier-fire-ring 2.4s ease-in-out infinite; }
 .display-list .lot[data-tier="tn"]::before { display: none; }
 .pw-turn .pw-bar { display: block; width: 100%; max-width: 30px; border-radius: 6px 6px 2px 2px; background: linear-gradient(180deg, var(--accent, #e8b85a), color-mix(in srgb, var(--accent, #e8b85a) 40%, transparent)); }
 .pw-turn em { top: -16px; } .pw-turns { padding-top: 22px; height: 130px; }
+
+/* ===== Tier outlines v2: list (text) and compact (small card) views =====
+   The whole row outline is the tier colour, drawn as a ring (mask) so it works on glass panels.
+   Each tier loops on its own seamless rhythm: full-turn rotations and symmetric pulses only, so
+   nothing jumps or restarts visibly. Same rules in all three games. */
+@property --ring { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.view-symbols .display-list .lot-art { display: none; }
+.view-symbols .display-list .lot { grid-template-columns: minmax(0, 1fr) auto; }
+.view-symbols .display-list .lot:has(.batch-mark) { grid-template-columns: auto minmax(0, 1fr) auto; }
+:is(.view-symbols, .view-compact) .display-list .lot[data-tier] { border-color: transparent; }
+:is(.view-symbols, .view-compact) .display-list .lot[data-tier] .lot-art { box-shadow: none; }
+:is(.view-symbols, .view-compact) .display-list .lot img[data-tier] { outline: 0; box-shadow: none; animation: none; }
+:is(.view-symbols, .view-compact) .display-list .lot[data-tier]::before {
+  content: ""; position: absolute; inset: 0; width: auto; top: 0; bottom: 0; left: 0; right: 0; border-radius: inherit; padding: 2px; opacity: 1; pointer-events: none;
+  background: var(--tier);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+}
+:is(.view-symbols, .view-compact) .display-list .lot[data-tier="tn"]::before { display: none; }
+:is(.view-symbols, .view-compact) .display-list .lot[data-tier="tn"] { border-color: var(--line); }
+/* Grey: a quiet silver ring with a slow, faint gleam travelling around it. */
+:is(.view-symbols, .view-compact) .display-list .lot[data-tier="t0"]::before { background: conic-gradient(from var(--ring), #6f7780, #b8c0c8, #6f7780 30%, #6f7780 70%, #a2aab3, #6f7780); animation: ring-spin 14s linear infinite; }
+/* Green: a soft emerald ring that breathes. */
+:is(.view-symbols, .view-compact) .display-list .lot[data-tier="t1"]::before { background: conic-gradient(from var(--ring), #2fae68, #7be3a8, #2fae68 40%, #1f8a50, #2fae68); animation: ring-spin 11s linear infinite, ring-breathe 4s ease-in-out infinite alternate; }
+/* Blue: a cool sheen that circles steadily. */
+:is(.view-symbols, .view-compact) .display-list .lot[data-tier="t2"]::before { background: conic-gradient(from var(--ring), #2f7fe0, #9fd2ff, #2f7fe0 35%, #1d5fb0 65%, #2f7fe0); animation: ring-spin 8s linear infinite; }
+/* Purple: holographic colours swirling around the edge. */
+:is(.view-symbols, .view-compact) .display-list .lot[data-tier="t3"]::before { padding: 2.5px; background: conic-gradient(from var(--ring), #b46cff, #6fd0ff, #ff7ad9, #ffe27a, #b46cff); animation: ring-spin 6s linear infinite; }
+/* Gold: a bright glint chasing around a gold ring. */
+:is(.view-symbols, .view-compact) .display-list .lot[data-tier="t4"]::before { padding: 2.5px; background: conic-gradient(from var(--ring), #b8860b, #ffd34d 20%, #fffbe6 25%, #ffd34d 30%, #b8860b 50%, #ffd34d 70%, #fffbe6 75%, #ffd34d 80%, #b8860b); animation: ring-spin 4.5s linear infinite; }
+/* Orange: a fiery ring with a flickering glow. */
+:is(.view-symbols, .view-compact) .display-list .lot[data-tier="t5"]::before { padding: 3px; background: conic-gradient(from var(--ring), #c2410c, #ff7a1a, #ffd08a, #ff7a1a, #c2410c, #ff5a10, #ffb050, #c2410c); animation: ring-spin 3.5s linear infinite; }
+:is(.view-symbols, .view-compact) .display-list .lot[data-tier="t5"] { box-shadow: 0 0 18px -8px #ff7a1a; animation: ring-glow 1.8s ease-in-out infinite alternate; }
+:is(.view-symbols, .view-compact) .display-list .lot[data-tier="t4"] { box-shadow: 0 0 16px -10px #ffd34d; }
+/* Wanted rows: the ring dims and stays still. */
+:is(.view-symbols, .view-compact) .display-list .lot.wanted::before { opacity: .4; animation: none; }
+@keyframes ring-spin { to { --ring: 360deg; } }
+@keyframes ring-breathe { from { opacity: .7; } to { opacity: 1; } }
+@keyframes ring-glow { from { box-shadow: 0 0 12px -8px #ff7a1a; } to { box-shadow: 0 0 22px -6px #ff5a10; } }
+
+/* Gallery frames: same seamless language (full-turn rotation), replacing the sweep that reset. */
+#content.view-gallery .display-list .lot[data-tier="t0"]:not(.wanted) .lot-art { background: conic-gradient(from var(--ring), #6f7780, #b8c0c8, #6f7780 30%, #6f7780 70%, #a2aab3, #6f7780); animation: ring-spin 14s linear infinite; }
+#content.view-gallery .display-list .lot[data-tier="t1"]:not(.wanted) .lot-art { background: conic-gradient(from var(--ring), #2fae68, #7be3a8, #2fae68 40%, #1f8a50, #2fae68); animation: ring-spin 11s linear infinite; }
+#content.view-gallery .display-list .lot[data-tier="t2"]:not(.wanted) .lot-art { background: conic-gradient(from var(--ring), #2f7fe0, #9fd2ff, #2f7fe0 35%, #1d5fb0 65%, #2f7fe0); animation: ring-spin 8s linear infinite; }
+#content.view-gallery .display-list .lot[data-tier="t3"]:not(.wanted) .lot-art { background: conic-gradient(from var(--ring), #b46cff, #6fd0ff, #ff7ad9, #ffe27a, #b46cff); animation: ring-spin 6s linear infinite, tier-breathe 3.2s ease-in-out infinite alternate; }
+#content.view-gallery .display-list .lot[data-tier="t4"]:not(.wanted) .lot-art { background: conic-gradient(from var(--ring), #b8860b, #ffd34d 20%, #fffbe6 25%, #ffd34d 30%, #b8860b 50%, #ffd34d 70%, #fffbe6 75%, #ffd34d 80%, #b8860b); animation: ring-spin 4.5s linear infinite; box-shadow: 0 0 20px -6px #ffd34d, 0 10px 24px -14px rgba(0,0,0,.8); }
+#content.view-gallery .display-list .lot[data-tier="t5"]:not(.wanted) .lot-art { background: conic-gradient(from var(--ring), #c2410c, #ff7a1a, #ffd08a, #ff7a1a, #c2410c, #ff5a10, #ffb050, #c2410c); animation: ring-spin 3.5s linear infinite, tier-fire 1.8s ease-in-out infinite alternate; }
+/* Gold gloss over the art: a soft rotating sheen instead of a sweep that restarts. */
+#content.view-gallery .display-list .lot[data-tier="t4"]:not(.wanted) .lot-art::after { background: conic-gradient(from var(--ring) at 50% 50%, transparent 0 40%, rgba(255,246,200,.35) 50%, transparent 60% 100%); background-size: auto; mix-blend-mode: overlay; animation: ring-spin 4.5s linear infinite; }
+/* Orange glitter: layers drift by exactly one tile, so the loop is invisible. */
+#content.view-gallery .display-list .lot[data-tier="t5"]:not(.wanted) .lot-art::after {
+  background:
+    radial-gradient(circle, #fff 0 1px, transparent 1.6px) 0 0 / 23px 29px,
+    radial-gradient(circle, #ffd27a 0 1.2px, transparent 2px) 9px 13px / 31px 37px,
+    radial-gradient(circle, #fff6 0 1.5px, transparent 2.4px) 17px 5px / 41px 33px;
+  animation: tier-twinkle 1.6s ease-in-out infinite alternate, tier-drift2 6s linear infinite; }
+@keyframes tier-twinkle { from { opacity: .45; } to { opacity: 1; } }
+@keyframes tier-drift2 { to { background-position: 23px -29px, -22px 50px, 58px -28px; } }
+@media (prefers-reduced-motion: reduce) { .display-list .lot::before, .display-list .lot, .display-list .lot .lot-art, .display-list .lot .lot-art::after { animation: none !important; } }
