@@ -1,5 +1,5 @@
-// Card tiers: one colour scale for all three games, from the card's real rarity and its market
-// price, whichever is higher. Grey, green, blue, purple, gold, and orange for cards over $1,000.
+// Card tiers: one colour scale for all three games, by market price so it means the same thing
+// everywhere: grey under $1, green $1+, blue $5+, purple $20+, gold $100+, orange $1,000+.
 export const TIERS = [
   { key: "t0", label: "Common", color: "#9aa3ad" },
   { key: "t1", label: "Uncommon", color: "#4fd18b" },
@@ -9,11 +9,13 @@ export const TIERS = [
   { key: "t5", label: "Grail", color: "#ff7a1a" },
 ];
 
-// Price bands (USD): under $1, $1+, $5+, $25+, $100+, $1,000+.
+export const BANDS = [0, 1, 5, 20, 100, 1000];
 export function priceTier(p) {
   const v = Number(p);
   if (!(v > 0)) return 0;
-  return v >= 1000 ? 5 : v >= 100 ? 4 : v >= 25 ? 3 : v >= 5 ? 2 : v >= 1 ? 1 : 0;
+  let i = 0;
+  while (i < BANDS.length - 1 && v >= BANDS[i + 1]) i++;
+  return i;
 }
 
 // Printed rarity, read the way collectors rank it in each game.
@@ -36,8 +38,9 @@ export function rarityTier(game, rarity) {
   return 0;
 }
 
+// Price decides the tier. Printed rarity (rarityTier) is kept for labels and filters only.
 export function tierOf(game, rarity, price) {
-  return TIERS[Math.max(rarityTier(game, rarity), priceTier(price))];
+  return TIERS[priceTier(price)];
 }
 
 // Attributes for a card element: the tier class and its colour.

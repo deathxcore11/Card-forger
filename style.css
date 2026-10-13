@@ -2103,19 +2103,6 @@ details.ingredient[open] > summary b { color: var(--accent); }
 .display-list .lot[data-tier] .lot-art { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--tier) 75%, transparent); }
 .display-list .lot[data-tier] .lot-side .price { color: color-mix(in srgb, var(--tier) 70%, var(--text)); }
 .display-list .lot .tile-chrome, .display-list .lot .tier-gem { display: none; }
-/* Gallery: the card pops in a frame of its tier colour, emblems on the art. */
-.view-gallery .display-list .lot[data-tier] { border-color: color-mix(in srgb, var(--tier) 45%, var(--line)); box-shadow: 0 14px 34px -18px color-mix(in srgb, var(--tier) 80%, transparent), inset 0 1px 0 rgba(255,255,255,.04); background: radial-gradient(120% 60% at 50% 0%, color-mix(in srgb, var(--tier) 14%, transparent), transparent 70%), var(--surface); }
-.view-gallery .display-list .lot[data-tier]::before { display: none; }
-.view-gallery .display-list .lot .tile-chrome, .view-gallery .display-list .lot .tier-gem { display: inline-flex; }
-.view-gallery .display-list .lot .tile-chrome { display: block; }
-.view-gallery .display-list .lot[data-tier] .lot-art { overflow: visible; box-shadow: 0 0 0 2px var(--tier), 0 0 18px -2px color-mix(in srgb, var(--tier) 70%, transparent); }
-.view-gallery .display-list .lot[data-tier] .lot-art img { border-radius: 10px; }
-.view-gallery .display-list .lot[data-tier="t0"] .lot-art { box-shadow: 0 0 0 1px color-mix(in srgb, var(--tier) 50%, transparent); }
-/* Legendary and Grail: a slow foil sweep around the frame. */
-@property --spin { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
-.view-gallery .display-list .lot:is([data-tier="t4"], [data-tier="t5"]) { border-color: transparent; background: radial-gradient(120% 60% at 50% 0%, color-mix(in srgb, var(--tier) 16%, transparent), transparent 70%) padding-box, var(--surface) padding-box, conic-gradient(from var(--spin), var(--tier), #fff6, var(--tier), color-mix(in srgb, var(--tier) 30%, #000), var(--tier)) border-box; border: 1.5px solid transparent; animation: tier-spin 6s linear infinite; }
-.view-gallery .display-list .lot[data-tier="t5"] { box-shadow: 0 0 0 1px #ff7a1a55, 0 18px 44px -14px #ff7a1acc; }
-@keyframes tier-spin { to { --spin: 360deg; } }
 /* Search and set tiles get the same frame. */
 .card-grid .grid-card[data-tier] .card-img { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--tier) 80%, transparent), 0 10px 26px -14px var(--tier); }
 .card-grid .grid-card[data-tier="t0"] .card-img { box-shadow: 0 0 0 1px color-mix(in srgb, var(--tier) 40%, transparent); }
@@ -2128,8 +2115,6 @@ details.ingredient[open] > summary b { color: var(--accent); }
 .lot.wanted:is(:hover, .peek) .lot-art img { filter: none; opacity: 1; }
 .lot.wanted .lot-name { color: color-mix(in srgb, var(--text) 72%, transparent); }
 .lot.wanted .lot-side .price { color: var(--muted); }
-.view-gallery .display-list .lot.wanted[data-tier] { border: 1.5px dashed color-mix(in srgb, var(--tier) 40%, var(--line)); animation: none; background: repeating-linear-gradient(135deg, transparent 0 9px, color-mix(in srgb, var(--text) 3.5%, transparent) 9px 10px), var(--surface); box-shadow: none; }
-.view-gallery .display-list .lot.wanted .lot-art { box-shadow: none; }
 .want-tag { position: absolute; left: 50%; bottom: 8px; z-index: 3; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 99px; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; background: rgba(10, 10, 16, .82); color: #ff8fa3; box-shadow: inset 0 0 0 1px #ff8fa355; }
 .want-tag svg { width: 12px; height: 12px; fill: currentColor; }
 .display-list:not(.view-gallery *) .want-tag { font-size: 0; padding: 3px; bottom: 3px; gap: 0; }
@@ -2145,7 +2130,6 @@ details.ingredient[open] > summary b { color: var(--accent); }
 /* ===== Motion: cards are dealt in on a new page, lean toward your finger with a holo shine ===== */
 @media (prefers-reduced-motion: no-preference) {
   #content.page-enter .display-list.deal .lot { animation: deal-in .58s cubic-bezier(.2, .9, .25, 1.12) backwards; animation-delay: calc(var(--i, 0) * 34ms); transform-origin: 50% 90%; }
-  #content.page-enter .view-gallery .display-list.deal .lot:is([data-tier="t4"], [data-tier="t5"]) { animation: deal-in .58s cubic-bezier(.2, .9, .25, 1.12) backwards calc(var(--i, 0) * 34ms), tier-spin 6s linear infinite; }
   @keyframes deal-in { from { opacity: 0; transform: perspective(800px) translateY(22px) rotateX(22deg) rotateY(-12deg) scale(.92); } }
   :is(.lot-art, .cd-img, .tile-art, .quick-card-thumb) { transition: transform .35s cubic-bezier(.2, .8, .2, 1); }
   .tilting { transform: perspective(700px) rotateX(var(--ty, 0deg)) rotateY(var(--tx, 0deg)) scale(1.035); transition: transform .08s linear; z-index: 4; }
@@ -2171,6 +2155,35 @@ details.ingredient[open] > summary b { color: var(--accent); }
 .lot-art .tile-chrome img, .lot-art .tile-chrome .img-missing { width: 15px !important; height: 15px !important; object-fit: contain !important; display: inline-block; border-radius: 0 !important; }
 .lot-art .tile-chrome img.pkr { width: auto !important; height: 10px !important; }
 .lot-art .tile-chrome .ygo-pack { width: auto !important; }
-/* The tier gem sits on the top edge of the frame like a crest, clear of the card's own text. */
-.view-gallery .display-list .lot .tier-gem { top: -10px; right: auto; left: 50%; transform: translateX(-50%); height: 20px; }
-.view-gallery .display-list .lot .lot-art > img { position: relative; z-index: 1; }
+
+/* ===== Collection gallery: the clean search-tile look ===== */
+/* Full card, emblem pills on the art, name and price under it, a thin price-tier ring. No boxes. */
+.view-gallery .display-list { gap: 18px 14px; }
+.view-gallery .display-list .lot { background: none; border: 0; box-shadow: none; padding: 0; gap: 8px; border-radius: 0; }
+.view-gallery .display-list .lot::before { display: none; }
+.view-gallery .display-list .lot .lot-art { border-radius: 4.6% / 3.3%; overflow: hidden; background: var(--surface-2); box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--tier, #9aa3ad) 70%, transparent), 0 10px 24px -14px rgba(0,0,0,.8); }
+.view-gallery .display-list .lot:is([data-tier="t3"], [data-tier="t4"], [data-tier="t5"]) .lot-art { box-shadow: 0 0 0 2px var(--tier), 0 0 22px -6px var(--tier), 0 10px 24px -14px rgba(0,0,0,.8); }
+.view-gallery .display-list .lot[data-tier="t0"] .lot-art { box-shadow: 0 0 0 1px rgba(255,255,255,.08), 0 10px 24px -14px rgba(0,0,0,.8); }
+.view-gallery .display-list .lot .lot-art img { border-radius: 0; }
+.view-gallery .display-list .lot .tile-chrome { display: block; }
+.view-gallery .display-list .lot .tier-gem { display: none; }
+.view-gallery .display-list .lot .lot-info { display: block; min-width: 0; padding: 0 2px; }
+.view-gallery .display-list .lot .lot-name { display: block; width: 100%; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+.view-gallery .display-list .lot .lot-name :is(.imp, .row-emb) { display: none; }
+.view-gallery .display-list .lot .lot-sub { display: none; }
+.view-gallery .display-list .lot .lot-side { padding: 0 2px; flex-wrap: nowrap; gap: 6px; }
+.view-gallery .display-list .lot .lot-side .price { font-weight: 700; font-size: 15px; color: color-mix(in srgb, var(--tier, #9aa3ad) 75%, var(--text)); }
+.view-gallery .display-list .lot[data-tier="t0"] .lot-side .price { color: var(--muted); }
+.view-gallery .display-list .lot .stepper { transform: scale(.86); transform-origin: right center; }
+/* Wanted in the gallery: the same card, greyed, a dashed outline instead of the ring. */
+.view-gallery .display-list .lot.wanted { background: none; border: 0; }
+.view-gallery .display-list .lot.wanted .lot-art { box-shadow: none; outline: 1.5px dashed rgba(255,255,255,.28); outline-offset: 3px; }
+.view-gallery .display-list .lot.wanted .lot-sub { display: block; margin-top: 2px; }
+.view-gallery .display-list .lot.wanted .lot-sub > :not(.want-chip) { display: none; }
+.view-gallery .display-list .lot.wanted .want-got { min-height: 30px; padding: 3px 10px; font-size: 13px; }
+#content.view-gallery .display-list .lot, #content.view-gallery .display-list .lot.wanted { background: none !important; border: 0 !important; box-shadow: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+#content.view-gallery .display-list .lot[data-tier]::before { display: none; }
+#content.view-gallery .display-list .lot.wanted .lot-sub { font-size: 0; }
+#content.view-gallery .display-list .lot.wanted .lot-sub .want-chip { font-size: 11px; }
+#content.view-gallery .display-list .lot.wanted .lot-side .price { font-size: 14px; }
+#content.view-gallery .display-list .lot.wanted .want-x { width: 28px; height: 28px; font-size: 16px; flex: none; }

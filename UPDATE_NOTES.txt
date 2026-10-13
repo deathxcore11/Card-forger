@@ -1,3 +1,10 @@
+3.32.1 — Cleaner collection gallery, price tiers
+- Collection gallery looks like search again: the full card with its emblems on the art, name
+  and price underneath, no boxes. A thin ring shows the card's tier.
+- Tiers are by one card's market price, the same in every game: grey under $1, green $1+,
+  blue $5+, purple $20+, gold $100+, orange $1,000+. Copies you own never change a card's tier.
+- Wanted cards in the gallery: greyed card with a dashed outline, Wanted tag, Got it and ×.
+
 3.32.0 — Wanted cards in your collection, card tiers, and Deck Power judged against the meta
 - The Wishlist tab is gone: cards you want now sit in your collection, greyed out in a dashed
   "empty sleeve" with a Wanted tag. Touch one and its colour peeks through. "Got it" adds it
