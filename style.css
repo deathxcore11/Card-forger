@@ -1355,3 +1355,44 @@ details.trouble code { word-break: break-word; }
 .imp-ico { flex: none; }
 @media (prefers-reduced-motion: reduce) { .imp-tile.imp-core .imp-ico { animation: none; } }
 .view-compact .card-grid .imp-tile { left: 2px; }
+
+/* Tile emblems, same layout in every game: type top-left, set + rarity bottom-left, importance seal
+   bottom-right. The overlay matches the card image (all tiles use the 488:680 card shape). */
+.tile-chrome { position: absolute; left: 0; right: 0; top: 0; aspect-ratio: 488 / 680; z-index: 2; pointer-events: none; }
+.tile-chrome .tile-emb, .tile-chrome .tile-set { position: absolute; display: inline-flex; align-items: center; gap: 3px; height: 22px; padding: 0 6px; border-radius: 999px; background: rgba(8, 10, 14, 0.66); backdrop-filter: blur(4px); color: #fff; box-shadow: 0 1px 3px #0006; }
+.tile-chrome .tile-emb { top: 5px; left: 5px; }
+.tile-chrome .tile-set { bottom: 5px; left: 5px; top: auto; right: auto; }
+.tile-chrome .tile-emb:has(.emblems:empty), .tile-chrome .tile-emb:empty { display: none; }
+.tile-chrome .emblems { display: inline-flex; align-items: center; gap: 2px; }
+.tile-chrome .emb, .tile-chrome .energy, .tile-chrome .ms { width: 15px; height: 15px; }
+.tile-chrome .lvl { font-size: 11px; color: #fff; }
+.tile-chrome .more { font-size: 10px; font-weight: 700; color: #fff; opacity: 0.85; }
+.tile-chrome .tset { padding: 0; border: 0; background: none; font-size: 10.5px; color: #fff; gap: 3px; }
+.tile-chrome .tset small { font-size: 9.5px; }
+.tile-chrome img.pks { width: 15px; height: 15px; }
+.tile-chrome img.pkr { height: 10px; }
+.tile-chrome .imp-tile { top: auto; left: auto; bottom: 3px; right: 3px; }
+.view-compact .card-grid .tile-chrome .tile-emb, .view-symbols .card-grid .tile-chrome .tile-emb,
+.view-compact .card-grid .tile-chrome .tile-set, .view-symbols .card-grid .tile-chrome .tile-set { position: absolute; max-width: none; background: rgba(8, 10, 14, 0.66); padding: 0 5px; }
+.view-compact .card-grid .tile-chrome .imp-tile { left: auto; }
+
+/* Proven decks: one summary line instead of three big boxes. */
+.proven-sum { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 10px 0 6px; font-size: 14px; }
+.cs-hero.compact { background: radial-gradient(120% 140% at 20% 0%, color-mix(in srgb, var(--gold, #e8b95b) 22%, transparent), transparent 60%), var(--surface-2); }
+/* Card tabs that don't fit fade at the right edge, so it's clear they scroll. */
+.cs-tabs { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); padding-right: 36px; }
+
+/* Trade advice, deck emblem tally, card Meta tab. */
+.advice > summary { cursor: pointer; display: flex; gap: 8px; align-items: baseline; }
+.advice[open] > summary { margin-bottom: 8px; }
+.adv-row .ellip { display: grid; } .adv-row small { color: var(--muted); font-size: 11.5px; }
+.adv-row b { display: inline; }
+.deck-emb { display: grid; gap: 8px; }
+.emb-tally { display: flex; flex-wrap: wrap; gap: 6px 12px; }
+.emb-count { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; }
+.emb-swap { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.emb-swap .strong { font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+.emb-swap .emb-why { grid-column: 1 / -1; color: var(--muted); font-size: 11.5px; margin-top: -4px; }
+.meta-use { margin: 14px 0; }
+.meta-use h3 { margin: 0 0 4px; font-size: 16px; }
+.meta-use-row .ellip { display: grid; } .meta-use-row small { color: var(--muted); font-size: 11.5px; }

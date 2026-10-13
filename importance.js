@@ -69,10 +69,14 @@ export function buildIndex(game, cached) {
 }
 
 let memo = { v: -1, idx: {} };
-const indexFor = (game) => {
+export const indexFor = (game) => {
   const v = metaVersion();
   if (memo.v !== v) memo = { v, idx: {}, cached: allCachedMeta() };
-  return (memo.idx[game] ||= buildIndex(game, memo.cached));
+  if (!memo.idx[game]) {
+    memo.idx[game] = buildIndex(game, memo.cached);
+    recordSnapshot(game, memo.idx[game]);
+  }
+  return memo.idx[game];
 };
 
 /** Every emblem a card earns, strongest first. `card` is a Scryfall card (Magic) or a normalized YGO/Pokémon card. */
@@ -126,4 +130,182 @@ export function emblemChips(game, card) {
 export function rowEmblem(game, card) {
   const top = importance(game, card)[0];
   return top && top.kind !== "played" ? `<span class="imp-row" title="${esc(top.label)} · ${esc(top.detail)}">${emblemIcon(top.kind, 16)}</span>` : "";
+}
+
+/* ---------- Ranking, trends and trade advice ---------- */
+
+const SCORE = { core: 5, meta: 4, edh: 3, flex: 2, played: 1 };
+// 0–5: how much a card matters for deck building right now (its strongest emblem).
+export const impactScore = (game, card, idx) => SCORE[importance(game, card, idx)[0]?.kind] || 0;
+export const hasEmblem = (game, card, idx) => impactScore(game, card, idx) >= 2;
+
+// Daily snapshots of each game's play rates, so we can say what is rising or falling.
+const TREND_KEY = "cardstashy-meta-trend-v1";
+const readTrend = () => {
+  try {
+    return JSON.parse(localStorage.getItem(TREND_KEY) || "{}") || {};
+  } catch {
+    return {};
+  }
+};
+export function recordSnapshot(game, idx, now = Date.now(), store = null) {
+  if (!idx?.size) return store;
+  const all = store || readTrend(),
+    list = (all[game] ||= []),
+    last = list[list.length - 1];
+  if (last && now - last.at < 20 * 3600e3) return all;
+  const pct = {};
+  for (const [k, e] of idx) if (e.pct >= 1) pct[k] = Math.round(e.pct * 10) / 10;
+  list.push({ at: now, pct });
+  // About two months of daily points is plenty.
+  all[game] = list.filter((s) => now - s.at < 60 * 864e5).slice(-40);
+  if (!store)
+    try {
+      localStorage.setItem(TREND_KEY, JSON.stringify(all));
+    } catch {}
+  return all;
+}
+/** Change in play rate (percentage points) against the oldest snapshot 3–45 days old; null when unknown. */
+export function trendOf(game, card, idx, store = readTrend(), now = Date.now()) {
+  const k = game === "ygo" ? String(card?.id) : nameKey(card?.name),
+    base = (store[game] || []).find((s) => now - s.at >= 3 * 864e5 && now - s.at <= 45 * 864e5);
+  if (!base) return null;
+  const nowPct = idx.get(k)?.pct || 0,
+    then = base.pct[k] || 0;
+  if (!nowPct && !then) return null;
+  return { delta: Math.round((nowPct - then) * 10) / 10, days: Math.round((now - base.at) / 864e5) };
+}
+
+/**
+ * Trade advice for owned cards. items: [{ key, name, card, qty, inDecks, price }]
+ *   rising  — play rate up 5+ points: hold, or trade while it's hot
+ *   bait    — meta/staple cards with copies no deck uses: good trade bait
+ *   falling — play rate down 5+ points and not in your decks: consider trading soon
+ */
+export function tradeAdvice(game, items, idx = indexFor(game), store = readTrend(), now = Date.now()) {
+  const rows = items
+    .filter((x) => x.card && !isBasic(x.name))
+    .map((x) => ({ ...x, emb: importance(game, x.card, idx)[0] || null, trend: trendOf(game, x.card, idx, store, now), spare: Math.max(0, x.qty - (x.inDecks || 0)) }));
+  const byValue = (a, b) => (SCORE[b.emb?.kind] || 0) - (SCORE[a.emb?.kind] || 0) || (b.price ?? -1) * b.spare - (a.price ?? -1) * a.spare;
+  const rising = rows.filter((x) => x.trend && x.trend.delta >= 5).sort((a, b) => b.trend.delta - a.trend.delta);
+  const falling = rows.filter((x) => x.trend && x.trend.delta <= -5 && x.spare).sort((a, b) => a.trend.delta - b.trend.delta);
+  const used = new Set([...rising, ...falling].map((x) => x.key));
+  const bait = rows.filter((x) => !used.has(x.key) && x.spare && (SCORE[x.emb?.kind] || 0) >= 2).sort(byValue);
+  const tracked = (store[game] || []).length;
+  return { rising: rising.slice(0, 6), bait: bait.slice(0, 6), falling: falling.slice(0, 6), trendReady: rows.some((x) => x.trend), tracked };
+}
+
+export function tradeAdviceHtml(game, adv, attrs, money) {
+  const n = adv.rising.length + adv.bait.length + adv.falling.length;
+  if (!n && !adv.tracked) return "";
+  const item = (x, note) => `<button class="mini-row adv-row" ${attrs(x)}><span class="ellip"><span><b>${esc(x.name)}</b>${x.emb ? `<span class="imp-row" title="${esc(x.emb.label)}">${emblemIcon(x.emb.kind, 16)}</span>` : ""}</span><small>${note}</small></span><span class="small">${x.price != null ? money(x.price) : "—"}</span></button>`;
+  const trendTxt = (x) => `${x.trend.delta > 0 ? "▲" : "▼"} ${Math.abs(x.trend.delta)} pts in ${x.trend.days} days`;
+  const group = (title, list, note) => (list.length ? `<p class="list-head">${title}</p><div class="list compact">${list.map((x) => item(x, note(x))).join("")}</div>` : "");
+  return `<details class="panel advice"><summary><b>Trade & play advice</b> <span class="muted small">${n ? `${n} card${n === 1 ? "" : "s"}` : "collecting trend data"}</span></summary>
+    ${group("▲ Rising in the meta — hold, or trade while it’s hot", adv.rising, (x) => `${trendTxt(x)} · ${x.spare ? `${x.spare} spare` : "all in decks"}`)}
+    ${group("⇄ Good trade bait — in demand, not in your decks", adv.bait, (x) => `${esc(x.emb?.label || "")} · ${x.spare} spare cop${x.spare === 1 ? "y" : "ies"}`)}
+    ${group("▼ Cooling off — consider trading soon", adv.falling, (x) => `${trendTxt(x)} · ${x.spare} spare`)}
+    <p class="foot">${adv.trendReady ? "Trends compare today’s tournament play rates with a few days ago." : `Rising and falling cards appear after a few days of tournament data (${adv.tracked} snapshot${adv.tracked === 1 ? "" : "s"} so far).`} Play rate isn’t price — check the market before trading.</p></details>`;
+}
+
+/* ---------- Decks: emblem tally and upgrades from your own cards ---------- */
+
+/**
+ * rows:   the deck — [{ key, name, card, qty }]
+ * spares: cards you own that aren't in the deck — [{ key, name, card, spare }]
+ * fits(card): legal for this deck; sameSlot(outCard, inCard): a sensible like-for-like swap;
+ * protect(row): never suggest cutting it (lands, the commander, archetype cards…).
+ * Suggests up to 3 swaps: a no-emblem card out, an owned meta/flexible/Commander staple in.
+ */
+export function deckEmblems(game, rows, spares, { fits = () => true, sameSlot = () => true, protect = () => false, idx = indexFor(game), max = 3 } = {}) {
+  const tally = { core: 0, meta: 0, edh: 0, flex: 0, played: 0 },
+    scored = rows.filter((r) => r.card).map((r) => {
+      const list = importance(game, r.card, idx);
+      for (const b of list) tally[b.kind] += r.qty;
+      return { ...r, score: SCORE[list[0]?.kind] || 0, emb: list[0] || null };
+    });
+  const low = scored.filter((r) => r.score <= 1 && !isBasic(r.name) && !protect(r)).sort((a, b) => a.score - b.score || (b.card?.price ?? 0) - (a.card?.price ?? 0)),
+    inDeck = new Set(rows.map((r) => r.key)),
+    pool = spares
+      .filter((x) => x.card && x.spare > 0 && !inDeck.has(x.key) && fits(x.card))
+      .map((x) => ({ ...x, list: importance(game, x.card, idx) }))
+      .filter((x) => (SCORE[x.list[0]?.kind] || 0) >= 2)
+      .sort((a, b) => SCORE[b.list[0].kind] - SCORE[a.list[0].kind]);
+  const swaps = [],
+    used = new Set();
+  for (const add of pool) {
+    if (swaps.length >= max) break;
+    const out = low.find((r) => !used.has(r.key) && sameSlot(r.card, add.card));
+    if (!out) continue;
+    used.add(out.key);
+    swaps.push({ out, in: add, why: `${add.list[0].label} — ${add.list[0].detail}` });
+  }
+  return { tally, swaps, scored: scored.length };
+}
+
+export function deckEmblemHtml(game, res, { swapAttrs, cardAttrs }) {
+  const t = res.tally,
+    parts = [["core", "meta staple"], ["meta", "meta card"], ["flex", "flexible staple"], ["edh", "Commander staple"]].filter(([k]) => t[k]).map(([k, label]) => `<span class="emb-count imp-${k}">${emblemIcon(k, 16)}<b>${t[k]}</b> ${label}${t[k] === 1 ? "" : "s"}</span>`);
+  if (!parts.length && !res.swaps.length) return "";
+  return `<section class="panel deck-emb"><div class="emb-tally">${parts.join("") || `<span class="muted small">No meta or staple cards yet.</span>`}</div>
+  ${res.swaps.length ? `<p class="list-head">Upgrade from your collection</p><div class="list compact">${res.swaps.map((s) => `<div class="mini-row emb-swap"><button class="link ellip" ${cardAttrs(s.out)}>${esc(s.out.name)}</button><span class="muted">→</span><button class="link ellip strong" ${cardAttrs(s.in)}>${emblemIcon(s.in.list[0].kind, 15)} ${esc(s.in.name)}</button><button class="btn small" ${swapAttrs(s)}>Swap</button><small class="emb-why">${esc(s.why)} · you own a spare</small></div>`).join("")}</div><p class="foot">The card going out has no meta or staple emblem. Check it isn’t part of your combo or theme before swapping.</p>` : ""}</section>`;
+}
+
+/* ---------- Card sheet "Meta" tab ---------- */
+
+// Where a card shows up in the cached tournament data: per format, its play rate, the archetypes
+// that play it and the best-placed decks that include it.
+export function cardMetaUsage(game, card, cached) {
+  if (!cached) {
+    indexFor(game);
+    cached = memo.cached;
+  }
+  if (!card?.name) return { sets: [], loaded: [] };
+  const k = nameKey(card.name),
+    id = String(card.id),
+    sets = [],
+    loaded = [];
+  for (const [dataKey, entry] of Object.entries(cached || {})) {
+    const data = entry?.data;
+    if (!data?.decks?.length) continue;
+    if (game === "mtg" ? !dataKey.startsWith("mtg:") : dataKey !== game) continue;
+    const format = game === "mtg" ? (data.format === "EDH" ? "Commander (cEDH)" : data.format || dataKey.slice(4)) : game === "ygo" ? "Yu-Gi-Oh! tournaments" : "Pokémon Standard";
+    loaded.push(format);
+    const has = (d) =>
+      game === "mtg" ? [...(d.main || []), ...(d.commanders || [])].some((r) => nameKey(r.name) === k)
+      : game === "ygo" ? [...(d.main || []), ...(d.extra || []), ...(d.side || [])].map(String).includes(id)
+      : (d.list || []).some((r) => nameKey(r.name) === k);
+    const decks = data.decks.filter(has);
+    if (!decks.length) continue;
+    const arch = new Map();
+    for (const d of decks) {
+      const a = d.archetype && game !== "ptcg" ? d.archetype : d.name;
+      arch.set(a, (arch.get(a) || 0) + 1);
+    }
+    const asCommander = game === "mtg" && decks.some((d) => (d.commanders || []).some((r) => nameKey(r.name) === k));
+    sets.push({ dataKey, format: dataKey.startsWith("mtg:") ? dataKey.slice(4) : dataKey, label: format, total: data.decks.length, lists: decks.length, pct: (decks.length / data.decks.length) * 100, asCommander, archetypes: [...arch].sort((a, b) => b[1] - a[1]).slice(0, 6), decks: [...decks].sort((a, b) => (a.rank || 99) - (b.rank || 99) || String(b.date || "").localeCompare(String(a.date || ""))).slice(0, 5) });
+  }
+  return { sets: sets.sort((a, b) => b.pct - a.pct), loaded };
+}
+
+/**
+ * opts: { deckAttrs(set, deck), buildAttrs, loadAttrs, loadLabel, busy, extra }
+ */
+export function cardMetaTab(game, card, usage, opts) {
+  // The emblems themselves already show under the card name; this tab explains where they come from.
+  const chips = importance(game, card).length ? "" : `<p class="small muted">No meta or staple emblem${usage.loaded.length ? "" : " yet"}.</p>`,
+    pctTxt = (p) => (p >= 10 ? Math.round(p) : p.toFixed(1)) + "%";
+  const sets = usage.sets
+    .map((s) => `<section class="meta-use"><h3>${esc(s.label)} <span class="muted small">in ${s.lists} of ${s.total} top lists · ${pctTxt(s.pct)}</span></h3>
+      ${s.asCommander ? `<p class="small"><b>Played as a commander</b> in this data.</p>` : ""}
+      <p class="small muted">${s.archetypes.length > 1 ? "Played in" : "Played by"}: ${s.archetypes.map(([a, n]) => `${esc(a)}${n > 1 ? ` <b>×${n}</b>` : ""}`).join(" · ")}</p>
+      <div class="list compact">${s.decks.map((d) => `<button class="mini-row meta-use-row" ${opts.deckAttrs(s, d)}><span class="ellip"><b>${esc(d.name || d.archetype || "Deck")}</b><small>${esc([d.place, d.event, d.date].filter(Boolean).join(" · "))}</small></span><span class="small link">Open ›</span></button>`).join("")}</div></section>`)
+    .join("");
+  const none = usage.loaded.length
+    ? `<p class="muted small">Not in recent top lists for ${esc(usage.loaded.join(", "))}. That doesn’t mean it’s bad — casual and theme decks can still want it.</p>`
+    : `<p class="muted small">No tournament data on this device yet.</p>`;
+  return `${chips}
+    ${sets || none}
+    ${opts.loadAttrs ? `<button class="btn ghost small" ${opts.loadAttrs} ${opts.busy ? "disabled" : ""}>${opts.busy ? "Loading…" : esc(opts.loadLabel || "Load tournament data")}</button>` : ""}
+    <section class="meta-use"><h3>Deck ideas around this card</h3><p class="small muted">Build decks that use it, from your collection and budget.</p><div class="actions wrap"><button class="btn" ${opts.buildAttrs}>⚒ Build decks around it</button>${opts.extra || ""}</div></section>`;
 }

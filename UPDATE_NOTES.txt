@@ -1,3 +1,23 @@
+3.11.0 — Emblems everywhere: tiles, collection, decks and a Meta tab
+- One tile layout in all three games: what the card is top-left (Magic color identity, Pokémon
+  energy type, Yu-Gi-Oh! level + attribute; three icons at most), where it's from bottom-left
+  (set symbol or code, colored by rarity), and its deck-building emblem bottom-right.
+- Card pages have a new Meta tab: the formats it's played in and how often, which decks play it,
+  the best-placed tournament lists with it (tap to open the full list), and "Build decks around
+  it" for any card, even ones no tournament deck plays. Magic links Commander decks on EDHREC;
+  Yu-Gi-Oh! links the card's archetype.
+- Collection (all games): a "★ Meta & staples" filter, a "Deck-building value" sort, emblems on
+  every row, and Trade & play advice: owned cards rising in the meta, good trade bait (staples
+  with spare copies no deck uses), and cards cooling off. Rising/falling needs a few days of
+  tournament data; CardStashy keeps one snapshot a day.
+- Deck pages (all games): emblem tally (meta staples, flexible staples, Commander staples) and up
+  to 3 "Upgrade from your collection" swaps — a no-emblem card out, an owned staple of the same
+  kind in, with undo. Magic checks legality and commander colors; Pokémon only swaps Trainers;
+  Yu-Gi-Oh! never cuts archetype or Extra Deck cards.
+- Tournament decks open with one line ("You own 6 of 16 · $170 to finish") and a "Cheapest way
+  in" button instead of three big boxes; the banner keeps a colored band if the art can't load;
+  card tabs fade at the edge so it's clear they scroll.
+
 3.10.1 — Deck-building emblems and phone fixes
 - Cards now carry a small hex emblem when they matter for deck building, from the tournament data
   CardStashy already caches (it loads quietly in the background, refreshed every 12 hours):

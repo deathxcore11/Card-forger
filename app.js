@@ -2312,6 +2312,24 @@ A.deckSaveInfo = async () => {
   await editDeck((d) => ({ ...d, name: $("#dmName").value.trim() || d.name, budget: Math.max(0, Number($("#dmBudget").value) || 0), strategy: $("#dmStrategy").value, format, commander: hasCommander(format) ? d.commander : "" }), { msg: "Saved." });
   closeSheet();
 };
+// Card sheet Meta tab: fetch tournament results, then redraw the open sheet.
+A.cardMetaLoad = (t) => {
+  const k = t.dataset.key;
+  const p = loadMetaData(k).catch(() => toast("Couldn’t load tournament results right now."));
+  refreshSheet();
+  p.finally(() => refreshSheet());
+};
+// Swap a no-emblem card for an owned staple (suggested on the deck page).
+A.deckEmbSwap = (t) =>
+  editDeck(
+    (d) => {
+      const out = d.cards.find((c) => key(c.name) === key(t.dataset.out));
+      if (!out) return d;
+      const cards = d.cards.map((c) => (c === out ? { ...c, qty: c.qty - 1 } : c)).filter((c) => c.qty > 0);
+      return mergeDeckCard({ ...d, cards }, t.dataset.in, 1);
+    },
+    { undo: `Swapped ${t.dataset.out} for ${t.dataset.in}.` },
+  );
 C.deckLock = (t) => editDeck((d) => ({ ...d, locked: t.checked }), { msg: t.checked ? "Copies reserved for this deck." : "Reservation released." });
 A.snapshot = async () => {
   const label = prompt("Name this version", "Version " + ((currentDeck().versions || []).length + 1));
@@ -2863,6 +2881,8 @@ A.mtgMetaFormat = (t) => {
 };
 A.mtgMetaReload = () => loadMtgMeta(true);
 A.mtgProven = (t) => {
+  // From a card's Meta tab, the deck may be from another format than the one on Meta decks.
+  if (t.dataset.format && metaState("mtg:" + t.dataset.format).data) (S.ui.mtgMeta ||= {}).format = t.dataset.format;
   const fmt = mtgMetaFormat(),
     data = metaState("mtg:" + fmt).data,
     d = data?.decks.find((x) => x.key === t.dataset.key);
