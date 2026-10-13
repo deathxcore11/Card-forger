@@ -1,3 +1,4 @@
+import {POKEMON_SET_ART} from './pokemon-set-art.js';
 import {pokemonFallback} from "./artwork.js";
 // Pokémon TCG adapter. Data: TCGdex (api.tcgdex.net) — every physical card and set,
 // Standard/Expanded legality, regulation marks, and daily TCGplayer (USD) and
@@ -105,6 +106,7 @@ export function normalizePtcg(c) {
 }
 
 // A search hit before details load (no price yet).
+const ptcgImageAsset = url => /\.(?:png|webp|jpe?g)(?:\?|$)/i.test(url) ? url : url+".webp";
 const brief = (c) => ({ game: "ptcg", id: c.id, name: c.name, image: ptcgImage(c.image, "low") || pokemonFallback(c), imageLarge: ptcgImage(c.image, "high") || pokemonFallback(c), brief: true, prices: {}, sets: [], stats: [], pocket: isPocket(c) });
 
 export const PTCG_FORMATS = [
@@ -245,15 +247,21 @@ export const ptcgSource = {
     return hit ? this.get(hit.id) : null;
   },
   async sets() {
-    const series = ((await get("/series")) || []).filter((s) => s.id !== "tcgp");
-    const details = await Promise.all(series.map((s) => get("/series/" + s.id).catch(() => null)));
-    const out = [];
-    for (const sd of details.filter(Boolean))
-      for (const st of sd.sets || []) out.push({ id: st.id, name: st.name, code: st.id.toUpperCase(), count: st.cardCount?.total || st.cardCount?.official || 0, date: "", series: sd.name, seriesDate: sd.releaseDate || "", image: st.logo ? st.logo + ".webp" : "", symbol: st.symbol ? st.symbol + ".webp" : "" });
-    // Series come oldest-first with their sets in release order; show newest first.
-    return out
-      .map((x, i) => ({ ...x, order: i }))
-      .sort((a, b) => String(b.seriesDate).localeCompare(String(a.seriesDate)) || b.order - a.order);
+    // The complete catalogue survives a missing series response; series only enrich it.
+    const catalogue = await get("/sets");
+    if (!Array.isArray(catalogue) || !catalogue.length) throw Error("Pokémon set catalogue unavailable. Try again.");
+    const series = ((await get("/series").catch(() => [])) || []).filter(s => s.id !== "tcgp");
+    const details = await Promise.allSettled(series.map(s => get("/series/" + s.id)));
+    const enriched = new Map();let order=0;
+    for (const result of details) if(result.status === "fulfilled" && result.value){
+      const sd=result.value;
+      for(const st of sd.sets || []) enriched.set(st.id,{...st,series:sd.name,seriesDate:sd.releaseDate || "",order:order++});
+    }
+    return catalogue.filter(st => !/^(?:[A-Z]\d|P-A)/.test(st.id)).map((st,i) => {
+      const extra=enriched.get(st.id)||{}, art=POKEMON_SET_ART[st.id]||{}, data={...extra,...st};
+      return {id:st.id,name:st.name,code:st.id.toUpperCase(),count:data.cardCount?.total ?? data.cardCount?.official ?? 0,date:data.releaseDate || art.date || "",series:extra.series || art.series || "Other sets",seriesDate:extra.seriesDate || "",order:extra.order ?? i,image:data.logo ? ptcgImageAsset(data.logo) : art.logo || "",symbol:data.symbol ? ptcgImageAsset(data.symbol) : art.symbol || ""};
+    }).sort((a,b)=>String(b.date||b.seriesDate).localeCompare(String(a.date||a.seriesDate))||b.order-a.order);
+
   },
   // A random card: a random set (weighted by size), then a random card in it.
   async random() {
@@ -281,7 +289,7 @@ export const ptcgSource = {
   },
   async setCards(set) {
     const d = await get("/sets/" + encodeURIComponent(set.id));
-    return (d?.cards || []).map((c) => ({ ...brief(c), set: { id: d.id, name: d.name, number: c.localId } }));
+    return (d?.cards || []).map((c) => ({ ...brief({...c,set:{id:d.id,number:c.localId}}), set: { id: d.id, name: d.name, number: c.localId } }));
   },
   validate: validatePtcg,
   legality: ptcgLegality,

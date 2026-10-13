@@ -1698,3 +1698,27 @@ body.glass .topbar { background: rgba(12, 14, 19, 0.58); }
 .set-row-main .set-icon { vertical-align:middle; }
 .browse-return { display:inline-flex; align-items:center; gap:8px; padding:10px 0; margin-bottom:8px; }
 @media(max-width:480px){ .set-row { gap:12px; padding:10px 12px; } .set-row .set-logo,.set-product { width:78px; } .set-product img { max-width:78px; } .set-row-count { flex:none; } }
+
+/* Shared set catalogue: stable art slots, readable names, quiet metadata. */
+.set-row { min-height:108px; gap:16px; align-items:center; }
+.set-media { width:104px; height:80px; flex:none; display:grid; place-items:center; border-radius:10px; background:rgba(255,255,255,.025); }
+.set-media > img { width:100%;height:100%;object-fit:contain; padding:5px; }
+.set-media-fallback { display:none; }
+.set-media.no-art > img { display:none; }
+.set-media.no-art .set-media-fallback { display:grid;place-items:center; }
+.set-media-fallback .set-icon,.set-media-fallback .pks { width:42px;height:42px; }
+.set-art-code { color:var(--muted);font-size:13px;font-weight:650;letter-spacing:.04em; }
+.set-row-main > b { display:flex;gap:8px;align-items:baseline;font-size:16px; }
+.set-row-main > b > .pks,.set-row-main > b > .set-icon { flex:none; }
+.set-row-detail { display:flex;gap:7px;align-items:baseline;flex-wrap:wrap;margin-top:7px;color:var(--muted);font-size:12px;line-height:1.45; }
+.set-code-mark { margin:0; }
+.set-row-count { display:grid;gap:2px;text-align:right;min-width:44px; }
+.set-row-count > b { font-size:17px;font-weight:650;color:var(--text); }
+.set-row-count > small { font-size:11px; }
+.set-catalog-status { display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--muted);font-size:13px;margin:12px 0; }
+@media(max-width:480px){.set-row{gap:12px;padding:12px;}.set-media{width:78px;height:70px;}.set-row-main > b{font-size:15px;line-height:1.4;}.set-row-detail{font-size:11px;}.set-row-count > b{font-size:16px;}}
+
+.set-catalog-toolbar { display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px 12px;margin:12px 0; }
+.set-catalog-toolbar > .check { grid-column:1/-1; }
+.set-hero h1 { overflow-wrap:anywhere; }
+@media(max-width:480px){.set-hero .set-logo.big{width:82px;height:58px;}.set-hero h1{font-size:28px;line-height:1.2;}.list-bar > p{font-size:12px;line-height:1.4;}}

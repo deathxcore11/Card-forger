@@ -1,3 +1,4 @@
+import {setRowContent} from './set-list-ui.js';
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
 import { ICON, actionIcon } from "./icons.js";
 import { emblemChips, rowEmblem, hasEmblem, impactScore, tradeAdvice, tradeAdviceHtml, deckEmblems, deckEmblemHtml, cardMetaUsage, cardMetaTab } from "./importance.js";
@@ -430,20 +431,20 @@ function ownedPrintings() {
 export function setsPage() {
   const st = S.ui.sets,
     q = st.q.trim().toLowerCase(),
-    list = st.list.filter((x) => !x.digital && (st.all || MAIN_TYPES.has(x.set_type)) && (!q || x.name.toLowerCase().includes(q) || x.code === q)),
+    list = st.list.filter((x) => !x.digital && (st.all || MAIN_TYPES.has(x.set_type)) && (!q || x.name.toLowerCase().includes(q) || x.code.includes(q))),
     years = new Map();
   for (const x of list) {
     const y = (x.released_at || "Upcoming").slice(0, 4);
     if (!years.has(y)) years.set(y, []);
     years.get(y).push(x);
   }
-  return `<div class="page-head"><h1>All sets</h1></div>
+  return `<div class="page-head"><h1>Magic sets</h1></div>
   <div class="searchbar"><input type="search" value="${esc(st.q)}" placeholder="Find a set by name or code" data-input="setsSearch" aria-label="Find a set" autocomplete="off"></div>
-  <div class="row between"><span class="muted small">${st.list.length ? `${list.length.toLocaleString()} sets · updated from Scryfall` : ""}</span><label class="check small"><input type="checkbox" data-change="setsAll" ${st.all ? "checked" : ""}> Promos, tokens & extras</label></div>
+  <div class="set-catalog-toolbar"><span class="muted small">${st.list.length ? `${list.length.toLocaleString()} sets · Scryfall` : ""}</span><button class="link small" data-act="setsReload" ${st.busy?"disabled":""}>${st.busy?"Refreshing…":"Refresh sets"}</button><label class="check small"><input type="checkbox" data-change="setsAll" ${st.all ? "checked" : ""}> Promos, tokens & extras</label></div>
   ${st.error ? `<div class="note warn">${esc(st.error)} <button class="link" data-act="setsReload">Try again</button></div>` : ""}
   ${!st.list.length && st.busy ? `<p class="muted center pad">Loading every set…</p>` : ""}
   ${[...years]
-    .map(([y, xs]) => `<h2 class="year">${esc(y)}</h2><div class="set-list">${xs.map((x) => `<button class="set-row" data-act="set" data-code="${esc(x.code)}"><span class="set-product"><img src="/img/mtg-set/${esc(x.code)}.jpg" alt="${esc(x.name)} product packaging" loading="lazy" onerror="this.hidden=true;this.parentElement.classList.add('no-product')"><span class="set-icon big" style="--icon:url('${esc(x.icon || setIconUrl(x.code))}')" aria-hidden="true"></span></span><span class="set-row-main"><b class="ellip"><span class="set-icon" style="--icon:url('${esc(x.icon || setIconUrl(x.code))}')" aria-hidden="true"></span> ${esc(x.name)}</b><small class="muted">${esc(x.code.toUpperCase())} · ${esc(SET_TYPES[x.set_type] || x.set_type)} · ${esc(x.released_at || "")}</small></span><span class="set-row-count">${x.card_count}</span></button>`).join("")}</div>`)
+    .map(([y, xs]) => `<h2 class="year">${esc(y)}</h2><div class="set-list">${xs.map(x => `<button class="set-row" data-act="set" data-code="${esc(x.code)}">${setRowContent({name:x.name,code:x.code.toUpperCase(),image:`/img/mtg-set/${x.code}.jpg`,symbol:`<span class="set-icon" style="--icon:url('${esc(x.icon || setIconUrl(x.code))}')" aria-hidden="true"></span>`,detail:[SET_TYPES[x.set_type]||x.set_type,x.released_at].filter(Boolean).join(' · '),count:x.card_count})}</button>`).join("")}</div>`)
     .join("")}
   ${st.list.length && !list.length ? empty("No sets match", "Try another name, or include promos and extras.") : ""}`;
 }

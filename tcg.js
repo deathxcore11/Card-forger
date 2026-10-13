@@ -1,3 +1,4 @@
+import {setRowContent} from './set-list-ui.js';
 import {artworkHTML,artworkSources} from "./artwork.js";
 import {viewControl,selectionControl,selectionMark,selectionTray,historyPanel,quoteModel,priceOverview} from "./workbench-ui.js";
 import { locationPicker, rememberLocation } from "./collection-locations.js";
@@ -1175,25 +1176,27 @@ export function tcgSets() {
   const g = game(),
     U = ui(g).sets,
     q = U.q.trim().toLowerCase(),
-    list = U.list.filter((s) => !q || s.name.toLowerCase().includes(q) || String(s.code).toLowerCase() === q),
+    list = U.list.filter((s) => !q || s.name.toLowerCase().includes(q) || String(s.code).toLowerCase().includes(q)),
     owned = ownedBySet(g);
   return `<div class="page-head"><h1>${esc(GAMES[g].short)} sets</h1></div>
   <div class="searchbar"><input type="search" value="${esc(U.q)}" placeholder="Find a set by name or code" data-input="tSetsQ" aria-label="Find a set" autocomplete="off"></div>
+  ${U.list.length ? `<div class="set-catalog-status"><span>${list.length.toLocaleString()} sets · ${g === "ptcg" ? "TCGdex" : "YGOPRODeck"}</span><button class="link small" data-act="tSetsReload" ${U.busy?"disabled":""}>${U.busy?"Refreshing…":"Refresh sets"}</button></div>` : ""}
   ${U.error ? `<div class="note warn">${esc(U.error)} <button class="link" data-act="tSetsReload">Try again</button></div>` : ""}
   ${U.busy && !U.list.length ? `<p class="muted center pad">Loading every set…</p>` : ""}
   <div class="set-list">${list
     .slice(0, U.limit)
-    .map((s) => `<button class="set-row" data-act="tSet" data-id="${esc(s.id)}">${s.image ? `<img class="set-logo ${g === "ygo" ? "set-pack" : ""}" src="${esc(s.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<span class="set-row-main"><b class="ellip">${g === "ptcg" ? pkSetSymbol(s) + " " : `<span class="set-code-mark">${esc(s.code)}</span> `}${esc(s.name)}</b><small class="muted">${esc(s.code)}${s.series ? " · " + esc(s.series) : ""}${s.date ? " · " + esc(s.date) : ""}</small></span><span class="set-row-count">${owned.get(s.id) ? `<b class="ok-text">${owned.get(s.id)}</b>/` : ""}${s.count}</span></button>`)
+    .map(s => `<button class="set-row" data-act="tSet" data-id="${esc(s.id)}">${setRowContent({name:s.name,code:s.code,image:s.image,symbol:g === "ptcg"?pkSetSymbol(s):'',detail:[s.series,s.date].filter(Boolean).join(' · '),count:s.count,owned:owned.get(s.id)||0})}</button>`)
     .join("")}</div>
+  ${U.list.length && !list.length ? empty("No sets match", "Try a set name or code, or refresh the catalogue.") : ""}
   ${list.length > U.limit ? `<button class="btn ghost block" data-act="tSetsMore">Show more · ${list.length - U.limit} left</button>` : ""}
   ${g === "ptcg" ? `<p class="foot">Set and rarity symbols from <a href="https://pokesymbols.com" target="_blank" rel="noopener">pokesymbols.com</a>.</p>` : ""}`;
 }
 function ownedBySet(g) {
-  const m = new Map();
+  const m = new Map(), seen = new Set();
   for (const e of gs(g).collection) {
     const c = cardOf(g, e.cardId),
       id = g === "ptcg" ? c?.set?.id : e.printing ? ui(g).sets.list.find((s) => e.printing.startsWith(s.code + "-"))?.id : null;
-    if (id) m.set(id, (m.get(id) || 0) + 1);
+    if (id && !seen.has(id+":"+e.cardId)){seen.add(id+":"+e.cardId);m.set(id, (m.get(id) || 0) + 1);}
   }
   return m;
 }
@@ -2712,7 +2715,7 @@ export function registerTcg(c) {
   };
 
   // sets
-  const SETS_KEY = (G) => "cardforge-" + G + "-sets-v1";
+  const SETS_KEY = (G) => "cardforge-" + G + "-sets-v2";
   const loadSets = async (G, force = false) => {
     const U = ui(G).sets;
     if (U.busy) return;

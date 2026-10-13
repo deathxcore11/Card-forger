@@ -112,7 +112,7 @@ export function pkSetSymbol(set, cls = "pks") {
   if (!set?.id) return "";
   const slug = set.id in PK_SET_SLUG ? PK_SET_SLUG[set.id] : slugify(set.name);
   // Last resort: TCGdex's own symbol (its symbol files 404 today, but this picks them up if they return).
-  const tcgdex = set.symbol ? `<img class="${cls}" src="${esc(set.symbol)}.png" alt="" loading="lazy" onerror="this.remove()">` : "";
+  const tcgdex = set.symbol ? `<img class="${cls}" src="${esc(/\.(?:png|webp|jpe?g)(?:\?|$)/i.test(set.symbol)?set.symbol:set.symbol+".png")}" alt="" loading="lazy" onerror="this.remove()">` : "";
   return slug ? symImg("s", slug, set.name || "", tcgdex, cls) : tcgdex;
 }
 const PK_RARITY_SLUG = { "rare holo": "rare", "holo rare": "rare" };

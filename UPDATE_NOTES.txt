@@ -1,3 +1,9 @@
+3.20.0 — Complete set catalogue and consistent set shelves
+- Pokémon uses the full live set catalogue, so a failed series enrichment request cannot hide sets. Refresh sets is available in every game.
+- Exact set-ID artwork fallback covers Crown Zenith Galarian Gallery, Best of Game and other verified English catalogue matches; gallery collector prefixes are preserved.
+- Shared set-row layout across all three games: stable art slot, real emblem, set-code badge, readable metadata and card count. Pokémon ownership counts distinct cards, not repeated inventory entries.
+- Existing gallery/compact/list views and card emblems remain intact. Archetype logos are kept separate from set identity.
+
 3.19.0 — Set presentation, exact promo artwork and browsing Back
 Verified live: set packaging, card-to-meta Back, set-to-card Back, price-sheet art; full regression suite, exact SVP and Sun & Moon promo artwork, Shining Legends Mewtwo GX artwork, and Foundations product metadata.
 - Built on 3.18.0, preserving scanner sessions, cross-game scanning, glass styling, emblems and saved views.
