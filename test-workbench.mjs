@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {S,blank} from './store.js';
 import {blankGame} from './games.js';
-import {modeFor,recordQuote,quoteModel,historyPanel,priceOverview,registerWorkbench,selectionState} from './workbench-ui.js';
+import {modeFor,recordQuote,quoteModel,historyPanel,priceOverview,variantChoices,registerWorkbench,selectionState} from './workbench-ui.js';
 import {validateWorkspace} from './confidence.js';
 import {deckPage,collectionList} from './views.js';
 import {tcgCollection,tcgCardSheet,cache} from './tcg.js';
@@ -11,6 +11,7 @@ const a=quoteModel('mtg',fixture,'nonfoil'),foil=quoteModel('mtg',fixture,'foil'
 recordQuote(S.state,a,'2026-10-01T10:00:00Z');recordQuote(S.state,{...a,value:1.5},'2026-10-01T12:00:00Z');recordQuote(S.state,{...a,value:1.7},'2026-10-03T12:00:00Z');
 assert.deepEqual(S.state.settings.marketHistory[a.key].points.map(p=>p.value),[1.5,1.7]);recordQuote(S.state,{...a,value:null},'2026-10-04T10:00:00Z');assert.equal(S.state.settings.marketHistory[a.key].points.length,2);
 recordQuote(S.state,foil,'2026-10-01T10:00:00Z');assert.equal(S.state.settings.marketHistory[foil.key].points.length,1);assert.match(historyPanel(a,'all'),/2026-10-03/);assert.match(historyPanel(foil,'all'),/First observation/);
+assert.deepEqual(variantChoices({variants:[{key:'a',label:'Normal',market:1},{key:'b',label:'Normal',market:null}]}),[['a','Normal · $1.00'],['b','Normal · price unavailable']]);
 const pk={id:'p1',name:'Fixture Pokémon',game:'ptcg',prices:{usd:4},variants:[{key:'reverse',label:'Reverse holo',market:8}]};assert.notEqual(quoteModel('ptcg',pk).key,quoteModel('ptcg',pk,'reverse').key);assert.equal(quoteModel('ptcg',pk,'missing').value,null);
 assert.equal(quoteModel('mtg',{...fixture,prices:{usd:null}},'nonfoil').value,null);
 for(const g of ['mtg','ptcg','ygo'])assert.match(priceOverview(g,g==='mtg'?fixture:pk),/Selected version[\s\S]*Price history[\s\S]*Find sellers/);

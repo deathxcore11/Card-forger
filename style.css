@@ -1313,3 +1313,14 @@ details.trouble code { word-break: break-word; }
 .view-compact .card-grid .tile-set,.view-symbols .card-grid .tile-set,
 .view-compact .card-grid .grid-set,.view-symbols .card-grid .grid-set { position:static; max-width:160px; background:transparent; padding:0; }
 .view-control { margin-bottom:8px; }
+.view-compact .display-list .lot { grid-template-columns:58px minmax(0,1fr) auto; }
+.view-symbols .display-list .lot { grid-template-columns:32px minmax(0,1fr) auto; }
+.view-compact .display-list .lot:has(> .batch-mark) { grid-template-columns:30px 58px minmax(0,1fr) auto; }
+.view-symbols .display-list .lot:has(> .batch-mark) { grid-template-columns:30px 32px minmax(0,1fr) auto; }
+.compare-facts { display:grid; gap:5px; font-size:12px; }
+.compare-facts > div { display:flex; justify-content:space-between; gap:8px; }
+.compare-facts dt { color:var(--muted); }
+.compare-facts dd { margin:0; font-weight:600; }
+@media(max-width:480px) { .view-compact .display-list .lot:has(> .batch-mark) > .lot-side,.view-symbols .display-list .lot:has(> .batch-mark) > .lot-side { grid-column:3/5; display:flex; justify-content:flex-end; gap:10px; } }
+.view-compact .card-grid .grid-meta,.view-symbols .card-grid .grid-meta { font-size:14px; line-height:1.5; }
+.view-compact .card-grid .grid-meta > span:last-child,.view-symbols .card-grid .grid-meta > span:last-child { font-size:13px; }
