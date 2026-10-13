@@ -2,6 +2,10 @@
 // well. Built from the card's own rules text and stats (all three games) plus the tournament lists
 // CardStashy has cached — a starting point for new players, not expert strategy.
 
+import { FORMATS } from "./formats.js";
+import { PTCG_FORMATS, ptcgLegality } from "./ptcg.js";
+import { YGO_FORMATS, ygoLimit, ygoLegality } from "./ygo.js";
+
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const nameKey = (n) => String(n || "").split(" // ")[0].toLowerCase().normalize("NFKD").replace(/[^a-z0-9]/g, "");
 const BASIC = /^(?:snow-covered )?(?:plains|island|swamp|mountain|forest|wastes)$|^(?:basic )?(?:grass|fire|water|lightning|psychic|fighting|darkness|metal|fairy) energy$/i;
@@ -119,6 +123,9 @@ const PTCG_RULES = [
   ["heal", /heal \d+ damage|heal all damage/, "Healing", "Removes damage.", "Heal a Pokémon that's about to be Knocked Out to waste your opponent's attack.", ""],
   ["disrupt", /your opponent (shuffles|discards|reveals)|discard (an|\d+) energy from your opponent|your opponent's active pokémon is now/, "Disruption", "Slows your opponent.", "Use it when your opponent has just set up — it costs them a turn.", ""],
   ["gust", /switch in 1 of your opponent's benched|your opponent switches/, "Gust", "Pulls an opponent's Benched Pokémon forward.", "Use it to Knock Out a key support Pokémon or one about to evolve.", ""],
+  ["devolve", /devolve/, "Devolve", "Turns one of your evolved Pokémon back into an earlier stage and returns the Evolution card to your hand.", "Use it to replay an Evolution whose Ability triggers “when you play this Pokémon from your hand to evolve”, or to pull a valuable Evolution card back to hand. Damage counters stay on the Pokémon — if the lower stage has less HP, it can be Knocked Out.", "Pairs with Evolution Pokémon that have evolve-trigger Abilities."],
+  ["evolve", /evolves from that pokémon|skipping the stage 1|search your deck for[^.]*evolves from|evolution card/, "Evolution support", "Helps you evolve faster or find Evolution cards.", "Use it on the turn you want your Stage 2 out — usually turn 2 when you're going second.", "Pairs with Stage 2 Pokémon."],
+  ["spread", /put \d+ damage counters on[^.]*bench|damage to each of your opponent's/, "Spread damage", "Damages several Pokémon at once.", "Spread damage sets up multiple Knock Outs next turn — aim at Benched Pokémon with low HP.", ""],
   ["recover", /from your discard pile into your hand|shuffle[^.]* from your discard pile into your deck/, "Recovery", "Gets cards back from the discard pile.", "Save it for later in the game when key cards are gone.", ""],
 ];
 function ptcgGuide(c) {
@@ -191,6 +198,65 @@ export function playedAlongside(game, card, cached, max = 8) {
   };
 }
 
+/* ---------- Rules: turn rules for this kind of card, and copies allowed per format ---------- */
+
+const MTG_SHOWN = ["standard", "pioneer", "modern", "legacy", "vintage", "pauper", "commander"];
+export function cardRules(game, c) {
+  const turn = [],
+    limits = [];
+  if (game === "mtg") {
+    const type = c.type_line || c.card_faces?.[0]?.type_line || "",
+      text = (c.oracle_text || c.card_faces?.map((f) => f.oracle_text).join(" ") || "").toLowerCase(),
+      basic = /Basic Land/.test(type),
+      any = /a deck can have any number of cards named/.test(text),
+      upTo = text.match(/a deck can have up to (\w+) cards named/)?.[1];
+    if (/Land/.test(type)) turn.push("You can play one land per turn, on your own turn.");
+    else if (/Instant/.test(type) || (c.keywords || []).includes("Flash")) turn.push("Instant speed: cast it any time you have priority, including your opponent's turn.");
+    else turn.push("Sorcery speed: cast it on your own turn, in a main phase, when nothing else is waiting to resolve.");
+    if (/Creature/.test(type) && !(c.keywords || []).includes("Haste")) turn.push("Summoning sickness: it can't attack or use {T} abilities the turn it comes in.");
+    if (/Planeswalker/.test(type)) turn.push("Planeswalkers: one loyalty ability per turn, on your turn at sorcery speed.");
+    if (/Equipment/.test(type)) turn.push("Equip only at sorcery speed; it stays on the battlefield if the creature leaves.");
+    if (/Legendary/.test(type)) turn.push("Legend rule: if you control two with the same name, you keep one.");
+    for (const id of MTG_SHOWN) {
+      const f = FORMATS.find((x) => x.id === id);
+      if (!f) continue;
+      const st = c.legalities?.[f.legality];
+      if (!st) continue;
+      limits.push([f.name, st === "banned" ? "Banned" : st === "not_legal" ? "Not legal" : st === "restricted" ? "1 (restricted)" : basic || any ? "Any number" : upTo ? `Up to ${upTo}` : f.copies === 1 ? "1 (singleton)" : `Up to ${f.copies}`]);
+    }
+    return { turn, limits, deck: "60-card formats: at least 60 cards, 15-card sideboard. Commander: exactly 100 cards, one of each (basics excepted)." };
+  }
+  if (game === "ygo") {
+    const t = String(c.typeLine || "") + " " + String(c.race || "");
+    if (c.category === "Monster") {
+      if (c.extra) turn.push("Extra Deck monsters are Special Summoned from the Extra Deck by meeting their requirements (they don't go in your hand).");
+      else turn.push("One Normal Summon or Set per turn. Level 5–6 needs 1 Tribute, Level 7+ needs 2. Special Summons don't count toward that limit.");
+    } else if (c.category === "Spell") turn.push(/quick-play/i.test(t) ? "Quick-Play Spell: from your hand on your turn, or Set it and use it on either turn (not the turn it was Set)." : /field/i.test(t) ? "Field Spell: one per player; playing a new one replaces yours." : "Spells are activated from your hand during your own Main Phase.");
+    else if (c.category === "Trap") turn.push("Traps must be Set first and can be activated from the next turn on (either player's turn), unless the card says otherwise.");
+    for (const f of YGO_FORMATS.filter((x) => ["tcg", "ocg", "goat", "md"].includes(x.id))) {
+      const leg = ygoLegality(c, f),
+        n = ygoLimit(c, f);
+      limits.push([f.name, leg === "not_legal" ? "Not in this card pool" : n === 0 ? "Forbidden" : n === 1 ? "1 (Limited)" : n === 2 ? "2 (Semi-Limited)" : "Up to 3"]);
+    }
+    return { turn, limits, deck: "Main Deck 40–60 cards, Extra Deck and Side Deck up to 15 each; at most 3 copies of a card across all three." };
+  }
+  const kind = String(c.typeLine || "").match(/Supporter|Item|Stadium|Tool/i)?.[0] || "";
+  if (c.category === "Trainer") {
+    if (kind === "Supporter") turn.push("Supporter: only one per turn. The player who goes first can't play a Supporter on their first turn.");
+    else if (kind === "Stadium") turn.push("Stadium: one per turn, and not one with the same name as the Stadium already in play. It stays until another replaces it.");
+    else if (kind === "Tool") turn.push("Pokémon Tool: play as many as you like, but each Pokémon can hold only one Tool.");
+    else turn.push("Item: play as many as you like during your turn.");
+  } else if (c.category === "Pokemon") {
+    turn.push(c.stage === "Basic" ? "Put Basic Pokémon onto your Bench any time on your turn (Bench limit: 5)." : "Evolve on your turn, but not on your first turn or on a Pokémon that came into play this turn — and once per Pokémon per turn.");
+    turn.push("Attach one Energy from your hand per turn. Attacking ends your turn; the player going first can't attack on their first turn.");
+  } else if (c.category === "Energy") turn.push("You can attach one Energy card from your hand per turn.");
+  for (const f of PTCG_FORMATS.filter((x) => x.id !== "unlimited")) {
+    const leg = ptcgLegality(c, f);
+    limits.push([f.name, leg !== "legal" ? (f.noRuleBox && c.ruleBox ? "Not allowed (Rule Box)" : "Not legal") : c.basicEnergy ? "Any number" : c.aceSpec ? "1 — and only 1 ACE SPEC per deck" : c.radiant ? "1 — and only 1 Radiant per deck" : f.copies === 1 ? "1 (singleton)" : `Up to ${f.copies} with this name`]);
+  }
+  return { turn, limits, deck: "Exactly 60 cards; at most 4 with the same name (basic Energy unlimited); 1 ACE SPEC and 1 Radiant Pokémon per deck." };
+}
+
 /* ---------- Rendering ---------- */
 
 /**
@@ -209,9 +275,17 @@ export function guideHtml(game, card, g, opts = {}) {
   ${when.length ? `<section class="guide-sec"><h3>How and when to play it</h3><ul class="guide-list">${when.slice(0, 7).map((t) => `<li>${esc(t)}</li>`).join("")}</ul></section>` : ""}
   ${syn.length ? `<section class="guide-sec"><h3>Synergies</h3><ul class="guide-list">${syn.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></section>` : ""}
   ${al?.cards?.length ? `<section class="guide-sec"><h3>Played alongside it <span class="muted small">in ${al.lists} tournament list${al.lists === 1 ? "" : "s"} · partners first</span></h3><div class="list compact">${al.cards.map((x) => `<button class="mini-row" ${opts.alongsideAttrs(x)}><span class="ellip">${esc(opts.alongsideName(x))}</span><span class="small muted">${Math.round(x.share)}% of them${x.overall < x.share - 5 ? ` · ${Math.round(x.overall)}% overall` : ""}</span></button>`).join("")}</div></section>` : ""}
-  ${opts.complements !== undefined ? `<section class="guide-sec"><h3>Cards that pair well</h3>${opts.complementsLoading ? `<p class="muted small">Finding cards that work with it…</p>` : opts.complements?.length ? `<div class="guide-grid">${opts.complements.map((x) => `<button class="guide-card" ${x.attrs}>${x.image ? `<img src="${esc(x.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ""}<span class="ellip">${esc(x.name)}</span></button>`).join("")}</div>${opts.complementsNote ? `<p class="foot">${esc(opts.complementsNote)}</p>` : ""}` : `<p class="muted small">${esc(opts.complementsNote || "Nothing specific found.")}</p>`}</section>` : ""}
+  ${opts.complements !== undefined ? `<section class="guide-sec"><h3>Cards that pair well</h3>${opts.complementsLoading ? `<p class="muted small">Finding cards that work with it…</p>` : opts.complements?.length ? `<div class="pair-list">${opts.complements.map((x) => `<button class="pair-row" ${x.attrs}>${x.image ? `<img src="${esc(x.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<span class="pair-noimg"></span>`}<span class="pair-txt"><b>${esc(x.name)}</b>${x.reasons?.length ? `<small>${esc(x.reasons.slice(0, 3).join(" · "))}</small>` : ""}</span>${x.score ? `<span class="pair-score" title="Pairing score">${x.score}</span>` : ""}</button>`).join("")}</div>${opts.complementsNote ? `<p class="foot">${esc(opts.complementsNote)}</p>` : ""}` : `<p class="muted small">${esc(opts.complementsNote || "Nothing specific found.")}</p>`}</section>` : ""}
+  ${rulesHtml(opts.rules)}
   ${opts.extra || ""}
   <p class="foot">This guide is generated from the card's rules text, its stats and the tournament lists on this device — a starting point, not expert strategy.</p>`;
+}
+
+function rulesHtml(r) {
+  if (!r) return "";
+  return `<section class="guide-sec"><h3>Rules for this card</h3><ul class="guide-list">${r.turn.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
+    ${r.limits.length ? `<p class="list-head">Copies allowed per deck</p><div class="guide-limits">${r.limits.map(([f, n]) => `<span><small>${esc(f)}</small><b class="${/Banned|Forbidden|Not/.test(n) ? "bad" : ""}">${esc(n)}</b></span>`).join("")}</div>` : ""}
+    <p class="small muted">${esc(r.deck)}</p></section>`;
 }
 
 // The Scryfall search for cards that feed this card's strongest synergy, within its colors.

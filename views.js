@@ -1,4 +1,4 @@
-import { playGuide, playedAlongside, guideHtml } from "./guide.js";
+import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
 import { emblemChips, rowEmblem, hasEmblem, impactScore, tradeAdvice, tradeAdviceHtml, deckEmblems, deckEmblemHtml, cardMetaUsage, cardMetaTab } from "./importance.js";
 import { tileChrome } from "./tiles.js";
 import {viewControl,selectionControl,selectionMark,selectionTray,historyPanel,quoteModel,priceOverview} from "./workbench-ui.js";
@@ -274,6 +274,7 @@ function mtgCardGuide(c) {
     complements: cache?.cards || [],
     complementsLoading: !cache || cache.loading,
     complementsNote: cache?.note || "",
+    rules: cardRules("mtg", c),
   });
 }
 

@@ -1406,3 +1406,15 @@ details.trouble code { word-break: break-word; }
 .guide-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .guide-card { display: grid; gap: 4px; padding: 0; border: 0; background: none; color: var(--text); text-align: left; min-width: 0; font-size: 12px; cursor: pointer; }
 .guide-card img { width: 100%; aspect-ratio: 488 / 680; object-fit: cover; border-radius: 6px; background: var(--surface-2); }
+
+/* Play guide: rules and ranked pairings with reasons. */
+.guide-limits { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; margin-bottom: 8px; }
+.guide-limits span { display: grid; padding: 6px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.guide-limits small { color: var(--muted); font-size: 11px; }
+.guide-limits b { font-size: 13px; } .guide-limits b.bad { color: var(--bad, #e5484d); }
+.pair-list { display: grid; gap: 8px; }
+.pair-row { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text); text-align: left; cursor: pointer; }
+.pair-row img, .pair-noimg { width: 54px; aspect-ratio: 488 / 680; object-fit: cover; border-radius: 4px; background: var(--surface-2); }
+.pair-txt { display: grid; gap: 3px; min-width: 0; }
+.pair-txt b { font-size: 14px; } .pair-txt small { color: var(--muted); font-size: 11.5px; line-height: 1.4; }
+.pair-score { font-size: 12px; font-weight: 800; color: var(--gold, #e8b95b); padding: 2px 8px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--gold, #e8b95b) 40%, transparent); }

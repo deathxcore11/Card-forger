@@ -16,7 +16,8 @@ import { buildYgo, buildPtcg, YGO_STAPLES, PTCG_STAPLES, PTCG_SUPPORT_BASICS, en
 import { ygoSource, ygoImageDirect, YGO_TYPES, YGO_ATTRIBUTES, YGO_RACES, YGO_SPELL_KINDS, YGO_TRAP_KINDS } from "./ygo.js";
 import { ptcgSource, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES } from "./ptcg.js";
 import { loadMeta, metaState, ptcgIcon, allCachedMeta } from "./meta.js";
-import { playGuide, playedAlongside, guideHtml } from "./guide.js";
+import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
+import { rankPairs, ygoTags, ptcgTags } from "./pairing.js";
 import { nameCandidates, scanCandidateMatches, ygoSetCodes, ygoPasscodes, ptcgNumbers, similarity } from "./scan.js";
 import { adaptList, ownedDraft, engineOf, similarLists, swapPool, costToFinish, unpricedCopies } from "./adapt.js";
 export { metaState, similarLists };
@@ -569,6 +570,7 @@ function tcgCardGuide(g, c) {
     complements: cache?.cards || [],
     complementsLoading: !cache || cache.loading,
     complementsNote: cache?.note || "",
+    rules: cardRules(g, c),
   });
 }
 // The card's Meta tab: where it's played, the tournament decks that play it, and decks to build around it.
@@ -1803,37 +1805,70 @@ export function registerTcg(c) {
     if (hit) A.tCard({ dataset: { id: hit.id } });
     else toast("Couldn’t find that card right now.");
   };
-  // Play guide: cards that pair well — the archetype (Yu-Gi-Oh!) or the evolution line (Pokémon).
+  // Play guide: rank cards that pair well (pairing.js). Candidates: Yu-Gi-Oh! — its archetype,
+  // cards named in its text, the race/attribute it supports; Pokémon — its evolution line, role
+  // Trainers for what it needs, Pokémon of the types it needs; both — tournament partners.
+  const PTCG_ROLE_CARDS = { stage2: ["Rare Candy"], evolution: ["Rare Candy"], switching: ["Switch", "Escape Rope"], energy_accel: ["Earthen Vessel"], basic: ["Nest Ball", "Buddy-Buddy Poffin"] };
   c.guideLoad = async (G, card) => {
     const k = G + ":" + card.id;
     S.ui.guide ||= {};
     if (S.ui.guide[k]) return;
     S.ui.guide[k] = { loading: true };
-    const tile = (x) => ({ name: x.name, image: x.image || "", attrs: `data-act="tCard" data-id="${esc(x.id)}"` });
-    let cards = [],
-      note = "";
+    const cands = [],
+      byName = async (n) => {
+        const r = await SOURCES[G].search({ q: n, size: 8 }).catch(() => ({ cards: [] }));
+        return r.cards.find((x) => x.name.toLowerCase() === n.toLowerCase()) || null;
+      },
+      owned = new Set(gs(G).collection.map((e) => e.cardId)),
+      add = (c, extra = {}) => c && cands.push({ card: c, owned: owned.has(c.id), ...extra });
     try {
+      const al = playedAlongside(G, card, allCachedMeta(), 12);
       if (G === "ygo") {
-        if (card.archetype) {
-          const r = await SOURCES.ygo.search({ archetype: card.archetype, size: 24 });
-          cards = r.cards.filter((x) => x.id !== card.id).slice(0, 9).map(tile);
-          note = `Other “${card.archetype}” cards — the archetype is built to work together.`;
-        } else note = "No archetype — see the cards played alongside it above.";
-      } else {
-        const names = [];
-        if (card.evolveFrom) names.push(card.evolveFrom);
-        if (card.stage === "Stage2") names.push("Rare Candy");
-        for (const n of names) {
-          const r = await SOURCES.ptcg.search({ q: n, size: 8 }).catch(() => ({ cards: [] }));
-          const hit = r.cards.find((x) => x.name === n);
-          if (hit) cards.push(tile(hit));
+        const T = ygoTags(card),
+          jobs = [];
+        if (card.archetype) jobs.push(SOURCES.ygo.search({ archetype: card.archetype, size: 30 }));
+        for (const q of T.quoted.slice(0, 2)) jobs.push(SOURCES.ygo.search({ archetype: q, size: 20 }), SOURCES.ygo.search({ q, size: 12 }));
+        const need = [...T.needs].find((n) => n.startsWith("race:") || n.startsWith("attr:"));
+        if (need) jobs.push(SOURCES.ygo.search(need.startsWith("race:") ? { race: need.slice(5), size: 30 } : { attribute: need.slice(5), size: 30 }));
+        for (const r of await Promise.all(jobs.map((j) => j.catch(() => ({ cards: [] }))))) for (const x of r.cards) add(x);
+        const ids = al.cards.map((x) => x.id).filter(Boolean);
+        const got = ids.length ? await SOURCES.ygo.byIds(ids).catch(() => []) : [];
+        for (const x of got || []) {
+          const a = al.cards.find((y) => y.id === String(x.id));
+          add(x, { lift: Math.max(0, (a?.share || 0) - (a?.overall || 0)), share: a?.share || 0 });
         }
-        note = cards.length ? (card.stage === "Stage2" ? "Its evolution line, and Rare Candy to skip the Stage 1." : "The Pokémon it evolves from.") : "Check the cards played alongside it in tournament lists above.";
+      } else {
+        const T = ptcgTags(card),
+          names = new Set();
+        if (card.evolveFrom) names.add(card.evolveFrom);
+        for (const n of T.needs) for (const x of PTCG_ROLE_CARDS[n] || []) names.add(x);
+        if (card.stage === "Stage2") names.add("Rare Candy");
+        // Basic Energy for the types its attacks need.
+        for (const n of T.needs) if (n.startsWith("type:")) names.add(`Basic ${n.slice(5)} Energy`);
+        // Two steps down the line: a Stage 2's Basic (Gardevoir ex → Kirlia → Ralts).
+        const line = new Set([card.evolveFrom].filter(Boolean));
+        if (card.stage === "Stage2" && card.evolveFrom) {
+          const mid = await byName(card.evolveFrom).then((b) => b && ensureCard("ptcg", b.id)).catch(() => null);
+          if (mid?.evolveFrom) names.add(mid.evolveFrom), line.add(mid.evolveFrom);
+        }
+        const briefs = (await Promise.all([...names].map(byName))).filter(Boolean);
+        // What it evolves into, and cards whose text names it (its own support cards).
+        const [into, named] = await Promise.all([card.category === "Pokemon" ? SOURCES.ptcg.evolutions(card.name).catch(() => []) : [], SOURCES.ptcg.mentioning(card.name.replace(/ ex$/, "")).catch(() => [])]);
+        briefs.push(...into.slice(0, 3), ...named.slice(0, 8));
+        for (const b of into) line.add(b.name);
+        const type = [...T.needs].find((n) => n.startsWith("type:"));
+        if (type) briefs.push(...(await SOURCES.ptcg.search({ type: type.slice(5), category: "Pokemon", format: "standard", size: 10 }).catch(() => ({ cards: [] }))).cards);
+        const alBriefs = (await Promise.all(al.cards.slice(0, 8).map((x) => byName(x.name)))).map((b, i) => b && { b, a: al.cards[i] }).filter(Boolean);
+        const full = async (b) => (b.brief ? await ensureCard("ptcg", b.id).catch(() => null) : b);
+        for (const b of (await Promise.all(briefs.slice(0, 20).map(full)))) add(b, { line: !!b && line.has(b.name) });
+        for (const { b, a } of alBriefs) add(await full(b), { lift: Math.max(0, a.share - a.overall), share: a.share });
       }
-    } catch {
-      note = "Couldn’t look up related cards right now.";
-    }
-    S.ui.guide[k] = { cards, note };
+    } catch {}
+    const ranked = rankPairs(G, card, cands);
+    S.ui.guide[k] = {
+      cards: ranked.map((p) => ({ name: p.card.name, image: p.card.image || "", attrs: `data-act="tCard" data-id="${esc(p.card.id)}"`, reasons: p.reasons, score: p.score })),
+      note: ranked.length ? "Ranked by how well they fit (what each card needs and gives), tournament pairings and what you own." : "No strong pairings found yet — check the cards played alongside it, or Build decks around it.",
+    };
     c.refreshSheet?.();
   };
   A.tDeckEmbSwap = async (t) => {

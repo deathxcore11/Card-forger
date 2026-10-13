@@ -7,8 +7,9 @@ import { binderPage, binderMatches, BINDER_COLORS, attachBinderDrag, animateTurn
 // CardStashy controller: persistence, routing, sheets and every user action.
 // Screens live in views.js; deck/collection math in core.js, planner.js,
 // strategy.js, deck-flow.js and insights.js.
-import { metaState, loadMeta as loadMetaData, MTG_META_FORMATS } from "./meta.js";
-import { mtgComplementQuery } from "./guide.js";
+import { metaState, loadMeta as loadMetaData, MTG_META_FORMATS, allCachedMeta } from "./meta.js";
+import { playedAlongside } from "./guide.js";
+import { mtgPairQueries, rankPairs, edhPop } from "./pairing.js";
 import { nextFact } from "./facts.js";
 import { S, STORAGE, CATALOG_RECORD, RECOVERY, blank, uid, meta, inv, deckById, currentDeck, priceOf, cacheCard, slim } from "./store.js";
 import { $, $$, esc, usd, img, art, cardImage, options, segmented, customBudget, registerSetIcons } from "./ui.js";
@@ -2318,26 +2319,31 @@ A.deckSaveInfo = async () => {
   await editDeck((d) => ({ ...d, name: $("#dmName").value.trim() || d.name, budget: Math.max(0, Number($("#dmBudget").value) || 0), strategy: $("#dmStrategy").value, format, commander: hasCommander(format) ? d.commander : "" }), { msg: "Saved." });
   closeSheet();
 };
-// Play guide (Magic): cards that feed this card's main synergy, in its colors, most played first.
+// Play guide (Magic): rank cards that pair well — synergy searches on Scryfall plus the cards
+// tournament lists run with it, scored by pairing.js (needs/provides, lift, popularity, owned).
 async function mtgGuideLoad(c) {
   if (!c) return;
   const k = "mtg:" + c.name;
   S.ui.guide ||= {};
   if (S.ui.guide[k]) return;
   S.ui.guide[k] = { loading: true };
-  const q = mtgComplementQuery(c);
-  let cards = [],
-    note = "";
-  if (!q) note = "No specific synergy found in its text — see the cards played alongside it, or Build decks around it.";
-  else {
-    const r = await api("/cards/search?" + new URLSearchParams({ q: q.q, order: "edhrec", unique: "cards" })).catch(() => null);
-    cards = (r?.data || []).slice(0, 9).map((x) => {
-      cacheCard(x);
-      return { name: x.name, image: x.image_uris?.small || x.card_faces?.[0]?.image_uris?.small || "", attrs: `data-act="card" data-name="${esc(x.name)}"` };
-    });
-    note = r ? `For its ${q.label.toLowerCase()} side, within its colors — most played first.` : "Couldn’t reach Scryfall right now.";
+  const qs = mtgPairQueries(c),
+    results = await Promise.all(qs.map((q) => api("/cards/search?" + new URLSearchParams({ q: q.q, order: "edhrec", unique: "cards" })).catch(() => null))),
+    cands = [];
+  for (const r of results) for (const x of (r?.data || []).slice(0, 30)) {
+    cacheCard(x);
+    cands.push({ card: x, pop: edhPop(x.edhrec_rank), owned: inv(x.name).owned > 0 });
   }
-  S.ui.guide[k] = { cards, note };
+  const al = playedAlongside("mtg", c, allCachedMeta(), 15);
+  for (const x of al.cards) {
+    const card = meta(x.name);
+    if (card) cands.push({ card, lift: Math.max(0, x.share - x.overall), share: x.share, pop: edhPop(card.edhrec_rank), owned: inv(card.name).owned > 0 });
+  }
+  const ranked = rankPairs("mtg", c, cands);
+  S.ui.guide[k] = {
+    cards: ranked.map((p) => ({ name: p.card.name, image: p.card.image_uris?.small || p.card.card_faces?.[0]?.image_uris?.small || "", attrs: `data-act="card" data-name="${esc(p.card.name)}"`, reasons: p.reasons, score: p.score })),
+    note: ranked.length ? "Ranked by how well they fit (what each card needs and gives), tournament pairings, popularity and what you own." : results.some((r) => !r) ? "Couldn’t reach Scryfall right now." : "No strong pairings found in its text — try Build decks around it.",
+  };
   refreshSheet();
 }
 // Card sheet Meta tab: fetch tournament results, then redraw the open sheet.

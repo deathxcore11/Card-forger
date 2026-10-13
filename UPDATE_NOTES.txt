@@ -1,3 +1,24 @@
+3.13.0 — Card rules per format, and a real pairing algorithm
+- Play guide → "Rules for this card": the turn rules for its kind of card and how many copies each
+  format allows, from the card's own legality/banlist data.
+  · Pokémon: Items — any number per turn; Supporters — one per turn, and not on the first turn of
+    the player going first; Stadiums — one per turn, not the same name as the one in play; Tools —
+    any number, one per Pokémon. Copies: up to 4 by name in Standard/Expanded (basic Energy
+    unlimited; 1 ACE SPEC and 1 Radiant per deck), 1 in Gym Leader Challenge (no Rule Box).
+  · Magic: Banned / Not legal / 1 (restricted) / up to 4 / 1 in Commander, and "any number"
+    cards like Relentless Rats. Yu-Gi-Oh!: Forbidden / Limited / Semi-Limited per banlist.
+- "Cards that pair well" is now ranked by pairing.js, with the reasons shown on every card:
+  · Fit — what the card needs and what each candidate provides (and the other way round), read
+    from rules text, types and stats: artifacts, tokens, sacrifice, graveyard, Tuners, races and
+    attributes, Energy types for attacks, evolution lines, evolve-trigger Abilities…
+  · Cards that name each other in their text, the same archetype, the full evolution line
+    (Gardevoir ex → Kirlia → Ralts, plus Rare Candy), and Basic Energy its attacks need.
+  · Tournament pairing (lift), popularity (EDHREC) and whether you own it — as tie-breakers only;
+    a card needs a real link to be listed.
+  · Pokémon support cards are found by searching card text for the Pokémon's name, and its
+    evolutions by what evolves from it.
+- Devolution Spray and other Trainers get proper roles (Devolve, Evolution support, Spread damage).
+
 3.12.0 — Play guide for every card
 - New "Play guide" tab on every card page in all three games:
   · What it does — its roles (removal, counterspell, ramp, hand trap, searcher, Supporter…).

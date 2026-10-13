@@ -174,6 +174,10 @@ export const PTCG_TYPES = ["Grass", "Fire", "Water", "Lightning", "Psychic", "Fi
 let standardPokemon = null,
   randomSets = null;
 
+const firstPerName = (list) => {
+  const seen = new Set();
+  return list.filter((c) => !seen.has(c.name) && seen.add(c.name));
+};
 export const ptcgSource = {
   game: "ptcg",
   formats: PTCG_FORMATS,
@@ -209,6 +213,16 @@ export const ptcgSource = {
     return normalizePtcg(d);
   },
   // Exact printing from a scan: name plus collector number (053 or 53).
+  // Pokémon that evolve from this one (TCGdex filters on evolveFrom), one per name.
+  async evolutions(name) {
+    const d = await get("/cards", { evolveFrom: name, "pagination:itemsPerPage": 40 });
+    return firstPerName((d || []).map(brief).filter((c) => !c.pocket));
+  },
+  // Cards whose rules text mentions this name (Trainer effects and Pokémon attacks), one per name.
+  async mentioning(name) {
+    const d = await get("/cards", { effect: "like:" + name, "pagination:itemsPerPage": 40 });
+    return firstPerName((d || []).map(brief).filter((c) => !c.pocket && c.name !== name));
+  },
   async byNameNumber(name, num) {
     const tries = [...new Set([num, String(Number(num)), String(Number(num)).padStart(3, "0")])];
     for (const n of tries) {
