@@ -121,7 +121,7 @@ assert.equal(exact.image,"https://example.test/first.webp");
 const thumb = variantArtThumb({name:"Charizard",id:"base1-4",image:"https://example.test/reference.webp"},{key:"first",label:"First Edition"});
 assert.match(thumb,/data-act="tVariantArt"/);
 assert.match(thumb,/Reference art/);
-assert.match(thumb,/Image unavailable/);
+assert.match(thumb,/data-art-sources=/, "every artwork source is tried before showing unavailable");
 const alt = normalizeYgo({id:1,name:"Example",card_images:[{id:1},{id:2}]});
 assert.deepEqual(alt.artworks.map(a=>a.id),["1","2"],"all source artwork preserved");
 assert.match(alt.artworks[1].image,/2[.]jpg$/);

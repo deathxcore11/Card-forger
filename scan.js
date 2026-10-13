@@ -73,6 +73,43 @@ export function anchoredNames(g, full) {
   return out.slice(0, 3);
 }
 
+// Phrases worth searching for when the name won't read: runs of real words from the rules,
+// flavour or attack text ("The elves of the Llanowar forest" → "elves of the Llanowar").
+// Longest runs first; words with digits or odd symbols break a run.
+export function textPhrases(full, max = 6) {
+  const runs = [];
+  for (const line of String(full || "").split(/\r?\n/)) {
+    let cur = [];
+    const flush = () => {
+      if (cur.length >= 3 && cur.filter((w) => w.length >= 4).length >= 2) runs.push(cur);
+      cur = [];
+    };
+    for (const w of line.split(/\s+/)) {
+      const t = w.replace(/^[^A-Za-z]+|[^A-Za-z'’]+$/g, "");
+      if (/^[A-Za-z][a-z'’]*$|^[A-Z][A-Za-z'’]*$/.test(t) && t.length >= 2 && t === w.replace(/[.,;:!?”"“)(]+/g, "")) cur.push(t);
+      else flush();
+    }
+    flush();
+  }
+  // Edge scraps ("Bl The elves…") go; then three-word windows, so one misread word ("Llanotwar")
+  // spoils only the windows it's in. Windows with long words first (they say more).
+  const wins = [];
+  for (const r of runs.sort((a, b) => b.join(" ").length - a.join(" ").length).slice(0, 3)) {
+    while (r.length && r[0].length <= 2 && !/^(a|an|to|of|in|on|at|by)$/i.test(r[0])) r.shift();
+    while (r.length && r[r.length - 1].length <= 2) r.pop();
+    for (let i = 0; i + 3 <= r.length; i++) wins.push(r.slice(i, i + 3).join(" "));
+  }
+  const weight = (w) => w.split(" ").reduce((n, x) => n + Math.max(0, x.length - 3), 0);
+  return [...new Set(wins)].sort((a, b) => weight(b) - weight(a)).slice(0, max);
+}
+
+// Pokémon attack names: capitalised words before a damage number ("Super Psy Bolt 110").
+export function attackNames(full) {
+  const out = [];
+  for (const m of String(full || "").matchAll(/((?:[A-Z][a-z'’]+[ -]){0,3}[A-Z][a-z'’]{2,})[^A-Za-z\n]{0,6}\d{2,3}\+?(?=\s|$)/g)) if (m[1].replace(/[^a-z]/gi, "").length >= 6) out.push(m[1].trim());
+  return [...new Set(out)].slice(0, 4);
+}
+
 // Quality feedback is a capture aid, never a claim that a card was identified.
 // All four guide edges must have contrast. Interior detail, exposure and
 // multiple stable frames are checked separately by the camera controller.

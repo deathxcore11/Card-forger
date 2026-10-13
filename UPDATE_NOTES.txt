@@ -1,3 +1,20 @@
+3.22.0 — The scanner picks the exact printing, and finds cards it can't read
+- Artwork matching: once it knows the card, the scanner compares your photo with every printing
+  of it and picks the one that matches, picture and frame. A card with only one printing is
+  identified straight away. When reprints share the same art, it shows the closest few.
+- Cards with an unreadable name are found from their other text: Magic rules and flavour text,
+  Yu-Gi-Oh! card text, Pokémon attack names. The artwork then confirms which one it is.
+- A misread suffix no longer hides the card: "Mewtwo" also checks Mewtwo ex, Mewtwo GX and so on.
+- Tilted or loosely cropped photos: a taller name read when the first one misses.
+- Your capture now sits next to the match, big enough to compare. Tap either to zoom in.
+  Missing pictures fall back to the other art sources instead of showing nothing.
+- Google Lens now opens Lens results directly (through the app's server, since Lens refuses
+  uploads sent straight from other sites) instead of the phone's share sheet.
+- Plainer wording throughout the scanner, and no emoji or symbol glyphs.
+- Search puts exact name matches first in all three games ("Sol Ring" before "Solemn Offering").
+- Versions tab (Pokémon, Yu-Gi-Oh!): the art shows even when the source has no picture for that
+  version, and a version you already own has − / + instead of Add.
+
 3.21.0 — User-created binders and resilient binder artwork
 - No automatic starter, Unsorted, or location binders. Existing user-created binders are preserved; other locations remain in the collection.
 - Binder pockets and clear covers use exact card/printing artwork fallbacks, including Shining Legends and Classic Collection cached records.

@@ -1,3 +1,4 @@
+import { rankByName } from "./catalog-tools.js";
 import {setRowContent} from './set-list-ui.js';
 import {artworkHTML,artworkSources} from "./artwork.js";
 import {viewControl,selectionControl,selectionMark,selectionTray,historyPanel,quoteModel,priceOverview} from "./workbench-ui.js";
@@ -21,7 +22,7 @@ import { ptcgSource, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES } from "./ptcg.js";
 import { loadMeta, metaState, ptcgIcon, allCachedMeta, cleanName } from "./meta.js";
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
 import { rankPairs, ygoTags, ptcgTags } from "./pairing.js";
-import { nameCandidates, scanCandidateMatches, ygoSetCodes, ygoPasscodes, ptcgNumbers, similarity, scanNameKey } from "./scan.js";
+import { nameCandidates, scanCandidateMatches, ygoSetCodes, ygoPasscodes, ptcgNumbers, similarity, scanNameKey, textPhrases, attackNames } from "./scan.js";
 import { adaptList, ownedDraft, engineOf, similarLists, swapPool, costToFinish, unpricedCopies } from "./adapt.js";
 export { metaState, similarLists };
 
@@ -107,11 +108,21 @@ const imgTag = (c,cls="card-img",large=false) => artworkHTML(c,cls,large);
 export function variantArtwork(card, variant = {}) {
   const exact = !!variant.image;
   return { image:variant.image || card.image || "", imageLarge:variant.imageLarge || variant.image || card.imageLarge || card.image || "", imageId:variant.id || card.id, exact,
-    label:exact ? "Variant image" : "Reference art · exact version image unavailable" };
+    label:exact ? "Variant image" : "Reference art: the main card picture" };
 }
 export function variantArtThumb(card, variant = {}, attrs = "") {
-  const a = variantArtwork(card,variant), fail = "this.hidden=true;this.parentElement.classList.add('art-unavailable')", onerror = card.game === "ygo" ? `if(!this.dataset.f){this.dataset.f=1;this.src='${esc(ygoImageDirect(a.imageId))}'}else{${fail}}` : fail;
-  return `<button class="variant-art" data-act="tVariantArt" data-id="${esc(card.id)}" ${attrs} aria-label="View ${esc(variant.label || card.name)} artwork"><span class="variant-art-frame">${a.image ? `<img src="${esc(a.image)}" alt="${esc(card.name)} — ${esc(a.label)}" loading="lazy" referrerpolicy="no-referrer" onerror="${onerror}">` : ""}<span class="art-unavailable-label">Image unavailable</span></span></button>`;
+  const a = variantArtwork(card,variant),
+    urls = [...new Set([variant.image, a.image, ...artworkSources(card), card.game === "ygo" ? ygoImageDirect(a.imageId) : ""].filter(Boolean))];
+  return `<button class="variant-art" data-act="tVariantArt" data-id="${esc(card.id)}" ${attrs} aria-label="View ${esc(variant.label || card.name)} artwork"><span class="variant-art-frame">${urls.length ? `<img src="${esc(urls[0])}" data-art-sources="${esc(JSON.stringify(urls))}" data-art-index="0" alt="${esc(card.name)} — ${esc(a.label)}" loading="lazy" referrerpolicy="no-referrer">` : `<span class="art-unavailable-label">Image unavailable</span>`}</span></button>`;
+}
+
+// Already in the collection: − count + right there. Not yet: an Add button.
+const variantEntries = (g, c, v) => gs(g).collection.filter((e) => e.cardId === c.id && (e.variant || "normal") === (v.key || "normal"));
+function variantOwnControl(g, c, v) {
+  const n = variantEntries(g, c, v).reduce((t, e) => t + e.qty, 0);
+  return n
+    ? `<span class="stepper owned" title="In your collection"><button data-act="tVariantQty" data-id="${esc(c.id)}" data-print="${esc(v.key)}" data-delta="-1" aria-label="One fewer ${esc(v.label)}">−</button><b>${n}</b><button data-act="tVariantQty" data-id="${esc(c.id)}" data-print="${esc(v.key)}" data-delta="1" aria-label="One more ${esc(v.label)}">＋</button></span>`
+    : `<button class="btn ghost small" data-act="tOwn" data-id="${esc(c.id)}" data-print="${esc(v.key)}" aria-label="Add ${esc(v.label)}">Add</button>`;
 }
 
 /* ---------- ownership & value ---------- */
@@ -521,7 +532,7 @@ export function tcgCardSheet(c, sctx = {}) {
         ? `<div class="print-list"><div class="print on">
         <button class="print-main" data-act="tSet" data-id="${esc(c.set.id)}">${thumb}<span class="print-name">${pkSetSymbol(c.set)}<span class="ellip"><b>${esc(c.set.name)}</b><small>${esc((c.set.id || "").toUpperCase())} #${esc(c.set.number || "")}${c.set.total ? "/" + c.set.total : ""} · ${pkRarity(c.rarity)} ${esc(c.rarity || "")}</small></span></span></button>
         <span class="print-prices"><a class="pp buy" href="${esc(SOURCES.ptcg.buy(c)[0]?.[1] || "#")}" target="_blank" rel="noopener noreferrer">Buy</a><span class="pp"><small>reference</small>${usd(p.usd)}</span></span>
-      </div></div><div class="list compact">${(c.variants || []).map(v => `<div class="variant-row">${variantArtThumb(c,v,`data-variant="${esc(v.key)}"`)}<div class="variant-copy"><b>${esc(v.label)}</b><small class="muted">${esc(variantArtwork(c,v).label)}</small><span>${v.usd == null ? "Price unavailable" : usd(v.usd)}</span></div><span class="variant-actions">${v.productId ? `<a class="link small" href="https://www.tcgplayer.com/product/${encodeURIComponent(v.productId)}" target="_blank" rel="noopener noreferrer">Seller ↗</a>` : ""}<button class="btn ghost small" data-act="tOwn" data-id="${esc(c.id)}" data-print="${esc(v.key)}" aria-label="Add ${esc(v.label)}">＋ Add</button></span></div>`).join("")}</div><p class="foot">Confirm edition and finish on the seller’s listing; some product pages group versions. An unavailable price is not $0.</p><p class="foot">Pokémon reprints are separate cards with their own number. <button class="link small" data-act="tOtherPrintings" data-name="${esc(c.name)}">See every “${esc(c.name)}” →</button></p>`
+      </div></div><div class="list compact">${(c.variants || []).map(v => `<div class="variant-row">${variantArtThumb(c,v,`data-variant="${esc(v.key)}"`)}<div class="variant-copy"><b>${esc(v.label)}</b><small class="muted">${esc(variantArtwork(c,v).label)}</small><span>${v.usd == null ? "Price unavailable" : usd(v.usd)}</span></div><span class="variant-actions">${v.productId ? `<a class="link small" href="https://www.tcgplayer.com/product/${encodeURIComponent(v.productId)}" target="_blank" rel="noopener noreferrer">Seller ↗</a>` : ""}${variantOwnControl(g, c, v)}</span></div>`).join("")}</div><p class="foot">Confirm edition and finish on the seller’s listing; some product pages group versions. An unavailable price is not $0.</p><p class="foot">Pokémon reprints are separate cards with their own number. <button class="link small" data-act="tOtherPrintings" data-name="${esc(c.name)}">See every “${esc(c.name)}” →</button></p>`
         : "";
   const prices =
     g === "ptcg"
@@ -1368,7 +1379,7 @@ export function registerTcg(c) {
     try {
       const r = await SOURCES[G].search({ q: U.q, ...U.f, sort: U.sort === "price" || U.sort === "priceAsc" ? (G === "ygo" ? "name" : "new") : U.sort, page: U.page });
       for (const x of r.cards) remember(x);
-      U.results.push(...r.cards);
+      U.results.push(...(append || (U.sort && U.sort !== (G === "ygo" ? "name" : "new")) ? r.cards : rankByName(r.cards, U.q || "")));
       U.more = r.more;
       U.total = r.total;
       if (G === "ptcg") ensureMany(G, r.cards.map((x) => x.id), () => S.ui.view === "search" && game() === G && render());
@@ -1562,6 +1573,50 @@ export function registerTcg(c) {
       .slice(0, k)
       .map((x) => x.name);
 
+  // A scan candidate for the scanner's list.
+  const scanCand = (G, card, why, exact, print = "", m = ownedMap(G)) => {
+    remember(card);
+    const ps = G === "ygo" && print ? card.sets?.find((x) => `${x.code}|${x.rarity}` === print) : null;
+    return { id: card.id, name: card.name, image: G === "ygo" ? ygoImageDirect(card.id, false) : card.imageLarge, sub: G === "ygo" ? (ps ? `${ps.name} · ${ps.code} · ${ps.rarity}` : card.typeLine) : `${card.set?.name || ""} · #${card.set?.number || ""}${card.set?.total ? "/" + card.set.total : ""} · ${card.rarity || ""}`, why, exact, print, owned: ownedOf(G, card, m), card };
+  };
+  const ptcgBase = (n) => String(n).replace(/[\s-]+(?:ex|EX|GX|V|VMAX|VSTAR|V-UNION|BREAK|LV\.X|Prime|LEGEND|δ|☆|◇)$/u, "").trim();
+  // Every printing of a scanned card's name with a small picture, for matching the artwork.
+  c.scanPrintings = async (G, cand) => {
+    if (G !== "ptcg") return [];
+    const r = await SOURCES.ptcg.search({ q: cand.name, size: 400 }).catch(() => ({ cards: [] }));
+    // Pictures from hosts that allow reading pixels (TCGdex, or the Pokémon TCG API fallback).
+    return r.cards
+      // The suffix logo (ex, GX, V…) often reads as noise, so "Mewtwo" also checks Mewtwo ex, Mewtwo GX…
+      .filter((b) => b.name === cand.name || ptcgBase(b.name) === ptcgBase(cand.name))
+      .sort((a, b) => (b.name === cand.name) - (a.name === cand.name))
+      .map((b) => ({ id: b.id, thumb: artworkSources(b).find((u) => /tcgdex\.net|images\.pokemontcg\.io/.test(u)) || "" }))
+      .filter((b) => b.thumb)
+      .slice(0, 120);
+  };
+  // No readable name: Yu-Gi-Oh! from phrases of the card text, Pokémon from attack names.
+  c.scanByText = async (G, full) => {
+    const tally = new Map(),
+      add = (name, w) => tally.set(name, (tally.get(name) || 0) + w);
+    if (G === "ygo")
+      for (const ph of textPhrases(full, 10)) {
+        if ([...tally.values()].some((w) => w >= 0.3)) break;
+        const r = await SOURCES.ygo.search({ text: ph, size: 10 }).catch(() => null);
+        if (r?.cards?.length && r.total <= 8) for (const x of r.cards) add(x.name, 1 / r.total);
+      }
+    else
+      for (const atk of attackNames(full)) {
+        const u = "https://api.pokemontcg.io/v2/cards?" + new URLSearchParams({ q: `attacks.name:"${atk.replace(/"/g, "")}"`, select: "name,attacks", pageSize: "60" });
+        const d = await fetch(u).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+        const hits = (d?.data || []).filter((x) => (x.attacks || []).some((a) => similarity(a.name, atk) >= 0.85));
+        // That catalogue writes "Mewtwo-GX"; TCGdex writes "Mewtwo GX".
+        for (const x of hits) add(x.name.replace(/-(GX|EX)\b/g, " $1"), 1 / hits.length);
+      }
+    return [...tally].sort((a, b) => b[1] - a[1]).map((x) => x[0]).slice(0, 5);
+  };
+  c.scanCandById = async (G, id, why, exact) => {
+    const card = await ensureCard(G, id).catch(() => null);
+    return card ? scanCand(G, card, why, exact) : null;
+  };
   // Scanner matching (the scanner itself is scancam.js): exact printing codes first, then names.
   c.scanMatch = async (read, lang, manual = false, status = () => {}, G0 = "") => {
     const G = G0 || g(),
@@ -1572,9 +1627,7 @@ export function registerTcg(c) {
       push = (card, why, exact, print = "") => {
         if (!card || seen.has(card.id) || out.length >= 3) return;
         seen.add(card.id);
-        remember(card);
-        const ps = G === "ygo" && print ? card.sets?.find((x) => `${x.code}|${x.rarity}` === print) : null;
-        out.push({ id: card.id, name: card.name, image: G === "ygo" ? ygoImageDirect(card.id, false) : card.imageLarge, sub: G === "ygo" ? (ps ? `${ps.name} · ${ps.code} · ${ps.rarity}` : card.typeLine) : `${card.set?.name || ""} · #${card.set?.number || ""}${card.set?.total ? "/" + card.set.total : ""} · ${card.rarity || ""}`, why, exact, print, owned: ownedOf(G, card, m), card });
+        out.push(scanCand(G, card, why, exact, print, m));
       };
     const all = `${read.code}\n${read.full}`,
       names = manual ? [read.name] : nameCandidates(G, read.name || read.full);
@@ -1617,7 +1670,7 @@ export function registerTcg(c) {
           const list = await nameIndex("ptcg", status).catch(() => []);
           for (const name of closestNames(list, n, 2)) hits.push(...(await SOURCES.ptcg.search({ q: name, size: 4 }).catch(() => ({ cards: [] }))).cards.filter((b) => b.name === name));
         }
-        for (const b of hits.slice(0, 3 - out.length)) push(await ensureCard("ptcg", b.id).catch(() => null), "Name match — check the number", false);
+        for (const b of hits.slice(0, 3 - out.length)) push(await ensureCard("ptcg", b.id).catch(() => null), "Same name. Check the number", false);
       }
     }
     return { cands: out, tried };
@@ -1673,6 +1726,21 @@ export function registerTcg(c) {
       { msg: `Added ${qty}× ${card.name}.` },
     );
     closeSheet();
+  };
+  // − / + on a version you own: changes the copy you already have (one undo per tap).
+  A.tVariantQty = async (t) => {
+    const G = g(), c = cardOf(G, t.dataset.id), d = Number(t.dataset.delta);
+    if (!c) return;
+    const v = (c.variants || []).find((x) => x.key === t.dataset.print) || { key: t.dataset.print };
+    const id = variantEntries(G, c, v).at(-1)?.id;
+    if (!id) return;
+    await mutate((st) => {
+      const e = st.collection.find((x) => x.id === id);
+      if (!e) return;
+      e.qty += d;
+      if (e.qty <= 0) st.collection = st.collection.filter((x) => x.id !== id);
+    }, { undo: `${d > 0 ? "Added" : "Removed"} 1 × ${c.name} (${v.label || v.key}).` });
+    c.refreshSheet?.();
   };
   A.tEntryQty = async (t) => {
     const delta = Number(t.dataset.delta);

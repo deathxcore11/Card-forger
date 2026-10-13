@@ -21,6 +21,21 @@ export function searchQuery(
     parts.push("usd<=" + Number(maxPrice));
   return parts.join(" ");
 }
+// Best name matches first: exact name, then names starting with the words, then names with a word
+// starting with them, then everything else in the order the source gave (stable).
+export function rankByName(list, term, nameOf = (c) => c.name) {
+  const k = (x) => String(x || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim(),
+    t = k(term);
+  if (!t || /[:<>=]/.test(term)) return list;
+  const score = (c) => {
+    const n = k(nameOf(c));
+    if (n === t || k(String(nameOf(c)).split(" // ")[0]) === t) return 0;
+    if (n.startsWith(t + " ") || n.startsWith(t)) return 1;
+    if ((" " + n).includes(" " + t)) return 2;
+    return 3;
+  };
+  return list.map((c, i) => [score(c), i, c]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((x) => x[2]);
+}
 export const scanNames = (text) => scanNamesFor("mtg", text);
 export function cardLinks(card) {
   const name = encodeURIComponent(card.name);

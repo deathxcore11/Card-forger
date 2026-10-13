@@ -29,8 +29,8 @@ import {
 import { parseDeckImport, acquireMissing } from "./deck-flow.js";
 import { completionPlan, commanderTheme } from "./planner.js";
 import { sourceCredit, mtgjsonDeck, collectionIdeas, upgradeSuggestions, applyUpgradeSwaps } from "./strategy.js";
-import { searchQuery } from "./catalog-tools.js";
-import { mtgCollector, nameCandidates } from "./scan.js";
+import { searchQuery, rankByName } from "./catalog-tools.js";
+import { mtgCollector, nameCandidates, textPhrases } from "./scan.js";
 import { registerScanner, scanView } from "./scancam.js";
 import { newGame, proxyList, proxySheetHTML } from "./extras.js";
 import { sharePayload, encodeShare, decodeShare } from "./share.js";
@@ -2822,7 +2822,7 @@ async function dbSearch(next = false, random = false) {
       }
     }
     for (const c of d.data) cacheCard(c);
-    db.results = next ? [...db.results, ...d.data] : d.data;
+    db.results = next ? [...db.results, ...d.data] : !db.filters.sort && !db.note ? rankByName(d.data, db.term) : d.data;
     db.total = d.total_cards || db.results.length;
     db.next = d.has_more ? d.next_page : null;
   } catch (e) {
@@ -3459,6 +3459,41 @@ A.deleteNote = async (t) => commit((s) => (s.notes = s.notes.filter((n) => n.id 
    ========================================================= */
 
 // Matching for the scanner (Magic). The scanner itself lives in scancam.js and is shared by all games.
+const mtgScanCand = (c, why, exact) => {
+  cacheCard(c);
+  return { id: c.id, name: c.name, image: c.image_uris?.normal || c.card_faces?.[0]?.image_uris?.normal || "", sub: `${c.set_name} · ${c.set.toUpperCase()} #${c.collector_number}`, why, exact, owned: inv(c.name).owned, card: c };
+};
+// Every paper printing of a scanned card, with a small picture for matching the artwork.
+async function mtgScanPrintings(cand) {
+  const oid = cand.card?.oracle_id;
+  if (!oid) return [];
+  const r = await api("/cards/search?" + new URLSearchParams({ q: `oracleid:${oid} game:paper`, unique: "prints", order: "released", dir: "desc" })).catch(() => null);
+  return (r?.data || [])
+    .map((c) => ({ id: c.id, thumb: c.image_uris?.small || c.card_faces?.[0]?.image_uris?.small || "", card: c }))
+    .filter((p) => p.thumb);
+}
+// No readable name: find the card from phrases of its rules or flavour text. A phrase that
+// matches only a few cards is a strong hint; names hinted by several phrases come first.
+async function mtgScanByText(phrases, full = "") {
+  const ps = [...new Set(phrases.map((x) => x.replace(/["’]/g, "").trim()).filter(Boolean))];
+  if (!ps.length) return [];
+  // One search for every phrase at once; each card is then scored by the phrases its own text
+  // contains, rare phrases counting most (a misread phrase simply matches nothing).
+  const r = await api("/cards/search?" + new URLSearchParams({ q: `game:paper (${ps.map((x) => `o:"${x}" or ft:"${x}"`).join(" or ")})`, unique: "cards" })).catch(() => null);
+  if (!r?.data?.length || r.total_cards > 175) return [];
+  const text = (c) => [c.oracle_text, c.flavor_text, ...(c.card_faces || []).flatMap((f) => [f.oracle_text, f.flavor_text])].filter(Boolean).join(" ").toLowerCase().replace(/[’']/g, ""),
+    texts = r.data.map((c) => [c.name, text(c)]),
+    df = Object.fromEntries(ps.map((x) => [x, texts.filter(([, t]) => t.includes(x.toLowerCase())).length])),
+    // A card usually names itself in its text ("Lightning Bolt deals 3 damage"): those first.
+    said = (n) => n.split(" // ").some((f) => f.length > 3 && scanKey(full).includes(scanKey(f)));
+  return texts
+    .map(([n, t]) => [n, ps.reduce((sc, x) => sc + (t.includes(x.toLowerCase()) ? 1 / df[x] : 0), 0)])
+    .filter(([, sc]) => sc > 0)
+    .sort((x, y) => said(y[0]) - said(x[0]) || y[1] - x[1])
+    .map((x) => x[0])
+    .slice(0, 5);
+}
+const scanKey = (x) => String(x || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 async function mtgScanMatch(read, lang, manual = false, prefs = {}) {
   const out = [],
     seen = new Set(),
@@ -3466,8 +3501,7 @@ async function mtgScanMatch(read, lang, manual = false, prefs = {}) {
     push = (c, why, exact) => {
       if (!c?.name || seen.has(c.id) || out.length >= 3) return;
       seen.add(c.id);
-      cacheCard(c);
-      out.push({ id: c.id, name: c.name, image: c.image_uris?.normal || c.card_faces?.[0]?.image_uris?.normal || "", sub: `${c.set_name} · ${c.set.toUpperCase()} #${c.collector_number}`, why, exact, owned: inv(c.name).owned, card: c });
+      out.push(mtgScanCand(c, why, exact));
     };
   // The set code + collector number at the bottom identify the exact printing.
   const at = manual ? null : mtgCollector(`${read.code}\n${read.full}`);
@@ -3541,6 +3575,9 @@ const scanCtx = {
   game: () => T.game(),
   match: (g, read, lang, manual, status, prefs = {}) => (g === "mtg" ? mtgScanMatch(read, lang, manual, prefs) : tcgCtx.scanMatch(read, lang, manual, status, g)),
   add: (g, c) => (g === "mtg" ? mtgScanAdd(c) : tcgCtx.scanAdd(c)),
+  byText: (g, full) => (g === "mtg" ? mtgScanByText(textPhrases(full, 12), full) : tcgCtx.scanByText?.(g, full) ?? []),
+  printings: (g, cand) => (g === "mtg" ? mtgScanPrintings(cand) : tcgCtx.scanPrintings?.(g, cand) ?? []),
+  candOf: async (g, p, why, exact) => (g === "mtg" ? (p.card ? mtgScanCand(p.card, why, exact) : null) : tcgCtx.scanCandById?.(g, p.id, why, exact) ?? null),
   details: (g, c) => (g === "mtg" ? A.card({ dataset: { name: c.name } }) : A.tCard({ dataset: { id: c.id } })),
 };
 registerScanner(scanCtx);

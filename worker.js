@@ -113,6 +113,25 @@ async function mtgRoute(url, env, ctx) {
   }
 }
 
+// Google Lens refuses uploads posted from another website (it checks Origin), so the scanner's
+// "Search with Google Lens" sends the picture here; the Worker uploads it and returns the results link.
+export async function lensUpload(request, url, fetchImpl = fetch) {
+  const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
+  if (request.method !== "POST") return json({ error: "POST a picture." }, 405);
+  const origin = request.headers.get("Origin");
+  if (origin && origin !== url.origin) return json({ error: "Not allowed." }, 403);
+  const type = request.headers.get("Content-Type") || "";
+  if (!/^image\/(jpeg|png|webp)$/.test(type)) return json({ error: "Send a JPEG, PNG or WebP picture." }, 415);
+  const img = await request.arrayBuffer();
+  if (!img.byteLength || img.byteLength > 6 * 1024 * 1024) return json({ error: "Picture too large." }, 413);
+  const form = new FormData();
+  form.append("encoded_image", new File([img], "card." + type.split("/")[1], { type }));
+  const up = await fetchImpl("https://lens.google.com/v3/upload?hl=en", { method: "POST", body: form, redirect: "manual", headers: { "User-Agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Mobile Safari/537.36" } }).catch(() => null);
+  const loc = up?.headers.get("Location") || "";
+  if (!up || up.status < 300 || up.status > 399 || !/^https:\/\/(www\.)?google\.[a-z.]+\//.test(loc)) return json({ error: "Google Lens didn’t answer." }, 502);
+  return json({ url: loc });
+}
+
 export default {
   // Daily refresh of the popular formats, so visitors rarely wait on TopDeck.
   async scheduled(event, env, ctx) {
@@ -132,6 +151,7 @@ export default {
         const res=new Response(upstream.body,{headers:{'Content-Type':upstream.headers.get('Content-Type')||'image/jpeg','Cache-Control':`public, max-age=${MONTH}`,'X-Art-Source':'MTGJSON / TCGplayer'}});ctx.waitUntil(caches.default.put(request,res.clone()));return res;
       }catch{return new Response('Product artwork unavailable',{status:503});}
     }
+    if (url.pathname === "/api/lens") return lensUpload(request, url);
     if (url.pathname === "/api/meta/mtg" || url.pathname === "/api/meta/mtg/coverage") return mtgRoute(url, env, ctx);
     if (url.pathname === "/api/meta/ygo/decks" || url.pathname === "/api/meta/ygo/top") return ygoMeta(url, ctx);
     const m = url.pathname.match(/^\/img\/ygo\/(s\/|a\/)?(\d{1,12})\.jpg$/),

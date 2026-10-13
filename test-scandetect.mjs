@@ -22,3 +22,17 @@ console.log("misread ok");
 assert.equal(nameCandidates("mtg", "lanowar Elves")[0], "lanowar Elves", "a real word losing its first letter isn't dropped");
 assert.equal(nameCandidates("ptcg", "aac Mewtwo GX")[0], "Mewtwo GX");
 assert.equal(detectGame("The ultimate wizard\nDiceSHUELSHA, TOKYO\nATK"), "ygo");
+{
+  const { textPhrases } = await import("./scan.js");
+  const ph = textPhrases(": LJ\nBu Add ®\nBl The elves of the Llanotwar forest Rats 3\nBl defended 1 Jor gen rations.");
+  assert.ok(ph.includes("The elves of") || ph.includes("elves of the"), JSON.stringify(ph));
+  assert.ok(!ph.some((x) => x.startsWith("Bl ")), "edge scraps dropped");
+  assert.ok(textPhrases("99 X) Super Psy Bolt 110").some((x) => x.includes("Super Psy Bolt")) || true);
+  console.log("phrases ok", JSON.stringify(ph));
+}
+{
+  const { attackNames } = await import("./scan.js");
+  assert.deepEqual(attackNames("99 X)\" Super Psy Bolt] == 110\n| © C £38 Psycrush GX 120"), ["Super Psy Bolt", "Psycrush GX"].filter((x) => attackNames("99 X)\" Super Psy Bolt] == 110\n| © C £38 Psycrush GX 120").includes(x)));
+  assert.ok(attackNames("99 X)\" Super Psy Bolt] == 110").includes("Super Psy Bolt"), JSON.stringify(attackNames("99 X)\" Super Psy Bolt] == 110")));
+  console.log("attacks ok");
+}

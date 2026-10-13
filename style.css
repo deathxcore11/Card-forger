@@ -1732,3 +1732,19 @@ body.glass .topbar { background: rgba(12, 14, 19, 0.58); }
 .pocket-image .img-missing { position:absolute;inset:0;display:grid;place-content:center;gap:6px;color:var(--muted);font-size:12px;text-align:center; }
 .pocket-image .img-missing small { font-size:10px; }
 .pocket-image .binder-card-art { -webkit-user-drag:none;user-select:none; }
+
+/* Scan result: your capture beside the match, big enough to compare; other options as rows */
+.scan-cand2 .sc-art { padding: 0; border: 0; background: none; cursor: zoom-in; display: block; border-radius: 8px; }
+.scan-cand2 .sc-img { width: 96px; aspect-ratio: 63 / 88; object-fit: cover; border-radius: 6px; display: block; }
+.scan-cand2 .img-missing.sc-img { display: grid; place-items: center; background: var(--surface-2); color: var(--muted); font-size: 22px; }
+.scan-cand2 .img-missing small { font-size: 10px; }
+.scan-cand2.lead { grid-template-columns: 1fr; }
+.sc-compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 10px; }
+.sc-compare figure { margin: 0; display: grid; gap: 6px; justify-items: center; }
+.sc-compare .sc-art, .sc-compare .sc-img { width: 100%; max-width: 220px; }
+.sc-compare .sc-img { border-radius: 10px; box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45); }
+.sc-compare figcaption { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.scan-cand2.exact .sc-compare figure:last-child figcaption { color: var(--good); }
+.ss-row .ss-img { width: 40px; aspect-ratio: 63 / 88; object-fit: cover; border-radius: 4px; }
+.cam-status .cam-dot { display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: currentColor; vertical-align: 1px; }
+.btn .ico { width: 18px; height: 18px; vertical-align: -3px; margin-right: 4px; }

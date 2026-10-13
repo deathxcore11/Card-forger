@@ -19,7 +19,7 @@ const st = (f, prev, steady = 5) => guideState(frameMetrics(f, W, H, g, prev), s
 const ok = frame();
 assert.equal(st(frame({ card: false })).state, "red", "no card → red");
 assert.equal(st(frame({ dx: 30 })).state, "red", "card off to the side → red");
-assert.equal(st(frame({ dark: true })).msg, "Too dark — find more light");
+assert.equal(st(frame({ dark: true })).msg, "Too dark. Find more light");
 assert.equal(st(frame({ blur: true })).state, "amber", "blurry → amber");
 assert.match(st(frame({ glare: true })).msg, /glare/, "glare → amber with a glare tip");
 assert.equal(st(ok, frame({ dx: 30 })).msg, "Hold steady", "moving → amber");
@@ -43,4 +43,13 @@ console.log("PASS: scan guide — red (no card / off-frame / dark), amber (blur,
   assert.ok(b && Math.abs(b.x - 52 / W) < 0.04 && Math.abs(b.h - 78 / H) < 0.06, JSON.stringify(b));
   assert.equal(findCardBox(new Uint8ClampedArray(W * H * 4).fill(90), W, H), null);
   console.log("card box ok");
+}
+{
+  const { settleLimited } = await import("./scancam.js");
+  let live = 0, peak = 0;
+  const r = await settleLimited([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], async (x) => { live++; peak = Math.max(peak, live); await new Promise((ok) => setTimeout(ok, 5)); live--; if (x === 3) throw Error("x"); return x * 2; }, 3);
+  assert.equal(peak, 3, "never more than 3 at once");
+  assert.equal(r[1].value, 4);
+  assert.equal(r[2].status, "rejected");
+  console.log("PASS: limited parallel downloads.");
 }

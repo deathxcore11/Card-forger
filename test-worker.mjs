@@ -72,3 +72,17 @@ assert.equal((await get("/api/meta/mtg?format=Bogus", env)).status, 400);
 assert.equal((await get("/api/meta/mtg/coverage", noKey)).status, 503, "the TopDeck coverage report needs the key");
 assert.equal(await get("/index.html", env).then((x) => x.text()), "asset", "other paths still serve the site");
 console.log("PASS: Worker Magic meta — Magic Online and EDHTop16 without a key, TopDeck fallback with it, cache, stale fallback, format check.");
+
+// Google Lens upload goes through the Worker (Lens rejects cross-site posts).
+{
+  const { lensUpload } = await import("./worker.js");
+  const url = new URL("https://app.example/api/lens");
+  const req = (h = {}, body = new Uint8Array([1, 2, 3])) => new Request(url, { method: "POST", body, headers: { "Content-Type": "image/jpeg", ...h } });
+  const fakeOk = async (u, o) => { assert.equal(u, "https://lens.google.com/v3/upload?hl=en"); assert.ok(o.body.get("encoded_image")); return new Response(null, { status: 303, headers: { Location: "https://www.google.com/search?vsrid=x&udm=26" } }); };
+  assert.equal((await (await lensUpload(req({ Origin: "https://app.example" }), url, fakeOk)).json()).url, "https://www.google.com/search?vsrid=x&udm=26");
+  assert.equal((await lensUpload(req({ Origin: "https://evil.example" }), url, fakeOk)).status, 403);
+  assert.equal((await lensUpload(req({ "Content-Type": "text/plain" }), url, fakeOk)).status, 415);
+  assert.equal((await lensUpload(req(), url, async () => new Response("no", { status: 403 }))).status, 502);
+  assert.equal((await lensUpload(req(), url, async () => new Response(null, { status: 302, headers: { Location: "https://evil.example/" } }))).status, 502);
+  console.log("PASS: Lens upload proxy — same-site only, images only, Google links only.");
+}

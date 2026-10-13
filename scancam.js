@@ -8,6 +8,9 @@
 import { S } from "./store.js";
 import { esc } from "./ui.js";
 import { nameCandidates, detectGame, anchoredNames, scanNameKey } from "./scan.js";
+import { fingerprintCanvas, fingerprintUrl, rankPrintings, likeness } from "./scanart.js";
+import { artworkHTML, artworkSources } from "./artwork.js";
+import { openZoom } from "./zoom.js";
 import { FINISHES, CONDITIONS, LANGS, QTYS, loadPrefs, savePrefs, loadSession, saveSession, addToSession, itemKey, sessionCount, sessionValue, sessionUnpriced, sessionText, feedback } from "./scansession.js";
 
 const CARD = 63 / 88; // card width / height
@@ -91,13 +94,13 @@ export function frameMetrics(gray, w, h, g0, prev = null) {
 
 // Turn the checks into the guide's state, with words (never colour alone).
 export function guideState(m, steady = 0) {
-  if (m.bright < T.dark) return { state: "red", icon: "◐", msg: "Too dark — find more light" };
+  if (m.bright < T.dark) return { state: "red", icon: "◐", msg: "Too dark. Find more light" };
   if (m.edges < 3) return { state: "red", icon: "▢", msg: "Move the whole card inside the frame" };
   if (m.motion > T.motion) return { state: "amber", icon: "✋", msg: "Hold steady" };
   if (m.glare > T.glare) return { state: "amber", icon: "☀", msg: "Tilt slightly to reduce glare" };
-  if (m.sharp < T.sharp) return { state: "amber", icon: "◎", msg: "Hold steady — the picture is blurry" };
-  if (m.edges < 4) return { state: "amber", icon: "▢", msg: "Line all four edges up with the guide" };
-  return steady + 1 >= T.greenFrames ? { state: "green", icon: "✓", msg: "Ready to capture" } : { state: "amber", icon: "✋", msg: "Hold steady…" };
+  if (m.sharp < T.sharp) return { state: "amber", icon: "◎", msg: "Blurry. Hold still" };
+  if (m.edges < 4) return { state: "amber", icon: "▢", msg: "Line the edges up with the frame" };
+  return steady + 1 >= T.greenFrames ? { state: "green", icon: "✓", msg: "Got it" } : { state: "amber", icon: "✋", msg: "Hold steady…" };
 }
 
 // Where the guide sits in a video/image of size vw×vh (same rule for the overlay and the crop).
@@ -210,6 +213,8 @@ export async function readCard(card, g, lang, progress = () => {}) {
   let name = await recog(w, regionCanvas(card, L.name, 2.5));
   // Light letters on a dark banner (full-art, GX, foils) read better inverted.
   if (!nameCandidates(g, name).length) name = [name, await recog(w, regionCanvas(card, L.name, 2.5, true))].join("\n");
+  // A tilted or loosely cropped photo puts the name lower: read a taller strip.
+  if (!nameCandidates(g, name).length) name = [name, await recog(w, regionCanvas(card, [0, 0, 1, 0.16], 2))].join("\n");
   progress("Reading the set code and number…");
   const code = [await recog(w, regionCanvas(card, L.code, 3)), L.pass ? await recog(w, regionCanvas(card, L.pass, 3)) : ""].join("\n");
   let full = "";
@@ -269,22 +274,22 @@ function sessionPanel(g, p, list) {
     unp = sessionUnpriced(list);
   return `<section class="panel scan-session" aria-label="Scanned cards">
     <div class="ss-head"><div class="ss-stats"><span class="ss-stat"><b>${n}</b><small>card${n === 1 ? "" : "s"}</small></span>${p.showValue && n ? `<span class="ss-stat"><b>${money(v)}</b><small>${unp ? `+ ${unp} unpriced` : "value"}</small></span>` : ""}</div>
-      ${n ? `<button class="btn small ss-save" data-act="sessCommit">＋ Save to collection</button>` : ""}</div>
+      ${n ? `<button class="btn small ss-save" data-act="sessCommit">Save to collection</button>` : ""}</div>
     <div class="searchbar ss-add"><input id="scanName" placeholder="Add by name${g === "ygo" ? " or set code" : ""}" data-enter="scanFind" aria-label="Add a card by name"><button class="btn ghost small" data-act="scanFind">Find</button></div>
     ${
       n
         ? `<div class="ss-list">${list
             .map((x) => {
               const k = esc(itemKey(x));
-              return `<div class="ss-row ${Date.now() - (x.at || 0) < 2500 ? "fresh" : ""}">${x.image ? `<img src="${esc(x.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<span class="ss-noimg"></span>`}
+              return `<div class="ss-row ${Date.now() - (x.at || 0) < 2500 ? "fresh" : ""}">${x.cand?.card ? artworkHTML(x.cand.card, "ss-img") : x.image ? `<img src="${esc(x.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<span class="ss-noimg"></span>`}
           <span class="ss-txt"><b>${esc(x.name)}</b><small>${esc([x.setCode && String(x.setCode).toUpperCase(), x.number && "#" + x.number].filter(Boolean).join(" "))} · ${esc(label(CONDITIONS, x.condition))} · ${esc(label(LANGS, x.lang))}</small></span>
           ${finishesFor(g, x.cand).length > 1 ? `<button class="ss-chip" data-act="sessFinish" data-k="${k}" title="Tap to change finish">${esc(label(FINISHES[g], x.finish))}</button>` : `<span class="ss-chip fixed" title="Only printed in this finish">${esc(label(FINISHES[g], x.finish))}</span>`}
           <span class="ss-qty"><button data-act="sessQty" data-k="${k}" data-d="-1" aria-label="One fewer">−</button><b>${x.qty}</b><button data-act="sessQty" data-k="${k}" data-d="1" aria-label="One more">＋</button></span>
           ${p.showValue ? `<span class="ss-price">${money(x.price == null ? null : x.price * x.qty)}</span>` : ""}</div>`;
             })
             .join("")}</div>
-        <div class="ss-foot"><input id="sessLoc" value="${esc(p.location || "")}" placeholder="Binder or box (optional)" aria-label="Where these cards go"><button class="btn ghost small" data-act="sessCopy">⧉ Copy list</button><button class="link small danger" data-act="sessClear">Clear</button></div>`
-        : `<div class="ss-empty"><span class="ss-fan" aria-hidden="true"><i></i><i></i><i></i></span><b>Your scans land here</b><small>Check each card, tweak finish or copies, then save the whole stack in one tap.</small></div>`
+        <div class="ss-foot"><input id="sessLoc" value="${esc(p.location || "")}" placeholder="Binder or box (optional)" aria-label="Where these cards go"><button class="btn ghost small" data-act="sessCopy">Copy list</button><button class="link small danger" data-act="sessClear">Clear</button></div>`
+        : `<div class="ss-empty"><span class="ss-fan" aria-hidden="true"><i></i><i></i><i></i></span><b>Nothing scanned yet</b><small>Cards you scan show up here. When you’re done, save them all to your collection at once.</small></div>`
     }</section>`;
 }
 
@@ -296,11 +301,17 @@ export function scanView(g, gameName) {
     list = loadSession(g),
     live = (s.mode || "live") === "live",
     tips = { mtg: "the name at the top and the set code + number at the bottom", ygo: "the name, the set code under the art (like LOB-EN001) and the passcode", ptcg: "the name and the number at the bottom (like 053/128)" }[g];
+  // The best match sits beside your own capture, big enough to compare at a glance; tap to zoom.
+  const art = (c, cls) => (c.card ? artworkHTML(c.card, cls, true) : c.image ? `<img class="${cls}" src="${esc(c.image)}" alt="${esc(c.name)}" loading="lazy" referrerpolicy="no-referrer">` : `<span class="${cls} img-missing" role="img" aria-label="Artwork unavailable">◇<small>Art unavailable</small></span>`);
   const cands = (s.cands || [])
-    .map(
-      (c, i) => `<article class="scan-cand2 ${c.exact ? "exact" : ""}">${c.image ? `<img src="${esc(c.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<div class="sc-body"><b>${esc(c.name)}</b><small>${esc(c.sub || "")}</small><span class="tag ${c.exact ? "ok" : ""}">${esc(c.why)}</span>${c.owned ? `<small class="muted">You own ${c.owned}</small>` : ""}
-        <div class="actions wrap"><button class="btn small" data-act="scanAdd" data-i="${i}">＋ Add to list</button><button class="btn ghost small" data-act="scanDetails" data-i="${i}">Details</button></div></div></article>`,
-    )
+    .map((c, i) => {
+      const lead = i === 0,
+        body = `<div class="sc-body"><b>${esc(c.name)}</b><small>${esc(c.sub || "")}</small><span class="tag ${c.exact ? "ok" : ""}">${esc(c.why)}</span>${c.owned ? `<small class="muted">You own ${c.owned}</small>` : ""}
+        <div class="actions wrap"><button class="btn small" data-act="scanAdd" data-i="${i}">Add</button><button class="btn ghost small" data-act="scanDetails" data-i="${i}">Details</button></div></div>`;
+      return lead
+        ? `<article class="scan-cand2 lead ${c.exact ? "exact" : ""}"><div class="sc-compare">${s.shot ? `<figure><button class="sc-art" data-act="scanZoom" data-i="shot" aria-label="Zoom your capture"><img class="sc-img" src="${s.shot}" alt="Your capture"></button><figcaption>Your card</figcaption></figure>` : ""}<figure><button class="sc-art" data-act="scanZoom" data-i="${i}" aria-label="Zoom ${esc(c.name)}">${art(c, "sc-img")}</button><figcaption>${c.exact ? "Match" : "Best guess"}</figcaption></figure></div>${body}</article>`
+        : `<article class="scan-cand2 ${c.exact ? "exact" : ""}"><button class="sc-art" data-act="scanZoom" data-i="${i}" aria-label="Zoom ${esc(c.name)}">${art(c, "sc-img")}</button>${body}</article>`;
+    })
     .join("");
   const rail = `<div class="cam-rail">${s.torchCap ? `<button class="${s.torch ? "on" : ""}" data-act="scanTorch" aria-pressed="${!!s.torch}" aria-label="Flashlight">${TORCH}</button>` : ""}<button class="${p.quick ? "on" : ""}" data-act="scanQuick" aria-pressed="${p.quick}" aria-label="Quick mode: exact matches are added without asking">${BOLT}</button><button data-act="scanSettings" aria-label="Scanner settings">${GEAR}</button><button data-act="scanStop" aria-label="Stop camera">${STOP}</button></div>`;
   return `<div class="page-head"><h1>Scan</h1>${p.lockSet ? `<span class="tag">Set locked: ${esc(p.lockSet.toUpperCase())}</span>` : ""}</div>
@@ -308,26 +319,44 @@ export function scanView(g, gameName) {
   <section class="panel scan-panel">
     ${
       live
-        ? `<div class="cam-wrap ${s.camOn ? "immersive" : ""}" id="camWrap">${s.camOn ? `<div id="camSlot"></div><div class="cam-guide ${esc(s.guide?.state || "red")}" id="camGuide"></div><div class="cam-status ${esc(s.guide?.state || "red")}" id="camStatus" role="status" aria-live="polite"><span aria-hidden="true">${esc(s.guide?.icon || "▢")}</span> ${esc(s.guide?.msg || "Starting camera…")}</div>${rail}<div class="scan-flash" id="scanFlash" aria-live="polite"></div>${defaultsPill(g, p)}` : `<div class="scan-drop"><span class="scan-sweep" aria-hidden="true"></span><span class="scan-ghost" aria-hidden="true"></span><b>Ready when you are</b><span class="muted small">Hold one ${esc(gameName)} card in the frame — it scans itself.</span><span class="scan-tips"><span>${TIP_FLAT} Flat</span><span>${TIP_LIGHT} Bright</span><span>${TIP_GLARE} No glare</span></span><button class="btn scan-go" data-act="scanStart">📷 Start camera</button><small class="muted scan-tip-line" title="${esc("Keep " + tips + " sharp.")}">Keep the name and the bottom code sharp</small></div>`}</div>
+        ? `<div class="cam-wrap ${s.camOn ? "immersive" : ""}" id="camWrap">${s.camOn ? `<div id="camSlot"></div><div class="cam-guide ${esc(s.guide?.state || "red")}" id="camGuide"></div><div class="cam-status ${esc(s.guide?.state || "red")}" id="camStatus" role="status" aria-live="polite"><i class="cam-dot" aria-hidden="true"></i>${esc(s.guide?.msg || "Starting camera…")}</div>${rail}<div class="scan-flash" id="scanFlash" aria-live="polite"></div>${defaultsPill(g, p)}` : `<div class="scan-drop"><span class="scan-sweep" aria-hidden="true"></span><span class="scan-ghost" aria-hidden="true"></span><b>Point at a card</b><span class="muted small">Hold one ${esc(gameName)} card inside the frame. It scans on its own.</span><span class="scan-tips"><span>${TIP_FLAT} Flat</span><span>${TIP_LIGHT} Bright</span><span>${TIP_GLARE} No glare</span></span><button class="btn scan-go" data-act="scanStart">${CAMERA} Start camera</button><small class="muted scan-tip-line" title="${esc("Keep " + tips + " sharp.")}">Keep the name and the bottom code sharp</small></div>`}</div>
       ${s.camOn ? `<div class="actions wrap scan-under"><button class="btn" id="scanCaptureBtn" data-act="scanCapture">Capture</button><label class="check small"><input type="checkbox" data-change="scanAuto" ${s.auto !== false ? "checked" : ""}> Capture automatically</label></div>` : defaultsPill(g, p)}`
-        : `<div class="actions wrap"><label class="btn">📷 Take photo<input type="file" accept="image/*" capture="environment" data-change="scanFile" hidden></label><label class="btn ghost">Upload<input type="file" accept="image/*" data-change="scanFile" hidden></label></div>
+        : `<div class="actions wrap"><label class="btn">${CAMERA} Take photo<input type="file" accept="image/*" capture="environment" data-change="scanFile" hidden></label><label class="btn ghost">Upload<input type="file" accept="image/*" data-change="scanFile" hidden></label></div>
       ${s.url ? `<p class="muted small">Drag a box around the card to crop. Rotate if it’s sideways.</p><div class="crop-wrap" id="cropWrap"><img id="cropImg" src="${s.url}" alt="Your photo"><div class="crop-box" id="cropBox"></div></div>
-      <div class="actions wrap"><button class="btn ghost small" data-act="scanRotate">↻ Rotate</button><button class="btn ghost small" data-act="scanCropReset">Whole photo</button><button class="btn" data-act="scanRead" ${s.busy ? "disabled" : ""}>${s.busy ? "Reading…" : "Read card"}</button></div>` : ""}
+      <div class="actions wrap"><button class="btn ghost small" data-act="scanRotate">Rotate</button><button class="btn ghost small" data-act="scanCropReset">Whole photo</button><button class="btn" data-act="scanRead" ${s.busy ? "disabled" : ""}>${s.busy ? "Reading…" : "Read card"}</button></div>` : ""}
       ${defaultsPill(g, p)}`
     }
     <p class="muted small" id="scanStatus" role="status">${esc(s.status || "")}</p>
   </section>
   ${
     s.cands?.length || (s.read && !s.busy)
-      ? `<section class="panel"><h3>${s.cands?.length ? (s.cands[0].exact ? "Found it — check the printing" : "Which card is it?") : "No match yet"}</h3>
+      ? `<section class="panel"><h3>${s.cands?.length ? (s.cands[0].exact ? "Is this your card?" : "Which one is it?") : "Couldn’t find it"}</h3>
       ${s.foundIn && s.cands?.length ? `<p class="scan-other" style="--game-color:${GAME_HUE[s.foundIn]}"><b>This is a ${esc(GAME_LABEL[s.foundIn])} card.</b> Adding it switches the app to ${esc(GAME_LABEL[s.foundIn])}${/[!.]$/.test(GAME_LABEL[s.foundIn]) ? "" : "."}</p>` : ""}
-      ${cands ? `<div class="scan-cands">${cands}</div>` : `<p class="muted small">Fill the frame with the card — the name strip and the bottom code need to be sharp. Or let Google Lens read it, then type the name below.</p>`}
-      ${s.lastCard ? `<div class="actions wrap"><button class="btn ghost small scan-lens" data-act="scanLens">${LENS} Search with Google Lens</button></div>` : ""}
+      ${cands ? `<div class="scan-cands">${cands}</div>` : `<p class="muted small">Move closer so the card fills the frame and the name is sharp. Or look it up with Google Lens, or type the name.</p>`}
+      ${s.lastCard ? `<div class="actions wrap"><button class="btn ghost small scan-lens" data-act="scanLens">${LENS} Search with Google Lens</button>${s.lensUrl ? `<a class="btn small" href="${esc(s.lensUrl)}" target="_blank" rel="noopener">Open Lens results</a>` : ""}</div>` : ""}
       <details class="trouble"><summary>Troubleshooting</summary><p class="small muted">Name strip read as: <code>${esc((s.read?.name || "").slice(0, 120)) || "—"}</code><br>Code strip read as: <code>${esc((s.read?.code || "").replace(/\s+/g, " ").slice(0, 120)) || "—"}</code><br>Names tried: ${esc((s.tried || []).join(" · ") || "—")}</p></details></section>`
       : ""
   }
   ${sessionPanel(g, p, list)}
-  <p class="foot">${p.quick ? "⚡ Quick mode: exact matches skip the question." : "Every scan asks before it goes on the list."} Reading happens on your phone; the first scan downloads the reader (~5 MB${scanLang() !== "eng" ? " + Japanese" : ""}).</p>`;
+  <p class="foot">${p.quick ? "Quick mode is on, so cards it’s sure about are added for you." : "You confirm each card before it’s added."} Scanning runs on your phone. The first scan downloads about 5 MB${scanLang() !== "eng" ? ", plus Japanese" : ""}.</p>`;
+}
+
+// Like Promise.allSettled, but at most `n` at a time (60 pictures at once overwhelm a phone's connection).
+export async function settleLimited(items, fn, n = 6) {
+  const out = new Array(items.length);
+  let next = 0;
+  const run = async () => {
+    while (next < items.length) {
+      const i = next++;
+      try {
+        out[i] = { status: "fulfilled", value: await fn(items[i], i) };
+      } catch (e) {
+        out[i] = { status: "rejected", reason: e };
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, run));
+  return out;
 }
 
 // Rail icons (drawn, same family as the app).
@@ -340,6 +369,7 @@ const BOLT = ico(`<path d="M13.5 3 6 13.5h5.5L10 21l8-11h-5.5z"/>`);
 const GEAR = ico(`<circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.5 1.5M16.5 16.5 18 18M6 18l1.5-1.5M16.5 7.5 18 6"/>`);
 const LENS = ico(`<path d="M4 9V6.5A2.5 2.5 0 0 1 6.5 4H9M15 4h2.5A2.5 2.5 0 0 1 20 6.5V9M20 15v2.5a2.5 2.5 0 0 1-2.5 2.5H15M9 20H6.5A2.5 2.5 0 0 1 4 17.5V15"/><circle cx="12" cy="12" r="3.2"/>`);
 const GAME_HUE = { mtg: "#f08a5d", ygo: "#f5b335", ptcg: "#ef5350" };
+const CAMERA = ico(`<path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2.2l1.4-2h5.8l1.4 2h2.2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.4"/>`);
 const STOP = ico(`<rect x="6.5" y="6.5" width="11" height="11" rx="2"/>`);
 
 /* ---------- controller ---------- */
@@ -411,10 +441,65 @@ export function registerScanner(ctx) {
   };
   ctx.stopCamera = stopCamera;
 
+  // Which printing: the only one there is, or the one whose artwork and frame match the scan.
+  // Unsure → the three closest pictures to choose from.
+  const pickPrinting = async (g, card, cand) => {
+    const prints = await ctx.printings(g, cand);
+    if (!prints?.length) return null;
+    const scan = fingerprintCanvas(card, g);
+    if (prints.length === 1) {
+      const c = await ctx.candOf(g, prints[0], "The only printing", true),
+        fp = await fingerprintUrl(prints[0].thumb, g).catch(() => null);
+      if (c) c.artScore = fp ? likeness(scan, fp) : null;
+      return c ? [c] : null;
+    }
+    const fps = await settleLimited(prints.slice(0, 60), (x) => fingerprintUrl(x.thumb, g), 6),
+      ok = prints.slice(0, 60).map((x, i) => ({ ...x, fp: fps[i].value })).filter((x) => x.fp),
+      { ranked, sure } = rankPrintings(scan, ok);
+    const out = [];
+    for (const [i, x] of (sure ? ranked.slice(0, 1) : ranked.slice(0, 3)).entries()) {
+      const c = await ctx.candOf(g, x, sure ? "Artwork match" : "Closest artwork", sure && i === 0);
+      if (c) out.push(Object.assign(c, { artScore: x.score }));
+    }
+    return out;
+  };
+  // No name: cards suggested by the card's other text (rules, flavour, attacks). Each suggestion's
+  // printings are compared with the photo and the closest picture wins, if it clearly looks alike.
+  // A name match already found is never replaced by a text guess.
+  const fromText = async (g, full, r, p, card) => {
+    setStatus("Reading the rest of the card…");
+    const names = await Promise.resolve(ctx.byText?.(g, full)).catch(() => []);
+    if (!names?.length) return r;
+    const key = (x) => scanNameKey(x);
+    if (r.cands.length && names.some((n) => key(n) === key(r.cands[0].name))) return { ...r, tried: [...r.tried, r.cands[0].name] };
+    setStatus("Comparing the artwork…");
+    let best = null;
+    for (const n of names.slice(0, 5)) {
+      const rt = await match(g, { name: n, code: "", full: "" }, scanLang(), true, setStatus, p).catch(() => null),
+        c = rt?.cands?.find((x) => key(x.name) === key(n)) || rt?.cands?.[0];
+      if (!c) continue;
+      const picked = await pickPrinting(g, card, c).catch(() => null),
+        score = picked?.[0]?.artScore ?? -1;
+      if (picked?.length && (!best || score > best.score)) best = { picked, score, n };
+    }
+    if (!best || best.score < 0.35) return r;
+    return { cands: best.picked.map((c) => ({ ...c, why: c.exact ? "Found from its text and artwork" : "Found from its text" })), tried: [...r.tried, best.n], picked: true };
+  };
+  const st0 = () => s();
   const process = async (card) => {
     const st = s(),
       G = game();
+    try {
+      const k = Math.min(1, 360 / card.width), t = document.createElement("canvas");
+      t.width = Math.round(card.width * k);
+      t.height = Math.round(card.height * k);
+      t.getContext("2d").drawImage(card, 0, 0, t.width, t.height);
+      st.shot = t.toDataURL("image/jpeg", 0.85);
+    } catch {
+      st.shot = "";
+    }
     st.busy = true;
+    st.lensUrl = "";
     st.cands = [];
     render();
     try {
@@ -432,21 +517,30 @@ export function registerScanner(ctx) {
         const full = st.read.full || (await readFull(card, scanLang(), setStatus));
         st.read.full = full;
         const wide = { name: [...anchoredNames(G, full), st.read.name, full].join("\n"), code: st.read.code, full };
-        setStatus("Looking again with the whole card…");
+        setStatus("Reading the whole card…");
         const r2 = await match(G, wide, scanLang(), false, setStatus, p);
         if (sure(r2) || !r.cands.length) r = { cands: r2.cands.length ? r2.cands : r.cands, tried: [...r.tried, ...r2.tried] };
+        // Still no name: find the card from its other text (rules, flavour, attack names).
+        if (!sure(r)) r = await fromText(G, full, r, p, card);
         // Still unsure: maybe it's another game's card.
         const other = detectGame(`${st.read.name}\n${st.read.code}\n${full}`);
         if (!sure(r) && other && other !== G) {
-          setStatus(`Looks like a ${GAME_LABEL[other]} card — checking…`);
+          setStatus(`This looks like a ${GAME_LABEL[other]} card. Checking…`);
           const ro = await readCard(card, other, scanLang(), setStatus),
             wo = { name: [...anchoredNames(other, full), ro.name, full].join("\n"), code: `${ro.code}\n${full}`, full };
-          const r3 = await match(other, wo, scanLang(), false, setStatus, {});
+          let r3 = await match(other, wo, scanLang(), false, setStatus, {});
+          if (!sure(r3)) r3 = await fromText(other, full, r3, {}, card);
           if (r3.cands.length && (sure(r3) || !r.cands.length)) {
             st.foundIn = other;
             r = { cands: r3.cands, tried: [...r.tried, ...r3.tried] };
           }
         }
+      }
+      // The picture picks the printing: compare the scan with every printing of the best name.
+      if (r.cands.length && !r.cands[0].exact && !r.picked) {
+        setStatus("Comparing the artwork…");
+        const picked = await pickPrinting(st.foundIn || G, card, r.cands[0]).catch(() => null);
+        if (picked?.length) r = { ...r, cands: picked[0].exact ? picked : [...picked, ...r.cands.filter((c) => c.name !== picked[0].name)].slice(0, 3) };
       }
       // Lock set: candidates from the locked set first.
       if (p.lockSet && !st.foundIn) r.cands.sort((a, b) => (ctx.setOf(G, b).toLowerCase() === p.lockSet.toLowerCase()) - (ctx.setOf(G, a).toLowerCase() === p.lockSet.toLowerCase()));
@@ -457,8 +551,8 @@ export function registerScanner(ctx) {
         const it = toSession(r.cands[0]);
         st.cands = [];
         st.read = null;
-        st.status = `Added ${it.name} — swap in the next card.`;
-        lockMsg = "Added — swap in the next card";
+        st.status = `Added ${it.name}. Next card.`;
+        lockMsg = "Added. Next card";
       } else {
         st.cands = r.cands;
         if (!r.cands.length) feedback("fail", p);
@@ -466,9 +560,9 @@ export function registerScanner(ctx) {
           ? `Found it in ${GAME_LABEL[st.foundIn]}.`
           : r.cands.length
             ? r.cands[0].exact
-              ? "Found the exact printing — check it and add it."
-              : "Not sure which printing — pick the right one."
-            : "Couldn’t read it — try Google Lens or type the name below.";
+              ? "Found it."
+              : "Pick the right version."
+            : "Couldn’t read this card.";
       }
     } catch (e) {
       st.status = e.message;
@@ -514,7 +608,7 @@ export function registerScanner(ctx) {
       guide = document.getElementById("camGuide");
     if (el) {
       el.className = "cam-status " + st.state;
-      el.innerHTML = `<span aria-hidden="true">${st.icon}</span> ${esc(st.msg)}`;
+      el.innerHTML = `<i class="cam-dot" aria-hidden="true"></i>${esc(st.msg)}`;
     }
     if (guide) guide.className = "cam-guide " + st.state;
     if (st.state === "green" && !lockSig) {
@@ -567,11 +661,11 @@ export function registerScanner(ctx) {
     s().lastCard = c;
     greenSince = 0;
     lockSig = sigOf(c);
-    lockMsg = "Captured — tap Add below, or swap in the next card";
+    lockMsg = "Captured. Tap Add, or try the next card";
     process(c);
   };
   A.scanStart = async () => {
-    if (!navigator.mediaDevices?.getUserMedia) return toast("This browser can’t open the camera here — use Photo instead.");
+    if (!navigator.mediaDevices?.getUserMedia) return toast("This browser can’t open the camera here. Use Photo instead.");
     try {
       const ticket = ++camTicket,
         cam = prefs().camera,
@@ -587,7 +681,7 @@ export function registerScanner(ctx) {
       s().status = "";
       render();
     } catch (e) {
-      s().status = /denied|NotAllowed/i.test(e.name + e.message) ? "Camera permission was declined. Allow it in your browser settings, or use Photo." : "Couldn’t open the camera — use Photo instead.";
+      s().status = /denied|NotAllowed/i.test(e.name + e.message) ? "Camera permission was declined. Allow it in your browser settings, or use Photo." : "Couldn’t open the camera. Use Photo instead.";
       render();
     }
   };
@@ -728,41 +822,47 @@ export function registerScanner(ctx) {
     // The same card still sitting in front of the camera won't be captured again.
     if (s().lastCard) {
       lockSig = sigOf(s().lastCard);
-      lockMsg = "Added — swap in the next card";
+      lockMsg = "Added. Next card";
     }
     s().cands = [];
     s().read = null;
     s().status = s().camOn ? "On the list. Swap in the next card." : "On the list. Take the next photo.";
     render();
   };
-  // Backup reader: hand the captured card to Google Lens (the phone's share sheet, or Lens on the web).
+  // Backup reader: Google Lens. The app's server uploads the picture (Lens refuses uploads posted
+  // straight from other sites) and the results open in a new tab. The tab opens during the tap so
+  // it isn't blocked as a pop-up; if it is blocked anyway, a link to the results appears instead.
   A.scanLens = async () => {
     const card = s().lastCard;
     if (!card?.toBlob) return toast("Scan or photograph a card first.");
-    const blob = await new Promise((ok) => card.toBlob(ok, "image/jpeg", 0.92));
-    if (!blob) return toast("Couldn’t prepare the picture.");
-    const file = new File([blob], "card.jpg", { type: "image/jpeg" });
-    if (navigator.canShare?.({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: "Card" });
-        toast("Pick Google Lens (or the Google app), then type the name it finds below.");
-      } catch {}
+    const tab = window.open("", "_blank");
+    try {
+      if (tab) tab.document.title = "Google Lens";
+    } catch {}
+    setStatus("Sending the picture to Google Lens…");
+    const blob = await new Promise((ok) => card.toBlob(ok, "image/jpeg", 0.9));
+    const r = blob ? await fetch("api/lens", { method: "POST", body: blob, headers: { "Content-Type": "image/jpeg" } }).then((x) => x.json()).catch(() => null) : null;
+    if (!r?.url) {
+      tab?.close();
+      s().lensUrl = "";
+      setStatus("Google Lens didn’t answer. Try again in a moment.");
       return;
     }
-    // Desktop: post the picture straight to Lens in a new tab.
-    const f = document.createElement("form");
-    Object.assign(f, { action: "https://lens.google.com/v3/upload", method: "post", enctype: "multipart/form-data", target: "_blank" });
-    const inp = document.createElement("input");
-    Object.assign(inp, { type: "file", name: "encoded_image" });
-    const dt = new DataTransfer();
-    dt.items.add(file);
-    inp.files = dt.files;
-    f.append(inp);
-    f.hidden = true;
-    document.body.append(f);
-    f.submit();
-    f.remove();
-    toast("Opened Google Lens — type the name it finds below.");
+    if (tab && !tab.closed) {
+      tab.location.href = r.url;
+      setStatus("Lens results are open in a new tab. Type the name it finds below.");
+    } else {
+      s().lensUrl = r.url;
+      setStatus("Lens is ready. Tap the link to see the results.");
+      render();
+    }
+  };
+  A.scanZoom = (t) => {
+    if (t.dataset.i === "shot") return s().shot && openZoom({ src: s().shot, alt: "Your capture" });
+    const c = s().cands?.[Number(t.dataset.i)];
+    if (!c) return;
+    const urls = c.card ? artworkSources(c.card, true) : [c.image].filter(Boolean);
+    if (urls.length) openZoom({ src: urls[0], hi: urls[0], alt: c.name, fallback: urls[1] || "" });
   };
   A.scanDetails = (t) => {
     const c = s().cands?.[Number(t.dataset.i)];
@@ -831,7 +931,7 @@ export function registerScanner(ctx) {
   ctx.closePop = closePop;
   A.scanQuick = () => {
     const p = savePrefs(game(), { quick: !prefs().quick });
-    toast(p.quick ? "Quick mode on — exact matches are added without asking." : "Quick mode off — you confirm every scan.");
+    toast(p.quick ? "Quick mode on. Cards it’s sure about go straight on the list." : "Quick mode off. You confirm each card.");
     render();
   };
   A.scanTorch = async () => {
@@ -918,9 +1018,9 @@ export function registerScanner(ctx) {
     const text = sessionText(loadSession(game()));
     try {
       await navigator.clipboard.writeText(text);
-      toast("List copied — paste it into Moxfield, ManaBox or a message.");
+      toast("List copied. Paste it into Moxfield, ManaBox or a message.");
     } catch {
-      toast("Couldn't copy — your browser blocked the clipboard.");
+      toast("Couldn't copy. Your browser blocked the clipboard.");
     }
   };
   A.sessClear = () => {
