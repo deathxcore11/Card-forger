@@ -1,3 +1,4 @@
+import { locationPicker, rememberLocation, chooseLocation } from "./collection-locations.js";
 import { captureAuthFields, restoreAuthFields, authFeedback } from "./auth-form.js";
 import { formatUpgrades, applyFormatSwap } from "./format-upgrades.js";
 import { cutToTarget } from "./deck-safety.js";
@@ -626,6 +627,7 @@ window.addEventListener("hashchange", () => {
 
 const A = {}; // click actions
 const C = {}; // change handlers
+C.chooseLocation = t => chooseLocation(t);
 const I = {}; // input handlers
 
 // Yu-Gi-Oh! and Pokémon actions (tcg.js).
@@ -1571,7 +1573,7 @@ function addSheet(entry = null, preset = {}) {
       <label>Finish<select id="addFinish">${options([["nonfoil", "Nonfoil"], ["foil", "Foil"], ["etched", "Etched"]], entry?.finish || preset.finish || "nonfoil")}</select></label>
       <label>Condition<select id="addCondition">${options(["Near Mint", "Lightly Played", "Moderately Played", "Heavily Played", "Damaged"].map((x) => [x, x]), entry?.condition || "Near Mint")}</select></label>
       <label>Language<select id="addLanguage">${options([["en", "English"], ["ja", "Japanese"], ["de", "German"], ["fr", "French"], ["es", "Spanish"], ["it", "Italian"], ["pt", "Portuguese"], ["ru", "Russian"], ["ko", "Korean"], ["zhs", "Chinese (S)"], ["zht", "Chinese (T)"]], entry?.language || "en")}</select></label>
-      <label class="span2">Where it lives<input id="addLocation" maxlength="100" placeholder="Binder A, red box…" value="${esc(entry?.location || preset.location || "")}"></label>
+      ${locationPicker(S.state,"mtg","addLocation",entry ? entry.location || "" : preset.location ?? null)}
     </div>
     <details class="more" ${entry?.set || preset.set ? "open" : ""}><summary>Exact printing (optional)</summary><div class="grid2"><label>Set code<input id="addSet" placeholder="e.g. CMM" value="${esc(entry?.set || preset.set || "")}"></label><label>Collector #<input id="addNumber" value="${esc(entry?.collectorNumber || preset.number || "")}"></label></div><p class="muted small">Leave blank if unsure — CardStashy never guesses an edition.</p></details>
     <p id="addError" class="error" role="alert"></p>
@@ -1655,6 +1657,7 @@ async function saveLot(unverified) {
     } else if (!unverified) e.nameVerified = true;
     await commit(
       (s) => {
+        e.location=rememberLocation(s,"mtg",e.location);
         s.collection = editing ? s.collection.map((x) => (x.id === e.id ? e : x)) : [...s.collection, e];
         s.example = false;
         s.printings = { ...s.printings, ...(S.pendingPrintings || {}) };
@@ -2372,7 +2375,7 @@ function acquireSheet(mode) {
   openSheet(
     `<div class="sheet-head"><h2>${mode === "purchase" ? "Add the whole deck to my collection" : "Cards I got"}</h2><button class="icon" data-act="closeSheet">✕</button></div>
     <p class="muted small">${mode === "purchase" ? "For a precon or deck you bought: every card below is added as new copies, on top of what you already own." : "Tick the cards you now physically have. They’ll be added to your collection and the shopping gap updates."}</p>
-    <div class="grid2"><label class="span2">Store them in<input id="acqLoc" maxlength="100" value="${esc(mode === "purchase" ? "Deck: " + d.name : "New arrivals")}"></label><label>Finish<select id="acqFinish">${options([["nonfoil", "Nonfoil"], ["foil", "Foil"], ["etched", "Etched"]], "nonfoil")}</select></label><label>Condition<select id="acqCond">${options(["Near Mint", "Lightly Played", "Moderately Played"].map((x) => [x, x]), "Near Mint")}</select></label></div>
+    <div class="grid2">${locationPicker(S.state,"mtg","acqLoc",mode === "purchase" ? "Deck: " + d.name : null,"Store them in")}<label>Finish<select id="acqFinish">${options([["nonfoil", "Nonfoil"], ["foil", "Foil"], ["etched", "Etched"]], "nonfoil")}</select></label><label>Condition<select id="acqCond">${options(["Near Mint", "Lightly Played", "Moderately Played"].map((x) => [x, x]), "Near Mint")}</select></label></div>
     <div class="row between"><button class="link small" data-act="acqAll" data-on="1">Select all</button><button class="link small" data-act="acqAll" data-on="">Select none</button></div>
     <div class="list compact">${rows.map((r, i) => `<label class="mini-row"><span class="row"><input type="checkbox" class="acq-check" data-i="${i}" ${mode === "purchase" ? "checked" : ""}><span class="ellip">${esc(r.name)}</span></span><input type="number" class="acq-qty narrow" data-i="${i}" data-name="${esc(r.name)}" min="1" max="${r.max}" value="${r.qty}" aria-label="Copies of ${esc(r.name)}"></label>`).join("")}</div>
     <p id="acqError" class="error" role="alert"></p><button class="btn block" data-act="acqConfirm">Add to collection</button>`,
@@ -2396,6 +2399,7 @@ A.acqConfirm = async (t) => {
     const extra = { finish: $("#acqFinish").value, condition: $("#acqCond").value, language: "en" };
     await commit(
       (s) => {
+        for(const p of picked)p.location=rememberLocation(s,"mtg",p.location);
         if (acqMode === "purchase") {
           for (const p of picked) {
             if (!Number.isInteger(p.qty) || p.qty < 1) throw Error("Check the quantity for " + p.name);

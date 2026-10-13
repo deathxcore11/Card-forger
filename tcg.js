@@ -1,3 +1,4 @@
+import { locationPicker, rememberLocation } from "./collection-locations.js";
 import { zoneCountLabel } from "./deck-safety.js";
 import { binderShelf } from "./binders.js";
 // Yu-Gi-Oh! and Pokémon: collection, search, sets and deck building, sharing one
@@ -580,7 +581,7 @@ export function tcgAddSheet(c, preset = "") {
     <label>Condition<select id="tCond">${options(["Near Mint", "Lightly Played", "Moderately Played", "Heavily Played", "Damaged"].map((x) => [x, x]), "Near Mint")}</select></label>
     ${opts.length ? `<label class="span2">${g === "ygo" ? "Printing (set code · rarity)" : "Version"}<select id="tPrint">${options([["", g === "ygo" ? "Not sure / any printing" : "Not sure"], ...opts], opts.some((o) => o[0] === preset) ? preset : "")}</select></label>` : ""}
     ${g === "ygo" ? `<label class="span2">Edition<select id="tEdition">${options([["", "Not sure"], ["1st-edition", "First Edition"], ["unlimited", "Unlimited"], ["limited", "Limited Edition"]], "")}</select></label><p class="foot span2">Set prices do not distinguish editions. An edition-specific value stays unknown; verify it with the seller.</p>` : `<p class="foot span2">Versions without a price are still collectible. The source image may represent a different edition; confirm stamps and borders yourself.</p>`}
-    <label class="span2">Where it lives<input id="tLoc" maxlength="100" placeholder="Binder, deck box…"></label>
+    ${locationPicker(S.state,g,"tLoc")}
   </div>
   <button class="btn block" data-act="tOwnSave" data-id="${esc(c.id)}">Add to collection</button>`;
 }
@@ -1555,10 +1556,11 @@ export function registerTcg(c) {
       edition = G === "ygo" ? document.querySelector("#tEdition")?.value || "" : "",
       variantLabel = G === "ptcg" ? card.variants?.find(v => v.key === pr)?.label || pr : "";
     await mutate(
-      (st) => {
-        const same = st.collection.find((e) => e.cardId === card.id && (e.printing || "") === printing && (e.variant || "") === (G === "ptcg" ? pr : "") && (e.edition || "") === edition && (e.rarity || "") === rarity && e.condition === document.querySelector("#tCond").value);
+      (st,state) => {
+        const location=rememberLocation(state,G,document.querySelector("#tLoc").value);
+        const same = st.collection.find((e) => e.cardId === card.id && (e.printing || "") === printing && (e.variant || "") === (G === "ptcg" ? pr : "") && (e.edition || "") === edition && (e.rarity || "") === rarity && e.condition === document.querySelector("#tCond").value && String(e.location || "").trim() === location);
         if (same) same.qty += qty;
-        else st.collection.push({ id: uid(), cardId: card.id, name: card.name, key: SOURCES[G].ownKey(card), qty, printing, rarity, edition, variantLabel, variant: G === "ptcg" ? pr : "", condition: document.querySelector("#tCond").value, location: document.querySelector("#tLoc").value.trim().slice(0, 100), addedAt: new Date().toISOString() });
+        else st.collection.push({ id: uid(), cardId: card.id, name: card.name, key: SOURCES[G].ownKey(card), qty, printing, rarity, edition, variantLabel, variant: G === "ptcg" ? pr : "", condition: document.querySelector("#tCond").value, location, addedAt: new Date().toISOString() });
       },
       { msg: `Added ${qty}× ${card.name}.` },
     );

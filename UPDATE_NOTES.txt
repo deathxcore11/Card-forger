@@ -1,3 +1,7 @@
+3.9.4 — Reusable collection locations
+All three games now offer a location dropdown when adding cards: reuse existing binder/deck/box names, choose Unsorted, or type a new name. Successful saves remember names and the last-used location per game; editing a Magic entry keeps that entry’s current location. Imported collection locations also appear in the menu. This changes physical storage labels, not deck contents.
+Pokémon and Yu-Gi-Oh! now keep matching cards in different locations as separate collection entries; additions to the same printing/condition/location still combine copies.
+
 3.9.3 — See-through binders and real page turns
 - Binder covers are clear, tinted acrylic: you see the cards inside through the cover.
 - Star up to 9 cards in a binder to show them on its cover (1 star = one big card, 2–4 = a 2×2
