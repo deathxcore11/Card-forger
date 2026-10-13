@@ -7,7 +7,7 @@
 // Thresholds are starting points tuned on test images; they should be refined with real phone photos.
 import { S } from "./store.js";
 import { esc } from "./ui.js";
-import { nameCandidates } from "./scan.js";
+import { nameCandidates, detectGame, anchoredNames, scanNameKey } from "./scan.js";
 import { FINISHES, CONDITIONS, LANGS, QTYS, loadPrefs, savePrefs, loadSession, saveSession, addToSession, itemKey, sessionCount, sessionValue, sessionUnpriced, sessionText, feedback } from "./scansession.js";
 
 const CARD = 63 / 88; // card width / height
@@ -156,31 +156,74 @@ export async function releaseOCR() {
   worker = null;
   workerLang = "";
 }
-// A region of the card, enlarged and high-contrast, for the reader.
-function regionCanvas(card, [fx, fy, fw, fh], scale = 2) {
+// A region of the card, enlarged and high-contrast, for the reader. Small photos (a card in the
+// corner of a picture, a screenshot) are scaled up so letters are tall enough to read.
+function regionCanvas(card, [fx, fy, fw, fh], scale = 2, invert = false) {
+  const rw = card.width * fw,
+    k = Math.min(6, Math.max(scale, 1100 / Math.max(1, rw)));
   const c = document.createElement("canvas");
-  c.width = Math.max(1, Math.round(card.width * fw * scale));
-  c.height = Math.max(1, Math.round(card.height * fh * scale));
+  c.width = Math.max(1, Math.round(rw * k));
+  c.height = Math.max(1, Math.round(card.height * fh * k));
   const ctx = c.getContext("2d");
-  ctx.filter = "grayscale(1) contrast(1.6)";
-  ctx.drawImage(card, card.width * fx, card.height * fy, card.width * fw, card.height * fh, 0, 0, c.width, c.height);
+  ctx.filter = `grayscale(1) contrast(1.6)${invert ? " invert(1)" : ""}`;
+  ctx.drawImage(card, card.width * fx, card.height * fy, rw, card.height * fh, 0, 0, c.width, c.height);
   return c;
 }
+const recog = async (w, canvas) => ((await w.recognize(canvas)).data.text || "").trim();
+// Where the card is in a photo: the longest run of rows and of columns that differ from the
+// photo's border (a table, a playmat, a dark screen). Returns fractions, or null if no card shape.
+export function findCardBox(data, W, H) {
+  const px = (x, y) => (y * W + x) * 4,
+    edge = [];
+  for (let x = 0; x < W; x++) edge.push(px(x, 0), px(x, H - 1));
+  for (let y = 0; y < H; y++) edge.push(px(0, y), px(W - 1, y));
+  const med = [0, 1, 2].map((c) => edge.map((i) => data[i + c]).sort((a, b) => a - b)[edge.length >> 1]),
+    off = (x, y) => {
+      const i = px(x, y);
+      return Math.abs(data[i] - med[0]) + Math.abs(data[i + 1] - med[1]) + Math.abs(data[i + 2] - med[2]) > 60;
+    };
+  const run = (n, m, at) => {
+    let best = [0, -1], start = -1;
+    for (let a = 0; a <= n; a++) {
+      let k = 0;
+      if (a < n) for (let b = 0; b < m; b++) k += at(a, b) ? 1 : 0;
+      if (a < n && k / m > 0.2) { if (start < 0) start = a; }
+      else if (start >= 0) { if (a - start > best[1] - best[0]) best = [start, a]; start = -1; }
+    }
+    return best;
+  };
+  const [y0, y1] = run(H, W, (y, x) => off(x, y)),
+    [x0, x1] = run(W, H, (x, y) => y >= y0 && y < y1 && off(x, y));
+  const w = (x1 - x0) / W, h = (y1 - y0) / H, aspect = (x1 - x0) / Math.max(1, y1 - y0);
+  // A card that already fills the photo isn't cropped (its own frame would look like the edge).
+  if (w * h < 0.04 || w * h > 0.6 || aspect < 0.55 || aspect > 0.9) return null;
+  // A little margin so the card's edge and corners stay in.
+  const m = 0.02, bx = Math.max(0, x0 / W - m), by = Math.max(0, y0 / H - m);
+  return { x: bx, y: by, w: Math.min(1 - bx, w + 2 * m), h: Math.min(1 - by, h + 2 * m) };
+}
+
 // Read the name strip and the code strip separately; the whole card only as a fallback.
 export async function readCard(card, g, lang, progress = () => {}) {
   const w = await getWorker(lang, progress),
-    L = LAYOUT[g] || LAYOUT.mtg,
-    text = async (canvas) => ((await w.recognize(canvas)).data.text || "").trim();
+    L = LAYOUT[g] || LAYOUT.mtg;
   progress("Reading the name…");
-  const name = await text(regionCanvas(card, L.name, 2.5));
+  let name = await recog(w, regionCanvas(card, L.name, 2.5));
+  // Light letters on a dark banner (full-art, GX, foils) read better inverted.
+  if (!nameCandidates(g, name).length) name = [name, await recog(w, regionCanvas(card, L.name, 2.5, true))].join("\n");
   progress("Reading the set code and number…");
-  const code = [await text(regionCanvas(card, L.code, 3)), L.pass ? await text(regionCanvas(card, L.pass, 3)) : ""].join("\n");
+  const code = [await recog(w, regionCanvas(card, L.code, 3)), L.pass ? await recog(w, regionCanvas(card, L.pass, 3)) : ""].join("\n");
   let full = "";
   if (!nameCandidates(g, name).length) {
     progress("Reading the whole card…");
-    full = await text(regionCanvas(card, [0, 0, 1, 1], 1));
+    full = await readFull(card, lang, progress);
   }
   return { name, code, full };
+}
+// The whole card as text: for finding the name wherever it is and telling which game it is.
+export async function readFull(card, lang, progress = () => {}) {
+  const w = await getWorker(lang, progress);
+  progress("Reading the whole card…");
+  return recog(w, regionCanvas(card, [0, 0, 1, 1], 1));
 }
 
 /* ---------- view ---------- */
@@ -206,12 +249,18 @@ const money = (v) => (v == null ? "—" : "$" + Number(v).toFixed(2));
 const label = (list, v) => (list.find((x) => (Array.isArray(x) ? x[0] : x) === v) || [v, v])[1] ?? v;
 
 // The defaults every scan uses: finish, condition, card language and quantity. Tap to change.
+// The defaults every scan uses. Each opens a glass dropdown with the full choices.
+const LANG_NAME = { en: "English", ja: "Japanese", de: "German", fr: "French", it: "Italian", es: "Spanish", pt: "Portuguese", ko: "Korean", zhs: "Chinese" };
+export function pickOptions(g, k) {
+  if (k === "finish") return FINISHES[g].map(([v, l]) => ({ v, l, sub: { nonfoil: "Non-foil", foil: "Traditional foil", etched: "Etched foil", normal: "No holo", holofoil: "Holo art", "reverse-holofoil": "Reverse holo", unlimited: "Unlimited print run", "1st-edition": "1st Edition stamp" }[v] }));
+  if (k === "condition") return CONDITIONS.map(([v, l]) => ({ v, l, sub: v }));
+  if (k === "lang") return LANGS.map(([v, l]) => ({ v, l, sub: LANG_NAME[v] }));
+  return QTYS.map((n) => ({ v: n, l: "×" + n, sub: `${n} cop${n === 1 ? "y" : "ies"} per scan` }));
+}
+const CAPTION = { finish: "Finish", condition: "Condition", lang: "Language", qty: "Copies" };
 function defaultsPill(g, p) {
-  return `<div class="scan-defaults" role="group" aria-label="Defaults for scanned cards">
-    <button data-act="scanCycle" data-k="finish" title="Finish">${esc(label(FINISHES[g], p.finish))}</button>
-    <button data-act="scanCycle" data-k="condition" title="Condition">${esc(label(CONDITIONS, p.condition))}</button>
-    <button data-act="scanCycle" data-k="lang" title="Card language">${esc(label(LANGS, p.lang))}</button>
-    <button data-act="scanCycle" data-k="qty" title="Copies per scan">+${p.qty}</button></div>`;
+  const seg = (k, val) => `<button data-act="scanPick" data-k="${k}" aria-haspopup="listbox" aria-label="${CAPTION[k]}: ${esc(String(val))}"><small>${CAPTION[k]}</small><span>${esc(String(val))}<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>`;
+  return `<div class="scan-defaults" role="group" aria-label="Defaults for scanned cards">${seg("finish", label(FINISHES[g], p.finish))}${seg("condition", label(CONDITIONS, p.condition))}${seg("lang", label(LANGS, p.lang))}${seg("qty", "×" + p.qty)}</div>`;
 }
 
 function sessionPanel(g, p, list) {
@@ -219,15 +268,15 @@ function sessionPanel(g, p, list) {
     v = sessionValue(list),
     unp = sessionUnpriced(list);
   return `<section class="panel scan-session" aria-label="Scanned cards">
-    <div class="ss-head"><div><b>${n} card${n === 1 ? "" : "s"} scanned</b>${p.showValue && n ? `<small>${money(v)}${unp ? ` + ${unp} unpriced` : ""}</small>` : ""}</div>
-      ${n ? `<button class="btn small" data-act="sessCommit">＋ Save to collection</button>` : ""}</div>
+    <div class="ss-head"><div class="ss-stats"><span class="ss-stat"><b>${n}</b><small>card${n === 1 ? "" : "s"}</small></span>${p.showValue && n ? `<span class="ss-stat"><b>${money(v)}</b><small>${unp ? `+ ${unp} unpriced` : "value"}</small></span>` : ""}</div>
+      ${n ? `<button class="btn small ss-save" data-act="sessCommit">＋ Save to collection</button>` : ""}</div>
     <div class="searchbar ss-add"><input id="scanName" placeholder="Add by name${g === "ygo" ? " or set code" : ""}" data-enter="scanFind" aria-label="Add a card by name"><button class="btn ghost small" data-act="scanFind">Find</button></div>
     ${
       n
         ? `<div class="ss-list">${list
             .map((x) => {
               const k = esc(itemKey(x));
-              return `<div class="ss-row">${x.image ? `<img src="${esc(x.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<span class="ss-noimg"></span>`}
+              return `<div class="ss-row ${Date.now() - (x.at || 0) < 2500 ? "fresh" : ""}">${x.image ? `<img src="${esc(x.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<span class="ss-noimg"></span>`}
           <span class="ss-txt"><b>${esc(x.name)}</b><small>${esc([x.setCode && String(x.setCode).toUpperCase(), x.number && "#" + x.number].filter(Boolean).join(" "))} · ${esc(label(CONDITIONS, x.condition))} · ${esc(label(LANGS, x.lang))}</small></span>
           ${finishesFor(g, x.cand).length > 1 ? `<button class="ss-chip" data-act="sessFinish" data-k="${k}" title="Tap to change finish">${esc(label(FINISHES[g], x.finish))}</button>` : `<span class="ss-chip fixed" title="Only printed in this finish">${esc(label(FINISHES[g], x.finish))}</span>`}
           <span class="ss-qty"><button data-act="sessQty" data-k="${k}" data-d="-1" aria-label="One fewer">−</button><b>${x.qty}</b><button data-act="sessQty" data-k="${k}" data-d="1" aria-label="One more">＋</button></span>
@@ -235,9 +284,11 @@ function sessionPanel(g, p, list) {
             })
             .join("")}</div>
         <div class="ss-foot"><input id="sessLoc" value="${esc(p.location || "")}" placeholder="Binder or box (optional)" aria-label="Where these cards go"><button class="btn ghost small" data-act="sessCopy">⧉ Copy list</button><button class="link small danger" data-act="sessClear">Clear</button></div>`
-        : `<p class="muted small">Scanned cards collect here. Check them, change finish or copies, then save them all at once.</p>`
+        : `<div class="ss-empty"><span class="ss-fan" aria-hidden="true"><i></i><i></i><i></i></span><b>Your scans land here</b><small>Check each card, tweak finish or copies, then save the whole stack in one tap.</small></div>`
     }</section>`;
 }
+
+const GAME_LABEL = { mtg: "Magic", ygo: "Yu-Gi-Oh!", ptcg: "Pokémon" };
 
 export function scanView(g, gameName) {
   const s = S.ui.scan,
@@ -257,7 +308,7 @@ export function scanView(g, gameName) {
   <section class="panel scan-panel">
     ${
       live
-        ? `<div class="cam-wrap ${s.camOn ? "immersive" : ""}" id="camWrap">${s.camOn ? `<div id="camSlot"></div><div class="cam-guide ${esc(s.guide?.state || "red")}" id="camGuide"></div><div class="cam-status ${esc(s.guide?.state || "red")}" id="camStatus" role="status" aria-live="polite"><span aria-hidden="true">${esc(s.guide?.icon || "▢")}</span> ${esc(s.guide?.msg || "Starting camera…")}</div>${rail}<div class="scan-flash" id="scanFlash" aria-live="polite"></div>${defaultsPill(g, p)}` : `<div class="scan-drop"><b>Hold one ${esc(gameName)} card inside the frame</b><span class="muted small">On a plain, contrasting surface, all four corners visible, no glare. Keep ${tips} sharp.</span><button class="btn" data-act="scanStart">📷 Start camera</button></div>`}</div>
+        ? `<div class="cam-wrap ${s.camOn ? "immersive" : ""}" id="camWrap">${s.camOn ? `<div id="camSlot"></div><div class="cam-guide ${esc(s.guide?.state || "red")}" id="camGuide"></div><div class="cam-status ${esc(s.guide?.state || "red")}" id="camStatus" role="status" aria-live="polite"><span aria-hidden="true">${esc(s.guide?.icon || "▢")}</span> ${esc(s.guide?.msg || "Starting camera…")}</div>${rail}<div class="scan-flash" id="scanFlash" aria-live="polite"></div>${defaultsPill(g, p)}` : `<div class="scan-drop"><span class="scan-sweep" aria-hidden="true"></span><span class="scan-ghost" aria-hidden="true"></span><b>Ready when you are</b><span class="muted small">Hold one ${esc(gameName)} card in the frame — it scans itself.</span><span class="scan-tips"><span>${TIP_FLAT} Flat</span><span>${TIP_LIGHT} Bright</span><span>${TIP_GLARE} No glare</span></span><button class="btn scan-go" data-act="scanStart">📷 Start camera</button><small class="muted scan-tip-line" title="${esc("Keep " + tips + " sharp.")}">Keep the name and the bottom code sharp</small></div>`}</div>
       ${s.camOn ? `<div class="actions wrap scan-under"><button class="btn" id="scanCaptureBtn" data-act="scanCapture">Capture</button><label class="check small"><input type="checkbox" data-change="scanAuto" ${s.auto !== false ? "checked" : ""}> Capture automatically</label></div>` : defaultsPill(g, p)}`
         : `<div class="actions wrap"><label class="btn">📷 Take photo<input type="file" accept="image/*" capture="environment" data-change="scanFile" hidden></label><label class="btn ghost">Upload<input type="file" accept="image/*" data-change="scanFile" hidden></label></div>
       ${s.url ? `<p class="muted small">Drag a box around the card to crop. Rotate if it’s sideways.</p><div class="crop-wrap" id="cropWrap"><img id="cropImg" src="${s.url}" alt="Your photo"><div class="crop-box" id="cropBox"></div></div>
@@ -269,19 +320,26 @@ export function scanView(g, gameName) {
   ${
     s.cands?.length || (s.read && !s.busy)
       ? `<section class="panel"><h3>${s.cands?.length ? (s.cands[0].exact ? "Found it — check the printing" : "Which card is it?") : "No match yet"}</h3>
-      ${cands ? `<div class="scan-cands">${cands}</div>` : `<p class="muted small">Type the name below, or try again with the card flat and the name sharp.</p>`}
+      ${s.foundIn && s.cands?.length ? `<p class="scan-other" style="--game-color:${GAME_HUE[s.foundIn]}"><b>This is a ${esc(GAME_LABEL[s.foundIn])} card.</b> Adding it switches the app to ${esc(GAME_LABEL[s.foundIn])}${/[!.]$/.test(GAME_LABEL[s.foundIn]) ? "" : "."}</p>` : ""}
+      ${cands ? `<div class="scan-cands">${cands}</div>` : `<p class="muted small">Fill the frame with the card — the name strip and the bottom code need to be sharp. Or let Google Lens read it, then type the name below.</p>`}
+      ${s.lastCard ? `<div class="actions wrap"><button class="btn ghost small scan-lens" data-act="scanLens">${LENS} Search with Google Lens</button></div>` : ""}
       <details class="trouble"><summary>Troubleshooting</summary><p class="small muted">Name strip read as: <code>${esc((s.read?.name || "").slice(0, 120)) || "—"}</code><br>Code strip read as: <code>${esc((s.read?.code || "").replace(/\s+/g, " ").slice(0, 120)) || "—"}</code><br>Names tried: ${esc((s.tried || []).join(" · ") || "—")}</p></details></section>`
       : ""
   }
   ${sessionPanel(g, p, list)}
-  <p class="foot">${p.quick ? "Quick mode: exact matches (set code and number) go straight to the list; anything less sure asks you first." : "Every scan asks you to confirm before it goes on the list."} Text recognition runs on your phone; only names and codes are looked up online. The first scan downloads the reader (~5 MB${scanLang() !== "eng" ? ", plus Japanese" : ""}).</p>`;
+  <p class="foot">${p.quick ? "⚡ Quick mode: exact matches skip the question." : "Every scan asks before it goes on the list."} Reading happens on your phone; the first scan downloads the reader (~5 MB${scanLang() !== "eng" ? " + Japanese" : ""}).</p>`;
 }
 
 // Rail icons (drawn, same family as the app).
 const ico = (b) => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${b}</svg>`;
+const TIP_FLAT = ico(`<path d="M3 15.5 12 20l9-4.5L12 11z"/><path d="M3 15.5V13l9-4.5 9 4.5v2.5" stroke-opacity=".5"/>`);
+const TIP_LIGHT = ico(`<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/>`);
+const TIP_GLARE = ico(`<circle cx="12" cy="12" r="8.5"/><path d="m6 6 12 12"/>`);
 const TORCH = ico(`<path d="M8 3h8l-1 5H9z"/><path d="M9 8h6v3l-1.5 2v8h-3v-8L9 11z"/><path d="M12 15v2"/>`);
 const BOLT = ico(`<path d="M13.5 3 6 13.5h5.5L10 21l8-11h-5.5z"/>`);
 const GEAR = ico(`<circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.5 1.5M16.5 16.5 18 18M6 18l1.5-1.5M16.5 7.5 18 6"/>`);
+const LENS = ico(`<path d="M4 9V6.5A2.5 2.5 0 0 1 6.5 4H9M15 4h2.5A2.5 2.5 0 0 1 20 6.5V9M20 15v2.5a2.5 2.5 0 0 1-2.5 2.5H15M9 20H6.5A2.5 2.5 0 0 1 4 17.5V15"/><circle cx="12" cy="12" r="3.2"/>`);
+const GAME_HUE = { mtg: "#f08a5d", ygo: "#f5b335", ptcg: "#ef5350" };
 const STOP = ico(`<rect x="6.5" y="6.5" width="11" height="11" rx="2"/>`);
 
 /* ---------- controller ---------- */
@@ -360,15 +418,41 @@ export function registerScanner(ctx) {
     st.cands = [];
     render();
     try {
+      st.foundIn = "";
       st.read = await readCard(card, G, scanLang(), setStatus);
       setStatus("Matching…");
-      const p = prefs(),
-        r = await match(G, st.read, scanLang(), false, setStatus, p);
+      const p = prefs();
+      let r = await match(G, st.read, scanLang(), false, setStatus, p);
+      // A sure match is an exact printing or a name read letter for letter; a closest spelling
+      // ("MAGICIAN" → Zacian) is only a guess and gets a second look.
+      const sure = (x) => x.cands.some((c) => c.exact || x.tried.some((t) => scanNameKey(t) === scanNameKey(c.name)));
+      // Not sure: read the whole card and look for the name wherever it sits
+      // (a card in the corner of a photo, a screenshot, an unusual frame), and check the game.
+      if (!sure(r)) {
+        const full = st.read.full || (await readFull(card, scanLang(), setStatus));
+        st.read.full = full;
+        const wide = { name: [...anchoredNames(G, full), st.read.name, full].join("\n"), code: st.read.code, full };
+        setStatus("Looking again with the whole card…");
+        const r2 = await match(G, wide, scanLang(), false, setStatus, p);
+        if (sure(r2) || !r.cands.length) r = { cands: r2.cands.length ? r2.cands : r.cands, tried: [...r.tried, ...r2.tried] };
+        // Still unsure: maybe it's another game's card.
+        const other = detectGame(`${st.read.name}\n${st.read.code}\n${full}`);
+        if (!sure(r) && other && other !== G) {
+          setStatus(`Looks like a ${GAME_LABEL[other]} card — checking…`);
+          const ro = await readCard(card, other, scanLang(), setStatus),
+            wo = { name: [...anchoredNames(other, full), ro.name, full].join("\n"), code: `${ro.code}\n${full}`, full };
+          const r3 = await match(other, wo, scanLang(), false, setStatus, {});
+          if (r3.cands.length && (sure(r3) || !r.cands.length)) {
+            st.foundIn = other;
+            r = { cands: r3.cands, tried: [...r.tried, ...r3.tried] };
+          }
+        }
+      }
       // Lock set: candidates from the locked set first.
-      if (p.lockSet) r.cands.sort((a, b) => (ctx.setOf(G, b).toLowerCase() === p.lockSet.toLowerCase()) - (ctx.setOf(G, a).toLowerCase() === p.lockSet.toLowerCase()));
+      if (p.lockSet && !st.foundIn) r.cands.sort((a, b) => (ctx.setOf(G, b).toLowerCase() === p.lockSet.toLowerCase()) - (ctx.setOf(G, a).toLowerCase() === p.lockSet.toLowerCase()));
       st.tried = r.tried;
       st.guess = r.cands[0]?.name || nameCandidates(G, st.read.name || st.read.full)[0] || "";
-      if (p.quick && r.cands[0]?.exact) {
+      if (p.quick && r.cands[0]?.exact && !st.foundIn) {
         // Quick mode: an exact printing goes straight on the list; wait for the next card.
         const it = toSession(r.cands[0]);
         st.cands = [];
@@ -378,7 +462,13 @@ export function registerScanner(ctx) {
       } else {
         st.cands = r.cands;
         if (!r.cands.length) feedback("fail", p);
-        st.status = r.cands.length ? (r.cands[0].exact ? "Found the exact printing — check it and add it." : "Not sure which printing — pick the right one.") : "Couldn’t match it — type the name below.";
+        st.status = st.foundIn
+          ? `Found it in ${GAME_LABEL[st.foundIn]}.`
+          : r.cands.length
+            ? r.cands[0].exact
+              ? "Found the exact printing — check it and add it."
+              : "Not sure which printing — pick the right one."
+            : "Couldn’t read it — try Google Lens or type the name below.";
       }
     } catch (e) {
       st.status = e.message;
@@ -552,6 +642,15 @@ export function registerScanner(ctx) {
     s().crop = null;
     render();
   };
+  // No crop drawn: find the card in the photo by itself.
+  const autoBox = (img) => {
+    const W = 160, H = Math.max(1, Math.round((160 * img.naturalHeight) / img.naturalWidth)), c = document.createElement("canvas");
+    c.width = W;
+    c.height = H;
+    const x = c.getContext("2d", { willReadFrequently: true });
+    x.drawImage(img, 0, 0, W, H);
+    return findCardBox(x.getImageData(0, 0, W, H).data, W, H);
+  };
   A.scanRead = async () => {
     const st = s();
     if (!st.url || st.busy) return;
@@ -560,8 +659,8 @@ export function registerScanner(ctx) {
     // Crop to the box (fractions of the photo as shown).
     const rw = r.naturalWidth,
       rh = r.naturalHeight,
-      cr = st.crop || { x: 0, y: 0, w: 1, h: 1 },
-      k = Math.min(1, 1100 / (rw * cr.w)),
+      cr = st.crop || autoBox(r) || { x: 0, y: 0, w: 1, h: 1 },
+      k = Math.min(3, 1100 / (rw * cr.w)),
       c = document.createElement("canvas");
     c.width = Math.max(1, Math.round(rw * cr.w * k));
     c.height = Math.max(1, Math.round(rh * cr.h * k));
@@ -616,8 +715,15 @@ export function registerScanner(ctx) {
     render();
   };
   A.scanAdd = async (t) => {
-    const c = s().cands?.[Number(t.dataset.i)];
+    const c = s().cands?.[Number(t.dataset.i)],
+      other = s().foundIn;
     if (!c) return;
+    // A card from another game: switch to that game, then put it on that game's list.
+    if (other && other !== game()) {
+      await A.setGame({ dataset: { game: other } });
+      toast(`Switched to ${GAME_LABEL[other]}.`);
+    }
+    s().foundIn = "";
     toSession(c);
     // The same card still sitting in front of the camera won't be captured again.
     if (s().lastCard) {
@@ -628,6 +734,35 @@ export function registerScanner(ctx) {
     s().read = null;
     s().status = s().camOn ? "On the list. Swap in the next card." : "On the list. Take the next photo.";
     render();
+  };
+  // Backup reader: hand the captured card to Google Lens (the phone's share sheet, or Lens on the web).
+  A.scanLens = async () => {
+    const card = s().lastCard;
+    if (!card?.toBlob) return toast("Scan or photograph a card first.");
+    const blob = await new Promise((ok) => card.toBlob(ok, "image/jpeg", 0.92));
+    if (!blob) return toast("Couldn’t prepare the picture.");
+    const file = new File([blob], "card.jpg", { type: "image/jpeg" });
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: "Card" });
+        toast("Pick Google Lens (or the Google app), then type the name it finds below.");
+      } catch {}
+      return;
+    }
+    // Desktop: post the picture straight to Lens in a new tab.
+    const f = document.createElement("form");
+    Object.assign(f, { action: "https://lens.google.com/v3/upload", method: "post", enctype: "multipart/form-data", target: "_blank" });
+    const inp = document.createElement("input");
+    Object.assign(inp, { type: "file", name: "encoded_image" });
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    inp.files = dt.files;
+    f.append(inp);
+    f.hidden = true;
+    document.body.append(f);
+    f.submit();
+    f.remove();
+    toast("Opened Google Lens — type the name it finds below.");
   };
   A.scanDetails = (t) => {
     const c = s().cands?.[Number(t.dataset.i)];
@@ -645,6 +780,55 @@ export function registerScanner(ctx) {
     savePrefs(game(), { [k]: next });
     render();
   };
+  // Glass dropdown for a default: opens above or below its button, closes on pick, tap outside or Esc.
+  let pop = null;
+  const closePop = () => {
+    if (!pop) return;
+    pop.remove();
+    pop = null;
+    document.removeEventListener("pointerdown", outside, true);
+    document.removeEventListener("keydown", onKey, true);
+  };
+  const outside = (e) => {
+    if (pop && !pop.contains(e.target) && !e.target.closest?.('[data-act="scanPick"]')) closePop();
+  };
+  const onKey = (e) => {
+    if (e.key === "Escape") closePop();
+  };
+  A.scanPick = (t) => {
+    const k = t.dataset.k,
+      same = pop?.dataset.k === k;
+    closePop();
+    if (same) return;
+    const G = game(),
+      cur = prefs()[k],
+      opts = pickOptions(G, k);
+    pop = document.createElement("div");
+    pop.className = "glass-pop";
+    pop.dataset.k = k;
+    pop.setAttribute("role", "listbox");
+    pop.setAttribute("aria-label", CAPTION[k]);
+    pop.innerHTML = `<p class="gp-title">${CAPTION[k]}</p>${opts.map((o) => `<button role="option" aria-selected="${o.v === cur}" class="${o.v === cur ? "on" : ""}" data-act="scanSet" data-k="${k}" data-v="${esc(String(o.v))}"><b>${esc(o.l)}</b>${o.sub ? `<small>${esc(o.sub)}</small>` : ""}<svg class="gp-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4 4 9-9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`).join("")}`;
+    document.body.append(pop);
+    const r = t.getBoundingClientRect(),
+      ph = pop.offsetHeight,
+      pw = pop.offsetWidth,
+      up = r.top > ph + 16 && window.innerHeight - r.bottom < ph + 16;
+    pop.style.left = Math.max(8, Math.min(window.innerWidth - pw - 8, r.left + r.width / 2 - pw / 2)) + "px";
+    pop.style.top = (up ? r.top - ph - 8 : r.bottom + 8) + "px";
+    pop.classList.add(up ? "up" : "down");
+    pop.querySelector(".on, button")?.focus({ preventScroll: true });
+    document.addEventListener("pointerdown", outside, true);
+    document.addEventListener("keydown", onKey, true);
+  };
+  A.scanSet = (t) => {
+    const k = t.dataset.k,
+      v = k === "qty" ? Number(t.dataset.v) : t.dataset.v;
+    savePrefs(game(), { [k]: v });
+    closePop();
+    render();
+  };
+  ctx.closePop = closePop;
   A.scanQuick = () => {
     const p = savePrefs(game(), { quick: !prefs().quick });
     toast(p.quick ? "Quick mode on — exact matches are added without asking." : "Quick mode off — you confirm every scan.");
@@ -748,6 +932,7 @@ export function registerScanner(ctx) {
   // Called after every render of the scan screen (the page HTML is rebuilt on render).
   ctx.afterRender = () => {
     if (S.ui.view !== "scan") {
+      ctx.closePop?.();
       if (stream) stopCamera();
       return;
     }

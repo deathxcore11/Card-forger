@@ -3433,6 +3433,8 @@ async function mtgScanMatch(read, lang, manual = false, prefs = {}) {
   // Then plausible names from the name strip, one at a time (never the whole noisy string).
   for (const n of manual ? [read.name] : nameCandidates("mtg", read.name || read.full)) {
     if (out.length >= 3) break;
+    // A piece of a name already found ("Elves" after Llanowar Elves) would only add noise.
+    if (out.some((o) => key(o.name).includes(key(n)))) continue;
     tried.push(n);
     // Lock set: look the name up in that set first.
     const locked = prefs.lockSet ? await api("/cards/named?" + new URLSearchParams({ fuzzy: n, set: prefs.lockSet })).catch(() => null) : null;
@@ -3486,7 +3488,7 @@ const scanCtx = {
   render: () => render(),
   toast: (m) => toast(m),
   game: () => T.game(),
-  match: (g, read, lang, manual, status, prefs = {}) => (g === "mtg" ? mtgScanMatch(read, lang, manual, prefs) : tcgCtx.scanMatch(read, lang, manual, status)),
+  match: (g, read, lang, manual, status, prefs = {}) => (g === "mtg" ? mtgScanMatch(read, lang, manual, prefs) : tcgCtx.scanMatch(read, lang, manual, status, g)),
   add: (g, c) => (g === "mtg" ? mtgScanAdd(c) : tcgCtx.scanAdd(c)),
   details: (g, c) => (g === "mtg" ? A.card({ dataset: { name: c.name } }) : A.tCard({ dataset: { id: c.id } })),
 };

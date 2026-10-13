@@ -34,3 +34,13 @@ for (const s of [st(ok, ok, 5), st(frame({ card: false }))]) assert.ok(s.msg && 
   assert.ok(Math.abs(g.w / g.h - 63 / 88) < 0.01, "card-shaped");
 }
 console.log("PASS: scan guide — red (no card / off-frame / dark), amber (blur, glare, motion), green only when steady.");
+// A card on a dark background is found; a plain photo isn't mistaken for one.
+{
+  const { findCardBox } = await import("./scancam.js");
+  const W = 160, H = 340, d = new Uint8ClampedArray(W * H * 4);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const i = (y * W + x) * 4, inCard = x >= 52 && x < 108 && y >= 80 && y < 158; d[i] = d[i + 1] = d[i + 2] = inCard ? 200 : 25; d[i + 3] = 255; }
+  const b = findCardBox(d, W, H);
+  assert.ok(b && Math.abs(b.x - 52 / W) < 0.04 && Math.abs(b.h - 78 / H) < 0.06, JSON.stringify(b));
+  assert.equal(findCardBox(new Uint8ClampedArray(W * H * 4).fill(90), W, H), null);
+  console.log("card box ok");
+}

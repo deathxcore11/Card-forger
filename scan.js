@@ -3,8 +3,13 @@
 
 const clean = (s) =>
   s
-    // The Pokémon "ex" logo often reads as @X / €X / eX.
-    .replace(/\s*[@€©]\s*[X?x×]?(?![A-Za-z])|\s*\beX\b/g, " ex")
+    // Suffix glued on with a misread hyphen: "MewtwolGX" / "Mewtwo-GX" → "Mewtwo GX".
+    .replace(/([a-z])[lI1|\-–]?(GX|EX|VMAX|VSTAR)\b/g, "$1 $2")
+    .replace(/([a-z])[\-–|]V\b/g, "$1 V")
+    // A border mark read as a capital stuck to the name: "JMewtwo" → "Mewtwo".
+    .replace(/(^|\s)[A-Z](?=[A-Z][a-z]{2,})/g, "$1")
+    // The Pokémon "ex" logo often reads as @X / €X / eX (a lone € or © is just noise).
+    .replace(/\s*[@€©]\s*[X?x×](?![A-Za-z])|\s*@(?![A-Za-z])|\s*\beX\b/g, " ex")
     .replace(/\{[^}]*\}/g, "")
     .replace(/[|©®™]/g, " ")
     .replace(/\s+[0-9][0-9\s]*$/, "")
@@ -29,7 +34,7 @@ export function scanNamesFor(g, text) {
     ...new Set(
       String(text)
         .split(/\r?\n/)
-        .map((s) => (g === "ptcg" ? s.replace(/^\s*(?:BASIC|STAGE\s*[12])\s+/i, "").replace(/\bHP\s*\d+.*$/i, "") : s))
+        .map((s) => (g === "ptcg" ? s.replace(/^\s*(?:BASIC|STAGE\s*[12])\s+/i, "").replace(/\(?\bH\s?P(?![A-Za-z]).*$/i, "") : s))
         // Keep suffixes (ex/GX/V) but remove mixed digit/text OCR fragments
         // before a title: "snce1 Eldegoss". Do not strip legitimate words.
         .map((s) => s.replace(/^(?:\s*[A-Za-z]*\d+[A-Za-z]*\s+)+(?=[A-Za-z])/g, ""))
@@ -37,6 +42,35 @@ export function scanNamesFor(g, text) {
         .filter((s) => s.length >= 3 && s.length <= 60 && /[a-z]/i.test(s) && !ignore.test(s) && (s.match(/[A-Za-z]/g) || []).length >= 3),
     ),
   ].slice(0, 5);
+}
+
+// Which game a card's text belongs to, from a whole-card read: the scanner set to Magic can still
+// tell it is holding a Pokémon card. Returns "" when nothing is clear.
+// [pattern, weight]: weight 2 is something only that game prints (an HP line, ATK/DEF, a type line).
+const GAME_SIGNS = {
+  ptcg: [[/\bH\s?P\s?\d{2,3}\b/i, 2], [/\bweakness\b/i, 2], [/\bresistance\b/i, 1], [/\bretreat\b/i, 2], [/\bevolves from\b/i, 2], [/\bstage\s?[12]\b/i, 1], [/\b(?:GX|VMAX|VSTAR)\b/, 2], [/pok[eé]mon/i, 1], [/\bTrainer\b/, 1], [/\bSupporter\b/, 1], [/\bdamage counters?\b/i, 1], [/\bEnergy\b/, 1]],
+  ygo: [[/\bATK\s*[\/|l1]?\s*\d/i, 2], [/\bDEF\s*[\/|l1]?\s*\d/i, 2], [/effect monster|spell card|trap card/i, 2], [/\bspecial summon/i, 2], [/\b[A-Z0-9]{3,4}-[A-Z]{2}\d{3}\b/, 2], [/\bkonami\b|shu\w{0,3}sha|takahashi|t\w{0,2}okyo/i, 2], [/\bATK\b|\bDEF\b/, 1], [/\bonce per turn\b/i, 1], [/\b(?:Spellcaster|Warrior|Dragon|Fiend|Machine|Cyberse)\s*\//i, 2], [/\bgraveyard\b|\bGY\b/, 1]],
+  mtg: [[/\b(?:Creature|Instant|Sorcery|Enchantment|Artifact|Planeswalker)\b/, 2], [/\bLegendary\b/, 1], [/wizards of the coast|\bTM\s*&|™\s*&/i, 2], [/\bbattlefield\b/i, 2], [/\bmana\b/i, 1], [/\b(?:flying|trample|haste|lifelink|deathtouch|vigilance|flash)\b/i, 1], [/\{T\}|\b(?:untap|tap)\b/i, 1], [/\billus\b/i, 1], [/\b[A-Z0-9]{3}\s*\W?\s*EN\b/, 1], [/\bAdd \{?[WUBRGC]\b/, 2]],
+};
+export function detectGame(text) {
+  const t = String(text || "");
+  const score = Object.fromEntries(Object.entries(GAME_SIGNS).map(([g, rs]) => [g, rs.reduce((n, [r, w]) => n + (r.test(t) ? w : 0), 0)]));
+  const [best, second] = Object.entries(score).sort((a, b) => b[1] - a[1]);
+  return best[1] >= 2 && best[1] >= second[1] + 2 ? best[0] : "";
+}
+
+// Name lines found by what sits beside them on a whole-card read: a Pokémon name sits right before
+// "HP 190"; the line before a Magic type line is often the art, so only Pokémon has a sure anchor.
+export function anchoredNames(g, full) {
+  const out = [];
+  for (const l of String(full || "").split(/\r?\n/)) {
+    if (g === "ptcg") {
+      // "HP 180", or HP misread ("Y.-180"): a name line ends in a round number from 30 to 340.
+      const m = l.match(/^(.*?)\s*\(?\bH\s?P\s?\d{2,3}/i) || l.match(/^(.*?[A-Za-z]{3}.*?)\s+\S{0,4}?\b((?:[3-9]|[12]\d|3[0-4])0)\b\W{0,3}$/);
+      if (m && /[a-z]{3}/i.test(m[1])) out.push(m[1].replace(/^\s*(?:BASIC|STAGE\s*[12])\s+/i, ""));
+    }
+  }
+  return out.slice(0, 3);
 }
 
 // Quality feedback is a capture aid, never a claim that a card was identified.
@@ -120,6 +154,9 @@ export function nameCandidates(g, text, max = 6) {
   for (const name of scanNamesFor(g, text)) {
     const tokens = name.split(" "),
       words = tokens.filter((w) => /^[A-Za-z][A-Za-z'’,.\-&!]*$/.test(w) && (w.length > 2 || /^(of|the|a|an|to|in|on|ex|EX|GX|V)$/i.test(w)));
+    // Names are capitalised: lowercase scraps ("aac") around them are noise.
+    const caps = words.filter((w, i) => /^[A-Z]/.test(w) || w.length > 3 || (i > 0 && /^(of|the|a|an|to|in|on|ex|and)$/.test(w)));
+    if (caps.length && caps.length < words.length) push(caps.join(" "));
     // Junk-free first when the line had junk; the raw line is only a fallback.
     if (words.length < tokens.length) push(words.join(" "));
     push(name);

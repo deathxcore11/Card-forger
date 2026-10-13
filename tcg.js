@@ -19,7 +19,7 @@ import { ptcgSource, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES } from "./ptcg.js";
 import { loadMeta, metaState, ptcgIcon, allCachedMeta, cleanName } from "./meta.js";
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
 import { rankPairs, ygoTags, ptcgTags } from "./pairing.js";
-import { nameCandidates, scanCandidateMatches, ygoSetCodes, ygoPasscodes, ptcgNumbers, similarity } from "./scan.js";
+import { nameCandidates, scanCandidateMatches, ygoSetCodes, ygoPasscodes, ptcgNumbers, similarity, scanNameKey } from "./scan.js";
 import { adaptList, ownedDraft, engineOf, similarLists, swapPool, costToFinish, unpricedCopies } from "./adapt.js";
 export { metaState, similarLists };
 
@@ -1558,14 +1558,14 @@ export function registerTcg(c) {
   const closestNames = (list, n, k = 3) =>
     list
       .map((name) => ({ name, sc: similarity(name, n) }))
-      .filter((x) => x.sc >= 0.6)
+      .filter((x) => x.sc >= 0.68)
       .sort((a, b) => b.sc - a.sc)
       .slice(0, k)
       .map((x) => x.name);
 
   // Scanner matching (the scanner itself is scancam.js): exact printing codes first, then names.
-  c.scanMatch = async (read, lang, manual = false, status = () => {}) => {
-    const G = g(),
+  c.scanMatch = async (read, lang, manual = false, status = () => {}, G0 = "") => {
+    const G = G0 || g(),
       out = [],
       seen = new Set(),
       tried = [],
@@ -1590,6 +1590,7 @@ export function registerTcg(c) {
       if (!manual) for (const id of ygoPasscodes(all)) push(await ensureCard("ygo", id).catch(() => null), "Passcode " + id, false);
       for (const n of names) {
         if (out.length >= 3) break;
+        if (out.some((o) => scanNameKey(o.name).includes(scanNameKey(n)))) continue;
         tried.push(n);
         push(await SOURCES.ygo.byName(n).catch(() => null), "Name match", false);
       }
@@ -1608,6 +1609,7 @@ export function registerTcg(c) {
         }
       for (const n of names) {
         if (out.length >= 3) break;
+        if (out.some((o) => scanNameKey(o.name).includes(scanNameKey(n)))) continue;
         tried.push(n);
         // Exact-ish names first; for misreads, search the first word's start and rank by spelling.
         // A substring hit ("wel" → Swellow) is not identification: whole-name matches only, unless typed.

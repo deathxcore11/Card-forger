@@ -1,3 +1,18 @@
+3.18.0 — A scanner that reads more cards, in any game
+- Reads cards that don't fill the picture: a photo with a card on a table or a screenshot is
+  cropped to the card automatically, and small cards are enlarged before reading.
+- When the name strip doesn't read, it reads the whole card and finds the name wherever it is
+  (a Pokémon name is the line with the HP, even when "HP" itself is misread).
+- Cleaner names from messy reads: "JMewtwolGX" → Mewtwo GX, "Zacian-V" → Zacian V, stray
+  scraps dropped; a closest-spelling guess ("MAGICIAN" → Zacian) no longer counts as a match.
+- Any game, any mode: scan a Pokémon card while set to Magic (or any mix) and it tells you which
+  game it is, finds it there, and switches over when you add it.
+- Light-on-dark names (full-art, GX, foils) get a second, inverted read.
+- Search with Google Lens: when a card still won't read, send the picture to Google Lens (share
+  sheet on phones, Lens in a new tab on computers) and type the name it finds.
+- Glass dropdowns for finish, condition, language and copies; redesigned idle viewfinder, scan
+  list stats and empty state; copies shown as ×1…×4; tighter defaults pill on small phones.
+
 3.17.0 — Scan sessions: set it once, scan fast, review, save
 - Defaults pill over the camera: finish (Magic Normal/Foil/Etched, Pokémon Normal/Holo/Reverse,
   Yu-Gi-Oh! Unlimited/1st Ed.), condition (NM…DMG), card language and copies per scan (+1…+4).

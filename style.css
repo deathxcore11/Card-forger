@@ -1626,3 +1626,62 @@ body.glass .topbar { background: rgba(12, 14, 19, 0.58); }
 .ss-set { display: flex; gap: 12px; align-items: flex-start; margin: 12px 0; }
 .ss-set span { display: grid; gap: 2px; } .ss-set small { color: var(--muted); font-size: 12px; }
 .ss-chip.fixed { display: inline-grid; place-items: center; opacity: 0.7; cursor: default; }
+
+/* Scan defaults: glass segments with a caption, opening a glass dropdown. */
+.scan-defaults button { display: grid; place-items: center; gap: 0; padding: 4px 6px; line-height: 1.1; }
+.scan-defaults button small { font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255, 255, 255, 0.55); }
+.scan-defaults button span { display: inline-flex; align-items: center; gap: 2px; font-size: 15px; }
+.scan-defaults .chev { width: 14px; height: 14px; opacity: 0.7; }
+.scan-defaults button[aria-expanded="true"], .scan-defaults button:focus-visible { background: rgba(255, 255, 255, 0.12); }
+.glass-pop { position: fixed; z-index: 60; min-width: 210px; max-width: calc(100vw - 16px); max-height: 60vh; overflow: auto; padding: 8px; border-radius: 18px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03) 40%), rgba(16, 18, 24, 0.72);
+  backdrop-filter: blur(22px) saturate(1.6); -webkit-backdrop-filter: blur(22px) saturate(1.6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 18px 50px rgba(0, 0, 0, 0.55);
+  transform-origin: 50% 100%; animation: pop-in 0.16s cubic-bezier(.2,.9,.3,1.2); }
+.glass-pop.down { transform-origin: 50% 0; }
+@keyframes pop-in { from { opacity: 0; transform: scale(0.94) translateY(6px); } to { opacity: 1; transform: none; } }
+.gp-title { margin: 4px 10px 6px; font-size: 10.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255, 255, 255, 0.5); }
+.glass-pop button { display: grid; grid-template-columns: minmax(0, 1fr) 20px; grid-template-areas: "l c" "s c"; align-items: center; width: 100%; min-height: 48px; padding: 6px 10px; border: 0; border-radius: 12px; background: transparent; color: #fff; text-align: left; cursor: pointer; }
+.glass-pop button b { grid-area: l; font-size: 15px; } .glass-pop button small { grid-area: s; font-size: 11.5px; color: rgba(255, 255, 255, 0.6); }
+.glass-pop .gp-check { grid-area: c; width: 18px; height: 18px; color: var(--gold); opacity: 0; }
+.glass-pop button.on { background: color-mix(in srgb, var(--gold) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 35%, transparent); }
+.glass-pop button.on .gp-check { opacity: 1; }
+.glass-pop button:hover, .glass-pop button:focus-visible { background: rgba(255, 255, 255, 0.08); outline: none; }
+
+/* Idle viewfinder: a gentle sweep and a ghost card, three tip chips. */
+.cam-wrap .scan-drop { overflow: hidden; }
+.scan-sweep { position: absolute; left: 10px; right: 10px; top: 10px; height: 38%; pointer-events: none; background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--game-color) 22%, transparent) 85%, color-mix(in srgb, var(--game-color) 70%, transparent) 99%, transparent); border-radius: 4.75% / 3.5%; animation: sweep 3.2s cubic-bezier(.45,.05,.55,.95) infinite; opacity: 0.8; }
+@keyframes sweep { 0% { transform: translateY(-100%); opacity: 0; } 15% { opacity: 0.8; } 85% { opacity: 0.8; } 100% { transform: translateY(170%); opacity: 0; } }
+.scan-ghost { position: absolute; inset: 22% 26% 30%; border-radius: 6% / 4.5%; border: 1.5px solid rgba(255, 255, 255, 0.08); background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), transparent 60%); transform: rotate(-4deg); pointer-events: none; }
+.scan-drop b { font: 800 22px/1.15 Manrope, sans-serif; letter-spacing: -0.01em; }
+.scan-tips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.scan-tips > span { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; color: var(--text); background: rgba(255, 255, 255, 0.06); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
+.scan-tips .ico { width: 15px; height: 15px; color: var(--game-color); }
+.scan-go { min-height: 52px; padding: 0 26px; font-size: 16px; box-shadow: 0 10px 30px color-mix(in srgb, var(--gold) 30%, transparent); }
+.scan-tip-line { font-size: 11.5px; }
+
+/* Scan list: stat chips, an illustrated empty state, and a glow on cards that just landed. */
+.ss-stats { display: flex; gap: 8px; }
+.ss-stat { display: grid; padding: 6px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07); line-height: 1.15; }
+.ss-stat b { font: 800 18px Manrope, sans-serif; } .ss-stat small { font-size: 11px; color: var(--muted); }
+.ss-save { box-shadow: 0 8px 22px color-mix(in srgb, var(--gold) 28%, transparent); }
+.ss-empty { display: grid; justify-items: center; gap: 6px; padding: 18px 8px 8px; text-align: center; }
+.ss-empty b { font-size: 15px; } .ss-empty small { color: var(--muted); max-width: 300px; line-height: 1.45; }
+.ss-fan { position: relative; width: 92px; height: 70px; margin-bottom: 4px; }
+.ss-fan i { position: absolute; left: 30px; top: 4px; width: 40px; height: 56px; border-radius: 5px; border: 1.5px dashed color-mix(in srgb, var(--game-color) 55%, transparent); background: color-mix(in srgb, var(--game-color) 7%, transparent); transform-origin: 50% 110%; }
+.ss-fan i:nth-child(1) { transform: rotate(-16deg); } .ss-fan i:nth-child(3) { transform: rotate(16deg); }
+.ss-row.fresh { animation: row-land 1.4s ease; }
+@keyframes row-land { 0% { transform: translateY(-8px) scale(0.98); box-shadow: 0 0 0 2px color-mix(in srgb, var(--good, #3ccf91) 70%, transparent), 0 0 24px color-mix(in srgb, var(--good, #3ccf91) 45%, transparent); } 30% { transform: none; } 100% { box-shadow: 0 0 0 0 transparent; } }
+@media (prefers-reduced-motion: reduce) { .scan-sweep, .ss-row.fresh, .glass-pop { animation: none; } .scan-sweep { display: none; } }
+@media (max-width: 360px) { .scan-defaults button span { font-size: 13.5px; } .scan-defaults button small { font-size: 8.5px; } .ss-row { grid-template-columns: 34px minmax(0, 1fr) auto; grid-template-areas: "img txt qty" "img chip price"; } .ss-chip { justify-self: start; } }
+
+/* Scanner: card from another game, Google Lens backup */
+.scan-other { margin: 0 0 10px; padding: 10px 12px; border-radius: 12px; font-size: 0.9rem; border: 1px solid color-mix(in srgb, var(--game-color) 55%, transparent); background: color-mix(in srgb, var(--game-color) 14%, transparent); }
+.scan-other b { color: var(--game-color); }
+.scan-lens { display: inline-flex; align-items: center; gap: 8px; }
+.scan-lens .ico { width: 18px; height: 18px; }
+@media (max-width: 360px) {
+  .scan-defaults { gap: 0; padding: 4px; }
+  .scan-defaults button { padding: 4px 3px; }
+  .scan-defaults button small { font-size: 8.5px; letter-spacing: 0.04em; }
+}
