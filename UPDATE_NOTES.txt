@@ -1,3 +1,14 @@
+3.16.0 — Glass and art
+- Frosted glass look: panels, stat tiles, list rows, buttons, inputs and tabs are translucent with
+  a light top edge and a faint sheen; the header, bottom bar and card sheets are real frosted glass.
+- Art backdrop: behind every screen, a soft, blurred copy of the game's featured art (the card of
+  the day or one from your decks), tinted with the game's color. It's remembered per game, so
+  Search, Collection and Decks share the same mood as Home.
+- Settings → App & sources → Appearance: turn the glass and backdrop off for plain solid panels.
+  Phones set to "reduce transparency" get solid panels automatically.
+- Home quick tiles use the drawn icons too (search, ideas, binder, trophy, booster pack, rulebook,
+  scan); the active card tab keeps its highlight under glass.
+
 3.15.2 — Cleaner toolbars
 - View is now a one-tap switch of three drawn icons (gallery, compact, list) instead of a
   "▦ View · Gallery" button that opened a sheet. Select and Compare are icon buttons.

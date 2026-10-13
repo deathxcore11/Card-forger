@@ -65,6 +65,40 @@ function setSaveStatus(text, cls = "") {
     mark.title = text;
   }
 }
+// Glass look: frosted surfaces over a blurred copy of the game's hero art (the card of the day or
+// one from your decks). The art is remembered per game so every screen shares the same backdrop.
+const AMBIENT_KEY = "cardstashy-ambient-v1",
+  GLASS_KEY = "cardstashy-glass";
+const glassOn = () => {
+  try {
+    return localStorage.getItem(GLASS_KEY) !== "off";
+  } catch {
+    return true;
+  }
+};
+function updateAmbient() {
+  const g = document.body.dataset.game || "mtg",
+    art = $("#ambient .amb-art");
+  if (!art) return;
+  let saved = {};
+  try {
+    saved = JSON.parse(localStorage.getItem(AMBIENT_KEY) || "{}") || {};
+  } catch {}
+  const hero = $("#homeHero .hh-art");
+  const src = hero && !hero.hidden && hero.currentSrc ? hero.currentSrc : hero?.getAttribute("src");
+  if (src && saved[g] !== src) {
+    saved[g] = src;
+    try {
+      localStorage.setItem(AMBIENT_KEY, JSON.stringify(saved));
+    } catch {}
+  }
+  const url = saved[g] || "";
+  if (art.dataset.src !== url) {
+    art.dataset.src = url;
+    art.style.backgroundImage = url ? `url("${url.replace(/"/g, "%22")}")` : "none";
+  }
+  document.body.classList.toggle("glass", glassOn());
+}
 // Emoji / stock symbols in any template become drawn icons (icons.js), right after each change.
 let glyphQueued = false;
 const glyphObserver = typeof MutationObserver !== "undefined" ? new MutationObserver(() => {
@@ -617,6 +651,7 @@ function render() {
   // The scanner keeps its camera stream across renders (or stops it when you leave the page).
   setTimeout(() => scanCtx.afterRender?.(), 0);
   warmEmblems();
+  setTimeout(updateAmbient, 0);
   for (const b of $$("[data-nav]")) b.classList.toggle("on", b.dataset.nav === (ui.view === "deck" ? "decks" : ui.view === "set" || ui.view === "sets" ? "search" : ui.view));
   document.body.dataset.view = ui.view;
   const g = T.game();
@@ -2388,6 +2423,13 @@ async function mtgGuideLoad(c) {
   };
   refreshSheet();
 }
+// Settings → Appearance: glass panels and the art backdrop.
+C.setGlass = (t) => {
+  try {
+    localStorage.setItem(GLASS_KEY, t.checked ? "on" : "off");
+  } catch {}
+  updateAmbient();
+};
 // Tap a card image: full-screen, high-resolution, zoomable.
 A.zoomCard = (t) =>
   openZoom({ src: t.dataset.src, hi: t.dataset.hi || (/scryfall\.io/.test(t.dataset.src) ? scryfallHi(t.dataset.src) : ""), art: t.dataset.art, alt: t.dataset.name || "Card", fallback: t.dataset.fallback || "" });

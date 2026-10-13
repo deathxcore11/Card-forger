@@ -1529,3 +1529,56 @@ html.zoom-open, html.zoom-open body { overflow: hidden; }
 .view-preview .ico { width: 34px; height: 34px; color: var(--gold); }
 .head-actions { align-items: center; }
 .actions + label, .actions + .field, .actions + .scan-language { margin-top: 14px; display: block; }
+
+/* ====================================================================
+   Glass 3.16: frosted surfaces over a blurred art backdrop.
+   The backdrop art is already blurred, so most surfaces only need translucency
+   (cheap on phones); real backdrop blur is kept for the header, nav and sheets.
+   ==================================================================== */
+#ambient { display: none; }
+body.glass #ambient { display: block; position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; background: var(--bg); }
+body.glass #ambient .amb-art { position: absolute; inset: -8%; background-size: cover; background-position: center 30%; filter: blur(42px) saturate(1.35) brightness(0.5); transform: scale(1.08); opacity: 0.85; transition: background-image 0.6s ease, opacity 0.6s ease; }
+body.glass #ambient::after { content: ""; position: absolute; inset: 0;
+  background:
+    radial-gradient(80% 55% at 85% 0%, color-mix(in srgb, var(--game-color) 26%, transparent), transparent 70%),
+    radial-gradient(70% 50% at 0% 100%, color-mix(in srgb, var(--game-color) 16%, transparent), transparent 70%),
+    linear-gradient(180deg, rgba(10, 12, 16, 0.35), rgba(10, 12, 16, 0.78) 60%, rgba(10, 12, 16, 0.92)); }
+body.glass #app { position: relative; z-index: 1; }
+body.glass {
+  --glass: color-mix(in srgb, var(--surface) 58%, transparent);
+  --glass-2: color-mix(in srgb, var(--surface-2) 62%, transparent);
+  --glass-line: rgba(255, 255, 255, 0.09);
+  --glass-hi: inset 0 1px 0 rgba(255, 255, 255, 0.07), inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+  background: var(--bg);
+}
+/* Panels, stat tiles, choices and list rows: frosted, with a light top edge and a faint sheen. */
+body.glass :is(.panel, .kpi, .game-choice, .lot, .meta-row, .print, .cd-text, .price-pill, .advice, .deck-emb, .pair-row, .guide-limits span, .imp-chip, .proven-sum, .settings-card, .stash-binder[aria-pressed="true"]) {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0) 45%), var(--glass);
+  border-color: var(--glass-line);
+  box-shadow: var(--glass-hi), 0 10px 30px rgba(0, 0, 0, 0.22);
+}
+body.glass :is(.btn.ghost, .chip:not(.on):not(.pick.on), .seg, .view-switch, .game-switch button:not(.on), .tool-btn:not(.on), .cs-tabs button:not(.on):not([aria-selected="true"]), input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+  background-color: var(--glass-2);
+  border-color: var(--glass-line);
+  box-shadow: var(--glass-hi);
+}
+body.glass .seg button.on, body.glass .seg [aria-selected="true"] { background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+body.glass .game-choice[aria-pressed="true"] { background: linear-gradient(110deg, color-mix(in srgb, var(--game-color) 20%, transparent), var(--glass) 70%); }
+/* Header, nav and sheets: real frosted glass. */
+body.glass .topbar { background: rgba(12, 14, 19, 0.45); backdrop-filter: blur(20px) saturate(1.5); }
+body.glass .bottom-nav { background: rgba(12, 14, 19, 0.55); backdrop-filter: blur(22px) saturate(1.5); }
+body.glass dialog.sheet { background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 120px), rgba(18, 20, 26, 0.72); backdrop-filter: blur(28px) saturate(1.4); border: 1px solid var(--glass-line); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 -20px 60px rgba(0, 0, 0, 0.45); }
+body.glass dialog.sheet::backdrop { background: rgba(4, 5, 8, 0.45); backdrop-filter: blur(3px); }
+body.glass .sheet-head:not(.overlay) { background: transparent; }
+body.glass .sheet-head.overlay.scrolled { background: rgba(18, 20, 26, 0.7); backdrop-filter: blur(20px); }
+body.glass .cs-tabs { background: transparent; }
+/* Home hero blends into the backdrop instead of ending in a hard edge. */
+body.glass .home-hero { -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent); mask-image: linear-gradient(180deg, #000 70%, transparent); }
+@media (prefers-reduced-transparency: reduce) {
+  body.glass #ambient { display: none; }
+  body.glass :is(.panel, .kpi, .game-choice, .lot, .meta-row, .print, .cd-text, .price-pill, .advice, .deck-emb, .pair-row, .proven-sum, .settings-card) { background: var(--surface); }
+  body.glass dialog.sheet, body.glass .topbar, body.glass .bottom-nav { background: var(--bg); backdrop-filter: none; }
+}
+.quick-btn span .gl.lone .ico { width: 20px; height: 20px; color: var(--gold); }
+body.glass .bottom-nav { background: rgba(12, 14, 19, 0.74); }
+body.glass .topbar { background: rgba(12, 14, 19, 0.58); }

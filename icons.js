@@ -72,6 +72,9 @@ const ACTION = {
   share: svg(`<circle cx="6.5" cy="12" r="2.3"/><circle cx="17.5" cy="6" r="2.3"/><circle cx="17.5" cy="18" r="2.3"/><path d="m8.6 10.9 6.8-3.7M8.6 13.1l6.8 3.7"/>`),
   search: ICON.search,
   scan: ICON.scan,
+  collection: ICON.collection,
+  // Rules: an open rulebook.
+  book: svg(`<path d="M12 6.5C10 5 7 4.5 3.5 5v13.5c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5z"/><path d="M12 6.5V20"/>`),
   // Card views: gallery (cards in a grid), compact (thumbnail + text rows), symbols (list).
   viewGallery: svg(`<rect x="3.5" y="3.5" width="7.5" height="10.5" rx="1.3"/><rect x="13" y="3.5" width="7.5" height="10.5" rx="1.3"/><path d="M3.5 17.5h7.5M13 17.5h7.5M3.5 20.5h5M13 20.5h5" stroke-opacity=".6"/>`),
   viewCompact: svg(`<rect x="3.5" y="4" width="5" height="7" rx="1"/><rect x="3.5" y="13" width="5" height="7" rx="1"/><path d="M11 6h9.5M11 9h6M11 15h9.5M11 18h6" />`),
@@ -94,9 +97,11 @@ const RANDOM = {
 };
 
 // Leading symbols (followed by a space) and lone symbols in buttons → icons.
-const LEAD = { "🎲": "random", "⚒": "build", "✧": "ideas", "🏆": "trophy", "⇄": "compare", "♡": "heart", "♥": "heartOn", "＋": "plus", "+": "plus", "↥": "import", "↓": "export", "⟳": "refresh", "↻": "flip", "⧉": "copy", "🔗": "link", "🖨": "print", "📷": "camera", "◈": "pack", "☆": "bookmark", "▦": "grid", "◷": "history", "🛒": "bag", "⌕": "search", "☑": "pick", "⚠": "warn", "🖌": "brush", "✓": "check", "←": "back", "‹": "back", "▧": "scan" };
+const LEAD = { "🎲": "random", "⚒": "build", "✧": "ideas", "🏆": "trophy", "⇄": "compare", "♡": "heart", "♥": "heartOn", "＋": "plus", "+": "plus", "↥": "import", "↓": "export", "⟳": "refresh", "↻": "flip", "⧉": "copy", "🔗": "link", "🖨": "print", "📷": "camera", "◈": "pack", "☆": "bookmark", "▦": "collection", "📖": "book", "◷": "history", "🛒": "bag", "⌕": "search", "☑": "pick", "⚠": "warn", "🖌": "brush", "✓": "check", "←": "back", "‹": "back", "▧": "scan" };
 const ALONE = { "◐": "dark", "▢": "frame", "✋": "hand", "☀": "glare", "◎": "focus", "✓": "check", "✕": "close", "⋯": "more", "−": "minus", "＋": "plus", "←": "back", "⟳": "refresh", "↻": "flip" };
 export const actionIcon = (name) => ACTION[name] || "";
+// A lone symbol inside a button (quick tiles, icon buttons) maps like a leading one.
+for (const [k, v] of Object.entries(LEAD)) if (!ALONE[k] && k !== "+" && k !== "✓") ALONE[k] = v;
 const iconFor = (name, game) => (name === "random" ? RANDOM[game] || RANDOM.mtg : ACTION[name]);
 
 /**
@@ -112,7 +117,7 @@ export function decorateGlyphs(root, game = "mtg") {
     if (!p || p.closest("script, style, textarea, input, select, option, svg, .no-ic, .oracle, .flavor, .rulings, pre, code")) continue;
     const s = n.data;
     const lone = s.trim().replace(/\uFE0F/g, "");
-    if (ALONE[lone] && p.closest("button, a, .icon, .cam-status") && p.childNodes.length === 1) hits.push([n, ALONE[lone], "", true]);
+    if (ALONE[lone] && p.closest("button, a, .icon, .cam-status, .quick-btn") && p.childNodes.length === 1) hits.push([n, ALONE[lone], "", true]);
     else {
       const m = s.match(/^(\s*)(\S)\uFE0F?[ \u00a0](?=\S)/u);
       if (m && LEAD[m[2]] && p.closest("button, a, label, summary, .tag, .chip, .small, .foot, small, span, h3, p")) hits.push([n, LEAD[m[2]], s.slice(m[0].length), false, m[1]]);
