@@ -1768,3 +1768,7 @@ body.glass .topbar { background: rgba(12, 14, 19, 0.58); }
 .price-hist .spark.up { color: var(--good); }
 .price-hist .spark.down { color: var(--bad, #ef5350); }
 .price-hist .btn { justify-self: start; }
+.stat-reg span { display: block; margin-top: 2px; font-size: 12px; font-weight: 600; line-height: 1.3; }
+.stat-help { margin-top: 8px; font-size: 13px; }
+.stat-help summary { cursor: pointer; color: var(--muted); }
+.stat-help p { margin: 6px 0 0; color: var(--muted); line-height: 1.45; }

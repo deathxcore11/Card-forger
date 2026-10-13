@@ -121,6 +121,16 @@ export function variantArtThumb(card, variant = {}, attrs = "") {
   return `<button class="variant-art" data-act="tVariantArt" data-id="${esc(card.id)}" ${attrs} aria-label="View ${esc(variant.label || card.name)} artwork"><span class="variant-art-frame">${urls.length ? `<img src="${esc(urls[0])}" data-art-sources="${esc(JSON.stringify(urls))}" data-art-index="0" alt="${esc(card.name)} — ${esc(a.label)}" loading="lazy" referrerpolicy="no-referrer">` : `<span class="art-unavailable-label">Image unavailable</span>`}</span></button>`;
 }
 
+// A stat on the card page. The regulation mark gets what it means for you, not just a letter.
+function statCell(c, k, v) {
+  if (k !== "Regulation") return `<div><small>${esc(k)}</small><b>${esc(String(v))}</b></div>`;
+  const where = c.legal?.standard ? ["ok-text", "Playable in Standard"] : c.legal?.expanded ? ["warn-text", "Rotated out of Standard · Expanded only"] : ["muted", "Not tournament legal"];
+  return `<div class="stat-reg"><small>Regulation mark</small><b>${esc(String(v))}</b><span class="${where[0]}">${where[1]}</span></div>`;
+}
+function regulationHelp(c) {
+  return `<details class="stat-help"><summary>What’s a regulation mark?</summary><p>The small letter in the bottom-left corner of the card (${esc(c.regulationMark)} here). Tournaments use it to decide which cards are allowed: <b>Standard</b> only allows the newest few letters and drops the oldest one each year, while <b>Expanded</b> allows much older cards. For casual games with friends, it doesn’t matter at all.</p></details>`;
+}
+
 // Already in the collection: − count + right there. Not yet: an Add button.
 const variantEntries = (g, c, v) => gs(g).collection.filter((e) => e.cardId === c.id && (e.variant || "normal") === (v.key || "normal"));
 function variantOwnControl(g, c, v) {
@@ -506,7 +516,7 @@ export function tcgCardSheet(c, sctx = {}) {
       <div class="cs-card-side">
         <p class="small own-line">${own ? `<b class="ok-text">You own ${own}</b>` : "Not in your collection"}</p>
         ${deck ? `<p class="small deck-legal ${SOURCES[g].legality(c, f) === "legal" ? "ok-text" : "bad-text"}">${SOURCES[g].legality(c, f) === "legal" ? "✓ Legal" : "● Not allowed"} in ${esc(f.name)} <span class="muted">(${esc(deck.name)})</span></p>` : ""}
-        ${c.stats?.length ? `<div class="stat-grid">${c.stats.filter(([k]) => g !== "ptcg" || !["HP", "Type", "Weakness", "Resistance", "Retreat"].includes(k)).map(([k, v]) => `<div><small>${esc(k)}</small><b>${esc(String(v))}</b></div>`).join("")}</div>` : ""}
+        ${c.stats?.length ? `<div class="stat-grid">${c.stats.filter(([k]) => g !== "ptcg" || !["HP", "Type", "Weakness", "Resistance", "Retreat"].includes(k)).map(([k, v]) => statCell(c, k, v)).join("")}</div>${c.regulationMark ? regulationHelp(c) : ""}` : ""}
       </div></div>
     ${priceHistoryHtml(g, c.id, c.name)}
     <div class="actions wrap">

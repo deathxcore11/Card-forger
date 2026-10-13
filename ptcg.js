@@ -85,7 +85,7 @@ export function normalizePtcg(c) {
     stats = [];
   if (c.hp) stats.push(["HP", c.hp]);
   if (c.types?.length) stats.push(["Type", c.types.join(" / ")]);
-  if (c.stage) stats.push(["Stage", c.stage]);
+  if (c.stage) stats.push(["Stage", String(c.stage).replace(/^Stage(\d)/, "Stage $1")]);
   if (c.evolveFrom) stats.push(["Evolves from", c.evolveFrom]);
   if (c.weaknesses?.length) stats.push(["Weakness", c.weaknesses.map((w) => w.type + " " + (w.value || "")).join(", ")]);
   if (c.resistances?.length) stats.push(["Resistance", c.resistances.map((w) => w.type + " " + (w.value || "")).join(", ")]);
