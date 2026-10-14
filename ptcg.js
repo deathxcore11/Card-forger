@@ -89,7 +89,24 @@ async function fillPricesNow(c) {
   const u = "https://api.pokemontcg.io/v2/cards?" + new URLSearchParams({ q: `name:"${c.name.replace(/"/g, "")}" number:${num}`, select: "name,number,set,tcgplayer", pageSize: "20" });
   const d = await fetch(u, { signal: AbortSignal.timeout?.(8000) }).then((r) => (r.ok ? r.json() : null));
   const hit = (d?.data || []).find((x) => setKey(x.set?.name) === setKey(c.set?.name));
-  if (hit) applyFallbackPrices(c, hit);
+  if (hit && applyFallbackPrices(c, hit)) return;
+  // Last: the dated TCGplayer market quotes kept for this exact product (same product id), when
+  // the newest is from the last three weeks. The card page shows the same quote and date.
+  const products = new Set((c.variants || []).map((v) => String(v.productId || "")).filter(Boolean));
+  if (!products.size) return;
+  const h = await fetch("api/prices/recent?" + new URLSearchParams({ game: "ptcg", id: c.id, finish: "reference" }), { signal: AbortSignal.timeout?.(10000) }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  for (const sr of h?.series || []) {
+    const last = sr.points?.at(-1), v = c.variants.find((x) => String(x.productId) === String(sr.productId) && x.usd == null);
+    if (!v || !(last?.value > 0) || Date.now() - Date.parse(last.date) > 21 * 864e5) continue;
+    Object.assign(v, { usd: last.value, market: last.value, historyQuote: last.date });
+  }
+  const best = c.variants.find((v) => v.key === "normal" && v.usd != null) || c.variants.find((v) => v.usd != null);
+  if (best && c.prices.usd == null) {
+    c.prices.usd = best.usd;
+    c.prices.source = "TCGplayer market (USD), latest dated quote";
+    c.prices.updated = best.historyQuote || c.prices.updated;
+    if (c.sets?.[0]) c.sets[0].price = c.prices.usd;
+  }
 }
 
 // Newer TCGdex text carries markup for energy symbols ("<span class=\"energy-symbol Fire\" …>Fire</span>"):
@@ -117,7 +134,7 @@ export function normalizePtcg(c) {
   ].filter(Boolean).join("\n\n");
   return {
     game: "ptcg",
-    variantSchema: 5,
+    variantSchema: 6,
     released:c.set?.releaseDate || "",
     id: c.id,
     name: c.name,

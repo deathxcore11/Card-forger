@@ -2,6 +2,7 @@ import {recentHistoryRoute} from './recent-history.js';
 import {ygoPriceRoute} from './ygo-prices.js';
 import {archivePriceRoute} from "./historical-archive.js";
 import {pokemonPriceRoute} from "./pokemon-prices.js";
+import {pokemonArtRoute} from "./pokemon-art.js";
 import {magicSetArtwork} from "./set-art.js";
 import { watchRoute, historyRoute, recordDailyPrices } from "./pricefeed.js";
 import { TOPDECK_API, TOPDECK_FORMATS, WARM_FORMATS, normalizeTopdeck, topdeckBody } from "./topdeck.js";
@@ -177,6 +178,7 @@ export default {
         const res=new Response(upstream.body,{headers:{'Content-Type':upstream.headers.get('Content-Type')||'image/jpeg','Cache-Control':`public, max-age=${MONTH}`,'X-Art-Source':'MTGJSON / TCGplayer'}});ctx.waitUntil(caches.default.put(request,res.clone()));return res;
       }catch{return new Response('Product artwork unavailable',{status:503});}
     }
+    if (url.pathname.startsWith("/img/ptcg/")) return pokemonArtRoute(request, url, ctx);
     if (url.pathname === "/.well-known/assetlinks.json") return assetLinks();
     if (url.pathname === "/api/lens") return lensUpload(request, url);
     if (url.pathname === "/api/prices/recent") return recentHistoryRoute(url,ctx);

@@ -20,7 +20,7 @@ export function pokemonFallback(c){
 }
 export function artworkSources(c,large=false){
  if(!c)return [];
- const urls=c.game==='ptcg'?[POKEMON_CARD_ART[c.id],large?c.imageLarge:c.image,large?c.image:c.imageLarge,pokemonFallback(c)]:c.game==='ygo'?[large?c.imageLarge:c.image,`https://images.ygoprodeck.com/images/cards${large?'':'_small'}/${encodeURIComponent(c.id)}.jpg`]:[c.image_uris?.normal,c.card_faces?.[0]?.image_uris?.normal];
+ const urls=c.game==='ptcg'?[POKEMON_CARD_ART[c.id],large?c.imageLarge:c.image,large?c.image:c.imageLarge,pokemonFallback(c),c.id?`img/ptcg/${large?'l':'s'}/${encodeURIComponent(c.id)}.jpg`:'']:c.game==='ygo'?[large?c.imageLarge:c.image,`https://images.ygoprodeck.com/images/cards${large?'':'_small'}/${encodeURIComponent(c.id)}.jpg`]:[c.image_uris?.normal,c.card_faces?.[0]?.image_uris?.normal];
  return [...new Set(urls.filter(u=>typeof u==='string'&&(/^(https?:\/\/|img\/)/.test(u))))];
 }
 export function artworkHTML(c,cls='card-img',large=false){

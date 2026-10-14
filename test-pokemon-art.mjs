@@ -1,0 +1,14 @@
+import assert from "node:assert/strict";
+import { pickGroup, pickProduct } from "./pokemon-art.js";
+const groups = [{ groupId: 1, name: "Shining Fates" }, { groupId: 2, name: "Shining Fates: Shiny Vault" }, { groupId: 3, name: "XY Promos" }, { groupId: 4, name: "ME: 30th Celebration Classic Collection" }, { groupId: 5, name: "McDonald's Promos 2023" }];
+assert.equal(pickGroup(groups, "Shining Fates Shiny Vault").groupId, 2);
+assert.equal(pickGroup(groups, "Shining Fates").groupId, 1);
+assert.equal(pickGroup(groups, "XY Black Star Promos").groupId, 3);
+assert.equal(pickGroup(groups, "30th Classic Collection").groupId, 4);
+assert.equal(pickGroup(groups, "Unknown Set Name"), null);
+const num = (n) => [{ name: "Number", value: n }];
+const products = [{ productId: 10, name: "Charizard", extendedData: num("4/102") }, { productId: 11, name: "Kingdra", extendedData: num("XY39") }, { productId: 12, name: "Charizard (Holo)", extendedData: num("001/030") }];
+assert.equal(pickProduct(products, { name: "Charizard", localId: "001" }).productId, 12);
+assert.equal(pickProduct(products, { name: "Kingdra", localId: "XY39" }).productId, 11);
+assert.equal(pickProduct(products, { name: "Charizard", localId: "2" }), null, "never another printing's image");
+console.log("PASS: Pokémon art fallback picks the exact TCGplayer set and card, never another printing.");

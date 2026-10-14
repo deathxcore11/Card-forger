@@ -1,3 +1,16 @@
+3.50.1 — Pokémon art and prices for promos and special sets
+- Cards TCGdex has no picture for (about 1,600: Shiny Vault, Black Star promos, McDonald's
+  collections, Galarian and Trainer Galleries, trainer kits, My First Battle, Unown, Skyridge and
+  Aquapolis extras…) now show the exact card's TCGplayer image when every other source is missing.
+  It is matched by the card's own TCGplayer product, or by set and collector number, never by name
+  alone, so another printing's picture is never shown.
+- Prices for cards in sets with a dot in their code (Shining Fates, Hidden Fates, Shining Legends,
+  Dragon Majesty, Crown Zenith Galarian Gallery…): the exact-product price lookup refused those
+  codes, so they had no price in the collection while the card page showed one. Fixed, and when
+  that lookup has nothing, the latest dated TCGplayer quote for the exact product (from the last
+  three weeks) is used, the same one the card page shows. Collection rows now get their price,
+  outline and total like every other card; cards already saved refresh once on their own.
+
 3.50.0 — Back where you were, and cards that move on phones
 - Every page remembers your place. Open a set (or a deck, or a shared list) and come back, with
   the back button or a link like "All sets", and you land on the same spot instead of the top.
