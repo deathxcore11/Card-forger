@@ -1,7 +1,8 @@
 """Daily public market ingestion. No inventory or account access, no stored secrets.
 MTGJSON is streamed once per run only when new Magic printings need backfill.
 """
-import datetime,gzip,json,os,time,urllib.request,urllib.parse
+import datetime,gzip,json,os,time,urllib.request,urllib.parse,tempfile,shutil
+from contextlib import contextmanager
 import ijson
 BASE='https://noxfmbwuytnbvfgukpiv.supabase.co'
 KEY='sb_publishable_TpEfTlAdziX6ALSZLA7U_A_tBKKHcAz'
@@ -64,6 +65,31 @@ def current(w):
     if value is None or float(value)<=0:return None
     return {**{k:w[k] for k in ['game','card_id','finish']},'source':source,'points':[{'date':TODAY,'value':float(value)}]}
 
+@lru_cache(maxsize=3)
+def snapshot_file(url):
+    """Finish and validate the gzip download before any slow database writes."""
+    last=None
+    for attempt in range(3):
+        fd,path=tempfile.mkstemp(prefix='cardstashy-market-',suffix='.json.gz');os.close(fd)
+        try:
+            req=urllib.request.Request(url,headers={'User-Agent':UA})
+            with urllib.request.urlopen(req,timeout=120) as response,open(path,'wb') as dest:
+                shutil.copyfileobj(response,dest,length=1024*1024)
+                length=response.headers.get('Content-Length')
+            if length and os.path.getsize(path)!=int(length):raise EOFError('Incomplete market download')
+            with gzip.open(path,'rb') as check:
+                while check.read(1024*1024):pass # includes CRC and end-of-stream validation
+            print('Validated market snapshot:',url,os.path.getsize(path),flush=True)
+            return path
+        except (OSError,EOFError,urllib.error.URLError) as exc:
+            last=exc;os.unlink(path)
+            if attempt<2:time.sleep(2*(attempt+1))
+    raise RuntimeError('Could not download a complete market snapshot') from last
+
+@contextmanager
+def gzip_snapshot(url):
+    with gzip.open(snapshot_file(url),'rb') as stream:yield stream
+
 def backfill(watches):
     mapping={}
     for code in sorted(set(w['set_code'] for w in watches if w.get('set_code'))):
@@ -78,8 +104,7 @@ def backfill(watches):
         except Exception as e:print('Backfill set unavailable:',code,type(e).__name__)
     if not mapping:return []
     out=[]
-    req=urllib.request.Request('https://mtgjson.com/api/v5/AllPrices.json.gz',headers={'User-Agent':UA})
-    with urllib.request.urlopen(req,timeout=120) as response, gzip.GzipFile(fileobj=response) as stream:
+    with gzip_snapshot('https://mtgjson.com/api/v5/AllPrices.json.gz') as stream:
         for uuid,prices in ijson.kvitems(stream,'data',use_float=True):
             if uuid not in mapping:continue
             retail=prices.get('paper',{}).get('tcgplayer',{}).get('retail',{})
@@ -92,16 +117,16 @@ def backfill(watches):
 def backfill_magic_catalogue():
     """Every priced paper printing: exact MTGJSON UUID -> Scryfall ID, last 31 calendar days."""
     mapping={}
-    req=urllib.request.Request('https://mtgjson.com/api/v5/AllIdentifiers.json.gz',headers={'User-Agent':UA})
-    with urllib.request.urlopen(req,timeout=120) as response,gzip.GzipFile(fileobj=response) as stream:
+    with gzip_snapshot('https://mtgjson.com/api/v5/AllIdentifiers.json.gz') as stream:
         for uuid,card in ijson.kvitems(stream,'data',use_float=True):
             sid=card.get('identifiers',{}).get('scryfallId')
             if sid:mapping[uuid]=sid
     print('Exact Magic printing mappings:',len(mapping),flush=True)
     cutoff=(datetime.date.fromisoformat(TODAY)-datetime.timedelta(days=30)).isoformat()
-    batch=[];count=0
-    req=urllib.request.Request('https://mtgjson.com/api/v5/AllPrices.json.gz',headers={'User-Agent':UA})
-    with urllib.request.urlopen(req,timeout=120) as response,gzip.GzipFile(fileobj=response) as stream:
+    batch=[];count=0;skipped=0
+    completed={(r['card_id'],r['finish']) for r in table('market_series','select=card_id,finish&game=eq.mtg&source=eq.'+urllib.parse.quote('TCGplayer retail via MTGJSON',safe='')+'&updated_at=gte.'+TODAY+'T00:00:00Z')}
+    print('Already saved today:',len(completed),flush=True)
+    with gzip_snapshot('https://mtgjson.com/api/v5/AllPrices.json.gz') as stream:
         for uuid,prices in ijson.kvitems(stream,'data',use_float=True):
             sid=mapping.get(uuid)
             if not sid:continue
@@ -109,12 +134,13 @@ def backfill_magic_catalogue():
             for finish,sub in [('nonfoil','normal'),('foil','foil'),('etched','etched')]:
                 points=[{'date':day,'value':float(v)} for day,v in sorted(retail.get(sub,{}).items()) if cutoff<=day<=TODAY and isinstance(v,(int,float)) and 0<v<=10000000]
                 if not points:continue
+                if (sid,finish) in completed:skipped+=1;continue
                 batch.append({'game':'mtg','card_id':sid,'finish':finish,'source':'TCGplayer retail via MTGJSON','points':points})
                 if len(batch)>=100:
                     save_rows(batch);count+=len(batch);batch=[]
                     if count%1000==0:print('Magic month histories saved:',count,flush=True)
     if batch:save_rows(batch);count+=len(batch)
-    print('Complete Magic month import:',count,flush=True)
+    print('Complete Magic month import:',count,'new series;',skipped,'already saved today',flush=True)
 
 def main():
     cutoff=(datetime.date.fromisoformat(TODAY)-datetime.timedelta(days=90)).isoformat()
