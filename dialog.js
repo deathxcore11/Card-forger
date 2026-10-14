@@ -6,15 +6,16 @@ import { haptic } from "./feel.js";
 
 const DANGER = /^(Delete|Remove|Replace|Clear|Sign out|Start empty|Switch|End|Restore)\b/i;
 
-function open(message, { input = null, ok, cancel = "Cancel", danger } = {}) {
+function open(message, { input = null, ok, cancel = "Cancel", danger, title = "", tone = "" } = {}) {
   return new Promise((resolve) => {
     const verb = String(message).match(DANGER)?.[1];
     danger ??= !!verb && !/^(Restore|Switch)$/i.test(verb);
     ok ??= input != null ? "Save" : verb ? verb.replace(/^./, (x) => x.toUpperCase()) : "OK";
     const d = document.createElement("dialog");
-    d.className = "cf-dialog" + (danger ? " danger" : "");
+    d.className = "cf-dialog" + (danger ? " danger" : "") + (tone ? " " + tone : "");
     d.innerHTML = `<form method="dialog" class="cf-dialog-card">
-      <p class="cf-dialog-msg">${esc(message)}</p>
+      ${title ? `<p class="cf-dialog-title">${tone === "ok" ? `<span class="cf-dialog-check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>` : ""}${esc(title)}</p>` : ""}
+      <p class="cf-dialog-msg${title ? " sub" : ""}">${esc(message)}</p>
       ${input != null ? `<input class="cf-dialog-input" value="${esc(input)}" maxlength="80" aria-label="${esc(message)}">` : ""}
       <div class="cf-dialog-actions"><button type="button" class="btn ghost" value="cancel">${esc(cancel)}</button><button class="btn ${danger ? "danger" : ""}" value="ok">${esc(ok)}</button></div>
     </form>`;
@@ -33,7 +34,7 @@ function open(message, { input = null, ok, cancel = "Cancel", danger } = {}) {
     d.addEventListener("cancel", (e) => { e.preventDefault(); finish(false); });
     d.addEventListener("click", (e) => { if (e.target === d) finish(false); });
     d.showModal ? d.showModal() : d.setAttribute("open", "");
-    haptic("tap");
+    haptic(tone === "ok" ? "success" : "tap");
     // A destructive question starts on Cancel, so Enter can't delete by accident.
     (field || d.querySelector(danger ? '[value="cancel"]' : '[value="ok"]')).focus();
     field?.select();

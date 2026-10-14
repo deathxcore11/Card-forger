@@ -1,3 +1,14 @@
+3.54.0 — Build decks looks like your decks, and buying is one tap
+- Each version in Build decks lists its cards as the same tiles as the deck page: the card art with
+  its price, type and set badges, "Need 4" or "Owned", and the number of copies. Pokémon, Trainers and
+  Energy (Creatures/Spells/Lands, Monsters/Spells/Traps/Extra) are folding sections.
+- One action bar per version: Save as deck, Buy on TCGplayer, See all. The ⋯ menu holds Save and see
+  matchups, Save and playtest (each saves, then opens the new deck on that tab) and Copy deck list
+  (Pokémon TCG Live format, Arena/MTGO text for Magic).
+- Buy on TCGplayer, everywhere you buy (Build decks, a deck's shopping list, deck ideas, upgrades):
+  copies just the cards you still need with quantities, shows a "Shopping list copied" sheet saying
+  what to do next, then opens TCGplayer's Mass Entry for the right game when you tap Open TCGplayer.
+
 3.53.1 — See the deck you're up against
 - Matchups: each opponent's details start with "See their deck", which opens the exact tournament list
   the matchup is simulated against (placing, event, every card, prices and what you own) in the same

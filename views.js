@@ -543,7 +543,10 @@ function tierCard(t, i, mode, tierList = null) {
       g = !c ? "Other" : isLand(c) ? "Lands" : /\bCreature\b/.test(typeText(c)) ? "Creatures" : "Spells",
       free = Math.min(r.qty, S.ui.build.avail?.(r.name) ?? 0),
       basic = isBasic(c) || /^(Plains|Island|Swamp|Mountain|Forest|Wastes)$/.test(r.name);
-    groups[g].push({ qty: r.qty, name: r.name, art: img(art(c), r.name, "mini-art"), act: `data-act="card" data-name="${esc(r.name)}"`, why: r.why === "Already in your list" ? "Kept in this version" : r.why || "", status: basic ? "basic" : free >= r.qty ? "✓ Owned" : `Need ${r.qty - free}`, ok: basic || free >= r.qty });
+    const need = basic ? 0 : Math.max(0, r.qty - free), tt = tierOf("mtg", c?.rarity || "", priceOf(r.name)), why = r.why === "Already in your list" ? "Kept in this version" : r.why || "";
+    // The same card tile as the deck page: art with price, set and mana, owned or needed.
+    const tile = `<div class="lot deck-row tier-row ${need ? "short" : ""}" data-tier="${tt.key}" style="${tierStyle(tt)}"><button class="lot-art" data-act="card" data-name="${esc(r.name)}" aria-label="Open ${esc(r.name)}">${img(cardImage(c), r.name)}${c ? tileChrome("mtg", c) : ""}<span class="art-price">${usd(priceOf(r.name))}</span></button><div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(r.name)}">${esc(r.name)}</button><span class="lot-sub">${manaCost(c)}${why ? `<small class="muted">${esc(why)}</small>` : ""}</span><span class="own ${need ? "no" : "yes"}">${need ? "Need " + need : basic && !free ? "Basic land" : "Owned"}</span></div><div class="lot-side"><span class="tier-qty">×${r.qty}</span></div></div>`;
+    groups[g].push({ qty: r.qty, name: r.name, tile, need, art: img(art(c), r.name, "mini-art"), act: `data-act="card" data-name="${esc(r.name)}"`, why, status: basic ? "basic" : free >= r.qty ? "✓ Owned" : `Need ${r.qty - free}`, ok: basic || free >= r.qty });
   }
   for (const k of Object.keys(groups)) groups[k].sort((a, b) => b.qty - a.qty || a.name.localeCompare(b.name));
   return tierCardHtml({
@@ -559,6 +562,12 @@ function tierCard(t, i, mode, tierList = null) {
     toggle: `data-act="tierToggle" data-i="${i}"`,
     save: mode === "fill" ? `data-act="tierApply" data-i="${i}"` : `data-act="tierSave" data-i="${i}"`,
     saveLabel: mode === "fill" ? "Use this version" : "Save as deck",
+    buy: `data-act="tierBuy" data-i="${i}"`, need: Object.values(groups).flat().reduce((a, r) => a + r.need, 0),
+    more: mode === "fill" ? [{ icon: "copy", label: "Copy deck list", note: "Paste into any deck site", attrs: `data-act="tierCopy" data-i="${i}"` }] : [
+      { icon: "sword", label: "Save and see matchups", note: "How it does against the decks winning now", attrs: `data-act="tierSaveGo" data-i="${i}" data-to="matchups"` },
+      { icon: "cardStack", label: "Save and playtest", note: "Draw opening hands", attrs: `data-act="tierSaveGo" data-i="${i}" data-to="playtest"` },
+      { icon: "copy", label: "Copy deck list", note: "Arena / MTGO text", attrs: `data-act="tierCopy" data-i="${i}"` },
+    ],
   });
 }
 
@@ -1656,7 +1665,7 @@ function deckShop(d, t) {
     })
     .join("")}</div>
   <section class="panel">${costBlock(sub, total, d.budget, "deck budget")}${t.unpriced ? `<p class="small warn-text">${t.unpriced} copies have no price and aren’t included.</p>` : ""}
-  <div class="actions wrap"><button class="btn" data-act="copyShopping" data-src="deck">Copy list</button><a class="btn ghost" href="https://www.tcgplayer.com/massentry" target="_blank" rel="noopener">TCGplayer Mass Entry ↗</a><button class="btn ghost" data-act="exportMissing">↓ .txt</button><button class="btn ghost" data-act="acquire">I got cards</button><button class="btn ghost" data-act="proxies" data-scope="missing">🖨 Print proxies of missing</button></div>
+  <div class="actions wrap"><button class="btn" data-act="copyShopping" data-src="deck">${actionIcon("bag")}<span>Buy on TCGplayer</span></button><button class="btn ghost" data-act="exportMissing">↓ .txt</button><button class="btn ghost" data-act="acquire">I got cards</button><button class="btn ghost" data-act="proxies" data-scope="missing">🖨 Print proxies of missing</button></div>
   <p class="foot">Tap a card → Printings to price a specific edition. Reference prices from Scryfall; check the seller’s condition and shipping.</p></section>`;
 }
 

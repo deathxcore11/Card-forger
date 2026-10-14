@@ -2796,3 +2796,47 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .mu-see > i { font-style: normal; font-size: 22px; color: var(--muted); }
 .mu-see-art { width: 46px; height: 34px; border-radius: 8px; overflow: hidden; background: var(--surface-2); flex: none; }
 .mu-see-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cf-dialog-title { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; font-size: 19px; font-weight: 800; }
+.cf-dialog-msg.sub { font-weight: 500; color: var(--muted); font-size: 15px; }
+.cf-dialog-check { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--good); flex: none; animation: cf-check .5s cubic-bezier(.2, 1.4, .4, 1) .05s both; }
+.cf-dialog-check svg { width: 18px; height: 18px; fill: none; stroke: #062014; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 24; stroke-dashoffset: 24; animation: cf-draw .4s ease-out .25s forwards; }
+@keyframes cf-check { from { transform: scale(.3); opacity: 0; } }
+@keyframes cf-draw { to { stroke-dashoffset: 0; } }
+
+/* Build decks: each version lists its cards as the same tiles as the deck page, in folding groups,
+   with one action bar (Save, Buy on TCGplayer, See all) and a ⋯ menu for the rest. */
+.tier-group { margin: 12px 0 0; }
+.tier-group > summary { list-style: none; display: flex; align-items: center; gap: 8px; padding: 8px 2px; cursor: pointer; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.tier-group > summary::-webkit-details-marker { display: none; }
+.tier-group > summary b { color: var(--text); letter-spacing: 0; }
+.tier-group > summary::after { content: ""; margin-left: auto; width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
+.tier-group:not([open]) > summary::after { transform: rotate(-45deg); }
+.tier-group[open] > .tier-tiles { animation: tier-open .3s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes tier-open { from { opacity: 0; transform: translateY(-6px); } }
+.tier-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+.tier-tiles .lot { margin: 0; }
+.tier-qty { font-weight: 800; font-size: 18px; font-variant-numeric: tabular-nums; padding: 4px 10px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); }
+.tier-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+.tier-actions .btn { display: inline-flex; align-items: center; gap: 6px; }
+.tier-actions .btn svg { width: 16px; height: 16px; }
+.tier-actions .tier-save { flex: 1 1 auto; justify-content: center; }
+.tier-more { position: relative; }
+.tier-more > summary { list-style: none; cursor: pointer; min-width: 40px; justify-content: center; }
+.tier-more > summary::-webkit-details-marker { display: none; }
+.tier-more-menu { position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 20; min-width: 260px; padding: 6px; border-radius: 16px; background: color-mix(in srgb, var(--surface-2) 94%, transparent); border: 1px solid var(--line); box-shadow: 0 18px 40px -12px rgba(0, 0, 0, .7); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); transform-origin: bottom right; animation: tier-menu .22s cubic-bezier(.2, 1.2, .4, 1) both; }
+@keyframes tier-menu { from { opacity: 0; transform: scale(.92) translateY(6px); } }
+.tier-more-menu button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border: 0; border-radius: 12px; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.tier-more-menu button:hover, .tier-more-menu button:focus-visible { background: var(--surface); }
+.tier-more-menu button svg { width: 20px; height: 20px; flex: none; color: var(--game-color, var(--gold)); }
+.tier-more-menu button span { display: grid; }
+.tier-more-menu small { color: var(--muted); font-size: 12px; }
+@media (max-width: 520px) { .tier-tiles { grid-template-columns: 1fr; } .tier-more-menu { min-width: min(280px, calc(100vw - 48px)); } }
+/* Builder tiles keep a fixed card-tile layout wherever they're shown: portrait art, name and status,
+   then the copy count, never overlapping. */
+.tier-tiles { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+.tier-tiles .lot.tier-row { display: grid !important; grid-template-columns: 62px minmax(0, 1fr) auto !important; gap: 12px; align-items: center; padding: 8px; position: relative; }
+.tier-tiles .tier-row .lot-art { width: 62px !important; height: 86px !important; aspect-ratio: auto; }
+.tier-tiles .tier-row .lot-art img { width: 100%; height: 100%; object-fit: cover; }
+.tier-tiles .tier-row .lot-side { position: static !important; display: flex; align-items: center; }
+.tier-tiles .tier-row .lot-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; font-weight: 700; }
+.tier-tiles .tier-row .lot-sub { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }

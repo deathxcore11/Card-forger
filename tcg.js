@@ -1,4 +1,5 @@
 import { ask, askText } from "./dialog.js";
+import { buyOnTcgplayer } from "./buy.js";
 import {effectText,ruleText} from './rule-dex.js';
 import {editionPrice} from './ygo-prices.js';
 import {buildOverlay} from './build-overlay.js';
@@ -1176,7 +1177,7 @@ function deckCardsTab(g, d, f, s, issues) {
     })
     .join("")}
   <section class="panel">${s.total ? `<div class="row between"><span>${s.total - s.owned} cards to get</span><b>${usd(s.buy)}${s.unknown ? ` + ${s.unknown} unpriced` : ""}</b></div>` : ""}
-  <div class="actions wrap">${g === "ptcg" && s.total > s.owned ? `<button class="btn small" data-act="tDeckCheapest" data-id="${esc(d.id)}" title="Same cards, cheapest legal printings">Cheapest printings</button>` : ""}<button class="btn ghost small" data-act="tDeckCopyMissing" data-id="${esc(d.id)}">Copy shopping list</button><button class="btn ghost small" data-act="tDeckExport" data-id="${esc(d.id)}">↓ Export ${SOURCES[g].exportExt === "ydk" ? ".ydk" : "list"}</button><button class="btn ghost small" data-act="tDeckRefresh" data-id="${esc(d.id)}">⟳ Refresh prices</button></div>
+  <div class="actions wrap">${g === "ptcg" && s.total > s.owned ? `<button class="btn small" data-act="tDeckCheapest" data-id="${esc(d.id)}" title="Same cards, cheapest legal printings">Cheapest printings</button>` : ""}${s.total > s.owned ? `<button class="btn ghost small" data-act="tDeckCopyMissing" data-id="${esc(d.id)}">${actionIcon("bag")}<span>Buy on TCGplayer</span></button>` : ""}<button class="btn ghost small" data-act="tDeckExport" data-id="${esc(d.id)}">↓ Export ${SOURCES[g].exportExt === "ydk" ? ".ydk" : "list"}</button><button class="btn ghost small" data-act="tDeckRefresh" data-id="${esc(d.id)}">⟳ Refresh prices</button></div>
   <p class="foot">Owned counts every copy in your ${esc(GAMES[g].short)} collection${g === "ptcg" ? " (Pokémon by exact card; Trainers and Energy by name)" : ""}. Prices are daily market estimates.</p></section>`;
 }
 
@@ -1471,7 +1472,10 @@ export function tcgBuildSheet() {
     for (const [zone, rows] of [["main", t.zones.main], ["extra", t.zones.extra || []]])
       for (const r of rows) {
         const card = cardOf(g, r.cardId), have = Math.min(r.qty, ownedOf(g, card)), basic = !!card?.basicEnergy;
-        groups[groupOf(card, zone)].push({ qty: r.qty, name: r.name, art: imgTag(card, "mini-art"), act: `data-act="tCard" data-id="${esc(r.cardId)}"`, why: r.why || "", status: basic ? "basic" : have >= r.qty ? "✓ Owned" : `Need ${r.qty - have}`, ok: basic || have >= r.qty });
+        const need = basic ? 0 : Math.max(0, r.qty - have), tt = tcgTier(card);
+        // The same card tile as the deck page: art with price, set and type badges, owned or needed.
+        const tile = `<div class="lot deck-row tier-row ${need ? "short" : ""}" data-tier="${tt.key}" style="${tierStyle(tt)}"><button class="lot-art" data-act="tCard" data-id="${esc(r.cardId)}" aria-label="Open ${esc(r.name)}">${imgTag(card)}${tileBadges(card)}<span class="art-price">${usd(price(card))}</span></button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(r.cardId)}">${esc(r.name)}</button><span class="lot-sub">${rowBadges(card)}${r.why ? `<small class="muted">${esc(r.why)}</small>` : ""}</span><span class="own ${need ? "no" : "yes"}">${need ? "Need " + need : basic && !have ? "Basic Energy" : "Owned"}</span></div><div class="lot-side"><span class="tier-qty">×${r.qty}</span></div></div>`;
+        groups[groupOf(card, zone)].push({ qty: r.qty, name: r.name, tile, need, art: imgTag(card, "mini-art"), act: `data-act="tCard" data-id="${esc(r.cardId)}"`, why: r.why || "", status: basic ? "basic" : have >= r.qty ? "✓ Owned" : `Need ${r.qty - have}`, ok: basic || have >= r.qty });
       }
     for (const k of order) groups[k].sort((x, y) => y.qty - x.qty || x.name.localeCompare(y.name));
     return tierCardHtml({
@@ -1486,6 +1490,12 @@ export function tcgBuildSheet() {
       open: B.openTier === i,
       groups: order.map((name) => ({ name, rows: groups[name] })),
       toggle: `data-act="tTier" data-i="${i}"`, save: `data-act="tTierSave" data-i="${i}"`, saveLabel: "Save as deck",
+      buy: `data-act="tTierBuy" data-i="${i}"`, need: order.reduce((a, k) => a + groups[k].reduce((b, r) => b + r.need, 0), 0),
+      more: [
+        { icon: "sword", label: "Save and see matchups", note: "How it does against the decks winning now", attrs: `data-act="tTierSaveGo" data-i="${i}" data-to="matchups"` },
+        { icon: "cardStack", label: "Save and playtest", note: "Draw opening hands", attrs: `data-act="tTierSaveGo" data-i="${i}" data-to="playtest"` },
+        { icon: "copy", label: "Copy deck list", note: g === "ptcg" ? "Pokémon TCG Live format" : "Paste into any deck site", attrs: `data-act="tTierCopy" data-i="${i}"` },
+      ],
     });
   }).join("")}</div>${tiers.length > 1 ? `<button class="btn ghost block" data-act="tTierSaveAll">Save all ${tiers.length} versions</button>` : ""}` : ""}
   <p class="foot">Built from your cards first, then what today's tournament decks play. A strong start, not a tuned tournament list. Prices are daily estimates.</p>`;
@@ -2845,6 +2855,36 @@ export function registerTcg(c) {
       d = { id: uid(), name: `${seed.name}${many} · ${formatOf(B.game, B.format).name} · ${tierName(tier).toLowerCase()}`, format: B.format, zones: structuredClone(tier.zones), createdAt: new Date().toISOString(), source: tier.source || { kind: tier.meta || tier.proven ? "Tournament list" : "Generated" } };
     await mutate((st) => st.decks.push(d), { msg: `Saved “${d.name}” to your decks.` });
   };
+  const tierDeck = (i) => {
+    const B = S.ui.tbuild, tier = B.results[B.format]?.[Number(i)], seed = cardOf(B.game, B.seed);
+    if (!tier || !seed) return null;
+    const many = (B.seeds?.length || 1) > 1 ? ` + ${B.seeds.length - 1} more` : "";
+    return { tier, d: { id: uid(), name: `${seed.name}${many} · ${formatOf(B.game, B.format).name} · ${tierName(tier).toLowerCase()}`, format: B.format, zones: structuredClone(tier.zones), createdAt: new Date().toISOString(), source: tier.source || { kind: "Generated", description: `Built by CardStashy around ${seed.name}.` } } };
+  };
+  // Save, then open the new deck on the tab you asked for (Matchups, Playtest).
+  A.tTierSaveGo = async (t) => {
+    const x = tierDeck(t.dataset.i);
+    if (!x) return;
+    await mutate((st) => st.decks.push(x.d), { msg: `Saved “${x.d.name}”.` });
+    (S.ui.tdeckTab ||= {})[x.d.id] = t.dataset.to;
+    closeSheet();
+    go("#tdeck/" + x.d.id);
+  };
+  A.tTierCopy = (t) => {
+    const x = tierDeck(t.dataset.i), G = S.ui.tbuild.game;
+    if (x) copyText(SOURCES[G].exportText(x.d, (id) => cardOf(G, id)), "Deck list copied.");
+  };
+  // The cards this version needs that you don't own, copied for TCGplayer's Mass Entry.
+  A.tTierBuy = async (t) => {
+    const x = tierDeck(t.dataset.i), G = S.ui.tbuild.game;
+    if (!x) return;
+    const m = ownedMap(G), lines = [];
+    for (const r of [...x.tier.zones.main, ...(x.tier.zones.extra || [])]) {
+      const c = cardOf(G, r.cardId), need = c?.basicEnergy ? 0 : Math.max(0, r.qty - ownedOf(G, c, m));
+      if (need) lines.push(`${need} ${r.name}`);
+    }
+    if (!(await buyOnTcgplayer(G, lines))) toast("You own every card in this version.");
+  };
   A.tTierSaveAll = async () => {
     const B = S.ui.tbuild,
       tiers = B.results[B.format] || [],
@@ -3143,7 +3183,7 @@ export function registerTcg(c) {
       s = deckStats(G, d),
       lines = s.rows.filter((x) => x.need).map((x) => `${x.need} ${x.r.name}`);
     if (!lines.length) return toast("You own every card in this deck.");
-    copyText(lines.join("\n"), `Copied ${lines.length} cards — paste into TCGplayer Mass Entry or a store’s list.`);
+    buyOnTcgplayer(G, lines);
   };
   // Pokémon decks hold exact printings: swap each card for its cheapest printing with the same
   // game text that is legal in the deck's format (an owned printing wins). Versions keep the old list.

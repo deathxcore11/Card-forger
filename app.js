@@ -1,4 +1,5 @@
 import { ask, askText } from "./dialog.js";
+import { buyOnTcgplayer } from "./buy.js";
 import {applySwapsToCards} from './insights.js';
 import {showRuleHint} from './rule-dex.js';
 import {bestBudgetDecks,purchaseCost,comparePower,refineCandidates,towardDeck,spendUp,cardQuality} from './deck-optimizer.js';
@@ -1091,6 +1092,10 @@ attachCardGestures({onSelect:target=>{
 document.addEventListener("pointerdown", ripple, { passive: true });
 attachGestures({ closeSheet: () => closeSheet() });
 attachTilt();
+// Fold-out ⋯ menus close when you pick something or tap anywhere else.
+document.addEventListener("click", (e) => {
+  for (const m of document.querySelectorAll("details.tier-more[open]")) if (!m.contains(e.target) || e.target.closest(".tier-more-menu button")) m.open = false;
+}, true);
 // One rule for every card frame: a row or tile without its own tier takes it from its card
 // picture, which always carries that exact printing's price (ui.js tierRing).
 let tierQueued = false;
@@ -1561,6 +1566,25 @@ A.tierSave = async (t) => {
   if (!tier) return;
   const d = generatedDeck(tier, B.seed);
   await commit((s) => s.decks.push(d), { msg: `Saved “${d.name}”. Find it in My decks.` });
+};
+A.tierSaveGo = async (t) => {
+  const B = S.ui.build, tier = B.results[B.format]?.[Number(t.dataset.i)];
+  if (!tier) return;
+  const d = generatedDeck(tier, B.seed);
+  await commit((s) => s.decks.push(d), { msg: `Saved “${d.name}”.` });
+  closeSheet();
+  go(`#deck/${d.id}/${t.dataset.to}`);
+};
+A.tierCopy = (t) => {
+  const B = S.ui.build, tier = B.results[B.format]?.[Number(t.dataset.i)];
+  if (tier) copyText(exportDeckText({ cards: tier.cards, side: tier.side || [] }), "Deck list copied.");
+};
+// The cards this version needs that you don't own (basic lands aside), for TCGplayer's Mass Entry.
+A.tierBuy = async (t) => {
+  const B = S.ui.build, tier = B.results[B.format]?.[Number(t.dataset.i)];
+  if (!tier) return;
+  const lines = tier.cards.filter((r) => !/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(r.name)).map((r) => [r.qty - Math.min(r.qty, B.avail?.(r.name) ?? 0), r.name]).filter(([n]) => n > 0).map(([n, name]) => `${n} ${name}`);
+  if (!(await buyOnTcgplayer("mtg", lines))) toast("You own every card in this version.");
 };
 A.tierSaveAll = async () => {
   const B = S.ui.build,
@@ -2465,7 +2489,8 @@ function missingList(d) {
 }
 A.copyShopping = (t) => {
   const items = t.dataset.src === "wish" ? V.wishlistItems().map((w) => ({ name: w.name, qty: w.need })) : missingList(currentDeck());
-  copyText(exportDeck(items), `${sumQty(items)} cards copied — paste into TCGplayer Mass Entry.`);
+  if (!items.length) return toast("Nothing to buy.");
+  buyOnTcgplayer("mtg", exportDeck(items).split("\n").filter(Boolean));
 };
 A.exportMissing = () => {
   const d = currentDeck();
@@ -3464,7 +3489,7 @@ A.ideaBuy = () => {
     sel = S.ui.ideas.sel,
     list = rows.filter((r) => r.missing && (!sel.size || sel.has(r.name))).map((r) => ({ name: r.name, qty: r.missing }));
   if (!list.length) return toast("You already own everything selected.");
-  copyText(exportDeck(list), `${sumQty(list)} cards copied — paste into TCGplayer Mass Entry.`);
+  buyOnTcgplayer("mtg", exportDeck(list).split("\n").filter(Boolean));
 };
 A.saveIdea = (t) => {
   S.ui.ideas.sel = new Set();
@@ -3775,7 +3800,7 @@ A.upExport = () => {
   const d = currentDeck(),
     buy = pickedSwaps().filter((s) => !inv(s.add, d.id).available).map((s) => ({ name: s.add, qty: 1 }));
   if (!buy.length) return toast("All selected additions are cards you already own.");
-  copyText(exportDeck(buy), `${buy.length} cards copied for TCGplayer Mass Entry.`);
+  buyOnTcgplayer("mtg", exportDeck(buy).split("\n").filter(Boolean));
 };
 A.upApply = async () => {
   const U = S.ui.upgrade,
