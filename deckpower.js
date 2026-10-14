@@ -139,7 +139,7 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
   const gold = mtgGoldfish(known.map((r) => ({ qty: r.qty, c: r.c })), { size, plan });
   if (gold) {
     const ctl = plan === "Control";
-    parts.push({ ...part("Goldfish", ctl ? "Goldfish: mana use" : "Goldfish speed", ctl ? Math.round(gold.metrics[0].value * 100) + "%" : gold.turnDist && gold.speed != null ? `turn ${gold.headline.match(/turn (\d+)/)?.[1] || "10+"}` : "—", ctl ? "75%+" : `turn ${{ Aggro: 5, Midrange: 6, Ramp: 6 }[plan] || 6}`, ctl ? gold.metrics[0].value / 0.75 : gold.speed, 0, "1,000 games played out against an empty board: how fast the deck actually closes."), why: gold.headline });
+    parts.push({ ...part("Goldfish", ctl ? "Goldfish: mana use" : "Goldfish speed", ctl ? Math.round(gold.metrics[0].value * 100) + "%" : gold.turnDist && gold.speed != null ? `turn ${gold.headline.match(/turn (\d+)/)?.[1] || "10+"}` : "—", ctl ? "75%+" : `turn ${{ Aggro: 5, Midrange: 6, Ramp: 6 }[plan] || 6}`, ctl ? gold.metrics[0].value / 0.75 : gold.speed, 8, "1,000 games played out against an empty board: how fast the deck actually closes."), why: gold.headline });
   }
   const names = (re) => evidence(spells.filter((r) => re.test(text(r.c))));
   const ev = { Mana: evidence(lands), Interaction: evidence(spells.filter((r) => M.removal.test(text(r.c)) || M.counter.test(text(r.c)) || M.discard.test(text(r.c)) || M.wipe.test(text(r.c)))), Flow: names(M.draw), Threats: evidence(spells.filter((r) => /Creature|Planeswalker/.test(type(r.c)))), Consistency: evidence(spells.filter((r) => r.qty <= 2 && !legendary(r.c))), Curve: evidence(spells.filter((r) => Number(r.c.cmc) >= 5)) };
@@ -309,6 +309,16 @@ const P = {
 };
 const SUPPORTER = /^(?:iono|professor's research|boss's orders|lillie's determination|arven|judge|carmine|crispin|briar|jacq|penny|irida|cyllene|colress's tenacity|peonia|raihan|kieran|black belt's training|lana's aid|janine's secret art|morty's conviction|eri|clavell|giacomo|ciphermaniac's codebreaking|grand tree|hilda|dawn|lacey|brock's scouting|team rocket's (?:petrel|ariana|proton|archer|giovanni)|cynthia|marnie|n|sada's vitality|turo's scenario|professor turo's scenario)$/i;
 
+const ETYPE = { G: "Grass", R: "Fire", W: "Water", L: "Lightning", P: "Psychic", F: "Fighting", D: "Darkness", M: "Metal" };
+// Damage an attack can reasonably deal: "30×" and "60+" scale, so count them above their printed number.
+export const attackDamage = (a) => {
+  const t = String(a?.damage ?? ""), n = parseInt(t.replace(/\D/g, "")) || 0;
+  return /[×x]/.test(t) ? Math.min(n * 3, 280) : /\+/.test(t) ? Math.round(n * 1.5) : n;
+};
+export const attackReach = (c) => Math.max(0, ...(c?.attacks || []).map(attackDamage));
+// Energy types an Ability needs attached before it works ("if this Pokémon has any Darkness Energy attached").
+export const abilityEnergy = (c) => [...new Set((c?.abilities || []).flatMap((a) => [...String(a.effect || "").matchAll(/(?:has|have) (?:any |at least \w+ )?(?:\{([GRWLPFDM])\}|(Grass|Fire|Water|Lightning|Psychic|Fighting|Darkness|Metal)) Energy attached/gi)].map((m) => ETYPE[m[1]?.toUpperCase()] || m[2][0].toUpperCase() + m[2].slice(1).toLowerCase())))];
+
 export function ptcgPower(rows, f = {}) {
   const main = rows.filter((r) => r.c),
     unknown = rows.filter((r) => !r.c).reduce((a, r) => a + r.qty, 0),
@@ -352,6 +362,8 @@ export function ptcgPower(rows, f = {}) {
     needTypes = [...new Set(main.flatMap((r) => r.c.attackCosts || []))],
     energyTypes = new Set(main.filter((r) => r.c.category === "Energy").map((r) => (r.c.basicEnergy ? r.c.name.replace(/^Basic | Energy$/g, "") : "Special"))),
     missingTypes = needTypes.filter((tp) => !energyTypes.has(tp)),
+    // Abilities that only work with a type of Energy attached (Munkidori needs Darkness).
+    deadAbility = energyTypes.has("Special") ? [] : main.filter((r) => abilityEnergy(r.c).some((tp) => !energyTypes.has(tp))),
     energyFit = !missingTypes.length || energyTypes.has("Special") ? 1 : 0.4,
     mull = 1 - atLeastOne(N, basics, 7),
     ruleBox = main.filter((r) => r.c.ruleBox);
@@ -367,7 +379,7 @@ export function ptcgPower(rows, f = {}) {
       const thin = two ? nb < 4 || nt < 3 || nm + Math.min(candy, 4) < nt + 2 : nb < 3 || nt < 2;
       return { top: top.c.name, base, mid, two, counts: two ? [nb, nm, nt] : [nb, nt], thin, text: (two ? [nb, nm, nt] : [nb, nt]).join("-") };
     });
-  const dmg = (r) => Math.max(0, ...(r.c.attacks || []).map((a) => parseInt(String(a.damage).replace(/\D/g, "")) || 0)),
+  const dmg = (r) => attackReach(r.c),
     attackers = main.filter((r) => r.c.category === "Pokemon").sort((a, b) => dmg(b) - dmg(a) || (b.c.ruleBox ? 1 : 0) - (a.c.ruleBox ? 1 : 0) || /2/.test(b.c.stage || "") - /2/.test(a.c.stage || "") || b.qty - a.qty),
     mainAtk = attackers[0],
     line = mainAtk ? lines.find((l) => l.top === mainAtk.c.name) : null;
@@ -417,13 +429,24 @@ export function ptcgPower(rows, f = {}) {
       cards: evidence(switches), why: `${q(switches)} ways to switch. A stuck Active Pokémon or Special Condition costs you a whole turn.` },
     { ...part("Recovery", "Recovery", q(recs), 2, q(recs) / 2, 5, "Night Stretcher, Super Rod and friends bring back knocked-out attackers."),
       cards: evidence(recs), why: `${q(recs)} recovery card${q(recs) === 1 ? "" : "s"}. Once your attackers are knocked out, they're gone for good.` },
-    { ...part("Energy", "Energy", energy, needTypes.length ? needTypes.join("/") : "any", energyFit * (energy >= 6 || !needTypes.length ? 1 : energy / 6) * (S("energy") >= 0.75 || !needTypes.length ? 1 : S("energy") / 0.75) * (energy > 16 ? Math.max(0.2, 1 - (energy - 16) / 12) : 1), 8, `Enough of the right Energy for your attacks. ${Pc(S("energy"))} of games have Energy or acceleration by turn 1.`),
-      cards: evidence([...by("energy"), ...accel]), why: missingTypes.length ? `Attacks need ${missingTypes.join(", ")} Energy, which the deck doesn't run.` : energy > 16 ? `${energy} Energy is far more than any attacker needs. Competitive lists run 8–14; every extra one is a Trainer you don't draw.` : `${energy} Energy: ${Pc(1 - S("energy"))} of games have none (and no acceleration) on turn 1.` },
+    { ...part("Energy", "Energy", energy, needTypes.length ? needTypes.join("/") : "any", energyFit * (deadAbility.length ? 0.6 : 1) * (energy >= 6 || !needTypes.length ? 1 : energy / 6) * (S("energy") >= 0.75 || !needTypes.length ? 1 : S("energy") / 0.75) * (energy > 16 ? Math.max(0.2, 1 - (energy - 16) / 12) : 1), 8, `Enough of the right Energy for your attacks. ${Pc(S("energy"))} of games have Energy or acceleration by turn 1.`),
+      cards: evidence([...by("energy"), ...accel, ...deadAbility]), why: missingTypes.length ? `Attacks need ${missingTypes.join(", ")} Energy, which the deck doesn't run.` : deadAbility.length ? `${deadAbility.map((r) => `${r.c.name}'s Ability needs ${abilityEnergy(r.c).join("/")} Energy attached`).join("; ")}, and the deck runs none, so ${deadAbility.length > 1 ? "those cards do" : "it does"} nothing.` : energy > 16 ? `${energy} Energy is far more than any attacker needs. Competitive lists run 8–14; every extra one is a Trainer you don't draw.` : `${energy} Energy: ${Pc(1 - S("energy"))} of games have none (and no acceleration) on turn 1.` },
     { ...part("Consistency", "4-of consistency", Math.round((q(quads) / Math.max(1, N)) * 100) + "%", "55%", q(quads) / Math.max(1, N) / 0.55, 6, "Key Trainers and Basics as 3–4-ofs."),
       cards: evidence(main.filter((r) => r.qty <= 2 && (tag.get(r).has("draw") || tag.get(r).has("search")))), why: "Draw and search cards run as 1–2-ofs. Those are the cards every competitive list maxes out." },
     { ...part("Ace", "ACE SPEC", aces.length ? aces.map((r) => r.c.name).join(", ") : "none", "1", q(aces) > 1 ? 0 : aces.length ? 1 : 0.6, 3, "One ACE SPEC (Prime Catcher, Master Ball, Unfair Stamp…) is a free power boost."),
       why: q(aces) > 1 ? `${q(aces)} ACE SPEC cards: only 1 is allowed.` : "No ACE SPEC. Every deck may play one, and most play one." },
   ];
+  // Win plan: a deck needs an attacker that can take Prizes against today's 200-330 HP ex Pokémon,
+  // in enough copies to keep attacking after one is Knocked Out. Consistency can't make up for it.
+  const atkQty = mainAtk ? (line ? line.counts.at(-1) : mainAtk.qty) : 0,
+    reach = mainAtk ? dmg(mainAtk) : 0,
+    cost = mainAtk ? Math.min(...(mainAtk.c.attacks || []).filter((a) => attackDamage(a) === reach).map((a) => (a.cost || []).length), 9) : 9,
+    atkRatio = clamp(reach / 200) * (atkQty >= 3 ? 1 : atkQty === 2 ? 0.8 : 0.55) * (cost <= 3 || accel.length ? 1 : 0.85);
+  // Only judged when attack details have loaded; brief search results carry none.
+  const atkKnown = main.some((r) => r.c.category === "Pokemon" && Array.isArray(r.c.attacks));
+  if (atkKnown) parts.push({ ...part("Attacker", mainAtk ? `Attacker · ${mainAtk.c.name}` : "Attacker", mainAtk ? `${reach} dmg · ${atkQty}×` : "none", "200+ dmg · 3+", atkRatio, 16, "The Pokémon that takes your Prizes: how hard it hits, how many copies, how much Energy it needs."),
+    cards: mainAtk ? evidence([mainAtk]) : [],
+    why: !mainAtk ? "No Pokémon in the list attacks for real damage." : reach < 120 ? `Your hardest hitter is ${mainAtk.c.name} for ${reach}. Most competitive decks Knock Out a 200+ HP ex in one or two attacks; at ${reach} a game takes ${Math.ceil(240 / Math.max(10, reach))}+ attacks per ex, and the deck has no other way to win.` : `${mainAtk.c.name} hits for ${reach}${atkQty < 3 ? ` but only ${atkQty} cop${atkQty === 1 ? "y" : "ies"} survive a Knock Out` : ""}${cost > 3 ? `, and needs ${cost} Energy` : ""}.` });
   if (q(radiants) > 1) parts.push({ ...part("Radiant", "Radiant limit", q(radiants), "≤ 1", 0, 6, "Only one Radiant Pokémon per deck."), why: `${q(radiants)} Radiant Pokémon: only 1 is allowed.` });
   const gold = ptcgGoldfish(main.map((r) => ({ qty: r.qty, c: r.c })), { attacker: mainAtk?.c.name, line });
   if (gold) parts.push({ ...part("Goldfish", "Goldfish speed", gold.headline.match(/turn (\d+)/)?.[1] ? `turn ${gold.headline.match(/turn (\d+)/)[1]}` : "6+", "turn 2", gold.speed, 0, "1,000 games played out: draw, search, bench, evolve, attach, attack, until the main attacker swings."), why: gold.headline });
@@ -431,8 +454,12 @@ export function ptcgPower(rows, f = {}) {
   const roles = new Map();
   for (const r of main) roles.set(String(r.id ?? r.c.id ?? r.c.name), [...(r === mainAtk ? ["Main attacker"] : []), ...[...tag.get(r)].map((k) => LABEL[k]).filter(Boolean)]);
   const multi = q(ruleBox.filter((r) => !r.c.basicPokemon || dmg(r) >= 100));
+  // A consistent deck with nothing to win with is still not a strong deck.
+  const raw = finish(parts),
+    score = Math.min(raw, atkKnown ? Math.round(55 + 40 * atkRatio) - (deadAbility.length ? 5 : 0) : 100);
   return {
-    score: finish(parts),
+    score,
+    capped: score < raw ? (atkRatio < 1 ? "attacker" : "ability") : "",
     parts,
     goldfish: gold,
     plan: mainAtk ? mainAtk.c.name + (line ? ` · ${line.text} line` : "") : "Pokémon deck",

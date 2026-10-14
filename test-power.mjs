@@ -75,7 +75,7 @@ const pk = (name, extra) => ({ name, ...extra });
 const pt = ptcgPower([
   { qty: 4, c: pk("Dreepy", { category: "Pokemon", basicPokemon: true, stage: "Basic" }) },
   { qty: 4, c: pk("Drakloak", { category: "Pokemon", evolveFrom: "Dreepy", stage: "Stage1", abilities: [{ effect: "Look at the top 2 cards of your deck and put 1 of them into your hand." }] }) },
-  { qty: 3, c: pk("Dragapult ex", { category: "Pokemon", evolveFrom: "Drakloak", stage: "Stage2", ruleBox: true, attackCosts: ["Fire", "Psychic"] }) },
+  { qty: 3, c: pk("Dragapult ex", { category: "Pokemon", evolveFrom: "Drakloak", stage: "Stage2", ruleBox: true, attackCosts: ["Fire", "Psychic"], attacks: [{ name: "Phantom Dive", cost: ["Fire", "Psychic"], damage: "200" }] }) },
   { qty: 2, c: pk("Fezandipiti ex", { category: "Pokemon", basicPokemon: true, ruleBox: true, abilities: [{ effect: "Draw 3 cards." }] }) },
   { qty: 4, c: pk("Rare Candy", { category: "Trainer" }) },
   { qty: 4, c: pk("Ultra Ball", { category: "Trainer", text: "Discard 2 cards from your hand. Search your deck for a Pokémon." }) },
@@ -95,6 +95,30 @@ assert.equal(pt.stats.N, 60);
 assert.ok(pt.score >= 75, `a proper Pokémon list rates well (got ${pt.score})`);
 assert.ok(!pt.parts.some((x) => /Ramp|Lands|Interaction/.test(x.key)), "Pokémon uses its own ingredients");
 console.log(`PASS: Pokémon judged on Basics, draw, search and gust (${pt.score}).`);
+
+// A consistent pile with no real attacker, and an Ability that needs Energy the deck doesn't run.
+const pile = ptcgPower([
+  { qty: 4, c: pk("Impidimp", { category: "Pokemon", basicPokemon: true, stage: "Basic", attackCosts: ["Psychic"], attacks: [{ name: "Tackle", cost: ["Psychic"], damage: "20" }] }) },
+  { qty: 2, c: pk("Munkidori", { category: "Pokemon", basicPokemon: true, stage: "Basic", attacks: [{ name: "Mind Bend", cost: ["Psychic", "Colorless"], damage: "60" }], abilities: [{ effect: "Once during your turn, if this Pokémon has any Darkness Energy attached, you may move up to 3 damage counters from 1 of your Pokémon to 1 of your opponent's Pokémon." }] }) },
+  { qty: 2, c: pk("Fezandipiti ex", { category: "Pokemon", basicPokemon: true, ruleBox: true, attacks: [{ name: "Cruel Arrow", cost: ["Colorless", "Colorless", "Colorless"], damage: "" }], abilities: [{ effect: "Draw 3 cards." }] }) },
+  ...[
+    { qty: 4, c: pk("Ultra Ball", { category: "Trainer", text: "Discard 2 cards from your hand. Search your deck for a Pokémon." }) },
+    { qty: 4, c: pk("Buddy-Buddy Poffin", { category: "Trainer", text: "Search your deck for up to 2 Basic Pokémon with 70 HP or less." }) },
+    { qty: 4, c: pk("Iono", { category: "Trainer", text: "Each player shuffles their hand and puts it on the bottom of their deck. Then each player draws a card for each of their remaining Prize cards." }) },
+    { qty: 4, c: pk("Lillie's Determination", { category: "Trainer", text: "Shuffle your hand into your deck. Then, draw 6 cards." }) },
+    { qty: 4, c: pk("Boss's Orders", { category: "Trainer", text: "Switch in 1 of your opponent's Benched Pokémon to the Active Spot." }) },
+    { qty: 4, c: pk("Nest Ball", { category: "Trainer", text: "Search your deck for a Basic Pokémon and put it onto your Bench." }) },
+    { qty: 4, c: pk("Professor's Research", { category: "Trainer", text: "Discard your hand and draw 7 cards." }) },
+    { qty: 4, c: pk("Night Stretcher", { category: "Trainer", text: "Put a Pokémon or a Basic Energy card from your discard pile into your hand." }) },
+    { qty: 2, c: pk("Switch", { category: "Trainer", text: "Switch your Active Pokémon with 1 of your Benched Pokémon." }) },
+    { qty: 4, c: pk("Poké Pad", { category: "Trainer", text: "Search your deck for a Pokémon that doesn't have a Rule Box." }) },
+  ],
+  { qty: 14, c: pk("Psychic Energy", { category: "Energy", basicEnergy: true, name: "Basic Psychic Energy" }) },
+], { name: "Standard" });
+const atk = pile.parts.find((x) => x.key === "Attacker"), en = pile.parts.find((x) => x.key === "Energy");
+assert.ok(pile.score <= 72 && pile.score < pt.score - 10, `no attacker caps the score (pile ${pile.score} vs ${pt.score})`);
+assert.ok(atk && atk.ratio < 0.5 && /Munkidori's Ability needs Darkness/.test(en.why), "attacker and dead Ability explained");
+console.log(`PASS: Pokémon needs a real attacker and working Abilities (pile ${pile.score} vs real list ${pt.score}).`);
 
 // Detail: simulated hands, ranked weaknesses with the cards behind them, card roles.
 import { review, simulate, poolOf, allIn } from "./deckaudit.js";

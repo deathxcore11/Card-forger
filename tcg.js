@@ -17,6 +17,7 @@ import { locationPicker, rememberLocation } from "./collection-locations.js";
 import { zoneCountLabel } from "./deck-safety.js";
 import { binderShelf } from "./binders.js";
 import { emblemChips, rowEmblem, hasEmblem, impactScore, tradeAdvice, tradeAdviceHtml, deckEmblems, deckEmblemHtml, cardMetaUsage, cardMetaTab, playRate } from "./importance.js";
+import { attackReach, abilityEnergy } from "./deckpower.js";
 import { tileChrome } from "./tiles.js";
 // Yu-Gi-Oh! and Pokémon: collection, search, sets and deck building, sharing one
 // set of screens. Each game's data, rules and formats come from its adapter.
@@ -628,7 +629,7 @@ export function tcgCardSheet(c, sctx = {}) {
     <button class="btn ghost small" data-act="go" data-to="#rules">${esc(GAMES[g].short)} rules reference →</button>`;
   const legal = `${legalChips(g, c)}<p class="foot">${g === "ygo" ? "Forbidden = 0 copies, Limited = 1, Semi-Limited = 2, otherwise 3. Banlists from YGOPRODeck." : "Standard/Expanded legality from TCGdex; Gym Leader Challenge also bans Rule Box Pokémon."} <button class="link small" data-act="go" data-to="#rules">Banlists & format rules →</button></p>`;
   return `<div class="sheet-head overlay"><span></span><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
-  <div class="cs-banner"><div class="cs-hero ${g}">${g === "ptcg" ? artworkHTML(c,"cs-art",true) : heroSrc ? `<img class="cs-art" src="${esc(heroSrc)}" alt="${esc(c.name)}" referrerpolicy="no-referrer" onerror="${heroFallback ? `if(!this.dataset.f){this.dataset.f=1;this.src='${esc(heroFallback)}'}else ` : ""}this.remove()">` : ""}<div class="cs-shade"></div></div>
+  <div class="cs-banner"><div class="cs-hero ${g}">${g === "ptcg" ? pokemonArtCrop(c, "cs-art") : heroSrc ? `<img class="cs-art" src="${esc(heroSrc)}" alt="${esc(c.name)}" referrerpolicy="no-referrer" onerror="${heroFallback ? `if(!this.dataset.f){this.dataset.f=1;this.src='${esc(heroFallback)}'}else ` : ""}this.remove()">` : ""}<div class="cs-shade"></div></div>
   <div class="cs-title"><div><h2>${esc(c.name)}</h2><p class="type-line">${esc(c.typeLine || "")}</p></div>${gameEmblems(c)}</div></div>
   ${emblemChips(g, c)}
   <div class="cs-meta">
@@ -2445,6 +2446,16 @@ export function registerTcg(c) {
       .sort((a, b) => b.n - a.n || a.d.rank - b.d.rank)[0]?.d;
   };
   // One evolution line; the first (main) line gets more copies.
+  // A Basic or Stage 1 that evolves is built toward its evolution: the meta's pick first, then a
+  // Pokémon ex, then the hardest hitter. Impidimp builds Grimmsnarl, not a deck of Impidimp.
+  const climb = async (card, f, metaNames, depth = 0) => {
+    if (depth > 1 || card.ruleBox || card.stage === "Stage2") return card;
+    const ev = await SOURCES.ptcg.evolutions(card.name).catch(() => []);
+    const legal = (await Promise.all(ev.slice(0, 6).map((e) => ptcgBest(e.name, f).catch(() => null)))).filter((x) => x && x.evolveFrom === card.name);
+    if (!legal.length) return card;
+    legal.sort((a, b) => metaNames.has(b.name) - metaNames.has(a.name) || !!b.ruleBox - !!a.ruleBox || attackReach(b) - attackReach(a));
+    return climb(legal[0], f, metaNames, depth + 1);
+  };
   const lineFor = async (seed, f, main) => {
     const line = [],
       w = main ? [4, 2, 3, 4] : [3, 2, 2, 2];
@@ -2514,17 +2525,22 @@ export function registerTcg(c) {
         upPool = [...staples, ...arch];
       } else {
         const line = [];
+        let climbNote = "";
         for (const [i, p] of seeds.filter((x) => x.category === "Pokemon").slice(0, 3).entries()) {
           status(`Finding the evolution line for ${p.name}…`);
-          for (const x of await lineFor(p, f, i === 0)) if (!line.some((y) => y.card.id === x.card.id)) line.push(x);
+          const top = i === 0 ? await climb(p, f, new Set((meta?.decks || []).flatMap((d) => (d.list || []).filter((r) => r.kind === "Pokemon").map((r) => r.name)))) : p;
+          if (top !== p) climbNote = `${p.name} evolves into ${top.name}, so the deck is built to attack with ${top.name}.`;
+          for (const x of await lineFor(top, f, i === 0)) if (!line.some((y) => y.card.id === x.card.id)) line.push(x);
         }
         // Enough Basic Pokémon (about 10) that most opening hands have one — the meta's favourites first.
         status("Adding support Pokémon…");
         let basics = line.filter((x) => x.card.basicPokemon).reduce((a, x) => a + x.want, 0);
+        const lineTypes = new Set(line.flatMap((x) => x.card.attackCosts || []));
         for (const n of [...new Set([...ptcgMetaBasics(meta), ...PTCG_SUPPORT_BASICS])]) {
           if (basics >= 10) break;
           const card = await ptcgBest(n, f);
-          if (card?.basicPokemon && !line.some((y) => y.card.id === card.id)) {
+          // Skip support whose Ability needs an Energy type this deck won't run (Munkidori without Darkness).
+          if (card?.basicPokemon && !line.some((y) => y.card.id === card.id) && abilityEnergy(card).every((t) => lineTypes.has(t))) {
             const want = f.copies === 1 ? 1 : Math.min(2, 10 - basics);
             line.push({ card, want });
             basics += want;
@@ -2542,6 +2558,7 @@ export function registerTcg(c) {
           metaT = [...own, ...metaT.filter(([n]) => !own.some(([m]) => m === n))].slice(0, Math.max(own.length, 18));
           B.evidence = `Trainers from ${matching.length} Top 8 lists that play ${seed.name}.`;
         } else B.evidence = metaT.length >= 8 ? `No recent Top 8 list plays ${seed.name}, so Trainers are the format’s most played — check they suit the deck.` : "";
+        if (climbNote) B.evidence = (climbNote + " " + (B.evidence || "")).trim();
         const wanted = [...(line.some((x) => x.card.stage === "Stage2") && !metaT.some(([n]) => n === "Rare Candy") ? [["Rare Candy", 4]] : []), ...(metaT.length >= 8 ? metaT : PTCG_STAPLES)].filter(([n]) => !chosen.some((x) => x.card.name === n));
         status(`Finding Trainers ${metaT.length >= 8 ? "today’s top decks play" : "staples"} legal in ${f.name}…`);
         const got = await inBatches(wanted, 6, ([n, want]) => ptcgBest(n, f).then((card) => (card ? { card, want: f.copies === 1 ? 1 : want } : null)));

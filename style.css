@@ -2612,3 +2612,17 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .diff-tag.easy { color: #4fd18b; background: rgba(79, 209, 139, .12); }
 .diff-tag.medium { color: #ffc93c; background: rgba(255, 201, 60, .12); }
 .diff-tag.hard { color: #ff7a6a; background: rgba(255, 122, 106, .12); }
+
+/* 3.44: the card page banner melts into the sheet like the deck page hero, whatever the sheet's
+   background (glass or solid): the artwork itself fades out instead of ending on a painted colour. */
+.cs-banner { border-radius:22px 22px 0 0; }
+.cs-banner > .cs-hero:not(.compact) { height:clamp(280px,74vw,420px); background:transparent;
+ -webkit-mask-image:linear-gradient(180deg,#000 0%,#000 52%,rgba(0,0,0,.55) 76%,transparent 100%);
+ mask-image:linear-gradient(180deg,#000 0%,#000 52%,rgba(0,0,0,.55) 76%,transparent 100%); }
+.cs-banner > .cs-hero:not(.compact) .cs-shade { background:linear-gradient(180deg,rgba(0,0,0,.35) 0%,rgba(0,0,0,.1) 35%,rgba(0,0,0,.35) 100%); }
+.cs-banner > .cs-title { padding-bottom:18px; }
+@media(min-width:700px) { .cs-banner > .cs-hero:not(.compact) { height:380px; } }
+/* Pokémon art windows end on the card's small-print strip: fade out before it. */
+.cs-banner > .cs-hero.ptcg:not(.compact) { -webkit-mask-image:linear-gradient(180deg,#000 0%,#000 52%,rgba(0,0,0,.55) 76%,transparent 100%); mask-image:linear-gradient(180deg,#000 0%,#000 52%,rgba(0,0,0,.55) 76%,transparent 100%); }
+.cs-banner > .cs-hero.ptcg:not(.compact) .cs-art.pk-crop { position:absolute; inset:0; width:100%; height:100%; display:flex; transform:none; }
+.cs-banner > .cs-hero.ptcg .pk-crop .pk-win { transform:scale(1.05); transform-origin:center 60%; }

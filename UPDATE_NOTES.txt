@@ -1,3 +1,17 @@
+3.44.0 — Pokémon decks need a real attacker; card pages blend like deck pages
+- Build decks now builds a Basic or Stage 1 toward what it evolves into. Building around
+  Impidimp gives an Impidimp-Morgrem-Grimmsnarl line with Rare Candy, not a deck whose
+  strongest attacker is a 70 HP Basic.
+- Support Pokémon whose Ability needs an Energy type the deck won't run are skipped (Munkidori
+  without Darkness Energy).
+- Pokémon Deck Power now asks whether the deck can take Prizes: how hard its main attacker hits
+  against today's 200+ HP ex Pokémon, how many copies survive a Knock Out, and how much Energy it
+  needs. A list that draws and searches well but has nothing to win with is capped (around 60–75)
+  however consistent it is. Abilities that can't work with the deck's Energy are named and count
+  against it, and the played-out goldfish speed now counts toward the score.
+- Card pages: the artwork banner fades into the page the same way the deck page hero does, and
+  Pokémon cards show only the art window, without the card frame or small print.
+
 3.43.0 — One look for every game's decks, each with its own rules
 - Build decks shows the same version card in Magic, Pokémon and Yu-Gi-Oh!: format, legality,
   cost to buy, power, how hard it is to play, size and how much you own, in the same order.
