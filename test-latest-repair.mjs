@@ -22,3 +22,5 @@ let renders=0;const A={},C={};globalThis.document={querySelector:()=>null,queryS
 console.log('PASS: Commander tournament matching, Kinnan engine roles, product/finish market fallback, bounded trade bundles and selection without remount.');
 import {strategicRisk} from './strategy-risk.js';
 const risk=strategicRisk('mtg',[{qty:4,c:{name:'Reanimate test',oracle_text:'Return target creature card from your graveyard to the battlefield.'}}],[{name:'Rival',main:[{name:'Hate',qty:2}]}],()=>({name:'Hate',oracle_text:'Exile all cards from all graveyards.'}));assert.equal(risk.axes[0].threats[0].card,'Hate');assert.equal(strategicRisk('mtg',[{qty:4,c:{name:'Hate',oracle_text:'Exile all cards from all graveyards.'}}]).axes.length,0,'hate must not become graveyard dependence');
+import {collectionOrder} from './collection-order.js';
+assert.ok(collectionOrder({date:'2024-01-01',set:'A',number:'9'},{date:'2024-01-01',set:'A',number:'10'})<0);assert.ok(collectionOrder({date:'2024-01-01',set:'A',number:'10'},{date:'1999-01-01',set:'B',number:'1'})<0);

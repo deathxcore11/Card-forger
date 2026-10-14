@@ -118,6 +118,7 @@ export function normalizePtcg(c) {
   return {
     game: "ptcg",
     variantSchema: 4,
+    released:c.set?.releaseDate || "",
     id: c.id,
     name: c.name,
     category: c.category || "Pokemon",

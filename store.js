@@ -34,7 +34,7 @@ export const S = {
     collTab: "cards",
     decksTab: "mine",
     q: { coll: "", deck: "", shelf: "", ref: "", precon: "" },
-    collSort: "name",
+    collSort: "set-order",
     collFilter: "all",
     collLimit: 120,
     deckFilter: "all",

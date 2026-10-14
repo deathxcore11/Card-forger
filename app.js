@@ -780,7 +780,7 @@ function render() {
   if (ui.view === "settings") storageDetail();
   if (g !== "mtg") {
     const SU = T.ui(g).sets;
-    if (ui.view === "sets" && !SU.list.length && !SU.busy && !SU.error) setTimeout(() => tcgCtx.loadSets?.(g), 0);
+    if (["sets","collection"].includes(ui.view) && !SU.list.length && !SU.busy && !SU.error) setTimeout(() => tcgCtx.loadSets?.(g), 0);
     if (ui.view === "set" && ui.tsetId && T.ui(g).set.id !== ui.tsetId) setTimeout(() => tcgCtx.openSet?.(ui.tsetId), 0);
     // Ideas, Meta decks and Deck Power need the current tournament meta.
     const MS = T.metaState(g);
@@ -816,7 +816,7 @@ function render() {
   }
   if (ui.view === "decks" && ui.decksTab === "inspiration" && !ui.finder.cacheLoaded) loadPreconCache();
   if (ui.view === "decks" && ui.decksTab === "inspiration") loadMtgMeta();
-  if (ui.view === "sets" && !ui.sets.list.length && !ui.sets.busy && !ui.sets.error) loadSetIndex(true);
+  if (["sets","collection"].includes(ui.view) && !ui.sets.list.length && !ui.sets.busy && !ui.sets.error) loadSetIndex(true);
   if (ui.view === "set" && !ui.set.loaded && !ui.set.busy && !ui.set.error) loadSet(ui.set.code);
   if (ui.view === "decks" && ui.decksTab === "ideas" && !ui.ideas.cache.length && !ui.ideas.busy && !ui.ideas.ran) {
     ui.ideas.ran = true;
@@ -3871,7 +3871,8 @@ A.install = async () => {
 // Price alerts (all games).
 A.priceAlert = (t) => {
   const { game: g, id, name } = t.dataset;
-  openSheet(alertSheet(g, id, name || "This card", priceSeries(g, id).at(-1)?.[1] ?? null), { type: "alert", back:S.ui.sheetCtx });
+  const card=g==='mtg'?meta(name):T.cardOf(g,String(id).split('|')[0]),finish=String(id).split('|')[1] || (g==='mtg'?'nonfoil':'reference'),value=priceSeries(g,id).at(-1)?.[1] ?? quoteModel(g,card,finish)?.value ?? null;
+  openSheet(alertSheet(g, id, name || "This card", value), { type: "alert", back:S.ui.sheetCtx });
 };
 A.priceAlertSave = async (t) => {
   const { game: g, id, name } = t.dataset,

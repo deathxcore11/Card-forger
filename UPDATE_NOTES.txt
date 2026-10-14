@@ -1,3 +1,7 @@
+3.34.1 — Default set order and contextual diagnostics
+- Collection defaults to newest release year then natural card number in all three games; alternate sorts stay available. Set dates load when opening Collection.
+- Matched tournament decks keep generic role cautions behind an optional disclosure. Commander solitaire simulations explicitly state their partial ability model and remain available without dominating the competitive result.
+
 3.34.0 — Selection stability, cEDH evidence, exact product prices and trade intent
 - Selection updates only the checked card and action tray. Big card bodies toggle selection; decorative tiers ignore touch. Gallery selection marks stay above effects. Tier loops and card nodes survive selection changes.
 - Commander now matches EDH tournament lists, including commanders. Competitive evidence and build-health heuristics are labelled separately; generic Commander role cautions do not override a matched winner. Kinnan's nonland mana engine is recognised instead of labelling it Humans tribal.

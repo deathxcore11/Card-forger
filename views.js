@@ -1,3 +1,4 @@
+import {collectionOrder} from "./collection-order.js";
 import { hapticsOn } from "./feel.js";
 import { tradePanel } from "./trade.js";
 import { skeletonGrid } from "./ui.js";
@@ -668,7 +669,7 @@ function collectionCards(wantedOnly = false) {
   const value = collectionValue(st.collection, S.catalog, st.printings, []);
   return `<p class="summary-line"><b>${sumQty(st.collection)}</b> copies · <b>${new Set(st.collection.map((e) => key(e.name))).size}</b> names · <b data-count="${Math.round(value.total)}" data-money="1">${usd(value.total, 0)}</b>${value.unpriced ? ` <span class="muted">(${value.unpriced} unpriced)</span>` : ""}${wanted.length ? ` · <b>${wanted.length}</b> wanted` : ""}</p>
   <div class="searchbar want-add"><input id="wishName" placeholder="Add a card you want" data-enter="wishAdd" data-suggest="mtg" aria-label="Add a card to your wishlist"><button class="btn ghost" data-act="wishAdd">${actionIcon("heart")}<span>Want</span></button></div>
-  <div class="toolbar"><input type="search" value="${esc(S.ui.q.coll)}" placeholder="Search name, set, binder…" data-input="collSearch" aria-label="Search collection"><select data-change="collSort" aria-label="Sort">${options([["name", "A–Z"], ["value", "Value ↓"], ["impact", "Deck-building value"], ["recent", "Recent"], ["color", "Color"], ["mv", "Mana value"]], S.ui.collSort)}</select><select data-change="collFilter" aria-label="Filter">${options([["all", "Owned + wanted"], ["owned", "Owned only"], ["wanted", "Wanted"], ["meta", "★ Meta & staples"], ["spare", "Not in a deck"], ["review", "Printing to review"], ["foil", "Foils"], ["unpriced", "Unpriced"]], S.ui.collFilter)}</select></div>
+  <div class="toolbar"><input type="search" value="${esc(S.ui.q.coll)}" placeholder="Search name, set, binder…" data-input="collSearch" aria-label="Search collection"><select data-change="collSort" aria-label="Sort">${options([["set-order","Set year · card number"], ["name", "A–Z"], ["value", "Value ↓"], ["impact", "Deck-building value"], ["recent", "Recent"], ["color", "Color"], ["mv", "Mana value"]], S.ui.collSort)}</select><select data-change="collFilter" aria-label="Filter">${options([["all", "Owned + wanted"], ["owned", "Owned only"], ["wanted", "Wanted"], ["meta", "★ Meta & staples"], ["spare", "Not in a deck"], ["review", "Printing to review"], ["foil", "Foils"], ["unpriced", "Unpriced"]], S.ui.collFilter)}</select></div>
   <div id="collList">${collectionList()}</div>`;
 }
 
@@ -714,8 +715,10 @@ export function collectionList() {
       const id = meta(e.name)?.color_identity || [];
       return id.length > 1 ? 6 : id.length ? "WUBRG".indexOf(id[0]) : 5;
     };
+  const orderOf=e=>{const c=(e.printingVerified&&st.printings?.[e.printingId]) || meta(e.name);return {name:e.name,set:e.set || c?.set_name || '',number:e.collectorNumber || c?.collector_number,date:e.set?S.ui.sets.list.find(s=>s.code===e.set)?.released_at || (c?.set===e.set?c.released_at:''):c?.released_at || ''};};
   list.sort((a, b) =>
-    S.ui.collSort === "value" ? val(b) - val(a)
+    S.ui.collSort === 'set-order' ? collectionOrder(orderOf(a),orderOf(b))
+    : S.ui.collSort === "value" ? val(b) - val(a)
     : S.ui.collSort === "impact" ? impactScore("mtg", meta(b.name)) - impactScore("mtg", meta(a.name)) || val(b) - val(a)
     : S.ui.collSort === "recent" ? (order.get(b.id) ?? -1) - (order.get(a.id) ?? -1)
     : S.ui.collSort === "color" ? colorRank(a) - colorRank(b) || a.name.localeCompare(b.name)
@@ -1666,7 +1669,7 @@ export function settings() {
   <details class="settings-disclosure settings-danger"><summary>Start over or load examples</summary><p class="foot">Export a backup first. One recovery copy is kept on this device.</p><div class="actions wrap"><button class="btn ghost danger" data-act="reset">Start empty</button><button class="btn ghost" data-act="loadExample">Load example data</button></div></details></div>
   <div id="settings-app" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-app" ${tab === "app" ? "" : "hidden"}><section class="panel settings-card"><div class="settings-card-heading"><div><p class="eyebrow">APPEARANCE</p><h2>Glass &amp; art backdrop</h2></div></div><label class="check"><input type="checkbox" data-change="setGlass" ${(() => { try { return localStorage.getItem("cardstashy-glass") !== "off"; } catch { return true; } })() ? "checked" : ""}> Frosted glass panels over a blurred copy of the game's featured art</label><p class="foot">Turn it off for plain solid panels (a little lighter on older phones).</p><label class="check"><input type="checkbox" data-change="setHaptics" ${hapticsOn() ? "checked" : ""}> Vibration when you tap, add or remove cards</label><p class="foot">On iPhone this uses the system tap (iOS 18 or later). Animations follow your phone’s “Reduce motion” setting.</p></section><section class="panel settings-card"><div class="settings-card-heading"><span class="settings-icon" aria-hidden="true">＋</span><div><p class="eyebrow">TAKE IT WITH YOU</p><h2>Install CardStashy</h2></div></div><p class="muted small">Open it from your home screen. Saved collections and decks work offline.</p><button class="btn" data-act="install">Install app</button><details class="settings-disclosure"><summary>Android installation help</summary><p class="foot">In Chrome, open ⋮ → Add to Home screen or Install app. Searches and updated prices need internet.</p></details></section>
   <details class="settings-disclosure settings-source"><summary>Card databases & prices</summary><ul class="sources"><li><b>Magic:</b> Scryfall card data, images and reference prices; MTGJSON precon lists.</li><li><b>Pokémon:</b> TCGdex card data and images, with supplied TCGplayer and Cardmarket prices.</li><li><b>Yu-Gi-Oh!:</b> YGOPRODeck card data, alternate art, printings and reference prices.</li><li><b>Imports:</b> Supported text and CSV exports from deck and collection tools.</li></ul><p class="foot">Prices are estimates; check edition, condition and shipping with the seller.</p></details>
-  <details class="settings-disclosure settings-source"><summary>About CardStashy</summary><p class="foot">Scores and test games are estimates, not win rates. CardStashy is an independent fan app; cards and art belong to their owners.</p><span class="settings-version">Version 3.34.0</span></details></div></div>`;
+  <details class="settings-disclosure settings-source"><summary>About CardStashy</summary><p class="foot">Scores and test games are estimates, not win rates. CardStashy is an independent fan app; cards and art belong to their owners.</p><span class="settings-version">Version 3.34.1</span></details></div></div>`;
 }
 
 /* ---------- Deck idea sheet ---------- */
