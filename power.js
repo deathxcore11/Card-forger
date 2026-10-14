@@ -17,8 +17,15 @@ export function powerReadiness(game,deck,format,cardOf) {
    if(format.legality && c.legalities && !['legal','restricted'].includes(legalityIn(c,format)))issues.push(`${r.name} is not legal in ${format.name}`);
    if(format.commander && deck.commander && cardKey(r.name)!==cardKey(deck.commander)){const identity=cardOf(deck.commander)?.color_identity;if(identity && (c.color_identity || []).some(x=>!identity.includes(x)))issues.push(`${r.name} is outside the commander’s color identity`);}
   }
-  for(const [k,n] of byName){const c=cardOf(k);if(c&&!/^Basic/.test(c.type_line || '')&&!/any number of cards named/i.test(c.oracle_text || '')&&n>(legalityIn(c,format)==='restricted'?1:format.copies))issues.push(`${n} copies of ${c.name}`);}
+  for(const [k,n] of byName){const c=cardOf(k);if(c&&!/^Basic(?: Snow)? Land/.test(c.type_line || '')&&!/any number of cards named/i.test(c.oracle_text || '')&&n>(legalityIn(c,format)==='restricted'?1:format.copies))issues.push(`${n} copies of ${c.name}`);}
   if(format.commander&&!deck.commander)issues.push('Choose a commander');
+  // The sideboard follows the same rules check as the deck page: 15 cards, legal, and copies
+  // counted with the main deck.
+  const sideN=(deck.side||[]).reduce((n,r)=>n+r.qty,0);
+  if(sideN>15)issues.push(`Sideboard has ${sideN} cards (limit 15)`);
+  for(const r of deck.side||[]){const c=cardOf(r.name);if(!c)continue;const k=cardKey(r.name),n=(byName.get(k)||0)+r.qty;
+   if(format.legality && c.legalities && !['legal','restricted'].includes(legalityIn(c,format)))issues.push(`${r.name} (sideboard) is not legal in ${format.name}`);
+   if(!/^Basic(?: Snow)? Land/.test(c.type_line||'')&&!/any number of cards named/i.test(c.oracle_text||'')&&n>format.copies&&(byName.get(k)||0)<=format.copies)issues.push(`${n} copies of ${c.name} across main deck and sideboard`);}
  }else issues.push(...(game==='ygo'?ygoSource:ptcgSource).validate(deck,cardOf,format).filter(x=>x.level==='bad').map(x=>x.text));
  return {unknown,issues:[...new Set(issues)],provisional:unknown>0||issues.length>0};
 }
@@ -26,7 +33,7 @@ const readinessLabel=p=>p.readiness?.provisional?'Provisional · resolve deck ch
 
 import { esc, ring, bar, pct } from "./ui.js";
 import { review } from "./deckaudit.js";
-import { scoutingReport, competitiveScore, competitiveTier } from "./scouting.js";
+import { scoutingReport, competitiveScore, competitiveTier, verdictTier } from "./scouting.js";
 import { mtgGoldfish } from "./goldfish.js";
 import { cardKey } from "./core.js";
 import { engineProfile } from "./insights.js";
@@ -67,6 +74,16 @@ function mtgMetaDecks(data) {
 
 // A deal-breaker (can't cast its spells, attacker can't attack, nothing to search) holds back the
 // competitive reading too: a list that matches a winning deck on paper but can't function isn't one.
+// Eligibility comes first: a deck that isn't tournament-legal (wrong size, too many copies, banned
+// or illegal cards) can't be called competitive, however close it is to a winning list.
+const LEGAL_CAP = 55;
+function legalGate(base, readiness) {
+  if (!readiness?.issues?.length) return base;
+  const cap = { key: "Legal", max: LEGAL_CAP, label: "Not tournament-legal yet", why: `${readiness.issues.slice(0, 3).join("; ")}${readiness.issues.length > 3 ? `; and ${readiness.issues.length - 3} more` : ""}. Fix this before the deck can be judged against the field.` };
+  return { ...base, caps: [cap, ...(base.caps || [])].sort((a, b) => a.max - b.max) };
+}
+// A close copy of a winning list that's missing that deck's core cards gets told so.
+const coreCap = (base, ctx) => (ctx?.coreMissing?.length ? { ...base, caps: [...(base.caps || []), { key: "Core", max: ctx.score, label: "Missing the deck's core", why: `Nearly every ${ctx.coreMissing.length > 1 ? "list" : "list"} of this archetype plays ${ctx.coreMissing.map((x) => `${x.qty}× ${x.name}`).join(", ")}, and this one has none. Without ${ctx.coreMissing.length > 1 ? "them" : "it"} it isn't the deck that wins those events.` }].sort((a, b) => a.max - b.max) } : base);
 function capCtx(ctx, caps) {
   const max = caps?.[0]?.max;
   if (max == null || !ctx) return;
@@ -125,8 +142,11 @@ export function mtgPower(d) {
       ctx.unplayed = (ctx.unplayed || []).map((x) => ({ ...x, name: d.cards.find((c) => cardKey(c.name) === x.key)?.name || x.key }));
     } else if (isCommanderLike(d)) ctx = { score: base.score, from: "commander" };
     else ctx = metaContext({ build: base.score, mine, loaded: !!M?.data, formatOk: !!mk });
+    const readiness = powerReadiness("mtg",d,formatOf(d),name=>S.catalog[cardKey(name)]);
+    base = legalGate(base, readiness);
     capCtx(ctx, base.caps);
-    return { ...base, engine:engineMap("mtg",d.cards.map(r=>({...r,c:S.catalog[cardKey(r.name)]}))), readiness:powerReadiness("mtg",d,formatOf(d),name=>S.catalog[cardKey(name)]), strategicRisk:strategicRisk("mtg",d.cards.map(r=>({...r,c:S.catalog[cardKey(r.name)]})),M?.data?.decks || [],r=>S.catalog[cardKey(r.name)]), heuristic: base.score, score: ctx.score, from: ctx.from, ctx, match, metaKey: mk, metaLoaded: !!M?.data, metaBusy: !!M?.busy, game: "mtg", formatName: formatOf(d).name };
+    base = coreCap(base, ctx);
+    return { ...base, engine:engineMap("mtg",d.cards.map(r=>({...r,c:S.catalog[cardKey(r.name)]}))), readiness, strategicRisk:strategicRisk("mtg",d.cards.map(r=>({...r,c:S.catalog[cardKey(r.name)]})),M?.data?.decks || [],r=>S.catalog[cardKey(r.name)]), heuristic: base.score, score: ctx.score, from: ctx.from, ctx, match, metaKey: mk, metaLoaded: !!M?.data, metaBusy: !!M?.busy, game: "mtg", formatName: formatOf(d).name };
   });
 }
 
@@ -181,7 +201,10 @@ export function tcgPower(g, d, f, cardOf) {
     const ctx = metaContext({ build: base.score, mine: mineMap || new Map(), decks: formatOk ? metaDecks : [], match: formatOk ? match : null, loaded: !!data, formatOk, archetypes: (data?.archetypes || []).map((a) => ({ name: a.name || a.id, share: a.share })) });
     if (ctx.unplayed) ctx.unplayed = ctx.unplayed.map((x) => ({ ...x, name: g === "ygo" ? cardOf(x.key)?.name || x.key : rows.find((r) => String(r.c?.name || r.name).toLowerCase() === x.key)?.c?.name || x.key, id: g === "ygo" ? x.key : rows.find((r) => String(r.c?.name || r.name).toLowerCase() === x.key)?.id }));
     if (!formatOk) match = null;
-    capCtx(ctx, base.caps);
+    const readiness = powerReadiness(g, d, f, cardOf);
+    let gated = legalGate(base, readiness);
+    capCtx(ctx, gated.caps);
+    gated = coreCap(gated, ctx);
     // Upgrades from lists of the same archetype (only when the match is real).
     let upgrades = null;
     if (match && match.sim >= 0.25 && mineMap) {
@@ -189,7 +212,7 @@ export function tcgPower(g, d, f, cardOf) {
       upgrades = archetypeUpgrades(mineMap, metaDecks.filter((x) => (x.archetype || x.name) === arch));
       upgrades.cuts = upgrades.cuts.map((x) => ({ ...x, name: match.extra.find((e) => e.key === x.key)?.name || (g === "ygo" ? cardOf(x.key)?.name : x.key) || x.key }));
     }
-    return { ...base, engine:engineMap(g,rows), readiness:powerReadiness(g,d,f,cardOf), strategicRisk:strategicRisk(g,rows,(data?.decks || []).map(d=>g==='ygo'?{...d,main:[...(d.main || []),...(d.extra || [])].map(id=>({cardId:String(id),name:cardOf(String(id))?.name,qty:1}))}:d),r=>g==='ygo'?cardOf(r.cardId):rows.find(x=>x.c?.name===r.name)?.c), heuristic: base.score, score: ctx.score, from: ctx.from, ctx, match, upgrades, metaKey: formatOk ? g : null, metaLoaded: !!data, metaBusy: !!M?.busy, game: g, formatName: f?.name || d.format };
+    return { ...gated, engine:engineMap(g,rows), readiness, strategicRisk:strategicRisk(g,rows,(data?.decks || []).map(d=>g==='ygo'?{...d,main:[...(d.main || []),...(d.extra || [])].map(id=>({cardId:String(id),name:cardOf(String(id))?.name,qty:1}))}:d),r=>g==='ygo'?cardOf(r.cardId):rows.find(x=>x.c?.name===r.name)?.c), heuristic: base.score, score: ctx.score, from: ctx.from, ctx, match, upgrades, metaKey: formatOk ? g : null, metaLoaded: !!data, metaBusy: !!M?.busy, game: g, formatName: f?.name || d.format };
   });
 }
 
@@ -263,7 +286,7 @@ export function powerPanel(p, { loadAct = "", findAct = "", cardAct = () => "" }
   // tournament data exists.
   const comp = competitiveScore(p),
     eng = p.heuristic ?? p.score,
-    tier = competitiveTier(comp),
+    tier = verdictTier(p, comp),
     lead = comp ?? p.score;
   return `<section class="panel score-panel power">${ring(lead)}<div><p class="eyebrow">${comp != null ? "Deck Power · competitive" : p.from === "commander" ? "Deck Power · Commander build" : "Deck Power · engine estimate"}</p><h2>${p.from === "commander" ? "Commander build check" : comp != null ? esc(tier.label) : esc(readinessLabel(p))}</h2><p class="small"><b>${esc(p.plan)}</b></p><p class="muted small">${esc(p.lens)}</p>${p.caps?.length ? `<p class="pw-headline small">Fix first: <b>${esc(p.caps[0].label)}</b> (holds the score to ${p.caps[0].max})</p>` : top ? `<p class="pw-headline small">Biggest gain: <b>${esc(top.label)}</b> (+${pts(top.lost)} pts available)</p>` : ""}</div>
   <div class="pw-dual"><span class="${comp == null ? "dim" : tier.tone}"><b>${comp ?? "—"}</b>Competitive<small>${comp == null ? "needs tournament data" : "vs. what's winning now"}</small></span><span><b>${eng}</b>Engine<small>how well it's built for its plan</small></span></div>${profile}</section>

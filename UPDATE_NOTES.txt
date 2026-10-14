@@ -1,3 +1,17 @@
+3.48.1 — Verdicts you can trust: legality first, then the engine, then the field
+- A deck that isn't tournament-legal (wrong size, too many copies, banned or illegal cards) can no
+  longer be called competitive, however close it is to a winning list. The headline says "Not
+  tournament-legal yet", the score is held to 55, and "What holds this deck back" lists what to fix.
+  A 59-card copy of a winning list no longer shows "Tier 1 contender".
+- A copy of a winning list that's missing that deck's core cards (cards nearly every list of the
+  archetype plays and other decks don't, like Karn in Tron) loses most of its borrowed tournament
+  credit and says which core cards are missing.
+- Yu-Gi-Oh!: a Synchro, Xyz, Fusion or Link deck with an empty Extra Deck is capped and told why.
+- Fixed: basic lands were flagged as breaking the copy limit in Magic's deck checks (a corrupted
+  pattern). The checks now also cover the sideboard: 15 cards, legal cards, and copies counted
+  with the main deck.
+- Fixed: Modern and other 60-card scouting reports could describe a four-player Commander game.
+
 3.48.0 — Matchups: how your deck does against the field, your results, and a plan for each
 - New Matchups tab on every deck in all three games. It simulates your deck against the most-played
   tournament decks in its format (2,000 games each, half on the play), with each game's own rules:

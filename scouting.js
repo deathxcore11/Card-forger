@@ -20,6 +20,8 @@ export function competitiveScore(p) {
   if (c.from === "rogue") return c.fieldEstimate ?? null;
   return null;
 }
+// The headline label: eligibility first, then how it compares with the field.
+export const verdictTier = (p, score) => (p?.caps?.some((c) => c.key === "Legal") ? { label: "Not tournament-legal yet", tone: "bad" } : competitiveTier(score));
 export function competitiveTier(score) {
   if (score == null) return { label: "Not compared with the field yet", tone: "" };
   return score >= 88 ? { label: "Tier 1 contender", tone: "ok" } : score >= 75 ? { label: "Competitive: holds up at regionals", tone: "ok" } : score >= 62 ? { label: "Locals-ready, outclassed at big events", tone: "warn" } : score >= 50 ? { label: "Rogue: can steal games, rarely wins events", tone: "warn" } : { label: "Casual / kitchen-table", tone: "bad" };
@@ -35,7 +37,7 @@ const MTG_PLAN = {
 function planText(p) {
   const g = p.game;
   if (g === "mtg") {
-    if (p.from === "commander" || /Commander/.test(p.lens || "")) return `A Commander deck (${esc(p.plan)}). It's judged on mana, card flow, answers and how much of it serves the commander's plan, since a four-player game is long and political.`;
+    if (p.from === "commander" || /^Commander lens/.test(p.lens || "")) return `A Commander deck (${esc(p.plan)}). It's judged on mana, card flow, answers and how much of it serves the commander's plan, since a four-player game is long and political.`;
     const base = String(p.plan || "Midrange").split(" · ")[0],
       theme = String(p.plan || "").split(" · ")[1];
     const st = p.stats || {};
@@ -80,7 +82,7 @@ function fieldText(p) {
 function verdictText(p, comp) {
   const R = review(p.parts || []),
     fixes = R.weak.slice(0, 2).map((x) => x.label.toLowerCase()),
-    tier = competitiveTier(comp);
+    tier = verdictTier(p, comp);
   const eng = p.heuristic ?? p.score;
   const gap =
     comp == null ? ""

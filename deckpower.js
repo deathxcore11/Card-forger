@@ -418,6 +418,7 @@ export function ygoPower(rows, f = {}) {
   const caps = [
     q(starters) < 4 && (focus < 0.25 || q(deadSearch) >= 6) ? { key: "Starters", max: 50, label: "No engine", why: `Nothing in the deck searches or starts a combo${deadSearch.length ? ` (${deadSearch.map((r) => r.c.name).slice(0, 3).join(", ")} search for cards it doesn't run)` : ""} ${focus < 0.25 ? " and no archetype holds it together" : ""}. Hand traps and staples stop the opponent but can't win on their own.` } : null,
     q(deadSearch) >= 6 && q(starters) >= 4 ? { key: "Starters", max: 70, label: "Searchers with nothing to search", why: `${q(deadSearch)} cards search for cards this deck doesn't run: ${deadSearch.slice(0, 4).map((r) => r.c.name).join(", ")}. They're dead draws, not starters.` } : null,
+    needsExtra && !E ? { key: "Extra", max: 55, label: "No Extra Deck", why: "The engine summons from the Extra Deck (Xyz, Synchro, Fusion or Link), and the Extra Deck is empty: its combos have nothing to make." } : null,
     needsExtra && E && Eok / E < 0.4 ? { key: "Extra", max: 65, label: "Extra Deck it can't use", why: `The engine summons from the Extra Deck, but ${q(dead)} of ${E} cards there can't be made from this Main Deck.` } : null,
   ];
   const capped = capScore(finish(parts), caps);
@@ -728,11 +729,18 @@ export function metaMatch(mine, metaDecks, archetypes = []) {
   }
   missing.sort((a, b) => b.qty - a.qty);
   extra.sort((a, b) => b.qty - a.qty);
+  // The archetype's core: cards nearly every list of it plays that other archetypes don't. Missing
+  // one (Karn in Tron) breaks the deck even if the rest of the list matches.
+  const core = [];
+  for (const [k, n] of best.deck.rows) {
+    const inArch = sameArch.filter((d) => (d.rows.get(k) || 0) > 0).length / Math.max(1, sameArch.length);
+    if (inArch >= 0.75 && n >= 2 && (spread.get(k) || 0) <= 0.5 && !(mine.get(k) > 0)) core.push({ key: k, name: best.deck.labels.get(k) || k, qty: n });
+  }
   const share = arch?.share ?? sameArch.length / Math.max(1, metaDecks.length),
     finishQ = bestRank <= 1 ? 1 : bestRank <= 2 ? 0.9 : bestRank <= 4 ? 0.8 : bestRank <= 8 ? 0.7 : bestRank <= 32 ? 0.55 : 0.45,
     metaScore = Math.round(72 + 28 * clamp(0.55 * finishQ + 0.45 * clamp(share / 0.12))),
     weight = clamp((best.sim - 0.35) / 0.45);
-  return { sim: best.sim, deck: best.deck, archetype: best.deck.archetype || best.deck.name, share, bestRank, lists: sameArch.length, missing: missing.slice(0, 10), extra: extra.slice(0, 10), metaScore, weight };
+  return { sim: best.sim, deck: best.deck, archetype: best.deck.archetype || best.deck.name, share, bestRank, lists: sameArch.length, missing: missing.slice(0, 10), extra: extra.slice(0, 10), metaScore, weight, coreMissing: core.slice(0, 6) };
 }
 
 // Deck Power is always judged against the field, never in a vacuum. A list can be built well
@@ -763,8 +771,11 @@ export function metaContext({ build, mine, decks = [], match = null, loaded = fa
     field = [...archetypes].sort((a, b) => (b.share || 0) - (a.share || 0)).slice(0, 4);
   if (match && match.sim >= 0.35) {
     const k = clamp((match.sim - 0.35) / 0.45),
-      score = Math.round(build * (1 - k) * 0.5 + Math.min(build, ROGUE_CAP) * (1 - k) * 0.5 + match.metaScore * k);
-    return { score: Math.min(100, score), from: k >= 0.75 ? "meta" : "mixed", presence, played, unplayed, field, lists };
+      broken = (match.coreMissing || []).length,
+      // Each missing core piece costs the borrowed tournament credit: it's no longer that deck.
+      metaScore = match.metaScore - Math.min(50, broken * 28),
+      score = Math.round(build * (1 - k) * 0.5 + Math.min(build, ROGUE_CAP) * (1 - k) * 0.5 + metaScore * k);
+    return { score: Math.min(100, score), from: k >= 0.75 && !broken ? "meta" : "mixed", presence, played, unplayed, field, lists, coreMissing: match.coreMissing || [] };
   }
   // Off-meta: mostly what the field says about these cards, then how well it's built. A pile of
   // staples around an engine nobody plays lands in casual territory (about 45–60).

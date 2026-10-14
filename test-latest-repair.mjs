@@ -12,7 +12,7 @@ const d={id:'champion-fixture',format:'Commander',commander:commander.name,cards
 S.catalog={'kinnan, bonder prodigy':commander,'sol ring':ring};
 assert.equal(mtgMetaKey(d),'mtg:EDH');assert.equal(mtgMetaKey({...d,format:'Brawl'}),null);
 const M=metaState('mtg:EDH');M.at=Date.now();M.data={decks:[{key:'win',name:commander.name,archetype:commander.name,rank:1,event:'Fixture event',main:[{name:ring.name,qty:1}],commanders:[{name:commander.name,qty:1}]}],archetypes:[]};
-const p=mtgPower(d);assert.equal(p.match.sim,1);assert.ok(p.score>=90);assert.equal(p.from,'meta');assert.match(powerPanel(p),/Build-model cautions/);assert.doesNotMatch(p.plan,/Humans/);
+const p=mtgPower(d);assert.equal(p.match.sim,1);assert.equal(p.from,'meta');assert.ok(p.caps.some(c=>c.key==='Legal')&&p.score<=55,'an incomplete 2-card list matching a winner is not called competitive');assert.match(powerPanel(p),/Build-model cautions/);assert.doesNotMatch(p.plan,/Humans/);
 assert.match(synergyTest(commander).label,/Nonland mana/);assert.equal(synergyTest(commander).test(ring),true);
 const card={id:'cel25cc-CC002',variants:[{key:'detail:x',label:'Holofoil',productId:250320,usd:null}],prices:{usd:null}};
 assert.equal(applyProductPrices(card,{cardId:'base1-4',quotes:[{productId:250320,subTypeName:'Holofoil',marketPrice:144.17}]}),false);

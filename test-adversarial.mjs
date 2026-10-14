@@ -107,6 +107,22 @@ const real = new Map([...staples, ["dreepy", 4], ["drakloak", 4], ["dragapult ex
 const rm = metaMatch(real, field, []);
 if (!(rm.sim >= 0.8 && rm.archetype === "Dragapult")) fails.push(`Real Dragapult copy only matched ${Math.round(rm.sim * 100)}%`);
 
+// Audit cases: a winning list with its core cards swapped out keeps little tournament credit, and
+// a Synchro deck with no Extra Deck is capped.
+{
+  const { metaContext } = await import("./deckpower.js");
+  const tron = new Map([["karn, the great creator", 4], ["urza's tower", 4], ["urza's mine", 4], ["urza's power plant", 4], ["expedition map", 4], ["sowing mycospawn", 4], ["devourer of destiny", 4]]);
+  const others = (name, rank) => ({ key: name, name, archetype: name, rank, rows: new Map([["expedition map", 0], [name + " a", 4], [name + " b", 4], [name + " c", 4]]), labels: new Map() });
+  const field = [{ key: "t1", name: "Tron", archetype: "Tron", rank: 1, rows: new Map(tron), labels: new Map([["karn, the great creator", "Karn, the Great Creator"]]) }, { key: "t2", name: "Tron", archetype: "Tron", rank: 3, rows: new Map(tron), labels: new Map() }, others("Burn", 2), others("Elves", 4)];
+  const copy = metaContext({ build: 90, mine: new Map(tron), decks: field, match: metaMatch(new Map(tron), field, []), loaded: true });
+  const bears = new Map(tron); bears.delete("karn, the great creator"); bears.set("grizzly bears", 4);
+  const mb = metaMatch(bears, field, []), broken = metaContext({ build: 94, mine: bears, decks: field, match: mb, loaded: true });
+  out.push(`Match · Tron copy ${copy.score} vs Karn swapped for Grizzly Bears ${broken.score} (core missing: ${mb.coreMissing.map((x) => x.name).join(", ")})`);
+  if (!(mb.coreMissing.some((x) => /Karn/.test(x.name)) && broken.score <= 75)) fails.push(`Karn → Grizzly Bears kept tournament credit (${broken.score} vs ${copy.score})`);
+  const synchro = yc("Synchro Starter", "Monster", `Add 1 "Synchro" monster from your Deck to your hand. You can Special Summon this card. Synchro Summon using this card.`, { level: 4, archetype: "Synchro" });
+  const noExtra = Y([[synchro, 3], ...Array.from({ length: 5 }, (_, i) => [yc("Synchro " + i, "Monster", `Add 1 "Synchro" card from your Deck to your hand. You can Special Summon this card. Tuner.`, { level: 3, archetype: "Synchro", typeLine: "Tuner Effect Monster" }), 3]), [ash, 3], [imperm, 3], [ghost, 3], [duster, 1], [storm, 1], [pot, 3], [yc("Synchro Field", "Spell", `Add 1 "Synchro" monster from your Deck to your hand.`, { archetype: "Synchro", typeLine: "Field Spell" }), 2], [yc("Synchro Spell", "Spell", `Synchro Summon 1 Synchro Monster.`, { archetype: "Synchro" }), 3], [yc("Synchro Trap", "Trap", "Negate the activation.", { archetype: "Synchro" }), 3]], [], 15);
+  check("Yu-Gi-Oh!", "Synchro deck with its Extra Deck removed", noExtra, 55);
+}
 console.log(out.join("\n"));
 assert.deepEqual(fails, [], "Decks built to fool Deck Power:\n" + fails.join("\n"));
 console.log("PASS: decks built to fool Deck Power rate low in all three games.");
