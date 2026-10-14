@@ -92,9 +92,18 @@ export function mtgPower(d) {
           Protection: `${p.counts.Protection} protection pieces for your commander and key permanents.`,
           Curve: `Average cost ${p.avg?.toFixed(2) ?? "—"}. Above 3.0, the early turns are slow.`,
         };
+      // Commander keeps its own engine check, plus the deal-breakers every Magic deck is held to
+      // (can't cast its spells, no way to win, filler creatures) and critical mass for tribal,
+      // spells and artifact commanders. Off-plan cards aren't judged: wipes and life gain are
+      // normal in a four-player game.
+      const caps = (hands.caps || []).filter((c) => c.key !== "Plan"),
+        crit = hands.parts.find((x) => x.key === "Critical"),
+        cmdScore = crit ? Math.round(p.score * 0.88 + 12 * crit.ratio) : p.score,
+        capped = Math.min(cmdScore, caps[0]?.max ?? 100);
       base = {
-        score: p.score,
-        parts: p.parts.map((x) => ({ ...x, fix: ["Ramp", "Draw", "Removal", "Wipe", "Protection", "Synergy"].includes(x.key) ? x.key : "", why: why[x.key] || (x.key === "Synergy" ? `${x.count} cards support your commander's plan; about ${x.target} makes it come together.` : ""), cards: (p.byRole?.[x.key] || []).map((name) => ({ name, qty: 1 })) })),
+        score: capped,
+        caps: caps.filter((c) => c.max < cmdScore),
+        parts: [...(crit ? [{ ...crit, weight: Math.round(p.parts.reduce((a, x) => a + (x.weight || 0), 0) * 0.136) }] : []), ...p.parts].map((x) => x.key === "Critical" ? x : ({ ...x, fix: ["Ramp", "Draw", "Removal", "Wipe", "Protection", "Synergy"].includes(x.key) ? x.key : "", why: why[x.key] || (x.key === "Synergy" ? `${x.count} cards support your commander's plan; about ${x.target} makes it come together.` : ""), cards: (p.byRole?.[x.key] || []).map((name) => ({ name, qty: 1 })) })),
         plan: /kinnan, bonder prodigy/i.test(d.commander || "") ? "Nonland mana engine · activated-ability combo" : p.archetype,
         lens: "Commander lens: lands, ramp, draw, answers, synergy with your commander and curve.",
         unknown: p.unknown,

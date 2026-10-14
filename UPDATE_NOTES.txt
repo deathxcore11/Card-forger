@@ -1,3 +1,17 @@
+3.46.0 — Same Deck Power rules everywhere, and the right Pokémon cards from tournament lists
+- Fixed: Pokémon cards from tournament lists could load as the wrong printing. The set-code check
+  never matched sets like Twilight Masquerade (TWM), so a different Dipplin, Thwackey or Grookey
+  without its Ability was used instead. Tournament decks now load the exact printing, which also
+  fixes Deck Power reading those decks wrong (Festival Lead now scores 81 instead of 77).
+- Pokémon Abilities that only work with a named card in play ("If Festival Grounds is in play")
+  only count when the deck runs that card. Single-Prize swarm decks are no longer labelled
+  "attacker too thin".
+- Commander decks now get the same deal-breakers as every other Magic deck (can't cast its spells,
+  no way to win, filler creatures), plus critical mass for tribal, spells and artifact commanders,
+  on top of the Commander engine check. Board wipes and life gain aren't marked off-plan in
+  Commander, where they're normal. Checked against current cEDH tournament winners: none are
+  held back.
+
 3.45.1 — A clear "working on it" pop-up for every long build
 - The animated pop-up from Build decks now appears on every task that takes more than a moment,
   with what it's doing right now and why it takes a while: building a Commander deck at a budget,

@@ -298,8 +298,10 @@ export const ptcgSource = {
     for(const brief of candidates.filter(c=>c.name.toLowerCase()===row.name.toLowerCase())){
       const setId=brief.id.slice(0,brief.id.lastIndexOf('-'));
       const set=await get('/sets/'+encodeURIComponent(setId)).catch(()=>null);
-      const codes=[set?.id,set?.tcgOnline,set?.abbreviation,set?.abbreviations?.official].filter(Boolean).map(x=>String(x).toLowerCase());
-      if(!codes.includes(String(row.set).toLowerCase()))continue;
+      // TCGdex keeps the printed set code under abbreviation.official ("TWM" for sv06).
+      const codes=[set?.id,set?.tcgOnline,set?.abbreviation?.official,set?.abbreviation?.normal,typeof set?.abbreviation==="string"?set.abbreviation:null,set?.abbreviations?.official].filter(Boolean).map(x=>String(x).toLowerCase());
+      // Only one printing with that name and number: it's the card, whatever the set code says.
+      if(!codes.includes(String(row.set).toLowerCase())&&candidates.length>1)continue;
       const card=await this.get(brief.id);if(card.name.toLowerCase()===row.name.toLowerCase())return card;
     }return null;
   },

@@ -476,9 +476,11 @@ export const attackDamage = (a) => {
 };
 // Best attack, doubled when an Ability lets it attack twice (Festival Lead); attacks this Pokémon
 // can only use as a copy of another don't count.
-export const attackReach = (c) => {
+export const attackReach = (c, names = null) => {
   const best = Math.max(0, ...(c?.attacks || []).map(attackDamage)),
-    twice = (c?.abilities || []).some((a) => /attack twice|use (?:this|its) attack (?:again|twice)|may attack (?:an additional|again)/i.test(a.effect || ""));
+    // "If Festival Grounds is in play…": only counts when the deck runs that card.
+    met = (a) => { const need = String(a.effect || "").match(/if ([A-Z][^,.]*?) is in play/)?.[1]; return !need || !names || names.has(need.toLowerCase()); },
+    twice = (c?.abilities || []).some((a) => met(a) && /attack twice|attack it has twice|use (?:this|its) attack (?:again|twice)|may attack (?:an additional|again)|attack again/i.test(a.effect || ""));
   return twice ? Math.min(best * 2, 340) : best;
 };
 // Energy types an Ability needs attached before it works ("if this Pokémon has any Darkness Energy attached").
@@ -547,7 +549,8 @@ export function ptcgPower(rows, f = {}) {
   // Attackers that copy another Pokémon's attack (N's Zoroark ex, Mew ex) hit as hard as the best
   // attack they can copy in this deck.
   const copies = (c) => (c.attacks || []).some((a) => /choose 1 of (?:your |the )?(?:benched |opponent's )?[^.]*attacks?[^.]*use it|use (?:it|that attack) as this attack/i.test(a.effect || ""));
-  const ownReach = new Map(main.map((r) => [r, attackReach(r.c)])),
+  const deckNames = new Set(main.map((r) => lc(r.c.name))),
+    ownReach = new Map(main.map((r) => [r, attackReach(r.c, deckNames)])),
     copyReach = Math.max(0, ...main.filter((r) => r.c.category === "Pokemon" && !copies(r.c)).map((r) => ownReach.get(r)));
   const dmg = (r) => (copies(r.c) ? Math.max(ownReach.get(r), Math.min(copyReach, 340)) : ownReach.get(r)),
     // The deck can only attack with what its Energy pays for (Special Energy may provide any type).
@@ -640,7 +643,7 @@ export function ptcgPower(rows, f = {}) {
     stranded = star && !payable(star) && dmg(star) >= 120 && (!mainAtk || !payable(mainAtk) || reach < dmg(star) * 0.6) ? star : null,
     cantPay = stranded ? costOf(stranded).filter((tp) => !energyTypes.has(tp)) : [];
   const caps = [
-    atkKnown && atkRatio < 1 ? { key: "Attacker", max: Math.round(55 + 40 * atkRatio), label: reach < 120 ? "No real attacker" : "Attacker too thin", why: parts.find((x) => x.key === "Attacker")?.why } : null,
+    atkKnown && atkRatio < 1 && !swarm ? { key: "Attacker", max: Math.round(55 + 40 * atkRatio), label: reach < 120 ? "No real attacker" : "Attacker too thin", why: parts.find((x) => x.key === "Attacker")?.why } : null,
     cantPay.length ? { key: "Energy", max: 45, label: "Main attacker can't attack", why: `${stranded?.c.name}'s attack needs ${cantPay.join(" and ")} Energy and the deck runs none, so its best attacker never attacks.` } : null,
     line && !swarm && q(team.filter((r) => r.c.name !== line.top)) < 2 && (line.counts[0] < 3 || line.counts.at(-1) < 2 || (line.two && line.counts[1] + Math.min(candy, 4) < 3)) ? { key: "Lines", max: 62, label: "Main line too thin", why: `${line.top} is on a ${line.text} line${line.two && !candy ? " with no Rare Candy" : ""}. One prized or Knocked Out piece and the deck has no attacker; lists run 4-3-3, or 4-2-3 with Rare Candy.` } : null,
     deadAbility.length ? { key: "Energy", max: 85, label: "Abilities that can't work", why: `${deadAbility.map((r) => r.c.name).join(", ")} need${deadAbility.length > 1 ? "" : "s"} Energy the deck doesn't run.` } : null,
