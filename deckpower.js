@@ -69,7 +69,7 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     qty = (list) => list.reduce((a, r) => a + r.qty, 0),
     creatures = qty(spells.filter((r) => /Creature/.test(type(r.c)))),
     walkers = qty(spells.filter((r) => /Planeswalker/.test(type(r.c)))),
-    interaction = qty(has(M.removal)) + qty(has(M.counter)) + qty(has(M.discard)) + qty(has(M.wipe)),
+    interaction = qty(spells.filter(r=>[M.removal,M.counter,M.discard,M.wipe].some(re=>re.test(text(r.c))))),
     flow = qty(has(M.draw)),
     ramp = qty(has(M.ramp)),
     big = qty(spells.filter((r) => Number(r.c.cmc) >= 5)),
@@ -102,7 +102,7 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
   for (const r of lands) for (const m of r.c.produced_mana || (isBasicC(r.c) ? [{ Plains: "W", Island: "U", Swamp: "B", Mountain: "R", Forest: "G" }[r.c.name]] : [])) if (m) src[m] = (src[m] || 0) + r.qty;
   const colors = Object.keys(pips),
     pipTotal = colors.reduce((a, k) => a + pips[k], 0),
-    colorRatio = colors.length <= 1 ? (nLand ? 1 : 0) : Math.min(...colors.map((k) => clamp((src[k] || 0) / Math.max(1, Math.round((pips[k] / pipTotal >= 0.4 ? 14 : 9) * scale))))),
+    colorRatio = colors.length === 0 ? (nLand ? 1 : 0) : Math.min(...colors.map((k) => clamp((src[k] || 0) / Math.max(1, Math.round((pips[k] / pipTotal >= 0.4 ? 14 : 9) * scale))))),
     threats = plan === "Control" ? creatures + walkers + qty(spells.filter((r) => /win the game|each opponent loses/.test(text(r.c)))) : creatures + walkers,
     themeCount = theme ? themes[0][1] + (theme === "Landfall" ? ramp : 0) : 0;
   const parts = [
@@ -113,7 +113,7 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     part("Threats", plan === "Control" ? "Win conditions" : "Threat density", threats, Math.round(T.threats * scale), threats / Math.max(1, T.threats * scale), 14, plan === "Control" ? "Control needs a few ways to actually win." : "Enough threats that removal can’t answer them all."),
     part("Flow", "Card flow", flow, Math.round(T.flow * scale), flow / Math.max(1, T.flow * scale), 8, "Draw, scry, surveil and explore keep you hitting what you need.", "Draw"),
   ];
-  if (colors.length > 1) parts.push(part("Colors", "Color sources", colors.map((k) => `${k} ${src[k] || 0}`).join(" · "), "enough per color", colorRatio, 8, "Main colors want about 14 sources in 60 cards, splashes about 9."));
+  if (colors.length > 0) parts.push(part("Colors", "Color sources", colors.map((k) => `${k} ${src[k] || 0}`).join(" · "), "enough per color", colorRatio, 8, "Main colors want about 14 sources in 60 cards, splashes about 9."));
   if (theme) parts.push(part("Synergy", "Synergy · " + theme, themeCount, Math.round(10 * scale), themeCount / (10 * scale), 8, `Cards that feed the ${theme.toLowerCase()} plan.`));
   // Shuffled games of this list: keepable 7s, land drops, an early play, interaction in hand.
   const tagOf = (r) => {
@@ -139,7 +139,7 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
   const gold = mtgGoldfish(known.map((r) => ({ qty: r.qty, c: r.c })), { size, plan });
   if (gold) {
     const ctl = plan === "Control";
-    parts.push({ ...part("Goldfish", ctl ? "Goldfish: mana use" : "Goldfish speed", ctl ? Math.round(gold.metrics[0].value * 100) + "%" : gold.turnDist && gold.speed != null ? `turn ${gold.headline.match(/turn (\d+)/)?.[1] || "10+"}` : "—", ctl ? "75%+" : `turn ${{ Aggro: 5, Midrange: 6, Ramp: 6 }[plan] || 6}`, ctl ? gold.metrics[0].value / 0.75 : gold.speed, 10, "1,000 games played out against an empty board: how fast the deck actually closes."), why: gold.headline });
+    parts.push({ ...part("Goldfish", ctl ? "Goldfish: mana use" : "Goldfish speed", ctl ? Math.round(gold.metrics[0].value * 100) + "%" : gold.turnDist && gold.speed != null ? `turn ${gold.headline.match(/turn (\d+)/)?.[1] || "10+"}` : "—", ctl ? "75%+" : `turn ${{ Aggro: 5, Midrange: 6, Ramp: 6 }[plan] || 6}`, ctl ? gold.metrics[0].value / 0.75 : gold.speed, 0, "1,000 games played out against an empty board: how fast the deck actually closes."), why: gold.headline });
   }
   const names = (re) => evidence(spells.filter((r) => re.test(text(r.c))));
   const ev = { Mana: evidence(lands), Interaction: evidence(spells.filter((r) => M.removal.test(text(r.c)) || M.counter.test(text(r.c)) || M.discard.test(text(r.c)) || M.wipe.test(text(r.c)))), Flow: names(M.draw), Threats: evidence(spells.filter((r) => /Creature|Planeswalker/.test(type(r.c)))), Consistency: evidence(spells.filter((r) => r.qty <= 2 && !legendary(r.c))), Curve: evidence(spells.filter((r) => Number(r.c.cmc) >= 5)) };
@@ -272,7 +272,7 @@ export function ygoPower(rows, f = {}) {
   if (f.extra) parts.push({ ...part("Extra", "Extra Deck", E, f.extra, (E / f.extra) ** (needsExtra ? 1.5 : 1), needsExtra ? 16 : 6, needsExtra ? "This deck's engine summons from the Extra Deck, so a full one is the deck." : "A full Extra Deck gives you more lines and answers."), cards: evidence(extra), why: needsExtra ? `Only ${E} of ${f.extra} Extra Deck cards, but the main deck is built to summon from it (Xyz, Rank-Up, Fusion, Synchro or Link). Without backups and generic Extra Deck tools, one negate or a missing piece ends the turn.` : `${f.extra - E} Extra Deck slot${f.extra - E === 1 ? "" : "s"} empty: free lines and outs you aren't using.` });
   if (f.side) parts.push({ ...part("Side", "Side Deck", sideN, f.side, Math.min(1, sideN / f.side), 4, "Fifteen cards to swap in for games 2 and 3 against the decks you expect."), why: sideN ? `${sideN} of ${f.side} Side Deck cards: fewer answers to bring in after game 1.` : "No Side Deck. Tournament matches are best of three; without one you can't adapt for games 2 and 3." });
   const gold = ygoGoldfish(main.map((r) => ({ qty: r.qty, c: r.c, tags: tag.get(r) })), extra.map((r) => ({ qty: r.qty, c: r.c })));
-  if (gold) parts.push({ ...part("Goldfish", "Plays through interruption", Math.round(gold.metrics[0].value * 100) + "%", "65%+", gold.speed, 8, "1,000 opening hands read like a player would: can it start, and keep going after a hand trap?"), why: gold.headline });
+  if (gold) parts.push({ ...part("Goldfish", "Plays through interruption", Math.round(gold.metrics[0].value * 100) + "%", "65%+", gold.speed, 0, "1,000 opening hands read like a player would: can it start, and keep going after a hand trap?"), why: gold.headline });
   const roles = new Map(),
     LABEL = { starter: "Starter", extender: "Extender", handtrap: "Hand trap", negate: "Negate", breaker: "Breaker", draw: "Draw", brick: "Brick", garnet: "Dead draw" };
   for (const r of main) roles.set(String(r.id ?? r.c.id ?? r.c.name), [...tag.get(r)].map((k) => LABEL[k]));
@@ -426,7 +426,7 @@ export function ptcgPower(rows, f = {}) {
   ];
   if (q(radiants) > 1) parts.push({ ...part("Radiant", "Radiant limit", q(radiants), "≤ 1", 0, 6, "Only one Radiant Pokémon per deck."), why: `${q(radiants)} Radiant Pokémon: only 1 is allowed.` });
   const gold = ptcgGoldfish(main.map((r) => ({ qty: r.qty, c: r.c })), { attacker: mainAtk?.c.name, line });
-  if (gold) parts.push({ ...part("Goldfish", "Goldfish speed", gold.headline.match(/turn (\d+)/)?.[1] ? `turn ${gold.headline.match(/turn (\d+)/)[1]}` : "6+", "turn 2", gold.speed, 10, "1,000 games played out: draw, search, bench, evolve, attach, attack, until the main attacker swings."), why: gold.headline });
+  if (gold) parts.push({ ...part("Goldfish", "Goldfish speed", gold.headline.match(/turn (\d+)/)?.[1] ? `turn ${gold.headline.match(/turn (\d+)/)[1]}` : "6+", "turn 2", gold.speed, 0, "1,000 games played out: draw, search, bench, evolve, attach, attack, until the main attacker swings."), why: gold.headline });
   const LABEL = { basic: "Basic", supporter: "Supporter", draw: "Draw", search: "Search", gust: "Gust", switch: "Switch", pivot: "Free retreat", recovery: "Recovery", accel: "Accel", disrupt: "Disruption", candy: "Candy", energy: "" };
   const roles = new Map();
   for (const r of main) roles.set(String(r.id ?? r.c.id ?? r.c.name), [...(r === mainAtk ? ["Main attacker"] : []), ...[...tag.get(r)].map((k) => LABEL[k]).filter(Boolean)]);
@@ -505,7 +505,7 @@ export function metaMatch(mine, metaDecks, archetypes = []) {
 export const BUILD_CAP = 70, ROGUE_CAP = 62;
 export function metaContext({ build, mine, decks = [], match = null, loaded = false, formatOk = true, archetypes = [] }) {
   if (!loaded || !formatOk || !decks.length)
-    return { score: Math.min(build, BUILD_CAP), from: "build", capped: build > BUILD_CAP, reason: !loaded ? "unloaded" : !formatOk ? "format" : "empty" };
+    return { score: build, from: "build", capped: false, reason: !loaded ? "unloaded" : !formatOk ? "format" : "empty" };
   // How much of this list the field plays: each card's share of placing lists, weighted by copies.
   const lists = decks.length,
     seen = new Map();
@@ -529,7 +529,7 @@ export function metaContext({ build, mine, decks = [], match = null, loaded = fa
   // Off-meta: mostly what the field says about these cards, then how well it's built. A pile of
   // staples around an engine nobody plays lands in casual territory (about 45–60).
   const rogue = Math.round(Math.min(ROGUE_CAP, build * 0.45 + (20 + 40 * presence) * 0.55));
-  return { score: Math.min(rogue, build), from: "rogue", capped: build > rogue, presence, played, unplayed, field, lists };
+  return { score: build, fieldEstimate: rogue, from: "rogue", capped: false, presence, played, unplayed, field, lists };
 }
 
 export function blend(heur, match) {

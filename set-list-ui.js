@@ -3,7 +3,7 @@ import {esc} from './ui.js';
 export function catalogueText(value) {
  return String(value ?? '').replace(/&(?:apos|#39|#x27);/gi,"'").replace(/&quot;/gi,'"').replace(/&amp;/gi,'&').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>');
 }
-// Shared structure, real game-specific art. Pack art is never replaced with an archetype logo.
+// Shared emblem treatment. Use verified set logos/symbols; unknown sets keep their code.
 export function setRowContent({name,code,image='',symbol='',detail='',count=0,owned=null}){
  name=catalogueText(name);detail=catalogueText(detail);
  const fallback=symbol||`<span class="set-art-code">${esc(code)}</span>`;

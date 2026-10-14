@@ -438,7 +438,7 @@ export function tcgHome() {
     <button class="kpi" data-act="go" data-to="#decks"><b>${st.decks.length}</b><span>decks</span></button>
   </div>`}
   ${quickTiles(g)}
-  ${recent.length ? `<div class="section-head"><h2>Your decks</h2><button class="link" data-act="go" data-to="#decks">All decks →</button></div><div class="deck-grid">${recent.map((d) => deckTile(g, d)).join("")}</div>` : ""}
+  ${recent.length ? `<section class="home-deck-section"><div class="section-head"><h2>Your decks</h2><button class="link" data-act="go" data-to="#decks">All decks →</button></div><div class="deck-grid">${recent.map((d) => deckTile(g, d)).join("")}</div></section>` : ""}
   <p class="muted small">${esc(G.tagline)}. Card data and daily prices from ${esc(G.source)}.</p>`;
 }
 
@@ -569,7 +569,7 @@ export function tcgCardSheet(c, sctx = {}) {
         ${deck ? `<p class="small deck-legal ${SOURCES[g].legality(c, f) === "legal" ? "ok-text" : "bad-text"}">${SOURCES[g].legality(c, f) === "legal" ? "✓ Legal" : "● Not allowed"} in ${esc(f.name)} <span class="muted">(${esc(deck.name)})</span></p>` : ""}
         ${c.stats?.length ? `<div class="stat-grid">${c.stats.filter(([k]) => g !== "ptcg" || !["HP", "Type", "Weakness", "Resistance", "Retreat"].includes(k)).map(([k, v]) => statCell(c, k, v)).join("")}</div>${c.regulationMark ? regulationHelp(c) : ""}` : ""}
       </div></div>
-    ${quoteWarning(c)}${priceHistoryHtml(g, trackedQuote(g,c)?.id, c.name, trackedQuote(g,c)?.label)}
+    ${quoteWarning(c)}${historyPanel(quoteModel(g,c,sctx.priceFinish || trackedQuote(g,c)?.finish || "reference"),sctx.priceRange || "30")}
     <div class="actions wrap">
       <button class="btn" data-act="tOwn" data-id="${esc(c.id)}">＋ Add to collection</button>
       <button class="btn ghost" data-act="tWish" data-id="${esc(c.id)}">${wished ? "♥ On wishlist" : "♡ Wishlist"}</button>
@@ -1264,11 +1264,11 @@ function deckUpgradeTab(g, d, f, s) {
     m = ownedMap(g),
     U = pw.upgrades,
     meta = metaState(g).data,
-    cardFor = (x) => (g === "ygo" ? cardOf(g, x.key) : null),
-    addBtn = (x) => (g === "ygo" ? `data-act="tDeckAdd" data-id="${esc(x.key)}" data-deck="${esc(d.id)}"` : `data-act="tDeckAddName" data-name="${esc(x.name)}" data-deck="${esc(d.id)}"`),
+    cardFor = (x) => (g === "ygo" ? cardOf(g, x.key) : Object.values(cache.ptcg).find(c=>c.name.toLowerCase()===x.name.toLowerCase() && SOURCES.ptcg.legality(c,f)==="legal")),
+    addBtn = (x) => (g === "ygo" ? `data-act="tDeckAdd" data-id="${esc(x.key)}" data-deck="${esc(d.id)}" data-upgrade="1"` : `data-act="tDeckAddName" data-name="${esc(x.name)}" data-deck="${esc(d.id)}" data-upgrade="1"`),
     row = (x, extra) => {
       const c = cardFor(x), p = c ? price(c) : null, own = c ? ownedOf(g, c, m) : 0;
-      return `<div class="mini-row upgrade-row">${c ? imgTag(c, "mini-art") : `<span class="mini-art img-missing">◇</span>`}<span class="ellip"><b>${esc(x.name)}</b><small class="muted">${extra}</small></span><span class="upgrade-side">${p != null ? `<small>${usd(p)}</small>` : ""}${own ? `<small class="ok-text">own ${own}</small>` : ""}<button class="btn small" ${addBtn(x)}>＋ Add</button></span></div>`;
+      return `<div class="mini-row upgrade-row">${c ? imgTag(c, "mini-art") : `<span class="mini-art img-missing">◇</span>`}<span class="ellip"><b>${esc(x.name)}</b><small class="muted">${extra}</small></span><span class="upgrade-side">${p != null ? `<small>${usd(p)}</small>` : ""}${own ? `<small class="ok-text">own ${own}</small>` : ""}<button class="btn small" ${addBtn(x)}>Review swap</button></span></div>`;
     };
   // Yu-Gi-Oh! suggestions arrive as card ids: load their pictures and prices once.
   if (g === "ygo") {
@@ -1278,7 +1278,7 @@ function deckUpgradeTab(g, d, f, s) {
   if (!pw.metaLoaded) return `<section class="panel"><h3>Upgrade lab</h3><p class="muted small">Load recent tournament decks to see what lists like yours play.</p><button class="btn" data-act="tMetaRefresh">Load tournament decks</button></section>`;
   const staples = g === "ygo" ? (meta?.top || []).filter((x) => x.pct >= 20) : (meta?.top || []).filter((x) => x.kind === "Trainer" && x.pct >= 30);
   const inDeck = new Set([...(d.zones.main || []), ...(d.zones.extra || [])].flatMap((r) => [String(r.cardId), (cardOf(g, r.cardId)?.name || r.name || "").toLowerCase()]));
-  const stapleRows = staples.filter((x) => !inDeck.has(String(x.id || "")) && !inDeck.has(String(x.name).toLowerCase())).slice(0, 12)
+  const stapleRows = staples.filter((x) => !(U?.adds || []).some(a=>a.key===String(x.id || x.name)||a.name.toLowerCase()===String(x.name).toLowerCase())).filter((x) => !inDeck.has(String(x.id || "")) && !inDeck.has(String(x.name).toLowerCase())).slice(0, 12)
     .map((x) => row({ key: String(x.id || x.name), name: x.name }, `${Math.round(x.pct)}% of tournament decks · usually ${Math.max(1, Math.round(x.avg || 1))}`)).join("");
   const addCost = U ? U.adds.reduce((a, x) => { const c = cardFor(x), p = c ? price(c) : null, own = c ? ownedOf(g, c, m) : 0; return a + (p != null ? p * Math.max(0, x.need - own) : 0); }, 0) : 0;
   return `<section class="panel"><p class="eyebrow">Upgrade lab</p><h2>${U ? `Make it play like ${esc(pw.match.archetype)}` : "Format staples"}</h2>
@@ -2009,6 +2009,7 @@ export function registerTcg(c) {
     const f=formatOf(g(),d.format), limit=SOURCES[g()].limit(card,f), totalCopies=["main","extra","side"].reduce((a,z)=>a+(d.zones[z] || []).filter(r=>r.name===card.name).reduce((a,r)=>a+r.qty,0),0), cap=g()==="ygo"?(zone==="main"?f.main[1]:f[zone]):60;
     if(g()==="ygo" && zone==="extra" && !card.extra)throw Error("Only Extra Deck monsters belong in this zone.");
     if(g()==="ygo" && zone==="main" && card.extra) throw Error("This monster belongs in the Extra Deck.");
+    if(SOURCES[g()].legality(card,f)==="not_legal")throw Error("This printing is not legal in the selected format.");
     if(limit===0)throw Error("This card is forbidden in the selected format.");
     if(totalCopies+n>limit)throw Error(`This format allows ${limit} copies of ${card.name}.`);
     if((d.zones[zone] || []).reduce((a,r)=>a+r.qty,0)+n>cap)throw Error(`${zone} deck is full (${cap} cards maximum). Make a cut before adding.`);
@@ -2042,13 +2043,37 @@ export function registerTcg(c) {
       render();
     }
   };
-  // Upgrade lab (Pokémon lists only carry names): find the exact card, then add it.
+  const reviewUpgrade = (card,deckId) => {
+    const G=g(),d=gs(G).decks.find(x=>x.id===deckId);if(!d||!card)return;
+    const f=formatOf(G,d.format),zone=SOURCES[G].zoneFor(card),rows=d.zones[zone] || [];
+    if(SOURCES[G].legality(card,f)!=="legal")return toast("This printing is not legal in the selected format.");
+    const total=rows.reduce((a,r)=>a+r.qty,0),target=G==='ptcg'?60:zone==='main'?f.main[0]:f[zone];
+    const actions=rows.filter(r=>r.cardId!==card.id).map(r=>`<button class="btn ghost" data-act="tUpgradeSwap" data-deck="${esc(d.id)}" data-in="${esc(card.id)}" data-out="${esc(r.cardId)}" data-zone="${zone}">Cut 1× ${esc(r.name)} → ${esc(card.name)}</button>`).join('');
+    openSheet(`<div class="sheet-head"><h2>Review upgrade</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p>Add 1× <b>${esc(card.name)}</b> to ${esc(d.name)}.</p><p class="muted small">${total} cards in ${zone}. Choose one copy to cut. Each swap preserves the count and saves a version you can restore.</p><div class="card-action-list">${actions}</div>${total<target?`<button class="btn" data-act="tDeckAdd" data-deck="${esc(d.id)}" data-id="${esc(card.id)}">Fill one open slot (${target-total} open)</button>`:''}`,{type:'upgrade',id:card.id});
+  };
+  A.tUpgradeSwap = async t => {
+    const G=g(),card=cardOf(G,t.dataset.in);if(!card)return toast("Load this card again before swapping.");
+    await mutate(st=>{
+      const d=st.decks.find(x=>x.id===t.dataset.deck);if(!d)throw Error("Deck no longer exists.");
+      const before=structuredClone(d),zone=t.dataset.zone,row=d.zones[zone]?.find(r=>r.cardId===t.dataset.out);
+      if(!row||row.qty<1)throw Error("The cut is no longer in this deck. Review the upgrade again.");
+      const beforeIssues=SOURCES[G].validate(d,x=>cardOf(G,x),formatOf(G,d.format)).filter(x=>x.level==='bad').map(x=>x.text);
+      try {
+        row.qty--;d.zones[zone]=d.zones[zone].filter(r=>r.qty>0);addToDeck(st,d.id,card,zone);
+        const newIssues=SOURCES[G].validate(d,x=>cardOf(G,x),formatOf(G,d.format)).filter(x=>x.level==='bad'&&!beforeIssues.includes(x.text));
+        if(newIssues.length)throw Error(newIssues[0].text);
+        (d.versions ||= []).push({id:uid(),label:'Before upgrade swap',at:Date.now(),zones:before.zones});
+      }catch(e){Object.assign(d,before);throw e;}
+    },{undo:`Swapped one copy for ${card.name}.`});closeSheet();
+  };
+  // Resolve an exact legal printing before reviewing the swap.
   A.tDeckAddName = async (t) => {
     const G = g(),
       r = await SOURCES[G].search({ q: t.dataset.name, size: 8 }).catch(() => ({ cards: [] })),
-      hit = r.cards.find((x) => x.name.toLowerCase() === String(t.dataset.name).toLowerCase()) || r.cards[0];
+      hit = r.cards.find((x) => x.name.toLowerCase() === String(t.dataset.name).toLowerCase() && SOURCES[G].legality(x,formatOf(G,gs(G).decks.find(d=>d.id===t.dataset.deck)?.format)) === "legal");
     if (!hit) return toast("Couldn’t find that card right now.");
     const card = await ensureCard(G, hit.id).catch(() => remember(hit));
+    if(t.dataset.upgrade)return reviewUpgrade(card,t.dataset.deck);
     await mutate((st) => addToDeck(st, t.dataset.deck, card), { msg: `${card.name} added.` });
   };
   // From the Power panel: look up a card the tournament list plays, ready to add.
@@ -2066,6 +2091,8 @@ export function registerTcg(c) {
   A.tDeckAdd = async (t) => {
     const G = g(),
       card = await ensureCard(G, t.dataset.id).catch(() => cardOf(G, t.dataset.id));
+    if(!card)return toast("Couldn’t load this card right now.");
+    if(t.dataset.upgrade)return reviewUpgrade(card,t.dataset.deck);
     await mutate((st) => addToDeck(st, t.dataset.deck, card), { msg: `${card.name} added.` });
   };
   // Open a card from a name (Play guide lists from tournament decks, which only carry names).

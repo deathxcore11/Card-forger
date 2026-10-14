@@ -85,7 +85,7 @@ export function home() {
     <button class="kpi" data-act="go" data-to="#collection"><b>${copies}</b><span>cards owned</span></button>
     <button class="kpi" data-act="go" data-to="#decks"><b>${st.decks.length}</b><span>decks</span></button>
   </div>`}
-  ${others.length ? `<div class="section-head"><h2>Deck shelf</h2><button class="link" data-act="go" data-to="#decks">All decks →</button></div><div class="shelf">${others.map((d) => deckTile(d)).join("")}</div>` : ""}
+  ${others.length ? `<section class="home-deck-section"><div class="section-head"><h2>Deck shelf</h2><button class="link" data-act="go" data-to="#decks">All decks →</button></div><div class="shelf">${others.map((d) => deckTile(d)).join("")}</div></section>` : ""}
   ${quickTiles("mtg")}
   ${
     value.spare.length && value.spareValue > 0
@@ -378,7 +378,7 @@ export function cardSheet(c, ctx = {}) {
         : `<button class="price-pill unknown" data-act="buyCard" data-finish="nonfoil"><small>Price</small><b>No price yet</b><span class="buy-hint">Find sellers ›</span></button><p class="price-gap small muted">Stores haven't priced this printing yet. Common for new or rarely sold cards.</p>`
     }</div>
   </div>
-  ${priceHistoryHtml("mtg", trackedQuote("mtg",shown)?.id, name, trackedQuote("mtg",shown)?.label)}
+  ${historyPanel(quoteModel("mtg",shown,ctx.priceFinish || trackedQuote("mtg",shown)?.finish || "nonfoil"),ctx.priceRange || "30")}
   ${faces
     .map(
       (f, n) => `<section class="cd-text">
@@ -476,7 +476,7 @@ export function setsPage() {
   ${st.error ? `<div class="note warn">${esc(st.error)} <button class="link" data-act="setsReload">Try again</button></div>` : ""}
   ${!st.list.length && st.busy ? `<p class="muted center pad">Loading every set…</p>` : ""}
   ${[...years]
-    .map(([y, xs]) => `<h2 class="year">${esc(y)}</h2><div class="set-list">${xs.map(x => `<button class="set-row" data-act="set" data-code="${esc(x.code)}">${setRowContent({name:x.name,code:x.code.toUpperCase(),image:`/img/mtg-set/${x.code}.jpg`,symbol:`<span class="set-icon" style="--icon:url('${esc(x.icon || setIconUrl(x.code))}')" aria-hidden="true"></span>`,detail:[SET_TYPES[x.set_type]||x.set_type,x.released_at].filter(Boolean).join(' · '),count:x.card_count})}</button>`).join("")}</div>`)
+    .map(([y, xs]) => `<h2 class="year">${esc(y)}</h2><div class="set-list">${xs.map(x => `<button class="set-row" data-act="set" data-code="${esc(x.code)}">${setRowContent({name:x.name,code:x.code.toUpperCase(),image:x.icon || setIconUrl(x.code),symbol:`<span class="set-icon" style="--icon:url('${esc(x.icon || setIconUrl(x.code))}')" aria-hidden="true"></span>`,detail:[SET_TYPES[x.set_type]||x.set_type,x.released_at].filter(Boolean).join(' · '),count:x.card_count})}</button>`).join("")}</div>`)
     .join("")}
   ${st.list.length && !list.length ? empty("No sets match", "Try another name, or include promos and extras.") : ""}`;
 }
@@ -1669,7 +1669,7 @@ export function settings() {
   <details class="settings-disclosure settings-danger"><summary>Start over or load examples</summary><p class="foot">Export a backup first. One recovery copy is kept on this device.</p><div class="actions wrap"><button class="btn ghost danger" data-act="reset">Start empty</button><button class="btn ghost" data-act="loadExample">Load example data</button></div></details></div>
   <div id="settings-app" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-app" ${tab === "app" ? "" : "hidden"}><section class="panel settings-card"><div class="settings-card-heading"><div><p class="eyebrow">APPEARANCE</p><h2>Glass &amp; art backdrop</h2></div></div><label class="check"><input type="checkbox" data-change="setGlass" ${(() => { try { return localStorage.getItem("cardstashy-glass") !== "off"; } catch { return true; } })() ? "checked" : ""}> Frosted glass panels over a blurred copy of the game's featured art</label><p class="foot">Turn it off for plain solid panels (a little lighter on older phones).</p><label class="check"><input type="checkbox" data-change="setHaptics" ${hapticsOn() ? "checked" : ""}> Vibration when you tap, add or remove cards</label><p class="foot">On iPhone this uses the system tap (iOS 18 or later). Animations follow your phone’s “Reduce motion” setting.</p></section><section class="panel settings-card"><div class="settings-card-heading"><span class="settings-icon" aria-hidden="true">＋</span><div><p class="eyebrow">TAKE IT WITH YOU</p><h2>Install CardStashy</h2></div></div><p class="muted small">Open it from your home screen. Saved collections and decks work offline.</p><button class="btn" data-act="install">Install app</button><details class="settings-disclosure"><summary>Android installation help</summary><p class="foot">In Chrome, open ⋮ → Add to Home screen or Install app. Searches and updated prices need internet.</p></details></section>
   <details class="settings-disclosure settings-source"><summary>Card databases & prices</summary><ul class="sources"><li><b>Magic:</b> Scryfall card data, images and reference prices; MTGJSON precon lists.</li><li><b>Pokémon:</b> TCGdex card data and images, with supplied TCGplayer and Cardmarket prices.</li><li><b>Yu-Gi-Oh!:</b> YGOPRODeck card data, alternate art, printings and reference prices.</li><li><b>Imports:</b> Supported text and CSV exports from deck and collection tools.</li></ul><p class="foot">Prices are estimates; check edition, condition and shipping with the seller.</p></details>
-  <details class="settings-disclosure settings-source"><summary>About CardStashy</summary><p class="foot">Scores and test games are estimates, not win rates. CardStashy is an independent fan app; cards and art belong to their owners.</p><span class="settings-version">Version 3.34.3</span></details></div></div>`;
+  <details class="settings-disclosure settings-source"><summary>About CardStashy</summary><p class="foot">Scores and test games are estimates, not win rates. CardStashy is an independent fan app; cards and art belong to their owners.</p><span class="settings-version">Version 3.35.1</span></details></div></div>`;
 }
 
 /* ---------- Deck idea sheet ---------- */

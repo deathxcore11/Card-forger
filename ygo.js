@@ -236,7 +236,7 @@ export const ygoSource = {
   async sets() {
     const d = await fetch(API + "/cardsets.php").then((r) => r.json());
     return (d || [])
-      .map((s) => ({ id: s.set_code, name: s.set_name, code: s.set_code, count: s.num_of_cards, date: s.tcg_date || "", image: s.set_image || "" }))
+      .map((s) => ({ id: s.set_code, name: s.set_name, code: s.set_code, count: s.num_of_cards, date: s.tcg_date || "", image: "" }))
       .sort((a, b) => String(b.date).localeCompare(String(a.date)));
   },
   async setCards(set) {

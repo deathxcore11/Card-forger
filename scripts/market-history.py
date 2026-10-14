@@ -16,11 +16,15 @@ def get(url,headers=None):
 
 def table(name,query):
     rows=[]
-    for offset in range(0,3000,1000):
+    for offset in range(0,1000000,1000):
         batch=get(BASE+'/rest/v1/'+name+'?'+query.replace('&limit=3000','')+'&limit=1000&offset='+str(offset),{'apikey':KEY})
         rows+=batch
         if len(batch)<1000:break
     return rows
+
+@lru_cache(maxsize=4096)
+def feed(url):
+    return get(url)
 
 def current(w):
     g,id,f=w['game'],w['card_id'],w['finish']
@@ -44,12 +48,12 @@ def current(w):
         source='TCGplayer market via TCGdex'
         if value is None:
             norm=lambda text: ''.join(x for x in str(text).lower() if x.isalnum())
-            groups=get('https://tcgcsv.com/tcgplayer/3/groups').get('results',[])
+            groups=feed('https://tcgcsv.com/tcgplayer/3/groups').get('results',[])
             group=next((g for g in groups if norm(g['name'])==norm(c.get('set',{}).get('name'))),None)
             variant=next((v for v in c.get('variants_detailed',[]) if f=='reference' or 'detail:'+str(v.get('variantId'))==f),None)
             if group and variant and variant.get('thirdParty',{}).get('tcgplayer'):
                 subtype={'holo':'Holofoil','normal':'Normal','reverse':'Reverse Holofoil'}.get(variant.get('type'))
-                quotes=get('https://tcgcsv.com/tcgplayer/3/'+str(group['groupId'])+'/prices').get('results',[])
+                quotes=feed('https://tcgcsv.com/tcgplayer/3/'+str(group['groupId'])+'/prices').get('results',[])
                 matches=[r for r in quotes if r['productId']==variant['thirdParty']['tcgplayer'] and r['subTypeName']==subtype]
                 if len(matches)==1:value=matches[0].get('marketPrice');source='TCGplayer market via TCGCSV'
     else:
@@ -88,7 +92,19 @@ def backfill(watches):
 def main():
     cutoff=(datetime.date.fromisoformat(TODAY)-datetime.timedelta(days=90)).isoformat()
     watches=table('market_watch','select=*&touched_at=gte.'+cutoff+'&order=touched_at.desc&limit=3000')
+    game=os.getenv('HISTORY_GAME')
+    if game:watches=[w for w in watches if w['game']==game]
     print('Public printing/finish series:',len(watches))
+    if os.getenv('HISTORY_CATALOGUE'):
+        from market_catalogue import catalog_rows
+        count=0
+        batch=[]
+        for row in catalog_rows(game):
+            batch.append(row)
+            if len(batch)>=25:
+                save_rows(batch);count+=len(batch);batch=[]
+        if batch:save_rows(batch);count+=len(batch)
+        print('Catalogue series saved:',game,count)
     rows=[];failed=0
     for w in watches:
         try:
@@ -103,11 +119,21 @@ def main():
     if os.getenv('HISTORY_DRY_RUN'):
         with open(os.getenv('HISTORY_OUTPUT','/tmp/cardstashy-history.json'),'w') as f:json.dump(rows,f)
         print('Verified rows written:',len(rows));return
-    token=get(os.environ['ACTIONS_ID_TOKEN_REQUEST_URL']+'&audience=cardstashy-market-history',{'Authorization':'Bearer '+os.environ['ACTIONS_ID_TOKEN_REQUEST_TOKEN']})['value']
+    save_rows(rows)
+    if watches and failed==len(watches):raise RuntimeError('All providers unavailable; previous history preserved')
+
+_token=None
+_token_at=0
+def save_rows(rows):
+    global _token,_token_at
+    if not rows:return
+    if os.getenv('HISTORY_DRY_RUN'):return
+    if not _token or time.monotonic()-_token_at>240:
+        _token=get(os.environ['ACTIONS_ID_TOKEN_REQUEST_URL']+'&audience=cardstashy-market-history',{'Authorization':'Bearer '+os.environ['ACTIONS_ID_TOKEN_REQUEST_TOKEN']})['value'];_token_at=time.monotonic()
+    token=_token
     for start in range(0,len(rows),25):
         data=json.dumps(rows[start:start+25]).encode()
         req=urllib.request.Request(BASE+'/functions/v1/market-history',data=data,method='POST',headers={'Content-Type':'application/json','Authorization':'Bearer '+token,'User-Agent':UA})
         result=json.load(urllib.request.urlopen(req,timeout=120));print('Saved series:',result['saved'])
-    if watches and failed==len(watches):raise RuntimeError('All providers unavailable; previous history preserved')
 
 if __name__=='__main__':main()

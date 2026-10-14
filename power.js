@@ -1,7 +1,29 @@
+import {engineMap,engineMapPanel} from './engine-map.js';
 import {strategicRisk,riskPanel} from "./strategy-risk.js";
 // Connects Deck Power (deckpower.js) to the app: picks the right lens for each game and
 // format, matches the list against cached tournament results, and renders the panel/badges.
 import { S } from "./store.js";
+import { ygoSource } from './ygo.js';
+import { ptcgSource } from './ptcg.js';
+import { legalityIn } from './formats.js';
+
+export function powerReadiness(game,deck,format,cardOf) {
+ const rows=game==='mtg'?deck.cards || []:Object.entries(deck.zones || {}).flatMap(([zone,rs])=>rs.map(r=>({...r,zone})));
+ const unknown=rows.filter(r=>!cardOf(game==='mtg'?r.name:r.cardId)).reduce((n,r)=>n+r.qty,0),issues=[];
+ if(game==='mtg'){
+  const total=rows.reduce((n,r)=>n+r.qty,0),byName=new Map();
+  if(total<format.size || (format.exact && total!==format.size))issues.push(`${total}/${format.size} cards`);
+  for(const r of rows){const c=cardOf(r.name);if(!c)continue;const k=cardKey(r.name);byName.set(k,(byName.get(k)||0)+r.qty);
+   if(format.legality && c.legalities && !['legal','restricted'].includes(legalityIn(c,format)))issues.push(`${r.name} is not legal in ${format.name}`);
+   if(format.commander && deck.commander && cardKey(r.name)!==cardKey(deck.commander)){const identity=cardOf(deck.commander)?.color_identity;if(identity && (c.color_identity || []).some(x=>!identity.includes(x)))issues.push(`${r.name} is outside the commander’s color identity`);}
+  }
+  for(const [k,n] of byName){const c=cardOf(k);if(c&&!/^Basic/.test(c.type_line || '')&&!/any number of cards named/i.test(c.oracle_text || '')&&n>(legalityIn(c,format)==='restricted'?1:format.copies))issues.push(`${n} copies of ${c.name}`);}
+  if(format.commander&&!deck.commander)issues.push('Choose a commander');
+ }else issues.push(...(game==='ygo'?ygoSource:ptcgSource).validate(deck,cardOf,format).filter(x=>x.level==='bad').map(x=>x.text));
+ return {unknown,issues:[...new Set(issues)],provisional:unknown>0||issues.length>0};
+}
+const readinessLabel=p=>p.readiness?.provisional?'Provisional · resolve deck checks':p.from==='meta'?powerGrade(p.score,p.from):p.score>=85?'Strong engine estimate':p.score>=68?'Solid engine estimate':p.score>=50?'Developing engine':'Engine needs work';
+
 import { esc, ring, bar, pct } from "./ui.js";
 import { review } from "./deckaudit.js";
 import { mtgGoldfish } from "./goldfish.js";
@@ -45,7 +67,7 @@ function mtgMetaDecks(data) {
 export function mtgPower(d) {
   const mk = mtgMetaKey(d),
     M = mk ? metaState(mk) : null,
-    sig = d.id + "|" + d.format + "|" + JSON.stringify(d.cards) + "|" + (M?.at || 0) + "|" + Object.keys(S.catalog).length;
+    sig = d.id + "|" + d.format + "|" + JSON.stringify(d.cards) + "|" + (M?.at || 0) + "|" + JSON.stringify(d.cards.map(r=>S.catalog[cardKey(r.name)] || null));
   return memo(sig, () => {
     let base;
     if (isCommanderLike(d)) {
@@ -84,7 +106,7 @@ export function mtgPower(d) {
       ctx.unplayed = (ctx.unplayed || []).map((x) => ({ ...x, name: d.cards.find((c) => cardKey(c.name) === x.key)?.name || x.key }));
     } else if (isCommanderLike(d)) ctx = { score: base.score, from: "commander" };
     else ctx = metaContext({ build: base.score, mine, loaded: !!M?.data, formatOk: !!mk });
-    return { ...base, strategicRisk:strategicRisk("mtg",d.cards.map(r=>({...r,c:S.catalog[cardKey(r.name)]})),M?.data?.decks || [],r=>S.catalog[cardKey(r.name)]), heuristic: base.score, score: ctx.score, from: ctx.from, ctx, match, metaKey: mk, metaLoaded: !!M?.data, metaBusy: !!M?.busy, game: "mtg", formatName: formatOf(d).name };
+    return { ...base, engine:engineMap("mtg",d.cards.map(r=>({...r,c:S.catalog[cardKey(r.name)]}))), readiness:powerReadiness("mtg",d,formatOf(d),name=>S.catalog[cardKey(name)]), strategicRisk:strategicRisk("mtg",d.cards.map(r=>({...r,c:S.catalog[cardKey(r.name)]})),M?.data?.decks || [],r=>S.catalog[cardKey(r.name)]), heuristic: base.score, score: ctx.score, from: ctx.from, ctx, match, metaKey: mk, metaLoaded: !!M?.data, metaBusy: !!M?.busy, game: "mtg", formatName: formatOf(d).name };
   });
 }
 
@@ -92,7 +114,7 @@ export function mtgPower(d) {
 
 export function tcgPower(g, d, f, cardOf) {
   const M = metaState(g),
-    sig = g + "|" + d.id + "|" + d.format + "|" + JSON.stringify(d.zones) + "|" + (M?.at || 0);
+    sig = g + "|" + d.id + "|" + d.format + "|" + JSON.stringify(d.zones) + "|" + (M?.at || 0) + "|" + JSON.stringify(Object.values(d.zones || {}).flat().map(r=>cardOf(r.cardId) || null));
   return memo(sig, () => {
     const rows = [];
     for (const zone of ["main", "extra", "side"]) for (const r of d.zones?.[zone] || []) rows.push({ zone, qty: r.qty, c: cardOf(r.cardId), id: r.cardId, name: r.name });
@@ -103,7 +125,7 @@ export function tcgPower(g, d, f, cardOf) {
       const mine = new Map(), nameOf = new Map();
       mineMap = mine;
       if (g === "ygo") {
-        for (const r of rows) mine.set(String(r.id), (mine.get(String(r.id)) || 0) + r.qty);
+        for (const r of rows.filter(r=>r.zone!=="side")) mine.set(String(r.id), (mine.get(String(r.id)) || 0) + r.qty);
         const decks = data.decks.map((x) => {
           const m = new Map();
           for (const id of [...(x.main || []), ...(x.extra || [])]) m.set(String(id), (m.get(String(id)) || 0) + 1);
@@ -135,7 +157,7 @@ export function tcgPower(g, d, f, cardOf) {
       if (match) match.extra = match.extra.map((x) => ({ ...x, name: g === "ygo" ? cardOf(x.key)?.name || x.key : nameOf.get(x.key) || x.key }));
     }
     // The field this deck is judged against: Pokémon data is Standard, Yu-Gi-Oh! data is TCG Advanced.
-    const formatOk = g === "ptcg" ? (d.format || "standard") === "standard" : ["tcg", "traditional"].includes(d.format || "tcg");
+    const formatOk = g === "ptcg" ? (d.format || "standard") === "standard" : (d.format || "tcg") === "tcg";
     const ctx = metaContext({ build: base.score, mine: mineMap || new Map(), decks: formatOk ? metaDecks : [], match: formatOk ? match : null, loaded: !!data, formatOk, archetypes: (data?.archetypes || []).map((a) => ({ name: a.name || a.id, share: a.share })) });
     if (ctx.unplayed) ctx.unplayed = ctx.unplayed.map((x) => ({ ...x, name: g === "ygo" ? cardOf(x.key)?.name || x.key : rows.find((r) => String(r.c?.name || r.name).toLowerCase() === x.key)?.c?.name || x.key, id: g === "ygo" ? x.key : rows.find((r) => String(r.c?.name || r.name).toLowerCase() === x.key)?.id }));
     if (!formatOk) match = null;
@@ -146,13 +168,13 @@ export function tcgPower(g, d, f, cardOf) {
       upgrades = archetypeUpgrades(mineMap, metaDecks.filter((x) => (x.archetype || x.name) === arch));
       upgrades.cuts = upgrades.cuts.map((x) => ({ ...x, name: match.extra.find((e) => e.key === x.key)?.name || (g === "ygo" ? cardOf(x.key)?.name : x.key) || x.key }));
     }
-    return { ...base, strategicRisk:strategicRisk(g,rows,(data?.decks || []).map(d=>g==='ygo'?{...d,main:[...(d.main || []),...(d.extra || [])].map(id=>({cardId:String(id),name:cardOf(String(id))?.name,qty:1}))}:d),r=>g==='ygo'?cardOf(r.cardId):rows.find(x=>x.c?.name===r.name)?.c), heuristic: base.score, score: ctx.score, from: ctx.from, ctx, match, upgrades, metaKey: formatOk ? g : null, metaLoaded: !!data, metaBusy: !!M?.busy, game: g, formatName: f?.name || d.format };
+    return { ...base, engine:engineMap(g,rows), readiness:powerReadiness(g,d,f,cardOf), strategicRisk:strategicRisk(g,rows,(data?.decks || []).map(d=>g==='ygo'?{...d,main:[...(d.main || []),...(d.extra || [])].map(id=>({cardId:String(id),name:cardOf(String(id))?.name,qty:1}))}:d),r=>g==='ygo'?cardOf(r.cardId):rows.find(x=>x.c?.name===r.name)?.c), heuristic: base.score, score: ctx.score, from: ctx.from, ctx, match, upgrades, metaKey: formatOk ? g : null, metaLoaded: !!data, metaBusy: !!M?.busy, game: g, formatName: f?.name || d.format };
   });
 }
 
 /* ---------- Rendering ---------- */
 
-export const powerChip = (p) => `<span class="power-chip p-${p.score >= 80 ? "hi" : p.score >= 60 ? "mid" : "lo"}" title="Deck Power ${p.score}/100 · ${esc(powerGrade(p.score, p.from))}"><em>${p.score}</em> power</span>`;
+export const powerChip = (p) => `<span class="power-chip p-${p.score >= 80 ? "hi" : p.score >= 60 ? "mid" : "lo"}" title="Deck Power ${p.score}/100 · ${esc(readinessLabel(p))}"><em>${p.score}</em> ${p.readiness?.provisional?"provisional":"power"}</span>`;
 
 export function powerPanel(p, { loadAct = "", findAct = "", cardAct = () => "" } = {}) {
   const m = p.match,
@@ -174,27 +196,15 @@ export function powerPanel(p, { loadAct = "", findAct = "", cardAct = () => "" }
     unplayed = c.unplayed?.length ? `<p class="small"><b>Not in any placing list:</b> ${c.unplayed.slice(0, 10).map((x) => `<button class="link small" ${cardAct(x)}>${esc(x.name)}${x.qty > 1 ? ` ×${x.qty}` : ""}</button>`).join(", ")}</p>` : "";
   const fieldBox =
     c.from === "build" && c.reason === "format"
-      ? `<div class="pw-field warn"><b>No tournament results for ${esc(p.formatName || "this format")}</b><p class="small">There's no placing-deck data for this format, so the rating is the build check only and is capped at ${BUILD_CAP}. A list can be built well and still lose to everything people actually play.</p></div>`
+      ? `<div class="pw-field warn"><b>No tournament results for ${esc(p.formatName || "this format")}</b><p class="small">There's no placing-deck data for this format, so the rating measures the deck’s own engine. Missing tournament coverage does not deduct points. Matchup performance remains unverified.</p></div>`
       : c.from === "build"
-        ? `<div class="pw-field"><b>Not compared with the field yet</b><p class="small">${p.metaBusy ? "Loading tournament results…" : `Until it's compared with recent tournament decks, the rating is the build check only and is capped at ${BUILD_CAP}.`}</p></div>`
+        ? `<div class="pw-field"><b>Not compared with the field yet</b><p class="small">${p.metaBusy ? "Loading tournament results…" : `The engine estimate uses this deck’s cards. Tournament evidence is separate; its absence does not deduct points.`}</p></div>`
         : c.from === "rogue"
-          ? `<div class="pw-field warn"><b>Off-meta list</b><p class="small">No deck that placed in the last ${c.lists} tournament lists shares at least a third of these cards. ${Math.round((c.played || 0) * 100)}% of your cards see tournament play at all. It's capped at 62 (casual tier) until a list like it puts up results: on paper it can look fine and still be outclassed.</p>${unplayed}${field}</div>`
+          ? `<div class="pw-field warn"><b>Off-meta list</b><p class="small">No deck that placed in the last ${c.lists} tournament lists shares at least a third of these cards. ${Math.round((c.played || 0) * 100)}% of your cards see tournament play at all. This is an unproven strategy in this sample, not evidence that it is weak. The engine estimate stays independent of card popularity.</p>${unplayed}${field}</div>`
           : c.from === "commander"
             ? ""
             : `<div class="pw-field ok"><b>Proven archetype</b><p class="small">${Math.round((c.played || 0) * 100)}% of your cards appear in placing lists. The rating leans on how this archetype actually performs.</p>${unplayed}${field}</div>`;
   const R = review(p.parts);
-  // The field comes first: points lost because the list isn't proven against what wins.
-  if (p.ctx && p.heuristic - p.score >= 1) {
-    const c = p.ctx;
-    R.weak.unshift({
-      label: c.from === "rogue" ? "Outclassed by the meta" : c.from === "mixed" ? "Strays from the proven list" : "Not tested against the field",
-      lost: p.heuristic - p.score,
-      count: c.from === "rogue" ? `${Math.round((c.played || 0) * 100)}% played` : c.from === "mixed" ? `${Math.round((p.match?.sim || 0) * 100)}% same` : "no data",
-      target: c.from === "rogue" ? "a placing archetype" : c.from === "mixed" ? "75%+ same cards" : "tournament data",
-      why: c.from === "rogue" ? "Built on its own terms it scores well, but no deck like it is placing, and part of it isn't played anywhere. Decks that are winning right now are faster or more consistent." : c.from === "mixed" ? `It's a version of ${p.match?.archetype || "a placing deck"}, but changes enough that those results only partly apply.` : c.reason === "format" ? `No placing-deck data for ${p.formatName || "this format"}, so it can't be checked against the field.` : "Compare it with recent tournament decks to see if it holds up.",
-      cards: (c.unplayed || []).slice(0, 10),
-    });
-  }
   const _ = 0,
     pts = (x) => (Math.round(x * 10) / 10).toFixed(1).replace(/\.0$/, ""),
     pctx = (x) => Math.round(x * 100) + "%",
@@ -204,9 +214,9 @@ export function powerPanel(p, { loadAct = "", findAct = "", cardAct = () => "" }
     ? R.weak
         .map((x) => `<div class="pw-issue ${x.lost >= 6 ? "major" : x.lost >= 3 ? "mid" : ""}"><div class="pw-issue-top"><b>${esc(x.label)}</b><span class="pw-lost">−${pts(x.lost)} pts</span></div><p>${esc(x.why || x.hint)}</p><p class="pw-have muted small">Now <b>${esc(String(x.count))}</b> · aim for <b>${esc(String(x.target))}</b></p>${cardList(x)}${x.fix && findAct && x.fix.length < 14 ? `<button class="btn ghost small" ${findAct(x)}>Find ${esc(x.fix.toLowerCase())} cards</button>` : x.fix && x.fix.length >= 14 ? `<p class="pw-fix small">${esc(x.fix)}</p>` : ""}</div>`)
         .join("")
-    : `<p class="small ok-text">Nothing loses real points. What's left is matchup tuning and your sideboard.</p>`;
+    : `<p class="small ok-text">No weaknesses detected by the supported checks. Review engine interactions and matchup tests next.</p>`;
   const sims = p.sims?.length
-    ? `<section class="panel pw-sims"><div class="row between"><h3>3,000 shuffles of this list</h3><span class="muted small">same list, same numbers</span></div><p class="muted small">Every number below comes from shuffling your exact list and dealing real opening hands with this game's rules, not from estimates.</p>${p.sims
+    ? `<section class="panel pw-sims"><div class="row between"><h3>3,000 shuffles of this list</h3><span class="muted small">same list, same numbers</span></div><p class="muted small">Opening-hand probabilities use your listed quantities. Role and playability checks infer card behavior; unsupported rules and opponent responses can change the result.</p>${p.sims
         .map((x) => {
           const ok = x.lower ? x.p <= x.target : x.p >= x.target,
             close = x.lower ? x.p <= x.target * 1.6 : x.p >= x.target * 0.85;
@@ -227,7 +237,9 @@ export function powerPanel(p, { loadAct = "", findAct = "", cardAct = () => "" }
       <p class="foot">Solitaire approximation: generic plays and combat, without an opponent. It does not resolve every card ability, stack interaction or infinite combo, so it is not a cEDH win-turn forecast.</p></section>`
       : "";
   const profile = p.profile?.length ? `<div class="pw-profile">${p.profile.map(([k, v]) => `<span><b>${esc(String(v))}</b>${esc(k)}</span>`).join("")}</div>` : "";
-  return `<section class="panel score-panel power">${ring(p.score)}<div><p class="eyebrow">${p.from === "commander" ? "Deck health · heuristic" : p.from === "build" ? "Deck Power · build health" : "Deck Power · competitive index"}</p><h2>${p.from === "commander" ? "Commander build check" : esc(powerGrade(p.score, p.from))}</h2><p class="small"><b>${esc(p.plan)}</b></p><p class="muted small">${esc(p.lens)}</p>${top ? `<p class="pw-headline small">Biggest gain: <b>${esc(top.label)}</b> (+${pts(top.lost)} pts available)</p>` : ""}</div>${profile}</section>
+  return `<section class="panel score-panel power">${ring(p.score)}<div><p class="eyebrow">${p.from === "meta" ? "Deck Power · tournament comparison" : "Deck Power · engine estimate"}</p><h2>${p.from === "commander" ? "Commander build check" : esc(readinessLabel(p))}</h2><p class="small"><b>${esc(p.plan)}</b></p><p class="muted small">${esc(p.lens)}</p>${top ? `<p class="pw-headline small">Biggest gain: <b>${esc(top.label)}</b> (+${pts(top.lost)} pts available)</p>` : ""}</div>${profile}</section>
+  ${engineMapPanel(p.engine)}
+  ${p.readiness?.provisional?`<section class="panel issues-panel"><h3>Resolve before treating this as competitive</h3>${p.readiness.unknown?`<p>${p.readiness.unknown} card copies still need their details loaded.</p>`:""}<ul>${p.readiness.issues.map(x=>`<li>${esc(x)}</li>`).join("")}</ul><p class="foot">The displayed score is a comparison, not evidence that an incomplete or illegal list is tournament ready.</p></section>`:""}
   ${p.from === "meta" ? '<details class="panel"><summary>Optional generic build checks</summary>' : ""}<section class="panel pw-weak"><div class="row between"><h3>${p.from === "meta" ? "Build-model cautions" : "Build-health checks"}</h3><span class="muted small">${R.weak.length ? `${R.weak.length} found, biggest first` : "none"}</span></div>${p.from === "meta" ? '<p class="foot">These generic role targets are advisory. They do not override the placing list’s tournament evidence or prove that its engine is weak.</p>' : ""}${weak}</section>
   ${p.from === "meta" ? "</details>" : ""}
   ${R.strong.length ? `<section class="panel pw-strong"><h3>Strengths</h3><div class="pw-chips">${R.strong.map((x) => `<span class="pw-chip"><b>${esc(x.label)}</b> ${esc(String(x.count))}</span>`).join("")}</div></section>` : ""}

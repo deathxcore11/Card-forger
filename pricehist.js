@@ -103,7 +103,7 @@ export function priceHistoryHtml(g, id, name = "", label = "") {
     ch = priceChange(s);
   const alert = alertFor(g, id);
   const alertBtn = `<button class="btn ghost small" data-act="priceAlert" data-game="${esc(g)}" data-id="${esc(id)}" data-name="${esc(name)}">${alert ? `Alert: ${alert.below != null ? `below $${alert.below}` : ""}${alert.below != null && alert.above != null ? " or " : ""}${alert.above != null ? `above $${alert.above}` : ""}` : "Set a price alert"}</button>`;
-  if (!ch) return `<div class="price-hist">${label ? `<p class="foot">${esc(label)}</p>` : ""}<p class="muted small">Price history starts today. Check back to see how it moves.</p>${alertBtn}</div>`;
+  if (!ch) return `<div class="price-hist">${label ? `<p class="foot">${esc(label)}</p>` : ""}<p class="muted small">No earlier dated prices are stored for this version.</p>${alertBtn}</div>`;
   const when = new Date(ch.since + "T00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
   return `<div class="price-hist">${label ? `<p class="foot">${esc(label)}</p>` : ""}<div class="row between"><span class="small muted">Since ${esc(when)}</span><b class="${ch.pct >= 0 ? "ok-text" : "bad-text"}">${ch.pct >= 0 ? "+" : "−"}${Math.abs(ch.pct).toFixed(1)}%</b></div>${sparkline(s)}${alertBtn}</div>`;
 }

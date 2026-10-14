@@ -244,7 +244,7 @@ export const ptcgSource = {
   // TCGdex can't sort by release date, so fetch every match once, order it by each
   // set's real release order, and page through it here.
   async search({ q = "", category = "", type = "", set = "", rarity = "", stage = "", hp = "", format = "", sort = "new", page = 0, size = 48 }) {
-    if (!q.trim() && !set && !type && !rarity && !stage) throw Error("Type a card name, or pick an energy type, rarity, stage or set.");
+    // Empty search browses the complete physical-card catalogue, paged below.
     const p = {},
       legal = PTCG_FORMATS.find((f) => f.id === format)?.legal;
     if (q.trim()) p.name = q.trim();

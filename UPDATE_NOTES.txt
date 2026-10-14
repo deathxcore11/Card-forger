@@ -1,3 +1,17 @@
+3.35.1 — One history graph on every card page
+- Magic, Pokémon and Yu-Gi-Oh! Overview pages now use the same dated/source-specific history component as their price panels. The old local-only “starts today” message is removed.
+- One real quote draws a single labeled point; multiple quotes draw the actual dated line. No dates or trends are fabricated. Sticky tabs use an opaque backdrop so card text does not overlap their labels.
+- TCGCSV’s archive download currently reports it was temporarily removed; older Pokémon/edition-specific history cannot be claimed from that unavailable archive. Daily catalogue observations continue; available Magic history remains separate.
+
+3.35.0 — Contained screens, complete-catalogue market ingestion and independent engine analysis
+- Card details show full card artwork without Pokémon zoom/cropping. Trade bundles have native horizontal touch scrolling; controls stay within the dialog. Deck headings and grids stay together on fold/tablet Home.
+- Set selectors use the same emblem frame. Magic uses verified set symbols instead of booster-product photos; unknown Yu-Gi-Oh! set logos use their set code rather than unrelated pack imagery. Purposeful press and arrival motion respects reduced motion.
+- Empty Pokémon search browses the full physical-card catalogue. Daily history jobs traverse complete Magic/Pokémon/Yu-Gi-Oh! provider catalogues, keeping printing/finish/source distinct. Older unavailable dates are not fabricated. A single quote displays as a quote rather than an empty graph.
+- Engine ratings no longer deduct points for missing tournament coverage or unfamiliar strategies. Generic goldfish models remain advisory and do not subtract power points. Rules-text dependency links explain support pieces and exact joint opening odds; missing data and illegality mark ratings provisional.
+- Mono-color mana must actually cast that color; overlapping interaction roles count once. Cached ratings refresh when card details change. Yu-Gi-Oh! similarity excludes Side Deck cards and Advanced results do not apply to Traditional.
+- Pokémon/Yu-Gi-Oh! Upgrade Lab reviews exact legal printings and one-copy swaps, preserves zone count, validates replacement rules, rolls back rejected swaps, and saves a restorable version. Generic staple rows do not duplicate archetype additions.
+- Verification: syntax, existing suite and new cross-game regressions. Live phone/fold visual behavior still needs device verification. The evaluator infers rules interactions; it is not a complete opposing-player rules simulation or a win-rate prediction.
+
 3.34.3 — Price fallback survives restart
 - Detailed Pokémon records await the exact-product fallback before entering the persistent cache. Concurrent requests share the in-flight lookup; completed/failed lookups can be requested again. Existing Pokémon cache records refresh automatically on Collection.
 

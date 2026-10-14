@@ -7,6 +7,7 @@ on:
     branches: [claude/edit-publish-github-bpm8zu]
     paths:
       - scripts/market-history.py
+      - scripts/market_catalogue.py
       - .github/workflows/market-history.yml
 permissions:
   contents: read
@@ -17,7 +18,11 @@ concurrency:
 jobs:
   record:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        game: [mtg, ptcg, ygo]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -26,3 +31,6 @@ jobs:
       - run: pip install ijson==3.4.0
       - name: Check public quotes and backfill new Magic printings
         run: python scripts/market-history.py
+        env:
+          HISTORY_GAME: ${{ matrix.game }}
+          HISTORY_CATALOGUE: "1"
