@@ -1,3 +1,9 @@
+3.49.1 — Real game names
+- The game chooser names each game in full: Magic: The Gathering, Yu-Gi-Oh! TCG and Pokémon TCG.
+  The header and explanations keep the short names (Magic, Yu-Gi-Oh!, Pokémon).
+- The app description, install name and About credit all three games by their real names, with
+  each publisher's trademark noted.
+
 3.49.0 — Cleaner, consistent and quicker to use
 - One icon for one action: random card and random deck use the same die in all three games
   (Magic used a d20 and Pokémon a coin, which looked like different actions).

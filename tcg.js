@@ -258,7 +258,7 @@ export function gameBinders(active = game()) {
     const v = g === "mtg" ? null : collectionValue(g),
       mtgCopies = g === "mtg" ? S.state.collection.reduce((a, e) => a + e.qty, 0) : 0,
       decks = g === "mtg" ? S.state.decks.length : gs(g).decks.length;
-    return `<button class="game-choice gc-${g}" style="--game-color:${GAME_COLOR[g]}" data-act="setGame" data-game="${g}" aria-pressed="${g===active}"><span class="game-choice-icon">${GAME_ICON[g]}</span><span><b>${esc(GAMES[g].short)}</b><small>${g === "mtg" ? mtgCopies : v.copies} cards · ${decks} decks</small></span><span class="game-choice-check" aria-hidden="true">${g===active ? ICON.check : ""}</span></button>`;
+    return `<button class="game-choice gc-${g}" style="--game-color:${GAME_COLOR[g]}" data-act="setGame" data-game="${g}" aria-pressed="${g===active}"><span class="game-choice-icon">${GAME_ICON[g]}</span><span><b>${esc(GAMES[g].name)}</b><small>${g === "mtg" ? mtgCopies : v.copies} cards · ${decks} decks</small></span><span class="game-choice-check" aria-hidden="true">${g===active ? ICON.check : ""}</span></button>`;
   }).join("")}</section>`;
 }
 
