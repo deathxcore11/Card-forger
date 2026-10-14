@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-v134";
+const CACHE = "cardforge-shell-v135";
 const ASSETS = [
   "./",
   "./index.html",
@@ -13,6 +13,8 @@ const ASSETS = [
   "./sharedprices.js",
   "./historical-archive.js",
   "./recent-history.js",
+  "./ptcg-product.js",
+  "./pokemon-art.js",
   "./deckpower.js",
   "./deckaudit.js",
   "./card-actions.js",

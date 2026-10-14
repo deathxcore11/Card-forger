@@ -1,3 +1,25 @@
+3.51.0 — Trustworthy verdicts, complete versions and price history for older Pokémon sets
+- Price history for older Pokémon sets (Parasect in BREAKthrough and many more): the exact
+  TCGplayer product was only listed with each finish's price, which the history lookup didn't
+  read, so it said "Choose an exact finish" even after you chose one. Both are read now: Parasect
+  shows a year of daily Normal and Reverse holo history. Cards whose stamped versions are separate
+  products use the plain printing as the reference. The archive finds sets named differently
+  on TCGplayer ("XY - BREAKthrough").
+- Those sets also showed "Normal" twice (one without a price); it's one Normal with its price now.
+- Deck Power won't give a confident verdict about cards it can't read. Cards without details
+  (still loading, or a name it doesn't recognise) hold the score down: any one blocks Tier 1, and the
+  bigger the unknown share, the lower the ceiling. The reason is shown under "What holds this deck
+  back". Unknown sideboard cards count too.
+- Core quantities: playing 1 copy of a card the archetype's lists play 4 of now costs in proportion
+  ("Too few copies of the deck's core: lists play 4× …, this deck has 1"), not only cutting all of them.
+- Sideboard rules: copies are added up across separate sideboard rows (3 + 3 Grizzly Bears is 6),
+  with the main deck, and restricted cards are limited to one.
+- Versions keep the sideboard. Saving, importing or restoring a version includes it, and a change to the
+  sideboard alone counts as a new version.
+- Matchups count only the games you logged with the exact list you have now (main deck and
+  sideboard). Games from an earlier version stay in "Your games", marked "earlier list", and the
+  summary says how many aren't counted.
+
 3.50.1 — Pokémon art and prices for promos and special sets
 - Cards TCGdex has no picture for (about 1,600: Shiny Vault, Black Star promos, McDonald's
   collections, Galarian and Trainer Galleries, trainer kits, My First Battle, Unown, Skyridge and

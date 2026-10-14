@@ -185,6 +185,16 @@ function reasonsFor(game, me, op, log) {
 /* ---------- your results ---------- */
 
 export const sameOpp = (a, b) => lc(a).replace(/[^a-z0-9]+/g, " ").trim() === lc(b).replace(/[^a-z0-9]+/g, " ").trim();
+// A short fingerprint of an exact list (main deck, extra/side, quantities). Each logged game keeps
+// the fingerprint of the list it was played with, so a changed deck isn't credited (or blamed)
+// for games an earlier version played. Games logged before fingerprints count as an earlier list.
+export function listSig(zones) {
+  const norm = Object.entries(zones || {}).map(([z, rows]) => z + ":" + (rows || []).map((r) => String(r.cardId ?? r.name).toLowerCase() + "×" + r.qty).sort().join(",")).sort().join("|");
+  let h = 2166136261;
+  for (let i = 0; i < norm.length; i++) h = Math.imul(h ^ norm.charCodeAt(i), 16777619);
+  return (h >>> 0).toString(36);
+}
+export const forList = (results = [], sig) => ({ current: results.filter((g) => g.sig === sig), earlier: results.filter((g) => g.sig !== sig) });
 export function recordOf(results = [], opp = null) {
   const list = opp == null ? results : results.filter((x) => sameOpp(x.opp, opp));
   const w = list.filter((x) => x.res === "W").length, l = list.filter((x) => x.res === "L").length, d = list.filter((x) => x.res === "D").length;

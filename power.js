@@ -9,7 +9,7 @@ import { legalityIn } from './formats.js';
 
 export function powerReadiness(game,deck,format,cardOf) {
  const rows=game==='mtg'?deck.cards || []:Object.entries(deck.zones || {}).flatMap(([zone,rs])=>rs.map(r=>({...r,zone})));
- const unknown=rows.filter(r=>!cardOf(game==='mtg'?r.name:r.cardId)).reduce((n,r)=>n+r.qty,0),issues=[];
+ const all=game==='mtg'?[...rows,...(deck.side||[])]:rows,unknown=all.filter(r=>!cardOf(game==='mtg'?r.name:r.cardId)).reduce((n,r)=>n+r.qty,0),total=all.reduce((n,r)=>n+r.qty,0),issues=[];
  if(game==='mtg'){
   const total=rows.reduce((n,r)=>n+r.qty,0),byName=new Map();
   if(total<format.size || (format.exact && total!==format.size))issues.push(`${total}/${format.size} cards`);
@@ -23,11 +23,12 @@ export function powerReadiness(game,deck,format,cardOf) {
   // counted with the main deck.
   const sideN=(deck.side||[]).reduce((n,r)=>n+r.qty,0);
   if(sideN>15)issues.push(`Sideboard has ${sideN} cards (limit 15)`);
-  for(const r of deck.side||[]){const c=cardOf(r.name);if(!c)continue;const k=cardKey(r.name),n=(byName.get(k)||0)+r.qty;
+  const sideBy=new Map();for(const r of deck.side||[]){const k=cardKey(r.name);sideBy.set(k,{name:r.name,qty:(sideBy.get(k)?.qty||0)+r.qty});}
+  for(const [k,r] of sideBy){const c=cardOf(r.name);if(!c)continue;const n=(byName.get(k)||0)+r.qty,limit=legalityIn(c,format)==='restricted'?1:format.copies;
    if(format.legality && c.legalities && !['legal','restricted'].includes(legalityIn(c,format)))issues.push(`${r.name} (sideboard) is not legal in ${format.name}`);
-   if(!/^Basic(?: Snow)? Land/.test(c.type_line||'')&&!/any number of cards named/i.test(c.oracle_text||'')&&n>format.copies&&(byName.get(k)||0)<=format.copies)issues.push(`${n} copies of ${c.name} across main deck and sideboard`);}
+   if(!/^Basic(?: Snow)? Land/.test(c.type_line||'')&&!/any number of cards named/i.test(c.oracle_text||'')&&n>limit&&(byName.get(k)||0)<=limit)issues.push(`${n} copies of ${c.name} across main deck and sideboard`);}
  }else issues.push(...(game==='ygo'?ygoSource:ptcgSource).validate(deck,cardOf,format).filter(x=>x.level==='bad').map(x=>x.text));
- return {unknown,issues:[...new Set(issues)],provisional:unknown>0||issues.length>0};
+ return {unknown,total,issues:[...new Set(issues)],provisional:unknown>0||issues.length>0};
 }
 const readinessLabel=p=>p.readiness?.provisional?'Provisional · resolve deck checks':p.from==='meta'?powerGrade(p.score,p.from):p.score>=85?'Strong engine estimate':p.score>=68?'Solid engine estimate':p.score>=50?'Developing engine':'Engine needs work';
 
@@ -77,13 +78,27 @@ function mtgMetaDecks(data) {
 // Eligibility comes first: a deck that isn't tournament-legal (wrong size, too many copies, banned
 // or illegal cards) can't be called competitive, however close it is to a winning list.
 const LEGAL_CAP = 55;
+// Unresolved cards (details not loaded or not found) can't be judged: any of them blocks a
+// confident verdict, and the larger the unknown share, the lower the ceiling.
+function dataCap(readiness) {
+  const u = readiness?.unknown || 0, share = u / Math.max(1, readiness?.total || 0);
+  if (!u) return null;
+  return { key: "Data", max: share >= 0.25 ? 45 : share >= 0.1 ? 60 : 74, label: "Card details not loaded", why: `${u} card${u === 1 ? "" : "s"} in this list ${u === 1 ? "has" : "have"} no card details yet (still loading, or the name isn't recognised). The score only counts what it can read, so it can't be trusted until ${u === 1 ? "it resolves" : "they resolve"}.` };
+}
 function legalGate(base, readiness) {
+  const data = dataCap(readiness);
+  if (data) base = { ...base, caps: [data, ...(base.caps || [])].sort((a, b) => a.max - b.max) };
   if (!readiness?.issues?.length) return base;
   const cap = { key: "Legal", max: LEGAL_CAP, label: "Not tournament-legal yet", why: `${readiness.issues.slice(0, 3).join("; ")}${readiness.issues.length > 3 ? `; and ${readiness.issues.length - 3} more` : ""}. Fix this before the deck can be judged against the field.` };
   return { ...base, caps: [cap, ...(base.caps || [])].sort((a, b) => a.max - b.max) };
 }
 // A close copy of a winning list that's missing that deck's core cards gets told so.
-const coreCap = (base, ctx) => (ctx?.coreMissing?.length ? { ...base, caps: [...(base.caps || []), { key: "Core", max: ctx.score, label: "Missing the deck's core", why: `Nearly every ${ctx.coreMissing.length > 1 ? "list" : "list"} of this archetype plays ${ctx.coreMissing.map((x) => `${x.qty}× ${x.name}`).join(", ")}, and this one has none. Without ${ctx.coreMissing.length > 1 ? "them" : "it"} it isn't the deck that wins those events.` }].sort((a, b) => a.max - b.max) } : base);
+const coreCap = (base, ctx) => {
+  const gone = ctx?.coreMissing || [], few = ctx?.coreShort || [];
+  if (!gone.length && !few.length) return base;
+  const parts = [...gone.map((x) => `${x.qty}× ${x.name} (this deck has none)`), ...few.map((x) => `${x.qty}× ${x.name} (this deck has ${x.have})`)];
+  return { ...base, caps: [...(base.caps || []), { key: "Core", max: ctx.score, label: gone.length ? "Missing the deck's core" : "Too few copies of the deck's core", why: `Nearly every list of this archetype plays ${parts.join(", ")}. ${gone.length ? "Without the core it isn't the deck that wins those events." : "With fewer copies you find them far less often, so the deck does its thing in fewer games."}` }].sort((a, b) => a.max - b.max) };
+};
 function capCtx(ctx, caps) {
   const max = caps?.[0]?.max;
   if (max == null || !ctx) return;

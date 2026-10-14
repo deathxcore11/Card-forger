@@ -1,3 +1,5 @@
+import {ptcgProduct,sameSubtype} from './ptcg-product.js';
+import {pickGroup} from './pokemon-art.js';
 import {ygoProductMatches} from './ygo-prices.js';
 // Public, pinned archive snapshot. Exact provider product joins; no invented daily values.
 export const ARCHIVE_COMMIT='1789c5a80de7b2b6adc287fa7a8db0970cd7b2e7';
@@ -32,18 +34,16 @@ export async function archivePriceRoute(url,ctx,fetchImpl=fetch,now=Date.now()){
    if(String(provider?.id)!==id)return empty('Card identity mismatch.');
    archiveGame=game==='ptcg'?'pokemon':'yugioh';const category=game==='ptcg'?'3':'2';let setName;
    if(game==='ptcg'){
-    let variants=(provider.variants_detailed || []).filter(v=>v.thirdParty?.tcgplayer);
-    if(finish.startsWith('detail:'))variants=variants.filter(v=>'detail:'+v.variantId===finish);
-    else if(finish!=='reference')variants=variants.filter(v=>({normal:'normal',holo:'holofoil',reverse:'reverse-holofoil'}[v.type]||v.type)===finish);
-    const products=[...new Set(variants.map(v=>Number(v.thirdParty.tcgplayer)))];
-    if(products.length!==1)return empty('Choose an exact finish to load archived prices.');
-    productId=products[0];subtype={normal:'normal',holo:'holofoil',reverse:'reverse holofoil'}[variants[0].type];setName=provider.set?.name;label=`${setName} #${provider.localId}`;
+    const hit=ptcgProduct(provider,finish);
+    if(!hit)return empty('Choose an exact finish to load archived prices.');
+    productId=hit.productId;subtype=hit.subtype.toLowerCase();setName=provider.set?.name;label=`${setName} #${provider.localId}`;
    }else{
     const versions=(provider.card_sets || []).filter(s=>s.set_code===edition && (!rarity || s.set_rarity===rarity));
     if(versions.length!==1)return empty('Choose an exact printing and rarity to load archived prices.');setName=versions[0].set_name;label=`${setName} · ${edition}`;
    }
    const [groups,joins]=await Promise.all([get(`https://tcgcsv.com/tcgplayer/${category}/groups`),get(ROOT+'/maps/groups.json')]);
-   const matches=(groups.results || []).filter(g=>norm(g.name)===norm(setName)&&joins[category]?.[String(g.groupId)]);
+   let matches=(groups.results || []).filter(g=>norm(g.name)===norm(setName)&&joins[category]?.[String(g.groupId)]);
+   if(!matches.length&&game==='ptcg'){const g=pickGroup((groups.results || []).filter(x=>joins[category]?.[String(x.groupId)]),setName);if(g)matches=[g];}
    if(matches.length!==1)return empty('No unambiguous archived set mapping for this printing.');setKey=joins[category][String(matches[0].groupId)];
    if(game==='ygo' && rarity){const currentProducts=await get(`https://tcgcsv.com/tcgplayer/2/${matches[0].groupId}/products`),hits=ygoProductMatches({code:edition,rarity},currentProducts.results || []);if(hits.length!==1)return empty('No exact rarity mapping for this archive.');productId=hits[0].productId;}
   }
@@ -56,7 +56,7 @@ export async function archivePriceRoute(url,ctx,fetchImpl=fetch,now=Date.now()){
   if(!hit||hit[1])return empty('This exact product variant has no separate archived series.');
   const record=data.cards?.[hit[0]] || {},series=[];
   for(const [sub,raw] of Object.entries(record)){
-   if(game!=='ygo'&&sub!==subtype)continue;const points=archivePoints(raw,now);if(!points.length)continue;
+   if(game==='mtg'&&sub!==subtype||game==='ptcg'&&!sameSubtype(sub,subtype))continue;const points=archivePoints(raw,now);if(!points.length)continue;
    series.push({source:`${SOURCE} · ${productId} · ${sub}`,currency:'USD',finish,archived:true,label:`${label} · ${sub}`,productId:Number(productId),archiveCommit:ARCHIVE_COMMIT,archiveUpdated:data.updated,provenance:`${ROOT}/data/${archiveGame}/${setKey}.json`,points});
   }
   const response=Response.json({game,cardId:id,finish,series,notice:series.length?'':'No dated archived quotes for this exact version.'},{headers:{'Cache-Control':'public,max-age=43200'}});

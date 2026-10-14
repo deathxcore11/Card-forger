@@ -526,6 +526,7 @@ export function snapshot(deck, label, extra = {}) {
     date: new Date().toISOString(),
     commander: deck.commander || "",
     cards: deck.cards.map((c) => ({ name: c.name, qty: c.qty })),
+    side: (deck.side || []).map((c) => ({ name: c.name, qty: c.qty })),
     ...extra,
   };
 }
@@ -533,7 +534,8 @@ export function snapshot(deck, label, extra = {}) {
 export function withSnapshot(deck, label, extra) {
   const versions = [...(deck.versions || [])],
     last = versions[versions.length - 1];
-  if (last && JSON.stringify(last.cards) === JSON.stringify(deck.cards))
+  // Sideboard changes count as a new version too (older versions without one had an empty board).
+  if (last && JSON.stringify(last.cards) === JSON.stringify(deck.cards) && JSON.stringify(last.side || []) === JSON.stringify((deck.side || []).map((c) => ({ name: c.name, qty: c.qty }))))
     return { ...deck, versions };
   versions.push(snapshot(deck, label, extra));
   return { ...deck, versions: versions.slice(-40) };

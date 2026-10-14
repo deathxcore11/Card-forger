@@ -1,5 +1,6 @@
 // Exact product histories, displayed with provider attribution. No interpolated dates.
 import {ygoProductMatches} from './ygo-prices.js';
+import {ptcgProduct,sameSubtype} from './ptcg-product.js';
 const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
 export function recentPoints(raw,now=Date.now()){
  const today=new Date(now).toISOString().slice(0,10),cutoff=new Date(now-365*864e5).toISOString().slice(0,10),days=new Map();
@@ -16,11 +17,8 @@ export async function recentHistoryRoute(url,ctx,fetchImpl=fetch,now=Date.now())
   let productId,subtype,label;
   if(game==='ptcg'){
    const c=await get('https://api.tcgdex.net/v2/en/cards/'+encodeURIComponent(id));if(c.id!==id)return empty('Printing identity mismatch.');
-   let variants=(c.variants_detailed || []).filter(v=>v.thirdParty?.tcgplayer);
-   if(finish.startsWith('detail:'))variants=variants.filter(v=>'detail:'+v.variantId===finish);
-   else if(finish!=='reference')variants=variants.filter(v=>({normal:'normal',holo:'holofoil',reverse:'reverse-holofoil'}[v.type]||v.type)===finish);
-   const products=[...new Set(variants.map(v=>Number(v.thirdParty.tcgplayer)))];if(products.length!==1)return empty('Choose an exact finish to load recent history.');
-   productId=products[0];subtype={normal:'Normal',holo:'Holofoil',reverse:'Reverse Holofoil'}[variants[0]?.type];label=`${c.set?.name} #${c.localId}`;
+   const hit=ptcgProduct(c,finish);if(!hit)return empty('Choose an exact finish to load recent history.');
+   productId=hit.productId;subtype=hit.subtype;label=`${c.set?.name} #${c.localId}`;
   }else{
    const c=(await get('https://db.ygoprodeck.com/api/v7/cardinfo.php?id='+encodeURIComponent(id))).data?.[0];if(String(c?.id)!==id)return empty('Card identity mismatch.');
    const sets=(c.card_sets || []).filter(s=>s.set_code===edition && (!rarity || norm(s.set_rarity)===norm(rarity)));if(sets.length!==1)return empty('Choose the exact set printing and rarity.');const set=sets[0];
@@ -29,7 +27,7 @@ export async function recentHistoryRoute(url,ctx,fetchImpl=fetch,now=Date.now())
   }
   const data=await get(`https://api.tickermint.cards/products/${productId}/prices`),series=[];
   for(const [sub,raw] of Object.entries(data)){
-   if(!Array.isArray(raw)||game==='ptcg'&&norm(sub)!==norm(subtype))continue;const points=recentPoints(raw,now);if(!points.length)continue;
+   if(!Array.isArray(raw)||game==='ptcg'&&!sameSubtype(sub,subtype))continue;const points=recentPoints(raw,now);if(!points.length)continue;
    series.push({source:`TCGplayer market via TickerMint · ${productId} · ${sub}`,currency:'USD',finish,label:`${label} · ${sub}`,productId:Number(productId),provenance:`https://tickermint.cards/card/${productId}`,attribution:'Prices: TickerMint',points});
   }
   const response=Response.json({game,cardId:id,finish,series,notice:series.length?'':'No recorded market history for this exact product.'},{headers:{'Cache-Control':'public,max-age=3600'}});ctx?.waitUntil?.(cache?.put(k,response.clone()));return response;

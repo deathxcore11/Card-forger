@@ -19,7 +19,7 @@ import { binderShelf } from "./binders.js";
 import { emblemChips, rowEmblem, hasEmblem, impactScore, tradeAdvice, tradeAdviceHtml, deckEmblems, deckEmblemHtml, cardMetaUsage, cardMetaTab, playRate } from "./importance.js";
 import { attackReach, abilityEnergy, ygoPower, ptcgPower } from "./deckpower.js";
 import { matchupsTab, fieldStore, computeMatchups, celebrate } from "./matchups-ui.js";
-import { profileOf, simulateMatchup, gamePlan, recordOf, blend } from "./matchup.js";
+import { profileOf, simulateMatchup, gamePlan, recordOf, blend, listSig, forList } from "./matchup.js";
 import { haptic } from "./feel.js";
 import { tileChrome } from "./tiles.js";
 // Yu-Gi-Oh! and Pokémon: collection, search, sets and deck building, sharing one
@@ -1211,9 +1211,11 @@ function deckMatchupsT(g, d, f) {
     reprofile = (rs) => profileOf(g, tPower(g, f, rs, extra), rs, extra),
     sims = computeMatchups(key + "|" + d.id + "|" + JSON.stringify(d.zones), st.field, me, (op, win) => gamePlan(g, me, op, { main, side, protect, reprofile, sim: win }), (a, b) => simulateMatchup(g, a, b)),
     results = d.results || [],
-    field = sims.map((m) => { const rec = recordOf(results, m.name); return { ...m, rec, shown: blend(m.sim.win, rec), open: st.openName === m.name }; }),
+    sig = listSig(d.zones),
+    { current, earlier } = forList(results, sig),
+    field = sims.map((m) => { const rec = recordOf(current, m.name); return { ...m, rec, shown: blend(m.sim.win, rec), open: st.openName === m.name }; }),
     tot = field.reduce((a, m) => a + (m.share || 0), 0) || 1;
-  return matchupsTab({ ...base, field, fieldWin: field.reduce((a, m) => a + m.shown * (m.share || 0), 0) / tot, record: recordOf(results), history: [...results].sort((a, b) => String(b.at).localeCompare(String(a.at))) });
+  return matchupsTab({ ...base, field, sig, earlier: earlier.length, fieldWin: field.reduce((a, m) => a + m.shown * (m.share || 0), 0) / tot, record: recordOf(current), history: [...results].sort((a, b) => String(b.at).localeCompare(String(a.at))) });
 }
 
 function deckInsights(g, d, f, s) {
@@ -2374,7 +2376,7 @@ export function registerTcg(c) {
     if (!opp) return;
     st.openName = t.dataset.opp || null;
     if (t.dataset.res === "W") { haptic("success"); celebrate(t); }
-    const game = { at: new Date().toISOString(), opp, res: t.dataset.res, first: st.first !== false };
+    const game = { at: new Date().toISOString(), opp, res: t.dataset.res, first: st.first !== false, sig: listSig(d.zones) };
     await mutate((s2) => { const x = s2.decks.find((y) => y.id === d.id); (x.results ||= []).push(game); }, { msg: `${game.res === "W" ? "Win" : game.res === "L" ? "Loss" : "Draw"} vs ${opp} logged.` });
   };
   A.tMuUndo = async (t) => {

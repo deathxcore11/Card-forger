@@ -1,6 +1,6 @@
 import { APP_VERSION } from "./config.js";
 import { matchupsTab, fieldStore, computeMatchups } from "./matchups-ui.js";
-import { profileOf, simulateMatchup, gamePlan, recordOf, blend } from "./matchup.js";
+import { profileOf, simulateMatchup, gamePlan, recordOf, blend, listSig, forList } from "./matchup.js";
 import { mtgConstructedPower } from "./deckpower.js";
 import { isCommanderLike } from "./formats.js";
 import { mtgMetaKey } from "./power.js";
@@ -1201,12 +1201,15 @@ function deckMatchups(d) {
   if (!me) return matchupsTab({ ...base, unsupported: "This deck's cards are still loading. Open the Power tab once, then come back." });
   const sims = computeMatchups(fkey + "|" + JSON.stringify([d.cards, d.side || []]), st.field, me, (op, win) => gamePlan("mtg", me, op, { main: rows, side, reprofile, sim: win }), (a, b) => simulateMatchup("mtg", a, b)),
     results = d.results || [];
-  return matchupsTab({ ...base, ...fieldSummary(sims, results, st) });
+  return matchupsTab({ ...base, ...fieldSummary(sims, results, st, mtgListSig(d)) });
 }
-export function fieldSummary(sims, results, st) {
-  const field = sims.map((m) => { const rec = recordOf(results, m.name); return { ...m, rec, shown: blend(m.sim.win, rec), open: st.openName === m.name }; }),
+export const mtgListSig = (d) => listSig({ main: d.cards, side: d.side || [] });
+// Only games played with this exact list feed the numbers; earlier lists stay in the history.
+export function fieldSummary(sims, results, st, sig) {
+  const { current, earlier } = forList(results, sig),
+    field = sims.map((m) => { const rec = recordOf(current, m.name); return { ...m, rec, shown: blend(m.sim.win, rec), open: st.openName === m.name }; }),
     tot = field.reduce((a, m) => a + (m.share || 0), 0) || 1;
-  return { field, fieldWin: field.reduce((a, m) => a + m.shown * (m.share || 0), 0) / tot, record: recordOf(results), history: [...results].sort((a, b) => String(b.at).localeCompare(String(a.at))) };
+  return { field, sig, earlier: earlier.length, fieldWin: field.reduce((a, m) => a + m.shown * (m.share || 0), 0) / tot, record: recordOf(current), history: [...results].sort((a, b) => String(b.at).localeCompare(String(a.at))) };
 }
 
 // The sideboard: up to 15 cards swapped in between games. Not part of the main-deck count,

@@ -1280,7 +1280,7 @@ A.muFirst = (t) => { const d = currentDeck(); muState(d).first = t.dataset.v !==
 async function logGame(t, save) {
   const opp = t.dataset.opp || $("#" + t.dataset.act.replace(/Log$/, "") + "OtherName")?.value.trim();
   if (!opp) { toast("Type their deck first."); return null; }
-  return { at: new Date().toISOString(), opp, res: t.dataset.res, first: save.first !== false };
+  return { at: new Date().toISOString(), opp, res: t.dataset.res, first: save.first !== false, sig: V.mtgListSig(currentDeck()) };
 }
 A.muLog = async (t) => {
   const d = currentDeck(), st = muState(d), g = await logGame(t, st);
@@ -3797,7 +3797,7 @@ A.restoreVer = async (t) => {
   const d = currentDeck(),
     v = (d.versions || []).find((x) => x.id === t.dataset.id);
   if (!v || !confirm(`Restore “${v.label}”? Your current list is saved as a version first.`)) return;
-  await editDeck((x) => ({ ...withSnapshot(x, "Before restoring " + v.label), cards: structuredClone(v.cards) }), { msg: "Version restored." });
+  await editDeck((x) => ({ ...withSnapshot(x, "Before restoring " + v.label), cards: structuredClone(v.cards), ...(v.side ? { side: structuredClone(v.side) } : {}) }), { msg: "Version restored." });
 };
 A.deleteVer = async (t) => {
   if (!confirm("Delete this saved version?")) return;
