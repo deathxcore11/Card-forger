@@ -1,3 +1,9 @@
+3.46.2 — Build decks shows the same score your saved deck will
+- Deck versions in Build decks showed the Engine score (how well the list is built for its own
+  plan), while the saved deck showed Competitive (how it stacks up against what's winning). Now
+  each version shows the same number the deck tile will, labelled "comp." when it's Competitive,
+  with the Engine score next to it. Applies to all three games.
+
 3.46.1 — Correct version in Settings
 - Settings showed "Version 3.39.1" because the number was typed into the page. It now reads the
   app's real version, and a check stops it falling behind again.

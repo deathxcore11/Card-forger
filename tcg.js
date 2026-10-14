@@ -34,7 +34,7 @@ import { buildYgo, buildPtcg, YGO_STAPLES, PTCG_STAPLES, PTCG_SUPPORT_BASICS, en
 import { ygoSource, ygoImageDirect, YGO_TYPES, YGO_ATTRIBUTES, YGO_RACES, YGO_SPELL_KINDS, YGO_TRAP_KINDS } from "./ygo.js";
 import { ptcgSource, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES, plainText } from "./ptcg.js";
 import { loadMeta, metaState, ptcgIcon, allCachedMeta, cleanName } from "./meta.js";
-import { tcgPower, powerPanel, powerChip, shownPower } from "./power.js";
+import { tcgPower, powerPanel, powerChip, shownPower, asShown } from "./power.js";
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
 import { rankPairs, ygoTags, ptcgTags } from "./pairing.js";
 import { nameCandidates, scanCandidateMatches, ygoSetCodes, ygoPasscodes, ptcgNumbers, similarity, scanNameKey, textPhrases, attackNames } from "./scan.js";
@@ -1437,7 +1437,7 @@ export function tcgBuildSheet() {
       title: `${t.total < t.size ? `Draft — ${t.size - t.total} slot${t.size - t.total === 1 ? "" : "s"} open · ` : ""}${t.meta ? `🏆 ${esc(t.label)}` : esc(tierName(t))}`,
       format: f.name,
       legal: issues.length ? { ok: false, text: issues.length + " to fix" } : { ok: true, text: "Legal" },
-      cost: t.cost, unknown: t.unknown, difficulty: t.difficulty, power: t.power,
+      cost: t.cost, unknown: t.unknown, difficulty: t.difficulty, power: t.power, powerKind: t.powerKind, engine: t.engine,
       sizeText: zoneCountLabel(g, t.total, f), extraText: g === "ygo" ? `${(t.zones.extra || []).reduce((a, r) => a + r.qty, 0)} extra` : "",
       owned: all.length ? owned / all.reduce((a, r) => a + r.qty, 0) : 0,
       evidence: t.proven ? `Tournament candidate · ${t.label}` : "", warnings: t.warnings.filter((w) => !/slots? still open/.test(w)),
@@ -2641,7 +2641,7 @@ export function registerTcg(c) {
           }
         }
       }
-      results = variantsFrom(budgetNotes(results, budgets), budgets, (d) => difficultyOf((d.zones?.main || []).map((r) => { const card = cardOf(G, r.cardId); return { qty: r.qty, text: !card || card.basicEnergy ? null : card.text || card.effect || "" }; })));
+      results = variantsFrom(budgetNotes(results.map((t) => t && asShown(t)), budgets), budgets, (d) => difficultyOf((d.zones?.main || []).map((r) => { const card = cardOf(G, r.cardId); return { qty: r.qty, text: !card || card.basicEnergy ? null : card.text || card.effect || "" }; })));
       B.evidence += ` Compared ${candidates.length} candidates with Power, legality, engine readiness and your purchase cost. Higher budgets retain the best affordable lower-budget candidate.`;
       B.results[B.format] = results;
       B.msg = `${results.length} budget versions · ${proven.filter(x=>x.proven).length} complete tournament candidates evaluated.`;

@@ -289,3 +289,12 @@ export function powerPanel(p, { loadAct = "", findAct = "", cardAct = () => "" }
 // The one Deck Power number shown everywhere (tiles, deck headers, builder): Competitive when the
 // field is known, otherwise the engine estimate. The Power tab shows both.
 export const shownPower = (p) => competitiveScore(p) ?? p?.score;
+
+// Builder versions show the same number the saved deck will: Competitive when the field is known,
+// else Engine. The Engine score stays alongside so the two never look like a mismatch.
+export const asShown = (t) => {
+  if (!t?.assessment) return t;
+  const kind = competitiveScore(t.assessment) != null ? "comp" : "power",
+    next = t.nextUpgrade?.assessment ? { ...t.nextUpgrade, power: shownPower(t.nextUpgrade.assessment) } : t.nextUpgrade;
+  return { ...t, power: shownPower(t.assessment), engine: t.assessment.heuristic ?? t.assessment.score, powerKind: kind, nextUpgrade: next };
+};

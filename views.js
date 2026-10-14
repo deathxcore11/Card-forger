@@ -544,7 +544,7 @@ function tierCard(t, i, mode, tierList = null) {
     title: `${t.total < t.size ? `Draft — ${t.size - t.total} slot${t.size - t.total === 1 ? "" : "s"} open · ` : ""}${esc(tierLabel(t))}`,
     format: t.format,
     legal: t.total < t.size ? { ok: false, text: "Incomplete" } : { ok: true, text: "Legal" },
-    cost: t.cost, unknown: t.unknown, difficulty: t.difficulty, power: t.power ?? p.score,
+    cost: t.cost, unknown: t.unknown, difficulty: t.difficulty, power: t.power ?? shownPower(p), powerKind: t.powerKind, engine: t.engine,
     sizeText: `${t.total}/${t.size} cards`, owned: t.total ? t.owned / t.total : 0,
     evidence: t.proven ? `Tournament candidate · ${t.label}` : "", warnings: t.warnings.filter((w) => !/slots? still open/.test(w)),
     notes: budgetComparisonHtml(t, i, "tierAlternative") + (tierList ? draftPath(tierList, i, tierLabel) : ""),
