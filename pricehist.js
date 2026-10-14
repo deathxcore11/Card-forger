@@ -41,7 +41,7 @@ export function trackedQuote(game, card) {
   } else if (game === "ptcg") {
     const variants = card.variants || [];
     const v = variants.find(v => v.key === "normal" && Number(v.usd ?? v.market) > 0) || variants.find(v => Number(v.usd ?? v.market) > 0);
-    if (v) { finish = v.key; value = v.usd ?? v.market; source = v.fallback ? "TCGplayer / Pokémon TCG API" : "TCGplayer / TCGdex"; }
+    if (v) { finish = v.key; value = v.usd ?? v.market; source = v.productFallback ? "TCGplayer market via TCGCSV" : v.fallback ? "TCGplayer / Pokémon TCG API" : "TCGplayer / TCGdex"; }
   }
   return { id: [card.id,finish,source,"USD"].join("|"), finish, source, value, label: `${finish} · ${source} · USD` };
 }
@@ -144,9 +144,9 @@ export function alertSheet(g, id, name, price) {
   const a = alertFor(g, id);
   return `<div class="sheet-head"><h2>Price alert</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   <p class="muted small">${esc(name)}${price != null ? ` is $${Number(price).toFixed(2)} now` : ""}. You'll get a message when the price crosses your number, when this exact quote is checked while the app is open. Alerts do not monitor prices in the background.</p>
-  <label class="field">Tell me when it drops below<input id="alertBelow" type="number" inputmode="decimal" min="0" step="0.01" value="${a?.below ?? ""}" placeholder="${price != null ? (price * 0.85).toFixed(2) : "e.g. 5.00"}"></label>
-  <label class="field">or rises above<input id="alertAbove" type="number" inputmode="decimal" min="0" step="0.01" value="${a?.above ?? ""}" placeholder="${price != null ? (price * 1.25).toFixed(2) : "e.g. 20.00"}"></label>
-  <div class="actions wrap"><button class="btn" data-act="priceAlertSave" data-game="${esc(g)}" data-id="${esc(id)}" data-name="${esc(name)}">Save alert</button>${a ? `<button class="btn ghost" data-act="priceAlertClear" data-game="${esc(g)}" data-id="${esc(id)}">Remove alert</button>` : ""}</div>`;
+  <label class="field">Tell me when it drops below<input id="alertBelow" type="number" inputmode="decimal" min="0" step="0.01" value="${a?.below ?? (a ? "" : price != null ? (price*.85).toFixed(2) : "")}" placeholder="${price != null ? (price * 0.85).toFixed(2) : "e.g. 5.00"}"></label>
+  <label class="field">or rises above<input id="alertAbove" type="number" inputmode="decimal" min="0" step="0.01" value="${a?.above ?? (a ? "" : price != null ? (price*1.25).toFixed(2) : "")}" placeholder="${price != null ? (price * 1.25).toFixed(2) : "e.g. 20.00"}"></label>
+  <p id="priceAlertError" class="error" role="alert" aria-live="polite"></p><div class="actions wrap"><button class="btn" data-act="priceAlertSave" data-game="${esc(g)}" data-id="${esc(id)}" data-name="${esc(name)}">Save alert</button>${a ? `<button class="btn ghost" data-act="priceAlertClear" data-game="${esc(g)}" data-id="${esc(id)}">Remove alert</button>` : ""}</div>`;
 }
 export function alertsPanel(g) {
   const list = alerts().filter((a) => a.game === g);
@@ -162,3 +162,5 @@ export function alertsPanel(g) {
 export const _reset = () => {
   hist = null;
 };
+
+export function alertStatus(g,id,name='This card'){const a=alertFor(g,id);if(!a)return '';return `<button class="watch-status" data-act="priceAlert" data-game="${esc(g)}" data-id="${esc(id)}" data-name="${esc(name)}"><b>Price alert active</b><small>${a.below!=null?'Below $'+a.below.toFixed(2):''}${a.below!=null&&a.above!=null?' · ':''}${a.above!=null?'Above $'+a.above.toFixed(2):''} · edit</small></button>`;}

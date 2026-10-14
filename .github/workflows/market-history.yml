@@ -1,0 +1,28 @@
+name: Daily market history
+on:
+  schedule:
+    - cron: '37 6 * * *'
+  workflow_dispatch:
+  push:
+    branches: [claude/edit-publish-github-bpm8zu]
+    paths:
+      - scripts/market-history.py
+      - .github/workflows/market-history.yml
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: market-history
+  cancel-in-progress: false
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install ijson==3.4.0
+      - name: Check public quotes and backfill new Magic printings
+        run: python scripts/market-history.py

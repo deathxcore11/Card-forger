@@ -86,6 +86,10 @@ export function rampKind(c) {
 
 export function synergyTest(commander) {
   if (!commander) return null;
+  if(/tap a nonland permanent for mana/i.test(rulesText(commander))) return {
+    label:'Nonland mana engine',
+    test:c=>!!c&&!isLand(c)&&cardKey(c.name)!==cardKey(commander.name)&&(/(?:add \{|add (?:one|two|three|an amount)|untap (?:target|this)|activated abilities)/i.test(rulesText(c)) || /non-human creature/i.test(rulesText(c)))
+  };
   const theme = commanderTheme(commander),
     tribe = theme.tribe
       ? new RegExp("\\b" + theme.tribe + "s?\\b", "i")

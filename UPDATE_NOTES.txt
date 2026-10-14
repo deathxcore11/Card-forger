@@ -1,3 +1,10 @@
+3.34.0 — Selection stability, cEDH evidence, exact product prices and trade intent
+- Selection updates only the checked card and action tray. Big card bodies toggle selection; decorative tiers ignore touch. Gallery selection marks stay above effects. Tier loops and card nodes survive selection changes.
+- Commander now matches EDH tournament lists, including commanders. Competitive evidence and build-health heuristics are labelled separately; generic Commander role cautions do not override a matched winner. Kinnan's nonland mana engine is recognised instead of labelling it Humans tribal.
+- Pokémon missing-price fallback checks exact TCGplayer product IDs and finishes via the daily TCGCSV feed. Celebrations Classic Collection Charizard CC002 maps to product 250320, keeping market and Direct asking prices separate.
+- Shared history is enabled through the deployed Supabase market function without putting a server key in the browser. The nightly trusted importer backfills new Magic printings from MTGJSON (up to 90 days, not an invented year) and records real daily quotes for all three games. Sources and finishes remain separate.
+- Trade adds deck needs, wanted cards and hybrid bundles of up to four copies, a value-window selector and a 75% vendor-credit assumption. It uses locally cached prices and does not reserve or remove inventory.
+
 3.33.5 — One card design on search, set and shared-deck pages
 - Search results, set checklists and shared decks now use the same card design as your
   collection, in all three games and all three views: big cards get the animated tier frame,

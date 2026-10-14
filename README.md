@@ -152,3 +152,16 @@ Card data and images © Wizards of the Coast, provided by Scryfall. Cardforge is
 ## 3.9 safeguards and browsing
 
 Magic completion respects its target, rejects known illegal/nonfunctional retained cards, and offers reviewed cuts for oversized lists without treating every >60 list as illegal. Completed non-Commander decks can preview conservative same-role spell swaps; each applies one copy in and one out, with a saved version. Scores measure heuristic build health, including an aggro lens, rather than win rate. Pokémon card-name lookups use the persistent catalog first and deduplicate in-flight requests; six workers keep source load bounded. Set pages progressively load more cards near the viewport, retaining an accessible button fallback.
+
+### Shared market history (3.34)
+The deployed Supabase `market-history` function stores public quotes separately from inventory.
+Browser callers can request a printing and finish, but cannot submit prices. The nightly
+`.github/workflows/market-history.yml` importer uses short-lived GitHub OIDC tokens restricted
+to this repository, production branch and workflow; no server credential is stored in GitHub
+or browser code. It runs at 06:37 UTC and records recently viewed cards (90-day active window,
+3,000-series registration limit). Unavailable feeds preserve existing data.
+New Magic printings can receive up to 90 days of MTGJSON backfill. Historical and current
+providers remain distinct selectable datasets. Six-month and one-year ranges show available
+observations only; they do not manufacture a full year. Pokémon exact-product fallback reads
+TCGCSV market prices and keeps asking prices separate. The previous Cloudflare price feed
+remains available for deployments configured with its server secret.

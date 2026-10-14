@@ -1,7 +1,7 @@
 import { hapticsOn } from "./feel.js";
 import { tradePanel } from "./trade.js";
 import { skeletonGrid } from "./ui.js";
-import { trackedQuote, priceHistoryHtml, alertsPanel } from "./pricehist.js";
+import { trackedQuote, priceHistoryHtml, alertsPanel, alertStatus } from "./pricehist.js";
 import { installNudge } from "./install.js";
 import {setRowContent} from './set-list-ui.js';
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
@@ -327,7 +327,7 @@ export function cardSheet(c, ctx = {}) {
   const overview = `
     <div class="cs-card">
       <div class="cd-img"><button class="cd-zoom" data-act="zoomCard" data-src="${esc(image || "")}" data-hi="${esc(imgFaces?.length > 1 ? imgFaces[face]?.image_uris?.png || "" : shown.image_uris?.png || "")}" data-art="${esc(heroArt || "")}" data-name="${esc(name)}" aria-label="Enlarge ${esc(name)}">${img(image, name, "card-img")}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button>${imgFaces?.length > 1 ? `<button class="btn ghost small block" data-act="flipFace">↻ Flip to ${esc(imgFaces[face ? 0 : 1].name)}</button>` : ""}</div>
-      <div class="cs-card-side">
+      <div class="cs-card-side">${alertStatus("mtg",trackedQuote("mtg",shown)?.id,name)}
         <p class="small own-line">${i.owned ? `<b class="ok-text">You own ${i.owned}</b> · ${i.available} free${i.reserved ? ` · ${i.reserved} reserved` : ""}` : "Not in your collection"}${inDecks.length ? ` · in ${inDecks.map((d) => esc(d.name)).join(", ")}` : ""}</p>
         <div class="chips">${roles.map((r) => `<span class="chip role-${r.toLowerCase()}">${r}</span>`).join("")}${c.edhrec_rank ? `<span class="chip">EDHREC #${Number(c.edhrec_rank).toLocaleString()}</span>` : ""}${c.reserved ? `<span class="chip">Reserved List</span>` : ""}${c.game_changer ? `<span class="chip warn">Game Changer</span>` : ""}</div>
         ${deck ? deckLegalLine(c, deck) : ""}
@@ -395,13 +395,13 @@ export function cardSheet(c, ctx = {}) {
   ${cardPanel("guide", tab, mtgCardGuide(c))}
   ${cardPanel("versions", tab, `<section class="prints">${prints ? printList(prints, shown, name, chosen) : `<p class="muted small">Loading every printing…</p>`}</section>`)}
   ${cardPanel("prices", tab, pricesTab)}
-  ${tab === "trade" ? cardPanel("trade", tab, mtgTradePanel(name, shown)) : ""}
+  ${tab === "trade" ? cardPanel("trade", tab, mtgTradePanel(name, shown, ctx)) : ""}
   ${cardPanel("rulings", tab, rulings)}
   ${cardPanel("legal", tab, legality)}`;
 }
 
 // Trade tab: fair swaps from your collection and wishlist (trade.js).
-function mtgTradePanel(name, shown) {
+function mtgTradePanel(name, shown, ctx={}) {
   const st = S.state,
     byName = new Map();
   for (const e of st.collection) {
@@ -414,7 +414,11 @@ function mtgTradePanel(name, shown) {
   }
   const wish = st.wishlist.map((w) => ({ key: key(w.name), name: w.name, price: priceOf(w.name), art: img(cardImage(meta(w.name)), w.name, "mini-art"), open: `data-act="card" data-name="${esc(w.name)}"` }));
   const p = Number(priceOfFinish(shown, "nonfoil")) || priceOf(name);
-  return tradePanel({ key: key(name), name, price: p > 0 ? p : null, owned: inv(name).owned > 0 }, [...byName.values()], wish);
+  const needMap=new Map();for(const d of st.decks)for(const r of aggregateCards(d.cards)){
+   const k=key(r.name),qty=Math.max(0,r.qty-inv(r.name).available);if(!qty||k===key(name))continue;
+   const old=needMap.get(k),card=meta(r.name);needMap.set(k,{key:k,name:r.name,price:priceOf(r.name),qty:Math.max(qty,old?.qty||0),priority:engineRoles(card).some(x=>['Ramp','Draw','Synergy'].includes(x))?3:2,deckName:d.name,art:img(cardImage(card),r.name,'mini-art'),open:`data-act="card" data-name="${esc(r.name)}"`});
+  }
+  return tradePanel({ key: key(name), name, price: p > 0 ? p : null, owned: inv(name).owned > 0 }, [...byName.values()], wish, {...ctx.tradeOptions,needs:[...needMap.values()]});
 }
 
 const allPrices = (prints) => prints.flatMap((p) => ["nonfoil", "foil", "etched"].map((f) => Number(priceOfFinish(p, f))).filter((x) => x > 0));
@@ -1662,7 +1666,7 @@ export function settings() {
   <details class="settings-disclosure settings-danger"><summary>Start over or load examples</summary><p class="foot">Export a backup first. One recovery copy is kept on this device.</p><div class="actions wrap"><button class="btn ghost danger" data-act="reset">Start empty</button><button class="btn ghost" data-act="loadExample">Load example data</button></div></details></div>
   <div id="settings-app" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-app" ${tab === "app" ? "" : "hidden"}><section class="panel settings-card"><div class="settings-card-heading"><div><p class="eyebrow">APPEARANCE</p><h2>Glass &amp; art backdrop</h2></div></div><label class="check"><input type="checkbox" data-change="setGlass" ${(() => { try { return localStorage.getItem("cardstashy-glass") !== "off"; } catch { return true; } })() ? "checked" : ""}> Frosted glass panels over a blurred copy of the game's featured art</label><p class="foot">Turn it off for plain solid panels (a little lighter on older phones).</p><label class="check"><input type="checkbox" data-change="setHaptics" ${hapticsOn() ? "checked" : ""}> Vibration when you tap, add or remove cards</label><p class="foot">On iPhone this uses the system tap (iOS 18 or later). Animations follow your phone’s “Reduce motion” setting.</p></section><section class="panel settings-card"><div class="settings-card-heading"><span class="settings-icon" aria-hidden="true">＋</span><div><p class="eyebrow">TAKE IT WITH YOU</p><h2>Install CardStashy</h2></div></div><p class="muted small">Open it from your home screen. Saved collections and decks work offline.</p><button class="btn" data-act="install">Install app</button><details class="settings-disclosure"><summary>Android installation help</summary><p class="foot">In Chrome, open ⋮ → Add to Home screen or Install app. Searches and updated prices need internet.</p></details></section>
   <details class="settings-disclosure settings-source"><summary>Card databases & prices</summary><ul class="sources"><li><b>Magic:</b> Scryfall card data, images and reference prices; MTGJSON precon lists.</li><li><b>Pokémon:</b> TCGdex card data and images, with supplied TCGplayer and Cardmarket prices.</li><li><b>Yu-Gi-Oh!:</b> YGOPRODeck card data, alternate art, printings and reference prices.</li><li><b>Imports:</b> Supported text and CSV exports from deck and collection tools.</li></ul><p class="foot">Prices are estimates; check edition, condition and shipping with the seller.</p></details>
-  <details class="settings-disclosure settings-source"><summary>About CardStashy</summary><p class="foot">Scores and test games are estimates, not win rates. CardStashy is an independent fan app; cards and art belong to their owners.</p><span class="settings-version">Version 3.29.0</span></details></div></div>`;
+  <details class="settings-disclosure settings-source"><summary>About CardStashy</summary><p class="foot">Scores and test games are estimates, not win rates. CardStashy is an independent fan app; cards and art belong to their owners.</p><span class="settings-version">Version 3.34.0</span></details></div></div>`;
 }
 
 /* ---------- Deck idea sheet ---------- */

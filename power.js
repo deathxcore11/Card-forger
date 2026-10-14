@@ -1,3 +1,4 @@
+import {strategicRisk,riskPanel} from "./strategy-risk.js";
 // Connects Deck Power (deckpower.js) to the app: picks the right lens for each game and
 // format, matches the list against cached tournament results, and renders the panel/badges.
 import { S } from "./store.js";
@@ -25,13 +26,13 @@ const BASICS = /^(?:snow-covered )?(?:plains|island|swamp|mountain|forest|wastes
 
 export const mtgMetaKey = (d) => {
   const name = formatOf(d).name;
-  return MTG_META_FORMATS.some(([k]) => k === name) && !isCommanderLike(d) ? "mtg:" + name : null;
+  return name === "Commander" ? "mtg:EDH" : MTG_META_FORMATS.some(([k]) => k === name) && !isCommanderLike(d) ? "mtg:" + name : null;
 };
 
 function mtgMetaDecks(data) {
   return (data?.decks || []).map((d) => {
     const rows = new Map(), labels = new Map();
-    for (const r of d.main || []) {
+    for (const r of [...(d.main || []), ...(d.commanders || []).map(r=>typeof r === "string"?{name:r,qty:1}:r)]) {
       if (BASICS.test(r.name)) continue;
       const k = cardKey(r.name);
       rows.set(k, (rows.get(k) || 0) + r.qty);
@@ -62,7 +63,7 @@ export function mtgPower(d) {
       base = {
         score: p.score,
         parts: p.parts.map((x) => ({ ...x, fix: ["Ramp", "Draw", "Removal", "Wipe", "Protection", "Synergy"].includes(x.key) ? x.key : "", why: why[x.key] || (x.key === "Synergy" ? `${x.count} cards support your commander's plan; about ${x.target} makes it come together.` : ""), cards: (p.byRole?.[x.key] || []).map((name) => ({ name, qty: 1 })) })),
-        plan: p.archetype,
+        plan: /kinnan, bonder prodigy/i.test(d.commander || "") ? "Nonland mana engine · activated-ability combo" : p.archetype,
         lens: "Commander lens: lands, ramp, draw, answers, synergy with your commander and curve.",
         unknown: p.unknown,
         sims: hands.sims,
@@ -79,10 +80,11 @@ export function mtgPower(d) {
       match = metaMatch(mine, decks, M.data.archetypes || []);
       if (match) match.extra = match.extra.map((x) => ({ ...x, name: d.cards.find((c) => cardKey(c.name) === x.key)?.name || x.key }));
       ctx = metaContext({ build: base.score, mine, decks, match, loaded: true, archetypes: (M.data.archetypes || []).map((a) => ({ name: a.name, share: a.share })) });
-      ctx.unplayed = ctx.unplayed.map((x) => ({ ...x, name: d.cards.find((c) => cardKey(c.name) === x.key)?.name || x.key }));
+      if(isCommanderLike(d) && (!match || match.sim<.35)) ctx={...ctx,score:base.score,from:'commander'};
+      ctx.unplayed = (ctx.unplayed || []).map((x) => ({ ...x, name: d.cards.find((c) => cardKey(c.name) === x.key)?.name || x.key }));
     } else if (isCommanderLike(d)) ctx = { score: base.score, from: "commander" };
     else ctx = metaContext({ build: base.score, mine, loaded: !!M?.data, formatOk: !!mk });
-    return { ...base, heuristic: base.score, score: ctx.score, from: ctx.from, ctx, match, metaKey: mk, metaLoaded: !!M?.data, metaBusy: !!M?.busy, game: "mtg", formatName: formatOf(d).name };
+    return { ...base, strategicRisk:strategicRisk("mtg",d.cards.map(r=>({...r,c:S.catalog[cardKey(r.name)]})),M?.data?.decks || [],r=>S.catalog[cardKey(r.name)]), heuristic: base.score, score: ctx.score, from: ctx.from, ctx, match, metaKey: mk, metaLoaded: !!M?.data, metaBusy: !!M?.busy, game: "mtg", formatName: formatOf(d).name };
   });
 }
 
@@ -144,7 +146,7 @@ export function tcgPower(g, d, f, cardOf) {
       upgrades = archetypeUpgrades(mineMap, metaDecks.filter((x) => (x.archetype || x.name) === arch));
       upgrades.cuts = upgrades.cuts.map((x) => ({ ...x, name: match.extra.find((e) => e.key === x.key)?.name || (g === "ygo" ? cardOf(x.key)?.name : x.key) || x.key }));
     }
-    return { ...base, heuristic: base.score, score: ctx.score, from: ctx.from, ctx, match, upgrades, metaKey: formatOk ? g : null, metaLoaded: !!data, metaBusy: !!M?.busy, game: g, formatName: f?.name || d.format };
+    return { ...base, strategicRisk:strategicRisk(g,rows,(data?.decks || []).map(d=>g==='ygo'?{...d,main:[...(d.main || []),...(d.extra || [])].map(id=>({cardId:String(id),name:cardOf(String(id))?.name,qty:1}))}:d),r=>g==='ygo'?cardOf(r.cardId):rows.find(x=>x.c?.name===r.name)?.c), heuristic: base.score, score: ctx.score, from: ctx.from, ctx, match, upgrades, metaKey: formatOk ? g : null, metaLoaded: !!data, metaBusy: !!M?.busy, game: g, formatName: f?.name || d.format };
   });
 }
 
@@ -197,7 +199,7 @@ export function powerPanel(p, { loadAct = "", findAct = "", cardAct = () => "" }
     pts = (x) => (Math.round(x * 10) / 10).toFixed(1).replace(/\.0$/, ""),
     pctx = (x) => Math.round(x * 100) + "%",
     cardList = (x) => (x.cards?.length ? `<p class="pw-cards">${x.cards.map((c) => `<button class="link small" ${cardAct(c)}>${esc(c.name)}${c.qty > 1 ? ` ×${c.qty}` : ""}</button>`).join(", ")}</p>` : ""),
-    top = R.weak[0];
+    top = p.from === "meta" && isCommanderLike({format:p.formatName}) ? null : R.weak[0];
   const weak = R.weak.length
     ? R.weak
         .map((x) => `<div class="pw-issue ${x.lost >= 6 ? "major" : x.lost >= 3 ? "mid" : ""}"><div class="pw-issue-top"><b>${esc(x.label)}</b><span class="pw-lost">−${pts(x.lost)} pts</span></div><p>${esc(x.why || x.hint)}</p><p class="pw-have muted small">Now <b>${esc(String(x.count))}</b> · aim for <b>${esc(String(x.target))}</b></p>${cardList(x)}${x.fix && findAct && x.fix.length < 14 ? `<button class="btn ghost small" ${findAct(x)}>Find ${esc(x.fix.toLowerCase())} cards</button>` : x.fix && x.fix.length >= 14 ? `<p class="pw-fix small">${esc(x.fix)}</p>` : ""}</div>`)
@@ -222,14 +224,15 @@ export function powerPanel(p, { loadAct = "", findAct = "", cardAct = () => "" }
       <div class="pw-gmetrics">${g.metrics.map((m) => { const v = m.pct ? pc(m.value) : m.value.toFixed(1), ok = m.bad ? m.value <= m.good : m.value >= m.good; return `<span class="${ok ? "ok" : "bad"}"><b>${v}</b>${esc(m.label)}${m.note ? `<small> ${esc(m.note)}</small>` : ""}</span>`; }).join("")}</div>
       <div class="pw-plan"><p><b>How it wins</b>${esc(g.winCon)}</p><p><b>Late game</b>${esc(g.endgame)}</p></div>
       ${g.samples.map((x, i) => `<details class="pw-sample" ${i === 0 ? "open" : ""}><summary>${esc(x.title)}</summary>${x.hand ? `<p class="pw-hand">${x.hand.map((n) => `<span>${esc(n)}</span>`).join("")}</p>` : ""}<ol>${x.log.map((l) => `<li><b>${g.game === "ygo" ? "" : "T" + l.t}</b>${esc(l.text)}${l.total != null && l.total ? `<small> · ${l.total} total</small>` : ""}</li>`).join("")}</ol></details>`).join("")}
-      <p class="foot">Solitaire test of this exact list with each game's turn rules. It shows raw speed and consistency; real games add your opponent's interaction.</p></section>`
+      <p class="foot">Solitaire approximation: generic plays and combat, without an opponent. It does not resolve every card ability, stack interaction or infinite combo, so it is not a cEDH win-turn forecast.</p></section>`
       : "";
   const profile = p.profile?.length ? `<div class="pw-profile">${p.profile.map(([k, v]) => `<span><b>${esc(String(v))}</b>${esc(k)}</span>`).join("")}</div>` : "";
-  return `<section class="panel score-panel power">${ring(p.score)}<div><p class="eyebrow">Deck Power</p><h2>${esc(powerGrade(p.score, p.from))}</h2><p class="small"><b>${esc(p.plan)}</b></p><p class="muted small">${esc(p.lens)}</p>${top ? `<p class="pw-headline small">Biggest gain: <b>${esc(top.label)}</b> (+${pts(top.lost)} pts available)</p>` : ""}</div>${profile}</section>
-  <section class="panel pw-weak"><div class="row between"><h3>Weaknesses</h3><span class="muted small">${R.weak.length ? `${R.weak.length} found, biggest first` : "none"}</span></div>${weak}</section>
+  return `<section class="panel score-panel power">${ring(p.score)}<div><p class="eyebrow">${p.from === "commander" ? "Deck health · heuristic" : p.from === "build" ? "Deck Power · build health" : "Deck Power · competitive index"}</p><h2>${p.from === "commander" ? "Commander build check" : esc(powerGrade(p.score, p.from))}</h2><p class="small"><b>${esc(p.plan)}</b></p><p class="muted small">${esc(p.lens)}</p>${top ? `<p class="pw-headline small">Biggest gain: <b>${esc(top.label)}</b> (+${pts(top.lost)} pts available)</p>` : ""}</div>${profile}</section>
+  <section class="panel pw-weak"><div class="row between"><h3>${p.from === "meta" ? "Build-model cautions" : "Build-health checks"}</h3><span class="muted small">${R.weak.length ? `${R.weak.length} found, biggest first` : "none"}</span></div>${p.from === "meta" ? '<p class="foot">These generic role targets are advisory. They do not override the placing list’s tournament evidence or prove that its engine is weak.</p>' : ""}${weak}</section>
   ${R.strong.length ? `<section class="panel pw-strong"><h3>Strengths</h3><div class="pw-chips">${R.strong.map((x) => `<span class="pw-chip"><b>${esc(x.label)}</b> ${esc(String(x.count))}</span>`).join("")}</div></section>` : ""}
   ${sims}
   ${gold}
+  ${riskPanel(p.strategicRisk)}
   ${fieldBox || metaBox ? `<section class="panel"><h3>Against the meta</h3>${fieldBox}${metaBox}</section>` : ""}
   <section class="panel"><div class="row between"><h3>Score breakdown</h3><span class="muted small">build ${p.heuristic}/100</span></div><p class="muted small">How well the list is built, before the field is considered. Each ingredient is worth a share of 100 points, weighted by how much it decides games in this format. ${p.heuristic !== p.score ? `Deck Power is <b>${p.score}</b> after weighing it against the meta (above).` : ""}</p>${R.scored
     .map((x) => {

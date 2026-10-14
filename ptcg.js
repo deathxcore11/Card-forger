@@ -1,3 +1,4 @@
+import {applyProductPrices} from "./pokemon-prices.js";
 import {POKEMON_SET_ART} from './pokemon-set-art.js';
 import {pokemonFallback} from "./artwork.js";
 // Pokémon TCG adapter. Data: TCGdex (api.tcgdex.net) — every physical card and set,
@@ -80,6 +81,9 @@ function fillPrices(c) {
   return run;
 }
 async function fillPricesNow(c) {
+  if(c.variants?.some(v=>v.productId&&v.usd==null)){
+   try{const r=await fetch('api/prices/pokemon?'+new URLSearchParams({id:c.id}),{signal:AbortSignal.timeout?.(15000)});if(r.ok&&applyProductPrices(c,await r.json())&&c.variants.every(v=>v.usd!=null))return;}catch{}
+  }
   const num = String(c.set?.number || "").replace(/^0+(?=\d)/, "");
   if (!c.name || !num) return;
   const u = "https://api.pokemontcg.io/v2/cards?" + new URLSearchParams({ q: `name:"${c.name.replace(/"/g, "")}" number:${num}`, select: "name,number,set,tcgplayer", pageSize: "20" });
@@ -113,7 +117,7 @@ export function normalizePtcg(c) {
   ].filter(Boolean).join("\n\n");
   return {
     game: "ptcg",
-    variantSchema: 3,
+    variantSchema: 4,
     id: c.id,
     name: c.name,
     category: c.category || "Pokemon",

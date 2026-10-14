@@ -1,4 +1,4 @@
-import { recordCardPrice, trackedQuote, priceHistoryHtml, alertsPanel } from "./pricehist.js";
+import { recordCardPrice, trackedQuote, priceHistoryHtml, alertsPanel, alertStatus } from "./pricehist.js";
 import { lineChart, skeletonGrid } from "./ui.js";
 import { installNudge } from "./install.js";
 import { rankByName } from "./catalog-tools.js";
@@ -80,7 +80,7 @@ const remember = (card) => {
 // Full card with prices no older than a day.
 export async function ensureCard(g, id, force = false) {
   const c = cache[g][id];
-  if (c && !c.brief && (g !== "ptcg" || c.variantSchema === 3) && (g !== "ygo" || c.artSchema === 1) && !force && Date.now() - new Date(c.fetchedAt).getTime() < PRICE_TTL) return c;
+  if (c && !c.brief && (g !== "ptcg" || c.variantSchema === 4) && (g !== "ygo" || c.artSchema === 1) && !force && Date.now() - new Date(c.fetchedAt).getTime() < PRICE_TTL) return c;
   try {
     return remember(await SOURCES[g].get(id));
   } catch (e) {
@@ -90,7 +90,7 @@ export async function ensureCard(g, id, force = false) {
 }
 // Load details for many cards, a few at a time, calling `tick` as they arrive.
 export async function ensureMany(g, ids, tick = () => {}, force = false) {
-  const queue = [...new Set(ids)].filter((id) => force || !cache[g][id] || cache[g][id].brief || (g === "ptcg" && cache[g][id].variantSchema !== 3) || (g === "ygo" && cache[g][id].artSchema !== 1) || Date.now() - new Date(cache[g][id].fetchedAt).getTime() > PRICE_TTL);
+  const queue = [...new Set(ids)].filter((id) => force || !cache[g][id] || cache[g][id].brief || (g === "ptcg" && cache[g][id].variantSchema !== 4) || (g === "ygo" && cache[g][id].artSchema !== 1) || Date.now() - new Date(cache[g][id].fetchedAt).getTime() > PRICE_TTL);
   let done = 0;
   const worker = async () => {
     while (queue.length) {
@@ -127,7 +127,7 @@ export function variantArtThumb(card, variant = {}, attrs = "") {
 }
 
 // Trade tab: fair swaps from your collection and wishlist (trade.js).
-function tcgTradePanel(g, c, own) {
+function tcgTradePanel(g, c, own, ctx={}) {
   const st = gs(g),
     byId = new Map();
   for (const e of st.collection) {
@@ -142,7 +142,11 @@ function tcgTradePanel(g, c, own) {
     const card = cardOf(g, w.cardId);
     return { key: w.cardId, name: w.name, price: price(card), art: imgTag(card, "mini-art"), open: `data-act="tCard" data-id="${esc(w.cardId)}"` };
   });
-  return tradePanel({ key: c.id, name: c.name, price: price(c), owned: own > 0 }, [...byId.values()], wish);
+  const needs=new Map();for(const d of st.decks){const counts=new Map();for(const zone of Object.values(d.zones || {}))for(const r of zone)counts.set(r.cardId,{...r,qty:r.qty+(counts.get(r.cardId)?.qty||0)});for(const r of counts.values()){
+   const card=cardOf(g,r.cardId),have=st.collection.filter(e=>e.cardId===r.cardId).reduce((a,e)=>a+e.qty,0),qty=Math.max(0,r.qty-have);if(!qty||r.cardId===c.id)continue;
+   const old=needs.get(r.cardId);needs.set(r.cardId,{key:r.cardId,name:r.name,price:price(card),qty:Math.max(qty,old?.qty||0),priority:2,deckName:d.name,art:imgTag(card,'mini-art'),open:`data-act="tCard" data-id="${esc(r.cardId)}"`});
+  }}
+  return tradePanel({ key: c.id, name: c.name, price: price(c), owned: own > 0 }, [...byId.values()], wish,{...ctx.tradeOptions,needs:[...needs.values()]});
 }
 
 // A stat on the card page. The regulation mark gets what it means for you, not just a letter.
@@ -558,7 +562,7 @@ export function tcgCardSheet(c, sctx = {}) {
     heroFallback = g === "ygo" ? c.artDirect || "" : "";
   const overview = `
     <div class="cs-card"><div class="cd-img"><button class="cd-zoom" data-act="zoomCard" data-src="${esc(artworkSources(c,true)[0] || "")}" data-hi="${esc(g === "ygo" ? ygoImageDirect(c.id, false) : c.imageLarge || "")}" data-fallback="${esc(artworkSources(c,true)[1] || "")}" data-art="${esc(g === "ygo" ? c.artDirect || "" : "")}" data-name="${esc(c.name)}" aria-label="Enlarge ${esc(c.name)}">${imgTag(c, "card-img", true)}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button></div>
-      <div class="cs-card-side">
+      <div class="cs-card-side">${alertStatus(g,trackedQuote(g,c)?.id,c.name)}
         <p class="small own-line">${own ? `<b class="ok-text">You own ${own}</b>` : "Not in your collection"}</p>
         ${deck ? `<p class="small deck-legal ${SOURCES[g].legality(c, f) === "legal" ? "ok-text" : "bad-text"}">${SOURCES[g].legality(c, f) === "legal" ? "✓ Legal" : "● Not allowed"} in ${esc(f.name)} <span class="muted">(${esc(deck.name)})</span></p>` : ""}
         ${c.stats?.length ? `<div class="stat-grid">${c.stats.filter(([k]) => g !== "ptcg" || !["HP", "Type", "Weakness", "Resistance", "Retreat"].includes(k)).map(([k, v]) => statCell(c, k, v)).join("")}</div>${c.regulationMark ? regulationHelp(c) : ""}` : ""}
@@ -626,7 +630,7 @@ export function tcgCardSheet(c, sctx = {}) {
   ${panel("meta", tab, tcgCardMeta(g, c))}
   ${panel("guide", tab, tcgCardGuide(g, c))}
   ${panel("versions", tab, versions)}
-  ${tab === "trade" ? panel("trade", tab, tcgTradePanel(g, c, own)) : ""}
+  ${tab === "trade" ? panel("trade", tab, tcgTradePanel(g, c, own, sctx)) : ""}
   ${panel("prices", tab, priceOverview(g,c,sctx,SOURCES[g].buy(c)) + `<details class="market-details"><summary>Market details · sources & finishes</summary>` + prices + `<p class="foot">${esc(p.source || "")}${p.updated ? " · updated " + esc(new Date(p.updated).toLocaleDateString()) : c.fetchedAt ? " · checked " + esc(new Date(c.fetchedAt).toLocaleDateString()) : ""}. Condition prices and stock are on the store’s page.</p>` + buy + `</details>`)}
   ${panel("rulings", tab, rulings)}
   ${panel("legal", tab, legal)}`;

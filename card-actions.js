@@ -16,7 +16,7 @@ export class CompareSelection {
     return 'waiting';
   }
 }
-export function attachCardGestures({ onHold, onPick, choosing, root = document }) {
+export function attachCardGestures({ onHold, onPick, choosing, onSelect=()=>false, root = document }) {
   let press = null, timer = null, cue = null, cued = null;
   // A short press shows the card sinking and a ring filling, so a hold feels intentional.
   const clear = () => { clearTimeout(timer); clearTimeout(cue); timer = cue = null; cued?.classList.remove('holding'); cued = null; };
@@ -47,6 +47,7 @@ export function attachCardGestures({ onHold, onPick, choosing, root = document }
     if (e.detail !== 0 && (press?.moved || press?.held)) {
       e.preventDefault(); e.stopImmediatePropagation(); press = null; return;
     }
+    if (onSelect(e.target,e)) {e.preventDefault();e.stopImmediatePropagation();press=null;return;}
     if (card && choosing()) {
       e.preventDefault(); e.stopImmediatePropagation(); onPick(card);
     }

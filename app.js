@@ -957,7 +957,12 @@ function registerCardMenus() {
   };
   A.quickBinderNew = () => { A.quickOwn(); const picker=document.querySelector(quickCard.game==="mtg"?"#addLocationPicker":"#tLocPicker");if(picker){picker.value="binder:new";chooseLocation(picker);} };
 }
-attachCardGestures({onHold:t=>safely(cardQuickMenu(t)),onPick:t=>safely(pickCompareCard(t)),choosing:()=>comparison.active});
+attachCardGestures({onSelect:target=>{
+ const lot=target.closest?.('.lot'),input=lot?.querySelector?.('.batch-mark input');if(!input)return false;
+ if(target.closest?.('label,input,select,.stepper,.lot-side'))return false;
+ const button=target.closest?.('button');if(button&&!['card','tCard'].includes(button.dataset.act))return false;
+ input.checked=!input.checked;C.batchToggle(input);return true;
+},onHold:t=>safely(cardQuickMenu(t)),onPick:t=>safely(pickCompareCard(t)),choosing:()=>comparison.active});
 
 document.addEventListener("pointerdown", ripple, { passive: true });
 attachGestures({ closeSheet: () => closeSheet() });
@@ -3866,18 +3871,20 @@ A.install = async () => {
 // Price alerts (all games).
 A.priceAlert = (t) => {
   const { game: g, id, name } = t.dataset;
-  openSheet(alertSheet(g, id, name || "This card", priceSeries(g, id).at(-1)?.[1] ?? null), { type: "alert" });
+  openSheet(alertSheet(g, id, name || "This card", priceSeries(g, id).at(-1)?.[1] ?? null), { type: "alert", back:S.ui.sheetCtx });
 };
 A.priceAlertSave = async (t) => {
   const { game: g, id, name } = t.dataset,
-    num = (x) => (x === "" || x == null || !(Number(x) > 0) ? null : Math.round(Number(x) * 100) / 100),
+    num = (x) => (x === "" || x == null || !(Number(x) > 0) || !Number.isFinite(Number(x)) ? null : Math.round(Number(x) * 100) / 100),
     below = num($("#alertBelow")?.value),
     above = num($("#alertAbove")?.value);
-  if (below == null && above == null) return toast("Enter a price to watch for.");
+  const error=$("#priceAlertError"),alertCtx=S.ui.sheetCtx;
+  if(below==null&&above==null){if(error)error.textContent="Enter a price above $0 in either field.";$("#alertBelow")?.focus();return;}
+  if(below!=null&&above!=null&&below>=above){if(error)error.textContent="The lower price must be less than the upper price.";return;}
   setAlert(g, id, name, { below, above });
   // Ask once, while the tap counts as permission to ask.
-  if (globalThis.Notification?.permission === "default") await Notification.requestPermission().catch(() => {});
-  closeSheet();
+  if (globalThis.Notification?.permission === "default") void Notification.requestPermission().catch(() => {});
+  if(S.ui.sheetCtx===alertCtx){if(alertCtx?.back&&['card','tcard','buy','market'].includes(alertCtx.back.type)){openSheet('',alertCtx.back);refreshSheet();}else closeSheet();}
   toast("Alert saved. Checked while you use the app; no background monitoring.");
   render();
 };
@@ -4009,3 +4016,5 @@ async function boot() {
 boot().catch((e) => {
   $("#content").innerHTML = `<section class="empty"><h3>CardStashy couldn’t open your saved data</h3><p>${esc(e.message)}</p><p class="muted small">Nothing was deleted. Close other CardStashy tabs and retry.</p><button class="btn" onclick="location.reload()">Retry</button></section>`;
 });
+
+C.tradeOption=t=>{const ctx=S.ui.sheetCtx;if(!['card','tcard'].includes(ctx?.type))return;const f=t.dataset.field;if(!['mode','tolerance','credit'].includes(f))return;ctx.tradeOptions ||= {};ctx.tradeOptions[f]=f==='mode'?t.value:Number(t.value);refreshSheet();};
