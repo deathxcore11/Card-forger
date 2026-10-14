@@ -139,8 +139,9 @@ export const looseName = (q) =>
     .join("%");
 
 async function get(path, params) {
-  // "%" in a fuzzy name is a wildcard for YGOPRODeck, so it must not be escaped.
-  const qs = params ? Object.entries(params).map(([k, v]) => k + "=" + (k === "fname" ? String(v).split("%").map(encodeURIComponent).join("%") : encodeURIComponent(v))).join("&") : "";
+  // "%" in a fuzzy name is a wildcard for YGOPRODeck. It travels as "%25": sent raw, "%Ba" in
+  // "A%Bao" was decoded as a byte and names like A Bao A Qu found nothing.
+  const qs = params ? Object.entries(params).map(([k, v]) => k + "=" + (k === "fname" ? String(v).split("%").map(encodeURIComponent).join("%25") : encodeURIComponent(v))).join("&") : "";
   const r = await fetch(API + path + (qs ? "?" + qs : ""), { headers: { Accept: "application/json" } });
   const d = await r.json().catch(() => ({}));
   if (!r.ok || d.error) {

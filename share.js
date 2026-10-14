@@ -19,6 +19,7 @@ export function sharePayload(deck, { author = "", about = "" } = {}) {
     a: clean(author, 60),
     d: clean(about, 1500),
     l: aggregateCards(deck.cards).slice(0, MAX_CARDS).map((c) => (c.qty === 1 ? c.name : [c.name, c.qty])),
+    ...((deck.side || []).length ? { sb: aggregateCards(deck.side).slice(0, 30).map((c) => (c.qty === 1 ? c.name : [c.name, c.qty])) } : {}),
   };
 }
 
@@ -53,6 +54,8 @@ export function deckFromPayload(p) {
     author: clean(p.a, 60),
     about: clean(p.d, 1500),
     cards,
+    // Sideboard (optional; older links have none).
+    side: (Array.isArray(p.sb) ? p.sb.slice(0, 30) : []).map((x) => (Array.isArray(x) ? { name: clean(x[0], 150), qty: Number(x[1]) } : { name: clean(x, 150), qty: 1 })).filter((c) => c.name && Number.isInteger(c.qty) && c.qty > 0 && c.qty <= 15),
   };
 }
 

@@ -1,3 +1,18 @@
+3.48.2 — Collection and price integrity, missing art, and search
+- Magic trades value each physical lot at its own printing and finish. Ten $1 copies and one $50
+  copy are no longer offered as two $50 cards; each offer names the printing it means.
+- Unpriced isn't owned: a sideboard with unpriced missing cards says how many you still need,
+  instead of "all owned".
+- Magic share links carry the sideboard, and saving a shared deck keeps it.
+- Pokémon cards with no current catalogue price show their latest dated quote from the price
+  history (with its date and finish), so the price box and the chart no longer disagree.
+- Pokémon artwork: MEP Black Star Promos now load from a second image source. Cards with no
+  artwork anywhere get a short, intentional banner instead of a large empty box.
+- Sets the card database lists without any cards (W Promotional, Jumbo cards) now explain that,
+  instead of showing "0 shown".
+- Fixed: Yu-Gi-Oh! name search failed for names with words like "Bao" (A Bao A Qu, the Lightless
+  Shadow) because a wildcard was sent unescaped.
+
 3.48.1 — Verdicts you can trust: legality first, then the engine, then the field
 - A deck that isn't tournament-legal (wrong size, too many copies, banned or illegal cards) can no
   longer be called competitive, however close it is to a winning list. The headline says "Not

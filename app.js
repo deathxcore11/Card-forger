@@ -1725,7 +1725,7 @@ A.sharedSave = async () => {
   const d = S.ui.shared.deck;
   if (!d) return;
   if ((S.state.references || []).some((r) => r.source?.url === sharedSourceURL())) return toast("Already in your saved decks.");
-  await commit((s) => (s.references = [...(s.references || []), { id: uid(), name: d.name, format: d.format, commander: d.commander, strategy: d.strategy, about: d.about, locked: false, source: sharedCredit(d), cards: d.cards }]), { msg: "Saved — find it under Decks → Find decks." });
+  await commit((s) => (s.references = [...(s.references || []), { id: uid(), name: d.name, format: d.format, commander: d.commander, strategy: d.strategy, about: d.about, locked: false, source: sharedCredit(d), cards: d.cards, side: d.side || [] }]), { msg: "Saved — find it under Decks → Find decks." });
 };
 A.sharedCopy = () => S.ui.shared.deck && copyText(exportDeckText(S.ui.shared.deck), "Decklist copied.");
 A.deckShare = () => {

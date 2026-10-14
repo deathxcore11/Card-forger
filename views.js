@@ -415,12 +415,16 @@ export function cardSheet(c, ctx = {}) {
 function mtgTradePanel(name, shown, ctx={}) {
   const st = S.state,
     byName = new Map();
+  // One offer item per physical lot: the same card in different printings or finishes is
+  // worth different amounts, so copies are never priced at the most expensive printing.
   for (const e of st.collection) {
-    const k = key(e.name),
-      p = lotPrice(e, S.catalog, st.printings);
-    const x = byName.get(k) || { key: k, name: e.name, price: p, qty: 0, art: img(cardImage(meta(e.name)), e.name, "mini-art"), open: `data-act="card" data-name="${esc(e.name)}"` };
+    if (!(e.qty > 0) || key(e.name) === key(name)) continue;
+    const p = lotPrice(e, S.catalog, st.printings),
+      pr = e.printingVerified ? st.printings?.[e.printingId] : null,
+      label = [pr?.set_name || pr?.set?.toUpperCase?.() || "", e.finish && e.finish !== "nonfoil" ? e.finish : "", e.condition && e.condition !== "NM" ? e.condition : ""].filter(Boolean).join(" · "),
+      k = [key(e.name), e.printingId || "", e.finish || "nonfoil", e.condition || ""].join("|"),
+      x = byName.get(k) || { key: k, name: e.name + (label ? ` (${label})` : ""), price: p, qty: 0, art: img(cardImage(pr || meta(e.name)), e.name, "mini-art"), open: `data-act="card" data-name="${esc(e.name)}"` };
     x.qty += e.qty;
-    if (p != null && (x.price == null || p > x.price)) x.price = p;
     byName.set(k, x);
   }
   const wish = st.wishlist.map((w) => ({ key: key(w.name), name: w.name, price: priceOf(w.name), art: img(cardImage(meta(w.name)), w.name, "mini-art"), open: `data-act="card" data-name="${esc(w.name)}"` }));
@@ -1215,8 +1219,12 @@ function mtgSideboard(d) {
   if (!side.length) return "";
   const n = sumQty(side),
     rows = side.map((r) => { const c = meta(r.name), own = Math.min(r.qty, inv(r.name).owned || 0), price = c ? Number(c.prices?.usd ?? c.prices?.usd_foil) || 0 : 0; return { ...r, c, own, cost: (r.qty - own) * price }; }),
-    cost = rows.reduce((a, r) => a + r.cost, 0);
-  return `<details class="group side-group" open><summary><span>Sideboard <em>${n}</em>${n > 15 ? ` <span class="warn-text small">· over 15</span>` : ""}</span><span class="muted small">${cost ? usd(cost, 0) + " to finish" : "all owned ✓"}</span></summary>
+    cost = rows.reduce((a, r) => a + r.cost, 0),
+    need = rows.reduce((a, r) => a + r.qty - r.own, 0),
+    unpriced = rows.filter((r) => r.qty > r.own && !(r.cost > 0)).reduce((a, r) => a + r.qty - r.own, 0),
+    // Unpriced isn't owned: say what's missing even when it has no price yet.
+    status = !need ? "all owned ✓" : `${need} to get${cost ? " · " + usd(cost, 0) : ""}${unpriced ? ` · ${unpriced} unpriced` : ""}`;
+  return `<details class="group side-group" open><summary><span>Sideboard <em>${n}</em>${n > 15 ? ` <span class="warn-text small">· over 15</span>` : ""}</span><span class="muted small">${status}</span></summary>
     <p class="small muted">Swapped in between games. Not counted in the ${esc(String(formatOf(d).size))}-card deck${n > 15 ? "; tournament sideboards are at most 15 cards" : ""}.</p>
     <div class="list compact">${rows.sort((a, b) => b.qty - a.qty || a.name.localeCompare(b.name)).map((r) => `<button class="mini-row art-row" data-act="card" data-name="${esc(r.name)}">${img(art(r.c), r.name, "mini-art")}<span class="ellip">${r.qty}× ${esc(r.name)}</span><span class="small ${r.own >= r.qty ? "ok-text" : "warn-text"}">${r.own >= r.qty ? "✓ Owned" : `Need ${r.qty - r.own}`}</span></button>`).join("")}</div></details>`;
 }

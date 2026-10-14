@@ -2714,3 +2714,7 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 @media (max-width: 380px) { .mu-io { grid-template-columns: 1fr; } .mu-split { grid-template-columns: 1fr 1fr; } }
 .mu-seg button { white-space: nowrap; padding: 6px 10px; }
 .mu-logbar > span { white-space: nowrap; }
+/* A card with no artwork anywhere: a short, intentional banner instead of a big empty box. */
+.cs-banner.no-art > .cs-hero:not(.compact) { height: 150px; background: radial-gradient(120% 140% at 20% 0%, color-mix(in srgb, var(--accent, var(--gold)) 18%, transparent), transparent 60%), var(--surface-2); -webkit-mask-image: none; mask-image: none; }
+.cs-banner.no-art .cs-art.img-missing { display: none; }
+.price-pill .pill-note { display: block; font-size: .66rem; color: var(--muted); letter-spacing: 0; text-transform: none; margin-top: 1px; }

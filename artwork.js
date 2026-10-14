@@ -2,7 +2,7 @@ import {POKEMON_SET_ART,POKEMON_CARD_ART} from './pokemon-set-art.js';
 import {esc,tierRing,rememberPrice} from './ui.js';
 // English set + collector-number matches only. No name-based art substitutions.
 export function pokemonFallback(c){
- const id=String(c?.id||''),set=String(c?.set?.id || id.slice(0,id.lastIndexOf('-'))).toLowerCase(),code={svp:'SVP',swshp:'SWSH'}[set];
+ const id=String(c?.id||''),set=String(c?.set?.id || id.slice(0,id.lastIndexOf('-'))).toLowerCase(),code={svp:'SVP',swshp:'SWSH',mep:'MEP'}[set];
  if(POKEMON_CARD_ART[id])return POKEMON_CARD_ART[id];
  const collector=String(c?.set?.number || id.slice(id.lastIndexOf('-')+1));
  // Verified historical set IDs use different naming between the two catalogues.
