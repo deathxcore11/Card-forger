@@ -1,3 +1,16 @@
+3.47.0 — Magic sideboards
+- Magic tournament decks now keep their 15-card sideboard. It shows in the tournament deck
+  preview (with what it costs to finish) and is saved with the original list, budget adaptation
+  or draft. Yu-Gi-Oh! already kept Side Decks; Magic now matches.
+- Decks show a Sideboard section on the Cards tab with what you own and what you still need. It
+  isn't counted in the 60 cards, Deck Power or the main shopping total.
+- Importing keeps the sideboard, from Arena/Moxfield text ("Sideboard" heading) and MTGO files
+  (sideboard after a blank line). Maybeboards are still left out, and Commander decks have no
+  sideboard.
+- Copy and export write the sideboard under a "Sideboard" heading that Arena and MTGO read.
+- Rules checks: at most 15 sideboard cards, sideboard cards must be legal, and the copy limit
+  counts main deck and sideboard together.
+
 3.46.2 — Build decks shows the same score your saved deck will
 - Deck versions in Build decks showed the Engine score (how well the list is built for its own
   plan), while the saved deck showed Competitive (how it stacks up against what's winning). Now

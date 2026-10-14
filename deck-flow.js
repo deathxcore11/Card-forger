@@ -10,7 +10,8 @@ export function parseDeckImport(text) {
   let section = "main",
     commander = "",
     excluded = 0;
-  const lines = [],
+  const sideLines = [],
+    lines = [],
     errors = [];
   const raw = String(text).replace(/^\uFEFF/, "");
   if (
@@ -26,7 +27,16 @@ export function parseDeckImport(text) {
       excluded: 0,
     };
   }
-  for (const [index, line] of raw.split(/\r?\n/).entries()) {
+  // MTGO .txt exports have no headings: the sideboard is the block after the last blank line.
+  const blocks = raw.trim().split(/\r?\n\s*\r?\n/);
+  const qtyOf = (b) => b.split(/\r?\n/).reduce((a, l) => a + (Number(l.trim().match(/^(\d+)\s/)?.[1]) || 0), 0);
+  const headed = /^\s*\[?(?:commander|commanders|mainboard|main deck|maindeck|deck|sideboard|maybeboard|considering|companion)\]?:?\s*$/im.test(raw);
+  let body = raw;
+  if (!headed && blocks.length === 2 && qtyOf(blocks[0]) >= 40 && qtyOf(blocks[1]) > 0 && qtyOf(blocks[1]) <= 15) {
+    body = blocks[0];
+    for (const l of blocks[1].split(/\r?\n/)) if (/^\s*\d+\s*[xX]?\s+/.test(l)) sideLines.push(l.trim().replace(/\s+\[[^\]]+\]\s*$/, ""));
+  }
+  for (const [index, line] of body.split(/\r?\n/).entries()) {
     const s = line.trim();
     if (!s || s.startsWith("//") || s.startsWith("#")) continue;
     const heading = s
@@ -39,11 +49,18 @@ export function parseDeckImport(text) {
         heading,
       )
     ) {
-      section = /^(sideboard|maybeboard|considering|companion)/.test(heading)
+      section = /^(sideboard|companion)/.test(heading)
+        ? "side"
+        : /^(maybeboard|considering)/.test(heading)
         ? "excluded"
         : /^command/.test(heading)
           ? "commander"
           : "main";
+      continue;
+    }
+    if (section === "side") {
+      const cleanedSide = s.replace(/\s+\[[^\]]+\]\s*$/, "");
+      if (/^\d+\s*[xX]?\s+/.test(cleanedSide)) sideLines.push(cleanedSide);
       continue;
     }
     if (section === "excluded") {
@@ -69,11 +86,13 @@ export function parseDeckImport(text) {
     throw Error(
       "No deck cards found. Export text or CSV from the source website and paste or upload it here.",
     );
-  const p = parseImport(lines.join("\n"));
+  const p = parseImport(lines.join("\n")),
+    sp = sideLines.length ? parseImport(sideLines.join("\n")) : { rows: [] };
   return {
     ...p,
     errors: [...errors, ...p.errors],
     cards: aggregateCards(p.rows.map((e) => ({ name: e.name, qty: e.qty }))),
+    side: aggregateCards(sp.rows.map((e) => ({ name: e.name, qty: e.qty }))),
     commander,
     excluded,
   };

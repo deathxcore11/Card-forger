@@ -1061,6 +1061,13 @@ export function provenSheetHtml() {
       ${d.rows.length ? `<p class="list-head">Cards you own <span class="muted">${total - d.open}</span></p><div class="list compact">${d.rows.map((r) => row(r, "✓ owned")).join("")}</div>` : `<p class="muted small">You don’t own any cards from this list yet.</p>`}
       ${d.open ? `<p class="list-head">To finish · cheapest first <span class="muted">${usd(d.cost, 0)}${d.unpriced ? ` + ${d.unpriced} unpriced` : ""}</span></p><div class="list compact">${d.missing.map((r) => row({ ...r, owned: 0 })).join("")}</div>` : ""}`;
   }
+  // Magic tournament lists keep their sideboard: shown in every mode and saved with every version.
+  const side = base.sideRowsFn ? base.sideRowsFn() : [];
+  if (side.length) {
+    const sn = side.reduce((a, r) => a + r.qty, 0),
+      sc = side.reduce((a, r) => a + Math.max(0, r.qty - Math.min(r.qty, r.owned || 0)) * (r.price || 0), 0);
+    body += `<details class="group side-group" ${mode === "original" ? "open" : ""}><summary><span>Sideboard <em>${sn}</em></span><span class="muted small">${usd(sc, 0)} to finish</span></summary><p class="small muted">Saved with ${mode === "original" ? "the deck" : "every version"} as the tournament player ran it. Swap these in between games.</p><div class="list compact">${side.map((r) => row(r)).join("")}</div></details>`;
+  }
   const hero = spec.heroFor?.(spec.rows);
   return `<div class="sheet-head overlay"><span></span><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   <div class="cs-hero compact ${spec.g}">${hero ? `<img class="cs-art" src="${esc(hero)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<div class="cs-shade"></div></div>

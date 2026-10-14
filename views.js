@@ -1172,7 +1172,21 @@ function deckCards(d, t) {
   <div class="toolbar"><input type="search" value="${esc(S.ui.q.deck)}" placeholder="Search this deck" data-input="deckSearch" aria-label="Search deck"><select data-change="deckFilter" aria-label="Show">${options([["all", "All"], ["missing", "Missing"], ["owned", "Owned"], ["unresolved", "Unresolved"]], S.ui.deckFilter)}</select><select data-change="deckSort" aria-label="Group by">${options([["type", "By type"], ["mv", "By mana value"], ["role", "By role"], ["price", "By price"]], S.ui.deckSort)}</select></div>
   ${mtgDeckEmblems(d)}
   <div id="deckList">${deckList(d)}</div>
+  ${mtgSideboard(d)}
   ${t.missing ? `<div class="sticky-bar"><span><b>${t.missing}</b> to get · ${usd(t.pricedGap, 0)}</span><span><button class="btn ghost small" data-act="deckTab" data-id="shop">Shop</button><button class="btn small" data-act="acquire">I got cards</button></span></div>` : ""}`;
+}
+
+// The sideboard: up to 15 cards swapped in between games. Not part of the main-deck count,
+// Deck Power or the shopping total above; its own cost is shown here.
+function mtgSideboard(d) {
+  const side = (d.side || []).filter((r) => r.qty > 0);
+  if (!side.length) return "";
+  const n = sumQty(side),
+    rows = side.map((r) => { const c = meta(r.name), own = Math.min(r.qty, inv(r.name).owned || 0), price = c ? Number(c.prices?.usd ?? c.prices?.usd_foil) || 0 : 0; return { ...r, c, own, cost: (r.qty - own) * price }; }),
+    cost = rows.reduce((a, r) => a + r.cost, 0);
+  return `<details class="group side-group" open><summary><span>Sideboard <em>${n}</em>${n > 15 ? ` <span class="warn-text small">· over 15</span>` : ""}</span><span class="muted small">${cost ? usd(cost, 0) + " to finish" : "all owned ✓"}</span></summary>
+    <p class="small muted">Swapped in between games. Not counted in the ${esc(String(formatOf(d).size))}-card deck${n > 15 ? "; tournament sideboards are at most 15 cards" : ""}.</p>
+    <div class="list compact">${rows.sort((a, b) => b.qty - a.qty || a.name.localeCompare(b.name)).map((r) => `<button class="mini-row art-row" data-act="card" data-name="${esc(r.name)}">${img(art(r.c), r.name, "mini-art")}<span class="ellip">${r.qty}× ${esc(r.name)}</span><span class="small ${r.own >= r.qty ? "ok-text" : "warn-text"}">${r.own >= r.qty ? "✓ Owned" : `Need ${r.qty - r.own}`}</span></button>`).join("")}</div></details>`;
 }
 
 export function deckList(d = currentDeck()) {

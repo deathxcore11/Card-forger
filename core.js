@@ -185,6 +185,21 @@ export function validateDeck(deck, catalog, entries, decks = []) {
         });
     }
   }
+  // Sideboard: at most 15 cards, legal in the format, and the copy limit counts main + side.
+  const side = aggregateCards(deck.side || []).filter((r) => r.qty > 0),
+    sideN = side.reduce((a, r) => a + r.qty, 0);
+  if (sideN > 15)
+    issues.push({ kind: "sideboard", text: `Sideboard has ${sideN} cards; the limit is 15.` });
+  for (const r of side) {
+    const m = catalog[cardKey(r.name)];
+    if (!m) continue;
+    const legal = legalityIn(m, f);
+    if (legal === "banned" || legal === "not_legal")
+      issues.push({ kind: "legality", text: `${r.name} (sideboard): ${legal === "banned" ? "banned" : "not legal"} in ${f.name}.` });
+    const inMain = (deck.cards || []).filter((c) => cardKey(c.name) === cardKey(r.name)).reduce((a, c) => a + c.qty, 0);
+    if (inMain + r.qty > f.copies && !isBasic(m) && !/any number of cards named/i.test(rulesText(m)))
+      issues.push({ kind: "copies", text: `${r.name}: ${inMain + r.qty} copies across main deck and sideboard; ${f.name} allows ${f.copies}.` });
+  }
   const missing = gaps(deck, entries, decks).reduce((a, c) => a + c.missing, 0);
   return {
     count,
@@ -371,3 +386,7 @@ export const exportDeck = (cards) =>
     .filter((c) => c.qty > 0)
     .map((c) => `${c.qty} ${c.name}`)
     .join("\n");
+// A whole deck as text, with its sideboard under the "Sideboard" header that Arena, MTGO and most
+// sites read.
+export const exportDeckText = (d) => exportDeck(d.cards || []) + ((d.side || []).some((r) => r.qty > 0) ? "\n\nSideboard\n" + exportDeck(d.side) : "");
+

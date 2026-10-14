@@ -29,7 +29,7 @@ import * as V from "./views.js";
 import { readRecord, writeRecord, writeRecords, persistenceStatus, requestPersistence } from "./storage.js";
 import {
   cardKey as key, sumQty, typeText, rulesText, isLand, commanderEligible, mergeDeckCard,
-  cardPrice, drawHand, exportDeck, aggregateCards, inventory,
+  cardPrice, drawHand, exportDeck, exportDeckText, aggregateCards, inventory,
 } from "./core.js";
 import {
   parseImport, previewImport, applyImport, printingState, importErrorsCSV, exportCollectionCSV,
@@ -1663,7 +1663,7 @@ A.sharedSave = async () => {
   if ((S.state.references || []).some((r) => r.source?.url === sharedSourceURL())) return toast("Already in your saved decks.");
   await commit((s) => (s.references = [...(s.references || []), { id: uid(), name: d.name, format: d.format, commander: d.commander, strategy: d.strategy, about: d.about, locked: false, source: sharedCredit(d), cards: d.cards }]), { msg: "Saved — find it under Decks → Find decks." });
 };
-A.sharedCopy = () => S.ui.shared.deck && copyText(exportDeck(S.ui.shared.deck.cards), "Decklist copied.");
+A.sharedCopy = () => S.ui.shared.deck && copyText(exportDeckText(S.ui.shared.deck), "Decklist copied.");
 A.deckShare = () => {
   const d = currentDeck();
   if (d) openSheet(V.shareSheet(d), { type: "share", deckId: d.id });
@@ -2572,6 +2572,8 @@ function dImpCandidate() {
     locked: false,
     source: sourceCredit({ url: $("#dImpURL").value, author: $("#dImpAuthor").value, description: $("#dImpDesc").value, kind: $("#dImpKind").value }),
     cards: deckRowsFromImport(dImp.cards.map((c) => ({ name: meta(c.name)?.name || c.name, qty: c.qty }))),
+    // Commander has no sideboard; every other format keeps the imported one.
+    side: hasCommander(format) ? [] : (dImp.side || []).map((c) => ({ name: meta(c.name)?.name || c.name, qty: c.qty })),
   };
 }
 function drawDeckImport() {
@@ -2587,7 +2589,8 @@ function drawDeckImport() {
     t = rows.reduce((a, r) => ({ copies: a.copies + r.qty, covered: a.covered + r.covered, missing: a.missing + r.missing, gap: a.gap + (r.price ?? 0) * r.missing }), { copies: 0, covered: 0, missing: 0, gap: 0 }),
     unresolved = rows.filter((r) => !meta(r.name));
   $("#dImpResults").innerHTML = `<div class="kpis small"><div class="kpi"><b>${t.copies}</b><span>cards</span></div><div class="kpi"><b>${t.covered}</b><span>you own</span></div><div class="kpi"><b>${usd(t.gap, 0)}</b><span>to finish</span></div></div>
-  ${dImp.excluded ? `<p class="muted small">${dImp.excluded} sideboard / maybeboard cards left out.</p>` : ""}
+  ${dImp.side?.length ? `<p class="muted small">${hasCommander(d.format) ? `${sumQty(dImp.side)} sideboard cards left out (Commander has no sideboard).` : `+ ${sumQty(dImp.side)}-card sideboard, saved with the deck.`}</p>` : ""}
+  ${dImp.excluded ? `<p class="muted small">${dImp.excluded} maybeboard cards left out.</p>` : ""}
   ${dImp.errors.length ? `<div class="note warn">${dImp.errors.length} lines skipped: ${dImp.errors.slice(0, 3).map((e) => esc("line " + e.line)).join(", ")}</div>` : ""}
   ${unresolved.length ? `<div class="note warn">Not recognized: ${unresolved.slice(0, 8).map((r) => esc(r.name)).join(", ")}${unresolved.length > 8 ? "…" : ""}. You can save anyway and fix them later.</div>` : ""}
   <div class="list compact">${rows
@@ -2614,7 +2617,7 @@ A.dImpPreview = async () => {
     dImpBusy = true;
     const btn = busy($("#dImpPreviewBtn"), "Loading…");
     drawDeckImport();
-    const r = await resolveNames(dImp.cards.map((c) => c.name), (m) => ($("#dImpStatus").textContent = m));
+    const r = await resolveNames([...dImp.cards, ...(dImp.side || [])].map((c) => c.name), (m) => ($("#dImpStatus").textContent = m));
     // A list without a commander section: guess a legendary creature if there's exactly one.
     if (!$("#dImpCommander").value && hasCommander($("#dImpFormat").value)) {
       const legends = dImp.cards.filter((c) => canLead(meta(c.name), formatOf($("#dImpFormat").value)));
@@ -2790,8 +2793,8 @@ A.snapshot = async () => {
   await editDeck((d) => withSnapshot(d, label || "Snapshot"));
   toast((currentDeck().versions || []).length > before ? "Version saved." : "No changes since the last version.");
 };
-A.deckCopy = () => copyText(exportDeck(currentDeck().cards), "Decklist copied.");
-A.deckExport = () => download(`CardStashy_${fileSafe(currentDeck().name)}.txt`, exportDeck(currentDeck().cards) + "\n");
+A.deckCopy = () => copyText(exportDeckText(currentDeck()), "Decklist copied.");
+A.deckExport = () => download(`CardStashy_${fileSafe(currentDeck().name)}.txt`, exportDeckText(currentDeck()) + "\n");
 A.deckDup = async () => {
   const d = currentDeck(),
     copy = { ...structuredClone(d), id: uid(), name: d.name + " (copy)", locked: false };
@@ -3359,16 +3362,18 @@ A.mtgProven = (t) => {
     sourceUrl: d.url || d.eventUrl,
     sourceLabel: data.source.startsWith("Magic Online") ? "Magic Online event" : data.source.startsWith("EDHTop16") ? "Decklist" : "TopDeck.gg event",
     rowsFn: () => rowsOf(d),
+    // The 15-card sideboard travels with the list (not in Commander, which has none).
+    sideRowsFn: () => (fmt === "EDH" ? [] : (d.side || []).map((r) => ({ key: key(r.name), name: r.name, qty: r.qty, kind: kindOf(r.name), price: meta(r.name) ? Number(meta(r.name).prices?.usd ?? meta(r.name).prices?.usd_foil) || null : null, owned: inv(r.name).owned }))),
     listsFn: () => data.decks.map(rowsOf),
     // Format staples played across unrelated decks aren't this deck's engine.
     generic: (k) => (seen.get(k) || 0) / Math.max(1, data.decks.length) >= 0.3,
     load: async (status) => {
       const sim = T.similarLists(rowsOf(d), data.decks.map(rowsOf));
-      await resolveNames([...rowsOf(d), ...sim.flat()].map((r) => r.name), status);
+      await resolveNames([...rowsOf(d), ...sim.flat(), ...(d.side || [])].map((r) => r.name), status);
     },
     save: async (rows, labelText) => {
       const commander = rows.find((r) => r.kind === "commander")?.name || "";
-      const deck = withSnapshot({ id: uid(), name: `${d.name} · ${labelText}`.slice(0, 100), format: appFormat, commander, strategy: "Auto", budget: S.state.settings.budget ?? 25, locked: false, cards: rows.map((r) => ({ name: r.name, qty: r.qty })), versions: [], source: sourceCredit({ kind: labelText === "original" ? "Tournament list" : "Adapted tournament list", author: d.player, website: "TopDeck.gg", url: d.eventUrl || d.url, description: `${d.place} at ${d.event} (${d.players} players).` }) }, labelText === "original" ? "From TopDeck.gg" : "Adapted from a tournament list");
+      const deck = withSnapshot({ id: uid(), name: `${d.name} · ${labelText}`.slice(0, 100), format: appFormat, commander, strategy: "Auto", budget: S.state.settings.budget ?? 25, locked: false, cards: rows.map((r) => ({ name: r.name, qty: r.qty })), side: fmt === "EDH" ? [] : (d.side || []).map((r) => ({ name: r.name, qty: r.qty })), versions: [], source: sourceCredit({ kind: labelText === "original" ? "Tournament list" : "Adapted tournament list", author: d.player, website: "TopDeck.gg", url: d.eventUrl || d.url, description: `${d.place} at ${d.event} (${d.players} players).` }) }, labelText === "original" ? "From TopDeck.gg" : "Adapted from a tournament list");
       await commit((s) => {
         s.decks.push(deck);
         s.activeDeck = deck.id;
@@ -3397,7 +3402,7 @@ A.copyRef = async (t) => {
 };
 A.exportRef = (t) => {
   const r = S.state.references.find((x) => x.id === t.dataset.id);
-  download(`CardStashy_${fileSafe(r.name)}.txt`, exportDeck(r.cards) + "\n");
+  download(`CardStashy_${fileSafe(r.name)}.txt`, exportDeckText(r) + "\n");
 };
 A.deleteRef = async (t) => {
   if (!confirm("Remove this saved idea?")) return;
