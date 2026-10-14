@@ -72,13 +72,13 @@ export function applyFallbackPrices(c, hit) {
 // One lookup at a time with a short gap (a list of unpriced cards must not flood the service),
 // and each card asked at most once per session.
 let fillChain = Promise.resolve();
-const fillAsked = new Set();
+const fillAsked = new Map();
 function fillPrices(c) {
-  if (fillAsked.has(c.id)) return Promise.resolve();
-  fillAsked.add(c.id);
-  const run = fillChain.then(() => fillPricesNow(c)).catch(() => {}).then(() => new Promise((ok) => setTimeout(ok, 250)));
-  fillChain = run;
-  return run;
+  if(fillAsked.has(c.id))return fillAsked.get(c.id).then(done=>{c.prices=done.prices;c.variants=done.variants;c.sets=done.sets;});
+  const run=fillChain.then(()=>fillPricesNow(c)).catch(()=>{}).then(()=>c);
+  fillAsked.set(c.id,run);
+  fillChain=run.then(()=>new Promise(ok=>setTimeout(ok,250)));
+  return run.finally(()=>fillAsked.delete(c.id));
 }
 async function fillPricesNow(c) {
   if(c.variants?.some(v=>v.productId&&v.usd==null)){
@@ -117,7 +117,7 @@ export function normalizePtcg(c) {
   ].filter(Boolean).join("\n\n");
   return {
     game: "ptcg",
-    variantSchema: 4,
+    variantSchema: 5,
     released:c.set?.releaseDate || "",
     id: c.id,
     name: c.name,
@@ -273,7 +273,7 @@ export const ptcgSource = {
     const c = normalizePtcg(d);
     // No price from TCGdex (common for new sets): ask the Pokémon TCG API, which also carries
     // TCGplayer market prices.
-    if (c.prices.usd == null) fillPrices(c);
+    if (c.prices.usd == null) await fillPrices(c);
     return c;
   },
   // Exact printing from a scan: name plus collector number (053 or 53).

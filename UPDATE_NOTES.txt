@@ -1,3 +1,6 @@
+3.34.3 — Price fallback survives restart
+- Detailed Pokémon records await the exact-product fallback before entering the persistent cache. Concurrent requests share the in-flight lookup; completed/failed lookups can be requested again. Existing Pokémon cache records refresh automatically on Collection.
+
 3.34.2 — Accurate historical-point labels
 - Shared/imported dates no longer carry the device-only “your check” label; device observations remain explicitly identified.
 
