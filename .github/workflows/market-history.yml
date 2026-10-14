@@ -13,7 +13,7 @@ permissions:
   contents: read
   id-token: write
 concurrency:
-  group: market-history
+  group: market-history-${{ github.event_name }}
   cancel-in-progress: false
 jobs:
   record:
@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        game: [mtg, ptcg, ygo]
+        game: ${{ fromJSON(github.event_name == 'push' && '["mtg"]' || '["mtg","ptcg","ygo"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

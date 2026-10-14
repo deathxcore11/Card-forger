@@ -7,7 +7,7 @@ BASE='https://noxfmbwuytnbvfgukpiv.supabase.co'
 KEY='sb_publishable_TpEfTlAdziX6ALSZLA7U_A_tBKKHcAz'
 from functools import lru_cache
 
-UA='CardStashy/3.27 (daily dated market observations; github.com/deathxcore11/Card-forger)'
+UA='CardStashy/3.35.1 (daily dated market observations; github.com/deathxcore11/Card-forger)'
 TODAY=datetime.datetime.now(datetime.timezone.utc).date().isoformat()
 
 def get(url,headers=None):

@@ -31,7 +31,8 @@ Deno.serve(async req=>{
    if(Number(req.headers.get('content-length') || 0)>1000000)return reply({error:'Batch too large'},413);
    const text=await req.text();if(text.length>1000000)return reply({error:'Batch too large'},413);
    const rows=JSON.parse(text);if(!Array.isArray(rows)||rows.length>100)return reply({error:'Invalid batch'},400);
-   for(const r of rows){if(!valid(r.game,r.card_id,r.finish)||!['TCGplayer retail via MTGJSON','TCGplayer retail via Scryfall','TCGplayer market via TCGdex','TCGplayer market via TCGCSV','TCGplayer reference via YGOPRODeck'].includes(r.source)||!Array.isArray(r.points)||r.points.length>366||r.points.some((p:any)=>!/^\d{4}-\d{2}-\d{2}$/.test(p.date)||!Number.isFinite(p.value)||p.value<0||p.value>10000000))throw Error('Invalid quote');await save(r.game,r.card_id,r.finish,r.source,r.points);}
+   for(const r of rows){if(!valid(r.game,r.card_id,r.finish)||!['TCGplayer retail via MTGJSON','TCGplayer retail via Scryfall','TCGplayer market via TCGdex','TCGplayer market via TCGCSV','TCGplayer reference via YGOPRODeck'].includes(r.source)||!Array.isArray(r.points)||r.points.length>366||r.points.some((p:any)=>!/^\d{4}-\d{2}-\d{2}$/.test(p.date)||!Number.isFinite(p.value)||p.value<0||p.value>10000000))throw Error('Invalid quote');}
+   for(let start=0;start<rows.length;start+=8)await Promise.all(rows.slice(start,start+8).map(r=>save(r.game,r.card_id,r.finish,r.source,r.points)));
    return reply({saved:rows.length});
   }
   if(req.method!=='GET')return reply({error:'Method not allowed'},405);

@@ -1,5 +1,5 @@
 """Walk complete provider catalogues; write only real dated quotes, never synthetic history."""
-import importlib.util,json,urllib.request,time
+import importlib.util,json,gzip,urllib.request,time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 spec=importlib.util.spec_from_file_location('market_importer',Path(__file__).with_name('market-history.py'))
@@ -13,15 +13,32 @@ def row(game,id,finish,source,value):
 
 def catalog_rows(game):
     if game=='mtg':
-        bulk=m.get('https://api.scryfall.com/bulk-data')
-        url=next(x['download_uri'] for x in bulk['data'] if x['type']=='default_cards')
-        request=urllib.request.Request(url,headers={'User-Agent':m.UA})
-        with urllib.request.urlopen(request,timeout=180) as stream:
-            for card in m.ijson.items(stream,'item',use_float=True):
-                if 'paper' not in card.get('games',[]):continue
-                for finish,key in [('nonfoil','usd'),('foil','usd_foil'),('etched','usd_etched')]:
-                    r=row(game,card['id'],finish,'TCGplayer retail via Scryfall',card.get('prices',{}).get(key))
-                    if r:yield r
+        def priced(card):
+            if 'paper' not in card.get('games',[]):return
+            for finish,key in [('nonfoil','usd'),('foil','usd_foil'),('etched','usd_etched')]:
+                r=row(game,card['id'],finish,'TCGplayer retail via Scryfall',card.get('prices',{}).get(key))
+                if r:yield r
+        try:
+            bulk=m.get('https://api.scryfall.com/bulk-data')
+            snapshot=next(x for x in bulk['data'] if x['type']=='default_cards')
+            url=snapshot.get('download_uri') or snapshot.get('jsonl_download_uri')
+            if not url:raise KeyError('bulk download URI')
+            request=urllib.request.Request(url,headers={'User-Agent':m.UA,'Accept':'application/json'})
+            with urllib.request.urlopen(request,timeout=180) as stream:
+                if snapshot.get('jsonl_download_uri') and not snapshot.get('download_uri'):
+                    with gzip.GzipFile(fileobj=stream) as records:
+                        for line in records:
+                            if line.strip():yield from priced(json.loads(line))
+                else:
+                    for card in m.ijson.items(stream,'item',use_float=True):yield from priced(card)
+        except (OSError,KeyError,StopIteration,ValueError) as error:
+            print('Bulk snapshot unavailable:',type(error).__name__,'using complete paged printing search')
+            url='https://api.scryfall.com/cards/search?q=game%3Apaper&unique=prints&order=set&dir=desc'
+            while url:
+                data=m.get(url)
+                for card in data.get('data',[]):yield from priced(card)
+                url=data.get('next_page') if data.get('has_more') else None
+                if url:time.sleep(.15)
     elif game=='ygo':
         cards=m.get('https://db.ygoprodeck.com/api/v7/cardinfo.php')['data']
         for card in cards:
