@@ -3,7 +3,8 @@
 // TCGplayer product id comes from TCGdex; without one, the product is matched in the set's
 // TCGplayer group by name and collector number. Never another printing's image.
 const MONTH = 60 * 60 * 24 * 30;
-const words = (s) => String(s || "").toLowerCase().replace(/\bhs\b/g, "hgss").replace(/pok[eé]mon/g, "").match(/[a-z0-9]+/g) || [];
+// Words of a set name, singular ("Energies" and "Energy" match), "HS" read as HGSS.
+const words = (s) => (String(s || "").toLowerCase().replace(/\bhs\b/g, "hgss").replace(/pok[eé]mon/g, "").match(/[a-z0-9]+/g) || []).map((w) => (w.length > 4 ? w.replace(/ies$/, "y").replace(/s$/, "") : w));
 const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 const numKey = (s) => {
   const first = String(s || "").split("/")[0].trim().toUpperCase();
@@ -70,5 +71,23 @@ export async function pokemonArtRoute(request, url, ctx, fetchImpl = fetch) {
     return res;
   } catch {
     return new Response("Artwork unavailable", { status: 503 });
+  }
+}
+
+// TCGplayer's own set codes ("SSP", "PAL"…) for a game, for Mass Entry lines. Cached for a day.
+export async function tcgplayerSetsRoute(url, ctx, fetchImpl = fetch) {
+  const cat = { ptcg: 3, ygo: 2, mtg: 1 }[url.searchParams.get("game")];
+  if (!cat) return Response.json({ error: "Unknown game" }, { status: 400 });
+  const cache = caches.default, hit = await cache.match(url.href);
+  if (hit) return hit;
+  try {
+    const r = await fetchImpl(`https://tcgcsv.com/tcgplayer/${cat}/groups`, { headers: { Accept: "application/json", "User-Agent": "CardStashy/3.54 (mass entry set codes)" }, signal: AbortSignal.timeout(15000) });
+    if (!r.ok) throw Error();
+    const sets = ((await r.json()).results || []).filter((g) => g.abbreviation).map((g) => ({ name: g.name, code: g.abbreviation }));
+    const res = Response.json({ sets }, { headers: { "Cache-Control": "public, max-age=86400" } });
+    ctx?.waitUntil?.(cache.put(url.href, res.clone()));
+    return res;
+  } catch {
+    return Response.json({ sets: [] }, { status: 503 });
   }
 }

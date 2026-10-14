@@ -1,6 +1,7 @@
 // One buying flow for every game: copy the cards you still need, say so in a small in-app sheet
 // with what to do next, then open TCGplayer's Mass Entry (paste → Add to cart).
 import { ask } from "./dialog.js";
+import { pickGroup } from "./pokemon-art.js";
 
 const LINE = { mtg: "Magic", ptcg: "Pokemon", ygo: "YuGiOh" };
 export const massEntryUrl = (game) => `https://www.tcgplayer.com/massentry?productline=${LINE[game] || "Magic"}`;
@@ -37,4 +38,16 @@ export async function buyOnTcgplayer(game, lines, { what = "cards you need" } = 
   );
   if (go) window.open(massEntryUrl(game), "_blank", "noopener");
   return true;
+}
+
+// Pokémon on TCGplayer's Mass Entry need the set: "4 Milotic ex [SSP]". No collector number, so
+// any art from that set can fill the line (the cheapest listing usually wins). rows: [{ qty, name, set }].
+let ptcgSets = null;
+export async function pokemonMassLines(rows) {
+  ptcgSets ||= fetch("api/tcgplayer/sets?game=ptcg").then((r) => (r.ok ? r.json() : { sets: [] })).then((d) => d.sets || []).catch(() => ((ptcgSets = null), []));
+  const sets = await ptcgSets;
+  return rows.map((r) => {
+    const g = r.set ? pickGroup(sets, r.set) : null;
+    return `${r.qty} ${r.name}${g ? ` [${g.code}]` : ""}`;
+  });
 }

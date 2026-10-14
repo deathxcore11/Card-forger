@@ -12,3 +12,10 @@ assert.equal(pickProduct(products, { name: "Charizard", localId: "001" }).produc
 assert.equal(pickProduct(products, { name: "Kingdra", localId: "XY39" }).productId, 11);
 assert.equal(pickProduct(products, { name: "Charizard", localId: "2" }), null, "never another printing's image");
 console.log("PASS: Pokémon art fallback picks the exact TCGplayer set and card, never another printing.");
+// Mass Entry set codes: TCGplayer's set names carry a series prefix and plural "Energies".
+const tp = [{ name: "SV08: Surging Sparks", code: "SSP" }, { name: "SVE: Scarlet & Violet Energies", code: "SVE" }, { name: "ME: Ascended Heroes", code: "ASC" }, { name: "ME01: Mega Evolution", code: "MEG" }, { name: "MEE: Mega Evolution Energies", code: "MEE" }];
+assert.equal(pickGroup(tp, "Surging Sparks").code, "SSP");
+assert.equal(pickGroup(tp, "Scarlet & Violet Energy").code, "SVE");
+assert.equal(pickGroup(tp, "Mega Evolution").code, "MEG");
+assert.equal(pickGroup(tp, "Mega Evolution Energy").code, "MEE");
+console.log("PASS: TCGplayer set codes for Mass Entry lines.");

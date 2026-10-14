@@ -1,3 +1,9 @@
+3.54.1 — Pokémon shopping lists TCGplayer accepts
+- TCGplayer's Mass Entry rejected Pokémon lines that had only the card name. Pokémon lines now carry
+  TCGplayer's own set code, e.g. "4 Milotic ex [SSP]" and "2 Budew [ASC]", taken from TCGplayer's set
+  list. There's no collector number, so any art of that card from that set can fill the line and
+  TCGplayer can pick the cheapest. Magic and Yu-Gi-Oh! lines are unchanged (names are enough).
+
 3.54.0 — Build decks looks like your decks, and buying is one tap
 - Each version in Build decks lists its cards as the same tiles as the deck page: the card art with
   its price, type and set badges, "Need 4" or "Owned", and the number of copies. Pokémon, Trainers and
