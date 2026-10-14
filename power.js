@@ -26,6 +26,7 @@ const readinessLabel=p=>p.readiness?.provisional?'Provisional · resolve deck ch
 
 import { esc, ring, bar, pct } from "./ui.js";
 import { review } from "./deckaudit.js";
+import { scoutingReport, competitiveScore, competitiveTier } from "./scouting.js";
 import { mtgGoldfish } from "./goldfish.js";
 import { cardKey } from "./core.js";
 import { engineProfile } from "./insights.js";
@@ -174,7 +175,7 @@ export function tcgPower(g, d, f, cardOf) {
 
 /* ---------- Rendering ---------- */
 
-export const powerChip = (p) => `<span class="power-chip p-${p.score >= 80 ? "hi" : p.score >= 60 ? "mid" : "lo"}" title="Deck Power ${p.score}/100 · ${esc(readinessLabel(p))}"><em>${p.score}</em> ${p.readiness?.provisional?"provisional":"power"}</span>`;
+export const powerChip = (p) => { const c = competitiveScore(p), v = c ?? p.score; return `<span class="power-chip p-${v >= 80 ? "hi" : v >= 60 ? "mid" : "lo"}" title="${c != null ? `Competitive ${c}/100 · engine ${p.heuristic ?? p.score}` : `Deck Power ${p.score}/100 · ${esc(readinessLabel(p))}`}"><em>${v}</em> ${c != null ? "comp." : p.readiness?.provisional ? "provisional" : "power"}</span>`; };
 
 export function powerPanel(p, { loadAct = "", findAct = "", cardAct = () => "" } = {}) {
   const m = p.match,
@@ -237,7 +238,16 @@ export function powerPanel(p, { loadAct = "", findAct = "", cardAct = () => "" }
       <p class="foot">Solitaire approximation: generic plays and combat, without an opponent. It does not resolve every card ability, stack interaction or infinite combo, so it is not a cEDH win-turn forecast.</p></section>`
       : "";
   const profile = p.profile?.length ? `<div class="pw-profile">${p.profile.map(([k, v]) => `<span><b>${esc(String(v))}</b>${esc(k)}</span>`).join("")}</div>` : "";
-  return `<section class="panel score-panel power">${ring(p.score)}<div><p class="eyebrow">${p.from === "meta" ? "Deck Power · tournament comparison" : "Deck Power · engine estimate"}</p><h2>${p.from === "commander" ? "Commander build check" : esc(readinessLabel(p))}</h2><p class="small"><b>${esc(p.plan)}</b></p><p class="muted small">${esc(p.lens)}</p>${top ? `<p class="pw-headline small">Biggest gain: <b>${esc(top.label)}</b> (+${pts(top.lost)} pts available)</p>` : ""}</div>${profile}</section>
+  // Two numbers, never one in a vacuum: Engine (how well the list is built for its own plan) and
+  // Competitive (how it stacks up against what's winning). The ring leads with Competitive when
+  // tournament data exists.
+  const comp = competitiveScore(p),
+    eng = p.heuristic ?? p.score,
+    tier = competitiveTier(comp),
+    lead = comp ?? p.score;
+  return `<section class="panel score-panel power">${ring(lead)}<div><p class="eyebrow">${comp != null ? "Deck Power · competitive" : p.from === "commander" ? "Deck Power · Commander build" : "Deck Power · engine estimate"}</p><h2>${p.from === "commander" ? "Commander build check" : comp != null ? esc(tier.label) : esc(readinessLabel(p))}</h2><p class="small"><b>${esc(p.plan)}</b></p><p class="muted small">${esc(p.lens)}</p>${top ? `<p class="pw-headline small">Biggest gain: <b>${esc(top.label)}</b> (+${pts(top.lost)} pts available)</p>` : ""}</div>
+  <div class="pw-dual"><span class="${comp == null ? "dim" : tier.tone}"><b>${comp ?? "—"}</b>Competitive<small>${comp == null ? "needs tournament data" : "vs. what's winning now"}</small></span><span><b>${eng}</b>Engine<small>how well it's built for its plan</small></span></div>${profile}</section>
+  ${scoutingReport(p)}
   ${engineMapPanel(p.engine)}
   ${p.readiness?.provisional?`<section class="panel issues-panel"><h3>Resolve before treating this as competitive</h3>${p.readiness.unknown?`<p>${p.readiness.unknown} card copies still need their details loaded.</p>`:""}<ul>${p.readiness.issues.map(x=>`<li>${esc(x)}</li>`).join("")}</ul><p class="foot">The displayed score is a comparison, not evidence that an incomplete or illegal list is tournament ready.</p></section>`:""}
   ${p.from === "meta" ? '<details class="panel"><summary>Optional generic build checks</summary>' : ""}<section class="panel pw-weak"><div class="row between"><h3>${p.from === "meta" ? "Build-model cautions" : "Build-health checks"}</h3><span class="muted small">${R.weak.length ? `${R.weak.length} found, biggest first` : "none"}</span></div>${p.from === "meta" ? '<p class="foot">These generic role targets are advisory. They do not override the placing list’s tournament evidence or prove that its engine is weak.</p>' : ""}${weak}</section>

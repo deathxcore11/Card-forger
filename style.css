@@ -2592,3 +2592,19 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .build-pop p { color: var(--accent, #e8b85a); }
 .build-fan i { border: 2px solid var(--accent, #e8b85a); transform: rotate(var(--r)); animation: fan2 1.8s ease-in-out infinite alternate; }
 @keyframes fan2 { from { transform: rotate(var(--r)) translateY(0); } to { transform: rotate(calc(var(--r) * 1.5)) translateY(-6px); } }
+
+/* Deck Power: Competitive + Engine, and the scouting report */
+.pw-dual { flex: 1 1 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.pw-dual span { display: grid; gap: 1px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--text) 5%, transparent); font-size: .78rem; color: var(--muted); border-left: 3px solid var(--line); }
+.pw-dual span b { font-size: 1.5rem; color: var(--text); line-height: 1.1; }
+.pw-dual span small { font-size: .72rem; }
+.pw-dual span.ok { border-left-color: var(--good, #3fb68b); }
+.pw-dual span.warn { border-left-color: var(--warn, #e0a240); }
+.pw-dual span.bad { border-left-color: var(--bad, #e5534b); }
+.pw-dual span.dim b { color: var(--muted); }
+.scout { display: grid; gap: 4px; }
+.scout-row { padding: 10px 0; border-top: 1px solid var(--line); }
+.scout-row:first-of-type { border-top: 0; }
+.scout-row h3 { margin: 0 0 4px; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.scout-row p { margin: 0; line-height: 1.55; }
+.scout-row:last-of-type p b:first-child { color: var(--accent, #e8b85a); }

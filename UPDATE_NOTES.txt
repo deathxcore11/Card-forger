@@ -1,3 +1,17 @@
+3.41.0 — Two scores and a scouting report on every deck
+- Deck Power now shows two numbers, so a deck is never rated in a vacuum:
+  Competitive (how it stacks up against the decks winning right now, from recent tournament
+  results) and Engine (how well it's built for its own plan). When tournament data exists, the
+  big ring and deck tiles lead with Competitive and a plain tier: Tier 1 contender, Competitive
+  at regionals, Locals-ready, Rogue, or Casual. Without data, it says so instead of guessing.
+- New scouting report on the Power tab, written from the deck's own numbers in each game's
+  terms: the plan (what it opens with, extends with and holds up in Yu-Gi-Oh!; setup, draw and
+  gust in Pokémon; aggro/midrange/control/ramp and its theme in Magic), how a game goes
+  (played-out goldfish and its weak spot), what makes it work (the card synergies and how often
+  you draw both halves), how it wins and its late game, how it fares against the field (the
+  archetype it copies or the decks to beat, and rival cards that hit its plan), and a verdict
+  with the first things to fix.
+
 3.40.0 — Budget versions that use their budget, and a clear building pop-up
 - Every budget version now spends toward its limit, in all three games. After the best list
   for a budget is found, the builder swaps the weakest cards for stronger ones that fit the
