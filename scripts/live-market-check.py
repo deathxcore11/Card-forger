@@ -11,13 +11,13 @@ def check(label,url,kind):
     try:
         body=get(url,kind in ('version','layout'))
         if kind=='version':
-            assert 'Version 3.39.0' in body,'Published version marker is older than 3.39.0'
-            summary='3.39.0'
+            assert 'Version 3.39.1' in body,'Published version marker is older than 3.39.1'
+            summary='3.39.1'
         elif kind=='layout':
-            assert '.cs-hero.mtg:not(.compact) { aspect-ratio:4/3;' in body
-            assert '.cs-hero.ygo:not(.compact) { aspect-ratio:1;' in body
-            assert '.cs-hero.ptcg:not(.compact)' in body
-            summary='All three game-specific artwork layouts are deployed'
+            assert '.cs-banner > .cs-title { position:absolute;' in body
+            assert '.cs-banner > .cs-hero.ptcg:not(.compact) .cs-art' in body
+            assert 'transform:scale(1.35)' in body
+            summary='Original art banner, faded title overlay and Pokemon artwork framing deployed'
         elif kind=='printing':
             summary=body
             rarities={p['rarity']:p for p in body.get('printings',[]) if p['code']=='MAMO-EN038'}
@@ -38,7 +38,7 @@ def check(label,url,kind):
 # Allow the independent Cloudflare build to finish before checking the new routes.
 for attempt in range(12):
     try:
-        if 'Version 3.39.0' in get(ROOT+'views.js',raw=True):break
+        if 'Version 3.39.1' in get(ROOT+'views.js',raw=True):break
     except Exception as exc:
         print('Deployment check:',str(exc),flush=True)
         if isinstance(exc,urllib.error.HTTPError) and exc.code in (401,403):break
