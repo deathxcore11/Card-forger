@@ -1,3 +1,6 @@
+3.34.2 — Accurate historical-point labels
+- Shared/imported dates no longer carry the device-only “your check” label; device observations remain explicitly identified.
+
 3.34.1 — Default set order and contextual diagnostics
 - Collection defaults to newest release year then natural card number in all three games; alternate sorts stay available. Set dates load when opening Collection.
 - Matched tournament decks keep generic role cautions behind an optional disclosure. Commander solitaire simulations explicitly state their partial ability model and remain available without dominating the competitive result.
