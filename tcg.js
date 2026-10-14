@@ -17,7 +17,10 @@ import { locationPicker, rememberLocation } from "./collection-locations.js";
 import { zoneCountLabel } from "./deck-safety.js";
 import { binderShelf } from "./binders.js";
 import { emblemChips, rowEmblem, hasEmblem, impactScore, tradeAdvice, tradeAdviceHtml, deckEmblems, deckEmblemHtml, cardMetaUsage, cardMetaTab, playRate } from "./importance.js";
-import { attackReach, abilityEnergy } from "./deckpower.js";
+import { attackReach, abilityEnergy, ygoPower, ptcgPower } from "./deckpower.js";
+import { matchupsTab, fieldStore, computeMatchups, celebrate } from "./matchups-ui.js";
+import { profileOf, simulateMatchup, gamePlan, recordOf, blend } from "./matchup.js";
+import { haptic } from "./feel.js";
 import { tileChrome } from "./tiles.js";
 // Yu-Gi-Oh! and Pokémon: collection, search, sets and deck building, sharing one
 // set of screens. Each game's data, rules and formats come from its adapter.
@@ -1115,8 +1118,8 @@ export function tcgDeck(id) {
     <button class="review-badge ${issues.length ? "bad" : "ok"}" data-act="tIssues" data-deck="${esc(d.id)}">${issues.length ? `● ${issues.length} to fix` : s.total ? "✓ Legal in " + esc(f.name) : "Add cards to check legality"}</button>
     <div class="hero-stats"><span><b>${zoneCount("main")}</b>${g === "ygo" ? "main" : "/60 cards"}</span><span><b>${s.total ? Math.round((s.owned / s.total) * 100) : 0}%</b>owned</span><span><b>${usd(s.buy, 0)}${s.unknown ? "+" : ""}</b>to finish${s.unknown ? " · some unpriced" : ""}</span>${s.total ? `<button data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="insights"><b>${shownPower(tcgPower(g, d, f, (x) => cardOf(g, x)))}</b>power</button>` : ""}</div>
   </div></section>
-  <nav class="tabs" role="tablist">${[["cards", "Cards"], ["insights", "Power"], ["upgrade", "Upgrade lab"], ["playtest", "Playtest"], ["versions", "Versions"]].map(([id, l]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="${id}">${l}</button>`).join("")}</nav>
-  <div class="deck-body">${tab === "insights" ? deckInsights(g, d, f, s) : tab === "upgrade" ? deckUpgradeTab(g, d, f, s) : tab === "playtest" ? deckPlaytest(g, d, f) : tab === "versions" ? deckVersions(g, d) : deckCardsTab(g, d, f, s, issues)}</div>`;
+  <nav class="tabs" role="tablist">${[["cards", "Cards"], ["insights", "Power"], ["matchups", "Matchups"], ["upgrade", "Upgrade lab"], ["playtest", "Playtest"], ["versions", "Versions"]].map(([id, l]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="${id}">${l}</button>`).join("")}</nav>
+  <div class="deck-body">${tab === "insights" ? deckInsights(g, d, f, s) : tab === "matchups" ? deckMatchupsT(g, d, f) : tab === "upgrade" ? deckUpgradeTab(g, d, f, s) : tab === "playtest" ? deckPlaytest(g, d, f) : tab === "versions" ? deckVersions(g, d) : deckCardsTab(g, d, f, s, issues)}</div>`;
 }
 
 // Meta / staple tally for the deck, and owned staples that could replace no-emblem cards.
@@ -1187,6 +1190,35 @@ export const atLeastOne = (N, k, n) => {
   return 1 - none;
 };
 const pctTxt = (x) => Math.round(x * 100) + "%";
+
+// Matchups: this deck against the decks winning now, with each game's own rules.
+const META_FORMAT = { ygo: "tcg", ptcg: "standard" };
+export const tcgFieldKey = (g) => g + ":" + META_FORMAT[g] + "|" + (metaState(g)?.at || 0);
+const muStateT = (g, d) => ((S.ui.mu ||= {})[g + ":" + d.id] ||= { first: true });
+const tRows = (g, zone) => (zone || []).map((r) => ({ qty: r.qty, c: cardOf(g, r.cardId), name: r.name })).filter((r) => r.c);
+const tPower = (g, f, main, extra = []) => (g === "ygo" ? ygoPower([...main.map((r) => ({ ...r, zone: "main" })), ...extra.map((r) => ({ ...r, zone: "extra" }))], f) : ptcgPower(main, f));
+function deckMatchupsT(g, d, f) {
+  const st = muStateT(g, d),
+    base = { prefix: "tMu", gameName: g === "ygo" ? "Yu-Gi-Oh!" : "Pokémon", game: g, state: st, runKey: g + ":" + d.id,
+      modelNote: g === "ygo" ? "going first opens a combo against the other side's hand traps; going second breaks boards" : "a Prize race: first attack, attacks per Knock Out against their HP and Weakness, Prize values and disruption" };
+  if ((d.format || META_FORMAT[g]) !== META_FORMAT[g]) return matchupsTab({ ...base, unsupported: `Tournament results cover ${g === "ygo" ? "TCG Advanced" : "Standard"} only. Switch this deck's format to compare it with the field.` });
+  const main = tRows(g, d.zones?.main), need = g === "ygo" ? 40 : 60, have = main.reduce((a, r) => a + r.qty, 0);
+  if (have < need) return matchupsTab({ ...base, unsupported: `Finish the deck first: matchups compare complete lists (this one has ${have} of ${need}).` });
+  const key = tcgFieldKey(g);
+  if (!st.field || st.fieldKey !== key) { const cached = metaState(g)?.data ? fieldStore.get(key) : null; if (cached) { st.field = cached; st.fieldKey = key; } }
+  if (!st.field?.length || st.fieldKey !== key) return matchupsTab({ ...base, field: [], fieldLabel: g === "ygo" ? "in TCG Advanced" : "in Standard" });
+  const extra = tRows(g, d.zones?.extra), side = tRows(g, d.zones?.side),
+    me = profileOf(g, tcgPower(g, d, f, (x) => cardOf(g, x)), main, extra);
+  if (!me) return matchupsTab({ ...base, unsupported: "This deck's cards are still loading. Open the Power tab once, then come back." });
+  const lead = Object.entries(main.reduce((a, r) => (r.c.archetype ? ((a[r.c.archetype] = (a[r.c.archetype] || 0) + r.qty), a) : a), {})).sort((a, b) => b[1] - a[1])[0]?.[0],
+    protect = (r) => !!lead && r.c.archetype === lead,
+    reprofile = (rs) => profileOf(g, tPower(g, f, rs, extra), rs, extra),
+    sims = computeMatchups(key + "|" + d.id + "|" + JSON.stringify(d.zones), st.field, me, (op, win) => gamePlan(g, me, op, { main, side, protect, reprofile, sim: win }), (a, b) => simulateMatchup(g, a, b)),
+    results = d.results || [],
+    field = sims.map((m) => { const rec = recordOf(results, m.name); return { ...m, rec, shown: blend(m.sim.win, rec), open: st.openName === m.name }; }),
+    tot = field.reduce((a, m) => a + (m.share || 0), 0) || 1;
+  return matchupsTab({ ...base, field, fieldWin: field.reduce((a, m) => a + m.shown * (m.share || 0), 0) / tot, record: recordOf(results), history: [...results].sort((a, b) => String(b.at).localeCompare(String(a.at))) });
+}
 
 function deckInsights(g, d, f, s) {
   const main = (d.zones.main || []).map((r) => ({ r, c: cardOf(g, r.cardId) })),
@@ -2284,6 +2316,55 @@ export function registerTcg(c) {
     (S.ui.tdeckTab ||= {})[t.dataset.deck] = "cards";
     render();
     setTimeout(() => { const panel=document.querySelector("#tIssuesPanel"); const details=panel?.querySelector("details"); if(details)details.open=true; panel?.scrollIntoView({ behavior: "smooth", block: "center" }); }, 50);
+  };
+  // ----- matchups -----
+  const muDeck = () => gs(g()).decks.find((x) => x.id === S.ui.tdeckId);
+  A.tMuRun = async () => {
+    const G = g(), d = muDeck();
+    if (!d) return;
+    const st = muStateT(G, d), f = formatOf(G, META_FORMAT[G]);
+    if (st.busy) return;
+    const msg = (m) => { st.msg = m; const el = document.querySelector(".build-overlay [role=status]"); if (el) el.textContent = m; };
+    Object.assign(st, { busy: true, error: "", msg: "Loading tournament results…" });
+    render();
+    try {
+      const data = await metaFor(G);
+      const archs = (data?.archetypes || []).filter((a) => a.share > 0).slice(0, 8),
+        lists = archs.map((a) => ({ a, list: data.decks.find((x) => x.key === a.best) })).filter((x) => x.list);
+      if (!lists.length) throw Error("No tournament decks to compare with right now.");
+      const field = [];
+      for (const [i, { a, list }] of lists.entries()) {
+        msg(`Loading ${a.name} · ${i + 1} of ${lists.length}`);
+        const { zones } = await metaZones(G, list, (m) => msg(`${a.name} · ${m}`));
+        const main = tRows(G, zones.main), extra = tRows(G, zones.extra);
+        if (!main.length) continue;
+        const prof = profileOf(G, tPower(G, f, main, extra), main, extra);
+        if (prof) field.push({ name: a.name, share: a.share, art: G === "ygo" ? (list.cover ? `https://images.ygoprodeck.com/images/cards_cropped/${encodeURIComponent(list.cover)}.jpg` : "") : a.icons?.[0] ? ptcgIcon(a.icons[0]) : "", profile: prof });
+      }
+      st.field = field;
+      st.fieldKey = tcgFieldKey(G);
+      fieldStore.set(st.fieldKey, field);
+      haptic("success");
+    } catch (e) {
+      st.error = e.message || "Couldn't load the field.";
+    } finally {
+      st.busy = false;
+      render();
+    }
+  };
+  A.tMuFirst = (t) => { muStateT(g(), muDeck()).first = t.dataset.v !== "second"; render(); };
+  A.tMuLog = async (t) => {
+    const G = g(), d = muDeck(), st = muStateT(G, d),
+      opp = t.dataset.opp || document.querySelector("#tMuOtherName")?.value.trim();
+    if (!opp) return;
+    st.openName = t.dataset.opp || null;
+    if (t.dataset.res === "W") { haptic("success"); celebrate(t); }
+    const game = { at: new Date().toISOString(), opp, res: t.dataset.res, first: st.first !== false };
+    await mutate((s2) => { const x = s2.decks.find((y) => y.id === d.id); (x.results ||= []).push(game); }, { msg: `${game.res === "W" ? "Win" : game.res === "L" ? "Loss" : "Draw"} vs ${opp} logged.` });
+  };
+  A.tMuUndo = async (t) => {
+    const d = muDeck();
+    await mutate((s2) => { const x = s2.decks.find((y) => y.id === d.id); x.results = (x.results || []).filter((r) => r.at !== t.dataset.at); }, { msg: "Game removed." });
   };
   A.tDeckTab = (t) => {
     (S.ui.tdeckTab ||= {})[t.dataset.deck] = t.dataset.id;

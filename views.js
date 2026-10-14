@@ -1,4 +1,9 @@
 import { APP_VERSION } from "./config.js";
+import { matchupsTab, fieldStore, computeMatchups } from "./matchups-ui.js";
+import { profileOf, simulateMatchup, gamePlan, recordOf, blend } from "./matchup.js";
+import { mtgConstructedPower } from "./deckpower.js";
+import { isCommanderLike } from "./formats.js";
+import { mtgMetaKey } from "./power.js";
 import {buildOverlay} from "./build-overlay.js";
 import { tierCardHtml } from "./tier-card.js";
 import { atLeastOne } from "./deckaudit.js";
@@ -1086,7 +1091,7 @@ export function deckPage() {
     fm = formatOf(d),
     target = fm.size,
     tab = S.ui.deckTab,
-    tabs = [["cards", "Cards"], ["engine", "Power"], ["upgrade", "Upgrade lab"], ["versions", "Versions"], ["playtest", "Playtest"], ["shop", t.missing ? `Shop · ${t.missing}` : "Shop"]];
+    tabs = [["cards", "Cards"], ["engine", "Power"], ["matchups", "Matchups"], ["upgrade", "Upgrade lab"], ["versions", "Versions"], ["playtest", "Playtest"], ["shop", t.missing ? `Shop · ${t.missing}` : "Shop"]];
   return `<section class="deck-hero">${img(coverOf(d), d.name, "hero-art")}<div class="hero-shade"></div>
     <div class="hero-body">
       <div class="row between"><button class="icon light" data-act="go" data-to="#decks" aria-label="Back to decks">←</button><button class="icon light" data-act="deckMenu" aria-label="Deck options">⋯</button></div>
@@ -1103,7 +1108,7 @@ export function deckPage() {
   </section>
   <nav class="tabs" role="tablist">${tabs.map(([id, l]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="deckTab" data-id="${id}">${l}</button>`).join("")}</nav>
   ${fm.commander && !canLead(meta(d.commander), fm) && tab !== "upgrade" ? `<button class="note warn block-note" data-act="deckTab" data-id="upgrade">⚠ No ${fm.commander === "planeswalker" ? "Oathbreaker" : "commander"} set — tap to choose one so colors and synergy are checked.</button>` : ""}
-  <div class="deck-body" data-tab="${tab}">${{ cards: deckCards, engine: deckEngine, upgrade: deckUpgrade, versions: deckVersions, playtest: deckPlaytest, shop: deckShop }[tab](d, t)}</div>`;
+  <div class="deck-body" data-tab="${tab}">${{ cards: deckCards, engine: deckEngine, matchups: deckMatchups, upgrade: deckUpgrade, versions: deckVersions, playtest: deckPlaytest, shop: deckShop }[tab](d, t)}</div>`;
 }
 
 function reviewBadge(d) {
@@ -1174,6 +1179,33 @@ function deckCards(d, t) {
   <div id="deckList">${deckList(d)}</div>
   ${mtgSideboard(d)}
   ${t.missing ? `<div class="sticky-bar"><span><b>${t.missing}</b> to get · ${usd(t.pricedGap, 0)}</span><span><button class="btn ghost small" data-act="deckTab" data-id="shop">Shop</button><button class="btn small" data-act="acquire">I got cards</button></span></div>` : ""}`;
+}
+
+// Matchups: this deck against the decks winning in its format, then the games you log.
+export const mtgFieldKey = (d) => { const mk = mtgMetaKey(d); return mk ? mk + "|" + (metaState(mk)?.at || 0) : null; };
+function deckMatchups(d) {
+  const fm = formatOf(d), mk = mtgMetaKey(d),
+    st = ((S.ui.mu ||= {})[d.id] ||= { first: true }),
+    base = { prefix: "mu", gameName: "Magic", state: st, modelNote: "both decks' played-out clocks race, slowed by the removal and counters each side draws", runKey: "mtg:" + d.id };
+  if (isCommanderLike(d)) return matchupsTab({ ...base, unsupported: "Commander is a four-player game, so one-on-one matchups don't apply. Bracket and Deck Power describe how it fits a table." });
+  if (!mk) return matchupsTab({ ...base, unsupported: `There are no tournament results for ${fm.name} in the data. Matchups work for Standard, Pioneer, Modern, Legacy, Vintage, Pauper and Premodern.` });
+  if (sumQty(d.cards) < fm.size) return matchupsTab({ ...base, unsupported: `Finish the deck first: matchups compare complete ${fm.size}-card lists (this one has ${sumQty(d.cards)}).` });
+  const fkey = mtgFieldKey(d);
+  if (!st.field || st.fieldKey !== fkey) { const cached = metaState(mk)?.data ? fieldStore.get(fkey) : null; if (cached) { st.field = cached; st.fieldKey = fkey; } }
+  if (!st.field?.length || st.fieldKey !== fkey) return matchupsTab({ ...base, field: [], fieldLabel: `in ${fm.name}` });
+  const rows = d.cards.map((r) => ({ qty: r.qty, c: meta(r.name) })).filter((r) => r.c),
+    side = (d.side || []).map((r) => ({ qty: r.qty, c: meta(r.name), name: r.name })),
+    me = profileOf("mtg", mtgPower(d), rows),
+    reprofile = (rs) => profileOf("mtg", mtgConstructedPower({ cards: rs.map((r) => ({ name: r.c.name, qty: r.qty })) }, S.catalog, key, fm.size), rs);
+  if (!me) return matchupsTab({ ...base, unsupported: "This deck's cards are still loading. Open the Power tab once, then come back." });
+  const sims = computeMatchups(fkey + "|" + JSON.stringify([d.cards, d.side || []]), st.field, me, (op, win) => gamePlan("mtg", me, op, { main: rows, side, reprofile, sim: win }), (a, b) => simulateMatchup("mtg", a, b)),
+    results = d.results || [];
+  return matchupsTab({ ...base, ...fieldSummary(sims, results, st) });
+}
+export function fieldSummary(sims, results, st) {
+  const field = sims.map((m) => { const rec = recordOf(results, m.name); return { ...m, rec, shown: blend(m.sim.win, rec), open: st.openName === m.name }; }),
+    tot = field.reduce((a, m) => a + (m.share || 0), 0) || 1;
+  return { field, fieldWin: field.reduce((a, m) => a + m.shown * (m.share || 0), 0) / tot, record: recordOf(results), history: [...results].sort((a, b) => String(b.at).localeCompare(String(a.at))) };
 }
 
 // The sideboard: up to 15 cards swapped in between games. Not part of the main-deck count,

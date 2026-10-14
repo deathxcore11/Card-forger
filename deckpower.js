@@ -428,7 +428,7 @@ export function ygoPower(rows, f = {}) {
     goldfish: gold,
     plan: lead ? lead[0] + " engine" : "Unfocused",
     unknown,
-    stats: { N, E, starters: q(starters), extenders: q(extenders), handtraps: q(hts), negates: q(negs), startOdds: S("open"), engine: q(engine), nonEngine: q(nonEngine) },
+    stats: { N, E, starters: q(starters), extenders: q(extenders), handtraps: q(hts), negates: q(negs), breakers: q(breakers), startOdds: S("open"), second: S("second"), engine: q(engine), nonEngine: q(nonEngine) },
     profile: [["Engine", `${q(engine)} cards`], ["Non-engine", `${q(nonEngine)} cards`], ["Starters", q(starters)], ["Hand traps", q(hts)], ["Extra Deck", `${E}/${f.extra || 15}`]],
     sims: [
       { label: "Going first: opens a starter", p: S("open"), target: 0.88, note: "5 cards" },
@@ -654,6 +654,8 @@ export function ptcgPower(rows, f = {}) {
     caps: capped.caps,
     parts,
     goldfish: gold,
+    // For matchups: who takes the Prizes, how hard, and what it's weak to.
+    attacker: mainAtk ? { name: mainAtk.c.name, reach, hp: Number(mainAtk.c.hp) || 0, types: mainAtk.c.types || [], weak: (mainAtk.c.weak || []).map((w) => w.type), ruleBox: !!mainAtk.c.ruleBox, lives, gust: q(gusts), disrupt: q(by("disrupt")), swarm } : null,
     plan: mainAtk ? mainAtk.c.name + (line ? ` · ${line.text} line` : "") : "Pokémon deck",
     stats: { N, basics, pokemon, trainers, energy, mull },
     unknown,

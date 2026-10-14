@@ -2632,3 +2632,85 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .pw-cap { padding: 10px 0; border-top: 1px solid var(--line); }
 .pw-cap:first-of-type { border-top: 0; }
 .pw-cap p { margin: 6px 0 0; line-height: 1.45; }
+
+/* ---------- Matchups (all three games) ---------- */
+.mu-head { display: flex; gap: 16px; align-items: center; }
+.mu-head-text { min-width: 0; }
+.mu-head-text h2 { margin: 2px 0 4px; }
+.mu-ring { width: 92px; height: 92px; flex: none; transform: rotate(-90deg); }
+.mu-ring text { transform: rotate(90deg); transform-origin: 42px 42px; font: 800 19px Manrope, sans-serif; fill: var(--text); }
+.mu-ring-track { fill: none; stroke: color-mix(in srgb, var(--text) 9%, transparent); stroke-width: 7; }
+.mu-ring-fill { fill: none; stroke-width: 7; stroke-linecap: round; stroke-dasharray: var(--c); stroke-dashoffset: var(--o); animation: mu-ring 1.1s cubic-bezier(.2,.8,.2,1) both; }
+.mu-ring.good .mu-ring-fill { stroke: var(--good); } .mu-ring.even .mu-ring-fill { stroke: var(--gold); } .mu-ring.bad .mu-ring-fill { stroke: var(--bad); }
+@keyframes mu-ring { from { stroke-dashoffset: var(--c); } }
+.mu-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.mu-chip { font-size: .75rem; padding: 4px 9px; border-radius: 999px; background: color-mix(in srgb, var(--text) 6%, transparent); color: var(--muted); }
+.mu-chip.good { color: var(--good); background: color-mix(in srgb, var(--good) 12%, transparent); }
+.mu-chip.bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); }
+.mu-logbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 14px 2px 8px; }
+.mu-seg { display: inline-flex; padding: 3px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+.mu-seg button { border: 0; background: none; color: var(--muted); font: 600 13px inherit; padding: 6px 12px; border-radius: 9px; transition: background .2s, color .2s; }
+.mu-seg button.on { background: var(--surface); color: var(--text); box-shadow: 0 2px 8px #0004; }
+.mu-list { display: grid; gap: 8px; }
+.mu-row { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); overflow: hidden; animation: mu-in .45s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i) * 55ms); transition: border-color .2s, box-shadow .25s; }
+.mu-row[open] { border-color: color-mix(in srgb, var(--tone) 45%, var(--line)); box-shadow: 0 10px 28px -14px color-mix(in srgb, var(--tone) 60%, transparent); }
+.mu-row.good { --tone: var(--good); } .mu-row.even { --tone: var(--gold); } .mu-row.bad { --tone: var(--bad); }
+@keyframes mu-in { from { opacity: 0; transform: translateY(10px); } }
+.mu-row > summary { list-style: none; display: grid; grid-template-columns: 46px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; cursor: pointer; }
+.mu-row > summary::-webkit-details-marker { display: none; }
+.mu-art { width: 46px; height: 46px; border-radius: 12px; object-fit: cover; background: var(--surface-2); display: grid; place-items: center; font-weight: 800; color: var(--muted); }
+.mu-list.ptcg .mu-art { object-fit: contain; padding: 4px; }
+.mu-name { min-width: 0; display: grid; gap: 2px; }
+.mu-name b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mu-name small { color: var(--muted); font-size: .75rem; }
+.mu-bar { display: block; height: 5px; border-radius: 99px; background: color-mix(in srgb, var(--text) 8%, transparent); margin-top: 5px; overflow: hidden; }
+.mu-bar span { display: block; height: 100%; width: var(--w); border-radius: inherit; background: linear-gradient(90deg, color-mix(in srgb, var(--tone) 60%, transparent), var(--tone)); animation: mu-bar 1s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i) * 55ms + 150ms); }
+@keyframes mu-bar { from { width: 0; } }
+.mu-pct { text-align: right; display: grid; }
+.mu-pct b { font: 800 1.3rem Manrope, sans-serif; color: var(--tone); }
+.mu-pct small { font-size: .68rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.mu-body { padding: 2px 14px 14px; animation: mu-open .3s ease both; }
+@keyframes mu-open { from { opacity: 0; transform: translateY(-4px); } }
+.mu-split { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+.mu-split span { display: grid; gap: 1px; padding: 8px 10px; border-radius: 12px; background: var(--surface-2); font-size: .72rem; color: var(--muted); }
+.mu-split b { font: 800 1.05rem Manrope, sans-serif; color: var(--text); }
+.mu-why { margin: 0 0 10px; padding-left: 18px; display: grid; gap: 5px; font-size: .88rem; line-height: 1.45; }
+.mu-plan { padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--tone) 7%, var(--surface-2)); border-left: 3px solid var(--tone); margin-bottom: 10px; }
+.mu-plan.dim { background: var(--surface-2); border-left-color: var(--line); }
+.mu-plan ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: .86rem; line-height: 1.45; }
+.mu-plan-h { margin: 0 0 6px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.mu-delta { font-size: .78rem; padding: 2px 8px; border-radius: 99px; background: var(--surface); }
+.mu-delta.up { color: var(--good); } .mu-delta.down { color: var(--bad); }
+.mu-io { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mu-io > div { display: grid; gap: 5px; align-content: start; }
+.mu-io small { font-weight: 800; letter-spacing: .08em; font-size: .68rem; }
+.mu-swap { display: grid; padding: 6px 8px; border-radius: 10px; background: var(--surface); font-size: .82rem; line-height: 1.3; }
+.mu-swap small { color: var(--muted); font-size: .7rem; }
+.mu-swap.in b { color: var(--good); } .mu-swap.out b { color: var(--bad); }
+.mu-log { display: flex; gap: 6px; flex-wrap: wrap; }
+.mu-log .btn { flex: 1 1 0; min-width: 0; }
+.mu-log .mu-w { background: var(--good); color: #10251a; border-color: transparent; }
+.mu-rec-chip { color: var(--text); font-weight: 700; animation: mu-pop .5s cubic-bezier(.2,1.4,.4,1) both; display: inline-block; }
+@keyframes mu-pop { from { transform: scale(.6); opacity: 0; } }
+.mu-other { margin-top: 12px; } .mu-other summary { cursor: pointer; font-weight: 600; }
+.mu-other-row { display: grid; gap: 8px; margin-top: 10px; }
+.mu-hist summary { cursor: pointer; font-weight: 600; }
+.mu-games { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 6px; }
+.mu-games li { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: baseline; padding: 6px 10px; border-radius: 10px; background: var(--surface-2); font-size: .86rem; }
+.mu-games li.W b { color: var(--good); } .mu-games li.L b { color: var(--bad); } .mu-games li.D b { color: var(--gold); }
+.mu-games small { grid-column: 2; }
+.mu-games .link { grid-row: 1; grid-column: 3; }
+.mu-empty { text-align: center; display: grid; justify-items: center; gap: 8px; padding: 28px 18px; }
+.mu-empty-mark { width: 56px; height: 56px; border-radius: 18px; display: grid; place-items: center; font-size: 26px; background: color-mix(in srgb, var(--gold) 14%, var(--surface-2)); color: var(--gold); animation: mu-float 3s ease-in-out infinite; }
+@keyframes mu-float { 50% { transform: translateY(-4px) rotate(-4deg); } }
+.mu-row.skel { display: grid; grid-template-columns: 46px 1fr; gap: 12px; padding: 10px 12px; }
+.mu-row.skel b, .mu-row.skel small { display: block; height: 12px; border-radius: 6px; background: var(--surface-2); }
+.mu-row.skel small { width: 50%; margin-top: 6px; }
+.mu-burst { position: fixed; z-index: 80; pointer-events: none; }
+.mu-burst i { position: absolute; width: 7px; height: 7px; border-radius: 2px; background: var(--good); animation: mu-burst .8s cubic-bezier(.15,.8,.3,1) forwards; }
+.mu-burst i:nth-child(3n) { background: var(--gold); } .mu-burst i:nth-child(3n+1) { border-radius: 50%; }
+@keyframes mu-burst { to { transform: translate(var(--x), var(--y)) rotate(200deg); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .mu-row, .mu-bar span, .mu-ring-fill, .mu-body, .mu-rec-chip, .mu-empty-mark { animation: none; } }
+@media (max-width: 380px) { .mu-io { grid-template-columns: 1fr; } .mu-split { grid-template-columns: 1fr 1fr; } }
+.mu-seg button { white-space: nowrap; padding: 6px 10px; }
+.mu-logbar > span { white-space: nowrap; }

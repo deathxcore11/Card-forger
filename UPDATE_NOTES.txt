@@ -1,3 +1,22 @@
+3.48.0 — Matchups: how your deck does against the field, your results, and a plan for each
+- New Matchups tab on every deck in all three games. It simulates your deck against the most-played
+  tournament decks in its format (2,000 games each, half on the play), with each game's own rules:
+  Magic races both decks' played-out clocks, slowed by the removal and counters each side draws;
+  Pokémon runs a Prize race from first attack, attacks per Knock Out against the other attacker's
+  HP and Weakness, Prize values and disruption; Yu-Gi-Oh! plays the first turn out (open a combo,
+  get through hand traps, survive board breakers) from both sides.
+- A ring shows expected wins against the field, weighted by how often you'll face each deck, with
+  your best and worst matchups. Each matchup opens to on-the-play and on-the-draw odds and the
+  reasons in plain words.
+- Log your games in one tap (won, lost or draw; went first or second). Your record shows on each
+  matchup and moves the estimate: the simulation counts as six games, then your results take over.
+  Games are saved on the deck and sync with your account.
+- Game plan for each matchup: Magic and Yu-Gi-Oh! get a sideboard plan (what comes in, what goes
+  out and why, and what it does to your odds, re-simulated); swaps that test worse aren't
+  suggested. Pokémon gets a Prize plan: which attacker to lead with, hits per Knock Out, Prize
+  values, Weakness and the disruption to play around.
+- Animated ring and bars, staggered rows, a small burst on logged wins, and haptics throughout.
+
 3.47.0 — Magic sideboards
 - Magic tournament decks now keep their 15-card sideboard. It shows in the tournament deck
   preview (with what it costs to finish) and is saved with the original list, budget adaptation

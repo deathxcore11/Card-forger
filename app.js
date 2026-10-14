@@ -36,6 +36,9 @@ import {
   validateWorkspace, backupEnvelope, deckRowsFromImport,
 } from "./confidence.js";
 import { parseDeckImport, acquireMissing } from "./deck-flow.js";
+import { profileOf } from "./matchup.js";
+import { mtgConstructedPower } from "./deckpower.js";
+import { fieldStore, celebrate } from "./matchups-ui.js";
 import { completionPlan, commanderTheme } from "./planner.js";
 import { sourceCredit, mtgjsonDeck, collectionIdeas, upgradeSuggestions, applyUpgradeSwaps } from "./strategy.js";
 import { searchQuery, rankByName } from "./catalog-tools.js";
@@ -705,7 +708,7 @@ function parseHash() {
       ui.versions = { a: null, b: "current" };
     }
     ui.deckId = id;
-    if (["cards", "engine", "upgrade", "versions", "playtest", "shop"].includes(b)) ui.deckTab = b;
+    if (["cards", "engine", "matchups", "upgrade", "versions", "playtest", "shop"].includes(b)) ui.deckTab = b;
     if (id && id !== S.state.activeDeck && deckById(id)) {
       S.state.activeDeck = id;
       save();
@@ -789,6 +792,12 @@ function render() {
   if (metaBtn && !autoMeta.has(metaBtn.dataset.autoloadMeta)) {
     autoMeta.add(metaBtn.dataset.autoloadMeta);
     setTimeout(() => metaBtn.isConnected && metaBtn.click(), 50);
+  }
+  // Matchups start simulating the first time the tab opens (once per deck per session).
+  const runBtn = $("#content [data-autorun]");
+  if (runBtn && !autoMeta.has("run:" + runBtn.dataset.autorun)) {
+    autoMeta.add("run:" + runBtn.dataset.autorun);
+    setTimeout(() => runBtn.isConnected && runBtn.click(), 80);
   }
   // Deck tiles lead with the Competitive score, so load each Magic format's tournament results
   // once when the deck list or Home shows decks in it.
@@ -1145,6 +1154,61 @@ A.decksTab = (t) => go("#decks/" + t.dataset.id);
 A.deckTab = (t) => {
   closeSheet();
   go("#deck/" + currentDeck().id + "/" + t.dataset.id);
+};
+/* ---------- Matchups (Magic) ---------- */
+const muState = (d) => ((S.ui.mu ||= {})[d.id] ||= { first: true });
+A.muRun = async () => {
+  const d = currentDeck(), mk = d && mtgMetaKey(d);
+  if (!d || !mk) return;
+  const st = muState(d);
+  if (st.busy) return;
+  const msg = (m) => { st.msg = m; const el = $(".build-overlay [role=status]"); if (el) el.textContent = m; };
+  Object.assign(st, { busy: true, error: "", msg: "Loading tournament results…" });
+  render();
+  try {
+    const data = await loadMetaData(mk);
+    const archs = (data?.archetypes || []).filter((a) => a.share > 0).slice(0, 8),
+      lists = archs.map((a) => ({ a, list: data.decks.find((x) => x.key === a.best) || data.decks.find((x) => (x.archetype || x.name) === a.name) })).filter((x) => x.list?.main?.length);
+    if (!lists.length) throw Error("No tournament decks to compare with right now.");
+    await resolveNames([...new Set(lists.flatMap((x) => x.list.main.map((r) => r.name)))], (m) => msg("Loading the field's cards · " + m));
+    const field = [];
+    for (const [i, { a, list }] of lists.entries()) {
+      msg(`Simulating against ${a.name} · ${i + 1} of ${lists.length}`);
+      await new Promise((r) => setTimeout(r, 16));
+      const rows = list.main.map((r) => ({ qty: r.qty, c: meta(r.name) })).filter((r) => r.c),
+        prof = profileOf("mtg", mtgConstructedPower({ cards: list.main }, S.catalog, key, 60), rows);
+      const cover = meta(a.cover || "");
+      if (prof) field.push({ name: a.name, share: a.share, art: cover?.image_uris?.art_crop || cover?.card_faces?.[0]?.image_uris?.art_crop || (a.cover ? `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(a.cover)}&format=image&version=art_crop` : ""), profile: prof });
+    }
+    st.field = field;
+    st.fieldKey = V.mtgFieldKey(d);
+    fieldStore.set(st.fieldKey, field);
+    haptic("success");
+  } catch (e) {
+    st.error = e.message || "Couldn't load the field.";
+  } finally {
+    st.busy = false;
+    render();
+    setTimeout(() => countUp($("#content")), 60);
+  }
+};
+A.muFirst = (t) => { const d = currentDeck(); muState(d).first = t.dataset.v !== "second"; render(); };
+// Log a game: one tap, kept on the deck (and synced with your account).
+async function logGame(t, save) {
+  const opp = t.dataset.opp || $("#" + t.dataset.act.replace(/Log$/, "") + "OtherName")?.value.trim();
+  if (!opp) { toast("Type their deck first."); return null; }
+  return { at: new Date().toISOString(), opp, res: t.dataset.res, first: save.first !== false };
+}
+A.muLog = async (t) => {
+  const d = currentDeck(), st = muState(d), g = await logGame(t, st);
+  if (!g) return;
+  st.openName = t.dataset.opp || null;
+  if (g.res === "W") { haptic("success"); celebrate(t); }
+  await commit((s) => { const x = s.decks.find((y) => y.id === d.id); (x.results ||= []).push(g); }, { msg: `${g.res === "W" ? "Win" : g.res === "L" ? "Loss" : "Draw"} vs ${g.opp} logged.` });
+};
+A.muUndo = async (t) => {
+  const d = currentDeck();
+  await commit((s) => { const x = s.decks.find((y) => y.id === d.id); x.results = (x.results || []).filter((g) => g.at !== t.dataset.at); }, { msg: "Game removed." });
 };
 A.menu = () => { closeSheet(); S.ui.settingsTab="account"; go("#settings"); };
 
