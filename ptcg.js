@@ -237,6 +237,15 @@ async function get(path, params) {
   return r.json();
 }
 
+// What a card does in a game, without its art, rarity or set: printings with the same signature
+// are the same card for deck building.
+export const playSig = (c) => [c.name, c.category, c.hp, c.stage, c.evolveFrom, (c.types || []).join("/"), c.retreat, (c.weak || []).map((w) => w.type + w.value).join(","), c.text].join("|").toLowerCase().replace(/[^a-z0-9|]/g, "");
+const cheapMemo = new Map();
+const getCard = (id) => ptcgSource.get(id);
+const SET_ALIAS = { rc: { from: "bw11", prefix: /^RC\d/ } };
+// Listed by TCGdex with no cards in any source (Jumbo cards, Sample, W Promotional): left out of
+// the set list rather than shown as a set that never fills in.
+const NO_CARDS = new Set(["jumbo", "sp", "wp"]);
 const searchCache = new Map();
 let rankPromise = null;
 // Set id → position in release order (higher = newer), from the series list.
@@ -355,7 +364,7 @@ export const ptcgSource = {
       const sd=result.value;
       for(const st of sd.sets || []) enriched.set(st.id,{...st,series:sd.name,seriesDate:sd.releaseDate || "",order:order++});
     }
-    return catalogue.filter(st => !/^(?:[A-Z]\d|P-A)/.test(st.id)).map((st,i) => {
+    return catalogue.filter(st => !/^(?:[A-Z]\d|P-A)/.test(st.id) && !NO_CARDS.has(st.id)).map((st,i) => {
       const extra=enriched.get(st.id)||{}, art=POKEMON_SET_ART[st.id]||{}, data={...extra,...st};
       return {id:st.id,name:st.name,code:st.id.toUpperCase(),count:data.cardCount?.total ?? data.cardCount?.official ?? 0,date:data.releaseDate || art.date || "",series:extra.series || art.series || "Other sets",seriesDate:extra.seriesDate || "",order:extra.order ?? i,image:data.logo ? ptcgImageAsset(data.logo) : art.logo || "",symbol:data.symbol ? ptcgImageAsset(data.symbol) : art.symbol || ""};
     }).sort((a,b)=>String(b.date||b.seriesDate).localeCompare(String(a.date||a.seriesDate))||b.order-a.order);
@@ -386,8 +395,45 @@ export const ptcgSource = {
     return this.get(list[Math.floor(Math.random() * list.length)].id);
   },
   async setCards(set) {
-    const d = await get("/sets/" + encodeURIComponent(set.id));
+    let d = await get("/sets/" + encodeURIComponent(set.id));
+    // Subsets TCGdex lists empty but files inside their parent set (Radiant Collection RC1–RC25
+    // are Legendary Treasures cards): show the parent's cards with that prefix.
+    const alias = SET_ALIAS[set.id];
+    if (alias && !d?.cards?.length) {
+      const parent = await get("/sets/" + alias.from);
+      if (parent) d = { ...parent, cards: (parent.cards || []).filter((c) => alias.prefix.test(c.localId)) };
+    }
     return (d?.cards || []).map((c) => ({ ...brief({...c,set:{id:d.id,number:c.localId}}), set: { id: d.id, name: d.name, number: c.localId } }));
+  },
+  // The same card at the lowest cost: reprints and alternate arts with the same name and the same
+  // game text (HP, attacks, abilities, retreat, rules) play identically, so a deck only needs the
+  // cheapest one that is legal in the format, or one you already own. Basic Energy: any printing.
+  async cheapestPrint(card, { legal = () => true, owned = () => 0 } = {}) {
+    if (!card?.name) return card;
+    const key = card.id + "|" + legal.key;
+    if (cheapMemo.has(key)) return cheapMemo.get(key);
+    const run = (async () => {
+      // Basic Energy is named both "Water Energy" and "Basic Water Energy" depending on the set.
+      const names = card.basicEnergy ? [card.name.replace(/^Basic /, ""), "Basic " + card.name.replace(/^Basic /, "")] : [card.name];
+      const briefs = (await Promise.all(names.map((n) => get("/cards", { name: "eq:" + n }).catch(() => [])))).flat().filter((c) => c && !isPocket(c) && c.id !== card.id),
+        rank = await setRank(),
+        setOf = (id) => id.slice(0, id.lastIndexOf("-"));
+      briefs.sort((a, b) => (rank.get(setOf(b.id)) ?? -1) - (rank.get(setOf(a.id)) ?? -1));
+      const full = [];
+      for (let i = 0; i < Math.min(briefs.length, card.basicEnergy ? 24 : 16); i += 6)
+        full.push(...(await Promise.all(briefs.slice(i, i + 6).map((b) => getCard(b.id).catch(() => null)))));
+      const sig = playSig(card),
+        same = [card, ...full].filter((c) => c && legal(c) && (card.basicEnergy ? c.basicEnergy : playSig(c) === sig)),
+        mine = same.filter((c) => owned(c) > 0),
+        rare = (c) => { const i = PTCG_RARITIES.indexOf(c.rarity); return i < 0 ? 50 : i; },
+        cost = (c) => c.prices?.usd ?? Infinity;
+      // Prefer printings with a picture (some trainer-kit and promo scans are missing).
+      const pool = mine.length ? mine : same.filter((c) => c.image).length ? same.filter((c) => c.image) : same;
+      const best = pool.sort((a, b) => cost(a) - cost(b) || rare(a) - rare(b))[0] || card;
+      return best;
+    })().catch(() => card);
+    cheapMemo.set(key, run);
+    return run;
   },
   validate: validatePtcg,
   legality: ptcgLegality,

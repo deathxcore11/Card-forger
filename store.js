@@ -1,3 +1,4 @@
+import { cheapestKnown } from "./mtg-cheap.js";
 import { recordCardPrice } from "./pricehist.js";
 // Shared in-memory store. `S.state` is the saved workspace, `S.catalog` the card-data
 // cache, `S.ui` is screen state that is never saved.
@@ -82,8 +83,11 @@ export const priceOf = (name, finish = "nonfoil") => {
   const choice = S.state.priceChoices?.[cardKey(name)];
   if (choice && (finish === "nonfoil" || choice.finish === finish))
     return choice.price;
-  const c = meta(name);
-  return cardPrice(c, finish) ?? (finish === "nonfoil" ? null : cardPrice(c));
+  const c = meta(name),
+    p = cardPrice(c, finish) ?? (finish === "nonfoil" ? null : cardPrice(c));
+  // A name-based deck can use any printing: its regular cost is the cheapest legal one, when known.
+  const low = finish === "nonfoil" ? cheapestKnown(cardKey(name))?.usd : null;
+  return low != null && (p == null || low < p) ? low : p;
 };
 
 // Drop heavy Scryfall fields so the cache stays small on phones.

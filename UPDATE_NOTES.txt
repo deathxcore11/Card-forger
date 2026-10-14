@@ -1,3 +1,21 @@
+3.52.0 — Same card, cheapest printing
+- The deck builder no longer prices decks with full arts and special printings. Alternate arts and
+  reprints are the same card in a game, so every deck now uses the cheapest printing that is legal in
+  its format, or the printing you already own:
+  · Pokémon: printings with the same name and identical game text (HP, attacks, abilities, retreat,
+    weakness, rules) count as one card. A $2.14 full-art Milotic ex becomes the $0.68 regular one, and
+    a $8.36 gold Basic Water Energy becomes a cheap Basic Water Energy printing. It applies when building
+    decks, importing tournament lists and building budget versions. Printings with art come first.
+  · New "Cheapest printings" button on Pokémon decks: swaps every card for its cheapest legal printing
+    (keeping the ones you own), saves the old list in Versions, and says how much it saved.
+  · Magic: a deck can be any printing of each card, so costs now use the cheapest tournament-legal paper
+    printing (no gold-bordered World Championship cards, oversized or memorabilia). The builder picks from
+    the cheapest printings and checks each card it uses; deck pages update their costs in the background.
+  · Yu-Gi-Oh!: already priced at the cheapest printing (TCGplayer's lowest market price), unchanged.
+- Radiant Collection (Black & White) shows its 25 cards with art (TCGdex files them under Legendary
+  Treasures). Jumbo cards, Sample and W Promotional, which no card database lists cards for, are
+  no longer shown as empty sets.
+
 3.51.0 — Trustworthy verdicts, complete versions and price history for older Pokémon sets
 - Price history for older Pokémon sets (Parasect in BREAKthrough and many more): the exact
   TCGplayer product was only listed with each finish's price, which the history lookup didn't

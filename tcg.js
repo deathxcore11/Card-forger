@@ -1172,7 +1172,7 @@ function deckCardsTab(g, d, f, s, issues) {
     })
     .join("")}
   <section class="panel">${s.total ? `<div class="row between"><span>${s.total - s.owned} cards to get</span><b>${usd(s.buy)}${s.unknown ? ` + ${s.unknown} unpriced` : ""}</b></div>` : ""}
-  <div class="actions wrap"><button class="btn ghost small" data-act="tDeckCopyMissing" data-id="${esc(d.id)}">Copy shopping list</button><button class="btn ghost small" data-act="tDeckExport" data-id="${esc(d.id)}">↓ Export ${SOURCES[g].exportExt === "ydk" ? ".ydk" : "list"}</button><button class="btn ghost small" data-act="tDeckRefresh" data-id="${esc(d.id)}">⟳ Refresh prices</button></div>
+  <div class="actions wrap">${g === "ptcg" && s.total > s.owned ? `<button class="btn small" data-act="tDeckCheapest" data-id="${esc(d.id)}" title="Same cards, cheapest legal printings">Cheapest printings</button>` : ""}<button class="btn ghost small" data-act="tDeckCopyMissing" data-id="${esc(d.id)}">Copy shopping list</button><button class="btn ghost small" data-act="tDeckExport" data-id="${esc(d.id)}">↓ Export ${SOURCES[g].exportExt === "ydk" ? ".ydk" : "list"}</button><button class="btn ghost small" data-act="tDeckRefresh" data-id="${esc(d.id)}">⟳ Refresh prices</button></div>
   <p class="foot">Owned counts every copy in your ${esc(GAMES[g].short)} collection${g === "ptcg" ? " (Pokémon by exact card; Trainers and Energy by name)" : ""}. Prices are daily market estimates.</p></section>`;
 }
 
@@ -2478,17 +2478,25 @@ export function registerTcg(c) {
   };
   // ----- deck generator -----
   const nameLookups=new Map();
+  // The same card at its lowest cost, legal in f: an owned printing first, else the cheapest
+  // printing with the same game text (alternate arts and reprints play identically).
+  const legalIn = (f) => Object.assign((c) => SOURCES.ptcg.legality(c, f) === "legal", { key: f.id });
+  const ptcgCheapest = async (card, f) => {
+    if (!card) return card;
+    const m = ownedMap("ptcg"), best = await SOURCES.ptcg.cheapestPrint(card, { legal: legalIn(f), owned: (c) => ownedOf("ptcg", c, m) });
+    return remember(best);
+  };
   const ptcgBest = (name,f) => {
     const key=name.toLowerCase()+"|"+f.id;
     if(nameLookups.has(key))return nameLookups.get(key);
-    const task=(async()=>{
+    const task=(async()=>ptcgCheapest(await (async()=>{
       const cached=Object.values(cache.ptcg).filter(c=>!c.brief && c.name.toLowerCase()===name.toLowerCase() && SOURCES.ptcg.legality(c,f)==="legal").sort((a,b)=>(a.prices?.usd ?? Infinity)-(b.prices?.usd ?? Infinity));
       if(cached.length)return await ensureCard("ptcg",cached[0].id).catch(()=>cached[0]);
       const r=await SOURCES.ptcg.search({q:name,size:24}).catch(()=>({cards:[]}));
       const exact=r.cards.filter(x=>x.name.toLowerCase()===name.toLowerCase()).slice(0,8);
       for(const b of exact){const c=await ensureCard("ptcg",b.id).catch(()=>null);if(c&&SOURCES.ptcg.legality(c,f)==="legal")return c;}
       return null;
-    })();
+    })(),f))();
     nameLookups.set(key,task);task.finally(()=>nameLookups.delete(key));return task;
   };
   // Sliding six-worker queue: one slow lookup doesn't block the next batch.
@@ -2534,7 +2542,10 @@ export function registerTcg(c) {
       missed = [];
     let n = 0;
     const got = await inBatches(d.list, 6, async (x) => {
-      const card = BASIC_TYPES.test(x.name) ? await ptcgBest(energyName(x.name.replace(/ Energy$/, "")), any) : await SOURCES.ptcg.tournamentCard(x).catch(()=>null);
+      // The list's exact printing is often a full art; the deck gets the same card's cheapest legal
+      // printing (or the one you own).
+      const listed = BASIC_TYPES.test(x.name) ? await ptcgBest(energyName(x.name.replace(/ Energy$/, "")), any) : await SOURCES.ptcg.tournamentCard(x).catch(()=>null);
+      const card = listed && !BASIC_TYPES.test(x.name) ? await ptcgCheapest(listed, SOURCES.ptcg.legality(listed, std) === "legal" ? std : any) : listed;
       status(`Matching cards ${++n}/${d.list.length}…`);
       if (!card) missed.push(x.name);
       return card ? { card: remember(card), qty: x.qty } : null;
@@ -3123,6 +3134,34 @@ export function registerTcg(c) {
       lines = s.rows.filter((x) => x.need).map((x) => `${x.need} ${x.r.name}`);
     if (!lines.length) return toast("You own every card in this deck.");
     copyText(lines.join("\n"), `Copied ${lines.length} cards — paste into TCGplayer Mass Entry or a store’s list.`);
+  };
+  // Pokémon decks hold exact printings: swap each card for its cheapest printing with the same
+  // game text that is legal in the deck's format (an owned printing wins). Versions keep the old list.
+  A.tDeckCheapest = async (t) => {
+    const G = g(), d = gs(G).decks.find((x) => x.id === t.dataset.id);
+    if (G !== "ptcg" || !d) return;
+    const f = formatOf(G, d.format), done = busy(t, "Finding cheaper printings…");
+    try {
+      const rows = (d.zones.main || []).filter((r) => cardOf(G, r.cardId)),
+        swaps = new Map();
+      let saved = 0;
+      for (const r of rows) {
+        const c = cardOf(G, r.cardId), best = await ptcgCheapest(c, f);
+        if (best && best.id !== c.id) { swaps.set(r.cardId, best); saved += ((c.prices?.usd ?? 0) - (best.prices?.usd ?? 0)) * r.qty; }
+      }
+      if (!swaps.size) return toast("Every card is already its cheapest legal printing.");
+      await mutate((s2) => {
+        const x = s2.decks.find((y) => y.id === d.id), main = new Map();
+        x.versions = [...(x.versions || []), { id: uid(), at: new Date().toISOString(), label: "Before cheapest printings", zones: structuredClone(x.zones) }].slice(-30);
+        for (const r of x.zones.main || []) {
+          const b = swaps.get(r.cardId), id = b ? b.id : r.cardId, row = main.get(id);
+          if (row) row.qty += r.qty; else main.set(id, { ...r, cardId: id, name: b ? b.name : r.name });
+        }
+        x.zones.main = [...main.values()];
+      }, { msg: `${swaps.size} card${swaps.size === 1 ? "" : "s"} switched to the same card's cheapest printing${saved > 0.5 ? ` · about ${usd(saved, 0)} less` : ""}. The old list is in Versions.` });
+    } finally {
+      done();
+    }
   };
   A.tDeckRefresh = async (t) => {
     const G = g(),

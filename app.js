@@ -26,6 +26,7 @@ import { nextFact } from "./facts.js";
 import { S, STORAGE, CATALOG_RECORD, RECOVERY, blank, uid, meta, inv, deckById, currentDeck, priceOf, cacheCard, slim } from "./store.js";
 import { $, $$, esc, usd, img, art, cardImage, options, segmented, customBudget, registerSetIcons } from "./ui.js";
 import * as V from "./views.js";
+import { refreshCheapest } from "./mtg-cheap.js";
 import { readRecord, writeRecord, writeRecords, persistenceStatus, requestPersistence } from "./storage.js";
 import {
   cardKey as key, sumQty, typeText, rulesText, isLand, commanderEligible, mergeDeckCard,
@@ -737,6 +738,7 @@ function attachBrowseObserver() {
 
 const autoMeta = new Set();
 let lastPageKey = "";
+const cheapChecked = new Set();
 function render() {
   const authFields=S.ui.view === "settings" && !cloudInfo().user ? captureAuthFields(document) : [];
   browseCleanup?.();
@@ -787,6 +789,12 @@ function render() {
     setTimeout(() => countUp($("#content")), 60);
   }
   attachBrowseObserver();
+  // A Magic deck's costs use each card's cheapest legal printing: check them once per session.
+  if (ui.view === "deck" && g === "mtg" && currentDeck() && !cheapChecked.has(currentDeck().id)) {
+    const d = currentDeck();
+    cheapChecked.add(d.id);
+    refreshCheapest([...d.cards, ...(d.side || [])].map((r) => r.name).filter((n) => !/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(n)), { api, key, limit: 80 }).then((n) => n && S.ui.view === "deck" && render()).catch(() => {});
+  }
   // Deck Power needs the field: load tournament results once per format, the first time a
   // Power tab opens without them.
   const metaBtn = $("#content [data-autoload-meta]");
@@ -1404,7 +1412,8 @@ async function loadFormatPool(f, colors, seed, progress) {
   for (const [label, q] of queries) {
     progress(`Finding ${label}…`);
     try {
-      const r = await api("/cards/search?" + new URLSearchParams({ q, unique: "cards", order: "edhrec" }));
+      // One printing per card, the cheapest (any printing plays the same in a deck).
+      const r = await api("/cards/search?" + new URLSearchParams({ q: q + " prefer:usd-low", unique: "cards", order: "edhrec" }));
       for (const c of r.data || []) cacheCard(c);
     } catch {}
   }
@@ -1447,6 +1456,8 @@ async function runBuild() {
     candidates=await refineCandidates(candidates,{evaluate,cost,status:buildMsg,rounds:2,maxNeighbors:12,
       accept:d=>!evaluate(d).readiness?.provisional,
       neighbors:d=>targets.flatMap(target=>towardDeck(d,target,{protectedKeys,zoneOf:r=>/\bLand\b/.test(meta(r.name)?.type_line || '')?'land':'spell'}))});
+    // Price every card these versions use at its cheapest legal printing before choosing tiers.
+    await refreshCheapest(candidates.flatMap(d=>d.cards.map(r=>r.name)).filter(n=>!/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(n)&&(priceOf(n)??1)>0.25),{api,key,progress:buildMsg,limit:80});
     let tiers=bestBudgetDecks(candidates,tierList(),{evaluate,cost});
     // Spend toward each budget: stronger cards for the same plan until the list is within $10 of
     // the budget, as long as Power holds. The best version found (no limit) is the reference.
