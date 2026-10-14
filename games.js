@@ -4,8 +4,8 @@ import { GAME_MARK, GAME_COLOR } from "./icons.js";
 // (ygo.js, ptcg.js) that knows each game's data source, rules and formats.
 export const GAMES = {
   mtg: { id: "mtg", name: "Magic: The Gathering", short: "Magic", source: "Scryfall", tagline: "Commander, Standard, Modern and every other format" },
-  ygo: { id: "ygo", name: "Yu-Gi-Oh! TCG", short: "Yu-Gi-Oh!", source: "YGOPRODeck", tagline: "Advanced, Traditional, OCG, GOAT, Speed Duel and more" },
-  ptcg: { id: "ptcg", name: "Pokémon TCG", short: "Pokémon", source: "TCGdex", tagline: "Standard, Expanded, Unlimited and Gym Leader Challenge" },
+  ygo: { id: "ygo", name: "Yu-Gi-Oh!", short: "Yu-Gi-Oh!", source: "YGOPRODeck", tagline: "Advanced, Traditional, OCG, GOAT, Speed Duel and more" },
+  ptcg: { id: "ptcg", name: "Pokémon", short: "Pokémon", source: "TCGdex", tagline: "Standard, Expanded, Unlimited and Gym Leader Challenge" },
 };
 export const GAME_IDS = Object.keys(GAMES);
 export const gameOf = (id) => GAMES[id] || GAMES.mtg;

@@ -22,13 +22,14 @@ export const ICON = {
 };
 
 // Game marks, drawn for this app (not official logos).
+// Game marks: bold and simple so they read at 18px, drawn the same way for every game.
 export const GAME_MARK = {
-  // A planeswalker-style spark: tall center blade, two flanking blades, outer wings and a root.
-  mtg: svg(`<path d="M12 2.4 13.9 9 12 12l-1.9-3z" fill="currentColor" fill-opacity=".22"/><path d="M7.1 4.4 9.5 10.3 8.5 12.7 5.8 8.7z" fill="currentColor" fill-opacity=".18"/><path d="M16.9 4.4 18.2 8.7l-2.7 4-1-2.4z" fill="currentColor" fill-opacity=".18"/><path d="M2.6 9 5.5 13.5l-1 2.2L2.1 12z"/><path d="m21.4 9 .5 3-2.4 3.7-1-2.2z"/><path d="M8.7 14.3 12 21.6l3.3-7.3L12 12.8z" fill="currentColor" fill-opacity=".32"/>`, "mark mtg"),
-  // An all-seeing eye inside a pyramid, with a brow ridge and base line.
-  ygo: svg(`<path d="M12 2.6 21.6 20H2.4z"/><path d="M12 2.6v3.6" stroke-opacity=".55"/><path d="M7.4 11.4Q12 8.5 16.6 11.4"/><path d="M7.8 14.4Q12 11.3 16.2 14.4 12 17.5 7.8 14.4z" fill="currentColor" fill-opacity=".16"/><circle cx="12" cy="14.4" r="1.7" fill="currentColor" stroke="none"/><path d="M5.2 18h13.6" stroke-opacity=".5"/>`, "mark ygo"),
-  // A capture ball: shell, equator split around a two-ring core.
-  ptcg: svg(`<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 9 9h-5.4" fill="currentColor" fill-opacity=".12" stroke="none"/><path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 9 9h-5.3a3.7 3.7 0 0 0-7.4 0z" fill="currentColor" fill-opacity=".14" stroke="none"/><path d="M3.2 12h5.1M15.7 12h5.1"/><circle cx="12" cy="12" r="3.3"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/>`, "mark ptcg"),
+  // Magic: the five-color pie, five mana dots joined around a pentagon.
+  mtg: svg(`<path d="M12 4.2 19.4 9.6 16.6 18.3H7.4L4.6 9.6z" stroke-width="1.6" stroke-opacity=".75"/><circle cx="12" cy="4.2" r="2.3" fill="currentColor" stroke="none"/><circle cx="19.4" cy="9.6" r="2.3" fill="currentColor" stroke="none"/><circle cx="16.6" cy="18.3" r="2.3" fill="currentColor" stroke="none"/><circle cx="7.4" cy="18.3" r="2.3" fill="currentColor" stroke="none"/><circle cx="4.6" cy="9.6" r="2.3" fill="currentColor" stroke="none"/>`, "game-mark"),
+  // Yu-Gi-Oh!: an eye inside a triangle.
+  ygo: svg(`<path d="M12 3 21.5 20h-19z" stroke-width="2.2"/><path d="M7.6 14.2Q12 10.4 16.4 14.2 12 18 7.6 14.2z" stroke-width="1.8"/><circle cx="12" cy="14.2" r="1.7" fill="currentColor" stroke="none"/>`, "game-mark"),
+  // Pokémon: a ball, split across the middle around a center button.
+  ptcg: svg(`<circle cx="12" cy="12" r="9" stroke-width="2.2"/><path d="M3 12h5.6M15.4 12H21" stroke-width="2.2"/><circle cx="12" cy="12" r="3" stroke-width="2.2"/>`, "game-mark"),
 };
 
 // Signature color per game (the mark, its chip and its glow).

@@ -1,5 +1,13 @@
+3.49.2 — Clear game marks and a quieter Home
+- New game marks that are easy to tell apart at any size, white on each game's color: Magic's
+  five-color pie, Yu-Gi-Oh!'s eye in a triangle, and Pokémon's ball. Same style in the header and
+  the game chooser.
+- Game names: Magic: The Gathering, Yu-Gi-Oh! and Pokémon (no "TCG" suffix).
+- Home doesn't repeat itself: the search box at the top replaces the Find cards tile (Search is also
+  in the bottom bar), and when the Next step card already offers Deck ideas the tile below doesn't.
+
 3.49.1 — Real game names
-- The game chooser names each game in full: Magic: The Gathering, Yu-Gi-Oh! TCG and Pokémon TCG.
+- The game chooser names each game in full: Magic: The Gathering, Yu-Gi-Oh! and Pokémon.
   The header and explanations keep the short names (Magic, Yu-Gi-Oh!, Pokémon).
 - The app description, install name and About credit all three games by their real names, with
   each publisher's trademark noted.

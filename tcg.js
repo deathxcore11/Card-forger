@@ -397,12 +397,12 @@ function tcgNext(g) {
 }
 
 // The same shortcuts, in the same order, for every game.
-export function quickTiles(g) {
+// skipIdeas: the Next step card is already offering Deck ideas, so the tile would repeat it.
+export function quickTiles(g, skipIdeas = false) {
   const mtg = g === "mtg",
     tile = (act, to, icon, title, sub, cls = "") => `<button class="quick-btn ${cls}" data-act="${act}" ${to ? `data-to="${to}"` : ""}><span>${icon}</span><b>${title}</b><small>${sub}</small></button>`;
   return `<div class="quick">
-    ${tile("go", "#search", "⌕", "Find cards", "Search, filter by set, type, format and price", "primary")}
-    ${tile("go", "#decks/ideas", "✧", "Deck ideas", mtg ? "Commanders your cards support" : "Build from your collection")}
+    ${skipIdeas ? "" : tile("go", "#decks/ideas", "✧", "Deck ideas", mtg ? "Commanders your cards support" : "Build from your collection")}
     ${tile("go", "#decks/inspiration", "🏆", "Meta decks", mtg ? "Tournament decks, precons and shared lists, with what you own" : "Today’s tournament decks, with what you own")}
     </div><details class="home-tools"><summary>More tools · import, add, sets & rules</summary><div class="quick">    ${tile(mtg ? "importDeck" : "tImport", "", "↥", "Import a deck", mtg ? "Moxfield, Archidekt, ManaBox or text" : g === "ygo" ? ".ydk file or a text list" : "Pokémon TCG Live list or text")}
     ${tile(mtg ? "addCard" : "tImportColl", "", "＋", "Add cards", "One card or a whole list")}
@@ -451,7 +451,7 @@ export function tcgHome() {
     <button class="kpi" data-act="go" data-to="#collection"><b>${v.copies}</b><span>cards owned</span></button>
     <button class="kpi" data-act="go" data-to="#decks"><b>${st.decks.length}</b><span>decks</span></button>
   </div>`}
-  ${quickTiles(g)}
+  ${quickTiles(g, !!gs(g).collection.length && !gs(g).decks.length)}
   ${recent.length ? `<section class="home-deck-section"><div class="section-head"><h2>Your decks</h2><button class="link" data-act="go" data-to="#decks">All decks →</button></div><div class="deck-grid">${recent.map((d) => deckTile(g, d)).join("")}</div></section>` : ""}
   <p class="muted small">${esc(G.tagline)}. Card data and daily prices from ${esc(G.source)}.</p>`;
 }
