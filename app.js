@@ -3138,7 +3138,7 @@ A.analyze = async () => {
   try {
     const r = await resolveNames(S.state.collection.map((e) => e.name), (m) => {
       I2.msg = m;
-      const el = $("#content .muted.small[role=status]");
+      const el = $("#ideasMsg") || $("#content .muted.small[role=status]");
       if (el) el.textContent = m;
     });
     await commit((s) => {

@@ -579,7 +579,7 @@ function fillAnyPanel(d, fm, count) {
   ${count === fm.size ? `<button class="btn" data-act="suggestFormatUpgrades" ${B.busy ? "disabled" : ""}>Find paired upgrades</button><p class="muted small">Same-role spell swaps within your $${esc(d.budget ?? 25)} purchase budget. Suggestions are heuristics, not measured win rates.</p>` : ""}
   ${B.fillDeck === d.id && B.formatSwaps?.length ? `<div class="list">${B.formatSwaps.map((swap,i)=>`<article class="panel"><div class="swap-art-pair"><div>${img(art(meta(swap.cardOut)),swap.cardOut,"mini-art")}<small class="muted">OUT</small><b>${esc(swap.cardOut)}</b></div><span aria-hidden="true">→</span><div>${img(art(meta(swap.cardIn)),swap.cardIn,"mini-art")}<small class="ok-text">IN</small><b>${esc(swap.cardIn)}</b></div></div><p class="small muted">${esc(swap.reason)}</p><button class="btn ghost small" data-act="applyFormatUpgrade" data-i="${i}">Swap 1 copy · ${usd(swap.cost)} to buy</button></article>`).join("")}</div>` : ""}
   <div class="actions"><button class="btn" data-act="fillAny" ${B.busy || count > fm.size ? "disabled" : ""}>${B.busy && B.fillDeck === d.id ? "Building…" : tiers ? "↻ Rebuild" : "Build versions"}</button></div>
-  ${B.fillDeck === d.id && B.msg ? `<p class="small muted" role="status">${esc(B.msg)}</p>` : ""}
+  ${B.busy && B.fillDeck === d.id ? buildOverlay(B.msg, { title: "Building your deck versions", note: "Filling the open slots at each budget, then checking every version with Deck Power. This can take up to a minute." }) : B.fillDeck === d.id && B.msg ? `<p class="small muted" role="status">${esc(B.msg)}</p>` : ""}
   </section>
   ${tiers ? `<div class="tiers">${tiers.map((t, i) => tierCard(t, i, "fill", tiers)).join("")}</div>` : ""}`;
 }
@@ -838,7 +838,7 @@ function ideasView() {
     plans = [...new Set(I.cache.map((i) => i.plan))];
   return `<p class="muted">Commanders and strategies your <b>owned</b> cards can already support, ranked by how much of a 100-card deck you could build today for $0.</p>
   <div class="toolbar"><button class="btn" data-act="analyze" ${I.busy ? "disabled" : ""}>${I.busy ? "Analyzing…" : I.cache.length ? "↻ Re-analyze" : "Analyze my collection"}</button><label class="check"><input type="checkbox" data-change="ideasOwned" ${I.ownedOnly ? "checked" : ""}> Owned commanders only</label>${plans.length > 1 ? `<select data-change="ideaFilter" aria-label="Strategy">${options([["all", "All strategies"], ...plans.map((p) => [p, p])], I.filter)}</select>` : ""}</div>
-  ${I.msg ? `<p class="muted small" role="status">${esc(I.msg)}</p>` : ""}
+  ${I.busy ? buildOverlay(I.msg, { title: "Reading your collection", note: "Checking which commanders and strategies your cards already support. Large collections can take a minute.", id: "ideasMsg" }) : I.msg ? `<p class="muted small" role="status">${esc(I.msg)}</p>` : ""}
   ${
     visible.length
       ? `<div class="deck-grid">${visible
@@ -1376,7 +1376,7 @@ function fillPanel(d, open) {
   <label class="custom-budget">Custom purchase budget ($)<input type="number" min="0" max="100000" step="0.01" value="${F.budget}" data-change="fillCustom" aria-label="Custom slot-filling budget"></label>
   <div class="grid2"><label>Target lands<input type="number" min="30" max="42" value="${F.lands}" data-change="fill" data-field="lands"></label><label class="check"><input type="checkbox" data-change="fill" data-field="simple" ${F.simple ? "checked" : ""}> Prefer simpler cards</label></div>
   <button class="btn block" data-act="fillRun" ${F.busy ? "disabled" : ""}>${F.busy ? "Working…" : "Recommend cards"}</button>
-  <p class="muted small" role="status" id="fillMsg">${esc(F.msg)}</p>
+  ${F.busy ? buildOverlay(F.msg, { title: "Finding cards for your deck", note: "Searching ramp, draw, removal, lands and budget picks in your colors, then filling the open slots. This can take up to a minute.", id: "fillMsg" }) : `<p class="muted small" role="status" id="fillMsg">${esc(F.msg)}</p>`}
   ${plan ? fillResults(d, plan) : ""}</section>`;
 }
 
@@ -1418,7 +1418,7 @@ function swapPanel(d) {
   <label class="custom-budget">Custom upgrade budget ($)<input type="number" min="0" max="100000" step="0.01" value="${U.budget}" data-change="upCustom" aria-label="Custom upgrade budget"></label>
   <label class="check small"><input type="checkbox" data-change="upTrade" ${U.tradeIn ? "checked" : ""}> Show what the cut cards are worth (reference only — never subtracted from what you spend)</label>
   <div class="row between"><label class="check"><input type="checkbox" data-change="upSimple" ${U.simple ? "checked" : ""}> Prefer simpler cards</label><button class="btn" data-act="upRun" ${U.busy ? "disabled" : ""}>${U.busy ? "Working…" : Object.keys(plans).length ? "↻ Refresh" : "Find upgrades"}</button></div>
-  <p class="muted small" role="status" id="upMsg">${esc(U.msg)}</p>
+  ${U.busy ? buildOverlay(U.msg, { title: "Comparing upgrades", note: "Testing one-for-one swaps at each budget and keeping only the ones that make the deck stronger. This can take up to a minute.", id: "upMsg" }) : `<p class="muted small" role="status" id="upMsg">${esc(U.msg)}</p>`}
   ${Object.keys(plans).length ? budgetLadder(d, plans) : ""}
   </section>
   ${plan ? swapResults(d, plan) : ""}`;
@@ -1715,7 +1715,7 @@ export function ideaSheet(idea, deck, open, sel) {
   <div class="chips">${[0, 25, 50, 100].map((n) => `<button class="chip pick ${open.budget === n ? "on" : ""}" data-act="ideaBudget" data-v="${n}" ${open.busy ? "disabled" : ""}>${n ? "+ $" + n + " of new cards" : "Only my cards"}</button>`).join("")}</div>
   <div class="custom-budget-row"><label>Custom purchase budget ($)<input id="ideaCustomBudget" type="number" min="0" max="100000" step="0.01" value="${open.budget}" ${open.busy?"disabled":""}></label><button class="btn ghost" data-act="ideaCustomBudget" ${open.busy?"disabled":""}>Build with this budget</button></div>
   <p class="foot">Dollar budget and deck size are different: lands are included in the 100-card deck. Shipping and tax are separate.</p>
-  <p class="muted small" id="ideaMsg" role="status">${esc(open.busy ? open.msg || "Working…" : open.msg || (open.budget ? "" : "Owned-only starters can be incomplete. Choose a purchase budget to build the full deck, including lands."))}</p>
+  ${open.busy ? buildOverlay(open.msg, { title: "Building this deck", note: "Finding cards in your commander's colors at your budget, then filling all 100 slots, lands included. This can take up to a minute.", id: "ideaMsg" }) : `<p class="muted small" id="ideaMsg" role="status">${esc(open.msg || (open.budget ? "" : "Owned-only starters can be incomplete. Choose a purchase budget to build the full deck, including lands."))}</p>`}
   <div class="row between sel-bar"><span class="small" id="ideaSelCount">${sel.size ? sel.size + " selected" : "Tick cards to act on them"}</span><span class="row"><button class="link small" data-act="ideaSelect" data-mode="missing">Missing</button><button class="link small" data-act="ideaSelect" data-mode="all">All</button><button class="link small" data-act="ideaSelect" data-mode="none">None</button></span></div>
   ${[...byCat]
     .filter(([, l]) => l.length)

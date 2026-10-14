@@ -1,3 +1,10 @@
+3.45.1 — A clear "working on it" pop-up for every long build
+- The animated pop-up from Build decks now appears on every task that takes more than a moment,
+  with what it's doing right now and why it takes a while: building a Commander deck at a budget,
+  reading your collection for deck ideas, filling open slots and comparing upgrades in the Upgrade
+  lab, building deck versions, and fitting a tournament deck to your cards. No more small grey
+  status lines that look like the app froze.
+
 3.45.0 — Deck Power that can't be fooled, in each game's own terms
 - Deck Power was tested against decks built to trick it, and against real tournament winners in
   all three games. The fakes used to score 60–88; now each is held down by the flaw a player would

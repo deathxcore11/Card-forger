@@ -1069,7 +1069,7 @@ export function provenSheetHtml() {
   <div class="proven-sum"><span><b>You own ${have} of ${total}</b> · ${have >= total ? "complete ✓" : `<b>${usd(M.full, 0)}</b> to finish${unpriced ? ` + ${unpriced} unpriced` : ""}`}</span>${have < total && mode !== "budget" ? `<button class="btn small" data-act="provenMode" data-id="budget">Cheapest way in ›</button>` : ""}</div>
   ${bar(total ? have / total : 0)}
   ${segmented("provenMode", mode, [["original", "Original"], ["budget", "Budget adaptation"], ["draft", "My cards draft"]])}
-  ${proven.busy ? `<p class="muted small" role="status">${esc(proven.msg)}</p>` : proven.msg ? `<p class="small warn-text" role="status">${esc(proven.msg)}</p>` : ""}
+  ${proven.busy ? buildOverlay(proven.msg, { title: "Fitting the tournament deck", note: "Matching the winning list to your cards and budget, card by card. This can take up to a minute." }) : proven.msg ? `<p class="small warn-text" role="status">${esc(proven.msg)}</p>` : ""}
   ${body}
   <div class="actions wrap sheet-actions"><button class="btn" data-act="provenSave">${mode === "original" ? "Save original list" : mode === "budget" ? "Save adaptation" : "Save draft"}</button>${spec.sourceUrl ? `<a class="btn ghost" href="${esc(spec.sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(spec.sourceLabel || "Source")} ↗</a>` : ""}${spec.extraActions || ""}</div>
   ${spec.attribution ? `<p class="foot">${spec.attribution}</p>` : ""}`;
