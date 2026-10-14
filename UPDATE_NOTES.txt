@@ -1,3 +1,10 @@
+3.52.1 — Cheaper, and still legal
+- Cheaper printings never cost a deck its legality. A printing is only used when it's legal in the
+  deck's format itself (an older reprint that has rotated out of Standard isn't used in a Standard
+  deck), and copies still count by name: four Milotic ex in any mix of printings is the limit.
+- Basic Energy follows the game's rule: every printing is legal in every format. An older Water
+  Energy no longer shows as "not legal in Standard".
+
 3.52.0 — Same card, cheapest printing
 - The deck builder no longer prices decks with full arts and special printings. Alternate arts and
   reprints are the same card in a game, so every deck now uses the cheapest printing that is legal in

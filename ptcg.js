@@ -199,6 +199,8 @@ export const PTCG_FORMATS = [
 
 export function ptcgLegality(c, f) {
   if (c.pocket) return "not_legal";
+  // Basic Energy is legal in every format, whatever set it was printed in.
+  if (c.basicEnergy) return "legal";
   if (f.legal && c.legal && !c.legal[f.legal]) return "not_legal";
   if (f.noRuleBox && c.ruleBox) return "not_legal";
   return "legal";
@@ -429,6 +431,7 @@ export const ptcgSource = {
         cost = (c) => c.prices?.usd ?? Infinity;
       // Prefer printings with a picture (some trainer-kit and promo scans are missing).
       const pool = mine.length ? mine : same.filter((c) => c.image).length ? same.filter((c) => c.image) : same;
+      // Never trade a legal card for an illegal one: the original stays when nothing else qualifies.
       const best = pool.sort((a, b) => cost(a) - cost(b) || rare(a) - rare(b))[0] || card;
       return best;
     })().catch(() => card);

@@ -19,3 +19,13 @@ assert.equal(playSig(base), playSig({ ...base, rarity: "Special illustration rar
 assert.notEqual(playSig(base), playSig({ ...base, text: base.text.replace("160", "150") }));
 assert.notEqual(playSig(base), playSig({ ...base, hp: 260 }));
 console.log("PASS: cheapest equivalent printing (Magic tournament-legal printings, Pokémon same game text).");
+// Legality: any Basic Energy printing is legal in every format; other cards keep their set legality.
+const { ptcgLegality, validatePtcg, PTCG_FORMATS } = await import("./ptcg.js");
+const std = PTCG_FORMATS.find((f) => f.id === "standard");
+assert.equal(ptcgLegality({ basicEnergy: true, legal: { standard: false, expanded: true } }, std), "legal");
+assert.equal(ptcgLegality({ name: "Ultra Ball", legal: { standard: false, expanded: true } }, std), "not_legal");
+// Mixing printings of one card still counts toward the four-copy limit by name.
+const cards = { a: { name: "Milotic ex", category: "Pokemon", stage: "Basic", legal: { standard: true } }, b: { name: "Milotic ex", category: "Pokemon", stage: "Basic", legal: { standard: true } } };
+const issues = validatePtcg({ zones: { main: [{ cardId: "a", qty: 3 }, { cardId: "b", qty: 2 }] } }, (id) => cards[id], std).map((x) => x.text).join(" ");
+assert.match(issues, /5× Milotic ex/);
+console.log("PASS: cheaper printings keep decks legal (Basic Energy rule, per-name copy limits).");

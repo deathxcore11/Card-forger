@@ -3147,7 +3147,7 @@ export function registerTcg(c) {
       let saved = 0;
       for (const r of rows) {
         const c = cardOf(G, r.cardId), best = await ptcgCheapest(c, f);
-        if (best && best.id !== c.id) { swaps.set(r.cardId, best); saved += ((c.prices?.usd ?? 0) - (best.prices?.usd ?? 0)) * r.qty; }
+        if (best && best.id !== c.id && SOURCES.ptcg.legality(best, f) === "legal" && (best.name === c.name || (best.basicEnergy && c.basicEnergy))) { swaps.set(r.cardId, best); saved += ((c.prices?.usd ?? 0) - (best.prices?.usd ?? 0)) * r.qty; }
       }
       if (!swaps.size) return toast("Every card is already its cheapest legal printing.");
       await mutate((s2) => {
