@@ -569,7 +569,7 @@ export function tcgCardSheet(c, sctx = {}) {
         ${deck ? `<p class="small deck-legal ${SOURCES[g].legality(c, f) === "legal" ? "ok-text" : "bad-text"}">${SOURCES[g].legality(c, f) === "legal" ? "✓ Legal" : "● Not allowed"} in ${esc(f.name)} <span class="muted">(${esc(deck.name)})</span></p>` : ""}
         ${c.stats?.length ? `<div class="stat-grid">${c.stats.filter(([k]) => g !== "ptcg" || !["HP", "Type", "Weakness", "Resistance", "Retreat"].includes(k)).map(([k, v]) => statCell(c, k, v)).join("")}</div>${c.regulationMark ? regulationHelp(c) : ""}` : ""}
       </div></div>
-    ${quoteWarning(c)}${historyPanel(quoteModel(g,c,sctx.priceFinish || trackedQuote(g,c)?.finish || "reference",sctx.priceEdition),sctx.priceRange || "365")}
+    ${quoteWarning(c)}
     <div class="actions wrap">
       <button class="btn" data-act="tOwn" data-id="${esc(c.id)}">＋ Add to collection</button>
       <button class="btn ghost" data-act="tWish" data-id="${esc(c.id)}">${wished ? "♥ On wishlist" : "♡ Wishlist"}</button>

@@ -2,7 +2,7 @@ import {attachCardGestures, CompareSelection, cardActionButtons} from './card-ac
 import {tcgCompareSheet} from './tcgcompare.js';
 import {artworkHTML} from './artwork.js';
 import {attachAutomaticBrowse} from './auto-browse.js';
-import {SheetHistory,BROWSE_TYPES} from "./sheet-history.js";
+import {SheetHistory,BROWSE_TYPES,sheetKey} from "./sheet-history.js";
 import {handleArtworkError} from "./artwork.js";
 import {modeFor,registerWorkbench,quoteModel,recordQuote} from "./workbench-ui.js";
 import { locationPicker, rememberLocation, chooseLocation } from "./collection-locations.js";
@@ -519,6 +519,10 @@ function wireRouteBack(){
  const button=document.createElement("button");button.className="link browse-return";button.dataset.act="routeHistoryBack";button.textContent="← Back to "+(saved.ctx.name || "previous card or deck");main.prepend(button);
 }
 function openSheet(html, ctx = null, scrollTop = 0) {
+  const dlg = $("#sheet");
+  const cardPopup = ["card","tcard"].includes(ctx?.type);
+  const enteringCard = cardPopup && (!dlg.open || sheetKey(S.ui.sheetCtx) !== sheetKey(ctx));
+  dlg.dataset.cardPopup = String(cardPopup);
   if(!restoringSheet && $("#sheet").open)sheetTrail.push(sheetSnapshot(),ctx);
   pendingRoute=null;
   binderDragCleanup?.(); binderDragCleanup=null;
@@ -531,12 +535,16 @@ function openSheet(html, ctx = null, scrollTop = 0) {
     $("#sheetBody").classList.add("sheet-step");
   }
   lastSheetStep = stepKey;
-  const dlg = $("#sheet");
   if (!dlg.open) {
     // Remember what opened the sheet so focus can return there, and stop the page behind from scrolling.
     sheetReturn = document.activeElement;
     document.documentElement?.classList.add("sheet-open");
     dlg.showModal();
+  }
+  if (enteringCard && !globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches && dlg.animate) {
+    for (const animation of dlg.getAnimations?.() || []) if (animation.id === "card-popup-enter") animation.cancel();
+    const animation = dlg.animate([{ opacity:0,transform:"translateY(18px) scale(.975)" },{ opacity:1,transform:"translateY(0) scale(1)" }],{duration:280,easing:"cubic-bezier(.16,1,.3,1)"});
+    animation.id = "card-popup-enter";
   }
   $("#sheetBody").scrollTop = scrollTop;
   sheetScrolled();

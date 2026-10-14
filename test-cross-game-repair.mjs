@@ -60,6 +60,9 @@ for(const game of ['mtg','ptcg','ygo']){
  recordPrice(game,legacyId,2,card.name,Date.parse('2026-10-10T00:00:00Z'));
  const panel=historyPanel(q,'all');assert.match(panel,/market-chart/);assert.match(panel,/2026-10-01/);assert.match(panel,/2026-10-10/);
  const page=game==='mtg'?cardSheet(card,{priceRange:'all'}):tcgCardSheet(card,{priceRange:'all',priceFinish:q.finish});
- assert.match(page,/market-chart/,`${game} Overview must render the shared dated graph`);assert.doesNotMatch(page,/Price history starts today/);
+ assert.match(page,/market-chart/,`${game} Prices must retain the shared dated graph`);
+ const start=page.indexOf('class="cs-panel" data-tab="prices"'),end=page.indexOf('class="cs-panel"',start+10);
+ assert.equal((page.match(/class="market-panel"/g)||[]).length,1,`${game} card graph must appear once`);
+ assert.match(page.slice(start,end<0?undefined:end),/market-chart/,`${game} graph must belong to the Prices panel`);assert.doesNotMatch(page,/Price history starts today/);
 }
-console.log('PASS: every game Overview renders real saved dated price checks through the common graph; prior checks are retained.');
+console.log('PASS: every game Prices panel exclusively contains the dated graph; prior checks are retained.');

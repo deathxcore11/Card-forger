@@ -1,3 +1,7 @@
+3.36.1 — Prices-only graph and card popup entrance
+- Price history appears once, inside the Prices tab, for Magic, Pokémon and Yu-Gi-Oh! card popups. Overview stays focused on the card.
+- New card popups ease upward and scale into place over 280 ms. Switching tabs or refreshing quotes does not replay the entrance. Reduced-motion preferences are respected.
+
 3.36.0 — Archived history for all three games
 - The graph now loads a pinned public Rarebox/TCGCSV-derived archive in addition to daily shared and device observations. The last-year view is the default. No dates are synthesized; archive series remain separate from current market quotes.
 - Exact product IDs join Pokémon and Magic records. Yu-Gi-Oh! requires an identified set printing and exposes an archive-printing selector; first-edition and unlimited datasets stay separate.
