@@ -1,3 +1,7 @@
+3.46.1 — Correct version in Settings
+- Settings showed "Version 3.39.1" because the number was typed into the page. It now reads the
+  app's real version, and a check stops it falling behind again.
+
 3.46.0 — Same Deck Power rules everywhere, and the right Pokémon cards from tournament lists
 - Fixed: Pokémon cards from tournament lists could load as the wrong printing. The set-code check
   never matched sets like Twilight Masquerade (TWM), so a different Dipplin, Thwackey or Grookey

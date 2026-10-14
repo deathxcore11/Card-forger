@@ -7,3 +7,6 @@ export const SUPABASE = {
   url: "https://noxfmbwuytnbvfgukpiv.supabase.co",
   key: "sb_publishable_TpEfTlAdziX6ALSZLA7U_A_tBKKHcAz",
 };
+
+// The app version shown in Settings. Kept equal to package.json by test-version.mjs.
+export const APP_VERSION = "3.46.1";
