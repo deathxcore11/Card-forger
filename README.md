@@ -165,3 +165,18 @@ providers remain distinct selectable datasets. Six-month and one-year ranges sho
 observations only; they do not manufacture a full year. Pokémon exact-product fallback reads
 TCGCSV market prices and keeps asking prices separate. The previous Cloudflare price feed
 remains available for deployments configured with its server secret.
+
+### Exact history feeds (3.38)
+
+Pokémon and Yu-Gi-Oh! recent histories use TickerMint's exact TCGplayer product IDs.
+Every rendered TickerMint series links back to its card page. The keyless feed is for
+personal/non-commercial deployments; commercial deployments need the provider's
+commercial license. Do not redistribute its raw history as a dataset or standalone feed.
+Terms and API reference: https://tickermint.cards/developers
+
+Magic's daily importer streams MTGJSON AllIdentifiers and AllPrices, joins UUIDs to
+Scryfall printing IDs, and imports available market quotes from the last 31 calendar
+days for every priced paper printing/finish. It does not shift old observations into
+the current month, interpolate missing quotes, or merge market/mid archive prices
+with the current provider. Batches are authenticated with repository-scoped GitHub
+OIDC and merged through a service-role-only RPC.

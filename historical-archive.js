@@ -1,3 +1,4 @@
+import {ygoProductMatches} from './ygo-prices.js';
 // Public, pinned archive snapshot. Exact provider product joins; no invented daily values.
 export const ARCHIVE_COMMIT='1789c5a80de7b2b6adc287fa7a8db0970cd7b2e7';
 const ROOT=`https://raw.githubusercontent.com/novaoc/rarebox-price-history/${ARCHIVE_COMMIT}`;
@@ -12,7 +13,7 @@ export function archivePoints(points,now=Date.now()){
  return [...days.values()].sort((a,b)=>a.date.localeCompare(b.date));
 }
 export async function archivePriceRoute(url,ctx,fetchImpl=fetch,now=Date.now()){
- const game=url.searchParams.get('game'),id=url.searchParams.get('id')||'',finish=url.searchParams.get('finish')||'reference',edition=url.searchParams.get('edition')||'';
+ const game=url.searchParams.get('game'),id=url.searchParams.get('id')||'',finish=url.searchParams.get('finish')||'reference',edition=url.searchParams.get('edition')||'',rarity=url.searchParams.get('rarity')||'';
  if(!['mtg','ptcg','ygo'].includes(game)||!/^[A-Za-z0-9.!%?_:-]{1,89}$/.test(id)||!/^[A-Za-z0-9:_-]{1,99}$/.test(finish)||!/^[-A-Za-z0-9]{0,60}$/.test(edition))return Response.json({error:'Invalid history request'},{status:400});
  const cache=globalThis.caches?.default,cacheKey=new Request(url.href),saved=await cache?.match(cacheKey);if(saved)return saved;
  const get=async u=>{
@@ -38,17 +39,18 @@ export async function archivePriceRoute(url,ctx,fetchImpl=fetch,now=Date.now()){
     if(products.length!==1)return empty('Choose an exact finish to load archived prices.');
     productId=products[0];subtype={normal:'normal',holo:'holofoil',reverse:'reverse holofoil'}[variants[0].type];setName=provider.set?.name;label=`${setName} #${provider.localId}`;
    }else{
-    const versions=(provider.card_sets || []).filter(s=>s.set_code===edition);
-    if(!versions.length)return empty('Choose a set printing to load archived prices.');setName=versions[0].set_name;label=`${setName} · ${edition}`;
+    const versions=(provider.card_sets || []).filter(s=>s.set_code===edition && (!rarity || s.set_rarity===rarity));
+    if(versions.length!==1)return empty('Choose an exact printing and rarity to load archived prices.');setName=versions[0].set_name;label=`${setName} · ${edition}`;
    }
    const [groups,joins]=await Promise.all([get(`https://tcgcsv.com/tcgplayer/${category}/groups`),get(ROOT+'/maps/groups.json')]);
    const matches=(groups.results || []).filter(g=>norm(g.name)===norm(setName)&&joins[category]?.[String(g.groupId)]);
    if(matches.length!==1)return empty('No unambiguous archived set mapping for this printing.');setKey=joins[category][String(matches[0].groupId)];
+   if(game==='ygo' && rarity){const currentProducts=await get(`https://tcgcsv.com/tcgplayer/2/${matches[0].groupId}/products`),hits=ygoProductMatches({code:edition,rarity},currentProducts.results || []);if(hits.length!==1)return empty('No exact rarity mapping for this archive.');productId=hits[0].productId;}
   }
   if(!/^[A-Za-z0-9_-]{1,100}$/.test(setKey||''))return empty('No archived set for this printing.');
   const [products,data]=await Promise.all([get(`${ROOT}/maps/products/${archiveGame}/${setKey}.json`),get(`${ROOT}/data/${archiveGame}/${setKey}.json`)]);
   let hit;
-  if(game==='ygo'){
+  if(game==='ygo' && !productId){
    const matches=Object.entries(products).filter(([,v])=>v[0]===edition&&!v[1]);if(matches.length!==1)return empty('This printing has an ambiguous archived product mapping.');productId=matches[0][0];hit=matches[0][1];
   }else hit=products[String(productId)];
   if(!hit||hit[1])return empty('This exact product variant has no separate archived series.');

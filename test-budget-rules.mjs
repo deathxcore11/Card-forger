@@ -34,3 +34,14 @@ assert.equal(tradeMatches({target:{key:'a',price:5},owned:[{key:'lot',cardKey:'a
 console.log('PASS: all-game budget tournament competition, monotonic quality, legality/unknown-cost gates, physical ownership, in-range source choice, safe game-specific rule dex, exact YGO rarity/edition prices and honest trade states.');
 
 assert.equal(sameCardLogic('ptcg',{id:'a',name:'Charizard',attacks:[{name:'Attack',damage:'100'}]},{id:'b',name:'Charizard',attacks:[{name:'Attack',damage:'200'}]}),false,'A different same-name Pokémon is not a tournament printing substitution');
+import {recentHistoryRoute,recentPoints} from './recent-history.js';
+const historyNow=Date.parse('2026-10-14'),raw=[{snapshot_date:'2026-10-13',market:'18.62'},{snapshot_date:'2026-10-14',market:null},{snapshot_date:'2026-10-15',market:12}];assert.deepEqual(recentPoints(raw,historyNow),[{date:'2026-10-13',value:18.62}]);
+for(const game of ['ptcg','ygo']){
+ const params=game==='ptcg'?{game,id:'cel25-22',finish:'reference'}:{game,id:'1',finish:'reference',edition:'MAMO-EN038',rarity:'Starlight Rare'};
+ const response=await recentHistoryRoute(new URL('https://fixture/api/prices/recent?'+new URLSearchParams(params)),{},async u=>{
+  if(u.includes('tcgdex'))return Response.json({id:'cel25-22',localId:'22',set:{name:'Celebrations'},variants_detailed:[{type:'holo',variantId:'holo',thirdParty:{tcgplayer:250317}}]});
+  if(u.includes('ygoprodeck'))return Response.json({data:[{id:1,card_sets:[{set_code:'MAMO-EN038',set_name:'Magnificent Monsters',set_rarity:'Starlight Rare'}]}]});
+  if(u.endsWith('/groups'))return Response.json({results:[{groupId:2,name:'Magnificent Monsters'}]});if(u.endsWith('/products'))return Response.json({results:products});
+  if(u.includes('tickermint'))return Response.json({[game==='ptcg'?'Holofoil':'1st Edition']:raw});throw Error('Unexpected '+u);
+ },historyNow);const data=await response.json();assert.equal(data.series.length,1);assert.equal(data.series[0].points[0].date,'2026-10-13');assert.ok(data.series[0].attribution);assert.equal(data.series[0].productId,game==='ptcg'?250317:11);
+}

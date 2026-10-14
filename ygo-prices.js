@@ -21,7 +21,7 @@ export function applyYgoPrices(card,body){
 export async function ygoPriceRoute(url,ctx,fetchImpl=fetch){
  const id=url.searchParams.get('id') || '';if(!/^\d{1,12}$/.test(id))return Response.json({error:'Invalid card'},{status:400});
  const cache=globalThis.caches?.default,k=new Request(url.href),cached=await cache?.match(k);if(cached)return cached;
- const get=async u=>{const key=new Request(u),old=await cache?.match(key);if(old)return old.json();const r=await fetchImpl(u,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error('Price feed unavailable');const d=await r.json();ctx?.waitUntil?.(cache?.put(key,Response.json(d,{headers:{'Cache-Control':'public,max-age=21600'}})));return d;};
+ const get=async u=>{const key=new Request(u),old=await cache?.match(key);if(old)return old.json();const r=await fetchImpl(u,{headers:{Accept:'application/json','User-Agent':'CardStashy/3.38 (cached exact printing prices; github.com/deathxcore11/Card-forger)'},signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error(`Price provider ${new URL(u).hostname} returned ${r.status}`);const d=await r.json();ctx?.waitUntil?.(cache?.put(key,Response.json(d,{headers:{'Cache-Control':'public,max-age=21600'}})));return d;};
  try{
   const [data,groups]=await Promise.all([get('https://db.ygoprodeck.com/api/v7/cardinfo.php?id='+id),get('https://tcgcsv.com/tcgplayer/2/groups')]),card=data.data?.[0];
   if(String(card?.id)!==id)throw Error('Card identity mismatch');
@@ -40,7 +40,7 @@ export async function ygoPriceRoute(url,ctx,fetchImpl=fetch){
    }catch{}
   }));
   const response=Response.json({cardId:id,printings,source:'TCGplayer market via TCGCSV',updatedAt:new Date().toISOString()},{headers:{'Cache-Control':'public,max-age=21600'}});ctx?.waitUntil?.(cache?.put(k,response.clone()));return response;
- }catch{return Response.json({error:'Exact printing prices temporarily unavailable'},{status:503});}
+ }catch(e){return Response.json({error:'Exact printing prices temporarily unavailable',notice:e.message},{status:503});}
 }
 export function editionPrice(set,edition){
  const subtype={'1st-edition':'1st Edition',unlimited:'Unlimited',limited:'Limited'}[edition];

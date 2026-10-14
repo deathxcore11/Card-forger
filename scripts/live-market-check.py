@@ -1,5 +1,5 @@
 """Read-only live/provider checks. A denied live check never implies a failed deploy."""
-import json,urllib.request,concurrent.futures
+import json,time,urllib.request,concurrent.futures
 ROOT='https://cardforge2.deathxcore11.workers.dev/'
 def get(url,raw=False):
     req=urllib.request.Request(url,headers={'Accept':'application/json','User-Agent':'CardStashy live verification (github.com/deathxcore11/Card-forger)'})
@@ -9,20 +9,31 @@ def check(label,url,kind):
     try:
         body=get(url,kind=='version')
         if kind=='version':
-            assert 'Version 3.37.0' in body,'Published version marker is older than 3.37.0'
-            summary='3.37.0'
+            assert 'Version 3.38.0' in body,'Published version marker is older than 3.38.0'
+            summary='3.38.0'
         elif kind=='printing':
             summary=body
             rarities={p['rarity']:p for p in body.get('printings',[]) if p['code']=='MAMO-EN038'}
             assert 'Starlight Rare' in rarities and 'Secret Rare' in rarities,'Exact screenshot rarities did not resolve'
             assert rarities['Starlight Rare']['productId']!=rarities['Secret Rare']['productId'],'Rarities were merged'
+        elif kind=='printing-history':
+            summary=body
+            assert any(len(s.get('points',[]))>=20 for s in body.get('series',[])),'Recent month history did not resolve'
         elif kind=='history':
             summary={k:{'count':len(v),'first':v[0] if v else None,'last':v[-1] if v else None} for k,v in body.items() if isinstance(v,list)}
         else:summary=str(body)[:800]
         print(label,json.dumps(summary),flush=True);return True
     except Exception as exc:print(label,'UNVERIFIED:',str(exc),flush=True);return False
+# Allow the independent Cloudflare build to finish before checking the new routes.
+for attempt in range(12):
+    try:
+        if 'Version 3.38.0' in get(ROOT+'views.js',raw=True):break
+    except Exception as exc:
+        print('Deployment check:',str(exc),flush=True)
+        if isinstance(exc,urllib.error.HTTPError) and exc.code in (401,403):break
+    time.sleep(10)
 # Read-only research, no API signup, key, charge, or raw-data redistribution.
-jobs=[('Live version',ROOT+'views.js','version'),('Exact screenshot prices',ROOT+'api/prices/yugioh?id=4731783','printing'),('Pokemon recent history','https://api.tickermint.cards/products/250317/prices','history'),('YGO recent history','https://api.tickermint.cards/products/25824/prices','history'),('MTGJSON metadata','https://mtgjson.com/api/v5/Meta.json','metadata'),('TCGCSV groups','https://tcgcsv.com/tcgplayer/2/groups','metadata')]
+jobs=[('Live version',ROOT+'views.js','version'),('Exact screenshot prices',ROOT+'api/prices/yugioh?id=4731783','printing'),('Live Pokemon recent history',ROOT+'api/prices/recent?game=ptcg&id=cel25-22&finish=reference','printing-history'),('Live YGO recent history',ROOT+'api/prices/recent?game=ygo&id=4731783&finish=reference&edition=MAMO-EN038&rarity=Starlight%20Rare','printing-history'),('MTGJSON metadata','https://mtgjson.com/api/v5/Meta.json','metadata'),('TCGCSV groups','https://tcgcsv.com/tcgplayer/2/groups','metadata')]
 with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
     results=list(pool.map(lambda x:check(*x),jobs))
-if not all(results[:2]):raise RuntimeError('Live HTTP verification blocked or failed; inspect the diagnostics above and Cloudflare deployment status separately.')
+if not all(results[:4]):raise RuntimeError('Live HTTP verification blocked or failed; inspect the diagnostics above and Cloudflare deployment status separately.')

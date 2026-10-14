@@ -89,8 +89,39 @@ def backfill(watches):
                 if points:out.append({'game':'mtg','card_id':w['card_id'],'finish':w['finish'],'source':'TCGplayer retail via MTGJSON','points':points[-366:]})
     return out
 
+def backfill_magic_catalogue():
+    """Every priced paper printing: exact MTGJSON UUID -> Scryfall ID, last 31 calendar days."""
+    mapping={}
+    req=urllib.request.Request('https://mtgjson.com/api/v5/AllIdentifiers.json.gz',headers={'User-Agent':UA})
+    with urllib.request.urlopen(req,timeout=120) as response,gzip.GzipFile(fileobj=response) as stream:
+        for uuid,card in ijson.kvitems(stream,'data',use_float=True):
+            sid=card.get('identifiers',{}).get('scryfallId')
+            if sid:mapping[uuid]=sid
+    print('Exact Magic printing mappings:',len(mapping),flush=True)
+    cutoff=(datetime.date.fromisoformat(TODAY)-datetime.timedelta(days=30)).isoformat()
+    batch=[];count=0
+    req=urllib.request.Request('https://mtgjson.com/api/v5/AllPrices.json.gz',headers={'User-Agent':UA})
+    with urllib.request.urlopen(req,timeout=120) as response,gzip.GzipFile(fileobj=response) as stream:
+        for uuid,prices in ijson.kvitems(stream,'data',use_float=True):
+            sid=mapping.get(uuid)
+            if not sid:continue
+            retail=prices.get('paper',{}).get('tcgplayer',{}).get('retail',{})
+            for finish,sub in [('nonfoil','normal'),('foil','foil'),('etched','etched')]:
+                points=[{'date':day,'value':float(v)} for day,v in sorted(retail.get(sub,{}).items()) if cutoff<=day<=TODAY and isinstance(v,(int,float)) and 0<v<=10000000]
+                if not points:continue
+                batch.append({'game':'mtg','card_id':sid,'finish':finish,'source':'TCGplayer retail via MTGJSON','points':points})
+                if len(batch)>=100:
+                    save_rows(batch);count+=len(batch);batch=[]
+                    if count%1000==0:print('Magic month histories saved:',count,flush=True)
+    if batch:save_rows(batch);count+=len(batch)
+    print('Complete Magic month import:',count,flush=True)
+
 def main():
     cutoff=(datetime.date.fromisoformat(TODAY)-datetime.timedelta(days=90)).isoformat()
+    if os.getenv('HISTORY_MAGIC_ALL')=='1' and os.getenv('HISTORY_GAME')=='mtg':
+        priority=table('market_watch',"select=*&game=eq.mtg&limit=3000")
+        save_rows(backfill(priority))
+        backfill_magic_catalogue()
     watches=table('market_watch','select=*&touched_at=gte.'+cutoff+'&order=touched_at.desc&limit=3000')
     game=os.getenv('HISTORY_GAME')
     if game:watches=[w for w in watches if w['game']==game]
@@ -131,8 +162,8 @@ def save_rows(rows):
     if not _token or time.monotonic()-_token_at>240:
         _token=get(os.environ['ACTIONS_ID_TOKEN_REQUEST_URL']+'&audience=cardstashy-market-history',{'Authorization':'Bearer '+os.environ['ACTIONS_ID_TOKEN_REQUEST_TOKEN']})['value'];_token_at=time.monotonic()
     token=_token
-    for start in range(0,len(rows),25):
-        data=json.dumps(rows[start:start+25]).encode()
+    for start in range(0,len(rows),100):
+        data=json.dumps(rows[start:start+100]).encode()
         req=urllib.request.Request(BASE+'/functions/v1/market-history',data=data,method='POST',headers={'Content-Type':'application/json','Authorization':'Bearer '+token,'User-Agent':UA})
         result=json.load(urllib.request.urlopen(req,timeout=120));print('Saved series:',result['saved'])
 

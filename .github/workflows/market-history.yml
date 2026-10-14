@@ -34,3 +34,4 @@ jobs:
         env:
           HISTORY_GAME: ${{ matrix.game }}
           HISTORY_CATALOGUE: "1"
+          HISTORY_MAGIC_ALL: "1"
