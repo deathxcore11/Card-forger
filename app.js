@@ -783,6 +783,7 @@ function render() {
   if (pageKey !== lastPageKey) {
     lastPageKey = pageKey;
     $("#content").classList.add("page-enter");
+    if (navDir) $("#content").classList.add(navDir === "back" ? "page-back" : "page-fwd");
     setTimeout(() => countUp($("#content")), 60);
   }
   attachBrowseObserver();
@@ -858,10 +859,43 @@ function render() {
 
 const tcgCtx = {};
 
-window.addEventListener("hashchange", () => {
+// Every page remembers where you were. Going back (the browser's back, or a link to the page you
+// came from, like "All sets") returns you to that spot instead of the top; going forward starts a
+// new page at the top. Lists that fill in after the page draws (set grids, results) are waited for.
+try { history.scrollRestoration = "manual"; } catch {}
+const scrollMem = new Map(), navStack = [];
+let navDir = "", scrollRestore = 0;
+const routeKey = (hash) => T.game() + (decodeURIComponent((hash || "").split("#")[1] || "home"));
+function restoreScroll(top) {
+  const run = ++scrollRestore, until = Date.now() + 2500;
+  const stop = () => { scrollRestore++; off(); };
+  const off = () => { for (const e of ["wheel", "touchstart", "keydown", "pointerdown"]) removeEventListener(e, stop, true); };
+  for (const e of ["wheel", "touchstart", "keydown", "pointerdown"]) addEventListener(e, stop, { capture: true, once: true, passive: true });
+  const step = () => {
+    if (run !== scrollRestore) return;
+    const max = document.documentElement.scrollHeight - innerHeight;
+    window.scrollTo(0, Math.min(top, Math.max(0, max)));
+    if (max >= top - 2 || Date.now() > until) return off();
+    requestAnimationFrame(step);
+  };
+  step();
+}
+window.addEventListener("hashchange", (e) => {
+  const from = routeKey(e.oldURL), to = routeKey(location.hash);
+  scrollMem.set(from, window.scrollY);
+  if (scrollMem.size > 60) scrollMem.delete(scrollMem.keys().next().value);
+  if (navStack.at(-1) !== from) navStack.push(from);
+  const back = navStack.at(-2) === to;
+  if (back) navStack.pop(); else navStack.push(to);
+  if (navStack.length > 40) navStack.shift();
+  const [fv, fa] = from.slice(T.game().length).split("/"), [tv, ta] = to.slice(T.game().length).split("/");
+  const newPage = fv !== tv || (["set", "tdeck", "shared", "deck"].includes(tv) && fa !== ta);
+  navDir = newPage ? (back ? "back" : "fwd") : "";
   const changed = parseHash();
   render();
-  if (changed) window.scrollTo({ top: 0 });
+  navDir = "";
+  if (back && scrollMem.has(to)) restoreScroll(scrollMem.get(to));
+  else if (changed || newPage) { scrollRestore++; window.scrollTo({ top: 0 }); }
 });
 
 /* =========================================================

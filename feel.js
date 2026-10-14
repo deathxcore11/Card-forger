@@ -294,4 +294,66 @@ export function attachTilt(root = typeof document === "undefined" ? null : docum
   for (const ev of ["pointerup", "pointercancel"]) root.addEventListener(ev, (e) => e.pointerType !== "mouse" && setTimeout(end, 260), { passive: true });
   root.addEventListener("pointerout", (e) => e.pointerType === "mouse" && el && !el.contains(e.relatedTarget) && end(), { passive: true });
   root.addEventListener("scroll", end, { passive: true, capture: true });
+  attachMotionTilt(root, () => el);
+}
+
+// Phones have no hover, so the card on a card page answers the phone itself: tilt the phone and
+// the card leans and its shine slides, like holding a real foil. It also catches the light once
+// when it opens. iOS asks for motion access the first time you touch a card (Apple requires a tap).
+function attachMotionTilt(root, pressed) {
+  if (typeof window === "undefined" || !("DeviceOrientationEvent" in window) || !matchMedia?.("(hover: none)").matches) return;
+  let base = null, frame = 0, last = null, asked = false, listening = false;
+  const hero = () => {
+    const c = document.querySelector("dialog[open] .cd-img, #content .cd-img");
+    if (!c) return null;
+    const r = c.getBoundingClientRect();
+    return r.bottom > 0 && r.top < innerHeight ? c : null;
+  };
+  const apply = () => {
+    frame = 0;
+    const c = hero();
+    if (!c || !last || pressed() === c) return;
+    const clamp = (v) => Math.max(-1, Math.min(1, v / 18));
+    if (!base) base = { ...last };
+    // The resting angle drifts toward however you hold the phone, so the card settles flat.
+    base.b += (last.b - base.b) * 0.02;
+    base.g += (last.g - base.g) * 0.02;
+    const x = clamp(last.g - base.g), y = clamp(last.b - base.b);
+    c.classList.add("tilting", "gyro");
+    c.style.setProperty("--tx", `${x * 9}deg`);
+    c.style.setProperty("--ty", `${-y * 9}deg`);
+    c.style.setProperty("--mx", `${50 + x * 45}%`);
+    c.style.setProperty("--my", `${50 + y * 45}%`);
+  };
+  const onTurn = (e) => {
+    if (e.beta == null || e.gamma == null) return;
+    last = { b: e.beta, g: e.gamma };
+    if (!frame) frame = requestAnimationFrame(apply);
+  };
+  const listen = () => {
+    if (listening) return;
+    listening = true;
+    addEventListener("deviceorientation", onTurn, { passive: true });
+  };
+  const needsAsk = typeof DeviceOrientationEvent.requestPermission === "function";
+  if (!needsAsk) listen();
+  root.addEventListener("click", (e) => {
+    if (!needsAsk || asked || !e.target.closest?.(TILT)) return;
+    asked = true;
+    DeviceOrientationEvent.requestPermission().then((r) => r === "granted" && listen()).catch(() => {});
+  }, { capture: true, passive: true });
+  // A new card page: forget the old resting angle and sweep the light across once.
+  // It plays when the card first comes into view (on a card page it often sits below the art).
+  const seen = typeof IntersectionObserver === "undefined" ? null : new IntersectionObserver((xs) => {
+    for (const x of xs) {
+      if (!x.isIntersecting) continue;
+      seen.unobserve(x.target);
+      base = null;
+      x.target.classList.add("shine-once");
+      setTimeout(() => x.target.classList.remove("shine-once"), 1300);
+    }
+  }, { threshold: 0.6 });
+  if (seen) new MutationObserver(() => {
+    for (const c of document.querySelectorAll(".cd-img:not([data-shone])")) { c.dataset.shone = "1"; seen.observe(c); }
+  }).observe(document.body, { childList: true, subtree: true });
 }

@@ -2745,3 +2745,26 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .ico.game-mark { background: none; width: auto; height: auto; border-radius: 0; color: inherit; display: inline-block; }
 .game-pill .pill-mark .ico.game-mark { width: 18px; height: 18px; color: #fff; }
 .game-choice-icon .ico.game-mark { width: 24px; height: 24px; color: #fff; }
+
+/* Direction-aware page moves: forward pages arrive from the right, going back slides the page
+   you came from in from the left, already at the spot you left it (no re-dealing the grid). */
+@keyframes page-fwd { from { opacity: 0; transform: translateX(22px) scale(.995); } to { opacity: 1; transform: none; } }
+@keyframes page-back { from { opacity: 0; transform: translateX(-22px) scale(.995); } to { opacity: 1; transform: none; } }
+#content.page-enter.page-fwd > * { animation-name: page-fwd; }
+#content.page-enter.page-back > * { animation: page-back .32s cubic-bezier(.2, .8, .2, 1) both !important; }
+#content.page-enter.page-back :is(.card-grid, .deck-grid, .tdeck-list) > * { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { #content.page-enter.page-back > *, #content.page-enter.page-fwd > * { animation: none !important; } }
+
+/* Card art on touch screens: no iOS lift-out ghost or text selection when you press a card, the
+   tilt follows the phone smoothly, and a new card page catches the light once. */
+:is(.lot-art, .cd-img, .tile-art, .quick-card-thumb) { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+:is(.lot-art, .cd-img, .tile-art, .quick-card-thumb) img { -webkit-user-drag: none; -webkit-touch-callout: none; }
+.cd-img { position: relative; }
+@media (prefers-reduced-motion: no-preference) {
+  .cd-img.tilting.gyro { transform: perspective(700px) rotateX(var(--ty, 0deg)) rotateY(var(--tx, 0deg)); transition: transform .18s ease-out; }
+  .cd-img.gyro::before { transition: background-position .18s ease-out; }
+  .cd-img.shine-once { animation: card-catch 1.1s cubic-bezier(.2, .8, .2, 1) .15s both; }
+  .cd-img.shine-once::after { content: ""; position: absolute; inset: 0; z-index: 3; border-radius: inherit; pointer-events: none; mix-blend-mode: color-dodge; background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.5) 45%, rgba(0,220,255,.3) 52%, rgba(255,0,170,.25) 58%, transparent 70%) no-repeat; background-size: 250% 100%; animation: shine-sweep 1.1s cubic-bezier(.3, .6, .3, 1) .15s both; }
+  @keyframes shine-sweep { from { background-position: 120% 0; } to { background-position: -30% 0; } }
+  @keyframes card-catch { 0% { transform: perspective(700px) rotateY(-9deg) rotateX(3deg); } 55% { transform: perspective(700px) rotateY(5deg) rotateX(-1deg); } 100% { transform: none; } }
+}

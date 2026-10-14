@@ -1,3 +1,14 @@
+3.50.0 — Back where you were, and cards that move on phones
+- Every page remembers your place. Open a set (or a deck, or a shared list) and come back, with
+  the back button or a link like "All sets", and you land on the same spot instead of the top.
+  Lists that fill in after the page draws are waited for, and touching the screen stops the jump.
+- Pages move in the direction you go: new pages slide in from the right; going back slides the
+  page in from the left, already at your spot, without dealing the cards in again.
+- Cards on phones: the card on a card page leans with the phone and its foil shine follows, like
+  holding the real card (iPhone asks for motion access the first time you touch a card). It also
+  catches the light once when it comes into view. Pressing card art no longer pops up the
+  system's faded image preview.
+
 3.49.2 — Clear game marks and a quieter Home
 - New game marks that are easy to tell apart at any size, white on each game's color: Magic's
   five-color pie, Yu-Gi-Oh!'s eye in a triangle, and Pokémon's ball. Same style in the header and
