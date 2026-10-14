@@ -1,3 +1,4 @@
+import { ask, askText } from "./dialog.js";
 import {applySwapsToCards} from './insights.js';
 import {showRuleHint} from './rule-dex.js';
 import {bestBudgetDecks,purchaseCost,comparePower,refineCandidates,towardDeck,spendUp,cardQuality} from './deck-optimizer.js';
@@ -1696,7 +1697,7 @@ A.finishPasswordReset = async (t) => {
   finally { for (const id of ["resetPassword","resetConfirm"]) if ($("#"+id)) $("#"+id).value = ""; done(); }
 };
 A.signOut = async () => {
-  if (!confirm("Sign out? Your cards stay on this device; they just stop syncing.")) return;
+  if (!await ask("Sign out? Your cards stay on this device; they just stop syncing.")) return;
   await signOut();
   render();
   toast("Signed out. Your data is still on this device.");
@@ -1708,7 +1709,7 @@ A.syncDecide = () => {
 };
 A.syncChoice = async (t) => {
   const c = t.dataset.choice;
-  if (c === "device" && cloudInfo().pending?.cloud && !confirm("Replace your account copy with this device’s? The account copy is downloaded as a backup first.")) return;
+  if (c === "device" && cloudInfo().pending?.cloud && !await ask("Replace your account copy with this device’s? The account copy is downloaded as a backup first.")) return;
   closeSheet();
   await resolvePending(c);
   render();
@@ -2231,7 +2232,7 @@ A.addSave = () => saveLot(false);
 A.addSaveRaw = () => saveLot(true);
 A.addDelete = async () => {
   const e = S.ui.sheetCtx?.entry;
-  if (!e || !confirm(`Delete ${e.qty}× ${e.name} from your collection?`)) return;
+  if (!e || !await ask(`Delete ${e.qty}× ${e.name} from your collection?`)) return;
   await commit((s) => (s.collection = s.collection.filter((x) => x.id !== e.id)), { msg: "Removed from collection." });
   closeSheet();
 };
@@ -2344,7 +2345,7 @@ A.qty = async (t) => {
     delta = Number(t.dataset.delta),
     e = S.state.collection.find((x) => x.id === id);
   if (!e) return;
-  if (e.qty + delta <= 0 && !confirm(`Remove ${e.name} from your collection?`)) return;
+  if (e.qty + delta <= 0 && !await ask(`Remove ${e.name} from your collection?`)) return;
   await commit((s) => {
     const x = s.collection.find((y) => y.id === id);
     x.qty = Math.max(0, x.qty + delta);
@@ -2576,7 +2577,7 @@ A.impApply = async () => {
     sourceKey = $("#impSource").value.trim();
   try {
     if (!sourceKey) throw Error("Give this import a source name.");
-    if (mode === "replace-all" && !confirm("Replace your whole collection? A recovery copy is kept, but export a backup first.")) return;
+    if (mode === "replace-all" && !await ask("Replace your whole collection? A recovery copy is kept, but export a backup first.")) return;
     await commit(
       (s) => {
         const lots = rows.map((e) => {
@@ -2813,7 +2814,7 @@ A.dImpSave = async (t) => {
     }
     if (dest === "replace") {
       const old = currentDeck();
-      if (!confirm(`Replace the cards in ${old.name}? The old list is kept in Versions.`)) return;
+      if (!await ask(`Replace the cards in ${old.name}? The old list is kept in Versions.`)) return;
       await commit((s) => {
         const i = s.decks.findIndex((x) => x.id === old.id);
         const snap = withSnapshot(s.decks[i], "Before re-import");
@@ -2945,7 +2946,7 @@ A.deckEmbSwap = (t) =>
   );
 C.deckLock = (t) => editDeck((d) => ({ ...d, locked: t.checked }), { msg: t.checked ? "Copies reserved for this deck." : "Reservation released." });
 A.snapshot = async () => {
-  const label = prompt("Name this version", "Version " + ((currentDeck().versions || []).length + 1));
+  const label = await askText("Name this version", "Version " + ((currentDeck().versions || []).length + 1));
   if (label === null) return;
   const before = (currentDeck().versions || []).length;
   await editDeck((d) => withSnapshot(d, label || "Snapshot"));
@@ -2965,7 +2966,7 @@ A.deckDup = async () => {
 };
 A.deckDelete = async () => {
   const d = currentDeck();
-  if (!confirm(`Delete ${d.name}? Your collection is not affected.`)) return;
+  if (!await ask(`Delete ${d.name}? Your collection is not affected.`)) return;
   await commit((s) => {
     s.decks = s.decks.filter((x) => x.id !== d.id);
     if (s.activeDeck === d.id) s.activeDeck = s.decks[0]?.id || null;
@@ -3445,7 +3446,7 @@ A.ideaWish = async () => {
 A.ideaOwn = async () => {
   const picked = ideaPicked();
   if (!picked.length) return toast("Tick the cards you own.");
-  if (!confirm(`Add ${sumQty(picked)} cards to your collection as cards you own?`)) return;
+  if (!await ask(`Add ${sumQty(picked)} cards to your collection as cards you own?`)) return;
   await commit((s) => {
     for (const c of picked) s.collection.push({ id: uid(), name: c.name, qty: c.qty, set: "", collectorNumber: "", finish: "nonfoil", language: "en", condition: "Near Mint", location: "", reserved: 0, printingId: null, printingVerified: false, nameVerified: !!meta(c.name), raw: { acquisition: "Added from deck idea" } });
   }, { msg: `${sumQty(picked)} cards added to your collection.` });
@@ -3563,7 +3564,7 @@ A.exportRef = (t) => {
   download(`CardStashy_${fileSafe(r.name)}.txt`, exportDeckText(r) + "\n");
 };
 A.deleteRef = async (t) => {
-  if (!confirm("Remove this saved idea?")) return;
+  if (!await ask("Remove this saved idea?")) return;
   await commit((s) => (s.references = s.references.filter((x) => x.id !== t.dataset.id)));
 };
 async function fetchJSON(url) {
@@ -3807,11 +3808,11 @@ C.verB = (t) => {
 A.restoreVer = async (t) => {
   const d = currentDeck(),
     v = (d.versions || []).find((x) => x.id === t.dataset.id);
-  if (!v || !confirm(`Restore “${v.label}”? Your current list is saved as a version first.`)) return;
+  if (!v || !await ask(`Restore “${v.label}”? Your current list is saved as a version first.`)) return;
   await editDeck((x) => ({ ...withSnapshot(x, "Before restoring " + v.label), cards: structuredClone(v.cards), ...(v.side ? { side: structuredClone(v.side) } : {}) }), { msg: "Version restored." });
 };
 A.deleteVer = async (t) => {
-  if (!confirm("Delete this saved version?")) return;
+  if (!await ask("Delete this saved version?")) return;
   await editDeck((x) => ({ ...x, versions: (x.versions || []).filter((v) => v.id !== t.dataset.id) }));
 };
 
@@ -3866,8 +3867,8 @@ C.lifeName = (t) => {
   const pl = S.ui.life?.players[Number(t.dataset.i)];
   if (pl) pl.name = t.value.trim().slice(0, 24) || pl.name;
 };
-A.lifeEnd = () => {
-  if (!confirm("End this game without logging it?")) return;
+A.lifeEnd = async () => {
+  if (!await ask("End this game without logging it?")) return;
   S.ui.life = null;
   render();
 };
@@ -4065,7 +4066,7 @@ C.checkBackup = async (t) => {
 C.restoreBackup = async (t) => {
   try {
     const { next, cache } = await readBackup(t.files[0]);
-    if (!confirm(`Replace everything here with ${sumQty(next.collection)} cards and ${next.decks.length} decks from the backup? The current data is kept as a recovery copy.`)) return;
+    if (!await ask(`Replace everything here with ${sumQty(next.collection)} cards and ${next.decks.length} decks from the backup? The current data is kept as a recovery copy.`)) return;
     for (const [k, c] of Object.entries(cache)) if (!S.catalog[k]) S.catalog[k] = slim(c);
     S.catalogDirty = true;
     await writeRecords([[RECOVERY, stripCache(S.state)], [STORAGE, next]]);
@@ -4081,20 +4082,20 @@ A.undoRestore = async () => {
   const raw = await readRecord(RECOVERY);
   if (!raw) return toast("No recovery copy yet.");
   const next = normalize(raw);
-  if (!confirm(`Switch to the recovery copy (${sumQty(next.collection)} cards, ${next.decks.length} decks)? What you have now becomes the recovery copy.`)) return;
+  if (!await ask(`Switch to the recovery copy (${sumQty(next.collection)} cards, ${next.decks.length} decks)? What you have now becomes the recovery copy.`)) return;
   await writeRecords([[RECOVERY, stripCache(S.state)], [STORAGE, next]]);
   S.state = next;
   render();
   toast("Recovery copy restored.");
 };
 A.reset = async () => {
-  if (!confirm("Start empty? One recovery copy is kept on this device. Export a backup first if in doubt.")) return;
+  if (!await ask("Start empty? One recovery copy is kept on this device. Export a backup first if in doubt.")) return;
   await writeRecords([[RECOVERY, stripCache(S.state)], [STORAGE, blank()]]);
   S.state = blank();
   go("#home");
 };
 A.loadExample = async () => {
-  if (S.state.collection.length && !confirm("Replace your data with example data? Your current data becomes the recovery copy.")) return;
+  if (S.state.collection.length && !await ask("Replace your data with example data? Your current data becomes the recovery copy.")) return;
   const names = ["Krenko, Mob Boss", "Goblin Instigator", "Sol Ring", "Arcane Signet", "Talrand, Sky Summoner", "Counterspell", "Mountain", "Island"];
   const st = blank();
   st.example = true;

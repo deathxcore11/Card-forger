@@ -1,3 +1,14 @@
+3.53.0 — In-app dialogs, plain energy in built decks
+- Every question the app asks (delete a deck, remove cards, restore a version, name a version, sign
+  out, replace data…) is now an in-app dialog instead of the browser's pop-up: a glass card over a
+  blurred backdrop, a bottom sheet on phones. Destructive actions have a red button named for the action
+  ("Delete", "Remove") with a warning haptic, and start on Cancel so Enter can't delete by accident.
+  Esc or tapping outside cancels.
+- Built Pokémon decks use the plain Basic Energy, not a gold one you happen to own. Basic Energy now
+  counts as one card per type whatever the printing ("Water Energy" and the gold "Basic Water Energy"
+  are the same card), so a deck's energy shows as owned if you have any printing of it, and the
+  deck lists the cheap regular printing. Decks saved before this: tap "Cheapest printings".
+
 3.52.1 — Cheaper, and still legal
 - Cheaper printings never cost a deck its legality. A printing is only used when it's legal in the
   deck's format itself (an older reprint that has rotated out of Standard isn't used in a Standard

@@ -1,3 +1,4 @@
+import { ask, askText } from "./dialog.js";
 import {effectText,ruleText} from './rule-dex.js';
 import {editionPrice} from './ygo-prices.js';
 import {buildOverlay} from './build-overlay.js';
@@ -184,10 +185,13 @@ function variantOwnControl(g, c, v) {
 
 /* ---------- ownership & value ---------- */
 
-const keyOf = (g, c) => SOURCES[g].ownKey(c);
+// Basic Energy is one card per type whatever the printing: TCGdex names most "Water Energy" and a
+// few special printings "Basic Water Energy", so both count as the same card you own.
+const sameCard = (k) => String(k || "").replace(/^name:Basic (\w+ Energy)$/, "name:$1");
+const keyOf = (g, c) => sameCard(SOURCES[g].ownKey(c));
 export function ownedMap(g, s = S.state) {
   const m = new Map();
-  for (const e of gs(g, s).collection) m.set(e.key, (m.get(e.key) || 0) + e.qty);
+  for (const e of gs(g, s).collection) m.set(sameCard(e.key), (m.get(sameCard(e.key)) || 0) + e.qty);
   return m;
 }
 const ownedOf = (g, c, m = ownedMap(g)) => (c ? m.get(keyOf(g, c)) || 0 : 0);
@@ -2431,7 +2435,7 @@ export function registerTcg(c) {
     render();
   };
   A.tSnap = async (t) => {
-    const label = prompt("Name this version", "Version " + ((gs(g()).decks.find((x) => x.id === t.dataset.deck)?.versions || []).length + 1));
+    const label = await askText("Name this version", "Version " + ((gs(g()).decks.find((x) => x.id === t.dataset.deck)?.versions || []).length + 1));
     if (label === null) return;
     await mutate((st) => {
       const d = st.decks.find((x) => x.id === t.dataset.deck);
@@ -2439,7 +2443,7 @@ export function registerTcg(c) {
     }, { msg: "Version saved." });
   };
   A.tRestore = async (t) => {
-    if (!confirm("Restore this version? The current list is saved as a version first.")) return;
+    if (!await ask("Restore this version? The current list is saved as a version first.")) return;
     await mutate((st) => {
       const d = st.decks.find((x) => x.id === t.dataset.deck),
         v = (d.versions || []).find((x) => x.id === t.dataset.id);
@@ -3114,7 +3118,7 @@ export function registerTcg(c) {
     go("#tdeck/" + d.id);
   };
   A.tDeckDelete = async (t) => {
-    if (!confirm("Delete this deck? Your collection isn’t affected.")) return;
+    if (!await ask("Delete this deck? Your collection isn’t affected.")) return;
     const name = gs(g()).decks.find((x) => x.id === t.dataset.id)?.name || "deck";
     await mutate((st) => (st.decks = st.decks.filter((x) => x.id !== t.dataset.id)), { undo: `Deleted ${name}.` });
     closeSheet();

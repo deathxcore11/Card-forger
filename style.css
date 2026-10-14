@@ -2768,3 +2768,21 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
   @keyframes shine-sweep { from { background-position: 120% 0; } to { background-position: -30% 0; } }
   @keyframes card-catch { 0% { transform: perspective(700px) rotateY(-9deg) rotateX(3deg); } 55% { transform: perspective(700px) rotateY(5deg) rotateX(-1deg); } 100% { transform: none; } }
 }
+
+/* In-app confirm/prompt (dialog.js): a small glass card that springs in over a blurred backdrop.
+   Destructive questions get a solid red action. */
+.cf-dialog { border: 0; padding: 0; background: transparent; max-width: min(420px, calc(100vw - 32px)); width: 100%; color: var(--text); overflow: visible; }
+.cf-dialog::backdrop { background: rgba(6, 8, 12, .55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: cf-fade .2s ease both; }
+.cf-dialog-card { margin: 0; padding: 22px 20px 16px; border-radius: 20px; background: color-mix(in srgb, var(--surface-2) 92%, transparent); border: 1px solid var(--line); box-shadow: 0 24px 60px -18px rgba(0, 0, 0, .75), inset 0 1px 0 rgba(255, 255, 255, .05); animation: cf-pop .32s cubic-bezier(.2, 1.3, .35, 1) both; }
+.cf-dialog-msg { margin: 0 0 16px; font-size: 16px; line-height: 1.45; font-weight: 600; text-wrap: pretty; }
+.cf-dialog-input { width: 100%; box-sizing: border-box; margin: 0 0 16px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; font-size: 16px; }
+.cf-dialog-input:focus { outline: 2px solid var(--game-color, var(--gold)); outline-offset: 1px; }
+.cf-dialog-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.cf-dialog-actions .btn { min-width: 96px; min-height: 44px; }
+.cf-dialog.danger .btn.danger { background: var(--bad); color: #1a0806; border-color: transparent; }
+.cf-dialog.closing .cf-dialog-card { animation: cf-out .16s ease-in both; }
+.cf-dialog.closing::backdrop { animation: cf-fade .16s ease-in reverse both; }
+@keyframes cf-pop { from { opacity: 0; transform: translateY(12px) scale(.94); } to { opacity: 1; transform: none; } }
+@keyframes cf-out { to { opacity: 0; transform: scale(.96); } }
+@keyframes cf-fade { from { opacity: 0; } }
+@media (max-width: 520px) { .cf-dialog { margin: auto auto 16px; } .cf-dialog-actions .btn { flex: 1; } }

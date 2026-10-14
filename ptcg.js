@@ -426,7 +426,9 @@ export const ptcgSource = {
         full.push(...(await Promise.all(briefs.slice(i, i + 6).map((b) => getCard(b.id).catch(() => null)))));
       const sig = playSig(card),
         same = [card, ...full].filter((c) => c && legal(c) && (card.basicEnergy ? c.basicEnergy : playSig(c) === sig)),
-        mine = same.filter((c) => owned(c) > 0),
+        // Owned printings first, except Basic Energy: owning any one covers them all, so the deck
+        // shows the plain cheap printing rather than a gold one you happen to have.
+        mine = card.basicEnergy ? [] : same.filter((c) => owned(c) > 0),
         rare = (c) => { const i = PTCG_RARITIES.indexOf(c.rarity); return i < 0 ? 50 : i; },
         cost = (c) => c.prices?.usd ?? Infinity;
       // Prefer printings with a picture (some trainer-kit and promo scans are missing).

@@ -1,3 +1,4 @@
+import { ask, askText } from "./dialog.js";
 // Card scanner for all three games:
 //   live camera → card in the guide → quality checks → crop → read name & code strips → match → confirm → add
 // Text recognition runs on the phone (Tesseract). The guide's colour is about capture quality only:
@@ -1120,8 +1121,8 @@ export function registerScanner(ctx) {
       toast("Couldn't copy. Your browser blocked the clipboard.");
     }
   };
-  A.sessClear = () => {
-    if (!confirm("Clear the scanned list? Cards already saved to your collection stay there.")) return;
+  A.sessClear = async () => {
+    if (!await ask("Clear the scanned list? Cards already saved to your collection stay there.")) return;
     saveSession(game(), []);
     render();
   };
