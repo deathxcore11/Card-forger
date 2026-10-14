@@ -145,7 +145,7 @@ function tcgTradePanel(g, c, own, ctx={}) {
     return { key: w.cardId, name: w.name, price: price(card), art: imgTag(card, "mini-art"), open: `data-act="tCard" data-id="${esc(w.cardId)}"` };
   });
   const needs=new Map();for(const d of st.decks){const counts=new Map();for(const zone of Object.values(d.zones || {}))for(const r of zone)counts.set(r.cardId,{...r,qty:r.qty+(counts.get(r.cardId)?.qty||0)});for(const r of counts.values()){
-   const card=cardOf(g,r.cardId),have=st.collection.filter(e=>e.cardId===r.cardId).reduce((a,e)=>a+e.qty,0),qty=Math.max(0,r.qty-have);if(!qty||r.cardId===c.id)continue;
+   const card=cardOf(g,r.cardId),have=card ? ownedOf(g,card) : st.collection.filter(e=>e.cardId===r.cardId).reduce((a,e)=>a+e.qty,0),qty=Math.max(0,r.qty-have);if(!qty||r.cardId===c.id)continue;
    const old=needs.get(r.cardId);needs.set(r.cardId,{key:r.cardId,name:r.name,price:price(card),qty:Math.max(qty,old?.qty||0),priority:2,deckName:d.name,art:imgTag(card,'mini-art'),open:`data-act="tCard" data-id="${esc(r.cardId)}"`});
   }}
   return tradePanel({ key: c.id, name: c.name, price: price(c), owned: own > 0 }, [...byId.values()], wish,{...ctx.tradeOptions,needs:[...needs.values()]});
