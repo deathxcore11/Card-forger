@@ -2786,3 +2786,13 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 @keyframes cf-out { to { opacity: 0; transform: scale(.96); } }
 @keyframes cf-fade { from { opacity: 0; } }
 @media (max-width: 520px) { .cf-dialog { margin: auto auto 16px; } .cf-dialog-actions .btn { flex: 1; } }
+
+/* Matchups: open the opponent's list from its row. */
+.mu-see { display: flex; align-items: center; gap: 12px; width: 100%; margin: 4px 0 12px; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--text); text-align: left; font: inherit; cursor: pointer; transition: transform .2s cubic-bezier(.2, .8, .2, 1), border-color .2s; }
+.mu-see:hover { border-color: var(--game-color, var(--gold)); }
+.mu-see:active { transform: scale(.98); }
+.mu-see > span:nth-child(2) { display: grid; flex: 1; min-width: 0; }
+.mu-see small { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mu-see > i { font-style: normal; font-size: 22px; color: var(--muted); }
+.mu-see-art { width: 46px; height: 34px; border-radius: 8px; overflow: hidden; background: var(--surface-2); flex: none; }
+.mu-see-art img { width: 100%; height: 100%; object-fit: cover; display: block; }

@@ -1,3 +1,9 @@
+3.53.1 — See the deck you're up against
+- Matchups: each opponent's details start with "See their deck", which opens the exact tournament list
+  the matchup is simulated against (placing, event, every card, prices and what you own) in the same
+  deck window as Meta decks, in all three games. Close it to land back on the matchup.
+- Fields saved before this re-simulate once so every opponent has its list.
+
 3.53.0 — In-app dialogs, plain energy in built decks
 - Every question the app asks (delete a deck, remove cards, restore a version, name a version, sign
   out, replace data…) is now an in-app dialog instead of the browser's pop-up: a glass card over a

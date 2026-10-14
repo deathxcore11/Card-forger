@@ -1270,7 +1270,7 @@ A.muRun = async () => {
       const rows = list.main.map((r) => ({ qty: r.qty, c: meta(r.name) })).filter((r) => r.c),
         prof = profileOf("mtg", mtgConstructedPower({ cards: list.main }, S.catalog, key, 60), rows);
       const cover = meta(a.cover || "");
-      if (prof) field.push({ name: a.name, share: a.share, art: cover?.image_uris?.art_crop || cover?.card_faces?.[0]?.image_uris?.art_crop || (a.cover ? `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(a.cover)}&format=image&version=art_crop` : ""), profile: prof });
+      if (prof) field.push({ key: list.key, format: mk.slice(4), name: a.name, share: a.share, art: cover?.image_uris?.art_crop || cover?.card_faces?.[0]?.image_uris?.art_crop || (a.cover ? `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(a.cover)}&format=image&version=art_crop` : ""), profile: prof });
     }
     st.field = field;
     st.fieldKey = V.mtgFieldKey(d);
@@ -1283,6 +1283,13 @@ A.muRun = async () => {
     render();
     setTimeout(() => countUp($("#content")), 60);
   }
+};
+// Their list, in the same deck window as Meta decks (the field may be cached from an earlier visit).
+A.muSee = async (t) => {
+  const mk = "mtg:" + t.dataset.format;
+  if (!metaState(mk).data) await loadMetaData(mk).catch(() => null);
+  if (!metaState(mk).data?.decks?.some((x) => x.key === t.dataset.key)) return toast("That tournament list is no longer in the current results. Simulate again to refresh the field.");
+  A.mtgProven(t);
 };
 A.muFirst = (t) => { const d = currentDeck(); muState(d).first = t.dataset.v !== "second"; render(); };
 // Log a game: one tap, kept on the deck (and synced with your account).

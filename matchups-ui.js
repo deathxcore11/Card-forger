@@ -43,6 +43,7 @@ function row(P, m, i) {
       <span class="mu-name"><b>${esc(m.name)}</b><small>${pc(m.share)}% of the field${m.rec.n ? ` · you <span class="mu-rec-chip">${rec(m.rec)}</span>` : ""}</small><i class="mu-bar"><span></span></i></span>
       <span class="mu-pct"><b>${pc(w)}%</b><small>${m.rec.n ? "blended" : "to win"}</small></span></summary>
     <div class="mu-body">
+      ${m.key ? `<button class="mu-see" data-act="${P}See" data-key="${esc(m.key)}" ${m.format ? `data-format="${esc(m.format)}"` : ""}><span class="mu-see-art">${m.art ? `<img src="${esc(m.art)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ""}</span><span><b>See their deck</b><small>The ${esc(m.name)} list this matchup is played against</small></span><i aria-hidden="true">›</i></button>` : ""}
       <div class="mu-split"><span>On the play<b>${pc(m.sim.onPlay)}%</b></span><span>On the draw<b>${pc(m.sim.onDraw)}%</b></span><span>${m.rec.n ? "Your games" : "Simulated"}<b>${m.rec.n ? rec(m.rec) : pc(m.sim.win) + "%"}</b></span></div>
       <ul class="mu-why">${m.sim.reasons.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
       ${planHtml(m.plan, m.sim.win)}
@@ -83,7 +84,8 @@ export function celebrate(el) {
 const FIELD_KEY = "cardstashy-mu-field:";
 export const fieldStore = {
   get(key) {
-    try { const v = JSON.parse(localStorage.getItem(FIELD_KEY + key) || "null"); return Array.isArray(v) ? v : null; } catch { return null; }
+    // Fields saved before each opponent kept its list key are re-simulated (so "See their deck" works).
+    try { const v = JSON.parse(localStorage.getItem(FIELD_KEY + key) || "null"); return Array.isArray(v) && v.every((f) => f.key) ? v : null; } catch { return null; }
   },
   set(key, field) {
     try {

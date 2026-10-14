@@ -2360,7 +2360,7 @@ export function registerTcg(c) {
         const main = tRows(G, zones.main), extra = tRows(G, zones.extra);
         if (!main.length) continue;
         const prof = profileOf(G, tPower(G, f, main, extra), main, extra);
-        if (prof) field.push({ name: a.name, share: a.share, art: G === "ygo" ? (list.cover ? `https://images.ygoprodeck.com/images/cards_cropped/${encodeURIComponent(list.cover)}.jpg` : "") : a.icons?.[0] ? ptcgIcon(a.icons[0]) : "", profile: prof });
+        if (prof) field.push({ key: list.key, name: a.name, share: a.share, art: G === "ygo" ? (list.cover ? `https://images.ygoprodeck.com/images/cards_cropped/${encodeURIComponent(list.cover)}.jpg` : "") : a.icons?.[0] ? ptcgIcon(a.icons[0]) : "", profile: prof });
       }
       st.field = field;
       st.fieldKey = tcgFieldKey(G);
@@ -3025,6 +3025,12 @@ export function registerTcg(c) {
       cardAttrs: (r) => (G === "ygo" ? `data-act="tCard" data-id="${esc(r.key)}"` : pkByName.get(r.name) ? `data-act="tCard" data-id="${esc(pkByName.get(r.name).id)}"` : `data-act="tOtherPrintings" data-name="${esc(r.name)}"`),
       extraActions: `<button class="btn ghost" data-act="tMetaBuild" data-key="${esc(d.key)}">⚒ Build around it</button>`,
     };
+  };
+  A.tMuSee = async (t) => {
+    const G = g();
+    if (!metaState(G).data) await metaFor(G);
+    if (!metaState(G).data?.decks?.some((x) => x.key === t.dataset.key)) return toast("That tournament list is no longer in the current results. Simulate again to refresh the field.");
+    A.tMetaDeck(t);
   };
   A.tMetaDeck = (t) => {
     const G = g(),
