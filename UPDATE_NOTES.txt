@@ -1,3 +1,10 @@
+3.36.0 — Archived history for all three games
+- The graph now loads a pinned public Rarebox/TCGCSV-derived archive in addition to daily shared and device observations. The last-year view is the default. No dates are synthesized; archive series remain separate from current market quotes.
+- Exact product IDs join Pokémon and Magic records. Yu-Gi-Oh! requires an identified set printing and exposes an archive-printing selector; first-edition and unlimited datasets stay separate.
+- The archive covers 152 Pokémon sets, 297 Magic sets and 605 Yu-Gi-Oh! sets, with observations through September 15, 2026. It cannot cover every new or unmatched variant. It records market prices with mid-price fallback; missing per-point fallback flags are disclosed. Older dates can be weekly/change-only observations.
+- Celebrations Charizard product 250320 has 106 observations in the current one-year window, October 16, 2025 through September 15, 2026. Today's live quote is shown separately.
+- Regression fixtures preserve real source records and provenance for all three games, wrong-finish rejection, valid dated prices and exact product joins.
+
 3.35.1 — One history graph on every card page
 - Magic, Pokémon and Yu-Gi-Oh! Overview pages now use the same dated/source-specific history component as their price panels. The old local-only “starts today” message is removed.
 - One real quote draws a single labeled point; multiple quotes draw the actual dated line. No dates or trends are fabricated. Sticky tabs use an opaque backdrop so card text does not overlap their labels.
