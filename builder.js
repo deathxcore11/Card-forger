@@ -247,3 +247,20 @@ export function buildTiers(opts, tiers = TIERS) {
 export function formatsFor(card, all) {
   return all.filter((f) => f.id !== "limited" && (!f.legality || ["legal", "restricted"].includes(card?.legalities?.[f.legality])) && (!f.commander || canLead(card, f)));
 }
+
+// Spells a deck in this format and these colors could play (for spending a budget on upgrades).
+export function upgradePool(format, catalog, colors) {
+  const f = formatOf(format);
+  return [...new Map(Object.values(catalog).filter((c) => c?.name && !isLand(c) && functionalIn(c, f) && (!f.legality || ["legal", "restricted"].includes(legalityIn(c, f))) && fitsColors(c, colors)).map((c) => [cardKey(c.name), c])).values()];
+}
+export const copyLimit = (c, format) => {
+  const f = formatOf(format);
+  return isBasic(c) ? Infinity : legalityIn(c, f) === "restricted" ? 1 : f.copies;
+};
+
+// How well a card fits decks built around these seeds (the builder's own fit score).
+export function fitFor(seeds, size = 60) {
+  const tags = [...new Set(seeds.flatMap((s) => roles(s).filter((r) => THEMES.includes(r))))],
+    subs = [...new Set(seeds.flatMap(subtypes))];
+  return (c) => scoreCard(c, tags, subs, { size });
+}

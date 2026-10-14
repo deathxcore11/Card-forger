@@ -1,3 +1,4 @@
+import {buildOverlay} from "./build-overlay.js";
 import {budgetComparisonHtml} from './deck-optimizer.js';
 import {effectText} from './rule-dex.js';
 import {collectionOrder} from "./collection-order.js";
@@ -554,7 +555,7 @@ export function buildSheet() {
   <p class="muted small">Pick a format for a complete, legal deck at each budget, using your cards first. Basic lands count as owned.</p>
   <div class="fmt-chips">${fmts.map((f) => `<button class="chip pick ${f.name === B.format ? "on" : ""}" ${B.busy?"disabled":""} data-act="buildFormat" data-format="${esc(f.name)}">${esc(f.name)}</button>`).join("") || '<span class="muted small">This card isn’t legal in any constructed format.</span>'}</div>
   <label class="custom-budget">Purchase budget $<input id="buildCustom" type="number" min="0" max="100000" step="1" value="${esc(B.custom ?? "")}" placeholder="Blank = unlimited" ${B.busy?"disabled":""} data-change="buildCustom"></label>
-  ${B.busy ? `<p class="muted small" role="status">${esc(B.msg || "Building…")}</p>` : B.msg ? `<p class="small ${B.error ? "warn-text" : "muted"}" role="status">${esc(B.msg)}</p>` : ""}
+  ${B.busy ? buildOverlay(B.msg) : B.msg ? `<p class="small ${B.error ? "warn-text" : "muted"}" role="status">${esc(B.msg)}</p>` : ""}
   ${tiers ? `<div class="tiers">${tiers.map((t, i) => tierCard(t, i, "build", tiers)).join("")}</div>${tiers.length > 1 ? `<button class="btn ghost block" data-act="tierSaveAll">Save all ${tiers.length} versions</button>` : ""}` : ""}
   <p class="foot">Built from your cards first, then popular, well-curved picks. A strong start, not a tuned tournament list.</p>`;
 }

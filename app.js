@@ -1,6 +1,8 @@
 import {applySwapsToCards} from './insights.js';
 import {showRuleHint} from './rule-dex.js';
-import {bestBudgetDecks,purchaseCost,comparePower,refineCandidates,towardDeck} from './deck-optimizer.js';
+import {bestBudgetDecks,purchaseCost,comparePower,refineCandidates,towardDeck,spendUp,cardQuality} from './deck-optimizer.js';
+import { playRate } from './importance.js';
+import { budgetNotes } from './deck-optimizer.js';
 import {attachCardGestures, CompareSelection, cardActionButtons} from './card-actions.js';
 import {tcgCompareSheet} from './tcgcompare.js';
 import {artworkHTML} from './artwork.js';
@@ -48,7 +50,7 @@ import { registerScanner, scanView } from "./scancam.js";
 import { newGame, proxyList, proxySheetHTML } from "./extras.js";
 import { sharePayload, encodeShare, decodeShare } from "./share.js";
 import { FORMATS, formatOf, hasCommander, canLead, sizeLabel } from "./formats.js";
-import { buildTiers, formatsFor, themeQuery, BUDGET_TIERS } from "./builder.js";
+import { buildTiers, formatsFor, themeQuery, BUDGET_TIERS, upgradePool, copyLimit, fitFor } from "./builder.js";
 import * as T from "./tcg.js";
 import { rulesPage } from "./rules.js";
 import { GAMES, GAME_ICON, GAME_COLOR } from "./games.js";
@@ -1288,7 +1290,29 @@ async function runBuild() {
     candidates=await refineCandidates(candidates,{evaluate,cost,status:buildMsg,rounds:2,maxNeighbors:12,
       accept:d=>!evaluate(d).readiness?.provisional,
       neighbors:d=>targets.flatMap(target=>towardDeck(d,target,{protectedKeys,zoneOf:r=>/\bLand\b/.test(meta(r.name)?.type_line || '')?'land':'spell'}))});
-    B.results[f.name]=bestBudgetDecks(candidates,tierList(),{evaluate,cost}).map((winner,i)=>{const d=winner || candidates[i];return {...d,owned:d.cards.reduce((n,r)=>n+Math.min(r.qty,/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(r.name)?r.qty:B.avail(r.name)),0)};});
+    let tiers=bestBudgetDecks(candidates,tierList(),{evaluate,cost});
+    // Spend toward each budget: stronger cards for the same plan until the list is within $10 of
+    // the budget, as long as Power holds. The best version found (no limit) is the reference.
+    // The field's own cards are the first place to look for stronger options in these colors.
+    if(data?.decks?.length){
+      const freq=new Map();for(const d of data.decks)for(const r of [...(d.main||[]),...(d.side||[])])if(!/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(r.name))freq.set(r.name,(freq.get(r.name)||0)+1);
+      const names=[...freq].sort((a,b)=>b[1]-a[1]).slice(0,120).map(([n])=>n).filter(n=>!meta(n));
+      if(names.length){buildMsg(`Loading ${names.length} tournament cards to compare…`);await resolveNames(names).catch(()=>{});}
+    }
+    const pool=upgradePool(f.name,S.catalog,colors),isLandName=n=>/\bLand\b/.test(meta(n)?.type_line || ''),
+      fit=fitFor([seed],f.size),quality=c=>cardQuality(playRate('mtg',c),priceOf(c.name),fit(c))+(f.commander && c.edhrec_rank?Math.max(0,4-Math.log10(c.edhrec_rank)):0),
+      mrows=d=>d.cards.map(r=>({key:key(r.name),zone:isLandName(r.name)?'land':'spell',qty:r.qty,card:meta(r.name) || {name:r.name}})),
+      mswap=(d,w,c,n)=>{const cards=structuredClone(d.cards),out=cards.find(r=>key(r.name)===w.key);if(!out || out.qty<n)throw Error('swap');out.qty-=n;const hit=cards.find(r=>key(r.name)===key(c.name));if(hit)hit.qty+=n;else cards.push({name:c.name,qty:n,why:'Upgrade for this budget'});return {...d,cards:cards.filter(r=>r.qty>0),proven:null,label:d.label};};
+    const budgets=tierList();
+    for(const [i,t] of tiers.entries()){
+      if(!t || !budgets[i])continue;
+      buildMsg(`Spending toward ${budgets[i]===Infinity?'the best version':'$'+budgets[i]}…`);
+      const protect=r=>r.zone==='land' || r.key===key(seed.name) || (!!t.commander && r.key===key(t.commander)) || playRate('mtg',r.card)>=25;
+      const up=await spendUp(t,budgets[i],{pool,quality,rows:mrows,swap:mswap,cost,evaluate,protect,maxCopies:c=>copyLimit(c,f.name),status:buildMsg});
+      if(up.swaps.length)tiers[i]={...t,...up.deck,cost:up.cost,assessment:up.power,power:up.power.score,upgrades:up.swaps};
+    }
+    tiers=budgetNotes(tiers,budgets);
+    B.results[f.name]=tiers.map((winner,i)=>{const d=winner || candidates[i];return {...d,owned:d.cards.reduce((n,r)=>n+Math.min(r.qty,/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(r.name)?r.qty:B.avail(r.name)),0)};});
     B.msg = `${B.results[f.name].length} budget versions · compared ${candidates.length} decks using Power, legality and purchase cost.`;
   } catch (e) {
     B.msg = e.message;

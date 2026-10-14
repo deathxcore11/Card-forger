@@ -1,6 +1,7 @@
 import {effectText,ruleText} from './rule-dex.js';
 import {editionPrice} from './ygo-prices.js';
-import {bestBudgetDecks,purchaseCost,comparePower,swappedZones,sameCardLogic,budgetComparisonHtml,refineCandidates,towardDeck} from './deck-optimizer.js';
+import {buildOverlay} from './build-overlay.js';
+import {bestBudgetDecks,purchaseCost,comparePower,swappedZones,sameCardLogic,budgetComparisonHtml,refineCandidates,towardDeck,spendUp,cardQuality,budgetNotes} from './deck-optimizer.js';
 import {collectionOrder} from "./collection-order.js";
 import {POKEMON_SET_ART} from "./pokemon-set-art.js";
 import { recordCardPrice, trackedQuote, priceHistoryHtml, alertsPanel, alertStatus } from "./pricehist.js";
@@ -14,7 +15,7 @@ import {viewControl,selectionControl,selectionMark,selectionTray,historyPanel,qu
 import { locationPicker, rememberLocation } from "./collection-locations.js";
 import { zoneCountLabel } from "./deck-safety.js";
 import { binderShelf } from "./binders.js";
-import { emblemChips, rowEmblem, hasEmblem, impactScore, tradeAdvice, tradeAdviceHtml, deckEmblems, deckEmblemHtml, cardMetaUsage, cardMetaTab } from "./importance.js";
+import { emblemChips, rowEmblem, hasEmblem, impactScore, tradeAdvice, tradeAdviceHtml, deckEmblems, deckEmblemHtml, cardMetaUsage, cardMetaTab, playRate } from "./importance.js";
 import { tileChrome } from "./tiles.js";
 // Yu-Gi-Oh! and Pokémon: collection, search, sets and deck building, sharing one
 // set of screens. Each game's data, rules and formats come from its adapter.
@@ -1409,11 +1410,11 @@ export function tcgBuildSheet() {
   return `<div class="sheet-head"><h2>Build decks</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   ${(B.seeds?.length || 1) > 1
     ? `<div class="build-seed multi"><div class="seed-strip">${B.seeds.slice(0, 8).map((id) => imgTag(cardOf(g, id), "mini-art")).join("")}</div><div><small class="muted">Built around</small><b>${B.seeds.length} of your cards</b><small class="muted">${esc([...new Set(B.seeds.map((id) => cardOf(g, id)?.archetype || "").filter(Boolean))].slice(0, 3).join(", ") || seed?.name || "")}</small></div></div>`
-    : `<div class="build-seed">${imgTag(seed, "mini-art")}<div><small class="muted">Built around</small><b>${esc(seed?.name || "")}</b><small class="muted">${esc(seed?.archetype ? "Archetype: " + seed.archetype : seed?.typeLine || "")}</small></div><span></span></div>`}
+    : `<div class="build-seed">${imgTag(seed, "mini-art")}<div><small class="muted">Built around</small><b>${esc(seed?.name || "")}</b><small class="muted">${esc(seed?.archetype ? "Archetype: " + seed.archetype : seed?.typeLine || "")}</small></div><button class="btn ghost small" data-act="tRandomDeck" ${B.busy ? "disabled" : ""}>🎲 Random card</button></div>`}
   <p class="muted small">${g === "ygo" ? "Builds a legal deck from the archetype, then adds the hand traps, draw and removal today’s tournament decks play most — your cards first, at each budget, plus a recent tournament list when one plays your card." : "Builds the evolution line, adds the Trainers and support Pokémon today’s top decks play, and the Energy your attacks need — your cards first, at each budget, plus a recent tournament list when one plays your card. Basic Energy is assumed owned."}</p>
   <div class="fmt-chips">${fmts.map((f) => `<button class="chip pick ${f.id === B.format ? "on" : ""}" ${B.busy?"disabled":""} data-act="tBuildFormat" data-format="${f.id}">${esc(f.name)}</button>`).join("") || `<span class="muted small">${g === "ptcg" ? "Pick a Pokémon (not a Trainer or Energy) to build around." : "This card isn’t legal in any format."}</span>`}</div>
   <label class="custom-budget">Purchase budget $<input type="number" min="0" max="100000" step="1" value="${esc(B.custom ?? '')}" placeholder="Blank = unlimited" ${B.busy?'disabled':''} data-change="tBuildCustom"></label>
-  ${B.busy ? `<p class="muted small" role="status">${esc(B.msg || "Building…")}</p>` : B.msg ? `<p class="small ${B.error ? "warn-text" : "muted"}" role="status">${esc(B.msg)}</p>` : ""}
+  ${B.busy ? buildOverlay(B.msg) : B.msg ? `<p class="small ${B.error ? "warn-text" : "muted"}" role="status">${esc(B.msg)}</p>` : ""}
   ${!B.busy && B.evidence ? `<p class="evidence small">${esc(B.evidence)}</p>` : ""}
   ${tiers ? `<div class="tiers">${tiers.map((t, i) => {
     const owned = t.zones.main.concat(t.zones.extra).reduce((a, r) => a + Math.min(r.qty, ownedOf(g, cardOf(g, r.cardId))), 0),
@@ -2464,7 +2465,7 @@ export function registerTcg(c) {
         seeds = (B.seeds || [B.seed]).map((id) => cardOf(G, id)).filter(Boolean);
       status("Checking what tournament decks play right now…");
       const meta = await metaFor(G),budgets=tcgBudgets(B);
-      let results = [];
+      let results = [], upPool = [];
       if (G === "ygo") {
         const archs = [...new Set(seeds.map((x) => x.archetype).filter(Boolean))].slice(0, 3);
         status(archs.length ? `Loading ${archs.join(", ")}…` : "Loading…");
@@ -2491,6 +2492,7 @@ export function registerTcg(c) {
         }
         if (!staples?.length) staples = (await SOURCES.ygo.byNames(YGO_STAPLES).catch(() => [])).map(remember).sort((a, b) => YGO_STAPLES.indexOf(a.name) - YGO_STAPLES.indexOf(b.name));
         results = budgets.map((budget) => ({ budget, ...buildYgo({ f, seed, seeds, archetype: arch, staples, limit: SOURCES.ygo.limit, legal: SOURCES.ygo.legality, owned, price: priceOf, budget }) }));
+        upPool = [...staples, ...arch];
       } else {
         const line = [];
         for (const [i, p] of seeds.filter((x) => x.category === "Pokemon").slice(0, 3).entries()) {
@@ -2528,6 +2530,7 @@ export function registerTcg(c) {
         const types = [...new Set(line.flatMap((x) => x.card.attackCosts || []))].filter((t) => t in { Grass: 1, Fire: 1, Water: 1, Lightning: 1, Psychic: 1, Fighting: 1, Darkness: 1, Metal: 1 });
         const energy = (await Promise.all((types.length ? types : (seed.types || []).slice(0, 1)).slice(0, 2).map((t) => ptcgBest(energyName(t), formatOf("ptcg", "unlimited"))))).filter(Boolean);
         results = budgets.map((budget) => ({ budget, ...buildPtcg({ line, trainers, energy, owned: (card) => (card.basicEnergy ? 99 : owned(card)), price: priceOf, budget }) }));
+        upPool = trainers.map((x) => x.card);
       }
       // Tournament decks compete for every affordable tier, rather than being a disconnected extra row.
       const proven=[];
@@ -2550,6 +2553,45 @@ export function registerTcg(c) {
         evaluate,cost,
         accept:d=>seeds.every(seed=>rows(d).some(r=>r.cardId===seed.id || (G==='ptcg' && sameCardLogic(G,cardOf(G,r.cardId),seed))))
       }).map((winner,i)=>winner || results[i]);
+      // Spend toward each budget: stronger cards for the same deck until it's within $10 of the
+      // budget, as long as Power holds. Yu-Gi-Oh! keeps its archetype engine; Pokémon keeps its
+      // Pokémon and Energy and upgrades Trainers.
+      const engineArch = G === "ygo" ? seed.archetype || "" : "",
+        trows = (d) => (d.zones.main || []).map((r) => ({ key: r.cardId, zone: "main", qty: r.qty, card: cardOf(G, r.cardId) || { name: r.name, id: r.cardId } })),
+        tswap = (d, w, card, n) => { let out = d; for (let k = 0; k < n; k++) out = swappedZones(out, "main", w.key, card); return { ...out, proven: null }; },
+        // Never trade away what makes the deck run: Rare Candy in a Stage 2 deck, and any card most
+        // tournament lists play (a core staple), besides the engine itself.
+        tprotect = (r) => seedKeys.has(r.key) || playRate(G, r.card) >= 25 || (G === "ptcg" ? r.card?.category !== "Trainer" || /^Rare Candy$/i.test(r.card?.name || "") : !!engineArch && r.card?.archetype === engineArch),
+        tquality = (card) => cardQuality(playRate(G, card), priceOf(card)),
+        accept2 = (d) => !SOURCES[G].validate(d, (id) => cardOf(G, id), f).some((x) => x.level === "bad");
+      for (const [i, t] of results.entries()) {
+        if (!t?.zones || !budgets[i]) continue;
+        const up = await spendUp(t, budgets[i], { pool: upPool, quality: tquality, rows: trows, swap: tswap, cost, evaluate, accept: accept2, protect: tprotect, maxCopies: (card) => SOURCES[G].limit(card, f), status });
+        if (up.swaps.length) results[i] = { ...t, ...up.deck, cost: up.cost, assessment: up.power, power: up.power.score, upgrades: up.swaps };
+        // Yu-Gi-Oh!: a fuller Extra Deck is the next best use of the money (more lines and outs).
+        if (G === "ygo" && budgets[i]) {
+          let d = results[i];
+          const cap = budgets[i] === Infinity ? Infinity : budgets[i] + 10,
+            ext = upPool.filter((x) => x?.extra && SOURCES.ygo.legality(x, f) !== "not_legal").sort((a, b) => tquality(b) - tquality(a)),
+            added = [];
+          for (const x of ext) {
+            const extra = d.zones.extra || [], n = extra.reduce((a, r) => a + r.qty, 0);
+            if (n >= (f.extra || 15)) break;
+            const have = extra.filter((r) => r.cardId === x.id).reduce((a, r) => a + r.qty, 0);
+            if (have >= SOURCES.ygo.limit(x, f)) continue;
+            const next = { ...d, zones: { ...d.zones, extra: have ? extra.map((r) => (r.cardId === x.id ? { ...r, qty: r.qty + 1 } : r)) : [...extra, { cardId: x.id, name: x.name, qty: 1 }] } },
+              q = cost(next);
+            if (q.unknown || q.cost > cap || !accept2(next)) continue;
+            d = { ...next, cost: q.cost };
+            added.push(x.name);
+          }
+          if (added.length) {
+            const pw = evaluate(d);
+            results[i] = { ...d, assessment: pw, power: pw.score, upgrades: [...(results[i].upgrades || []), ...added.map((n) => ({ out: "empty Extra Deck slot", in: n, n: 1 }))] };
+          }
+        }
+      }
+      results = budgetNotes(results, budgets);
       B.evidence += ` Compared ${candidates.length} candidates with Power, legality, engine readiness and your purchase cost. Higher budgets retain the best affordable lower-budget candidate.`;
       B.results[B.format] = results;
       B.msg = `${results.length} budget versions · ${proven.filter(x=>x.proven).length} complete tournament candidates evaluated.`;

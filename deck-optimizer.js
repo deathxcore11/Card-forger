@@ -91,3 +91,84 @@ export function budgetComparisonHtml(t,i,action){
  const n=t.nextUpgrade,rows=n?(n.cards || Object.values(n.zones || {}).flat()):[];
  return `${t.explanation?`<p class="small budget-explanation">${esc(t.explanation)}</p>`:''}${n?`<details class="budget-next"><summary>${n.withinTolerance?'Within $10 above your budget':'Next assessed improvement · outside budget'} · ${usd(n.cost)}</summary><p class="small">${usd(n.overBy)} above your ${usd(t.budget)} purchase budget · ${n.power} power estimate. This option is not included in the within-budget list.</p><p class="small">${rows.map(r=>`${r.qty}× ${esc(r.name)}`).join(' · ')}</p><button class="btn ghost small" data-act="${action}" data-i="${i}">Review this version</button></details>`:''}`;
 }
+
+// Card strength for spending a budget: how much of the competitive field plays it, plus a modest
+// price signal (inside one legal format, stronger cards usually cost more). Owned copies never
+// look cheaper here; cost is handled by the purchase quote.
+// fit: how well it serves this deck's plan (game-specific score, roughly 0–15). Price only breaks
+// ties between cards that fit about as well, so an expensive card that doesn't fit never wins.
+export const cardQuality = (rate, price, fit = 0) => fit + (rate || 0) / 8 + Math.min(4, Math.log2(1 + Math.max(0, Number(price) || 0))) * 0.35;
+
+// Spend toward a budget: swap the weakest replaceable copies for stronger affordable cards while
+// the list stays legal and its Power doesn't drop. Lands within `tolerance` of the budget (over is
+// allowed up to the tolerance). Never touches protected cards (the build-around card, a Pokémon
+// line, Energy, lands). Returns the upgraded deck and the swaps made, in order.
+// rows(deck) → [{key, zone, qty, card}], swap(deck, out, inCard, n) → new deck.
+export async function spendUp(deck, budget, { pool, quality, rows, swap, cost, evaluate, accept = () => true, protect = () => false, maxCopies = () => 4, tolerance = 10, maxSwaps = 30, status = () => {} }) {
+  const cap = budget === Infinity ? Infinity : budget + tolerance,
+    ranked = [...new Map(pool.filter(Boolean).map((c) => [c.id || c.name, c])).values()].map((c) => ({ c, q: quality(c) })).sort((a, b) => b.q - a.q),
+    swaps = [];
+  let cur = deck,
+    curCost = cost(cur),
+    curPower = evaluate(cur),
+    evals = 0;
+  if (curCost.unknown) return { deck, swaps };
+  for (let step = 0; step < maxSwaps && evals < 90; step++) {
+    if (budget !== Infinity && curCost.cost >= budget - 1) break;
+    const have = rows(cur),
+      weak = have.filter((r) => !protect(r)).map((r) => ({ ...r, q: quality(r.card) })).sort((a, b) => a.q - b.q).slice(0, 6);
+    let done = false;
+    for (const w of weak) {
+      for (const { c, q } of ranked) {
+        if (q <= w.q + 0.6) break;
+        const inDeck = have.filter((r) => (r.card?.id || r.card?.name) === (c.id || c.name)).reduce((a, r) => a + r.qty, 0),
+          room = maxCopies(c) - inDeck;
+        if (room <= 0) continue;
+        const n = Math.min(w.qty, room);
+        let next;
+        try {
+          next = swap(cur, w, c, n);
+        } catch {
+          continue;
+        }
+        const quote = cost(next);
+        if (quote.unknown || quote.cost > cap + 1e-6 || !accept(next)) continue;
+        evals++;
+        const power = evaluate(next);
+        const issues = (x) => (x?.readiness?.issues?.length || 0) + (x?.readiness?.unknown || 0);
+        if ((power?.score ?? 0) < (curPower?.score ?? 0) - 1 || (power?.readiness?.provisional && !curPower?.readiness?.provisional) || issues(power) > issues(curPower)) continue;
+        swaps.push({ out: w.card?.name || w.key, in: c.name, n, from: w.q, to: q, cost: quote.cost - curCost.cost });
+        cur = next;
+        curCost = quote;
+        curPower = power;
+        done = true;
+        break;
+      }
+      if (done || evals >= 90) break;
+    }
+    status(`Spending toward ${budget === Infinity ? "the best version" : "$" + budget} · ${swaps.length} upgrade${swaps.length === 1 ? "" : "s"}`);
+    await new Promise((r) => setTimeout(r, 0));
+    if (!done) break;
+  }
+  return { deck: cur, swaps, cost: curCost.cost, power: curPower };
+}
+
+// Plain notes for each budget version: how much of the budget it uses, whether it repeats the
+// version below, and what the strongest version found costs when that's beyond this budget.
+export function budgetNotes(tiers, budgets) {
+  const sig = (d) => JSON.stringify((d?.cards || Object.values(d?.zones || {}).flat()).map((r) => [r.cardId || r.name, r.qty]).sort());
+  const real = tiers.filter(Boolean),
+    best = real.reduce((a, t) => (!a || (t.power ?? 0) > (a.power ?? 0) || ((t.power ?? 0) === (a.power ?? 0) && t.cost > a.cost) ? t : a), null);
+  let prev = null;
+  return tiers.map((t, i) => {
+    if (!t) return t;
+    const b = budgets[i],
+      notes = [];
+    if (prev && sig(prev.t) === sig(t)) notes.push(`Same list as the ${prev.b === 0 ? "your-cards" : usd(prev.b)} version: nothing stronger for this plan was found in the extra budget.`);
+    else if (b !== Infinity && b > 0 && t.cost < b - 10) notes.push(`Uses ${usd(t.cost)} of ${usd(b)}. No stronger cards for this plan fit the rest without weakening it; the difference stays in your pocket.`);
+    if (t.upgrades?.length) notes.push(`${t.upgrades.length} upgrade${t.upgrades.length === 1 ? "" : "s"} for this budget: ${t.upgrades.slice(0, 4).map((u) => `${u.n}× ${u.out} → ${u.in}`).join(" · ")}${t.upgrades.length > 4 ? " · …" : ""}.`);
+    if (best && best !== t && b !== Infinity && best.cost > b + 10 && (best.power ?? 0) > (t.power ?? 0)) notes.push(`The strongest version found costs ${usd(best.cost)} (${best.power} power${t.power != null ? ` vs ${t.power}` : ""}). ${best.cost > b + 100 ? "The upgrades past this budget are expensive cards; see the No-limit version for them." : "See the higher versions for what the extra money buys."}`);
+    prev = { t, b };
+    return { ...t, explanation: notes.join(" ") || t.explanation || "" };
+  });
+}

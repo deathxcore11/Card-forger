@@ -309,3 +309,10 @@ export function cardMetaTab(game, card, usage, opts) {
     ${opts.loadAttrs ? `<button class="btn ghost small" ${opts.loadAttrs} ${opts.busy ? "disabled" : ""}>${opts.busy ? "Loading…" : esc(opts.loadLabel || "Load tournament data")}</button>` : ""}
     <section class="meta-use"><h3>Deck ideas around this card</h3><p class="small muted">Build decks that use it, from your collection and budget.</p><div class="actions wrap"><button class="btn" ${opts.buildAttrs}>⚒ Build decks around it</button>${opts.extra || ""}</div></section>`;
 }
+
+// Share of recent top lists (0–100) that play this card, in any loaded format; 0 when unknown.
+export function playRate(game, card, idx = indexFor(game)) {
+  if (!card?.name || isBasic(card.name)) return 0;
+  const e = idx.get(game === "ygo" ? String(card.id) : nameKey(card.name)) || (game === "ygo" ? idx.get(nameKey(card.name)) : null);
+  return e?.pct || 0;
+}

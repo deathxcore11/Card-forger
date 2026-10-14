@@ -1,3 +1,20 @@
+3.40.0 — Budget versions that use their budget, and a clear building pop-up
+- Every budget version now spends toward its limit, in all three games. After the best list
+  for a budget is found, the builder swaps the weakest cards for stronger ones that fit the
+  same plan until it's within about $10 of the budget, checking Deck Power after every swap
+  so the deck never gets weaker. A card is chosen first for how well it fits the plan, then for
+  how much of the tournament field plays it; price only breaks ties.
+- What each version shows: the upgrades it bought ("4× Hedge Whisperer → Elvish Archdruid"),
+  how much of the budget it uses when nothing stronger fits, "Same list as the $50 version"
+  when a bigger budget can't improve it, and what the strongest version found costs when
+  that's beyond the budget.
+- The build-around card, lands, a commander, Rare Candy and core staples most tournament lists
+  play are never swapped out. Yu-Gi-Oh! keeps its archetype engine and fills the Extra Deck
+  with the money left; Pokémon keeps its Pokémon and Energy and upgrades Trainers.
+- Building now shows a pop-up with a card-fan animation and the live step (loading cards,
+  testing upgrades, spending toward $50…) instead of a small line of text.
+- Pokémon and Yu-Gi-Oh! builders get the same Random card button as Magic.
+
 3.36.1 — Prices-only graph and card popup entrance
 - Price history appears once, inside the Prices tab, for Magic, Pokémon and Yu-Gi-Oh! card popups. Overview stays focused on the card.
 - New card popups ease upward and scale into place over 280 ms. Switching tabs or refreshing quotes does not replay the entrance. Reduced-motion preferences are respected.
