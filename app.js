@@ -790,6 +790,16 @@ function render() {
     autoMeta.add(metaBtn.dataset.autoloadMeta);
     setTimeout(() => metaBtn.isConnected && metaBtn.click(), 50);
   }
+  // Deck tiles lead with the Competitive score, so load each Magic format's tournament results
+  // once when the deck list or Home shows decks in it.
+  if (g === "mtg" && ["decks", "home"].includes(ui.view)) {
+    for (const k of new Set(S.state.decks.map((d) => mtgMetaKey(d)).filter(Boolean))) {
+      const M = metaState(k);
+      if (M?.data || M?.busy || autoMeta.has(k)) continue;
+      autoMeta.add(k);
+      setTimeout(() => loadMetaData(k).then(() => render()).catch(() => {}), 200);
+    }
+  }
   if (ui.view === "settings") storageDetail();
   if (g !== "mtg") {
     const SU = T.ui(g).sets;
@@ -797,7 +807,7 @@ function render() {
     if (ui.view === "set" && ui.tsetId && T.ui(g).set.id !== ui.tsetId) setTimeout(() => tcgCtx.openSet?.(ui.tsetId), 0);
     // Ideas, Meta decks and Deck Power need the current tournament meta.
     const MS = T.metaState(g);
-    if ((ui.view === "tdeck" || (ui.view === "decks" && ["ideas", "inspiration", "mine"].includes(ui.decksTab))) && !MS.busy && (!MS.data || Date.now() - MS.at > 12 * 3600e3) && !autoLoaded.has("meta" + g + MS.at)) {
+    if ((ui.view === "tdeck" || (ui.view === "home" && T.gs(g).decks.length) || (ui.view === "decks" && (!ui.decksTab || ["ideas", "inspiration", "mine"].includes(ui.decksTab)))) && !MS.busy && (!MS.data || Date.now() - MS.at > 12 * 3600e3) && !autoLoaded.has("meta" + g + MS.at)) {
       autoLoaded.add("meta" + g + MS.at);
       setTimeout(() => tcgCtx.loadMeta?.(g), 0);
     }

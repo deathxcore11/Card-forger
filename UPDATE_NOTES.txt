@@ -1,3 +1,8 @@
+3.41.1 — Competitive scores on deck tiles right away
+- The deck list and Home now load each format's recent tournament results by themselves, so
+  deck tiles show the Competitive score without opening the Power tab first. Applies to all three
+  games.
+
 3.41.0 — Two scores and a scouting report on every deck
 - Deck Power now shows two numbers, so a deck is never rated in a vacuum:
   Competitive (how it stacks up against the decks winning right now, from recent tournament
