@@ -1,3 +1,32 @@
+3.45.0 — Deck Power that can't be fooled, in each game's own terms
+- Deck Power was tested against decks built to trick it, and against real tournament winners in
+  all three games. The fakes used to score 60–88; now each is held down by the flaw a player would
+  spot. Real top decks (Standard, Pioneer, Modern, Pokémon Standard, Yu-Gi-Oh! Advanced) score 74–100.
+- New "What holds this deck back" box on the Power tab: deal-breakers that cap the score until
+  they're fixed, each explained. The scouting verdict names the biggest one first.
+- Magic, built on Gavin Verhey's deck-building rule (a deck with a mission, not a pile):
+  - Plan check: names cards that work against the deck's plan, like life gain or board wipes in
+    aggro, or combat tricks in control. Life gain counts as on-plan when the deck pays it off, and
+    cards with cost reducers, Warp or cycling aren't called too slow.
+  - Critical mass: tribal, spells-matter and artifact decks need enough pieces for their payoffs
+    (about 18 of the tribe, 20 noncreature spells, 16 artifacts). Below that the score is capped.
+  - Midrange with no theme is judged on cards that out-value the opponent.
+  - Can't cast its spells (no source of a main color), no way to win, and creatures far below a
+    fair rate for their cost are deal-breakers. Hybrid mana no longer demands both colors, mana
+    rocks count as sources, splash colors need fewer sources, and landfall decks may run extra lands.
+- Yu-Gi-Oh!: searchers only count as starters when the deck runs what they search for (named
+  cards, Field Spells, the right Type and Attribute). Extra Deck cards the Main Deck can't summon
+  (Xyz with no monsters of that Level, Synchro with no Tuner, Fusion materials it doesn't run) are
+  named and don't count. Hand traps and staples with no engine are capped.
+- Pokémon: damage is judged as it plays: scaling attacks, damage counters (Alakazam), attacks
+  that hit any Pokémon, Abilities that attack twice, and attacks copied from other Pokémon
+  (N's Zoroark ex). Decks that share the attacking between several Pokémon, recover attackers or
+  swarm with single-Prize Pokémon get credit for it. A best attacker whose Energy the deck doesn't
+  run, or a main line too thin to survive one Prize, is a deal-breaker.
+- Tournament matching ignores the generic staples every deck plays, so a list only counts as a
+  copy of a winning deck when it shares that deck's own cards.
+- Fixed: Pokémon Deck Power could crash on a list whose cards hadn't finished loading.
+
 3.44.0 — Pokémon decks need a real attacker; card pages blend like deck pages
 - Build decks now builds a Basic or Stage 1 toward what it evolves into. Building around
   Impidimp gives an Impidimp-Morgrem-Grimmsnarl line with Rare Candy, not a deck whose

@@ -2626,3 +2626,9 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .cs-banner > .cs-hero.ptcg:not(.compact) { -webkit-mask-image:linear-gradient(180deg,#000 0%,#000 52%,rgba(0,0,0,.55) 76%,transparent 100%); mask-image:linear-gradient(180deg,#000 0%,#000 52%,rgba(0,0,0,.55) 76%,transparent 100%); }
 .cs-banner > .cs-hero.ptcg:not(.compact) .cs-art.pk-crop { position:absolute; inset:0; width:100%; height:100%; display:flex; transform:none; }
 .cs-banner > .cs-hero.ptcg .pk-crop .pk-win { transform:scale(1.05); transform-origin:center 60%; }
+
+/* Deck Power: deal-breakers that cap the score */
+.pw-caps { border-left: 3px solid var(--warn, #e0a03a); }
+.pw-cap { padding: 10px 0; border-top: 1px solid var(--line); }
+.pw-cap:first-of-type { border-top: 0; }
+.pw-cap p { margin: 6px 0 0; line-height: 1.45; }

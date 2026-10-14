@@ -65,6 +65,15 @@ function mtgMetaDecks(data) {
   });
 }
 
+// A deal-breaker (can't cast its spells, attacker can't attack, nothing to search) holds back the
+// competitive reading too: a list that matches a winning deck on paper but can't function isn't one.
+function capCtx(ctx, caps) {
+  const max = caps?.[0]?.max;
+  if (max == null || !ctx) return;
+  if (ctx.score != null) ctx.score = Math.min(ctx.score, max);
+  if (ctx.fieldEstimate != null) ctx.fieldEstimate = Math.min(ctx.fieldEstimate, max);
+}
+
 export function mtgPower(d) {
   const mk = mtgMetaKey(d),
     M = mk ? metaState(mk) : null,
@@ -107,6 +116,7 @@ export function mtgPower(d) {
       ctx.unplayed = (ctx.unplayed || []).map((x) => ({ ...x, name: d.cards.find((c) => cardKey(c.name) === x.key)?.name || x.key }));
     } else if (isCommanderLike(d)) ctx = { score: base.score, from: "commander" };
     else ctx = metaContext({ build: base.score, mine, loaded: !!M?.data, formatOk: !!mk });
+    capCtx(ctx, base.caps);
     return { ...base, engine:engineMap("mtg",d.cards.map(r=>({...r,c:S.catalog[cardKey(r.name)]}))), readiness:powerReadiness("mtg",d,formatOf(d),name=>S.catalog[cardKey(name)]), strategicRisk:strategicRisk("mtg",d.cards.map(r=>({...r,c:S.catalog[cardKey(r.name)]})),M?.data?.decks || [],r=>S.catalog[cardKey(r.name)]), heuristic: base.score, score: ctx.score, from: ctx.from, ctx, match, metaKey: mk, metaLoaded: !!M?.data, metaBusy: !!M?.busy, game: "mtg", formatName: formatOf(d).name };
   });
 }
@@ -162,6 +172,7 @@ export function tcgPower(g, d, f, cardOf) {
     const ctx = metaContext({ build: base.score, mine: mineMap || new Map(), decks: formatOk ? metaDecks : [], match: formatOk ? match : null, loaded: !!data, formatOk, archetypes: (data?.archetypes || []).map((a) => ({ name: a.name || a.id, share: a.share })) });
     if (ctx.unplayed) ctx.unplayed = ctx.unplayed.map((x) => ({ ...x, name: g === "ygo" ? cardOf(x.key)?.name || x.key : rows.find((r) => String(r.c?.name || r.name).toLowerCase() === x.key)?.c?.name || x.key, id: g === "ygo" ? x.key : rows.find((r) => String(r.c?.name || r.name).toLowerCase() === x.key)?.id }));
     if (!formatOk) match = null;
+    capCtx(ctx, base.caps);
     // Upgrades from lists of the same archetype (only when the match is real).
     let upgrades = null;
     if (match && match.sim >= 0.25 && mineMap) {
@@ -245,8 +256,9 @@ export function powerPanel(p, { loadAct = "", findAct = "", cardAct = () => "" }
     eng = p.heuristic ?? p.score,
     tier = competitiveTier(comp),
     lead = comp ?? p.score;
-  return `<section class="panel score-panel power">${ring(lead)}<div><p class="eyebrow">${comp != null ? "Deck Power · competitive" : p.from === "commander" ? "Deck Power · Commander build" : "Deck Power · engine estimate"}</p><h2>${p.from === "commander" ? "Commander build check" : comp != null ? esc(tier.label) : esc(readinessLabel(p))}</h2><p class="small"><b>${esc(p.plan)}</b></p><p class="muted small">${esc(p.lens)}</p>${top ? `<p class="pw-headline small">Biggest gain: <b>${esc(top.label)}</b> (+${pts(top.lost)} pts available)</p>` : ""}</div>
+  return `<section class="panel score-panel power">${ring(lead)}<div><p class="eyebrow">${comp != null ? "Deck Power · competitive" : p.from === "commander" ? "Deck Power · Commander build" : "Deck Power · engine estimate"}</p><h2>${p.from === "commander" ? "Commander build check" : comp != null ? esc(tier.label) : esc(readinessLabel(p))}</h2><p class="small"><b>${esc(p.plan)}</b></p><p class="muted small">${esc(p.lens)}</p>${p.caps?.length ? `<p class="pw-headline small">Fix first: <b>${esc(p.caps[0].label)}</b> (holds the score to ${p.caps[0].max})</p>` : top ? `<p class="pw-headline small">Biggest gain: <b>${esc(top.label)}</b> (+${pts(top.lost)} pts available)</p>` : ""}</div>
   <div class="pw-dual"><span class="${comp == null ? "dim" : tier.tone}"><b>${comp ?? "—"}</b>Competitive<small>${comp == null ? "needs tournament data" : "vs. what's winning now"}</small></span><span><b>${eng}</b>Engine<small>how well it's built for its plan</small></span></div>${profile}</section>
+  ${p.caps?.length ? `<section class="panel pw-caps"><h3>What holds this deck back</h3><p class="muted small">Problems no amount of good cards elsewhere makes up for. Each one caps the score until it's fixed.</p>${p.caps.map((c) => `<div class="pw-cap"><div class="row between"><b>${esc(c.label)}</b><span class="chip warn">max ${c.max}</span></div><p>${esc(c.why || "")}</p></div>`).join("")}</section>` : ""}
   ${scoutingReport(p)}
   ${engineMapPanel(p.engine)}
   ${p.readiness?.provisional?`<section class="panel issues-panel"><h3>Resolve before treating this as competitive</h3>${p.readiness.unknown?`<p>${p.readiness.unknown} card copies still need their details loaded.</p>`:""}<ul>${p.readiness.issues.map(x=>`<li>${esc(x)}</li>`).join("")}</ul><p class="foot">The displayed score is a comparison, not evidence that an incomplete or illegal list is tournament ready.</p></section>`:""}

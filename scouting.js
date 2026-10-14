@@ -87,7 +87,8 @@ function verdictText(p, comp) {
     : eng - comp >= 15 && eng >= 70 ? ` Built well on its own terms (engine ${eng}), but against the field it rates ${comp}: the cards are fine, the strategy is what holds it back.`
     : eng - comp >= 15 ? ` Its own build is shaky (engine ${eng}) and against the field it drops to ${comp}.`
     : comp >= 75 ? ` Built well (engine ${eng}) and it holds up against the field (${comp}).` : "";
-  return `<b>${esc(tier.label)}.</b>${gap} ${fixes.length ? `First things to fix: ${esc(list(fixes, 2))}.` : "The build checks find nothing major to fix."}`;
+  const cap = p.caps?.[0];
+  return `<b>${esc(tier.label)}.</b>${cap ? ` Held back by one thing above all: <b>${esc(cap.label.toLowerCase())}</b>. ${esc(cap.why || "")}` : ""}${gap} ${fixes.length ? `First things to fix: ${esc(list(fixes, 2))}.` : "The build checks find nothing major to fix."}`;
 }
 
 export function scoutingReport(p) {

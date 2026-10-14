@@ -27,6 +27,12 @@ const finish = (parts) => {
   return Math.round((parts.reduce((a, p) => a + clamp(p.ratio) * p.weight, 0) / w) * 100);
 };
 const part = (key, label, count, target, ratio, weight, hint, fix = "") => ({ key, label, count, target, ratio: clamp(ratio), weight, hint, fix });
+// Deal-breakers: flaws no amount of consistency makes up for (a deck that can't cast its spells,
+// an attacker that can't attack, searchers with nothing to search). Each caps the score and says why.
+const capScore = (raw, caps) => {
+  const list = caps.filter(Boolean).sort((a, b) => a.max - b.max);
+  return { score: Math.min(raw, list[0]?.max ?? 100), caps: list.filter((c) => c.max < raw) };
+};
 
 /* ======================= Magic constructed ======================= */
 
@@ -73,7 +79,19 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     flow = qty(has(M.draw)),
     ramp = qty(has(M.ramp)),
     big = qty(spells.filter((r) => Number(r.c.cmc) >= 5)),
-    scale = size / 60;
+    scale = size / 60,
+    // Damage straight to the opponent wins games too (Burn): it counts toward the ways to win.
+    burn = qty(spells.filter((r) => !/Creature/.test(type(r.c)) && /deals? (?:\d+|x) damage to (?:any target|each opponent|target player|target opponent|each player)/.test(text(r.c)))),
+    // Threat quality: a creature with rules text does something; a vanilla body is judged on its
+    // stats for its cost (a 2/1 for 2 is filler, a 3/3 for 2 is fine).
+    quality = (c) => {
+      if (!/Creature/.test(type(c))) return 1;
+      const pw = parseInt(c.power, 10) || 0, tg = parseInt(c.toughness, 10) || 0, mv = Number(c.cmc) || 0,
+        stat = clamp((pw + tg) / (2 * mv + 1.5)), words = text(c).replace(/\([^)]*\)/g, "").trim();
+      return words.length > 24 ? 1 : words ? clamp(stat * 1.2) : stat;
+    },
+    creatureRows = spells.filter((r) => /Creature/.test(type(r.c))),
+    threatQ = creatureRows.length ? creatureRows.reduce((a, r) => a + quality(r.c) * r.qty, 0) / Math.max(1, creatures) : 1;
   // Plan detection
   const themes = Object.entries({ Landfall: M.landfall, Tokens: M.tokens, Spells: M.spells, Sacrifice: M.sac, Graveyard: M.gy })
     .map(([k, re]) => [k, qty(spells.filter((r) => re.test(text(r.c))))])
@@ -92,18 +110,33 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
   }[plan];
   // Karsten: lands ≈ 19.59 + 1.90·avgMV − 0.28·(cheap draw/ramp) for 60 cards.
   const cheapHelp = qty(spells.filter((r) => Number(r.c.cmc) <= 2 && (M.draw.test(text(r.c)) || M.ramp.test(text(r.c))))),
-    idealLands = Math.round((19.59 + 1.9 * avg - 0.28 * Math.min(cheapHelp, 12)) * scale),
+    // Landfall decks play extra lands on purpose: every land is a trigger.
+    idealLands = Math.round((19.59 + 1.9 * avg - 0.28 * Math.min(cheapHelp, 12) + (theme === "Landfall" ? 3.5 : 0)) * scale),
     nonLegendSpells = spells.filter((r) => !legendary(r.c)),
     redundant = qty(nonLegendSpells.filter((r) => r.qty >= 3)) + qty(spells.filter((r) => legendary(r.c) && r.qty >= 2)),
     redundancy = nSpell ? redundant / nSpell : 0;
   // Colors: pips per color vs sources per color (Karsten wants ~14+ sources for a main color in 60).
   const pips = {}, src = {};
-  for (const r of spells) for (const m of (r.c.mana_cost || r.c.card_faces?.[0]?.mana_cost || "").match(/\{[^}]+\}/g) || []) for (const col of "WUBRG") if (m.includes(col)) pips[col] = (pips[col] || 0) + r.qty;
+  // Hybrid and Phyrexian symbols ({G/U}, {R/P}) can be paid other ways, so they don't demand a color.
+  for (const r of spells) for (const m of (r.c.mana_cost || r.c.card_faces?.[0]?.mana_cost || "").match(/\{[^}]+\}/g) || []) if (!m.includes("/")) for (const col of "WUBRG") if (m.includes(col)) pips[col] = (pips[col] || 0) + r.qty;
+  // Mana rocks, dorks and filters (Chromatic Star, Llanowar Elves) are color sources too.
+  for (const r of spells) {
+    const tx = text(r.c);
+    const listed = (r.c.produced_mana || []).filter((x) => "WUBRG".includes(x));
+    if (!listed.length && !M.ramp.test(tx) && !/add one mana of any color|add \{[wubrg]\}/.test(tx)) continue;
+    const cols = listed.length ? listed.join("") : /any color/.test(tx) ? "WUBRG" : [...new Set((tx.match(/add [^.]*/)?.[0] || "").match(/\{([wubrg])\}/g) || [])].map((x) => x[1].toUpperCase()).join("");
+    for (const col of cols) src[col] = (src[col] || 0) + r.qty * 0.5;
+  }
   for (const r of lands) for (const m of r.c.produced_mana || (isBasicC(r.c) ? [{ Plains: "W", Island: "U", Swamp: "B", Mountain: "R", Forest: "G" }[r.c.name]] : [])) if (m) src[m] = (src[m] || 0) + r.qty;
+  // How much of the deck needs each color: share of spell copies with that color in their cost.
+  const needers = {};
+  for (const r of spells) for (const col of new Set(((r.c.mana_cost || r.c.card_faces?.[0]?.mana_cost || "").match(/\{[^}/]+\}/g) || []).join("").replace(/[^WUBRG]/g, ""))) needers[col] = (needers[col] || 0) + r.qty;
+  const share = (k) => (needers[k] || 0) / Math.max(1, nSpell);
   const colors = Object.keys(pips),
     pipTotal = colors.reduce((a, k) => a + pips[k], 0),
-    colorRatio = colors.length === 0 ? (nLand ? 1 : 0) : Math.min(...colors.map((k) => clamp((src[k] || 0) / Math.max(1, Math.round((pips[k] / pipTotal >= 0.4 ? 14 : 9) * scale))))),
-    threats = plan === "Control" ? creatures + walkers + qty(spells.filter((r) => /win the game|each opponent loses/.test(text(r.c)))) : creatures + walkers,
+    colorRatio = colors.length === 0 ? (nLand ? 1 : 0) : Math.min(...colors.map((k) => clamp((src[k] || 0) / Math.max(1, Math.round((share(k) >= 0.4 ? 14 : share(k) >= 0.15 ? 9 : 5) * scale))))),
+    wincons = qty(spells.filter((r) => /win the game|each opponent loses/.test(text(r.c)))),
+    threats = Math.round(creatures * threatQ) + walkers + (plan === "Control" ? wincons : 0) + Math.round(burn / 2),
     themeCount = theme ? themes[0][1] + (theme === "Landfall" ? ramp : 0) : 0;
   const parts = [
     part("Mana", "Mana base", nLand, idealLands, 1 - Math.abs(nLand - idealLands) / 5, 18, `With an average spell cost of ${avg.toFixed(2)}, about ${idealLands} lands hit your drops on time.`),
@@ -113,7 +146,72 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     part("Threats", plan === "Control" ? "Win conditions" : "Threat density", threats, Math.round(T.threats * scale), threats / Math.max(1, T.threats * scale), 14, plan === "Control" ? "Control needs a few ways to actually win." : "Enough threats that removal can’t answer them all."),
     part("Flow", "Card flow", flow, Math.round(T.flow * scale), flow / Math.max(1, T.flow * scale), 8, "Draw, scry, surveil and explore keep you hitting what you need.", "Draw"),
   ];
-  if (colors.length > 0) parts.push(part("Colors", "Color sources", colors.map((k) => `${k} ${src[k] || 0}`).join(" · "), "enough per color", colorRatio, 8, "Main colors want about 14 sources in 60 cards, splashes about 9."));
+  // Lands with no listed colors (fetches, utility lands) count as half a source of every color.
+  const flexLands = qty(lands.filter((r) => !isBasicC(r.c) && !(r.c.produced_mana || []).length)),
+    starved = colors.filter((k) => share(k) >= 0.25 && (src[k] || 0) + flexLands / 2 < 1),
+    need = (k) => Math.round((share(k) >= 0.4 ? 14 : share(k) >= 0.15 ? 9 : 5) * scale),
+    thin = colors.filter((k) => (src[k] || 0) + flexLands / 2 < need(k) / 2);
+  const caps = [
+    starved.length ? { key: "Colors", max: 35, label: "Can't cast its spells", why: `The spells need ${starved.map((k) => ({ W: "white", U: "blue", B: "black", R: "red", G: "green" })[k]).join(" and ")} mana and no land makes it. Most games this deck does nothing.` } : null,
+    !starved.length && thin.length ? { key: "Colors", max: 62, label: "Color sources far short", why: `Fewer than half the ${thin.map((k) => ({ W: "white", U: "blue", B: "black", R: "red", G: "green" })[k]).join("/")} sources the spells need: many hands can't cast what they draw.` } : null,
+    !creatures && !walkers && !wincons && burn < 8 && !qty(spells.filter((r) => /create [^.]*creature token|\bvehicle\b|becomes? an? (?:\d+\/\d+ )?[^.]*creature/i.test(text(r.c) + " " + type(r.c)))) ? { key: "Threats", max: 45, label: "No way to win", why: "No creatures, planeswalkers, burn or alternate win conditions: the deck can stop the opponent but never finish a game." } : null,
+    creatures >= 8 && threatQ < 0.7 ? { key: "Threats", max: Math.round(40 + 30 * threatQ), label: "Filler threats", why: `Most creatures are bodies with no abilities and weak stats for their cost (${Math.round(threatQ * 100)}% of a fair rate). Any deck with real cards outclasses them.` } : null,
+  ];
+  // Plan coherence (Gavin Verhey's rule: build a deck with a mission, not a pile). Every card
+  // should serve the plan; cards that pull the other way are named, linear strategies need a
+  // critical mass of their pieces, and "good stuff" midrange needs cards that out-value.
+  const pw = (c) => parseInt(c.power, 10) || 0, tg = (c) => parseInt(c.toughness, 10) || 0;
+  // Life gain is the plan when the deck pays it off ("whenever you gain life").
+  const lifePlan = qty(spells.filter((r) => /whenever you gain life|if you gained life|for each life you gained|life total|you gained \d+ or more life/.test(text(r.c)))) >= 4,
+    cheapens = (c) => /costs? \{?\d*\}? ?less|costs? \w+ less|\b(?:warp|evoke|delve|convoke|affinity|emerge|foretell|prototype|ninjutsu|dash|plot|improvise|offspring|disguise|blitz|bestow|channel|adventure)\b|cycling|without paying/.test(text(c)) || (c.card_faces || []).length > 1;
+  const lifeOnly = (r) => !lifePlan && !/Creature|Land|Planeswalker/.test(type(r.c)) && /gain (?:\d+|x|that much) life/.test(text(r.c)) && !/damage|destroy|exile|counter target|draw|create|token|\+\d+\/\+\d+|search|loses? \d+ life/.test(text(r.c)),
+    trick = (tx) => /target creature(?: you control)? gets \+\d+\/\+\d+ until end of turn/.test(tx) && !/draw|fights?|destroy|exile/.test(tx),
+    defensive = (c) => /Creature/.test(type(c)) && (/\bdefender\b/.test(text(c)) || (pw(c) <= 1 && tg(c) >= 4)),
+    offPlanWhy = {
+      Aggro: (r) => lifeOnly(r) ? "gains life instead of pressing damage" : !/Creature/.test(type(r.c)) && M.wipe.test(text(r.c)) && !/(?:creatures|nonland permanents) (?:you don't control|your opponents control)/.test(text(r.c)) ? "a board wipe kills your own attackers" : defensive(r.c) ? "a defensive body that doesn't attack" : Number(r.c.cmc) >= 5 && !cheapens(r.c) && big > 4 * scale ? "too slow for a deck that wants to win by turn 5" : M.counter.test(text(r.c)) && Number(r.c.cmc) >= 3 && !cheapens(r.c) ? "holding up mana instead of attacking" : "",
+      Control: (r) => trick(text(r.c)) ? "a combat trick: control rarely attacks" : /Creature/.test(type(r.c)) && Number(r.c.cmc) <= 2 && quality(r.c) < 1 ? "a small beater that trades poorly late" : "",
+      Ramp: (r) => trick(text(r.c)) ? "a combat trick: ramp wants big threats, not tempo" : lifeOnly(r) ? "gains life without advancing the plan" : "",
+      Midrange: (r) => lifeOnly(r) ? "gains life without affecting the board" : defensive(r.c) ? "a wall that doesn't pressure or generate value" : "",
+    }[plan],
+    offPlan = spells.map((r) => ({ r, why: offPlanWhy(r) })).filter((x) => x.why),
+    offN = qty(offPlan.map((x) => x.r)),
+    // Linear strategies: payoffs that care about a creature type, instants/sorceries or artifacts.
+    PL = { Elf: "Elves", Dwarf: "Dwarves", Wolf: "Wolves", Merfolk: "Merfolk", Faerie: "Faeries", Fungus: "Fungi", Ally: "Allies", Mouse: "Mice", Sphinx: "Sphinxes", Fox: "Foxes" },
+    plural = (t) => PL[t] || t + "s",
+    subs = new Map();
+  const NOT_TRIBE = /^(?:Sorcery|Instant|Adventure|Equipment|Aura|Saga|Vehicle|Food|Treasure|Clue|Role|Case|Room|Class|Shrine|Omen)$/;
+  for (const r of creatureRows) for (const t of ((type(r.c).split(" // ")[0].split("—")[1]) || "").trim().split(/\s+/).filter((x) => x && !NOT_TRIBE.test(x))) subs.set(t, (subs.get(t) || 0) + r.qty);
+  const linear = [];
+  for (const [t] of [...subs].sort((a, b) => b[1] - a[1]).slice(0, 4)) {
+    const re = new RegExp(`\\b(?:${lc(t)}|${lc(plural(t))})\\b(?: (?:you control|spells?|creatures?|cards?))|each other ${lc(t)}|other ${lc(plural(t))}`),
+      payRows = spells.filter((r) => re.test(text(r.c))),
+      payoffs = payRows.length >= 3 ? qty(payRows) : 0,
+      members = qty(creatureRows.filter((r) => new RegExp(`\\b${t}\\b`).test(type(r.c)) || /changeling/.test(text(r.c))));
+    if (payoffs >= 4) linear.push({ name: t + " tribal", payoffs, enablers: members, target: Math.round(18 * scale), unit: plural(t) });
+  }
+  const instSorc = qty(spells.filter((r) => /Instant|Sorcery/.test(type(r.c)))),
+    spellPay = has(M.spells).length >= 2 ? qty(has(M.spells)) : 0;
+  // Prowess and "noncreature spell" payoffs count every noncreature spell (and Adventures).
+  const nonCre = /noncreature|prowess/.test(has(M.spells).map((r) => text(r.c)).join(" ")),
+    nonCreN = qty(spells.filter((r) => !/Creature/.test(type(r.c).split(" // ")[0]) || (r.c.card_faces || []).some((f) => /Instant|Sorcery/.test(f.type_line || ""))));
+  if (spellPay >= 4) linear.push({ name: "Spells", payoffs: spellPay, enablers: nonCre ? nonCreN : instSorc, target: Math.round(20 * scale), unit: nonCre ? "noncreature spells" : "instants and sorceries" });
+  const artRows = spells.filter((r) => /artifacts? you control|whenever (?:an|another) artifact|for each artifact|affinity for artifacts|metalcraft|improvise/.test(text(r.c))),
+    artPay = artRows.length >= 3 ? qty(artRows) : 0,
+    arts = qty(known.filter((r) => /Artifact/.test(type(r.c)) || /create [^.]*(?:artifact|treasure|food|clue|blood|map|powerstone|gold)/.test(text(r.c))));
+  if (artPay >= 4) linear.push({ name: "Artifacts", payoffs: artPay, enablers: arts, target: Math.round(16 * scale), unit: "artifacts" });
+  const lin = linear.sort((a, b) => a.enablers / a.target - b.enablers / b.target)[0],
+    // Midrange "good stuff": wins by trading 1-for-1 then pulling ahead with 2-for-1s.
+    value = qty(spells.filter((r) => M.draw.test(text(r.c)) || walkers && /Planeswalker/.test(type(r.c)) || /Creature/.test(type(r.c)) && /when (?:this creature|.{0,40}) enters[^.]*(?:draw|destroy|exile|create|return|deals?|search|counter)/.test(text(r.c))));
+  parts.push({ ...part("Plan", `Plan · ${plan}`, offN ? `${offN} off-plan` : "on plan", "0 off-plan", 1 - offN / Math.max(4, nSpell * 0.2), 12, `Every card should serve the ${plan.toLowerCase()} plan. Cards that pull the other way slow your clock or waste slots.`),
+    cards: offPlan.slice(0, 8).map((x) => ({ name: `${x.r.name} — ${x.why}`, qty: x.r.qty })),
+    why: offN ? `${offN} card${offN === 1 ? "" : "s"} work against a ${plan.toLowerCase()} plan: ${offPlan.slice(0, 3).map((x) => `${x.r.name} (${x.why})`).join("; ")}. Swap them for cards that do what the deck is trying to do.` : `Every spell serves the ${plan.toLowerCase()} plan.` });
+  if (lin) parts.push({ ...part("Critical", `Critical mass · ${lin.name}`, `${lin.enablers} ${lin.unit}`, `${lin.target}+`, lin.enablers / lin.target, 10, "Linear decks get better with every matching card and fall apart below a threshold."),
+    why: lin.enablers >= lin.target ? `${lin.enablers} ${lin.unit} feed ${lin.payoffs} payoffs: dense enough that the payoffs work most games.` : `${lin.payoffs} cards pay off ${lin.unit}, but only ${lin.enablers} are in the deck. Linear decks need about ${lin.target}; below that the payoffs are blank cards half the time.` });
+  else if (plan === "Midrange" && !theme) parts.push({ ...part("Value", "Card advantage", value, Math.round(10 * scale), value / (10 * scale), 8, "Good-stuff midrange wins by out-valuing: cards that replace themselves or answer something while adding a body."),
+    why: `${value} cards generate extra value (draw, enters-the-battlefield removal or tokens, planeswalkers). Midrange with no synergy needs about ${Math.round(10 * scale)} to grind the opponent out.` });
+  caps.push(offN / Math.max(1, nSpell) > 0.3 ? { key: "Plan", max: 62, label: "No clear plan", why: `${offN} of ${nSpell} spells pull against the ${plan.toLowerCase()} plan. A deck that tries to do two things does neither well.` } : null);
+  caps.push(lin && lin.enablers < lin.target * 0.7 ? { key: "Critical", max: 66, label: "Below critical mass", why: `Built around ${lin.unit} with only ${lin.enablers} of them: the ${lin.payoffs} payoffs do little most games.` } : null);
+  if (colors.length > 0) parts.push(part("Colors", "Color sources", colors.map((k) => `${k} ${Math.round(src[k] || 0)}`).join(" · "), "enough per color", colorRatio, 8, "Main colors want about 14 sources in 60 cards, splashes about 9."));
   if (theme) parts.push(part("Synergy", "Synergy · " + theme, themeCount, Math.round(10 * scale), themeCount / (10 * scale), 8, `Cards that feed the ${theme.toLowerCase()} plan.`));
   // Shuffled games of this list: keepable 7s, land drops, an early play, interaction in hand.
   const tagOf = (r) => {
@@ -144,13 +242,13 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
   const names = (re) => evidence(spells.filter((r) => re.test(text(r.c))));
   const ev = { Mana: evidence(lands), Interaction: evidence(spells.filter((r) => M.removal.test(text(r.c)) || M.counter.test(text(r.c)) || M.discard.test(text(r.c)) || M.wipe.test(text(r.c)))), Flow: names(M.draw), Threats: evidence(spells.filter((r) => /Creature|Planeswalker/.test(type(r.c)))), Consistency: evidence(spells.filter((r) => r.qty <= 2 && !legendary(r.c))), Curve: evidence(spells.filter((r) => Number(r.c.cmc) >= 5)) };
   const whyOf = {
-    Mana: nLand < idealLands ? `${nLand} lands for an average spell cost of ${avg.toFixed(2)}: you'll miss land drops. Karsten's numbers say about ${idealLands}.` : `${nLand} lands where about ${idealLands} is right: you'll draw extra lands instead of spells.`,
+    Mana: theme === "Landfall" && Math.abs(nLand - idealLands) <= 2 ? `${nLand} lands: right for a landfall deck, where extra lands are triggers rather than flood.` : nLand < idealLands ? `${nLand} lands for an average spell cost of ${avg.toFixed(2)}: you'll miss land drops. Karsten's numbers say about ${idealLands}.` : `${nLand} lands where about ${idealLands} is right: you'll draw extra lands instead of spells.`,
     Curve: `Spells average ${avg.toFixed(2)} mana; a ${plan.toLowerCase()} deck wants ${T.curve} or less. The 5+ drops listed are the first to look at.`,
     Consistency: `Only ${Math.round(redundancy * 100)}% of spells are 3–4-ofs. The 1–2-ofs listed show up in a minority of games.`,
     Interaction: `${interaction} cards that interact. ${plan} decks want about ${Math.round(T.inter * scale)} so the opponent's best threats don't just win.`,
-    Threats: `${threats} ${plan === "Control" ? "win conditions" : "threats"}; about ${Math.round(T.threats * scale)} keeps pressure on after removal.`,
+    Threats: `${threats} ${plan === "Control" ? "win conditions" : "threats"}${threatQ < 0.95 ? ` (creatures counted by quality: ${Math.round(threatQ * 100)}% of a fair rate)` : ""}${burn ? `, with ${burn} burn spells counted as half a threat each` : ""}; about ${Math.round(T.threats * scale)} keeps pressure on after removal.`,
     Flow: `${flow} draw/selection cards; ${plan} wants about ${Math.round(T.flow * scale)} to find what it needs.`,
-    Colors: `Color sources: ${colors.map((k) => `${k} ${src[k] || 0}`).join(", ")}. A main color wants about 14 sources in 60 and a splash about 9.`,
+    Colors: `Color sources: ${colors.map((k) => `${k} ${Math.round(src[k] || 0)}`).join(", ")}. A main color wants about 14 sources in 60 and a splash about 9.`,
     Synergy: `${themeCount} cards feed the ${theme?.toLowerCase()} plan; about ${Math.round(10 * scale)} makes it reliable.`,
   };
   for (const x of parts) {
@@ -159,8 +257,10 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
   }
   const roles = new Map(), LABEL = { land: "Land", cheap: "", inter: "Interaction", draw: "Card flow", ramp: "Ramp" };
   for (const r of tagged) roles.set(key(r.name), [...r.tags].map((k) => LABEL[k]).filter(Boolean));
+  const capped = capScore(finish(parts), caps);
   return {
-    score: finish(parts),
+    score: capped.score,
+    caps: capped.caps,
     parts,
     goldfish: gold,
     sims: [
@@ -205,10 +305,30 @@ export function ygoPower(rows, f = {}) {
     nm = (r) => lc(r.c.name),
     tag = new Map(),
     give = (r, k) => (tag.get(r) || tag.set(r, new Set()).get(r)).add(k);
+  // A searcher only starts anything if the deck runs what it searches for.
+  const RACE = /\b(warrior|spellcaster|dragon|zombie|machine|fiend|fairy|beast-warrior|winged beast|beast|aqua|pyro|rock|plant|insect|thunder|dinosaur|sea serpent|reptile|psychic|wyrm|cyberse|illusion)\b monster/,
+    ATTR = /\b(dark|light|water|fire|earth|wind)\b monster/,
+    raceKnown = main.some((r) => r.c.race);
+  const finds = (r) => {
+    const m = t(r).match(/add (?:1|one|up to \w+)([^.]*?)from your deck(?: or gy| or graveyard)? to your hand/);
+    if (!m) return true;
+    const what = m[1], others = main.filter((x) => x !== r && x.c.name !== r.c.name),
+      quoted = [...String(r.c.text || "").slice(m.index).matchAll(/"([^"]+)"/g)].slice(0, 3).map((x) => lc(x[1])).filter((qn) => what.includes(qn));
+    if (quoted.length) return others.some((x) => quoted.some((qn) => nm(x).includes(qn) || lc(x.c.archetype) === qn || t(x).includes(`"${qn}"`) && lc(x.c.archetype).includes(qn)));
+    if (/field spell/.test(what)) return others.some((x) => /field/i.test(x.c.typeLine || "") || /field/i.test(x.c.race || ""));
+    if (/ritual/.test(what)) return others.some((x) => /ritual/i.test(x.c.typeLine || "") || /ritual/i.test(x.c.race || ""));
+    const lv = Number(what.match(/level (\d+) or lower/)?.[1] || 99), race = what.match(RACE)?.[1], attr = what.match(ATTR)?.[1];
+    if ((race || attr) && raceKnown) return others.some((x) => x.c.category === "Monster" && (!race || lc(x.c.race) === race) && (!attr || lc(x.c.attribute) === attr) && (Number(x.c.level) || 0) <= lv);
+    return true;
+  };
+  const deadSearch = [];
   for (const r of main) {
     tag.set(r, new Set());
     const txt = t(r);
-    if (Y.search.test(txt) || (r.c.category === "Spell" && /field/i.test(r.c.typeLine || "") && Y.search.test(txt))) give(r, "starter");
+    if (Y.search.test(txt)) {
+      if (finds(r)) give(r, "starter");
+      else deadSearch.push(r);
+    }
     if (r.c.category === "Monster" && Y.extend.test(txt)) give(r, "extender");
     if (Y.handtrap.test(txt)) give(r, "handtrap");
     else if (Y.negate.test(txt)) give(r, "negate");
@@ -247,7 +367,7 @@ export function ygoPower(rows, f = {}) {
     { ...part("Size", "Main Deck size", N, minMain, N < minMain ? 0 : 1 - (N - minMain) / 15, 12, "Every card over 40 lowers the odds of opening your best cards.", "Trim to 40 by cutting your weakest 1-ofs."),
       why: N < minMain ? `${N} cards is under the ${minMain}-card minimum, so the deck isn't legal yet.` : `${N} cards: each of your ${q(starters)} starters shows up less often than at 40. Cutting ${N - minMain} card${N - minMain === 1 ? "" : "s"} raises your starter odds to ${P(atLeastOne(minMain, q(starters), 5))}.` },
     { ...part("Starters", "Opens a starter", P(S("open")), "88%+", S("open") / 0.88, 16, `Share of 5-card hands with a card that searches or starts your combo (${q(starters)} starters in ${N}).`),
-      cards: evidence(starters), why: q(starters) ? `Only ${P(S("open"))} of hands going first have a starter. Competitive lists sit at 85–90%; that usually means 12–15 one-card starters at 40.` : "No card searches or starts a combo, so most hands just play whatever they drew." },
+      cards: evidence(starters), why: deadSearch.length ? `${P(S("open"))} of hands open a starter. ${deadSearch.map((r) => r.c.name).slice(0, 3).join(", ")} ${deadSearch.length > 1 ? "search" : "searches"} for cards the deck doesn't run, so ${deadSearch.length > 1 ? "they don't" : "it doesn't"} count.` : q(starters) ? `Only ${P(S("open"))} of hands going first have a starter. Competitive lists sit at 85–90%; that usually means 12–15 one-card starters at 40.` : "No card searches or starts a combo, so most hands just play whatever they drew." },
     { ...part("Extenders", "Extenders", q(extenders), 6, q(extenders) / 6, 8, "Monsters that Special Summon themselves keep the combo going after a hand trap."),
       cards: evidence(extenders), why: `${q(extenders)} extender${q(extenders) === 1 ? "" : "s"}. One Ash Blossom or Nibiru on your starter ends the turn unless you have a second line.` },
     { ...part("Interaction", "Hand traps & negates", q(inter), 9, q(inter) / 9, 12, "Cards that stop the opponent's combo from your hand or field."),
@@ -269,15 +389,41 @@ export function ygoPower(rows, f = {}) {
   // crippled without one; for them an empty Extra Deck is a major hole, not a minor gap.
   const needsExtra = main.some((r) => /xyz|rank-up|fusion summon|synchro|link summon|extra deck/.test(t(r))),
     sideN = rows.filter((r) => r.zone === "side").reduce((a, r) => a + r.qty, 0);
-  if (f.extra) parts.push({ ...part("Extra", "Extra Deck", E, f.extra, (E / f.extra) ** (needsExtra ? 1.5 : 1), needsExtra ? 16 : 6, needsExtra ? "This deck's engine summons from the Extra Deck, so a full one is the deck." : "A full Extra Deck gives you more lines and answers."), cards: evidence(extra), why: needsExtra ? `Only ${E} of ${f.extra} Extra Deck cards, but the main deck is built to summon from it (Xyz, Rank-Up, Fusion, Synchro or Link). Without backups and generic Extra Deck tools, one negate or a missing piece ends the turn.` : `${f.extra - E} Extra Deck slot${f.extra - E === 1 ? "" : "s"} empty: free lines and outs you aren't using.` });
+  // Can the main deck actually summon what's in the Extra Deck? Xyz need monsters of their Level,
+  // Synchro need a Tuner, named Fusion materials must be in the deck.
+  const mons = main.filter((r) => r.c.category === "Monster"),
+    levelFix = mons.some((r) => /treated as (?:a )?level|becomes? level|change (?:its|their) levels?|declare a level|level of/.test(t(r))),
+    usable = (c) => {
+      const tx = lc(c.text), fr = lc((c.frame || "") + " " + (c.typeLine || ""));
+      if (/xyz/.test(fr)) {
+        const m = tx.match(/(\d+)\+? level (\d+) monsters/);
+        return !m || levelFix || q(mons.filter((r) => Number(r.c.level) === Number(m[2]))) >= 3;
+      }
+      if (/synchro/.test(fr)) return mons.some((r) => /tuner/i.test(r.c.typeLine || "")) || /non-tuner/.test(tx) === false;
+      if (/fusion/.test(fr)) {
+        const names = [...String(c.text || "").split(/\n|\./)[0].matchAll(/"([^"]+)"/g)].map((x) => lc(x[1]));
+        return !names.length || names.some((n) => main.some((r) => nm(r).includes(n) || lc(r.c.archetype) === n));
+      }
+      return true;
+    },
+    dead = extra.filter((r) => !usable(r.c)),
+    Eok = E - q(dead);
+  if (f.extra) parts.push({ ...part("Extra", "Extra Deck", dead.length ? `${Eok} usable of ${E}` : E, f.extra, (Eok / f.extra) ** (needsExtra ? 1.5 : 1), needsExtra ? 16 : 6, needsExtra ? "This deck's engine summons from the Extra Deck, so a full one is the deck." : "A full Extra Deck gives you more lines and answers."), cards: evidence(dead.length ? dead : extra), why: dead.length ? `${q(dead)} Extra Deck card${q(dead) === 1 ? "" : "s"} can't be summoned with this Main Deck (no monsters of the right Level, no Tuner, or named materials it doesn't run): ${dead.slice(0, 4).map((r) => r.c.name).join(", ")}${dead.length > 4 ? "…" : ""}.` : needsExtra ? `Only ${E} of ${f.extra} Extra Deck cards, but the main deck is built to summon from it (Xyz, Rank-Up, Fusion, Synchro or Link). Without backups and generic Extra Deck tools, one negate or a missing piece ends the turn.` : `${f.extra - E} Extra Deck slot${f.extra - E === 1 ? "" : "s"} empty: free lines and outs you aren't using.` });
   if (f.side) parts.push({ ...part("Side", "Side Deck", sideN, f.side, Math.min(1, sideN / f.side), 4, "Fifteen cards to swap in for games 2 and 3 against the decks you expect."), why: sideN ? `${sideN} of ${f.side} Side Deck cards: fewer answers to bring in after game 1.` : "No Side Deck. Tournament matches are best of three; without one you can't adapt for games 2 and 3." });
   const gold = ygoGoldfish(main.map((r) => ({ qty: r.qty, c: r.c, tags: tag.get(r) })), extra.map((r) => ({ qty: r.qty, c: r.c })));
   if (gold) parts.push({ ...part("Goldfish", "Plays through interruption", Math.round(gold.metrics[0].value * 100) + "%", "65%+", gold.speed, 0, "1,000 opening hands read like a player would: can it start, and keep going after a hand trap?"), why: gold.headline });
   const roles = new Map(),
     LABEL = { starter: "Starter", extender: "Extender", handtrap: "Hand trap", negate: "Negate", breaker: "Breaker", draw: "Draw", brick: "Brick", garnet: "Dead draw" };
   for (const r of main) roles.set(String(r.id ?? r.c.id ?? r.c.name), [...tag.get(r)].map((k) => LABEL[k]));
+  const caps = [
+    q(starters) < 4 && (focus < 0.25 || q(deadSearch) >= 6) ? { key: "Starters", max: 50, label: "No engine", why: `Nothing in the deck searches or starts a combo${deadSearch.length ? ` (${deadSearch.map((r) => r.c.name).slice(0, 3).join(", ")} search for cards it doesn't run)` : ""} ${focus < 0.25 ? " and no archetype holds it together" : ""}. Hand traps and staples stop the opponent but can't win on their own.` } : null,
+    q(deadSearch) >= 6 && q(starters) >= 4 ? { key: "Starters", max: 70, label: "Searchers with nothing to search", why: `${q(deadSearch)} cards search for cards this deck doesn't run: ${deadSearch.slice(0, 4).map((r) => r.c.name).join(", ")}. They're dead draws, not starters.` } : null,
+    needsExtra && E && Eok / E < 0.4 ? { key: "Extra", max: 65, label: "Extra Deck it can't use", why: `The engine summons from the Extra Deck, but ${q(dead)} of ${E} cards there can't be made from this Main Deck.` } : null,
+  ];
+  const capped = capScore(finish(parts), caps);
   return {
-    score: finish(parts),
+    score: capped.score,
+    caps: capped.caps,
     parts,
     goldfish: gold,
     plan: lead ? lead[0] + " engine" : "Unfocused",
@@ -311,11 +457,30 @@ const SUPPORTER = /^(?:iono|professor's research|boss's orders|lillie's determin
 
 const ETYPE = { G: "Grass", R: "Fire", W: "Water", L: "Lightning", P: "Psychic", F: "Fighting", D: "Darkness", M: "Metal" };
 // Damage an attack can reasonably deal: "30×" and "60+" scale, so count them above their printed number.
+// Damage an attack can reasonably deal in a real game. Printed numbers undersell scaling attacks:
+// "30×" for each Energy or card in hand, "60+" with a bonus, attacks that place damage counters
+// (Alakazam) or hit any Pokémon for a fixed amount (Fezandipiti ex) all count for what they do.
+const MULT = (eff) => (/cards? in (?:your|their) hand/.test(eff) ? 7 : /prize/.test(eff) ? 3 : /damage counters? on (?:this|your)|bench/.test(eff) ? 5 : 4);
 export const attackDamage = (a) => {
-  const t = String(a?.damage ?? ""), n = parseInt(t.replace(/\D/g, "")) || 0;
-  return /[×x]/.test(t) ? Math.min(n * 3, 280) : /\+/.test(t) ? Math.round(n * 1.5) : n;
+  const t = String(a?.damage ?? ""), eff = lc(a?.effect), n = parseInt(t.replace(/\D/g, "")) || 0;
+  if (/[×x]/.test(t)) return Math.min(n * MULT(eff), 340);
+  if (/\+/.test(t)) {
+    const bonus = Number(eff.match(/(\d+) more damage/)?.[1] || n / 2);
+    // "For each" scales; a one-off "if …" bonus only applies some of the time.
+    return Math.min(n + (/for each/.test(eff) ? bonus * (MULT(eff) - 1) : /\bif\b/.test(eff) ? bonus * 0.5 : bonus), 340);
+  }
+  if (n) return n;
+  const fixed = Number(eff.match(/does (\d+) damage to (?:1|one|each|2|two)/)?.[1] || 0),
+    counters = Number(eff.match(/put (\d+) damage counters?/)?.[1] || 0) * 10;
+  return Math.min(Math.max(fixed, counters * (/for each/.test(eff) ? MULT(eff) : 1)), 340);
 };
-export const attackReach = (c) => Math.max(0, ...(c?.attacks || []).map(attackDamage));
+// Best attack, doubled when an Ability lets it attack twice (Festival Lead); attacks this Pokémon
+// can only use as a copy of another don't count.
+export const attackReach = (c) => {
+  const best = Math.max(0, ...(c?.attacks || []).map(attackDamage)),
+    twice = (c?.abilities || []).some((a) => /attack twice|use (?:this|its) attack (?:again|twice)|may attack (?:an additional|again)/i.test(a.effect || ""));
+  return twice ? Math.min(best * 2, 340) : best;
+};
 // Energy types an Ability needs attached before it works ("if this Pokémon has any Darkness Energy attached").
 export const abilityEnergy = (c) => [...new Set((c?.abilities || []).flatMap((a) => [...String(a.effect || "").matchAll(/(?:has|have) (?:any |at least \w+ )?(?:\{([GRWLPFDM])\}|(Grass|Fire|Water|Lightning|Psychic|Fighting|Darkness|Metal)) Energy attached/gi)].map((m) => ETYPE[m[1]?.toUpperCase()] || m[2][0].toUpperCase() + m[2].slice(1).toLowerCase())))];
 
@@ -379,8 +544,16 @@ export function ptcgPower(rows, f = {}) {
       const thin = two ? nb < 4 || nt < 3 || nm + Math.min(candy, 4) < nt + 2 : nb < 3 || nt < 2;
       return { top: top.c.name, base, mid, two, counts: two ? [nb, nm, nt] : [nb, nt], thin, text: (two ? [nb, nm, nt] : [nb, nt]).join("-") };
     });
-  const dmg = (r) => attackReach(r.c),
-    attackers = main.filter((r) => r.c.category === "Pokemon").sort((a, b) => dmg(b) - dmg(a) || (b.c.ruleBox ? 1 : 0) - (a.c.ruleBox ? 1 : 0) || /2/.test(b.c.stage || "") - /2/.test(a.c.stage || "") || b.qty - a.qty),
+  // Attackers that copy another Pokémon's attack (N's Zoroark ex, Mew ex) hit as hard as the best
+  // attack they can copy in this deck.
+  const copies = (c) => (c.attacks || []).some((a) => /choose 1 of (?:your |the )?(?:benched |opponent's )?[^.]*attacks?[^.]*use it|use (?:it|that attack) as this attack/i.test(a.effect || ""));
+  const ownReach = new Map(main.map((r) => [r, attackReach(r.c)])),
+    copyReach = Math.max(0, ...main.filter((r) => r.c.category === "Pokemon" && !copies(r.c)).map((r) => ownReach.get(r)));
+  const dmg = (r) => (copies(r.c) ? Math.max(ownReach.get(r), Math.min(copyReach, 340)) : ownReach.get(r)),
+    // The deck can only attack with what its Energy pays for (Special Energy may provide any type).
+    costOf = (r) => [...new Set((r.c.attacks || []).filter((a) => attackDamage(a) === attackReach(r.c) || attackDamage(a) * 2 === attackReach(r.c)).flatMap((a) => a.cost || []).filter((x) => x !== "Colorless"))],
+    payable = (r) => energyTypes.has("Special") || costOf(r).every((tp) => energyTypes.has(tp)),
+    attackers = main.filter((r) => r.c.category === "Pokemon").sort((a, b) => payable(b) - payable(a) || dmg(b) - dmg(a) || (b.c.ruleBox ? 1 : 0) - (a.c.ruleBox ? 1 : 0) || /2/.test(b.c.stage || "") - /2/.test(a.c.stage || "") || b.qty - a.qty),
     mainAtk = attackers[0],
     line = mainAtk ? lines.find((l) => l.top === mainAtk.c.name) : null;
   // Shuffled games: mulligan until a Basic, set 6 Prizes, draw for turn 1 and turn 2.
@@ -389,7 +562,7 @@ export function ptcgPower(rows, f = {}) {
   const sim = simulate(pool, (a) => {
     const h7 = a.slice(0, 7);
     if (!hasTag(h7, "basic")) return null;
-    const t1 = [...h7, a[13]], t2 = [...t1, a[14]];
+    const t1 = [...h7, a[13]].filter(Boolean), t2 = [...t1, a[14]].filter(Boolean);
     const out = hasTag(t1, "draw") || hasTag(t1, "search"),
       sup = hasTag(t1, "supporter") && t1.some((c) => c.tags.has("supporter") && c.tags.has("draw"));
     let setup = true;
@@ -438,15 +611,22 @@ export function ptcgPower(rows, f = {}) {
   ];
   // Win plan: a deck needs an attacker that can take Prizes against today's 200-330 HP ex Pokémon,
   // in enough copies to keep attacking after one is Knocked Out. Consistency can't make up for it.
-  const atkQty = mainAtk ? (line ? line.counts.at(-1) : mainAtk.qty) : 0,
-    reach = mainAtk ? dmg(mainAtk) : 0,
+  // Every Pokémon that hits close to as hard as the main attacker counts: decks often share the
+  // job between two or three attackers (Mewtwo ex and friends) instead of 4 of one.
+  const reach = mainAtk ? dmg(mainAtk) : 0,
+    team = attackers.filter((r) => payable(r) && dmg(r) >= Math.max(110, reach * 0.45)),
+    atkQty = mainAtk ? Math.max(line ? line.counts.at(-1) : mainAtk.qty, q(team)) : 0,
+    // Recovery (Night Stretcher, Super Rod) brings a Knocked Out attacker back.
+    lives = atkQty + Math.min(2, Math.floor(q(recs) / 2)),
+    // Single-Prize swarm: many cheap attackers make the opponent take six Knock Outs instead of three.
+    swarm = q(attackers.filter((r) => payable(r) && !r.c.ruleBox && dmg(r) >= 30 && r.c.category === "Pokemon")) >= 10,
     cost = mainAtk ? Math.min(...(mainAtk.c.attacks || []).filter((a) => attackDamage(a) === reach).map((a) => (a.cost || []).length), 9) : 9,
-    atkRatio = clamp(reach / 200) * (atkQty >= 3 ? 1 : atkQty === 2 ? 0.8 : 0.55) * (cost <= 3 || accel.length ? 1 : 0.85);
+    atkRatio = Math.max(swarm ? 0.8 : 0, clamp(reach / 200) * (lives >= 3 ? 1 : lives === 2 ? 0.8 : 0.55) * (cost <= 3 || accel.length ? 1 : 0.85));
   // Only judged when attack details have loaded; brief search results carry none.
   const atkKnown = main.some((r) => r.c.category === "Pokemon" && Array.isArray(r.c.attacks));
-  if (atkKnown) parts.push({ ...part("Attacker", mainAtk ? `Attacker · ${mainAtk.c.name}` : "Attacker", mainAtk ? `${reach} dmg · ${atkQty}×` : "none", "200+ dmg · 3+", atkRatio, 16, "The Pokémon that takes your Prizes: how hard it hits, how many copies, how much Energy it needs."),
+  if (atkKnown) parts.push({ ...part("Attacker", mainAtk ? `Attacker · ${mainAtk.c.name}` : "Attacker", mainAtk ? `${reach} dmg · ${atkQty} attacker${atkQty === 1 ? "" : "s"}` : "none", "200+ dmg · 3+", atkRatio, 16, "The Pokémon that takes your Prizes: how hard it hits, how many copies, how much Energy it needs."),
     cards: mainAtk ? evidence([mainAtk]) : [],
-    why: !mainAtk ? "No Pokémon in the list attacks for real damage." : reach < 120 ? `Your hardest hitter is ${mainAtk.c.name} for ${reach}. Most competitive decks Knock Out a 200+ HP ex in one or two attacks; at ${reach} a game takes ${Math.ceil(240 / Math.max(10, reach))}+ attacks per ex, and the deck has no other way to win.` : `${mainAtk.c.name} hits for ${reach}${atkQty < 3 ? ` but only ${atkQty} cop${atkQty === 1 ? "y" : "ies"} survive a Knock Out` : ""}${cost > 3 ? `, and needs ${cost} Energy` : ""}.` });
+    why: !mainAtk ? "No Pokémon in the list attacks for real damage." : swarm && reach < 160 ? `A single-Prize swarm: ${q(attackers.filter((r) => payable(r) && !r.c.ruleBox && dmg(r) >= 30))} small attackers, so the opponent needs six Knock Outs. ${mainAtk.c.name} hits hardest at ${reach}; against 200+ HP ex Pokémon it needs two hits or more each.` : reach < 120 ? `Your hardest hitter is ${mainAtk.c.name} for ${reach}. Most competitive decks Knock Out a 200+ HP ex in one or two attacks; at ${reach} a game takes ${Math.ceil(240 / Math.max(10, reach))}+ attacks per ex, and the deck has no other way to win.` : `${mainAtk.c.name} hits for ${reach}${team.length > 1 ? ` (with ${team.filter((r) => r !== mainAtk).map((r) => r.c.name).slice(0, 2).join(", ")})` : ""}${atkQty < 3 ? ` but only ${atkQty} attacker${atkQty === 1 ? "" : "s"} in the deck, so one Knock Out leaves ${atkQty === 1 ? "none" : "one"}` : ""}${cost > 3 ? `, and needs ${cost} Energy` : ""}.` });
   if (q(radiants) > 1) parts.push({ ...part("Radiant", "Radiant limit", q(radiants), "≤ 1", 0, 6, "Only one Radiant Pokémon per deck."), why: `${q(radiants)} Radiant Pokémon: only 1 is allowed.` });
   const gold = ptcgGoldfish(main.map((r) => ({ qty: r.qty, c: r.c })), { attacker: mainAtk?.c.name, line });
   if (gold) parts.push({ ...part("Goldfish", "Goldfish speed", gold.headline.match(/turn (\d+)/)?.[1] ? `turn ${gold.headline.match(/turn (\d+)/)[1]}` : "6+", "turn 2", gold.speed, 0, "1,000 games played out: draw, search, bench, evolve, attach, attack, until the main attacker swings."), why: gold.headline });
@@ -455,11 +635,20 @@ export function ptcgPower(rows, f = {}) {
   for (const r of main) roles.set(String(r.id ?? r.c.id ?? r.c.name), [...(r === mainAtk ? ["Main attacker"] : []), ...[...tag.get(r)].map((k) => LABEL[k]).filter(Boolean)]);
   const multi = q(ruleBox.filter((r) => !r.c.basicPokemon || dmg(r) >= 100));
   // A consistent deck with nothing to win with is still not a strong deck.
-  const raw = finish(parts),
-    score = Math.min(raw, atkKnown ? Math.round(55 + 40 * atkRatio) - (deadAbility.length ? 5 : 0) : 100);
+  // The hardest hitter the list is built around, whether or not the Energy can pay for it.
+  const star = main.filter((r) => r.c.category === "Pokemon").sort((a, b) => dmg(b) - dmg(a))[0],
+    stranded = star && !payable(star) && dmg(star) >= 120 && (!mainAtk || !payable(mainAtk) || reach < dmg(star) * 0.6) ? star : null,
+    cantPay = stranded ? costOf(stranded).filter((tp) => !energyTypes.has(tp)) : [];
+  const caps = [
+    atkKnown && atkRatio < 1 ? { key: "Attacker", max: Math.round(55 + 40 * atkRatio), label: reach < 120 ? "No real attacker" : "Attacker too thin", why: parts.find((x) => x.key === "Attacker")?.why } : null,
+    cantPay.length ? { key: "Energy", max: 45, label: "Main attacker can't attack", why: `${stranded?.c.name}'s attack needs ${cantPay.join(" and ")} Energy and the deck runs none, so its best attacker never attacks.` } : null,
+    line && !swarm && q(team.filter((r) => r.c.name !== line.top)) < 2 && (line.counts[0] < 3 || line.counts.at(-1) < 2 || (line.two && line.counts[1] + Math.min(candy, 4) < 3)) ? { key: "Lines", max: 62, label: "Main line too thin", why: `${line.top} is on a ${line.text} line${line.two && !candy ? " with no Rare Candy" : ""}. One prized or Knocked Out piece and the deck has no attacker; lists run 4-3-3, or 4-2-3 with Rare Candy.` } : null,
+    deadAbility.length ? { key: "Energy", max: 85, label: "Abilities that can't work", why: `${deadAbility.map((r) => r.c.name).join(", ")} need${deadAbility.length > 1 ? "" : "s"} Energy the deck doesn't run.` } : null,
+  ];
+  const capped = capScore(finish(parts), caps);
   return {
-    score,
-    capped: score < raw ? (atkRatio < 1 ? "attacker" : "ability") : "",
+    score: capped.score,
+    caps: capped.caps,
     parts,
     goldfish: gold,
     plan: mainAtk ? mainAtk.c.name + (line ? ` · ${line.text} line` : "") : "Pokémon deck",
@@ -494,10 +683,29 @@ export function overlap(a, b) {
 }
 
 // mine: Map(key→qty). metaDecks: [{ key, name/archetype, rank, place, rows: Map(key→qty), labels: Map(key→name) }]
+// Like overlap, but a card counts by how specific it is to a deck: generic staples that most
+// placing lists play (Ultra Ball, Ash Blossom, Fable of the Fallen…) count for little, so two
+// lists only "match" when they share the cards that make an archetype what it is.
+export function coreOverlap(a, b, spread) {
+  const keys = new Set([...a.keys(), ...b.keys()]);
+  let num = 0, den = 0;
+  for (const k of keys) {
+    const w = 1 - 0.9 * (spread.get(k) || 0), x = a.get(k) || 0, y = b.get(k) || 0;
+    num += w * Math.min(x, y);
+    den += w * Math.max(x, y);
+  }
+  return den ? num / den : 0;
+}
 export function metaMatch(mine, metaDecks, archetypes = []) {
   let best = null;
+  // How widely each card is played across archetypes (not lists, so one popular deck's own cards
+  // aren't mistaken for staples).
+  const archOf = (d) => d.archetype || d.name, byArch = new Map();
+  for (const d of metaDecks) for (const k of d.rows.keys()) (byArch.get(k) || byArch.set(k, new Set()).get(k)).add(archOf(d));
+  const nArch = new Set(metaDecks.map(archOf)).size,
+    spread = new Map([...byArch].map(([k, set]) => [k, nArch > 2 ? (set.size - 1) / (nArch - 1) : 0]));
   for (const d of metaDecks) {
-    const s = overlap(mine, d.rows);
+    const s = coreOverlap(mine, d.rows, spread);
     if (!best || s > best.sim || (s === best.sim && d.rank < best.deck.rank)) best = { sim: s, deck: d };
   }
   if (!best) return null;
