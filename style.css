@@ -2608,3 +2608,7 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .scout-row h3 { margin: 0 0 4px; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .scout-row p { margin: 0; line-height: 1.55; }
 .scout-row:last-of-type p b:first-child { color: var(--accent, #e8b85a); }
+.diff-tag { display: inline-block; font-size: .78rem; padding: 2px 9px; border-radius: 99px; }
+.diff-tag.easy { color: #4fd18b; background: rgba(79, 209, 139, .12); }
+.diff-tag.medium { color: #ffc93c; background: rgba(255, 201, 60, .12); }
+.diff-tag.hard { color: #ff7a6a; background: rgba(255, 122, 106, .12); }

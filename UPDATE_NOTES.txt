@@ -1,3 +1,13 @@
+3.42.0 — Cleaner deck versions: Starter to Best version
+- Build decks no longer repeats the same list at several budgets. Identical versions merge into
+  one card that says which budgets it covers ("Best version · for budgets of $50 and up"), and
+  versions are named by what they are, cheapest first: Starter, Upgraded, then Best version.
+- Every version shows how hard it is to play (Easy, Medium, Hard), from how much each card asks
+  of you.
+- Fixed: higher budgets could leave slots open (a "Draft" with 3 slots open at $100). Open slots
+  are now filled with the strongest affordable cards first; a $10 Pokémon starter went from 27
+  open slots to a complete, legal 60.
+
 3.41.1 — Competitive scores on deck tiles right away
 - The deck list and Home now load each format's recent tournament results by themselves, so
   deck tiles show the Competitive score without opening the Power tab first. Applies to all three

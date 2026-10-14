@@ -1,7 +1,7 @@
 import {effectText,ruleText} from './rule-dex.js';
 import {editionPrice} from './ygo-prices.js';
 import {buildOverlay} from './build-overlay.js';
-import {bestBudgetDecks,purchaseCost,comparePower,swappedZones,sameCardLogic,budgetComparisonHtml,refineCandidates,towardDeck,spendUp,cardQuality,budgetNotes} from './deck-optimizer.js';
+import {bestBudgetDecks,purchaseCost,comparePower,swappedZones,sameCardLogic,budgetComparisonHtml,refineCandidates,towardDeck,spendUp,cardQuality,budgetNotes,variantsFrom,fillOpen,difficultyOf} from './deck-optimizer.js';
 import {collectionOrder} from "./collection-order.js";
 import {POKEMON_SET_ART} from "./pokemon-set-art.js";
 import { recordCardPrice, trackedQuote, priceHistoryHtml, alertsPanel, alertStatus } from "./pricehist.js";
@@ -1398,7 +1398,7 @@ export function draftPath(tiers, i, label) {
 }
 export const TCG_TIERS = { ygo: [0, 10, 25, 50, 100, Infinity], ptcg: [0, 10, 25, 50, 100, Infinity] };
 const tcgBudgets = B => [...new Set([...TCG_TIERS[B.game],...(B.custom!==undefined && B.custom!=="" && Number.isFinite(Number(B.custom))?[Math.max(0,Number(B.custom))]:[])])].sort((a,b)=>a-b);
-const tierName = (t) => (t.meta ? "Tournament list" : t.budget === 0 ? "Your cards only" : t.budget === Infinity ? "No budget limit" : "Up to $" + t.budget);
+const tierName = (t) => (t.meta ? "Tournament list" : t.variant ? `${t.variant}${t.coversText ? ` · ${t.coversText}` : ""}` : t.budget === 0 ? "Your cards only" : t.budget === Infinity ? "No budget limit" : "Up to $" + t.budget);
 const buildable = (g, c) => (c ? formatsOf(g).filter((f) => SOURCES[g].legality(c, f) !== "not_legal" && SOURCES[g].limit(c, f) > 0 && (g === "ygo" || c.category === "Pokemon")) : []);
 
 export function tcgBuildSheet() {
@@ -1421,7 +1421,7 @@ export function tcgBuildSheet() {
       open = B.openTier === i,
       issues = SOURCES[g].validate({ zones: t.zones }, (id) => cardOf(g, id), formatOf(g, B.format));
     return `<article class="tier ${open ? "on" : ""} ${t.meta ? "meta" : ""}"><div class="row between"><b>${t.total < t.size ? `Draft — ${t.size - t.total} slot${t.size - t.total === 1 ? "" : "s"} open · ` : ""}${t.meta ? `🏆 ${esc(t.label)}` : tierName(t)}</b><span class="chip ${issues.length ? "warn" : "ok"}">${issues.length ? issues.length + " to fix" : "Legal"}</span></div>
-      <div class="tier-stats"><span><b>${usd(t.cost)}${t.unknown?"+":""}</b> to buy</span>${t.power!==undefined?`<span><b>${t.power}</b> power</span>`:""}<span><b>${esc(zoneCountLabel(g,t.total,formatOf(g,B.format)))}</b></span>${g === "ygo" ? `<span><b>${t.zones.extra.reduce((a, r) => a + r.qty, 0)}</b> extra</span>` : ""}<span><b>${t.total ? Math.round((owned / t.total) * 100) : 0}%</b> owned</span></div>
+      <div class="tier-stats"><span><b>${usd(t.cost)}${t.unknown?"+":""}</b> to buy</span>${t.difficulty ? `<span><b class="diff-tag ${t.difficulty.key}">${t.difficulty.label}</b></span>` : ""}${t.power!==undefined?`<span><b>${t.power}</b> power</span>`:""}<span><b>${esc(zoneCountLabel(g,t.total,formatOf(g,B.format)))}</b></span>${g === "ygo" ? `<span><b>${t.zones.extra.reduce((a, r) => a + r.qty, 0)}</b> extra</span>` : ""}<span><b>${t.total ? Math.round((owned / t.total) * 100) : 0}%</b> owned</span></div>
       ${t.proven?`<p class="evidence small">Tournament candidate · ${esc(t.label)}</p>`:""}${t.warnings.filter((w) => !/slots? still open/.test(w)).map((w) => `<p class="small warn-text">${esc(w)}</p>`).join("")}
       ${budgetComparisonHtml(t,i,"tTierAlternative")}${draftPath(tiers, i, tierName)}
       ${open ? `<div class="card-grid small-grid">${t.zones.main.concat(t.zones.extra).map((r) => `<button class="grid-card" data-act="tCard" data-id="${esc(r.cardId)}">${imgTag(cardOf(g, r.cardId))}${tileBadges(cardOf(g, r.cardId))}<span class="grid-meta stacked"><b class="clamp2">${r.qty}× ${esc(r.name)}</b><small>${esc(r.why || "")}</small></span></button>`).join("")}</div>` : ""}
@@ -2566,8 +2566,22 @@ export function registerTcg(c) {
         accept2 = (d) => !SOURCES[G].validate(d, (id) => cardOf(G, id), f).some((x) => x.level === "bad");
       for (const [i, t] of results.entries()) {
         if (!t?.zones || !budgets[i]) continue;
-        const up = await spendUp(t, budgets[i], { pool: upPool, quality: tquality, rows: trows, swap: tswap, cost, evaluate, accept: accept2, protect: tprotect, maxCopies: (card) => SOURCES[G].limit(card, f), status });
-        if (up.swaps.length) results[i] = { ...t, ...up.deck, cost: up.cost, assessment: up.power, power: up.power.score, upgrades: up.swaps };
+        // First fill any open slots with the best affordable cards the budget allows.
+        const mainCount = (d) => (d.zones.main || []).reduce((a, r) => a + r.qty, 0),
+          deckSize = G === "ygo" ? f.main[0] : 60;
+        if (mainCount(t) < deckSize) {
+          // A part-built deck always fails the size rule; only refuse cards that add a new problem.
+          const bad = (d) => SOURCES[G].validate(d, (id) => cardOf(G, id), f).filter((x) => x.level === "bad" && !/\b(?:cards?|Main Deck)\b[^.]*\b(?:needs?|has|must|exactly)\b|\bneeds? \d+|\b\d+ cards?\b/i.test(x.text)).length,
+            baseBad = bad(t);
+          const filled = fillOpen(t, budgets[i], { pool: upPool, quality: tquality, count: mainCount, size: deckSize, cost, accept: (d) => bad(d) <= baseBad, maxCopies: (card) => SOURCES[G].limit(card, f), have: (d, card) => (d.zones.main || []).filter((r) => r.cardId === card.id).reduce((a, r) => a + r.qty, 0), add: (d, card) => { const main = structuredClone(d.zones.main || []), hit = main.find((r) => r.cardId === card.id); if (hit) hit.qty++; else main.push({ cardId: card.id, name: card.name, qty: 1 }); return { ...d, zones: { ...d.zones, main }, proven: null }; } });
+          if (filled !== t) {
+            const pw = evaluate(filled);
+            results[i] = { ...filled, total: mainCount(filled), open: Math.max(0, deckSize - mainCount(filled)), assessment: pw, power: pw.score };
+          }
+        }
+        const t2 = results[i];
+        const up = await spendUp(t2, budgets[i], { pool: upPool, quality: tquality, rows: trows, swap: tswap, cost, evaluate, accept: accept2, protect: tprotect, maxCopies: (card) => SOURCES[G].limit(card, f), status });
+        if (up.swaps.length) results[i] = { ...t2, ...up.deck, cost: up.cost, assessment: up.power, power: up.power.score, upgrades: up.swaps };
         // Yu-Gi-Oh!: a fuller Extra Deck is the next best use of the money (more lines and outs).
         if (G === "ygo" && budgets[i]) {
           let d = results[i];
@@ -2591,7 +2605,7 @@ export function registerTcg(c) {
           }
         }
       }
-      results = budgetNotes(results, budgets);
+      results = variantsFrom(budgetNotes(results, budgets), budgets, (d) => difficultyOf((d.zones?.main || []).map((r) => { const card = cardOf(G, r.cardId); return { qty: r.qty, text: !card || card.basicEnergy ? null : card.text || card.effect || "" }; })));
       B.evidence += ` Compared ${candidates.length} candidates with Power, legality, engine readiness and your purchase cost. Higher budgets retain the best affordable lower-budget candidate.`;
       B.results[B.format] = results;
       B.msg = `${results.length} budget versions · ${proven.filter(x=>x.proven).length} complete tournament candidates evaluated.`;

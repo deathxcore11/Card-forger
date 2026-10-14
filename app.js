@@ -2,7 +2,7 @@ import {applySwapsToCards} from './insights.js';
 import {showRuleHint} from './rule-dex.js';
 import {bestBudgetDecks,purchaseCost,comparePower,refineCandidates,towardDeck,spendUp,cardQuality} from './deck-optimizer.js';
 import { playRate } from './importance.js';
-import { budgetNotes } from './deck-optimizer.js';
+import { budgetNotes, variantsFrom, difficultyOf } from './deck-optimizer.js';
 import {attachCardGestures, CompareSelection, cardActionButtons} from './card-actions.js';
 import {tcgCompareSheet} from './tcgcompare.js';
 import {artworkHTML} from './artwork.js';
@@ -1321,8 +1321,8 @@ async function runBuild() {
       const up=await spendUp(t,budgets[i],{pool,quality,rows:mrows,swap:mswap,cost,evaluate,protect,maxCopies:c=>copyLimit(c,f.name),status:buildMsg});
       if(up.swaps.length)tiers[i]={...t,...up.deck,cost:up.cost,assessment:up.power,power:up.power.score,upgrades:up.swaps};
     }
-    tiers=budgetNotes(tiers,budgets);
-    B.results[f.name]=tiers.map((winner,i)=>{const d=winner || candidates[i];return {...d,owned:d.cards.reduce((n,r)=>n+Math.min(r.qty,/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(r.name)?r.qty:B.avail(r.name)),0)};});
+    tiers=variantsFrom(budgetNotes(tiers,budgets),budgets,d=>difficultyOf(d.cards.map(r=>{const c=meta(r.name);return {qty:r.qty,text:!c || /\bLand\b/.test(c.type_line || '')?null:c.oracle_text || (c.card_faces || []).map(x=>x.oracle_text || '').join(' ')};})));
+    B.results[f.name]=tiers.filter(Boolean).map((winner,i)=>{const d=winner;return {...d,owned:d.cards.reduce((n,r)=>n+Math.min(r.qty,/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(r.name)?r.qty:B.avail(r.name)),0)};});
     B.msg = `${B.results[f.name].length} budget versions · compared ${candidates.length} decks using Power, legality and purchase cost.`;
   } catch (e) {
     B.msg = e.message;

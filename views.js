@@ -523,7 +523,7 @@ export function setPage() {
 
 /* ---------- Deck generator (every format) ---------- */
 
-const tierLabel = (t) => (t.budget===Infinity ? "No budget limit" : t.budget ? `Up to $${t.budget}${t.upTo ? "–" + t.upTo : ""}` : "Your cards only");
+const tierLabel = (t) => (t.variant ? `${t.variant}${t.coversText ? ` · ${t.coversText}` : ""}` : t.budget===Infinity ? "No budget limit" : t.budget ? `Up to $${t.budget}${t.upTo ? "–" + t.upTo : ""}` : "Your cards only");
 
 function tierCard(t, i, mode, tierList = null) {
   const p = engineProfile({ format: t.format, commander: t.commander, cards: t.cards }, S.catalog),
@@ -536,7 +536,7 @@ function tierCard(t, i, mode, tierList = null) {
   }
   return `<article class="tier ${shown ? "on" : ""}">
     <div class="row between"><b>${t.total < t.size ? `Draft — ${t.size - t.total} slot${t.size - t.total === 1 ? "" : "s"} open · ` : ""}${esc(tierLabel(t))}</b><span class="chip">${esc(t.format)}</span></div>
-    <div class="tier-stats"><span><b>${usd(t.cost)}${t.unknown?"+":""}</b> to buy</span><span><b>${t.total}/${t.size}</b> cards</span><span><b>${t.total ? Math.round((t.owned / t.total) * 100) : 0}%</b> owned</span><span><b>${t.power ?? p.score}</b> power</span></div>
+    <div class="tier-stats"><span><b>${usd(t.cost)}${t.unknown?"+":""}</b> to buy</span>${t.difficulty ? `<span><b class="diff-tag ${t.difficulty.key}">${t.difficulty.label}</b></span>` : ""}<span><b>${t.total}/${t.size}</b> cards</span><span><b>${t.total ? Math.round((t.owned / t.total) * 100) : 0}%</b> owned</span><span><b>${t.power ?? p.score}</b> power</span></div>
     ${bar(t.total ? t.owned / t.total : 0, "thin")}
     ${t.proven?`<p class="evidence small">Tournament candidate · ${esc(t.label)}</p>`:""}${t.warnings.map((w) => `<p class="small warn-text">${esc(w)}</p>`).join("")}
     ${budgetComparisonHtml(t,i,"tierAlternative")}${tierList ? draftPath(tierList, i, tierLabel) : ""}

@@ -172,3 +172,66 @@ export function budgetNotes(tiers, budgets) {
     return { ...t, explanation: notes.join(" ") || t.explanation || "" };
   });
 }
+
+// How hard a list is to pilot, from how much each card asks of you (rules text per card, weighted
+// by copies; lands and basic Energy don't count). Easy / Medium / Hard.
+export function difficultyOf(entries) {
+  let chars = 0, n = 0;
+  for (const { qty, text } of entries) {
+    if (text == null) continue;
+    chars += Math.min(600, String(text).length) * qty;
+    n += qty;
+  }
+  const avg = n ? chars / n : 0;
+  return avg < 130 ? { label: "Easy to play", key: "easy", avg } : avg < 230 ? { label: "Medium", key: "medium", avg } : { label: "Hard to play", key: "hard", avg };
+}
+
+// Budget versions → distinct variations: identical lists merge into one (covering every budget
+// they won), then they're named by what they are, cheapest/easiest first, strongest last.
+export function variantsFrom(tiers, budgets, difficulty = () => null) {
+  const sig = (d) => JSON.stringify((d?.cards || Object.values(d?.zones || {}).flat()).map((r) => [r.cardId || r.name, r.qty]).sort());
+  const out = [];
+  tiers.forEach((t, i) => {
+    if (!t) return;
+    const b = budgets[i] ?? t.budget,
+      same = out.find((x) => sig(x) === sig(t));
+    if (same) {
+      same.covers.push(b);
+      return;
+    }
+    out.push({ ...t, budget: b, covers: [b], difficulty: difficulty(t) });
+  });
+  const full = out.filter((t) => !(t.budget === 0 && (t.open || t.total < t.size)));
+  full.forEach((t, k) => {
+    t.variant = full.length === 1 ? "Best version" : k === 0 ? "Starter" : k === full.length - 1 ? "Best version" : full.length === 3 ? "Upgraded" : ["Upgraded", "Strong", "Stronger"][k - 1] || "Upgraded";
+  });
+  for (const t of out) {
+    if (!t.variant) t.variant = "Your cards only";
+    const c = t.covers.filter((x) => x !== 0);
+    t.coversText = !c.length ? "" : c.includes(Infinity) && c.length > 1 ? `for budgets of ${usd(Math.min(...c))} and up` : c.includes(Infinity) ? "no budget limit" : c.length > 1 ? `for budgets ${usd(Math.min(...c))}–${usd(Math.max(...c))}` : `up to ${usd(c[0])}`;
+    // The merge replaces "Same list as…" notes.
+    t.explanation = String(t.explanation || "").replace(/Same list as the [^.]*\.\s*/g, "").trim();
+  }
+  return out;
+}
+
+// Fill open slots with the strongest affordable cards (one copy at a time) while the budget allows.
+export function fillOpen(deck, budget, { pool, quality, count, size, add, cost, accept = () => true, maxCopies = () => 4, have = () => 0, tolerance = 10 }) {
+  const cap = budget === Infinity ? Infinity : budget + tolerance,
+    ranked = [...new Map(pool.filter(Boolean).map((c) => [c.id || c.name, c])).values()].sort((a, b) => quality(b) - quality(a));
+  let d = deck, guard = 0;
+  while (count(d) < size && guard++ < 80) {
+    let placed = false;
+    for (const c of ranked) {
+      if (have(d, c) >= maxCopies(c)) continue;
+      const next = add(d, c),
+        q = cost(next);
+      if (q.unknown || q.cost > cap + 1e-6 || !accept(next)) continue;
+      d = { ...next, cost: q.cost };
+      placed = true;
+      break;
+    }
+    if (!placed) break;
+  }
+  return d;
+}
