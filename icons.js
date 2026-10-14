@@ -98,21 +98,15 @@ const ACTION = {
   focus: svg(`<circle cx="12" cy="12" r="7.5" stroke-dasharray="3 2.6"/><circle cx="12" cy="12" r="2.5"/>`),
 };
 
-// Random, in each game's own idiom: Magic's d20 life counter, Yu-Gi-Oh!'s six-sided die
-// (dice cards), Pokémon's coin flip.
-const RANDOM = {
-  mtg: svg(`<path d="M12 2.8 20 7.4v9.2L12 21.2 4 16.6V7.4z"/><path d="M12 2.8 8 9.6h8zM8 9.6l-4 7M16 9.6l4 7M8 9.6 12 16.6l4-7M12 16.6v4.6M4 16.6l8 0 8 0" stroke-opacity=".6"/>`),
-  ygo: svg(`<rect x="4" y="4" width="16" height="16" rx="3.2"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor" stroke="none"/>`),
-  ptcg: svg(`<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="6" stroke-opacity=".5"/><path d="M9.7 9v6M14.3 9v6M9.7 12h4.6"/>`),
-};
-
+// Random is the same six-sided die in every game, so the same action always looks the same.
+ACTION.random = svg(`<rect x="4" y="4" width="16" height="16" rx="3.2"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor" stroke="none"/>`);
 // Leading symbols (followed by a space) and lone symbols in buttons → icons.
 const LEAD = { "▲": "warn", "●": "stop", "⚔": "sword", "☠": "poison", "🎲": "random", "⚒": "build", "✧": "ideas", "🏆": "trophy", "⇄": "compare", "♡": "heart", "♥": "heartOn", "＋": "plus", "+": "plus", "↥": "import", "↓": "export", "⟳": "refresh", "↻": "flip", "⧉": "copy", "🔗": "link", "🖨": "print", "📷": "camera", "◈": "pack", "☆": "bookmark", "▦": "collection", "📖": "book", "◷": "history", "🛒": "bag", "⌕": "search", "☑": "pick", "⚠": "warn", "🖌": "brush", "✓": "check", "←": "back", "‹": "back", "▧": "scan" };
 const ALONE = { "◐": "dark", "▢": "frame", "✋": "hand", "☀": "glare", "◎": "focus", "✓": "check", "✕": "close", "⋯": "more", "−": "minus", "＋": "plus", "←": "back", "⟳": "refresh", "↻": "flip" };
 export const actionIcon = (name) => ACTION[name] || "";
 // A lone symbol inside a button (quick tiles, icon buttons) maps like a leading one.
 for (const [k, v] of Object.entries(LEAD)) if (!ALONE[k] && k !== "+" && k !== "✓") ALONE[k] = v;
-const iconFor = (name, game) => (name === "random" ? RANDOM[game] || RANDOM.mtg : ACTION[name]);
+const iconFor = (name) => ACTION[name];
 
 /**
  * Replace emoji / stock-symbol icons inside `root` with drawn icons. Safe to run repeatedly:

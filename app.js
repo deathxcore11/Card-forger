@@ -3,7 +3,7 @@ import {showRuleHint} from './rule-dex.js';
 import {bestBudgetDecks,purchaseCost,comparePower,refineCandidates,towardDeck,spendUp,cardQuality} from './deck-optimizer.js';
 import { playRate } from './importance.js';
 import { budgetNotes, variantsFrom, difficultyOf } from './deck-optimizer.js';
-import {attachCardGestures, CompareSelection, cardActionButtons} from './card-actions.js';
+import {attachCardGestures, CompareSelection, cardActionButtons, HOLD_MS, moved as movedFrom} from './card-actions.js';
 import {tcgCompareSheet} from './tcgcompare.js';
 import {artworkHTML} from './artwork.js';
 import {attachAutomaticBrowse} from './auto-browse.js';
@@ -940,7 +940,56 @@ async function cardQuickMenu(t) {
   const wished = st.wishlist.some(w => ref.game === "mtg" ? key(w.name) === key(ref.card.name) : w.cardId === ref.card.id);
   openSheet(`<div class="sheet-head"><h2>Card actions</h2><button class="icon" data-act="closeSheet" aria-label="Close">${actionIcon("close")}</button></div><div class="quick-card-heading">${artworkHTML(ref.card,"quick-card-thumb")}<div><b>${esc(ref.card.name)}</b><small>${esc(ref.card.set_name || ref.card.set?.name || ref.card.typeLine || "")}</small></div></div>${cardActionButtons({game:ref.game,wished,existing:!!ref.dataset.entry,second:comparison.active && comparison.cards.length>0})}`,{type:"card-actions",game:ref.game,id:ref.card.id});
 }
+// Hold a deck or binder tile for its quick actions, the same gesture as holding a card.
+// Every action is also reachable inside the deck or binder; this is a shortcut, not a hiding place.
+function tileMenu(tile) {
+  haptic("tap");
+  const to = tile.dataset.to || "", m = to.match(/^#(t?deck)\/(.+)$/);
+  if (m) {
+    const tcg = m[1] === "tdeck", id = decodeURIComponent(m[2]),
+      d = tcg ? T.gs(T.game()).decks.find((x) => x.id === id) : S.state.decks.find((x) => x.id === id);
+    if (!d) return;
+    const tabs = tcg ? [["cards", "Cards"], ["insights", "Power"], ["matchups", "Matchups"], ["playtest", "Playtest"]] : [["cards", "Cards"], ["engine", "Power"], ["matchups", "Matchups"], ["playtest", "Playtest"]];
+    openSheet(`<div class="sheet-head"><h2>${esc(d.name)}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
+      <div class="menu-list tile-menu">${tabs.map(([tab, label]) => `<button data-act="tileOpen" data-deck="${esc(id)}" data-tcg="${tcg ? 1 : ""}" data-tab="${tab}">${actionIcon({ cards: "cardStack", engine: "trophy", insights: "trophy", matchups: "sword", playtest: "random" }[tab] || "decks")}<span>${label}</span></button>`).join("")}
+      <button data-act="tileOptions" data-deck="${esc(id)}" data-tcg="${tcg ? 1 : ""}">${actionIcon("more")}<span>Deck options<small>Rename, format, budget, versions, export, delete</small></span></button></div>`, { type: "tileMenu" });
+    return;
+  }
+  if (tile.dataset.binder) {
+    openSheet(`<div class="sheet-head"><h2>Binder</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
+      <div class="menu-list tile-menu"><button data-act="openBinder" data-game="${esc(tile.dataset.game || "")}" data-binder="${esc(tile.dataset.binder)}">${actionIcon("binder")}<span>Open binder</span></button><button data-act="editBinder" data-binder="${esc(tile.dataset.binder)}">${actionIcon("brush")}<span>Edit cover and cards</span></button></div>`, { type: "tileMenu" });
+  }
+}
+A.tileOpen = (t) => {
+  closeSheet(false);
+  if (t.dataset.tcg) { (S.ui.tdeckTab ||= {})[t.dataset.deck] = t.dataset.tab; go("#tdeck/" + t.dataset.deck); }
+  else go(`#deck/${t.dataset.deck}/${t.dataset.tab}`);
+};
+A.tileOptions = (t) => {
+  closeSheet(false);
+  if (t.dataset.tcg) A.tDeckMenu({ dataset: { id: t.dataset.deck } });
+  else { S.ui.deckId = t.dataset.deck; A.deckMenu(); }
+};
+function attachTileHolds(root = document) {
+  let press = null, timer = null;
+  const TILE = ".deck-tile, .stash-binder[data-binder]",
+    clear = () => { clearTimeout(timer); press?.tile.classList.remove("holding"); };
+  root.addEventListener("pointerdown", (e) => {
+    const tile = e.target.closest?.(TILE);
+    if (!tile || e.button !== 0) { press = null; return; }
+    press = { x: e.clientX, y: e.clientY, tile, held: false };
+    const mine = press;
+    setTimeout(() => mine === press && !mine.moved && tile.classList.add("holding"), 140);
+    timer = setTimeout(() => { if (mine !== press || mine.moved) return; mine.held = true; tile.classList.remove("holding"); tileMenu(tile); }, HOLD_MS);
+  }, { passive: true });
+  root.addEventListener("pointermove", (e) => { if (press && movedFrom(press, e)) { press.moved = true; clear(); } }, { passive: true });
+  root.addEventListener("pointerup", clear, { passive: true });
+  root.addEventListener("pointercancel", () => { if (press) press.moved = true; clear(); }, { passive: true });
+  root.addEventListener("click", (e) => { if (press?.held && e.target.closest?.(TILE)) { e.preventDefault(); e.stopImmediatePropagation(); } press = null; }, true);
+  root.addEventListener("contextmenu", (e) => { const tile = e.target.closest?.(TILE); if (!tile) return; e.preventDefault(); clear(); tileMenu(tile); });
+}
 function registerCardMenus() {
+  attachTileHolds();
   A.cancelCardCompare = () => { comparison.cancel(); updateCompareTray(); };
   A.compareOpen = A.tCompareOpen = () => startCardCompare(T.game());
   A.compareReset = () => startCardCompare("mtg");

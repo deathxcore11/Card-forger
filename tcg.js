@@ -335,7 +335,8 @@ export async function loadHero(g, mtgRandom) {
 export function gameSwitch(active = game()) {
   const used = GAME_IDS.some((g) => (g === "mtg" ? S.state.collection.length || S.state.decks.length : gs(g).collection.length || gs(g).decks.length));
   if (!used) return gameBinders(active);
-  return `<nav class="game-switch" aria-label="Game">${GAME_IDS.map((g) => `<button class="gs-${g} ${g === active ? "on" : ""}" style="--game-color:${GAME_COLOR[g]}" data-act="setGame" data-game="${g}" aria-pressed="${g === active}">${GAME_ICON[g]}<span>${esc(GAMES[g].short)}</span></button>`).join("")}</nav>`;
+  // Once you're using the app, the header's game picker switches games; Home doesn't repeat it.
+  return "";
 }
 // Saved searches, per game, on this device.
 const SAVED_KEY = "cardforge-saved-searches-v1";
@@ -378,7 +379,7 @@ function tcgNext(g) {
   if (!st.collection.length && !st.decks.length)
     return nextCard({ title: "Add your collection", text: `Paste a list of the ${esc(GAMES[g].short)} cards you own, or search and add them one by one. Then CardStashy shows what you can build.`, actions: `<button class="btn" data-act="tImportColl">↥ Paste a list</button><button class="btn ghost" data-act="go" data-to="#search">⌕ Find cards</button><button class="btn ghost" data-act="go" data-to="#decks/inspiration">🏆 Browse meta decks</button>` });
   if (!lead)
-    return nextCard({ title: "Discover decks your cards support", text: `${st.collection.reduce((a, e) => a + e.qty, 0)} cards in your binder. See the ${g === "ygo" ? "archetypes" : "Pokémon"} you can build around and the tournament decks you’re closest to.`, actions: `<button class="btn" data-act="go" data-to="#decks/ideas">✧ Deck ideas from my cards</button><button class="btn ghost" data-act="go" data-to="#decks/inspiration">🏆 Meta decks</button>` });
+    return nextCard({ title: "Discover decks your cards support", text: `${st.collection.reduce((a, e) => a + e.qty, 0)} cards in your binder. See the ${g === "ygo" ? "archetypes" : "Pokémon"} you can build around and the tournament decks you’re closest to.`, actions: `<button class="btn" data-act="go" data-to="#decks/ideas">✧ Deck ideas from my cards</button>` });
   const s = deckStats(g, lead),
     f = formatOf(g, lead.format),
     issues = SOURCES[g].validate(lead, (id) => cardOf(g, id), f),
@@ -402,14 +403,12 @@ export function quickTiles(g) {
   return `<div class="quick">
     ${tile("go", "#search", "⌕", "Find cards", "Search, filter by set, type, format and price", "primary")}
     ${tile("go", "#decks/ideas", "✧", "Deck ideas", mtg ? "Commanders your cards support" : "Build from your collection")}
-    ${tile("go", "#collection", "▦", "Collection", "Your cards, binders and wishlist")}
-    </div><details class="home-tools"><summary>More tools · imports, sets & inspiration</summary><div class="quick">${tile("go", "#decks/inspiration", "🏆", "Meta decks", mtg ? "Tournament decks, precons and shared lists, with what you own" : "Today’s tournament decks, with what you own")}
-    ${tile(mtg ? "importDeck" : "tImport", "", "↥", "Import a deck", mtg ? "Moxfield, Archidekt, ManaBox or text" : g === "ygo" ? ".ydk file or a text list" : "Pokémon TCG Live list or text")}
+    ${tile("go", "#decks/inspiration", "🏆", "Meta decks", mtg ? "Tournament decks, precons and shared lists, with what you own" : "Today’s tournament decks, with what you own")}
+    </div><details class="home-tools"><summary>More tools · import, add, sets & rules</summary><div class="quick">    ${tile(mtg ? "importDeck" : "tImport", "", "↥", "Import a deck", mtg ? "Moxfield, Archidekt, ManaBox or text" : g === "ygo" ? ".ydk file or a text list" : "Pokémon TCG Live list or text")}
     ${tile(mtg ? "addCard" : "tImportColl", "", "＋", "Add cards", "One card or a whole list")}
     ${tile("go", "#sets", "◈", "Browse sets", "Every set, newest first, with your completion")}
 
     ${tile("go", "#rules", "📖", "Rules & banlists", mtg ? "Every format, core rules, live bans" : g === "ygo" ? "Formats, core rules, Forbidden & Limited" : "Formats, core rules, official rules")}
-    ${tile("go", "#scan", "▧", "Scan a card", "Photo → match → confirm")}
   </div>${randomTools(g)}</details>`;
 }
 export const randomTools = (g) =>
@@ -526,7 +525,7 @@ export function tcgSearch() {
       ...(U.own ? [["own", U.own === "owned" ? "Owned" : "Not owned"]] : []),
       ...(U.sort && U.sort !== (g === "ygo" ? "name" : "new") ? [["sort", `Sort: ${L(sorts, U.sort)}`]] : []),
     ];
-  return `<div class="page-head"><h1>Search ${esc(GAMES[g].short)}</h1>${viewControl(g,"search")}<span class="row"><button class="btn ghost small tool-btn" data-act="tCompareOpen" aria-label="Compare cards">${actionIcon("compare")}<span>Compare</span></button><button class="btn ghost small" data-act="go" data-to="#sets">◈ Browse sets</button><button class="btn ghost small" data-act="tRandomCard">🎲 Random card</button></span></div>
+  return `<div class="page-head"><h1>Search cards</h1>${viewControl(g,"search")}<div class="search-tools"><button class="chip tool-chip" data-act="tCompareOpen" aria-label="Compare cards">${actionIcon("compare")}<span>Compare</span></button><button class="chip tool-chip" data-act="go" data-to="#sets" aria-label="Browse sets">◈ Sets</button><button class="chip tool-chip" data-act="tRandomCard" aria-label="Random card">🎲 Random</button></div></div>
   <div class="searchbar"><input type="search" data-suggest="${g}" value="${esc(U.q)}" placeholder="${g === "ygo" ? "Card name, e.g. Dark Magician" : "Card name, e.g. Charizard"}" data-input="tQ" data-enter="tSearch" aria-label="Search cards" autocomplete="off"><button class="btn" data-act="tSearch" ${U.busy ? "disabled" : ""}>${U.busy ? "…" : "Search"}</button></div>
   ${chips.length ? `<div class="filter-chips" aria-label="Active filters">${chips.map(([k, l]) => `<button class="fchip" data-act="tChip" data-field="${esc(k)}" aria-label="Remove ${esc(l)}">${esc(l)} <span aria-hidden="true">×</span></button>`).join("")}<button class="link small" data-act="tClear">Clear all</button></div>` : ""}
   ${savedSearches(g).length ? `<div class="saved-searches"><span class="muted small">Saved:</span>${savedSearches(g).map((x, i) => `<span class="schip"><button data-act="tSaved" data-i="${i}">${esc(x.label)}</button><button data-act="tSavedDel" data-i="${i}" aria-label="Delete saved search ${esc(x.label)}">×</button></span>`).join("")}</div>` : ""}
@@ -585,14 +584,11 @@ export function tcgCardSheet(c, sctx = {}) {
         ${c.stats?.length ? `<div class="stat-grid">${c.stats.filter(([k]) => g !== "ptcg" || !["HP", "Type", "Weakness", "Resistance", "Retreat"].includes(k)).map(([k, v]) => statCell(c, k, v)).join("")}</div>${c.regulationMark ? regulationHelp(c) : ""}` : ""}
       </div></div>
     ${quoteWarning(c)}
-    <div class="actions wrap">
-      <button class="btn" data-act="tOwn" data-id="${esc(c.id)}">＋ Add to collection</button>
-      <button class="btn ghost" data-act="tWish" data-id="${esc(c.id)}">${wished ? "♥ On wishlist" : "♡ Wishlist"}</button>
-      <button class="btn ghost" data-act="tBuild" data-id="${esc(c.id)}">⚒ Build decks</button>
-      <button class="btn ghost" data-act="tCompareFrom" data-id="${esc(c.id)}">⇄ Compare</button>
-      ${sctx.random ? `<button class="btn ghost" data-act="tRandomCard">🎲 Another</button>` : ""}
+    <div class="card-actions">
+      <div class="ca-main"><button class="btn" data-act="tOwn" data-id="${esc(c.id)}">＋ Add to collection</button><button class="btn ghost" data-act="tWish" data-id="${esc(c.id)}">${wished ? "♥ On wishlist" : "♡ Wishlist"}</button></div>
+      <div class="ca-more"><button class="btn ghost small" data-act="tBuild" data-id="${esc(c.id)}">⚒ Build decks</button><button class="btn ghost small" data-act="tCompareFrom" data-id="${esc(c.id)}">⇄ Compare</button>${sctx.random ? `<button class="btn ghost small" data-act="tRandomCard">🎲 Another</button>` : ""}</div>
     </div>
-    ${decks.length ? `<div class="inline-pick"><select id="tToDeck" aria-label="Deck">${options(decks.map((d) => [d.id, d.name]), deck?.id || decks.at(-1).id)}</select><button class="btn ghost" data-act="tAddToDeck" data-id="${esc(c.id)}">Add to deck</button></div>` : `<button class="btn ghost" data-act="tNewDeck">Start a deck</button>`}
+    ${decks.length ? `<div class="inline-pick"><select id="tToDeck" aria-label="Deck">${options(decks.map((d) => [d.id, d.name]), deck?.id || decks.at(-1).id)}</select><button class="btn ghost" data-act="tAddToDeck" data-id="${esc(c.id)}">Add to deck</button></div>` : ""}
     ${factBox(factsFor(c), c.id)}`;
   // Same art-first rows as Magic's Versions: thumbnail, set mark, set name, code, Buy, price box.
   const artworkGallery = g === "ygo" && c.artworks?.length ? `<section class="variant-gallery"><h3>Available artwork</h3><p class="foot">These are the source’s artwork scans. Set code, rarity and edition are not mapped to individual images.</p><div class="artwork-grid">${c.artworks.map((a,i) => `<div class="artwork-item">${variantArtThumb(c,a,`data-art="${esc(a.id)}"`)}<span>${esc(a.label)} ${i+1}</span></div>`).join("")}</div></section>` : "";
@@ -842,7 +838,7 @@ export function tcgDecks() {
     tab = ["ideas", "inspiration"].includes(S.ui.decksTab) ? S.ui.decksTab : "mine";
   return `<div class="page-head"><h1>Decks</h1><div class="row"><button class="btn small" data-act="tImport">↥ Import</button><button class="btn ghost small" data-act="tNewDeck">＋ New</button></div></div>
   ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Meta decks"]])}
-  <div class="random-tools"><button class="btn ghost small" data-act="tRandomDeck">🎲 Random deck</button><button class="btn ghost small" data-act="tRandomCard">🎲 Random card</button></div>
+  <div class="random-tools"><button class="btn ghost small" data-act="tRandomDeck">🎲 Random deck</button></div>
   ${tab === "ideas" ? ideasView(g) : tab === "inspiration" ? metaView(g) : st.decks.length ? `<div class="deck-grid">${st.decks.slice().reverse().map((d) => deckTile(g, d)).join("")}</div>` : empty("No decks yet", `Pick a format and start adding cards, build from cards you own in Ideas, or copy a tournament deck from Meta decks.`, `<button class="btn" data-act="decksTab" data-id="ideas">✧ Ideas from my cards</button><button class="btn ghost" data-act="decksTab" data-id="inspiration">🏆 Meta decks</button>`)}`;
 }
 

@@ -1,3 +1,20 @@
+3.49.0 — Cleaner, consistent and quicker to use
+- One icon for one action: random card and random deck use the same die in all three games
+  (Magic used a d20 and Pokémon a coin, which looked like different actions).
+- Card pages have the same action block in every game: Add to collection and Wishlist, then
+  Build decks, Compare (and Another for random cards) in a tidy row. "I own this" and "Start a
+  deck" are gone (Add to collection and Build decks cover them).
+- Home shows each destination once: Find cards, Deck ideas and Meta decks up front; import, add,
+  sets, rules and random tools under More tools. Collection and Scan stay in the bottom bar, the
+  game picker stays in the header, and the "Continue your deck" card keeps one main action.
+- Search: Compare, Sets and Random sit in one compact row, and every game's page is "Search cards".
+- Hold a deck or binder tile, like holding a card, for quick actions: open its Cards, Power,
+  Matchups or Playtest, or its Deck options; binders open or edit. A haptic tick and a little sink
+  confirm the hold. Everything stays reachable inside the deck or binder too.
+- The Decks page for Yu-Gi-Oh! and Pokémon keeps Random deck only (Random card lives on Search
+  and Home).
+- Sticky sheet titles are solid, so text no longer shows through behind them while scrolling.
+
 3.48.2 — Collection and price integrity, missing art, and search
 - Magic trades value each physical lot at its own printing and finish. Ten $1 copies and one $50
   copy are no longer offered as two $50 cards; each offer names the printing it means.

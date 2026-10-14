@@ -135,7 +135,7 @@ function mtgNext(d, copies) {
     art: coverOf(d),
     stats: [[`${t.copies}/${f.size}`, f.name], [`${t.missing}`, "missing copies"], [`${usd(t.pricedGap, 0)}${t.unpriced ? "+" : ""}`, "to finish"], [r.length ? `${r.length}` : "✓", r.length ? "to review" : "reviewed"]],
     text: r.length ? `Next: ${esc(r[0].title)}` : t.missing ? "Nothing to review — get the missing copies to finish." : t.copies < f.size ? `${f.size - t.copies} slots still open.` : "Complete. Playtest it or start another.",
-    actions: `<button class="btn" data-act="go" data-to="#deck/${esc(d.id)}/cards">Open deck</button>${r.length ? `<button class="btn ghost" data-act="go" data-to="#deck/${esc(d.id)}/cards">Review ${r.length}</button>` : ""}${t.missing ? `<button class="btn ghost" data-act="go" data-to="#deck/${esc(d.id)}/shop">Shop missing</button>` : ""}`,
+    actions: `<button class="btn" data-act="go" data-to="#deck/${esc(d.id)}/cards">Open deck</button>${t.missing ? `<button class="btn ghost" data-act="go" data-to="#deck/${esc(d.id)}/shop">Shop missing</button>` : ""}`,
   });
 }
 function startPath() {
@@ -206,7 +206,7 @@ export function search() {
     deck = currentDeck(),
     chips = mtgFilterChips(f),
     shown = db.results.filter((c) => (f.own === "owned" ? inv(c.name).owned > 0 : f.own === "missing" ? !inv(c.name).owned : true));
-  return `<div class="page-head"><h1>Search cards</h1>${viewControl("mtg","search")}<span class="row"><button class="btn ghost small tool-btn" data-act="compareOpen" aria-label="Compare cards">${actionIcon("compare")}<span>Compare</span></button><button class="btn ghost small" data-act="go" data-to="#sets">◈ Browse sets</button><button class="btn ghost small" data-act="dbRandom">🎲 Random card</button></span></div>
+  return `<div class="page-head"><h1>Search cards</h1>${viewControl("mtg","search")}<div class="search-tools"><button class="chip tool-chip" data-act="compareOpen" aria-label="Compare cards">${actionIcon("compare")}<span>Compare</span></button><button class="chip tool-chip" data-act="go" data-to="#sets" aria-label="Browse sets">◈ Sets</button><button class="chip tool-chip" data-act="dbRandom" aria-label="Random card">🎲 Random</button></div></div>
   <div class="searchbar"><input id="dbTerm" type="search" data-suggest="mtg" value="${esc(db.term)}" placeholder="Card name, or words like “draw a card”" data-input="dbTerm" data-enter="dbSearch" aria-label="Search all cards" autocomplete="off"><button class="btn" data-act="dbSearch" ${db.busy ? "disabled" : ""}>${db.busy ? "…" : "Search"}</button></div>
   ${chipRow(chips, "dbChip", "dbClear")}
   ${savedRow(savedSearches("mtg"), "dbSaved", "dbSavedDel")}
@@ -346,12 +346,9 @@ export function cardSheet(c, ctx = {}) {
       </div>
     </div>
     ${row ? `<div class="panel tight"><div class="row between"><b>In ${esc(deck.name)}</b><span class="stepper"><button data-act="deckQty" data-name="${esc(name)}" data-delta="-1" aria-label="One fewer">−</button><b>${row.qty}</b><button data-act="deckQty" data-name="${esc(name)}" data-delta="1" aria-label="One more">＋</button></span></div>${key(name) !== key(deck.commander) ? `<button class="link danger small" data-act="deckRemove" data-name="${esc(name)}">Remove from deck</button>` : ""}</div>` : ""}
-    <div class="actions wrap">
-      <button class="btn" data-act="own" data-name="${esc(name)}">＋ I own this</button>
-      <button class="btn ghost" data-act="wish" data-name="${esc(name)}">♡ Wishlist</button>
-      <button class="btn ghost" data-act="compareFrom" data-name="${esc(name)}">⇄ Compare</button>
-      ${isLand(c) ? "" : `<button class="btn ghost" data-act="buildFrom" data-name="${esc(name)}">⚒ Build decks</button>`}
-      ${ctx.random ? `<button class="btn ghost" data-act="dbRandom">🎲 Another</button>` : ""}
+    <div class="card-actions">
+      <div class="ca-main"><button class="btn" data-act="own" data-name="${esc(name)}">＋ Add to collection</button><button class="btn ghost" data-act="wish" data-name="${esc(name)}">♡ Wishlist</button></div>
+      <div class="ca-more">${isLand(c) ? "" : `<button class="btn ghost small" data-act="buildFrom" data-name="${esc(name)}">⚒ Build decks</button>`}<button class="btn ghost small" data-act="compareFrom" data-name="${esc(name)}">⇄ Compare</button>${ctx.random ? `<button class="btn ghost small" data-act="dbRandom">🎲 Another</button>` : ""}</div>
     </div>
     ${S.state.decks.length ? `<div class="inline-pick"><select id="toDeck" aria-label="Deck to add to">${options(S.state.decks.map((d) => [d.id, d.name]), deck?.id || S.state.activeDeck)}</select><button class="btn ghost" data-act="addToDeck" data-name="${esc(name)}">Add to deck</button></div>` : ""}
     ${factBox(factsFor(c, prints), c.oracle_id || name)}
@@ -824,7 +821,7 @@ export function costBlock(sub, total, budget, label) {
 export function decks() {
   const tab = S.ui.decksTab;
   return `<div class="page-head"><h1>Decks</h1><div class="head-actions"><button class="btn small" data-act="importDeck">↥ Import</button><button class="btn small ghost" data-act="newDeck">＋ New</button></div></div>
-  ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Meta decks"]])}<div class="random-tools"><button class="btn ghost small" data-act="randomDeck" aria-label="Random Commander deck">🎲 Random Commander</button><button class="btn ghost small" data-act="buildRandom" data-format="Standard" aria-label="Random deck in any format">⚒ Random deck</button></div>
+  ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Meta decks"]])}<div class="random-tools"><button class="btn ghost small" data-act="randomDeck" aria-label="Random Commander deck">🎲 Random Commander</button><button class="btn ghost small" data-act="buildRandom" data-format="Standard" aria-label="Random deck in any format">🎲 Random deck</button></div>
   ${tab === "ideas" ? ideasView() : tab === "inspiration" ? inspirationView() : myDecks()}`;
 }
 

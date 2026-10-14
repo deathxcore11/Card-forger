@@ -2718,3 +2718,18 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .cs-banner.no-art > .cs-hero:not(.compact) { height: 150px; background: radial-gradient(120% 140% at 20% 0%, color-mix(in srgb, var(--accent, var(--gold)) 18%, transparent), transparent 60%), var(--surface-2); -webkit-mask-image: none; mask-image: none; }
 .cs-banner.no-art .cs-art.img-missing { display: none; }
 .price-pill .pill-note { display: block; font-size: .66rem; color: var(--muted); letter-spacing: 0; text-transform: none; margin-top: 1px; }
+
+/* Card page actions: the same block in every game. Primary pair, then a tidy row of tools. */
+.card-actions { display: grid; gap: 8px; margin: 12px 0; }
+.ca-main { display: grid; grid-template-columns: 1.4fr 1fr; gap: 8px; }
+.ca-more { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; }
+.ca-main .btn, .ca-more .btn { width: 100%; justify-content: center; white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tile-menu button small { display: block; color: var(--muted); font-size: .74rem; }
+.deck-tile.holding, .stash-binder.holding { transform: scale(.97); transition: transform .3s ease; }
+.page-head .search-tools { flex: 1 1 100%; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 0; }
+.search-tools .tool-chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; font-size: .85rem; white-space: nowrap; }
+.search-tools .tool-chip svg { width: 16px; height: 16px; }
+/* Sticky sheet titles are solid, so scrolled text never shows through behind them. */
+.sheet-head.overlay.scrolled, body.glass .sheet-head.overlay.scrolled { background: var(--surface, var(--bg)); backdrop-filter: none; -webkit-backdrop-filter: none; }
+/* Home: the primary shortcut spans the row, the other two sit side by side. */
+.quick > .quick-btn.primary:first-child { grid-column: 1 / -1; }
