@@ -2,7 +2,9 @@
 import json,time,urllib.request,concurrent.futures
 ROOT='https://cardforge2.deathxcore11.workers.dev/'
 def get(url,raw=False):
-    req=urllib.request.Request(url,headers={'Accept':'application/json','User-Agent':'CardStashy live verification (github.com/deathxcore11/Card-forger)'})
+    headers={'Accept':'application/json','User-Agent':'CardStashy live verification (github.com/deathxcore11/Card-forger)'}
+    if url.startswith('https://noxfmbwuytnbvfgukpiv.supabase.co/'):headers['apikey']='sb_publishable_TpEfTlAdziX6ALSZLA7U_A_tBKKHcAz'
+    req=urllib.request.Request(url,headers=headers)
     with urllib.request.urlopen(req,timeout=20) as response:
         return response.read().decode() if raw else json.load(response)
 def check(label,url,kind):
@@ -21,6 +23,10 @@ def check(label,url,kind):
             rarities={p['rarity']:p for p in body.get('printings',[]) if p['code']=='MAMO-EN038'}
             assert 'Starlight Rare' in rarities and 'Secret Rare' in rarities,'Exact screenshot rarities did not resolve'
             assert rarities['Starlight Rare']['productId']!=rarities['Secret Rare']['productId'],'Rarities were merged'
+        elif kind=='magic-history':
+            series=[s for s in body.get('series',[]) if 'MTGJSON' in s.get('source','')]
+            assert any(sum(p['date']>='2026-09-14' for p in s.get('points',[]))>=20 for s in series),'Magic screenshot printing has no recent month'
+            summary=[{'source':s['source'],'count':len(s['points']),'last':s['points'][-1]} for s in series]
         elif kind=='printing-history':
             summary=body
             assert any(len(s.get('points',[]))>=20 for s in body.get('series',[])),'Recent month history did not resolve'
@@ -38,7 +44,7 @@ for attempt in range(12):
         if isinstance(exc,urllib.error.HTTPError) and exc.code in (401,403):break
     time.sleep(10)
 # Read-only research, no API signup, key, charge, or raw-data redistribution.
-jobs=[('Live version',ROOT+'views.js','version'),('Live artwork CSS',ROOT+'style.css','layout'),('Exact screenshot prices',ROOT+'api/prices/yugioh?id=4731783','printing'),('Live Pokemon recent history',ROOT+'api/prices/recent?game=ptcg&id=cel25-22&finish=reference','printing-history'),('Live YGO recent history',ROOT+'api/prices/recent?game=ygo&id=4731783&finish=reference&edition=MAMO-EN038&rarity=Starlight%20Rare','printing-history'),('MTGJSON metadata','https://mtgjson.com/api/v5/Meta.json','metadata'),('TCGCSV groups','https://tcgcsv.com/tcgplayer/2/groups','metadata')]
+jobs=[('Live version',ROOT+'views.js','version'),('Live artwork CSS',ROOT+'style.css','layout'),('Exact screenshot prices',ROOT+'api/prices/yugioh?id=4731783','printing'),('Live Pokemon recent history',ROOT+'api/prices/recent?game=ptcg&id=cel25-22&finish=reference','printing-history'),('Live YGO recent history',ROOT+'api/prices/recent?game=ygo&id=4731783&finish=reference&edition=MAMO-EN038&rarity=Starlight%20Rare','printing-history'),('Magic screenshot recent history','https://noxfmbwuytnbvfgukpiv.supabase.co/functions/v1/market-history?game=mtg&id=4b335496-05d2-40f5-a52c-10029f7fa008&finish=nonfoil','magic-history'),('MTGJSON metadata','https://mtgjson.com/api/v5/Meta.json','metadata'),('TCGCSV groups','https://tcgcsv.com/tcgplayer/2/groups','metadata')]
 with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
     results=list(pool.map(lambda x:check(*x),jobs))
-if not all(results[:5]):raise RuntimeError('Live HTTP verification blocked or failed; inspect the diagnostics above and Cloudflare deployment status separately.')
+if not all(results[:6]):raise RuntimeError('Live HTTP verification blocked or failed; inspect the diagnostics above and Cloudflare deployment status separately.')
