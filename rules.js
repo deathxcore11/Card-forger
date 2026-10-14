@@ -1,3 +1,4 @@
+import {ruleDexPanel} from './rule-dex.js';
 // Rules reference for each game: format deck rules, a core-rules quick reference,
 // live banned/restricted lists, and links to the official documents.
 import { esc } from "./ui.js";
@@ -88,7 +89,7 @@ export function rulesPage(g, R) {
     <p class="foot">Live from ${g === "ygo" ? "YGOPRODeck" : "Scryfall"}; updates as soon as they do.</p></section>`
       : `<section class="panel"><h3>Banned cards</h3><p class="small">The Pokémon banned list (mostly Expanded) isn’t published as data. Cards that aren’t legal in a format are already flagged in your decks; the official list is linked below.</p></section>`
   }
-  <section class="panel"><h3>Official documents</h3><div class="list compact">${OFFICIAL[g].map(([l, u]) => `<a class="mini-row store" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><span>${esc(l)}</span><span class="small">↗</span></a>`).join("")}</div></section>`;
+  ${ruleDexPanel(g)}<section class="panel"><h3>Official documents</h3><div class="list compact">${OFFICIAL[g].map(([l, u]) => `<a class="mini-row store" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><span>${esc(l)}</span><span class="small">↗</span></a>`).join("")}</div></section>`;
 }
 
 function banlistView(g, rows) {

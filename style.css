@@ -2515,3 +2515,21 @@ body.glass .cs-tabs { background:rgba(18,20,26,.98); }
 
 /* Card entry is triggered once by its identity, independent of price refreshes. */
 dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:center bottom; }
+
+/* CardStashy field notes: one visual language, each game's own accent. */
+.effect-card{position:relative;border-left:3px solid var(--accent);background:linear-gradient(125deg,color-mix(in srgb,var(--accent) 7%,transparent),transparent 65%);}
+.effect-card .effect-label{letter-spacing:.12em;opacity:.8;margin:0 0 14px;}
+.effect-line{margin:0 0 16px;line-height:1.7;text-wrap:pretty;}
+.effect-line:last-child{margin-bottom:0;}
+.rule-word{display:inline;padding:0;margin:0;border:0;border-bottom:1px dotted currentColor;border-radius:0;background:none;color:var(--accent);font:inherit;line-height:inherit;cursor:help;vertical-align:baseline;}
+.rule-word:hover,.rule-word:focus-visible{background:color-mix(in srgb,var(--accent) 16%,transparent);outline:2px solid var(--accent);outline-offset:3px;}
+.logic-condition{color:color-mix(in srgb,var(--accent) 65%,white);font-weight:650;}
+.logic-activation{background:color-mix(in srgb,var(--accent) 9%,transparent);}
+.logic-resolution{color:var(--text);}
+.effect-card .flavor{margin:22px 0 6px;padding:16px 0 0 18px;border-left:2px solid color-mix(in srgb,var(--accent) 40%,transparent);font-style:italic;opacity:.8;}
+.flavor .eyebrow{display:block;font-style:normal;font-size:10px;margin-bottom:8px;}
+.rule-glass{position:fixed;z-index:10000;max-height:calc(100dvh - 32px);overflow:auto;padding:20px;border:1px solid color-mix(in srgb,var(--accent) 38%,transparent);border-radius:20px;background:rgba(22,25,35,.94);backdrop-filter:blur(24px);box-shadow:0 16px 70px #0009;color:var(--text);animation:rule-reveal .18s ease-out;}
+.rule-glass h3{margin:12px 0 8px;}.rule-glass p{line-height:1.6;}.rule-glass a{font-size:12px;color:var(--accent);}.rule-dismiss{border:0;background:none;color:inherit;padding:6px;}
+.printing-quote{display:inline-flex;flex-direction:column;gap:3px;padding:4px 6px;}.print-prices{flex-wrap:wrap;}.trade-valuation{margin-bottom:12px;}
+@keyframes rule-reveal{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.rule-glass{animation:none}}

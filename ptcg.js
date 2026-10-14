@@ -292,6 +292,17 @@ export const ptcgSource = {
     const d = await get("/cards", { effect: "like:" + name, "pagination:itemsPerPage": 40 });
     return firstPerName((d || []).map(brief).filter((c) => !c.pocket && c.name !== name));
   },
+  async tournamentCard(row) {
+    if(!row.set || !row.number)return null;
+    const candidates=await this.byNameNumber(row.name,String(row.number));
+    for(const brief of candidates.filter(c=>c.name.toLowerCase()===row.name.toLowerCase())){
+      const setId=brief.id.slice(0,brief.id.lastIndexOf('-'));
+      const set=await get('/sets/'+encodeURIComponent(setId)).catch(()=>null);
+      const codes=[set?.id,set?.tcgOnline,set?.abbreviation,set?.abbreviations?.official].filter(Boolean).map(x=>String(x).toLowerCase());
+      if(!codes.includes(String(row.set).toLowerCase()))continue;
+      const card=await this.get(brief.id);if(card.name.toLowerCase()===row.name.toLowerCase())return card;
+    }return null;
+  },
   async byNameNumber(name, num) {
     const tries = [...new Set([num, String(Number(num)), String(Number(num)).padStart(3, "0")])];
     for (const n of tries) {

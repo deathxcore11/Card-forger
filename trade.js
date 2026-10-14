@@ -8,7 +8,7 @@ const money = (v) => `$${Number(v).toFixed(2)}`;
 export function tradeMatches({ target, owned = [], wish = [] }) {
   const p = Number(target?.price);
   if (!(p > 0)) return { price: null, singles: [], pairs: [], asks: [] };
-  const mine = owned.filter((x) => x.price > 0 && x.key !== target.key && (x.qty || 1) > 0);
+  const mine = owned.filter((x) => x.price > 0 && (x.cardKey || x.key) !== target.key && (x.qty || 1) > 0);
   const near = (v, tol) => Math.abs(v - p) / p <= tol;
   const singles = mine
     .filter((x) => near(x.price, 0.15))
@@ -73,6 +73,9 @@ export function tradePanel(target, owned, wish, config={}) {
   const row = (b) =>
     `<div class="trade-row">${b.items.map((x) => `<button class="trade-card" ${x.open} aria-label="Open ${esc(x.name)}">${x.art}<span>${esc(x.name)}</span><small>${money(x.price)}</small></button>`).join(`<span class="trade-plus" aria-hidden="true">+</span>`)}<div class="trade-total"><b>${money(b.total)}</b>${diff(b.diff)}</div></div>`;
   const block = (title, sub, list, emptyText) => `<div class="trade-block"><h3>${title}</h3><p class="muted small">${sub}</p>${list.length ? list.map(row).join("") : `<p class="trade-empty">${emptyText}</p>`}</div>`;
+  const unpriced=owned.filter(x=>!(x.price>0)).length,valuation=config.valuation || 'exact';
+  const valuationControl=config.game==='ygo'?`<label class="trade-valuation">Valuation<select data-change="tradeOption" data-field="valuation"><option value="exact" ${valuation==='exact'?'selected':''}>Exact edition prices</option><option value="reference" ${valuation==='reference'?'selected':''}>Printing reference estimates</option></select></label>${valuation==='reference'?'<p class="foot">Reference estimates may cover another edition. Confirm each physical card before agreeing to a trade.</p>':''}`:'';
+  const emptyOffer=owned.length?`${unpriced} collection entries have no usable quote for this valuation. ${config.game==='ygo'?'Choose printing reference estimates above, or check the exact edition in Versions.':'Open their Prices tab to load available quotes.'}`:'Add cards to your collection to see what you could offer.';
   const offers = [...m.singles, ...m.pairs],
     near = m.closest ? `<div class="trade-block"><h3>Closest you can get</h3><p class="muted small">Nothing you own matches it on its own or as a pair. Your best bundle${m.closest.items.length > 1 ? ` of ${m.closest.items.length} cards` : ""}:</p>${row(m.closest)}</div>` : "";
   const intent=config.mode || 'hybrid',tolerance=Number(config.tolerance || .08),credit=Number(config.credit || 1),needs=config.needs || [];
@@ -81,7 +84,7 @@ export function tradePanel(target, owned, wish, config={}) {
   const controls=target.owned?`<details class="trade-intent" open><summary>Trade into what I need</summary><div class="grid2"><label>Goal<select data-change="tradeOption" data-field="mode"><option value="hybrid" ${intent==='hybrid'?'selected':''}>Deck needs + wants</option><option value="deck" ${intent==='deck'?'selected':''}>Missing deck cards</option><option value="wishlist" ${intent==='wishlist'?'selected':''}>Wanted cards</option></select></label><label>Value window<select data-change="tradeOption" data-field="tolerance">${[.05,.08,.1,.15].map(v=>`<option value="${v}" ${v===tolerance?'selected':''}>±${Math.round(v*100)}%</option>`).join('')}</select></label><label>Trade value<select data-change="tradeOption" data-field="credit"><option value="1" ${credit===1?'selected':''}>Player · 100%</option><option value="0.75" ${credit===.75?'selected':''}>Vendor estimate · 75%</option></select></label></div><p class="foot">Vendor credit is an editable assumption, not an offer. Up to four copies per bundle; cached prices work offline.</p>${proposals.length?proposals.map(b=>`<div class="trade-proposal"><div class="row between"><b>My side ${money(b.target)}</b><b>Bundle ${money(b.total)}</b></div><progress max="${Math.max(b.target,b.total)}" value="${Math.min(b.target,b.total)}" aria-label="Relative trade values"></progress>${row(b)}<p class="small muted">${[...new Set(b.items.map(x=>x.deckName?'Needs for '+x.deckName:'Wanted card'))].map(esc).join(' · ')}</p></div>`).join(''):'<p class="muted small">No bundle within this window yet. Add missing deck cards or wanted cards, or widen the value window.</p>'}</details>`:'';
   return `<section class="trade">
     <div class="trade-head"><span class="muted small">Worth about</span><b>${money(m.price)}</b></div>
-    ${near || block("Offer from your cards", "Cards you own worth about the same, alone or as a pair.", offers, "Add cards to your collection to see what you could offer.")}
+    ${valuationControl}${unpriced?`<p class="foot">${unpriced} unpriced entries excluded from offers.</p>`:""}${near || block("Offer from your cards", "Cards you own worth about the same, alone or as a pair.", offers, emptyOffer)}
     ${controls}
     ${target.owned ? block("Ask for from your wishlist", "You own this one. These cards you want are worth about the same.", m.asks, wish.length ? "Nothing on your wishlist is close in value." : "Add cards to your wishlist to see fair swaps for this one.") : ""}
     <p class="foot">Values are daily market estimates. Condition, edition and the other trader decide the real deal.</p>

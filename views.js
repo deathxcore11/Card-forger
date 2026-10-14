@@ -1,3 +1,4 @@
+import {effectText} from './rule-dex.js';
 import {collectionOrder} from "./collection-order.js";
 import { hapticsOn } from "./feel.js";
 import { tradePanel } from "./trade.js";
@@ -380,10 +381,10 @@ export function cardSheet(c, ctx = {}) {
   </div>
   ${faces
     .map(
-      (f, n) => `<section class="cd-text">
-      ${faces.length > 1 ? `<div class="row between"><b>${esc(f.name)}</b>${manaCost(f)}</div><p class="type-line">${esc(f.type_line || "")}</p>` : ""}
-      ${f.oracle_text ? `<p class="oracle">${symbolText(f.oracle_text)}</p>` : ""}
-      ${f.flavor_text ? `<p class="flavor">${esc(f.flavor_text)}</p>` : ""}
+      (f, n) => `<section class="cd-text effect-card mtg">
+      <p class="eyebrow effect-label">Spellcraft · Rules text</p>${faces.length > 1 ? `<div class="row between"><b>${esc(f.name)}</b>${manaCost(f)}</div><p class="type-line">${esc(f.type_line || "")}</p>` : ""}
+      ${f.oracle_text ? `<div class="oracle">${effectText("mtg",f.oracle_text)}</div>` : ""}
+      ${f.flavor_text ? `<blockquote class="flavor"><small class="eyebrow">Flavour</small>${esc(f.flavor_text)}</blockquote>` : ""}
       <div class="row between small muted">${f.power !== undefined && f.power !== null ? `<span class="pt">${esc(f.power)}/${esc(f.toughness)}</span>` : shown.loyalty && !n ? `<span class="pt">Loyalty ${esc(shown.loyalty)}</span>` : "<span></span>"}${f.artist || shown.artist ? `<span>🖌 ${esc(f.artist || shown.artist)}</span>` : ""}</div>
     </section>`,
     )
@@ -520,7 +521,7 @@ export function setPage() {
 
 /* ---------- Deck generator (every format) ---------- */
 
-const tierLabel = (t) => (t.budget ? `Up to $${t.budget}${t.upTo ? "–" + t.upTo : ""}` : "Your cards only");
+const tierLabel = (t) => (t.budget===Infinity ? "No budget limit" : t.budget ? `Up to $${t.budget}${t.upTo ? "–" + t.upTo : ""}` : "Your cards only");
 
 function tierCard(t, i, mode, tierList = null) {
   const p = engineProfile({ format: t.format, commander: t.commander, cards: t.cards }, S.catalog),
@@ -533,9 +534,9 @@ function tierCard(t, i, mode, tierList = null) {
   }
   return `<article class="tier ${shown ? "on" : ""}">
     <div class="row between"><b>${t.total < t.size ? `Draft — ${t.size - t.total} slot${t.size - t.total === 1 ? "" : "s"} open · ` : ""}${esc(tierLabel(t))}</b><span class="chip">${esc(t.format)}</span></div>
-    <div class="tier-stats"><span><b>${usd(t.cost)}</b> to buy</span><span><b>${t.total}/${t.size}</b> cards</span><span><b>${t.total ? Math.round((t.owned / t.total) * 100) : 0}%</b> owned</span><span><b>${p.score}</b> build score</span></div>
+    <div class="tier-stats"><span><b>${usd(t.cost)}${t.unknown?"+":""}</b> to buy</span><span><b>${t.total}/${t.size}</b> cards</span><span><b>${t.total ? Math.round((t.owned / t.total) * 100) : 0}%</b> owned</span><span><b>${t.power ?? p.score}</b> power</span></div>
     ${bar(t.total ? t.owned / t.total : 0, "thin")}
-    ${t.warnings.map((w) => `<p class="small warn-text">${esc(w)}</p>`).join("")}
+    ${t.proven?`<p class="evidence small">Tournament candidate · ${esc(t.label)}</p>`:""}${t.warnings.map((w) => `<p class="small warn-text">${esc(w)}</p>`).join("")}
     ${tierList ? draftPath(tierList, i, tierLabel) : ""}
     ${shown ? ["Creatures", "Spells", "Lands", "Other"].filter((g) => groups[g]).map((g) => `<p class="list-head">${g} <span class="muted">${groups[g].reduce((a, r) => a + r.qty, 0)}</span></p><div class="list compact">${groups[g].sort((a, b) => b.qty - a.qty || a.name.localeCompare(b.name)).map((r) => { const free = Math.min(r.qty, S.ui.build.avail?.(r.name) ?? 0), basic = isBasic(meta(r.name)) || /^(Plains|Island|Swamp|Mountain|Forest|Wastes)$/.test(r.name); return `<button class="mini-row upgrade-card-row" data-act="card" data-name="${esc(r.name)}">${img(art(meta(r.name)),r.name,"mini-art")}<span class="ellip">${r.qty}× ${esc(r.name)} <small class="muted">${esc(r.why === "Already in your list" ? "Kept in this version" : r.why || "")}</small></span><span class="small ${basic || free >= r.qty ? "ok-text" : "warn-text"}">${basic ? "basic" : free >= r.qty ? "✓ Owned" : `Need ${r.qty - free}`}</span></button>`; }).join("")}</div>`).join("") : ""}
     <div class="actions wrap"><button class="btn ghost small" data-act="tierToggle" data-i="${i}">${shown ? "Hide list" : "See all " + t.total + " cards"}</button>${mode === "fill" ? `<button class="btn small" data-act="tierApply" data-i="${i}">Use this version</button>` : `<button class="btn small" data-act="tierSave" data-i="${i}">Save as deck</button>`}</div>
@@ -560,7 +561,7 @@ export function buildSheet() {
 function fillAnyPanel(d, fm, count) {
   const B = S.ui.build,
     tiers = B.fillDeck === d.id ? B.results.__fill : null;
-  return `<section class="panel"><p class="eyebrow">${esc(fm.name)}</p><h2>${count < fm.size ? `Fill ${fm.size - count} open slots` : "Complete this list"}</h2>
+  return `<section class="panel"><p class="eyebrow">${esc(fm.name)}</p><button class="btn ghost" data-act="optimizeMtgDeck">Compare budget builds</button><h2>${count < fm.size ? `Fill ${fm.size - count} open slots` : "Complete this list"}</h2>
   <p class="muted small">Keeps every card you chose, then completes the deck with ${esc(fm.name)}-legal cards in its colors — your cards first, then the best affordable ones. One version per budget.</p>
   ${count > fm.size ? `<div class="notice warn">${count - fm.size} cards above the ${fm.size}-card consistency target. <button class="btn ghost small" data-act="reviewTrim">Review cuts</button></div>` : ""}
   ${count === fm.size ? `<button class="btn" data-act="suggestFormatUpgrades" ${B.busy ? "disabled" : ""}>Find paired upgrades</button><p class="muted small">Same-role spell swaps within your $${esc(d.budget ?? 25)} purchase budget. Suggestions are heuristics, not measured win rates.</p>` : ""}
@@ -1386,7 +1387,7 @@ function swapPanel(d) {
   const U = S.ui.upgrade,
     plans = U.deckId === d.id ? U.plans : {},
     plan = plans[U.budget];
-  return `<section class="panel"><p class="eyebrow">${sumQty(d.cards) < 100 ? "Step 2" : "Upgrade lab"}</p><h2>One-for-one upgrades</h2><p class="muted small">Pick a budget to see suggested swaps, what each one changes, and what it costs.</p>
+  return `<section class="panel"><p class="eyebrow">${sumQty(d.cards) < 100 ? "Step 2" : "Upgrade lab"}</p><h2>One-for-one upgrades</h2><button class="btn" data-act="optimizeMtgDeck">Compare budget builds</button><p class="muted small">Pick a budget to see suggested swaps, what each one changes, and what it costs.</p>
   <div class="chips">${[0, 10, 25, 50, 100].map((n) => `<button class="chip pick ${U.budget === n ? "on" : ""}" data-act="upBudget" data-v="${n}">${n ? "$" + n : "My cards ($0)"}</button>`).join("")}</div>
   <label class="custom-budget">Custom upgrade budget ($)<input type="number" min="0" max="100000" step="0.01" value="${U.budget}" data-change="upCustom" aria-label="Custom upgrade budget"></label>
   <label class="check small"><input type="checkbox" data-change="upTrade" ${U.tradeIn ? "checked" : ""}> Show what the cut cards are worth (reference only — never subtracted from what you spend)</label>
@@ -1398,12 +1399,12 @@ function swapPanel(d) {
 }
 
 function budgetLadder(d, plans) {
-  const base = engineProfile(d, S.catalog).score;
-  return `<table class="metrics ladder"><thead><tr><th>Budget</th><th class="num">Swaps</th><th class="num">Spend</th><th class="num">Engine</th><th class="num">Per $</th></tr></thead><tbody>${Object.keys(plans).map(Number).sort((a,b)=>a-b)
+  const base = mtgPower(d).score;
+  return `<table class="metrics ladder"><thead><tr><th>Budget</th><th class="num">Swaps</th><th class="num">Spend</th><th class="num">Power</th><th class="num">Per $</th></tr></thead><tbody>${Object.keys(plans).map(Number).sort((a,b)=>a-b)
     .filter((b) => plans[b])
     .map((b) => {
       const p = plans[b],
-        after = engineProfile({ ...d, cards: applySwapsToCards(d.cards, p.swaps) }, S.catalog).score,
+        after = p.powerAfter ?? mtgPower({ ...d, cards: applySwapsToCards(d.cards, p.swaps) }).score,
         gain = after - base;
       return `<tr class="${b === S.ui.upgrade.budget ? "on" : ""}" data-act="upBudget" data-v="${b}"><td>${b ? "$" + b : "$0"}</td><td class="num">${p.swaps.length}</td><td class="num">${usd(p.spent)}</td><td class="num">${after} <em class="${gain > 0 ? "up" : ""}">${signed(gain)}</em></td><td class="num">${p.spent > 0 ? (gain / p.spent).toFixed(2) : gain > 0 ? "free" : "—"}</td></tr>`;
     })
@@ -1435,7 +1436,7 @@ function swapResults(d, plan) {
         </div>
         <ul class="swap-why">${why.lines.map((l) => `<li class="${l.kind}"><span aria-hidden="true">${sign[l.kind]}</span>${esc(l.text)}</li>`).join("")}</ul>
         <p class="swap-choose small">${esc(why.choose)}</p>
-        <div class="swap-facts"><span>Engine score <b class="${imp.delta > 0 ? "up" : ""}">${base} → ${base + imp.delta}</b></span><span>${s.owned ? "Cost <b>$0</b>" : `Cost <b>${usd(s.cost)}</b>`}</span><span class="chip">${esc(s.complexity === "Straightforward" ? "Simple to play" : s.complexity)}</span></div>
+        <div class="swap-facts"><span>Power <b class="${(s.powerAfter-s.powerBefore) > 0 ? "up" : ""}">${s.powerBefore ?? base} → ${s.powerAfter ?? base + imp.delta}</b></span><span>${s.owned ? "Cost <b>$0</b>" : `Cost <b>${usd(s.cost)}</b>`}</span><span class="chip">${esc(s.complexity === "Straightforward" ? "Simple to play" : s.complexity)}</span></div>
       </article>`;
     })
     .join("")}</div>
@@ -1444,8 +1445,8 @@ function swapResults(d, plan) {
 
 export function upgradeSummary(d, plan) {
   const sel = [...S.ui.upgrade.selected].map((i) => plan.swaps[i]).filter(Boolean),
-    before = engineProfile(d, S.catalog),
-    after = engineProfile({ ...d, cards: applySwapsToCards(d.cards, sel) }, S.catalog),
+    before = {...engineProfile(d,S.catalog),score:mtgPower(d).score},
+    after = {...engineProfile({ ...d, cards: applySwapsToCards(d.cards, sel) }, S.catalog),score:mtgPower({...d,cards:applySwapsToCards(d.cards,sel)}).score},
     spend = sel.reduce((a, s) => a + (s.cost || 0), 0),
     trade = sel.reduce((a, s) => a + (priceOf(s.cut) ?? 0), 0);
   if (!sel.length) return `<p class="small center">Tick the swaps you like to see before → after.</p>`;
@@ -1668,7 +1669,7 @@ export function settings() {
   <details class="settings-disclosure settings-danger"><summary>Start over or load examples</summary><p class="foot">Export a backup first. One recovery copy is kept on this device.</p><div class="actions wrap"><button class="btn ghost danger" data-act="reset">Start empty</button><button class="btn ghost" data-act="loadExample">Load example data</button></div></details></div>
   <div id="settings-app" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-app" ${tab === "app" ? "" : "hidden"}><section class="panel settings-card"><div class="settings-card-heading"><div><p class="eyebrow">APPEARANCE</p><h2>Glass &amp; art backdrop</h2></div></div><label class="check"><input type="checkbox" data-change="setGlass" ${(() => { try { return localStorage.getItem("cardstashy-glass") !== "off"; } catch { return true; } })() ? "checked" : ""}> Frosted glass panels over a blurred copy of the game's featured art</label><p class="foot">Turn it off for plain solid panels (a little lighter on older phones).</p><label class="check"><input type="checkbox" data-change="setHaptics" ${hapticsOn() ? "checked" : ""}> Vibration when you tap, add or remove cards</label><p class="foot">On iPhone this uses the system tap (iOS 18 or later). Animations follow your phone’s “Reduce motion” setting.</p></section><section class="panel settings-card"><div class="settings-card-heading"><span class="settings-icon" aria-hidden="true">＋</span><div><p class="eyebrow">TAKE IT WITH YOU</p><h2>Install CardStashy</h2></div></div><p class="muted small">Open it from your home screen. Saved collections and decks work offline.</p><button class="btn" data-act="install">Install app</button><details class="settings-disclosure"><summary>Android installation help</summary><p class="foot">In Chrome, open ⋮ → Add to Home screen or Install app. Searches and updated prices need internet.</p></details></section>
   <details class="settings-disclosure settings-source"><summary>Card databases & prices</summary><ul class="sources"><li><b>Magic:</b> Scryfall card data, images and reference prices; MTGJSON precon lists.</li><li><b>Pokémon:</b> TCGdex card data and images, with supplied TCGplayer and Cardmarket prices.</li><li><b>Yu-Gi-Oh!:</b> YGOPRODeck card data, alternate art, printings and reference prices.</li><li><b>Imports:</b> Supported text and CSV exports from deck and collection tools.</li></ul><p class="foot">Prices are estimates; check edition, condition and shipping with the seller.</p></details>
-  <details class="settings-disclosure settings-source"><summary>About CardStashy</summary><p class="foot">Scores and test games are estimates, not win rates. CardStashy is an independent fan app; cards and art belong to their owners.</p><span class="settings-version">Version 3.36.1</span></details></div></div>`;
+  <details class="settings-disclosure settings-source"><summary>About CardStashy</summary><p class="foot">Scores and test games are estimates, not win rates. CardStashy is an independent fan app; cards and art belong to their owners.</p><span class="settings-version">Version 3.37.0</span></details></div></div>`;
 }
 
 /* ---------- Deck idea sheet ---------- */

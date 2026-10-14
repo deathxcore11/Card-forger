@@ -1,3 +1,4 @@
+import {comparePower} from './deck-optimizer.js';
 import {aggregateCards,cardKey,isLand,isBasic,sumQty,typeText,rulesText} from './core.js';
 import {formatOf,legalityIn} from './formats.js';
 import {functionalIn} from './deck-safety.js';
@@ -7,10 +8,10 @@ const colors=c=>c?.color_identity||[];
 const cap=(c,f)=>isBasic(c)||/any number of cards named/i.test(rulesText(c))?Infinity:legalityIn(c,f)==='restricted'?1:f.copies;
 const allowed=(c,f)=>functionalIn(c,f)&&(!f.legality||['legal','restricted'].includes(legalityIn(c,f)));
 // Conservative one-copy, same-function swaps. This is a review aid, not a win-rate model.
-export function formatUpgrades(deck,catalog,{budget=25,available=()=>0,price=()=>null}={}) {
+export function formatUpgrades(deck,catalog,{budget=25,available=()=>0,price=()=>null,evaluate=null}={}) {
  const f=formatOf(deck),rows=aggregateCards(deck.cards),identity=[...new Set(rows.flatMap(r=>colors(catalog[cardKey(r.name)])))];
  if(f.commander||sumQty(rows)!==f.size)return [];
- const suggestions=[],used=new Set();
+ const suggestions=[],used=new Set(),before=evaluate?.(deck);
  for(const row of rows){const out=catalog[cardKey(row.name)];if(!out||isLand(out))continue;
   const roles=engineRoles(out),subtype=typeText(out).split('—')[1]?.trim(),mv=Number(out.cmc)||0;
   const candidates=Object.values(catalog).filter(c=>c?.name&&cardKey(c.name)!==cardKey(out.name)&&!isLand(c)&&allowed(c,f)&&colors(c).every(x=>identity.includes(x))&&qty(rows,c.name)<cap(c,f)&&!used.has(cardKey(c.name))).map(c=>{
@@ -19,10 +20,15 @@ export function formatUpgrades(deck,catalog,{budget=25,available=()=>0,price=()=
    const gain=mv-(Number(c.cmc)||0),p=price(c),owned=available(c.name)>qty(rows,c.name),cost=owned?0:p;
    return {c,shared,sameSubtype,sameType,gain,cost};
   }).filter(x=>(x.shared.length||x.sameSubtype)&&x.sameType&&x.gain>=1&&x.cost!==null&&Number.isFinite(x.cost)&&x.cost<=budget).sort((a,b)=>b.shared.length-a.shared.length||b.gain-a.gain||a.cost-b.cost);
-  const best=candidates[0];if(!best)continue;used.add(cardKey(best.c.name));
-  suggestions.push({cardOut:out.name,cardIn:best.c.name,qty:1,cost:best.cost,reason:`Same ${best.shared.length?best.shared.join(' / '):subtype} role; mana value ${mv} → ${Number(best.c.cmc)||0}. Check the rules text and engine trade-off before applying.`});
+  const assessed=candidates.slice(0,8).map(x=>{
+   if(!evaluate)return x;
+   const swap={cardOut:out.name,cardIn:x.c.name},next={...deck,cards:applyFormatSwap(deck,swap,catalog)},after=evaluate(next);
+   return {...x,after,delta:after.score-before.score};
+  }).filter(x=>!evaluate || comparePower(x.after,before)>0).sort((a,b)=>evaluate?comparePower(b.after,a.after):0);
+  const best=assessed[0];if(!best)continue;used.add(cardKey(best.c.name));
+  suggestions.push({cardOut:out.name,cardIn:best.c.name,qty:1,cost:best.cost,delta:best.delta,reason:`${evaluate?`Power ${before.score} → ${best.after.score}. `:""}Same ${best.shared.length?best.shared.join(' / '):subtype} role; mana value ${mv} → ${Number(best.c.cmc)||0}. Check the rules text and engine trade-off before applying.`});
  }
- return suggestions.slice(0,6);
+ return suggestions.sort((a,b)=>(b.delta||0)-(a.delta||0)).slice(0,6);
 }
 export function applyFormatSwap(deck,swap,catalog) {
  const f=formatOf(deck),rows=aggregateCards(deck.cards).map(r=>({...r})),out=rows.find(r=>cardKey(r.name)===cardKey(swap.cardOut)),c=catalog[cardKey(swap.cardIn)];

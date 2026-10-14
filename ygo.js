@@ -1,3 +1,4 @@
+import {applyYgoPrices} from './ygo-prices.js';
 // Yu-Gi-Oh! adapter. Data: YGOPRODeck (db.ygoprodeck.com) — card text, every
 // printing with set rarity and price, TCG/OCG/GOAT banlists, and prices from
 // TCGplayer, Cardmarket, eBay, Amazon and CoolStuffInc (refreshed daily).
@@ -183,10 +184,12 @@ export const ygoSource = {
     const d = await get("/cardinfo.php", p);
     return { cards: (d.data || []).map(normalizeYgo), total: d.meta?.total_rows ?? (d.data || []).length, more: !!d.meta?.rows_remaining };
   },
-  async get(id) {
+  async get(id,{printings=true}={}) {
     const d = await get("/cardinfo.php", { id, misc: "yes" });
     if (!d.data?.[0]) throw Error("Card not found.");
-    return normalizeYgo(d.data[0]);
+    const card=normalizeYgo(d.data[0]);
+    if(printings)try{const r=await fetch("api/prices/yugioh?id="+encodeURIComponent(card.id),{signal:AbortSignal.timeout(20000)});if(r.ok){applyYgoPrices(card,await r.json());card.printPriceSchema=1;}}catch{}
+    return card;
   },
   // Every card on a banlist ("tcg", "ocg" or "goat").
   async banlist(list) {

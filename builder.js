@@ -10,7 +10,7 @@ import { splitBasics } from "./extras.js";
 
 const BASIC = { W: "Plains", U: "Island", B: "Swamp", R: "Mountain", G: "Forest", C: "Wastes" };
 const THEMES = ["Tokens", "Graveyard", "Spells", "Dragons", "Artifacts", "Lifegain", "Landfall"];
-const TIERS = [0, 10, 25, 50, 100];
+const TIERS = [0, 10, 25, 50, 100, Infinity];
 export const BUDGET_TIERS = TIERS;
 
 // Creature types and similar subtypes on a card ("Goblin Warrior" → Goblin, Warrior).
@@ -61,7 +61,7 @@ export function scoreCard(c, seedTags, seedSubs, { free = 0, size = 60 } = {}) {
 export function buildDeck({ format, seeds = [], base = [], catalog, available = () => 0, price = (c) => null, budget = 25, colors = null, commander = null }) {
   const f = formatOf(format);
   if (f.id === "limited") throw Error("Limited decks come from the cards you open — build those by hand.");
-  if (!Number.isFinite(budget) || budget < 0) throw Error("Enter a budget of $0 or more.");
+  if ((!Number.isFinite(budget) && budget!==Infinity) || budget < 0) throw Error("Enter a budget of $0 or more.");
   const size = f.size,
     lead = f.commander ? commander || seeds.find((s) => canLead(s, f)) : null;
   if (f.commander && !lead) throw Error(`${f.name} decks need a card that can lead them (${f.commander === "planeswalker" ? "a planeswalker" : "a legendary creature"}).`);

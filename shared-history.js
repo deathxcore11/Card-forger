@@ -1,7 +1,7 @@
 import {SUPABASE} from './config.js';
 export const sharedHistory = new Map();
 const pending=new Map();let refresh=()=>{};
-const CACHE='cardstashy-public-market-history-v2';
+const CACHE='cardstashy-public-market-history-v3';
 function cached(k){try{return JSON.parse(localStorage.getItem(CACHE)||'{}')[k];}catch{return null;}}
 function remember(k,d){try{const all=JSON.parse(localStorage.getItem(CACHE)||'{}');all[k]=d;const keys=Object.keys(all).sort((a,b)=>(all[b].checked||0)-(all[a].checked||0));for(const key of keys.slice(60))delete all[key];localStorage.setItem(CACHE,JSON.stringify(all));}catch{}}
 

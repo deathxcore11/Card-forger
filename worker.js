@@ -1,3 +1,4 @@
+import {ygoPriceRoute} from './ygo-prices.js';
 import {archivePriceRoute} from "./historical-archive.js";
 import {pokemonPriceRoute} from "./pokemon-prices.js";
 import {magicSetArtwork} from "./set-art.js";
@@ -178,6 +179,7 @@ export default {
     if (url.pathname === "/.well-known/assetlinks.json") return assetLinks();
     if (url.pathname === "/api/lens") return lensUpload(request, url);
     if (url.pathname === "/api/prices/archive") return archivePriceRoute(url,ctx);
+    if (url.pathname === "/api/prices/yugioh") return ygoPriceRoute(url,ctx);
     if (url.pathname === "/api/prices/pokemon") return pokemonPriceRoute(url,ctx);
     if (url.pathname === "/api/prices/watch") return watchRoute(request, env);
     if (url.pathname === "/api/prices/history") return historyRoute(url, env, ctx);

@@ -1,3 +1,6 @@
+import {effectText,ruleText} from './rule-dex.js';
+import {editionPrice} from './ygo-prices.js';
+import {bestBudgetDecks,purchaseCost,comparePower,swappedZones,sameCardLogic} from './deck-optimizer.js';
 import {collectionOrder} from "./collection-order.js";
 import {POKEMON_SET_ART} from "./pokemon-set-art.js";
 import { recordCardPrice, trackedQuote, priceHistoryHtml, alertsPanel, alertStatus } from "./pricehist.js";
@@ -34,6 +37,7 @@ import { rankPairs, ygoTags, ptcgTags } from "./pairing.js";
 import { nameCandidates, scanCandidateMatches, ygoSetCodes, ygoPasscodes, ptcgNumbers, similarity, scanNameKey, textPhrases, attackNames } from "./scan.js";
 import { adaptList, ownedDraft, engineOf, similarLists, swapPool, costToFinish, unpricedCopies } from "./adapt.js";
 export { metaState, similarLists };
+export async function loadTradeCards(g){const st=gs(g);const ids=[...new Set([...st.collection,...st.wishlist,...st.decks.flatMap(d=>Object.values(d.zones||{}).flat())].map(e=>e.cardId))].filter(id=>id && (!cardOf(g,id)||cardOf(g,id).brief || (g==='ygo' && cardOf(g,id).printPriceSchema!==1)));await ensureMany(g,ids,()=>{},false,true);}
 
 export const SOURCES = { ygo: ygoSource, ptcg: ptcgSource };
 // (exported for the rules page)
@@ -80,24 +84,24 @@ const remember = (card) => {
   return card;
 };
 // Full card with prices no older than a day.
-export async function ensureCard(g, id, force = false) {
+export async function ensureCard(g, id, force = false,printings=true) {
   const c = cache[g][id];
-  if (c && !c.brief && (g !== "ptcg" || c.variantSchema === 5) && (g !== "ygo" || c.artSchema === 1) && !force && Date.now() - new Date(c.fetchedAt).getTime() < PRICE_TTL) return c;
+  if (c && !c.brief && (g !== "ptcg" || c.variantSchema === 5) && (g !== "ygo" || (c.artSchema === 1 && (!printings || c.printPriceSchema === 1))) && !force && Date.now() - new Date(c.fetchedAt).getTime() < PRICE_TTL) return c;
   try {
-    return remember(await SOURCES[g].get(id));
+    return remember(await SOURCES[g].get(id,{printings}));
   } catch (e) {
     if (c) return c;
     throw e;
   }
 }
 // Load details for many cards, a few at a time, calling `tick` as they arrive.
-export async function ensureMany(g, ids, tick = () => {}, force = false) {
-  const queue = [...new Set(ids)].filter((id) => force || !cache[g][id] || cache[g][id].brief || (g === "ptcg" && cache[g][id].variantSchema !== 5) || (g === "ygo" && cache[g][id].artSchema !== 1) || Date.now() - new Date(cache[g][id].fetchedAt).getTime() > PRICE_TTL);
+export async function ensureMany(g, ids, tick = () => {}, force = false,printings=false) {
+  const queue = [...new Set(ids)].filter((id) => force || !cache[g][id] || cache[g][id].brief || (g === "ptcg" && cache[g][id].variantSchema !== 5) || (g === "ygo" && (cache[g][id].artSchema !== 1 || (printings && cache[g][id].printPriceSchema !== 1))) || Date.now() - new Date(cache[g][id].fetchedAt).getTime() > PRICE_TTL);
   let done = 0;
   const worker = async () => {
     while (queue.length) {
       const id = queue.shift();
-      await ensureCard(g, id, force).catch(() => {});
+      await ensureCard(g, id, force,printings).catch(() => {});
       if (++done % 8 === 0) tick(done);
     }
   };
@@ -134,11 +138,11 @@ function tcgTradePanel(g, c, own, ctx={}) {
     byId = new Map();
   for (const e of st.collection) {
     const card = cardOf(g, e.cardId),
-      p = entryPrice(card, e);
-    const x = byId.get(e.cardId) || { key: e.cardId, name: e.name, price: p, qty: 0, art: imgTag(card, "mini-art"), open: `data-act="tCard" data-id="${esc(e.cardId)}"` };
+      exact = entryPrice(card,e), p = exact ?? (ctx.tradeOptions?.valuation==='reference' ? (card?.sets?.find(x=>x.code===e.printing && (!e.rarity||x.rarity===e.rarity))?.price ?? price(card)) : null);
+    const x = byId.get(e.id) || { key: e.id, cardKey:e.cardId, name: e.name + (e.printing ? " · "+e.printing : "") + (e.edition ? " · "+e.edition : ""), price: p, qty: 0, art: imgTag(card, "mini-art"), open: `data-act="tCard" data-id="${esc(e.cardId)}"` };
     x.qty += e.qty;
     if (p != null && (x.price == null || p > x.price)) x.price = p;
-    byId.set(e.cardId, x);
+    byId.set(e.id, x);
   }
   const wish = st.wishlist.map((w) => {
     const card = cardOf(g, w.cardId);
@@ -148,7 +152,9 @@ function tcgTradePanel(g, c, own, ctx={}) {
    const card=cardOf(g,r.cardId),have=card ? ownedOf(g,card) : st.collection.filter(e=>e.cardId===r.cardId).reduce((a,e)=>a+e.qty,0),qty=Math.max(0,r.qty-have);if(!qty||r.cardId===c.id)continue;
    const old=needs.get(r.cardId);needs.set(r.cardId,{key:r.cardId,name:r.name,price:price(card),qty:Math.max(qty,old?.qty||0),priority:2,deckName:d.name,art:imgTag(card,'mini-art'),open:`data-act="tCard" data-id="${esc(r.cardId)}"`});
   }}
-  return tradePanel({ key: c.id, name: c.name, price: price(c), owned: own > 0 }, [...byId.values()], wish,{...ctx.tradeOptions,needs:[...needs.values()]});
+  const targetEntries=st.collection.filter(e=>e.cardId===c.id),selected=targetEntries.find(e=>e.id===(ctx.tradeOptions?.targetEntry || ctx.entryId)),targetPrice=selected?entryPrice(c,selected):price(c);
+  const targetPicker=g==='ygo' && targetEntries.length?`<label>Value my printing<select data-change="tradeOption" data-field="targetEntry">${options([['','Card reference · edition unspecified'],...targetEntries.map(e=>[e.id,[e.printing,e.rarity,e.edition].filter(Boolean).join(' · ') || e.name])],selected?.id || '')}</select></label>`:'';
+  return targetPicker+tradePanel({ key:c.id,name:c.name,price:targetPrice,owned:own>0 },[...byId.values()],wish,{...ctx.tradeOptions,needs:[...needs.values()],game:g,collectionCount:st.collection.length});
 }
 
 // A stat on the card page. The regulation mark gets what it means for you, not just a letter.
@@ -196,7 +202,10 @@ export function collectionValue(g, s = S.state) {
 // Price for the exact printing/variant when known (Yu-Gi-Oh! set price, Pokémon variant).
 export function entryPrice(c, e) {
   if (!c) return null;
-  if (c.game === "ygo" && e.edition) return null; // source prices do not distinguish editions
+  if (c.game === "ygo" && e.edition) {
+    const set=c.sets?.find(s=>s.code===e.printing && (!e.rarity || s.rarity===e.rarity));
+    return editionPrice(set,e.edition);
+  }
   if (c.game === "ygo" && e.printing) {
     const s = c.sets?.find((x) => x.code === e.printing && x.rarity === (e.rarity || x.rarity));
     if (s?.price) return s.price;
@@ -591,7 +600,7 @@ export function tcgCardSheet(c, sctx = {}) {
             .map(
               (s) => `<div class="print">
         <button class="print-main" data-act="tSetByName" data-name="${esc(s.name)}">${thumb}<span class="print-name"><span class="ellip"><b>${esc(s.name)}</b><small>${ygoPrintBadge(s)} ${esc(s.rarity || "")} · reference art</small></span></span></button>
-        <span class="print-prices"><a class="pp buy" href="https://www.tcgplayer.com/search/yugioh/product?productLineName=yugioh&q=${encodeURIComponent(s.code)}" target="_blank" rel="noopener noreferrer" aria-label="Buy the ${esc(s.code)} printing">Buy</a><span class="pp"><small>market</small>${s.price ? usd(s.price) : "—"}</span></span>
+        <span class="print-prices"><a class="pp buy" href="${s.url || `https://www.tcgplayer.com/search/yugioh/product?productLineName=yugioh&q=${encodeURIComponent(s.code+' '+s.rarity)}`}" target="_blank" rel="noopener noreferrer" aria-label="Buy the ${esc(s.code)} printing">Buy</a><span class="pp"><small>market</small>${s.quotes?.length ? s.quotes.map(q=>`<span class="printing-quote"><small>${esc(q.edition)}</small>${usd(q.market)}</span>`).join("") : s.price ? usd(s.price) : "Unavailable"}</span></span>
       </div>`,
             )
             .join("")}</div><p class="foot">${c.sets.length} printings, priciest first. Thumbnails are reference art; inspect the seller’s edition and rarity. Tap a printing to open its set.</p>${artworkGallery}`
@@ -626,7 +635,7 @@ export function tcgCardSheet(c, sctx = {}) {
     <div class="cd-prices"><button class="price-pill" data-act="marketOpen" data-game="${g}" data-id="${esc(c.id)}"><small>Market</small><b>${p.usd !== null && p.usd !== undefined ? usd(p.usd) : c.brief ? "…" : "No price yet"}</b><span class="buy-hint">Prices ›</span></button>${p.eur ? `<button class="price-pill" data-act="cardTab" data-tab="prices"><small>Cardmarket</small><b>€${p.eur.toFixed(2)}</b></button>` : ""}</div>
     ${p.usd == null && !p.eur && !c.brief ? `<p class="price-gap small muted">Stores haven't listed a price for this card yet. That's normal for new sets and rarely sold cards; it fills in when sales start.</p>` : ""}
   </div>
-  ${g === "ptcg" && !c.brief ? pokemonText(c) : c.text ? `<section class="cd-text"><p class="oracle">${esc(c.text)}</p>${c.illustrator ? `<div class="small muted right">🖌 ${esc(c.illustrator)}</div>` : ""}</section>` : ""}
+  ${g === "ptcg" && !c.brief ? pokemonText(c) : c.text ? `<section class="cd-text effect-card ygo"><p class="eyebrow effect-label">${c.frame==='normal'?'Lore · Flavour text':'Chaincraft · Card effect'}</p>${c.frame==='normal'?`<blockquote class="flavor">${esc(c.text)}</blockquote>`:`<div class="oracle">${effectText(g,c.text)}</div>`}${c.illustrator ? `<div class="small muted right">🖌 ${esc(c.illustrator)}</div>` : ""}</section>` : ""}
   ${tabs(tab, [["overview", "Overview"], ["meta", "Meta"], ["guide", "Play guide"], ["versions", "Versions"], ["prices", "Prices"], ["trade", "Trade"], ["rulings", "Rulings"], ["legal", "Legality"]])}
   ${panel("overview", tab, overview)}
   ${panel("meta", tab, tcgCardMeta(g, c))}
@@ -669,13 +678,13 @@ function pokemonText(c) {
     c.resist?.length ? `<span>Resistance ${c.resist.map((w) => energyIcon(w.type, "sm") + esc(w.value)).join(" ")}</span>` : "",
     c.retreat !== null && c.retreat !== undefined && c.category === "Pokemon" ? `<span>Retreat ${c.retreat ? Array(c.retreat).fill(energyIcon("Colorless", "sm")).join("") : "0"}</span>` : "",
   ].filter(Boolean);
-  return `<section class="cd-text pk">
-    ${(c.abilities || []).map((a) => `<div class="pk-ability"><span class="pk-tag">${esc(a.type)}</span> <b>${esc(a.name)}</b><p>${esc(plainText(a.effect))}</p></div>`).join("")}
-    ${(c.attacks || []).map((a) => `<div class="pk-attack"><div class="row between"><span class="row">${attackLine(a.cost)}<b>${esc(a.name)}</b></span>${a.damage !== "" ? `<b class="dmg">${esc(a.damage)}</b>` : ""}</div>${a.effect ? `<p>${esc(plainText(a.effect))}</p>` : ""}</div>`).join("")}
-    ${c.effect ? `<p class="oracle">${esc(plainText(c.effect))}</p>` : ""}
-    ${!c.attacks?.length && !c.abilities?.length && !c.effect && c.text ? `<p class="oracle">${esc(c.text)}</p>` : ""}
+  return `<section class="cd-text pk effect-card ptcg"><p class="eyebrow effect-label">Battlecraft · Abilities & attacks</p>
+    ${(c.abilities || []).map((a) => `<div class="pk-ability"><span class="pk-tag">${esc(a.type)}</span> <b>${esc(a.name)}</b><p>${ruleText("ptcg",plainText(a.effect))}</p></div>`).join("")}
+    ${(c.attacks || []).map((a) => `<div class="pk-attack"><div class="row between"><span class="row">${attackLine(a.cost)}<b>${esc(a.name)}</b></span>${a.damage !== "" ? `<b class="dmg">${esc(a.damage)}</b>` : ""}</div>${a.effect ? `<p>${ruleText("ptcg",plainText(a.effect))}</p>` : ""}</div>`).join("")}
+    ${c.effect ? `<p class="oracle">${ruleText("ptcg",plainText(c.effect))}</p>` : ""}
+    ${!c.attacks?.length && !c.abilities?.length && !c.effect && c.text ? `<div class="oracle">${effectText(g,c.text)}</div>` : ""}
     ${strip.length ? `<div class="pk-strip">${strip.join("")}</div>` : ""}
-    ${c.flavor ? `<p class="flavor">${esc(c.flavor)}</p>` : ""}
+    ${c.flavor ? `<blockquote class="flavor"><small class="eyebrow">Flavour</small>${esc(c.flavor)}</blockquote>` : ""}
     ${c.illustrator ? `<div class="small muted right">🖌 ${esc(c.illustrator)}</div>` : ""}
   </section>`;
 }
@@ -1275,13 +1284,13 @@ function deckUpgradeTab(g, d, f, s) {
     const want = [...(U?.adds || []).map((x) => x.key), ...((meta?.top || []).slice(0, 30).map((x) => String(x.id)))].filter((id) => id && !cardOf(g, id) && !upgradeLoads.has(id));
     if (want.length) { want.forEach((id) => upgradeLoads.add(id)); ensureMany(g, want).then(() => globalThis.dispatchEvent?.(new Event("cardstashy-rerender"))); }
   }
-  if (!pw.metaLoaded) return `<section class="panel"><h3>Upgrade lab</h3><p class="muted small">Load recent tournament decks to see what lists like yours play.</p><button class="btn" data-act="tMetaRefresh">Load tournament decks</button></section>`;
+  if (!pw.metaLoaded) return `<section class="panel"><h3>Upgrade lab</h3><button class="btn" data-act="tOptimizeDeck" data-deck="${esc(d.id)}">Compare budget builds</button><p class="muted small">Load recent tournament decks to see what lists like yours play.</p><button class="btn" data-act="tMetaRefresh">Load tournament decks</button></section>`;
   const staples = g === "ygo" ? (meta?.top || []).filter((x) => x.pct >= 20) : (meta?.top || []).filter((x) => x.kind === "Trainer" && x.pct >= 30);
   const inDeck = new Set([...(d.zones.main || []), ...(d.zones.extra || [])].flatMap((r) => [String(r.cardId), (cardOf(g, r.cardId)?.name || r.name || "").toLowerCase()]));
   const stapleRows = staples.filter((x) => !(U?.adds || []).some(a=>a.key===String(x.id || x.name)||a.name.toLowerCase()===String(x.name).toLowerCase())).filter((x) => !inDeck.has(String(x.id || "")) && !inDeck.has(String(x.name).toLowerCase())).slice(0, 12)
     .map((x) => row({ key: String(x.id || x.name), name: x.name }, `${Math.round(x.pct)}% of tournament decks · usually ${Math.max(1, Math.round(x.avg || 1))}`)).join("");
   const addCost = U ? U.adds.reduce((a, x) => { const c = cardFor(x), p = c ? price(c) : null, own = c ? ownedOf(g, c, m) : 0; return a + (p != null ? p * Math.max(0, x.need - own) : 0); }, 0) : 0;
-  return `<section class="panel"><p class="eyebrow">Upgrade lab</p><h2>${U ? `Make it play like ${esc(pw.match.archetype)}` : "Format staples"}</h2>
+  return `<section class="panel"><p class="eyebrow">Upgrade lab</p><button class="btn" data-act="tOptimizeDeck" data-deck="${esc(d.id)}">Compare budget builds</button><p class="foot">Your current list and complete tournament candidates compete at each budget using Power. Save the version you prefer.</p><h2>${U ? `Make it play like ${esc(pw.match.archetype)}` : "Format staples"}</h2>
     <p class="muted small">${U ? `Compared with ${U.lists} placing ${esc(pw.match.archetype)} list${U.lists === 1 ? "" : "s"} (your list is ${Math.round(pw.match.sim * 100)}% the same). Power now: <b>${pw.score}</b>.` : "Your list doesn’t closely match a tournament archetype yet, so here are the cards most tournament decks in this format play."}</p></section>
   ${U && U.adds.length ? `<section class="panel"><div class="row between"><h3>Add · played by most ${esc(pw.match.archetype)} lists</h3>${addCost ? `<span class="small">≈ ${usd(addCost, 0)} to buy</span>` : ""}</div><div class="list compact">${U.adds.map((x) => row(x, `${Math.round(x.share * 100)}% of lists · they run ${x.typical}, you run ${x.have}`)).join("")}</div></section>` : ""}
   ${U && U.cuts.length ? `<section class="panel"><h3>Consider cutting</h3><p class="muted small">Cards few or none of the placing lists play. Keep them if they’re part of your own plan.</p><div class="list compact">${U.cuts.map((x) => `<div class="mini-row"><span class="ellip">${x.qty}× ${esc(x.name)}</span><small class="muted">${Math.round(x.share * 100)}% of lists</small></div>`).join("")}</div></section>` : ""}
@@ -1409,8 +1418,8 @@ export function tcgBuildSheet() {
       open = B.openTier === i,
       issues = SOURCES[g].validate({ zones: t.zones }, (id) => cardOf(g, id), formatOf(g, B.format));
     return `<article class="tier ${open ? "on" : ""} ${t.meta ? "meta" : ""}"><div class="row between"><b>${t.total < t.size ? `Draft — ${t.size - t.total} slot${t.size - t.total === 1 ? "" : "s"} open · ` : ""}${t.meta ? `🏆 ${esc(t.label)}` : tierName(t)}</b><span class="chip ${issues.length ? "warn" : "ok"}">${issues.length ? issues.length + " to fix" : "Legal"}</span></div>
-      <div class="tier-stats"><span><b>${usd(t.cost)}</b> to buy</span><span><b>${esc(zoneCountLabel(g,t.total,formatOf(g,B.format)))}</b></span>${g === "ygo" ? `<span><b>${t.zones.extra.reduce((a, r) => a + r.qty, 0)}</b> extra</span>` : ""}<span><b>${t.total ? Math.round((owned / t.total) * 100) : 0}%</b> owned</span></div>
-      ${t.warnings.filter((w) => !/slots? still open/.test(w)).map((w) => `<p class="small warn-text">${esc(w)}</p>`).join("")}
+      <div class="tier-stats"><span><b>${usd(t.cost)}${t.unknown?"+":""}</b> to buy</span>${t.power!==undefined?`<span><b>${t.power}</b> power</span>`:""}<span><b>${esc(zoneCountLabel(g,t.total,formatOf(g,B.format)))}</b></span>${g === "ygo" ? `<span><b>${t.zones.extra.reduce((a, r) => a + r.qty, 0)}</b> extra</span>` : ""}<span><b>${t.total ? Math.round((owned / t.total) * 100) : 0}%</b> owned</span></div>
+      ${t.proven?`<p class="evidence small">Tournament candidate · ${esc(t.label)}</p>`:""}${t.warnings.filter((w) => !/slots? still open/.test(w)).map((w) => `<p class="small warn-text">${esc(w)}</p>`).join("")}
       ${draftPath(tiers, i, tierName)}
       ${open ? `<div class="card-grid small-grid">${t.zones.main.concat(t.zones.extra).map((r) => `<button class="grid-card" data-act="tCard" data-id="${esc(r.cardId)}">${imgTag(cardOf(g, r.cardId))}${tileBadges(cardOf(g, r.cardId))}<span class="grid-meta stacked"><b class="clamp2">${r.qty}× ${esc(r.name)}</b><small>${esc(r.why || "")}</small></span></button>`).join("")}</div>` : ""}
       <div class="actions wrap"><button class="btn ghost small" data-act="tTier" data-i="${i}">${open ? "Hide cards" : "See the cards"}</button><button class="btn small" data-act="tTierSave" data-i="${i}">Save as deck</button></div></article>`;
@@ -1621,7 +1630,7 @@ export function registerTcg(c) {
   A.tCard = async (t) => {
     const G = g(),
       id = t.dataset.id,
-      sctx = { type: "tcard", game: G, id, random: !!t.dataset.random, deckId: t.dataset.deck || (S.ui.view === "tdeck" ? S.ui.tdeckId : null) };
+      sctx = { type: "tcard", game: G, id, entryId:t.dataset.entry || "",random: !!t.dataset.random, deckId: t.dataset.deck || (S.ui.view === "tdeck" ? S.ui.tdeckId : null) };
     const known = cardOf(G, id);
     openSheet(known ? tcgCardSheet(known, sctx) : `<div class="sheet-head"><h2>Loading…</h2><button class="icon" data-act="closeSheet">✕</button></div>`, sctx);
     try {
@@ -2048,8 +2057,13 @@ export function registerTcg(c) {
     const f=formatOf(G,d.format),zone=SOURCES[G].zoneFor(card),rows=d.zones[zone] || [];
     if(SOURCES[G].legality(card,f)!=="legal")return toast("This printing is not legal in the selected format.");
     const total=rows.reduce((a,r)=>a+r.qty,0),target=G==='ptcg'?60:zone==='main'?f.main[0]:f[zone];
-    const actions=rows.filter(r=>r.cardId!==card.id).map(r=>`<button class="btn ghost" data-act="tUpgradeSwap" data-deck="${esc(d.id)}" data-in="${esc(card.id)}" data-out="${esc(r.cardId)}" data-zone="${zone}">Cut 1× ${esc(r.name)} → ${esc(card.name)}</button>`).join('');
-    openSheet(`<div class="sheet-head"><h2>Review upgrade</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p>Add 1× <b>${esc(card.name)}</b> to ${esc(d.name)}.</p><p class="muted small">${total} cards in ${zone}. Choose one copy to cut. Each swap preserves the count and saves a version you can restore.</p><div class="card-action-list">${actions}</div>${total<target?`<button class="btn" data-act="tDeckAdd" data-deck="${esc(d.id)}" data-id="${esc(card.id)}">Fill one open slot (${target-total} open)</button>`:''}`,{type:'upgrade',id:card.id});
+    const before=tcgPower(G,d,f,id=>cardOf(G,id));
+    const ranked=rows.filter(r=>r.cardId!==card.id).map(r=>{
+      const next=swappedZones(d,zone,r.cardId,card),issues=SOURCES[G].validate(next,id=>cardOf(G,id),f).filter(x=>x.level==='bad');
+      if(issues.length)return null;const after=tcgPower(G,next,f,id=>cardOf(G,id));return {r,after,delta:after.score-before.score};
+    }).filter(Boolean).sort((a,b)=>comparePower(b.after,a.after));
+    const actions=ranked.map(({r,after,delta})=>`<button class="btn ghost" data-act="tUpgradeSwap" data-deck="${esc(d.id)}" data-in="${esc(card.id)}" data-out="${esc(r.cardId)}" data-zone="${zone}">Cut 1× ${esc(r.name)} → ${esc(card.name)} <span class="small ${delta>0?"ok-text":delta<0?"warn-text":"muted"}">Power ${before.score} → ${after.score} · ${delta>0?"+":""}${delta.toFixed(1)}${after.engine?.unmappedNeeds?` · ${after.engine.unmappedNeeds} unrecognized requirements`:""}</span></button>`).join('');
+    openSheet(`<div class="sheet-head"><h2>Review upgrade</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p>Add 1× <b>${esc(card.name)}</b> to ${esc(d.name)}.</p><p class="muted small">${total} cards in ${zone}. Ranked with the same Power and engine checks as your deck. A neutral or lower estimate is a trade-off, not a claimed upgrade. Choose one copy to cut. Each swap preserves the count and saves a version you can restore.</p><div class="card-action-list">${actions}</div>${total<target?`<button class="btn" data-act="tDeckAdd" data-deck="${esc(d.id)}" data-id="${esc(card.id)}">Fill one open slot (${target-total} open)</button>`:''}`,{type:'upgrade',id:card.id});
   };
   A.tUpgradeSwap = async t => {
     const G=g(),card=cardOf(G,t.dataset.in);if(!card)return toast("Load this card again before swapping.");
@@ -2379,20 +2393,20 @@ export function registerTcg(c) {
         else zones[z].push({ cardId: card.id, name: card.name, qty });
       };
     if (G === "ygo") {
-      const need = [...new Set([...d.main, ...d.extra, ...d.side])].filter((id) => !cardOf("ygo", id));
+      const need = [...new Set([...(d.main || []), ...(d.extra || []), ...(d.side || [])])].filter((id) => !cardOf("ygo", id));
       if (need.length) {
         status(`Loading ${need.length} cards…`);
         (await SOURCES.ygo.byIds(need)).forEach(remember);
       }
-      for (const z of ["main", "extra", "side"]) for (const id of d[z]) if (cardOf("ygo", id)) put(z, cardOf("ygo", id), 1);
-      return { zones, missed: [] };
+      for (const z of ["main", "extra", "side"]) for (const id of d[z] || []) if (cardOf("ygo", id)) put(z, cardOf("ygo", id), 1);
+      return { zones, missed: [...new Set([...(d.main||[]),...(d.extra||[]),...(d.side||[])])].filter(id=>!cardOf("ygo",id)) };
     }
     const std = formatOf("ptcg", "standard"),
       any = formatOf("ptcg", "unlimited"),
       missed = [];
     let n = 0;
     const got = await inBatches(d.list, 6, async (x) => {
-      const card = BASIC_TYPES.test(x.name) ? await ptcgBest(energyName(x.name.replace(/ Energy$/, "")), any) : (await ptcgBest(x.name, std)) || (await SOURCES.ptcg.byName(x.name).catch(() => null));
+      const card = BASIC_TYPES.test(x.name) ? await ptcgBest(energyName(x.name.replace(/ Energy$/, "")), any) : await SOURCES.ptcg.tournamentCard(x).catch(()=>null);
       status(`Matching cards ${++n}/${d.list.length}…`);
       if (!card) missed.push(x.name);
       return card ? { card: remember(card), qty: x.qty } : null;
@@ -2405,7 +2419,7 @@ export function registerTcg(c) {
       hits = (d) => (G === "ygo" ? seeds.filter((s) => d.main.includes(s.id) || d.extra.includes(s.id)).length : d.list.filter((r) => names.includes(r.name.toLowerCase())).length);
     return (meta?.decks || [])
       .map((d) => ({ d, n: hits(d) }))
-      .filter((x) => x.n)
+      .filter((x) => x.n === seeds.length)
       .sort((a, b) => b.n - a.n || a.d.rank - b.d.rank)[0]?.d;
   };
   // One evolution line; the first (main) line gets more copies.
@@ -2513,20 +2527,27 @@ export function registerTcg(c) {
         const energy = (await Promise.all((types.length ? types : (seed.types || []).slice(0, 1)).slice(0, 2).map((t) => ptcgBest(energyName(t), formatOf("ptcg", "unlimited"))))).filter(Boolean);
         results = TCG_TIERS.ptcg.map((budget) => ({ budget, ...buildPtcg({ line, trainers, energy, owned: (card) => (card.basicEnergy ? 99 : owned(card)), price: priceOf, budget }) }));
       }
-      // A recent tournament list that plays your card(s), as its own version.
-      const mt = meta && f.id === (G === "ygo" ? "tcg" : "standard") ? bestMetaDeckFor(G, meta, seeds) : null;
-      if (mt) {
-        status("Loading a tournament list that plays it…");
-        const { zones } = await metaZones(G, mt, status),
-          rows = [...zones.main, ...zones.extra],
-          cost = rows.reduce((a, r) => {
-            const card = cardOf(G, r.cardId);
-            return a + Math.max(0, r.qty - (card?.basicEnergy ? 99 : owned(card))) * (price(card) ?? 0);
-          }, 0);
-        results.unshift({ budget: null, label: `Tournament list · ${mt.place}, ${mt.event}`, meta: mt.key, zones, cost, total: zones.main.reduce((a, r) => a + r.qty, 0), size: G === "ygo" ? f.main[0] : 60, warnings: [] });
+      // Tournament decks compete for every affordable tier, rather than being a disconnected extra row.
+      const budgets=TCG_TIERS[G],proven=[];
+      const formatMeta=meta && f.id === (G==='ygo'?'tcg':'standard');
+      const matches=formatMeta ? (meta.decks || []).filter(d=>seeds.every(seed=>G==='ygo'?[...(d.main||[]),...(d.extra||[])].includes(seed.id):(d.list||[]).some(r=>r.name.toLowerCase()===seed.name.toLowerCase()))).sort((a,b)=>(a.rank||99)-(b.rank||99)).slice(0,4) : [];
+      for(const mt of matches){
+        status(`Evaluating tournament candidate ${proven.length+1}/${matches.length}…`);
+        const {zones,missed}=await metaZones(G,mt,status);
+        if(missed.length)continue;
+        proven.push({proven:mt.key,source:{kind:'Tournament list',url:mt.url,description:mt.event},label:`${mt.place || 'Placing list'} · ${mt.event || mt.name}`,zones,total:zones.main.reduce((a,r)=>a+r.qty,0),size:G==='ygo'?f.main[0]:60,warnings:[]});
       }
+      const base=B.baseDeck ? gs(G).decks.find(d=>d.id===B.baseDeck && d.format===f.id) : null;
+      if(base)proven.push({...structuredClone(base),label:'Your current deck',total:base.zones.main.reduce((a,r)=>a+r.qty,0),size:G==='ygo'?f.main[0]:60,warnings:[]});
+      const candidates=[...results,...proven],rows=d=>Object.values(d.zones).flat();
+      results=bestBudgetDecks(candidates,budgets,{
+        evaluate:d=>tcgPower(G,{...d,id:'builder:'+G,format:f.id},f,id=>cardOf(G,id)),
+        cost:d=>purchaseCost(rows(d),{owned:r=>cardOf(G,r.cardId)?.basicEnergy?r.qty:owned(cardOf(G,r.cardId)),price:r=>priceOf(cardOf(G,r.cardId))}),
+        accept:d=>seeds.every(seed=>rows(d).some(r=>r.cardId===seed.id || (G==='ptcg' && sameCardLogic(G,cardOf(G,r.cardId),seed))))
+      }).map((winner,i)=>winner || results[i]);
+      B.evidence += ` Compared ${candidates.length} candidates with Power, legality, engine readiness and your purchase cost. Higher budgets retain the best affordable lower-budget candidate.`;
       B.results[B.format] = results;
-      B.msg = `${results.length} versions${mt ? ", including a recent tournament list" : ""}.`;
+      B.msg = `${results.length} budget versions · ${proven.filter(x=>x.proven).length} complete tournament candidates evaluated.`;
     } catch (e) {
       B.msg = e.message;
       B.error = true;
@@ -2535,14 +2556,21 @@ export function registerTcg(c) {
       c.refreshSheet();
     }
   };
-  const openBuild = (G, ids, metaKey = "") => {
+  const openBuild = (G, ids, metaKey = "",baseDeck=null) => {
     const cards = ids.map((id) => cardOf(G, id)).filter(Boolean);
     // Pokémon decks are built around Pokémon; put them first.
     cards.sort((a, b) => (G === "ptcg" ? (b.category === "Pokemon") - (a.category === "Pokemon") : 0));
     const fmts = buildable(G, cards[0]);
-    S.ui.tbuild = { game: G, seed: cards[0]?.id, seeds: cards.map((x) => x.id), format: fmts[0]?.id || "", results: {}, busy: false, msg: "", openTier: null, metaKey };
+    S.ui.tbuild = { game: G, seed: cards[0]?.id, seeds: cards.map((x) => x.id), format: baseDeck?.format || fmts[0]?.id || "",baseDeck:baseDeck?.id, results: {}, busy: false, msg: "", openTier: null, metaKey };
     openSheet(tcgBuildSheet(), { type: "tbuild" });
     if (fmts.length) runTBuild();
+  };
+  A.tOptimizeDeck = async t => {
+    const G=g(),d=gs(G).decks.find(x=>x.id===t.dataset.deck);if(!d)return;
+    await ensureMany(G,Object.values(d.zones || {}).flat().map(r=>r.cardId));
+    const anchors=d.zones.main.filter(r=>{const card=cardOf(G,r.cardId);return G==='ptcg'?card?.category==='Pokemon':card?.category==='Monster' && !!card.archetype;}).sort((a,b)=>b.qty-a.qty);
+    const anchor=anchors[0] || d.zones.main[0];if(!anchor)return;
+    openBuild(G,[anchor.cardId],"",d);
   };
   A.tBuild = async (t) => {
     const G = g(),
@@ -2587,7 +2615,7 @@ export function registerTcg(c) {
       tier = B.results[B.format][Number(t.dataset.i)],
       seed = cardOf(B.game, B.seed),
       many = (B.seeds?.length || 1) > 1 ? ` + ${B.seeds.length - 1} more` : "",
-      d = { id: uid(), name: `${seed.name}${many} · ${formatOf(B.game, B.format).name} · ${tierName(tier).toLowerCase()}`, format: B.format, zones: structuredClone(tier.zones), createdAt: new Date().toISOString(), source: { kind: tier.meta ? "Tournament list" : "Generated" } };
+      d = { id: uid(), name: `${seed.name}${many} · ${formatOf(B.game, B.format).name} · ${tierName(tier).toLowerCase()}`, format: B.format, zones: structuredClone(tier.zones), createdAt: new Date().toISOString(), source: tier.source || { kind: tier.meta || tier.proven ? "Tournament list" : "Generated" } };
     await mutate((st) => st.decks.push(d), { msg: `Saved “${d.name}” to your decks.` });
   };
 
