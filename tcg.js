@@ -1,6 +1,6 @@
 import {effectText,ruleText} from './rule-dex.js';
 import {editionPrice} from './ygo-prices.js';
-import {bestBudgetDecks,purchaseCost,comparePower,swappedZones,sameCardLogic} from './deck-optimizer.js';
+import {bestBudgetDecks,purchaseCost,comparePower,swappedZones,sameCardLogic,budgetComparisonHtml,refineCandidates,towardDeck} from './deck-optimizer.js';
 import {collectionOrder} from "./collection-order.js";
 import {POKEMON_SET_ART} from "./pokemon-set-art.js";
 import { recordCardPrice, trackedQuote, priceHistoryHtml, alertsPanel, alertStatus } from "./pricehist.js";
@@ -1395,7 +1395,8 @@ export function draftPath(tiers, i, label) {
   const next = tiers.findIndex((x, j) => j !== i && x.total >= x.size && (x.budget ?? Infinity) > (t.budget ?? -1));
   return `<p class="small draft-path">To finish: ${next >= 0 ? `the “${esc(label(tiers[next]))}” version fills every slot for ${usd(tiers[next].cost)}` : `add ${open} card${open === 1 ? "" : "s"} you own, or raise the budget`}.</p>`;
 }
-export const TCG_TIERS = { ygo: [0, 25, 50, 100, 250, Infinity], ptcg: [0, 25, 50, 100, 200, Infinity] };
+export const TCG_TIERS = { ygo: [0, 10, 25, 50, 100, Infinity], ptcg: [0, 10, 25, 50, 100, Infinity] };
+const tcgBudgets = B => [...new Set([...TCG_TIERS[B.game],...(B.custom!==undefined && B.custom!=="" && Number.isFinite(Number(B.custom))?[Math.max(0,Number(B.custom))]:[])])].sort((a,b)=>a-b);
 const tierName = (t) => (t.meta ? "Tournament list" : t.budget === 0 ? "Your cards only" : t.budget === Infinity ? "No budget limit" : "Up to $" + t.budget);
 const buildable = (g, c) => (c ? formatsOf(g).filter((f) => SOURCES[g].legality(c, f) !== "not_legal" && SOURCES[g].limit(c, f) > 0 && (g === "ygo" || c.category === "Pokemon")) : []);
 
@@ -1410,7 +1411,8 @@ export function tcgBuildSheet() {
     ? `<div class="build-seed multi"><div class="seed-strip">${B.seeds.slice(0, 8).map((id) => imgTag(cardOf(g, id), "mini-art")).join("")}</div><div><small class="muted">Built around</small><b>${B.seeds.length} of your cards</b><small class="muted">${esc([...new Set(B.seeds.map((id) => cardOf(g, id)?.archetype || "").filter(Boolean))].slice(0, 3).join(", ") || seed?.name || "")}</small></div></div>`
     : `<div class="build-seed">${imgTag(seed, "mini-art")}<div><small class="muted">Built around</small><b>${esc(seed?.name || "")}</b><small class="muted">${esc(seed?.archetype ? "Archetype: " + seed.archetype : seed?.typeLine || "")}</small></div><span></span></div>`}
   <p class="muted small">${g === "ygo" ? "Builds a legal deck from the archetype, then adds the hand traps, draw and removal today’s tournament decks play most — your cards first, at each budget, plus a recent tournament list when one plays your card." : "Builds the evolution line, adds the Trainers and support Pokémon today’s top decks play, and the Energy your attacks need — your cards first, at each budget, plus a recent tournament list when one plays your card. Basic Energy is assumed owned."}</p>
-  <div class="fmt-chips">${fmts.map((f) => `<button class="chip pick ${f.id === B.format ? "on" : ""}" data-act="tBuildFormat" data-format="${f.id}">${esc(f.name)}</button>`).join("") || `<span class="muted small">${g === "ptcg" ? "Pick a Pokémon (not a Trainer or Energy) to build around." : "This card isn’t legal in any format."}</span>`}</div>
+  <div class="fmt-chips">${fmts.map((f) => `<button class="chip pick ${f.id === B.format ? "on" : ""}" ${B.busy?"disabled":""} data-act="tBuildFormat" data-format="${f.id}">${esc(f.name)}</button>`).join("") || `<span class="muted small">${g === "ptcg" ? "Pick a Pokémon (not a Trainer or Energy) to build around." : "This card isn’t legal in any format."}</span>`}</div>
+  <label class="custom-budget">Purchase budget $<input type="number" min="0" max="100000" step="1" value="${esc(B.custom ?? '')}" placeholder="Blank = unlimited" ${B.busy?'disabled':''} data-change="tBuildCustom"></label>
   ${B.busy ? `<p class="muted small" role="status">${esc(B.msg || "Building…")}</p>` : B.msg ? `<p class="small ${B.error ? "warn-text" : "muted"}" role="status">${esc(B.msg)}</p>` : ""}
   ${!B.busy && B.evidence ? `<p class="evidence small">${esc(B.evidence)}</p>` : ""}
   ${tiers ? `<div class="tiers">${tiers.map((t, i) => {
@@ -1420,7 +1422,7 @@ export function tcgBuildSheet() {
     return `<article class="tier ${open ? "on" : ""} ${t.meta ? "meta" : ""}"><div class="row between"><b>${t.total < t.size ? `Draft — ${t.size - t.total} slot${t.size - t.total === 1 ? "" : "s"} open · ` : ""}${t.meta ? `🏆 ${esc(t.label)}` : tierName(t)}</b><span class="chip ${issues.length ? "warn" : "ok"}">${issues.length ? issues.length + " to fix" : "Legal"}</span></div>
       <div class="tier-stats"><span><b>${usd(t.cost)}${t.unknown?"+":""}</b> to buy</span>${t.power!==undefined?`<span><b>${t.power}</b> power</span>`:""}<span><b>${esc(zoneCountLabel(g,t.total,formatOf(g,B.format)))}</b></span>${g === "ygo" ? `<span><b>${t.zones.extra.reduce((a, r) => a + r.qty, 0)}</b> extra</span>` : ""}<span><b>${t.total ? Math.round((owned / t.total) * 100) : 0}%</b> owned</span></div>
       ${t.proven?`<p class="evidence small">Tournament candidate · ${esc(t.label)}</p>`:""}${t.warnings.filter((w) => !/slots? still open/.test(w)).map((w) => `<p class="small warn-text">${esc(w)}</p>`).join("")}
-      ${draftPath(tiers, i, tierName)}
+      ${budgetComparisonHtml(t,i,"tTierAlternative")}${draftPath(tiers, i, tierName)}
       ${open ? `<div class="card-grid small-grid">${t.zones.main.concat(t.zones.extra).map((r) => `<button class="grid-card" data-act="tCard" data-id="${esc(r.cardId)}">${imgTag(cardOf(g, r.cardId))}${tileBadges(cardOf(g, r.cardId))}<span class="grid-meta stacked"><b class="clamp2">${r.qty}× ${esc(r.name)}</b><small>${esc(r.why || "")}</small></span></button>`).join("")}</div>` : ""}
       <div class="actions wrap"><button class="btn ghost small" data-act="tTier" data-i="${i}">${open ? "Hide cards" : "See the cards"}</button><button class="btn small" data-act="tTierSave" data-i="${i}">Save as deck</button></div></article>`;
   }).join("")}</div>` : ""}
@@ -2461,7 +2463,7 @@ export function registerTcg(c) {
         priceOf = (card) => price(card),
         seeds = (B.seeds || [B.seed]).map((id) => cardOf(G, id)).filter(Boolean);
       status("Checking what tournament decks play right now…");
-      const meta = await metaFor(G);
+      const meta = await metaFor(G),budgets=tcgBudgets(B);
       let results = [];
       if (G === "ygo") {
         const archs = [...new Set(seeds.map((x) => x.archetype).filter(Boolean))].slice(0, 3);
@@ -2488,7 +2490,7 @@ export function registerTcg(c) {
           B.evidence = staples ? `No recent tournament list plays ${archs[0] || seed.name}, so staples are the format’s most played generic cards — check they suit the engine.` : "";
         }
         if (!staples?.length) staples = (await SOURCES.ygo.byNames(YGO_STAPLES).catch(() => [])).map(remember).sort((a, b) => YGO_STAPLES.indexOf(a.name) - YGO_STAPLES.indexOf(b.name));
-        results = TCG_TIERS.ygo.map((budget) => ({ budget, ...buildYgo({ f, seed, seeds, archetype: arch, staples, limit: SOURCES.ygo.limit, legal: SOURCES.ygo.legality, owned, price: priceOf, budget }) }));
+        results = budgets.map((budget) => ({ budget, ...buildYgo({ f, seed, seeds, archetype: arch, staples, limit: SOURCES.ygo.limit, legal: SOURCES.ygo.legality, owned, price: priceOf, budget }) }));
       } else {
         const line = [];
         for (const [i, p] of seeds.filter((x) => x.category === "Pokemon").slice(0, 3).entries()) {
@@ -2525,10 +2527,10 @@ export function registerTcg(c) {
         const trainers = [...chosen, ...got.filter(Boolean)];
         const types = [...new Set(line.flatMap((x) => x.card.attackCosts || []))].filter((t) => t in { Grass: 1, Fire: 1, Water: 1, Lightning: 1, Psychic: 1, Fighting: 1, Darkness: 1, Metal: 1 });
         const energy = (await Promise.all((types.length ? types : (seed.types || []).slice(0, 1)).slice(0, 2).map((t) => ptcgBest(energyName(t), formatOf("ptcg", "unlimited"))))).filter(Boolean);
-        results = TCG_TIERS.ptcg.map((budget) => ({ budget, ...buildPtcg({ line, trainers, energy, owned: (card) => (card.basicEnergy ? 99 : owned(card)), price: priceOf, budget }) }));
+        results = budgets.map((budget) => ({ budget, ...buildPtcg({ line, trainers, energy, owned: (card) => (card.basicEnergy ? 99 : owned(card)), price: priceOf, budget }) }));
       }
       // Tournament decks compete for every affordable tier, rather than being a disconnected extra row.
-      const budgets=TCG_TIERS[G],proven=[];
+      const proven=[];
       const formatMeta=meta && f.id === (G==='ygo'?'tcg':'standard');
       const matches=formatMeta ? (meta.decks || []).filter(d=>seeds.every(seed=>G==='ygo'?[...(d.main||[]),...(d.extra||[])].includes(seed.id):(d.list||[]).some(r=>r.name.toLowerCase()===seed.name.toLowerCase()))).sort((a,b)=>(a.rank||99)-(b.rank||99)).slice(0,4) : [];
       for(const mt of matches){
@@ -2539,10 +2541,13 @@ export function registerTcg(c) {
       }
       const base=B.baseDeck ? gs(G).decks.find(d=>d.id===B.baseDeck && d.format===f.id) : null;
       if(base)proven.push({...structuredClone(base),label:'Your current deck',total:base.zones.main.reduce((a,r)=>a+r.qty,0),size:G==='ygo'?f.main[0]:60,warnings:[]});
-      const candidates=[...results,...proven],rows=d=>Object.values(d.zones).flat();
+      const rows=d=>Object.values(d.zones).flat(),evaluate=d=>tcgPower(G,{...d,id:'builder:'+G,format:f.id},f,id=>cardOf(G,id)),cost=d=>purchaseCost(rows(d),{owned:r=>cardOf(G,r.cardId)?.basicEnergy?r.qty:owned(cardOf(G,r.cardId)),price:r=>priceOf(cardOf(G,r.cardId))});
+      const seedKeys=new Set(seeds.map(s=>s.id)),targets=[...proven,...results.slice(-1)];
+      const candidates=await refineCandidates([...results,...proven],{evaluate,cost,status,rounds:2,maxNeighbors:12,
+       accept:d=>!SOURCES[G].validate(d,id=>cardOf(G,id),f).some(x=>x.level==='bad'),
+       neighbors:d=>targets.flatMap(target=>towardDeck(d,target,{protectedKeys:seedKeys,zoneOf:r=>G==='ptcg'?cardOf(G,r.cardId)?.category:'main'}))});
       results=bestBudgetDecks(candidates,budgets,{
-        evaluate:d=>tcgPower(G,{...d,id:'builder:'+G,format:f.id},f,id=>cardOf(G,id)),
-        cost:d=>purchaseCost(rows(d),{owned:r=>cardOf(G,r.cardId)?.basicEnergy?r.qty:owned(cardOf(G,r.cardId)),price:r=>priceOf(cardOf(G,r.cardId))}),
+        evaluate,cost,
         accept:d=>seeds.every(seed=>rows(d).some(r=>r.cardId===seed.id || (G==='ptcg' && sameCardLogic(G,cardOf(G,r.cardId),seed))))
       }).map((winner,i)=>winner || results[i]);
       B.evidence += ` Compared ${candidates.length} candidates with Power, legality, engine readiness and your purchase cost. Higher budgets retain the best affordable lower-budget candidate.`;
@@ -2595,6 +2600,16 @@ export function registerTcg(c) {
     B.format = t.dataset.format;
     if (B.results[B.format]) c.refreshSheet();
     else runTBuild();
+  };
+  C.tBuildCustom = t => {
+    const B=S.ui.tbuild;if(B.busy)return;
+    B.custom=t.value===''?'':String(Math.max(0,Math.min(100000,Number(t.value)||0)));
+    B.results={};runTBuild();
+  };
+  A.tTierAlternative = t => {
+    const B=S.ui.tbuild,n=B.results[B.format]?.[Number(t.dataset.i)]?.nextUpgrade;if(!n)return;
+    B.results[B.format].push({...n,nextUpgrade:null,explanation:'Outside the original budget. Review the actual purchase total before saving.',warnings:[...(n.warnings || [])]});
+    B.openTier=B.results[B.format].length-1;c.refreshSheet();
   };
   A.tTier = (t) => {
     const B = S.ui.tbuild,

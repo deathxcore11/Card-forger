@@ -48,7 +48,8 @@ export function scoreCard(c, seedTags, seedSubs, { free = 0, size = 60 } = {}) {
   if (/\bCreature\b/.test(typeText(c))) s += 1;
   s -= Math.max(0, cmc - (size >= 100 ? 4 : 3)) * 1.4;
   if (rank) s += Math.max(0, 3.5 - Math.log10(rank));
-  if (free) s += 4;
+  // Ownership already reduces purchase cost; it must not overwhelm engine quality.
+  if (free) s += 0.5;
   return s;
 }
 
@@ -124,7 +125,13 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
     fillerPrice = cheapPrices.length ? Math.max(0.02, cheapPrices.reduce((a, b) => a + b, 0) / cheapPrices.length) : 0.25,
     nonland = () => count() - landsIn(),
     heavy = () => [...rows.values()].filter((r) => (Number(catalog[cardKey(r.name)]?.cmc) || 0) >= 5 && !isLand(catalog[cardKey(r.name)])).reduce((a, r) => a + r.qty, 0);
-  for (const { c } of scored) {
+  const remaining=[...scored];
+  while(remaining.length){
+    const counts=new Map();for(const row of rows.values())for(const role of engineRoles(catalog[cardKey(row.name)] || {}))counts.set(role,(counts.get(role)||0)+row.qty);
+    const targets=f.commander?{Removal:8,Draw:10,Ramp:10,Wipe:3}:{Removal:6,Draw:6,Ramp:4,Wipe:2};
+    const adaptive=x=>x.s+engineRoles(x.c).reduce((n,r)=>n+(targets[r]===undefined?0:(counts.get(r)||0)<targets[r]?3:-3),0);
+    remaining.sort((a,b)=>adaptive(b)-adaptive(a)||a.c.name.localeCompare(b.c.name));
+    const {c}=remaining.shift();
     const left = spellTarget - nonland();
     if (left <= 0) break;
     const have = qtyOf(c);

@@ -2533,3 +2533,30 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .printing-quote{display:inline-flex;flex-direction:column;gap:3px;padding:4px 6px;}.print-prices{flex-wrap:wrap;}.trade-valuation{margin-bottom:12px;}
 @keyframes rule-reveal{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.rule-glass{animation:none}}
+
+/* Artwork has its own proportions; the shared chrome never stretches a crop into a card scan. */
+#sheetBody > .cs-hero:not(.compact) {
+ width:100%; max-height:none; border-radius:22px; border:1px solid color-mix(in srgb,var(--gold) 32%,var(--line));
+ box-shadow:0 18px 42px #0005,0 0 24px color-mix(in srgb,var(--gold) 10%,transparent);
+ background:radial-gradient(ellipse at center,color-mix(in srgb,var(--gold) 14%,var(--surface-2)),var(--surface));
+}
+#sheetBody > .cs-hero.mtg:not(.compact) { aspect-ratio:4/3; }
+#sheetBody > .cs-hero.ygo:not(.compact) { aspect-ratio:1; }
+#sheetBody > .cs-hero.mtg:not(.compact) .cs-art,
+#sheetBody > .cs-hero.ygo:not(.compact) .cs-art { object-fit:cover; object-position:center; transform:none; }
+#sheetBody > .cs-hero.ptcg:not(.compact),
+#sheetBody > .cs-hero.ygo:not(.compact):has(.cs-art[data-f]) { width:min(100%,calc(65dvh * 63 / 88)); aspect-ratio:63/88; justify-self:center; margin-inline:auto; }
+#sheetBody > .cs-hero.ptcg:not(.compact) .cs-art,
+#sheetBody > .cs-hero.ygo:not(.compact) .cs-art[data-f] { object-fit:contain; object-position:center; }
+#sheetBody > .cs-hero.mtg:not(.compact) .cs-shade,
+#sheetBody > .cs-hero.ygo:not(.compact) .cs-shade { display:block; pointer-events:none; background:linear-gradient(180deg,transparent 72%,#0005); }
+.cs-title h2 { text-wrap:balance; }
+.budget-explanation { padding:12px 14px; border-left:3px solid var(--gold); background:color-mix(in srgb,var(--gold) 6%,var(--surface)); border-radius:0 12px 12px 0; }
+.budget-next { margin-block:12px; padding:12px; border:1px solid var(--line); border-radius:14px; }
+.budget-next summary { cursor:pointer; font-weight:650; }
+@media(prefers-reduced-motion:no-preference) {
+ dialog.sheet[open] .cs-hero { animation:art-reveal .32s cubic-bezier(.2,.8,.2,1) both; }
+ @keyframes art-reveal { from { opacity:0;transform:translateY(8px) scale(.985); } to { opacity:1;transform:none; } }
+}
+
+#sheetBody > .sheet-head.overlay:not(.scrolled) { background:transparent; margin-bottom:-58px; padding-bottom:0; }

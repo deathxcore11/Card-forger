@@ -1,6 +1,6 @@
 import {applySwapsToCards} from './insights.js';
 import {showRuleHint} from './rule-dex.js';
-import {bestBudgetDecks,purchaseCost,comparePower} from './deck-optimizer.js';
+import {bestBudgetDecks,purchaseCost,comparePower,refineCandidates,towardDeck} from './deck-optimizer.js';
 import {attachCardGestures, CompareSelection, cardActionButtons} from './card-actions.js';
 import {tcgCompareSheet} from './tcgcompare.js';
 import {artworkHTML} from './artwork.js';
@@ -1238,6 +1238,8 @@ async function loadFormatPool(f, colors, seed, progress) {
     ...(theme ? [["cards for its theme", `${fq} id<=${ci} -t:land ${theme}`]] : []),
     ["the format’s staples", `${fq} id<=${ci} -t:land`],
     ["budget picks", `${fq} id<=${ci} -t:land usd<=0.5`],
+    ["efficient interaction", `${fq} id<=${ci} -t:land cmc<=3 (o:destroy or o:exile or o:counter)`],
+    ["card flow", `${fq} id<=${ci} -t:land cmc<=3 (o:draw or o:search)`],
     ...(ci.length > 1 ? [["lands", `${fq} id<=${ci} t:land -t:basic`]] : []),
   ];
   for (const [label, q] of queries) {
@@ -1282,7 +1284,11 @@ async function runBuild() {
       candidates.push({proven:d.key,source:sourceCredit({kind:'Tournament list',url:d.url,description:d.event}),label:d.event || d.name,format:f.name,commander:commanders[0]?.name || '',cards,total:sumQty(cards),size:f.size,warnings:[]});
     }
     const cost=d=>purchaseCost(d.cards,{key:r=>key(r.name),owned:r=>/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(r.name)?r.qty:B.avail(r.name),price:r=>priceOf(r.name)});
-    B.results[f.name]=bestBudgetDecks(candidates,tierList(),{evaluate:d=>mtgPower({...d,id:'builder:mtg'}),cost}).map((winner,i)=>{const d=winner || candidates[i];return {...d,owned:d.cards.reduce((n,r)=>n+Math.min(r.qty,/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(r.name)?r.qty:B.avail(r.name)),0)};});
+    const evaluate=d=>mtgPower({...d,id:'builder:mtg'}),targets=[...candidates.filter(d=>d.proven),...candidates.slice(-1)],protectedKeys=new Set([seed.name]);
+    candidates=await refineCandidates(candidates,{evaluate,cost,status:buildMsg,rounds:2,maxNeighbors:12,
+      accept:d=>!evaluate(d).readiness?.provisional,
+      neighbors:d=>targets.flatMap(target=>towardDeck(d,target,{protectedKeys,zoneOf:r=>/\bLand\b/.test(meta(r.name)?.type_line || '')?'land':'spell'}))});
+    B.results[f.name]=bestBudgetDecks(candidates,tierList(),{evaluate,cost}).map((winner,i)=>{const d=winner || candidates[i];return {...d,owned:d.cards.reduce((n,r)=>n+Math.min(r.qty,/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(r.name)?r.qty:B.avail(r.name)),0)};});
     B.msg = `${B.results[f.name].length} budget versions · compared ${candidates.length} decks using Power, legality and purchase cost.`;
   } catch (e) {
     B.msg = e.message;
@@ -1307,6 +1313,11 @@ A.optimizeMtgDeck = async () => {
  const seed=d.commander || [...d.cards].filter(r=>!isLand(meta(r.name))).sort((a,b)=>b.qty-a.qty)[0]?.name;if(!seed)return;
  Object.assign(S.ui.build,{seed,baseDeck:d.id,results:{},format:formatOf(d).name,openTier:null,msg:''});openSheet(V.buildSheet(),{type:'build'});runBuild();
 };
+A.tierAlternative = t => {
+ const B=S.ui.build,n=B.results[B.format]?.[Number(t.dataset.i)]?.nextUpgrade;if(!n)return;
+ B.results[B.format].push({...n,owned:n.cards.reduce((sum,r)=>sum+Math.min(r.qty,/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(r.name)?r.qty:B.avail(r.name)),0),nextUpgrade:null,explanation:'Outside the original budget. Review the actual purchase total before saving.',warnings:[...(n.warnings || [])]});
+ B.openTier=B.results[B.format].length-1;refreshSheet();
+};
 A.buildFormat = (t) => {
   const B = S.ui.build;
   B.format = t.dataset.format;
@@ -1315,7 +1326,7 @@ A.buildFormat = (t) => {
   else runBuild();
 };
 C.buildCustom = (t) => {
-  const B = S.ui.build;
+  const B = S.ui.build;if(B.busy)return;
   B.custom = t.value === "" ? "" : String(Math.max(0, Math.min(100000, Number(t.value) || 0)));
   B.results = {};
   runBuild();

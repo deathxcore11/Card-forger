@@ -7,10 +7,15 @@ def get(url,raw=False):
         return response.read().decode() if raw else json.load(response)
 def check(label,url,kind):
     try:
-        body=get(url,kind=='version')
+        body=get(url,kind in ('version','layout'))
         if kind=='version':
-            assert 'Version 3.38.0' in body,'Published version marker is older than 3.38.0'
-            summary='3.38.0'
+            assert 'Version 3.39.0' in body,'Published version marker is older than 3.39.0'
+            summary='3.39.0'
+        elif kind=='layout':
+            assert '.cs-hero.mtg:not(.compact) { aspect-ratio:4/3;' in body
+            assert '.cs-hero.ygo:not(.compact) { aspect-ratio:1;' in body
+            assert '.cs-hero.ptcg:not(.compact)' in body
+            summary='All three game-specific artwork layouts are deployed'
         elif kind=='printing':
             summary=body
             rarities={p['rarity']:p for p in body.get('printings',[]) if p['code']=='MAMO-EN038'}
@@ -27,13 +32,13 @@ def check(label,url,kind):
 # Allow the independent Cloudflare build to finish before checking the new routes.
 for attempt in range(12):
     try:
-        if 'Version 3.38.0' in get(ROOT+'views.js',raw=True):break
+        if 'Version 3.39.0' in get(ROOT+'views.js',raw=True):break
     except Exception as exc:
         print('Deployment check:',str(exc),flush=True)
         if isinstance(exc,urllib.error.HTTPError) and exc.code in (401,403):break
     time.sleep(10)
 # Read-only research, no API signup, key, charge, or raw-data redistribution.
-jobs=[('Live version',ROOT+'views.js','version'),('Exact screenshot prices',ROOT+'api/prices/yugioh?id=4731783','printing'),('Live Pokemon recent history',ROOT+'api/prices/recent?game=ptcg&id=cel25-22&finish=reference','printing-history'),('Live YGO recent history',ROOT+'api/prices/recent?game=ygo&id=4731783&finish=reference&edition=MAMO-EN038&rarity=Starlight%20Rare','printing-history'),('MTGJSON metadata','https://mtgjson.com/api/v5/Meta.json','metadata'),('TCGCSV groups','https://tcgcsv.com/tcgplayer/2/groups','metadata')]
+jobs=[('Live version',ROOT+'views.js','version'),('Live artwork CSS',ROOT+'style.css','layout'),('Exact screenshot prices',ROOT+'api/prices/yugioh?id=4731783','printing'),('Live Pokemon recent history',ROOT+'api/prices/recent?game=ptcg&id=cel25-22&finish=reference','printing-history'),('Live YGO recent history',ROOT+'api/prices/recent?game=ygo&id=4731783&finish=reference&edition=MAMO-EN038&rarity=Starlight%20Rare','printing-history'),('MTGJSON metadata','https://mtgjson.com/api/v5/Meta.json','metadata'),('TCGCSV groups','https://tcgcsv.com/tcgplayer/2/groups','metadata')]
 with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
     results=list(pool.map(lambda x:check(*x),jobs))
-if not all(results[:4]):raise RuntimeError('Live HTTP verification blocked or failed; inspect the diagnostics above and Cloudflare deployment status separately.')
+if not all(results[:5]):raise RuntimeError('Live HTTP verification blocked or failed; inspect the diagnostics above and Cloudflare deployment status separately.')

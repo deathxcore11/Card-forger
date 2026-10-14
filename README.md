@@ -180,3 +180,6 @@ days for every priced paper printing/finish. It does not shift old observations 
 the current month, interpolate missing quotes, or merge market/mid archive prices
 with the current provider. Batches are authenticated with repository-scoped GitHub
 OIDC and merged through a service-role-only RPC.
+
+### 3.39.0
+Artwork proportions now follow their source: landscape Magic art, square Yu-Gi-Oh! art, and uncropped Pokémon scans. Shared dialog chrome, subtle reveal motion and reduced-motion support remain consistent across layouts. Pokémon and Yu-Gi-Oh! builders now use the same manual purchase budget and quick tiers as Magic. A bounded two-pass replacement search compares legal engine packages with the existing Power evaluator, protects the build-around card and keeps deck quantities. Closely matched tournament engines outrank unsupported generic scores. Repeated tiers explain the candidate limit; stronger options over budget show actual purchase totals, the gap and their complete list before review. This is a candidate search and partial rules model, not exhaustive optimization or a claimed win rate.

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {purchaseCost,bestBudgetDecks,swappedZones,comparePower,sameCardLogic} from './deck-optimizer.js';
+import {purchaseCost,bestBudgetDecks,swappedZones,comparePower,sameCardLogic,refineCandidates,towardDeck,budgetComparisonHtml} from './deck-optimizer.js';
 import {selectHistoryDataset} from './workbench-ui.js';
 import {ruleText,effectText,ruleDexPanel} from './rule-dex.js';
 import {ygoProductMatches,applyYgoPrices,editionPrice,ygoPriceRoute} from './ygo-prices.js';
@@ -45,3 +45,21 @@ for(const game of ['ptcg','ygo']){
   if(u.includes('tickermint'))return Response.json({[game==='ptcg'?'Holofoil':'1st Edition']:raw});throw Error('Unexpected '+u);
  },historyNow);const data=await response.json();assert.equal(data.series.length,1);assert.equal(data.series[0].points[0].date,'2026-10-13');assert.ok(data.series[0].attribution);assert.equal(data.series[0].productId,game==='ptcg'?250317:11);
 }
+
+// More expensive does not mean stronger; show genuine next steps with truthful totals.
+const options=[{cards:[{name:'base',qty:60}],score:70,cost:50},{cards:[{name:'engine',qty:60}],score:85,cost:108},{cards:[{name:'premium',qty:60}],score:95,cost:700}];
+const tiers=bestBudgetDecks(options,[50,100,Infinity],{evaluate:d=>p(d.score),cost:d=>({cost:d.cost,unknown:0})});
+assert.equal(tiers[1].cost,50);assert.ok(tiers[1].explanation.includes('Same strongest'));
+assert.equal(tiers[1].nextUpgrade.cost,108);assert.equal(tiers[1].nextUpgrade.withinTolerance,true);
+const gap=bestBudgetDecks([options[0],options[2]],[100],{evaluate:d=>p(d.score),cost:d=>({cost:d.cost,unknown:0})})[0];
+assert.equal(gap.nextUpgrade.overBy,600);assert.equal(gap.nextUpgrade.withinTolerance,false);
+assert.ok(budgetComparisonHtml(gap,0,'review').includes('outside budget'));
+assert.ok(comparePower({...p(85),from:'meta'},{...p(92),from:'build'})>0,'a generic 92 cannot override a proven matching engine');
+const original={cards:[{name:'anchor',qty:1},{name:'filler',qty:3}]},target={cards:[{name:'anchor',qty:1},{name:'engine',qty:3}]};
+const moves=towardDeck(original,target,{protectedKeys:new Set(['anchor'])});
+assert.ok(moves.some(d=>d.cards.some(r=>r.name==='engine' && r.qty===3)));
+assert.ok(moves.every(d=>d.cards.reduce((n,r)=>n+r.qty,0)===4 && d.cards.some(r=>r.name==='anchor' && r.qty===1)));
+assert.equal(original.cards[1].qty,3);
+const refined=await refineCandidates([original],{neighbors:d=>towardDeck(d,target,{protectedKeys:new Set(['anchor'])}),evaluate:d=>p(d.cards.filter(r=>r.name==='engine').reduce((n,r)=>n+r.qty*10,50)),cost:()=>({cost:25,unknown:0})});
+assert.ok(refined.some(d=>d.power===80));
+console.log('PASS: distinct budget explanations, honest $10 / $700 next steps, proven engine priority, quantity-preserving package search and seed protection.');
