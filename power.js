@@ -264,3 +264,7 @@ export function powerPanel(p, { loadAct = "", findAct = "", cardAct = () => "" }
     })
     .join("")}</section>`;
 }
+
+// The one Deck Power number shown everywhere (tiles, deck headers, builder): Competitive when the
+// field is known, otherwise the engine estimate. The Power tab shows both.
+export const shownPower = (p) => competitiveScore(p) ?? p?.score;

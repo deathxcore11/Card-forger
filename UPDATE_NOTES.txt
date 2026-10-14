@@ -1,3 +1,15 @@
+3.43.0 — One look for every game's decks, each with its own rules
+- Build decks shows the same version card in Magic, Pokémon and Yu-Gi-Oh!: format, legality,
+  cost to buy, power, how hard it is to play, size and how much you own, in the same order.
+  Opening a version lists its cards in each game's own groups (Creatures/Spells/Lands in Magic;
+  Pokémon/Trainers/Energy in Pokémon; Monsters/Spells/Traps/Extra Deck in Yu-Gi-Oh!).
+- "Save all versions" now works in every game, not just Magic.
+- Magic's Power tab now matches the other two games: "Card by card" (odds to see each card in
+  your opening hand and by turn 3, with its role) and "Most valuable cards" replace the separate
+  test-games and key-cards panels, which repeated the goldfish results.
+- Deck headers in every game show the same score as the deck tiles: Competitive when tournament
+  results are loaded, Engine otherwise.
+
 3.42.0 — Cleaner deck versions: Starter to Best version
 - Build decks no longer repeats the same list at several budgets. Identical versions merge into
   one card that says which budgets it covers ("Best version · for budgets of $50 and up"), and

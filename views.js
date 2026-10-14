@@ -1,4 +1,6 @@
 import {buildOverlay} from "./build-overlay.js";
+import { tierCardHtml } from "./tier-card.js";
+import { atLeastOne } from "./deckaudit.js";
 import {budgetComparisonHtml} from './deck-optimizer.js';
 import {effectText} from './rule-dex.js';
 import {collectionOrder} from "./collection-order.js";
@@ -18,7 +20,7 @@ import { binderShelf } from "./binders.js";
 // Screen renderers. Each returns HTML for #content; interaction is wired by
 // data-act / data-change / data-input attributes handled centrally in app.js.
 import { metaState, MTG_META_FORMATS, allCachedMeta } from "./meta.js";
-import { mtgPower, powerPanel, powerChip } from "./power.js";
+import { mtgPower, powerPanel, powerChip, shownPower } from "./power.js";
 import { factBox, factsFor } from "./facts.js";
 import { S, meta, inv, deckById, currentDeck, priceOf } from "./store.js";
 import {
@@ -526,23 +528,31 @@ export function setPage() {
 const tierLabel = (t) => (t.variant ? `${t.variant}${t.coversText ? ` · ${t.coversText}` : ""}` : t.budget===Infinity ? "No budget limit" : t.budget ? `Up to $${t.budget}${t.upTo ? "–" + t.upTo : ""}` : "Your cards only");
 
 function tierCard(t, i, mode, tierList = null) {
-  const p = engineProfile({ format: t.format, commander: t.commander, cards: t.cards }, S.catalog),
+  const p = t.power == null ? engineProfile({ format: t.format, commander: t.commander, cards: t.cards }, S.catalog) : null,
     shown = S.ui.build.openTier === i,
-    groups = {};
+    groups = { Creatures: [], Spells: [], Lands: [], Other: [] };
   for (const r of t.cards) {
     const c = meta(r.name),
-      g = !c ? "Other" : isLand(c) ? "Lands" : /\bCreature\b/.test(typeText(c)) ? "Creatures" : "Spells";
-    (groups[g] = groups[g] || []).push(r);
+      g = !c ? "Other" : isLand(c) ? "Lands" : /\bCreature\b/.test(typeText(c)) ? "Creatures" : "Spells",
+      free = Math.min(r.qty, S.ui.build.avail?.(r.name) ?? 0),
+      basic = isBasic(c) || /^(Plains|Island|Swamp|Mountain|Forest|Wastes)$/.test(r.name);
+    groups[g].push({ qty: r.qty, name: r.name, art: img(art(c), r.name, "mini-art"), act: `data-act="card" data-name="${esc(r.name)}"`, why: r.why === "Already in your list" ? "Kept in this version" : r.why || "", status: basic ? "basic" : free >= r.qty ? "✓ Owned" : `Need ${r.qty - free}`, ok: basic || free >= r.qty });
   }
-  return `<article class="tier ${shown ? "on" : ""}">
-    <div class="row between"><b>${t.total < t.size ? `Draft — ${t.size - t.total} slot${t.size - t.total === 1 ? "" : "s"} open · ` : ""}${esc(tierLabel(t))}</b><span class="chip">${esc(t.format)}</span></div>
-    <div class="tier-stats"><span><b>${usd(t.cost)}${t.unknown?"+":""}</b> to buy</span>${t.difficulty ? `<span><b class="diff-tag ${t.difficulty.key}">${t.difficulty.label}</b></span>` : ""}<span><b>${t.total}/${t.size}</b> cards</span><span><b>${t.total ? Math.round((t.owned / t.total) * 100) : 0}%</b> owned</span><span><b>${t.power ?? p.score}</b> power</span></div>
-    ${bar(t.total ? t.owned / t.total : 0, "thin")}
-    ${t.proven?`<p class="evidence small">Tournament candidate · ${esc(t.label)}</p>`:""}${t.warnings.map((w) => `<p class="small warn-text">${esc(w)}</p>`).join("")}
-    ${budgetComparisonHtml(t,i,"tierAlternative")}${tierList ? draftPath(tierList, i, tierLabel) : ""}
-    ${shown ? ["Creatures", "Spells", "Lands", "Other"].filter((g) => groups[g]).map((g) => `<p class="list-head">${g} <span class="muted">${groups[g].reduce((a, r) => a + r.qty, 0)}</span></p><div class="list compact">${groups[g].sort((a, b) => b.qty - a.qty || a.name.localeCompare(b.name)).map((r) => { const free = Math.min(r.qty, S.ui.build.avail?.(r.name) ?? 0), basic = isBasic(meta(r.name)) || /^(Plains|Island|Swamp|Mountain|Forest|Wastes)$/.test(r.name); return `<button class="mini-row upgrade-card-row" data-act="card" data-name="${esc(r.name)}">${img(art(meta(r.name)),r.name,"mini-art")}<span class="ellip">${r.qty}× ${esc(r.name)} <small class="muted">${esc(r.why === "Already in your list" ? "Kept in this version" : r.why || "")}</small></span><span class="small ${basic || free >= r.qty ? "ok-text" : "warn-text"}">${basic ? "basic" : free >= r.qty ? "✓ Owned" : `Need ${r.qty - free}`}</span></button>`; }).join("")}</div>`).join("") : ""}
-    <div class="actions wrap"><button class="btn ghost small" data-act="tierToggle" data-i="${i}">${shown ? "Hide list" : "See all " + t.total + " cards"}</button>${mode === "fill" ? `<button class="btn small" data-act="tierApply" data-i="${i}">Use this version</button>` : `<button class="btn small" data-act="tierSave" data-i="${i}">Save as deck</button>`}</div>
-  </article>`;
+  for (const k of Object.keys(groups)) groups[k].sort((a, b) => b.qty - a.qty || a.name.localeCompare(b.name));
+  return tierCardHtml({
+    title: `${t.total < t.size ? `Draft — ${t.size - t.total} slot${t.size - t.total === 1 ? "" : "s"} open · ` : ""}${esc(tierLabel(t))}`,
+    format: t.format,
+    legal: t.total < t.size ? { ok: false, text: "Incomplete" } : { ok: true, text: "Legal" },
+    cost: t.cost, unknown: t.unknown, difficulty: t.difficulty, power: t.power ?? p.score,
+    sizeText: `${t.total}/${t.size} cards`, owned: t.total ? t.owned / t.total : 0,
+    evidence: t.proven ? `Tournament candidate · ${t.label}` : "", warnings: t.warnings.filter((w) => !/slots? still open/.test(w)),
+    notes: budgetComparisonHtml(t, i, "tierAlternative") + (tierList ? draftPath(tierList, i, tierLabel) : ""),
+    open: shown,
+    groups: ["Creatures", "Spells", "Lands", "Other"].map((name) => ({ name, rows: groups[name] })),
+    toggle: `data-act="tierToggle" data-i="${i}"`,
+    save: mode === "fill" ? `data-act="tierApply" data-i="${i}"` : `data-act="tierSave" data-i="${i}"`,
+    saveLabel: mode === "fill" ? "Use this version" : "Save as deck",
+  });
 }
 
 export function buildSheet() {
@@ -557,7 +567,7 @@ export function buildSheet() {
   <label class="custom-budget">Purchase budget $<input id="buildCustom" type="number" min="0" max="100000" step="1" value="${esc(B.custom ?? "")}" placeholder="Blank = unlimited" ${B.busy?"disabled":""} data-change="buildCustom"></label>
   ${B.busy ? buildOverlay(B.msg) : B.msg ? `<p class="small ${B.error ? "warn-text" : "muted"}" role="status">${esc(B.msg)}</p>` : ""}
   ${tiers ? `<div class="tiers">${tiers.map((t, i) => tierCard(t, i, "build", tiers)).join("")}</div>${tiers.length > 1 ? `<button class="btn ghost block" data-act="tierSaveAll">Save all ${tiers.length} versions</button>` : ""}` : ""}
-  <p class="foot">Built from your cards first, then popular, well-curved picks. A strong start, not a tuned tournament list.</p>`;
+  <p class="foot">Built from your cards first, then what today's tournament decks play. A strong start, not a tuned tournament list. Prices are daily estimates.</p>`;
 }
 
 function fillAnyPanel(d, fm, count) {
@@ -1015,7 +1025,7 @@ export function sharedPage() {
     <div class="hero-body"><div class="row between"><button class="icon light" data-act="go" data-to="#home" aria-label="Home">←</button><span class="chip dark">Shared deck</span></div>
       <h1>${esc(d.name)}</h1>
       <p>${fm.commander ? colorDots(meta(d.commander)) + " " + esc(d.commander || "") + " · " : ""}<span class="chip dark">${esc(fm.name)}</span>${d.author ? ` · by <b>${esc(d.author)}</b>` : ""}</p>
-      <div class="hero-stats"><span><b class="${(fm.exact ? sumQty(d.cards) === target : sumQty(d.cards) >= target) ? "" : "warn-text"}">${sumQty(d.cards)}/${target}</b>cards</span><span><b>${mtgPower(d).score}</b>power</span>${br ? `<span><b>${br.bracket}</b>bracket est.</span>` : ""}<span><b>${d.budget !== null ? usd(d.budget, 0) : "—"}</b>budget</span></div>
+      <div class="hero-stats"><span><b class="${(fm.exact ? sumQty(d.cards) === target : sumQty(d.cards) >= target) ? "" : "warn-text"}">${sumQty(d.cards)}/${target}</b>cards</span><span><b>${shownPower(mtgPower(d))}</b>power</span>${br ? `<span><b>${br.bracket}</b>bracket est.</span>` : ""}<span><b>${d.budget !== null ? usd(d.budget, 0) : "—"}</b>budget</span></div>
     </div></section>
   <div class="actions wrap share-actions"><button class="btn" data-act="sharedBuild">Make my version</button><button class="btn ghost" data-act="sharedSave">Save to Inspiration</button><button class="btn ghost" data-act="sharedCopy">Copy list</button></div>
   ${d.about ? `<section class="panel"><h3>About this deck</h3><p class="about">${esc(d.about)}</p><p class="foot">Written by ${esc(d.author || "the person who shared it")}.</p></section>` : ""}
@@ -1086,7 +1096,7 @@ export function deckPage() {
         <span><b class="${(fm.exact ? t.copies === target : t.copies >= target) ? "" : "warn-text"}">${t.copies}/${target}</b>cards</span>
         <span><b>${t.copies ? Math.round((t.covered / t.copies) * 100) : 0}%</b>owned</span>
         <span><b>${usd(t.pricedGap, 0)}${t.unpriced ? "+" : ""}</b>to finish${t.unpriced ? " · some unpriced" : ""}</span>
-        <button data-act="deckTab" data-id="engine"><b>${mtgPower(d).score}</b>power</button>
+        <button data-act="deckTab" data-id="engine"><b>${shownPower(mtgPower(d))}</b>power</button>
       </div>
     </div>
   </section>
@@ -1234,9 +1244,28 @@ function deckGridCard(r) {
 
 /* Engine */
 
+// Card by card: exact odds to see each card, with its job in the deck (same table as Pokémon and
+// Yu-Gi-Oh!, Magic's own draws: opening 7, and 9 cards by turn 3 on the draw).
+function mtgCardByCard(d, pw) {
+  const rows = aggregateCards(d.cards).filter((r) => !/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(r.name)),
+    N = sumQty(d.cards) - (formatOf(d).commander && d.commander ? 1 : 0);
+  if (!rows.length || !N) return "";
+  const pct = (x) => Math.round(x * 100) + "%",
+    chips = (name) => (pw.roles?.get(key(name)) || []).map((r) => `<span class="role-chip">${esc(r)}</span>`).join("");
+  return `<section class="panel"><h3>Card by card</h3><p class="muted small">Chance to see at least one copy (exact odds): in your opening 7, and by turn 3 on the draw (9 cards). Labels show each card's job in the deck.</p>
+    <table class="metrics"><thead><tr><th>Card</th><th class="num">Qty</th><th class="num" title="Opening hand of 7">In 7</th><th class="num" title="By turn 3 on the draw: 9 cards">By T3</th></tr></thead><tbody>${rows
+      .sort((a, b) => b.qty - a.qty || a.name.localeCompare(b.name))
+      .map((r) => `<tr><td><button class="link odds-name" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(d.id)}">${esc(r.name)}</button><span class="role-chips">${chips(r.name)}</span></td><td class="num">${r.qty}</td><td class="num">${pct(atLeastOne(N, r.qty, 7))}</td><td class="num">${pct(atLeastOne(N, r.qty, 9))}</td></tr>`)
+      .join("")}</tbody></table></section>`;
+}
+function mtgMostValuable(d) {
+  const top = aggregateCards(d.cards).map((r) => ({ ...r, p: priceOf(r.name) })).filter((r) => r.p).sort((a, b) => b.p * b.qty - a.p * a.qty).slice(0, 5);
+  if (!top.length) return "";
+  return `<section class="panel"><h3>Most valuable cards</h3><div class="list compact">${top.map((r) => `<button class="mini-row" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(d.id)}"><span class="ellip">${r.qty}× ${esc(r.name)}</span><span class="small">${usd(r.p * r.qty)}</span></button>`).join("")}</div></section>`;
+}
+
 function deckEngine(d) {
   const p = engineProfile(d, S.catalog),
-    g = goldfishFor(d),
     v = validateDeck(d, S.catalog, S.state.collection, S.state.decks),
     issues = v.issues.filter((i) => i.kind !== "count"),
     colorTotal = Object.values(p.pips).reduce((a, b) => a + b, 0),
@@ -1254,13 +1283,8 @@ function deckEngine(d) {
       : ""
   }
   ${manaBasePanel(d, p)}
-  <section class="panel"><div class="row between"><h3>Test games</h3><span class="muted small">${g ? g.games.toLocaleString() + " simulated" : ""}</span></div>
-  ${g ? goldfishTable(g) + `<p class="foot">Solitaire “goldfish” games: shuffle, mulligan 0–1 or 6–7 land hands, play a land and cast what you can for ${g.turns} turns. No opponents; colors are ignored. Useful for comparing versions of the same deck.</p>` : `<p class="muted">Add at least 20 cards with card data to simulate games.</p>`}
-  </section>
-  <details class="panel"><summary><b>Key cards by role</b></summary>${Object.entries(p.byRole)
-    .filter(([, l]) => l.length)
-    .map(([r, l]) => `<p class="small"><b>${r}:</b> ${l.map((n) => `<button class="link" data-act="card" data-name="${esc(n)}" data-deck="${esc(d.id)}">${esc(n)}</button>`).join(", ")}</p>`)
-    .join("") || '<p class="muted small">No roles recognized yet.</p>'}</details>
+  ${mtgCardByCard(d, pw)}
+  ${mtgMostValuable(d)}
   <details class="panel" ${issues.length ? "" : ""}><summary><b>Rules checks</b> <span class="chip ${issues.length ? "warn" : "ok"}">${issues.length ? issues.length + " to fix" : "pass"}</span></summary><ul class="issues">${issues.slice(0, 40).map((i) => `<li>${esc(i.text)}</li>`).join("") || "<li>Color identity, legality and copy limits pass.</li>"}</ul><p class="foot">Single commander only. Legality comes from cached card data — refresh before an event.</p></details>`;
 }
 

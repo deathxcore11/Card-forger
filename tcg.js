@@ -1,6 +1,7 @@
 import {effectText,ruleText} from './rule-dex.js';
 import {editionPrice} from './ygo-prices.js';
 import {buildOverlay} from './build-overlay.js';
+import { tierCardHtml } from './tier-card.js';
 import {bestBudgetDecks,purchaseCost,comparePower,swappedZones,sameCardLogic,budgetComparisonHtml,refineCandidates,towardDeck,spendUp,cardQuality,budgetNotes,variantsFrom,fillOpen,difficultyOf} from './deck-optimizer.js';
 import {collectionOrder} from "./collection-order.js";
 import {POKEMON_SET_ART} from "./pokemon-set-art.js";
@@ -32,7 +33,7 @@ import { buildYgo, buildPtcg, YGO_STAPLES, PTCG_STAPLES, PTCG_SUPPORT_BASICS, en
 import { ygoSource, ygoImageDirect, YGO_TYPES, YGO_ATTRIBUTES, YGO_RACES, YGO_SPELL_KINDS, YGO_TRAP_KINDS } from "./ygo.js";
 import { ptcgSource, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES, plainText } from "./ptcg.js";
 import { loadMeta, metaState, ptcgIcon, allCachedMeta, cleanName } from "./meta.js";
-import { tcgPower, powerPanel, powerChip } from "./power.js";
+import { tcgPower, powerPanel, powerChip, shownPower } from "./power.js";
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
 import { rankPairs, ygoTags, ptcgTags } from "./pairing.js";
 import { nameCandidates, scanCandidateMatches, ygoSetCodes, ygoPasscodes, ptcgNumbers, similarity, scanNameKey, textPhrases, attackNames } from "./scan.js";
@@ -1104,7 +1105,7 @@ export function tcgDeck(id) {
     <div class="row between"><button class="icon light" data-act="go" data-to="#decks" aria-label="Back">←</button><button class="icon light" data-act="tDeckMenu" data-id="${esc(d.id)}" aria-label="Deck options">⋯</button></div>
     <h1>${esc(d.name)}</h1><p><button class="chip dark fmt-chip" data-act="tDeckMenu" data-id="${esc(d.id)}">${esc(GAMES[g].short)} · ${esc(f.name)}</button></p>
     <button class="review-badge ${issues.length ? "bad" : "ok"}" data-act="tIssues" data-deck="${esc(d.id)}">${issues.length ? `● ${issues.length} to fix` : s.total ? "✓ Legal in " + esc(f.name) : "Add cards to check legality"}</button>
-    <div class="hero-stats"><span><b>${zoneCount("main")}</b>${g === "ygo" ? "main" : "/60 cards"}</span><span><b>${s.total ? Math.round((s.owned / s.total) * 100) : 0}%</b>owned</span><span><b>${usd(s.buy, 0)}${s.unknown ? "+" : ""}</b>to finish${s.unknown ? " · some unpriced" : ""}</span>${s.total ? `<button data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="insights"><b>${tcgPower(g, d, f, (x) => cardOf(g, x)).score}</b>power</button>` : ""}</div>
+    <div class="hero-stats"><span><b>${zoneCount("main")}</b>${g === "ygo" ? "main" : "/60 cards"}</span><span><b>${s.total ? Math.round((s.owned / s.total) * 100) : 0}%</b>owned</span><span><b>${usd(s.buy, 0)}${s.unknown ? "+" : ""}</b>to finish${s.unknown ? " · some unpriced" : ""}</span>${s.total ? `<button data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="insights"><b>${shownPower(tcgPower(g, d, f, (x) => cardOf(g, x)))}</b>power</button>` : ""}</div>
   </div></section>
   <nav class="tabs" role="tablist">${[["cards", "Cards"], ["insights", "Power"], ["upgrade", "Upgrade lab"], ["playtest", "Playtest"], ["versions", "Versions"]].map(([id, l]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="${id}">${l}</button>`).join("")}</nav>
   <div class="deck-body">${tab === "insights" ? deckInsights(g, d, f, s) : tab === "upgrade" ? deckUpgradeTab(g, d, f, s) : tab === "playtest" ? deckPlaytest(g, d, f) : tab === "versions" ? deckVersions(g, d) : deckCardsTab(g, d, f, s, issues)}</div>`;
@@ -1417,17 +1418,35 @@ export function tcgBuildSheet() {
   ${B.busy ? buildOverlay(B.msg) : B.msg ? `<p class="small ${B.error ? "warn-text" : "muted"}" role="status">${esc(B.msg)}</p>` : ""}
   ${!B.busy && B.evidence ? `<p class="evidence small">${esc(B.evidence)}</p>` : ""}
   ${tiers ? `<div class="tiers">${tiers.map((t, i) => {
-    const owned = t.zones.main.concat(t.zones.extra).reduce((a, r) => a + Math.min(r.qty, ownedOf(g, cardOf(g, r.cardId))), 0),
-      open = B.openTier === i,
-      issues = SOURCES[g].validate({ zones: t.zones }, (id) => cardOf(g, id), formatOf(g, B.format));
-    return `<article class="tier ${open ? "on" : ""} ${t.meta ? "meta" : ""}"><div class="row between"><b>${t.total < t.size ? `Draft — ${t.size - t.total} slot${t.size - t.total === 1 ? "" : "s"} open · ` : ""}${t.meta ? `🏆 ${esc(t.label)}` : tierName(t)}</b><span class="chip ${issues.length ? "warn" : "ok"}">${issues.length ? issues.length + " to fix" : "Legal"}</span></div>
-      <div class="tier-stats"><span><b>${usd(t.cost)}${t.unknown?"+":""}</b> to buy</span>${t.difficulty ? `<span><b class="diff-tag ${t.difficulty.key}">${t.difficulty.label}</b></span>` : ""}${t.power!==undefined?`<span><b>${t.power}</b> power</span>`:""}<span><b>${esc(zoneCountLabel(g,t.total,formatOf(g,B.format)))}</b></span>${g === "ygo" ? `<span><b>${t.zones.extra.reduce((a, r) => a + r.qty, 0)}</b> extra</span>` : ""}<span><b>${t.total ? Math.round((owned / t.total) * 100) : 0}%</b> owned</span></div>
-      ${t.proven?`<p class="evidence small">Tournament candidate · ${esc(t.label)}</p>`:""}${t.warnings.filter((w) => !/slots? still open/.test(w)).map((w) => `<p class="small warn-text">${esc(w)}</p>`).join("")}
-      ${budgetComparisonHtml(t,i,"tTierAlternative")}${draftPath(tiers, i, tierName)}
-      ${open ? `<div class="card-grid small-grid">${t.zones.main.concat(t.zones.extra).map((r) => `<button class="grid-card" data-act="tCard" data-id="${esc(r.cardId)}">${imgTag(cardOf(g, r.cardId))}${tileBadges(cardOf(g, r.cardId))}<span class="grid-meta stacked"><b class="clamp2">${r.qty}× ${esc(r.name)}</b><small>${esc(r.why || "")}</small></span></button>`).join("")}</div>` : ""}
-      <div class="actions wrap"><button class="btn ghost small" data-act="tTier" data-i="${i}">${open ? "Hide cards" : "See the cards"}</button><button class="btn small" data-act="tTierSave" data-i="${i}">Save as deck</button></div></article>`;
-  }).join("")}</div>` : ""}
-  <p class="foot">Built lists follow what today's tournament decks play. Prices are daily estimates.</p>`;
+    const f = formatOf(g, B.format),
+      all = t.zones.main.concat(t.zones.extra || []),
+      owned = all.reduce((a, r) => a + Math.min(r.qty, ownedOf(g, cardOf(g, r.cardId))), 0),
+      issues = SOURCES[g].validate({ zones: t.zones }, (id) => cardOf(g, id), f),
+      // Each game's own card groups, in the order players read a list.
+      groupOf = (card, zone) => g === "ygo" ? (zone === "extra" ? "Extra Deck" : card?.category === "Spell" ? "Spells" : card?.category === "Trap" ? "Traps" : "Monsters") : card?.category === "Trainer" ? "Trainers" : card?.category === "Energy" ? "Energy" : "Pokémon",
+      order = g === "ygo" ? ["Monsters", "Spells", "Traps", "Extra Deck"] : ["Pokémon", "Trainers", "Energy"],
+      groups = Object.fromEntries(order.map((k) => [k, []]));
+    for (const [zone, rows] of [["main", t.zones.main], ["extra", t.zones.extra || []]])
+      for (const r of rows) {
+        const card = cardOf(g, r.cardId), have = Math.min(r.qty, ownedOf(g, card)), basic = !!card?.basicEnergy;
+        groups[groupOf(card, zone)].push({ qty: r.qty, name: r.name, art: imgTag(card, "mini-art"), act: `data-act="tCard" data-id="${esc(r.cardId)}"`, why: r.why || "", status: basic ? "basic" : have >= r.qty ? "✓ Owned" : `Need ${r.qty - have}`, ok: basic || have >= r.qty });
+      }
+    for (const k of order) groups[k].sort((x, y) => y.qty - x.qty || x.name.localeCompare(y.name));
+    return tierCardHtml({
+      title: `${t.total < t.size ? `Draft — ${t.size - t.total} slot${t.size - t.total === 1 ? "" : "s"} open · ` : ""}${t.meta ? `🏆 ${esc(t.label)}` : esc(tierName(t))}`,
+      format: f.name,
+      legal: issues.length ? { ok: false, text: issues.length + " to fix" } : { ok: true, text: "Legal" },
+      cost: t.cost, unknown: t.unknown, difficulty: t.difficulty, power: t.power,
+      sizeText: zoneCountLabel(g, t.total, f), extraText: g === "ygo" ? `${(t.zones.extra || []).reduce((a, r) => a + r.qty, 0)} extra` : "",
+      owned: all.length ? owned / all.reduce((a, r) => a + r.qty, 0) : 0,
+      evidence: t.proven ? `Tournament candidate · ${t.label}` : "", warnings: t.warnings.filter((w) => !/slots? still open/.test(w)),
+      notes: budgetComparisonHtml(t, i, "tTierAlternative") + draftPath(tiers, i, tierName),
+      open: B.openTier === i,
+      groups: order.map((name) => ({ name, rows: groups[name] })),
+      toggle: `data-act="tTier" data-i="${i}"`, save: `data-act="tTierSave" data-i="${i}"`, saveLabel: "Save as deck",
+    });
+  }).join("")}</div>${tiers.length > 1 ? `<button class="btn ghost block" data-act="tTierSaveAll">Save all ${tiers.length} versions</button>` : ""}` : ""}
+  <p class="foot">Built from your cards first, then what today's tournament decks play. A strong start, not a tuned tournament list. Prices are daily estimates.</p>`;
 }
 
 /* ---------- shared deck page (#shared/… for Yu-Gi-Oh! and Pokémon) ---------- */
@@ -2688,6 +2707,14 @@ export function registerTcg(c) {
       many = (B.seeds?.length || 1) > 1 ? ` + ${B.seeds.length - 1} more` : "",
       d = { id: uid(), name: `${seed.name}${many} · ${formatOf(B.game, B.format).name} · ${tierName(tier).toLowerCase()}`, format: B.format, zones: structuredClone(tier.zones), createdAt: new Date().toISOString(), source: tier.source || { kind: tier.meta || tier.proven ? "Tournament list" : "Generated" } };
     await mutate((st) => st.decks.push(d), { msg: `Saved “${d.name}” to your decks.` });
+  };
+  A.tTierSaveAll = async () => {
+    const B = S.ui.tbuild,
+      tiers = B.results[B.format] || [],
+      seed = cardOf(B.game, B.seed),
+      many = (B.seeds?.length || 1) > 1 ? ` + ${B.seeds.length - 1} more` : "",
+      ds = tiers.map((tier) => ({ id: uid(), name: `${seed.name}${many} · ${formatOf(B.game, B.format).name} · ${tierName(tier).toLowerCase()}`, format: B.format, zones: structuredClone(tier.zones), createdAt: new Date().toISOString(), source: tier.source || { kind: tier.meta || tier.proven ? "Tournament list" : "Generated" } }));
+    await mutate((st) => st.decks.push(...ds), { msg: `Saved ${ds.length} decks to My decks.` });
   };
 
   // ----- meta decks & ideas -----
