@@ -1,3 +1,7 @@
+3.60.2 — Yu-Gi-Oh! printing prices retry
+- If the price source fails for some of a card's sets, the app now asks again instead of keeping
+  a partial list.
+
 3.60.1 — All printing prices for Yu-Gi-Oh! cards in many sets
 - Cards printed in dozens of sets (Blue-Eyes White Dragon, Ash Blossom) ran into the server's
   per-request limit, so only some of their printings got prices. The server now prices them over

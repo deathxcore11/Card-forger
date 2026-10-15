@@ -23,7 +23,7 @@ export async function ygoPriceRoute(url,ctx,fetchImpl=fetch){
  const cache=globalThis.caches?.default,k=new Request(url.href),cached=await cache?.match(k);if(cached)return cached;
  // Cloudflare allows about 50 outside requests per call. Cached responses don't count; a card in
  // many sets is priced over a few calls (partial answers aren't cached, the app asks again).
- let budget=44,partial=false;
+ let budget=44,partial=false;const errors=[];
  const get=async u=>{const key=new Request(u),old=await cache?.match(key);if(old)return old.json();if(budget--<=0){partial=true;throw Error('Request budget used');}const r=await fetchImpl(u,{headers:{Accept:'application/json','User-Agent':'CardStashy/3.38 (cached exact printing prices; github.com/deathxcore11/Card-forger)'},signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error(`Price provider ${new URL(u).hostname} returned ${r.status}`);const d=await r.json();ctx?.waitUntil?.(cache?.put(key,Response.json(d,{headers:{'Cache-Control':'public,max-age=21600'}})));return d;};
  try{
   const [data,groups]=await Promise.all([get('https://db.ygoprodeck.com/api/v7/cardinfo.php?id='+id),get('https://tcgcsv.com/tcgplayer/2/groups')]),card=data.data?.[0];
@@ -43,9 +43,9 @@ export async function ygoPriceRoute(url,ctx,fetchImpl=fetch){
      const quotes=(prices.results||[]).filter(q=>q.productId===product.productId && Number(q.marketPrice)>0).map(q=>({edition:q.subTypeName,market:Number(q.marketPrice),low:q.lowPrice}));
      if(quotes.length)printings.push({...set,productId:product.productId,url:`https://www.tcgplayer.com/product/${product.productId}`,quotes});
     }
-   }catch{}
+   }catch(e){partial=true;errors.push(String(e.message||e).slice(0,80));}
   }));
-  const response=Response.json({cardId:id,printings,partial,source:'TCGplayer market via TCGCSV',updatedAt:new Date().toISOString()},{headers:{'Cache-Control':partial?'no-store':'public,max-age=21600'}});if(!partial)ctx?.waitUntil?.(cache?.put(k,response.clone()));return response;
+  const response=Response.json({cardId:id,printings,partial,errors:errors.slice(0,5),source:'TCGplayer market via TCGCSV',updatedAt:new Date().toISOString()},{headers:{'Cache-Control':partial?'no-store':'public,max-age=21600'}});if(!partial)ctx?.waitUntil?.(cache?.put(k,response.clone()));return response;
  }catch(e){return Response.json({error:'Exact printing prices temporarily unavailable',notice:e.message},{status:503});}
 }
 export function editionPrice(set,edition){
