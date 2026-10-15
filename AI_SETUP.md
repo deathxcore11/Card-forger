@@ -41,3 +41,12 @@ The quota object stores counters and a daily-salted hash of Cloudflare's client 
 - Reports distinguish ideas from strengths/risks and expose remaining costs, timing and rules checks.
 - No live tournament, pricing or external rules lookup is provided to the model.
 - Tests mock the API. After activation, compare winning lists against deliberately damaged lists in all three games before treating AI advice as dependable.
+
+## Ask AI (in-app assistant)
+
+`/api/ai/ask` uses the same `OPENAI_API_KEY`, model and quota switch. The model only receives the
+player's question, earlier answers in the same chat, and the results of app tools it asks for
+(card search, card details, collection summary, sets, set prices, meta decks with owned %, saved
+decks, builder setup). Tools run on the device; the Worker validates every message, rejects
+unknown tools or roles, stores nothing and never browses the web. With limits on, each new question
+uses one allowance; its follow-up tool rounds don't.

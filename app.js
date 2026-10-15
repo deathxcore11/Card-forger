@@ -1,4 +1,6 @@
 import { showAiReview } from './ai-review.js';
+import { openAsk } from './ai-ask.js';
+import { makeAskTools } from './ai-tools.js';
 import { ask, askText } from "./dialog.js";
 import { attachHomeSwipe } from "./home-swipe.js";
 import { useMyPrices, myPriceKey, ensureTcgPrices } from "./mtg-tcgprice.js";
@@ -24,7 +26,7 @@ import { binderPage, binderMatches, BINDER_COLORS, attachBinderDrag, animateTurn
 // Screens live in views.js; deck/collection math in core.js, planner.js,
 // strategy.js, deck-flow.js and insights.js.
 import { metaState, loadMeta as loadMetaData, MTG_META_FORMATS, allCachedMeta } from "./meta.js";
-import { mtgPower, mtgMetaKey, asShown } from "./power.js";
+import { mtgPower, mtgMetaKey, asShown, shownPower } from "./power.js";
 import { playedAlongside } from "./guide.js";
 import { mtgPairQueries, rankPairs, edhPop } from "./pairing.js";
 import { nextFact } from "./facts.js";
@@ -66,7 +68,7 @@ import { GAMES, GAME_ICON, GAME_COLOR } from "./games.js";
 import { ICON, actionIcon, decorateGlyphs } from "./icons.js";
 import { openZoom, scryfallHi } from "./zoom.js";
 import { initCloud, cloudInfo, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
-import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact } from "./insights.js";
+import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact, lotPrice } from "./insights.js";
 
 /* =========================================================
    Persistence
@@ -1544,6 +1546,21 @@ async function runBuild() {
   const names = [...new Set((B.results[f.name] || []).flatMap((t) => t.cards.map((r) => r.name)))].filter((n) => !/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(n)).sort((a, b) => (priceOf(b) ?? 0) - (priceOf(a) ?? 0));
   if (names.length) refreshCheapest(names, { api, key, limit: 40 }).then((n) => n && S.ui.sheetCtx?.type === "build" && refreshSheet()).catch(() => {});
 }
+// Tour demos use real card art from the app's own reference catalog (bundled, so new users have it).
+const tourArt = () => {
+  const cards = Object.values(S.catalog).filter((c) => c?.image_uris?.normal && !/Land/.test(c.type_line || "")).slice(0, 8);
+  const top = Object.values(allCachedMeta()).map((m) => m.data?.archetypes?.[0]?.name).find(Boolean);
+  return { game: T.game(), art: cards.map((c) => c.image_uris.normal), names: cards.map((c) => c.name), meta: top || "" };
+};
+A.replayTour = () => { closeSheet(); openTour(tourArt()); };
+// Ask AI: the in-app assistant. Its tools are the app's own functions, run here on the device.
+let askTools = null;
+A.askOpen = () => {
+  askTools ||= makeAskTools({ S, T, A, go, esc, api, resolve, cacheCard, loadSetIndex, loadMetaData, metaState, MTG_META_FORMATS, allMeta: () => Object.fromEntries(Object.entries(allCachedMeta()).map(([k, v]) => [k, v.data])), priceOf, inv, meta, collectionValue, lotPrice, mtgPower, shownPower, tcgCtx,
+    openMtgBuild: (seed, fmt, budget) => { Object.assign(S.ui.build, { baseDeck: null, seed, results: {}, msg: "", openTier: null, format: formatOf(fmt).name, custom: budget ? String(budget) : "" }); openSheet(V.buildSheet(), { type: "build" }); runBuild(); },
+    openTcgBuild: async (g, id, budget) => { await A.tBuild({ dataset: { id } }); if (budget) C.tBuildCustom({ value: String(budget) }); } });
+  openAsk({ game: T.game(), tools: askTools, show: (s) => safely(askTools.open(s)) });
+};
 A.buildFrom = async (t) => {
   const c = meta(t.dataset.name) || (await resolve(t.dataset.name, true)),
     B = S.ui.build,
@@ -4381,7 +4398,7 @@ async function boot() {
   {
     const cards = S.state.collection.length + ["ptcg", "ygo"].reduce((n, g) => n + T.gs(g).collection.length, 0),
       decks = S.state.decks.length + ["ptcg", "ygo"].reduce((n, g) => n + T.gs(g).decks.length, 0);
-    if (shouldTour({ cards, decks }) && !location.hash.startsWith("#shared")) setTimeout(() => openTour({ game: T.game() }), 600);
+    if (shouldTour({ cards, decks }) && !location.hash.startsWith("#shared")) setTimeout(() => openTour(tourArt()), 600);
   }
   $("#app").classList.add("ready");
   initCloud({

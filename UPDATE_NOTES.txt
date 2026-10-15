@@ -1,3 +1,18 @@
+3.73.0 — Ask AI and a new animated welcome tour
+- Ask AI: tap ✦ Ask next to the search bar (or the Ask AI chip) and ask anything about your
+  cards, by typing or by voice. It can only use the app: search cards, read a card's text and
+  prices, your collection and its most valuable cards, sets (newest, by name), the most valuable
+  cards in a set, the decks winning tournaments and how much of each you own, your decks with
+  their Deck Power, and opening the deck builder for "build me a … deck for $…". Answers come
+  with the real cards, sets or decks to tap. Anything not from app data is labelled "General
+  knowledge". No web browsing, no links.
+- Glowing orb, a listening wave while you speak, "tink tink tink" dots with the step it's
+  actually doing (searching cards, checking tournament results…), and answer cards that deal in.
+- New welcome tour: five cards, each with a looping mini replay of the app (scan, build a deck
+  three ways, Deck Power, prices, Ask AI with example questions), using real card art. Replay it
+  any time from Settings.
+- The AI coach now shows real card art in the dealt hand, winning-line steps and swaps.
+
 3.72.2 — Every top deck in the Meta tab
 - The evaluation showed the coach covered only 1–3 of the five top decks. It is now asked for
   exactly one matchup per top deck, and any it still skips are listed with their key cards from
