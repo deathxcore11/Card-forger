@@ -1,3 +1,9 @@
+3.60.1 — All printing prices for Yu-Gi-Oh! cards in many sets
+- Cards printed in dozens of sets (Blue-Eyes White Dragon, Ash Blossom) ran into the server's
+  per-request limit, so only some of their printings got prices. The server now prices them over
+  a few quick requests and keeps what it has looked up. Blue-Eyes now shows all 42 priced
+  printings, instead of 7–13.
+
 3.60.0 — Yu-Gi-Oh! set-by-set check, tap-to-buy and your own price in every game
 - Checked all 1,035 Yu-Gi-Oh! sets and 14,615 cards the way the app loads them.
   - Every card has art.

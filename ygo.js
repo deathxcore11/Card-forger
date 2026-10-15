@@ -189,7 +189,10 @@ export const ygoSource = {
     const d = await get("/cardinfo.php", { id, misc: "yes" });
     if (!d.data?.[0]) throw Error("Card not found.");
     const card=normalizeYgo(d.data[0]);
-    if(printings)try{const r=await fetch("api/prices/yugioh?id="+encodeURIComponent(card.id),{signal:AbortSignal.timeout(20000)});if(r.ok){applyYgoPrices(card,await r.json());card.printPriceSchema=1;}}catch{}
+    if(printings)try{
+      // A card printed in many sets is priced over a few requests (the Worker answers "partial").
+      for(let i=0;i<4;i++){const r=await fetch("api/prices/yugioh?id="+encodeURIComponent(card.id)+(i?"&more="+i:""),{signal:AbortSignal.timeout(20000)});if(!r.ok)break;const body=await r.json();applyYgoPrices(card,body);if(!body.partial){card.printPriceSchema=1;break;}}
+    }catch{}
     return card;
   },
   // Every card on a banlist ("tcg", "ocg" or "goat").
