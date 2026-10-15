@@ -191,7 +191,7 @@ export const ygoSource = {
     const card=normalizeYgo(d.data[0]);
     if(printings)try{
       // A card printed in many sets is priced over a few requests (the Worker answers "partial").
-      for(let i=0;i<6;i++){const r=await fetch("api/prices/yugioh?id="+encodeURIComponent(card.id)+(i?"&more="+i:""),{signal:AbortSignal.timeout(20000)});if(!r.ok)break;const body=await r.json();applyYgoPrices(card,body);if(!body.partial){card.printPriceSchema=1;break;}}
+      for(let i=0;i<10;i++){const r=await fetch("api/prices/yugioh?id="+encodeURIComponent(card.id)+(i?"&more="+i:""),{signal:AbortSignal.timeout(20000)});if(!r.ok)break;const body=await r.json();applyYgoPrices(card,body);if(!body.partial){card.printPriceSchema=1;break;}}
     }catch{}
     return card;
   },

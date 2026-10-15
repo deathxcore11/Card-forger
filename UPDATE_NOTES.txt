@@ -1,3 +1,7 @@
+3.60.4 — Yu-Gi-Oh! printing prices load fully on the first look
+- A card printed in dozens of sets now gets every printing price on the first look. The app keeps
+  asking in the background, up to 10 times, until the server has them all.
+
 3.60.3 — Every printing price for Yu-Gi-Oh! staples
 - The server stores each TCGplayer set's prices as one compact entry and stays within its
   per-request limit. A card printed in 40 sets (Blue-Eyes White Dragon) gets every price
