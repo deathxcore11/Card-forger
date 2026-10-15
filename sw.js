@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-v157";
+const CACHE = "cardforge-shell-v158";
 const ASSETS = [
   "./",
   "./index.html",
@@ -95,6 +95,7 @@ const ASSETS = [
   "./icon.svg",
   "./icon-192.png",
   "./icon-512.png",
+  "./icon-maskable-512.png",
 ];
 self.addEventListener("install", (e) =>
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS))),

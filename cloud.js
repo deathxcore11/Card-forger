@@ -214,6 +214,21 @@ export async function signOut() {
   setStatus("local");
 }
 
+// Deletes the signed-in account and everything synced to it (profile, collection, decks), via the
+// delete_my_account database function. Data on this device is left for the caller to clear.
+export async function deleteAccount() {
+  if (!client || !user) throw Error("Sign in first to delete your account.");
+  await flushPush().catch(() => {});
+  const { error } = await client.rpc("delete_my_account");
+  if (error) throw Error(/function .*does not exist|PGRST202/i.test(error.message + error.code) ? "Account deletion isn't set up on the server yet. Please try again later." : authError(error));
+  await client.auth.signOut().catch(() => {});
+  user = null;
+  profile = null;
+  pending = null;
+  authNotice = "";
+  setStatus("local");
+}
+
 async function loadProfile() {
   const { data } = await client.from("profiles").select("username, display_name, avatar_url, bio, favorite_formats").eq("id", user.id).maybeSingle();
   profile = data || { display_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "", avatar_url: user.user_metadata?.avatar_url || "" };

@@ -1,5 +1,5 @@
 {
-  "name": "CardStashy \u2014 Your Card Collection",
+  "name": "CardStashy — Your Card Collection",
   "short_name": "CardStashy",
   "start_url": "./#home",
   "scope": "./",
@@ -20,7 +20,7 @@
       "purpose": "any"
     },
     {
-      "src": "icon-512.png",
+      "src": "icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -36,5 +36,5 @@
     "games",
     "utilities"
   ],
-  "description": "Magic: The Gathering, Pok\u00e9mon and Yu-Gi-Oh! collections, binders and deck building."
+  "description": "Magic: The Gathering, Pokémon and Yu-Gi-Oh! collections, binders and deck building."
 }

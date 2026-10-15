@@ -115,6 +115,15 @@ never silently overwrite each other — if both changed, you choose which copy t
 is downloaded as a backup file. The first sign-in on a device with existing data asks before
 uploading or replacing anything. Signing out leaves the data on the device.
 
+### Account deletion (required by Google Play; one-time setup)
+
+Players delete their account in **Settings → Account → Delete account** (typed DELETE to confirm),
+and the public page **/delete-account.html** explains how, for the Play Store's "delete account" URL.
+Deletion runs a database function, so run this once in Supabase → **SQL Editor**:
+`supabase/migrations/20261015120000_delete_my_account.sql`. It deletes only the signed-in user's
+account, synced collection and profile; no secret key is involved. Until it's run, the button says
+deletion isn't set up yet.
+
 ## Files
 
 | File | Purpose |

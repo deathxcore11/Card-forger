@@ -1,3 +1,15 @@
+3.63.0 — Store readiness: account deletion and a new app icon
+- Delete your account: Settings → Account → Delete account. You type DELETE to confirm. It
+  removes your account and the collection, decks and profile synced to it. Afterwards you choose
+  whether to also erase this device's copy.
+- A public page, delete-account.html, explains how to delete an account from any browser, for
+  the Google Play listing.
+- New app icon: three fanned gold cards (one for each game) on the dark background, with a
+  full-bleed version for Android's icon shapes.
+- Security check: no secret keys anywhere in the code or the full commit history. The Supabase
+  key in config.js is the public "publishable" key, which is designed to be shared. A test now
+  fails if a secret key is ever added.
+
 3.62.0 — Pokémon matchup odds checked against real matches
 - Backtest: 8,469 real matches from 30 Limitless events. The app predicted each match from both
   players' lists before looking at the result, and the predictions were scored against what

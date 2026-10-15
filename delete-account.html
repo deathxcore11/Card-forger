@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Delete your CardStashy account</title>
+<meta name="description" content="How to delete your CardStashy account and the data synced to it.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+  :root { --bg: #0f1115; --panel: #171a21; --ink: #eceef3; --muted: #a2a8b6; --rule: #2a2f3a; --gold: #e8b95b; --gold-ink: #1b1406; --danger: #f07c7c; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 680px; margin: 0 auto; padding-block: 40px 64px; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+  header { display: flex; gap: 12px; align-items: center; }
+  header img { width: 40px; height: 40px; border-radius: 10px; }
+  header b { font-size: 18px; }
+  h1 { font-size: clamp(26px, 6vw, 34px); line-height: 1.15; margin: 0; text-wrap: balance; }
+  h2 { font-size: 19px; margin: 0 0 8px; }
+  p, li { color: var(--muted); max-width: 64ch; }
+  section { background: var(--panel); border: 1px solid var(--rule); border-radius: 14px; padding: 20px; }
+  ol, ul { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+  strong { color: var(--ink); }
+  a { color: var(--gold); }
+  .btn { display: inline-block; background: var(--gold); color: var(--gold-ink); font-weight: 700; text-decoration: none; padding: 12px 18px; border-radius: 12px; margin-top: 12px; }
+  .btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+  .warn { color: var(--danger); }
+  footer { color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <header><img src="icon.svg" alt=""><b>CardStashy</b></header>
+  <h1>Delete your CardStashy account</h1>
+  <p>You can delete your account and everything synced to it at any time, from the app on your phone or from any web browser. You don't need the app installed.</p>
+
+  <section>
+    <h2>How to delete it</h2>
+    <ol>
+      <li>Open CardStashy, in the app or at the link below, and <strong>sign in</strong> to the account you want to delete.</li>
+      <li>Open <strong>Settings</strong> (the button at the top right), then <strong>Account</strong>.</li>
+      <li>Open <strong>Delete account</strong> and tap <strong>Delete my account</strong>.</li>
+      <li>Type <strong>DELETE</strong> to confirm.</li>
+    </ol>
+    <a class="btn" href="./#settings">Open CardStashy settings</a>
+  </section>
+
+  <section>
+    <h2>What gets deleted</h2>
+    <ul>
+      <li>Your account: sign-in email, password and Google sign-in link.</li>
+      <li>Everything synced to it: your collection, decks, wishlist, binders, saved prices, match results and settings.</li>
+      <li>Your profile: name, avatar and bio.</li>
+    </ul>
+    <p class="warn">Deletion is permanent and can't be undone. Download a backup first (Settings → Backup &amp; data) if you might want your data later.</p>
+  </section>
+
+  <section>
+    <h2>What stays</h2>
+    <ul>
+      <li><strong>The copy on your device.</strong> CardStashy also keeps your data on the device you use. After deleting your account, the app asks whether to erase that copy too. You can also erase it any time with Settings → Start empty, or by uninstalling the app.</li>
+      <li><strong>Shared price history.</strong> Card prices CardStashy records are about cards, not people. They hold nothing about you and aren't deleted.</li>
+    </ul>
+    <p>Your account data is removed from CardStashy's database as soon as you confirm. Our database host may keep routine backups for a short period before they expire.</p>
+  </section>
+
+  <footer>CardStashy · account and data deletion</footer>
+</main>
+</body>
+</html>

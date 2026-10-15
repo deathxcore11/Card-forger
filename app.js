@@ -63,7 +63,7 @@ import { rulesPage } from "./rules.js";
 import { GAMES, GAME_ICON, GAME_COLOR } from "./games.js";
 import { ICON, actionIcon, decorateGlyphs } from "./icons.js";
 import { openZoom, scryfallHi } from "./zoom.js";
-import { initCloud, cloudInfo, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, saveProfile, resolvePending, syncNow, resendConfirmation } from "./cloud.js";
+import { initCloud, cloudInfo, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact } from "./insights.js";
 
 /* =========================================================
@@ -1768,6 +1768,24 @@ A.finishPasswordReset = async (t) => {
   const done = busy(t?.tagName === "BUTTON" ? t : $('[data-act="finishPasswordReset"]'),"Saving…");
   try { await finishPasswordReset(password,confirmPassword); render(); toast("Password saved. You’re signed in."); }
   finally { for (const id of ["resetPassword","resetConfirm"]) if ($("#"+id)) $("#"+id).value = ""; done(); }
+};
+// Delete the account and everything synced to it (Google Play requires this in the app). Typed
+// confirmation; then the player chooses whether this device's copy goes too.
+A.deleteAccount = async (t) => {
+  const email = cloudInfo().user?.email || "your account";
+  const v = await askText(`This permanently deletes ${email} and the collection, decks and profile synced to it. It can't be undone. Type DELETE to confirm.`, "", { title: "Delete account", ok: "Delete account", danger: true });
+  if (v === null) return;
+  if (v.trim() !== "DELETE") return toast("Account not deleted. Type DELETE in capitals to confirm.");
+  const done = busy(t, "Deleting…");
+  try { await deleteAccount(); }
+  catch (e) { done(); return toast(e.message || "Couldn't delete the account. Try again."); }
+  done();
+  if (await ask("Your account is deleted. Also erase the collection and decks saved on this device?", { ok: "Erase this device", cancel: "Keep on this device", danger: true })) {
+    await writeRecords([[RECOVERY, blank()], [STORAGE, blank()]]);
+    S.state = blank();
+  }
+  go("#home");
+  toast("Your account and its synced data were deleted.");
 };
 A.signOut = async () => {
   if (!await ask("Sign out? Your cards stay on this device; they just stop syncing.")) return;
