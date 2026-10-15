@@ -1,3 +1,8 @@
+3.69.0 — Owner testing without app review quotas
+- At the owner's request, AI_LIMITS_ENABLED=false bypasses both daily and hourly app quotas immediately, without resetting stored counters.
+- OpenAI billing/rate limits, private key requirements, payload/output bounds and duplicate-request guards remain in effect.
+- Connection status now reports limitsEnabled. Restore true before public launch or replace with authenticated subscription allowances.
+
 3.68.0 — AI review, front and center
 - AI review appears first in Power in all three games, with a compact game-colored launcher.
 - Animated glass dialog shows honest request progress, results with text evidence, or actionable errors. Close it to keep browsing and reopen without another request.

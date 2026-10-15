@@ -54,8 +54,10 @@ async function readBounded(request) {
   try { return JSON.parse(new TextDecoder().decode(bytes)); } catch { throw fail('Send a valid deck as JSON.'); }
 }
 export async function aiReviewRoute(request, env, { fetcher = fetch } = {}) {
-  const configured = !!(env.OPENAI_API_KEY && env.AI_REVIEW_LIMITS);
-  if (request.method === 'GET') return reply({ available: configured, provider: 'OpenAI', scoreChanges: false });
+  // Explicit testing switch. Missing/invalid values retain limits by default.
+  const limitsEnabled = env.AI_LIMITS_ENABLED !== 'false';
+  const configured = !!(env.OPENAI_API_KEY && (!limitsEnabled || env.AI_REVIEW_LIMITS));
+  if (request.method === 'GET') return reply({ available: configured, provider: 'OpenAI', scoreChanges: false, limitsEnabled });
   if (request.method !== 'POST') return reply({ message: 'Use POST for a deck review.' }, 405, { Allow: 'GET, POST' });
   if (!configured) return reply({ message: 'AI review is not connected yet. Your deck checks still work.' }, 503);
   const origin = request.headers.get('Origin');
@@ -64,12 +66,14 @@ export async function aiReviewRoute(request, env, { fetcher = fetch } = {}) {
   try {
     const deck = cleanDeck(await readBounded(request));
     if (!deck.cards.some(c => c.known && (c.text || c.details))) throw fail('Load card details before requesting AI review.');
-    // Cloudflare supplies this header; raw addresses are never persisted. Rotate hashes daily.
-    const day = new Date().toISOString().slice(0, 10), ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-    const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(day + ':' + ip)))].map(x => x.toString(16).padStart(2, '0')).join('');
-    const gate = env.AI_REVIEW_LIMITS.get(env.AI_REVIEW_LIMITS.idFromName('global'));
-    const limit = await gate.fetch('https://limit/reserve', { method: 'POST', body: JSON.stringify({ hash }) });
-    if (!limit.ok) return reply({ code: 'app_limit', message: 'AI review limit reached. Try later; your regular deck checks remain available.' }, 429, { 'Retry-After': '3600' });
+    if (limitsEnabled) {
+      // Cloudflare supplies this header; raw addresses are never persisted. Rotate hashes daily.
+      const day = new Date().toISOString().slice(0, 10), ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+      const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(day + ':' + ip)))].map(x => x.toString(16).padStart(2, '0')).join('');
+      const gate = env.AI_REVIEW_LIMITS.get(env.AI_REVIEW_LIMITS.idFromName('global'));
+      const limit = await gate.fetch('https://limit/reserve', { method: 'POST', body: JSON.stringify({ hash }) });
+      if (!limit.ok) return reply({ code: 'app_limit', message: 'AI review limit reached. Try later; your regular deck checks remain available.' }, 429, { 'Retry-After': '3600' });
+    }
     const upstream = await fetcher('https://api.openai.com/v1/responses', { method: 'POST', signal: AbortSignal.timeout(45000), headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: env.OPENAI_MODEL || 'gpt-4.1-mini', store: false, max_output_tokens: 2400, instructions, input: JSON.stringify(deck), text: { format: { type: 'json_schema', name: 'deck_review', strict: true, schema } } }) });
     if (!upstream.ok) {
       // Never expose provider messages (they may echo user input or credentials).

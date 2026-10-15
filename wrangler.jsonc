@@ -11,6 +11,8 @@
   //   npx wrangler secret put TOPDECK_KEY   (or Workers → cardforge2 → Settings → Variables and Secrets)
   // Second trigger: record shared price history (needs the SUPABASE_SERVICE_KEY secret).
   "triggers": { "crons": ["17 6 * * *", "41 7 * * *"] },
+  // Temporary owner testing mode. Restore "true" before the public launch.
+  "vars": { "AI_LIMITS_ENABLED": "false" },
   "durable_objects": { "bindings": [{ "name": "AI_REVIEW_LIMITS", "class_name": "AiReviewLimits" }] },
   "migrations": [{ "tag": "ai-review-v1", "new_sqlite_classes": ["AiReviewLimits"] }],
   "assets": {

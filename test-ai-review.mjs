@@ -26,7 +26,7 @@ const fetcher = async (url, init) => {
 assert.equal((await aiReviewRoute(request(), {}, { fetcher })).status, 503);
 assert.equal((await aiReviewRoute(request(), { OPENAI_API_KEY: 'key' }, { fetcher })).status, 503, 'fails closed without durable usage gate');
 assert.equal(calls, 0);
-assert.deepEqual(await (await aiReviewRoute(request(null, {}, 'GET'), {})).json(), { available: false, provider: 'OpenAI', scoreChanges: false });
+assert.deepEqual(await (await aiReviewRoute(request(null, {}, 'GET'), {})).json(), { available: false, provider: 'OpenAI', scoreChanges: false, limitsEnabled: true });
 const env = setup();
 for (const game of ['mtg', 'ygo', 'ptcg']) {
   const res = await aiReviewRoute(request({ ...payload, game }), env, { fetcher });
@@ -115,3 +115,14 @@ for (const [status, error, expected] of [
  const body = await res.json(); assert.equal(body.code,expected); assert.ok(!JSON.stringify(body).includes('private-test-key'));
 }
 console.log('PASS: provider credits, spend, usage, rate, authentication, model access and outage errors have distinct safe guidance.');
+
+// Owner testing can explicitly bypass both app quotas, including previously exhausted counts.
+const blockedEnv=setup(0), unlimited={...blockedEnv,AI_LIMITS_ENABLED:'false'};
+for(let i=0;i<25;i++) assert.equal((await aiReviewRoute(request(),unlimited,{fetcher})).status,200);
+assert.equal(blockedEnv.st.data.size,0,'disabled limits do not reserve or write quota counters');
+assert.equal((await aiReviewRoute(request(),{OPENAI_API_KEY:'private-test-key',AI_LIMITS_ENABLED:'false'},{fetcher})).status,200,'testing mode needs no limiter binding');
+assert.equal((await aiReviewRoute(request(),{AI_LIMITS_ENABLED:'false'},{fetcher})).status,503,'testing does not bypass the private API key requirement');
+assert.equal((await aiReviewRoute(request(),{...unlimited,AI_LIMITS_ENABLED:'true'},{fetcher})).status,429,'restoring limits respects existing cap');
+assert.equal((await aiReviewRoute(request(),{...unlimited,AI_LIMITS_ENABLED:'typo'},{fetcher})).status,429,'invalid switch fails closed');
+const status=await(await aiReviewRoute(request(null,{},'GET'),unlimited)).json();assert.equal(status.limitsEnabled,false);
+console.log('PASS: explicit testing mode bypasses hourly/daily quotas, retains key/validation requirements, reports its state and can restore limits.');
