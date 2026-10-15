@@ -95,3 +95,16 @@ const yg = async (u) => {
 const ygp = await (await ygoPriceRoute(new URL("https://x/api/prices/yugioh?id=89631139&t=1"), null, yg)).json();
 assert.deepEqual(ygp.printings.map((p) => [p.code, p.productId]), [["MP14-EN001", 50]], "set found by code; colour variants sharing a code aren't guessed");
 console.log("PASS: Yu-Gi-Oh! printings find their TCGplayer set by code, never guessing between variants.");
+
+// Each finish is checked on its own: a printing with a regular price but no foil price still
+// fetches its set's TCGplayer prices, and the foil then shows TCGplayer's quote.
+const { needsTcgPrices } = await import("./mtg-tcgprice.js");
+const bolt = { name: "Lightning Bolt", set: "m10", tcgplayer_id: 4242, finishes: ["nonfoil", "foil"], prices: { usd: "1.50", usd_foil: null } };
+assert.equal(needsTcgPrices(bolt), true, "missing foil price triggers the lookup");
+assert.equal(needsTcgPrices({ ...bolt, prices: { usd: "1.50", usd_foil: "9.00" } }), false, "both finishes priced: no lookup");
+assert.equal(needsTcgPrices({ ...bolt, finishes: ["nonfoil"] }), false, "a printing with no foil doesn't need one");
+assert.equal(needsTcgPrices({ ...bolt, finishes: ["nonfoil", "etched"], prices: { usd: "1.50" } }), false, "etched needs its own TCGplayer product");
+setTcgPrices("m10", { 4242: { Normal: { market: 1.4, low: 1, mid: 2 }, Foil: { market: 8.75, low: 7, mid: 9 } } });
+assert.equal(cardPrice(bolt, "foil"), 8.75, "foil filled from TCGplayer");
+assert.equal(cardPrice(bolt), 1.5, "Scryfall's regular price still wins");
+console.log("PASS: Each Magic finish is priced on its own: a missing foil price is looked up even when the regular one exists.");

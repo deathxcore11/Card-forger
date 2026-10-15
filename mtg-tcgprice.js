@@ -36,12 +36,15 @@ export function tcgFallback(c, finish = "nonfoil") {
   const value = sub ? sub.market ?? sub.low ?? sub.mid : null;
   return value == null ? null : { value, kind: sub.market != null ? "market" : "low" };
 }
-const unpriced = (c) => c?.set && !["usd", "usd_foil", "usd_etched"].some((k) => c.prices?.[k]) && productIdOf(c);
+// A printing needs its set's TCGplayer prices when any finish it comes in (Scryfall's `finishes`)
+// has no Scryfall USD price: a card priced only as a regular printing still needs its foil.
+const FIELD = { nonfoil: "usd", foil: "usd_foil", etched: "usd_etched" };
+export const needsTcgPrices = (c) => !!c?.set && (Array.isArray(c.finishes) && c.finishes.length ? c.finishes : ["nonfoil"]).some((f) => FIELD[f] && !(Number(c.prices?.[FIELD[f]]) > 0) && productIdOf(c, f) && (f !== "etched" || c.tcgplayer_etched_id));
 
 // Fetch the sets of any unpriced printings among `cards`; fires "cf:tcg-prices" when new prices land.
 export async function ensureTcgPrices(cards) {
   if (typeof fetch !== "function" || typeof location === "undefined") return;
-  const codes = [...new Set((cards || []).filter(unpriced).map((c) => c.set))].filter((code) => !store().has(code) && !pending.has(code) && !(Date.now() - (failed.get(code) || 0) < 600000)).slice(0, 8);
+  const codes = [...new Set((cards || []).filter(needsTcgPrices).map((c) => c.set))].filter((code) => !store().has(code) && !pending.has(code) && !(Date.now() - (failed.get(code) || 0) < 600000)).slice(0, 8);
   if (!codes.length) return;
   codes.forEach((code) => pending.add(code));
   let got = false;

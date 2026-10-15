@@ -1,3 +1,8 @@
+3.61.1 — Foil prices for Magic printings with only a regular price
+- The TCGplayer price lookup now checks each finish a printing comes in. A printing with a regular
+  price but no foil price now gets TCGplayer's foil price, labelled. Before, it was skipped
+  because the regular price existed. Scryfall's own prices always win where they exist.
+
 3.61.0 — Magic Matchups fixed, Commander pods
 - Fixed: "Simulate matchups" on Magic decks failed with "simulateMatchup is not defined". A new
   test checks that the Matchups code imports every simulation it uses.
