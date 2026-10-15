@@ -1,3 +1,8 @@
+3.60.3 — Every printing price for Yu-Gi-Oh! staples
+- The server stores each TCGplayer set's prices as one compact entry and stays within its
+  per-request limit. A card printed in 40 sets (Blue-Eyes White Dragon) gets every price
+  TCGplayer has in a few quick background requests the first time, then instantly.
+
 3.60.2 — Yu-Gi-Oh! printing prices retry
 - If the price source fails for some of a card's sets, the app now asks again instead of keeping
   a partial list.

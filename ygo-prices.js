@@ -18,34 +18,43 @@ export function applyYgoPrices(card,body){
   changed=true;
  }if(changed&&!body.partial)card.printPriceSchema=1;return changed;
 }
+// Group data kept in memory by the Worker isolate between calls (free; Cache API calls are not).
+const memo=new Map();
 export async function ygoPriceRoute(url,ctx,fetchImpl=fetch){
  const id=url.searchParams.get('id') || '';if(!/^\d{1,12}$/.test(id))return Response.json({error:'Invalid card'},{status:400});
- const cache=globalThis.caches?.default,k=new Request(url.href),cached=await cache?.match(k);if(cached)return cached;
- // Cloudflare allows about 50 outside requests per call. Cached responses don't count; a card in
- // many sets is priced over a few calls (partial answers aren't cached, the app asks again).
- let budget=44,partial=false;const errors=[];
- const get=async u=>{const key=new Request(u),old=await cache?.match(key);if(old)return old.json();if(budget--<=0){partial=true;throw Error('Request budget used');}const r=await fetchImpl(u,{headers:{Accept:'application/json','User-Agent':'CardStashy/3.38 (cached exact printing prices; github.com/deathxcore11/Card-forger)'},signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error(`Price provider ${new URL(u).hostname} returned ${r.status}`);const d=await r.json();ctx?.waitUntil?.(cache?.put(key,Response.json(d,{headers:{'Cache-Control':'public,max-age=21600'}})));return d;};
+ // Cloudflare allows about 50 subrequests per call, and every fetch, cache read and cache write
+ // counts. Each TCGplayer set is kept as one compact cache entry (products + prices), so a cached
+ // set costs one operation; a card in many sets is priced over a few calls (a partial answer
+ // isn't cached and the app asks again).
+ let ops=0,partial=false;const errors=[],LIMIT=46;
+ const cache=globalThis.caches?.default,op=()=>{if(++ops>LIMIT){partial=true;throw Error('Request budget used');}};
+ op();const k=new Request(url.href.replace(/[?&]more=\d+/,'')),cached=await cache?.match(k);if(cached)return cached;
+ const fetchJson=async u=>{op();const r=await fetchImpl(u,{headers:{Accept:'application/json','User-Agent':'CardStashy/3.60 (cached exact printing prices; github.com/deathxcore11/Card-forger)'},signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error(`Price provider ${new URL(u).hostname} returned ${r.status}`);return r.json();};
+ // One cached JSON per key, built by `make` on a miss.
+ const stored=async(key,make)=>{if(memo.has(key))return memo.get(key);const req=new Request('https://cardstashy.cache/ygo/'+key);op();const old=await cache?.match(req);if(old){const d=await old.json();memo.set(key,d);return d;}const d=await make();memo.set(key,d);op();ctx?.waitUntil?.(cache?.put(req,Response.json(d,{headers:{'Cache-Control':'public,max-age=21600'}})));return d;};
  try{
-  const [data,groups]=await Promise.all([get('https://db.ygoprodeck.com/api/v7/cardinfo.php?id='+id),get('https://tcgcsv.com/tcgplayer/2/groups')]),card=data.data?.[0];
+  const [data,groups]=await Promise.all([fetchJson('https://db.ygoprodeck.com/api/v7/cardinfo.php?id='+id),stored('groups',async()=>((await fetchJson('https://tcgcsv.com/tcgplayer/2/groups')).results||[]).map(g=>({groupId:g.groupId,name:g.name,abbreviation:g.abbreviation})))]),card=data.data?.[0];
   if(String(card?.id)!==id)throw Error('Card identity mismatch');
   const sets=(card.card_sets||[]).map(s=>({code:s.set_code,rarity:s.set_rarity,name:s.set_name}));const printings=[];
   // Each printing's TCGplayer set: the one group with the set's name, else the one whose code is
   // the printing's code prefix (LOB-EN001 → LOB; sneak peeks and tin packs are listed under their
-  // parent's code). Each group is fetched once; a product still has to carry the exact code and rarity.
-  const all=groups.results||[],groupFor=s=>{const byName=all.filter(g=>norm(g.name)===norm(s.name));if(byName.length===1)return byName[0];const pre=String(s.code||'').split('-')[0].toUpperCase(),byCode=all.filter(g=>String(g.abbreviation||'').toUpperCase()===pre);return byCode.length===1?byCode[0]:null;};
+  // parent's code). A product still has to carry the exact code and rarity.
+  const groupFor=s=>{const byName=groups.filter(g=>norm(g.name)===norm(s.name));if(byName.length===1)return byName[0];const pre=String(s.code||'').split('-')[0].toUpperCase(),byCode=groups.filter(g=>String(g.abbreviation||'').toUpperCase()===pre);return byCode.length===1?byCode[0]:null;};
   const byGroup=new Map();for(const set of sets){const g=groupFor(set);if(g)(byGroup.get(g.groupId)||byGroup.set(g.groupId,[]).get(g.groupId)).push(set);}
+  // A set's products (number + rarity only) with their market prices, as one compact entry.
+  const groupData=groupId=>stored('group-'+groupId,async()=>{const [products,prices]=await Promise.all([fetchJson(`https://tcgcsv.com/tcgplayer/2/${groupId}/products`),fetchJson(`https://tcgcsv.com/tcgplayer/2/${groupId}/prices`)]);const q=new Map();for(const p of prices.results||[])if(Number(p.marketPrice)>0)(q.get(p.productId)||q.set(p.productId,[]).get(p.productId)).push({edition:p.subTypeName,market:Number(p.marketPrice),low:p.lowPrice});return (products.results||[]).filter(p=>q.has(p.productId)).map(p=>({productId:p.productId,extendedData:(p.extendedData||[]).filter(x=>/number|rarity/i.test(x.name)),quotes:q.get(p.productId)}));});
   const ids=[...byGroup.keys()];
-  for(let i=0;i<ids.length;i+=3)await Promise.all(ids.slice(i,i+3).map(async groupId=>{
+  for(let i=0;i<ids.length&&!partial;i+=3)await Promise.all(ids.slice(i,i+3).map(async groupId=>{
    try{
-    const [products,prices]=await Promise.all([get(`https://tcgcsv.com/tcgplayer/2/${groupId}/products`),get(`https://tcgcsv.com/tcgplayer/2/${groupId}/prices`)]);
+    const products=await groupData(groupId);
     for(const set of byGroup.get(groupId)){
-     const hits=ygoProductMatches(set,products.results||[]);if(hits.length!==1)continue;const product=hits[0];
-     const quotes=(prices.results||[]).filter(q=>q.productId===product.productId && Number(q.marketPrice)>0).map(q=>({edition:q.subTypeName,market:Number(q.marketPrice),low:q.lowPrice}));
-     if(quotes.length)printings.push({...set,productId:product.productId,url:`https://www.tcgplayer.com/product/${product.productId}`,quotes});
+     const hits=ygoProductMatches(set,products);if(hits.length!==1)continue;const product=hits[0];
+     printings.push({...set,productId:product.productId,url:`https://www.tcgplayer.com/product/${product.productId}`,quotes:product.quotes});
     }
-   }catch(e){partial=true;errors.push(String(e.message||e).slice(0,80));}
+   }catch(e){partial=true;if(errors.length<5)errors.push(String(e.message||e).slice(0,80));}
   }));
-  const response=Response.json({cardId:id,printings,partial,errors:errors.slice(0,5),source:'TCGplayer market via TCGCSV',updatedAt:new Date().toISOString()},{headers:{'Cache-Control':partial?'no-store':'public,max-age=21600'}});if(!partial)ctx?.waitUntil?.(cache?.put(k,response.clone()));return response;
+  const response=Response.json({cardId:id,printings,partial,errors,source:'TCGplayer market via TCGCSV',updatedAt:new Date().toISOString()},{headers:{'Cache-Control':partial?'no-store':'public,max-age=21600'}});
+  if(!partial&&ops<LIMIT)ctx?.waitUntil?.(cache?.put(k,response.clone()));return response;
  }catch(e){return Response.json({error:'Exact printing prices temporarily unavailable',notice:e.message},{status:503});}
 }
 export function editionPrice(set,edition){
