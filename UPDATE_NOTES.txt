@@ -1,3 +1,8 @@
+3.73.1 — Ask AI answers "newest set" in one step
+- Tested live with eleven real questions across the three games. "Newest set" took five lookups
+  because announced sets were mixed in; the set list now returns the latest released set and
+  upcoming ones separately.
+
 3.73.0 — Ask AI and a new animated welcome tour
 - Ask AI: tap ✦ Ask next to the search bar (or the Ask AI chip) and ask anything about your
   cards, by typing or by voice. It can only use the app: search cards, read a card's text and

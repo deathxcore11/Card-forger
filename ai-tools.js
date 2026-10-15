@@ -69,7 +69,8 @@ export function makeAskTools(x) {
       if (q) sets = sets.filter((s) => s.name.toLowerCase().includes(q) || String(s.code).toLowerCase() === q);
       if (order !== 'largest') sets = sets.filter((s) => s.date);
       sets.sort(order === 'oldest' ? (a, b) => a.date.localeCompare(b.date) : order === 'largest' ? (a, b) => (b.cards || 0) - (a.cards || 0) : (a, b) => b.date.localeCompare(a.date));
-      return { game: g, today, note: 'Sets dated after today are announced, not yet released.', sets: sets.slice(0, n) };
+      const latest = [...sets].filter((s) => s.status === 'released').sort((a, b) => b.date.localeCompare(a.date))[0] || null, upcoming = sets.filter((s) => s.status === 'upcoming').sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5);
+      return { game: g, today, latestReleased: latest, upcoming, sets: sets.slice(0, n) };
     },
     async set_cards({ game, set, limit }) {
       const g = g0(game), n = lim(limit, 8, 20), q = clip(set, 80).toLowerCase();
