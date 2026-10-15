@@ -1,3 +1,12 @@
+3.54.2 — Shopping lists TCGplayer accepts, in all three games
+- Every Buy on TCGplayer line names the set, using TCGplayer's own set codes:
+  · Pokémon: "4 Milotic ex [SSP]". Promos add their number ("1 Iron Crown ex [SVP] 146"), and Basic
+    Energy uses TCGplayer's name ("7 Basic Fighting Energy [SVE]"). Promo sets now map too.
+  · Magic: the exact printing the deck is priced at, with its collector number
+    ("1 Deadpool, Trading Card [SLD] 1753"), so Secret Lair and Universes Beyond cards are found.
+  · Yu-Gi-Oh!: the set of the cheapest printing ("3 Ash Blossom & Joyous Spring [MAGO]").
+  When a set can't be matched exactly, the line keeps just the name, which Magic and Yu-Gi-Oh! accept.
+
 3.54.1 — Pokémon shopping lists TCGplayer accepts
 - TCGplayer's Mass Entry rejected Pokémon lines that had only the card name. Pokémon lines now carry
   TCGplayer's own set code, e.g. "4 Milotic ex [SSP]" and "2 Budew [ASC]", taken from TCGplayer's set

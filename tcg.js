@@ -1,5 +1,5 @@
 import { ask, askText } from "./dialog.js";
-import { buyOnTcgplayer, pokemonMassLines } from "./buy.js";
+import { buyOnTcgplayer, massLines } from "./buy.js";
 import {effectText,ruleText} from './rule-dex.js';
 import {editionPrice} from './ygo-prices.js';
 import {buildOverlay} from './build-overlay.js';
@@ -189,6 +189,21 @@ function variantOwnControl(g, c, v) {
 // Basic Energy is one card per type whatever the printing: TCGdex names most "Water Energy" and a
 // few special printings "Basic Water Energy", so both count as the same card you own.
 const sameCard = (k) => String(k || "").replace(/^name:Basic (\w+ Energy)$/, "name:$1");
+// The set a shopping line names: Pokémon, the card's own set; Yu-Gi-Oh!, its cheapest printing.
+const massSet = (g, c) => {
+  if (!c) return {};
+  // Pokémon: the card's set by name, its TCGdex set id as a code ("svp", "sve"), and Basic Energy
+  // falls back to the Scarlet & Violet Energy set (any printing is legal).
+  // TCGplayer lists Basic Energy as "Basic Fighting Energy" and promos with their number
+  // ("Iron Crown ex - 146"), so energy lines use that name and promo lines add the number.
+  if (g === "ptcg") {
+    if (c.basicEnergy) return { name: "Basic " + String(c.name || "").replace(/^Basic /, ""), set: "Scarlet & Violet Energy", code: "SVE" };
+    const setId = c.set?.id || String(c.id || "").replace(/-[^-]+$/, ""), num = String(c.set?.number || String(c.id || "").split("-").pop() || "");
+    return { set: c.set?.name, code: setId, ...(/p$/i.test(setId) && num ? { num: /^\d+$/.test(num) ? String(Number(num)) : num } : {}) };
+  }
+  const sets = (c.sets || []).filter((x) => x.name), best = [...sets].filter((x) => x.price > 0).sort((a, b) => a.price - b.price)[0] || sets[0];
+  return best ? { set: best.name, code: String(best.code || "").split("-")[0] } : {};
+};
 const keyOf = (g, c) => sameCard(SOURCES[g].ownKey(c));
 export function ownedMap(g, s = S.state) {
   const m = new Map();
@@ -2881,9 +2896,9 @@ export function registerTcg(c) {
     const m = ownedMap(G), rows = [];
     for (const r of [...x.tier.zones.main, ...(x.tier.zones.extra || [])]) {
       const c = cardOf(G, r.cardId), need = c?.basicEnergy ? 0 : Math.max(0, r.qty - ownedOf(G, c, m));
-      if (need) rows.push({ qty: need, name: r.name, set: c?.set?.name });
+      if (need) rows.push({ qty: need, name: r.name, ...massSet(G, c) });
     }
-    const lines = G === "ptcg" ? await pokemonMassLines(rows) : rows.map((r) => `${r.qty} ${r.name}`);
+    const lines = await massLines(G, rows);
     if (!(await buyOnTcgplayer(G, lines))) toast("You own every card in this version.");
   };
   A.tTierSaveAll = async () => {
@@ -3182,9 +3197,9 @@ export function registerTcg(c) {
     const G = g(),
       d = gs(G).decks.find((x) => x.id === t.dataset.id),
       s = deckStats(G, d),
-      rows = s.rows.filter((x) => x.need).map((x) => ({ qty: x.need, name: x.r.name, set: x.c?.set?.name }));
+      rows = s.rows.filter((x) => x.need).map((x) => ({ qty: x.need, name: x.r.name, ...massSet(G, x.c || (G === "ptcg" ? { id: x.r.cardId, name: x.r.name, basicEnergy: /^(Basic )?\w+ Energy$/.test(x.r.name) } : null)) }));
     if (!rows.length) return toast("You own every card in this deck.");
-    buyOnTcgplayer(G, G === "ptcg" ? await pokemonMassLines(rows) : rows.map((r) => `${r.qty} ${r.name}`));
+    buyOnTcgplayer(G, await massLines(G, rows));
   };
   // Pokémon decks hold exact printings: swap each card for its cheapest printing with the same
   // game text that is legal in the deck's format (an owned printing wins). Versions keep the old list.

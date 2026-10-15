@@ -23,7 +23,7 @@ export async function refreshCheapest(names, { api, key, progress = () => {}, li
     try {
       const r = await api("/cards/search?" + new URLSearchParams({ q: cheapestQuery(n), order: "usd", dir: "asc" })),
         c = r.data?.[0], usd = Number(c?.prices?.usd);
-      load()[key(n)] = Number.isFinite(usd) && usd > 0 ? { usd, set: c.set, cn: c.collector_number, at: Date.now() } : { usd: null, at: Date.now() };
+      load()[key(n)] = Number.isFinite(usd) && usd > 0 ? { usd, set: c.set, setName: c.set_name, cn: c.collector_number, at: Date.now() } : { usd: null, at: Date.now() };
     } catch {
       load()[key(n)] = { usd: null, at: Date.now() - WEEK + 864e5 };
     }

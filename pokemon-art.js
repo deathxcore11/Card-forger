@@ -13,7 +13,7 @@ const numKey = (s) => {
 
 // The set's TCGplayer group: every word of the TCGdex set name appears in the group name.
 // TCGdex and TCGplayer name the promo sets differently.
-const ALIAS = { "xy black star promos": "XY Promos", "bw black star promos": "Black and White Promos", "dp black star promos": "Diamond and Pearl Promos", "hgss black star promos": "HGSS Promos", "sm black star promos": "SM Promos", "wizards black star promos": "WoTC Promo", "nintendo black star promos": "Nintendo Promos" };
+const ALIAS = { "svp black star promos": "SV: Scarlet & Violet Promo Cards", "swsh black star promos": "SWSH: Sword & Shield Promo Cards", "mep black star promos": "ME: Mega Evolution Promo", "xy black star promos": "XY Promos", "bw black star promos": "Black and White Promos", "dp black star promos": "Diamond and Pearl Promos", "hgss black star promos": "HGSS Promos", "sm black star promos": "SM Promos", "wizards black star promos": "WoTC Promo", "nintendo black star promos": "Nintendo Promos" };
 export function pickGroup(groups, setName) {
   setName = ALIAS[String(setName || "").toLowerCase()] || setName;
   const want = words(setName).filter((w) => !["trainer", "kit", "collection", "set"].includes(w) || words(setName).length < 3);

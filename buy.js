@@ -40,14 +40,22 @@ export async function buyOnTcgplayer(game, lines, { what = "cards you need" } = 
   return true;
 }
 
-// Pokémon on TCGplayer's Mass Entry need the set: "4 Milotic ex [SSP]". No collector number, so
-// any art from that set can fill the line (the cheapest listing usually wins). rows: [{ qty, name, set }].
-let ptcgSets = null;
-export async function pokemonMassLines(rows) {
-  ptcgSets ||= fetch("api/tcgplayer/sets?game=ptcg").then((r) => (r.ok ? r.json() : { sets: [] })).then((d) => d.sets || []).catch(() => ((ptcgSets = null), []));
-  const sets = await ptcgSets;
+// Mass Entry lines with TCGplayer's own set code: "4 Milotic ex [SSP]", "3 Ash Blossom & Joyous
+// Spring [MP22]", "4 Lightning Bolt [FCA]". No collector number, so any art of the card in that set can
+// fill the line and TCGplayer can pick the cheapest. rows: [{ qty, name, set (set name), code, num }].
+// Pokémon needs the set; for Magic and Yu-Gi-Oh! the code is added only on an exact set match.
+const SETS = {};
+const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+export async function massLines(game, rows) {
+  SETS[game] ||= fetch("api/tcgplayer/sets?game=" + game).then((r) => (r.ok ? r.json() : { sets: [] })).then((d) => d.sets || []).catch(() => ((SETS[game] = null), []));
+  const sets = await SETS[game],
+    byName = new Map(sets.map((x) => [norm(x.name), x])),
+    byCode = new Map(sets.map((x) => [String(x.code).toUpperCase(), x]));
   return rows.map((r) => {
-    const g = r.set ? pickGroup(sets, r.set) : null;
-    return `${r.qty} ${r.name}${g ? ` [${g.code}]` : ""}`;
+    const code = String(r.code || "").toUpperCase(),
+      g = !r.set && !code ? null : (game === "ptcg" ? r.set && pickGroup(sets, r.set) : byName.get(norm(r.set))) || byCode.get(code) || null;
+    // With a collector number (Magic), the line names one exact printing: "1 Deadpool, Trading Card [SLD] 1753".
+    return `${r.qty} ${r.name}${g ? ` [${g.code}]${r.num ? " " + r.num : ""}` : ""}`;
   });
 }
+export const pokemonMassLines = (rows) => massLines("ptcg", rows);

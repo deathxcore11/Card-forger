@@ -1,5 +1,5 @@
 import { ask, askText } from "./dialog.js";
-import { buyOnTcgplayer } from "./buy.js";
+import { buyOnTcgplayer, massLines } from "./buy.js";
 import {applySwapsToCards} from './insights.js';
 import {showRuleHint} from './rule-dex.js';
 import {bestBudgetDecks,purchaseCost,comparePower,refineCandidates,towardDeck,spendUp,cardQuality} from './deck-optimizer.js';
@@ -28,7 +28,7 @@ import { nextFact } from "./facts.js";
 import { S, STORAGE, CATALOG_RECORD, RECOVERY, blank, uid, meta, inv, deckById, currentDeck, priceOf, cacheCard, slim } from "./store.js";
 import { $, $$, esc, usd, img, art, cardImage, options, segmented, customBudget, registerSetIcons } from "./ui.js";
 import * as V from "./views.js";
-import { refreshCheapest } from "./mtg-cheap.js";
+import { refreshCheapest, cheapestKnown } from "./mtg-cheap.js";
 import { readRecord, writeRecord, writeRecords, persistenceStatus, requestPersistence } from "./storage.js";
 import {
   cardKey as key, sumQty, typeText, rulesText, isLand, commanderEligible, mergeDeckCard,
@@ -1567,6 +1567,15 @@ A.tierSave = async (t) => {
   const d = generatedDeck(tier, B.seed);
   await commit((s) => s.decks.push(d), { msg: `Saved “${d.name}”. Find it in My decks.` });
 };
+// Magic shopping lines name the printing the deck is priced at (the cheapest legal one when known).
+async function buyMtg(items) {
+  const rows = aggregateCards(items).filter((r) => r.qty > 0).map((r) => {
+    const low = cheapestKnown(key(r.name)), c = meta(r.name);
+    const priced = low?.usd != null && low.set;
+    return { qty: r.qty, name: r.name.split(" // ")[0], set: priced ? low.setName : c?.set_name, code: priced ? low.set : c?.set, num: priced ? low.cn : c?.collector_number };
+  });
+  return buyOnTcgplayer("mtg", await massLines("mtg", rows));
+}
 A.tierSaveGo = async (t) => {
   const B = S.ui.build, tier = B.results[B.format]?.[Number(t.dataset.i)];
   if (!tier) return;
@@ -1583,8 +1592,8 @@ A.tierCopy = (t) => {
 A.tierBuy = async (t) => {
   const B = S.ui.build, tier = B.results[B.format]?.[Number(t.dataset.i)];
   if (!tier) return;
-  const lines = tier.cards.filter((r) => !/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(r.name)).map((r) => [r.qty - Math.min(r.qty, B.avail?.(r.name) ?? 0), r.name]).filter(([n]) => n > 0).map(([n, name]) => `${n} ${name}`);
-  if (!(await buyOnTcgplayer("mtg", lines))) toast("You own every card in this version.");
+  const rows = tier.cards.filter((r) => !/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(r.name)).map((r) => ({ qty: r.qty - Math.min(r.qty, B.avail?.(r.name) ?? 0), name: r.name })).filter((r) => r.qty > 0);
+  if (!(await buyMtg(rows))) toast("You own every card in this version.");
 };
 A.tierSaveAll = async () => {
   const B = S.ui.build,
@@ -2490,7 +2499,7 @@ function missingList(d) {
 A.copyShopping = (t) => {
   const items = t.dataset.src === "wish" ? V.wishlistItems().map((w) => ({ name: w.name, qty: w.need })) : missingList(currentDeck());
   if (!items.length) return toast("Nothing to buy.");
-  buyOnTcgplayer("mtg", exportDeck(items).split("\n").filter(Boolean));
+  buyMtg(items);
 };
 A.exportMissing = () => {
   const d = currentDeck();
@@ -3489,7 +3498,7 @@ A.ideaBuy = () => {
     sel = S.ui.ideas.sel,
     list = rows.filter((r) => r.missing && (!sel.size || sel.has(r.name))).map((r) => ({ name: r.name, qty: r.missing }));
   if (!list.length) return toast("You already own everything selected.");
-  buyOnTcgplayer("mtg", exportDeck(list).split("\n").filter(Boolean));
+  buyMtg(list);
 };
 A.saveIdea = (t) => {
   S.ui.ideas.sel = new Set();
@@ -3800,7 +3809,7 @@ A.upExport = () => {
   const d = currentDeck(),
     buy = pickedSwaps().filter((s) => !inv(s.add, d.id).available).map((s) => ({ name: s.add, qty: 1 }));
   if (!buy.length) return toast("All selected additions are cards you already own.");
-  buyOnTcgplayer("mtg", exportDeck(buy).split("\n").filter(Boolean));
+  buyMtg(buy);
 };
 A.upApply = async () => {
   const U = S.ui.upgrade,
