@@ -1,4 +1,5 @@
 import { formatOf, canLead, legalityIn } from "./formats.js";
+import { tcgFallback, myPrice } from "./mtg-tcgprice.js";
 
 // Called millions of times while building and scoring decks: normalised names are remembered.
 const keyMemo = new Map();
@@ -126,9 +127,9 @@ export function cardPrice(c, finish = "nonfoil") {
           ? "usd_etched"
           : "usd"
     ];
-  return p !== null && p !== undefined && p !== "" && Number.isFinite(Number(p))
-    ? Number(p)
-    : null;
+  if (p !== null && p !== undefined && p !== "" && Number.isFinite(Number(p))) return Number(p);
+  // Unpriced on Scryfall: TCGplayer's price for the same product, then the player's own price.
+  return tcgFallback(c, finish)?.value ?? myPrice(c, finish);
 }
 export function validateDeck(deck, catalog, entries, decks = []) {
   const f = formatOf(deck),

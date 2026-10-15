@@ -28,6 +28,7 @@ import { binderShelf } from "./binders.js";
 import { metaState, MTG_META_FORMATS, allCachedMeta } from "./meta.js";
 import { mtgPower, powerPanel, powerChip, shownPower } from "./power.js";
 import { factBox, factsFor } from "./facts.js";
+import { tcgFallback, myPrice, ensureTcgPrices } from "./mtg-tcgprice.js";
 import { S, meta, inv, deckById, currentDeck, priceOf } from "./store.js";
 import {
   esc, usd, pct, signed, art, cardImage, img, manaCost, colorDots, segmented,
@@ -35,7 +36,7 @@ import {
 } from "./ui.js";
 import {
   cardKey as key, sumQty, rulesText, typeText, isLand, validateDeck,
-  atLeastLands, aggregateCards, commanderEligible, isBasic,
+  atLeastLands, aggregateCards, commanderEligible, isBasic, cardPrice,
 } from "./core.js";
 import { deckComparison, comparisonTotals } from "./deck-flow.js";
 import { printingState } from "./confidence.js";
@@ -267,6 +268,24 @@ export const setIcon = (code, rarity = "common", size = 18) =>
 
 const FINISH = { nonfoil: "Regular", foil: "Foil", etched: "Etched" };
 const priceOfFinish = (p, f) => p?.prices?.[f === "nonfoil" ? "usd" : "usd_" + f] ?? null;
+// What the card sheet shows for a finish: Scryfall's price, else TCGplayer's for the same product,
+// else the player's own (long-press). Each says where it came from.
+const quoteOfFinish = (p, f) => {
+  const v = priceOfFinish(p, f);
+  if (v != null) return { value: Number(v), note: "" };
+  const t = tcgFallback(p, f);
+  if (t) return { value: t.value, note: t.kind === "market" ? "TCGplayer market" : "TCGplayer low" };
+  // Cardmarket (Europe) often prices old and foreign printings US stores don't; shown in euros.
+  const eur = f === "etched" ? null : Number(p?.prices?.[f === "foil" ? "eur_foil" : "eur"]);
+  if (eur > 0) return { value: eur, cur: "EUR", note: "Cardmarket" };
+  const m = myPrice(p, f);
+  return m != null ? { value: m, note: "Your price" } : null;
+};
+const pricePill = (shown, f) => {
+  const q = quoteOfFinish(shown, f), mine = myPrice(shown, f), extra = mine != null && q?.note !== "Your price" ? `yours ${usd(mine)}` : q?.note;
+  const shownValue = q.cur === "EUR" ? "€" + q.value.toFixed(2) : usd(q.value);
+  return `<button class="price-pill ${f}" data-act="buyDirect" data-hold="myPriceSet" data-finish="${f}" aria-label="Buy ${esc(FINISH[f])} on TCGplayer — ${shownValue}. Press and hold to set your own price."><small>${FINISH[f]}</small><b>${shownValue}</b>${extra ? `<small class="pill-note">${esc(extra)}</small>` : ""}<span class="buy-hint">Buy ›</span></button>`;
+};
 
 function facesOf(c) {
   return c.card_faces?.length && !c.oracle_text ? c.card_faces : [c];
@@ -330,12 +349,16 @@ export function cardSheet(c, ctx = {}) {
     face = ctx.face && faces[ctx.face] ? ctx.face : 0,
     imgFaces = shown.card_faces?.filter((f) => f.image_uris),
     image = imgFaces?.length > 1 ? imgFaces[face]?.image_uris?.normal : cardImage(shown),
-    heroArt = (imgFaces?.length > 1 ? imgFaces[face]?.image_uris?.art_crop : null) || art(shown),
+    // A placeholder scan (foreign printing shown in English with a banner, display commanders)
+    // borrows the clean art of a printing with the same illustration for the hero.
+    clean = shown.image_status === "placeholder" ? (ctx.prints || []).find((p) => p.illustration_id && p.illustration_id === shown.illustration_id && p.image_status === "highres_scan" && p.image_uris?.art_crop) : null,
+    heroArt = (imgFaces?.length > 1 ? imgFaces[face]?.image_uris?.art_crop : null) || art(clean || shown),
     chosen = S.state.priceChoices?.[key(name)],
     legal = c.legalities || {},
     prints = ctx.prints || null,
     src = MTG_SOURCES.find((x) => x[0] === (ctx.source || "tcgplayer")) || MTG_SOURCES[0];
-  const finishes = ["nonfoil", "foil", "etched"].filter((f) => priceOfFinish(shown, f));
+  ensureTcgPrices([shown]);
+  const finishes = ["nonfoil", "foil", "etched"].filter((f) => quoteOfFinish(shown, f));
   const overview = `
     <div class="cs-card">
       <div class="cd-img"><button class="cd-zoom" data-act="zoomCard" data-src="${esc(image || "")}" data-hi="${esc(imgFaces?.length > 1 ? imgFaces[face]?.image_uris?.png || "" : shown.image_uris?.png || "")}" data-art="${esc(heroArt || "")}" data-name="${esc(name)}" aria-label="Enlarge ${esc(name)}">${img(image, name, "card-img")}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button>${imgFaces?.length > 1 ? `<button class="btn ghost small block" data-act="flipFace">↻ Flip to ${esc(imgFaces[face ? 0 : 1].name)}</button>` : ""}</div>
@@ -382,8 +405,8 @@ export function cardSheet(c, ctx = {}) {
     <button class="cd-set" data-act="set" data-code="${esc(shown.set || "")}" ${shown.set ? "" : "disabled"} aria-label="See every card in ${esc(shown.set_name || "this set")}">${setIcon(shown.set, shown.rarity, 24)}<div><b>${esc(shown.set_name || (shown.set || "").toUpperCase())} <span class="set-go">›</span></b><small>${esc((shown.set || "").toUpperCase())} #${esc(shown.collector_number || "?")} · ${esc(RARITY[shown.rarity] || shown.rarity || "")}${shown.released_at ? " · " + esc(shown.released_at.slice(0, 4)) : ""}</small></div></button>
     <div class="cd-prices">${
       finishes.length
-        ? finishes.map((f) => `<button class="price-pill ${f}" data-act="buyCard" data-finish="${f}" aria-label="Buy ${esc(FINISH[f])} — estimated ${usd(priceOfFinish(shown, f))}"><small>${FINISH[f]}</small><b>${usd(priceOfFinish(shown, f))}</b><span class="buy-hint">Buy ›</span></button>`).join("")
-        : `<button class="price-pill unknown" data-act="buyCard" data-finish="nonfoil"><small>Price</small><b>No price yet</b><span class="buy-hint">Find sellers ›</span></button><p class="price-gap small muted">Stores haven't priced this printing yet. Common for new or rarely sold cards.</p>`
+        ? finishes.map((f) => pricePill(shown, f)).join("") + `<p class="price-gap small muted">Tap a price to buy on TCGplayer. Press and hold it, or <button class="link small" data-act="myPriceSet" data-finish="${finishes[0]}">set your price</button>; only you see it.</p>`
+        : `<button class="price-pill unknown" data-act="buyDirect" data-hold="myPriceSet" data-finish="nonfoil" aria-label="Find sellers on TCGplayer. Press and hold to set your own price."><small>Price</small><b>No price yet</b><span class="buy-hint">Find sellers ›</span></button><p class="price-gap small muted">No store prices this printing yet. Tap to see TCGplayer listings. Press and hold, or <button class="link small" data-act="myPriceSet" data-finish="nonfoil">set your price</button>; only you see it.</p>`
     }</div>
   </div>
   ${faces
@@ -498,7 +521,7 @@ export function setPage() {
     owned = ownedPrintings(),
     q = st.q.trim().toLowerCase(),
     ownedOf = (c) => owned.get(c.set + "#" + String(c.collector_number).toLowerCase()) || 0,
-    price = (c) => Number(c.prices?.usd ?? c.prices?.usd_foil ?? c.prices?.usd_etched ?? NaN),
+    price = (c) => Number(["nonfoil", "foil", "etched"].map((f) => cardPrice(c, f)).find((v) => v != null) ?? NaN),
     all = st.cards,
     ownedCount = all.filter((c) => ownedOf(c)).length;
   let list = all.filter((c) => (!q || c.name.toLowerCase().includes(q)) && (st.rarity === "all" || c.rarity === st.rarity) && (st.filter === "all" || (st.filter === "owned" ? ownedOf(c) : !ownedOf(c))));
@@ -516,14 +539,14 @@ export function setPage() {
   <div class="set-controls">${segmented("setFilter", st.filter, [["all", "All"], ["owned", "Owned"], ["missing", "Missing"]])}
     <select data-change="setRarity" aria-label="Rarity">${options([["all", "All rarities"], ...["common", "uncommon", "rare", "mythic", "special", "bonus"].filter((r) => rarities.includes(r)).map((r) => [r, RARITY[r]])], st.rarity)}</select>
     <select data-change="setSort" aria-label="Sort">${options([["number", "Set order"], ["price", "Price: high to low"], ["name", "Name"]], st.sort)}</select></div>
-  <div class="list-bar"><p class="muted small">${st.busy ? `Loading ${all.length ? all.length + " of " + (st.total || "…") : ""} cards…` : all.length ? `${list.length.toLocaleString()} match · prices are Scryfall estimates` : ""}</p>${viewControl("mtg", "set")}</div>
+  <div class="list-bar"><p class="muted small">${st.busy ? `Loading ${all.length ? all.length + " of " + (st.total || "…") : ""} cards…` : all.length ? `${list.length.toLocaleString()} match · Scryfall prices, TCGplayer's where Scryfall has none` : ""}</p>${viewControl("mtg", "set")}</div>
   <div class="card-grid set-grid">${list
     .slice(0, st.limit)
     .map((c) => {
       const i = all.indexOf(c),
         n = ownedOf(c),
         other = !n && inv(c.name).owned;
-      return `<button class="grid-card ${n ? "own" : ""}" data-act="card" data-name="${esc(c.name)}" data-set-i="${i}" ${tierAttrs(tierOf("mtg", c.rarity, c.prices?.usd ?? c.prices?.usd_foil))}>${img(cardImage(c, "normal"), c.name, "card-img")}${tileChrome("mtg", c)}<span class="grid-meta"><span class="ellip">#${esc(c.collector_number)} ${esc(c.name)}</span><span>${Number.isFinite(price(c)) ? usd(price(c)) : "—"}</span></span>${n ? `<span class="owned-badge">×${n}</span>` : other ? `<span class="owned-badge other" title="You own a different printing">other ed.</span>` : ""}</button>`;
+      return `<button class="grid-card ${n ? "own" : ""}" data-act="card" data-name="${esc(c.name)}" data-set-i="${i}" ${tierAttrs(tierOf("mtg", c.rarity, Number.isFinite(price(c)) ? price(c) : null))}>${img(cardImage(c, "normal"), c.name, "card-img")}${tileChrome("mtg", c)}<span class="grid-meta"><span class="ellip">#${esc(c.collector_number)} ${esc(c.name)}</span><span>${Number.isFinite(price(c)) ? usd(price(c)) : "—"}</span></span>${n ? `<span class="owned-badge">×${n}</span>` : other ? `<span class="owned-badge other" title="You own a different printing">other ed.</span>` : ""}</button>`;
     })
     .join("")}</div>
   ${list.length > st.limit ? `<button class="btn ghost block" data-act="setMore">Show more · ${(list.length - st.limit).toLocaleString()} left</button>` : ""}

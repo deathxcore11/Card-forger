@@ -1,3 +1,22 @@
+3.58.0 — Prices for old and rare Magic printings, one-tap Buy, your own price
+- Printings Scryfall has no US price for (Alpha and Beta rares, old promos) now show TCGplayer's
+  price for the exact same product, labelled "TCGplayer market" or "TCGplayer low". Alpha Animate
+  Wall now shows $249.99 (TCGplayer low) instead of "No price yet". Collection value, decks and
+  set pages use it too.
+- Printings only Cardmarket prices (many foreign and old cards) show the Cardmarket price in euros,
+  labelled. It isn't converted or added to dollar totals.
+- Tap a price on a card page to open that exact printing on TCGplayer. The full sellers list is
+  still under Prices.
+- Press and hold a price (or tap "set your price") to set your own price for that printing. Only
+  you see it. It counts only where no store prices the card, and never replaces a market price.
+- Set-by-set audit of all 779 paper Magic sets: every set page shows all its cards.
+  - About 4,470 playable printings had no US price. TCGplayer now prices 680 of them, Cardmarket
+    1,646 more. The remaining ~2,100 have no market price anywhere (Salvat magazine reprints,
+    Summer Magic, foreign black-border, playtest cards); "your price" covers those.
+  - Foreign printings without their own scan, and the four Modern Horizons 3 display commanders,
+    use Scryfall's English placeholder. The card page hero now uses the clean art of the same
+    illustration when it's loaded.
+
 3.57.0 — Magic cards know their roles
 - Deck Power and the Commander engine now use Scryfall's community card tags for removal,
   counterspells, board wipes, card draw, ramp and discard. Before, roles came only from

@@ -2,6 +2,7 @@ import {recentHistoryRoute} from './recent-history.js';
 import {ygoPriceRoute} from './ygo-prices.js';
 import {archivePriceRoute} from "./historical-archive.js";
 import {pokemonPriceRoute} from "./pokemon-prices.js";
+import {mtgTcgPriceRoute} from "./mtg-tcg-route.js";
 import {pokemonArtRoute, tcgplayerSetsRoute} from "./pokemon-art.js";
 import {magicSetArtwork} from "./set-art.js";
 import { watchRoute, historyRoute, recordDailyPrices } from "./pricefeed.js";
@@ -186,6 +187,7 @@ export default {
     if (url.pathname === "/api/prices/archive") return archivePriceRoute(url,ctx);
     if (url.pathname === "/api/prices/yugioh") return ygoPriceRoute(url,ctx);
     if (url.pathname === "/api/prices/pokemon") return pokemonPriceRoute(url,ctx);
+    if (url.pathname === "/api/prices/mtg-tcg") return mtgTcgPriceRoute(url,ctx);
     if (url.pathname === "/api/prices/watch") return watchRoute(request, env);
     if (url.pathname === "/api/prices/history") return historyRoute(url, env, ctx);
     if (url.pathname === "/api/meta/mtg" || url.pathname === "/api/meta/mtg/coverage") return mtgRoute(url, env, ctx);

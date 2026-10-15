@@ -2844,3 +2844,5 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .set-media { overflow: hidden; }
 .set-media > img { box-sizing: border-box; max-width: 100%; max-height: 100%; }
 .set-media > img[src*="svgs.scryfall.io"], .set-media > img[src*="/sets/"][src$=".svg"] { filter: invert(.9) drop-shadow(0 1px 0 rgba(0,0,0,.3)); padding: 14px; }
+/* Press-and-hold targets: no text selection or iOS callout while holding. */
+[data-hold] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }

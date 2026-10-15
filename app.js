@@ -1,4 +1,5 @@
 import { ask, askText } from "./dialog.js";
+import { useMyPrices, myPriceKey, ensureTcgPrices } from "./mtg-tcgprice.js";
 import { buyOnTcgplayer, massLines } from "./buy.js";
 import {applySwapsToCards} from './insights.js';
 import {showRuleHint} from './rule-dex.js';
@@ -430,6 +431,7 @@ async function loadSet(code) {
     if (S.ui.set.code === code) {
       st.loaded = true;
       setCache.set(code, { info: st.info, cards: st.cards, total: st.total });
+      ensureTcgPrices(st.cards);
     }
   } catch (e) {
     st.error = st.cards.length ? "Some cards didn’t load: " + e.message : e.message;
@@ -741,7 +743,14 @@ function attachBrowseObserver() {
 const autoMeta = new Set();
 let lastPageKey = "";
 const cheapChecked = new Set();
+let tcgCheckedFor = -1;
 function render() {
+  useMyPrices(S.state.myPrices);
+  // Owned printings Scryfall leaves unpriced get TCGplayer's price (once per collection size).
+  if (S.ui.view === "collection" && S.state.collection.length !== tcgCheckedFor) {
+    tcgCheckedFor = S.state.collection.length;
+    ensureTcgPrices(S.state.collection.map((e) => (e.printingVerified && S.state.printings?.[e.printingId]) || null).filter(Boolean));
+  }
   const authFields=S.ui.view === "settings" && !cloudInfo().user ? captureAuthFields(document) : [];
   browseCleanup?.();
   const ui = S.ui;
@@ -926,8 +935,24 @@ registerWorkbench({A,C,commit,render,openSheet,closeSheet,refreshSheet,toast,
 // Yu-Gi-Oh! and Pokémon actions (tcg.js).
 setTimeout(() => Object.assign(tcgCtx, { A, C, I, commit, render, openSheet, closeSheet, refreshSheet, toast, go, download, copyText, busy, rerenderKeepingFocus, writeRecord }) && (T.registerTcg(tcgCtx), registerCardMenus()), 0);
 
+// Press and hold (data-hold="action"): runs that action instead of the tap's, with a haptic tick.
+let holdTimer = null, heldTarget = null, holdAt = null;
+const endHold = () => { clearTimeout(holdTimer); holdTimer = null; };
+document.addEventListener("pointerdown", (e) => {
+  const t = e.target.closest("[data-hold]");
+  if (!t || t.disabled || (e.pointerType === "mouse" && e.button !== 0)) return;
+  endHold();
+  holdAt = [e.clientX, e.clientY];
+  holdTimer = setTimeout(() => { holdTimer = null; heldTarget = t; haptic("success"); safely(A[t.dataset.hold]?.(t)); }, 550);
+});
+// A drag of more than a few pixels is a scroll, not a hold.
+document.addEventListener("pointermove", (e) => { if (holdTimer && Math.hypot(e.clientX - holdAt[0], e.clientY - holdAt[1]) > 10) endHold(); }, true);
+for (const ev of ["pointerup", "pointercancel"]) document.addEventListener(ev, endHold, true);
+document.addEventListener("contextmenu", (e) => { if (e.target.closest("[data-hold]")) e.preventDefault(); });
 document.addEventListener("click", (e) => {
   const t = e.target.closest("[data-act]");
+  if (heldTarget && heldTarget === t) { heldTarget = null; e.preventDefault(); return; }
+  heldTarget = null;
   if (!t || t.disabled) return;
   const fn = A[t.dataset.act];
   if (!fn) return;
@@ -1366,6 +1391,7 @@ async function loadCardExtras(ctx) {
     }
     ctx.prints = prints;
     ctx.pricesAt = new Date().toISOString();
+    ensureTcgPrices(prints);
     S.ui.prints = prints;
     if (still()) refreshSheet();
   } catch (e) {
@@ -2085,6 +2111,35 @@ A.buyCard = async (t) => {
   const ctx = { type: "buy", name: back.name, deckId: back.deckId, print, finish: t.dataset.finish || "nonfoil", asOf: fromPrints ? back.pricesAt : print?.checkedAt, back, backScroll };
   await commit(s=>recordQuote(s,quoteModel("mtg",print,ctx.finish)),{rerender:false,enrich:false});
   openSheet(V.buySheet(ctx), ctx);
+};
+// Card sheet price: one tap opens this exact printing on TCGplayer.
+const sheetPrint = () => { const ctx = S.ui.sheetCtx; return ctx?.type === "card" ? ctx.print || meta(ctx.name) : null; };
+A.buyDirect = (t) => {
+  const print = sheetPrint();
+  if (!print) return;
+  const url = print.purchase_uris?.tcgplayer || "https://www.tcgplayer.com/search/magic/product?q=" + encodeURIComponent(print.name);
+  window.open(url, "_blank", "noopener");
+  commit((s) => recordQuote(s, quoteModel("mtg", print, t.dataset.finish || "nonfoil")), { rerender: false, enrich: false });
+};
+// Press and hold a price: the player's own price for this printing and finish. Saved with their
+// data, shown only to them, and only counted where no store prices the card.
+A.myPriceSet = async (t) => {
+  const print = sheetPrint();
+  if (!print) return;
+  const finish = t.dataset.finish || "nonfoil", k = myPriceKey(print, finish), cur = S.state.myPrices?.[k]?.price;
+  const label = { nonfoil: "", foil: " (foil)", etched: " (etched)" }[finish] || "";
+  const v = await askText(`Your price for ${print.name}${label}. Only you see it; leave empty to remove.`, cur != null ? String(cur) : "", { title: "Set your price" });
+  if (v === null) return;
+  const n = Number(String(v).replace(/[$,\s]/g, ""));
+  if (v.trim() && !(n >= 0 && Number.isFinite(n))) return toast("Enter a price like 12.50");
+  await commit((s) => {
+    s.myPrices ||= {};
+    if (v.trim()) s.myPrices[k] = { price: Math.round(n * 100) / 100, name: print.name, set: print.set, number: print.collector_number, finish, at: new Date().toISOString() };
+    else delete s.myPrices[k];
+  }, { rerender: false, enrich: false });
+  useMyPrices(S.state.myPrices);
+  toast(v.trim() ? `Your price saved: ${usd(Math.round(n * 100) / 100)}` : "Your price removed");
+  refreshSheet();
 };
 A.buyFinish = async (t) => {
   const ctx = S.ui.sheetCtx;
@@ -4295,6 +4350,8 @@ async function boot() {
   }).catch(() => {});
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
   // Scryfall role tags arrive after first paint; redraw Magic pages so Deck Power counts them.
+  // TCGplayer prices for printings Scryfall leaves unpriced arrive in the background.
+  window.addEventListener("cf:tcg-prices", () => { if (S.ui.sheetCtx?.type === "card" && $("#sheet").open) refreshSheet(); else render(); });
   window.addEventListener("cf:mtg-tags", () => { if ((S.state.settings?.game || "mtg") === "mtg") render(); });
   window.addEventListener("online", () => {
     setSaveStatus("Online", "ok");
