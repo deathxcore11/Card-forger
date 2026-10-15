@@ -47,3 +47,25 @@ for(let i=0;i<100;i++){
  reject(Error('stale failure'));await p;closeAsk();
 }
 console.log('PASS: one Ask on Search and Home in all three games; duplicate-submit guard, close/reopen network and tool races, 100 cancellation cycles, valid bounded tool JSON.');
+const {restartAsk,clearAskConversations}=await import('./ai-ask.js');
+clearAskConversations();
+const original=openAsk({game:'mtg'});
+await ask('First question',async()=>Response.json({answer:{text:'First answer',source:'app'}}));
+original.nodes['.ask-input'].value='An unfinished question';original.nodes['.ask-log'].scrollTop=123;
+closeAsk();const reopened=openAsk({game:'mtg'});
+assert.equal(reopened,original,'closing and reopening retains the conversation UI');
+assert.equal(reopened.nodes['.ask-input'].value,'An unfinished question');assert.equal(reopened.nodes['.ask-log'].scrollTop,123);
+let sent;
+await ask('Follow-up',async(u,init)=>{sent=JSON.parse(init.body);return Response.json({answer:{text:'Still here',source:'app'}});});
+assert.equal(sent.items[0].content,'First question');assert.equal(sent.items[1].content,'First answer');assert.equal(sent.items.at(-1).content,'Follow-up');
+restartAsk();
+await ask('Start over',async(u,init)=>{sent=JSON.parse(init.body);return Response.json({answer:{text:'Fresh',source:'app'}});});
+assert.equal(sent.items.length,1,'New chat deliberately clears prior context');
+closeAsk();openAsk({game:'ptcg'});
+await ask('Pokémon only',async(u,init)=>{sent=JSON.parse(init.body);return Response.json({answer:{text:'Separate game',source:'app'}});});
+assert.equal(sent.items.length,1,'each game keeps its own chat');
+clearAskConversations();openAsk({game:'mtg'});
+await ask('Different account',async(u,init)=>{sent=JSON.parse(init.body);return Response.json({answer:{text:'Private session',source:'app'}});});
+assert.equal(sent.items.length,1,'account changes clear previous chat');
+closeAsk();
+console.log('PASS: Ask retains history, draft and scroll position after closing; New chat, per-game isolation and account-change privacy.');

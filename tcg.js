@@ -324,8 +324,7 @@ export function homeHero(g, title, deckArt = null, compact = false) {
     <div class="hh-body"><p class="eyebrow">${esc(G.name)}</p><h1>${title}</h1>
       <div class="hh-search"><input id="homeQ" type="search" data-suggest="${g}" placeholder="Search ${esc(G.short)} cards" data-enter="homeSearch" aria-label="Search ${esc(G.short)} cards" autocomplete="off"><button class="btn" data-act="homeSearch">Search</button><button class="ask-launch" data-act="askOpen" aria-label="Ask AI"><span aria-hidden="true">✦</span>Ask</button></div>
       ${h?.name ? `<button class="hh-credit" ${g === "mtg" ? `data-act="card" data-name="${esc(h.name)}"` : `data-act="tCard" data-id="${esc(h.id)}"`}>${h.deck ? "From your deck" : "Card of the day"} · <b>${esc(h.name)}</b> ›</button>` : ""}
-    </div></section>
-    <section class="learn-card" aria-label="Learn CardStashy"><div><p class="eyebrow">Your app guide</p><h2>Learn CardStashy</h2><p>Short slides and animated demos: scan, collect, build, improve and play.</p></div><button class="btn ghost" data-act="replayTour">▶ Take the tour</button></section>`;
+    </div></section>`;
 }
 // Fetch today's card for a game once per day (cached on the device).
 export async function loadHero(g, mtgRandom) {
@@ -468,7 +467,7 @@ export function tcgHome() {
   const onboarding = !(st.collection.length && st.decks.length),
     fresh = !st.collection.length && !st.decks.length;
   return `${homeHero(g, v.copies ? "Welcome back." : "Let’s build from your cards.", deckArt, !fresh)}
-  ${gameSwitch(g)}${installNudge(v.copies)}
+  ${installNudge(v.copies)}
   ${fresh && !startHidden(g) ? tcgStartPath(g) : tcgNext(g)}
   ${onboarding ? "" : `<div class="kpis">
     <button class="kpi" data-act="go" data-to="#collection"><b data-count="${Math.round(v.total)}" data-money="1">${usd(v.total, 0)}</b><span>collection value${v.unpriced ? ` · ${v.unpriced} unpriced` : ""}</span></button>

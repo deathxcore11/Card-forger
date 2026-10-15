@@ -1,5 +1,5 @@
 import { showAiReview } from './ai-review.js';
-import { openAsk } from './ai-ask.js';
+import { openAsk, clearAskConversations } from './ai-ask.js';
 import { makeAskTools } from './ai-tools.js';
 import { ask, askText } from "./dialog.js";
 import { attachHomeSwipe } from "./home-swipe.js";
@@ -53,6 +53,7 @@ import { searchQuery, rankByName } from "./catalog-tools.js";
 import { promptInstall, dismissInstall, onInstallable, isIOS } from "./install.js";
 import { attachSuggest } from "./suggest.js";
 import { shouldTour, openTour } from "./tour.js";
+import { tourScenes } from "./tour-scenes.js";
 import { haptic, hapticFor, flyToCollection, countUp, ripple, setHaptics, attachGestures, attachTilt } from "./feel.js";
 import { alertSheet, setAlert, onAlert, alertText, priceSeries } from "./pricehist.js";
 import { onSharedPrices, watchCards } from "./sharedprices.js";
@@ -67,7 +68,7 @@ import { rulesPage } from "./rules.js";
 import { GAMES, GAME_ICON, GAME_COLOR } from "./games.js";
 import { ICON, actionIcon, decorateGlyphs } from "./icons.js";
 import { openZoom, scryfallHi } from "./zoom.js";
-import { initCloud, cloudInfo, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
+import { initCloud, cloudInfo, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact, lotPrice } from "./insights.js";
 
 /* =========================================================
@@ -1546,11 +1547,11 @@ async function runBuild() {
   const names = [...new Set((B.results[f.name] || []).flatMap((t) => t.cards.map((r) => r.name)))].filter((n) => !/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(n)).sort((a, b) => (priceOf(b) ?? 0) - (priceOf(a) ?? 0));
   if (names.length) refreshCheapest(names, { api, key, limit: 40 }).then((n) => n && S.ui.sheetCtx?.type === "build" && refreshSheet()).catch(() => {});
 }
-// Tour demos use real card art from the app's own reference catalog (bundled, so new users have it).
+// Preview the app's own screen renderers without changing the saved workspace.
 const tourArt = () => {
-  const cards = Object.values(S.catalog).filter((c) => c?.image_uris?.normal && !/Land/.test(c.type_line || "")).slice(0, 8);
-  const top = Object.values(allCachedMeta()).map((m) => m.data?.archetypes?.[0]?.name).find(Boolean);
-  return { game: T.game(), art: cards.map((c) => c.image_uris.normal), names: cards.map((c) => c.name), meta: top || "" };
+  return { game: T.game(), scenes: tourScenes(T.game()),
+    header: document.querySelector('.topbar')?.outerHTML || '', nav: document.querySelector('.bottom-nav')?.outerHTML || '',
+    cssUrl: new URL('./style.css', import.meta.url).href };
 };
 A.replayTour = () => { closeSheet(); openTour(tourArt()); };
 // Ask AI: the in-app assistant. Its tools are the app's own functions, run here on the device.
@@ -1814,9 +1815,9 @@ A.deleteAccount = async (t) => {
 };
 A.signOut = async () => {
   if (!await ask("Sign out? Your cards stay on this device; they just stop syncing.")) return;
-  await signOut();
+  const result = await signOut();
   render();
-  toast("Signed out. Your data is still on this device.");
+  toast(result?.synced ? "Signed out. Your cards are saved on this device and your account." : "Signed out. Account sync was not confirmed. Keep this device copy or export a backup.");
 };
 A.syncNow = () => syncNow();
 A.syncDecide = () => {
@@ -4260,7 +4261,10 @@ A.undoRestore = async () => {
   toast("Recovery copy restored.");
 };
 A.reset = async () => {
-  if (!await ask("Start empty? One recovery copy is kept on this device. Export a backup first if in doubt.")) return;
+  if (!await ask("Clear this device and sign out? Any existing account copy stays separate. A recovery copy is kept here; export a backup first if your latest changes have not synced.")) return;
+  if (cloudInfo().user) await signOut();
+  detachDeviceSync();
+  clearAskConversations();
   await writeRecords([[RECOVERY, stripCache(S.state)], [STORAGE, blank()]]);
   S.state = blank();
   go("#home");
@@ -4394,7 +4398,7 @@ async function boot() {
   loadSetIndex(); // cached set symbols first; refreshes from Scryfall every few days
   decorateShell();
   render();
-  // Introduce the tour even with existing cards; Home and Settings can always replay it.
+  // First visit opens automatically; replay is available in Settings.
   {
     const cards = S.state.collection.length + ["ptcg", "ygo"].reduce((n, g) => n + T.gs(g).collection.length, 0),
       decks = S.state.decks.length + ["ptcg", "ygo"].reduce((n, g) => n + T.gs(g).decks.length, 0);
@@ -4402,6 +4406,7 @@ async function boot() {
   }
   $("#app").classList.add("ready");
   initCloud({
+    accountChanged: () => clearAskConversations(),
     passwordRecovery: () => { S.ui.settingsTab = "account"; go("#settings"); },
     getState: () => stripCache(S.state),
     // Replace this device's workspace with the account copy.

@@ -1,6 +1,4 @@
-// Welcome tour for anyone who has not seen it yet, including existing collectors, each with a looping mini replay of the app itself: a tap marker moving
-// through the real screens. Skip any time; it never comes back on its own once closed, and
-// Settings can replay it. Card art comes from the app's own card data.
+// First-visit welcome; replay stays in Settings. Preview frames use the real app renderers.
 const KEY = "cardstashy-tour-v1";
 export const tourSeen = () => {
   try {
@@ -17,70 +15,25 @@ const markSeen = () => {
 export const shouldTour = ({ cards = 0, decks = 0, seen = tourSeen() } = {}) => !seen;
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-// A card face: real art when the app has it, otherwise a coloured card.
-const card = (art, i, cls = "") => `<span class="tv-card ${cls}" style="--n:${i}">${art ? `<img src="${esc(art)}" alt="" loading="lazy">` : ""}</span>`;
-const tap = (cls) => `<i class="tv-tap ${cls}" aria-hidden="true"></i>`;
-const phone = (step, body) => `<div class="tv-phone tv-${step}" aria-hidden="true"><div class="tv-notch"></div><div class="tv-screen">${body}</div></div>`;
-
+// The visuals below are live screen-renderer output, not a second imitation UI.
 export const STEPS = [
-  {
-    key: "scan",
-    title: "Add your cards in seconds",
-    text: "Point your camera at a card and it's recognised in a moment, or search any card by name. Magic, Pokémon and Yu-Gi-Oh! all live here.",
-    demo: (a) => phone("scan", `<div class="tv-top"><b>Scan</b></div><div class="tv-cam"><div class="tv-guide"></div>${card(a[0], 0, "tv-scanned")}<div class="tv-beam"></div></div><div class="tv-toast">✓ Added ${esc(a.names[0] || "Sol Ring")}</div>${tap("t-scan")}`),
-  },
-  {
-    key: "build",
-    title: "Decks, three ways",
-    text: "Copy a deck that's winning tournaments, build your own, or tap Build for me and set a budget: the app finds legal lists, using the cards you already own first.",
-    demo: (a) => phone("build", `<div class="tv-top"><b>Decks</b></div><div class="tv-chips"><span>Meta decks</span><span class="tv-hit">Build for me</span><span>My own</span></div><div class="tv-budget"><span>$25</span><span class="tv-hit2">$50</span><span>$100</span></div><div class="tv-deal">${[1, 2, 3].map((k) => card(a[k], k)).join("")}</div><div class="tv-bar"><span>Deck ready · 3 owned</span></div>${tap("t-build")}`),
-  },
-  {
-    key: "power",
-    title: "Know how strong it is",
-    text: "Deck Power scores any deck in all three games: what it does well, what holds it back and what to fix first. The AI coach then explains it in plain words.",
-    demo: () => phone("power", `<div class="tv-top"><b>Power</b></div><div class="tv-ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9" class="tv-track"/><circle cx="18" cy="18" r="15.9" class="tv-arc"/></svg><b class="tv-score"></b></div><div class="tv-bars">${["Draw", "Interaction", "Curve"].map((l, k) => `<div><span>${l}</span><i style="--w:${[82, 54, 91][k]}%"></i></div>`).join("")}</div><div class="tv-coach">✦ Coach this deck</div>${tap("t-power")}`),
-  },
-  {
-    key: "prices",
-    title: "Watch what it's worth",
-    text: "Prices update daily. Follow your collection's value, tap any price to buy it, and get an alert when a card you want gets cheaper.",
-    demo: (a) => phone("prices", `<div class="tv-top"><b>Collection</b><span class="tv-bell">🔔</span></div><div class="tv-value"><small>Collection value</small><b>$1,284</b><em>▲ 6.2%</em></div><svg class="tv-chart" viewBox="0 0 120 50" preserveAspectRatio="none"><path d="M0 42 L15 38 L30 40 L45 30 L60 33 L75 22 L90 25 L105 12 L120 8"/></svg><div class="tv-row">${card(a[4], 0, "mini")}<span>${esc(a.names[4] || "Ragavan")}</span><b>$54.10</b></div>${tap("t-prices")}`),
-  },
-  {
-    key: "ask",
-    title: "Just ask",
-    text: "Tap ✦ Ask next to search and ask anything about your cards, by voice or typing. It only uses the app: cards, prices, sets, tournament decks and your collection.",
-    examples: ["What's the most competitive Modern deck?", "What's my most valuable card?", "Build me a Fire deck for $40"],
-    demo: (a) => phone("ask", `<div class="tv-top"><b>Search</b><span class="tv-askbtn">✦ Ask</span></div><div class="tv-orb"><i></i><i></i><span>✦</span></div><div class="tv-q"><span>What's the most competitive deck?</span></div><div class="tv-dots"><i></i><i></i><i></i></div><div class="tv-answer"><small>From your app data</small>${card(a[5], 0, "mini")}<b>${esc(a.meta || "Top meta deck")}</b></div>${tap("t-ask")}`),
-  },
-  {
-    key: "collect",
-    title: "Make the collection yours",
-    text: "Open Collection to organise cards into binders, choose a cover and flip through pages. Open a card's Versions to check its printing and finish before adding it. Use Compare or Trade to inspect cards side by side.",
-    demo: (a) => phone("build", `<div class="tv-top"><b>Collection · Binders</b></div><div class="tv-chips"><span class="tv-hit">My binder</span><span>Versions</span><span>Trade</span></div><div class="tv-deal">${[0, 1, 2].map((k) => card(a[k], k)).join("")}</div><div class="tv-bar"><span>Your cards · your organisation</span></div>${tap("t-build")}`),
-  },
-  {
-    key: "upgrade",
-    title: "Improve without losing your plan",
-    text: "Open a deck's Upgrade lab to compare budget builds and see why a change helps. Check the cards being added and removed, the estimated cost and legality. Save a version before experimenting so you can compare your lists.",
-    demo: (a) => phone("build", `<div class="tv-top"><b>Upgrade lab</b></div><div class="tv-budget"><span>$25</span><span class="tv-hit2">$50</span><span>$100</span></div><div class="tv-deal">${[2, 3].map((k) => card(a[k], k)).join("")}</div><div class="tv-bar"><span>Review changes → Save a version</span></div>${tap("t-build")}`),
-  },
-  {
-    key: "practice",
-    title: "Try the deck before buying",
-    text: "Use Playtest to explore opening hands and your setup. Matchups compares your deck with the field where supported. These are simplified estimates, not tournament win rates. Use the AI coach for lines, weak spots and ideas to test in real games.",
-    demo: (a) => phone("build", `<div class="tv-top"><b>Playtest · Matchups</b></div><div class="tv-chips"><span class="tv-hit">Opening hand</span><span>Setup</span></div><div class="tv-deal">${[1, 2, 3].map((k) => card(a[k], k)).join("")}</div><div class="tv-bar"><span>Practice the plan · test the assumptions</span></div>${tap("t-build")}`),
-  },
-  {
-    key: "backup",
-    title: "Keep your cards safe",
-    text: "Your cards save on this device. In Settings, export a backup or sign in to use account sync. Export before clearing site data or changing devices. Each game's collection and decks stay separate; switch games from the header or swipe left or right on Home.",
-    demo: () => phone("build", `<div class="tv-top"><b>Settings</b></div><div class="tv-chips"><span class="tv-hit">Account</span><span>Backup</span></div><div class="tv-value"><small>Your workspace</small><b>Saved</b></div><div class="tv-bar"><span>Export a backup · keep a copy</span></div>${tap("t-build")}`),
-  },
+  { key: "welcome", title: "Your cards. Three games. One place.", text: "Welcome to CardStashy. Pick your game from the menu at the top, or swipe left or right on Home. Your cards and decks stay separate for each game." },
+  { key: "scan", title: "Let's get your cards in", text: "Got a pile to sort? Open Scan and hold a card inside the guide. Check the match, then add it. You can search by name or paste a list too." },
+  { key: "build", title: "Find your next deck", text: "Start with a list you like, explore Meta decks, or build around cards you already own. Pick a format and a budget, then see what you're missing." },
+  { key: "power", title: "Get to know your deck", text: "Once you've added a deck, open Power. It'll show what supports your plan and where the deck needs help. Treat the score as a starting point, then try it in a real game." },
+  { key: "prices", title: "See what you've got", text: "Your collection keeps track of your cards and their estimated value. Tap a card to check its printing, finish and prices. Check the seller's listing before you buy." },
+  { key: "ask", title: "A little help when you want it", text: "The shiny Ask button sits right beside Search. Ask about cards, prices or your next deck. You can type, or use the microphone if your phone supports it." },
+  { key: "collect", title: "Give your cards a home", text: "Head to Collection, then Binders. Make a binder for a set, a favourite deck or whatever you're collecting. Open a card's Versions when you want a different printing." },
+  { key: "upgrade", title: "Make a few good changes", text: "Inside your deck, try Upgrade lab. Look through the suggested builds, check the cost and save a version before changing things. Keep what fits the way you like to play." },
+  { key: "practice", title: "Give it a few practice hands", text: "Open Playtest from your deck to try your opening hands. Matchups and the AI coach can give you more ideas to test. They're estimates, so let real games have the final say." },
+  { key: "backup", title: "Keep a copy of your cards", text: "Before you switch devices, head to Settings and download a backup. You can sign in there for account sync too. Want another look around later? Replay this tour in Settings." },
 ];
 
-export function openTour({ onDone = () => {}, game = "mtg", art = [], names = [], meta = "" } = {}) {
+export function previewDocument(html, { cssUrl = './style.css', game = 'mtg', header = '', nav = '' } = {}) {
+  return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="${esc(cssUrl)}"><style>html,body{margin:0;overflow:hidden}body{opacity:1!important}#app{opacity:1!important}#content{padding:12px;padding-bottom:70px}.topbar{position:relative}.sheet-head{margin-bottom:12px}button,input,select,a{pointer-events:none}.ask-launch,[aria-selected=true],.btn:not(.ghost){animation:tour-hint 3s ease-in-out infinite}@keyframes tour-hint{50%{box-shadow:0 0 0 3px color-mix(in srgb,var(--game-color,var(--gold)) 30%,transparent)}}@media(prefers-reduced-motion:reduce){*{animation:none!important}}</style></head><body data-game="${esc(game)}" style="--game-color:${({mtg:'#f08a5d',ptcg:'#ef5350',ygo:'#f5b335'})[game] || '#f08a5d'}"><div id="app" class="ready">${header}<main id="content">${html}</main>${nav}</div></body></html>`;
+}
+
+export function openTour({ onDone = () => {}, game = "mtg", scenes = {}, header = "", nav = "", cssUrl = "./style.css" } = {}) {
   if (typeof document === "undefined" || document.querySelector(".tour")) return;
   let i = 0, finished = false;
   const launcher = document.activeElement;
@@ -92,16 +45,15 @@ export function openTour({ onDone = () => {}, game = "mtg", art = [], names = []
   el.setAttribute("aria-label", "Welcome to CardStashy");
   el.dataset.game = game;
   document.body.append(el);
-  const a = Object.assign([...art], { names, meta });
+
   const draw = (dir = 0) => {
     const s = STEPS[i],
       last = i === STEPS.length - 1;
     el.innerHTML = `<div class="tour-card tour-v2" data-step="${i}" data-dir="${dir}">
       <button class="tour-skip" data-tour="skip">Skip</button>
-      <div class="tour-demo">${s.demo(a)}</div>
+      <div class="tour-preview" aria-hidden="true">${(scenes[s.key] || []).map((html, n, list) => `<iframe tabindex="-1" title="${esc(s.title)}" sandbox="" style="--frame:${n};--frames:${list.length}" srcdoc="${esc(previewDocument(html, { cssUrl, game, header, nav }))}"></iframe>`).join("")}</div>
       <h2>${s.title}</h2><p>${s.text}</p>
       ${s.examples ? `<div class="tour-examples">${s.examples.map((q, k) => `<span style="--i:${k}">“${esc(q)}”</span>`).join("")}</div>` : ""}
-      <p class="tour-progress" aria-live="polite">Step ${i + 1} of ${STEPS.length} · Animated walkthrough</p>
       <div class="tour-dots" aria-hidden="true">${STEPS.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join("")}</div>
       <div class="tour-actions">${i ? `<button class="btn ghost" data-tour="back">Back</button>` : "<span></span>"}<button class="btn" data-tour="${last ? "done" : "next"}">${last ? "Let's go" : "Next"}</button></div>
     </div>`;

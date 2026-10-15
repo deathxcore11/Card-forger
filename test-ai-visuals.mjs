@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import {makeAskTools} from './ai-tools.js';
+import {esc} from './ui.js';
+const card={name:'Lead card',id:'lead',image:'https://art.test/card.png',imageLarge:'https://art.test/card-large.png',image_uris:{normal:'https://art.test/magic.png',art_crop:'https://art.test/magic-art.png'}};
+const data={source:'Fixture tournament',decks:[{key:'winner',name:'Winning deck',cover:'123',list:[{name:card.name,qty:4,kind:'Pokemon'}],main:[{name:card.name,qty:4}]}],archetypes:[{name:'Winning deck',best:'winner',share:.25,count:3}]};
+const T={game:()=> 'ptcg',cache:{ptcg:{lead:card},ygo:{lead:card}},cardOf:()=>card,gs:()=>({decks:[]}),metaState:()=>({data}),metaOwned:()=>({pct:.5,cost:12}),SOURCES:{ptcg:{search:async()=>({cards:[card]})},ygo:{}},ui:()=>({})};
+let opened=0;
+const tools=makeAskTools({S:{state:{settings:{},decks:[]},ui:{}},T,esc,meta:()=>card,inv:()=>({owned:2}),priceOf:()=>1,loadMetaData:async()=>data,MTG_META_FORMATS:[['Modern','Modern']],tcgCtx:{loadMeta:async()=>data},openTcgBuild:()=>opened++});
+for(const game of ['mtg','ptcg','ygo']){
+ tools.reset();const result=await tools.meta_decks({game,format:'Modern'});assert.equal(result.decks.length,1);
+ const item=tools.suggestedItems()[0];assert.equal(item.ref,'winner');
+ const html=tools.preview(item,0);assert.match(html,/ask-deck/);assert.match(html,/ask-deck-art/);assert.match(html,/25.0% of the field/);
+ assert.match(html,game==='ptcg'?/pk-crop/:game==='ygo'?/img\/ygo\/a\/123/:/magic-art.png/);
+ assert.equal(tools.canonicalItem({kind:'meta',game,ref:'Winning deck'}).ref,'winner');
+}
+// Old builder cards remain attached to their own action after another question.
+await tools.build_deck({game:'ptcg',style:'Fire',budget:40});const first=tools.pendingItem();tools.reset();
+await tools.build_deck({game:'ptcg',style:'Water',budget:60});const second=tools.pendingItem();
+assert.notEqual(first.ref,second.ref);await tools.open(first);assert.equal(opened,1);
+console.log('PASS: art-backed meta tiles across all three games, automatic recommendation cards, canonical references and persistent builder-card actions.');

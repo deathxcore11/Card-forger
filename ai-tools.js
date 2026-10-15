@@ -1,3 +1,4 @@
+import { pokemonArtCrop } from './artwork.js';
 // The app functions Ask AI may use. Each runs on this device against the app's own data and
 // returns compact JSON for the model; nothing here reaches outside the app's own data sources.
 // app.js passes in its internals (ctx) because its actions are module-scoped.
@@ -12,6 +13,34 @@ const tcgSet = (c) => c?.set?.name || c?.setName || c?.sets?.[0]?.name || c?.set
 
 export function makeAskTools(x) {
   const { S, T } = x;
+  const visuals = new Map();
+  let suggestions = [], buildId = 0;
+  const builders = new Map();
+  const visualKey = s => [s.game,s.kind,s.ref].join(':');
+  async function deckVisual(g, d, item, share = null) {
+    if (!d) return;
+    const rows = d.list || d.main || d.cards || d.zones?.main || [];
+    let card = null, image = '';
+    try {
+      if (g === 'ygo' && d.cover) image = `img/ygo/a/${encodeURIComponent(d.cover)}.jpg`;
+      else if (g === 'mtg') {
+        const lead = d.commander || rows.find(r => x.meta(r.name)?.type_line && !/Land/.test(x.meta(r.name).type_line))?.name || rows.find(r=>!BASICS.test(r.name))?.name;
+        card = lead ? x.meta(lead) || await x.resolve?.(lead).catch(()=>null) : null;
+        image = card?.image_uris?.art_crop || card?.card_faces?.[0]?.image_uris?.art_crop || mtgImg(card);
+      } else {
+        const lead = rows.find(r=>r.kind === 'Pokemon' && /ex|VSTAR|VMAX/i.test(r.name)) || rows.find(r=>r.kind === 'Pokemon') || rows.find(r=>! /Energy/.test(r.name));
+        card = lead && (Object.values(T.cache?.[g] || {}).find(c=>c.name===lead.name) || await (T.SOURCES[g].tournamentCard?.(lead) || T.SOURCES[g].byName(lead.name)).catch(()=>null));
+        image = card?.imageLarge || card?.image || '';
+      }
+    } catch {}
+    visuals.set(visualKey(item), { image, card, share, name: d.name, label:item.label });
+  }
+  async function decorateMeta(g, data, result) {
+    const items = (result.decks || []).slice(0,6).map(d=>({kind:'meta',game:g,ref:d.key || d.name,label:d.name}));
+    suggestions = items;
+    await Promise.all(items.map((item,i)=>deckVisual(g,(data.decks || []).find(d=>d.key===item.ref) || (data.decks || []).find(d=>d.name===item.ref),item,result.decks[i].share)));
+    return result;
+  }
   const g0 = (g) => (GAMES.includes(g) ? g : T.game());
   const mtgCard = (c) => ({ name: c.name, type: clip(c.type_line, 80), cost: c.mana_cost || '', set: c.set_name, setCode: c.set, rarity: c.rarity, price: num(x.priceOf(c.name)), owned: x.inv(c.name).owned || 0 });
   const tcgCard = (g, c) => ({ id: String(c.id), name: c.name, type: clip(c.typeLine || c.type || c.category, 80), set: tcgSet(c), rarity: c.rarity || '', price: num(c.prices?.usd), owned: T.ownedMap(g).get(T.SOURCES[g].ownKey(c)) || 0 });
@@ -95,11 +124,11 @@ export function makeAskTools(x) {
         const k = metaKey(format), data = await x.loadMetaData(k).catch(() => x.metaState(k).data);
         if (!data) return { error: 'Tournament data for that format isn\'t available right now.' };
         const owned = (d) => { const rows = [...(d.commanders || []).map((r) => (typeof r === 'string' ? { name: r, qty: 1 } : r)), ...(d.main || [])].filter((r) => !BASICS.test(r.name)); const total = rows.reduce((s, r) => s + r.qty, 0), have = rows.reduce((s, r) => s + Math.min(r.qty, x.inv(r.name).owned || 0), 0); return total ? Math.round((have / total) * 100) : 0; };
-        return { game: g, format: k.slice(4), source: data.source || 'tournament results', decks: (data.archetypes || []).slice(0, 8).map((a) => { const d = data.decks.find((y) => y.key === a.best) || data.decks.find((y) => (y.archetype || y.name) === a.name); return { name: a.name, key: d?.key || '', share: Math.round((a.share || 0) * 1000) / 10, lists: a.lists || a.count || 0, best: d ? `${d.place || ''} ${d.event || ''}`.trim() : '', ownedPercent: d ? owned(d) : 0, keyCards: d ? (d.main || []).filter((r) => !BASICS.test(r.name)).sort((p, q) => q.qty - p.qty).slice(0, 6).map((r) => r.name) : [] }; }) };
+        return decorateMeta(g, data, { game: g, format: k.slice(4), source: data.source || 'tournament results', decks: (data.archetypes || []).slice(0, 8).map((a) => { const d = data.decks.find((y) => y.key === a.best) || data.decks.find((y) => (y.archetype || y.name) === a.name); return { name: a.name, key: d?.key || '', share: Math.round((a.share || 0) * 1000) / 10, lists: a.lists || a.count || 0, best: d ? `${d.place || ''} ${d.event || ''}`.trim() : '', ownedPercent: d ? owned(d) : 0, keyCards: d ? (d.main || []).filter((r) => !BASICS.test(r.name)).sort((p, q) => q.qty - p.qty).slice(0, 6).map((r) => r.name) : [] }; }) });
       }
       const data = (await x.tcgCtx.loadMeta?.(g).catch(() => null)) || T.metaState(g).data;
       if (!data) return { error: 'Tournament data isn\'t available right now.' };
-      return { game: g, source: data.source || 'tournament results', decks: (data.archetypes || []).slice(0, 8).map((a) => { const d = data.decks.find((y) => y.key === a.best); const o = d ? T.metaOwned(g, d) : null; return { name: a.name || a.id, key: d?.key || '', share: Math.round((a.share || 0) * 1000) / 10, lists: a.count || 0, best: d ? `${d.place || ''} ${d.event || ''}`.trim() : '', ownedPercent: o ? Math.round(o.pct * 100) : 0, costToFinish: o?.cost != null ? num(o.cost) : null }; }) };
+      return decorateMeta(g, data, { game: g, source: data.source || 'tournament results', decks: (data.archetypes || []).slice(0, 8).map((a) => { const d = data.decks.find((y) => y.key === a.best); const o = d ? T.metaOwned(g, d) : null; return { name: a.name || a.id, key: d?.key || '', share: Math.round((a.share || 0) * 1000) / 10, lists: a.count || 0, best: d ? `${d.place || ''} ${d.event || ''}`.trim() : '', ownedPercent: o ? Math.round(o.pct * 100) : 0, costToFinish: o?.cost != null ? num(o.cost) : null }; }) });
     },
     async my_decks({ game }) {
       const g = g0(game);
@@ -127,12 +156,14 @@ export function makeAskTools(x) {
     },
   };
   // A builder prepared during this question appears as one more tappable item.
-  tools.reset = () => { x.pending = null; };
-  tools.pendingItem = () => (x.pending ? { kind: 'build', game: x.pendingGame, ref: 'builder', label: 'Open the deck builder' } : null);
+  tools.reset = () => { x.pending = null; suggestions = []; };
+  tools.suggestedItems = () => suggestions;
+  tools.canonicalItem = s => s.kind === 'meta' ? suggestions.find(x=>x.game===s.game && (x.ref===s.ref || x.label===s.ref || x.label===s.label)) || s : s;
+  tools.pendingItem = () => { if (!x.pending) return null; const ref = 'builder-' + (++buildId); builders.set(ref,x.pending); return {kind:'build',game:x.pendingGame,ref,label:'Open the deck builder'}; };
   // What a tapped answer item opens, in the right game.
   tools.open = async (s) => {
     if (s.game !== T.game()) await x.A.setGame({ dataset: { game: s.game } });
-    if (s.kind === 'build') return x.pending?.();
+    if (s.kind === 'build') return builders.get(s.ref)?.();
     if (s.kind === 'deck') return x.go((s.game === 'mtg' ? '#deck/' : '#tdeck/') + encodeURIComponent(s.ref));
     if (s.kind === 'set') {
       if (s.game === 'mtg') { const st = (await mtgSets()).find((y) => y.code.toLowerCase() === s.ref.toLowerCase() || y.name.toLowerCase() === s.ref.toLowerCase()); return x.go('#set/' + (st?.code || s.ref).toLowerCase()); }
@@ -150,13 +181,23 @@ export function makeAskTools(x) {
   };
   // Answer items as small cards: art from the app's card data when it has it.
   tools.preview = (s, i) => {
-    let img = '', price = null;
+    let img = '', price = null, card = null;
+    const deck = s.kind === 'meta' || s.kind === 'deck', visual = visuals.get(visualKey(s));
     if (s.kind === 'card') {
-      if (s.game === 'mtg') { const c = x.meta(s.ref); img = mtgImg(c); price = c ? x.priceOf(c.name) : null; }
-      else { const c = T.cardOf(s.game, s.ref) || Object.values(T.cache?.[s.game] || {}).find((c) => c.name === s.ref); img = c?.image || ''; price = c?.prices?.usd ?? null; }
+      if (s.game === 'mtg') { card = x.meta(s.ref); img = mtgImg(card); price = card ? x.priceOf(card.name) : null; }
+      else { card = T.cardOf(s.game, s.ref) || Object.values(T.cache?.[s.game] || {}).find(c=>c.name===s.ref); img = card?.imageLarge || card?.image || ''; price = card?.prices?.usd ?? null; }
+    } else if (deck) {
+      img = visual?.image || '';
+      card = visual?.card;
+      if (!img && s.kind === 'deck') {
+        const d=(s.game==='mtg'?S.state.decks:T.gs(s.game).decks).find(d=>d.id===s.ref);
+        card=s.game==='mtg'?x.meta(d?.commander || d?.cards?.[0]?.name):T.cardOf(s.game,d?.zones?.main?.[0]?.cardId);
+        img=s.game==='mtg'?(card?.image_uris?.art_crop || mtgImg(card)):(card?.art || card?.imageLarge || card?.image || '');
+      }
     }
-    const kind = { card: 'Card', set: 'Set', meta: 'Meta deck', deck: 'Your deck', build: 'Deck builder' }[s.kind] || '';
-    return `<button class="ask-item ${img ? '' : 'wide'}" style="--i:${i}" data-ask-show='${x.esc(JSON.stringify(s))}'>${img ? `<img src="${x.esc(img)}" alt="" loading="lazy">` : ''}<b>${x.esc(s.label || s.ref)}</b><small>${kind}</small>${price != null ? `<em>$${Number(price).toFixed(2)}</em>` : ''}</button>`;
+    const kind = { card:'Card', set:'Set', meta:'Meta deck', deck:'Your deck', build:'Deck builder' }[s.kind] || '';
+    const media = img ? (deck && s.game==='ptcg' ? pokemonArtCrop(card,'ask-deck-art',img) : `<img class="${deck?'ask-deck-art':''}" src="${x.esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer">`) : deck ? '<span class="ask-deck-art img-missing" aria-hidden="true">◇</span>' : '';
+    return `<button class="ask-item ${deck?'ask-deck':img?'':'wide'}" style="--i:${i}" data-ask-show='${x.esc(JSON.stringify(s))}'>${media}<b>${x.esc(s.label || s.ref)}</b><small>${kind}${visual?.share!=null?' · '+Number(visual.share).toFixed(1)+'% of the field':''}</small>${price!=null?`<em>$${Number(price).toFixed(2)}</em>`:''}</button>`;
   };
   return tools;
 }

@@ -1,29 +1,53 @@
-import assert from "node:assert/strict";
-globalThis.localStorage = { m: {}, getItem(k) { return this.m[k] ?? null; }, setItem(k, v) { this.m[k] = String(v); } };
-const { shouldTour, STEPS } = await import("./tour.js");
-assert.equal(shouldTour({ cards: 0, decks: 0, seen: false }), true, "brand new: show");
-assert.equal(shouldTour({ cards: 3, decks: 0, seen: false }), true, "existing collectors can learn new features");
-assert.equal(shouldTour({ cards: 0, decks: 0, seen: true }), false, "seen: never again");
-assert.equal(STEPS.length, 9);
-assert.deepEqual(STEPS.map((s) => s.key), ["scan", "build", "power", "prices", "ask", "collect", "upgrade", "practice", "backup"]);
-const demo = STEPS[4].demo(Object.assign(["a.jpg", "b.jpg", "c.jpg", "d.jpg", "e.jpg", "f.jpg"], { names: [], meta: "Dragapult <x>" }));
-assert.match(demo, /f\.jpg/); assert.match(demo, /Dragapult &lt;x&gt;/); assert.ok(STEPS[4].examples.length >= 3);
-console.log("PASS: first-run tour for new and existing collectors, once; nine animated demos with real card art, Ask AI examples, escaped text.");
-
-const {homeHero}=await import('./tcg.js');
-for(const g of ['mtg','ptcg','ygo']) { const html=homeHero(g,'Welcome');assert.match(html,/Learn CardStashy/);assert.match(html,/data-act="replayTour"/); }
-for(const step of STEPS) assert.ok(step.demo(Object.assign([],{names:[]})).includes('tv-phone'));
-console.log('PASS: always-visible Home tour entry in all three games and animated demos for every guide chapter.');
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {S,blank} from './store.js';
+import {homeHero,tcgHome,ui} from './tcg.js';
+import {home,settings} from './views.js';
+import {tourScenes} from './tour-scenes.js';
+import {shouldTour,STEPS,openTour,tourSeen,previewDocument} from './tour.js';
+globalThis.localStorage={m:{},getItem(k){return this.m[k]??null;},setItem(k,v){this.m[k]=String(v);}};
+assert.equal(shouldTour({seen:false}),true);
+assert.equal(shouldTour({cards:5,decks:2,seen:false}),true);
+assert.equal(shouldTour({seen:true}),false);
+assert.equal(STEPS.length,10);
+assert.match(STEPS[0].text,/swipe left or right on Home/);
+assert.doesNotMatch(STEPS.map(x=>x.text).join(' '),/Trade|Animated walkthrough|Step \d/);
+S.state=blank();
+for(const g of ['mtg','ptcg','ygo']) {
+ S.state.settings.game=g;
+ assert.doesNotMatch(homeHero(g,'Welcome'),/learn-card|replayTour/);
+ const html=g==='mtg'?home():tcgHome();
+ assert.doesNotMatch(html,/game-switch|game-choice-list|learn-card|replayTour/,'Home has no duplicate selector or replay card');
+ const state=S.state,screen=S.ui,tcg=ui(g),before=structuredClone({state,screen,tcg});
+ const scenes=tourScenes(g);
+ assert.equal(S.state,state);assert.equal(S.ui,screen);assert.deepEqual({state,screen,tcg},before,'preview rendering cannot change the workspace or active screens');
+ for(const step of STEPS)assert.ok(scenes[step.key]?.every(x=>x.length>100),`${g}: real screen for ${step.key}`);
+ assert.match(scenes.ask[0],/search-query/);assert.match(scenes.ask[0],/ask-launch/);
+ assert.match(scenes.collect[0],/Binders/);assert.match(scenes.power[0],/Power/);
+ for(const tab of ['account','backup','app']){S.ui.settingsTab=tab;assert.equal((settings().match(/data-act="replayTour"/g)||[]).length,1);}
+}
+const docs=previewDocument('<button data-act="example">Real control</button>',{game:'ptcg',cssUrl:'https://app.test/style.css'});
+assert.match(docs,/https:\/\/app.test\/style.css/);assert.match(docs,/Real control/);
+assert.doesNotMatch(docs,/<script/);
 const dialogs=[];
 globalThis.document={activeElement:{isConnected:true,focus(){}},querySelector:()=>null,body:{append:e=>dialogs.push(e)},createElement:()=>({dataset:{},handlers:{},classList:{add(){}},setAttribute(){},addEventListener(k,f){this.handlers[k]=f;},querySelector(){return {focus(){}};},remove(){this.removed=true;}})};
-const {openTour,tourSeen}=await import('./tour.js');let completions=0;
-openTour({onDone:()=>completions++});const dialog=dialogs.at(-1);
-assert.match(dialog.innerHTML,/Step 1 of 9/);
-for(let n=0;n<12;n++) dialog.handlers.keydown({key:'ArrowRight'});
-assert.match(dialog.innerHTML,/Step 9 of 9/);assert.match(dialog.innerHTML,/Keep your cards safe/);
-for(let n=0;n<12;n++) dialog.handlers.keydown({key:'ArrowLeft'});
-assert.match(dialog.innerHTML,/Step 1 of 9/);
+let completions=0;
+openTour({scenes:{welcome:['<h1>Actual home</h1>']},onDone:()=>completions++});const dialog=dialogs.at(-1);
+assert.match(dialog.innerHTML,/sandbox=""/);assert.doesNotMatch(dialog.innerHTML,/allow-scripts|allow-same-origin|Animated walkthrough|Step \d|tv-phone/);
+assert.match(dialog.innerHTML,/Actual home/);
+for(let i=0;i<15;i++)dialog.handlers.keydown({key:'ArrowRight'});
+assert.match(dialog.innerHTML,/Keep a copy of your cards/);
+for(let i=0;i<15;i++)dialog.handlers.keydown({key:'ArrowLeft'});
+assert.match(dialog.innerHTML,/Your cards\. Three games/);
 dialog.handlers.keydown({key:'Escape'});dialog.handlers.keydown({key:'Escape'});
 assert.equal(completions,1);assert.equal(tourSeen(),true);
-openTour();assert.match(dialogs.at(-1).innerHTML,/Step 1 of 9/,'explicit replay works even after dismissal');
-console.log('PASS: nine-slide navigation stays in bounds, dismissal is idempotent, seen state persists and explicit replay still works.');
+openTour();assert.match(dialogs.at(-1).innerHTML,/Your cards\. Three games/);
+assert.match(readFileSync('app.js','utf8'),/shouldTour\(\{ cards, decks \}\)/);
+console.log('PASS: first-visit autoplay, Settings-only replay, clean Home across games, ten real-rendered screen chapters, isolated previews, navigation bounds and persistent dismissal.');
+
+const stateBeforeFailure=S.state,uiBeforeFailure=S.ui,tcgBeforeFailure={...ui('ptcg')};
+S.ui.uncloneable=()=>{};
+assert.throws(()=>tourScenes('ptcg'));
+assert.equal(S.state,stateBeforeFailure);assert.equal(S.ui,uiBeforeFailure);assert.deepEqual(ui('ptcg'),tcgBeforeFailure);
+delete S.ui.uncloneable;
+console.log('PASS: a preview preparation failure leaves the active workspace and per-game controls untouched.');

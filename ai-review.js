@@ -3,6 +3,7 @@
 // the AI returns decisions (lines, stress tests, swaps), and the app checks them in code before
 // showing them: cards in the list, copies, per-turn limits, mana by turn, and re-scored swaps.
 import { esc } from './ui.js';
+import { aiOrb } from './ai-ui.js';
 import { review } from './deckaudit.js';
 import { competitiveScore } from './scouting.js';
 const entries = new Map();
@@ -285,6 +286,7 @@ export function aiReviewDialogContent(entry, stale = false) {
 function updateDialog() {
   if (!activeDialog) return;
   const body = activeDialog.node.querySelector('.ai-dialog-body');
+  activeDialog.node.classList?.toggle?.('thinking', !!activeDialog.entry.busy);
   body.setAttribute('aria-busy', String(activeDialog.entry.busy && !activeDialog.stale));
   body.innerHTML = aiReviewDialogContent(activeDialog.entry, activeDialog.stale);
   activeDialog.node.querySelector('.ai-dialog-status').textContent = activeDialog.stale ? 'Deck changed' : activeDialog.entry.busy ? 'Coaching in progress' : activeDialog.entry.error ? 'Coaching unavailable' : 'Coaching ready';
@@ -299,8 +301,8 @@ export function showAiReview(key, render, fetcher = fetch) {
   const entry = entries.get(key); if (!entry) return;
   if (activeDialog) closeAiReview();
   const node = document.createElement('dialog');
-  node.className = 'ai-review-dialog'; node.setAttribute('aria-labelledby', 'ai-review-title');
-  node.innerHTML = `<div class="ai-dialog-shell"><header class="ai-dialog-head"><div><p class="eyebrow">AI coach</p><h2 id="ai-review-title">Deck coaching</h2></div><button class="icon" data-ai-close aria-label="Close AI coaching">✕</button></header><p class="ai-dialog-status sr-only" role="status" aria-live="polite"></p><div class="ai-dialog-body"></div></div>`;
+  node.className = 'ai-review-dialog ai-companion'; node.setAttribute('aria-labelledby', 'ai-review-title');
+  node.innerHTML = `<div class="ai-dialog-shell"><header class="ai-dialog-head ask-head">${aiOrb()}<div><p class="eyebrow">AI coach</p><h2 id="ai-review-title">Deck coaching</h2></div><button class="icon" data-ai-close aria-label="Close AI coaching">✕</button></header><p class="ai-dialog-status sr-only" role="status" aria-live="polite"></p><div class="ai-dialog-body"></div></div>`;
   document.body.append(node); activeDialog = { key, entry, node, stale: false };
   node.addEventListener('cancel', e => { e.preventDefault(); closeAiReview(); });
   node.addEventListener('click', e => {

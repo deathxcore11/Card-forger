@@ -25,11 +25,11 @@ export function workspaceSig(state) {
 }
 
 // Example data or nothing at all: safe to replace without asking.
-export const isEmptyWorkspace = (s) => !s || s.example === true || (!s.collection?.length && !s.decks?.length && !s.wishlist?.length && !s.references?.length);
+export const isEmptyWorkspace = (s) => !s || s.example === true || ![s, ...Object.values(s.tcg || {})].some(g => g.collection?.length || g.decks?.length || g.wishlist?.length || g.notes?.length || g.references?.length) && !s.settings?.binders?.length;
 
 export function summarize(s) {
-  const copies = (s?.collection || []).reduce((a, e) => a + (Number(e.qty) || 0), 0);
-  return { copies, names: s?.collection?.length || 0, decks: s?.decks?.length || 0, wishlist: s?.wishlist?.length || 0, saved: s?.lastSavedAt || null };
+  const games = [s || {}, ...Object.values(s?.tcg || {})];
+  return { copies: games.reduce((n,g) => n + (g.collection || []).reduce((a,e) => a + (Number(e.qty) || 0),0),0), names: games.reduce((n,g)=>n+(g.collection?.length||0),0), decks: games.reduce((n,g)=>n+(g.decks?.length||0),0), wishlist: games.reduce((n,g)=>n+(g.wishlist?.length||0),0), saved:s?.lastSavedAt || null };
 }
 
 // What to do after reading the account copy.
@@ -46,6 +46,8 @@ export function decideSync({ cloud, meta, userId, local }) {
     empty = isEmptyWorkspace(local);
   if (!cloud) return empty ? "upload" : "offer";
   const cloudSig = workspaceSig(cloud.data);
+  // A cleared device must never silently replace a populated account.
+  if (empty && !isEmptyWorkspace(cloud.data)) return meta?.userId === userId && meta.sig !== localSig ? "choose" : "adopt";
   if (!meta || meta.userId !== userId) {
     if (cloudSig === localSig) return "link";
     return empty ? "adopt" : "choose";
@@ -61,6 +63,7 @@ export function decideSync({ cloud, meta, userId, local }) {
 
 /* ---------- runtime ---------- */
 
+let syncEpoch = 0;
 let providers = { email: true }, // sign-in methods enabled on the project
   client = null,
   user = null,
@@ -84,6 +87,11 @@ const writeMeta = (m) => {
     else localStorage.removeItem(META);
   } catch {}
 };
+// Forget only this device's sync baseline; never issue a cloud delete or empty upload.
+export function detachDeviceSync() {
+  syncEpoch++; clearTimeout(pushTimer); pushTimer = null; pending = null; writeMeta(null);
+}
+
 const device = () => {
   const ua = navigator.userAgent || "";
   const kind = /Android/i.test(ua) ? "Android" : /iPhone|iPad/i.test(ua) ? "iPhone/iPad" : /Mac/i.test(ua) ? "Mac" : /Windows/i.test(ua) ? "Windows" : "Browser";
@@ -106,7 +114,7 @@ export function statusLabel() {
       error: ["Saved on this device · sync paused", "bad"],
       decide: ["Sync needs your decision", "bad"],
       offline: ["Saved on this device · offline", ""],
-    }[status.state] || ["Synced to your account", "ok"]
+    }[status.state] || ["Saved on this device · account sync not confirmed", ""]
   );
 }
 
@@ -121,11 +129,11 @@ function friendly(e) {
   return m || "Something went wrong while syncing.";
 }
 
-export async function initCloud(h) {
+export async function initCloud(h, { createClient: factory } = {}) {
   hooks = h;
   if (!cloudConfigured()) return;
   try {
-    const { createClient } = await import(/* @vite-ignore */ LIB);
+    const createClient = factory || (await import(/* @vite-ignore */ LIB)).createClient;
     client = createClient(SUPABASE.url, SUPABASE.key, { global: { fetch: timedFetch }, auth: { flowType: "pkce", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true } });
   } catch {
     status.state = "error";
@@ -151,6 +159,8 @@ export async function initCloud(h) {
     const next = session?.user || null;
     if (!next || (next.id !== user?.id && event !== "PASSWORD_RECOVERY")) recoveringPassword = false;
     if (next?.id === user?.id) return;
+    hooks?.accountChanged?.();
+    syncEpoch++; clearTimeout(pushTimer); pushTimer = null; pending = null;
     user = next;
     profile = null;
     if (user) setTimeout(() => startSync(), 0);
@@ -204,14 +214,17 @@ export async function finishPasswordReset(password,confirm) {
 export async function signOut() {
   if (!client) return;
   await flushPush().catch(() => {});
-  const { error } = await client.auth.signOut();
+  const synced = status.state === "synced" && readMeta()?.sig === workspaceSig(hooks.getState());
+  const { error } = await client.auth.signOut({ scope: "local" });
   if (error) throw Error(authError(error));
+  detachDeviceSync();
   user = null;
   profile = null;
   pending = null;
   recoveringPassword = false;
   authNotice = "";
   setStatus("local");
+  return { synced };
 }
 
 // Deletes the signed-in account and everything synced to it (profile, collection, decks), via the
@@ -230,7 +243,10 @@ export async function deleteAccount() {
 }
 
 async function loadProfile() {
-  const { data } = await client.from("profiles").select("username, display_name, avatar_url, bio, favorite_formats").eq("id", user.id).maybeSingle();
+  const owner = user?.id, epoch = syncEpoch;
+  if (!owner) return;
+  const { data } = await client.from("profiles").select("username, display_name, avatar_url, bio, favorite_formats").eq("id", owner).maybeSingle();
+  if (user?.id !== owner || syncEpoch !== epoch) return;
   profile = data || { display_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "", avatar_url: user.user_metadata?.avatar_url || "" };
   hooks.changed();
 }
@@ -257,16 +273,18 @@ async function fetchCloud() {
 export async function startSync() {
   if (!client || !user) return;
   if (!navigator.onLine) return setStatus("offline");
+  const owner = user.id, epoch = syncEpoch;
   setStatus("syncing");
   try {
     loadProfile().catch(() => {});
-    const cloud = await fetchCloud(),
-      meta = readMeta(),
+    const cloud = await fetchCloud();
+    if (user?.id !== owner || syncEpoch !== epoch) return;
+    const meta = readMeta(),
       local = hooks.getState(),
       action = decideSync({ cloud, meta, userId: user.id, local });
     await act(action, cloud, local);
   } catch (e) {
-    setStatus("error", friendly(e));
+    if (user?.id === owner && syncEpoch === epoch) setStatus("error", friendly(e));
   }
 }
 
@@ -332,16 +350,17 @@ async function pushNow(first = false) {
   if (!client || !user || pending) return;
   if (pushing) return scheduleSync();
   if (!navigator.onLine) return setStatus("offline");
+  const owner = user.id, epoch = syncEpoch;
   pushing = true;
   setStatus("syncing");
   try {
     const data = hooks.getState(),
       meta = readMeta(),
       sig = workspaceSig(data);
-    if (meta?.userId === user.id && meta.sig === sig && !first) return setStatus("synced");
+    if (meta?.userId === owner && meta.sig === sig && !first) return setStatus("synced");
     let row;
-    if (first || !meta || meta.userId !== user.id) {
-      const r = await client.from("workspaces").insert({ user_id: user.id, data, revision: 1, device: device() }).select("revision").single();
+    if (first || !meta || meta.userId !== owner) {
+      const r = await client.from("workspaces").insert({ user_id: owner, data, revision: 1, device: device() }).select("revision").single();
       if (r.error) {
         // Someone (another device) created the account copy first.
         if (/duplicate|unique|conflict/i.test(r.error.message) || r.error.code === "23505") return conflictFromServer();
@@ -349,15 +368,16 @@ async function pushNow(first = false) {
       }
       row = r.data;
     } else {
-      const r = await client.from("workspaces").update({ data, revision: meta.revision + 1, device: device() }).eq("user_id", user.id).eq("revision", meta.revision).select("revision");
+      const r = await client.from("workspaces").update({ data, revision: meta.revision + 1, device: device() }).eq("user_id", owner).eq("revision", meta.revision).select("revision");
       if (r.error) throw r.error;
       if (!r.data?.length) return conflictFromServer();
       row = r.data[0];
     }
-    writeMeta({ userId: user.id, revision: row.revision, sig });
+    if (user?.id !== owner || syncEpoch !== epoch) return;
+    writeMeta({ userId: owner, revision: row.revision, sig });
     setStatus("synced");
   } catch (e) {
-    setStatus("error", friendly(e));
+    if (user?.id === owner && syncEpoch === epoch) setStatus("error", friendly(e));
   } finally {
     pushing = false;
   }

@@ -3069,10 +3069,26 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
   .search-query .btn, .hh-search .btn, .search-query .ask-launch, .hh-search .ask-launch { padding-inline: 9px; font-size: 13px; }
 }
 
-.learn-card { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:12px 0 18px; padding:18px; border:1px solid var(--line); border-radius:18px; background:linear-gradient(120deg,color-mix(in srgb,var(--game-color,var(--gold)) 8%,var(--surface)),var(--surface)); }
-.learn-card h2 { margin:3px 0 5px; font-size:19px; }
-.learn-card p { margin:0; color:var(--muted); font-size:14px; }
-.learn-card .eyebrow { font-size:11px; }
-.learn-card .btn { flex:none; white-space:nowrap; }
-.tour-card .tour-progress { font-size:12px; margin-top:12px; }
-@media(max-width:480px) { .learn-card { flex-wrap:wrap; gap:12px; } .learn-card .btn { min-height:44px; } }
+/* Actual app screens, isolated from live controls and workspace writes. */
+.tour-card.tour-v2 { width:min(100%,480px); max-width:480px; max-height:calc(100dvh - 32px - env(safe-area-inset-bottom)); overflow:auto; padding-top:46px; }
+.tour-preview { position:relative; width:100%; height:clamp(190px,42dvh,350px); overflow:hidden; border-radius:16px; border:1px solid var(--line); margin:0 0 18px; background:var(--bg); }
+.tour-preview iframe { position:absolute; inset:0; width:100%; height:100%; border:0; pointer-events:none; background:var(--bg); }
+.tour-preview iframe:not(:only-child) { animation:tour-screen-cycle 12s infinite; animation-delay:calc(var(--frame) * -6s); }
+@keyframes tour-screen-cycle { 0%,45%,100%{opacity:1} 50%,95%{opacity:0} }
+@media(prefers-reduced-motion:reduce) { .tour-preview iframe {animation:none!important} .tour-preview iframe:not(:first-child){display:none} }
+
+/* One visual family for Ask and deck coaching. */
+.ai-companion { border-radius:28px; background:color-mix(in srgb,var(--surface-2) 97%,transparent); animation:ask-in .45s cubic-bezier(.2,.9,.2,1.1) both; }
+.ai-companion::backdrop { background:#05070cd0; backdrop-filter:blur(16px); }
+.ai-companion .ask-head { gap:12px; padding:18px 20px; background:radial-gradient(120% 160% at 0 0,color-mix(in srgb,var(--game-color,var(--gold)) 20%,transparent),transparent 60%); }
+.ai-companion .ask-head>div:nth-child(2) { flex:1; min-width:0; }
+.ai-companion .ask-head h2 { font-size:21px; overflow-wrap:anywhere; }
+.ask-new { display:flex; align-items:center; gap:3px; flex:none; min-height:40px; padding:6px 8px; border:1px solid var(--line); border-radius:12px; color:var(--muted); background:transparent; font:inherit; cursor:pointer; }
+.ask-deck { min-height:160px; position:relative; overflow:hidden; justify-content:flex-end; padding:16px; isolation:isolate; background:var(--surface); }
+.ask-deck .ask-deck-art { position:absolute; inset:0; width:100%; height:100%; z-index:-2; object-fit:cover; border-radius:0; }
+.ask-deck::after {content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(transparent,#0b0d12e8 72%)}
+.ask-deck b {font-size:16px;text-shadow:0 2px 8px #000}.ask-deck small{color:#d4dae4}.ask-items:has(.ask-deck){grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr))}
+@media(max-width:380px){.ai-companion .ask-head{gap:8px;padding:14px}.ai-companion .ask-head h2{font-size:18px}.ai-companion .ask-orb{width:40px;height:40px}.ask-new span{display:none}}
+@media(prefers-reduced-motion:reduce){.ai-companion,.ai-companion::backdrop{animation:none!important}}
+
+.ai-companion.thinking .ask-orb{animation-duration:1.6s}.ai-companion.thinking .ask-orb i{animation-duration:1.2s}
