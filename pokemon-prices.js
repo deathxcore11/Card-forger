@@ -1,3 +1,4 @@
+import {pickGroup} from './pokemon-art.js';
 // Exact product/finish fallback. An asking price never replaces the market price.
 export function applyProductPrices(card,body){
  if(body?.cardId!==card.id)return false;
@@ -21,7 +22,7 @@ export async function pokemonPriceRoute(url,ctx,fetchImpl=fetch){
   const c=await get('https://api.tcgdex.net/v2/en/cards/'+encodeURIComponent(id));if(c.id!==id)throw Error('Wrong printing');
   const products=new Set((c.variants_detailed || []).map(v=>Number(v.thirdParty?.tcgplayer)).filter(Boolean));
   if(!products.size)return Response.json({cardId:id,quotes:[],notice:'No exact product mapping'});
-  const groups=await get('https://tcgcsv.com/tcgplayer/3/groups'),group=groups.results?.find(g=>setKey(g.name)===setKey(c.set?.name));
+  const groups=await get('https://tcgcsv.com/tcgplayer/3/groups'),group=groups.results?.find(g=>setKey(g.name)===setKey(c.set?.name))||pickGroup(groups.results,c.set?.name);
   if(!group)return Response.json({cardId:id,quotes:[],notice:'No exact set mapping'});
   const prices=await get('https://tcgcsv.com/tcgplayer/3/'+group.groupId+'/prices');
   const quotes=(prices.results || []).filter(q=>products.has(Number(q.productId))&&q.marketPrice>0);

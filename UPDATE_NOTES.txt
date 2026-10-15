@@ -1,3 +1,10 @@
+3.58.1 — Pokémon promo prices
+- Black Star promos now get TCGplayer prices. TCGdex calls the set "SVP Black Star Promos" and
+  TCGplayer calls it "SV: Scarlet & Violet Promo Cards", so the exact-product price lookup missed
+  it. It now matches sets the same way the card-art fallback does. In Scarlet & Violet promos,
+  214 of 226 cards now have a US price; before, all but 11 showed only Cardmarket's euro price.
+- New: a set-by-set audit script for Pokémon (scripts/ptcg-set-audit.mjs).
+
 3.58.0 — Prices for old and rare Magic printings, one-tap Buy, your own price
 - Printings Scryfall has no US price for (Alpha and Beta rares, old promos) now show TCGplayer's
   price for the exact same product, labelled "TCGplayer market" or "TCGplayer low". Alpha Animate

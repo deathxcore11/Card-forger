@@ -49,3 +49,16 @@ useMyPrices({ [myPriceKey(wall)]: { price: 5 } });
 assert.equal(cardPrice({ ...wall, id: undefined }), 249.99, "own price never replaces a store price");
 useMyPrices({});
 console.log("PASS: Personal prices stay with the player and only fill gaps.");
+
+// Pokémon promos: TCGdex calls the set "SVP Black Star Promos", TCGplayer "SV: Scarlet & Violet
+// Promo Cards". The exact-product price fallback finds the group by the same alias as the art.
+const { pokemonPriceRoute } = await import("./pokemon-prices.js");
+const pk = async (u) => {
+  if (u.endsWith("/cards/svp-1")) return Response.json({ id: "svp-1", name: "Sprigatito", set: { name: "SVP Black Star Promos" }, variants_detailed: [{ type: "holo", thirdParty: { tcgplayer: 4242 } }] });
+  if (u.endsWith("/tcgplayer/3/groups")) return Response.json({ results: [{ groupId: 22872, name: "SV: Scarlet & Violet Promo Cards" }, { groupId: 1, name: "Scarlet & Violet" }] });
+  if (u.endsWith("/tcgplayer/3/22872/prices")) return Response.json({ results: [{ productId: 4242, marketPrice: 1.75, lowPrice: 1, midPrice: 2, subTypeName: "Holofoil" }] });
+  return new Response("", { status: 404 });
+};
+const promo1 = await (await pokemonPriceRoute(new URL("https://x/api/prices/pokemon?id=svp-1"), null, pk)).json();
+assert.equal(promo1.quotes?.[0]?.marketPrice, 1.75, "SVP promo priced through TCGplayer's promo group");
+console.log("PASS: Pokémon Black Star promos get TCGplayer prices through the promo group alias.");
