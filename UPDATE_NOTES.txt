@@ -1,3 +1,9 @@
+3.71.2 — Power picks the cut
+- Each deck card now tells the coach which Power areas it counts toward, so suggested cuts avoid
+  cards Power relies on.
+- When a suggested swap would still lower Deck Power, Power tests other cuts for the same added
+  card and shows its pick ("Keep X and cut Y instead: Power 70 → 72, Draw 3 → 4").
+
 3.71.1 — Coach swaps chosen by Power, and fewer dropped answers
 - Swap candidates are chosen with Deck Power: owned cards are test-added and Power's own counts
   show which weak area each would raise (e.g. a land for "Lands"); those come first and are

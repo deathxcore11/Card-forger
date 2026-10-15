@@ -75,7 +75,7 @@ async function run(c) {
     winMatchesGoldfish: named.length && win ? named.some((nm) => win.includes(nm.toLowerCase().split(/,| \/\/ /)[0])) : null,
     core: [...new Set(named)], plan: r.identity?.plan,
     lines: r.pilot.lines.length, linesPass: e.verified.lines.filter((f) => !f.length).length,
-    swaps: r.improve.length, swapsRescored: swaps.length, swapsNotWorse: swaps.filter((x) => x.after >= x.before && !x.issues.length).length, swapsAreaUp: swaps.filter((x) => x.area && x.area.after > x.area.before).length,
+    swaps: r.improve.length, swapsRescored: swaps.length, swapsNotWorse: swaps.filter((x) => x.after >= x.before && !x.issues.length).length, swapsAreaUp: swaps.filter((x) => x.area && x.area.after > x.area.before).length, swapsBestNotWorse: swaps.filter((x) => { const b = x.better && !x.better.issues.length && x.better.after >= x.better.before ? x.better : x; return b.after >= b.before && !b.issues.length; }).length, swapsBestAreaUp: swaps.filter((x) => { const b = x.better || x; return b.area && b.area.after > b.area.before; }).length, swapDetail: e.result.improve.map((s, i) => ({ area: s.area, cut: s.cutName, add: s.addName, helps: e.cands?.find((c) => c.id === s.add)?.helps || [], ...(e.verified.swaps[i] || {}) })),
     beyond: r.beyond.length, explain: r.explain.length, omitted: r.omitted, notes: r.notes || [],
   };
 }
@@ -95,6 +95,8 @@ const summary = {
   winCardsMatchGoldfish: rate(ok, (x) => x.winMatchesGoldfish),
   linesPassAppChecks: +(ok.reduce((s, x) => s + x.linesPass, 0) / Math.max(1, ok.reduce((s, x) => s + x.lines, 0))).toFixed(2),
   swapsNotWorse: +(ok.reduce((s, x) => s + x.swapsNotWorse, 0) / Math.max(1, ok.reduce((s, x) => s + x.swapsRescored, 0))).toFixed(2),
+  swapsWithPowerPickNotWorse: +(ok.reduce((s, x) => s + x.swapsBestNotWorse, 0) / Math.max(1, ok.reduce((s, x) => s + x.swapsRescored, 0))).toFixed(2),
+  swapsWithPowerPickImproveArea: +(ok.reduce((s, x) => s + x.swapsBestAreaUp, 0) / Math.max(1, ok.reduce((s, x) => s + x.swapsRescored, 0))).toFixed(2),
   swapsImproveTheirArea: +(ok.reduce((s, x) => s + x.swapsAreaUp, 0) / Math.max(1, ok.reduce((s, x) => s + x.swapsRescored, 0))).toFixed(2),
   namesCoreCards: rate(ok, (x) => x.core.length > 0), droppedPerReview: rate(ok, (x) => x.omitted), consistency,
 };

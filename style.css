@@ -2929,3 +2929,5 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 @keyframes air-grow{from{transform:scaleX(0)}}
 @media(max-width:520px){.air-tabs button{font-size:12px;gap:4px}.air-tabs button>span{display:none}}
 @media(prefers-reduced-motion:reduce){.air-area,.air-meter span{animation:none!important}}
+
+.air-better{margin:10px 0 2px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--good) 9%,transparent);border:1px solid color-mix(in srgb,var(--good) 35%,transparent)}.air-better p{margin:4px 0 0;line-height:1.7}.air-better .air-score{padding:3px 8px;font-size:13px}

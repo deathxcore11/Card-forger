@@ -109,7 +109,10 @@ export function sampleHand(game, rows, seed) {
 }
 export function reviewPayload(game, deck, lookup, p) {
   const rows = deckRows(game, deck, lookup);
-  const cards = rows.map(r => cardEntry(game, r.id, r.row.name || String(r.row.cardId), r.row.qty, r.zone, r.c));
+  // Which Power areas each card counts toward, from Power's own card lists.
+  const areasOf = new Map();
+  for (const x of p?.parts || []) for (const c of x.cards || []) { const k = String(nm(c)).toLowerCase(); if (k) (areasOf.get(k) || areasOf.set(k, new Set()).get(k)).add(x.label || x.key); }
+  const cards = rows.map(r => { const e = cardEntry(game, r.id, r.row.name || String(r.row.cardId), r.row.qty, r.zone, r.c), a = areasOf.get(String(e.name).toLowerCase()); return a?.size ? { ...e, power: [...a].join(', ') } : e; });
   const base = { game, format: p.formatName || deck.format || '', commander: game === 'mtg' ? deck.commander || '' : '', cards };
   return { ...base, power: powerSummary(p), facts: deckFacts(game, rows, p), hand: sampleHand(game, rows, JSON.stringify(cards.map(c => [c.name, c.qty, c.zone]))), checks: { engine: p.heuristic ?? p.score, competitive: p.ctx?.score ?? null, provisional: !!p.readiness?.provisional, issues: [...(p.readiness?.issues || []), ...(p.caps || []).map(c => `${c.label}: ${c.why || ''}`)] } };
 }
@@ -230,7 +233,7 @@ function improveTab(r, v, entry) {
     const sc = v.swaps[i], d = sc ? sc.after - sc.before : 0;
     const verdict = sc ? (sc.issues.length ? `<span class="air-check bad">Not legal: ${esc(sc.issues[0])}</span>` : `<span class="air-score ${d > 0 ? 'up' : d < 0 ? 'down' : ''}">Power ${sc.before} → ${sc.after} <b>${d > 0 ? '+' : ''}${d}</b></span>`) : s.add ? '' : '<span class="air-check">Find a card</span>';
     const A = areaOf.get(s.area), moved = sc?.area && sc.area.before != null ? `<span class="air-score ${sc.area.after > sc.area.before ? 'up' : sc.area.after < sc.area.before ? 'down' : ''}">${esc(A?.label || s.area)} ${esc(String(sc.area.before))} → ${esc(String(sc.area.after))}</span>` : A ? `<span class="air-check">${esc(A.label)}</span>` : '';
-    return `<article class="air-card air-swap" style="--i:${i + 1}">${moved ? `<div class="air-fixes"><span class="air-label">Fixes</span>${moved}</div>` : ''}<div class="air-swap-pair"><span class="out"><small>OUT</small>${esc(s.cutName)}</span><span class="air-arrow" aria-hidden="true">→</span><span class="in"><small>${s.add ? 'IN · you own it' : 'IN'}</small>${esc(s.addName || s.role || 'A better card for this role')}</span></div>${verdict ? `<div class="air-verdict-row">${verdict}${sc ? '<small>recounted by Power</small>' : ''}</div>` : ''}<ul class="air-pm">${s.gain ? `<li class="good"><i>+</i>${esc(s.gain)}</li>` : ''}${s.loss ? `<li class="bad"><i>−</i>${esc(s.loss)}</li>` : ''}${s.lost ? `<li class="bad"><i>×</i>${esc(s.lost)}</li>` : ''}${s.test ? `<li><i>▶</i>${esc(s.test)}</li>` : ''}</ul>${ev(s.evidence)}</article>`;
+    return `<article class="air-card air-swap" style="--i:${i + 1}">${moved ? `<div class="air-fixes"><span class="air-label">Fixes</span>${moved}</div>` : ''}<div class="air-swap-pair"><span class="out"><small>OUT</small>${esc(s.cutName)}</span><span class="air-arrow" aria-hidden="true">→</span><span class="in"><small>${s.add ? 'IN · you own it' : 'IN'}</small>${esc(s.addName || s.role || 'A better card for this role')}</span></div>${verdict ? `<div class="air-verdict-row">${verdict}${sc ? '<small>recounted by Power</small>' : ''}</div>` : ''}${sc?.better ? `<div class="air-better"><span class="air-label">Power's pick</span><p>Keep ${esc(s.cutName)} and cut <b>${esc(sc.better.cutName)}</b> instead: <span class="air-score ${sc.better.after > sc.better.before ? 'up' : ''}">Power ${sc.better.before} → ${sc.better.after}</span>${sc.better.area && sc.better.area.before != null ? ` <span class="air-score ${sc.better.area.after > sc.better.area.before ? 'up' : ''}">${esc(areaOf.get(s.area)?.label || s.area)} ${esc(String(sc.better.area.before))} → ${esc(String(sc.better.area.after))}</span>` : ''}</p></div>` : ''}<ul class="air-pm">${s.gain ? `<li class="good"><i>+</i>${esc(s.gain)}</li>` : ''}${s.loss ? `<li class="bad"><i>−</i>${esc(s.loss)}</li>` : ''}${s.lost ? `<li class="bad"><i>×</i>${esc(s.lost)}</li>` : ''}${s.test ? `<li><i>▶</i>${esc(s.test)}</li>` : ''}</ul>${ev(s.evidence)}</article>`;
   }).join('');
   const tests = r.tests?.length ? `<article class="air-card air-tests" style="--i:6"><span class="air-label">Prove it in the app</span><ol>${r.tests.map(t => `<li>${esc(t)}</li>`).join('')}</ol></article>` : '';
   return sw + tests || '<p class="air-empty">No swap held up to the app\'s checks.</p>';
@@ -254,7 +257,7 @@ function reviewReport(entry) {
 }
 export function aiReviewDialogContent(entry, stale = false) {
   if (stale) return '<div class="ai-state"><span class="ai-state-symbol" aria-hidden="true">↻</span><h3>The deck changed</h3><p>Close this window and ask for fresh coaching on your updated list. The earlier answer won\'t be applied to it.</p></div>';
-  if (entry.busy) return `<div class="ai-state"><div class="ai-orbit" aria-hidden="true"><i></i><span>✦</span></div><p class="eyebrow">Your deck, another perspective</p><h3>Coaching your deck</h3><p>OpenAI is reading your cards and the app's numbers. The app then checks every line and swap before showing it.</p><div class="ai-review-steps"><span>Deck sent</span><span class="current">Finding lines</span><span>App checks next</span></div><p class="foot">You can close this window and keep browsing. Reopening it won't start another request. No automatic retries.</p></div>`;
+  if (entry.busy) return `<div class="ai-state"><div class="ai-orbit" aria-hidden="true"><i></i><span>✦</span></div><p class="eyebrow">Your deck, another perspective</p><h3>Coaching your deck</h3><p>OpenAI is reading your cards and the app's numbers. The app then checks every line and swap before showing it.</p><div class="ai-review-steps"><span>Deck sent</span><span class="current">Finding lines</span><span>Power checks next</span></div><p class="foot">You can close this window and keep browsing. Reopening it won't start another request. No automatic retries.</p></div>`;
   if (entry.error) {
     const title = ['billing', 'credits', 'spend_limit', 'usage_limit'].includes(entry.errorCode) ? 'API billing needs attention' : entry.errorCode === 'rate_limit' ? 'OpenAI needs a breather' : entry.errorCode === 'app_limit' ? 'App review allowance reached' : entry.errorCode === 'authentication' ? 'API connection needs attention' : 'Coaching couldn\'t finish';
     return `<div class="ai-state ai-error"><span class="ai-state-symbol" aria-hidden="true">!</span><h3>${title}</h3><p>${esc(entry.error)}</p><p class="foot">Your deck and score are unchanged. No automatic retry was made. Resolve the issue before trying again.</p><button class="btn small" data-ai-retry>Try again</button></div>`;
@@ -321,6 +324,31 @@ async function withCandidates(entry, budget = 1500) {
   entry.cands = cards.map((c, i) => ({ id: 'o' + i, c, helps: helps.get(c) || [] }));
   return { ...entry.payload, candidates: entry.cands.map(x => ({ ...cardEntry(entry.game, x.id, x.c.name, 1, 'owned', x.c), ...(x.helps.length ? { helps: x.helps.join(', ') } : {}) })) };
 }
+// When a suggested swap would lower Deck Power, Power tries other cuts for the same added card
+// (cards outside the deck's core and outside Power's weak areas first) and offers its best pick.
+async function betterCuts(entry, budget = 3000) {
+  const v = verify(entry); if (!v || !entry.hooks?.rescore) return;
+  const r = entry.result, P = entry.payload.power || { areas: [], priority: [] }, t = Date.now();
+  const core = new Set([...(r.identity?.winCards || []), ...(r.identity?.engineCards || [])].map(x => x.cardId)), weakLabels = new Set(P.areas.filter(a => a.status === 'weak' || a.status === 'cap').map(a => a.label));
+  const powerOf = new Map(entry.payload.cards.map(c => [c.id, (c.power || '').split(', ').filter(Boolean)]));
+  for (const [i, s] of (r.improve || []).entries()) {
+    const sc = v.swaps[i], add = entry.cands?.find(x => x.id === s.add);
+    if (!sc || !add || (sc.after >= sc.before && !sc.issues.length && (!sc.area || sc.area.after > sc.area.before))) continue;
+    const alts = entry.rows.filter(x => x.zone === 'main' && x.id !== s.cut && !core.has(x.id) && x.c).map(x => ({ x, a: powerOf.get(x.id) || [] })).sort((p, q) => p.a.filter(l => weakLabels.has(l)).length - q.a.filter(l => weakLabels.has(l)).length || p.a.length - q.a.length).slice(0, 10);
+    let best = null;
+    for (const { x } of alts) {
+      if (Date.now() - t > budget) break;
+      try {
+        const w = entry.hooks.rescore(x, add.c), had = new Set(w.beforeIssues || []), count = parts => parts?.find(y => y.key === s.area)?.count;
+        const cand = { cutName: x.c.name, before: w.before, after: w.after, issues: (w.issues || []).filter(z => !had.has(z)), area: s.area ? { before: count(w.beforeParts), after: count(w.afterParts) } : null };
+        const good = c => !c.issues.length ? c.after + (c.area && c.area.after > c.area.before ? 0.5 : 0) : -1;
+        if (good(cand) > (best ? good(best) : good(sc))) best = cand;
+      } catch {}
+      await new Promise(res => setTimeout(res, 0));
+    }
+    if (best) sc.better = best;
+  }
+}
 export async function runAiReview(key, render, fetcher = fetch) {
   const entry = entries.get(key); if (!entry || entry.busy || entry.result) return;
   entry.busy = true; entry.error = ''; entry.errorCode = ''; entry.verified = null; render(); updateDialog();
@@ -329,7 +357,8 @@ export async function runAiReview(key, render, fetcher = fetch) {
     let data; try { data = await r.json(); } catch { throw Error('AI coaching is unavailable. Check your connection and try later.'); }
     if (!r.ok) throw Object.assign(Error(data.message || 'AI coaching is unavailable. Try later.'), { code: data.code || '' });
     if (!data || typeof data.headline !== 'string' || !data.pilot || !data.pressure || !Array.isArray(data.improve)) throw Error('AI coaching returned an unreadable response.');
-    entry.result = data;
+    entry.result = data; entry.verified = null;
+    await betterCuts(entry);
   } catch (e) { entry.errorCode = e.code || ''; entry.error = e.name === 'TimeoutError' || e.name === 'AbortError' ? 'AI coaching took too long. Try again later.' : e.message || 'AI coaching is unavailable.'; }
   finally { entry.busy = false; if (entries.get(key) === entry) render(); if (activeDialog?.entry === entry) updateDialog(); }
 }
