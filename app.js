@@ -1,4 +1,4 @@
-import { runAiReview } from './ai-review.js';
+import { showAiReview } from './ai-review.js';
 import { ask, askText } from "./dialog.js";
 import { attachHomeSwipe } from "./home-swipe.js";
 import { useMyPrices, myPriceKey, ensureTcgPrices } from "./mtg-tcgprice.js";
@@ -924,7 +924,7 @@ window.addEventListener("hashchange", (e) => {
    ========================================================= */
 
 const A = {}; // click actions
-A.aiDeckReview = t => runAiReview(t.dataset.ai, render);
+A.aiDeckReview = t => showAiReview(t.dataset.ai, render);
 const C = {}; // change handlers
 C.chooseLocation = t => chooseLocation(t);
 const I = {}; // input handlers

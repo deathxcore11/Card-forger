@@ -1,3 +1,10 @@
+3.68.0 — AI review, front and center
+- AI review appears first in Power in all three games, with a compact game-colored launcher.
+- Animated glass dialog shows honest request progress, results with text evidence, or actionable errors. Close it to keep browsing and reopen without another request.
+- Native dialog focus/keyboard behavior, mobile scrolling, reduced-motion support and stale-deck safeguards.
+- OpenAI credit/billing, spend/usage, temporary rate, key and model-access failures now have distinct safe messages. Provider text and credentials are never forwarded.
+- AI interpretation still does not modify numeric scores or saved decks. No automatic retry.
+
 3.67.0 — Optional AI deck review
 - Magic, Pokémon and Yu-Gi-Oh share an on-demand second opinion in Power.
 - Server-side OpenAI Responses API; key never goes to the browser. Requires OPENAI_API_KEY secret; no API calls before a user requests a review.

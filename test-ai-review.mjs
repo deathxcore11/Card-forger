@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { aiReviewRoute, AiReviewLimits, cleanDeck, validateReview } from './ai-review-route.js';
-import { reviewPayload, aiReviewPanel, runAiReview } from './ai-review.js';
+import { reviewPayload, aiReviewPanel, runAiReview, aiReviewDialogContent } from './ai-review.js';
 import worker from './worker.js';
 const origin = 'https://site.test';
 const card = { id: 'c0', name: 'Test Engine', qty: 4, zone: 'main', type: 'Creature', text: 'Sacrifice an artifact: Draw two cards.', details: '', known: true };
@@ -65,7 +65,7 @@ for (const result of [{ status: 'incomplete', output: [] }, { status: 'completed
   assert.equal((await aiReviewRoute(request(), setup(), { fetcher: async () => Response.json(result) })).status, 502);
 }
 assert.equal((await aiReviewRoute(request(), setup(), { fetcher: async () => { throw new DOMException('timeout', 'TimeoutError'); } })).status, 502);
-assert.equal((await aiReviewRoute(request(), setup(), { fetcher: async () => new Response('secret upstream body', { status: 401 }) })).status, 502);
+assert.equal((await aiReviewRoute(request(), setup(), { fetcher: async () => new Response('secret upstream body', { status: 401 }) })).status, 503);
 // Burst across different IP hashes cannot race past the global daily quota.
 const st = storage(), gate = new AiReviewLimits({ storage: st }, { AI_DAILY_LIMIT: 5 });
 const results = await Promise.all(Array.from({ length: 20 }, (_, i) => gate.fetch(new Request('https://limit/reserve', { method: 'POST', body: JSON.stringify({ hash: i.toString(16).padStart(64, '0') }) }))));
@@ -82,7 +82,8 @@ for (const game of ['mtg', 'ygo', 'ptcg']) {
   const data = reviewPayload(game, d, lookup, p); assert.equal(data.cards.length, 2); assert.ok(!JSON.stringify(data).includes('privateNotes')); assert.ok(!JSON.stringify(data).includes('999'));
   const html = aiReviewPanel(game, d, lookup, p); assert.match(html, /Review with AI/); assert.match(html, /OpenAI/);
   let n = 0; await runAiReview(game + ':d', () => {}, async () => { n++; return Response.json({ ...review, omitted: 0 }); });
-  assert.match(aiReviewPanel(game, d, lookup, p), /Needs fodder/);
+  assert.match(aiReviewPanel(game, d, lookup, p), /Open AI review/);
+  assert.match(aiReviewDialogContent({ result: { ...review, omitted: 0 } }), /Needs fodder/);
   await runAiReview(game + ':d', () => {}, async () => { n++; }); assert.equal(n, 1, 'repeat clicks reuse in-memory review');
   if (game === 'mtg') d.cards[0].qty++; else d.zones.main[0].qty++;
   assert.match(aiReviewPanel(game, d, lookup, p), /Review with AI/, 'editing quantities invalidates the review');
@@ -98,8 +99,19 @@ assert.doesNotMatch(aiReviewPanel('mtg', d, lookup, p), /Needs fodder/);
 const evil = { ...review, plan: '<script>alert(1)</script>', omitted: 0 };
 await runAiReview('mtg:race', () => {}, async () => Response.json(evil));
 assert.doesNotMatch(aiReviewPanel('mtg', d, lookup, p), /<script>/);
-assert.match(aiReviewPanel('mtg', d, lookup, p), /&lt;script&gt;/);
+assert.match(aiReviewDialogContent({ result: evil }), /&lt;script&gt;/);
 assert.match(readFileSync('.assetsignore', 'utf8'), /ai-review-route\.js/);
 assert.match(readFileSync('.gitignore', 'utf8'), /\.dev\.vars/);
 assert.match(readFileSync('sw.js', 'utf8'), /url\.pathname\.startsWith\("\/api\/"\)\) return/);
 console.log('PASS: AI review all three games, secret isolation, bounded input, quota burst/restart, fail-closed setup, failure handling, citation rejection, explicit opt-in, escaping and stale-review invalidation. No paid API requests made.');
+
+for (const [status, error, expected] of [
+ [429,{code:'credit_balance_exhausted'},'credits'],[429,{code:'project_spend_limit_exceeded'},'spend_limit'],
+ [429,{code:'organization_spend_limit_exceeded'},'spend_limit'],[429,{code:'organization_usage_limit_exceeded'},'usage_limit'],
+ [429,{type:'insufficient_quota'},'billing'],[429,{code:'rate_limit_exceeded'},'rate_limit'],
+ [401,{message:'private-test-key'},'authentication'],[403,{},'access'],[404,{},'access'],[503,{},'provider_unavailable']
+]) {
+ const res = await aiReviewRoute(request(), setup(), {fetcher:async()=>Response.json({error},{status})});
+ const body = await res.json(); assert.equal(body.code,expected); assert.ok(!JSON.stringify(body).includes('private-test-key'));
+}
+console.log('PASS: provider credits, spend, usage, rate, authentication, model access and outage errors have distinct safe guidance.');

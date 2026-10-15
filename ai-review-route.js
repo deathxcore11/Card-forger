@@ -69,9 +69,21 @@ export async function aiReviewRoute(request, env, { fetcher = fetch } = {}) {
     const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(day + ':' + ip)))].map(x => x.toString(16).padStart(2, '0')).join('');
     const gate = env.AI_REVIEW_LIMITS.get(env.AI_REVIEW_LIMITS.idFromName('global'));
     const limit = await gate.fetch('https://limit/reserve', { method: 'POST', body: JSON.stringify({ hash }) });
-    if (!limit.ok) return reply({ message: 'AI review limit reached. Try later; your regular deck checks remain available.' }, 429, { 'Retry-After': '3600' });
+    if (!limit.ok) return reply({ code: 'app_limit', message: 'AI review limit reached. Try later; your regular deck checks remain available.' }, 429, { 'Retry-After': '3600' });
     const upstream = await fetcher('https://api.openai.com/v1/responses', { method: 'POST', signal: AbortSignal.timeout(45000), headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: env.OPENAI_MODEL || 'gpt-4.1-mini', store: false, max_output_tokens: 2400, instructions, input: JSON.stringify(deck), text: { format: { type: 'json_schema', name: 'deck_review', strict: true, schema } } }) });
-    if (!upstream.ok) return reply({ message: upstream.status === 429 ? 'The AI provider is busy or its usage limit was reached. Try later.' : 'AI review is temporarily unavailable. Your regular checks are unchanged.' }, 502);
+    if (!upstream.ok) {
+      // Never expose provider messages (they may echo user input or credentials).
+      let detail = {}; try { detail = (await upstream.json()).error || {}; } catch {}
+      const code = detail.code || '', type = detail.type || '';
+      if (code === 'credit_balance_exhausted') return reply({ code: 'credits', message: 'OpenAI API credits are exhausted. The app owner needs to add API credits before reviews can run. Waiting or repeatedly retrying will not fix this.' }, 503);
+      if (['project_spend_limit_exceeded','organization_spend_limit_exceeded'].includes(code)) return reply({ code: 'spend_limit', message: 'The OpenAI API project or organization reached its spending limit. The app owner needs to review that limit or wait for its reset before retrying.' }, 503);
+      if (code === 'organization_usage_limit_exceeded') return reply({ code: 'usage_limit', message: 'The OpenAI account reached its approved API usage limit. The app owner needs to check the account’s usage limits before retrying.' }, 503);
+      if (code === 'insufficient_quota' || type === 'insufficient_quota') return reply({ code: 'billing', message: 'OpenAI reports insufficient API quota. The app owner needs to check API billing, credits and project limits. A ChatGPT subscription does not provide this app with API credit.' }, 503);
+      if (upstream.status === 429) return reply({ code: 'rate_limit', message: 'OpenAI temporarily rate-limited this review. Wait before trying again; no automatic retry was made.' }, 503);
+      if (upstream.status === 401) return reply({ code: 'authentication', message: 'OpenAI did not accept the server API key. The app owner needs to check the Worker’s OPENAI_API_KEY secret.' }, 503);
+      if ([403,404].includes(upstream.status)) return reply({ code: 'access', message: 'OpenAI could not provide access to the configured model. The app owner needs to check API project permissions and OPENAI_MODEL.' }, 503);
+      return reply({ code: 'provider_unavailable', message: 'OpenAI is temporarily unavailable. Your deck and regular checks are unchanged. Try again later.' }, 502);
+    }
     const result = await upstream.json();
     if (result.status !== 'completed') throw fail('The AI could not finish this review. Try again later.', 502);
     const text = (result.output || []).filter(x => x.type === 'message').flatMap(x => x.content || []).filter(x => x.type === 'output_text').map(x => x.text).join('');
