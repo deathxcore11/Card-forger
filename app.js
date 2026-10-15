@@ -833,7 +833,7 @@ function render() {
     }
     // Load card data and prices for what's on screen.
     const ids = ui.view === "collection" && (!T.ui(g).coll.tab || T.ui(g).coll.tab === "cards") ? [...document.querySelectorAll(".lot-art[data-id]")].map(e=>e.dataset.id) : ui.view === "collection" || (ui.view === "decks" && ui.decksTab === "ideas") ? T.gs(g).collection.map((e) => e.cardId) : ui.view === "tdeck" ? (T.gs(g).decks.find((d) => d.id === ui.tdeckId)?.zones ? ["main", "extra", "side"].flatMap((z) => T.gs(g).decks.find((d) => d.id === ui.tdeckId).zones[z].map((r) => r.cardId)) : []) : ui.view === "home" || ui.view === "decks" ? T.gs(g).decks.flatMap((d) => (d.zones.main || []).slice(0, 1).map((r) => r.cardId)) : [];
-    const missing = ids.filter(id=>!T.cardOf(g,id)||(g==="ptcg"&&T.cardOf(g,id).variantSchema!==7));
+    const missing = ids.filter(id=>!T.cardOf(g,id)||(g==="ptcg"&&T.cardOf(g,id).variantSchema!==8));
     const k = g + ui.view + missing.length;
     if (missing.length && navigator.onLine && !autoLoaded.has(k)) {
       autoLoaded.add(k);
@@ -3853,7 +3853,7 @@ A.restoreVer = async (t) => {
   const d = currentDeck(),
     v = (d.versions || []).find((x) => x.id === t.dataset.id);
   if (!v || !await ask(`Restore “${v.label}”? Your current list is saved as a version first.`)) return;
-  await editDeck((x) => ({ ...withSnapshot(x, "Before restoring " + v.label), cards: structuredClone(v.cards), ...(v.side ? { side: structuredClone(v.side) } : {}) }), { msg: "Version restored." });
+  await editDeck((x) => ({ ...withSnapshot(x, "Before restoring " + v.label), cards: structuredClone(v.cards), side: structuredClone(v.side || []) }), { msg: "Version restored." });
 };
 A.deleteVer = async (t) => {
   if (!await ask("Delete this saved version?")) return;

@@ -83,7 +83,7 @@ export function profileOf(game, p, rows = [], extra = []) {
   if (game === "ptcg") {
     const a = p.attacker, td = p.goldfish?.turnDist;
     if (!a || !td) return null;
-    return { game, score: quality(p), clock: td.d, maxT: td.maxT, name: a.name, reach: Math.max(10, a.reach || 10), spread: a.spread || 0, hp: a.hp || 200, types: a.types || [], weak: a.weak || [], prize: a.ruleBox ? 2 : 1, lives: a.lives || 1, gust: a.gust || 0, disrupt: a.disrupt || 0, swarm: !!a.swarm };
+    return { game, score: quality(p), clock: td.d, maxT: td.maxT, name: a.name, reach: Math.max(10, a.reach || 10), spread: a.spread || 0, hp: a.hp || 200, types: a.types || [], weak: a.weak || [], prize: a.prize || (a.ruleBox ? 2 : 1), lives: a.lives || 1, gust: a.gust || 0, disrupt: a.disrupt || 0, swarm: !!a.swarm };
   }
   const st = p.stats || {};
   return {

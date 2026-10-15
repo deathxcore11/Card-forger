@@ -285,7 +285,10 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
 /* ======================= Yu-Gi-Oh! ======================= */
 
 const Y = {
-  search: /add (?:1|one|up to \w+)[^.]*from your deck to your hand/,
+  search: /add (?:1|one|2|two|up to \w+)[^.]*from your deck(?: or (?:gy|graveyard))? to your hand/,
+  // Sends from the Deck to the GY: a starter when the deck's monsters trigger on it (Shaddoll…).
+  mill: /send (?:1|one)([^.]*?)from your deck to the (?:gy|graveyard)/,
+  milled: /if this card is sent[^.:;]*to the (?:gy|graveyard)/,
   extend: /special summon (?:this card|1|one|up to \w+)/,
   handtrap: /(?:\(quick effect\)|during either player's turn|during your opponent's turn)[^.]*(?:discard this card|send this card from your hand)|you can discard this card[^.]*;|from your hand[^.]*\(quick effect\)/,
   negate: /negate (?:the|that|its) (?:activation|effect|summon)|negate the activation/,
@@ -312,7 +315,7 @@ export function ygoPower(rows, f = {}) {
     ATTR = /\b(dark|light|water|fire|earth|wind)\b monster/,
     raceKnown = main.some((r) => r.c.race);
   const finds = (r) => {
-    const m = t(r).match(/add (?:1|one|up to \w+)([^.]*?)from your deck(?: or gy| or graveyard)? to your hand/);
+    const m = t(r).match(/add (?:1|one|2|two|up to \w+)([^.]*?)from your deck(?: or gy| or graveyard)? to your hand/);
     if (!m) return true;
     const what = m[1], others = main.filter((x) => x !== r && x.c.name !== r.c.name),
       quoted = [...String(r.c.text || "").slice(m.index).matchAll(/"([^"]+)"/g)].slice(0, 3).map((x) => lc(x[1])).filter((qn) => what.includes(qn));
@@ -323,6 +326,15 @@ export function ygoPower(rows, f = {}) {
     if ((race || attr) && raceKnown) return others.some((x) => x.c.category === "Monster" && (!race || lc(x.c.race) === race) && (!attr || lc(x.c.attribute) === attr) && (Number(x.c.level) || 0) <= lv);
     return true;
   };
+  // A Deck-to-GY sender starts the turn only if what it can send has a "sent to the GY" effect.
+  const feeds = (r) => {
+    const m = t(r).match(Y.mill);
+    if (!m) return false;
+    const what = m[1], race = what.match(/\b(warrior|spellcaster|dragon|zombie|machine|fiend|fairy|beast-warrior|winged beast|beast|aqua|pyro|rock|plant|insect|thunder|dinosaur|sea serpent|reptile|psychic|wyrm|cyberse|illusion)\b/)?.[1], attr = what.match(/\b(dark|light|water|fire|earth|wind)\b/)?.[1],
+      quoted = [...what.matchAll(/"([^"]+)"/g)].map((x) => lc(x[1]));
+    return main.some((x) => x !== r && x.c.name !== r.c.name && Y.milled.test(t(x)) && (!/monster/.test(what) || x.c.category === "Monster") &&
+      (!race || lc(x.c.race) === race) && (!attr || lc(x.c.attribute) === attr) && (!quoted.length || quoted.some((qn) => nm(x).includes(qn) || lc(x.c.archetype) === qn)));
+  };
   const deadSearch = [];
   for (const r of main) {
     tag.set(r, new Set());
@@ -330,7 +342,7 @@ export function ygoPower(rows, f = {}) {
     if (Y.search.test(txt)) {
       if (finds(r)) give(r, "starter");
       else deadSearch.push(r);
-    }
+    } else if (feeds(r)) give(r, "starter");
     if (r.c.category === "Monster" && Y.extend.test(txt)) give(r, "extender");
     if (Y.handtrap.test(txt)) give(r, "handtrap");
     else if (Y.negate.test(txt)) give(r, "negate");
@@ -418,7 +430,7 @@ export function ygoPower(rows, f = {}) {
     LABEL = { starter: "Starter", extender: "Extender", handtrap: "Hand trap", negate: "Negate", breaker: "Breaker", draw: "Draw", brick: "Brick", garnet: "Dead draw" };
   for (const r of main) roles.set(String(r.id ?? r.c.id ?? r.c.name), [...tag.get(r)].map((k) => LABEL[k]));
   const caps = [
-    q(starters) < 4 && (focus < 0.25 || q(deadSearch) >= 6) ? { key: "Starters", max: 50, label: "No engine", why: `Nothing in the deck searches or starts a combo${deadSearch.length ? ` (${deadSearch.map((r) => r.c.name).slice(0, 3).join(", ")} search for cards it doesn't run)` : ""} ${focus < 0.25 ? " and no archetype holds it together" : ""}. Hand traps and staples stop the opponent but can't win on their own.` } : null,
+    (q(starters) < 4 || S("open") < 0.5) && (focus < 0.25 || q(deadSearch) >= 6) ? { key: "Starters", max: 50, label: "No engine", why: `Nothing in the deck searches or starts a combo${deadSearch.length ? ` (${deadSearch.map((r) => r.c.name).slice(0, 3).join(", ")} search for cards it doesn't run)` : ""} ${focus < 0.25 ? " and no archetype holds it together" : ""}. Hand traps and staples stop the opponent but can't win on their own.` } : null,
     q(deadSearch) >= 6 && q(starters) >= 4 ? { key: "Starters", max: 70, label: "Searchers with nothing to search", why: `${q(deadSearch)} cards search for cards this deck doesn't run: ${deadSearch.slice(0, 4).map((r) => r.c.name).join(", ")}. They're dead draws, not starters.` } : null,
     needsExtra && !E ? { key: "Extra", max: 55, label: "No Extra Deck", why: "The engine summons from the Extra Deck (Xyz, Synchro, Fusion or Link), and the Extra Deck is empty: its combos have nothing to make." } : null,
     needsExtra && E && Eok / E < 0.4 ? { key: "Extra", max: 65, label: "Extra Deck it can't use", why: `The engine summons from the Extra Deck, but ${q(dead)} of ${E} cards there can't be made from this Main Deck.` } : null,
@@ -666,7 +678,7 @@ export function ptcgPower(rows, f = {}) {
     parts,
     goldfish: gold,
     // For matchups: who takes the Prizes, how hard, and what it's weak to.
-    attacker: mainAtk ? { name: mainAtk.c.name, reach, spread: attackSpread(mainAtk.c), hp: Number(mainAtk.c.hp) || 0, types: mainAtk.c.types || [], weak: (mainAtk.c.weak || []).map((w) => w.type), ruleBox: !!mainAtk.c.ruleBox, lives, gust: q(gusts), disrupt: q(by("disrupt")), swarm } : null,
+    attacker: mainAtk ? { name: mainAtk.c.name, reach, spread: attackSpread(mainAtk.c), prize: mainAtk.c.prize ?? (mainAtk.c.ruleBox ? 2 : 1), hp: Number(mainAtk.c.hp) || 0, types: mainAtk.c.types || [], weak: (mainAtk.c.weak || []).map((w) => w.type), ruleBox: !!mainAtk.c.ruleBox, lives, gust: q(gusts), disrupt: q(by("disrupt")), swarm } : null,
     plan: mainAtk ? mainAtk.c.name + (line ? ` · ${line.text} line` : "") : "Pokémon deck",
     stats: { N, basics, pokemon, trainers, energy, mull },
     unknown,

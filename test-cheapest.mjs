@@ -29,3 +29,24 @@ const cards = { a: { name: "Milotic ex", category: "Pokemon", stage: "Basic", le
 const issues = validatePtcg({ zones: { main: [{ cardId: "a", qty: 3 }, { cardId: "b", qty: 2 }] } }, (id) => cards[id], std).map((x) => x.text).join(" ");
 assert.match(issues, /5× Milotic ex/);
 console.log("PASS: cheaper printings keep decks legal (Basic Energy rule, per-name copy limits).");
+// Structured identity: one changed game field means a different card, never a "cheaper printing".
+const { prizeValue } = await import("./ptcg.js");
+const milo = { name: "Milotic ex", category: "Pokemon", stage: "Stage1", hp: 270, types: ["Water"], evolveFrom: "Feebas", retreat: 2, weak: [{ type: "Lightning", value: "×2" }], resist: [], abilities: [{ type: "Ability", name: "Sparkling Scales", effect: "Prevent all damage…" }], attacks: [{ cost: ["Water", "Colorless", "Colorless"], name: "Hypno Splash", damage: "160", effect: "Your opponent's Active Pokémon is now Asleep." }] };
+const sig = playSig(milo);
+assert.equal(sig, playSig({ ...milo, id: "sv08-217", rarity: "Special illustration rare", image: "x" }), "art and rarity don't matter");
+assert.equal(sig, playSig({ ...milo, attacks: [{ ...milo.attacks[0], effect: "Your  opponent’s Active Pokémon is now Asleep." }] }), "spacing and quote style don't matter");
+for (const [what, changed] of [
+  ["damage modifier + vs ×", { ...milo, attacks: [{ ...milo.attacks[0], damage: "160+" }] }],
+  ["damage modifier × ", { ...milo, attacks: [{ ...milo.attacks[0], damage: "160×" }] }],
+  ["resistance", { ...milo, resist: [{ type: "Fighting", value: "-30" }] }],
+  ["attack cost", { ...milo, attacks: [{ ...milo.attacks[0], cost: ["Water", "Colorless"] }] }],
+  ["ability text", { ...milo, abilities: [{ ...milo.abilities[0], effect: "Prevent all effects…" }] }],
+  ["weakness value", { ...milo, weak: [{ type: "Lightning", value: "+30" }] }],
+  ["retreat", { ...milo, retreat: 1 }],
+  ["Prize value (Mega)", { ...milo, name: "Mega Milotic ex" }],
+]) assert.notEqual(playSig(changed), sig, `a different ${what} is a different card`);
+// Prize values.
+for (const [name, n] of [["Mega Lucario ex", 3], ["Mega Kangaskhan ex", 3], ["Charizard VMAX", 3], ["Pikachu & Zekrom-GX", 3], ["Mewtwo V-UNION", 3], ["Milotic ex", 2], ["Arceus VSTAR", 2], ["Lugia V", 2], ["M Venusaur-EX", 2], ["Radiant Greninja", 1], ["Feebas", 1]])
+  assert.equal(prizeValue({ category: "Pokemon", name }), n, `${name} gives ${n} Prizes`);
+assert.equal(prizeValue({ category: "Trainer", name: "Boss's Orders" }), 1);
+console.log("PASS: printings are the same card only when every game field matches; Prize values 1/2/3.");

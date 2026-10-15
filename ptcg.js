@@ -146,7 +146,7 @@ export function normalizePtcg(c) {
   ].filter(Boolean).join("\n\n");
   return {
     game: "ptcg",
-    variantSchema: 7,
+    variantSchema: 8,
     released:c.set?.releaseDate || "",
     id: c.id,
     name: c.name,
@@ -186,6 +186,7 @@ export function normalizePtcg(c) {
     aceSpec: /ACE SPEC/i.test(c.rarity || ""),
     radiant: /^Radiant /.test(c.name),
     ruleBox: c.category === "Pokemon" && RULE_BOX.test(c.name),
+    prize: prizeValue(c),
     image: ptcgImage(c.image, "low") || pokemonFallback(c),
     imageLarge: ptcgImage(c.image, "high") || pokemonFallback(c),
     pocket: isPocket(c),
@@ -246,9 +247,30 @@ async function get(path, params) {
   return r.json();
 }
 
+// Prizes the opponent takes when this Pokémon is Knocked Out: Mega Evolution Pokémon ex, VMAX,
+// V-UNION and TAG TEAM give 3; ex, EX, GX, V and VSTAR give 2; everything else (Radiant, Prism
+// Star, BREAK, plain Pokémon) gives 1.
+export function prizeValue(c) {
+  if ((c?.category || "Pokemon") !== "Pokemon") return 1;
+  const n = String(c?.name || "");
+  if (/^Mega .+ ex$/.test(n) || /\bVMAX\b|V-UNION/.test(n) || (/&/.test(n) && /\bGX\b/.test(n))) return 3;
+  if (/\b(ex|EX|GX|V|VSTAR)\b/.test(n) || /^M .+-EX$/.test(n)) return 2;
+  return 1;
+}
 // What a card does in a game, without its art, rarity or set: printings with the same signature
-// are the same card for deck building.
-export const playSig = (c) => [c.name, c.category, c.hp, c.stage, c.evolveFrom, (c.types || []).join("/"), c.retreat, (c.weak || []).map((w) => w.type + w.value).join(","), c.text].join("|").toLowerCase().replace(/[^a-z0-9|]/g, "");
+// are the same card for deck building. Every game field is compared as data, damage modifiers
+// (30+ vs 30×), resistance and Prize value included; only the wording's spacing and quote style is
+// normalised.
+const sigText = (s) => String(s ?? "").toLowerCase().replace(/[’‘]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, " ").trim();
+export const playSig = (c) => JSON.stringify([
+  sigText(c.name), c.category, c.stage || "", c.hp ?? null, (c.types || []).join("/"), sigText(c.evolveFrom), c.retreat ?? null,
+  (c.weak || []).map((w) => w.type + " " + sigText(w.value)), (c.resist || []).map((w) => w.type + " " + sigText(w.value)),
+  (c.abilities || []).map((a) => [sigText(a.type), sigText(a.name), sigText(a.effect)]),
+  (c.attacks || []).map((a) => [(a.cost || []).join(","), sigText(a.name), sigText(a.damage), sigText(a.effect)]),
+  sigText(c.effect), sigText(c.energyType), !!c.aceSpec, !!c.radiant, prizeValue(c),
+  // Older cached cards without the structured fields fall back to the full text.
+  c.attacks || c.abilities ? "" : sigText(c.text),
+]);
 const cheapMemo = new Map();
 // Candidate printings for the cheapest-printing check: TCGdex's own data only (no slow price
 // backfill); printings without a TCGdex price simply rank last.

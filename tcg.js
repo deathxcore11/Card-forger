@@ -94,7 +94,7 @@ const remember = (card) => {
 // Full card with prices no older than a day.
 export async function ensureCard(g, id, force = false,printings=true) {
   const c = cache[g][id];
-  if (c && !c.brief && (g !== "ptcg" || c.variantSchema === 7) && (g !== "ygo" || (c.artSchema === 1 && (!printings || c.printPriceSchema === 1))) && !force && Date.now() - new Date(c.fetchedAt).getTime() < PRICE_TTL) return c;
+  if (c && !c.brief && (g !== "ptcg" || c.variantSchema === 8) && (g !== "ygo" || (c.artSchema === 1 && (!printings || c.printPriceSchema === 1))) && !force && Date.now() - new Date(c.fetchedAt).getTime() < PRICE_TTL) return c;
   try {
     return remember(await SOURCES[g].get(id,{printings}));
   } catch (e) {
@@ -104,7 +104,7 @@ export async function ensureCard(g, id, force = false,printings=true) {
 }
 // Load details for many cards, a few at a time, calling `tick` as they arrive.
 export async function ensureMany(g, ids, tick = () => {}, force = false,printings=false) {
-  const queue = [...new Set(ids)].filter((id) => force || !cache[g][id] || cache[g][id].brief || (g === "ptcg" && cache[g][id].variantSchema !== 7) || (g === "ygo" && (cache[g][id].artSchema !== 1 || (printings && cache[g][id].printPriceSchema !== 1))) || Date.now() - new Date(cache[g][id].fetchedAt).getTime() > PRICE_TTL);
+  const queue = [...new Set(ids)].filter((id) => force || !cache[g][id] || cache[g][id].brief || (g === "ptcg" && cache[g][id].variantSchema !== 8) || (g === "ygo" && (cache[g][id].artSchema !== 1 || (printings && cache[g][id].printPriceSchema !== 1))) || Date.now() - new Date(cache[g][id].fetchedAt).getTime() > PRICE_TTL);
   let done = 0;
   const worker = async () => {
     while (queue.length) {

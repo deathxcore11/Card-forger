@@ -1,3 +1,24 @@
+3.56.0 — Deck Power benchmark, Prize values, exact cheaper printings
+- Deck Power now has a frozen benchmark: 394 real decks replayed on every test run. These are
+  placing lists from all three games, the same lists deliberately weakened, and cheat decks. Winners
+  must score 80+. Hard damage (no interaction, no starters, wrong mana) must cost 10+ points, and
+  cutting a core card or one copy of each playset must cost 5+. Illegal lists stay at 60 or below,
+  and piles of format staples at 65 or below. A change that flatters cheats or punishes real
+  lists now fails the tests.
+- The benchmark found a real Yu-Gi-Oh! false positive. A placing Dogmatika Shaddoll list was
+  capped at 50 as "No engine". These are now counted as starters:
+  - searchers that add from "Deck or GY" (Nadir Servant);
+  - searchers that add 2 cards (Void Unleashing);
+  - Deck-to-GY senders (Armageddon Knight, Foolish Burial) in decks whose monsters trigger when
+    sent to the GY.
+  The list now scores 85. Staple piles with few starters and weak opening odds stay capped.
+- Pokémon Prize values: Mega Pokémon ex, VMAX, V-UNION and TAG TEAM count 3 Prizes. ex, EX, GX,
+  V and VSTAR count 2. Matchups and Deck Power use the right Prize count.
+- A cheaper Pokémon printing is only swapped in when it is really the same card: same HP,
+  weakness and resistance values, retreat, attack costs, damage (30+ is not 30×) and full text.
+- Restoring a deck version saved before sideboards existed now restores an empty sideboard,
+  instead of keeping the current one.
+
 3.55.0 — Pressure-tested Deck Power and Matchups, faster builders
 Deck Power was run against real winning lists in all three games, the same lists deliberately
 weakened, and decks built to cheat. What changed:
