@@ -1,3 +1,29 @@
+3.65.0 — Functional scoring regressions and Home game swipes
+- Added all-game regression checks for damaged reference lists, gibberish,
+  cosmetic/title invariance, functional repairs and safe matchup eligibility.
+- Pokémon draw estimates account for shared once-per-turn/Active Ability limits
+  and supported Basic Energy attachment prerequisites, across alternate printings.
+  Basic retreat-support Abilities count toward switching; three-Prize cards are
+  identified in the Prize plan. Colorless attacks still need Energy.
+- The Pokémon goldfish checks Basic Energy types instead of paying every attack
+  with arbitrary Energy. Unsupported Special Energy and Ability behavior remain
+  explicitly limited; this is not a full rules simulator.
+- Magic draw requiring a mandatory sacrifice gets no draw/value credit when
+  the supported checks find no fodder. Restoring fodder restores credit.
+- Yu-Gi-Oh! explicit named A + B Fusion requirements check both materials;
+  exact names cannot be impersonated by longer names. Alternatives and recognized
+  bypass routes remain conservative. Unsupported Main Deck roles dilute the engine.
+- Missing common tournament cards are reference differences, not a manufactured
+  functional score cap. The conservative reference-evidence discount remains;
+  it is separate from the Engine score and does not establish missing functionality.
+- Scouting labels describe estimates, not guaranteed regional/event performance.
+  Narrated openings are examples from a simplified model.
+- Major functional/legality issues block matchup estimates. Modified lists cannot
+  automatically inherit a familiar archetype's record or field calibration.
+- Swipe left/right on Home to cycle Magic, Yu-Gi-Oh! and Pokémon. Inputs, overlays,
+  vertical scrolling, horizontal scrollers and native edge gestures retain control.
+  Successful swipes suppress accidental taps and respect reduced motion.
+
 3.64.0 — Magic and Yu-Gi-Oh! matchup odds checked against reality
 - Backtest: 4,045 real Top 8 matches from Magic Online Challenges (Standard, Pioneer, Modern,
   Legacy, Pauper, Premodern, Vintage). The app predicted each match from both lists before

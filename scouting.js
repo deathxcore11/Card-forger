@@ -24,7 +24,7 @@ export function competitiveScore(p) {
 export const verdictTier = (p, score) => (p?.caps?.some((c) => c.key === "Legal") ? { label: "Not tournament-legal yet", tone: "bad" } : competitiveTier(score));
 export function competitiveTier(score) {
   if (score == null) return { label: "Not compared with the field yet", tone: "" };
-  return score >= 88 ? { label: "Tier 1 contender", tone: "ok" } : score >= 75 ? { label: "Competitive: holds up at regionals", tone: "ok" } : score >= 62 ? { label: "Locals-ready, outclassed at big events", tone: "warn" } : score >= 50 ? { label: "Rogue: can steal games, rarely wins events", tone: "warn" } : { label: "Casual / kitchen-table", tone: "bad" };
+  return score >= 88 ? { label: "Tier 1 reference estimate", tone: "ok" } : score >= 75 ? { label: "Competitive reference estimate", tone: "ok" } : score >= 62 ? { label: "Developing competitive estimate", tone: "warn" } : score >= 50 ? { label: "Limited tournament evidence", tone: "warn" } : { label: "Low competitive estimate", tone: "bad" };
 }
 
 const MTG_PLAN = {
@@ -57,7 +57,7 @@ function gameText(p) {
   const bad = (p.sims || []).find((s) => s.lower && s.p > s.target);
   const log = g.samples?.[0]?.log?.slice(0, 3) || [],
     t = p.game === "ygo" ? log.map((l) => l.text).join(" ") : log.map((l) => `turn ${l.t}: ${l.text}`).join("; ");
-  return `${esc(g.headline)}${t ? (p.game === "ygo" ? ` With a good hand: ${esc(t)}` : ` A typical opening: ${esc(t)}.`) : ""}${bad ? ` The weak spot is consistency: ${esc(bad.label.toLowerCase())} happens ${pc(bad.p)} of the time (aim for under ${pc(bad.target)}).` : ""}`;
+  return `${esc(g.headline)}${t ? ` Example from the simplified model: ${esc(t)}.` : ""}${bad ? ` A probability to review: ${esc(bad.label.toLowerCase())} happens ${pc(bad.p)} of the time (reference target under ${pc(bad.target)}). This is not necessarily a required piece.` : ""}`;
 }
 
 function synergyText(p) {
@@ -86,9 +86,9 @@ function verdictText(p, comp) {
   const eng = p.heuristic ?? p.score;
   const gap =
     comp == null ? ""
-    : eng - comp >= 15 && eng >= 70 ? ` Built well on its own terms (engine ${eng}), but against the field it rates ${comp}: the cards are fine, the strategy is what holds it back.`
+    : eng - comp >= 15 && eng >= 70 ? ` Engine estimate ${eng}; reference-based competitive estimate ${comp}. This gap does not prove the strategy is weak: inspect functional checks and test the exact list against opponents.`
     : eng - comp >= 15 ? ` Its own build is shaky (engine ${eng}) and against the field it drops to ${comp}.`
-    : comp >= 75 ? ` Built well (engine ${eng}) and it holds up against the field (${comp}).` : "";
+    : comp >= 75 ? ` Engine estimate ${eng}; reference-based competitive estimate ${comp}. Tournament results belong to the reference lists, not automatically to this version.` : "";
   const cap = p.caps?.[0];
   return `<b>${esc(tier.label)}.</b>${cap ? ` Held back by one thing above all: <b>${esc(cap.label.toLowerCase())}</b>. ${esc(cap.why || "")}` : ""}${gap} ${fixes.length ? `First things to fix: ${esc(list(fixes, 2))}.` : "The build checks find nothing major to fix."}`;
 }

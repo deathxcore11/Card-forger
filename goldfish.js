@@ -183,7 +183,7 @@ export function ptcgGoldfish(main, { attacker = null, line = null, runs = 1000, 
     text = (c) => lc((c.effect || c.text || "") + " " + (c.abilities || []).map((a) => a.effect).join(" "));
   const model = (c) => {
     const tx = text(c),
-      best = (c.attacks || []).map((a) => ({ name: a.name, cost: (a.cost || []).length, dmg: parseInt(String(a.damage).replace(/\D/g, ""), 10) || 0 })).sort((a, b) => b.dmg - a.dmg)[0];
+      best = (c.attacks || []).map((a) => ({ name: a.name, cost: (a.cost || []).length, types: (a.cost || []).filter(x=>x!=="Colorless"), dmg: parseInt(String(a.damage).replace(/\D/g, ""), 10) || 0 })).sort((a, b) => b.dmg - a.dmg)[0];
     return {
       name: c.name,
       pokemon: c.category === "Pokemon",
@@ -191,6 +191,7 @@ export function ptcgGoldfish(main, { attacker = null, line = null, runs = 1000, 
       stage: c.stage || "",
       from: c.evolveFrom || "",
       energy: c.category === "Energy",
+      energyType: c.basicEnergy ? c.name.replace(/^Basic | Energy$/g, "") : "Unresolved special Energy",
       supporter: sup(c),
       draw: c.category === "Trainer" && /draw/.test(tx) ? (/draw 7|draw seven/.test(tx) ? 7 : /draw (\d)/.test(tx) ? Number(tx.match(/draw (\d)/)[1]) : 4) : 0,
       shuffleHand: /shuffle (?:your|their) hand|puts it on the bottom/.test(tx),
@@ -207,7 +208,7 @@ export function ptcgGoldfish(main, { attacker = null, line = null, runs = 1000, 
   if (!deck.some((c) => c.attack)) return null;
   let atkName = attacker || deck.filter((c) => c.attack).sort((a, b) => b.attack.dmg - a.attack.dmg)[0]?.name,
     atkCard = deck.find((c) => c.name === atkName && c.attack) || deck.filter((c) => c.attack).sort((a, b) => b.attack.dmg - a.attack.dmg)[0],
-    need = atkCard.attack.cost || 1,
+    need = atkCard.attack.cost,
     _n = (atkName = atkCard.name),
     chain = line && line.top === atkName ? [line.base, line.two ? line.mid : null, line.top].filter(Boolean) : atkCard?.basic ? [atkName] : atkCard?.from ? [atkCard.from, atkName] : [atkName],
     maxT = 6,
@@ -272,7 +273,7 @@ export function ptcgGoldfish(main, { attacker = null, line = null, runs = 1000, 
       for (let i = hand.length - 1; i >= 0 && field.length < 6; i--)
         if (hand[i].basic) {
           const b = hand.splice(i, 1)[0];
-          field.push({ name: b.name, card: b, since: t, energy: 0 });
+          field.push({ name: b.name, card: b, since: t, energy: [] });
           did.push(`play ${b.name}`);
         }
       // Evolve (not on a Pokémon's first turn, never on turn 1), Rare Candy from turn 2.
@@ -300,20 +301,28 @@ export function ptcgGoldfish(main, { attacker = null, line = null, runs = 1000, 
       }
       // Energy: one attachment a turn, to the most developed member of the line; plus acceleration.
       const target = field.filter((f) => lineIdx(f.name) >= 0 || f.name === atkName).sort((a, b) => lineIdx(b.name) - lineIdx(a.name))[0] || field[0];
-      const ei = hand.findIndex((c) => c.energy);
+      const unmet = target ? [...atkCard.attack.types] : [];
+      for (const tp of target?.energy || []) { const k=unmet.indexOf(tp); if(k>=0)unmet.splice(k,1); }
+      let ei = hand.findIndex((c) => c.energy && unmet.includes(c.energyType));
+      if(ei<0)ei=hand.findIndex(c=>c.energy);
       if (target && ei >= 0) {
-        hand.splice(ei, 1);
-        target.energy++;
+        const attached=hand.splice(ei, 1)[0];
+        target.energy.push(attached.energyType);
         did.push(`attach Energy to ${target.name}`);
       }
       const ai = hand.findIndex((c) => c.accel);
-      if (target && ai >= 0 && take((x) => x.energy)) {
+      const accelerated = target && ai >= 0 ? take(x=>x.energy) : null;
+      if (accelerated) {
         const a = hand.splice(ai, 1)[0];
-        target.energy++;
+        target.energy.push(accelerated.energyType);
         did.push(`${a.name}: +1 Energy`);
       }
       // Attack (not on turn 1 when going first).
-      const ready = t > 1 && field.find((f) => f.name === atkName && f.energy >= need);
+      const ready = t > 1 && field.find((f) => {
+        if(f.name!==atkName || f.energy.length<need)return false;
+        const available=[...f.energy];
+        return atkCard.attack.types.every(tp=>{const k=available.indexOf(tp);if(k<0)return false;available.splice(k,1);return true;});
+      });
       if (ready) {
         nAtk++;
         dmg += atkCard.attack.dmg;
@@ -344,7 +353,7 @@ export function ptcgGoldfish(main, { attacker = null, line = null, runs = 1000, 
       { label: "Mulligans per game", value: avg(mulls), bad: true, good: 0.2 },
     ],
     winCon: atkCard?.attack ? `${atkName}: ${atkCard.attack.name}, ${atkCard.attack.dmg} damage for ${need} Energy. About ${Math.round(avg(dmgTot))} damage in the first 6 turns of a goldfish.` : "No attacker with printed damage found.",
-    endgame: line ? `Its line is ${chain.join(" → ")}. Late game depends on rebuilding it: keep recovery (Night Stretcher, Super Rod) and a second Basic on the Bench.` : `${atkName} is a Basic, so it can be replaced quickly once Knocked Out.`,
+    endgame: (line ? `Its line is ${chain.join(" → ")}. Review recovery and replacement Basics after a Knock Out.` : `${atkName} is a Basic; replacing it still requires access to another copy and enough Energy.`) + " This simplified model checks Basic Energy types. Special Energy, Pokémon Abilities, attack restrictions and opponent interaction are not fully resolved.",
     samples: [pick && { title: `Typical game${pick.first ? ` · first attack turn ${pick.first}` : ""}`, log: pick.log }, worst && worst !== pick && { title: `A bad draw${worst.first ? ` · first attack turn ${worst.first}` : " · no attack by turn 6"}`, log: worst.log }].filter(Boolean),
     speed: firstT == null ? 0.1 : Math.max(0, Math.min(1, 1 - (firstT - 2) / 3)),
   };

@@ -1,4 +1,5 @@
 import { ask, askText } from "./dialog.js";
+import { attachHomeSwipe } from "./home-swipe.js";
 import { useMyPrices, myPriceKey, ensureTcgPrices } from "./mtg-tcgprice.js";
 import { buyOnTcgplayer, massLines } from "./buy.js";
 import {applySwapsToCards} from './insights.js';
@@ -1116,6 +1117,11 @@ attachCardGestures({onSelect:target=>{
 
 document.addEventListener("pointerdown", ripple, { passive: true });
 attachGestures({ closeSheet: () => closeSheet() });
+attachHomeSwipe($("#content"), {
+  enabled: () => S.ui.view === "home" && !document.documentElement.classList.contains("sheet-open") && !document.querySelector('[role="dialog"], dialog[open], .tour, .zoom-overlay'),
+  current: () => S.state.settings.game || "mtg",
+  switchGame: id => A.setGame({ dataset: { game: id } }),
+});
 attachTilt();
 // Fold-out ⋯ menus close when you pick something or tap anywhere else.
 document.addEventListener("click", (e) => {

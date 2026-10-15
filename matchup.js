@@ -313,7 +313,7 @@ export function gamePlan(game, me, op, { main = [], side = [], protect = () => f
       hits = Math.max(1, Math.ceil(op.hp / Math.max(10, me.reach * (weakHit ? 2 : 1)))),
       lines = [
         `Lead with ${me.name}: ${hits} attack${hits === 1 ? "" : "s"} Knock Out a ${op.hp} HP ${op.name}${weakHit ? " (it hits their Weakness)" : ""}.`,
-        op.prize === 2 ? "They're built on 2-Prize Pokémon: three Knock Outs win. Save gust for a damaged ex to skip a turn." : "They play single-Prize Pokémon: you need six Knock Outs, so keep a second attacker ready on the Bench.",
+        op.prize === 3 ? "Their main attacker gives up 3 Prizes when Knocked Out: two such Knock Outs take six Prizes. Other Pokémon can change the route." : op.prize === 2 ? "They're built on 2-Prize Pokémon: three Knock Outs win. Save gust for a damaged ex to skip a turn." : "They play single-Prize Pokémon: you need six Knock Outs, so keep a second attacker ready on the Bench.",
         weakTaken ? `${op.name} hits your ${me.name}'s Weakness: spread your attackers and don't power up two at once in front of it.` : "",
         op.disrupt >= 3 ? `They run ${op.disrupt} hand-disruption cards (Iono and friends): keep searchers on the Bench once you take a Prize lead.` : "",
       ].filter(Boolean);
@@ -427,6 +427,16 @@ export function calibratePods(field, { runs = 700 } = {}) {
 // So the number comes from real results: the two archetypes' head-to-head record, pulled toward
 // their overall strength when there are few games, nudged a little by the simulation.
 const keyOf = (s) => lc(s).trim();
+// A recognizable name is insufficient to transfer an archetype's match record.
+// In particular, a nonfunctional/illegal list must never inherit a winning mirror.
+export function matchupBlock(p) {
+  if (p?.readiness?.provisional) return "Resolve the deck's legality and unloaded-card checks before estimating matchups.";
+  const cap=(p?.caps || []).find(c=>["Energy","Lines","Starters","Extra","Mana","Colors","Threats","Critical","Attacker"].includes(c.key)&&c.max<=66);
+  return cap ? `${cap.label}: ${cap.why} Fix this functional issue before estimating matchups.` : null;
+}
+export function canBorrowResults(p) {
+  return !matchupBlock(p) && (p?.match?.sim || 0)>=0.8 && !(p.match.coreMissing?.length) && !(p.match.coreShort?.length);
+}
 export function realMatchup(results, me, op, sim = 0.5) {
   if (!results?.arch) return { win: clamp(0.5 + 0.12 * (sim - 0.5), 0.03, 0.97), w: 0, n: 0, source: "model" };
   const W = results.arch, H = results.h2h || {};

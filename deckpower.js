@@ -60,6 +60,13 @@ const type = (c) => String(c?.type_line || "");
 const isLandC = (c) => /\bLand\b/.test(type(c).split(" // ")[0]);
 const isBasicC = (c) => /^Basic(?: Snow)? Land/.test(type(c));
 const legendary = (c) => /Legendary/.test(type(c));
+// Only exclude a role when a printed prerequisite is demonstrably absent. This is a
+// supported dependency check, not a claim to resolve arbitrary Magic rules text.
+const missingSacrifice = (c, rows) => {
+  const tx = text(c), need = tx.match(/as an additional cost to cast this spell, sacrifice (?:a|an) (creature|artifact)[.,]/)?.[1];
+  if (!need || /or pay|or discard/.test(tx)) return false;
+  return !rows.some(r => (r.c !== c || r.qty>1) && (new RegExp(need, "i").test(type(r.c)) || new RegExp(`create [^.]*${need}[^.]*token`).test(text(r.c)) || need === "artifact" && /create [^.]*treasure/.test(text(r.c))));
+};
 
 export function mtgConstructedPower(deck, catalog, key, size = 60) {
   const rows = [];
@@ -82,7 +89,7 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     creatures = qty(spells.filter((r) => /Creature/.test(type(r.c)))),
     walkers = qty(spells.filter((r) => /Planeswalker/.test(type(r.c)))),
     interaction = qty(spells.filter((r) => interacts(r.c))),
-    flow = qty(has("draw")),
+    flow = qty(has("draw").filter((r) => !missingSacrifice(r.c, known))),
     ramp = qty(has("ramp")),
     big = qty(spells.filter((r) => Number(r.c.cmc) >= 5)),
     scale = size / 60,
@@ -115,7 +122,7 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     Ramp: { inter: 5, threats: 10, flow: 3, curve: 3.6 },
   }[plan];
   // Karsten: lands ≈ 19.59 + 1.90·avgMV − 0.28·(cheap draw/ramp) for 60 cards.
-  const cheapHelp = qty(spells.filter((r) => Number(r.c.cmc) <= 2 && (role(r.c, "draw") || role(r.c, "ramp")))),
+  const cheapHelp = qty(spells.filter((r) => Number(r.c.cmc) <= 2 && ((role(r.c, "draw") && !missingSacrifice(r.c, known)) || role(r.c, "ramp")))),
     // Landfall decks play extra lands on purpose: every land is a trigger.
     idealLands = Math.round((19.59 + 1.9 * avg - 0.28 * Math.min(cheapHelp, 12) + (theme === "Landfall" ? 3.5 : 0)) * scale),
     nonLegendSpells = spells.filter((r) => !legendary(r.c)),
@@ -209,7 +216,7 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
   if (artPay >= 4) linear.push({ name: "Artifacts", payoffs: artPay, enablers: arts, target: Math.round(16 * scale), unit: "artifacts" });
   const lin = linear.sort((a, b) => a.enablers / a.target - b.enablers / b.target)[0],
     // Midrange "good stuff": wins by trading 1-for-1 then pulling ahead with 2-for-1s.
-    value = qty(spells.filter((r) => role(r.c, "draw") || walkers && /Planeswalker/.test(type(r.c)) || /Creature/.test(type(r.c)) && /when (?:this creature|.{0,40}) enters[^.]*(?:draw|destroy|exile|create|return|deals?|search|counter)/.test(text(r.c))));
+    value = qty(spells.filter((r) => (role(r.c, "draw") && !missingSacrifice(r.c, known)) || walkers && /Planeswalker/.test(type(r.c)) || /Creature/.test(type(r.c)) && /when (?:this creature|.{0,40}) enters[^.]*(?:draw|destroy|exile|create|return|deals?|search|counter)/.test(text(r.c))));
   parts.push({ ...part("Plan", `Plan · ${plan}`, offN ? `${offN} off-plan` : "on plan", "0 off-plan", 1 - offN / Math.max(4, nSpell * 0.2), 12, `Every card should serve the ${plan.toLowerCase()} plan. Cards that pull the other way slow your clock or waste slots.`),
     cards: offPlan.slice(0, 8).map((x) => ({ name: `${x.r.name} — ${x.why}`, qty: x.r.qty })),
     why: offN ? `${offN} card${offN === 1 ? "" : "s"} work against a ${plan.toLowerCase()} plan: ${offPlan.slice(0, 3).map((x) => `${x.r.name} (${x.why})`).join("; ")}. Swap them for cards that do what the deck is trying to do.` : `Every spell serves the ${plan.toLowerCase()} plan.` });
@@ -228,7 +235,7 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     else {
       if (Number(r.c.cmc) <= 2) s.add("cheap");
       if (interacts(r.c)) s.add("inter");
-      if (role(r.c, "draw")) s.add("draw");
+      if (role(r.c, "draw") && !missingSacrifice(r.c, known)) s.add("draw");
       if (role(r.c, "ramp")) s.add("ramp");
     }
     return s;
@@ -248,14 +255,14 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     parts.push({ ...part("Goldfish", ctl ? "Goldfish: mana use" : "Goldfish speed", ctl ? Math.round(gold.metrics[0].value * 100) + "%" : gold.turnDist && gold.speed != null ? `turn ${gold.headline.match(/turn (\d+)/)?.[1] || "10+"}` : "—", ctl ? "75%+" : `turn ${{ Aggro: 5, Midrange: 6, Ramp: 6 }[plan] || 6}`, ctl ? gold.metrics[0].value / 0.75 : gold.speed, 8, "1,000 games played out against an empty board: how fast the deck actually closes."), why: gold.headline });
   }
   const names = (re) => evidence(spells.filter((r) => re.test(text(r.c))));
-  const ev = { Mana: evidence(lands), Interaction: evidence(spells.filter((r) => interacts(r.c))), Flow: evidence(has("draw")), Threats: evidence(spells.filter((r) => /Creature|Planeswalker/.test(type(r.c)))), Consistency: evidence(spells.filter((r) => r.qty <= 2 && !legendary(r.c))), Curve: evidence(spells.filter((r) => Number(r.c.cmc) >= 5)) };
+  const ev = { Mana: evidence(lands), Interaction: evidence(spells.filter((r) => interacts(r.c))), Flow: evidence(has("draw").filter(r=>!missingSacrifice(r.c,known))), Threats: evidence(spells.filter((r) => /Creature|Planeswalker/.test(type(r.c)))), Consistency: evidence(spells.filter((r) => r.qty <= 2 && !legendary(r.c))), Curve: evidence(spells.filter((r) => Number(r.c.cmc) >= 5)) };
   const whyOf = {
     Mana: theme === "Landfall" && Math.abs(nLand - idealLands) <= 2 ? `${nLand} lands: right for a landfall deck, where extra lands are triggers rather than flood.` : nLand < idealLands ? `${nLand} lands for an average spell cost of ${avg.toFixed(2)}: you'll miss land drops. Karsten's numbers say about ${idealLands}.` : `${nLand} lands where about ${idealLands} is right: you'll draw extra lands instead of spells.`,
     Curve: `Spells average ${avg.toFixed(2)} mana; a ${plan.toLowerCase()} deck wants ${T.curve} or less. The 5+ drops listed are the first to look at.`,
     Consistency: `Only ${Math.round(redundancy * 100)}% of spells are 3–4-ofs. The 1–2-ofs listed show up in a minority of games.`,
     Interaction: `${interaction} cards that interact. ${plan} decks want about ${Math.round(T.inter * scale)} so the opponent's best threats don't just win.`,
     Threats: `${threats} ${plan === "Control" ? "win conditions" : "threats"}${threatQ < 0.95 ? ` (creatures counted by quality: ${Math.round(threatQ * 100)}% of a fair rate)` : ""}${burn ? `, with ${burn} burn spells counted as half a threat each` : ""}; about ${Math.round(T.threats * scale)} keeps pressure on after removal.`,
-    Flow: `${flow} draw/selection cards; ${plan} wants about ${Math.round(T.flow * scale)} to find what it needs.`,
+    Flow: `${flow} supported draw/selection cards (effects with absent mandatory sacrifice fodder are excluded); ${plan} wants about ${Math.round(T.flow * scale)} to find what it needs.`,
     Colors: `Color sources: ${colors.map((k) => `${k} ${Math.round(src[k] || 0)}`).join(", ")}. A main color wants about 14 sources in 60 and a splash about 9.`,
     Synergy: `${themeCount} cards feed the ${theme?.toLowerCase()} plan; about ${Math.round(10 * scale)} makes it reliable.`,
   };
@@ -383,7 +390,9 @@ export function ygoPower(rows, f = {}) {
     };
   });
   const S = (k) => sim[k] || 0, P = (x) => Math.round(x * 100) + "%";
+  const supported = main.filter(r => tag.get(r).size || r.c.archetype || (r.c.category === "Monster" && Number(r.c.atk)>=1800 && Number(r.c.level)<=4));
   const parts = [
+    { ...part("Function", "Supported Main Deck functions", q(supported), N, q(supported)/Math.max(1,N), 12, "Copies with a recognized role, archetype connection or standalone low-level attacker. Unsupported effects need review."), cards:evidence(main.filter(r=>!supported.includes(r))), why:`${N-q(supported)} Main Deck copies have no recognized engine role or standalone attacker function. Adding these dilutes access even when the remaining starter and interaction counts still meet their targets. This is a supported-role estimate, not a solved combo line.` },
     { ...part("Size", "Main Deck size", N, minMain, N < minMain ? 0 : 1 - (N - minMain) / 15, 12, "Every card over 40 lowers the odds of opening your best cards.", "Trim to 40 by cutting your weakest 1-ofs."),
       why: N < minMain ? `${N} cards is under the ${minMain}-card minimum, so the deck isn't legal yet.` : `${N} cards: each of your ${q(starters)} starters shows up less often than at 40. Cutting ${N - minMain} card${N - minMain === 1 ? "" : "s"} raises your starter odds to ${P(atLeastOne(minMain, q(starters), 5))}.` },
     { ...part("Starters", "Opens a starter", P(S("open")), "88%+", S("open") / 0.88, 16, `Share of 5-card hands with a card that searches or starts your combo (${q(starters)} starters in ${N}).`),
@@ -422,7 +431,12 @@ export function ygoPower(rows, f = {}) {
       if (/synchro/.test(fr)) return mons.some((r) => /tuner/i.test(r.c.typeLine || "")) || /non-tuner/.test(tx) === false;
       if (/fusion/.test(fr)) {
         const names = [...String(c.text || "").split(/\n|\./)[0].matchAll(/"([^"]+)"/g)].map((x) => lc(x[1]));
-        return !names.length || names.some((n) => main.some((r) => nm(r).includes(n) || lc(r.c.archetype) === n));
+        // Explicit A + B materials require both. Preserve alternatives, substitutions
+        // and effects that summon without the normal materials as unresolved cases.
+        const materialLine = String(c.text || "").split(/\n|\./)[0];
+        const bypass = main.some(r => /ignoring (?:its|their) summoning conditions|fusion summon[^.]*using (?:monsters|materials) from (?:either|your opponent)|substitute for any 1 fusion material/.test(t(r)));
+        const present = n => main.some((r) => nm(r) === n || lc(materialLine).includes(`"${n}" monster`) && (nm(r).includes(n) || lc(r.c.archetype) === n));
+        return !names.length || bypass || (/\+/.test(materialLine) && !/\bor\b/i.test(materialLine) ? names.every(present) : names.some(present));
       }
       return true;
     },
@@ -525,16 +539,33 @@ export function ptcgPower(rows, f = {}) {
     isTrainer = (r) => r.c.category === "Trainer",
     supporter = (r) => isTrainer(r) && (/Supporter/.test(r.c.typeLine || "") || SUPPORTER.test(r.c.name)),
     tag = new Map();
+  const energyCount = tp => main.filter(r => r.c.basicEnergy && r.c.name.replace(/^Basic | Energy$/g, "") === tp).reduce((n,r)=>n+r.qty,0);
+  const drawWeight = r => {
+    if (isTrainer(r)) return r.qty;
+    const abilities = (r.c.abilities || []).filter(a=>P.draw.test(lc(a.effect)));
+    if (!abilities.length) return 0;
+    return Math.max(...abilities.map(a=>{
+      const tx=lc(a.effect), required=String(a.effect || "").match(/attach (?:a |1 )?Basic (?:\{([GRWLPFDM])\}|(Grass|Fire|Water|Lightning|Psychic|Fighting|Darkness|Metal)) Energy/i);
+      const count=required?energyCount(ETYPE[required[1]] || required[2]):null;
+      // An Energy attachment draw requires that Energy in hand; extra Pokémon do
+      // not turn an absent or scarce resource into unconditional draw.
+      const availability=count===null?1:atLeastOne(N,count,7);
+      const shared=/can't use more than 1|cannot use more than 1|in the active spot/.test(tx);
+      const copies=main.filter(x=>x.c.name===r.c.name).reduce((n,x)=>n+x.qty,0);
+      return (shared?(1+0.25*Math.max(0,copies-1))*r.qty/copies:r.qty)*availability;
+    }));
+  };
   for (const r of main) {
     const s = new Set(), tx = isTrainer(r) ? lcText(r) : "", ab = abil(r), any = tx + " " + ab;
     if (r.c.basicPokemon) s.add("basic");
     if (r.c.category === "Energy") s.add("energy");
     if (supporter(r)) s.add("supporter");
-    if ((isTrainer(r) || ab) && P.draw.test(any)) s.add("draw");
+    if ((isTrainer(r) || ab) && P.draw.test(any) && drawWeight(r)>0) s.add("draw");
     if ((isTrainer(r) || ab) && P.search.test(any) && !/search your deck for (?:up to \w+ )?(?:basic )?\w* ?energy/.test(any)) s.add("search");
     if (P.gust.test(any)) s.add("gust");
     if (isTrainer(r) && P.switch.test(tx) && !P.gust.test(tx)) s.add("switch");
     if (r.c.category === "Pokemon" && r.c.retreat === 0) s.add("pivot");
+    if (r.c.category === "Pokemon" && /your basic pokémon in play have no retreat cost/i.test(ab) && main.some(x=>x.c.basicPokemon)) s.add("switch");
     if (isTrainer(r) && P.recovery.test(tx)) s.add("recovery");
     if (P.accel.test(any) || P.accel.test(lc(r.c.text || ""))) s.add("accel");
     if (P.disrupt.test(any)) s.add("disrupt");
@@ -548,7 +579,7 @@ export function ptcgPower(rows, f = {}) {
     pokemon = q(main.filter((r) => r.c.category === "Pokemon")),
     trainers = q(main.filter(isTrainer)),
     energy = q(by("energy")),
-    draws = by("draw"), searches = by("search"), gusts = by("gust"), switches = [...by("switch"), ...by("pivot")], recs = by("recovery"), sups = by("supporter"), accel = by("accel"),
+    draws = by("draw"), effectiveDraw = draws.reduce((n,r)=>n+drawWeight(r),0), searches = by("search"), gusts = by("gust"), switches = [...new Set([...by("switch"), ...by("pivot")])], recs = by("recovery"), sups = by("supporter"), accel = by("accel"),
     quads = main.filter((r) => r.qty >= 3 && !r.c.basicEnergy),
     names = new Set(main.map((r) => r.c.name)),
     broken = main.filter((r) => r.c.evolveFrom && !names.has(r.c.evolveFrom)),
@@ -584,7 +615,7 @@ export function ptcgPower(rows, f = {}) {
   const dmg = (r) => (copies(r.c) ? Math.max(ownReach.get(r), Math.min(copyReach, 340)) : ownReach.get(r)),
     // The deck can only attack with what its Energy pays for (Special Energy may provide any type).
     costOf = (r) => [...new Set((r.c.attacks || []).filter((a) => attackDamage(a) === attackReach(r.c) || attackDamage(a) * 2 === attackReach(r.c)).flatMap((a) => a.cost || []).filter((x) => x !== "Colorless"))],
-    payable = (r) => energyTypes.has("Special") || costOf(r).every((tp) => energyTypes.has(tp)),
+    payable = (r) => energy > 0 && (energyTypes.has("Special") || costOf(r).every((tp) => energyTypes.has(tp))) || (r.c.attacks || []).some(a => !(a.cost || []).length && attackDamage(a)>0),
     attackers = main.filter((r) => r.c.category === "Pokemon").sort((a, b) => payable(b) - payable(a) || dmg(b) - dmg(a) || (b.c.ruleBox ? 1 : 0) - (a.c.ruleBox ? 1 : 0) || /2/.test(b.c.stage || "") - /2/.test(a.c.stage || "") || b.qty - a.qty),
     mainAtk = attackers[0],
     line = mainAtk ? lines.find((l) => l.top === mainAtk.c.name) : null;
@@ -616,8 +647,8 @@ export function ptcgPower(rows, f = {}) {
     { ...part("Size", "Deck size", N, 60, N === 60 ? 1 : 0, 8, "Pokémon decks are exactly 60 cards."), why: `${N} cards. The deck must be exactly 60 to be legal.` },
     { ...part("Basics", "Basic Pokémon", basics, "10–14", 1 - Math.max(0, mull - 0.12) / 0.25, 10, `${Pc(mull)} of opening hands have no Basic (a mulligan).`),
       cards: evidence(by("basic")), why: `${basics} Basics means ${Pc(mull)} of games start with a mulligan, giving your opponent free cards. Most lists play 10–14.` },
-    { ...part("Draw", "Draw power", q(draws), 8, q(draws) / 8, 14, "Supporters and Abilities that refill your hand (Iono, Professor's Research, Bibarel…).", "Draw"),
-      cards: evidence(draws), why: `${q(draws)} draw cards. Without a steady draw engine you run out of things to do by turn 3; competitive lists play 8+ draw Supporters, often backed by a draw Ability.` },
+    { ...part("Draw", "Draw power", Math.round(effectiveDraw*10)/10, 8, effectiveDraw / 8, 14, "Draw-source equivalents, adjusted for shared Ability limits and supported Energy prerequisites. An estimate, not cards drawn per turn.", "Draw"),
+      cards: evidence(draws), why: `${q(draws)} copies with supported draw effects provide about ${effectiveDraw.toFixed(1)} draw-source equivalents after shared-use limits and Energy prerequisites. Multiple copies improve access, but a shared once-per-turn Ability does not provide an independent use per copy. Other activation conditions still need playtesting.` },
     { ...part("Start", "Turn-1 draw or search", Pc(S("out")), "90%+", S("out") / 0.9, 10, "Share of games with a draw or search card in your first 8 cards (after mulligans and Prizes)."),
       why: `${Pc(1 - S("out"))} of games start with no draw or search card at all, so you're stuck with your opening hand.` },
     { ...part("Search", "Search", q(searches), 8, q(searches) / 8, 12, "Ultra Ball, Nest Ball, Buddy-Buddy Poffin and search Abilities find your attackers on time."),
@@ -635,7 +666,7 @@ export function ptcgPower(rows, f = {}) {
     { ...part("Recovery", "Recovery", q(recs), 2, q(recs) / 2, 5, "Night Stretcher, Super Rod and friends bring back knocked-out attackers."),
       cards: evidence(recs), why: `${q(recs)} recovery card${q(recs) === 1 ? "" : "s"}. Once your attackers are knocked out, they're gone for good.` },
     { ...part("Energy", "Energy", energy, needTypes.length ? needTypes.join("/") : "any", energyFit * (deadAbility.length ? 0.6 : 1) * (energy >= 6 || !needTypes.length ? 1 : energy / 6) * (S("energy") >= 0.75 || !needTypes.length ? 1 : S("energy") / 0.75) * (energy > 16 ? Math.max(0.2, 1 - (energy - 16) / 12) : 1), 8, `Enough of the right Energy for your attacks. ${Pc(S("energy"))} of games have Energy or acceleration by turn 1.`),
-      cards: evidence([...by("energy"), ...accel, ...deadAbility]), why: missingTypes.length ? `Attacks need ${missingTypes.join(", ")} Energy, which the deck doesn't run.` : deadAbility.length ? `${deadAbility.map((r) => `${r.c.name}'s Ability needs ${abilityEnergy(r.c).join("/")} Energy attached`).join("; ")}, and the deck runs none, so ${deadAbility.length > 1 ? "those cards do" : "it does"} nothing.` : energy > 16 ? `${energy} Energy is far more than any attacker needs. Competitive lists run 8–14; every extra one is a Trainer you don't draw.` : `${energy} Energy: ${Pc(1 - S("energy"))} of games have none (and no acceleration) on turn 1.` },
+      cards: evidence([...by("energy"), ...accel, ...deadAbility]), why: missingTypes.length ? `Attacks need ${missingTypes.join(", ")} Energy, which the deck doesn't run.` : deadAbility.length ? `${deadAbility.map((r) => `${r.c.name}'s Ability needs ${abilityEnergy(r.c).join("/")} Energy attached`).join("; ")}, and the deck runs none, so ${deadAbility.length > 1 ? "those cards do" : "it does"} nothing.` : energy > 16 ? `${energy} Energy leaves fewer slots for setup and interaction. High-Energy strategies can justify this; verify the attack and Ability requirements rather than treating a fixed count as universal.` : `${energy} Energy: ${Pc(1 - S("energy"))} of games have none (and no acceleration) on turn 1.` },
     { ...part("Consistency", "4-of consistency", Math.round((q(quads) / Math.max(1, N)) * 100) + "%", "55%", q(quads) / Math.max(1, N) / 0.55, 6, "Key Trainers and Basics as 3–4-ofs."),
       cards: evidence(main.filter((r) => r.qty <= 2 && (tag.get(r).has("draw") || tag.get(r).has("search")))), why: "Draw and search cards run as 1–2-ofs. Those are the cards every competitive list maxes out." },
     { ...part("Ace", "ACE SPEC", aces.length ? aces.map((r) => r.c.name).join(", ") : "none", "1", q(aces) > 1 ? 0 : aces.length ? 1 : 0.6, 3, "One ACE SPEC (Prime Catcher, Master Ball, Unfair Stamp…) is a free power boost."),
@@ -672,6 +703,7 @@ export function ptcgPower(rows, f = {}) {
     stranded = star && !payable(star) && dmg(star) >= 120 && (!mainAtk || !payable(mainAtk) || reach < dmg(star) * 0.6) ? star : null,
     cantPay = stranded ? costOf(stranded).filter((tp) => !energyTypes.has(tp)) : [];
   const caps = [
+    atkKnown && !energy && attackers.some(r=>(r.c.attacks || []).some(a=>(a.cost || []).length)) && !attackers.some(r=>(r.c.attacks || []).some(a=>!(a.cost || []).length && attackDamage(a)>0)) ? { key:"Energy",max:45,label:"No Energy for attacks",why:"The listed attacks require Energy, but the deck has none. Colorless costs still require Energy; they do not mean a free attack." } : null,
     atkKnown && atkRatio < 1 && !swarm ? { key: "Attacker", max: Math.round(55 + 40 * atkRatio), label: reach < 120 ? "No real attacker" : "Attacker too thin", why: parts.find((x) => x.key === "Attacker")?.why } : null,
     cantPay.length ? { key: "Energy", max: 45, label: "Main attacker can't attack", why: `${stranded?.c.name}'s attack needs ${cantPay.join(" and ")} Energy and the deck runs none, so its best attacker never attacks.` } : null,
     line && !swarm && q(team.filter((r) => r.c.name !== line.top)) < 2 && (line.counts[0] < 3 || line.counts.at(-1) < 2 || (line.two && line.counts[1] + Math.min(candy, 4) < 3)) ? { key: "Lines", max: 62, label: "Main line too thin", why: `${line.top} is on a ${line.text} line${line.two && !candy ? " with no Rare Candy" : ""}. One prized or Knocked Out piece and the deck has no attacker; lists run 4-3-3, or 4-2-3 with Rare Candy.` } : null,
@@ -688,7 +720,7 @@ export function ptcgPower(rows, f = {}) {
     plan: mainAtk ? mainAtk.c.name + (line ? ` · ${line.text} line` : "") : "Pokémon deck",
     stats: { N, basics, pokemon, trainers, energy, mull },
     unknown,
-    profile: [["Pokémon", pokemon], ["Trainers", trainers], ["Energy", energy], ["Supporters", q(sups)], ["Prize plan", multi >= 4 ? "Two-prize attackers" : ruleBox.length ? "Mixed" : "Single-prize"]],
+    profile: [["Pokémon", pokemon], ["Trainers", trainers], ["Energy", energy], ["Supporters", q(sups)], ["Prize plan", main.some(r=>r.c.prize===3) ? "Includes three-prize Pokémon" : multi >= 4 ? "Two-prize attackers" : ruleBox.length ? "Mixed" : "Single-prize"]],
     sims: [
       { label: "Mulligan", p: mull, target: 0.15, lower: true, note: "no Basic in opening 7 (exact)" },
       { label: "Draw or search on turn 1", p: S("out"), target: 0.9, note: "first 8 cards, after Prizes" },
@@ -764,7 +796,7 @@ export function metaMatch(mine, metaDecks, archetypes = []) {
   missing.sort((a, b) => b.qty - a.qty);
   extra.sort((a, b) => b.qty - a.qty);
   // The archetype's core: cards nearly every list of it plays that other archetypes don't. Missing
-  // one (Karn in Tron) breaks the deck even if the rest of the list matches.
+  // one limits transfer of the reference results; functionality is checked separately.
   // Playing too few copies counts too: one Karn where the lists play four draws it a quarter as
   // often. "Short" is half or less of what the archetype's lists usually play.
   // How often lists of other decks play a card: a hand trap or Boss's Orders is everywhere.
@@ -853,17 +885,19 @@ export function metaContext({ build, mine, decks = [], match = null, loaded = fa
     const k = clamp((match.sim - 0.35) / 0.45),
       broken = (match.coreMissing || []).reduce((a, x) => a + (x.unique ?? 1), 0),
       thin = (match.coreShort || []).reduce((a, x) => a + (1 - x.have / x.qty) * (x.unique ?? 1), 0),
-      // Each missing core piece costs the borrowed tournament credit: it's no longer that deck.
-      // Too few copies of one costs in proportion to the copies cut.
+      // Discount borrowed reference results for large departures from that list.
+      // This is an evidence-transfer discount, never a functional engine cap.
+      // core/short keys are excluded from deficit above, so they count once here.
       // Copies short of what the archetype usually plays, and cards no placing list plays (filler),
       // cost in proportion; the list is judged, not just the archetype's results.
       shortfall = Math.min(30, (match.deficit || 0) * 5),
       filler = Math.max(0, 1 - played - 0.12) * 45,
-      metaScore = match.metaScore - Math.min(50, broken * 28 + thin * 28) - shortfall - filler,
+      referenceDiscount = Math.min(50, broken * 28 + thin * 28) + shortfall + filler,
+      metaScore = match.metaScore - referenceDiscount,
       mixed = Math.round(build * (1 - k) * 0.5 + Math.min(build, ROGUE_CAP) * (1 - k) * 0.5 + metaScore * k),
       // Never far above how well the list itself is built (mana, curve, interaction, consistency).
       score = Math.min(mixed, build + 18);
-    return { score: Math.max(0, Math.min(100, score)), from: k >= 0.75 && broken < 0.3 && thin < 0.3 && shortfall < 5 ? "meta" : "mixed", presence, played, unplayed, field, lists, coreMissing: match.coreMissing || [], coreShort: match.coreShort || [], thinned: shortfall >= 3 ? match.thinned || [] : [], shortfall, filler };
+    return { score: Math.max(0, Math.min(100, score)), from: k >= 0.75 && broken < 0.3 && thin < 0.3 && shortfall < 5 ? "meta" : "mixed", referenceDiscount, presence, played, unplayed, field, lists, coreMissing: match.coreMissing || [], coreShort: match.coreShort || [], thinned: shortfall >= 3 ? match.thinned || [] : [], shortfall, filler };
   }
   // Off-meta: mostly what the field says about these cards, then how well it's built. A pile of
   // staples around an engine nobody plays lands in casual territory (about 45–60).

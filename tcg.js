@@ -22,7 +22,7 @@ import { binderShelf } from "./binders.js";
 import { emblemChips, rowEmblem, hasEmblem, impactScore, tradeAdvice, tradeAdviceHtml, deckEmblems, deckEmblemHtml, cardMetaUsage, cardMetaTab, playRate } from "./importance.js";
 import { attackReach, abilityEnergy, ygoPower, ptcgPower } from "./deckpower.js";
 import { matchupsTab, fieldStore, computeMatchups, celebrate, calibrateField } from "./matchups-ui.js";
-import { profileOf, simulateMatchup, gamePlan, recordOf, blend, listSig, forList, realMatchup, trustedSim } from "./matchup.js";
+import { profileOf, simulateMatchup, gamePlan, recordOf, blend, listSig, forList, realMatchup, trustedSim, matchupBlock, canBorrowResults } from "./matchup.js";
 import { haptic } from "./feel.js";
 import { tileChrome } from "./tiles.js";
 // Yu-Gi-Oh! and Pokémon: collection, search, sets and deck building, sharing one
@@ -1216,7 +1216,7 @@ const muStateT = (g, d) => ((S.ui.mu ||= {})[g + ":" + d.id] ||= { first: true }
 const tRows = (g, zone) => (zone || []).map((r) => ({ qty: r.qty, c: cardOf(g, r.cardId), name: r.name })).filter((r) => r.c);
 const tPower = (g, f, main, extra = []) => (g === "ygo" ? ygoPower([...main.map((r) => ({ ...r, zone: "main" })), ...extra.map((r) => ({ ...r, zone: "extra" }))], f) : ptcgPower(main, f));
 // The calibration of the field archetype this deck copies (see calibrateField), else 0.
-const myBiasFor = (p, field) => { const m = p?.match; if (!m || m.sim < 0.6) return 0; const f = (field || []).find((x) => String(x.name).toLowerCase() === String(m.archetype).toLowerCase()); return f?.bias || 0; };
+const myBiasFor = (p, field) => { const m = p?.match; if (!canBorrowResults(p)) return 0; const f = (field || []).find((x) => String(x.name).toLowerCase() === String(m.archetype).toLowerCase()); return f?.bias || 0; };
 function deckMatchupsT(g, d, f) {
   const st = muStateT(g, d),
     base = { prefix: "tMu", gameName: g === "ygo" ? "Yu-Gi-Oh!" : "Pokémon", game: g, state: st, runKey: g + ":" + d.id,
@@ -1230,7 +1230,10 @@ function deckMatchupsT(g, d, f) {
   if (!st.field || st.fieldKey !== key) { const cached = metaState(g)?.data ? fieldStore.get(key) : null; if (cached) { st.field = cached; st.fieldKey = key; } }
   if (!st.field?.length || st.fieldKey !== key) return matchupsTab({ ...base, field: [], fieldLabel: g === "ygo" ? "in TCG Advanced" : "in Standard" });
   const extra = tRows(g, d.zones?.extra), side = tRows(g, d.zones?.side),
-    me = profileOf(g, tcgPower(g, d, f, (x) => cardOf(g, x)), main, extra);
+    assessment = tcgPower(g, d, f, (x) => cardOf(g, x)),
+    blocked = matchupBlock(assessment),
+    me = profileOf(g, assessment, main, extra);
+  if (blocked) return matchupsTab({ ...base, unsupported: blocked });
   if (!me) return matchupsTab({ ...base, unsupported: "This deck's cards are still loading. Open the Power tab once, then come back." });
   const lead = Object.entries(main.reduce((a, r) => (r.c.archetype ? ((a[r.c.archetype] = (a[r.c.archetype] || 0) + r.qty), a) : a), {})).sort((a, b) => b[1] - a[1])[0]?.[0],
     protect = (r) => !!lead && r.c.archetype === lead,
@@ -1247,14 +1250,14 @@ function deckMatchupsT(g, d, f) {
 // Pokémon: the number comes from real results (realMatchup in matchup.js, validated on 8,469
 // Limitless matches); the simulation only nudges it and explains the matchup.
 function realResults(sims, p) {
-  const R = metaState("ptcg")?.data?.results, mine = p?.match?.sim >= 0.6 ? p.match.archetype : null;
+  const R = metaState("ptcg")?.data?.results, mine = canBorrowResults(p) ? p.match.archetype : null;
   return sims.map((m) => {
     const real = realMatchup(R, mine, m.name, m.sim.win), shift = real.win - m.sim.win, c = (x) => Math.max(0.03, Math.min(0.97, x + shift));
     const line = !R ? `Recent online results aren't loaded, so this is the simulation pulled most of the way to even: on its own it was overconfident when tested against real matches.`
       : mine && mine.toLowerCase() === String(m.name).toLowerCase() ? `Mirror match: even by definition, so the deck that plays better and draws better wins.`
       : real.n ? `Real results: ${mine} went ${real.w}–${real.n - real.w} against ${m.name} in ${real.n} online matches (Limitless, last 3 weeks).`
       : mine ? `No recorded games between these decks yet, so this rests on each deck's overall results.`
-      : `Your list doesn't match a known archetype, so this rests on ${m.name}'s overall results.`;
+      : `This exact list cannot safely borrow an archetype's record. This is a conservative baseline using ${m.name}'s overall results, not a validated forecast for your deck.`;
     return { ...m, sim: { ...m.sim, model: m.sim.win, win: real.win, onPlay: c(m.sim.onPlay), onDraw: c(m.sim.onDraw), real, reasons: [line, `The game simulation leans ${Math.round(m.sim.win * 100)}%; it only nudges this number, because real results predict matches better.`, ...m.sim.reasons] } };
   });
 }

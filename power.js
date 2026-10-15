@@ -93,12 +93,13 @@ function legalGate(base, readiness) {
   const cap = { key: "Legal", max: LEGAL_CAP, label: "Not tournament-legal yet", why: `${readiness.issues.slice(0, 3).join("; ")}${readiness.issues.length > 3 ? `; and ${readiness.issues.length - 3} more` : ""}. Fix this before the deck can be judged against the field.` };
   return { ...base, caps: [cap, ...(base.caps || [])].sort((a, b) => a.max - b.max) };
 }
-// A close copy of a winning list that's missing that deck's core cards gets told so.
+// Tournament frequency is comparison evidence, not proof of a broken dependency.
+// Keep differences visible without manufacturing a functional hard cap from names.
 const coreCap = (base, ctx) => {
   const gone = ctx?.coreMissing || [], few = ctx?.coreShort || [];
   if (!gone.length && !few.length) return base;
   const parts = [...gone.map((x) => `${x.qty}× ${x.name} (this deck has none)`), ...few.map((x) => `${x.qty}× ${x.name} (this deck has ${x.have})`)];
-  return { ...base, caps: [...(base.caps || []), { key: "Core", max: ctx.score, label: gone.length ? "Missing the deck's core" : "Too few copies of the deck's core", why: `Nearly every list of this archetype plays ${parts.join(", ")}. ${gone.length ? "Without the core it isn't the deck that wins those events." : "With fewer copies you find them far less often, so the deck does its thing in fewer games."}` }].sort((a, b) => a.max - b.max) };
+  return { ...base, referenceDifference: `Common reference-list differences: ${parts.join(", ")}. These reduce how confidently the reference results transfer to this list. Frequency alone does not establish a missing function; check replacements and the engine analysis.` };
 };
 function capCtx(ctx, caps) {
   const max = caps?.[0]?.max;
@@ -249,7 +250,8 @@ export function powerPanel(p, { loadAct = "", findAct = "", cardAct = () => "" }
         <p class="small muted">${m.lists} placing list${m.lists === 1 ? "" : "s"} · ${pct(m.share)} of the field · best finish <b>${placeText(m.bestRank)}</b>${m.deck.event ? ` · e.g. ${esc(m.deck.event)}${m.deck.place ? " (" + esc(m.deck.place) + ")" : ""}` : ""}${m.deck.url ? ` · <a href="${esc(m.deck.url)}" target="_blank" rel="noopener">list ↗</a>` : ""}</p>
         ${strong && m.missing.length ? `<p class="small"><b>Their list plays, yours doesn’t:</b> ${m.missing.slice(0, 8).map((x) => `<button class="link small" ${cardAct(x)}>${x.qty}× ${esc(x.name)}</button>`).join(", ")}</p>` : ""}
         ${strong && m.extra.length ? `<p class="small"><b>Yours only:</b> ${m.extra.slice(0, 8).map((x) => `${x.qty}× ${esc(x.name)}`).join(", ")}</p>` : ""}
-        ${m.weight > 0 ? `<p class="foot">Because your list is ${Math.round(m.sim * 100)}% the same as proven placing decks, the rating leans on that tournament evidence (build check alone: ${p.heuristic}).</p>` : `<p class="foot">Not close enough to any placing list to use tournament results; this rating is the build check only.</p>`}
+        ${p.referenceDifference ? `<p class="small warn-text">${esc(p.referenceDifference)}</p>` : ""}
+        ${m.weight > 0 ? `<p class="foot">Because your list is ${Math.round(m.sim * 100)}% the same as proven placing decks, the rating leans on that tournament evidence (build check alone: ${p.heuristic}). This is a reference-based estimate, not a measured win rate for this exact list.</p>` : `<p class="foot">Not close enough to any placing list to use tournament results; this rating is the build check only.</p>`}
       </div>`
     : p.metaKey
       ? `<div class="meta-match"><p class="small">${p.metaBusy ? "Loading tournament results…" : "Compare this list with recent tournament winners to see which archetype it is, how it placed, and what it’s missing."}</p>${loadAct && !p.metaBusy ? `<button class="btn small" ${loadAct} data-autoload-meta="${esc(p.metaKey)}">Compare with tournament decks</button>` : ""}</div>`

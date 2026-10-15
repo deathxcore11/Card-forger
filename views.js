@@ -1,6 +1,6 @@
 import { APP_VERSION } from "./config.js";
 import { matchupsTab, fieldStore, computeMatchups } from "./matchups-ui.js";
-import { profileOf, simulateMatchup, gamePlan, recordOf, blend, listSig, forList, simulatePod, podProfile, trustedSim } from "./matchup.js";
+import { profileOf, simulateMatchup, gamePlan, recordOf, blend, listSig, forList, simulatePod, podProfile, trustedSim, matchupBlock, canBorrowResults } from "./matchup.js";
 import { mtgConstructedPower } from "./deckpower.js";
 import { isCommanderLike } from "./formats.js";
 import { mtgMetaKey } from "./power.js";
@@ -1221,6 +1221,8 @@ function deckMatchups(d) {
     st = ((S.ui.mu ||= {})[d.id] ||= { first: true }),
     base = { prefix: "mu", gameName: "Magic", state: st, modelNote: "both decks' played-out clocks race, slowed by the removal and counters each side draws", runKey: "mtg:" + d.id,
       footNote: "Tested on 4,045 real Magic Online Top 8 matches, neither the game simulation nor archetype records predicted winners better than a coin flip, so each matchup shows as about even until you log your own games, which count for more as you add them. The sideboard plans and the reasons under each deck are the useful part: they come from both lists." };
+  const blocked = matchupBlock(mtgPower(d));
+  if (blocked) return matchupsTab({ ...base, unsupported: blocked });
   if (isCommanderLike(d)) return commanderPods(d, fm, mk, st, base);
   if (!mk) return matchupsTab({ ...base, unsupported: `There are no tournament results for ${fm.name} in the data. Matchups work for Standard, Pioneer, Modern, Legacy, Vintage, Pauper and Premodern.` });
   if (sumQty(d.cards) < fm.size) return matchupsTab({ ...base, unsupported: `Finish the deck first: matchups compare complete ${fm.size}-card lists (this one has ${sumQty(d.cards)}).` });
@@ -1262,7 +1264,7 @@ function commanderPods(d, fm, mk, st, base) {
   return matchupsTab({ ...pod, ...fieldSummary(sims, d.results || [], st, mtgListSig(d)), podWin: res.win, seats: res.seats, speed: me.speed });
 }
 // The calibration of the field archetype this deck copies (see calibrateField), else 0.
-const mtgBias = (p, field) => { const m = p?.match; if (!m || m.sim < 0.6) return 0; const f = (field || []).find((x) => String(x.name).toLowerCase() === String(m.archetype).toLowerCase()); return f?.bias || 0; };
+const mtgBias = (p, field) => { const m = p?.match; if (!canBorrowResults(p)) return 0; const f = (field || []).find((x) => String(x.name).toLowerCase() === String(m.archetype).toLowerCase()); return f?.bias || 0; };
 export const mtgListSig = (d) => listSig({ main: d.cards, side: d.side || [] });
 // Only games played with this exact list feed the numbers; earlier lists stay in the history.
 export function fieldSummary(sims, results, st, sig) {

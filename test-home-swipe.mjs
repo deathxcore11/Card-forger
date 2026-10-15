@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import {swipeGame,attachHomeSwipe} from './home-swipe.js';
+assert.equal(swipeGame('mtg',-100,5,200),'ygo');
+assert.equal(swipeGame('mtg',100,5,200),'ptcg');
+assert.equal(swipeGame('ptcg',-100,5,200),'mtg');
+for(const args of [[-40,0,100],[-100,90,200],[-100,0,800]])assert.equal(swipeGame('mtg',...args),null);
+const handlers={},root={addEventListener:(n,f)=>handlers[n]=f,removeEventListener:(n)=>delete handlers[n],animate:()=>{}},target={closest:()=>null,parentElement:root,scrollWidth:100,clientWidth:100};
+let current='mtg',enabled=true,switched=[];
+const view={innerWidth:500,getComputedStyle:()=>({overflowX:'auto'}),matchMedia:()=>({matches:true})};
+const dispose=attachHomeSwipe(root,{view,enabled:()=>enabled,current:()=>current,switchGame:async g=>{switched.push(g);current=g;}});
+const evt=(x,y=100,extra={})=>({target,touches:[{clientX:x,clientY:y}],changedTouches:[{clientX:x,clientY:y}],cancelable:true,preventDefault(){this.prevented=true;},...extra});
+async function swipe({start=250,end=120,dy=0}={}){handlers.touchstart(evt(start));handlers.touchmove(evt(end,100+dy));await handlers.touchend(evt(end,100+dy,{touches:[]}));}
+await swipe();assert.deepEqual(switched,['ygo']);
+let prevented=false;handlers.click({preventDefault:()=>prevented=true,stopImmediatePropagation(){}});assert.ok(prevented,'swipe does not activate the card/button underneath');
+enabled=false;await swipe();assert.equal(switched.length,1,'no navigation outside Home or under overlay');enabled=true;
+await swipe({dy:150});assert.equal(switched.length,1,'vertical scrolling retains control');
+target.scrollWidth=400;await swipe();assert.equal(switched.length,1,'nested horizontal scroller retains control');target.scrollWidth=100;
+target.closest=()=>({});await swipe();assert.equal(switched.length,1,'input/slider retains control');target.closest=()=>null;
+await swipe({start:10});assert.equal(switched.length,1,'native edge back gesture retains control');
+handlers.touchstart(evt(250));handlers.touchmove(evt(130));handlers.touchcancel();await handlers.touchend(evt(120,100,{touches:[]}));assert.equal(switched.length,1,'cancelled touch cannot navigate');
+dispose();assert.equal(Object.keys(handlers).length,0);
+console.log('PASS: Home swipe cycles games; scroll, input, overlay, edge and cancellation guards; click suppression.');
