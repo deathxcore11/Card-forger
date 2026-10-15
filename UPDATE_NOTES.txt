@@ -1,3 +1,13 @@
+3.70.1 — AI coach tested live on all three games
+- Live reviews of a Magic Commander, a Yu-Gi-Oh! and a Pokémon tournament list showed good
+  advice being dropped: card quotes with curly quotes, dashes or "…" didn't match exactly. Quotes
+  now match those differences, and a stress test or swap keeps its verified cards even when one
+  of its quotes doesn't match (the unmatched quote is removed).
+- A line step that cites one card but describes another is dropped.
+- Card codes like "(c19)" no longer appear in the text; card names do.
+- Winning lines must now end in a win or the deck's engine coming online (no "hold up
+  counterspells" lines); the headline is about the deck, not the sample hand; text is shorter.
+
 3.70.0 — AI coach: decisions you can act on, checked by the app
 - The AI review is now a coach with three tabs, Pilot, Pressure and Improve, and leads with
   the one decision that matters most for the list.

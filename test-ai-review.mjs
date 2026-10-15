@@ -58,8 +58,17 @@ const sc = review.pressure.scenarios[0];
 const invalid = { ...review, pressure: { challenges: [], scenarios: [sc, { ...sc, evidence: [{ cardId: 'c0', quote: 'Draw ten cards.' }] }, { ...sc, evidence: [{ cardId: 'not-in-deck', quote: 'Sacrifice an artifact' }] }, { ...sc, backupCards: ['ghost'] }] },
   pilot: { ...review.pilot, lines: [...review.pilot.lines, { ...review.pilot.lines[0], steps: [...review.pilot.lines[0].steps, { turn: 3, cardId: 'c9', kind: 'play', action: 'Cast a card that is not there', quote: '' }] }] } };
 const checked = validateReview(invalid, cleanDeck(payload));
-assert.equal(checked.pressure.scenarios.length, 1); assert.equal(checked.pilot.lines.length, 1);
-assert.equal(checked.omitted, 4, 'fabricated text, cards and line steps are omitted');
+assert.equal(checked.pilot.lines.length, 1, 'a line using a card not in the deck is dropped');
+assert.deepEqual(checked.pressure.scenarios.map(x => x.evidence.length), [1, 0, 0, 1], 'fabricated quotes are removed, the scenario stays');
+assert.equal(checked.pressure.scenarios[3].backupCards.length, 0, 'backup cards not in the deck are removed');
+assert.ok(checked.notes.some(n => /quote not found/.test(n)));
+// Quotes match despite curly quotes, dashes, case and "…" gaps; prose shows names, not ids.
+const loose = validateReview({ ...review, headline: 'Protect Test Engine (c0) first; c0 wins.', pressure: { scenarios: [], challenges: [{ area: 'Draw', claim: 'x', evidence: [{ cardId: 'c0', quote: 'sacrifice an artifact… two cards' }] }] } }, cleanDeck(payload));
+assert.equal(loose.pressure.challenges.length, 1); assert.equal(loose.headline, 'Protect Test Engine first; Test Engine wins.');
+// A step citing one card while describing another is dropped.
+const two = cleanDeck({ ...payload, cards: [card, { ...card, id: 'c1', name: 'Other Engine' }] });
+const mixed = validateReview({ ...review, pilot: { hand: null, lines: [{ ...review.pilot.lines[0], steps: [{ turn: 1, cardId: 'c0', kind: 'play', action: 'Cast Other Engine', quote: '' }, review.pilot.lines[0].steps[1]] }] } }, two);
+assert.equal(mixed.pilot.lines.length, 0);
 // Swaps: cut from the deck (never the commander), add only from owned candidates.
 const withOwned = cleanDeck({ ...payload, cards: [card, { ...card, id: 'c1', name: 'Leader', zone: 'commander', qty: 1 }], candidates: [{ id: 'o0', name: 'Owned Bauble', type: 'Artifact', text: 'Draw a card.', details: '', known: true }] });
 const swap = { cut: 'c0', add: 'o0', role: 'Fodder', gain: 'More fodder', loss: 'Less draw', lost: 'None', test: 'Goldfish', evidence: [{ cardId: 'o0', quote: 'Draw a card.' }] };
