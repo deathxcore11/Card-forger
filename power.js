@@ -37,6 +37,7 @@ import { review } from "./deckaudit.js";
 import { scoutingReport, competitiveScore, competitiveTier, verdictTier } from "./scouting.js";
 import { mtgGoldfish } from "./goldfish.js";
 import { cardKey } from "./core.js";
+import { mtgTagsReady } from "./mtg-tags.js";
 import { engineProfile } from "./insights.js";
 import { formatOf, isCommanderLike } from "./formats.js";
 import { metaState, MTG_META_FORMATS } from "./meta.js";
@@ -109,7 +110,7 @@ function capCtx(ctx, caps) {
 export function mtgPower(d) {
   const mk = mtgMetaKey(d),
     M = mk ? metaState(mk) : null,
-    sig = d.id + "|" + d.format + "|" + JSON.stringify(d.cards) + "|" + (M?.at || 0) + "|" + JSON.stringify(d.cards.map(r=>S.catalog[cardKey(r.name)] || null));
+    sig = d.id + "|" + d.format + "|" + JSON.stringify(d.cards) + "|" + (M?.at || 0) + "|" + mtgTagsReady() + "|" + JSON.stringify(d.cards.map(r=>S.catalog[cardKey(r.name)] || null));
   return memo(sig, () => {
     let base;
     if (isCommanderLike(d)) {

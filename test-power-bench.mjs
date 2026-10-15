@@ -11,10 +11,12 @@ import { metaState } from "./meta.js";
 import { mtgPower, tcgPower, shownPower } from "./power.js";
 import { YGO_FORMATS } from "./ygo.js";
 import { PTCG_FORMATS } from "./ptcg.js";
+import { setMtgTags } from "./mtg-tags.js";
 
 const B = JSON.parse(zlib.gunzipSync(fs.readFileSync(new URL("./test-fixtures/power-bench.json.gz", import.meta.url))));
 S.state = blank();
 S.catalog = B.mtg.cards;
+setMtgTags(JSON.parse(fs.readFileSync(new URL("./mtg-tags.json", import.meta.url), "utf8")));
 Object.assign(cache.ygo, B.ygo.cards);
 Object.assign(cache.ptcg, B.ptcg.cards);
 for (const [f, data] of Object.entries(B.mtg.meta)) Object.assign(metaState("mtg:" + f), { data, at: 1 });

@@ -1,3 +1,17 @@
+3.57.0 — Magic cards know their roles
+- Deck Power and the Commander engine now use Scryfall's community card tags for removal,
+  counterspells, board wipes, card draw, ramp and discard. Before, roles came only from
+  text patterns, which missed many cards:
+  - edicts and ETB removal (Gatekeeper of Malakir, Volley Veteran);
+  - one-sided sweepers (Massacre Wurm, Blasphemous Edict);
+  - discard creatures (Tinybones, Bloodtithe Collector).
+  The patterns caught about 6 in 10 of the removal Scryfall tags; the tags fill in the rest.
+- Tags only add a role and never remove one. Brand-new cards that aren't tagged yet still use
+  the patterns. The file (35 KB compressed) loads in the background, and Magic pages refresh when
+  it arrives.
+- The Deck Power benchmark still holds. Scores moved by at most 5 points, and only on weakened
+  decks that still ran interaction the patterns couldn't see.
+
 3.56.0 — Deck Power benchmark, Prize values, exact cheaper printings
 - Deck Power now has a frozen benchmark: 394 real decks replayed on every test run. These are
   placing lists from all three games, the same lists deliberately weakened, and cheat decks. Winners

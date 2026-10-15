@@ -4294,6 +4294,8 @@ async function boot() {
     decide: (p) => openSheet(V.syncDecideSheet(p, stripCache(S.state)), { type: "sync" }),
   }).catch(() => {});
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
+  // Scryfall role tags arrive after first paint; redraw Magic pages so Deck Power counts them.
+  window.addEventListener("cf:mtg-tags", () => { if ((S.state.settings?.game || "mtg") === "mtg") render(); });
   window.addEventListener("online", () => {
     setSaveStatus("Online", "ok");
     autoEnrich();

@@ -13,6 +13,7 @@
 
 import { simulate, poolOf, has as hasTag, countTag, atLeastOne, allIn, evidence } from "./deckaudit.js";
 import { mtgGoldfish, ptcgGoldfish, ygoGoldfish } from "./goldfish.js";
+import { mtgTagged } from "./mtg-tags.js";
 
 const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
 const lc = (s) => String(s || "").toLowerCase();
@@ -49,6 +50,11 @@ const M = {
   sac: /sacrifice (?:another|a creature|an artifact)|whenever (?:another )?creature you control dies/,
   gy: /from your graveyard|mill|escape|flashback|unearth|delve/,
 };
+export const MTG_ROLE_RX = M;
+// A card has a role when its text matches the pattern or Scryfall's community tags say so.
+const role = (c, k) => M[k].test(text(c)) || mtgTagged(c, k),
+  interacts = (c) => role(c, "removal") || role(c, "counter") || role(c, "discard") || role(c, "wipe");
+export const mtgRulesText = (c) => text(c);
 const text = (c) => lc(c?.oracle_text || (c?.card_faces || []).map((f) => f.oracle_text || "").join("\n"));
 const type = (c) => String(c?.type_line || "");
 const isLandC = (c) => /\bLand\b/.test(type(c).split(" // ")[0]);
@@ -71,13 +77,13 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     nLand = lands.reduce((a, r) => a + r.qty, 0),
     nSpell = spells.reduce((a, r) => a + r.qty, 0),
     avg = nSpell ? spells.reduce((a, r) => a + (Number(r.c.cmc) || 0) * r.qty, 0) / nSpell : 0,
-    has = (re) => spells.filter((r) => re.test(text(r.c))),
+    has = (re) => spells.filter((r) => (typeof re === "string" ? role(r.c, re) : re.test(text(r.c)))),
     qty = (list) => list.reduce((a, r) => a + r.qty, 0),
     creatures = qty(spells.filter((r) => /Creature/.test(type(r.c)))),
     walkers = qty(spells.filter((r) => /Planeswalker/.test(type(r.c)))),
-    interaction = qty(spells.filter(r=>[M.removal,M.counter,M.discard,M.wipe].some(re=>re.test(text(r.c))))),
-    flow = qty(has(M.draw)),
-    ramp = qty(has(M.ramp)),
+    interaction = qty(spells.filter((r) => interacts(r.c))),
+    flow = qty(has("draw")),
+    ramp = qty(has("ramp")),
     big = qty(spells.filter((r) => Number(r.c.cmc) >= 5)),
     scale = size / 60,
     // Damage straight to the opponent wins games too (Burn): it counts toward the ways to win.
@@ -109,7 +115,7 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     Ramp: { inter: 5, threats: 10, flow: 3, curve: 3.6 },
   }[plan];
   // Karsten: lands ≈ 19.59 + 1.90·avgMV − 0.28·(cheap draw/ramp) for 60 cards.
-  const cheapHelp = qty(spells.filter((r) => Number(r.c.cmc) <= 2 && (M.draw.test(text(r.c)) || M.ramp.test(text(r.c))))),
+  const cheapHelp = qty(spells.filter((r) => Number(r.c.cmc) <= 2 && (role(r.c, "draw") || role(r.c, "ramp")))),
     // Landfall decks play extra lands on purpose: every land is a trigger.
     idealLands = Math.round((19.59 + 1.9 * avg - 0.28 * Math.min(cheapHelp, 12) + (theme === "Landfall" ? 3.5 : 0)) * scale),
     nonLegendSpells = spells.filter((r) => !legendary(r.c)),
@@ -123,7 +129,7 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
   for (const r of spells) {
     const tx = text(r.c);
     const listed = (r.c.produced_mana || []).filter((x) => "WUBRG".includes(x));
-    if (!listed.length && !M.ramp.test(tx) && !/add one mana of any color|add \{[wubrg]\}/.test(tx)) continue;
+    if (!listed.length && !role(r.c, "ramp") && !/add one mana of any color|add \{[wubrg]\}/.test(tx)) continue;
     const cols = listed.length ? listed.join("") : /any color/.test(tx) ? "WUBRG" : [...new Set((tx.match(/add [^.]*/)?.[0] || "").match(/\{([wubrg])\}/g) || [])].map((x) => x[1].toUpperCase()).join("");
     for (const col of cols) src[col] = (src[col] || 0) + r.qty * 0.5;
   }
@@ -170,7 +176,7 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     trick = (tx) => /target creature(?: you control)? gets \+\d+\/\+\d+ until end of turn/.test(tx) && !/draw|fights?|destroy|exile/.test(tx),
     defensive = (c) => /Creature/.test(type(c)) && (/\bdefender\b/.test(text(c)) || (pw(c) <= 1 && tg(c) >= 4)),
     offPlanWhy = {
-      Aggro: (r) => lifeOnly(r) ? "gains life instead of pressing damage" : !/Creature/.test(type(r.c)) && M.wipe.test(text(r.c)) && !/(?:creatures|nonland permanents) (?:you don't control|your opponents control)/.test(text(r.c)) ? "a board wipe kills your own attackers" : defensive(r.c) ? "a defensive body that doesn't attack" : Number(r.c.cmc) >= 5 && !cheapens(r.c) && big > 4 * scale ? "too slow for a deck that wants to win by turn 5" : M.counter.test(text(r.c)) && Number(r.c.cmc) >= 3 && !cheapens(r.c) ? "holding up mana instead of attacking" : "",
+      Aggro: (r) => lifeOnly(r) ? "gains life instead of pressing damage" : !/Creature/.test(type(r.c)) && role(r.c, "wipe") && !/(?:creatures|nonland permanents) (?:you don't control|your opponents control)/.test(text(r.c)) ? "a board wipe kills your own attackers" : defensive(r.c) ? "a defensive body that doesn't attack" : Number(r.c.cmc) >= 5 && !cheapens(r.c) && big > 4 * scale ? "too slow for a deck that wants to win by turn 5" : role(r.c, "counter") && Number(r.c.cmc) >= 3 && !cheapens(r.c) ? "holding up mana instead of attacking" : "",
       Control: (r) => trick(text(r.c)) ? "a combat trick: control rarely attacks" : /Creature/.test(type(r.c)) && Number(r.c.cmc) <= 2 && quality(r.c) < 1 ? "a small beater that trades poorly late" : "",
       Ramp: (r) => trick(text(r.c)) ? "a combat trick: ramp wants big threats, not tempo" : lifeOnly(r) ? "gains life without advancing the plan" : "",
       Midrange: (r) => lifeOnly(r) ? "gains life without affecting the board" : defensive(r.c) ? "a wall that doesn't pressure or generate value" : "",
@@ -203,7 +209,7 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
   if (artPay >= 4) linear.push({ name: "Artifacts", payoffs: artPay, enablers: arts, target: Math.round(16 * scale), unit: "artifacts" });
   const lin = linear.sort((a, b) => a.enablers / a.target - b.enablers / b.target)[0],
     // Midrange "good stuff": wins by trading 1-for-1 then pulling ahead with 2-for-1s.
-    value = qty(spells.filter((r) => M.draw.test(text(r.c)) || walkers && /Planeswalker/.test(type(r.c)) || /Creature/.test(type(r.c)) && /when (?:this creature|.{0,40}) enters[^.]*(?:draw|destroy|exile|create|return|deals?|search|counter)/.test(text(r.c))));
+    value = qty(spells.filter((r) => role(r.c, "draw") || walkers && /Planeswalker/.test(type(r.c)) || /Creature/.test(type(r.c)) && /when (?:this creature|.{0,40}) enters[^.]*(?:draw|destroy|exile|create|return|deals?|search|counter)/.test(text(r.c))));
   parts.push({ ...part("Plan", `Plan · ${plan}`, offN ? `${offN} off-plan` : "on plan", "0 off-plan", 1 - offN / Math.max(4, nSpell * 0.2), 12, `Every card should serve the ${plan.toLowerCase()} plan. Cards that pull the other way slow your clock or waste slots.`),
     cards: offPlan.slice(0, 8).map((x) => ({ name: `${x.r.name} — ${x.why}`, qty: x.r.qty })),
     why: offN ? `${offN} card${offN === 1 ? "" : "s"} work against a ${plan.toLowerCase()} plan: ${offPlan.slice(0, 3).map((x) => `${x.r.name} (${x.why})`).join("; ")}. Swap them for cards that do what the deck is trying to do.` : `Every spell serves the ${plan.toLowerCase()} plan.` });
@@ -221,9 +227,9 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     if (isLandC(r.c)) s.add("land");
     else {
       if (Number(r.c.cmc) <= 2) s.add("cheap");
-      if (M.removal.test(tx) || M.counter.test(tx) || M.discard.test(tx) || M.wipe.test(tx)) s.add("inter");
-      if (M.draw.test(tx)) s.add("draw");
-      if (M.ramp.test(tx)) s.add("ramp");
+      if (interacts(r.c)) s.add("inter");
+      if (role(r.c, "draw")) s.add("draw");
+      if (role(r.c, "ramp")) s.add("ramp");
     }
     return s;
   };
@@ -242,7 +248,7 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     parts.push({ ...part("Goldfish", ctl ? "Goldfish: mana use" : "Goldfish speed", ctl ? Math.round(gold.metrics[0].value * 100) + "%" : gold.turnDist && gold.speed != null ? `turn ${gold.headline.match(/turn (\d+)/)?.[1] || "10+"}` : "—", ctl ? "75%+" : `turn ${{ Aggro: 5, Midrange: 6, Ramp: 6 }[plan] || 6}`, ctl ? gold.metrics[0].value / 0.75 : gold.speed, 8, "1,000 games played out against an empty board: how fast the deck actually closes."), why: gold.headline });
   }
   const names = (re) => evidence(spells.filter((r) => re.test(text(r.c))));
-  const ev = { Mana: evidence(lands), Interaction: evidence(spells.filter((r) => M.removal.test(text(r.c)) || M.counter.test(text(r.c)) || M.discard.test(text(r.c)) || M.wipe.test(text(r.c)))), Flow: names(M.draw), Threats: evidence(spells.filter((r) => /Creature|Planeswalker/.test(type(r.c)))), Consistency: evidence(spells.filter((r) => r.qty <= 2 && !legendary(r.c))), Curve: evidence(spells.filter((r) => Number(r.c.cmc) >= 5)) };
+  const ev = { Mana: evidence(lands), Interaction: evidence(spells.filter((r) => interacts(r.c))), Flow: evidence(has("draw")), Threats: evidence(spells.filter((r) => /Creature|Planeswalker/.test(type(r.c)))), Consistency: evidence(spells.filter((r) => r.qty <= 2 && !legendary(r.c))), Curve: evidence(spells.filter((r) => Number(r.c.cmc) >= 5)) };
   const whyOf = {
     Mana: theme === "Landfall" && Math.abs(nLand - idealLands) <= 2 ? `${nLand} lands: right for a landfall deck, where extra lands are triggers rather than flood.` : nLand < idealLands ? `${nLand} lands for an average spell cost of ${avg.toFixed(2)}: you'll miss land drops. Karsten's numbers say about ${idealLands}.` : `${nLand} lands where about ${idealLands} is right: you'll draw extra lands instead of spells.`,
     Curve: `Spells average ${avg.toFixed(2)} mana; a ${plan.toLowerCase()} deck wants ${T.curve} or less. The 5+ drops listed are the first to look at.`,

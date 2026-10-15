@@ -13,6 +13,7 @@ import {
   aggregateCards,
 } from "./core.js";
 import { commanderTheme } from "./planner.js";
+import { mtgTagged, mtgTagsReady } from "./mtg-tags.js";
 
 const lower = (c) => rulesText(c).toLowerCase();
 
@@ -64,17 +65,18 @@ export function engineRoles(c) {
   if (!c) return [];
   if (typeof c === "object" && roleMemo.has(c)) return roleMemo.get(c);
   const roles = engineRolesRaw(c);
-  if (typeof c === "object") roleMemo.set(c, roles);
+  if (typeof c === "object" && mtgTagsReady()) roleMemo.set(c, roles);
   return roles;
 }
 function engineRolesRaw(c) {
   const text = lower(c),
     out = [];
   if (isLand(c)) return ["Land"];
-  if (RAMP.some((r) => r.test(text))) out.push("Ramp");
-  if (DRAW.some((r) => r.test(text))) out.push("Draw");
-  if (REMOVAL.some((r) => r.test(text))) out.push("Removal");
-  if (WIPE.some((r) => r.test(text))) out.push("Wipe");
+  // Scryfall's community tags add what the text patterns miss (mtg-tags.js).
+  if (RAMP.some((r) => r.test(text)) || mtgTagged(c, "ramp")) out.push("Ramp");
+  if (DRAW.some((r) => r.test(text)) || mtgTagged(c, "draw")) out.push("Draw");
+  if (REMOVAL.some((r) => r.test(text)) || mtgTagged(c, "removal") || mtgTagged(c, "counter")) out.push("Removal");
+  if (WIPE.some((r) => r.test(text)) || mtgTagged(c, "wipe")) out.push("Wipe");
   if (PROTECTION.some((r) => r.test(text))) out.push("Protection");
   return out;
 }
