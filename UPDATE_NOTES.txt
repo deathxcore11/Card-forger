@@ -1,3 +1,8 @@
+3.72.2 — Every top deck in the Meta tab
+- The evaluation showed the coach covered only 1–3 of the five top decks. It is now asked for
+  exactly one matchup per top deck, and any it still skips are listed with their key cards from
+  the tournament data, marked "Not analysed this time".
+
 3.72.1 — Meta tab shows how many placing lists each matchup comes from
 - The field sent to the coach is now kept with the review, so the Meta tab shows "From N placing
   lists" under each deck (and the evaluation script can measure meta coverage).
