@@ -2840,3 +2840,7 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .tier-tiles .tier-row .lot-side { position: static !important; display: flex; align-items: center; }
 .tier-tiles .tier-row .lot-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; font-weight: 700; }
 .tier-tiles .tier-row .lot-sub { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+/* Set tiles: the symbol stays inside its tile, and Scryfall's black set symbols show light on the dark UI. */
+.set-media { overflow: hidden; }
+.set-media > img { box-sizing: border-box; max-width: 100%; max-height: 100%; }
+.set-media > img[src*="svgs.scryfall.io"], .set-media > img[src*="/sets/"][src$=".svg"] { filter: invert(.9) drop-shadow(0 1px 0 rgba(0,0,0,.3)); padding: 14px; }
