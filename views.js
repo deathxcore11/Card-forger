@@ -1,6 +1,6 @@
 import { APP_VERSION } from "./config.js";
 import { matchupsTab, fieldStore, computeMatchups } from "./matchups-ui.js";
-import { profileOf, simulateMatchup, gamePlan, recordOf, blend, listSig, forList, simulatePod, podProfile } from "./matchup.js";
+import { profileOf, simulateMatchup, gamePlan, recordOf, blend, listSig, forList, simulatePod, podProfile, trustedSim } from "./matchup.js";
 import { mtgConstructedPower } from "./deckpower.js";
 import { isCommanderLike } from "./formats.js";
 import { mtgMetaKey } from "./power.js";
@@ -1219,7 +1219,8 @@ export const mtgFieldKey = (d) => { const mk = mtgMetaKey(d); return mk ? mk + "
 function deckMatchups(d) {
   const fm = formatOf(d), mk = mtgMetaKey(d),
     st = ((S.ui.mu ||= {})[d.id] ||= { first: true }),
-    base = { prefix: "mu", gameName: "Magic", state: st, modelNote: "both decks' played-out clocks race, slowed by the removal and counters each side draws", runKey: "mtg:" + d.id };
+    base = { prefix: "mu", gameName: "Magic", state: st, modelNote: "both decks' played-out clocks race, slowed by the removal and counters each side draws", runKey: "mtg:" + d.id,
+      footNote: "Tested on 4,045 real Magic Online Top 8 matches, neither the game simulation nor archetype records predicted winners better than a coin flip, so each matchup shows as about even until you log your own games, which count for more as you add them. The sideboard plans and the reasons under each deck are the useful part: they come from both lists." };
   if (isCommanderLike(d)) return commanderPods(d, fm, mk, st, base);
   if (!mk) return matchupsTab({ ...base, unsupported: `There are no tournament results for ${fm.name} in the data. Matchups work for Standard, Pioneer, Modern, Legacy, Vintage, Pauper and Premodern.` });
   if (sumQty(d.cards) < fm.size) return matchupsTab({ ...base, unsupported: `Finish the deck first: matchups compare complete ${fm.size}-card lists (this one has ${sumQty(d.cards)}).` });
@@ -1231,7 +1232,7 @@ function deckMatchups(d) {
     me = profileOf("mtg", mtgPower(d), rows),
     reprofile = (rs) => profileOf("mtg", mtgConstructedPower({ cards: rs.map((r) => ({ name: r.c.name, qty: r.qty })) }, S.catalog, key, fm.size), rs);
   if (!me) return matchupsTab({ ...base, unsupported: "This deck's cards are still loading. Open the Power tab once, then come back." });
-  const sims = computeMatchups(fkey + "|" + JSON.stringify([d.cards, d.side || []]), st.field, me, (op, win) => gamePlan("mtg", me, op, { main: rows, side, reprofile, sim: win }), (a, b) => simulateMatchup("mtg", a, b), mtgBias(mtgPower(d), st.field)),
+  const sims = computeMatchups(fkey + "|" + JSON.stringify([d.cards, d.side || []]), st.field, me, (op, win) => gamePlan("mtg", me, op, { main: rows, side, reprofile, sim: win }), (a, b) => simulateMatchup("mtg", a, b), mtgBias(mtgPower(d), st.field)).map((m) => ({ ...m, sim: trustedSim("mtg", m.sim) })),
     results = d.results || [];
   return matchupsTab({ ...base, ...fieldSummary(sims, results, st, mtgListSig(d)) });
 }

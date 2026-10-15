@@ -55,7 +55,10 @@ for (const s of slugs) {
     for (const c of x.main_deck || []) { const n = c.card_attributes?.card_name; if (!n) continue; const r = by.get(n) || { name: n, qty: 0, land: /LAND/.test(c.card_attributes?.card_type || "") }; r.qty += Number(c.qty) || 0; by.set(n, r); }
     return { id: String(x.loginid), player: x.player, main: [...by.values()], rec: rec.get(String(x.loginid)) };
   });
-  const matches = d.brackets.flatMap((b) => b.matches || []).map((m) => m.players).filter((p) => p?.length === 2).map(([a, b]) => ({ a: String(a.loginid), b: String(b.loginid), y: a.winner ? 1 : 0 }));
+  // Magic Online lists the bracket winner first most of the time; order each pair by a hash of the
+  // two players instead, so "did the first player win" doesn't leak the result.
+  const order = (x, y) => crypto.createHash("sha1").update(s + x.loginid + "|" + y.loginid).digest()[0] & 1;
+  const matches = d.brackets.flatMap((b) => b.matches || []).map((m) => m.players).filter((p) => p?.length === 2).map(([a, b]) => (order(a, b) ? [b, a] : [a, b])).map(([a, b]) => ({ a: String(a.loginid), b: String(b.loginid), y: a.winner ? 1 : 0 }));
   events.push({ id: s, fmt, decks, matches });
 }
 console.error(`${events.length} events with brackets · ${events.reduce((a, e) => a + e.matches.length, 0)} bracket matches`);

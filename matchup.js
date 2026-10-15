@@ -446,3 +446,18 @@ export function tallyResults(games) {
   }
   return { arch, h2h, games: games.length };
 }
+
+/* ---------- How much the simulation is trusted (from backtests) ---------- */
+// Share of the simulated lean (sim − 50%) kept when there are no real head-to-head results:
+//   Magic: 4,045 Magic Online Top 8 matches; the lean had no signal (favoured sides won 48–53% in
+//   every format; best share on unseen events 0–4%). Kept at 2%: shown as about even.
+//   Yu-Gi-Oh!: no public round-by-round results to test; the Pokémon finding (12%) is applied.
+export const SIM_TRUST = { mtg: 0.02, ygo: 0.12, ptcg: 0.12 };
+export function trustedSim(game, sim) {
+  if (!sim) return sim;
+  const k = SIM_TRUST[game] ?? 0.12, t = (x) => clamp(0.5 + k * (x - 0.5), 0.03, 0.97);
+  const why = game === "mtg"
+    ? `The game simulation leans ${Math.round(sim.win * 100)}%, but tested on 4,045 real Magic Online Top 8 matches its leans didn't predict winners, so this shows as about even until you log games.`
+    : `The game simulation leans ${Math.round(sim.win * 100)}%. Yu-Gi-Oh! has no public round-by-round results to test it on, so only part of that lean is kept, as it was for Pokémon (where tests showed simulated odds were overconfident).`;
+  return { ...sim, model: sim.win, win: t(sim.win), onPlay: t(sim.onPlay), onDraw: t(sim.onDraw), reasons: [why, ...sim.reasons] };
+}

@@ -1,3 +1,17 @@
+3.64.0 — Magic and Yu-Gi-Oh! matchup odds checked against reality
+- Backtest: 4,045 real Top 8 matches from Magic Online Challenges (Standard, Pioneer, Modern,
+  Legacy, Pauper, Premodern, Vintage). The app predicted each match from both lists before
+  looking at the result (Brier score; a coin flip scores 0.250, lower is better):
+  - the simulated odds scored 0.313, clearly worse than a coin flip;
+  - archetype records and head-to-head results from other events scored 0.250, no better
+    than a coin flip. Between Top 8 decks, the favourite won only 48–53% of the time.
+- So Magic matchups now show close to even (the simulation keeps 2% of its lean) and say why.
+  The plan text, key cards and sideboard advice are unchanged.
+- Yu-Gi-Oh! has no public round-by-round results to test against, so its odds now keep only
+  part of the simulation's lean (the same trust level that tested best for Pokémon) and say so.
+- Commander pod odds are still untested against real games.
+- A test now replays the Magic matches, so this can't quietly regress.
+
 3.63.0 — Store readiness: account deletion and a new app icon
 - Delete your account: Settings → Account → Delete account. You type DELETE to confirm. It
   removes your account and the collection, decks and profile synced to it. Afterwards you choose
