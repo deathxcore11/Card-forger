@@ -1399,6 +1399,16 @@ export function mtgCoachHooks(d, pw) {
       return [...new Set([...fits.slice(0, 30), ...ranked, ...owned])].filter(legal).slice(0, 60);
     },
     probe: (card) => mtgPower({ ...d, id: d.id + "~probe", cards: [...d.cards, { name: card.name, qty: 1 }] }).parts,
+    // The decks this list would face: the top archetypes in the app's tournament data, each with
+    // its most-played cards across that archetype's placing lists.
+    field: () => {
+      const mk = mtgMetaKey(d), data = mk ? metaState(mk).data : null;
+      return (data?.archetypes || []).filter((a) => a.share > 0).slice(0, 8).map((a) => {
+        const lists = (data.decks || []).filter((x) => (x.archetype || x.name) === a.name), by = new Map();
+        for (const l of lists) for (const r of [...(l.main || []), ...(l.commanders || []).map((x) => (typeof x === "string" ? { name: x, qty: 1 } : x))]) if (!/^(?:snow-covered )?(?:plains|island|swamp|mountain|forest|wastes)$/i.test(r.name)) by.set(r.name, (by.get(r.name) || 0) + r.qty);
+        return { name: a.name, share: a.share, lists: lists.length, rows: [...by].sort((x, y) => y[1] - x[1]).slice(0, 12).map(([name, n]) => ({ name, qty: Math.max(1, Math.round(n / Math.max(1, lists.length))), c: meta(name) })) };
+      }).filter((f) => f.rows.length).slice(0, 5);
+    },
     rescore: (out, add) => {
       if (out.zone !== "main") throw Error("main deck only");
       const p2 = mtgPower({ ...d, id: d.id + "~coach", cards: applySwapsToCards(d.cards, [{ cut: out.row.name, add: add.name }]) });

@@ -1277,6 +1277,16 @@ export function tcgCoachHooks(g, d, f, pw) {
       return [...ranked, ...owned.filter((c) => !ranked.includes(c))].filter(legal).slice(0, 60);
     },
     probe: (card) => tcgPower(g, { ...d, id: d.id + "~probe", zones: { ...d.zones, main: [...(d.zones.main || []), { cardId: card.id, name: card.name, qty: 1 }] } }, f, (x) => cardOf(g, x)).parts,
+    // The decks this list would face: the top archetypes in the app's tournament data, each with
+    // its most-played cards across that archetype's placing lists.
+    field: () => {
+      const data = metaState(g).data, byName = g === "ptcg" ? new Map(Object.values(cache.ptcg).map((c) => [c.name, c])) : null;
+      return (data?.archetypes || []).filter((a) => a.share > 0).slice(0, 8).map((a) => {
+        const id = a.id || a.name, lists = (data.decks || []).filter((x) => (g === "ptcg" ? x.archetype === id : x.name === a.name)), by = new Map();
+        for (const l of lists) for (const r of g === "ygo" ? (l.main || []).map((cid) => ({ key: String(cid), qty: 1 })) : (l.list || []).filter((x) => !/^(?:basic )?\w+ energy$/i.test(x.name)).map((x) => ({ key: x.name, qty: x.qty }))) by.set(r.key, (by.get(r.key) || 0) + r.qty);
+        return { name: a.name || id, share: a.share, lists: lists.length, rows: [...by].sort((x, y) => y[1] - x[1]).slice(0, 12).map(([k, n]) => { const c = g === "ygo" ? cardOf(g, k) : byName.get(k); return { name: c?.name || k, qty: Math.max(1, Math.round(n / Math.max(1, lists.length))), c }; }) };
+      }).filter((f) => f.rows.length).slice(0, 5);
+    },
     rescore: (out, add) => {
       if (out.zone === "side") throw Error("main deck only");
       const p2 = tcgPower(g, { ...swappedZones(d, out.zone, out.row.cardId, add), id: d.id + "~coach" }, f, (x) => cardOf(g, x));

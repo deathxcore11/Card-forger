@@ -206,3 +206,14 @@ console.log('PASS: Paraphrased card quotes are replaced by the card\'s own sente
   assert.equal(out.improve[0].gain, 'Starts attacks early.'); assert.equal(out.improve[0].loss, 'Wooloo has 70 HP, more than Budew at 30 HP.');
   console.log('PASS: Wrong HP claims in swap advice are removed; correct ones stay.');
 }
+
+// Meta matchups: only decks in the app's tournament data, only cards in their lists, real answers only.
+{
+  const m = cleanDeck({ ...payload, meta: [{ name: 'Dragapult', share: 0.13, lists: 9, cards: [{ name: 'Dreepy', qty: 4, type: 'Pokémon', text: 'Bite 40' }, { name: "Boss's Orders", qty: 2, type: 'Supporter', text: 'Switch in 1 of your opponent\'s Benched Pokémon.' }] }] });
+  const out = validateReview({ ...review, meta: [
+    { deck: 'dragapult', edge: 'they are favoured', how: 'Phantom Dive spreads damage onto your Bench.', theirKeys: ['Dreepy', 'Rare Candy'], yourAnswers: ['Test Engine', 'ghost'], plan: 'Keep the Bench small.' },
+    { deck: 'Gardevoir', edge: 'close', how: 'x', theirKeys: [], yourAnswers: [], plan: '' }] }, m);
+  assert.deepEqual(out.meta.map(x => [x.deck, x.theirKeys, x.yourAnswers.map(a => a.cardId)]), [['Dragapult', ['Dreepy'], ['c0']]], 'invented meta decks, their unlisted cards and non-deck answers are dropped');
+  assert.ok(out.notes.some(n => /not in its lists/.test(n)) && out.notes.some(n => /not in the meta data/.test(n)));
+  console.log('PASS: Meta matchups only use decks and cards from the app\'s tournament data, and answers from the list.');
+}

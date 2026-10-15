@@ -1,3 +1,14 @@
+3.72.0 — AI coach knows the meta
+- The coach now receives the decks winning tournaments in your format right now (the top five
+  archetypes in the app's tournament data, with their share of the field and their most-played
+  cards and real card text) for Magic, Yu-Gi-Oh! and Pokémon.
+- New Meta tab: for each top deck, exactly how its cards play against yours or why it struggles,
+  its key cards, your answers from your list (or "none yet"), and a plan for the matchup;
+  followed by the "if things go wrong" stress tests. Matchups against decks or cards that aren't
+  in the tournament data are dropped. "Tough" and "Good for you" are the coach's card-by-card
+  read; the Matchups tab keeps the app's measured odds.
+- Swaps now favour fixes that also help against the top decks, within Power's priorities.
+
 3.71.3 — Coach never suggests cards you can't play
 - Swap candidates now go through Power's own deck check before the coach sees them: owned cards
   that aren't legal in the deck's format (e.g. a Shining Fates Wooloo in Standard), banned or

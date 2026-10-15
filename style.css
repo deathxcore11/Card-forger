@@ -2931,3 +2931,7 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 @media(prefers-reduced-motion:reduce){.air-area,.air-meter span{animation:none!important}}
 
 .air-better{margin:10px 0 2px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--good) 9%,transparent);border:1px solid color-mix(in srgb,var(--good) 35%,transparent)}.air-better p{margin:4px 0 0;line-height:1.7}.air-better .air-score{padding:3px 8px;font-size:13px}
+
+.air-meta{border-left:4px solid var(--tone,#8fa3c0)}.air-meta.bad{--tone:#f07c7c}.air-meta.warn{--tone:#f4bf58}.air-meta.good{--tone:var(--good)}
+.air-chips.them span{background:#f07c7c14;border-color:#f07c7c45}
+.air-sub{margin:18px 2px 4px;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}

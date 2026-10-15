@@ -76,6 +76,7 @@ async function run(c) {
     core: [...new Set(named)], plan: r.identity?.plan,
     lines: r.pilot.lines.length, linesPass: e.verified.lines.filter((f) => !f.length).length,
     swaps: r.improve.length, swapsRescored: swaps.length, swapsNotWorse: swaps.filter((x) => x.after >= x.before && !x.issues.length).length, swapsAreaUp: swaps.filter((x) => x.area?.up).length, swapsBestNotWorse: swaps.filter((x) => { const b = x.better && !x.better.issues.length && x.better.after >= x.better.before ? x.better : x; return b.after >= b.before && !b.issues.length; }).length, swapsBestAreaUp: swaps.filter((x) => { const b = x.better || x; return !!b.area?.up; }).length, swapDetail: e.result.improve.map((s, i) => ({ area: s.area, cut: s.cutName, add: s.addName, helps: e.cands?.find((c) => c.id === s.add)?.helps || [], ...(e.verified.swaps[i] || {}) })),
+    metaDecks: (e.payload.meta || []).length, metaCovered: r.meta?.length || 0, metaKeys: (r.meta || []).reduce((n, m) => n + m.theirKeys.length, 0), metaAnswers: (r.meta || []).reduce((n, m) => n + m.yourAnswers.length, 0), metaSample: (r.meta || [])[0] || null,
     beyond: r.beyond.length, explain: r.explain.length, omitted: r.omitted, notes: r.notes || [],
   };
 }
@@ -98,6 +99,7 @@ const summary = {
   swapsWithPowerPickNotWorse: +(ok.reduce((s, x) => s + x.swapsBestNotWorse, 0) / Math.max(1, ok.reduce((s, x) => s + x.swapsRescored, 0))).toFixed(2),
   swapsWithPowerPickImproveArea: +(ok.reduce((s, x) => s + x.swapsBestAreaUp, 0) / Math.max(1, ok.reduce((s, x) => s + x.swapsRescored, 0))).toFixed(2),
   swapsImproveTheirArea: +(ok.reduce((s, x) => s + x.swapsAreaUp, 0) / Math.max(1, ok.reduce((s, x) => s + x.swapsRescored, 0))).toFixed(2),
+  metaCoverage: +(ok.reduce((s, x) => s + Math.min(x.metaCovered, x.metaDecks), 0) / Math.max(1, ok.reduce((s, x) => s + x.metaDecks, 0))).toFixed(2),
   namesCoreCards: rate(ok, (x) => x.core.length > 0), droppedPerReview: rate(ok, (x) => x.omitted), consistency,
 };
 fs.writeFileSync(OUT, JSON.stringify({ at: new Date().toISOString(), summary, results }, null, 1));

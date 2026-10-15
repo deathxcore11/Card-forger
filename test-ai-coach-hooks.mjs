@@ -10,10 +10,13 @@ import { mtgPower, tcgPower, powerReadiness } from "./power.js";
 import { YGO_FORMATS } from "./ygo.js";
 import { PTCG_FORMATS } from "./ptcg.js";
 import { aiReviewPanel, runAiReview, reviewPayload } from "./ai-review.js";
+import { metaState } from "./meta.js";
 
 const B = JSON.parse(zlib.gunzipSync(fs.readFileSync(new URL("./test-fixtures/power-bench.json.gz", import.meta.url))));
 S.state = blank(); S.catalog = B.mtg.cards;
 Object.assign(cache.ygo, B.ygo.cards); Object.assign(cache.ptcg, B.ptcg.cards);
+for (const [f, data] of Object.entries(B.mtg.meta)) Object.assign(metaState("mtg:" + f), { data, at: 1 });
+for (const g of ["ygo", "ptcg"]) Object.assign(metaState(g), { data: B[g].meta, at: 1 });
 
 // Magic Commander: owned cards outside the commander's colors never become candidates.
 const edh = B.mtg.cases.find((c) => c.fmt === "EDH");
@@ -34,6 +37,7 @@ if (lands && weakKeys.includes("Lands")) assert.ok(hooks.probe(lands).find((x) =
 aiReviewPanel("mtg", d, (n) => S.catalog[n.toLowerCase()], pw, hooks);
 let mtgSent; await runAiReview("mtg:hk", () => {}, async (u, init) => { mtgSent = JSON.parse(init.body); return Response.json({}, { status: 500 }); });
 assert.ok(mtgSent.candidates.length <= 25 && mtgSent.candidates.some((c) => c.helps), "candidates carry the Power areas they raise");
+assert.ok(mtgSent.meta.length >= 3 && mtgSent.meta.every((f) => f.cards.length >= 5), "Commander coach receives the top cEDH decks with their cards");
 assert.ok(mtgSent.candidates.findIndex((c) => !c.helps) === -1 || mtgSent.candidates.slice(0, mtgSent.candidates.findIndex((c) => !c.helps)).every((c) => c.helps), "helpers first");
 console.log(`PASS: Magic coach swap re-scored by Deck Power (${v.before} → ${v.after}); ${mtgSent.candidates.filter((c) => c.helps).length} owned candidates raise a weak Power area (e.g. ${mtgSent.candidates.find((c) => c.helps)?.name}: ${mtgSent.candidates.find((c) => c.helps)?.helps}).`);
 
@@ -54,6 +58,8 @@ for (const g of ["ygo", "ptcg"]) {
   // End to end: the payload carries facts and a hand, and the candidates go out with the request.
   aiReviewPanel(g, dd, (x) => cache[g][x] || null, p, h);
   let sent; await runAiReview(g + ":" + dd.id, () => {}, async (u, init) => { sent = JSON.parse(init.body); return Response.json({ error: 1 }, { status: 500 }); });
+  assert.ok(sent.meta.length >= 3 && sent.meta.every((f) => f.share > 0 && f.cards.length >= 5 && f.cards.filter((c) => c.text).length >= 3), g + ": the field's top decks go with their most-played cards and real card text");
+  console.log(`PASS: ${g === "ygo" ? "Yu-Gi-Oh!" : "Pokémon"} coach receives the field: ${sent.meta.map((f) => `${f.name} ${Math.round(f.share * 100)}%`).join(", ")}.`);
   assert.equal(sent.hand.length, g === "ygo" ? 5 : 7); assert.ok(sent.facts.length > 10); assert.ok(sent.candidates.length > 0);
   assert.ok(new Blob([JSON.stringify(sent)]).size < 240000, g + ": request fits the server limit");
   // "Helps" follows Power's ratio, not raw counts: adding a card never "helps" an oversized deck's size.

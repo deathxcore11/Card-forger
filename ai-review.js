@@ -222,9 +222,20 @@ function deckTab(r, entry) {
   const nums = `<div class="air-power-nums">${P.competitive != null ? `<span><b>${P.competitive}</b>Competitive</span>` : ''}<span><b>${P.engine ?? '—'}</b>Engine</span></div>`;
   return who + (rows ? `<article class="air-card air-power" style="--i:2"><div class="air-card-head"><span class="air-label">Deck Power, explained</span>${nums}</div><p class="air-note">Numbers and verdicts are Power's own; the coach explains them.</p>${rows}</article>` : '');
 }
-function pressureTab(r) {
+const EDGE = { 'they are favoured': ['Tough matchup', 'bad'], close: ['Close', 'warn'], 'you are favoured': ['Good for you', 'good'] };
+function metaTab(r, entry) {
+  const pct = x => Math.round((x || 0) * 100) + '%';
+  const rows = (r.meta || []).map((m, i) => {
+    const [word, tone] = EDGE[m.edge] || EDGE.close, mine = new Map((entry.payload.meta || []).map(f => [f.name, f]));
+    return `<article class="air-card air-meta ${tone}" style="--i:${i + 1}"><div class="air-card-head"><span class="air-label">${pct(m.share)} of the field</span><span class="air-status ${tone}">${word}</span></div><h4>${esc(m.deck)}</h4><p class="air-lead">${esc(m.how)}</p>${m.theirKeys?.length ? `<div class="air-idrow"><span class="air-label">Their key cards</span><div class="air-chips them">${m.theirKeys.map(n => `<span>${esc(n)}</span>`).join('')}</div></div>` : ''}${m.yourAnswers?.length ? `<div class="air-idrow"><span class="air-label">Your answers</span>${chips(m.yourAnswers)}</div>` : `<p class="air-row bad"><b>Answers</b>None in this list yet; see Improve.</p>`}${m.plan ? `<p class="air-row good"><b>Plan</b>${esc(m.plan)}</p>` : ''}${mine.get(m.deck)?.lists ? `<p class="air-note">From ${mine.get(m.deck).lists} placing list${mine.get(m.deck).lists === 1 ? '' : 's'}.</p>` : ''}</article>`;
+  }).join('');
+  const head = rows ? `<p class="air-note">How the decks winning now play against this list, from their real tournament lists. "Tough" and "Good for you" are the coach's card-by-card read; the Matchups tab has the app's measured odds.</p>` : `<p class="air-empty">No tournament data for this format is loaded yet. Open Power and tap "Compare with tournament decks", then ask again.</p>`;
+  const sc = pressureTab(r, true);
+  return head + rows + (sc ? `<h4 class="air-sub">If things go wrong</h4>${sc}` : '');
+}
+function pressureTab(r, inner = false) {
   const sc = (r.pressure?.scenarios || []).map((s, i) => `<article class="air-card air-threat" style="--i:${i + 1}"><div class="air-card-head"><span class="air-label">If…</span><span class="air-check ${s.gap ? 'bad' : 'ok'}">${s.gap ? 'Gap' : 'Backup ready'}</span></div><h4>${esc(s.threat)}</h4>${s.impact ? `<p>${esc(s.impact)}</p>` : ''}<p class="air-row ${s.gap ? 'bad' : 'good'}"><b>${s.gap ? 'Missing' : 'Then'}</b>${esc(s.backup)}</p>${chips(s.backupCards)}${ev(s.evidence)}</article>`).join('');
-  return sc || '<p class="air-empty">No stress test held up to the card-text check.</p>';
+  return inner ? sc : sc || '<p class="air-empty">No stress test held up to the card-text check.</p>';
 }
 function improveTab(r, v, entry) {
   const areaOf = new Map((entry.payload.power?.areas || []).map(a => [a.key, a]));
@@ -244,16 +255,16 @@ function improveTab(r, v, entry) {
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 function tabBody(entry, v = verify(entry)) {
   const r = entry.result, tab = entry.tab || 'deck';
-  return tab === 'pressure' ? pressureTab(r) : tab === 'improve' ? improveTab(r, v, entry) : tab === 'pilot' ? pilotTab(r, v, entry) : deckTab(r, entry);
+  return tab === 'pressure' || tab === 'meta' ? metaTab(r, entry) : tab === 'improve' ? improveTab(r, v, entry) : tab === 'pilot' ? pilotTab(r, v, entry) : deckTab(r, entry);
 }
 function reviewReport(entry) {
   const r = entry.result, v = verify(entry) || { info: new Map(), lines: [], swaps: [] }, tab = entry.tab || 'deck';
-  const counts = { deck: r.explain?.length || 0, pilot: (r.pilot?.lines?.length || 0) + (r.pilot?.hand ? 1 : 0), pressure: r.pressure?.scenarios?.length || 0, improve: r.improve?.length || 0 };
+  const counts = { deck: r.explain?.length || 0, pilot: (r.pilot?.lines?.length || 0) + (r.pilot?.hand ? 1 : 0), meta: (r.meta?.length || 0) + (r.pressure?.scenarios?.length || 0), improve: r.improve?.length || 0 };
   const focus = (entry.payload.power?.areas || []).find(a => a.key === r.priority);
   const checked = v.lines.filter(f => !f.length).length, scored = v.swaps.filter(Boolean).length;
-  const tabs = [['deck', '◆', 'Deck'], ['pilot', '▶', 'Pilot'], ['pressure', '⚡', 'Pressure'], ['improve', '↑', 'Improve']];
+  const tabs = [['deck', '◆', 'Deck'], ['pilot', '▶', 'Pilot'], ['meta', '⚔', 'Meta'], ['improve', '↑', 'Improve']];
   const body = tabBody(entry, v);
-  return `<section class="air-hero" style="--i:0"><span class="air-kicker"><span aria-hidden="true">✦</span> The decision${focus ? ` · <em>${esc(focus.label)}</em>` : ''}</span><p class="air-headline">${esc(r.headline)}</p><div class="air-stats"><span>${plural(r.pilot?.lines?.length || 0, 'line')} · ${checked} passed app checks</span><span>${plural(r.pressure?.scenarios?.length || 0, 'stress test')}</span><span>${plural(counts.improve, 'swap')} · ${scored} re-scored</span></div></section>
+  return `<section class="air-hero" style="--i:0"><span class="air-kicker"><span aria-hidden="true">✦</span> The decision${focus ? ` · <em>${esc(focus.label)}</em>` : ''}</span><p class="air-headline">${esc(r.headline)}</p><div class="air-stats"><span>${plural(r.pilot?.lines?.length || 0, 'line')} · ${checked} passed app checks</span><span>${plural(r.meta?.length || 0, 'meta matchup')} · ${plural(r.pressure?.scenarios?.length || 0, 'stress test')}</span><span>${plural(counts.improve, 'swap')} · ${scored} re-scored</span></div></section>
   <div class="air-tabs" role="tablist" aria-label="Coaching sections">${tabs.map(([k, icon, label]) => `<button role="tab" aria-selected="${tab === k}" class="${tab === k ? 'on' : ''}" data-ai-tab="${k}"><span aria-hidden="true">${icon}</span>${label}<em>${counts[k]}</em></button>`).join('')}</div>
   <div class="air-panel" role="tabpanel">${body}</div>
   ${r.omitted ? `<p class="foot">${r.omitted} suggestion${r.omitted === 1 ? ' was' : 's were'} dropped because ${r.omitted === 1 ? 'it' : 'they'} cited cards or text that aren't in this list.</p>` : ''}<p class="foot">AI coaching · card quotes are matched to real card text and the app checks cards, copies and turn limits, but full rules interactions aren't verified. Your score is unchanged. Clears when you change the deck or reload.</p>`;
@@ -327,7 +338,9 @@ async function withCandidates(entry, budget = 1500) {
   }
   const cards = [...pool.filter(c => helps.has(c)), ...pool.filter(c => !helps.has(c))].slice(0, 25);
   entry.cands = cards.map((c, i) => ({ id: 'o' + i, c, helps: helps.get(c) || [] }));
-  return { ...entry.payload, candidates: entry.cands.map(x => ({ ...cardEntry(entry.game, x.id, x.c.name, 1, 'owned', x.c), ...(x.helps.length ? { helps: x.helps.join(', ') } : {}) })) };
+  let field = [];
+  try { field = (entry.hooks?.field?.() || []).slice(0, 5).map(f => ({ name: String(f.name), share: Number(f.share) || 0, lists: f.lists || 0, cards: (f.rows || []).slice(0, 12).map(r => ({ name: r.c?.name || r.name, qty: r.qty, type: typeOf(r.c), text: textOf(r.c).slice(0, 400) })) })); } catch {}
+  return { ...entry.payload, meta: field, candidates: entry.cands.map(x => ({ ...cardEntry(entry.game, x.id, x.c.name, 1, 'owned', x.c), ...(x.helps.length ? { helps: x.helps.join(', ') } : {}) })) };
 }
 // How a swap moves one Power area: its count before and after, and whether Power's ratio for it rose.
 function areaMove(v, key) {
