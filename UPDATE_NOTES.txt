@@ -1,3 +1,7 @@
+3.72.1 — Meta tab shows how many placing lists each matchup comes from
+- The field sent to the coach is now kept with the review, so the Meta tab shows "From N placing
+  lists" under each deck (and the evaluation script can measure meta coverage).
+
 3.72.0 — AI coach knows the meta
 - The coach now receives the decks winning tournaments in your format right now (the top five
   archetypes in the app's tournament data, with their share of the field and their most-played

@@ -76,7 +76,7 @@ async function run(c) {
     core: [...new Set(named)], plan: r.identity?.plan,
     lines: r.pilot.lines.length, linesPass: e.verified.lines.filter((f) => !f.length).length,
     swaps: r.improve.length, swapsRescored: swaps.length, swapsNotWorse: swaps.filter((x) => x.after >= x.before && !x.issues.length).length, swapsAreaUp: swaps.filter((x) => x.area?.up).length, swapsBestNotWorse: swaps.filter((x) => { const b = x.better && !x.better.issues.length && x.better.after >= x.better.before ? x.better : x; return b.after >= b.before && !b.issues.length; }).length, swapsBestAreaUp: swaps.filter((x) => { const b = x.better || x; return !!b.area?.up; }).length, swapDetail: e.result.improve.map((s, i) => ({ area: s.area, cut: s.cutName, add: s.addName, helps: e.cands?.find((c) => c.id === s.add)?.helps || [], ...(e.verified.swaps[i] || {}) })),
-    metaDecks: (e.payload.meta || []).length, metaCovered: r.meta?.length || 0, metaKeys: (r.meta || []).reduce((n, m) => n + m.theirKeys.length, 0), metaAnswers: (r.meta || []).reduce((n, m) => n + m.yourAnswers.length, 0), metaSample: (r.meta || [])[0] || null,
+    metaDecks: (e.meta || []).length, metaCovered: r.meta?.length || 0, metaKeys: (r.meta || []).reduce((n, m) => n + m.theirKeys.length, 0), metaAnswers: (r.meta || []).reduce((n, m) => n + m.yourAnswers.length, 0), metaSample: (r.meta || [])[0] || null,
     beyond: r.beyond.length, explain: r.explain.length, omitted: r.omitted, notes: r.notes || [],
   };
 }

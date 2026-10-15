@@ -226,7 +226,7 @@ const EDGE = { 'they are favoured': ['Tough matchup', 'bad'], close: ['Close', '
 function metaTab(r, entry) {
   const pct = x => Math.round((x || 0) * 100) + '%';
   const rows = (r.meta || []).map((m, i) => {
-    const [word, tone] = EDGE[m.edge] || EDGE.close, mine = new Map((entry.payload.meta || []).map(f => [f.name, f]));
+    const [word, tone] = EDGE[m.edge] || EDGE.close, mine = new Map((entry.meta || []).map(f => [f.name, f]));
     return `<article class="air-card air-meta ${tone}" style="--i:${i + 1}"><div class="air-card-head"><span class="air-label">${pct(m.share)} of the field</span><span class="air-status ${tone}">${word}</span></div><h4>${esc(m.deck)}</h4><p class="air-lead">${esc(m.how)}</p>${m.theirKeys?.length ? `<div class="air-idrow"><span class="air-label">Their key cards</span><div class="air-chips them">${m.theirKeys.map(n => `<span>${esc(n)}</span>`).join('')}</div></div>` : ''}${m.yourAnswers?.length ? `<div class="air-idrow"><span class="air-label">Your answers</span>${chips(m.yourAnswers)}</div>` : `<p class="air-row bad"><b>Answers</b>None in this list yet; see Improve.</p>`}${m.plan ? `<p class="air-row good"><b>Plan</b>${esc(m.plan)}</p>` : ''}${mine.get(m.deck)?.lists ? `<p class="air-note">From ${mine.get(m.deck).lists} placing list${mine.get(m.deck).lists === 1 ? '' : 's'}.</p>` : ''}</article>`;
   }).join('');
   const head = rows ? `<p class="air-note">How the decks winning now play against this list, from their real tournament lists. "Tough" and "Good for you" are the coach's card-by-card read; the Matchups tab has the app's measured odds.</p>` : `<p class="air-empty">No tournament data for this format is loaded yet. Open Power and tap "Compare with tournament decks", then ask again.</p>`;
@@ -340,6 +340,7 @@ async function withCandidates(entry, budget = 1500) {
   entry.cands = cards.map((c, i) => ({ id: 'o' + i, c, helps: helps.get(c) || [] }));
   let field = [];
   try { field = (entry.hooks?.field?.() || []).slice(0, 5).map(f => ({ name: String(f.name), share: Number(f.share) || 0, lists: f.lists || 0, cards: (f.rows || []).slice(0, 12).map(r => ({ name: r.c?.name || r.name, qty: r.qty, type: typeOf(r.c), text: textOf(r.c).slice(0, 400) })) })); } catch {}
+  entry.meta = field;
   return { ...entry.payload, meta: field, candidates: entry.cands.map(x => ({ ...cardEntry(entry.game, x.id, x.c.name, 1, 'owned', x.c), ...(x.helps.length ? { helps: x.helps.join(', ') } : {}) })) };
 }
 // How a swap moves one Power area: its count before and after, and whether Power's ratio for it rose.

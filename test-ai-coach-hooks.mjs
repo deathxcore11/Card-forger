@@ -9,7 +9,7 @@ import { mtgCoachHooks } from "./views.js";
 import { mtgPower, tcgPower, powerReadiness } from "./power.js";
 import { YGO_FORMATS } from "./ygo.js";
 import { PTCG_FORMATS } from "./ptcg.js";
-import { aiReviewPanel, runAiReview, reviewPayload } from "./ai-review.js";
+import { aiReviewPanel, runAiReview, reviewPayload, coachEntry } from "./ai-review.js";
 import { metaState } from "./meta.js";
 
 const B = JSON.parse(zlib.gunzipSync(fs.readFileSync(new URL("./test-fixtures/power-bench.json.gz", import.meta.url))));
@@ -59,6 +59,7 @@ for (const g of ["ygo", "ptcg"]) {
   aiReviewPanel(g, dd, (x) => cache[g][x] || null, p, h);
   let sent; await runAiReview(g + ":" + dd.id, () => {}, async (u, init) => { sent = JSON.parse(init.body); return Response.json({ error: 1 }, { status: 500 }); });
   assert.ok(sent.meta.length >= 3 && sent.meta.every((f) => f.share > 0 && f.cards.length >= 5 && f.cards.filter((c) => c.text).length >= 3), g + ": the field's top decks go with their most-played cards and real card text");
+  assert.equal(coachEntry(g + ":" + dd.id).meta.length, sent.meta.length, g + ": the field sent is kept with the review");
   console.log(`PASS: ${g === "ygo" ? "Yu-Gi-Oh!" : "Pokémon"} coach receives the field: ${sent.meta.map((f) => `${f.name} ${Math.round(f.share * 100)}%`).join(", ")}.`);
   assert.equal(sent.hand.length, g === "ygo" ? 5 : 7); assert.ok(sent.facts.length > 10); assert.ok(sent.candidates.length > 0);
   assert.ok(new Blob([JSON.stringify(sent)]).size < 240000, g + ": request fits the server limit");
