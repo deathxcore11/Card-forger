@@ -4394,7 +4394,7 @@ async function boot() {
   loadSetIndex(); // cached set symbols first; refreshes from Scryfall every few days
   decorateShell();
   render();
-  // First visit: a three-card welcome tour (never again once closed).
+  // Introduce the tour even with existing cards; Home and Settings can always replay it.
   {
     const cards = S.state.collection.length + ["ptcg", "ygo"].reduce((n, g) => n + T.gs(g).collection.length, 0),
       decks = S.state.decks.length + ["ptcg", "ygo"].reduce((n, g) => n + T.gs(g).decks.length, 0);

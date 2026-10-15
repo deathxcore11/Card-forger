@@ -3068,3 +3068,11 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
   .search-query, .hh-search { gap: 6px; }
   .search-query .btn, .hh-search .btn, .search-query .ask-launch, .hh-search .ask-launch { padding-inline: 9px; font-size: 13px; }
 }
+
+.learn-card { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:12px 0 18px; padding:18px; border:1px solid var(--line); border-radius:18px; background:linear-gradient(120deg,color-mix(in srgb,var(--game-color,var(--gold)) 8%,var(--surface)),var(--surface)); }
+.learn-card h2 { margin:3px 0 5px; font-size:19px; }
+.learn-card p { margin:0; color:var(--muted); font-size:14px; }
+.learn-card .eyebrow { font-size:11px; }
+.learn-card .btn { flex:none; white-space:nowrap; }
+.tour-card .tour-progress { font-size:12px; margin-top:12px; }
+@media(max-width:480px) { .learn-card { flex-wrap:wrap; gap:12px; } .learn-card .btn { min-height:44px; } }

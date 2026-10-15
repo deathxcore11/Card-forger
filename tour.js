@@ -1,5 +1,4 @@
-// First-run tour: five short cards for someone opening CardStashy for the first time (no cards,
-// no decks, never seen it), each with a looping mini replay of the app itself: a tap marker moving
+// Welcome tour for anyone who has not seen it yet, including existing collectors, each with a looping mini replay of the app itself: a tap marker moving
 // through the real screens. Skip any time; it never comes back on its own once closed, and
 // Settings can replay it. Card art comes from the app's own card data.
 const KEY = "cardstashy-tour-v1";
@@ -15,7 +14,7 @@ const markSeen = () => {
     localStorage.setItem(KEY, "done");
   } catch {}
 };
-export const shouldTour = ({ cards = 0, decks = 0, seen = tourSeen() } = {}) => !seen && !cards && !decks;
+export const shouldTour = ({ cards = 0, decks = 0, seen = tourSeen() } = {}) => !seen;
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 // A card face: real art when the app has it, otherwise a coloured card.
@@ -55,11 +54,36 @@ export const STEPS = [
     examples: ["What's the most competitive Modern deck?", "What's my most valuable card?", "Build me a Fire deck for $40"],
     demo: (a) => phone("ask", `<div class="tv-top"><b>Search</b><span class="tv-askbtn">✦ Ask</span></div><div class="tv-orb"><i></i><i></i><span>✦</span></div><div class="tv-q"><span>What's the most competitive deck?</span></div><div class="tv-dots"><i></i><i></i><i></i></div><div class="tv-answer"><small>From your app data</small>${card(a[5], 0, "mini")}<b>${esc(a.meta || "Top meta deck")}</b></div>${tap("t-ask")}`),
   },
+  {
+    key: "collect",
+    title: "Make the collection yours",
+    text: "Open Collection to organise cards into binders, choose a cover and flip through pages. Open a card's Versions to check its printing and finish before adding it. Use Compare or Trade to inspect cards side by side.",
+    demo: (a) => phone("build", `<div class="tv-top"><b>Collection · Binders</b></div><div class="tv-chips"><span class="tv-hit">My binder</span><span>Versions</span><span>Trade</span></div><div class="tv-deal">${[0, 1, 2].map((k) => card(a[k], k)).join("")}</div><div class="tv-bar"><span>Your cards · your organisation</span></div>${tap("t-build")}`),
+  },
+  {
+    key: "upgrade",
+    title: "Improve without losing your plan",
+    text: "Open a deck's Upgrade lab to compare budget builds and see why a change helps. Check the cards being added and removed, the estimated cost and legality. Save a version before experimenting so you can compare your lists.",
+    demo: (a) => phone("build", `<div class="tv-top"><b>Upgrade lab</b></div><div class="tv-budget"><span>$25</span><span class="tv-hit2">$50</span><span>$100</span></div><div class="tv-deal">${[2, 3].map((k) => card(a[k], k)).join("")}</div><div class="tv-bar"><span>Review changes → Save a version</span></div>${tap("t-build")}`),
+  },
+  {
+    key: "practice",
+    title: "Try the deck before buying",
+    text: "Use Playtest to explore opening hands and your setup. Matchups compares your deck with the field where supported. These are simplified estimates, not tournament win rates. Use the AI coach for lines, weak spots and ideas to test in real games.",
+    demo: (a) => phone("build", `<div class="tv-top"><b>Playtest · Matchups</b></div><div class="tv-chips"><span class="tv-hit">Opening hand</span><span>Setup</span></div><div class="tv-deal">${[1, 2, 3].map((k) => card(a[k], k)).join("")}</div><div class="tv-bar"><span>Practice the plan · test the assumptions</span></div>${tap("t-build")}`),
+  },
+  {
+    key: "backup",
+    title: "Keep your cards safe",
+    text: "Your cards save on this device. In Settings, export a backup or sign in to use account sync. Export before clearing site data or changing devices. Each game's collection and decks stay separate; switch games from the header or swipe left or right on Home.",
+    demo: () => phone("build", `<div class="tv-top"><b>Settings</b></div><div class="tv-chips"><span class="tv-hit">Account</span><span>Backup</span></div><div class="tv-value"><small>Your workspace</small><b>Saved</b></div><div class="tv-bar"><span>Export a backup · keep a copy</span></div>${tap("t-build")}`),
+  },
 ];
 
 export function openTour({ onDone = () => {}, game = "mtg", art = [], names = [], meta = "" } = {}) {
   if (typeof document === "undefined" || document.querySelector(".tour")) return;
-  let i = 0;
+  let i = 0, finished = false;
+  const launcher = document.activeElement;
   const el = document.createElement("div");
   if (typeof el.setAttribute !== "function" || typeof el.addEventListener !== "function") return;
   el.className = "tour";
@@ -77,21 +101,25 @@ export function openTour({ onDone = () => {}, game = "mtg", art = [], names = []
       <div class="tour-demo">${s.demo(a)}</div>
       <h2>${s.title}</h2><p>${s.text}</p>
       ${s.examples ? `<div class="tour-examples">${s.examples.map((q, k) => `<span style="--i:${k}">“${esc(q)}”</span>`).join("")}</div>` : ""}
+      <p class="tour-progress" aria-live="polite">Step ${i + 1} of ${STEPS.length} · Animated walkthrough</p>
       <div class="tour-dots" aria-hidden="true">${STEPS.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join("")}</div>
       <div class="tour-actions">${i ? `<button class="btn ghost" data-tour="back">Back</button>` : "<span></span>"}<button class="btn" data-tour="${last ? "done" : "next"}">${last ? "Let's go" : "Next"}</button></div>
     </div>`;
     el.querySelector(`[data-tour="${last ? "done" : "next"}"]`)?.focus();
   };
   const finish = (how) => {
+    if (finished) return;
+    finished = true;
     markSeen();
     el.classList.add("leaving");
-    setTimeout(() => el.remove(), 260);
+    setTimeout(() => { el.remove(); if (launcher?.isConnected) launcher.focus?.(); }, 260);
     onDone(how);
   };
   el.addEventListener("click", (e) => {
+    if (finished) return;
     const t = e.target.closest("[data-tour]")?.dataset.tour;
-    if (t === "next") (i++, draw(1));
-    else if (t === "back") (i--, draw(-1));
+    if (t === "next" && i < STEPS.length - 1) (i++, draw(1));
+    else if (t === "back" && i > 0) (i--, draw(-1));
     else if (t === "skip") finish("skip");
     else if (t === "done") finish("done");
   });

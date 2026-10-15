@@ -324,7 +324,8 @@ export function homeHero(g, title, deckArt = null, compact = false) {
     <div class="hh-body"><p class="eyebrow">${esc(G.name)}</p><h1>${title}</h1>
       <div class="hh-search"><input id="homeQ" type="search" data-suggest="${g}" placeholder="Search ${esc(G.short)} cards" data-enter="homeSearch" aria-label="Search ${esc(G.short)} cards" autocomplete="off"><button class="btn" data-act="homeSearch">Search</button><button class="ask-launch" data-act="askOpen" aria-label="Ask AI"><span aria-hidden="true">✦</span>Ask</button></div>
       ${h?.name ? `<button class="hh-credit" ${g === "mtg" ? `data-act="card" data-name="${esc(h.name)}"` : `data-act="tCard" data-id="${esc(h.id)}"`}>${h.deck ? "From your deck" : "Card of the day"} · <b>${esc(h.name)}</b> ›</button>` : ""}
-    </div></section>`;
+    </div></section>
+    <section class="learn-card" aria-label="Learn CardStashy"><div><p class="eyebrow">Your app guide</p><h2>Learn CardStashy</h2><p>Short slides and animated demos: scan, collect, build, improve and play.</p></div><button class="btn ghost" data-act="replayTour">▶ Take the tour</button></section>`;
 }
 // Fetch today's card for a game once per day (cached on the device).
 export async function loadHero(g, mtgRandom) {

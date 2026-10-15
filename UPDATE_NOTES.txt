@@ -1,3 +1,6 @@
+3.73.3 — Find the welcome tour any time
+Learn CardStashy on every Home page opens nine animated guide chapters. Existing collectors can see the first-run tour too; dismissing it still prevents repeated popups. Includes binders, versions, trade, upgrades, practice, backup and game switching.
+
 3.73.2 — Consistent Search + Ask on every game
 One shiny Ask button on Search and Home for Magic, Pokémon and Yu-Gi-Oh!; compact search actions, fully visible Compare / Sets / Random controls. Closing Ask cancels its request and isolates late network, tool and voice callbacks. Oversized tool results remain valid JSON.
 
