@@ -192,3 +192,7 @@ OIDC and merged through a service-role-only RPC.
 
 ### 3.39.0
 Artwork proportions now follow their source: landscape Magic art, square Yu-Gi-Oh! art, and uncropped Pokémon scans. Shared dialog chrome, subtle reveal motion and reduced-motion support remain consistent across layouts. Pokémon and Yu-Gi-Oh! builders now use the same manual purchase budget and quick tiers as Magic. A bounded two-pass replacement search compares legal engine packages with the existing Power evaluator, protects the build-around card and keeps deck quantities. Closely matched tournament engines outrank unsupported generic scores. Repeated tiers explain the candidate limit; stronger options over budget show actual purchase totals, the gap and their complete list before review. This is a candidate search and partial rules model, not exhaustive optimization or a claimed win rate.
+
+## Optional AI deck review
+
+The Power tab offers an on-demand AI second opinion for all three games. Numeric scores stay deterministic. See [AI_SETUP.md](AI_SETUP.md) to connect the server-side OpenAI key, review limits and data handling. The feature makes no paid calls until configured and requested.

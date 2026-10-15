@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-v161";
+const CACHE = "cardforge-shell-v162";
 const ASSETS = [
   "./",
   "./index.html",
@@ -6,6 +6,7 @@ const ASSETS = [
   "./app.js",
   "./home-swipe.js",
   "./power.js",
+  "./ai-review.js",
   "./deck-optimizer.js",
   "./rule-dex.js",
   "./ygo-prices.js",
@@ -118,6 +119,8 @@ self.addEventListener("activate", (e) =>
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET" || url.origin !== self.location.origin) return;
+  // API responses (including connection status) must not enter the offline shell cache.
+  if (url.pathname.startsWith("/api/")) return;
   // The instant-scan index is large and changes rarely: serve the saved copy at once and refresh
   // it in the background.
   if (url.pathname.includes("/scanidx/")) {

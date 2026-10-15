@@ -1,3 +1,4 @@
+import { aiReviewPanel } from './ai-review.js';
 import { myPrice } from "./mtg-tcgprice.js";
 import { ask, askText } from "./dialog.js";
 import { buyOnTcgplayer, massLines } from "./buy.js";
@@ -1268,7 +1269,7 @@ function deckInsights(g, d, f, s) {
     top = [...s.rows].filter((x) => x.c && price(x.c)).sort((a, b) => price(b.c) - price(a.c)).slice(0, 5);
   if (!N) return `<p class="muted pad">Add cards to see composition and odds.</p>`;
   const pw = tcgPower(g, d, f, (x) => cardOf(g, x)),
-    powerHtml = powerPanel(pw, { loadAct: `data-act="tMetaRefresh"`, cardAct: (x) => (x.id || g === "ygo" ? `data-act="tCard" data-id="${esc(x.id || x.key)}"` : `data-act="tDeckFindName" data-name="${esc(x.name)}"`) });
+    powerHtml = powerPanel(pw, { loadAct: `data-act="tMetaRefresh"`, cardAct: (x) => (x.id || g === "ygo" ? `data-act="tCard" data-id="${esc(x.id || x.key)}"` : `data-act="tDeckFindName" data-name="${esc(x.name)}"`) }) + aiReviewPanel(g, d, x => cardOf(g, x), pw);
   const bars = (items) => `<div class="comp">${items.map(([label, n, total, note]) => `<div class="meter"><span>${esc(label)}</span>${bar(total ? n / total : 0)}<b>${n}</b></div>${note ? `<p class="foot">${note}</p>` : ""}`).join("")}</div>`;
   // Each card's role comes from the Deck Power engine, so the table shows why a card matters.
   const roleChips = (id) => (pw.roles?.get(String(id)) || []).map((r) => `<span class="role-chip">${esc(r)}</span>`).join(""),

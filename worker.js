@@ -1,3 +1,5 @@
+import { aiReviewRoute } from './ai-review-route.js';
+export { AiReviewLimits } from './ai-review-route.js';
 import {recentHistoryRoute} from './recent-history.js';
 import {ygoPriceRoute} from './ygo-prices.js';
 import {archivePriceRoute} from "./historical-archive.js";
@@ -171,6 +173,7 @@ export default {
   },
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    if (url.pathname === "/api/ai/deck-review") return aiReviewRoute(request, env);
     const setImage=url.pathname.match(/^\/img\/mtg-set\/([a-z0-9]{2,8})\.jpg$/i);
     if(setImage){
       const hit=await caches.default.match(request);if(hit)return hit;

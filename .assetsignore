@@ -19,3 +19,13 @@ pricefeed.js
 set-art.js
 test-fixtures
 mtg-tcg-route.js
+
+ai-review-route.js
+AI_SETUP.md
+
+# Private local credentials must never be committed or served.
+.env
+.env.*
+.dev.vars
+.dev.vars.*
+.wrangler

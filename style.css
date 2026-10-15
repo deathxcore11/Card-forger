@@ -2846,3 +2846,7 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .set-media > img[src*="svgs.scryfall.io"], .set-media > img[src*="/sets/"][src$=".svg"] { filter: invert(.9) drop-shadow(0 1px 0 rgba(0,0,0,.3)); padding: 14px; }
 /* Press-and-hold targets: no text selection or iOS callout while holding. */
 [data-hold] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+
+/* Optional evidence-backed AI second opinion. */
+.ai-review{border-color:color-mix(in srgb,var(--accent,#b69aff) 38%,transparent);background:linear-gradient(140deg,#b69aff12,transparent 65%),var(--panel,#191d25)}
+.ai-review h3{margin-top:0}.ai-finding{padding:18px 0;border-top:1px solid #ffffff14}.ai-finding:first-of-type{margin-top:20px}.ai-finding q{display:block;margin-top:8px;color:var(--muted,#b0b5c1);overflow-wrap:anywhere}.ai-finding .row{gap:12px;align-items:start}.ai-plan{font-size:1.05rem;line-height:1.65}.ai-review [role=status]:empty{display:none}

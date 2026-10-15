@@ -1,2 +1,9 @@
 scanidx/.cache-*.jsonl
 scripts/__pycache__/
+
+# Private local credentials must never be committed or served.
+.env
+.env.*
+.dev.vars
+.dev.vars.*
+.wrangler

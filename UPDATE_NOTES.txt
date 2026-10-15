@@ -1,3 +1,12 @@
+3.67.0 — Optional AI deck review
+- Magic, Pokémon and Yu-Gi-Oh share an on-demand second opinion in Power.
+- Server-side OpenAI Responses API; key never goes to the browser. Requires OPENAI_API_KEY secret; no API calls before a user requests a review.
+- Quotes are matched against supplied card text; unmatched findings are removed. AI interpretations still require rules validation and never change numeric scores.
+- Bounded requests/output, no automatic retry, in-memory browser reuse, stale result invalidation after deck changes, persistent global quota (20/day by default) and three requests per IP per UTC hour.
+- Selected deck/checks only; no whole collection, account or price data. No decks/prompts/reviews logged or persisted by this route; store:false on API requests.
+- Fail closed if the key or durable quota binding is missing. See AI_SETUP.md for activation.
+- Tests use mocked responses; real model quality and live credentials still need an activation check.
+
 3.66.0 — Deeper resource and continuation checks
 - Magic's goldfish pays supported colored pips from actual source colors. One dual
   source cannot pay two pips. Generic spending preserves flexible sources. Alternative
