@@ -3056,3 +3056,15 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .tour-examples{display:flex;flex-direction:column;gap:6px;margin:-4px 0 12px}.tour-examples span{font-size:14px;padding:8px 12px;border-radius:12px;background:#ffffff0c;border:1px solid #ffffff1a;animation:ask-pop .4s both;animation-delay:calc(var(--i) * 120ms + 200ms)}
 @media(max-height:700px){.tv-phone{transform:scale(.82);margin:-27px 0}}
 @media(prefers-reduced-motion:reduce){.tv-screen *,.tv-screen *::after,.tour-v2{animation:none!important}.tv-tap{display:none}.tv-scanned,.tv-toast,.tv-budget,.tv-deal .tv-card,.tv-bar,.tv-row,.tv-orb,.tv-dots,.tv-answer,.tv-value em{opacity:1}.tv-q span{width:auto}.tv-arc{stroke-dashoffset:14}.tv-chart path{stroke-dashoffset:0}.tv-score{--tv-num:86}}
+
+/* Shared search rhythm on Home and Search, across all three games. */
+.page-head .search-tools { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; }
+.search-tools .tool-chip { min-width: 0; min-height: 44px; justify-content: center; padding: 7px 8px; }
+.search-query, .hh-search { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: stretch; gap: 8px; }
+.search-query input, .hh-search input { width: 100%; min-width: 0; }
+.search-query .btn, .hh-search .btn { padding-inline: 12px; min-width: 0; font-size: 14px; }
+.search-query .ask-launch, .hh-search .ask-launch { padding-inline: 12px; gap: 5px; min-height: 48px; box-shadow: 0 3px 12px color-mix(in srgb,var(--game-color,var(--gold)) 22%,transparent); }
+@media (max-width: 359px) {
+  .search-query, .hh-search { gap: 6px; }
+  .search-query .btn, .hh-search .btn, .search-query .ask-launch, .hh-search .ask-launch { padding-inline: 9px; font-size: 13px; }
+}

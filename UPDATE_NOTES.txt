@@ -1,3 +1,6 @@
+3.73.2 — Consistent Search + Ask on every game
+One shiny Ask button on Search and Home for Magic, Pokémon and Yu-Gi-Oh!; compact search actions, fully visible Compare / Sets / Random controls. Closing Ask cancels its request and isolates late network, tool and voice callbacks. Oversized tool results remain valid JSON.
+
 3.73.1 — Ask AI answers "newest set" in one step
 - Tested live with eleven real questions across the three games. "Newest set" took five lookups
   because announced sets were mixed in; the set list now returns the latest released set and
