@@ -22,7 +22,7 @@ import { binderShelf } from "./binders.js";
 import { emblemChips, rowEmblem, hasEmblem, impactScore, tradeAdvice, tradeAdviceHtml, deckEmblems, deckEmblemHtml, cardMetaUsage, cardMetaTab, playRate } from "./importance.js";
 import { attackReach, abilityEnergy, ygoPower, ptcgPower } from "./deckpower.js";
 import { matchupsTab, fieldStore, computeMatchups, celebrate, calibrateField } from "./matchups-ui.js";
-import { profileOf, simulateMatchup, gamePlan, recordOf, blend, listSig, forList } from "./matchup.js";
+import { profileOf, simulateMatchup, gamePlan, recordOf, blend, listSig, forList, realMatchup } from "./matchup.js";
 import { haptic } from "./feel.js";
 import { tileChrome } from "./tiles.js";
 // Yu-Gi-Oh! and Pokémon: collection, search, sets and deck building, sharing one
@@ -1220,7 +1220,9 @@ const myBiasFor = (p, field) => { const m = p?.match; if (!m || m.sim < 0.6) ret
 function deckMatchupsT(g, d, f) {
   const st = muStateT(g, d),
     base = { prefix: "tMu", gameName: g === "ygo" ? "Yu-Gi-Oh!" : "Pokémon", game: g, state: st, runKey: g + ":" + d.id,
-      modelNote: g === "ygo" ? "going first opens a combo against the other side's hand traps; going second breaks boards" : "a Prize race: first attack, attacks per Knock Out against their HP and Weakness, Prize values and disruption" };
+      modelNote: g === "ygo" ? "going first opens a combo against the other side's hand traps; going second breaks boards" : "a Prize race: first attack, attacks per Knock Out against their HP and Weakness, Prize values and disruption",
+      // Pokémon odds come from real results, validated against 8,469 Limitless matches.
+      footNote: g === "ptcg" ? "Odds come from real online results (Limitless, the biggest events of the last 3 weeks): the two archetypes' head-to-head record, pulled toward each deck's overall results when there are few games, then nudged by a Prize-race simulation. Tested on 8,469 real matches, this predicted better than the simulation alone, which was badly overconfident. Your own logged games count for more as you add them." : "" };
   if ((d.format || META_FORMAT[g]) !== META_FORMAT[g]) return matchupsTab({ ...base, unsupported: `Tournament results cover ${g === "ygo" ? "TCG Advanced" : "Standard"} only. Switch this deck's format to compare it with the field.` });
   const main = tRows(g, d.zones?.main), need = g === "ygo" ? 40 : 60, have = main.reduce((a, r) => a + r.qty, 0);
   if (have < need) return matchupsTab({ ...base, unsupported: `Finish the deck first: matchups compare complete lists (this one has ${have} of ${need}).` });
@@ -1237,9 +1239,24 @@ function deckMatchupsT(g, d, f) {
     results = d.results || [],
     sig = listSig(d.zones),
     { current, earlier } = forList(results, sig),
-    field = sims.map((m) => { const rec = recordOf(current, m.name); return { ...m, rec, shown: blend(m.sim.win, rec), open: st.openName === m.name }; }),
+    field = (g === "ptcg" ? realResults(sims, tcgPower(g, d, f, (x) => cardOf(g, x))) : sims).map((m) => { const rec = recordOf(current, m.name); return { ...m, rec, shown: blend(m.sim.win, rec), open: st.openName === m.name }; }),
     tot = field.reduce((a, m) => a + (m.share || 0), 0) || 1;
   return matchupsTab({ ...base, field, sig, earlier: earlier.length, fieldWin: field.reduce((a, m) => a + m.shown * (m.share || 0), 0) / tot, record: recordOf(current), history: [...results].sort((a, b) => String(b.at).localeCompare(String(a.at))) });
+}
+
+// Pokémon: the number comes from real results (realMatchup in matchup.js, validated on 8,469
+// Limitless matches); the simulation only nudges it and explains the matchup.
+function realResults(sims, p) {
+  const R = metaState("ptcg")?.data?.results, mine = p?.match?.sim >= 0.6 ? p.match.archetype : null;
+  return sims.map((m) => {
+    const real = realMatchup(R, mine, m.name, m.sim.win), shift = real.win - m.sim.win, c = (x) => Math.max(0.03, Math.min(0.97, x + shift));
+    const line = !R ? `Recent online results aren't loaded, so this is the simulation pulled most of the way to even: on its own it was overconfident when tested against real matches.`
+      : mine && mine.toLowerCase() === String(m.name).toLowerCase() ? `Mirror match: even by definition, so the deck that plays better and draws better wins.`
+      : real.n ? `Real results: ${mine} went ${real.w}–${real.n - real.w} against ${m.name} in ${real.n} online matches (Limitless, last 3 weeks).`
+      : mine ? `No recorded games between these decks yet, so this rests on each deck's overall results.`
+      : `Your list doesn't match a known archetype, so this rests on ${m.name}'s overall results.`;
+    return { ...m, sim: { ...m.sim, model: m.sim.win, win: real.win, onPlay: c(m.sim.onPlay), onDraw: c(m.sim.onDraw), real, reasons: [line, `The game simulation leans ${Math.round(m.sim.win * 100)}%; it only nudges this number, because real results predict matches better.`, ...m.sim.reasons] } };
+  });
 }
 
 function deckInsights(g, d, f, s) {

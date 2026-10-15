@@ -1,3 +1,4 @@
+import { tallyResults } from "./matchup.js";
 // Live "what's winning right now" data for Yu-Gi-Oh! and Pokémon.
 // · Yu-Gi-Oh!: YGOPRODeck's curated Tournament Meta Decks (recent WCQ/YCS top cuts) and the
 //   most-played cards in them. YGOPRODeck doesn't allow cross-site calls, so the site's
@@ -171,6 +172,20 @@ export async function ptcgMeta() {
     .slice(0, 6);
   if (!events.length) throw Error("No recent Standard events found.");
   const standings = await Promise.all(events.map((t) => lim(`/tournaments/${t.id}/standings`).then((s) => ({ t, s })).catch(() => ({ t, s: [] }))));
+  // Real results for the Matchups tab: every round of the biggest recent events (up to 12),
+  // tallied by archetype and head to head (realMatchup in matchup.js).
+  const resultEvents = (list || []).filter((t) => Date.parse(t.date) >= cutoff && Date.parse(t.date) < Date.now() - 864e5 && t.players >= 32).sort((a, b) => b.players - a.players).slice(0, 12);
+  const games = [];
+  await Promise.all(resultEvents.map(async (t) => {
+    try {
+      const [s, pairs] = await Promise.all([standings.find((x) => x.t.id === t.id)?.s || lim(`/tournaments/${t.id}/standings`), lim(`/tournaments/${t.id}/pairings`)]);
+      const deckOf = new Map((s || []).filter((p) => p.deck?.name).map((p) => [p.player, p.deck.name]));
+      for (const m of pairs || []) {
+        const a = deckOf.get(m.player1), b = deckOf.get(m.player2);
+        if (a && b && m.winner && m.winner !== -1 && m.winner !== 0) games.push([a, b, m.winner === m.player1 ? 1 : 0]);
+      }
+    } catch {}
+  }));
   const arch = new Map(),
     decks = [];
   let players = 0;
@@ -202,6 +217,7 @@ export async function ptcgMeta() {
     }
   return {
     game: "ptcg",
+    results: games.length ? { ...tallyResults(games), events: resultEvents.length } : null,
     source: "Limitless — " + events.length + " recent Standard events, " + players + " players",
     events: events.map((t) => ({ name: cleanName(t.name), players: t.players, date: t.date?.slice(0, 10) })),
     decks: decks.sort((a, b) => a.rank - b.rank || b.players - a.players),

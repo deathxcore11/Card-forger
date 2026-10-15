@@ -1,3 +1,24 @@
+3.62.0 — Pokémon matchup odds checked against real matches
+- Backtest: 8,469 real matches from 30 Limitless events. The app predicted each match from both
+  players' lists before looking at the result, and the predictions were scored against what
+  happened (Brier score; a coin flip scores 0.250, lower is better):
+  - the old simulated odds scored 0.290, worse than a coin flip. They were badly overconfident:
+    sides given 18% won 47% of the time, and sides given 82% won 54%;
+  - each archetype's overall results scored 0.248;
+  - the two archetypes' head-to-head results scored 0.246, the best.
+- Pokémon Matchups now use real results. Each number is:
+  - the two archetypes' head-to-head record from the biggest Limitless events of the last 3 weeks
+    (about 5,000 games);
+  - pulled toward each deck's overall results when there are few games;
+  - nudged slightly by the Prize-race simulation, which still explains each matchup.
+  Each row shows the real record ("Real games 27–19"). Mirrors are even by definition.
+  Your own logged games still count for more as you add them.
+- Tested on the events it didn't learn from, the new odds score 0.246. When they favour a side at
+  55% or more, that side wins 59% of the time. A frozen test keeps it that way.
+- Honest limit: no model of the lists predicts single matches much better than a coin flip.
+  Online Pokémon is high-variance and player skill matters. The numbers are now about as
+  confident as the evidence allows.
+
 3.61.1 — Foil prices for Magic printings with only a regular price
 - The TCGplayer price lookup now checks each finish a printing comes in. A printing with a regular
   price but no foil price now gets TCGplayer's foil price, labelled. Before, it was skipped

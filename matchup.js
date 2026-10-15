@@ -417,3 +417,32 @@ export function calibratePods(field, { runs = 700 } = {}) {
     }
   return field;
 }
+
+/* ---------- Real results (Pokémon) ---------- */
+// Validated on 8,469 matches from 30 Limitless events, scored on events each model hadn't seen
+// (Brier score; a coin flip is 0.250, lower is better):
+//   simulated odds alone 0.290 (overconfident: "18%" sides won 47%), pulled toward 50% 0.249,
+//   each archetype's overall results 0.248, head-to-head results between the two archetypes
+//   0.246 (best), plus a small nudge from the simulation 0.2463.
+// So the number comes from real results: the two archetypes' head-to-head record, pulled toward
+// their overall strength when there are few games, nudged a little by the simulation.
+const keyOf = (s) => lc(s).trim();
+export function realMatchup(results, me, op, sim = 0.5) {
+  if (!results?.arch) return { win: clamp(0.5 + 0.12 * (sim - 0.5), 0.03, 0.97), w: 0, n: 0, source: "model" };
+  const W = results.arch, H = results.h2h || {};
+  const rate = (a) => { const [w, n] = W[keyOf(a)] || [0, 0]; return (w + 5) / (n + 10); };
+  const ra = me ? rate(me) : 0.5, rb = rate(op), base = ra / (ra + rb);
+  const [w, n] = me && keyOf(me) !== keyOf(op) ? H[keyOf(me) + "|" + keyOf(op)] || [0, 0] : [0, 0];
+  const h2h = me && keyOf(me) === keyOf(op) ? 0.5 : (w + 12 * base) / (n + 12);
+  return { win: clamp(h2h + 0.06 * (sim - 0.5), 0.03, 0.97), w, n, base, source: n ? "h2h" : "overall" };
+}
+// Round-by-round results to the tallies realMatchup reads: [deckA, deckB, 1 if A won else 0].
+export function tallyResults(games) {
+  const arch = {}, h2h = {}, add = (o, k, won) => { const x = (o[k] ||= [0, 0]); x[0] += won; x[1]++; };
+  for (const [a, b, y] of games) {
+    const A = keyOf(a), B = keyOf(b);
+    add(arch, A, y); add(arch, B, 1 - y);
+    if (A !== B) { add(h2h, A + "|" + B, y); add(h2h, B + "|" + A, 1 - y); }
+  }
+  return { arch, h2h, games: games.length };
+}
