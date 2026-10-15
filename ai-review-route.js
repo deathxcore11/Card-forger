@@ -152,10 +152,19 @@ export function validateReview(raw, deck) {
   const priority = areaOf.has(raw.priority) ? raw.priority : '';
   if (raw.priority && !priority) why.push('priority is not a Power area');
   const commander = new Set(deck.cards.filter(c => c.zone === 'commander').map(c => c.id)), owned = new Set(deck.candidates.map(c => c.id));
+  // Card facts in prose are checked against card data: an HP claim that matches none of the swap's
+  // cards is removed with its sentence (the model sometimes invents numbers).
+  const hpOf = c => { try { return JSON.parse(c?.details || '{}').hp; } catch { return null; } };
+  const factCheck = (text, cards) => {
+    const hps = new Set(cards.map(hpOf).filter(Number.isFinite));
+    if (!hps.size || typeof text !== 'string') return text;
+    return text.split(/(?<=[.;!?])\s+/).filter(sent => { const bad = [...sent.matchAll(/\b(\d{1,3})\s*HP\b/gi)].some(m => !hps.has(Number(m[1]))); if (bad) why.push('removed a wrong HP claim'); return !bad; }).join(' ');
+  };
   const improve = raw.improve.slice(0, 4).map(x => x && ({ ...x, cut: R(x.cut), add: x.add ? R(x.add) : '' })).flatMap(x => {
     if (!inDeck(x?.cut)) return drop('swap cuts a card not in the deck');
     if (commander.has(x.cut)) return drop('swap cuts the commander');
     if (x.add && !owned.has(x.add)) return drop('swap adds a card you don\'t own');
+    const sw = [idx.get(x.cut), idx.get(x.add)].filter(Boolean); for (const k of ['gain', 'loss', 'lost']) x[k] = factCheck(x[k], sw);
     return [{ area: areaOf.has(x.area) ? x.area : '', cut: x.cut, cutName: idx.get(x.cut).name, add: x.add || '', addName: x.add ? idx.get(x.add).name : '', role: s(x.role, 200), gain: s(x.gain, 500), loss: s(x.loss, 500), lost: s(x.lost, 400), test: s(x.test, 400), evidence: checkEvidence(x.evidence, idx, why) }];
   });
   return { headline: s(raw.headline, 400), priority, identity, explain, beyond, pilot: { hand, lines }, pressure: { scenarios }, improve, tests: (Array.isArray(raw.tests) ? raw.tests : []).filter(x => typeof x === 'string').slice(0, 3).map(x => s(x, 300)), omitted, notes: [...new Set(why)].slice(0, 12) };

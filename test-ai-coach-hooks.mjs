@@ -6,7 +6,7 @@ import zlib from "node:zlib";
 import { S, blank } from "./store.js";
 import { cache, tcgCoachHooks } from "./tcg.js";
 import { mtgCoachHooks } from "./views.js";
-import { mtgPower, tcgPower } from "./power.js";
+import { mtgPower, tcgPower, powerReadiness } from "./power.js";
 import { YGO_FORMATS } from "./ygo.js";
 import { PTCG_FORMATS } from "./ptcg.js";
 import { aiReviewPanel, runAiReview, reviewPayload } from "./ai-review.js";
@@ -41,7 +41,13 @@ for (const g of ["ygo", "ptcg"]) {
   const c = B[g].cases[0], f = (g === "ygo" ? YGO_FORMATS : PTCG_FORMATS)[0], dd = { id: "hk" + g, name: "t", format: c.fmt, zones: c.zones };
   const names = new Set(Object.values(c.zones).flat().map((r) => cache[g][r.cardId]?.name));
   S.state.tcg = { ...(S.state.tcg || {}), [g]: { ...(S.state.tcg?.[g] || {}), collection: Object.values(cache[g]).filter((x) => !names.has(x.name)).slice(0, 300).map((x) => ({ cardId: x.id, name: x.name, qty: 1, key: x.id })) } };
+  // Plant owned cards the deck can't legally play (e.g. an old Pokémon printing in Standard).
+  const base = new Set(powerReadiness(g, dd, f, (x) => cache[g][x] || null).issues);
+  const illegal = Object.values(cache[g]).filter((x) => !names.has(x.name) && powerReadiness(g, { ...dd, zones: { ...dd.zones, main: [...dd.zones.main, { cardId: x.id, name: x.name, qty: 1 }] } }, f, (y) => cache[g][y] || null).issues.some((i) => !base.has(i) && i.includes(x.name))).slice(0, 15);
+  S.state.tcg[g].collection.unshift(...illegal.map((x) => ({ cardId: x.id, name: x.name, qty: 1, key: x.id })));
   const p = tcgPower(g, dd, f, (x) => cache[g][x] || null), h = tcgCoachHooks(g, dd, f, p), cs = h.candidates();
+  if (illegal.length) assert.ok(!cs.some((x) => illegal.some((y) => y.id === x.id)), g + ": owned cards that aren't legal in this format are never offered as swaps");
+  console.log(`PASS: ${g === "ygo" ? "Yu-Gi-Oh!" : "Pokémon"} swap candidates exclude ${illegal.length} owned cards that aren't legal here.`);
   assert.ok(cs.length > 0 && cs.every((x) => !names.has(x.name)), g + ": candidates are owned and new to the deck");
   const r = dd.zones.main[0], out = h.rescore({ zone: "main", row: r }, cs[0]);
   assert.ok(Number.isFinite(out.before) && Number.isFinite(out.after), g + ": swap re-scored");
@@ -50,6 +56,9 @@ for (const g of ["ygo", "ptcg"]) {
   let sent; await runAiReview(g + ":" + dd.id, () => {}, async (u, init) => { sent = JSON.parse(init.body); return Response.json({ error: 1 }, { status: 500 }); });
   assert.equal(sent.hand.length, g === "ygo" ? 5 : 7); assert.ok(sent.facts.length > 10); assert.ok(sent.candidates.length > 0);
   assert.ok(new Blob([JSON.stringify(sent)]).size < 240000, g + ": request fits the server limit");
+  // "Helps" follows Power's ratio, not raw counts: adding a card never "helps" an oversized deck's size.
+  const big = sent.power.areas.find((a) => a.key === "Size" && Number(a.count) > Number(a.target));
+  if (big) assert.ok(!sent.candidates.some((c) => (c.helps || "").includes(big.label)), g + ": adding cards doesn't count as fixing an oversized deck");
   console.log(`PASS: ${g === "ygo" ? "Yu-Gi-Oh!" : "Pokémon"} coach swap re-scored (${out.before} → ${out.after}); request carries ${sent.facts.length} facts, a ${sent.hand.length}-card hand and ${sent.candidates.length} owned candidates.`);
 }
 const big = reviewPayload("mtg", d, (n) => S.catalog[n.toLowerCase()], pw);

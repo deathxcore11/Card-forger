@@ -1,3 +1,15 @@
+3.71.3 — Coach never suggests cards you can't play
+- Swap candidates now go through Power's own deck check before the coach sees them: owned cards
+  that aren't legal in the deck's format (e.g. a Shining Fates Wooloo in Standard), banned or
+  outside the commander's colours are never offered. A swap that still fails the check is not
+  shown (Power's legal alternative replaces it when it finds one).
+- "Fixes" appears only when Power's recount improves that area; otherwise the swap is labelled
+  "Aims at" and Power looks for a better cut.
+- Swap advice is fact-checked against card data: an HP claim that matches none of the swapped
+  cards is removed.
+- "Helps" and "fixes" follow Power's own ratio for the area, so adding a card never counts as
+  fixing an oversized deck.
+
 3.71.2 — Power picks the cut
 - Each deck card now tells the coach which Power areas it counts toward, so suggested cuts avoid
   cards Power relies on.

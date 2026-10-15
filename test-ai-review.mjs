@@ -198,3 +198,11 @@ assert.equal(matchQuote(drak, 'look at the top 2 cards of your deck and put one 
 assert.equal(matchQuote(drak, 'Search your deck for any Supporter card'), null);
 assert.equal(matchQuote(drak, 'Put the other card on the bottom'), 'Put the other card on the bottom');
 console.log('PASS: Paraphrased card quotes are replaced by the card\'s own sentence; unrelated quotes are rejected.');
+
+// Invented card numbers in swap prose are removed (live: "a reliable, 4 HP Basic Pokémon").
+{
+  const pk = cleanDeck({ game: 'ptcg', format: 'Standard', cards: [{ id: 'c0', name: 'Budew', qty: 1, zone: 'main', type: 'Pokémon', text: 'Itchy Pollen 10', details: JSON.stringify({ hp: 30 }), known: true }], candidates: [{ id: 'o0', name: 'Wooloo', type: 'Pokémon', text: 'Tackle 20', details: JSON.stringify({ hp: 70 }), known: true }] });
+  const out = validateReview({ ...review, improve: [{ area: '', cut: 'c0', add: 'o0', role: '', gain: 'Adds a reliable, 4 HP Basic Pokémon. Starts attacks early.', loss: 'Wooloo has 70 HP, more than Budew at 30 HP.', lost: '', test: '', evidence: [{ cardId: 'o0', quote: 'Tackle 20' }] }] }, pk);
+  assert.equal(out.improve[0].gain, 'Starts attacks early.'); assert.equal(out.improve[0].loss, 'Wooloo has 70 HP, more than Budew at 30 HP.');
+  console.log('PASS: Wrong HP claims in swap advice are removed; correct ones stay.');
+}

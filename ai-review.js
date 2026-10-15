@@ -173,8 +173,7 @@ function verify(entry) {
     if (!out || !add || !entry.hooks?.rescore) return null;
     try {
       const v = entry.hooks.rescore(out, add.c), had = new Set(v.beforeIssues || []);
-      const count = (parts) => parts?.find(x => x.key === s.area)?.count;
-      return { before: v.before, after: v.after, issues: (v.issues || []).filter(i => !had.has(i)), area: s.area ? { before: count(v.beforeParts), after: count(v.afterParts) } : null };
+      return { before: v.before, after: v.after, issues: (v.issues || []).filter(i => !had.has(i)), area: s.area ? areaMove(v, s.area) : null };
     } catch { return null; }
   });
   return (entry.verified = { info, lines, swaps });
@@ -229,14 +228,18 @@ function pressureTab(r) {
 }
 function improveTab(r, v, entry) {
   const areaOf = new Map((entry.payload.power?.areas || []).map(a => [a.key, a]));
-  const sw = (r.improve || []).map((s, i) => {
-    const sc = v.swaps[i], d = sc ? sc.after - sc.before : 0;
+  // A swap Power's deck check calls illegal is never shown (Power's legal pick replaces it if found).
+  const shown = (r.improve || []).map((s, i) => [s, v.swaps[i]]).filter(([, sc]) => !sc?.issues?.length || (sc.better && !sc.better.issues.length));
+  const sw = shown.map(([s, sc], i) => {
+    if (sc?.issues?.length && sc.better) { s = { ...s, cut: '', cutName: sc.better.cutName }; sc = { ...sc.better, better: null }; }
+    const d = sc ? sc.after - sc.before : 0;
     const verdict = sc ? (sc.issues.length ? `<span class="air-check bad">Not legal: ${esc(sc.issues[0])}</span>` : `<span class="air-score ${d > 0 ? 'up' : d < 0 ? 'down' : ''}">Power ${sc.before} → ${sc.after} <b>${d > 0 ? '+' : ''}${d}</b></span>`) : s.add ? '' : '<span class="air-check">Find a card</span>';
-    const A = areaOf.get(s.area), moved = sc?.area && sc.area.before != null ? `<span class="air-score ${sc.area.after > sc.area.before ? 'up' : sc.area.after < sc.area.before ? 'down' : ''}">${esc(A?.label || s.area)} ${esc(String(sc.area.before))} → ${esc(String(sc.area.after))}</span>` : A ? `<span class="air-check">${esc(A.label)}</span>` : '';
-    return `<article class="air-card air-swap" style="--i:${i + 1}">${moved ? `<div class="air-fixes"><span class="air-label">Fixes</span>${moved}</div>` : ''}<div class="air-swap-pair"><span class="out"><small>OUT</small>${esc(s.cutName)}</span><span class="air-arrow" aria-hidden="true">→</span><span class="in"><small>${s.add ? 'IN · you own it' : 'IN'}</small>${esc(s.addName || s.role || 'A better card for this role')}</span></div>${verdict ? `<div class="air-verdict-row">${verdict}${sc ? '<small>recounted by Power</small>' : ''}</div>` : ''}${sc?.better ? `<div class="air-better"><span class="air-label">Power's pick</span><p>Keep ${esc(s.cutName)} and cut <b>${esc(sc.better.cutName)}</b> instead: <span class="air-score ${sc.better.after > sc.better.before ? 'up' : ''}">Power ${sc.better.before} → ${sc.better.after}</span>${sc.better.area && sc.better.area.before != null ? ` <span class="air-score ${sc.better.area.after > sc.better.area.before ? 'up' : ''}">${esc(areaOf.get(s.area)?.label || s.area)} ${esc(String(sc.better.area.before))} → ${esc(String(sc.better.area.after))}</span>` : ''}</p></div>` : ''}<ul class="air-pm">${s.gain ? `<li class="good"><i>+</i>${esc(s.gain)}</li>` : ''}${s.loss ? `<li class="bad"><i>−</i>${esc(s.loss)}</li>` : ''}${s.lost ? `<li class="bad"><i>×</i>${esc(s.lost)}</li>` : ''}${s.test ? `<li><i>▶</i>${esc(s.test)}</li>` : ''}</ul>${ev(s.evidence)}</article>`;
+    const A = areaOf.get(s.area), aims = !(sc?.area?.up || sc?.better?.area?.up), moved = sc?.area && sc.area.before != null ? `<span class="air-score ${sc.area.up ? 'up' : sc.area.down ? 'down' : ''}">${esc(A?.label || s.area)} ${esc(String(sc.area.before))} → ${esc(String(sc.area.after))}</span>` : A ? `<span class="air-check">${esc(A.label)}</span>` : '';
+    return `<article class="air-card air-swap" style="--i:${i + 1}">${moved ? `<div class="air-fixes"><span class="air-label">${aims ? 'Aims at' : 'Fixes'}</span>${moved}</div>` : ''}<div class="air-swap-pair"><span class="out"><small>OUT</small>${esc(s.cutName)}</span><span class="air-arrow" aria-hidden="true">→</span><span class="in"><small>${s.add ? 'IN · you own it' : 'IN'}</small>${esc(s.addName || s.role || 'A better card for this role')}</span></div>${verdict ? `<div class="air-verdict-row">${verdict}${sc ? '<small>recounted by Power</small>' : ''}</div>` : ''}${sc?.better ? `<div class="air-better"><span class="air-label">Power's pick</span><p>Keep ${esc(s.cutName)} and cut <b>${esc(sc.better.cutName)}</b> instead: <span class="air-score ${sc.better.after > sc.better.before ? 'up' : ''}">Power ${sc.better.before} → ${sc.better.after}</span>${sc.better.area && sc.better.area.before != null ? ` <span class="air-score ${sc.better.area.up ? 'up' : sc.better.area.down ? 'down' : ''}">${esc(areaOf.get(s.area)?.label || s.area)} ${esc(String(sc.better.area.before))} → ${esc(String(sc.better.area.after))}</span>` : ''}</p></div>` : ''}<ul class="air-pm">${s.gain ? `<li class="good"><i>+</i>${esc(s.gain)}</li>` : ''}${s.loss ? `<li class="bad"><i>−</i>${esc(s.loss)}</li>` : ''}${s.lost ? `<li class="bad"><i>×</i>${esc(s.lost)}</li>` : ''}${s.test ? `<li><i>▶</i>${esc(s.test)}</li>` : ''}</ul>${ev(s.evidence)}</article>`;
   }).join('');
   const tests = r.tests?.length ? `<article class="air-card air-tests" style="--i:6"><span class="air-label">Prove it in the app</span><ol>${r.tests.map(t => `<li>${esc(t)}</li>`).join('')}</ol></article>` : '';
-  return sw + tests || '<p class="air-empty">No swap held up to the app\'s checks.</p>';
+  const hidden = (r.improve || []).length - shown.length;
+  return sw + tests + (hidden ? `<p class="foot">${hidden} suggested swap${hidden === 1 ? ' was' : 's were'} left out because Power's deck check found the card isn't legal here.</p>` : '') || '<p class="air-empty">No swap held up to the app\'s checks.</p>';
 }
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 function tabBody(entry, v = verify(entry)) {
@@ -311,18 +314,25 @@ async function withCandidates(entry, budget = 1500) {
   let pool = [];
   try { pool = (entry.hooks?.candidates?.() || []).filter(Boolean).slice(0, 60); } catch {}
   const P = entry.payload.power || { areas: [], priority: [] }, weak = P.priority.filter(k => !k.startsWith('cap:')).slice(0, 4);
-  const base = new Map(P.areas.map(a => [a.key, a.count])), label = new Map(P.areas.map(a => [a.key, a.label])), helps = new Map();
+  // "Helps" means Power's own ratio for that area rises (closer to target), not just a bigger count:
+  // adding a card to an oversized deck raises its size count but moves it away from the target.
+  const base = new Map(P.areas.map(a => [a.key, a.ratio])), label = new Map(P.areas.map(a => [a.key, a.label])), helps = new Map();
   if (entry.hooks?.probe && weak.length) {
     const t = Date.now();
     for (const c of pool) {
       if (Date.now() - t > budget) break;
-      try { const parts = entry.hooks.probe(c), up = weak.filter(k => { const x = parts?.find(p => p.key === k)?.count; return Number.isFinite(x) && Number.isFinite(base.get(k)) && x > base.get(k); }); if (up.length) helps.set(c, up.map(k => label.get(k))); } catch {}
+      try { const parts = entry.hooks.probe(c), up = weak.filter(k => { const x = parts?.find(p => p.key === k)?.ratio; return Number.isFinite(x) && Number.isFinite(base.get(k)) && x > base.get(k) + 1e-9; }); if (up.length) helps.set(c, up.map(k => label.get(k))); } catch {}
       await new Promise(r => setTimeout(r, 0));
     }
   }
   const cards = [...pool.filter(c => helps.has(c)), ...pool.filter(c => !helps.has(c))].slice(0, 25);
   entry.cands = cards.map((c, i) => ({ id: 'o' + i, c, helps: helps.get(c) || [] }));
   return { ...entry.payload, candidates: entry.cands.map(x => ({ ...cardEntry(entry.game, x.id, x.c.name, 1, 'owned', x.c), ...(x.helps.length ? { helps: x.helps.join(', ') } : {}) })) };
+}
+// How a swap moves one Power area: its count before and after, and whether Power's ratio for it rose.
+function areaMove(v, key) {
+  const a = v.beforeParts?.find(x => x.key === key), b = v.afterParts?.find(x => x.key === key);
+  return a && b ? { before: a.count, after: b.count, up: b.ratio > a.ratio + 1e-9, down: b.ratio < a.ratio - 1e-9 } : null;
 }
 // When a suggested swap would lower Deck Power, Power tries other cuts for the same added card
 // (cards outside the deck's core and outside Power's weak areas first) and offers its best pick.
@@ -333,15 +343,15 @@ async function betterCuts(entry, budget = 3000) {
   const powerOf = new Map(entry.payload.cards.map(c => [c.id, (c.power || '').split(', ').filter(Boolean)]));
   for (const [i, s] of (r.improve || []).entries()) {
     const sc = v.swaps[i], add = entry.cands?.find(x => x.id === s.add);
-    if (!sc || !add || (sc.after >= sc.before && !sc.issues.length && (!sc.area || sc.area.after > sc.area.before))) continue;
+    if (!sc || !add || (sc.after >= sc.before && !sc.issues.length && (!sc.area || sc.area.up))) continue;
     const alts = entry.rows.filter(x => x.zone === 'main' && x.id !== s.cut && !core.has(x.id) && x.c).map(x => ({ x, a: powerOf.get(x.id) || [] })).sort((p, q) => p.a.filter(l => weakLabels.has(l)).length - q.a.filter(l => weakLabels.has(l)).length || p.a.length - q.a.length).slice(0, 10);
     let best = null;
     for (const { x } of alts) {
       if (Date.now() - t > budget) break;
       try {
-        const w = entry.hooks.rescore(x, add.c), had = new Set(w.beforeIssues || []), count = parts => parts?.find(y => y.key === s.area)?.count;
-        const cand = { cutName: x.c.name, before: w.before, after: w.after, issues: (w.issues || []).filter(z => !had.has(z)), area: s.area ? { before: count(w.beforeParts), after: count(w.afterParts) } : null };
-        const good = c => !c.issues.length ? c.after + (c.area && c.area.after > c.area.before ? 0.5 : 0) : -1;
+        const w = entry.hooks.rescore(x, add.c), had = new Set(w.beforeIssues || []);
+        const cand = { cutName: x.c.name, before: w.before, after: w.after, issues: (w.issues || []).filter(z => !had.has(z)), area: s.area ? areaMove(w, s.area) : null };
+        const good = c => !c.issues.length ? c.after + (c.area?.up ? 0.5 : 0) : -1;
         if (good(cand) > (best ? good(best) : good(sc))) best = cand;
       } catch {}
       await new Promise(res => setTimeout(res, 0));

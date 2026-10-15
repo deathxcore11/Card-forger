@@ -28,7 +28,7 @@ import { binderShelf } from "./binders.js";
 // Screen renderers. Each returns HTML for #content; interaction is wired by
 // data-act / data-change / data-input attributes handled centrally in app.js.
 import { metaState, MTG_META_FORMATS, allCachedMeta } from "./meta.js";
-import { mtgPower, powerPanel, powerChip, shownPower } from "./power.js";
+import { mtgPower, powerPanel, powerChip, shownPower, powerReadiness } from "./power.js";
 import { factBox, factsFor } from "./facts.js";
 import { tcgFallback, myPrice, ensureTcgPrices } from "./mtg-tcgprice.js";
 import { S, meta, inv, deckById, currentDeck, priceOf } from "./store.js";
@@ -1394,7 +1394,9 @@ export function mtgCoachHooks(d, pw) {
       // Lands and role cards for Power's weak areas join the pool; Power itself then probes them.
       const roles = engineRoles, weak = new Set((pw.parts || []).filter((x) => x.ratio < 0.9).map((x) => x.key));
       const fits = owned.filter((c) => ((weak.has("Lands") || weak.has("Mana")) && isLand(c)) || roles(c).some((r) => weak.has(r)));
-      return [...new Set([...fits.slice(0, 30), ...ranked, ...owned])].slice(0, 60);
+      // Only cards the deck can legally play: the same deck check Power uses, card by card.
+      const had = new Set(powerReadiness("mtg", d, f, meta).issues), legal = (c) => !powerReadiness("mtg", { ...d, cards: [...d.cards, { name: c.name, qty: 1 }] }, f, meta).issues.some((i) => !had.has(i) && i.includes(c.name));
+      return [...new Set([...fits.slice(0, 30), ...ranked, ...owned])].filter(legal).slice(0, 60);
     },
     probe: (card) => mtgPower({ ...d, id: d.id + "~probe", cards: [...d.cards, { name: card.name, qty: 1 }] }).parts,
     rescore: (out, add) => {
