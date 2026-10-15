@@ -1,6 +1,18 @@
 import { formatOf, canLead, legalityIn } from "./formats.js";
 
-export const cardKey = (s) =>
+// Called millions of times while building and scoring decks: normalised names are remembered.
+const keyMemo = new Map();
+export const cardKey = (s) => {
+  const raw = String(s || "");
+  let k = keyMemo.get(raw);
+  if (k === undefined) {
+    k = cardKeyRaw(raw);
+    if (keyMemo.size > 20000) keyMemo.clear();
+    keyMemo.set(raw, k);
+  }
+  return k;
+};
+const cardKeyRaw = (s) =>
   String(s || "")
     .normalize("NFKC")
     .replace(/[’‘]/g, "'")

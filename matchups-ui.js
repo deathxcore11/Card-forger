@@ -85,7 +85,7 @@ const FIELD_KEY = "cardstashy-mu-field:";
 export const fieldStore = {
   get(key) {
     // Fields saved before each opponent kept its list key are re-simulated (so "See their deck" works).
-    try { const v = JSON.parse(localStorage.getItem(FIELD_KEY + key) || "null"); return Array.isArray(v) && v.every((f) => f.key) ? v : null; } catch { return null; }
+    try { const v = JSON.parse(localStorage.getItem(FIELD_KEY + key) || "null"); return Array.isArray(v) && v.every((f) => f.key && f.bias != null) ? v : null; } catch { return null; }
   },
   set(key, field) {
     try {
@@ -97,12 +97,36 @@ export const fieldStore = {
   },
 };
 
+// Every deck in the field is placing in real events, so none of them really loses to almost
+// everything. When the model has one far below 50% against the rest of the field, that's the model
+// missing how it wins (a combo kill the goldfish can't see); half of that gap is corrected.
+export function calibrateField(field, simulate) {
+  for (const f of field) {
+    let tot = 0, w = 0;
+    for (const g of field) {
+      if (g === f) continue;
+      const s = simulate(f.profile, g.profile, { runs: 600 });
+      if (s) { tot += s.win * (g.share || 0.01); w += g.share || 0.01; }
+    }
+    f.bias = w ? Math.max(-0.35, Math.min(0.35, 0.5 - tot / w)) : 0;
+  }
+  return field;
+}
 // Everything the tab needs from a deck's own profile and the field, memoised per deck + field +
-// list, so re-renders (logging a game) don't re-simulate.
+// list, so re-renders (logging a game) don't re-simulate. myBias: the calibration of the field
+// archetype this deck is a copy of (0 when it isn't one).
 const memo = new Map();
-export function computeMatchups(sig, field, me, planFor, simulate) {
+const clamp01 = (x) => Math.max(0.03, Math.min(0.97, x));
+export function computeMatchups(sig, field, me, planFor, simulate, myBias = 0) {
+  sig += "|" + myBias.toFixed(3);
   if (memo.has(sig)) return memo.get(sig);
-  const out = field.map((f) => { const sim = simulate(me, f.profile); return { ...f, sim, plan: sim ? planFor(f.profile, sim.win) : null }; }).filter((x) => x.sim);
+  const out = field.map((f) => {
+    let sim = simulate(me, f.profile);
+    const shift = (myBias - (f.bias || 0)) / 2;
+    if (sim && Math.abs(shift) > 0.005)
+      sim = { ...sim, win: clamp01(sim.win + shift), onPlay: clamp01(sim.onPlay + shift), onDraw: clamp01(sim.onDraw + shift), reasons: [...sim.reasons, `Adjusted ${shift > 0 ? "up" : "down"} ${Math.round(Math.abs(shift) * 100)} points for how these archetypes actually do against the field (the model can't see every way a deck wins).`] };
+    return { ...f, sim, plan: sim ? planFor(f.profile, sim.win) : null };
+  }).filter((x) => x.sim);
   memo.set(sig, out);
   if (memo.size > 12) memo.delete(memo.keys().next().value);
   return out;

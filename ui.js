@@ -9,14 +9,15 @@ export const esc = (s) =>
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
   );
 
-export const usd = (n, digits = 2) =>
-  n === null || n === undefined || !Number.isFinite(Number(n))
-    ? "—"
-    : "$" +
-      Number(n).toLocaleString("en-US", {
-        minimumFractionDigits: digits,
-        maximumFractionDigits: digits,
-      });
+// One formatter per number of decimals (toLocaleString builds a new one on every call, which adds
+// up when a 300-card set renders).
+const USD = new Map();
+export const usd = (n, digits = 2) => {
+  if (n === null || n === undefined || !Number.isFinite(Number(n))) return "—";
+  let f = USD.get(digits);
+  if (!f) USD.set(digits, (f = new Intl.NumberFormat("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits })));
+  return "$" + f.format(Number(n));
+};
 
 export const pct = (n, digits = 0) =>
   n === null || n === undefined ? "—" : (n * 100).toFixed(digits) + "%";

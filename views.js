@@ -1208,10 +1208,12 @@ function deckMatchups(d) {
     me = profileOf("mtg", mtgPower(d), rows),
     reprofile = (rs) => profileOf("mtg", mtgConstructedPower({ cards: rs.map((r) => ({ name: r.c.name, qty: r.qty })) }, S.catalog, key, fm.size), rs);
   if (!me) return matchupsTab({ ...base, unsupported: "This deck's cards are still loading. Open the Power tab once, then come back." });
-  const sims = computeMatchups(fkey + "|" + JSON.stringify([d.cards, d.side || []]), st.field, me, (op, win) => gamePlan("mtg", me, op, { main: rows, side, reprofile, sim: win }), (a, b) => simulateMatchup("mtg", a, b)),
+  const sims = computeMatchups(fkey + "|" + JSON.stringify([d.cards, d.side || []]), st.field, me, (op, win) => gamePlan("mtg", me, op, { main: rows, side, reprofile, sim: win }), (a, b) => simulateMatchup("mtg", a, b), mtgBias(mtgPower(d), st.field)),
     results = d.results || [];
   return matchupsTab({ ...base, ...fieldSummary(sims, results, st, mtgListSig(d)) });
 }
+// The calibration of the field archetype this deck copies (see calibrateField), else 0.
+const mtgBias = (p, field) => { const m = p?.match; if (!m || m.sim < 0.6) return 0; const f = (field || []).find((x) => String(x.name).toLowerCase() === String(m.archetype).toLowerCase()); return f?.bias || 0; };
 export const mtgListSig = (d) => listSig({ main: d.cards, side: d.side || [] });
 // Only games played with this exact list feed the numbers; earlier lists stay in the history.
 export function fieldSummary(sims, results, st, sig) {

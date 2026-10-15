@@ -150,7 +150,9 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
   const flexLands = qty(lands.filter((r) => !isBasicC(r.c) && !(r.c.produced_mana || []).length)),
     starved = colors.filter((k) => share(k) >= 0.25 && (src[k] || 0) + flexLands / 2 < 1),
     need = (k) => Math.round((share(k) >= 0.4 ? 14 : share(k) >= 0.15 ? 9 : 5) * scale),
-    thin = colors.filter((k) => (src[k] || 0) + flexLands / 2 < need(k) / 2);
+    // A color only one or two cards ask for is a light splash (a 1-of Krang in a blue deck), not a
+    // mana base that's broken: it doesn't trigger the "far short" cap.
+    thin = colors.filter((k) => (needers[k] || 0) > 2 && (src[k] || 0) + flexLands / 2 < need(k) / 2);
   const caps = [
     starved.length ? { key: "Colors", max: 35, label: "Can't cast its spells", why: `The spells need ${starved.map((k) => ({ W: "white", U: "blue", B: "black", R: "red", G: "green" })[k]).join(" and ")} mana and no land makes it. Most games this deck does nothing.` } : null,
     !starved.length && thin.length ? { key: "Colors", max: 62, label: "Color sources far short", why: `Fewer than half the ${thin.map((k) => ({ W: "white", U: "blue", B: "black", R: "red", G: "green" })[k]).join("/")} sources the spells need: many hands can't cast what they draw.` } : null,
@@ -484,6 +486,14 @@ export const attackReach = (c, names = null) => {
     twice = (c?.abilities || []).some((a) => met(a) && /attack twice|attack it has twice|use (?:this|its) attack (?:again|twice)|may attack (?:an additional|again)|attack again/i.test(a.effect || ""));
   return twice ? Math.min(best * 2, 340) : best;
 };
+// Damage an attack spreads to the opponent's Bench (Dragapult ex's Phantom Dive: 6 counters), which
+// softens the next Pokémon it has to Knock Out.
+export const attackSpread = (c) => Math.max(0, ...(c?.attacks || []).map((a) => {
+  const e = lc(a.effect);
+  if (!/bench/.test(e) || !/opponent/.test(e)) return 0;
+  const counters = Number(e.match(/put (\d+) damage counters?/)?.[1] || 0) * 10, each = Number(e.match(/(\d+) damage to each of your opponent'?s benched/)?.[1] || 0) * 2, one = Number(e.match(/(\d+) damage to 1 of your opponent'?s benched/)?.[1] || 0);
+  return Math.min(Math.max(counters, each, one), 200);
+}));
 // Energy types an Ability needs attached before it works ("if this Pokémon has any Darkness Energy attached").
 export const abilityEnergy = (c) => [...new Set((c?.abilities || []).flatMap((a) => [...String(a.effect || "").matchAll(/(?:has|have) (?:any |at least \w+ )?(?:\{([GRWLPFDM])\}|(Grass|Fire|Water|Lightning|Psychic|Fighting|Darkness|Metal)) Energy attached/gi)].map((m) => ETYPE[m[1]?.toUpperCase()] || m[2][0].toUpperCase() + m[2].slice(1).toLowerCase())))];
 
@@ -656,7 +666,7 @@ export function ptcgPower(rows, f = {}) {
     parts,
     goldfish: gold,
     // For matchups: who takes the Prizes, how hard, and what it's weak to.
-    attacker: mainAtk ? { name: mainAtk.c.name, reach, hp: Number(mainAtk.c.hp) || 0, types: mainAtk.c.types || [], weak: (mainAtk.c.weak || []).map((w) => w.type), ruleBox: !!mainAtk.c.ruleBox, lives, gust: q(gusts), disrupt: q(by("disrupt")), swarm } : null,
+    attacker: mainAtk ? { name: mainAtk.c.name, reach, spread: attackSpread(mainAtk.c), hp: Number(mainAtk.c.hp) || 0, types: mainAtk.c.types || [], weak: (mainAtk.c.weak || []).map((w) => w.type), ruleBox: !!mainAtk.c.ruleBox, lives, gust: q(gusts), disrupt: q(by("disrupt")), swarm } : null,
     plan: mainAtk ? mainAtk.c.name + (line ? ` · ${line.text} line` : "") : "Pokémon deck",
     stats: { N, basics, pokemon, trainers, energy, mull },
     unknown,
@@ -715,8 +725,14 @@ export function metaMatch(mine, metaDecks, archetypes = []) {
     if (!best || s > best.sim || (s === best.sim && d.rank < best.deck.rank)) best = { sim: s, deck: d };
   }
   if (!best) return null;
+  // The deck's family: lists with the same archetype name, and lists that are mostly the same cards
+  // under another name ("Elfnote" and "Ars Magna Elfnote").
   const arch = archetypes.find((a) => a.name === best.deck.archetype || a.id === best.deck.archetype || a.name === best.deck.name) || null,
-    sameArch = metaDecks.filter((d) => (d.archetype || d.name) === (best.deck.archetype || best.deck.name)),
+    named = metaDecks.filter((d) => (d.archetype || d.name) === (best.deck.archetype || best.deck.name)),
+    sameArch = metaDecks.filter((d) => named.includes(d) || coreOverlap(d.rows, best.deck.rows, spread) >= 0.55),
+    // Core cards come from lists of the same archetype name (when there are enough of them):
+    // a close cousin's signature card isn't this deck's core.
+    coreLists = named.length >= 3 ? named : sameArch,
     bestRank = Math.min(...sameArch.map((d) => d.rank || 99)),
     missing = [], extra = [];
   for (const [k, n] of best.deck.rows) {
@@ -733,20 +749,60 @@ export function metaMatch(mine, metaDecks, archetypes = []) {
   // one (Karn in Tron) breaks the deck even if the rest of the list matches.
   // Playing too few copies counts too: one Karn where the lists play four draws it a quarter as
   // often. "Short" is half or less of what the archetype's lists usually play.
-  const core = [], short = [];
+  // How often lists of other decks play a card: a hand trap or Boss's Orders is everywhere.
+  const others = metaDecks.filter((d) => !sameArch.includes(d)), fieldRate = new Map();
+  for (const d of others) for (const k of d.rows.keys()) fieldRate.set(k, (fieldRate.get(k) || 0) + 1 / others.length);
+  const core = [], short = [], singleton = [...best.deck.rows.values()].every((n) => n <= 1);
   for (const [k, n] of best.deck.rows) {
-    const plays = sameArch.map((d) => d.rows.get(k) || 0).filter((x) => x > 0),
-      inArch = plays.length / Math.max(1, sameArch.length);
-    if (!(inArch >= 0.75 && n >= 2 && (spread.get(k) || 0) <= 0.5)) continue;
+    const plays = coreLists.map((d) => d.rows.get(k) || 0).filter((x) => x > 0),
+      inArch = plays.length / Math.max(1, coreLists.length);
+    // Singleton formats (Commander): a 1-of every list of the archetype plays is core too.
+    // …and isn't a field-wide staple (a hand trap or Boss's Orders that most decks play).
+    if (!(inArch >= 0.8 && (n >= 2 || (singleton && coreLists.length >= 3)) && (spread.get(k) || 0) <= 0.5 && (fieldRate.get(k) || 0) < 0.35)) continue;
     const usual = plays.sort((a, b) => a - b)[Math.floor(plays.length / 2)] || n, have = mine.get(k) || 0;
-    if (!have) core.push({ key: k, name: best.deck.labels.get(k) || k, qty: usual });
-    else if (usual >= 2 && have * 2 <= usual) short.push({ key: k, name: best.deck.labels.get(k) || k, qty: usual, have });
+    // How specific to this deck the card is (a Karn nobody else plays: 1; a card a fifth of other
+    // decks run: about 0.6), so a missing generic card costs less than a missing signature card.
+    const unique = Math.max(0.3, 1 - 2 * (fieldRate.get(k) || 0));
+    if (!have) core.push({ key: k, name: best.deck.labels.get(k) || k, qty: usual, unique });
+    else if (usual >= 2 && have * 2 <= usual) short.push({ key: k, name: best.deck.labels.get(k) || k, qty: usual, have, unique });
   }
+  // What the family usually plays (cards in at least half its lists, at their usual count). A fresh
+  // list is compared with that as well as with single lists, and every copy short of it costs
+  // something, staples included: four Boss's Orders, the hand traps, Sol Ring.
+  const consensus = new Map(), counted = new Set([...core, ...short].map((x) => x.key));
+  const allKeys = new Set(sameArch.flatMap((d) => [...d.rows.keys()]));
+  for (const k of allKeys) {
+    const plays = sameArch.map((d) => d.rows.get(k) || 0).filter((x) => x > 0);
+    if (plays.length / Math.max(1, sameArch.length) >= 0.5) consensus.set(k, plays.sort((a, b) => a - b)[Math.floor(plays.length / 2)]);
+  }
+  const consSim = sameArch.length >= 2 ? coreOverlap(mine, consensus, spread) : 0;
+  if (consSim > best.sim) best = { sim: consSim, deck: best.deck };
+  // Shortfall against a reference list: weighted by how widely the family plays each card.
+  // Measured against the family's consensus and against the closest real list, and the smaller one
+  // counts: a list that matches a real placing list isn't charged for another variant's choices.
+  const shortfallVs = (ref, minIn) => {
+    let total = 0;
+    const out = [];
+    for (const [k, usual] of ref) {
+      if (counted.has(k)) continue;
+      const inArch = sameArch.filter((d) => d.rows.get(k)).length / Math.max(1, sameArch.length);
+      if (inArch < minIn) continue;
+      const have = mine.get(k) || 0, miss = Math.max(0, usual - have) / usual;
+      if (!miss) continue;
+      total += miss * ((spread.get(k) || 0) <= 0.5 ? 1 : 0.7) * Math.min(1, inArch + 0.1);
+      out.push({ key: k, name: best.deck.labels.get(k) || sameArch.find((d) => d.labels?.get(k))?.labels.get(k) || k, qty: usual, have });
+    }
+    return { total, out };
+  };
+  const vsFamily = shortfallVs(consensus, 0.6), vsList = shortfallVs(best.deck.rows, 0.3),
+    pickRef = vsList.total <= vsFamily.total ? vsList : vsFamily,
+    deficit = pickRef.total, thinned = pickRef.out;
+  thinned.sort((a, b) => (b.qty - b.have) / b.qty - (a.qty - a.have) / a.qty);
   const share = arch?.share ?? sameArch.length / Math.max(1, metaDecks.length),
     finishQ = bestRank <= 1 ? 1 : bestRank <= 2 ? 0.9 : bestRank <= 4 ? 0.8 : bestRank <= 8 ? 0.7 : bestRank <= 32 ? 0.55 : 0.45,
     metaScore = Math.round(72 + 28 * clamp(0.55 * finishQ + 0.45 * clamp(share / 0.12))),
     weight = clamp((best.sim - 0.35) / 0.45);
-  return { sim: best.sim, deck: best.deck, archetype: best.deck.archetype || best.deck.name, share, bestRank, lists: sameArch.length, missing: missing.slice(0, 10), extra: extra.slice(0, 10), metaScore, weight, coreMissing: core.slice(0, 6), coreShort: short.slice(0, 6) };
+  return { sim: best.sim, deck: best.deck, archetype: best.deck.archetype || best.deck.name, share, bestRank, lists: sameArch.length, missing: missing.slice(0, 10), extra: extra.slice(0, 10), metaScore, weight, coreMissing: core.slice(0, 6), coreShort: short.slice(0, 6), deficit, thinned: thinned.slice(0, 8) };
 }
 
 // Deck Power is always judged against the field, never in a vacuum. A list can be built well
@@ -777,13 +833,19 @@ export function metaContext({ build, mine, decks = [], match = null, loaded = fa
     field = [...archetypes].sort((a, b) => (b.share || 0) - (a.share || 0)).slice(0, 4);
   if (match && match.sim >= 0.35) {
     const k = clamp((match.sim - 0.35) / 0.45),
-      broken = (match.coreMissing || []).length,
-      thin = (match.coreShort || []).reduce((a, x) => a + (1 - x.have / x.qty), 0),
+      broken = (match.coreMissing || []).reduce((a, x) => a + (x.unique ?? 1), 0),
+      thin = (match.coreShort || []).reduce((a, x) => a + (1 - x.have / x.qty) * (x.unique ?? 1), 0),
       // Each missing core piece costs the borrowed tournament credit: it's no longer that deck.
       // Too few copies of one costs in proportion to the copies cut.
-      metaScore = match.metaScore - Math.min(50, broken * 28 + thin * 28),
-      score = Math.round(build * (1 - k) * 0.5 + Math.min(build, ROGUE_CAP) * (1 - k) * 0.5 + metaScore * k);
-    return { score: Math.min(100, score), from: k >= 0.75 && !broken && !thin ? "meta" : "mixed", presence, played, unplayed, field, lists, coreMissing: match.coreMissing || [], coreShort: match.coreShort || [] };
+      // Copies short of what the archetype usually plays, and cards no placing list plays (filler),
+      // cost in proportion; the list is judged, not just the archetype's results.
+      shortfall = Math.min(30, (match.deficit || 0) * 5),
+      filler = Math.max(0, 1 - played - 0.12) * 45,
+      metaScore = match.metaScore - Math.min(50, broken * 28 + thin * 28) - shortfall - filler,
+      mixed = Math.round(build * (1 - k) * 0.5 + Math.min(build, ROGUE_CAP) * (1 - k) * 0.5 + metaScore * k),
+      // Never far above how well the list itself is built (mana, curve, interaction, consistency).
+      score = Math.min(mixed, build + 18);
+    return { score: Math.max(0, Math.min(100, score)), from: k >= 0.75 && broken < 0.3 && thin < 0.3 && shortfall < 5 ? "meta" : "mixed", presence, played, unplayed, field, lists, coreMissing: match.coreMissing || [], coreShort: match.coreShort || [], thinned: shortfall >= 3 ? match.thinned || [] : [], shortfall, filler };
   }
   // Off-meta: mostly what the field says about these cards, then how well it's built. A pile of
   // staples around an engine nobody plays lands in casual territory (about 45–60).

@@ -58,8 +58,16 @@ const PROTECTION = [
   /regenerate target/,
 ];
 
+// Roles depend only on the card, and the builder asks for the same cards thousands of times.
+const roleMemo = new WeakMap();
 export function engineRoles(c) {
   if (!c) return [];
+  if (typeof c === "object" && roleMemo.has(c)) return roleMemo.get(c);
+  const roles = engineRolesRaw(c);
+  if (typeof c === "object") roleMemo.set(c, roles);
+  return roles;
+}
+function engineRolesRaw(c) {
   const text = lower(c),
     out = [];
   if (isLand(c)) return ["Land"];

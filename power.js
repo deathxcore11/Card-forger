@@ -159,6 +159,9 @@ export function mtgPower(d) {
     else ctx = metaContext({ build: base.score, mine, loaded: !!M?.data, formatOk: !!mk });
     const readiness = powerReadiness("mtg",d,formatOf(d),name=>S.catalog[cardKey(name)]);
     base = legalGate(base, readiness);
+    // Legal, but every card past the minimum makes your best cards show up less often.
+    const fmt = formatOf(d), over = d.cards.reduce((n, r) => n + r.qty, 0) - fmt.size;
+    if (!fmt.exact && !fmt.commander && over > 3) base = { ...base, caps: [...(base.caps || []), { key: "Size", max: Math.max(50, 90 - over * 2.5), label: `${over} cards over the minimum`, why: `Tournament decks play exactly ${fmt.size}: each extra card makes your best cards ${Math.round((1 - fmt.size / (fmt.size + over)) * 100)}% less likely to show up. Cut back to ${fmt.size}.` }].sort((a, b) => a.max - b.max) };
     capCtx(ctx, base.caps);
     base = coreCap(base, ctx);
     return { ...base, engine:engineMap("mtg",d.cards.map(r=>({...r,c:S.catalog[cardKey(r.name)]}))), readiness, strategicRisk:strategicRisk("mtg",d.cards.map(r=>({...r,c:S.catalog[cardKey(r.name)]})),M?.data?.decks || [],r=>S.catalog[cardKey(r.name)]), heuristic: base.score, score: ctx.score, from: ctx.from, ctx, match, metaKey: mk, metaLoaded: !!M?.data, metaBusy: !!M?.busy, game: "mtg", formatName: formatOf(d).name };
@@ -199,7 +202,8 @@ export function tcgPower(g, d, f, cardOf) {
         const decks = data.decks.map((x) => {
           const m = new Map(), labels = new Map();
           for (const r of x.list || []) {
-            if (r.kind === "Energy" && /^basic | energy$/i.test(r.name) && !/special/i.test(r.name)) continue;
+            // Only Basic Energy is left out of the comparison (as on your side); Special Energy counts.
+            if (r.kind === "Energy" && /^(?:basic )?(?:\{\w\}|grass|fire|water|lightning|psychic|fighting|darkness|metal|fairy) energy$/i.test(r.name)) continue;
             m.set(nk(r.name), (m.get(nk(r.name)) || 0) + r.qty);
             labels.set(nk(r.name), r.name);
           }

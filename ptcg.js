@@ -78,7 +78,7 @@ export function applyFallbackPrices(c, hit) {
 }
 // One lookup at a time with a short gap (a list of unpriced cards must not flood the service),
 // and each card asked at most once per session.
-let fillChain = Promise.resolve();
+let fillChain = Promise.resolve(), ptcgApiFails = 0;
 const fillAsked = new Map();
 function fillPrices(c) {
   if(fillAsked.has(c.id))return fillAsked.get(c.id).then(done=>{c.prices=done.prices;c.variants=done.variants;c.sets=done.sets;});
@@ -93,8 +93,13 @@ async function fillPricesNow(c) {
   }
   const num = String(c.set?.number || "").replace(/^0+(?=\d)/, "");
   if (!c.name || !num) return;
-  const u = "https://api.pokemontcg.io/v2/cards?" + new URLSearchParams({ q: `name:"${c.name.replace(/"/g, "")}" number:${num}`, select: "name,number,set,tcgplayer", pageSize: "20" });
-  const d = await fetch(u, { signal: AbortSignal.timeout?.(8000) }).then((r) => (r.ok ? r.json() : null));
+  // The Pokémon TCG API is a backup source that is often down (HTTP 500): after two failures it is
+  // skipped for the rest of the session instead of slowing every card that has no price.
+  let d = null;
+  if (ptcgApiFails < 2) {
+    const u = "https://api.pokemontcg.io/v2/cards?" + new URLSearchParams({ q: `name:"${c.name.replace(/"/g, "")}" number:${num}`, select: "name,number,set,tcgplayer", pageSize: "20" });
+    d = await fetch(u, { signal: AbortSignal.timeout?.(6000) }).then((r) => (r.ok ? r.json() : (ptcgApiFails++, null))).catch(() => (ptcgApiFails++, null));
+  }
   const hit = (d?.data || []).find((x) => setKey(x.set?.name) === setKey(c.set?.name));
   if (hit && applyFallbackPrices(c, hit)) return;
   // Last: the dated TCGplayer market quotes kept for this exact product (same product id), when
@@ -141,7 +146,7 @@ export function normalizePtcg(c) {
   ].filter(Boolean).join("\n\n");
   return {
     game: "ptcg",
-    variantSchema: 6,
+    variantSchema: 7,
     released:c.set?.releaseDate || "",
     id: c.id,
     name: c.name,
@@ -174,7 +179,9 @@ export function normalizePtcg(c) {
     types: c.types || [],
     attackCosts: [...new Set((c.attacks || []).flatMap((a) => a.cost || []).filter((x) => x !== "Colorless"))],
     energyType: c.energyType || "",
-    basicEnergy: c.category === "Energy" && c.energyType === "Normal",
+    // Only the eight (nine with Fairy) basic types are Basic Energy; TCGdex marks a few Special
+    // Energy (Telepathic Psychic Energy, Growing Grass Energy) "Normal" too.
+    basicEnergy: c.category === "Energy" && c.energyType === "Normal" && /^(?:Basic )?(?:Grass|Fire|Water|Lightning|Psychic|Fighting|Darkness|Metal|Fairy) Energy$/.test(c.name || ""),
     basicPokemon: c.category === "Pokemon" && c.stage === "Basic",
     aceSpec: /ACE SPEC/i.test(c.rarity || ""),
     radiant: /^Radiant /.test(c.name),
@@ -243,7 +250,13 @@ async function get(path, params) {
 // are the same card for deck building.
 export const playSig = (c) => [c.name, c.category, c.hp, c.stage, c.evolveFrom, (c.types || []).join("/"), c.retreat, (c.weak || []).map((w) => w.type + w.value).join(","), c.text].join("|").toLowerCase().replace(/[^a-z0-9|]/g, "");
 const cheapMemo = new Map();
-const getCard = (id) => ptcgSource.get(id);
+// Candidate printings for the cheapest-printing check: TCGdex's own data only (no slow price
+// backfill); printings without a TCGdex price simply rank last.
+const liteCards = new Map();
+const getCard = (id) => {
+  if (!liteCards.has(id)) liteCards.set(id, get("/cards/" + encodeURIComponent(id)).then((d) => (d ? normalizePtcg(d) : null)).catch(() => null));
+  return liteCards.get(id);
+};
 const SET_ALIAS = { rc: { from: "bw11", prefix: /^RC\d/ } };
 // Listed by TCGdex with no cards in any source (Jumbo cards, Sample, W Promotional): left out of
 // the set list rather than shown as a set that never fills in.
@@ -422,7 +435,7 @@ export const ptcgSource = {
         setOf = (id) => id.slice(0, id.lastIndexOf("-"));
       briefs.sort((a, b) => (rank.get(setOf(b.id)) ?? -1) - (rank.get(setOf(a.id)) ?? -1));
       const full = [];
-      for (let i = 0; i < Math.min(briefs.length, card.basicEnergy ? 24 : 16); i += 6)
+      for (let i = 0; i < Math.min(briefs.length, card.basicEnergy ? 16 : 12); i += 6)
         full.push(...(await Promise.all(briefs.slice(i, i + 6).map((b) => getCard(b.id).catch(() => null)))));
       const sig = playSig(card),
         same = [card, ...full].filter((c) => c && legal(c) && (card.basicEnergy ? c.basicEnergy : playSig(c) === sig)),

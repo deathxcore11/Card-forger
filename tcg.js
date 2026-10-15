@@ -20,7 +20,7 @@ import { zoneCountLabel } from "./deck-safety.js";
 import { binderShelf } from "./binders.js";
 import { emblemChips, rowEmblem, hasEmblem, impactScore, tradeAdvice, tradeAdviceHtml, deckEmblems, deckEmblemHtml, cardMetaUsage, cardMetaTab, playRate } from "./importance.js";
 import { attackReach, abilityEnergy, ygoPower, ptcgPower } from "./deckpower.js";
-import { matchupsTab, fieldStore, computeMatchups, celebrate } from "./matchups-ui.js";
+import { matchupsTab, fieldStore, computeMatchups, celebrate, calibrateField } from "./matchups-ui.js";
 import { profileOf, simulateMatchup, gamePlan, recordOf, blend, listSig, forList } from "./matchup.js";
 import { haptic } from "./feel.js";
 import { tileChrome } from "./tiles.js";
@@ -94,7 +94,7 @@ const remember = (card) => {
 // Full card with prices no older than a day.
 export async function ensureCard(g, id, force = false,printings=true) {
   const c = cache[g][id];
-  if (c && !c.brief && (g !== "ptcg" || c.variantSchema === 6) && (g !== "ygo" || (c.artSchema === 1 && (!printings || c.printPriceSchema === 1))) && !force && Date.now() - new Date(c.fetchedAt).getTime() < PRICE_TTL) return c;
+  if (c && !c.brief && (g !== "ptcg" || c.variantSchema === 7) && (g !== "ygo" || (c.artSchema === 1 && (!printings || c.printPriceSchema === 1))) && !force && Date.now() - new Date(c.fetchedAt).getTime() < PRICE_TTL) return c;
   try {
     return remember(await SOURCES[g].get(id,{printings}));
   } catch (e) {
@@ -104,7 +104,7 @@ export async function ensureCard(g, id, force = false,printings=true) {
 }
 // Load details for many cards, a few at a time, calling `tick` as they arrive.
 export async function ensureMany(g, ids, tick = () => {}, force = false,printings=false) {
-  const queue = [...new Set(ids)].filter((id) => force || !cache[g][id] || cache[g][id].brief || (g === "ptcg" && cache[g][id].variantSchema !== 6) || (g === "ygo" && (cache[g][id].artSchema !== 1 || (printings && cache[g][id].printPriceSchema !== 1))) || Date.now() - new Date(cache[g][id].fetchedAt).getTime() > PRICE_TTL);
+  const queue = [...new Set(ids)].filter((id) => force || !cache[g][id] || cache[g][id].brief || (g === "ptcg" && cache[g][id].variantSchema !== 7) || (g === "ygo" && (cache[g][id].artSchema !== 1 || (printings && cache[g][id].printPriceSchema !== 1))) || Date.now() - new Date(cache[g][id].fetchedAt).getTime() > PRICE_TTL);
   let done = 0;
   const worker = async () => {
     while (queue.length) {
@@ -1213,6 +1213,8 @@ export const tcgFieldKey = (g) => g + ":" + META_FORMAT[g] + "|" + (metaState(g)
 const muStateT = (g, d) => ((S.ui.mu ||= {})[g + ":" + d.id] ||= { first: true });
 const tRows = (g, zone) => (zone || []).map((r) => ({ qty: r.qty, c: cardOf(g, r.cardId), name: r.name })).filter((r) => r.c);
 const tPower = (g, f, main, extra = []) => (g === "ygo" ? ygoPower([...main.map((r) => ({ ...r, zone: "main" })), ...extra.map((r) => ({ ...r, zone: "extra" }))], f) : ptcgPower(main, f));
+// The calibration of the field archetype this deck copies (see calibrateField), else 0.
+const myBiasFor = (p, field) => { const m = p?.match; if (!m || m.sim < 0.6) return 0; const f = (field || []).find((x) => String(x.name).toLowerCase() === String(m.archetype).toLowerCase()); return f?.bias || 0; };
 function deckMatchupsT(g, d, f) {
   const st = muStateT(g, d),
     base = { prefix: "tMu", gameName: g === "ygo" ? "Yu-Gi-Oh!" : "Pokémon", game: g, state: st, runKey: g + ":" + d.id,
@@ -1229,7 +1231,7 @@ function deckMatchupsT(g, d, f) {
   const lead = Object.entries(main.reduce((a, r) => (r.c.archetype ? ((a[r.c.archetype] = (a[r.c.archetype] || 0) + r.qty), a) : a), {})).sort((a, b) => b[1] - a[1])[0]?.[0],
     protect = (r) => !!lead && r.c.archetype === lead,
     reprofile = (rs) => profileOf(g, tPower(g, f, rs, extra), rs, extra),
-    sims = computeMatchups(key + "|" + d.id + "|" + JSON.stringify(d.zones), st.field, me, (op, win) => gamePlan(g, me, op, { main, side, protect, reprofile, sim: win }), (a, b) => simulateMatchup(g, a, b)),
+    sims = computeMatchups(key + "|" + d.id + "|" + JSON.stringify(d.zones), st.field, me, (op, win) => gamePlan(g, me, op, { main, side, protect, reprofile, sim: win }), (a, b) => simulateMatchup(g, a, b), myBiasFor(tcgPower(g, d, f, (x) => cardOf(g, x)), st.field)),
     results = d.results || [],
     sig = listSig(d.zones),
     { current, earlier } = forList(results, sig),
@@ -2381,12 +2383,13 @@ export function registerTcg(c) {
       const field = [];
       for (const [i, { a, list }] of lists.entries()) {
         msg(`Loading ${a.name} · ${i + 1} of ${lists.length}`);
-        const { zones } = await metaZones(G, list, (m) => msg(`${a.name} · ${m}`));
+        const { zones } = await metaZones(G, list, (m) => msg(`${a.name} · ${m}`), { cheap: false });
         const main = tRows(G, zones.main), extra = tRows(G, zones.extra);
         if (!main.length) continue;
         const prof = profileOf(G, tPower(G, f, main, extra), main, extra);
         if (prof) field.push({ key: list.key, name: a.name, share: a.share, art: G === "ygo" ? (list.cover ? `https://images.ygoprodeck.com/images/cards_cropped/${encodeURIComponent(list.cover)}.jpg` : "") : a.icons?.[0] ? ptcgIcon(a.icons[0]) : "", profile: prof });
       }
+      calibrateField(field, (a, b, o) => simulateMatchup(G, a, b, o));
       st.field = field;
       st.fieldKey = tcgFieldKey(G);
       fieldStore.set(st.fieldKey, field);
@@ -2550,7 +2553,9 @@ export function registerTcg(c) {
   const ptcgMetaBasics = (meta) => (meta?.top || []).filter((t) => t.kind === "Pokemon" && t.pct >= 35).map((t) => t.name);
   const BASIC_TYPES = /^(Grass|Fire|Water|Lightning|Psychic|Fighting|Darkness|Metal) Energy$/;
   // A tournament list → deck zones of real card ids.
-  const metaZones = async (G, d, status = () => {}) => {
+  // cheap: swap each card for its cheapest legal printing (decks you'll buy); Matchups only needs
+  // what the cards do, so it skips that step.
+  const metaZones = async (G, d, status = () => {}, { cheap = true } = {}) => {
     const zones = { main: [], extra: [], side: [] },
       put = (z, card, qty) => {
         const row = zones[z].find((r) => r.cardId === card.id);
@@ -2574,7 +2579,7 @@ export function registerTcg(c) {
       // The list's exact printing is often a full art; the deck gets the same card's cheapest legal
       // printing (or the one you own).
       const listed = BASIC_TYPES.test(x.name) ? await ptcgBest(energyName(x.name.replace(/ Energy$/, "")), any) : await SOURCES.ptcg.tournamentCard(x).catch(()=>null);
-      const card = listed && !BASIC_TYPES.test(x.name) ? await ptcgCheapest(listed, SOURCES.ptcg.legality(listed, std) === "legal" ? std : any) : listed;
+      const card = cheap && listed && !BASIC_TYPES.test(x.name) ? await ptcgCheapest(listed, SOURCES.ptcg.legality(listed, std) === "legal" ? std : any) : listed;
       status(`Matching cards ${++n}/${d.list.length}…`);
       if (!card) missed.push(x.name);
       return card ? { card: remember(card), qty: x.qty } : null;

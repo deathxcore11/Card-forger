@@ -142,6 +142,14 @@ assert.equal(metaContext({ build: 95, mine: mineM, loaded: false }).score, 95, "
 assert.equal(metaContext({ build: 95, mine: mineM, loaded: true, formatOk: false, decks: fieldDecks }).reason, "format");
 const rogueCtx = metaContext({ build: 95, mine: new Map([["x", 4], ["y", 4]]), loaded: true, decks: fieldDecks });
 assert.ok(rogueCtx.from === "rogue" && rogueCtx.score === 95 && rogueCtx.unplayed.length === 2, `novel strategies retain their engine estimate (${rogueCtx.score})`);
-const proven = metaContext({ build: 90, mine: mineM, loaded: true, decks: fieldDecks, match: { sim: 0.95, metaScore: 96 } });
+const copy = new Map([["a", 4], ["b", 4], ["c", 4]]);
+const proven = metaContext({ build: 90, mine: copy, loaded: true, decks: fieldDecks, match: { sim: 0.95, metaScore: 96 } });
 assert.ok(proven.score >= 90 && proven.from === "meta", `a copy of a placing list can rate tournament-ready (${proven.score})`);
+// A third of the copies are a card no placing list plays: that costs, even at high similarity.
+const padded = metaContext({ build: 90, mine: mineM, loaded: true, decks: fieldDecks, match: { sim: 0.95, metaScore: 96 } });
+assert.ok(padded.score < proven.score - 5, `filler no list plays costs points (${padded.score} vs ${proven.score})`);
+// Copies short of what the archetype plays cost in proportion; the score never sits far above the build.
+const thinList = metaContext({ build: 90, mine: copy, loaded: true, decks: fieldDecks, match: { sim: 0.9, metaScore: 96, deficit: 3 } });
+assert.ok(thinList.score <= proven.score - 10, `cutting copies of the deck's usual cards lowers the score (${thinList.score})`);
+assert.ok(metaContext({ build: 60, mine: copy, loaded: true, decks: fieldDecks, match: { sim: 0.95, metaScore: 96 } }).score <= 78, "a badly built copy can't borrow the archetype's results");
 console.log(`PASS: rated against the field: unloaded 95, off-meta ${rogueCtx.score}, proven ${proven.score}.`);

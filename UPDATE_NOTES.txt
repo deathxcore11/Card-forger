@@ -1,3 +1,35 @@
+3.55.0 — Pressure-tested Deck Power and Matchups, faster builders
+Deck Power was run against real winning lists in all three games, the same lists deliberately
+weakened, and decks built to cheat. What changed:
+- A close copy of a tournament deck is judged on the list, not just the archetype's results. Copies
+  short of what the archetype's lists usually play cost in proportion (staples too: Boss's Orders,
+  hand traps, Sol Ring), cards no placing list plays cost, and the score can't sit far above how
+  well the list itself is built. Trimming a copy of each key card now costs about 8–20; cutting a
+  4-of core card to 1 about 20; removing hand traps, draw Supporters or interaction 20–50.
+- Lists of the same deck under different names ("Elfnote" / "Ars Magna Elfnote") are compared as one
+  family, and a new list is also compared with what most of that family plays.
+- A core card missing costs in proportion to how specific it is to the deck; generic staples other
+  decks also play aren't treated as a deck's core.
+- Commander: a 1-of that every list of the commander plays counts as core.
+- Magic: a light splash (one or two cards of a color) no longer triggers "Color sources far short"
+  (a placing Kappa Cannoneer list was capped at 62); lists far over the minimum size are capped.
+- Pokémon: Telepathic Psychic Energy and Growing Grass Energy were treated as Basic Energy, which
+  broke the Power tab for Slowking and Festival Lead decks. Special Energy now counts in the
+  comparison with tournament lists.
+Matchups:
+- Calibrated against the field: every listed deck places in real events, so when the model has one
+  losing to almost everything (a combo kill the race can't see), half of that gap is corrected.
+- Card quality matters: a pile no placing list resembles is judged by that, not by a tidy curve.
+- Yu-Gi-Oh!: when the player going first bricks, the other deck still has to be able to do something.
+- Pokémon: spread damage (Dragapult ex) softens the next target and Knocks Out benched Pokémon.
+Speed:
+- Magic deck builder shows its versions without waiting on the cheapest-printing check (it runs
+  afterwards and only lowers prices), and long searches no longer freeze the screen.
+- Card names and card roles are computed once instead of thousands of times.
+- Pokémon: the backup price source (often down) is skipped after two failures, the cheapest-printing
+  check fetches less, and Matchups skips it entirely.
+- Prices format faster on big sets.
+
 3.54.2 — Shopping lists TCGplayer accepts, in all three games
 - Every Buy on TCGplayer line names the set, using TCGplayer's own set codes:
   · Pokémon: "4 Milotic ex [SSP]". Promos add their number ("1 Iron Crown ex [SVP] 146"), and Basic

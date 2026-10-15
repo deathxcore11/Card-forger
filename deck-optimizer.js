@@ -50,6 +50,12 @@ export function sameCardLogic(game,a,b){
 }
 
 // Bounded, yielding search over real replacement packages. Never mutates a saved list.
+// Long searches hand the main thread back every ~40 ms so the screen keeps animating and scrolling.
+let lastBreath = 0;
+const breathe = async () => {
+  const now = globalThis.performance?.now?.() ?? Date.now();
+  if (now - lastBreath > 40) { await new Promise((r) => setTimeout(r, 0)); lastBreath = globalThis.performance?.now?.() ?? Date.now(); }
+};
 export async function refineCandidates(candidates,{neighbors,evaluate,cost,accept=()=>true,rounds=2,maxNeighbors=12,status=()=>{}}){
  const found=[...candidates];let frontier=[...candidates];
  for(let round=0;round<rounds;round++){
@@ -57,7 +63,7 @@ export async function refineCandidates(candidates,{neighbors,evaluate,cost,accep
   for(const [i,deck] of frontier.entries()){
    const before=evaluate(deck),options=neighbors(deck).filter(accept).slice(0,maxNeighbors);
    let best=null;
-   for(const d of options){const quote=cost(d);if(quote.unknown)continue;const after=evaluate(d);if(comparePower(after,before)<=0)continue;
+   for(const d of options){await breathe();const quote=cost(d);if(quote.unknown)continue;const after=evaluate(d);if(comparePower(after,before)<=0)continue;
     const improved={...d,...quote,assessment:after,power:after.score};found.push(improved);if(!best || comparePower(after,best.assessment)>0)best=improved;
    }
    if(best)next.push(best);
@@ -134,6 +140,7 @@ export async function spendUp(deck, budget, { pool, quality, rows, swap, cost, e
         const quote = cost(next);
         if (quote.unknown || quote.cost > cap + 1e-6 || !accept(next)) continue;
         evals++;
+        await breathe();
         const power = evaluate(next);
         const issues = (x) => (x?.readiness?.issues?.length || 0) + (x?.readiness?.unknown || 0);
         if ((power?.score ?? 0) < (curPower?.score ?? 0) - 1 || (power?.readiness?.provisional && !curPower?.readiness?.provisional) || issues(power) > issues(curPower)) continue;

@@ -159,7 +159,7 @@ export function ptcgTags(c) {
   const provides = set(
     // A Pokémon's own type is a weak hint (see rankPairs); Energy cards provide the type.
     ...(c?.category === "Pokemon" ? (c.types || []).map((x) => "ptype:" + x) : (c?.types || []).map((x) => "type:" + x)),
-    c?.category === "Energy" && isBasicEnergy(c) && "type:" + /^(?:Basic )?(\w+) Energy$/.exec(c.name)[1],
+    c?.category === "Energy" && isBasicEnergy(c) && /^(?:Basic )?(\w+) Energy$/.test(c.name || "") && "type:" + /^(?:Basic )?(\w+) Energy$/.exec(c.name)[1],
     /Stage[12]/.test(c?.stage || "") && "evolution",
     c?.stage === "Stage2" && "stage2",
     c?.category === "Pokemon" && c?.stage === "Basic" && "basic",

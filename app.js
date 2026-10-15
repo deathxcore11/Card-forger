@@ -41,7 +41,7 @@ import {
 import { parseDeckImport, acquireMissing } from "./deck-flow.js";
 import { profileOf } from "./matchup.js";
 import { mtgConstructedPower } from "./deckpower.js";
-import { fieldStore, celebrate } from "./matchups-ui.js";
+import { fieldStore, celebrate, calibrateField } from "./matchups-ui.js";
 import { completionPlan, commanderTheme } from "./planner.js";
 import { sourceCredit, mtgjsonDeck, collectionIdeas, upgradeSuggestions, applyUpgradeSwaps } from "./strategy.js";
 import { searchQuery, rankByName } from "./catalog-tools.js";
@@ -833,7 +833,7 @@ function render() {
     }
     // Load card data and prices for what's on screen.
     const ids = ui.view === "collection" && (!T.ui(g).coll.tab || T.ui(g).coll.tab === "cards") ? [...document.querySelectorAll(".lot-art[data-id]")].map(e=>e.dataset.id) : ui.view === "collection" || (ui.view === "decks" && ui.decksTab === "ideas") ? T.gs(g).collection.map((e) => e.cardId) : ui.view === "tdeck" ? (T.gs(g).decks.find((d) => d.id === ui.tdeckId)?.zones ? ["main", "extra", "side"].flatMap((z) => T.gs(g).decks.find((d) => d.id === ui.tdeckId).zones[z].map((r) => r.cardId)) : []) : ui.view === "home" || ui.view === "decks" ? T.gs(g).decks.flatMap((d) => (d.zones.main || []).slice(0, 1).map((r) => r.cardId)) : [];
-    const missing = ids.filter(id=>!T.cardOf(g,id)||(g==="ptcg"&&T.cardOf(g,id).variantSchema!==6));
+    const missing = ids.filter(id=>!T.cardOf(g,id)||(g==="ptcg"&&T.cardOf(g,id).variantSchema!==7));
     const k = g + ui.view + missing.length;
     if (missing.length && navigator.onLine && !autoLoaded.has(k)) {
       autoLoaded.add(k);
@@ -1277,6 +1277,7 @@ A.muRun = async () => {
       const cover = meta(a.cover || "");
       if (prof) field.push({ key: list.key, format: mk.slice(4), name: a.name, share: a.share, art: cover?.image_uris?.art_crop || cover?.card_faces?.[0]?.image_uris?.art_crop || (a.cover ? `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(a.cover)}&format=image&version=art_crop` : ""), profile: prof });
     }
+    calibrateField(field, (a, b, o) => simulateMatchup("mtg", a, b, o));
     st.field = field;
     st.fieldKey = V.mtgFieldKey(d);
     fieldStore.set(st.fieldKey, field);
@@ -1469,8 +1470,6 @@ async function runBuild() {
     candidates=await refineCandidates(candidates,{evaluate,cost,status:buildMsg,rounds:2,maxNeighbors:12,
       accept:d=>!evaluate(d).readiness?.provisional,
       neighbors:d=>targets.flatMap(target=>towardDeck(d,target,{protectedKeys,zoneOf:r=>/\bLand\b/.test(meta(r.name)?.type_line || '')?'land':'spell'}))});
-    // Price every card these versions use at its cheapest legal printing before choosing tiers.
-    await refreshCheapest(candidates.flatMap(d=>d.cards.map(r=>r.name)).filter(n=>!/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(n)&&(priceOf(n)??1)>0.25),{api,key,progress:buildMsg,limit:80});
     let tiers=bestBudgetDecks(candidates,tierList(),{evaluate,cost});
     // Spend toward each budget: stronger cards for the same plan until the list is within $10 of
     // the budget, as long as Power holds. The best version found (no limit) is the reference.
@@ -1502,6 +1501,10 @@ async function runBuild() {
     B.busy = false;
     refreshSheet();
   }
+  // After the versions are on screen: check the cheapest legal printing of the priciest cards they
+  // use (it can only lower what they cost), then refresh the prices shown.
+  const names = [...new Set((B.results[f.name] || []).flatMap((t) => t.cards.map((r) => r.name)))].filter((n) => !/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(n)).sort((a, b) => (priceOf(b) ?? 0) - (priceOf(a) ?? 0));
+  if (names.length) refreshCheapest(names, { api, key, limit: 40 }).then((n) => n && S.ui.sheetCtx?.type === "build" && refreshSheet()).catch(() => {});
 }
 A.buildFrom = async (t) => {
   const c = meta(t.dataset.name) || (await resolve(t.dataset.name, true)),

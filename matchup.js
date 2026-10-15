@@ -66,22 +66,29 @@ function ygoFeatures(rows, extra) {
 }
 
 // p: the deck's Deck Power result; rows: [{ qty, c }] main deck (and extra for Yu-Gi-Oh!).
+// Quality used by the race: the Engine score, but never above what the field says about the list
+// (a pile no placing list resembles is judged by that, not by a tidy curve of vanilla creatures).
+const quality = (p) => {
+  const c = p?.ctx || {}, heur = p.heuristic ?? p.score ?? 70,
+    field = c.from === "rogue" ? c.fieldEstimate : c.from === "meta" || c.from === "mixed" ? c.score : null;
+  return field != null ? Math.min(heur, field) : heur;
+};
 export function profileOf(game, p, rows = [], extra = []) {
   if (!p) return null;
   if (game === "mtg") {
     const td = p.goldfish?.turnDist, st = p.stats || {};
     if (!td) return null;
-    return { game, score: p.heuristic ?? p.score ?? 70, clock: td.d, maxT: td.maxT, inter: st.interaction || 0, threats: st.threats || 0, flow: st.flow || 0, plan: String(p.plan || "Midrange").split(" ")[0], size: Math.max(40, q(rows) || 60), features: mtgFeatures(rows) };
+    return { game, score: quality(p), clock: td.d, maxT: td.maxT, inter: st.interaction || 0, threats: st.threats || 0, flow: st.flow || 0, plan: String(p.plan || "Midrange").split(" ")[0], size: Math.max(40, q(rows) || 60), features: mtgFeatures(rows) };
   }
   if (game === "ptcg") {
     const a = p.attacker, td = p.goldfish?.turnDist;
     if (!a || !td) return null;
-    return { game, score: p.heuristic ?? p.score ?? 70, clock: td.d, maxT: td.maxT, name: a.name, reach: Math.max(10, a.reach || 10), hp: a.hp || 200, types: a.types || [], weak: a.weak || [], prize: a.ruleBox ? 2 : 1, lives: a.lives || 1, gust: a.gust || 0, disrupt: a.disrupt || 0, swarm: !!a.swarm };
+    return { game, score: quality(p), clock: td.d, maxT: td.maxT, name: a.name, reach: Math.max(10, a.reach || 10), spread: a.spread || 0, hp: a.hp || 200, types: a.types || [], weak: a.weak || [], prize: a.ruleBox ? 2 : 1, lives: a.lives || 1, gust: a.gust || 0, disrupt: a.disrupt || 0, swarm: !!a.swarm };
   }
   const st = p.stats || {};
   return {
     game,
-    score: p.heuristic ?? p.score ?? 70,
+    score: quality(p),
     open: st.startOdds ?? 0.5,
     second: st.second ?? 0.5,
     through: p.goldfish?.metrics?.[0]?.value ?? 0.4,
@@ -101,18 +108,36 @@ function mtgGame(me, op, first, r) {
   const per = (threats) => 1.1 * (1 - Math.min(0.5, threats / 48));
   const slowMe = drawn(op.inter, op.size, base) * per(me.threats),
     slowOp = drawn(me.inter, me.size, opBase) * per(op.threats);
-  let tm = base + slowMe, to = opBase + slowOp;
+  // Card quality and blocking: the race alone lets a pile of vanilla creatures "goldfish" past
+  // combo and control. A deck built far below a solid one (Engine under 75) is slowed for it.
+  const weak = (s) => Math.max(0, 75 - (s ?? 70)) / 12;
+  let tm = base + slowMe + weak(me.score), to = opBase + slowOp + weak(op.score);
   // Long games go to the deck that draws more cards.
   if (tm > 9 && to > 9) { const edge = (me.flow - op.flow) / 12; return r() < clamp(0.5 + edge, 0.15, 0.85); }
   return { win: first ? tm <= to : tm < to, tm, to, slowMe, slowOp, base, opBase };
 }
 function ptcgGame(me, op, first, r) {
-  const hitsOn = (a, b) => { const dmg = a.reach * (b.weak.some((t) => a.types.includes(t)) ? 2 : 1); return Math.max(1, Math.ceil(b.hp / Math.max(10, dmg))); };
+  // Bench damage from earlier attacks softens the next target: about 60% of each attack's spread
+  // lands on the Pokémon it has to Knock Out next.
+  const hitsOn = (a, b) => { const dmg = a.reach * (b.weak.some((t) => a.types.includes(t)) ? 2 : 1) + (a.spread || 0) * 0.6; return Math.max(1, Math.ceil(b.hp / Math.max(10, dmg))); };
   const race = (a, b, goesFirst) => {
     let start = sampleTurn(a.clock, a.maxT, r);
     if (!goesFirst && start > 1 && r() < 0.35) start -= 1; // going second can attack on turn 1
     const hits = hitsOn(a, b), kos = Math.ceil(6 / b.prize);
     let t = start + kos * hits - 1 - (a.gust >= 3 && hits > 1 ? 1 : 0);
+    // Spread damage also Knocks Out benched support Pokémon (about 150 HP) over a game: each such
+    // Knock Out is one or two more Prizes, so the race ends sooner.
+    if (a.spread > 0) {
+      let prizes = 0, onTarget = 0, bench = 0, turn = start;
+      const dmg = a.reach * (b.weak.some((x) => a.types.includes(x)) ? 2 : 1);
+      while (prizes < 6 && turn < start + 20) {
+        onTarget += dmg; bench += a.spread;
+        if (onTarget >= b.hp) { prizes += b.prize; onTarget = a.spread * 0.4; }
+        if (bench >= 150 && prizes < 6) { prizes += r() < 0.4 ? 2 : 1; bench -= 150; }
+        if (prizes < 6) turn += 1;
+      }
+      t = Math.min(t, turn - (a.gust >= 3 ? 1 : 0));
+    }
     if (r() < Math.min(0.6, b.disrupt * 0.08)) t += 1; // Iono / Unfair Stamp costs a turn
     return { t, hits, kos, start };
   };
@@ -132,7 +157,7 @@ function ygoGame(me, op, first, r) {
       const broken = r() < B.breakRate * 0.65;
       aWins = broken ? r() > B.open * 0.75 : r() < 0.88;
     } else aWins = r() < 0.5 - 0.25 * B.open + 0.25 * A.through;
-  } else aWins = r() > 0.55 + 0.3 * B.open;
+  } else aWins = r() > 0.3 + 0.62 * B.open; // A bricks: B wins if B can actually do something
   return { win: first ? aWins : !aWins };
 }
 
@@ -148,8 +173,10 @@ export function simulateMatchup(game, me, op, { runs = 2000, seed = 7 } = {}) {
   }
   // The race leaves out blocking, card quality and play skill, so its extremes are pulled toward
   // even, and the better-built deck (Engine score) gets a small edge.
-  const tilt = 0.12 * Math.tanh(((me.score ?? 70) - (op.score ?? 70)) / 20),
-    cal = (x) => clamp(0.5 + (x - 0.5) * 0.72 + tilt, 0.03, 0.97),
+  const tilt = 0.16 * Math.tanh(((me.score ?? 70) - (op.score ?? 70)) / 20),
+    // Less pulling toward even when one side is far worse built (a pile against a tournament deck).
+    gap = Math.min(1, Math.abs((me.score ?? 70) - (op.score ?? 70)) / 40),
+    cal = (x) => clamp(0.5 + (x - 0.5) * (0.72 + 0.25 * gap) + tilt, 0.03, 0.97),
     onPlay = cal(avg(play)), onDraw = cal(avg(draw));
   return { win: (onPlay + onDraw) / 2, onPlay, onDraw, runs, reasons: reasonsFor(game, me, op, log) };
 }
