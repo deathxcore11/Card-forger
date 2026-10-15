@@ -29,8 +29,28 @@ const names = (list) => list.map((c) => c.name).join(", ");
 
 /* ======================= Magic ======================= */
 
+// Each pool entry is one mana unit with its possible colors. A flexible source
+// cannot pay two colored pips at once. Unsupported alternative costs stay outside
+// this basic payment model rather than being claimed as fully simulated rules.
+export function spendMana(pool, pips, cost) {
+  if(pool.length<cost)return null;
+  const needs=[...pips].sort((a,b)=>pool.filter(x=>x.includes(a)).length-pool.filter(x=>x.includes(b)).length);
+  const used=new Set();
+  const assign=i=>{
+    if(i===needs.length)return true;
+    const choices=pool.map((colors,k)=>({colors,k})).filter(x=>!used.has(x.k)&&x.colors.includes(needs[i])).sort((a,b)=>a.colors.length-b.colors.length);
+    for(const {k} of choices){used.add(k);if(assign(i+1))return true;used.delete(k);}return false;
+  };
+  if(!assign(0))return null;
+  const left=pool.filter((_,i)=>!used.has(i));
+  left.sort((a,b)=>a.length-b.length);left.splice(0,Math.max(0,cost-needs.length));
+  return left;
+}
+
 // rows: [{ qty, c }] with Scryfall card objects. opts: { size, commander (card), plan }
 export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrange", runs = 1000, seed = 11 } = {}) {
+  const basics={Plains:"W",Island:"U",Swamp:"B",Mountain:"R",Forest:"G",Wastes:"C"};
+  const basicColors=[...new Set(rows.filter(r=>/^Basic/.test(r.c?.type_line || "")).flatMap(r=>Object.entries(basics).filter(([n])=>String(r.c.type_line).includes(n)).map(([,color])=>color)))];
   const model = (c) => {
     const type = String(c.type_line || ""),
       text = lc(c.oracle_text || (c.card_faces || []).map((f) => f.oracle_text).join("\n")),
@@ -40,6 +60,12 @@ export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrang
     return {
       name: c.name,
       cmc: Number(c.cmc) || 0,
+      pips: [...String(c.mana_cost || c.card_faces?.[0]?.mana_cost || "").matchAll(/\{([WUBRGC])\}/g)].map(m=>m[1]),
+      colors: c.produced_mana?.length ? c.produced_mana : /add [^.]*mana of any (?:one )?colou?r/.test(text) ? [..."WUBRG"] : [...new Set([
+        ...Object.entries(basics).filter(([n])=>land&&type.includes(n)).map(([,v])=>v),
+        ...[...text.matchAll(/add ((?:\{[wubrgc]\})+)/g)].flatMap(m=>[...m[1].matchAll(/\{([wubrgc])\}/g)].map(x=>x[1].toUpperCase())),
+        ...(land&&/search your library for[^.]*basic land/.test(text)?basicColors:[]),
+      ])],
       land,
       creature,
       walker: /Planeswalker/.test(type),
@@ -68,21 +94,25 @@ export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrang
       hand = lib.splice(0, 7),
       log = run < 400 ? [] : null;
     let lands = 0, extra = 0, nextExtra = 0, board = [], damage = 0, kill = null, cmdrCast = null, spent = 0, avail = 0, castEach = 0, bigCast = false;
+    const landMana=[],extraMana=[],nextMana=[];
     for (let t = 1; t <= maxT; t++) {
       if (t > 1 && lib.length) hand.push(lib.shift());
       extra += nextExtra;
       nextExtra = 0;
+      extraMana.push(...nextMana.splice(0));
       const did = [];
       const li = hand.findIndex((c) => c.land);
       if (li >= 0) {
         lands++;
+        landMana.push(hand[li].colors);
         did.push(hand.splice(li, 1)[0].name);
       }
-      let mana = lands + extra;
+      let pool=[...landMana,...extraMana],mana = pool.length;
       const startMana = mana;
       let castAny = false;
       // Commander first when it fits, then the biggest spells that fit (greedy, like a goldfish).
-      if (cmdr && cmdrCast == null && mana >= cmdr.cmc) {
+      if (cmdr && cmdrCast == null && spendMana(pool,cmdr.pips,cmdr.cmc)) {
+        pool=spendMana(pool,cmdr.pips,cmdr.cmc);
         mana -= cmdr.cmc;
         cmdrCast = t;
         board.push({ ...cmdr, summoned: t });
@@ -91,19 +121,20 @@ export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrang
       }
       for (let again = true; again; ) {
         again = false;
-        const order = hand.map((c, i) => [c, i]).filter(([c]) => !c.land && c.cmc <= mana).sort((a, b) => b[0].cmc - a[0].cmc || (b[0].dork || b[0].rock) - (a[0].dork || a[0].rock));
+        const order = hand.map((c, i) => [c, i]).filter(([c]) => !c.land && spendMana(pool,c.pips,c.cmc)).sort((a, b) => b[0].cmc - a[0].cmc || (b[0].dork || b[0].rock) - (a[0].dork || a[0].rock));
         if (!order.length) break;
         const [c, i] = order[0];
         hand.splice(i, 1);
+        pool=spendMana(pool,c.pips,c.cmc);
         mana -= c.cmc;
         castAny = true;
         if (c.cmc >= 5) bigCast = true;
         did.push(c.name);
-        if (c.rock) (extra++, mana++);
-        if (c.dork) nextExtra++;
+        if (c.rock) { extra++; mana++; extraMana.push(c.colors);pool.push(c.colors); }
+        if (c.dork) { nextExtra++;nextMana.push(c.colors); }
         if (c.rampLand) {
           const li2 = lib.findIndex((x) => x.land);
-          if (li2 >= 0) (lands++, lib.splice(li2, 1));
+          if (li2 >= 0) { lands++;landMana.push(lib.splice(li2,1)[0].colors); }
         }
         for (let k = 0; k < c.draw && lib.length; k++) hand.push(lib.shift());
         if (c.creature || c.walker) board.push({ ...c, summoned: t });
@@ -198,6 +229,7 @@ export function ptcgGoldfish(main, { attacker = null, line = null, runs = 1000, 
       discardHand: /discard your hand/.test(tx),
       searchBasic: c.category === "Trainer" && /search your deck for (?:up to \w+ |a |\d )?basic pokémon/.test(tx),
       searchAny: c.category === "Trainer" && /search your deck for (?:a|up to \w+|\d) pokémon/.test(tx) && !/basic pokémon/.test(tx),
+      searchDiscard: Number(tx.match(/discard (\d+) (?:other )?cards? from your hand/)?.[1] || 0),
       candy: /^rare candy$/i.test(c.name),
       accel: c.category === "Trainer" && /attach [^.]*energy[^.]*from your (?:deck|discard pile)/.test(tx),
       attack: best || null,
@@ -236,6 +268,7 @@ export function ptcgGoldfish(main, { attacker = null, line = null, runs = 1000, 
     const lineIdx = (name) => chain.indexOf(name);
     for (let t = 1; t <= maxT; t++) {
       const did = [];
+      let supporterUsed = false;
       if (lib.length) hand.push(lib.shift());
       // Supporter (not on the first turn when going first): draw when the hand is thin or missing pieces.
       if (t > 1) {
@@ -243,6 +276,7 @@ export function ptcgGoldfish(main, { attacker = null, line = null, runs = 1000, 
         const missing = chain.some((n) => !field.some((f) => f.name === n) && !hand.some((c) => c.name === n));
         if (si >= 0 && (hand.length <= 5 || missing)) {
           const s = hand.splice(si, 1)[0];
+          supporterUsed = true;
           if (s.discardHand || s.shuffleHand) {
             if (s.shuffleHand) lib.push(...hand.splice(0));
             else hand.splice(0);
@@ -255,14 +289,19 @@ export function ptcgGoldfish(main, { attacker = null, line = null, runs = 1000, 
       for (const c of hand.filter((x) => x.searchBasic || x.searchAny)) {
         const i = hand.indexOf(c);
         if (i < 0) continue;
+        if (c.supporter && (t === 1 || supporterUsed)) continue;
+        // Pay the printed cost before searching. A generic Pokémon search does
+        // not automatically cost two discards; Ultra Ball's explicit cost does.
+        if (hand.length - 1 < c.searchDiscard) continue;
         const wantBasic = !field.some((f) => f.name === chain[0]) && !hand.some((h) => h.name === chain[0]);
         const nextPiece = chain.find((n, k) => k > 0 && !hand.some((h) => h.name === n) && !field.some((f) => f.name === n));
         const got = wantBasic ? take((x) => x.name === chain[0]) : c.searchAny && nextPiece ? take((x) => x.name === nextPiece) : c.searchBasic ? take((x) => x.basic) : null;
         if (!got) continue;
         hand.splice(i, 1);
+        if(c.supporter)supporterUsed=true;
         // Ultra Ball-style: discard two cards, the least useful first (spare Energy, then filler).
-        if (c.searchAny)
-          for (let k = 0; k < 2 && hand.length; k++) {
+        if (c.searchDiscard)
+          for (let k = 0; k < c.searchDiscard; k++) {
             const j = Math.max(0, hand.findIndex((x) => !x.pokemon && !x.supporter && !x.candy));
             hand.splice(j, 1);
           }
@@ -310,10 +349,11 @@ export function ptcgGoldfish(main, { attacker = null, line = null, runs = 1000, 
         target.energy.push(attached.energyType);
         did.push(`attach Energy to ${target.name}`);
       }
-      const ai = hand.findIndex((c) => c.accel);
+      const ai = hand.findIndex((c) => c.accel && (!c.supporter || t > 1 && !supporterUsed));
       const accelerated = target && ai >= 0 ? take(x=>x.energy) : null;
       if (accelerated) {
         const a = hand.splice(ai, 1)[0];
+        if(a.supporter)supporterUsed=true;
         target.energy.push(accelerated.energyType);
         did.push(`${a.name}: +1 Energy`);
       }
@@ -365,7 +405,10 @@ export function ptcgGoldfish(main, { attacker = null, line = null, runs = 1000, 
 // opening hand the way a player would: can it start, can it play through a hand trap, what does
 // it hold for the opponent's turn, and what is dead. tagged: [{ qty, c, tags:Set }]; extra: [{ qty, c }]
 export function ygoGoldfish(tagged, extra = [], { runs = 1000, seed = 17 } = {}) {
-  const deck = expand(tagged.filter((r) => r.c).map((r) => ({ qty: r.qty, card: { name: r.c.name, tags: r.tags, atk: r.c.atk } })));
+  const deck = expand(tagged.filter((r) => r.c).map((r) => ({ qty: r.qty, card: {
+    name: r.c.name, tags: r.tags, atk: r.c.atk,
+    sharedLimit: /you can only (?:use|activate)[^.]*"[^"]+"[^.]*once per turn|you can only activate 1 "[^"]+" per turn/i.test(r.c.text || ""),
+  } })));
   if (deck.length < 20) return null;
   const r = rng(seed),
     out = { full: 0, through1: 0, fragile: 0, interOnly: 0, brick: 0 },
@@ -376,15 +419,22 @@ export function ygoGoldfish(tagged, extra = [], { runs = 1000, seed = 17 } = {})
       starters = n("starter"),
       ext = n("extender"),
       inter = n("handtrap") + n("negate"),
-      dead = n("brick") + n("garnet");
+      dead = n("brick") + n("garnet"),
+      // Each physical card is one resource, even if it has both tags. A named
+      // once-per-turn restriction prevents duplicate copies being independent outs.
+      seen = new Set(),
+      continuations = h.filter(c => c.tags.has("starter") || c.tags.has("extender")).filter(c=>{
+        const name=lc(c.name);if(c.sharedLimit&&seen.has(name))return false;
+        seen.add(name);return true;
+      }).length;
     let kind;
-    if (starters && starters + ext >= 2 && inter) kind = "full";
-    else if (starters && starters + ext >= 2) kind = "through1";
+    if (starters && continuations >= 2 && inter) kind = "full";
+    else if (starters && continuations >= 2) kind = "through1";
     else if (starters) kind = "fragile";
     else if (inter >= 2) kind = "interOnly";
     else kind = "brick";
     out[kind]++;
-    if (samples.length < 40) samples.push({ kind, h, starters, ext, inter, dead });
+    if (samples.length < 40) samples.push({ kind, h, starters, ext, inter, dead, continuations });
   }
   const P = (k) => out[k] / runs,
     plan = (s) => {
@@ -394,24 +444,24 @@ export function ygoGoldfish(tagged, extra = [], { runs = 1000, seed = 17 } = {})
         dd = s.h.filter((c) => c.tags.has("brick") || c.tags.has("garnet"));
       const lines = [];
       if (st.length) lines.push(`Open with ${st[0].name}: it searches or starts the combo.`);
-      if (st.length > 1 || ex.length) lines.push(`If it's stopped, ${[...st.slice(1), ...ex].map((c) => c.name).join(" or ")} starts a second line.`);
+      if (s.continuations >= 2) lines.push("The hand has a separate potential continuation. Its summon conditions, shared resources and the opponent's interruption still need validation.");
       if (it.length) lines.push(`Hold ${names(it)} for the opponent's turn.`);
       if (!st.length && !it.length) lines.push("No starter and nothing to stop the opponent: this hand passes with little on board.");
       if (dd.length) lines.push(`${names(dd)} ${dd.length > 1 ? "do" : "does"} nothing from the hand here.`);
       return lines;
     };
-  const LABEL = { full: "Full combo plus interaction", through1: "Combo with a backup line", fragile: "One starter, folds to a single hand trap", interOnly: "No combo, but 2+ interaction (going second)", brick: "Brick: no starter, little interaction" };
+  const LABEL = { full: "Starter, separate potential continuation and interaction", through1: "Starter and separate potential continuation", fragile: "Starter without a recognized independent continuation", interOnly: "No recognized starter, but 2+ interaction", brick: "No recognized starter, little interaction" };
   const show = ["full", "fragile", "brick"].map((k) => samples.find((s) => s.kind === k)).filter(Boolean);
   const bosses = extra.filter((x) => x.c).map((x) => x.c).sort((a, b) => (b.atk || 0) - (a.atk || 0)).slice(0, 3),
     beaters = tagged.filter((x) => x.c?.atk >= 2500).map((x) => x.c).slice(0, 3);
   return {
     game: "ygo",
     runs,
-    headline: `${Math.round((P("full") + P("through1")) * 100)}% of 5-card hands can start a combo and keep going if one card is stopped; ${Math.round(P("brick") * 100)}% are bricks.`,
+    headline: `${Math.round((P("full") + P("through1")) * 100)}% of 5-card hands contain a starter and a separate potential continuation after supported shared-use limits; ${Math.round(P("brick") * 100)}% have no recognized starter and little interaction. This does not prove a legal combo through an interruption.`,
     outcomes: Object.keys(LABEL).map((k) => ({ label: LABEL[k], p: P(k), kind: k })),
     metrics: [
-      { label: "Plays through one interruption", value: P("full") + P("through1"), pct: true, good: 0.65 },
-      { label: "Combo and a hand trap in the same hand", value: P("full"), pct: true, good: 0.45 },
+      { label: "Starter + separate potential continuation", value: P("full") + P("through1"), pct: true, good: 0.65 },
+      { label: "Starter, continuation and interaction", value: P("full"), pct: true, good: 0.45 },
       { label: "Bricks", value: P("brick"), pct: true, bad: true, good: 0.08 },
     ],
     winCon: bosses.length ? `Ends on its Extra Deck: ${bosses.map((b) => `${b.name}${b.atk ? ` (${b.atk} ATK)` : ""}`).join(", ")}.` : beaters.length ? `Wins through big Main Deck monsters: ${names(beaters)}.` : "No Extra Deck boss and no big beaters: it's unclear how this list closes a game.",

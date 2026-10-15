@@ -1,3 +1,15 @@
+3.66.0 — Deeper resource and continuation checks
+- Magic's goldfish pays supported colored pips from actual source colors. One dual
+  source cannot pay two pips. Generic spending preserves flexible sources. Alternative
+  costs, conditional mana and mana amounts beyond this model remain limited.
+- Yu-Gi-Oh! one card with both starter and extender tags is one resource, not two.
+  Named shared once-per-turn copies are not assumed independent continuation lines.
+  The report describes potential access, not proof of playing through an interruption.
+- Pokémon search pays printed discard costs instead of assigning two discards to every
+  search. Supporter draw, search and acceleration share one use per turn, unavailable
+  on the first turn going first. New behavior regressions cover each of these cases.
+- The existing 394-deck benchmark still passes without relaxing its score bands.
+
 3.65.0 — Functional scoring regressions and Home game swipes
 - Added all-game regression checks for damaged reference lists, gibberish,
   cosmetic/title invariance, functional repairs and safe matchup eligibility.

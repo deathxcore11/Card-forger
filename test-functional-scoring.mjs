@@ -85,3 +85,25 @@ assert.match(String(part(ygoPower(misleadingMaterial,{extra:15}),'Extra').count)
 const fodder={name:'Fodder',type_line:'Creature — Zombie',cmc:1,mana_cost:'{B}',power:'1',toughness:'1',oracle_text:''};
 assert.equal(part(mtgConstructedPower({...md,cards:md.cards.map(r=>r.name==='Blank'?{name:'Fodder',qty:r.qty}:r)},{...cat,fodder},s=>s.toLowerCase()),'Flow').count,4,'restoring sacrifice fodder restores supported draw');
 console.log('PASS: functional repairs restore credit; printing and name tricks cannot bypass prerequisites.');
+const {ygoGoldfish}=await import('./goldfish.js');
+const multiRole={name:'One resource',text:'You can only use this effect of "One resource" once per turn.'};
+const multi=ygoGoldfish([{qty:1,c:multiRole,tags:new Set(['starter','extender'])},{qty:39,c:{name:'Blank'},tags:new Set()}]);
+assert.equal(multi.metrics[0].value,0,'one physical card cannot supply both starter and a separate continuation');
+const repeated=ygoGoldfish([{qty:3,c:multiRole,tags:new Set(['starter','extender'])},{qty:37,c:{name:'Blank'},tags:new Set()}]);
+assert.equal(repeated.metrics[0].value,0,'shared once-per-turn copies cannot be assumed independent continuations');
+const {spendMana,mtgGoldfish}=await import('./goldfish.js');
+assert.equal(spendMana([['G'],['G']],['R'],2),null,'two green sources cannot pay red');
+assert.equal(spendMana([['G','R']],['G','R'],2),null,'one dual source cannot pay two pips');
+assert.deepEqual(spendMana([['G','R'],['G']],['G','R'],2),[],'flexible source is assigned without wasting the only red source');
+const wrongColor=mtgGoldfish([{qty:24,c:{name:'Forest',cmc:0,type_line:'Basic Land — Forest'}},{qty:36,c:{name:'Red threat',cmc:2,mana_cost:'{1}{R}',type_line:'Creature',power:'3',oracle_text:''}}]);
+assert.equal(wrongColor.metrics[1].value,0,'turn simulation cannot cast red threats with Forests');
+console.log('PASS: typed mana payment, flexible-source allocation and no double spending.');
+const guide={name:'Guide',category:'Trainer',typeLine:'Trainer · Supporter',effect:'Search your deck for a Pokémon.'};
+const accelerate={name:'Accelerate',category:'Trainer',typeLine:'Trainer · Supporter',effect:'Attach 1 Energy from your deck to your Pokémon.'};
+const turnTests=ptcgGoldfish([{qty:4,c:colored},{qty:4,c:pk('Other Basic')},{qty:4,c:guide},{qty:4,c:accelerate},{qty:12,c:en('Grass')},{qty:32,c:filler}]);
+for(const sample of turnTests.samples)for(const log of sample.log){
+ const used=(log.text.match(/Guide →|Accelerate: \+1 Energy/g)||[]).length;
+ assert.ok(used<=1,'one Supporter per turn across search and acceleration');
+ if(log.t===1)assert.equal(used,0,'no Supporter on the first turn going first');
+}
+console.log('PASS: Pokémon Supporter timing and shared turn-use budget.');
