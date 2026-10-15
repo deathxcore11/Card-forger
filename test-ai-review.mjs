@@ -5,7 +5,7 @@ import { reviewPayload, aiReviewPanel, runAiReview, aiReviewDialogContent } from
 import worker from './worker.js';
 const origin = 'https://site.test';
 const card = { id: 'c0', name: 'Test Engine', qty: 4, zone: 'main', type: 'Creature', text: 'Sacrifice an artifact: Draw two cards.', details: '', known: true };
-const payload = { game: 'mtg', format: 'Modern', cards: [card], checks: { engine: 72, issues: [] } };
+const payload = { game: 'mtg', format: 'Modern', cards: [card], power: { areas: [{ key: 'Draw', label: 'Draw', count: 4, target: 10, status: 'weak', lost: 6 }], priority: ['Draw', 'Unknown'] }, checks: { engine: 72, issues: [] } };
 const request = (body = payload, headers = {}, method = 'POST') => new Request(origin + '/api/ai/deck-review', { method, headers: { Origin: origin, 'Content-Type': 'application/json', ...headers }, ...(method === 'GET' ? {} : { body: typeof body === 'string' ? body : JSON.stringify(body) }) });
 function storage() {
   const data = new Map(); let queue = Promise.resolve();
@@ -16,7 +16,7 @@ function setup(limit = 20) {
   const st = storage(), gate = new AiReviewLimits({ storage: st }, { AI_DAILY_LIMIT: limit });
   return { OPENAI_API_KEY: 'private-test-key', AI_REVIEW_LIMITS: { idFromName: n => n, get: () => ({ fetch: (url, init) => gate.fetch(new Request(url, init)) }) }, st };
 }
-const review = { headline: 'Keep artifact fodder for Needs fodder engine.', pilot: { hand: { verdict: 'keep', reason: 'Has the engine.', firstTurns: 'Cast it.', lookFor: 'Artifacts', preserve: 'Fodder', evidence: [] }, lines: [{ name: 'Draw engine', goal: 'Draw cards', steps: [{ turn: 1, cardId: 'c0', kind: 'play', action: 'Cast it', quote: '' }, { turn: 2, cardId: 'c0', kind: 'activate', action: 'Sacrifice and draw', quote: 'Sacrifice an artifact' }], payoff: 'Cards', interrupt: 'Removal' }] }, pressure: { scenarios: [{ threat: 'Needs fodder', impact: 'No draw.', backup: 'None', backupCards: [], gap: true, evidence: [{ cardId: 'c0', quote: 'Sacrifice an artifact' }] }], challenges: [] }, improve: [], tests: ['Goldfish ten hands.'] };
+const review = { headline: 'Keep artifact fodder for Needs fodder engine.', priority: 'Draw', identity: { plan: 'Sacrifice artifacts to draw.', howItWins: 'Card advantage.', winCards: ['c0'], engineCards: ['c0', 'ghost'] }, explain: [{ area: 'Draw', says: 'Draw comes from Test Engine.', cards: ['c0'] }, { area: 'Nope', says: 'x', cards: [] }], beyond: [{ area: 'Draw', note: 'Test Engine needs an artifact for each activation.', evidence: [{ cardId: 'c0', quote: 'Sacrifice an artifact' }] }, { area: 'Draw', note: 'Draw is really 1 here.', evidence: [{ cardId: 'c0', quote: 'Sacrifice an artifact' }] }], pilot: { hand: { verdict: 'keep', reason: 'Has the engine.', firstTurns: 'Cast it.', lookFor: 'Artifacts', preserve: 'Fodder', evidence: [] }, lines: [{ name: 'Draw engine', goal: 'Draw cards', steps: [{ turn: 1, cardId: 'c0', kind: 'play', action: 'Cast it', quote: '' }, { turn: 2, cardId: 'c0', kind: 'activate', action: 'Sacrifice and draw', quote: 'Sacrifice an artifact' }], payoff: 'Cards', interrupt: 'Removal' }] }, pressure: { scenarios: [{ threat: 'Needs fodder', impact: 'No draw.', backup: 'None', backupCards: [], gap: true, evidence: [{ cardId: 'c0', quote: 'Sacrifice an artifact' }] }] }, improve: [], tests: ['Goldfish ten hands.'] };
 let calls = 0, last;
 const fetcher = async (url, init) => {
   calls++; assert.equal(url, 'https://api.openai.com/v1/responses');
@@ -55,7 +55,7 @@ const poison = { ...payload, account: { email: 'private@example.test' }, cards: 
 assert.ok(!JSON.stringify(cleanDeck(poison)).includes('private@example'));
 assert.match(last.instructions, /untrusted content/); assert.match(last.instructions, /Never ask the player to count/);
 const sc = review.pressure.scenarios[0];
-const invalid = { ...review, pressure: { challenges: [], scenarios: [sc, { ...sc, evidence: [{ cardId: 'c0', quote: 'Draw ten cards.' }] }, { ...sc, evidence: [{ cardId: 'not-in-deck', quote: 'Sacrifice an artifact' }] }, { ...sc, backupCards: ['ghost'] }] },
+const invalid = { ...review, pressure: { scenarios: [sc, { ...sc, evidence: [{ cardId: 'c0', quote: 'Draw ten cards.' }] }, { ...sc, evidence: [{ cardId: 'not-in-deck', quote: 'Sacrifice an artifact' }] }, { ...sc, backupCards: ['ghost'] }] },
   pilot: { ...review.pilot, lines: [...review.pilot.lines, { ...review.pilot.lines[0], steps: [...review.pilot.lines[0].steps, { turn: 3, cardId: 'c9', kind: 'play', action: 'Cast a card that is not there', quote: '' }] }] } };
 const checked = validateReview(invalid, cleanDeck(payload));
 assert.equal(checked.pilot.lines.length, 1, 'a line using a card not in the deck is dropped');
@@ -63,8 +63,8 @@ assert.deepEqual(checked.pressure.scenarios.map(x => x.evidence.length), [1, 0, 
 assert.equal(checked.pressure.scenarios[3].backupCards.length, 0, 'backup cards not in the deck are removed');
 assert.ok(checked.notes.some(n => /quote not found/.test(n)));
 // Quotes match despite curly quotes, dashes, case and "…" gaps; prose shows names, not ids.
-const loose = validateReview({ ...review, headline: 'Protect Test Engine (c0) first; c0 wins.', pressure: { scenarios: [], challenges: [{ area: 'Draw', claim: 'x', evidence: [{ cardId: 'c0', quote: 'sacrifice an artifact… two cards' }] }] } }, cleanDeck(payload));
-assert.equal(loose.pressure.challenges.length, 1); assert.equal(loose.headline, 'Protect Test Engine first; Test Engine wins.');
+const loose = validateReview({ ...review, headline: 'Protect Test Engine (c0) first; c0 wins.', beyond: [{ area: 'Draw', note: 'x', evidence: [{ cardId: 'c0', quote: 'sacrifice an artifact… two cards' }] }] }, cleanDeck(payload));
+assert.equal(loose.beyond.length, 1); assert.equal(loose.headline, 'Protect Test Engine first; Test Engine wins.');
 // A step citing one card while describing another is dropped.
 const two = cleanDeck({ ...payload, cards: [card, { ...card, id: 'c1', name: 'Other Engine' }] });
 const mixed = validateReview({ ...review, pilot: { hand: null, lines: [{ ...review.pilot.lines[0], steps: [{ turn: 1, cardId: 'c0', kind: 'play', action: 'Cast Other Engine', quote: '' }, review.pilot.lines[0].steps[1]] }] } }, two);
@@ -117,6 +117,12 @@ assert.match(aiReviewDialogContent({ result: evil, payload: { hand: [] }, rows: 
 assert.match(readFileSync('.assetsignore', 'utf8'), /ai-review-route\.js/);
 assert.match(readFileSync('.gitignore', 'utf8'), /\.dev\.vars/);
 assert.match(readFileSync('sw.js', 'utf8'), /url\.pathname\.startsWith\("\/api\/"\)\) return/);
+// Coach and Power share one vocabulary: unknown areas and restated counts are dropped, Power's ranking is kept.
+const tied = validateReview(review, cleanDeck(payload));
+assert.equal(tied.priority, 'Draw'); assert.deepEqual(tied.explain.map(x => x.area), ['Draw']);
+assert.deepEqual(tied.beyond.map(x => x.note), ['Test Engine needs an artifact for each activation.'], 'a detail that restates Power\'s count with a different number is dropped');
+assert.deepEqual(tied.identity.engineCards.map(x => x.name), ['Test Engine']);
+assert.deepEqual(cleanDeck(payload).power.priority, ['Draw'], 'priority keys must be Power areas');
 console.log('PASS: AI review all three games, secret isolation, bounded input, quota burst/restart, fail-closed setup, failure handling, citation rejection, explicit opt-in, escaping and stale-review invalidation. No paid API requests made.');
 
 for (const [status, error, expected] of [

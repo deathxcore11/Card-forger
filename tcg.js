@@ -1277,7 +1277,7 @@ export function tcgCoachHooks(g, d, f, pw) {
     rescore: (out, add) => {
       if (out.zone === "side") throw Error("main deck only");
       const p2 = tcgPower(g, { ...swappedZones(d, out.zone, out.row.cardId, add), id: d.id + "~coach" }, f, (x) => cardOf(g, x));
-      return { before: shownPower(pw), after: shownPower(p2), beforeIssues: pw.readiness?.issues, issues: p2.readiness?.issues };
+      return { before: shownPower(pw), after: shownPower(p2), beforeIssues: pw.readiness?.issues, issues: p2.readiness?.issues, beforeParts: pw.parts, afterParts: p2.parts };
     },
   };
 }

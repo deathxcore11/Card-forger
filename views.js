@@ -1396,7 +1396,7 @@ export function mtgCoachHooks(d, pw) {
     rescore: (out, add) => {
       if (out.zone !== "main") throw Error("main deck only");
       const p2 = mtgPower({ ...d, id: d.id + "~coach", cards: applySwapsToCards(d.cards, [{ cut: out.row.name, add: add.name }]) });
-      return { before: shownPower(pw), after: shownPower(p2), beforeIssues: pw.readiness?.issues, issues: p2.readiness?.issues };
+      return { before: shownPower(pw), after: shownPower(p2), beforeIssues: pw.readiness?.issues, issues: p2.readiness?.issues, beforeParts: pw.parts, afterParts: p2.parts };
     },
   };
 }

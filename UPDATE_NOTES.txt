@@ -1,3 +1,18 @@
+3.71.0 — AI coach built on Deck Power
+- The coach now receives Deck Power's own analysis as structured data (each area's count, target,
+  status and points lost, and Power's ranking of what to fix first) and works from it.
+- New first tab, "Deck": what the deck does and how it wins (with its win cards and engine
+  cards), then "Deck Power, explained": Power's rows in Power's own order, with Power's numbers
+  and colours, and the coach's plain-language meaning for this deck underneath. Details a count
+  can't show (a card that only works under a condition, sequencing) appear under that row.
+- The coach no longer argues with Power's numbers: a detail that restates an area with a
+  different count is dropped, and its focus follows Power's ranking.
+- Every swap names the Power area it fixes, and Power recounts that area after the swap.
+- scripts/coach-eval.mjs measures the coach against Power on real winning lists and damaged
+  copies (no starters, wrong mana, no Supporter draw…): does it follow Power, explain Power's
+  weak areas, find the damage, name the cards Power's games win with, and say the same thing
+  when asked twice.
+
 3.70.3 — Opens on a weak connection
 - The app stayed on its splash screen when the connection stalled: start-up waited for the card
   reference file with no time limit, and the offline helper waited for the network with no

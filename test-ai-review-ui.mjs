@@ -11,7 +11,7 @@ globalThis.document = {
   querySelector(q) { return this.nodes[q]; }, addEventListener(k,f){this.handlers[k]=f;}, showModal(){this.open=true;}, close(){this.open=false;}, remove(){this.removed=true;} })
 };
 const deck = { id: 'popup', cards: [{ name: 'Engine', qty: 4 }] }, p = { heuristic: 60, formatName: 'Casual' }, lookup = () => ({ name: 'Engine', oracle_text: 'Draw two cards.' });
-const report = { headline: 'Draw cards.', pilot: { hand: null, lines: [] }, pressure: { scenarios: [], challenges: [] }, improve: [], tests: [], omitted: 0 };
+const report = { headline: 'Draw cards.', priority: '', identity: { plan: 'Draw cards.', howItWins: '', winCards: [], engineCards: [] }, explain: [], beyond: [], pilot: { hand: null, lines: [] }, pressure: { scenarios: [] }, improve: [], tests: [], omitted: 0 };
 aiReviewPanel('mtg', deck, lookup, p);
 let complete, calls = 0;
 const fetcher = async () => { calls++; return new Promise(resolve => { complete = resolve; }); };

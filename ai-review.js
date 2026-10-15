@@ -3,6 +3,8 @@
 // the AI returns decisions (lines, stress tests, swaps), and the app checks them in code before
 // showing them: cards in the list, copies, per-turn limits, mana by turn, and re-scored swaps.
 import { esc } from './ui.js';
+import { review } from './deckaudit.js';
+import { competitiveScore } from './scouting.js';
 const entries = new Map();
 let activeDialog = null;
 const plain = s => String(s ?? '').replace(/<[^>]*>/g, ' ').trim();
@@ -66,8 +68,6 @@ export function deckFacts(game, rows, p) {
   const f = [...composition(game, rows)];
   if (!p) return f;
   f.push(`App scores: engine ${p.heuristic ?? p.score ?? '—'}/100${p.ctx?.score != null ? `, competitive ${p.ctx.score}/100` : ''}. Plan the app detected: ${p.plan || 'unknown'}.`);
-  for (const c of p.caps || []) f.push(`Score capped at ${c.max}: ${c.label}${c.why ? ' — ' + c.why : ''}`);
-  for (const x of p.parts || []) f.push(`${x.label || x.key}: ${x.count ?? '—'}${x.target != null ? ` (aim ${x.target})` : ''}${x.why ? ' — ' + x.why : ''}${x.cards?.length ? ' Cards: ' + names(x.cards, 12) : ''}`);
   for (const s of p.sims || []) if (Number.isFinite(s.p)) f.push(`Hand odds · ${s.label}: ${pct(s.p)}${s.target != null ? ` (aim ${s.lower ? 'under' : 'over'} ${pct(s.target)})` : ''}${s.note ? ' — ' + s.note : ''}`);
   const g = p.goldfish;
   if (g) {
@@ -88,6 +88,17 @@ export function deckFacts(game, rows, p) {
   return f.slice(0, 90);
 }
 // A shuffled opening hand, the same for the same list (so reopening shows the same hand).
+// Deck Power's analysis as the coach sees it: every area with Power's own status, points lost and
+// ranking (score limits first, then weak areas by points lost). The coach explains these; it
+// never sets a status itself.
+export function powerSummary(p) {
+  if (!p) return { areas: [], priority: [] };
+  const R = review(p.parts || []), weak = new Set(R.weak.map(x => x.key)), strong = new Set(R.strong.map(x => x.key));
+  const caps = (p.caps || []).map(c => ({ key: 'cap:' + c.key, label: c.label, count: '', target: '', status: 'cap', lost: 100 - (c.max ?? 100), max: c.max, why: c.why || '', cards: [] }));
+  const parts = R.scored.map(x => ({ key: x.key, label: x.label || x.key, count: Number.isFinite(x.count) ? x.count : String(x.count ?? ''), target: Number.isFinite(x.target) ? x.target : String(x.target ?? ''), ratio: x.ratio, status: weak.has(x.key) ? 'weak' : strong.has(x.key) ? 'strong' : 'ok', lost: Math.round(x.lost * 10) / 10, why: x.why || x.hint || '', cards: (x.cards || []).map(nm).filter(Boolean).slice(0, 12) }));
+  const comp = competitiveScore(p);
+  return { score: comp ?? p.score, engine: p.heuristic ?? p.score, competitive: comp ?? null, verdict: p.caps?.[0] ? `Held to ${p.caps[0].max} by ${p.caps[0].label}` : '', plan: p.plan || '', areas: [...caps, ...parts], priority: [...caps.map(c => c.key), ...R.weak.map(x => x.key)] };
+}
 export function sampleHand(game, rows, seed) {
   const lib = rows.filter(r => r.zone === 'main' && r.c).flatMap(r => Array(r.row.qty).fill(r.id)), n = game === 'ygo' ? 5 : 7;
   if (lib.length < n) return [];
@@ -100,7 +111,7 @@ export function reviewPayload(game, deck, lookup, p) {
   const rows = deckRows(game, deck, lookup);
   const cards = rows.map(r => cardEntry(game, r.id, r.row.name || String(r.row.cardId), r.row.qty, r.zone, r.c));
   const base = { game, format: p.formatName || deck.format || '', commander: game === 'mtg' ? deck.commander || '' : '', cards };
-  return { ...base, facts: deckFacts(game, rows, p), hand: sampleHand(game, rows, JSON.stringify(cards.map(c => [c.name, c.qty, c.zone]))), checks: { engine: p.heuristic ?? p.score, competitive: p.ctx?.score ?? null, provisional: !!p.readiness?.provisional, issues: [...(p.readiness?.issues || []), ...(p.caps || []).map(c => `${c.label}: ${c.why || ''}`)] } };
+  return { ...base, power: powerSummary(p), facts: deckFacts(game, rows, p), hand: sampleHand(game, rows, JSON.stringify(cards.map(c => [c.name, c.qty, c.zone]))), checks: { engine: p.heuristic ?? p.score, competitive: p.ctx?.score ?? null, provisional: !!p.readiness?.provisional, issues: [...(p.readiness?.issues || []), ...(p.caps || []).map(c => `${c.label}: ${c.why || ''}`)] } };
 }
 
 /* ---------- What the app checks ---------- */
@@ -159,7 +170,8 @@ function verify(entry) {
     if (!out || !add || !entry.hooks?.rescore) return null;
     try {
       const v = entry.hooks.rescore(out, add.c), had = new Set(v.beforeIssues || []);
-      return { before: v.before, after: v.after, issues: (v.issues || []).filter(i => !had.has(i)) };
+      const count = (parts) => parts?.find(x => x.key === s.area)?.count;
+      return { before: v.before, after: v.after, issues: (v.issues || []).filter(i => !had.has(i)), area: s.area ? { before: count(v.beforeParts), after: count(v.afterParts) } : null };
     } catch { return null; }
   });
   return (entry.verified = { info, lines, swaps });
@@ -172,7 +184,7 @@ export function aiReviewPanel(game, deck, lookup, p, hooks = {}) {
   let entry = entries.get(key);
   if (!entry || entry.signature !== signature) {
     if (entries.size > 40) entries.delete(entries.keys().next().value);
-    entry = { signature, payload, game, rows: deckRows(game, deck, lookup), hooks, busy: false, result: null, error: '', errorCode: '', tab: 'pilot' }; entries.set(key, entry);
+    entry = { signature, payload, game, rows: deckRows(game, deck, lookup), hooks, busy: false, result: null, error: '', errorCode: '', tab: 'deck' }; entries.set(key, entry);
     if (activeDialog?.key === key) { activeDialog.stale = true; updateDialog(); }
   } else entry.hooks = hooks;
   const result = entry.result, ready = result ? `${plural(result.pilot?.lines?.length || 0, 'line')} · ${plural(result.pressure?.scenarios?.length || 0, 'stress test')} · ${plural(result.improve?.length || 0, 'swap')}` : '';
@@ -190,32 +202,52 @@ function pilotTab(r, v, entry) {
   }).join('');
   return handHtml + lines || '<p class="air-empty">No line held up to the app\'s checks for this list. Try the Goldfish tab to see how it plays out.</p>';
 }
+const STATUS = { cap: ['Holds the score back', 'bad'], weak: ['Needs work', 'warn'], ok: ['Fine', 'ok'], strong: ['Strength', 'good'] };
+function deckTab(r, entry) {
+  const P = entry.payload.power || { areas: [], priority: [] }, areaOf = new Map(P.areas.map(a => [a.key, a]));
+  const id = r.identity || {}, chipList = (label, cards) => cards?.length ? `<div class="air-idrow"><span class="air-label">${label}</span>${chips(cards)}</div>` : '';
+  const who = `<article class="air-card air-identity" style="--i:1"><span class="air-label">What this deck does</span><p class="air-lead">${esc(id.plan || P.plan)}</p>${id.howItWins ? `<p class="air-row good"><b>Wins by</b>${esc(id.howItWins)}</p>` : ''}${chipList('Wins with', id.winCards)}${chipList('Runs on', id.engineCards)}</article>`;
+  // Rows in Power's own order (what to fix first), each with Power's number and status; the coach
+  // only adds what it means for this deck and what the count can't show.
+  const said = new Map((r.explain || []).map(x => [x.area, x])), more = new Map(); for (const b of r.beyond || []) (more.get(b.area) || more.set(b.area, []).get(b.area)).push(b);
+  const fixes = new Set((r.improve || []).map(x => x.area).filter(Boolean));
+  const order = [...new Set([...P.priority, ...P.areas.filter(a => a.status === 'strong').map(a => a.key), ...said.keys()])].filter(k => areaOf.has(k) && (said.has(k) || more.has(k) || P.priority.includes(k)));
+  const rows = order.map((k, i) => {
+    const a = areaOf.get(k), [word, tone] = STATUS[a.status] || STATUS.ok, x = said.get(k);
+    const meter = a.status === 'cap' ? `<span class="air-max">max ${esc(String(a.max ?? ''))}</span>` : Number.isFinite(a.ratio) ? `<div class="air-meter ${tone}"><span style="width:${Math.round(Math.min(1, a.ratio) * 100)}%"></span></div>` : '';
+    return `<div class="air-area ${tone}" style="--i:${i + 3}"><div class="air-area-top"><b>${esc(a.label)}</b>${a.count !== '' && a.count != null ? `<span class="air-num">${esc(String(a.count))}${a.target !== '' && a.target != null ? `<small> / ${esc(String(a.target))}</small>` : ''}</span>` : ''}<span class="air-status ${tone}">${word}</span></div>${meter}${x ? `<p>${esc(x.says)}</p>${chips(x.cards)}` : a.why ? `<p class="air-note">${esc(a.why)}</p>` : ''}${(more.get(k) || []).map(b => `<div class="air-beyond"><span class="air-label">What the count doesn't show</span><p>${esc(b.note)}</p>${ev(b.evidence)}</div>`).join('')}${fixes.has(k) ? `<button class="link air-jump" data-ai-tab="improve">See the swap that fixes this →</button>` : ''}</div>`;
+  }).join('');
+  const nums = `<div class="air-power-nums">${P.competitive != null ? `<span><b>${P.competitive}</b>Competitive</span>` : ''}<span><b>${P.engine ?? '—'}</b>Engine</span></div>`;
+  return who + (rows ? `<article class="air-card air-power" style="--i:2"><div class="air-card-head"><span class="air-label">Deck Power, explained</span>${nums}</div><p class="air-note">Numbers and verdicts are Power's own; the coach explains them.</p>${rows}</article>` : '');
+}
 function pressureTab(r) {
   const sc = (r.pressure?.scenarios || []).map((s, i) => `<article class="air-card air-threat" style="--i:${i + 1}"><div class="air-card-head"><span class="air-label">If…</span><span class="air-check ${s.gap ? 'bad' : 'ok'}">${s.gap ? 'Gap' : 'Backup ready'}</span></div><h4>${esc(s.threat)}</h4>${s.impact ? `<p>${esc(s.impact)}</p>` : ''}<p class="air-row ${s.gap ? 'bad' : 'good'}"><b>${s.gap ? 'Missing' : 'Then'}</b>${esc(s.backup)}</p>${chips(s.backupCards)}${ev(s.evidence)}</article>`).join('');
-  const ch = (r.pressure?.challenges || []).map((c, i) => `<article class="air-card air-challenge" style="--i:${i + 5}"><div class="air-card-head"><span class="air-label">Where Power may mislead</span>${c.area ? `<span class="air-check">${esc(c.area)}</span>` : ''}</div><p class="air-lead">${esc(c.claim)}</p>${ev(c.evidence)}</article>`).join('');
-  return sc + ch || '<p class="air-empty">No stress test held up to the card-text check.</p>';
+  return sc || '<p class="air-empty">No stress test held up to the card-text check.</p>';
 }
-function improveTab(r, v) {
+function improveTab(r, v, entry) {
+  const areaOf = new Map((entry.payload.power?.areas || []).map(a => [a.key, a]));
   const sw = (r.improve || []).map((s, i) => {
     const sc = v.swaps[i], d = sc ? sc.after - sc.before : 0;
     const verdict = sc ? (sc.issues.length ? `<span class="air-check bad">Not legal: ${esc(sc.issues[0])}</span>` : `<span class="air-score ${d > 0 ? 'up' : d < 0 ? 'down' : ''}">Power ${sc.before} → ${sc.after} <b>${d > 0 ? '+' : ''}${d}</b></span>`) : s.add ? '' : '<span class="air-check">Find a card</span>';
-    return `<article class="air-card air-swap" style="--i:${i + 1}"><div class="air-swap-pair"><span class="out"><small>OUT</small>${esc(s.cutName)}</span><span class="air-arrow" aria-hidden="true">→</span><span class="in"><small>${s.add ? 'IN · you own it' : 'IN'}</small>${esc(s.addName || s.role || 'A better card for this role')}</span></div>${verdict ? `<div class="air-verdict-row">${verdict}${sc ? '<small>re-scored by the app</small>' : ''}</div>` : ''}<ul class="air-pm">${s.gain ? `<li class="good"><i>+</i>${esc(s.gain)}</li>` : ''}${s.loss ? `<li class="bad"><i>−</i>${esc(s.loss)}</li>` : ''}${s.lost ? `<li class="bad"><i>×</i>${esc(s.lost)}</li>` : ''}${s.test ? `<li><i>▶</i>${esc(s.test)}</li>` : ''}</ul>${ev(s.evidence)}</article>`;
+    const A = areaOf.get(s.area), moved = sc?.area && sc.area.before != null ? `<span class="air-score ${sc.area.after > sc.area.before ? 'up' : sc.area.after < sc.area.before ? 'down' : ''}">${esc(A?.label || s.area)} ${esc(String(sc.area.before))} → ${esc(String(sc.area.after))}</span>` : A ? `<span class="air-check">${esc(A.label)}</span>` : '';
+    return `<article class="air-card air-swap" style="--i:${i + 1}">${moved ? `<div class="air-fixes"><span class="air-label">Fixes</span>${moved}</div>` : ''}<div class="air-swap-pair"><span class="out"><small>OUT</small>${esc(s.cutName)}</span><span class="air-arrow" aria-hidden="true">→</span><span class="in"><small>${s.add ? 'IN · you own it' : 'IN'}</small>${esc(s.addName || s.role || 'A better card for this role')}</span></div>${verdict ? `<div class="air-verdict-row">${verdict}${sc ? '<small>recounted by Power</small>' : ''}</div>` : ''}<ul class="air-pm">${s.gain ? `<li class="good"><i>+</i>${esc(s.gain)}</li>` : ''}${s.loss ? `<li class="bad"><i>−</i>${esc(s.loss)}</li>` : ''}${s.lost ? `<li class="bad"><i>×</i>${esc(s.lost)}</li>` : ''}${s.test ? `<li><i>▶</i>${esc(s.test)}</li>` : ''}</ul>${ev(s.evidence)}</article>`;
   }).join('');
   const tests = r.tests?.length ? `<article class="air-card air-tests" style="--i:6"><span class="air-label">Prove it in the app</span><ol>${r.tests.map(t => `<li>${esc(t)}</li>`).join('')}</ol></article>` : '';
   return sw + tests || '<p class="air-empty">No swap held up to the app\'s checks.</p>';
 }
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 function tabBody(entry, v = verify(entry)) {
-  const r = entry.result, tab = entry.tab || 'pilot';
-  return tab === 'pressure' ? pressureTab(r) : tab === 'improve' ? improveTab(r, v) : pilotTab(r, v, entry);
+  const r = entry.result, tab = entry.tab || 'deck';
+  return tab === 'pressure' ? pressureTab(r) : tab === 'improve' ? improveTab(r, v, entry) : tab === 'pilot' ? pilotTab(r, v, entry) : deckTab(r, entry);
 }
 function reviewReport(entry) {
-  const r = entry.result, v = verify(entry) || { info: new Map(), lines: [], swaps: [] }, tab = entry.tab || 'pilot';
-  const counts = { pilot: (r.pilot?.lines?.length || 0) + (r.pilot?.hand ? 1 : 0), pressure: (r.pressure?.scenarios?.length || 0) + (r.pressure?.challenges?.length || 0), improve: r.improve?.length || 0 };
+  const r = entry.result, v = verify(entry) || { info: new Map(), lines: [], swaps: [] }, tab = entry.tab || 'deck';
+  const counts = { deck: r.explain?.length || 0, pilot: (r.pilot?.lines?.length || 0) + (r.pilot?.hand ? 1 : 0), pressure: r.pressure?.scenarios?.length || 0, improve: r.improve?.length || 0 };
+  const focus = (entry.payload.power?.areas || []).find(a => a.key === r.priority);
   const checked = v.lines.filter(f => !f.length).length, scored = v.swaps.filter(Boolean).length;
-  const tabs = [['pilot', '▶', 'Pilot'], ['pressure', '⚡', 'Pressure'], ['improve', '↑', 'Improve']];
+  const tabs = [['deck', '◆', 'Deck'], ['pilot', '▶', 'Pilot'], ['pressure', '⚡', 'Pressure'], ['improve', '↑', 'Improve']];
   const body = tabBody(entry, v);
-  return `<section class="air-hero" style="--i:0"><span class="air-kicker"><span aria-hidden="true">✦</span> The decision</span><p class="air-headline">${esc(r.headline)}</p><div class="air-stats"><span>${plural(r.pilot?.lines?.length || 0, 'line')} · ${checked} passed app checks</span><span>${plural(r.pressure?.scenarios?.length || 0, 'stress test')}</span><span>${plural(counts.improve, 'swap')} · ${scored} re-scored</span></div></section>
+  return `<section class="air-hero" style="--i:0"><span class="air-kicker"><span aria-hidden="true">✦</span> The decision${focus ? ` · <em>${esc(focus.label)}</em>` : ''}</span><p class="air-headline">${esc(r.headline)}</p><div class="air-stats"><span>${plural(r.pilot?.lines?.length || 0, 'line')} · ${checked} passed app checks</span><span>${plural(r.pressure?.scenarios?.length || 0, 'stress test')}</span><span>${plural(counts.improve, 'swap')} · ${scored} re-scored</span></div></section>
   <div class="air-tabs" role="tablist" aria-label="Coaching sections">${tabs.map(([k, icon, label]) => `<button role="tab" aria-selected="${tab === k}" class="${tab === k ? 'on' : ''}" data-ai-tab="${k}"><span aria-hidden="true">${icon}</span>${label}<em>${counts[k]}</em></button>`).join('')}</div>
   <div class="air-panel" role="tabpanel">${body}</div>
   ${r.omitted ? `<p class="foot">${r.omitted} suggestion${r.omitted === 1 ? ' was' : 's were'} dropped because ${r.omitted === 1 ? 'it' : 'they'} cited cards or text that aren't in this list.</p>` : ''}<p class="foot">AI coaching · card quotes are matched to real card text and the app checks cards, copies and turn limits, but full rules interactions aren't verified. Your score is unchanged. Clears when you change the deck or reload.</p>`;
@@ -255,7 +287,7 @@ export function showAiReview(key, render, fetcher = fetch) {
     if (tab) {
       // Swap only the tab's content, so the decision card doesn't replay; bring the tabs to the top.
       entry.tab = tab.dataset.aiTab;
-      for (const b of node.querySelectorAll('[data-ai-tab]')) { b.classList.toggle('on', b === tab); b.setAttribute('aria-selected', String(b === tab)); }
+      for (const b of node.querySelectorAll('.air-tabs [data-ai-tab]')) { const on = b.dataset.aiTab === entry.tab; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); }
       const panel = node.querySelector('.air-panel'), body = node.querySelector('.ai-dialog-body'), bar = node.querySelector('.air-tabs');
       if (panel) panel.innerHTML = tabBody(entry);
       if (body && bar && body.scrollTop > bar.offsetTop - 8) body.scrollTop = bar.offsetTop - 8;
@@ -288,3 +320,6 @@ export async function runAiReview(key, render, fetcher = fetch) {
   } catch (e) { entry.errorCode = e.code || ''; entry.error = e.name === 'TimeoutError' || e.name === 'AbortError' ? 'AI coaching took too long. Try again later.' : e.message || 'AI coaching is unavailable.'; }
   finally { entry.busy = false; if (entries.get(key) === entry) render(); if (activeDialog?.entry === entry) updateDialog(); }
 }
+
+// The current coaching for a deck, with the app's own checks (used by scripts/coach-eval.mjs).
+export function coachEntry(key) { const e = entries.get(key); return e ? { ...e, verified: verify(e) } : null; }
