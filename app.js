@@ -2141,6 +2141,31 @@ A.myPriceSet = async (t) => {
   toast(v.trim() ? `Your price saved: ${usd(Math.round(n * 100) / 100)}` : "Your price removed");
   refreshSheet();
 };
+// Pokémon / Yu-Gi-Oh! card pages: the same tap-to-buy and press-and-hold price as Magic.
+A.tBuyDirect = (t) => {
+  const g = t.dataset.game, c = T.cardOf(g, t.dataset.id);
+  if (!c) return;
+  // The exact TCGplayer product when known (Pokémon: the card's product; Yu-Gi-Oh!: one priced printing), else a search.
+  const pid = g === "ptcg" ? (c.variants || []).find((v) => v.productId)?.productId : (c.sets || []).filter((s) => s.productId).length === 1 ? c.sets.find((s) => s.productId).productId : null;
+  window.open(pid ? `https://www.tcgplayer.com/product/${pid}` : `https://www.tcgplayer.com/search/${g === "ptcg" ? "pokemon" : "yugioh"}/product?q=${encodeURIComponent(c.name)}`, "_blank", "noopener");
+};
+A.tMyPriceSet = async (t) => {
+  const g = t.dataset.game, c = T.cardOf(g, t.dataset.id);
+  if (!c) return;
+  const k = myPriceKey(c), cur = S.state.myPrices?.[k]?.price;
+  const v = await askText(`Your price for ${c.name}. Only you see it; leave empty to remove.`, cur != null ? String(cur) : "", { title: "Set your price" });
+  if (v === null) return;
+  const n = Number(String(v).replace(/[$,\s]/g, ""));
+  if (v.trim() && !(n >= 0 && Number.isFinite(n))) return toast("Enter a price like 12.50");
+  await commit((s) => {
+    s.myPrices ||= {};
+    if (v.trim()) s.myPrices[k] = { price: Math.round(n * 100) / 100, name: c.name, game: g, at: new Date().toISOString() };
+    else delete s.myPrices[k];
+  }, { rerender: false, enrich: false });
+  useMyPrices(S.state.myPrices);
+  toast(v.trim() ? `Your price saved: ${usd(Math.round(n * 100) / 100)}` : "Your price removed");
+  refreshSheet();
+};
 A.buyFinish = async (t) => {
   const ctx = S.ui.sheetCtx;
   if (ctx?.type !== "buy") return;

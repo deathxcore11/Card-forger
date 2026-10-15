@@ -26,13 +26,16 @@ export async function ygoPriceRoute(url,ctx,fetchImpl=fetch){
   const [data,groups]=await Promise.all([get('https://db.ygoprodeck.com/api/v7/cardinfo.php?id='+id),get('https://tcgcsv.com/tcgplayer/2/groups')]),card=data.data?.[0];
   if(String(card?.id)!==id)throw Error('Card identity mismatch');
   const sets=(card.card_sets||[]).map(s=>({code:s.set_code,rarity:s.set_rarity,name:s.set_name}));const printings=[];
-  // Fetch each distinct set once. Avoid arbitrary name/cheapest-product fallbacks.
-  const names=[...new Set(sets.map(s=>s.name))];
-  for(let i=0;i<names.length;i+=3)await Promise.all(names.slice(i,i+3).map(async name=>{
-   const matches=(groups.results||[]).filter(g=>norm(g.name)===norm(name));if(matches.length!==1)return;
-   const group=matches[0];try{
-    const [products,prices]=await Promise.all([get(`https://tcgcsv.com/tcgplayer/2/${group.groupId}/products`),get(`https://tcgcsv.com/tcgplayer/2/${group.groupId}/prices`)]);
-    for(const set of sets.filter(s=>s.name===name)){
+  // Each printing's TCGplayer set: the one group with the set's name, else the one whose code is
+  // the printing's code prefix (LOB-EN001 → LOB; sneak peeks and tin packs are listed under their
+  // parent's code). Each group is fetched once; a product still has to carry the exact code and rarity.
+  const all=groups.results||[],groupFor=s=>{const byName=all.filter(g=>norm(g.name)===norm(s.name));if(byName.length===1)return byName[0];const pre=String(s.code||'').split('-')[0].toUpperCase(),byCode=all.filter(g=>String(g.abbreviation||'').toUpperCase()===pre);return byCode.length===1?byCode[0]:null;};
+  const byGroup=new Map();for(const set of sets){const g=groupFor(set);if(g)(byGroup.get(g.groupId)||byGroup.set(g.groupId,[]).get(g.groupId)).push(set);}
+  const ids=[...byGroup.keys()];
+  for(let i=0;i<ids.length;i+=3)await Promise.all(ids.slice(i,i+3).map(async groupId=>{
+   try{
+    const [products,prices]=await Promise.all([get(`https://tcgcsv.com/tcgplayer/2/${groupId}/products`),get(`https://tcgcsv.com/tcgplayer/2/${groupId}/prices`)]);
+    for(const set of byGroup.get(groupId)){
      const hits=ygoProductMatches(set,products.results||[]);if(hits.length!==1)continue;const product=hits[0];
      const quotes=(prices.results||[]).filter(q=>q.productId===product.productId && Number(q.marketPrice)>0).map(q=>({edition:q.subTypeName,market:Number(q.marketPrice),low:q.lowPrice}));
      if(quotes.length)printings.push({...set,productId:product.productId,url:`https://www.tcgplayer.com/product/${product.productId}`,quotes});

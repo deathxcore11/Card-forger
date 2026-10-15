@@ -1,3 +1,4 @@
+import { myPrice } from "./mtg-tcgprice.js";
 import { ask, askText } from "./dialog.js";
 import { buyOnTcgplayer, massLines } from "./buy.js";
 import {effectText,ruleText} from './rule-dex.js';
@@ -118,7 +119,8 @@ export async function ensureMany(g, ids, tick = () => {}, force = false,printing
   return done;
 }
 
-const price = (c) => c?.prices?.usd ?? null;
+// A store's price, else the player's own (press and hold a price; only they see it).
+const price = (c) => c?.prices?.usd ?? myPrice(c);
 // Emblems shown on a card: Yu-Gi-Oh! Level/Attribute or Spell/Trap property; Pokémon energy type.
 export const gameEmblems = (c) => (!c || c.brief ? "" : c.game === "ygo" ? ygoEmblems(c) : `<span class="emblems">${(c.types || []).map((t) => energyIcon(t)).join("")}${c.hp ? `<span class="hp">HP ${esc(c.hp)}</span>` : ""}</span>`);
 // Search tiles stay light: the type emblem plus set/rarity symbols. HP and codes are on the card page.
@@ -654,7 +656,7 @@ export function tcgCardSheet(c, sctx = {}) {
   <div class="cs-meta">
     ${g === "ygo" ? ygoSetRow(c) : ""}
     ${c.set ? `<button class="cd-set" data-act="tSet" data-id="${esc(c.set.id)}">${pkSetSymbol(c.set, "pks big")}<div><b>${esc(c.set.name)} <span class="set-go">›</span></b><small>#${esc(c.set.number || "")}${c.set.total ? "/" + c.set.total : ""}${c.rarity ? ` · ${pkRarity(c.rarity)} ${esc(c.rarity)}` : ""}</small></div></button>` : c.archetype ? `<button class="cd-set" data-act="tArchetype" data-name="${esc(c.archetype)}"><div><b>${esc(c.archetype)} <span class="set-go">›</span></b><small>Archetype · ${c.sets?.length || 0} printings</small></div></button>` : ""}
-    <div class="cd-prices"><button class="price-pill" data-act="marketOpen" data-game="${g}" data-id="${esc(c.id)}"><small>Market</small><b>${p.usd !== null && p.usd !== undefined ? usd(p.usd) : c.brief ? "…" : lastQuote(g, c) ? usd(lastQuote(g, c).value) : "No price yet"}</b>${p.usd == null && lastQuote(g, c) ? `<small class="pill-note">last quote ${esc(lastQuote(g, c).date)}${lastQuote(g, c).finish ? " · " + esc(lastQuote(g, c).finish) : ""}</small>` : ""}<span class="buy-hint">Prices ›</span></button>${p.eur ? `<button class="price-pill" data-act="cardTab" data-tab="prices"><small>Cardmarket</small><b>€${p.eur.toFixed(2)}</b></button>` : ""}</div>
+    <div class="cd-prices"><button class="price-pill${p.usd == null && !lastQuote(g, c) && myPrice(c) == null && !c.brief ? " unknown" : ""}" data-act="tBuyDirect" data-hold="tMyPriceSet" data-game="${g}" data-id="${esc(c.id)}" aria-label="Buy on TCGplayer. Press and hold to set your own price."><small>Market</small><b>${p.usd !== null && p.usd !== undefined ? usd(p.usd) : c.brief ? "…" : lastQuote(g, c) ? usd(lastQuote(g, c).value) : myPrice(c) != null ? usd(myPrice(c)) : "No price yet"}</b>${p.usd == null && lastQuote(g, c) ? `<small class="pill-note">last quote ${esc(lastQuote(g, c).date)}${lastQuote(g, c).finish ? " · " + esc(lastQuote(g, c).finish) : ""}</small>` : myPrice(c) != null ? `<small class="pill-note">${p.usd == null ? "Your price" : "yours " + usd(myPrice(c))}</small>` : ""}<span class="buy-hint">${p.usd == null && !lastQuote(g, c) ? "Find sellers ›" : "Buy ›"}</span></button>${p.eur ? `<button class="price-pill" data-act="cardTab" data-tab="prices"><small>Cardmarket</small><b>€${p.eur.toFixed(2)}</b></button>` : ""}<p class="price-gap small muted">Tap a price to buy on TCGplayer. Press and hold it, or <button class="link small" data-act="tMyPriceSet" data-game="${g}" data-id="${esc(c.id)}">set your price</button>; only you see it. Every printing's price is under Prices.</p></div>
     ${p.usd == null && !p.eur && !c.brief ? `<p class="price-gap small muted">Stores haven't listed a price for this card yet. That's normal for new sets and rarely sold cards; it fills in when sales start.</p>` : ""}
   </div>
   ${g === "ptcg" && !c.brief ? pokemonText(c) : c.text ? `<section class="cd-text effect-card ygo"><p class="eyebrow effect-label">${c.frame==='normal'?'Lore · Flavour text':'Chaincraft · Card effect'}</p>${c.frame==='normal'?`<blockquote class="flavor">${esc(c.text)}</blockquote>`:`<div class="oracle">${effectText(g,c.text)}</div>`}${c.illustrator ? `<div class="small muted right">🖌 ${esc(c.illustrator)}</div>` : ""}</section>` : ""}

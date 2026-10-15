@@ -1,3 +1,21 @@
+3.60.0 — Yu-Gi-Oh! set-by-set check, tap-to-buy and your own price in every game
+- Checked all 1,035 Yu-Gi-Oh! sets and 14,615 cards the way the app loads them.
+  - Every card has art.
+  - 44 cards have no price, all too new for TCGplayer to list.
+  - Card data is complete apart from 2 cards.
+- Printing prices (Versions tab): the app found a printing's TCGplayer set only when the names
+  matched exactly, which happened for 408 of 1,035 sets. It now also uses the set code (LOB-EN001
+  is TCGplayer's "LOB"), which finds a set for 810. A printing is still priced only when TCGplayer
+  lists that exact code and rarity, so colour variants and versions sharing one code aren't
+  guessed. Example: Blue-Eyes White Dragon now has 42 priced printings, up from 38.
+- Pokémon and Yu-Gi-Oh! card pages now work like Magic's:
+  - Tap the price to open the card on TCGplayer.
+  - Press and hold it, or tap "set your price", to save your own price. Only you see it, and it
+    counts only where no store prices the card.
+  - Every printing's price is still under Prices.
+- Not fixable here: the card database is missing a few cards in 39 sets (75 cards, mostly new
+  sets and tins), and 5 single-card promos are filed under a different set name.
+
 3.59.0 — Pokémon set-by-set check: prices, art and card data
 Every Pokémon set the app lists (202 sets, 21,281 cards) was checked the way the app loads it.
 - Prices: Pokémon cards with no US price went from 721 to 88. When TCGdex has no TCGplayer link

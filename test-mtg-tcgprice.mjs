@@ -78,3 +78,20 @@ const old = normalizePtcg({ id: "bw7-9", name: "Celebi-EX", category: "Pokemon",
 assert.ok(applyProductPrices(old, { cardId: "bw7-9", matchedProduct: 99, quotes: [{ productId: 99, subTypeName: "Holofoil", marketPrice: 4.2, lowPrice: 3, midPrice: 5 }] }));
 assert.equal(old.prices.usd, 4.2);
 console.log("PASS: Pokémon cards missing stage, trainer type or a TCGplayer link still play and price correctly.");
+
+// Yu-Gi-Oh! printing prices: the TCGplayer set by name, else by the printing's code prefix; the
+// product must still carry the exact code and rarity.
+const { ygoPriceRoute } = await import("./ygo-prices.js");
+const yg = async (u) => {
+  if (u.includes("cardinfo.php")) return Response.json({ data: [{ id: 89631139, name: "Blue-Eyes White Dragon", card_sets: [{ set_name: "2014 Mega-Tin Mega Pack", set_code: "MP14-EN001", set_rarity: "Ultra Rare" }, { set_name: "Legendary Duelists: Season 2", set_code: "LDS2-EN001", set_rarity: "Ultra Rare" }] }] });
+  if (u.endsWith("/tcgplayer/2/groups")) return Response.json({ results: [{ groupId: 5, name: "2014 Mega-Tins Mega Pack", abbreviation: "MP14" }, { groupId: 6, name: "Legendary Duelists: Season 2", abbreviation: "LDS2" }] });
+  const num = (n, r) => [{ name: "Number", value: n }, { name: "Rarity", value: r }];
+  if (u.endsWith("/2/5/products")) return Response.json({ results: [{ productId: 50, name: "Blue-Eyes White Dragon", extendedData: num("MP14-EN001", "Ultra Rare") }] });
+  if (u.endsWith("/2/5/prices")) return Response.json({ results: [{ productId: 50, marketPrice: 2.5, lowPrice: 2, subTypeName: "1st Edition" }] });
+  if (u.endsWith("/2/6/products")) return Response.json({ results: [{ productId: 60, name: "Blue-Eyes White Dragon (Blue)", extendedData: num("LDS2-EN001", "Ultra Rare") }, { productId: 61, name: "Blue-Eyes White Dragon (Green)", extendedData: num("LDS2-EN001", "Ultra Rare") }] });
+  if (u.endsWith("/2/6/prices")) return Response.json({ results: [{ productId: 60, marketPrice: 9, subTypeName: "1st Edition" }, { productId: 61, marketPrice: 8, subTypeName: "1st Edition" }] });
+  return new Response("", { status: 404 });
+};
+const ygp = await (await ygoPriceRoute(new URL("https://x/api/prices/yugioh?id=89631139&t=1"), null, yg)).json();
+assert.deepEqual(ygp.printings.map((p) => [p.code, p.productId]), [["MP14-EN001", 50]], "set found by code; colour variants sharing a code aren't guessed");
+console.log("PASS: Yu-Gi-Oh! printings find their TCGplayer set by code, never guessing between variants.");
