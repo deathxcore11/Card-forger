@@ -1,3 +1,23 @@
+3.70.0 — AI coach: decisions you can act on, checked by the app
+- The AI review is now a coach with three tabs, Pilot, Pressure and Improve, and leads with
+  the one decision that matters most for the list.
+- Pilot: keep or mulligan a sample hand the app deals from your list, with first turns, what to
+  dig for and what to hold back. Winning lines are drawn as a turn-by-turn timeline from your
+  own cards, with each card's real cost.
+- Pressure: what happens when your commander or key engine is removed, your starter is negated
+  or your key Pokémon is prized, and the backup in your list, or a clear "Gap". It also flags
+  where Power's counts may mislead (e.g. draw that needs fodder the deck lacks).
+- Improve: OUT → IN swaps using only cards you own, each re-scored by Deck Power and checked for
+  legality before you see it, with what improves, what gets worse and how to test it.
+- The AI now receives what the app already knows (counts, curve, legendary permanents,
+  evolution lines, hand odds, goldfish results, engine links, tournament comparison), so it no
+  longer asks you to count things.
+- The app checks every line in code: cards in the list, copies, once-per-turn reuse, Magic
+  mana by turn, Pokémon Supporter, attachment and evolution limits, Yu-Gi-Oh! Normal Summon and
+  Extra Deck rules. Lines that cite cards or text not in the list are dropped.
+- New results design: a glowing decision card, a dealt-in hand fan, timelines, OUT → IN tiles
+  with the score change, and cards that rise in one by one (respects reduced motion).
+
 3.69.0 — Owner testing without app review quotas
 - At the owner's request, AI_LIMITS_ENABLED=false bypasses both daily and hourly app quotas immediately, without resetting stored counters.
 - OpenAI billing/rate limits, private key requirements, payload/output bounds and duplicate-request guards remain in effect.

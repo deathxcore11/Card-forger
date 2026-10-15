@@ -1,4 +1,5 @@
 import { aiReviewPanel } from './ai-review.js';
+import { rankPairs } from "./pairing.js";
 import { APP_VERSION } from "./config.js";
 import { matchupsTab, fieldStore, computeMatchups } from "./matchups-ui.js";
 import { profileOf, simulateMatchup, gamePlan, recordOf, blend, listSig, forList, simulatePod, podProfile, trustedSim, matchupBlock, canBorrowResults } from "./matchup.js";
@@ -1382,6 +1383,24 @@ function mtgMostValuable(d) {
   return `<section class="panel"><h3>Most valuable cards</h3><div class="list compact">${top.map((r) => `<button class="mini-row" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(d.id)}"><span class="ellip">${r.qty}× ${esc(r.name)}</span><span class="small">${usd(r.p * r.qty)}</span></button>`).join("")}</div></section>`;
 }
 
+// AI coach hooks: owned cards that could join this deck, and the app's own re-score of a swap.
+export function mtgCoachHooks(d, pw) {
+  return {
+    candidates: () => {
+      const f = formatOf(d), inDeck = new Set(d.cards.map((r) => key(r.name))), ident = isCommanderLike(d) || f.commander ? meta(d.commander)?.color_identity : null;
+      const owned = [...new Set(S.state.collection.map((e) => e.name))].map(meta).filter((c) => c && !inDeck.has(key(c.name)) && !isBasic(c) && (!f.legality || ["legal", "restricted"].includes(legalityIn(c, f))) && (!ident || (c.color_identity || []).every((x) => ident.includes(x))));
+      const target = meta(d.commander) || aggregateCards(d.cards).map((r) => meta(r.name)).filter((c) => c && !isLand(c)).sort((a, b) => (d.cards.find((r) => r.name === b.name)?.qty || 0) - (d.cards.find((r) => r.name === a.name)?.qty || 0))[0];
+      const ranked = target ? rankPairs("mtg", target, owned.map((card) => ({ card, owned: true })), { max: 25 }).map((x) => x.card) : [];
+      return [...ranked, ...owned.filter((c) => !ranked.includes(c))].slice(0, 25);
+    },
+    rescore: (out, add) => {
+      if (out.zone !== "main") throw Error("main deck only");
+      const p2 = mtgPower({ ...d, id: d.id + "~coach", cards: applySwapsToCards(d.cards, [{ cut: out.row.name, add: add.name }]) });
+      return { before: shownPower(pw), after: shownPower(p2), beforeIssues: pw.readiness?.issues, issues: p2.readiness?.issues };
+    },
+  };
+}
+
 function deckEngine(d) {
   const p = engineProfile(d, S.catalog),
     v = validateDeck(d, S.catalog, S.state.collection, S.state.decks),
@@ -1390,7 +1409,7 @@ function deckEngine(d) {
     srcTotal = Object.values(p.sources).reduce((a, b) => a + b, 0),
     colors = Object.keys(p.pips).filter((k) => p.pips[k] > 0 || p.sources[k] > 0);
   const pw = mtgPower(d);
-  return `${aiReviewPanel("mtg", d, meta, pw)}${powerPanel(pw, { loadAct: pw.metaKey ? `data-act="deckMetaLoad" data-key="${esc(pw.metaKey)}"` : "", findAct: (x) => `data-act="findRole" data-role="${esc(x.fix)}"`, cardAct: (x) => `data-act="card" data-name="${esc(x.name)}"` })}
+  return `${aiReviewPanel("mtg", d, meta, pw, mtgCoachHooks(d, pw))}${powerPanel(pw, { loadAct: pw.metaKey ? `data-act="deckMetaLoad" data-key="${esc(pw.metaKey)}"` : "", findAct: (x) => `data-act="findRole" data-role="${esc(x.fix)}"`, cardAct: (x) => `data-act="card" data-name="${esc(x.name)}"` })}
   ${p.unknown ? `<div class="note warn">${p.unknown} cards have no card data yet, so they aren’t counted. <button class="link" data-act="refreshDeck">Load card data</button></div>` : ""}
   ${d.format === "Commander" ? bracketPanel(d) : ""}  <section class="panel"><div class="row between"><h3>Mana curve</h3><span class="muted small">avg ${p.avg === null ? "—" : p.avg.toFixed(2)} · ${p.counts.Lands} lands</span></div>${curveChart(p.curve)}</section>
   ${

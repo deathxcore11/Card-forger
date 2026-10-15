@@ -1,78 +1,290 @@
-// On-demand review only. Selected deck data leaves the device after the user taps Review.
+// On-demand AI coaching. Selected deck data leaves the device only after the user taps Review.
+// The app sends what it already knows (Power's numbers, a sample hand, owned swap candidates),
+// the AI returns decisions (lines, stress tests, swaps), and the app checks them in code before
+// showing them: cards in the list, copies, per-turn limits, mana by turn, and re-scored swaps.
 import { esc } from './ui.js';
 const entries = new Map();
 let activeDialog = null;
 const plain = s => String(s ?? '').replace(/<[^>]*>/g, ' ').trim();
-export function reviewPayload(game, deck, lookup, p) {
+const pct = v => Math.round(v * 100) + '%';
+const nm = x => typeof x === 'string' ? x : x?.name || x?.label || x?.key || '';
+const names = (xs, n = 8) => (xs || []).slice(0, n).map(nm).filter(Boolean).join(', ');
+const textOf = c => plain([c?.oracle_text, ...(c?.card_faces || []).map(f => f.oracle_text), c?.text, c?.desc, ...(c?.abilities || []).map(a => a.effect), ...(c?.attacks || []).map(a => a.effect)].filter(Boolean).join('\n'));
+const typeOf = c => c?.type_line || c?.typeLine || c?.card_faces?.[0]?.type_line || c?.type || '';
+
+/* ---------- What the app sends ---------- */
+
+function deckRows(game, deck, lookup) {
   const rows = game === 'mtg' ? [...(deck.cards || []).map(r => ({ ...r, zone: 'main' })), ...(deck.side || []).map(r => ({ ...r, zone: 'side' }))] : Object.entries(deck.zones || {}).flatMap(([zone, rows]) => rows.map(r => ({ ...r, zone })));
-  return { game, format: p.formatName || deck.format || '', commander: game === 'mtg' ? deck.commander || '' : '', cards: rows.map((r, i) => {
+  return rows.map((r, i) => {
     const c = lookup(game === 'mtg' ? r.name : r.cardId);
-    const details = !c ? '' : game === 'mtg' ? JSON.stringify({ mana: c.mana_cost, identity: c.color_identity, power: c.power, toughness: c.toughness, produces: c.produced_mana, faces: c.card_faces?.map(x => ({ name: x.name, type: x.type_line, mana: x.mana_cost, text: x.oracle_text })) }) : JSON.stringify(game === 'ptcg' ? { stage: c.stage, evolvesFrom: c.evolveFrom, hp: c.hp, types: c.types, abilities: c.abilities, attacks: c.attacks, retreat: c.retreat, regulationMark: c.regulationMark } : { attribute: c.attribute, race: c.race, level: c.level, atk: c.atk, def: c.def, link: c.link, archetype: c.archetype });
-    return { id: 'c' + i, name: c?.name || r.name || String(r.cardId), qty: r.qty, zone: game === 'mtg' && r.name === deck.commander && r.zone === 'main' ? 'commander' : r.zone, type: c?.type_line || c?.typeLine || '', text: plain(c?.oracle_text || c?.text || ''), details, known: !!c && !c.brief };
-  }), checks: { engine: p.heuristic ?? p.score, competitive: p.ctx?.score ?? null, provisional: !!p.readiness?.provisional, issues: [...(p.readiness?.issues || []), ...(p.caps || []).map(c => `${c.label}: ${c.why || ''}`)] } };
+    const zone = game === 'mtg' && deck.commander && r.name === deck.commander && r.zone === 'main' ? 'commander' : r.zone;
+    return { id: 'c' + i, row: r, c, zone };
+  });
 }
-export function aiReviewPanel(game, deck, lookup, p) {
+function cardDetails(game, c) {
+  if (!c) return '';
+  return game === 'mtg' ? JSON.stringify({ mana: c.mana_cost, mv: c.cmc, identity: c.color_identity, power: c.power, toughness: c.toughness, produces: c.produced_mana, faces: c.card_faces?.map(x => ({ name: x.name, type: x.type_line, mana: x.mana_cost, text: x.oracle_text })) })
+    : JSON.stringify(game === 'ptcg' ? { stage: c.stage, evolvesFrom: c.evolveFrom, hp: c.hp, types: c.types, abilities: c.abilities, attacks: c.attacks, weaknesses: c.weaknesses, retreat: c.retreat, regulationMark: c.regulationMark } : { attribute: c.attribute, race: c.race, level: c.level, atk: c.atk, def: c.def, link: c.link, archetype: c.archetype });
+}
+const cardEntry = (game, id, name, qty, zone, c) => ({ id, name: c?.name || name, qty, zone, type: typeOf(c), text: plain(c?.oracle_text || c?.text || c?.desc || ''), details: cardDetails(game, c), known: !!c && !c.brief });
+
+// The card's real cost or role, from card data (never from the AI).
+export function costOf(game, c) {
+  if (!c) return '';
+  const t = typeOf(c);
+  if (game === 'mtg') return /\bLand\b/.test(t) ? 'Land' : c.mana_cost ? c.mana_cost.replace(/[{}]/g, '') : c.card_faces?.[0]?.mana_cost?.replace(/[{}]/g, '') || '0';
+  if (game === 'ptcg') return c.category === 'Pokemon' ? [c.stage, c.hp ? c.hp + ' HP' : ''].filter(Boolean).join(' · ') : /Supporter|Item|Tool|Stadium/.exec(t)?.[0] || c.category || '';
+  return c.level ? `Level ${c.level}` : c.link ? `Link-${c.link}` : /Spell|Trap/.exec(t)?.[0] || '';
+}
+function composition(game, rows) {
+  const out = [], main = rows.filter(r => r.zone !== 'side' && r.c), count = f => main.filter(f).reduce((n, r) => n + r.row.qty, 0);
+  if (game === 'mtg') {
+    const t = r => typeOf(r.c), land = r => /\bLand\b/.test(t(r));
+    out.push('Card types: ' + ['Creature', 'Instant', 'Sorcery', 'Artifact', 'Enchantment', 'Planeswalker', 'Battle', 'Land'].map(k => `${k} ${count(r => new RegExp('\\b' + k + '\\b').test(t(r)))}`).join(', '));
+    const curve = {}; for (const r of main.filter(r => !land(r))) { const k = Math.min(7, Math.floor(r.c.cmc || 0)); curve[k] = (curve[k] || 0) + r.row.qty; }
+    out.push('Nonland mana curve: ' + Object.entries(curve).map(([k, n]) => `${k === '7' ? '7+' : k}: ${n}`).join(', '));
+    const legend = main.filter(r => /\bLegendary\b/.test(t(r)) && !/\b(Instant|Sorcery)\b/.test(t(r)));
+    if (legend.length) {
+      const by = {}; for (const r of legend) { const k = land(r) ? 'land' : Math.min(7, Math.floor(r.c.cmc || 0)); (by[k] ||= []).push(r.c.name); }
+      out.push(`Legendary permanents: ${legend.reduce((n, r) => n + r.row.qty, 0)} (by mana value: ${Object.entries(by).map(([k, xs]) => `${k}: ${xs.length}`).join(', ')}). ${legend.slice(0, 30).map(r => r.c.name).join(', ')}`);
+    }
+    const ramp = main.filter(r => !land(r) && r.c.produced_mana?.length);
+    out.push(`Nonland mana sources: ${count(r => !land(r) && r.c.produced_mana?.length)}${ramp.length ? ' — ' + names(ramp.map(r => r.c), 15) : ''}`);
+  } else if (game === 'ptcg') {
+    const poke = r => r.c.category === 'Pokemon', tl = r => typeOf(r.c);
+    out.push(`Pokémon ${count(poke)} (Basic ${count(r => poke(r) && /basic/i.test(r.c.stage || ''))}, Stage 1 ${count(r => poke(r) && /1/.test(r.c.stage || ''))}, Stage 2 ${count(r => poke(r) && /2/.test(r.c.stage || ''))}), Trainers ${count(r => r.c.category === 'Trainer')} (Supporter ${count(r => /Supporter/.test(tl(r)))}, Item ${count(r => /Item/.test(tl(r)))}, Tool ${count(r => /Tool/.test(tl(r)))}, Stadium ${count(r => /Stadium/.test(tl(r)))}), Energy ${count(r => r.c.category === 'Energy')}`);
+    const lines = main.filter(r => poke(r) && r.c.evolveFrom).map(r => `${r.row.qty}× ${r.c.name} from ${r.c.evolveFrom}`);
+    if (lines.length) out.push('Evolutions: ' + lines.join(', '));
+  } else {
+    const t = r => typeOf(r.c), extra = main.filter(r => r.zone === 'extra');
+    out.push(`Main Deck: Monsters ${count(r => r.zone === 'main' && !/Spell|Trap/.test(t(r)))}, Spells ${count(r => r.zone === 'main' && /Spell/.test(t(r)))}, Traps ${count(r => r.zone === 'main' && /Trap/.test(t(r)))}. Extra Deck ${extra.reduce((n, r) => n + r.row.qty, 0)}: ${['Fusion', 'Synchro', 'XYZ', 'Link'].map(k => `${k} ${count(r => r.zone === 'extra' && new RegExp(k, 'i').test(t(r)))}`).join(', ')}`);
+  }
+  return out;
+}
+export function deckFacts(game, rows, p) {
+  const f = [...composition(game, rows)];
+  if (!p) return f;
+  f.push(`App scores: engine ${p.heuristic ?? p.score ?? '—'}/100${p.ctx?.score != null ? `, competitive ${p.ctx.score}/100` : ''}. Plan the app detected: ${p.plan || 'unknown'}.`);
+  for (const c of p.caps || []) f.push(`Score capped at ${c.max}: ${c.label}${c.why ? ' — ' + c.why : ''}`);
+  for (const x of p.parts || []) f.push(`${x.label || x.key}: ${x.count ?? '—'}${x.target != null ? ` (aim ${x.target})` : ''}${x.why ? ' — ' + x.why : ''}${x.cards?.length ? ' Cards: ' + names(x.cards, 12) : ''}`);
+  for (const s of p.sims || []) if (Number.isFinite(s.p)) f.push(`Hand odds · ${s.label}: ${pct(s.p)}${s.target != null ? ` (aim ${s.lower ? 'under' : 'over'} ${pct(s.target)})` : ''}${s.note ? ' — ' + s.note : ''}`);
+  const g = p.goldfish;
+  if (g) {
+    if (g.headline) f.push('Played-out goldfish games: ' + g.headline);
+    for (const m of g.metrics || []) if (m.value != null) f.push(`Goldfish · ${m.label}: ${m.pct ? pct(m.value) : typeof m.value === 'number' ? +m.value.toFixed(2) : m.value}${m.note ? ' ' + m.note : ''}`);
+    if (g.winCon) f.push('How the goldfish wins: ' + g.winCon);
+    if (g.endgame) f.push('Goldfish late game: ' + g.endgame);
+  }
+  for (const l of p.engine?.links || []) f.push(`Rules-text link: ${l.payoff} needs ${l.need}; provided by ${names(l.providers, 6)}${l.openingBoth != null ? `; opens both ${pct(l.openingBoth)}` : ''}`);
+  if (p.engine?.unmappedNeeds) f.push(`${p.engine.unmappedNeeds} card requirements have no recognized provider in the list.`);
+  const m = p.match;
+  if (m?.deck) f.push(`Closest tournament list: ${m.archetype || m.deck.name}, ${pct(m.sim || 0)} similar, ${m.deck.place || ''} at ${m.deck.event || 'an event'}${m.missing?.length ? '. That list plays these you don\'t: ' + names(m.missing, 10) : ''}${m.extra?.length ? '. You play these it doesn\'t: ' + names(m.extra, 10) : ''}`);
+  if (p.ctx?.coreMissing?.length) f.push('Core cards of the archetype missing: ' + names(p.ctx.coreMissing));
+  if (p.ctx?.field?.length) f.push('Field: ' + p.ctx.field.slice(0, 6).map(x => `${x.name} ${pct(x.share || 0)}`).join(', '));
+  for (const a of p.strategicRisk?.axes || []) f.push(`Exposed to hate: ${a.label} (${a.copies} copies: ${names(a.cards, 5)})${a.threats?.length ? '; answers seen in the field: ' + names(a.threats, 4) : ''}`);
+  if (p.upgrades?.adds?.length) f.push('Same-archetype lists also play: ' + names(p.upgrades.adds, 8));
+  for (const i of p.readiness?.issues || []) f.push('Deck check: ' + i);
+  return f.slice(0, 90);
+}
+// A shuffled opening hand, the same for the same list (so reopening shows the same hand).
+export function sampleHand(game, rows, seed) {
+  const lib = rows.filter(r => r.zone === 'main' && r.c).flatMap(r => Array(r.row.qty).fill(r.id)), n = game === 'ygo' ? 5 : 7;
+  if (lib.length < n) return [];
+  let h = 2166136261; for (const ch of seed) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  const rnd = () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909)) >>> 0) / 4294967296;
+  for (let i = lib.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [lib[i], lib[j]] = [lib[j], lib[i]]; }
+  return lib.slice(0, n);
+}
+export function reviewPayload(game, deck, lookup, p) {
+  const rows = deckRows(game, deck, lookup);
+  const cards = rows.map(r => cardEntry(game, r.id, r.row.name || String(r.row.cardId), r.row.qty, r.zone, r.c));
+  const base = { game, format: p.formatName || deck.format || '', commander: game === 'mtg' ? deck.commander || '' : '', cards };
+  return { ...base, facts: deckFacts(game, rows, p), hand: sampleHand(game, rows, JSON.stringify(cards.map(c => [c.name, c.qty, c.zone]))), checks: { engine: p.heuristic ?? p.score, competitive: p.ctx?.score ?? null, provisional: !!p.readiness?.provisional, issues: [...(p.readiness?.issues || []), ...(p.caps || []).map(c => `${c.label}: ${c.why || ''}`)] } };
+}
+
+/* ---------- What the app checks ---------- */
+
+const OPT = /once per turn|only once each turn|activate only once/i;
+// Code checks of one line. Returns plain-language problems; empty means every check passed.
+export function checkLine(game, line, info) {
+  line = { ...line, steps: (line.steps || []).filter(st => info.get(st.cardId)?.name) };
+  const flags = [], byTurn = new Map(), plays = new Map();
+  for (const st of line.steps) { if (!byTurn.has(st.turn)) byTurn.set(st.turn, []); byTurn.get(st.turn).push(st); }
+  for (const st of line.steps) {
+    const c = info.get(st.cardId); if (!c) continue;
+    if (['play', 'normal_summon', 'special_summon', 'attach'].includes(st.kind) && c.zone !== 'commander') plays.set(st.cardId, (plays.get(st.cardId) || 0) + 1);
+  }
+  for (const [id, n] of plays) if (n > info.get(id).qty) flags.push(`Uses ${info.get(id).name} ${n} times, but the list has ${info.get(id).qty}.`);
+  let ramp = 0;
+  for (const [turn, steps] of [...byTurn].sort((a, b) => a[0] - b[0])) {
+    const seen = new Map();
+    for (const st of steps.filter(s => s.kind === 'activate')) {
+      const c = info.get(st.cardId);
+      if (OPT.test(c.text) && (game === 'ygo' || c.qty === 1)) { seen.set(st.cardId, (seen.get(st.cardId) || 0) + 1); if (seen.get(st.cardId) === 2) flags.push(`Turn ${turn} uses ${c.name}'s once-per-turn effect twice.`); }
+    }
+    if (game === 'mtg') {
+      const cost = steps.filter(s => s.kind === 'play' && !info.get(s.cardId).land).reduce((n, s) => n + (info.get(s.cardId).mv || 0), 0), have = turn + ramp;
+      if (cost > have + 1) flags.push(`Turn ${turn} casts ${cost} mana of spells; one land a turn plus the mana pieces this line played gives about ${have}.`);
+      ramp += steps.filter(s => s.kind === 'play' && info.get(s.cardId).mana && !info.get(s.cardId).land).length;
+    }
+    if (game === 'ptcg') {
+      if (steps.filter(s => s.kind === 'play' && info.get(s.cardId).supporter).length > 1) flags.push(`Turn ${turn} plays two Supporters; only one is allowed each turn.`);
+      if (steps.filter(s => s.kind === 'attach' && info.get(s.cardId).energy).length > 1) flags.push(`Turn ${turn} attaches Energy from hand twice; only one attachment a turn unless a card's text allows more.`);
+      if (turn === 1 && steps.some(s => s.kind === 'evolve')) flags.push('Evolves on turn 1; Pokémon can\'t evolve on your first turn.');
+    }
+    if (game === 'ygo') {
+      if (steps.filter(s => s.kind === 'normal_summon').length > 1) flags.push(`Turn ${turn} Normal Summons twice; only one Normal Summon a turn unless a card grants another.`);
+      for (const s of steps) if (s.kind === 'normal_summon' && info.get(s.cardId).zone === 'extra') flags.push(`${info.get(s.cardId).name} is an Extra Deck monster; it can't be Normal Summoned.`);
+    }
+  }
+  if (game === 'ptcg') for (const s of line.steps) { const c = info.get(s.cardId); if (s.kind === 'evolve' && c.evolvesFrom && !info.has('name:' + c.evolvesFrom) && !info.has('name:Rare Candy')) flags.push(`${c.name} evolves from ${c.evolvesFrom}, which isn't in the list.`); }
+  return flags;
+}
+function cardInfo(game, rows) {
+  const info = new Map();
+  for (const r of rows) {
+    const c = r.c, t = typeOf(c);
+    info.set(r.id, { name: c?.name || r.row.name, qty: r.row.qty, zone: r.zone, text: textOf(c), mv: c?.cmc || 0, land: /\bLand\b/.test(t), mana: !!c?.produced_mana?.length, supporter: /Supporter/.test(t), energy: c?.category === 'Energy', evolvesFrom: c?.evolveFrom || '', cost: costOf(game, c) });
+    if (c?.name) info.set('name:' + c.name, true);
+  }
+  return info;
+}
+function verify(entry) {
+  if (entry.verified || !entry.result) return entry.verified;
+  const r = entry.result, info = cardInfo(entry.game, entry.rows);
+  const lines = (r.pilot?.lines || []).map(l => checkLine(entry.game, l, info));
+  const swaps = (r.improve || []).map(s => {
+    const out = entry.rows.find(x => x.id === s.cut), add = entry.cands?.find(x => x.id === s.add);
+    if (!out || !add || !entry.hooks?.rescore) return null;
+    try {
+      const v = entry.hooks.rescore(out, add.c), had = new Set(v.beforeIssues || []);
+      return { before: v.before, after: v.after, issues: (v.issues || []).filter(i => !had.has(i)) };
+    } catch { return null; }
+  });
+  return (entry.verified = { info, lines, swaps });
+}
+
+/* ---------- Launcher and dialog ---------- */
+
+export function aiReviewPanel(game, deck, lookup, p, hooks = {}) {
   const payload = reviewPayload(game, deck, lookup, p), signature = JSON.stringify(payload), key = game + ':' + deck.id;
   let entry = entries.get(key);
   if (!entry || entry.signature !== signature) {
     if (entries.size > 40) entries.delete(entries.keys().next().value);
-    entry = { signature, payload, busy: false, result: null, error: '', errorCode: '' }; entries.set(key, entry);
+    entry = { signature, payload, game, rows: deckRows(game, deck, lookup), hooks, busy: false, result: null, error: '', errorCode: '', tab: 'pilot' }; entries.set(key, entry);
     if (activeDialog?.key === key) { activeDialog.stale = true; updateDialog(); }
-  }
-  const result = entry.result;
-  return `<section class="panel ai-review ai-review-launch" aria-label="AI deck review"><div class="ai-launch-top"><span class="ai-sigil" aria-hidden="true">✦</span><div><p class="eyebrow">Second opinion · all three games</p><h3>See how your deck connects</h3></div><span class="chip">AI</span></div><p class="small muted">A closer look at your game plan, synergies and weak spots, with card-text evidence.</p><div class="ai-launch-actions"><button class="btn small" data-act="aiDeckReview" data-ai="${esc(key)}">${entry.busy ? 'View review progress' : result ? 'Open AI review' : 'Review with AI'} <span aria-hidden="true">↗</span></button><span class="small muted">${entry.busy ? 'Review in progress' : result ? `${result.findings.length} findings ready` : 'Optional · your score stays unchanged'}</span></div><p class="foot">Tapping Review sends this deck’s card text and checks to OpenAI. Your collection and account details stay out of the request.</p><div role="status" aria-live="polite">${entry.error ? `<p class="warn-text small">${esc(entry.error)}</p>` : ''}</div></section>`;
+  } else entry.hooks = hooks;
+  const result = entry.result, ready = result ? `${plural(result.pilot?.lines?.length || 0, 'line')} · ${plural(result.pressure?.scenarios?.length || 0, 'stress test')} · ${plural(result.improve?.length || 0, 'swap')}` : '';
+  return `<section class="panel ai-review ai-review-launch" aria-label="AI deck coach"><div class="ai-launch-top"><span class="ai-sigil" aria-hidden="true">✦</span><div><p class="eyebrow">AI coach · all three games</p><h3>Pilot, pressure-test and improve this deck</h3></div><span class="chip">AI</span></div><p class="small muted">Winning lines from your own cards, what to do when your key piece is answered, and swaps from cards you own. The app checks each one before you see it.</p><div class="ai-launch-actions"><button class="btn small" data-act="aiDeckReview" data-ai="${esc(key)}">${entry.busy ? 'View coaching progress' : result ? 'Open coaching' : 'Coach this deck'} <span aria-hidden="true">↗</span></button><span class="small muted">${entry.busy ? 'Coaching in progress' : result ? ready : 'Optional · your score stays unchanged'}</span></div><p class="foot">Tapping it sends this deck's card text, the app's checks and the names and text of up to 25 cards you own to OpenAI. Your account details and prices stay out of the request.</p><div role="status" aria-live="polite">${entry.error ? `<p class="warn-text small">${esc(entry.error)}</p>` : ''}</div></section>`;
 }
-function reviewReport(result) {
-  return `<p class="ai-plan">${esc(result.plan)}</p>${result.findings.map(f => `<article class="ai-finding ${['strength','risk','idea'].includes(f.kind) ? f.kind : 'idea'}"><div class="row between"><b>${esc(f.title)}</b><span class="chip">${f.kind === 'idea' ? 'Try next' : f.kind === 'risk' ? 'Check this' : 'Strength'}</span></div><p>${esc(f.explanation)}</p><details><summary>Card-text evidence</summary>${f.evidence.map(e => `<p class="small"><b>${esc(e.name)}</b><br><q>${esc(e.quote)}</q></p>`).join('')}</details>${f.verify ? `<p class="foot"><b>Still to verify:</b> ${esc(f.verify)}</p>` : ''}</article>`).join('')}${result.questions.length ? `<h4>Questions to test</h4><ul>${result.questions.map(q => `<li>${esc(q)}</li>`).join('')}</ul>` : ''}${result.omitted ? '<p class="foot">Some findings were omitted because their card-text citations could not be matched.</p>' : ''}<p class="foot">AI interpretation · evidence quotes matched to supplied text; interactions are not rules-verified. Your score is unchanged. This review clears when you change the deck or reload.</p>`;
+
+const ev = list => list?.length ? `<details class="air-ev"><summary>Card text</summary>${list.map(e => `<p><b>${esc(e.name)}</b><q>${esc(e.quote)}</q></p>`).join('')}</details>` : '';
+const chips = cards => cards?.length ? `<div class="air-chips">${cards.map(c => `<span>${esc(c.name)}</span>`).join('')}</div>` : '';
+function pilotTab(r, v, entry) {
+  const h = r.pilot?.hand, hand = entry.payload.hand.map(id => v.info.get(id)).filter(Boolean);
+  const handHtml = h && hand.length ? `<article class="air-card air-hand" style="--i:1"><div class="air-card-head"><span class="air-label">Opening hand coach</span><span class="air-verdict ${h.verdict}">${h.verdict === 'keep' ? 'Keep' : 'Mulligan'}</span></div><div class="air-fan">${hand.map((c, i) => `<span style="--k:${i - (hand.length - 1) / 2}"><b>${esc(c.name)}</b><small>${esc(c.cost)}</small></span>`).join('')}</div><p class="air-lead">${esc(h.reason)}</p><dl class="air-dl">${h.firstTurns ? `<dt>First turns</dt><dd>${esc(h.firstTurns)}</dd>` : ''}${h.lookFor ? `<dt>Dig for</dt><dd>${esc(h.lookFor)}</dd>` : ''}${h.preserve ? `<dt>Hold back</dt><dd>${esc(h.preserve)}</dd>` : ''}</dl>${ev(h.evidence)}<p class="air-note">A random hand the app dealt from your list.</p></article>` : '';
+  const lines = (r.pilot?.lines || []).map((l, i) => {
+    const flags = v.lines[i] || [];
+    return `<article class="air-card air-line" style="--i:${i + 2}"><div class="air-card-head"><span class="air-label">Winning line ${i + 1}</span><span class="air-check ${flags.length ? 'warn' : 'ok'}">${flags.length ? '⚠ Check' : '✓ App-checked'}</span></div><h4>${esc(l.name)}</h4>${l.goal ? `<p class="air-lead">${esc(l.goal)}</p>` : ''}<ol class="air-steps">${l.steps.map(s => `<li><span class="air-turn">T${s.turn}</span><div><b>${esc(s.name)}</b>${v.info.get(s.cardId)?.cost ? `<small class="air-cost">${esc(v.info.get(s.cardId).cost)}</small>` : ''}<p>${esc(s.action)}</p>${s.quote ? `<q>${esc(s.quote)}</q>` : ''}</div></li>`).join('')}</ol>${l.payoff ? `<p class="air-row good"><b>Payoff</b>${esc(l.payoff)}</p>` : ''}${l.interrupt ? `<p class="air-row bad"><b>Can be stopped</b>${esc(l.interrupt)}</p>` : ''}${flags.length ? `<ul class="air-flags">${flags.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : `<p class="air-note">The app confirmed every card is in your list, copies and once-per-turn limits${entry.game === 'mtg' ? ', and mana by turn' : entry.game === 'ptcg' ? ', Supporter, attachment and evolution rules' : ' and Normal Summon limits'}.</p>`}</article>`;
+  }).join('');
+  return handHtml + lines || '<p class="air-empty">No line held up to the app\'s checks for this list. Try the Goldfish tab to see how it plays out.</p>';
+}
+function pressureTab(r) {
+  const sc = (r.pressure?.scenarios || []).map((s, i) => `<article class="air-card air-threat" style="--i:${i + 1}"><div class="air-card-head"><span class="air-label">If…</span><span class="air-check ${s.gap ? 'bad' : 'ok'}">${s.gap ? 'Gap' : 'Backup ready'}</span></div><h4>${esc(s.threat)}</h4>${s.impact ? `<p>${esc(s.impact)}</p>` : ''}<p class="air-row ${s.gap ? 'bad' : 'good'}"><b>${s.gap ? 'Missing' : 'Then'}</b>${esc(s.backup)}</p>${chips(s.backupCards)}${ev(s.evidence)}</article>`).join('');
+  const ch = (r.pressure?.challenges || []).map((c, i) => `<article class="air-card air-challenge" style="--i:${i + 5}"><div class="air-card-head"><span class="air-label">Where Power may mislead</span>${c.area ? `<span class="air-check">${esc(c.area)}</span>` : ''}</div><p class="air-lead">${esc(c.claim)}</p>${ev(c.evidence)}</article>`).join('');
+  return sc + ch || '<p class="air-empty">No stress test held up to the card-text check.</p>';
+}
+function improveTab(r, v) {
+  const sw = (r.improve || []).map((s, i) => {
+    const sc = v.swaps[i], d = sc ? sc.after - sc.before : 0;
+    const verdict = sc ? (sc.issues.length ? `<span class="air-check bad">Not legal: ${esc(sc.issues[0])}</span>` : `<span class="air-score ${d > 0 ? 'up' : d < 0 ? 'down' : ''}">Power ${sc.before} → ${sc.after} <b>${d > 0 ? '+' : ''}${d}</b></span>`) : s.add ? '' : '<span class="air-check">Find a card</span>';
+    return `<article class="air-card air-swap" style="--i:${i + 1}"><div class="air-swap-pair"><span class="out"><small>OUT</small>${esc(s.cutName)}</span><span class="air-arrow" aria-hidden="true">→</span><span class="in"><small>${s.add ? 'IN · you own it' : 'IN'}</small>${esc(s.addName || s.role || 'A better card for this role')}</span></div>${verdict ? `<div class="air-verdict-row">${verdict}${sc ? '<small>re-scored by the app</small>' : ''}</div>` : ''}<ul class="air-pm">${s.gain ? `<li class="good"><i>+</i>${esc(s.gain)}</li>` : ''}${s.loss ? `<li class="bad"><i>−</i>${esc(s.loss)}</li>` : ''}${s.lost ? `<li class="bad"><i>×</i>${esc(s.lost)}</li>` : ''}${s.test ? `<li><i>▶</i>${esc(s.test)}</li>` : ''}</ul>${ev(s.evidence)}</article>`;
+  }).join('');
+  const tests = r.tests?.length ? `<article class="air-card air-tests" style="--i:6"><span class="air-label">Prove it in the app</span><ol>${r.tests.map(t => `<li>${esc(t)}</li>`).join('')}</ol></article>` : '';
+  return sw + tests || '<p class="air-empty">No swap held up to the app\'s checks.</p>';
+}
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+function tabBody(entry, v = verify(entry)) {
+  const r = entry.result, tab = entry.tab || 'pilot';
+  return tab === 'pressure' ? pressureTab(r) : tab === 'improve' ? improveTab(r, v) : pilotTab(r, v, entry);
+}
+function reviewReport(entry) {
+  const r = entry.result, v = verify(entry) || { info: new Map(), lines: [], swaps: [] }, tab = entry.tab || 'pilot';
+  const counts = { pilot: (r.pilot?.lines?.length || 0) + (r.pilot?.hand ? 1 : 0), pressure: (r.pressure?.scenarios?.length || 0) + (r.pressure?.challenges?.length || 0), improve: r.improve?.length || 0 };
+  const checked = v.lines.filter(f => !f.length).length, scored = v.swaps.filter(Boolean).length;
+  const tabs = [['pilot', '▶', 'Pilot'], ['pressure', '⚡', 'Pressure'], ['improve', '↑', 'Improve']];
+  const body = tabBody(entry, v);
+  return `<section class="air-hero" style="--i:0"><span class="air-kicker"><span aria-hidden="true">✦</span> The decision</span><p class="air-headline">${esc(r.headline)}</p><div class="air-stats"><span>${plural(r.pilot?.lines?.length || 0, 'line')} · ${checked} passed app checks</span><span>${plural(r.pressure?.scenarios?.length || 0, 'stress test')}</span><span>${plural(counts.improve, 'swap')} · ${scored} re-scored</span></div></section>
+  <div class="air-tabs" role="tablist" aria-label="Coaching sections">${tabs.map(([k, icon, label]) => `<button role="tab" aria-selected="${tab === k}" class="${tab === k ? 'on' : ''}" data-ai-tab="${k}"><span aria-hidden="true">${icon}</span>${label}<em>${counts[k]}</em></button>`).join('')}</div>
+  <div class="air-panel" role="tabpanel">${body}</div>
+  ${r.omitted ? `<p class="foot">${r.omitted} suggestion${r.omitted === 1 ? ' was' : 's were'} dropped because ${r.omitted === 1 ? 'it' : 'they'} cited cards or text that aren't in this list.</p>` : ''}<p class="foot">AI coaching · card quotes are matched to real card text and the app checks cards, copies and turn limits, but full rules interactions aren't verified. Your score is unchanged. Clears when you change the deck or reload.</p>`;
 }
 export function aiReviewDialogContent(entry, stale = false) {
-  if (stale) return '<div class="ai-state"><span class="ai-state-symbol" aria-hidden="true">↻</span><h3>The deck changed</h3><p>Close this window and request a fresh review of your updated list. The earlier response will not be applied to it.</p></div>';
-  if (entry.busy) return `<div class="ai-state"><div class="ai-orbit" aria-hidden="true"><i></i><span>✦</span></div><p class="eyebrow">Your deck, another perspective</p><h3>Requesting your AI review</h3><p>OpenAI is reviewing the supplied cards and checks. We’ll show its response and matching text evidence here.</p><div class="ai-review-steps"><span>Deck sent</span><span class="current">Awaiting review</span><span>Evidence check next</span></div><p class="foot">You can close this window and keep browsing. Reopening progress won’t start another request. No automatic retries.</p></div>`;
+  if (stale) return '<div class="ai-state"><span class="ai-state-symbol" aria-hidden="true">↻</span><h3>The deck changed</h3><p>Close this window and ask for fresh coaching on your updated list. The earlier answer won\'t be applied to it.</p></div>';
+  if (entry.busy) return `<div class="ai-state"><div class="ai-orbit" aria-hidden="true"><i></i><span>✦</span></div><p class="eyebrow">Your deck, another perspective</p><h3>Coaching your deck</h3><p>OpenAI is reading your cards and the app's numbers. The app then checks every line and swap before showing it.</p><div class="ai-review-steps"><span>Deck sent</span><span class="current">Finding lines</span><span>App checks next</span></div><p class="foot">You can close this window and keep browsing. Reopening it won't start another request. No automatic retries.</p></div>`;
   if (entry.error) {
-    const title = ['billing','credits','spend_limit','usage_limit'].includes(entry.errorCode) ? 'API billing needs attention' : entry.errorCode === 'rate_limit' ? 'OpenAI needs a breather' : entry.errorCode === 'app_limit' ? 'App review allowance reached' : entry.errorCode === 'authentication' ? 'API connection needs attention' : 'Review couldn’t finish';
+    const title = ['billing', 'credits', 'spend_limit', 'usage_limit'].includes(entry.errorCode) ? 'API billing needs attention' : entry.errorCode === 'rate_limit' ? 'OpenAI needs a breather' : entry.errorCode === 'app_limit' ? 'App review allowance reached' : entry.errorCode === 'authentication' ? 'API connection needs attention' : 'Coaching couldn\'t finish';
     return `<div class="ai-state ai-error"><span class="ai-state-symbol" aria-hidden="true">!</span><h3>${title}</h3><p>${esc(entry.error)}</p><p class="foot">Your deck and score are unchanged. No automatic retry was made. Resolve the issue before trying again.</p><button class="btn small" data-ai-retry>Try again</button></div>`;
   }
-  return entry.result ? `<div class="ai-ready" role="status"><span aria-hidden="true">✦</span> Review ready · ${entry.result.findings.length} findings</div>${reviewReport(entry.result)}` : '<p>Choose a deck to begin a review.</p>';
+  return entry.result ? `<p class="sr-only" role="status">Coaching ready</p>${reviewReport(entry)}` : '<p>Choose a deck to begin.</p>';
 }
 function updateDialog() {
   if (!activeDialog) return;
   const body = activeDialog.node.querySelector('.ai-dialog-body');
   body.setAttribute('aria-busy', String(activeDialog.entry.busy && !activeDialog.stale));
   body.innerHTML = aiReviewDialogContent(activeDialog.entry, activeDialog.stale);
-  activeDialog.node.querySelector('.ai-dialog-status').textContent = activeDialog.stale ? 'Deck changed' : activeDialog.entry.busy ? 'Review in progress' : activeDialog.entry.error ? 'Review unavailable' : 'Review ready';
+  activeDialog.node.querySelector('.ai-dialog-status').textContent = activeDialog.stale ? 'Deck changed' : activeDialog.entry.busy ? 'Coaching in progress' : activeDialog.entry.error ? 'Coaching unavailable' : 'Coaching ready';
 }
 export function closeAiReview() {
   if (!activeDialog) return;
   const { node, key } = activeDialog; activeDialog = null;
   node.close?.(); node.remove();
-  [...document.querySelectorAll('[data-act="aiDeckReview"]')].find(b => b.dataset.ai === key)?.focus({preventScroll:true});
+  [...document.querySelectorAll('[data-act="aiDeckReview"]')].find(b => b.dataset.ai === key)?.focus({ preventScroll: true });
 }
 export function showAiReview(key, render, fetcher = fetch) {
   const entry = entries.get(key); if (!entry) return;
   if (activeDialog) closeAiReview();
   const node = document.createElement('dialog');
-  node.className = 'ai-review-dialog'; node.setAttribute('aria-labelledby','ai-review-title');
-  node.innerHTML = `<div class="ai-dialog-shell"><header class="ai-dialog-head"><div><p class="eyebrow">Second opinion</p><h2 id="ai-review-title">AI deck review</h2></div><button class="icon" data-ai-close aria-label="Close AI review">✕</button></header><p class="ai-dialog-status sr-only" role="status" aria-live="polite"></p><div class="ai-dialog-body"></div></div>`;
+  node.className = 'ai-review-dialog'; node.setAttribute('aria-labelledby', 'ai-review-title');
+  node.innerHTML = `<div class="ai-dialog-shell"><header class="ai-dialog-head"><div><p class="eyebrow">AI coach</p><h2 id="ai-review-title">Deck coaching</h2></div><button class="icon" data-ai-close aria-label="Close AI coaching">✕</button></header><p class="ai-dialog-status sr-only" role="status" aria-live="polite"></p><div class="ai-dialog-body"></div></div>`;
   document.body.append(node); activeDialog = { key, entry, node, stale: false };
   node.addEventListener('cancel', e => { e.preventDefault(); closeAiReview(); });
   node.addEventListener('click', e => {
+    const tab = e.target.closest?.('[data-ai-tab]');
+    if (tab) {
+      // Swap only the tab's content, so the decision card doesn't replay; bring the tabs to the top.
+      entry.tab = tab.dataset.aiTab;
+      for (const b of node.querySelectorAll('[data-ai-tab]')) { b.classList.toggle('on', b === tab); b.setAttribute('aria-selected', String(b === tab)); }
+      const panel = node.querySelector('.air-panel'), body = node.querySelector('.ai-dialog-body'), bar = node.querySelector('.air-tabs');
+      if (panel) panel.innerHTML = tabBody(entry);
+      if (body && bar && body.scrollTop > bar.offsetTop - 8) body.scrollTop = bar.offsetTop - 8;
+      return;
+    }
     if (e.target === node || e.target.closest('[data-ai-close]')) closeAiReview();
     else if (e.target.closest('[data-ai-retry]') && !activeDialog?.stale) { void runAiReview(key, render, fetcher); node.querySelector('[data-ai-close]').focus(); }
   });
   updateDialog();
-  if (node.showModal) node.showModal(); else node.setAttribute('open','');
+  if (node.showModal) node.showModal(); else node.setAttribute('open', '');
   node.querySelector('[data-ai-close]').focus();
   if (!entry.busy && !entry.result) return runAiReview(key, render, fetcher);
 }
+// Owned cards offered as swaps: only at request time, so rendering never walks the collection.
+function withCandidates(entry) {
+  let cards = [];
+  try { cards = (entry.hooks?.candidates?.() || []).filter(Boolean).slice(0, 25); } catch {}
+  entry.cands = cards.map((c, i) => ({ id: 'o' + i, c }));
+  return { ...entry.payload, candidates: entry.cands.map(x => cardEntry(entry.game, x.id, x.c.name, 1, 'owned', x.c)) };
+}
 export async function runAiReview(key, render, fetcher = fetch) {
   const entry = entries.get(key); if (!entry || entry.busy || entry.result) return;
-  entry.busy = true; entry.error = ''; entry.errorCode = ''; render(); updateDialog();
+  entry.busy = true; entry.error = ''; entry.errorCode = ''; entry.verified = null; render(); updateDialog();
   try {
-    const r = await fetcher('/api/ai/deck-review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(entry.payload), signal: AbortSignal.timeout(55000) });
-    let data; try { data = await r.json(); } catch { throw Error('AI review is unavailable. Check your connection and try later.'); }
-    if (!r.ok) throw Object.assign(Error(data.message || 'AI review is unavailable. Try later.'), { code: data.code || '' });
-    if (!data || typeof data.plan !== 'string' || !Array.isArray(data.findings) || !Array.isArray(data.questions)) throw Error('AI review returned an unreadable response.');
+    const r = await fetcher('/api/ai/deck-review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(withCandidates(entry)), signal: AbortSignal.timeout(110000) });
+    let data; try { data = await r.json(); } catch { throw Error('AI coaching is unavailable. Check your connection and try later.'); }
+    if (!r.ok) throw Object.assign(Error(data.message || 'AI coaching is unavailable. Try later.'), { code: data.code || '' });
+    if (!data || typeof data.headline !== 'string' || !data.pilot || !data.pressure || !Array.isArray(data.improve)) throw Error('AI coaching returned an unreadable response.');
     entry.result = data;
-  } catch (e) { entry.errorCode = e.code || ''; entry.error = e.name === 'TimeoutError' || e.name === 'AbortError' ? 'AI review took too long. Try again later.' : e.message || 'AI review is unavailable.'; }
+  } catch (e) { entry.errorCode = e.code || ''; entry.error = e.name === 'TimeoutError' || e.name === 'AbortError' ? 'AI coaching took too long. Try again later.' : e.message || 'AI coaching is unavailable.'; }
   finally { entry.busy = false; if (entries.get(key) === entry) render(); if (activeDialog?.entry === entry) updateDialog(); }
 }

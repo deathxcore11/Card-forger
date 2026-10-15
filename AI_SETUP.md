@@ -29,14 +29,15 @@ CLI alternative from the repo: `npx wrangler secret put OPENAI_API_KEY`, followe
 
 ## What is sent and retained
 
-After the user taps Review, the app sends the selected deck's game/format, quantities/zones, card rules/details and heuristic check summary to the Worker, then OpenAI. It does not send the whole collection, account identifiers, shopping prices, private notes or deck title. The Worker does not log/store deck payloads or reviews. OpenAI is called with `store:false`; that is not a promise of zero provider retention. See OpenAI's API data controls for provider policies.
+After the user taps **Coach this deck**, the app sends the selected deck's game/format, quantities/zones, card rules/details, the app's computed facts (Power breakdown, hand odds, goldfish results, rules-text links, tournament comparison), a sample opening hand dealt by the app, and the names and rules text of up to 25 owned cards that could be swapped in. It does not send the rest of the collection, quantities owned, account identifiers, prices, private notes or deck title. The Worker does not log/store deck payloads or reviews. OpenAI is called with `store:false`; that is not a promise of zero provider retention. See OpenAI's API data controls for provider policies.
 
 The quota object stores counters and a daily-salted hash of Cloudflare's client IP header. A single state record is replaced each day/hour; provider storage backup retention may differ. No raw IP, deck or review is stored in that record.
 
 ## Quality contract
 
 - AI does not change scores, legal status, saved decks or collections.
-- Each displayed finding must have exact text evidence from a known supplied card. Matching a quote does **not** prove the interpretation or combo is valid.
+- Each displayed stress test, Power challenge and swap must have exact text evidence from a known supplied card; every step of a winning line must be a card in the deck, quoting that card's text.
+- The app checks AI lines in code (copies, once-per-turn reuse, Magic mana by turn, Pokémon Supporter/attachment/evolution limits, Yu-Gi-Oh! Normal Summon and Extra Deck rules) and re-scores every swap with Deck Power, including the legality check, before showing it. Swaps may only add owned cards that were supplied. Matching a quote does **not** prove the interpretation or combo is valid.
 - Reports distinguish ideas from strengths/risks and expose remaining costs, timing and rules checks.
 - No live tournament, pricing or external rules lookup is provided to the model.
 - Tests mock the API. After activation, compare winning lists against deliberately damaged lists in all three games before treating AI advice as dependable.

@@ -1263,13 +1263,32 @@ function realResults(sims, p) {
   });
 }
 
+// AI coach hooks: owned cards that could join this deck, and the app's own re-score of a swap.
+export function tcgCoachHooks(g, d, f, pw) {
+  return {
+    candidates: () => {
+      const rows = Object.values(d.zones || {}).flat(), inDeck = new Set(rows.map((r) => cardOf(g, r.cardId)?.name || r.name));
+      const seen = new Set(), owned = [];
+      for (const e of gs(g).collection) { const c = cardOf(g, e.cardId); if (c && !inDeck.has(c.name) && !seen.has(c.name) && !c.basicEnergy) { seen.add(c.name); owned.push(c); } }
+      const top = [...(d.zones.main || [])].sort((a, b) => b.qty - a.qty).map((r) => cardOf(g, r.cardId)).find((c) => c && (g === "ygo" ? !/Spell|Trap/.test(c.typeLine || c.type || "") : c.category === "Pokemon"));
+      const ranked = top ? rankPairs(g, top, owned.map((card) => ({ card, owned: true })), { max: 25 }).map((x) => x.card) : [];
+      return [...ranked, ...owned.filter((c) => !ranked.includes(c))].slice(0, 25);
+    },
+    rescore: (out, add) => {
+      if (out.zone === "side") throw Error("main deck only");
+      const p2 = tcgPower(g, { ...swappedZones(d, out.zone, out.row.cardId, add), id: d.id + "~coach" }, f, (x) => cardOf(g, x));
+      return { before: shownPower(pw), after: shownPower(p2), beforeIssues: pw.readiness?.issues, issues: p2.readiness?.issues };
+    },
+  };
+}
+
 function deckInsights(g, d, f, s) {
   const main = (d.zones.main || []).map((r) => ({ r, c: cardOf(g, r.cardId) })),
     N = main.reduce((a, x) => a + x.r.qty, 0),
     top = [...s.rows].filter((x) => x.c && price(x.c)).sort((a, b) => price(b.c) - price(a.c)).slice(0, 5);
   if (!N) return `<p class="muted pad">Add cards to see composition and odds.</p>`;
   const pw = tcgPower(g, d, f, (x) => cardOf(g, x)),
-    powerHtml = aiReviewPanel(g, d, x => cardOf(g, x), pw) + powerPanel(pw, { loadAct: `data-act="tMetaRefresh"`, cardAct: (x) => (x.id || g === "ygo" ? `data-act="tCard" data-id="${esc(x.id || x.key)}"` : `data-act="tDeckFindName" data-name="${esc(x.name)}"`) });
+    powerHtml = aiReviewPanel(g, d, x => cardOf(g, x), pw, tcgCoachHooks(g, d, f, pw)) + powerPanel(pw, { loadAct: `data-act="tMetaRefresh"`, cardAct: (x) => (x.id || g === "ygo" ? `data-act="tCard" data-id="${esc(x.id || x.key)}"` : `data-act="tDeckFindName" data-name="${esc(x.name)}"`) });
   const bars = (items) => `<div class="comp">${items.map(([label, n, total, note]) => `<div class="meter"><span>${esc(label)}</span>${bar(total ? n / total : 0)}<b>${n}</b></div>${note ? `<p class="foot">${note}</p>` : ""}`).join("")}</div>`;
   // Each card's role comes from the Deck Power engine, so the table shows why a card matters.
   const roleChips = (id) => (pw.roles?.get(String(id)) || []).map((r) => `<span class="role-chip">${esc(r)}</span>`).join(""),

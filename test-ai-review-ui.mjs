@@ -11,18 +11,18 @@ globalThis.document = {
   querySelector(q) { return this.nodes[q]; }, addEventListener(k,f){this.handlers[k]=f;}, showModal(){this.open=true;}, close(){this.open=false;}, remove(){this.removed=true;} })
 };
 const deck = { id: 'popup', cards: [{ name: 'Engine', qty: 4 }] }, p = { heuristic: 60, formatName: 'Casual' }, lookup = () => ({ name: 'Engine', oracle_text: 'Draw two cards.' });
-const report = { plan: 'Draw cards.', findings: [], questions: [], omitted: 0 };
+const report = { headline: 'Draw cards.', pilot: { hand: null, lines: [] }, pressure: { scenarios: [], challenges: [] }, improve: [], tests: [], omitted: 0 };
 aiReviewPanel('mtg', deck, lookup, p);
 let complete, calls = 0;
 const fetcher = async () => { calls++; return new Promise(resolve => { complete = resolve; }); };
 const pending = showAiReview('mtg:popup', () => {}, fetcher);
 assert.equal(dialogs.length, 1); assert.equal(dialogs[0].open, true); assert.equal(focused,'close');
-assert.match(dialogs[0].nodes['.ai-dialog-body'].innerHTML,/Awaiting review/);
+assert.match(dialogs[0].nodes['.ai-dialog-body'].innerHTML,/Finding lines/);
 assert.equal(dialogs[0].nodes['.ai-dialog-body'].attrs['aria-busy'],'true');
 closeAiReview(); assert.equal(focused,'launcher'); assert.equal(dialogs[0].removed,true);
 showAiReview('mtg:popup', () => {}, fetcher); assert.equal(calls,1,'reopening progress never duplicates paid request');
 complete(Response.json(report)); await pending;
-assert.match(dialogs[1].nodes['.ai-dialog-body'].innerHTML,/Review ready/);
+assert.match(dialogs[1].nodes['.ai-dialog-body'].innerHTML,/Coaching ready/);
 assert.equal(dialogs[1].nodes['.ai-dialog-body'].attrs['aria-busy'],'false');
 let prevented=false; dialogs[1].handlers.cancel({preventDefault(){prevented=true;}});
 assert.ok(prevented); assert.equal(dialogs[1].open,false); assert.equal(focused,'launcher');
