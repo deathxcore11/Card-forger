@@ -61,16 +61,29 @@ const cardIndex = deck => new Map([...deck.cards, ...deck.candidates].map(c => [
 // Quotes match loosely: curly quotes, dashes, case, trailing periods and "…" gaps don't matter,
 // and text inside the card's details JSON is compared unescaped.
 const loose = t => norm(String(t).toLowerCase().replace(/[’‘`]/g, "'").replace(/[“”]/g, '"').replace(/[–—−]/g, '-').replace(/\\"/g, '"').replace(/\\n/g, ' ')).replace(/[.\s]+$/, '');
-const quoted = (c, q) => {
-  if (!c?.known || q.length < 4 || q.length > 350) return false;
+const words = t => loose(t).match(/[a-z0-9]{3,}/g) || [];
+// The card text the quote refers to: the quote itself when it's on the card, else the card's own
+// sentence it paraphrases (most of its words on that sentence). The UI only ever shows card text.
+export function matchQuote(c, q) {
+  if (!c?.known || q.length < 4 || q.length > 350) return null;
   const hay = loose(c.text + ' ' + c.details);
-  return q.split(/\.\.\.|…/).map(loose).filter(Boolean).every(part => part.length >= 3 && hay.includes(part));
-};
+  if (q.split(/\.\.\.|…/).map(loose).filter(Boolean).every(part => part.length >= 3 && hay.includes(part))) return q;
+  const want = [...new Set(words(q))];
+  if (want.length < 3) return null;
+  let best = null, score = 0;
+  const details = (() => { try { const d = JSON.parse(c.details || '{}'); return [...(d.abilities || []), ...(d.attacks || []), ...(d.faces || [])].map(x => x.effect || x.text || '').join('\n'); } catch { return ''; } })();
+  for (const sentence of (c.text + '\n' + details).split(/(?<=[.!?])\s+|\n+/).map(x => x.trim()).filter(x => x.length >= 8)) {
+    const have = new Set(words(sentence)), hit = want.filter(w => have.has(w)).length / want.length;
+    if (hit > score) { score = hit; best = sentence; }
+  }
+  return score >= 0.7 ? best.slice(0, 300) : null;
+}
 function checkEvidence(list, idx, why) {
   const out = [];
   for (const e of Array.isArray(list) ? list.slice(0, 6) : []) {
     const c = idx.get(e?.cardId), q = typeof e?.quote === 'string' ? norm(e.quote) : '';
-    if (quoted(c, q)) out.push({ cardId: c.id, name: c.name, quote: q }); else why.push(`quote not found on ${c?.name || 'an unknown card'}`);
+    const real = matchQuote(c, q);
+    if (real) out.push({ cardId: c.id, name: c.name, quote: real }); else why.push(`quote not found on ${c?.name || 'an unknown card'}: "${q.slice(0, 60)}"`);
   }
   return out;
 }
@@ -93,7 +106,7 @@ export function validateReview(raw, deck) {
     if (bad) return drop(`line step uses ${idx.get(bad?.cardId)?.name || 'a card not in the deck'}`);
     const wrong = steps.find(st => { const own = short(idx.get(st.cardId).name).toLowerCase(), a = st.action.toLowerCase(); return !a.includes(own) && deckShort.some(([id, n]) => id !== st.cardId && a.includes(n.toLowerCase()) && !own.includes(n.toLowerCase())); });
     if (wrong) return drop(`line step cites ${idx.get(wrong.cardId).name} but describes another card`);
-    return [{ name: s(l.name, 120), goal: s(l.goal, 400), payoff: s(l.payoff, 400), interrupt: s(l.interrupt, 400), steps: steps.map(st => { const q = norm(st.quote || ''), ok = q && quoted(idx.get(st.cardId), q); if (q && !ok) why.push(`step quote not found on ${idx.get(st.cardId).name}`); return { turn: st.turn, cardId: st.cardId, name: idx.get(st.cardId).name, kind: st.kind, action: s(st.action, 300), quote: ok ? q : '' }; }) }];
+    return [{ name: s(l.name, 120), goal: s(l.goal, 400), payoff: s(l.payoff, 400), interrupt: s(l.interrupt, 400), steps: steps.map(st => { const q = norm(st.quote || ''), real = q ? matchQuote(idx.get(st.cardId), q) : null; if (q && !real) why.push(`step quote not found on ${idx.get(st.cardId).name}: "${q.slice(0, 60)}"`); return { turn: st.turn, cardId: st.cardId, name: idx.get(st.cardId).name, kind: st.kind, action: s(st.action, 300), quote: real || '' }; }) }];
   });
   const scenarios = (raw.pressure.scenarios || []).slice(0, 4).flatMap(x => {
     if (typeof x?.threat !== 'string') return drop('unreadable scenario');
@@ -150,7 +163,7 @@ export async function aiReviewRoute(request, env, { fetcher = fetch } = {}) {
       const limit = await gate.fetch('https://limit/reserve', { method: 'POST', body: JSON.stringify({ hash }) });
       if (!limit.ok) return reply({ code: 'app_limit', message: 'AI review limit reached. Try later; your regular deck checks remain available.' }, 429, { 'Retry-After': '3600' });
     }
-    const upstream = await fetcher('https://api.openai.com/v1/responses', { method: 'POST', signal: AbortSignal.timeout(100000), headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: env.OPENAI_MODEL || 'gpt-4.1-mini', store: false, max_output_tokens: 6000, instructions: instructionsFor(deck.game), input: JSON.stringify(deck), text: { format: { type: 'json_schema', name: 'deck_review', strict: true, schema } } }) });
+    const upstream = await fetcher('https://api.openai.com/v1/responses', { method: 'POST', signal: AbortSignal.timeout(100000), headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: env.OPENAI_MODEL || 'gpt-4.1-mini', store: false, max_output_tokens: /^(o\d|gpt-5)/.test(env.OPENAI_MODEL || '') ? 20000 : 6000, instructions: instructionsFor(deck.game), input: JSON.stringify(deck), text: { format: { type: 'json_schema', name: 'deck_review', strict: true, schema } } }) });
     if (!upstream.ok) {
       // Never expose provider messages (they may echo user input or credentials).
       let detail = {}; try { detail = (await upstream.json()).error || {}; } catch {}

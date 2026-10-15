@@ -1,3 +1,9 @@
+3.70.2 — AI coach shows real card text
+- The AI often paraphrases card text. Instead of dropping that advice, the app finds the card's
+  own sentence it refers to and shows that; quotes that match nothing on the card are still
+  rejected.
+- Reasoning models (OPENAI_MODEL o-series or GPT-5 family) get room to think before answering.
+
 3.70.1 — AI coach tested live on all three games
 - Live reviews of a Magic Commander, a Yu-Gi-Oh! and a Pokémon tournament list showed good
   advice being dropped: card quotes with curly quotes, dashes or "…" didn't match exactly. Quotes

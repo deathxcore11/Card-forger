@@ -181,3 +181,10 @@ const { showAiReview: _s } = await import('./ai-review.js');
 const html = aiReviewPanel('mtg', fdeck, flook, fp, hooks);
 assert.match(html, /1 swap\b/);
 console.log('PASS: Coaching sends computed facts, a repeatable sample hand and owned swap candidates.');
+// A paraphrased quote shows the card's real sentence; an unrelated one is rejected.
+const { matchQuote } = await import('./ai-review-route.js');
+const drak = { known: true, text: 'Ability: Recon Directive\nOnce during your turn, you may look at the top 2 cards of your deck and put 1 of them into your hand. Put the other card on the bottom of your deck.', details: '{}' };
+assert.equal(matchQuote(drak, 'look at the top 2 cards of your deck and put one into your hand'), 'Once during your turn, you may look at the top 2 cards of your deck and put 1 of them into your hand.');
+assert.equal(matchQuote(drak, 'Search your deck for any Supporter card'), null);
+assert.equal(matchQuote(drak, 'Put the other card on the bottom'), 'Put the other card on the bottom');
+console.log('PASS: Paraphrased card quotes are replaced by the card\'s own sentence; unrelated quotes are rejected.');
