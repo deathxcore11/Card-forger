@@ -301,18 +301,31 @@ export function showAiReview(key, render, fetcher = fetch) {
   node.querySelector('[data-ai-close]').focus();
   if (!entry.busy && !entry.result) return runAiReview(key, render, fetcher);
 }
-// Owned cards offered as swaps: only at request time, so rendering never walks the collection.
-function withCandidates(entry) {
-  let cards = [];
-  try { cards = (entry.hooks?.candidates?.() || []).filter(Boolean).slice(0, 25); } catch {}
-  entry.cands = cards.map((c, i) => ({ id: 'o' + i, c }));
-  return { ...entry.payload, candidates: entry.cands.map(x => cardEntry(entry.game, x.id, x.c.name, 1, 'owned', x.c)) };
+// Owned cards offered as swaps, chosen with Power: each is test-added and Power's own counts say
+// which weak areas it would raise (within a time budget, yielding so the progress animation runs).
+// Only at request time, so rendering never walks the collection.
+async function withCandidates(entry, budget = 1500) {
+  let pool = [];
+  try { pool = (entry.hooks?.candidates?.() || []).filter(Boolean).slice(0, 60); } catch {}
+  const P = entry.payload.power || { areas: [], priority: [] }, weak = P.priority.filter(k => !k.startsWith('cap:')).slice(0, 4);
+  const base = new Map(P.areas.map(a => [a.key, a.count])), label = new Map(P.areas.map(a => [a.key, a.label])), helps = new Map();
+  if (entry.hooks?.probe && weak.length) {
+    const t = Date.now();
+    for (const c of pool) {
+      if (Date.now() - t > budget) break;
+      try { const parts = entry.hooks.probe(c), up = weak.filter(k => { const x = parts?.find(p => p.key === k)?.count; return Number.isFinite(x) && Number.isFinite(base.get(k)) && x > base.get(k); }); if (up.length) helps.set(c, up.map(k => label.get(k))); } catch {}
+      await new Promise(r => setTimeout(r, 0));
+    }
+  }
+  const cards = [...pool.filter(c => helps.has(c)), ...pool.filter(c => !helps.has(c))].slice(0, 25);
+  entry.cands = cards.map((c, i) => ({ id: 'o' + i, c, helps: helps.get(c) || [] }));
+  return { ...entry.payload, candidates: entry.cands.map(x => ({ ...cardEntry(entry.game, x.id, x.c.name, 1, 'owned', x.c), ...(x.helps.length ? { helps: x.helps.join(', ') } : {}) })) };
 }
 export async function runAiReview(key, render, fetcher = fetch) {
   const entry = entries.get(key); if (!entry || entry.busy || entry.result) return;
   entry.busy = true; entry.error = ''; entry.errorCode = ''; entry.verified = null; render(); updateDialog();
   try {
-    const r = await fetcher('/api/ai/deck-review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(withCandidates(entry)), signal: AbortSignal.timeout(110000) });
+    const r = await fetcher('/api/ai/deck-review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(await withCandidates(entry)), signal: AbortSignal.timeout(110000) });
     let data; try { data = await r.json(); } catch { throw Error('AI coaching is unavailable. Check your connection and try later.'); }
     if (!r.ok) throw Object.assign(Error(data.message || 'AI coaching is unavailable. Try later.'), { code: data.code || '' });
     if (!data || typeof data.headline !== 'string' || !data.pilot || !data.pressure || !Array.isArray(data.improve)) throw Error('AI coaching returned an unreadable response.');

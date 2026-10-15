@@ -20,7 +20,7 @@ assert.equal(dialogs.length, 1); assert.equal(dialogs[0].open, true); assert.equ
 assert.match(dialogs[0].nodes['.ai-dialog-body'].innerHTML,/Finding lines/);
 assert.equal(dialogs[0].nodes['.ai-dialog-body'].attrs['aria-busy'],'true');
 closeAiReview(); assert.equal(focused,'launcher'); assert.equal(dialogs[0].removed,true);
-showAiReview('mtg:popup', () => {}, fetcher); assert.equal(calls,1,'reopening progress never duplicates paid request');
+showAiReview('mtg:popup', () => {}, fetcher); while (!complete) await new Promise(r => setTimeout(r, 1)); assert.equal(calls,1,'reopening progress never duplicates paid request');
 complete(Response.json(report)); await pending;
 assert.match(dialogs[1].nodes['.ai-dialog-body'].innerHTML,/Coaching ready/);
 assert.equal(dialogs[1].nodes['.ai-dialog-body'].attrs['aria-busy'],'false');

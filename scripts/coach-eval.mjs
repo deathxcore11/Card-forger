@@ -86,7 +86,7 @@ const results = await pool(jobs, 4, async (c) => { try { const x = await run(c);
 
 const ok = results.filter((x) => !x.error), rate = (xs, f) => { const v = xs.map(f).filter((x) => x !== null && x !== undefined); return v.length ? +(v.reduce((a, b) => a + Number(b), 0) / v.length).toFixed(2) : null; };
 const byCase = new Map(); for (const x of ok.filter((x) => x.label === "winner")) (byCase.get(x.case) || byCase.set(x.case, []).get(x.case)).push(x);
-const jac = (a, b) => { const A = new Set(a), B2 = new Set(b); const i = [...A].filter((x) => B2.has(x)).length; return A.size + B2.size - i ? i / (A.size + B2.size - i) : 1; };
+const jac = (a, b) => { const A = new Set(a), B2 = new Set(b); if (!A.size || !B2.size) return 0; const i = [...A].filter((x) => B2.has(x)).length; return i / (A.size + B2.size - i); };
 const consistency = [...byCase.entries()].filter(([, xs]) => xs.length > 1).map(([k, xs]) => ({ case: k, runs: xs.length, sameFocus: xs.every((x) => x.focus === xs[0].focus), coreOverlap: +(xs.slice(1).reduce((s, x) => s + jac(xs[0].core, x.core), 0) / (xs.length - 1)).toFixed(2), focuses: xs.map((x) => x.focus) }));
 const summary = {
   reviews: results.length, errors: results.filter((x) => x.error).length,
@@ -96,7 +96,7 @@ const summary = {
   linesPassAppChecks: +(ok.reduce((s, x) => s + x.linesPass, 0) / Math.max(1, ok.reduce((s, x) => s + x.lines, 0))).toFixed(2),
   swapsNotWorse: +(ok.reduce((s, x) => s + x.swapsNotWorse, 0) / Math.max(1, ok.reduce((s, x) => s + x.swapsRescored, 0))).toFixed(2),
   swapsImproveTheirArea: +(ok.reduce((s, x) => s + x.swapsAreaUp, 0) / Math.max(1, ok.reduce((s, x) => s + x.swapsRescored, 0))).toFixed(2),
-  droppedPerReview: rate(ok, (x) => x.omitted), consistency,
+  namesCoreCards: rate(ok, (x) => x.core.length > 0), droppedPerReview: rate(ok, (x) => x.omitted), consistency,
 };
 fs.writeFileSync(OUT, JSON.stringify({ at: new Date().toISOString(), summary, results }, null, 1));
 console.log(JSON.stringify(summary, null, 1));

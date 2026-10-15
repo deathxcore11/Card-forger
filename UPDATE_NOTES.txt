@@ -1,3 +1,11 @@
+3.71.1 — Coach swaps chosen by Power, and fewer dropped answers
+- Swap candidates are chosen with Deck Power: owned cards are test-added and Power's own counts
+  show which weak area each would raise (e.g. a land for "Lands"); those come first and are
+  labelled, and the coach is told to use them for that area.
+- Cards the coach names instead of citing by id are now recognised, and a real quote with a wrong
+  card id is credited to the one card it appears on; first evaluation showed most identity cards
+  and swaps were being lost to citation format, not bad advice.
+
 3.71.0 — AI coach built on Deck Power
 - The coach now receives Deck Power's own analysis as structured data (each area's count, target,
   status and points lost, and Power's ranking of what to fix first) and works from it.

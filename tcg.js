@@ -1271,9 +1271,10 @@ export function tcgCoachHooks(g, d, f, pw) {
       const seen = new Set(), owned = [];
       for (const e of gs(g).collection) { const c = cardOf(g, e.cardId); if (c && !inDeck.has(c.name) && !seen.has(c.name) && !c.basicEnergy) { seen.add(c.name); owned.push(c); } }
       const top = [...(d.zones.main || [])].sort((a, b) => b.qty - a.qty).map((r) => cardOf(g, r.cardId)).find((c) => c && (g === "ygo" ? !/Spell|Trap/.test(c.typeLine || c.type || "") : c.category === "Pokemon"));
-      const ranked = top ? rankPairs(g, top, owned.map((card) => ({ card, owned: true })), { max: 25 }).map((x) => x.card) : [];
-      return [...ranked, ...owned.filter((c) => !ranked.includes(c))].slice(0, 25);
+      const ranked = top ? rankPairs(g, top, owned.map((card) => ({ card, owned: true })), { max: 40 }).map((x) => x.card) : [];
+      return [...ranked, ...owned.filter((c) => !ranked.includes(c))].slice(0, 60);
     },
+    probe: (card) => tcgPower(g, { ...d, id: d.id + "~probe", zones: { ...d.zones, main: [...(d.zones.main || []), { cardId: card.id, name: card.name, qty: 1 }] } }, f, (x) => cardOf(g, x)).parts,
     rescore: (out, add) => {
       if (out.zone === "side") throw Error("main deck only");
       const p2 = tcgPower(g, { ...swappedZones(d, out.zone, out.row.cardId, add), id: d.id + "~coach" }, f, (x) => cardOf(g, x));

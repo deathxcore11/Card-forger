@@ -59,7 +59,7 @@ const invalid = { ...review, pressure: { scenarios: [sc, { ...sc, evidence: [{ c
   pilot: { ...review.pilot, lines: [...review.pilot.lines, { ...review.pilot.lines[0], steps: [...review.pilot.lines[0].steps, { turn: 3, cardId: 'c9', kind: 'play', action: 'Cast a card that is not there', quote: '' }] }] } };
 const checked = validateReview(invalid, cleanDeck(payload));
 assert.equal(checked.pilot.lines.length, 1, 'a line using a card not in the deck is dropped');
-assert.deepEqual(checked.pressure.scenarios.map(x => x.evidence.length), [1, 0, 0, 1], 'fabricated quotes are removed, the scenario stays');
+assert.deepEqual(checked.pressure.scenarios.map(x => x.evidence.length), [1, 0, 1, 1], 'fabricated quotes are removed (the scenario stays); a real quote with a wrong card id is credited to the one card it is on');
 assert.equal(checked.pressure.scenarios[3].backupCards.length, 0, 'backup cards not in the deck are removed');
 assert.ok(checked.notes.some(n => /quote not found/.test(n)));
 // Quotes match despite curly quotes, dashes, case and "…" gaps; prose shows names, not ids.
@@ -107,6 +107,7 @@ const d = { id: 'race', cards: [{ name: 'Test', qty: 1 }] }, lookup = () => ({ n
 aiReviewPanel('mtg', d, lookup, p); let finish;
 const pending = runAiReview('mtg:race', () => {}, () => new Promise(resolve => { finish = resolve; }));
 d.cards[0].qty = 2; aiReviewPanel('mtg', d, lookup, p);
+while (!finish) await new Promise(r => setTimeout(r, 1));
 finish(Response.json({ ...review, omitted: 0 })); await pending;
 assert.doesNotMatch(aiReviewPanel('mtg', d, lookup, p), /Needs fodder/);
 // Model output is escaped in the UI, including citations.
@@ -123,6 +124,9 @@ assert.equal(tied.priority, 'Draw'); assert.deepEqual(tied.explain.map(x => x.ar
 assert.deepEqual(tied.beyond.map(x => x.note), ['Test Engine needs an artifact for each activation.'], 'a detail that restates Power\'s count with a different number is dropped');
 assert.deepEqual(tied.identity.engineCards.map(x => x.name), ['Test Engine']);
 assert.deepEqual(cleanDeck(payload).power.priority, ['Draw'], 'priority keys must be Power areas');
+// Cards cited by name instead of id still resolve.
+const named = validateReview({ ...review, identity: { ...review.identity, winCards: ['Test Engine'] }, improve: [{ ...swap, cut: 'Test Engine', add: 'Owned Bauble' }] }, withOwned);
+assert.deepEqual(named.identity.winCards.map(x => x.cardId), ['c0']); assert.deepEqual(named.improve.map(x => [x.cut, x.add]), [['c0', 'o0']]);
 console.log('PASS: AI review all three games, secret isolation, bounded input, quota burst/restart, fail-closed setup, failure handling, citation rejection, explicit opt-in, escaping and stale-review invalidation. No paid API requests made.');
 
 for (const [status, error, expected] of [

@@ -1390,9 +1390,13 @@ export function mtgCoachHooks(d, pw) {
       const f = formatOf(d), inDeck = new Set(d.cards.map((r) => key(r.name))), ident = isCommanderLike(d) || f.commander ? meta(d.commander)?.color_identity : null;
       const owned = [...new Set(S.state.collection.map((e) => e.name))].map(meta).filter((c) => c && !inDeck.has(key(c.name)) && !isBasic(c) && (!f.legality || ["legal", "restricted"].includes(legalityIn(c, f))) && (!ident || (c.color_identity || []).every((x) => ident.includes(x))));
       const target = meta(d.commander) || aggregateCards(d.cards).map((r) => meta(r.name)).filter((c) => c && !isLand(c)).sort((a, b) => (d.cards.find((r) => r.name === b.name)?.qty || 0) - (d.cards.find((r) => r.name === a.name)?.qty || 0))[0];
-      const ranked = target ? rankPairs("mtg", target, owned.map((card) => ({ card, owned: true })), { max: 25 }).map((x) => x.card) : [];
-      return [...ranked, ...owned.filter((c) => !ranked.includes(c))].slice(0, 25);
+      const ranked = target ? rankPairs("mtg", target, owned.map((card) => ({ card, owned: true })), { max: 30 }).map((x) => x.card) : [];
+      // Lands and role cards for Power's weak areas join the pool; Power itself then probes them.
+      const roles = engineRoles, weak = new Set((pw.parts || []).filter((x) => x.ratio < 0.9).map((x) => x.key));
+      const fits = owned.filter((c) => ((weak.has("Lands") || weak.has("Mana")) && isLand(c)) || roles(c).some((r) => weak.has(r)));
+      return [...new Set([...fits.slice(0, 30), ...ranked, ...owned])].slice(0, 60);
     },
+    probe: (card) => mtgPower({ ...d, id: d.id + "~probe", cards: [...d.cards, { name: card.name, qty: 1 }] }).parts,
     rescore: (out, add) => {
       if (out.zone !== "main") throw Error("main deck only");
       const p2 = mtgPower({ ...d, id: d.id + "~coach", cards: applySwapsToCards(d.cards, [{ cut: out.row.name, add: add.name }]) });

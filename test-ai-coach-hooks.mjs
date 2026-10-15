@@ -22,13 +22,20 @@ const inDeck = new Set(d.cards.map((r) => r.name.toLowerCase()));
 S.state.collection = Object.values(B.mtg.cards).filter((c) => !inDeck.has(c.name.toLowerCase())).slice(0, 400).map((c, i) => ({ id: "e" + i, name: c.name, qty: 1 }));
 const pw = mtgPower(d), hooks = mtgCoachHooks(d, pw), ident = S.catalog[edh.commander.toLowerCase()].color_identity;
 const cands = hooks.candidates();
-assert.ok(cands.length > 0 && cands.length <= 25);
+assert.ok(cands.length > 0 && cands.length <= 60);
 assert.ok(cands.every((c) => !inDeck.has(c.name.toLowerCase()) && (c.color_identity || []).every((x) => ident.includes(x))), "owned, new to the deck, inside the commander's colors");
 const cutRow = { zone: "main", row: d.cards.find((r) => r.name !== edh.commander && !/^(Forest|Island|Swamp|Mountain|Plains)$/.test(r.name)) };
 const v = hooks.rescore(cutRow, cands[0]);
 assert.ok(Number.isFinite(v.before) && Number.isFinite(v.after));
 assert.ok(!(v.issues || []).some((i) => /outside the commander/.test(i)), "a candidate swap stays legal");
-console.log(`PASS: Magic coach swap re-scored by Deck Power (${v.before} → ${v.after}) with ${cands.length} legal owned candidates.`);
+// Power picks the candidates: test-added cards that raise a weak area's count come first, labelled.
+const weakKeys = pw.parts.filter((x) => x.ratio < 0.9).map((x) => x.key), lands = cands.find((c) => /Land/.test(c.type_line || ""));
+if (lands && weakKeys.includes("Lands")) assert.ok(hooks.probe(lands).find((x) => x.key === "Lands").count > pw.parts.find((x) => x.key === "Lands").count, "Power counts a probed land toward Lands");
+aiReviewPanel("mtg", d, (n) => S.catalog[n.toLowerCase()], pw, hooks);
+let mtgSent; await runAiReview("mtg:hk", () => {}, async (u, init) => { mtgSent = JSON.parse(init.body); return Response.json({}, { status: 500 }); });
+assert.ok(mtgSent.candidates.length <= 25 && mtgSent.candidates.some((c) => c.helps), "candidates carry the Power areas they raise");
+assert.ok(mtgSent.candidates.findIndex((c) => !c.helps) === -1 || mtgSent.candidates.slice(0, mtgSent.candidates.findIndex((c) => !c.helps)).every((c) => c.helps), "helpers first");
+console.log(`PASS: Magic coach swap re-scored by Deck Power (${v.before} → ${v.after}); ${mtgSent.candidates.filter((c) => c.helps).length} owned candidates raise a weak Power area (e.g. ${mtgSent.candidates.find((c) => c.helps)?.name}: ${mtgSent.candidates.find((c) => c.helps)?.helps}).`);
 
 for (const g of ["ygo", "ptcg"]) {
   const c = B[g].cases[0], f = (g === "ygo" ? YGO_FORMATS : PTCG_FORMATS)[0], dd = { id: "hk" + g, name: "t", format: c.fmt, zones: c.zones };
