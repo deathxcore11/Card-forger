@@ -128,5 +128,20 @@
 <link rel="modulepreload" href="zoom.js">
 <!-- modulepreload:end -->
 <script type="module" src="app.js"></script>
+<script>
+// Start-up watchdog: if the app hasn't opened after 12 seconds, show what's happening and offer a
+// retry, or a repair that clears the offline copy (saved cards are kept; they live elsewhere).
+setTimeout(function () {
+  var app = document.getElementById("app");
+  if (!app || app.classList.contains("ready")) return;
+  app.classList.add("ready");
+  document.getElementById("content").innerHTML = '<section class="empty"><h3>CardStashy is taking a while to open</h3><p>Usually a slow or dropped connection. Your saved cards are safe.</p><p><button class="btn" onclick="location.reload()">Retry</button> <button class="btn ghost" id="cfRepair">Repair offline files</button></p><p class="muted small">Repair clears the app\'s offline copy of its own files and reloads. Your collection and decks are not touched.</p></section>';
+  document.getElementById("cfRepair").onclick = function () {
+    var regs = navigator.serviceWorker ? navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); }) : Promise.resolve();
+    var keys = window.caches ? caches.keys().then(function (ks) { return Promise.all(ks.filter(function (k) { return k.indexOf("cardforge-shell-") === 0; }).map(function (k) { return caches.delete(k); })); }) : Promise.resolve();
+    Promise.all([regs, keys]).then(function () { location.reload(); }, function () { location.reload(); });
+  };
+}, 12000);
+</script>
 </body>
 </html>

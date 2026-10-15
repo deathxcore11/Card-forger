@@ -1,3 +1,11 @@
+3.70.3 — Opens on a weak connection
+- The app stayed on its splash screen when the connection stalled: start-up waited for the card
+  reference file with no time limit, and the offline helper waited for the network with no
+  time limit. The reference file now arrives in the background after 2.5 seconds, and the
+  offline helper uses its saved copy when the network hasn't answered within a few seconds.
+- If the app still hasn't opened after 12 seconds, it says so and offers Retry and "Repair
+  offline files" (clears only the app's own offline copy; your cards and decks are kept).
+
 3.70.2 — AI coach shows real card text
 - The AI often paraphrases card text. Instead of dropping that advice, the app finds the card's
   own sentence it refers to and shows that; quotes that match nothing on the card are still

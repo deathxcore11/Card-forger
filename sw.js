@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-v167";
+const CACHE = "cardforge-shell-v168";
 const ASSETS = [
   "./",
   "./index.html",
@@ -138,28 +138,20 @@ self.addEventListener("fetch", (e) => {
     );
     return;
   }
-  if (e.request.mode === "navigate") {
-    e.respondWith(
-      fetch(e.request)
-        .then((r) => {
-          if (r.ok) {
-            const copy = r.clone();
-            caches.open(CACHE).then((c) => c.put("./index.html", copy));
-          }
-          return r;
-        })
-        .catch(() => caches.match("./index.html")),
-    );
-  } else
-    e.respondWith(
-      fetch(e.request)
-        .then((r) => {
-          if (r.ok) {
-            const copy = r.clone();
-            caches.open(CACHE).then((c) => c.put(e.request, copy));
-          }
-          return r;
-        })
-        .catch(() => caches.match(e.request)),
-    );
+  // Network first, but a stalled connection falls back to the saved copy after a few seconds,
+  // so the app always opens (the fresh copy still updates the cache when it arrives).
+  const key = e.request.mode === "navigate" ? "./index.html" : e.request;
+  e.respondWith(
+    new Promise((resolve) => {
+      let done = false;
+      const finish = (r) => { if (!done && r) { done = true; resolve(r); } };
+      const saved = () => caches.match(key);
+      const net = fetch(e.request).then((r) => {
+        if (r.ok) { const copy = r.clone(); caches.open(CACHE).then((c) => c.put(key, copy)); }
+        return r;
+      });
+      net.then(finish, () => saved().then((hit) => finish(hit || Response.error())));
+      setTimeout(() => saved().then(finish), e.request.mode === "navigate" ? 3500 : 6000);
+    }),
+  );
 });

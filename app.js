@@ -4343,13 +4343,15 @@ function watchCollectionPrices() {
 }
 async function boot() {
   setTimeout(watchCollectionPrices, 8000);
+  // The reference catalog never holds up the first screen: on a slow connection the app opens
+  // with saved cards and adds the catalog when it arrives.
+  const addRef = (ref) => { for (const c of ref?.cards || []) if (!S.catalog[key(c.name)] || (S.catalog[key(c.name)].checkedAt || "") < ref.snapshot_date) S.catalog[key(c.name)] = slim({ ...c, checkedAt: ref.snapshot_date }); };
   try {
-    const r = await fetch("catalog.json");
-    if (r.ok) {
-      const ref = await r.json();
-      for (const c of ref.cards) S.catalog[key(c.name)] = slim({ ...c, checkedAt: ref.snapshot_date });
-    }
-  } catch {}
+    const r = await fetch("catalog.json", { signal: AbortSignal.timeout(2500) });
+    if (r.ok) addRef(await r.json());
+  } catch (e) {
+    if (e?.name === "TimeoutError" || e?.name === "AbortError") fetch("catalog.json").then((r) => (r.ok ? r.json() : null)).then((late) => { if (late) { addRef(late); render(); } }).catch(() => {});
+  }
   try {
     const cat = await readRecord(CATALOG_RECORD);
     if (cat && typeof cat === "object") Object.assign(S.catalog, cat);
