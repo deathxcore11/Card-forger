@@ -66,7 +66,9 @@ for (const s of sets) {
     // Price
     if (c.prices.usd == null) {
       let got = false;
-      const products = new Set((raw.variants_detailed || []).map((v) => Number(v.thirdParty?.tcgplayer)).filter(Boolean));
+      // As pokemon-prices.js: TCGdex's products, else the product found by number and name.
+      const products = new Set([...(raw.variants_detailed || []).map((v) => Number(v.thirdParty?.tcgplayer)), ...Object.values(raw.pricing?.tcgplayer || {}).map((v) => Number(v?.productId))].filter(Boolean));
+      if (!products.size && exactGroup) { const pp = exactGroup === artGroup ? artProducts : (await get(`https://tcgcsv.com/tcgplayer/3/${exactGroup.groupId}/products`))?.results || []; const f = pickProduct(pp, raw); if (f) products.add(Number(f.productId)); }
       if (exactGroup && products.size) { const pr = await pricesOf(exactGroup.groupId); got = [...pr.values()].some((q) => products.has(Number(q.productId)) && q.marketPrice > 0); }
       if (got) row.priceFallback++;
       else if (c.prices.eur != null) row.eurOnly++;
@@ -77,7 +79,7 @@ for (const s of sets) {
     if (c.category === "Pokemon") {
       if (!c.hp) gap.push("HP");
       if (!c.types.length) gap.push("type");
-      if (!c.stage) gap.push("stage");
+      if (!c.stage && !c.evolveFrom && !/V-UNION|\bLEGEND$/.test(c.name)) gap.push("stage");
       if (!c.attacks.length && !c.abilities.length) gap.push("attacks");
       if (/Stage ?[12]/.test(c.stage) && !c.evolveFrom) gap.push("evolves from");
       if (/\bex\b/.test(c.name) && !/^Mega /.test(c.name) && c.prize !== 2) gap.push("prize " + c.prize);

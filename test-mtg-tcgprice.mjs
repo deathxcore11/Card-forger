@@ -62,3 +62,19 @@ const pk = async (u) => {
 const promo1 = await (await pokemonPriceRoute(new URL("https://x/api/prices/pokemon?id=svp-1"), null, pk)).json();
 assert.equal(promo1.quotes?.[0]?.marketPrice, 1.75, "SVP promo priced through TCGplayer's promo group");
 console.log("PASS: Pokémon Black Star promos get TCGplayer prices through the promo group alias.");
+
+// Pokémon card data TCGdex leaves out: stage on old EX/GX, trainer type, kit Basic Energy.
+const { normalizePtcg } = await import("./ptcg.js");
+const { applyProductPrices } = await import("./pokemon-prices.js");
+const celebi = normalizePtcg({ id: "bw7-9", name: "Celebi-EX", category: "Pokemon", hp: 110, types: ["Grass"], attacks: [{ name: "Shiny Leaf", cost: ["Grass"] }] });
+assert.ok(celebi.basicPokemon && celebi.stage === "Basic", "an EX that evolves from nothing is a Basic Pokémon");
+assert.equal(normalizePtcg({ id: "sm12-4", name: "Vileplume GX", category: "Pokemon", evolveFrom: "Gloom" }).basicPokemon, false, "evolutions are never guessed Basic");
+assert.equal(normalizePtcg({ id: "swshp-215", name: "Morpeko V-UNION", category: "Pokemon" }).basicPokemon, false, "V-UNION pieces aren't Basic");
+assert.match(normalizePtcg({ id: "x", name: "Old Draw", category: "Trainer", effect: "Draw 3 cards. You may play only 1 Supporter card during your turn." }).typeLine, /Supporter/);
+assert.match(normalizePtcg({ id: "y", name: "Tropical Wind", category: "Trainer", effect: "Each player draws 3 cards." }).typeLine, /Item/);
+assert.ok(normalizePtcg({ id: "tk-sm-r-3", name: "Lightning Energy", category: "Energy" }).basicEnergy, "kit Basic Energy is Basic Energy");
+// A product the Worker found by number and name prices every finish of a card TCGdex never mapped.
+const old = normalizePtcg({ id: "bw7-9", name: "Celebi-EX", category: "Pokemon", variants: { holo: true } });
+assert.ok(applyProductPrices(old, { cardId: "bw7-9", matchedProduct: 99, quotes: [{ productId: 99, subTypeName: "Holofoil", marketPrice: 4.2, lowPrice: 3, midPrice: 5 }] }));
+assert.equal(old.prices.usd, 4.2);
+console.log("PASS: Pokémon cards missing stage, trainer type or a TCGplayer link still play and price correctly.");

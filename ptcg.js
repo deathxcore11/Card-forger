@@ -88,7 +88,7 @@ function fillPrices(c) {
   return run.finally(()=>fillAsked.delete(c.id));
 }
 async function fillPricesNow(c) {
-  if(c.variants?.some(v=>v.productId&&v.usd==null)){
+  if(c.prices?.usd==null||c.variants?.some(v=>v.productId&&v.usd==null)){
    try{const r=await fetch('api/prices/pokemon?'+new URLSearchParams({id:c.id}),{signal:AbortSignal.timeout?.(15000)});if(r.ok&&applyProductPrices(c,await r.json())&&c.variants.every(v=>v.usd!=null))return;}catch{}
   }
   const num = String(c.set?.number || "").replace(/^0+(?=\d)/, "");
@@ -125,6 +125,18 @@ async function fillPricesNow(c) {
 // keep the words, drop the tags.
 export const plainText = (t) => String(t ?? "").replace(/<span[^>]*\btitle="([^"]+)"[^>]*>[^<]*<\/span>/gi, "$1").replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&");
 export function normalizePtcg(c) {
+  // TCGdex has no stage for many older EX/GX cards (Celebi-EX, Palkia GX). A Pokémon that
+  // evolves from nothing is a Basic Pokémon.
+  // V-UNION pieces and LEGEND halves aren't Basic Pokémon.
+  if (c.category === "Pokemon" && !c.stage && !c.evolveFrom && !/V-UNION|\bLEGEND$/.test(c.name || "")) c = { ...c, stage: "Basic" };
+  // Older trainers often have no type: read it from the rules text, as the card itself says.
+  if (c.category === "Trainer" && !c.trainerType) {
+    const t = plainText(c.effect || c.description || "");
+    const type = /Technical Machine/i.test(c.name + " " + t) ? "Technical Machine" : /\bSupporter\b/i.test(t) ? "Supporter" : /\bStadium\b|stays in play when you play it/i.test(t) ? "Stadium" : /Pokémon Tool|Tool card/i.test(t) ? "Tool" : "Item";
+    c = { ...c, trainerType: type };
+  }
+  // Basic Energy with no energy type (some trainer-kit printings).
+  if (c.category === "Energy" && !c.energyType && /^(?:Basic )?(?:Grass|Fire|Water|Lightning|Psychic|Fighting|Darkness|Metal|Fairy) Energy$/.test(c.name || "")) c = { ...c, energyType: "Normal" };
   const tp = c.pricing?.tcgplayer || {},
     cm = c.pricing?.cardmarket || {},
     variants = pokemonVariants(c),
@@ -146,7 +158,7 @@ export function normalizePtcg(c) {
   ].filter(Boolean).join("\n\n");
   return {
     game: "ptcg",
-    variantSchema: 8,
+    variantSchema: 9,
     released:c.set?.releaseDate || "",
     id: c.id,
     name: c.name,

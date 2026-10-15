@@ -1,3 +1,23 @@
+3.59.0 — Pokémon set-by-set check: prices, art and card data
+Every Pokémon set the app lists (202 sets, 21,281 cards) was checked the way the app loads it.
+- Prices: Pokémon cards with no US price went from 721 to 88. When TCGdex has no TCGplayer link
+  for a card, the app now finds the exact product in the set's TCGplayer listing by number and
+  name. That covers Hidden Fates Shiny Vault, Black & White and Diamond & Pearl promos, older EX
+  cards and the new 30th Celebration. Cards with only a Cardmarket euro price went from 650 to
+  244.
+- Art: cards with no picture at all went from 45 to 21. 30th Classic Collection reprints keep
+  their original numbers on TCGplayer (Charizard 4/102), so for reprint collections the art and
+  price lookup matches the one same-named product. It never guesses between two.
+- Card data the deck tools read:
+  - 837 older EX/GX cards with no stage are now treated as Basic Pokémon when they evolve from
+    nothing. This fixes opening-hand odds, goldfish games and deck checks. V-UNION pieces and
+    LEGEND halves are excluded.
+  - 225 trainers with no type get one from their rules text (Supporter, Stadium, Tool, TM, Item).
+  - Trainer-kit Basic Energy is recognised as Basic Energy, so the 4-copy limit doesn't apply.
+  - Cards saved on your device refresh once to pick this up.
+- Not fixable here: TCGdex is missing cards in two trainer-kit sets (My First Battle 34 of 48,
+  SM Trainer Kit Lycanroc 18 of 30).
+
 3.58.2 — Simpler card pages
 - Removed the Trade tab from card pages in all three games. It repeated what the price already
   shows. The "Trade & play advice" panel on the collection page (rising and cooling cards) stays.

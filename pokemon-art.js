@@ -23,12 +23,18 @@ export function pickGroup(groups, setName) {
 }
 
 // The card in the group's products: same collector number, and a name that starts with the card's.
+// Reprint collections with no numbering of their own (TCGdex: 0 official cards) keep each card's
+// original number on TCGplayer (30th Classic Collection's Charizard is 4/102 there, 001 on
+// TCGdex): for those only, the one product in the group with exactly that name.
 export function pickProduct(products, card) {
-  const n = numKey(card.localId), name = norm(card.name);
-  return (products || []).find((p) => {
+  const n = numKey(card.localId), name = norm(card.name), list = products || [];
+  const exact = list.find((p) => {
     const num = (p.extendedData || []).find((x) => x.name === "Number")?.value;
     return num && numKey(num) === n && norm(p.name).startsWith(name);
-  }) || null;
+  });
+  if (exact || card.set?.cardCount?.official !== 0) return exact || null;
+  const named = list.filter((p) => (p.extendedData || []).some((x) => x.name === "Number") && norm(p.name.replace(/\s+-\s+[^-]*$/, "")) === name);
+  return named.length === 1 ? named[0] : null;
 }
 
 export async function pokemonProductId(id, get) {

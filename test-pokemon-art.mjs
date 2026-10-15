@@ -11,6 +11,9 @@ const products = [{ productId: 10, name: "Charizard", extendedData: num("4/102")
 assert.equal(pickProduct(products, { name: "Charizard", localId: "001" }).productId, 12);
 assert.equal(pickProduct(products, { name: "Kingdra", localId: "XY39" }).productId, 11);
 assert.equal(pickProduct(products, { name: "Charizard", localId: "2" }), null, "never another printing's image");
+const classic = { name: "Charizard", localId: "001", set: { cardCount: { official: 0, total: 30 } } };
+assert.equal(pickProduct([{ productId: 20, name: "Charizard", extendedData: num("4/102") }, { productId: 21, name: "Pikachu & Zekrom GX", extendedData: num("33/181") }], classic).productId, 20, "reprint collection: matched by its one same-named product");
+assert.equal(pickProduct([{ productId: 20, name: "Charizard", extendedData: num("4/102") }, { productId: 22, name: "Charizard", extendedData: num("11/102") }], classic), null, "two same-named products: no guess");
 console.log("PASS: Pokémon art fallback picks the exact TCGplayer set and card, never another printing.");
 // Mass Entry set codes: TCGplayer's set names carry a series prefix and plural "Energies".
 const tp = [{ name: "SV08: Surging Sparks", code: "SSP" }, { name: "SVE: Scarlet & Violet Energies", code: "SVE" }, { name: "ME: Ascended Heroes", code: "ASC" }, { name: "ME01: Mega Evolution", code: "MEG" }, { name: "MEE: Mega Evolution Energies", code: "MEE" }];
