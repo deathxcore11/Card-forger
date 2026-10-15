@@ -128,7 +128,7 @@ export async function ask(text, fetcher = fetch) {
 const SOURCE = { app: ['From your app data', 'app'], general: ['General knowledge, not app data', 'general'], mixed: ['App data + general knowledge', 'mixed'] };
 function answer(a) {
   const [label, cls] = SOURCE[a.source] || SOURCE.mixed;
-  const extra = state.tools?.pendingItem?.(), seen = new Set(), list = [...(a.show || []), ...(state.tools?.suggestedItems?.() || []), ...(extra ? [extra] : [])].map(s => state.tools?.canonicalItem?.(s) || s).filter(s => { const k = [s.game,s.kind,s.ref].join(':'); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 8);
+  const extra = state.tools?.pendingItem?.(), seen = new Set(), list = [...((a.show || []).length ? a.show : (state.tools?.suggestedItems?.() || [])), ...(extra ? [extra] : [])].map(s => state.tools?.canonicalItem?.(s) || s).filter(s => { const k = [s.game,s.kind,s.ref].join(':'); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 8);
   const items = list.map((s, i) => state.tools?.preview?.(s, i) || `<button class="ask-item" style="--i:${i}" data-ask-show='${esc(JSON.stringify(s))}'><b>${esc(s.label || s.ref)}</b><small>${esc({ card: 'Card', set: 'Set', meta: 'Meta deck', deck: 'Your deck' }[s.kind])} · ${esc(GAME_NAME[s.game])}</small></button>`).join('');
   bubble('ai', `<p class="ask-source ${cls}">${label}</p><p>${esc(a.text)}</p>${items ? `<div class="ask-items">${items}</div>` : ''}${a.suggestions?.length ? `<div class="ask-examples follow">${a.suggestions.map((q, i) => `<button type="button" style="--i:${i}" data-ask-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : ''}`);
 }

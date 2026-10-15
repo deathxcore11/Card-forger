@@ -1,4 +1,5 @@
 import { pokemonArtCrop } from './artwork.js';
+import { ptcgIcon } from './meta.js';
 // The app functions Ask AI may use. Each runs on this device against the app's own data and
 // returns compact JSON for the model; nothing here reaches outside the app's own data sources.
 // app.js passes in its internals (ctx) because its actions are module-scoped.
@@ -28,7 +29,9 @@ export function makeAskTools(x) {
         card = lead ? x.meta(lead) || await x.resolve?.(lead).catch(()=>null) : null;
         image = card?.image_uris?.art_crop || card?.card_faces?.[0]?.image_uris?.art_crop || mtgImg(card);
       } else {
-        const lead = rows.find(r=>r.kind === 'Pokemon' && /ex|VSTAR|VMAX/i.test(r.name)) || rows.find(r=>r.kind === 'Pokemon') || rows.find(r=>! /Energy/.test(r.name));
+        const words = String(item.label || d.name).toLowerCase().split(/[^a-z0-9]+/).filter(w=>w.length>3 && !['basic','mega','deck'].includes(w));
+        const pokemon = rows.filter(r=>r.kind === 'Pokemon').sort((a,b)=>(b.qty||0)-(a.qty||0));
+        const lead = pokemon.find(r=>words.some(w=>r.name.toLowerCase().includes(w))) || pokemon.find(r=>/ex|VSTAR|VMAX/i.test(r.name)) || pokemon[0] || rows.find(r=>! /Energy/.test(r.name));
         card = lead && (Object.values(T.cache?.[g] || {}).find(c=>c.name===lead.name) || await (T.SOURCES[g].tournamentCard?.(lead) || T.SOURCES[g].byName(lead.name)).catch(()=>null));
         image = card?.imageLarge || card?.image || '';
       }
@@ -38,7 +41,13 @@ export function makeAskTools(x) {
   async function decorateMeta(g, data, result) {
     const items = (result.decks || []).slice(0,6).map(d=>({kind:'meta',game:g,ref:d.key || d.name,label:d.name}));
     suggestions = items;
-    await Promise.all(items.map((item,i)=>deckVisual(g,(data.decks || []).find(d=>d.key===item.ref) || (data.decks || []).find(d=>d.name===item.ref),item,result.decks[i].share)));
+    await Promise.all(items.map(async (item,i)=> {
+      const d=(data.decks || []).find(d=>d.key===item.ref) || (data.decks || []).find(d=>d.name===item.ref);
+      if (d) return deckVisual(g,d,item,result.decks[i].share);
+      const a=(data.archetypes || []).find(a=>(a.name || a.id)===item.label);
+      const icon=a?.icons?.[0];
+      visuals.set(visualKey(item), { image:g==='ptcg' && icon?ptcgIcon(icon):'', sprite:!!icon, share:result.decks[i].share, label:item.label });
+    }));
     return result;
   }
   const g0 = (g) => (GAMES.includes(g) ? g : T.game());
@@ -196,7 +205,7 @@ export function makeAskTools(x) {
       }
     }
     const kind = { card:'Card', set:'Set', meta:'Meta deck', deck:'Your deck', build:'Deck builder' }[s.kind] || '';
-    const media = img ? (deck && s.game==='ptcg' ? pokemonArtCrop(card,'ask-deck-art',img) : `<img class="${deck?'ask-deck-art':''}" src="${x.esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer">`) : deck ? '<span class="ask-deck-art img-missing" aria-hidden="true">◇</span>' : '';
+    const media = img ? (deck && s.game==='ptcg' && !visual?.sprite ? pokemonArtCrop(card,'ask-deck-art',img) : `<img class="${deck?'ask-deck-art':''}" src="${x.esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer">`) : deck ? '<span class="ask-deck-art img-missing" aria-hidden="true">◇</span>' : '';
     return `<button class="ask-item ${deck?'ask-deck':img?'':'wide'}" style="--i:${i}" data-ask-show='${x.esc(JSON.stringify(s))}'>${media}<b>${x.esc(s.label || s.ref)}</b><small>${kind}${visual?.share!=null?' · '+Number(visual.share).toFixed(1)+'% of the field':''}</small>${price!=null?`<em>$${Number(price).toFixed(2)}</em>`:''}</button>`;
   };
   return tools;

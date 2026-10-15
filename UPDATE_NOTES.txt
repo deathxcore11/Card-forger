@@ -1,3 +1,6 @@
+3.73.5 — Match AI artwork to the deck
+Deck tiles prefer the Pokémon named by the archetype over a support attacker. Archetypes without a placing list can use their supplied Pokémon icon. Explicit AI recommendations are shown without adding unrelated extra decks.
+
 3.73.4 — A simpler welcome, lasting AI chats and safer account sync
 First-visit welcome opens automatically; replay lives in Settings. Actual app-rendered screens replace imitation controls. Friendlier copy, no walkthrough captions, no Home tour card or duplicate game tiles. The welcome explains the header selector and Home swipe.
 Ask keeps each game’s chat, draft and scroll position until New chat or refresh; account changes clear private chats. Both AI dialogs share the same animated identity. Meta recommendations use artwork tiles. Device reset detaches its sync baseline so an empty device cannot overwrite a populated account; all three games now count toward workspace safety and sync summaries.

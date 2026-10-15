@@ -18,3 +18,11 @@ await tools.build_deck({game:'ptcg',style:'Fire',budget:40});const first=tools.p
 await tools.build_deck({game:'ptcg',style:'Water',budget:60});const second=tools.pendingItem();
 assert.notEqual(first.ref,second.ref);await tools.open(first);assert.equal(opened,1);
 console.log('PASS: art-backed meta tiles across all three games, automatic recommendation cards, canonical references and persistent builder-card actions.');
+// The archetype's namesake must beat a more plentiful support attacker for the cover.
+const slow={...card,id:'slow',name:'Slowking',imageLarge:'https://art.test/slowking.png'};
+T.cache.ptcg.slow=slow;
+data.decks[0].name='Slowking';data.decks[0].list=[{kind:'Pokemon',name:'Lead card',qty:4},{kind:'Pokemon',name:'Slowking',qty:2}];data.archetypes[0].name='Slowking';
+tools.reset();await tools.meta_decks({game:'ptcg'});assert.match(tools.preview(tools.suggestedItems()[0],0),/slowking.png/);
+data.archetypes.push({name:'Dhelmise',best:null,share:.04,count:2,icons:['dhelmise']});
+tools.reset();await tools.meta_decks({game:'ptcg'});assert.match(tools.preview(tools.suggestedItems()[1],0),/dhelmise.png/);
+console.log('PASS: Slowking uses Slowking art instead of a support attacker; an archetype without a placing list uses its supplied icon.');
