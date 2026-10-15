@@ -40,7 +40,7 @@ import {
   validateWorkspace, backupEnvelope, deckRowsFromImport,
 } from "./confidence.js";
 import { parseDeckImport, acquireMissing } from "./deck-flow.js";
-import { profileOf } from "./matchup.js";
+import { profileOf, simulateMatchup, podProfile, calibratePods } from "./matchup.js";
 import { mtgConstructedPower } from "./deckpower.js";
 import { fieldStore, celebrate, calibrateField } from "./matchups-ui.js";
 import { completionPlan, commanderTheme } from "./planner.js";
@@ -54,7 +54,7 @@ import { alertSheet, setAlert, onAlert, alertText, priceSeries } from "./pricehi
 import { onSharedPrices, watchCards } from "./sharedprices.js";
 import { mtgCollector, nameCandidates, textPhrases } from "./scan.js";
 import { registerScanner, scanView } from "./scancam.js";
-import { newGame, proxyList, proxySheetHTML } from "./extras.js";
+import { newGame, proxyList, proxySheetHTML, podSpeed } from "./extras.js";
 import { sharePayload, encodeShare, decodeShare } from "./share.js";
 import { FORMATS, formatOf, hasCommander, canLead, sizeLabel } from "./formats.js";
 import { buildTiers, formatsFor, themeQuery, BUDGET_TIERS, upgradePool, copyLimit, fitFor } from "./builder.js";
@@ -1297,12 +1297,16 @@ A.muRun = async () => {
     for (const [i, { a, list }] of lists.entries()) {
       msg(`Simulating against ${a.name} · ${i + 1} of ${lists.length}`);
       await new Promise((r) => setTimeout(r, 16));
-      const rows = list.main.map((r) => ({ qty: r.qty, c: meta(r.name) })).filter((r) => r.c),
-        prof = profileOf("mtg", mtgConstructedPower({ cards: list.main }, S.catalog, key, 60), rows);
+      // Commander lists: 100 cards with their commanders, paced by bracket and speed cards.
+      const edh = mk === "mtg:EDH", cards = edh ? [...list.main, ...(list.commanders || []).map((r) => (typeof r === "string" ? { name: r, qty: 1 } : r))] : list.main,
+        rows = cards.map((r) => ({ qty: r.qty, c: meta(r.name) })).filter((r) => r.c),
+        base = profileOf("mtg", mtgConstructedPower({ cards }, S.catalog, key, edh ? 100 : 60), rows),
+        prof = edh ? podProfile(base, podSpeed({ cards }, S.catalog)) : base;
       const cover = meta(a.cover || "");
       if (prof) field.push({ key: list.key, format: mk.slice(4), name: a.name, share: a.share, art: cover?.image_uris?.art_crop || cover?.card_faces?.[0]?.image_uris?.art_crop || (a.cover ? `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(a.cover)}&format=image&version=art_crop` : ""), profile: prof });
     }
-    calibrateField(field, (a, b, o) => simulateMatchup("mtg", a, b, o));
+    if (mk === "mtg:EDH") { calibratePods(field); for (const f of field) f.bias = 0; }
+    else calibrateField(field, (a, b, o) => simulateMatchup("mtg", a, b, o));
     st.field = field;
     st.fieldKey = V.mtgFieldKey(d);
     fieldStore.set(st.fieldKey, field);

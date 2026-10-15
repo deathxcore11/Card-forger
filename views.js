@@ -1,6 +1,6 @@
 import { APP_VERSION } from "./config.js";
 import { matchupsTab, fieldStore, computeMatchups } from "./matchups-ui.js";
-import { profileOf, simulateMatchup, gamePlan, recordOf, blend, listSig, forList } from "./matchup.js";
+import { profileOf, simulateMatchup, gamePlan, recordOf, blend, listSig, forList, simulatePod, podProfile } from "./matchup.js";
 import { mtgConstructedPower } from "./deckpower.js";
 import { isCommanderLike } from "./formats.js";
 import { mtgMetaKey } from "./power.js";
@@ -45,7 +45,7 @@ import {
   engineProfile, engineRoles, goldfish, scoreGrade, diffCards, deckValue,
   collectionValue, lotPrice, swapImpact, applySwapsToCards, cardSig,
 } from "./insights.js";
-import { bracketEstimate, manaBase, isOut, deckReview, explainSwap } from "./extras.js";
+import { bracketEstimate, manaBase, isOut, deckReview, explainSwap, podSpeed } from "./extras.js";
 import { buildability, rankBuildable } from "./share.js";
 import { formatsFor } from "./builder.js";
 import { gameBinders, gameSwitch, homeHero, quickTiles, randomTools, draftPath, nextCard, startHidden, savedSearches } from "./tcg.js";
@@ -1220,7 +1220,7 @@ function deckMatchups(d) {
   const fm = formatOf(d), mk = mtgMetaKey(d),
     st = ((S.ui.mu ||= {})[d.id] ||= { first: true }),
     base = { prefix: "mu", gameName: "Magic", state: st, modelNote: "both decks' played-out clocks race, slowed by the removal and counters each side draws", runKey: "mtg:" + d.id };
-  if (isCommanderLike(d)) return matchupsTab({ ...base, unsupported: "Commander is a four-player game, so one-on-one matchups don't apply. Bracket and Deck Power describe how it fits a table." });
+  if (isCommanderLike(d)) return commanderPods(d, fm, mk, st, base);
   if (!mk) return matchupsTab({ ...base, unsupported: `There are no tournament results for ${fm.name} in the data. Matchups work for Standard, Pioneer, Modern, Legacy, Vintage, Pauper and Premodern.` });
   if (sumQty(d.cards) < fm.size) return matchupsTab({ ...base, unsupported: `Finish the deck first: matchups compare complete ${fm.size}-card lists (this one has ${sumQty(d.cards)}).` });
   const fkey = mtgFieldKey(d);
@@ -1234,6 +1234,31 @@ function deckMatchups(d) {
   const sims = computeMatchups(fkey + "|" + JSON.stringify([d.cards, d.side || []]), st.field, me, (op, win) => gamePlan("mtg", me, op, { main: rows, side, reprofile, sim: win }), (a, b) => simulateMatchup("mtg", a, b), mtgBias(mtgPower(d), st.field)),
     results = d.results || [];
   return matchupsTab({ ...base, ...fieldSummary(sims, results, st, mtgListSig(d)) });
+}
+// Commander: four-player pods against the decks winning Commander tournaments (cEDH). Your deck
+// and three of them, seats shuffled; an even share is 25%. Speed comes from each list's bracket
+// and speed cards (podSpeed), so a precon isn't treated like a tournament deck.
+const podMemo = new Map();
+function commanderPods(d, fm, mk, st, base) {
+  const pod = { ...base, pod: true, modelNote: "each deck's kill turn from its bracket, fast mana and tutors, the table aiming its answers at whoever is ahead", fieldLabel: "in Commander tournaments (cEDH)" };
+  if (!mk) return matchupsTab({ ...pod, unsupported: "Commander tournament results aren't loaded yet." });
+  if (sumQty(d.cards) < fm.size) return matchupsTab({ ...pod, unsupported: `Finish the deck first: pods compare complete ${fm.size}-card decks (this one has ${sumQty(d.cards)}).` });
+  const fkey = mtgFieldKey(d);
+  if (!st.field || st.fieldKey !== fkey) { const cached = metaState(mk)?.data ? fieldStore.get(fkey) : null; if (cached?.every((f) => f.shift != null)) { st.field = cached; st.fieldKey = fkey; } }
+  if (!st.field?.length || st.fieldKey !== fkey) return matchupsTab({ ...pod, field: [] });
+  const rows = d.cards.map((r) => ({ qty: r.qty, c: meta(r.name) })).filter((r) => r.c), p = mtgPower(d),
+    // The same 100-card goldfish and counts the field's decks are measured with.
+    cp = mtgConstructedPower(d, S.catalog, key, fm.size),
+    me = podProfile(profileOf("mtg", { ...p, goldfish: cp.goldfish, stats: cp.stats }, rows), podSpeed(d, S.catalog));
+  if (!me) return matchupsTab({ ...pod, unsupported: "This deck's cards are still loading. Open the Power tab once, then come back." });
+  // A copy of a field archetype keeps that archetype's calibration.
+  const twin = p.match?.sim >= 0.6 ? st.field.find((f) => String(f.name).toLowerCase() === String(p.match.archetype).toLowerCase()) : null;
+  const sig = fkey + "|" + JSON.stringify(d.cards) + "|" + (twin?.shift ?? 0);
+  if (!podMemo.has(sig)) podMemo.set(sig, simulatePod(me, st.field, { shift: twin?.shift ?? 0 }));
+  const res = podMemo.get(sig);
+  if (!res) return matchupsTab({ ...pod, unsupported: "Couldn't simulate pods for this deck." });
+  const sims = st.field.map((f) => ({ ...f, sim: { win: res.per.get(f) ?? res.win, onPlay: res.seats[0], onDraw: res.seats[3], reasons: res.reasons }, plan: null }));
+  return matchupsTab({ ...pod, ...fieldSummary(sims, d.results || [], st, mtgListSig(d)), podWin: res.win, seats: res.seats, speed: me.speed });
 }
 // The calibration of the field archetype this deck copies (see calibrateField), else 0.
 const mtgBias = (p, field) => { const m = p?.match; if (!m || m.sim < 0.6) return 0; const f = (field || []).find((x) => String(x.name).toLowerCase() === String(m.archetype).toLowerCase()); return f?.bias || 0; };

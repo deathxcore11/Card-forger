@@ -335,3 +335,85 @@ export function gamePlan(game, me, op, { main = [], side = [], protect = () => f
   if (after != null && sim != null && after < sim - 0.005) return { kind: "side", ins: [], outs: [], after: null, empty: !side.length, worse: true };
   return { kind: "side", ins, outs, after, empty: !side.length };
 }
+
+/* ---------- Commander: four-player pods ---------- */
+// Your deck and three decks from the field (picked by how often they're played), seats shuffled.
+// Each deck races its own goldfish kill turn. The table spends its answers on whoever is closest
+// to winning (the "archenemy"); everyone else is only lightly slowed. Earliest kill wins, ties to
+// the earlier seat; games that drag on go to the deck that draws more. An even share is 25%.
+// `shift` (turns, negative = faster) is each field deck's calibration: placing decks win about
+// their share against the rest of the field, and the shift stands in for kills the goldfish
+// can't see (a combo on turn 3).
+// A pod profile: the deck's goldfish spread, centred on the turn its bracket and speed cards say it
+// ends games (see podSpeed in extras.js).
+export function podProfile(profile, speed) {
+  if (!profile || !speed) return profile;
+  const d = profile.clock, tot = d.reduce((a, x) => a + x, 0) || 1;
+  let acc = 0, med = profile.maxT + 2;
+  for (let i = 0; i < d.length; i++) if ((acc += d[i]) >= tot / 2) { med = i >= profile.maxT ? profile.maxT + 2 : i + 1; break; }
+  return { ...profile, anchor: speed.turn - med, speed };
+}
+function podGame(players, r) {
+  const drawn = (inter, size, turns) => { const e = (inter / size) * (7 + turns); return Math.floor(e) + (r() < e - Math.floor(e) ? 1 : 0); };
+  const per = (threats) => 1.1 * (1 - Math.min(0.5, threats / 48));
+  const weak = (s) => Math.max(0, 75 - (s ?? 70)) / 12;
+  const base = players.map((p) => Math.max(2, sampleTurn(p.profile.clock, p.profile.maxT, r) + (p.profile.anchor || 0) + (p.shift || 0) + (p.profile.anchor == null ? weak(p.profile.score) : 0)));
+  // The table's biggest threat: the fastest deck; a tie is broken at random, not by seat.
+  const fastest = base.map((t, i) => (t === Math.min(...base) ? i : -1)).filter((i) => i >= 0), lead = fastest[Math.floor(r() * fastest.length)];
+  const end = players.map((p, i) => base[i] + players.reduce((a, q, j) => (j === i ? a : a + drawn(q.profile.inter, q.profile.size, base[i]) * per(p.profile.threats) * (i === lead ? 1 : 0.3)), 0) + i * 0.01);
+  if (end.every((t) => t > 12)) {
+    const w = players.map((p) => Math.max(1, (p.profile.flow || 0) + 4)), tot = w.reduce((a, x) => a + x, 0);
+    let x = r() * tot;
+    for (let i = 0; i < w.length; i++) if ((x -= w[i]) < 0) return { winner: i, end, lead, long: true };
+    return { winner: 0, end, lead, long: true };
+  }
+  return { winner: end.indexOf(Math.min(...end)), end, lead, long: false };
+}
+const pickByShare = (field, r) => {
+  const tot = field.reduce((a, f) => a + (f.share || 0.01), 0);
+  let x = r() * tot;
+  for (const f of field) if ((x -= f.share || 0.01) < 0) return f;
+  return field[field.length - 1];
+};
+export function simulatePod(me, field, { runs = 3000, seed = 11, shift = 0, exclude = null } = {}) {
+  const pool = field.filter((f) => f !== exclude && f.profile);
+  if (!me || pool.length < 1) return null;
+  const r = rng(seed), per = new Map(), seat = [0, 0, 0, 0], seatN = [0, 0, 0, 0], mine = [], others = [];
+  let wins = 0, archenemy = 0, answered = 0;
+  for (let i = 0; i < runs; i++) {
+    const opps = [pickByShare(pool, r), pickByShare(pool, r), pickByShare(pool, r)], mySeat = i % 4;
+    const players = [...opps.map((f) => ({ profile: f.profile, shift: f.shift || 0, f }))];
+    players.splice(mySeat, 0, { profile: me, shift, me: true });
+    const g = podGame(players, r), won = players[g.winner].me ? 1 : 0;
+    wins += won; seat[mySeat] += won; seatN[mySeat]++;
+    if (g.lead === mySeat) archenemy++;
+    mine.push(g.end[mySeat]); others.push(Math.min(...g.end.filter((_, j) => j !== mySeat)));
+    for (const f of new Set(opps)) { const s = per.get(f) || per.set(f, { w: 0, n: 0 }).get(f); s.w += won; s.n++; }
+  }
+  // The race leaves out politics, blockers and play skill: pull extremes toward an even 25%.
+  const cal = (x) => clamp(0.25 + (x - 0.25) * 0.85, 0.02, 0.9);
+  const win = cal(wins / runs), mt = median(mine), ot = median(others);
+  return {
+    win, seats: seat.map((w, i) => cal(w / Math.max(1, seatN[i]))), runs,
+    per: new Map([...per].map(([f, s]) => [f, cal(s.w / Math.max(1, s.n))])),
+    reasons: [
+      mt <= ot ? `You close around turn ${Math.round(mt)}; the fastest other deck at the table around turn ${Math.round(ot)}.` : `The fastest other deck at the table closes around turn ${Math.round(ot)}; you around turn ${Math.round(mt)}.`,
+      `You're the table's biggest threat in ${Math.round((archenemy / runs) * 100)}% of games, so three players aim their answers at you there.`,
+      me.inter >= 10 ? `Your ${me.inter} answers slow whoever is ahead.` : `Only ${me.inter} answers: you can't stop the fastest deck at the table on your own.`,
+    ],
+  };
+}
+// Each field deck's turn shift so it wins about 25% of pods against the rest of the field.
+export function calibratePods(field, { runs = 700 } = {}) {
+  for (const f of field) f.shift = 0;
+  for (let pass = 0; pass < 2; pass++)
+    for (const f of field) {
+      let best = 0, gap = Infinity;
+      for (let s = -6; s <= 3; s++) {
+        const p = simulatePod(f.profile, field, { runs, seed: 5, shift: s, exclude: f });
+        if (p && Math.abs(p.win - 0.25) < gap) { gap = Math.abs(p.win - 0.25); best = s; }
+      }
+      f.shift = best;
+    }
+  return field;
+}

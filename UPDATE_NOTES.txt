@@ -1,3 +1,18 @@
+3.61.0 — Magic Matchups fixed, Commander pods
+- Fixed: "Simulate matchups" on Magic decks failed with "simulateMatchup is not defined". A new
+  test checks that the Matchups code imports every simulation it uses.
+- Commander decks now have Matchups, as four-player pods:
+  - Your deck plays thousands of pods against three decks from Commander tournaments (cEDH),
+    picked by how often they're played, with seats shuffled. An even share is 25%.
+  - Each deck's pace comes from its bracket (WotC's published card rules), its fast mana and its
+    tutors. The table aims its answers at whoever is closest to winning.
+  - Each tournament deck is calibrated to win about its share against the rest of the field.
+  - A tournament list wins about 25% of pods. A precon-level deck (bracket 2) wins about 4%,
+    because cEDH tables usually end by turn 4–5. The tab says so, and the pods you log count for
+    more as you add them.
+  - Shown: pod win rate, your seat 1 vs seat 4 odds, how often you're the table's biggest threat,
+    and your rate with each tournament deck at the table.
+
 3.60.4 — Yu-Gi-Oh! printing prices load fully on the first look
 - A card printed in dozens of sets now gets every printing price on the first look. The app keeps
   asking in the background, up to 10 times, until the server has them all.

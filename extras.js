@@ -114,6 +114,16 @@ export function bracketEstimate(deck, catalog) {
   return { bracket, ...BRACKETS[bracket], reasons, lower, found, unknown };
 }
 
+// When a Commander deck usually ends a game, for pod simulations. The bracket (from the published
+// card rules) sets the pace a table expects (precon-level games run to about turn 10, optimized
+// decks end around turn 6); fast mana and tutors bring it earlier. A list can't show politics or
+// combos it doesn't tutor for, so this is an estimate the UI labels as one.
+export function podSpeed(deck, catalog) {
+  const b = bracketEstimate(deck, catalog), fm = b.found.fastMana.length, tu = b.found.tutors.length;
+  const base = { 2: 10, 3: 8.5, 4: 6.5 }[b.bracket] ?? 10;
+  return { turn: Math.max(3.5, base - Math.min(2.5, fm * 0.3) - Math.min(1.5, tu * 0.15)), bracket: b.bracket, fastMana: fm, tutors: tu };
+}
+
 /* ---------- Mana base helper ---------- */
 
 const BASIC_OF = { W: "Plains", U: "Island", B: "Swamp", R: "Mountain", G: "Forest" };
