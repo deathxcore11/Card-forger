@@ -587,7 +587,7 @@ const eur = (v) => (v ? "€" + Number(v).toFixed(2) : "—");
 
 export function tcgCardSheet(c, sctx = {}) {
   const g = c.game,
-    tab = sctx.tab || "overview",
+    tab = sctx.tab && sctx.tab !== "trade" ? sctx.tab : "overview", // Trade tab retired for now
     own = ownedOf(g, c),
     decks = gs(g).decks,
     deck = sctx.deckId ? decks.find((d) => d.id === sctx.deckId) : null,
@@ -658,7 +658,7 @@ export function tcgCardSheet(c, sctx = {}) {
     ${p.usd == null && !p.eur && !c.brief ? `<p class="price-gap small muted">Stores haven't listed a price for this card yet. That's normal for new sets and rarely sold cards; it fills in when sales start.</p>` : ""}
   </div>
   ${g === "ptcg" && !c.brief ? pokemonText(c) : c.text ? `<section class="cd-text effect-card ygo"><p class="eyebrow effect-label">${c.frame==='normal'?'Lore · Flavour text':'Chaincraft · Card effect'}</p>${c.frame==='normal'?`<blockquote class="flavor">${esc(c.text)}</blockquote>`:`<div class="oracle">${effectText(g,c.text)}</div>`}${c.illustrator ? `<div class="small muted right">🖌 ${esc(c.illustrator)}</div>` : ""}</section>` : ""}
-  ${tabs(tab, [["overview", "Overview"], ["meta", "Meta"], ["guide", "Play guide"], ["versions", "Versions"], ["prices", "Prices"], ["trade", "Trade"], ["rulings", "Rulings"], ["legal", "Legality"]])}
+  ${tabs(tab, [["overview", "Overview"], ["meta", "Meta"], ["guide", "Play guide"], ["versions", "Versions"], ["prices", "Prices"], ["rulings", "Rulings"], ["legal", "Legality"]])}
   ${panel("overview", tab, overview)}
   ${panel("meta", tab, tcgCardMeta(g, c))}
   ${panel("guide", tab, tcgCardGuide(g, c))}

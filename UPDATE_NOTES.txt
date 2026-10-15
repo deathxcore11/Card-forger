@@ -1,3 +1,7 @@
+3.58.2 — Simpler card pages
+- Removed the Trade tab from card pages in all three games. It repeated what the price already
+  shows. The "Trade & play advice" panel on the collection page (rising and cooling cards) stays.
+
 3.58.1 — Pokémon promo prices
 - Black Star promos now get TCGplayer prices. TCGdex calls the set "SVP Black Star Promos" and
   TCGplayer calls it "SV: Scarlet & Violet Promo Cards", so the exact-product price lookup missed

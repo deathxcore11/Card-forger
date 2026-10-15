@@ -339,7 +339,7 @@ function mtgCardMeta(c) {
 export function cardSheet(c, ctx = {}) {
   const name = c.name,
     shown = ctx.print || c, // the printing currently being looked at
-    tab = ctx.tab || "overview",
+    tab = ctx.tab && ctx.tab !== "trade" ? ctx.tab : "overview", // Trade tab retired for now
     i = inv(name),
     inDecks = S.state.decks.filter((d) => d.cards.some((x) => key(x.name) === key(name))),
     deck = ctx.deckId ? deckById(ctx.deckId) : null,
@@ -420,7 +420,7 @@ export function cardSheet(c, ctx = {}) {
     )
     .join("")}
   ${!c.full ? `<p class="muted small center" id="cardLoading">Loading flavor text and printings…</p>` : ""}
-  ${cardTabs(tab, [["overview", "Overview"], ["meta", "Meta"], ["guide", "Play guide"], ["versions", `Versions${prints ? " · " + prints.length : ""}`], ["prices", "Prices"], ["trade", "Trade"], ["rulings", "Rulings"], ["legal", "Legality"]])}
+  ${cardTabs(tab, [["overview", "Overview"], ["meta", "Meta"], ["guide", "Play guide"], ["versions", `Versions${prints ? " · " + prints.length : ""}`], ["prices", "Prices"], ["rulings", "Rulings"], ["legal", "Legality"]])}
   ${cardPanel("overview", tab, overview)}
   ${cardPanel("meta", tab, mtgCardMeta(c))}
   ${cardPanel("guide", tab, mtgCardGuide(c))}
