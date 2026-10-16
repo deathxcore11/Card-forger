@@ -3092,3 +3092,51 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 @media(prefers-reduced-motion:reduce){.ai-companion,.ai-companion::backdrop{animation:none!important}}
 
 .ai-companion.thinking .ask-orb{animation-duration:1.6s}.ai-companion.thinking .ask-orb i{animation-duration:1.2s}
+
+/* Live scanner confirmation */
+.scan-confirm {position:fixed;z-index:90;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(calc(100% - 20px),560px);max-height:44dvh;overflow:auto;padding:12px 16px;border:1px solid color-mix(in srgb,var(--game-color,var(--gold)) 38%,var(--line));border-radius:24px;background:color-mix(in srgb,var(--surface-2) 97%,transparent);box-shadow:0 -10px 50px #0008;backdrop-filter:blur(18px);animation:page-in .22s ease-out;}
+.scan-confirm header {display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.scan-confirm header .icon {width:36px;height:36px;min-height:36px;}
+.scan-confirm-card {display:flex;gap:12px;align-items:center;margin:4px 0 6px;}
+.scan-confirm-art {width:48px;height:66px;object-fit:contain;border-radius:6px;flex:none;}
+.scan-confirm-card>div {min-width:0;display:grid;gap:3px;}
+.scan-confirm-card strong {font-size:17px;overflow-wrap:anywhere;}
+.scan-confirm-card small,.scan-confirm-price {font-size:12px;color:var(--muted);margin:0;}
+.scan-confirm-conditions {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:10px 0;}
+.scan-confirm-conditions button {min-height:36px;border:1px solid var(--line);border-radius:10px;color:var(--text);background:var(--surface);font:inherit;font-size:12px;font-weight:700;}
+.scan-confirm-conditions [aria-pressed=true] {background:var(--game-color,var(--gold));color:#101116;border-color:transparent;}
+.scan-confirm-controls {display:flex;justify-content:space-between;align-items:center;gap:12px;margin:8px 0;}
+.scan-confirm-controls label {display:flex;gap:7px;align-items:center;font-size:12px;color:var(--muted);}
+.scan-confirm-controls select {width:auto;max-width:160px;padding:8px;}
+.scan-confirm-actions,.scan-confirm-search {display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;margin-top:10px;}
+.scan-confirm-actions .btn {font-size:14px;padding:10px 12px;min-width:0;white-space:normal;}
+.scan-confirm-search {grid-template-columns:minmax(0,1fr) auto;}
+.scan-confirm-search input {min-width:0;}
+.scan-confirm-options {display:grid;gap:6px;margin-top:8px;}
+.scan-confirm-options button {white-space:normal;text-align:left;}
+.scan-confirm-options small {display:block;color:var(--muted);font-size:11px;}
+.scan-confirm-error {color:var(--bad);font-size:13px;margin:8px 0;}
+@media(min-width:700px) {.scan-confirm {bottom:20px;}}
+@media(prefers-reduced-motion:reduce) {.scan-confirm {animation:none;}}
+
+/* A single picker surface across every game's filters, forms and scan controls. */
+:root { --picker-bg:rgba(20,23,30,.96); --picker-border:rgba(255,255,255,.15); }
+.glass-pop { background:linear-gradient(145deg,#ffffff0c,transparent 60%),var(--picker-bg); border:1px solid var(--picker-border); }
+.scan-confirm-controls {flex-wrap:wrap;}
+.scan-confirm-controls label {flex:1 1 120px;min-width:0;}
+.scan-confirm-controls select {flex:1;min-width:0;max-width:100%;}
+@supports (appearance:base-select) {
+  select:not([multiple]):not([size]), select:not([multiple])[size="1"],
+  select:not([multiple]):not([size])::picker(select), select:not([multiple])[size="1"]::picker(select) {appearance:base-select;}
+  select:not([multiple]):not([size]), select:not([multiple])[size="1"] {background-image:none;padding-right:12px;align-items:center;gap:10px;}
+  select::picker-icon {color:var(--muted);transition:rotate .15s ease;}
+  select:open::picker-icon {rotate:180deg;}
+  select::picker(select) {max-height:min(52dvh,420px);max-width:calc(100vw - 20px);overflow:auto;padding:6px;border:1px solid var(--picker-border);border-radius:18px;color:var(--text);background:linear-gradient(145deg,#ffffff0c,transparent 60%),var(--picker-bg);backdrop-filter:blur(22px) saturate(1.4);box-shadow:inset 0 1px #ffffff12,0 18px 50px #0008;}
+  select option {min-height:44px;display:flex;align-items:center;gap:12px;padding:10px 12px;border:0;border-radius:12px;background:transparent;color:var(--text);white-space:normal;overflow-wrap:anywhere;}
+  select option:checked {background:color-mix(in srgb,var(--game-color,var(--gold)) 17%,transparent);font-weight:700;}
+  select option:hover,select option:focus {background:#ffffff12;outline:none;}
+  select option:disabled {opacity:.4;}
+  select option::checkmark {color:var(--game-color,var(--gold));}
+  select optgroup {font-size:12px;color:var(--muted);padding:6px;}
+}
+@media(prefers-reduced-motion:reduce) {select::picker-icon {transition:none;}}
