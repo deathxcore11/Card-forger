@@ -18,7 +18,7 @@ import { lineChart, skeletonGrid } from "./ui.js";
 import { installNudge } from "./install.js";
 import { rankByName } from "./catalog-tools.js";
 import {setRowContent} from './set-list-ui.js';
-import {artworkHTML,artworkSources,pokemonArtCrop} from "./artwork.js";
+import {artworkHTML,artworkSources,pokemonArtCrop,pokemonDeckCover} from "./artwork.js";
 import { tierOf, tierAttrs, tierStyle, tierGem } from "./tier.js";
 import {viewControl,selectionControl,selectionMark,selectionTray,historyPanel,quoteModel,priceOverview,quoteWarning} from "./workbench-ui.js";
 import { locationPicker, rememberLocation } from "./collection-locations.js";
@@ -981,9 +981,9 @@ const metaStatus = (g, M) =>
 
 function metaDeckRow(g, d, m) {
   const o = metaOwned(g, d, m),
-    cover = g === "ygo" ? cardOf("ygo", d.cover) : null;
+    cover = g === "ygo" ? cardOf("ygo", d.cover) : pokemonDeckCover(d);
   return `<button class="meta-row" data-act="tMetaDeck" data-key="${esc(d.key)}">
-    <span class="meta-art">${g === "ygo" ? (cover ? imgTag(cover, "mini-art") : `<img class="mini-art" src="${esc(ygoImageDirect(d.cover))}" alt="" loading="lazy" referrerpolicy="no-referrer">`) : d.icons.map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("")}</span>
+    <span class="meta-art">${g === "ygo" ? (cover ? imgTag(cover, "mini-art") : `<img class="mini-art" src="${esc(ygoImageDirect(d.cover))}" alt="" loading="lazy" referrerpolicy="no-referrer">`) : cover ? pokemonArtCrop(cover, "meta-card-art") : (d.icons||[]).map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("")}</span>
     <span class="meta-main"><b class="ellip">${esc(d.name)}</b><small class="muted ellip">${esc(d.place)} · ${esc(cleanName(d.event))}${d.players ? ` · ${d.players} players` : ""}</small>
       <span class="meta-own">${bar(o.pct)}<small>${Math.round(o.pct * 100)}% owned${o.cost !== null && o.pct < 1 ? ` · ${usd(o.cost, 0)} to finish` : ""}</small></span></span></button>`;
 }
@@ -1022,8 +1022,10 @@ function metaView(g) {
     .slice(0, 8)
     .map((a) => {
       const best = data.decks.find((d) => d.key === a.best),
-        art = g === "ygo" && best?.cover ? `https://images.ygoprodeck.com/images/cards_cropped/${encodeURIComponent(best.cover)}.jpg` : "";
-      return `<button class="arch ${art ? "has-art" : ""}" data-act="tMetaDeck" data-key="${esc(a.best)}" ${a.best ? "" : "disabled"}>${art ? `<img class="arch-art" src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<span class="arch-icons">${g === "ptcg" ? a.icons.map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("") : ""}</span><b class="ellip">${esc(a.name)}</b><small>${g === "ptcg" ? `${(a.share * 100).toFixed(1)}% of players · ${a.top8} in Top 8` : `${a.count} top finish${a.count === 1 ? "" : "es"}`}</small>${bar(a.share / (data.archetypes[0]?.share || 1))}</button>`;
+        cover = g === "ptcg" ? pokemonDeckCover(best) : null,
+        art = g === "ygo" && best?.cover ? `https://images.ygoprodeck.com/images/cards_cropped/${encodeURIComponent(best.cover)}.jpg` : "",
+        illustrated = art || cover;
+      return `<button class="arch ${illustrated ? "has-art" : ""}" data-act="tMetaDeck" data-key="${esc(a.best)}" ${a.best ? "" : "disabled"}>${cover ? pokemonArtCrop(cover, "arch-art") : art ? `<img class="arch-art" src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<span class="arch-icons">${g === "ptcg" ? a.icons.map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("") : ""}</span><b class="clamp2">${esc(a.name)}</b><small>${g === "ptcg" ? `${(a.share * 100).toFixed(1)}% of players · ${a.top8} in Top 8` : `${a.count} top finish${a.count === 1 ? "" : "es"}`}</small>${bar(a.share / (data.archetypes[0]?.share || 1))}</button>`;
     })
     .join("")}</div>
   <div class="section-head"><h2>Most played cards</h2></div>

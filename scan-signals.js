@@ -2,7 +2,7 @@ import {scanNameKey,ptcgNumbers,mtgCollector,ygoSetCodes} from './scan.js';
 export function readScanSignals(g,read={}){
  const header=String(read.name||''),stats=String(read.stats||''),text=header+'\n'+stats+'\n'+String(read.full||'');
  const number=(regex,source=text)=>{const m=source.match(regex);return m?Number(m[1]):null;};
- return {hp:g==='ptcg'?number(/\bHP\s*(\d{2,3})\b/i,header)??number(/\b(\d{2,3})\s*HP\b/i,header):null,atk:g==='ygo'?number(/\bATK\s*[/:]?\s*(\d{1,5})\b/i):null,def:g==='ygo'?number(/\bDEF\s*[/:]?\s*(\d{1,5})\b/i):null,pt:g==='mtg'?stats.match(/\b(\d{1,2})\s*\/\s*(\d{1,2})\b/)?.slice(1).map(Number):null,text};
+ return {hp:g==='ptcg'?number(/\bHP\s*(\d{2,3})\b/i,header)??number(/\b(\d{2,3})\s*HP\b/i,header):null,atk:g==='ygo'?number(/\bATK\s*[/:]?\s*(\d{1,5})(?![\d/])\b/i):null,def:g==='ygo'?number(/\bDEF\s*[/:]?\s*(\d{1,5})(?![\d/])\b/i):null,pt:g==='mtg'?stats.match(/\b(\d{1,2})\s*\/\s*(\d{1,2})\b/)?.slice(1).map(Number):null,text};
 }
 export function signalEvidence(g,card,read={}){
  const s=readScanSignals(g,read),conflicts=[],agrees=[];

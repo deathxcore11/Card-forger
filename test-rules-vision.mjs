@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import {gunzipSync} from 'node:zlib';
 import {createHash} from 'node:crypto';
 import {detectCardQuad,quadPoint,warpPixels,normalizedQuality,quadArea} from './scan-vision.js';
-import {rankScanCandidates,signalEvidence,nameDistance} from './scan-signals.js';
+import {rankScanCandidates,signalEvidence,nameDistance,readScanSignals} from './scan-signals.js';
 import {ptcgNumbers} from './scan.js';
 import {compileCatalog,lookupCatalog} from './scan-catalog.js';
 import {LESSONS,TURN_STEPS,RULE_CHECKS} from './rule-lessons.js';
@@ -40,3 +40,5 @@ for(const g of ['mtg','ptcg','ygo']){
  else {S.state.tcg[g].decks=[{id:'rules-deck',name:'Rules deck',format:g==='ptcg'?'Standard':'Advanced',zones:{main:[],extra:[],side:[]}}];S.ui.tdeckTab={['rules-deck']:'rules'};assert.match(T.tcgDeck('rules-deck'),/data-learning-root/);}
 }
 console.log('PASS: Rules pill renders the shared interactive learning view inside actual deck pages for all three games.');
+
+assert.equal(readScanSignals('ygo',{stats:'ATK 7/7000 NEC 71060 4'}).atk,null,'garbled fraction after ATK is not a readable attack value');

@@ -3296,3 +3296,13 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 
 .card-rules-entry { margin:12px 0; }
 .card-rules-entry .chip { max-width:100%;white-space:normal; }
+
+/* Shared illustrated tournament tiles; Pokémon sprites remain small identity accents. */
+.arch-art.pk-crop { display:flex; transform:none; }
+.arch.has-art .arch-icons:not(:empty) { position:absolute; top:8px; right:8px; padding:2px 5px; border:1px solid rgba(255,255,255,.18); border-radius:99px; background:rgba(13,16,23,.72); backdrop-filter:blur(8px); }
+.arch.has-art .arch-icons .pk-icon { width:24px; height:24px; }
+.meta-art .meta-card-art { width:64px; height:46px; border-radius:7px; }
+.meta-main > b { white-space:normal; overflow-wrap:anywhere; }
+.meta-own { grid-template-columns:minmax(0,1fr) auto; }
+@media(min-width:760px) { .arch-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; } }
+@media(min-width:1100px) { .arch-grid { grid-template-columns:repeat(4,minmax(0,1fr)); } }

@@ -45,3 +45,14 @@ export function pokemonArtCrop(c, cls = "", src = "") {
   if (!urls.length) return `<span class="${cls} pk-crop img-missing" role="img" aria-label="Artwork unavailable">◇</span>`;
   return `<span class="${cls} pk-crop" aria-hidden="true"><span class="pk-win"><img src="${esc(urls[0])}" data-art-sources="${esc(JSON.stringify(urls))}" data-art-index="0" alt="" loading="lazy" referrerpolicy="no-referrer"></span></span>`;
 }
+
+// Tournament rows carry the exact English set abbreviation and collector number.
+// Pick the archetype's featured Pokémon; never substitute an unrelated mascot.
+export function pokemonDeckCover(deck){
+ const key=s=>String(s||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+ const title=key(deck?.name),rows=(deck?.list||[]).filter(r=>r.kind==='Pokemon'&&/^[A-Z0-9]{2,8}$/i.test(r.set||'')&&/^\d{1,3}$/.test(String(r.number||'')));
+ const scored=rows.map(r=>{const n=key(r.name).replace(/(?:ex|vmax|vstar|gx|v)$/,'');return {r,score:(n.length>3&&title.includes(n)?100:0)+Number(r.qty||0)};}).sort((a,b)=>b.score-a.score);
+ if(!scored.length)return null;
+ const r=scored[0].r,set=String(r.set).toUpperCase(),number=String(Number(r.number)).padStart(3,'0');
+ return {game:'ptcg',name:r.name,imageLarge:`https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpci/${set}/${set}_${number}_R_EN.png`};
+}
