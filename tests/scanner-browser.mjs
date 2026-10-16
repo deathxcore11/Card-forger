@@ -69,7 +69,31 @@ try{
    assert.equal(saved.length,1);assert.equal(saved[0].name,ref.name);if(ref.id)assert.equal(String(saved[0].cardId),ref.id,'same name is insufficient: save the correct indexed card/printing');assert.equal(saved[0].qty,3);assert.equal(saved[0].condition,'Lightly Played');assert.equal(saved[0].language,'ja');
    await page.getByRole('navigation',{name:'Main',exact:true}).getByRole('button',{name:'Collection',exact:true}).click();
    await page.getByRole('heading',{name:'Collection',exact:true}).waitFor();await page.locator('main').getByRole('img',{name:ref.name,exact:true}).first().waitFor({state:'visible'});
-   console.log(`PASS: ${ref.game}: real image → real browser OCR → public lookup → illustrated popup → dropdown edit → 3 LP/Japanese copies saved once → collection screen.`);
+   console.log(`PASS: ${ref.game}: reference photo → local artwork/OCR → illustrated popup → dropdown edit → 3 LP/Japanese copies saved once → collection screen.`);
+   // Feed actual reference artwork through a browser MediaStream. This exercises
+   // capture and retained playback, without claiming a physical camera test.
+   await page.getByRole('navigation',{name:'Main',exact:true}).getByRole('button',{name:'Scan',exact:true}).click();
+   await page.getByRole('tab',{name:'Live camera',exact:true}).click();
+   await page.evaluate(async g=>{
+    const {visibleGuide}=await import('/scancam.js'),image=new Image();image.src='/__reference/'+g;await image.decode();
+    navigator.mediaDevices.getUserMedia=async()=>{
+     const canvas=document.createElement('canvas');canvas.width=640;canvas.height=900;const x=canvas.getContext('2d');
+     const draw=()=>{const v=document.querySelector('#scanVideo'),r=v?.getBoundingClientRect(),guide=visibleGuide(640,900,r?.width,r?.height);x.fillStyle='#181818';x.fillRect(0,0,640,900);x.drawImage(image,guide.x,guide.y,guide.w,guide.h);};draw();setInterval(draw,33);
+     window.__cameraStream=canvas.captureStream(30);return window.__cameraStream;
+    };
+   },ref.g);
+   await page.getByRole('button',{name:'Start camera',exact:true}).click();
+   await page.locator('#scanVideo').waitFor();
+   const auto=page.getByLabel('Capture automatically',{exact:true});if(await auto.count())await auto.uncheck();
+   await page.waitForFunction(()=>document.querySelector('#scanVideo')?.videoWidth>0);
+   await page.getByRole('button',{name:'Capture',exact:true}).click();
+   await page.getByRole('region',{name:'Confirm scanned card',exact:true}).waitFor({timeout:120000});
+   await page.getByRole('region',{name:'Confirm scanned card',exact:true}).getByText(ref.name,{exact:true}).waitFor();
+   const beforeTime=await page.locator('#scanVideo').evaluate(v=>v.currentTime);await page.waitForTimeout(250);
+   assert(await page.locator('#scanVideo').evaluate((v,t)=>!v.paused&&v.currentTime>t&&v.srcObject===window.__cameraStream&&v.srcObject.getTracks()[0].readyState==='live',beforeTime),'video keeps playing behind confirmation');
+   await page.getByRole('button',{name:'Skip this scan',exact:true}).click();
+   assert(await page.locator('#scanVideo').evaluate(v=>v.srcObject===window.__cameraStream&&v.srcObject.getTracks()[0].readyState==='live'),'dismiss keeps the same live camera stream');
+   console.log(`PASS: ${ref.game}: reference MediaStream → viewfinder crop → correct popup → playback continues → dismiss retains the same active camera track.`);
   }catch(e){
    console.error(`FAIL ${ref.game}: ${e.stack}`);console.error((await page.locator('main').innerText()).slice(0,6000));
    await page.screenshot({path:`test-results/scanner-${ref.g}-failure.png`,fullPage:true});throw e;
