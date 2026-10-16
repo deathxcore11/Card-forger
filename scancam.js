@@ -1048,7 +1048,7 @@ export function registerScanner(ctx) {
   A.scanConfirm = async () => {
     const st=s(),q=st.confirm,c=st.cands?.[q?.i||0],G=game();
     if(!q||!c||q.saving)return;
-    q.saving=true;q.error="";render();
+    q.saving=true;q.error="";q.errorDetail="";render();
     try {
       const resolved=await hydrateCandidate(G,c);
       if(s()!==st||game()!==G||st.confirm!==q)return;
@@ -1058,7 +1058,7 @@ export function registerScanner(ctx) {
       if(s()!==st||game()!==G)return;
       feedback("ok",prefs());flash(`Saved ${item.qty} × ${c.name}`);
       resetConfirmation("Saved. Move to the next card.");
-    } catch {if(s()===st&&game()===G){q.saving=false;q.error="Couldn't save this card. Your match is still here; try again.";render();}}
+    } catch(e) {if(s()===st&&game()===G){q.saving=false;q.errorDetail=String(e?.stack||e?.message||e);q.error="Couldn't save this card. Your match is still here; try again.";render();}}
   };
   ctx.confirmKey = e => {
     if(document.querySelector?.("#sheet[open], .zoom-overlay, .tour"))return;
