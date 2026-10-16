@@ -120,9 +120,19 @@ export function curveChart(a, b = null, labels = ["0", "1", "2", "3", "4", "5", 
     .join("")}</div>`;
 }
 
+export function valueChange(points) {
+  const valid = points.filter(p => Number.isFinite(p.total));
+  if (valid.length < 2) return null;
+  const first = valid[0], last = valid.at(-1), delta = Math.round((last.total-first.total)*100)/100;
+  return {delta, percent:first.total > 0 ? delta/first.total*100 : null, date:first.date,
+    direction:delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'};
+}
+
 export function lineChart(points, { height = 120 } = {}) {
   if (points.length < 2)
     return `<p class="muted small">The chart starts after a second day of tracking. Value is recorded once per day when you open CardStashy.</p>`;
+  const change = valueChange(points);
+  const changeHtml = change ? `<div class="value-change ${change.direction}" role="status"><strong>${change.delta>0?"↑ +":change.delta<0?"↓ −":""}${usd(Math.abs(change.delta))}${change.percent===null?"":` (${change.percent>0?"+":change.percent<0?"−":""}${Math.abs(change.percent).toFixed(1)}%)`}</strong><span class="muted small">${change.direction==="flat"?"Unchanged":"Total change"} since ${esc(change.date)}</span></div><p class="muted small">Includes changes to copies, recorded values and available prices.</p>` : "";
   const w = 320,
     h = height,
     pad = 6,
@@ -135,7 +145,7 @@ export function lineChart(points, { height = 120 } = {}) {
       h - pad - ((p.total - min) / span) * (h - pad * 2),
     ]),
     d = xy.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
-  return `<svg class="line" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Collection value over time"><path d="${d} L ${xy.at(-1)[0]} ${h} L ${xy[0][0]} ${h} Z" class="line-area"/><path d="${d}" class="line-stroke"/></svg><div class="row between muted small"><span>${esc(points[0].date)} · ${usd(points[0].total, 0)}</span><span>${esc(points.at(-1).date)} · ${usd(points.at(-1).total, 0)}</span></div>`;
+  return `${changeHtml}<svg class="line" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Collection value over time"><path d="${d} L ${xy.at(-1)[0]} ${h} L ${xy[0][0]} ${h} Z" class="line-area"/><path d="${d}" class="line-stroke"/></svg><div class="value-chart-dates muted small"><span>${esc(points[0].date)} · ${usd(points[0].total, 0)}</span><span>${esc(points.at(-1).date)} · ${usd(points.at(-1).total, 0)}</span></div>`;
 }
 
 export const empty = (title, text, actions = "") =>

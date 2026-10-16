@@ -1,3 +1,5 @@
+import {pokemonRole} from './pokemon-role.js';
+import {brandMark} from './brand.js';
 // On-demand AI coaching. Selected deck data leaves the device only after the user taps Review.
 // The app sends what it already knows (Power's numbers, a sample hand, owned swap candidates),
 // the AI returns decisions (lines, stress tests, swaps), and the app checks them in code before
@@ -30,7 +32,7 @@ function deckRows(game, deck, lookup) {
 function cardDetails(game, c) {
   if (!c) return '';
   return game === 'mtg' ? JSON.stringify({ mana: c.mana_cost, mv: c.cmc, identity: c.color_identity, power: c.power, toughness: c.toughness, produces: c.produced_mana, faces: c.card_faces?.map(x => ({ name: x.name, type: x.type_line, mana: x.mana_cost, text: x.oracle_text })) })
-    : JSON.stringify(game === 'ptcg' ? { stage: c.stage, evolvesFrom: c.evolveFrom, hp: c.hp, types: c.types, abilities: c.abilities, attacks: c.attacks, weaknesses: c.weaknesses, retreat: c.retreat, regulationMark: c.regulationMark } : { attribute: c.attribute, race: c.race, level: c.level, atk: c.atk, def: c.def, link: c.link, archetype: c.archetype });
+    : JSON.stringify(game === 'ptcg' ? { category:c.category, prize:c.prize, tacticalRole:pokemonRole(c), stage: c.stage, evolvesFrom: c.evolveFrom, hp: c.hp, types: c.types, abilities: c.abilities, attacks: c.attacks, weaknesses: c.weaknesses, retreat: c.retreat, regulationMark: c.regulationMark } : { attribute: c.attribute, race: c.race, level: c.level, atk: c.atk, def: c.def, link: c.link, archetype: c.archetype });
 }
 const cardEntry = (game, id, name, qty, zone, c) => ({ id, name: c?.name || name, qty, zone, type: typeOf(c), text: plain(c?.oracle_text || c?.text || c?.desc || ''), details: cardDetails(game, c), known: !!c && !c.brief });
 
@@ -61,6 +63,8 @@ function composition(game, rows) {
     out.push(`Pokémon ${count(poke)} (Basic ${count(r => poke(r) && /basic/i.test(r.c.stage || ''))}, Stage 1 ${count(r => poke(r) && /1/.test(r.c.stage || ''))}, Stage 2 ${count(r => poke(r) && /2/.test(r.c.stage || ''))}), Trainers ${count(r => r.c.category === 'Trainer')} (Supporter ${count(r => /Supporter/.test(tl(r)))}, Item ${count(r => /Item/.test(tl(r)))}, Tool ${count(r => /Tool/.test(tl(r)))}, Stadium ${count(r => /Stadium/.test(tl(r)))}), Energy ${count(r => r.c.category === 'Energy')}`);
     const lines = main.filter(r => poke(r) && r.c.evolveFrom).map(r => `${r.row.qty}× ${r.c.name} from ${r.c.evolveFrom}`);
     if (lines.length) out.push('Evolutions: ' + lines.join(', '));
+    out.push('Every Basic Pokémon counts toward legal opening hands and mulligan odds, including one-copy tactical attackers. A low copy count does not make that Basic irrelevant.');
+    for(const r of main){const role=pokemonRole(r.c);if(role)out.push(`${r.c.name}: ${role.prize} Prize liability; ${role.basic?'Basic; ':''}${role.attacks.map(a=>`${a.cost.length} Energy ${a.name}: ${a.base??'variable'} base${a.conditionalDamage!=null?' / '+a.conditionalDamage+' conditional damage':''} against Pokémon ${a.targets.join('/')}.`).join(' ')} Match the printed condition; do not assume a knockout or extend ex to GX/V.`);}
   } else {
     const t = r => typeOf(r.c), extra = main.filter(r => r.zone === 'extra');
     out.push(`Main Deck: Monsters ${count(r => r.zone === 'main' && !/Spell|Trap/.test(t(r)))}, Spells ${count(r => r.zone === 'main' && /Spell/.test(t(r)))}, Traps ${count(r => r.zone === 'main' && /Trap/.test(t(r)))}. Extra Deck ${extra.reduce((n, r) => n + r.row.qty, 0)}: ${['Fusion', 'Synchro', 'XYZ', 'Link'].map(k => `${k} ${count(r => r.zone === 'extra' && new RegExp(k, 'i').test(t(r)))}`).join(', ')}`);
@@ -276,7 +280,7 @@ function reviewReport(entry) {
 }
 export function aiReviewDialogContent(entry, stale = false) {
   if (stale) return '<div class="ai-state"><span class="ai-state-symbol" aria-hidden="true">↻</span><h3>The deck changed</h3><p>Close this window and ask for fresh coaching on your updated list. The earlier answer won\'t be applied to it.</p></div>';
-  if (entry.busy) return `<div class="ai-state"><div class="ai-orbit" aria-hidden="true"><i></i><span>✦</span></div><p class="eyebrow">Your deck, another perspective</p><h3>Coaching your deck</h3><p>OpenAI is reading your cards and the app's numbers. The app then checks every line and swap before showing it.</p><div class="ai-review-steps"><span>Deck sent</span><span class="current">Finding lines</span><span>Power checks next</span></div><p class="foot">You can close this window and keep browsing. Reopening it won't start another request. No automatic retries.</p></div>`;
+  if (entry.busy) return `<div class="ai-state"><div class="ai-brand-loader" aria-hidden="true">${brandMark("brand-loading")}</div><p class="eyebrow">Your deck, another perspective</p><h3>Coaching your deck</h3><p>OpenAI is reading your cards and the app's numbers. The app then checks every line and swap before showing it.</p><div class="ai-review-steps"><span>Deck sent</span><span class="current">Finding lines</span><span>Power checks next</span></div><p class="foot">You can close this window and keep browsing. Reopening it won't start another request. No automatic retries.</p></div>`;
   if (entry.error) {
     const title = ['billing', 'credits', 'spend_limit', 'usage_limit'].includes(entry.errorCode) ? 'API billing needs attention' : entry.errorCode === 'rate_limit' ? 'OpenAI needs a breather' : entry.errorCode === 'app_limit' ? 'App review allowance reached' : entry.errorCode === 'authentication' ? 'API connection needs attention' : 'Coaching couldn\'t finish';
     return `<div class="ai-state ai-error"><span class="ai-state-symbol" aria-hidden="true">!</span><h3>${title}</h3><p>${esc(entry.error)}</p><p class="foot">Your deck and score are unchanged. No automatic retry was made. Resolve the issue before trying again.</p><button class="btn small" data-ai-retry>Try again</button></div>`;
@@ -345,7 +349,7 @@ async function withCandidates(entry, budget = 1500) {
   const cards = [...pool.filter(c => helps.has(c)), ...pool.filter(c => !helps.has(c))].slice(0, 25);
   entry.cands = cards.map((c, i) => ({ id: 'o' + i, c, helps: helps.get(c) || [] }));
   let field = [];
-  try { field = (entry.hooks?.field?.() || []).slice(0, 5).map(f => ({ name: String(f.name), share: Number(f.share) || 0, lists: f.lists || 0, cards: (f.rows || []).slice(0, 12).map(r => ({ name: r.c?.name || r.name, qty: r.qty, type: typeOf(r.c), text: textOf(r.c).slice(0, 400) })) })); } catch {}
+  try { field = (entry.hooks?.field?.() || []).slice(0, 5).map(f => ({ name: String(f.name), share: Number(f.share) || 0, lists: f.lists || 0, cards: (f.rows || []).slice(0, 12).map(r => ({ name: r.c?.name || r.name, qty: r.qty, type: typeOf(r.c), text: textOf(r.c).slice(0, 400), details:cardDetails(entry.game,r.c).slice(0,1600) })) })); } catch {}
   entry.meta = field;
   return { ...entry.payload, meta: field, candidates: entry.cands.map(x => ({ ...cardEntry(entry.game, x.id, x.c.name, 1, 'owned', x.c), ...(x.helps.length ? { helps: x.helps.join(', ') } : {}) })) };
 }
@@ -364,7 +368,7 @@ async function betterCuts(entry, budget = 3000) {
   for (const [i, s] of (r.improve || []).entries()) {
     const sc = v.swaps[i], add = entry.cands?.find(x => x.id === s.add);
     if (!sc || !add || (sc.after >= sc.before && !sc.issues.length && (!sc.area || sc.area.up))) continue;
-    const alts = entry.rows.filter(x => x.zone === 'main' && x.id !== s.cut && !core.has(x.id) && x.c).map(x => ({ x, a: powerOf.get(x.id) || [] })).sort((p, q) => p.a.filter(l => weakLabels.has(l)).length - q.a.filter(l => weakLabels.has(l)).length || p.a.length - q.a.length).slice(0, 10);
+    const alts = entry.rows.filter(x => x.zone === 'main' && x.id !== s.cut && !core.has(x.id) && x.c && !(entry.game==='ptcg' && x.row.qty===1 && pokemonRole(x.c)?.prize===1)).map(x => ({ x, a: powerOf.get(x.id) || [] })).sort((p, q) => p.a.filter(l => weakLabels.has(l)).length - q.a.filter(l => weakLabels.has(l)).length || p.a.length - q.a.length).slice(0, 10);
     let best = null;
     for (const { x } of alts) {
       if (Date.now() - t > budget) break;

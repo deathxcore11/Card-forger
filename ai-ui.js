@@ -1,1 +1,2 @@
-export const aiOrb = () => `<div class="ask-orb" aria-hidden="true"><i></i><i></i><i></i><span>✦</span></div>`;
+import {brandMark} from "./brand.js";
+export const aiOrb = () => `<div class="ask-orb" aria-hidden="true">${brandMark()}</div>`;

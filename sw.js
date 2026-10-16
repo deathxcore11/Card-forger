@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-v185";
+const CACHE = "cardforge-shell-v186";
 const ASSETS = [
   "./",
   "./index.html",
@@ -10,6 +10,10 @@ const ASSETS = [
   "./ai-review.js",
   "./ai-ask.js",
   "./ai-ui.js",
+  "./brand.js",
+  "./condition-value.js",
+  "./quick-quantity.js",
+  "./pokemon-role.js",
   "./ai-tools.js",
   "./deck-optimizer.js",
   "./rule-dex.js",

@@ -1,3 +1,4 @@
+import {pokemonRole} from './pokemon-role.js';
 // Deck Power: a game- and format-aware rating for all three games.
 // Each game is judged by how competitive decks in THAT game and format are built:
 //   • Magic constructed (Standard, Pioneer, Modern…): mana vs. curve (Karsten), redundancy
@@ -716,6 +717,7 @@ export function ptcgPower(rows, f = {}) {
     parts,
     goldfish: gold,
     // For matchups: who takes the Prizes, how hard, and what it's weak to.
+    tacticalCounters: main.filter(r=>pokemonRole(r.c)?.prize===1).map(r=>({name:r.c.name,qty:r.qty,...pokemonRole(r.c)})),
     attacker: mainAtk ? { name: mainAtk.c.name, reach, spread: attackSpread(mainAtk.c), prize: mainAtk.c.prize ?? (mainAtk.c.ruleBox ? 2 : 1), hp: Number(mainAtk.c.hp) || 0, types: mainAtk.c.types || [], weak: (mainAtk.c.weak || []).map((w) => w.type), ruleBox: !!mainAtk.c.ruleBox, lives, gust: q(gusts), disrupt: q(by("disrupt")), swarm } : null,
     plan: mainAtk ? mainAtk.c.name + (line ? ` · ${line.text} line` : "") : "Pokémon deck",
     stats: { N, basics, pokemon, trainers, energy, mull },

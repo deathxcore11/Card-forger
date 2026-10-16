@@ -37,6 +37,8 @@ jobs:
         run: git fetch --depth=1 origin b1fc1fd79b0c9e7b9e46feb0101ca5c485d586c6
       - name: Test card tilt with browser orientation events
         run: node tests/tilt-browser.mjs
+      - name: Test ownership controls and condition values in the real app
+        run: node tests/owned-browser.mjs
   scanner-browser:
     runs-on: ubuntu-latest
     timeout-minutes: 10

@@ -1,3 +1,6 @@
+import {brandMark} from './brand.js';
+import {ownedCardLots,quickQuantity} from './quick-quantity.js';
+import {conditionName} from './condition-value.js';
 import { showAiReview } from './ai-review.js';
 import { openAsk, clearAskConversations } from './ai-ask.js';
 import { makeAskTools } from './ai-tools.js';
@@ -151,7 +154,7 @@ function decorateShell() {
   const gear = $('.topbar [data-act="menu"]');
   if (gear) gear.innerHTML = ICON.settings;
   const mark = $(".brand .mark");
-  if (mark) mark.innerHTML = ICON.sync;
+  if (mark) mark.innerHTML = brandMark("brand-idle");
   glyphObserver?.observe(document.body, { childList: true, subtree: true });
 }
 
@@ -1010,11 +1013,14 @@ async function pickCompareCard(t) {
   } finally { compareBusy = false; }
 }
 async function cardQuickMenu(t) {
-  const ref = await resolveActionCard(t); if (!ref) return;
+  t?.closest?.("dialog.zoom")?.querySelector('[data-z="close"]')?.click();
+  const ref = t?.quickRef || await resolveActionCard(t); if (!ref) return;
   quickCard = ref; haptic("tap");
   const st = ref.game === "mtg" ? S.state : T.gs(ref.game);
+  const lots=ownedCardLots(st.collection,ref.card);ref.selectedLot=lots.some(e=>e.id===ref.selectedLot)?ref.selectedLot:lots.some(e=>e.id===ref.dataset.entry)?ref.dataset.entry:lots[0]?.id;
+  if(ref.selectedLot)ref.dataset.entry=ref.selectedLot;
   const wished = st.wishlist.some(w => ref.game === "mtg" ? key(w.name) === key(ref.card.name) : w.cardId === ref.card.id);
-  openSheet(`<div class="sheet-head"><h2>Card actions</h2><button class="icon" data-act="closeSheet" aria-label="Close">${actionIcon("close")}</button></div><div class="quick-card-heading">${artworkHTML(ref.card,"quick-card-thumb")}<div><b>${esc(ref.card.name)}</b><small>${esc(ref.card.set_name || ref.card.set?.name || ref.card.typeLine || "")}</small></div></div>${cardActionButtons({game:ref.game,wished,existing:!!ref.dataset.entry,second:comparison.active && comparison.cards.length>0})}`,{type:"card-actions",game:ref.game,id:ref.card.id});
+  openSheet(`<div class="sheet-head"><h2>Card actions</h2><button class="icon" data-act="closeSheet" aria-label="Close">${actionIcon("close")}</button></div><div class="quick-card-heading">${artworkHTML(ref.card,"quick-card-thumb")}<div><b>${esc(ref.card.name)}</b><small>${esc(ref.card.set_name || ref.card.set?.name || ref.card.typeLine || "")}</small></div></div>${cardActionButtons({game:ref.game,wished,existing:lots.length>0,quantityHtml:quickQuantity(lots,ref.selectedLot,ref.qtyBusy),second:comparison.active && comparison.cards.length>0})}`,{type:"card-actions",game:ref.game,id:ref.card.id});
 }
 // Hold a deck or binder tile for its quick actions, the same gesture as holding a card.
 // Every action is also reachable inside the deck or binder; this is a shortcut, not a hiding place.
@@ -1076,6 +1082,19 @@ function registerCardMenus() {
     if (!quickCard || quickCard.game !== T.game()) return;
     if (comparison.active && comparison.game === quickCard.game) { closeSheet(false); return safely(pickCompareCard({dataset:quickCard.dataset})); }
     startCardCompare(quickCard.game,quickCard.card);
+  };
+  C.quickLot=t=>{if(quickCard){quickCard.selectedLot=t.value;cardQuickMenu({quickRef:quickCard});}};
+  A.quickQty=async t=>{
+    const ref=quickCard;if(!ref||ref.qtyBusy||ref.game!==T.game()||![-1,1].includes(Number(t.dataset.delta)))return;
+    const lots=ownedCardLots((ref.game==='mtg'?S.state:T.gs(ref.game)).collection,ref.card),lot=lots.find(e=>e.id===ref.selectedLot)||lots[0];if(!lot)return;
+    ref.qtyBusy=true;await cardQuickMenu({quickRef:ref});
+    try{await A[ref.game==='mtg'?'qty':'tEntryQty']({dataset:{id:lot.id,delta:t.dataset.delta}});}finally{ref.qtyBusy=false;if(quickCard===ref&&S.ui.sheetCtx?.type==='card-actions')await cardQuickMenu({quickRef:ref});}
+  };
+  A.quickValueSave=async()=>{
+    const ref=quickCard;if(!ref||ref.qtyBusy||ref.game!==T.game())return;const input=document.querySelector('#quickLotValue'),raw=input?.value||'',value=raw===''?null:Number(raw);
+    if(value!==null&&(!Number.isFinite(value)||value<0))return toast('Enter a non-negative value or leave it blank.');
+    await commit(state=>{const st=ref.game==='mtg'?state:state.tcg[ref.game],e=st.collection.find(x=>x.id===ref.selectedLot);if(e){e.manualValue=value;e.manualValueCondition=conditionName(e.condition);}}, {undo:'Updated this copy’s value.'});
+    if(quickCard===ref)await cardQuickMenu({quickRef:ref});
   };
   A.quickOwn = () => {
     if (!quickCard || quickCard.game !== T.game()) return;
@@ -1148,6 +1167,7 @@ const tierSync = () => {
 if (typeof MutationObserver !== "undefined") new MutationObserver(() => { if (!tierQueued) { tierQueued = true; requestAnimationFrame(tierSync); } }).observe(document.body, { childList: true, subtree: true });
 attachSuggest();
 attachGlassSelects();
+document.addEventListener("change",e=>{if(e.target.matches?.("#addCondition,#addFinish,#addLanguage,#tCond,#tPrint,#tEdition")){for(const n of document.querySelectorAll("#lotManualValue,#quickLotValue"))n.value="";}});
 document.addEventListener("submit",e=>{
  const form=e.target.closest?.('[data-auth-action]');if(!form)return;
  e.preventDefault();const action=A[form.dataset.authAction];if(action)safely(action(form.querySelector('button[type="submit"]')));
@@ -1366,7 +1386,7 @@ A.menu = () => { closeSheet(); S.ui.settingsTab="account"; go("#settings"); };
 A.card = async (t) => {
   S.ui.sheetBack = S.ui.sheetCtx?.type === "idea" && $("#sheet").open ? { type: "idea", i: S.ui.sheetCtx.i } : null;
   const name = t.dataset.name,
-    ctx = { type: "card", name, deckId: t.dataset.deck || (S.ui.view === "deck" ? currentDeck()?.id : null), random: !!t.dataset.random };
+    ctx = { type: "card", name, entryId:t.dataset.entry||"", deckId: t.dataset.deck || (S.ui.view === "deck" ? currentDeck()?.id : null), random: !!t.dataset.random };
   const print = t.dataset.setI !== undefined ? S.ui.set.cards[Number(t.dataset.setI)] : null;
   if (print) {
     if (!meta(name)) cacheCard(print);
@@ -2363,6 +2383,7 @@ function addSheet(entry = null, preset = {}) {
       ${locationPicker(S.state,"mtg","addLocation",entry ? entry.location || "" : preset.location ?? null)}
     </div>
     <details class="more" ${entry?.set || preset.set ? "open" : ""}><summary>Exact printing (optional)</summary><div class="grid2"><label>Set code<input id="addSet" placeholder="e.g. CMM" value="${esc(entry?.set || preset.set || "")}"></label><label>Collector #<input id="addNumber" value="${esc(entry?.collectorNumber || preset.number || "")}"></label></div><p class="muted small">Leave blank if unsure — CardStashy never guesses an edition.</p></details>
+    <details class="more"><summary>Value for this condition</summary><label>Your value per copy (USD, optional)<input id="lotManualValue" type="number" min="0" step="0.01" value="${Number.isFinite(entry?.manualValue)?entry.manualValue:''}" placeholder="No condition quote"></label><p class="foot">A played or damaged copy without a matching quote is excluded from value totals. Enter your own value to include it.</p></details>
     <p id="addError" class="error" role="alert"></p>
     <div class="actions"><button class="btn" data-act="addSave" ${lookup ? "" : "disabled"} id="addSaveBtn">${entry ? "Save changes" : "Add to collection"}</button><button class="link small" data-act="addSaveRaw">Save without lookup</button>${entry ? `<button class="link small danger" data-act="addDelete">Delete</button>` : ""}</div>`,
     S.ui.sheetCtx,
@@ -2418,8 +2439,11 @@ async function saveLot(unverified) {
   if (!name) return (err.textContent = "Look up or type a card name first.");
   const qty = Number($("#addQty").value);
   if (!Number.isInteger(qty) || qty < 1 || qty > 100000) return (err.textContent = "Copies must be a whole number from 1 to 100000.");
+  const rawValue=$("#lotManualValue")?.value||"",manualValue=rawValue===""?null:Number(rawValue);
+  if(manualValue!==null&&(!Number.isFinite(manualValue)||manualValue<0))return(err.textContent="Enter a non-negative value or leave it blank.");
   const e = {
     ...(editing || {}),
+    manualValue,manualValueCondition:conditionName($("#addCondition").value),
     id: editing?.id || uid(),
     name,
     qty,
@@ -3094,7 +3118,7 @@ C.setGlass = (t) => {
 };
 // Tap a card image: full-screen, high-resolution, zoomable.
 A.zoomCard = (t) =>
-  openZoom({ src: t.dataset.src, hi: t.dataset.hi || (/scryfall\.io/.test(t.dataset.src) ? scryfallHi(t.dataset.src) : ""), art: t.dataset.art, alt: t.dataset.name || "Card", fallback: t.dataset.fallback || "" });
+  openZoom({ src: t.dataset.src, hi: t.dataset.hi || (/scryfall\.io/.test(t.dataset.src) ? scryfallHi(t.dataset.src) : ""), art: t.dataset.art, alt: t.dataset.name || "Card", fallback: t.dataset.fallback || "", holdCard:{holdCard:"true",id:t.dataset.id||"",name:t.dataset.name||"",entry:t.dataset.entry||""} });
 // Card sheet Meta tab: fetch tournament results, then redraw the open sheet.
 A.deckMetaLoad = (t) => {
   const p = loadMetaData(t.dataset.key).catch(() => toast("Couldn’t load tournament results right now."));

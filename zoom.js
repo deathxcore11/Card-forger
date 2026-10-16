@@ -4,7 +4,7 @@
 
 const MAX = 6;
 
-export function openZoom({ src, hi, alt = "Card", art = "", artHi = "", fallback = "" }) {
+export function openZoom({ src, hi, alt = "Card", art = "", artHi = "", fallback = "", holdCard=null }) {
   const views = [{ id: "card", label: "Card", src, hi: hi || src }];
   if (art) views.push({ id: "art", label: "Art", src: art, hi: artHi || art });
   const dlg = document.createElement("dialog");
@@ -19,6 +19,7 @@ export function openZoom({ src, hi, alt = "Card", art = "", artHi = "", fallback
   dlg.showModal();
   document.documentElement.classList.add("zoom-open");
 
+  if(holdCard)Object.assign(dlg.querySelector(".zoom-img").dataset,holdCard);
   const stage = dlg.querySelector(".zoom-stage"),
     im = dlg.querySelector(".zoom-img"),
     res = dlg.querySelector(".zoom-res");
@@ -107,6 +108,7 @@ export function openZoom({ src, hi, alt = "Card", art = "", artHi = "", fallback
   let downOnBackdrop = false,
     downAt = null;
   stage.addEventListener("pointerdown", (e) => {
+    if(e.button!==0)return;
     // Note where the finger landed before capturing (capture retargets later events to the stage).
     downOnBackdrop = e.target === stage;
     downAt = { x: e.clientX, y: e.clientY, t: Date.now() };

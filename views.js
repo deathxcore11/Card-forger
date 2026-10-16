@@ -1,3 +1,4 @@
+import {conditionValueNote} from './condition-value.js';
 import { aiReviewPanel } from './ai-review.js';
 import { rankPairs } from "./pairing.js";
 import { APP_VERSION } from "./config.js";
@@ -363,7 +364,7 @@ export function cardSheet(c, ctx = {}) {
   const finishes = ["nonfoil", "foil", "etched"].filter((f) => quoteOfFinish(shown, f));
   const overview = `
     <div class="cs-card">
-      <div class="cd-art-stack"><div class="cd-img"><button class="cd-zoom" data-act="zoomCard" data-src="${esc(image || "")}" data-hi="${esc(imgFaces?.length > 1 ? imgFaces[face]?.image_uris?.png || "" : shown.image_uris?.png || "")}" data-art="${esc(heroArt || "")}" data-name="${esc(name)}" aria-label="Enlarge ${esc(name)}">${img(image, name, "card-img")}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button></div>${imgFaces?.length > 1 ? `<button class="btn ghost small block" data-act="flipFace">↻ Flip to ${esc(imgFaces[face ? 0 : 1].name)}</button>` : ""}</div>
+      <div class="cd-art-stack"><div class="cd-img"><button class="cd-zoom" data-hold-card="true" data-entry="${esc(ctx.entryId||ctx.entry||'')}" data-act="zoomCard" data-src="${esc(image || "")}" data-hi="${esc(imgFaces?.length > 1 ? imgFaces[face]?.image_uris?.png || "" : shown.image_uris?.png || "")}" data-art="${esc(heroArt || "")}" data-name="${esc(name)}" aria-label="Enlarge ${esc(name)}">${img(image, name, "card-img")}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button></div>${imgFaces?.length > 1 ? `<button class="btn ghost small block" data-act="flipFace">↻ Flip to ${esc(imgFaces[face ? 0 : 1].name)}</button>` : ""}</div>
       <div class="cs-card-side">${alertStatus("mtg",trackedQuote("mtg",shown)?.id,name)}
         <p class="small own-line">${i.owned ? `<b class="ok-text">You own ${i.owned}</b> · ${i.available} free${i.reserved ? ` · ${i.reserved} reserved` : ""}` : "Not in your collection"}${inDecks.length ? ` · in ${inDecks.map((d) => esc(d.name)).join(", ")}` : ""}</p>
         <div class="chips">${roles.map((r) => `<span class="chip role-${r.toLowerCase()}">${r}</span>`).join("")}${c.edhrec_rank ? `<span class="chip">EDHREC #${Number(c.edhrec_rank).toLocaleString()}</span>` : ""}${c.reserved ? `<span class="chip">Reserved List</span>` : ""}${c.game_changer ? `<span class="chip warn">Game Changer</span>` : ""}</div>
@@ -735,7 +736,8 @@ function mtgTradeAdvice() {
   for (const e of st.collection) {
     const k = key(e.name),
       x = items.get(k) || { key: k, name: e.name, card: meta(e.name), qty: 0, inDecks: used.get(k) || 0, price: lotPrice(e, S.catalog, st.printings) };
-    x.qty += e.qty;
+    const p=lotPrice(e,S.catalog,st.printings);x.value=(x.value||0)+(p??0)*e.qty;x.unpriced=!!x.unpriced||p==null;
+    x.qty += e.qty;x.price=x.unpriced?null:x.value/x.qty;
     items.set(k, x);
   }
   return tradeAdviceHtml("mtg", tradeAdvice("mtg", [...items.values()]), (x) => `data-act="card" data-name="${esc(x.name)}"`, (p) => usd(p));
@@ -798,7 +800,7 @@ export function collectionList() {
           <span class="lot-sub">${manaCost(c)}<span>${esc((e.set || e.setName || "Any printing").toUpperCase())}${e.collectorNumber ? " #" + esc(e.collectorNumber) : ""}${e.finish !== "nonfoil" ? ` · <b class="foil">${esc(e.finish)}</b>` : ""}${e.condition && e.condition !== "Near Mint" ? " · " + esc(e.condition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></span>
           ${e.lookupFailed ? `<button class="tag warn" data-act="editLot" data-id="${e.id}">Not found — tap to fix name</button>` : !c ? `<span class="tag muted">Looking up…</span>` : ""}
         </div>
-        <div class="lot-side"><button class="price link" data-act="buyCard" data-name="${esc(e.name)}" data-lot="${esc(e.id)}" data-finish="${esc(e.finish||"nonfoil")}" aria-label="Price history and sellers for ${esc(e.name)}">${usd(unit === null ? null : unit * e.qty)}</button>
+        <div class="lot-side"><button class="price link" data-act="buyCard" data-name="${esc(e.name)}" data-lot="${esc(e.id)}" data-finish="${esc(e.finish||"nonfoil")}" aria-label="Price history and sellers for ${esc(e.name)}">${usd(unit === null ? null : unit * e.qty)}</button>${e.condition&&e.condition!=="Near Mint"?`<small class="condition-value-note">${esc(conditionValueNote(e))}</small>`:""}
           <span class="stepper"><button data-act="qty" data-id="${e.id}" data-delta="-1" aria-label="Remove one">−</button><b>${e.qty}</b><button data-act="qty" data-id="${e.id}" data-delta="1" aria-label="Add one">＋</button></span>
           <button class="link small" data-act="editLot" data-id="${e.id}">Edit</button>
         </div>
@@ -811,12 +813,11 @@ function collectionValueView() {
   const st = S.state,
     v = collectionValue(st.collection, S.catalog, st.printings, st.decks),
     hist = st.valueHistory || [],
-    first = hist[0],
     colorNames = { W: "White", U: "Blue", B: "Black", R: "Red", G: "Green", Multi: "Multicolor", Colorless: "Colorless" },
     maxColor = Math.max(1, ...Object.values(v.colors));
   if (!st.collection.length) return empty("No value to track yet", "Add cards and CardStashy records your collection value once a day so you can watch it change.");
   return `<section class="panel">
-    <div class="row between"><div><p class="eyebrow">Estimated value</p><p class="big" data-count="${v.total.toFixed(2)}" data-money="1">${usd(v.total)}</p><p class="muted small">${v.copies} copies${v.unpriced ? ` · ${v.unpriced} without a price` : ""}${first && first.total && first.date !== new Date().toISOString().slice(0, 10) ? ` · ${signed(v.total - first.total, (x) => usd(x))} since ${esc(first.date)}` : ""}</p></div><button class="btn ghost small" data-act="refreshPrices">↻ Refresh prices</button></div>
+    <div class="row between"><div><p class="eyebrow">Estimated value</p><p class="big" data-count="${v.total.toFixed(2)}" data-money="1">${usd(v.total)}</p><p class="muted small">${v.copies} copies${v.unpriced ? ` · ${v.unpriced} without a price` : ""}</p></div><button class="btn ghost small" data-act="refreshPrices">↻ Refresh prices</button></div>
     ${lineChart(hist)}
   </section>
   <section class="panel"><h3>By color</h3>${Object.entries(v.colors)
