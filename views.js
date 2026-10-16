@@ -1,3 +1,4 @@
+import {brandMark} from './brand.js';
 import {conditionValueNote} from './condition-value.js';
 import { aiReviewPanel } from './ai-review.js';
 import { rankPairs } from "./pairing.js";
@@ -46,7 +47,7 @@ import { printingState } from "./confidence.js";
 import { complexity } from "./planner.js";
 import {
   engineProfile, engineRoles, goldfish, scoreGrade, diffCards, deckValue,
-  collectionValue, lotPrice, swapImpact, applySwapsToCards, cardSig,
+  collectionValue, recordValuePoint, lotPrice, swapImpact, applySwapsToCards, cardSig,
 } from "./insights.js";
 import { bracketEstimate, manaBase, isOut, deckReview, explainSwap, podSpeed } from "./extras.js";
 import { buildability, rankBuildable } from "./share.js";
@@ -83,7 +84,7 @@ export function home() {
   const st = S.state,
     copies = sumQty(st.collection),
     value = collectionValue(st.collection, S.catalog, st.printings, st.decks),
-    hist = st.valueHistory || [],
+    hist = recordValuePoint(st.valueHistory || [], value.total, value.copies),
     prev = hist.length > 1 ? hist[hist.length - 2] : null,
     change = prev ? value.total - prev.total : null,
     active = deckById(st.activeDeck),
@@ -602,7 +603,7 @@ export function buildSheet() {
     seed = meta(B.seed),
     fmts = seed ? formatsFor(seed, ALL_FORMATS) : [],
     tiers = B.results[B.format] || null;
-  return `<div class="sheet-head"><h2>Build decks</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
+  return `<div class="sheet-head"><h2 class="build-heading">${brandMark("brand-idle")}<span>Build decks</span></h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   <div class="build-seed">${img(art(seed), B.seed, "mini-art")}<div><small class="muted">Built around</small><b>${esc(B.seed)}</b>${seed ? colorDots(seed) : ""}</div><button class="btn ghost small" data-act="buildRandom" data-format="${esc(B.format)}">🎲 Random card</button></div>
   <p class="muted small">Pick a format for a complete, legal deck at each budget, using your cards first. Basic lands count as owned.</p>
   <div class="fmt-chips">${fmts.map((f) => `<button class="chip pick ${f.name === B.format ? "on" : ""}" ${B.busy?"disabled":""} data-act="buildFormat" data-format="${esc(f.name)}">${esc(f.name)}</button>`).join("") || '<span class="muted small">This card isn’t legal in any constructed format.</span>'}</div>
@@ -812,12 +813,12 @@ export function collectionList() {
 function collectionValueView() {
   const st = S.state,
     v = collectionValue(st.collection, S.catalog, st.printings, st.decks),
-    hist = st.valueHistory || [],
+    hist = recordValuePoint(st.valueHistory || [], v.total, v.copies),
     colorNames = { W: "White", U: "Blue", B: "Black", R: "Red", G: "Green", Multi: "Multicolor", Colorless: "Colorless" },
     maxColor = Math.max(1, ...Object.values(v.colors));
   if (!st.collection.length) return empty("No value to track yet", "Add cards and CardStashy records your collection value once a day so you can watch it change.");
   return `<section class="panel">
-    <div class="row between"><div><p class="eyebrow">Estimated value</p><p class="big" data-count="${v.total.toFixed(2)}" data-money="1">${usd(v.total)}</p><p class="muted small">${v.copies} copies${v.unpriced ? ` · ${v.unpriced} without a price` : ""}</p></div><button class="btn ghost small" data-act="refreshPrices">↻ Refresh prices</button></div>
+    <div class="row between"><div><p class="eyebrow">Your collection value</p><p class="big" data-count="${v.total.toFixed(2)}" data-money="1">${usd(v.total)}</p><p class="muted small">${v.copies} copies${v.unpriced ? ` · ${v.unpriced} without a price` : ""}</p></div><button class="btn ghost small" data-act="refreshPrices">↻ Refresh prices</button></div>
     ${lineChart(hist)}
   </section>
   <section class="panel"><h3>By color</h3>${Object.entries(v.colors)

@@ -44,3 +44,11 @@ assert.match(lineChart(history(0,10)),/Total change/);
 assert.doesNotMatch(lineChart(history(0,10)),/Infinity|NaN/);
 assert.match(lineChart(history(10,10)),/Unchanged/);
 console.log('PASS: shared collection value graph shows signed dollar and percentage changes, zero baseline and unchanged states.');
+
+assert.match(lineChart([{date:'2026-10-16',total:215}]),/Collection value over time/);
+assert.match(lineChart([{date:'2026-10-16',total:215}]),/Starting value/);
+assert.doesNotMatch(lineChart([{date:'2026-10-16',total:215}]),/second day of tracking/);
+const {conditionPriceHtml}=await import('./condition-value.js');
+assert.match(conditionPriceHtml(null,{condition:'LP'}),/Lightly Played[\s\S]*Condition price unavailable/);
+assert.match(conditionPriceHtml(60,{condition:'Damaged',manualValue:60}),/\$60.00/);
+console.log('PASS: first-day graph remains visible and selected condition price is explicit.');

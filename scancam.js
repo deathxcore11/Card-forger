@@ -1016,10 +1016,13 @@ export function registerScanner(ctx) {
   const hydrateCandidate=(G,c)=>{
     if(!c.localReference)return Promise.resolve(c);
     const key=G+":"+c.id;
-    if(!hydration.has(key))hydration.set(key,Promise.resolve(ctx.candById?.(G,c.id,c.why,c.exact)).then(full=>{
-      if(!full?.card || scanNameKey(full.name)!==scanNameKey(c.name))throw Error("Card details are unavailable. Connect and try again.");
-      return {...full,exact:c.exact,print:c.print||full.print,sub:c.sub,localReference:false};
-    }).finally(()=>hydration.delete(key)));
+    if(!hydration.has(key))hydration.set(key,(async()=>{
+      for(let attempt=0;attempt<2;attempt++)try{
+        const full=await ctx.candById?.(G,c.id,c.why,c.exact);
+        if(!full?.card || scanNameKey(full.name)!==scanNameKey(c.name))throw Error("Card details are unavailable. Connect and try again.");
+        return {...full,exact:c.exact,print:c.print||full.print,sub:c.sub,localReference:false};
+      }catch(e){if(attempt===1)throw e;await new Promise(resolve=>setTimeout(resolve,250));}
+    })().finally(()=>hydration.delete(key)));
     return hydration.get(key);
   };
   A.scanCatalogDownload=async()=>{
@@ -1048,7 +1051,7 @@ export function registerScanner(ctx) {
   A.scanConfirm = async () => {
     const st=s(),q=st.confirm,c=st.cands?.[q?.i||0],G=game();
     if(!q||!c||q.saving)return;
-    q.saving=true;q.error="";render();
+    q.saving=true;q.error="";q.errorDetail="";render();
     try {
       const resolved=await hydrateCandidate(G,c);
       if(s()!==st||game()!==G||st.confirm!==q)return;
@@ -1058,7 +1061,7 @@ export function registerScanner(ctx) {
       if(s()!==st||game()!==G)return;
       feedback("ok",prefs());flash(`Saved ${item.qty} × ${c.name}`);
       resetConfirmation("Saved. Move to the next card.");
-    } catch {if(s()===st&&game()===G){q.saving=false;q.error="Couldn't save this card. Your match is still here; try again.";render();}}
+    } catch(e) {if(s()===st&&game()===G){q.saving=false;q.errorDetail=String(e?.stack||e?.message||e);q.error="Couldn't save this card. Your match is still here; try again.";render();}}
   };
   ctx.confirmKey = e => {
     if(document.querySelector?.("#sheet[open], .zoom-overlay, .tour"))return;

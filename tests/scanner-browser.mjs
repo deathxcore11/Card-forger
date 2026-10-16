@@ -95,7 +95,7 @@ try{
    assert(await page.locator('#scanVideo').evaluate(v=>v.srcObject===window.__cameraStream&&v.srcObject.getTracks()[0].readyState==='live'),'dismiss keeps the same live camera stream');
    console.log(`PASS: ${ref.game}: reference MediaStream → viewfinder crop → correct popup → playback continues → dismiss retains the same active camera track.`);
   }catch(e){
-   console.error(`FAIL ${ref.game}: ${e.stack}`);console.error((await page.locator('main').innerText()).slice(0,6000));
+   console.error(`FAIL ${ref.game}: ${e.stack}`);console.error('Scan save diagnostic:',await page.evaluate(async()=>{const {S}=await import('/store.js');return S.ui.scan.confirm?.errorDetail||'No save exception';}));console.error((await page.locator('main').innerText()).slice(0,6000));
    await page.screenshot({path:`test-results/scanner-${ref.g}-failure.png`,fullPage:true});throw e;
   }finally{await context.close();}
  }

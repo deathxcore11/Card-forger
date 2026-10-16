@@ -1,3 +1,4 @@
+import {brandMark} from './brand.js';
 import {conditionValue,conditionValueNote,conditionName} from './condition-value.js';
 import { aiReviewPanel } from './ai-review.js';
 import { myPrice } from "./mtg-tcgprice.js";
@@ -725,12 +726,13 @@ export function tcgAddSheet(c, preset = "") {
   <div class="build-seed">${imgTag(c, "mini-art")}<div><b>${esc(c.name)}</b><small class="muted">${esc(c.typeLine || "")}</small></div><span></span></div>
   <div class="grid2">
     <label>Copies<input id="tQty" type="number" min="1" max="999" value="1"></label>
-    <label>Condition<select id="tCond">${options(["Near Mint", "Lightly Played", "Moderately Played", "Heavily Played", "Damaged"].map((x) => [x, x]), "Near Mint")}</select></label>
+    <label>Condition<select id="tCond" aria-label="Condition">${options(["Near Mint", "Lightly Played", "Moderately Played", "Heavily Played", "Damaged"].map((x) => [x, x]), "Near Mint")}</select></label>
     ${opts.length ? `<label class="span2">${g === "ygo" ? "Printing (set code · rarity)" : "Version"}<select id="tPrint">${options([["", g === "ygo" ? "Not sure / any printing" : "Not sure"], ...opts], opts.some((o) => o[0] === preset) ? preset : "")}</select></label>` : ""}
     ${g === "ygo" ? `<label class="span2">Edition<select id="tEdition">${options([["", "Not sure"], ["1st-edition", "First Edition"], ["unlimited", "Unlimited"], ["limited", "Limited Edition"]], "")}</select></label><p class="foot span2">Set prices do not distinguish editions. An edition-specific value stays unknown; verify it with the seller.</p>` : `<p class="foot span2">Versions without a price are still collectible. The source image may represent a different edition; confirm stamps and borders yourself.</p>`}
     ${locationPicker(S.state,g,"tLoc")}
   </div>
-  <details class="more"><summary>Value for this condition</summary><label>Your value per copy (USD, optional)<input id="lotManualValue" type="number" min="0" step="0.01" placeholder="No condition quote"></label><p class="foot">Reference amounts in Version describe that printing, not its condition. Played or damaged copies without a matching quote are excluded from totals unless you enter a value.</p></details>
+  <section id="conditionPricePreview" class="condition-price-preview" role="status" aria-label="Selected condition value"></section>
+  <details class="more" open><summary>Value for this condition</summary><label>Your value per copy (USD, optional)<input id="lotManualValue" type="number" min="0" step="0.01" placeholder="No condition quote"></label><p class="foot">Reference amounts in Version describe that printing, not its condition. Played or damaged copies without a matching quote are excluded from totals unless you enter a value.</p></details>
   <button class="btn block" data-act="tOwnSave" data-id="${esc(c.id)}">Add to collection</button>`;
 }
 
@@ -787,7 +789,7 @@ function tcgValueView(g) {
   const tabs = segmented("tCollTab", "value", [["cards", "Cards"], ["binders", "Binders"], ["value", "Value"]]);
   if (!st.collection.length) return `<div class="page-head"><h1>Collection</h1></div>${tabs}<section class="empty"><h3>No value to track yet</h3><p>Add cards and CardStashy records your collection value once a day so you can watch it change.</p></section>${alertsPanel(g)}`;
   return `<div class="page-head"><h1>Collection</h1></div>${tabs}
-  <section class="panel"><p class="eyebrow">Estimated value</p><p class="big" data-count="${v.total.toFixed(2)}" data-money="1">${usd(v.total)}</p><p class="muted small">${v.copies} cards${v.unpriced ? ` · ${v.unpriced} without a price` : ""}</p>${lineChart(hist)}</section>
+  <section class="panel"><p class="eyebrow">Your collection value</p><p class="big" data-count="${v.total.toFixed(2)}" data-money="1">${usd(v.total)}</p><p class="muted small">${v.copies} cards${v.unpriced ? ` · ${v.unpriced} without a price` : ""}</p>${lineChart(hist)}</section>
   <section class="panel"><h3>Most valuable</h3><div class="list compact">${top.map((x) => `<button class="mini-row" data-act="tCard" data-id="${esc(x.e.cardId)}"><span class="ellip">${x.e.qty > 1 ? x.e.qty + "× " : ""}${esc(x.e.name)}</span><b>${usd(x.total)}</b></button>`).join("")}</div></section>
   ${tcgTradeAdvice(g)}
   ${alertsPanel(g)}`;
@@ -1527,7 +1529,7 @@ export function tcgBuildSheet() {
     seed = cardOf(g, B.seed),
     fmts = buildable(g, seed),
     tiers = B.results[B.format];
-  return `<div class="sheet-head"><h2>Build decks</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
+  return `<div class="sheet-head"><h2 class="build-heading">${brandMark("brand-idle")}<span>Build decks</span></h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   ${(B.seeds?.length || 1) > 1
     ? `<div class="build-seed multi"><div class="seed-strip">${B.seeds.slice(0, 8).map((id) => imgTag(cardOf(g, id), "mini-art")).join("")}</div><div><small class="muted">Built around</small><b>${B.seeds.length} of your cards</b><small class="muted">${esc([...new Set(B.seeds.map((id) => cardOf(g, id)?.archetype || "").filter(Boolean))].slice(0, 3).join(", ") || seed?.name || "")}</small></div></div>`
     : `<div class="build-seed">${imgTag(seed, "mini-art")}<div><small class="muted">Built around</small><b>${esc(seed?.name || "")}</b><small class="muted">${esc(seed?.archetype ? "Archetype: " + seed.archetype : seed?.typeLine || "")}</small></div><button class="btn ghost small" data-act="tRandomDeck" ${B.busy ? "disabled" : ""}>🎲 Random card</button></div>`}
@@ -2822,19 +2824,19 @@ export function registerTcg(c) {
           // A part-built deck always fails the size rule; only refuse cards that add a new problem.
           const bad = (d) => SOURCES[G].validate(d, (id) => cardOf(G, id), f).filter((x) => x.level === "bad" && !/\b(?:cards?|Main Deck)\b[^.]*\b(?:needs?|has|must|exactly)\b|\bneeds? \d+|\b\d+ cards?\b/i.test(x.text)).length,
             baseBad = bad(t);
-          const filled = fillOpen(t, budgets[i], { pool: upPool, quality: tquality, count: mainCount, size: deckSize, cost, accept: (d) => bad(d) <= baseBad, maxCopies: (card) => SOURCES[G].limit(card, f), have: (d, card) => (d.zones.main || []).filter((r) => r.cardId === card.id).reduce((a, r) => a + r.qty, 0), add: (d, card) => { const main = structuredClone(d.zones.main || []), hit = main.find((r) => r.cardId === card.id); if (hit) hit.qty++; else main.push({ cardId: card.id, name: card.name, qty: 1 }); return { ...d, zones: { ...d.zones, main }, proven: null }; } });
+          const filled = fillOpen(t, budgets[i], { pool: upPool, quality: tquality, count: mainCount, size: deckSize, cost, tolerance:0, accept: (d) => bad(d) <= baseBad, maxCopies: (card) => SOURCES[G].limit(card, f), have: (d, card) => (d.zones.main || []).filter((r) => r.cardId === card.id).reduce((a, r) => a + r.qty, 0), add: (d, card) => { const main = structuredClone(d.zones.main || []), hit = main.find((r) => r.cardId === card.id); if (hit) hit.qty++; else main.push({ cardId: card.id, name: card.name, qty: 1 }); return { ...d, zones: { ...d.zones, main }, proven: null }; } });
           if (filled !== t) {
             const pw = evaluate(filled);
             results[i] = { ...filled, total: mainCount(filled), open: Math.max(0, deckSize - mainCount(filled)), assessment: pw, power: pw.score };
           }
         }
         const t2 = results[i];
-        const up = await spendUp(t2, budgets[i], { pool: upPool, quality: tquality, rows: trows, swap: tswap, cost, evaluate, accept: accept2, protect: tprotect, maxCopies: (card) => SOURCES[G].limit(card, f), status });
+        const up = await spendUp(t2, budgets[i], { pool: upPool, quality: tquality, rows: trows, swap: tswap, cost, evaluate, accept: accept2, protect: tprotect, tolerance:0, maxCopies: (card) => SOURCES[G].limit(card, f), status });
         if (up.swaps.length) results[i] = { ...t2, ...up.deck, cost: up.cost, assessment: up.power, power: up.power.score, upgrades: up.swaps };
         // Yu-Gi-Oh!: a fuller Extra Deck is the next best use of the money (more lines and outs).
         if (G === "ygo" && budgets[i]) {
           let d = results[i];
-          const cap = budgets[i] === Infinity ? Infinity : budgets[i] + 10,
+          const cap = budgets[i],
             ext = upPool.filter((x) => x?.extra && SOURCES.ygo.legality(x, f) !== "not_legal").sort((a, b) => tquality(b) - tquality(a)),
             added = [];
           for (const x of ext) {

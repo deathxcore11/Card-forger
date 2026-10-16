@@ -63,3 +63,26 @@ assert.equal(original.cards[1].qty,3);
 const refined=await refineCandidates([original],{neighbors:d=>towardDeck(d,target,{protectedKeys:new Set(['anchor'])}),evaluate:d=>p(d.cards.filter(r=>r.name==='engine').reduce((n,r)=>n+r.qty*10,50)),cost:()=>({cost:25,unknown:0})});
 assert.ok(refined.some(d=>d.power===80));
 console.log('PASS: distinct budget explanations, honest $10 / $700 next steps, proven engine priority, quantity-preserving package search and seed protection.');
+
+// A complete budget starter beats a higher-scoring unfinished list in every game.
+for(const game of ['mtg','ptcg','ygo']){
+ const size={mtg:100,ptcg:60,ygo:40}[game],deck=n=>game==='mtg'?{cards:[{name:'core',qty:n}],size}:{zones:{main:[{cardId:'core',qty:n}]},size};
+ const choices=[{...deck(size-13),score:95,cost:49.9},{...deck(size),score:55,cost:35}];
+ assert.equal(bestBudgetDecks(choices,[50],{evaluate:d=>p(d.score),cost:d=>({cost:d.cost,unknown:0})})[0].cost,35);
+}
+const {buildDeck}=await import('./builder.js'),{cardKey}=await import('./core.js'),{buildYgo,buildPtcg}=await import('./tcgbuild.js');
+const mtg=(name,usd,type='Creature — Soldier',rank=10000)=>({name,type_line:type,oracle_text:'',cmc:2,mana_cost:'{1}{R}',color_identity:['R'],legalities:{commander:'legal'},edhrec_rank:rank,prices:{usd:String(usd)}});
+const seed=mtg('Budget leader',1,'Legendary Creature — Dragon',1),pool=[seed,...Array.from({length:10},(_,i)=>mtg('Premium dragon '+i,8,'Creature — Dragon',1)),...Array.from({length:20},(_,i)=>mtg('Cheap '+i,.05)),...Array.from({length:60},(_,i)=>mtg('Fallback '+i,.6))];
+const built=buildDeck({format:'Commander',seeds:[seed],catalog:Object.fromEntries(pool.map(c=>[cardKey(c.name),c])),available:()=>0,price:c=>Number(c.prices?.usd)||null,budget:50});
+assert.equal(built.total,100);assert.equal(built.open,0);assert(built.cost<=50);assert(built.cards.some(r=>r.name===seed.name));
+const ys={id:1,name:'Budget seed',category:'Monster',level:4,usd:5},staples=Array.from({length:15},(_,i)=>({id:10+i,name:'Support '+i,category:'Spell',usd:.3}));
+const yb=buildYgo({f:{main:[40,60],extra:15},seed:ys,archetype:[ys],staples,limit:()=>3,legal:()=> 'legal',owned:()=>0,price:c=>c.usd,budget:20});
+assert.equal(yb.total,40);assert(yb.cost<=20);assert(yb.zones.main.some(r=>r.cardId===1));assert(yb.zones.main.every(r=>r.qty<=3));
+const basic={id:'basic',name:'Budget Basic',stage:'Basic',usd:2},energy={id:'energy',name:'Basic Fire Energy',basicEnergy:true,usd:0},trainers=[{card:{id:'premium',name:'Premium Trainer',usd:8},want:4},...Array.from({length:12},(_,i)=>({card:{id:'trainer'+i,name:'Budget Trainer '+i,usd:.4},want:4}))];
+const pb=buildPtcg({line:[{card:basic,want:4}],trainers,energy:[energy],owned:()=>0,price:c=>c.usd,budget:25});
+assert.equal(pb.total,60);assert(pb.cost<=25);assert.equal(pb.zones.main.find(r=>r.cardId==='basic').qty,4);assert(pb.zones.main.filter(r=>r.cardId!=='energy').every(r=>r.qty<=4));
+const {fillOpen}=await import('./deck-optimizer.js');
+const filled=fillOpen({cards:[]},1,{pool:[{name:'expensive',usd:1},{name:'cheap',usd:.25}],quality:c=>c.name==='expensive'?100:1,count:d=>d.cards.length,size:4,add:(d,c)=>({cards:[...d.cards,c]}),cost:d=>({cost:d.cards.reduce((n,c)=>n+c.usd,0),unknown:0}),maxCopies:()=>4,have:(d,c)=>d.cards.filter(r=>r.name===c.name).length,tolerance:0});
+assert.equal(filled.cards.length,4);assert.equal(filled.cost,1);
+const {buildOverlay}=await import('./build-overlay.js');assert.match(buildOverlay(),/stashy-logo brand-loading/);assert.doesNotMatch(buildOverlay(),/build-fan/);
+console.log('PASS: complete affordable starters beat unfinished high-score lists; MTG 100, Pokémon 60 and YGO 40 fit hard budgets; cheapest-first filling and canonical build logo.');

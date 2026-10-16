@@ -37,6 +37,7 @@ try{
   await page.evaluate(scale=>document.body.style.zoom=scale,textScale);
   const clipped=await page.locator('#sheetBody button, #sheetBody .sh-title, #sheetBody h2, #sheetBody .stat-grid small, #sheetBody .stat-grid b, #sheetBody .stat-grid p').evaluateAll(nodes=>nodes.filter(n=>n.scrollWidth>n.clientWidth+2).map(n=>({text:n.textContent,width:n.clientWidth,scroll:n.scrollWidth})));
   assert.equal(await page.locator('.cd-art-stack > .btn').evaluate(n=>!!n.closest('.cd-img')),false,'flip label is outside the animated card surface');
+  assert(await page.locator('.cs-tabs').evaluate(n=>n.clientHeight<=n.querySelector('button').clientHeight+22),'pill bar is a single horizontally scrollable row');
   assert.deepEqual(clipped,[],`${game} ${width}px full labels must wrap, not clip`);
   assert(await page.locator('#sheetBody').evaluate(n=>n.scrollWidth<=n.clientWidth+2),'no horizontal clipping hidden by sheet overflow');
   assert(await page.locator('.cs-panel').evaluate(n=>n.querySelector('.cd-art-stack > .btn').getBoundingClientRect().bottom<=n.querySelector('.card-actions').getBoundingClientRect().top+2),'wrapped flip control does not overlap collection actions');
