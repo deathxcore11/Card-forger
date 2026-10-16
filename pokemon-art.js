@@ -5,7 +5,7 @@
 const MONTH = 60 * 60 * 24 * 30;
 // Words of a set name, singular ("Energies" and "Energy" match), "HS" read as HGSS.
 const words = (s) => (String(s || "").toLowerCase().replace(/\bhs\b/g, "hgss").replace(/pok[eé]mon/g, "").match(/[a-z0-9]+/g) || []).map((w) => (w.length > 4 ? w.replace(/ies$/, "y").replace(/s$/, "") : w));
-const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+const norm = (s) => String(s || "").normalize("NFKD").toLowerCase().replace(/[^a-z0-9]/g, "");
 const numKey = (s) => {
   const first = String(s || "").split("/")[0].trim().toUpperCase();
   return /^\d+$/.test(first) ? String(Number(first)) : first.replace(/^([A-Z]+)0+(\d)/, "$1$2");
@@ -19,22 +19,25 @@ export function pickGroup(groups, setName) {
   const want = words(setName).filter((w) => !["trainer", "kit", "collection", "set"].includes(w) || words(setName).length < 3);
   if (!want.length) return null;
   const hits = (groups || []).filter((g) => { const have = new Set(words(g.name)); return want.every((w) => have.has(w)); });
-  return hits.sort((a, b) => a.name.length - b.name.length)[0] || null;
+  const exact = hits.filter(g=>norm(g.name)===norm(setName));
+  if(exact.length) return exact.length===1?exact[0]:null;
+  hits.sort((a,b)=>a.name.length-b.name.length);
+  return hits.length && (hits.length===1 || hits[0].name.length<hits[1].name.length)?hits[0]:null;
 }
 
-// The card in the group's products: same collector number, and a name that starts with the card's.
+// The card in the group's products: same collector number and exact card name.
 // Reprint collections with no numbering of their own (TCGdex: 0 official cards) keep each card's
 // original number on TCGplayer (30th Classic Collection's Charizard is 4/102 there, 001 on
 // TCGdex): for those only, the one product in the group with exactly that name.
 export function pickProduct(products, card) {
   const n = numKey(card.localId), name = norm(card.name), list = products || [];
-  const exact = list.find((p) => {
-    const num = (p.extendedData || []).find((x) => x.name === "Number")?.value;
-    return num && numKey(num) === n && norm(p.name).startsWith(name);
-  });
-  if (exact || card.set?.cardCount?.official !== 0) return exact || null;
-  const named = list.filter((p) => (p.extendedData || []).some((x) => x.name === "Number") && norm(p.name.replace(/\s+-\s+[^-]*$/, "")) === name);
-  return named.length === 1 ? named[0] : null;
+  if(!n||!name)return null;
+  // Only known finish/collector annotations may follow the name. EX/GX/V are identities.
+  const nameOf=p=>norm(String(p.name||"").replace(/\s*\((?:Holo|Holofoil|Reverse Holo(?:foil)?|Non-Holo)\)\s*$/i,"").replace(/\s+-\s+[A-Z]*\d+(?:\/\d+)?$/i,""));
+  const exact = list.filter(p=>numKey((p.extendedData||[]).find(x=>x.name==="Number")?.value)===n && nameOf(p)===name);
+  if(exact.length || card.set?.cardCount?.official!==0)return exact.length===1?exact[0]:null;
+  const named=list.filter(p=>(p.extendedData||[]).some(x=>x.name==="Number")&&nameOf(p)===name);
+  return named.length===1?named[0]:null;
 }
 
 export async function pokemonProductId(id, get) {

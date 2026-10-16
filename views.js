@@ -278,7 +278,7 @@ const quoteOfFinish = (p, f) => {
   const v = priceOfFinish(p, f);
   if (v != null) return { value: Number(v), note: "" };
   const t = tcgFallback(p, f);
-  if (t) return { value: t.value, note: t.kind === "market" ? "TCGplayer market" : "TCGplayer low" };
+  if (t) return { value: t.value, note: t.kind === "market" ? "TCGplayer market reference" : t.kind === "mid" ? "Median listing estimate" : "Lowest listing estimate" };
   // Cardmarket (Europe) often prices old and foreign printings US stores don't; shown in euros.
   const eur = f === "etched" ? null : Number(p?.prices?.[f === "foil" ? "eur_foil" : "eur"]);
   if (eur > 0) return { value: eur, cur: "EUR", note: "Cardmarket" };

@@ -1,3 +1,4 @@
+import {referenceQuote} from './price-reference.js';
 // TCGplayer prices for Magic printings Scryfall leaves unpriced (Alpha/Beta rares, old promos).
 // Fetched per set through the Worker (/api/prices/mtg-tcg), kept for a day on the device, and only
 // ever used where Scryfall has no USD price for that finish; the UI labels them as TCGplayer's.
@@ -6,7 +7,7 @@ let sets = null;
 const pending = new Set(), failed = new Map(); // set → time of a failed fetch, retried after 10 minutes
 
 function store() {
-  if (sets) return sets;
+  if (sets) { for(const [k,v] of sets)if(!Number.isFinite(v.t)||Date.now()-v.t>=TTL)sets.delete(k);return sets; }
   sets = new Map();
   try { for (const [k, v] of Object.entries(JSON.parse(localStorage.getItem(KEY) || "{}"))) if (Date.now() - v.t < TTL) sets.set(k, v); } catch {}
   return sets;
@@ -25,7 +26,7 @@ export function productIdOf(c, finish = "nonfoil") {
   try { u = decodeURIComponent(u); } catch {}
   return Number(u.match(/\/product\/(\d+)/)?.[1]) || null;
 }
-// { value, kind: "market" | "low" } or null.
+// { value, kind: "market" | "mid" | "low" } or null.
 export function tcgFallback(c, finish = "nonfoil") {
   // Only finishes this printing comes in (no "etched" Alpha card).
   if (Array.isArray(c?.finishes) && !c.finishes.includes(finish)) return null;
@@ -33,8 +34,7 @@ export function tcgFallback(c, finish = "nonfoil") {
   const s = c?.set && store().get(c.set), p = s?.prices[productIdOf(c, finish)];
   if (!p) return null;
   const sub = finish === "nonfoil" ? p.Normal : p.Foil || (finish === "etched" ? p.Normal : null);
-  const value = sub ? sub.market ?? sub.low ?? sub.mid : null;
-  return value == null ? null : { value, kind: sub.market != null ? "market" : "low" };
+  return sub ? referenceQuote(sub) : null;
 }
 // A printing needs its set's TCGplayer prices when any finish it comes in (Scryfall's `finishes`)
 // has no Scryfall USD price: a card priced only as a regular printing still needs its foil.

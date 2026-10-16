@@ -1,3 +1,4 @@
+import {referenceQuote} from './price-reference.js';
 import {applyProductPrices} from "./pokemon-prices.js";
 import {POKEMON_SET_ART} from './pokemon-set-art.js';
 import {pokemonFallback} from "./artwork.js";
@@ -17,7 +18,7 @@ const VARIANT_LABEL = { normal: "Normal", holofoil: "Holofoil", "reverse-holofoi
 // stamped promos, copyright runs and other versions omitted by pricing alone.
 export function pokemonVariants(c) {
   const legacy = Object.entries(c.pricing?.tcgplayer || {}).filter(([,v]) => v && typeof v === "object" && "marketPrice" in v)
-    .map(([key,v]) => ({ key, label: VARIANT_LABEL[key] || key, usd: n(v.marketPrice) ?? n(v.midPrice), low:n(v.lowPrice), mid:n(v.midPrice), market:n(v.marketPrice), productId:v.productId }));
+    .map(([key,v]) => ({ key, label: VARIANT_LABEL[key] || key, usd: referenceQuote(v)?.value??null, priceKind:referenceQuote(v)?.kind, low:n(v.lowPrice), mid:n(v.midPrice), market:n(v.marketPrice), productId:v.productId }));
   const out = new Map();
   const title = value => String(value).split("-").map(x => x.charAt(0).toUpperCase()+x.slice(1)).join(" ");
   for (const d of c.variants_detailed || []) {
@@ -31,7 +32,7 @@ export function pokemonVariants(c) {
     const bare = !special && !bucket && !d.pricing && !d.thirdParty?.tcgplayer;
     const key = !special && bucket ? bucket : bare ? wanted[0] : "detail:" + (d.variantId || JSON.stringify([d.type,d.subtype,d.stamp,d.size]));
     const label = [first ? "First Edition" : "", d.subtype ? title(d.subtype) : "", ...(d.stamp || []).filter(x => x !== "1st-edition").map(title), d.size && d.size !== "standard" ? title(d.size) : "", {holo:"Holofoil",reverse:"Reverse Holo",normal:"Normal"}[d.type] || title(d.type || "Version")].filter(Boolean).join(" · ");
-    out.set(key, { key, label, usd:n(q.marketPrice) ?? n(q.midPrice), low:n(q.lowPrice), mid:n(q.midPrice), market:n(q.marketPrice), productId:q.productId || d.thirdParty?.tcgplayer, cmProduct:d.thirdParty?.cardmarket, detailed:true, image: typeof d.image === "string" ? (/[.](?:webp|png|jpe?g)(?:[?]|$)/i.test(d.image) ? d.image : ptcgImage(d.image)) : "", imageLarge: typeof d.image === "string" ? (/[.](?:webp|png|jpe?g)(?:[?]|$)/i.test(d.image) ? d.image : ptcgImage(d.image,"high")) : "" });
+    out.set(key, { key, label, usd:referenceQuote(q)?.value??null, priceKind:referenceQuote(q)?.kind, low:n(q.lowPrice), mid:n(q.midPrice), market:n(q.marketPrice), productId:q.productId || d.thirdParty?.tcgplayer, cmProduct:d.thirdParty?.cardmarket, detailed:true, image: typeof d.image === "string" ? (/[.](?:webp|png|jpe?g)(?:[?]|$)/i.test(d.image) ? d.image : ptcgImage(d.image)) : "", imageLarge: typeof d.image === "string" ? (/[.](?:webp|png|jpe?g)(?:[?]|$)/i.test(d.image) ? d.image : ptcgImage(d.image,"high")) : "" });
   }
   for (const v of legacy) {
     const have = out.get(v.key);
@@ -55,22 +56,23 @@ export function applyFallbackPrices(c, hit) {
   const tp = hit?.tcgplayer?.prices || {};
   let filled = false;
   for (const [k, v] of Object.entries(tp)) {
-    const usd = n(v?.market) ?? n(v?.mid);
+    const ref=referenceQuote(v),usd=ref?.value;
     if (usd == null) continue;
     const key = PTCG_API_KEYS[k] || k,
       variant = c.variants?.find((x) => x.key === key);
     if (variant && variant.usd == null) {
-      variant.usd = usd;
+      Object.assign(variant,{usd,market:n(v.market),mid:n(v.mid),low:n(v.low),priceKind:ref.kind});
       variant.fallback = true;
       filled = true;
     } else if (!variant && !c.variants?.some((x) => x.usd != null)) {
-      (c.variants ||= []).push({ key, label: VARIANT_LABEL[key] || key, usd, fallback: true });
+      (c.variants ||= []).push({ key, label: VARIANT_LABEL[key] || key, usd, priceKind:ref.kind, fallback: true });
       filled = true;
     }
   }
   if (!filled) return false;
   const best = c.variants.find((v) => v.key === "normal" && v.usd) || c.variants.find((v) => v.usd);
   c.prices.usd = best?.usd ?? null;
+  c.prices.referenceKind=best?.priceKind||"market";
   c.prices.source = "TCGplayer market (USD, via the Pokémon TCG API)";
   c.prices.updated = hit.tcgplayer?.updatedAt || c.prices.updated;
   if (c.sets?.[0]) c.sets[0].price = c.prices.usd;
@@ -159,7 +161,7 @@ export function normalizePtcg(c) {
   return {
     game: "ptcg",
     variantSchema: 9,
-    priceFallbackSchema: 2,
+    priceFallbackSchema: 3,
     released:c.set?.releaseDate || "",
     id: c.id,
     name: c.name,
@@ -172,7 +174,7 @@ export function normalizePtcg(c) {
     set: c.set ? { id: c.set.id, name: c.set.name, number: c.localId, total: c.set.cardCount?.official, symbol: c.set.symbol || "" } : null,
     sets: c.set ? [{ code: c.set.id + " " + c.localId, name: c.set.name, rarity: c.rarity, price: best?.usd ?? null }] : [],
     variants,
-    prices: { usd: best?.usd ?? null, eur: n(cm.trend) ?? n(cm.avg), others: [], source: "TCGplayer market (USD) · Cardmarket trend (EUR)", updated: tp.updated || cm.updated || null },
+    prices: { usd: best?.usd ?? null, referenceKind:best?.priceKind||"market", eur: n(cm.trend) ?? n(cm.avg), others: [], source: "TCGplayer market (USD) · Cardmarket trend (EUR)", updated: tp.updated || cm.updated || null },
     cardmarket: { low: n(cm.low), avg: n(cm.avg), trend: n(cm.trend), avg30: n(cm.avg30), holoLow: n(cm["low-holo"]), holoAvg: n(cm["avg-holo"]), holoTrend: n(cm["trend-holo"]) },
     cmProduct: cm.idProduct || null,
     legal: { standard: !!c.legal?.standard, expanded: !!c.legal?.expanded },

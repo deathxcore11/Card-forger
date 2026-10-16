@@ -759,14 +759,14 @@ function attachBrowseObserver() {
 const autoMeta = new Set();
 let lastPageKey = "";
 const cheapChecked = new Set();
-let tcgCheckedFor = -1;
+let tcgCheckedFor = "";
 const disclosureStates=new Map();
 function render() {
-  if(S.ui.view==='collection')setTimeout(refreshCollectionConditions,0);
+  if(S.ui.view==='collection'){setTimeout(refreshCollectionConditions,0);if(T.game()==='mtg')setTimeout(()=>refreshMagicCollectionPrices().catch(()=>{}),0);}
   useMyPrices(S.state.myPrices);
   // Owned printings Scryfall leaves unpriced get TCGplayer's price (once per collection size).
-  if (S.ui.view === "collection" && S.state.collection.length !== tcgCheckedFor) {
-    tcgCheckedFor = S.state.collection.length;
+  if (S.ui.view === "collection" && String(S.state.collection.length)+":"+Math.floor(Date.now()/86400000) !== tcgCheckedFor) {
+    tcgCheckedFor = String(S.state.collection.length)+":"+Math.floor(Date.now()/86400000);
     ensureTcgPrices(S.state.collection.map((e) => (e.printingVerified && S.state.printings?.[e.printingId]) || null).filter(Boolean));
   }
   const authFields=S.ui.view === "settings" && !cloudInfo().user ? captureAuthFields(document) : [];
@@ -869,8 +869,8 @@ function render() {
     }
     // Load card data and prices for what's on screen.
     const ids = ui.view === "collection" && (!T.ui(g).coll.tab || T.ui(g).coll.tab === "cards") ? [...document.querySelectorAll(".lot-art[data-id]")].map(e=>e.dataset.id) : ui.view === "collection" || (ui.view === "decks" && ui.decksTab === "ideas") ? T.gs(g).collection.map((e) => e.cardId) : ui.view === "tdeck" ? (T.gs(g).decks.find((d) => d.id === ui.tdeckId)?.zones ? ["main", "extra", "side"].flatMap((z) => T.gs(g).decks.find((d) => d.id === ui.tdeckId).zones[z].map((r) => r.cardId)) : []) : ui.view === "home" || ui.view === "decks" ? T.gs(g).decks.flatMap((d) => (d.zones.main || []).slice(0, 1).map((r) => r.cardId)) : [];
-    const missing = ids.filter(id=>!T.cardOf(g,id)||(g==="ptcg"&&T.cardOf(g,id).variantSchema!==9));
-    const k = g + ui.view + missing.length;
+    const missing = ids.filter(id=>T.needsCardRefresh(g,T.cardOf(g,id)));
+    const k = g + ui.view + Math.floor(Date.now()/3600000) + ":" + [...new Set(missing)].sort().join(",");
     if (missing.length && navigator.onLine && !autoLoaded.has(k)) {
       autoLoaded.add(k);
       T.ensureMany(g, missing, () => {}).then(() => render());
@@ -1197,6 +1197,39 @@ function fetchConditionValue(card,entry,game,done){
   done?.(result);
  });
 }
+let magicPriceRefresh=null;
+const magicPriceAttempts=new Map();
+async function refreshMagicCollectionPrices(force=false){
+ if(magicPriceRefresh)return magicPriceRefresh;
+ if(!navigator.onLine)return;
+ const now=Date.now(),cards=new Map();
+ for(const e of S.state.collection){
+  const c=(e.printingVerified&&S.state.printings?.[e.printingId])||meta(e.name);
+  if(!c?.id)continue;
+  const time=Date.parse(c.checkedAt);
+  if(force||((!Number.isFinite(time)||now-time>=86400000)&&now-(magicPriceAttempts.get(c.id)||0)>=3600000))cards.set(c.id,c);
+ }
+ const ids=[...cards.keys()].slice(0,force?5000:150);
+ if(!ids.length)return;
+ ids.forEach(id=>magicPriceAttempts.set(id,now));
+ magicPriceRefresh=(async()=>{
+  let changed=false;
+  for(let i=0;i<ids.length;i+=75){
+   try{
+    const data=await api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers:ids.slice(i,i+75).map(id=>({id}))})});
+    for(const c of data.data||[]){
+     const old=cards.get(c.id);if(!old)continue;
+     const fresh=slim({...c,conditionQuotes:old.conditionQuotes,checkedAt:new Date().toISOString()});
+     if(S.state.printings?.[c.id])S.state.printings[c.id]=fresh;
+     if(meta(c.name)?.id===c.id)cacheCard(fresh);
+     changed=true;
+    }
+   }catch{}
+  }
+  if(changed){saveCatalogSoon();trackValue();await save();if(S.ui.view==='collection')render();}
+ })();
+ try{await magicPriceRefresh;}finally{magicPriceRefresh=null;}
+}
 function refreshCollectionConditions(){
  const game=T.game(),lots=game==='mtg'?S.state.collection:T.gs(game).collection;
  // Session request de-duplication also prevents rerender loops and repeated paid calls.
@@ -1220,11 +1253,11 @@ function refreshConditionPrice(){
   if((set&&set!==String(card?.set||'').toLowerCase())||(number&&number!==String(card?.collector_number||'')))price=null;
   else {sourceCard=card;sourceGame='mtg';}
  }else return;
- node.innerHTML=conditionPriceHtml(price,entry);
+ node.innerHTML=conditionPriceHtml(price,entry,[...(sourceCard?.conditionQuotes||[]),...(entry.conditionQuotes||[])]);
  if(sourceCard)fetchConditionValue(sourceCard,entry,sourceGame,result=>{
   if(!node.isConnected||S.ui.sheetCtx!==ctx)return;
   if(result.changed)refreshConditionPrice();
-  else if(result.status==='not_configured'&&price==null)node.insertAdjacentHTML('beforeend','<p class="muted small">Condition market feed is not connected yet.</p>');
+  else if(result.status==='not_configured'&&price==null)node.insertAdjacentHTML('beforeend','<p class="muted small">Condition feed is not connected. You can record a personal estimate above.</p>');
  });
 }
 document.addEventListener("change",e=>{if(e.target.matches?.("#addCondition,#addFinish,#addLanguage,#tCond,#tPrint,#tEdition")){for(const n of document.querySelectorAll("#lotManualValue,#quickLotValue"))n.value="";refreshConditionPrice();}});
@@ -2684,6 +2717,7 @@ A.refreshPrices = async (t) => {
   const done = busy(t, "Refreshing…");
   try {
     const r = await resolveNames(S.state.collection.map((e) => e.name), (m) => toast(m), true);
+    await refreshMagicCollectionPrices(true);
     trackValue();
     await save();
     render();

@@ -1,12 +1,12 @@
 // Read-only condition lookup, shared by forms and collection valuation. Each exact
-// version is requested once per session/day, never once per camera frame.
+// version is requested once per hour, never once per camera frame.
 export const CONDITION_IDENTITY=['cardId','printingId','printing','rarity','variant','edition','finish','language'];
 const attempted=new Map();
 let active=0;const waiting=[];
 async function limitedFetch(fetcher,...args){
  if(active>=2)await new Promise(resolve=>waiting.push(resolve));
  active++;
- try{return await fetcher(...args);}finally{active--;waiting.shift()?.();}
+ try{const [url,options]=args;return await fetcher(url,{...options,signal:AbortSignal.timeout(15000)});}finally{active--;waiting.shift()?.();}
 }
 export function conditionRequest(card,entry,game){
  if(!card?.id)return null;
@@ -22,7 +22,7 @@ export function loadConditionQuotes(card,entry,game,fetcher=fetch){
  const identity=Object.fromEntries(CONDITION_IDENTITY.map(k=>[k,entry[k]||'']));
  return (async()=>{
   try{
-   const r=await limitedFetch(fetcher,url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(15000)});
+   const r=await limitedFetch(fetcher,url,{headers:{Accept:'application/json'}});
    if(!r.ok)return {changed:false,status:'unavailable'};
    const data=await r.json();
    if(!['available','unpriced','unmapped'].includes(data.status))return {changed:false,status:data.status||'unavailable',notice:data.notice||''};

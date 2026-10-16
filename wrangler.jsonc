@@ -12,9 +12,9 @@
   // Second trigger: record shared price history (needs the SUPABASE_SERVICE_KEY secret).
   "triggers": { "crons": ["17 6 * * *", "41 7 * * *"] },
   // Temporary owner testing mode. Restore "true" before the public launch.
-  "vars": { "AI_LIMITS_ENABLED": "false" },
-  "durable_objects": { "bindings": [{ "name": "AI_REVIEW_LIMITS", "class_name": "AiReviewLimits" }] },
-  "migrations": [{ "tag": "ai-review-v1", "new_sqlite_classes": ["AiReviewLimits"] }],
+  "vars": { "AI_LIMITS_ENABLED": "false", "CONDITION_DAILY_LIMIT": "30", "CONDITION_MONTHLY_LIMIT": "900", "CONDITION_MINUTE_LIMIT": "8" },
+  "durable_objects": { "bindings": [{ "name": "AI_REVIEW_LIMITS", "class_name": "AiReviewLimits" }, { "name": "CONDITION_PRICES", "class_name": "ConditionPriceCache" }] },
+  "migrations": [{ "tag": "ai-review-v1", "new_sqlite_classes": ["AiReviewLimits"] }, { "tag": "condition-prices-v1", "new_sqlite_classes": ["ConditionPriceCache"] }],
   "assets": {
     "directory": "./",
     "binding": "ASSETS"
