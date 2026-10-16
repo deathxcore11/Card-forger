@@ -30,3 +30,7 @@ AI_SETUP.md
 .dev.vars
 .dev.vars.*
 .wrangler
+
+tests
+test-results
+*.log

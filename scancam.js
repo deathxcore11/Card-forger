@@ -7,6 +7,7 @@ import { ask, askText } from "./dialog.js";
 //   green  = edges, sharpness, light and stillness all pass for several frames → ready to capture
 // Thresholds are starting points tuned on test images; they should be refined with real phone photos.
 import { S } from "./store.js";
+import {catalogState,catalogManifest,initCatalog,downloadCatalog,removeCatalog,localScanMatch,localIndexCandidate} from "./scan-catalog.js";
 import { esc } from "./ui.js";
 import { nameCandidates, detectGame, anchoredNames, scanNameKey, scanCandidateMatches, ptcgNumbers, ygoSetCodes, mtgCollector } from "./scan.js";
 import { fingerprintCanvas, fingerprintUrl, rankPrintings, likeness, hashCanvas, nearest } from "./scanart.js";
@@ -19,7 +20,7 @@ const CARD = 63 / 88; // card width / height
 export const LAYOUT = {
   mtg: { name: [0.04, 0.025, 0.74, 0.07], code: [0.0, 0.905, 0.62, 0.075] },
   // Modern Pokémon cards print the number at the very bottom-left (older ones a little higher).
-  ptcg: { name: [0.1, 0.02, 0.62, 0.075], code: [0.0, 0.93, 0.55, 0.07], pass: [0.55, 0.88, 0.45, 0.08] },
+  ptcg: { name: [0.1, 0.02, 0.62, 0.075], code: [0.0, 0.875, 1.0, 0.125] },
   ygo: { name: [0.04, 0.025, 0.8, 0.075], code: [0.5, 0.7, 0.5, 0.06], pass: [0.0, 0.94, 0.45, 0.06] },
 };
 // Calibrated on test video (sharp card ≈ 3000, 4px blur ≈ 280, empty table ≈ 1); refine on real phones.
@@ -317,6 +318,11 @@ function sessionPanel(g, p, list) {
 
 const GAME_LABEL = { mtg: "Magic", ygo: "Yu-Gi-Oh!", ptcg: "Pokémon" };
 
+function catalogControl(g, st) {
+  const p=catalogState(g),size=st.catalogMeta?.bytes?` ${(st.catalogMeta.bytes/1048576).toFixed(1)} MB`:"";
+  return `<div class="scan-catalog-control" role="status"><span>${p.status==="ready" ? `${p.count.toLocaleString()} local card records ready` : p.status==="downloading" ? `Downloading recognition pack · ${Math.min(100,Math.round((p.loaded||0)/p.bytes*100))}%` : "Faster recognition on this device"}</span>${p.status!=="ready" ? `<button class="link small" data-act="scanCatalogDownload" ${p.status==="downloading" ? "disabled" : ""}>${p.status==="downloading" ? "Downloading…" : "Download"+size}</button>` : ""}${p.error ? `<small role="alert">${esc(p.error)}</small>` : ""}</div>`;
+}
+
 export function scanView(g, gameName) {
   const s = S.ui.scan,
     p = loadPrefs(g),
@@ -338,11 +344,12 @@ export function scanView(g, gameName) {
   const rail = `<div class="cam-rail">${s.torchCap ? `<button class="${s.torch ? "on" : ""}" data-act="scanTorch" aria-pressed="${!!s.torch}" aria-label="Flashlight">${TORCH}</button>` : ""}<button class="${p.quick ? "on" : ""}" data-act="scanQuick" aria-pressed="${p.quick}" aria-label="Quick mode: exact matches are added without asking">${BOLT}</button><button data-act="scanSettings" aria-label="Scanner settings">${GEAR}</button><button data-act="scanStop" aria-label="Stop camera">${STOP}</button></div>`;
   return `<div class="page-head"><h1>Scan</h1>${p.lockSet ? `<span class="tag">Set locked: ${esc(p.lockSet.toUpperCase())}</span>` : ""}</div>
   <div class="seg" role="tablist"><button role="tab" class="${live ? "on" : ""}" aria-selected="${live}" data-act="scanMode" data-id="live">Live camera</button><button role="tab" class="${live ? "" : "on"}" aria-selected="${!live}" data-act="scanMode" data-id="photo">Photo</button></div>
+  ${catalogControl(g,s)}
   <section class="panel scan-panel">
     ${
       live
         ? `<div class="cam-wrap ${s.camOn ? "immersive" : ""}" id="camWrap">${s.camOn ? `<div id="camSlot"></div><div class="cam-guide ${esc(s.guide?.state || "red")}" id="camGuide"></div><div class="cam-status ${esc(s.guide?.state || "red")}" id="camStatus" role="status" aria-live="polite"><i class="cam-dot" aria-hidden="true"></i>${esc(s.guide?.msg || "Starting camera…")}</div>${rail}<div class="scan-flash" id="scanFlash" aria-live="polite"></div>${defaultsPill(g, p)}` : `<div class="scan-drop"><span class="scan-sweep" aria-hidden="true"></span><span class="scan-ghost" aria-hidden="true"></span><b>Point at a card</b><span class="muted small">Hold one ${esc(gameName)} card inside the frame. It scans on its own.</span><span class="scan-tips"><span>${TIP_FLAT} Flat</span><span>${TIP_LIGHT} Bright</span><span>${TIP_GLARE} No glare</span></span><button class="btn scan-go" data-act="scanStart">${CAMERA} Start camera</button><small class="muted scan-tip-line" title="${esc("Keep " + tips + " sharp.")}">Keep the name and the bottom code sharp</small></div>`}</div>
-      ${s.camOn && !s.confirm ? `<div class="actions wrap scan-under"><button class="btn" id="scanCaptureBtn" data-act="scanCapture">Capture</button><label class="check small"><input type="checkbox" data-change="scanAuto" ${s.auto !== false ? "checked" : ""}> Capture automatically</label></div>` : defaultsPill(g, p)}`
+      ${s.camOn ? (s.confirm ? "" : `<div class="actions wrap scan-under"><button class="btn" id="scanCaptureBtn" data-act="scanCapture">Capture</button><label class="check small"><input type="checkbox" data-change="scanAuto" ${s.auto !== false ? "checked" : ""}> Capture automatically</label></div>`) : defaultsPill(g, p)}`
         : `<div class="actions wrap"><label class="btn">${CAMERA} Take photo<input type="file" accept="image/*" capture="environment" data-change="scanFile" hidden></label><label class="btn ghost">Upload<input type="file" accept="image/*" data-change="scanFile" hidden></label></div>
       ${s.url ? `<p class="muted small">Drag a box around the card to crop. Rotate if it’s sideways.</p><div class="crop-wrap" id="cropWrap"><img id="cropImg" src="${s.url}" alt="Your photo"><div class="crop-box" id="cropBox"></div></div>
       <div class="actions wrap"><button class="btn ghost small" data-act="scanRotate">Rotate</button><button class="btn ghost small" data-act="scanCropReset">Whole photo</button><button class="btn" data-act="scanRead" ${s.busy ? "disabled" : ""}>${s.busy ? "Reading…" : "Read card"}</button></div>` : ""}
@@ -449,6 +456,7 @@ export function indexThumb(g, [id, path]) {
 }
 // Layout fingerprints from different games are not comparable. A weak guess is never proof.
 export function acceptArtMatch(selectedGame, match) {
+  if(match?.g===selectedGame && match.hashOnly) return Number.isFinite(match.distance) && match.distance<=12 && match.margin>=4 ? {...match,sure:false} : null;
   if (!match || match.g !== selectedGame || !Number.isFinite(match.score) || match.score < 0.62) return null;
   return { ...match, sure: match.like >= 0.72 && match.score >= 0.72 && match.distance <= 20 && match.margin >= 0.10 };
 }
@@ -467,19 +475,31 @@ export function textVerifiedMatch(g, cand, read = {}) {
   return !!code && code.set === String(cand.card.set || "").toLowerCase() && Number(code.number) === Number(cand.card.collector_number);
 }
 
+// OCR can produce plausible-looking nonsense. Keep visual suggestions reviewable
+// when text lookup fails, without turning visual similarity into a verified printing.
+export function recoverScanCandidates(g, result, visual, read = {}) {
+  if(result.cands.some(c=>textVerifiedMatch(g,c,read)) || !visual?.cands?.length)return result;
+  const names=nameCandidates(g,read.name || "");
+  const compatible=visual.cands.filter(c=>names.some(n=>scanNameKey(n)===scanNameKey(c.name)));
+  if(result.cands.length && !compatible.length)return result;
+  const suggestions=(compatible.length?compatible:visual.cands).map(c=>({...c,exact:false,why:"Artwork suggestion · check the card and printing"}));
+  return {...visual,cands:suggestions,tried:[...(result.tried||[]),...(visual.tried||[])]};
+}
+
 export function scanConfirmation(g, st, prefs) {
   const q = st.confirm, c = st.cands?.[q?.i || 0];
-  if (!q || !c) return "";
+  if (!q) return "";
+  if (!c) return `<section class="scan-confirm ${q.presented ? "" : "scan-confirm-enter"}" role="region" aria-label="Identify scanned card"><header><b>Let’s find this card</b><button class="icon" data-act="scanDismiss" aria-label="Skip this scan">✕</button></header><div class="scan-confirm-card">${st.shot ? `<img class="scan-confirm-art" src="${esc(st.shot)}" alt="Your captured card">` : ""}<div><strong>No reliable match yet</strong><small>${esc(st.recognitionError || "Try the name or printed card code below.")}</small></div></div><div class="scan-confirm-search"><input id="scanMatchName" placeholder="Card name or printed code" aria-label="Correct card name" data-enter="scanFind"><button class="btn" data-act="scanFind">Find card</button></div>${q.error ? `<p role="alert">${esc(q.error)}</p>` : ""}<div class="scan-confirm-actions"><button class="btn ghost" data-act="scanDismiss">Skip</button><button class="btn" data-act="scanRetry">Scan again</button></div></section>`;
   const image = c.card ? artworkHTML(c.card, "scan-confirm-art", true) : c.image ? `<img class="scan-confirm-art" src="${esc(c.image)}" alt="${esc(c.name)}">` : "";
-  return `<section class="scan-confirm" role="region" aria-label="Confirm scanned card" aria-busy="${!!q.saving}">
-    <header><b>${q.editing ? "Choose your match" : "Check this match"}</b><button class="icon" data-act="scanDismiss" aria-label="Skip this scan" ${q.saving ? "disabled" : ""}>✕</button></header>
+  return `<section class="scan-confirm ${q.presented ? "" : "scan-confirm-enter"}" role="region" aria-label="Confirm scanned card" aria-busy="${!!q.saving}">
+    <header><b>${q.editing ? "Choose your match" : "Add this card"}</b><button class="icon" data-act="scanDismiss" aria-label="Skip this scan" ${q.saving ? "disabled" : ""}>✕</button></header>
     <div class="scan-confirm-card">${image}<div><strong>${esc(c.name)}</strong><small>${esc(c.sub || "")}</small><small>${textVerifiedMatch(g,c,st.read) ? "Printed identifier matched" : "Possible match · check name and printing"}</small></div></div>
     ${q.editing ? `<div class="scan-confirm-search"><input id="scanMatchName" placeholder="Card name or code" aria-label="Correct card name" data-enter="scanFind"><button class="btn ghost small" data-act="scanFind">Find</button></div><div class="scan-confirm-options">${st.cands.map((x,i)=>`<button class="btn ghost small" data-act="scanChoose" data-i="${i}" aria-pressed="${i===q.i}">${esc(x.name)}<small>${esc(x.sub || "")}</small></button>`).join("")}<button class="link" data-act="scanDismiss">None of these · scan again</button></div>` : ""}
     <p class="scan-confirm-price">${q.price == null ? "Price unavailable" : "Reference price · " + money(q.price)}${q.price == null ? "" : " · check the selected finish"}</p>
     <div class="scan-confirm-conditions" role="group" aria-label="Card condition">${CONDITIONS.map(([v,l])=>`<button data-act="scanConfirmCondition" data-condition="${esc(v)}" aria-label="${esc(v)}" aria-pressed="${q.condition===v}" ${q.saving ? "disabled" : ""}>${l}</button>`).join("")}</div>
     <div class="scan-confirm-controls"><div class="ss-qty"><button data-act="scanConfirmQty" data-d="-1" aria-label="Fewer copies" ${q.saving || q.qty<=1 ? "disabled" : ""}>−</button><output aria-label="Copies to save">${q.qty}</output><button data-act="scanConfirmQty" data-d="1" aria-label="More copies" ${q.saving ? "disabled" : ""}>＋</button></div><label>Language<select data-change="scanConfirmLanguage" aria-label="Scanned card language" ${q.saving ? "disabled" : ""}>${LANGS.map(([v,l])=>`<option value="${esc(v)}" ${q.lang===v ? "selected" : ""}>${esc(LANG_NAME[v]||l)}</option>`).join("")}</select></label><label>Finish<select data-change="scanConfirmFinish" aria-label="Scanned card finish" ${q.saving ? "disabled" : ""}>${finishesFor(g,c).map(f=>`<option value="${esc(f)}" ${q.finish===f ? "selected" : ""}>${esc(label(FINISHES[g],f))}</option>`).join("")}</select></label></div>
     ${q.error ? `<p class="scan-confirm-error" role="alert">${esc(q.error)}</p>` : ""}
-    <div class="scan-confirm-actions"><button class="btn ghost" data-act="scanEditMatch" ${q.saving ? "disabled" : ""}>Edit match</button><button class="btn" data-act="scanConfirm" ${q.saving ? "disabled" : ""}>${q.saving ? "Saving…" : "Save & next scan"}</button></div>
+    <div class="scan-confirm-actions"><button class="btn ghost" data-act="scanEditMatch" ${q.saving ? "disabled" : ""}>Edit match</button><button class="btn" data-act="scanConfirm" ${q.saving ? "disabled" : ""}>${q.saving ? "Saving…" : "Add to collection"}</button></div>
   </section>`;
 }
 
@@ -542,7 +562,9 @@ export function registerScanner(ctx) {
     // Hash the capture as it is and slightly tighter (a crop with a sliver of table around it
     // shifts the fingerprint); each index entry keeps its best distance over the versions.
     const near = nearest([0, 0.02, 0.035, 0.05].map((f) => hashCanvas(insetCanvas(card, f), g)), idx.bin, 8),
-      scan = fingerprintCanvas(card, g),
+      strong=near[0] && near[0][1]<=12 && (!near[1]||near[1][1]-near[0][1]>=4);
+    if(strong)return {g,id:idx.ids[near[0][0]][0],distance:near[0][1],margin:near[1]?near[1][1]-near[0][1]:Infinity,hashOnly:true};
+    const scan = fingerprintCanvas(card, g),
       fps = await settleLimited(near, ([i]) => fingerprintUrl(indexThumb(g, idx.ids[i]), g), 6),
       dmin = near[0]?.[1] ?? 0,
       // Picture likeness, minus a little for every step the index put it further away: the index
@@ -554,12 +576,22 @@ export function registerScanner(ctx) {
   const artFirst = async (card, G) => {
     const best = acceptArtMatch(G, await lookArt(card,G).catch(() => null));
     if (!best) return null;
-    const cand = await ctx.candById(best.g, indexCardId(best.g, best.id), "Artwork match", false);
+    const cand = localIndexCandidate(best.g,indexCardId(best.g,best.id)) || await ctx.candById(best.g, indexCardId(best.g, best.id), "Artwork match", false);
     if (!cand) return null;
-    const picked = await pickPrinting(best.g, card, cand).catch(() => null);
-    // A printing is only "found" when the index match itself was clear.
-    const cands = (picked?.length ? picked : [cand]).map((c) => ({ ...c, exact: false, why: "Possible artwork match · confirm name and printing" }));
+    // The index entry already identifies a printing. Do not replace it with one
+    // of only the newest reprints of the same name.
+    const cands = [cand].map((c) => ({ ...c, exact: false, why: "Possible artwork match · confirm name and printing" }));
     return { g: best.g, sure: best.sure, exact: !!cands[0].exact, r: { cands, tried: [cand.name], picked: true } };
+  };
+  // Only an unusually close, separated local fingerprint may precede OCR. It is
+  // still a reviewable suggestion, never a verified printing or an automatic add.
+  const localArtwork = async (card,G) => {
+    if(catalogState(G).status!=="ready")return null;
+    const idx=await loadIndex(G);if(!idx)return null;
+    const near=nearest([0,0.02,0.035,0.05].map(f=>hashCanvas(insetCanvas(card,f),G)),idx.bin,2);
+    if(!near[0]||near[0][1]>3||(near[1]&&near[1][1]-near[0][1]<8))return null;
+    const c=localIndexCandidate(G,indexCardId(G,idx.ids[near[0][0]][0]));
+    return c?{cands:[{...c,exact:false,why:"Possible local artwork match · check printing"}],tried:[c.name],picked:true,localArtwork:true}:null;
   };
   // Which printing: the only one there is, or the one whose artwork and frame match the scan.
   // Unsure → the three closest pictures to choose from.
@@ -614,7 +646,8 @@ export function registerScanner(ctx) {
     const st = s();
     st.read = await readCard(card, G, scanLang(), setStatus);
     setStatus("Matching…");
-    let r = await match(G, st.read, scanLang(), false, setStatus, p);
+    let r=await localScanMatch(G,st.read);
+    if(!r.cands.length)r=await match(G, st.read, scanLang(), false, setStatus, p);
     if (r.cands.some(c => textVerifiedMatch(G,c,st.read))) return r;
     // A sure match is an exact printing or a name read letter for letter; a closest spelling
     // ("MAGICIAN" → Zacian) is only a guess and gets a second look.
@@ -644,7 +677,7 @@ export function registerScanner(ctx) {
   };
   const process = async (card) => {
     const st = s(),
-      G = game(), ticket = ++scanTicket;
+      G = game(), ticket = ++scanTicket, started=performance.now();
     const current = () => ticket === scanTicket && s() === st && game() === G && S.ui.view === "scan";
     try {
       const k = Math.min(1, 360 / card.width), t = document.createElement("canvas");
@@ -658,24 +691,27 @@ export function registerScanner(ctx) {
     st.busy = true;
     st.lensUrl = "";
     st.cands = [];
+    st.read = null;
     st.confirm = null;
     render();
     try {
       st.foundIn = "";
       const p = prefs();
-      // Text first: avoid downloading 24 thumbnail pictures before reading the identifiers.
-      let r = await readFlow(card, G, p, null);
+      // A strict local fingerprint can open review immediately. Otherwise read identifiers before remote artwork.
+      let r;
+      st.recognitionError="";
+      st.read={name:"",code:"",full:""};
+      try { r=await localArtwork(card,G);if(!r)r=await readFlow(card,G,p,null); }
+      catch(e) {st.read ||= {name:"",code:"",full:""};st.recognitionError=e.message || "Text reading is unavailable. Try the card name.";r={cands:[],tried:[]};}
       if (!current()) return;
-      if (!r.cands.length || !r.cands.some(c => nameCandidates(G,st.read?.name || "").some(n => scanNameKey(n)===scanNameKey(c.name)))) {
+      if (!r.localArtwork && !r.cands.some(c=>textVerifiedMatch(G,c,st.read))) {
         setStatus("Checking the artwork…");
         const fast = await artFirst(card,G).catch(() => null);
         if (!current()) return;
-        const names=nameCandidates(G,st.read?.name || "");
-        const compatible=fast?.r.cands.filter(c=>!names.length || names.some(n=>scanNameKey(n)===scanNameKey(c.name))) || [];
-        if (compatible.length && !r.cands.some(c=>textVerifiedMatch(G,c,st.read))) r={...fast.r,cands:compatible};
+        if(fast)r=recoverScanCandidates(G,r,fast.r,st.read);
       }
       // The picture picks the printing: compare the scan with every printing of the best name.
-      if (r.cands.length && !r.cands[0].exact && !r.picked) {
+      if (r.cands.length && !r.cands[0].exact && !r.picked && !r.cands[0].localReference) {
         setStatus("Comparing the artwork…");
         const picked = await pickPrinting(st.foundIn || G, card, r.cands[0]).catch(() => null);
         if (picked?.length) r = { ...r, cands: picked[0].exact ? picked : [...picked, ...r.cands.filter((c) => c.name !== picked[0].name)].slice(0, 3) };
@@ -689,7 +725,7 @@ export function registerScanner(ctx) {
       if (p.lockSet && !st.foundIn) r.cands.sort((a, b) => (ctx.setOf(G, b).toLowerCase() === p.lockSet.toLowerCase()) - (ctx.setOf(G, a).toLowerCase() === p.lockSet.toLowerCase()));
       st.tried = r.tried;
       st.guess = r.cands[0]?.name || nameCandidates(G, st.read.name || st.read.full)[0] || "";
-      if (p.quick && textVerifiedMatch(G,r.cands[0],st.read) && !st.foundIn) {
+      if (p.quick && !r.cands[0]?.localReference && textVerifiedMatch(G,r.cands[0],st.read) && !st.foundIn) {
         // Quick mode: an exact printing goes straight on the list; wait for the next card.
         const it = toSession(r.cands[0]);
         st.cands = [];
@@ -703,7 +739,10 @@ export function registerScanner(ctx) {
           st.confirm={i:0,qty:p.qty||1,condition:p.condition||"Near Mint",lang:p.lang||"en",finish:fs.includes(p.finish)?p.finish:fs[0],price:ctx.priceOf(G,r.cands[0],fs.includes(p.finish)?p.finish:fs[0]),saving:false,error:""};
           feedback("ok",{...p,sounds:false});
         }
-        if (!r.cands.length) feedback("fail", p);
+        if (!r.cands.length) {
+          st.confirm={i:0,qty:p.qty||1,condition:p.condition||"Near Mint",lang:p.lang||"en",saving:false,error:"",unresolved:true};
+          feedback("fail",p);
+        }
         st.status = st.foundIn
           ? `Found it in ${GAME_LABEL[st.foundIn]}.`
           : r.cands.length
@@ -715,7 +754,7 @@ export function registerScanner(ctx) {
     } catch (e) {
       if (current()) st.status = e.message;
     } finally {
-      if (current()) { st.busy = false; render(); }
+      if (current()) { st.recognitionMs=performance.now()-started;st.busy = false; render(); }
     }
   };
 
@@ -973,6 +1012,22 @@ export function registerScanner(ctx) {
     st.status = r.cands.length ? "Check the picture matches your card, then tap Add." : "No card found with that name.";
     render();
   };
+  const hydration=new Map();
+  const hydrateCandidate=(G,c)=>{
+    if(!c.localReference)return Promise.resolve(c);
+    const key=G+":"+c.id;
+    if(!hydration.has(key))hydration.set(key,Promise.resolve(ctx.candById?.(G,c.id,c.why,c.exact)).then(full=>{
+      if(!full?.card || scanNameKey(full.name)!==scanNameKey(c.name))throw Error("Card details are unavailable. Connect and try again.");
+      return {...full,exact:c.exact,print:c.print||full.print,sub:c.sub,localReference:false};
+    }).finally(()=>hydration.delete(key)));
+    return hydration.get(key);
+  };
+  A.scanCatalogDownload=async()=>{
+    const G=game();
+    try{await downloadCatalog(G,()=>{if(game()===G&&S.ui.view==="scan")render();});toast("Recognition pack saved on this device.");}
+    catch(e){toast(e.message);}
+  };
+  A.scanCatalogRemove=async()=>{await removeCatalog(game());toast("Recognition text pack removed. Your collection is unchanged.");render();};
   const resetConfirmation = (message) => {
     Object.assign(s(),{confirm:null,cands:[],read:null,status:message});
     lockMsg=message; greenSince=0;
@@ -984,13 +1039,21 @@ export function registerScanner(ctx) {
   C.scanConfirmFinish = t => {const q=s().confirm,c=s().cands?.[q?.i||0];if(q&&!q.saving&&finishesFor(game(),c).includes(t.value)){q.finish=t.value;q.price=ctx.priceOf(game(),c,q.finish);render();}};
   A.scanEditMatch = () => {const q=s().confirm;if(q&&!q.saving){q.editing=!q.editing;render();}};
   A.scanChoose = t => {const q=s().confirm,i=Number(t.dataset.i);if(q&&!q.saving&&s().cands?.[i]){q.i=i;q.editing=false;const fs=finishesFor(game(),s().cands[i]);if(!fs.includes(q.finish))q.finish=fs[0];q.price=ctx.priceOf(game(),s().cands[i],q.finish);render();}};
+  A.scanRetry = () => {
+    if(s().busy || s().confirm?.saving)return;
+    s().confirm=null;
+    if(s().camOn)capture();else if(s().lastCard)process(s().lastCard);else render();
+  };
   A.scanDismiss = () => {if(!s().confirm?.saving)resetConfirmation("Skipped. Move to the next card.");};
   A.scanConfirm = async () => {
     const st=s(),q=st.confirm,c=st.cands?.[q?.i||0],G=game();
     if(!q||!c||q.saving)return;
     q.saving=true;q.error="";render();
     try {
-      const item=makeItem(c,q);
+      const resolved=await hydrateCandidate(G,c);
+      if(s()!==st||game()!==G||st.confirm!==q)return;
+      const validFinishes=finishesFor(G,resolved);if(!validFinishes.includes(q.finish))q.finish=validFinishes[0];
+      const item=makeItem(resolved,q);
       await ctx.addMany(G,[{...item,location:prefs().location||""}]);
       if(s()!==st||game()!==G)return;
       feedback("ok",prefs());flash(`Saved ${item.qty} × ${c.name}`);
@@ -1154,6 +1217,7 @@ export function registerScanner(ctx) {
       ${chk("haptics", "Vibration", "A tap on each card added.")}
       ${chk("showValue", "Show prices and total value")}
       <label class="field">Text recognition language<select data-change="scanLang">${[["eng", "English"], ["jpn+eng", "Japanese (+ English)"]].map(([v, l]) => `<option value="${v}" ${scanLang() === v ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+      <section class="scan-catalog-settings"><h3>Recognition download</h3><p class="small muted">Card names, printing codes and image references stay on this device. Current prices and full card details use the internet.</p>${catalogControl(G,s())}${catalogState(G).status==="ready" ? `<button class="link small" data-act="scanCatalogRemove">Remove this game's text pack</button>` : ""}</section>
       <details class="settings-disclosure"><summary>Scanning tips</summary><ul class="guide-list small"><li>Plain, contrasting surface; one card at a time.</li><li>Fill the frame; keep the name and the bottom code sharp.</li><li>Tilt slightly or use the flashlight off-axis to kill foil glare.</li><li>Sorting a single set? Lock it for faster, surer matches.</li><li>Quick mode + automatic capture: just swap cards; listen for the chime.</li></ul></details>`;
   };
   A.scanSettings = async () => {
@@ -1230,6 +1294,19 @@ export function registerScanner(ctx) {
       ctx.closePop?.();
       if (stream) stopCamera();
       return;
+    }
+    const st=s(),G=game();
+    if(st.catalogInitGame!==G){
+      st.catalogInitGame=G;
+      Promise.all([initCatalog(G),catalogManifest().catch(()=>null)]).then(([,m])=>{if(s()===st&&game()===G&&S.ui.view==="scan"){st.catalogMeta=m?.games?.[G];render();}});
+    }
+    if(!st.ocrWarm){st.ocrWarm=true;getWorker(scanLang(),()=>{}).catch(()=>{});}
+    if(st.confirm){
+      const q=st.confirm,c=st.cands?.[q.i||0];q.presented=true;
+      if(c?.localReference && q.detailStartedFor!==c.id+":"+c.print){
+        q.detailStartedFor=c.id+":"+c.print;
+        hydrateCandidate(G,c).then(full=>{if(s()===st&&st.confirm===q&&st.cands[q.i||0]===c){st.cands[q.i||0]=full;const fs=finishesFor(G,full);if(!fs.includes(q.finish))q.finish=fs[0];q.price=ctx.priceOf(G,full,q.finish);render();}}).catch(()=>{});
+      }
     }
     if (s().camOn) attach();
     attachCrop();
