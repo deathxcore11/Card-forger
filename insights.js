@@ -570,7 +570,7 @@ export function lotPrice(e, catalog, printings = {}) {
   const c =
     (e.printingVerified && printings[e.printingId]) ||
     catalog[cardKey(e.name)];
-  return conditionValue(cardPrice(c, e.finish || "nonfoil") ?? cardPrice(c),e,c?.conditionQuotes||[]).price;
+  return conditionValue(cardPrice(c, e.finish || "nonfoil") ?? cardPrice(c),e,[...(c?.conditionQuotes||[]),...(e.conditionQuotes||[])]).price;
 }
 
 export function collectionValue(entries, catalog, printings = {}, decks = []) {

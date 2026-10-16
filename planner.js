@@ -212,7 +212,7 @@ export function completionPlan(
         : "Owned land within commander color identity.",
     );
   }
-  while (count() < 100) {
+  while (count() < 100 - Math.max(0, landTarget - stats().lands)) {
     const current = stats();
     let ranked = spellPool
       .filter(canAdd)

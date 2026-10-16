@@ -91,7 +91,7 @@ export const priceOf = (name, finish = "nonfoil") => {
 };
 
 // Drop heavy Scryfall fields so the cache stays small on phones.
-const KEEP = [
+const KEEP = ["conditionQuotes",
   "id", "oracle_id", "name", "lang", "cmc", "mana_cost", "type_line", "oracle_text",
   "colors", "color_identity", "produced_mana", "keywords", "power", "toughness",
   "loyalty", "legalities", "prices", "set", "set_name", "collector_number", "rarity",

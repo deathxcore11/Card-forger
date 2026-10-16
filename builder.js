@@ -93,7 +93,7 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
       else rows.set(cardKey(c.name), { name: c.name, qty: n, why });
     },
     count = () => [...rows.values()].reduce((a, r) => a + r.qty, 0),
-    landsIn = () => [...rows.values()].filter((r) => isLand(catalog[cardKey(r.name)])).reduce((a, r) => a + r.qty, 0);
+    landsIn = () => [...rows.values()].filter((r) => isLand(catalog[cardKey(r.name)]) || /^(?:Snow-Covered )?(?:Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(r.name)).reduce((a, r) => a + r.qty, 0);
 
   if (sumQty(base)>size) throw Error(`This list has ${sumQty(base)} cards. Review ${sumQty(base)-size} cuts before building to the ${size}-card target.`);
   // Keep everything already in the list.

@@ -1,3 +1,4 @@
+import {loadConditionQuotes,CONDITION_IDENTITY} from './condition-feed.js';
 import {brandMark} from './brand.js';
 import {ownedCardLots,quickQuantity} from './quick-quantity.js';
 import {conditionName,conditionValue,conditionPriceHtml} from './condition-value.js';
@@ -34,7 +35,7 @@ import { playedAlongside } from "./guide.js";
 import { mtgPairQueries, rankPairs, edhPop } from "./pairing.js";
 import { nextFact } from "./facts.js";
 import { S, STORAGE, CATALOG_RECORD, RECOVERY, blank, uid, meta, inv, deckById, currentDeck, priceOf, cacheCard, slim } from "./store.js";
-import { $, $$, esc, usd, img, art, cardImage, options, segmented, customBudget, registerSetIcons } from "./ui.js";
+import { $, $$, esc, usd, img, art, cardImage, options, segmented, customBudget, registerSetIcons, captureDisclosures, restoreDisclosures } from "./ui.js";
 import * as V from "./views.js";
 import { refreshCheapest, cheapestKnown } from "./mtg-cheap.js";
 import { readRecord, writeRecord, writeRecords, persistenceStatus, requestPersistence } from "./storage.js";
@@ -68,7 +69,7 @@ import { sharePayload, encodeShare, decodeShare } from "./share.js";
 import { FORMATS, formatOf, hasCommander, canLead, sizeLabel } from "./formats.js";
 import { buildTiers, formatsFor, themeQuery, BUDGET_TIERS, upgradePool, copyLimit, fitFor } from "./builder.js";
 import * as T from "./tcg.js";
-import { rulesPage } from "./rules.js";
+import { rulesPage, learnSheet } from "./rules.js";
 import { GAMES, GAME_ICON, GAME_COLOR } from "./games.js";
 import { ICON, actionIcon, decorateGlyphs } from "./icons.js";
 import { openZoom, scryfallHi } from "./zoom.js";
@@ -759,7 +760,9 @@ const autoMeta = new Set();
 let lastPageKey = "";
 const cheapChecked = new Set();
 let tcgCheckedFor = -1;
+const disclosureStates=new Map();
 function render() {
+  if(S.ui.view==='collection')setTimeout(refreshCollectionConditions,0);
   useMyPrices(S.state.myPrices);
   // Owned printings Scryfall leaves unpriced get TCGplayer's price (once per collection size).
   if (S.ui.view === "collection" && S.state.collection.length !== tcgCheckedFor) {
@@ -776,6 +779,11 @@ function render() {
   for (const b of $$("[data-nav]")) b.classList.toggle("on", b.dataset.nav === (ui.view === "deck" ? "decks" : ui.view === "set" || ui.view === "sets" ? "search" : ui.view));
   document.body.dataset.view = ui.view;
   const g = T.game();
+  const content=$('#content'),previousDisclosureKey=content?.dataset?.disclosureKey;
+  if(previousDisclosureKey)disclosureStates.set(previousDisclosureKey,captureDisclosures(content));
+  if(disclosureStates.size>100)disclosureStates.delete(disclosureStates.keys().next().value);
+  const disclosureKey=[g,ui.view,ui.deckId,ui.tdeckId,ui.set?.code,ui.tsetId,ui.collTab,ui.decksTab,ui.deckTab].join(':');
+  if(content?.dataset)content.dataset.disclosureKey=disclosureKey;
   document.body.dataset.game = g;
   const pill = $("#gamePill");
   document.body.style?.setProperty("--game-color", GAME_COLOR[g]);
@@ -795,13 +803,17 @@ function render() {
   $("#content").className="";
   if (ui.view === "rules") {
     $("#content").innerHTML = rulesPage(g, ui.rules[g] || (ui.rules[g] = { list: "", busy: false, error: "", data: {} }));
+    restoreDisclosures(content,disclosureStates.get(disclosureKey));
     return;
   }
   if (ui.view === "shared" && ui.shared.deck?.game) {
     $("#content").innerHTML = T.tcgSharedPage(ui.shared.deck);
+    restoreDisclosures(content,disclosureStates.get(disclosureKey));
     return;
   }
   $("#content").innerHTML = (g !== "mtg" && tcgViews[ui.view] ? tcgViews[ui.view] : views[ui.view] || V.home)();
+  restoreDisclosures(content,disclosureStates.get(disclosureKey));
+  content.dataset.disclosureKey=disclosureKey;
   if(!cloudInfo().user)restoreAuthFields(document,authFields);
   const displayArea=["deck","tdeck"].includes(ui.view)?"deck":ui.view === "search"?"search":ui.view === "set"?"set":ui.view === "collection" && (g === "mtg" ? ui.collTab === "wishlist" : T.ui(g).coll.tab === "wishlist")?"wishlist":ui.view === "collection" && (g === "mtg" ? ui.collTab === "cards" : !T.ui(g).coll.tab || T.ui(g).coll.tab === "cards")?"collection":null;
   $("#content").className=displayArea ? "view-"+modeFor(g,displayArea) : "";
@@ -1173,21 +1185,47 @@ const tierSync = () => {
 if (typeof MutationObserver !== "undefined") new MutationObserver(() => { if (!tierQueued) { tierQueued = true; requestAnimationFrame(tierSync); } }).observe(document.body, { childList: true, subtree: true });
 attachSuggest();
 attachGlassSelects();
+function fetchConditionValue(card,entry,game,done){
+ const request=loadConditionQuotes(card,entry,game);if(!request)return;
+ request.then(result=>{
+  if(result.changed){
+   if(game==='mtg'){S.catalogDirty=true;saveCatalogSoon();}else T.persistQuoteCache();
+   const lots=game==='mtg'?S.state.collection:T.gs(game).collection;
+   for(const lot of lots)if((game==='mtg'?key(lot.name)===key(card.name):lot.cardId===card.id)&&CONDITION_IDENTITY.every(k=>String(lot[k]||'')===String(entry[k]||'')))lot.conditionQuotes=result.quotes;
+   save();
+  }
+  done?.(result);
+ });
+}
+function refreshCollectionConditions(){
+ const game=T.game(),lots=game==='mtg'?S.state.collection:T.gs(game).collection;
+ // Session request de-duplication also prevents rerender loops and repeated paid calls.
+ for(const entry of lots.slice(0,100)){
+  const card=game==='mtg'?(entry.printingVerified&&S.state.printings?.[entry.printingId])||meta(entry.name):T.cardOf(game,entry.cardId);
+  if(card&&!card.brief)fetchConditionValue(card,entry,game,result=>{if(result.changed && S.ui.view==='collection')render();});
+ }
+}
 function refreshConditionPrice(){
  const node=$("#conditionPricePreview"),ctx=S.ui.sheetCtx;if(!node||!ctx)return;
  const raw=$("#lotManualValue")?.value??'',manualValue=raw===''?null:Number(raw);
- let entry,price;
+ let entry,price,sourceCard,sourceGame;
  if(ctx.type==='tadd'){
   const game=T.game(),card=T.cardOf(game,ctx.id),pr=$("#tPrint")?.value||'',[printing,rarity]=game==='ygo'?pr.split('|'):['',''];
   entry={cardId:card?.id,condition:$("#tCond")?.value,variant:game==='ptcg'?pr:'',printing:printing||'',rarity:rarity||'',edition:$("#tEdition")?.value||'',manualValue,manualValueCondition:conditionName($("#tCond")?.value)};
-  price=T.entryPrice(card,entry);
+  price=T.entryPrice(card,entry);sourceCard=card;sourceGame=game;
  }else if(ctx.type==='add'){
   const card=(ctx.entry?.printingVerified&&S.state.printings?.[ctx.entry.printingId])||ctx.lookup;entry={...ctx.entry,condition:$("#addCondition")?.value,finish:$("#addFinish")?.value,language:$("#addLanguage")?.value,manualValue,manualValueCondition:conditionName($("#addCondition")?.value)};
   price=conditionValue(cardPrice(card,entry.finish)??cardPrice(card),entry,card?.conditionQuotes||[]).price;
   const set=$('#addSet')?.value?.trim().toLowerCase(),number=$('#addNumber')?.value?.trim();
   if((set&&set!==String(card?.set||'').toLowerCase())||(number&&number!==String(card?.collector_number||'')))price=null;
+  else {sourceCard=card;sourceGame='mtg';}
  }else return;
  node.innerHTML=conditionPriceHtml(price,entry);
+ if(sourceCard)fetchConditionValue(sourceCard,entry,sourceGame,result=>{
+  if(!node.isConnected||S.ui.sheetCtx!==ctx)return;
+  if(result.changed)refreshConditionPrice();
+  else if(result.status==='not_configured'&&price==null)node.insertAdjacentHTML('beforeend','<p class="muted small">Condition market feed is not connected yet.</p>');
+ });
 }
 document.addEventListener("change",e=>{if(e.target.matches?.("#addCondition,#addFinish,#addLanguage,#tCond,#tPrint,#tEdition")){for(const n of document.querySelectorAll("#lotManualValue,#quickLotValue"))n.value="";refreshConditionPrice();}});
 document.addEventListener("input",e=>{if(e.target.matches?.('#addSet,#addNumber')){if($('#lotManualValue'))$('#lotManualValue').value='';refreshConditionPrice();}else if(e.target.id==='lotManualValue')refreshConditionPrice();});
@@ -1500,6 +1538,8 @@ async function loadFormatPool(f, colors, seed, progress) {
     fq = f.legality ? "f:" + f.legality : "game:paper",
     theme = seed ? themeQuery(seed) : "",
     key = f.id + "|" + ci + "|" + theme;
+  const basics = (colors.length ? colors : ["C"]).map(c=>({W:"Plains",U:"Island",B:"Swamp",R:"Mountain",G:"Forest",C:"Wastes"})[c]).filter(Boolean);
+  for (const name of basics) await resolve(name).catch(()=>{});
   if (poolCache.has(key)) return;
   const queries = [
     ...(theme ? [["cards for its theme", `${fq} id<=${ci} -t:land ${theme}`]] : []),
@@ -1641,17 +1681,30 @@ C.buildCustom = (t) => {
   runBuild();
 };
 // A random build-around card that's legal (and can lead, if needed) in the chosen format.
+A.learnGame = () => openSheet(learnSheet(T.game()), {type:"learn-game"});
+A.randomDeckOptions = () => {
+ const g=T.game(),formats=g === "mtg" ? FORMATS.filter(f=>f.id !== "limited") : T.formatsOf(g);
+ openSheet(`<div class="sheet-head"><h2>Discover a deck</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p class="muted">Choose a format. Leave the theme blank for a surprise.</p><label>Format<select id="randomFormat" required>${options([["","Choose a format"],...formats.map(f=>[f.id,f.name])],"")}</select></label><label>Optional theme or card type<input id="randomTheme" maxlength="80" placeholder="${g === "mtg" ? "Dragons, artifacts, graveyard…" : g === "ygo" ? "An archetype or monster type…" : "Fire, Water, Psychic…"}"></label><button class="btn block" data-act="randomDeckStart">Find my deck</button>`,{type:"random-deck-options",game:g});
+};
+A.randomDeckStart = async () => {
+ const g=T.game(),id=$("#randomFormat")?.value,theme=$("#randomTheme")?.value.trim() || "";
+ const f=(g === "mtg" ? FORMATS : T.formatsOf(g)).find(f=>f.id===id);
+ if(!f)return toast("Choose a format first.");
+ if(g === "mtg")return A.buildRandom({dataset:{format:f.id,theme}});
+ return A.tRandomDeck({dataset:{format:f.id,theme}});
+};
 A.buildRandom = async (t) => {
   const B = S.ui.build,
     f = formatOf(t.dataset.format || B.format || "Standard"),
     lead = f.commander === "planeswalker" ? " t:planeswalker" : f.commander ? " is:commander" : "",
-    q = `${f.legality ? "f:" + f.legality : "game:paper"} -t:land -t:basic${lead}`;
+    theme = String(t.dataset.theme || "").replace(/[^\p{L}\p{N} '-]/gu, "").slice(0,80),
+    q = `${f.legality ? "f:" + f.legality : "game:paper"} -t:land -t:basic${lead}${theme ? ` (t:"${theme}" or o:"${theme}")` : ""}`;
   if (!$("#sheet").open || S.ui.sheetCtx?.type !== "build") {
     Object.assign(B, { seed: "", results: {}, msg: "Picking a random card…", format: f.name });
     openSheet(V.buildSheet(), { type: "build" });
   }
   const c = cacheCard(await api("/cards/random?" + new URLSearchParams({ q })));
-  Object.assign(B, { seed: c.name, results: {}, format: f.name, openTier: null });
+  Object.assign(B, { baseDeck:null,seed: c.name, results: {}, format: f.name, openTier: null });
   runBuild();
 };
 A.tierToggle = (t) => {
@@ -1668,6 +1721,7 @@ A.tierSave = async (t) => {
   const B = S.ui.build,
     tier = B.results[B.format]?.[Number(t.dataset.i)];
   if (!tier) return;
+  await resolveNames(tier.cards.map(r=>r.name));
   const d = generatedDeck(tier, B.seed);
   await commit((s) => s.decks.push(d), { msg: `Saved “${d.name}”. Find it in My decks.` });
 };
@@ -1683,6 +1737,7 @@ async function buyMtg(items) {
 A.tierSaveGo = async (t) => {
   const B = S.ui.build, tier = B.results[B.format]?.[Number(t.dataset.i)];
   if (!tier) return;
+  await resolveNames(tier.cards.map(r=>r.name));
   const d = generatedDeck(tier, B.seed);
   await commit((s) => s.decks.push(d), { msg: `Saved “${d.name}”.` });
   closeSheet();

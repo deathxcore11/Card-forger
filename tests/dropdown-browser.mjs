@@ -74,6 +74,8 @@ try{
     await page.getByRole('button',{name:'Switch game',exact:true}).getByText(game,{exact:true}).waitFor();
    }
    await page.locator('summary').filter({hasText:'Filters'}).click();
+   await page.evaluate(()=>window.dispatchEvent(new Event('cf:tcg-prices')));
+   assert.equal(await page.locator('summary').filter({hasText:'Filters'}).evaluate(n=>n.parentElement.open),true,`${game} Filters survive a background refresh before opening Sort`);
    await activate(page.getByRole('combobox',{name:'Sort',exact:true}));
    await page.evaluate(()=>{window.dispatchEvent(new Event('resize'));document.dispatchEvent(new Event('scroll'));});
    await page.waitForTimeout(80);assert.equal(await menu.count(),1,`${name} real ${game} Sort stays open`);

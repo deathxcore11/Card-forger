@@ -175,3 +175,18 @@ export function customBudget(value) {
 
 // Placeholder cards while results load: the layout appears at once and fills in.
 export const skeletonGrid = (n = 6) => `<div class="card-grid skeleton-grid" aria-busy="true" aria-label="Loading cards">${Array.from({ length: n }, () => `<div class="skel-card"><span class="skel-img"></span><span class="skel-line"></span><span class="skel-line short"></span></div>`).join("")}</div>`;
+
+// Async prices/results must not close the disclosure the player is using.
+const disclosureKeys = root => {
+ const counts=new Map();
+ return [...(root?.querySelectorAll?.('details')||[])].map(node=>{
+  const label=node.id || node.querySelector('summary')?.textContent?.trim() || '';
+  const n=counts.get(label)||0;counts.set(label,n+1);
+  return [label+'#'+n,node];
+ });
+};
+export const captureDisclosures=root=>new Map(disclosureKeys(root).map(([key,node])=>[key,node.open]));
+export function restoreDisclosures(root,state){
+ if(!state)return;
+ for(const [key,node] of disclosureKeys(root))if(state.has(key))node.open=state.get(key);
+}

@@ -35,7 +35,8 @@ export async function ygoPriceRoute(url,ctx,fetchImpl=fetch){
  try{
   const [data,groups]=await Promise.all([fetchJson('https://db.ygoprodeck.com/api/v7/cardinfo.php?id='+id),stored('groups',async()=>((await fetchJson('https://tcgcsv.com/tcgplayer/2/groups')).results||[]).map(g=>({groupId:g.groupId,name:g.name,abbreviation:g.abbreviation})))]),card=data.data?.[0];
   if(String(card?.id)!==id)throw Error('Card identity mismatch');
-  const sets=(card.card_sets||[]).map(s=>({code:s.set_code,rarity:s.set_rarity,name:s.set_name}));const printings=[];
+  const wantedCode=url.searchParams.get('printing'),wantedRarity=url.searchParams.get('rarity');
+  const sets=(card.card_sets||[]).map(s=>({code:s.set_code,rarity:s.set_rarity,name:s.set_name})).filter(s=>(!wantedCode||s.code===wantedCode)&&(!wantedRarity||s.rarity===wantedRarity));const printings=[];
   // Each printing's TCGplayer set: the one group with the set's name, else the one whose code is
   // the printing's code prefix (LOB-EN001 → LOB; sneak peeks and tin packs are listed under their
   // parent's code). A product still has to carry the exact code and rarity.
