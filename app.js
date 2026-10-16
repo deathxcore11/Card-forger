@@ -1182,13 +1182,15 @@ function refreshConditionPrice(){
   entry={cardId:card?.id,condition:$("#tCond")?.value,variant:game==='ptcg'?pr:'',printing:printing||'',rarity:rarity||'',edition:$("#tEdition")?.value||'',manualValue,manualValueCondition:conditionName($("#tCond")?.value)};
   price=T.entryPrice(card,entry);
  }else if(ctx.type==='add'){
-  const card=ctx.lookup;entry={...ctx.entry,condition:$("#addCondition")?.value,finish:$("#addFinish")?.value,language:$("#addLanguage")?.value,manualValue,manualValueCondition:conditionName($("#addCondition")?.value)};
+  const card=(ctx.entry?.printingVerified&&S.state.printings?.[ctx.entry.printingId])||ctx.lookup;entry={...ctx.entry,condition:$("#addCondition")?.value,finish:$("#addFinish")?.value,language:$("#addLanguage")?.value,manualValue,manualValueCondition:conditionName($("#addCondition")?.value)};
   price=conditionValue(cardPrice(card,entry.finish)??cardPrice(card),entry,card?.conditionQuotes||[]).price;
+  const set=$('#addSet')?.value?.trim().toLowerCase(),number=$('#addNumber')?.value?.trim();
+  if((set&&set!==String(card?.set||'').toLowerCase())||(number&&number!==String(card?.collector_number||'')))price=null;
  }else return;
  node.innerHTML=conditionPriceHtml(price,entry);
 }
 document.addEventListener("change",e=>{if(e.target.matches?.("#addCondition,#addFinish,#addLanguage,#tCond,#tPrint,#tEdition")){for(const n of document.querySelectorAll("#lotManualValue,#quickLotValue"))n.value="";refreshConditionPrice();}});
-document.addEventListener("input",e=>{if(e.target.id==='lotManualValue')refreshConditionPrice();});
+document.addEventListener("input",e=>{if(e.target.matches?.('#addSet,#addNumber')){if($('#lotManualValue'))$('#lotManualValue').value='';refreshConditionPrice();}else if(e.target.id==='lotManualValue')refreshConditionPrice();});
 document.addEventListener("submit",e=>{
  const form=e.target.closest?.('[data-auth-action]');if(!form)return;
  e.preventDefault();const action=A[form.dataset.authAction];if(action)safely(action(form.querySelector('button[type="submit"]')));
