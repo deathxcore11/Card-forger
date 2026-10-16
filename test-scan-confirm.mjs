@@ -59,7 +59,7 @@ const prints=await tcg.scanPrintings('ptcg',{name:'Kyogre'});assert.ok(prints.le
 Object.assign(SOURCES.ptcg,old);
 const source=fs.readFileSync('scancam.js','utf8');
 assert.ok(source.indexOf('r=await readFlow(card,G,p,null)') < source.indexOf('const fast = await artFirst(card,G)'));
-assert.match(source,/if \(s\(\)\.confirm\)/);assert.match(source,/640 \/ g.w/);
+assert.match(source,/if \(s\(\)\.confirm\)/);assert.match(source,/flattenCapture\(v,loop.quad\)/);
 console.log('PASS: all-game identifier gates, Pokémon suffix/number collisions, compact live confirmation, quantity/condition, direct save, duplicate-submit protection, failed-save recovery and camera continuity.');
 
 for(const g of ['mtg','ptcg','ygo']){

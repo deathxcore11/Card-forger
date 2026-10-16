@@ -165,6 +165,11 @@ export const ygoPasscodes = (text) => [...new Set([...String(text).matchAll(/(?<
 export function ptcgNumbers(text) {
   const out = [];
   for (const m of String(text).matchAll(/(?<![\d/])(\d{1,3})\s?\/\s?(\d{2,3})(?![\d/])/g)) if (Number(m[1]) > 0 && Number(m[2]) >= 10) out.push({ num: m[1], total: m[2] });
+  // OCR-confusable letters are corrected only inside a compact fraction token.
+  if(!out.length)for(const m of String(text).matchAll(/(?<![A-Za-z0-9])([0-9OIlLSBZ]{1,3})\s*[\/\\]\s*([0-9OIlLSBZ]{2,3})(?![A-Za-z0-9])/g)){
+    const fix=x=>x.replace(/[OIlLSBZ]/g,c=>({O:'0',I:'1',l:'1',L:'1',S:'5',B:'8',Z:'2'}[c]));
+    const num=fix(m[1]),total=fix(m[2]);if(/\d/.test(m[1]+m[2])&&Number(num)>0&&Number(total)>=10)out.push({num,total});
+  }
   // The small slash often reads as 7, 1 or l: "0537128" → 053/128.
   if (!out.length) for (const m of String(text).matchAll(/(?<!\d)(\d{3})[71l|I](\d{3})(?!\d)/g)) if (Number(m[1]) > 0 && Number(m[2]) >= 10) out.push({ num: m[1], total: m[2] });
   return out.slice(0, 3);
