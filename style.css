@@ -3153,3 +3153,13 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .glass-select-options button span:last-child {color:var(--game-color,var(--gold));flex:none;}
 .glass-select-filter {margin:0 0 8px;min-height:44px;width:100%;}
 .glass-select-options [hidden] {display:none!important;}
+
+/* Scanner result: one animated card popup, with actions always within reach. */
+.scan-confirm {animation:none;background:linear-gradient(145deg,color-mix(in srgb,var(--game-color,var(--gold)) 12%,transparent),transparent 65%),rgba(21,24,31,.96);max-height:min(56dvh,520px);border-color:color-mix(in srgb,var(--game-color,var(--gold)) 42%,var(--line));}
+.scan-confirm-enter {animation:scan-confirm-in .24s cubic-bezier(.2,.8,.2,1);}
+@keyframes scan-confirm-in {from{opacity:0;transform:translate(-50%,24px) scale(.98)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
+.scan-confirm-art {width:76px;height:106px;object-fit:contain;flex:none;filter:drop-shadow(0 6px 12px #0005);}
+.scan-confirm-card {gap:16px;margin:8px 0;}
+.scan-confirm-actions {position:sticky;bottom:-12px;padding:10px 0 4px;background:rgba(21,24,31,.98);z-index:1;}
+.scan-confirm-actions .btn {min-height:44px;}
+@media(prefers-reduced-motion:reduce){.scan-confirm-enter{animation:none;}}

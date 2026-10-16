@@ -467,19 +467,31 @@ export function textVerifiedMatch(g, cand, read = {}) {
   return !!code && code.set === String(cand.card.set || "").toLowerCase() && Number(code.number) === Number(cand.card.collector_number);
 }
 
+// OCR can produce plausible-looking nonsense. Keep visual suggestions reviewable
+// when text lookup fails, without turning visual similarity into a verified printing.
+export function recoverScanCandidates(g, result, visual, read = {}) {
+  if(result.cands.some(c=>textVerifiedMatch(g,c,read)) || !visual?.cands?.length)return result;
+  const names=nameCandidates(g,read.name || "");
+  const compatible=visual.cands.filter(c=>names.some(n=>scanNameKey(n)===scanNameKey(c.name)));
+  if(result.cands.length && !compatible.length)return result;
+  const suggestions=(compatible.length?compatible:visual.cands).map(c=>({...c,exact:false,why:"Artwork suggestion · check the card and printing"}));
+  return {...visual,cands:suggestions,tried:[...(result.tried||[]),...(visual.tried||[])]};
+}
+
 export function scanConfirmation(g, st, prefs) {
   const q = st.confirm, c = st.cands?.[q?.i || 0];
-  if (!q || !c) return "";
+  if (!q) return "";
+  if (!c) return `<section class="scan-confirm ${q.presented ? "" : "scan-confirm-enter"}" role="region" aria-label="Identify scanned card"><header><b>Let’s find this card</b><button class="icon" data-act="scanDismiss" aria-label="Skip this scan">✕</button></header><div class="scan-confirm-card">${st.shot ? `<img class="scan-confirm-art" src="${esc(st.shot)}" alt="Your captured card">` : ""}<div><strong>No reliable match yet</strong><small>${esc(st.recognitionError || "Try the name or printed card code below.")}</small></div></div><div class="scan-confirm-search"><input id="scanMatchName" placeholder="Card name or printed code" aria-label="Correct card name" data-enter="scanFind"><button class="btn" data-act="scanFind">Find card</button></div>${q.error ? `<p role="alert">${esc(q.error)}</p>` : ""}<div class="scan-confirm-actions"><button class="btn ghost" data-act="scanDismiss">Skip</button><button class="btn" data-act="scanRetry">Scan again</button></div></section>`;
   const image = c.card ? artworkHTML(c.card, "scan-confirm-art", true) : c.image ? `<img class="scan-confirm-art" src="${esc(c.image)}" alt="${esc(c.name)}">` : "";
-  return `<section class="scan-confirm" role="region" aria-label="Confirm scanned card" aria-busy="${!!q.saving}">
-    <header><b>${q.editing ? "Choose your match" : "Check this match"}</b><button class="icon" data-act="scanDismiss" aria-label="Skip this scan" ${q.saving ? "disabled" : ""}>✕</button></header>
+  return `<section class="scan-confirm ${q.presented ? "" : "scan-confirm-enter"}" role="region" aria-label="Confirm scanned card" aria-busy="${!!q.saving}">
+    <header><b>${q.editing ? "Choose your match" : "Add this card"}</b><button class="icon" data-act="scanDismiss" aria-label="Skip this scan" ${q.saving ? "disabled" : ""}>✕</button></header>
     <div class="scan-confirm-card">${image}<div><strong>${esc(c.name)}</strong><small>${esc(c.sub || "")}</small><small>${textVerifiedMatch(g,c,st.read) ? "Printed identifier matched" : "Possible match · check name and printing"}</small></div></div>
     ${q.editing ? `<div class="scan-confirm-search"><input id="scanMatchName" placeholder="Card name or code" aria-label="Correct card name" data-enter="scanFind"><button class="btn ghost small" data-act="scanFind">Find</button></div><div class="scan-confirm-options">${st.cands.map((x,i)=>`<button class="btn ghost small" data-act="scanChoose" data-i="${i}" aria-pressed="${i===q.i}">${esc(x.name)}<small>${esc(x.sub || "")}</small></button>`).join("")}<button class="link" data-act="scanDismiss">None of these · scan again</button></div>` : ""}
     <p class="scan-confirm-price">${q.price == null ? "Price unavailable" : "Reference price · " + money(q.price)}${q.price == null ? "" : " · check the selected finish"}</p>
     <div class="scan-confirm-conditions" role="group" aria-label="Card condition">${CONDITIONS.map(([v,l])=>`<button data-act="scanConfirmCondition" data-condition="${esc(v)}" aria-label="${esc(v)}" aria-pressed="${q.condition===v}" ${q.saving ? "disabled" : ""}>${l}</button>`).join("")}</div>
     <div class="scan-confirm-controls"><div class="ss-qty"><button data-act="scanConfirmQty" data-d="-1" aria-label="Fewer copies" ${q.saving || q.qty<=1 ? "disabled" : ""}>−</button><output aria-label="Copies to save">${q.qty}</output><button data-act="scanConfirmQty" data-d="1" aria-label="More copies" ${q.saving ? "disabled" : ""}>＋</button></div><label>Language<select data-change="scanConfirmLanguage" aria-label="Scanned card language" ${q.saving ? "disabled" : ""}>${LANGS.map(([v,l])=>`<option value="${esc(v)}" ${q.lang===v ? "selected" : ""}>${esc(LANG_NAME[v]||l)}</option>`).join("")}</select></label><label>Finish<select data-change="scanConfirmFinish" aria-label="Scanned card finish" ${q.saving ? "disabled" : ""}>${finishesFor(g,c).map(f=>`<option value="${esc(f)}" ${q.finish===f ? "selected" : ""}>${esc(label(FINISHES[g],f))}</option>`).join("")}</select></label></div>
     ${q.error ? `<p class="scan-confirm-error" role="alert">${esc(q.error)}</p>` : ""}
-    <div class="scan-confirm-actions"><button class="btn ghost" data-act="scanEditMatch" ${q.saving ? "disabled" : ""}>Edit match</button><button class="btn" data-act="scanConfirm" ${q.saving ? "disabled" : ""}>${q.saving ? "Saving…" : "Save & next scan"}</button></div>
+    <div class="scan-confirm-actions"><button class="btn ghost" data-act="scanEditMatch" ${q.saving ? "disabled" : ""}>Edit match</button><button class="btn" data-act="scanConfirm" ${q.saving ? "disabled" : ""}>${q.saving ? "Saving…" : "Add to collection"}</button></div>
   </section>`;
 }
 
@@ -556,9 +568,9 @@ export function registerScanner(ctx) {
     if (!best) return null;
     const cand = await ctx.candById(best.g, indexCardId(best.g, best.id), "Artwork match", false);
     if (!cand) return null;
-    const picked = await pickPrinting(best.g, card, cand).catch(() => null);
-    // A printing is only "found" when the index match itself was clear.
-    const cands = (picked?.length ? picked : [cand]).map((c) => ({ ...c, exact: false, why: "Possible artwork match · confirm name and printing" }));
+    // The index entry already identifies a printing. Do not replace it with one
+    // of only the newest reprints of the same name.
+    const cands = [cand].map((c) => ({ ...c, exact: false, why: "Possible artwork match · confirm name and printing" }));
     return { g: best.g, sure: best.sure, exact: !!cands[0].exact, r: { cands, tried: [cand.name], picked: true } };
   };
   // Which printing: the only one there is, or the one whose artwork and frame match the scan.
@@ -658,21 +670,23 @@ export function registerScanner(ctx) {
     st.busy = true;
     st.lensUrl = "";
     st.cands = [];
+    st.read = null;
     st.confirm = null;
     render();
     try {
       st.foundIn = "";
       const p = prefs();
       // Text first: avoid downloading 24 thumbnail pictures before reading the identifiers.
-      let r = await readFlow(card, G, p, null);
+      let r;
+      st.recognitionError="";
+      try { r=await readFlow(card,G,p,null); }
+      catch(e) {st.read ||= {name:"",code:"",full:""};st.recognitionError=e.message || "Text reading is unavailable. Try the card name.";r={cands:[],tried:[]};}
       if (!current()) return;
       if (!r.cands.length || !r.cands.some(c => nameCandidates(G,st.read?.name || "").some(n => scanNameKey(n)===scanNameKey(c.name)))) {
         setStatus("Checking the artwork…");
         const fast = await artFirst(card,G).catch(() => null);
         if (!current()) return;
-        const names=nameCandidates(G,st.read?.name || "");
-        const compatible=fast?.r.cands.filter(c=>!names.length || names.some(n=>scanNameKey(n)===scanNameKey(c.name))) || [];
-        if (compatible.length && !r.cands.some(c=>textVerifiedMatch(G,c,st.read))) r={...fast.r,cands:compatible};
+        if(fast)r=recoverScanCandidates(G,r,fast.r,st.read);
       }
       // The picture picks the printing: compare the scan with every printing of the best name.
       if (r.cands.length && !r.cands[0].exact && !r.picked) {
@@ -703,7 +717,10 @@ export function registerScanner(ctx) {
           st.confirm={i:0,qty:p.qty||1,condition:p.condition||"Near Mint",lang:p.lang||"en",finish:fs.includes(p.finish)?p.finish:fs[0],price:ctx.priceOf(G,r.cands[0],fs.includes(p.finish)?p.finish:fs[0]),saving:false,error:""};
           feedback("ok",{...p,sounds:false});
         }
-        if (!r.cands.length) feedback("fail", p);
+        if (!r.cands.length) {
+          st.confirm={i:0,qty:p.qty||1,condition:p.condition||"Near Mint",lang:p.lang||"en",saving:false,error:"",unresolved:true};
+          feedback("fail",p);
+        }
         st.status = st.foundIn
           ? `Found it in ${GAME_LABEL[st.foundIn]}.`
           : r.cands.length
@@ -984,6 +1001,11 @@ export function registerScanner(ctx) {
   C.scanConfirmFinish = t => {const q=s().confirm,c=s().cands?.[q?.i||0];if(q&&!q.saving&&finishesFor(game(),c).includes(t.value)){q.finish=t.value;q.price=ctx.priceOf(game(),c,q.finish);render();}};
   A.scanEditMatch = () => {const q=s().confirm;if(q&&!q.saving){q.editing=!q.editing;render();}};
   A.scanChoose = t => {const q=s().confirm,i=Number(t.dataset.i);if(q&&!q.saving&&s().cands?.[i]){q.i=i;q.editing=false;const fs=finishesFor(game(),s().cands[i]);if(!fs.includes(q.finish))q.finish=fs[0];q.price=ctx.priceOf(game(),s().cands[i],q.finish);render();}};
+  A.scanRetry = () => {
+    if(s().busy || s().confirm?.saving)return;
+    s().confirm=null;
+    if(s().camOn)capture();else if(s().lastCard)process(s().lastCard);else render();
+  };
   A.scanDismiss = () => {if(!s().confirm?.saving)resetConfirmation("Skipped. Move to the next card.");};
   A.scanConfirm = async () => {
     const st=s(),q=st.confirm,c=st.cands?.[q?.i||0],G=game();
@@ -1231,6 +1253,7 @@ export function registerScanner(ctx) {
       if (stream) stopCamera();
       return;
     }
+    if(s().confirm)s().confirm.presented=true;
     if (s().camOn) attach();
     attachCrop();
   };

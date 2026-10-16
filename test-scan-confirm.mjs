@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {textVerifiedMatch,scanConfirmation,scanView,registerScanner} from './scancam.js';
+import {textVerifiedMatch,scanConfirmation,scanView,registerScanner,recoverScanCandidates} from './scancam.js';
 import {S,blank} from './store.js';
 import {savePrefs,loadPrefs,loadSession,DEFAULT_PREFS} from './scansession.js';
 import {registerTcg,SOURCES,cache} from './tcg.js';
@@ -33,7 +33,7 @@ for(const g of ['mtg','ptcg','ygo']){
  const setup=()=>{S.ui.scan={mode:'live',camOn:true,cands:[cand],read:{name:'Demo card',code:''},confirm:{i:0,qty:1,condition:'Near Mint',lang:'en',finish:{mtg:'nonfoil',ptcg:'normal',ygo:'unlimited'}[g],price:1.5,saving:false,error:''}};};
  setup();
  const html=scanView(g,g);
- assert.match(html,/id="camSlot"/);assert.match(html,/Confirm scanned card/);assert.match(html,/Save &amp; next scan|Save & next scan/);assert.doesNotMatch(html,/sc-compare|Which one is it/);assert.match(html,/Reference price/);assert.match(html,/Scanned card language/);assert.doesNotMatch(html,/Defaults for scanned cards|Capture automatically|Scanned cards/,'one set of controls while confirming');
+ assert.match(html,/id="camSlot"/);assert.match(html,/Confirm scanned card/);assert.match(html,/Add to collection/);assert.doesNotMatch(html,/sc-compare|Which one is it/);assert.match(html,/Reference price/);assert.match(html,/Scanned card language/);assert.doesNotMatch(html,/Defaults for scanned cards|Capture automatically|Scanned cards/,'one set of controls while confirming');
  assert.match(scanConfirmation(g,S.ui.scan,{}),/Possible match/);
  A.scanConfirmQty({dataset:{d:'-1'}});assert.equal(S.ui.scan.confirm.qty,1);
  A.scanConfirmQty({dataset:{d:'1'}});A.scanConfirmQty({dataset:{d:'1'}});A.scanConfirmCondition({dataset:{condition:'Lightly Played'}});C.scanConfirmLanguage({value:'ja'});
@@ -58,6 +58,16 @@ assert.deepEqual(result.cands.filter(c=>c.exact).map(c=>c.id),['correct']);
 const prints=await tcg.scanPrintings('ptcg',{name:'Kyogre'});assert.ok(prints.length>0);assert.ok(prints.every(p=>p.id!=='wrong-suffix'));
 Object.assign(SOURCES.ptcg,old);
 const source=fs.readFileSync('scancam.js','utf8');
-assert.ok(source.indexOf('let r = await readFlow(card, G, p, null)') < source.indexOf('const fast = await artFirst(card,G)'));
+assert.ok(source.indexOf('r=await readFlow(card,G,p,null)') < source.indexOf('const fast = await artFirst(card,G)'));
 assert.match(source,/if \(s\(\)\.confirm\)/);assert.match(source,/640 \/ g.w/);
 console.log('PASS: all-game identifier gates, Pokémon suffix/number collisions, compact live confirmation, quantity/condition, direct save, duplicate-submit protection, failed-save recovery and camera continuity.');
+
+for(const g of ['mtg','ptcg','ygo']){
+ const candidate={id:'visual-card',name:g==='ptcg'?'Kyogre':'Known Card',exact:true,card:{name:g==='ptcg'?'Kyogre':'Known Card'}};
+ const r=recoverScanCandidates(g,{cands:[],tried:['Nonsensical OCR']},{cands:[candidate],tried:['art']},{name:'Nonsensical OCR'});
+ assert.equal(r.cands.length,1,'noisy OCR cannot erase an available visual suggestion');assert.equal(r.cands[0].exact,false,'visual recovery still requires confirmation');
+ assert.equal(textVerifiedMatch(g,r.cands[0],{name:'Nonsensical OCR'}),false);
+ const empty=scanConfirmation(g,{cands:[],shot:'data:image/png;base64,AA',confirm:{unresolved:true}},{});
+ assert.match(empty,/Your captured card/);assert.match(empty,/Find card/);assert.match(empty,/Scan again/);assert.doesNotMatch(empty,/data-act="scanConfirm"/,'unidentified card cannot be saved as a fabricated match');
+}
+console.log('PASS: noisy-title visual recovery and retry/manual-identification popup in all games; unverified artwork never becomes an exact printing.');

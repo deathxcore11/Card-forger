@@ -50,7 +50,39 @@ try{
   await activate(page.locator('#lower'));await page.waitForTimeout(80);assert.equal(await menu.count(),1);await activate(menu.getByRole('option',{name:'Price',exact:true}));assert.equal(await page.locator('#lower').inputValue(),'Price');
   // Replaced controls continue working after the application's next render.
   await activate(page.locator('#replace'));await activate(page.locator('#mtg'));assert.equal(await menu.count(),1);await menu.getByRole('option').first().press('Escape');
+  // A new outside tap dismisses, while Escape preserves the selected value.
+  await activate(page.locator('#mtg'));
+  if(options.hasTouch)await page.touchscreen.tap(2,2);else await page.mouse.click(2,2);
+  assert.equal(await menu.count(),0,'a complete outside tap dismisses');
   console.log(`PASS: ${name}: 15 repeated open/save gestures, phone viewport/scroll events, long-list filtering, resize, nested sheets, lower-page menus and source replacement.`);
+  // Exercise the unchanged production app handlers as well as the isolated module.
+  await page.route('**/*',route=>route.request().url().startsWith(base+'/')?route.continue():route.abort());
+  await page.goto(base+'/#search');
+  await page.getByRole('heading',{name:'Search cards',exact:true}).waitFor();
+  const skip=page.getByRole('button',{name:'Skip',exact:true});
+  try{await skip.waitFor({state:'visible',timeout:2000});await skip.click();}catch{}
+  for(const game of ['Magic','Pokémon','Yu-Gi-Oh!']){
+   if(game!=='Magic'){
+    await page.getByRole('button',{name:'Switch game',exact:true}).click();
+    await page.locator('#sheet[open]').getByRole('button',{name:new RegExp(game)}).click();
+    await page.getByRole('button',{name:'Switch game',exact:true}).getByText(game,{exact:true}).waitFor();
+   }
+   await page.locator('summary').filter({hasText:'Filters'}).click();
+   await activate(page.getByRole('combobox',{name:'Sort',exact:true}));
+   await page.evaluate(()=>{window.dispatchEvent(new Event('resize'));document.dispatchEvent(new Event('scroll'));});
+   await page.waitForTimeout(80);assert.equal(await menu.count(),1,`${name} real ${game} Sort stays open`);
+   await activate(menu.getByRole('option',{name:'Name',exact:true}));
+   assert.equal(await menu.count(),0);
+   assert.equal((await page.getByLabel('Sort',{exact:true}).inputValue()).toLowerCase(),'name',`${game} real sort handler saved Name`);
+  }
+  await page.getByRole('button',{name:'Settings',exact:true}).click();
+  await page.getByRole('heading',{name:'Settings',exact:true}).waitFor();
+  const settingsSelect=page.locator('#sheet[open] select:visible').first();
+  if(await settingsSelect.count()){
+   await activate(settingsSelect);assert.equal(await menu.count(),1,`${name} Settings dropdown remains open`);
+   await menu.getByRole('option').first().press('Escape');assert.equal(await page.locator('#sheet[open]').count(),1,'closing picker keeps Settings open');
+  }
+  console.log(`PASS: ${name}: production app Sort controls in all three games and Settings navigation.`);
   await context.close();
  }
  assert.deepEqual(errors,[],'no browser errors');

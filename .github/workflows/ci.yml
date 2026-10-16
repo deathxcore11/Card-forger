@@ -33,3 +33,22 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Test dropdown gestures before release
         run: node tests/dropdown-browser.mjs
+  scanner-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install pinned browser test runner
+        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - name: Install test browser
+        run: npx playwright install --with-deps chromium
+      - name: Test real reference images through scanner and collection
+        run: node tests/scanner-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: scanner-browser-failures
+          path: test-results/
