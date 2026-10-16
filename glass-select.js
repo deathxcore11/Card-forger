@@ -13,7 +13,11 @@ export function chooseOption(select, index) {
 }
 export function attachGlassSelects(doc=document) {
   if(!doc.body?.append || !doc.createElement('dialog').showModal) return;
-  let active=null,serial=0;
+  let active=null,serial=0,positionFrame=0;
+  const schedulePosition=()=>{
+    if(!active || positionFrame)return;
+    positionFrame=doc.defaultView.requestAnimationFrame(()=>{positionFrame=0;active?.position?.();});
+  };
   const eligible=t=>t?.tagName==='SELECT' && !t.disabled && !t.multiple && t.size<=1;
   const close=(restore=true)=>{
     if(!active)return;
@@ -53,7 +57,12 @@ export function attachGlassSelects(doc=document) {
     select.setAttribute('aria-expanded','true');select.setAttribute('aria-controls',dialog.id);
     const accent=getComputedStyle(select).getPropertyValue('--game-color');if(accent)dialog.style.setProperty('--game-color',accent);
     dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
-    dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)close();}});
+    // A completed outside gesture dismisses the menu. A release left over from the
+    // opening tap must never be treated as an outside click.
+    let outsidePress=false;
+    const outside=e=>{const r=dialog.getBoundingClientRect();return e.target===dialog&&(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom);};
+    dialog.addEventListener('pointerdown',e=>{outsidePress=outside(e);});
+    dialog.addEventListener('click',e=>{if(outsidePress&&outside(e))close();outsidePress=false;});
     let typed='',lastKey=0;
     dialog.addEventListener('keydown',e=>{
       const enabled=buttons.filter(b=>!b.disabled&&!b.hidden),i=enabled.indexOf(doc.activeElement);
@@ -70,26 +79,40 @@ export function attachGlassSelects(doc=document) {
     });
     const first=buttons.find(b=>b.getAttribute('aria-selected')==='true'&&!b.disabled)||buttons.find(b=>!b.disabled);
     if(first)first.autofocus=true;
+    const position=()=>{
+      if(!select.isConnected)return close(false);
+      const view=doc.defaultView,viewport=view.visualViewport,r=select.getBoundingClientRect(),vw=viewport?.width||view.innerWidth,vh=viewport?.height||view.innerHeight;
+      const left=viewport?.offsetLeft||0,top=viewport?.offsetTop||0,width=Math.min(Math.max(r.width,240),vw-20);
+      dialog.style.width=width+'px';dialog.style.left=Math.max(left+10,Math.min(r.left,left+vw-width-10))+'px';
+      const below=top+vh-r.bottom-12,above=r.top-top-12,down=below>=Math.min(dialog.scrollHeight,280)||below>=above;
+      const maxHeight=Math.max(100,Math.min(vh-20,down?below:above));dialog.style.maxHeight=maxHeight+'px';
+      dialog.style.top=Math.max(top+10,Math.min(top+vh-Math.min(dialog.scrollHeight||280,maxHeight)-10,down?r.bottom+6:r.top-Math.min(dialog.scrollHeight||280,maxHeight)-6))+'px';
+    };
+    active.position=position;
+    // Anchor before showModal's autofocus, rather than initially laying the dialog
+    // out at the bottom of a long page and scrolling the whole document to it.
+    position();
     try{dialog.showModal();}catch{close(false);return;}
-    const view=doc.defaultView,viewport=view?.visualViewport,r=select.getBoundingClientRect(),vw=viewport?.width||view.innerWidth,vh=viewport?.height||view.innerHeight;
-    const left=viewport?.offsetLeft||0,top=viewport?.offsetTop||0;
-    const width=Math.min(Math.max(r.width,240),vw-20);
-    dialog.style.width=width+'px';dialog.style.left=Math.max(left+10,Math.min(r.left,left+vw-width-10))+'px';
-    const below=top+vh-r.bottom-12,above=r.top-top-12,down=below>=Math.min(dialog.scrollHeight,280)||below>=above;
-    const maxHeight=Math.max(100,Math.min(vh-20,down?below:above));dialog.style.maxHeight=maxHeight+'px';
-    dialog.style.top=Math.max(top+10,down?r.bottom+6:r.top-Math.min(dialog.scrollHeight,maxHeight)-6)+'px';
-    if(first){first.tabIndex=0;first.focus({preventScroll:true});first.scrollIntoView({block:'nearest'});}
+    position();
+    if(first){
+      first.tabIndex=0;first.focus({preventScroll:true});
+      // Scroll only the menu. scrollIntoView can scroll the page and mobile viewport.
+      dialog.scrollTop=Math.max(0,first.offsetTop-dialog.clientHeight/2+first.offsetHeight/2);
+    }
     if(typeof MutationObserver!=='undefined'){
       active.observer=new MutationObserver(records=>{if(!select.isConnected||records.some(r=>r.target===select||select.contains(r.target)))close(false);});
       active.observer.observe(doc.body,{childList:true,subtree:true,attributes:true,attributeFilter:['disabled','hidden']});
     }
   };
   // Cancel the native picker before Android can display its system dialog.
-  doc.addEventListener('pointerdown',e=>{if(eligible(e.target)){e.preventDefault();open(e.target);}},true);
+  doc.addEventListener('pointerdown',e=>{if(eligible(e.target))e.preventDefault();},true);
   doc.addEventListener('mousedown',e=>{if(eligible(e.target))e.preventDefault();},true);
   doc.addEventListener('click',e=>{if(eligible(e.target)){e.preventDefault();e.stopPropagation();open(e.target);}},true);
   doc.addEventListener('keydown',e=>{if(eligible(e.target)&&['Enter',' ','ArrowDown','ArrowUp','Home','End'].includes(e.key)){e.preventDefault();e.stopPropagation();open(e.target);}},true);
-  doc.defaultView?.addEventListener('resize',()=>close());
-  doc.defaultView?.visualViewport?.addEventListener('resize',()=>close());
-  doc.addEventListener('scroll',e=>{if(active&&!active.dialog.contains(e.target))close(false);},true);
+  // Mobile browser bars, keyboards and fold changes resize/scroll the viewport.
+  // Reposition the open menu; these are not user dismissal gestures.
+  doc.defaultView?.addEventListener('resize',schedulePosition);
+  doc.defaultView?.visualViewport?.addEventListener('resize',schedulePosition);
+  doc.defaultView?.visualViewport?.addEventListener('scroll',schedulePosition);
+  doc.addEventListener('scroll',e=>{if(active&&!active.dialog.contains(e.target))schedulePosition();},true);
 }

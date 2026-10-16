@@ -16,3 +16,20 @@ jobs:
         run: for f in *.js *.mjs; do node --check "$f"; done
       - name: Unit and action tests
         run: npm test
+  dropdown-browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Fetch the known broken version for regression proof
+        run: git fetch --depth=1 origin a570fb034b61f508b48427200bb3d69aab5323a6
+      - name: Install pinned browser test runner
+        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - name: Install test browser
+        run: npx playwright install --with-deps chromium
+      - name: Test dropdown gestures before release
+        run: node tests/dropdown-browser.mjs
