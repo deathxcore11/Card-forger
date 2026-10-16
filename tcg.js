@@ -1916,15 +1916,14 @@ export function registerTcg(c) {
     const ps = G === "ygo" && print ? card.sets?.find((x) => `${x.code}|${x.rarity}` === print) : null;
     return { id: card.id, name: card.name, image: G === "ygo" ? ygoImageDirect(card.id, false) : card.imageLarge, sub: G === "ygo" ? (ps ? `${ps.name} · ${ps.code} · ${ps.rarity}` : card.typeLine) : `${card.set?.name || ""} · #${card.set?.number || ""}${card.set?.total ? "/" + card.set.total : ""} · ${card.rarity || ""}`, why, exact, print, owned: ownedOf(G, card, m), card };
   };
-  const ptcgBase = (n) => String(n).replace(/[\s-]+(?:ex|EX|GX|V|VMAX|VSTAR|V-UNION|BREAK|LV\.X|Prime|LEGEND|δ|☆|◇)$/u, "").trim();
   // Every printing of a scanned card's name with a small picture, for matching the artwork.
   c.scanPrintings = async (G, cand) => {
     if (G !== "ptcg") return [];
     const r = await SOURCES.ptcg.search({ q: cand.name, size: 400 }).catch(() => ({ cards: [] }));
     // Pictures from hosts that allow reading pixels (TCGdex, or the Pokémon TCG API fallback).
     return r.cards
-      // The suffix logo (ex, GX, V…) often reads as noise, so "Mewtwo" also checks Mewtwo ex, Mewtwo GX…
-      .filter((b) => b.name === cand.name || ptcgBase(b.name) === ptcgBase(cand.name))
+      // A different suffix means a different card, not a printing of the same card.
+      .filter((b) => scanNameKey(b.name) === scanNameKey(cand.name))
       .sort((a, b) => (b.name === cand.name) - (a.name === cand.name))
       .map((b) => ({ id: b.id, thumb: artworkSources(b).find((u) => /tcgdex\.net|images\.pokemontcg\.io/.test(u)) || "" }))
       .filter((b) => b.thumb)
@@ -1994,7 +1993,10 @@ export function registerTcg(c) {
       for (const n of names.slice(0, 3))
         for (const x of nums) {
           tried.push(`${n} #${x.num}`);
-          for (const h of await SOURCES.ptcg.byNameNumber(n, x.num).catch(() => [])) push(await ensureCard("ptcg", h.id).catch(() => null), `Card #${x.num}/${x.total}`, true);
+          for (const h of await SOURCES.ptcg.byNameNumber(n, x.num).catch(() => [])) {
+            const card = await ensureCard("ptcg", h.id).catch(() => null);
+            if (scanCandidateMatches(card, n, [x])) push(card, `Card #${x.num}/${x.total}`, true);
+          }
         }
       for (const n of names) {
         if (out.length >= 3) break;

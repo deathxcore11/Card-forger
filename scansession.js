@@ -26,11 +26,13 @@ const write = (k, v) => {
   } catch {}
 };
 
-export const DEFAULT_PREFS = { quick: true, sounds: true, haptics: true, showValue: true, preferFoil: false, ignorePromos: false, lockSet: "", camera: "", qty: 1, condition: "Near Mint", lang: "en", location: "" };
+export const DEFAULT_PREFS = { quick: false, sounds: true, haptics: true, showValue: true, preferFoil: false, ignorePromos: false, lockSet: "", camera: "", qty: 1, condition: "Near Mint", lang: "en", location: "" };
 // Per-game finish default, shared settings otherwise.
 export function loadPrefs(g) {
   const all = read(PREFS_KEY, {}) || {};
   const p = { ...DEFAULT_PREFS, ...(all.shared || {}) };
+  // Old installs enabled quick-add by default. Require a fresh opt-in to bypass confirmation.
+  p.quick = p.quick === true && all.shared?.quickVersion === 2;
   p.finish = all[g]?.finish || (p.preferFoil ? FINISHES[g][1][0] : FINISHES[g][0][0]);
   p.lockSet = all[g]?.lockSet || "";
   return p;
@@ -38,6 +40,7 @@ export function loadPrefs(g) {
 export function savePrefs(g, patch) {
   const all = read(PREFS_KEY, {}) || {};
   const { finish, lockSet, ...shared } = patch;
+  if (Object.hasOwn(patch, "quick")) shared.quickVersion = 2;
   all.shared = { ...(all.shared || {}), ...shared };
   all[g] = { ...(all[g] || {}), ...(finish !== undefined ? { finish } : {}), ...(lockSet !== undefined ? { lockSet } : {}) };
   write(PREFS_KEY, all);

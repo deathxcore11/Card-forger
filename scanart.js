@@ -79,11 +79,13 @@ export function fingerprintUrl(url, g) {
   if (fpCache.has(url)) return fpCache.get(url);
   const p = new Promise((ok, bad) => {
     const img = new Image();
+    const timeout = setTimeout(() => {img.onload=img.onerror=null;bad(Error("Image comparison timed out"));}, 4500);
     img.crossOrigin = "anonymous";
     img.onload = () => {
+      clearTimeout(timeout);
       try { ok(fingerprintCanvas(img, g)); } catch (e) { bad(e); }
     };
-    img.onerror = () => bad(Error("image"));
+    img.onerror = () => {clearTimeout(timeout);bad(Error("image"));};
     img.src = url;
   });
   fpCache.set(url, p);
