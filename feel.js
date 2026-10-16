@@ -356,12 +356,14 @@ function attachMotionTilt(root, pressed) {
     for (const x of xs) {
       if (!x.isIntersecting) continue;
       seen.unobserve(x.target);
-      base = null;
+      if(x.target.classList.contains("gyro"))continue;
       x.target.classList.add("shine-once");
       setTimeout(() => x.target.classList.remove("shine-once"), 1300);
     }
   }, { threshold: 0.6 });
-  if (seen) new MutationObserver(() => {
-    for (const c of document.querySelectorAll(".cd-img:not([data-shone])")) { c.dataset.shone = "1"; seen.observe(c); }
-  }).observe(document.body, { childList: true, subtree: true });
+  if (seen) {
+    const observeCards=()=>{for (const c of root.querySelectorAll(".cd-img:not([data-shone])")) { c.dataset.shone = "1"; seen.observe(c); }};
+    observeCards();
+    new MutationObserver(observeCards).observe(document.body, { childList: true, subtree: true });
+  }
 }
