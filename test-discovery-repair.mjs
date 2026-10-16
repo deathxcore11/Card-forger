@@ -1,3 +1,5 @@
+import {atLeastOne} from './deckaudit.js';
+import {buildDeck} from './builder.js';
 import assert from 'node:assert/strict';
 import {playGuide,guideHtml} from './guide.js';
 import {mtgFacts} from './facts.js';
@@ -24,3 +26,6 @@ try{const r=await pokemonPriceRoute(new URL('https://app.test/api/prices/pokemon
 S.state={...blank(),settings:{game:'ygo'}};const U=ui('ygo').sets;Object.assign(U,{list:[{name:'Starter Deck',code:'SD',id:'sd',date:'2020-01-01'},{name:'New Booster',code:'NB',id:'nb',date:'2026-10-01'},{name:'Old Booster',code:'OB',id:'ob',date:'2002-01-01'}],q:'',kind:'all',limit:80});const html=tcgSets();assert.ok(html.indexOf('New Booster')<html.indexOf('Starter Deck'));assert.match(html,/class="year">2026/);U.kind='decks';assert.doesNotMatch(tcgSets(),/New Booster/);assert.equal(setKind('Structure Deck: Test'),'decks');
 for(const game of ['mtg','ptcg','ygo']){const h=learnSheet(game);assert.match(h,/Core|turn|Turn/);assert.match(h,/rule-dex/);assert.match(h,/data-act="closeSheet"/);}
 console.log('PASS: effect coverage, partial-printing dates, reserved Commander mana, basic land counts, exact edition market quotes, bounded supplemental pricing, organized sets and all-game learning sheets.');
+
+assert(atLeastOne(60,12,7)<.85,'12 one-drops in 60 do not guarantee an 85% opening chance');
+const built=buildDeck({format:'Commander',seeds:[leader],catalog:cat,price:()=>.01,budget:100});assert.equal(built.lands,36,'generated basics count as lands even before metadata hydration');

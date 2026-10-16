@@ -1,3 +1,4 @@
+import {loadConditionQuotes,CONDITION_IDENTITY} from './condition-feed.js';
 import {brandMark} from './brand.js';
 import {ownedCardLots,quickQuantity} from './quick-quantity.js';
 import {conditionName,conditionValue,conditionPriceHtml} from './condition-value.js';
@@ -760,6 +761,7 @@ let lastPageKey = "";
 const cheapChecked = new Set();
 let tcgCheckedFor = -1;
 function render() {
+  if(S.ui.view==='collection')setTimeout(refreshCollectionConditions,0);
   useMyPrices(S.state.myPrices);
   // Owned printings Scryfall leaves unpriced get TCGplayer's price (once per collection size).
   if (S.ui.view === "collection" && S.state.collection.length !== tcgCheckedFor) {
@@ -1173,21 +1175,47 @@ const tierSync = () => {
 if (typeof MutationObserver !== "undefined") new MutationObserver(() => { if (!tierQueued) { tierQueued = true; requestAnimationFrame(tierSync); } }).observe(document.body, { childList: true, subtree: true });
 attachSuggest();
 attachGlassSelects();
+function fetchConditionValue(card,entry,game,done){
+ const request=loadConditionQuotes(card,entry,game);if(!request)return;
+ request.then(result=>{
+  if(result.changed){
+   if(game==='mtg'){S.catalogDirty=true;saveCatalogSoon();}else T.persistQuoteCache();
+   const lots=game==='mtg'?S.state.collection:T.gs(game).collection;
+   for(const lot of lots)if((game==='mtg'?key(lot.name)===key(card.name):lot.cardId===card.id)&&CONDITION_IDENTITY.every(k=>String(lot[k]||'')===String(entry[k]||'')))lot.conditionQuotes=result.quotes;
+   save();
+  }
+  done?.(result);
+ });
+}
+function refreshCollectionConditions(){
+ const game=T.game(),lots=game==='mtg'?S.state.collection:T.gs(game).collection;
+ // Session request de-duplication also prevents rerender loops and repeated paid calls.
+ for(const entry of lots.slice(0,100)){
+  const card=game==='mtg'?(entry.printingVerified&&S.state.printings?.[entry.printingId])||meta(entry.name):T.cardOf(game,entry.cardId);
+  if(card&&!card.brief)fetchConditionValue(card,entry,game,result=>{if(result.changed && S.ui.view==='collection')render();});
+ }
+}
 function refreshConditionPrice(){
  const node=$("#conditionPricePreview"),ctx=S.ui.sheetCtx;if(!node||!ctx)return;
  const raw=$("#lotManualValue")?.value??'',manualValue=raw===''?null:Number(raw);
- let entry,price;
+ let entry,price,sourceCard,sourceGame;
  if(ctx.type==='tadd'){
   const game=T.game(),card=T.cardOf(game,ctx.id),pr=$("#tPrint")?.value||'',[printing,rarity]=game==='ygo'?pr.split('|'):['',''];
   entry={cardId:card?.id,condition:$("#tCond")?.value,variant:game==='ptcg'?pr:'',printing:printing||'',rarity:rarity||'',edition:$("#tEdition")?.value||'',manualValue,manualValueCondition:conditionName($("#tCond")?.value)};
-  price=T.entryPrice(card,entry);
+  price=T.entryPrice(card,entry);sourceCard=card;sourceGame=game;
  }else if(ctx.type==='add'){
   const card=(ctx.entry?.printingVerified&&S.state.printings?.[ctx.entry.printingId])||ctx.lookup;entry={...ctx.entry,condition:$("#addCondition")?.value,finish:$("#addFinish")?.value,language:$("#addLanguage")?.value,manualValue,manualValueCondition:conditionName($("#addCondition")?.value)};
   price=conditionValue(cardPrice(card,entry.finish)??cardPrice(card),entry,card?.conditionQuotes||[]).price;
   const set=$('#addSet')?.value?.trim().toLowerCase(),number=$('#addNumber')?.value?.trim();
   if((set&&set!==String(card?.set||'').toLowerCase())||(number&&number!==String(card?.collector_number||'')))price=null;
+  else {sourceCard=card;sourceGame='mtg';}
  }else return;
  node.innerHTML=conditionPriceHtml(price,entry);
+ if(sourceCard)fetchConditionValue(sourceCard,entry,sourceGame,result=>{
+  if(!node.isConnected||S.ui.sheetCtx!==ctx)return;
+  if(result.changed)refreshConditionPrice();
+  else if(result.status==='not_configured'&&price==null)node.insertAdjacentHTML('beforeend','<p class="muted small">Condition market feed is not connected yet.</p>');
+ });
 }
 document.addEventListener("change",e=>{if(e.target.matches?.("#addCondition,#addFinish,#addLanguage,#tCond,#tPrint,#tEdition")){for(const n of document.querySelectorAll("#lotManualValue,#quickLotValue"))n.value="";refreshConditionPrice();}});
 document.addEventListener("input",e=>{if(e.target.matches?.('#addSet,#addNumber')){if($('#lotManualValue'))$('#lotManualValue').value='';refreshConditionPrice();}else if(e.target.id==='lotManualValue')refreshConditionPrice();});
@@ -1666,7 +1694,7 @@ A.buildRandom = async (t) => {
     openSheet(V.buildSheet(), { type: "build" });
   }
   const c = cacheCard(await api("/cards/random?" + new URLSearchParams({ q })));
-  Object.assign(B, { seed: c.name, results: {}, format: f.name, openTier: null });
+  Object.assign(B, { baseDeck:null,seed: c.name, results: {}, format: f.name, openTier: null });
   runBuild();
 };
 A.tierToggle = (t) => {

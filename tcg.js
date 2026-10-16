@@ -231,7 +231,8 @@ export function collectionValue(g, s = S.state) {
   return { total, unpriced, copies };
 }
 // Price for the exact printing/variant when known (Yu-Gi-Oh! set price, Pokémon variant).
-export function entryPrice(c,e){return conditionValue(referenceEntryPrice(c,e),e,c?.conditionQuotes||[]).price;}
+export const persistQuoteCache=()=>saveCacheSoon();
+export function entryPrice(c,e){return conditionValue(referenceEntryPrice(c,e),e,[...(c?.conditionQuotes||[]),...(e.conditionQuotes||[])]).price;}
 function referenceEntryPrice(c, e) {
   if (!c) return null;
   if (c.game === "ygo" && e.edition) {
@@ -825,7 +826,7 @@ export function tcgCollection() {
       if (w) return wantedLot(g, w, c, i);
       const p = entryPrice(c, e);
       const t = tcgTier(c, e, p);
-      return `<div class="lot" data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}">${selectionMark(g,e.id)}<button class="lot-art" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${imgTag(c)}${tileBadges(c)}${tierGem(t)}</button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem(g, c)}</button><span class="lot-sub">${rowBadges(c)}${esc(setLabel({ e, c }) || "")}${e.printing ? " · " + esc(e.printing) : ""}${e.rarity ? " · " + esc(e.rarity) : ""}${e.variant ? " · " + esc(c?.variants?.find((v) => v.key === e.variant)?.label || e.variantLabel || e.variant) : ""}${e.edition ? " · " + esc({"1st-edition":"First Edition",unlimited:"Unlimited",limited:"Limited Edition"}[e.edition] || e.edition) : ""}${e.condition && e.condition !== "Near Mint" ? " · " + esc(e.condition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></div><div class="lot-side"><button class="price link" data-act="marketOpen" data-game="${g}" data-id="${esc(e.cardId)}" data-finish="${esc(e.variant||"reference")}" aria-label="Price history and sellers for ${esc(e.name)}">${p === null ? "—" : usd(p * e.qty)}</button>${e.condition&&e.condition!=="Near Mint"?`<small class="condition-value-note">${esc(conditionValueNote(e))}</small>`:""}<span class="stepper"><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="-1" aria-label="One fewer">−</button><b>${e.qty}</b><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="1" aria-label="One more">＋</button></span></div></div>`;
+      return `<div class="lot" data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}">${selectionMark(g,e.id)}<button class="lot-art" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${imgTag(c)}${tileBadges(c)}${tierGem(t)}</button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem(g, c)}</button><span class="lot-sub">${rowBadges(c)}${esc(setLabel({ e, c }) || "")}${e.printing ? " · " + esc(e.printing) : ""}${e.rarity ? " · " + esc(e.rarity) : ""}${e.variant ? " · " + esc(c?.variants?.find((v) => v.key === e.variant)?.label || e.variantLabel || e.variant) : ""}${e.edition ? " · " + esc({"1st-edition":"First Edition",unlimited:"Unlimited",limited:"Limited Edition"}[e.edition] || e.edition) : ""}${e.condition && e.condition !== "Near Mint" ? " · " + esc(e.condition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></div><div class="lot-side"><button class="price link" data-act="marketOpen" data-game="${g}" data-id="${esc(e.cardId)}" data-finish="${esc(e.variant||"reference")}" aria-label="Price history and sellers for ${esc(e.name)}">${p === null ? "—" : usd(p * e.qty)}</button>${e.condition&&e.condition!=="Near Mint"?`<small class="condition-value-note">${esc(conditionValueNote(e,[...(c?.conditionQuotes||[]),...(e.conditionQuotes||[])]))}</small>`:""}<span class="stepper"><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="-1" aria-label="One fewer">−</button><b>${e.qty}</b><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="1" aria-label="One more">＋</button></span></div></div>`;
     })
     .join("")}</div>${selectionTray(g)}${!rows.length ? empty("No matching cards", "Try a different search or filter.") : ""}${rows.length > (U.limit || 120) ? `<button class="btn ghost block" data-act="tCollMore">Load more · ${rows.length-(U.limit || 120)} remaining</button>` : ""}`
   : empty(`No ${esc(GAMES[g].short)} cards yet`, "Search for a card and tap “Add to collection”, or import a list.", `<button class="btn" data-act="go" data-to="#search">Find cards</button><button class="btn ghost" data-act="tImportColl">Paste a list</button>`)}
@@ -1839,7 +1840,13 @@ export function registerTcg(c) {
     try {
       let seed;
       if (G === "ygo") {
-        const { cards } = theme ? await SOURCES.ygo.search({q:theme,size:100}) : await SOURCES.ygo.randomArchetype();
+        let result;
+        if(theme){
+          result=await SOURCES.ygo.search({archetype:theme,format:chosen.id,size:100}).catch(()=>({cards:[]}));
+          if(!result.cards.length)result=await SOURCES.ygo.search({race:theme,format:chosen.id,size:100}).catch(()=>({cards:[]}));
+          if(!result.cards.length)result=await SOURCES.ygo.search({q:theme,format:chosen.id,size:100});
+        }else result=await SOURCES.ygo.randomArchetype();
+        const {cards}=result;
         cards.forEach(remember);
         const tcgOk = (c) => SOURCES.ygo.legality(c, chosen) !== "not_legal" && SOURCES.ygo.limit(c, chosen) > 0;
         const monsters = cards.filter((c) => c.category === "Monster" && !c.extra);

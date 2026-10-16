@@ -3251,3 +3251,10 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .learn-topics details {padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--surface);}
 .learn-topics summary {font-weight:750;cursor:pointer;}
 .learn-topics p {line-height:1.65;overflow-wrap:anywhere;}
+
+@media(min-width:740px){
+ body[data-view="home"] #content > .kpis {order:1;}
+ body[data-view="home"] #content > .next-card,body[data-view="home"] #content > .quick {order:2;}
+ body[data-view="home"] #content > .home-deck-section {order:3;}
+ body[data-view="home"] #content > p {order:4;}
+}

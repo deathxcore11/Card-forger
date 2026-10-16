@@ -17,6 +17,7 @@ try{
  }
  for(const game of ['mtg','ptcg','ygo']){
   const page=await browser.newPage({viewport:{width:884,height:1100}});page.setDefaultTimeout(15000);const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.route('**/*',r=>r.request().url().startsWith(base+'/')?r.continue():r.abort());
+  await page.addInitScript(()=>localStorage.setItem('cardstashy-tour-v1','done'));
   await page.goto(base+'/#home');await page.waitForFunction(()=>document.querySelector('#content .home-hero'));
   const skip=page.getByRole('button',{name:'Skip',exact:true});if(await skip.isVisible())await skip.click();
   await page.evaluate(async game=>{const {S}=await import('/store.js');S.state.settings.game=game;location.hash='#decks/ideas';},game);

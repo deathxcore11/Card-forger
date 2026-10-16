@@ -1,3 +1,4 @@
+import {conditionFeedRoute} from './condition-feed-route.js';
 import { aiReviewRoute } from './ai-review-route.js';
 import { aiAskRoute } from './ai-ask-route.js';
 export { AiReviewLimits } from './ai-review-route.js';
@@ -190,6 +191,7 @@ export default {
     if (url.pathname === "/api/lens") return lensUpload(request, url);
     if (url.pathname === "/api/prices/recent") return recentHistoryRoute(url,ctx);
     if (url.pathname === "/api/prices/archive") return archivePriceRoute(url,ctx);
+    if (url.pathname === "/api/prices/conditions") return conditionFeedRoute(url,env,ctx);
     if (url.pathname === "/api/prices/yugioh") return ygoPriceRoute(url,ctx);
     if (url.pathname === "/api/prices/pokemon") return pokemonPriceRoute(url,ctx);
     if (url.pathname === "/api/prices/mtg-tcg") return mtgTcgPriceRoute(url,ctx);
