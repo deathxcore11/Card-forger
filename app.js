@@ -1,6 +1,6 @@
 import {brandMark} from './brand.js';
 import {ownedCardLots,quickQuantity} from './quick-quantity.js';
-import {conditionName} from './condition-value.js';
+import {conditionName,conditionValue,conditionPriceHtml} from './condition-value.js';
 import { showAiReview } from './ai-review.js';
 import { openAsk, clearAskConversations } from './ai-ask.js';
 import { makeAskTools } from './ai-tools.js';
@@ -570,6 +570,7 @@ function openSheet(html, ctx = null, scrollTop = 0) {
   }
   $("#sheetBody").scrollTop = scrollTop;
   sheetScrolled();
+  refreshConditionPrice();
   wireSheetBack();
   if (!sheetScrollWired) {
     sheetScrollWired = true;
@@ -607,6 +608,7 @@ function sheetScrolled() {
     head.firstElementChild?.after(t);
   }
   head.classList.toggle("scrolled", on);
+  body.style?.setProperty?.("--card-tabs-top",Math.max(0,on?head.getBoundingClientRect().bottom-body.getBoundingClientRect().top:0)+"px");
 }
 function closeSheet(rememberRoute=true) {
   pendingRoute=rememberRoute && $("#sheet").open ? sheetSnapshot() : null;
@@ -630,8 +632,10 @@ function refreshSheet() {
   }
   if (ctx.type === "tcard") {
     const c = T.cardOf(ctx.game, ctx.id),
+      left = $("#sheetBody .cs-tabs")?.scrollLeft || 0,
       top = $("#sheetBody").scrollTop;
     if (c) $("#sheetBody").innerHTML = T.tcgCardSheet(c, ctx);
+    if($("#sheetBody .cs-tabs"))$("#sheetBody .cs-tabs").scrollLeft=left;
     $("#sheetBody").scrollTop = top;
     return;
   }
@@ -649,8 +653,10 @@ function refreshSheet() {
   }
   if (ctx.type === "card") {
     const c = meta(ctx.name),
+      left = $("#sheetBody .cs-tabs")?.scrollLeft || 0,
       top = $("#sheetBody").scrollTop;
     if (c) $("#sheetBody").innerHTML = V.cardSheet(c, ctx);
+    if($("#sheetBody .cs-tabs"))$("#sheetBody .cs-tabs").scrollLeft=left;
     $("#sheetBody").scrollTop = top;
   }
 }
@@ -1167,7 +1173,22 @@ const tierSync = () => {
 if (typeof MutationObserver !== "undefined") new MutationObserver(() => { if (!tierQueued) { tierQueued = true; requestAnimationFrame(tierSync); } }).observe(document.body, { childList: true, subtree: true });
 attachSuggest();
 attachGlassSelects();
-document.addEventListener("change",e=>{if(e.target.matches?.("#addCondition,#addFinish,#addLanguage,#tCond,#tPrint,#tEdition")){for(const n of document.querySelectorAll("#lotManualValue,#quickLotValue"))n.value="";}});
+function refreshConditionPrice(){
+ const node=$("#conditionPricePreview"),ctx=S.ui.sheetCtx;if(!node||!ctx)return;
+ const raw=$("#lotManualValue")?.value??'',manualValue=raw===''?null:Number(raw);
+ let entry,price;
+ if(ctx.type==='tadd'){
+  const game=T.game(),card=T.cardOf(game,ctx.id),pr=$("#tPrint")?.value||'',[printing,rarity]=game==='ygo'?pr.split('|'):['',''];
+  entry={cardId:card?.id,condition:$("#tCond")?.value,variant:game==='ptcg'?pr:'',printing:printing||'',rarity:rarity||'',edition:$("#tEdition")?.value||'',manualValue,manualValueCondition:conditionName($("#tCond")?.value)};
+  price=T.entryPrice(card,entry);
+ }else if(ctx.type==='add'){
+  const card=ctx.lookup;entry={...ctx.entry,condition:$("#addCondition")?.value,finish:$("#addFinish")?.value,language:$("#addLanguage")?.value,manualValue,manualValueCondition:conditionName($("#addCondition")?.value)};
+  price=conditionValue(cardPrice(card,entry.finish)??cardPrice(card),entry,card?.conditionQuotes||[]).price;
+ }else return;
+ node.innerHTML=conditionPriceHtml(price,entry);
+}
+document.addEventListener("change",e=>{if(e.target.matches?.("#addCondition,#addFinish,#addLanguage,#tCond,#tPrint,#tEdition")){for(const n of document.querySelectorAll("#lotManualValue,#quickLotValue"))n.value="";refreshConditionPrice();}});
+document.addEventListener("input",e=>{if(e.target.id==='lotManualValue')refreshConditionPrice();});
 document.addEventListener("submit",e=>{
  const form=e.target.closest?.('[data-auth-action]');if(!form)return;
  e.preventDefault();const action=A[form.dataset.authAction];if(action)safely(action(form.querySelector('button[type="submit"]')));
@@ -2139,7 +2160,7 @@ A.cardTab = async (t) => {
     if (ctx.type === "card") mtgGuideLoad(meta(ctx.name));
     else if (ctx.type === "tcard") tcgCtx.guideLoad?.(ctx.game, T.cardOf(ctx.game, ctx.id));
   }
-  $("#sheetBody .cs-tabs")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  // Keep the reader’s vertical place when switching pills; the bar stays sticky.
   if(ctx.tab === "prices" && ["card","tcard"].includes(ctx.type)){
     const g=ctx.type === "card"?"mtg":ctx.game,c=ctx.type === "card"?ctx.print||meta(ctx.name):T.cardOf(g,ctx.id);
     await commit(s=>recordQuote(s,quoteModel(g,c,ctx.priceFinish || (g === "mtg"?(c?.finishes?.includes("nonfoil")?"nonfoil":c?.finishes?.[0]||"nonfoil"):"reference"))),{rerender:false,enrich:false});
@@ -2383,14 +2404,15 @@ function addSheet(entry = null, preset = {}) {
       ${locationPicker(S.state,"mtg","addLocation",entry ? entry.location || "" : preset.location ?? null)}
     </div>
     <details class="more" ${entry?.set || preset.set ? "open" : ""}><summary>Exact printing (optional)</summary><div class="grid2"><label>Set code<input id="addSet" placeholder="e.g. CMM" value="${esc(entry?.set || preset.set || "")}"></label><label>Collector #<input id="addNumber" value="${esc(entry?.collectorNumber || preset.number || "")}"></label></div><p class="muted small">Leave blank if unsure — CardStashy never guesses an edition.</p></details>
-    <details class="more"><summary>Value for this condition</summary><label>Your value per copy (USD, optional)<input id="lotManualValue" type="number" min="0" step="0.01" value="${Number.isFinite(entry?.manualValue)?entry.manualValue:''}" placeholder="No condition quote"></label><p class="foot">A played or damaged copy without a matching quote is excluded from value totals. Enter your own value to include it.</p></details>
+    <section id="conditionPricePreview" class="condition-price-preview" role="status" aria-label="Selected condition value"></section>
+    <details class="more" open><summary>Value for this condition</summary><label>Your value per copy (USD, optional)<input id="lotManualValue" type="number" min="0" step="0.01" value="${Number.isFinite(entry?.manualValue)?entry.manualValue:''}" placeholder="No condition quote"></label><p class="foot">A played or damaged copy without a matching quote is excluded from value totals. Enter your own value to include it.</p></details>
     <p id="addError" class="error" role="alert"></p>
     <div class="actions"><button class="btn" data-act="addSave" ${lookup ? "" : "disabled"} id="addSaveBtn">${entry ? "Save changes" : "Add to collection"}</button><button class="link small" data-act="addSaveRaw">Save without lookup</button>${entry ? `<button class="link small danger" data-act="addDelete">Delete</button>` : ""}</div>`,
     S.ui.sheetCtx,
   );
 }
 const addPreview = (c) =>
-  `<div class="add-preview">${img(cardImage(c, "small") || cardImage(c), c.name, "card-img")}<div><b>${esc(c.name)}</b><p class="muted small">${esc(typeText(c))}</p><p class="small">${usd(cardPrice(c))} · ${esc((c.set || "").toUpperCase())}</p></div></div>`;
+  `<div class="add-preview">${img(cardImage(c, "small") || cardImage(c), c.name, "card-img")}<div><b>${esc(c.name)}</b><p class="muted small">${esc(typeText(c))}</p><p class="small">Reference ${usd(cardPrice(c))} · ${esc((c.set || "").toUpperCase())}</p></div></div>`;
 
 A.addCard = () => addSheet();
 A.addMode = (t) => (t.dataset.id === "list" ? importCollectionSheet() : addSheet());
@@ -2409,17 +2431,20 @@ A.addLookup = async () => {
   if (!name) return;
   $("#addError").textContent = "";
   $("#addPreview").innerHTML = '<p class="muted small">Looking up…</p>';
+  if($("#lotManualValue"))$("#lotManualValue").value="";
   try {
     const c = await resolve(name, true);
     S.ui.sheetCtx.lookup = c;
     $("#addName").value = c.name;
     $("#addPreview").innerHTML = addPreview(c);
     $("#addSaveBtn").disabled = false;
+    refreshConditionPrice();
   } catch (e) {
     S.ui.sheetCtx.lookup = null;
     $("#addPreview").innerHTML = "";
     $("#addError").textContent = e.message;
     $("#addSaveBtn").disabled = true;
+    refreshConditionPrice();
   }
 };
 A.addSave = () => saveLot(false);

@@ -129,8 +129,8 @@ export function valueChange(points) {
 }
 
 export function lineChart(points, { height = 120 } = {}) {
-  if (points.length < 2)
-    return `<p class="muted small">The chart starts after a second day of tracking. Value is recorded once per day when you open CardStashy.</p>`;
+  if (!points.length) return `<p class="muted small">Add a priced card to start your collection graph.</p>`;
+  if (points.length === 1) return `<div class="value-change flat"><strong>↔ Starting value</strong><span class="muted small">No earlier snapshot to compare</span></div><svg class="line value-start" viewBox="0 0 320 ${height}" role="img" aria-label="Collection value over time"><path d="M 6 ${height/2} H 314" class="line-stroke" stroke-dasharray="4 5"/><circle cx="160" cy="${height/2}" r="4" fill="currentColor"/></svg><div class="value-chart-dates muted small"><span>${esc(points[0].date)}</span><b>${usd(points[0].total)}</b></div><p class="muted small">First recorded snapshot. Daily changes will show ↑ gains or ↓ losses; no earlier values have been invented.</p>`;
   const change = valueChange(points);
   const changeHtml = change ? `<div class="value-change ${change.direction}" role="status"><strong>${change.delta>0?"↑ +":change.delta<0?"↓ −":""}${usd(Math.abs(change.delta))}${change.percent===null?"":` (${change.percent>0?"+":change.percent<0?"−":""}${Math.abs(change.percent).toFixed(1)}%)`}</strong><span class="muted small">${change.direction==="flat"?"Unchanged":"Total change"} since ${esc(change.date)}</span></div><p class="muted small">Includes changes to copies, recorded values and available prices.</p>` : "";
   const w = 320,
