@@ -19,8 +19,10 @@ export function mtgFacts(c, prints = null) {
   const f = [];
   if (!c) return f;
   if (prints?.length > 1) {
-    const first = prints.slice().sort((a, b) => String(a.released_at).localeCompare(String(b.released_at)))[0];
-    f.push(`First printed in ${first.set_name} (${year(first.released_at)})${yearsAgo(first.released_at)}, and printed ${prints.length} times since.`);
+    if (c.released_at) f.push(`This version comes from ${c.set_name}, released ${longDate(c.released_at)}.`);
+    const known = [...prints, c].filter(p => /^\d{4}-\d{2}-\d{2}$/.test(p.released_at || ""));
+    const first = known.sort((a, b) => a.released_at.localeCompare(b.released_at))[0];
+    if (first) f.push(`Earliest printing in the loaded results: ${first.set_name} (${year(first.released_at)}). ${new Set(prints.map(p => p.id || `${p.set}:${p.collector_number}`)).size} printings loaded; this may not include the full release history.`);
   } else if (c.reprint === false && c.released_at) f.push(`This is its first printing: ${c.set_name}, released ${longDate(c.released_at)}${yearsAgo(c.released_at)}.`);
   else if (c.released_at) f.push(`This version comes from ${c.set_name}, released ${longDate(c.released_at)}.`);
   if (c.artist) f.push(`Illustrated by ${c.artist}.`);

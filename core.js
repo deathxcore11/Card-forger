@@ -230,7 +230,7 @@ export function deckStats(deck, catalog) {
   const counts = { Ramp: 0, Draw: 0, Interaction: 0, Protection: 0, Tokens: 0 },
     curve = [0, 0, 0, 0, 0, 0, 0];
   for (const c of deck.cards) {
-    const m = catalog[cardKey(c.name)];
+    const m = catalog[cardKey(c.name)] || (/^(?:Snow-Covered )?(?:Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(c.name) ? {name:c.name,type_line:"Basic Land"} : null);
     if (!m) {
       unknown += c.qty;
       continue;

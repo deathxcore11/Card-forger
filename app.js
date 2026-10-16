@@ -68,7 +68,7 @@ import { sharePayload, encodeShare, decodeShare } from "./share.js";
 import { FORMATS, formatOf, hasCommander, canLead, sizeLabel } from "./formats.js";
 import { buildTiers, formatsFor, themeQuery, BUDGET_TIERS, upgradePool, copyLimit, fitFor } from "./builder.js";
 import * as T from "./tcg.js";
-import { rulesPage } from "./rules.js";
+import { rulesPage, learnSheet } from "./rules.js";
 import { GAMES, GAME_ICON, GAME_COLOR } from "./games.js";
 import { ICON, actionIcon, decorateGlyphs } from "./icons.js";
 import { openZoom, scryfallHi } from "./zoom.js";
@@ -1500,6 +1500,8 @@ async function loadFormatPool(f, colors, seed, progress) {
     fq = f.legality ? "f:" + f.legality : "game:paper",
     theme = seed ? themeQuery(seed) : "",
     key = f.id + "|" + ci + "|" + theme;
+  const basics = (colors.length ? colors : ["C"]).map(c=>({W:"Plains",U:"Island",B:"Swamp",R:"Mountain",G:"Forest",C:"Wastes"})[c]).filter(Boolean);
+  for (const name of basics) await resolve(name).catch(()=>{});
   if (poolCache.has(key)) return;
   const queries = [
     ...(theme ? [["cards for its theme", `${fq} id<=${ci} -t:land ${theme}`]] : []),
@@ -1641,11 +1643,24 @@ C.buildCustom = (t) => {
   runBuild();
 };
 // A random build-around card that's legal (and can lead, if needed) in the chosen format.
+A.learnGame = () => openSheet(learnSheet(T.game()), {type:"learn-game"});
+A.randomDeckOptions = () => {
+ const g=T.game(),formats=g === "mtg" ? FORMATS.filter(f=>f.id !== "limited") : T.formatsOf(g);
+ openSheet(`<div class="sheet-head"><h2>Discover a deck</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p class="muted">Choose a format. Leave the theme blank for a surprise.</p><label>Format<select id="randomFormat" required>${options([["","Choose a format"],...formats.map(f=>[f.id,f.name])],"")}</select></label><label>Optional theme or card type<input id="randomTheme" maxlength="80" placeholder="${g === "mtg" ? "Dragons, artifacts, graveyard…" : g === "ygo" ? "An archetype or monster type…" : "Fire, Water, Psychic…"}"></label><button class="btn block" data-act="randomDeckStart">Find my deck</button>`,{type:"random-deck-options",game:g});
+};
+A.randomDeckStart = async () => {
+ const g=T.game(),id=$("#randomFormat")?.value,theme=$("#randomTheme")?.value.trim() || "";
+ const f=(g === "mtg" ? FORMATS : T.formatsOf(g)).find(f=>f.id===id);
+ if(!f)return toast("Choose a format first.");
+ if(g === "mtg")return A.buildRandom({dataset:{format:f.id,theme}});
+ return A.tRandomDeck({dataset:{format:f.id,theme}});
+};
 A.buildRandom = async (t) => {
   const B = S.ui.build,
     f = formatOf(t.dataset.format || B.format || "Standard"),
     lead = f.commander === "planeswalker" ? " t:planeswalker" : f.commander ? " is:commander" : "",
-    q = `${f.legality ? "f:" + f.legality : "game:paper"} -t:land -t:basic${lead}`;
+    theme = String(t.dataset.theme || "").replace(/[^\p{L}\p{N} '-]/gu, "").slice(0,80),
+    q = `${f.legality ? "f:" + f.legality : "game:paper"} -t:land -t:basic${lead}${theme ? ` (t:"${theme}" or o:"${theme}")` : ""}`;
   if (!$("#sheet").open || S.ui.sheetCtx?.type !== "build") {
     Object.assign(B, { seed: "", results: {}, msg: "Picking a random card…", format: f.name });
     openSheet(V.buildSheet(), { type: "build" });
@@ -1668,6 +1683,7 @@ A.tierSave = async (t) => {
   const B = S.ui.build,
     tier = B.results[B.format]?.[Number(t.dataset.i)];
   if (!tier) return;
+  await resolveNames(tier.cards.map(r=>r.name));
   const d = generatedDeck(tier, B.seed);
   await commit((s) => s.decks.push(d), { msg: `Saved “${d.name}”. Find it in My decks.` });
 };
@@ -1683,6 +1699,7 @@ async function buyMtg(items) {
 A.tierSaveGo = async (t) => {
   const B = S.ui.build, tier = B.results[B.format]?.[Number(t.dataset.i)];
   if (!tier) return;
+  await resolveNames(tier.cards.map(r=>r.name));
   const d = generatedDeck(tier, B.seed);
   await commit((s) => s.decks.push(d), { msg: `Saved “${d.name}”.` });
   closeSheet();

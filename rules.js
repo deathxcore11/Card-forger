@@ -72,6 +72,9 @@ function formatTable(g) {
   return PTCG_FORMATS.map((f) => `<tr><td><b>${esc(f.name)}</b>${f.note ? `<br><small class="muted">${esc(f.note)}</small>` : ""}</td><td>60 cards, ${f.copies === 1 ? "1" : "up to 4"} of each name${f.legal ? `, ${esc(f.legal === "standard" ? "Standard" : "Expanded")}-legal sets only` : ", every set"}</td><td class="num">—</td></tr>`).join("");
 }
 
+export function learnSheet(g) {
+  return `<div class="sheet-head"><h2>Learn ${esc(GAMES[g].short)}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p class="muted">Start with the turn, then explore the terms at your own pace.</p><section class="learn-topics">${CORE[g].map(([title,text]) => `<details><summary>${esc(title)}</summary><p>${esc(text)}</p></details>`).join("")}</section>${ruleDexPanel(g)}<button class="btn ghost block" data-act="go" data-to="#rules">Formats & official rules</button>`;
+}
 export function rulesPage(g, R) {
   const G = GAMES[g],
     lists = BANLISTS[g],

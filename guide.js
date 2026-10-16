@@ -14,6 +14,7 @@ const BASIC = /^(?:snow-covered )?(?:plains|island|swamp|mountain|forest|wastes)
 
 // [id, test(text, card), label, what it means, when to use it, synergy note, Scryfall query for cards that feed it]
 const MTG_RULES = [
+  ["choice", /opponent chooses a number[\s\S]*sacrifices all but that many/, "Opponent's choice", "Your opponent names a number; you choose whether they lose that much life or keep only that many permanents of their choice.", "Compare the named number with their life total and permanent count before choosing. A number at least their life total threatens a loss through life loss; a low number can force a large sacrifice. They choose which permanents survive, so this does not guarantee removal of their best threat.", "Compare this with targeted removal: it can remove more permanents, but gives your opponent control over what remains. Sacrifice gets around indestructible, while token-heavy boards can leave them disposable choices.", ""],
   ["counter", /counter target (spell|activated|ability)/, "Counterspell", "Stops a spell or ability before it resolves.", "Keep mana open on your opponent's turn and save it for the spell that would beat you — a sweeper, a bomb or a combo piece. If they play around it, use your mana at the end of their turn instead.", "", ""],
   ["wipe", /(destroy|exile) all|deals \d+ damage to each (creature|player)|all creatures get -/, "Board wipe", "Clears many creatures at once.", "Wait until your opponent has committed more to the board than you have. Hold back your own creatures the turn before you cast it.", "Pairs with indestructible or hexproof creatures, planeswalkers, and cards that return creatures afterward.", "o:indestructible t:creature"],
   ["removal", /(destroy|exile) (up to \w+ )?target (creature|permanent|artifact|enchantment|planeswalker|nonland)|deals \d+ damage to (any target|target creature)|target creature gets -\d+\/-\d+|fights? (another )?target|put target [^.]* on (the )?(top|bottom) of (its|their) owner's library|shuffles it into (their|its owner's) library/, "Removal", "Answers one threat.", "Save it for the threat that matters most — a creature that wins games, draws cards or makes combos work — rather than the first thing you see.", "", ""],
@@ -212,6 +213,7 @@ export function playGuide(game, card) {
   // Pokémon always get their battlefield job; others only when their text gave no role.
   if (game === "ptcg" && card.category === "Pokemon") g.roles = [...structuralRoles(game, card), ...g.roles];
   else if (!g.roles.length) g.roles = structuralRoles(game, card);
+  g.rulesText = game === "mtg" ? (card.oracle_text || card.card_faces?.map(f => f.oracle_text || "").join("\n") || "") : game === "ygo" ? (/Normal Monster/.test(card.typeLine || "") ? "" : card.text || "") : [card.effect, ...(card.abilities || []).map(a => a.effect), ...(card.attacks || []).map(a => a.effect)].filter(Boolean).join("\n");
   return g;
 }
 
@@ -327,11 +329,11 @@ export function guideHtml(game, card, g, opts = {}) {
   const roleBlock = g.roles.length
     ? `<div class="guide-roles">${g.roles.map((r) => `<span class="chip guide-chip">${esc(r.label)}</span>`).join("")}</div>
       <p class="guide-what">${esc(g.roles.map((r) => r.what).join(" "))}</p>`
-    : `<p class="guide-what muted">No special effect detected — judge it by its stats and cost.</p>`;
+    : g.rulesText ? `<p class="guide-what">${esc(g.rulesText)}</p><p class="muted small">This effect has no specific strategy classification yet. Compare its cost, targets, restrictions and outcome with alternatives; the rules text still applies.</p>` : `<p class="guide-what muted">No additional rules text is available for this card. Check its printed text before deciding how to use it.</p>`;
   const when = [...g.roles.map((r) => r.when), ...g.tips].filter(Boolean);
   const syn = g.roles.map((r) => r.syn).filter(Boolean);
   const al = opts.alongside;
-  return `<section class="guide-sec"><h3>What it does</h3>${roleBlock}</section>
+  return `<section class="guide-sec"><h3>What it does</h3>${roleBlock}${g.rulesText && g.roles.length ? `<details class="guide-text"><summary>Full effect · conditions and restrictions</summary><p>${esc(g.rulesText)}</p></details>` : ""}</section>
   ${when.length ? `<section class="guide-sec"><h3>How and when to play it</h3><ul class="guide-list">${when.slice(0, 7).map((t) => `<li>${esc(t)}</li>`).join("")}</ul></section>` : ""}
   ${syn.length ? `<section class="guide-sec"><h3>Synergies</h3><ul class="guide-list">${syn.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></section>` : ""}
   ${al?.cards?.length ? `<section class="guide-sec"><h3>Played alongside it <span class="muted small">in ${al.lists} tournament list${al.lists === 1 ? "" : "s"} · partners first</span></h3><div class="list compact">${al.cards.map((x) => `<button class="mini-row" ${opts.alongsideAttrs(x)}><span class="ellip">${esc(opts.alongsideName(x))}</span><span class="small muted">${Math.round(x.share)}% of them${x.overall < x.share - 5 ? ` · ${Math.round(x.overall)}% overall` : ""}</span></button>`).join("")}</div></section>` : ""}

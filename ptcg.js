@@ -159,6 +159,7 @@ export function normalizePtcg(c) {
   return {
     game: "ptcg",
     variantSchema: 9,
+    priceFallbackSchema: 2,
     released:c.set?.releaseDate || "",
     id: c.id,
     name: c.name,

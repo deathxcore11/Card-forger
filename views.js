@@ -101,14 +101,14 @@ export function home() {
     <button class="kpi" data-act="go" data-to="#collection"><b>${copies}</b><span>cards owned</span></button>
     <button class="kpi" data-act="go" data-to="#decks"><b>${st.decks.length}</b><span>decks</span></button>
   </div>`}
-  ${others.length ? `<section class="home-deck-section"><div class="section-head"><h2>Deck shelf</h2><button class="link" data-act="go" data-to="#decks">All decks →</button></div><div class="shelf">${others.map((d) => deckTile(d)).join("")}</div></section>` : ""}
   ${quickTiles("mtg", !!S.state.collection.length && !S.state.decks.length)}
+  ${others.length ? `<section class="home-deck-section"><div class="section-head"><h2>Deck shelf</h2><button class="link" data-act="go" data-to="#decks">All decks →</button></div><div class="shelf">${others.map((d) => deckTile(d)).join("")}</div></section>` : ""}
   ${
     value.spare.length && value.spareValue > 0
       ? `<button class="banner" data-act="go" data-to="#collection/value"><span><b>${usd(value.spareValue, 0)}</b> sits in ${sumQty(value.spare)} cards no deck uses</span><span class="muted">Trade binder →</span></button>`
       : ""
   }
-  ${glossary()}`;
+  `;
 }
 
 const glossary = () => `<details class="glossary"><summary>New to Commander? 60-second glossary</summary><dl>
@@ -857,7 +857,8 @@ export function costBlock(sub, total, budget, label) {
 export function decks() {
   const tab = S.ui.decksTab;
   return `<div class="page-head"><h1>Decks</h1><div class="head-actions"><button class="btn small" data-act="importDeck">↥ Import</button><button class="btn small ghost" data-act="newDeck">＋ New</button></div></div>
-  ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Meta decks"]])}<div class="random-tools"><button class="btn ghost small" data-act="randomDeck" aria-label="Random Commander deck">🎲 Random Commander</button><button class="btn ghost small" data-act="buildRandom" data-format="Standard" aria-label="Random deck in any format">🎲 Random deck</button></div>
+  <div class="random-tools"><button class="btn ghost small" data-act="learnGame">How to play · keywords</button></div>
+  ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Meta decks"]])}<div class="random-tools"><button class="btn ghost small" data-act="randomDeck" aria-label="Random Commander deck">🎲 Random Commander</button><button class="btn ghost small" data-act="randomDeckOptions" aria-label="Random deck in any format">🎲 Random deck</button></div>
   ${tab === "ideas" ? ideasView() : tab === "inspiration" ? inspirationView() : myDecks()}`;
 }
 
@@ -879,8 +880,8 @@ function ideasView() {
   const I = S.ui.ideas,
     visible = I.cache.filter((i) => I.filter === "all" || i.plan === I.filter),
     plans = [...new Set(I.cache.map((i) => i.plan))];
-  return `<p class="muted">Commanders and strategies your <b>owned</b> cards can already support, ranked by how much of a 100-card deck you could build today for $0.</p>
-  <div class="toolbar"><button class="btn" data-act="analyze" ${I.busy ? "disabled" : ""}>${I.busy ? "Analyzing…" : I.cache.length ? "↻ Re-analyze" : "Analyze my collection"}</button><label class="check"><input type="checkbox" data-change="ideasOwned" ${I.ownedOnly ? "checked" : ""}> Owned commanders only</label>${plans.length > 1 ? `<select data-change="ideaFilter" aria-label="Strategy">${options([["all", "All strategies"], ...plans.map((p) => [p, p])], I.filter)}</select>` : ""}</div>
+  return `<section class="panel build-own"><h3>Build from my cards</h3><p class="muted small">Find commanders and strategies your collection supports, then explore complete plans at your budget.</p>
+  <div class="toolbar"><button class="btn" data-act="analyze" ${I.busy ? "disabled" : ""}>${I.busy ? "Analyzing…" : I.cache.length ? "↻ Re-analyze" : "Analyze my collection"}</button><label class="check"><input type="checkbox" data-change="ideasOwned" ${I.ownedOnly ? "checked" : ""}> Owned commanders only</label>${plans.length > 1 ? `<select data-change="ideaFilter" aria-label="Strategy">${options([["all", "All strategies"], ...plans.map((p) => [p, p])], I.filter)}</select>` : ""}</div></section>
   ${I.busy ? buildOverlay(I.msg, { title: "Reading your collection", note: "Checking which commanders and strategies your cards already support. Large collections can take a minute.", id: "ideasMsg" }) : I.msg ? `<p class="muted small" role="status">${esc(I.msg)}</p>` : ""}
   ${
     visible.length
