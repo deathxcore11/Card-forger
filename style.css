@@ -3224,3 +3224,6 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .condition-price-preview {border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:12px 0;display:grid;gap:4px;min-width:0;overflow-wrap:break-word;}
 .condition-price-preview p {margin:0;}
 .condition-price-preview strong {font-size:1.1rem;}
+
+.build-brand {width:88px;height:88px;margin:0 auto 6px;}
+.build-brand .stashy-logo {width:100%;height:100%;}

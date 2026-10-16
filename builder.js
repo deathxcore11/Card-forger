@@ -59,7 +59,7 @@ export function scoreCard(c, seedTags, seedSubs, { free = 0, size = 60 } = {}) {
  *       available(name) → free copies you own, price(card) → USD or null,
  *       budget (USD for cards you must buy), colors (optional override)
  */
-export function buildDeck({ format, seeds = [], base = [], catalog, available = () => 0, price = (c) => null, budget = 25, colors = null, commander = null }) {
+export function buildDeck({ format, seeds = [], base = [], catalog, available = () => 0, price = (c) => null, budget = 25, colors = null, commander = null, completionFirst = false }) {
   const f = formatOf(format);
   if (f.id === "limited") throw Error("Limited decks come from the cards you open — build those by hand.");
   if ((!Number.isFinite(budget) && budget!==Infinity) || budget < 0) throw Error("Enter a budget of $0 or more.");
@@ -126,6 +126,17 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
     nonland = () => count() - landsIn(),
     heavy = () => [...rows.values()].filter((r) => (Number(catalog[cardKey(r.name)]?.cmc) || 0) >= 5 && !isLand(catalog[cardKey(r.name)])).reduce((a, r) => a + r.qty, 0);
   const remaining=[...scored];
+  if(completionFirst){
+    // Keep each requested build-around, then buy the cheapest next legal copy.
+    // Ownership is recalculated per copy, so one free copy is not treated as a free playset.
+    for(const seed of seeds){const c=pool.find(c=>cardKey(c.name)===cardKey(seed.name));if(!c||qtyOf(c)||nonland()>=spellTarget)continue;
+      const extra=costFor(c,0,1);if(extra!==Infinity&&spent+extra<=budget+1e-6){put(c,1,'Your build-around card');spent+=extra;}}
+    while(nonland()<spellTarget){
+      const choices=scored.filter(x=>qtyOf(x.c)<maxCopies(x.c)).map(x=>({...x,extra:costFor(x.c,qtyOf(x.c),qtyOf(x.c)+1)})).filter(x=>x.extra!==Infinity&&spent+x.extra<=budget+1e-6).sort((a,b)=>a.extra-b.extra||b.s-a.s);
+      const next=choices[0];if(!next)break;put(next.c,1,next.extra===0?'you own it':'Budget completion');spent+=next.extra;
+    }
+    remaining.length=0;
+  }
   while(remaining.length){
     const counts=new Map();for(const row of rows.values())for(const role of engineRoles(catalog[cardKey(row.name)] || {}))counts.set(role,(counts.get(role)||0)+row.qty);
     const targets=f.commander?{Removal:8,Draw:10,Ramp:10,Wipe:3}:{Removal:6,Draw:6,Ramp:4,Wipe:2};
@@ -208,6 +219,11 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
     total = sumQty(cards),
     open = Math.max(0, size - total);
   if(total>size)throw Error("Generated deck exceeds its target; no version was applied.");
+  if(open && !completionFirst){
+    const economical=buildDeck({format,seeds,base,catalog,available,price,budget,colors,commander,completionFirst:true});
+    const seedKept=seeds.every(seed=>isLand(seed)||economical.cards.some(r=>cardKey(r.name)===cardKey(seed.name)));
+    if(seedKept && economical.open<open)return economical;
+  }
   if (open) warnings.push(`${open} slots still open — raise the budget or add more cards to your collection.`);
   if (unknown) warnings.push(`${unknown} card${unknown > 1 ? "s have" : " has"} no current price.`);
   const owned = cards.reduce((a, r) => a + Math.min(r.qty, isBasic(catalog[cardKey(r.name)]) || BASIC_NAMES.has(r.name) ? r.qty : available(r.name)), 0);

@@ -25,9 +25,15 @@ export function bestBudgetDecks(candidates,budgets,{evaluate,cost,accept=()=>tru
  let previous=null;
  return budgets.map(budget=>{
   const feasible=evaluated.filter(d=>d.cost<=budget+1e-6 && (!d.unknown || budget===Infinity));
-  feasible.sort((a,b)=>comparePower(b.assessment,a.assessment)||(!!b.proven-!!a.proven)||a.cost-b.cost);
+  const complete=d=>{
+    if(d.open>0)return false;
+    const n=(d.cards||d.zones?.main||[]).reduce((sum,r)=>sum+r.qty,0);
+    return !(d.size>0&&n<d.size);
+  };
+  const ready=d=>complete(d)&&!d.assessment?.readiness?.provisional;
+  feasible.sort((a,b)=>Number(ready(b))-Number(ready(a))||comparePower(b.assessment,a.assessment)||(!!b.proven-!!a.proven)||a.cost-b.cost);
   const winner=feasible[0];if(!winner)return null;
-  const stronger=evaluated.filter(d=>!d.unknown && comparePower(d.assessment,winner.assessment)>0 && d.cost>budget).sort((a,b)=>a.cost-b.cost);
+  const stronger=evaluated.filter(d=>!d.unknown && (ready(d)||!ready(winner)) && comparePower(d.assessment,winner.assessment)>0 && d.cost>budget).sort((a,b)=>a.cost-b.cost);
   const next=stronger[0],same=previous && signature(previous)===signature(winner);
   const explanation=same?'Same strongest assessed list as the lower budget. Extra spending did not improve the supported checks in this candidate pool.':winner.cost<budget-10 && budget!==Infinity?'The strongest assessed candidate costs less than this budget. Unspent money is kept; price alone does not improve the engine.':'';
   previous=winner;
@@ -208,12 +214,12 @@ export function variantsFrom(tiers, budgets, difficulty = () => null) {
     }
     out.push({ ...t, budget: b, covers: [b], difficulty: difficulty(t) });
   });
-  const full = out.filter((t) => !(t.budget === 0 && (t.open || t.total < t.size)));
+  const full = out.filter((t) => !(t.open || t.total < t.size));
   full.forEach((t, k) => {
     t.variant = full.length === 1 ? "Best version" : k === 0 ? "Starter" : k === full.length - 1 ? "Best version" : full.length === 3 ? "Upgraded" : ["Upgraded", "Strong", "Stronger"][k - 1] || "Upgraded";
   });
   for (const t of out) {
-    if (!t.variant) t.variant = "Your cards only";
+    if (!t.variant) t.variant = t.budget===0?"Your cards only":"Budget draft";
     const c = t.covers.filter((x) => x !== 0);
     t.coversText = !c.length ? "" : c.includes(Infinity) && c.length > 1 ? `for budgets of ${usd(Math.min(...c))} and up` : c.includes(Infinity) ? "no budget limit" : c.length > 1 ? `for budgets ${usd(Math.min(...c))}–${usd(Math.max(...c))}` : `up to ${usd(c[0])}`;
     // The merge replaces "Same list as…" notes.
@@ -229,15 +235,8 @@ export function fillOpen(deck, budget, { pool, quality, count, size, add, cost, 
   let d = deck, guard = 0;
   while (count(d) < size && guard++ < 80) {
     let placed = false;
-    for (const c of ranked) {
-      if (have(d, c) >= maxCopies(c)) continue;
-      const next = add(d, c),
-        q = cost(next);
-      if (q.unknown || q.cost > cap + 1e-6 || !accept(next)) continue;
-      d = { ...next, cost: q.cost };
-      placed = true;
-      break;
-    }
+    const choices=ranked.filter(c=>have(d,c)<maxCopies(c)).map(c=>{const next=add(d,c);return {c,next,q:cost(next)};}).filter(x=>!x.q.unknown&&x.q.cost<=cap+1e-6&&accept(x.next)).sort((a,b)=>a.q.cost-b.q.cost||quality(b.c)-quality(a.c));
+    if(choices.length){const {next,q}=choices[0];d={...next,cost:q.cost};placed=true;}
     if (!placed) break;
   }
   return d;

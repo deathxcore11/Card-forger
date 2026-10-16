@@ -61,17 +61,27 @@ const add = (m, c, n, why) => {
  * opts: f (format), seed, seeds (extra must-include cards), archetype (cards), staples (cards),
  *       limit(card, f), legal(card, f), owned(card), price(card), budget
  */
-export function buildYgo({ f, seed, seeds = [], archetype = [], staples = [], limit, legal, owned, price, budget }) {
+export function buildYgo({ f, seed, seeds = [], archetype = [], staples = [], limit, legal, owned, price, budget, completionFirst = false }) {
   const picks = [seed, ...seeds.filter((c) => c.id !== seed.id)],
     isSeed = (c) => picks.some((x) => x.id === c.id),
     ok = (c) => legal(c, f) !== "not_legal" && limit(c, f) > 0,
-    pick = picker({ owned, price, budget, filler: 0.25 }),
+    pick = picker({ owned, price, budget, filler: completionFirst?0:0.25 }),
     main = new Map(),
     extra = new Map(),
     target = f.main[0],
     count = (m) => rowsOf(m).reduce((a, r) => a + r.qty, 0),
     lvl = (c) => (c.category === "Monster" ? (c.level || 4) : 0),
     order = (c) => (isSeed(c) ? -1 : c.category === "Monster" ? (lvl(c) <= 4 ? 0 : 3) : c.category === "Spell" ? 1 : 2);
+  if(completionFirst){
+    const pool=[...new Map([...picks,...archetype,...staples].filter(ok).map(c=>[c.id,c])).values()];
+    for(const c of picks.filter(ok))add(c.extra?extra:main,c,pick.take(c,1),"Your build-around card");
+    while(count(main)<target){
+      const choices=pool.filter(c=>!c.extra&&(main.get(c.id)?.qty||0)<limit(c,f)).map(c=>({c,p:owned(c)>(main.get(c.id)?.qty||0)?0:price(c)})).filter(x=>x.p!=null&&Number.isFinite(x.p)&&x.p>=0&&pick.spent+x.p<=budget+1e-6).sort((a,b)=>a.p-b.p||order(a.c)-order(b.c));
+      const next=choices[0];if(!next)break;add(main,next.c,pick.take(next.c,1),'Budget completion');
+    }
+    if(count(main)>=target)for(const c of pool.filter(c=>c.extra&&!extra.has(c.id))){if(count(extra)>=f.extra)break;add(extra,c,pick.take(c,1),'Affordable Extra Deck');}
+    const total=count(main);return {zones:{main:rowsOf(main),extra:rowsOf(extra),side:[]},cost:pick.spent,total,size:target,warnings:total<target?[`${target-total} Main Deck slots still open; no complete list fits this pool and budget.`]:[]};
+  }
   // Balanced core: archetype monsters first, then the archetype's own Spells and Traps, then staples.
   const core = archetype.filter((c) => ok(c) && !c.extra && !isSeed(c)).sort((a, b) => order(a) - order(b) || (b.atk || 0) - (a.atk || 0));
   core.unshift(...picks.filter((c) => !c.extra && ok(c)));
@@ -98,6 +108,11 @@ export function buildYgo({ f, seed, seeds = [], archetype = [], staples = [], li
   }
   const total = count(main),
     warnings = [];
+  if(total<target){
+    const cheap=buildYgo({f,seed,seeds,archetype,staples,limit,legal,owned,price,budget,completionFirst:true});
+    const kept=picks.every(c=>[...cheap.zones.main,...cheap.zones.extra].some(r=>r.cardId===c.id));
+    if(kept&&cheap.total>total)return cheap;
+  }
   if (total < target) warnings.push(`${target - total} Main Deck slots still open — raise the budget or add cards you own.`);
   if (monsters.length + support.length < 6) warnings.push("Small archetype: most of the deck is general-purpose cards. Add your own engine cards.");
   return { zones: { main: rowsOf(main), extra: rowsOf(extra), side: [] }, cost: pick.spent, total, size: target, warnings };
@@ -107,11 +122,23 @@ export function buildYgo({ f, seed, seeds = [], archetype = [], staples = [], li
  * Pokémon: the evolution line, legal Trainer staples, and basic Energy to exactly 60.
  * opts: line ([{card, want}] Basic → Stage 2), trainers ([{card, want}]), energy (cards), owned, price, budget
  */
-export function buildPtcg({ line = [], trainers = [], energy = [], owned, price, budget }) {
-  const pick = picker({ owned, price, budget, filler: 0.1 }),
+export function buildPtcg({ line = [], trainers = [], energy = [], owned, price, budget, completionFirst = false }) {
+  const pick = picker({ owned, price, budget, filler: completionFirst?0:0.1 }),
     deck = new Map(),
     count = () => rowsOf(deck).reduce((a, r) => a + r.qty, 0),
     energyTarget = energy.length ? (line.some((x) => x.card.stage === "Stage2") ? 9 : 11) : 0;
+  if(completionFirst){
+    const all=new Map([...line,...trainers].map(x=>[x.card.id,x.card]));
+    for(const {card,want} of line)add(deck,card,pick.take(card,want,0,want),'Evolution line');
+    const trainerTarget=60-(energy.length?14:0);
+    while(count()<trainerTarget){
+      const aceUsed=rowsOf(deck).some(r=>all.get(r.cardId)?.aceSpec);
+      const choices=trainers.filter(({card,want})=>(deck.get(card.id)?.qty||0)<Math.min(4,want)&&(!card.aceSpec||!aceUsed)).map(x=>({...x,p:owned(x.card)>(deck.get(x.card.id)?.qty||0)?0:price(x.card)})).filter(x=>x.p!=null&&Number.isFinite(x.p)&&x.p>=0&&pick.spent+x.p<=budget+1e-6).sort((a,b)=>a.p-b.p);
+      const next=choices[0];if(!next)break;add(deck,next.card,pick.take(next.card,1),'Budget Trainer');
+    }
+    let left=Math.min(14,60-count());energy.forEach((e,i)=>{const n=Math.round(left/(energy.length-i));add(deck,e,n,'Basic Energy');left-=n;});
+    const total=count();return {zones:{main:rowsOf(deck),extra:[],side:[]},cost:pick.spent,total,size:60,warnings:total<60?[`${60-total} slots still open; no complete list fits this pool and budget.`]:[]};
+  }
   for (const { card, want } of line) add(deck, card, pick.take(card, want, 60 - count() - want), card.stage === "Basic" ? "Basic Pokémon" : "Evolution");
   for (const { card, want } of trainers) {
     const room = 60 - energyTarget - count();
@@ -128,6 +155,11 @@ export function buildPtcg({ line = [], trainers = [], energy = [], owned, price,
   });
   const total = count(),
     warnings = [];
+  if(total<60){
+    const cheap=buildPtcg({line,trainers,energy,owned,price,budget,completionFirst:true});
+    const kept=line.every(({card,want})=>(cheap.zones.main.find(r=>r.cardId===card.id)?.qty||0)>=want);
+    if(kept&&cheap.total>total)return cheap;
+  }
   if (total < 60) warnings.push(`${60 - total} slots still open.`);
   if (!line.length) warnings.push("No Pokémon line found for this card.");
   return { zones: { main: rowsOf(deck), extra: [], side: [] }, cost: pick.spent, total, size: 60, warnings };
