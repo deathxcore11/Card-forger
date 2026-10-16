@@ -9,7 +9,12 @@ const root=process.cwd(),refs=[
  {game:'Pokémon',g:'ptcg',name:'Kyogre',id:'cel25-3',url:'https://api.tcgdex.net/v2/en/cards/cel25-3'},
  {game:'Yu-Gi-Oh!',g:'ygo',name:'Dark Magician',id:'46986414',url:'https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Dark%20Magician'}
 ];
-async function download(url){const r=await fetch(url,{headers:{'User-Agent':'CardStashy-Scanner-Regression/1.0','Accept':'*/*'},signal:AbortSignal.timeout(30000)});if(!r.ok)throw Error(`Reference unavailable: ${url} (${r.status})`);return r;}
+async function download(url){
+ let last;for(let attempt=0;attempt<3;attempt++){
+  try{const r=await fetch(url,{headers:{'User-Agent':'CardStashy-Scanner-Regression/1.0','Accept':'*/*'},signal:AbortSignal.timeout(30000)});if(r.ok)return r;last=Error(`Reference unavailable: ${url} (${r.status})`);if(r.status<500&&r.status!==429)throw last;}catch(e){last=e;}
+  if(attempt<2)await new Promise(r=>setTimeout(r,1000*(attempt+1)));
+ }throw last;
+}
 for(const ref of refs){
  const raw=await (await download(ref.url)).json(),card=raw.data?.[0]||raw;
  assert.equal(card.name,ref.name);
