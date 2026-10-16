@@ -66,6 +66,7 @@ try{
   await page.getByRole('heading',{name:'Search cards',exact:true}).waitFor();
   const skip=page.getByRole('button',{name:'Skip',exact:true});
   try{await skip.waitFor({state:'visible',timeout:2000});await skip.click();}catch{}
+  await page.evaluate(()=>{window.__pickerTrace=[];for(const type of ['pointerdown','pointerup','pointercancel','touchstart','touchend','click','scroll'])document.addEventListener(type,e=>{if(e.target.closest?.('.glass-select-menu')||e.target===document){const r=e.target.getBoundingClientRect?.();window.__pickerTrace.push({type,target:e.target.outerHTML?.slice(0,100),x:e.clientX,y:e.clientY,rect:r&&{x:r.x,y:r.y,w:r.width,h:r.height},scrollY:window.scrollY});window.__pickerTrace=window.__pickerTrace.slice(-25);}},true);});
   for(const game of ['Magic','Pokémon','Yu-Gi-Oh!']){
    if(game!=='Magic'){
     await page.getByRole('button',{name:'Switch game',exact:true}).click();
@@ -77,7 +78,7 @@ try{
    await page.evaluate(()=>{window.dispatchEvent(new Event('resize'));document.dispatchEvent(new Event('scroll'));});
    await page.waitForTimeout(80);assert.equal(await menu.count(),1,`${name} real ${game} Sort stays open`);
    await activate(menu.getByRole('option',{name:'Name',exact:true}));
-   await menu.waitFor({state:'detached',timeout:2000});
+   try{await menu.waitFor({state:'detached',timeout:2000});}catch(e){console.log('PICKER FAILURE '+name+' '+game,JSON.stringify(await page.evaluate(()=>({trace:window.__pickerTrace,html:document.querySelector('.glass-select-menu')?.outerHTML,viewport:{width:innerWidth,height:innerHeight,scale:visualViewport?.scale}}))));throw e;}
    assert.equal((await page.locator('select[data-field="sort"], select[data-change="tSort"]').inputValue()).toLowerCase(),'name',`${game} real sort handler saved Name`);
   }
   await page.getByRole('button',{name:'Settings',exact:true}).click();
