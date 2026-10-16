@@ -13,7 +13,7 @@ export function chooseOption(select, index) {
 }
 export function attachGlassSelects(doc=document) {
   if(!doc.body?.append || !doc.createElement('dialog').showModal) return;
-  let active=null,serial=0,positionFrame=0;
+  let active=null,serial=0,positionFrame=0,suppressTouchClick=false;
   const schedulePosition=()=>{
     if(!active || positionFrame)return;
     positionFrame=doc.defaultView.requestAnimationFrame(()=>{positionFrame=0;active?.position?.();});
@@ -57,7 +57,7 @@ export function attachGlassSelects(doc=document) {
       let press=null;
       b.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse')press={id:e.pointerId,x:e.clientX,y:e.clientY};});
       b.addEventListener('pointercancel',()=>{press=null;});
-      b.addEventListener('pointerup',e=>{const p=press;press=null;if(p&&p.id===e.pointerId&&Math.hypot(e.clientX-p.x,e.clientY-p.y)<=8){e.preventDefault();e.stopPropagation();choose();}});
+      b.addEventListener('pointerup',e=>{const p=press;press=null;if(p&&p.id===e.pointerId&&Math.hypot(e.clientX-p.x,e.clientY-p.y)<=8){e.preventDefault();e.stopPropagation();suppressTouchClick=true;setTimeout(()=>{suppressTouchClick=false;},700);choose();}});
       list.append(b);buttons.push(b);
     }
     if(options.filter(o=>!o.hidden).length>12){
@@ -128,9 +128,9 @@ export function attachGlassSelects(doc=document) {
     }
   };
   // Cancel the native picker before Android can display its system dialog.
-  doc.addEventListener('pointerdown',e=>{if(eligible(e.target))e.preventDefault();},true);
+  doc.addEventListener('pointerdown',e=>{suppressTouchClick=false;if(eligible(e.target))e.preventDefault();},true);
   doc.addEventListener('mousedown',e=>{if(eligible(e.target))e.preventDefault();},true);
-  doc.addEventListener('click',e=>{if(eligible(e.target)){e.preventDefault();e.stopPropagation();open(e.target);}},true);
+  doc.addEventListener('click',e=>{if(suppressTouchClick&&e.detail!==0){suppressTouchClick=false;e.preventDefault();e.stopImmediatePropagation();return;}if(eligible(e.target)){e.preventDefault();e.stopPropagation();open(e.target);}},true);
   doc.addEventListener('keydown',e=>{if(eligible(e.target)&&['Enter',' ','ArrowDown','ArrowUp','Home','End'].includes(e.key)){e.preventDefault();e.stopPropagation();open(e.target);}},true);
   // Mobile browser bars, keyboards and fold changes resize/scroll the viewport.
   // Reposition the open menu; these are not user dismissal gestures.
