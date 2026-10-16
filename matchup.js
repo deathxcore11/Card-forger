@@ -83,7 +83,7 @@ export function profileOf(game, p, rows = [], extra = []) {
   if (game === "ptcg") {
     const a = p.attacker, td = p.goldfish?.turnDist;
     if (!a || !td) return null;
-    return { game, score: quality(p), clock: td.d, maxT: td.maxT, name: a.name, reach: Math.max(10, a.reach || 10), spread: a.spread || 0, hp: a.hp || 200, types: a.types || [], weak: a.weak || [], prize: a.prize || (a.ruleBox ? 2 : 1), lives: a.lives || 1, gust: a.gust || 0, disrupt: a.disrupt || 0, swarm: !!a.swarm };
+    return { game, score: quality(p), clock: td.d, maxT: td.maxT, name: a.name, counters:p.tacticalCounters||[], reach: Math.max(10, a.reach || 10), spread: a.spread || 0, hp: a.hp || 200, types: a.types || [], weak: a.weak || [], prize: a.prize || (a.ruleBox ? 2 : 1), lives: a.lives || 1, gust: a.gust || 0, disrupt: a.disrupt || 0, swarm: !!a.swarm };
   }
   const st = p.stats || {};
   return {
@@ -317,6 +317,11 @@ export function gamePlan(game, me, op, { main = [], side = [], protect = () => f
         weakTaken ? `${op.name} hits your ${me.name}'s Weakness: spread your attackers and don't power up two at once in front of it.` : "",
         op.disrupt >= 3 ? `They run ${op.disrupt} hand-disruption cards (Iono and friends): keep searchers on the Bench once you take a Prize lead.` : "",
       ].filter(Boolean);
+    // Matchup tools are alternatives to the main attacker, not a universal score bonus.
+    const tag=String(op.name||'').match(/(?:^|[ -])(ex|EX|GX|VMAX|VSTAR|V)$/)?.[1];
+    for(const c of me.counters||[])for(const a of c.attacks||[])if(a.targets.includes(tag)){
+      lines.push(`${c.name} is a ${c.prize}-Prize alternative: ${a.cost.length} Energy for ${a.conditionalDamage??'conditional'} printed damage against Pokémon ${tag}. Check Energy access, Weakness, Resistance and defensive effects before choosing it; bonus damage alone does not guarantee a Knock Out.`);break;
+    }
     return { kind: "prize", lines };
   }
   const ins = sideIn(game, side, op),

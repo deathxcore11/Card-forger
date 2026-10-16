@@ -1,3 +1,4 @@
+import {brandMark} from './brand.js';
 // Ask AI: a chat that can only use the app. The model asks for app functions (tools), this device
 // runs them against the player's own data and the app's card data, and the answer comes back with
 // the real cards, sets or decks to tap. Voice uses the phone's speech recognition when available.
@@ -96,7 +97,7 @@ export async function ask(text, fetcher = fetch) {
   state.log.querySelector('.ask-empty')?.remove();
   state.pendingText = text;
   const question = bubble('me pending', esc(text));
-  const think = bubble('ai thinking', `<div class="ask-dots" aria-hidden="true"><i></i><i></i><i></i></div><span class="ask-step">Thinking</span>`);
+  const think = bubble('ai thinking', `<div class="ask-brand-progress" aria-hidden="true">${brandMark("brand-loading")}</div><span class="ask-step">Thinking</span>`);
   state.node.classList.add('thinking');
   const items = [...state.history, { type: 'message', role: 'user', content: text }];
   try {

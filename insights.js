@@ -1,3 +1,4 @@
+import {conditionValue} from './condition-value.js';
 import { hasCommander, isCommanderLike, formatOf } from "./formats.js";
 // Deck engine analysis, goldfish simulation, version comparison and collection value.
 // Pure functions: no DOM, no network. Everything here is a transparent heuristic,
@@ -569,7 +570,7 @@ export function lotPrice(e, catalog, printings = {}) {
   const c =
     (e.printingVerified && printings[e.printingId]) ||
     catalog[cardKey(e.name)];
-  return cardPrice(c, e.finish || "nonfoil") ?? cardPrice(c);
+  return conditionValue(cardPrice(c, e.finish || "nonfoil") ?? cardPrice(c),e,c?.conditionQuotes||[]).price;
 }
 
 export function collectionValue(entries, catalog, printings = {}, decks = []) {
@@ -602,7 +603,9 @@ export function collectionValue(entries, catalog, printings = {}, decks = []) {
     const free = qty - (used.get(k) || 0);
     if (free <= 0) continue;
     const c = catalog[cardKey(k)],
-      unit = cardPrice(c);
+      related = entries.filter(e=>cardKey(e.name)===k),
+      values = related.map(e=>({qty:e.qty,p:lotPrice(e,catalog,printings)})),
+      unit = values.some(x=>x.p==null)?null:values.reduce((n,x)=>n+x.p*x.qty,0)/Math.max(1,qty);
     const name =
       entries.find((e) => cardKey(e.name) === k)?.name || c?.name || k;
     spare.push({ name, qty: free, unit, value: unit === null ? null : unit * free });

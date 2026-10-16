@@ -23,7 +23,7 @@ export function attachCardGestures({ onHold, onPick, choosing, onSelect=()=>fals
   root.addEventListener('pointerdown', e => {
     clear();
     if (e.button !== 0 || e.isPrimary === false) { press = null; return; }
-    const card = e.target.closest?.('[data-act="card"], [data-act="tCard"]');
+    const card = e.target.closest?.('[data-act="card"], [data-act="tCard"], [data-hold-card]');
     press = { x: e.clientX, y: e.clientY, id: e.pointerId, card, moved: false, held: false };
     if (!card) return;
     const original = press, art = card.matches?.('.lot-art, .grid-card, .deck-tile, .tile') ? card : null;
@@ -43,7 +43,7 @@ export function attachCardGestures({ onHold, onPick, choosing, onSelect=()=>fals
   root.addEventListener('pointercancel', () => { if (press) press.moved = true; clear(); }, { passive: true });
   root.addEventListener('scroll', () => { if (press) press.moved = true; clear(); }, { passive: true, capture: true });
   root.addEventListener('click', e => {
-    const card = e.target.closest?.('[data-act="card"], [data-act="tCard"]');
+    const card = e.target.closest?.('[data-act="card"], [data-act="tCard"], [data-hold-card]');
     if (e.detail !== 0 && (press?.moved || press?.held)) {
       e.preventDefault(); e.stopImmediatePropagation(); press = null; return;
     }
@@ -54,24 +54,24 @@ export function attachCardGestures({ onHold, onPick, choosing, onSelect=()=>fals
     press = null;
   }, true);
   root.addEventListener('contextmenu', e => {
-    const card = e.target.closest?.('[data-act="card"], [data-act="tCard"]');
+    const card = e.target.closest?.('[data-act="card"], [data-act="tCard"], [data-hold-card]');
     if (!card) return;
     e.preventDefault(); clear(); if (!press?.held) onHold(card);
   });
   root.addEventListener('keydown', e => {
     if (e.key !== 'ContextMenu' && !(e.shiftKey && e.key === 'F10')) return;
-    const card = e.target.closest?.('[data-act="card"], [data-act="tCard"]');
+    const card = e.target.closest?.('[data-act="card"], [data-act="tCard"], [data-hold-card]');
     if (card) { e.preventDefault(); onHold(card); }
   });
 }
 
-export function cardActionButtons({game, wished=false, existing=false, second=false}={}) {
+export function cardActionButtons({game, wished=false, existing=false, second=false, quantityHtml=""}={}) {
   const actions = [
     ['quickCompare','compare','Compare',second ? 'Use as the second card' : 'Choose another card while browsing'],
-    ['quickOwn','cardStack','Add to collection'],
+    ...(!quantityHtml ? [['quickOwn','cardStack','Add to collection']] : []),
     ['quickDeck','decks','Add to deck'],
     ['quickWish','heart',wished && game !== 'mtg' ? 'Remove from wishlist' : 'Add to wishlist'],
     ['quickBinder','binder',existing ? 'Move to binder' : 'Add to binder'],
   ];
-  return `<div class="card-action-list">${actions.map(([act,icon,label,hint])=>`<button data-act="${act}">${actionIcon(icon)}<span>${label}${hint?`<small>${hint}</small>`:''}</span></button>`).join('')}</div>`;
+  return `${quantityHtml}<div class="card-action-list">${actions.map(([act,icon,label,hint])=>`<button data-act="${act}">${actionIcon(icon)}<span>${label}${hint?`<small>${hint}</small>`:''}</span></button>`).join('')}</div>`;
 }

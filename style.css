@@ -792,7 +792,8 @@ body[data-game="ygo"] #content .card-grid .card-img { aspect-ratio: 59 / 86; }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 .cs-card { display: grid; grid-template-columns: minmax(0, 42%) 1fr; gap: 14px; align-items: start; margin: 6px 0 12px; }
 .cs-card-side { display: grid; gap: 8px; min-width: 0; }
-.cs-card-side .stat-grid { margin: 0; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
+.cs-card-side .stat-grid { margin: 0; grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)); }
+.cs-card-side .stat-grid small { overflow-wrap: normal; word-break: normal; white-space: normal; }
 .src-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
 .price-table { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; margin: 8px 0; }
 .pt-head, .pt-row { display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(var(--cols, 3), minmax(0, 1fr)); gap: 6px; padding: 10px 12px; align-items: center; font-size: 14px; }
@@ -3185,3 +3186,37 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .cd-art-stack {display:grid;gap:12px;min-width:0;align-content:start;}
 .cd-art-stack > .btn {width:100%;white-space:normal;overflow-wrap:anywhere;line-height:1.35;height:auto;min-height:44px;}
 .cd-art-stack > .cd-img {isolation:isolate;border-radius:4.75% / 3.5%;}
+
+/* One card-fan mark for app identity and AI progress. */
+.brand .mark {width:40px;height:40px;padding:0;background:none;border:0;overflow:visible;}
+.stashy-logo {display:block;width:100%;height:100%;overflow:visible;}
+.stashy-logo .brand-card {transform-origin:64px 98px;transform-box:view-box;}
+.brand-idle .brand-card {animation:stashy-idle 9s ease-in-out infinite alternate;}
+@keyframes stashy-idle {from{transform:rotate(var(--fan-from))}to{transform:rotate(calc(var(--fan-from) * 1.12)) translateY(-1px)}}
+.ask-orb {animation:none!important;background:none;box-shadow:none;border-radius:0;}
+.ask-orb .stashy-logo {width:56px;height:56px;}
+.ask-orb .brand-backplate,.ai-brand-loader .brand-backplate,.ask-brand-progress .brand-backplate {fill:transparent;}
+.ai-brand-loader {width:100px;height:100px;margin:0 auto 12px;}
+.ask-brand-progress {width:48px;height:48px;flex:none;}
+.brand-loading .brand-card,.thinking .ask-orb .brand-card {animation:stashy-fan 1.2s ease-in-out infinite alternate;}
+.brand-loading .brand-center,.thinking .ask-orb .brand-center {animation-delay:.12s;}
+@keyframes stashy-fan {from{transform:rotate(var(--fan-from)) translateY(0)}to{transform:rotate(var(--fan-to)) translateY(-5px)}}
+.quick-owned {display:grid;gap:12px;padding:16px;margin:12px 0;border:1px solid var(--line);border-radius:18px;background:var(--surface);}
+.quick-owned small {display:block;color:var(--muted);line-height:1.45;}
+.quick-owned label {display:grid;gap:6px;min-width:0;}
+.quick-owned .stepper {justify-self:center;min-height:48px;}
+.quick-owned .stepper button {min-width:52px;min-height:48px;}
+.quick-owned .stepper output {font-size:20px;font-weight:800;min-width:48px;text-align:center;}
+.condition-value-note {display:block;max-width:190px;white-space:normal;color:var(--muted);font-size:11px;line-height:1.4;}
+@media(prefers-reduced-motion:reduce){.brand-idle .brand-card,.brand-loading .brand-card,.thinking .ask-orb .brand-card{animation:none!important;}}
+
+.brand .mark[data-state]::after {content:"";position:absolute;right:0;bottom:0;width:7px;height:7px;border-radius:50%;background:var(--muted);border:2px solid var(--bg);}
+.brand .mark[data-state="ok"]::after{background:var(--good);}
+.brand .mark[data-state="bad"]::after{background:var(--bad);}
+.brand .mark[data-state="busy"]::after{background:var(--gold);}
+
+.value-change { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px; margin:12px 0 4px; }
+.value-change strong { font-variant-numeric:tabular-nums; }
+.value-change.up strong { color:var(--good,#7ed6a6); }
+.value-change.down strong { color:var(--danger,#ff827b); }
+.value-chart-dates { display:flex; flex-wrap:wrap; justify-content:space-between; gap:6px 16px; }

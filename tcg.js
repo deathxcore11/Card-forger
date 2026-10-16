@@ -1,3 +1,4 @@
+import {conditionValue,conditionValueNote,conditionName} from './condition-value.js';
 import { aiReviewPanel } from './ai-review.js';
 import { myPrice } from "./mtg-tcgprice.js";
 import { ask, askText } from "./dialog.js";
@@ -229,7 +230,8 @@ export function collectionValue(g, s = S.state) {
   return { total, unpriced, copies };
 }
 // Price for the exact printing/variant when known (Yu-Gi-Oh! set price, Pokémon variant).
-export function entryPrice(c, e) {
+export function entryPrice(c,e){return conditionValue(referenceEntryPrice(c,e),e,c?.conditionQuotes||[]).price;}
+function referenceEntryPrice(c, e) {
   if (!c) return null;
   if (c.game === "ygo" && e.edition) {
     const set=c.sets?.find(s=>s.code===e.printing && (!e.rarity || s.rarity===e.rarity));
@@ -600,7 +602,7 @@ export function tcgCardSheet(c, sctx = {}) {
     heroSrc = g === "ygo" ? c.art || c.imageLarge : artworkSources(c,true)[0],
     heroFallback = g === "ygo" ? c.artDirect || "" : "";
   const overview = `
-    <div class="cs-card"><div class="cd-art-stack"><div class="cd-img"><button class="cd-zoom" data-act="zoomCard" data-src="${esc(artworkSources(c,true)[0] || "")}" data-hi="${esc(g === "ygo" ? ygoImageDirect(c.id, false) : c.imageLarge || "")}" data-fallback="${esc(artworkSources(c,true)[1] || "")}" data-art="${esc(g === "ygo" ? c.artDirect || "" : "")}" data-name="${esc(c.name)}" aria-label="Enlarge ${esc(c.name)}">${imgTag(c, "card-img", true)}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button></div></div>
+    <div class="cs-card"><div class="cd-art-stack"><div class="cd-img"><button class="cd-zoom" data-hold-card="true" data-id="${esc(c.id)}" data-entry="${esc(sctx.entryId||'')}" data-act="zoomCard" data-src="${esc(artworkSources(c,true)[0] || "")}" data-hi="${esc(g === "ygo" ? ygoImageDirect(c.id, false) : c.imageLarge || "")}" data-fallback="${esc(artworkSources(c,true)[1] || "")}" data-art="${esc(g === "ygo" ? c.artDirect || "" : "")}" data-name="${esc(c.name)}" aria-label="Enlarge ${esc(c.name)}">${imgTag(c, "card-img", true)}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button></div></div>
       <div class="cs-card-side">${alertStatus(g,trackedQuote(g,c)?.id,c.name)}
         <p class="small own-line">${own ? `<b class="ok-text">You own ${own}</b>` : "Not in your collection"}</p>
         ${deck ? `<p class="small deck-legal ${SOURCES[g].legality(c, f) === "legal" ? "ok-text" : "bad-text"}">${SOURCES[g].legality(c, f) === "legal" ? "✓ Legal" : "● Not allowed"} in ${esc(f.name)} <span class="muted">(${esc(deck.name)})</span></p>` : ""}
@@ -728,6 +730,7 @@ export function tcgAddSheet(c, preset = "") {
     ${g === "ygo" ? `<label class="span2">Edition<select id="tEdition">${options([["", "Not sure"], ["1st-edition", "First Edition"], ["unlimited", "Unlimited"], ["limited", "Limited Edition"]], "")}</select></label><p class="foot span2">Set prices do not distinguish editions. An edition-specific value stays unknown; verify it with the seller.</p>` : `<p class="foot span2">Versions without a price are still collectible. The source image may represent a different edition; confirm stamps and borders yourself.</p>`}
     ${locationPicker(S.state,g,"tLoc")}
   </div>
+  <details class="more"><summary>Value for this condition</summary><label>Your value per copy (USD, optional)<input id="lotManualValue" type="number" min="0" step="0.01" placeholder="No condition quote"></label><p class="foot">Reference amounts in Version describe that printing, not its condition. Played or damaged copies without a matching quote are excluded from totals unless you enter a value.</p></details>
   <button class="btn block" data-act="tOwnSave" data-id="${esc(c.id)}">Add to collection</button>`;
 }
 
@@ -825,7 +828,7 @@ export function tcgCollection() {
       if (w) return wantedLot(g, w, c, i);
       const p = entryPrice(c, e);
       const t = tcgTier(c, e, p);
-      return `<div class="lot" data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}">${selectionMark(g,e.id)}<button class="lot-art" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${imgTag(c)}${tileBadges(c)}${tierGem(t)}</button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem(g, c)}</button><span class="lot-sub">${rowBadges(c)}${esc(setLabel({ e, c }) || "")}${e.printing ? " · " + esc(e.printing) : ""}${e.rarity ? " · " + esc(e.rarity) : ""}${e.variant ? " · " + esc(c?.variants?.find((v) => v.key === e.variant)?.label || e.variantLabel || e.variant) : ""}${e.edition ? " · " + esc({"1st-edition":"First Edition",unlimited:"Unlimited",limited:"Limited Edition"}[e.edition] || e.edition) : ""}${e.condition && e.condition !== "Near Mint" ? " · " + esc(e.condition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></div><div class="lot-side"><button class="price link" data-act="marketOpen" data-game="${g}" data-id="${esc(e.cardId)}" data-finish="${esc(e.variant||"reference")}" aria-label="Price history and sellers for ${esc(e.name)}">${p === null ? "—" : usd(p * e.qty)}</button><span class="stepper"><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="-1" aria-label="One fewer">−</button><b>${e.qty}</b><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="1" aria-label="One more">＋</button></span></div></div>`;
+      return `<div class="lot" data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}">${selectionMark(g,e.id)}<button class="lot-art" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${imgTag(c)}${tileBadges(c)}${tierGem(t)}</button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem(g, c)}</button><span class="lot-sub">${rowBadges(c)}${esc(setLabel({ e, c }) || "")}${e.printing ? " · " + esc(e.printing) : ""}${e.rarity ? " · " + esc(e.rarity) : ""}${e.variant ? " · " + esc(c?.variants?.find((v) => v.key === e.variant)?.label || e.variantLabel || e.variant) : ""}${e.edition ? " · " + esc({"1st-edition":"First Edition",unlimited:"Unlimited",limited:"Limited Edition"}[e.edition] || e.edition) : ""}${e.condition && e.condition !== "Near Mint" ? " · " + esc(e.condition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></div><div class="lot-side"><button class="price link" data-act="marketOpen" data-game="${g}" data-id="${esc(e.cardId)}" data-finish="${esc(e.variant||"reference")}" aria-label="Price history and sellers for ${esc(e.name)}">${p === null ? "—" : usd(p * e.qty)}</button>${e.condition&&e.condition!=="Near Mint"?`<small class="condition-value-note">${esc(conditionValueNote(e))}</small>`:""}<span class="stepper"><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="-1" aria-label="One fewer">−</button><b>${e.qty}</b><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="1" aria-label="One more">＋</button></span></div></div>`;
     })
     .join("")}</div>${selectionTray(g)}${!rows.length ? empty("No matching cards", "Try a different search or filter.") : ""}${rows.length > (U.limit || 120) ? `<button class="btn ghost block" data-act="tCollMore">Load more · ${rows.length-(U.limit || 120)} remaining</button>` : ""}`
   : empty(`No ${esc(GAMES[g].short)} cards yet`, "Search for a card and tap “Add to collection”, or import a list.", `<button class="btn" data-act="go" data-to="#search">Find cards</button><button class="btn ghost" data-act="tImportColl">Paste a list</button>`)}
@@ -846,7 +849,8 @@ function tcgTradeAdvice(g) {
   for (const d of st.decks) for (const z of Object.values(d.zones || {})) for (const r of z || []) used.set(r.cardId, (used.get(r.cardId) || 0) + r.qty);
   for (const e of st.collection) {
     const x = items.get(e.cardId) || { key: e.cardId, name: e.name, card: cardOf(g, e.cardId), qty: 0, inDecks: used.get(e.cardId) || 0, price: entryPrice(cardOf(g, e.cardId), e) };
-    x.qty += e.qty;
+    const p=entryPrice(cardOf(g,e.cardId),e);x.value=(x.value||0)+(p??0)*e.qty;x.unpriced=!!x.unpriced||p==null;
+    x.qty += e.qty;x.price=x.unpriced?null:x.value/x.qty;
     items.set(e.cardId, x);
   }
   return tradeAdviceHtml(g, tradeAdvice(g, [...items.values()]), (x) => `data-act="tCard" data-id="${esc(x.key)}"`, (p) => usd(p));
@@ -2048,6 +2052,8 @@ export function registerTcg(c) {
   };
 
   A.tOwnSave = async (t) => {
+    const rawValue=document.querySelector("#lotManualValue")?.value||"",manualValue=rawValue===""?null:Number(rawValue);
+    if(manualValue!==null&&(!Number.isFinite(manualValue)||manualValue<0))return toast("Enter a non-negative value or leave it blank.");
     const G = g(),
       card = cardOf(G, t.dataset.id),
       qty = Math.max(1, Math.min(999, Math.floor(Number(document.querySelector("#tQty").value) || 1))),
@@ -2058,9 +2064,9 @@ export function registerTcg(c) {
     await mutate(
       (st,state) => {
         const location=rememberLocation(state,G,document.querySelector("#tLoc").value,{createBinder:document.querySelector("#tLocPicker")?.value === "binder:new"});
-        const same = st.collection.find((e) => e.cardId === card.id && (e.printing || "") === printing && (e.variant || "") === (G === "ptcg" ? pr : "") && (e.edition || "") === edition && (e.rarity || "") === rarity && e.condition === document.querySelector("#tCond").value && String(e.location || "").trim() === location);
+        const same = st.collection.find((e) => e.cardId === card.id && (e.printing || "") === printing && (e.variant || "") === (G === "ptcg" ? pr : "") && (e.edition || "") === edition && (e.rarity || "") === rarity && (e.manualValue??null)===manualValue && e.condition === document.querySelector("#tCond").value && String(e.location || "").trim() === location);
         if (same) same.qty += qty;
-        else st.collection.push({ id: uid(), cardId: card.id, name: card.name, key: SOURCES[G].ownKey(card), qty, printing, rarity, edition, variantLabel, variant: G === "ptcg" ? pr : "", condition: document.querySelector("#tCond").value, location, addedAt: new Date().toISOString() });
+        else st.collection.push({ id: uid(), cardId: card.id, name: card.name, key: SOURCES[G].ownKey(card), qty, printing, rarity, edition, variantLabel, variant: G === "ptcg" ? pr : "", manualValue,manualValueCondition:conditionName(document.querySelector("#tCond").value), condition: document.querySelector("#tCond").value, location, addedAt: new Date().toISOString() });
       },
       { msg: `Added ${qty}× ${card.name}.` },
     );
