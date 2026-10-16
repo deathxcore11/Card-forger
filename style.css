@@ -3179,5 +3179,5 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .cs-card {grid-template-columns:minmax(0,42%) minmax(0,1fr);}
 .cd-img > .btn, .ca-main .btn, .ca-more .btn {white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.35;height:auto;min-height:44px;}
 .card-actions .btn svg {flex:none;}
-.cs-tabs {position:relative;top:auto;flex-wrap:wrap;overflow:visible;padding-right:0;mask-image:none;-webkit-mask-image:none;}
+.cs-tabs {display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));position:relative;top:auto;overflow:visible;padding-right:0;mask-image:none;-webkit-mask-image:none;}
 .cs-tabs button {flex:1 1 88px;min-width:0;min-height:44px;padding:8px 10px;white-space:normal;overflow-wrap:anywhere;line-height:1.3;}
