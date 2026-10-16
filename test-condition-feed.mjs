@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {conditionFeedRoute,normalizeConditionVariants} from './condition-feed-route.js';
 import {loadConditionQuotes} from './condition-feed.js';
 import {conditionValue} from './condition-value.js';
+import {compactConditionData} from './condition-cache.js';
 import {lotPrice} from './insights.js';
 const now=Date.now(),v=(condition,price,extra={})=>({condition,price,printing:'Foil',lastUpdated:Math.floor(now/1000),priceStatus:'current',...extra});
 const body={data:[{tcgplayerId:'42',variants:[v('Near Mint',100),v('Lightly Played',70),v('Moderately Played',50),v('Heavily Played',20),v('Damaged',5),v('Damaged',9,{printing:'Normal'}),v('Lightly Played',200,{language:'Japanese'}),v('Damaged',null,{priceStatus:'expired',printing:'Normal',lastKnownPrice:55})]}]};
@@ -9,14 +10,15 @@ const quotes=normalizeConditionVariants(body,42,['Foil']);assert.deepEqual(quote
 assert.deepEqual(normalizeConditionVariants({data:[{tcgplayerId:42,variants:[v('Near Mint',1),v('Near Mint',2)]}]},42,['Foil']),[],'ambiguous duplicate SKU not chosen arbitrarily');
 const entry={name:'A',condition:'Damaged',finish:'foil',language:'en'};const bound=quotes.map(q=>({...q,finish:'foil',language:'en'}));assert.equal(conditionValue(100,entry,bound).price,5);assert.equal(conditionValue(100,{...entry,finish:'nonfoil'},bound).price,null);assert.equal(conditionValue(100,{...entry,language:'ja'},bound).price,null);assert.equal(conditionValue(null,entry,bound.map(q=>({...q,validUntil:'2000-01-01'}))).price,null);assert.equal(lotPrice({...entry,conditionQuotes:bound},{a:{prices:{usd:'100'}}}),5);
 let calls=0;const disabled=await conditionFeedRoute(new URL('https://app.test/api/prices/conditions?game=mtg&id=abc'),{},null,async()=>{calls++;});assert.equal((await disabled.json()).status,'not_configured');assert.equal(calls,0);
+function binding(fetcher){const saved=new Map();return {idFromName:n=>n,get:()=>({fetch:async u=>{const product=new URL(u).searchParams.get('product');if(!saved.has(product)){const r=await fetcher('https://api.justtcg.com/v1/cards?tcgplayerId='+product,{headers:{'x-api-key':'test-secret'}});saved.set(product,compactConditionData(await r.json(),product));}return Response.json({status:'available',...saved.get(product)});}})};}
 const originalCaches=globalThis.caches;const cache=new Map(),pending=[];globalThis.caches={default:{match:async k=>cache.get(k.url||k)?.clone(),put:async(k,r)=>cache.set(k.url||k,r.clone())}};
 const id='11111111-1111-1111-1111-111111111111',url=new URL('https://app.test/api/prices/conditions?game=mtg&id='+id+'&finish=foil&language=en');let paid=0;
 try{
  const fetcher=async(u,opts)=>{if(u.includes('scryfall'))return Response.json({id,tcgplayer_id:42,finishes:['nonfoil','foil']});assert.equal(opts.headers['x-api-key'],'test-secret');paid++;return Response.json(body);};
- const ctx={waitUntil:p=>pending.push(p)};
- const a=await conditionFeedRoute(url,{JUSTTCG_API_KEY:'test-secret'},ctx,fetcher);assert.equal((await a.json()).quotes.length,5);await Promise.all(pending);
- await conditionFeedRoute(url,{JUSTTCG_API_KEY:'test-secret'},ctx,fetcher);assert.equal(paid,1,'all conditions share one cached provider product');
- const wrong=new URL(url);wrong.searchParams.set('finish','etched');assert.equal((await (await conditionFeedRoute(wrong,{JUSTTCG_API_KEY:'test-secret'},ctx,fetcher)).json()).status,'unmapped');assert.equal(paid,1);
+ const ctx={waitUntil:p=>pending.push(p)},env={JUSTTCG_API_KEY:'test-secret',CONDITION_PRICES:binding(fetcher)};
+ const a=await conditionFeedRoute(url,env,ctx,fetcher);assert.equal((await a.json()).quotes.length,5);await Promise.all(pending);
+ await conditionFeedRoute(url,env,ctx,fetcher);assert.equal(paid,1,'all conditions share one cached provider product');
+ const wrong=new URL(url);wrong.searchParams.set('finish','etched');assert.equal((await (await conditionFeedRoute(wrong,env,ctx,fetcher)).json()).status,'unmapped');assert.equal(paid,1);
 }finally{globalThis.caches=originalCaches;}
 // Server identity resolution is exercised independently for the other two catalogues.
 for(const game of ['ptcg','ygo']){
@@ -33,7 +35,8 @@ for(const game of ['ptcg','ygo']){
    if(u.endsWith('/prices'))return Response.json({results:[{productId:42,marketPrice:100,subTypeName:'1st Edition'}]});
    throw Error('Unexpected fixture request '+u);
   };
-  const result=await (await conditionFeedRoute(url,{JUSTTCG_API_KEY:'test-secret'},ctx,fetcher)).json();assert.equal(result.status,'available',game+' exact product resolution');assert.equal(result.quotes[0].price,5);assert.equal(providerCalls,1);await Promise.all(wait);
+  const env={JUSTTCG_API_KEY:'test-secret',CONDITION_PRICES:binding(fetcher)};
+  const result=await (await conditionFeedRoute(url,env,ctx,fetcher)).json();assert.equal(result.status,'available',game+' exact product resolution');assert.equal(result.quotes[0].price,5);assert.equal(providerCalls,1);await Promise.all(wait);
  }finally{globalThis.caches=originalCaches;}
 }
 for(const game of ['mtg','ptcg','ygo']){

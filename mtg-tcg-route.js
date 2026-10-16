@@ -3,7 +3,7 @@
 // group's daily prices. GET /api/prices/mtg-tcg?set=lea → { prices: { productId: { Normal, Foil } } }
 const DAY = 86400;
 const HEAD = { Accept: "application/json", "User-Agent": "CardStashy/3.57 (price fallback)" };
-const num = (v) => (v == null || !Number.isFinite(Number(v)) ? null : Math.round(Number(v) * 100) / 100);
+const num = (v) => (v == null || v === "" || !Number.isFinite(Number(v)) || Number(v)<=0 ? null : Math.round(Number(v) * 100) / 100);
 
 export function compactPrices(results) {
   const out = {};

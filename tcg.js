@@ -1,3 +1,4 @@
+import {referenceQuote,referenceLabel} from './price-reference.js';
 import {brandMark} from './brand.js';
 import {conditionValue,conditionValueNote,conditionName} from './condition-value.js';
 import { aiReviewPanel } from './ai-review.js';
@@ -95,10 +96,16 @@ const remember = (card) => {
   saveCacheSoon();
   return card;
 };
+export function needsCardRefresh(g,c,printings=false){
+ const time=Date.parse(c?.fetchedAt);
+ return !c||c.brief||!Number.isFinite(time)||time>Date.now()+300000||Date.now()-time>=PRICE_TTL||
+ (g==='ptcg'&&(c.variantSchema!==9||c.priceFallbackSchema!==3))||
+ (g==='ygo'&&(c.artSchema!==1||(printings&&c.printPriceSchema!==1)));
+}
 // Full card with prices no older than a day.
 export async function ensureCard(g, id, force = false,printings=true) {
   const c = cache[g][id];
-  if (c && !c.brief && (g !== "ptcg" || (c.variantSchema === 9 && (c.prices?.usd != null || c.priceFallbackSchema === 2))) && (g !== "ygo" || (c.artSchema === 1 && (!printings || c.printPriceSchema === 1))) && !force && Date.now() - new Date(c.fetchedAt).getTime() < PRICE_TTL) return c;
+  if (!force&&!needsCardRefresh(g,c,printings)) return c;
   try {
     return remember(await SOURCES[g].get(id,{printings}));
   } catch (e) {
@@ -108,7 +115,7 @@ export async function ensureCard(g, id, force = false,printings=true) {
 }
 // Load details for many cards, a few at a time, calling `tick` as they arrive.
 export async function ensureMany(g, ids, tick = () => {}, force = false,printings=false) {
-  const queue = [...new Set(ids)].filter((id) => force || !cache[g][id] || cache[g][id].brief || (g === "ptcg" && (cache[g][id].variantSchema !== 9 || (cache[g][id].prices?.usd == null && cache[g][id].priceFallbackSchema !== 2))) || (g === "ygo" && (cache[g][id].artSchema !== 1 || (printings && cache[g][id].printPriceSchema !== 1))) || Date.now() - new Date(cache[g][id].fetchedAt).getTime() > PRICE_TTL);
+  const queue = [...new Set(ids)].filter(id=>force||needsCardRefresh(g,cache[g][id],printings));
   let done = 0;
   const worker = async () => {
     while (queue.length) {
@@ -624,7 +631,7 @@ export function tcgCardSheet(c, sctx = {}) {
             .map(
               (s) => `<div class="print">
         <button class="print-main" data-act="tSetByName" data-name="${esc(s.name)}">${thumb}<span class="print-name"><span class="ellip"><b>${esc(s.name)}</b><small>${ygoPrintBadge(s)} ${esc(s.rarity || "")} · reference art</small></span></span></button>
-        <span class="print-prices"><a class="pp buy" href="${s.url || `https://www.tcgplayer.com/search/yugioh/product?productLineName=yugioh&q=${encodeURIComponent(s.code+' '+s.rarity)}`}" target="_blank" rel="noopener noreferrer" aria-label="Buy the ${esc(s.code)} printing">Buy</a><span class="pp"><small>market</small>${s.quotes?.length ? s.quotes.map(q=>`<span class="printing-quote"><small>${esc(q.edition)}</small>${usd(q.market)}</span>`).join("") : s.price ? usd(s.price) : "Unavailable"}</span></span>
+        <span class="print-prices"><a class="pp buy" href="${s.url || `https://www.tcgplayer.com/search/yugioh/product?productLineName=yugioh&q=${encodeURIComponent(s.code+' '+s.rarity)}`}" target="_blank" rel="noopener noreferrer" aria-label="Buy the ${esc(s.code)} printing">Buy</a><span class="pp"><small>reference</small>${s.quotes?.length ? s.quotes.map(q=>`<span class="printing-quote"><small>${esc(q.edition)} · ${referenceLabel(referenceQuote(q)?.kind)}</small>${usd(referenceQuote(q)?.value)}</span>`).join("") : s.price ? usd(s.price) : "Unavailable"}</span></span>
       </div>`,
             )
             .join("")}</div><p class="foot">${c.sets.length} printings, priciest first. Thumbnails are reference art; inspect the seller’s edition and rarity. Tap a printing to open its set.</p>${artworkGallery}`
@@ -656,7 +663,7 @@ export function tcgCardSheet(c, sctx = {}) {
   <div class="cs-meta">
     ${g === "ygo" ? ygoSetRow(c) : ""}
     ${c.set ? `<button class="cd-set" data-act="tSet" data-id="${esc(c.set.id)}">${pkSetSymbol(c.set, "pks big")}<div><b>${esc(c.set.name)} <span class="set-go">›</span></b><small>#${esc(c.set.number || "")}${c.set.total ? "/" + c.set.total : ""}${c.rarity ? ` · ${pkRarity(c.rarity)} ${esc(c.rarity)}` : ""}</small></div></button>` : c.archetype ? `<button class="cd-set" data-act="tArchetype" data-name="${esc(c.archetype)}"><div><b>${esc(c.archetype)} <span class="set-go">›</span></b><small>Archetype · ${c.sets?.length || 0} printings</small></div></button>` : ""}
-    <div class="cd-prices"><button class="price-pill${p.usd == null && !lastQuote(g, c) && myPrice(c) == null && !c.brief ? " unknown" : ""}" data-act="tBuyDirect" data-hold="tMyPriceSet" data-game="${g}" data-id="${esc(c.id)}" aria-label="Buy on TCGplayer. Press and hold to set your own price."><small>Market${p.referenceVariantLabel ? ` · ${esc(p.referenceVariantLabel)}` : ""}</small><b>${p.usd !== null && p.usd !== undefined ? usd(p.usd) : c.brief ? "…" : lastQuote(g, c) ? usd(lastQuote(g, c).value) : myPrice(c) != null ? usd(myPrice(c)) : "No price yet"}</b>${p.usd == null && lastQuote(g, c) ? `<small class="pill-note">last quote ${esc(lastQuote(g, c).date)}${lastQuote(g, c).finish ? " · " + esc(lastQuote(g, c).finish) : ""}</small>` : myPrice(c) != null ? `<small class="pill-note">${p.usd == null ? "Your price" : "yours " + usd(myPrice(c))}</small>` : ""}<span class="buy-hint">${p.usd == null && !lastQuote(g, c) ? "Find sellers ›" : "Buy ›"}</span></button>${p.eur ? `<button class="price-pill" data-act="cardTab" data-tab="prices"><small>Cardmarket</small><b>€${p.eur.toFixed(2)}</b></button>` : ""}<p class="price-gap small muted">Tap a price to buy on TCGplayer. Press and hold it, or <button class="link small" data-act="tMyPriceSet" data-game="${g}" data-id="${esc(c.id)}">set your price</button>; only you see it. Every printing's price is under Prices.</p></div>
+    <div class="cd-prices"><button class="price-pill${p.usd == null && !lastQuote(g, c) && myPrice(c) == null && !c.brief ? " unknown" : ""}" data-act="tBuyDirect" data-hold="tMyPriceSet" data-game="${g}" data-id="${esc(c.id)}" aria-label="Buy on TCGplayer. Press and hold to set your own price."><small>${referenceLabel(p.referenceKind)}${p.referenceVariantLabel ? ` · ${esc(p.referenceVariantLabel)}` : ""}</small><b>${p.usd !== null && p.usd !== undefined ? usd(p.usd) : c.brief ? "…" : lastQuote(g, c) ? usd(lastQuote(g, c).value) : myPrice(c) != null ? usd(myPrice(c)) : "No price yet"}</b>${p.usd == null && lastQuote(g, c) ? `<small class="pill-note">last quote ${esc(lastQuote(g, c).date)}${lastQuote(g, c).finish ? " · " + esc(lastQuote(g, c).finish) : ""}</small>` : myPrice(c) != null ? `<small class="pill-note">${p.usd == null ? "Your price" : "yours " + usd(myPrice(c))}</small>` : ""}<span class="buy-hint">${p.usd == null && !lastQuote(g, c) ? "Find sellers ›" : "Buy ›"}</span></button>${p.eur ? `<button class="price-pill" data-act="cardTab" data-tab="prices"><small>Cardmarket</small><b>€${p.eur.toFixed(2)}</b></button>` : ""}<p class="price-gap small muted">Tap a price to buy on TCGplayer. Press and hold it, or <button class="link small" data-act="tMyPriceSet" data-game="${g}" data-id="${esc(c.id)}">set your price</button>; only you see it. Every printing's price is under Prices.</p></div>
     ${p.usd == null && !p.eur && !c.brief ? `<p class="price-gap small muted">Stores haven't listed a price for this card yet. That's normal for new sets and rarely sold cards; it fills in when sales start.</p>` : ""}
   </div>
   ${g === "ptcg" && !c.brief ? pokemonText(c) : c.text ? `<section class="cd-text effect-card ygo"><p class="eyebrow effect-label">${c.frame==='normal'?'Lore · Flavour text':'Chaincraft · Card effect'}</p>${c.frame==='normal'?`<blockquote class="flavor">${esc(c.text)}</blockquote>`:`<div class="oracle">${effectText(g,c.text)}</div>`}${c.illustrator ? `<div class="small muted right">🖌 ${esc(c.illustrator)}</div>` : ""}</section>` : ""}
