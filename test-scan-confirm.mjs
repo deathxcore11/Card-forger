@@ -71,3 +71,9 @@ for(const g of ['mtg','ptcg','ygo']){
  assert.match(empty,/Your captured card/);assert.match(empty,/Find card/);assert.match(empty,/Scan again/);assert.doesNotMatch(empty,/data-act="scanConfirm"/,'unidentified card cannot be saved as a fabricated match');
 }
 console.log('PASS: noisy-title visual recovery and retry/manual-identification popup in all games; unverified artwork never becomes an exact printing.');
+
+S.state=blank();S.state.settings.game='ptcg';S.ui.view='scan';let lookups=0,writes=0;
+const retryA={};registerScanner({A:retryA,C:{},render(){},toast(){},game:()=> 'ptcg',setOf:()=>'',numberOf:()=>'',priceOf:()=>null,async candById(){if(++lookups===1)throw Error('temporary lookup outage');return {id:'retry-card',name:'Retry card',card:{id:'retry-card',name:'Retry card',game:'ptcg',variants:[]}};},async addMany(){writes++;}});
+S.ui.scan={camOn:true,cands:[{id:'retry-card',name:'Retry card',localReference:true,card:{id:'retry-card',name:'Retry card'}}],confirm:{i:0,qty:1,condition:'Near Mint',lang:'en',finish:'normal'}};
+await retryA.scanConfirm();assert.equal(lookups,2);assert.equal(writes,1);assert.equal(S.ui.scan.confirm,null);assert.equal(S.ui.scan.camOn,true);
+console.log('PASS: transient identifier hydration is retried once; collection writes still happen only once.');

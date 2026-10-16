@@ -1,3 +1,4 @@
+import {brandMark} from './brand.js';
 import {conditionValueNote} from './condition-value.js';
 import { aiReviewPanel } from './ai-review.js';
 import { rankPairs } from "./pairing.js";
@@ -602,7 +603,7 @@ export function buildSheet() {
     seed = meta(B.seed),
     fmts = seed ? formatsFor(seed, ALL_FORMATS) : [],
     tiers = B.results[B.format] || null;
-  return `<div class="sheet-head"><h2>Build decks</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
+  return `<div class="sheet-head"><h2 class="build-heading">${brandMark("brand-idle")}<span>Build decks</span></h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   <div class="build-seed">${img(art(seed), B.seed, "mini-art")}<div><small class="muted">Built around</small><b>${esc(B.seed)}</b>${seed ? colorDots(seed) : ""}</div><button class="btn ghost small" data-act="buildRandom" data-format="${esc(B.format)}">🎲 Random card</button></div>
   <p class="muted small">Pick a format for a complete, legal deck at each budget, using your cards first. Basic lands count as owned.</p>
   <div class="fmt-chips">${fmts.map((f) => `<button class="chip pick ${f.name === B.format ? "on" : ""}" ${B.busy?"disabled":""} data-act="buildFormat" data-format="${esc(f.name)}">${esc(f.name)}</button>`).join("") || '<span class="muted small">This card isn’t legal in any constructed format.</span>'}</div>

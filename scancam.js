@@ -1016,10 +1016,13 @@ export function registerScanner(ctx) {
   const hydrateCandidate=(G,c)=>{
     if(!c.localReference)return Promise.resolve(c);
     const key=G+":"+c.id;
-    if(!hydration.has(key))hydration.set(key,Promise.resolve(ctx.candById?.(G,c.id,c.why,c.exact)).then(full=>{
-      if(!full?.card || scanNameKey(full.name)!==scanNameKey(c.name))throw Error("Card details are unavailable. Connect and try again.");
-      return {...full,exact:c.exact,print:c.print||full.print,sub:c.sub,localReference:false};
-    }).finally(()=>hydration.delete(key)));
+    if(!hydration.has(key))hydration.set(key,(async()=>{
+      for(let attempt=0;attempt<2;attempt++)try{
+        const full=await ctx.candById?.(G,c.id,c.why,c.exact);
+        if(!full?.card || scanNameKey(full.name)!==scanNameKey(c.name))throw Error("Card details are unavailable. Connect and try again.");
+        return {...full,exact:c.exact,print:c.print||full.print,sub:c.sub,localReference:false};
+      }catch(e){if(attempt===1)throw e;await new Promise(resolve=>setTimeout(resolve,250));}
+    })().finally(()=>hydration.delete(key)));
     return hydration.get(key);
   };
   A.scanCatalogDownload=async()=>{
