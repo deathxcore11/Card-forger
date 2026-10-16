@@ -349,7 +349,7 @@ export function scanView(g, gameName) {
     ${
       live
         ? `<div class="cam-wrap ${s.camOn ? "immersive" : ""}" id="camWrap">${s.camOn ? `<div id="camSlot"></div><div class="cam-guide ${esc(s.guide?.state || "red")}" id="camGuide"></div><div class="cam-status ${esc(s.guide?.state || "red")}" id="camStatus" role="status" aria-live="polite"><i class="cam-dot" aria-hidden="true"></i>${esc(s.guide?.msg || "Starting camera…")}</div>${rail}<div class="scan-flash" id="scanFlash" aria-live="polite"></div>${defaultsPill(g, p)}` : `<div class="scan-drop"><span class="scan-sweep" aria-hidden="true"></span><span class="scan-ghost" aria-hidden="true"></span><b>Point at a card</b><span class="muted small">Hold one ${esc(gameName)} card inside the frame. It scans on its own.</span><span class="scan-tips"><span>${TIP_FLAT} Flat</span><span>${TIP_LIGHT} Bright</span><span>${TIP_GLARE} No glare</span></span><button class="btn scan-go" data-act="scanStart">${CAMERA} Start camera</button><small class="muted scan-tip-line" title="${esc("Keep " + tips + " sharp.")}">Keep the name and the bottom code sharp</small></div>`}</div>
-      ${s.camOn && !s.confirm ? `<div class="actions wrap scan-under"><button class="btn" id="scanCaptureBtn" data-act="scanCapture">Capture</button><label class="check small"><input type="checkbox" data-change="scanAuto" ${s.auto !== false ? "checked" : ""}> Capture automatically</label></div>` : defaultsPill(g, p)}`
+      ${s.camOn ? (s.confirm ? "" : `<div class="actions wrap scan-under"><button class="btn" id="scanCaptureBtn" data-act="scanCapture">Capture</button><label class="check small"><input type="checkbox" data-change="scanAuto" ${s.auto !== false ? "checked" : ""}> Capture automatically</label></div>`) : defaultsPill(g, p)}`
         : `<div class="actions wrap"><label class="btn">${CAMERA} Take photo<input type="file" accept="image/*" capture="environment" data-change="scanFile" hidden></label><label class="btn ghost">Upload<input type="file" accept="image/*" data-change="scanFile" hidden></label></div>
       ${s.url ? `<p class="muted small">Drag a box around the card to crop. Rotate if it’s sideways.</p><div class="crop-wrap" id="cropWrap"><img id="cropImg" src="${s.url}" alt="Your photo"><div class="crop-box" id="cropBox"></div></div>
       <div class="actions wrap"><button class="btn ghost small" data-act="scanRotate">Rotate</button><button class="btn ghost small" data-act="scanCropReset">Whole photo</button><button class="btn" data-act="scanRead" ${s.busy ? "disabled" : ""}>${s.busy ? "Reading…" : "Read card"}</button></div>` : ""}
@@ -583,6 +583,16 @@ export function registerScanner(ctx) {
     const cands = [cand].map((c) => ({ ...c, exact: false, why: "Possible artwork match · confirm name and printing" }));
     return { g: best.g, sure: best.sure, exact: !!cands[0].exact, r: { cands, tried: [cand.name], picked: true } };
   };
+  // Only an unusually close, separated local fingerprint may precede OCR. It is
+  // still a reviewable suggestion, never a verified printing or an automatic add.
+  const localArtwork = async (card,G) => {
+    if(catalogState(G).status!=="ready")return null;
+    const idx=await loadIndex(G);if(!idx)return null;
+    const near=nearest([0,0.02,0.035,0.05].map(f=>hashCanvas(insetCanvas(card,f),G)),idx.bin,2);
+    if(!near[0]||near[0][1]>3||(near[1]&&near[1][1]-near[0][1]<8))return null;
+    const c=localIndexCandidate(G,indexCardId(G,idx.ids[near[0][0]][0]));
+    return c?{cands:[{...c,exact:false,why:"Possible local artwork match · check printing"}],tried:[c.name],picked:true,localArtwork:true}:null;
+  };
   // Which printing: the only one there is, or the one whose artwork and frame match the scan.
   // Unsure → the three closest pictures to choose from.
   const pickPrinting = async (g, card, cand) => {
@@ -667,7 +677,7 @@ export function registerScanner(ctx) {
   };
   const process = async (card) => {
     const st = s(),
-      G = game(), ticket = ++scanTicket;
+      G = game(), ticket = ++scanTicket, started=performance.now();
     const current = () => ticket === scanTicket && s() === st && game() === G && S.ui.view === "scan";
     try {
       const k = Math.min(1, 360 / card.width), t = document.createElement("canvas");
@@ -687,13 +697,14 @@ export function registerScanner(ctx) {
     try {
       st.foundIn = "";
       const p = prefs();
-      // Text first: avoid downloading 24 thumbnail pictures before reading the identifiers.
+      // A strict local fingerprint can open review immediately. Otherwise read identifiers before remote artwork.
       let r;
       st.recognitionError="";
-      try { r=await readFlow(card,G,p,null); }
+      st.read={name:"",code:"",full:""};
+      try { r=await localArtwork(card,G);if(!r)r=await readFlow(card,G,p,null); }
       catch(e) {st.read ||= {name:"",code:"",full:""};st.recognitionError=e.message || "Text reading is unavailable. Try the card name.";r={cands:[],tried:[]};}
       if (!current()) return;
-      if (!r.cands.some(c=>textVerifiedMatch(G,c,st.read))) {
+      if (!r.localArtwork && !r.cands.some(c=>textVerifiedMatch(G,c,st.read))) {
         setStatus("Checking the artwork…");
         const fast = await artFirst(card,G).catch(() => null);
         if (!current()) return;
@@ -743,7 +754,7 @@ export function registerScanner(ctx) {
     } catch (e) {
       if (current()) st.status = e.message;
     } finally {
-      if (current()) { st.busy = false; render(); }
+      if (current()) { st.recognitionMs=performance.now()-started;st.busy = false; render(); }
     }
   };
 

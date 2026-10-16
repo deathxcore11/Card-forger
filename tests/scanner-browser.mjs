@@ -53,7 +53,7 @@ try{
    await upload.setInputFiles({name:ref.g+(ref.g==='ptcg'?'.webp':'.jpg'),mimeType:ref.mime,buffer:ref.bytes});
    await page.getByRole('button',{name:'Read card',exact:true}).click();
    await page.locator('.scan-confirm').waitFor({state:'visible',timeout:120000});
-   const read=await page.evaluate(async()=>{const {S}=await import('/store.js');return {read:S.ui.scan.read,status:S.ui.scan.status,tried:S.ui.scan.tried};});
+   const read=await page.evaluate(async()=>{const {S}=await import('/store.js');return {read:S.ui.scan.read,status:S.ui.scan.status,tried:S.ui.scan.tried,recognitionMs:S.ui.scan.recognitionMs};});
    console.log(`${ref.game} real OCR: ${JSON.stringify(read)}`);
    const popup=page.getByRole('region',{name:'Confirm scanned card',exact:true});
    assert.equal(await popup.count(),1,`${ref.game} reference photo must produce a candidate, not a blank result`);
