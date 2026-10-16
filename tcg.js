@@ -600,7 +600,7 @@ export function tcgCardSheet(c, sctx = {}) {
     heroSrc = g === "ygo" ? c.art || c.imageLarge : artworkSources(c,true)[0],
     heroFallback = g === "ygo" ? c.artDirect || "" : "";
   const overview = `
-    <div class="cs-card"><div class="cd-img"><button class="cd-zoom" data-act="zoomCard" data-src="${esc(artworkSources(c,true)[0] || "")}" data-hi="${esc(g === "ygo" ? ygoImageDirect(c.id, false) : c.imageLarge || "")}" data-fallback="${esc(artworkSources(c,true)[1] || "")}" data-art="${esc(g === "ygo" ? c.artDirect || "" : "")}" data-name="${esc(c.name)}" aria-label="Enlarge ${esc(c.name)}">${imgTag(c, "card-img", true)}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button></div>
+    <div class="cs-card"><div class="cd-art-stack"><div class="cd-img"><button class="cd-zoom" data-act="zoomCard" data-src="${esc(artworkSources(c,true)[0] || "")}" data-hi="${esc(g === "ygo" ? ygoImageDirect(c.id, false) : c.imageLarge || "")}" data-fallback="${esc(artworkSources(c,true)[1] || "")}" data-art="${esc(g === "ygo" ? c.artDirect || "" : "")}" data-name="${esc(c.name)}" aria-label="Enlarge ${esc(c.name)}">${imgTag(c, "card-img", true)}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button></div></div>
       <div class="cs-card-side">${alertStatus(g,trackedQuote(g,c)?.id,c.name)}
         <p class="small own-line">${own ? `<b class="ok-text">You own ${own}</b>` : "Not in your collection"}</p>
         ${deck ? `<p class="small deck-legal ${SOURCES[g].legality(c, f) === "legal" ? "ok-text" : "bad-text"}">${SOURCES[g].legality(c, f) === "legal" ? "✓ Legal" : "● Not allowed"} in ${esc(f.name)} <span class="muted">(${esc(deck.name)})</span></p>` : ""}
