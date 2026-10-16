@@ -50,6 +50,11 @@ try{
   await activate(page.locator('#lower'));await page.waitForTimeout(80);assert.equal(await menu.count(),1);await activate(menu.getByRole('option',{name:'Price',exact:true}));assert.equal(await page.locator('#lower').inputValue(),'Price');
   // Replaced controls continue working after the application's next render.
   await activate(page.locator('#replace'));await activate(page.locator('#mtg'));assert.equal(await menu.count(),1);await menu.getByRole('option').first().press('Escape');
+  // Simulate a completed API request rebuilding the page while a menu is open.
+  await activate(page.locator('#mtg'));
+  await page.evaluate(()=>{const s=document.querySelector('#mtg');s.replaceWith(s.cloneNode(true));});
+  await page.waitForTimeout(80);assert.equal(await menu.count(),1,'background render preserves the open menu');
+  await activate(menu.getByRole('option',{name:'Etched',exact:true}));assert.equal(await page.locator('#mtg').inputValue(),'Etched','choice saves to replacement source control');
   // A new outside tap dismisses, while Escape preserves the selected value.
   await activate(page.locator('#mtg'));
   if(options.hasTouch)await page.touchscreen.tap(2,2);else await page.mouse.click(2,2);

@@ -28,7 +28,8 @@ export function attachGlassSelects(doc=document) {
     if(controls==null)select.removeAttribute('aria-controls');else select.setAttribute('aria-controls',controls);
     if(restore&&select.isConnected)select.focus({preventScroll:true});
   };
-  const open=select=>{
+  const open=initial=>{
+    let select=initial;
     if(active?.select===select)return;
     close(false);
     const dialog=doc.createElement('dialog'),list=doc.createElement('div'),heading=doc.createElement('div');
@@ -37,6 +38,11 @@ export function attachGlassSelects(doc=document) {
     dialog.className='glass-select-menu';dialog.setAttribute('aria-label',title);dialog.id='glass-picker-'+(++serial);
     heading.className='gp-title';heading.textContent=title;dialog.append(heading);
     list.className='glass-select-options';list.setAttribute('role','listbox');list.setAttribute('aria-label',title);
+    // A background app render may replace the control without changing its choices.
+    // Keep the open menu bound to the equivalent new source, preserving the gesture.
+    const identity=s=>['id','name','data-change','data-field','aria-label'].map(k=>s.getAttribute(k)||'').join('\u001f');
+    const identityKey=identity(select),ordinal=Array.from(doc.querySelectorAll('select')).filter(s=>identity(s)===identityKey).indexOf(select);
+    const sameOptions=(a,b)=>a.length===b.length&&a.every((o,i)=>['value','label','disabled','group','hidden'].every(k=>o[k]===b[i][k]));
     const options=pickerOptions(select),buttons=[];let group='';
     for(const o of options){
       if(o.hidden)continue;
@@ -100,7 +106,16 @@ export function attachGlassSelects(doc=document) {
       dialog.scrollTop=Math.max(0,first.offsetTop-dialog.clientHeight/2+first.offsetHeight/2);
     }
     if(typeof MutationObserver!=='undefined'){
-      active.observer=new MutationObserver(records=>{if(!select.isConnected||records.some(r=>r.target===select||select.contains(r.target)))close(false);});
+      active.observer=new MutationObserver(records=>{
+        if(!active)return;
+        if(!select.isConnected){
+          const replacement=Array.from(doc.querySelectorAll('select')).filter(s=>identity(s)===identityKey)[ordinal];
+          if(!replacement||!eligible(replacement)||!sameOptions(options,pickerOptions(replacement)))return close(false);
+          select=replacement;active.select=select;
+          active.expanded=select.getAttribute('aria-expanded');active.controls=select.getAttribute('aria-controls');
+          select.setAttribute('aria-expanded','true');select.setAttribute('aria-controls',dialog.id);schedulePosition();
+        }else if(records.some(r=>r.target===select||select.contains(r.target)))close(false);
+      });
       active.observer.observe(doc.body,{childList:true,subtree:true,attributes:true,attributeFilter:['disabled','hidden']});
     }
   };
