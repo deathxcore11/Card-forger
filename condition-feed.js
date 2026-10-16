@@ -24,7 +24,9 @@ export function loadConditionQuotes(card,entry,game,fetcher=fetch){
   try{
    const r=await limitedFetch(fetcher,url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(15000)});
    if(!r.ok)return {changed:false,status:'unavailable'};
-   const data=await r.json();const quotes=(data.quotes||[]).filter(q=>q.priceStatus==='current'&&q.currency==='USD'&&typeof q.price==='number'&&Number.isFinite(q.price)&&q.price>=0&&Date.parse(q.validUntil)>Date.now()).map(q=>({...q,...identity}));
+   const data=await r.json();
+   if(!['available','unpriced','unmapped'].includes(data.status))return {changed:false,status:data.status||'unavailable',notice:data.notice||''};
+   const quotes=(data.quotes||[]).filter(q=>q.priceStatus==='current'&&q.currency==='USD'&&typeof q.price==='number'&&Number.isFinite(q.price)&&q.price>=0&&Date.parse(q.validUntil)>Date.now()).map(q=>({...q,...identity}));
    const same=q=>CONDITION_IDENTITY.every(k=>String(q[k]||'')===String(identity[k]||''));
    const old=card.conditionQuotes||[],next=[...old.filter(q=>!same(q)&&(!q.validUntil||Date.parse(q.validUntil)>Date.now())),...quotes];
    const changed=JSON.stringify(old)!==JSON.stringify(next);card.conditionQuotes=next;
