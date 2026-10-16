@@ -35,7 +35,7 @@ import { playedAlongside } from "./guide.js";
 import { mtgPairQueries, rankPairs, edhPop } from "./pairing.js";
 import { nextFact } from "./facts.js";
 import { S, STORAGE, CATALOG_RECORD, RECOVERY, blank, uid, meta, inv, deckById, currentDeck, priceOf, cacheCard, slim } from "./store.js";
-import { $, $$, esc, usd, img, art, cardImage, options, segmented, customBudget, registerSetIcons } from "./ui.js";
+import { $, $$, esc, usd, img, art, cardImage, options, segmented, customBudget, registerSetIcons, captureDisclosures, restoreDisclosures } from "./ui.js";
 import * as V from "./views.js";
 import { refreshCheapest, cheapestKnown } from "./mtg-cheap.js";
 import { readRecord, writeRecord, writeRecords, persistenceStatus, requestPersistence } from "./storage.js";
@@ -760,6 +760,7 @@ const autoMeta = new Set();
 let lastPageKey = "";
 const cheapChecked = new Set();
 let tcgCheckedFor = -1;
+const disclosureStates=new Map();
 function render() {
   if(S.ui.view==='collection')setTimeout(refreshCollectionConditions,0);
   useMyPrices(S.state.myPrices);
@@ -778,6 +779,11 @@ function render() {
   for (const b of $$("[data-nav]")) b.classList.toggle("on", b.dataset.nav === (ui.view === "deck" ? "decks" : ui.view === "set" || ui.view === "sets" ? "search" : ui.view));
   document.body.dataset.view = ui.view;
   const g = T.game();
+  const content=$('#content'),previousDisclosureKey=content?.dataset?.disclosureKey;
+  if(previousDisclosureKey)disclosureStates.set(previousDisclosureKey,captureDisclosures(content));
+  if(disclosureStates.size>100)disclosureStates.delete(disclosureStates.keys().next().value);
+  const disclosureKey=[g,ui.view,ui.deckId,ui.tdeckId,ui.set?.code,ui.tsetId,ui.collTab,ui.decksTab,ui.deckTab].join(':');
+  if(content?.dataset)content.dataset.disclosureKey=disclosureKey;
   document.body.dataset.game = g;
   const pill = $("#gamePill");
   document.body.style?.setProperty("--game-color", GAME_COLOR[g]);
@@ -797,13 +803,17 @@ function render() {
   $("#content").className="";
   if (ui.view === "rules") {
     $("#content").innerHTML = rulesPage(g, ui.rules[g] || (ui.rules[g] = { list: "", busy: false, error: "", data: {} }));
+    restoreDisclosures(content,disclosureStates.get(disclosureKey));
     return;
   }
   if (ui.view === "shared" && ui.shared.deck?.game) {
     $("#content").innerHTML = T.tcgSharedPage(ui.shared.deck);
+    restoreDisclosures(content,disclosureStates.get(disclosureKey));
     return;
   }
   $("#content").innerHTML = (g !== "mtg" && tcgViews[ui.view] ? tcgViews[ui.view] : views[ui.view] || V.home)();
+  restoreDisclosures(content,disclosureStates.get(disclosureKey));
+  content.dataset.disclosureKey=disclosureKey;
   if(!cloudInfo().user)restoreAuthFields(document,authFields);
   const displayArea=["deck","tdeck"].includes(ui.view)?"deck":ui.view === "search"?"search":ui.view === "set"?"set":ui.view === "collection" && (g === "mtg" ? ui.collTab === "wishlist" : T.ui(g).coll.tab === "wishlist")?"wishlist":ui.view === "collection" && (g === "mtg" ? ui.collTab === "cards" : !T.ui(g).coll.tab || T.ui(g).coll.tab === "cards")?"collection":null;
   $("#content").className=displayArea ? "view-"+modeFor(g,displayArea) : "";

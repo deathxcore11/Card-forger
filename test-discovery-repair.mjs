@@ -1,3 +1,4 @@
+import {captureDisclosures,restoreDisclosures} from './ui.js';
 import {atLeastOne} from './deckaudit.js';
 import {buildDeck} from './builder.js';
 import assert from 'node:assert/strict';
@@ -29,3 +30,9 @@ console.log('PASS: effect coverage, partial-printing dates, reserved Commander m
 
 assert(atLeastOne(60,12,7)<.85,'12 one-drops in 60 do not guarantee an 85% opening chance');
 const built=buildDeck({format:'Commander',seeds:[leader],catalog:cat,price:()=>.01,budget:100});assert.equal(built.lands,36,'generated basics count as lands even before metadata hydration');
+
+const details=(label,open)=>({open,querySelector:()=>({textContent:label})});
+const before=[details('Filters',true),details('Advanced',false),details('Advanced',true)];
+const state=captureDisclosures({querySelectorAll:()=>before});
+const after=[details('Filters',false),details('Advanced',true),details('Advanced',false),details('New section',true)];
+restoreDisclosures({querySelectorAll:()=>after},state);assert.deepEqual(after.map(d=>d.open),[true,false,true,true],'both open and closed disclosures survive refresh, including duplicate summaries');
