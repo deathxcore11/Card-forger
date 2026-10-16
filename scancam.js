@@ -1052,6 +1052,7 @@ export function registerScanner(ctx) {
     try {
       const resolved=await hydrateCandidate(G,c);
       if(s()!==st||game()!==G||st.confirm!==q)return;
+      const validFinishes=finishesFor(G,resolved);if(!validFinishes.includes(q.finish))q.finish=validFinishes[0];
       const item=makeItem(resolved,q);
       await ctx.addMany(G,[{...item,location:prefs().location||""}]);
       if(s()!==st||game()!==G)return;
@@ -1304,7 +1305,7 @@ export function registerScanner(ctx) {
       const q=st.confirm,c=st.cands?.[q.i||0];q.presented=true;
       if(c?.localReference && q.detailStartedFor!==c.id+":"+c.print){
         q.detailStartedFor=c.id+":"+c.print;
-        hydrateCandidate(G,c).then(full=>{if(s()===st&&st.confirm===q&&st.cands[q.i||0]===c){st.cands[q.i||0]=full;q.price=ctx.priceOf(G,full,q.finish);render();}}).catch(()=>{});
+        hydrateCandidate(G,c).then(full=>{if(s()===st&&st.confirm===q&&st.cands[q.i||0]===c){st.cands[q.i||0]=full;const fs=finishesFor(G,full);if(!fs.includes(q.finish))q.finish=fs[0];q.price=ctx.priceOf(G,full,q.finish);render();}}).catch(()=>{});
       }
     }
     if (s().camOn) attach();
