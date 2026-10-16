@@ -56,7 +56,7 @@ try{
    const saved=await page.evaluate(async g=>{const {S}=await import('/store.js');return (g==='mtg'?S.state:S.state.tcg[g]).collection;},ref.g);
    assert.equal(saved.length,1);assert.equal(saved[0].name,ref.name);assert.equal(saved[0].qty,3);assert.equal(saved[0].condition,'Lightly Played');assert.equal(saved[0].language,'ja');
    await page.getByRole('navigation',{name:'Main',exact:true}).getByRole('button',{name:'Collection',exact:true}).click();
-   await page.getByRole('heading',{name:'Collection',exact:true}).waitFor();assert.equal((await page.locator('main').innerText()).includes(ref.name),true,'saved card appears in the actual collection screen');
+   await page.getByRole('heading',{name:'Collection',exact:true}).waitFor();await page.locator('main').getByRole('img',{name:ref.name,exact:true}).first().waitFor({state:'visible'});
    console.log(`PASS: ${ref.game}: real image → real browser OCR → public lookup → illustrated popup → dropdown edit → 3 LP/Japanese copies saved once → collection screen.`);
   }catch(e){
    console.error(`FAIL ${ref.game}: ${e.stack}`);console.error((await page.locator('main').innerText()).slice(0,6000));
