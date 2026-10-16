@@ -3168,3 +3168,5 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .scan-catalog-control button {min-height:36px;flex:none;}
 .scan-catalog-control small {width:100%;color:var(--bad);}
 .scan-catalog-settings {margin:16px 0;}
+
+.glass-select-options button {touch-action:manipulation;}

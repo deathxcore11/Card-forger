@@ -49,7 +49,15 @@ export function attachGlassSelects(doc=document) {
       if(o.group && o.group!==group){const label=doc.createElement('div');label.className='gp-title';label.textContent=o.group;list.append(label);}group=o.group;
       const b=doc.createElement('button');b.type='button';b.setAttribute('role','option');b.setAttribute('aria-selected',String(o.selected));b.disabled=o.disabled;b.tabIndex=-1;
       const name=doc.createElement('span'),check=doc.createElement('span');name.textContent=o.label;check.textContent=o.selected?'✓':'';check.setAttribute('aria-hidden','true');b.append(name,check);
-      b.onclick=()=>{if(!select.isConnected){close(false);return;}close();chooseOption(select,o.index);};
+      const choose=()=>{if(active?.dialog!==dialog)return;if(!select.isConnected){close(false);return;}close();chooseOption(select,o.index);};
+      b.onclick=choose;
+      // Chromium can suppress the synthetic click after a touch scroll settles,
+      // even though pointerdown/up land on the same option. Complete that tap
+      // directly; a drag or pointercancel must never select an option.
+      let press=null;
+      b.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse')press={id:e.pointerId,x:e.clientX,y:e.clientY};});
+      b.addEventListener('pointercancel',()=>{press=null;});
+      b.addEventListener('pointerup',e=>{const p=press;press=null;if(p&&p.id===e.pointerId&&Math.hypot(e.clientX-p.x,e.clientY-p.y)<=8){e.preventDefault();e.stopPropagation();choose();}});
       list.append(b);buttons.push(b);
     }
     if(options.filter(o=>!o.hidden).length>12){
