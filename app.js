@@ -51,6 +51,7 @@ import { completionPlan, commanderTheme } from "./planner.js";
 import { sourceCredit, mtgjsonDeck, collectionIdeas, upgradeSuggestions, applyUpgradeSwaps } from "./strategy.js";
 import { searchQuery, rankByName } from "./catalog-tools.js";
 import { promptInstall, dismissInstall, onInstallable, isIOS } from "./install.js";
+import { attachGlassSelects } from "./glass-select.js";
 import { attachSuggest } from "./suggest.js";
 import { shouldTour, openTour } from "./tour.js";
 import { tourScenes } from "./tour-scenes.js";
@@ -1146,6 +1147,7 @@ const tierSync = () => {
 };
 if (typeof MutationObserver !== "undefined") new MutationObserver(() => { if (!tierQueued) { tierQueued = true; requestAnimationFrame(tierSync); } }).observe(document.body, { childList: true, subtree: true });
 attachSuggest();
+attachGlassSelects();
 document.addEventListener("submit",e=>{
  const form=e.target.closest?.('[data-auth-action]');if(!form)return;
  e.preventDefault();const action=A[form.dataset.authAction];if(action)safely(action(form.querySelector('button[type="submit"]')));
