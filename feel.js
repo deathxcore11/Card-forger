@@ -300,21 +300,29 @@ export function attachTilt(root = typeof document === "undefined" ? null : docum
 // Phones have no hover, so the card on a card page answers the phone itself: tilt the phone and
 // the card leans and its shine slides, like holding a real foil. It also catches the light once
 // when it opens. iOS asks for motion access the first time you touch a card (Apple requires a tap).
+export function motionCard(root=document) {
+  // An open sheet owns the visible card, even when a card page remains behind it.
+  const dialogs=Array.from(root.querySelectorAll('dialog[open]'));
+  const scope=dialogs.at(-1)||root.querySelector('#content')||root;
+  return Array.from(scope.querySelectorAll('.cd-img')).find(c=>{
+    const r=c.getBoundingClientRect();return r.width>0&&r.height>0&&r.bottom>0&&r.top<innerHeight&&r.right>0&&r.left<innerWidth;
+  })||null;
+}
 function attachMotionTilt(root, pressed) {
-  if (typeof window === "undefined" || !("DeviceOrientationEvent" in window) || !matchMedia?.("(hover: none)").matches) return;
-  let base = null, frame = 0, last = null, asked = false, listening = false;
-  const hero = () => {
-    const c = document.querySelector("dialog[open] .cd-img, #content .cd-img");
-    if (!c) return null;
-    const r = c.getBoundingClientRect();
-    return r.bottom > 0 && r.top < innerHeight ? c : null;
-  };
+  if (typeof window === "undefined" || !("DeviceOrientationEvent" in window)) return;
+  // Foldables, tablets and phones with a pen/mouse can report hover support.
+  if (!(navigator.maxTouchPoints>0 || matchMedia?.("(any-pointer: coarse)").matches || matchMedia?.("(hover: none)").matches)) return;
+  let base = null, frame = 0, last = null, asked = false, listening = false, currentCard=null;
+  const hero = () => motionCard(root);
   const apply = () => {
     frame = 0;
     const c = hero();
     if (!c || !last || pressed() === c) return;
     const clamp = (v) => Math.max(-1, Math.min(1, v / 18));
+    if(c!==currentCard){currentCard=c;base=null;}
     if (!base) base = { ...last };
+    // The entrance sweep must not override the sensor transform with animation fill.
+    c.classList.remove("shine-once");
     // The resting angle drifts toward however you hold the phone, so the card settles flat.
     base.b += (last.b - base.b) * 0.02;
     base.g += (last.g - base.g) * 0.02;
@@ -326,7 +334,7 @@ function attachMotionTilt(root, pressed) {
     c.style.setProperty("--my", `${50 + y * 45}%`);
   };
   const onTurn = (e) => {
-    if (e.beta == null || e.gamma == null) return;
+    if (!Number.isFinite(e.beta) || !Number.isFinite(e.gamma)) return;
     last = { b: e.beta, g: e.gamma };
     if (!frame) frame = requestAnimationFrame(apply);
   };
