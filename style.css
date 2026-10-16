@@ -3163,3 +3163,8 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .scan-confirm-actions {position:sticky;bottom:-12px;padding:10px 0 4px;background:rgba(21,24,31,.98);z-index:1;}
 .scan-confirm-actions .btn {min-height:44px;}
 @media(prefers-reduced-motion:reduce){.scan-confirm-enter{animation:none;}}
+
+.scan-catalog-control {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 12px;padding:8px 2px;color:var(--muted);font-size:12px;}
+.scan-catalog-control button {min-height:36px;flex:none;}
+.scan-catalog-control small {width:100%;color:var(--bad);}
+.scan-catalog-settings {margin:16px 0;}

@@ -6,8 +6,8 @@ import {resolve,extname} from 'node:path';
 import {chromium,devices} from 'playwright';
 const root=process.cwd(),refs=[
  {game:'Magic',g:'mtg',name:'Lightning Bolt',url:'https://api.scryfall.com/cards/7673784e-db4b-43a1-8d55-1bb9fc1e284f'},
- {game:'Pokémon',g:'ptcg',name:'Kyogre',url:'https://api.tcgdex.net/v2/en/cards/cel25-3'},
- {game:'Yu-Gi-Oh!',g:'ygo',name:'Dark Magician',url:'https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Dark%20Magician'}
+ {game:'Pokémon',g:'ptcg',name:'Kyogre',id:'cel25-3',url:'https://api.tcgdex.net/v2/en/cards/cel25-3'},
+ {game:'Yu-Gi-Oh!',g:'ygo',name:'Dark Magician',id:'46986414',url:'https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Dark%20Magician'}
 ];
 async function download(url){const r=await fetch(url,{headers:{'User-Agent':'CardStashy-Scanner-Regression/1.0','Accept':'*/*'},signal:AbortSignal.timeout(30000)});if(!r.ok)throw Error(`Reference unavailable: ${url} (${r.status})`);return r;}
 for(const ref of refs){
@@ -36,6 +36,18 @@ try{
     await page.getByRole('button',{name:'Switch game',exact:true}).click();await page.locator('#sheet[open]').getByRole('button',{name:new RegExp(ref.game)}).click();
     await page.getByRole('button',{name:'Switch game',exact:true}).getByText(ref.game,{exact:true}).waitFor();
    }
+   // Exercise the user's explicit opt-in download, integrity check and durable cache.
+   await page.locator('[data-act="scanCatalogDownload"]').click();
+   await page.getByText(/local card records ready/).waitFor({timeout:45000});
+   const local=await page.evaluate(async g=>{
+    const c=await import('/scan-catalog.js');const start=performance.now();
+    const read=g==='mtg'?{name:'Lightning Bolt',code:'U 0806\nMSC EN'}:g==='ptcg'?{name:'Kyogre',code:'003/025'}:{name:'Dark Magician',code:'LOB-EN005'};
+    // Network is disabled only for this lookup: catalogue recognition must use no HTTP.
+    const prior=window.fetch;window.fetch=()=>{throw Error('Recognition attempted an HTTP request');};
+    try{const r=await c.localScanMatch(g,read);return {names:r.cands.map(x=>x.name),ids:r.cands.map(x=>x.id),exact:r.cands[0]?.exact,ms:performance.now()-start};}finally{window.fetch=prior;}
+   },ref.g);
+   assert(local.names.includes(ref.name));assert(local.exact);if(ref.id)assert(local.ids.includes(ref.id));console.log(`${ref.game} cached identifier lookup, HTTP blocked: ${JSON.stringify(local)}`);
+   await page.reload();await page.getByText(/local card records ready/).waitFor({timeout:15000});
    await page.getByRole('tab',{name:'Photo',exact:true}).click();
    const upload=page.locator('input[data-change="scanFile"]').last();
    await upload.setInputFiles({name:ref.g+(ref.g==='ptcg'?'.webp':'.jpg'),mimeType:ref.mime,buffer:ref.bytes});
@@ -54,7 +66,7 @@ try{
    await popup.getByRole('button',{name:'Add to collection',exact:true}).click();
    await popup.waitFor({state:'detached'});
    const saved=await page.evaluate(async g=>{const {S}=await import('/store.js');return (g==='mtg'?S.state:S.state.tcg[g]).collection;},ref.g);
-   assert.equal(saved.length,1);assert.equal(saved[0].name,ref.name);assert.equal(saved[0].qty,3);assert.equal(saved[0].condition,'Lightly Played');assert.equal(saved[0].language,'ja');
+   assert.equal(saved.length,1);assert.equal(saved[0].name,ref.name);if(ref.id)assert.equal(String(saved[0].cardId),ref.id,'same name is insufficient: save the correct indexed card/printing');assert.equal(saved[0].qty,3);assert.equal(saved[0].condition,'Lightly Played');assert.equal(saved[0].language,'ja');
    await page.getByRole('navigation',{name:'Main',exact:true}).getByRole('button',{name:'Collection',exact:true}).click();
    await page.getByRole('heading',{name:'Collection',exact:true}).waitFor();await page.locator('main').getByRole('img',{name:ref.name,exact:true}).first().waitFor({state:'visible'});
    console.log(`PASS: ${ref.game}: real image → real browser OCR → public lookup → illustrated popup → dropdown edit → 3 LP/Japanese copies saved once → collection screen.`);

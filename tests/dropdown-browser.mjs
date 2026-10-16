@@ -73,7 +73,7 @@ try{
    await page.waitForTimeout(80);assert.equal(await menu.count(),1,`${name} real ${game} Sort stays open`);
    await activate(menu.getByRole('option',{name:'Name',exact:true}));
    assert.equal(await menu.count(),0);
-   assert.equal((await page.getByLabel('Sort',{exact:true}).inputValue()).toLowerCase(),'name',`${game} real sort handler saved Name`);
+   assert.equal((await page.locator('select[data-field="sort"]').inputValue()).toLowerCase(),'name',`${game} real sort handler saved Name`);
   }
   await page.getByRole('button',{name:'Settings',exact:true}).click();
   await page.getByRole('heading',{name:'Settings',exact:true}).waitFor();

@@ -96,6 +96,7 @@ const ASSETS = [
   "./zoom.js",
   "./scansession.js",
   "./scancam.js",
+  "./scan-catalog.js",
   "./rules.js",
   "./catalog.json",
   "./manifest.webmanifest",
