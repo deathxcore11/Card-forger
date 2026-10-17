@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import {CONDITION_IDENTITY} from './condition-feed.js';
 import {normalizeYgoSets,YGO_SET_CACHE_KEY} from './ygo.js';
 import * as T from './tcg.js';
 import {S,blank} from './store.js';
@@ -217,7 +218,7 @@ const conditionNodes={'#conditionPricePreview':{innerHTML:'',isConnected:true},'
 const ambiguousCard={...ygo,sets:[{...ygo.sets[0],code:'LOB-EN001'},ygo.sets[1]]};
 const ambiguousProjection=T.setContextCard('ygo',ambiguousCard,anniversary,releases);assert.equal(ambiguousProjection.setContext.printing.releasePriceAmbiguous,true);
 let conditionRequests=0;
-const conditionHarness={S:{ui:{sheetCtx:{type:'tadd',game:'ygo',id:ygo.id,setId:anniversary.id}}},T:{game:()=> 'ygo',cardOf:()=>ambiguousCard,entryPrice:()=>500},$:s=>conditionNodes[s],contextTcgCard:()=>ambiguousProjection,conditionName:c=>c,conditionValue:(_price,entry)=>({price:entry.manualValue}),conditionPriceHtml:price=>String(price),fetchConditionValue:()=>conditionRequests++};
+const conditionHarness={CONDITION_IDENTITY,S:{ui:{sheetCtx:{type:'tadd',game:'ygo',id:ygo.id,setId:anniversary.id}}},T:{game:()=> 'ygo',cardOf:()=>ambiguousCard,entryPrice:()=>500},$:s=>conditionNodes[s],contextTcgCard:()=>ambiguousProjection,conditionName:c=>c,conditionValue:(_price,entry)=>({price:entry.manualValue}),conditionPriceHtml:price=>String(price),fetchConditionValue:()=>conditionRequests++};
 vm.createContext(conditionHarness);vm.runInContext(conditionCode,conditionHarness);conditionHarness.refreshConditionPrice();assert.equal(conditionNodes['#conditionPricePreview'].innerHTML,'null');assert.equal(conditionRequests,0);
 conditionNodes['#lotManualValue'].value='4';conditionHarness.refreshConditionPrice();assert.equal(conditionNodes['#conditionPricePreview'].innerHTML,'4');assert.equal(conditionRequests,0);
 const editionHeld={...held,priceEdition:'LOB-EN001::Ultra Rare',priceYgoEdition:'unlimited'};

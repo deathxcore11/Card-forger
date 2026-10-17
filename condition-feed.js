@@ -17,20 +17,31 @@ export function conditionRequest(card,entry,game){
 }
 export function loadConditionQuotes(card,entry,game,fetcher=fetch){
  const url=conditionRequest(card,entry,game);if(!url)return null;
- const stamp=attempted.get(url);if(stamp && Date.now()-stamp<3600000)return null;
+ const stamp=attempted.get(url);if(stamp!==undefined && Date.now()-stamp<3600000)return null;
  attempted.set(url,Date.now());
- const identity=Object.fromEntries(CONDITION_IDENTITY.map(k=>[k,entry[k]||'']));
  return (async()=>{
   try{
    const r=await limitedFetch(fetcher,url,{headers:{Accept:'application/json'}});
-   if(!r.ok)return {changed:false,status:'unavailable'};
+   if(!r.ok)return {changed:false,status:r.status===429?'rate_limited':'unavailable'};
    const data=await r.json();
    if(!['available','unpriced','unmapped'].includes(data.status))return {changed:false,status:data.status||'unavailable',notice:data.notice||''};
-   const quotes=(data.quotes||[]).filter(q=>q.priceStatus==='current'&&q.currency==='USD'&&typeof q.price==='number'&&Number.isFinite(q.price)&&q.price>=0&&Date.parse(q.validUntil)>Date.now()).map(q=>({...q,...identity}));
-   const same=q=>CONDITION_IDENTITY.every(k=>String(q[k]||'')===String(identity[k]||''));
-   const old=card.conditionQuotes||[],next=[...old.filter(q=>!same(q)&&(!q.validUntil||Date.parse(q.validUntil)>Date.now())),...quotes];
-   const changed=JSON.stringify(old)!==JSON.stringify(next);card.conditionQuotes=next;
-   return {changed,status:data.status||'unavailable',notice:data.notice||'',quotes};
+   const rawQuotes=(data.quotes||[]).filter(q=>compatibleConditionQuote(q,entry));
+   return {...applyConditionQuotes(card,entry,rawQuotes),status:data.status||'unavailable',notice:data.notice||'',rawQuotes};
   }catch{return {changed:false,status:'unavailable'};}
  })();
+}
+
+// Endpoint identity fields may be absent, but conflicting fields must never be
+// relabeled as the requested printing. Cached responses can then safely fan out.
+function compatibleConditionQuote(q,entry){
+ return q&&q.priceStatus==='current'&&q.currency==='USD'&&typeof q.price==='number'&&Number.isFinite(q.price)&&q.price>=0&&Date.parse(q.validUntil)>Date.now()&&
+  CONDITION_IDENTITY.every(k=>q[k]==null||String(q[k])===String(entry[k]||''));
+}
+export function applyConditionQuotes(card,entry,rawQuotes=[]){
+ const identity=Object.fromEntries(CONDITION_IDENTITY.map(k=>[k,entry[k]||'']));
+ const quotes=rawQuotes.filter(q=>compatibleConditionQuote(q,entry)).map(q=>({...q,...identity}));
+ const same=q=>CONDITION_IDENTITY.every(k=>String(q[k]||'')===String(identity[k]||''));
+ const old=card.conditionQuotes||[],next=[...old.filter(q=>!same(q)&&(!q.validUntil||Date.parse(q.validUntil)>Date.now())),...quotes];
+ const changed=JSON.stringify(old)!==JSON.stringify(next);card.conditionQuotes=next;
+ return {changed,quotes};
 }

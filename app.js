@@ -1,6 +1,7 @@
 import { syncGameTabs, attachGameTabs, attachHomeCommunity, refreshHomeCommunity, isHomeRevealCurrent, homeDeckReveal } from "./home-ui.js";
 import {attachRuleLearning} from './rule-learning.js';
-import {loadConditionQuotes,CONDITION_IDENTITY} from './condition-feed.js';
+import {loadConditionQuotes,applyConditionQuotes,conditionRequest,CONDITION_IDENTITY} from './condition-feed.js';
+import {createConditionRefreshScheduler,conditionCursorKey,selectConditionLots,changedConditionLots,conditionLotIdentity} from './condition-refresh-scheduler.js';
 import {brandMark} from './brand.js';
 import {ownedCardLots,quickQuantity} from './quick-quantity.js';
 import {conditionName,conditionValue,conditionPriceHtml} from './condition-value.js';
@@ -200,6 +201,7 @@ function save() {
 // The state before the last undoable change (deck edits, removals, deletions).
 let lastUndo = null;
 let commitQueue = Promise.resolve();
+let conditionWorkspaceRevision = 0;
 function queueWorkspaceWrite(transaction) {
   const result = commitQueue.then(transaction, transaction);
   commitQueue = result.catch(() => {});
@@ -219,6 +221,7 @@ function replaceWorkspace(next, { recovery = false, clearRecovery = false, stamp
     else if (typeof recovery === "function" ? recovery(S.state) : recovery) records.unshift([RECOVERY, stripCache(S.state)]);
     await writeRecords(records);
     S.state = valid;
+    conditionWorkspaceRevision++;
     lastUndo = null;
     if (notify) afterLocalSave();
     return true;
@@ -229,6 +232,7 @@ async function commit(fn, { msg = "", recovery = false, rerender = true, enrich 
     // Confirm against the latest committed state, without allowing another queued edit to pass.
     if (guard && !await guard(S.state)) return;
     const before = undo ? structuredClone(stripCache(S.state)) : null;
+    const previous = S.state;
     const next = structuredClone(stripCache(S.state));
     const out = fn(next);
     const valid = normalize(next);
@@ -237,6 +241,8 @@ async function commit(fn, { msg = "", recovery = false, rerender = true, enrich 
     if (recovery) records.unshift([RECOVERY, stripCache(S.state)]);
     await writeRecords(records);
     S.state = valid;
+    const changedLots = changedConditionLots(previous, valid);
+    if (changedLots.length) setTimeout(() => refreshChangedConditions(changedLots), 0);
     afterLocalSave();
     saveCatalogSoon();
     if (rerender) {
@@ -1305,30 +1311,76 @@ if (typeof MutationObserver !== "undefined") new MutationObserver(() => { if (!t
 attachRuleLearning();
 attachSuggest();
 attachGlassSelects();
-function fetchConditionValue(card,entry,game,done){
- // The existing condition provider key does not encode a dated YGO release.
- // Do not spend a request or attach a quote when the same printed code/rarity
- // refers to multiple releases, or the saved lot explicitly remains unverified.
+const conditionScheduler=createConditionRefreshScheduler();
+function conditionCardFor(entry,game){
+ const card=game==='mtg'?(entry.printingVerified&&S.state.printings?.[entry.printingId])||meta(entry.name):T.cardOf(game,entry.cardId);
+ return card&&!card.brief&&!(game==='mtg'&&entry.printingVerified&&card.id!==entry.printingId)?card:null;
+}
+function conditionSelectionAllowed(card,entry,game){
+ if(!card?.id||card.brief||!conditionRequest(card,entry,game))return false;
+ // The provider key cannot encode dated YGO releases. Preserve both the raw
+ // code/rarity collision guard and the scoped release proof before scheduling.
  if(game==='ygo'){
-  if(entry.setReleaseUnverified)return;
-  const raw=T.cardOf(game,card?.id)||card;
+  if(entry.setReleaseUnverified)return false;
+  const raw=T.cardOf(game,card.id)||card;
   const matches=(raw?.sets||[]).filter(p=>p.code===entry.printing&&(!entry.rarity||p.rarity===entry.rarity));
-  if(matches.length>1)return;
+  if(matches.length>1)return false;
   if(entry.setReleaseId){
    const scoped=T.setContextCard(game,raw,entry.setReleaseId,T.currentYgoCatalogue());
-   if(scoped?.setContext?.status!=='resolved'||scoped.setContext.printings.filter(p=>p.code===entry.printing&&p.rarity===entry.rarity&&!p.releasePriceAmbiguous).length!==1)return;
+   if(scoped?.setContext?.status!=='resolved'||scoped.setContext.printings.filter(p=>p.code===entry.printing&&p.rarity===entry.rarity&&!p.releasePriceAmbiguous).length!==1)return false;
   }
  }
- const request=loadConditionQuotes(card,entry,game);if(!request)return;
- request.then(result=>{
-  if(result.changed){
-   if(game==='mtg'){S.catalogDirty=true;saveCatalogSoon();}else T.persistQuoteCache();
-   const lots=game==='mtg'?S.state.collection:T.gs(game).collection;
-   for(const lot of lots)if((game==='mtg'?key(lot.name)===key(card.name):lot.cardId===card.id)&&(!entry.setReleaseId||lot.setReleaseId===entry.setReleaseId)&&CONDITION_IDENTITY.every(k=>String(lot[k]||'')===String(entry[k]||'')))lot.conditionQuotes=result.quotes;
-   save();
+ return true;
+}
+function fetchConditionValue(card,entry,game,done,options={}){
+ const selected={...entry},workspaceRevision=conditionWorkspaceRevision;
+ if(navigator.onLine===false)return Promise.resolve({changed:false,status:'deferred',reason:'offline'});
+ if(!conditionSelectionAllowed(card,selected,game))return Promise.resolve({changed:false,status:'deferred',reason:'unverified-selection'});
+ const current=()=>workspaceRevision===conditionWorkspaceRevision&&conditionSelectionAllowed(card,selected,game)&&(!options.current||options.current());
+ const identityMatches=q=>CONDITION_IDENTITY.every(k=>String(q[k]||'')===String(selected[k]||''));
+ const cached=[...new Map([...(card.conditionQuotes||[]),...(selected.conditionQuotes||[])].filter(identityMatches).map(q=>[JSON.stringify(q),q])).values()];
+ const value=conditionValue(null,selected,cached);
+ if(value.kind==='manual')return Promise.resolve({changed:false,status:'manual'});
+ const request=value.kind==='condition-quote'?Promise.resolve({changed:false,status:'available',rawQuotes:cached,reused:true}):
+  conditionScheduler.request(conditionRequest(card,selected,game),()=>conditionSelectionAllowed(card,selected,game)?loadConditionQuotes({...card,conditionQuotes:[...(card.conditionQuotes||[])]},selected,game):{changed:false,status:'deferred',reason:'unverified-selection'},{...options,current});
+ return request.then(async result=>{
+  if(workspaceRevision!==conditionWorkspaceRevision)return {changed:false,status:'deferred',reason:'workspace-changed'};
+  if(!conditionSelectionAllowed(card,selected,game))return {changed:false,status:'deferred',reason:'unverified-selection'};
+  let changed=false;
+  if(['available','unpriced','unmapped'].includes(result.status)){
+   // A shared request returns unbound response rows. Bind each caller separately,
+   // including another serialized capture or a saved lot created while it ran.
+   const rawQuotes=result.rawQuotes||result.quotes||[];
+   changed=applyConditionQuotes(card,selected,rawQuotes).changed||!!result.changed;
+   await queueWorkspaceWrite(async()=>{
+    if(workspaceRevision!==conditionWorkspaceRevision||!conditionSelectionAllowed(card,selected,game))return;
+    const canonical=conditionCardFor(selected,game);
+    if(canonical&&canonical.id===card.id)changed=applyConditionQuotes(canonical,selected,rawQuotes).changed||changed;
+    const quotes=applyConditionQuotes({conditionQuotes:[]},selected,rawQuotes).quotes;
+    const lots=game==='mtg'?S.state.collection:T.gs(game).collection;
+    let saved=false;
+    for(const lot of lots)if((game==='mtg'?key(lot.name)===key(card.name):lot.cardId===card.id)&&
+     !lot.setReleaseUnverified&&(!selected.setReleaseId||lot.setReleaseId===selected.setReleaseId)&&identityMatches(lot)&&
+     conditionSelectionAllowed(card,lot,game)&&JSON.stringify(lot.conditionQuotes||[])!==JSON.stringify(quotes)){
+      lot.conditionQuotes=quotes;saved=true;
+    }
+    if(changed){if(game==='mtg'){S.catalogDirty=true;saveCatalogSoon();}else T.persistQuoteCache();}
+    if(saved){changed=true;await save();}
+   });
   }
-  done?.(result);
+  const output={...result,changed};if(current())done?.(output);return output;
  });
+}
+function refreshChangedConditions(changed){
+ for(const {game,entry} of changed){
+  const identity=conditionLotIdentity(entry),current=()=>{
+   const lots=game==='mtg'?S.state.collection:T.gs(game).collection;
+   return lots.some(lot=>lot.id===entry.id&&conditionLotIdentity(lot)===identity);
+  };
+  if(!current())continue;
+  const card=conditionCardFor(entry,game);
+  if(card)void fetchConditionValue(card,entry,game,result=>{if(result.changed&&S.ui.view==='collection'&&T.game()===game)render();},{source:'saved',current});
+ }
 }
 let magicPriceRefresh=null;
 const magicPriceAttempts=new Map();
@@ -1364,13 +1416,29 @@ async function refreshMagicCollectionPrices(force=false){
  try{await magicPriceRefresh;}finally{magicPriceRefresh=null;}
 }
 function refreshCollectionConditions(){
- const game=T.game(),lots=game==='mtg'?S.state.collection:T.gs(game).collection;
- // Session request de-duplication also prevents rerender loops and repeated paid calls.
- for(const entry of lots.slice(0,100)){
-  const card=game==='mtg'?(entry.printingVerified&&S.state.printings?.[entry.printingId])||meta(entry.name):T.cardOf(game,entry.cardId);
-  if(card&&!card.brief)fetchConditionValue(card,entry,game,result=>{if(result.changed && S.ui.view==='collection')render();});
+ if(S.ui.view!=='collection'||!conditionScheduler.canScheduleCollection()||navigator.onLine===false)return;
+ const game=T.game(),lots=game==='mtg'?S.state.collection:T.gs(game).collection,visibleIds=new Set();
+ for(const node of document.querySelectorAll('#content [data-entry]')){
+  const rect=node.getBoundingClientRect();if(rect.height>0&&rect.bottom>0&&rect.top<innerHeight)visibleIds.add(node.dataset.entry);
+ }
+ let cursor='';try{cursor=localStorage.getItem(conditionCursorKey(game))||'';}catch{}
+ const eligible=entry=>{
+  const card=conditionCardFor(entry,game);if(!conditionSelectionAllowed(card,entry,game))return false;
+  if(['manual','condition-quote'].includes(conditionValue(null,entry,[...(card.conditionQuotes||[]),...(entry.conditionQuotes||[])]).kind))return false;
+  return !conditionScheduler.has(conditionRequest(card,entry,game));
+ };
+ const selected=selectConditionLots(lots,{cursor,visibleIds,eligible});
+ try{if(selected.cursor)localStorage.setItem(conditionCursorKey(game),selected.cursor);}catch{}
+ for(const entry of selected.entries){
+  const card=conditionCardFor(entry,game),identity=conditionLotIdentity(entry);
+  void fetchConditionValue(card,entry,game,result=>{if(result.changed&&S.ui.view==='collection'&&T.game()===game)render();},{source:'collection',current:()=>S.ui.view==='collection'&&T.game()===game&&
+   (game==='mtg'?S.state.collection:T.gs(game).collection).some(lot=>lot.id===entry.id&&conditionLotIdentity(lot)===identity)});
  }
 }
+// Collection filtering updates only its list, without a full app render.
+for(const event of ['input','change'])document.addEventListener(event,e=>{
+ if(S.ui.view==='collection'&&e.target.closest?.('#content'))setTimeout(refreshCollectionConditions,0);
+});
 function refreshConditionPrice(){
  const node=$("#conditionPricePreview"),ctx=S.ui.sheetCtx;if(!node||!ctx)return;
  const raw=$("#lotManualValue")?.value??'',manualValue=raw===''?null:Number(raw);
@@ -1389,11 +1457,14 @@ function refreshConditionPrice(){
   else {sourceCard=card;sourceGame='mtg';}
  }else return;
  node.innerHTML=conditionPriceHtml(price,entry,[...(sourceCard?.conditionQuotes||[]),...(entry.conditionQuotes||[])]);
+ const selectionKey=JSON.stringify([...CONDITION_IDENTITY.map(k=>entry[k]||''),entry.condition||'']);node.conditionSelectionKey=selectionKey;
+ const current=()=>node.isConnected&&S.ui.sheetCtx===ctx&&node.conditionSelectionKey===selectionKey;
  if(sourceCard)fetchConditionValue(sourceCard,entry,sourceGame,result=>{
-  if(!node.isConnected||S.ui.sheetCtx!==ctx)return;
+  if(!current())return;
   if(result.changed)refreshConditionPrice();
-  else if(result.status==='not_configured'&&price==null)node.insertAdjacentHTML('beforeend','<p class="muted small">Condition feed is not connected. You can record a personal estimate above.</p>');
- });
+  else if((result.status==='not_configured'||result.reason==='not_configured')&&price==null)node.insertAdjacentHTML('beforeend','<p class="muted small">Condition feed is not connected. You can record a personal estimate above.</p>');
+  else if(result.status==='deferred'&&price==null)node.insertAdjacentHTML('beforeend','<p class="muted small">Condition lookup deferred. Existing valid values are unchanged.</p>');
+ },{source:'search',current});
 }
 document.addEventListener("change",e=>{if(e.target.matches?.("#addCondition,#addFinish,#addLanguage,#tCond,#tPrint,#tEdition")){for(const n of document.querySelectorAll("#lotManualValue,#quickLotValue"))n.value="";refreshConditionPrice();}});
 document.addEventListener("input",e=>{if(e.target.matches?.('#addSet,#addNumber')){if($('#lotManualValue'))$('#lotManualValue').value='';refreshConditionPrice();}else if(e.target.id==='lotManualValue')refreshConditionPrice();});
@@ -4670,6 +4741,8 @@ async function mtgScanAddMany(items) {
           if (prior.printingId !== c.id || prior.finish !== it.finish || prior.qty !== it.qty || prior.language !== (it.lang || c.lang || "en") || prior.condition !== (it.condition || "Near Mint")) throw Error("This capture is already saved with different details. Check its collection entry before trying again.");
           continue;
         }
+        s.printings ||= {};
+        s.printings[c.id] = slim({ ...c, conditionQuotes: c.conditionQuotes || s.printings[c.id]?.conditionQuotes });
         s.collection.push({ id: uid(), scanCaptureId: captureId, name: c.name, qty: it.qty, set: c.set.toUpperCase(), setName: c.set_name, collectorNumber: c.collector_number, finish: it.finish, language: it.lang || c.lang || "en", condition: it.condition || "Near Mint", location: it.location || "", reserved: 0, printingId: c.id, oracleId: c.oracle_id, printingVerified: !!(it.cand.exact || it.cand.printingConfirmed), nameVerified: true, raw: { acquisition: "Scanned" } });
       }
     },
@@ -4694,6 +4767,14 @@ const scanCtx = {
   closeSheet: () => closeSheet(),
   addMany: (g, items) => (g === "mtg" ? mtgScanAddMany(items) : tcgCtx.scanAddMany(items, g)),
   priceOf: (g, cand, finish, selection = {}) => (g === "mtg" ? mtgScanPrice(cand, finish, selection) : tcgCtx.scanPrice?.(cand, finish, selection) ?? null),
+  requestConditionPrice: (g,cand,finish,selection,done,current) => {
+    const card=cand.card;
+    if(!card||!finish||cand.localReference||cand.detailsOnly||!(cand.exact||cand.printingConfirmed))return;
+    const [printing,rarity]=String(cand.print||'').split('|');
+    const entry=g==='mtg'?{...selection,printingId:card.id,printingVerified:true,finish}:
+      {...selection,cardId:card.id,...(g==='ptcg'?{variant:finish}:{printing:printing||'',rarity:rarity||'',edition:finish,setReleaseId:cand.setReleaseId||'',setReleaseUnverified:!!cand.setReleaseUnverified})};
+    return fetchConditionValue(card,entry,g,done,{source:'review',current});
+  },
   openPrintingPicker: config => scannerPrintingPicker.open(config),
   setOf: (g, cand) => (g === "mtg" ? cand.card?.set || "" : g === "ygo" ? String(cand.print || "").split("|")[0].split("-")[0] : cand.card?.set?.id || ""),
   numberOf: (g, cand) => (g === "mtg" ? cand.card?.collector_number || "" : g === "ygo" ? String(cand.print || "").split("|")[0] : cand.card?.set?.number || ""),
