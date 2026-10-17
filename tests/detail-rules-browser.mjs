@@ -178,7 +178,7 @@ async function deckArt(app,game){
  const {page}=app,before=await inventorySnapshot(page);await navigate(page,'#decks/inspiration');
  if(game==='ptcg'){
   const card=page.locator('.arch').filter({has:page.locator('b',{hasText:/^Dhelmise$/})}),none=page.locator('.arch').filter({has:page.locator('b',{hasText:/^No supplied cover$/})});
-  await card.waitFor();assert(await card.isDisabled());assert.equal(await card.getAttribute('data-key'),'');assert.match(await card.innerText(),/0 in Top 8/);assert.match(await card.locator('.arch-list-state').innerText(),/No Top-8 list available/);
+  await card.waitFor();assert(await card.isDisabled());assert.equal(await card.getAttribute('data-key'),'');assert.match(await card.innerText(),/0 in Top 8/);assert.match(await card.locator('.arch-list-state').innerText(),/No published list available/);
   assert.equal(await card.locator('.arch-art img').getAttribute('src'),DHELMISE_COVER.imageLarge,'Supplied lower-place exact cover URL, not an invented mascot');
   await page.waitForFunction(()=>{const card=[...document.querySelectorAll('.arch')].find(n=>n.querySelector('b')?.textContent==='Dhelmise'),img=card?.querySelector('.arch-art img');return img?.isConnected&&img.complete&&img.naturalWidth>0&&!img.hidden;});
   assert.match(await none.getAttribute('class'),/no-cover/);assert(await none.locator('.arch-art-fallback').isVisible());assert(await none.locator('.arch-art-state').isVisible());assert(await none.isDisabled());assert.equal(await none.locator('img').count(),0,'No supplied art stays an honest fallback');

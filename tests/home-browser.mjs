@@ -118,7 +118,7 @@ function metaFeed(game, empty = false, options = {}) {
   const c = seeds[game];
   const missing = options.deckArtMode === 'missing';
   const unsafe = options.deckArtMode === 'unsafe';
-  return { game, ...(game === 'ptcg' ? { artSchema: 1 } : {}), source: sources[game].label, fetchedAt: ISO, top: [], archetypes: [], events: [],
+  return { game, ...(game === 'ptcg' ? { artSchema: 2 } : {}), source: sources[game].label, fetchedAt: ISO, top: [], archetypes: [], events: [],
     decks: empty ? [] : [{ key: `fixture-${game}`, name: `${c.name} published fixture deck`, event: 'Fixture tournament', players: 32, place: 'Top 8', date: '2026-10-15', url: sources[game].deck,
       ...(game === 'mtg' ? { main: missing ? [] : [{ name: c.name, qty: 4 }], commanders: [], side: [], cover: unsafe ? 'javascript:invalid-cover' : c.name, art: unsafe ? UNSAFE_IMAGE : undefined } : game === 'ygo' ? { main: missing ? [] : [c.id], extra: [], side: [], cover: unsafe ? UNSAFE_IMAGE : c.id } : { list: missing ? [] : [{ name: c.name, qty: 4, set: unsafe ? '../BAD' : 'SSP', number: '57', kind: 'Pokemon' }] }) },
       ...(options.twoDecks ? [{ key: `fixture-${game}-second`, name: `${heroes[game].name} alternate fixture deck`, event: 'Second fixture tournament', players: 32, place: 'Winner', date: '2026-10-14', url: `${sources[game].deck}-second`,

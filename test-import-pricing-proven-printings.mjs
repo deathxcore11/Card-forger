@@ -27,6 +27,9 @@ try {
  setup(false);await spec.load(()=>{});first.prices.usd=null;second.prices.usd=null;
  const oldGet=SOURCES.ptcg.get;let priceFetches=0;SOURCES.ptcg.get=async()=>{priceFetches++;throw Error('price service offline');};
  try{await spec.save(spec.rowsFn(),'original');assert.equal(S.state.tcg.ptcg.decks.length,1);assert.equal(priceFetches,0);}finally{SOURCES.ptcg.get=oldGet;}
+ const representative={...setup(false),key:'representative',rank:17,place:'Top 17'};
+ metaState('ptcg').data={decks:[],archetypes:[{representative}],top:[]};A.tMetaDeck({dataset:{key:'representative'}});
+ assert.equal(spec.key,'representative');assert.match(spec.evidence,/Top 17/);await spec.load(()=>{});await spec.save(spec.rowsFn(),'original');assert.equal(S.state.tcg.ptcg.decks.length,1);
  // Name grouping is only an adaptation heuristic; actual rows keep printing keys.
  const r=(key,name,price)=>({key,name,price,qty:4,owned:0,kind:'Pokemon'}),rows=[r('exact-a','Pikachu',5)],lists=[[r('reprint-a','Pikachu',2),r('exact-b','Raichu',8)],[r('reprint-a','Pikachu',3),r('reprint-b','Raichu',4)]];
  const model=provenModel({rows,lists,compareRows:rs=>rs.map(r=>({...r,key:r.name.toLowerCase()}))});assert.equal(model.similar.length,2);assert.ok(model.engine.has('exact-a'));assert.deepEqual(model.pool.map(r=>r.key),['reprint-b']);
