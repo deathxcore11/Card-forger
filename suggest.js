@@ -49,6 +49,8 @@ let box = null,
   active = -1,
   ticket = 0;
 const close = () => {
+  clearTimeout(timer);
+  timer = 0;
   box?.remove();
   box = null;
   active = -1;
@@ -56,8 +58,15 @@ const close = () => {
   input?.removeAttribute("aria-activedescendant");
   ticket++;
 };
+function position() {
+  if (!box) return;
+  if (!input?.isConnected || document.activeElement !== input) return close();
+  const r = input.getBoundingClientRect(), viewport = document.documentElement.clientWidth || window.innerWidth;
+  const width = Math.min(r.width, viewport), left = Math.max(0, Math.min(r.left, viewport - width));
+  Object.assign(box.style, { left: `${left + window.scrollX}px`, top: `${r.bottom + window.scrollY + 6}px`, width: `${width}px` });
+}
 function show(items, recent) {
-  if (!input?.isConnected || !items.length) return close();
+  if (!input?.isConnected || document.activeElement !== input || !items.length) return close();
   if (!box) {
     box = document.createElement("div");
     box.className = "suggest";
@@ -76,8 +85,7 @@ function show(items, recent) {
       if (b) { e.preventDefault(); pick(b.dataset.pick); }
     });
   }
-  const r = input.getBoundingClientRect();
-  Object.assign(box.style, { left: `${r.left + window.scrollX}px`, top: `${r.bottom + window.scrollY + 6}px`, width: `${r.width}px` });
+  position();
   box.innerHTML = `${recent ? `<p class="suggest-head">Recent</p>` : ""}${items.map((n, i) => `<button type="button" role="option" id="sg${i}" class="${i === active ? "on" : ""}" data-pick="${esc(n)}">${recent ? `<svg class="sg-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9"/><path d="M4.5 4.8V9h4.2M12 8v4.3l2.8 1.7"/></svg>` : ""}${esc(n)}</button>`).join("")}`;
   input.setAttribute("aria-expanded", "true");
   input.setAttribute("aria-controls", "suggestBox");
@@ -97,7 +105,7 @@ async function update() {
   const my = ++ticket;
   if (!q.trim()) return show(recentSearches(g), true);
   const names = await suggestNames(g, q);
-  if (my === ticket && document.activeElement === input) show(names.filter((n) => n.toLowerCase() !== q.trim().toLowerCase() || names.length > 1), false);
+  if (my === ticket && document.activeElement === input && input.dataset.suggest === g && input.value === q) show(names.filter((n) => n.toLowerCase() !== q.trim().toLowerCase() || names.length > 1), false);
 }
 
 export function attachSuggest() {
@@ -105,10 +113,32 @@ export function attachSuggest() {
   document.addEventListener("focusin", (e) => {
     const el = e.target.closest?.("input[data-suggest]");
     if (!el) return;
+    const restoration = el.suggestFocusRestore;
+    // The render helper already matches the full search-field key. Require its
+    // exact origin, game and query too before carrying any popup or async work.
+    const restored = restoration?.input === input && input && (input === el || !input.isConnected) && restoration.game === input.dataset.suggest && restoration.game === el.dataset.suggest && restoration.value === el.value && input.value === el.value;
+    if (!restored) {
+      clearTimeout(timer);
+      if (input !== el) close();
+    } else if (input !== el) {
+      input.setAttribute("aria-expanded", "false");
+      input.removeAttribute("aria-activedescendant");
+    }
     input = el;
     input.setAttribute("autocomplete", "off");
     input.setAttribute("role", "combobox");
     input.setAttribute("aria-autocomplete", "list");
+    if (restored) {
+      input.setAttribute("aria-expanded", String(!!box));
+      if (box) {
+        input.setAttribute("aria-controls", "suggestBox");
+        if (active >= 0) input.setAttribute("aria-activedescendant", "sg" + active);
+        position();
+      }
+      // Preserve open/closed intent, option identity, pending debounce and the
+      // in-flight ticket. A completed or dismissed query must not reopen here.
+      return;
+    }
     update();
   });
   document.addEventListener("input", (e) => {
@@ -117,7 +147,12 @@ export function attachSuggest() {
     timer = setTimeout(update, 180);
   });
   document.addEventListener("focusout", (e) => {
-    if (e.target === input) setTimeout(close, 120);
+    const blurred = e.target;
+    if (blurred === input) setTimeout(() => {
+      // A delayed blur from an old field must not dismiss a newer popup, nor
+      // a popup whose original field has already regained focus.
+      if (input === blurred && document.activeElement !== blurred) close();
+    }, 120);
   });
   document.addEventListener("keydown", (e) => {
     if (e.target !== input) return;
@@ -130,6 +165,7 @@ export function attachSuggest() {
       rememberSearch(input.dataset.suggest, input.value);
       return close();
     }
+    if (e.key === "Escape") return close();
     if (!box) return;
     const n = box.querySelectorAll("[data-pick]").length;
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
@@ -137,8 +173,11 @@ export function attachSuggest() {
       active = (active + (e.key === "ArrowDown" ? 1 : -1) + n) % n;
       box.querySelectorAll("[data-pick]").forEach((b, i) => b.classList.toggle("on", i === active));
       input.setAttribute("aria-activedescendant", "sg" + active);
-    } else if (e.key === "Escape") close();
+    }
   }, true);
   document.addEventListener("pointerdown", e => { if (box && !box.contains(e.target) && e.target !== input) close(); }, { passive: true });
   window.addEventListener("scroll", () => box && close(), { passive: true });
+  // Reanchor the existing options in place: folding never re-queries providers
+  // or changes the typed query, focus or keyboard selection.
+  window.addEventListener("resize", position, { passive: true });
 }

@@ -85,7 +85,9 @@ export async function seedReviews(page,game,{cards=[primary(game),primary(game)]
   window.__conditionReview={batch,ocrCalls:0};window.Tesseract={createWorker:async()=>({setParameters:async()=>{},terminate:async()=>{},recognize:async()=>{window.__conditionReview.ocrCalls++;throw Error('Condition tests do not run OCR');}})};
  },{game,candidates,condition,lang,selectedFinish});
  if(game==='ygo'){
-  await navigate(page,'sets');await page.waitForFunction(()=>window.__uiTestTcg.currentYgoCatalogue().length>0);
+  // Sets is reached from Search, not a Home shortcut. Use both real controls
+  // so catalogue loading still runs through the production navigation queue.
+  await navigate(page,'search');await navigate(page,'sets');await page.waitForFunction(()=>window.__uiTestTcg.currentYgoCatalogue().length>0);
  }
  await navigate(page,'scan');return candidates;
 }

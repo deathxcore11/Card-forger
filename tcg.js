@@ -1,5 +1,5 @@
 import {compactPriceSummary,detailTabs,detailPanel,presentationQuote,quoteForContext} from "./pricing-presentation.js";
-import { homeValue, homeEdition, homeMetaShortcut } from "./home-ui.js";
+import { homeValue, homeEdition, homeMetaCarousel, homeValueCoverage, homeMetaSnapshot } from "./home-ui.js";
 import {interactiveRules} from './rule-learning.js';
 import {referenceQuote,referenceLabel} from './price-reference.js';
 import {brandMark} from './brand.js';
@@ -496,9 +496,8 @@ function tcgNext(g) {
   const st = gs(g),
     lead = st.decks.at(-1);
   if (!st.collection.length && !st.decks.length)
-    return nextCard({ title: "Add your collection", text: `Paste a list of the ${esc(GAMES[g].short)} cards you own, or search and add them one by one. Then CardStashy shows what you can build.`, actions: `<button class="btn" data-act="tImportColl">↥ Paste a list</button><button class="btn ghost" data-act="go" data-to="#search">⌕ Find cards</button><button class="btn ghost" data-act="go" data-to="#decks/inspiration">🏆 Browse meta decks</button>` });
-  if (!lead)
-    return nextCard({ title: "Discover decks your cards support", text: `${st.collection.reduce((a, e) => a + e.qty, 0)} cards in your binder. See the ${g === "ygo" ? "archetypes" : "Pokémon"} you can build around and the tournament decks you’re closest to.`, actions: `<button class="btn" data-act="go" data-to="#decks/ideas">✧ Deck ideas from my cards</button>` });
+    return nextCard({ title: "Add your collection", text: `Paste a list of the ${esc(GAMES[g].short)} cards you own, or search and add them one by one. Then CardStashy shows what you can build.`, actions: `<button class="btn" data-act="tImportColl">↥ Paste a list</button><button class="btn ghost" data-act="go" data-to="#search">⌕ Find cards</button>` });
+  if (!lead) return ""; // Discovery is the shared art-led section above.
   const s = deckStats(g, lead),
     f = formatOf(g, lead.format),
     issues = SOURCES[g].validate(lead, (id) => cardOf(g, id), f),
@@ -511,19 +510,13 @@ function tcgNext(g) {
     artHtml: cover && g === "ptcg" ? pokemonArtCrop(cover, "nc-pk") : "",
     stats: [[`${s.total}`, f.name], [`${missing}`, "missing copies"], [usd(s.buy, 0), "to finish"], [issues.length ? `${issues.length}` : "✓", issues.length ? "to fix" : "legal"]],
     text: issues.length ? `Next: ${esc(issues[0].text)}` : missing ? "Everything checks out — buy or add the missing copies to finish." : "Complete and legal. Playtest it or start another.",
-    actions: `<button class="btn" data-act="go" data-to="#tdeck/${esc(lead.id)}">Open deck</button><button class="btn ghost" data-act="go" data-to="#decks/ideas">✧ More ideas</button>`,
+    actions: `<button class="btn" data-act="go" data-to="#tdeck/${esc(lead.id)}">Open deck</button>`,
   });
 }
 
-// The same shortcuts, in the same order, for every game.
-// skipIdeas: the Next step card is already offering Deck ideas, so the tile would repeat it.
-export function quickTiles(g, skipIdeas = false) {
-  const mtg = g === "mtg",
-    tile = (act, to, icon, title, sub, cls = "") => `<button class="quick-btn ${cls}" data-act="${act}" ${to ? `data-to="${to}"` : ""}><span>${icon}</span><b>${title}</b><small>${sub}</small></button>`;
-  return `<div class="quick">
-    ${skipIdeas ? "" : tile("go", "#decks/ideas", "✧", "Deck ideas", mtg ? "Commanders your cards support" : "Build from your collection")}
-    ${homeMetaShortcut(g)}
-    </div>`;
+// One source-backed discovery composition, with compact owned/random actions.
+export function quickTiles(g) {
+  return homeMetaCarousel(g);
 }
 export const randomTools = (g) =>
   g === "mtg"
@@ -555,10 +548,10 @@ export function tcgHome() {
   const fresh = !st.collection.length && !st.decks.length;
   return `${homeHero(g, v.copies ? "Welcome back." : "Let’s build from your cards.", !fresh)}
   ${installNudge(v.copies)}
-  ${homeValue({ total: v.total, copies: v.copies, decks: st.decks.length, unpriced: v.unpriced })}
+  ${homeValue({ game: g, ...v, decks: st.decks.length, history: readTcgValueHistory(g) })}
   ${homeEdition(g)}
-  <div class="home-personal">${fresh && !startHidden(g) ? `<details class="home-start"><summary>New here? Start with your cards <span aria-hidden="true">＋</span></summary>${tcgStartPath(g)}</details>` : tcgNext(g)}
-  ${quickTiles(g, !!gs(g).collection.length && !gs(g).decks.length)}</div>
+  ${quickTiles(g)}
+  <div class="home-personal">${fresh && !startHidden(g) ? `<details class="home-start"><summary>New here? Start with your cards <span aria-hidden="true">＋</span></summary>${tcgStartPath(g)}</details>` : tcgNext(g)}</div>
   ${recent.length ? `<section class="home-deck-section"><div class="section-head"><h2>Deck shelf</h2><button class="link" data-act="go" data-to="#decks">All decks →</button></div><div class="deck-grid">${recent.map((d) => deckTile(g, d)).join("")}</div></section>` : ""}
   <p class="muted small">${esc(G.tagline)}. Card data and daily prices from ${esc(G.source)}.</p>`;
 }
@@ -880,15 +873,15 @@ function ygoSetRow(c,ctx={}) {
 
 // Collection value over time (one point a day, kept on this device), top cards and alerts.
 const VALUE_KEY = (g) => `cardstashy-value-hist-${g}`;
+export function readTcgValueHistory(g) {
+  try { const history = JSON.parse(localStorage.getItem(VALUE_KEY(g)) || '[]'); return Array.isArray(history) ? history : []; } catch { return []; }
+}
 export function trackTcgValue(g, v = collectionValue(g)) {
   if (!gs(g).collection.length) return [];
-  let h = [];
-  try {
-    h = JSON.parse(localStorage.getItem(VALUE_KEY(g)) || "[]");
-  } catch {}
+  let h = readTcgValueHistory(g);
   const day = new Date().toISOString().slice(0, 10);
   h = h.filter((x) => x.date !== day);
-  h.push({ date: day, total: Math.round(v.total * 100) / 100, copies: v.copies });
+  h.push({ date: day, total: Math.round(v.total * 100) / 100, copies: v.copies, ...homeValueCoverage(v) });
   h = h.slice(-365);
   try {
     localStorage.setItem(VALUE_KEY(g), JSON.stringify(h));
@@ -1172,6 +1165,10 @@ function metaView(g) {
 export const proven = { spec: null, mode: "original", budget: 0, busy: false, msg: "" };
 // Back navigation restores selection snapshots, not obsolete network state.
 const provenLoads = new WeakMap();
+let provenBuildSequence = 0, activeProvenBuild = null;
+// Only the active inspector may finish seed resolution. Dismiss/replacement
+// retires this one transient request, including close-and-reopen of the same spec.
+export function cancelProvenBuild() { activeProvenBuild = null; }
 const PROVEN_BUDGETS = [25, 50, 100, 200, 400];
 export function provenModel(spec) {
   const others = spec.lists || [], compare = spec.compareRows || ((rows) => rows),
@@ -3153,8 +3150,8 @@ export function registerTcg(c) {
         owned = (card) => ownedOf(G, card, m),
         priceOf = (card) => price(card),
         seeds = (B.seeds || [B.seed]).map((id) => cardOf(G, id)).filter(Boolean);
-      status("Checking what tournament decks play right now…");
-      const meta = await metaFor(G),budgets=tcgBudgets(B);
+      status(B.metaSnapshot ? "Checking the selected tournament snapshot…" : "Checking what tournament decks play right now…");
+      const meta = B.metaSnapshot?.game === G ? B.metaSnapshot.data : await metaFor(G),budgets=tcgBudgets(B);
       let results = [], upPool = [];
       if (G === "ygo") {
         const archs = [...new Set(seeds.map((x) => x.archetype).filter(Boolean))].slice(0, 3);
@@ -3313,12 +3310,12 @@ export function registerTcg(c) {
       c.refreshSheet();
     }
   };
-  const openBuild = (G, ids, metaKey = "",baseDeck=null,requestedFormat="") => {
+  const openBuild = (G, ids, metaKey = "",baseDeck=null,requestedFormat="",metaSnapshot=null) => {
     const cards = ids.map((id) => cardOf(G, id)).filter(Boolean);
     // Pokémon decks are built around Pokémon; put them first.
     cards.sort((a, b) => (G === "ptcg" ? (b.category === "Pokemon") - (a.category === "Pokemon") : 0));
     const fmts = buildable(G, cards[0]);
-    S.ui.tbuild = { game: G, seed: cards[0]?.id, seeds: cards.map((x) => x.id), format: baseDeck?.format || fmts.find(f=>f.id===requestedFormat)?.id || fmts[0]?.id || "",baseDeck:baseDeck?.id, results: {}, busy: false, msg: "", openTier: null, metaKey };
+    S.ui.tbuild = { game: G, seed: cards[0]?.id, seeds: cards.map((x) => x.id), format: baseDeck?.format || fmts.find(f=>f.id===requestedFormat)?.id || fmts[0]?.id || "",baseDeck:baseDeck?.id, results: {}, busy: false, msg: "", openTier: null, metaKey, ...(metaSnapshot ? { metaSnapshot } : {}) };
     openSheet(tcgBuildSheet(), { type: "tbuild" });
     if (fmts.length) runTBuild();
   };
@@ -3519,8 +3516,9 @@ export function registerTcg(c) {
     if (!pkRequests.has(key)) pkRequests.set(key, { name: row.name, set: row.set, number: row.number });
     return { key, ...pkRequests.get(key) };
   };
-  const tcgProvenSpec = (G, d) => {
-    const meta = metaState(G).data,
+  const tcgProvenSpec = (G, d, snapshot = null) => {
+    const meta = snapshot || metaState(G).data,
+      buildMeta = { token: String(++provenBuildSequence), game: G, deck: d, data: meta },
       m = ownedMap(G),
       genericKeys = new Set((meta?.top || []).filter((x) => x.pct >= 30).map((x) => (G === "ygo" ? x.id : x.name)));
     let rowsOf, save, load, evidence, attribution;
@@ -3645,7 +3643,8 @@ export function registerTcg(c) {
         return top?.imageLarge || "";
       },
       cardAttrs: (r) => (G === "ygo" ? `data-act="tCard" data-id="${esc(r.key)}"` : pkByPrinting.get(pkKey(r)) ? `data-act="tCard" data-id="${esc(pkByPrinting.get(pkKey(r)).id)}"` : `data-act="tOtherPrintings" data-name="${esc(r.name)}"`),
-      extraActions: `<button class="btn ghost" data-act="tMetaBuild" data-key="${esc(d.key)}">⚒ Build around it</button>`,
+      buildMeta,
+      extraActions: `<button class="btn ghost" data-act="tMetaBuild" data-key="${esc(d.key)}" data-proven-build="${buildMeta.token}">⚒ Build around it</button>`,
     };
   };
   A.tMuSee = async (t) => {
@@ -3655,30 +3654,41 @@ export function registerTcg(c) {
     A.tMetaDeck(t);
   };
   A.tMetaDeck = (t) => {
-    const G = g(),
-      d = metaState(G).data?.decks.find((x) => x.key === t.dataset.key);
-    if (d) c.openProven(tcgProvenSpec(G, d));
+    const G = g(), captured = t.dataset.homeMetaOpen !== undefined ? homeMetaSnapshot(t, G) : null;
+    if (t.dataset.homeMetaOpen !== undefined && !captured) return toast("This Home list has changed. Choose the current visible list.");
+    const d = captured?.deck || metaState(G).data?.decks.find((x) => x.key === t.dataset.key);
+    if (d) c.openProven(tcgProvenSpec(G, d, captured?.data));
   };
   // Budget versions of a tournament deck: build around its signature cards.
   A.tMetaBuild = async (t) => {
-    const G = g(),
-      d = metaState(G).data?.decks.find((x) => x.key === t.dataset.key);
-    if (!d) return;
+    const G = g(), spec = proven.spec, captured = spec?.buildMeta,
+      origin = S.ui.sheetCtx, sheet = document.querySelector("#sheet");
+    // This inspector owns its exact snapshot independently of Home's current
+    // rail token. Never resolve an inspector button against a newer same-key list.
+    if (!captured || captured.game !== G || spec.g !== G || origin?.type !== "proven" || origin.key !== spec.key ||
+        t.dataset.provenBuild !== captured.token || t.dataset.key !== captured.deck.key ||
+        t.isConnected === false || !sheet?.open || !sheet.contains(t)) return;
+    if (activeProvenBuild?.origin === origin && activeProvenBuild.spec === spec) return;
+    const request = { origin, spec }, d = captured.deck, meta = captured.data;
+    activeProvenBuild = request;
+    const current = () => activeProvenBuild === request && S.ui.sheetCtx === origin && proven.spec === spec && g() === G &&
+      document.querySelector("#sheet") === sheet && sheet.open;
     const done = busy(t, "Loading…");
     try {
       const { zones } = await metaZones(G, d);
-      const meta = metaState(G).data,
-        common = new Set((meta?.top || []).filter((x) => x.pct >= 25).map((x) => (G === "ygo" ? x.id : x.name))),
+      if (!current()) return;
+      const common = new Set((meta?.top || []).filter((x) => x.pct >= 25).map((x) => (G === "ygo" ? x.id : x.name))),
         sig = zones.main
           .map((r) => cardOf(G, r.cardId))
           .filter((card) => card && !common.has(G === "ygo" ? card.id : card.name) && (G === "ygo" ? card.archetype : card.category === "Pokemon"))
           .slice(0, 8);
       if (!sig.length) throw Error("Couldn’t find this deck’s signature cards.");
       closeSheet();
-      openBuild(G, sig.map((x) => x.id), d.key);
+      openBuild(G, sig.map((x) => x.id), d.key, null, "", { game: G, data: meta });
     } catch (e) {
-      toast(e.message);
+      if (current()) toast(e.message);
     } finally {
+      if (activeProvenBuild === request) activeProvenBuild = null;
       done();
     }
   };

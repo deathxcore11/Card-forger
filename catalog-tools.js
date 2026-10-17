@@ -80,14 +80,20 @@ const searchFocusKey = el => {
 // Keep a draft and selection intact when an asynchronous result redraws Search.
 export function captureSearchFocus(root, active = globalThis.document?.activeElement) {
   if (!active || !root?.contains?.(active)) return null;
-  return { key: searchFocusKey(active), value: /^(INPUT|TEXTAREA)$/.test(active.tagName) ? active.value : undefined, start: active.selectionStart, end: active.selectionEnd, direction: active.selectionDirection };
+  return { key: searchFocusKey(active), value: /^(INPUT|TEXTAREA)$/.test(active.tagName) ? active.value : undefined, start: active.selectionStart, end: active.selectionEnd, direction: active.selectionDirection,
+    suggestFocus: active.dataset?.suggest ? { input: active, game: active.dataset.suggest, value: active.value } : null };
 }
 export function restoreSearchFocus(root, state) {
   if (!state) return;
   const el = [...(root?.querySelectorAll?.("input,select,button,summary,textarea") || [])].find(node => searchFocusKey(node) === state.key);
   if (!el || el.disabled) return;
   if (state.value !== undefined) el.value = state.value;
-  el.focus?.({ preventScroll: true });
+  // Restoring the same field is not a new request for suggestions. The marker
+  // exists only during focus dispatch; user focus and typing remain ordinary.
+  const previous = el.suggestFocusRestore;
+  el.suggestFocusRestore = searchFocusKey(state.suggestFocus?.input) === state.key ? state.suggestFocus : null;
+  try { el.focus?.({ preventScroll: true }); }
+  finally { if (previous === undefined) delete el.suggestFocusRestore; else el.suggestFocusRestore = previous; }
   if (Number.isInteger(state.start)) try { el.setSelectionRange(state.start, state.end, state.direction); } catch {}
 }
 
