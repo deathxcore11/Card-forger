@@ -164,6 +164,17 @@ export async function openApp(browser,base,{game='mtg',width=390,height=1000,red
 export async function navigate(page,hash){await page.evaluate(h=>{location.hash=h;},hash);await page.waitForFunction(h=>location.hash===h&&window.__uiTestState.ui.view===h.slice(1).split('/')[0],hash);}
 export async function closeSheet(page){await page.locator('#sheet [data-act="closeSheet"]').first().click();await page.waitForFunction(()=>!document.querySelector('#sheet').open);}
 export async function inventorySnapshot(page){return page.evaluate(()=>JSON.stringify([window.__uiTestState.state.collection,window.__uiTestState.state.printings,window.__uiTestState.state.decks,window.__uiTestState.state.tcg]));}
+// The ordinary Magic Collection opens a named catalogue card, not necessarily an
+// explicit ctx.print. Resolve the same real source as the production renderer.
+export function detailHistoryContext(game){
+ const ctx=window.__uiTestState.ui.sheetCtx,card=game==='mtg'?(ctx.print||window.__responsiveStore.meta(ctx.name)):window.__uiTestTcg.cardOf(game,ctx.id),body=document.querySelector('#sheetBody');
+ if(!card?.id)throw Error('Real detail card missing for '+game+' context');
+ const quote=window.__responsivePricing.quoteForContext(game,card,ctx);
+ if(!quote||quote.game!==game||quote.cardId!==card.id)throw Error('Real detail quote does not match its displayed card');
+ const key=window.__responsiveHistory.historyKey(quote);
+ window.__openingDetail={ctx,body,identity:body.dataset.detailIdentity,key,quote,card:body.querySelector('.cs-card'),generation:body.detailMountGeneration};
+ return {key,game:quote.game,id:quote.cardId,finish:quote.finish,entry:ctx.entryId,generation:body.detailMountGeneration};
+}
 // Serialized by waitForFunction, and exercised directly by the pure lifecycle
 // regression. Match the real cache TTL: a retained stale entry is not completion
 // while its replacement request and synchronous refresh callback are pending.

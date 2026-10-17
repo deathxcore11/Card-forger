@@ -5,14 +5,29 @@ import {gunzipSync} from 'node:zlib';
 import {attachTilt,motionCard} from './feel.js';
 import {rememberDetailViewport,restoreDetailViewport,quoteForContext} from './pricing-presentation.js';
 import {visibleRulePassage,ygoTurnStructureDisplay} from './rule-reference.js';
-import {auditedCollectionControl,detailHistoryReady,CARDS} from './tests/detail-rules-fixtures.mjs';
+import {auditedCollectionControl,detailHistoryContext,detailHistoryReady,CARDS} from './tests/detail-rules-fixtures.mjs';
 import {loadSharedHistory,sharedHistory,historyKey,setHistoryRefresh} from './shared-history.js';
+import * as responsiveStore from './store.js';
+import {cardKey} from './core.js';
 const audit={game:'ptcg',width:320,controls:[{change:'tCollSort',field:'',value:'name'}]},railControl={root:'content',view:'collection',game:'ptcg',viewport:320,tag:'SELECT',change:'tCollSort',field:'',value:'name',left:238,right:418,width:180,rail:{known:true,direct:true,overflow:'auto',left:16,right:304,client:288,scroll:402,position:0}};
 assert(auditedCollectionControl(railControl,audit),'Only the measured and independently accessed Collection rail admits its partially visible Sort');
 for(const change of [{root:'sheetBody'},{view:'search'},{game:'mtg'},{viewport:390},{tag:'BUTTON'},{change:'unknown'},{field:'unknown'},{value:'set-order'},{width:400},{left:-40},{right:500}])assert(!auditedCollectionControl({...railControl,...change},audit),JSON.stringify(change));
 for(const change of [{known:false},{direct:false},{overflow:'hidden'},{left:-2},{right:322},{client:0},{scroll:200}])assert(!auditedCollectionControl({...railControl,rail:{...railControl.rail,...change}},audit),JSON.stringify(change));
 for(const missing of [null,{...audit,controls:[]},{...audit,game:'ygo'},{...audit,width:390}])assert(!auditedCollectionControl(railControl,missing),'Missing/stale proof never exempts offscreen controls');
 console.log('PASS: default-deny Collection rail classification, exact game/width/selection proof, bounded local scrolling and no generic scroller or native-control exemption.');
+// Exercise the exact serialized browser resolver using the actual store.meta
+// schema, both ordinary name-based Collection and explicitly chosen printing.
+{
+ const oldWindow=globalThis.window,oldDocument=globalThis.document,oldCatalog=responsiveStore.S.catalog,card=CARDS.mtg[0],ctx={type:'card',name:card.name,entryId:'lot-mtg-0'},node={},body={dataset:{detailIdentity:'mtg:'+card.id},detailMountGeneration:1,querySelector:()=>node};let keys=0;
+ try{
+  responsiveStore.S.catalog={[cardKey(card.name)]:card};globalThis.document={querySelector:()=>body};globalThis.window={__uiTestState:{ui:{sheetCtx:ctx}},__responsiveStore:responsiveStore,__responsivePricing:{quoteForContext},__responsiveHistory:{historyKey:q=>{keys++;return historyKey(q);}}};
+  let resolved=detailHistoryContext('mtg');assert.equal(resolved.id,card.id);assert.equal(resolved.entry,ctx.entryId);assert.equal(window.__openingDetail.ctx,ctx);assert.equal(window.__openingDetail.card,node);assert.equal(keys,1);
+  ctx.print=CARDS.mtg[1];resolved=detailHistoryContext('mtg');assert.equal(resolved.id,ctx.print.id,'An explicit printing takes precedence over the name catalogue');assert.equal(keys,2);
+  delete ctx.print;responsiveStore.S.catalog={};assert.throws(()=>detailHistoryContext('mtg'),/Real detail card missing/);assert.equal(keys,2,'Missing real data is rejected before historyKey, never replaced by a fixture quote');
+  responsiveStore.S.catalog={[cardKey(card.name)]:card};window.__responsivePricing={quoteForContext:()=>null};assert.throws(()=>detailHistoryContext('mtg'),/Real detail quote/);assert.equal(keys,2);
+ }finally{responsiveStore.S.catalog=oldCatalog;globalThis.window=oldWindow;globalThis.document=oldDocument;}
+}
+console.log('PASS: actual Magic catalogue fallback and explicit printing precedence resolve exact context/quote identity, rejecting missing card or quote before history lookup.');
 // Actual history module with intercepted responses only. A ready entry is written
 // before its synchronous mount-refresh callback, and awaiting completion observes
 // that callback finished. The browser probe reads this state, never starts a load.
@@ -84,6 +99,12 @@ for(const changed of [{...entry,id:'0-p21'},{...entry,doc:1},{...entry,text:'Rul
 for(const game of ['mtg','ptcg'])assert.equal(visibleRulePassage(game,{id:'new',text:'Rule 1\nRule 1\nDraw Phase\nDraw Phase'}).text,'Rule 1\nRule 1\nDraw Phase\nDraw Phase');
 console.log('PASS: exact-page display cleanup preserves every rule token and legitimate repeated phase label, complete raw text, canonical entry and all other sources.');
 const css=readFileSync('style.css','utf8'),app=readFileSync('app.js','utf8');assert.match(css,/@container \(max-width:520px\)/);assert.match(css,/\.ca-main \{ grid-template-columns:1fr;/);assert.match(app,/window.addEventListener\?\.\("resize"/);assert.doesNotMatch(app,/resize[^\n]*(refreshSheet|location\.reload)/);
+const conditionLayout=css.slice(css.indexOf('/* A condition explanation'),css.indexOf('@media(prefers-reduced-motion:reduce){.brand-idle',css.indexOf('/* A condition explanation')));
+assert.match(conditionLayout,/@media \(max-width:480px\)/);assert.equal((conditionLayout.match(/body\[data-view="collection"\]/g)||[]).length,7);assert.equal((conditionLayout.match(/:has\(> \.lot-side > \.condition-value-note\)/g)||[]).length,7);
+for(const declaration of ['grid-template-columns:58px minmax(0,1fr)','grid-template-columns:30px 58px minmax(0,1fr)','grid-template-columns:minmax(0,1fr)','grid-template-columns:auto minmax(0,1fr)','grid-column:1/-1;grid-row:2','max-width:none'])assert(conditionLayout.includes(declaration),declaration);
+assert.doesNotMatch(conditionLayout,/view-gallery|font-size|overflow|word-break|white-space|display:none/,'Only real space changes; gallery, fonts, wrapping and visible content remain intact');
+assert.equal((conditionLayout.match(/:has\(> \.batch-mark\)/g)||[]).length,2,'Compact and symbols explicitly preserve the independent batch column');
+console.log('PASS: narrow Collection condition-only grid reflow, explicit art/batch columns, full-width note and no ordinary/gallery/wide/font/clipping changes.');
 const reflow=css.slice(css.indexOf('/* Reflow the existing components'));
 for(const selector of ['.card-actions .ca-more { display:flex','.card-actions .ca-more .btn { flex:1','.card-actions .ca-main .btn { padding:9px','.cs-card-side .own-line { margin:0','.cs-card-side .stat-grid > :only-child'])assert(reflow.indexOf(selector)>reflow.indexOf('@container (max-width:520px)'),selector+' is narrow-only; approved wide layout retains its existing grid, padding and margins');
 const extreme=css.match(/@container \(max-width:(260)px\) \{([\s\S]*?)\n\}/);assert(extreme,'Extreme zoom reflow has its own narrow container breakpoint');

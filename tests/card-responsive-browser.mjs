@@ -1,7 +1,7 @@
 // Actual app/dialog checks, authorized hosted CI only. No private reference media.
 // The local path validates data without importing Playwright or starting a server.
 import assert from 'node:assert/strict';
-import {GAMES,CARDS,validateFixtures,startServer,openApp,navigate,closeSheet,inventorySnapshot,detailHistoryReady,noOverflow,capture,saveReport} from './detail-rules-fixtures.mjs';
+import {GAMES,CARDS,validateFixtures,startServer,openApp,navigate,closeSheet,inventorySnapshot,detailHistoryContext,detailHistoryReady,noOverflow,capture,saveReport} from './detail-rules-fixtures.mjs';
 console.log(await validateFixtures());
 if(process.argv.includes('--validate-fixtures'))process.exit(0);
 if(process.env.GITHUB_ACTIONS!=='true')throw Error('Responsive browser execution is restricted to hosted GitHub Actions. Use --validate-fixtures locally.');
@@ -49,18 +49,15 @@ async function focusedSuggestions(game){
 }
 async function turn(page,beta,gamma){await page.evaluate(({beta,gamma})=>window.dispatchEvent(new DeviceOrientationEvent('deviceorientation',{beta,gamma})),{beta,gamma});await frame(page);}
 async function openCard(page,game,scrollToCard=true,onInitial=null){
- await page.evaluate(async()=>{window.__responsivePricing ||= await import('/pricing-presentation.js');window.__responsiveHistory ||= await import('/shared-history.js');});
+ await page.evaluate(async()=>{window.__responsivePricing ||= await import('/pricing-presentation.js');window.__responsiveHistory ||= await import('/shared-history.js');window.__responsiveStore ||= await import('/store.js');window.__responsiveFeel ||= await import('/feel.js');});
+ if(onInitial)await page.evaluate(()=>{window.__openingPointer=[];window.__openingPointerAbort?.abort();window.__openingPointerAbort=new AbortController();for(const type of ['pointerover','pointerdown','pointerup','pointerout','scroll'])document.addEventListener(type,e=>{const card=e.target.closest?.('.cd-img,.lot-art');window.__openingPointer.push({type,pointer:e.pointerType,card:card?.className||null,connected:card?.isConnected,top:card?.getBoundingClientRect().top});},{capture:true,passive:true,signal:window.__openingPointerAbort.signal});});
  if(game!=='mtg')assert.equal(await page.evaluate(({game,id})=>window.__uiTestTcg.needsCardRefresh(game,window.__uiTestTcg.cardOf(game,id),true),{game,id:CARDS[game][0].id}),false,'This cached first-open fixture has genuine complete current card data, not an ignored provider hydration');
  await page.locator(`#content .lot-art[data-entry="lot-${game}-0"]`).click();
  await page.waitForFunction(({game,name})=>{const c=window.__uiTestState.ui.sheetCtx;return document.querySelector('#sheet')?.open&&!c?.detailsBusy&&!c?.printsBusy&&(game!=='ygo'||!window.__uiTestTcg.ui(game).sets.busy)&&c?.entryId==='lot-'+game+'-0'&&document.querySelector('#sheet .cs-title h2')?.textContent===name;},{game,name:CARDS[game][0].name});
  // Cached ensureCard still has an awaited continuation. History has another
  // real refreshSheet continuation, even while the Overview panel is selected.
  await frame(page);await page.waitForFunction(()=>{const im=document.querySelector('#sheet .cs-card .card-img');return im?.complete&&im.naturalWidth>0;});
- const pending=await page.evaluate(game=>{
-  const ctx=window.__uiTestState.ui.sheetCtx,card=game==='mtg'?ctx.print:window.__uiTestTcg.cardOf(game,ctx.id),quote=window.__responsivePricing.quoteForContext(game,card,ctx),key=window.__responsiveHistory.historyKey(quote),body=document.querySelector('#sheetBody');
-  window.__openingDetail={ctx,body,identity:body.dataset.detailIdentity,key,quote,card:body.querySelector('.cs-card'),generation:body.detailMountGeneration};
-  return {key,game:quote.game,id:quote.cardId,finish:quote.finish,entry:ctx.entryId,generation:body.detailMountGeneration};
- },game);
+ const pending=await page.evaluate(detailHistoryContext,game);
  assert.equal(pending.game,game);assert.equal(pending.id,CARDS[game][0].id);assert.equal(pending.entry,'lot-'+game+'-0');
  if(onInitial)await onInitial();
  await page.waitForFunction(detailHistoryReady);
@@ -82,6 +79,39 @@ async function noBrokenActionWords(page,scope,selector='.btn'){
    }
   }return found;
  },selector);assert.deepEqual(broken,[],'Labels must wrap between words, never inside Compare/Another/collection or card stat words');
+}
+async function conditionCollection(game){
+ const app=await openApp(browser,server.base,{game,width:320,height:1000}),{page,context}=app,selector='#content .display-list > .lot:has(> .lot-side > .condition-value-note)',row=page.locator(selector);
+ try{
+  const inventory=await inventorySnapshot(page);assert.equal(await row.count(),1,'The real Collection fixture includes its condition-priced lot');
+  const snapshot=()=>row.evaluate(n=>({metadata:n.querySelector('.lot-sub').textContent.replace(/\s+/g,' ').trim(),note:n.querySelector('.condition-value-note').textContent,price:n.querySelector('.price').textContent,quantity:n.querySelector('.stepper b').textContent})),original=await snapshot();
+  for(const mode of ['compact','symbols']){
+   await row.evaluate(n=>{window.__conditionPriorRow=n;});await page.locator(`#content [data-act="viewSave"][data-mode="${mode}"]`).click();await page.waitForFunction(mode=>!window.__conditionPriorRow.isConnected&&document.querySelector('#content').classList.contains('view-'+mode),mode);
+   for(const batch of [false,true]){
+    if(batch){await page.locator('#content [data-act="batchStart"]').click();await row.locator(':scope > .batch-mark').waitFor();}
+    for(const width of [320,390,768]){
+     await page.setViewportSize({width,height:1000});await frame(page);await noOverflow(page,selector,`${game} ${mode} condition row ${width} batch ${batch}`,true);await row.scrollIntoViewIfNeeded();await frame(page);
+     assert.deepEqual(await snapshot(),original,'Reflow preserves every metadata/condition word, price and quantity');
+     const geometry=await row.evaluate(n=>{
+      const rect=x=>x.getBoundingClientRect().toJSON(),info=n.querySelector('.lot-info'),side=n.querySelector('.lot-side'),art=n.querySelector('.lot-art'),mark=n.querySelector('.batch-mark'),targets=[n.querySelector('.lot-sub'),n.querySelector('.condition-value-note')],bad=[];let words=0;
+      for(const target of targets){const bound=target.getBoundingClientRect();if(!bound.width||!bound.height||getComputedStyle(target).visibility!=='visible'||target.scrollWidth>target.clientWidth+2)bad.push({text:target.textContent,reason:'hidden or clipped metadata'});const walker=document.createTreeWalker(target,NodeFilter.SHOW_TEXT);let text;
+       while((text=walker.nextNode()))for(const word of text.textContent.matchAll(/[\p{L}\p{N}]+/gu)){if(word[0].length<3)continue;words++;const range=document.createRange();range.setStart(text,word.index);range.setEnd(text,word.index+word[0].length);const rects=[...range.getClientRects()].filter(r=>r.width&&r.height),rows=new Set(rects.map(r=>Math.round(r.top)));if(!rects.length||rows.size>1||rects.some(r=>r.left<bound.left-2||r.right>bound.right+2||r.top<bound.top-2||r.bottom>bound.bottom+2))bad.push({word:word[0],rects:rects.map(r=>r.toJSON()),bound:bound.toJSON()});}
+      }
+      const controls=[...side.querySelectorAll('button,.stepper')].map(x=>({text:x.textContent,rect:rect(x)}));return {row:rect(n),info:rect(info),side:rect(side),art:art.getClientRects().length?rect(art):null,mark:mark?rect(mark):null,cols:getComputedStyle(n).gridTemplateColumns.split(' ').length,words,bad,controls};
+     });
+     assert(geometry.words>=5,'The actual condition and printing/edition words are audited');assert.deepEqual(geometry.bad,[],`${game} ${mode} ${width}: real metadata words fit intact ${JSON.stringify(geometry)}`);
+     assert.equal(!!geometry.mark,batch);assert.equal(!!geometry.art,mode==='compact');
+     const columns=(mode==='compact'?2:1)+(batch?1:0)+(width>480?1:0);assert.equal(geometry.cols,columns,'Narrow condition rows retain correct artwork/batch columns; wide layout is unchanged');
+     if(width<=480)assert(geometry.side.top>=Math.max(geometry.info.bottom,geometry.art?.bottom||0,geometry.mark?.bottom||0)-2&&geometry.side.left>=geometry.row.left-2&&geometry.side.right<=geometry.row.right+2,'Value, quantity and note have their own full-width row, not the metadata column');
+     else assert(geometry.side.left>=geometry.info.right-2,'Wide condition row retains its original side column');
+     for(const control of geometry.controls)assert(control.rect.left>=geometry.side.left-2&&control.rect.right<=geometry.side.right+2&&control.rect.top>=geometry.side.top-2&&control.rect.bottom<=geometry.side.bottom+2,`Condition actions remain inside their row ${JSON.stringify(control)}`);
+     report.push(`${game} condition ${mode} ${width} batch ${batch}: ${JSON.stringify(geometry)}`);if(width===320)await capture(page,`card-responsive-${game}-condition-${mode}${batch?'-batch':''}`);
+    }
+    if(batch){await page.locator('#content [data-act="batchStart"]').click();await row.locator(':scope > .batch-mark').waitFor({state:'detached'});}
+   }
+  }
+  assert.equal(await inventorySnapshot(page),inventory,'Changing view/selection mode never changes card quantities, values or inventory');await app.close();
+ }catch(error){await capture(page,`card-responsive-${game}-condition-failure`).catch(()=>{});await context.close();throw error;}
 }
 async function cardColumns(page,game,stacked){
  const geometry=await page.locator('#sheet .cs-card').evaluate(root=>{
@@ -249,10 +279,15 @@ async function scenario(game){
   const held=game==='ptcg'?app.hold(url=>url.origin===server.base&&url.pathname==='/api/prices/archive'&&url.searchParams.get('game')==='ptcg'&&url.searchParams.get('id')===CARDS.ptcg[0].id&&url.searchParams.get('finish')==='normal'):null;
   try{await openCard(page,game,true,held?async()=>{
    let timeout;try{await Promise.race([held.seen,new Promise((_,reject)=>{timeout=setTimeout(()=>reject(Error('The exact initial Pokémon archive request was not observed')),15000);})]);}finally{clearTimeout(timeout);}
-   assert.equal(await page.locator('dialog.zoom').count(),0);await turn(page,35,6);
-   const initial=await page.evaluate(()=>{const old=window.__openingDetail,card=document.querySelector('#sheet .cs-card .cd-img');window.__heldInitial={ctx:old.ctx,body:old.body,card,generation:old.body.detailMountGeneration,identity:old.identity};return {connected:card.isConnected,gyro:card.classList.contains('gyro'),tx:card.style.getPropertyValue('--tx'),history:window.__responsiveHistory.sharedHistory.get(old.key)?.checked||null,generation:old.body.detailMountGeneration};});
+   assert.equal(await page.locator('dialog.zoom').count(),0);
+   const before=await page.evaluate(()=>{const old=window.__openingDetail,card=old.card.querySelector('.cd-img'),r=card.getBoundingClientRect();window.__heldInitial={ctx:old.ctx,body:old.body,card,generation:old.body.detailMountGeneration,identity:old.identity};return {rect:r.toJSON(),foreground:window.__responsiveFeel.motionCard()===card,foregroundDialog:[...document.querySelectorAll('dialog[open]')].at(-1)?.id,hover:card.matches(':hover'),hovered:[...document.querySelectorAll(':hover')].slice(-4).map(n=>n.tagName+'.'+n.className),gyro:card.classList.contains('gyro'),tx:card.style.getPropertyValue('--tx'),pointer:window.__openingPointer};});report.push('ptcg held before original scroll: '+JSON.stringify(before));
+   // Preserve the original first-open visibility setup while the exact history
+   // response is still held. Scrolling also ends any mouse-owned hover transform.
+   await page.locator('#sheet .cs-card').scrollIntoViewIfNeeded();await frame(page);await turn(page,35,6);
+   const initial=await page.evaluate(()=>{const old=window.__heldInitial,body=document.querySelector('#sheetBody'),card=body.querySelector('.cs-card .cd-img'),r=card.getBoundingClientRect(),sheet=body.getBoundingClientRect();return {connected:card.isConnected,same:card===old.card&&body===old.body&&old.ctx===window.__uiTestState.ui.sheetCtx&&body.detailMountGeneration===old.generation&&body.dataset.detailIdentity===old.identity,foreground:window.__responsiveFeel.motionCard()===card,foregroundDialog:[...document.querySelectorAll('dialog[open]')].at(-1)?.id,visible:r.bottom>Math.max(0,sheet.top)&&r.top<Math.min(innerHeight,sheet.bottom)&&r.right>0&&r.left<innerWidth,rect:r.toJSON(),hover:card.matches(':hover'),hovered:[...document.querySelectorAll(':hover')].slice(-4).map(n=>n.tagName+'.'+n.className),pointer:window.__openingPointer,gyro:card.classList.contains('gyro'),tx:card.style.getPropertyValue('--tx'),history:window.__responsiveHistory.sharedHistory.get(window.__openingDetail.key)?.checked||null,generation:body.detailMountGeneration};});
+   assert(initial.same&&initial.foreground&&initial.foregroundDialog==='sheet'&&initial.visible,`Held initial card stays mounted and is actually visible in the foreground ${JSON.stringify(initial)}`);
    assert(initial.connected&&initial.gyro&&initial.tx!=='0deg'&&!initial.history,`Initial cached card tilts before its held history response can replace it ${JSON.stringify(initial)}`);report.push('ptcg held initial tilt: '+JSON.stringify(initial));held.release();
-  }:null);}finally{held?.release();}
+  }:null);}finally{held?.release();await page.evaluate(()=>{window.__openingPointerAbort?.abort();delete window.__openingPointerAbort;});}
   if(held){
    const replacement=await page.evaluate(()=>{const old=window.__heldInitial,body=document.querySelector('#sheetBody'),card=body.querySelector('.cs-card .cd-img');return {sameContext:old.ctx===window.__uiTestState.ui.sheetCtx,sameBody:body===old.body,sameIdentity:body.dataset.detailIdentity===old.identity,newMount:body.detailMountGeneration>old.generation,newCard:card!==old.card,oldDetached:!old.card.isConnected,connected:card.isConnected};});
    assert.deepEqual(replacement,{sameContext:true,sameBody:true,sameIdentity:true,newMount:true,newCard:true,oldDetached:true,connected:true});await turn(page,50,25);assert(await page.locator('#sheet .cs-card .cd-img').evaluate(n=>n.classList.contains('gyro')&&n.style.getPropertyValue('--tx')!=='0deg'),'Late exact-history replacement rebinds tilt without enlarged-art detour');report.push('ptcg real history replacement tilt: '+JSON.stringify(replacement));
@@ -313,7 +348,7 @@ async function scenario(game){
  }catch(error){await capture(page,`card-responsive-${game}-failure`).catch(()=>{});await context.close();throw error;}
 }
 try{
- browser=await chromium.launch();const failures=[];for(const game of GAMES)for(const check of [focusedSuggestions,scenario])try{await check(game);}catch(error){failures.push(error);report.push(game+' '+check.name+': '+String(error.stack||error));}
+ browser=await chromium.launch();const failures=[];for(const game of GAMES)for(const check of [focusedSuggestions,scenario,conditionCollection])try{await check(game);}catch(error){failures.push(error);report.push(game+' '+check.name+': '+String(error.stack||error));}
  const reduced=await openApp(browser,server.base,{game:'ygo',reducedMotion:'reduce'});try{await openCard(reduced.page,'ygo');await turn(reduced.page,30,0);await turn(reduced.page,50,20);assert.equal(await reduced.page.locator('#sheet .cd-img').evaluate(n=>n.classList.contains('gyro')),false);await reduced.close();}catch(error){await reduced.context.close();failures.push(error);}
  if(failures.length)throw new AggregateError(failures,'Actual responsive-card regressions failed');
 }catch(error){failure=error;throw error;}finally{await saveReport('card-responsive-browser',report,failure);await browser?.close();await server.close();}

@@ -3212,6 +3212,18 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .quick-owned .stepper button {min-width:52px;min-height:48px;}
 .quick-owned .stepper output {font-size:20px;font-weight:800;min-width:48px;text-align:center;}
 .condition-value-note {display:block;max-width:190px;white-space:normal;color:var(--muted);font-size:11px;line-height:1.4;}
+/* A condition explanation must not take the narrow row's card-name/printing
+   column. Only these Collection list rows reflow; gallery and wide rows retain
+   their existing presentation, including the separate batch-selection column. */
+@media (max-width:480px) {
+  body[data-view="collection"] #content.view-compact .display-list > .lot:has(> .lot-side > .condition-value-note) {grid-template-columns:58px minmax(0,1fr);}
+  body[data-view="collection"] #content.view-compact .display-list > .lot:has(> .lot-side > .condition-value-note):has(> .batch-mark) {grid-template-columns:30px 58px minmax(0,1fr);}
+  body[data-view="collection"] #content.view-symbols .display-list > .lot:has(> .lot-side > .condition-value-note) {grid-template-columns:minmax(0,1fr);}
+  body[data-view="collection"] #content.view-symbols .display-list > .lot:has(> .lot-side > .condition-value-note):has(> .batch-mark) {grid-template-columns:auto minmax(0,1fr);}
+  body[data-view="collection"] #content:is(.view-compact,.view-symbols) .display-list > .lot:has(> .lot-side > .condition-value-note) > .lot-side {grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;justify-items:start;}
+  body[data-view="collection"] #content:is(.view-compact,.view-symbols) .display-list > .lot:has(> .lot-side > .condition-value-note) > .lot-side > .stepper {grid-column:2;grid-row:1;justify-self:end;}
+  body[data-view="collection"] #content:is(.view-compact,.view-symbols) .display-list > .lot:has(> .lot-side > .condition-value-note) > .lot-side > .condition-value-note {grid-column:1/-1;grid-row:2;max-width:none;}
+}
 @media(prefers-reduced-motion:reduce){.brand-idle .brand-card,.brand-loading .brand-card,.thinking .ask-orb .brand-card{animation:none!important;}}
 
 .brand .mark[data-state]::after {content:"";position:absolute;right:0;bottom:0;width:7px;height:7px;border-radius:50%;background:var(--muted);border:2px solid var(--bg);}
