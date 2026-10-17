@@ -227,6 +227,7 @@ async function openApp(options = {}) {
   }, { storage: f.storage, now: NOW });
   await page.goto(BASE + '/#home');
   await page.locator('#app.ready').waitFor();
+  await preloadTestState(page);
   await assertSelected(page, game);
   await page.waitForFunction(() => document.querySelector('.home-hero') && !document.querySelector('.tour'));
   const health = () => {
@@ -244,6 +245,11 @@ async function openApp(options = {}) {
     },
     async close() { health(); await context.close(); },
   };
+}
+async function preloadTestState(page) {
+  // Import outside polling: an async waitForFunction predicate can return a
+  // truthy Promise before its boolean result is known, ending the wait early.
+  await page.evaluate(async () => { window.__homeTestState = (await import('/store.js')).S; });
 }
 async function assertSelected(page, game) {
   await page.waitForFunction(g => document.body.dataset.game === g && document.querySelector(`#game-tab-${g}`)?.getAttribute('aria-selected') === 'true', game);
@@ -393,7 +399,7 @@ try {
       // its exposed upper-right label, as an actual visitor would.
       const control = page.locator(selector === '.hh-art-link' ? '.hh-art-link > span' : selector);
       await control.click();
-      await page.waitForFunction(async ({ game, value }) => { const c = (await import('/store.js')).S.ui.sheetCtx; return game === 'mtg' ? c?.type === 'card' && c.name === value : c?.type === 'tcard' && c.id === value; }, { game, value });
+      await page.waitForFunction(({ game, value }) => { const c = window.__homeTestState.ui.sheetCtx; return game === 'mtg' ? c?.type === 'card' && c.name === value : c?.type === 'tcard' && c.id === value; }, { game, value });
       assert.match(await page.locator('#sheetBody').innerText(), new RegExp(hero.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
       await closeSheet(page);
     }
@@ -470,6 +476,7 @@ try {
   await selectGame(page, 'ygo');
   await page.reload();
   await page.locator('#app.ready').waitFor();
+  await preloadTestState(page);
   await assertSelected(page, 'ygo');
   assert.equal(await page.locator('.home-value-main strong').innerText(), '$25');
   app.health();
@@ -515,8 +522,8 @@ try {
       await random.page.evaluate(async () => { (await import('/store.js')).S.ui.build.busy = false; });
     }
     await random.page.locator('[data-act="homeBuildReveal"]').click();
-    await random.page.waitForFunction(async ({ game, seed }) => {
-      const { S } = await import('/store.js');
+    await random.page.waitForFunction(({ game, seed }) => {
+      const S = window.__homeTestState;
       return game === 'mtg' ? S.ui.sheetCtx?.type === 'build' && S.ui.build.seed === seed.name && S.ui.build.format === 'Standard'
         : S.ui.sheetCtx?.type === 'tbuild' && S.ui.tbuild.seed === seed.id && S.ui.tbuild.format === (game === 'ygo' ? 'tcg' : 'standard');
     }, { game, seed: seeds[game] });
@@ -535,7 +542,7 @@ try {
   await closeSheet(cancel.page);
   await selectGame(cancel.page, 'ptcg');
   held.release();
-  await cancel.page.waitForFunction(async () => (await import('/store.js')).S.catalog['llanowar elves']?.checkedAt > '2026-10-17T12:00:00.000Z');
+  await cancel.page.waitForFunction(() => window.__homeTestState.catalog['llanowar elves']?.checkedAt > '2026-10-17T12:00:00.000Z');
   await cancel.page.waitForTimeout(200);
   assert.equal(await cancel.page.locator('.home-deck-reveal').count(), 0, 'late response cannot reveal across closed picker/game navigation');
   await assertSelected(cancel.page, 'ptcg');

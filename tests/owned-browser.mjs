@@ -5,6 +5,8 @@ try{for(const g of ['mtg','ptcg','ygo']){
  await page.goto(base+'/#home');const skip=page.getByRole('button',{name:'Skip',exact:true});try{await skip.waitFor({state:'visible',timeout:2000});await skip.click();}catch{}
  await page.evaluate(async g=>{
   const {S,blank,STORAGE,CATALOG_RECORD}=await import('/store.js'),{cache,TCG_CACHE}=await import('/tcg.js'),{cardKey}=await import('/core.js'),{writeRecord}=await import('/storage.js');
+  // Poll the preloaded live state synchronously, never a truthy import Promise.
+  window.__ownedTestState=S;
   S.state=blank();S.state.settings.game=g;const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);S.state.valueHistory=[{date:yesterday,total:300,copies:3}];localStorage.setItem('cardstashy-value-hist-'+g,JSON.stringify([{date:yesterday,total:300,copies:3}]));S.state.tcg={ptcg:{collection:[],decks:[],wishlist:[]},ygo:{collection:[],decks:[],wishlist:[]}};
   const img='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="630" height="880"><rect width="630" height="880" rx="25" fill="#547ca0"/><text x="60" y="110" fill="white" font-size="50">Owned test card</text></svg>');
   const common={id:'test-owned',name:'Owned test card',image:img,imageLarge:img,prices:{usd:100},fetchedAt:new Date().toISOString(),checkedAt:new Date().toISOString(),brief:false};
@@ -17,17 +19,26 @@ try{for(const g of ['mtg','ptcg','ygo']){
  await tile.click({button:'right'});const owned=page.getByRole('region',{name:'Owned copies',exact:true});
  // section has an accessible label; Chromium exposes it as a region.
  await owned.waitFor();assert.equal(await page.locator('[data-act="quickOwn"]').count(),0);assert(await page.locator('[data-act="quickWish"]').isVisible());
- await page.getByRole('button',{name:'One more owned copy',exact:true}).click();await page.waitForFunction(async g=>{const {S}=await import('/store.js');return(g==='mtg'?S.state:S.state.tcg[g]).collection.find(e=>e.id==='owned-nm').qty===3;},g);
- await page.getByRole('button',{name:'One fewer owned copy',exact:true}).click();await page.waitForFunction(async g=>{const {S}=await import('/store.js');return(g==='mtg'?S.state:S.state.tcg[g]).collection.find(e=>e.id==='owned-nm').qty===2;},g);
+ await page.getByRole('button',{name:'One more owned copy',exact:true}).click();await page.waitForFunction(g=>{const S=window.__ownedTestState;return(g==='mtg'?S.state:S.state.tcg[g]).collection.find(e=>e.id==='owned-nm').qty===3;},g);
+ await page.getByRole('button',{name:'One fewer owned copy',exact:true}).click();await page.waitForFunction(g=>{const S=window.__ownedTestState;return(g==='mtg'?S.state:S.state.tcg[g]).collection.find(e=>e.id==='owned-nm').qty===2;},g);
  await page.getByRole('combobox',{name:'Saved lot to change',exact:true}).click();await page.locator('.glass-select-menu[open]').getByRole('option',{name:/Damaged/}).click();
  await page.getByText('Value for this copy',{exact:true}).click();await page.getByLabel('Your value per copy (USD)',{exact:true}).fill('15');await page.getByRole('button',{name:'Save value',exact:true}).click();
- await page.waitForFunction(async g=>{const {S}=await import('/store.js');return(g==='mtg'?S.state:S.state.tcg[g]).collection.find(e=>e.id==='owned-damaged').manualValue===15;},g);
+ await page.waitForFunction(g=>{const S=window.__ownedTestState;return(g==='mtg'?S.state:S.state.tcg[g]).collection.find(e=>e.id==='owned-damaged').manualValue===15;},g);
  assert.equal(await page.locator('.brand .mark .stashy-logo').count(),1,'save status cannot replace app logo');
  const saved=await page.evaluate(async g=>{const {S}=await import('/store.js');return(g==='mtg'?S.state:S.state.tcg[g]).collection;},g);assert.equal(saved.length,2);assert.equal(saved[0].qty,2);assert.equal(saved[1].qty,1);assert.equal(saved[1].condition,'Damaged');assert.equal(saved[1].manualValueCondition,'Damaged');
  await page.locator('#sheet').getByRole('button',{name:'Close',exact:true}).click();await tile.click();await page.locator('#sheet .cd-zoom[data-hold-card]').waitFor();await page.locator('#sheet .cd-zoom').click();await page.locator('dialog.zoom .zoom-img[data-hold-card]').waitFor();await page.locator('dialog.zoom .zoom-img').click({button:'right'});await owned.waitFor();assert.equal(await page.locator('dialog.zoom[open]').count(),0,'full image hold brings its ownership menu forward');assert.equal(await page.locator('[data-act="quickOwn"]').count(),0);
  await page.reload();await page.getByRole('heading',{name:'Collection',exact:true}).waitFor();const reloaded=await page.evaluate(async g=>{const {S}=await import('/store.js');return(g==='mtg'?S.state:S.state.tcg[g]).collection;},g);assert.equal(reloaded[1].manualValue,15);assert.equal(reloaded[0].qty,2);await page.getByRole('tab',{name:'Value',exact:true}).click();await page.locator('.value-change.down').waitFor();assert.match(await page.locator('.value-change').innerText(),/−\$85.00/);assert(await page.getByRole('img',{name:'Collection value over time',exact:true}).isVisible());await page.evaluate(async g=>{const {S}=await import('/store.js');S.state.valueHistory=[];localStorage.removeItem('cardstashy-value-hist-'+g);},g);
  await page.getByRole('tab',{name:'Cards',exact:true}).click();await page.getByRole('tab',{name:'Value',exact:true}).click();await page.getByText('Starting value',{exact:false}).waitFor();assert(await page.getByRole('img',{name:'Collection value over time',exact:true}).isVisible(),'a first-day collection still has its own graph');
- await page.getByRole('tab',{name:'Cards',exact:true}).click();await tile.click();const pills=page.locator('#sheet .cs-tabs');await pills.waitFor();assert.equal(await pills.evaluate(n=>getComputedStyle(n).position),'sticky');assert.equal(await pills.evaluate(n=>n.clientHeight<=n.querySelector('button').clientHeight+22),true,'card pills stay in a single row');
+ await page.getByRole('tab',{name:'Cards',exact:true}).click();await tile.click();
+ // Background card/history refresh replaces the sheet DOM. Re-query its current
+ // connected tabs and check visibility, sticky position and one row atomically.
+ await page.waitForFunction(()=>{
+  const n=document.querySelector('#sheet[open] .cs-tabs'),button=n?.querySelector('button');
+  if(!n?.isConnected||!button)return false;
+  const css=getComputedStyle(n),rect=n.getBoundingClientRect();
+  return css.position==='sticky'&&css.display!=='none'&&css.visibility==='visible'&&Number(css.opacity)>0
+   &&rect.width>0&&rect.height>0&&button.clientHeight>0&&n.clientHeight<=button.clientHeight+22;
+ });
  await page.locator(g==='mtg'?'#sheet [data-act="own"]':'#sheet [data-act="tOwn"]').first().click();const preview=page.getByRole('status',{name:'Selected condition value',exact:true});await preview.waitFor();assert.match(await preview.innerText(),/\$100.00/);
  await page.getByLabel('Condition',{exact:true}).click();await page.locator('.glass-select-menu[open]').getByRole('option',{name:'Lightly Played',exact:true}).click();assert.match(await preview.innerText(),/Lightly Played[\s\S]*Condition price unavailable/);
  await page.locator('#lotManualValue').fill('60');assert.match(await preview.innerText(),/\$60.00/);

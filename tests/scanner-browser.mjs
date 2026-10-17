@@ -55,11 +55,14 @@ try{
    assert(local.names.includes(ref.name));assert(local.exact);if(ref.id)assert(local.ids.includes(ref.id));console.log(`${ref.game} cached identifier lookup, HTTP blocked: ${JSON.stringify(local)}`);
    await page.reload();await page.getByRole('button',{name:'Scanner settings',exact:true}).first().click();await page.getByText(/local card records ready/).waitFor({timeout:15000});
    await page.locator('#sheet[open] [data-act="closeSheet"]').first().click();
+   // Playwright 1.62 polls predicate return values synchronously. Import once;
+   // never return a truthy Promise from the polling predicate itself.
+   await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js'),{S}=await import('/store.js');window.__scannerTestRead={loadBatch,state:()=>S.ui.scan};});
    await page.getByRole('button',{name:'Photo',exact:true}).click();
    const upload=page.locator('input[data-change="scanFile"]').last();
    await upload.setInputFiles({name:ref.g+(ref.g==='ptcg'?'.webp':'.jpg'),mimeType:ref.mime,buffer:ref.bytes});
    await page.getByRole('button',{name:'Read card',exact:true}).click();
-   await page.waitForFunction(async()=>{const {loadBatch}=await import('/scan-batch.js');return loadBatch().some(x=>!['captured','reading'].includes(x.status));},{},{timeout:120000});
+   await page.waitForFunction(()=>{const q=window.__scannerTestRead;return q.loadBatch().some(x=>['ready','review','unresolved'].includes(x.status))&&!q.state().busy;},{},{timeout:120000});
    const framing=await page.evaluate(async g=>{
     const {S}=await import('/store.js'),image=new Image();image.src='/__reference/'+g;await image.decode();
     const card=S.ui.scan.lastCard;
@@ -136,15 +139,18 @@ try{
    await page.evaluate(async()=>{const {S}=await import('/store.js');S.ui.scan.auto=false;});
    await page.waitForFunction(()=>document.querySelector('#scanVideo')?.videoWidth>0);
    await page.evaluate(()=>{const r=document.querySelector('#scanVideo').getBoundingClientRect();window.__cameraInitialBox={width:r.width,height:r.height};});
-   await page.waitForFunction(async()=>{const {S}=await import('/store.js');return S.ui.scan.boundaryReady;});
+   await page.waitForFunction(()=>window.__scannerTestRead.state().boundaryReady);
    assert.equal(await page.locator('#camGuide,.cam-guide,.cam-wrap polygon').count(),0,'internal boundary detection never overlays the feed');
+   const priorCaptureIds=await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js');return loadBatch().map(x=>x.id);});
    await page.getByRole('button',{name:'Capture card now',exact:true}).click();
-   await page.waitForFunction(async()=>{const {loadBatch}=await import('/scan-batch.js');return loadBatch().some(x=>!['captured','reading'].includes(x.status));},{},{timeout:120000});
+   const captureHandle=await page.waitForFunction(prior=>window.__scannerTestRead.loadBatch().find(x=>!prior.includes(x.id))?.id,priorCaptureIds,{timeout:15000});
+   const liveCaptureId=await captureHandle.jsonValue();
+   await page.waitForFunction(id=>{const q=window.__scannerTestRead,entry=q.loadBatch().find(x=>x.id===id);return entry&&['ready','review','unresolved'].includes(entry.status)&&!q.state().busy;},liveCaptureId,{timeout:120000});
    console.log(`${ref.game} live capture diagnostic: ${JSON.stringify(await page.evaluate(async()=>{
     const {loadBatch}=await import('/scan-batch.js'),{S}=await import('/store.js'),v=document.querySelector('#scanVideo'),r=v.getBoundingClientRect();
     return {initialBox:window.__cameraInitialBox,video:{width:v.videoWidth,height:v.videoHeight,boxWidth:r.width,boxHeight:r.height},capture:{width:S.ui.scan.lastCard?.width,height:S.ui.scan.lastCard?.height},batch:loadBatch().map(({id,status,read,error,cands})=>({id,status,read,error,candidates:(cands||[]).map(({id,name,exact})=>({id,name,exact}))}))};
    }))}`);
-   await page.locator('[data-act="scanBatchReview"]').first().click();
+   await page.locator(`[data-act="scanBatchReview"][data-id="${liveCaptureId}"]`).click();
    await page.getByRole('region',{name:'Confirm scanned card',exact:true}).waitFor({timeout:15000});
    await page.getByRole('region',{name:'Confirm scanned card',exact:true}).getByText(ref.name,{exact:true}).waitFor();
    const beforeTime=await page.locator('#scanVideo').evaluate(v=>v.currentTime);await page.waitForTimeout(250);
@@ -174,6 +180,7 @@ try{
    console.log(`PASS: ${ref.game}: off-centre rotated reference MediaStream → automatic boundary + perspective warp → queued recognition → explicit review → playback continues → dismiss retains the same active camera track.`);
   }catch(e){
    console.error(`FAIL ${ref.game}: ${e.stack}`);console.error('Scan save diagnostic:',await page.evaluate(async()=>{const {S}=await import('/store.js');return S.ui.scan.confirm?.errorDetail||'No save exception';}));console.error((await page.locator('main').innerText()).slice(0,6000));
+   console.error('Final capture diagnostic:',await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js'),{S}=await import('/store.js');return {busy:S.ui.scan.busy,error:S.ui.scan.recognitionError,tried:S.ui.scan.tried,read:S.ui.scan.read,batch:loadBatch().map(({id,status,read,error,cands})=>({id,status,read,error,candidates:(cands||[]).map(({id,name,exact})=>({id,name,exact}))}))};}));
    await page.screenshot({path:`test-results/scanner-${ref.g}-failure.png`,fullPage:true});throw e;
   }finally{await context.close();}
  }
