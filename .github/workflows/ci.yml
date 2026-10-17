@@ -39,6 +39,8 @@ jobs:
         run: node tests/tilt-browser.mjs
       - name: Test discovery, learning and responsive AI identity
         run: node tests/discovery-browser.mjs
+      - name: Test interactive official rulebooks and learning
+        run: node tests/rules-browser.mjs
       - name: Test ownership controls and condition values in the real app
         run: node tests/owned-browser.mjs
   scanner-browser:

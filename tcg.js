@@ -1,3 +1,4 @@
+import {interactiveRules} from './rule-learning.js';
 import {referenceQuote,referenceLabel} from './price-reference.js';
 import {brandMark} from './brand.js';
 import {conditionValue,conditionValueNote,conditionName} from './condition-value.js';
@@ -17,7 +18,7 @@ import { lineChart, skeletonGrid } from "./ui.js";
 import { installNudge } from "./install.js";
 import { rankByName } from "./catalog-tools.js";
 import {setRowContent} from './set-list-ui.js';
-import {artworkHTML,artworkSources,pokemonArtCrop} from "./artwork.js";
+import {artworkHTML,artworkSources,pokemonArtCrop,pokemonDeckCover} from "./artwork.js";
 import { tierOf, tierAttrs, tierStyle, tierGem } from "./tier.js";
 import {viewControl,selectionControl,selectionMark,selectionTray,historyPanel,quoteModel,priceOverview,quoteWarning} from "./workbench-ui.js";
 import { locationPicker, rememberLocation } from "./collection-locations.js";
@@ -664,9 +665,10 @@ export function tcgCardSheet(c, sctx = {}) {
     ${g === "ygo" ? ygoSetRow(c) : ""}
     ${c.set ? `<button class="cd-set" data-act="tSet" data-id="${esc(c.set.id)}">${pkSetSymbol(c.set, "pks big")}<div><b>${esc(c.set.name)} <span class="set-go">›</span></b><small>#${esc(c.set.number || "")}${c.set.total ? "/" + c.set.total : ""}${c.rarity ? ` · ${pkRarity(c.rarity)} ${esc(c.rarity)}` : ""}</small></div></button>` : c.archetype ? `<button class="cd-set" data-act="tArchetype" data-name="${esc(c.archetype)}"><div><b>${esc(c.archetype)} <span class="set-go">›</span></b><small>Archetype · ${c.sets?.length || 0} printings</small></div></button>` : ""}
     <div class="cd-prices"><button class="price-pill${p.usd == null && !lastQuote(g, c) && myPrice(c) == null && !c.brief ? " unknown" : ""}" data-act="tBuyDirect" data-hold="tMyPriceSet" data-game="${g}" data-id="${esc(c.id)}" aria-label="Buy on TCGplayer. Press and hold to set your own price."><small>${referenceLabel(p.referenceKind)}${p.referenceVariantLabel ? ` · ${esc(p.referenceVariantLabel)}` : ""}</small><b>${p.usd !== null && p.usd !== undefined ? usd(p.usd) : c.brief ? "…" : lastQuote(g, c) ? usd(lastQuote(g, c).value) : myPrice(c) != null ? usd(myPrice(c)) : "No price yet"}</b>${p.usd == null && lastQuote(g, c) ? `<small class="pill-note">last quote ${esc(lastQuote(g, c).date)}${lastQuote(g, c).finish ? " · " + esc(lastQuote(g, c).finish) : ""}</small>` : myPrice(c) != null ? `<small class="pill-note">${p.usd == null ? "Your price" : "yours " + usd(myPrice(c))}</small>` : ""}<span class="buy-hint">${p.usd == null && !lastQuote(g, c) ? "Find sellers ›" : "Buy ›"}</span></button>${p.eur ? `<button class="price-pill" data-act="cardTab" data-tab="prices"><small>Cardmarket</small><b>€${p.eur.toFixed(2)}</b></button>` : ""}<p class="price-gap small muted">Tap a price to buy on TCGplayer. Press and hold it, or <button class="link small" data-act="tMyPriceSet" data-game="${g}" data-id="${esc(c.id)}">set your price</button>; only you see it. Every printing's price is under Prices.</p></div>
-    ${p.usd == null && !p.eur && !c.brief ? `<p class="price-gap small muted">Stores haven't listed a price for this card yet. That's normal for new sets and rarely sold cards; it fills in when sales start.</p>` : ""}
+    ${p.usd == null && !p.eur && !c.brief ? `<p class="price-gap small muted">No verified reference price is available in this feed yet. Check seller listings; a missing quote does not mean the card has no market.</p>` : ""}
   </div>
   ${g === "ptcg" && !c.brief ? pokemonText(c) : c.text ? `<section class="cd-text effect-card ygo"><p class="eyebrow effect-label">${c.frame==='normal'?'Lore · Flavour text':'Chaincraft · Card effect'}</p>${c.frame==='normal'?`<blockquote class="flavor">${esc(c.text)}</blockquote>`:`<div class="oracle">${effectText(g,c.text)}</div>`}${c.illustrator ? `<div class="small muted right">🖌 ${esc(c.illustrator)}</div>` : ""}</section>` : ""}
+  <div class="card-rules-entry"><button type="button" class="chip" data-act="learnGame" data-game="${g}">Interactive rules · how to play →</button></div>
   ${tabs(tab, [["overview", "Overview"], ["meta", "Meta"], ["guide", "Play guide"], ["versions", "Versions"], ["prices", "Prices"], ["rulings", "Rulings"], ["legal", "Legality"]])}
   ${panel("overview", tab, overview)}
   ${panel("meta", tab, tcgCardMeta(g, c))}
@@ -979,9 +981,9 @@ const metaStatus = (g, M) =>
 
 function metaDeckRow(g, d, m) {
   const o = metaOwned(g, d, m),
-    cover = g === "ygo" ? cardOf("ygo", d.cover) : null;
+    cover = g === "ygo" ? cardOf("ygo", d.cover) : pokemonDeckCover(d);
   return `<button class="meta-row" data-act="tMetaDeck" data-key="${esc(d.key)}">
-    <span class="meta-art">${g === "ygo" ? (cover ? imgTag(cover, "mini-art") : `<img class="mini-art" src="${esc(ygoImageDirect(d.cover))}" alt="" loading="lazy" referrerpolicy="no-referrer">`) : d.icons.map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("")}</span>
+    <span class="meta-art">${g === "ygo" ? (cover ? imgTag(cover, "mini-art") : `<img class="mini-art" src="${esc(ygoImageDirect(d.cover))}" alt="" loading="lazy" referrerpolicy="no-referrer">`) : cover ? pokemonArtCrop(cover, "meta-card-art") : (d.icons||[]).map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("")}</span>
     <span class="meta-main"><b class="ellip">${esc(d.name)}</b><small class="muted ellip">${esc(d.place)} · ${esc(cleanName(d.event))}${d.players ? ` · ${d.players} players` : ""}</small>
       <span class="meta-own">${bar(o.pct)}<small>${Math.round(o.pct * 100)}% owned${o.cost !== null && o.pct < 1 ? ` · ${usd(o.cost, 0)} to finish` : ""}</small></span></span></button>`;
 }
@@ -1020,8 +1022,10 @@ function metaView(g) {
     .slice(0, 8)
     .map((a) => {
       const best = data.decks.find((d) => d.key === a.best),
-        art = g === "ygo" && best?.cover ? `https://images.ygoprodeck.com/images/cards_cropped/${encodeURIComponent(best.cover)}.jpg` : "";
-      return `<button class="arch ${art ? "has-art" : ""}" data-act="tMetaDeck" data-key="${esc(a.best)}" ${a.best ? "" : "disabled"}>${art ? `<img class="arch-art" src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<span class="arch-icons">${g === "ptcg" ? a.icons.map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("") : ""}</span><b class="ellip">${esc(a.name)}</b><small>${g === "ptcg" ? `${(a.share * 100).toFixed(1)}% of players · ${a.top8} in Top 8` : `${a.count} top finish${a.count === 1 ? "" : "es"}`}</small>${bar(a.share / (data.archetypes[0]?.share || 1))}</button>`;
+        cover = g === "ptcg" ? pokemonDeckCover(best) : null,
+        art = g === "ygo" && best?.cover ? `https://images.ygoprodeck.com/images/cards_cropped/${encodeURIComponent(best.cover)}.jpg` : "",
+        illustrated = art || cover;
+      return `<button class="arch ${illustrated ? "has-art" : ""}" data-act="tMetaDeck" data-key="${esc(a.best)}" ${a.best ? "" : "disabled"}>${cover ? pokemonArtCrop(cover, "arch-art") : art ? `<img class="arch-art" src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<span class="arch-icons">${g === "ptcg" ? a.icons.map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("") : ""}</span><b class="clamp2">${esc(a.name)}</b><small>${g === "ptcg" ? `${(a.share * 100).toFixed(1)}% of players · ${a.top8} in Top 8` : `${a.count} top finish${a.count === 1 ? "" : "es"}`}</small>${bar(a.share / (data.archetypes[0]?.share || 1))}</button>`;
     })
     .join("")}</div>
   <div class="section-head"><h2>Most played cards</h2></div>
@@ -1147,8 +1151,8 @@ export function tcgDeck(id) {
     <button class="review-badge ${issues.length ? "bad" : "ok"}" data-act="tIssues" data-deck="${esc(d.id)}">${issues.length ? `● ${issues.length} to fix` : s.total ? "✓ Legal in " + esc(f.name) : "Add cards to check legality"}</button>
     <div class="hero-stats"><span><b>${zoneCount("main")}</b>${g === "ygo" ? "main" : "/60 cards"}</span><span><b>${s.total ? Math.round((s.owned / s.total) * 100) : 0}%</b>owned</span><span><b>${usd(s.buy, 0)}${s.unknown ? "+" : ""}</b>to finish${s.unknown ? " · some unpriced" : ""}</span>${s.total ? `<button data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="insights"><b>${shownPower(tcgPower(g, d, f, (x) => cardOf(g, x)))}</b>power</button>` : ""}</div>
   </div></section>
-  <nav class="tabs" role="tablist">${[["cards", "Cards"], ["insights", "Power"], ["matchups", "Matchups"], ["upgrade", "Upgrade lab"], ["playtest", "Playtest"], ["versions", "Versions"]].map(([id, l]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="${id}">${l}</button>`).join("")}</nav>
-  <div class="deck-body">${tab === "insights" ? deckInsights(g, d, f, s) : tab === "matchups" ? deckMatchupsT(g, d, f) : tab === "upgrade" ? deckUpgradeTab(g, d, f, s) : tab === "playtest" ? deckPlaytest(g, d, f) : tab === "versions" ? deckVersions(g, d) : deckCardsTab(g, d, f, s, issues)}</div>`;
+  <nav class="tabs" role="tablist">${[["cards", "Cards"], ["rules", "Rules"], ["insights", "Power"], ["matchups", "Matchups"], ["upgrade", "Upgrade lab"], ["playtest", "Playtest"], ["versions", "Versions"]].map(([id, l]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="${id}">${l}</button>`).join("")}</nav>
+  <div class="deck-body">${tab === "rules" ? interactiveRules(g) : tab === "insights" ? deckInsights(g, d, f, s) : tab === "matchups" ? deckMatchupsT(g, d, f) : tab === "upgrade" ? deckUpgradeTab(g, d, f, s) : tab === "playtest" ? deckPlaytest(g, d, f) : tab === "versions" ? deckVersions(g, d) : deckCardsTab(g, d, f, s, issues)}</div>`;
 }
 
 // Meta / staple tally for the deck, and owned staples that could replace no-emblem cards.

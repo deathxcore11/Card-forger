@@ -1,3 +1,4 @@
+import {interactiveRules} from './rule-learning.js';
 import {ruleDexPanel} from './rule-dex.js';
 // Rules reference for each game: format deck rules, a core-rules quick reference,
 // live banned/restricted lists, and links to the official documents.
@@ -19,7 +20,7 @@ const OFFICIAL = {
     ["Official card database & rulings", "https://www.db.yugioh-card.com/yugiohdb/"],
   ],
   ptcg: [
-    ["Rules & rulebooks (The Pokémon Company)", "https://www.pokemon.com/us/play-pokemon/about/pokemon-tcg-rules"],
+    ["Rules & rulebooks (The Pokémon Company)", "https://play.pokemon.com/en-us/resources/rules/"],
     ["Banned card list & Standard rotation", "https://www.pokemon.com/us/play-pokemon/about/pokemon-tcg-banned-card-list"],
   ],
 };
@@ -40,7 +41,7 @@ const CORE = {
     ["Turn order", "Draw Phase → Standby Phase → Main Phase 1 → Battle Phase → Main Phase 2 → End Phase. The player who goes first doesn't draw on their first turn and can't attack that turn."],
     ["Summoning", "One Normal Summon or Set per turn. Level 5–6 monsters need 1 Tribute, Level 7+ need 2. Special Summons have no limit unless a card says so."],
     ["Extra Deck monsters", "Fusion (fuse listed materials), Synchro (Tuner + non-Tuners whose Levels add up), Xyz (monsters of the same Level as materials), Link (materials equal to the Link Rating). Fusion, Synchro and Xyz can be summoned to any Main Monster Zone; Link monsters and face-up Pendulums from the Extra Deck go to the Extra Monster Zone or a zone a Link Monster points to."],
-    ["Chains", "Responding to an effect builds a Chain; it resolves last-in, first-out. Spell Speed 1 can't respond, Speed 2 (Quick-Play Spells, Traps, Quick Effects) can, Speed 3 (Counter Traps) can respond to anything."],
+    ["Chains", "Responding to an effect builds a Chain; it resolves last-in, first-out. Spell Speed 1 can't respond, Speed 2 (Quick-Play Spells, Traps, Quick Effects) can, Speed 3 responses require an eligible Counter Trap. Activation conditions and Damage Step restrictions still apply."],
     ["Deck rules", "Main Deck 40–60, Extra Deck up to 15, Side Deck up to 15, at most 3 copies of a card. Forbidden = 0, Limited = 1, Semi-Limited = 2."],
   ],
   ptcg: [
@@ -73,7 +74,7 @@ function formatTable(g) {
 }
 
 export function learnSheet(g) {
-  return `<div class="sheet-head"><h2>Learn ${esc(GAMES[g].short)}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p class="muted">Start with the turn, then explore the terms at your own pace.</p><section class="learn-topics">${CORE[g].map(([title,text]) => `<details><summary>${esc(title)}</summary><p>${esc(text)}</p></details>`).join("")}</section>${ruleDexPanel(g)}<button class="btn ghost block" data-act="go" data-to="#rules">Formats & official rules</button>`;
+  return `<div class="sheet-head"><h2>Learn ${esc(GAMES[g].short)}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p class="muted">Start with the turn, then explore the terms at your own pace.</p><section class="learn-topics">${CORE[g].map(([title,text]) => `<details><summary>${esc(title)}</summary><p>${esc(text)}</p></details>`).join("")}</section>${interactiveRules(g)}${ruleDexPanel(g)}<button class="btn ghost block" data-act="go" data-to="#rules">Formats & official rules</button>`;
 }
 export function rulesPage(g, R) {
   const G = GAMES[g],
@@ -92,7 +93,7 @@ export function rulesPage(g, R) {
     <p class="foot">Live from ${g === "ygo" ? "YGOPRODeck" : "Scryfall"}; updates as soon as they do.</p></section>`
       : `<section class="panel"><h3>Banned cards</h3><p class="small">The Pokémon banned list (mostly Expanded) isn’t published as data. Cards that aren’t legal in a format are already flagged in your decks; the official list is linked below.</p></section>`
   }
-  ${ruleDexPanel(g)}<section class="panel"><h3>Official documents</h3><div class="list compact">${OFFICIAL[g].map(([l, u]) => `<a class="mini-row store" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><span>${esc(l)}</span><span class="small">↗</span></a>`).join("")}</div></section>`;
+  ${interactiveRules(g)}${ruleDexPanel(g)}<section class="panel"><h3>Official documents</h3><div class="list compact">${OFFICIAL[g].map(([l, u]) => `<a class="mini-row store" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><span>${esc(l)}</span><span class="small">↗</span></a>`).join("")}</div></section>`;
 }
 
 function banlistView(g, rows) {

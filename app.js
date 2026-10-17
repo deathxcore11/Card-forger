@@ -1,3 +1,4 @@
+import {attachRuleLearning} from './rule-learning.js';
 import {loadConditionQuotes,CONDITION_IDENTITY} from './condition-feed.js';
 import {brandMark} from './brand.js';
 import {ownedCardLots,quickQuantity} from './quick-quantity.js';
@@ -1183,6 +1184,7 @@ const tierSync = () => {
   }
 };
 if (typeof MutationObserver !== "undefined") new MutationObserver(() => { if (!tierQueued) { tierQueued = true; requestAnimationFrame(tierSync); } }).observe(document.body, { childList: true, subtree: true });
+attachRuleLearning();
 attachSuggest();
 attachGlassSelects();
 function fetchConditionValue(card,entry,game,done){
@@ -1714,7 +1716,7 @@ C.buildCustom = (t) => {
   runBuild();
 };
 // A random build-around card that's legal (and can lead, if needed) in the chosen format.
-A.learnGame = () => openSheet(learnSheet(T.game()), {type:"learn-game"});
+A.learnGame = (t) => openSheet(learnSheet(t?.dataset?.game || T.game()), {type:"learn-game"});
 A.randomDeckOptions = () => {
  const g=T.game(),formats=g === "mtg" ? FORMATS.filter(f=>f.id !== "limited") : T.formatsOf(g);
  openSheet(`<div class="sheet-head"><h2>Discover a deck</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p class="muted">Choose a format. Leave the theme blank for a surprise.</p><label>Format<select id="randomFormat" required>${options([["","Choose a format"],...formats.map(f=>[f.id,f.name])],"")}</select></label><label>Optional theme or card type<input id="randomTheme" maxlength="80" placeholder="${g === "mtg" ? "Dragons, artifacts, graveyard…" : g === "ygo" ? "An archetype or monster type…" : "Fire, Water, Psychic…"}"></label><button class="btn block" data-act="randomDeckStart">Find my deck</button>`,{type:"random-deck-options",game:g});

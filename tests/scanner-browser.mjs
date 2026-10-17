@@ -9,7 +9,12 @@ const root=process.cwd(),refs=[
  {game:'Pokémon',g:'ptcg',name:'Kyogre',id:'cel25-3',url:'https://api.tcgdex.net/v2/en/cards/cel25-3'},
  {game:'Yu-Gi-Oh!',g:'ygo',name:'Dark Magician',id:'46986414',url:'https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Dark%20Magician'}
 ];
-async function download(url){const r=await fetch(url,{headers:{'User-Agent':'CardStashy-Scanner-Regression/1.0','Accept':'*/*'},signal:AbortSignal.timeout(30000)});if(!r.ok)throw Error(`Reference unavailable: ${url} (${r.status})`);return r;}
+async function download(url){
+ let last;for(let attempt=0;attempt<3;attempt++){
+  try{const r=await fetch(url,{headers:{'User-Agent':'CardStashy-Scanner-Regression/1.0','Accept':'*/*'},signal:AbortSignal.timeout(30000)});if(r.ok)return r;last=Error(`Reference unavailable: ${url} (${r.status})`);if(r.status<500&&r.status!==429)throw last;}catch(e){last=e;}
+  if(attempt<2)await new Promise(r=>setTimeout(r,1000*(attempt+1)));
+ }throw last;
+}
 for(const ref of refs){
  const raw=await (await download(ref.url)).json(),card=raw.data?.[0]||raw;
  assert.equal(card.name,ref.name);
@@ -78,7 +83,7 @@ try{
     const {visibleGuide}=await import('/scancam.js'),image=new Image();image.src='/__reference/'+g;await image.decode();
     navigator.mediaDevices.getUserMedia=async()=>{
      const canvas=document.createElement('canvas');canvas.width=640;canvas.height=900;const x=canvas.getContext('2d');
-     const draw=()=>{const v=document.querySelector('#scanVideo'),r=v?.getBoundingClientRect(),guide=visibleGuide(640,900,r?.width,r?.height);x.fillStyle='#181818';x.fillRect(0,0,640,900);x.drawImage(image,guide.x,guide.y,guide.w,guide.h);};draw();setInterval(draw,33);
+     const draw=()=>{const v=document.querySelector('#scanVideo'),r=v?.getBoundingClientRect(),guide=visibleGuide(640,900,r?.width,r?.height);x.fillStyle='#567064';x.fillRect(0,0,640,900);x.save();x.translate(guide.x+guide.w*.44,guide.y+guide.h*.48);x.rotate(.13);x.drawImage(image,-guide.w*.36,-guide.h*.36,guide.w*.72,guide.h*.72);x.restore();};draw();setInterval(draw,33);
      window.__cameraStream=canvas.captureStream(30);return window.__cameraStream;
     };
    },ref.g);
@@ -86,6 +91,7 @@ try{
    await page.locator('#scanVideo').waitFor();
    const auto=page.getByLabel('Capture automatically',{exact:true});if(await auto.count())await auto.uncheck();
    await page.waitForFunction(()=>document.querySelector('#scanVideo')?.videoWidth>0);
+   await page.waitForFunction(()=>document.querySelector('#camGuide.auto-boundary')?.style.opacity==='1');
    await page.getByRole('button',{name:'Capture',exact:true}).click();
    await page.getByRole('region',{name:'Confirm scanned card',exact:true}).waitFor({timeout:120000});
    await page.getByRole('region',{name:'Confirm scanned card',exact:true}).getByText(ref.name,{exact:true}).waitFor();
@@ -93,7 +99,7 @@ try{
    assert(await page.locator('#scanVideo').evaluate((v,t)=>!v.paused&&v.currentTime>t&&v.srcObject===window.__cameraStream&&v.srcObject.getTracks()[0].readyState==='live',beforeTime),'video keeps playing behind confirmation');
    await page.getByRole('button',{name:'Skip this scan',exact:true}).click();
    assert(await page.locator('#scanVideo').evaluate(v=>v.srcObject===window.__cameraStream&&v.srcObject.getTracks()[0].readyState==='live'),'dismiss keeps the same live camera stream');
-   console.log(`PASS: ${ref.game}: reference MediaStream → viewfinder crop → correct popup → playback continues → dismiss retains the same active camera track.`);
+   console.log(`PASS: ${ref.game}: off-centre rotated reference MediaStream → automatic boundary + perspective warp → correct popup → playback continues → dismiss retains the same active camera track.`);
   }catch(e){
    console.error(`FAIL ${ref.game}: ${e.stack}`);console.error('Scan save diagnostic:',await page.evaluate(async()=>{const {S}=await import('/store.js');return S.ui.scan.confirm?.errorDetail||'No save exception';}));console.error((await page.locator('main').innerText()).slice(0,6000));
    await page.screenshot({path:`test-results/scanner-${ref.g}-failure.png`,fullPage:true});throw e;

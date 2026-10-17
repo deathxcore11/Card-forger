@@ -1,3 +1,4 @@
+import {interactiveRules} from './rule-learning.js';
 import {brandMark} from './brand.js';
 import {conditionValueNote} from './condition-value.js';
 import { aiReviewPanel } from './ai-review.js';
@@ -424,6 +425,7 @@ export function cardSheet(c, ctx = {}) {
     )
     .join("")}
   ${!c.full ? `<p class="muted small center" id="cardLoading">Loading flavor text and printings…</p>` : ""}
+  <div class="card-rules-entry"><button type="button" class="chip" data-act="learnGame" data-game="mtg">Interactive rules · how to play →</button></div>
   ${cardTabs(tab, [["overview", "Overview"], ["meta", "Meta"], ["guide", "Play guide"], ["versions", `Versions${prints ? " · " + prints.length : ""}`], ["prices", "Prices"], ["rulings", "Rulings"], ["legal", "Legality"]])}
   ${cardPanel("overview", tab, overview)}
   ${cardPanel("meta", tab, mtgCardMeta(c))}
@@ -1129,7 +1131,7 @@ export function deckPage() {
     fm = formatOf(d),
     target = fm.size,
     tab = S.ui.deckTab,
-    tabs = [["cards", "Cards"], ["engine", "Power"], ["matchups", "Matchups"], ["upgrade", "Upgrade lab"], ["versions", "Versions"], ["playtest", "Playtest"], ["shop", t.missing ? `Shop · ${t.missing}` : "Shop"]];
+    tabs = [["cards", "Cards"], ["rules", "Rules"], ["engine", "Power"], ["matchups", "Matchups"], ["upgrade", "Upgrade lab"], ["versions", "Versions"], ["playtest", "Playtest"], ["shop", t.missing ? `Shop · ${t.missing}` : "Shop"]];
   return `<section class="deck-hero">${img(coverOf(d), d.name, "hero-art")}<div class="hero-shade"></div>
     <div class="hero-body">
       <div class="row between"><button class="icon light" data-act="go" data-to="#decks" aria-label="Back to decks">←</button><button class="icon light" data-act="deckMenu" aria-label="Deck options">⋯</button></div>
@@ -1146,7 +1148,7 @@ export function deckPage() {
   </section>
   <nav class="tabs" role="tablist">${tabs.map(([id, l]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="deckTab" data-id="${id}">${l}</button>`).join("")}</nav>
   ${fm.commander && !canLead(meta(d.commander), fm) && tab !== "upgrade" ? `<button class="note warn block-note" data-act="deckTab" data-id="upgrade">⚠ No ${fm.commander === "planeswalker" ? "Oathbreaker" : "commander"} set — tap to choose one so colors and synergy are checked.</button>` : ""}
-  <div class="deck-body" data-tab="${tab}">${{ cards: deckCards, engine: deckEngine, matchups: deckMatchups, upgrade: deckUpgrade, versions: deckVersions, playtest: deckPlaytest, shop: deckShop }[tab](d, t)}</div>`;
+  <div class="deck-body" data-tab="${tab}">${{ rules: ()=>interactiveRules("mtg"), cards: deckCards, engine: deckEngine, matchups: deckMatchups, upgrade: deckUpgrade, versions: deckVersions, playtest: deckPlaytest, shop: deckShop }[tab](d, t)}</div>`;
 }
 
 function reviewBadge(d) {

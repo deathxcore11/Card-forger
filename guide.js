@@ -1,3 +1,4 @@
+import {cardRuleHelp} from './rule-learning.js';
 // Play guide for any card: what it does, when to play it, what it works with, and cards that pair
 // well. Built from the card's own rules text and stats (all three games) plus the tournament lists
 // CardStashy has cached — a starting point for new players, not expert strategy.
@@ -338,7 +339,7 @@ export function guideHtml(game, card, g, opts = {}) {
   ${syn.length ? `<section class="guide-sec"><h3>Synergies</h3><ul class="guide-list">${syn.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></section>` : ""}
   ${al?.cards?.length ? `<section class="guide-sec"><h3>Played alongside it <span class="muted small">in ${al.lists} tournament list${al.lists === 1 ? "" : "s"} · partners first</span></h3><div class="list compact">${al.cards.map((x) => `<button class="mini-row" ${opts.alongsideAttrs(x)}><span class="ellip">${esc(opts.alongsideName(x))}</span><span class="small muted">${Math.round(x.share)}% of them${x.overall < x.share - 5 ? ` · ${Math.round(x.overall)}% overall` : ""}</span></button>`).join("")}</div></section>` : ""}
   ${opts.complements !== undefined ? `<section class="guide-sec"><h3>Cards that pair well</h3>${opts.complementsLoading ? `<p class="muted small">Finding cards that work with it…</p>` : opts.complements?.length ? pairGroups(opts.complements) + (opts.complementsNote ? `<p class="foot">${esc(opts.complementsNote)}</p>` : "") : `<p class="muted small">${esc(opts.complementsNote || "Nothing specific found.")}</p>`}</section>` : ""}
-  ${rulesHtml(opts.rules)}
+  ${rulesHtml(opts.rules)}${cardRuleHelp(game,card)}
   ${opts.extra || ""}
   <p class="foot">This guide is generated from the card's rules text, its stats and the tournament lists on this device — a starting point, not expert strategy.</p>`;
 }

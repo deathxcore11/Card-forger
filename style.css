@@ -3258,3 +3258,51 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
  body[data-view="home"] #content > .home-deck-section {order:3;}
  body[data-view="home"] #content > p {order:4;}
 }
+
+/* Interactive learning keeps the existing glass panels and lets content breathe. */
+.rule-learning { display:grid; gap:16px; min-width:0; }
+.rule-learning .panel { margin:0; min-width:0; }
+.learn-search { display:grid; gap:8px; margin:16px 0; font-size:.85rem; color:var(--muted); }
+.learn-search input { width:100%; min-width:0; }
+.learn-step-rail,.learn-book-filters,.learn-keywords { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0; }
+.rule-learning .chip { white-space:normal; text-align:left; height:auto; min-height:40px; }
+.learn-turn-body { min-height:190px; padding:16px 0; }
+.learn-topic-grid,.rule-check-grid { display:grid; gap:12px; }
+.learn-topic,.rule-check { border:1px solid var(--line); border-radius:16px; padding:16px; min-width:0; background:var(--surface); }
+.learn-topic summary { cursor:pointer; }
+.learn-topic summary small { display:block; color:var(--muted); margin-top:6px; font-weight:400; }
+.learn-topic p,.rule-check p,.rule-source-text { line-height:1.65; overflow-wrap:anywhere; }
+.learn-example { border-left:3px solid var(--gold); padding:10px 14px; margin:16px 0; background:var(--surface); border-radius:0 12px 12px 0; }
+.learn-example p { margin:6px 0; }
+.rule-check h4 { margin:0 0 14px; line-height:1.5; }
+.rule-check-answer { margin-top:16px; border-top:1px solid var(--line); padding-top:14px; }
+.rule-learning [hidden] { display:none!important; }
+.rule-source-text { white-space:pre-wrap; font-size:.9rem; }
+.rule-library .rules-list summary small,.rule-library .mini-row small { display:block; color:var(--muted); font-size:.75rem; margin-top:5px; }
+.rule-library .rules-list details { min-width:0; }
+.rule-library .rules-list summary { overflow-wrap:anywhere; }
+.rule-library .mini-row { align-items:flex-start; gap:12px; }
+.rule-library .mini-row span:first-child { min-width:0; overflow-wrap:anywhere; }
+.rule-library .mini-row span:last-child { flex-shrink:0; font-size:.75rem; }
+.rule-glass { overflow:auto; max-height:calc(100dvh - 32px); }
+.card-rule-help .row { gap:8px; }
+@media(min-width:850px){.learn-topic-grid,.rule-check-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.learn-topic[open]{align-self:start;}}
+
+.cam-guide.auto-boundary { border:0!important; box-shadow:none!important; background:none!important; }
+.cam-guide.auto-boundary svg { width:100%;height:100%;overflow:visible; }
+.cam-guide.auto-boundary polygon { fill:none;stroke:var(--bad,#f26c64);stroke-width:2;vector-effect:non-scaling-stroke; }
+.cam-guide.auto-boundary.amber polygon { stroke:var(--gold); }
+.cam-guide.auto-boundary.green polygon { stroke:var(--ok,#70d9a3); }
+
+.card-rules-entry { margin:12px 0; }
+.card-rules-entry .chip { max-width:100%;white-space:normal; }
+
+/* Shared illustrated tournament tiles; Pokémon sprites remain small identity accents. */
+.arch-art.pk-crop { display:flex; transform:none; }
+.arch.has-art .arch-icons:not(:empty) { position:absolute; top:8px; right:8px; padding:2px 5px; border:1px solid rgba(255,255,255,.18); border-radius:99px; background:rgba(13,16,23,.72); backdrop-filter:blur(8px); }
+.arch.has-art .arch-icons .pk-icon { width:24px; height:24px; }
+.meta-art .meta-card-art { width:64px; height:46px; border-radius:7px; }
+.meta-main > b { white-space:normal; overflow-wrap:anywhere; }
+.meta-own { grid-template-columns:minmax(0,1fr) auto; }
+@media(min-width:760px) { .arch-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; } }
+@media(min-width:1100px) { .arch-grid { grid-template-columns:repeat(4,minmax(0,1fr)); } }
