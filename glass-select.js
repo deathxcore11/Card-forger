@@ -11,7 +11,21 @@ export function chooseOption(select, index) {
   if(changed) {select.dispatchEvent(new Event('input',{bubbles:true}));select.dispatchEvent(new Event('change',{bubbles:true}));}
   return true;
 }
+// Chromium's custom native-select appearance can focus an offscreen pill without
+// revealing it. Keep keyboard and restored focus visible inside this known rail
+// only; scrolling the control itself would also move the page vertically.
+export function revealCollectionFilter(select,doc=select?.ownerDocument) {
+  const rail=select?.parentElement,content=doc?.querySelector?.('#content'),known={tCollSet:[''],tCollSort:[''],tCollKind:['kind','rarity','show']};
+  if(select?.tagName!=='SELECT'||!select.isConnected||select.disabled||select.multiple||select.size>1||doc?.body?.dataset.view!=='collection'||!['ptcg','ygo'].includes(doc.body.dataset.game)||!content?.isConnected||!Object.hasOwn(known,select.dataset.change)||!known[select.dataset.change].includes(select.dataset.field||'')||!rail?.matches('.coll-tools > .filter-pills')||rail.closest('#content')!==content||!['auto','scroll'].includes(doc.defaultView?.getComputedStyle(rail).overflowX))return;
+  const box=rail.getBoundingClientRect(),item=select.getBoundingClientRect(),scale=box.width/rail.offsetWidth,left=box.left+rail.clientLeft*scale,right=left+rail.clientWidth*scale;
+  if(!Number.isFinite(scale)||scale<=0||!rail.clientWidth||!item.width)return;
+  const delta=item.left<left?item.left-left:item.right>right?item.right-right:0;
+  if(delta)rail.scrollLeft+=delta/scale;
+}
 export function attachGlassSelects(doc=document) {
+  // This accessibility behavior also applies when the custom dialog is absent;
+  // keep the ordinary native select and its default keyboard actions intact.
+  doc.addEventListener?.('focusin',e=>revealCollectionFilter(e.target,doc));
   if(!doc.body?.append || !doc.createElement('dialog').showModal) return;
   let active=null,serial=0,positionFrame=0,suppressTouchClick=false;
   const schedulePosition=()=>{

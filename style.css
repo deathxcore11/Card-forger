@@ -1325,7 +1325,13 @@ details.trouble code { word-break: break-word; }
 .compare-facts > div { display:flex; justify-content:space-between; gap:8px; }
 .compare-facts dt { color:var(--muted); }
 .compare-facts dd { margin:0; font-weight:600; }
-@media(max-width:480px) { .view-compact .display-list .lot:has(> .batch-mark) > .lot-side,.view-symbols .display-list .lot:has(> .batch-mark) > .lot-side { grid-column:3/5; display:flex; justify-content:flex-end; gap:10px; } }
+/* Narrow Collection batch rows have explicit art/selection tracks; actions do
+   not create an implicit fourth symbols track or squeeze the metadata column. */
+@media(max-width:480px) {
+  body[data-view="collection"] #content.view-compact .display-list > .lot:has(> .batch-mark) {grid-template-columns:30px 58px minmax(0,1fr);}
+  body[data-view="collection"] #content.view-symbols .display-list > .lot:has(> .batch-mark) {grid-template-columns:auto minmax(0,1fr);}
+  body[data-view="collection"] #content:is(.view-compact,.view-symbols) .display-list > .lot:has(> .batch-mark) > .lot-side {grid-column:1/-1;grid-row:2;display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:8px 10px;}
+}
 .view-compact .card-grid .grid-meta,.view-symbols .card-grid .grid-meta { font-size:14px; line-height:1.5; }
 .view-compact .card-grid .grid-meta > span:last-child,.view-symbols .card-grid .grid-meta > span:last-child { font-size:13px; }
 
@@ -3182,13 +3188,13 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .sheet-head.overlay.scrolled .sh-title {white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;}
 .sheet-head .icon {flex:none;}
 .cs-card {grid-template-columns:minmax(0,42%) minmax(0,1fr);}
-.cd-img > .btn, .ca-main .btn, .ca-more .btn {white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.35;height:auto;min-height:44px;}
+.cd-img > .btn, .ca-main .btn, .ca-more .btn {white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:normal;word-break:normal;line-height:1.35;height:auto;min-height:44px;}
 .card-actions .btn svg {flex:none;}
 .cs-tabs {display:flex;position:sticky;top:var(--card-tabs-top,52px);overflow-x:auto;overflow-y:hidden;padding:10px 0;mask-image:none;-webkit-mask-image:none;scroll-padding-inline:8px;overscroll-behavior-x:contain;touch-action:pan-x;}
 .cs-tabs button {flex:0 0 auto;min-width:max-content;min-height:44px;padding:8px 16px;white-space:nowrap;overflow-wrap:normal;line-height:1.3;}
 
 .cd-art-stack {display:grid;gap:12px;min-width:0;align-content:start;}
-.cd-art-stack > .btn {width:100%;white-space:normal;overflow-wrap:anywhere;line-height:1.35;height:auto;min-height:44px;}
+.cd-art-stack > .btn {width:100%;white-space:normal;overflow-wrap:break-word;line-height:1.35;height:auto;min-height:44px;}
 .cd-art-stack > .cd-img {isolation:isolate;border-radius:4.75% / 3.5%;}
 
 /* One card-fan mark for app identity and AI progress. */
@@ -3212,6 +3218,30 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .quick-owned .stepper button {min-width:52px;min-height:48px;}
 .quick-owned .stepper output {font-size:20px;font-weight:800;min-width:48px;text-align:center;}
 .condition-value-note {display:block;max-width:190px;white-space:normal;color:var(--muted);font-size:11px;line-height:1.4;}
+/* A condition explanation must not take the narrow row's card-name/printing
+   column. Only these Collection list rows reflow; gallery and wide rows retain
+   their existing presentation, including the separate batch-selection column. */
+@media (max-width:480px) {
+  body[data-view="collection"] #content.view-compact .display-list > .lot:has(> .lot-side > .condition-value-note) {grid-template-columns:58px minmax(0,1fr);}
+  body[data-view="collection"] #content.view-compact .display-list > .lot:has(> .lot-side > .condition-value-note):has(> .batch-mark) {grid-template-columns:30px 58px minmax(0,1fr);}
+  body[data-view="collection"] #content.view-symbols .display-list > .lot:has(> .lot-side > .condition-value-note) {grid-template-columns:minmax(0,1fr);}
+  body[data-view="collection"] #content.view-symbols .display-list > .lot:has(> .lot-side > .condition-value-note):has(> .batch-mark) {grid-template-columns:auto minmax(0,1fr);}
+  body[data-view="collection"] #content:is(.view-compact,.view-symbols) .display-list > .lot:has(> .lot-side > .condition-value-note) > .lot-side {grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;justify-items:start;}
+  body[data-view="collection"] #content:is(.view-compact,.view-symbols) .display-list > .lot:has(> .lot-side > .condition-value-note) > .lot-side > .stepper {grid-column:2;grid-row:1;justify-self:end;}
+  body[data-view="collection"] #content:is(.view-compact,.view-symbols) .display-list > .lot:has(> .lot-side > .condition-value-note) > .lot-side > .condition-value-note {grid-column:1/-1;grid-row:2;max-width:none;}
+}
+/* A tablet/desktop list can give a batch row less room than a phone. Query
+   the row itself, not the viewport, and reflow only its children. Explicit
+   parent tracks stay intact; metadata spans the now-unused side track. */
+body[data-view="collection"] #content:is(.view-compact,.view-symbols) .display-list > .lot:has(> .batch-mark) {container:collection-batch / inline-size;}
+@container collection-batch (max-width:480px) {
+  body[data-view="collection"] #content.view-compact .display-list > .lot:has(> .batch-mark) > .lot-info {grid-column:3/-1;}
+  body[data-view="collection"] #content.view-symbols .display-list > .lot:has(> .batch-mark) > .lot-info {grid-column:2/-1;}
+  body[data-view="collection"] #content:is(.view-compact,.view-symbols) .display-list > .lot:has(> .batch-mark) > .lot-side {grid-column:1/-1;grid-row:2;display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:8px 10px;}
+  body[data-view="collection"] #content:is(.view-compact,.view-symbols) .display-list > .lot:has(> .batch-mark) > .lot-side:has(> .condition-value-note) {display:grid;grid-template-columns:minmax(0,1fr) auto;justify-items:start;}
+  body[data-view="collection"] #content:is(.view-compact,.view-symbols) .display-list > .lot:has(> .batch-mark) > .lot-side:has(> .condition-value-note) > .stepper {grid-column:2;grid-row:1;justify-self:end;}
+  body[data-view="collection"] #content:is(.view-compact,.view-symbols) .display-list > .lot:has(> .batch-mark) > .lot-side > .condition-value-note {grid-column:1/-1;grid-row:2;max-width:none;}
+}
 @media(prefers-reduced-motion:reduce){.brand-idle .brand-card,.brand-loading .brand-card,.thinking .ask-orb .brand-card{animation:none!important;}}
 
 .brand .mark[data-state]::after {content:"";position:absolute;right:0;bottom:0;width:7px;height:7px;border-radius:50%;background:var(--muted);border:2px solid var(--bg);}
@@ -3916,3 +3946,49 @@ html:has(.rules-ask-dialog[open]),html:has(.rules-ask-dialog[open]) body{overflo
 
 .community-feature.feature-text-only { padding-block:28px; }
 .community-feature.feature-text-only .community-feature-copy { max-width:100%; }
+
+/* Reflow the existing components, never replace a mounted card on resize. */
+.cs-panel { container-type:inline-size; }
+@container (max-width:520px) {
+  .card-actions .ca-more { display:flex; flex-wrap:wrap; }
+  .card-actions .ca-more .btn { flex:1 1 max-content; width:auto; padding:9px 12px; }
+  .card-actions .ca-main .btn { padding:9px 12px; }
+  .cs-card-side .own-line { margin:0 0 4px; }
+  .cs-card-side .stat-grid > :only-child { grid-column:1 / -1; }
+  .cs-card { grid-template-columns:minmax(0,36%) minmax(0,1fr); gap:12px; }
+  .cs-card-side { gap:8px; }
+  .cs-card-side .stat-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; }
+  .cs-card-side .stat-grid > div { padding:7px; gap:3px; align-content:start; }
+  .cs-card-side .stat-grid > .stat-reg, .cs-card-side .stat-grid > [data-stat-wide] { grid-column:1 / -1; }
+  .cs-card-side .stat-grid small { font-size:11px; letter-spacing:.025em; }
+  .cs-card-side .stat-grid b { line-height:1.25; overflow-wrap:break-word; }
+  .ca-main { grid-template-columns:1fr; }
+  .cs-panel .inline-pick { flex-wrap:wrap; }
+  .cs-panel .inline-pick select { flex:1 1 12rem; }
+  .cs-panel .inline-pick .btn { flex:1 0 max-content; }
+}
+/* Extreme fold/zoom: give art and stats real reading width instead of letting
+   implicit min-content tracks overlap. Ordinary 320px phones stay two-column. */
+@container (max-width:260px) {
+  .cs-card { grid-template-columns:minmax(0,1fr); }
+  .cs-card .cd-art-stack { width:min(100%,220px); justify-self:center; grid-template-columns:minmax(0,1fr); }
+  .cs-card .cd-art-stack > *, .cs-card-side .stat-grid > div > * { min-width:0; }
+  .cs-card-side .stat-grid > div { grid-template-columns:minmax(0,1fr); }
+}
+/* Shared action roots used by Search, Sets, Decks and Rules. Let controls
+   take another row before splitting a word; long data remains breakable. */
+:is(.page-head,.toolbar,.learn-nav,.rules-ask-invite) .btn {
+  white-space:normal; overflow-wrap:normal; word-break:normal; height:auto;
+  min-height:44px; padding-block:8px; line-height:1.35; max-width:100%;
+}
+:is(.page-head,.toolbar,.learn-nav,.rules-ask-invite) > * { min-width:0; }
+
+.rules-ask-dialog .rules-ai-format-bar { flex:none; padding:10px 20px; border-bottom:1px solid var(--line); }
+.rules-ask-dialog .rules-ai-format { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:12px; margin:0; font-size:13px; }
+.rules-ask-dialog .rules-ai-format select { width:100%; min-height:44px; font-size:15px; padding:8px 12px; }
+.rules-ask-dialog .rules-ai-format-bar .foot { margin:5px 0 0; }
+.rules-ask-dialog .ask-head .eyebrow { overflow-wrap:normal; word-break:normal; }
+@media(max-height:500px) {
+  .rules-ask-dialog .ask-head { padding-block:8px; }
+  .rules-ask-dialog .rules-ai-format-bar { padding-block:6px; }
+}

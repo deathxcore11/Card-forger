@@ -201,7 +201,7 @@ function statCell(c, k, v) {
   // Old normalized caches may still contain Level:null on Link cards. Keep
   // their real Link/ATK and zero-valued stats; never invent a Level or Rank.
   if(c.game==="ygo"&&["Level","Rank"].includes(k)&&(v==null||String(v).trim()===""||/link/i.test(c.frame+" "+c.typeLine)))return "";
-  if (k !== "Regulation") return `<div><small>${esc(k)}</small><b>${esc(String(v))}</b></div>`;
+  if (k !== "Regulation") return `<div${String(v).length > 14 ? ' data-stat-wide="true"' : ""}><small>${esc(k)}</small><b>${esc(String(v))}</b></div>`;
   const where = c.legal?.standard ? ["ok-text", "Playable in Standard"] : c.legal?.expanded ? ["warn-text", "Rotated out of Standard · Expanded only"] : ["muted", "Not tournament legal"];
   return `<div class="stat-reg"><small>Regulation mark</small><b>${esc(String(v))}</b><span class="${where[0]}">${where[1]}</span></div>`;
 }

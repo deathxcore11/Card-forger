@@ -164,11 +164,104 @@ export async function openApp(browser,base,{game='mtg',width=390,height=1000,red
 export async function navigate(page,hash){await page.evaluate(h=>{location.hash=h;},hash);await page.waitForFunction(h=>location.hash===h&&window.__uiTestState.ui.view===h.slice(1).split('/')[0],hash);}
 export async function closeSheet(page){await page.locator('#sheet [data-act="closeSheet"]').first().click();await page.waitForFunction(()=>!document.querySelector('#sheet').open);}
 export async function inventorySnapshot(page){return page.evaluate(()=>JSON.stringify([window.__uiTestState.state.collection,window.__uiTestState.state.printings,window.__uiTestState.state.decks,window.__uiTestState.state.tcg]));}
+// The ordinary Magic Collection opens a named catalogue card, not necessarily an
+// explicit ctx.print. Resolve the same real source as the production renderer.
+export function detailHistoryContext(game){
+ const ctx=window.__uiTestState.ui.sheetCtx,card=game==='mtg'?(ctx.print||window.__responsiveStore.meta(ctx.name)):window.__uiTestTcg.cardOf(game,ctx.id),body=document.querySelector('#sheetBody');
+ if(!card?.id)throw Error('Real detail card missing for '+game+' context');
+ const quote=window.__responsivePricing.quoteForContext(game,card,ctx);
+ if(!quote||quote.game!==game||quote.cardId!==card.id)throw Error('Real detail quote does not match its displayed card');
+ const key=window.__responsiveHistory.historyKey(quote);
+ window.__openingDetail={ctx,body,identity:body.dataset.detailIdentity,key,quote,card:body.querySelector('.cs-card'),generation:body.detailMountGeneration};
+ return {key,game:quote.game,id:quote.cardId,finish:quote.finish,entry:ctx.entryId,generation:body.detailMountGeneration};
+}
+// Serialized by waitForFunction, and exercised directly by the pure lifecycle
+// regression. Match the real cache TTL: a retained stale entry is not completion
+// while its replacement request and synchronous refresh callback are pending.
+export function detailHistoryReady(){
+ const old=window.__openingDetail,ctx=window.__uiTestState.ui.sheetCtx,body=document.querySelector('#sheetBody'),entry=window.__responsiveHistory.sharedHistory.get(old.key),now=Date.now();
+ const complete=entry?.series?.some(s=>s.points?.length>2&&now-Date.parse(s.points.at(-1).date)<3*864e5);
+ return document.querySelector('#sheet').open&&ctx===old.ctx&&body===old.body&&body.dataset.detailIdentity===old.identity&&entry?.game===old.quote.game&&entry.cardId===old.quote.cardId&&entry.finish===old.quote.finish&&Number.isFinite(entry.checked)&&now-entry.checked<(complete?3600000:30000)&&['ready','empty','unsupported','unavailable'].includes(entry.status);
+}
+// Both browser and pure regressions use this exact fractional CSS-space probe.
+// clientWidth/clientHeight are integer-rounded and cannot decide line wrapping.
+export function collectionControlGeometry(n){
+ const el=document.activeElement,r=n.getBoundingClientRect(),a=el.getBoundingClientRect(),s=getComputedStyle(el),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');ctx.font=[s.fontStyle,s.fontVariant,s.fontWeight,s.fontSize,s.fontFamily].join(' ');
+ const num=v=>parseFloat(v)||0,px=num(s.paddingLeft)+num(s.paddingRight),py=num(s.paddingTop)+num(s.paddingBottom),bx=num(s.borderLeftWidth)+num(s.borderRightWidth),by=num(s.borderTopWidth)+num(s.borderBottomWidth);
+ const boxWidth=num(s.width)+(s.boxSizing==='border-box'?0:px+bx),boxHeight=num(s.height)+(s.boxSizing==='border-box'?0:py+by),scaleX=a.width/boxWidth,scaleY=a.height/boxHeight;
+ const contentWidth=a.width/scaleX-bx-px,contentHeight=a.height/scaleY-by-py,label=el.selectedOptions?.[0]?.label||'',icon=getComputedStyle(el,'::picker-icon'),available=contentWidth-num(icon.width)-num(s.columnGap),words=label.split(/\s+/),longest=Math.max(...words.map(w=>ctx.measureText(w).width));
+ let lines=1,line='';for(const word of words){const next=line?line+' '+word:word;if(line&&ctx.measureText(next).width>available){lines++;line=word;}else line=next;}
+ const nowrap=['nowrap','pre'].includes(s.whiteSpace),lineHeight=num(s.lineHeight)||num(s.fontSize)*1.2,hit=document.elementFromPoint(a.left+a.width/2,a.top+a.height/2);
+ return {inside:el.parentElement===n,change:el.dataset.change,field:el.dataset.field||'',value:el.value,label,accessible:el.getAttribute('aria-label'),tabIndex:el.tabIndex,disabled:el.disabled,selectedWordWidth:longest,selectedTextWidth:ctx.measureText(label).width,labelWidth:available,nowrap,requiredTextHeight:(nowrap?1:lines)*lineHeight,labelHeight:contentHeight,scaleX,scaleY,ellipsis:s.textOverflow==='ellipsis',scrollWidth:el.scrollWidth,clientWidth:el.clientWidth,scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,rect:a.toJSON(),rail:r.toJSON(),railWidth:n.clientWidth,railScroll:n.scrollWidth,position:n.scrollLeft,overflow:getComputedStyle(n).overflowX,hit:hit===el||el.contains(hit)};
+}
+// SVG title/desc are accessible metadata, not rendered glyphs. Nothing else,
+// including hidden HTML or real SVG text/tspan without rectangles, is exempt.
+export function collectionRowGeometry(n){
+ // Locator.evaluate first resolves a remote ElementHandle, then evaluates it in
+ // another protocol call. A legitimate Collection render may detach that handle
+ // between calls. Resolve and measure the exact current row in this single
+ // synchronous page callback instead; never retry or accept another context.
+ let identity=null;
+ if(typeof n?.getBoundingClientRect!=='function'){
+  const expected=n,need=(ok,message)=>{if(!ok)throw Error('Collection row identity: '+message);};
+  need(expected&&['mtg','ptcg','ygo'].includes(expected.game)&&['compact','symbols'].includes(expected.mode)&&typeof expected.batch==='boolean'&&Number.isFinite(expected.width)&&new RegExp('^lot-'+expected.game+'-\\d+$').test(expected.id),'invalid descriptor');
+  const {game,mode,batch,width,id}=expected,roots=document.querySelectorAll('#content'),state=window.__uiTestState;
+  need(roots.length===1&&roots[0].isConnected,'unique connected content root');const root=roots[0];
+  need(document.body.dataset.game===game&&state?.state.settings.game===game&&document.body.dataset.view==='collection'&&state.ui.view==='collection'&&location.hash==='#collection','current Collection game and route');
+  need(root.classList.contains('view-'+mode)&&(state.state.settings.displayModes?.[game]?.collection||'compact')===mode,'current display mode');
+  need(innerWidth===width&&state.ui.batch?.game===game&&state.ui.batch.active===batch,'current viewport and batch state');
+  const selector='.display-list > .lot:has(> .lot-art[data-entry="'+id+'"])',rows=root.querySelectorAll(selector);need(rows.length===1,'unique current lot');n=rows[0];
+  need(n.isConnected&&n.closest('#content')===root&&n.parentElement.matches('.display-list')&&root.contains(n.parentElement),'connected direct current list row');
+  need(n.querySelector(':scope > .lot-art')?.dataset.entry===id&&n.querySelector(':scope > .lot-info > .lot-name')?.dataset.entry===id,'matching artwork and name entry');
+  const entries=(game==='mtg'?state.state:state.state.tcg?.[game])?.collection;
+  need(entries?.filter(e=>e.id===id).length===1,'unique current owned entry');need(!!n.querySelector(':scope > .batch-mark')===batch,'matching rendered batch mark');
+  const prior=expected.previous?window.__conditionPriorRow:null;
+  if(expected.previous)need(prior&&!prior.isConnected&&prior!==n&&prior.querySelector('.lot-art')?.dataset.entry===id,'real prior row replaced');
+  identity={id,game,mode,batch,width,connected:n.isConnected,current:root.querySelectorAll(selector)[0]===n,rootConnected:root.isConnected,unique:rows.length,previous:expected.previous?{connected:prior.isConnected,replaced:prior!==n}:null,data:{id,metadata:n.querySelector('.lot-sub').textContent.replace(/\s+/g,' ').trim(),icons:[...n.querySelectorAll('.lot-sub svg.emb')].map(x=>({role:x.getAttribute('role'),label:x.getAttribute('aria-label'),title:x.querySelector('title')?.textContent,hidden:x.getAttribute('aria-hidden'),parentLabel:x.parentElement.getAttribute('aria-label')})),note:n.querySelector('.condition-value-note')?.textContent||null,price:n.querySelector('.price').textContent,quantity:n.querySelector('.stepper b').textContent,actions:[...n.querySelectorAll('.lot-side button')].map(b=>[b.dataset.act,b.textContent,b.getAttribute('aria-label')])}};
+ }
+ const rect=x=>x.getBoundingClientRect().toJSON(),style=getComputedStyle(n),inset=k=>['padding'+k,'border'+k+'Width'].reduce((sum,key)=>sum+(parseFloat(style[key])||0),0),contentWidth=parseFloat(style.width)-(style.boxSizing==='border-box'?inset('Left')+inset('Right'):0),rowRect=n.getBoundingClientRect(),scaleX=rowRect.width/(contentWidth+inset('Left')+inset('Right')),info=n.querySelector('.lot-info'),side=n.querySelector('.lot-side'),art=n.querySelector('.lot-art'),mark=n.querySelector('.batch-mark'),targets=[...n.querySelectorAll('.lot-sub,.condition-value-note,.lot-side .price,.lot-side .stepper b,.lot-side button')],bad=[],icons=[],metadata=new Set();let words=0;
+ for(const target of targets){for(const icon of target.querySelectorAll('svg.emb'))metadata.add(icon);const bound=target.getBoundingClientRect();if(!bound.width||!bound.height||getComputedStyle(target).visibility!=='visible'||target.scrollWidth>target.clientWidth+2)bad.push({text:target.textContent,reason:'hidden or clipped metadata'});const walker=document.createTreeWalker(target,NodeFilter.SHOW_TEXT);let text;
+  while((text=walker.nextNode())){
+   let meta=null;for(let p=text.parentElement;p&&p!==target;p=p.parentElement)if(p.namespaceURI==='http://www.w3.org/2000/svg'&&['title','desc'].includes(p.localName)){meta=p;break;}
+   if(meta){metadata.add(meta.ownerSVGElement);continue;}
+   for(const word of text.textContent.matchAll(/[\p{L}\p{N}]+/gu)){if(word[0].length<3)continue;words++;const range=document.createRange();range.setStart(text,word.index);range.setEnd(text,word.index+word[0].length);const rects=[...range.getClientRects()].filter(r=>r.width&&r.height),rows=new Set(rects.map(r=>Math.round(r.top)));if(!rects.length||rows.size>1||rects.some(r=>r.left<bound.left-2||r.right>bound.right+2||r.top<bound.top-2||r.bottom>bound.bottom+2))bad.push({word:word[0],rects:rects.map(r=>r.toJSON()),bound:bound.toJSON()});}
+  }
+ }
+ for(const icon of metadata){
+  if(!icon){bad.push({reason:'SVG metadata has no visible owner'});continue;}
+  const parent=icon.parentElement,r=icon.getBoundingClientRect(),p=parent.getBoundingClientRect(),title=icon.querySelector('title')?.textContent.trim(),label=icon.getAttribute('aria-label'),parentLabel=parent.getAttribute('aria-label'),decorative=icon.matches('svg.emb.star[aria-hidden="true"]')&&parent.matches('.lvl');
+  const visible=r.width>0&&r.height>0&&getComputedStyle(icon).visibility==='visible'&&getComputedStyle(icon).opacity!=='0'&&getComputedStyle(parent).opacity!=='0',named=decorative?/^(Level|Rank) \d+$/.test(parentLabel||'')&&parentLabel.split(' ').at(-1)===parent.textContent.trim():icon.getAttribute('aria-hidden')!=='true'&&icon.getAttribute('role')==='img'&&!!label&&!!title&&label===title;
+  icons.push({label,title,parentLabel,decorative,rect:rect(icon),visible,named});if(!visible||!named||r.left<p.left-2||r.right>p.right+2||r.top<p.top-2||r.bottom>p.bottom+2)bad.push({reason:'Accessible icon is hidden, clipped or unnamed',label,parentLabel,rect:rect(icon)});
+ }
+ const controls=[...side.querySelectorAll('button,.stepper')].map(x=>({text:x.textContent,rect:rect(x)})),footer=[...side.children].map(rect),steppers=[...side.querySelectorAll('.stepper')].map(x=>{const s=getComputedStyle(x),r=x.getBoundingClientRect();return {height:r.height,buttonHeight:Math.max(...[...x.querySelectorAll('button')].map(b=>b.getBoundingClientRect().height)),chrome:['paddingTop','paddingBottom','borderTopWidth','borderBottomWidth'].reduce((sum,k)=>sum+(parseFloat(s[k])||0),0)};});return {identity,row:rect(n),contentWidth,scaleX,columnGap:(parseFloat(style.columnGap)||0)*scaleX,containerName:style.containerName,containerType:style.containerType,contentLeft:rowRect.left+inset('Left')*scaleX,contentRight:rowRect.right-inset('Right')*scaleX,info:rect(info),side:rect(side),art:art.getClientRects().length?rect(art):null,mark:mark?rect(mark):null,cols:getComputedStyle(n).gridTemplateColumns.split(' ').length,words,bad,icons,controls,footer,steppers};
+}
+// Read-only ownership diagnostics use the exact replacement reference, never a
+// locator that could silently follow another render while proving sensor motion.
+export function detailMotionState(){
+ const old=window.__motionProof,body=document.querySelector('#sheetBody'),card=body.querySelector('.cs-card .cd-img'),r=card.getBoundingClientRect(),sheet=body.getBoundingClientRect();
+ return {same:card===old.card&&body===old.body&&old.ctx===window.__uiTestState.ui.sheetCtx&&body.detailMountGeneration===old.generation&&body.dataset.detailIdentity===old.identity,connected:card.isConnected,generation:body.detailMountGeneration,foreground:window.__responsiveFeel.motionCard()===card,foregroundDialog:[...document.querySelectorAll('dialog[open]')].at(-1)?.id,visible:r.bottom>Math.max(0,sheet.top)&&r.top<Math.min(innerHeight,sheet.bottom)&&r.right>0&&r.left<innerWidth,rect:r.toJSON(),hover:card.matches(':hover'),hovered:[...document.querySelectorAll(':hover')].slice(-4).map(n=>n.tagName+'.'+n.className),pointer:window.__openingPointer.slice(),gyro:card.classList.contains('gyro'),tx:card.style.getPropertyValue('--tx'),ty:card.style.getPropertyValue('--ty')};
+}
 // Card detail tabs are an intentional horizontal scroller. Their focus/visibility
 // is asserted independently; they must not create page or sheet overflow.
-export async function noOverflow(page,scope,label){
- const result=await page.locator(scope).evaluate(root=>{const r=root.getBoundingClientRect();return {width:innerWidth,root:document.documentElement.scrollWidth,scope:root.scrollWidth,client:root.clientWidth,rect:{left:r.left,right:r.right},bad:[...root.querySelectorAll('button,input,select,summary,a')].filter(n=>n.getClientRects().length&&!n.closest('[hidden]')&&!n.closest('.cs-tabs')).filter(n=>{const b=n.getBoundingClientRect();return b.left<-.5||b.right>innerWidth+.5;}).map(n=>({text:n.textContent.slice(0,90),class:n.className}))};});
- assert(result.root<=result.width+2&&result.scope<=result.client+2,`${label}: no horizontal overflow ${JSON.stringify(result)}`);assert.deepEqual(result.bad,[],`${label}: all visible controls fit the viewport`);
+// Collection alone has a second known rail. Admit a clipped source select only
+// after the caller has proved keyboard/touch access at this exact game/width and
+// selection snapshot. Generic scrollers, hidden controls and other roots fail.
+export function auditedCollectionControl(control,audit){
+ const r=control.rail,known={tCollSet:[''],tCollSort:[''],tCollKind:['kind','rarity','show']};
+ return !!audit&&control.root==='content'&&control.view==='collection'&&['ptcg','ygo'].includes(control.game)&&audit.game===control.game&&audit.width===control.viewport&&control.tag==='SELECT'&&known[control.change]?.includes(control.field)&&r?.direct&&r.known&&/^(auto|scroll)$/.test(r.overflow)&&r.left>=-.5&&r.right<=control.viewport+.5&&r.client>0&&r.scroll>=r.client&&control.width<=r.client+2&&control.left+r.position>=r.left-2&&control.right+r.position<=r.left+r.scroll+2&&audit.controls?.some(n=>n.change===control.change&&n.field===control.field&&n.value===control.value);
+}
+export async function noOverflow(page,scope,label,settleFinite=false,collectionAudit=null){
+ const result=await page.locator(scope).evaluate(async(root,settleFinite)=>{
+  // Opt-in page-entry settlement, matching Home. Never disable motion; measure
+  // in the same evaluation after real finite subtree animations have finished.
+  if(settleFinite)for(;;){
+   const animations=root.getAnimations({subtree:true}).filter(a=>Number.isFinite(a.effect?.getComputedTiming().endTime)&&!['finished','idle'].includes(a.playState));
+   if(!animations.length)break;await Promise.all(animations.map(a=>a.finished.catch(()=>{})));
+  }
+  const r=root.getBoundingClientRect();return {width:innerWidth,root:document.documentElement.scrollWidth,scope:root.scrollWidth,client:root.clientWidth,rect:{left:r.left,right:r.right},bad:[...root.querySelectorAll('button,input,select,summary,a')].filter(n=>n.getClientRects().length&&!n.closest('[hidden]')&&!n.closest('.cs-tabs')).filter(n=>{const b=n.getBoundingClientRect();return b.left<-.5||b.right>innerWidth+.5;}).map(n=>{
+   const b=n.getBoundingClientRect(),rail=n.closest('.filter-pills'),a=rail?.getBoundingClientRect();return {text:n.tagName==='SELECT'?n.selectedOptions[0]?.label:n.textContent.slice(0,90),class:n.className,tag:n.tagName,change:n.dataset.change,field:n.dataset.field||'',value:n.value,root:root.id,view:document.body.dataset.view,game:document.body.dataset.game,viewport:innerWidth,left:b.left,right:b.right,width:b.width,rail:rail&&{known:rail.matches('.coll-tools > .filter-pills'),direct:n.parentElement===rail,left:a.left,right:a.right,client:rail.clientWidth,scroll:rail.scrollWidth,position:rail.scrollLeft,overflow:getComputedStyle(rail).overflowX}};
+  })};},settleFinite);
+ assert(result.root<=result.width+2&&result.scope<=result.client+2,`${label}: no horizontal overflow ${JSON.stringify(result)}`);assert.deepEqual(result.bad.filter(n=>!auditedCollectionControl(n,collectionAudit)),[],`${label}: all visible controls fit the viewport or the specifically audited Collection rail`);
 }
 export async function capture(page,name){await page.screenshot({path:resolve(RESULTS,name+'.png'),fullPage:true,animations:'disabled'});}
 export async function saveReport(name,report,error){await mkdir(RESULTS,{recursive:true});await writeFile(resolve(RESULTS,name+'.json'),JSON.stringify({generatedAt:new Date().toISOString(),artEvidence,status:error?'failed':'passed',checks:report,...(error?{error:String(error.stack||error)}:{})},null,2));}

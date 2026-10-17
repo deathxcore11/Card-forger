@@ -166,8 +166,31 @@ const keywordIds={
 };
 export function keywordReference(game,key){return game==='ygo'&&key==='once per turn'?lessonReference(game,'Once-per-turn restrictions'):game==='ygo'&&key==='target'?lessonReference(game,'Other Rules'):keywordIds[game]?.[key]?entryReference(game,keywordIds[game][key],key):null;}
 
+// Display-only cleanup for one verified two-page extraction layout. This is not
+// generic duplicate removal: changed prefixes/footers and every other page stay
+// untouched. The canonical entry and complete extraction remain available.
+export function ygoTurnStructureDisplay(entry) {
+ const prefix = 'How\nTo\nPlay\nHow\nTo\nPlay\nTurn Structure\nTurn Structure\n';
+ const footer = '\nDraw Phase\n35\n34';
+ if (entry?.id !== '0-p20' || entry.doc !== 0 || !entry.text.startsWith(prefix) || !entry.text.endsWith(footer)) return null;
+ let text = 'Turn Structure\n\n' + entry.text.slice(prefix.length, -'\n35\n34'.length);
+ // These exact paragraphs/diagram labels are verified contiguous spans, not a heuristic for
+ // deleting repeated words, rule numbers, phase labels or list items.
+ const paragraphs = [
+  'Some cards have effects that activate, or costs you must pay, in the\nStandby Phase. If you do not have any of these cards on the field, you\ncan still activate Trap Cards or Quick-Play Spell Cards before moving\non to your Main Phase 1.',
+  'This is the first phase. The player whose turn it is (the “turn player”)\ndraws 1 card from the top of their Deck. A player with no cards left in\ntheir Deck and unable to draw loses the Duel. After you draw, Trap\nCards or Quick-Play Spell Cards can be activated before proceeding\nto the Standby Phase.',
+  'IMPORTANT: The player who goes first cannot draw during the\nDraw Phase of their first turn.',
+  'If\nno\nbattles\nare\nconducted',
+  'Draw 1 Card (except for the very\n1st turn of the Duel).',
+  'Activate Trap Cards, Quick-Play\nSpell Cards, etc.',
+  'Resolve card effects that happen\nin this phase'
+ ];
+ for (const paragraph of paragraphs) text = text.replaceAll(paragraph, '\n' + paragraph.replaceAll('\n', ' ') + '\n');
+ return { text, fullText:entry.text };
+}
 // Keep PDF diagrams/headers available, but show the actual Draw passage first.
 export function visibleRulePassage(game,entry){
+ if(game==='ygo'){const display=ygoTurnStructureDisplay(entry);if(display)return display;}
  if(game==='ptcg'&&entry.id==='0-p10'){const at=entry.text.indexOf('Turn Actions');if(at>=0)return {text:entry.text.slice(at),fullText:entry.text};}
  return {text:entry.text,fullText:null};
 }
