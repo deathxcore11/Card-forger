@@ -206,7 +206,7 @@ export function normalizeYgo(c) {
     stats = [];
   if (category === "Monster") {
     if (c.attribute) stats.push(["Attribute", c.attribute]);
-    if (c.level !== undefined) stats.push([/xyz/i.test(c.frameType) ? "Rank" : "Level", c.level]);
+    if (c.level != null && String(c.level).trim() !== "" && !/link/i.test(c.frameType+" "+type)) stats.push([/xyz/i.test(c.frameType) ? "Rank" : "Level", c.level]);
     if (c.linkval !== undefined) stats.push(["Link", c.linkval]);
     if (c.scale !== undefined) stats.push(["Scale", c.scale]);
     stats.push(["ATK", c.atk ?? "?"]);

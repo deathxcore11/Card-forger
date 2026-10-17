@@ -1,4 +1,4 @@
-import {compactPriceSummary,detailTabs,detailPanel,presentationQuote} from "./pricing-presentation.js";
+import {compactPriceSummary,detailTabs,detailPanel,presentationQuote,quoteForContext} from "./pricing-presentation.js";
 import { homeValue, homeEdition, homeMetaShortcut } from "./home-ui.js";
 import {interactiveRules} from './rule-learning.js';
 import {referenceQuote,referenceLabel} from './price-reference.js';
@@ -191,6 +191,9 @@ function tcgTradePanel(g, c, own, ctx={}) {
 
 // A stat on the card page. The regulation mark gets what it means for you, not just a letter.
 function statCell(c, k, v) {
+  // Old normalized caches may still contain Level:null on Link cards. Keep
+  // their real Link/ATK and zero-valued stats; never invent a Level or Rank.
+  if(c.game==="ygo"&&["Level","Rank"].includes(k)&&(v==null||String(v).trim()===""||/link/i.test(c.frame+" "+c.typeLine)))return "";
   if (k !== "Regulation") return `<div><small>${esc(k)}</small><b>${esc(String(v))}</b></div>`;
   const where = c.legal?.standard ? ["ok-text", "Playable in Standard"] : c.legal?.expanded ? ["warn-text", "Rotated out of Standard · Expanded only"] : ["muted", "Not tournament legal"];
   return `<div class="stat-reg"><small>Regulation mark</small><b>${esc(String(v))}</b><span class="${where[0]}">${where[1]}</span></div>`;
@@ -761,7 +764,7 @@ export function tcgCardSheet(c, sctx = {}) {
   <div class="cs-title"><div><h2>${esc(c.name)}</h2><p class="type-line">${esc(c.typeLine || "")}</p></div>${gameEmblems(c)}</div></div>
   ${emblemChips(g, c)}
   <div class="cs-meta">
-    ${g === "ygo" ? ygoSetRow(c) : ""}
+    ${g === "ygo" ? ygoSetRow(c,sctx) : ""}
     ${c.set ? `<button class="cd-set" data-act="tSet" data-id="${esc(c.set.id)}">${pkSetSymbol(c.set, "pks big")}<div><b>${esc(c.set.name)} <span class="set-go">›</span></b><small>#${esc(c.set.number || "")}${c.set.total ? "/" + c.set.total : ""}${c.rarity ? ` · ${pkRarity(c.rarity)} ${esc(c.rarity)}` : ""}</small></div></button>` : c.archetype ? `<button class="cd-set" data-act="tArchetype" data-name="${esc(c.archetype)}"><div><b>${esc(c.archetype)} <span class="set-go">›</span></b><small>Archetype · ${c.sets?.length || 0} printings</small></div></button>` : ""}
     ${compactPriceSummary(g,c,sctx,p.usd==null?lastQuote(g,c):null)}
   </div>
@@ -855,11 +858,11 @@ function readYgoSetCache(){
 export function currentYgoCatalogue(){const list=ui('ygo').sets.list;return list.length?list:readYgoSetCache()?.list||[];}
 const ygoSetIndex=()=>new Map([...releaseIndex(currentYgoCatalogue()).names].filter(([,sets])=>sets.length===1).map(([name,sets])=>[name,sets[0]]));
 
-function ygoSetRow(c) {
+function ygoSetRow(c,ctx={}) {
   const context=c.setContext,idx=ygoSetIndex();
   if(context){
-    const set=ui('ygo').sets.list.find(s=>s.id===context.releaseId),printing=context.printing;
-    return `<button class="cd-set" data-act="tSet" data-id="${esc(context.releaseId)}">${set?.image?`<img class="ygo-pack" src="${esc(set.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`:''}<div><b>${esc(context.name||context.code||context.releaseId)} <span class="set-go">›</span></b><small>${printing?ygoPrintBadge(printing):esc(context.code||'')} ${context.date?esc(context.date)+' · ':''}${context.status==='resolved'?'Selected release':'Release unverified'} · ${printing?'edition unspecified':'choose a printing; edition unspecified'}</small></div></button>`;
+    const set=ui('ygo').sets.list.find(s=>s.id===context.releaseId),printing=context.printing,quote=quoteForContext("ygo",c,ctx),edition=quote?.printing&&new Map([["1st-edition","1st Edition"],["unlimited","Unlimited"],["limited","Limited"]]).get(quote.selectedEdition);
+    return `<button class="cd-set" data-act="tSet" data-id="${esc(context.releaseId)}">${set?.image?`<img class="ygo-pack" src="${esc(set.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`:''}<div><b>${esc(context.name||context.code||context.releaseId)} <span class="set-go">›</span></b><small>${printing?ygoPrintBadge(printing):esc(context.code||'')} ${context.date?esc(context.date)+' · ':''}${context.status==='resolved'?'Selected release':'Release unverified'} · ${printing?esc(edition||'edition unspecified'):'choose a printing; edition unspecified'}</small></div></button>`;
   }
   if(!c.sets?.length)return '';
   const dated=c.sets.map(print=>({...print,release:idx.get(print.name)})),known=dated.filter(p=>p.release?.date).sort((a,b)=>a.release.date.localeCompare(b.release.date)),pick=known[0]||dated[0],release=pick.release;

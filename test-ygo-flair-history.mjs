@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {S,blank} from './store.js';
 import {blankGame} from './games.js';
-import {normalizeYgoSets} from './ygo.js';
+import {normalizeYgo,normalizeYgoSets} from './ygo.js';
 import {setContextCard,selectedYgoCard,selectedSetRarity,tcgRarityAttrs,tcgSet,tcgCardSheet,ui,cache} from './tcg.js';
 import {presentationQuote,priceSelectionState,scrollDetailTarget} from './pricing-presentation.js';
 import {historyPanel,priceOverview,recordQuote,registerWorkbench} from './workbench-ui.js';
@@ -61,6 +61,32 @@ html=priceOverview('ygo',superRare,{type:'tcard',setId:release.id});assert.match
 const quoted=setContextCard('ygo',{...card,sets:[{...print('VASM-EN003','Ultra Rare',77),quotes:[{edition:'1st Edition',market:40}]}]},release,releases);
 const noEdition=presentationQuote('ygo',quoted);assert.equal(noEdition.value,null);assert.equal(noEdition.selectedEdition,'');assert.match(noEdition.label,/Edition not specified/);assert.equal(priceSelectionState(noEdition),'edition-required');assert.match(historyPanel(noEdition),/>Select edition</);
 const first=presentationQuote('ygo',quoted,'reference','VASM-EN003::Ultra Rare','1st-edition');assert.equal(first.value,40);assert.notEqual(first.key,noEdition.key);
+// Reconstruct public card/release metadata visible in the reported MP25 case.
+// Quote amounts are deterministic fixtures, not assertions of today's market.
+const [mp25]=normalizeYgoSets([{set_name:'2025 Mega-Pack Tin',set_code:'MP25',tcg_date:'2025-09-04'}]);
+ui('ygo').sets.list=[...releases,mp25];
+const darkGolem={...card,id:'99020009',name:'Ancient Gear Dark Golem',sets:[{name:mp25.name,code:'MP25-EN003',rarity:'Starlight Rare',price:null,quotes:[{edition:'1st Edition',market:.54},{edition:'Unlimited',market:.31}]}]};
+cache.ygo[darkGolem.id]=darkGolem;const unchanged=JSON.stringify(darkGolem),stateBefore=JSON.stringify(S.state);
+for(const [edition,label,amount]of [['','edition unspecified',null],['1st-edition','1st Edition',.54],['unlimited','Unlimited',.31],['limited','Limited',null],['','edition unspecified',null]]){
+ const ctx={type:'tcard',game:'ygo',id:darkGolem.id,setId:mp25.id,priceEdition:'MP25-EN003::Starlight Rare',priceYgoEdition:edition,tab:'overview'};
+ const projected=setContextCard('ygo',darkGolem,mp25,ui('ygo').sets.list),quote=presentationQuote('ygo',projected,'reference',ctx.priceEdition,edition),sheet=tcgCardSheet(darkGolem,ctx);
+ assert.equal(quote.value,amount);assert.equal(quote.selectedEdition,edition);
+ const badge=sheet.match(/<button class="cd-set"[\s\S]*?<\/button>/)?.[0],summary=sheet.match(/<div class="card-price-reference">([\s\S]*?)<\/div>/)?.[1];
+ assert(badge?.includes('MP25-EN003'));assert(badge.includes('Selected release · '+label));
+ assert(summary?.includes(amount===null?'No quote yet':'$'+amount.toFixed(2)));assert(summary.includes('MP25-EN003 · Starlight Rare · '+(edition?label:'Edition not specified')));
+ assert.match(sheet,/class="cd-img" data-rarity-flair="yr4" data-printed-rarity="Starlight Rare"/,'Starlight edge is present with or without a supported quote');
+}
+assert.equal(JSON.stringify(darkGolem),unchanged);assert.equal(JSON.stringify(S.state),stateBefore);
+const rawLink={id:99020010,name:'Gravity Controller',type:'Link Monster',frameType:'link',race:'Psychic',attribute:'DARK',level:null,linkval:1,atk:1000,card_sets:[{set_name:release.name,set_code:'VASM-EN010',set_rarity:'Common'}],card_images:[],card_prices:[]};
+const link=normalizeYgo(rawLink);assert(!link.stats.some(([key])=>['Level','Rank'].includes(key)));assert(link.stats.some(([key,value])=>key==='Link'&&value===1));
+const staleLink={...link,stats:[...link.stats,['Level',null],['Rank',0]]};
+assert.doesNotMatch(tcgCardSheet(staleLink,{type:'tcard',game:'ygo',id:link.id,setId:release.id}),/<small>(?:Level|Rank)<\/small>/,'Existing cached Link stats are repaired at presentation without overwriting cache');
+for(const [frame,type,level,key]of [['effect','Effect Monster',4,'Level'],['xyz','XYZ Monster',3,'Rank'],['effect','Effect Monster',0,'Level']]){
+ const monster=normalizeYgo({...rawLink,frameType:frame,type,level,linkval:undefined,atk:0,def:0,scale:0});
+ const sheet=tcgCardSheet(monster,{type:'tcard',game:'ygo',id:monster.id,setId:release.id});assert(sheet.includes('<small>'+key+'</small><b>'+level+'</b>'));for(const stat of ['ATK','DEF','Scale'])assert(sheet.includes('<small>'+stat+'</small><b>0</b>'),'Real zero '+stat+' is retained');
+}
+for(const missing of [null,undefined,'']){const c=normalizeYgo({...rawLink,type:'Effect Monster',frameType:'effect',level:missing,linkval:undefined});assert(!c.stats.some(([key])=>key==='Level'));}
+ui('ygo').sets.list=releases;
 const otherRelease={...selected,releaseId:'other-release',key:selected.key.replace(release.id,'other-release')};
 recordQuote(S.state,{...otherRelease,value:888},'2026-10-16T00:00:00Z');assert.doesNotMatch(historyPanel(selected,'all'),/\$888/);
 recordQuote(S.state,{...selected,value:12.5},'2026-10-16T00:00:00Z');html=historyPanel(selected,'all');assert.match(html,/data-history-state="ready"/);assert.match(html,/1 verified observation/);assert.match(html,/\$12\.50/);

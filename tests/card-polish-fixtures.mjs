@@ -4,10 +4,11 @@ import assert from 'node:assert/strict';
 import {blank} from '../store.js';
 import {cardKey} from '../core.js';
 import {validateWorkspace} from '../confidence.js';
-import {normalizeYgo,normalizeYgoSets,summarizeYgoSetContents} from '../ygo.js';
+import {normalizeYgo,normalizeYgoSets,summarizeYgoSetContents,ygoSource} from '../ygo.js';
 import {normalizePtcg,ptcgSource} from '../ptcg.js';
 import {pkCatalogueSymbolSources} from '../emblems.js';
 import {artworkSources} from '../artwork.js';
+import {applyYgoPrices} from '../ygo-prices.js';
 import {presentationQuote} from '../pricing-presentation.js';
 import {setContextCard} from '../tcg.js';
 import {SUPABASE} from '../config.js';
@@ -20,8 +21,8 @@ export const GAMES=['mtg','ptcg','ygo'];
 export const NOW=Date.parse('2026-10-17T12:00:00Z'),ISO=new Date(NOW).toISOString();
 export const ART_EVIDENCE='SYNTHETIC PUBLIC-PROVIDER FIXTURES ONLY. Card artwork and set symbols are labeled SVG stand-ins intercepted at the exact supplied/derived provider URLs. Evidence proves source identity, white CSS treatment, layout and finite fallback, not real publisher image pixels or live image availability. No private images, account data, paid calls or external writes.';
 const IMAGE='https://card-polish-fixtures.invalid';
-export const YGO_RAW_SETS=[{set_code:'VASM',set_name:'Valiant Smashers',tcg_date:'2023-11-16',num_of_cards:60},{set_code:'OTHR',set_name:'Synthetic unrelated release',tcg_date:'2022-01-01',num_of_cards:1}];
-export const YGO_SETS=normalizeYgoSets(YGO_RAW_SETS),VASM=YGO_SETS[0];
+export const YGO_RAW_SETS=[{set_code:'VASM',set_name:'Valiant Smashers',tcg_date:'2023-11-16',num_of_cards:60},{set_code:'OTHR',set_name:'Synthetic unrelated release',tcg_date:'2022-01-01',num_of_cards:1},{set_code:'MP25',set_name:'2025 Mega-Pack Tin',tcg_date:'2025-09-04',num_of_cards:1}];
+export const YGO_SETS=normalizeYgoSets(YGO_RAW_SETS),VASM=YGO_SETS.find(s=>s.code==='VASM'),MP25=YGO_SETS.find(s=>s.code==='MP25');
 export const SETS={
  mtg:[{code:'fdn',name:'Foundations',released_at:'2024-11-15',set_type:'core',card_count:2,icon_svg_uri:'https://svgs.scryfall.io/sets/fdn.svg'}],
  ptcg:[
@@ -47,10 +48,14 @@ export const RAW={
   ygo(99020002,'Synthetic known VASM printing',[printing('VASM-EN002','Ultra Rare','12.50')]),
   ygo(99020003,'Synthetic unpriced VASM collector',[printing('VASM-EN003',"Collector's Rare")]),
   ygo(99020004,'Synthetic unpriced VASM common',[printing('VASM-EN004','Common')]),
+  ygo(99020005,'Ancient Gear Dark Golem',[{set_name:MP25.name,set_code:'MP25-EN003',set_rarity:'Starlight Rare',set_price:''}]),
  ],
 };
-export const CARDS={mtg:RAW.mtg,ptcg:RAW.ptcg.map(c=>({...normalizePtcg(c),fetchedAt:ISO,printPriceSchema:1})),ygo:RAW.ygo.map(c=>({...normalizeYgo(c),fetchedAt:ISO,printPriceSchema:1}))};
-export const EXPECTED={mtg:{set:'fdn',known:CARDS.mtg[0].id,unknown:CARDS.mtg[1].id},ptcg:{set:'sv08',known:'sv08-001',unknown:'sv08-002'},ygo:{set:VASM.id,multiple:'99020001',known:'99020002',unknown:'99020003',common:'99020004'}};
+// Public release/name/code from the reported surface; synthetic ID, artwork and
+// prices. Both edition amounts are deterministic fixtures, not live-price claims.
+export const MP25_PRICE={cardId:'99020005',source:'Synthetic exact-edition fixture',updatedAt:ISO,partial:false,printings:[{code:'MP25-EN003',rarity:'Starlight Rare',name:MP25.name,productId:99020005,url:'https://www.tcgplayer.com/product/99020005',quotes:[{edition:'1st Edition',market:.54},{edition:'Unlimited',market:.31}]}]};
+export const CARDS={mtg:RAW.mtg,ptcg:RAW.ptcg.map(c=>({...normalizePtcg(c),fetchedAt:ISO,printPriceSchema:1})),ygo:RAW.ygo.map(c=>{const card={...normalizeYgo(c),fetchedAt:ISO,printPriceSchema:1};if(card.id===MP25_PRICE.cardId)applyYgoPrices(card,MP25_PRICE);return card;})};
+export const EXPECTED={mtg:{set:'fdn',known:CARDS.mtg[0].id,unknown:CARDS.mtg[1].id},ptcg:{set:'sv08',known:'sv08-001',unknown:'sv08-002'},ygo:{set:VASM.id,multiple:'99020001',known:'99020002',unknown:'99020003',common:'99020004',edition:'99020005'}};
 export const SYMBOLS={
  normal:['/img/pks/s/surging-sparks.png','https://pokesymbols.com/images/tcg/sets/symbols/surging-sparks.png','https://assets.tcgdex.net/en/sv/sv08/symbol.webp'],
  broken:['/img/pks/s/obsidian-flames.png','https://pokesymbols.com/images/tcg/sets/symbols/obsidian-flames.png','https://assets.tcgdex.net/en/sv/sv03/symbol.webp'],
@@ -172,6 +177,12 @@ export async function validateFixtures(){
   assert.deepEqual(pkCatalogueSymbolSources(pokemonSets.find(s=>s.id==='base1')),[],'Base Set has no expansion symbol and must create no image');
   const cards=await ptcgSource.setCards(pokemonSets[0]);assert.deepEqual(cards.map(c=>c.id),CARDS.ptcg.map(c=>c.id));assert(cards.every(c=>c.set.id===EXPECTED.ptcg.set),'Set response preserves exact release identity');
  }finally{globalThis.fetch=originalFetch;}
+ const editionCalls=[];
+ try{
+  globalThis.fetch=async input=>{const url=new URL(String(input),'https://fixture.invalid/'),data=url.hostname==='db.ygoprodeck.com'?providerFixture(url):url.origin==='https://fixture.invalid'&&url.pathname==='/api/prices/yugioh'&&url.searchParams.get('id')===MP25_PRICE.cardId?MP25_PRICE:undefined;assert.notEqual(data,undefined,'Every exact-edition adapter read is explicitly mocked');editionCalls.push(url.pathname);return {ok:true,status:200,json:async()=>structuredClone(data)};};
+  const card=await ygoSource.get(MP25_PRICE.cardId),selected=setContextCard('ygo',card,MP25,YGO_SETS);assert.deepEqual(editionCalls,['/api/v7/cardinfo.php','/api/prices/yugioh']);assert.equal(selected.setContext.printing.rarity,'Starlight Rare');
+  for(const [edition,value]of [['',null],['1st-edition',.54],['unlimited',.31],['limited',null],['',null]])assert.equal(presentationQuote('ygo',selected,'reference','MP25-EN003::Starlight Rare',edition).value,value);
+ }finally{globalThis.fetch=originalFetch;}
  for(const game of GAMES){const history=emptyHistory(new URL('https://fixture.invalid/api/prices/recent?'+new URLSearchParams({game,id:EXPECTED[game].known,finish:'reference'})));assert.equal(history.series.length,0);assert.equal(historyResponseStatus(history),'empty','The fixture must exercise a verified empty response, not a provider outage.');}
  return 'PASS: exact VASM code/rarity collisions, unique rarity proof, poisoned generic prices, all-game $12.50 references, empty provider histories and Pokemon missing/failed-symbol fixtures. No browser/server or network started.';
 }
@@ -186,7 +197,7 @@ export async function openApp(browser,base,{game='ygo',hash='#sets',width=390,he
  const artURLs=new Set(CARDS.mtg.flatMap(c=>Object.values(c.image_uris)).concat(...Object.values(CARDS).flat().map(c=>[...artworkSources(c,false),...artworkSources(c,true),c.art,c.artDirect]).flat()).filter(Boolean).map(u=>new URL(u,base+'/').href));
  for(const game of GAMES)artURLs.add(IMAGE+'/hero-'+game+'.svg');
  for(const set of SETS.mtg)artURLs.add(set.icon_svg_uri);
- for(const code of ['VASM','OTHR'])artURLs.add('https://images.ygoprodeck.com/images/sets/'+code+'.jpg');
+ for(const code of ['VASM','OTHR','MP25'])artURLs.add('https://images.ygoprodeck.com/images/sets/'+code+'.jpg');
  for(const set of SETS.ptcg)for(const suffix of ['symbol.png','logo.png'])artURLs.add('https://images.pokemontcg.io/'+set.id+'/'+suffix);
  for(const suffix of ['logo.webp','symbol.webp'])for(const id of ['sv08','sv03'])artURLs.add('https://assets.tcgdex.net/en/sv/'+id+'/'+suffix);
  for(const path of Object.values(SYMBOLS).flat())artURLs.add(new URL(path,base+'/').href);
@@ -206,6 +217,7 @@ export async function openApp(browser,base,{game='ygo',hash='#sets',width=390,he
   if(url.origin===base){
    if(url.pathname==='/catalog.json')return fulfill({cards:[],snapshot_date:'2000-01-01'});
    if(url.pathname==='/api/community')return fulfill({game:url.searchParams.get('game'),status:'unavailable',items:[],fetchedAt:ISO});
+   if(url.pathname==='/api/prices/yugioh'&&url.searchParams.get('id')===MP25_PRICE.cardId)return fulfill(MP25_PRICE);
    if(url.pathname.startsWith('/api/prices/'))return fulfill({points:[],series:[],cards:[],products:[],variants:[],prices:{},partial:false});
    if(url.pathname.startsWith('/api/meta/'))return fulfill({events:[],decks:[],archetypes:[],top:[]});
    if(!url.pathname.startsWith('/api/')&&!url.pathname.startsWith('/img/')){record.settled=true;return route.continue();}
