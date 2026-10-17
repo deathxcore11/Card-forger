@@ -46,7 +46,7 @@ try{
    await query.fill('Alpha');await query.press('Enter');
    const tile=page.locator('#content .card-grid > .grid-card').first();await tile.waitFor();await tile.click();
    const direct=page.locator('#sheet [data-act="cardProfilePhoto"]');await direct.waitFor();
-   const cardName=await page.locator('#sheet .sheet-head h2').innerText();
+   const cardName=await page.locator('#sheet h2').first().innerText();
    await direct.click();await page.waitForFunction(()=>document.querySelector('[data-avatar-save]')?.disabled===false);
    assert.equal(await page.locator('[data-avatar-query]').count(),0,'Direct artwork skips card search');
    assert.equal(await page.locator('.profile-art-name').innerText(),cardName);

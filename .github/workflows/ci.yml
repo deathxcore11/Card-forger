@@ -146,14 +146,14 @@ jobs:
         run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
       - name: Install test browser
         run: npx playwright install --with-deps chromium
+      - name: Test card-art profile crop and compact navigation
+        if: ${{ !cancelled() }}
+        run: node tests/profile-art-browser.mjs
       - name: Test real Home shell, game tabs, community slides and responsive layouts
         run: node tests/home-browser.mjs
       - name: Test integrated search, action tutorials, Settings Info and local tabletop
         if: ${{ !cancelled() }}
         run: node tests/home-guide-browser.mjs
-      - name: Test card-art profile crop and compact navigation
-        if: ${{ !cancelled() }}
-        run: node tests/profile-art-browser.mjs
       - name: Validate and test exact Home value updates with synthetic quotes
         if: ${{ !cancelled() }}
         run: |
