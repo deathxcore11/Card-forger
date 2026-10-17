@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import vm from 'node:vm';
 import { gameTabs, syncGameTabs, attachGameTabs, homeValue, featureArticle, homeEdition, isHomeRevealCurrent, homeDeckReveal, displayDate, refreshHomeCommunity } from './home-ui.js';
 import { communityState } from './community-feed.js';
 import { GAME_IDS } from './games.js';
@@ -84,3 +85,51 @@ refreshHomeCommunity('ygo',feedRoot,{documentRef:doc,loadDecks:()=>new Promise((
 }});
 await new Promise(r=>setTimeout(r,0));assert.match(painted,/Independent fresh headline/,'fresh news paints even when tournament request never settles');
 console.log('PASS: Home tabs/keyboard, honest partial values, safe dated source slides, exact header card/deck targets, actual daily-card caches, gesture isolation, reduced motion and navigation-safe reveal.');
+
+// Execute the actual delayed emblem callback, not a duplicate guard. A visitor
+// can focus a Home control after the request starts but before its data arrives.
+const emblemStart = app.indexOf('const warmed = new Set();'), emblemEnd = app.indexOf('let sheetReturn = null,', emblemStart);
+assert(emblemStart >= 0 && emblemEnd > emblemStart, 'production emblem callback is available');
+for (const scenario of [
+  { name: 'Home carousel button', view: 'home', kind: 'button', inside: true, renders: 0 },
+  { name: 'Home source link', view: 'home', kind: 'link', inside: true, renders: 0 },
+  { name: 'Home search input', view: 'home', kind: 'input', inside: true, renders: 0 },
+  { name: 'unfocused Home', view: 'home', kind: 'body', inside: false, renders: 1 },
+  { name: 'Home shell button', view: 'home', kind: 'button', inside: false, renders: 1 },
+  { name: 'non-Home button', view: 'decks', kind: 'button', inside: true, renders: 1 },
+  { name: 'non-Home input', view: 'decks', kind: 'input', inside: true, renders: 0 },
+  { name: 'open sheet', view: 'home', kind: 'body', inside: false, sheet: true, renders: 0 },
+]) {
+  const body = {}, focused = { kind: scenario.kind, isConnected: true }, cache = { data: null, at: 0, busy: false };
+  const documentRef = { activeElement: body, querySelector: () => documentRef.activeElement.kind === 'input' ? documentRef.activeElement : null };
+  const nodes = { '#sheet': { open: !!scenario.sheet }, '#content': { contains: node => scenario.inside && node === focused } };
+  const calls = [];
+  let timer, finish, renders = 0;
+  const context = {
+    S: { ui: { view: scenario.view } }, T: { game: () => 'mtg' }, mtgMetaFormat: () => 'Modern',
+    metaState: () => cache, document: documentRef, $: selector => nodes[selector],
+    setTimeout: (callback, delay) => { timer = { callback, delay }; },
+    loadMetaData: key => {
+      calls.push(key); cache.busy = true;
+      return new Promise(resolve => { finish = () => { cache.data = { source: 'Fresh tournament data' }; cache.at = Date.now(); cache.busy = false; resolve(cache.data); }; });
+    },
+    render: () => { renders++; if (scenario.inside) { focused.isConnected = false; documentRef.activeElement = body; } },
+  };
+  vm.runInNewContext(app.slice(emblemStart, emblemEnd) + '\nwarmEmblems();', context);
+  assert.equal(timer.delay, 2500, scenario.name + ': exercise the delayed production load');
+  timer.callback();
+  assert.deepEqual(calls, ['mtg:Modern']);
+  assert.equal(cache.busy, true);
+  documentRef.activeElement = focused;
+  finish();
+  await Promise.resolve(); await Promise.resolve();
+  assert.equal(cache.data.source, 'Fresh tournament data', scenario.name + ': focus does not cancel the cache update');
+  assert.equal(cache.busy, false);
+  assert(cache.at > 0);
+  assert.equal(renders, scenario.renders, scenario.name + ': bounded background repaint policy');
+  if (!scenario.renders) {
+    assert.equal(documentRef.activeElement, focused, scenario.name + ': the original focused node remains active');
+    assert.equal(focused.isConnected, true, scenario.name + ': the focused node is not replaced');
+  }
+}
+console.log('PASS: delayed production emblem refresh caches fresh data without replacing focused Home controls; unfocused/non-Home redraws and input/sheet guards remain intact.');

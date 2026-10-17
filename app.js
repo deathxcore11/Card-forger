@@ -664,8 +664,8 @@ function warmEmblems() {
   const M = metaState(k);
   if (M.busy || (M.data && Date.now() - M.at < 12 * 3600e3)) return;
   setTimeout(() => loadMetaData(k).then(() => {
-    // Show the new emblems unless the person is typing or has a sheet open.
-    if (!document.querySelector("input:focus, textarea:focus") && !$("#sheet").open) render();
+    // Keep Home's focused controls intact; the cached emblems appear on the next natural render.
+    if (!document.querySelector("input:focus, textarea:focus") && !$("#sheet").open && !(S.ui.view === "home" && $("#content")?.contains(document.activeElement))) render();
   }).catch(() => {}), 2500);
 }
 let sheetReturn = null,
