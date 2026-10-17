@@ -55,7 +55,10 @@ assert.equal(matchingLot('ygo',b,{entryId:damaged.id},S.state),null);
 const qa=presentationQuote('ygo',a),qb=presentationQuote('ygo',b);
 recordQuote(S.state,{...presentationQuote('ygo',ygo),value:999});recordQuote(S.state,qa);
 assert.doesNotMatch(historyPanel(qb),/\$999|\$11\.00/,'exact release history never borrows card or another release');
-recordQuote(S.state,qb);assert.match(historyPanel(qb),/\$22\.00/);
+recordQuote(S.state,qb);assert.match(historyPanel(qb),/data-history-state="edition-required"/);
+// An edition-unspecified current check is not an exact physical-edition history.
+const pricedB=T.setContextCard('ygo',{...ygo,sets:ygo.sets.map(s=>({...s,quotes:[{edition:'1st Edition',market:s.price}]}))},anniversary.id),exactB=presentationQuote('ygo',pricedB,'reference','','1st-edition');
+assert.doesNotMatch(historyPanel(exactB),/1 verified observation/);recordQuote(S.state,exactB);assert.match(historyPanel(exactB),/\$22\.00/);assert.match(historyPanel(exactB),/1 verified observation/);assert.doesNotMatch(historyPanel(exactB),/\$999|\$11\.00/);
 const releaseA={id:'pk-a',name:'Set A'},releaseB={id:'pk-b',name:'Set B'};T.ui('ptcg').sets.list=[releaseA,releaseB];
 const pk={id:'pk-a-1',game:'ptcg',name:'Potion',set:{id:'pk-a',name:'Set A',number:'1'},prices:{usd:2},variants:[{key:'normal',usd:2,productId:301},{key:'holofoil',usd:9,productId:302}]};
 const pkA=T.setContextCard('ptcg',pk,releaseA),pkWrong=T.setContextCard('ptcg',pk,releaseB);
