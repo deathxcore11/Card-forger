@@ -60,6 +60,24 @@ const active={tagName:'INPUT',id:'dbTerm',value:'draft still typing',selectionSt
 const focus=captureSearchFocus({contains:el=>el===active},active);restoreSearchFocus({querySelectorAll:()=>[copy]},focus);assert.equal(copy.value,active.value);assert.deepEqual(copy.range,[2,7,'backward']);assert.deepEqual(copy.focused,{preventScroll:true});
 const cardButton=name=>({tagName:'BUTTON',dataset:{act:'card',name},focus(){this.focused=true;}}),firstButton=cardButton('First'),wantedButton=cardButton('Second'),oldButton=cardButton('Second');
 restoreSearchFocus({querySelectorAll:()=>[firstButton,wantedButton]},captureSearchFocus({contains:()=>true},oldButton));assert.equal(wantedButton.focused,true);assert.equal(firstButton.focused,undefined,'focus restores exact card action, not first action with same name');
+// Execute the actual render identity/capture gate and actual restore call. A
+// catalogue response redraws Collection without editing the visitor's draft.
+const focusGateStart=source.indexOf('  const disclosureKey='),focusGateEnd=source.indexOf('  if(content?.dataset)',focusGateStart),restoreLine=source.match(/^  restoreSearchFocus\(content,searchFocus\);$/m)?.[0];
+assert(focusGateStart>=0&&focusGateEnd>focusGateStart&&restoreLine,'Actual render focus boundary is available');
+const focusGate=source.slice(focusGateStart,focusGateEnd);
+function collectionFocusTransition({fromGame='ptcg',toGame=fromGame,fromTab='cards',toTab=fromTab,toView='collection',outside=false}={}){
+ const original={tagName:'INPUT',id:'',dataset:{input:fromGame==='mtg'?'collSearch':'tCollQ'},value:'Pikachu draft',selectionStart:1,selectionEnd:5,selectionDirection:'backward'},replacement={...original,value:'rendered state',focus(opts){this.focused=opts;},setSelectionRange(...range){this.range=range;}},content={contains:n=>!outside&&n===original,querySelectorAll:()=>[replacement]};
+ const state={view:'collection',collTab:fromTab,db:{}},tabs={mtg:fromTab,ptcg:fromTab,ygo:fromTab},T={ui:g=>({coll:{tab:tabs[g]}})};
+ const prior=vm.runInNewContext(focusGate+'\ndisclosureKey;',{ui:state,g:fromGame,T,previousDisclosureKey:null,content,captureSearchFocus:root=>captureSearchFocus(root,original)});
+ state.view=toView;state.collTab=toGame==='mtg'?toTab:fromTab;tabs[toGame]=toTab;
+ vm.runInNewContext(focusGate+'\n'+restoreLine,{ui:state,g:toGame,T,previousDisclosureKey:prior,content,captureSearchFocus:root=>captureSearchFocus(root,original),restoreSearchFocus});
+ return {original,replacement};
+}
+for(const game of ['mtg','ptcg','ygo']){
+ const {original,replacement}=collectionFocusTransition({fromGame:game});assert.equal(replacement.value,original.value,game+' Collection keeps its unsubmitted draft');assert.deepEqual(replacement.range,[1,5,'backward'],game+' Collection preserves the exact selection');assert.deepEqual(replacement.focused,{preventScroll:true});
+ for(const patch of [{toGame:game==='ptcg'?'ygo':'ptcg'},{toTab:'binders'},{toView:'search'},{outside:true}]){const {replacement}=collectionFocusTransition({fromGame:game,...patch});assert.equal(replacement.focused,undefined,'Different game/view/subtab or outside focus cannot be transplanted: '+JSON.stringify({game,...patch}));assert.equal(replacement.value,'rendered state');}
+}
+console.log('PASS: actual same-context render gate preserves Collection drafts, ranges and focus; game/view/subtab changes never transplant focus.');
 store.state=blank();store.ui.db={...db,term:'',filters:{maxPrice:'0'},results:[],next:'/cards/search?page=2',total:8,busy:false,error:''};
 let html=search();assert.match(html,/id="magic-search-filters"/);assert.match(html,/id="magic-search-advanced"/);assert.match(html,/At most \$0\.00/);assert.match(html,/data-act="dbMore"/,'continuation survives a zero-result provider page');
 store.ui.db.results=[card('not-owned')];store.ui.db.filters={own:'owned'};html=search();assert.match(html,/None of the loaded cards/);assert.match(html,/data-act="dbMore"/);

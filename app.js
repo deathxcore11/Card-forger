@@ -864,8 +864,8 @@ function render() {
   const content=$('#content'),previousDisclosureKey=content?.dataset?.disclosureKey;
   if(previousDisclosureKey)disclosureStates.set(previousDisclosureKey,captureDisclosures(content));
   if(disclosureStates.size>100)disclosureStates.delete(disclosureStates.keys().next().value);
-  const disclosureKey=[g,ui.view,ui.deckId,ui.tdeckId,ui.set?.code,ui.tsetId,ui.collTab,ui.decksTab,ui.deckTab].join(':');
-  const searchFocus=ui.view === "search" && previousDisclosureKey === disclosureKey ? captureSearchFocus(content) : null;
+  const disclosureKey=[g,ui.view,ui.deckId,ui.tdeckId,ui.set?.code,ui.tsetId,ui.collTab,ui.decksTab,ui.deckTab,...(ui.view === "collection" && g !== "mtg" ? [T.ui(g).coll.tab || "cards"] : [])].join(':');
+  const searchFocus=["search","collection"].includes(ui.view) && previousDisclosureKey === disclosureKey ? captureSearchFocus(content) : null;
   if (searchFocus?.key === "id:dbTerm") searchFocus.value = ui.db.term;
   if(content?.dataset)content.dataset.disclosureKey=disclosureKey;
   document.body.dataset.game = g;
