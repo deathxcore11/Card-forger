@@ -861,18 +861,21 @@ export function registerScanner(ctx) {
     if(prior?.g===G)r.cands=uniquePrintings([...r.cands,...(prior.cands||[])].sort((a,b)=>Number(!!b.exact)-Number(!!a.exact)));
     return budget.checkpoint({...r,g:G,read,cands:rankScanCandidates(G,r.cands,read)});
   };
-  const probeOrientations=async(packet,prior,entry,progress,trace,active,budget)=>{
+  const probeOrientations=async(packet,prior,entry,progress,trace,active,budget,includeUpright=false)=>{
     const proposal=packet.proposal,lang=entry.ocrLang||'eng';
     if(!proposal?.quad)return prior;
     // This view is a hypothesis only, even for an unsafe art-window outline.
     // Its pixels never replace the original or establish a printing by shape.
-    const native=flattenCapture(packet.original,padQuad(proposal.quad,packet.original.width,packet.original.height),proposal),turns=proposal.nativeAspect>1?[1,3]:[2],reads=[];
+    const native=flattenCapture(packet.original,padQuad(proposal.quad,packet.original.width,packet.original.height),proposal),turns=proposal.nativeAspect>1?[1,3]:includeUpright?[0,2]:[2],reads=[];
     for(const turn of turns){
       if(!active())throw Error('Reading interrupted · retry');
       progress('Checking card orientation…');const view=rotateCapture(native,turn),w=await getWorker(lang,progress);
       const name=await trace.stage('ocrOrientationName',()=>recog(w,regionCanvas(view,[.02,.01,.96,.14],2.5),6,budget));
       const G=detectGame(name)||prior.g||entry.game,L=LAYOUT[G];
-      const code=await trace.stage('ocrOrientationCode',()=>recog(w,regionCanvas(view,L.code,3),6,budget));
+      let code=await trace.stage('ocrOrientationCode',()=>recog(w,regionCanvas(view,L.code,3),6,budget));
+      // Near-edge recovery gets a second sparse footer read at a different
+      // scale. Keep both observations so disagreement still requires review.
+      if(turn===0)code=joinReads(code,await trace.stage('ocrUprightFooterRetry',()=>recog(w,regionCanvas(view,L.code,2),11,budget)));
       const pass=L.pass?await trace.stage('ocrOrientationPasscode',()=>recog(w,regionCanvas(view,L.pass,3),6,budget)):'';
       reads.push({g:G,name,code:joinReads(code,pass)});
     }
@@ -927,9 +930,10 @@ export function registerScanner(ctx) {
         const rawFirst=entry.originalOnly||entry.geometryUncertain||packet.proposal?.cropSafe===false;
         r=rawFirst?await readOriginalEvidence(packet.original,null,entry,progress,trace,current,budget):await readFlow(card,entry.game,snapshots,entry.ocrLang||'eng',progress,trace,current,budget);
         if(!r.cands.some(c=>textVerifiedMatch(r.g,c,r.read))&&packet.proposal?.quad&&!rawFirst)r=await readOriginalEvidence(packet.original,r,entry,progress,trace,current,budget);
-        // Only failed orientation hypotheses get minimal name/footer probes:
-        // 90° and 270° for native landscape, 180° for unverified portrait.
-        if(!r.cands.some(c=>textVerifiedMatch(r.g,c,r.read))&&packet.proposal?.orientation?.status==='unverified')r=await probeOrientations(packet,r,entry,progress,trace,current,budget);
+        // A near-edge card can fail conservative auto geometry while still giving
+        // a useful deskew hypothesis. Probe its upright title/footer after the
+        // untouched original, without promoting the crop to safe/auto-ready.
+        if(!r.cands.some(c=>textVerifiedMatch(r.g,c,r.read))&&(rawFirst||packet.proposal?.orientation?.status==='unverified'))r=await probeOrientations(packet,r,entry,progress,trace,current,budget,rawFirst);
       }
       catch(e){recognitionError=e.message||'Reading failed. Capture saved for retry.';r=budget.latest||r||{g:entry.game,read:{},cands:[],tried:[]};r={...r,cands:r.cands.map(c=>({...c,exact:false}))};}
       if(!current())return;
