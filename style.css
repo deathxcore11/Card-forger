@@ -4268,3 +4268,13 @@ body[data-view="scan"] #content:has(.scan-workspace.is-live) > .context-guide{di
 
 /* CSS owns breakpoint visibility immediately, even before the search dock moves. */
 @media(max-width:1199px){.topbar>#desktopSearch{display:none!important}}
+
+/* Card artwork goes straight into the shared circular profile editor. */
+.card-profile-photo{width:100%;min-height:44px;white-space:normal;line-height:1.3;padding:10px 8px}
+.zoom-profile-photo{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 100px);min-height:44px;max-width:calc(100vw - 28px);white-space:nowrap;background:#15171fe8!important;backdrop-filter:blur(12px)}
+dialog.zoom:has(.zoom-profile-photo) .zoom-stage{bottom:96px}
+dialog.zoom:has(.zoom-profile-photo) .zoom-img{max-height:calc(100dvh - 224px)}
+.profile-crop-footer{position:sticky;bottom:-24px;padding:12px 0;background:var(--bg);z-index:1}
+.condition-reference{display:block;margin-top:12px;padding-top:10px;border-top:1px solid var(--line);line-height:1.5}
+.condition-retry{min-height:44px;margin-top:8px}
+@media(max-width:380px){.profile-crop-footer{bottom:-18px}}

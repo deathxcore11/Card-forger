@@ -38,4 +38,42 @@ try{
   await page.reload();await page.locator('#app.ready').waitFor();assert.equal(await page.locator('.topbar .profile-avatar img').getAttribute('src'),saved.image,'Avatar survives reload');
   app.health();console.log('PASS: compact header, desktop Sets shortcut, all-game card lookup, mouse/keyboard crop, save/cancel/reload and unchanged inventory.');
  }catch(error){console.error(error.stack);await capture(page,'synthetic-search-profile-failure').catch(e=>console.error(e.message));throw error;}finally{await app.context.close();}
+ // Open from the actual card and art viewer in each game; no search in the picker.
+ for(const game of ['mtg','ptcg','ygo']){
+  const app=await openSearchApp(browser,server.base,{game,width:390,height:844}),{page}=app;
+  try{
+   const before=await inventorySnapshot(page),query=page.locator(game==='mtg'?'#dbTerm':'[data-input="tQ"]');
+   await query.fill('Alpha');await query.press('Enter');
+   const tile=page.locator('#content .card-grid > .grid-card').first();await tile.waitFor();await tile.click();
+   const direct=page.locator('#sheet [data-act="cardProfilePhoto"]');await direct.waitFor();
+   const cardName=await page.locator('#sheet .sheet-head h2').innerText();
+   await direct.click();await page.waitForFunction(()=>document.querySelector('[data-avatar-save]')?.disabled===false);
+   assert.equal(await page.locator('[data-avatar-query]').count(),0,'Direct artwork skips card search');
+   assert.equal(await page.locator('.profile-art-name').innerText(),cardName);
+   await page.locator('[data-avatar-zoom]').fill('1.5');await page.locator('[data-avatar-save]').click();
+   await page.waitForFunction(()=>!document.querySelector('.profile-art-dialog'));
+   const saved=await page.evaluate(()=>window.__uiTestState.state.settings.cardAvatar);assert.equal(saved.game,game);assert.equal(saved.zoom,1.5);
+   await page.locator('#sheet [data-act="zoomCard"]').click();
+   await page.waitForFunction(()=>{const i=document.querySelector('dialog.zoom img');return i?.complete&&i.naturalWidth;});
+   if(game!=='ptcg')await page.locator('[data-z="view"][data-i="1"]').click();
+   await page.waitForFunction(()=>{const i=document.querySelector('dialog.zoom img');return i?.complete&&i.naturalWidth;});
+   const actualImage=await page.locator('dialog.zoom .zoom-img').evaluate(i=>i.src);
+   await page.locator('[data-z="profile"]').click();await page.waitForFunction(()=>document.querySelector('[data-avatar-save]')?.disabled===false);
+   const cropImage=await page.locator('[data-avatar-crop] img').evaluate(i=>i.src);
+   assert.equal(cropImage,actualImage,'Profile receives the precise displayed card/Art source');
+   // Two real browser pointer streams drive pinch zoom through the crop handlers.
+   const crop=page.locator('[data-avatar-crop]'),r=await crop.boundingBox(),cx=r.x+r.width/2,cy=r.y+r.height/2;
+   const cdp=await app.context.newCDPSession(page);
+   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:0,x:cx-30,y:cy},{id:1,x:cx+30,y:cy}]});
+   await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:0,x:cx-60,y:cy},{id:1,x:cx+60,y:cy}]});
+   await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+   assert(Number(await page.locator('[data-avatar-zoom]').inputValue())>1.5,'Pinch zoom enlarges the image');
+   for(const size of [{width:320,height:568},{width:768,height:900}]){await page.setViewportSize(size);await noOverflow(page,'.profile-art-dialog','Direct profile crop '+game);await page.locator('[data-avatar-save]').scrollIntoViewIfNeeded();const b=await page.locator('[data-avatar-save]').boundingBox();assert(b.y>=0&&b.y+b.height<=size.height,'Save is reachable on short phones and tablets');}
+   await capture(page,'synthetic-search-direct-profile-'+game);
+   await page.keyboard.press('Escape');assert.deepEqual(await page.evaluate(()=>window.__uiTestState.state.settings.cardAvatar),saved,'Cancel preserves the saved profile');
+   await page.locator('[data-z="close"]').click();
+   assert.equal(await inventorySnapshot(page),before,'Direct profile flow does not modify inventory or decks');app.health();
+  }catch(error){await capture(page,'synthetic-search-direct-profile-failed-'+game).catch(()=>{});throw error;}finally{await app.context.close();}
+ }
+ console.log('PASS: all-game card detail and exact Art viewer shortcuts, pinch zoom, small-screen Save, cancel and unchanged inventory.');
 }finally{await browser.close();await server.close();}

@@ -40,7 +40,7 @@ export async function conditionOwner(request,env,fetchImpl=fetch){
 }
 export async function conditionFeedRoute(url,env,ctx,fetchImpl=fetch,{request}={}){
  const game=url.searchParams.get('game'),id=url.searchParams.get('id')||'';
- const empty=(status,notice)=>Response.json({status,quotes:[],notice},{headers:{'Cache-Control':'no-store'}});
+ const empty=(status,notice,details={})=>Response.json({status,quotes:[],notice,...details},{headers:{'Cache-Control':'no-store'}});
  if(!['mtg','ptcg','ygo'].includes(game)||!(/^[a-zA-Z0-9.!?_-]{1,80}$/.test(id)))return Response.json({error:'Invalid card'},{status:400});
  if(!env?.JUSTTCG_API_KEY)return empty('not_configured','Condition pricing requires a connected provider. Reference prices are still available; you can record your own value for this condition.');
  if(!env.CONDITION_PRICES)return empty('unavailable','Condition price cache is not configured.');
@@ -93,7 +93,10 @@ export async function conditionFeedRoute(url,env,ctx,fetchImpl=fetch,{request}={
   const owner=await conditionOwner(request,env,fetchImpl);
   const response=await stub.fetch('https://condition-cache/?product='+product,{headers:owner?{'X-Condition-Owner':'verified'}:{}});
   const data=await response.json();
-  if(data.status!=='available')return empty(data.status||'unavailable',data.status==='rate_limited'?(data.reason==='provider_rate'?'JustTCG is temporarily limiting requests. Saved quotes remain available.':owner?'Condition pricing is temporarily busy. Try again shortly.':'The app’s shared lookup allowance has been reached. Owner access requires signing in to the owner account.'):'Condition pricing is temporarily unavailable.');
+  if(data.status!=='available'){
+   const messages={provider_rate:'JustTCG is temporarily limiting requests. Saved quotes remain available.',provider_daily:'JustTCG reports its daily request allowance is used. It resets at midnight UTC.',provider_monthly:'JustTCG reports its monthly request allowance is used. Check the provider plan and billing reset.',provider_shared_limit:'JustTCG blocked this request under its shared-hosting Free tier protection. This can happen even when your own lookup allowance remains.',provider_auth:'JustTCG rejected the connected API key or subscription. Check the provider connection.',app_budget:owner?'Condition pricing is temporarily busy. Try again shortly.':'The app’s shared lookup allowance has been reached. Sign in to the owner account for owner access.'};
+   return empty(data.status||'unavailable',messages[data.reason]||'Condition pricing is temporarily unavailable.',{reason:data.reason||'',providerCode:data.providerCode||'',retryAfterMs:data.retryAfterMs||60000,ownerVerified:owner});
+  }
   const quotes=normalizeConditionVariants(data,product,printings,language,data.cachedAt||Date.now());
   return Response.json({status:quotes.length?'available':'unpriced',quotes,productId:product,source:'JustTCG',notice:quotes.length?'':'No current quote matches this version, language and condition.'},{headers:{'Cache-Control':'public,max-age=3600'}});
  }catch{return empty('unavailable','Condition pricing is temporarily unavailable.');}

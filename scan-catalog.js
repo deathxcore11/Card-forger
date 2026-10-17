@@ -1,7 +1,7 @@
 import {rankScanCandidates,nameDistance,collectorKey,scanIdentifierEvidence} from './scan-signals.js';
 // Compact identification metadata. Full descriptions/prices stay in the normal card adapters.
 import {readRecord,writeRecord} from './storage.js';
-import {nameCandidates,scanNameKey,ptcgIdentifierKey} from './scan.js';
+import {nameCandidates,scanNameKey,scanCardNameKey,ptcgIdentifierKey} from './scan.js';
 const states=new Map(),loads=new Map();let manifestPromise;
 const key=g=>'cardstashy-scan-catalog-v1-'+g;
 export function compileCatalog(pack){
@@ -13,7 +13,7 @@ export function compileCatalog(pack){
   // integrity, but never index digital cards as physical collection candidates.
   if(g==='ptcg'&&/(?:^|\/)tcgp\//i.test(String(r[6]||'')))return;
   indexedCount++;
-  push(names,scanNameKey(r[1]),i);push(ids,r[0],i);push(codes,g==='mtg'?r[2]+':'+collectorKey(r[3]):g==='ptcg'&&r[4]?ptcgIdentifierKey(r[3],r[4]):g==='ygo'?r[2]:'',i);});
+  push(names,scanCardNameKey(g,r[1]),i);push(ids,r[0],i);push(codes,g==='mtg'?r[2]+':'+collectorKey(r[3]):g==='ptcg'&&r[4]?ptcgIdentifierKey(r[3],r[4]):g==='ygo'?r[2]:'',i);});
  return {...pack,names,codes,ids,indexedCount};
 }
 export function catalogCandidate(pack,i,exact=false){
@@ -30,12 +30,12 @@ export function catalogCandidate(pack,i,exact=false){
  return {id:card.id,name:card.name,card,image:card.image||card.image_uris?.normal,sub,print,exact,...(g==='ygo'?{releaseName:r[4]||''}:{}),why:exact?'Printed identifier found on this device':'Name found on this device · check printing',localReference:true};
 }
 export function lookupCatalog(pack,read){
- const g=pack.game,names=nameCandidates(g,read.name||read.full||'').map(scanNameKey);
+ const g=pack.game,names=nameCandidates(g,read.name||read.full||'').map(n=>scanCardNameKey(g,n));
  let bestName=names.find(n=>pack.names.has(n)),fuzzy=false,indexes=[];
  const {observations,identifierConflict}=scanIdentifierEvidence(g,read);
  if(!bestName&&names[0]?.length>=5){const hits=[...pack.names.keys()].filter(n=>Math.abs(n.length-names[0].length)<=2).map(n=>[n,nameDistance(n,names[0],2)]).filter(([,d])=>d<=2).sort((a,b)=>a[1]-b[1]);if(hits[0]&&(!hits[1]||hits[0][1]<hits[1][1])){bestName=hits[0][0];fuzzy=true;}}
  if(g==='mtg'){for(const c of observations)indexes.push(...(pack.codes.get(c.set+':'+collectorKey(c.number))||[]));if(bestName&&!fuzzy)indexes=indexes.filter(i=>bestName===scanNameKey(pack.rows[i][1]));}
- if(g==='ptcg'){for(const c of observations)indexes.push(...(pack.codes.get(ptcgIdentifierKey(c.num,c.total))||[]));indexes=indexes.filter(i=>bestName===scanNameKey(pack.rows[i][1]));}
+ if(g==='ptcg'){for(const c of observations)indexes.push(...(pack.codes.get(ptcgIdentifierKey(c.num,c.total))||[]));indexes=indexes.filter(i=>bestName===scanCardNameKey(g,pack.rows[i][1]));}
  if(g==='ygo'){for(const c of observations)indexes.push(...(pack.codes.get(c)||[]));}
  const exact=!fuzzy&&!identifierConflict&&indexes.length>0&&new Set(indexes.map(i=>JSON.stringify(g==='ygo'?pack.rows[i].slice(0,5):[pack.rows[i][0]]))).size===1;
  if(!indexes.length&&bestName)indexes.push(...pack.names.get(bestName));

@@ -6,6 +6,7 @@ import {catalogueText,setCardFields} from './set-list-ui.js';
 import {finishLabel,presentationQuote,priceAmount} from './pricing-presentation.js';
 import {normalizeYgoSets,ygoSetPrintings} from './ygo.js';
 import {productIdOf} from './mtg-tcgprice.js';
+import {pokemonPrintedNameKey} from './pokemon-identity.js';
 
 const text = value => String(value ?? '').normalize('NFC').trim();
 const compare = (a,b) => text(a).localeCompare(text(b),undefined,{numeric:true,sensitivity:'base'});
@@ -23,7 +24,7 @@ export function samePrintingFamily(game,source,card) {
  if(!source?.id||!card?.id||(source.game&&source.game!==game)||(card.game&&card.game!==game))return false;
  if(game==='mtg')return !!source.oracle_id&&source.oracle_id===card.oracle_id&&(!card.games||card.games.includes('paper'));
  if(game==='ygo')return String(source.id)===String(card.id);
- return game==='ptcg'&&!card.pocket&&printingNameKey(source.name)===printingNameKey(card.name);
+ return game==='ptcg'&&!card.pocket&&pokemonPrintedNameKey(source.name)===pokemonPrintedNameKey(card.name);
 }
 
 const emptyFilters = () => ({set:'',number:'',rarity:'',finish:'',edition:'',price:'',sort:'new'});

@@ -1,4 +1,5 @@
 import {referenceQuote} from './price-reference.js';
+import {pokemonPrintedName,pokemonPrintedNameKey} from './pokemon-identity.js';
 import {applyProductPrices} from "./pokemon-prices.js";
 import {POKEMON_SET_ART} from './pokemon-set-art.js';
 import {pokemonFallback} from "./artwork.js";
@@ -351,7 +352,7 @@ export const ptcgSource = {
     // Empty search browses the complete physical-card catalogue, paged below.
     const p = {},
       legal = PTCG_FORMATS.find((f) => f.id === format)?.legal;
-    if (q.trim()) p.name = q.trim();
+    if (q.trim()) p.name = exactName?pokemonPrintedName(q):q.trim();
     if (category) p.category = category;
     if (type) p.types = type;
     if (set) p["set.id"] = set;
@@ -374,7 +375,7 @@ export const ptcgSource = {
     const { all, rank } = searchCache.get(key),
       setOf = (id) => id.slice(0, id.lastIndexOf("-")),
       num = (id) => parseInt(id.slice(id.lastIndexOf("-") + 1), 10) || 0,
-      nameKey = value => String(value || "").normalize("NFC").trim().replace(/\s+/g, " ").toLocaleLowerCase(),
+      nameKey = pokemonPrintedNameKey,
       family = exactName ? all.filter(card => nameKey(card.name) === nameKey(q)) : all,
       sorted = [...family].sort(sort === "name" ? (a, b) => a.name.localeCompare(b.name) || (rank.get(setOf(b.id)) ?? -1) - (rank.get(setOf(a.id)) ?? -1) || a.id.localeCompare(b.id) : (a, b) => (rank.get(setOf(b.id)) ?? -1) - (rank.get(setOf(a.id)) ?? -1) || num(a.id) - num(b.id) || a.id.localeCompare(b.id));
     return { cards: sorted.slice(page * size, (page + 1) * size), total: sorted.length, more: (page + 1) * size < sorted.length };
@@ -419,6 +420,7 @@ export const ptcgSource = {
     }return null;
   },
   async byNameNumber(name, num) {
+    name=pokemonPrintedName(name);
     num = String(num).trim();
     const tries = [...new Set(/^\d+$/.test(num) ? [num, String(Number(num)), String(Number(num)).padStart(3, "0")] : [num, num.toUpperCase()])];
     for (const n of tries) {

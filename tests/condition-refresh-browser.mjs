@@ -43,7 +43,7 @@ async function reviewAvailable(app,game){
  await act(page,'scanDismiss').click();await openReview(page,1);await waitPrice(page,7.25);assert.equal(app.condition.records.length,count,'A separately serialized second capture reuses cached exact quote');
  assert.equal(await page.evaluate(()=>window.__uiTestState.state.settings.game),globalGame,'Mixed-game condition review never changes the global game');assert.deepEqual(collectionCore(await savedLots(page,game)),before,'Viewing/caching quotes never saves another capture');assert.equal(await page.evaluate(()=>window.__conditionReview.ocrCalls),0);
 }
-async function searchPath(app,game){
+async function searchPath(app,game,{recovery=false}={}){
  const {page}=app,name=primary(game).name,query=page.locator(game==='mtg'?'#dbTerm':'[data-input="tQ"]');await query.fill(name);await query.press('Enter');
  await page.waitForFunction(g=>!(g==='mtg'?window.__uiTestState.ui.db:window.__uiTestTcg.ui(g).search).busy,game);if(game==='ptcg')await page.waitForFunction(()=>!window.__uiTestTcg.ui('ptcg').search.detailsBusy);
  const tile=game==='mtg'?page.locator('#content .grid-card').filter({hasText:name}).first():page.locator(`#content .grid-card[data-id="${primary(game).id}"]`);await tile.click();await page.locator('#sheet[open]').waitFor();if(game==='mtg')await page.waitForFunction(()=>!window.__uiTestState.ui.sheetCtx.printsBusy&&Array.isArray(window.__uiTestState.ui.sheetCtx.prints));
@@ -56,6 +56,17 @@ async function searchPath(app,game){
  // final one must be reached without bypassing production scheduler pacing.
  for(let i=0;i<6&&!conditionRequests(app,exact).length;i++){app.condition.release();await advance(page);await settle(app);}
  await waitRequest(app,exact);await expectIdentity(conditionRequests(app,exact).at(-1).params,game);app.condition.release();await settle(app);
+ if(recovery){
+  const preview=page.locator('#conditionPricePreview');
+  await preview.getByText('Provider is slowing lookups',{exact:true}).waitFor();
+  assert.match(await preview.innerText(),/Synthetic temporary provider limit/,'The exact provider reason survives the scheduler');
+  assert.match(await preview.locator('.condition-reference').innerText(),/Reference price/,'A known market price stays visible during an outage');
+  assert.match(await preview.innerText(),/excluded from your total/,'A reference is not relabeled as a played-condition quote');
+  await capture(page,'synthetic-search-condition-reference-paused');
+  const before=app.condition.records.length;app.condition.respond(()=>available());
+  await act(page,'retryConditionPrice').click();await advance(page);await settle(app);
+  await waitUntil(()=>app.condition.records.length===before+1,'One explicit retry rechecks the exact version');
+ }
  await page.waitForFunction(()=>/\$7\.25/.test(document.querySelector('#conditionPricePreview')?.textContent||''));const count=app.condition.records.length;
  await select(page,game==='mtg'?'#addCondition':'#tCond',MP);await page.waitForFunction(()=>/\$3\.50/.test(document.querySelector('#conditionPricePreview')?.textContent||''));await advance(page);assert.equal(app.condition.records.length,count);
  await capture(page,`synthetic-search-condition-${game}-search-parity`);
@@ -122,6 +133,7 @@ async function run(label,game,fn,options={}){
 try{
  server=await startServer();browser=await chromium.launch();
  for(const game of GAMES){await run(`${game}-review-fresh-cached`,game,app=>reviewAvailable(app,game),{hold:true,...(game==='ptcg'?{game:'mtg'}:{})});await run(`${game}-search-path`,game,app=>searchPath(app,game),{hold:false});}
+ await run('mtg-paused-reference-retry','mtg',app=>searchPath(app,'mtg',{recovery:true}),{response:()=>({status:'rate_limited',reason:'provider_rate',notice:'Synthetic temporary provider limit',retryAfterMs:60000,quotes:[]})});
  await run('mtg-save-change-tail','mtg',savedTail,{hold:true});await run('mtg-visible-fair-bounds','mtg',collectionBounds);
  for(const kind of ['capture','dismiss','condition','finish','language','printing'])await run(`mtg-late-${kind}`,'mtg',app=>delayedIsolation(app,kind),{hold:true});
  for(const status of ['not-configured','unavailable','rate-limited'])await run(`mtg-${status}`,'mtg',app=>unavailable(app,status),{response:()=>({status:status.replaceAll('-','_'),quotes:[],...(status==='rate-limited'?{httpStatus:429}:{})})});

@@ -217,12 +217,12 @@ assert.equal(galleryHeld.card.setContext.status,'resolved');assert.equal(gallery
 console.log('PASS: Pokémon market holo→reference retains base reference/null; Magic quick mutations respect finish; fresh gallery-alias holds retain provider membership.');
 
 // Scoped add preview fails closed for reused printing enrichment; private condition values survive.
-const conditionCode=app.slice(app.indexOf('function refreshConditionPrice(){'),app.indexOf('\ndocument.addEventListener("change",e=>'));
+const conditionCode=app.slice(app.indexOf('function refreshConditionPrice('),app.indexOf('\ndocument.addEventListener("change",e=>'));
 const conditionNodes={'#conditionPricePreview':{innerHTML:'',isConnected:true},'#lotManualValue':{value:''},'#tPrint':{value:'LOB-EN001|Ultra Rare'},'#tCond':{value:'Near Mint'},'#tEdition':{value:''}};
 const ambiguousCard={...ygo,sets:[{...ygo.sets[0],code:'LOB-EN001'},ygo.sets[1]]};
 const ambiguousProjection=T.setContextCard('ygo',ambiguousCard,anniversary,releases);assert.equal(ambiguousProjection.setContext.printing.releasePriceAmbiguous,true);
 let conditionRequests=0;
-const conditionHarness={CONDITION_IDENTITY,S:{ui:{sheetCtx:{type:'tadd',game:'ygo',id:ygo.id,setId:anniversary.id}}},T:{game:()=> 'ygo',cardOf:()=>ambiguousCard,entryPrice:()=>500},$:s=>conditionNodes[s],contextTcgCard:()=>ambiguousProjection,conditionName:c=>c,conditionValue:(_price,entry)=>({price:entry.manualValue}),conditionPriceHtml:price=>String(price),fetchConditionValue:()=>conditionRequests++};
+const conditionHarness={A:{},CONDITION_IDENTITY,S:{ui:{sheetCtx:{type:'tadd',game:'ygo',id:ygo.id,setId:anniversary.id}}},T:{game:()=> 'ygo',cardOf:()=>ambiguousCard,entryPrice:()=>500},$:s=>conditionNodes[s],contextTcgCard:()=>ambiguousProjection,conditionName:c=>c,conditionValue:(_price,entry)=>({price:entry.manualValue}),conditionPriceHtml:price=>String(price),fetchConditionValue:()=>conditionRequests++};
 vm.createContext(conditionHarness);vm.runInContext(conditionCode,conditionHarness);conditionHarness.refreshConditionPrice();assert.equal(conditionNodes['#conditionPricePreview'].innerHTML,'null');assert.equal(conditionRequests,0);
 conditionNodes['#lotManualValue'].value='4';conditionHarness.refreshConditionPrice();assert.equal(conditionNodes['#conditionPricePreview'].innerHTML,'4');assert.equal(conditionRequests,0);
 const editionHeld={...held,priceEdition:'LOB-EN001::Ultra Rare',priceYgoEdition:'unlimited'};

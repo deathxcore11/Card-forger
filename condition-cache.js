@@ -3,14 +3,33 @@
 const DAY=86400000;
 export const compactConditionData=(raw,product)=>({data:(raw?.data||[]).filter(c=>String(c.tcgplayerId)===String(product)).map(c=>({tcgplayerId:c.tcgplayerId,variants:(c.variants||[]).map(v=>({condition:v.condition,printing:v.printing,language:v.language,price:v.price,priceStatus:v.priceStatus,lastUpdated:v.lastUpdated,tcgplayerSkuId:v.tcgplayerSkuId}))})),cachedAt:Date.now()});
 const reply=(body,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'no-store'}});
+// Preserve the provider's public error code, never its raw response or API key.
+export async function conditionProviderFailure(response,now=Date.now()){
+ let body;try{body=await response.json();}catch{}
+ const codes=['RATE_LIMIT_EXCEEDED','DAILY_LIMIT_EXCEEDED','REQUEST_LIMIT_EXCEEDED','EXCESSIVE_FREE_TIER_USAGE','INVALID_API_KEY','MISSING_API_KEY','SUBSCRIPTION_REQUIRED'];
+ const providerCode=codes.includes(body?.code)?body.code:'';
+ const limited=response.status===429||['DAILY_LIMIT_EXCEEDED','REQUEST_LIMIT_EXCEEDED','EXCESSIVE_FREE_TIER_USAGE'].includes(providerCode);
+ const reason=providerCode==='EXCESSIVE_FREE_TIER_USAGE'?'provider_shared_limit':providerCode==='DAILY_LIMIT_EXCEEDED'?'provider_daily':providerCode==='REQUEST_LIMIT_EXCEEDED'?'provider_monthly':limited?'provider_rate':[401,403].includes(response.status)?'provider_auth':'provider_error';
+ const header=response.headers.get('Retry-After'),seconds=header?.trim()!==''&&header!=null?Number(header):NaN;
+ const advised=Number.isFinite(seconds)?seconds*1000:header?Date.parse(header)-now:NaN;
+ const fallback=reason==='provider_daily'?DAY-now%DAY:reason==='provider_monthly'?3600000:60000;
+ const retryAfterMs=Math.max(1000,Number.isFinite(advised)&&advised>0?advised:fallback);
+ return {status:limited?'rate_limited':'unavailable',reason,providerCode,retryAfterMs};
+}
 export class ConditionPriceCache {
  constructor(ctx,env){this.storage=ctx.storage;this.env=env;this.pending=new Map();}
  async fetch(request){
   const product=new URL(request.url).searchParams.get('product');
   if(!/^\d{1,12}$/.test(product||''))return reply({status:'unmapped'},400);
   if(!this.env.JUSTTCG_API_KEY)return reply({status:'not_configured'});
-  if(this.pending.has(product))return reply(await this.pending.get(product));
-  const job=this.load(product,request.headers.get('X-Condition-Owner')==='verified');this.pending.set(product,job);
+  const owner=request.headers.get('X-Condition-Owner')==='verified';
+  if(this.pending.has(product)){
+   const result=await this.pending.get(product);
+   // A guest's app-budget rejection must not become the owner's result.
+   if(!owner||result.reason!=='app_budget')return reply(result);
+   return this.fetch(request);
+  }
+  const job=this.load(product,owner);this.pending.set(product,job);
   try{return reply(await job);}finally{this.pending.delete(product);}
  }
  async load(product,owner=false){
@@ -23,14 +42,14 @@ export class ConditionPriceCache {
    if(s.month!==month)s={month,monthly:0};
    if(s.day!==day)Object.assign(s,{day,daily:0});
    if(s.minute!==minute)Object.assign(s,{minute,perMinute:0});
-   if(s.blockedUntil>now)return 'provider_rate';
-   if(!owner&&(s.daily>=cap('CONDITION_DAILY_LIMIT',30)||s.monthly>=cap('CONDITION_MONTHLY_LIMIT',900)||s.perMinute>=cap('CONDITION_MINUTE_LIMIT',8)))return 'app_budget';
+   if(s.blockedUntil>now)return {status:'rate_limited',reason:s.blockedReason||'provider_rate',providerCode:s.providerCode||'',retryAfterMs:s.blockedUntil-now};
+   if(!owner&&(s.daily>=cap('CONDITION_DAILY_LIMIT',30)||s.monthly>=cap('CONDITION_MONTHLY_LIMIT',900)||s.perMinute>=cap('CONDITION_MINUTE_LIMIT',8)))return {status:'rate_limited',reason:'app_budget',retryAfterMs:60000};
    s.daily++;s.monthly++;s.perMinute++;await tx.put('usage',s);return true;
   });
-  if(allowed!==true)return {status:'rate_limited',reason:allowed};
+  if(allowed!==true)return allowed;
   try{
    const r=await fetch('https://api.justtcg.com/v1/cards?tcgplayerId='+product,{headers:{Accept:'application/json','x-api-key':this.env.JUSTTCG_API_KEY,'User-Agent':'CardStashy/3.73.13 (condition pricing)'},signal:AbortSignal.timeout(12000)});
-   if(!r.ok){if(r.status===429)await this.storage.transaction(async tx=>{const s=await tx.get('usage')||{};s.blockedUntil=now+Math.min(DAY,Math.max(60000,Number(r.headers.get('Retry-After'))*1000||3600000));await tx.put('usage',s);});return {status:r.status===429?'rate_limited':'unavailable',...(r.status===429?{reason:'provider_rate'}:{})};}
+   if(!r.ok){const failure=await conditionProviderFailure(r);if(failure.status==='rate_limited')await this.storage.transaction(async tx=>{const s=await tx.get('usage')||{};Object.assign(s,{blockedUntil:Date.now()+failure.retryAfterMs,blockedReason:failure.reason,providerCode:failure.providerCode});await tx.put('usage',s);});return failure;}
    const data=compactConditionData(await r.json(),product);await this.storage.put(key,data);
    // Expired entries are periodically removed so storage does not grow with the catalogue.
    if(!await this.storage.getAlarm())await this.storage.setAlarm(now+DAY);

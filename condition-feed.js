@@ -5,6 +5,11 @@ const attempted=new Map();
 let accessToken=async()=>'';
 export function configureConditionAuth(readToken){accessToken=readToken;}
 export const clearConditionAttempts=()=>attempted.clear();
+export const forgetConditionAttempt=url=>attempted.delete(url);
+export function conditionRetryMs(result,fallback=3600000){
+ const advised=Number(result?.retryAfterMs);
+ return advised>0&&Number.isFinite(advised)?advised:['unavailable'].includes(result?.status)?Math.min(fallback,15000):result?.status==='rate_limited'?Math.min(fallback,60000):fallback;
+}
 let active=0;const waiting=[];
 async function limitedFetch(fetcher,...args){
  if(active>=2)await new Promise(resolve=>waiting.push(resolve));
@@ -20,18 +25,19 @@ export function conditionRequest(card,entry,game){
 }
 export function loadConditionQuotes(card,entry,game,fetcher=fetch){
  const url=conditionRequest(card,entry,game);if(!url)return null;
- const stamp=attempted.get(url);if(stamp!==undefined && Date.now()-stamp<3600000)return null;
- attempted.set(url,Date.now());
+ const stamp=attempted.get(url);if(stamp!==undefined && Date.now()<stamp)return null;
+ attempted.set(url,Date.now()+3600000);
  return (async()=>{
+  const failed=result=>{attempted.set(url,Date.now()+conditionRetryMs(result));return result;};
   try{
    const token=await accessToken();
    const r=await limitedFetch(fetcher,url,{headers:{Accept:'application/json',...(token?{Authorization:'Bearer '+token}:{})}});
-   if(!r.ok)return {changed:false,status:r.status===429?'rate_limited':'unavailable'};
+   if(!r.ok)return failed({changed:false,status:r.status===429?'rate_limited':'unavailable'});
    const data=await r.json();
-   if(!['available','unpriced','unmapped'].includes(data.status))return {changed:false,status:data.status||'unavailable',notice:data.notice||''};
+   if(!['available','unpriced','unmapped'].includes(data.status))return failed({changed:false,status:data.status||'unavailable',notice:data.notice||'',reason:data.reason||'',providerCode:data.providerCode||'',retryAfterMs:data.retryAfterMs,ownerVerified:data.ownerVerified});
    const rawQuotes=(data.quotes||[]).filter(q=>compatibleConditionQuote(q,entry));
    return {...applyConditionQuotes(card,entry,rawQuotes),status:data.status||'unavailable',notice:data.notice||'',rawQuotes};
-  }catch{return {changed:false,status:'unavailable'};}
+  }catch{return failed({changed:false,status:'unavailable'});}
  })();
 }
 

@@ -1,5 +1,6 @@
 // What a card photo's text says, per game. The phone reads the text (Tesseract, offline);
 // these turn that text into things worth looking up — exact-printing codes first, names second.
+import {pokemonPrintedName} from './pokemon-identity.js';
 
 const clean = (s) =>
   s
@@ -301,8 +302,9 @@ export const prefixQuery = (name, n = 3) =>
 // Automatic recognition must not turn a substring search into identification.
 // Ignore punctuation/spacing, but preserve GX/ex/V and other meaningful words.
 export const scanNameKey = name => String(name || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+export const scanCardNameKey=(game,name)=>scanNameKey(game==='ptcg'?pokemonPrintedName(name):name);
 export function scanCandidateMatches(card, name, numbers = []) {
-  if (!card || scanNameKey(card.name) !== scanNameKey(name)) return false;
+  if (!card || scanCardNameKey('ptcg',card.name) !== scanCardNameKey('ptcg',name)) return false;
   if (!numbers.length) return true;
   return numbers.some(n => ptcgNumberMatches(card, n));
 }

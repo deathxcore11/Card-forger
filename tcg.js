@@ -272,7 +272,7 @@ export function entryPrice(c,e){
   const quotes=!verified?[]:collision?allQuotes.filter(q=>q.setReleaseId===e.setReleaseId):allQuotes;
   return conditionValue(verified?referenceEntryPrice(scoped,e):null,e,quotes).price;
 }
-function referenceEntryPrice(c, e) {
+export function referenceEntryPrice(c, e) {
   if (!c) return null;
   if(c.game==='ygo'){
     if(e.setReleaseUnverified||(e.setReleaseId&&c.setContext?.status!=='resolved'))return null;
@@ -698,7 +698,7 @@ export function tcgCardSheet(c, sctx = {}) {
     heroSrc = g === "ygo" ? c.art || c.imageLarge : artworkSources(c,true)[0],
     heroFallback = g === "ygo" ? c.artDirect || "" : "";
   const overview = `
-    <div class="cs-card"><div class="cd-art-stack"><div class="cd-img" ${tcgRarityAttrs(c)}><button class="cd-zoom" data-hold-card="true" data-id="${esc(c.id)}" data-entry="${esc(sctx.entryId||'')}" data-act="zoomCard" data-src="${esc(artworkSources(c,true)[0] || "")}" data-hi="${esc(g === "ygo" ? ygoImageDirect(c.id, false) : c.imageLarge || "")}" data-fallback="${esc(artworkSources(c,true)[1] || "")}" data-art="${esc(g === "ygo" ? c.artDirect || "" : "")}" data-name="${esc(c.name)}" aria-label="Enlarge ${esc(c.name)}">${imgTag(c, "card-img", true)}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button></div></div>
+    <div class="cs-card"><div class="cd-art-stack"><div class="cd-img" ${tcgRarityAttrs(c)}><button class="cd-zoom" data-hold-card="true" data-id="${esc(c.id)}" data-entry="${esc(sctx.entryId||'')}" data-act="zoomCard" data-src="${esc(artworkSources(c,true)[0] || "")}" data-hi="${esc(g === "ygo" ? ygoImageDirect(c.id, false) : c.imageLarge || "")}" data-fallback="${esc(artworkSources(c,true)[1] || "")}" data-art="${esc(g === "ygo" ? c.artDirect || "" : "")}" data-name="${esc(c.name)}" aria-label="Enlarge ${esc(c.name)}">${imgTag(c, "card-img", true)}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button></div><button class="btn ghost small card-profile-photo" data-act="cardProfilePhoto" data-id="${esc(c.id)}">Use as profile photo</button></div>
       <div class="cs-card-side">${c.setContext?'':alertStatus(g,trackedQuote(g,c)?.id,c.name)}
         <p class="small own-line">${savedUnverifiedLot ? `<b class="ok-text">Owned copy</b> <span class="muted">· printing unverified</span>` : own ? `<b class="ok-text">You own ${own}</b>` : "Not in your collection"}</p>
         ${deck ? `<p class="small deck-legal ${SOURCES[g].legality(c, f) === "legal" ? "ok-text" : "bad-text"}">${SOURCES[g].legality(c, f) === "legal" ? "✓ Legal" : "● Not allowed"} in ${esc(f.name)} <span class="muted">(${esc(deck.name)})</span></p>` : ""}

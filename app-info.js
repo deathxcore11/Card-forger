@@ -6,7 +6,8 @@ export const INFO_TOPICS = [
  {id:'start',category:'Start here',title:'Find your way around',summary:'One workspace, with a separate collection and decks for each game.',lesson:'find',route:'#home',action:'Open Home',details:[
   'Choose Magic, Pokémon or Yu-Gi-Oh! at the top. Home also supports a horizontal swipe. Search, Collection, Decks and Scan stay within the selected game.',
   'The Home search finds real cards as you type. Choose a result to inspect that printing. Submit a question to ask the assistant; typing alone does not start an AI conversation.',
-  'Open Settings without leaving your current page. Closing it returns to the same game and task.'
+  'Open Settings without leaving your current page. Closing it returns to the same game and task.',
+  'Use as profile photo in a card view or enlarged artwork opens the circle editor directly. Drag or pinch to frame it, then Save photo. This does not add the card to your collection.'
  ]},
  {id:'collection',category:'Your cards',title:'Copies, conditions & binders',summary:'Record what you own, including each copy’s condition and printing.',lesson:'save',route:'#collection',action:'Open Collection',details:[
   'Open a card, choose Add to collection, then check the quantity, condition and version. Copies in different conditions or printings belong in separate saved lots.',

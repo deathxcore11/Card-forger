@@ -8,7 +8,7 @@ import {createSettingsDialog} from './settings-dialog.js';
 import { normalizeHomeDeckActivity, recordHomeDeckWork } from "./home-deck-activity.js";
 import { syncGameTabs, attachGameTabs, attachHomeCommunity, refreshHomeCommunity, isHomeRevealCurrent, homeDeckReveal, refreshHomeValue, homeValueCoverage, homeMetaSnapshot } from "./home-ui.js";
 import {attachRuleLearning} from './rule-learning.js';
-import {configureConditionAuth,clearConditionAttempts,loadConditionQuotes,applyConditionQuotes,conditionRequest,CONDITION_IDENTITY} from './condition-feed.js';
+import {configureConditionAuth,clearConditionAttempts,forgetConditionAttempt,loadConditionQuotes,applyConditionQuotes,conditionRequest,CONDITION_IDENTITY} from './condition-feed.js';
 import {createConditionRefreshScheduler,conditionCursorKey,selectConditionLots,changedConditionLots,conditionLotIdentity} from './condition-refresh-scheduler.js';
 import {brandMark} from './brand.js';
 import {ownedCardLots,quickQuantity} from './quick-quantity.js';
@@ -1614,7 +1614,11 @@ function fetchConditionValue(card,entry,game,done,options={}){
  const value=conditionValue(null,selected,cached);
  if(value.kind==='manual')return Promise.resolve({changed:false,status:'manual'});
  const request=value.kind==='condition-quote'?Promise.resolve({changed:false,status:'available',rawQuotes:cached,reused:true}):
-  conditionScheduler.request(conditionRequest(card,selected,game),()=>conditionSelectionAllowed(card,selected,game)?loadConditionQuotes({...card,conditionQuotes:[...(card.conditionQuotes||[])]},selected,game):{changed:false,status:'deferred',reason:'unverified-selection'},{...options,current});
+  conditionScheduler.request(conditionRequest(card,selected,game),()=>{
+   if(!conditionSelectionAllowed(card,selected,game))return {changed:false,status:'deferred',reason:'unverified-selection'};
+   if(options.retry)forgetConditionAttempt(conditionRequest(card,selected,game));
+   return loadConditionQuotes({...card,conditionQuotes:[...(card.conditionQuotes||[])]},selected,game);
+  },{...options,current});
  return request.then(async result=>{
   if(workspaceRevision!==conditionWorkspaceRevision)return {changed:false,status:'deferred',reason:'workspace-changed'};
   if(!conditionSelectionAllowed(card,selected,game))return {changed:false,status:'deferred',reason:'unverified-selection'};
@@ -1711,35 +1715,43 @@ function refreshCollectionConditions(){
 for(const event of ['input','change'])document.addEventListener(event,e=>{
  if(S.ui.view==='collection'&&e.target.closest?.('#content'))setTimeout(refreshCollectionConditions,0);
 });
-function refreshConditionPrice(){
+function refreshConditionPrice(retry=false){
  const node=$("#conditionPricePreview"),ctx=S.ui.sheetCtx;if(!node||!ctx)return;
  const raw=$("#lotManualValue")?.value??'',manualValue=raw===''?null:Number(raw);
- let entry,price,sourceCard,sourceGame;
+ let entry,price,sourceCard,sourceGame,reference=null,referenceLabel='Reference price';
  if(ctx.type==='tadd'){
   const game=ctx.game;if(!['ptcg','ygo'].includes(game)||game!==T.game())return;const card=contextTcgCard(game,ctx.id,ctx),pr=$("#tPrint")?.value||'',[printing,rarity]=game==='ygo'?pr.split('|'):['',''];
   entry={cardId:card?.id,...(ctx.setId?{setReleaseId:ctx.setId}:{}),condition:$("#tCond")?.value,variant:game==='ptcg'?pr:'',printing:printing||'',rarity:rarity||'',edition:$("#tEdition")?.value||'',manualValue,manualValueCondition:conditionName($("#tCond")?.value)};
   const exact = !ctx.setId || (card?.setContext?.status === 'resolved' && (game !== 'ygo' || card.setContext.printings.filter(p=>p.code===printing&&p.rarity===rarity&&!p.releasePriceAmbiguous).length === 1 && (T.cardOf(game,ctx.id)?.sets||[]).filter(p=>p.code===printing&&p.rarity===rarity).length === 1));
   price=exact?T.entryPrice(card,entry):conditionValue(null,entry,[]).price;
-  if(exact){sourceCard=card;sourceGame=game;}
+  if(exact){sourceCard=card;sourceGame=game;
+   reference=T.referenceEntryPrice(card,entry);
+   if(reference==null&&game==='ygo'){
+    const matches=(card.sets||[]).filter(p=>p.code===printing&&p.rarity===rarity);
+    if(matches.length===1){reference=matches[0].price??null;referenceLabel='Set reference · edition unverified';}
+   }
+  }
  }else if(ctx.type==='add'){
   const card=(ctx.entry?.printingVerified&&S.state.printings?.[ctx.entry.printingId])||ctx.lookup;entry={...ctx.entry,condition:$("#addCondition")?.value,finish:$("#addFinish")?.value,language:$("#addLanguage")?.value,manualValue,manualValueCondition:conditionName($("#addCondition")?.value)};
   price=conditionValue(cardPrice(card,entry.finish),entry,card?.conditionQuotes||[]).price;
   const set=$('#addSet')?.value?.trim().toLowerCase(),number=$('#addNumber')?.value?.trim();
   if((set&&set!==String(card?.set||'').toLowerCase())||(number&&number!==String(card?.collector_number||'')))price=null;
-  else {sourceCard=card;sourceGame='mtg';}
+  else {sourceCard=card;sourceGame='mtg';reference=cardPrice(card,entry.finish);}
  }else return;
- node.innerHTML=conditionPriceHtml(price,entry,[...(sourceCard?.conditionQuotes||[]),...(entry.conditionQuotes||[])]);
- const selectionKey=JSON.stringify([...CONDITION_IDENTITY.map(k=>entry[k]||''),entry.condition||'']);node.conditionSelectionKey=selectionKey;
+ const referenceInfo={reference,referenceLabel,retryAction:sourceCard?'retryConditionPrice':''};
+ node.innerHTML=conditionPriceHtml(price,entry,[...(sourceCard?.conditionQuotes||[]),...(entry.conditionQuotes||[])],referenceInfo);
+ const selectionKey=JSON.stringify([...CONDITION_IDENTITY.map(k=>entry[k]||''),entry.condition||'',manualValue]);node.conditionSelectionKey=selectionKey;
  const current=()=>node.isConnected&&S.ui.sheetCtx===ctx&&node.conditionSelectionKey===selectionKey;
  if(sourceCard){
-  if(price==null)node.innerHTML=conditionPriceHtml(price,entry,[],{status:'loading'});
-  Promise.resolve(fetchConditionValue(sourceCard,entry,sourceGame,null,{source:'search',current})).then(result=>{
+  if(price==null)node.innerHTML=conditionPriceHtml(price,entry,[],{...referenceInfo,status:'loading'});
+  Promise.resolve(fetchConditionValue(sourceCard,entry,sourceGame,null,{source:'search',current,retry})).then(result=>{
    if(!current()||!result)return;
    const quotes=[...(sourceCard.conditionQuotes||[]),...(entry.conditionQuotes||[])],fresh=conditionValue(price,entry,quotes).price;
-   node.innerHTML=conditionPriceHtml(fresh,entry,quotes,result);
+   node.innerHTML=conditionPriceHtml(fresh,entry,quotes,{...referenceInfo,...result});
   });
  }
 }
+A.retryConditionPrice=()=>refreshConditionPrice(true);
 document.addEventListener("change",e=>{if(e.target.matches?.("#addCondition,#addFinish,#addLanguage,#tCond,#tPrint,#tEdition")){for(const n of document.querySelectorAll("#lotManualValue,#quickLotValue"))n.value="";refreshConditionPrice();}});
 document.addEventListener("input",e=>{if(e.target.matches?.('#addSet,#addNumber')){if($('#lotManualValue'))$('#lotManualValue').value='';refreshConditionPrice();}else if(e.target.id==='lotManualValue')refreshConditionPrice();});
 document.addEventListener("submit",e=>{
@@ -2844,6 +2856,10 @@ const profilePicker=createProfileArtPicker({lookup:homeLookup,currentGame:T.game
  save:async value=>{const crop=profileArt(value);if(!crop)throw Error('Invalid artwork');await commit(s=>{s.settings.cardAvatar=crop;},{rerender:false,enrich:false,recordDeckWork:false});},
  onSaved:()=>{refreshProfileAvatar();settingsPopup.refresh();toast('Profile photo saved.');}});
 A.profilePhoto=()=>profilePicker.open();
+A.cardProfilePhoto=async t=>{
+ const image=zoomCardOptions(t.closest?.('.cd-art-stack')?.querySelector('[data-act="zoomCard"]')||t).src;
+ const ref=await resolveActionCard(t);if(ref)profilePicker.open({card:ref.card,game:ref.game,image});
+};
 const homeSearchController=attachHomeSearch({game:T.game,lookup:homeLookup,submit:submitHome,open:async(g,c)=>{
  if(T.game()!==g)return;
  if(g==='mtg'){
@@ -4016,7 +4032,9 @@ C.setGlass = (t) => {
   updateAmbient();
 };
 // Tap a card image: full-screen, high-resolution, zoomable.
-A.zoomCard = (t) => openZoom(zoomCardOptions(t));
+A.zoomCard = (t) => openZoom({...zoomCardOptions(t),onProfilePhoto:async image=>{
+ const ref=await resolveActionCard(t);if(ref)profilePicker.open({card:ref.card,game:ref.game,image});
+}});
 // Card sheet Meta tab: fetch tournament results, then redraw the open sheet.
 A.deckMetaLoad = (t) => {
   const p = loadMetaData(t.dataset.key).catch(() => toast("Couldn’t load tournament results right now."));

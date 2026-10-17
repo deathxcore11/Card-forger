@@ -17,7 +17,7 @@ export function zoomSources(values, base) {
     try { const url = new URL(value, base); return ["https:", "http:", "blob:"].includes(url.protocol) || /^data:image\//i.test(value) ? [url.href] : []; } catch { return []; }
   }))];
 }
-export function openZoom({ src, hi, sources = [], alt = "Card", art = "", artHi = "", fallback = "", holdCard=null }) {
+export function openZoom({ src, hi, sources = [], alt = "Card", art = "", artHi = "", fallback = "", holdCard=null, onProfilePhoto=null }) {
   const base = document.baseURI;
   const views = [{ id: "card", label: "Card", sources:zoomSources([src, ...sources, fallback, hi], base), hi:zoomSources([hi], base)[0] }];
   if (art) views.push({ id: "art", label: "Art", sources:zoomSources([art, artHi], base), hi:zoomSources([artHi], base)[0] });
@@ -28,6 +28,7 @@ export function openZoom({ src, hi, sources = [], alt = "Card", art = "", artHi 
     <div class="zoom-top"><span class="zoom-res" aria-live="polite"></span><button class="zoom-btn" data-z="close" aria-label="Close">✕</button></div>
     <div class="zoom-bar">${views.length > 1 ? `<div class="zoom-seg" role="tablist">${views.map((v, i) => `<button role="tab" data-z="view" data-i="${i}" aria-selected="${i === 0}">${v.label}</button>`).join("")}</div>` : ""}
       <button class="zoom-btn" data-z="out" aria-label="Zoom out">−</button><button class="zoom-btn" data-z="fit" aria-label="Fit to screen">Fit</button><button class="zoom-btn" data-z="in" aria-label="Zoom in">+</button></div>
+    ${onProfilePhoto?'<button class="btn ghost zoom-profile-photo" data-z="profile">Use as profile photo</button>':''}
     <p class="zoom-hint">Pinch or double-tap to zoom · drag to move · swipe down to close</p>`;
   document.body.append(dlg);
   dlg.showModal();
@@ -116,6 +117,7 @@ export function openZoom({ src, hi, sources = [], alt = "Card", art = "", artHi 
     else if (z === "out") zoomAt(s / 1.6, 0, 0, true);
     else if (z === "fit") zoomAt(1, 0, 0, true);
     else if (z === "view") load(Number(b.dataset.i));
+    else if (z === "profile" && !im.hidden && im.complete && im.naturalWidth) onProfilePhoto(im.currentSrc || im.src);
   });
   dlg.addEventListener("keydown", (e) => {
     if (e.key === "+" || e.key === "=") zoomAt(s * 1.4, 0, 0, true);
