@@ -14,7 +14,7 @@ import { cardKey } from '../core.js';
 import { collectionValue } from '../insights.js';
 import { validateWorkspace } from '../confidence.js';
 import { normalizeYgo } from '../ygo.js';
-import { normalizePtcg } from '../ptcg.js';
+import { normalizePtcg, ptcgPrintingMatches, ptcgSource } from '../ptcg.js';
 import { GAME_IDS } from '../games.js';
 import { SUPABASE } from '../config.js';
 import { validateHistory } from '../shared-history.js';
@@ -70,6 +70,23 @@ const rawPtcg = (name, id, type) => ({ name, id, localId: id.split('-').at(-1), 
   variants: { normal: true }, pricing: { tcgplayer: { normal: { marketPrice: 12.5 }, updated: TODAY } } });
 const ptcgHeroRaw = rawPtcg('Charizard ex', 'sv03-125', 'Fire');
 const ptcgSeedRaw = rawPtcg('Pikachu', 'sv08-057', 'Lightning');
+const ptcgCards = [ptcgSeedRaw, ptcgHeroRaw];
+const ptcgSets = {
+  sv08: { ...ptcgSeedRaw.set, abbreviation: { official: 'SSP' } },
+  sv03: { ...ptcgHeroRaw.set, abbreviation: { official: 'OBF' } },
+};
+// The inspector and builder both verify the printed set code against TCGdex's
+// exact set record. An empty set response cannot prove SSP means sv08.
+function ptcgFixture(url) {
+  if (url.pathname === '/v2/en/cards') {
+    const name = url.searchParams.get('name')?.replace(/^eq:/, ''), number = url.searchParams.get('localId');
+    if (name || number) return ptcgCards.filter(c => (!name || c.name === name) && (!number || Number(c.localId) === Number(number)));
+    return [ptcgSeedRaw];
+  }
+  if (url.pathname.startsWith('/v2/en/cards/')) return ptcgCards.find(c => url.pathname === `/v2/en/cards/${c.id}`) || null;
+  if (url.pathname.startsWith('/v2/en/sets/')) return ptcgSets[url.pathname.slice('/v2/en/sets/'.length)] || null;
+  if (url.pathname.startsWith('/v2/en/series') || url.pathname === '/v2/en/sets') return [];
+}
 const normalize = raw => raw.category ? normalizePtcg(raw) : normalizeYgo(raw);
 const fresh = raw => ({ ...normalize(raw), fetchedAt: ISO, printPriceSchema: 1 });
 const heroes = { mtg: mtgHero, ygo: fresh(ygoHeroRaw), ptcg: fresh(ptcgHeroRaw) };
@@ -93,9 +110,9 @@ function metaFeed(game, empty = false, options = {}) {
   const missing = options.deckArtMode === 'missing';
   const unsafe = options.deckArtMode === 'unsafe';
   return { game, ...(game === 'ptcg' ? { artSchema: 1 } : {}), source: sources[game].label, fetchedAt: ISO, top: [], archetypes: [], events: [],
-    decks: empty ? [] : [{ key: `fixture-${game}`, name: `${c.name} published fixture deck`, event: 'Fixture tournament', place: 'Top 8', date: '2026-10-15', url: sources[game].deck,
+    decks: empty ? [] : [{ key: `fixture-${game}`, name: `${c.name} published fixture deck`, event: 'Fixture tournament', players: 32, place: 'Top 8', date: '2026-10-15', url: sources[game].deck,
       ...(game === 'mtg' ? { main: missing ? [] : [{ name: c.name, qty: 4 }], commanders: [], side: [], cover: unsafe ? 'javascript:invalid-cover' : c.name, art: unsafe ? UNSAFE_IMAGE : undefined } : game === 'ygo' ? { main: missing ? [] : [c.id], extra: [], side: [], cover: unsafe ? UNSAFE_IMAGE : c.id } : { list: missing ? [] : [{ name: c.name, qty: 4, set: unsafe ? '../BAD' : 'SSP', number: '57', kind: 'Pokemon' }] }) },
-      ...(options.twoDecks ? [{ key: `fixture-${game}-second`, name: `${heroes[game].name} alternate fixture deck`, event: 'Second fixture tournament', place: 'Winner', date: '2026-10-14', url: `${sources[game].deck}-second`,
+      ...(options.twoDecks ? [{ key: `fixture-${game}-second`, name: `${heroes[game].name} alternate fixture deck`, event: 'Second fixture tournament', players: 32, place: 'Winner', date: '2026-10-14', url: `${sources[game].deck}-second`,
         ...(game === 'mtg' ? { main: [{ name: heroes.mtg.name, qty: 4 }], commanders: [], side: [], cover: heroes.mtg.name } : game === 'ygo' ? { main: [heroes.ygo.id], extra: [], side: [], cover: heroes.ygo.id } : { list: [{ name: heroes.ptcg.name, qty: 4, set: 'OBF', number: '125', kind: 'Pokemon' }] }) }] : [])] };
 }
 function fixtures(options = {}) {
@@ -173,6 +190,43 @@ for (const game of GAME_IDS) for (const initialMetaLists of [0, 1]) {
 const emblemsFixture=fixtures({holdEmblems:true}).storage['cardforge-meta-v1'][metaFixtureKey('mtg')];
 assert.equal(emblemsFixture.at,0,'emblem focus fixture still requests its intentionally stale selected-format snapshot');
 assert.equal(emblemsFixture.data.decks[0].key,'fixture-mtg');
+// Run the real exact-printing adapter against the same responses used below.
+// Keep this before the browser guard so missing identity evidence fails offline,
+// without a provider request, server, browser, or virtual-clock advancement.
+const originalFetch = globalThis.fetch, originalSetTimeout = globalThis.setTimeout, ptcgRequests = [];
+try {
+  globalThis.fetch = async input => {
+    const url = new URL(input);
+    assert.equal(url.origin, 'https://api.tcgdex.net', 'fixture validation never contacts a provider');
+    const body = ptcgFixture(url);
+    assert.notEqual(body, undefined, `unmapped Pokémon fixture: ${url.pathname}`);
+    ptcgRequests.push(url.pathname + url.search);
+    return { ok: true, status: 200, json: async () => structuredClone(body) };
+  };
+  globalThis.setTimeout = () => { throw Error('Exact printing fixture resolution must not depend on clock advancement'); };
+  const lists = metaFeed('ptcg', false, { twoDecks: true }).decks;
+  const replacement = structuredClone(lists[0]); replacement.key += '-replacement'; replacement.url += '-replacement';
+  for (const [index, deck] of [...lists, replacement].entries()) {
+    const row = deck.list[0], expected = index === 1 ? ptcgHeroRaw : ptcgSeedRaw;
+    const card = await ptcgSource.tournamentCard(row);
+    assert.equal(card?.id, expected.id, `${deck.key}: exact listed printing resolves before builder handoff`);
+    assert(ptcgPrintingMatches(card, row, ptcgSets[expected.set.id]));
+    assert.equal(card.category, 'Pokemon'); assert.equal(card.prices.usd, 12.5);
+    const format = ptcgSource.formats.find(f => f.id === 'standard');
+    assert.equal(ptcgSource.legality(card, format), 'legal');
+    const legal = Object.assign(c => ptcgSource.legality(c, format) === 'legal', { key: format.id });
+    assert.equal((await ptcgSource.cheapestPrint(card, { legal }))?.id, expected.id, 'the builder keeps this exact seed through its legal-printing check');
+    assert(ptcgRequests.includes(`/v2/en/sets/${expected.set.id}`), 'the printed set code is verified, not guessed');
+    assert(ptcgRequests.includes(`/v2/en/cards/${expected.id}`), 'the exact detail is hydrated, not a generic same-name substitute');
+  }
+  for (const wrong of [{ set: 'OBF' }, { number: '58' }, { name: 'Charizard ex' }]) {
+    assert.equal(await ptcgSource.tournamentCard({ ...lists[0].list[0], ...wrong }), null, 'mismatched name, set or number never substitutes another printing');
+  }
+  assert.equal(ptcgFixture(new URL('https://api.tcgdex.net/v2/en/cards/unknown-printing')), null);
+  assert.equal(ptcgFixture(new URL('https://api.tcgdex.net/v2/en/sets/unknown-set')), null);
+} finally {
+  globalThis.fetch = originalFetch; globalThis.setTimeout = originalSetTimeout;
+}
 if (process.argv.includes('--validate-fixtures')) {
   console.log('PASS: Home fixtures validate against real workspace, card adapters, collection pricing and exact all-game community-art source contracts; browser was not started.');
   process.exit(0);
@@ -279,9 +333,8 @@ async function openApp(options = {}) {
       if (url.pathname.endsWith('/cardsets.php')) return json([]);
     }
     if (url.hostname === 'api.tcgdex.net') {
-      if (url.pathname === '/v2/en/cards') return json([ptcgSeedRaw]);
-      if (url.pathname.startsWith('/v2/en/cards/')) return json(url.pathname.endsWith(ptcgHeroRaw.id) ? ptcgHeroRaw : ptcgSeedRaw);
-      if (url.pathname.startsWith('/v2/en/series') || url.pathname.startsWith('/v2/en/sets')) return json([]);
+      const body = ptcgFixture(url);
+      if (body !== undefined) return json(body);
     }
     if (url.hostname === 'play.limitlesstcg.com') {
       if (url.pathname === '/api/tournaments') return json([{ id: 'fixture', name: 'Fixture tournament', players: 32, date: '2026-10-15T12:00:00.000Z' }]);

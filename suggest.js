@@ -105,7 +105,7 @@ async function update() {
   const my = ++ticket;
   if (!q.trim()) return show(recentSearches(g), true);
   const names = await suggestNames(g, q);
-  if (my === ticket && document.activeElement === input) show(names.filter((n) => n.toLowerCase() !== q.trim().toLowerCase() || names.length > 1), false);
+  if (my === ticket && document.activeElement === input && input.dataset.suggest === g && input.value === q) show(names.filter((n) => n.toLowerCase() !== q.trim().toLowerCase() || names.length > 1), false);
 }
 
 export function attachSuggest() {
@@ -113,12 +113,32 @@ export function attachSuggest() {
   document.addEventListener("focusin", (e) => {
     const el = e.target.closest?.("input[data-suggest]");
     if (!el) return;
-    clearTimeout(timer);
-    if (input !== el) close();
+    const restoration = el.suggestFocusRestore;
+    // The render helper already matches the full search-field key. Require its
+    // exact origin, game and query too before carrying any popup or async work.
+    const restored = restoration?.input === input && input && (input === el || !input.isConnected) && restoration.game === input.dataset.suggest && restoration.game === el.dataset.suggest && restoration.value === el.value && input.value === el.value;
+    if (!restored) {
+      clearTimeout(timer);
+      if (input !== el) close();
+    } else if (input !== el) {
+      input.setAttribute("aria-expanded", "false");
+      input.removeAttribute("aria-activedescendant");
+    }
     input = el;
     input.setAttribute("autocomplete", "off");
     input.setAttribute("role", "combobox");
     input.setAttribute("aria-autocomplete", "list");
+    if (restored) {
+      input.setAttribute("aria-expanded", String(!!box));
+      if (box) {
+        input.setAttribute("aria-controls", "suggestBox");
+        if (active >= 0) input.setAttribute("aria-activedescendant", "sg" + active);
+        position();
+      }
+      // Preserve open/closed intent, option identity, pending debounce and the
+      // in-flight ticket. A completed or dismissed query must not reopen here.
+      return;
+    }
     update();
   });
   document.addEventListener("input", (e) => {
@@ -145,6 +165,7 @@ export function attachSuggest() {
       rememberSearch(input.dataset.suggest, input.value);
       return close();
     }
+    if (e.key === "Escape") return close();
     if (!box) return;
     const n = box.querySelectorAll("[data-pick]").length;
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
@@ -152,7 +173,7 @@ export function attachSuggest() {
       active = (active + (e.key === "ArrowDown" ? 1 : -1) + n) % n;
       box.querySelectorAll("[data-pick]").forEach((b, i) => b.classList.toggle("on", i === active));
       input.setAttribute("aria-activedescendant", "sg" + active);
-    } else if (e.key === "Escape") close();
+    }
   }, true);
   document.addEventListener("pointerdown", e => { if (box && !box.contains(e.target) && e.target !== input) close(); }, { passive: true });
   window.addEventListener("scroll", () => box && close(), { passive: true });
