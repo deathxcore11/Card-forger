@@ -707,8 +707,9 @@ function warmEmblems() {
   const M = metaState(k);
   if (M.busy || (M.data && Date.now() - M.at < 12 * 3600e3)) return;
   setTimeout(() => loadMetaData(k).then(() => {
-    // Keep Home's focused controls intact; the cached emblems appear on the next natural render.
-    if (navigationCurrent(screen) && !document.querySelector("input:focus, textarea:focus") && !$("#sheet").open && !(S.ui.view === "home" && $("#content")?.contains(document.activeElement))) render();
+    // Home refreshes its own data in place. An emblem fetch must not replace a
+    // carousel under an active touch; cached emblems appear on the next natural render.
+    if (navigationCurrent(screen) && S.ui.view !== "home" && !document.querySelector("input:focus, textarea:focus") && !$("#sheet").open) render();
   }).catch(() => {}), 2500);
 }
 let sheetReturn = null,
