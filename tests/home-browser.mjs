@@ -708,7 +708,10 @@ try {
     await safeSourceLink(article, game);
     const firstId = await article.getAttribute('data-slide-id');
     const selectedDeck=page.locator('.home-meta-card');
-    assert.match(await selectedDeck.innerText(), /Top Meta/);
+    const metaLabel=`Top Meta · ${game==='mtg'?DEFAULT_MTG_META_FORMAT:game==='ygo'?'TCG':'Standard'} · Published list`;
+    const metaEyebrow=selectedDeck.locator('.home-meta-copy > .eyebrow');
+    assert.equal(await metaEyebrow.textContent(),metaLabel,'exact source label retains selected format and published-list metadata');
+    assert.equal(await metaEyebrow.innerText(),metaLabel.toUpperCase(),'eyebrow CSS renders the same exact label in uppercase');
     assert.equal(await selectedDeck.locator('a.home-meta-original').getAttribute('href'), sources[game].deck);
     assert.equal(await selectedDeck.locator('time').getAttribute('datetime'), '2026-10-15');
     assert.match(await selectedDeck.innerText(), game === 'ygo' ? /List submitted/ : /Event date/);

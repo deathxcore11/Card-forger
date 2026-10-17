@@ -72,6 +72,9 @@ async function run(game, mode) {
       // Production render event also services later local cache changes without
       // replacing a focused value action. No extra provider request is started.
       await page.locator('.home-value-main').focus();
+      // Wait for production focusout dismissal before measuring unrelated value layout.
+      await page.locator('#suggestBox').waitFor({state:'detached'});
+      assert(await page.locator('.home-value-main').evaluate(n=>n===document.activeElement),'autocomplete dismissal preserves value focus');
       const control=await page.locator('.home-value-main').elementHandle();
       await page.evaluate(game=>{
         const st=game==='mtg'?window.__uiTestState.state:window.__uiTestState.state.tcg[game];st.collection[0].qty++;
