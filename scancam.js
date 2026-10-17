@@ -1344,7 +1344,7 @@ export function registerScanner(ctx) {
     const c = s().cands?.[Number(t.dataset.i)];
     if (!c) return;
     const urls = c.card ? artworkSources(c.card, true) : [c.image].filter(Boolean);
-    if (urls.length) openZoom({ src: urls[0], hi: urls[0], alt: c.name, fallback: urls[1] || "" });
+    if (urls.length) openZoom({ src: urls[0], hi: urls[0], alt: c.name, fallback: urls[1] || "", sources: urls });
   };
   A.scanDetails = (t) => {
     const c = s().cands?.[Number(t.dataset.i)];

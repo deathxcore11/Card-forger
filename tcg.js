@@ -154,13 +154,20 @@ const imgTag = (c,cls="card-img",large=false,knownPrice=undefined) => artworkHTM
 
 // A printed variant can share art, but that is not proof of its stamp/finish.
 export function variantArtwork(card, variant = {}) {
-  const exact = !!variant.image;
-  return { image:variant.image || card.image || "", imageLarge:variant.imageLarge || variant.image || card.imageLarge || card.image || "", imageId:variant.id || card.id, exact,
+  const exact = !!(variant.image || variant.imageLarge);
+  return { image:variant.image || variant.imageLarge || card.image || "", imageLarge:variant.imageLarge || variant.image || card.imageLarge || card.image || "", imageId:variant.id || card.id, exact,
     label:exact ? "Variant image" : "Reference art: the main card picture" };
 }
+export function variantArtSources(card, variant = {}, large = false) {
+  const a = variantArtwork(card, variant);
+  if (!a.exact) return [...new Set([large ? a.imageLarge : a.image, ...artworkSources(card, large)].filter(url => typeof url === "string" && /^(https?:\/\/|img\/)/.test(url)))];
+  // A failed alternate-art/variant image is not permission to show the base
+  // picture under the selected variant's label. Yu-Gi-Oh! IDs identify scans.
+  if (card.game === "ygo" && /^\d{1,12}$/.test(String(variant.id || ""))) return artworkSources({ ...card, id:a.imageId, image:a.image, imageLarge:a.imageLarge }, large);
+  return [...new Set((large ? [variant.imageLarge, variant.image] : [variant.image, variant.imageLarge]).filter(url => typeof url === "string" && /^(https?:\/\/|img\/)/.test(url)))];
+}
 export function variantArtThumb(card, variant = {}, attrs = "") {
-  const a = variantArtwork(card,variant),
-    urls = [...new Set([variant.image, a.image, ...artworkSources(card), card.game === "ygo" ? ygoImageDirect(a.imageId) : ""].filter(Boolean))];
+  const a = variantArtwork(card,variant), urls = variantArtSources(card,variant);
   return `<button class="variant-art" data-act="tVariantArt" data-id="${esc(card.id)}" ${attrs} aria-label="View ${esc(variant.label || card.name)} artwork"><span class="variant-art-frame">${urls.length ? `<img src="${esc(urls[0])}" data-art-sources="${esc(JSON.stringify(urls))}" data-art-index="0" alt="${esc(card.name)} — ${esc(a.label)}" loading="lazy" referrerpolicy="no-referrer">` : `<span class="art-unavailable-label">Image unavailable</span>`}</span></button>`;
 }
 
@@ -2144,8 +2151,8 @@ export function registerTcg(c) {
     if (!card) return;
     const v = t.dataset.art ? card.artworks?.find(a => a.id === t.dataset.art) : card.variants?.find(v => v.key === t.dataset.variant);
     const a = variantArtwork(card,v || {});
-    const chosen = { ...card, id:a.imageId, image:a.image, imageLarge:a.imageLarge };
-    openSheet(`<div class="sheet-head"><h2>${esc(card.name)}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p>${esc(v?.label || "Card artwork")}</p><div class="variant-art-large">${imgTag(chosen,"card-img",true)}</div><p class="foot">${esc(a.label)}${card.game === "ygo" ? " · The source does not map this artwork to a specific set code or edition." : " · Confirm stamps, borders and finish on your physical card."}</p>`,{type:"variant-art",id:card.id});
+    const sources = variantArtSources(card,v || {},true), art = sources.length ? `<img class="card-img" src="${esc(sources[0])}" data-art-sources="${esc(JSON.stringify(sources))}" data-art-index="0" alt="${esc(card.name)}" referrerpolicy="no-referrer">` : imgTag(null,"card-img",true);
+    openSheet(`<div class="sheet-head"><h2>${esc(card.name)}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p>${esc(v?.label || "Card artwork")}</p><div class="variant-art-large">${art}</div><p class="foot">${esc(a.label)}${card.game === "ygo" ? " · The source does not map this artwork to a specific set code or edition." : " · Confirm stamps, borders and finish on your physical card."}</p>`,{type:"variant-art",id:card.id});
   };
   // Compare two cards (same as Magic's Compare).
   const cmp = () => (ui().compare ||= [null, null]);

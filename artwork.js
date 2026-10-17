@@ -1,5 +1,5 @@
 import {POKEMON_SET_ART,POKEMON_CARD_ART} from './pokemon-set-art.js';
-import {esc,tierRing,rememberPrice} from './ui.js';
+import {esc,tierRing,rememberPrice,magicArtworkSources} from './ui.js';
 import {tierOf,tierAttrs} from './tier.js';
 // English set + collector-number matches only. No name-based art substitutions.
 export function pokemonFallback(c){
@@ -21,7 +21,7 @@ export function pokemonFallback(c){
 }
 export function artworkSources(c,large=false){
  if(!c)return [];
- const urls=c.game==='ptcg'?[POKEMON_CARD_ART[c.id],large?c.imageLarge:c.image,large?c.image:c.imageLarge,pokemonFallback(c),c.id?`img/ptcg/${large?'l':'s'}/${encodeURIComponent(c.id)}.jpg`:'']:c.game==='ygo'?[large?c.imageLarge:c.image,`https://images.ygoprodeck.com/images/cards${large?'':'_small'}/${encodeURIComponent(c.id)}.jpg`]:[c.image_uris?.normal,c.card_faces?.[0]?.image_uris?.normal];
+ const urls=c.game==='ptcg'?[POKEMON_CARD_ART[c.id],large?c.imageLarge:c.image,large?c.image:c.imageLarge,pokemonFallback(c),c.id?`img/ptcg/${large?'l':'s'}/${encodeURIComponent(c.id)}.jpg?v=2`:'']:c.game==='ygo'?[large?c.imageLarge:c.image,large?c.image:c.imageLarge,...(/^\d{1,12}$/.test(String(c.id||''))?[`https://images.ygoprodeck.com/images/cards${large?'':'_small'}/${c.id}.jpg`,`https://images.ygoprodeck.com/images/cards${large?'_small':''}/${c.id}.jpg`]:[])]:magicArtworkSources(c,large?'large':'normal');
  return [...new Set(urls.filter(u=>typeof u==='string'&&(/^(https?:\/\/|img\/)/.test(u))))];
 }
 export function artworkHTML(c,cls='card-img',large=false){
