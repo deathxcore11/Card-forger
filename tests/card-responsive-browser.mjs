@@ -87,7 +87,7 @@ async function conditionCollection(game){
   const snapshot=()=>allRows.evaluateAll(nodes=>nodes.map(n=>({id:n.querySelector('.lot-art').dataset.entry,metadata:n.querySelector('.lot-sub').textContent.replace(/\s+/g,' ').trim(),icons:[...n.querySelectorAll('.lot-sub svg.emb')].map(x=>({role:x.getAttribute('role'),label:x.getAttribute('aria-label'),title:x.querySelector('title')?.textContent,hidden:x.getAttribute('aria-hidden'),parentLabel:x.parentElement.getAttribute('aria-label')})),note:n.querySelector('.condition-value-note')?.textContent||null,price:n.querySelector('.price').textContent,quantity:n.querySelector('.stepper b').textContent,actions:[...n.querySelectorAll('.lot-side button')].map(b=>[b.dataset.act,b.textContent,b.getAttribute('aria-label')])}))),original=await snapshot();
   if(game!=='mtg'){const label=game==='ptcg'?'Grass Energy':'LIGHT attribute';assert(original.find(n=>n.note).icons.some(n=>n.role==='img'&&n.label===label&&n.title===label),'The real condition fixture retains its exact accessible Energy/attribute emblem, not just non-rendering title text');}
   for(const mode of ['compact','symbols']){
-   await row.evaluate(n=>{window.__conditionPriorRow=n;});await page.locator(`#content [data-act="viewSave"][data-mode="${mode}"]`).click();await page.waitForFunction(mode=>!window.__conditionPriorRow.isConnected&&document.querySelector('#content').classList.contains('view-'+mode),mode);
+   await page.evaluate(selector=>{const nodes=document.querySelectorAll(selector);if(nodes.length!==1||!nodes[0].isConnected)throw Error('Unique connected prior condition row required');window.__conditionPriorRow=nodes[0];},selector);await page.locator(`#content [data-act="viewSave"][data-mode="${mode}"]`).click();await page.waitForFunction(mode=>!window.__conditionPriorRow.isConnected&&document.querySelector('#content').classList.contains('view-'+mode),mode);
    for(const batch of [false,true]){
     if(batch){await page.locator('#content [data-act="batchStart"]').click();await row.locator(':scope > .batch-mark').waitFor();assert.equal(await allRows.locator(':scope > .batch-mark').count(),original.length,'Every owned row participates in the batch layout audit');}
     for(const width of [320,390,560,768,1100]){
@@ -98,7 +98,11 @@ async function conditionCollection(game){
      for(const item of original.filter(item=>batch||item.note)){
       const targetSelector=`#content .display-list > .lot:has(> .lot-art[data-entry="${item.id}"])`,target=page.locator(targetSelector);
       await noOverflow(page,targetSelector,`${game} ${mode} ${item.id} ${width} batch ${batch}`,true);await target.scrollIntoViewIfNeeded();await frame(page);
-      const geometry=await target.evaluate(collectionRowGeometry);
+      // Resolve the current unique row and measure synchronously, not through
+      // an ElementHandle that a real background Collection render can detach.
+      const geometry=await page.evaluate(collectionRowGeometry,{id:item.id,game,mode,batch,width,previous:!!item.note&&!batch&&width===320});
+      assert(geometry.identity.connected&&geometry.identity.current&&geometry.identity.rootConnected&&geometry.identity.unique===1,'Geometry belongs to the exact connected current Collection row');assert.deepEqual(geometry.identity.data,item,'The atomically measured row retains its exact owned metadata, values and actions');
+      if(geometry.identity.previous)assert.deepEqual(geometry.identity.previous,{connected:false,replaced:true},'The real viewSave render replaces the prior node; the strict probe measures its current counterpart');
       assert(geometry.words>=(item.note?5:1),'Actual printing/edition, condition, value and action words are audited');assert.deepEqual(geometry.bad,[],`${game} ${mode} ${width} ${item.id}: real visible words fit intact ${JSON.stringify(geometry)}`);
       assert.equal(!!geometry.mark,batch);assert.equal(!!geometry.art,mode==='compact');
       const columns=(mode==='compact'?2:1)+(batch?1:0)+(width>480?1:0);assert.equal(geometry.cols,columns,'Narrow rows retain only the correct explicit artwork/batch columns; wide layout is unchanged');

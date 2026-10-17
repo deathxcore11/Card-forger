@@ -197,6 +197,28 @@ export function collectionControlGeometry(n){
 // SVG title/desc are accessible metadata, not rendered glyphs. Nothing else,
 // including hidden HTML or real SVG text/tspan without rectangles, is exempt.
 export function collectionRowGeometry(n){
+ // Locator.evaluate first resolves a remote ElementHandle, then evaluates it in
+ // another protocol call. A legitimate Collection render may detach that handle
+ // between calls. Resolve and measure the exact current row in this single
+ // synchronous page callback instead; never retry or accept another context.
+ let identity=null;
+ if(typeof n?.getBoundingClientRect!=='function'){
+  const expected=n,need=(ok,message)=>{if(!ok)throw Error('Collection row identity: '+message);};
+  need(expected&&['mtg','ptcg','ygo'].includes(expected.game)&&['compact','symbols'].includes(expected.mode)&&typeof expected.batch==='boolean'&&Number.isFinite(expected.width)&&new RegExp('^lot-'+expected.game+'-\\d+$').test(expected.id),'invalid descriptor');
+  const {game,mode,batch,width,id}=expected,roots=document.querySelectorAll('#content'),state=window.__uiTestState;
+  need(roots.length===1&&roots[0].isConnected,'unique connected content root');const root=roots[0];
+  need(document.body.dataset.game===game&&state?.state.settings.game===game&&document.body.dataset.view==='collection'&&state.ui.view==='collection'&&location.hash==='#collection','current Collection game and route');
+  need(root.classList.contains('view-'+mode)&&(state.state.settings.displayModes?.[game]?.collection||'compact')===mode,'current display mode');
+  need(innerWidth===width&&state.ui.batch?.game===game&&state.ui.batch.active===batch,'current viewport and batch state');
+  const selector='.display-list > .lot:has(> .lot-art[data-entry="'+id+'"])',rows=root.querySelectorAll(selector);need(rows.length===1,'unique current lot');n=rows[0];
+  need(n.isConnected&&n.closest('#content')===root&&n.parentElement.matches('.display-list')&&root.contains(n.parentElement),'connected direct current list row');
+  need(n.querySelector(':scope > .lot-art')?.dataset.entry===id&&n.querySelector(':scope > .lot-info > .lot-name')?.dataset.entry===id,'matching artwork and name entry');
+  const entries=(game==='mtg'?state.state:state.state.tcg?.[game])?.collection;
+  need(entries?.filter(e=>e.id===id).length===1,'unique current owned entry');need(!!n.querySelector(':scope > .batch-mark')===batch,'matching rendered batch mark');
+  const prior=expected.previous?window.__conditionPriorRow:null;
+  if(expected.previous)need(prior&&!prior.isConnected&&prior!==n&&prior.querySelector('.lot-art')?.dataset.entry===id,'real prior row replaced');
+  identity={id,game,mode,batch,width,connected:n.isConnected,current:root.querySelectorAll(selector)[0]===n,rootConnected:root.isConnected,unique:rows.length,previous:expected.previous?{connected:prior.isConnected,replaced:prior!==n}:null,data:{id,metadata:n.querySelector('.lot-sub').textContent.replace(/\s+/g,' ').trim(),icons:[...n.querySelectorAll('.lot-sub svg.emb')].map(x=>({role:x.getAttribute('role'),label:x.getAttribute('aria-label'),title:x.querySelector('title')?.textContent,hidden:x.getAttribute('aria-hidden'),parentLabel:x.parentElement.getAttribute('aria-label')})),note:n.querySelector('.condition-value-note')?.textContent||null,price:n.querySelector('.price').textContent,quantity:n.querySelector('.stepper b').textContent,actions:[...n.querySelectorAll('.lot-side button')].map(b=>[b.dataset.act,b.textContent,b.getAttribute('aria-label')])}};
+ }
  const rect=x=>x.getBoundingClientRect().toJSON(),style=getComputedStyle(n),inset=k=>['padding'+k,'border'+k+'Width'].reduce((sum,key)=>sum+(parseFloat(style[key])||0),0),contentWidth=parseFloat(style.width)-(style.boxSizing==='border-box'?inset('Left')+inset('Right'):0),rowRect=n.getBoundingClientRect(),scaleX=rowRect.width/(contentWidth+inset('Left')+inset('Right')),info=n.querySelector('.lot-info'),side=n.querySelector('.lot-side'),art=n.querySelector('.lot-art'),mark=n.querySelector('.batch-mark'),targets=[...n.querySelectorAll('.lot-sub,.condition-value-note,.lot-side .price,.lot-side .stepper b,.lot-side button')],bad=[],icons=[],metadata=new Set();let words=0;
  for(const target of targets){for(const icon of target.querySelectorAll('svg.emb'))metadata.add(icon);const bound=target.getBoundingClientRect();if(!bound.width||!bound.height||getComputedStyle(target).visibility!=='visible'||target.scrollWidth>target.clientWidth+2)bad.push({text:target.textContent,reason:'hidden or clipped metadata'});const walker=document.createTreeWalker(target,NodeFilter.SHOW_TEXT);let text;
   while((text=walker.nextNode())){
@@ -211,7 +233,7 @@ export function collectionRowGeometry(n){
   const visible=r.width>0&&r.height>0&&getComputedStyle(icon).visibility==='visible'&&getComputedStyle(icon).opacity!=='0'&&getComputedStyle(parent).opacity!=='0',named=decorative?/^(Level|Rank) \d+$/.test(parentLabel||'')&&parentLabel.split(' ').at(-1)===parent.textContent.trim():icon.getAttribute('aria-hidden')!=='true'&&icon.getAttribute('role')==='img'&&!!label&&!!title&&label===title;
   icons.push({label,title,parentLabel,decorative,rect:rect(icon),visible,named});if(!visible||!named||r.left<p.left-2||r.right>p.right+2||r.top<p.top-2||r.bottom>p.bottom+2)bad.push({reason:'Accessible icon is hidden, clipped or unnamed',label,parentLabel,rect:rect(icon)});
  }
- const controls=[...side.querySelectorAll('button,.stepper')].map(x=>({text:x.textContent,rect:rect(x)})),footer=[...side.children].map(rect),steppers=[...side.querySelectorAll('.stepper')].map(x=>{const s=getComputedStyle(x),r=x.getBoundingClientRect();return {height:r.height,buttonHeight:Math.max(...[...x.querySelectorAll('button')].map(b=>b.getBoundingClientRect().height)),chrome:['paddingTop','paddingBottom','borderTopWidth','borderBottomWidth'].reduce((sum,k)=>sum+(parseFloat(s[k])||0),0)};});return {row:rect(n),contentWidth,scaleX,columnGap:(parseFloat(style.columnGap)||0)*scaleX,containerName:style.containerName,containerType:style.containerType,contentLeft:rowRect.left+inset('Left')*scaleX,contentRight:rowRect.right-inset('Right')*scaleX,info:rect(info),side:rect(side),art:art.getClientRects().length?rect(art):null,mark:mark?rect(mark):null,cols:getComputedStyle(n).gridTemplateColumns.split(' ').length,words,bad,icons,controls,footer,steppers};
+ const controls=[...side.querySelectorAll('button,.stepper')].map(x=>({text:x.textContent,rect:rect(x)})),footer=[...side.children].map(rect),steppers=[...side.querySelectorAll('.stepper')].map(x=>{const s=getComputedStyle(x),r=x.getBoundingClientRect();return {height:r.height,buttonHeight:Math.max(...[...x.querySelectorAll('button')].map(b=>b.getBoundingClientRect().height)),chrome:['paddingTop','paddingBottom','borderTopWidth','borderBottomWidth'].reduce((sum,k)=>sum+(parseFloat(s[k])||0),0)};});return {identity,row:rect(n),contentWidth,scaleX,columnGap:(parseFloat(style.columnGap)||0)*scaleX,containerName:style.containerName,containerType:style.containerType,contentLeft:rowRect.left+inset('Left')*scaleX,contentRight:rowRect.right-inset('Right')*scaleX,info:rect(info),side:rect(side),art:art.getClientRects().length?rect(art):null,mark:mark?rect(mark):null,cols:getComputedStyle(n).gridTemplateColumns.split(' ').length,words,bad,icons,controls,footer,steppers};
 }
 // Read-only ownership diagnostics use the exact replacement reference, never a
 // locator that could silently follow another render while proving sensor motion.
