@@ -3609,6 +3609,7 @@ body[data-view="scan"] #app:has(.scan-workspace.is-live) > #content {
   body[data-view="scan"] #app:has(.scan-workspace.is-live) { --scan-nav-space:env(safe-area-inset-bottom); }
 }
 @media (max-height:600px) {
+  body[data-view="scan"] #app:has(.scan-workspace.is-live) > .topbar { row-gap:6px; padding-top:calc(env(safe-area-inset-top) + 6px); padding-bottom:6px; }
   #app .scan-workspace.is-live > .scan-toolbar { min-height:40px; margin-bottom:6px; }
   #app .scan-workspace.is-live .scan-status-line { min-height:24px; padding:4px 10px; font-size:10px; }
   #app .scan-workspace.is-live > .scan-batch-tray { padding-top:6px; padding-bottom:2px; }
