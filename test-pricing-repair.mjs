@@ -78,3 +78,14 @@ try{
  now=oldNow()+86400001;Date.now=()=>now;await ygoPriceRoute(url,null,yg);assert.equal(groupFetches,2,'warm-isolate group cache expires');
 }finally{globalThis.caches=originalCache2;Date.now=oldNow;}
 console.log('PASS: Yu-Gi-Oh rarity/edition listing estimates, unpriced product identities and warm-isolate refresh.');
+
+// Regression for the photographed Base Set Nidoking: exact product and a
+// provider printing label that includes its edition. All amounts are synthetic.
+const nidoking={id:'base1-11',pricing:{tcgplayer:{holofoil:{productId:42351}}},variants_detailed:[{type:'holo',subtype:'unlimited',variantId:'unlimited',thirdParty:{tcgplayer:42351},pricing:{tcgplayer:{holofoil:{productId:42351}}}},{type:'holo',subtype:'shadowless',stamp:['1st-edition'],variantId:'first',thirdParty:{tcgplayer:107006}},{type:'holo',subtype:'shadowless',variantId:'shadowless',thirdParty:{tcgplayer:107006}}]};
+const provider=product=>({status:'available',cachedAt:Date.now(),data:[{tcgplayerId:product,variants:['Unlimited Holofoil','1st Edition Holofoil'].map((printing,i)=>({condition:'Moderately Played',printing,price:i?250:12,priceStatus:'current',lastUpdated:Math.floor(Date.now()/1000)}))}]});
+const env2={JUSTTCG_API_KEY:'fixture',CONDITION_PRICES:{idFromName:n=>n,get:()=>({fetch:async u=>Response.json(provider(new URL(u).searchParams.get('product')))})}};
+for(const [variant,expected] of [['holofoil',12],['detail:first',250],['detail:shadowless',12]]){
+ const result=await(await conditionFeedRoute(new URL('https://app/api/prices/conditions?game=ptcg&id=base1-11&variant='+encodeURIComponent(variant)),env2,null,async()=>Response.json(nidoking))).json();assert.equal(result.status,'available');assert.equal(result.quotes[0].price,expected);assert.equal(result.quotes.length,1);
+}
+assert.doesNotMatch(conditionPriceHtml(null,{condition:'Moderately Played'}),/Connect a condition/);assert.match(conditionPriceHtml(null,{},[],{status:'rate_limited'}),/lookup paused/);assert.match(conditionPriceHtml(null,{},[],{status:'unmapped'}),/Version not matched/);assert.match(conditionPriceHtml(null,{},[],{status:'loading'}),/Checking condition/);
+console.log('PASS: photographed Nidoking edition/finish mismatch is repaired without borrowing First Edition quotes; failures show their actual status.');

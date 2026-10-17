@@ -23,7 +23,9 @@ for (const g of GAME_IDS) {
   assert.equal((html.match(new RegExp(`data-id="daily-${g}"`, 'g')) || []).length, 1);
   assert.equal((html.match(/>Card of the Day</g) || []).length, 1, `${g}: one visible daily-card label, not a duplicate artwork badge`);
   assert.match(html, /class="hh-credit"[^>]+aria-label="Explore [^"]+, Card of the Day"/);
-  assert.doesNotMatch(html, /hh-art-link|homeQ|hh-search|<h1/);
+  assert.doesNotMatch(html, /hh-art-link|hh-search/);
+  assert.equal((html.match(/id="homeQ"/g)||[]).length,1,"one shared search input");
+  assert.match(html, /home-art-header/);
   assert.doesNotMatch(html, /From your deck|hh-deck-link|onerror=/);
 }
 // Exercise the actual three Home entry points with saved deck leaders present.

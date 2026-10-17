@@ -1,3 +1,7 @@
+import {openTabletop} from './tabletop.js';
+import {INFO_TOPICS,findInfo} from './app-info.js';
+import {attachHomeSearch,homeIntent,rankHomeCards,homeQueries,placeGlobalSearch,searchEmblem} from './home-search.js';
+import {catalogState,catalogCandidate} from './scan-catalog.js';
 import {createSettingsDialog} from './settings-dialog.js';
 import { normalizeHomeDeckActivity, recordHomeDeckWork } from "./home-deck-activity.js";
 import { syncGameTabs, attachGameTabs, attachHomeCommunity, refreshHomeCommunity, isHomeRevealCurrent, homeDeckReveal, refreshHomeValue, homeValueCoverage, homeMetaSnapshot } from "./home-ui.js";
@@ -67,7 +71,7 @@ import { searchQuery, rankByName, magicFilterError, hasMagicSearchQuery, magicSe
 import { promptInstall, dismissInstall, onInstallable, isIOS } from "./install.js";
 import { attachGlassSelects } from "./glass-select.js";
 import { attachSuggest } from "./suggest.js";
-import { shouldTour, openTour } from "./tour.js";
+import { shouldTour, openTour, resetOnboarding, markGuide, guidePrompt } from "./tour.js";
 import { tourScenes } from "./tour-scenes.js";
 import { haptic, hapticFor, flyToCollection, countUp, ripple, setHaptics, attachGestures, attachTilt } from "./feel.js";
 import { alertSheet, setAlert, onAlert, alertText, priceSeries } from "./pricehist.js";
@@ -160,7 +164,9 @@ const glyphObserver = typeof MutationObserver !== "undefined" ? new MutationObse
 function decorateShell() {
   for (const b of $$(".bottom-nav [data-nav]")) {
     const span = b.querySelector("span");
-    if (span && ICON[b.dataset.nav]) span.innerHTML = ICON[b.dataset.nav];
+    if(span&&b.dataset.nav==="search")span.innerHTML=searchEmblem();
+    else if(span&&b.dataset.nav==="community")span.innerHTML='<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 5v1"/></svg>';
+    else if (span && ICON[b.dataset.nav]) span.innerHTML = ICON[b.dataset.nav];
   }
   const gear = $('.topbar [data-act="menu"]');
   if (gear) gear.innerHTML = ICON.settings;
@@ -320,10 +326,10 @@ function api(path, options = {}) {
           await new Promise((ok) => setTimeout(ok, attempt ? 1500 : 600));
         }
       }
-      if (!r.ok) throw Error(d.details || "Card database unavailable.");
+      if (!r.ok) throw Object.assign(Error(d.details || "Card database unavailable."),{status:r.status});
       return d;
     } catch (e) {
-      throw Error(e.name === "AbortError" ? options.signal?.aborted ? "Card lookup cancelled." : "Card lookup timed out. Check your connection and try again." : e.message);
+      throw Object.assign(Error(e.name === "AbortError" ? options.signal?.aborted ? "Card lookup cancelled." : "Card lookup timed out. Check your connection and try again." : e.message),{status:e.status});
     } finally {
       clearTimeout(timer);
       options.signal?.removeEventListener?.("abort", cancel);
@@ -902,13 +908,14 @@ function render() {
   if(previousDisclosureKey)disclosureStates.set(previousDisclosureKey,captureDisclosures(content));
   if(disclosureStates.size>100)disclosureStates.delete(disclosureStates.keys().next().value);
   const disclosureKey=[g,ui.view,ui.deckId,ui.tdeckId,ui.set?.code,ui.tsetId,ui.collTab,ui.decksTab,ui.deckTab,...(ui.view === "collection" && g !== "mtg" ? [T.ui(g).coll.tab || "cards"] : [])].join(':');
-  const searchFocus=["search","collection"].includes(ui.view) && previousDisclosureKey === disclosureKey ? captureSearchFocus(content) : null;
+  const searchFocus=["home","search","collection"].includes(ui.view) && previousDisclosureKey === disclosureKey ? captureSearchFocus(content) : null;
   if (searchFocus?.key === "id:dbTerm") searchFocus.value = ui.db.term;
   if(content?.dataset)content.dataset.disclosureKey=disclosureKey;
   const priorSectionRail=previousDisclosureKey === disclosureKey ? readSectionTabRail(content) : null;
   document.body.dataset.game = g;
   document.body.style?.setProperty("--game-color", GAME_COLOR[g]);
   syncGameTabs($("#gameTabs"), g);
+  $(".brand-home")?.setAttribute?.("aria-current",ui.view==="home"?"page":"false");
   content?.setAttribute?.("aria-labelledby", `game-tab-${g}`);
   const views = {
     home: V.home, search: V.search, collection: V.collection, decks: V.decks,
@@ -937,6 +944,10 @@ function render() {
   restoreDisclosures(content,disclosureStates.get(disclosureKey));
   content.dataset.disclosureKey=disclosureKey;
   restoreSearchFocus(content,searchFocus);
+  placeGlobalSearch(g,ui.view);
+  const guideKey={collection:"save",decks:"build",scan:"scan"}[ui.view];
+  if(guideKey)content.insertAdjacentHTML?.("afterbegin",guidePrompt(guideKey));
+  if(introPending)setTimeout(safeIntro,100);
   restoreSectionTabRail(content,priorSectionRail);
   if (ui.view === "home") refreshHomeCommunity(g, content).catch(() => {});
   if(!cloudInfo().user)restoreAuthFields(document,authFields);
@@ -1714,12 +1725,14 @@ function refreshConditionPrice(){
  node.innerHTML=conditionPriceHtml(price,entry,[...(sourceCard?.conditionQuotes||[]),...(entry.conditionQuotes||[])]);
  const selectionKey=JSON.stringify([...CONDITION_IDENTITY.map(k=>entry[k]||''),entry.condition||'']);node.conditionSelectionKey=selectionKey;
  const current=()=>node.isConnected&&S.ui.sheetCtx===ctx&&node.conditionSelectionKey===selectionKey;
- if(sourceCard)fetchConditionValue(sourceCard,entry,sourceGame,result=>{
-  if(!current())return;
-  if(result.changed)refreshConditionPrice();
-  else if((result.status==='not_configured'||result.reason==='not_configured')&&price==null)node.insertAdjacentHTML('beforeend','<p class="muted small">Condition feed is not connected. You can record a personal estimate above.</p>');
-  else if(result.status==='deferred'&&price==null)node.insertAdjacentHTML('beforeend','<p class="muted small">Condition lookup deferred. Existing valid values are unchanged.</p>');
- },{source:'search',current});
+ if(sourceCard){
+  if(price==null)node.innerHTML=conditionPriceHtml(price,entry,[],{status:'loading'});
+  Promise.resolve(fetchConditionValue(sourceCard,entry,sourceGame,null,{source:'search',current})).then(result=>{
+   if(!current()||!result)return;
+   const quotes=[...(sourceCard.conditionQuotes||[]),...(entry.conditionQuotes||[])],fresh=conditionValue(price,entry,quotes).price;
+   node.innerHTML=conditionPriceHtml(fresh,entry,quotes,result);
+  });
+ }
 }
 document.addEventListener("change",e=>{if(e.target.matches?.("#addCondition,#addFinish,#addLanguage,#tCond,#tPrint,#tEdition")){for(const n of document.querySelectorAll("#lotManualValue,#quickLotValue"))n.value="";refreshConditionPrice();}});
 document.addEventListener("input",e=>{if(e.target.matches?.('#addSet,#addNumber')){if($('#lotManualValue'))$('#lotManualValue').value='';refreshConditionPrice();}else if(e.target.id==='lotManualValue')refreshConditionPrice();});
@@ -1941,7 +1954,7 @@ A.muUndo = async (t) => {
   await commit((s) => { const x = s.decks.find((y) => y.id === d.id); x.results = (x.results || []).filter((g) => g.at !== t.dataset.at); }, { msg: "Game removed." });
 };
 let settingsBaseState=null;
-const settingsPopup=createSettingsDialog({beforeOpen:()=>{settingsBaseState=S.state;},dialog:$("#settingsDialog"),markup:()=>`<header class="settings-dialog-head"><div><p class="eyebrow">ALL THREE GAMES</p><h2 id="settingsDialogTitle">Settings</h2></div><button class="icon" data-act="closeSettings" aria-label="Close settings">${ICON.close||'✕'}</button></header>${V.settings({popup:true})}`,afterPaint:()=>{if(S.ui.settingsTab==='backup')storageDetail();},afterClose:scroll=>{if(settingsBaseState!==S.state)render();window.scrollTo({top:scroll,behavior:'instant'});}});
+const settingsPopup=createSettingsDialog({beforeOpen:()=>{settingsBaseState=S.state;},dialog:$("#settingsDialog"),markup:()=>`<header class="settings-dialog-head"><div><p class="eyebrow">ALL THREE GAMES</p><h2 id="settingsDialogTitle">Settings</h2></div><button class="icon" data-act="closeSettings" aria-label="Close settings">${ICON.close||'✕'}</button></header>${V.settings({popup:true})}`,afterPaint:()=>{if(S.ui.settingsTab==='backup')storageDetail();},afterClose:scroll=>{if(settingsBaseState!==S.state)render();window.scrollTo({top:scroll,behavior:'instant'});setTimeout(safeIntro,50);}});
 A.menu = () => settingsPopup.open();
 A.closeSettings = () => settingsPopup.close();
 
@@ -2215,13 +2228,22 @@ async function runBuild() {
   const names = [...new Set((B.results[f.name] || []).flatMap((t) => t.cards.map((r) => r.name)))].filter((n) => !/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(n)).sort((a, b) => (priceOf(b) ?? 0) - (priceOf(a) ?? 0));
   if (names.length) refreshCheapest(names, { api, key, limit: 40 }).then((n) => n && S.ui.sheetCtx?.type === "build" && refreshSheet()).catch(() => {});
 }
-// Preview the app's own screen renderers without changing the saved workspace.
-const tourArt = () => {
-  return { game: T.game(), scenes: tourScenes(T.game()),
-    header: document.querySelector('.topbar')?.outerHTML || '', nav: document.querySelector('.bottom-nav')?.outerHTML || '',
-    cssUrl: new URL('./style.css', import.meta.url).href };
-};
-A.replayTour = () => { settingsPopup.close(); closeSheet(); openTour(tourArt()); };
+// Tutorials run in a separate modal with disposable example data. Existing
+// card forms and the camera screen stay mounted underneath it.
+const tourArt = () => ({game:T.game(),scenes:tourScenes(T.game()),cssUrl:new URL('./style.css',import.meta.url).href});
+let introPending=false;
+const safeIntro=()=>{if(!introPending||S.ui.view!=='home'||document.querySelector('dialog[open]'))return;introPending=false;openTour(tourArt());};
+A.replayTour = (t) => openTour({...tourArt(),lesson:t?.dataset?.lesson||'',choose:!t?.dataset?.lesson,onTry:key=>{
+ if(S.ui.view==='scan'||$('#sheet')?.open){toast('Your current task is still open. Close it when you’re ready to try the example.');return;}
+ settingsPopup.close();
+ if(key==='tabletop')A.tabletop();else go(({find:'#home',save:'#collection',scan:'#scan',build:'#decks/inspiration'})[key]||'#home');
+}});
+A.tabletop=()=>openTabletop({game:T.game(),confirm:ask,judge:game=>A.askRules({dataset:{game}})});
+A.dismissGuide=t=>{markGuide(t.dataset.id);t.closest('[data-guide]')?.remove();};
+A.resetOnboarding=async()=>{if(!await ask('Reset guide history? Only tutorials will reset. Your cards, decks, account and preferences stay saved.'))return;resetOnboarding();introPending=true;toast('Guides reset. The introduction will return on Home when you finish your current task.');};
+A.helpOpen=t=>{const id=t?.dataset?.id||'start';if(!INFO_TOPICS.some(x=>x.id===id))return;S.ui.settingsTab='info';settingsPopup.open();A.settingsTab({dataset:{id:'info'}});const topic=document.getElementById('info-'+id);if(topic){topic.hidden=false;topic.open=true;topic.querySelector('summary')?.focus();topic.scrollIntoView({block:'nearest'});}};
+A.infoGo=t=>{const topic=INFO_TOPICS.find(x=>x.id===t.dataset.id);if(!topic)return;if(topic.id==='tabletop')return A.tabletop();if(topic.route==='#settings')return A.settingsTab({dataset:{id:'account'}});settingsPopup.close();go(topic.route);};
+document.addEventListener('input',e=>{if(e.target.id!=='infoQuery')return;const matches=new Set(findInfo(e.target.value).map(t=>t.id)),root=e.target.closest('.info-centre');root.querySelectorAll('[data-info-topic]').forEach(n=>n.hidden=!matches.has(n.dataset.infoTopic));root.querySelector('#infoCount').textContent=matches.size+' topics';root.querySelector('.info-empty').hidden=matches.size>0;});
 // Ask AI: the in-app assistant. Its tools are the app's own functions, run here on the device.
 let askTools = null;
 A.askRules = (button) => {
@@ -2237,11 +2259,11 @@ A.askRules = (button) => {
   openRulesAsk({ game, format, cards, references, trigger });
   rulesGuideOrigin = origin;
 };
-A.askOpen = () => {
+A.askOpen = (options={}) => {
   askTools ||= makeAskTools({ S, T, A, go, navigationStamp, navigationCurrent, esc, api, resolve, cacheCard, loadSetIndex, loadMetaData, metaState, MTG_META_FORMATS, allMeta: () => Object.fromEntries(Object.entries(allCachedMeta()).map(([k, v]) => [k, v.data])), priceOf, inv, meta, collectionValue, lotPrice, mtgPower, shownPower, tcgCtx,
     openMtgBuild: (seed, fmt, budget) => { Object.assign(S.ui.build, { baseDeck: null, seed, results: {}, msg: "", openTier: null, format: formatOf(fmt).name, custom: budget ? String(budget) : "" }); openSheet(V.buildSheet(), { type: "build" }); runBuild(); },
-    openTcgBuild: async (g, id, budget) => { await A.tBuild({ dataset: { id } }); if (budget) C.tBuildCustom({ value: String(budget) }); } });
-  openAsk({ game: T.game(), tools: askTools, show: (s) => safely(askTools.open(s)) });
+    openTcgBuild: async (g, id, budget, format) => { await A.tBuild({ dataset: { id, format } }); if (budget) C.tBuildCustom({ value: String(budget) }); } });
+  openAsk({ game: T.game(), prefill:typeof options.query==='string'?options.query:'', tools: askTools, show: (s) => safely(askTools.open(s)) });
 };
 A.buildFrom = async (t) => {
   const c = meta(t.dataset.name) || (await resolve(t.dataset.name, true)),
@@ -2451,11 +2473,11 @@ A.tierApply = async (t) => {
 /* ---------- account ---------- */
 A.settingsTab = (t) => {
   const tab = t.dataset.id;
-  if (!["account","backup","app"].includes(tab)) return;
+  if (!["account","backup","app","info"].includes(tab)) return;
   S.ui.settingsTab = tab;
   if (tab === "backup") storageDetail();
   for (const pane of document.querySelectorAll(".settings-pane")) pane.hidden = pane.id !== "settings-" + tab;
-  for (const button of document.querySelectorAll('[data-act="settingsTab"][role="tab"]')) button.setAttribute("aria-selected",String(button.dataset.id === tab));
+  for (const button of document.querySelectorAll('[data-act="settingsTab"][role="tab"]')) button.setAttribute("aria-selected",String(button.dataset.id === tab || button.dataset.id === "account" && tab === "backup"));
 };
 document.addEventListener('keydown',e=>{
   const tab=e.target.closest?.('[data-act="settingsTab"][role="tab"]');
@@ -2773,19 +2795,52 @@ function rerenderKeepingFocus() {
 }
 
 /* ---------- home search & art ---------- */
-A.homeSearch = () => {
-  const q = ($("#homeQ")?.value || "").trim();
-  if (T.isTcg()) {
-    T.ui().search.q = q;
-    go("#search");
-    if (q) A.tSearch();
-  } else {
-    S.ui.db.term = q;
-    dbInvalidate();
-    go("#search");
-    if (q) A.dbSearch();
+const homeResultCache=new Map();
+async function homeLookup(g,q){
+ const k=g+':'+q.toLowerCase();if(homeResultCache.has(k))return homeResultCache.get(k);
+ const cached=g==='mtg'?Object.values(S.catalog):Object.values(T.cache[g]||{}),pack=catalogState(g).pack;
+ const local=[...cached];
+ if(pack){const query=q.toLowerCase();for(const [name,indexes]of pack.names)if(name.includes(query)||name.startsWith(query.slice(0,3)))for(const i of indexes.slice(0,3))local.push(catalogCandidate(pack,i).card);}
+ let cards=rankHomeCards(local,q),error=false,corrected=false;
+ if(cards.length<5){try{
+   if(g==='mtg'){
+    let data;try{data=await api('/cards/search?'+new URLSearchParams({q:q+' game:paper',unique:'prints',order:'released'}));}catch(e){if(e.status!==404&&!/404|no cards|not found|zero results|didn.t match/i.test(e.message||''))throw e;data={data:[]};}
+    if(!data.data?.length){try{const c=await api('/cards/named?'+new URLSearchParams({fuzzy:q}));data={data:[c]};corrected=true;}catch(e){if(e.status!==404&&!/404|no cards|not found|zero results|ambiguous|didn.t match/i.test(e.message||''))throw e;}}
+    cards=rankHomeCards([...cards,...(data.data||[])],q);
+   }else{
+    let result=await T.SOURCES[g].search({q,size:7,page:0});
+    if(!result.cards.length&&q.length>=5){result=await T.SOURCES[g].search({q:q.slice(0,3),size:40,page:0});corrected=true;}
+    cards=rankHomeCards([...cards,...result.cards.map(c=>T.cardOf(g,c.id)||c)],q);
+   }
+  }catch{error=true;}}
+ const result={cards,error,corrected};if(!error){homeResultCache.set(k,result);if(homeResultCache.size>40)homeResultCache.delete(homeResultCache.keys().next().value);}return result;
+}
+async function submitHome(q,mode){
+ q=String(q||'').trim();if(!q)return;const g=T.game();homeQueries[g]=q;
+ if((mode||homeIntent(q))==='ask'){
+  if(/\b(?:rules?|ruling|resolve|stack|trigger|can i (?:cast|summon|attack|activate)|when can)\b/i.test(q)){
+   A.askRules({dataset:{game:g}});const input=document.querySelector('.rules-ask-dialog .ask-input');if(input){input.value=q;input.focus();}return;
   }
-};
+  return A.askOpen({query:q});
+ }
+ if(T.isTcg()){T.ui().search.q=q;await go('#search');if(T.game()===g)A.tSearch();}
+ else{S.ui.db.term=q;dbInvalidate();await go('#search');if(T.game()===g)A.dbSearch();}
+}
+A.homeSearch=()=>submitHome($('#homeQ')?.value);
+window.matchMedia?.("(min-width:1200px)").addEventListener?.("change",()=>placeGlobalSearch(T.game(),S.ui.view));
+const homeSearchController=attachHomeSearch({game:T.game,lookup:homeLookup,submit:submitHome,open:async(g,c)=>{
+ if(T.game()!==g)return;
+ if(g==='mtg'){
+  if(c.oracle_text!==undefined||c.card_faces?.some(f=>f.oracle_text!==undefined))return A.card({dataset:{name:c.name},printing:c});
+  const ctx={type:'card',name:c.name,searchPrintingId:c.id};
+  openSheet(`<div class="sheet-head"><h2>${esc(c.name)}</h2><button class="icon" data-act="closeSheet">✕</button></div><p class="muted">Loading this printing…</p>`,ctx);
+  const still=()=>S.ui.sheetCtx===ctx&&$('#sheet').open&&T.game()===g;
+  try{const print=await api('/cards/'+encodeURIComponent(c.id));if(!still())return;if(print.id!==c.id||key(print.name)!==key(c.name))throw Error('The source returned a different printing. Please try again.');return A.card({dataset:{name:c.name},printing:slim({...print,full:true})});}
+  catch(e){if(still())$('#sheetBody').innerHTML=`<div class="sheet-head"><h2>${esc(c.name)}</h2><button class="icon" data-act="closeSheet">✕</button></div><p class="note warn">${esc(e.message)}</p>`;}return;
+ }
+
+ return A.tCard({dataset:{id:String(c.id),game:g}});
+}});
 // A daily feature opens its actual printing, never a name-wide/default deck card.
 A.homeDailyCard = async (t) => {
   const g = t.dataset.game, h = T.heroFor(g);

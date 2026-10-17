@@ -115,9 +115,9 @@ for(const game of ['mtg','ygo','ptcg']) for(const progress of ['new','cards','sa
   assert.equal((html.match(/data-home-value=/g)||[]).length,1);
   assert.equal((html.match(/data-home-community=/g)||[]).length,1);
   assert.doesNotMatch(html,/class="home-discover"|home-deal|Discover decks your cards support|>Random deck</);
-  const order=['class="home-overview"', 'data-home-resume=', 'class="home-meta"', 'data-home-community='].map(token=>html.indexOf(token));
+  const order=['class="home-overview home-value-overview"', 'data-home-resume=', 'class="home-meta"', 'data-home-community='].map(token=>html.indexOf(token));
   assert(order.every((position,i)=>position>=0 && (!i || position>order[i-1])), 'value, resume, Meta, then news');
-  assert.doesNotMatch(html,/home-deck-section|home-start|homeQ|homeRandomDeck|Build from my cards/);
+  assert.doesNotMatch(html,/home-deck-section|home-start|homeRandomDeck|Build from my cards/);
   assert.match(html,/data-home-resume=/);
   if(progress==='saved')assert.match(html,/Choose a deck/,'an unrecorded deck is not falsely called recently worked');
   if(progress==='new')assert.match(html,/No saved decks yet/);

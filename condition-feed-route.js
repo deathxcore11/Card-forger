@@ -17,6 +17,14 @@ export function normalizeConditionVariants(body,product,printings,language='Engl
  // Ambiguous parallel variants are unavailable, not whichever came first.
  return [...buckets.values()].filter(xs=>xs.length===1).map(xs=>xs[0]);
 }
+// Some Pokémon products encode the edition in the printing label (for example
+// Unlimited Holofoil), while TCGdex calls that same finish simply holofoil.
+// Derive aliases from the exact provider variant, never from the card name.
+export function pokemonConditionPrintings(v,{bare=false}={}){
+ const finish={normal:'Normal',holo:'Holofoil',reverse:'Reverse Holofoil'}[v?.type];if(!finish)return [];
+ const stamps=Array.isArray(v.stamp)?v.stamp:[v.stamp],edition=stamps.includes('1st-edition')?'1st Edition':['unlimited','shadowless'].includes(v.subtype)?'Unlimited':'';
+ return [...new Set(edition?[edition+' '+finish,edition,...(bare?[finish]:[])]:[finish])];
+}
 export async function conditionFeedRoute(url,env,ctx,fetchImpl=fetch){
  const game=url.searchParams.get('game'),id=url.searchParams.get('id')||'';
  const empty=(status,notice)=>Response.json({status,quotes:[],notice},{headers:{'Cache-Control':'no-store'}});
@@ -49,10 +57,13 @@ export async function conditionFeedRoute(url,env,ctx,fetchImpl=fetch){
     if(exact.length===1){product=exact[0].productId;printings=[exact[0].subTypeName];if(/^1st Edition /.test(exact[0].subTypeName))printings.push('1st Edition');}
    }else if(variant.startsWith('detail:')){
     const v=c.variants_detailed?.find(v=>'detail:'+v.variantId===variant);product=v?.thirdParty?.tcgplayer;
-    if(v){const edition=(Array.isArray(v.stamp)?v.stamp:[v.stamp]).includes('1st-edition')?'1st Edition':v.subtype==='unlimited'?'Unlimited':'';printings=[edition || ({normal:'Normal',holo:'Holofoil',reverse:'Reverse Holofoil'}[v.type])].filter(Boolean);}
+    if(v)printings=pokemonConditionPrintings(v,{bare:(c.variants_detailed||[]).filter(d=>String(d.thirdParty?.tcgplayer)===String(product)).length===1});
    }else{
     const v=c.pricing?.tcgplayer?.[variant];product=v?.productId;
     printings=({'normal':['Normal'],'holofoil':['Holofoil'],'reverse-holofoil':['Reverse Holofoil'],'1st-edition':['1st Edition'],'1st-edition-holofoil':['1st Edition Holofoil','1st Edition'],'unlimited':['Unlimited'],'unlimited-holofoil':['Unlimited Holofoil','Unlimited']})[variant]||[];
+    const details=(c.variants_detailed||[]).filter(d=>d.pricing?.tcgplayer?.[variant]&&String(d.pricing.tcgplayer[variant].productId||d.thirdParty?.tcgplayer)===String(product));
+    if(details.length===1){const d=details[0],siblings=(c.variants_detailed||[]).filter(x=>String(x.thirdParty?.tcgplayer)===String(product));printings=pokemonConditionPrintings(d,{bare:siblings.length<=1});}
+
    }
    // Recover exact legacy finishes when TCGdex has no product, but the daily catalogue does.
    if(!product&&['normal','holofoil','reverse-holofoil'].includes(variant)){

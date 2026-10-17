@@ -1,3 +1,5 @@
+import {findInfo,INFO_TOPICS} from './app-info.js';
+import {FORMATS} from './formats.js';
 import {cardPrice} from './core.js';
 import {resolveYgoSet} from './ygo.js';
 import { pokemonArtCrop } from './artwork.js';
@@ -13,6 +15,14 @@ const BASICS = /^(?:snow-covered )?(?:plains|island|swamp|mountain|forest|wastes
 const mtgText = (c) => [c?.oracle_text, ...(c?.card_faces || []).map((f) => f.oracle_text)].filter(Boolean).join(' // ');
 const mtgImg = (c) => c?.image_uris?.normal || c?.image_uris?.small || c?.card_faces?.[0]?.image_uris?.normal || '';
 const tcgSet = (c) => c?.setContext?.name || c?.set?.name || c?.setName || c?.sets?.[0]?.name || c?.sets?.[0]?.set || '';
+
+// Main-list requirements, including basic resources. Unknown quotes are not zero.
+export function completionSummary(rows,owned,unit){
+ const counts=new Map();for(const r of rows||[]){const name=String(r.name||r.id||'');if(!name)continue;const key=name.toLowerCase();const old=counts.get(key)||{name,qty:0};old.qty+=Math.max(0,Number(r.qty)||0);counts.set(key,old);}
+ let total=0,have=0,cost=0,pricedMissing=0,unpricedMissing=0;const missing=[];
+ for(const r of counts.values()){const n=Math.min(r.qty,Math.max(0,owned(r.name)||0)),need=r.qty-n,p=num(unit(r.name));total+=r.qty;have+=n;if(need){if(p==null)unpricedMissing+=need;else{cost+=p*need;pricedMissing+=need;}missing.push({name:r.name,qty:need,each:p});}}
+ return {totalCopies:total,ownedCopies:have,missingCopies:total-have,ownedPercent:total?Math.round(have/total*100):0,costToFinish:unpricedMissing?null:num(cost),pricedMissingSubtotal:num(cost),pricedMissingCopies:pricedMissing,unpricedMissingCopies:unpricedMissing,missing:missing.slice(0,8),allocation:'Compared independently per deck; copies are not reserved.',costBasis:'Available reference quotes; excludes shipping. Review legality before saving.'};
+}
 
 export function makeAskTools(x) {
   const { S, T } = x;
@@ -83,6 +93,7 @@ export function makeAskTools(x) {
   const metaKey = (format) => { const f = String(format || S.ui.mtgMeta?.format || 'Modern'); return 'mtg:' + (/commander|edh|cedh/i.test(f) ? 'EDH' : x.MTG_META_FORMATS.find(([k]) => k.toLowerCase() === f.toLowerCase())?.[0] || 'Modern'); };
 
   const tools = {
+    async app_help({query}) { return {topics:findInfo(clip(query,160)).slice(0,4).map(t=>({ref:t.id,title:t.title,summary:t.summary,details:t.details,demonstration:t.lesson||null,action:t.action})),note:'Read-only help. Open a returned topic for instructions or a sample demonstration; opening it does not change saved cards.'}; },
     async search_cards({ game, query, limit }) {
       const g = g0(game), n = lim(limit, 8, 15), q = clip(query, 120);
       if (!q) return { error: 'Give a card name or words to search for.' };
@@ -109,14 +120,14 @@ export function makeAskTools(x) {
       const g = g0(game), n = lim(limit, 10, 25);
       if (g === 'mtg') {
         const st = S.state, v = x.collectionValue(st.collection, S.catalog, st.printings, st.decks);
-        let rows = st.collection.map((e, i) => ({ e, i, value: x.lotPrice(e, S.catalog, st.printings) || 0 }));
+        let rows = st.collection.map((e, i) => ({ e, i, each: x.lotPrice(e, S.catalog, st.printings), value: x.lotPrice(e, S.catalog, st.printings)==null?null:x.lotPrice(e, S.catalog, st.printings)*e.qty }));
         rows.sort(sort === 'quantity' ? (a, b) => b.e.qty - a.e.qty : sort === 'recent' ? (a, b) => b.i - a.i : (a, b) => b.value - a.value);
-        return { game: g, totalValue: num(v.total), copies: v.copies, unpriced: v.unpriced, cards: rows.slice(0, n).map(({ e, value }) => ({ name: e.name, qty: e.qty, set: e.setName || e.set || '', value: num(value), each: num(value / Math.max(1, e.qty)) })) };
+        return { game: g, totalValue: num(v.total), copies: v.copies, unpriced: v.unpriced, cards: rows.slice(0, n).map(({ e, value, each }) => ({ name: e.name, qty: e.qty, condition:e.condition, set: e.setName || e.set || '', value: num(value), each:num(each) })) };
       }
       const col = T.gs(g).collection, v = T.collectionValue(g);
-      let rows = col.map((e, i) => { const c = T.cardOf(g, e.cardId), each = c ? T.entryPrice(c, e) ?? (e.setReleaseId || e.setReleaseUnverified ? null : c.prices?.usd) : null; return { e, i, c, each: num(each), value: num((each || 0) * e.qty) }; });
+      let rows = col.map((e, i) => { const c = T.cardOf(g, e.cardId), each = c ? T.entryPrice(c, e) : null; return { e, i, c, each: num(each), value: each==null?null:num(each * e.qty) }; });
       rows.sort(sort === 'quantity' ? (a, b) => b.e.qty - a.e.qty : sort === 'recent' ? (a, b) => b.i - a.i : (a, b) => (b.value || 0) - (a.value || 0));
-      return { game: g, totalValue: num(v.total), copies: v.copies, unpriced: v.unpriced, cards: rows.slice(0, n).map((r) => ({ id: String(r.e.cardId), name: r.e.name, qty: r.e.qty, set: r.e.printing || (r.e.setReleaseUnverified ? 'Printing not verified' : tcgSet(r.c)), each: r.each, value: r.value })) };
+      return { game: g, totalValue: num(v.total), copies: v.copies, unpriced: v.unpriced, cards: rows.slice(0, n).map((r) => ({ id: String(r.e.cardId), name: r.e.name, qty: r.e.qty, condition:r.e.condition, set: r.e.printing || (r.e.setReleaseUnverified ? 'Printing not verified' : tcgSet(r.c)), each: r.each, value: r.value })) };
     },
     async list_sets({ game, query, order, limit }) {
       const g = g0(game), n = lim(limit, 10, 30), q = clip(query, 60).toLowerCase();
@@ -170,12 +181,16 @@ export function makeAskTools(x) {
       if (g === 'mtg') {
         const k = metaKey(format), data = await x.loadMetaData(k).catch(() => x.metaState(k).data);
         if (!data) return { error: 'Tournament data for that format isn\'t available right now.' };
-        const owned = (d) => { const rows = [...(d.commanders || []).map((r) => (typeof r === 'string' ? { name: r, qty: 1 } : r)), ...(d.main || [])].filter((r) => !BASICS.test(r.name)); const total = rows.reduce((s, r) => s + r.qty, 0), have = rows.reduce((s, r) => s + Math.min(r.qty, x.inv(r.name).owned || 0), 0); return total ? Math.round((have / total) * 100) : 0; };
-        return decorateMeta(g, data, { game: g, format: k.slice(4), source: data.source || 'tournament results', decks: (data.archetypes || []).slice(0, 8).map((a) => { const d = data.decks.find((y) => y.key === a.best) || data.decks.find((y) => (y.archetype || y.name) === a.name); return { name: a.name, key: d?.key || '', share: Math.round((a.share || 0) * 1000) / 10, lists: a.lists || a.count || 0, best: d ? `${d.place || ''} ${d.event || ''}`.trim() : '', ownedPercent: d ? owned(d) : 0, keyCards: d ? (d.main || []).filter((r) => !BASICS.test(r.name)).sort((p, q) => q.qty - p.qty).slice(0, 6).map((r) => r.name) : [] }; }) });
+        const summary=d=>completionSummary([...(d.commanders||[]).map(r=>typeof r==='string'?{name:r,qty:1}:r),...(d.main||[])],n=>x.inv(n).owned,n=>x.priceOf(n));
+        return decorateMeta(g,data,{game:g,format:k.slice(4),source:data.source||'tournament results',fetchedAt:data.fetchedAt||data.updatedAt||null,decks:(data.archetypes||[]).slice(0,8).map(a=>{const d=data.decks.find(y=>y.key===a.best)||data.decks.find(y=>(y.archetype||y.name)===a.name);return {name:a.name,key:d?.key||'',share:Math.round((a.share||0)*1000)/10,lists:a.lists||a.count||0,best:d?`${d.place||''} ${d.event||''}`.trim():'',eventDate:d?.date||null,...(d?summary(d):{listUnavailable:true,ownedPercent:null,costToFinish:null})};})});
       }
       const data = (await x.tcgCtx.loadMeta?.(g).catch(() => null)) || T.metaState(g).data;
       if (!data) return { error: 'Tournament data isn\'t available right now.' };
-      return decorateMeta(g, data, { game: g, source: data.source || 'tournament results', decks: (data.archetypes || []).slice(0, 8).map((a) => { const d = data.decks.find((y) => y.key === a.best); const o = d ? T.metaOwned(g, d) : null; return { name: a.name || a.id, key: d?.key || '', share: Math.round((a.share || 0) * 1000) / 10, lists: a.count || 0, best: d ? `${d.place || ''} ${d.event || ''}`.trim() : '', ownedPercent: o ? Math.round(o.pct * 100) : 0, costToFinish: o?.cost != null ? num(o.cost) : null }; }) });
+      const own=T.ownedMap(g),byName=new Map();for(const e of T.gs(g).collection)byName.set(e.name.toLowerCase().replace(/^basic /,''),(byName.get(e.name.toLowerCase().replace(/^basic /,''))||0)+e.qty);
+      const summary=d=>g==='ygo'?completionSummary([...(d.main||[]),...(d.extra||[])].map(id=>({name:String(id),qty:1})),id=>own.get('id:'+id),id=>T.cardOf(g,id)?.prices?.usd):completionSummary(d.list,n=>byName.get(n.toLowerCase().replace(/^basic /,'')),n=>Object.values(T.cache?.[g]||{}).find(c=>c.name.toLowerCase()===n.toLowerCase())?.prices?.usd);
+      const metaFormat=g==='ptcg'?'Standard':'Advanced (TCG)';
+      if(format&&!(g==='ptcg'?/^standard$/i:/^(tcg|advanced(?: \(tcg\))?)$/i).test(format))return {game:g,error:'This tournament source covers '+metaFormat+'. Choose that format or use the builder for other formats.',format:metaFormat};
+      return decorateMeta(g,data,{game:g,format:metaFormat,source:data.source||'tournament results',fetchedAt:data.fetchedAt||data.updatedAt||null,decks:(data.archetypes||[]).slice(0,8).map(a=>{const d=data.decks.find(y=>y.key===a.best)||a.representative;return {name:a.name||a.id,key:d?.key||'',share:Math.round((a.share||0)*1000)/10,lists:a.count||0,best:d?`${d.place||''} ${d.event||''}`.trim():'',eventDate:d?.date||null,...(d?summary(d):{listUnavailable:true,ownedPercent:null,costToFinish:null})};})});
     },
     async my_decks({ game }) {
       const g = g0(game);
@@ -184,22 +199,25 @@ export function makeAskTools(x) {
     },
     async build_deck({ game, style, budget, format }) {
       const g = g0(game), want = clip(style, 80), $ = Math.max(0, Math.min(10000, Number(budget) || 0));
+      const formats=g==='mtg'?FORMATS.map(f=>({id:f.name,name:f.name})):T.SOURCES[g].formats;
+      const selected=formats.find(f=>[f.id,f.name].some(n=>n.toLowerCase()===String(format||'').toLowerCase()));
+      if(!selected)return {game:g,requiresChoice:true,formats:formats.map(f=>({id:f.id,name:f.name})),note:'Choose a format before preparing a deck. No deck has been changed.'};
       if (g === 'mtg') {
-        const fmt = clip(format, 30) || 'Commander', commander = /commander|edh/i.test(fmt);
+        const fmt = selected.name, commander = /commander|edh/i.test(fmt);
         const colors = { white: 'w', blue: 'u', black: 'b', red: 'r', green: 'g', mono: '' }, cs = Object.entries(colors).filter(([k]) => new RegExp('\\b' + k).test(want.toLowerCase())).map(([, v]) => v).join('');
         const q = commander ? `is:commander ${cs ? `id=${cs}` : ''} ${cs ? '' : want}` : `${cs ? `c=${cs}` : ''} ${cs ? '' : want} f:${fmt.toLowerCase()} (t:creature or t:planeswalker)`;
         const seed = (await mtgSearch(q.replace(/\s+/g, ' ').trim(), 1))[0] || (await mtgSearch(want, 1))[0];
         if (!seed) return { error: `No ${fmt} build-around card found for "${want}".` };
         x.pending = () => x.openMtgBuild(seed.name, fmt, $); x.pendingGame = g;
-        return { game: g, ready: true, seed: seed.name, format: fmt, budget: $ || 'no limit', note: 'The builder opens when the player taps it, and builds legal lists at budget tiers from that card.' };
+        return { game: g, ready: true, seed: seed.name, format: fmt, budget: $ || 'no limit', note: 'The builder opens when the player taps it, and previews budget tiers with deck checks; incomplete drafts and missing prices remain visible from that card.' };
       }
       const src = T.SOURCES[g];
-      let r = g === 'ptcg' && /^(fire|water|grass|lightning|psychic|fighting|darkness|metal|dragon|colorless|fairy)\b/i.test(want) ? await src.search({ q: '', type: want.split(/\s/)[0][0].toUpperCase() + want.split(/\s/)[0].slice(1).toLowerCase(), category: 'Pokemon', format: 'standard', page: 0, size: 12 }).catch(() => null) : null;
-      if (!r?.cards?.length) r = await src.search({ q: want, page: 0, size: 12 }).catch(() => ({ cards: [] }));
+      let r = g === 'ptcg' && /^(fire|water|grass|lightning|psychic|fighting|darkness|metal|dragon|colorless|fairy)\b/i.test(want) ? await src.search({ q: '', type: want.split(/\s/)[0][0].toUpperCase() + want.split(/\s/)[0].slice(1).toLowerCase(), category: 'Pokemon', format: selected.id, page: 0, size: 12 }).catch(() => null) : null;
+      if (!r?.cards?.length) r = await src.search({ q: want, format:selected.id, page: 0, size: 12 }).catch(() => ({ cards: [] }));
       const pick = (r.cards || []).find((c) => /ex|VSTAR|VMAX|Stage 2/i.test(`${c.name} ${c.stage || ''}`)) || r.cards?.[0];
       if (!pick) return { error: `No ${g === 'ygo' ? 'Yu-Gi-Oh!' : 'Pokémon'} card found for "${want}".` };
-      x.pending = () => x.openTcgBuild(g, pick.id, $); x.pendingGame = g;
-      return { game: g, ready: true, seed: pick.name, budget: $ || 'no limit', note: 'The builder opens when the player taps it, and builds legal lists at budget tiers around that card.' };
+      x.pending = () => x.openTcgBuild(g, pick.id, $,selected.id); x.pendingGame = g;
+      return { game: g, ready: true, seed: pick.name, format:selected.name, budget: $ || 'no limit', note: 'The builder opens when the player taps it, and previews budget tiers with deck checks; incomplete drafts and missing prices remain visible around that card.' };
     },
   };
   // A builder prepared during this question appears as one more tappable item.
@@ -210,6 +228,7 @@ export function makeAskTools(x) {
   // What a tapped answer item opens, in the right game.
   tools.open = async (s) => {
     s=tools.canonicalItem(s);
+    if(s.kind==='help')return INFO_TOPICS.some(t=>t.id===s.ref)?x.A.helpOpen({dataset:{id:s.ref}}):undefined;
     if (s.game !== T.game() && await x.A.setGame({ dataset: { game: s.game } }) === false) return;
     const screen=x.navigationStamp?.(),current=()=>!screen || x.navigationCurrent?.(screen)!==false;
     if (s.kind === 'build') return builders.get(s.ref)?.();
@@ -220,7 +239,7 @@ export function makeAskTools(x) {
     }
     if (s.kind === 'meta') {
       const data = s.game === 'mtg' ? Object.values(x.allMeta?.() || {}) : [T.metaState(s.game).data];
-      const deck = data.flatMap((d) => d?.decks || []).find((d) => d.key === s.ref) || data.flatMap((d) => (d?.archetypes || []).map((a) => ({ a, d }))).filter(({ a }) => (a.name || a.id) === s.ref).map(({ a, d }) => d.decks.find((y) => y.key === a.best))[0];
+      const deck = data.flatMap((d) => [...(d?.decks||[]),...(d?.archetypes||[]).map(a=>a.representative).filter(Boolean)]).find((d) => d.key === s.ref) || data.flatMap((d) => (d?.archetypes || []).map((a) => ({ a, d }))).filter(({ a }) => (a.name || a.id) === s.ref).map(({ a, d }) => d.decks.find((y) => y.key === a.best))[0];
       if (!deck) return x.go('#decks/inspiration');
       if(!current())return;
       return s.game === 'mtg' ? x.A.mtgProven({ dataset: { key: deck.key } }) : x.A.tMetaDeck({ dataset: { key: deck.key } });
@@ -253,7 +272,7 @@ export function makeAskTools(x) {
         img=s.game==='mtg'?(card?.image_uris?.art_crop || mtgImg(card)):(card?.art || card?.imageLarge || card?.image || '');
       }
     }
-    const kind = { card:'Card', set:'Set', meta:'Meta deck', deck:'Your deck', build:'Deck builder' }[s.kind] || '';
+    const kind = { card:'Card', set:'Set', meta:'Meta deck', deck:'Your deck', build:'Deck builder', help:'App guide' }[s.kind] || '';
     const media = img ? (deck && s.game==='ptcg' && !visual?.sprite ? pokemonArtCrop(card,'ask-deck-art',img) : `<img class="${deck?'ask-deck-art':''}" src="${x.esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer">`) : deck ? '<span class="ask-deck-art img-missing" aria-hidden="true">◇</span>' : '';
     return `<button class="ask-item ${deck?'ask-deck':img?'':'wide'}" style="--i:${i}" data-ask-show='${x.esc(JSON.stringify(s))}'>${media}<b>${x.esc(s.label || s.ref)}</b><small>${kind}${visual?.share!=null?' · '+Number(visual.share).toFixed(1)+'% of the field':''}</small>${price!=null?`<em>$${Number(price).toFixed(2)}</em>`:''}</button>`;
   };

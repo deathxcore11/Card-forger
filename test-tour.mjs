@@ -1,53 +1,23 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {S,blank} from './store.js';
-import {homeHero,tcgHome,ui} from './tcg.js';
-import {home,settings} from './views.js';
-import {tourScenes} from './tour-scenes.js';
-import {shouldTour,STEPS,openTour,tourSeen,previewDocument} from './tour.js';
-globalThis.localStorage={m:{},getItem(k){return this.m[k]??null;},setItem(k,v){this.m[k]=String(v);}};
-assert.equal(shouldTour({seen:false}),true);
-assert.equal(shouldTour({cards:5,decks:2,seen:false}),true);
-assert.equal(shouldTour({seen:true}),false);
-assert.equal(STEPS.length,10);
-assert.match(STEPS[0].text,/swipe left or right on Home/);
-assert.doesNotMatch(STEPS.map(x=>x.text).join(' '),/Trade|Animated walkthrough|Step \d/);
-S.state=blank();
-for(const g of ['mtg','ptcg','ygo']) {
- S.state.settings.game=g;
- assert.doesNotMatch(homeHero(g,'Welcome'),/learn-card|replayTour/);
- const html=g==='mtg'?home():tcgHome();
- assert.doesNotMatch(html,/game-switch|game-choice-list|learn-card|replayTour/,'Home has no duplicate selector or replay card');
- const state=S.state,screen=S.ui,tcg=ui(g),before=structuredClone({state,screen,tcg});
- const scenes=tourScenes(g);
- assert.equal(S.state,state);assert.equal(S.ui,screen);assert.deepEqual({state,screen,tcg},before,'preview rendering cannot change the workspace or active screens');
- for(const step of STEPS)assert.ok(scenes[step.key]?.every(x=>x.length>100),`${g}: real screen for ${step.key}`);
- assert.match(scenes.ask[0],/search-query/);assert.match(scenes.ask[0],/ask-launch/);
- assert.match(scenes.collect[0],/Binders/);assert.match(scenes.power[0],/Power/);
- for(const tab of ['account','backup','app']){S.ui.settingsTab=tab;assert.equal((settings().match(/data-act="replayTour"/g)||[]).length,1);}
+import {tourScenes,DEMO_CARDS} from './tour-scenes.js';
+import {shouldTour,STEPS,LESSONS,tourSeen,guideSeen,markGuide,resetOnboarding,previewDocument} from './tour.js';
+const saved=new Map([['cards','private inventory'],['cardstashy-glass','off'],['cardstashy-tour-v1','done']]);
+globalThis.localStorage={getItem:k=>saved.get(k)||null,setItem:(k,v)=>saved.set(k,v),removeItem:k=>saved.delete(k)};
+assert.equal(shouldTour({seen:false}),true);assert.equal(shouldTour({cards:5,decks:2,seen:false}),true);assert.equal(shouldTour({seen:true}),false);
+assert.equal(STEPS.length,2,'short introduction, optional deeper lessons');assert.match(STEPS[0].text,/swipe left or right on Home/);
+const original=S.state;S.state=blank();S.state.collection=[{name:'Private card never shown',qty:77}];const before=JSON.stringify(S.state);
+let requests=0;globalThis.fetch=()=>{requests++;throw Error('Tutorial called a provider');};
+for(const g of ['mtg','ptcg','ygo']){
+ const scenes=tourScenes(g);for(const lesson of LESSONS){const f=scenes[lesson.key];assert(f.length>=3);assert(f.every(x=>x.html.length>100&&x.caption&&x.duration>=1000));assert.equal(new Set(f.map(x=>x.html)).size,f.length,'each action visibly changes the scene');assert.doesNotMatch(f.map(x=>x.html).join(''),/Private card never shown/);}
+ assert.match(scenes.find[1].html,new RegExp(DEMO_CARDS[g].name.slice(0,4)));assert.match(scenes.find[3].html,/demo-detail/);
+ assert.match(scenes.save[0].html,/Near Mint/);assert.match(scenes.save[1].html,/Lightly Played/);assert.match(scenes.save[2].html,/<b>2<\/b>/);assert.match(scenes.save.at(-1).html,/Added 2 copies/);assert.match(scenes.save.at(-1).html,/example total/);
+ assert.match(scenes.scan[0].html,/demo-enter/);assert.match(scenes.scan[1].html,/Review match/);
+ assert.notEqual(scenes.tabletop[0].html,scenes.tabletop[1].html);assert.equal(scenes.tabletop[2].caption,'Undo reverses that player’s last change.');
 }
-const docs=previewDocument('<button data-act="example">Real control</button>',{game:'ptcg',cssUrl:'https://app.test/style.css'});
-assert.match(docs,/https:\/\/app.test\/style.css/);assert.match(docs,/Real control/);
-assert.doesNotMatch(docs,/<script/);
-const dialogs=[];
-globalThis.document={activeElement:{isConnected:true,focus(){}},querySelector:()=>null,body:{append:e=>dialogs.push(e)},createElement:()=>({dataset:{},handlers:{},classList:{add(){}},setAttribute(){},addEventListener(k,f){this.handlers[k]=f;},querySelector(){return {focus(){}};},remove(){this.removed=true;}})};
-let completions=0;
-openTour({scenes:{welcome:['<h1>Actual home</h1>']},onDone:()=>completions++});const dialog=dialogs.at(-1);
-assert.match(dialog.innerHTML,/sandbox=""/);assert.doesNotMatch(dialog.innerHTML,/allow-scripts|allow-same-origin|Animated walkthrough|Step \d|tv-phone/);
-assert.match(dialog.innerHTML,/Actual home/);
-for(let i=0;i<15;i++)dialog.handlers.keydown({key:'ArrowRight'});
-assert.match(dialog.innerHTML,/Keep a copy of your cards/);
-for(let i=0;i<15;i++)dialog.handlers.keydown({key:'ArrowLeft'});
-assert.match(dialog.innerHTML,/Your cards\. Three games/);
-dialog.handlers.keydown({key:'Escape'});dialog.handlers.keydown({key:'Escape'});
-assert.equal(completions,1);assert.equal(tourSeen(),true);
-openTour();assert.match(dialogs.at(-1).innerHTML,/Your cards\. Three games/);
-assert.match(readFileSync('app.js','utf8'),/shouldTour\(\{ cards, decks \}\)/);
-console.log('PASS: first-visit autoplay, Settings-only replay, clean Home across games, ten real-rendered screen chapters, isolated previews, navigation bounds and persistent dismissal.');
-
-const stateBeforeFailure=S.state,uiBeforeFailure=S.ui,tcgBeforeFailure={...ui('ptcg')};
-S.ui.uncloneable=()=>{};
-assert.throws(()=>tourScenes('ptcg'));
-assert.equal(S.state,stateBeforeFailure);assert.equal(S.ui,uiBeforeFailure);assert.deepEqual(ui('ptcg'),tcgBeforeFailure);
-delete S.ui.uncloneable;
-console.log('PASS: a preview preparation failure leaves the active workspace and per-game controls untouched.');
+assert.equal(requests,0);assert.equal(JSON.stringify(S.state),before);S.state=original;
+markGuide('scan');assert.equal(guideSeen('scan'),true);resetOnboarding();assert.equal(tourSeen(),false);assert.equal(guideSeen('scan'),false);assert.equal(saved.get('cards'),'private inventory');assert.equal(saved.get('cardstashy-glass'),'off');
+const doc=previewDocument('<button>Sample</button>',{cssUrl:'https://app.test/style.css',game:'ptcg'});assert.match(doc,/https:\/\/app.test\/style.css/);assert.doesNotMatch(doc,/<script/);
+const controller=readFileSync('tour.js','utf8');assert.match(controller,/sandbox=""/);assert.doesNotMatch(controller,/allow-scripts|allow-same-origin|\.click\(\)/);assert.match(controller,/visibilitychange/);assert.match(controller,/prefers-reduced-motion/);
+console.log('PASS: two-part intro, action-changing examples in every game, no private data or paid requests, isolated Reset, script-free sandbox and reduced-motion controls.');

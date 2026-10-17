@@ -1,3 +1,4 @@
+import {homeSearchMarkup} from './home-search.js';
 import {applyYgoSetPrices} from './ygo-set-prices.js';
 import {compactPriceSummary,detailTabs,detailPanel,presentationQuote,quoteForContext} from "./pricing-presentation.js";
 import { homeValue, homeEdition, homeMetaCarousel, homeValueCoverage, homeMetaSnapshot, homeResume } from "./home-ui.js";
@@ -20,7 +21,7 @@ import { recordCardPrice, trackedQuote, priceHistoryHtml, alertsPanel, alertStat
 import { lineChart, skeletonGrid } from "./ui.js";
 import { installNudge } from "./install.js";
 import { rankByName } from "./catalog-tools.js";
-import {setRowContent,knownSetCount,setYearSections,setCardFields,setCardFacets,filterSortSetCards,setProgressMarkup} from './set-list-ui.js';
+import {setRowContent,knownSetCount,setYearSections,setCardFields,setCardFacets,setFinishLabel,setVariantKey,filterSortSetCards,setProgressMarkup} from './set-list-ui.js';
 import {artworkHTML,artworkSources,pokemonArtCrop,pokemonDeckCover} from "./artwork.js";
 import { tierOf, tierAttrs, tierStyle, tierGem, ygoRarityFlair } from "./tier.js";
 import {viewControl,selectionControl,selectionMark,selectionTray,historyPanel,quoteModel,priceOverview,quoteWarning} from "./workbench-ui.js";
@@ -395,10 +396,8 @@ export function heroFor(g) {
   return h;
 }
 export function homeHero(g) {
-  const h = heroFor(g), cardAction = h ? `data-act="homeDailyCard" data-game="${g}" data-id="${esc(h.id)}" data-name="${esc(h.name)}" data-date="${h.date}"` : "";
-  // A small art accent inside the personal overview, not another welcome/search
-  // hero. One action opens the very same persisted daily printing shown here.
-  return `<section class="home-hero home-daily ${g} ${h?.art ? "has-art" : "no-art"}" id="homeHero" data-game="${g}" data-daily-date="${h?.date || ""}" data-daily-id="${esc(h?.id || "")}">${h?.art && g === "ptcg" ? pokemonArtCrop({ game: g, id: h.id }, "hh-art", h.art) : h?.art ? `<img class="hh-art" src="${esc(h.art)}" alt="" referrerpolicy="no-referrer" data-art-sources="${esc(JSON.stringify([...new Set([h.art, h.artDirect].filter(Boolean))]))}" data-art-index="0">` : ""}<div class="hh-body"><div class="hh-credits">${cardAction ? `<button class="hh-credit" ${cardAction} aria-label="Explore ${esc(h.name)}, Card of the Day"><span>Card of the Day</span><b>${esc(h.name)}</b><span class="hh-daily-arrow" aria-hidden="true">↗</span></button>` : ""}</div></div></section>`;
+  const h=heroFor(g),G=GAMES[g],cardAction=h?`data-act="homeDailyCard" data-game="${g}" data-id="${esc(h.id)}" data-name="${esc(h.name)}" data-date="${h.date}"`:'';
+  return `<section class="home-hero home-art-header ${g} ${h?.art?'has-art':'no-art'}" id="homeHero" data-game="${g}" data-daily-date="${h?.date||''}" data-daily-id="${esc(h?.id||'')}">${h?.art&&g==='ptcg'?pokemonArtCrop({game:g,id:h.id},'hh-art',h.art):h?.art?`<img class="hh-art" src="${esc(h.art)}" alt="" referrerpolicy="no-referrer" data-art-sources="${esc(JSON.stringify([...new Set([h.art,h.artDirect].filter(Boolean))]))}" data-art-index="0">`:''}<div class="hh-shade"></div><div class="hh-body"><p class="eyebrow">${esc(G.name)}</p><h1>Your cards. Your next adventure.</h1><div id="homeSearchDock">${homeSearchMarkup(g)}</div><div class="hh-credits">${cardAction?`<button class="hh-credit" ${cardAction} aria-label="Explore ${esc(h.name)}, Card of the Day"><span>Card of the Day</span><b>${esc(h.name)}</b><span class="hh-daily-arrow" aria-hidden="true">↗</span></button>`:''}</div></div></section>`;
 }
 // Retain the existing per-device daily picks and providers. Share in-flight work
 // per game/day; an old day's response may never overwrite today's selection.
@@ -538,7 +537,7 @@ function tcgStartPath(g) {
 
 export function tcgHome() {
   const g = game(), v = collectionValue(g), st = gs(g);
-  return `<div class="home-overview"><h1 class="home-sr-only">${esc(GAMES[g].short)} dashboard</h1>${homeValue({ game: g, ...v, decks: st.decks.length, history: readTcgValueHistory(g) })}${homeHero(g)}</div>
+  return `${homeHero(g)}<div class="home-overview home-value-overview">${homeValue({ game: g, ...v, decks: st.decks.length, history: readTcgValueHistory(g) })}</div>
   ${homeResume(g, deck => formatOf(g, deck.format).name)}
   ${quickTiles(g)}
   ${homeEdition(g)}`;
@@ -816,7 +815,7 @@ const panel = detailPanel;
 export function tcgAddSheet(c, preset = "", presetEdition = "") {
   if(!preset&&c.setContext?.printing)preset=c.setContext.printing.code+"|"+c.setContext.printing.rarity;
   const g = c.game,
-    opts = g === "ygo" ? c.sets?.map((s) => [s.code + "|" + s.rarity, `${s.code} · ${s.rarity}${s.price ? " · " + usd(s.price) : ""}`]) || [] : c.variants?.map((v) => [v.key, `${v.label}${v.usd ? " · " + usd(v.usd) : ""}`]) || [];
+    opts = g === "ygo" ? c.sets?.map((s) => [s.code + "|" + s.rarity, `${s.code} · ${s.rarity}${s.price ? " · " + usd(s.price) : ""}`]) || [] : c.variants?.map((v) => [v.key, `${v.label}${v.usd ? " · " + usd(v.usd) + " reference" : ""}`]) || [];
   return `<div class="sheet-head"><h2>Add to collection</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   <div class="build-seed">${imgTag(c, "mini-art")}<div><b>${esc(c.name)}</b><small class="muted">${esc(c.typeLine || "")}</small></div><span></span></div>
   <div class="grid2">
@@ -966,7 +965,7 @@ export function tcgDecks() {
     st = gs(g),
     tab = ["ideas", "inspiration"].includes(S.ui.decksTab) ? S.ui.decksTab : "mine";
   return `<div class="page-head"><h1>Decks</h1><div class="row"><button class="btn small" data-act="tImport">↥ Import</button><button class="btn ghost small" data-act="tNewDeck">＋ New</button></div></div>
-  <div class="random-tools"><button class="btn ghost small" data-act="learnGame">How to play · keywords</button></div>
+  <div class="random-tools"><button class="btn ghost small" data-act="learnGame">How to play · keywords</button><button class="btn ghost small" data-act="tabletop">Tabletop · play together</button></div>
   ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Meta decks"]])}
   <div class="random-tools"><button class="btn ghost small" data-act="randomDeckOptions" data-home="1">🎲 Random deck</button></div>
   ${tab === "ideas" ? ideasView(g) : tab === "inspiration" ? metaView(g) : st.decks.length ? `<div class="deck-grid">${st.decks.slice().reverse().map((d) => deckTile(g, d)).join("")}</div>` : empty("No decks yet", `Pick a format and start adding cards, build from cards you own in Ideas, or copy a tournament deck from Meta decks.`, `<button class="btn" data-act="decksTab" data-id="ideas">✧ Ideas from my cards</button><button class="btn ghost" data-act="decksTab" data-id="inspiration">🏆 Meta decks</button>`)}`;
@@ -1733,7 +1732,7 @@ const setCoverageText=(contents,total,loaded,source)=>{
 export function tcgSet() {
   const g=game(),U=ui(g).set,info=U.info,source=g==="ptcg"?"TCGdex":"YGOPRODeck";
   if(U.candidates?.length)return `<section class="panel set-release-chooser"><button class="link small" data-act="go" data-to="#sets">← All sets</button><p class="eyebrow">Choose the exact release</p><h1>More than one release uses ${esc(U.id)}</h1><p class="muted">This older link does not identify a unique release. Choose its name and release date; no edition has been assumed.</p><div class="set-list">${U.candidates.map(s=>`<button class="set-row" data-act="tSet" data-id="${esc(s.id)}">${setRowContent({name:s.name,code:s.code,image:s.image,detail:s.date||"Date unavailable",count:s.expectedUniqueCards,printingCount:s.printingCount})}</button>`).join('')}</div></section>`;
-  const all=[...new Map(U.cards.map(raw=>[raw.id,setContextCard(g,{...(cardOf(g,raw.id)||raw),...(raw.setContext?{setContext:raw.setContext}:{})},info||raw.setContext,ui(g).sets.list,{variantKey:U.finish||""})])).values()].map(c=>g==="ygo"?selectedYgoCard(c):c);
+  const all=[...new Map(U.cards.map(raw=>{const full={...(cardOf(g,raw.id)||raw),...(raw.setContext?{setContext:raw.setContext}:{})};return [raw.id,setContextCard(g,full,info||raw.setContext,ui(g).sets.list,{variantKey:g==="ptcg"&&U.finish?(setVariantKey(full,U.finish)||"unresolved-selection"):U.finish||""})];})).values()].map(c=>g==="ygo"?selectedYgoCard(c):c);
   const own=c=>ownedInSet(g,c,info),ownedCount=all.filter(c=>own(c)>0).length,facets=setCardFacets(all,g),contents=U.contents||{},total=knownSetCount(g==="ygo"?contents.expectedUniqueCards??info?.expectedUniqueCards:info?.count);
   let list=filterSortSetCards(all.map(c=>{const chosen=selectedSetRarity(c,U.rarity);return g==='ygo'?selectedYgoCard(chosen,chosen.displayPrintingKey||'',U.edition||''):chosen;}),g,U);
   if(U.filter!=="all")list=list.filter(c=>U.filter==="owned"?own(c)>0:own(c)===0);
@@ -1746,11 +1745,11 @@ export function tcgSet() {
   ${all.length?progress.html:""}
   ${contents.completeness!=="complete"&&all.length?`<p class="set-coverage-note" role="status">${esc(setCoverageText(contents,total,all.length,source))} <button class="link small" data-act="tSetRetry" ${U.busy?'disabled':''}>${U.busy?'Refreshing…':'Refresh card list'}</button></p>`:""}
   <div class="searchbar"><input type="search" value="${esc(U.q||'')}" placeholder="Search this set by name or number" data-input="tSetQ" aria-label="Search this set" autocomplete="off"></div>
-  <div class="set-controls">${segmented("tSetFilter",U.filter,[["all","All"],["owned","Owned"],["missing","Missing"]])}${facets.rarities.length?`<select data-change="tSetRarity" aria-label="Rarity">${options([["","All rarities"],...facets.rarities.map(x=>[x,x])],U.rarity||"")}</select>`:""}${g==="ygo"?`<select data-change="tSetEdition" aria-label="Edition">${options([["","Edition unspecified"],["1st-edition","First Edition"],["unlimited","Unlimited"],["limited","Limited"]],U.edition||"")}</select>`:""}${facets.finishes.length?`<select data-change="tSetFinish" aria-label="${g==="ptcg"?'Version':'Finish'}">${options([["",g==="ptcg"?"All versions":"All finishes"],...facets.finishes.map(x=>[x,x.replaceAll('-',' ')])],U.finish||"")}</select>`:""}<select data-change="tSetSort" aria-label="Sort">${options(sortOptions,sortOptions.some(([key])=>key===U.sort)?U.sort:"name")}</select></div>
+  <div class="set-controls">${segmented("tSetFilter",U.filter,[["all","All"],["owned","Owned"],["missing","Missing"]])}${facets.rarities.length?`<select data-change="tSetRarity" aria-label="Rarity">${options([["","All rarities"],...facets.rarities.map(x=>[x,x])],U.rarity||"")}</select>`:""}${g==="ygo"?`<select data-change="tSetEdition" aria-label="Edition">${options([["","Edition unspecified"],["1st-edition","First Edition"],["unlimited","Unlimited"],["limited","Limited"]],U.edition||"")}</select>`:""}${facets.finishes.length?`<select data-change="tSetFinish" aria-label="${g==="ptcg"?'Version':'Finish'}">${options([["",g==="ptcg"?"All versions":"All finishes"],...facets.finishes.map(x=>[x,setFinishLabel(x)])],U.finish||"")}</select>`:""}<select data-change="tSetSort" aria-label="Sort">${options(sortOptions,sortOptions.some(([key])=>key===U.sort)?U.sort:"name")}</select></div>
   ${!U.busy&&!U.error&&!all.length?`<section class="panel mu-empty"><div class="mu-empty-mark" aria-hidden="true">◇</div><h3>No card list for this release yet</h3><p class="muted">${source} has not returned cards for ${esc(info?.name||"this release")}. This does not mean the release contains zero cards.</p><button class="btn ghost" data-act="tSetRetry">Try again</button></section>`:`<div class="list-bar"><p class="muted small">${U.busy?"Loading cards and prices…":`${list.length} shown · ${g==="ygo"?"selected-release references; choose rarity and edition":"daily market references"}`}</p>${viewControl(g,"set")}</div>`}
   ${remainingDetails?`<p class="set-coverage-note">Rarity and version filters use loaded card details. ${remainingDetails} ${remainingDetails===1?'card is':'cards are'} still waiting for details. <button class="link small" data-act="tSetDetails" ${U.busy||U.detailsBusy?'disabled':''}>${U.busy||U.detailsBusy?'Loading details…':'Load remaining details'}</button></p>`:''}
   ${all.length&&!list.length?empty("No cards match","Try another name or number, or clear your filters."):""}
-  <div class="card-grid set-grid">${list.slice(0,U.limit).map(c=>`<button class="grid-card ${own(c)?"own":""}" data-act="tCard" data-id="${esc(c.id)}" data-set-id="${esc(info?.id||U.id)}" ${U.finish?`data-set-variant="${esc(U.finish)}"`:""} ${g==="ygo"&&c.setContext?.printing?`data-printing="${esc(c.setContext.printing.code+"::"+c.setContext.printing.rarity)}" data-edition="${esc(U.edition||'')}"`:""} ${tcgRarityAttrs(c)} ${tierAttrs(tcgTier(c))}>${imgTag(c)}${tileBadges(c)}<span class="grid-meta"><span class="ellip">${setCardFields(c,g).number?"#"+esc(setCardFields(c,g).number)+" ":""}${esc(c.name)}</span><span>${c.brief?"…":price(c)===null?(g==="ygo"&&c.setContext?.printingAmbiguous?"Choose rarity":g==="ygo"&&c.setContext?.printing?.quotes?.length&&!U.edition?"Choose edition":"—"):usd(price(c))}</span></span>${own(c)?`<span class="owned-badge">×${own(c)}</span>`:""}</button>`).join('')}</div>
+  <div class="card-grid set-grid">${list.slice(0,U.limit).map(c=>`<button class="grid-card ${own(c)?"own":""}" data-act="tCard" data-id="${esc(c.id)}" data-set-id="${esc(info?.id||U.id)}" ${U.finish?`data-set-variant="${esc(g==="ptcg"?setVariantKey(c,U.finish):U.finish)}"`:""} ${g==="ygo"&&c.setContext?.printing?`data-printing="${esc(c.setContext.printing.code+"::"+c.setContext.printing.rarity)}" data-edition="${esc(U.edition||'')}"`:""} ${tcgRarityAttrs(c)} ${tierAttrs(tcgTier(c))}>${imgTag(c)}${tileBadges(c)}<span class="grid-meta"><span class="ellip">${setCardFields(c,g).number?"#"+esc(setCardFields(c,g).number)+" ":""}${esc(c.name)}</span><span>${c.brief?"…":price(c)===null?(g==="ygo"&&c.setContext?.printingAmbiguous?"Choose rarity":g==="ygo"&&c.setContext?.printing?.quotes?.length&&!U.edition?"Choose edition":"—"):usd(price(c))}</span></span>${own(c)?`<span class="owned-badge">×${own(c)}</span>`:""}</button>`).join('')}</div>
   ${list.length>U.limit?`<button class="btn ghost block" data-act="tSetMore">Show more · ${list.length-U.limit} left</button>`:""}`;
 }
 
@@ -3321,7 +3320,8 @@ export function registerTcg(c) {
   A.tBuild = async (t) => {
     const G = g(),
       card = await ensureCard(G, t.dataset.id);
-    openBuild(G, [card.id]);
+    if(t.dataset.format&&!buildable(G,card).some(f=>f.id===t.dataset.format))return toast("This card cannot seed that format. Choose another card.");
+    openBuild(G, [card.id],"",null,t.dataset.format||"");
   };
   // Build around several cards at once (e.g. everything you own from one archetype).
   A.tBuildMulti = async (t) => {

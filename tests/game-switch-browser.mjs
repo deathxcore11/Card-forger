@@ -53,8 +53,8 @@ async function prepare(app, pair, row) {
     assert.equal(await control.getAttribute('aria-selected'), 'true', 'The real source deck subtab is active');
   }
   if (row.settings) {
-    await page.locator('#settingsTab-backup').click();
-    assert.equal(await page.locator('#settingsTab-backup').getAttribute('aria-selected'), 'true');
+    await page.locator('[data-act="settingsTab"][data-id="backup"]').click();
+    assert.equal(await page.locator('#settingsTab-account').getAttribute('aria-selected'), 'true');
   }
   // Normalize and persist only the synthetic setup, before observing transitions.
   // This avoids confusing initial workspace migrations with navigation writes.
@@ -89,7 +89,7 @@ async function assertTarget(page, pair, row) {
     assert.equal(scan.camera, 0); assert.equal(scan.ocr, 0); assert.equal(scan.confirm, false); assert.equal(scan.camOn, false);
     assert.equal(await page.locator('.scan-batch-thumb').count(), 3, 'All original mixed-game captures stay reviewable');
   }
-  if (row.settings) assert.equal(await page.locator('#settingsTab-backup').getAttribute('aria-selected'), 'true', 'Settings subsection survives');
+  if (row.settings) assert.equal(await page.locator('#settingsTab-account').getAttribute('aria-selected'), 'true', 'Settings subsection survives');
   if (view === 'rules') assert.equal(await page.locator('[data-learning-root]').getAttribute('data-game'), pair.to, 'Rules use target-game context');
 }
 
@@ -427,7 +427,7 @@ async function workspaceReplacementCase(app, game) {
   await page.goBack();await waitRoute(page,other,'#collection/cards');
   assert.equal(await page.evaluate(()=>window.__uiTestState.state.settings.authorName),marker,'Back changes the visit, never revives pre-import workspace data');
   await page.goForward();await waitRoute(page,importGame,'#settings');
-  await page.locator('#settingsTab-backup').click();await page.locator('#settings-backup .settings-disclosure > summary').filter({hasText:/^Restore or check a backup$/}).click();
+  await page.locator('[data-act="settingsTab"][data-id="backup"]').click();await page.locator('#settings-backup .settings-disclosure > summary').filter({hasText:/^Restore or check a backup$/}).click();
   await page.locator('[data-act="undoRestore"]').click();await page.locator('dialog.cf-dialog[open] [value="ok"]').click();
   await waitRoute(page,other,'#settings');assert.deepEqual(await collections(page),original);
   assert.notEqual(await page.evaluate(()=>window.__uiTestState.state.settings.authorName),marker);

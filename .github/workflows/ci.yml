@@ -148,6 +148,9 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Test real Home shell, game tabs, community slides and responsive layouts
         run: node tests/home-browser.mjs
+      - name: Test integrated search, action tutorials, Settings Info and local tabletop
+        if: ${{ !cancelled() }}
+        run: node tests/home-guide-browser.mjs
       - name: Validate and test exact Home value updates with synthetic quotes
         if: ${{ !cancelled() }}
         run: |

@@ -29,13 +29,24 @@ export function setYearSections(sets, renderRow, dateOf = set => set.date) {
  return `<div class="set-year-sections">${[...groups].map(([year,rows])=>`<section class="set-year-section" aria-label="${esc(year)} releases"><header class="set-year-heading"><h2 class="year">${esc(year)}</h2><span>${rows.length.toLocaleString()} ${rows.length===1?'release':'releases'}</span><i aria-hidden="true"></i></header><div class="set-list set-year-grid">${rows.map(renderRow).join('')}</div></section>`).join('')}</div>`;
 }
 const values = xs => [...new Set(xs.filter(x=>x!==null&&x!==undefined&&x!==''))].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
+// Detailed provider IDs identify products, not labels a collector can understand.
+const finishNames={normal:'Normal',holofoil:'Holofoil','reverse-holofoil':'Reverse Holofoil',reverse:'Reverse Holofoil','1st-edition':'First Edition','1st-edition-holofoil':'First Edition · Holofoil'};
+export function setFinishLabel(key){return finishNames[key]||String(key).replace(/^label:/,'').replaceAll('-',' ');}
+export function pokemonSetFinish(variant){
+ const k=String(variant.key||'');if(!k.startsWith('detail:'))return k;
+ const label=String(variant.label||'').trim();return label&&!label.startsWith('detail:')?'label:'+label:'';
+}
+export function setVariantKey(card,finish){
+ if(!finish)return '';const matches=(card.variants||[]).filter(v=>pokemonSetFinish(v)===finish);
+ return matches.length===1?matches[0].key:'';
+}
 export function setCardFields(card, game) {
  const context=card.setContext,printings=context?.printings||[],single=context?.printing||(!context?.printingAmbiguous&&printings.length===1?printings[0]:null);
  return { set:game==='mtg'?card.set_name||card.set||'':game==='ptcg'?card.set?.name||card.set?.id||'':context?.name||'',
   number:game==='mtg'?card.collector_number||'':game==='ptcg'?card.set?.number||'':values(printings.map(p=>String(p.code||'').split('-').slice(1).join('-'))).length===1?String(printings[0]?.code||'').split('-').slice(1).join('-'):'',
   numbers:values(game==='ygo'?printings.map(p=>p.code):[game==='mtg'?card.collector_number:card.set?.number]),
   rarities:values(game==='ygo'?(single?[single.rarity]:printings.map(p=>p.rarity)):[card.rarity]),
-  finishes:values(game==='mtg'?card.finishes||[]:game==='ptcg'?(card.variants||[]).map(v=>v.key):printings.map(p=>p.finish)),
+  finishes:values(game==='mtg'?card.finishes||[]:game==='ptcg'?(card.variants||[]).map(pokemonSetFinish):printings.map(p=>p.finish)),
   price:context?context.price:card.prices?.usd??null };
 }
 // Only offer facets that the actual returned cards can substantiate.
