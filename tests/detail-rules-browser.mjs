@@ -2,7 +2,7 @@
 // No production provider, payment or AI traffic is permitted by the fixture.
 // Run schema checks without any browser: --validate-fixtures.
 import assert from 'node:assert/strict';
-import {GAMES,WIDTHS,CARDS,DHELMISE_COVER,validateFixtures,startServer,openApp,navigate,closeSheet,inventorySnapshot,noOverflow,capture,saveReport} from './detail-rules-fixtures.mjs';
+import {GAMES,WIDTHS,CARDS,DHELMISE_COVER,makeFixtures,validateFixtures,startServer,openApp,navigate,closeSheet,inventorySnapshot,noOverflow,capture,saveReport} from './detail-rules-fixtures.mjs';
 import {sellerModels,presentationQuote} from '../pricing-presentation.js';
 
 console.log(await validateFixtures());
@@ -17,7 +17,15 @@ assert.equal(tcg('ygo',CARDS.ygo[0],{priceEdition:'SET-001::Super Rare'}).value,
 assert.equal(tcg('ygo',CARDS.ygo[0],{priceEdition:'SET-001::Super Rare',priceYgoEdition:'1st-edition'}).value,31);
 assert.equal(presentationQuote('ptcg',CARDS.ptcg[3],'normal').observedAt,'2020-01-01');
 for(const card of CARDS.mtg.slice(1,4))assert.equal(tcg('mtg',card).value,null,'Missing, EUR-only and private quotes cannot become USD seller amounts');
-if(process.argv.includes('--validate-fixtures'))process.exit(0);
+if(process.argv.includes('--validate-fixtures')){
+ // Verify the real renderer's face selection before spending a hosted browser
+ // run. No fetch is available here; exit also cancels deferred watch work.
+ globalThis.fetch=undefined;
+ const {S}=await import('../store.js'),{cardSheet}=await import('../views.js'),fixtures=makeFixtures('mtg'),dual=CARDS.mtg[4];S.state=fixtures.state;S.catalog=fixtures.catalog;
+ const before=JSON.stringify(S.state);
+ for(const face of [0,1,0]){const html=cardSheet(dual,{type:'card',name:dual.name,entryId:'lot-mtg-4',face});assert.equal(html.match(/<div class="cs-card">[\s\S]*?<img class="card-img" src="([^"]+)"/)?.[1],dual.card_faces[face].image_uris.normal);assert.equal(html.match(/<img class="cs-art" src="([^"]+)"/)?.[1],dual.card_faces[face].image_uris.art_crop);assert(html.includes('<h2>'+dual.name+'</h2>'));assert(html.includes('Flip to '+dual.card_faces[face?0:1].name));}
+ assert.equal(JSON.stringify(S.state),before,'Rendering either face preserves exact saved identity and all inventory data');console.log('Actual Magic cardSheet renders exact dawn/dusk/dawn card and hero images without changing identity. No browser or provider call.');process.exit(0);
+}
 const {chromium}=await import('playwright');
 const server=await startServer();let browser,failure;const report=[];
 async function openCard(page,game,index=0){
@@ -106,7 +114,7 @@ async function missingQuotes(app,game){
  await openCard(page,game,personal);assert.match(await page.locator('.card-price-summary').innerText(),/\$987\.65/);assert.match(await page.locator('.card-price-summary').innerText(),/private value|not a seller/i);await jump(page,'sellers');assert.doesNotMatch(await page.locator('#card-sellers').innerText(),/987\.65/);assert((await page.locator('#card-sellers .vendor-quote strong').allTextContents()).every(t=>t==='Check price'));await closeSheet(page);
  if(game==='mtg'){await openCard(page,game,2);assert.match(await page.locator('.card-price-summary').innerText(),/€9\.30/);await jump(page,'sellers');await seller(page,'TCGplayer',{amount:'Check price'});await seller(page,'Cardmarket',{amount:'€9.30',currency:'EUR'});assert.doesNotMatch(await row(page,'TCGplayer').innerText(),/9\.30/);await closeSheet(page);}
  if(game==='ptcg'){await openCard(page,game,3);assert.match(await page.locator('.card-price-summary').innerText(),/Last observed 2020-01-01/);await jump(page,'sellers');assert.match(await row(page,'TCGplayer').innerText(),/Last observed 2020-01-01/);assert.match(await page.locator('.price-version').innerText(),/not a current offer/);await closeSheet(page);}
- if(game==='mtg'){await openCard(page,game,4);await mainArt(page);const first=await artSnapshot(page);await page.locator('[data-act="flipFace"]').click();await page.waitForFunction(()=>document.querySelector('.cs-card .card-img')?.src.endsWith('/dual-dusk.png'));assert.notEqual((await artSnapshot(page)).card,first.card);await page.locator('[data-act="flipFace"]').click();await page.waitForFunction(()=>document.querySelector('.cs-card .card-img')?.src.endsWith('/dual-dawn.png'));assert.deepEqual(await artSnapshot(page),first);await closeSheet(page);}
+ if(game==='mtg'){await openCard(page,game,4);await mainArt(page);const first=await artSnapshot(page);await page.locator('[data-act="flipFace"]').click();await page.waitForFunction(()=>{const n=document.querySelector('#sheet[open] .cs-card .card-img'),ctx=window.__uiTestState.ui.sheetCtx;return n?.isConnected&&n.complete&&n.naturalWidth>0&&n.src.endsWith('/dual-dusk.png')&&ctx.face===1&&ctx.entryId==='lot-mtg-4';});const back=await artSnapshot(page);assert.notEqual(back.card,first.card);assert.equal(back.hero,CARDS.mtg[4].card_faces[1].image_uris.art_crop);assert.equal(back.title,first.title,'Flipping changes face artwork, not printing identity');await page.locator('[data-act="flipFace"]').click();await page.waitForFunction(()=>{const n=document.querySelector('#sheet[open] .cs-card .card-img'),ctx=window.__uiTestState.ui.sheetCtx;return n?.isConnected&&n.complete&&n.naturalWidth>0&&n.src.endsWith('/dual-dawn.png')&&ctx.face===0&&ctx.entryId==='lot-mtg-4';});assert.deepEqual(await artSnapshot(page),first);await closeSheet(page);}
  assert.equal(await inventorySnapshot(page),before);report.push(`${game}: unknown and private values never become seller quotes${game==='mtg'?'; EUR remains only EUR':''}${game==='ptcg'?'; dated quote is explicitly not current':''}.`);
 }
 async function deckArt(app,game){

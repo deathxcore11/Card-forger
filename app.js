@@ -766,7 +766,7 @@ function parseHash() {
       ui.versions = { a: null, b: "current" };
     }
     ui.deckId = id;
-    if (["cards", "engine", "matchups", "upgrade", "versions", "playtest", "shop"].includes(b)) ui.deckTab = b;
+    if (["cards", "engine", "matchups", "upgrade", "versions", "playtest", "shop", "rules"].includes(b)) ui.deckTab = b;
     if (id && id !== S.state.activeDeck && deckById(id)) {
       S.state.activeDeck = id;
       save();

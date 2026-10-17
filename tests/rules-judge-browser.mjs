@@ -146,6 +146,7 @@ async function modalContainment(){
  const mock=createResponder(),app=await openApp(browser,server.base,{game:'mtg',hash:'#deck/saved-mtg',width:390,height:800,rulesResponder:mock.respond});
  try{
   const {page}=app;await page.locator('#content [data-act="deckTab"][data-id="rules"]').click();
+  await page.waitForFunction(()=>location.hash==='#deck/saved-mtg/rules'&&window.__uiTestState.ui.deckTab==='rules'&&document.querySelector('#content .deck-body[data-tab="rules"]')?.isConnected);
   const launcher='#content [data-learning-root] [data-act="askRules"]',outside='#content [data-act="deckTab"][data-id="cards"]';await page.locator(launcher).waitFor();
   const before=await page.evaluate(()=>({sheet:document.querySelector('#sheet').open,sheetLock:document.documentElement.classList.contains('sheet-open'),root:getComputedStyle(document.documentElement).overflowY,body:getComputedStyle(document.body).overflowY}));assert.equal(before.sheet,false);assert.equal(before.sheetLock,false,'Direct deck Rules starts without a sheet-provided scroll lock');
   await page.locator(launcher).click();await page.locator(D).waitFor();assert.equal(await page.locator(D+' [data-rules-format]').inputValue(),'Commander','Direct deck guide inherits the actual deck format');
@@ -198,6 +199,13 @@ async function races(){
  const navMock=createResponder(),nav=await openApp(browser,server.base,{game:'ptcg',rulesResponder:navMock.respond});
  try{const {page}=nav;await openHub(nav);const gate=nav.hold(u=>u.pathname==='/api/ai/ask');await submit(nav,CASES.ptcg.question);await gate.seen;await navigate(page,'#collection');await page.waitForFunction(()=>!document.querySelector('.rules-ask-dialog[open]'));const response=page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname==='/api/ai/ask'&&r.request().postDataJSON()?.question===CASES.ptcg.question);gate.release();await response;await flush(page);assert.equal(await page.locator(D).count(),0,'Late answer never reopens after navigation');await openHub(nav);await settled(page);assert.equal(nav.rulesRequests.length,1,'Reopening completed context never retries');assert.match(await answer(page).innerText(),/Start your turn/);report.push('Navigation while a request is pending closes the guide; late result cannot reopen it. Same-context reopen restores its completed answer without resubmitting.');await nav.close();}catch(error){await capture(nav.page,'rules-judge-navigation-failure').catch(()=>{});await nav.context.close();throw error;}
 }
-try{browser=await chromium.launch();await modalContainment();for(const game of GAMES)await primaryGame(game);await keywordEscape();await corruption();await races();console.log('PASS: '+report.join('\nPASS: '));}
+try{
+ browser=await chromium.launch();const failures=[];
+ // Independent app contexts still run after a failed scenario. Every failure
+ // remains fatal, with its original stack in the report; nothing is skipped.
+ for(const [name,run] of [...GAMES.map(game=>['primary-'+game,()=>primaryGame(game)]),['direct-deck-modal',modalContainment],['keyword-escape',keywordEscape],['citation-rejection',corruption],['request-races',races]])try{await run();}catch(error){failures.push({name,error});console.error('FAIL: '+name+'\n'+String(error.stack||error));}
+ if(failures.length)throw new AggregateError(failures.map(f=>f.error),failures.map(f=>f.name+': '+String(f.error.stack||f.error)).join('\n\n'));
+ console.log('PASS: '+report.join('\nPASS: '));
+}
 catch(error){failure=error;throw error;}
 finally{await saveReport('rules-judge-browser',report,failure);await browser?.close();await server.close();}

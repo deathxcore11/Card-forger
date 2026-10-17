@@ -44,7 +44,11 @@ CARDS.ygo[0].sets[0]={...CARDS.ygo[0].sets[0],productId:555,checkedAt:ISO,quotes
 CARDS.ygo[0].sets[1]={...CARDS.ygo[0].sets[1],productId:556,checkedAt:ISO};
 CARDS.ygo[0].sets.push({code:'SET-001',name:'Same-code different-rarity fixture',rarity:'Super Rare',price:null,productId:557,checkedAt:ISO,quotes:[{edition:'1st Edition',market:31},{edition:'Unlimited',market:11}]});
 CARDS.ptcg[3].variants[0].historyQuote='2020-01-01';
-const dual=magic('dual','Fixture dawn // Fixture dusk',{usd:'12.50'});delete dual.image_uris;dual.layout='transform';dual.finishes=['nonfoil'];dual.card_faces=['dawn','dusk'].map((face,i)=>({name:'Fixture '+face,type_line:i?'Creature — Werewolf':'Creature — Human',oracle_text:'Vigilance.',power:String(2+i),toughness:String(2+i),image_uris:{normal:`${IMAGE}/dual-${face}.png`,art_crop:`${IMAGE}/dual-${face}-crop.png`}}));CARDS.mtg.push(dual);
+const dual=magic('dual','Fixture dawn // Fixture dusk',{usd:'12.50'});
+// Transform printings carry wording, mana and stats on their individual faces,
+// not the single-face helper's inherited oracle_text (which masks card_faces).
+for(const field of ['image_uris','oracle_text','mana_cost','power','toughness'])delete dual[field];
+dual.layout='transform';dual.type_line='Creature — Human // Creature — Werewolf';dual.finishes=['nonfoil'];dual.card_faces=['dawn','dusk'].map((face,i)=>({name:'Fixture '+face,type_line:i?'Creature — Werewolf':'Creature — Human',oracle_text:'Vigilance.',mana_cost:i?'':'{2}{G}',power:String(2+i),toughness:String(2+i),image_uris:{normal:`${IMAGE}/dual-${face}.png`,art_crop:`${IMAGE}/dual-${face}-crop.png`}}));CARDS.mtg.push(dual);
 export const DHELMISE_COVER=pokemonDeckCover({name:'Dhelmise V',icons:['dhelmise'],list:[{name:'Dhelmise V',set:'SSH',number:'009',qty:4,kind:'Pokemon'}]});
 export function metaFeed(game){
  if(game==='ptcg')return {game,artSchema:1,source:'Limitless deterministic fixture',events:[],decks:[],top:[],archetypes:[{id:'dhelmise',name:'Dhelmise',icons:['dhelmise'],count:8,top8:0,share:.2,best:'',cover:{...DHELMISE_COVER,source:{eventId:'fixture-event',rank:17}}},{id:'no-art',name:'No supplied cover',icons:[],count:2,top8:0,share:.05,best:'',cover:null}]};
@@ -71,6 +75,7 @@ export function historyFixture(url){
  return {game,cardId,finish,notice:'No invented dates or unavailable quotes in this fixture.',series:current&&!archive?[{source:'Deterministic matching USD source',currency:'USD',finish,points:[{date:'2026-10-14',value:2},{date:'2026-10-15',value:3},{date:'2026-10-16',value:4}]}]:[]};
 }
 export async function validateFixtures(){
+ assert.equal(dual.oracle_text,undefined,'Transform wording is face-specific');assert.equal(dual.image_uris,undefined,'Transform artwork is face-specific');assert.equal(dual.card_faces.length,2);assert(dual.card_faces.every(face=>face.oracle_text&&face.image_uris.normal&&face.image_uris.art_crop));
  for(const game of GAMES){
   const f=makeFixtures(game),valid=validateWorkspace(structuredClone(f.state));
   for(const g of GAMES){const st=g==='mtg'?valid:valid.tcg[g];assert.equal(st.collection.length,CARDS[g].length);for(const [i,e] of st.collection.entries()){assert.equal(e[g==='mtg'?'printingId':'cardId'],CARDS[g][i].id);assert.equal(e.condition,i===0?'Lightly Played':'Near Mint');}assert.equal(st.collection[0].manualValue,1.75);}
