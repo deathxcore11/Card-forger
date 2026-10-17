@@ -38,8 +38,8 @@ try{
    await page.goto(base+'/#scan');await page.getByRole('heading',{name:'Scan',exact:true}).waitFor();
    const skip=page.getByRole('button',{name:'Skip',exact:true});try{await skip.waitFor({state:'visible',timeout:2000});await skip.click();}catch{}
    if(ref.g!=='mtg'){
-    await page.getByRole('button',{name:'Switch game',exact:true}).click();await page.locator('#sheet[open]').getByRole('button',{name:new RegExp(ref.game)}).click();
-    await page.getByRole('button',{name:'Switch game',exact:true}).getByText(ref.game,{exact:true}).waitFor();
+    await page.locator(`#gameTabs [data-game="${ref.g}"]`).click();
+    await page.locator(`#gameTabs [data-game="${ref.g}"][aria-selected="true"]`).waitFor();
    }
    // Exercise the user's explicit opt-in download, integrity check and durable cache.
    await page.getByRole('button',{name:'Scanner settings',exact:true}).first().click();

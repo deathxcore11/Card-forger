@@ -1,3 +1,4 @@
+import { homeValue, homeEdition } from "./home-ui.js";
 import {interactiveRules} from './rule-learning.js';
 import {brandMark} from './brand.js';
 import {conditionValueNote} from './condition-value.js';
@@ -89,20 +90,16 @@ export function home() {
     prev = hist.length > 1 ? hist[hist.length - 2] : null,
     change = prev ? value.total - prev.total : null,
     active = deckById(st.activeDeck),
-    others = st.decks.filter((d) => d !== active).slice(-8).reverse(),
-    onboarding = !(st.collection.length && st.decks.length);
+    others = st.decks.filter((d) => d !== active).slice(-8).reverse();
   const fresh = !st.collection.length && !st.decks.length,
     lead = active || st.decks.at(-1);
   // One next step for where you are; the 3-step guide only for brand-new users (and it can be hidden).
   return `${homeHero("mtg", copies ? "Welcome back." : "Let’s build from your cards.", mtgDeckArt(active), !fresh)}${installNudge(copies)}
   ${st.example ? `<div class="note warn">Example data is loaded. Reset it in Settings before adding real cards.</div>` : ""}
-  ${fresh && !startHidden("mtg") ? startPath() : mtgNext(lead, copies)}
-  ${onboarding ? "" : `<div class="kpis">
-    <button class="kpi" data-act="go" data-to="#collection/value"><b data-count="${Math.round(value.total)}" data-money="1">${usd(value.total, 0)}</b><span>collection value${change !== null ? ` <em class="${change >= 0 ? "up" : "down"}">${signed(change, (x) => usd(x, 0))}</em>` : ""}</span></button>
-    <button class="kpi" data-act="go" data-to="#collection"><b>${copies}</b><span>cards owned</span></button>
-    <button class="kpi" data-act="go" data-to="#decks"><b>${st.decks.length}</b><span>decks</span></button>
-  </div>`}
-  ${quickTiles("mtg", !!S.state.collection.length && !S.state.decks.length)}
+  ${homeValue({ total: value.total, copies, decks: st.decks.length, unpriced: value.unpriced, change, valueRoute: "#collection/value" })}
+  ${homeEdition("mtg")}
+  <div class="home-personal">${fresh && !startHidden("mtg") ? `<details class="home-start"><summary>New here? Start with your cards <span aria-hidden="true">＋</span></summary>${startPath()}</details>` : mtgNext(lead, copies)}
+  ${quickTiles("mtg", !!S.state.collection.length && !S.state.decks.length)}</div>
   ${others.length ? `<section class="home-deck-section"><div class="section-head"><h2>Deck shelf</h2><button class="link" data-act="go" data-to="#decks">All decks →</button></div><div class="shelf">${others.map((d) => deckTile(d)).join("")}</div></section>` : ""}
   ${
     value.spare.length && value.spareValue > 0
@@ -123,7 +120,7 @@ const glossary = () => `<details class="glossary"><summary>New to Commander? 60-
 // The active deck's commander art leads the Home banner.
 function mtgDeckArt(d) {
   const c = d ? meta(d.commander) || d.cards.map((x) => meta(x.name)).find((x) => art(x)) : null;
-  return c && art(c) ? { name: c.name, art: art(c), deck: true } : null;
+  return c && art(c) ? { name: c.name, art: art(c), deck: true, deckId: d.id } : null;
 }
 
 // Three steps for a new visitor; disappears once they have cards and a deck.

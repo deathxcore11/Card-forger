@@ -59,6 +59,15 @@ class DeployedAssetsTests(unittest.TestCase):
         with self.assertRaises(HTTPError):
             verifier.NoRedirects().redirect_request(request, None, 302, "redirect", {}, "https://other.example/")
 
+    def test_html_diagnostics_do_not_normalize_or_hide_changes(self):
+        original = b'<script src="app.js"></script><link rel="stylesheet" href="style.css">'
+        changed = original + b'<script src="https://static.cloudflareinsights.com/beacon.min.js?token=omit"></script>'
+        result = verifier.classify(verifier.HOSTS[0], "index.html", {"sha256": verifier.sha256(original)}, 200, changed)
+        self.assertEqual(result["state"], "MISMATCH")
+        self.assertFalse(result["match"])
+        self.assertEqual(result["html_structure"]["scripts"], ["app.js", "https://static.cloudflareinsights.com/beacon.min.js"])
+        self.assertNotIn("token", json.dumps(result))
+
     def test_canonical_entry_and_private_server_modules(self):
         jobs = verifier.jobs_for(verifier.HOSTS[0], verifier.KEY_ASSETS, verifier.load_expected(REPO), "abc-1")
         self.assertEqual(len(jobs), 6)
@@ -89,6 +98,26 @@ class DeployedAssetsTests(unittest.TestCase):
             report = json.loads(output.read_text())
             self.assertEqual(report["state"], "UNVERIFIED")
             self.assertIn("finished_at", report)
+
+    def test_html_mismatch_does_not_hide_other_asset_evidence(self):
+        def transformed(jobs):
+            results = []
+            for url, asset, expected in jobs:
+                body = (REPO / asset).read_bytes()
+                if url.startswith(verifier.HOSTS[0]) and asset == "index.html":
+                    body += b'<!-- edge transform -->'
+                results.append(verifier.classify(url, asset, expected, 200, body))
+            return results
+        with tempfile.TemporaryDirectory() as directory, patch("builtins.print"):
+            output = Path(directory) / "report.json"
+            with patch.object(verifier, "check_many", side_effect=transformed) as checked:
+                self.assertFalse(verifier.verify(REPO, output, wait_seconds=0))
+                self.assertEqual(checked.call_count, 2)
+            report = json.loads(output.read_text())
+            for host in verifier.HOSTS:
+                rows = report["attempts"][0]["hosts"][host]["modules"]
+                self.assertTrue(verifier.all_match(rows))
+                self.assertEqual(len(rows), len(verifier.MODULES))
 
 
 if __name__ == "__main__":

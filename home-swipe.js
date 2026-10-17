@@ -9,7 +9,7 @@ export function attachHomeSwipe(root,{enabled,current,switchGame,view=globalThis
  if(!root)return ()=>{};
  let gesture=null,busy=false,suppressUntil=0;
  const blocked=target=>{
-  if(target.closest?.('input,textarea,select,[contenteditable="true"],[role="slider"],.zoom-stage'))return true;
+  if(target.closest?.('input,textarea,select,[contenteditable="true"],[role="slider"],.zoom-stage,[data-home-gesture],.deck-tile,[data-hold-card],[draggable="true"],.hh-art-link,.hh-credit'))return true;
   for(let el=target;el&&el!==root;el=el.parentElement){
    if(el.scrollWidth>el.clientWidth+8 && /auto|scroll/.test(view.getComputedStyle(el).overflowX))return true;
   }

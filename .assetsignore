@@ -15,6 +15,7 @@ topdeck.js
 scripts
 mtgmeta.js
 pricefeed.js
+community-feed-route.js
 
 set-art.js
 test-fixtures
