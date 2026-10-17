@@ -121,10 +121,13 @@ try{
    await page.locator('[data-act="scanMode"][data-id="live"]').click();
    await page.getByRole('button',{name:'Start camera',exact:true}).waitFor();
    await page.evaluate(async g=>{
-    const {visibleGuide}=await import('/scancam.js'),image=new Image();image.src='/__reference/'+g;await image.decode();
+    const {guideRect}=await import('/scancam.js'),image=new Image();image.src='/__reference/'+g;await image.decode();
     navigator.mediaDevices.getUserMedia=async()=>{
      const canvas=document.createElement('canvas');canvas.width=640;canvas.height=900;const x=canvas.getContext('2d');
-     const draw=()=>{const v=document.querySelector('#scanVideo'),r=v?.getBoundingClientRect(),guide=visibleGuide(640,900,r?.width,r?.height);x.fillStyle='#567064';x.fillRect(0,0,640,900);x.save();x.translate(guide.x+guide.w*.44,guide.y+guide.h*.48);x.rotate(.13);x.drawImage(image,-guide.w*.36,-guide.h*.36,guide.w*.72,guide.h*.72);x.restore();};draw();setInterval(draw,33);
+     // A real camera's physical pixels do not rescale when a DOM tray appears.
+     // Keep the same rotated/off-centre source frame throughout attachment and resize.
+     const guide=guideRect(640,900),draw=()=>{x.fillStyle='#567064';x.fillRect(0,0,640,900);x.save();x.translate(guide.x+guide.w*.44,guide.y+guide.h*.48);x.rotate(.13);x.drawImage(image,-guide.w*.36,-guide.h*.36,guide.w*.72,guide.h*.72);x.restore();};draw();setInterval(draw,33);
+     window.__cameraCanvas=canvas;window.__cameraPixels=canvas.toDataURL();
      window.__cameraStream=canvas.captureStream(30);return window.__cameraStream;
     };
    },ref.g);
@@ -132,10 +135,15 @@ try{
    await page.locator('#scanVideo').waitFor();
    await page.evaluate(async()=>{const {S}=await import('/store.js');S.ui.scan.auto=false;});
    await page.waitForFunction(()=>document.querySelector('#scanVideo')?.videoWidth>0);
+   await page.evaluate(()=>{const r=document.querySelector('#scanVideo').getBoundingClientRect();window.__cameraInitialBox={width:r.width,height:r.height};});
    await page.waitForFunction(async()=>{const {S}=await import('/store.js');return S.ui.scan.boundaryReady;});
    assert.equal(await page.locator('#camGuide,.cam-guide,.cam-wrap polygon').count(),0,'internal boundary detection never overlays the feed');
    await page.getByRole('button',{name:'Capture card now',exact:true}).click();
    await page.waitForFunction(async()=>{const {loadBatch}=await import('/scan-batch.js');return loadBatch().some(x=>!['captured','reading'].includes(x.status));},{},{timeout:120000});
+   console.log(`${ref.game} live capture diagnostic: ${JSON.stringify(await page.evaluate(async()=>{
+    const {loadBatch}=await import('/scan-batch.js'),{S}=await import('/store.js'),v=document.querySelector('#scanVideo'),r=v.getBoundingClientRect();
+    return {initialBox:window.__cameraInitialBox,video:{width:v.videoWidth,height:v.videoHeight,boxWidth:r.width,boxHeight:r.height},capture:{width:S.ui.scan.lastCard?.width,height:S.ui.scan.lastCard?.height},batch:loadBatch().map(({id,status,read,error,cands})=>({id,status,read,error,candidates:(cands||[]).map(({id,name,exact})=>({id,name,exact}))}))};
+   }))}`);
    await page.locator('[data-act="scanBatchReview"]').first().click();
    await page.getByRole('region',{name:'Confirm scanned card',exact:true}).waitFor({timeout:15000});
    await page.getByRole('region',{name:'Confirm scanned card',exact:true}).getByText(ref.name,{exact:true}).waitFor();
@@ -159,6 +167,7 @@ try{
     assert(layout.tray.top>=0&&layout.tray.bottom<=layout.clearBottom,`real shell tray clears navigation at ${JSON.stringify(viewport)}: ${JSON.stringify(layout)}`);
     assert(layout.camera.height>=100&&layout.shutterClear&&!layout.overflow,`real shell keeps camera and capture usable at ${JSON.stringify(viewport)}: ${JSON.stringify(layout)}`);
     assert(await page.locator('#scanVideo').evaluate(v=>v.srcObject===window.__cameraStream&&v.srcObject.getTracks()[0].readyState==='live'),'fold/landscape resize preserves camera stream');
+    assert(await page.evaluate(()=>window.__cameraCanvas.toDataURL()===window.__cameraPixels),'DOM resize cannot reframe the synthetic physical camera pixels');
     assert.deepEqual(await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js');return loadBatch().map(x=>x.id);}),retainedBatch,'fold/landscape resize preserves each captured card');
     if(viewport.width===844)await page.screenshot({path:`test-results/scanner-${ref.g}-landscape.png`,fullPage:false});
    }
