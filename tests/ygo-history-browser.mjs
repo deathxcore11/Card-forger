@@ -6,6 +6,7 @@ import {resolve} from 'node:path';
 import {startServer,openApp,navigate,closeSheet,noOverflow,capture,inventorySnapshot,isHistoryURL,emptyHistory,EXPECTED,VASM,WIDTHS,RESULTS} from './card-polish-fixtures.mjs';
 import {validateFixtures,historyFixture,EDITIONS,PRINTING,staleStorage} from './ygo-history-fixtures.mjs';
 import {canRequestExactYgoHistory,readExactYgoHistoryRequest} from '../ygo-history-identity.js';
+import {SUPABASE} from '../config.js';
 console.log(await validateFixtures());
 if(process.argv.includes('--validate-fixtures'))process.exit(0);
 if(process.env.GITHUB_ACTIONS!=='true')throw Error('Exact YGO history browser execution is restricted to the authorized hosted GitHub Actions job. Use --validate-fixtures for local checks.');
@@ -61,6 +62,21 @@ async function assertObservations(page,edition){
  assert.match(await page.locator('#card-price-selection').innerText(),/Current quote unavailable/,'History does not invent a current quote');
  assert.doesNotMatch(await page.locator('.card-price-reference strong').innerText(),/\$/);
 }
+async function captureEditionChart(page,name){
+ // Use the real history jump, then prove the dated graph is inside the visible
+ // sheet, below its sticky chrome. Capture the viewport, not a full-page image
+ // that can reposition a fixed sheet. All displayed quotes are synthetic.
+ await page.locator('.card-price-summary [data-act="cardPriceJump"][data-target="history"]').click();
+ await page.waitForFunction(()=>document.activeElement===document.querySelector('#card-history'));
+ await frame(page);
+ await page.waitForFunction(()=>{
+  const body=document.querySelector('#sheetBody'),chart=body?.querySelector('#card-history .market-chart'),identity=body?.querySelector('#card-history .history-identity');if(!body||!chart||!identity)return false;
+  const r=chart.getBoundingClientRect(),i=identity.getBoundingClientRect(),b=body.getBoundingClientRect(),top=Math.max(0,b.top,...['.sheet-head','.cs-tabs'].map(s=>body.querySelector(s)?.getBoundingClientRect().bottom||0));
+  return r.width>0&&r.height>0&&i.top>=top-2&&r.top>=top-2&&r.bottom<=Math.min(innerHeight,b.bottom)+2&&r.left>=0&&r.right<=innerWidth;
+ });
+ assert.match(await page.locator('#card-history .history-identity').innerText(),/Synthetic (archive|recent) provider/);
+ await page.screenshot({path:resolve(RESULTS,name+'.png'),fullPage:false,animations:'disabled'});
+}
 async function editions(app){
  const {page}=app;await openRelease(page);const before=await inventorySnapshot(page);await openCard(page);await state(page,'printing-required');assert.equal(historyRequests(app).length,0);
  await select(page,'[data-change="historyEdition"]',PRINTING);await state(page,'edition-required');assert.equal(historyRequests(app).length,0);assert.equal(await page.locator('[data-change="historyYgoEdition"]').inputValue(),'');assert.match(await page.locator('#card-price-selection').innerText(),/not every printing has every edition/);
@@ -68,8 +84,10 @@ async function editions(app){
  for(const edition of Object.keys(EDITIONS)){
   await select(page,'[data-change="historyYgoEdition"]',edition);await assertObservations(page,edition);
   const calls=historyRequests(app).filter(r=>new URL(r.url).searchParams.get('selectedEdition')===edition);assert.equal(calls.length,2);for(const req of calls){const q=readExactYgoHistoryRequest(new URL(req.url));assert.equal(q.cardId,EXPECTED.ygo.multiple);assert.equal(q.edition,'VASM-EN001');assert.equal(q.rarity,'Super Rare');}
+  assert.deepEqual(calls.map(r=>new URL(r.url).pathname).sort(),['/api/prices/archive','/api/prices/recent'],'Exactly one independent request per history source');
+  await captureEditionChart(page,'ygo-history-edition-'+edition+'-390');
  }
- for(const width of WIDTHS){await page.setViewportSize({width,height:1000});await noOverflow(page,'#sheetBody','Exact edition/history '+width);await capture(page,'ygo-history-exact-'+width);}
+ for(const width of WIDTHS){await page.setViewportSize({width,height:1000});await noOverflow(page,'#sheetBody','Exact edition/history '+width);await captureEditionChart(page,'ygo-history-exact-'+width);}
  await page.setViewportSize({width:390,height:1000});await select(page,'[data-change="historyEdition"]','VASM-E001::Ultra Rare');await state(page,'edition-required');assert.equal(await page.locator('[data-change="historyYgoEdition"]').inputValue(),'','Changing printing clears physical edition');assert.equal(historyRequests(app).length,6);
  await select(page,'[data-change="historyEdition"]','');await state(page,'printing-required');assert.equal(historyRequests(app).length,6);assert.equal(await inventorySnapshot(page),before);exactSafety(app);
 }
@@ -107,8 +125,22 @@ async function delayed(app,gate,mode){
 }
 async function legacy(app,game){
  const {page}=app;await openRelease(page,game);await openCard(page,EXPECTED[game].unknown,game);await state(page,'empty');
- const requests=historyRequests(app);assert.equal(requests.length,game==='mtg'?2:3);assert(requests.some(r=>new URL(r.url).pathname==='/functions/v1/market-history'));
- for(const req of requests){const p=new URL(req.url).searchParams;assert.equal(p.get('game'),game);assert.equal(p.get('id'),EXPECTED[game].unknown);assert.equal(p.has('releaseId'),false);assert.equal(p.has('selectedEdition'),false);}
+ const requests=historyRequests(app),finish=game==='mtg'?'nonfoil':'reference',identity={game,id:EXPECTED[game].unknown,finish};
+ const signature=req=>{const u=new URL(req.url);return JSON.stringify([req.method,u.origin+u.pathname,[...u.searchParams].sort(),req.settled]);};
+ const expected=(origin,path,params)=>signature({method:'GET',url:origin+path+'?'+new URLSearchParams(params),settled:true});
+ // Pokemon hydrates its missing current quote from the recent endpoint before
+ // opening history. That distinct purpose has no panel edition/rarity params.
+ // Account for its exact identity separately, never loosen the panel call count.
+ const hydration=requests.filter(r=>{const u=new URL(r.url);return u.pathname==='/api/prices/recent'&&!u.searchParams.has('edition')&&!u.searchParams.has('rarity');});
+ assert.deepEqual(hydration.map(signature),game==='ptcg'?[expected(server.base,'/api/prices/recent',identity)]:[],'Exactly one matching Pokemon current-quote hydration, and none for Magic');
+ const panel=requests.filter(r=>!hydration.includes(r)),panelParams={...identity,edition:'',rarity:''};
+ assert.equal(panel.length,game==='mtg'?2:3,'Panel calls remain exactly two for Magic or three for Pokemon');
+ assert.deepEqual(panel.map(signature).sort(),[
+  expected(SUPABASE.url,'/functions/v1/market-history',identity),
+  expected(server.base,'/api/prices/archive',panelParams),
+  ...(game==='ptcg'?[expected(server.base,'/api/prices/recent',panelParams)]:[]),
+ ].sort(),'No extra/duplicate history reads, changed identity, query fields, origins or methods');
+ for(const req of requests){const p=new URL(req.url).searchParams;assert.equal(p.get('game'),game);assert.equal(p.get('id'),EXPECTED[game].unknown);assert.equal(p.get('finish'),finish);assert.equal(p.has('releaseId'),false);assert.equal(p.has('selectedEdition'),false);}
  assert.doesNotMatch(await page.locator('.card-price-reference strong').innerText(),/\$/);assert.equal(await page.locator('[data-change="historyYgoEdition"]').count(),0);
 }
 function fail(label,phase,error){const e=error instanceof Error?error:new Error(String(error));failures.push({label,phase,error:e});console.error('FAIL '+label+' '+phase+'\n'+e.stack);return {phase,stack:e.stack,diagnostics:e.fixtureDiagnostics||null};}
@@ -130,6 +162,6 @@ try{
  for(const mode of ['edition','card','cancel']){const gate=deferredReply();await scenario('late-'+mode,{historyReply:gate.reply,release:gate.release},app=>delayed(app,gate,mode));}
 }catch(error){fail('runner','initialization',error);}
 finally{try{await browser?.close();}catch(error){fail('runner','browser cleanup',error);}try{await server.close();}catch(error){fail('runner','server cleanup',error);}}
-await mkdir(RESULTS,{recursive:true});await writeFile(resolve(RESULTS,'ygo-history-browser.json'),JSON.stringify({generatedAt:new Date().toISOString(),evidence:'Mock-only exact history in the real shell. No live/paid provider traffic or writes.',status:failures.length?'failed':'passed',widths:WIDTHS,scenarios:outcomes,failures:failures.map(f=>({scenario:f.label,phase:f.phase,stack:f.error.stack}))},null,2));
+await mkdir(RESULTS,{recursive:true});await writeFile(resolve(RESULTS,'ygo-history-browser.json'),JSON.stringify({generatedAt:new Date().toISOString(),evidence:'Synthetic exact-history prices, dates, provider labels and artwork in the real shell. Per-edition screenshots prove the chart is visible; they do not establish live provider prices or availability. No live/paid provider traffic or writes.',status:failures.length?'failed':'passed',widths:WIDTHS,scenarios:outcomes,failures:failures.map(f=>({scenario:f.label,phase:f.phase,stack:f.error.stack}))},null,2));
 console.log(`Exact YGO history: ${outcomes.filter(o=>o.status==='passed').length} passed; ${outcomes.filter(o=>o.status==='failed').length} failed.`);
 if(failures.length)throw new AggregateError(failures.map(f=>f.error),'Exact YGO history hosted browser checks failed');

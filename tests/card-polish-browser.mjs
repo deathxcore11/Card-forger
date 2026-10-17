@@ -58,7 +58,12 @@ async function jump(page,target='history'){
  await page.locator(`.card-price-summary [data-act="cardPriceJump"][data-target="${target}"]`).click();await page.waitForFunction(id=>document.activeElement===document.querySelector('#card-'+id)&&document.querySelector('#card-tab-prices')?.getAttribute('aria-selected')==='true',target);await clearance(page,'#card-'+target);
 }
 async function historyState(page,state){await page.waitForFunction(state=>document.querySelector('#card-history')?.dataset.historyState===state,state);const history=page.locator('#card-history');assert.equal(await history.locator('.market-chart').count(),0,'Missing matching history never produces an invented graph');assert.equal(await history.locator('.history-empty').count(),1,'One concise empty-state paragraph');assert.equal(await history.locator('.history-coverage').count(),0,'No duplicated empty-state summary');return history;}
-async function historySafety(app){assert.equal(app.requests.filter(r=>{const u=new URL(r.url);return isHistoryURL(u)&&u.searchParams.get('game')==='ygo';}).length,0,'Release-bound YGO must not query a card-level endpoint that lacks release identity');}
+async function historySafety(app,editions=[]){
+ const requests=app.requests.filter(r=>isHistoryURL(new URL(r.url)));
+ const signature=req=>{const u=new URL(req.url);return JSON.stringify([req.method,u.origin+u.pathname,[...u.searchParams].sort(),req.settled]);};
+ const expected=editions.flatMap(selectedEdition=>['archive','recent'].map(source=>signature({method:'GET',settled:true,url:server.base+'/api/prices/'+source+'?'+new URLSearchParams({game:'ygo',id:EXPECTED.ygo.edition,finish:'reference',edition:'MP25-EN003',rarity:'Starlight Rare',releaseId:MP25.id,selectedEdition,currency:'USD'})})));
+ assert.deepEqual(requests.map(signature).sort(),expected.sort(),'Only one exact MP25 archive/recent pair per explicit physical edition; no generic, extra, duplicate or mismatched history requests');
+}
 async function failedSymbol(page,id){
  await page.waitForFunction(id=>{const slot=document.querySelector('[data-set-symbol-id="'+id+'"]'),img=slot?.querySelector('img.set-catalogue-symbol');return slot?.classList.contains('no-art')&&(!img||img.complete&&img.hidden&&img.onload===null&&img.onerror===null&&!img.dataset.symbolNext&&!img.dataset.symbolLast);},id);
  const row=page.locator('.set-row[data-id="'+id+'"]');assert(await row.locator('.set-media-fallback').isVisible());assert.equal(await row.locator('.set-art-code').innerText(),id.toUpperCase());assert(await row.locator('.set-art-code').isVisible(),'An actual readable code replaces failed/missing art');assert.equal(await row.locator('.set-media-fallback img,.set-media-fallback svg').count(),0);
@@ -109,15 +114,24 @@ async function ygoSelection(app){
  // provider-shaped edition data; never inject the selection or price into DOM.
  await closeSheet(page);await openSet(page,'ygo',MP25.id);const starlight=await cardTile(page,'ygo',EXPECTED.ygo.edition,MP25.id);assert.equal(await starlight.getAttribute('data-rarity-flair'),'yr4');assert.equal(await starlight.getAttribute('data-tier'),'tn');
  await openCard(page,'ygo',EXPECTED.ygo.edition,{setId:MP25.id});await page.waitForFunction(id=>window.__uiTestTcg.cache.ygo[id]?.sets?.find(p=>p.code==='MP25-EN003'&&p.rarity==='Starlight Rare')?.quotes?.length===2,EXPECTED.ygo.edition);await tab(page,'prices');
+ const requestedEditions=[];
  for(const [edition,label,value]of [['','edition unspecified',null],['1st-edition','1st Edition',.54],['unlimited','Unlimited',.31],['limited','Limited',null],['','edition unspecified',null]]){
   if(await page.locator('[data-change="historyYgoEdition"]').inputValue()!==edition)await select(page,'[data-change="historyYgoEdition"]',edition);
   const quote=await activeQuote(page);assert.equal(quote.releaseId,MP25.id);assert.equal(quote.editionKey,'MP25-EN003::Starlight Rare');assert.equal(quote.selectedEdition,edition);assert.equal(quote.value,value);assert.equal(quote.currency,'USD');
   const badge=page.locator('#sheet .cd-set[data-act="tSet"]').first();assert.equal(await badge.getAttribute('data-id'),MP25.id);assert.match(await badge.innerText(),/MP25-EN003/);assert((await badge.innerText()).includes('Selected release · '+label),'Release badge and selected quote name the same explicit physical edition');
   assert.equal(await page.locator('.card-price-reference strong').innerText(),value===null?'No quote yet':'$'+value.toFixed(2));assert((await page.locator('.card-price-reference').innerText()).includes('MP25-EN003 · Starlight Rare · '+(edition?label:'Edition not specified')));
   assert.equal(await page.locator('#sheet .cd-img').first().getAttribute('data-rarity-flair'),'yr4','Starlight flair survives missing quote and clearing edition');
-  await historyState(page,edition?'exact-unavailable':'edition-required');
+  const history=await historyState(page,edition?'empty':'edition-required');
+  if(edition){
+   requestedEditions.push(edition);
+   assert.equal(await history.getAttribute('data-history-source-state'),'empty','Both exact providers completed with matching empty history');
+   assert.equal(await history.locator('.history-empty').innerText(),'No recorded quotes for this selection.');
+   assert.equal(await history.locator('[data-act="historyChoosePrinting"]').count(),0,'A verified empty result is not unresolved printing selection');
+   await jump(page);await capture(page,'card-polish-mp25-history-empty-'+edition);
+  }
+  await historySafety(app,requestedEditions);
  }
- await capture(page,'card-polish-mp25-edition-cleared');await historySafety(app);assert.equal(await inventorySnapshot(page),before,'Browsing editions cannot alter saved copies');
+ await capture(page,'card-polish-mp25-edition-cleared');await historySafety(app,requestedEditions);assert.equal(await inventorySnapshot(page),before,'Browsing editions cannot alter saved copies');
  report.push('Unresolved printing and physical edition are distinct, each has one empty message, Select printing focuses the real selector, and headings clear sticky chrome at all six widths.');
 }
 
