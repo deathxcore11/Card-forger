@@ -61,5 +61,25 @@ export async function ensureTcgPrices(cards, { retry = false } = {}) {
 // Used only where no store prices the printing at all.
 let mine = {};
 export const useMyPrices = (map) => { mine = map || {}; };
-export const myPriceKey = (c, finish = "nonfoil") => (c?.id || c?.name || "") + ":" + finish;
-export const myPrice = (c, finish = "nonfoil") => { const v = mine[myPriceKey(c, finish)]?.price; return v == null ? null : Number(v); };
+// Existing unscoped keys remain readable only in the old generic-reference context.
+// A selected release never inherits a card-wide personal value or another variant/edition.
+export function myPriceKey(c, finish = "nonfoil", ctx = {}) {
+  const selected = c?.setContext;
+  if(!selected)return ctx.setReleaseUnverified || (ctx.setId && !(typeof c?.set === "string" && c.set.toLowerCase() === String(ctx.setId).toLowerCase())) ? null : (c?.id || c?.name || "") + ":" + finish;
+  const game = c.game || selected.game;
+  if(!c.id || !selected.releaseId || selected.status !== "resolved" || (selected.game && selected.game !== game) || (selected.cardId && String(selected.cardId) !== String(c.id)) || (ctx.setId && ctx.setId !== selected.releaseId))return null;
+  if(game === "ygo") {
+    const wanted = ctx.priceEdition || ctx.edition || "";
+    const rows = selected.printings || [];
+    const hits = wanted ? rows.filter(p=>p.code+'::'+p.rarity===wanted || p.code===wanted) : !selected.printingAmbiguous && selected.printing ? [selected.printing] : [];
+    if(hits.length !== 1)return null;
+    return "exact:" + JSON.stringify([game,String(c.id),selected.releaseId,"reference",hits[0].code,hits[0].rarity,ctx.priceYgoEdition || ctx.ygoEdition || ""]);
+  }
+  if(game === "ptcg") {
+    const variant = ctx.priceFinish || ctx.finish || selected.variantKey || (finish === "nonfoil" ? "reference" : finish);
+    if(variant !== "reference" && !(c.variants || []).some(v=>v.key===variant))return null;
+    return "exact:" + JSON.stringify([game,String(c.id),selected.releaseId,variant]);
+  }
+  return game === "mtg" ? "exact:" + JSON.stringify([game,String(c.id),selected.releaseId,finish]) : null;
+}
+export const myPrice = (c, finish = "nonfoil", ctx = {}) => { const key=myPriceKey(c,finish,ctx),v=key?mine[key]?.price:null; return v == null ? null : Number(v); };

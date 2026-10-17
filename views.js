@@ -22,7 +22,7 @@ import { tradePanel } from "./trade.js";
 import { skeletonGrid } from "./ui.js";
 import { trackedQuote, priceHistoryHtml, alertsPanel, alertStatus } from "./pricehist.js";
 import { installNudge } from "./install.js";
-import {setRowContent} from './set-list-ui.js';
+import {setRowContent,setYearSections,setProgressMarkup,setCardFacets,filterSortSetCards} from './set-list-ui.js';
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
 import { ICON, actionIcon } from "./icons.js";
 import { tierOf, tierAttrs, tierStyle, tierGem } from "./tier.js";
@@ -463,35 +463,26 @@ const SET_TYPES = {
 };
 const MAIN_TYPES = new Set(["expansion", "core", "masters", "commander", "draft_innovation", "funny", "starter", "box", "duel_deck", "from_the_vault", "spellbook", "premium_deck", "arsenal", "planechase", "archenemy"]);
 
-// Owned copies by exact printing (SET#number) across the collection.
+// Sets count verified printing slots, not names, quantities or unresolved imports.
 function ownedPrintings() {
   const m = new Map();
-  for (const e of S.state.collection)
-    if (e.set && e.collectorNumber) {
-      const k = String(e.set).toLowerCase() + "#" + String(e.collectorNumber).toLowerCase();
-      m.set(k, (m.get(k) || 0) + (Number(e.qty) || 0));
-    }
+  for (const e of S.state.collection) {
+    if (!e.printingVerified || !e.printingId || !(Number(e.qty) > 0)) continue;
+    m.set(String(e.printingId), (m.get(String(e.printingId)) || 0) + Number(e.qty));
+  }
   return m;
 }
 
 export function setsPage() {
   const st = S.ui.sets,
     q = st.q.trim().toLowerCase(),
-    list = st.list.filter((x) => !x.digital && (st.all || MAIN_TYPES.has(x.set_type)) && (!q || x.name.toLowerCase().includes(q) || x.code.includes(q))),
-    years = new Map();
-  for (const x of list) {
-    const y = (x.released_at || "Upcoming").slice(0, 4);
-    if (!years.has(y)) years.set(y, []);
-    years.get(y).push(x);
-  }
+    list = st.list.filter((x) => !x.digital && (st.all || MAIN_TYPES.has(x.set_type)) && (!q || x.name.toLowerCase().includes(q) || x.code.includes(q)));
   return `<div class="page-head"><h1>Magic sets</h1></div>
   <div class="searchbar"><input type="search" value="${esc(st.q)}" placeholder="Find a set by name or code" data-input="setsSearch" aria-label="Find a set" autocomplete="off"></div>
   <div class="set-catalog-toolbar"><span class="muted small">${st.list.length ? `${list.length.toLocaleString()} sets · Scryfall` : ""}</span><button class="link small" data-act="setsReload" ${st.busy?"disabled":""}>${st.busy?"Refreshing…":"Refresh sets"}</button><label class="check small"><input type="checkbox" data-change="setsAll" ${st.all ? "checked" : ""}> Promos, tokens & extras</label></div>
   ${st.error ? `<div class="note warn">${esc(st.error)} <button class="link" data-act="setsReload">Try again</button></div>` : ""}
   ${!st.list.length && st.busy ? `<p class="muted center pad">Loading every set…</p>` : ""}
-  ${[...years]
-    .map(([y, xs]) => `<h2 class="year">${esc(y)}</h2><div class="set-list">${xs.map(x => `<button class="set-row" data-act="set" data-code="${esc(x.code)}">${setRowContent({name:x.name,code:x.code.toUpperCase(),image:x.icon || setIconUrl(x.code),symbol:`<span class="set-icon" style="--icon:url('${esc(x.icon || setIconUrl(x.code))}')" aria-hidden="true"></span>`,detail:[SET_TYPES[x.set_type]||x.set_type,x.released_at].filter(Boolean).join(' · '),count:x.card_count})}</button>`).join("")}</div>`)
-    .join("")}
+  ${setYearSections(list,x => `<button class="set-row" data-act="set" data-code="${esc(x.code)}">${setRowContent({name:x.name,code:x.code.toUpperCase(),image:x.icon || setIconUrl(x.code),symbol:`<span class="set-icon" style="--icon:url('${esc(x.icon || setIconUrl(x.code))}')" aria-hidden="true"></span>`,detail:[SET_TYPES[x.set_type]||x.set_type,x.released_at].filter(Boolean).join(' · '),count:x.card_count})}</button>`,x=>x.released_at)}
   ${st.list.length && !list.length ? empty("No sets match", "Try another name, or include promos and extras.") : ""}`;
 }
 
@@ -500,33 +491,36 @@ export function setPage() {
     info = st.info,
     owned = ownedPrintings(),
     q = st.q.trim().toLowerCase(),
-    ownedOf = (c) => owned.get(c.set + "#" + String(c.collector_number).toLowerCase()) || 0,
-    price = (c) => Number(["nonfoil", "foil", "etched"].map((f) => cardPrice(c, f)).find((v) => v != null) ?? NaN),
-    all = st.cards,
+    ownedOf = (c) => owned.get(String(c.id)) || 0,
+    price = (c) => { const value=st.finish && st.finish!=="all" ? cardPrice(c,st.finish) : ["nonfoil","foil","etched"].map(f=>cardPrice(c,f)).find(v=>v!=null); return value==null?NaN:Number(value); },
+    all = [...new Map(st.cards.filter(c=>c.id && c.set===st.code).map(c=>[c.id,c])).values()],
     ownedCount = all.filter((c) => ownedOf(c)).length;
-  let list = all.filter((c) => (!q || c.name.toLowerCase().includes(q)) && (st.rarity === "all" || c.rarity === st.rarity) && (st.filter === "all" || (st.filter === "owned" ? ownedOf(c) : !ownedOf(c))));
-  if (st.sort === "price") list = list.slice().sort((a, b) => (price(b) || -1) - (price(a) || -1));
-  else if (st.sort === "name") list = list.slice().sort((a, b) => a.name.localeCompare(b.name));
-  const rarities = [...new Set(all.map((c) => c.rarity))];
+  const progress = setProgressMarkup({key:"mtg:"+st.code,owned:ownedCount,total:st.complete?all.length:st.total || null,loaded:all.length,complete:!!st.complete,previous:st.progressSnapshot});
+  st.progressSnapshot = progress.snapshot;
+  const facets = setCardFacets(all,"mtg");
+  let list = filterSortSetCards(all,"mtg",{q,rarity:st.rarity,finish:st.finish,sort:st.sort}).filter(c=>st.filter === "all" || (st.filter === "owned" ? ownedOf(c) : !ownedOf(c)));
+  if (st.sort === "price") list = list.slice().sort((a, b) => (Number.isFinite(price(b))?price(b):-1) - (Number.isFinite(price(a))?price(a):-1));
+  const rarities = facets.rarities;
   return `<div class="set-hero">${info ? `<span class="set-icon huge" style="--icon:url('${esc(info.icon_svg_uri || setIconUrl(info.code))}')" aria-hidden="true"></span>` : ""}
     <div class="set-hero-main"><button class="link small" data-act="go" data-to="#sets">← All sets</button>
       <h1>${esc(info?.name || st.code.toUpperCase())}</h1>
       <p class="muted small">${info ? `${esc(info.code.toUpperCase())} · ${esc(SET_TYPES[info.set_type] || info.set_type || "")} · ${esc(info.released_at || "")} · ${info.card_count} cards` : ""}</p>
     </div></div>
   ${st.error ? `<div class="note warn">${esc(st.error)} <button class="link" data-act="setReload">Try again</button></div>` : ""}
-  ${all.length ? `<div class="panel tight"><div class="row between"><span>You own <b>${ownedCount}</b> of ${all.length} printings</span><b>${pct(all.length ? ownedCount / all.length : 0)}</b></div>${bar(all.length ? ownedCount / all.length : 0, "good")}</div>` : ""}
+  ${all.length ? progress.html : ""}
   <div class="searchbar"><input type="search" value="${esc(st.q)}" placeholder="Search this set" data-input="setSearch" aria-label="Search this set" autocomplete="off"></div>
   <div class="set-controls">${segmented("setFilter", st.filter, [["all", "All"], ["owned", "Owned"], ["missing", "Missing"]])}
-    <select data-change="setRarity" aria-label="Rarity">${options([["all", "All rarities"], ...["common", "uncommon", "rare", "mythic", "special", "bonus"].filter((r) => rarities.includes(r)).map((r) => [r, RARITY[r]])], st.rarity)}</select>
-    <select data-change="setSort" aria-label="Sort">${options([["number", "Set order"], ["price", "Price: high to low"], ["name", "Name"]], st.sort)}</select></div>
+    <select data-change="setRarity" aria-label="Rarity">${options([["all", "All rarities"], ...rarities.map((r) => [r, RARITY[r] || r])], st.rarity)}</select>
+    ${facets.finishes.length?`<select data-change="setFinish" aria-label="Finish">${options([["all","All finishes"],...facets.finishes.map(f=>[f,({nonfoil:"Nonfoil",foil:"Foil",etched:"Etched"})[f]||f])],st.finish||"all")}</select>`:""}
+    <select data-change="setSort" aria-label="Sort">${options([["number", "Set order"], ["price", "Price: high to low"], ["name", "Name"], ["set","Set"], ["rarity","Rarity"], ["finish","Finish"]], st.sort)}</select></div>
   <div class="list-bar"><p class="muted small">${st.busy ? `Loading ${all.length ? all.length + " of " + (st.total || "…") : ""} cards…` : all.length ? `${list.length.toLocaleString()} match · Scryfall prices, TCGplayer's where Scryfall has none` : ""}</p>${viewControl("mtg", "set")}</div>
   <div class="card-grid set-grid">${list
     .slice(0, st.limit)
     .map((c) => {
-      const i = all.indexOf(c),
+      const i = st.cards.indexOf(c),
         n = ownedOf(c),
         other = !n && inv(c.name).owned;
-      return `<button class="grid-card ${n ? "own" : ""}" data-act="card" data-name="${esc(c.name)}" data-set-i="${i}" ${tierAttrs(tierOf("mtg", c.rarity, Number.isFinite(price(c)) ? price(c) : null))}>${img(cardImage(c, "normal"), c.name, "card-img")}${tileChrome("mtg", c)}<span class="grid-meta"><span class="ellip">#${esc(c.collector_number)} ${esc(c.name)}</span><span>${Number.isFinite(price(c)) ? usd(price(c)) : "—"}</span></span>${n ? `<span class="owned-badge">×${n}</span>` : other ? `<span class="owned-badge other" title="You own a different printing">other ed.</span>` : ""}</button>`;
+      return `<button class="grid-card ${n ? "own" : ""}" data-act="card" data-name="${esc(c.name)}" data-set-i="${i}" data-set-finish="${esc(st.finish&&st.finish!=="all"?st.finish:"")}" ${tierAttrs(tierOf("mtg", c.rarity, Number.isFinite(price(c)) ? price(c) : null))}>${img(cardImage(c, "normal"), c.name, "card-img")}${tileChrome("mtg", c)}<span class="grid-meta"><span class="ellip">#${esc(c.collector_number)} ${esc(c.name)}</span><span>${Number.isFinite(price(c)) ? usd(price(c)) : "—"}</span></span>${n ? `<span class="owned-badge">×${n}</span>` : other ? `<span class="owned-badge other" title="You own a different printing">other ed.</span>` : ""}</button>`;
     })
     .join("")}</div>
   ${list.length > st.limit ? `<button class="btn ghost block" data-act="setMore">Show more · ${(list.length - st.limit).toLocaleString()} left</button>` : ""}

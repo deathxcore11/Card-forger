@@ -4,6 +4,192 @@ import {applyYgoPrices} from './ygo-prices.js';
 // TCGplayer, Cardmarket, eBay, Amazon and CoolStuffInc (refreshed daily).
 const API = "https://db.ygoprodeck.com/api/v7";
 
+// A set code is a printing prefix, not a release identity: LOB, SDY and CT10
+// each occur on more than one catalogue release. Keep exact names and dates.
+export const YGO_SET_CACHE_KEY = "cardforge-ygo-sets-v3";
+export const YGO_SET_LEGACY_CACHE_KEY = "cardforge-ygo-sets-v2";
+const releaseText = (value) => String(value ?? "").normalize("NFC").trim();
+const releasePart = (value) => encodeURIComponent(releaseText(value)).replace(/[!'()*]/g, (c) => "%" + c.charCodeAt(0).toString(16).toUpperCase());
+const positiveCount = (value) => ["number", "string"].includes(typeof value) && Number.isSafeInteger(Number(value)) && Number(value) > 0 ? Number(value) : null;
+const setFields = (set) => ({
+  code: releaseText(set?.set_code ?? set?.code),
+  name: releaseText(set?.set_name ?? set?.name),
+  date: releaseText(set?.tcg_date ?? set?.date),
+});
+export function ygoSetId(set) {
+  const { code, date, name } = setFields(set);
+  // Invalid Unicode is not repaired into a potentially colliding release name.
+  try { return code && name ? "ygo:" + [code, date, name].map(releasePart).join(":") : ""; }
+  catch { return ""; }
+}
+
+// English TCG checklist sizes checked against Konami on 2026-10-17. These
+// assertions are scoped to these exact metadata records, never every product
+// sharing the prefix. num_of_cards is retained separately as provider rows.
+const OFFICIAL_SET_COUNTS = [
+  { code: "LOB", names: ["Legend of Blue Eyes White Dragon"], dates: ["2002-03-08"], count: 126, productId: "11101000" },
+  { code: "LOB", names: ["Legend of Blue Eyes White Dragon (25th Anniversary Edition)", "Legend of Blue Eyes White Dragon (LC01 25th Anniversary Edition)"], dates: ["2023-04-20", "2023-04-21"], count: 126, productId: "2000001240000" },
+  { code: "LOB", names: ["Legend of Blue Eyes White Dragon", "Legend of Blue Eyes White Dragon (25th Anniversary Edition)"], dates: ["2023-07-13", "2023-07-14"], count: 126, url: "https://www.yugioh-card.com/en/products/lob/" },
+  { code: "SDY", names: ["Starter Deck: Yugi"], dates: ["2002-03-29"], count: 50, productId: "13301000" },
+];
+const officialSetCount = ({ code, name, date }) => OFFICIAL_SET_COUNTS.find((s) => s.code === code && s.names.includes(name) && s.dates.includes(date));
+const providerSetImage = (value) => {
+  if (!value) return "";
+  try {
+    const url = new URL(String(value || ""));
+    return url.protocol === "https:" ? url.href : "";
+  } catch { return ""; }
+};
+
+export function normalizeYgoSet(raw) {
+  const fields = setFields(raw), id = ygoSetId(fields);
+  if (!id) return null;
+  const official = officialSetCount(fields), expectedUniqueCards = official?.count ?? null;
+  return {
+    catalogSchema: 3,
+    id,
+    legacyId: fields.code,
+    ...fields,
+    image: providerSetImage(raw.set_image ?? raw.image),
+    // Compatibility field is a unique-card count only, never the regional /
+    // printing-row total that older caches labelled as "cards".
+    count: expectedUniqueCards,
+    expectedUniqueCards,
+    printingCount: positiveCount(raw.num_of_cards ?? raw.printingCount ?? (raw.catalogSchema === 3 ? null : raw.count)),
+    loadedUniqueCards: null,
+    completeness: "unknown",
+    providerNameAmbiguous: raw.providerNameAmbiguous === true,
+    provenance: {
+      catalog: { source: "YGOPRODeck", url: API + "/cardsets.php", printingCountField: "num_of_cards" },
+      expectedUniqueCards: official ? {
+        source: "Konami Yu-Gi-Oh! TCG",
+        url: official.url || `https://www.db.yugioh-card.com/yugiohdb/card_search.action?ope=1&pid=${official.productId}&request_locale=en&rp=99999`,
+        productId: official.productId || null,
+        locale: "en",
+        scope: "English TCG checklist",
+        verifiedAt: "2026-10-17",
+      } : null,
+    },
+  };
+}
+
+export function normalizeYgoSets(rows) {
+  const releases = new Map();
+  for (const raw of Array.isArray(rows) ? rows : []) {
+    const set = normalizeYgoSet(raw);
+    if (!set) continue;
+    const previous = releases.get(set.id);
+    if (previous) {
+      // Duplicate copies of the same metadata record do not add another set or
+      // inflate its count. Choose fields deterministically, independent of order.
+      set.printingCount = positiveCount(Math.max(previous.printingCount || 0, set.printingCount || 0));
+      set.image = [previous.image, set.image].filter(Boolean).sort()[0] || "";
+      set.providerNameAmbiguous ||= previous.providerNameAmbiguous;
+    }
+    releases.set(set.id, set);
+  }
+  const names = new Map();
+  for (const set of releases.values()) {
+    const key = JSON.stringify([set.code, set.name]);
+    names.set(key, (names.get(key) || 0) + 1);
+  }
+  return [...releases.values()].map((set) => ({ ...set, providerNameAmbiguous: set.providerNameAmbiguous || names.get(JSON.stringify([set.code, set.name])) > 1 }))
+    .sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+}
+
+export function migrateYgoSetCache(cache) {
+  if (!cache || !Array.isArray(cache.list)) return null;
+  const list = normalizeYgoSets(cache.list);
+  if (!list.length) return null;
+  return {
+    schema: 3,
+    at: Number.isFinite(cache.at) && cache.at >= 0 ? cache.at : 0,
+    list,
+    needsRefresh: cache.schema !== 3 || cache.needsRefresh === true || cache.list.some((s) => s?.catalogSchema !== 3 || s?.id !== ygoSetId(s)),
+  };
+}
+
+// Old #set/LOB links are still supported, but resolve to a chooser when a code
+// names multiple releases. Never let catalogue order select an anniversary.
+export function resolveYgoSet(list, idOrName) {
+  const rows = Array.isArray(list) ? list : [], query = releaseText(idOrName);
+  // Filter metadata before materializing full release/provenance objects. A
+  // caller resolving one link should not re-sort and clone the whole catalogue.
+  let matches = query.startsWith("ygo:") ? rows.filter((s) => ygoSetId(s) === query) : [];
+  if (!matches.length && query) matches = rows.filter((s) => setFields(s).name === query);
+  if (!matches.length && query && !query.startsWith("ygo:")) matches = rows.filter((s) => setFields(s).code.toUpperCase() === query.toUpperCase());
+  const candidates = normalizeYgoSets(matches);
+  for (const candidate of candidates) if (!candidate.providerNameAmbiguous) {
+    candidate.providerNameAmbiguous = rows.some((row) => {
+      const fields = setFields(row);
+      return fields.code === candidate.code && fields.name === candidate.name && fields.date !== candidate.date && Boolean(ygoSetId(row));
+    });
+  }
+  return { status: candidates.length === 1 ? "resolved" : candidates.length ? "ambiguous" : "missing", set: candidates.length === 1 ? candidates[0] : null, candidates };
+}
+
+export function ygoSetPrintings(card, set) {
+  const { code, name } = setFields(set);
+  if (!code || !name) return [];
+  return (card?.sets || []).filter((p) => releaseText(p.name) === name && (releaseText(p.code) === code || releaseText(p.code).startsWith(code + "-")));
+}
+
+// Set views get their own context, without pruning / reordering card.sets or
+// changing deck ownership, inventory keys, generic prices, editions or artwork.
+export function summarizeYgoSetContents(set, rows, { paginationComplete = true, loadedAt = null, loadError = "", paginationReason = "" } = {}) {
+  const release = normalizeYgoSet(set);
+  if (!release) throw Error("Choose a specific Yu-Gi-Oh! release before loading its cards.");
+  const byId = new Map(), rowCounts = new Map();
+  let excludedRows = 0;
+  for (const card of Array.isArray(rows) ? rows : []) {
+    if (!card?.id) { excludedRows++; continue; }
+    const id = String(card.id), previous = byId.get(id);
+    rowCounts.set(id, (rowCounts.get(id) || 0) + 1);
+    const copy = { ...card, id, sets: (card.sets || []).map((p) => ({ ...p })) };
+    delete copy.setContext;
+    if (previous) {
+      // Repeated / regional provider rows count as one card, while every distinct
+      // printing remains available for a later explicit printing selection.
+      const seen = new Set(previous.sets.map((p) => JSON.stringify(p)));
+      copy.sets = [...previous.sets];
+      for (const p of card.sets || []) if (!seen.has(JSON.stringify(p))) {
+        copy.sets.push({ ...p });
+        seen.add(JSON.stringify(p));
+      }
+    }
+    byId.set(id, copy);
+  }
+  const cards = [...byId.values()].flatMap((card) => {
+    const printings = ygoSetPrintings(card, release).map((p) => ({ ...p }));
+    if (!printings.length) { excludedRows += rowCounts.get(card.id); return []; }
+    return [{ ...card, setContext: { releaseId: release.id, name: release.name, code: release.code, date: release.date, printings, printingAmbiguous: release.providerNameAmbiguous || printings.length !== 1, releaseAmbiguous: release.providerNameAmbiguous, edition: "unknown" } }];
+  });
+  const loadedUniqueCards = cards.length, expectedUniqueCards = release.expectedUniqueCards;
+  let completeness = "unknown", coverageReason = "expected-count-unknown";
+  if (!paginationComplete || loadError) { completeness = "partial"; coverageReason = paginationReason || "provider-pagination-incomplete"; }
+  else if (release.providerNameAmbiguous) { coverageReason = "provider-release-date-ambiguous"; }
+  else if (expectedUniqueCards !== null) {
+    completeness = loadedUniqueCards === expectedUniqueCards ? "complete" : loadedUniqueCards < expectedUniqueCards ? "partial" : "unknown";
+    coverageReason = loadedUniqueCards === expectedUniqueCards ? "loaded-count-matches-official" : loadedUniqueCards < expectedUniqueCards ? "fewer-than-expected" : "count-exceeds-expected";
+  }
+  return {
+    cards,
+    releaseId: release.id,
+    expectedUniqueCards,
+    printingCount: release.printingCount,
+    loadedUniqueCards,
+    completeness,
+    paginationComplete: Boolean(paginationComplete && !loadError),
+    coverageReason,
+    loadError,
+    excludedRows,
+    provenance: {
+      ...release.provenance,
+      membership: { source: "YGOPRODeck", url: API + "/cardinfo.php?cardset=" + encodeURIComponent(release.name), match: "exact-release-name-and-code", loadedAt },
+    },
+  };
+}
+
 const EXTRA = new Set(["fusion", "synchro", "xyz", "link", "fusion_pendulum", "synchro_pendulum", "xyz_pendulum"]);
 const BAN = { Forbidden: "banned", Limited: "limited", "Semi-Limited": "semi" };
 const num = (v) => (v === undefined || v === null || v === "" || Number(v) <= 0 ? null : Number(v));
@@ -241,19 +427,45 @@ export const ygoSource = {
     throw Error("Couldn’t find a random archetype. Try again.");
   },
   async sets() {
-    const d = await fetch(API + "/cardsets.php").then((r) => r.json());
-    return (d || [])
-      .map((s) => ({ id: s.set_code, name: s.set_name, code: s.set_code, count: s.num_of_cards, date: s.tcg_date || "", image: "" }))
-      .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    const d = await get("/cardsets.php");
+    if (!Array.isArray(d)) throw Error("Yu-Gi-Oh! set catalogue returned an invalid response.");
+    return normalizeYgoSets(d);
+  },
+  async setContents(set) {
+    const release = normalizeYgoSet(set);
+    if (!release) throw Error("Choose a specific Yu-Gi-Oh! release before loading its cards.");
+    const out = [], seenPages = new Set();
+    let paginationComplete = false, loadError = "", paginationReason = "provider-page-limit";
+    for (let page = 0; page < 20; page++) {
+      try {
+        const d = await get("/cardinfo.php", { cardset: release.name, num: 100, offset: page * 100, misc: "yes" });
+        if (!Array.isArray(d.data)) throw Error("Yu-Gi-Oh! card list returned an invalid response.");
+        const fingerprint = JSON.stringify(d.data.map((c) => [c.id, c.card_sets]));
+        if (d.data.length && seenPages.has(fingerprint)) { paginationReason = "provider-repeated-page"; break; }
+        seenPages.add(fingerprint);
+        out.push(...d.data.map(normalizeYgo));
+        const remaining = d.meta?.rows_remaining;
+        if (remaining != null ? Number(remaining) === 0 : d.data.length < 100) {
+          paginationComplete = true;
+          paginationReason = "";
+          break;
+        }
+        if (!d.data.length) { paginationReason = "provider-empty-page"; break; }
+      } catch (e) {
+        if (!out.length) throw e;
+        // Keep usable earlier pages, but never describe them as a full checklist.
+        // Do not retry denied / unavailable providers or substitute a prefix union.
+        loadError = e.message || "Yu-Gi-Oh! card list temporarily unavailable.";
+        paginationReason = "provider-request-failed";
+        break;
+      }
+    }
+    return summarizeYgoSetContents(release, out, { paginationComplete, loadError, paginationReason, loadedAt: new Date().toISOString() });
   },
   async setCards(set) {
-    const out = [];
-    for (let page = 0; page < 20; page++) {
-      const d = await get("/cardinfo.php", { cardset: set.name, num: 100, offset: page * 100, misc: "yes" });
-      out.push(...(d.data || []).map(normalizeYgo));
-      if (!d.meta?.rows_remaining) break;
-    }
-    return out;
+    // Existing callers still receive an array. Set-page callers use setContents
+    // so partial provider coverage never becomes an incorrect 100% progress bar.
+    return (await this.setContents(set)).cards;
   },
   validate: validateYgo,
   legality: ygoLegality,

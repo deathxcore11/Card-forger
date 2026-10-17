@@ -86,6 +86,10 @@ async function currentDetail(app,game){
   await select(page,'#sheet [data-change="cardPriceFinish"]','holofoil');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/222',amount:'$5.00',currency:'USD'});assert.match(await page.locator('.price-version').innerText(),/Holofoil/);
   await select(page,'#sheet [data-change="cardPriceFinish"]','reverse-holofoil');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/333',amount:'Check price',action:'View listing'});assert.match(await page.locator('.price-version').innerText(),/No verified USD quote/);
  }else{
+  // Collection details restore the saved printing and edition, not the generic card reference.
+  assert.deepEqual(await page.evaluate(()=>{const c=window.__uiTestState.ui.sheetCtx;return [c.priceEdition,c.priceYgoEdition];}),['SET-001::Rare','unlimited']);
+  await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/555',amount:'$20.00',currency:'USD',action:'View listing'});assert.match(await page.locator('.price-version').innerText(),/SET-001 · Rare · Unlimited/);
+  await select(page,'#sheet [data-change="historyEdition"]','');
   await seller(page,'TCGplayer',{amount:'Check price',action:'Search store'});assert.match(await page.locator('.price-version').innerText(),/Reference card/);assert.equal(await row(page,'YGOPRODeck').count(),0,'Research site is not presented as a seller');
   await select(page,'#sheet [data-change="historyEdition"]','SET-001::Rare');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/555',amount:'$20.00',currency:'USD'});assert.match(await page.locator('.price-version').innerText(),/SET-001 · Rare/);
   await select(page,'#sheet [data-change="historyEdition"]','SET-002::Common');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/556',amount:'$1.00',currency:'USD'});
