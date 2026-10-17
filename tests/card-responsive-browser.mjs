@@ -90,7 +90,7 @@ async function conditionCollection(game){
    await row.evaluate(n=>{window.__conditionPriorRow=n;});await page.locator(`#content [data-act="viewSave"][data-mode="${mode}"]`).click();await page.waitForFunction(mode=>!window.__conditionPriorRow.isConnected&&document.querySelector('#content').classList.contains('view-'+mode),mode);
    for(const batch of [false,true]){
     if(batch){await page.locator('#content [data-act="batchStart"]').click();await row.locator(':scope > .batch-mark').waitFor();assert.equal(await allRows.locator(':scope > .batch-mark').count(),original.length,'Every owned row participates in the batch layout audit');}
-    for(const width of [320,390,768]){
+    for(const width of [320,390,560,768,1100]){
      await page.setViewportSize({width,height:1000});await frame(page);
      assert.deepEqual(await snapshot(),original,'Reflow preserves every row metadata/condition word, price, quantity and action');
      // Non-condition batch rows must be measured too: the former 3/5 placement
@@ -102,13 +102,17 @@ async function conditionCollection(game){
       assert(geometry.words>=(item.note?5:1),'Actual printing/edition, condition, value and action words are audited');assert.deepEqual(geometry.bad,[],`${game} ${mode} ${width} ${item.id}: real visible words fit intact ${JSON.stringify(geometry)}`);
       assert.equal(!!geometry.mark,batch);assert.equal(!!geometry.art,mode==='compact');
       const columns=(mode==='compact'?2:1)+(batch?1:0)+(width>480?1:0);assert.equal(geometry.cols,columns,'Narrow rows retain only the correct explicit artwork/batch columns; wide layout is unchanged');
-      if(width<=480)assert(geometry.side.top>=Math.max(geometry.info.bottom,geometry.art?.bottom||0,geometry.mark?.bottom||0)-2&&geometry.side.left>=geometry.row.left-2&&geometry.side.right<=geometry.row.right+2,'Value, quantity and actions have their own full-width row, not the metadata column');
-      else assert(geometry.side.left>=geometry.info.right-2,'Wide row retains its original side column');
+      assert(Number.isFinite(geometry.contentWidth)&&geometry.contentWidth>0,'Measure the actual row content box, not the viewport or a collapsed intrinsic track');
+      if(batch){assert.equal(geometry.containerName,'collection-batch');assert.equal(geometry.containerType,'inline-size');if(width===768)assert(geometry.contentWidth<=480,'The tablet viewport really contains narrow Collection cells');if([560,1100].includes(width))assert(geometry.contentWidth>480,'Roomy one-/two-column cells independently exercise unchanged side placement');}
+      const footer=width<=480||(batch&&geometry.contentWidth<=480);
+      if(footer)assert(geometry.side.top>=Math.max(geometry.info.bottom,geometry.art?.bottom||0,geometry.mark?.bottom||0)-2&&Math.abs(geometry.side.left-geometry.contentLeft)<=2&&Math.abs(geometry.side.right-geometry.contentRight)<=2&&geometry.info.width>0&&Math.abs(geometry.info.right-geometry.contentRight)<=2&&Math.abs(geometry.info.left-(geometry.art?.right??geometry.mark?.right??geometry.contentLeft)-((geometry.art||geometry.mark)?geometry.columnGap:0))<=2,'Narrow actual cells give metadata the remaining real width and actions a full-width second row');
+      else assert(geometry.side.left>=geometry.info.right-2,'Genuinely roomy cells retain their original side column');
       for(const control of geometry.controls)assert(control.rect.width>0&&control.rect.height>0&&control.rect.left>=geometry.side.left-2&&control.rect.right<=geometry.side.right+2&&control.rect.top>=geometry.side.top-2&&control.rect.bottom<=geometry.side.bottom+2,`Actions remain visibly inside their row ${JSON.stringify(control)}`);
       for(const stepper of geometry.steppers)assert(stepper.height<=stepper.buttonHeight+stepper.chrome+2,'Quantity control is not stretched to the metadata row height');
       for(let i=0;i<geometry.footer.length;i++)for(const other of geometry.footer.slice(i+1)){const a=geometry.footer[i];assert(!(Math.min(a.right,other.right)-Math.max(a.left,other.left)>2&&Math.min(a.bottom,other.bottom)-Math.max(a.top,other.top)>2),'Price, quantity, edit and note do not overlap');}
       report.push(`${game} condition/batch ${mode} ${width} batch ${batch} ${item.id}: ${JSON.stringify(geometry)}`);
      }
+     if(batch&&[768,1100].includes(width)){await row.scrollIntoViewIfNeeded();await capture(page,`card-responsive-${game}-batch-${mode}-${width}`);}
      if(width===320){await row.scrollIntoViewIfNeeded();await capture(page,`card-responsive-${game}-condition-${mode}${batch?'-batch':''}`);if(batch){await allRows.last().scrollIntoViewIfNeeded();await capture(page,`card-responsive-${game}-all-batch-${mode}`);}}
     }
     if(batch){await page.locator('#content [data-act="batchStart"]').click();await row.locator(':scope > .batch-mark').waitFor({state:'detached'});}

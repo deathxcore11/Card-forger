@@ -31,13 +31,14 @@ console.log('PASS: exact fractional select content box, border/content-box and z
 {
  const saved={document:globalThis.document,getComputedStyle:globalThis.getComputedStyle,NodeFilter:globalThis.NodeFilter},svgNS='http://www.w3.org/2000/svg',htmlNS='http://www.w3.org/1999/xhtml';
  const rect=(left=0,top=0,width=100,height=30)=>({left,top,right:left+width,bottom:top+height,width,height,toJSON(){return {...this,toJSON:undefined};}});
- const make=()=>({getBoundingClientRect:()=>rect(),getClientRects:()=>[rect()],clientWidth:100,scrollWidth:100,textContent:'Printing',children:[],querySelectorAll:()=>[],getAttribute:()=>null,matches:()=>false,style:{visibility:'visible',opacity:'1',gridTemplateColumns:'100px 100px'}});
+ const make=()=>({getBoundingClientRect:()=>rect(),getClientRects:()=>[rect()],clientWidth:100,scrollWidth:100,textContent:'Printing',children:[],querySelectorAll:()=>[],getAttribute:()=>null,matches:()=>false,style:{visibility:'visible',opacity:'1',gridTemplateColumns:'100px 100px',width:'100px',boxSizing:'border-box',paddingLeft:'6px',paddingRight:'6px',borderLeftWidth:'1px',borderRightWidth:'1px',columnGap:'10px'}});
  const info=make(),side=make(),art=make(),target=make(),row=make(),icon=make();icon.parentElement=target;icon.getBoundingClientRect=()=>rect(2,2,20,20);icon.getAttribute=k=>k==='role'?'img':k==='aria-label'?'Grass Energy':null;icon.querySelector=()=>({textContent:'Grass Energy'});
  const title={namespaceURI:svgNS,localName:'title',parentElement:icon,ownerSVGElement:icon},text={textContent:'Grass Energy',parentElement:title,rects:[]};let texts=[text];
  row.querySelector=selector=>({'.lot-info':info,'.lot-side':side,'.lot-art':art,'.batch-mark':null})[selector];row.querySelectorAll=()=>[target];target.querySelectorAll=()=>[icon];
  try{
   globalThis.NodeFilter={SHOW_TEXT:4};globalThis.getComputedStyle=n=>n.style;globalThis.document={createTreeWalker:()=>{let i=0;return {nextNode:()=>texts[i++]||null};},createRange:()=>{let text;return {setStart:n=>{text=n;},setEnd:()=>{},getClientRects:()=>text.rects};}};
-  let value=collectionRowGeometry(row);assert.deepEqual(value.bad,[]);assert.equal(value.words,0);assert.equal(value.icons.length,1);assert(value.icons[0].visible&&value.icons[0].named);
+  let value=collectionRowGeometry(row);assert.equal(value.contentWidth,86);assert.equal(value.contentLeft,7);assert.equal(value.contentRight,93);assert.equal(value.columnGap,10);assert.deepEqual(value.bad,[]);assert.equal(value.words,0);assert.equal(value.icons.length,1);assert(value.icons[0].visible&&value.icons[0].named);
+  row.getBoundingClientRect=()=>rect(0,0,125,37.5);value=collectionRowGeometry(row);assert.equal(value.contentWidth,86,'Container threshold remains CSS content width at125%');assert.equal(value.scaleX,1.25);assert.equal(value.contentLeft,8.75);assert.equal(value.contentRight,116.25);assert.equal(value.columnGap,12.5,'Visual edge assertions use the same scale as their rectangles');row.getBoundingClientRect=()=>rect();
   title.localName='desc';assert.deepEqual(collectionRowGeometry(row).bad,[],'SVG description is metadata too');
   title.namespaceURI=htmlNS;value=collectionRowGeometry(row);assert(value.bad.some(x=>x.word==='Grass'),'An HTML title/description element is not the SVG metadata exemption');
   title.namespaceURI=svgNS;for(const tag of ['text','tspan']){title.localName=tag;assert(collectionRowGeometry(row).bad.some(x=>x.word==='Grass'),'Real SVG '+tag+' with missing glyphs fails');}
@@ -148,12 +149,21 @@ for(const declaration of ['grid-template-columns:30px 58px minmax(0,1fr)','grid-
 assert.doesNotMatch(batchLayout,/view-gallery|font-size|overflow|word-break|white-space|display:none|grid-column:3\/5/);assert(!css.includes('grid-column:3/5'),'The legacy implicit symbols track cannot return');
 assert(css.indexOf('/* Narrow Collection batch rows')<css.indexOf('/* A condition explanation'),'Later, more-specific condition footer retains its independent layout');
 console.log('PASS: narrow direct Collection batch rows only, explicit art/batch tracks and aligned full-row actions; ordinary/gallery/wide styles unchanged.');
-const conditionLayout=css.slice(css.indexOf('/* A condition explanation'),css.indexOf('@media(prefers-reduced-motion:reduce){.brand-idle',css.indexOf('/* A condition explanation')));
+const conditionLayout=css.slice(css.indexOf('/* A condition explanation'),css.indexOf('/* A tablet/desktop list',css.indexOf('/* A condition explanation')));
 assert.match(conditionLayout,/@media \(max-width:480px\)/);assert.equal((conditionLayout.match(/body\[data-view="collection"\]/g)||[]).length,7);assert.equal((conditionLayout.match(/:has\(> \.lot-side > \.condition-value-note\)/g)||[]).length,7);
 for(const declaration of ['grid-template-columns:58px minmax(0,1fr)','grid-template-columns:30px 58px minmax(0,1fr)','grid-template-columns:minmax(0,1fr)','grid-template-columns:auto minmax(0,1fr)','grid-column:1/-1;grid-row:2','max-width:none'])assert(conditionLayout.includes(declaration),declaration);
 assert.doesNotMatch(conditionLayout,/view-gallery|font-size|overflow|word-break|white-space|display:none/,'Only real space changes; gallery, fonts, wrapping and visible content remain intact');
 assert.equal((conditionLayout.match(/:has\(> \.batch-mark\)/g)||[]).length,2,'Compact and symbols explicitly preserve the independent batch column');
 console.log('PASS: narrow Collection condition-only grid reflow, explicit art/batch columns, full-width note and no ordinary/gallery/wide/font/clipping changes.');
+const rowContainer=css.slice(css.indexOf('/* A tablet/desktop list'),css.indexOf('@media(prefers-reduced-motion:reduce){.brand-idle',css.indexOf('/* A tablet/desktop list')));
+assert.equal((rowContainer.match(/body\[data-view="collection"\]/g)||[]).length,7);assert.equal((rowContainer.match(/\.display-list > \.lot:has\(> \.batch-mark\)/g)||[]).length,7);
+assert.match(rowContainer,/container:collection-batch \/ inline-size/);assert.match(rowContainer,/@container collection-batch \(max-width:480px\)/);
+const rowRules=rowContainer.slice(rowContainer.indexOf('@container'));
+for(const selector of rowRules.matchAll(/([^{}]+)\{([^{}]*)\}/g)){if(selector[1].includes('@container'))continue;assert.match(selector[1],/> \.lot-(info|side)/,'Size queries style only children, never their own container');}
+for(const declaration of ['grid-column:3/-1','grid-column:2/-1','grid-column:1/-1;grid-row:2','justify-content:flex-end;align-items:center','grid-template-columns:minmax(0,1fr) auto','max-width:none'])assert(rowContainer.includes(declaration),declaration);
+assert.doesNotMatch(rowContainer,/view-gallery|font-size|overflow|word-break|white-space|display:none|grid-template-columns:30px|grid-template-columns:auto minmax/,'Parent tracks, nonbatch/gallery and text remain intact; only constrained children reflow');
+assert(359-14<=480&&528-14>480&&515-14>480,'Real tablet cells reflow while roomy one- and two-column rows do not');
+console.log('PASS: named Collection batch row-only container, descendant reflow, intact parent tracks and condition footer, independent narrow/roomy cell geometry.');
 const reflow=css.slice(css.indexOf('/* Reflow the existing components'));
 for(const selector of ['.card-actions .ca-more { display:flex','.card-actions .ca-more .btn { flex:1','.card-actions .ca-main .btn { padding:9px','.cs-card-side .own-line { margin:0','.cs-card-side .stat-grid > :only-child'])assert(reflow.indexOf(selector)>reflow.indexOf('@container (max-width:520px)'),selector+' is narrow-only; approved wide layout retains its existing grid, padding and margins');
 const extreme=css.match(/@container \(max-width:(260)px\) \{([\s\S]*?)\n\}/);assert(extreme,'Extreme zoom reflow has its own narrow container breakpoint');

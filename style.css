@@ -3230,6 +3230,18 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
   body[data-view="collection"] #content:is(.view-compact,.view-symbols) .display-list > .lot:has(> .lot-side > .condition-value-note) > .lot-side > .stepper {grid-column:2;grid-row:1;justify-self:end;}
   body[data-view="collection"] #content:is(.view-compact,.view-symbols) .display-list > .lot:has(> .lot-side > .condition-value-note) > .lot-side > .condition-value-note {grid-column:1/-1;grid-row:2;max-width:none;}
 }
+/* A tablet/desktop list can give a batch row less room than a phone. Query
+   the row itself, not the viewport, and reflow only its children. Explicit
+   parent tracks stay intact; metadata spans the now-unused side track. */
+body[data-view="collection"] #content:is(.view-compact,.view-symbols) .display-list > .lot:has(> .batch-mark) {container:collection-batch / inline-size;}
+@container collection-batch (max-width:480px) {
+  body[data-view="collection"] #content.view-compact .display-list > .lot:has(> .batch-mark) > .lot-info {grid-column:3/-1;}
+  body[data-view="collection"] #content.view-symbols .display-list > .lot:has(> .batch-mark) > .lot-info {grid-column:2/-1;}
+  body[data-view="collection"] #content:is(.view-compact,.view-symbols) .display-list > .lot:has(> .batch-mark) > .lot-side {grid-column:1/-1;grid-row:2;display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:8px 10px;}
+  body[data-view="collection"] #content:is(.view-compact,.view-symbols) .display-list > .lot:has(> .batch-mark) > .lot-side:has(> .condition-value-note) {display:grid;grid-template-columns:minmax(0,1fr) auto;justify-items:start;}
+  body[data-view="collection"] #content:is(.view-compact,.view-symbols) .display-list > .lot:has(> .batch-mark) > .lot-side:has(> .condition-value-note) > .stepper {grid-column:2;grid-row:1;justify-self:end;}
+  body[data-view="collection"] #content:is(.view-compact,.view-symbols) .display-list > .lot:has(> .batch-mark) > .lot-side > .condition-value-note {grid-column:1/-1;grid-row:2;max-width:none;}
+}
 @media(prefers-reduced-motion:reduce){.brand-idle .brand-card,.brand-loading .brand-card,.thinking .ask-orb .brand-card{animation:none!important;}}
 
 .brand .mark[data-state]::after {content:"";position:absolute;right:0;bottom:0;width:7px;height:7px;border-radius:50%;background:var(--muted);border:2px solid var(--bg);}
