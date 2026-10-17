@@ -24,6 +24,64 @@ const matrix=[
  'Retry keeps the same capture ID and original bytes; completed originals survive reload',
  'A rejected new card held in view queues exactly once when reading capacity becomes available'
 ];
+// Browser-serializable: wait for the current decoded camera, not the toast or
+// shutter DOM. render() briefly detaches the retained video until afterRender.
+function deliverSceneFrame({g,label,angle=0,timeoutMs=10000}){
+ const h=window.__scannerHarness,stream=h.stream;
+ return new Promise((resolve,reject)=>{
+  let poll,frame,video,drawn=false,afterTime,stage='current connected decoded camera';
+  const ready=()=>{
+   const v=document.querySelector('#scanVideo'),tracks=stream.getVideoTracks();
+   return v&&v.isConnected&&v.srcObject===stream&&h.stream===stream&&stream.active&&tracks.length&&tracks.every(t=>t.readyState==='live')&&!v.paused&&v.readyState>=2&&v.videoWidth===h.camera.width&&v.videoHeight===h.camera.height&&(!h.sceneVideo||h.sceneVideo===v)?v:null;
+  };
+  const finish=error=>{clearTimeout(deadline);clearTimeout(poll);if(frame!=null)video.cancelVideoFrameCallback(frame);error?reject(error):resolve();};
+  const deadline=setTimeout(()=>finish(Error(`Scene ${label}: timed out waiting for ${stage}; a lost camera or missing frame is not skipped.`)),timeoutMs);
+  const wait=()=>{
+   const v=ready();
+   if(!v){poll=setTimeout(wait,16);return;}
+   if(typeof v.requestVideoFrameCallback!=='function'){finish(Error('Synthetic camera requires physical video-frame callbacks'));return;}
+   video=v;h.sceneVideo=v;
+   if(!drawn){
+    afterTime=v.currentTime;h.events.push({event:'scene',g,label,angle,at:Date.now()});h.scene={g,angle};h.draw();h.remember(label);drawn=true;stage='a new physical camera frame';
+    // Ask the actual canvas MediaStream track to emit the newly drawn pixels.
+    // Do not wait for, invoke, or substitute the 160ms production detector tick.
+    stream.getVideoTracks()[0].requestFrame();
+   }
+   frame=v.requestVideoFrameCallback((_,metadata)=>{
+    frame=null;
+    if(ready()!==v||metadata.mediaTime<=afterTime){wait();return;}
+    finish();
+   });
+  };
+  wait();
+ });
+}
+// Pure control-flow coverage only. Actual decoded pixels and capture IDs remain
+// checked below in hosted Chromium; this fixture cannot certify camera pixels.
+async function validateSceneFrameReadiness(){
+ const source=await readFile(new URL('../scancam.js',import.meta.url),'utf8'),app=await readFile(new URL('../app.js',import.meta.url),'utf8');
+ const between=(start,end)=>{const a=source.indexOf(start),b=source.indexOf(end,a);assert(a>=0&&b>a);return source.slice(a,b);};
+ const attach=between('  const attach = () => {','  const capture = (automatic=false) => {'),torch=between('  A.scanTorch = async () => {','  const settingsSheet = (cams = []) => {');
+ const schedule=app.match(/setTimeout\(\(\) => scanCtx\.afterRender\?\.\(\), 0\);/),replace=app.match(/\$\("#content"\)\.innerHTML = \(g !== "mtg"[^\n]+/);assert(schedule&&replace,'Exercise the actual scheduled attach and synchronous content replacement');
+ const timers=new Map(),callbacks=new Map(),state={camOn:true,torch:false,torchCap:true},h={events:[],camera:{width:640,height:900},draws:0,remembers:0,draw(){this.draws++;},remember(){this.remembers++;}};let id=0,current,requests=0;
+ const track={readyState:'live',getCapabilities:()=>({torch:true}),applyConstraints:async()=>{throw Error('Synthetic torch rejection');},requestFrame(){requests++;},stop(){throw Error('Torch must not stop the camera');}},stream={active:true,getVideoTracks:()=>[track]};
+ const video={srcObject:stream,paused:false,isConnected:true,readyState:2,videoWidth:640,videoHeight:900,currentTime:5,requestVideoFrameCallback(fn){callbacks.set(++id,fn);return id;},cancelVideoFrameCallback(key){callbacks.delete(key);}};current=video;h.stream=stream;
+ const slot={replaceWith(v){assert.equal(v,video);current=v;v.isConnected=true;}},content={set innerHTML(html){assert(html.includes('camSlot'));current=null;video.isConnected=false;}};
+ const scope={A:{},s:()=>state,stream,videoEl:video,document:{getElementById:key=>key==='camSlot'?current?null:slot:current,querySelector:()=>current},window:{__scannerHarness:h},toast(){},loopTimer:1,loop(){},scanCtx:{},setTimeout(fn,ms){timers.set(++id,{fn,ms});return id;},clearTimeout:key=>timers.delete(key),$:()=>content,g:'mtg',tcgViews:{},views:{scan:()=>'<div id="camSlot"></div>'},ui:{view:'scan'},V:{}};
+ runInNewContext(attach+'\nscanCtx.afterRender=attach;\nfunction render(){'+schedule[0]+replace[0]+'}\n'+torch+'\nthis.deliverSceneFrame='+deliverSceneFrame.toString(),scope);
+ const tick=ms=>{const entry=[...timers].find(([,task])=>task.ms===ms);assert(entry,`Expected timer ${ms}`);timers.delete(entry[0]);entry[1].fn();},present=mediaTime=>{const [key,fn]=callbacks.entries().next().value;callbacks.delete(key);fn(0,{mediaTime});};
+ await scope.A.scanTorch();assert.equal(current,null,'Torch render leaves the expected pre-attach DOM gap');assert.equal(state.camOn,true);assert.equal(state.torch,false);assert.equal(video.srcObject,stream);assert.equal(track.readyState,'live');
+ let complete=false;const pending=scope.deliverSceneFrame({g:'mtg',label:'after-torch'}).then(()=>{complete=true;});
+ assert.equal(h.draws,0);assert.equal(callbacks.size,0,'No null video callback attempt');tick(0);assert.equal(current,video,'Actual attach retains the identical live camera');
+ for(const [key,value]of [['readyState',1],['paused',true],['srcObject',{}],['videoWidth',0]]){const before=video[key];video[key]=value;tick(16);assert.equal(callbacks.size,0,`${key} is not ready`);video[key]=before;}
+ track.readyState='ended';tick(16);assert.equal(callbacks.size,0,'Ended tracks are not treated as ready');track.readyState='live';tick(16);assert.equal(h.draws,1);assert.equal(requests,1);assert.equal(callbacks.size,1);
+ present(5);await Promise.resolve();assert.equal(complete,false,'An old physical frame cannot satisfy scene delivery');
+ current=null;video.isConnected=false;present(6);assert.equal(callbacks.size,0,'A detached callback cannot satisfy delivery');slot.replaceWith(video);tick(16);present(7);await pending;
+ assert.equal(h.draws,1);assert.equal(h.remembers,1);assert.equal(h.events.length,1);assert.equal(timers.size,0);assert.equal(callbacks.size,0);
+ const stalled=scope.deliverSceneFrame({g:'ptcg',label:'no-frame'});tick(10000);await assert.rejects(stalled,/new physical camera frame/);assert.equal(callbacks.size,0,'Missing frames fail within the bound and clean up callbacks');
+ current=null;video.isConnected=false;const lost=scope.deliverSceneFrame({g:'mtg',label:'lost-camera'});tick(10000);await assert.rejects(lost,/current connected decoded camera/);assert.equal(timers.size,0,'A truly lost camera fails, rather than bypassing capture checks');
+ return 'PASS: rejected torch temporarily detaches the same live camera; scene waits for connected decoded playback and a new physical frame, and fails closed on a lost camera or missing frame.';
+}
 // Execute the actual crop/read/freeze handlers without browser, provider reads
 // or pixels. Fake canvas proves metadata/control flow ONLY; hosted pixelCheck
 // remains responsible for the full original title/footer and image integrity.
@@ -50,6 +108,7 @@ async function validatePhotoCropHandlers(){
  assert.equal(st.photoLoading,false);return 'PASS: actual attachCrop → scanRead → freezeCapture handlers preserve established manual crop geometry across async decode; image-pixel assertions remain hosted-only.';
 }
 if(process.argv.includes('--validate-fixtures')){
+ console.log(await validateSceneFrameReadiness());
  console.log(await validatePhotoCropHandlers());
  assert.equal(refs.length,2);assert(refs.every(r=>new URL(r.url).protocol==='https:'));
  assert.equal(new Set(refs.map(r=>r.id)).size,2);
@@ -147,13 +206,7 @@ async function camera(page){
  await page.waitForFunction(()=>window.__scannerTest.state().boundaryReady&&window.__scannerTest.state().guide?.state!=='red');
 }
 async function scene(page,g,label,angle=0){
- await page.evaluate(async({g,label,angle})=>{
-  const h=window.__scannerHarness;h.events.push({event:'scene',g,label,angle,at:Date.now()});h.scene={g,angle};h.draw();h.remember(label);
-  const v=document.querySelector('#scanVideo');
-  // Wait only for physical delivery of the newly drawn frame, not for the next
-  // 160ms detector tick. This exposes stale best-frame/sampling reuse.
-  await new Promise(resolve=>v.requestVideoFrameCallback(resolve));
- },{g,label,angle});
+ await page.evaluate(deliverSceneFrame,{g,label,angle});
 }
 async function capture(page,count){
  await page.getByRole('button',{name:'Capture card now',exact:true}).click();

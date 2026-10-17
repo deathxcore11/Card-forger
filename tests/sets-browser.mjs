@@ -4,6 +4,26 @@
 import assert from 'node:assert/strict';
 import {GAMES,WIDTHS,SETS,LOB,ANNIVERSARY,PAGED,EXPECTED,ART_EVIDENCE,BROKEN_SET_SYMBOL_SOURCES,validateSetsFixtures,startServer,openSetsApp,navigate,inventorySnapshot,noOverflow,capture,saveReport} from './sets-fixtures.mjs';
 
+// Scroll the current continuation atomically. Its IntersectionObserver may
+// immediately replace/remove the sentinel after successful pagination; waiting
+// for that obsolete element to become visually stable mistakes success for loss.
+function scrollCurrentContinuation({action,selector,total}){
+ const marker=document.querySelector(`[data-auto-browse="${action}"]`);
+ if(!marker?.isConnected)return document.querySelectorAll(selector).length===total;
+ marker.scrollIntoView({block:'center',behavior:'instant'});
+ return true;
+}
+{
+ const prior=globalThis.document;let count=120,scrolls=0;
+ const marker={isConnected:true,scrollIntoView(options){assert.deepEqual(options,{block:'center',behavior:'instant'});scrolls++;this.isConnected=false;count=123;}};
+ try{
+  globalThis.document={querySelector:()=>marker,querySelectorAll:()=>Array(count)};
+  assert.equal(scrollCurrentContinuation({action:'setMore',selector:'.fixture',total:123}),true);
+  assert.equal(scrolls,1);assert.equal(count,123,'Immediate observer completion must not fail on the removed sentinel');
+  assert.equal(scrollCurrentContinuation({action:'setMore',selector:'.fixture',total:123}),true);assert.equal(scrolls,1,'Completed pagination never scrolls an obsolete node');
+  count=120;assert.equal(scrollCurrentContinuation({action:'setMore',selector:'.fixture',total:123}),false,'Missing marker before completion must wait, not skip the assertion');
+ }finally{if(prior===undefined)delete globalThis.document;else globalThis.document=prior;}
+}
 console.log(await validateSetsFixtures());
 if(process.argv.includes('--validate-fixtures'))process.exit(0);
 if(process.env.GITHUB_ACTIONS!=='true')throw Error('Browser execution is restricted to the approved hosted GitHub Actions job. Use --validate-fixtures locally.');
@@ -33,7 +53,7 @@ async function browseMore(app,action,selector,total){
  assert.equal(await button.textContent(),`Show more · ${total-before.length} left`,'Continuation belongs to the exact remaining result count');
  assert.equal(await button.count(),1,'A bounded page exposes exactly one continuation');
  assert(await button.evaluate(n=>n.hidden),'Native automatic browsing keeps the fallback button hidden');
- await marker.waitFor();await marker.scrollIntoViewIfNeeded();
+ await page.waitForFunction(scrollCurrentContinuation,{action,selector,total});
  await page.waitForFunction(({selector,total})=>document.querySelectorAll(selector).length===total,{selector,total});await frame(page);
  const after=await identities();
  assert.equal(after.length,total,'Scrolling the real sentinel loads every remaining result');
