@@ -48,5 +48,12 @@ The quota object stores counters and a daily-salted hash of Cloudflare's client 
 player's question, earlier answers in the same chat, and the results of app tools it asks for
 (card search, card details, collection summary, sets, set prices, meta decks with owned %, saved
 decks, builder setup). Tools run on the device; the Worker validates every message, rejects
-unknown tools or roles, stores nothing and never browses the web. With limits on, each new question
-uses one allowance; its follow-up tool rounds don't.
+unknown tools or roles, stores nothing and never browses the web. With limits on, every paid provider invocation consumes allowance, including tool continuation rounds.
+Testing mode (`AI_LIMITS_ENABLED=false`) is unchanged.
+
+Rules mode uses the same `/api/ai/ask` endpoint, key, model and quota infrastructure. It retrieves
+only integrity-checked bundled official passages on the server, validates exact citation IDs and
+quotes, and uses one bounded provider invocation when sufficient context is available. Unsupported
+questions or missing context can return without a paid call. No collection, pricing, deckbuilding
+or mutation tools are available in Rules mode. Answers are dated-source AI interpretations, not
+official judge rulings, and prior answers are not reused as source evidence.

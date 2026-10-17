@@ -78,7 +78,7 @@ function feed(game, empty = false) {
 }
 function metaFeed(game, empty = false) {
   const c = seeds[game];
-  return { game, source: sources[game].label, fetchedAt: ISO, top: [], archetypes: [], events: [],
+  return { game, ...(game === 'ptcg' ? { artSchema: 1 } : {}), source: sources[game].label, fetchedAt: ISO, top: [], archetypes: [], events: [],
     decks: empty ? [] : [{ key: `fixture-${game}`, name: `${game.toUpperCase()} published fixture deck`, event: 'Fixture tournament', place: 'Top 8', date: '2026-10-15', url: sources[game].deck,
       ...(game === 'mtg' ? { main: [{ name: c.name, qty: 4 }], commanders: [], side: [] } : game === 'ygo' ? { main: [c.id], extra: [], side: [], cover: c.id } : { list: [{ name: c.name, qty: 4, set: 'SSP', number: '57', kind: 'Pokemon' }] }) }] };
 }

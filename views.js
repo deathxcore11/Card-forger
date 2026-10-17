@@ -1,3 +1,4 @@
+import {compactPriceSummary,selectedFinish,detailTabs,detailPanel} from "./pricing-presentation.js";
 import { homeValue, homeEdition } from "./home-ui.js";
 import {interactiveRules} from './rule-learning.js';
 import {brandMark} from './brand.js';
@@ -14,7 +15,7 @@ import {buildOverlay} from "./build-overlay.js";
 import { tierCardHtml } from "./tier-card.js";
 import { atLeastOne } from "./deckaudit.js";
 import {budgetComparisonHtml} from './deck-optimizer.js';
-import {effectText} from './rule-dex.js';
+import {effectText,ruleCardContext} from './rule-dex.js';
 import {collectionOrder} from "./collection-order.js";
 import { hapticsOn } from "./feel.js";
 import { tradePanel } from "./trade.js";
@@ -34,7 +35,7 @@ import { binderShelf } from "./binders.js";
 import { metaState, MTG_META_FORMATS, allCachedMeta } from "./meta.js";
 import { mtgPower, powerPanel, powerChip, shownPower, powerReadiness } from "./power.js";
 import { factBox, factsFor } from "./facts.js";
-import { tcgFallback, myPrice, ensureTcgPrices } from "./mtg-tcgprice.js";
+import { ensureTcgPrices } from "./mtg-tcgprice.js";
 import { S, meta, inv, deckById, currentDeck, priceOf } from "./store.js";
 import {
   esc, safeHref, usd, pct, signed, art, cardImage, img, manaCost, colorDots, segmented,
@@ -270,33 +271,13 @@ export const setIcon = (code, rarity = "common", size = 18) =>
 
 const FINISH = { nonfoil: "Regular", foil: "Foil", etched: "Etched" };
 const priceOfFinish = (p, f) => p?.prices?.[f === "nonfoil" ? "usd" : "usd_" + f] ?? null;
-// What the card sheet shows for a finish: Scryfall's price, else TCGplayer's for the same product,
-// else the player's own (long-press). Each says where it came from.
-const quoteOfFinish = (p, f) => {
-  const v = priceOfFinish(p, f);
-  if (v != null) return { value: Number(v), note: "" };
-  const t = tcgFallback(p, f);
-  if (t) return { value: t.value, note: t.kind === "market" ? "TCGplayer market reference" : t.kind === "mid" ? "Median listing estimate" : "Lowest listing estimate" };
-  // Cardmarket (Europe) often prices old and foreign printings US stores don't; shown in euros.
-  const eur = f === "etched" ? null : Number(p?.prices?.[f === "foil" ? "eur_foil" : "eur"]);
-  if (eur > 0) return { value: eur, cur: "EUR", note: "Cardmarket" };
-  const m = myPrice(p, f);
-  return m != null ? { value: m, note: "Your price" } : null;
-};
-const pricePill = (shown, f) => {
-  const q = quoteOfFinish(shown, f), mine = myPrice(shown, f), extra = mine != null && q?.note !== "Your price" ? `yours ${usd(mine)}` : q?.note;
-  const shownValue = q.cur === "EUR" ? "€" + q.value.toFixed(2) : usd(q.value);
-  return `<button class="price-pill ${f}" data-act="buyDirect" data-hold="myPriceSet" data-finish="${f}" aria-label="Buy ${esc(FINISH[f])} on TCGplayer — ${shownValue}. Press and hold to set your own price."><small>${FINISH[f]}</small><b>${shownValue}</b>${extra ? `<small class="pill-note">${esc(extra)}</small>` : ""}<span class="buy-hint">Buy ›</span></button>`;
-};
-
 function facesOf(c) {
   return c.card_faces?.length && !c.oracle_text ? c.card_faces : [c];
 }
 
 // Tabs shared by every game's card page.
-export const cardTabs = (tab, items) =>
-  `<nav class="cs-tabs" role="tablist">${items.map(([id, label]) => `<button role="tab" aria-selected="${id === tab}" class="${id === tab ? "on" : ""}" data-act="cardTab" data-tab="${id}">${label}</button>`).join("")}</nav>`;
-export const cardPanel = (id, tab, html) => `<div class="cs-panel" data-tab="${id}" ${id === tab ? "" : "hidden"}>${html}</div>`;
+export const cardTabs = detailTabs;
+export const cardPanel = detailPanel;
 
 // Price sources Scryfall reports, per finish.
 const MTG_SOURCES = [
@@ -360,7 +341,7 @@ export function cardSheet(c, ctx = {}) {
     prints = ctx.prints || null,
     src = MTG_SOURCES.find((x) => x[0] === (ctx.source || "tcgplayer")) || MTG_SOURCES[0];
   ensureTcgPrices([shown]);
-  const finishes = ["nonfoil", "foil", "etched"].filter((f) => quoteOfFinish(shown, f));
+  const priceFinish = selectedFinish("mtg", shown, ctx.priceFinish);
   const overview = `
     <div class="cs-card">
       <div class="cd-art-stack"><div class="cd-img"><button class="cd-zoom" data-hold-card="true" data-entry="${esc(ctx.entryId||ctx.entry||'')}" data-act="zoomCard" data-src="${esc(image || "")}" data-hi="${esc(imgFaces?.length > 1 ? imgFaces[face]?.image_uris?.png || "" : shown.image_uris?.png || "")}" data-art="${esc(heroArt || "")}" data-name="${esc(name)}" aria-label="Enlarge ${esc(name)}">${img(image, name, "card-img")}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button></div>${imgFaces?.length > 1 ? `<button class="btn ghost small block" data-act="flipFace">↻ Flip to ${esc(imgFaces[face ? 0 : 1].name)}</button>` : ""}</div>
@@ -380,17 +361,17 @@ export function cardSheet(c, ctx = {}) {
     <div class="links research"><span class="muted small">Research</span>
       <a href="${esc(safeHref(c.scryfall_uri || "https://scryfall.com/search?q=" + encodeURIComponent(name)))}" target="_blank" rel="noopener">Scryfall ↗</a>
       <a href="https://edhrec.com/cards/${esc(name.toLowerCase().split(" // ")[0].replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""))}" target="_blank" rel="noopener">EDHREC ↗</a>
-      <button class="link" data-act="buyCard">Where to buy ›</button>
+      <button class="link" data-act="cardPriceJump" data-target="sellers">Where to buy ›</button>
     </div>`;
   const pricesTab = `${priceOverview("mtg",shown,ctx,Object.entries(shown.purchase_uris||{}))}<details class="market-details"><summary>Market details · sources & finishes</summary>
-    <div class="src-row" role="tablist" aria-label="Price source">${MTG_SOURCES.map(([id, label]) => `<button class="chip pick ${id === src[0] ? "on" : ""}" data-act="priceSource" data-src="${id}">${esc(label)}</button>`).join("")}</div>
+    <div class="src-row" role="group" aria-label="Price source">${MTG_SOURCES.map(([id, label]) => `<button class="chip pick ${id === src[0] ? "on" : ""}" aria-pressed="${id === src[0]}" data-act="priceSource" data-src="${id}">${esc(label)}</button>`).join("")}</div>
     <div class="price-table" style="--cols:${Object.keys(src[3]).length}"><div class="pt-head"><span></span>${Object.keys(src[3]).map((f) => `<b class="${f}">${FINISH[f]}</b>`).join("")}</div>
       <div class="pt-row"><span class="pt-label">${esc(shown.set_name || "This printing")} <small class="muted">${esc((shown.set || "").toUpperCase())} #${esc(shown.collector_number || "?")}</small></span>${Object.values(src[3]).map((k) => `<span>${money(shown.prices?.[k], src[2])}</span>`).join("")}</div>
     </div>
     <p class="foot">${esc(src[1])} ${src[2] === "TIX" ? "price for Magic Online tickets" : "market estimate"} from Scryfall, updated daily${shown.checkedAt ? " · checked " + esc(new Date(shown.checkedAt).toLocaleDateString()) : ""}. Condition prices (NM, LP…) and stock are on the store’s page.</p>
     ${prints ? `<p class="small">Across ${prints.length} printings: <b class="ok-text">${usd(cheapest(prints))}</b> cheapest · <b>${usd(dearest(prints))}</b> priciest <button class="link small" data-act="cardTab" data-tab="versions">Compare all →</button></p>` : ""}
     ${chosen ? `<p class="small">Your shopping price: <b>${usd(chosen.price)}</b> · ${esc(chosen.label)}</p>` : ""}
-    <div class="actions wrap"><button class="btn" data-act="buyCard" data-finish="${finishes[0] || "nonfoil"}">Buy this printing ›</button>${shown.purchase_uris?.[src[0]] ? `<a class="btn ghost" href="${esc(safeHref(shown.purchase_uris[src[0]]))}" target="_blank" rel="noopener noreferrer">${esc(src[1])} listing ↗</a>` : ""}</div></details>`;
+    </details>`;
   const rulings = ctx.rulings
     ? ctx.rulings.length
       ? `<ul class="rulings">${ctx.rulings.map((r) => `<li><p>${symbolText(r.comment)}</p><small class="muted">${esc(r.source === "wotc" ? "Wizards of the Coast" : "Scryfall")} · ${esc(r.published_at || "")}</small></li>`).join("")}</ul>`
@@ -405,15 +386,11 @@ export function cardSheet(c, ctx = {}) {
   ${emblemChips("mtg", c)}
   <div class="cs-meta">
     <button class="cd-set" data-act="set" data-code="${esc(shown.set || "")}" ${shown.set ? "" : "disabled"} aria-label="See every card in ${esc(shown.set_name || "this set")}">${setIcon(shown.set, shown.rarity, 24)}<div><b>${esc(shown.set_name || (shown.set || "").toUpperCase())} <span class="set-go">›</span></b><small>${esc((shown.set || "").toUpperCase())} #${esc(shown.collector_number || "?")} · ${esc(RARITY[shown.rarity] || shown.rarity || "")}${shown.released_at ? " · " + esc(shown.released_at.slice(0, 4)) : ""}</small></div></button>
-    <div class="cd-prices">${
-      finishes.length
-        ? finishes.map((f) => pricePill(shown, f)).join("") + `<p class="price-gap small muted">Tap a price to buy on TCGplayer. Press and hold it, or <button class="link small" data-act="myPriceSet" data-finish="${finishes[0]}">set your price</button>; only you see it.</p>`
-        : `<button class="price-pill unknown" data-act="buyDirect" data-hold="myPriceSet" data-finish="nonfoil" aria-label="Find sellers on TCGplayer. Press and hold to set your own price."><small>Price</small><b>No price yet</b><span class="buy-hint">Find sellers ›</span></button><p class="price-gap small muted">No store prices this printing yet. Tap to see TCGplayer listings. Press and hold, or <button class="link small" data-act="myPriceSet" data-finish="nonfoil">set your price</button>; only you see it.</p>`
-    }</div>
+    ${compactPriceSummary("mtg",shown,{...ctx,priceFinish})}
   </div>
   ${faces
     .map(
-      (f, n) => `<section class="cd-text effect-card mtg">
+      (f, n) => `<section class="cd-text effect-card mtg" data-rule-card-context="${esc(JSON.stringify(ruleCardContext('mtg',shown)))}">
       <p class="eyebrow effect-label">Spellcraft · Rules text</p>${faces.length > 1 ? `<div class="row between"><b>${esc(f.name)}</b>${manaCost(f)}</div><p class="type-line">${esc(f.type_line || "")}</p>` : ""}
       ${f.oracle_text ? `<div class="oracle">${effectText("mtg",f.oracle_text)}</div>` : ""}
       ${f.flavor_text ? `<blockquote class="flavor"><small class="eyebrow">Flavour</small>${esc(f.flavor_text)}</blockquote>` : ""}
@@ -628,7 +605,6 @@ function fillAnyPanel(d, fm, count) {
 
 /* ---------- Buy this card ---------- */
 
-const STORES_EXACT = { tcgplayer: "TCGplayer", cardmarket: "Cardmarket" };
 const nameSearch = (name) => [
   ["TCGplayer", "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=" + encodeURIComponent(name)],
   ["Card Kingdom", "https://www.cardkingdom.com/catalog/search?filter%5Bname%5D=" + encodeURIComponent(name)],
@@ -638,40 +614,15 @@ const nameSearch = (name) => [
 export function buySheet(ctx) {
   const p = ctx.print || meta(ctx.name) || { name: ctx.name },
     name = ctx.name,
-    have = ["nonfoil", "foil", "etched"].filter((f) => (p.finishes || ["nonfoil"]).includes(f) || priceOfFinish(p, f)),
-    finish = have.includes(ctx.finish) ? ctx.finish : have[0] || "nonfoil",
-    est = priceOfFinish(p, finish),
-    eur = p.prices?.[finish === "nonfoil" ? "eur" : "eur_" + finish] ?? null,
-    asOf = ctx.asOf || p.checkedAt,
-    exact = Object.entries(STORES_EXACT).filter(([k]) => p.purchase_uris?.[k]),
-    prints = ctx.back?.prints || [],
-    low = cheapest(prints),
+    finish = selectedFinish("mtg",p,ctx.finish),
+    est = quoteModel("mtg",p,finish)?.value ?? null,
+    low = cheapest(ctx.back?.prints || []),
     i = inv(name);
   return `<div class="sheet-head"><button class="icon" data-act="buyBack" aria-label="Back to card details">←</button><h2>Buy this card</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
-  <div class="buy-card">${img(p.image_uris?.small || p.card_faces?.[0]?.image_uris?.small, name, "buy-thumb")}<div class="buy-id">
-    <b>${esc(name)}</b>
-    <span class="small">${p.set ? setIcon(p.set, p.rarity, 14) : ""} ${esc(p.set_name || "Printing not recorded")}</span>
-    <span class="small muted">${p.set ? `${esc(p.set.toUpperCase())} #${esc(p.collector_number || "?")} · ` : ""}${esc((p.lang || "en").toUpperCase())} · ${esc(FINISH[finish])}</span>
-  </div></div>
-  ${have.length > 1 ? `<div class="seg" role="tablist" aria-label="Finish">${have.map((f) => `<button role="tab" aria-selected="${f === finish}" class="${f === finish ? "on" : ""}" data-act="buyFinish" data-finish="${f}">${FINISH[f]}</button>`).join("")}</div>` : ""}
-  <section class="panel tight buy-est"><div class="row between"><span class="muted small">Estimated price</span><b class="buy-price">${est === null ? "Unknown" : usd(est)}</b></div>
-    <p class="small muted">${est === null ? "Scryfall has no current USD price for this printing and finish." : `Scryfall reference price (USD, ${esc(FINISH[finish].toLowerCase())})`}${eur !== null ? ` · Cardmarket trend €${esc(Number(eur).toFixed(2))}` : ""}${asOf ? ` · as of ${esc(new Date(asOf).toLocaleDateString())}` : ""}. Sellers set their own prices, condition and shipping — check the listing.</p>
-  </section>
-  ${historyPanel(quoteModel("mtg",p,finish),ctx.range || "30")}
-  <h3>This exact printing</h3>
-  ${
-    exact.length
-      ? `<div class="list compact">${exact.map(([k, label]) => `<a class="mini-row store" href="${esc(safeHref(p.purchase_uris[k]))}" target="_blank" rel="noopener noreferrer"><span><b>${label}</b><small class="muted"> · ${esc(p.set ? p.set.toUpperCase() + " #" + p.collector_number : "this printing")}</small></span><span class="btn ghost small">View listing ↗</span></a>`).join("")}</div>${finish !== "nonfoil" ? `<p class="foot">Choose ${esc(FINISH[finish].toLowerCase())} on the listing page.</p>` : ""}`
-      : `<p class="muted small">No direct listing link for this printing. Use a name search below, then pick the set.</p>`
-  }
-  <h3>Search by card name</h3>
-  <p class="foot">These show every printing, not just this one.</p>
-  <div class="links">${nameSearch(name).map(([l, u]) => `<a href="${esc(safeHref(u))}" target="_blank" rel="noopener noreferrer">${l} ↗</a>`).join("")}</div>
-  <div class="actions wrap">
-    <button class="btn ghost" data-act="buyCompare">Compare cheaper printings${low !== null && est !== null && low < est ? ` · from ${usd(low)}` : ""}</button>
-    <button class="btn" data-act="own" data-name="${esc(name)}">＋ Add to collection</button>
-  </div>
-  <p class="foot">${i.owned ? `You own ${i.owned}. ` : ""}Opening a store never changes your collection — use “Add to collection” after the card arrives. Stock and shipping are only on the seller’s site.</p>`;
+  <div class="buy-card">${img(p.image_uris?.small || p.card_faces?.[0]?.image_uris?.small, name, "buy-thumb")}<div class="buy-id"><b>${esc(name)}</b><span class="small">${p.set ? setIcon(p.set, p.rarity, 14) : ""} ${esc(p.set_name || "Printing not recorded")}</span><span class="small muted">${p.set ? `${esc(p.set.toUpperCase())} #${esc(p.collector_number || "?")} · ` : ""}${esc((p.lang || "en").toUpperCase())} · ${esc(FINISH[finish])}</span></div></div>
+  ${priceOverview("mtg",p,{...ctx,priceFinish:finish},[...Object.entries(p.purchase_uris||{}),...nameSearch(name)])}
+  <div class="actions wrap"><button class="btn ghost" data-act="buyCompare">Compare cheaper printings${low !== null && est !== null && low < est ? ` · from ${usd(low)}` : ""}</button><button class="btn" data-act="own" data-name="${esc(name)}">＋ Add to collection</button></div>
+  <p class="foot">${i.owned ? `You own ${i.owned}. ` : ""}Opening a store never changes your collection. Use “Add to collection” after the card arrives.</p>`;
 }
 
 /* ---------- Compare two cards ---------- */
@@ -1145,7 +1096,7 @@ export function deckPage() {
   </section>
   <nav class="tabs" role="tablist">${tabs.map(([id, l]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="deckTab" data-id="${id}">${l}</button>`).join("")}</nav>
   ${fm.commander && !canLead(meta(d.commander), fm) && tab !== "upgrade" ? `<button class="note warn block-note" data-act="deckTab" data-id="upgrade">⚠ No ${fm.commander === "planeswalker" ? "Oathbreaker" : "commander"} set — tap to choose one so colors and synergy are checked.</button>` : ""}
-  <div class="deck-body" data-tab="${tab}">${{ rules: ()=>interactiveRules("mtg"), cards: deckCards, engine: deckEngine, matchups: deckMatchups, upgrade: deckUpgrade, versions: deckVersions, playtest: deckPlaytest, shop: deckShop }[tab](d, t)}</div>`;
+  <div class="deck-body" data-tab="${tab}">${{ rules: ()=>interactiveRules("mtg", {format:d.format}), cards: deckCards, engine: deckEngine, matchups: deckMatchups, upgrade: deckUpgrade, versions: deckVersions, playtest: deckPlaytest, shop: deckShop }[tab](d, t)}</div>`;
 }
 
 function reviewBadge(d) {

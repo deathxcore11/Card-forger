@@ -23,6 +23,8 @@ mtg-tcg-route.js
 
 ai-review-route.js
 ai-ask-route.js
+ai-rules-route.js
+rules-retrieval.js
 AI_SETUP.md
 
 # Private local credentials must never be committed or served.

@@ -50,10 +50,28 @@ jobs:
         run: node tests/tilt-browser.mjs
       - name: Test discovery, learning and responsive AI identity
         run: node tests/discovery-browser.mjs
+      - name: Validate exact Rules and detail provider fixtures
+        run: |
+          node tests/rules-browser.mjs --validate-fixtures
+          node tests/detail-rules-browser.mjs --validate-fixtures
+          node tests/rules-judge-browser.mjs --validate-fixtures
       - name: Test interactive official rulebooks and learning
+        if: ${{ !cancelled() }}
         run: node tests/rules-browser.mjs
+      - name: Test exact card prices, vendor links and uniform deck artwork
+        if: ${{ !cancelled() }}
+        run: node tests/detail-rules-browser.mjs
+      - name: Test grounded Rules guide citations and lifecycle
+        if: ${{ !cancelled() }}
+        run: node tests/rules-judge-browser.mjs
       - name: Test ownership controls and condition values in the real app
+        if: ${{ !cancelled() }}
         run: node tests/owned-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rules-detail-deck-browser-evidence
+          path: test-results/
   scanner-browser:
     runs-on: ubuntu-latest
     timeout-minutes: 10
