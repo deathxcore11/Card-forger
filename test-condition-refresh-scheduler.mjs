@@ -163,7 +163,7 @@ function harness(){
  const lot={id:'same-lot',name:card.name,qty:1,printingId:id,printingVerified:true,finish:'nonfoil',language:'en',condition:'Lightly Played'};
  const initial={collection:[lot],printings:{[id]:card},settings:{},tcg:{ptcg:{collection:[]},ygo:{collection:[]}}};
  const disk=new Map([['workspace',structuredClone(initial)]]),body=deferred(),firstWrite=deferred(),releaseWrite=deferred();
- let storageQueue=Promise.resolve(),writes=0,networkCalls=0,quoteCallbacks=0;
+ let storageQueue=Promise.resolve(),writes=0,networkCalls=0,quoteCallbacks=0,homeRefreshes=0;
  const scheduled=[];
  const c={S:{state:initial,catalog:{[card.name.toLowerCase()]:card},ui:{view:'scan'}},navigator:{onLine:true},structuredClone,Date,Promise,CONDITION_IDENTITY,conditionRequest,applyConditionQuotes,conditionValue,changedConditionLots,conditionLotIdentity,
   createConditionRefreshScheduler:()=>createConditionRefreshScheduler({intervalMs:0}),
@@ -171,12 +171,12 @@ function harness(){
   key:s=>String(s).toLowerCase(),meta:name=>c.S.catalog[String(name).toLowerCase()],T:{game:()=> 'mtg',gs:game=>c.S.state.tcg[game],cardOf:()=>null,persistQuoteCache(){},currentYgoCatalogue:()=>[]},
   normalize:s=>s,stripCache:s=>s,STORAGE:'workspace',RECOVERY:'recovery',blank:()=>({collection:[],printings:{},settings:{},tcg:{ptcg:{collection:[]},ygo:{collection:[]}}}),
   writeRecords(records){const snapshots=structuredClone(records);const transaction=async()=>{if(++writes===1){firstWrite.resolve();await releaseWrite.promise;}for(const[k,v]of snapshots)disk.set(k,v);};const result=storageQueue.then(transaction,transaction);storageQueue=result.catch(()=>{});return result;},
-  writeRecord:(key,value)=>c.writeRecords([[key,value]]),afterLocalSave(){},saveCatalogSoon(){},setSaveStatus(){},render(){},refreshSheet(){},haptic(){},flyToCollection(){},toast(){},autoEnrich(){},lastActTarget:null,
+  writeRecord:(key,value)=>c.writeRecords([[key,value]]),afterLocalSave(){},refreshHomeValueGlance(){homeRefreshes++;},saveCatalogSoon(){},setSaveStatus(){},render(){},refreshSheet(){},haptic(){},flyToCollection(){},toast(){},autoEnrich(){},lastActTarget:null,
   setTimeout(fn,ms){scheduled.push({fn,ms});return scheduled.length;}
  };
  vm.createContext(c);
  vm.runInContext(segment('function save()','// Transactional change:')+segment('let lastUndo =','const safely =')+segment('const conditionScheduler=','let magicPriceRefresh='),c);
- return {c,card,lot,disk,scheduled,firstWrite,releaseWrite,start:()=>c.fetchConditionValue(card,lot,'mtg',()=>quoteCallbacks++,{source:'review'}),resolveQuote:()=>body.resolve({status:'available',quotes:[{condition:'Lightly Played',price:7.25,currency:'USD',priceStatus:'current',validUntil:new Date(Date.now()+86400000).toISOString()}]}),get networkCalls(){return networkCalls;},get writes(){return writes;},get quoteCallbacks(){return quoteCallbacks;}};
+ return {c,card,lot,disk,scheduled,firstWrite,releaseWrite,start:()=>c.fetchConditionValue(card,lot,'mtg',()=>quoteCallbacks++,{source:'review'}),resolveQuote:()=>body.resolve({status:'available',quotes:[{condition:'Lightly Played',price:7.25,currency:'USD',priceStatus:'current',validUntil:new Date(Date.now()+86400000).toISOString()}]}),get networkCalls(){return networkCalls;},get writes(){return writes;},get quoteCallbacks(){return quoteCallbacks;},get homeRefreshes(){return homeRefreshes;}};
 }
 {
  const h=harness(),quote=h.start();await until(()=>h.networkCalls===1);
@@ -184,7 +184,7 @@ function harness(){
  await h.firstWrite.promise;h.resolveQuote();await flush();assert.equal(h.writes,1,'Quote persistence waits behind the in-flight edit');
  h.releaseWrite.resolve();await Promise.all([edit,quote]);
  for(const state of [h.c.S.state,h.disk.get('workspace')]){assert.equal(state.collection[0].qty,4);assert.equal(state.collection[0].location,'Changed while quote pending');assert.equal(state.collection[0].conditionQuotes[0].price,7.25);}
- assert.equal(h.writes,2);assert.equal(h.scheduled.length,0,'Price attachment and quantity/location-only edit do not recursively queue condition refreshes');assert.equal(h.networkCalls,1);assert.equal(h.quoteCallbacks,1);
+ assert.equal(h.writes,2);assert.equal(h.scheduled.length,0,'Price attachment and quantity/location-only edit do not recursively queue condition refreshes');assert.equal(h.networkCalls,1);assert.equal(h.quoteCallbacks,1);assert.equal(h.homeRefreshes,1,'Canonical quote changes notify the scoped Home glance even after the requesting view changes');
  console.log('PASS: actual quote completion serializes after an in-flight collection edit without overwriting quantity/location, and does not recursively schedule refreshes.');
 }
 {

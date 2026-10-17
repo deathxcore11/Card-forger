@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import { gameTabs, syncGameTabs, attachGameTabs, homeValue, featureArticle, homeEdition, isHomeRevealCurrent, homeDeckReveal, displayDate, refreshHomeCommunity } from './home-ui.js';
+import { gameTabs, syncGameTabs, attachGameTabs, homeValue, featureArticle, homeEdition, homeDiscovery, isHomeRevealCurrent, homeDeckReveal, displayDate, refreshHomeCommunity } from './home-ui.js';
 import { communityState } from './community-feed.js';
 import { GAME_IDS } from './games.js';
 import { homeHero, heroState, loadHero, heroFor } from './tcg.js';
@@ -16,7 +16,9 @@ for (const game of GAME_IDS) {
   assert.match(html, new RegExp(`data-game="${game}"[^>]+aria-selected="true"`));
   assert.deepEqual([...html.matchAll(/data-game="(.*?)"/g)].map(m=>m[1]), GAME_IDS, 'tabs and game swipe use exactly the same order');
   assert.match(homeEdition(game), /data-home-gesture="carousel"/);
-  assert.match(homeEdition(game), /data-act="homeRandomDeck"/);
+  assert.doesNotMatch(homeEdition(game), /data-act="homeRandomDeck"|data-home-meta|data-to="#decks\/ideas"/);
+  assert.match(homeDiscovery(game), /data-act="homeRandomDeck"/);
+  assert.match(homeDiscovery(game), /Build from my cards/);
 }
 let focused, clicked;
 const tabs = GAME_IDS.map(g=>({ dataset:{game:g}, setAttribute(k,v){this[k]=v;}, focus(){focused=g;}, click(){clicked=g;} }));
@@ -29,7 +31,7 @@ for (const [key,from,to] of [['ArrowRight',0,1],['ArrowLeft',0,2],['Home',2,0],[
 }
 cleanup();assert.equal(Object.keys(listeners).length,0);
 assert.match(homeValue({total:40,copies:5,decks:0,unpriced:2}),/Known subtotal · 2 unpriced/);
-assert.match(homeValue({total:0,copies:2,decks:0,unpriced:2}),/<strong>—<\/strong>/);
+assert.match(homeValue({total:0,copies:2,decks:0,unpriced:2}),/<strong data-value-amount>—<\/strong>/);
 assert.doesNotMatch(homeValue({total:0,copies:2,decks:0,unpriced:2}),/\$0/);
 assert.match(homeValue({total:0,copies:0,decks:0}),/Ready for your first card/);
 assert.match(homeValue({total:0,copies:2,decks:0}),/Estimated value/,'known genuine zero is not confused with missing prices');
@@ -82,7 +84,7 @@ assert.match(app,/Choose a format first\./,'new reveal preserves the existing ex
 let painted = '';
 const feedNode = { contains:()=>false, set outerHTML(value){ painted=value; } }, feedRoot = { querySelector:()=>feedNode }, doc = { body:{dataset:{view:'home',game:'ygo'}},activeElement:null };
 refreshHomeCommunity('ygo',feedRoot,{documentRef:doc,loadDecks:()=>new Promise(()=>{}),loadNews:async()=>{
- const now=new Date().toISOString();communityState('ygo').data={items:[{id:'live',game:'ygo',kind:'news',title:'Independent fresh headline',url:'https://www.yugioh-card.com/en/news/real-test',source:'Konami',publishedAt:now,fetchedAt:now}],status:'ready'};
+ const now=new Date().toISOString();communityState('ygo').data={items:[{id:'live',sourceId:'konami',game:'ygo',kind:'news',title:'Independent fresh headline',url:'https://www.yugioh-card.com/en/news/real-test',source:'Konami',publishedAt:now,fetchedAt:now}],status:'ready'};
 }});
 await new Promise(r=>setTimeout(r,0));assert.match(painted,/Independent fresh headline/,'fresh news paints even when tournament request never settles');
 console.log('PASS: Home tabs/keyboard, honest partial values, safe dated source slides, exact independent daily-header targets, actual daily-card caches, gesture isolation, reduced motion and navigation-safe reveal.');

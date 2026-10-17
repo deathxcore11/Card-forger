@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { communityDeckArtwork, communityArtwork, safeCommunityImage, handleCommunityArtwork } from './community-art.js';
 import { communitySlides, communityState } from './community-feed.js';
-import { featureArticle, homeMetaShortcut, attachHomeCommunity, refreshHomeCommunity } from './home-ui.js';
+import { featureArticle, homeMetaShortcut, homeMetaKey, attachHomeCommunity, refreshHomeCommunity } from './home-ui.js';
 import { metaState } from './meta.js';
 
 const now = Date.parse('2026-10-17T12:00:00Z');
@@ -33,12 +33,12 @@ for (const g of Object.keys(decks)) {
   assert.match(html, /referrerpolicy="no-referrer"/);
   assert.match(html, /Game theme · deck art unavailable/);
   assert.doesNotMatch(html, /data-art-sources|onerror=|unrelated-cover/);
-  Object.assign(metaState(g === 'mtg' ? 'mtg:Standard' : g), M);
+  Object.assign(metaState(homeMetaKey(g)), M);
   const shortcut = homeMetaShortcut(g);
-  assert.match(shortcut, /class="quick-btn home-meta-shortcut"/);
+  assert.match(shortcut, /class="home-meta"/);
   assert.match(shortcut, /data-act="go" data-to="#decks\/inspiration"/);
   assert(shortcut.includes(expected[g]));
-  assert.match(shortcut, /<b>Meta decks<\/b>/);
+  assert.match(shortcut, /<h2>Deck discovery<\/h2>/);
 }
 assert.match(featureArticle('ptcg', slideFor('ptcg'), 0, 1), /community-art-scan/);
 assert.equal(communityDeckArtwork('ptcg', { ...decks.ptcg, name: 'Mewtwo', icons: [], cover: { imageLarge: expected.ptcg } }), null, 'never borrows a generic archetype cover or a different species');
@@ -57,12 +57,13 @@ for (const g of Object.keys(decks)) {
   for (const patch of [{ deckKey: 'another-list' }, { url: 'https://attacker.test/deck' }, { artwork: { ...slide.artwork, game: 'wrong' } }]) assert.doesNotMatch(communityArtwork(g, { ...slide, ...patch }), /<img/, 'render boundary revalidates list, game and source');
 }
 const publisher = {
-  mtg: ['https://images.ctfassets.net/official-story.webp', 'https://magic.wizards.com/en/news/announcements/official-story'],
-  ptcg: ['https://assets.pokemon.com/assets/cms2/img/trading-card-game/story.jpg', 'https://www.pokemon.com/us/pokemon-news/official-tcg-story'],
-  ygo: ['https://img.yugioh-card.com/en/story.jpg', 'https://www.yugioh-card.com/en/news/official-story/'],
+  mtg: ['https://images.ctfassets.net/s5n2t79q9icq/fixture/0123456789abcdef0123456789abcdef/official-story.webp', 'https://magic.wizards.com/en/news/announcements/official-story'],
+  ptcg: ['https://primary.jwwb.nl/public/h/t/i/temp-zjpebgcobmaxydcmrfwb/story.jpg', 'https://www.pokeguardian.com/3412574_official-tcg-story'],
+  ygo: ['https://www.yugioh-card.com/en/wp-content/uploads/2026/10/story.jpg', 'https://www.yugioh-card.com/en/news/official-story/'],
 };
 for (const [g, [image, url]] of Object.entries(publisher)) {
-  const story = { game: g, kind: 'news', title: 'Official story', url, image, publishedAt: '2026-10-16', fetchedAt: '2026-10-17T10:00:00Z' };
+  const sourceId = { mtg: 'wizards', ptcg: 'pokeguardian', ygo: 'konami' }[g];
+  const story = { game: g, sourceId, kind: 'news', title: 'Official story', url, image, publishedAt: '2026-10-16', fetchedAt: '2026-10-17T10:00:00Z' };
   communityState(g).data = { items: [story], status: 'ready' };
   const slide = communitySlides(g, { metaState: { data: null }, now })[0];
   assert.equal(slide.image, image);
@@ -71,31 +72,32 @@ for (const [g, [image, url]] of Object.entries(publisher)) {
   assert.match(html, /data-art-kind="publisher"/);
   assert.match(html, /Published <time datetime="2026-10-16"/);
   assert.match(html, /Source image/);
-  assert.match(html, /Game theme · not article artwork/);
-  assert.equal(safeCommunityImage(image, g), image);
+  assert.doesNotMatch(html, /community-art-theme|community-art-emblem|Game theme/);
+  assert.equal(safeCommunityImage(image, g, sourceId, url), image);
   for (const bad of ['http:' + image.slice(6), 'https://attacker.test/a.jpg', 'https://assets.pokemon.com.attacker.test/a.jpg', 'https://x:y@assets.pokemon.com/a.jpg', 'https://assets.pokemon.com:8080/a.jpg', 'javascript:alert(1)', 'data:image/svg+xml,<svg onload=alert(1)>', '//assets.pokemon.com/a.jpg', image + '\n']) {
-    assert.equal(safeCommunityImage(bad, g), '');
+    assert.equal(safeCommunityImage(bad, g, sourceId, url), '');
     assert.doesNotMatch(featureArticle(g, { ...story, image: bad }, 0, 1), /<img/);
   }
   assert.doesNotMatch(featureArticle(g, { ...story, kind: 'link' }, 0, 1), /<img/, 'a source-link fallback never invents article imagery');
-  assert.match(featureArticle(g, { ...story, kind: 'link' }, 0, 1), /Game theme · source link/);
+  assert.doesNotMatch(featureArticle(g, { ...story, kind: 'link' }, 0, 1), /community-art|Game theme/);
 }
 assert.equal(safeCommunityImage(publisher.ptcg[0], 'mtg'), '', 'publisher images cannot silently cross games');
 assert.doesNotMatch(featureArticle('ygo', { kind: 'news', title: '<img src=x>', url: publisher.ygo[1], image: 'https://attacker.test/" onload="alert(1)' }, 0, 1), /<img|onload=/);
-const fakeWrapper = { dataset: { artState: 'pending' } };
+const fakeWrapper = { dataset: { artState: 'pending', artKind: 'publisher' } };
 const fakeImage = { matches: s => s === 'img[data-community-image]', closest: () => fakeWrapper, naturalWidth: 1200, hidden: false };
 handleCommunityArtwork({ type: 'load', target: fakeImage }); assert.equal(fakeWrapper.dataset.artState, 'ready');
-handleCommunityArtwork({ type: 'error', target: fakeImage }); assert.equal(fakeWrapper.dataset.artState, 'missing'); assert.equal(fakeImage.hidden, true);
+handleCommunityArtwork({ type: 'error', target: fakeImage }); assert.equal(fakeWrapper.dataset.artState, 'missing'); assert.equal(fakeImage.hidden, true); assert.equal(fakeWrapper.hidden, true, 'failed news becomes a clean text-only card');
 handleCommunityArtwork({ type: 'load', target: fakeImage }); assert.equal(fakeWrapper.dataset.artState, 'missing', 'a late load cannot revive a failed image');
 assert.equal(fakeImage.src, undefined, 'failure never mutates the image URL or retries');
 const handlers = new Map(), root = { addEventListener: (name, fn) => handlers.set(name, fn), removeEventListener: name => handlers.delete(name) };
 const cleanup = attachHomeCommunity(root); assert.equal(handlers.get('error'), handleCommunityArtwork); assert.equal(handlers.get('load'), handleCommunityArtwork); cleanup(); assert.equal(handlers.size, 0);
 let carousel = '', shortcut = '';
 const feedNode = { contains: () => false, set outerHTML(v) { carousel = v; } };
-const tileNode = { dataset: { homeMeta: 'ptcg' }, contains: () => false, set outerHTML(v) { shortcut = v; } };
+const leaf = { textContent: '' };
+const tileNode = { dataset: { homeMeta: 'ptcg' }, contains: () => false, querySelector: q => q === '.home-meta-stage' ? { contains: () => false, set innerHTML(v) { shortcut = v; } } : leaf, querySelectorAll: () => [] };
 const refreshRoot = { querySelector: q => q.includes('data-home-meta') ? tileNode : feedNode };
 await refreshHomeCommunity('ptcg', refreshRoot, { now, loadNews: async () => {}, loadDecks: async () => {}, documentRef: { body: { dataset: { view: 'home', game: 'ptcg' } }, activeElement: null } });
-assert.match(carousel, /Community spotlight/); assert.match(shortcut, /data-home-meta="ptcg"/, 'async deck arrival also refreshes the existing shortcut without a whole-page render');
+assert.match(carousel, /Community spotlight/); assert.match(shortcut, /data-meta-key="ptcg"/, 'async deck arrival also refreshes the existing shortcut without a whole-page render');
 const css = fs.readFileSync('style.css', 'utf8');
 assert.doesNotMatch(css, /\.community-art\s*\{[^}]*display\s*:\s*none/);
 assert.match(css, /\.community-art-image\[hidden\]\s*\{ display:none; \}/);

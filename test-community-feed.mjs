@@ -5,28 +5,28 @@ import { parseNewsIndex, parseNewsArticle, parseYgoEvents, retainCommunityItems,
 const now = Date.parse('2026-10-17T12:00:00Z'), iso = n => new Date(n).toISOString();
 const articleUrl = 'https://magic.wizards.com/en/news/announcements/fixture-update';
 const index = '<h2>Latest Articles</h2><article><a href="/en/news/announcements/fixture-update"><h3>Fixture update</h3></a></article>';
-const article = (published = '2026-10-16T09:00-07:00', title = 'Fixture rules update') => `<meta property="og:image" content="https://images.ctfassets.net/fixture.webp"><script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', headline: title, datePublished: published, dateModified: iso(now) })}</script>`;
+const article = (published = '2026-10-16T09:00-07:00', title = 'Fixture rules update') => `<meta property="og:image" content="https://images.ctfassets.net/s5n2t79q9icq/fixture/0123456789abcdef0123456789abcdef/fixture.webp"><script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', headline: title, datePublished: published, dateModified: iso(now) })}</script>`;
 const candidate = { url: articleUrl, title: 'Fallback title' };
 const news = parseNewsArticle('mtg', article(), candidate, now);
 assert.equal(news.title, 'Fixture rules update');
 assert.equal(news.publishedAt, '2026-10-16T16:00:00.000Z');
 assert.equal(news.fetchedAt, iso(now));
 assert.equal(news.important, true);
-assert.equal(news.image, 'https://images.ctfassets.net/fixture.webp');
+assert.equal(news.image, 'https://images.ctfassets.net/s5n2t79q9icq/fixture/0123456789abcdef0123456789abcdef/fixture.webp');
 assert.equal(news.dateLabel, 'Published');
 assert.equal(parseNewsArticle('mtg', article('2026-10-01'), candidate, now), null, 'modified date never refreshes an old publication');
 assert.equal(parseNewsArticle('mtg', article('2026-10-18'), candidate, now), null, 'future publications excluded');
 assert.equal(parseNewsArticle('mtg', '<h1>Undated item</h1>', candidate, now), null, 'missing dates never invented');
 assert.equal(parseNewsArticle('mtg', article('2026-02-31'), candidate, now), null, 'impossible dates excluded');
 assert.equal(parseNewsArticle('mtg', article(), { ...candidate, url: 'https://attacker.test/story' }, now), null);
-assert.equal(parseNewsArticle('mtg', article().replace('https://images.ctfassets.net/fixture.webp', 'javascript:alert(1)'), candidate, now).image, '');
+assert.equal(parseNewsArticle('mtg', article().replace('https://images.ctfassets.net/s5n2t79q9icq/fixture/0123456789abcdef0123456789abcdef/fixture.webp', 'javascript:alert(1)'), candidate, now).image, '');
 const indexAttack = index + '<a href="https://magic.wizards.com.attacker.test/en/news/a/b">Bad</a><a href="https://user:pass@magic.wizards.com/en/news/a/b">Bad</a><a href="/en/news/a/b?url=http://169.254.169.254/">Bad</a><a href="http://magic.wizards.com/en/news/a/b">Bad</a>';
-assert.deepEqual(parseNewsIndex('mtg', indexAttack), [{ url: articleUrl, title: 'Fixture update' }]);
+assert.deepEqual(parseNewsIndex('mtg', indexAttack), [{ sourceId: 'wizards', url: articleUrl, title: 'Fixture update' }]);
 assert.equal(parseNewsIndex('mtg', '<h2>Latest Articles</h2>' + Array.from({ length: 30 }, (_, i) => `<a href="/en/news/announcements/story-${i}">Story ${i}</a>`).join('')).length, 4, 'bounded article requests');
 assert.deepEqual(parseNewsIndex('mtg', '<a href="/en/news/mtg-arena/event-terms-and-conditions">Event terms and conditions</a>'), [], 'legal terms are not a community headline');
 assert.deepEqual(parseNewsIndex('ptcg', '<iframe src="/challenge"></iframe>'), [], 'a block page is not news');
 assert.deepEqual(parseNewsIndex('ptcg', '<a href="/us/pokemon-news/new-animation">Animation</a>'), [], 'unrelated Pokémon news is not tabletop news');
-const ygoIndex = '<section class="copy"><h4><a href="/en/news/fixture-update/">Fixture update</a></h4><p class="date">October 16, 2026</p><section class="preview"></section></section>';
+const ygoIndex = '<li class="clear"><img class="thumb" src="/en/wp-content/uploads/2026/10/story.jpg"><section class="copy"><h4><a href="/en/news/fixture-update/">Fixture update</a></h4><p class="date">October 16, 2026</p><section class="preview"></section></section></li>';
 assert.equal(parseNewsIndex('ygo', ygoIndex)[0].publishedAt, '2026-10-16', 'calendar date does not invent a time zone');
 const events = `<h2>Upcoming Events</h2><a href="/en/events-item/fixture-event/"><p>Fixture championship</p><p>Fixture city</p><p>10/16/2026 - 10/18/2026</p></a><a href="/en/events-item/expired/"><p>Old event</p><p>City</p><p>10/01/2026 - 10/02/2026</p></a><a href="https://attacker.test/en/events-item/other/"><p>Bad</p><p>City</p><p>10/16/2026 - 10/18/2026</p></a>`;
 const event = parseYgoEvents(events, now)[0];
@@ -43,13 +43,13 @@ const edgeFetch = handler => async (url, options) => {
   if (!['follow', 'manual'].includes(options?.redirect)) throw new TypeError('Invalid redirect value, must be one of "follow" or "manual"');
   return handler(url, options);
 };
-await assert.rejects(edgeFetch(() => html(index))('https://magic.wizards.com/en/news', { redirect: 'error' }), /Invalid redirect value/);
+await assert.rejects(edgeFetch(() => html(index))('https://magic.wizards.com/en/news/announcements', { redirect: 'error' }), /Invalid redirect value/);
 const memoryCache = () => { const rows = new Map(); return { match: async key => rows.get(key.url)?.clone(), put: async (key, response) => { rows.set(key.url, response.clone()); } }; };
 const routeModule = id => import(`./community-feed-route.js?case=${id}`);
 const request = (game = 'mtg', extra = '', method = 'GET') => { const url = new URL(`https://app.test/api/community?game=${game}${extra}`); return [new Request(url, { method }), url, null]; };
 {
   const { communityFeedRoute } = await routeModule('cache'); const cache = memoryCache(); let calls = 0;
-  const fetchImpl = edgeFetch(async (url, options) => { calls++; assert.equal(options.redirect, 'manual'); assert.ok(options.signal); assert.ok(!options.headers.Authorization); if (url.endsWith('/en/news')) return html(index); assert.equal(url, articleUrl); return html(article()); });
+  const fetchImpl = edgeFetch(async (url, options) => { calls++; assert.equal(options.redirect, 'manual'); assert.ok(options.signal); assert.ok(!options.headers.Authorization); if (url.endsWith('/en/news/announcements')) return html(index); assert.equal(url, articleUrl); return html(article()); });
   const results = await Promise.all(Array.from({ length: 8 }, () => communityFeedRoute(...request(), { cache, fetchImpl, now })));
   const body = await results[0].json(); assert.equal(calls, 2, 'simultaneous refreshes share one upstream batch'); assert.equal(body.items.length, 1); assert.equal(body.status, 'ready');
   await communityFeedRoute(...request(), { cache, fetchImpl, now: now + COMMUNITY_DAY - 1 }); assert.equal(calls, 2, 'no refresh within 24 hours');
@@ -81,7 +81,7 @@ const request = (game = 'mtg', extra = '', method = 'GET') => { const url = new 
     });
     const body = await (await communityFeedRoute(...request(), { cache: null, fetchImpl, now })).json();
     assert.equal(body.status, 'unavailable'); assert.deepEqual(body.items, []); assert.match(body.error, /redirects are not allowed/);
-    assert.deepEqual(urls, ['https://magic.wizards.com/en/news'], `HTTP ${status} must never request ${location}`);
+    assert.deepEqual(urls, ['https://magic.wizards.com/en/news/announcements'], `HTTP ${status} must never request ${location}`);
     await communityFeedRoute(...request(), { cache: null, fetchImpl, now: now + 1 });
     assert.equal(urls.length, 1, 'redirect refusal retains daily failure backoff');
   }
@@ -89,31 +89,31 @@ const request = (game = 'mtg', extra = '', method = 'GET') => { const url = new 
     const { communityFeedRoute } = await routeModule(`article-redirect-${i}`), urls = [];
     const fetchImpl = edgeFetch(async (url, options) => {
       urls.push(url);
-      if (url === 'https://magic.wizards.com/en/news') return html(index);
+      if (url === 'https://magic.wizards.com/en/news/announcements') return html(index);
       if (options.redirect === 'follow') { urls.push(location); return html(article()); }
       return new Response(article(), { status: 302, headers: { Location: location, 'Content-Type': 'text/html' } });
     });
     const body = await (await communityFeedRoute(...request(), { cache: null, fetchImpl, now })).json();
     assert.equal(body.status, 'unavailable'); assert.deepEqual(body.items, []);
-    assert.deepEqual(urls, ['https://magic.wizards.com/en/news', articleUrl], 'article redirect body is not parsed and target is never requested');
+    assert.deepEqual(urls, ['https://magic.wizards.com/en/news/announcements', articleUrl], 'article redirect body is not parsed and target is never requested');
   }
 }
 {
   const { communityFeedRoute } = await routeModule('edge-cache-v2-recovery'), cache = memoryCache(); let calls = 0;
-  const legacyKey = new Request('https://cardforge.cache/community/v1/mtg'), key = new Request('https://cardforge.cache/community/v2/mtg');
+  const legacyKey = new Request('https://cardforge.cache/community/v2/mtg'), key = new Request('https://cardforge.cache/community/v3/mtg');
   const previous = { game: 'mtg', items: [news, { ...news, id: 'expired', publishedAt: iso(now - COMMUNITY_RETENTION - 1) }], status: 'unavailable', error: 'Invalid redirect value', checkedAt: iso(now - 1000), fetchedAt: news.fetchedAt, nextCheckAt: iso(now + COMMUNITY_DAY - 1000) };
   await cache.put(legacyKey, Response.json(previous));
   const fetchImpl = edgeFetch(async () => { calls++; throw Error('Publisher offline'); });
   const body = await (await communityFeedRoute(...request(), { cache, fetchImpl, now })).json();
-  assert.equal(calls, 1, 'fresh v1 failure cannot suppress the corrected attempt');
+  assert.equal(calls, 1, 'fresh v3 failure cannot suppress the corrected attempt');
   assert.equal(body.status, 'unavailable'); assert.equal(body.items.length, 1); assert.equal(body.items[0].stale, true);
   assert.equal(body.items[0].publishedAt, news.publishedAt); assert.equal(body.items[0].fetchedAt, news.fetchedAt); assert.equal(body.fetchedAt, news.fetchedAt);
-  assert.equal(body.nextCheckAt, iso(now + COMMUNITY_DAY)); assert.equal(body.error, 'Publisher offline');
+  assert.equal(body.nextCheckAt, iso(now + COMMUNITY_DAY)); assert.match(body.error, /Publisher offline/);
   assert.deepEqual(await (await cache.match(legacyKey)).json(), previous, 'legacy cache is not purged or rewritten');
   const stored = await cache.match(key); assert.match(stored.headers.get('Cache-Control'), /max-age=604800/); assert.equal((await stored.json()).checkedAt, iso(now));
   const reloaded = await routeModule('edge-cache-v2-recovery-reloaded');
   await reloaded.communityFeedRoute(...request(), { cache, fetchImpl, now: now + COMMUNITY_DAY - 1 });
-  assert.equal(calls, 1, 'persisted v2 failure backoff survives a new Worker instance');
+  assert.equal(calls, 1, 'persisted v3 failure backoff survives a new Worker instance');
   await reloaded.communityFeedRoute(...request(), { cache, fetchImpl, now: now + COMMUNITY_DAY });
   assert.equal(calls, 2, 'recovery does not disable normal next-day refresh');
 }
@@ -121,7 +121,7 @@ const request = (game = 'mtg', extra = '', method = 'GET') => { const url = new 
   const { communityFeedRoute } = await routeModule('edge-cache-migration-race'); let releaseLegacy, markWaiting, calls = 0;
   const waiting = new Promise(resolve => { markWaiting = resolve; }), blockedLegacy = new Promise(resolve => { releaseLegacy = resolve; });
   const cache = { match: async key => {
-    if (key.url.includes('/v1/')) { markWaiting(); await blockedLegacy; return Response.json({ game: 'mtg', items: [news], checkedAt: iso(now), nextCheckAt: iso(now + COMMUNITY_DAY) }); }
+    if (key.url.includes('/v2/')) { markWaiting(); await blockedLegacy; return Response.json({ game: 'mtg', items: [news], checkedAt: iso(now), nextCheckAt: iso(now + COMMUNITY_DAY) }); }
   }, put: async () => {} };
   const fetchImpl = edgeFetch(async () => { calls++; throw Error('Offline'); });
   const delayed = communityFeedRoute(...request(), { cache, fetchImpl, now });
@@ -133,7 +133,7 @@ const request = (game = 'mtg', extra = '', method = 'GET') => { const url = new 
 }
 {
   const { communityFeedRoute } = await routeModule('future-external-cache'), cache = memoryCache(); let calls = 0;
-  await cache.put(new Request('https://cardforge.cache/community/v2/mtg'), Response.json({ game: 'mtg', items: [], checkedAt: iso(now + 1), nextCheckAt: iso(now + COMMUNITY_DAY), status: 'ready' }));
+  await cache.put(new Request('https://cardforge.cache/community/v3/mtg'), Response.json({ game: 'mtg', items: [], checkedAt: iso(now + 1), nextCheckAt: iso(now + COMMUNITY_DAY), status: 'ready' }));
   const body = await (await communityFeedRoute(...request(), { cache, now, fetchImpl: edgeFetch(async () => { calls++; throw Error('Offline'); }) })).json();
   assert.equal(calls, 1, 'future-dated external cache is not trusted like a completed in-process request');
   assert.equal(body.status, 'unavailable'); assert.equal(body.checkedAt, iso(now));
@@ -154,7 +154,7 @@ const request = (game = 'mtg', extra = '', method = 'GET') => { const url = new 
 {
   const { communityFeedRoute } = await routeModule('ygo'); const cache = memoryCache(); const urls = [];
   const body = await (await communityFeedRoute(...request('ygo'), { cache, now, fetchImpl: async url => { urls.push(url); return html(url.endsWith('/news/') ? ygoIndex : events); } })).json();
-  assert.equal(urls.length, 2); assert.deepEqual(body.items.map(x => x.kind).sort(), ['event', 'news']);
+  assert.equal(urls.length, 3); assert.deepEqual(body.items.map(x => x.kind).sort(), ['event', 'news']);
 }
 {
   const { communityFeedRoute } = await routeModule('pokemon');
@@ -183,7 +183,7 @@ await loadCommunity('mtg', { fetchImpl: async () => { calls++; throw Error('Offl
 await loadCommunity('mtg', { fetchImpl, now: now + COMMUNITY_DAY + 5 }); assert.equal(calls, 2, 'client failure does not trigger retry loops');
 assert.equal(communitySlides('mtg', { metaState: M, now: now + 8 * COMMUNITY_DAY }).some(x => x.kind === 'news'), false, 'retention enforced while rendering even offline');
 
-// A v1 success or failure may contain useful data, but its daily lock must not
+// A v2 success or failure may contain useful data, but its daily lock must not
 // hide the fixed endpoint. Migrate per game and persist even a failed attempt.
 for (const outage of [false, true]) {
   store.clear();
@@ -191,7 +191,7 @@ for (const outage of [false, true]) {
     game, items: game === 'mtg' ? [news, { ...news, url: articleUrl + '-expired', publishedAt: iso(now - COMMUNITY_RETENTION - 1) }] : game === 'ygo' ? [event] : [],
     status: game === 'mtg' ? 'ready' : 'unavailable', error: game === 'mtg' ? '' : 'Invalid redirect value', checkedAt: iso(now - 1000), fetchedAt: iso(now - 1000), nextCheckAt: iso(now + COMMUNITY_DAY - 1000),
   } }]));
-  const original = JSON.stringify(legacy); store.set('cardforge-community-v1', original);
+  const original = JSON.stringify(legacy); store.set('cardforge-community-v2', original);
   const mod = await import(`./community-feed.js?migration=${outage}`); let requests = 0;
   const fetchImpl = async (url, options) => {
     requests++; assert.equal(options.cache, 'no-store'); assert.ok(options.signal);
@@ -209,10 +209,10 @@ for (const outage of [false, true]) {
     if (game === 'mtg') { assert.equal(state.data.items[0].stale, true); assert.equal(state.data.items[0].publishedAt, news.publishedAt); assert.equal(state.data.items[0].fetchedAt, news.fetchedAt); }
   }
   assert.equal(requests, 3, 'one migration request per game, including concurrent visitors');
-  assert.equal(store.get('cardforge-community-v1'), original, 'recovery does not purge legacy data');
+  assert.equal(store.get('cardforge-community-v2'), original, 'recovery does not purge legacy data');
   const restored = await import(`./community-feed.js?migration-reload=${outage}`);
   for (const game of ['mtg', 'ptcg', 'ygo']) await restored.loadCommunity(game, { now: now + COMMUNITY_DAY - 1, fetchImpl });
-  assert.equal(requests, 3, 'v2 success/failure backoff survives reload, despite fresh legacy data');
+  assert.equal(requests, 3, 'v3 success/failure backoff survives reload, despite fresh legacy data');
   for (const game of ['mtg', 'ptcg', 'ygo']) {
     await restored.loadCommunity(game, { now: now + COMMUNITY_DAY, fetchImpl });
     assert.equal(restored.communitySlides(game, { metaState: { data: null }, now: now + 8 * COMMUNITY_DAY }).some(x => x.kind === 'news' || x.kind === 'event'), false, 'migrated data still expires after seven days');
@@ -226,7 +226,7 @@ store.clear();
 const badDates = ['1e100', '1e999', '-1e999', 'null', '8640000000000001'];
 for (let i = 0; i < badDates.length; i++) {
   const value = badDates[i], corrupt = JSON.stringify({ mtg: { at: '__BAD__', data: { game: 'mtg', status: 'ready', fetchedAt: '__BAD__', checkedAt: '__BAD__', nextCheckAt: '__BAD__', items: [{ ...news, fetchedAt: '__BAD__' }] } } }).replaceAll('"__BAD__"', value);
-  store.set('cardforge-community-v2', corrupt);
+  store.set('cardforge-community-v3', corrupt);
   const mod = await import(`./community-feed.js?invalid-date=${i}`);
   const restored = mod.communityState('mtg');
   assert.equal(restored.at, 0); assert.equal(restored.data.fetchedAt, ''); assert.equal(restored.data.checkedAt, ''); assert.equal(restored.data.nextCheckAt, ''); assert.deepEqual(restored.data.items, []);
@@ -240,7 +240,7 @@ for (let i = 0; i < badDates.length; i++) {
   assert.equal(mod.communityState('mtg').data.items.length, 1, 'valid next response recovers from malformed dates');
 }
 for (const [i, items] of [{}, 'not-an-array', true, 1, null].entries()) {
-  store.set('cardforge-community-v2', JSON.stringify({ mtg: { at: now, data: { game: 'mtg', items, status: 'ready' } } }));
+  store.set('cardforge-community-v3', JSON.stringify({ mtg: { at: now, data: { game: 'mtg', items, status: 'ready' } } }));
   const mod = await import(`./community-feed.js?invalid-items=${i}`);
   assert.equal(mod.communityState('mtg').data, null); assert.equal(mod.communityState('mtg').at, 0, 'discarded cache cannot suppress a fresh request');
   assert.equal(mod.communitySlides('mtg', { metaState: { data: null }, now }).length, 3);
@@ -251,11 +251,11 @@ for (const [i, items] of [{}, 'not-an-array', true, 1, null].entries()) {
   assert.equal(mod.communityState('mtg').data.status, 'ready'); assert.equal(mod.communityState('mtg').data.items.length, 1, 'in-memory wrong-shaped items also recover without map/spread errors');
 }
 for (const [i, data] of [[], 'invalid', true].entries()) {
-  store.set('cardforge-community-v2', JSON.stringify({ mtg: { at: now, data } }));
+  store.set('cardforge-community-v3', JSON.stringify({ mtg: { at: now, data } }));
   const mod = await import(`./community-feed.js?invalid-data=${i}`);
   assert.equal(mod.communityState('mtg').data, null);
   assert.doesNotThrow(() => mod.communitySlides('mtg', { metaState: { data: null }, now }));
 }
 const worker = fs.readFileSync(new URL('./worker.js', import.meta.url), 'utf8'); assert.match(worker, /url\.pathname === '\/api\/community'/);
 assert.doesNotMatch(fs.readFileSync(new URL('./community-feed.js', import.meta.url), 'utf8'), /import .*community-feed-route/);
-console.log('PASS: source-backed community feed, edge-compatible no-follow redirects, v1 cache recovery, truthful dates, safe URLs, all-game fallbacks, shared meta, bounded fixed sources, daily success/failure dedupe, stale preservation and seven-day retention.');
+console.log('PASS: source-backed community feed, edge-compatible no-follow redirects, v2-to-v3 source-contract recovery, truthful dates, safe URLs, all-game fallbacks, shared meta, bounded fixed sources, daily success/failure dedupe, stale preservation and seven-day retention.');

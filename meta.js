@@ -97,6 +97,7 @@ export async function loadMeta(g, force = false) {
 
 /* ---------- Magic (TopDeck.gg, through the Worker) ---------- */
 
+export const DEFAULT_MTG_META_FORMAT = "Modern";
 export const MTG_META_FORMATS = [["Standard", "Standard"], ["Pioneer", "Pioneer"], ["Modern", "Modern"], ["Legacy", "Legacy"], ["Vintage", "Vintage"], ["Pauper", "Pauper"], ["Premodern", "Premodern"], ["Duel Commander", "Duel Commander"], ["EDH", "Commander (cEDH)"]];
 export async function mtgMeta(format, days = 30) {
   let r;

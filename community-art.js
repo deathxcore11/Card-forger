@@ -3,16 +3,12 @@
 import { pokemonDeckCover } from './artwork.js';
 import { GAMES, GAME_ICON } from './games.js';
 import { esc } from './ui.js';
+import { safeNewsImage } from './community-sources.js';
 
 const SOURCE_HOSTS = {
   mtg: ['magic.wizards.com', 'www.magic.wizards.com', 'www.mtgo.com', 'mtgo.com', 'edhtop16.com', 'topdeck.gg', 'magic.gg', 'www.magic.gg', 'locator.wizards.com'],
   ptcg: ['www.pokemon.com', 'pokemon.com', 'events.pokemon.com', 'play.limitlesstcg.com', 'limitlesstcg.com'],
   ygo: ['www.yugioh-card.com', 'yugioh-card.com', 'ygoprodeck.com'],
-};
-const IMAGE_HOSTS = {
-  mtg: ['images.ctfassets.net'],
-  ptcg: ['assets.pokemon.com'],
-  ygo: ['img.yugioh-card.com', 'www.yugioh-card.com'],
 };
 function allowedUrl(value, hosts) {
   if (typeof value !== 'string' || value.length > 2048 || /[\u0000-\u001f\u007f]/.test(value)) return '';
@@ -21,7 +17,7 @@ function allowedUrl(value, hosts) {
     return u.protocol === 'https:' && !u.username && !u.password && !u.port && hosts?.includes(u.hostname) ? u.href : '';
   } catch { return ''; }
 }
-export const safeCommunityImage = (value, game) => allowedUrl(value, IMAGE_HOSTS[game]);
+export const safeCommunityImage = safeNewsImage;
 const sourceUrl = (value, game) => allowedUrl(value, SOURCE_HOSTS[game]);
 const cleanName = value => typeof value === 'string' && value.length <= 180 && !/[<>\u0000-\u001f\u007f]/.test(value) ? value.trim() : '';
 const numericId = value => /^(?:[1-9]\d{0,9})$/.test(String(value)) ? String(value) : '';
@@ -64,16 +60,18 @@ function cardImage(art, game, slide) {
 export function communityArtwork(game, slide = {}, { compact = false } = {}) {
   if (!GAMES[game]) return '';
   const deckImage = slide.kind === 'deck' ? cardImage(slide.artwork, game, slide) : '';
-  const publisherImage = ['news', 'event'].includes(slide.kind) && sourceUrl(slide.url, game) ? safeCommunityImage(slide.image, game) : '';
+  const publisherImage = ['news', 'event'].includes(slide.kind) ? safeCommunityImage(slide.image, game, slide.sourceId, slide.url, slide.kind) : '';
+  const deckContext = slide.kind === 'deck' || compact && !slide.url && (!slide.kind || slide.kind === 'link');
+  if (!deckContext && !publisherImage) return ''; // News/source cards are honestly text-only.
   const src = deckImage || publisherImage, kind = deckImage ? 'card' : publisherImage ? 'publisher' : 'theme';
-  const fallback = compact ? 'Game theme' : slide.kind === 'link' ? 'Game theme · source link' : slide.kind === 'deck' ? 'Game theme · deck art unavailable' : 'Game theme · not article artwork';
+  const fallback = compact ? 'Game theme' : deckContext ? 'Game theme · deck art unavailable' : 'Article image unavailable';
   const credit = deckImage ? `Featured card: ${slide.artwork.cardId}` : 'Source image';
   const image = src ? `<img class="community-art-image" data-community-image src="${esc(src)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : '';
   const visual = deckImage && game === 'ptcg' ? `<span class="community-art-scan"><span class="community-art-window">${image}</span></span>` : image;
-  return `<span class="community-art${compact ? ' community-art-compact' : ''}" data-community-art data-art-game="${game}" data-art-kind="${kind}" data-art-state="${src ? 'pending' : 'missing'}"${deckImage ? ` data-art-card="${esc(slide.artwork.cardId)}" data-art-deck="${esc(slide.deckKey)}"` : ''}${src ? ` data-art-source="${esc(slide.url)}"` : ''} aria-hidden="true"><span class="community-art-theme"><span class="community-art-orbit"></span><span class="community-art-emblem">${GAME_ICON[game]}</span><span class="community-art-lines"></span></span>${visual}<span class="community-art-shade"></span><span class="community-art-caption community-art-fallback">${fallback}</span>${src ? `<span class="community-art-caption community-art-credit">${esc(credit)}</span>` : ''}</span>`;
+  return `<span class="community-art${compact ? ' community-art-compact' : ''}" data-community-art data-art-game="${game}" data-art-kind="${kind}" data-art-state="${src ? 'pending' : 'missing'}"${deckImage ? ` data-art-card="${esc(slide.artwork.cardId)}" data-art-deck="${esc(slide.deckKey)}"` : ''}${src ? ` data-art-source="${esc(slide.url)}"` : ''} aria-hidden="true">${deckContext ? `<span class="community-art-theme"><span class="community-art-orbit"></span><span class="community-art-emblem">${GAME_ICON[game]}</span><span class="community-art-lines"></span></span>` : ''}${visual}<span class="community-art-shade"></span><span class="community-art-caption community-art-fallback">${fallback}</span>${src ? `<span class="community-art-caption community-art-credit">${esc(credit)}</span>` : ''}</span>`;
 }
 
-// One request per exact image, then a persistent in-place theme. No broken-image
+// One request per exact image. Failed publisher art becomes a clean text card; no broken-image
 // icon, retries, network discovery, or insertion of remotely supplied markup.
 export function handleCommunityArtwork(event) {
   const image = event.target;
@@ -84,5 +82,6 @@ export function handleCommunityArtwork(event) {
   else if (event.type === 'error' || event.type === 'load') {
     image.hidden = true;
     wrapper.dataset.artState = 'missing';
+    if (wrapper.dataset.artKind === 'publisher') { wrapper.hidden = true; wrapper.closest?.('.community-feature')?.classList?.add('feature-text-only'); }
   }
 }
