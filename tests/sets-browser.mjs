@@ -2,7 +2,7 @@
 // only. This guard is intentional: --validate-fixtures never imports Playwright,
 // starts a server, launches a browser or contacts a provider.
 import assert from 'node:assert/strict';
-import {GAMES,WIDTHS,SETS,LOB,ANNIVERSARY,PAGED,EXPECTED,ART_EVIDENCE,validateSetsFixtures,startServer,openSetsApp,navigate,inventorySnapshot,noOverflow,capture,saveReport} from './sets-fixtures.mjs';
+import {GAMES,WIDTHS,SETS,LOB,ANNIVERSARY,PAGED,EXPECTED,ART_EVIDENCE,BROKEN_SET_SYMBOL_SOURCES,validateSetsFixtures,startServer,openSetsApp,navigate,inventorySnapshot,noOverflow,capture,saveReport} from './sets-fixtures.mjs';
 
 console.log(await validateSetsFixtures());
 if(process.argv.includes('--validate-fixtures'))process.exit(0);
@@ -75,6 +75,7 @@ async function catalogue(app,game){
  if(game==='mtg'){assert.equal(await page.locator('.set-row[data-code="fxpromo"]').count(),0);await page.locator('[data-change="setsAll"]').check();assert.equal(await page.locator('.set-row[data-code="fxpromo"]').count(),1);await page.locator('[data-change="setsAll"]').uncheck();}
  const unknown=game==='mtg'?page.locator('.set-row[data-code="fxu"]'):game==='ptcg'?page.locator('.set-row[data-id="fixtureunknown"]'):page.locator('.set-row').filter({hasText:'Synthetic undated release'});await unknown.scrollIntoViewIfNeeded();assert.match(await unknown.locator('.set-row-count').innerText(),/Unknown/i);assert.doesNotMatch(await unknown.locator('.set-row-count').innerText(),/^0\s*cards/i);
  const broken=game==='mtg'?page.locator('.set-row[data-code="fxb"]'):game==='ptcg'?page.locator('.set-row[data-id="fixtureb"]'):page.locator('.set-row').filter({hasText:PAGED.name});await broken.scrollIntoViewIfNeeded();await broken.locator('.set-media.no-art').waitFor();const fallback=broken.locator('.set-media-fallback'),fallbackCode=fallback.locator('.set-art-code');assert(await fallback.isVisible(),'Failed source image leaves a visible fallback');assert(await fallbackCode.isVisible(),'The fallback paints independent set-code text, not an empty image wrapper');assert.equal(await fallbackCode.innerText(),game==='mtg'?'FXB':game==='ptcg'?'FIXTUREB':PAGED.code);assert.equal(await fallback.locator('img,svg,.set-icon').count(),0,'Fallback cannot reuse the failed artwork or remote symbol');
+ if(game==='ptcg'){await page.waitForFunction(()=>document.querySelector('.set-row[data-id="fixtureb"] .set-catalogue-symbol')?.hidden===true);const sources=BROKEN_SET_SYMBOL_SOURCES.map(source=>new URL(source,page.url()).href);assert.deepEqual([...new Set(app.images.filter(url=>sources.includes(url)))],sources,'Every exact symbol source fails before the final set-code fallback');assert(await fallbackCode.isVisible(),'The code remains visible after the entire symbol chain is exhausted');}
  await keyboardRelease(page,game,EXPECTED[game].a);await setIdentity(page,game,EXPECTED[game].a);assert.equal(await inventorySnapshot(page),before);assert.equal(await cacheSnapshot(page),cache,'Loading a selected release never changes shared card printings, art, generic prices or identity');report.push(`${game}: separate responsive year sections, keyboard release navigation, exact IDs, unknown count/image fallback, catalogue search/category/scroll-pagination boundaries.`);
 }
 async function filterCards(app,game){

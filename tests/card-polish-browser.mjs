@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import {writeFile,mkdir} from 'node:fs/promises';
 import {resolve} from 'node:path';
-import {WIDTHS,GAMES,SETS,VASM,CARDS,EXPECTED,SYMBOLS,ART_EVIDENCE,RESULTS,validateFixtures,startServer,openApp,navigate,closeSheet,noOverflow,capture,inventorySnapshot,isHistoryURL} from './card-polish-fixtures.mjs';
+import {WIDTHS,GAMES,SETS,VASM,CARDS,EXPECTED,SYMBOLS,ART_EVIDENCE,RESULTS,validateFixtures,startServer,openApp,navigate,closeSheet,noOverflow,capture,inventorySnapshot,isHistoryURL,assertSymbolMounts} from './card-polish-fixtures.mjs';
 
 console.log(await validateFixtures());
 if(process.argv.includes('--validate-fixtures'))process.exit(0);
@@ -63,7 +63,19 @@ async function failedSymbol(page,id){
  await page.waitForFunction(id=>{const slot=document.querySelector('[data-set-symbol-id="'+id+'"]'),img=slot?.querySelector('img.set-catalogue-symbol');return slot?.classList.contains('no-art')&&(!img||img.complete&&img.hidden&&img.onload===null&&img.onerror===null&&!img.dataset.symbolNext&&!img.dataset.symbolLast);},id);
  const row=page.locator('.set-row[data-id="'+id+'"]');assert(await row.locator('.set-media-fallback').isVisible());assert.equal(await row.locator('.set-art-code').innerText(),id.toUpperCase());assert(await row.locator('.set-art-code').isVisible(),'An actual readable code replaces failed/missing art');assert.equal(await row.locator('.set-media-fallback img,.set-media-fallback svg').count(),0);
 }
-function symbolAttempts(app,key){const expected=SYMBOLS[key].map(u=>new URL(u,server.base+'/').href);assert.deepEqual(app.images.filter(u=>expected.includes(u)),expected,key+': every declared fallback attempted once, in order');}
+async function symbolAttempts(app,key,{failed=true}={}){
+ const id={normal:'sv08',broken:'sv03',missing:'synthetic-missing'}[key],expected=(failed?SYMBOLS[key]:SYMBOLS[key].slice(0,1)).map(u=>new URL(u,server.base+'/').href);
+ const records=await app.page.evaluate(()=>window.__polishSymbolMounts());
+ const mounts=assertSymbolMounts(records,id,expected,{failed});
+ // Network requests may be coalesced across nodes, but never exceed the
+ // actual observed mounts. DOM events prove order even for cached responses.
+ for(const url of expected)assert(app.images.filter(u=>u===url).length<=mounts.length,key+': network attempts cannot exceed distinct image lifetimes');
+ return mounts;
+}
+
+// Retired nodes may finish an already-pending request after removal. Their
+// prefixes are revalidated above; only current terminal nodes must be unchanged.
+const symbolIdentity=groups=>groups.map(mounts=>mounts.map(({mount,revision,retiredAt,connected,events})=>({mount,revision,retiredAt,connected,...(connected?{events}:{})})));
 
 async function ygoFacets(app){
  const {page}=app;await readyIndex(page);await openSet(page,'ygo');const before=await inventorySnapshot(page),cache=await cacheSnapshot(page);
@@ -116,17 +128,17 @@ async function pokemonSymbols(app){
  for(const id of ['sv03','synthetic-missing','base1'])await failedSymbol(page,id);
  assert.equal(await symbolLess.locator('img.set-catalogue-symbol').count(),0,'A release known to have no expansion symbol must not create a speculative image');
  assert.equal(await missing.locator('img.set-catalogue-symbol').count(),1,'Missing provider metadata uses one bounded name-derived image, never duplicate images');
- symbolAttempts(app,'broken');symbolAttempts(app,'missing');
+ const symbolBefore=symbolIdentity(await Promise.all([symbolAttempts(app,'normal',{failed:false}),symbolAttempts(app,'broken'),symbolAttempts(app,'missing')]));
  await layout(page,'#content','pokemon-white-symbols',['.set-row','[data-change="tSetsSort"]']);
  // Terminal DOM state, not a timed quiet period, proves fallback cannot loop.
- for(const id of ['sv03','synthetic-missing','base1'])await failedSymbol(page,id);symbolAttempts(app,'broken');symbolAttempts(app,'missing');
+ for(const id of ['sv03','synthetic-missing','base1'])await failedSymbol(page,id);assert.deepEqual(symbolIdentity(await Promise.all([symbolAttempts(app,'normal',{failed:false}),symbolAttempts(app,'broken'),symbolAttempts(app,'missing')])),symbolBefore,'Resizing preserves the SAME terminal image nodes and creates no retry loop');
  const dimensions=await page.locator('.set-media-pokemon-symbol').evaluateAll(ns=>ns.map(n=>({w:n.getBoundingClientRect().width,h:n.getBoundingClientRect().height})));assert(dimensions.every(d=>d.w===dimensions[0].w&&d.h===dimensions[0].h),'All symbol/code slots have uniform dimensions');
  await openSet(page,'ptcg');await page.waitForFunction(()=>{const n=document.querySelector('.set-hero img.set-logo');return n?.complete&&n.naturalWidth>0;});const logoInfo=await page.locator('.set-hero img').evaluateAll(ns=>ns.map(n=>({src:n.getAttribute('src'),filter:getComputedStyle(n).filter,complete:n.complete,width:n.naturalWidth,class:n.className})));const colored=logoInfo.find(x=>x.src==='https://assets.tcgdex.net/en/sv/sv08/logo.webp');assert(colored,'Inside-set detail retains authentic provider colored-logo URL');assert.equal(colored.filter,'none','Catalogue whitening cannot affect set-detail logo');assert(colored.complete&&colored.width>0,'The exact colored logo really decoded');
  await capture(page,'card-polish-pokemon-colored-set-logo');assert.equal(await inventorySnapshot(page),before);report.push('Pokemon catalogue uses a single uniform source-backed white symbol; exact-provider and missing-metadata fallback chains end in readable codes, Base Set creates no expansion-symbol image, and the in-set colored logo is unchanged.');
 }
 async function pokemonAllSymbolsFail(app){
  const {page}=app;await readyIndex(page);for(const id of ['sv08','sv03','synthetic-missing','base1']){const row=page.locator('.set-row[data-id="'+id+'"]');await row.scrollIntoViewIfNeeded();await failedSymbol(page,id);}
- for(const key of Object.keys(SYMBOLS))symbolAttempts(app,key);const all=Object.values(SYMBOLS).flat().map(u=>new URL(u,server.base+'/').href);assert.equal(app.images.filter(u=>all.includes(u)).length,8,'All eight declared attempts terminate with disabled handlers, never retry indefinitely');assert.equal(await page.locator('[data-set-symbol-id="base1"] img').count(),0);await noOverflow(page,'#content','all symbols failed');await capture(page,'card-polish-pokemon-all-symbols-failed');for(const key of Object.keys(SYMBOLS))symbolAttempts(app,key);
+ const before=await Promise.all(Object.keys(SYMBOLS).map(key=>symbolAttempts(app,key)));assert.equal(before.flat().filter(r=>r.connected).reduce((n,r)=>n+r.events.length,0),8,'The three CURRENT images exhaust exactly eight sources and disable handlers');assert.equal(await page.locator('[data-set-symbol-id="base1"] img').count(),0);await noOverflow(page,'#content','all symbols failed');await capture(page,'card-polish-pokemon-all-symbols-failed');assert.deepEqual(symbolIdentity(await Promise.all(Object.keys(SYMBOLS).map(key=>symbolAttempts(app,key)))),symbolIdentity(before),'Terminal images cannot restart or remount during layout');
 }
 async function magicCatalogue(app){
  const {page}=app;await readyIndex(page);const row=page.locator('.set-row[data-code="fdn"]');assert.equal(await row.locator('.set-media-pokemon-symbol,.set-catalogue-symbol').count(),0);const image=row.locator('.set-media > img');assert.equal(await image.getAttribute('src'),SETS.mtg[0].icon_svg_uri);const filter=await image.evaluate(n=>getComputedStyle(n).filter);assert.match(filter,/invert\(0\.9\)/,'Magic retains its established 90% invert treatment');assert.doesNotMatch(filter,/grayscale/,'Pokemon-only grayscale cannot change Magic');await layout(page,'#content','magic-catalogue-unchanged',['.set-row']);report.push('Magic keeps its original set emblem/layout path, with no Pokemon-only symbol wrapper or recoloring.');
@@ -142,7 +154,7 @@ function failure(label,phase,error){const e=error instanceof Error?error:new Err
 async function scenario(label,options,run){
  let app;const outcome={scenario:label,game:options.game,status:'passed',errors:[]};
  try{app=await openApp(browser,server.base,{...options,evidenceLabel:label});await run(app);}catch(error){outcome.errors.push(failure(label,app?'assertions':'bootstrap',error));}
- finally{if(app){try{app.health();}catch(error){outcome.errors.push(failure(label,'network/application safety',error));}if(outcome.errors.length)try{await capture(app.page,'card-polish-failure-'+label);}catch(error){outcome.errors.push(failure(label,'failure screenshot',error));}outcome.diagnostics=app.diagnostics();try{await app.context.close();}catch(error){outcome.errors.push(failure(label,'cleanup',error));}}if(outcome.errors.length)outcome.status='failed';outcomes.push(outcome);console.log(outcome.status.toUpperCase()+': '+label);}
+ finally{if(app){try{app.health();}catch(error){outcome.errors.push(failure(label,'network/application safety',error));}if(outcome.errors.length)try{await capture(app.page,'card-polish-failure-'+label);}catch(error){outcome.errors.push(failure(label,'failure screenshot',error));}outcome.diagnostics=app.diagnostics();try{outcome.symbolMounts=await app.page.evaluate(()=>window.__polishSymbolMounts());}catch(error){outcome.symbolObservationError=String(error);}try{await app.context.close();}catch(error){outcome.errors.push(failure(label,'cleanup',error));}}if(outcome.errors.length)outcome.status='failed';outcomes.push(outcome);console.log(outcome.status.toUpperCase()+': '+label);}
 }
 try{
  browser=await chromium.launch();

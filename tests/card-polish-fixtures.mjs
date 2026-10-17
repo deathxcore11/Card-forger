@@ -101,7 +101,55 @@ export function providerFixture(url){
  if(host==='api.pokemontcg.io'&&path==='/v2/cards')return {data:[]};
  return undefined;
 }
+// Passive observation: never replace src, inline handlers or app render logic.
+// A boot render may retire an image before its chain finishes. Give each actual
+// DOM image a lifetime, and record the content replacement that retired it.
+function observeSymbolMounts(){
+ const records=[],seen=new WeakMap();let revision=0;
+ const includes=(root,node)=>root===node||root.contains?.(node);
+ const add=root=>{for(const node of [root,...(root.querySelectorAll?.('img.set-catalogue-symbol')||[])]){
+  if(!node.matches?.('img.set-catalogue-symbol')||seen.has(node))continue;
+  const record={mount:records.length+1,revision,id:node.closest('[data-set-symbol-id]')?.dataset.setSymbolId,initial:node.src,events:[],retiredAt:null,node};seen.set(node,record);records.push(record);
+  for(const type of ['error','load'])node.addEventListener(type,()=>record.events.push({type,url:node.src}),{capture:true});
+ }};
+ new MutationObserver(changes=>{for(const change of changes){
+  if(change.target.id==='content')revision++;
+  for(const root of change.removedNodes)for(const record of records)if(record.retiredAt===null&&includes(root,record.node))record.retiredAt=revision;
+  for(const root of change.addedNodes)add(root);
+ }}).observe(document,{childList:true,subtree:true});
+ window.__polishSymbolMounts=()=>records.map(({node,...record})=>({...record,events:record.events.map(e=>({...e})),connected:node.isConnected,complete:node.complete,hidden:node.hidden,handlersDisabled:node.onerror===null&&node.onload===null,remaining:[node.dataset.symbolNext,node.dataset.symbolLast].filter(Boolean)}));
+}
+export function assertSymbolMounts(records,id,expected,{failed=true}={}){
+ const mounts=records.filter(r=>r.id===id);
+ // Only the TCG catalogue completion and independent shared-symbol-index
+ // completion can mount populated catalogues before any interaction here.
+ assert(mounts.length>=1&&mounts.length<=2,id+': at most two distinct boot mounts, not arbitrary repeated chains');
+ assert.equal(new Set(mounts.map(r=>r.mount)).size,mounts.length,id+': distinct DOM identities');
+ const active=mounts.filter(r=>r.connected);assert.equal(active.length,1,id+': exactly one current DOM image');
+ for(const [i,mount] of mounts.entries()){
+  assert.equal(mount.initial,expected[0],id+': every new image starts at the declared first source');
+  assert.deepEqual(mount.events.map(e=>e.url),expected.slice(0,mount.events.length),id+': no source repeat, omission or reordering within one DOM image');
+  assert(mount.events.length<=expected.length,id+': finite per-image source bound');
+  assert(mount.events.every(e=>e.type===(failed?'error':'load')),id+': expected real image result');
+  if(mount.connected){assert.equal(mount.retiredAt,null);assert.equal(mount.events.length,expected.length,id+': current image completed its whole declared chain');assert(mount.complete);if(failed){assert(mount.hidden&&mount.handlersDisabled,id+': terminal failure disables both handlers');assert.deepEqual(mount.remaining,[]);}}
+  else{assert(mount.retiredAt>mount.revision,id+': retired image belongs to an actual content replacement');const next=mounts[i+1];assert(next&&next.revision===mount.retiredAt,id+': each retired image is replaced by a distinct mount in that render');}
+ }
+ return mounts;
+}
+function validateSymbolMountAssertions(){
+ const sources=['https://fixture.invalid/first','https://fixture.invalid/second','https://fixture.invalid/last'];
+ const current={mount:2,revision:3,id:'fixture',initial:sources[0],events:sources.map(url=>({type:'error',url})),retiredAt:null,connected:true,complete:true,hidden:true,handlersDisabled:true,remaining:[]};
+ const retired={...current,mount:1,revision:2,retiredAt:3,connected:false};
+ assertSymbolMounts([current],'fixture',sources);assertSymbolMounts([retired,current],'fixture',sources);assertSymbolMounts([{...retired,events:retired.events.slice(0,1)},current],'fixture',sources);
+ assert.throws(()=>assertSymbolMounts([{...current,events:[...current.events,...current.events]}],'fixture',sources),/repeat|finite/,'Two chains on ONE DOM image remain a regression');
+ assert.throws(()=>assertSymbolMounts([{...current,events:[current.events[1],current.events[0],current.events[2]]}],'fixture',sources),/reordering/);
+ assert.throws(()=>assertSymbolMounts([{...retired,retiredAt:null},current],'fixture',sources),/content replacement/);
+ assert.throws(()=>assertSymbolMounts([{...retired,mount:0},retired,current],'fixture',sources),/at most two/);
+ assert.throws(()=>assertSymbolMounts([{...current,handlersDisabled:false}],'fixture',sources),/disables both handlers/);
+ assert.throws(()=>assertSymbolMounts([{...current,events:current.events.slice(0,2)}],'fixture',sources),/completed its whole/);
+}
 export async function validateFixtures(){
+ validateSymbolMountAssertions();
  assert.equal(VASM.code,'VASM');assert.equal(VASM.name,'Valiant Smashers');
  const summary=summarizeYgoSetContents(VASM,CARDS.ygo),multi=setContextCard('ygo',CARDS.ygo.find(c=>c.id===EXPECTED.ygo.multiple),VASM,YGO_SETS),known=setContextCard('ygo',CARDS.ygo.find(c=>c.id===EXPECTED.ygo.known),VASM,YGO_SETS);
  assert.equal(summary.loadedUniqueCards,4);assert.equal(multi.setContext.printings.length,4);assert.equal(multi.setContext.printingAmbiguous,true);assert.equal(multi.setContext.price,null);
@@ -166,6 +214,7 @@ export async function openApp(browser,base,{game='ygo',hash='#sets',width=390,he
   unexpected.push(req.method()+' '+url.href);return fulfill({error:'Unmapped request blocked; no external traffic forwarded.'},451);
  });
  await page.addInitScript(({storage,now})=>{const NativeDate=Date,offset=now-NativeDate.now();globalThis.Date=class extends NativeDate{constructor(...args){super(...(args.length?args:[NativeDate.now()+offset]));}static now(){return NativeDate.now()+offset;}};Math.random=()=>0;if(!localStorage.getItem('card-polish-fixtures-installed')){for(const[k,v]of Object.entries(storage))localStorage.setItem(k,JSON.stringify(v));localStorage.setItem('cardstashy-tour-v1','done');localStorage.setItem('cardstashy-glass','off');localStorage.setItem('card-polish-fixtures-installed','1');}}, {storage:fixtures.storage,now:NOW});
+ await page.addInitScript(observeSymbolMounts);
  await page.goto(base+'/'+hash);await page.locator('#app.ready').waitFor();await page.evaluate(async()=>{window.__uiTestState=(await import('/store.js')).S;window.__uiTestTcg=await import('/tcg.js');window.__polishPricing=await import('/pricing-presentation.js');});
  await page.waitForFunction(g=>document.body.dataset.game===g&&window.__uiTestState.state.settings.game===g,game);
  const health=()=>{const issues=[];for(const [actual,label]of [[errors,'No uncaught app errors'],[writes,'No attempted writes/paid calls'],[unexpected,'Every external read explicitly mocked; none forwarded']])try{assert.deepEqual(actual,[],label);}catch(error){issues.push(error);}if(issues.length){const error=new AggregateError(issues,'Fixture safety failure');error.fixtureDiagnostics=diagnostics();throw error;}};

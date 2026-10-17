@@ -11,6 +11,7 @@ assert.equal(tcg('mtg',CARDS.mtg[0],{priceFinish:'etched'}).url,'https://www.tcg
 assert.equal(tcg('ptcg',CARDS.ptcg[0],{priceFinish:'holofoil'}).url,'https://www.tcgplayer.com/product/222');
 assert.equal(tcg('ptcg',CARDS.ptcg[0],{priceFinish:'holofoil'}).value,5);
 assert.equal(tcg('ptcg',CARDS.ptcg[0],{priceFinish:'reverse-holofoil'}).value,null);
+assert.equal(presentationQuote('ptcg',CARDS.ptcg[0],'reverse-holofoil').value,null,'The selected reverse-holo quote must not borrow normal $2 or holo $5');
 assert.equal(tcg('ygo',CARDS.ygo[0]).value,null,'Aggregate card reference must not masquerade as exact printing vendor amount');
 assert.equal(tcg('ygo',CARDS.ygo[0],{priceEdition:'SET-001::Rare'}).value,null,'One available edition quote is not an explicit physical-edition selection');
 assert.equal(tcg('ygo',CARDS.ygo[0],{priceEdition:'SET-001::Rare',priceYgoEdition:'unlimited'}).value,20,'Explicit Unlimited preserves the exact known $20 quote');
@@ -24,6 +25,8 @@ if(process.argv.includes('--validate-fixtures')){
  // run. No fetch is available here; exit also cancels deferred watch work.
  globalThis.fetch=undefined;
  const {S}=await import('../store.js'),{cardSheet}=await import('../views.js'),fixtures=makeFixtures('mtg'),dual=CARDS.mtg[4];S.state=fixtures.state;S.catalog=fixtures.catalog;
+ const {priceOverview}=await import('../workbench-ui.js'),unknownFinish=priceOverview('ptcg',CARDS.ptcg[0],{type:'tcard',game:'ptcg',id:CARDS.ptcg[0].id,priceFinish:'reverse-holofoil'});
+ assert.match(unknownFinish,/Current quote unavailable for this selection\. Seller searches remain available\./,'The real renderer explains an unavailable selected finish without borrowing another quote');
  const before=JSON.stringify(S.state);
  for(const face of [0,1,0]){const html=cardSheet(dual,{type:'card',name:dual.name,entryId:'lot-mtg-4',face});assert.equal(html.match(/<div class="cs-card">[\s\S]*?<img class="card-img" src="([^"]+)"/)?.[1],dual.card_faces[face].image_uris.normal);assert.equal(html.match(/<img class="cs-art" src="([^"]+)"/)?.[1],dual.card_faces[face].image_uris.art_crop);assert(html.includes('<h2>'+dual.name+'</h2>'));assert(html.includes('Flip to '+dual.card_faces[face?0:1].name));}
  assert.equal(JSON.stringify(S.state),before,'Rendering either face preserves exact saved identity and all inventory data');console.log('Actual Magic cardSheet renders exact dawn/dusk/dawn card and hero images without changing identity. No browser or provider call.');process.exit(0);
@@ -86,7 +89,9 @@ async function currentDetail(app,game){
  }else if(game==='ptcg'){
   await select(page,'#sheet [data-change="cardPriceFinish"]','normal');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/111',amount:'$2.00',currency:'USD'});
   await select(page,'#sheet [data-change="cardPriceFinish"]','holofoil');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/222',amount:'$5.00',currency:'USD'});assert.match(await page.locator('.price-version').innerText(),/Holofoil/);
-  await select(page,'#sheet [data-change="cardPriceFinish"]','reverse-holofoil');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/333',amount:'Check price',action:'View listing'});assert.match(await page.locator('.price-version').innerText(),/No verified USD quote/);
+  await select(page,'#sheet [data-change="cardPriceFinish"]','reverse-holofoil');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/333',amount:'Check price',action:'View listing'});assert.match(await page.locator('.price-version').innerText(),/Current quote unavailable for this selection\. Seller searches remain available\./);
+  assert.match(await page.locator('.price-version').innerText(),/Sword & Shield[\s\S]*#9[\s\S]*EN[\s\S]*Reverse holo/,'The unavailable quote still belongs to the exact set, collector number, language and finish');
+  const selected=await page.evaluate(async()=>{const ctx=window.__uiTestState.ui.sheetCtx,card=window.__uiTestTcg.cache.ptcg[ctx.id],{presentationQuote}=await import('/pricing-presentation.js');return {id:ctx.id,finish:ctx.priceFinish,value:presentationQuote('ptcg',card,ctx.priceFinish).value};});assert.deepEqual(selected,{id:CARDS.ptcg[0].id,finish:'reverse-holofoil',value:null});
  }else{
   // Collection details restore the saved printing and edition, not the generic card reference.
   assert.deepEqual(await page.evaluate(()=>{const c=window.__uiTestState.ui.sheetCtx;return [c.priceEdition,c.priceYgoEdition];}),['SET-001::Rare','unlimited']);
