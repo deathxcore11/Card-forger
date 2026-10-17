@@ -10,6 +10,7 @@ const ASSETS = [
   "./app.js",
   "./settings-dialog.js",
   "./profile-art.js",
+  "./collection-stack.js",
   "./condition-feed.js",
   "./condition-refresh-scheduler.js",
   "./rule-learning.js",

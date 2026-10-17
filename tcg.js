@@ -1,3 +1,4 @@
+import {addCollectionEntry,addScannedEntry} from './collection-stack.js';
 import {homeSearchMarkup} from './home-search.js';
 import {applyYgoSetPrices,ygoSetReference} from './ygo-set-prices.js';
 import {compactPriceSummary,detailTabs,detailPanel,presentationQuote,quoteForContext} from "./pricing-presentation.js";
@@ -2386,12 +2387,7 @@ export function registerTcg(c) {
           const card = it.cand.card,
             finish = it.variantKey || it.finish, variant = card.variants?.find(v => v.key === finish),
             print = it.print || it.cand.print || "", [printing, rarity] = print ? print.split("|") : ["", ""], captureId = it.captureId || "";
-          const prior = captureId && [...state.collection, ...Object.values(state.tcg || {}).flatMap(game => game.collection || [])].find(e => e.scanCaptureId === captureId);
-          if (prior) {
-            if (prior.cardId !== card.id || prior.qty !== it.qty || prior.printing !== printing || prior.rarity !== rarity || prior.variant !== (G === "ptcg" ? finish : "") || prior.edition !== (G === "ygo" ? finish : "") || (G==='ygo'&&((prior.setReleaseId||'')!==(it.setReleaseId||'')||(!prior.setReleaseId||!!prior.setReleaseUnverified)!==(!it.setReleaseId||!!it.setReleaseUnverified)||(!prior.setReleaseId&&prior.releaseName&&it.releaseName&&prior.releaseName!==it.releaseName))) || prior.condition !== (it.condition || "Near Mint") || prior.language !== (it.lang || "en")) throw Error("This capture is already saved with different details. Check its collection entry before trying again.");
-            continue;
-          }
-          st.collection.push({ id: uid(), scanCaptureId: captureId, cardId: card.id, name: card.name, key: SOURCES[G].ownKey(card), qty: it.qty, printing, rarity, ...(G==='ygo'?{setReleaseId:it.setReleaseId||'',setReleaseUnverified:!!it.setReleaseUnverified,releaseName:it.releaseName||''}:{}),variant: G === "ptcg" ? finish : "", variantLabel: G === "ptcg" ? variant?.label || "" : "", productId: it.productId || variant?.productId || "", edition: G === "ygo" ? finish : "", condition: it.condition || "Near Mint", language: it.lang || "en", location: it.location || "", addedAt: new Date().toISOString(), source: "scan" });
+          addScannedEntry(state, G, { id: uid(), scanCaptureId: captureId, cardId: card.id, name: card.name, key: SOURCES[G].ownKey(card), qty: it.qty, printing, rarity, ...(G==='ygo'?{setReleaseId:it.setReleaseId||'',setReleaseUnverified:!!it.setReleaseUnverified,releaseName:it.releaseName||''}:{}),variant: G === "ptcg" ? finish : "", variantLabel: G === "ptcg" ? variant?.label || "" : "", productId: it.productId || variant?.productId || "", edition: G === "ygo" ? finish : "", condition: it.condition || "Near Mint", language: it.lang || "en", location: it.location || "", addedAt: new Date().toISOString(), source: "scan" });
         }
       },
       { undo: `Added ${n} scanned card${n === 1 ? "" : "s"}.` },
@@ -2437,9 +2433,7 @@ export function registerTcg(c) {
     try{
     const saved=await mutate((st,state)=>{
       const location=rememberLocation(state,G,locationName,{createBinder});
-      const same=st.collection.find(e=>e.cardId===card.id&&(e.printing||'')===printing&&(e.variant||'')===(G==='ptcg'?pr:'')&&(e.edition||'')===edition&&(e.rarity||'')===rarity&&(e.setReleaseId||'')===setReleaseId&&!!e.setReleaseUnverified===setReleaseUnverified&&(e.manualValue??null)===manualValue&&e.condition===condition&&String(e.location||'').trim()===location);
-      if(same)same.qty+=qty;
-      else st.collection.push({id:uid(),cardId:card.id,name:card.name,key:SOURCES[G].ownKey(card),qty,printing,rarity,edition,setReleaseId,setReleaseUnverified,variantLabel,variant:G==='ptcg'?pr:'',manualValue,manualValueCondition:conditionName(condition),condition,location,addedAt:new Date().toISOString()});
+      addCollectionEntry(st.collection,G,{id:uid(),cardId:card.id,name:card.name,key:SOURCES[G].ownKey(card),qty,printing,rarity,edition,setReleaseId,setReleaseUnverified,variantLabel,variant:G==='ptcg'?pr:'',manualValue,manualValueCondition:conditionName(condition),condition,location,addedAt:new Date().toISOString()});
       return true;
     },{msg:`Added ${qty}× ${card.name}.`,guard:()=>S.ui.sheetCtx===sheet&&g()===G&&!completedOwnSaves.has(sheet)});
     if(saved){completedOwnSaves.add(sheet);if(S.ui.sheetCtx===sheet)closeSheet();}

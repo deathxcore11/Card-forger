@@ -281,7 +281,9 @@ try{
    await page.locator('#scanVideo').waitFor();
    await page.waitForFunction(()=>document.querySelector('#scanVideo')?.videoWidth>0);
    await page.evaluate(()=>{const r=document.querySelector('#scanVideo').getBoundingClientRect();window.__cameraInitialBox={width:r.width,height:r.height};});
-   await page.waitForFunction(()=>window.__scannerTestRead.state().boundaryReady);
+   // A close card near the sensor edge may correctly fail the conservative auto
+   // contour gate. The shutter must still preserve the full sensor and read it.
+   await page.getByRole('button',{name:'Capture card now',exact:true}).waitFor();
    assert.equal(await page.locator('.scan-frame-hint,#camGuide,.cam-wrap polygon').count(),0,'camera has no fixed alignment target or detector overlay');
    const priorCaptureIds=await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js');return loadBatch().map(x=>x.id);});
    await page.getByRole('button',{name:'Capture card now',exact:true}).click();

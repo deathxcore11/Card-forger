@@ -1,3 +1,4 @@
+import {addScannedEntry} from './collection-stack.js';
 import {profileAvatar,profileArt,createProfileArtPicker} from './profile-art.js';
 import {openTabletop} from './tabletop.js';
 import {INFO_TOPICS,findInfo} from './app-info.js';
@@ -7,7 +8,7 @@ import {createSettingsDialog} from './settings-dialog.js';
 import { normalizeHomeDeckActivity, recordHomeDeckWork } from "./home-deck-activity.js";
 import { syncGameTabs, attachGameTabs, attachHomeCommunity, refreshHomeCommunity, isHomeRevealCurrent, homeDeckReveal, refreshHomeValue, homeValueCoverage, homeMetaSnapshot } from "./home-ui.js";
 import {attachRuleLearning} from './rule-learning.js';
-import {loadConditionQuotes,applyConditionQuotes,conditionRequest,CONDITION_IDENTITY} from './condition-feed.js';
+import {configureConditionAuth,clearConditionAttempts,loadConditionQuotes,applyConditionQuotes,conditionRequest,CONDITION_IDENTITY} from './condition-feed.js';
 import {createConditionRefreshScheduler,conditionCursorKey,selectConditionLots,changedConditionLots,conditionLotIdentity} from './condition-refresh-scheduler.js';
 import {brandMark} from './brand.js';
 import {ownedCardLots,quickQuantity} from './quick-quantity.js';
@@ -88,7 +89,7 @@ import { rulesPage, learnSheet } from "./rules.js";
 import { GAMES, GAME_ICON, GAME_COLOR } from "./games.js";
 import { ICON, actionIcon, decorateGlyphs } from "./icons.js";
 import { openZoom, zoomCardOptions } from "./zoom.js";
-import { initCloud, cloudInfo, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
+import { initCloud, cloudAccessToken, cloudInfo, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact, lotPrice } from "./insights.js";
 
 /* =========================================================
@@ -1581,7 +1582,8 @@ if (typeof MutationObserver !== "undefined") new MutationObserver(() => { if (!t
 attachRuleLearning();
 attachSuggest();
 attachGlassSelects();
-const conditionScheduler=createConditionRefreshScheduler();
+configureConditionAuth(cloudAccessToken);
+let conditionScheduler=createConditionRefreshScheduler();
 function conditionCardFor(entry,game){
  const card=game==='mtg'?(entry.printingVerified&&S.state.printings?.[entry.printingId])||meta(entry.name):T.cardOf(game,entry.cardId);
  return card&&!card.brief&&!(game==='mtg'&&entry.printingVerified&&card.id!==entry.printingId)?card:null;
@@ -5141,14 +5143,9 @@ async function mtgScanAddMany(items) {
     (s) => {
       for (const it of items) {
         const c = it.cand.card, captureId = it.captureId || "";
-        const prior = captureId && [...s.collection, ...Object.values(s.tcg || {}).flatMap(g => g.collection || [])].find(e => e.scanCaptureId === captureId);
-        if (prior) {
-          if (prior.printingId !== c.id || prior.finish !== it.finish || prior.qty !== it.qty || prior.language !== (it.lang || c.lang || "en") || prior.condition !== (it.condition || "Near Mint")) throw Error("This capture is already saved with different details. Check its collection entry before trying again.");
-          continue;
-        }
         s.printings ||= {};
         s.printings[c.id] = slim({ ...c, conditionQuotes: c.conditionQuotes || s.printings[c.id]?.conditionQuotes });
-        s.collection.push({ id: uid(), scanCaptureId: captureId, name: c.name, qty: it.qty, set: c.set.toUpperCase(), setName: c.set_name, collectorNumber: c.collector_number, finish: it.finish, language: it.lang || c.lang || "en", condition: it.condition || "Near Mint", location: it.location || "", reserved: 0, printingId: c.id, oracleId: c.oracle_id, printingVerified: !!(it.cand.exact || it.cand.printingConfirmed), nameVerified: true, raw: { acquisition: "Scanned" } });
+        addScannedEntry(s, "mtg", { id: uid(), scanCaptureId: captureId, name: c.name, qty: it.qty, set: c.set.toUpperCase(), setName: c.set_name, collectorNumber: c.collector_number, finish: it.finish, language: it.lang || c.lang || "en", condition: it.condition || "Near Mint", location: it.location || "", reserved: 0, printingId: c.id, oracleId: c.oracle_id, printingVerified: !!(it.cand.exact || it.cand.printingConfirmed), nameVerified: true, raw: { acquisition: "Scanned" } });
       }
     },
     { undo: `Added ${n} scanned card${n === 1 ? "" : "s"}.` },
@@ -5406,7 +5403,7 @@ async function boot() {
   observeShellHeader();
   $("#app").classList.add("ready");
   initCloud({
-    accountChanged: () => { clearAskConversations(); clearRulesConversations(); rulesGuideOrigin = null; },
+    accountChanged: () => { clearConditionAttempts(); conditionScheduler=createConditionRefreshScheduler(); clearAskConversations(); clearRulesConversations(); rulesGuideOrigin = null; },
     passwordRecovery: () => { S.ui.settingsTab = "account"; go("#settings"); },
     getState: () => stripCache(S.state),
     // Replace this device's workspace with the account copy.

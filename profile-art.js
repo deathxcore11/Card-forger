@@ -5,15 +5,16 @@ import {artworkSources} from './artwork.js';
 const clamp=(n,a,b)=>Math.min(b,Math.max(a,n));
 const number=(v,f)=>Number.isFinite(Number(v))?Number(v):f;
 const https=value=>{try{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password?u.href:'';}catch{return '';}};
+const imageSource=value=>/^img\/ygo\/(?:s\/)?\d{1,12}\.jpg$/.test(String(value||''))?value:https(value);
 export function profileCrop(value={}){
  const ratio=clamp(number(value.ratio,1),.2,5),zoom=clamp(number(value.zoom,1),1,4);
  const width=Math.max(1,ratio)*zoom,height=Math.max(1,1/ratio)*zoom;
  return {ratio,zoom,x:clamp(number(value.x,.5),.5/width,1-.5/width),y:clamp(number(value.y,.5),.5/height,1-.5/height),width,height};
 }
 export function profileArt(value){
- if(!value||!GAME_IDS.includes(value.game)||!value.cardId||!https(value.image))return null;
+ if(!value||!GAME_IDS.includes(value.game)||!value.cardId||!imageSource(value.image))return null;
  const {ratio,zoom,x,y}=profileCrop(value);
- return {game:value.game,cardId:String(value.cardId).slice(0,100),name:String(value.name||'Card artwork').slice(0,200),image:https(value.image),ratio,zoom,x,y};
+ return {game:value.game,cardId:String(value.cardId).slice(0,100),name:String(value.name||'Card artwork').slice(0,200),image:imageSource(value.image),ratio,zoom,x,y};
 }
 const cropStyle=value=>{const c=profileCrop(value);return `width:${c.width*100}%;height:${c.height*100}%;left:${50-c.x*c.width*100}%;top:${50-c.y*c.height*100}%`;};
 const person='<svg viewBox="0 0 40 40" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="20" cy="14" r="6"/><path d="M8 33c0-8 5-12 12-12s12 4 12 12"/></svg>';

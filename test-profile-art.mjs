@@ -18,3 +18,6 @@ for(const image of ['javascript:alert(1)','data:text/html,<script>','https://use
 assert.equal(profileArt({game:'other',cardId:'1',image:'https://example.test/a'}),null);
 assert.match(profileAvatar(null,{display_name:'Randall'}),/>R</);
 console.log('PASS: circular crop geometry, bounded positions/zoom, safe source URLs, cross-game metadata persistence and unchanged inventory.');
+
+assert.equal(profileArt({game:'ygo',cardId:'123',image:'img/ygo/123.jpg'}).image,'img/ygo/123.jpg');
+for(const image of ['img/ygo/../secrets','img/ygo/123.jpg?redirect=https://other.test','//other.test/a'])assert.equal(profileArt({game:'ygo',cardId:'123',image}),null);

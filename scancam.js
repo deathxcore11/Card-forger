@@ -1088,7 +1088,7 @@ export function registerScanner(ctx) {
     else if(rowCount>=BATCH_LIMIT)st={state:'amber',icon:'…',msg:'Batch full. Save or review to continue.'};
     else if(s().capturePause&&/storage|too large/i.test(s().capturePause))st={state:'amber',icon:'…',msg:s().capturePause};
     s().guide = st;
-    s().boundaryReady=!!found&&found.cropSafe===true; // Internal capture state only; the static decorative guide is independent.
+    s().boundaryReady=!!found&&found.cropSafe===true; // Internal auto-capture gate; no alignment target is drawn.
     const el = document.getElementById("camStatus");
     if (el && (el.dataset.guideState!==st.state || el.dataset.guideMessage!==st.msg)) {
       el.dataset.guideState=st.state;el.dataset.guideMessage=st.msg;
