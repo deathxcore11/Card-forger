@@ -92,6 +92,13 @@ async function outboundBuy(app,expected,{search=false,activation='click'}={}){
  const before=await page.evaluate(()=>({url:location.href,tab:window.__uiTestState.ui.sheetCtx.tab||'overview',entry:window.__uiTestState.ui.sheetCtx.entryId})),inventory=await inventorySnapshot(page);
  assert.equal(await anchor.getAttribute('href'),expected);assert.equal(await anchor.getAttribute('target'),'_blank');assert.equal(await anchor.getAttribute('rel'),'noopener noreferrer');assert.equal(await anchor.getAttribute('referrerpolicy'),'no-referrer');assert.equal(await anchor.getAttribute('data-act'),null);
  assert.match(await anchor.innerText(),search?/Search TCGplayer/:/^Buy/);assert.match(await anchor.getAttribute('aria-label'),/opens in a new tab/);
+ // Measure the final touch target, not the transient scale of entry motion.
+ // Keep the 44px threshold; settle only finite animations on this control's ancestors.
+ await anchor.evaluate(async n=>{
+  const animations=[];
+  for(let p=n;p;p=p.parentElement)animations.push(...p.getAnimations().filter(a=>Number.isFinite(a.effect?.getComputedTiming().endTime)&&!['finished','idle'].includes(a.playState)));
+  await Promise.allSettled(animations.map(a=>a.finished));
+ });
  // focus() reacquires a connected locator if detail hydration replaces the row.
  await anchor.focus();
  const focusState=await anchor.evaluate(n=>({focused:document.activeElement===n,height:n.getBoundingClientRect().height,active:document.activeElement?.outerHTML.slice(0,300)}));
