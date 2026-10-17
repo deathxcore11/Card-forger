@@ -1,7 +1,7 @@
 // App-wide Settings keeps the underlying game, route, card and camera mounted.
 // Form snapshots live only during a synchronous repaint, never in storage/history.
 export function createSettingsDialog({dialog,markup,beforeOpen=()=>{},afterPaint=()=>{},afterClose=()=>{},history=globalThis.history,location=globalThis.location,document=globalThis.document}){
- let opener=null,html='',token=null,closingBack=false,scroll=0;
+ let opener=null,html='',token=null,closingBack=false,reopenPending=false,scroll=0;
  const marker='cardstashySettings';
  const paint=()=>{
   const next=markup();if(next===html)return;
@@ -15,7 +15,7 @@ export function createSettingsDialog({dialog,markup,beforeOpen=()=>{},afterPaint
   dialog.scrollTop=top;afterPaint();
  };
  const open=(push=true)=>{
-  if(dialog.open){paint();return;}if(closingBack)return;
+  if(dialog.open){paint();return;}if(closingBack){reopenPending=true;return;}
   beforeOpen();opener=document.activeElement;scroll=globalThis.scrollY||0;html='';dialog.innerHTML='';paint();
   token=push?String(Date.now())+Math.random():history.state?.[marker];
   if(push)history.pushState({...history.state,[marker]:token},'',location.href);
@@ -31,5 +31,5 @@ export function createSettingsDialog({dialog,markup,beforeOpen=()=>{},afterPaint
  };
  dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
  dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)close();}});
- return {get isOpen(){return dialog.open;},open,close,refresh:paint,historyChanged(){if(closingBack){closingBack=false;return true;}if(dialog.open){close(false);return true;}if(history.state?.[marker]){open(false);return true;}return false;}};
+ return {get isOpen(){return dialog.open;},open,close,refresh:paint,historyChanged(){if(closingBack){closingBack=false;if(reopenPending){reopenPending=false;open();}return true;}if(dialog.open){if(history.state?.[marker]!==token)close(false);return true;}if(history.state?.[marker]){open(false);return true;}return false;}};
 }

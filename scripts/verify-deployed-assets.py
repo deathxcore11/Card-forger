@@ -28,6 +28,7 @@ MODULES = (
     "app.js", "core.js", "scancam.js", "scan-batch.js", "scan-signals.js", "scan.js", "scan-catalog.js",
     "scan-vision.js", "scansession.js", "tcg.js", "ptcg.js", "ui.js",
     "views.js", "confidence.js", "mtg-tcgprice.js", "style.css",
+    "home-search.js", "app-info.js", "tabletop.js", "settings-dialog.js", "tour.js",
     "home-ui.js", "home-deck-activity.js", "home-swipe.js", "game-navigation.js", "tour-scenes.js", "community-feed.js", "community-art.js", "community-sources.js",
     "ai-rules.js", "ai-rules-panel.js",
     "pricing-presentation.js", "workbench-ui.js", "artwork.js", "zoom.js", "pokemon-art.js", "meta.js",

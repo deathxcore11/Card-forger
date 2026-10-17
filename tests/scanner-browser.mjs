@@ -228,6 +228,9 @@ try{
     assert(await popup.locator('[data-change="scanConfirmFinish"]').isEnabled(),'reviewing printing enables edition choice');
    }
    await popup.getByRole('button',{name:'More copies',exact:true}).click();await popup.getByRole('button',{name:'More copies',exact:true}).click();
+   // Detail hydration can replace this row after recognition. Wait for an actual
+   // offered finish instead of reading the temporary empty option collection.
+   await popup.locator('[data-change="scanConfirmFinish"] option:not([value=""])').first().waitFor({state:'attached'});
    const finish=await popup.locator('[data-change="scanConfirmFinish"] option').evaluateAll(opts=>opts.find(x=>x.value)?.value);
    assert(finish,'printing exposes a finish to explicitly confirm');
    await popup.locator('[data-change="scanConfirmFinish"]').selectOption(finish);

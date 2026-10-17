@@ -20,11 +20,11 @@
 <div id="ambient" aria-hidden="true"><div class="amb-art"></div></div>
 <div id="app">
   <header class="topbar">
-    <a class="brand" href="#home" aria-label="CardStashy home"><span class="mark"><img src="icon.svg?v=3.74.0" alt=""></span><span>CardStashy</span></a>
+    <a class="brand brand-home" href="#home" data-nav="home" aria-label="CardStashy Home" title="Home"><span class="mark"><img src="icon.svg?v=3.74.0" alt=""></span><span class="brand-wordmark">CardStashy</span><span class="brand-home-label">Home</span></a>
     <div id="gameTabs" class="game-tabs" role="tablist" aria-label="Choose your card game"></div>
+    <div id="desktopSearch" hidden></div>
     <nav class="top-nav" aria-label="Main">
-      <button data-act="go" data-to="#home" data-nav="home">Home</button>
-      <button data-act="go" data-to="#search" data-nav="search">Search</button>
+      <button data-nav="community" disabled aria-label="Community, coming soon" title="Community is coming soon">Community</button>
       <button data-act="go" data-to="#collection" data-nav="collection">Collection</button>
       <button data-act="go" data-to="#decks" data-nav="decks">Decks</button>
       <button data-act="go" data-to="#scan" data-nav="scan">Scan</button>
@@ -35,9 +35,9 @@
   <main id="content" role="tabpanel" aria-labelledby="game-tab-mtg"><p class="muted center pad">Loading your cards…</p></main>
   <div id="toast" role="status" aria-live="polite"></div>
   <nav class="bottom-nav" aria-label="Main">
-    <button data-act="go" data-to="#home" data-nav="home"><span aria-hidden="true">⌂</span>Home</button>
-    <button data-act="go" data-to="#search" data-nav="search"><span aria-hidden="true">⌕</span>Search</button>
+    <button data-nav="community" disabled aria-label="Community, coming soon" title="Community is coming soon"><span aria-hidden="true">♧</span>Community</button>
     <button data-act="go" data-to="#collection" data-nav="collection"><span aria-hidden="true">▦</span>Collection</button>
+    <button class="nav-search" data-act="go" data-to="#search" data-nav="search"><span aria-hidden="true">⌕</span>Search</button>
     <button data-act="go" data-to="#decks" data-nav="decks"><span aria-hidden="true">▣</span>Decks</button>
     <button data-act="go" data-to="#scan" data-nav="scan"><span aria-hidden="true">▧</span>Scan</button>
   </nav>
@@ -52,6 +52,7 @@
 <link rel="modulepreload" href="ai-rules.js">
 <link rel="modulepreload" href="ai-tools.js">
 <link rel="modulepreload" href="ai-ui.js">
+<link rel="modulepreload" href="app-info.js">
 <link rel="modulepreload" href="artwork.js">
 <link rel="modulepreload" href="auth-form.js">
 <link rel="modulepreload" href="auto-browse.js">
@@ -93,6 +94,7 @@
 <link rel="modulepreload" href="goldfish.js">
 <link rel="modulepreload" href="guide.js">
 <link rel="modulepreload" href="home-deck-activity.js">
+<link rel="modulepreload" href="home-search.js">
 <link rel="modulepreload" href="home-swipe.js">
 <link rel="modulepreload" href="home-ui.js">
 <link rel="modulepreload" href="icons.js">
@@ -147,6 +149,7 @@
 <link rel="modulepreload" href="strategy-risk.js">
 <link rel="modulepreload" href="strategy.js">
 <link rel="modulepreload" href="suggest.js">
+<link rel="modulepreload" href="tabletop.js">
 <link rel="modulepreload" href="tcg.js">
 <link rel="modulepreload" href="tcgbuild.js">
 <link rel="modulepreload" href="tcgcompare.js">

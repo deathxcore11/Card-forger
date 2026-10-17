@@ -15,11 +15,12 @@ try{
    assert.equal(page.url(),url);assert.equal(await page.locator('#settingsDialog [data-act="setGame"]').count(),0);
    for(const width of [320,390,768,1024,1440,390]){
     await page.setViewportSize({width,height:900});
-    for(const tab of ['account','backup','app']){
+    for(const tab of ['account','app','info']){
      await page.locator('#settingsTab-'+tab).click();await noOverflow(page,'#settingsDialog',`${game} ${tab} ${width}`);
     }
     if([390,768].includes(width))await capture(page,`synthetic-search-settings-${game}-${width}`);
    }
+   await page.locator('#settingsTab-account').click();await page.locator('[data-act="settingsTab"][data-id="backup"]').click();await noOverflow(page,'#settingsDialog',game+' backup');
    await page.locator('#settingsTab-app').focus();await page.keyboard.press('Home');
    assert.equal(await page.evaluate(()=>document.activeElement.id),'settingsTab-account');
    await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('#settingsDialog').open);

@@ -478,7 +478,7 @@ async function visibleHeaderArt(page) {
     const image = art?.matches('img') ? art : art?.querySelector('img');
     if (![hero, art, image].every(node => node?.isConnected) || !image.complete || image.naturalWidth <= 0) return false;
     const rect = art.getBoundingClientRect();
-    return rect.width >= 50 && rect.width <= 58 && rect.height >= 48 && rect.height <= 54 && [hero, art, image].every(node => {
+    return rect.width >= 280 && rect.height >= 280 && [hero, art, image].every(node => {
       const css = getComputedStyle(node);
       return css.display !== 'none' && css.visibility === 'visible' && Number(css.opacity) > 0;
     });
@@ -561,7 +561,7 @@ async function assertDailyIdentity(page, game, card = heroes[game], date = TODAY
   assert.equal((await page.locator('#homeHero').innerText()).match(/Card of the Day/gi)?.length,1);
   assert.equal(await control.locator('b').textContent(),card.name);
   assert.equal(await control.locator(':scope > span:first-child').innerText(),'Card of the Day');
-  assert.equal(await page.locator('.hh-art-link, .hh-search, #homeQ, .hh-deck-link').count(),0,'daily accent is not a search/welcome hero or saved-deck link');
+  assert.equal(await page.locator('.hh-art-link, .hh-search, .hh-deck-link').count(),0,'one daily action without duplicate art or saved-deck links');
   const size=await control.evaluate(n=>{
     const hero=n.closest('#homeHero'),art=hero.querySelector('.hh-art'),title=n.querySelector('b'),arrow=n.querySelector('.hh-daily-arrow');
     const rect=node=>{const r=node.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
@@ -582,7 +582,7 @@ async function assertDailyIdentity(page, game, card = heroes[game], date = TODAY
     const overlaps=(x,y)=>x.left<y.right&&x.right>y.left&&x.top<y.bottom&&x.bottom>y.top;
     // Include the transparent action above the art and the Pokémon crop's
     // nested image. The crop transform is intentional; blur is not.
-    const effects=[hero,...hero.querySelectorAll('*')].filter(node=>node===n||a&&overlaps(rect(node),a)).map(node=>{
+    const effects=[hero,...hero.querySelectorAll('*')].filter(node=>node===hero||node===art||node===art?.querySelector('img')).map(node=>{
       const css=getComputedStyle(node);return {node:node.className,filter:css.filter,backdrop:css.backdropFilter,prefixedBackdrop:css.getPropertyValue('-webkit-backdrop-filter')};
     });
     return {height:rect(hero).height,art:a,box,arrow:rect(arrow),text,effects,
@@ -590,13 +590,12 @@ async function assertDailyIdentity(page, game, card = heroes[game], date = TODAY
   });
   // This bound belongs to the normal fixtures, not every possible card name.
   // Longer titles may grow naturally, never clip or shrink to satisfy a cap.
-  if(compact)assert(size.height<110,`${game}: daily accent stays unobtrusive: ${JSON.stringify(size)}`);
+  if(compact)assert(size.height>=300 && size.height<600,`${game}: artwork header stays useful without hiding the dashboard: ${JSON.stringify(size)}`);
   assert(size.box.height>=44 && size.box.width>=44,`${game}: exact daily identity keeps its touch target`);
   assert(size.content.right+8<=size.arrow.left && size.arrow.right<=size.box.right,`${game}: text reserves space for the daily arrow`);
   if(size.art){
-    assert(size.art.width<=58 && size.art.height<=54,`${game}: daily art is a small source-identified thumbnail`);
-    assert(size.art.right+8<=size.content.left,`${game}: daily name never overlaps the thumbnail`);
-    assert(size.art.top>=size.box.top && size.art.bottom<=size.box.bottom,`${game}: thumbnail fits within the daily action`);
+    assert(size.art.width>=280 && size.art.height>=280,`${game}: immersive artwork remains prominent`);
+    assert(size.art.left<=size.box.left && size.art.right>=size.box.right,`${game}: daily action stays within the artwork header`);
   }
   for(const [index,text] of size.text.entries()){
     assert(text.fontSize>=(index?13:10) && !text.clipped && ['none',''].includes(text.lineClamp),`${game}: daily text is readable and unclipped: ${JSON.stringify(text)}`);
@@ -750,11 +749,13 @@ try {
     assert.equal(await page.locator('[data-home-meta]').count(),1,`${game}: shared full-width lower Meta rail parity`);
     assert.equal(await page.locator('[data-home-discovery]').count(),1,`${game}: one unified discovery section`);
     assert.equal(await page.locator('.home-discover, .home-deal, .home-personal .quick, .home-personal .quick-btn').count(),0,`${game}: no duplicate random panel or cramped legacy split shortcuts`);
-    assert.equal(await page.locator('[data-act="homeRandomDeck"], .home-discovery-actions, .home-deck-section, .home-start, #homeQ').count(),0,'no discovery prompts, duplicated shelf or search on personal Home');
+    assert.equal(await page.locator('[data-act="homeRandomDeck"], .home-discovery-actions, .home-deck-section, .home-start').count(),0,'no discovery prompts, duplicated shelf on personal Home');
     assert.equal(await page.locator('[data-home-resume]').getAttribute('data-resume-deck'),`saved-${game}`);
     assert.equal(await page.locator('[data-home-resume] button').getAttribute('data-to'),`#${game==='mtg'?'deck':'tdeck'}/saved-${game}/cards`);
     const order=await page.locator('#content > *').evaluateAll(nodes=>nodes.filter(n=>!n.classList.contains('home-sr-only')).map(n=>n.className));
-    assert.deepEqual(order,['home-overview','home-resume','home-meta','home-editorial'],'personal-first four-section composition');
+    assert(order[0].includes('home-art-header'),'approved artwork leads Home');
+    assert.deepEqual(order.slice(1),['home-overview home-value-overview','home-resume','home-meta','home-editorial'],'personal information follows the restored header');
+    assert.equal(await page.locator('#homeQ').count(),1,'one real search entry across responsive placements');
     assert.equal(await page.locator('.home-value-main strong').innerText(), '$25.00');
     assert.match(await page.locator('.home-value-note').innerText(), /Known subtotal.*1 unpriced/);
     for (const width of WIDTHS) {
@@ -958,7 +959,8 @@ try {
   for(const game of GAME_IDS){
     await selectGame(noDaily.page,game);
     await noDaily.page.waitForFunction(()=>!document.querySelector('.hh-credit'));
-    assert.equal(await noDaily.page.locator('#homeHero').isVisible(),false,'unavailable daily pick has no empty visual placeholder');
+    assert.equal(await noDaily.page.locator('#homeQ').isVisible(),true,'search remains usable when daily art is unavailable');
+    assert.equal(await noDaily.page.locator('#homeHero .hh-art').count(),0,'no invented artwork for unavailable daily identity');
     for(const width of EVIDENCE_WIDTHS){
       await noDaily.page.setViewportSize({width,height:viewportHeight(width)});
       const sizes=await noDaily.page.locator('.home-overview').evaluate(n=>({overview:n.clientWidth,value:n.querySelector('.home-value').getBoundingClientRect().width}));
@@ -1030,7 +1032,7 @@ try {
     await alternating.page.locator(`[data-home-meta="${game}"] [data-to="#decks/inspiration"]`).focus();
     await alternating.page.keyboard.press('Enter');
     await alternating.page.waitForFunction(() => location.hash === '#decks/inspiration');
-    await alternating.page.locator('.bottom-nav [data-nav="home"]').click();
+    await alternating.page.locator('.brand-home').click();
     await alternating.page.waitForFunction(() => location.hash === '#home' && document.body.dataset.view === 'home');
     await assertSelected(alternating.page, game);
   }

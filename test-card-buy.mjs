@@ -92,6 +92,6 @@ for(const [game,card] of [['ptcg',pk],['ygo',ygo]]){
 }
 assert.match(buySheet({type:'buy',name:mtg.name,print:mtg,finish:'etched'}),/href="https:\/\/www.tcgplayer.com\/product\/43"/);
 assert.equal(JSON.stringify(S.state),before,'Rendering outbound links cannot change private saved data');
-const css=fs.readFileSync('style.css','utf8');assert.match(css,/\.card-price-actions \.btn \{min-height:44px/);assert.match(css,/\.card-price-actions :is\(button,a\)[^}]*:focus-visible/);
+const css=fs.readFileSync('style.css','utf8');assert(Number(css.match(/\.card-price-actions \.btn \{min-height:(\d+)px/)?.[1])>=44,'Price actions meet the minimum touch size');assert.match(css,/\.card-price-actions :is\(button,a\)[^}]*:focus-visible/);
 assert(fixtureRequests.every(url=>url.startsWith('api/prices/recent?game=ptcg&')),'Unexpected mocked renderer request: '+JSON.stringify(fixtureRequests));
 console.log('PASS: direct all-game top Buy, Prices separation, changing exact printing/finish/lot contexts, honest search fallbacks, cross-release YGO contamination rejection, URL injection/privacy and native-link/focus/touch contracts. No browser or network used.');

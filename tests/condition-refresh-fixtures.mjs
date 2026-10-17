@@ -61,7 +61,7 @@ export async function advance(page,ms=8100){await page.clock.fastForward(ms);awa
 export async function waitUntil(fn,label,timeout=15000){const end=Date.now()+timeout;while(Date.now()<end){if(await fn())return;await new Promise(r=>setTimeout(r,15));}assert.fail(label+' timed out');}
 export async function settle(app){await waitUntil(()=>app.condition.records.every(r=>r.settled),'Mock condition responses settling');await frames(app.page);}
 export async function select(page,selector,value){const control=page.locator(selector),label=await control.locator('option').evaluateAll((nodes,v)=>nodes.find(node=>node.value===v)?.label,value);assert(label,`${selector} has option ${value}`);await control.click();await page.locator('.glass-select-menu[open]').getByRole('option',{name:label,exact:true}).click();await frames(page);}
-export async function navigate(page,to){await page.locator(`[data-act="go"][data-to="#${to}"]:visible`).first().click();await page.waitForFunction(v=>window.__uiTestState.ui.view===v,to);await frames(page);}
+export async function navigate(page,to){await page.locator(to==='home'?'.brand-home':`[data-act="go"][data-to="#${to}"]:visible`).first().click();await page.waitForFunction(v=>window.__uiTestState.ui.view===v,to);await frames(page);}
 export async function seedLots(page,{count=150,filter='',cursor=''}={}){
  const data=manyLots(count);await page.evaluate(async({data,filter,cursor})=>{
   const {S}=await import('/store.js'),{cardKey}=await import('/core.js');S.state.collection=data.lots;S.state.printings=Object.fromEntries(data.cards.map(c=>[c.id,c]));for(const c of data.cards)S.catalog[cardKey(c.name)]=c;

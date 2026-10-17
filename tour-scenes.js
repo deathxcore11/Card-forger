@@ -1,42 +1,35 @@
-// Render the same screen functions the app uses. Work only on disposable copies;
-// the sandboxed preview has no scripts, handlers, camera access or storage writes.
-import { S } from './store.js';
-import * as V from './views.js';
-import * as T from './tcg.js';
-import { GAMES, blankGame } from './games.js';
-import { scanView } from './scancam.js';
-const deckPanel = html => html.slice(Math.max(0, html.indexOf('<nav class="tabs"')));
-export function tourScenes(game = 'mtg') {
-  const state = S.state, ui = S.ui, tcgUi = T.ui(game), originalTcgUi = { ...tcgUi };
-  const copiedState = structuredClone(state), copiedUi = structuredClone(ui), copiedTcgUi = structuredClone(tcgUi);
-  try {
-    Object.assign(tcgUi, copiedTcgUi); S.state = copiedState; S.ui = copiedUi;
-    S.state.settings.game = game;
-    const mtg = game === 'mtg';
-    const decks = () => mtg ? V.decks() : T.tcgDecks();
-    const collection = () => mtg ? V.collection() : T.tcgCollection();
-    const search = () => mtg ? V.search() : T.tcgSearch();
-    let deck = mtg ? S.state.decks.find(d => d.id === state.activeDeck) || S.state.decks.at(-1) : T.gs(game).decks.at(-1);
-    const deckView = (tab) => {
-      if (!deck) {
-        deck = { id:'tour-draft', name:'A new deck', format:mtg ? 'Standard' : game === 'ygo' ? 'tcg' : 'standard', commander:'', strategy:'Auto', budget:50, cards:[], side:[], versions:[], zones:{main:[],extra:[],side:[]} };
-        if (mtg) S.state.decks.push(deck);
-        else { S.state.tcg ||= {}; S.state.tcg[game] ||= blankGame(); S.state.tcg[game].decks.push(deck); }
-      }
-      if (mtg) { S.ui.deckId = deck.id; S.ui.deckTab = tab === 'power' ? 'engine' : tab; return deckPanel(V.deckPage()); }
-      (S.ui.tdeckTab ||= {})[game+":"+deck.id] = tab === 'power' ? 'insights' : tab; return deckPanel(T.tcgDeck(deck.id));
-    };
-    const home = mtg ? V.home() : T.tcgHome();
-    const collect = collection();
-    if (mtg) S.ui.collTab = 'binders'; else T.ui(game).coll.tab = 'binders';
-    const binders = collection();
-    S.ui.settingsTab = 'account'; const account = V.settings();
-    S.ui.settingsTab = 'backup'; const backup = V.settings();
-    return {
-      welcome: [home], scan: [scanView(game, GAMES[game].short)], build: [decks()],
-      power: [deckView('power')], prices: [collect], ask: [search()],
-      collect: [collect, binders], upgrade: [deckView('upgrade')],
-      practice: [deckView('playtest')], backup: [account, backup],
-    };
-  } finally { S.state = state; S.ui = ui; for (const k of Object.keys(tcgUi)) delete tcgUi[k]; Object.assign(tcgUi, originalTcgUi); }
+// Deterministic examples: no user store, camera or pricing service is imported.
+import {esc} from './ui.js';
+import {homeResultRow} from './home-search.js';
+import {brandMark} from './brand.js';
+export const DEMO_CARDS={
+ mtg:{id:'example-sol-ring',name:'Sol Ring',set_name:'Choose your printing',rarity:'Uncommon',image_uris:{normal:'https://api.scryfall.com/cards/named?exact=Sol%20Ring&format=image&version=normal'}},
+ ptcg:{id:'base1-4',name:'Charizard',set:{name:'Base Set',number:'4/102'},rarity:'Rare',image:'https://assets.tcgdex.net/en/base/base1/4/high.webp'},
+ ygo:{id:'89631139',name:'Blue-Eyes White Dragon',set:{name:'Choose your printing'},rarity:'Varies by printing',image:'https://images.ygoprodeck.com/images/cards/89631139.jpg'},
+};
+const image=c=>c.image||c.image_uris?.normal;
+const target=(label,html)=>`<span class="demo-target" data-demo-action="${esc(label)}">${html}<i class="demo-finger" aria-hidden="true"></i></span>`;
+const button=(label,active=false)=>active?target(label,`<span class="btn">${label}</span>`):`<span class="btn ghost">${label}</span>`;
+const frame=(caption,html,duration=2200)=>({caption,html,duration});
+function shell(game,title,body){return `<div class="demo-app" data-demo-game="${game}"><header class="demo-top">${brandMark()}<b>Home</b><span>${{mtg:'Magic',ptcg:'Pokémon',ygo:'Yu-Gi-Oh!'}[game]}</span></header><main class="demo-main"><h3>${title}</h3>${body}</main><footer class="demo-nav"><span class="muted" aria-disabled="true">Community</span><span class="demo-collection">▣ Collection</span><span>⌕ Search</span><span>♧ Decks</span><span>▣ Scan</span></footer></div>`;}
+const mini=c=>`<div class="demo-card-line"><img src="${image(c)}" alt=""><div><b>${esc(c.name)}</b><small>${esc(c.set_name||c.set?.name)}</small></div></div>`;
+function addForm(c,{condition='Near Mint',qty=1,focus='',receipt=false}={}){
+ if(receipt)return `<div class="demo-receipt"><span class="demo-check">✓</span><h3>Added ${qty} copies</h3>${mini(c)}<p>Lightly Played · saved on this device</p><b>$3.00 <small>example total</small></b><p class="muted small">Example quote: $1.50 each. Actual prices vary.</p>${button('Undo')}<span class="demo-flying-card"><img src="${image(c)}" alt=""></span></div>`;
+ const field=(label,value,active)=>`<label>${label}${active?target(label,`<span class="demo-field">${value}</span>`):`<span class="demo-field">${value}</span>`}</label>`;
+ return `${mini(c)}<div class="demo-form">${field('Copies',`<b>${qty}</b>`,focus==='Copies')}${field('Condition',condition+' ▾',focus==='Condition')}${field('Version','Confirm printing & finish',false)}</div><p class="foot">${condition==='Lightly Played'?'$1.50 each · example LP quote':'Choose the condition of your own copy.'}</p>${button('Add to collection',focus==='Save')}`;
+}
+export function tourScenes(game='mtg'){
+ const g=DEMO_CARDS[game]?game:'mtg',c=DEMO_CARDS[g],wrap=(title,body)=>shell(g,title,body),name=c.name;
+ const search=value=>`<div class="home-search-pill demo-search"><span class="home-ai-label">AI-powered</span><input tabindex="-1" readonly value="${esc(value)}" placeholder="Find a card or ask a question…"><span>↗</span></div>`;
+ const result=`<div class="view-compact demo-results"><div class="display-list">${homeResultRow(g,c,0)}</div></div>`;
+ const open=`<div class="demo-detail"><img src="${image(c)}" alt=""><div><b>${esc(name)}</b><p>Check the set and version</p>${button('Add to collection',true)}</div></div>`;
+ const find=[frame('Tap Home search.',wrap('Your cards. Your next adventure.',target('Find cards',search('')))),frame('Type a card name. Matching cards appear below.',wrap('Find a card',search(name.slice(0,4))+result),1300),frame(`Choose ${name} from the actual card results.`,wrap('Find a card',search(name)+target('Open this card',result))),frame('The card opens. Check the printing before adding it.',wrap('Card details',open),3200)];
+ const save=[frame('Open Add to collection. This example starts with one copy.',wrap('Add to collection',addForm(c))),frame('Choose Lightly Played to match the physical card.',wrap('Add to collection',addForm(c,{condition:'Lightly Played',focus:'Condition'}))),frame('Set Copies to two. The quantity changes from one to two.',wrap('Add to collection',addForm(c,{condition:'Lightly Played',qty:2,focus:'Copies'}))),frame('Review the version and condition, then save.',wrap('Add to collection',addForm(c,{condition:'Lightly Played',qty:2,focus:'Save'}))),frame('Two Lightly Played copies arrive in Collection. Undo is available.',wrap('Saved to Collection',addForm(c,{qty:2,receipt:true})),3600)];
+ const fmt={mtg:'Commander',ptcg:'Standard',ygo:'Advanced (TCG)'}[g],size=g==='mtg'?100:g==='ptcg'?60:40,resource={mtg:'Lands',ptcg:'Energy',ygo:'Main Deck engine'}[g];
+ const build=[frame('Choose the format before generating or importing a deck.',wrap('Deck ideas',target('Choose format',`<label>Format<span class="demo-field">${fmt} ▾</span></label>`)+`<p class="muted">A format is required. Style and budget are optional.</p>`)),frame('Add the engine and its required resources. Counts update together.',wrap('Deck preview',`<div class="demo-deck-count">${size-4}/${size}</div><p>${resource}: check the plan and quantities</p>${button('＋ Add 4 copies',true)}`)),frame('The list is complete, but ownership and legality still need review.',wrap('Deck preview',`<div class="demo-deck-count">${size}/${size}</div><div class="demo-stats"><span>Owned <b>${size-8}</b></span><span>Missing <b>8</b></span></div><p class="muted small">Example counts. Review format legality, resources and missing-price coverage.</p>${button('Save as deck',true)}`)),frame('Save a new deck copy. Your collection is unchanged.',wrap('Your decks',`<div class="demo-receipt"><span class="demo-check">✓</span><h3>Example deck saved</h3><p>${fmt} · ${size} cards</p><p>Still missing 8 physical copies</p>${button('Open deck')}</div>`),3200)];
+ const scan=[frame('Bring the whole card into view. Perfect alignment is not required.',wrap('Scan cards',`<div class="demo-camera"><img class="demo-enter" src="${image(c)}" alt=""><span>Keep it clear and steady</span></div>`),2600),frame('A clear capture is ready. Review the proposed match.',wrap('Review match',`${mini(c)}<p>Check name, set number and edition.</p>${button('Use this match',true)}`)),frame('Select condition and quantity before adding your card.',wrap('Add to collection',addForm(c,{condition:'Lightly Played',qty:2,focus:'Condition'}))),frame('The save receipt confirms the copies and available condition value.',wrap('Saved to Collection',addForm(c,{qty:2,receipt:true})),3200)];
+ const base=g==='mtg'?40:g==='ygo'?8000:0,delta=g==='ptcg'?10:g==='mtg'?-1:-500;
+ const counter=(value,focus)=>wrap('Tabletop · Player 1',`<div class="demo-counter"><p>${g==='ptcg'?'Active Pokémon damage':g==='ygo'?'Life points':'Life total'}</p><strong>${value}</strong><div class="actions">${button(g==='ptcg'?'+10':g==='ygo'?'−500':'−1',focus==='change')}${button('Undo',focus==='undo')}</div></div>`);
+ const tabletop=[frame('Each player controls their own counters.',counter(base)),frame('Tap the control. Only this player’s selected counter changes.',counter(base+delta,'change')),frame('Undo reverses that player’s last change.',counter(base,'undo'),3200)];
+ return {find,save,build,scan,tabletop};
 }

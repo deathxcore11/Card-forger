@@ -44,10 +44,10 @@ export function handleArtworkError(e){
 // Pokémon cards have no separate art image, so crop the card picture to its art window (the
 // same framing Magic's art crops and Yu-Gi-Oh!'s artwork give). The window keeps its shape and
 // covers whatever box it sits in.
-export function pokemonArtCrop(c, cls = "", src = "") {
+export function pokemonArtCrop(c, cls = "", src = "", {loading = "lazy"} = {}) {
   const urls = src ? [src, ...artworkSources(c, true).filter((u) => u !== src)] : artworkSources(c, true);
   if (!urls.length) return `<span class="${cls} pk-crop img-missing" role="img" aria-label="Artwork unavailable">◇</span>`;
-  return `<span class="${cls} pk-crop" aria-hidden="true"><span class="pk-win"><img src="${esc(urls[0])}" data-art-sources="${esc(JSON.stringify(urls))}" data-art-index="0" alt="" loading="lazy" referrerpolicy="no-referrer"></span></span>`;
+  return `<span class="${cls} pk-crop" aria-hidden="true"><span class="pk-win"><img src="${esc(urls[0])}" data-art-sources="${esc(JSON.stringify(urls))}" data-art-index="0" alt="" loading="${loading === "eager" ? "eager" : "lazy"}" referrerpolicy="no-referrer"></span></span>`;
 }
 
 // Tournament rows carry the exact English set abbreviation and collector number.

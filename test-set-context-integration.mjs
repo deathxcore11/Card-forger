@@ -231,7 +231,7 @@ console.log('PASS: ambiguous scoped condition previews never invoke the old code
 // A follow-up collection answer must respect the new saved-lot uncertainty marker.
 S.state.settings.game='ygo';S.state.tcg.ygo.collection=[{id:'unknown-set-copy',cardId:ygo.id,name:ygo.name,qty:1,condition:'Near Mint',setReleaseUnverified:true}];
 const collectionAnswer=await ai.my_collection({game:'ygo'});
-assert.equal(collectionAnswer.cards[0].each,null);assert.equal(collectionAnswer.cards[0].value,0);assert.equal(collectionAnswer.cards[0].set,'Printing not verified');
+assert.equal(collectionAnswer.cards[0].each,null);assert.equal(collectionAnswer.cards[0].value,null);assert.equal(collectionAnswer.cards[0].set,'Printing not verified');
 console.log('PASS: AI collection follow-ups cannot replace an unverified scoped lot with the generic card price.');
 
 // Reopening a newly scoped saved lot cannot recover a generic market/private/history value.

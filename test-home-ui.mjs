@@ -97,8 +97,8 @@ for (const scenario of [
   { name: 'Home carousel button', view: 'home', kind: 'button', inside: true, renders: 0 },
   { name: 'Home source link', view: 'home', kind: 'link', inside: true, renders: 0 },
   { name: 'Home search input', view: 'home', kind: 'input', inside: true, renders: 0 },
-  { name: 'unfocused Home', view: 'home', kind: 'body', inside: false, renders: 1 },
-  { name: 'Home shell button', view: 'home', kind: 'button', inside: false, renders: 1 },
+  { name: 'unfocused Home', view: 'home', kind: 'body', inside: false, renders: 0 },
+  { name: 'Home shell button', view: 'home', kind: 'button', inside: false, renders: 0 },
   { name: 'non-Home button', view: 'decks', kind: 'button', inside: true, renders: 1 },
   { name: 'non-Home input', view: 'decks', kind: 'input', inside: true, renders: 0 },
   { name: 'open sheet', view: 'home', kind: 'body', inside: false, sheet: true, renders: 0 },
@@ -136,7 +136,7 @@ for (const scenario of [
     assert.equal(focused.isConnected, true, scenario.name + ': the focused node is not replaced');
   }
 }
-console.log('PASS: delayed production emblem refresh caches fresh data without replacing focused Home controls; unfocused/non-Home redraws and input/sheet guards remain intact.');
+console.log('PASS: delayed production emblem refresh caches fresh data without replacing focused Home controls; Home gestures stay mounted while non-Home redraws and input/sheet guards remain intact.');
 
 // Exercise the hosted regression's actual readiness/measurement helper without
 // importing its server or Playwright. A child transition can be replaced by a
