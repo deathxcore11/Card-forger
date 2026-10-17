@@ -49,6 +49,8 @@ let box = null,
   active = -1,
   ticket = 0;
 const close = () => {
+  clearTimeout(timer);
+  timer = 0;
   box?.remove();
   box = null;
   active = -1;
@@ -56,8 +58,15 @@ const close = () => {
   input?.removeAttribute("aria-activedescendant");
   ticket++;
 };
+function position() {
+  if (!box) return;
+  if (!input?.isConnected || document.activeElement !== input) return close();
+  const r = input.getBoundingClientRect(), viewport = document.documentElement.clientWidth || window.innerWidth;
+  const width = Math.min(r.width, viewport), left = Math.max(0, Math.min(r.left, viewport - width));
+  Object.assign(box.style, { left: `${left + window.scrollX}px`, top: `${r.bottom + window.scrollY + 6}px`, width: `${width}px` });
+}
 function show(items, recent) {
-  if (!input?.isConnected || !items.length) return close();
+  if (!input?.isConnected || document.activeElement !== input || !items.length) return close();
   if (!box) {
     box = document.createElement("div");
     box.className = "suggest";
@@ -76,8 +85,7 @@ function show(items, recent) {
       if (b) { e.preventDefault(); pick(b.dataset.pick); }
     });
   }
-  const r = input.getBoundingClientRect();
-  Object.assign(box.style, { left: `${r.left + window.scrollX}px`, top: `${r.bottom + window.scrollY + 6}px`, width: `${r.width}px` });
+  position();
   box.innerHTML = `${recent ? `<p class="suggest-head">Recent</p>` : ""}${items.map((n, i) => `<button type="button" role="option" id="sg${i}" class="${i === active ? "on" : ""}" data-pick="${esc(n)}">${recent ? `<svg class="sg-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9"/><path d="M4.5 4.8V9h4.2M12 8v4.3l2.8 1.7"/></svg>` : ""}${esc(n)}</button>`).join("")}`;
   input.setAttribute("aria-expanded", "true");
   input.setAttribute("aria-controls", "suggestBox");
@@ -105,6 +113,8 @@ export function attachSuggest() {
   document.addEventListener("focusin", (e) => {
     const el = e.target.closest?.("input[data-suggest]");
     if (!el) return;
+    clearTimeout(timer);
+    if (input !== el) close();
     input = el;
     input.setAttribute("autocomplete", "off");
     input.setAttribute("role", "combobox");
@@ -117,7 +127,12 @@ export function attachSuggest() {
     timer = setTimeout(update, 180);
   });
   document.addEventListener("focusout", (e) => {
-    if (e.target === input) setTimeout(close, 120);
+    const blurred = e.target;
+    if (blurred === input) setTimeout(() => {
+      // A delayed blur from an old field must not dismiss a newer popup, nor
+      // a popup whose original field has already regained focus.
+      if (input === blurred && document.activeElement !== blurred) close();
+    }, 120);
   });
   document.addEventListener("keydown", (e) => {
     if (e.target !== input) return;
@@ -141,4 +156,7 @@ export function attachSuggest() {
   }, true);
   document.addEventListener("pointerdown", e => { if (box && !box.contains(e.target) && e.target !== input) close(); }, { passive: true });
   window.addEventListener("scroll", () => box && close(), { passive: true });
+  // Reanchor the existing options in place: folding never re-queries providers
+  // or changes the typed query, focus or keyboard selection.
+  window.addEventListener("resize", position, { passive: true });
 }
