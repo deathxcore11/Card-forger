@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import {writeFile,mkdir} from 'node:fs/promises';
 import {resolve} from 'node:path';
-import {WIDTHS,GAMES,SETS,VASM,CARDS,EXPECTED,SYMBOLS,ART_EVIDENCE,RESULTS,validateFixtures,startServer,openApp,navigate,closeSheet,noOverflow,capture,inventorySnapshot,isHistoryURL,assertSymbolMounts} from './card-polish-fixtures.mjs';
+import {WIDTHS,GAMES,SETS,VASM,MP25,CARDS,EXPECTED,SYMBOLS,ART_EVIDENCE,RESULTS,validateFixtures,startServer,openApp,navigate,closeSheet,noOverflow,capture,inventorySnapshot,isHistoryURL,assertSymbolMounts} from './card-polish-fixtures.mjs';
 
 console.log(await validateFixtures());
 if(process.argv.includes('--validate-fixtures'))process.exit(0);
@@ -22,11 +22,11 @@ async function readyCatalogues(page){
 async function readyIndex(page){await readyCatalogues(page);await page.waitForFunction(()=>window.__uiTestState.ui.view==='sets');await page.locator('.set-year-section .set-row').first().waitFor();}
 async function readySet(page,game,id=EXPECTED[game].set){await readyCatalogues(page);await page.waitForFunction(({game,id})=>{const S=window.__uiTestState,s=game==='mtg'?S.ui.set:window.__uiTestTcg.ui(game).set;return S.state.settings.game===game&&S.ui.view==='set'&&(game==='mtg'?s.code===id:s.id===id)&&s.loaded&&!s.busy&&!s.detailsBusy&&s.cards.length>0;},{game,id});assert.equal(await page.evaluate(g=>(g==='mtg'?window.__uiTestState.ui.set:window.__uiTestTcg.ui(g).set).error,game),'','Exact set finished loading without an error');await tiles(page).first().waitFor();}
 async function openSet(page,game,id=EXPECTED[game].set){await navigate(page,'#set/'+encodeURIComponent(id));await readySet(page,game,id);}
-async function cardTile(page,game,id){
- await readySet(page,game);
+async function cardTile(page,game,id,setId=EXPECTED[game].set){
+ await readySet(page,game,setId);
  // Never retain a visual position across a rerender. TCG tiles expose exact
  // card/release IDs; Magic exposes the provider-array slot plus card name.
- const selector=game==='mtg'?await page.evaluate(id=>{const cards=window.__uiTestState.ui.set.cards,i=cards.findIndex(c=>c.id===id);return i<0?null:`[data-set-i="${i}"][data-name=${JSON.stringify(cards[i].name)}]`;},id):`[data-id=${JSON.stringify(id)}][data-set-id=${JSON.stringify(EXPECTED[game].set)}]`;
+ const selector=game==='mtg'?await page.evaluate(id=>{const cards=window.__uiTestState.ui.set.cards,i=cards.findIndex(c=>c.id===id);return i<0?null:`[data-set-i="${i}"][data-name=${JSON.stringify(cards[i].name)}]`;},id):`[data-id=${JSON.stringify(id)}][data-set-id=${JSON.stringify(setId)}]`;
  assert(selector,`Exact ${game} card ${id} exists`);const target=page.locator('#content .set-grid > .grid-card'+selector);await target.waitFor();assert.equal(await target.count(),1,'One exact card/release tile');assert.equal(await target.evaluate((n,g)=>g==='mtg'?window.__uiTestState.ui.set.cards[Number(n.dataset.setI)]?.id:n.dataset.id,game),id);
  // Locator click/focus handles scrolling and reacquires the exact node if it
  // detaches. An eager scrollIntoViewIfNeeded pins a transient element instead.
@@ -37,9 +37,9 @@ async function select(page,selector,value){
  await control.click();await page.locator('.glass-select-menu[open]').getByRole('option',{name:label,exact:true}).click();
  await page.waitForFunction(({selector,value})=>{const n=document.querySelector(selector);return n?.isConnected&&n.value===value&&[...n.options].find(o=>o.value===value)?.hasAttribute('selected');},{selector,value});await frame(page);
 }
-async function openCard(page,game,id,{keyboard=false}={}){
- const target=await cardTile(page,game,id);if(keyboard){await target.focus();await page.keyboard.press('Enter');}else await target.click();await page.waitForFunction(({game,id})=>{const ctx=window.__uiTestState.ui.sheetCtx;return document.querySelector('#sheet')?.open&&(game==='mtg'?ctx?.print?.id===id:ctx?.id===id)&&!!document.querySelector('.card-price-summary');},{game,id});
- assert.equal(await page.evaluate(()=>window.__uiTestState.ui.sheetCtx.setId),EXPECTED[game].set,'Detail keeps exact release identity');
+async function openCard(page,game,id,{keyboard=false,setId=EXPECTED[game].set}={}){
+ const target=await cardTile(page,game,id,setId);if(keyboard){await target.focus();await page.keyboard.press('Enter');}else await target.click();await page.waitForFunction(({game,id})=>{const ctx=window.__uiTestState.ui.sheetCtx;return document.querySelector('#sheet')?.open&&(game==='mtg'?ctx?.print?.id===id:ctx?.id===id)&&!!document.querySelector('.card-price-summary');},{game,id});
+ assert.equal(await page.evaluate(()=>window.__uiTestState.ui.sheetCtx.setId),setId,'Detail keeps exact release identity');
  await page.waitForFunction(()=>{const img=document.querySelector('#sheet .cs-card .card-img');return img?.complete&&img.naturalWidth>0;});
 }
 async function tab(page,id,{keyboard=false}={}){
@@ -105,6 +105,19 @@ async function ygoSelection(app){
  await page.setViewportSize({width:390,height:1000});await select(page,'[data-change="historyEdition"]',"VASM-EN001::Collector's Rare");await historyState(page,'exact-unavailable');assert.equal(await page.locator('#sheet .cd-img').first().getAttribute('data-rarity-flair'),'yr4');const q=await activeQuote(page);assert.equal(q.editionKey,"VASM-EN001::Collector's Rare");assert.equal(q.selectedEdition,'');assert.equal(q.value,null);await jump(page);await capture(page,'card-polish-ygo-exact-unavailable');
  await select(page,'[data-change="historyEdition"]','VASM-E001::Ultra Rare');await historyState(page,'exact-unavailable');assert.equal((await activeQuote(page)).editionKey,'VASM-E001::Ultra Rare');assert.equal(await page.locator('#sheet .cd-img').first().getAttribute('data-rarity-flair'),'yr3');
  await select(page,'[data-change="historyEdition"]','');await historyState(page,'printing-required');assert.equal(await page.locator('#sheet .cd-img').first().getAttribute('data-rarity-flair'),null,'Clearing the selection clears exact rarity flair');await historySafety(app);assert.equal(await inventorySnapshot(page),before);assert.equal(await cacheSnapshot(page),cache);
+ // Follow the reported MP25 surface through real release loading and exact
+ // provider-shaped edition data; never inject the selection or price into DOM.
+ await closeSheet(page);await openSet(page,'ygo',MP25.id);const starlight=await cardTile(page,'ygo',EXPECTED.ygo.edition,MP25.id);assert.equal(await starlight.getAttribute('data-rarity-flair'),'yr4');assert.equal(await starlight.getAttribute('data-tier'),'tn');
+ await openCard(page,'ygo',EXPECTED.ygo.edition,{setId:MP25.id});await page.waitForFunction(id=>window.__uiTestTcg.cache.ygo[id]?.sets?.find(p=>p.code==='MP25-EN003'&&p.rarity==='Starlight Rare')?.quotes?.length===2,EXPECTED.ygo.edition);await tab(page,'prices');
+ for(const [edition,label,value]of [['','edition unspecified',null],['1st-edition','1st Edition',.54],['unlimited','Unlimited',.31],['limited','Limited',null],['','edition unspecified',null]]){
+  if(await page.locator('[data-change="historyYgoEdition"]').inputValue()!==edition)await select(page,'[data-change="historyYgoEdition"]',edition);
+  const quote=await activeQuote(page);assert.equal(quote.releaseId,MP25.id);assert.equal(quote.editionKey,'MP25-EN003::Starlight Rare');assert.equal(quote.selectedEdition,edition);assert.equal(quote.value,value);assert.equal(quote.currency,'USD');
+  const badge=page.locator('#sheet .cd-set[data-act="tSet"]').first();assert.equal(await badge.getAttribute('data-id'),MP25.id);assert.match(await badge.innerText(),/MP25-EN003/);assert((await badge.innerText()).includes('Selected release · '+label),'Release badge and selected quote name the same explicit physical edition');
+  assert.equal(await page.locator('.card-price-reference strong').innerText(),value===null?'No quote yet':'$'+value.toFixed(2));assert((await page.locator('.card-price-reference').innerText()).includes('MP25-EN003 · Starlight Rare · '+(edition?label:'Edition not specified')));
+  assert.equal(await page.locator('#sheet .cd-img').first().getAttribute('data-rarity-flair'),'yr4','Starlight flair survives missing quote and clearing edition');
+  await historyState(page,edition?'exact-unavailable':'edition-required');
+ }
+ await capture(page,'card-polish-mp25-edition-cleared');await historySafety(app);assert.equal(await inventorySnapshot(page),before,'Browsing editions cannot alter saved copies');
  report.push('Unresolved printing and unsupported exact history are distinct, each has one empty message, Select printing focuses the real selector, and headings clear sticky chrome at all six widths.');
 }
 
