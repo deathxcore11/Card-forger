@@ -1,7 +1,7 @@
-import {rankScanCandidates,nameDistance} from './scan-signals.js';
+import {rankScanCandidates,nameDistance,collectorKey} from './scan-signals.js';
 // Compact identification metadata. Full descriptions/prices stay in the normal card adapters.
 import {readRecord,writeRecord} from './storage.js';
-import {nameCandidates,scanNameKey,mtgCollector,ptcgNumbers,ygoSetCodes} from './scan.js';
+import {nameCandidates,scanNameKey,mtgCollectors,ptcgNumbers,ygoSetCodes} from './scan.js';
 const states=new Map(),loads=new Map();let manifestPromise;
 const key=g=>'cardstashy-scan-catalog-v1-'+g;
 const num=v=>/^\d+$/.test(String(v))?String(Number(v)):String(v||'').toLowerCase();
@@ -9,7 +9,7 @@ export function compileCatalog(pack){
  if(pack?.schema!==1||!['mtg','ptcg','ygo'].includes(pack.game)||!Array.isArray(pack.rows)||!pack.rows.length)throw Error('Invalid recognition catalogue.');
  const names=new Map(),codes=new Map(),ids=new Map(),g=pack.game;
  const push=(map,k,i)=>{if(!k)return;const a=map.get(k);if(a)a.push(i);else map.set(k,[i]);};
- pack.rows.forEach((r,i)=>{if(!Array.isArray(r)||typeof r[0]!=='string'||typeof r[1]!=='string')throw Error('Invalid recognition record.');push(names,scanNameKey(r[1]),i);push(ids,r[0],i);push(codes,g==='mtg'?r[2]+':'+num(r[3]):g==='ptcg'&&r[4]?num(r[3])+'/'+num(r[4]):g==='ygo'?r[2]:'',i);});
+ pack.rows.forEach((r,i)=>{if(!Array.isArray(r)||typeof r[0]!=='string'||typeof r[1]!=='string')throw Error('Invalid recognition record.');push(names,scanNameKey(r[1]),i);push(ids,r[0],i);push(codes,g==='mtg'?r[2]+':'+collectorKey(r[3]):g==='ptcg'&&r[4]?num(r[3])+'/'+num(r[4]):g==='ygo'?r[2]:'',i);});
  return {...pack,names,codes,ids};
 }
 export function catalogCandidate(pack,i,exact=false){
@@ -27,12 +27,12 @@ export function catalogCandidate(pack,i,exact=false){
 }
 export function lookupCatalog(pack,read){
  const g=pack.game,names=nameCandidates(g,read.name||read.full||'').map(scanNameKey),text=`${read.code||''}\n${read.full||''}`;
- let bestName=names.find(n=>pack.names.has(n)),fuzzy=false,indexes=[];
+ let bestName=names.find(n=>pack.names.has(n)),fuzzy=false,indexes=[],identifierConflict=false;
  if(!bestName&&names[0]?.length>=5){const hits=[...pack.names.keys()].filter(n=>Math.abs(n.length-names[0].length)<=2).map(n=>[n,nameDistance(n,names[0],2)]).filter(([,d])=>d<=2).sort((a,b)=>a[1]-b[1]);if(hits[0]&&(!hits[1]||hits[0][1]<hits[1][1])){bestName=hits[0][0];fuzzy=true;}}
- if(g==='mtg'){const c=mtgCollector(text);if(c)indexes=pack.codes.get(c.set+':'+num(c.number))||[];}
+ if(g==='mtg'){const cs=mtgCollectors(read.code,read.full);identifierConflict=cs.length>1;for(const c of cs)indexes.push(...(pack.codes.get(c.set+':'+collectorKey(c.number))||[]));if(bestName&&!fuzzy)indexes=indexes.filter(i=>bestName===scanNameKey(pack.rows[i][1]));}
  if(g==='ptcg'){for(const c of ptcgNumbers(text))indexes.push(...(pack.codes.get(num(c.num)+'/'+num(c.total))||[]));indexes=indexes.filter(i=>bestName===scanNameKey(pack.rows[i][1]));}
  if(g==='ygo'){for(const c of ygoSetCodes(text))indexes.push(...(pack.codes.get(c)||[]));}
- const exact=!fuzzy&&indexes.length>0&&new Set(indexes.map(i=>pack.rows[i][0]+(g==='ygo'?'|'+pack.rows[i][3]:''))).size===1;
+ const exact=!fuzzy&&!identifierConflict&&indexes.length>0&&new Set(indexes.map(i=>pack.rows[i][0]+(g==='ygo'?'|'+pack.rows[i][3]:''))).size===1;
  if(!indexes.length&&bestName)indexes.push(...pack.names.get(bestName));
  const cands=rankScanCandidates(g,[...new Set(indexes)].map(i=>catalogCandidate(pack,i,exact)),read).slice(0,3);
  return {cands,tried:names,local:true,fuzzy};

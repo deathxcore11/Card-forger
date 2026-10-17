@@ -69,9 +69,9 @@ try{
   await page.evaluate(()=>{window.__pickerTrace=[];for(const type of ['pointerdown','pointerup','pointercancel','touchstart','touchend','click','scroll'])document.addEventListener(type,e=>{if(e.target.closest?.('.glass-select-menu')||e.target===document){const r=e.target.getBoundingClientRect?.();window.__pickerTrace.push({type,target:e.target.outerHTML?.slice(0,100),x:e.clientX,y:e.clientY,rect:r&&{x:r.x,y:r.y,w:r.width,h:r.height},scrollY:window.scrollY});window.__pickerTrace=window.__pickerTrace.slice(-25);}},true);});
   for(const game of ['Magic','Pokémon','Yu-Gi-Oh!']){
    if(game!=='Magic'){
-    await page.getByRole('button',{name:'Switch game',exact:true}).click();
-    await page.locator('#sheet[open]').getByRole('button',{name:new RegExp(game)}).click();
-    await page.getByRole('button',{name:'Switch game',exact:true}).getByText(game,{exact:true}).waitFor();
+    const gameId=game==='Pokémon'?'ptcg':'ygo';
+    await page.locator(`#gameTabs [data-game="${gameId}"]`).click();
+    await page.locator(`#gameTabs [data-game="${gameId}"][aria-selected="true"]`).waitFor();
    }
    await page.locator('summary').filter({hasText:'Filters'}).click();
    await page.evaluate(()=>window.dispatchEvent(new Event('cf:tcg-prices')));

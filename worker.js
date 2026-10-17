@@ -1,5 +1,6 @@
 export {ConditionPriceCache} from './condition-cache.js';
 import {conditionFeedRoute} from './condition-feed-route.js';
+import {communityFeedRoute} from './community-feed-route.js';
 import { aiReviewRoute } from './ai-review-route.js';
 import { aiAskRoute } from './ai-ask-route.js';
 export { AiReviewLimits } from './ai-review-route.js';
@@ -176,6 +177,7 @@ export default {
   },
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    if (url.pathname === '/api/community') return communityFeedRoute(request, url, ctx);
     if (url.pathname === "/api/ai/deck-review") return aiReviewRoute(request, env);
     if (url.pathname === "/api/ai/ask") return aiAskRoute(request, env);
     const setImage=url.pathname.match(/^\/img\/mtg-set\/([a-z0-9]{2,8})\.jpg$/i);

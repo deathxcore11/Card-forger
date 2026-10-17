@@ -5,7 +5,7 @@ import {readFile,mkdir} from 'node:fs/promises';
 import {resolve,extname} from 'node:path';
 import {chromium,devices} from 'playwright';
 const root=process.cwd(),refs=[
- {game:'Magic',g:'mtg',name:'Lightning Bolt',url:'https://api.scryfall.com/cards/7673784e-db4b-43a1-8d55-1bb9fc1e284f'},
+ {game:'Magic',g:'mtg',name:'Lightning Bolt',id:'7673784e-db4b-43a1-8d55-1bb9fc1e284f',url:'https://api.scryfall.com/cards/7673784e-db4b-43a1-8d55-1bb9fc1e284f'},
  {game:'Pokémon',g:'ptcg',name:'Kyogre',id:'cel25-3',url:'https://api.tcgdex.net/v2/en/cards/cel25-3'},
  {game:'Yu-Gi-Oh!',g:'ygo',name:'Dark Magician',id:'46986414',url:'https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Dark%20Magician'}
 ];
@@ -38,8 +38,8 @@ try{
    await page.goto(base+'/#scan');await page.getByRole('heading',{name:'Scan',exact:true}).waitFor();
    const skip=page.getByRole('button',{name:'Skip',exact:true});try{await skip.waitFor({state:'visible',timeout:2000});await skip.click();}catch{}
    if(ref.g!=='mtg'){
-    await page.getByRole('button',{name:'Switch game',exact:true}).click();await page.locator('#sheet[open]').getByRole('button',{name:new RegExp(ref.game)}).click();
-    await page.getByRole('button',{name:'Switch game',exact:true}).getByText(ref.game,{exact:true}).waitFor();
+    await page.locator(`#gameTabs [data-game="${ref.g}"]`).click();
+    await page.locator(`#gameTabs [data-game="${ref.g}"][aria-selected="true"]`).waitFor();
    }
    // Exercise the user's explicit opt-in download, integrity check and durable cache.
    await page.getByRole('button',{name:'Scanner settings',exact:true}).first().click();
@@ -55,11 +55,14 @@ try{
    assert(local.names.includes(ref.name));assert(local.exact);if(ref.id)assert(local.ids.includes(ref.id));console.log(`${ref.game} cached identifier lookup, HTTP blocked: ${JSON.stringify(local)}`);
    await page.reload();await page.getByRole('button',{name:'Scanner settings',exact:true}).first().click();await page.getByText(/local card records ready/).waitFor({timeout:15000});
    await page.locator('#sheet[open] [data-act="closeSheet"]').first().click();
+   // Playwright 1.62 polls predicate return values synchronously. Import once;
+   // never return a truthy Promise from the polling predicate itself.
+   await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js'),{S}=await import('/store.js');window.__scannerTestRead={loadBatch,state:()=>S.ui.scan,collection:g=>(g==='mtg'?S.state:S.state.tcg[g]).collection};});
    await page.getByRole('button',{name:'Photo',exact:true}).click();
    const upload=page.locator('input[data-change="scanFile"]').last();
    await upload.setInputFiles({name:ref.g+(ref.g==='ptcg'?'.webp':'.jpg'),mimeType:ref.mime,buffer:ref.bytes});
    await page.getByRole('button',{name:'Read card',exact:true}).click();
-   await page.waitForFunction(async()=>{const {loadBatch}=await import('/scan-batch.js');return loadBatch().some(x=>!['captured','reading'].includes(x.status));},{},{timeout:120000});
+   await page.waitForFunction(()=>{const q=window.__scannerTestRead;return q.loadBatch().some(x=>['ready','review','unresolved'].includes(x.status))&&!q.state().busy;},{},{timeout:120000});
    const framing=await page.evaluate(async g=>{
     const {S}=await import('/store.js'),image=new Image();image.src='/__reference/'+g;await image.decode();
     const card=S.ui.scan.lastCard;
@@ -76,6 +79,37 @@ try{
    assert.equal(await popup.getByText(ref.name,{exact:true}).count(),1,`${ref.game} correct card title`);
    assert.equal(await popup.getByRole('img',{name:ref.name,exact:true}).count(),1,'card copy is shown');
    let reviewedPrinting=null;
+   if(ref.g==='mtg'){
+    const pending=await page.evaluate(async expectedId=>{
+     const {S}=await import('/store.js'),{mtgCollectors}=await import('/scan.js'),{textVerifiedMatch}=await import('/scancam.js'),s=S.ui.scan,i=s.cands.findIndex(c=>String(c.id)===expectedId),c=s.cands[i];
+     return {selected:s.confirm.i,i,id:c?.id,set:c?.card?.set,number:c?.card?.collector_number,exact:c?.exact,verified:!!c&&textVerifiedMatch('mtg',c,s.read),observations:mtgCollectors(s.read.code,s.read.full),saved:S.state.collection.length};
+    },ref.id);
+    assert.equal(pending.id,ref.id,'photo review retains the exact reference printing, not just its name');assert.equal(pending.set,'msc');assert.equal(String(pending.number).replace(/^0+/,''),'806');assert.equal(pending.saved,0);
+    if(pending.observations.length>1){assert.equal(pending.selected,-1,'conflicting photo readings cannot silently select a printing');assert.equal(pending.exact,false);assert.equal(pending.verified,false);}
+    if(pending.selected<0){
+     assert.equal(pending.verified,false,'an unverified printing needs an explicit choice');
+     assert(await popup.locator('[data-change="scanConfirmFinish"]').isDisabled(),'finish waits for printing review');
+     assert(await popup.getByRole('button',{name:'Add to collection',exact:true}).isDisabled(),'unreviewed printing cannot be saved');
+     await popup.locator(`[data-act="scanChoose"][data-i="${pending.i}"]`).click();
+     const selected=await page.evaluate(async()=>{const {S}=await import('/store.js'),{textVerifiedMatch}=await import('/scancam.js'),s=S.ui.scan,c=s.cands[s.confirm.i];return {id:c.id,exact:c.exact,verified:textVerifiedMatch('mtg',c,s.read)};});
+     assert.equal(selected.id,ref.id);assert.equal(selected.exact,pending.exact,'manual review does not fabricate OCR proof');assert.equal(selected.verified,false);
+    }else assert.equal(pending.selected,pending.i,'only the actual reference printing may already be selected');
+    assert(await popup.locator('[data-change="scanConfirmFinish"]').isEnabled(),'explicit printing review enables finish choice');
+   }
+   if(ref.g==='ptcg'){
+    const pending=await page.evaluate(async expectedId=>{
+     const {S}=await import('/store.js'),{textVerifiedMatch}=await import('/scancam.js'),s=S.ui.scan,i=s.cands.findIndex(c=>String(c.id)===expectedId),c=s.cands[i];
+     return {selected:s.confirm.i,i,id:c?.id,exact:c?.exact,verified:!!c&&textVerifiedMatch('ptcg',c,s.read),saved:S.state.tcg.ptcg.collection.length};
+    },ref.id);
+    assert.equal(pending.id,ref.id,'Pokémon photo offers the exact reference printing');assert.equal(pending.saved,0);
+    if(pending.selected<0){
+     assert(await popup.locator('[data-change="scanConfirmFinish"]').isDisabled());assert(await popup.getByRole('button',{name:'Add to collection',exact:true}).isDisabled());
+     await popup.locator(`[data-act="scanChoose"][data-i="${pending.i}"]`).click();
+     const selected=await page.evaluate(async()=>{const {S}=await import('/store.js'),{textVerifiedMatch}=await import('/scancam.js'),s=S.ui.scan,c=s.cands[s.confirm.i];return {id:c.id,exact:c.exact,verified:textVerifiedMatch('ptcg',c,s.read)};});
+     assert.equal(selected.id,ref.id);assert.equal(selected.exact,pending.exact);assert.equal(selected.verified,pending.verified,'manual review preserves, not invents, OCR evidence');
+    }else assert.equal(pending.selected,pending.i,'only the reference Pokémon printing may already be selected');
+    assert(await popup.locator('[data-change="scanConfirmFinish"]').isEnabled());
+   }
    if(ref.g==='ygo'){
     // This public image is marked Replica and has no actual set code. Its
     // artwork/name identifies Dark Magician, not CT13 or a 25th printing.
@@ -95,7 +129,7 @@ try{
    await popup.getByRole('button',{name:'More copies',exact:true}).click();await popup.getByRole('button',{name:'More copies',exact:true}).click();
    const finish=await popup.locator('[data-change="scanConfirmFinish"] option').evaluateAll(opts=>opts.find(x=>x.value)?.value);
    assert(finish,'printing exposes a finish to explicitly confirm');
-   await popup.locator('[data-change="scanConfirmFinish"]').selectOption(finish,{force:true});
+   await popup.locator('[data-change="scanConfirmFinish"]').selectOption(finish);
    await popup.locator('.scan-review-more summary').click();
    await popup.getByRole('button',{name:'Lightly Played',exact:true}).click();
    await popup.getByRole('combobox',{name:'Scanned card language',exact:true}).tap();
@@ -103,7 +137,9 @@ try{
    await popup.getByRole('button',{name:'Add to collection',exact:true}).click();
    await popup.waitFor({state:'detached'});
    const saved=await page.evaluate(async g=>{const {S}=await import('/store.js');return (g==='mtg'?S.state:S.state.tcg[g]).collection;},ref.g);
-   assert.equal(saved.length,1);assert.equal(saved[0].name,ref.name);if(ref.id)assert.equal(String(saved[0].cardId),ref.id,'same name is insufficient: save the correct indexed card/printing');assert.equal(saved[0].qty,3);assert.equal(saved[0].condition,'Lightly Played');assert.equal(saved[0].language,'ja');
+   assert.equal(saved.length,1);assert.equal(saved[0].name,ref.name);if(ref.id)assert.equal(String(ref.g==='mtg'?saved[0].printingId:saved[0].cardId),ref.id,'same name is insufficient: save the correct indexed card/printing');assert.equal(saved[0].qty,3);assert.equal(saved[0].condition,'Lightly Played');assert.equal(saved[0].language,'ja');
+   if(ref.g==='mtg'){assert.equal(saved[0].set,'MSC');assert.equal(String(saved[0].collectorNumber),'806');assert.equal(saved[0].finish,finish);assert.equal(saved[0].printingVerified,true,'explicit review confirms the saved printing, not the OCR evidence');}
+   if(ref.g==='ptcg')assert.equal(saved[0].variant,finish,'save retains the explicitly selected Pokémon variant');
    if(reviewedPrinting){
     const [printing,rarity]=reviewedPrinting.print.split('|');
     assert.equal(saved[0].printing,printing,'save retains the explicitly reviewed set code');assert.equal(saved[0].rarity,rarity,'save retains the explicitly reviewed rarity');assert.equal(saved[0].edition,finish,'save retains the explicitly confirmed edition');
@@ -121,22 +157,44 @@ try{
    await page.locator('[data-act="scanMode"][data-id="live"]').click();
    await page.getByRole('button',{name:'Start camera',exact:true}).waitFor();
    await page.evaluate(async g=>{
-    const {visibleGuide}=await import('/scancam.js'),image=new Image();image.src='/__reference/'+g;await image.decode();
+    const {guideRect}=await import('/scancam.js'),image=new Image();image.src='/__reference/'+g;await image.decode();
     navigator.mediaDevices.getUserMedia=async()=>{
      const canvas=document.createElement('canvas');canvas.width=640;canvas.height=900;const x=canvas.getContext('2d');
-     const draw=()=>{const v=document.querySelector('#scanVideo'),r=v?.getBoundingClientRect(),guide=visibleGuide(640,900,r?.width,r?.height);x.fillStyle='#567064';x.fillRect(0,0,640,900);x.save();x.translate(guide.x+guide.w*.44,guide.y+guide.h*.48);x.rotate(.13);x.drawImage(image,-guide.w*.36,-guide.h*.36,guide.w*.72,guide.h*.72);x.restore();};draw();setInterval(draw,33);
+     // A real camera's physical pixels do not rescale when a DOM tray appears.
+     // Keep the same rotated/off-centre source frame throughout attachment and resize.
+     const guide=guideRect(640,900),draw=()=>{x.fillStyle='#567064';x.fillRect(0,0,640,900);x.save();x.translate(guide.x+guide.w*.44,guide.y+guide.h*.48);x.rotate(.13);x.drawImage(image,-guide.w*.36,-guide.h*.36,guide.w*.72,guide.h*.72);x.restore();};draw();setInterval(draw,33);
+     window.__cameraCanvas=canvas;window.__cameraPixels=canvas.toDataURL();
      window.__cameraStream=canvas.captureStream(30);return window.__cameraStream;
     };
    },ref.g);
+   // Opt out before attach starts its loop; a slow runner must not auto-capture
+   // this stationary fixture before the exact manual capture under test.
+   await page.evaluate(async()=>{const {S}=await import('/store.js');S.ui.scan.auto=false;});
    await page.getByRole('button',{name:'Start camera',exact:true}).click();
    await page.locator('#scanVideo').waitFor();
-   await page.evaluate(async()=>{const {S}=await import('/store.js');S.ui.scan.auto=false;});
    await page.waitForFunction(()=>document.querySelector('#scanVideo')?.videoWidth>0);
-   await page.waitForFunction(async()=>{const {S}=await import('/store.js');return S.ui.scan.boundaryReady;});
+   await page.evaluate(()=>{const r=document.querySelector('#scanVideo').getBoundingClientRect();window.__cameraInitialBox={width:r.width,height:r.height};});
+   await page.waitForFunction(()=>window.__scannerTestRead.state().boundaryReady);
    assert.equal(await page.locator('#camGuide,.cam-guide,.cam-wrap polygon').count(),0,'internal boundary detection never overlays the feed');
+   const priorCaptureIds=await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js');return loadBatch().map(x=>x.id);});
    await page.getByRole('button',{name:'Capture card now',exact:true}).click();
-   await page.waitForFunction(async()=>{const {loadBatch}=await import('/scan-batch.js');return loadBatch().some(x=>!['captured','reading'].includes(x.status));},{},{timeout:120000});
-   await page.locator('[data-act="scanBatchReview"]').first().click();
+   const captureHandle=await page.waitForFunction(prior=>window.__scannerTestRead.loadBatch().find(x=>!prior.includes(x.id))?.id,priorCaptureIds,{timeout:15000});
+   const liveCaptureId=await captureHandle.jsonValue();
+   await page.waitForFunction(id=>{const q=window.__scannerTestRead,entry=q.loadBatch().find(x=>x.id===id),v=document.querySelector('#scanVideo');return entry&&['ready','review','unresolved'].includes(entry.status)&&!q.state().busy&&v?.isConnected&&v.srcObject===window.__cameraStream&&!v.paused&&v.videoWidth>0&&v.srcObject.getTracks()[0]?.readyState==='live';},liveCaptureId,{timeout:120000});
+   console.log(`${ref.game} live capture diagnostic: ${JSON.stringify(await page.evaluate(async()=>{
+    const {loadBatch}=await import('/scan-batch.js'),{S}=await import('/store.js'),v=document.querySelector('#scanVideo'),r=v.getBoundingClientRect();
+    return {initialBox:window.__cameraInitialBox,video:{width:v.videoWidth,height:v.videoHeight,boxWidth:r.width,boxHeight:r.height},capture:{width:S.ui.scan.lastCard?.width,height:S.ui.scan.lastCard?.height},batch:loadBatch().map(({id,status,read,error,cands})=>({id,status,read,error,candidates:(cands||[]).map(({id,name,exact})=>({id,name,exact}))}))};
+   }))}`);
+   const liveMatch=await page.evaluate(async({captureId,expectedId})=>{
+    const {loadBatch}=await import('/scan-batch.js'),{mtgCollectors}=await import('/scan.js'),{textVerifiedMatch}=await import('/scancam.js'),entry=loadBatch().find(x=>x.id===captureId),candidate=entry?.cands?.find(x=>String(x.id)===expectedId);
+    return {status:entry?.status,id:candidate?.id,set:candidate?.card?.set,number:candidate?.card?.collector_number,exact:candidate?.exact,verified:!!candidate&&textVerifiedMatch(entry.game,candidate,entry.read),observations:entry?.game==='mtg'?mtgCollectors(entry.read?.code,entry.read?.full):[]};
+   },{captureId:liveCaptureId,expectedId:ref.id});
+   assert.equal(String(liveMatch.id),ref.id,`${ref.game} live recognition must retain the actual reference printing, never only a matching name`);
+   if(ref.g==='mtg'){
+    assert.equal(liveMatch.set,'msc');assert.equal(String(liveMatch.number).replace(/^0+/,''),'806');
+    if(liveMatch.observations.length>1){assert.equal(liveMatch.status,'review','conflicting OCR requires explicit review, never automatic ready');assert.equal(liveMatch.exact,false);assert.equal(liveMatch.verified,false);}
+   }
+   await page.locator(`[data-act="scanBatchReview"][data-id="${liveCaptureId}"]`).click();
    await page.getByRole('region',{name:'Confirm scanned card',exact:true}).waitFor({timeout:15000});
    await page.getByRole('region',{name:'Confirm scanned card',exact:true}).getByText(ref.name,{exact:true}).waitFor();
    const beforeTime=await page.locator('#scanVideo').evaluate(v=>v.currentTime);await page.waitForTimeout(250);
@@ -147,9 +205,53 @@ try{
    const shellTray=await page.locator('.scan-batch-tray').boundingBox(),shellNav=await page.getByRole('navigation',{name:'Main',exact:true}).boundingBox();
    assert(shellTray.y+shellTray.height<=shellNav.y,'production app shell keeps the complete live tray above navigation');
    await page.screenshot({path:`test-results/scanner-${ref.g}-live.png`,fullPage:false});
-   console.log(`PASS: ${ref.game}: off-centre rotated reference MediaStream → automatic boundary + perspective warp → queued recognition → explicit review → playback continues → dismiss retains the same active camera track.`);
+   const retainedBatch=await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js');return loadBatch().map(x=>x.id);});
+   // Neutralize only the original expiry timer, then expose the real saved toast
+   // as an active fixture for every measurement. Passing with an expired/hidden
+   // toast is forbidden; no markup, event handler, Undo state or OCR is replaced.
+   await page.waitForFunction(()=>{const t=document.querySelector('#toast');return t&&!t.classList.contains('show')&&!t.classList.contains('has-action');},null,{timeout:10000});
+   assert.equal(await page.locator('#toast .toast-undo[data-act="undo"]').count(),1,'the actual scan-save toast retains its real Undo action');
+   const originalToast=await page.evaluate(()=>{const t=document.querySelector('#toast'),before={classes:t.className,html:t.innerHTML};t.classList.add('show','has-action');return before;});
+   try{
+    for(const viewport of [{width:320,height:568},{width:700,height:500},{width:844,height:390},{width:1024,height:600}]){
+     await page.setViewportSize(viewport);await page.evaluate(()=>window.scrollTo(0,0));
+     await page.evaluate(async()=>{await Promise.all(document.querySelector('#toast').getAnimations().map(a=>a.finished.catch(()=>{})));});
+     const layout=await page.evaluate(()=>{
+      const box=n=>{const r=n.getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height};};
+      const describe=n=>n?{tag:n.tagName,id:n.id,classes:n.className}:null;
+      const hit=n=>{const r=box(n),target=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {clear:target===n||n.contains(target),target:describe(target)};};
+      const nav=document.querySelector('.bottom-nav'),tray=box(document.querySelector('.scan-batch-tray')),camera=box(document.querySelector('.cam-wrap.immersive'));
+      const shutter=document.querySelector('#scanCaptureBtn'),toast=document.querySelector('#toast'),undo=toast.querySelector('.toast-undo[data-act="undo"]');
+      const clearBottom=getComputedStyle(nav).display==='none'?innerHeight:nav.getBoundingClientRect().top,t=box(toast),s=box(shutter),u=undo&&box(undo),css=getComputedStyle(toast);
+      const disjoint=(a,b)=>a.right<=b.left||a.left>=b.right||a.bottom<=b.top||a.top>=b.bottom;
+      const inView=r=>!!r&&r.width>0&&r.height>0&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=clearBottom;
+      const shutterHit=hit(shutter),undoHit=undo?hit(undo):{clear:false,target:null};
+      return {tray,camera,shutter:s,toast:t,undo:u,clearBottom,shutterHit,undoHit,shutterClear:shutterHit.clear,overflow:document.documentElement.scrollWidth>innerWidth,
+       toastActive:toast.classList.contains('show')&&toast.classList.contains('has-action')&&css.display!=='none'&&css.visibility==='visible'&&Number(css.opacity)>0,
+       toastOutside:[camera,tray,s].every(r=>disjoint(t,r)),controlsInView:inView(t)&&inView(s)&&inView(u),undoEnabled:!!undo&&!undo.disabled};
+     });
+     assert(layout.tray.top>=0&&layout.tray.bottom<=layout.clearBottom,`real shell tray clears navigation at ${JSON.stringify(viewport)}: ${JSON.stringify(layout)}`);
+     assert(layout.camera.height>=100&&layout.shutterClear&&!layout.overflow,`real shell keeps camera and capture usable at ${JSON.stringify(viewport)}: ${JSON.stringify(layout)}`);
+     assert(layout.toastActive&&layout.toastOutside&&layout.controlsInView&&layout.undoEnabled&&layout.undoHit.clear,`active Undo toast clears camera/tray/shutter and both controls remain reachable at ${JSON.stringify(viewport)}: ${JSON.stringify(layout)}`);
+     assert(await page.locator('#scanVideo').evaluate(v=>v.srcObject===window.__cameraStream&&v.srcObject.getTracks()[0].readyState==='live'),'fold/landscape resize preserves camera stream');
+     assert(await page.evaluate(()=>window.__cameraCanvas.toDataURL()===window.__cameraPixels),'DOM resize cannot reframe the synthetic physical camera pixels');
+     assert.deepEqual(await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js');return loadBatch().map(x=>x.id);}),retainedBatch,'fold/landscape resize preserves each captured card');
+     if(viewport.width===844)await page.screenshot({path:`test-results/scanner-${ref.g}-landscape.png`,fullPage:false});
+    }
+    assert.equal(await page.evaluate(g=>window.__scannerTestRead.collection(g).length,ref.g),1,'layout checks do not change the saved collection');
+    await page.locator('#toast.show.has-action').getByRole('button',{name:'Undo',exact:true}).click();
+    await page.waitForFunction(g=>window.__scannerTestRead.collection(g).length===0,ref.g);
+    await page.waitForFunction(()=>{const v=document.querySelector('#scanVideo');return v?.isConnected&&v.srcObject===window.__cameraStream&&!v.paused&&v.videoWidth>0&&v.srcObject.getTracks()[0]?.readyState==='live';});
+    assert.deepEqual(await page.evaluate(()=>window.__scannerTestRead.loadBatch().map(x=>x.id)),retainedBatch,'real Undo removes the saved lot, never the pending live captures');
+    assert.match(await page.locator('#toast').innerText(),/^Undone:/,'the real Undo handler confirms its collection change');
+   }finally{
+    // Do not overwrite the production handler's newer "Undone" notification.
+    await page.evaluate(before=>{const t=document.querySelector('#toast');if(t?.innerHTML===before.html)t.className=before.classes;},originalToast);
+   }
+   console.log(`PASS: ${ref.game}: off-centre rotated reference MediaStream → automatic boundary + perspective warp → queued recognition → explicit review → playback continues → active Undo toast clears all resized controls → real Undo retains pending captures and the same camera track.`);
   }catch(e){
    console.error(`FAIL ${ref.game}: ${e.stack}`);console.error('Scan save diagnostic:',await page.evaluate(async()=>{const {S}=await import('/store.js');return S.ui.scan.confirm?.errorDetail||'No save exception';}));console.error((await page.locator('main').innerText()).slice(0,6000));
+   console.error('Final capture diagnostic:',await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js'),{S}=await import('/store.js');return {busy:S.ui.scan.busy,error:S.ui.scan.recognitionError,tried:S.ui.scan.tried,read:S.ui.scan.read,batch:loadBatch().map(({id,status,read,error,cands})=>({id,status,read,error,candidates:(cands||[]).map(({id,name,exact})=>({id,name,exact}))}))};}));
    await page.screenshot({path:`test-results/scanner-${ref.g}-failure.png`,fullPage:true});throw e;
   }finally{await context.close();}
  }

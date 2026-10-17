@@ -1,3 +1,4 @@
+import { syncGameTabs, attachGameTabs, attachHomeCommunity, refreshHomeCommunity, isHomeRevealCurrent, homeDeckReveal } from "./home-ui.js";
 import {attachRuleLearning} from './rule-learning.js';
 import {loadConditionQuotes,CONDITION_IDENTITY} from './condition-feed.js';
 import {brandMark} from './brand.js';
@@ -818,9 +819,9 @@ function render() {
   const disclosureKey=[g,ui.view,ui.deckId,ui.tdeckId,ui.set?.code,ui.tsetId,ui.collTab,ui.decksTab,ui.deckTab].join(':');
   if(content?.dataset)content.dataset.disclosureKey=disclosureKey;
   document.body.dataset.game = g;
-  const pill = $("#gamePill");
   document.body.style?.setProperty("--game-color", GAME_COLOR[g]);
-  if (pill) pill.innerHTML = `<span class="pill-mark">${GAME_ICON[g]}</span><span>${esc(GAMES[g].short)}</span>${ICON.chevron}`;
+  syncGameTabs($("#gameTabs"), g);
+  content?.setAttribute?.("aria-labelledby", `game-tab-${g}`);
   const views = {
     home: V.home, search: V.search, collection: V.collection, decks: V.decks,
     deck: V.deckPage, scan: () => scanView("mtg", "Magic"), settings: V.settings, sets: V.setsPage, set: V.setPage, shared: V.sharedPage,
@@ -847,6 +848,7 @@ function render() {
   $("#content").innerHTML = (g !== "mtg" && tcgViews[ui.view] ? tcgViews[ui.view] : views[ui.view] || V.home)();
   restoreDisclosures(content,disclosureStates.get(disclosureKey));
   content.dataset.disclosureKey=disclosureKey;
+  if (ui.view === "home") refreshHomeCommunity(g, content).catch(() => {});
   if(!cloudInfo().user)restoreAuthFields(document,authFields);
   const displayArea=["deck","tdeck"].includes(ui.view)?"deck":ui.view === "search"?"search":ui.view === "set"?"set":ui.view === "collection" && (g === "mtg" ? ui.collTab === "wishlist" : T.ui(g).coll.tab === "wishlist")?"wishlist":ui.view === "collection" && (g === "mtg" ? ui.collTab === "cards" : !T.ui(g).coll.tab || T.ui(g).coll.tab === "cards")?"collection":null;
   $("#content").className=displayArea ? "view-"+modeFor(g,displayArea) : "";
@@ -1193,6 +1195,8 @@ attachCardGestures({onSelect:target=>{
 
 document.addEventListener("pointerdown", ripple, { passive: true });
 attachGestures({ closeSheet: () => closeSheet() });
+attachGameTabs($("#gameTabs"));
+attachHomeCommunity($("#content"));
 attachHomeSwipe($("#content"), {
   enabled: () => S.ui.view === "home" && !document.documentElement.classList.contains("sheet-open") && !document.querySelector('[role="dialog"], dialog[open], .tour, .zoom-overlay'),
   current: () => S.state.settings.game || "mtg",
@@ -1749,16 +1753,41 @@ C.buildCustom = (t) => {
 };
 // A random build-around card that's legal (and can lead, if needed) in the chosen format.
 A.learnGame = (t) => openSheet(learnSheet(t?.dataset?.game || T.game()), {type:"learn-game"});
-A.randomDeckOptions = () => {
- const g=T.game(),formats=g === "mtg" ? FORMATS.filter(f=>f.id !== "limited") : T.formatsOf(g);
- openSheet(`<div class="sheet-head"><h2>Discover a deck</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p class="muted">Choose a format. Leave the theme blank for a surprise.</p><label>Format<select id="randomFormat" required>${options([["","Choose a format"],...formats.map(f=>[f.id,f.name])],"")}</select></label><label>Optional theme or card type<input id="randomTheme" maxlength="80" placeholder="${g === "mtg" ? "Dragons, artifacts, graveyard…" : g === "ygo" ? "An archetype or monster type…" : "Fire, Water, Psychic…"}"></label><button class="btn block" data-act="randomDeckStart">Find my deck</button>`,{type:"random-deck-options",game:g});
+let homeRevealPending = null, homePickBusy = null;
+A.homeRandomDeck = () => A.randomDeckOptions({ dataset: { home: "1" } });
+A.homeBuildReveal = () => {
+ const pending = homeRevealPending;
+ if (!pending || !isHomeRevealCurrent(pending.origin, { game:T.game(), view:S.ui.view, sheet:S.ui.sheetCtx, open:$("#sheet").open })) return;
+ // The Magic builder owns one mutable state object until its current run settles.
+ // Keep this revealed card retryable instead of relabelling an in-flight deck.
+ if (pending.origin.game === "mtg" && S.ui.build.busy) return toast("Your current Magic build is still running. Try this card again when it finishes.");
+ homeRevealPending = null;
+ return pending.start();
 };
-A.randomDeckStart = async () => {
+A.randomDeckOptions = (t) => {
+ homeRevealPending = null;
+ const g=T.game(),formats=g === "mtg" ? FORMATS.filter(f=>f.id !== "limited") : T.formatsOf(g);
+ openSheet(`<div class="sheet-head"><h2>Discover a deck</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p class="muted">Choose a format. Leave the theme blank for a surprise.</p><label>Format<select id="randomFormat" required>${options([["","Choose a format"],...formats.map(f=>[f.id,f.name])],"")}</select></label><label>Optional theme or card type<input id="randomTheme" maxlength="80" placeholder="${g === "mtg" ? "Dragons, artifacts, graveyard…" : g === "ygo" ? "An archetype or monster type…" : "Fire, Water, Psychic…"}"></label><button class="btn block" data-act="randomDeckStart">Find my deck</button>`,{type:"random-deck-options",game:g,homeReveal:t?.dataset?.home === "1"});
+};
+A.randomDeckStart = async (t) => {
  const g=T.game(),id=$("#randomFormat")?.value,theme=$("#randomTheme")?.value.trim() || "";
  const f=(g === "mtg" ? FORMATS : T.formatsOf(g)).find(f=>f.id===id);
  if(!f)return toast("Choose a format first.");
- if(g === "mtg")return A.buildRandom({dataset:{format:f.id,theme}});
- return A.tRandomDeck({dataset:{format:f.id,theme}});
+ const picker = S.ui.sheetCtx, origin = { game:g, view:S.ui.view, sheet:picker };
+ if (homePickBusy?.picker === picker) return;
+ const pickRequest = { picker };
+ const homePickCurrent = () => isHomeRevealCurrent(origin, { game:T.game(), view:S.ui.view, sheet:S.ui.sheetCtx, open:$("#sheet").open });
+ const onPick = picker?.homeReveal ? (card, format, start) => {
+   if (!homePickCurrent()) return;
+   const context = { type:"home-deck-reveal", game:g, name:card.name, id:card.id };
+   homeRevealPending = { origin:{ ...origin, sheet:context }, start };
+   openSheet(homeDeckReveal({ name:card.name, format, imageHtml:artworkHTML(card, "home-reveal-card", true) }), context);
+ } : null;
+ const done = busy(t, "Finding your build-around…"); homePickBusy = pickRequest;
+ try {
+   if(g === "mtg") return await A.buildRandom({dataset:{format:f.id,theme},onPick});
+   return await A.tRandomDeck({dataset:{format:f.id,theme},onPick,homePickCurrent:onPick ? homePickCurrent : null});
+ } finally { if (homePickBusy === pickRequest) homePickBusy = null; done(); }
 };
 A.buildRandom = async (t) => {
   const B = S.ui.build,
@@ -1766,13 +1795,20 @@ A.buildRandom = async (t) => {
     lead = f.commander === "planeswalker" ? " t:planeswalker" : f.commander ? " is:commander" : "",
     theme = String(t.dataset.theme || "").replace(/[^\p{L}\p{N} '-]/gu, "").slice(0,80),
     q = `${f.legality ? "f:" + f.legality : "game:paper"} -t:land -t:basic${lead}${theme ? ` (t:"${theme}" or o:"${theme}")` : ""}`;
-  if (!$("#sheet").open || S.ui.sheetCtx?.type !== "build") {
+  if (B.busy && !t.onPick) return toast("Your current Magic build is still running. Try again when it finishes.");
+  if (!t.onPick && (!$("#sheet").open || S.ui.sheetCtx?.type !== "build")) {
     Object.assign(B, { seed: "", results: {}, msg: "Picking a random card…", format: f.name });
     openSheet(V.buildSheet(), { type: "build" });
   }
   const c = cacheCard(await api("/cards/random?" + new URLSearchParams({ q })));
-  Object.assign(B, { baseDeck:null,seed: c.name, results: {}, format: f.name, openTier: null });
-  runBuild();
+  const start = () => {
+    if (B.busy) return toast("Your current Magic build is still running. Try again when it finishes.");
+    Object.assign(B, { baseDeck:null,seed:c.name,results:{},format:f.name,openTier:null });
+    if (t.onPick) openSheet(V.buildSheet(), { type:"build" });
+    return runBuild();
+  };
+  if (t.onPick) return t.onPick(c, f.name, start);
+  return start();
 };
 A.tierToggle = (t) => {
   const B = S.ui.build,

@@ -1,3 +1,4 @@
+import { homeValue, homeEdition } from "./home-ui.js";
 import {interactiveRules} from './rule-learning.js';
 import {referenceQuote,referenceLabel} from './price-reference.js';
 import {brandMark} from './brand.js';
@@ -330,12 +331,13 @@ export function heroFor(g, deckArt = null) {
   return heroState[g] || readHero()[g] || null;
 }
 export function homeHero(g, title, deckArt = null, compact = false) {
-  const h = heroFor(g, deckArt),
-    G = GAMES[g];
-  return `<section class="home-hero ${g} ${compact ? "compact" : ""}" id="homeHero">${h?.art && g === "ptcg" ? pokemonArtCrop(null, "hh-art", h.art) : h?.art ? `<img class="hh-art" src="${esc(h.art)}" alt="" referrerpolicy="no-referrer" onerror="${h.artDirect ? `if(!this.dataset.f){this.dataset.f=1;this.src='${esc(h.artDirect)}'}else ` : ""}this.remove()">` : ""}<div class="hh-shade"></div>
+  const h = heroFor(g, deckArt), G = GAMES[g],
+    cardAction = h?.name ? (g === "mtg" ? `data-act="card" data-name="${esc(h.name)}"` : h.id ? `data-act="tCard" data-id="${esc(h.id)}"` : "") : "";
+  return `<section class="home-hero ${g} ${compact ? "compact" : ""} ${h?.art ? "has-art" : "no-art"}" id="homeHero">${h?.art && g === "ptcg" ? pokemonArtCrop(null, "hh-art", h.art) : h?.art ? `<img class="hh-art" src="${esc(h.art)}" alt="" referrerpolicy="no-referrer" onerror="${h.artDirect ? `if(!this.dataset.f){this.dataset.f=1;this.src='${esc(h.artDirect)}'}else ` : ""}this.remove()">` : ""}<div class="hh-shade"></div>
+    ${cardAction ? `<button class="hh-art-link" ${cardAction} aria-label="Explore ${esc(h.name)}"><span>${h.deck ? "From your deck" : "Card of the day"} <span aria-hidden="true">↗</span></span></button>` : ""}
     <div class="hh-body"><p class="eyebrow">${esc(G.name)}</p><h1>${title}</h1>
       <div class="hh-search"><input id="homeQ" type="search" data-suggest="${g}" placeholder="Search ${esc(G.short)} cards" data-enter="homeSearch" aria-label="Search ${esc(G.short)} cards" autocomplete="off"><button class="btn" data-act="homeSearch">Search</button><button class="ask-launch" data-act="askOpen" aria-label="Ask AI"><span aria-hidden="true">✦</span>Ask</button></div>
-      ${h?.name ? `<button class="hh-credit" ${g === "mtg" ? `data-act="card" data-name="${esc(h.name)}"` : `data-act="tCard" data-id="${esc(h.id)}"`}>${h.deck ? "From your deck" : "Card of the day"} · <b>${esc(h.name)}</b> ›</button>` : ""}
+      ${cardAction ? `<div class="hh-credits"><button class="hh-credit" ${cardAction}>${h.deck ? "From your deck" : "Card of the day"} · <b>${esc(h.name)}</b> <span aria-hidden="true">›</span></button>${h.deckId ? `<button class="hh-deck-link" data-act="go" data-to="#${g === "mtg" ? "deck" : "tdeck"}/${esc(h.deckId)}">Open deck <span aria-hidden="true">↗</span></button>` : ""}</div>` : ""}
     </div></section>`;
 }
 // Fetch today's card for a game once per day (cached on the device).
@@ -470,18 +472,14 @@ export function tcgHome() {
     recent = st.decks.slice(-6).reverse();
   const lead = st.decks.at(-1),
     leadCard = lead ? cardOf(g, (lead.zones.main || [])[0]?.cardId) : null,
-    deckArt = leadCard ? { id: leadCard.id, name: leadCard.name, art: g === "ygo" ? leadCard.art : leadCard.imageLarge, artDirect: g === "ygo" ? leadCard.artDirect : "", deck: true } : null;
-  const onboarding = !(st.collection.length && st.decks.length),
-    fresh = !st.collection.length && !st.decks.length;
+    deckArt = leadCard ? { id: leadCard.id, name: leadCard.name, art: g === "ygo" ? leadCard.art : leadCard.imageLarge, artDirect: g === "ygo" ? leadCard.artDirect : "", deck: true, deckId: lead.id } : null;
+  const fresh = !st.collection.length && !st.decks.length;
   return `${homeHero(g, v.copies ? "Welcome back." : "Let’s build from your cards.", deckArt, !fresh)}
   ${installNudge(v.copies)}
-  ${fresh && !startHidden(g) ? tcgStartPath(g) : tcgNext(g)}
-  ${onboarding ? "" : `<div class="kpis">
-    <button class="kpi" data-act="go" data-to="#collection"><b data-count="${Math.round(v.total)}" data-money="1">${usd(v.total, 0)}</b><span>collection value${v.unpriced ? ` · ${v.unpriced} unpriced` : ""}</span></button>
-    <button class="kpi" data-act="go" data-to="#collection"><b>${v.copies}</b><span>cards owned</span></button>
-    <button class="kpi" data-act="go" data-to="#decks"><b>${st.decks.length}</b><span>decks</span></button>
-  </div>`}
-  ${quickTiles(g, !!gs(g).collection.length && !gs(g).decks.length)}
+  ${homeValue({ total: v.total, copies: v.copies, decks: st.decks.length, unpriced: v.unpriced })}
+  ${homeEdition(g)}
+  <div class="home-personal">${fresh && !startHidden(g) ? `<details class="home-start"><summary>New here? Start with your cards <span aria-hidden="true">＋</span></summary>${tcgStartPath(g)}</details>` : tcgNext(g)}
+  ${quickTiles(g, !!gs(g).collection.length && !gs(g).decks.length)}</div>
   ${recent.length ? `<section class="home-deck-section"><div class="section-head"><h2>Deck shelf</h2><button class="link" data-act="go" data-to="#decks">All decks →</button></div><div class="deck-grid">${recent.map((d) => deckTile(g, d)).join("")}</div></section>` : ""}
   <p class="muted small">${esc(G.tagline)}. Card data and daily prices from ${esc(G.source)}.</p>`;
 }
@@ -1852,9 +1850,9 @@ export function registerTcg(c) {
     }
   };
   // ----- random -----
-  let randomBusy = false;
+  let randomBusy = false, randomDeckRequest = null;
   A.tRandomCard = async () => {
-    if (randomBusy) return;
+    if (randomBusy || randomDeckRequest?.isCurrent()) return;
     randomBusy = true;
     const G = g();
     toast("Picking a random card…");
@@ -1869,8 +1867,11 @@ export function registerTcg(c) {
   };
   // A random deck: a random archetype (Yu-Gi-Oh!) or Standard-legal Pokémon, then the deck builder.
   A.tRandomDeck = async (t = {dataset:{}}) => {
-    if (randomBusy) return;
-    randomBusy = true;
+    if (randomBusy || randomDeckRequest?.isCurrent()) return;
+    // A closed Home picker no longer owns the random-selection lock. Keep each
+    // request's identity so its late completion cannot unlock a newer picker.
+    const request = { isCurrent: typeof t.homePickCurrent === "function" ? t.homePickCurrent : () => true };
+    randomDeckRequest = request;
     const G = g(), chosen = formatOf(G,t.dataset.format), theme = String(t.dataset.theme || "").trim();
     toast(G === "ygo" ? "Picking a random archetype…" : "Picking a random Pokémon…");
     try {
@@ -1898,11 +1899,13 @@ export function registerTcg(c) {
         }
         if(!seed)throw Error("No legal Pokémon found for that format and type. Try another type or leave it blank.");
       }
+      if (!request.isCurrent()) return;
+      if (t.onPick) return t.onPick(seed, chosen.name, () => openBuild(G,[seed.id],"",null,chosen.id));
       openBuild(G,[seed.id],"",null,chosen.id);
     } catch (e) {
       toast(e.message);
     } finally {
-      randomBusy = false;
+      if (randomDeckRequest === request) randomDeckRequest = null;
     }
   };
   A.tVariantArt = (t) => {

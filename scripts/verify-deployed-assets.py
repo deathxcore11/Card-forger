@@ -9,6 +9,7 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 import hashlib
+from html.parser import HTMLParser
 import json
 from pathlib import Path
 import re
@@ -21,9 +22,10 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 HOSTS = ("https://cardstashy.com/", "https://cardforge2.deathxcore11.workers.dev/")
 KEY_ASSETS = ("index.html", "config.js", "sw.js")
 MODULES = (
-    "app.js", "core.js", "scancam.js", "scan-batch.js", "scan-signals.js",
+    "app.js", "core.js", "scancam.js", "scan-batch.js", "scan-signals.js", "scan.js", "scan-catalog.js",
     "scan-vision.js", "scansession.js", "tcg.js", "ptcg.js", "ui.js",
     "views.js", "confidence.js", "mtg-tcgprice.js", "style.css",
+    "home-ui.js", "home-swipe.js", "community-feed.js",
 )
 MAX_BYTES = 8 * 1024 * 1024
 REQUEST_TIMEOUT = 15
@@ -36,6 +38,32 @@ def utc_now():
 
 def sha256(data):
     return hashlib.sha256(data).hexdigest()
+
+
+def html_structure(data):
+    """Diagnostic only: never turn a changed HTML response into a hash pass."""
+    class Structure(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.scripts, self.stylesheets = [], []
+            self.inline_scripts = 0
+
+        def handle_starttag(self, tag, attributes):
+            attrs = dict(attributes)
+            if tag == "script":
+                source = attrs.get("src")
+                if source:
+                    # Paths identify edge injections; query values are unnecessary.
+                    parsed = urlsplit(source)
+                    self.scripts.append((parsed.scheme + "://" + parsed.netloc if parsed.netloc else "") + parsed.path)
+                else:
+                    self.inline_scripts += 1
+            if tag == "link" and attrs.get("rel") == "stylesheet" and attrs.get("href"):
+                parsed = urlsplit(attrs["href"])
+                self.stylesheets.append((parsed.scheme + "://" + parsed.netloc if parsed.netloc else "") + parsed.path)
+    parser = Structure()
+    parser.feed(data.decode("utf-8", errors="replace"))
+    return {"scripts": parser.scripts, "stylesheets": parser.stylesheets, "inline_script_count": parser.inline_scripts}
 
 
 def markers(asset, data):
@@ -55,6 +83,8 @@ def load_expected(repo):
     for asset in KEY_ASSETS + MODULES:
         data = (repo / asset).read_bytes()
         expected[asset] = {"sha256": sha256(data), "bytes": len(data), **markers(asset, data)}
+        if asset == "index.html":
+            expected[asset]["html_structure"] = html_structure(data)
     if not expected["config.js"]["app_version"] or not expected["sw.js"]["service_worker_cache"]:
         raise ValueError("The checkout's app/SW version markers could not be parsed")
     return expected
@@ -95,6 +125,8 @@ def classify(url, asset, expected, status, data, headers=None, error=None):
         result.update(sha256=sha256(data), bytes=len(data), **markers(asset, data))
         result["match"] = result["sha256"] == expected["sha256"]
         result["state"] = "VERIFIED" if result["match"] else "MISMATCH"
+        if asset == "index.html":
+            result["html_structure"] = html_structure(data)
     return result
 
 
@@ -176,6 +208,7 @@ def verify(repo, output, wait_seconds=360, interval_seconds=20):
         print(f"Checkout {report['git_sha']}; app {expected['config.js']['app_version']}; "
               f"SW {expected['sw.js']['service_worker_cache']}", flush=True)
         deadline = started + wait_seconds
+        module_results = {}
         while True:
             number = len(report["attempts"]) + 1
             nonce = f"{report['git_sha'][:12]}-{time.time_ns()}-{number}"
@@ -188,15 +221,25 @@ def verify(repo, output, wait_seconds=360, interval_seconds=20):
                 attempt["hosts"][host] = {"key_assets": rows, "state": "UNVERIFIED"}
                 summarize("keys (regular + cache-busted)", host, rows)
             save_report(output, report)
+            eligible = []
+            for host in HOSTS:
+                # An HTML transformation on one domain must not prevent collecting
+                # module evidence on either host. The HTML mismatch still fails.
+                version_rows = [row for row in keys if row["url"].startswith(host) and row["asset"] != "index.html"]
+                if not all_match(version_rows):
+                    module_results.pop(host, None)
+                elif not all_match(module_results.get(host, [])):
+                    eligible.append(host)
+            if eligible:
+                modules = check_many([job for host in eligible for job in jobs_for(host, MODULES, expected)])
+                for host in eligible:
+                    module_results[host] = [row for row in modules if row["url"].startswith(host)]
+                    summarize("modules", host, module_results[host])
+            for host, rows in module_results.items():
+                attempt["hosts"][host]["modules"] = rows
+            save_report(output, report)
             if all_match(keys):
-                # Only inspect modules once both hosts' entry/config/SW agree.
-                modules = check_many([job for host in HOSTS for job in jobs_for(host, MODULES, expected)])
-                for host in HOSTS:
-                    rows = [row for row in modules if row["url"].startswith(host)]
-                    attempt["hosts"][host]["modules"] = rows
-                    summarize("modules", host, rows)
-                save_report(output, report)
-                if all_match(modules):
+                if all(all_match(module_results.get(host, [])) for host in HOSTS):
                     # Avoid declaring success if the deployment changed during the module pass.
                     final_keys = check_many([job for host in HOSTS for job in jobs_for(
                         host, KEY_ASSETS, expected, nonce + "-final")])
