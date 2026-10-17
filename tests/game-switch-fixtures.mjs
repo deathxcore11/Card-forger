@@ -251,10 +251,20 @@ export async function openGameSwitchApp(browser, base, {game = 'mtg', width = 39
         const native = history[method].bind(history);
         history[method] = (...args) => {window.__gameSwitchAudit[method === 'pushState' ? 'pushes' : 'replaces'].push({url: String(args[2] || location.href), state: structuredClone(args[0])}); return native(...args);};
       }
-      for (const type of ['touchstart', 'touchmove', 'touchend', 'touchcancel']) document.addEventListener(type, e => {
-        const t = e.touches[0] || e.changedTouches[0];
-        window.__gameSwitchAudit.touches.push({type, trusted: e.isTrusted, x: t?.clientX, y: t?.clientY, target: e.target.id || e.target.className || e.target.tagName, carousel: !!e.target.closest?.('[data-home-community]'), blocked: !!e.target.closest?.(swipeBlocked), isolated: !!e.target.closest?.('[data-home-gesture]'), inContent: !!e.target.closest?.('#content'), at: performance.now()});
-      }, {capture: true, passive: true});
+      const recordTouch=e=>{
+        const t=e.touches[0]||e.changedTouches[0];
+        window.__gameSwitchAudit.touches.push({type:e.type,trusted:e.isTrusted,x:t?.clientX,y:t?.clientY,target:e.target.id||e.target.className||e.target.tagName,carousel:!!e.target.closest?.('[data-home-community]'),blocked:!!e.target.closest?.(swipeBlocked),isolated:!!e.target.closest?.('[data-home-gesture]'),inContent:!!e.target.closest?.('#content'),connected:e.target.isConnected,at:performance.now()});
+      };
+      let releaseTouchTarget=()=>{};
+      for(const type of ['touchstart','touchmove','touchend','touchcancel'])document.addEventListener(type,e=>{
+        recordTouch(e);
+        if(type==='touchstart'){
+          releaseTouchTarget();const target=e.target;window.__gameSwitchTouchTarget=target;
+          const detached=event=>{if(!target.isConnected&&!event.composedPath().includes(document))recordTouch(event);if(['touchend','touchcancel'].includes(event.type))releaseTouchTarget();};
+          for(const kind of ['touchmove','touchend','touchcancel'])target.addEventListener(kind,detached,{capture:true,passive:true});
+          releaseTouchTarget=()=>{for(const kind of ['touchmove','touchend','touchcancel'])target.removeEventListener(kind,detached,true);releaseTouchTarget=()=>{};};
+        }else if(type==='touchend'||type==='touchcancel')releaseTouchTarget();
+      },{capture:true,passive:true});
       if (navigator.mediaDevices) navigator.mediaDevices.getUserMedia = async () => {window.__gameSwitchAudit.cameraCalls++; throw Error('Camera acquisition is forbidden in idle navigation tests');};
       window.Tesseract = {createWorker: async () => {window.__gameSwitchAudit.ocrWarmups++; return {setParameters:async()=>{},terminate:async()=>{},recognize:async()=>{window.__gameSwitchAudit.ocrCalls++;throw Error('Recognition is forbidden in idle navigation tests');}};}};
     }, {storage: fixtures.storage, now: NOW, swipeBlocked: SWIPE_BLOCKED_SELECTOR});

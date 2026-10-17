@@ -8,6 +8,7 @@ import {magicArtworkSources} from '../ui.js';
 import {entryPrice,needsCardRefresh} from '../tcg.js';
 import {lotPrice} from '../insights.js';
 import {cardKey} from '../core.js';
+import {adoptOwnedGame,validateOwnedGameAdoption} from './owned-navigation-fixture.mjs';
 const GAMES=['mtg','ptcg','ygo'];
 const SVG='<svg xmlns="http://www.w3.org/2000/svg" width="630" height="880"><rect width="630" height="880" rx="25" fill="#547ca0"/><text x="30" y="110" fill="white" font-size="36">SYNTHETIC OWNERSHIP FIXTURE</text><text x="60" y="180" fill="white" font-size="40">Owned test card</text></svg>';
 function ownedFixture(g){
@@ -32,7 +33,8 @@ for(const g of GAMES){
  assert.equal(saved.reduce((total,lot)=>total+price(lot)*lot.qty,0),215);
  assert.deepEqual(card,before,`${g}: artwork/valuation cannot mutate the fixture's printing or prices`);
 }
-if(process.argv.includes('--validate-fixtures')){console.log('PASS: all three exact HTTPS ownership artwork fixtures, current card schemas, unchanged identities and condition-bound $215 value; no server/browser/provider request.');process.exit(0);}
+await validateOwnedGameAdoption(ownedFixture,lotIdentity);
+if(process.argv.includes('--validate-fixtures')){console.log('PASS: all three exact HTTPS ownership artwork fixtures, current card schemas, real-controller fixture adoption, unchanged identities and condition-bound $215 value; no server/browser/provider request.');process.exit(0);}
 assert.equal(process.env.GITHUB_ACTIONS,'true','Ownership browser tests are hosted-only. Use --validate-fixtures for local pure validation.');
 const {createServer}=await import('node:http');
 const {chromium,devices}=await import('playwright');
@@ -46,19 +48,18 @@ try{for(const g of GAMES){
   if(url===fixture.card.image)return r.fulfill({status:200,contentType:'image/svg+xml',body:SVG});
   return url.startsWith(base+'/')?r.continue():r.abort();
  });
- await page.goto(base+'/#home');const skip=page.getByRole('button',{name:'Skip',exact:true});try{await skip.waitFor({state:'visible',timeout:2000});await skip.click();}catch{}
+ await page.addInitScript(()=>localStorage.setItem('cardstashy-tour-v1','done'));
+ await page.goto(base+'/#home');await page.locator('#app.ready').waitFor();
  await page.evaluate(async({g,card,lots})=>{
   const {S,blank,STORAGE,CATALOG_RECORD}=await import('/store.js'),{cache,TCG_CACHE}=await import('/tcg.js'),{cardKey}=await import('/core.js'),{writeRecord}=await import('/storage.js');
-  // Poll the preloaded live state synchronously, never a truthy import Promise.
+  // Keep one stable reference to the live store for the later adoption checks.
   window.__ownedTestState=S;
   S.state=blank();const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);S.state.valueHistory=[{date:yesterday,total:300,copies:3}];localStorage.setItem('cardstashy-value-hist-'+g,JSON.stringify([{date:yesterday,total:300,copies:3}]));S.state.tcg={ptcg:{collection:[],decks:[],wishlist:[]},ygo:{collection:[],decks:[],wishlist:[]}};
   if(g==='mtg')S.catalog[cardKey(card.name)]=card;else cache[g][card.id]=card;
   (g==='mtg'?S.state:S.state.tcg[g]).collection=lots;await writeRecord(STORAGE,S.state);await writeRecord(CATALOG_RECORD,S.catalog);await writeRecord(TCG_CACHE,cache);
  },{g,...fixture});
  // Synthetic data setup does not bypass the controller's active game entry.
- await page.locator(`#gameTabs [role="tab"][data-game="${g}"]`).click();
- await page.waitForFunction(g=>document.body.dataset.game===g&&window.__ownedTestState.state.settings.game===g&&history.state?.cardstashy?.game===g,g);
- assert.equal(await page.locator('#gameTabs [aria-selected="true"]').getAttribute('data-game'),g);
+ await adoptOwnedGame(page,g);
  await page.getByRole('navigation',{name:'Main',exact:true}).getByRole('button',{name:'Collection',exact:true}).click();await page.getByRole('heading',{name:'Collection',exact:true}).waitFor();
  const tile=page.locator('[data-entry="owned-nm"].lot-art').first();await tile.waitFor();
  await tile.click({button:'right'});const owned=page.getByRole('region',{name:'Owned copies',exact:true});

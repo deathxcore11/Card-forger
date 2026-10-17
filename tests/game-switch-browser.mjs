@@ -4,8 +4,9 @@
 // No DOM event constructors, direct setGame calls or live providers.
 // Representative synthetic screenshots are captured only by approved hosted CI.
 import assert from 'node:assert/strict';
+import {cheapestQuery} from '../mtg-cheap.js';
 import {
-  GAMES, PAIRS, METHODS, BASE_ROWS, WIDTHS, EVIDENCE, SEARCH, SET_IDS, SWIPE_BLOCKED_SELECTOR, captureNavigation,
+  GAMES, PAIRS, METHODS, BASE_ROWS, WIDTHS, EVIDENCE, SEARCH, SET_IDS, CARDS, SWIPE_BLOCKED_SELECTOR, captureNavigation,
   sourceHash, targetHash, finishFor, validateGameSwitchFixtures, makeScannerLifecycleFixture, makeManualReviewFixture, COLLISION_ID,
   startServer, openGameSwitchApp, frames, savedSnapshot, searchSnapshots, historySnapshot, saveReport,
 } from './game-switch-fixtures.mjs';
@@ -122,7 +123,7 @@ async function safePoint(page, dx, {carousel = false} = {}) {
   assert(point, 'A real clear swipe background is physically reachable at this viewport');
   assert.equal(point.carousel, carousel); return point;
 }
-async function trustedSwipe(app, dx, {carousel = false} = {}) {
+async function trustedSwipe(app, dx, {carousel = false, afterFirstMove} = {}) {
   const {page,context}=app,point=await safePoint(page,dx,{carousel});
   const start=await page.evaluate(()=>window.__gameSwitchAudit.touches.length),session=await context.newCDPSession(page);
   let events;
@@ -134,6 +135,7 @@ async function trustedSwipe(app, dx, {carousel = false} = {}) {
     for(let i=1;i<=6;i++){
       await delay(24);
       await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:point.x+dx*i/6,y:point.y,radiusX:4,radiusY:4,force:1,id:1}]});
+      if(i===1&&afterFirstMove)await afterFirstMove();
     }
     await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
     await page.waitForFunction(start=>window.__gameSwitchAudit.touches.slice(start).some(e=>e.type==='touchend'||e.type==='touchcancel'),start);
@@ -146,17 +148,21 @@ async function trustedSwipe(app, dx, {carousel = false} = {}) {
   assert(!events.some(e=>e.type==='touchcancel'),'The input remained an uninterrupted real touch gesture');
   return {point,events};
 }
-async function switchGame(app, pair, row, method) {
+async function switchGame(app, pair, row, method, touchOptions) {
+  let gesture;
   if (method === 'header') {assert.equal(await tab(app.page, pair.to).count(), 1); await tab(app.page, pair.to).click();}
-  else await trustedSwipe(app, pair.dx);
+  else gesture=await trustedSwipe(app, pair.dx, touchOptions);
   await waitRoute(app.page, pair.to, targetHash(row, pair.to));
+  return gesture;
 }
 async function bottomNavEvidence(page) {
   const geometry=await page.locator('.bottom-nav').evaluate(nav=>({width:innerWidth,nav:nav.getBoundingClientRect().toJSON(),scroll:nav.scrollWidth,client:nav.clientWidth,
-    buttons:[...nav.querySelectorAll('button')].map(button=>{const rect=button.getBoundingClientRect(),labelNodes=[...button.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim()),label=labelNodes.map(n=>n.textContent.trim()).join(''),labels=labelNodes.flatMap(node=>{const range=document.createRange();range.selectNodeContents(node);return [...range.getClientRects()].map(r=>r.toJSON());}),icon=button.querySelector('span').getBoundingClientRect(),hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);return {label,rect:rect.toJSON(),labels,icon:icon.toJSON(),scroll:button.scrollWidth,client:button.clientWidth,hit:!!hit&&(hit===button||button.contains(hit))};})}));
+    buttons:[...nav.querySelectorAll('button')].map(button=>{const rect=button.getBoundingClientRect(),labelNodes=[...button.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim()),label=labelNodes.map(n=>n.textContent.trim()).join(''),labels=labelNodes.flatMap(node=>{const range=document.createRange();range.selectNodeContents(node);return [...range.getClientRects()].map(r=>r.toJSON());}),icon=button.querySelector('span').getBoundingClientRect(),hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);return {label,font:getComputedStyle(button).fontSize,rect:rect.toJSON(),labels,icon:icon.toJSON(),scroll:button.scrollWidth,client:button.clientWidth,hit:!!hit&&(hit===button||button.contains(hit))};})}));
   assert.deepEqual(geometry.buttons.map(b=>b.label),['Home','Search','Collection','Decks','Scan'],'All five full section labels remain visible');
   assert(geometry.scroll<=geometry.client+1&&geometry.nav.right<=geometry.width+.5,'Bottom navigation itself fits the viewport');
   for(const button of geometry.buttons){
+    assert.equal(button.font,'11px','Full bottom labels retain the established readable type size');
+    assert(Math.abs(button.rect.width-geometry.width/5)<.5,'All five equal targets keep their full track width');
     assert(button.rect.width>=44&&button.rect.height>=44&&button.rect.left>=-.5&&button.rect.right<=geometry.width+.5&&button.hit,'Every bottom navigation target is full-sized, visible and physically reachable: '+JSON.stringify(button));
     assert(button.scroll<=button.client+1,'Bottom navigation content does not overflow its track');
     for(const rect of [button.icon,...button.labels])assert(rect.left>=button.rect.left-.5&&rect.right<=button.rect.right+.5&&rect.top>=button.rect.top-.5&&rect.bottom<=button.rect.bottom+.5,'Full icon and readable label stay inside their own target: '+JSON.stringify(button));
@@ -164,16 +170,30 @@ async function bottomNavEvidence(page) {
   return {filename:await captureNavigation(page,`bottom-nav-${geometry.width}`),geometry};
 }
 async function semanticCase(app, pair, row, method) {
+  // Keep the existing R13 identity and route assertions. Delay only its exact
+  // synthetic price response, then allow the real app's background render to
+  // replace the original touch target between trusted move1 and touchend.
+  const refresh=row.id==='R13'&&pair.from==='mtg'&&pair.to==='ygo'&&method==='touch'?
+    app.hold(url=>url.hostname==='api.scryfall.com'&&url.pathname==='/cards/search'&&url.searchParams.get('q')===cheapestQuery(CARDS.mtg[0].name)):null;
   await prepare(app, pair, row);
+  if(refresh)await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(Error('Expected exact synthetic cheapest-printing request was not issued')),8000);refresh.seen.then(()=>{clearTimeout(timeout);resolve();},reject);});
   const bottomNavigation=row.id==='R01'&&pair.from==='mtg'&&pair.to==='ygo'&&method==='header'&&[320,390].includes(app.page.viewportSize().width)?await bottomNavEvidence(app.page):undefined;
   const before = await savedSnapshot(app.page), searches = await searchSnapshots(app.page), history = await historySnapshot(app.page);
-  await switchGame(app, pair, row, method); await assertTarget(app.page, pair, row);
+  const gesture=await switchGame(app, pair, row, method,refresh?{afterFirstMove:async()=>{
+    refresh.release();
+    await app.page.waitForFunction(()=>window.__gameSwitchTouchTarget?.isConnected===false,null,{timeout:2000});
+    assert.equal((await historySnapshot(app.page)).hash,history.hash,'Only a same-route background render detached the target');
+  }}:undefined); await assertTarget(app.page, pair, row);
+  if(refresh){
+    assert(gesture.events.some(e=>e.type==='touchmove'&&e.connected===false),'Real trusted moves continued on the detached original target');
+    assert.equal(gesture.events.at(-1).connected,false,'Real touchend reached the detached target rather than a fabricated replacement');
+  }
   const after = await historySnapshot(app.page);
   assert.equal(after.length, history.length + 1, 'Exactly one browser entry per game change, including unchanged hashes');
   assert.equal(after.pushes, history.pushes + 1, 'The game transition pushes exactly once');
   assert.equal(await savedSnapshot(app.page), before, 'Saved collection/decks/versions/wishlist/binders/locations/scans are byte-equivalent except settings game/save timestamp');
   assert.deepEqual(await searchSnapshots(app.page), searches, 'All per-game queries, filters, loaded results and paging survive without copying');
-  return {hash: after.hash, historyDelta: after.length - history.length,...(bottomNavigation?{bottomNavigation}:{})};
+  return {hash: after.hash, historyDelta: after.length - history.length,...(bottomNavigation?{bottomNavigation}:{}),...(refresh?{detachedGesture:gesture}:{})};
 }
 async function historyCase(app, pair, method) {
   const row = BASE_ROWS.find(r => r.search);
@@ -257,15 +277,17 @@ async function deckHeaderEvidence(app) {
       assert(label.scroll<=label.client+1&&label.labelRects.length>0,'The full game name fits its label box');
       for(const r of label.labelRects)assert(r.left>=label.rect.left-.5&&r.right<=label.rect.right+.5&&r.top>=label.rect.top-.5&&r.bottom<=label.rect.bottom+.5,'No game label is clipped by its tab: '+JSON.stringify(label));
     }
-    const initial=await page.evaluate(()=>{const h=document.querySelector('.topbar'),tabs=document.querySelector('#content .tabs'),content=document.querySelector('#content');return {header:h.getBoundingClientRect().toJSON(),tabs:tabs.getBoundingClientRect().toJSON(),display:getComputedStyle(h).display,width:innerWidth,root:document.documentElement.scrollWidth,content:content.scrollWidth,client:content.clientWidth,workspaceHeight:content.scrollHeight};});
+    const initial=await page.evaluate(()=>{const h=document.querySelector('.topbar'),tabs=document.querySelector('#content > .tabs'),active=tabs.querySelector('[aria-selected="true"]'),content=document.querySelector('#content');return {header:h.getBoundingClientRect().toJSON(),tabs:tabs.getBoundingClientRect().toJSON(),active:active?.getBoundingClientRect().toJSON(),activeId:active?.dataset.id,railLeft:tabs.scrollLeft,display:getComputedStyle(h).display,width:innerWidth,root:document.documentElement.scrollWidth,content:content.scrollWidth,client:content.clientWidth,workspaceHeight:content.scrollHeight};});
     assert.equal(initial.display,'grid','Deck retains the shared responsive header grid');
+    assert.equal(initial.activeId,'versions','The meaningful selected Versions tab is retained');
+    assert(initial.active.left>=initial.tabs.left-.5&&initial.active.right<=initial.tabs.right+.5,'The selected tab remains fully visible after each live resize: '+JSON.stringify(initial));
     assert(initial.root<=width+2&&initial.content<=initial.client+2,'Deck header and workspace retain horizontal containment: '+JSON.stringify(initial));
     assert(initial.tabs.top>=initial.header.bottom-1,'Deck subtabs start below, not under, the game header');
     const filename=await captureNavigation(page,`deck-header-${width}`);
     await page.evaluate(()=>{const tabs=document.querySelector('#content .tabs'),header=document.querySelector('.topbar');scrollTo(0,scrollY+tabs.getBoundingClientRect().top-header.getBoundingClientRect().height+80);});await frames(page);
-    const sticky=await page.evaluate(()=>{const h=document.querySelector('.topbar').getBoundingClientRect(),tabs=document.querySelector('#content .tabs'),r=tabs.getBoundingClientRect(),button=tabs.querySelector('[aria-selected="true"]')||tabs.querySelector('button'),b=button.getBoundingClientRect(),hit=document.elementFromPoint(b.left+b.width/2,b.top+b.height/2);return {headerBottom:h.bottom,top:r.top,bottom:r.bottom,hit:!!hit&&(hit===button||button.contains(hit)),scrollY};});
+    const sticky=await page.evaluate(()=>{const h=document.querySelector('.topbar').getBoundingClientRect(),tabs=document.querySelector('#content .tabs'),r=tabs.getBoundingClientRect(),button=tabs.querySelector('[aria-selected="true"]'),b=button.getBoundingClientRect(),hit=document.elementFromPoint(b.left+b.width/2,b.top+b.height/2);return {headerBottom:h.bottom,top:r.top,bottom:r.bottom,activeId:button.dataset.id,active:b.toJSON(),rail:r.toJSON(),railLeft:tabs.scrollLeft,hit:!!hit&&(hit===button||button.contains(hit)),hitTarget:hit?.id||hit?.className||hit?.tagName,scrollY};});
     assert(sticky.top>=sticky.headerBottom-1,'Sticky deck subtabs stay beneath the measured header after scrolling: '+JSON.stringify(sticky));
-    assert(sticky.hit,'The active deck subtab stays physically reachable below the header');
+    assert(sticky.hit,'The active deck subtab stays physically reachable below the header: '+JSON.stringify(sticky));
     evidence.push({width,filename,headerHeight:initial.header.height,workspaceHeight:initial.workspaceHeight,sticky});
   }
   await page.setViewportSize(original);await page.evaluate(()=>scrollTo(0,0));await settledContent(page);return evidence;

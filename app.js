@@ -877,6 +877,7 @@ function render() {
   const searchFocus=["search","collection"].includes(ui.view) && previousDisclosureKey === disclosureKey ? captureSearchFocus(content) : null;
   if (searchFocus?.key === "id:dbTerm") searchFocus.value = ui.db.term;
   if(content?.dataset)content.dataset.disclosureKey=disclosureKey;
+  const priorSectionRail=previousDisclosureKey === disclosureKey ? readSectionTabRail(content) : null;
   document.body.dataset.game = g;
   document.body.style?.setProperty("--game-color", GAME_COLOR[g]);
   syncGameTabs($("#gameTabs"), g);
@@ -908,6 +909,7 @@ function render() {
   restoreDisclosures(content,disclosureStates.get(disclosureKey));
   content.dataset.disclosureKey=disclosureKey;
   restoreSearchFocus(content,searchFocus);
+  restoreSectionTabRail(content,priorSectionRail);
   if (ui.view === "home") refreshHomeCommunity(g, content).catch(() => {});
   if(!cloudInfo().user)restoreAuthFields(document,authFields);
   for(const {id,value} of profileFields){const field=$("#"+id);if(field)field.value=value;}
@@ -1446,11 +1448,40 @@ document.addEventListener("pointerdown", ripple, { passive: true });
 attachGestures({ closeSheet: () => A.closeSheet() });
 // One shared shell measurement keeps sticky section tabs below the responsive
 // game header through live viewport/fold changes without fixing workspace height.
+function readSectionTabRail(content) {
+  const rail=content?.querySelector?.(":scope > .tabs"),active=rail?.querySelector('[aria-selected="true"]');
+  if(!rail||!active)return null;
+  const box=rail.getBoundingClientRect(),tab=active.getBoundingClientRect();
+  return {rail,active:active.dataset.id,left:rail.scrollLeft,width:box.width,visible:tab.left>=box.left-.5&&tab.right<=box.right+.5};
+}
+let sectionRailMemory=null;
+function restoreSectionTabRail(content,previous=null) {
+  const state=readSectionTabRail(content);if(!state){sectionRailMemory=null;return;}
+  const rail=state.rail,active=rail.querySelector('[aria-selected="true"]');
+  if(previous?.active===state.active){
+    rail.scrollLeft=previous.left;
+    // A visitor who deliberately scrolled away from the active item keeps that
+    // position through same-section refreshes and viewport changes.
+    if(!previous.visible){sectionRailMemory=readSectionTabRail(content);return;}
+  }
+  const box=rail.getBoundingClientRect(),tab=active.getBoundingClientRect();
+  if(tab.left<box.left)rail.scrollLeft+=tab.left-box.left;
+  else if(tab.right>box.right)rail.scrollLeft+=tab.right-box.right;
+  sectionRailMemory=readSectionTabRail(content);
+}
 function observeShellHeader(header = document.querySelector(".topbar"), root = document.documentElement, view = window) {
   if (!header || !root) return () => {};
-  let previous = -1;
+  let previous = -1, previousWidth = -1;
+  const content=root.ownerDocument?.getElementById("content");
+  const trackRail=event=>{if(event.target===content?.querySelector?.(":scope > .tabs"))sectionRailMemory=readSectionTabRail(content);};
+  content?.addEventListener("scroll",trackRail,true);
   const measure = () => {
-    const height = Math.max(0, Math.ceil(header.getBoundingClientRect().height));
+    const box=header.getBoundingClientRect(),height=Math.max(0,Math.ceil(box.height));
+    if(Number.isFinite(box.width)&&box.width!==previousWidth){
+      previousWidth=box.width;
+      const rail=content?.querySelector?.(":scope > .tabs");
+      restoreSectionTabRail(content,sectionRailMemory?.rail===rail?sectionRailMemory:null);
+    }
     if (Number.isFinite(height) && height !== previous) {
       previous = height;
       root.style.setProperty("--shell-header-height", `${height}px`);
@@ -1460,13 +1491,13 @@ function observeShellHeader(header = document.querySelector(".topbar"), root = d
   const observer = typeof view.ResizeObserver === "function" ? new view.ResizeObserver(measure) : null;
   if (observer) observer.observe(header);
   else view.addEventListener("resize", measure, { passive: true });
-  return () => { observer?.disconnect(); if (!observer) view.removeEventListener("resize", measure); };
+  return () => { observer?.disconnect(); content?.removeEventListener("scroll",trackRail,true); if (!observer) view.removeEventListener("resize", measure); };
 }
 attachGameTabs($("#gameTabs"));
 attachHomeCommunity($("#content"));
 attachHomeSwipe($("#content"), {
   enabled: () => !navigationPending && !comparison.active && !document.documentElement.classList.contains("sheet-open") && !gameChangeBlocked(),
-  context: () => navigation.revision,
+  context: () => JSON.stringify([navigation.revision,workspaceVisitRevision,activeEntry?.entryId,location.hash]),
   current: () => S.state.settings.game || "mtg",
   switchGame: id => A.setGame({ dataset: { game: id } }),
 });

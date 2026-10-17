@@ -94,7 +94,7 @@ body[data-view="deck"] #content { padding-top: 0; }
   background: rgba(20, 22, 27, 0.97);
   border-top: 1px solid var(--line);
 }
-.bottom-nav button { min-width: 0; padding-inline: 2px; background: none; border: 0; color: var(--muted); display: grid; place-items: center; align-content: center; gap: 2px; font-size: 11.5px; font-weight: 600; }
+.bottom-nav button { min-width: 0; padding-inline: 0; background: none; border: 0; color: var(--muted); display: grid; place-items: center; align-content: center; gap: 2px; font-size: 11.5px; font-weight: 600; }
 .bottom-nav button span { max-width: 100%; font-size: 20px; line-height: 1; display: grid; place-items: center; width: 52px; height: 30px; border-radius: 15px; }
 .bottom-nav button.on { color: var(--gold); }
 .bottom-nav button.on span { background: rgba(232, 185, 91, 0.16); }
