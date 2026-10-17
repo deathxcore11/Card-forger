@@ -42,6 +42,7 @@ try{
     await page.getByRole('button',{name:'Switch game',exact:true}).getByText(ref.game,{exact:true}).waitFor();
    }
    // Exercise the user's explicit opt-in download, integrity check and durable cache.
+   await page.getByRole('button',{name:'Scanner settings',exact:true}).first().click();
    await page.locator('[data-act="scanCatalogDownload"]').click();
    await page.getByText(/local card records ready/).waitFor({timeout:45000});
    const local=await page.evaluate(async g=>{
@@ -52,12 +53,16 @@ try{
     try{const r=await c.localScanMatch(g,read);return {names:r.cands.map(x=>x.name),ids:r.cands.map(x=>x.id),exact:r.cands[0]?.exact,ms:performance.now()-start};}finally{window.fetch=prior;}
    },ref.g);
    assert(local.names.includes(ref.name));assert(local.exact);if(ref.id)assert(local.ids.includes(ref.id));console.log(`${ref.game} cached identifier lookup, HTTP blocked: ${JSON.stringify(local)}`);
-   await page.reload();await page.getByText(/local card records ready/).waitFor({timeout:15000});
-   await page.getByRole('tab',{name:'Photo',exact:true}).click();
+   await page.reload();await page.getByRole('button',{name:'Scanner settings',exact:true}).first().click();await page.getByText(/local card records ready/).waitFor({timeout:15000});
+   await page.locator('#sheet[open] [data-act="closeSheet"]').first().click();
+   await page.getByRole('button',{name:'Photo',exact:true}).click();
    const upload=page.locator('input[data-change="scanFile"]').last();
    await upload.setInputFiles({name:ref.g+(ref.g==='ptcg'?'.webp':'.jpg'),mimeType:ref.mime,buffer:ref.bytes});
    await page.getByRole('button',{name:'Read card',exact:true}).click();
-   await page.locator('.scan-confirm').waitFor({state:'visible',timeout:120000});
+   await page.waitForFunction(async()=>{const {loadBatch}=await import('/scan-batch.js');return loadBatch().some(x=>!['captured','reading'].includes(x.status));},{},{timeout:120000});
+   assert.equal(await page.locator('.scan-confirm').count(),0,'OCR does not interrupt capture with a picker');
+   await page.locator('[data-act="scanBatchReview"]').first().click();
+   await page.locator('.scan-confirm').waitFor({state:'visible',timeout:15000});
    const read=await page.evaluate(async()=>{const {S}=await import('/store.js');return {read:S.ui.scan.read,status:S.ui.scan.status,tried:S.ui.scan.tried,recognitionMs:S.ui.scan.recognitionMs};});
    console.log(`${ref.game} real OCR: ${JSON.stringify(read)}`);
    const popup=page.getByRole('region',{name:'Confirm scanned card',exact:true});
@@ -65,6 +70,10 @@ try{
    assert.equal(await popup.getByText(ref.name,{exact:true}).count(),1,`${ref.game} correct card title`);
    assert.equal(await popup.getByRole('img',{name:ref.name,exact:true}).count(),1,'card copy is shown');
    await popup.getByRole('button',{name:'More copies',exact:true}).click();await popup.getByRole('button',{name:'More copies',exact:true}).click();
+   const finish=await popup.locator('[data-change="scanConfirmFinish"] option').evaluateAll(opts=>opts.find(x=>x.value)?.value);
+   assert(finish,'printing exposes a finish to explicitly confirm');
+   await popup.locator('[data-change="scanConfirmFinish"]').selectOption(finish,{force:true});
+   await popup.locator('.scan-review-more summary').click();
    await popup.getByRole('button',{name:'Lightly Played',exact:true}).click();
    await popup.getByRole('combobox',{name:'Scanned card language',exact:true}).tap();
    await page.locator('.glass-select-menu[open]').getByRole('option',{name:'Japanese',exact:true}).tap();
@@ -74,11 +83,11 @@ try{
    assert.equal(saved.length,1);assert.equal(saved[0].name,ref.name);if(ref.id)assert.equal(String(saved[0].cardId),ref.id,'same name is insufficient: save the correct indexed card/printing');assert.equal(saved[0].qty,3);assert.equal(saved[0].condition,'Lightly Played');assert.equal(saved[0].language,'ja');
    await page.getByRole('navigation',{name:'Main',exact:true}).getByRole('button',{name:'Collection',exact:true}).click();
    await page.getByRole('heading',{name:'Collection',exact:true}).waitFor();await page.locator('main').getByRole('img',{name:ref.name,exact:true}).first().waitFor({state:'visible'});
-   console.log(`PASS: ${ref.game}: reference photo → local artwork/OCR → illustrated popup → dropdown edit → 3 LP/Japanese copies saved once → collection screen.`);
+   console.log(`PASS: ${ref.game}: reference photo → OCR batch → explicit review → finish/dropdown edit → 3 LP/Japanese copies saved once → collection screen.`);
    // Feed actual reference artwork through a browser MediaStream. This exercises
    // capture and retained playback, without claiming a physical camera test.
    await page.getByRole('navigation',{name:'Main',exact:true}).getByRole('button',{name:'Scan',exact:true}).click();
-   await page.getByRole('tab',{name:'Live camera',exact:true}).click();
+   const cameraMode=page.getByRole('button',{name:'Camera',exact:true});if(await cameraMode.count())await cameraMode.click();
    await page.evaluate(async g=>{
     const {visibleGuide}=await import('/scancam.js'),image=new Image();image.src='/__reference/'+g;await image.decode();
     navigator.mediaDevices.getUserMedia=async()=>{
@@ -89,17 +98,20 @@ try{
    },ref.g);
    await page.getByRole('button',{name:'Start camera',exact:true}).click();
    await page.locator('#scanVideo').waitFor();
-   const auto=page.getByLabel('Capture automatically',{exact:true});if(await auto.count())await auto.uncheck();
+   await page.evaluate(async()=>{const {S}=await import('/store.js');S.ui.scan.auto=false;});
    await page.waitForFunction(()=>document.querySelector('#scanVideo')?.videoWidth>0);
-   await page.waitForFunction(()=>document.querySelector('#camGuide.auto-boundary')?.style.opacity==='1');
-   await page.getByRole('button',{name:'Capture',exact:true}).click();
-   await page.getByRole('region',{name:'Confirm scanned card',exact:true}).waitFor({timeout:120000});
+   await page.waitForFunction(async()=>{const {S}=await import('/store.js');return S.ui.scan.boundaryReady;});
+   assert.equal(await page.locator('#camGuide,.cam-guide,.cam-wrap polygon').count(),0,'internal boundary detection never overlays the feed');
+   await page.getByRole('button',{name:'Capture card now',exact:true}).click();
+   await page.waitForFunction(async()=>{const {loadBatch}=await import('/scan-batch.js');return loadBatch().some(x=>!['captured','reading'].includes(x.status));},{},{timeout:120000});
+   await page.locator('[data-act="scanBatchReview"]').first().click();
+   await page.getByRole('region',{name:'Confirm scanned card',exact:true}).waitFor({timeout:15000});
    await page.getByRole('region',{name:'Confirm scanned card',exact:true}).getByText(ref.name,{exact:true}).waitFor();
    const beforeTime=await page.locator('#scanVideo').evaluate(v=>v.currentTime);await page.waitForTimeout(250);
    assert(await page.locator('#scanVideo').evaluate((v,t)=>!v.paused&&v.currentTime>t&&v.srcObject===window.__cameraStream&&v.srcObject.getTracks()[0].readyState==='live',beforeTime),'video keeps playing behind confirmation');
-   await page.getByRole('button',{name:'Skip this scan',exact:true}).click();
+   await page.getByRole('button',{name:'Keep for later and continue scanning',exact:true}).click();
    assert(await page.locator('#scanVideo').evaluate(v=>v.srcObject===window.__cameraStream&&v.srcObject.getTracks()[0].readyState==='live'),'dismiss keeps the same live camera stream');
-   console.log(`PASS: ${ref.game}: off-centre rotated reference MediaStream → automatic boundary + perspective warp → correct popup → playback continues → dismiss retains the same active camera track.`);
+   console.log(`PASS: ${ref.game}: off-centre rotated reference MediaStream → automatic boundary + perspective warp → queued recognition → explicit review → playback continues → dismiss retains the same active camera track.`);
   }catch(e){
    console.error(`FAIL ${ref.game}: ${e.stack}`);console.error('Scan save diagnostic:',await page.evaluate(async()=>{const {S}=await import('/store.js');return S.ui.scan.confirm?.errorDetail||'No save exception';}));console.error((await page.locator('main').innerText()).slice(0,6000));
    await page.screenshot({path:`test-results/scanner-${ref.g}-failure.png`,fullPage:true});throw e;

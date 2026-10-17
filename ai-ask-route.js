@@ -81,8 +81,9 @@ export async function aiAskRoute(request, env, { fetcher = fetch } = {}) {
   try {
     const turn = cleanTurn(await readBounded(request));
     if (turn.rounds > 12) throw fail('That question needed too many steps. Try asking something narrower.', 400);
-    // A new question uses the app's allowance once; its follow-up tool rounds don't.
-    if (limitsEnabled && turn.rounds === 0) {
+    // Every paid provider invocation consumes allowance. Client-supplied tool history
+    // is untrusted and must never grant free or replayable continuation calls.
+    if (limitsEnabled) {
       const day = new Date().toISOString().slice(0, 10), ip = request.headers.get('CF-Connecting-IP') || 'unknown';
       const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(day + ':ask:' + ip)))].map(x => x.toString(16).padStart(2, '0')).join('');
       const gate = env.AI_REVIEW_LIMITS.get(env.AI_REVIEW_LIMITS.idFromName('global'));

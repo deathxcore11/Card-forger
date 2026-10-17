@@ -9,6 +9,13 @@ export const esc = (s) =>
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
   );
 
+// A quoted attribute is not sufficient for links: reject executable URL schemes too.
+export const safeHref = (value) => {
+  const raw = String(value ?? "").trim();
+  if (/^[#/?]/.test(raw) && !/^[/\\]{2}/.test(raw)) return raw;
+  try { const url = new URL(raw); return ["https:", "http:"].includes(url.protocol) ? url.href : "#"; } catch { return "#"; }
+};
+
 // One formatter per number of decimals (toLocaleString builds a new one on every call, which adds
 // up when a 300-card set renders).
 const USD = new Map();

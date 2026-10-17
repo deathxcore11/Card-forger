@@ -31,17 +31,95 @@ function components(mask,w,h){
  }
  return out.sort((a,b)=>b.count-a.count).slice(0,8);
 }
+// A convex hull is only a proposal. It can span unrelated texture on a playmat.
+// Check a continuous colour step normal to each proposed side, not edge pixels
+// somewhere inside the hull. All values are image evidence, not match confidence.
+function sideEdgeSupport(rgba,w,h,a,b){
+ const sample=(x,y,c)=>{x=Math.max(0,Math.min(w-1,Math.round(x)));y=Math.max(0,Math.min(h-1,Math.round(y)));return rgba[(y*w+x)*4+c];};
+  const length=dist(a,b);if(!length)return 0;const nx=-(b.y-a.y)/length,ny=(b.x-a.x)/length;
+  const n=Math.max(20,Math.min(72,Math.round(length))),steps=[];
+  let mean=[0,0,0];
+  for(let j=0;j<n;j++){
+   const t=.08+.84*(j+.5)/n,x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t;
+   // Clamped image boundaries are not evidence of a complete visible card edge.
+   if(x<3||y<3||x>w-4||y>h-4){steps.push(null);continue;}
+   const delta=[0,1,2].map(c=>(sample(x+nx*2,y+ny*2,c)+sample(x+nx*3,y+ny*3,c)-sample(x-nx*2,y-ny*2,c)-sample(x-nx*3,y-ny*3,c))/2);
+   steps.push(delta);for(let c=0;c<3;c++)mean[c]+=delta[c];
+  }
+  const meanLength=Math.hypot(...mean);let count=0;
+  for(const d of steps){if(!d)continue;const magnitude=Math.hypot(...d);if(magnitude<30)continue;
+   // Random texture reverses direction along a side; a real boundary usually does not.
+   if(meanLength>0&&d.reduce((sum,v,c)=>sum+v*mean[c],0)/(magnitude*meanLength)>.35)count++;
+  }
+  return count/n;
+}
+export function quadEdgeSupport(rgba,w,h,q){
+ return q.map((a,i)=>sideEdgeSupport(rgba,w,h,a,q[(i+1)%4]));
+}
+// Threshold masks may stop a few pixels inside a rounded/anti-aliased border.
+// Move each whole line, never individual samples, to the strongest nearby step.
+function refineQuadEdges(rgba,w,h,q){
+ const lines=q.map((a,i)=>{
+  const b=q[(i+1)%4],length=dist(a,b),nx=-(b.y-a.y)/length,ny=(b.x-a.x)/length;
+  let best={a,b,support:-1,offset:0};
+  for(const offset of [0,-1,1,-2,2,-3,3,-4,4]){
+   const aa={x:a.x+nx*offset,y:a.y+ny*offset},bb={x:b.x+nx*offset,y:b.y+ny*offset};
+   const support=sideEdgeSupport(rgba,w,h,aa,bb);
+   if(support>best.support)best={a:aa,b:bb,support,offset};
+  }
+  return best;
+ });
+ const hit=(l,r)=>{
+  const ax=l.b.x-l.a.x,ay=l.b.y-l.a.y,bx=r.b.x-r.a.x,by=r.b.y-r.a.y,den=ax*by-ay*bx;
+  if(Math.abs(den)<1e-8)return null;
+  const t=((r.a.x-l.a.x)*by-(r.a.y-l.a.y)*bx)/den;return {x:l.a.x+t*ax,y:l.a.y+t*ay};
+ };
+ const refined=lines.map((l,i)=>hit(lines[(i+3)%4],l));
+ return refined.every(p=>p&&p.x>=1&&p.y>=1&&p.x<w-1&&p.y<h-1)?refined:q;
+}
+function erodeMask(mask,w,h){
+ const out=new Uint8Array(mask.length);
+ for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x;if(mask[i]&&mask[i-1]&&mask[i+1]&&mask[i-w]&&mask[i+w]&&mask[i-w-1]&&mask[i-w+1]&&mask[i+w-1]&&mask[i+w+1])out[i]=1;}
+ return out;
+}
+function luminanceSplit(gray){
+ const hist=new Uint32Array(256);let sum=0;for(const v of gray){const n=Math.max(0,Math.min(255,Math.round(v)));hist[n]++;sum+=n;}
+ let lower=0,weight=0,best=-1,split=128;
+ for(let i=0;i<255;i++){weight+=hist[i];lower+=hist[i]*i;if(!weight||weight===gray.length)continue;const delta=lower/weight-(sum-lower)/(gray.length-weight),score=weight*(gray.length-weight)*delta*delta;if(score>best){best=score;split=i;}}
+ return split;
+}
 export function detectCardQuad(rgba,w,h){
  if(w<20||h<20||rgba.length!==w*h*4)return null;
  const gray=new Float32Array(w*h),border=[[],[],[]];for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=(y*w+x)*4;gray[y*w+x]=.299*rgba[i]+.587*rgba[i+1]+.114*rgba[i+2];if((x<3||y<3||x>w-4||y>h-4)&&(x+y)%3===0)for(let c=0;c<3;c++)border[c].push(rgba[i+c]);}
  const bg=border.map(a=>a.sort((a,b)=>a-b)[Math.floor(a.length/2)]),contrast=new Uint8Array(w*h),edge=new Uint8Array(w*h);
  for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const p=y*w+x,i=p*4;contrast[p]=Math.abs(rgba[i]-bg[0])+Math.abs(rgba[i+1]-bg[1])+Math.abs(rgba[i+2]-bg[2])>55?1:0;const grad=Math.hypot(gray[p+1]-gray[p-1],gray[p+w]-gray[p-w]);if(grad>18)for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)edge[p+dy*w+dx]=1;}
  let best=null;
- for(const component of [...components(contrast,w,h),...components(edge,w,h)]){
-  const q=hullQuad(component.points);if(!q)continue;const area=quadArea(q),fraction=area/(w*h),width=(dist(q[0],q[1])+dist(q[2],q[3]))/2,height=(dist(q[1],q[2])+dist(q[3],q[0]))/2,ratio=width/height;
+ const contains=(outer,inner)=>inner.every(p=>outer.every((a,i)=>cross(a,outer[(i+1)%4],p)>=-2));
+ const consider=mask=>{for(const component of components(mask,w,h)){
+  let q=hullQuad(component.points);if(!q)continue;const area=quadArea(q),fraction=area/(w*h),width=(dist(q[0],q[1])+dist(q[2],q[3]))/2,height=(dist(q[1],q[2])+dist(q[3],q[0]))/2,ratio=width/height;
   if(fraction<.06||fraction>.94||ratio<.43||ratio>.94||Math.min(width,height)<24)continue;
   if(q.some((b,i)=>{const a=q[(i+3)%4],c=q[(i+1)%4];return Math.abs(((a.x-b.x)*(c.x-b.x)+(a.y-b.y)*(c.y-b.y))/(dist(a,b)*dist(c,b)))>.76;}))continue;
-  const score=fraction*(1-Math.abs(ratio-63/88)*.6);if(!best||score>best.score)best={quad:q,score,fraction};
+  let sideSupport=quadEdgeSupport(rgba,w,h,q);
+  if(sideSupport.filter(s=>s>=.55).length>=2&&Math.min(...sideSupport)<.9){q=refineQuadEdges(rgba,w,h,q);sideSupport=quadEdgeSupport(rgba,w,h,q);}
+  const edgeSupport=Math.min(...sideSupport),meanSupport=sideSupport.reduce((a,b)=>a+b,0)/4,edges=sideSupport.filter(s=>s>=.58).length;
+  if(edges!==4||meanSupport<.68)continue;
+  // Image evidence dominates. Area saturates, so a large background hull cannot
+  // beat a smaller card simply by covering more of the camera preview.
+  const aspect=Math.max(0,1-Math.abs(ratio-63/88)/.3),score=.58*edgeSupport+.25*meanSupport+.12*aspect+.05*Math.min(1,fraction/.25);
+  const candidate={quad:q,score,fraction:quadArea(q)/(w*h),sideSupport,edgeSupport,edges};
+  // The wide art window itself can look like a card rotated by 90 degrees.
+  // Prefer its well-supported enclosing card, not an arbitrary larger hull.
+  const outer=best&&candidate.fraction>best.fraction*1.4&&candidate.fraction<best.fraction*4.5&&edgeSupport>=.8&&contains(q,best.quad);
+  const inner=best&&best.fraction>candidate.fraction*1.4&&best.fraction<candidate.fraction*4.5&&best.edgeSupport>=.8&&contains(best.quad,q);
+  if(!best||outer||(!inner&&score>best.score))best=candidate;
+ }};
+ consider(contrast);consider(edge);
+ // Different foreground masks find a card even when background texture joins
+ // all gradient pixels into one component. Both polarities support dark borders
+ // on light desks; thresholds depend on this frame rather than card/game colours.
+ const split=luminanceSplit(gray);
+ for(const threshold of [...new Set([split,Math.max(12,split-24),Math.min(242,split+24)])])for(const light of [true,false]){
+  const mask=new Uint8Array(w*h);for(let i=0;i<gray.length;i++)mask[i]=light?gray[i]>threshold:gray[i]<=threshold;consider(mask);consider(erodeMask(mask,w,h));
  }
  return best;
 }
@@ -60,9 +138,19 @@ export function warpPixels(source,w,h,q,outW=400,outH=560){
  return out;
 }
 export function normalizedQuality(data,w,h){
- const gray=new Float32Array(w*h);let bright=0,hot=0,n=0,sum=0,sq=0;
+ const gray=new Float32Array(w*h);let bright=0,hot=0;
  for(let i=0;i<gray.length;i++){const j=i*4;gray[i]=.299*data[j]+.587*data[j+1]+.114*data[j+2];bright+=gray[i];if(gray[i]>250)hot++;}
- // Text bands, not sharp artwork or a textured table, determine whether to run OCR.
- for(let y=2;y<h-2;y++){if(y>h*.19&&y<h*.84)continue;for(let x=2;x<w-2;x++){const i=y*w+x,lap=4*gray[i]-gray[i-1]-gray[i+1]-gray[i-w]-gray[i+w];sum+=lap;sq+=lap*lap;n++;}}
- return {sharp:sq/Math.max(1,n)-(sum/Math.max(1,n))**2,bright:bright/gray.length,glare:hot/gray.length,gray};
+ const band=(from,to)=>{
+  let n=0,sum=0,sq=0,saturated=0;
+  for(let y=Math.max(2,Math.floor(h*from));y<Math.min(h-2,Math.ceil(h*to));y++)for(let x=2;x<w-2;x++){
+   const i=y*w+x,lap=4*gray[i]-gray[i-1]-gray[i+1]-gray[i-w]-gray[i+w];sum+=lap;sq+=lap*lap;n++;if(gray[i]>250)saturated++;
+  }
+  return {n,sum,sq,hot:saturated,sharp:sq/Math.max(1,n)-(sum/Math.max(1,n))**2};
+ };
+ // One readable title must not hide a completely washed-out collector-number
+ // band. Saturation is only a clue: white card stock can also be near-white.
+ const name=band(0,.19),code=band(.84,1),n=Math.max(1,name.n+code.n),sum=name.sum+code.sum;
+ const rawGlare=hot/Math.max(1,gray.length);
+ return {sharp:(name.sq+code.sq)/n-(sum/n)**2,nameSharp:name.sharp,codeSharp:code.sharp,
+  bright:bright/Math.max(1,gray.length),glare:rawGlare,rawGlare,textGlare:(name.hot+code.hot)/n,nameGlare:name.hot/Math.max(1,name.n),codeGlare:code.hot/Math.max(1,code.n),gray};
 }

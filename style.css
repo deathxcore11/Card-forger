@@ -3306,3 +3306,54 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .meta-own { grid-template-columns:minmax(0,1fr) auto; }
 @media(min-width:760px) { .arch-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; } }
 @media(min-width:1100px) { .arch-grid { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+
+/* Batch scanner: camera first; review is a deliberate, separate action. */
+body[data-view="scan"] #content { padding-top:14px; }
+.scan-workspace { max-width:720px;margin:0 auto; }
+.scan-toolbar { display:flex;align-items:center;gap:9px;min-height:44px;margin:0 0 10px; }
+.scan-toolbar h1 { font-size:22px;line-height:1.2;margin:0; }
+.scan-auto-game { font-size:11px;color:var(--muted);margin-right:auto;white-space:nowrap; }
+.scan-toolbar .icon { width:40px;height:40px;min-height:40px; }
+.scan-workspace .scan-panel { padding:0;overflow:hidden;margin:0; }
+.scan-workspace .cam-wrap.immersive { height:clamp(260px,calc(100dvh - 320px - env(safe-area-inset-top) - env(safe-area-inset-bottom)),620px);border-radius:16px; }
+.scan-workspace .cam-rail { display:flex;gap:2px;padding:3px;right:9px;top:9px;border-radius:14px; }
+.scan-workspace .cam-rail button { width:40px;height:40px; }
+.scan-workspace .cam-status { bottom:16px;left:12px;transform:none;max-width:calc(100% - 96px);padding:8px 12px;font-size:12px;white-space:normal; }
+.scan-shutter { position:absolute;z-index:4;right:14px;bottom:14px;width:54px;height:54px;border:3px solid #fff;border-radius:50%;display:grid;place-items:center;background:#ffffffd9;color:#15181f;box-shadow:0 2px 16px #0006; }
+.scan-shutter .ico { width:24px;height:24px; }
+.scan-status-line { margin:0;padding:7px 12px;min-height:30px;font-size:11px;color:var(--muted);line-height:1.4; }
+.scan-batch-tray { padding:10px 0 4px; }
+.scan-batch-summary { display:flex;gap:7px;align-items:center; }
+.scan-batch-summary>span { min-width:0;margin-right:auto; }
+.scan-batch-summary b { display:block;font-size:14px; }
+.scan-batch-summary small { display:block;font-size:11px;color:var(--muted); }
+.scan-batch-summary .btn { min-height:38px;padding:7px 10px;font-size:12px; }
+.scan-batch-tray p,.scan-disclosure { color:var(--muted);font-size:11px;line-height:1.45;margin:6px 0; }
+.scan-batch-tray [role="alert"] { color:var(--bad); }
+.scan-batch-strip { display:flex;gap:6px;overflow-x:auto;padding:9px 0 3px; }
+.scan-batch-thumb { position:relative;flex:none;width:34px;height:46px;padding:0;border:1px solid var(--line);border-radius:5px;overflow:hidden;background:var(--surface-2); }
+.scan-batch-thumb img { display:block;width:100%;height:100%;object-fit:cover; }
+.scan-batch-thumb span { position:absolute;right:0;bottom:0;display:grid;place-items:center;min-width:16px;min-height:16px;background:#e8b95b;color:#12151c;font-size:11px;font-weight:800;border-radius:4px 0 0 0; }
+.scan-batch-thumb.ready span { background:#70d9a3; }
+.scan-batch-thumb.reading span,.scan-batch-thumb.captured span { background:#d6dde4; }
+.scan-workspace .scan-drop { min-height:280px; }
+.scan-workspace .scan-drop>.small { max-width:270px;margin:0 auto; }
+.scan-workspace .scan-disclosure { max-width:580px; }
+.scan-workspace .scan-batch-review { max-height:min(52dvh,520px);padding:12px 14px; }
+.scan-batch-review .scan-confirm-art { width:52px;height:73px; }
+.scan-batch-review .scan-confirm-card { gap:10px;margin:8px 0; }
+.scan-batch-review .scan-confirm-card strong { font-size:15px; }
+.scan-batch-review .scan-confirm-controls { margin:8px 0; }
+.scan-batch-review .scan-confirm-controls select { min-height:40px; }
+.scan-batch-review .scan-confirm-options { max-height:145px;overflow:auto; }
+.scan-batch-review .scan-confirm-options [aria-pressed="true"] { border-color:var(--gold); }
+.scan-review-more summary { font-size:11px;color:var(--muted);cursor:pointer; }
+.scan-review-more>label { display:flex;gap:8px;align-items:center;font-size:12px; }
+.scan-batch-review>.link { display:block;margin:8px auto 0; }
+.scan-legacy-session { margin-top:16px; }
+.scan-legacy-session summary { font-size:12px;color:var(--muted); }
+@media (max-width:380px) { .scan-toolbar h1 { font-size:20px; }.scan-batch-summary .btn { padding:7px 8px; }.scan-workspace .cam-wrap.immersive { min-height:230px; } }
+@media (min-width:900px) { .scan-workspace .cam-wrap.immersive { height:min(62dvh,620px); }.scan-workspace .scan-batch-review { bottom:20px; } }
+/* Detection is internal. No live outline/mask, including stale scanner markup. */
+.scan-workspace .cam-guide { display:none!important; }
+.scan-batch-thumb { transform-origin:center bottom; }

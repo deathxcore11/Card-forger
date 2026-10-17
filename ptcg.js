@@ -323,6 +323,17 @@ const firstPerName = (list) => {
   const seen = new Set();
   return list.filter((c) => !seen.has(c.name) && seen.add(c.name));
 };
+const collectorKey = (number) => String(number ?? "").trim().toLowerCase().replace(/^0+(?=\d+$)/, "");
+// A name is not a printing identity. Keep this check shared by imports and
+// tournament matching, including when only one provider candidate is returned.
+export function ptcgPrintingMatches(card, row, set = card?.set) {
+  if (!card || !row?.set || !row?.number || String(card.name).toLowerCase() !== String(row.name).toLowerCase()) return false;
+  const split = String(card.id || "").lastIndexOf("-"),
+    setId = card.set?.id || String(card.id || "").slice(0, split),
+    number = card.set?.number ?? card.localId ?? String(card.id || "").slice(split + 1),
+    codes = [setId, set?.id, set?.tcgOnline, set?.abbreviation?.official, set?.abbreviation?.normal, typeof set?.abbreviation === "string" ? set.abbreviation : null, set?.abbreviations?.official];
+  return collectorKey(number) === collectorKey(row.number) && codes.some(code => code && String(code).toLowerCase() === String(row.set).toLowerCase());
+}
 export const ptcgSource = {
   game: "ptcg",
   formats: PTCG_FORMATS,
@@ -382,20 +393,19 @@ export const ptcgSource = {
     const candidates=await this.byNameNumber(row.name,String(row.number));
     for(const brief of candidates.filter(c=>c.name.toLowerCase()===row.name.toLowerCase())){
       const setId=brief.id.slice(0,brief.id.lastIndexOf('-'));
-      const set=await get('/sets/'+encodeURIComponent(setId)).catch(()=>null);
+      const set=String(setId).toLowerCase()===String(row.set).toLowerCase()?{id:setId}:await get('/sets/'+encodeURIComponent(setId)).catch(()=>null);
       // TCGdex keeps the printed set code under abbreviation.official ("TWM" for sv06).
-      const codes=[set?.id,set?.tcgOnline,set?.abbreviation?.official,set?.abbreviation?.normal,typeof set?.abbreviation==="string"?set.abbreviation:null,set?.abbreviations?.official].filter(Boolean).map(x=>String(x).toLowerCase());
-      // Only one printing with that name and number: it's the card, whatever the set code says.
-      if(!codes.includes(String(row.set).toLowerCase())&&candidates.length>1)continue;
-      const card=await this.get(brief.id);if(card.name.toLowerCase()===row.name.toLowerCase())return card;
+      if(!ptcgPrintingMatches(brief,row,set))continue;
+      const card=await this.get(brief.id);if(card?.id===brief.id && ptcgPrintingMatches(card,row,set))return card;
     }return null;
   },
   async byNameNumber(name, num) {
-    const tries = [...new Set([num, String(Number(num)), String(Number(num)).padStart(3, "0")])];
+    num = String(num).trim();
+    const tries = [...new Set(/^\d+$/.test(num) ? [num, String(Number(num)), String(Number(num)).padStart(3, "0")] : [num, num.toUpperCase()])];
     for (const n of tries) {
       const d = (await get("/cards", { name, localId: n })) || [];
       // TCGdex matches localId loosely ("053" also finds "SWSH153"); keep exact numbers only.
-      const hits = d.map(brief).filter((c) => !c.pocket && tries.includes(c.id.slice(c.id.lastIndexOf("-") + 1)));
+      const hits = d.map(brief).filter((c) => !c.pocket && collectorKey(c.id.slice(c.id.lastIndexOf("-") + 1)) === collectorKey(num));
       if (hits.length) return hits;
     }
     return [];

@@ -33,7 +33,7 @@ import { tileChrome } from "./tiles.js";
 // Yu-Gi-Oh! and Pokémon: collection, search, sets and deck building, sharing one
 // set of screens. Each game's data, rules and formats come from its adapter.
 import { S, uid } from "./store.js";
-import { esc, usd, empty, bar, options, segmented } from "./ui.js";
+import { esc, safeHref, usd, empty, bar, options, segmented } from "./ui.js";
 import { GAMES, GAME_ICON, GAME_COLOR, GAME_IDS, blankGame, gameOf } from "./games.js";
 import { ICON, actionIcon } from "./icons.js";
 import { tcgCompareSheet } from "./tcgcompare.js";
@@ -43,7 +43,7 @@ import { factBox, factsFor } from "./facts.js";
 import { ygoEmblems, energyIcon, attackLine, tcgSetBadge, ygoPrintBadge, pkRarity, pkSetSymbol } from "./emblems.js";
 import { buildYgo, buildPtcg, YGO_STAPLES, PTCG_STAPLES, PTCG_SUPPORT_BASICS, energyName } from "./tcgbuild.js";
 import { ygoSource, ygoImageDirect, YGO_TYPES, YGO_ATTRIBUTES, YGO_RACES, YGO_SPELL_KINDS, YGO_TRAP_KINDS } from "./ygo.js";
-import { ptcgSource, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES, plainText } from "./ptcg.js";
+import { ptcgSource, ptcgPrintingMatches, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES, plainText } from "./ptcg.js";
 import { loadMeta, metaState, ptcgIcon, allCachedMeta, cleanName } from "./meta.js";
 import { tcgPower, powerPanel, powerChip, shownPower, asShown, powerReadiness } from "./power.js";
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
@@ -632,7 +632,7 @@ export function tcgCardSheet(c, sctx = {}) {
             .map(
               (s) => `<div class="print">
         <button class="print-main" data-act="tSetByName" data-name="${esc(s.name)}">${thumb}<span class="print-name"><span class="ellip"><b>${esc(s.name)}</b><small>${ygoPrintBadge(s)} ${esc(s.rarity || "")} · reference art</small></span></span></button>
-        <span class="print-prices"><a class="pp buy" href="${s.url || `https://www.tcgplayer.com/search/yugioh/product?productLineName=yugioh&q=${encodeURIComponent(s.code+' '+s.rarity)}`}" target="_blank" rel="noopener noreferrer" aria-label="Buy the ${esc(s.code)} printing">Buy</a><span class="pp"><small>reference</small>${s.quotes?.length ? s.quotes.map(q=>`<span class="printing-quote"><small>${esc(q.edition)} · ${referenceLabel(referenceQuote(q)?.kind)}</small>${usd(referenceQuote(q)?.value)}</span>`).join("") : s.price ? usd(s.price) : "Unavailable"}</span></span>
+        <span class="print-prices"><a class="pp buy" href="${esc(safeHref(s.url || `https://www.tcgplayer.com/search/yugioh/product?productLineName=yugioh&q=${encodeURIComponent(s.code+' '+s.rarity)}`))}" target="_blank" rel="noopener noreferrer" aria-label="Buy the ${esc(s.code)} printing">Buy</a><span class="pp"><small>reference</small>${s.quotes?.length ? s.quotes.map(q=>`<span class="printing-quote"><small>${esc(q.edition)} · ${referenceLabel(referenceQuote(q)?.kind)}</small>${usd(referenceQuote(q)?.value)}</span>`).join("") : s.price ? usd(s.price) : "Unavailable"}</span></span>
       </div>`,
             )
             .join("")}</div><p class="foot">${c.sets.length} printings, priciest first. Thumbnails are reference art; inspect the seller’s edition and rarity. Tap a printing to open its set.</p>${artworkGallery}`
@@ -640,7 +640,7 @@ export function tcgCardSheet(c, sctx = {}) {
       : c.set
         ? `<div class="print-list"><div class="print on">
         <button class="print-main" data-act="tSet" data-id="${esc(c.set.id)}">${thumb}<span class="print-name">${pkSetSymbol(c.set)}<span class="ellip"><b>${esc(c.set.name)}</b><small>${esc((c.set.id || "").toUpperCase())} #${esc(c.set.number || "")}${c.set.total ? "/" + c.set.total : ""} · ${pkRarity(c.rarity)} ${esc(c.rarity || "")}</small></span></span></button>
-        <span class="print-prices"><a class="pp buy" href="${esc(SOURCES.ptcg.buy(c)[0]?.[1] || "#")}" target="_blank" rel="noopener noreferrer">Buy</a><span class="pp"><small>reference</small>${usd(p.usd)}</span></span>
+        <span class="print-prices"><a class="pp buy" href="${esc(safeHref(SOURCES.ptcg.buy(c)[0]?.[1] || "#"))}" target="_blank" rel="noopener noreferrer">Buy</a><span class="pp"><small>reference</small>${usd(p.usd)}</span></span>
       </div></div><div class="list compact">${(c.variants || []).map(v => `<div class="variant-row">${variantArtThumb(c,v,`data-variant="${esc(v.key)}"`)}<div class="variant-copy"><b>${esc(v.label)}</b><small class="muted">${esc(variantArtwork(c,v).label)}</small><span>${v.usd == null ? "Price unavailable" : usd(v.usd)}</span></div><span class="variant-actions">${v.productId ? `<a class="link small" href="https://www.tcgplayer.com/product/${encodeURIComponent(v.productId)}" target="_blank" rel="noopener noreferrer">Seller ↗</a>` : ""}${variantOwnControl(g, c, v)}</span></div>`).join("")}</div><p class="foot">Check the edition and finish on the seller's page before buying.</p><p class="foot">Pokémon reprints are separate cards with their own number. <button class="link small" data-act="tOtherPrintings" data-name="${esc(c.name)}">See every “${esc(c.name)}” →</button></p>`
         : "";
   const prices =
@@ -652,9 +652,9 @@ export function tcgCardSheet(c, sctx = {}) {
         <div class="pt-row"><span class="pt-label">Cardmarket</span><span><b>${eur(p.eur)}</b></span></div>
         ${(p.others || []).map(([k, v]) => `<div class="pt-row"><span class="pt-label">${esc(k)}</span><span><b>${usd(v)}</b></span></div>`).join("")}</div>
         <p class="small">Each printing has its own price — see <button class="link small" data-act="cardTab" data-tab="versions">Versions</button>.</p>`;
-  const buy = `<div class="links research"><span class="muted small">Buy</span>${SOURCES[g].buy(c).map(([l, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(l)} ↗</a>`).join("")}</div>`;
+  const buy = `<div class="links research"><span class="muted small">Buy</span>${SOURCES[g].buy(c).map(([l, u]) => `<a href="${esc(safeHref(u))}" target="_blank" rel="noopener noreferrer">${esc(l)} ↗</a>`).join("")}</div>`;
   const rulings = `<p class="small">${g === "ygo" ? "Konami publishes card rulings in its official database rather than as data, so they open there." : "Pokémon rulings are published by The Pokémon Company rather than as data, so they open there."}</p>
-    <div class="list compact">${RULES_LINKS[g].map(([l, u]) => `<a class="mini-row store" href="${esc(u(c))}" target="_blank" rel="noopener noreferrer"><span>${esc(l)}</span><span class="small">↗</span></a>`).join("")}</div>
+    <div class="list compact">${RULES_LINKS[g].map(([l, u]) => `<a class="mini-row store" href="${esc(safeHref(u(c)))}" target="_blank" rel="noopener noreferrer"><span>${esc(l)}</span><span class="small">↗</span></a>`).join("")}</div>
     <button class="btn ghost small" data-act="go" data-to="#rules">${esc(GAMES[g].short)} rules reference →</button>`;
   const legal = `${legalChips(g, c)}<p class="foot">${g === "ygo" ? "Forbidden = 0 copies, Limited = 1, Semi-Limited = 2, otherwise 3. Banlists from YGOPRODeck." : "Standard/Expanded legality from TCGdex; Gym Leader Challenge also bans Rule Box Pokémon."} <button class="link small" data-act="go" data-to="#rules">Banlists & format rules →</button></p>`;
   return `<div class="sheet-head overlay"><span></span><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
@@ -1039,41 +1039,59 @@ function metaView(g) {
 // spec: { g, title, sub, evidence, sourceUrl, sourceLabel, attribution, rows, lists, generic(key),
 //         load(keys, status) → fills prices/owned, save(rows, label), cardAttrs(row) }
 export const proven = { spec: null, mode: "original", budget: 0, busy: false, msg: "" };
+// Back navigation restores selection snapshots, not obsolete network state.
+const provenLoads = new WeakMap();
 const PROVEN_BUDGETS = [25, 50, 100, 200, 400];
 export function provenModel(spec) {
-  const others = spec.lists || [],
-    similar = similarLists(spec.rows, others),
+  const others = spec.lists || [], compare = spec.compareRows || ((rows) => rows),
+    compared = compare(spec.rows),
+    similar = others.filter(rows => similarLists(compared, [compare(rows)]).length),
     // The mana base isn't the engine: lands still only give way to cheaper lands (adaptList keepKinds).
-    engine = engineOf(spec.rows.filter((r) => r.kind !== "land"), similar, spec.generic || (() => false)),
-    pool = swapPool(spec.rows, similar),
+    engineKeys = engineOf(compared.filter((r) => r.kind !== "land"), similar.map(compare), spec.generic || (() => false)),
+    engine = new Set(spec.rows.filter((r, i) => engineKeys.has(compared[i].key)).map(r => r.key)),
+    candidates = swapPool(spec.rows, similar),
     full = costToFinish(spec.rows);
+  // Similarity is about gameplay names; exact keys still identify every saved
+  // printing. Do not offer duplicate same-name printings as separate substitutes.
+  const seen = new Set(compared.map(r => r.key)), pool = spec.compareRows ? candidates.sort((a, b) => (b.owned || 0) - (a.owned || 0) || (a.price ?? Infinity) - (b.price ?? Infinity)).filter(r => {
+    const key = compare([r])[0].key;
+    if (seen.has(key)) return false;
+    seen.add(key); return true;
+  }) : candidates;
   return { similar, engine, pool, full };
 }
 export function provenSheetHtml() {
   const base = proven.spec;
   if (!base) return "";
+  const loading = provenLoads.get(base);
+  if (loading) Object.assign(proven, { busy: loading.busy, msg: loading.msg });
   const spec = { ...base, rows: base.rowsFn ? base.rowsFn() : base.rows, lists: base.listsFn ? base.listsFn() : base.lists };
   proven.current = spec;
+  const side = base.sideRowsFn ? base.sideRowsFn() : [],
+    unpriced = unpricedCopies(spec.rows), sideUnpriced = unpricedCopies(side),
+    incomplete = unpriced + sideUnpriced;
   const M = provenModel(spec),
     mode = proven.mode,
-    chips = PROVEN_BUDGETS.filter((b) => b < M.full),
-    budget = chips.includes(proven.budget) ? proven.budget : chips.filter((b) => b <= M.full / 2).at(-1) ?? chips[0] ?? 0,
+    chips = incomplete ? [] : PROVEN_BUDGETS.filter((b) => b < M.full),
+    budget = chips.includes(proven.budget) ? proven.budget : chips.filter((b) => b <= M.full / 2).at(-1) ?? chips[0] ?? M.full,
     total = spec.rows.reduce((a, r) => a + r.qty, 0),
     have = spec.rows.reduce((a, r) => a + Math.min(r.qty, r.owned || 0), 0),
-    unpriced = unpricedCopies(spec.rows),
     thumb = (r) => {
       const u = spec.imageFor?.(r);
       return u ? `<img class="row-thumb" src="${esc(u)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'row-thumb img-missing'}))">` : `<span class="row-thumb img-missing" aria-hidden="true"></span>`;
     },
     row = (r, extra = "") =>
-      `<button class="mini-row art-row" ${spec.cardAttrs ? spec.cardAttrs(r) : ""}>${thumb(r)}<span class="ellip">${r.qty}× ${esc(r.name)}${r.swappedIn ? ` <span class="tag">swap</span>` : ""}${M.engine.has(r.key) && mode !== "draft" ? ` <span class="tag ok">engine</span>` : ""}${rowEmblem(spec.g, { name: r.name, id: r.key })}</span><span class="small ${r.owned >= r.qty ? "ok-text" : "muted"}">${extra || (r.owned >= r.qty ? "✓ owned" : r.owned ? `${r.owned}/${r.qty} · ${r.price != null ? usd((r.qty - r.owned) * r.price) : "—"}` : r.price != null ? usd(r.qty * r.price) : "—")}</span></button>`;
+      `<button class="mini-row art-row" ${spec.cardAttrs ? spec.cardAttrs(r) : ""}>${thumb(r)}<span class="ellip">${r.qty}× ${esc(r.name)}${r.swappedIn ? ` <span class="tag">swap</span>` : ""}${M.engine.has(r.key) && mode !== "draft" ? ` <span class="tag ok">engine</span>` : ""}${rowEmblem(spec.g, { name: r.name, id: r.key })}</span><span class="small ${r.owned >= r.qty ? "ok-text" : "muted"}">${extra || (r.owned >= r.qty ? "✓ owned" : r.owned ? `${r.owned}/${r.qty} · ${r.price != null ? usd((r.qty - r.owned) * r.price) : "Price unavailable"}` : r.price != null ? usd(r.qty * r.price) : "Price unavailable")}</span></button>`;
   let body = "";
   if (mode === "original") {
     body = `<div class="list compact">${spec.rows.map((r) => row(r)).join("")}</div>`;
+  } else if (mode === "budget" && incomplete) {
+    proven.last = null;
+    body = `<div class="note warn"><b>Price check incomplete</b><p>${incomplete} missing cop${incomplete === 1 ? "y has" : "ies have"} no price${sideUnpriced ? " across the main deck and sideboard" : ""}. Retry prices before choosing a budget; the known subtotal is not the complete purchase cost.</p></div><div class="list compact">${spec.rows.map((r) => row(r)).join("")}</div>`;
   } else if (mode === "budget") {
     const a = adaptList({ rows: spec.rows, pool: M.pool, engine: M.engine, budget, similarCount: M.similar.length });
     proven.last = a;
-    body = `${chips.length ? `<div class="fmt-chips">${chips.map((b) => `<button class="chip pick ${b === budget ? "on" : ""}" data-act="provenBudget" data-b="${b}">≤ ${usd(b, 0)}</button>`).join("")}</div>` : `<p class="small ok-text">This list already costs little to finish — no adaptation needed.</p>`}
+    body = `${side.length ? `<p class="small muted">Budgets below cover the main deck only. The sideboard is priced separately below.</p>` : ""}${chips.length ? `<div class="fmt-chips">${chips.map((b) => `<button class="chip pick ${b === budget ? "on" : ""}" data-act="provenBudget" data-b="${b}">≤ ${usd(b, 0)}</button>`).join("")}</div>` : `<p class="small ok-text">${side.length ? "The main deck" : "This list"} already costs little to finish — no adaptation needed.</p>`}
       ${(() => {
         const cards = a.rows.reduce((x, r) => x + r.qty, 0),
           KIND = { land: "Lands", creature: "Creatures", spell: "Other spells", commander: "Commander", Monster: "Monsters", Spell: "Spells", Trap: "Traps", Extra: "Extra Deck", Pokemon: "Pokémon", Trainer: "Trainers", Energy: "Energy", card: "Other" },
@@ -1093,28 +1111,28 @@ export function provenSheetHtml() {
       <p class="list-head">Adapted list</p><div class="list compact">${a.rows.map((r) => row(r)).join("")}</div>`;
   } else {
     const d = ownedDraft(spec.rows);
-    body = `<div class="note ${d.open ? "warn" : ""}"><b>${d.open ? `Draft — ${d.open} slot${d.open === 1 ? "" : "s"} open` : "Ready — you own every card"}</b>${d.open ? ` · you own ${total - d.open} of ${total}` : ""}</div>
+    body = `<div class="note ${d.open ? "warn" : ""}"><b>${d.open ? `Draft — ${d.open} slot${d.open === 1 ? "" : "s"} open` : side.some(r => r.qty > (r.owned || 0)) ? "Main deck ready — sideboard still needs cards" : "Ready — you own every card"}</b>${d.open ? ` · you own ${total - d.open} of ${total}` : ""}</div>
       ${d.rows.length ? `<p class="list-head">Cards you own <span class="muted">${total - d.open}</span></p><div class="list compact">${d.rows.map((r) => row(r, "✓ owned")).join("")}</div>` : `<p class="muted small">You don’t own any cards from this list yet.</p>`}
-      ${d.open ? `<p class="list-head">To finish · cheapest first <span class="muted">${usd(d.cost, 0)}${d.unpriced ? ` + ${d.unpriced} unpriced` : ""}</span></p><div class="list compact">${d.missing.map((r) => row({ ...r, owned: 0 })).join("")}</div>` : ""}`;
+      ${d.open ? `<p class="list-head">To finish · cheapest first <span class="muted">${usd(d.cost, 0)}${d.unpriced ? ` known subtotal · ${d.unpriced} unpriced · Incomplete total` : ""}</span></p><div class="list compact">${d.missing.map((r) => row({ ...r, owned: 0 })).join("")}</div>` : ""}`;
   }
   // Magic tournament lists keep their sideboard: shown in every mode and saved with every version.
-  const side = base.sideRowsFn ? base.sideRowsFn() : [];
   if (side.length) {
     const sn = side.reduce((a, r) => a + r.qty, 0),
-      sc = side.reduce((a, r) => a + Math.max(0, r.qty - Math.min(r.qty, r.owned || 0)) * (r.price || 0), 0);
-    body += `<details class="group side-group" ${mode === "original" ? "open" : ""}><summary><span>Sideboard <em>${sn}</em></span><span class="muted small">${usd(sc, 0)} to finish</span></summary><p class="small muted">Saved with ${mode === "original" ? "the deck" : "every version"} as the tournament player ran it. Swap these in between games.</p><div class="list compact">${side.map((r) => row(r)).join("")}</div></details>`;
+      sc = costToFinish(side);
+    body += `<details class="group side-group" ${mode === "original" ? "open" : ""}><summary><span>Sideboard <em>${sn}</em></span><span class="muted small">${usd(sc, 0)} ${sideUnpriced ? `known subtotal · ${sideUnpriced} unpriced · Incomplete total` : "to finish"}</span></summary><p class="small muted">Saved with ${mode === "original" ? "the deck" : "every version"} as the tournament player ran it. Swap these in between games.</p><div class="list compact">${side.map((r) => row(r)).join("")}</div></details>`;
   }
   const hero = spec.heroFor?.(spec.rows);
   return `<div class="sheet-head overlay"><span></span><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   <div class="cs-hero compact ${spec.g}">${hero ? `<img class="cs-art" src="${esc(hero)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<div class="cs-shade"></div></div>
   <div class="cs-title"><div><h2>${esc(spec.title)}</h2><p class="type-line">🏆 ${spec.sub}</p></div></div>
   <p class="evidence small">${spec.evidence}</p>
-  <div class="proven-sum"><span><b>You own ${have} of ${total}</b> · ${have >= total ? "complete ✓" : `<b>${usd(M.full, 0)}</b> to finish${unpriced ? ` + ${unpriced} unpriced` : ""}`}</span>${have < total && mode !== "budget" ? `<button class="btn small" data-act="provenMode" data-id="budget">Cheapest way in ›</button>` : ""}</div>
+  <div class="proven-sum"><span>${side.length ? "Main deck · " : ""}<b>You own ${have} of ${total}</b> · ${have >= total ? "complete ✓" : `<b>${usd(M.full, 0)}</b> ${unpriced ? `known subtotal · ${unpriced} unpriced · Incomplete total` : "to finish"}`}</span>${have < total && mode !== "budget" ? `<button class="btn small" data-act="provenMode" data-id="budget">Cheapest way in ›</button>` : ""}</div>
   ${bar(total ? have / total : 0)}
   ${segmented("provenMode", mode, [["original", "Original"], ["budget", "Budget adaptation"], ["draft", "My cards draft"]])}
   ${proven.busy ? buildOverlay(proven.msg, { title: "Fitting the tournament deck", note: "Matching the winning list to your cards and budget, card by card. This can take up to a minute." }) : proven.msg ? `<p class="small warn-text" role="status">${esc(proven.msg)}</p>` : ""}
+  ${!proven.busy && spec.load && (proven.msg || incomplete) ? `<div class="actions"><button class="btn small" data-act="provenRetry">Retry prices</button></div>` : ""}
   ${body}
-  <div class="actions wrap sheet-actions"><button class="btn" data-act="provenSave">${mode === "original" ? "Save original list" : mode === "budget" ? "Save adaptation" : "Save draft"}</button>${spec.sourceUrl ? `<a class="btn ghost" href="${esc(spec.sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(spec.sourceLabel || "Source")} ↗</a>` : ""}${spec.extraActions || ""}</div>
+  <div class="actions wrap sheet-actions"><button class="btn" data-act="provenSave" ${mode === "budget" && incomplete ? "disabled" : ""}>${mode === "original" ? "Save original list" : mode === "budget" ? "Save adaptation" : "Save draft"}</button>${spec.sourceUrl ? `<a class="btn ghost" href="${esc(safeHref(spec.sourceUrl))}" target="_blank" rel="noopener noreferrer">${esc(spec.sourceLabel || "Source")} ↗</a>` : ""}${spec.extraActions || ""}</div>
   ${spec.attribution ? `<p class="foot">${spec.attribution}</p>` : ""}`;
 }
 
@@ -1455,7 +1473,7 @@ export function tcgNewDeckSheet() {
 export function tcgImportSheet(mode = "deck") {
   const g = game();
   return `<div class="sheet-head"><h2>${mode === "deck" ? "Import a deck" : "Paste cards you own"}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
-  <p class="muted small">${g === "ygo" ? (mode === "deck" ? "Upload or paste a .ydk file (YGOPRODeck, EDOPro, Master Duel tools), or a list like “3 Ash Blossom & Joyous Spring”." : "One card per line: “3 Dark Magician”. Card names must match exactly.") : mode === "deck" ? "Paste a Pokémon TCG Live list (“4 Pikachu ex SVI 63”) or lines like “4 Nest Ball”. Cards are matched by name to their newest printing." : "One card per line: “2 Charizard ex” or a TCGdex id like “sv03.5-025”."}</p>
+  <p class="muted small">${g === "ygo" ? (mode === "deck" ? "Upload or paste a .ydk file (YGOPRODeck, EDOPro, Master Duel tools), or a list like “3 Ash Blossom & Joyous Spring”." : "One card per line: “3 Dark Magician”. Card names must match exactly.") : "Paste a Pokémon TCG Live list (“4 Pikachu ex SVI 63”), a TCGdex id (“2 sv03.5-025”), or names only (“4 Nest Ball”). Set and collector numbers are matched exactly; unmatched printings stop the import. Names alone do not identify a specific printing."}</p>
   <textarea id="tImpText" rows="9" placeholder="${g === "ygo" ? "#main&#10;89631139&#10;…" : "Pokémon: 12&#10;4 Pikachu ex SVI 63&#10;…"}"></textarea>
   ${mode === "deck" ? `<label class="btn ghost file">Upload a file<input type="file" accept=".ydk,.txt" data-change="tImpFile" hidden></label><div class="grid2"><label>Name<input id="tImpName" maxlength="100" value="Imported deck"></label><label>Format<select id="tImpFormat">${options(formatsOf(g).map((f) => [f.id, f.name]), formatsOf(g)[0].id)}</select></label></div>` : ""}
   <p id="tImpStatus" class="muted small" role="status"></p>
@@ -1631,8 +1649,13 @@ export function parseLines(text) {
   }
   return out;
 }
-// PTCGL lines end with "SET NUMBER"; keep the name only.
-export const ptcglName = (name) => name.replace(/\s+[A-Z0-9-]{2,6}\s+[A-Za-z0-9-]{1,6}$/, "").trim();
+// Preserve explicit PTCGL/app-export identities. A collector number must contain
+// a digit so ordinary multi-word names are never stripped as a set/number pair.
+export function ptcglIdentity(value) {
+  const text = String(value).trim(), match = text.match(/^(.+?)\s+([A-Z0-9][A-Z0-9.-]{1,19})\s+((?=[A-Z0-9-]*\d)[A-Z0-9-]+)(?:\/[A-Z0-9-]+)?$/i);
+  return match ? { name: match[1].trim(), set: match[2], number: match[3] } : { name: text };
+}
+export const ptcglName = (name) => ptcglIdentity(name).name;
 export function parseYdk(text) {
   const zones = { main: [], extra: [], side: [] };
   let zone = null;
@@ -1671,12 +1694,14 @@ export function registerTcg(c) {
   ctx = c;
   const { A, C, I, commit, render, openSheet, closeSheet, toast, go, download, copyText, busy } = c;
   const g = () => game();
-  const mutate = (fn, opts) =>
-    commit((s) => {
+  const mutate = (fn, opts) => {
+    const G = g();
+    return commit((s) => {
       s.tcg = s.tcg || {};
-      s.tcg[g()] = s.tcg[g()] || blankGame();
-      return fn(s.tcg[g()], s);
+      s.tcg[G] = s.tcg[G] || blankGame();
+      return fn(s.tcg[G], s);
     }, opts);
+  };
 
   A.setGame = async (t) => {
     const id = t.dataset.game;
@@ -2048,15 +2073,34 @@ export function registerTcg(c) {
     return { cands: out, tried };
   };
   // Save a whole scan session at once: Pokémon finish → variant, Yu-Gi-Oh! finish → edition.
-  c.scanAddMany = async (items) => {
-    const G = g(),
-      n = items.reduce((a, x) => a + x.qty, 0);
-    await mutate(
-      (st) => {
+  c.scanAddMany = async (items, G = g()) => {
+    if (!SOURCES[G]) throw Error("Choose a supported scan game before saving.");
+    for (const it of items) {
+      const card = it.cand?.card, finish = it.variantKey || it.finish;
+      if (!card?.id || card.game !== G) throw Error("A scanned card belongs to a different game. Review the batch before saving.");
+      if (!Number.isSafeInteger(it.qty) || it.qty < 1 || it.qty > 100000) throw Error("Use a positive whole-number quantity for every scanned card.");
+      if (it.captureId != null && (typeof it.captureId !== "string" || !/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,199}$/.test(it.captureId))) throw Error("Invalid scan capture identity.");
+      if (!finish || (it.variantKey && it.finish && it.variantKey !== it.finish)) throw Error("Confirm the exact finish for every scanned card before saving.");
+      if (G === "ptcg" && card.variants?.length && !card.variants.some(v => v.key === finish)) throw Error("That Pokémon finish is not available for this printing. Review the card before saving.");
+      if (G === "ygo" && !["unlimited", "1st-edition", "limited"].includes(finish)) throw Error("Confirm the Yu-Gi-Oh! edition before saving.");
+      const variant = G === "ptcg" && card.variants?.find(v => v.key === finish);
+      if (it.productId && variant?.productId && String(it.productId) !== String(variant.productId)) throw Error("The scanned product does not match the selected finish. Review the card before saving.");
+    }
+    const n = items.reduce((a, x) => a + x.qty, 0);
+    await commit(
+      (state) => {
+        state.tcg ||= {};
+        const st = state.tcg[G] ||= blankGame();
         for (const it of items) {
           const card = it.cand.card,
-            [printing, rarity] = it.cand.print ? it.cand.print.split("|") : ["", ""];
-          st.collection.push({ id: uid(), cardId: card.id, name: card.name, key: SOURCES[G].ownKey(card), qty: it.qty, printing, rarity, variant: G === "ptcg" && it.finish && it.finish !== "normal" ? it.finish : "", variantLabel: G === "ptcg" ? card.variants?.find((v) => v.key === it.finish)?.label || "" : "", edition: G === "ygo" && it.finish === "1st-edition" ? "1st-edition" : "", condition: it.condition || "Near Mint", language: it.lang || "en", location: it.location || "", addedAt: new Date().toISOString(), source: "scan" });
+            finish = it.variantKey || it.finish, variant = card.variants?.find(v => v.key === finish),
+            print = it.print || it.cand.print || "", [printing, rarity] = print ? print.split("|") : ["", ""], captureId = it.captureId || "";
+          const prior = captureId && [...state.collection, ...Object.values(state.tcg || {}).flatMap(game => game.collection || [])].find(e => e.scanCaptureId === captureId);
+          if (prior) {
+            if (prior.cardId !== card.id || prior.qty !== it.qty || prior.printing !== printing || prior.rarity !== rarity || prior.variant !== (G === "ptcg" ? finish : "") || prior.edition !== (G === "ygo" ? finish : "") || prior.condition !== (it.condition || "Near Mint") || prior.language !== (it.lang || "en")) throw Error("This capture is already saved with different details. Check its collection entry before trying again.");
+            continue;
+          }
+          st.collection.push({ id: uid(), scanCaptureId: captureId, cardId: card.id, name: card.name, key: SOURCES[G].ownKey(card), qty: it.qty, printing, rarity, variant: G === "ptcg" ? finish : "", variantLabel: G === "ptcg" ? variant?.label || "" : "", productId: it.productId || variant?.productId || "", edition: G === "ygo" ? finish : "", condition: it.condition || "Near Mint", language: it.lang || "en", location: it.location || "", addedAt: new Date().toISOString(), source: "scan" });
         }
       },
       { undo: `Added ${n} scanned card${n === 1 ? "" : "s"}.` },
@@ -2064,9 +2108,9 @@ export function registerTcg(c) {
   };
   c.scanPrice = (cand, finish) => {
     const card = cand.card;
-    if (!card) return null;
-    const v = card.variants?.find((x) => x.key === finish);
-    return v?.usd ?? price(card) ?? null;
+    if (!card || !finish) return null;
+    const [printing, rarity] = cand.print ? cand.print.split("|") : ["", ""];
+    return entryPrice(card, card.game === "ptcg" ? {variant: finish} : {printing, rarity, edition: finish});
   };
   c.scanAdd = async (cand) => {
     const G = g(),
@@ -2586,7 +2630,7 @@ export function registerTcg(c) {
       link = location.origin + location.pathname + "#shared/" + (await encodeShare(sharePayloadTcg(G, d, { author, about: d.about || "" })));
     openSheet(`<div class="sheet-head"><h2>Share this deck</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
       <p class="muted small">Anyone with the link sees the full list with card art, and how much of it they own. Your collection is never included.</p>
-      <div class="share-link"><input id="shareLink" readonly value="${esc(link)}" aria-label="Share link"><div class="actions wrap"><button class="btn" data-act="tShareCopy">Copy link</button>${navigator.share ? `<button class="btn ghost" data-act="tShareNative">Share…</button>` : ""}<a class="btn ghost" href="${esc(link)}" target="_blank" rel="noopener">Preview ↗</a></div></div>`, { type: "tshare", link, name: d.name });
+      <div class="share-link"><input id="shareLink" readonly value="${esc(link)}" aria-label="Share link"><div class="actions wrap"><button class="btn" data-act="tShareCopy">Copy link</button>${navigator.share ? `<button class="btn ghost" data-act="tShareNative">Share…</button>` : ""}<a class="btn ghost" href="${esc(safeHref(link))}" target="_blank" rel="noopener">Preview ↗</a></div></div>`, { type: "tshare", link, name: d.name });
   };
   A.tSharedBuild = async () => {
     const sd = S.ui.shared.deck;
@@ -3033,23 +3077,41 @@ export function registerTcg(c) {
   // ----- closest proven deck -----
   const refreshProven = () => S.ui.sheetCtx?.type === "proven" && openSheet(provenSheetHtml(), S.ui.sheetCtx, document.querySelector("#sheetBody")?.scrollTop || 0);
   c.refreshProven = refreshProven;
+  const loadProven = async (spec, sctx) => {
+    const state = { busy: true, msg: "Loading prices…" },
+      latest = () => provenLoads.get(spec) === state,
+      current = () => latest() && proven.spec === spec;
+    provenLoads.set(spec, state);
+    Object.assign(proven, { busy: state.busy, msg: state.msg });
+    if (S.ui.sheetCtx === sctx) refreshProven();
+    try {
+      const result = await spec.load?.((m) => {
+        if (latest()) state.msg = m;
+        if (!current()) return;
+        proven.msg = m;
+        const el = S.ui.sheetCtx === sctx && document.querySelector("#sheetBody [role=status]");
+        if (el) el.textContent = m;
+      });
+      if (latest()) state.msg = result?.failed?.length ? `Some prices couldn’t load (${result.failed.length}): ${result.failed.slice(0, 5).join(", ")}. Retry prices to check again.` : "";
+    } catch (e) {
+      if (latest()) state.msg = "Some prices couldn’t load: " + (e?.message || "Please retry.");
+    } finally {
+      if (latest()) state.busy = false;
+      if (current()) {
+        Object.assign(proven, { busy: state.busy, msg: state.msg });
+        if (S.ui.sheetCtx === sctx) refreshProven();
+      }
+    }
+  };
   c.openProven = async (spec) => {
     Object.assign(proven, { spec, mode: "original", budget: 0, busy: true, msg: "Loading prices…", last: null });
     const sctx = { type: "proven", key: spec.key };
     openSheet(provenSheetHtml(), sctx);
-    try {
-      await spec.load?.((m) => {
-        proven.msg = m;
-        const el = document.querySelector("#sheetBody [role=status]");
-        if (el) el.textContent = m;
-      });
-      proven.msg = "";
-    } catch (e) {
-      proven.msg = "Some prices couldn’t load: " + e.message;
-    } finally {
-      proven.busy = false;
-      if (S.ui.sheetCtx === sctx) refreshProven();
-    }
+    await loadProven(spec, sctx);
+  };
+  A.provenRetry = async () => {
+    if (proven.busy || !proven.spec || S.ui.sheetCtx?.type !== "proven" || S.ui.sheetCtx.key !== proven.spec.key) return;
+    await loadProven(proven.spec, S.ui.sheetCtx);
   };
   A.provenMode = (t) => {
     proven.mode = t.dataset.id;
@@ -3062,6 +3124,7 @@ export function registerTcg(c) {
   A.provenSave = async (t) => {
     const spec = proven.current;
     if (!spec) return;
+    if (proven.mode === "budget" && unpricedCopies([...(spec.rowsFn ? spec.rowsFn() : spec.rows), ...(spec.sideRowsFn?.() || [])])) return toast("Retry prices before saving a budget adaptation. The total is incomplete.");
     const rows = proven.mode === "budget" ? proven.last?.rows || spec.rows : proven.mode === "draft" ? ownedDraft(spec.rows).rows : spec.rows,
       label = proven.mode === "budget" ? "budget adaptation" : proven.mode === "draft" ? "my cards draft" : "original";
     if (!rows.length) return toast("Nothing to save yet — you don’t own any of these cards.");
@@ -3075,7 +3138,13 @@ export function registerTcg(c) {
     }
   };
 
-  const pkByName = new Map();
+  const pkByPrinting = new Map(), pkRequests = new Map();
+  const pkKey = (row) => row.key || JSON.stringify([row.name.toLowerCase(), String(row.set || "").toLowerCase(), String(row.number || "").toLowerCase()]);
+  const pkRequest = (row) => {
+    const key = pkKey(row);
+    if (!pkRequests.has(key)) pkRequests.set(key, { name: row.name, set: row.set, number: row.number });
+    return { key, ...pkRequests.get(key) };
+  };
   const tcgProvenSpec = (G, d) => {
     const meta = metaState(G).data,
       m = ownedMap(G),
@@ -3091,63 +3160,88 @@ export function registerTcg(c) {
         });
       };
       load = async (status) => {
-        const need = [...new Set(meta.decks.flatMap((x) => [...x.main, ...x.extra]))].filter((id) => !cardOf("ygo", id));
+        const need = [...new Set(meta.decks.flatMap((x) => [...x.main, ...x.extra]))].filter((id) => needsCardRefresh("ygo", cardOf("ygo", id)) || price(cardOf("ygo", id)) == null);
         if (need.length) {
           status(`Loading ${need.length} cards…`);
           (await SOURCES.ygo.byIds(need)).forEach(remember);
         }
+        return { failed: need.filter(id => needsCardRefresh("ygo", cardOf("ygo", id)) || price(cardOf("ygo", id)) == null).map(id => cardOf("ygo", id)?.name || id) };
       };
       save = async (rows, label) => {
+        const savingSheet = S.ui.sheetCtx;
         const zones = { main: [], extra: [], side: [] };
         for (const r of rows) zones[r.zone === "extra" ? "extra" : "main"].push({ cardId: r.key, name: r.name, qty: r.qty });
         const deck = { id: uid(), name: `${d.name} · ${label}`.slice(0, 100), format: "tcg", zones, createdAt: new Date().toISOString(), source: { kind: label === "original" ? "Tournament list" : "Adapted tournament list", author: d.player, url: d.url } };
         await mutate((st) => st.decks.push(deck), { msg: `Saved “${deck.name}”.` });
-        closeSheet();
-        go("#tdeck/" + deck.id);
+        if (g() === G && S.ui.sheetCtx === savingSheet) {
+          closeSheet();
+          go("#tdeck/" + deck.id);
+        }
       };
       evidence = `Tournament-backed · Advanced (TCG) · ${esc(d.place)} at ${esc(cleanName(d.event))}${d.players ? ` (${d.players} players)` : ""} · compared with ${meta.decks.length} recent top lists`;
       attribution = `Decklists from <a href="https://ygoprodeck.com/category/format/tournament%20meta%20decks" target="_blank" rel="noopener">YGOPRODeck Tournament Meta Decks</a>. Prices are TCGplayer market estimates.`;
     } else {
-      const byName = new Map();
-      for (const e of gs(G).collection) byName.set(e.name.toLowerCase(), (byName.get(e.name.toLowerCase()) || 0) + e.qty);
-      rowsOf = (deck) =>
-        deck.list.map((r) => {
-          const basic = isBasicEnergyName(r.name),
-            card = pkByName.get(r.name);
-          return { key: r.name, name: r.name, qty: r.qty, kind: r.kind, price: basic ? 0 : card ? price(card) : null, owned: basic ? r.qty : byName.get(r.name.toLowerCase()) || 0, core: r.kind === "Pokemon" };
+      rowsOf = (deck) => {
+        const inventory = ownedMap("ptcg"), used = new Map();
+        return deck.list.map((r) => {
+          const request = pkRequest(r), basic = isBasicEnergyName(r.name), card = pkByPrinting.get(request.key),
+            ownKey = card ? keyOf("ptcg", card) : request.key,
+            owned = basic ? r.qty : Math.max(0, (card ? ownedOf("ptcg", card, inventory) : 0) - (used.get(ownKey) || 0));
+          used.set(ownKey, (used.get(ownKey) || 0) + Math.min(r.qty, owned));
+          return { ...request, qty: r.qty, kind: r.kind, price: basic ? 0 : card ? price(card) : null, owned, core: r.kind === "Pokemon" };
         });
-      const resolve = async (names, status) => {
-        const std = formatOf("ptcg", "standard"),
-          any = formatOf("ptcg", "unlimited"),
-          todo = [...new Set(names)].filter((n) => !pkByName.has(n));
+      };
+      const resolve = async (rows, status) => {
+        const std = formatOf("ptcg", "standard"), any = formatOf("ptcg", "unlimited"),
+          requests = [...new Map(rows.map(row => { const request = pkRequest(row); return [request.key, request]; })).values()],
+          todo = requests.filter(r => needsCardRefresh("ptcg", pkByPrinting.get(r.key)) || price(pkByPrinting.get(r.key)) == null), failed = [];
         let i = 0;
-        await inBatches(todo, 6, async (n) => {
-          const card = isBasicEnergyName(n) ? await ptcgBest(energyName(n.replace(/^Basic /, "").replace(/ Energy$/, "")), any) : (await ptcgBest(n, std)) || (await SOURCES.ptcg.byName(n).catch(() => null));
-          pkByName.set(n, card ? remember(card) : null);
+        await inBatches(todo, 6, async (r) => {
+          const prior = pkByPrinting.get(r.key), cached = r.set && r.number ? Object.values(cache.ptcg).find(c => !c.brief && ptcgPrintingMatches(c, r)) : null;
+          let card = null;
+          try {
+            if (prior || cached) {
+              const known = prior || cached;
+              card = await ensureCard("ptcg", known.id, price(known) == null);
+            } else if (r.set || r.number) {
+              // An explicit but unresolved printing is never replaced by a same-name card.
+              card = r.set && r.number ? await SOURCES.ptcg.tournamentCard(r) : null;
+            } else {
+              card = isBasicEnergyName(r.name) ? await ptcgBest(energyName(r.name.replace(/^Basic /, "").replace(/ Energy$/, "")), any) : (await ptcgBest(r.name, std)) || await SOURCES.ptcg.byName(r.name);
+            }
+          } catch {}
+          pkByPrinting.set(r.key, card ? remember(card) : null);
+          if (!card || (!isBasicEnergyName(r.name) && (needsCardRefresh("ptcg", card) || price(card) == null))) failed.push([r.name, r.set, r.number].filter(Boolean).join(" "));
           status(`Matching cards ${++i}/${todo.length}…`);
         });
+        return { failed };
       };
       load = async (status) => {
-        const sim = similarLists(rowsOf(d), meta.decks.map(rowsOf));
-        await resolve([...d.list.map((r) => r.name), ...swapPool(rowsOf(d), sim).map((r) => r.name)], status);
+        const rows = rowsOf(d), others = meta.decks.map(rowsOf), compare = list => list.map(r => ({ ...r, key: r.name.toLowerCase() })),
+          sim = others.filter(list => similarLists(compare(rows), [compare(list)]).length);
+        return resolve([...rows, ...swapPool(rows, sim)], status);
       };
       save = async (rows, label) => {
-        await resolve(rows.map((r) => r.name), () => {});
-        const zones = { main: [], extra: [], side: [] },
-          missed = [];
+        const savingSheet = S.ui.sheetCtx;
+        await resolve(rows, () => {});
+        const zones = { main: [], extra: [], side: [] }, missed = [];
         for (const r of rows) {
-          const card = pkByName.get(r.name);
-          if (!card) missed.push(r.name);
+          const card = pkByPrinting.get(pkKey(r));
+          if (!card) missed.push([r.name, r.set, r.number].filter(Boolean).join(" "));
           else {
             const row = zones.main.find((x) => x.cardId === card.id);
             if (row) row.qty += r.qty;
             else zones.main.push({ cardId: card.id, name: card.name, qty: r.qty });
           }
         }
+        if (missed.length) throw Error(`Nothing saved: ${missed.length} unmatched printings. Retry matching ${missed.slice(0, 5).join(", ")}.`);
+        if (!zones.main.length) throw Error("No cards matched. Nothing saved.");
         const deck = { id: uid(), name: `${d.name} · ${label}`.slice(0, 100), format: "standard", zones, createdAt: new Date().toISOString(), source: { kind: label === "original" ? "Tournament list" : "Adapted tournament list", author: d.player, url: d.url } };
-        await mutate((st) => st.decks.push(deck), { msg: missed.length ? `Saved. Not found: ${missed.slice(0, 3).join(", ")}` : `Saved “${deck.name}”.` });
-        closeSheet();
-        go("#tdeck/" + deck.id);
+        await commit((state) => { state.tcg ||= {}; (state.tcg[G] ||= blankGame()).decks.push(deck); }, { msg: `Saved “${deck.name}”.` });
+        if (g() === G && S.ui.sheetCtx === savingSheet) {
+          closeSheet();
+          go("#tdeck/" + deck.id);
+        }
       };
       evidence = `Tournament-backed · Standard · ${esc(d.place)} at ${esc(cleanName(d.event))} (${d.players} players) · compared with ${meta.decks.length} Top 8 lists from ${meta.events?.length || "recent"} events in the last 21 days`;
       attribution = `Decklists from <a href="https://play.limitlesstcg.com" target="_blank" rel="noopener">Limitless</a>. Prices are TCGplayer market estimates; basic Energy counts as owned.`;
@@ -3163,19 +3257,20 @@ export function registerTcg(c) {
       sourceLabel: G === "ygo" ? "YGOPRODeck" : "Limitless",
       rowsFn: () => rowsOf(d),
       listsFn: () => meta.decks.map(rowsOf),
-      generic: (k) => genericKeys.has(k),
+      generic: (k) => genericKeys.has(k) || [...genericKeys].some(name => String(name).toLowerCase() === k),
+      ...(G === "ptcg" ? { compareRows: rows => rows.map(r => ({ ...r, key: r.name.toLowerCase() })) } : {}),
       load,
       save,
-      imageFor: (r) => (G === "ygo" ? (cardOf("ygo", r.key)?.image ? ygoImageDirect(r.key) : "") : pkByName.get(r.name)?.image || ""),
+      imageFor: (r) => (G === "ygo" ? (cardOf("ygo", r.key)?.image ? ygoImageDirect(r.key) : "") : pkByPrinting.get(pkKey(r))?.image || ""),
       heroFor: (rows) => {
         if (G === "ygo") {
           const id = d.cover || rows.find((r) => r.core)?.key;
           return id ? `https://images.ygoprodeck.com/images/cards_cropped/${encodeURIComponent(id)}.jpg` : "";
         }
-        const top = rows.filter((r) => r.kind === "Pokemon").map((r) => pkByName.get(r.name)).find((x) => x?.ruleBox) || rows.map((r) => pkByName.get(r.name)).find(Boolean);
+        const top = rows.filter((r) => r.kind === "Pokemon").map((r) => pkByPrinting.get(pkKey(r))).find((x) => x?.ruleBox) || rows.map((r) => pkByPrinting.get(pkKey(r))).find(Boolean);
         return top?.imageLarge || "";
       },
-      cardAttrs: (r) => (G === "ygo" ? `data-act="tCard" data-id="${esc(r.key)}"` : pkByName.get(r.name) ? `data-act="tCard" data-id="${esc(pkByName.get(r.name).id)}"` : `data-act="tOtherPrintings" data-name="${esc(r.name)}"`),
+      cardAttrs: (r) => (G === "ygo" ? `data-act="tCard" data-id="${esc(r.key)}"` : pkByPrinting.get(pkKey(r)) ? `data-act="tCard" data-id="${esc(pkByPrinting.get(pkKey(r)).id)}"` : `data-act="tOtherPrintings" data-name="${esc(r.name)}"`),
       extraActions: `<button class="btn ghost" data-act="tMetaBuild" data-key="${esc(d.key)}">⚒ Build around it</button>`,
     };
   };
@@ -3358,12 +3453,22 @@ export function registerTcg(c) {
     const results = new Array(lines.length), pending = new Map(); let next = 0, completed = 0;
     await Promise.all(Array.from({length:Math.min(6,lines.length)},async()=>{
       while(next < lines.length && active()) {
-        const i=next++, l=lines[i], name=G === "ptcg" ? ptcglName(l.name) : l.name;
-        if(!pending.has(name)) pending.set(name,(async()=>{
-          const cached=Object.values(cache[G]).find(c=>!c.brief && c.name === name);
-          return cached || (/^[a-z0-9.]+-[A-Za-z0-9]+$/.test(name) && G === "ptcg" ? ensureCard(G,name) : SOURCES[G].byName(name));
+        const i=next++, l=lines[i], identity=G === "ptcg" ? ptcglIdentity(l.name) : {name:l.name}, name=identity.name,
+          key=JSON.stringify([name.toLowerCase(),identity.set?.toLowerCase(),identity.number?.toLowerCase()]);
+        if(!pending.has(key)) pending.set(key,(async()=>{
+          if(G === "ptcg" && identity.set) {
+            const cached=Object.values(cache.ptcg).find(c=>!c.brief && ptcgPrintingMatches(c,identity));
+            return cached || SOURCES.ptcg.tournamentCard(identity);
+          }
+          if(G === "ptcg" && /^[a-z0-9.]+-(?=[a-z0-9]*\d)[a-z0-9]+$/i.test(name)) {
+            const split=name.lastIndexOf("-"), id=name.slice(0,split).toLowerCase()+"-"+name.slice(split+1).toUpperCase(),
+              card=await ensureCard(G,id);
+            return card?.id.toLowerCase()===name.toLowerCase()?card:null;
+          }
+          const cached=Object.values(cache[G]).find(c=>!c.brief && c.name.toLowerCase() === name.toLowerCase());
+          return cached || SOURCES[G].byName(name);
         })().catch(()=>null));
-        const card=await pending.get(name); results[i]=card ? {card:remember(card),qty:l.qty,zone:l.zone} : {missing:name};
+        const card=await pending.get(key); results[i]=card ? {card:remember(card),qty:l.qty,zone:l.zone} : {missing:l.name};
         status(`Matching ${++completed}/${lines.length}…`);
       }
     }));
@@ -3376,7 +3481,7 @@ export function registerTcg(c) {
     return {active,status:m=>{if(active() && node) node.textContent=m;}};
   };
   const requireComplete = (rows, missed) => {
-    if(missed.length) throw Error(`Nothing saved: ${missed.length} unmatched entries. Correct these names and retry: ${missed.slice(0,5).join(", ")}`);
+    if(missed.length) throw Error(`Nothing saved: ${missed.length} unmatched entries. Check names, sets and collector numbers, then retry: ${missed.slice(0,5).join(", ")}`);
     if(!rows.length) throw Error("No cards matched. Nothing saved.");
   };
   A.tImpDeck = async (t) => {

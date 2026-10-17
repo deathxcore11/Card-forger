@@ -57,8 +57,23 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Test real reference images through scanner and collection
         run: node tests/scanner-browser.mjs
+      - name: Test nonblocking mixed-game capture and mobile layout
+        run: node test-batch-scan-browser.mjs
+      - name: Test price outage recovery and honest mobile totals
+        run: node tests/pricing-browser.mjs
       - uses: actions/upload-artifact@v4
-        if: failure()
+        if: always()
         with:
-          name: scanner-browser-failures
+          name: scanner-browser-evidence
           path: test-results/
+  database-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install disposable PostgreSQL test runtime
+        run: npm install --no-save --package-lock=false --ignore-scripts @electric-sql/pglite@0.5.10
+      - name: Exercise actual quota SQL without contacting production
+        run: CARDSTASHY_PGLITE_MODULE="$PWD/node_modules/@electric-sql/pglite/dist/index.js" node test-server-safety-history-sql.mjs

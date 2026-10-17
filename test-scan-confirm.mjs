@@ -58,8 +58,8 @@ assert.deepEqual(result.cands.filter(c=>c.exact).map(c=>c.id),['correct']);
 const prints=await tcg.scanPrintings('ptcg',{name:'Kyogre'});assert.ok(prints.length>0);assert.ok(prints.every(p=>p.id!=='wrong-suffix'));
 Object.assign(SOURCES.ptcg,old);
 const source=fs.readFileSync('scancam.js','utf8');
-assert.ok(source.indexOf('r=await readFlow(card,G,p,null)') < source.indexOf('const fast = await artFirst(card,G)'));
-assert.match(source,/if \(s\(\)\.confirm\)/);assert.match(source,/flattenCapture\(v,loop.quad\)/);
+assert.doesNotMatch(source,/id="camGuide"|<polygon/,'camera detection has no visible outline or mask');
+assert.match(source,/if \(s\(\)\.confirm\)/);assert.match(source,/flattenCapture\(v,padQuad\(loop.quad/);
 console.log('PASS: all-game identifier gates, Pokémon suffix/number collisions, compact live confirmation, quantity/condition, direct save, duplicate-submit protection, failed-save recovery and camera continuity.');
 
 for(const g of ['mtg','ptcg','ygo']){
@@ -68,9 +68,9 @@ for(const g of ['mtg','ptcg','ygo']){
  assert.equal(r.cands.length,1,'noisy OCR cannot erase an available visual suggestion');assert.equal(r.cands[0].exact,false,'visual recovery still requires confirmation');
  assert.equal(textVerifiedMatch(g,r.cands[0],{name:'Nonsensical OCR'}),false);
  const empty=scanConfirmation(g,{cands:[],shot:'data:image/png;base64,AA',confirm:{unresolved:true}},{});
- assert.match(empty,/Your captured card/);assert.match(empty,/Find card/);assert.match(empty,/Scan again/);assert.doesNotMatch(empty,/data-act="scanConfirm"/,'unidentified card cannot be saved as a fabricated match');
+ assert.match(empty,/Your captured card/);assert.doesNotMatch(empty,/Find card|scanMatchName/,'failed reads do not demand catalogue hunting');assert.match(empty,/Saved for later/);assert.match(empty,/Scan again/);assert.doesNotMatch(empty,/data-act="scanConfirm"/,'unidentified card cannot be saved as a fabricated match');
 }
-console.log('PASS: noisy-title visual recovery and retry/manual-identification popup in all games; unverified artwork never becomes an exact printing.');
+console.log('PASS: noisy-title visual recovery and nonblocking retry review in all games; unverified artwork never becomes an exact printing.');
 
 S.state=blank();S.state.settings.game='ptcg';S.ui.view='scan';let lookups=0,writes=0;
 const retryA={};registerScanner({A:retryA,C:{},render(){},toast(){},game:()=> 'ptcg',setOf:()=>'',numberOf:()=>'',priceOf:()=>null,async candById(){if(++lookups===1)throw Error('temporary lookup outage');return {id:'retry-card',name:'Retry card',card:{id:'retry-card',name:'Retry card',game:'ptcg',variants:[]}};},async addMany(){writes++;}});
