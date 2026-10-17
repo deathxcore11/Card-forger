@@ -164,7 +164,7 @@ async function bottomNavEvidence(page) {
     assert.equal(button.font,'11px','Full bottom labels retain the established readable type size');
     assert(Math.abs(button.rect.width-geometry.width/5)<.5,'All five equal targets keep their full track width');
     assert(button.rect.width>=44&&button.rect.height>=44&&button.rect.left>=-.5&&button.rect.right<=geometry.width+.5&&button.hit,'Every bottom navigation target is full-sized, visible and physically reachable: '+JSON.stringify(button));
-    assert(button.scroll<=button.client+1,'Bottom navigation content does not overflow its track');
+    assert(button.scroll<=button.client+1,'Bottom navigation content does not overflow its track: '+JSON.stringify(button));
     for(const rect of [button.icon,...button.labels])assert(rect.left>=button.rect.left-.5&&rect.right<=button.rect.right+.5&&rect.top>=button.rect.top-.5&&rect.bottom<=button.rect.bottom+.5,'Full icon and readable label stay inside their own target: '+JSON.stringify(button));
   }
   return {filename:await captureNavigation(page,`bottom-nav-${geometry.width}`),geometry};
