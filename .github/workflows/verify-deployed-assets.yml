@@ -1,0 +1,33 @@
+name: Verify deployed release assets
+
+on:
+  push:
+    branches: [claude/edit-publish-github-bpm8zu]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test verifier offline
+        run: python -m unittest discover -s tests -p 'test_verify_deployed_assets.py' -v
+      - name: Verify public deployment bytes after propagation
+        run: python scripts/verify-deployed-assets.py
+      - name: Preserve release evidence, including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployed-assets-${{ github.sha }}
+          path: test-results/deployed-assets.json
+          if-no-files-found: warn
+          retention-days: 14

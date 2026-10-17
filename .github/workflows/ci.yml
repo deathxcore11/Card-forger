@@ -5,6 +5,17 @@ on:
   pull_request:
 
 jobs:
+  deployment-verifier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test static deployment verifier without contacting production
+        run: python -m unittest discover -s tests -p 'test_verify_deployed_assets.py' -v
   test:
     runs-on: ubuntu-latest
     steps:
