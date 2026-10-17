@@ -100,7 +100,8 @@ async function settledContent(page) {
   await frames(page);
 }
 async function safePoint(page, dx, {carousel = false} = {}) {
-  if (carousel) await page.locator('[data-home-community]').scrollIntoViewIfNeeded();
+  // Scroll the current hydrated node atomically, then measure the settled surface.
+  if (carousel) await page.locator('[data-home-community]').evaluate(n=>n.scrollIntoView({block:'center',behavior:'instant'}));
   else await page.evaluate(() => scrollTo(0, 0));
   await settledContent(page);
   // A one-pixel padding gap is not a real touch surface: Chromium may retarget

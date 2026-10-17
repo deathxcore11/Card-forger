@@ -4221,3 +4221,4 @@ body[data-view="scan"] #content:has(.scan-workspace.is-live) > .context-guide{di
 }
 /* The full Community label fits the narrowest 64px navigation target. */
 .bottom-nav [data-nav="community"]{letter-spacing:-.035em}
+@media(max-width:359px){.bottom-nav [data-nav="community"]{letter-spacing:-.075em}}
