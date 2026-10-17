@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {ygoSetPriceRoute,applyYgoSetPrices} from './ygo-set-prices.js';
+import {ygoSetPriceRoute,applyYgoSetPrices,ygoSetReference} from './ygo-set-prices.js';
 import {normalizeYgoSets} from './ygo.js';
 import {setContextCard,selectedYgoCard,tcgRarityAttrs,tcgSet,ui,cache} from './tcg.js';
 import {S,blank} from './store.js';
@@ -19,9 +19,18 @@ assert.equal(applyYgoSetPrices(card,{...release,providerNameAmbiguous:true},body
 S.state=blank();S.state.settings.game='ygo';ui('ygo').sets.list=[release];cache.ygo[card.id]=enriched;
 Object.assign(ui('ygo').set,{info:release,id:release.id,cards:[enriched],contents:{completeness:'complete'},q:'',filter:'all',rarity:'',edition:'1st-edition',sort:'number',limit:120});
 let html=tcgSet();assert.match(html,/data-edition="1st-edition"/);assert.match(html,/\$0.54/);assert.match(html,/data-rarity-flair="yr4"/);assert.match(html,/data-tier="t0"/);assert.match(html,/data-change="tSetEdition"/);
-ui('ygo').set.edition='';html=tcgSet();assert.match(html,/Choose edition/);assert.doesNotMatch(html,/\$0.54|\$999/);
+ui('ygo').set.edition='';html=tcgSet();assert.match(html,/\$0.54/);assert.match(html,/Market ref\./);assert.doesNotMatch(html,/\$999/);assert.equal(ui("ygo").set.edition,"");
 const collector={...card,sets:[{...card.sets[0],rarity:"Collector's Rare"}]},collectorBody={...body,products:[{...body.products[0],name:card.name+' (CR)',rarity:"Collector's Rare"}]};
 assert.equal(applyYgoSetPrices(collector,release,collectorBody).sets[0].quotes[0].market,.54);
 assert.equal(applyYgoSetPrices(collector,release,{...collectorBody,products:[{...collectorBody.products[0],name:card.name+' (Starlight Rare)'}]}).sets[0].quotes,undefined,'Only the exact rarity suffix can be removed');
 const failure=await ygoSetPriceRoute(new URL(url.href.replace('MP25','BAD')),{},async()=>{throw Error('offline')});assert.equal(failure.status,503);
 console.log('PASS: exact cached set-price hydration, three bounded source requests, deduplication, missing/ambiguous/name/rarity rejection, explicit edition, actual grid prices/tier and rarity coexistence.');
+
+const scoped=selectedYgoCard(setContextCard('ygo',enriched,release,[release])),prior=JSON.stringify(scoped);
+assert.equal(ygoSetReference(scoped).low,.54);assert.equal(JSON.stringify(scoped),prior);assert.equal(scoped.prices.usd,null,'Browse quote never becomes an exact selection');
+const ranged={...scoped,setContext:{...scoped.setContext,printings:[{...scoped.setContext.printings[0],quotes:[{edition:'1st Edition',market:12},{edition:'Unlimited',market:5}]}]}};
+assert.equal(ygoSetReference(ranged).low,5);assert.equal(ygoSetReference(ranged).high,12);assert.equal(ygoSetReference(ranged,{edition:'1st-edition'}).low,12);assert.equal(ygoSetReference(ranged,{edition:'limited'}),null);assert.equal(ygoSetReference(ranged,{rarity:'Common'}),null);
+assert.equal(ygoSetReference({...ranged,setContext:{...ranged.setContext,status:'ambiguous'}}),null);
+assert.equal(ygoSetReference({...ranged,setContext:{...ranged.setContext,printings:ranged.setContext.printings.map(p=>({...p,releasePriceAmbiguous:true}))}}),null);
+const duplicate={...ranged,setContext:{...ranged.setContext,printings:[...ranged.setContext.printings,...ranged.setContext.printings]}};assert.equal(ygoSetReference(duplicate),null);
+console.log('PASS: set browse ranges respect release, rarity and edition; missing editions and ambiguous duplicates stay unknown; exact/condition values are unchanged.');

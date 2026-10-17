@@ -48,3 +48,32 @@ export function applyYgoSetPrices(card,release,body){
  });
  return {...card,sets};
 }
+
+// Browsing a set must not require choosing a physical edition. Summarize only
+// that verified release's available printing references, without selecting one
+// for the detail sheet, collection value, condition lookup or price history.
+export function ygoSetReference(card,{rarity='',edition=''}={}){
+ const context=card?.setContext;
+ if(card?.game!=='ygo'||context?.status!=='resolved'||context.releaseAmbiguous)return null;
+ const rows=context.printings||[],selected=card.displayPrintingKey||'',quotes=[];
+ const subtype={'1st-edition':'1st Edition',unlimited:'Unlimited',limited:'Limited'}[edition];
+ if(edition&&!subtype)return null;
+ for(const p of rows){
+  const key=p.code+'::'+p.rarity;
+  if(p.releasePriceAmbiguous||rows.filter(r=>r.code===p.code&&rarityKey(r.rarity)===rarityKey(p.rarity)).length!==1)continue;
+  if(selected&&key!==selected||rarity&&rarity!=='all'&&p.rarity!==rarity)continue;
+  if(p.quotes?.length){
+   for(const q of p.quotes){
+    if(!['1st Edition','Unlimited','Limited'].includes(q.edition)||subtype&&q.edition!==subtype||p.quotes.filter(other=>other.edition===q.edition).length!==1)continue;
+    const ref=referenceQuote(q);if(ref)quotes.push({...ref,rarity:p.rarity,edition:q.edition,code:p.code});
+   }
+  }else if(!edition){
+   const value=Number(p.price);
+   if(Number.isFinite(value)&&value>0)quotes.push({value,kind:p.priceKind||'market',rarity:p.rarity,edition:'',code:p.code});
+  }
+ }
+ if(!quotes.length)return null;
+ const low=Math.min(...quotes.map(q=>q.value)),high=Math.max(...quotes.map(q=>q.value)),range=low!==high;
+ const market=quotes.every(q=>q.kind==='market'),label=(market?'Market':'Listing')+(range?' range':' ref.');
+ return {low,high,range,label,count:quotes.length,rarities:[...new Set(quotes.map(q=>q.rarity))],editions:[...new Set(quotes.map(q=>q.edition).filter(Boolean))],scope:context.name};
+}

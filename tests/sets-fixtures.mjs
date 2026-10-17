@@ -128,7 +128,7 @@ export async function validateSetsFixtures(){
  return 'PASS: Sets fixtures retain exact all-three-game IDs, condition/printing contexts, 14/126 partial coverage, duplicate regional rows, release collisions, paginated boundaries and synthetic-art provenance. No browser started.';
 }
 
-export async function openSetsApp(browser,base,{game='ygo',hash='#sets',width=390,height=1000,reducedMotion='no-preference',ownership='exact',legacy=false,evidenceLabel=game}={}){
+export async function openSetsApp(browser,base,{game='ygo',hash='#sets',width=390,height=1000,reducedMotion='no-preference',ownership='exact',legacy=false,setPrices=false,evidenceLabel=game}={}){
  assert.match(base,/^http:\/\/127\.0\.0\.1:\d+$/,'Fixture server must be loopback');
  const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:1,hasTouch:true,reducedMotion,locale:'en-US',timezoneId:'UTC',serviceWorkers:'block'}),page=await context.newPage();page.setDefaultTimeout(15000);
  const errors=[],writes=[],unexpected=[],requests=[],images=[],rules=[];const gates=[];const fixtures=makeSetsFixtures(game,{ownership,legacy});
@@ -156,6 +156,7 @@ export async function openSetsApp(browser,base,{game='ygo',hash='#sets',width=39
    if(url.pathname==='/catalog.json')return fulfill({cards:[],snapshot_date:'2000-01-01'});
    if(url.pathname==='/api/community')return fulfill({game:url.searchParams.get('game'),status:'unavailable',items:[],fetchedAt:ISO});
    if(url.pathname==='/api/prices/archive'||url.pathname==='/api/prices/recent')return fulfill(history(url));
+   if(setPrices&&url.pathname==='/api/prices/yugioh-set')return fulfill({name:LOB.name,code:'LOB',status:'ready',source:'Synthetic set price fixture',updatedAt:ISO,products:[{name:'Dark Energy',code:'LOB-118',rarity:'Common',productId:100001,quotes:[{edition:'1st Edition',market:15},{edition:'Unlimited',market:12.34}]},{name:'Blue-Eyes White Dragon',code:'LOB-001',rarity:'Ultra Rare',productId:100002,quotes:[{edition:'1st Edition',market:150}]}]});
    if(url.pathname.startsWith('/api/prices/'))return fulfill({points:[],series:[],cards:[],products:[],variants:[],prices:{},partial:false});
    if(url.pathname.startsWith('/api/meta/'))return fulfill({events:[],decks:[],archetypes:[],top:[]});
    if(!url.pathname.startsWith('/api/')&&!url.pathname.startsWith('/img/')){record.settled=true;return route.continue();}

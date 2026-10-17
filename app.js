@@ -1,3 +1,4 @@
+import {profileAvatar,profileArt,createProfileArtPicker} from './profile-art.js';
 import {openTabletop} from './tabletop.js';
 import {INFO_TOPICS,findInfo} from './app-info.js';
 import {attachHomeSearch,homeIntent,rankHomeCards,homeQueries,placeGlobalSearch,searchEmblem} from './home-search.js';
@@ -169,7 +170,7 @@ function decorateShell() {
     else if (span && ICON[b.dataset.nav]) span.innerHTML = ICON[b.dataset.nav];
   }
   const gear = $('.topbar [data-act="menu"]');
-  if (gear) gear.innerHTML = ICON.settings;
+  if (gear) {gear.classList.add("profile-menu");gear.innerHTML = profileAvatar(S.state.settings.cardAvatar,cloudInfo().profile||{});gear.title="Profile & settings";}
   const mark = $(".brand .mark");
   if (mark) mark.innerHTML = brandMark("brand-idle");
   glyphObserver?.observe(document.body, { childList: true, subtree: true });
@@ -903,6 +904,7 @@ function render() {
   warmEmblems();
   setTimeout(updateAmbient, 0);
   for (const b of $$("[data-nav]")) b.classList.toggle("on", b.dataset.nav === (ui.view === "deck" ? "decks" : ui.view === "set" || ui.view === "sets" ? "search" : ui.view));
+  document.querySelector(".header-sets")?.classList.toggle("on",["set","sets"].includes(ui.view));
   document.body.dataset.view = ui.view;
   const g = T.game();
   const content=$('#content'),previousDisclosureKey=content?.dataset?.disclosureKey;
@@ -916,6 +918,7 @@ function render() {
   document.body.dataset.game = g;
   document.body.style?.setProperty("--game-color", GAME_COLOR[g]);
   syncGameTabs($("#gameTabs"), g);
+  refreshProfileAvatar();
   $(".brand-home")?.setAttribute?.("aria-current",ui.view==="home"?"page":"false");
   content?.setAttribute?.("aria-labelledby", `game-tab-${g}`);
   const views = {
@@ -1955,7 +1958,7 @@ A.muUndo = async (t) => {
   await commit((s) => { const x = s.decks.find((y) => y.id === d.id); x.results = (x.results || []).filter((g) => g.at !== t.dataset.at); }, { msg: "Game removed." });
 };
 let settingsBaseState=null;
-const settingsPopup=createSettingsDialog({beforeOpen:()=>{settingsBaseState=S.state;},dialog:$("#settingsDialog"),markup:()=>`<header class="settings-dialog-head"><div><p class="eyebrow">ALL THREE GAMES</p><h2 id="settingsDialogTitle">Settings</h2></div><button class="icon" data-act="closeSettings" aria-label="Close settings">${ICON.close||'✕'}</button></header>${V.settings({popup:true})}`,afterPaint:()=>{if(S.ui.settingsTab==='backup')storageDetail();},afterClose:scroll=>{if(settingsBaseState!==S.state)render();window.scrollTo({top:scroll,behavior:'instant'});setTimeout(safeIntro,50);}});
+const settingsPopup=createSettingsDialog({beforeOpen:()=>{settingsBaseState=S.state;},dialog:$("#settingsDialog"),markup:()=>`<header class="settings-dialog-head"><div><p class="eyebrow">ALL THREE GAMES</p><h2 id="settingsDialogTitle">Settings</h2></div><button class="icon" data-act="closeSettings" aria-label="Close settings">${ICON.close||'✕'}</button></header>${V.settings({popup:true})}`,afterPaint:()=>{if(S.ui.settingsTab==='backup')storageDetail();},afterClose:scroll=>{profilePicker.close();if(settingsBaseState!==S.state)render();window.scrollTo({top:scroll,behavior:'instant'});setTimeout(safeIntro,50);}});
 A.menu = () => settingsPopup.open();
 A.closeSettings = () => settingsPopup.close();
 
@@ -2829,6 +2832,16 @@ async function submitHome(q,mode){
 }
 A.homeSearch=()=>submitHome($('#homeQ')?.value);
 window.matchMedia?.("(min-width:1200px)").addEventListener?.("change",()=>placeGlobalSearch(T.game(),S.ui.view));
+function refreshProfileAvatar(){
+ const button=document.querySelector('.topbar [data-act="menu"]');if(!button)return;
+ const html=profileAvatar(S.state.settings.cardAvatar,cloudInfo().profile||{});
+ if(button.innerHTML!==html)button.innerHTML=html;
+ button.classList.add('profile-menu');button.title='Profile & settings';
+}
+const profilePicker=createProfileArtPicker({lookup:homeLookup,currentGame:T.game,read:()=>S.state.settings.cardAvatar,
+ save:async value=>{const crop=profileArt(value);if(!crop)throw Error('Invalid artwork');await commit(s=>{s.settings.cardAvatar=crop;},{rerender:false,enrich:false,recordDeckWork:false});},
+ onSaved:()=>{refreshProfileAvatar();settingsPopup.refresh();toast('Profile photo saved.');}});
+A.profilePhoto=()=>profilePicker.open();
 const homeSearchController=attachHomeSearch({game:T.game,lookup:homeLookup,submit:submitHome,open:async(g,c)=>{
  if(T.game()!==g)return;
  if(g==='mtg'){

@@ -151,6 +151,9 @@ jobs:
       - name: Test integrated search, action tutorials, Settings Info and local tabletop
         if: ${{ !cancelled() }}
         run: node tests/home-guide-browser.mjs
+      - name: Test card-art profile crop and compact navigation
+        if: ${{ !cancelled() }}
+        run: node tests/profile-art-browser.mjs
       - name: Validate and test exact Home value updates with synthetic quotes
         if: ${{ !cancelled() }}
         run: |
@@ -230,6 +233,8 @@ jobs:
         run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
       - name: Install test browser
         run: npx playwright install --with-deps chromium
+      - name: Inspect public bulk set price coverage (read only)
+        run: node tests/probe-ygo-set-prices.mjs
       - name: Test exact releases, ownership, filters and responsive Sets
         run: node tests/sets-browser.mjs
       - uses: actions/upload-artifact@v4

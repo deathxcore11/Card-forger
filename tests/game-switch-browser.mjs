@@ -280,7 +280,10 @@ async function deckHeaderEvidence(app) {
       const rect=await control.boundingBox();assert(rect.width>=44&&rect.height>=44&&rect.x>=-.5&&rect.x+rect.width<=width+.5,'Each game tab is a contained, full-size touch target');
       const label=await control.evaluate(button=>{const name=button.querySelector('.game-tab-name'),range=document.createRange();range.selectNodeContents(name);return {text:name.textContent,rect:button.getBoundingClientRect().toJSON(),labelRects:[...range.getClientRects()].map(r=>r.toJSON()),scroll:name.scrollWidth,client:name.clientWidth};});
       assert.equal(label.text,{mtg:'Magic',ygo:'Yu-Gi-Oh!',ptcg:'Pokémon'}[game],'Game names are complete, never abbreviated to fit');
-      assert(label.scroll<=label.client+1&&label.labelRects.length>0,'The full game name fits its label box');
+      const compactInactive=width<600&&await control.getAttribute('aria-selected')!=='true';
+      assert.equal(await control.getAttribute('aria-label'),{mtg:'Magic: The Gathering',ygo:'Yu-Gi-Oh!',ptcg:'Pokémon'}[game]);
+      if(compactInactive){assert.equal(label.labelRects.length,0,'Inactive compact game uses its accessible symbol');continue;}
+      assert(label.scroll<=label.client+1&&label.labelRects.length>0,'The visible full game name fits its label box');
       for(const r of label.labelRects)assert(r.left>=label.rect.left-.5&&r.right<=label.rect.right+.5&&r.top>=label.rect.top-.5&&r.bottom<=label.rect.bottom+.5,'No game label is clipped by its tab: '+JSON.stringify(label));
     }
     const initial=await page.evaluate(()=>{const h=document.querySelector('.topbar'),tabs=document.querySelector('#content > .tabs'),active=tabs.querySelector('[aria-selected="true"]'),content=document.querySelector('#content');return {header:h.getBoundingClientRect().toJSON(),tabs:tabs.getBoundingClientRect().toJSON(),active:active?.getBoundingClientRect().toJSON(),activeId:active?.dataset.id,railLeft:tabs.scrollLeft,display:getComputedStyle(h).display,width:innerWidth,root:document.documentElement.scrollWidth,content:content.scrollWidth,client:content.clientWidth,workspaceHeight:content.scrollHeight};});
