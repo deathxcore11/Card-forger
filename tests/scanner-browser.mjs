@@ -237,6 +237,8 @@ try{
    await page.locator('.glass-select-menu[open]').getByRole('option',{name:'Japanese',exact:true}).tap();
    await popup.getByRole('button',{name:'Add to collection',exact:true}).click();
    await popup.waitFor({state:'detached'});
+   assert(await page.locator('.scan-saved-receipt').isVisible(),'Successful save shows its receipt');
+   assert.match(await page.locator('.scan-saved-receipt').innerText(),/Lightly Played/);
    const saved=await page.evaluate(async g=>{const {S}=await import('/store.js');return (g==='mtg'?S.state:S.state.tcg[g]).collection;},ref.g);
    assert.equal(saved.length,1);assert.equal(saved[0].name,ref.name);if(ref.id)assert.equal(String(ref.g==='mtg'?saved[0].printingId:saved[0].cardId),ref.id,'same name is insufficient: save the correct indexed card/printing');assert.equal(saved[0].qty,3);assert.equal(saved[0].condition,'Lightly Played');assert.equal(saved[0].language,'ja');
    if(ref.g==='mtg'){assert.equal(saved[0].set,'MSC');assert.equal(String(saved[0].collectorNumber),'806');assert.equal(saved[0].finish,finish);assert.equal(saved[0].printingVerified,true,'explicit review confirms the saved printing, not the OCR evidence');}

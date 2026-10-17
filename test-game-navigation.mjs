@@ -34,7 +34,7 @@ function harness(game='mtg',hash='#search'){
  const history={get state(){return entries[pos].state;},replaceState(state,_title,route){entries[pos]={state:structuredClone(state),hash:route};location.hash=route;},pushState(state,_title,route){entries.splice(++pos);entries.push({state:structuredClone(state),hash:route});location.hash=route;},go(delta){pos+=delta;location.hash=entries[pos].hash;handlers.popstate();handlers.hashchange();}};
  const T={game:()=>GAME_ROUTES.includes(S.state.settings?.game)?S.state.settings.game:"mtg",isTcg:()=>S.state.settings.game!=='mtg',ui:(g=S.state.settings.game)=>UI[g],invalidateTcgSearch:g=>hooks.push('search:'+g)};
  const content={setAttribute(){}};
- const context={S,T,location,history,routeSegments,normalizeRoute,gameSwitchRoute,historyEntry,createNavigationQueue,GAMES:Object.fromEntries(GAME_ROUTES.map(g=>[g,{}])),
+ const context={settingsPopup:{historyChanged:()=>false},S,T,location,history,routeSegments,normalizeRoute,gameSwitchRoute,historyEntry,createNavigationQueue,GAMES:Object.fromEntries(GAME_ROUTES.map(g=>[g,{}])),
  document:{querySelector:()=>null,querySelectorAll:selector=>selector==='dialog[open]'&&block?[{id:'dirty'}]:[],addEventListener(){}},window:{scrollY:175,scrollTo:arg=>scrolls.push(arg),addEventListener:(name,fn)=>handlers[name]=fn},$:()=>content,
  scanCtx:{beforeGameChange:(from,to)=>{hooks.push(['before',from,to]);return !scanSaving;},afterGameChange:g=>hooks.push(['after',g])},
  commit:async fn=>{if(slow)await new Promise((resolve,reject)=>jobs.push({resolve,reject}));if(reject)throw Error('fixture disk full');fn(S.state);},

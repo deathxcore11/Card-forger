@@ -20,5 +20,8 @@ S.state=blank();S.state.settings.game='ygo';ui('ygo').sets.list=[release];cache.
 Object.assign(ui('ygo').set,{info:release,id:release.id,cards:[enriched],contents:{completeness:'complete'},q:'',filter:'all',rarity:'',edition:'1st-edition',sort:'number',limit:120});
 let html=tcgSet();assert.match(html,/data-edition="1st-edition"/);assert.match(html,/\$0.54/);assert.match(html,/data-rarity-flair="yr4"/);assert.match(html,/data-tier="t0"/);assert.match(html,/data-change="tSetEdition"/);
 ui('ygo').set.edition='';html=tcgSet();assert.match(html,/Choose edition/);assert.doesNotMatch(html,/\$0.54|\$999/);
+const collector={...card,sets:[{...card.sets[0],rarity:"Collector's Rare"}]},collectorBody={...body,products:[{...body.products[0],name:card.name+' (CR)',rarity:"Collector's Rare"}]};
+assert.equal(applyYgoSetPrices(collector,release,collectorBody).sets[0].quotes[0].market,.54);
+assert.equal(applyYgoSetPrices(collector,release,{...collectorBody,products:[{...collectorBody.products[0],name:card.name+' (Starlight Rare)'}]}).sets[0].quotes,undefined,'Only the exact rarity suffix can be removed');
 const failure=await ygoSetPriceRoute(new URL(url.href.replace('MP25','BAD')),{},async()=>{throw Error('offline')});assert.equal(failure.status,503);
 console.log('PASS: exact cached set-price hydration, three bounded source requests, deduplication, missing/ambiguous/name/rarity rejection, explicit edition, actual grid prices/tier and rarity coexistence.');

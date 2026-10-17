@@ -497,7 +497,12 @@ async function assertCommunityArtwork(page, selector, game, { kind = 'card', sta
   assert.equal(await art.count(), 1, `${game}: one source-bound art treatment in ${selector}`);
   assert.equal(await art.getAttribute('data-art-game'), game);
   assert.equal(await art.getAttribute('data-art-kind'), kind);
-  const visual = await art.evaluate(node => {
+  const visual = await art.evaluate(async node => {
+    // A feed refresh can restart page-entry motion after scrollIntoView. Measure
+    // the completed layout, not its temporary .995 entry scale.
+    const animations=[];
+    for(let parent=node;parent;parent=parent.parentElement)animations.push(...parent.getAnimations().filter(a=>Number.isFinite(a.effect?.getComputedTiming().endTime)&&!['finished','idle'].includes(a.playState)));
+    await Promise.all(animations.map(a=>a.finished.catch(()=>{})));
     const rect = node.getBoundingClientRect(), css = getComputedStyle(node), image = node.querySelector('img[data-community-image]');
     return { width: rect.width, height: rect.height, display: css.display, visibility: css.visibility, opacity: Number(css.opacity),
       loaded: !!image?.complete && image.naturalWidth > 0, imageHidden: !image || image.hidden || getComputedStyle(image).display === 'none',

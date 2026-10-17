@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {textVerifiedMatch,scanConfirmation,scanView,registerScanner,recoverScanCandidates} from './scancam.js';
+import {textVerifiedMatch,scanConfirmation,scanView,registerScanner,recoverScanCandidates,initialReviewIndex,scanSavedMarkup} from './scancam.js';
 import {S,blank} from './store.js';
 import {savePrefs,loadPrefs,loadSession,DEFAULT_PREFS} from './scansession.js';
 import {registerTcg,SOURCES,cache} from './tcg.js';
@@ -78,3 +78,13 @@ const retryA={};registerScanner({A:retryA,C:{},render(){},toast(){},game:()=> 'p
 S.ui.scan={camOn:true,cands:[{id:'retry-card',name:'Retry card',localReference:true,card:{id:'retry-card',name:'Retry card'}}],confirm:{i:0,qty:1,condition:'Near Mint',lang:'en',finish:'normal'}};
 await retryA.scanConfirm();assert.equal(lookups,2);assert.equal(writes,1);assert.equal(S.ui.scan.confirm,null);assert.equal(S.ui.scan.camOn,true);
 console.log('PASS: transient identifier hydration is retried once; collection writes still happen only once.');
+
+for(const key of ['identityConflict','identifierConflict','signalConflict']){
+ assert.equal(initialReviewIndex({cands:[{[key]:true}]}),-1);
+ assert.equal(initialReviewIndex({cands:[{[key]:true}],selectedIndex:0}),0,'explicit review remains selected');
+}
+assert.equal(initialReviewIndex({cands:[{}]}),0);
+assert.equal(initialReviewIndex({cands:[]}),-1);
+assert.match(scanSavedMarkup({name:'Test',condition:'Lightly Played',finish:'holo',qty:2,price:3.25}),/6.50/);
+assert.match(scanSavedMarkup({name:'Test',condition:'Damaged',finish:'holo',qty:1,price:null}),/Condition price unavailable/);
+assert.doesNotMatch(scanSavedMarkup({name:'<script>',condition:'Damaged',finish:'holo',qty:1,price:NaN}),/<script>|NaN/);

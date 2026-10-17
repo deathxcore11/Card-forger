@@ -10,7 +10,7 @@ import { pokemonDeckCover } from "./artwork.js";
 
 const KEY = "cardforge-meta-v1",
   TTL = 12 * 3600 * 1000,
-  PTCG_ART_SCHEMA = 1;
+  PTCG_ART_SCHEMA = 2;
 const state = {};
 
 const readCache = () => {
@@ -237,10 +237,10 @@ export async function ptcgMeta() {
           a.cover = { ...cover, source: { eventId: t.id, rank: Number.isFinite(rank) ? rank : null } };
           a.coverRank = rank;
         }
-        // Art may come from an actual lower-place list. Top-8 lists, ranking,
-        // card statistics and click destinations remain strictly Top 8 only.
+        const d = { key: "ptcg:" + t.id + ":" + p.placing, name: p.deck.name, archetype: p.deck.id, icons: p.deck.icons || [], event: cleanName(t.name), place: p.placing === 1 ? "Winner" : p.placing === 2 ? "Runner-Up" : "Top " + (p.placing <= 4 ? 4 : p.placing <= 8 ? 8 : p.placing), rank: p.placing, players: t.players, player: p.name || "", date: t.date?.slice(0, 10) || "", list: rows, url: `https://play.limitlesstcg.com/tournament/${t.id}/player/${encodeURIComponent(p.player || "")}/decklist` };
+        // Keep a real representative accessible without polluting Top-8 stats.
+        if(rows.length&&(!a.representative||d.rank<a.representative.rank))a.representative=d;
         if (!(p.placing && p.placing <= 8)) continue;
-        const d = { key: "ptcg:" + t.id + ":" + p.placing, name: p.deck.name, archetype: p.deck.id, icons: p.deck.icons || [], event: cleanName(t.name), place: p.placing === 1 ? "Winner" : p.placing === 2 ? "Runner-Up" : "Top " + (p.placing <= 4 ? 4 : 8), rank: p.placing, players: t.players, player: p.name || "", date: t.date?.slice(0, 10) || "", list: rows, url: `https://play.limitlesstcg.com/tournament/${t.id}/player/${encodeURIComponent(p.player || "")}/decklist` };
         decks.push(d);
         if (!a.best || d.rank < a.best.rank) a.best = d;
       }
@@ -261,7 +261,7 @@ export async function ptcgMeta() {
     source: "Limitless — " + events.length + " recent Standard events, " + players + " players",
     events: events.map((t) => ({ name: cleanName(t.name), players: t.players, date: t.date?.slice(0, 10) })),
     decks: decks.sort((a, b) => a.rank - b.rank || b.players - a.players),
-    archetypes: [...arch.values()].filter((a) => a.id !== "other").sort((a, b) => b.count - a.count).map((a) => ({ id: a.id, name: a.name, icons: a.icons, count: a.count, top8: a.top8, share: a.count / Math.max(1, players), best: a.best?.key || "", cover: pokemonDeckCover(a.best) || a.cover })),
+    archetypes: [...arch.values()].filter((a) => a.id !== "other").sort((a, b) => b.count - a.count).map((a) => ({ id: a.id, name: a.name, icons: a.icons, count: a.count, top8: a.top8, share: a.count / Math.max(1, players), best: a.best?.key || "", representative: a.best || a.representative || null, cover: pokemonDeckCover(a.best) || a.cover })),
     top: [...cards.values()].map((c) => ({ name: c.name, kind: c.kind, pct: (c.decks / Math.max(1, decks.length)) * 100, avg: c.copies / c.decks })).sort((a, b) => b.pct - a.pct),
   };
 }

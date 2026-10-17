@@ -257,7 +257,7 @@ export async function openGameSwitchApp(browser, base, {game = 'mtg', width = 39
         if (u.pathname === '/catalog.json') return fulfill({cards: [], snapshot_date: '2000-01-01'});
         if (u.pathname === '/api/community') return fulfill(fixtures.storage['cardforge-community-v2'][u.searchParams.get('game')]?.data || {items: [], status: 'unavailable'});
         if (['/api/prices/recent', '/api/prices/archive'].includes(u.pathname)) return fulfill(historyBody(u));
-        if (['/api/prices/pokemon', '/api/prices/yugioh', '/api/prices/conditions', '/api/prices/mtg'].includes(u.pathname)) return fulfill({status: 'unavailable', quotes: [], cards: [], products: [], variants: [], prices: {}, printings: [], partial: false});
+        if (['/api/prices/pokemon', '/api/prices/yugioh', '/api/prices/yugioh-set', '/api/prices/conditions', '/api/prices/mtg'].includes(u.pathname)) return fulfill({status: 'unavailable', quotes: [], cards: [], products: [], variants: [], prices: {}, printings: [], partial: false});
         if (/^\/api\/meta\/(?:mtg|ygo|ptcg)(?:\/[a-zA-Z0-9_-]+)?$/.test(u.pathname)) return fulfill({events: [], decks: [], archetypes: [], top: []});
         if (staticPaths.has(u.pathname)) {record.settled = true; return route.continue();}
       }

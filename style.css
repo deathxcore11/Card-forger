@@ -4093,3 +4093,35 @@ body[data-view="home"] .home-meta-copy h3 { font-size:clamp(22px,3vw,28px); }
 .scan-workspace .scan-frame-hint svg { display:block; width:100%; height:100%; fill:none; stroke:#fff; stroke-width:2.5; stroke-linecap:round; filter:drop-shadow(0 1px 2px #0009); }
 .scan-workspace .scan-frame-hint .scan-frame-accent { stroke:var(--game-color,#7ce3bb); stroke-width:2; }
 @media (max-height:700px) { .scan-workspace .scan-frame-hint { display:none; } }
+
+/* App-wide preferences sit over the current task, with no game navigation inside. */
+.settings-dialog {width:min(760px,calc(100vw - 24px));max-width:760px;max-height:calc(100dvh - 32px);margin:auto;padding:0;border:1px solid var(--line);border-radius:26px;background:var(--bg,#14161b);color:var(--text);overflow:auto;overscroll-behavior:contain;box-shadow:0 28px 100px #0009;}
+.settings-dialog::backdrop {background:#05070cb8;backdrop-filter:blur(8px);}
+.settings-dialog-head {position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 24px;background:var(--surface,#191c24);border-bottom:1px solid var(--line);}
+.settings-dialog-head h2 {margin:0;font-size:24px;}.settings-dialog-head .eyebrow {margin:0 0 4px;font-size:10px;letter-spacing:.13em;}
+.settings-dialog-head .icon {flex:0 0 44px;width:44px;height:44px;}
+.settings-dialog .settings-page {padding:20px;}.settings-dialog .settings-tabs {width:100%;margin:0 0 18px;}
+.settings-dialog .settings-tabs button {flex:1;min-width:0;padding:12px 8px;white-space:normal;word-break:normal;overflow-wrap:normal;}
+.settings-dialog .settings-account-layout {grid-template-columns:1fr;gap:0;}
+.settings-dialog .settings-aside {border:1px solid var(--line);border-radius:16px;padding:16px;}
+.settings-dialog .account-head b,.settings-dialog .account-head small {overflow-wrap:anywhere;}
+.settings-dialog .sync-line {flex-wrap:wrap;row-gap:12px;}.settings-dialog .sync-line>span {flex:1 1 180px;min-width:0;}
+.settings-dialog .settings-tour {margin:4px 0 18px;}
+.settings-dialog .settings-danger {margin-top:22px;}
+html.settings-open,html.settings-open body {overflow:hidden;}
+@media(max-width:480px){.settings-dialog {width:calc(100vw - 16px);max-height:calc(100dvh - 16px);border-radius:22px;}.settings-dialog-head {padding:16px;}.settings-dialog .settings-page {padding:12px;}.settings-dialog .settings-page .panel {padding:16px;}.settings-dialog .settings-tabs button {font-size:12px;}.settings-dialog .sync-line .btn {min-height:44px;}}
+
+/* Scan receipt: the selected condition value stays readable as a copy is filed. */
+.scan-condition-value {display:grid;gap:5px;padding:14px 16px;margin:12px 0;border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);border-radius:16px;background:color-mix(in srgb,var(--accent) 8%,#151820);overflow-wrap:anywhere;}
+.scan-condition-value span {font-size:12px;color:var(--muted);}
+.scan-condition-value strong {font-size:20px;color:var(--accent);}
+.scan-saved-receipt {position:fixed;z-index:2500;bottom:calc(100px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(410px,calc(100vw - 32px));box-sizing:border-box;display:grid;grid-template-columns:52px minmax(0,1fr);gap:14px;align-items:center;padding:16px;border:1px solid color-mix(in srgb,var(--accent) 55%,#383c47);border-radius:22px;background:linear-gradient(125deg,color-mix(in srgb,var(--accent) 16%,#171a22),#14171ef5);box-shadow:0 16px 48px #0008;pointer-events:none;animation:scan-receipt-in .3s ease-out;}
+.scan-saved-receipt > div:last-child {display:grid;gap:4px;min-width:0;overflow-wrap:anywhere;}
+.scan-saved-receipt small,.scan-saved-receipt span {font-size:12px;color:var(--muted);}
+.scan-saved-receipt b {color:var(--accent);font-size:18px;}
+.scan-saved-art,.scan-saved-fly {position:relative;aspect-ratio:63/88;border-radius:6px;background:#242a35;}
+.scan-saved-art img,.scan-saved-fly img {width:100%;height:100%;object-fit:contain;border-radius:6px;}
+.scan-saved-art span,.scan-saved-fly span {position:absolute;bottom:-4px;right:-4px;border-radius:50%;background:var(--accent);color:#12141a;padding:3px 6px;}
+.scan-saved-fly {position:fixed;z-index:2501;pointer-events:none;}
+@keyframes scan-receipt-in {from {opacity:0;translate:0 10px}to {opacity:1;translate:0 0}}
+@media(prefers-reduced-motion:reduce){.scan-saved-receipt {animation:none;}}

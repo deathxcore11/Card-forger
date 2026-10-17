@@ -4,6 +4,12 @@ import {referenceQuote} from './price-reference.js';
 const norm=s=>String(s||'').normalize('NFKC').toLowerCase().replace(/[^a-z0-9]/g,'');
 const aliases={'2025 Mega-Pack Tin':'2025 Mega-Pack'};
 const pending=new Map();
+const productNameMatches=(product,card,rarity)=>{
+ if(norm(product)===norm(card))return true;
+ const m=String(product||'').match(/^(.*?)\s*\(([^()]+)\)$/);if(!m||norm(m[1])!==norm(card))return false;
+ const suffix={CR:"Collector's Rare",QCR:'Quarter Century Secret Rare',UR:'Ultra Rare',SR:'Super Rare',StR:'Starlight Rare'}[m[2]]||m[2];
+ return rarityKey(suffix)===rarityKey(rarity);
+};
 export async function ygoSetPriceRoute(url,ctx,fetchImpl=fetch){
  const name=url.searchParams.get('name')||'',code=url.searchParams.get('code')||'';
  if(!name.trim()||name.length>160||! /^[A-Z0-9-]{1,24}$/.test(code))return Response.json({error:'Invalid release'},{status:400});
@@ -33,7 +39,7 @@ export function applyYgoSetPrices(card,release,body){
  if(card?.game!=='ygo'||!release||release.providerNameAmbiguous||body?.status!=='ready'||body.name!==release.name||body.code!==release.code||!Array.isArray(body.products))return card;
  const sets=(card.sets||[]).map(p=>{
   if(p.name!==release.name||p.releasePriceAmbiguous)return p;
-  const matches=body.products.filter(x=>x.code===p.code&&rarityKey(x.rarity)===rarityKey(p.rarity)&&norm(x.name)===norm(card.name));
+  const matches=body.products.filter(x=>x.code===p.code&&rarityKey(x.rarity)===rarityKey(p.rarity)&&productNameMatches(x.name,card.name,p.rarity));
   if(matches.length!==1)return p;const row=matches[0];
   if(!Number.isSafeInteger(row.productId)||row.productId<1||!Array.isArray(row.quotes))return p;
   const quotes=row.quotes.filter(q=>['1st Edition','Unlimited','Limited'].includes(q.edition)&&referenceQuote(q));

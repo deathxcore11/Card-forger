@@ -8,6 +8,7 @@ const ASSETS = [
   "./printing-picker.js",
   "./scanner-printing.js",
   "./app.js",
+  "./settings-dialog.js",
   "./condition-feed.js",
   "./condition-refresh-scheduler.js",
   "./rule-learning.js",

@@ -1,3 +1,4 @@
+import {createSettingsDialog} from './settings-dialog.js';
 import { normalizeHomeDeckActivity, recordHomeDeckWork } from "./home-deck-activity.js";
 import { syncGameTabs, attachGameTabs, attachHomeCommunity, refreshHomeCommunity, isHomeRevealCurrent, homeDeckReveal, refreshHomeValue, homeValueCoverage, homeMetaSnapshot } from "./home-ui.js";
 import {attachRuleLearning} from './rule-learning.js';
@@ -842,6 +843,7 @@ function parseHash() {
 }
 
 function go(hash) {
+  if(normalizeRoute(hash)==="#settings"){settingsPopup.open();return Promise.resolve(true);}
   if(pendingRoute && Date.now()-pendingRoute.at<500 && pendingRoute.route!==hash && pendingRoute.game===T.game()){routeTrail.push(pendingRoute);if(routeTrail.length>12)routeTrail.shift();}pendingRoute=null;
   return navigate({ game: activeEntry?.game || T.game(), hash: normalizeRoute(hash), mode: "push" });
 }
@@ -872,6 +874,7 @@ function currentRulesOrigin() {
 }
 function dismissRulesGuide() { closeRulesAsk(); dismissRuleHint(); rulesGuideOrigin = null; }
 function render() {
+  if(settingsPopup?.isOpen){settingsPopup.refresh();return;}
   if (navigationPending && !navigationInstalling) return;
   const screen = navigationStamp();
   if (rulesGuideOrigin && JSON.stringify(currentRulesOrigin()) !== JSON.stringify(rulesGuideOrigin)) dismissRulesGuide();
@@ -1216,6 +1219,7 @@ function switchGame(game) {
   return navigate({...target,mode:game===source?'replace':'push'});
 }
 function applyHistory() {
+  if(settingsPopup.historyChanged())return;
   if(!navigationReady)return;
   const hash=normalizeRoute(location.hash), known=historyEntry(history.state,hash);
   if(known?.entryId===activeEntry?.entryId)rollbackHistoryId=null;
@@ -1936,7 +1940,10 @@ A.muUndo = async (t) => {
   const d = currentDeck();
   await commit((s) => { const x = s.decks.find((y) => y.id === d.id); x.results = (x.results || []).filter((g) => g.at !== t.dataset.at); }, { msg: "Game removed." });
 };
-A.menu = () => { closeSheet(); S.ui.settingsTab="account"; go("#settings"); };
+let settingsBaseState=null;
+const settingsPopup=createSettingsDialog({beforeOpen:()=>{settingsBaseState=S.state;},dialog:$("#settingsDialog"),markup:()=>`<header class="settings-dialog-head"><div><p class="eyebrow">ALL THREE GAMES</p><h2 id="settingsDialogTitle">Settings</h2></div><button class="icon" data-act="closeSettings" aria-label="Close settings">${ICON.close||'✕'}</button></header>${V.settings({popup:true})}`,afterPaint:()=>{if(S.ui.settingsTab==='backup')storageDetail();},afterClose:scroll=>{if(settingsBaseState!==S.state)render();window.scrollTo({top:scroll,behavior:'instant'});}});
+A.menu = () => settingsPopup.open();
+A.closeSettings = () => settingsPopup.close();
 
 /* =========================================================
    Card sheet, compare, printings
@@ -2214,7 +2221,7 @@ const tourArt = () => {
     header: document.querySelector('.topbar')?.outerHTML || '', nav: document.querySelector('.bottom-nav')?.outerHTML || '',
     cssUrl: new URL('./style.css', import.meta.url).href };
 };
-A.replayTour = () => { closeSheet(); openTour(tourArt()); };
+A.replayTour = () => { settingsPopup.close(); closeSheet(); openTour(tourArt()); };
 // Ask AI: the in-app assistant. Its tools are the app's own functions, run here on the device.
 let askTools = null;
 A.askRules = (button) => {
@@ -2450,6 +2457,13 @@ A.settingsTab = (t) => {
   for (const pane of document.querySelectorAll(".settings-pane")) pane.hidden = pane.id !== "settings-" + tab;
   for (const button of document.querySelectorAll('[data-act="settingsTab"][role="tab"]')) button.setAttribute("aria-selected",String(button.dataset.id === tab));
 };
+document.addEventListener('keydown',e=>{
+  const tab=e.target.closest?.('[data-act="settingsTab"][role="tab"]');
+  if(!tab||!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
+  const tabs=[...tab.parentElement.querySelectorAll('[role="tab"]')],i=tabs.indexOf(tab);
+  const next=tabs[e.key==='Home'?0:e.key==='End'?tabs.length-1:(i+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length];
+  e.preventDefault();A.settingsTab(next);next.focus();
+});
 A.authTab = (t) => {
   const mode = t.dataset.mode;
   if (!["login","signup","reset"].includes(mode)) return;

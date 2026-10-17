@@ -92,7 +92,8 @@ async function outboundBuy(app,expected,{search=false,activation='click'}={}){
  const before=await page.evaluate(()=>({url:location.href,tab:window.__uiTestState.ui.sheetCtx.tab||'overview',entry:window.__uiTestState.ui.sheetCtx.entryId})),inventory=await inventorySnapshot(page);
  assert.equal(await anchor.getAttribute('href'),expected);assert.equal(await anchor.getAttribute('target'),'_blank');assert.equal(await anchor.getAttribute('rel'),'noopener noreferrer');assert.equal(await anchor.getAttribute('referrerpolicy'),'no-referrer');assert.equal(await anchor.getAttribute('data-act'),null);
  assert.match(await anchor.innerText(),search?/Search TCGplayer/:/^Buy/);assert.match(await anchor.getAttribute('aria-label'),/opens in a new tab/);
- await anchor.scrollIntoViewIfNeeded();await anchor.focus();
+ // focus() reacquires a connected locator if detail hydration replaces the row.
+ await anchor.focus();
  assert(await anchor.evaluate(n=>document.activeElement===n&&n.getBoundingClientRect().height>=44),'Native Buy remains keyboard-focusable and at least a 44px touch target');
  const intercept=async route=>{const req=route.request();calls.push({url:req.url(),method:req.method(),referer:req.headers().referer||'',navigation:req.isNavigationRequest()});await route.fulfill({status:200,contentType:'text/html',body:'<!doctype html><title>Synthetic retailer destination</title><link rel="icon" href="data:,"><p>Outbound link fixture only.</p>'});};
  await context.route('https://www.tcgplayer.com/**',intercept);

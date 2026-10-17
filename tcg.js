@@ -1137,7 +1137,7 @@ function metaView(g) {
         cover = g === "ptcg" ? metaPokemonCover(best, a.cover) : null,
         art = g === "ygo" && best?.cover ? `https://images.ygoprodeck.com/images/cards_cropped/${encodeURIComponent(best.cover)}.jpg` : "",
         illustrated = art || cover;
-      return `<button class="arch ${illustrated ? "has-art" : "no-cover"}" data-act="tMetaDeck" data-key="${esc(a.best)}" ${a.best ? "" : "disabled"}>${cover ? pokemonArtCrop(cover, "arch-art") : art ? `<img class="arch-art" src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.closest('.arch').classList.add('no-cover')">` : `<span class="arch-art arch-art-fallback" aria-hidden="true"></span>`}<span class="arch-art-state">Art unavailable</span><span class="arch-icons">${g === "ptcg" ? (a.icons||[]).map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("") : ""}</span><b class="clamp2">${esc(a.name)}</b><small>${g === "ptcg" ? `${(a.share * 100).toFixed(1)}% of players · ${a.top8} in Top 8` : `${a.count} top finish${a.count === 1 ? "" : "es"}`}</small>${!a.best && g === "ptcg" ? `<small class="arch-list-state">No Top-8 list available</small>` : ""}${bar(a.share / (data.archetypes[0]?.share || 1))}</button>`;
+      return `<button class="arch ${illustrated ? "has-art" : "no-cover"}" data-act="tMetaDeck" data-key="${esc(a.best||a.representative?.key||'')}" ${a.best||a.representative ? "" : "disabled"}>${cover ? pokemonArtCrop(cover, "arch-art") : art ? `<img class="arch-art" src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.closest('.arch').classList.add('no-cover')">` : `<span class="arch-art arch-art-fallback" aria-hidden="true"></span>`}<span class="arch-art-state">Art unavailable</span><span class="arch-icons">${g === "ptcg" ? (a.icons||[]).map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("") : ""}</span><b class="clamp2">${esc(a.name)}</b><small>${g === "ptcg" ? `${(a.share * 100).toFixed(1)}% of players · ${a.top8} in Top 8` : `${a.count} top finish${a.count === 1 ? "" : "es"}`}</small>${!a.best && g === "ptcg" ? `<small class="arch-list-state">${a.representative?`View list · ${esc(a.representative.place)}`:"No published list available"}</small>` : ""}${bar(a.share / (data.archetypes[0]?.share || 1))}</button>`;
     })
     .join("")}</div>
   <div class="section-head"><h2>Most played cards</h2></div>
@@ -3555,10 +3555,10 @@ export function registerTcg(c) {
           return { ...request, qty: r.qty, kind: r.kind, price: basic ? 0 : card ? price(card) : null, owned, core: r.kind === "Pokemon" };
         });
       };
-      const resolve = async (rows, status) => {
+      const resolve = async (rows, status, {prices=true}={}) => {
         const std = formatOf("ptcg", "standard"), any = formatOf("ptcg", "unlimited"),
           requests = [...new Map(rows.map(row => { const request = pkRequest(row); return [request.key, request]; })).values()],
-          todo = requests.filter(r => needsCardRefresh("ptcg", pkByPrinting.get(r.key)) || price(pkByPrinting.get(r.key)) == null), failed = [];
+          todo = requests.filter(r => needsCardRefresh("ptcg", pkByPrinting.get(r.key)) || prices && price(pkByPrinting.get(r.key)) == null), failed = [];
         let i = 0;
         await inBatches(todo, 6, async (r) => {
           const prior = pkByPrinting.get(r.key), cached = r.set && r.number ? Object.values(cache.ptcg).find(c => !c.brief && ptcgPrintingMatches(c, r)) : null;
@@ -3566,7 +3566,9 @@ export function registerTcg(c) {
           try {
             if (prior || cached) {
               const known = prior || cached;
-              card = await ensureCard("ptcg", known.id, price(known) == null);
+              // Price availability is independent of the known exact printing.
+              // A transient refresh failure must not erase a resolved deck row.
+              card = await ensureCard("ptcg", known.id, price(known) == null).catch(()=>known);
             } else if (r.set || r.number) {
               // An explicit but unresolved printing is never replaced by a same-name card.
               card = r.set && r.number ? await SOURCES.ptcg.tournamentCard(r) : null;
@@ -3587,7 +3589,7 @@ export function registerTcg(c) {
       };
       save = async (rows, label) => {
         const savingSheet = S.ui.sheetCtx;
-        await resolve(rows, () => {});
+        await resolve(rows, () => {}, {prices:false});
         const zones = { main: [], extra: [], side: [] }, missed = [];
         for (const r of rows) {
           const card = pkByPrinting.get(pkKey(r));
@@ -3648,7 +3650,7 @@ export function registerTcg(c) {
   A.tMetaDeck = (t) => {
     const G = g(), captured = t.dataset.homeMetaOpen !== undefined ? homeMetaSnapshot(t, G) : null;
     if (t.dataset.homeMetaOpen !== undefined && !captured) return toast("This Home list has changed. Choose the current visible list.");
-    const d = captured?.deck || metaState(G).data?.decks.find((x) => x.key === t.dataset.key);
+    const d = captured?.deck || metaState(G).data?.decks.find((x) => x.key === t.dataset.key) || metaState(G).data?.archetypes?.map(a=>a.representative).find(d=>d?.key===t.dataset.key);
     if (d) c.openProven(tcgProvenSpec(G, d, captured?.data));
   };
   // Budget versions of a tournament deck: build around its signature cards.

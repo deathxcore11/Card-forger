@@ -23,6 +23,10 @@ try {
  const d=setup(false);d.key='missing';d.list[1].set='MISSING';metaState('ptcg').data={decks:[d],top:[]};SOURCES.ptcg.tournamentCard=async()=>null;A.tMetaDeck({dataset:{key:d.key}});
  assert.match((await spec.load(()=>{})).failed.join(','),/MISSING/);await assert.rejects(spec.save(spec.rowsFn(),'original'),/Nothing saved.*unmatched printings/);assert.equal(S.state.tcg.ptcg.decks.length,0);
  setup(false);await spec.load(()=>{});S.state.settings.game='mtg';await spec.save(spec.rowsFn(),'original');assert.equal(S.state.tcg.ptcg.decks.length,1,'pending Pokémon save keeps captured game');assert.equal(S.state.decks.length,0);
+ // Once exact cards are loaded, saving the original needs no new price fetch.
+ setup(false);await spec.load(()=>{});first.prices.usd=null;second.prices.usd=null;
+ const oldGet=SOURCES.ptcg.get;let priceFetches=0;SOURCES.ptcg.get=async()=>{priceFetches++;throw Error('price service offline');};
+ try{await spec.save(spec.rowsFn(),'original');assert.equal(S.state.tcg.ptcg.decks.length,1);assert.equal(priceFetches,0);}finally{SOURCES.ptcg.get=oldGet;}
  // Name grouping is only an adaptation heuristic; actual rows keep printing keys.
  const r=(key,name,price)=>({key,name,price,qty:4,owned:0,kind:'Pokemon'}),rows=[r('exact-a','Pikachu',5)],lists=[[r('reprint-a','Pikachu',2),r('exact-b','Raichu',8)],[r('reprint-a','Pikachu',3),r('reprint-b','Raichu',4)]];
  const model=provenModel({rows,lists,compareRows:rs=>rs.map(r=>({...r,key:r.name.toLowerCase()}))});assert.equal(model.similar.length,2);assert.ok(model.engine.has('exact-a'));assert.deepEqual(model.pool.map(r=>r.key),['reprint-b']);
