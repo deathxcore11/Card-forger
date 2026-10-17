@@ -221,6 +221,31 @@ export function restoreDetailState(body,state){
  if(target&&state.selection)try{target.setSelectionRange?.(...state.selection);}catch{}
  const tabs=body.querySelector?.('.cs-tabs');if(tabs)tabs.scrollLeft=state.left;
 }
+// A fold/rotation can clamp native scroll before its resize event arrives.
+// Carry only the latest intended reading position through that temporary clamp.
+// A real scroll supersedes it in every geometry; an actual content mount starts
+// a new lifetime even when the persistent sheet body and card identity are reused.
+// No rendering, focus changes, selection changes or model sniff.
+const detailViewports = new WeakMap();
+export function rememberDetailViewport(body, identity, viewport, generation) {
+ if (!body || !identity) return;
+ let state = detailViewports.get(body);
+ if (!state || state.identity !== identity || state.generation !== generation) {
+  state = {identity, generation, viewport, intendedTop:body.scrollTop, appliedTop:body.scrollTop};
+  detailViewports.set(body,state); return;
+ }
+ // Ignore native scroll/clamp events belonging to a not-yet-handled resize.
+ // The scroll event from our own clamped assignment must not erase its intent.
+ if (state.viewport === viewport && body.scrollTop !== state.appliedTop) {
+  state.intendedTop = state.appliedTop = body.scrollTop;
+ }
+}
+export function restoreDetailViewport(body, identity, viewport, generation) {
+ const state = body && detailViewports.get(body);
+ if (!state || state.identity !== identity || state.generation !== generation || state.viewport === viewport) return rememberDetailViewport(body,identity,viewport,generation);
+ state.viewport = viewport; body.scrollTop = state.intendedTop;
+ state.appliedTop = body.scrollTop;
+}
 export function detailTabKey(key,index,length){return key==='Home'?0:key==='End'?length-1:key==='ArrowRight'?(index+1)%length:key==='ArrowLeft'?(index+length-1)%length:null;}
 function settleDetailClearance(body,target,refreshOffsets){
  const head=body.querySelector?.('.sheet-head'),tabs=body.querySelector?.('.cs-tabs');

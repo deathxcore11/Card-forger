@@ -61,9 +61,9 @@ node = openRulesAsk({ game: 'ptcg', format: 'Expanded', trigger, fetcher: transp
 const pending = askRules('Question before New'); await Promise.resolve(); const oldNode = node;
 node = restartRulesAsk(); finish(); await pending; assert.equal(oldNode.open, false); assert.equal(node.querySelector('.rules-ai-log').children.length, 0, 'new chat discards stale response');
 assert.equal(transportCalls, 3, 'new chat itself makes no request');
-closeRulesAsk(); node = openRulesAsk({ game: 'mtg', trigger, fetcher: () => { transportCalls++; throw Error('Synchronous offline failure'); } });
+closeRulesAsk(); node = openRulesAsk({ game: 'mtg', format: 'Commander', trigger, fetcher: () => { transportCalls++; throw Error('Synchronous offline failure'); } });
 await askRules('How does priority work?'); assert.equal(node.querySelector('.ask-input').disabled, false, 'sync failure cannot leave a permanent pending promise');
-const calls = transportCalls; closeRulesAsk(); openRulesAsk({ game: 'mtg', trigger }); assert.equal(transportCalls, calls, 'error reopen never retries');
+const calls = transportCalls; closeRulesAsk(); openRulesAsk({ game: 'mtg', format: 'Commander', trigger }); assert.equal(transportCalls, calls, 'error reopen never retries');
 clearRulesConversations();
 let historyBodies = [];
 const clarifyTransport = async (url, init) => { const body = JSON.parse(init.body); historyBodies.push(body); return Response.json({ context: body, answer: rulesFallback(body, 'Need more context.', ['Whose turn is it?']) }); };
@@ -113,3 +113,22 @@ const source = readFileSync('ai-rules.js', 'utf8');
 assert.match(source, /openRuleReference\(session.root, reference, \{ trigger: citation \}\)/); assert.match(source, /session.input.value = example.dataset.rulesExample/); assert.doesNotMatch(source, /askRules\(example.dataset/);
 assert.match(source, /await Promise.resolve\(\)/); assert.doesNotMatch(source, /makeAskTools|card_details|my_collection|build_deck/);
 console.log('PASS: examples only prefill, source actions use the canonical popup with citation focus, and Rules never reuses generic Search app tools.');
+
+for (const game of ['mtg', 'ptcg', 'ygo']) {
+ clearRulesConversations(); const before = transportCalls;
+ const empty = openRulesAsk({ game, trigger, fetcher: () => { transportCalls++; throw Error('Must not request without a format'); } });
+ const input = empty.querySelector('.ask-input'); input.value = 'Can I attack on the first turn?';
+ assert(empty.querySelector('.ask-send').disabled);
+ await askRules(input.value);
+ assert.equal(transportCalls, before, 'Missing format cannot spend a request');
+ assert.equal(input.value, 'Can I attack on the first turn?', 'Missing prerequisite preserves typed draft');
+ assert.equal(focused, '[data-rules-format]');
+ assert.match(empty.innerHTML, /Choose a format before asking/);
+ const selector = empty.querySelector('[data-rules-format]'); selector.matches = q => q === '[data-rules-format]'; selector.value = game === 'mtg' ? 'Commander' : game === 'ptcg' ? 'Standard' : 'Advanced (TCG)';
+ empty.handlers.change[0]({target:selector});
+ const chosen = dialogs.at(-1); assert(!chosen.querySelector('.ask-send').disabled);
+ assert.equal(chosen.querySelector('.ask-input').value, input.value);
+ assert.equal(transportCalls, before, 'Choosing the prerequisite never auto-submits');
+}
+clearRulesConversations();
+console.log('PASS: visible all-game format prerequisite, no guessed default, draft preservation, no request on missing format or selection, and enabled explicit submit after selection.');

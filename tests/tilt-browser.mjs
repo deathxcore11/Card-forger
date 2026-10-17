@@ -1,11 +1,26 @@
 // Browser sensors are simulated; no claim of physical-phone hardware coverage.
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
-import {readFile} from 'node:fs/promises';
+import {readFile,mkdir,writeFile} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
 import {resolve,extname} from 'node:path';
-import {chromium,devices} from 'playwright';
+if(process.env.GITHUB_ACTIONS!=='true')throw Error('Tilt browser execution is restricted to hosted GitHub Actions.');
+const {chromium,devices}=await import('playwright');
 const root=process.cwd(),baseline='b1fc1fd79b0c9e7b9e46feb0101ca5c485d586c6';
+async function layoutFailure(page,cell,error){
+ const layout=await page.evaluate(()=>{
+  const sheet=document.querySelector('#sheetBody'),bounds=sheet?.getBoundingClientRect();
+  const describe=n=>{
+   const s=getComputedStyle(n),r=n.getBoundingClientRect(),path=[];for(let p=n;p&&p!==document.body;p=p.parentElement)path.unshift(p.tagName.toLowerCase()+(p.id?'#'+p.id:p.classList.length?'.'+[...p.classList].join('.'):''));
+   return {path:path.join(' > '),text:n.textContent.trim().slice(0,140),rect:r.toJSON(),clientWidth:n.clientWidth,scrollWidth:n.scrollWidth,clientHeight:n.clientHeight,scrollHeight:n.scrollHeight,style:Object.fromEntries(['display','position','boxSizing','width','minWidth','maxWidth','gridTemplateColumns','flex','overflowX','overflowY','overflowWrap','wordBreak','whiteSpace','paddingLeft','paddingRight','columnGap','zoom'].map(k=>[k,s[k]])),intentionalTabScroller:!!n.closest('.cs-tabs')};
+  };
+  const visible=sheet?[sheet,...sheet.querySelectorAll('*')].filter(n=>n.getClientRects().length):[];
+  return {viewport:{width:innerWidth,height:innerHeight,devicePixelRatio,documentClient:document.documentElement.clientWidth,documentScroll:document.documentElement.scrollWidth,bodyZoom:getComputedStyle(document.body).zoom},sheet:sheet&&describe(sheet),containers:[...document.querySelectorAll('dialog.sheet,.cs-panel,.cs-card,.cd-art-stack,.cs-card-side,.card-actions,.ca-main,.ca-more,.cs-tabs')].map(describe),overflowing:visible.filter(n=>{const r=n.getBoundingClientRect();return n.scrollWidth>n.clientWidth+2||r.left<bounds.left-2||r.right>bounds.right+2;}).slice(0,120).map(describe)};
+ });
+ const result={cell,error:String(error.stack||error),layout},dir=resolve(root,'test-results'),name=`tilt-layout-${cell.game.replace(/[^a-z0-9]+/gi,'-').toLowerCase()}-${cell.width}-${Math.round(cell.textScale*100)}-failure`;
+ console.error('TILT LAYOUT FAILURE '+JSON.stringify(result));await mkdir(dir,{recursive:true});
+ await writeFile(resolve(dir,name+'.json'),JSON.stringify(result,null,2));await page.screenshot({path:resolve(dir,name+'.png'),fullPage:true,animations:'disabled'});
+}
 const fixture=old=>`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/style.css"><style>body{margin:0}#content{padding:20px}.cd-img{width:140px;height:195px;background:linear-gradient(30deg,#333,#a85);border-radius:12px}.card-img{width:100%;height:100%;object-fit:cover}dialog{padding:20px;position:fixed;inset:20px auto auto 20px;background:#191c24;color:white}#background{position:fixed;top:10px;left:10px}</style><main id="content"><div class="cd-img" id="background"><span>Background card</span></div></main><dialog id="popup"><h2>Card view</h2><div class="cd-img" id="visible"><button class="cd-zoom" style="height:100%">Card artwork</button></div><button id="replace">Next card</button><button id="close">Close</button></dialog><script type="module">import {attachTilt} from '/${old?'__old-feel.js':'feel.js'}';attachTilt();document.querySelector('#popup').showModal();document.querySelector('#replace').onclick=()=>{const c=document.querySelector('#visible'),next=c.cloneNode(true);next.id='next';next.removeAttribute('style');next.className='cd-img';c.replaceWith(next);};document.querySelector('#close').onclick=()=>document.querySelector('#popup').close();</script>`;
 const server=createServer(async(req,res)=>{try{
  const u=new URL(req.url,'http://localhost');if(u.pathname==='/__fixture'){res.setHeader('Content-Type','text/html');return res.end(fixture(u.searchParams.has('old')));}
@@ -29,7 +44,8 @@ try{
  }
  // Use production card-view classes and the reported long flip/title labels.
  for(const width of [320,344,412,768,884])for(const textScale of [1,1.25])for(const game of ['Magic','Pokémon','Yu-Gi-Oh!']){
-  const context=await browser.newContext({viewport:{width,height:width>700?540:1104}}),page=await context.newPage();await page.goto(base+'/__fixture');
+  const context=await browser.newContext({viewport:{width,height:width>700?540:1104}}),page=await context.newPage();
+  try{await page.goto(base+'/__fixture');
   await page.evaluate(game=>{
    document.querySelector('style').remove();document.querySelector('#popup').remove();document.querySelector('#content').innerHTML='';
    const d=document.createElement('dialog');d.className='sheet';d.dataset.cardPopup='true';d.innerHTML=`<div id="sheetBody"><header class="sheet-head overlay scrolled"><span class="sh-title">${game}: Avatar Aang // Aang, Master of Elements with a complete long printing name</span><button class="icon">✕</button></header><div class="cs-title"><div><h2>${game}: Aang, Master of Elements</h2></div></div><nav class="cs-tabs"><button>Overview</button><button>Meta</button><button>Play guide</button><button>Versions</button><button>Prices</button><button>Rulings</button><button>Legality</button></nav><section class="cs-panel"><div class="cs-card"><div class="cd-art-stack"><div class="cd-img"><div style="aspect-ratio:63/88;background:#354">Card</div></div><button class="btn ghost small block">↻ Flip to Aang, Master of Elements</button></div><div class="cs-card-side"><p>Not in your collection</p><div class="stat-grid"><div><small>Stage</small><b>Basic</b></div><div><small>Regulation mark</small><b>F</b><p>Rotated out of Standard · Expanded only</p></div></div></div></div><div class="card-actions"><div class="ca-main"><button class="btn">＋ Add to collection</button><button class="btn ghost">♡ On wishlist</button></div><div class="ca-more"><button class="btn ghost small">⚒ Build decks</button><button class="btn ghost small">⇄ Compare</button></div></div></section></div>`;document.body.append(d);d.showModal();
@@ -41,7 +57,8 @@ try{
   assert.deepEqual(clipped,[],`${game} ${width}px full labels must wrap, not clip`);
   assert(await page.locator('#sheetBody').evaluate(n=>n.scrollWidth<=n.clientWidth+2),'no horizontal clipping hidden by sheet overflow');
   assert(await page.locator('.cs-panel').evaluate(n=>n.querySelector('.cd-art-stack > .btn').getBoundingClientRect().bottom<=n.querySelector('.card-actions').getBoundingClientRect().top+2),'wrapped flip control does not overlap collection actions');
-  console.log(`PASS: ${game} ${width}px title, face-flip label, all tabs and collection/deck actions fit without text clipping.`);await context.close();
+  console.log(`PASS: ${game} ${width}px at${Math.round(textScale*100)}% title, face-flip label, all tabs and collection/deck actions fit without text clipping.`);
+  }catch(error){await layoutFailure(page,{game,width,textScale},error).catch(diagnosticError=>console.error('Tilt failure diagnostic error:',diagnosticError));throw error;}finally{await context.close();}
  }
  const reduced=await browser.newContext({...devices['Pixel 7'],reducedMotion:'reduce'}),p=await reduced.newPage();await p.goto(base+'/__fixture');await turn(p,30,0);await turn(p,50,15);assert.equal(await p.locator('#visible').evaluate(c=>c.classList.contains('gyro')),false);console.log('PASS: reduced-motion preference remains respected.');await reduced.close();
 }finally{await browser.close();await new Promise(r=>server.close(r));}

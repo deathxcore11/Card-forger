@@ -251,8 +251,10 @@ export function attachGestures({ closeSheet }) {
 const TILT = ".lot-art, .cd-img, .tile-art, .scan-cand2 .sc-img, .quick-card-thumb";
 export function attachTilt(root = typeof document === "undefined" ? null : document) {
   if (!root || reduced()) return;
-  let el = null;
+  let el = null, release = 0;
   const set = (e) => {
+    // A live finger/cursor owns the transform, even during the entrance sweep.
+    el.classList.remove("shine-once");
     const r = el.getBoundingClientRect(),
       x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)),
       y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
@@ -262,6 +264,7 @@ export function attachTilt(root = typeof document === "undefined" ? null : docum
     el.style.setProperty("--my", `${y * 100}%`);
   };
   const end = () => {
+    clearTimeout(release);
     if (!el) return;
     el.classList.remove("tilting");
     el.closest(".lot")?.classList.remove("peek");
@@ -291,7 +294,10 @@ export function attachTilt(root = typeof document === "undefined" ? null : docum
     if (e.pointerType === "mouse" && !el.contains(e.target)) return end();
     set(e);
   }, { passive: true });
-  for (const ev of ["pointerup", "pointercancel"]) root.addEventListener(ev, (e) => e.pointerType !== "mouse" && setTimeout(end, 260), { passive: true });
+  root.addEventListener("pointerup", (e) => {
+    if (e.pointerType !== "mouse") { clearTimeout(release); release = setTimeout(end, 260); }
+  }, { passive: true });
+  root.addEventListener("pointercancel", (e) => e.pointerType !== "mouse" && end(), { passive: true });
   root.addEventListener("pointerout", (e) => e.pointerType === "mouse" && el && !el.contains(e.relatedTarget) && end(), { passive: true });
   root.addEventListener("scroll", end, { passive: true, capture: true });
   attachMotionTilt(root, () => el);
@@ -335,16 +341,20 @@ function attachMotionTilt(root, pressed) {
   };
   const onTurn = (e) => {
     if (!Number.isFinite(e.beta) || !Number.isFinite(e.gamma)) return;
+    asked = true; // A delivered sample already proves access; do not ask again.
     last = { b: e.beta, g: e.gamma };
-    if (!frame) frame = requestAnimationFrame(apply);
+    schedule();
   };
+  const schedule = () => { if (last && !frame) frame = requestAnimationFrame(apply); };
   const listen = () => {
     if (listening) return;
     listening = true;
     addEventListener("deviceorientation", onTurn, { passive: true });
   };
   const needsAsk = typeof DeviceOrientationEvent.requestPermission === "function";
-  if (!needsAsk) listen();
+  // Attaching a listener does not request permission. It also covers an iOS
+  // permission already granted before this app instance opened its first card.
+  listen();
   root.addEventListener("click", (e) => {
     if (!needsAsk || asked || !e.target.closest?.(TILT)) return;
     asked = true;
@@ -356,7 +366,8 @@ function attachMotionTilt(root, pressed) {
     for (const x of xs) {
       if (!x.isIntersecting) continue;
       seen.unobserve(x.target);
-      if(x.target.classList.contains("gyro"))continue;
+      schedule();
+      if(x.target.classList.contains("tilting") || pressed() === x.target)continue;
       x.target.classList.add("shine-once");
       setTimeout(() => x.target.classList.remove("shine-once"), 1300);
     }
@@ -364,6 +375,17 @@ function attachMotionTilt(root, pressed) {
   if (seen) {
     const observeCards=()=>{for (const c of root.querySelectorAll(".cd-img:not([data-shone])")) { c.dataset.shone = "1"; seen.observe(c); }};
     observeCards();
-    new MutationObserver(observeCards).observe(document.body, { childList: true, subtree: true });
   }
+  // A dialog can open, refresh or scroll into view between sensor events. Reuse
+  // the last sample immediately; no image/zoom interaction or permission prompt
+  // is needed on platforms that already deliver device orientation.
+  const changed = () => {
+    if (seen) for (const c of root.querySelectorAll(".cd-img:not([data-shone])")) { c.dataset.shone = "1"; seen.observe(c); }
+    schedule();
+  };
+  if (typeof MutationObserver !== "undefined") new MutationObserver(changed).observe(root === document ? document.body : root, { childList: true, subtree: true, attributes: true, attributeFilter: ["open", "hidden"] });
+  root.addEventListener("scroll", schedule, { passive: true, capture: true });
+  root.addEventListener("load", schedule, { passive: true, capture: true });
+  window.addEventListener("resize", schedule, { passive: true });
+  window.addEventListener("orientationchange", () => { base = null; schedule(); }, { passive: true });
 }

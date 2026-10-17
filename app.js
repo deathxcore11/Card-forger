@@ -27,7 +27,7 @@ import { createPrintingPicker } from "./printing-picker.js";
 import { createScannerPrintingPicker } from "./scanner-printing.js";
 import {SheetHistory,BROWSE_TYPES,sheetKey} from "./sheet-history.js";
 import {handleArtworkError} from "./artwork.js";
-import {selectedFinish,detailIdentity,captureDetailState,restoreDetailState,detailTabKey,createDetailJump} from "./pricing-presentation.js";
+import {selectedFinish,detailIdentity,captureDetailState,restoreDetailState,rememberDetailViewport,restoreDetailViewport,detailTabKey,createDetailJump} from "./pricing-presentation.js";
 import {modeFor,registerWorkbench,quoteModel,recordQuote} from "./workbench-ui.js";
 import { locationPicker, rememberLocation, chooseLocation } from "./collection-locations.js";
 import { captureAuthFields, restoreAuthFields, authFeedback } from "./auth-form.js";
@@ -648,6 +648,7 @@ function openSheet(html, ctx = null, scrollTop = 0) {
   binderDragCleanup?.(); binderDragCleanup=null;
   const stepKey = [ctx?.type,ctx?.tab,ctx?.id || ctx?.name,ctx?.finish].join(":");
   S.ui.sheetCtx = ctx;
+  $("#sheetBody").detailMountGeneration = ($("#sheetBody").detailMountGeneration || 0) + 1;
   $("#sheetBody").innerHTML = html;
   $("#sheetBody").dataset.detailIdentity = detailContextIdentity(ctx);
   if (lastSheetStep && lastSheetStep !== stepKey) {
@@ -675,6 +676,14 @@ function openSheet(html, ctx = null, scrollTop = 0) {
   if (!sheetScrollWired) {
     sheetScrollWired = true;
     $("#sheetBody").addEventListener?.("scroll", sheetScrolled, { passive: true });
+    // Fold/rotate in place: only recompute sticky-header clearance, not content.
+    window.addEventListener?.("resize", () => {
+      const body = $("#sheetBody"), ctx = S.ui.sheetCtx;
+      if ($("#sheet").open && ["card","tcard"].includes(ctx?.type)) {
+        restoreDetailViewport(body, detailContextIdentity(ctx) + ":" + (ctx.tab || "overview"), `${window.innerWidth}x${window.innerHeight}`, body.detailMountGeneration);
+      }
+      sheetScrolled();
+    }, { passive: true });
   }
   if (ctx?.type === "binder") binderDragCleanup = attachBinderDrag($("#sheetBody"),(delta,how)=>A.binderPage({dataset:{page:String(ctx.page+delta)},how}));
 }
@@ -700,6 +709,8 @@ function sheetScrolled() {
   const body = $("#sheetBody"),
     head = body?.querySelector?.(".sheet-head.overlay");
   if (!head) return;
+  const ctx = S.ui.sheetCtx;
+  if ($("#sheet").open && ["card","tcard"].includes(ctx?.type)) rememberDetailViewport(body, detailContextIdentity(ctx) + ":" + (ctx.tab || "overview"), `${window.innerWidth}x${window.innerHeight}`, body.detailMountGeneration);
   const on = body.scrollTop > 110;
   if (on && !head.querySelector(".sh-title")) {
     const t = document.createElement("b");
@@ -729,6 +740,7 @@ function refreshSheet() {
     const c = ctx.type === "card" ? ctx.print || meta(ctx.name) : ctx.type === "tcard" ? contextTcgCard(ctx.game,ctx.id,ctx) : ctx.print;
     if (!c && ctx.type !== "buy") return;
     const body = $("#sheetBody"), saved = body.dataset.detailIdentity === detailContextIdentity(ctx) ? captureDetailState(body) : null;
+    body.detailMountGeneration = (body.detailMountGeneration || 0) + 1;
     body.innerHTML = ctx.type === "card" ? V.cardSheet(c,ctx) : ctx.type === "tcard" ? T.tcgCardSheet(c,ctx) : V.buySheet(ctx);
     body.dataset.detailIdentity = detailContextIdentity(ctx);
     wireSheetBack();

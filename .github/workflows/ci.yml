@@ -293,3 +293,27 @@ jobs:
         run: npm install --no-save --package-lock=false --ignore-scripts @electric-sql/pglite@0.5.10
       - name: Exercise actual quota SQL without contacting production
         run: CARDSTASHY_PGLITE_MODULE="$PWD/node_modules/@electric-sql/pglite/dist/index.js" node test-server-safety-history-sql.mjs
+
+  responsive-card-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate responsive fixtures without a browser
+        run: node tests/card-responsive-browser.mjs --validate-fixtures
+      - name: Install pinned browser test runner
+        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - name: Install test browser
+        run: npx playwright install --with-deps chromium
+      - name: Test actual first-open touch, motion and mounted-dialog resizing
+        run: node tests/card-responsive-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: responsive-card-browser-evidence
+          path: test-results/card-responsive-*
