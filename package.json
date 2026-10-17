@@ -1,6 +1,6 @@
 {
   "name": "cardstashy",
-  "version": "3.80.1",
+  "version": "3.80.2",
   "private": true,
   "type": "module",
   "description": "CardStashy — Magic: The Gathering, Pokémon and Yu-Gi-Oh! collections, decks, upgrades and deck analysis.",

@@ -101,6 +101,7 @@ function feed(game, empty = false, options = {}) {
     items: empty ? [] : [
       { ...common, kind: 'news', title: `${game.toUpperCase()} dated fixture story`, summary: 'A dated story from a verified fixture source, distinct from a directory link.', url: s.host + s.news, publishedAt: '2026-10-16', image },
       { ...common, sourceId: game === 'ygo' ? 'konami-events' : '', kind: 'event', title: `${game.toUpperCase()} upcoming fixture event`, summary: 'A future event with its own start and end dates.', url: s.host + s.event, startsAt: '2026-10-20', endsAt: '2026-10-22' },
+      ...[1,2,3].map(i=>({...common, kind:'news', title:`${game.toUpperCase()} additional publisher headline ${i}: exact cards, release details and regional availability`, url:s.host+s.news+`-${i}`, publishedAt:'2026-10-16'})),
       { ...common, kind: 'news', title: 'UNSAFE FIXTURE MUST NOT RENDER', url: 'javascript:alert(1)', publishedAt: '2026-10-16' },
       { ...common, kind: 'news', title: 'UNTRUSTED FIXTURE MUST NOT RENDER', url: 'https://untrusted.invalid/news', publishedAt: '2026-10-16' },
     ] };
@@ -130,6 +131,8 @@ function fixtures(options = {}) {
       ...(g === 'mtg' ? { format: 'Standard', commander: '', cards: [{ name: saved.name, qty: 4 }], side: [] } : { format: g === 'ygo' ? 'tcg' : 'standard', zones: { main: [{ name: saved.name, cardId: saved.id, qty: 3 }], extra: [], side: [] } }) }] : [];
   }
   state.activeDeck = decks ? 'saved-mtg' : null;
+  if(decks && !options.noWorkHistory)state.homeDeckActivity=Object.fromEntries(GAME_IDS.map(g=>[g,[{id:`saved-${g}`,at:'2026-10-16T12:00:00.000Z'}]]));
+  if(decks && options.twoSavedDecks)for(const g of GAME_IDS){const rows=g==='mtg'?state.decks:state.tcg[g].decks;rows.push({...structuredClone(rows[0]),id:`newest-${g}`,name:`${g.toUpperCase()} newest untouched deck`,createdAt:ISO});}
   const cache = { ygo: { [heroes.ygo.id]: heroes.ygo, ...Object.fromEntries(ygoSeedRaws.map(raw => [String(raw.id), fresh(raw)])) }, ptcg: { [heroes.ptcg.id]: heroes.ptcg, [seeds.ptcg.id]: seeds.ptcg } };
   const community = Object.fromEntries(GAME_IDS.map(g => [g, { at: fetchFeed ? 0 : NOW, data: fetchFeed ? null : feed(g, emptyFeed, options) }]));
   const meta = Object.fromEntries(GAME_IDS.map(g => {
@@ -313,6 +316,7 @@ async function openApp(options = {}) {
       if (url.pathname.startsWith('/api/prices/')) return json({ points: [], series: [], cards: [], products: [], variants: [], prices: [], partial: false });
       if (!url.pathname.startsWith('/api/')) return route.continue();
     }
+    if(options.dailyUnavailable && (url.hostname==='api.scryfall.com' && url.pathname==='/cards/random' || url.hostname==='db.ygoprodeck.com' && url.searchParams.has('staple') || url.hostname==='api.tcgdex.net' && url.searchParams.has('rarity')))return json(url.hostname==='api.tcgdex.net'?[]:{data:[]});
     if (url.hostname === 'api.scryfall.com') {
       if (url.pathname === '/cards/random') return json(mtgSeed);
       if (url.pathname === '/cards/search') {
@@ -424,7 +428,7 @@ async function noOverflow(page, label) {
       await Promise.all(animations.map(a => a.finished.catch(() => {})));
     }
     const root = document.documentElement, body = document.body, content = document.querySelector('#content');
-    const selectors = ['.topbar', '#gameTabs', '.home-value', '.home-meta', '.home-meta-copy', '.home-meta-footer', '.home-editorial', '.home-community', '.home-discovery-actions', '.community-feature-copy', '.hh-search'];
+    const selectors = ['.topbar', '#gameTabs', '.home-value', '.home-meta', '.home-meta-copy', '.home-meta-footer', '.home-editorial', '.home-community', '.home-resume', '.community-feature-copy', '.home-overview'];
     return { viewport: innerWidth, root: root.scrollWidth, body: body.scrollWidth, content: content.scrollWidth, contentWidth: content.clientWidth,
       elements: selectors.map(selector => { const n = document.querySelector(selector); if (!n) return { selector, missing: true }; const r = n.getBoundingClientRect(); return { selector, left: r.left, right: r.right, scroll: n.scrollWidth, width: n.clientWidth }; }) };
   });
@@ -446,7 +450,7 @@ async function visibleHeaderArt(page) {
     const image = art?.matches('img') ? art : art?.querySelector('img');
     if (![hero, art, image].every(node => node?.isConnected) || !image.complete || image.naturalWidth <= 0) return false;
     const rect = art.getBoundingClientRect();
-    return rect.width >= 250 && rect.height >= 120 && [hero, art, image].every(node => {
+    return rect.width >= 50 && rect.width <= 58 && rect.height >= 48 && rect.height <= 54 && [hero, art, image].every(node => {
       const css = getComputedStyle(node);
       return css.display !== 'none' && css.visibility === 'visible' && Number(css.opacity) > 0;
     });
@@ -456,7 +460,7 @@ const deckIdentity = (game, second = false) => game === 'mtg' ? (second ? heroes
   : game === 'ygo' ? (second ? heroes : seeds)[game].id
     : second ? `${heroes.ptcg.name} · OBF 125` : `${seeds.ptcg.name} · SSP 57`;
 async function assertNoNewsArtwork(page, selector, { failed = false } = {}) {
-  const feature = page.locator(selector);
+  const feature = page.locator(selector).first();
   assert.equal(await feature.locator('.community-art-theme, .community-art-emblem').count(), 0, 'news never substitutes unrelated game artwork');
   if (failed) {
     await page.waitForFunction(selector => document.querySelector(`${selector} [data-community-art]`)?.hidden === true, selector);
@@ -499,36 +503,34 @@ async function assertCommunityArtwork(page, selector, game, { kind = 'card', sta
     assert.equal(await art.getAttribute('data-art-card'), null, 'themed art never impersonates a real featured card');
   }
   if (state === 'ready') {
-    assert(visual.loaded && !visual.imageHidden && (visual.visibleCredit || selector.startsWith('[data-home-meta=')), `${game}: actual loaded image and honest source caption: ${JSON.stringify(visual)}`);
+    assert(visual.loaded && !visual.imageHidden && (visual.visibleCredit || selector.startsWith('[data-home-meta=') || kind === 'publisher'), `${game}: actual loaded image and honest source caption: ${JSON.stringify(visual)}`);
     if (selector.startsWith('[data-home-meta=')) assert.match(await page.locator(selector).textContent(), /Featured deck:.*Card preview:/s, 'compact art retains source/card provenance in its accessible text');
   }
   else assert(visual.imageHidden && visual.visibleFallback, `${game}: failed/missing image has a visible honest theme fallback, not a broken icon: ${JSON.stringify(visual)}`);
 }
 async function assertReadableArtwork(page, game) {
-  const geometry = await page.locator('.community-feature').evaluate(node => {
-    const copy = node.querySelector('.community-feature-copy'), art = node.querySelector('[data-community-art]'), shade = art.querySelector('.community-art-shade');
-    const copyCss = getComputedStyle(copy), artCss = getComputedStyle(art), shadeCss = getComputedStyle(shade);
-    return { copyZ: Number(copyCss.zIndex), artZ: Number(artCss.zIndex), shade: shadeCss.backgroundImage, shadeColor: shadeCss.backgroundColor,
-      text: [...copy.querySelectorAll('h3,p,a,.community-source')].map(n => { const c = getComputedStyle(n), r = n.getBoundingClientRect(); return { tag: n.tagName, width: r.width, height: r.height, clipped: n.scrollWidth > n.clientWidth + 2, color: c.color, opacity: Number(c.opacity), fontSize: parseFloat(c.fontSize) }; }) };
+  const geometry = await page.locator('.community-feature').first().evaluate(node => {
+    const copy = node.querySelector('.community-feature-copy'), art = node.querySelector('[data-community-art]');
+    const a=art.getBoundingClientRect(),c=copy.getBoundingClientRect(),row=node.getBoundingClientRect();
+    return { art:{left:a.left,right:a.right,width:a.width,height:a.height},copy:{left:c.left,right:c.right},rowHeight:row.height,
+      text: [...copy.querySelectorAll(':scope > h3,:scope > .eyebrow,:scope > .community-source,:scope > .community-context > summary')].map(n => { const c = getComputedStyle(n), r = n.getBoundingClientRect(); return { tag:n.tagName,width:r.width,height:r.height,clipped:n.scrollWidth>n.clientWidth+2,color:c.color,opacity:Number(c.opacity),fontSize:parseFloat(c.fontSize) }; }) };
   });
-  assert(geometry.copyZ > geometry.artZ, `${game}: copy is composited above artwork`);
-  assert(geometry.shade !== 'none' || !['transparent', 'rgba(0, 0, 0, 0)'].includes(geometry.shadeColor), `${game}: source art has a dedicated contrast shade`);
-  for (const text of geometry.text) assert(text.width > 0 && text.height > 0 && !text.clipped && text.opacity === 1 && text.fontSize >= 9, `${game}: readable, unclipped editorial text: ${JSON.stringify(text)}`);
+  assert(geometry.art.right+7<=geometry.copy.left,`${game}: publisher image sits beside, never behind the real headline`);
+  assert(geometry.art.width<=115 && geometry.art.height<=90,`${game}: matched publisher image is a restrained thumbnail`);
+  assert(geometry.rowHeight<240,`${game}: one news item is a compact editorial row, not a 390px hero`);
+  for(const text of geometry.text)assert(text.width>0 && text.height>0 && !text.clipped && text.opacity===1 && text.fontSize>=10,`${game}: readable naturally wrapping editorial text: ${JSON.stringify(text)}`);
 }
 async function assertDailyIdentity(page, game, card = heroes[game], date = TODAY) {
-  for (const selector of ['.hh-art-link', '.hh-credit']) {
-    assert.equal(await page.locator(selector).getAttribute('data-act'), 'homeDailyCard');
-    assert.equal(await page.locator(selector).getAttribute('data-game'), game);
-    assert.equal(await page.locator(selector).getAttribute('data-id'), card.id);
-    assert.equal(await page.locator(selector).getAttribute('data-date'), date);
-  }
-  assert.equal(await page.locator('.hh-art-link').innerText(), '', 'clickable artwork has no redundant visual badge');
-  assert.match(await page.locator('.hh-art-link').getAttribute('aria-label'), /Explore .+ artwork/);
-  assert.equal((await page.locator('#homeHero').innerText()).match(/Card of the Day/gi)?.length, 1, `${game}: only one visible daily-card action`);
-  assert.match(await page.locator('.hh-credit').innerText(), /Card of the Day/i);
-  assert.match(await page.locator('.hh-credit').innerText(), new RegExp(card.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-  assert.doesNotMatch(await page.locator('.hh-credits').innerText(), /From your deck/);
-  assert.equal(await page.locator('.hh-deck-link').count(), 0, 'a daily card with no verified saved-deck membership does not gain a deck action');
+  const control=page.locator('.hh-credit');
+  assert.equal(await page.locator('[data-act="homeDailyCard"]').count(),1,'one exact daily action, not duplicate artwork/credit buttons');
+  for(const [attribute,value] of Object.entries({'data-act':'homeDailyCard','data-game':game,'data-id':card.id,'data-date':date}))assert.equal(await control.getAttribute(attribute),value);
+  assert.match(await control.getAttribute('aria-label'),/Explore .+, Card of the Day/);
+  assert.equal((await page.locator('#homeHero').innerText()).match(/Card of the Day/gi)?.length,1);
+  assert((await control.innerText()).includes(card.name));
+  assert.equal(await page.locator('.hh-art-link, .hh-search, #homeQ, .hh-deck-link').count(),0,'daily accent is not a search/welcome hero or saved-deck link');
+  const size=await page.locator('#homeHero').evaluate(n=>{const a=n.querySelector('.hh-art')?.getBoundingClientRect();return {height:n.getBoundingClientRect().height,art:a?{width:a.width,height:a.height}:null};});
+  assert(size.height<110,`${game}: daily accent stays unobtrusive`);
+  if(size.art)assert(size.art.width<=58 && size.art.height<=54,`${game}: daily art is a small source-identified thumbnail`);
 }
 async function accessibleCarouselControls(page, label) {
   // A fixed mobile nav appearing partway through a full-page capture is normal.
@@ -545,7 +547,7 @@ async function accessibleCarouselControls(page, label) {
       return { focused: document.activeElement === node, hit: hit === node || node.contains(hit), width: rect.width, height: rect.height,
         top: rect.top, bottom: rect.bottom, clearBottom: navVisible ? navRect.top : innerHeight };
     });
-    assert(bounds.focused && bounds.hit, `${label}: carousel ${step} receives focus and unobstructed input: ${JSON.stringify(bounds)}`);
+    assert((await control.isDisabled() || bounds.focused) && bounds.hit, `${label}: carousel ${step} receives focus and unobstructed input: ${JSON.stringify(bounds)}`);
     assert(bounds.top >= 0 && bounds.bottom <= bounds.clearBottom, `${label}: carousel ${step} scrolls clear of the fixed nav: ${JSON.stringify(bounds)}`);
     assert(bounds.width >= 44 && bounds.height >= 44, `${label}: carousel ${step} keeps a 44px touch target`);
   }
@@ -573,8 +575,13 @@ async function chooseFormat(page, game) {
   await page.locator('#randomFormat').click();
   await page.locator('.glass-select-menu[open]').getByRole('option', { name: game === 'ygo' ? 'Advanced (TCG)' : 'Standard', exact: true }).click();
 }
+async function openDeckRandom(page) {
+  await page.evaluate(()=>{location.hash='#decks';});
+  await page.waitForFunction(()=>document.body.dataset.view==='decks');
+  await page.locator('[data-act="randomDeckOptions"]').first().click();
+}
 async function startReveal(page, game) {
-  await page.locator('[data-act="homeRandomDeck"]').click();
+  await openDeckRandom(page);
   await page.locator('#randomFormat').waitFor();
   assert.equal(await page.locator('#randomFormat').inputValue(), '', 'format is an explicit user choice');
   assert.equal(await page.locator('#randomTheme').inputValue(), '', 'theme stays optional');
@@ -636,7 +643,7 @@ try {
     }
     await p.evaluate(()=>{location.hash='#collection';});
     await p.waitForFunction(()=>document.body.dataset.view==='collection');
-    await p.evaluate(()=>{location.hash='#home';});await assertSelected(p,game);
+    await p.evaluate(()=>{location.hash='#home';});await p.waitForFunction(()=>document.body.dataset.view==='home');await assertSelected(p,game);
     assert(await oldCommunity.evaluate(n=>!n.isConnected));assert(await oldMeta.evaluate(n=>!n.isConnected));
     const currentMeta=await p.locator('[data-home-meta]').elementHandle();
     pending.homeSources.news.release();
@@ -665,16 +672,11 @@ try {
     assert.equal(await page.locator('[data-home-meta]').count(),1,`${game}: shared full-width lower Meta rail parity`);
     assert.equal(await page.locator('[data-home-discovery]').count(),1,`${game}: one unified discovery section`);
     assert.equal(await page.locator('.home-discover, .home-deal, .home-personal .quick, .home-personal .quick-btn').count(),0,`${game}: no duplicate random panel or cramped legacy split shortcuts`);
-    assert.equal(await page.locator('[data-act="homeRandomDeck"]').count(),1);
-    const surprise=page.locator('[data-home-discovery] [data-act="homeRandomDeck"]');
-    // The real glyph decorator replaces the aria-hidden symbol with drawn SVG,
-    // so verify its decoration separately from the exact visible/accessibility label.
-    await surprise.locator('svg[aria-hidden="true"]').waitFor({state:'attached'});
-    assert.equal(await surprise.innerText(),'Surprise me');
-    assert.equal(await page.locator('[data-home-discovery]').getByRole('button',{name:'Surprise me',exact:true}).getAttribute('data-act'),'homeRandomDeck');
-    assert.equal(await surprise.locator('[aria-hidden="true"] svg[aria-hidden="true"]').count(),1);
-    assert.equal(await page.locator('[data-home-discovery] [data-to="#decks/ideas"]').innerText(),'Build from my cards');
-    assert.equal(await page.locator('.home-personal [data-to="#decks/ideas"]').count(),0,'saved continuation does not compete with discovery');
+    assert.equal(await page.locator('[data-act="homeRandomDeck"], .home-discovery-actions, .home-deck-section, .home-start, #homeQ').count(),0,'no discovery prompts, duplicated shelf or search on personal Home');
+    assert.equal(await page.locator('[data-home-resume]').getAttribute('data-resume-deck'),`saved-${game}`);
+    assert.equal(await page.locator('[data-home-resume] button').getAttribute('data-to'),`#${game==='mtg'?'deck':'tdeck'}/saved-${game}/cards`);
+    const order=await page.locator('#content > *').evaluateAll(nodes=>nodes.filter(n=>!n.classList.contains('home-sr-only')).map(n=>n.className));
+    assert.deepEqual(order,['home-overview','home-resume','home-meta','home-editorial'],'personal-first four-section composition');
     assert.equal(await page.locator('.home-value-main strong').innerText(), '$25.00');
     assert.match(await page.locator('.home-value-note').innerText(), /Known subtotal.*1 unpriced/);
     for (const width of WIDTHS) {
@@ -690,7 +692,7 @@ try {
       const discoveryWidth=await page.locator('[data-home-discovery]').evaluate(n=>n.getBoundingClientRect().width);
       const valueWidth=await page.locator('[data-home-value]').evaluate(n=>n.getBoundingClientRect().width);
       assert(discoveryWidth>=valueWidth-2,`${game}: discovery stays full width at ${width}px`);
-      for(const selector of ['[data-home-discovery] [data-to="#decks/ideas"]','[data-home-discovery] [data-act="homeRandomDeck"]']) {
+      for(const selector of ['[data-home-resume] button','.hh-credit']) {
         const action=page.locator(selector);await action.evaluate(n=>n.scrollIntoView({block:'center',behavior:'instant'}));await action.focus();
         assert(await action.evaluate(n=>{const r=n.getBoundingClientRect();return r.height>=44&&r.width>=44&&n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}),`${game}: companion action is readable and directly hittable at ${width}px`);
       }
@@ -701,7 +703,7 @@ try {
     for(const viewport of ORIENTATIONS) {
       await page.setViewportSize({width:viewport.width,height:viewport.height});
       await noOverflow(page,`${game} ${viewport.label}`);
-      for(const selector of ['[data-home-discovery] [data-to="#decks/ideas"]','[data-home-discovery] [data-act="homeRandomDeck"]','.home-value-main']) {
+      for(const selector of ['[data-home-resume] button','.hh-credit','.home-value-main']) {
         const action=page.locator(selector);await action.evaluate(n=>n.scrollIntoView({block:'center',behavior:'instant'}));await action.focus();
         assert(await action.evaluate(n=>{const r=n.getBoundingClientRect();return r.height>=44&&n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}),`${game}: ${viewport.label} action unobscured`);
       }
@@ -711,23 +713,9 @@ try {
     await page.setViewportSize({ width: 390, height: 844 });
     const hero = heroes[game];
     const value = hero.id;
-    for (const selector of ['.hh-art-link', '.hh-credit']) {
+    for (const selector of ['.hh-credit']) {
       assert.equal(await page.locator(selector).getAttribute('data-id'), value);
-      // The redundant visual badge is gone. Use an actual exposed artwork
-      // point above the title/search panel, with a real hit test, never force.
-      const control = page.locator(selector);
-      if (selector === '.hh-art-link') {
-        await control.scrollIntoViewIfNeeded();
-        const point = await control.evaluate(node => {
-          const r = node.getBoundingClientRect(), header = document.querySelector('.topbar')?.getBoundingClientRect(), title = document.querySelector('.hh-body .eyebrow')?.getBoundingClientRect();
-          const top = Math.max(r.top, header?.bottom || 0) + 12, bottom = Math.min(r.bottom, title?.top || r.bottom, innerHeight) - 12;
-          if (bottom <= top) throw Error('No exposed daily artwork click area');
-          const x = r.width - 24, y = (top + bottom) / 2 - r.top, hit = document.elementFromPoint(r.left + x, r.top + y);
-          if (hit !== node && !node.contains(hit)) throw Error('Daily artwork is obstructed');
-          return { x, y };
-        });
-        await control.click({ position: point });
-      } else await control.click();
+      await page.locator(selector).click();
       await page.waitForFunction(({ game, value }) => { const c = window.__homeTestState.ui.sheetCtx; return game === 'mtg' ? c?.type === 'card' && c.print?.id === value : c?.type === 'tcard' && c.id === value; }, { game, value });
       assert.match(await page.locator('#sheetBody').innerText(), new RegExp(hero.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
       await closeSheet(page);
@@ -755,7 +743,7 @@ try {
 
   for (const game of GAME_IDS) {
     await selectGame(page, game);
-    const article = page.locator('.community-stage .community-feature');
+    const article = page.locator('.community-stage .community-feature').first();
     assert.match(await article.getAttribute('class'), /feature-news/);
     assert.equal(await article.locator('time').getAttribute('datetime'), '2026-10-16');
     await safeSourceLink(article, game);
@@ -780,38 +768,30 @@ try {
       await page.screenshot({ path: resolve(RESULTS, `home-discovery-${game}-${width}.png`), fullPage: true, animations: 'disabled' });
     }
     await page.setViewportSize({ width: 390, height: 1100 });
-    await touchSwipe(page, '.community-feature-copy');
-    await assertSelected(page, game);
-    if(game==='ygo') {
-      assert.match(await article.getAttribute('class'), /feature-event/);
-      assert.deepEqual(await article.locator('time').evaluateAll(nodes => nodes.map(n => n.dateTime)), ['2026-10-20', '2026-10-22']);
-    } else {
-      assert.match(await article.getAttribute('class'), /feature-link/);
-      assert.equal(await article.locator('time').count(),0,'unsupported upcoming-event rows remain honest source links');
-      assert.doesNotMatch(await article.innerText(),/upcoming fixture event/);
+    const visibleRows=page.locator('.community-stage .community-feature');
+    assert.equal(await visibleRows.count(),3,'three compact rows share the first page');
+    if(game==='ygo'){
+      const event=page.locator('.community-feature.feature-event');
+      assert.deepEqual(await event.locator('time').evaluateAll(nodes=>nodes.map(n=>n.dateTime)),['2026-10-20','2026-10-22']);
+      await safeSourceLink(event,game);
     }
-    await safeSourceLink(article, game);
-    const eventId = await article.getAttribute('data-slide-id');
-    for (const width of [700, 768, 1024, 390]) {
-      await page.setViewportSize({ width, height: viewportHeight(width) });
-      await assertSelected(page, game);
-      assert.equal(await article.getAttribute('data-slide-id'), eventId, 'fold/tablet resize preserves carousel position');
-      await noOverflow(page, `${game} resized event at ${width}px`);
-      await accessibleCarouselControls(page, `${game} resized event at ${width}px`);
+    await touchSwipe(page, '.community-feature-copy');await assertSelected(page, game);
+    const secondPageId=await article.getAttribute('data-slide-id');assert.notEqual(secondPageId,firstId);
+    for(const width of [700,768,1024,390]){
+      await page.setViewportSize({width,height:viewportHeight(width)});await assertSelected(page,game);
+      assert.equal(await article.getAttribute('data-slide-id'),secondPageId,'same-mounted resize preserves the exact selected news page');
+      await noOverflow(page,`${game} resized news page ${width}`);await accessibleCarouselControls(page,`${game} page controls ${width}`);
     }
-    await page.locator('[data-community-step="1"]').focus();
-    await page.keyboard.press('ArrowLeft');
-    assert.equal(await article.getAttribute('data-slide-id'), firstId, 'news carousel keyboard is isolated from game keyboard and deck discovery');
-    await assertSelected(page, game);
-    await page.locator('[data-community-step="1"]').click();
-    if(game!=='mtg')await page.locator('[data-community-step="1"]').click();
-    assert.match(await article.getAttribute('class'), /feature-link/);
-    assert.match(await article.innerText(), /Source link · not a live headline/);
-    assert.equal(await article.locator('time').count(), 0, 'source directory is never misrepresented as dated news');
-    await safeSourceLink(article, game);
-    assert.doesNotMatch(await page.locator('#content').innerText(), /UNSAFE FIXTURE|UNTRUSTED FIXTURE/);
-    await page.locator('[data-community-step="1"]').click();
-    assert.equal(await article.getAttribute('data-slide-id'), firstId, 'next control wraps predictably');
+    await page.locator('[data-community-step="1"]').focus();await page.keyboard.press('ArrowLeft');
+    assert.equal(await article.getAttribute('data-slide-id'),firstId);await assertSelected(page,game);
+    assert(await page.locator('[data-community-step="1"]').evaluate(n=>n===document.activeElement),'stable page arrow keeps focus');
+    await article.locator('.community-open').focus();await page.keyboard.press('ArrowRight');
+    assert.equal(await article.getAttribute('data-slide-id'),secondPageId);
+    assert(await article.locator('.community-open').evaluate(n=>n===document.activeElement),'keyboard from a headline moves focus to the new page, not a detached link');
+    const links=page.locator('.community-feature.feature-link');
+    for(let i=0;i<await links.count();i++){assert.match(await links.nth(i).innerText(),/Source link · not a live headline/);assert.equal(await links.nth(i).locator('time').count(),0);await safeSourceLink(links.nth(i),game);}
+    assert.doesNotMatch(await page.locator('#content').innerText(),/UNSAFE FIXTURE|UNTRUSTED FIXTURE/);
+    await page.locator('[data-community-step="1"]').click();assert.equal(await article.getAttribute('data-slide-id'),firstId,'manual pages wrap predictably');
   }
   // Actual persistence is read, not reconstructed by a fake render helper.
   await selectGame(page, 'ygo');
@@ -824,6 +804,34 @@ try {
   await app.close();
   report.push('All-game tab clicks, keyboard focus/wrap, game swipe, isolated carousel touch/keyboard, safe links/dates, resize and durable reload');
 
+  for(const game of GAME_IDS){
+    const work=await openApp({game,twoSavedDecks:true,noWorkHistory:true}),p=work.page;
+    assert.equal(await p.locator('[data-resume-deck]').count(),0,'unrecorded/created decks are not claimed as last-worked');
+    assert.match(await p.locator('[data-home-resume]').innerText(),/Choose a deck/);
+    const route=`#${game==='mtg'?'deck':'tdeck'}/saved-${game}/cards`;
+    await p.evaluate(route=>{location.hash=route;},route);
+    await p.waitForFunction(game=>document.body.dataset.view===(game==='mtg'?'deck':'tdeck')&&window.__homeTestState.ui[game==='mtg'?'deckId':'tdeckId']===`saved-${game}`,game);
+    await p.locator(`[data-act="${game==='mtg'?'deckMenu':'tDeckMenu'}"]`).first().click();
+    await p.locator(game==='mtg'?'#dmName':'#tDmName').fill(`${game.toUpperCase()} edited older deck`);
+    await p.locator(`[data-act="${game==='mtg'?'deckSaveInfo':'tDeckSave'}"]`).click();
+    await p.waitForFunction(()=>!document.querySelector('#sheet').open);
+    await p.evaluate(()=>{location.hash='#home';});await p.waitForFunction(()=>document.body.dataset.view==='home');await assertSelected(p,game);
+    assert.equal(await p.locator('[data-home-resume]').getAttribute('data-resume-deck'),`saved-${game}`,'real saved edit beats newer array order');
+    assert.match(await p.locator('[data-home-resume]').innerText(),/edited older deck/);
+    assert.equal(await p.locator('[data-home-resume] button').getAttribute('data-to'),route);
+    await p.locator('[data-home-resume] button').click();
+    await p.waitForFunction(({game,route})=>location.hash===route&&document.body.dataset.view===(game==='mtg'?'deck':'tdeck')&&window.__homeTestState.ui[game==='mtg'?'deckId':'tdeckId']===`saved-${game}`,{game,route});
+    await p.evaluate(game=>{location.hash=`#${game==='mtg'?'deck':'tdeck'}/newest-${game}/cards`;},game);
+    await p.waitForFunction(game=>location.hash.includes(`newest-${game}`)&&document.body.dataset.view===(game==='mtg'?'deck':'tdeck')&&window.__homeTestState.ui[game==='mtg'?'deckId':'tdeckId']===`newest-${game}`,game);
+    await p.evaluate(()=>{location.hash='#home';});await assertSelected(p,game);
+    assert.equal(await p.locator('[data-home-resume]').getAttribute('data-resume-deck'),`saved-${game}`,'opening another deck is not a successful edit');
+    await p.reload();await p.locator('#app.ready').waitFor();await preloadTestState(p);await assertSelected(p,game);
+    assert.equal(await p.locator('[data-home-resume]').getAttribute('data-resume-deck'),`saved-${game}`,'successful work survives durable reload');
+    assert.equal(await p.locator('[data-home-resume] button').getAttribute('data-to'),route);
+    await work.close();
+  }
+  report.push('All games: actual older-deck edit/save → truthful resume → exact deck route → unrelated open unchanged → durable reload; no newest-deck inference');
+
   const unknown = await openApp({ unpriced: true, decks: false, emptyFeed: true });
   for (const game of GAME_IDS) {
     await selectGame(unknown.page, game);
@@ -833,15 +841,28 @@ try {
     await visibleHeaderArt(unknown.page);
     assert.match(await unknown.page.locator('.hh-credit').innerText(), /Card of the Day/i);
     assert.equal(await unknown.page.locator('.hh-deck-link').count(), 0);
-    assert.equal(await unknown.page.locator('.community-feature.feature-link').count(), 1);
+    assert((await unknown.page.locator('.community-feature.feature-link').count()) >= 2);
     assert.equal(await unknown.page.locator('.community-feature time').count(), 0);
     await noOverflow(unknown.page, `${game} unavailable source/unpriced state`);
   }
   await unknown.close();
+  const noDaily = await openApp({heroDate:'2026-10-16',dailyUnavailable:true,width:1024});
+  for(const game of GAME_IDS){
+    await selectGame(noDaily.page,game);
+    await noDaily.page.waitForFunction(()=>!document.querySelector('.hh-credit'));
+    assert.equal(await noDaily.page.locator('#homeHero').isVisible(),false,'unavailable daily pick has no empty visual placeholder');
+    for(const width of [320,390,768,1024,1440,2560]){
+      await noDaily.page.setViewportSize({width,height:viewportHeight(width)});
+      const sizes=await noDaily.page.locator('.home-overview').evaluate(n=>({overview:n.clientWidth,value:n.querySelector('.home-value').getBoundingClientRect().width}));
+      assert(sizes.value>=sizes.overview-2,'without a daily result the value uses the entire overview, not an empty second column');
+      await noOverflow(noDaily.page,`${game} missing daily pick ${width}`);
+    }
+  }
+  await noDaily.close();
   const fetched = await openApp({ fetchFeed: true, timezoneId: 'America/Los_Angeles' });
-  await fetched.page.locator('.community-feature.feature-news').waitFor();
+  await fetched.page.locator('.community-feature.feature-news').first().waitFor();
   assert(fetched.requests.some(url => url.includes('/api/community?game=mtg')), 'uncached feed uses the real fetch/refresh integration');
-  assert.match(await fetched.page.locator('.community-feature time').innerText(), /Oct 16, 2026/, 'date-only source dates do not shift in a western timezone');
+  assert.match(await fetched.page.locator('.community-feature time').first().innerText(), /Oct 16, 2026/, 'date-only source dates do not shift in a western timezone');
   await fetched.close();
   report.push('All-unpriced is not $0; independent daily art; unavailable-source disclosure; real feed refresh; western-timezone date integrity');
 
@@ -885,12 +906,12 @@ try {
     assert.equal(await alternating.page.locator('.home-meta-original').getAttribute('href'), `${sources[game].deck}-second`);
     assert.equal(await alternating.page.locator('[data-meta-step="1"]').evaluate(n=>n===document.activeElement),true,'changing selected-list art preserves control focus');
     assert.equal(await alternating.page.locator('.community-feature.feature-deck').count(),0,'news does not duplicate deck discovery');
-    await alternating.page.locator('#homeQ').fill('Keep my discovery search');
-    await alternating.page.evaluate(()=>{window.__foldHome={rail:document.querySelector('[data-home-meta]'),opener:document.querySelector('[data-home-meta-open]'),value:document.querySelector('.home-value-main'),search:document.querySelector('#homeQ'),key:document.querySelector('.home-meta-card').dataset.metaDeck,source:document.querySelector('.home-meta-original').href};});
+    await alternating.page.locator('[data-home-resume] button').focus();
+    await alternating.page.evaluate(()=>{window.__foldHome={rail:document.querySelector('[data-home-meta]'),opener:document.querySelector('[data-home-meta-open]'),value:document.querySelector('.home-value-main'),resume:document.querySelector('[data-home-resume] button'),key:document.querySelector('.home-meta-card').dataset.metaDeck,source:document.querySelector('.home-meta-original').href};});
     for(const viewport of FOLD_SEQUENCE) {
       await alternating.page.setViewportSize(viewport);await assertSelected(alternating.page,game);
-      assert(await alternating.page.evaluate(()=>{const s=window.__foldHome;return s.rail===document.querySelector('[data-home-meta]')&&s.opener===document.querySelector('[data-home-meta-open]')&&s.value===document.querySelector('.home-value-main')&&s.search===document.querySelector('#homeQ')&&s.key===document.querySelector('.home-meta-card').dataset.metaDeck&&s.source===document.querySelector('.home-meta-original').href;}),'fold/unfold keeps the exact mounted rail, visible list/source, value and search nodes');
-      assert.equal(await alternating.page.locator('#homeQ').inputValue(),'Keep my discovery search');
+      assert(await alternating.page.evaluate(()=>{const s=window.__foldHome;return s.rail===document.querySelector('[data-home-meta]')&&s.opener===document.querySelector('[data-home-meta-open]')&&s.value===document.querySelector('.home-value-main')&&s.resume===document.querySelector('[data-home-resume] button')&&s.key===document.querySelector('.home-meta-card').dataset.metaDeck&&s.source===document.querySelector('.home-meta-original').href;}),'fold/unfold keeps the exact mounted rail, visible list/source, value and resume nodes');
+      assert(await alternating.page.locator('[data-home-resume] button').evaluate(n=>n===document.activeElement),'same mounted resume focus survives resize');
       await noOverflow(alternating.page,`${game} same-mount fold ${viewport.width}x${viewport.height}`);
     }
     await touchSwipe(alternating.page, '.home-meta-copy', 150);
@@ -1033,10 +1054,10 @@ try {
     const random = await openApp({ game });
     const before = await inventorySnapshot(random.page);
     await startReveal(random.page, game);
-    await random.page.evaluate(()=>{window.__foldReveal={node:document.querySelector('.home-deck-reveal'),context:window.__homeTestState.ui.sheetCtx,home:document.querySelector('[data-home-discovery]'),value:document.querySelector('[data-home-value]')};});
+    await random.page.evaluate(()=>{window.__foldReveal={node:document.querySelector('.home-deck-reveal'),context:window.__homeTestState.ui.sheetCtx,decks:document.querySelector('#content'),opener:document.querySelector('[data-act="randomDeckOptions"]')};});
     for(const viewport of FOLD_SEQUENCE) {
       await random.page.setViewportSize(viewport);
-      assert(await random.page.evaluate(()=>{const r=window.__foldReveal;return r.node===document.querySelector('.home-deck-reveal')&&r.context===window.__homeTestState.ui.sheetCtx&&r.home===document.querySelector('[data-home-discovery]')&&r.value===document.querySelector('[data-home-value]');}),'resizing never restarts the random selection or remounts Home behind it');
+      assert(await random.page.evaluate(()=>{const r=window.__foldReveal;return r.node===document.querySelector('.home-deck-reveal')&&r.context===window.__homeTestState.ui.sheetCtx&&r.decks===document.querySelector('#content')&&r.opener===document.querySelector('[data-act="randomDeckOptions"]');}),'resizing never restarts the random selection or remounts the Decks page behind it');
       assert.equal(await random.page.locator('.home-deck-reveal h3').innerText(),seeds[game].name);
       assert.equal(await random.page.locator('.home-reveal-fan img').getAttribute('alt'),seeds[game].name);
     }
@@ -1063,7 +1084,7 @@ try {
     await random.close();
   }
   const cancel = await openApp();
-  await cancel.page.locator('[data-act="homeRandomDeck"]').click();
+  await openDeckRandom(cancel.page);
   await chooseFormat(cancel.page, 'mtg');
   const held = cancel.holdSelection();
   await cancel.page.locator('[data-act="randomDeckStart"]').click();
@@ -1072,12 +1093,13 @@ try {
     held.seen.then(() => { clearTimeout(timer); resolve(); }, reject);
   });
   await closeSheet(cancel.page);
-  await selectGame(cancel.page, 'ptcg');
+  await cancel.page.locator('#game-tab-ptcg').click();
+  await cancel.page.waitForFunction(()=>document.body.dataset.game==='ptcg');
   held.release();
   await cancel.page.waitForFunction(() => window.__homeTestState.catalog['llanowar elves']?.checkedAt > '2026-10-17T12:00:00.000Z');
   await cancel.page.waitForTimeout(200);
   assert.equal(await cancel.page.locator('.home-deck-reveal').count(), 0, 'late response cannot reveal across closed picker/game navigation');
-  await assertSelected(cancel.page, 'ptcg');
+  assert.equal(await cancel.page.locator('#game-tab-ptcg').getAttribute('aria-selected'),'true');
   await cancel.close();
   report.push('All-game explicit format → real provider-selected card → same seed/format builder, with no inventory mutation; busy Magic build preserved/retryable; late selection cancelled');
 

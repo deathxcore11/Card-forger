@@ -1,5 +1,5 @@
 import {compactPriceSummary,selectedFinish,detailTabs,detailPanel} from "./pricing-presentation.js";
-import { homeValue, homeEdition, homeValueCoverage } from "./home-ui.js";
+import { homeValue, homeEdition, homeValueCoverage, homeResume } from "./home-ui.js";
 import {interactiveRules} from './rule-learning.js';
 import {brandMark} from './brand.js';
 import {conditionValueNote} from './condition-value.js';
@@ -84,27 +84,12 @@ const coverOf = (d) =>
 /* ---------- Home ---------- */
 
 export function home() {
-  const st = S.state,
-    copies = sumQty(st.collection),
-    value = collectionValue(st.collection, S.catalog, st.printings, st.decks),
-    active = deckById(st.activeDeck),
-    others = st.decks.filter((d) => d !== active).slice(-8).reverse();
-  const fresh = !st.collection.length && !st.decks.length,
-    lead = active || st.decks.at(-1);
-  // One next step for where you are; the 3-step guide only for brand-new users (and it can be hidden).
-  return `${homeHero("mtg", copies ? "Welcome back." : "Let’s build from your cards.", !fresh)}${installNudge(copies)}
+  const st = S.state, value = collectionValue(st.collection, S.catalog, st.printings, st.decks);
+  return `<div class="home-overview"><h1 class="home-sr-only">Magic dashboard</h1>${homeValue({ game: "mtg", ...value, decks: st.decks.length, history: st.valueHistory, valueRoute: "#collection/value" })}${homeHero("mtg")}</div>
   ${st.example ? `<div class="note warn">Example data is loaded. Reset it in Settings before adding real cards.</div>` : ""}
-  ${homeValue({ total: value.total, copies, decks: st.decks.length, unpriced: value.unpriced, history: st.valueHistory, valueRoute: "#collection/value" })}
-  ${homeEdition("mtg")}
+  ${homeResume("mtg", deck => formatOf(deck).name)}
   ${quickTiles("mtg")}
-  <div class="home-personal">${fresh && !startHidden("mtg") ? `<details class="home-start"><summary>New here? Start with your cards <span aria-hidden="true">＋</span></summary>${startPath()}</details>` : mtgNext(lead, copies)}</div>
-  ${others.length ? `<section class="home-deck-section"><div class="section-head"><h2>Deck shelf</h2><button class="link" data-act="go" data-to="#decks">All decks →</button></div><div class="shelf">${others.map((d) => deckTile(d)).join("")}</div></section>` : ""}
-  ${
-    value.spare.length && value.spareValue > 0
-      ? `<button class="banner" data-act="go" data-to="#collection/value"><span><b>${usd(value.spareValue, 0)}</b> sits in ${sumQty(value.spare)} cards no deck uses</span><span class="muted">Trade binder →</span></button>`
-      : ""
-  }
-  `;
+  ${homeEdition("mtg")}`;
 }
 
 const glossary = () => `<details class="glossary"><summary>New to Commander? 60-second glossary</summary><dl>
@@ -809,7 +794,7 @@ export function decks() {
   const tab = S.ui.decksTab;
   return `<div class="page-head"><h1>Decks</h1><div class="head-actions"><button class="btn small" data-act="importDeck">↥ Import</button><button class="btn small ghost" data-act="newDeck">＋ New</button></div></div>
   <div class="random-tools"><button class="btn ghost small" data-act="learnGame">How to play · keywords</button></div>
-  ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Meta decks"]])}<div class="random-tools"><button class="btn ghost small" data-act="randomDeck" aria-label="Random Commander deck">🎲 Random Commander</button><button class="btn ghost small" data-act="randomDeckOptions" aria-label="Random deck in any format">🎲 Random deck</button></div>
+  ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Meta decks"]])}<div class="random-tools"><button class="btn ghost small" data-act="randomDeck" aria-label="Random Commander deck">🎲 Random Commander</button><button class="btn ghost small" data-act="randomDeckOptions" data-home="1" aria-label="Random deck in any format">🎲 Random deck</button></div>
   ${tab === "ideas" ? ideasView() : tab === "inspiration" ? inspirationView() : myDecks()}`;
 }
 

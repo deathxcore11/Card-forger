@@ -90,7 +90,7 @@ for (const game of ['mtg','ygo','ptcg']) {
   assert.equal((sharedLower.match(/class="home-meta"/g) || []).length,1,`${game}: exactly one shared full-width lower Meta rail`);
   assert.doesNotMatch(sharedLower,/class="quick"|quick-btn/,`${game}: no legacy split Deck ideas/Meta shortcut grid`);
   assert.match(html, /data-home-gesture="carousel"/); assert.match(html, /data-meta-toggle/); assert.match(html, /data-meta-step="-1"/);
-  assert.match(html, /Build from my cards/); assert.match(html, /Surprise me/); assert.match(html, /data-key=".+:a"/); assert.match(html, game === 'mtg' ? /data-act="mtgProven"/ : /data-act="tMetaDeck"/);
+  assert.doesNotMatch(html, /Build from my cards|Surprise me/); assert.match(html, /data-key=".+:a"/); assert.match(html, game === 'mtg' ? /data-act="mtgProven"/ : /data-act="tMetaDeck"/);
   assert.doesNotMatch(html, /quick-btn|#1|global rank|win rate/);
   assert.match(html, game === 'ygo' ? /List submitted/ : /Event date/);
   metaState(homeMetaKey(game)).data = { ...data, decks: [deck(game,'new')] };
@@ -110,16 +110,17 @@ for(const game of ['mtg','ygo','ptcg']) for(const progress of ['new','cards','sa
   if(progress==='saved') state.decks=game==='mtg'?[{id:'continue',name:'Keep this saved plan',format:'standard',cards:[],side:[]}]:[{id:'continue',name:'Keep this saved plan',format:game==='ygo'?'advanced':'standard',zones:{main:[],extra:[],side:[]}}];
   const before=JSON.stringify(S.state), html=game==='mtg'?magicHome():T.tcgHome();
   assert.equal((html.match(/data-home-discovery=/g)||[]).length,1,`${game}/${progress}: one unified discovery section`);
-  assert.equal((html.match(/data-act="homeRandomDeck"/g)||[]).length,1);
-  assert.equal((html.match(/>Build from my cards<\/button>/g)||[]).length,1);
+  assert.equal((html.match(/data-act="homeRandomDeck"/g)||[]).length,0);
+  assert.equal((html.match(/>Build from my cards<\/button>/g)||[]).length,0);
   assert.equal((html.match(/data-home-value=/g)||[]).length,1);
   assert.equal((html.match(/data-home-community=/g)||[]).length,1);
   assert.doesNotMatch(html,/class="home-discover"|home-deal|Discover decks your cards support|>Random deck</);
-  const discovery=html.slice(html.indexOf('<section class="home-meta"'),html.indexOf('<div class="home-personal"'));
-  assert.match(discovery,/data-to="#decks\/ideas"/);assert.match(discovery,/data-act="homeRandomDeck"/);
-  if(progress==='saved'){assert.match(html,/Continue your deck/);assert.match(html,/Keep this saved plan/);assert.match(html,/Open deck/);}
-  if(progress==='cards')assert.doesNotMatch(html,/<section class="next-card"/);
-  if(progress==='new')assert.match(html,/<details class="home-start"/);
+  const order=['class="home-overview"', 'data-home-resume=', 'class="home-meta"', 'data-home-community='].map(token=>html.indexOf(token));
+  assert(order.every((position,i)=>position>=0 && (!i || position>order[i-1])), 'value, resume, Meta, then news');
+  assert.doesNotMatch(html,/home-deck-section|home-start|homeQ|homeRandomDeck|Build from my cards/);
+  assert.match(html,/data-home-resume=/);
+  if(progress==='saved')assert.match(html,/Choose a deck/,'an unrecorded deck is not falsely called recently worked');
+  if(progress==='new')assert.match(html,/No saved decks yet/);
   assert.equal(JSON.stringify(S.state),before,'presentation does not create decks or edit collection');
 }
 S.state=savedState;
@@ -391,3 +392,6 @@ for(const cancellation of ['unmount','game','format','reject']) {
   assert.equal(currentMount.stage.innerHTML,'initial');delete S.ui.mtgMeta;
 }
 console.log('PASS: all-game exact Home totals/valuation, retained exact rendered-list actions after real cache replacement, original source/rows, focus/cancel/unmount, zero/one-slide remount subscriptions, exact downstream inspector/build snapshots, pending close/reopen/replacement cancellation, shared all-game unified discovery composition, saved continuation, original random action and carousel controls.');
+
+// Loading, empty and unavailable states must remain distinct in the normal suite.
+await import('./test-home-meta-loading.mjs');

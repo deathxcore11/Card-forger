@@ -1,3 +1,4 @@
+import { normalizeHomeDeckActivity, recordHomeDeckWork } from "./home-deck-activity.js";
 import { syncGameTabs, attachGameTabs, attachHomeCommunity, refreshHomeCommunity, isHomeRevealCurrent, homeDeckReveal, refreshHomeValue, homeValueCoverage, homeMetaSnapshot } from "./home-ui.js";
 import {attachRuleLearning} from './rule-learning.js';
 import {loadConditionQuotes,applyConditionQuotes,conditionRequest,CONDITION_IDENTITY} from './condition-feed.js';
@@ -93,7 +94,7 @@ const stripCache = (s) => {
   void cache;
   return keep;
 };
-const normalize = (s) => stripCache({ ...blank(), ...validateWorkspace(s) });
+const normalize = (s) => normalizeHomeDeckActivity(stripCache({ ...blank(), ...validateWorkspace(s) }));
 
 function setSaveStatus(text, cls = "") {
   const el = $("#saveStatus");
@@ -240,7 +241,7 @@ function replaceWorkspace(next, { recovery = false, clearRecovery = false, stamp
     return true;
   });
 }
-async function commit(fn, { msg = "", recovery = false, rerender = true, enrich = true, undo = "", guard = null, navigationWrite = false } = {}) {
+async function commit(fn, { msg = "", recovery = false, rerender = true, enrich = true, undo = "", guard = null, navigationWrite = false, recordDeckWork = true } = {}) {
   const transaction = async () => {
     // Confirm against the latest committed state, without allowing another queued edit to pass.
     if (guard && !await guard(S.state)) return;
@@ -249,6 +250,7 @@ async function commit(fn, { msg = "", recovery = false, rerender = true, enrich 
     const next = structuredClone(stripCache(S.state));
     const out = fn(next);
     const valid = normalize(next);
+    if (recordDeckWork && !navigationWrite) recordHomeDeckWork(previous, valid);
     valid.lastSavedAt = new Date().toISOString();
     const records = [[STORAGE, valid]];
     if (recovery) records.unshift([RECOVERY, stripCache(S.state)]);
@@ -428,7 +430,7 @@ async function autoEnrich() {
         }
         for (const d of [...s.decks, ...(s.references || [])]) for (const c of d.cards) if (r.matched.has(key(c.name))) c.name = r.matched.get(key(c.name));
       },
-      { enrich: false },
+      { enrich: false, recordDeckWork: false },
     );
     trackValue();
     await save();
@@ -2791,7 +2793,7 @@ A.homeDailyCard = async (t) => {
   }
 };
 
-// Only update the art/credits. Never replace Home search, carousel, focus or scroll.
+// Only update the daily art/action. Never replace value, resume, carousel, focus or scroll.
 function paintHomeHero(g) {
   if (S.ui.view !== "home" || T.game() !== g) return;
   const el = $("#homeHero"), h = T.heroFor(g);
@@ -2802,7 +2804,7 @@ function paintHomeHero(g) {
   const oldArt = el.querySelector(".hh-art"), newArt = next.querySelector(".hh-art");
   if (oldArt) newArt ? oldArt.replaceWith(newArt) : oldArt.remove();
   else if (newArt) el.prepend(newArt);
-  for (const selector of [".hh-art-link", ".hh-credit"]) {
+  for (const selector of [".hh-credit"]) {
     const old = el.querySelector(selector), fresh = next.querySelector(selector);
     if (old && fresh) {
       // Keep the focused button node; only its exact-card identity/content changes.
@@ -2811,8 +2813,8 @@ function paintHomeHero(g) {
       old.innerHTML = fresh.innerHTML;
     } else if (old) old.remove();
     else if (fresh) {
-      if (selector === ".hh-art-link") el.querySelector(".hh-shade").after(fresh);
-      else el.querySelector(".hh-body").append(next.querySelector(".hh-credits"));
+      el.querySelector(".hh-credits")?.remove();
+      el.querySelector(".hh-body").append(next.querySelector(".hh-credits"));
     }
   }
   if (!h) el.querySelector(".hh-credits")?.remove();
@@ -3988,7 +3990,7 @@ A.refreshDeck = async (t) => {
     done = busy(t, "Refreshing…");
   try {
     const r = await resolveNames(d.cards.map((c) => c.name), (m) => toast(m), true);
-    await editDeck((x) => ({ ...x, cards: x.cards.map((c) => ({ ...c, name: r.matched.get(key(c.name)) || c.name })) }));
+    await editDeck((x) => ({ ...x, cards: x.cards.map((c) => ({ ...c, name: r.matched.get(key(c.name)) || c.name })) }), { recordDeckWork: false });
     toast(r.failed.length ? `${r.failed.length} cards not found: ${r.failed.slice(0, 3).join(", ")}` : "Card data and prices refreshed.");
   } finally {
     done();

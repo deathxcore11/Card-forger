@@ -19,10 +19,11 @@ writeDaily();
 for (const g of GAME_IDS) {
   assert.equal(heroFor(g, { id: 'owned-lead', name: 'Owned lead', deck: true }).id, 'daily-' + g, 'saved-deck argument never overrides daily identity');
   const html = homeHero(g, 'Welcome back.', true);
-  assert.equal((html.match(/data-act="homeDailyCard"/g) || []).length, 2);
-  assert.equal((html.match(new RegExp(`data-id="daily-${g}"`, 'g')) || []).length, 2);
-  assert.equal((html.match(/Card of the Day/g) || []).length, 1, `${g}: one visible daily-card label, not a duplicate artwork badge`);
-  assert.match(html, /class="hh-art-link"[^>]+aria-label="Explore [^"]+ artwork"><\/button>/);
+  assert.equal((html.match(/data-act="homeDailyCard"/g) || []).length, 1);
+  assert.equal((html.match(new RegExp(`data-id="daily-${g}"`, 'g')) || []).length, 1);
+  assert.equal((html.match(/>Card of the Day</g) || []).length, 1, `${g}: one visible daily-card label, not a duplicate artwork badge`);
+  assert.match(html, /class="hh-credit"[^>]+aria-label="Explore [^"]+, Card of the Day"/);
+  assert.doesNotMatch(html, /hh-art-link|homeQ|hh-search|<h1/);
   assert.doesNotMatch(html, /From your deck|hh-deck-link|onerror=/);
 }
 // Exercise the actual three Home entry points with saved deck leaders present.
@@ -30,13 +31,13 @@ S.state = { ...blank(), settings: { game: 'mtg' }, tcg: { ygo: blankGame(), ptcg
 S.state.decks = [{ id: 'saved-magic', name: 'Owned deck', format: 'Standard', commander: 'Owned leader', cards: [] }];
 S.state.activeDeck = 'saved-magic';
 S.catalog['owned leader'] = { ...magic('owned-print', 'Owned leader'), type_line: 'Creature', prices: { usd: '1' } };
-assert.match(home().split('</section>')[0], /data-daily-id="daily-mtg"/);
-assert.doesNotMatch(home().split('</section>')[0], /owned-print|From your deck/);
+assert.match(home().match(/<section class="home-hero[\s\S]*?<\/section>/)[0], /data-daily-id="daily-mtg"/);
+assert.doesNotMatch(home().match(/<section class="home-hero[\s\S]*?<\/section>/)[0], /owned-print|From your deck/);
 for (const g of ['ygo', 'ptcg']) {
   S.state.settings.game = g;
   cache[g]['owned-' + g] = { game: g, id: 'owned-' + g, name: 'Owned leader', art: 'https://example.test/owned.jpg', imageLarge: 'https://example.test/owned.jpg', prices: { usd: 1 }, category: g === 'ygo' ? 'Monster' : 'Pokemon', stats: [], sets: [] };
   S.state.tcg[g].decks = [{ id: 'saved-' + g, name: 'Owned deck', format: g === 'ygo' ? 'tcg' : 'standard', zones: { main: [{ cardId: 'owned-' + g, qty: 1, name: 'Owned leader' }], extra: [], side: [] } }];
-  const html = tcgHome().split('</section>')[0];
+  const html = tcgHome().match(/<section class="home-hero[\s\S]*?<\/section>/)[0];
   assert.match(html, new RegExp(`data-daily-id="daily-${g}"`));
   assert.doesNotMatch(html, /owned\.jpg|From your deck/);
 }
@@ -104,7 +105,7 @@ await assert.rejects(loadHero('ptcg'), /No daily cards/); assert.equal(heroFor('
 globalThis.fetch = async () => ({ ok: false }); await assert.rejects(loadHero('ygo'), /unavailable/);
 // Run the production registered daily click callback, not a duplicate routing model.
 const app = fs.readFileSync('app.js', 'utf8');
-const actionSource = app.slice(app.indexOf('A.homeDailyCard ='), app.indexOf('// Only update the art/credits.'));
+const actionSource = app.slice(app.indexOf('A.homeDailyCard ='), app.indexOf('// Only update the daily art/action.'));
 const events = [], pending = [], state = { ui: { view: 'home', sheetCtx: null } }, sheet = { open: true }, body = {};
 let game = 'mtg', selected = { ...daily('mtg'), id: 'shown-print', name: 'Shown exact' }, refreshes = 0;
 const A = { card: x => events.push(['mtg', x]), tCard: x => events.push(['tcg', x]) };

@@ -205,19 +205,29 @@ export function collectionRowGeometry(n){
  if(typeof n?.getBoundingClientRect!=='function'){
   const expected=n,need=(ok,message)=>{if(!ok)throw Error('Collection row identity: '+message);};
   need(expected&&['mtg','ptcg','ygo'].includes(expected.game)&&['compact','symbols'].includes(expected.mode)&&typeof expected.batch==='boolean'&&Number.isFinite(expected.width)&&new RegExp('^lot-'+expected.game+'-\\d+$').test(expected.id),'invalid descriptor');
-  const {game,mode,batch,width,id}=expected,roots=document.querySelectorAll('#content'),state=window.__uiTestState;
-  need(roots.length===1&&roots[0].isConnected,'unique connected content root');const root=roots[0];
-  need(document.body.dataset.game===game&&state?.state.settings.game===game&&document.body.dataset.view==='collection'&&state.ui.view==='collection'&&location.hash==='#collection','current Collection game and route');
-  need(root.classList.contains('view-'+mode)&&(state.state.settings.displayModes?.[game]?.collection||'compact')===mode,'current display mode');
-  need(innerWidth===width&&state.ui.batch?.game===game&&state.ui.batch.active===batch,'current viewport and batch state');
-  const selector='.display-list > .lot:has(> .lot-art[data-entry="'+id+'"])',rows=root.querySelectorAll(selector);need(rows.length===1,'unique current lot');n=rows[0];
-  need(n.isConnected&&n.closest('#content')===root&&n.parentElement.matches('.display-list')&&root.contains(n.parentElement),'connected direct current list row');
-  need(n.querySelector(':scope > .lot-art')?.dataset.entry===id&&n.querySelector(':scope > .lot-info > .lot-name')?.dataset.entry===id,'matching artwork and name entry');
-  const entries=(game==='mtg'?state.state:state.state.tcg?.[game])?.collection;
-  need(entries?.filter(e=>e.id===id).length===1,'unique current owned entry');need(!!n.querySelector(':scope > .batch-mark')===batch,'matching rendered batch mark');
+  const {game,mode,batch,width,id}=expected,selector='.display-list > .lot:has(> .lot-art[data-entry="'+id+'"])';
+  const resolve=()=>{
+   const roots=document.querySelectorAll('#content'),state=window.__uiTestState;need(roots.length===1&&roots[0].isConnected,'unique connected content root');const root=roots[0];
+   need(document.body.dataset.game===game&&state?.state.settings.game===game&&document.body.dataset.view==='collection'&&state.ui.view==='collection'&&location.hash==='#collection','current Collection game and route');
+   need(root.classList.contains('view-'+mode)&&(state.state.settings.displayModes?.[game]?.collection||'compact')===mode,'current display mode');
+   need(innerWidth===width&&state.ui.batch?.game===game&&state.ui.batch.active===batch,'current viewport and batch state');
+   const rows=root.querySelectorAll(selector);need(rows.length===1,'unique current lot');const node=rows[0];
+   need(node.isConnected&&node.closest('#content')===root&&node.parentElement.matches('.display-list')&&root.contains(node.parentElement),'connected direct current list row');
+   need(node.querySelector(':scope > .lot-art')?.dataset.entry===id&&node.querySelector(':scope > .lot-info > .lot-name')?.dataset.entry===id,'matching artwork and name entry');
+   const entries=(game==='mtg'?state.state:state.state.tcg?.[game])?.collection;need(entries?.filter(e=>e.id===id).length===1,'unique current owned entry');need(!!node.querySelector(':scope > .batch-mark')===batch,'matching rendered batch mark');
+   return {root,node,rows};
+  };
+  let current=resolve(),scroll=null;n=current.node;
+  if(expected.scroll){
+   const before=n.getBoundingClientRect().toJSON();n.scrollIntoView({behavior:'instant',block:'center',inline:'nearest'});current=resolve();need(current.node===n,'scroll kept the same current row');
+   const after=n.getBoundingClientRect(),style=getComputedStyle(n);need(after.width>0&&after.height>0&&after.left>=-2&&after.right<=innerWidth+2&&after.top>=-2&&after.bottom<=innerHeight+2&&style.visibility==='visible'&&style.opacity!=='0','scrolled row is visibly inside the viewport');
+   for(let p=n.parentElement;p;p=p.parentElement){const s=getComputedStyle(p);need(s.visibility==='visible'&&s.opacity!=='0','scrolled row has visible ancestors');}
+   scroll={before,after:after.toJSON(),viewport:{width:innerWidth,height:innerHeight},visible:true,same:true};
+  }
+  const {root,rows}=current;
   const prior=expected.previous?window.__conditionPriorRow:null;
   if(expected.previous)need(prior&&!prior.isConnected&&prior!==n&&prior.querySelector('.lot-art')?.dataset.entry===id,'real prior row replaced');
-  identity={id,game,mode,batch,width,connected:n.isConnected,current:root.querySelectorAll(selector)[0]===n,rootConnected:root.isConnected,unique:rows.length,previous:expected.previous?{connected:prior.isConnected,replaced:prior!==n}:null,data:{id,metadata:n.querySelector('.lot-sub').textContent.replace(/\s+/g,' ').trim(),icons:[...n.querySelectorAll('.lot-sub svg.emb')].map(x=>({role:x.getAttribute('role'),label:x.getAttribute('aria-label'),title:x.querySelector('title')?.textContent,hidden:x.getAttribute('aria-hidden'),parentLabel:x.parentElement.getAttribute('aria-label')})),note:n.querySelector('.condition-value-note')?.textContent||null,price:n.querySelector('.price').textContent,quantity:n.querySelector('.stepper b').textContent,actions:[...n.querySelectorAll('.lot-side button')].map(b=>[b.dataset.act,b.textContent,b.getAttribute('aria-label')])}};
+  identity={id,game,mode,batch,width,scroll,connected:n.isConnected,current:root.querySelectorAll(selector)[0]===n,rootConnected:root.isConnected,unique:rows.length,previous:expected.previous?{connected:prior.isConnected,replaced:prior!==n}:null,data:{id,metadata:n.querySelector('.lot-sub').textContent.replace(/\s+/g,' ').trim(),icons:[...n.querySelectorAll('.lot-sub svg.emb')].map(x=>({role:x.getAttribute('role'),label:x.getAttribute('aria-label'),title:x.querySelector('title')?.textContent,hidden:x.getAttribute('aria-hidden'),parentLabel:x.parentElement.getAttribute('aria-label')})),note:n.querySelector('.condition-value-note')?.textContent||null,price:n.querySelector('.price').textContent,quantity:n.querySelector('.stepper b').textContent,actions:[...n.querySelectorAll('.lot-side button')].map(b=>[b.dataset.act,b.textContent,b.getAttribute('aria-label')])}};
  }
  const rect=x=>x.getBoundingClientRect().toJSON(),style=getComputedStyle(n),inset=k=>['padding'+k,'border'+k+'Width'].reduce((sum,key)=>sum+(parseFloat(style[key])||0),0),contentWidth=parseFloat(style.width)-(style.boxSizing==='border-box'?inset('Left')+inset('Right'):0),rowRect=n.getBoundingClientRect(),scaleX=rowRect.width/(contentWidth+inset('Left')+inset('Right')),info=n.querySelector('.lot-info'),side=n.querySelector('.lot-side'),art=n.querySelector('.lot-art'),mark=n.querySelector('.batch-mark'),targets=[...n.querySelectorAll('.lot-sub,.condition-value-note,.lot-side .price,.lot-side .stepper b,.lot-side button')],bad=[],icons=[],metadata=new Set();let words=0;
  for(const target of targets){for(const icon of target.querySelectorAll('svg.emb'))metadata.add(icon);const bound=target.getBoundingClientRect();if(!bound.width||!bound.height||getComputedStyle(target).visibility!=='visible'||target.scrollWidth>target.clientWidth+2)bad.push({text:target.textContent,reason:'hidden or clipped metadata'});const walker=document.createTreeWalker(target,NodeFilter.SHOW_TEXT);let text;
@@ -251,17 +261,23 @@ export function auditedCollectionControl(control,audit){
  return !!audit&&control.root==='content'&&control.view==='collection'&&['ptcg','ygo'].includes(control.game)&&audit.game===control.game&&audit.width===control.viewport&&control.tag==='SELECT'&&known[control.change]?.includes(control.field)&&r?.direct&&r.known&&/^(auto|scroll)$/.test(r.overflow)&&r.left>=-.5&&r.right<=control.viewport+.5&&r.client>0&&r.scroll>=r.client&&control.width<=r.client+2&&control.left+r.position>=r.left-2&&control.right+r.position<=r.left+r.scroll+2&&audit.controls?.some(n=>n.change===control.change&&n.field===control.field&&n.value===control.value);
 }
 export async function noOverflow(page,scope,label,settleFinite=false,collectionAudit=null){
- const result=await page.locator(scope).evaluate(async(root,settleFinite)=>{
-  // Opt-in page-entry settlement, matching Home. Never disable motion; measure
-  // in the same evaluation after real finite subtree animations have finished.
-  if(settleFinite)for(;;){
+ const result=await page.evaluate(async({scope,settleFinite})=>{
+  // Resolve current scopes in this page task, not remote handles. Finite motion
+  // may legitimately finish on a replaced node; reacquire and settle the new
+  // scope too, without ever retrying a failed geometry assertion.
+  const context=()=>({game:document.body.dataset.game,view:document.body.dataset.view,hash:location.hash,uiGame:window.__uiTestState?.state.settings.game,uiView:window.__uiTestState?.ui.view,sheet:document.querySelector('#sheet'),sheetOpen:document.querySelector('#sheet')?.open,sheetCtx:window.__uiTestState?.ui.sheetCtx,sheetIdentity:JSON.stringify(['type','game','id','name','entryId','entry','tab','face','priceFinish','pricePrinting','priceRarity','priceEdition'].map(k=>window.__uiTestState?.ui.sheetCtx?.[k]).concat(window.__uiTestState?.ui.sheetCtx?.print?.id)),width:innerWidth,height:innerHeight}),initial=context(),started=performance.now();let root,previous,replacements=0,passes=0;
+  const resolve=()=>{const now=context();if(Object.keys(initial).some(k=>initial[k]!==now[k]))throw Error('Overflow scope context changed: '+scope);const nodes=document.querySelectorAll(scope);if(nodes.length!==1||!nodes[0].isConnected)throw Error('Overflow scope must be unique and connected: '+scope);if(previous&&previous!==nodes[0])replacements++;return previous=nodes[0];};
+  for(;;){
+   root=resolve();if(!settleFinite)break;if(performance.now()-started>=15000)throw Error('Overflow finite motion exceeded 15000ms: '+scope);
    const animations=root.getAnimations({subtree:true}).filter(a=>Number.isFinite(a.effect?.getComputedTiming().endTime)&&!['finished','idle'].includes(a.playState));
-   if(!animations.length)break;await Promise.all(animations.map(a=>a.finished.catch(()=>{})));
+   if(!animations.length)break;const remaining=15000-(performance.now()-started);if(remaining<=0)throw Error('Overflow finite motion exceeded 15000ms: '+scope);passes++;
+   let timer;try{await Promise.race([Promise.all(animations.map(a=>a.finished.catch(()=>{}))),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Overflow finite motion exceeded 15000ms: '+scope)),remaining);})]);}finally{clearTimeout(timer);}
   }
-  const r=root.getBoundingClientRect();return {width:innerWidth,root:document.documentElement.scrollWidth,scope:root.scrollWidth,client:root.clientWidth,rect:{left:r.left,right:r.right},bad:[...root.querySelectorAll('button,input,select,summary,a')].filter(n=>n.getClientRects().length&&!n.closest('[hidden]')&&!n.closest('.cs-tabs')).filter(n=>{const b=n.getBoundingClientRect();return b.left<-.5||b.right>innerWidth+.5;}).map(n=>{
+  const r=root.getBoundingClientRect(),style=getComputedStyle(root);if(!r.width||!r.height||root.clientWidth<=0||style.visibility!=='visible'||style.opacity==='0')throw Error('Overflow scope is hidden or zero-sized: '+scope);
+  return {connected:root.isConnected,current:document.querySelectorAll(scope)[0]===root,settlement:{passes,replacements},width:innerWidth,root:document.documentElement.scrollWidth,scope:root.scrollWidth,client:root.clientWidth,rect:{left:r.left,right:r.right},bad:[...root.querySelectorAll('button,input,select,summary,a')].filter(n=>n.getClientRects().length&&!n.closest('[hidden]')&&!n.closest('.cs-tabs')).filter(n=>{const b=n.getBoundingClientRect();return b.left<-.5||b.right>innerWidth+.5;}).map(n=>{
    const b=n.getBoundingClientRect(),rail=n.closest('.filter-pills'),a=rail?.getBoundingClientRect();return {text:n.tagName==='SELECT'?n.selectedOptions[0]?.label:n.textContent.slice(0,90),class:n.className,tag:n.tagName,change:n.dataset.change,field:n.dataset.field||'',value:n.value,root:root.id,view:document.body.dataset.view,game:document.body.dataset.game,viewport:innerWidth,left:b.left,right:b.right,width:b.width,rail:rail&&{known:rail.matches('.coll-tools > .filter-pills'),direct:n.parentElement===rail,left:a.left,right:a.right,client:rail.clientWidth,scroll:rail.scrollWidth,position:rail.scrollLeft,overflow:getComputedStyle(rail).overflowX}};
-  })};},settleFinite);
- assert(result.root<=result.width+2&&result.scope<=result.client+2,`${label}: no horizontal overflow ${JSON.stringify(result)}`);assert.deepEqual(result.bad.filter(n=>!auditedCollectionControl(n,collectionAudit)),[],`${label}: all visible controls fit the viewport or the specifically audited Collection rail`);
+  })};},{scope,settleFinite});
+ assert(result.connected&&result.current,`${label}: current connected overflow scope`);assert(result.root<=result.width+2&&result.scope<=result.client+2,`${label}: no horizontal overflow ${JSON.stringify(result)}`);assert.deepEqual(result.bad.filter(n=>!auditedCollectionControl(n,collectionAudit)),[],`${label}: all visible controls fit the viewport or the specifically audited Collection rail`);return result;
 }
 export async function capture(page,name){await page.screenshot({path:resolve(RESULTS,name+'.png'),fullPage:true,animations:'disabled'});}
 export async function saveReport(name,report,error){await mkdir(RESULTS,{recursive:true});await writeFile(resolve(RESULTS,name+'.json'),JSON.stringify({generatedAt:new Date().toISOString(),artEvidence,status:error?'failed':'passed',checks:report,...(error?{error:String(error.stack||error)}:{})},null,2));}

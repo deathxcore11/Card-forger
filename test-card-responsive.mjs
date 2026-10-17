@@ -5,7 +5,7 @@ import {gunzipSync} from 'node:zlib';
 import {attachTilt,motionCard} from './feel.js';
 import {rememberDetailViewport,restoreDetailViewport,quoteForContext} from './pricing-presentation.js';
 import {visibleRulePassage,ygoTurnStructureDisplay} from './rule-reference.js';
-import {auditedCollectionControl,detailHistoryContext,detailHistoryReady,collectionControlGeometry,collectionRowGeometry,CARDS} from './tests/detail-rules-fixtures.mjs';
+import {auditedCollectionControl,detailHistoryContext,detailHistoryReady,collectionControlGeometry,collectionRowGeometry,noOverflow,CARDS} from './tests/detail-rules-fixtures.mjs';
 import {loadSharedHistory,sharedHistory,historyKey,setHistoryRefresh} from './shared-history.js';
 import * as responsiveStore from './store.js';
 import {cardKey} from './core.js';
@@ -29,7 +29,7 @@ console.log('PASS: exact fractional select content box, border/content-box and z
 // Run the same TreeWalker/range callback as hosted CI with deliberately empty,
 // split and clipped glyph ranges. Only SVG title/desc metadata are non-rendering.
 {
- const saved={document:globalThis.document,getComputedStyle:globalThis.getComputedStyle,NodeFilter:globalThis.NodeFilter,window:globalThis.window,location:globalThis.location,innerWidth:globalThis.innerWidth},svgNS='http://www.w3.org/2000/svg',htmlNS='http://www.w3.org/1999/xhtml';
+ const saved={document:globalThis.document,getComputedStyle:globalThis.getComputedStyle,NodeFilter:globalThis.NodeFilter,window:globalThis.window,location:globalThis.location,innerWidth:globalThis.innerWidth,innerHeight:globalThis.innerHeight},svgNS='http://www.w3.org/2000/svg',htmlNS='http://www.w3.org/1999/xhtml';
  const rect=(left=0,top=0,width=100,height=30)=>({left,top,right:left+width,bottom:top+height,width,height,toJSON(){return {...this,toJSON:undefined};}});
  const make=()=>({getBoundingClientRect:()=>rect(),getClientRects:()=>[rect()],clientWidth:100,scrollWidth:100,textContent:'Printing',children:[],querySelectorAll:()=>[],getAttribute:()=>null,matches:()=>false,style:{visibility:'visible',opacity:'1',gridTemplateColumns:'100px 100px',width:'100px',boxSizing:'border-box',paddingLeft:'6px',paddingRight:'6px',borderLeftWidth:'1px',borderRightWidth:'1px',columnGap:'10px'}});
  const info=make(),side=make(),art=make(),target=make(),row=make(),icon=make();icon.parentElement=target;icon.getBoundingClientRect=()=>rect(2,2,20,20);icon.getAttribute=k=>k==='role'?'img':k==='aria-label'?'Grass Energy':null;icon.querySelector=()=>({textContent:'Grass Energy'});
@@ -74,10 +74,55 @@ console.log('PASS: exact fractional select content box, border/content-box and z
   replacement.getBoundingClientRect=()=>rect(0,0,0,0);current=collectionRowGeometry(expected);assert.equal(current.row.width,0,'A genuinely zero current row remains zero; the probe never retries for a passing node');replacement.getBoundingClientRect=oldBounds;
   target.style.visibility='hidden';assert(collectionRowGeometry(expected).bad.some(x=>x.reason==='hidden or clipped metadata'),'Current hidden content still fails after atomic lookup');target.style.visibility='visible';
   text.parentElement=target;text.textContent='Printing';text.rects=[];texts=[text];assert(collectionRowGeometry(expected).bad.some(x=>x.word==='Printing'),'Missing real glyphs still fail on the current node');text.rects=[rect(95,0,20,10)];assert(collectionRowGeometry(expected).bad.some(x=>x.word==='Printing'),'Current clipped text is not treated as a stale-handle exemption');
+  // Native instant scrolling and measurement share the exact current node.
+  texts=[];let scrolls=0,top=1200;globalThis.innerHeight=1000;list.style={visibility:'visible',opacity:'1'};replacement.getBoundingClientRect=()=>rect(16,top,100,30);
+  replacement.scrollIntoView=options=>{assert.deepEqual(options,{behavior:'instant',block:'center',inline:'nearest'});scrolls++;top=400;};
+  current=collectionRowGeometry({...expected,scroll:true});assert.equal(scrolls,1);assert.equal(current.identity.scroll.before.top,1200);assert.equal(current.row.top,400);assert(current.identity.scroll.visible&&current.identity.scroll.same);assert.equal(current.identity.data.metadata,'FDN #101');
+  replacement.scrollIntoView=()=>{scrolls++;};top=1200;assert.throws(()=>collectionRowGeometry({...expected,scroll:true}),/visibly inside the viewport/);assert.equal(scrolls,2,'A failed visibility check is never retried');top=400;
+  replacement.style={...oldStyle,visibility:'hidden'};assert.throws(()=>collectionRowGeometry({...expected,scroll:true}),/visibly inside the viewport/);replacement.style={...oldStyle,opacity:'0'};assert.throws(()=>collectionRowGeometry({...expected,scroll:true}),/visibly inside the viewport/);replacement.style=oldStyle;
+  replacement.getBoundingClientRect=()=>rect(16,400,0,0);assert.throws(()=>collectionRowGeometry({...expected,scroll:true}),/visibly inside the viewport/);replacement.getBoundingClientRect=()=>rect(16,400,100,30);
+  list.style.opacity='0';assert.throws(()=>collectionRowGeometry({...expected,scroll:true}),/visible ancestors/);list.style.opacity='1';
+  replacement.scrollIntoView=()=>{rows=[{...replacement}];};assert.throws(()=>collectionRowGeometry({...expected,scroll:true}),/same current row/);rows=[replacement];replacement.scrollIntoView=()=>{location.hash='#search';};assert.throws(()=>collectionRowGeometry({...expected,scroll:true}),/current Collection game and route/);location.hash='#collection';
+  replacement.scrollIntoView=()=>{art.dataset.entry='lot-mtg-1';};assert.throws(()=>collectionRowGeometry({...expected,scroll:true}),/matching artwork and name entry/);art.dataset.entry=expected.id;
   pinned.style=oldStyle;pinned.getBoundingClientRect=oldBounds;
  }finally{Object.assign(globalThis,saved);}
 }
 console.log('PASS: atomic unique connected current-row measurement after stale-reference replacement; wrong root/context/lot rejected, zero/hidden/missing/clipped geometry still fails; SVG metadata exemption stays narrow.');
+// Exercise the actual shared page callback, including every consumer's scope
+// shape. There is no browser, timer sleep, or retry of a geometry assertion.
+{
+ const saved=Object.fromEntries(['document','window','location','innerWidth','innerHeight','getComputedStyle','performance','setTimeout','clearTimeout'].map(k=>[k,globalThis[k]]));
+ let nodes=[],sheet=null,clock=0,measurements=0,controlRight=300,rootWidth=320,timers=new Map(),timerId=0;
+ const node=()=>({isConnected:true,id:'content',style:{visibility:'visible',opacity:'1'},clientWidth:288,scrollWidth:288,width:288,height:100,animations:[],getBoundingClientRect(){measurements++;return {left:16,right:16+this.width,top:100,bottom:100+this.height,width:this.width,height:this.height};},getAnimations(options){assert.deepEqual(options,{subtree:true});return this.animations;},querySelectorAll:()=>[]});
+ const finite=()=>{let resolve,reject;const a={playState:'running',effect:{getComputedTiming:()=>({endTime:580})},finished:new Promise((yes,no)=>{resolve=yes;reject=no;})};return {a,finish(){a.playState='finished';resolve();},cancel(){a.playState='idle';reject(Error('Cancelled by real replacement'));}};};
+ const infinite={playState:'running',effect:{getComputedTiming:()=>({endTime:Infinity})},finished:new Promise(()=>{})},state={state:{settings:{game:'mtg'}},ui:{view:'collection',sheetCtx:null}};
+ const page={evaluate:(fn,arg)=>fn(arg)};
+ try{
+  Object.assign(globalThis,{window:{__uiTestState:state},location:{hash:'#collection'},innerWidth:320,innerHeight:1000,performance:{now:()=>clock},getComputedStyle:n=>n.style,setTimeout:(fn,ms)=>{assert(ms>0&&ms<=15000);timers.set(++timerId,{fn,ms});return timerId;},clearTimeout:id=>timers.delete(id),document:{body:{dataset:{game:'mtg',view:'collection'}},documentElement:{get scrollWidth(){return rootWidth;}},querySelector:selector=>selector==='#sheet'?sheet:null,querySelectorAll:()=>nodes}});
+  for(const scope of ['#content','#sheetBody','.home-value','.scan-confirm','.glass-select-menu[open]','.rules-ask-dialog[open]','#content .display-list > .lot'])for(const settle of [false,true]){
+   nodes=[node()];const result=await noOverflow(page,scope,'stable actual scope '+scope,settle);assert(result.connected&&result.current);assert.deepEqual(result.settlement,{passes:0,replacements:0});
+  }
+  const first=finite(),second=finite(),old=node(),fresh=node();old.animations=[first.a,infinite];fresh.animations=[second.a,infinite];nodes=[old];measurements=0;
+  const pending=noOverflow(page,'#content .display-list > .lot','replacement while settling',true);assert.equal(measurements,0);old.isConnected=false;nodes=[fresh];first.cancel();
+  for(let i=0;i<8;i++)await Promise.resolve();assert.equal(measurements,0,'The replacement must settle before any geometry is read');assert.equal(timers.size,1);second.finish();const settled=await pending;assert.equal(settled.settlement.replacements,1);assert.equal(settled.settlement.passes,2);assert.equal(timers.size,0);
+  // Default false still measures immediately rather than silently adding waits.
+  nodes=[node()];nodes[0].animations=[finite().a];const immediate=await noOverflow(page,'#sheetBody','default no settlement');assert.equal(immediate.settlement.passes,0);assert.equal(timers.size,0);
+  for(const change of [()=>{nodes=[];},()=>{nodes=[node(),node()];},()=>{nodes[0].isConnected=false;}]){nodes=[node()];change();await assert.rejects(noOverflow(page,'#content','invalid current root',true),/unique and connected/);}
+  for(const change of [n=>{n.width=0;},n=>{n.height=0;},n=>{n.clientWidth=0;},n=>{n.style.visibility='hidden';},n=>{n.style.opacity='0';}]){nodes=[node()];change(nodes[0]);await assert.rejects(noOverflow(page,'#sheetBody','hidden current root',true),/hidden or zero-sized/);}
+  const changed=async mutate=>{const motion=finite();nodes=[node()];nodes[0].animations=[motion.a];const p=noOverflow(page,'#sheetBody','changed context',true);mutate();motion.finish();await assert.rejects(p,/context changed/);assert.equal(timers.size,0);};
+  for(const [obj,key,value]of [[document.body.dataset,'game','ygo'],[document.body.dataset,'view','search'],[state.state.settings,'game','ptcg'],[state.ui,'view','search'],[location,'hash','#search'],[state.ui,'sheetCtx',{type:'card',name:'Other'}]]){const old=obj[key];await changed(()=>{obj[key]=value;});obj[key]=old;}
+  await changed(()=>{sheet={open:true};});sheet=null;sheet={open:true};await changed(()=>{sheet.open=false;});sheet=null;
+  state.ui.sheetCtx={type:'card',name:'A',tab:'overview'};await changed(()=>{state.ui.sheetCtx.name='B';});state.ui.sheetCtx=null;
+  state.ui.sheetCtx={type:'card',name:'A',print:{id:'printing-a'}};await changed(()=>{state.ui.sheetCtx.print.id='printing-b';});state.ui.sheetCtx=null;
+  for(const replacement of [[],[node(),node()]]){const motion=finite();nodes=[node()];nodes[0].animations=[motion.a];const missing=noOverflow(page,'#content','missing/duplicate replacement',true);nodes=replacement;motion.finish();await assert.rejects(missing,/unique and connected/);assert.equal(timers.size,0);}
+  nodes=[node()];const stuck=finite();nodes[0].animations=[stuck.a];const timeout=noOverflow(page,'#content','nonsettling finite motion',true);const timer=[...timers.values()][0];assert.equal(timer.ms,15000);timer.fn();await assert.rejects(timeout,/exceeded 15000ms/);assert.equal(timers.size,0);
+  nodes=[node()];const repeated=finite();nodes[0].animations=[repeated.a];const budget=noOverflow(page,'#content','continuous replacement motion',true);clock=15000;nodes=[node()];repeated.finish();await assert.rejects(budget,/exceeded 15000ms/);clock=0;assert.equal(timers.size,0);
+  const earlier=finite(),later=finite();nodes=[node()];nodes[0].animations=[earlier.a];const rolling=noOverflow(page,'#content','remaining shared budget',true);clock=10000;nodes=[node()];nodes[0].animations=[later.a];earlier.finish();for(let i=0;i<8;i++)await Promise.resolve();const remaining=[...timers.values()][0];assert.equal(remaining.ms,5000,'Replacement motion shares the original15s budget, never restarts it');remaining.fn();await assert.rejects(rolling,/exceeded 15000ms/);clock=0;assert.equal(timers.size,0);
+  nodes=[node()];rootWidth=324;await assert.rejects(noOverflow(page,'#content','real document overflow',true),/no horizontal overflow/);rootWidth=320;nodes[0].scrollWidth=292;await assert.rejects(noOverflow(page,'#sheetBody','real local overflow'),/no horizontal overflow/);nodes[0].scrollWidth=288;
+  const control={tagName:'BUTTON',className:'btn',textContent:'Visible action',dataset:{},getClientRects:()=>[{}],closest:()=>null,getBoundingClientRect:()=>({left:16,right:controlRight,width:controlRight-16})};nodes[0].querySelectorAll=()=>[control];controlRight=324;await assert.rejects(noOverflow(page,'.glass-select-menu[open]','visible control outside viewport'),/all visible controls/);assert.equal(timers.size,0);
+ }finally{Object.assign(globalThis,saved);}
+}
+console.log('PASS: every shared overflow scope resolves current nodes, settles finite replacements/cancellation within15000ms, rejects changed context/hidden/zero/missing/duplicate/persistent overflow, and never retries geometry.');
 const audit={game:'ptcg',width:320,controls:[{change:'tCollSort',field:'',value:'name'}]},railControl={root:'content',view:'collection',game:'ptcg',viewport:320,tag:'SELECT',change:'tCollSort',field:'',value:'name',left:238,right:418,width:180,rail:{known:true,direct:true,overflow:'auto',left:16,right:304,client:288,scroll:402,position:0}};
 assert(auditedCollectionControl(railControl,audit),'Only the measured and independently accessed Collection rail admits its partially visible Sort');
 for(const change of [{root:'sheetBody'},{view:'search'},{game:'mtg'},{viewport:390},{tag:'BUTTON'},{change:'unknown'},{field:'unknown'},{value:'set-order'},{width:400},{left:-40},{right:500}])assert(!auditedCollectionControl({...railControl,...change},audit),JSON.stringify(change));

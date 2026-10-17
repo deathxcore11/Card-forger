@@ -17,8 +17,8 @@ for (const game of GAME_IDS) {
   assert.deepEqual([...html.matchAll(/data-game="(.*?)"/g)].map(m=>m[1]), GAME_IDS, 'tabs and game swipe use exactly the same order');
   assert.match(homeEdition(game), /data-home-gesture="carousel"/);
   assert.doesNotMatch(homeEdition(game), /data-act="homeRandomDeck"|data-home-meta|data-to="#decks\/ideas"/);
-  assert.match(homeDiscovery(game), /data-act="homeRandomDeck"/);
-  assert.match(homeDiscovery(game), /Build from my cards/);
+  assert.doesNotMatch(homeDiscovery(game), /data-act="homeRandomDeck"/);
+  assert.doesNotMatch(homeDiscovery(game), /Build from my cards/);
 }
 let focused, clicked;
 const tabs = GAME_IDS.map(g=>({ dataset:{game:g}, setAttribute(k,v){this[k]=v;}, focus(){focused=g;}, click(){clicked=g;} }));
@@ -47,9 +47,9 @@ for(const g of GAME_IDS){
   heroState[g]={game:g,date,name:'Exact daily card',id:'daily-card-'+g,art:'https://example.org/daily.png'};
   const html=homeHero(g,'Welcome back.',true);
   assert.equal((html.match(/id="homeHero"/g)||[]).length,1);
-  assert.match(html,/class="hh-art-link"/);assert.match(html,/class="hh-credit"/);
-  assert.equal((html.match(/data-act="homeDailyCard"/g)||[]).length,2,'artwork and credit use the same daily-card action');
-  assert.equal((html.match(new RegExp('data-id="daily-card-'+g+'"','g'))||[]).length,2,'artwork and credit open the exact daily printing');
+  assert.doesNotMatch(html,/hh-art-link/);assert.match(html,/class="hh-credit"/);
+  assert.equal((html.match(/data-act="homeDailyCard"/g)||[]).length,1,'one unobtrusive daily-card action');
+  assert.equal((html.match(new RegExp('data-id="daily-card-'+g+'"','g'))||[]).length,1,'the action opens the exact daily printing');
   assert.match(html,/Card of the Day/);assert.doesNotMatch(html,/From your deck|Open deck|data-to="#(?:deck|tdeck)\//);
 }
 let dailyFetches=0,magicPicks=0;
@@ -161,3 +161,6 @@ contentWidth=402;await assert.rejects(noOverflow(fakePage,'persistent content ov
 copyRight=399;await assert.rejects(noOverflow(fakePage,'persistent descendant overflow'),/outside viewport/);copyRight=374;
 copyScroll=368;await assert.rejects(noOverflow(fakePage,'persistent copy clipping'),/clips overflowing content/);copyScroll=358;
 console.log('PASS: hosted overflow helper awaits actual finite descendant/replacement motion, ignores infinite decoration, and still rejects persistent document/content/element overflow and clipped copy.');
+
+// Personal dashboard and activity regressions run in the normal pure test suite.
+await import("./test-home-personal-dashboard.mjs");

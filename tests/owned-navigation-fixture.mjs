@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
+import {normalizeHomeDeckActivity,recordHomeDeckWork} from '../home-deck-activity.js';
 import {blank,STORAGE} from '../store.js';
 import {validateWorkspace} from '../confidence.js';
 import {game as currentGame} from '../tcg.js';
@@ -32,7 +33,7 @@ export async function validateOwnedGameAdoption(ownedFixture,lotIdentity){
   const before=structuredClone({card,lots}),history={state:{cardstashy:{game:'mtg'}}},document={body:{dataset:{game:'mtg'}}};
   // Production switchGame, game fallback, queue, commit and normalization run
   // unchanged. Only DOM installation and disk transport are in-memory fixtures.
-  const context=vm.createContext({S,GAMES,blank,validateWorkspace,STORAGE,structuredClone,gameSwitchRoute,history,document,window:{__ownedTestState:S},
+  const context=vm.createContext({S,GAMES,blank,validateWorkspace,normalizeHomeDeckActivity,recordHomeDeckWork,STORAGE,structuredClone,gameSwitchRoute,history,document,window:{__ownedTestState:S},
    activeEntry:{game:'mtg',route:'#home'},gameContext:()=>({hash:'#home'}),queueWorkspaceWrite:transaction=>transaction(),
    writeRecords:async records=>writes.push(records[0][1].settings.game),workspaceTransition:null,
    changedConditionLots:()=>[],afterLocalSave(){},saveCatalogSoon(){}});

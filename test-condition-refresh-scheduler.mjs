@@ -1,3 +1,4 @@
+import { recordHomeDeckWork } from './home-deck-activity.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -169,7 +170,7 @@ function harness(){
   createConditionRefreshScheduler:()=>createConditionRefreshScheduler({intervalMs:0}),
   loadConditionQuotes:(card,entry,game)=>loadConditionQuotes(card,entry,game,async()=>{networkCalls++;return {ok:true,json:()=>body.promise};}),
   key:s=>String(s).toLowerCase(),meta:name=>c.S.catalog[String(name).toLowerCase()],T:{game:()=> 'mtg',gs:game=>c.S.state.tcg[game],cardOf:()=>null,persistQuoteCache(){},currentYgoCatalogue:()=>[]},
-  normalize:s=>s,stripCache:s=>s,STORAGE:'workspace',RECOVERY:'recovery',blank:()=>({collection:[],printings:{},settings:{},tcg:{ptcg:{collection:[]},ygo:{collection:[]}}}),
+  recordHomeDeckWork,normalize:s=>s,stripCache:s=>s,STORAGE:'workspace',RECOVERY:'recovery',blank:()=>({collection:[],printings:{},settings:{},tcg:{ptcg:{collection:[]},ygo:{collection:[]}}}),
   writeRecords(records){const snapshots=structuredClone(records);const transaction=async()=>{if(++writes===1){firstWrite.resolve();await releaseWrite.promise;}for(const[k,v]of snapshots)disk.set(k,v);};const result=storageQueue.then(transaction,transaction);storageQueue=result.catch(()=>{});return result;},
   writeRecord:(key,value)=>c.writeRecords([[key,value]]),afterLocalSave(){},refreshHomeValueGlance(){homeRefreshes++;},saveCatalogSoon(){},setSaveStatus(){},render(){},refreshSheet(){},haptic(){},flyToCollection(){},toast(){},autoEnrich(){},lastActTarget:null,
   setTimeout(fn,ms){scheduled.push({fn,ms});return scheduled.length;}

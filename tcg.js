@@ -1,5 +1,5 @@
 import {compactPriceSummary,detailTabs,detailPanel,presentationQuote,quoteForContext} from "./pricing-presentation.js";
-import { homeValue, homeEdition, homeMetaCarousel, homeValueCoverage, homeMetaSnapshot } from "./home-ui.js";
+import { homeValue, homeEdition, homeMetaCarousel, homeValueCoverage, homeMetaSnapshot, homeResume } from "./home-ui.js";
 import {interactiveRules} from './rule-learning.js';
 import {referenceQuote,referenceLabel} from './price-reference.js';
 import {brandMark} from './brand.js';
@@ -393,15 +393,11 @@ export function heroFor(g) {
   if (h) heroState[g] = h;
   return h;
 }
-export function homeHero(g, title, compact = false) {
-  const h = heroFor(g), G = GAMES[g],
-    cardAction = h ? `data-act="homeDailyCard" data-game="${g}" data-id="${esc(h.id)}" data-name="${esc(h.name)}" data-date="${h.date}"` : "";
-  return `<section class="home-hero ${g} ${compact ? "compact" : ""} ${h?.art ? "has-art" : "no-art"}" id="homeHero" data-game="${g}" data-daily-date="${h?.date || ""}" data-daily-id="${esc(h?.id || "")}">${h?.art && g === "ptcg" ? pokemonArtCrop({ game: g, id: h.id }, "hh-art", h.art) : h?.art ? `<img class="hh-art" src="${esc(h.art)}" alt="" referrerpolicy="no-referrer" data-art-sources="${esc(JSON.stringify([...new Set([h.art, h.artDirect].filter(Boolean))]))}" data-art-index="0">` : ""}<div class="hh-shade"></div>
-    ${cardAction ? `<button class="hh-art-link" ${cardAction} aria-label="Explore ${esc(h.name)} artwork"></button>` : ""}
-    <div class="hh-body"><p class="eyebrow">${esc(G.name)}</p><h1>${title}</h1>
-      <div class="hh-search"><input id="homeQ" type="search" data-suggest="${g}" placeholder="Search ${esc(G.short)} cards" data-enter="homeSearch" aria-label="Search ${esc(G.short)} cards" autocomplete="off"><button class="btn" data-act="homeSearch">Search</button><button class="ask-launch" data-act="askOpen" aria-label="Ask AI"><span aria-hidden="true">✦</span>Ask</button></div>
-      ${cardAction ? `<div class="hh-credits"><button class="hh-credit" ${cardAction}>Card of the Day · <b>${esc(h.name)}</b> <span aria-hidden="true">›</span></button></div>` : ""}
-    </div></section>`;
+export function homeHero(g) {
+  const h = heroFor(g), cardAction = h ? `data-act="homeDailyCard" data-game="${g}" data-id="${esc(h.id)}" data-name="${esc(h.name)}" data-date="${h.date}"` : "";
+  // A small art accent inside the personal overview, not another welcome/search
+  // hero. One action opens the very same persisted daily printing shown here.
+  return `<section class="home-hero home-daily ${g} ${h?.art ? "has-art" : "no-art"}" id="homeHero" data-game="${g}" data-daily-date="${h?.date || ""}" data-daily-id="${esc(h?.id || "")}">${h?.art && g === "ptcg" ? pokemonArtCrop({ game: g, id: h.id }, "hh-art", h.art) : h?.art ? `<img class="hh-art" src="${esc(h.art)}" alt="" referrerpolicy="no-referrer" data-art-sources="${esc(JSON.stringify([...new Set([h.art, h.artDirect].filter(Boolean))]))}" data-art-index="0">` : ""}<div class="hh-body"><div class="hh-credits">${cardAction ? `<button class="hh-credit" ${cardAction} aria-label="Explore ${esc(h.name)}, Card of the Day"><span>Card of the Day</span><b>${esc(h.name)}</b><span class="hh-daily-arrow" aria-hidden="true">↗</span></button>` : ""}</div></div></section>`;
 }
 // Retain the existing per-device daily picks and providers. Share in-flight work
 // per game/day; an old day's response may never overwrite today's selection.
@@ -540,20 +536,11 @@ function tcgStartPath(g) {
 }
 
 export function tcgHome() {
-  const g = game(),
-    G = GAMES[g],
-    v = collectionValue(g),
-    st = gs(g),
-    recent = st.decks.slice(-6).reverse();
-  const fresh = !st.collection.length && !st.decks.length;
-  return `${homeHero(g, v.copies ? "Welcome back." : "Let’s build from your cards.", !fresh)}
-  ${installNudge(v.copies)}
-  ${homeValue({ game: g, ...v, decks: st.decks.length, history: readTcgValueHistory(g) })}
-  ${homeEdition(g)}
+  const g = game(), v = collectionValue(g), st = gs(g);
+  return `<div class="home-overview"><h1 class="home-sr-only">${esc(GAMES[g].short)} dashboard</h1>${homeValue({ game: g, ...v, decks: st.decks.length, history: readTcgValueHistory(g) })}${homeHero(g)}</div>
+  ${homeResume(g, deck => formatOf(g, deck.format).name)}
   ${quickTiles(g)}
-  <div class="home-personal">${fresh && !startHidden(g) ? `<details class="home-start"><summary>New here? Start with your cards <span aria-hidden="true">＋</span></summary>${tcgStartPath(g)}</details>` : tcgNext(g)}</div>
-  ${recent.length ? `<section class="home-deck-section"><div class="section-head"><h2>Deck shelf</h2><button class="link" data-act="go" data-to="#decks">All decks →</button></div><div class="deck-grid">${recent.map((d) => deckTile(g, d)).join("")}</div></section>` : ""}
-  <p class="muted small">${esc(G.tagline)}. Card data and daily prices from ${esc(G.source)}.</p>`;
+  ${homeEdition(g)}`;
 }
 
 // Yu-Gi-Oh! has true artwork crops (through the Worker's image cache, then the source).
@@ -980,7 +967,7 @@ export function tcgDecks() {
   return `<div class="page-head"><h1>Decks</h1><div class="row"><button class="btn small" data-act="tImport">↥ Import</button><button class="btn ghost small" data-act="tNewDeck">＋ New</button></div></div>
   <div class="random-tools"><button class="btn ghost small" data-act="learnGame">How to play · keywords</button></div>
   ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Meta decks"]])}
-  <div class="random-tools"><button class="btn ghost small" data-act="randomDeckOptions">🎲 Random deck</button></div>
+  <div class="random-tools"><button class="btn ghost small" data-act="randomDeckOptions" data-home="1">🎲 Random deck</button></div>
   ${tab === "ideas" ? ideasView(g) : tab === "inspiration" ? metaView(g) : st.decks.length ? `<div class="deck-grid">${st.decks.slice().reverse().map((d) => deckTile(g, d)).join("")}</div>` : empty("No decks yet", `Pick a format and start adding cards, build from cards you own in Ideas, or copy a tournament deck from Meta decks.`, `<button class="btn" data-act="decksTab" data-id="ideas">✧ Ideas from my cards</button><button class="btn ghost" data-act="decksTab" data-id="inspiration">🏆 Meta decks</button>`)}`;
 }
 

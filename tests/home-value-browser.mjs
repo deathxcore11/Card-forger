@@ -51,30 +51,28 @@ async function run(game, mode) {
       assert.equal(await page.locator('[data-value-amount]').innerText(),'$23.25','returning game reads its updated canonical total');
       await node.dispose();
     } else {
-      const search=page.locator('#homeQ');
-      await search.fill('Keep this exact search'); await search.focus();
-      await page.evaluate(()=>{window.__homeValueStable={search:document.querySelector('#homeQ'),value:document.querySelector('.home-value-main'),scrollY};});
+      const resume=page.locator('[data-home-resume] button');
+      await resume.focus();
+      await page.evaluate(()=>{window.__homeValueStable={resume:document.querySelector('[data-home-resume] button'),value:document.querySelector('.home-value-main'),scrollY};});
       const requestsBeforeResize=app.condition.records.length;
       for(const viewport of foldSequence){
         await page.setViewportSize(viewport);await frames(page);
-        assert(await page.evaluate(()=>window.__homeValueStable.search===document.querySelector('#homeQ')&&window.__homeValueStable.value===document.querySelector('.home-value-main')),'fold/unfold preserves the actual Home mount while the quote is pending');
-        assert.equal(await search.inputValue(),'Keep this exact search');
+        assert(await page.evaluate(()=>window.__homeValueStable.resume===document.querySelector('[data-home-resume] button')&&window.__homeValueStable.value===document.querySelector('.home-value-main')),'fold/unfold preserves the actual Home mount while the quote is pending');
+        assert(await resume.evaluate(n=>n===document.activeElement),'resume action keeps keyboard focus');
         assert.equal(await page.locator('[data-value-amount]').innerText(),'$8.75');
         assert.equal(app.condition.records[0].settled,false);
       }
       assert.equal(app.condition.records.length,requestsBeforeResize,'viewport changes do not launch duplicate quote requests');
       app.condition.release(); await settle(app);
       await page.waitForFunction(()=>document.querySelector('[data-value-amount]')?.textContent==='$23.25');
-      assert.equal(await search.inputValue(),'Keep this exact search');
-      assert(await page.evaluate(()=>window.__homeValueStable.search===document.activeElement&&window.__homeValueStable.value===document.querySelector('.home-value-main')),'async quote updates leaves, preserving original search focus and value button');
+      assert(await resume.evaluate(n=>n===document.activeElement),'resume action keeps keyboard focus');
+      assert(await page.evaluate(()=>window.__homeValueStable.resume===document.activeElement&&window.__homeValueStable.value===document.querySelector('.home-value-main')),'async quote updates leaves, preserving original resume focus and value button');
       assert.match(await page.locator('[data-value-movement]').innerText(),/↑ \+\$14\.92 · total change since Oct 16, 2026/,'inventory-inclusive total movement uses the actual dated baseline');
       assert.equal(await page.locator('[data-value-copies]').innerText(),'7');
       // Production render event also services later local cache changes without
       // replacing a focused value action. No extra provider request is started.
       await page.locator('.home-value-main').focus();
-      // Wait for production focusout dismissal before measuring unrelated value layout.
-      await page.locator('#suggestBox').waitFor({state:'detached'});
-      assert(await page.locator('.home-value-main').evaluate(n=>n===document.activeElement),'autocomplete dismissal preserves value focus');
+      assert(await page.locator('.home-value-main').evaluate(n=>n===document.activeElement),'value action accepts keyboard focus');
       const control=await page.locator('.home-value-main').elementHandle();
       await page.evaluate(game=>{
         const st=game==='mtg'?window.__uiTestState.state:window.__uiTestState.state.tcg[game];st.collection[0].qty++;
