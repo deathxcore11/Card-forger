@@ -1812,7 +1812,7 @@ dialog.sheet[open]::backdrop { animation: fade 0.3s ease-out; }
 .btn, .tool-btn, .chip, .kpi, .mini-row, nav button, .seg button { transition: transform 0.12s ease, background-color 0.15s, box-shadow 0.15s; }
 .btn:active, .tool-btn:active, .chip:active, .kpi:active, .mini-row:active, .seg button:active { transform: scale(0.965); }
 nav button:active { transform: scale(0.92); }
-.rippling { position: relative; overflow: hidden; isolation: isolate; }
+.rippling { position: relative; overflow: clip; isolation: isolate; }
 .rippling::after { content: ""; position: absolute; left: var(--rx, 50%); top: var(--ry, 50%); width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: currentColor; opacity: 0.22; pointer-events: none; z-index: -1; animation: ripple 0.55s ease-out forwards; }
 @keyframes ripple { to { transform: scale(28); opacity: 0; } }
 

@@ -39,6 +39,7 @@ try{
    for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:900});await noOverflow(page,'.action-tour .tour-card',`${game} guide ${width}`);}
    await capture(page,`synthetic-search-guide-action-${game}`);await page.keyboard.press('Escape');assert(await page.locator('#settingsDialog').isVisible());
    await page.locator('#settingsTab-app').click();await page.locator('[data-act="resetOnboarding"]').click();await page.locator('.cf-dialog button[value="ok"]').click();await page.waitForFunction(()=>!localStorage.getItem('cardstashy-tour-v1'));
+   await page.evaluate(()=>{window.__settingsTrace=[];for(const kind of ['popstate','hashchange','pointerdown','pointerup','click'])window.addEventListener(kind,e=>window.__settingsTrace.push({kind,act:e.target.closest?.('[data-act]')?.dataset.act,tag:e.target.tagName,open:document.querySelector('#settingsDialog')?.open,state:history.state}),true);});
    await page.locator('[data-act="closeSettings"]').click();assert.equal(await page.locator('.action-tour').count(),0,'reset defers introduction while away from Home');
    assert.equal(await inventorySnapshot(page),original);await page.evaluate(()=>localStorage.setItem('cardstashy-tour-v1','done'));
    // Open tabletop without leaving the collection. Independent simultaneous seats.
@@ -53,6 +54,6 @@ try{
    for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'.tabletop-dialog',`${game} tabletop ${width}`);}
    await capture(page,`synthetic-search-tabletop-${game}`);await page.locator('[data-table="new"]').click();await page.locator('.cf-dialog button[value="cancel"]').click();assert(await page.locator('.table-seats').isVisible());
    await page.keyboard.press('Escape');await page.keyboard.press('Escape');assert.equal(await inventorySnapshot(page),original);app.health();console.log(`PASS: ${game} responsive single Home/search, disabled Community, real demo state changes, safe reset, independent tabletop and no inventory mutation`);
-  }catch(error){try{app.health();}catch(health){error.message+='\n'+health.stack;}console.error('Guide failure context',await page.evaluate(()=>({view:document.body.dataset.view,sheet:window.__uiTestState.ui.sheetCtx,settings:document.querySelector('#settingsDialog')?.open,toast:document.querySelector('#toast')?.textContent})));await capture(page,`synthetic-search-guide-failure-${game}`);throw error;}finally{await app.context.close();}
+  }catch(error){try{app.health();}catch(health){error.message+='\n'+health.stack;}console.error('Guide failure context',await page.evaluate(()=>({view:document.body.dataset.view,sheet:window.__uiTestState.ui.sheetCtx,settings:document.querySelector('#settingsDialog')?.open,toast:document.querySelector('#toast')?.textContent,events:window.__settingsTrace})));await capture(page,`synthetic-search-guide-failure-${game}`);throw error;}finally{await app.context.close();}
  }
 }finally{await browser.close();await server.close();}

@@ -31,5 +31,5 @@ export function createSettingsDialog({dialog,markup,beforeOpen=()=>{},afterPaint
  };
  dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
  dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)close();}});
- return {get isOpen(){return dialog.open;},open,close,refresh:paint,historyChanged(){if(closingBack){closingBack=false;if(reopenPending){reopenPending=false;open();}return true;}if(dialog.open){close(false);return true;}if(history.state?.[marker]){open(false);return true;}return false;}};
+ return {get isOpen(){return dialog.open;},open,close,refresh:paint,historyChanged(){if(closingBack){closingBack=false;if(reopenPending){reopenPending=false;open();}return true;}if(dialog.open){if(history.state?.[marker]!==token)close(false);return true;}if(history.state?.[marker]){open(false);return true;}return false;}};
 }

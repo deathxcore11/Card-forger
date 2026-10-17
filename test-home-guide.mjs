@@ -36,5 +36,7 @@ const setHtml=T.tcgSet();assert.match(setHtml,/\$12\.34/);assert.doesNotMatch(se
  const popup=createSettingsDialog({dialog,markup:()=>'<p>Settings</p>',history,document,location:{href:'#collection'}});
  popup.open();popup.close();popup.open();assert.equal(dialog.open,false);assert.equal(history.backs,1);
  history.state={route:'collection'};assert(popup.historyChanged());assert(dialog.open,'The deferred reopen runs after Back settles');assert(history.state.cardstashySettings);
+ assert(popup.historyChanged());assert(dialog.open,'A duplicate history event for the current marker does not close the reopened modal');
+ history.state={route:'collection'};assert(popup.historyChanged());assert.equal(dialog.open,false,'A real traversal away still closes Settings');
 }
 console.log('PASS: rapid Settings close/reopen preserves a single modal history entry.');
