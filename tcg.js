@@ -1,5 +1,6 @@
+import {applyYgoSetPrices} from './ygo-set-prices.js';
 import {compactPriceSummary,detailTabs,detailPanel,presentationQuote,quoteForContext} from "./pricing-presentation.js";
-import { homeValue, homeEdition, homeMetaCarousel, homeValueCoverage, homeMetaSnapshot } from "./home-ui.js";
+import { homeValue, homeEdition, homeMetaCarousel, homeValueCoverage, homeMetaSnapshot, homeResume } from "./home-ui.js";
 import {interactiveRules} from './rule-learning.js';
 import {referenceQuote,referenceLabel} from './price-reference.js';
 import {brandMark} from './brand.js';
@@ -146,7 +147,7 @@ export function tcgRarityAttrs(c,e=null) {
   if(c?.game!=="ygo")return "";
   if(e?.setReleaseId)c=setContextCard("ygo",c,e.setReleaseId,currentYgoCatalogue());
   if(e?.setReleaseUnverified)return "";
-  const key=e?.printing&&e?.rarity?e.printing+"::"+e.rarity:c.displayPrintingKey||"",q=presentationQuote("ygo",c,"reference",key,e?.edition||""),flair=q?.printing&&ygoRarityFlair(q.rarity);
+  const key=e?.printing&&e?.rarity?e.printing+"::"+e.rarity:c.displayPrintingKey||"",q=presentationQuote("ygo",c,"reference",key,e?.edition||c.displayEdition||""),flair=q?.printing&&ygoRarityFlair(q.rarity);
   return flair?`data-rarity-flair="${flair}" data-printed-rarity="${esc(q.rarity)}"`:"";
 }
 const rowBadges = (c) => (!c || c.brief ? "" : `${gameEmblems(c)}${tcgSetBadge(c)} `);
@@ -393,15 +394,11 @@ export function heroFor(g) {
   if (h) heroState[g] = h;
   return h;
 }
-export function homeHero(g, title, compact = false) {
-  const h = heroFor(g), G = GAMES[g],
-    cardAction = h ? `data-act="homeDailyCard" data-game="${g}" data-id="${esc(h.id)}" data-name="${esc(h.name)}" data-date="${h.date}"` : "";
-  return `<section class="home-hero ${g} ${compact ? "compact" : ""} ${h?.art ? "has-art" : "no-art"}" id="homeHero" data-game="${g}" data-daily-date="${h?.date || ""}" data-daily-id="${esc(h?.id || "")}">${h?.art && g === "ptcg" ? pokemonArtCrop({ game: g, id: h.id }, "hh-art", h.art) : h?.art ? `<img class="hh-art" src="${esc(h.art)}" alt="" referrerpolicy="no-referrer" data-art-sources="${esc(JSON.stringify([...new Set([h.art, h.artDirect].filter(Boolean))]))}" data-art-index="0">` : ""}<div class="hh-shade"></div>
-    ${cardAction ? `<button class="hh-art-link" ${cardAction} aria-label="Explore ${esc(h.name)} artwork"></button>` : ""}
-    <div class="hh-body"><p class="eyebrow">${esc(G.name)}</p><h1>${title}</h1>
-      <div class="hh-search"><input id="homeQ" type="search" data-suggest="${g}" placeholder="Search ${esc(G.short)} cards" data-enter="homeSearch" aria-label="Search ${esc(G.short)} cards" autocomplete="off"><button class="btn" data-act="homeSearch">Search</button><button class="ask-launch" data-act="askOpen" aria-label="Ask AI"><span aria-hidden="true">✦</span>Ask</button></div>
-      ${cardAction ? `<div class="hh-credits"><button class="hh-credit" ${cardAction}>Card of the Day · <b>${esc(h.name)}</b> <span aria-hidden="true">›</span></button></div>` : ""}
-    </div></section>`;
+export function homeHero(g) {
+  const h = heroFor(g), cardAction = h ? `data-act="homeDailyCard" data-game="${g}" data-id="${esc(h.id)}" data-name="${esc(h.name)}" data-date="${h.date}"` : "";
+  // A small art accent inside the personal overview, not another welcome/search
+  // hero. One action opens the very same persisted daily printing shown here.
+  return `<section class="home-hero home-daily ${g} ${h?.art ? "has-art" : "no-art"}" id="homeHero" data-game="${g}" data-daily-date="${h?.date || ""}" data-daily-id="${esc(h?.id || "")}">${h?.art && g === "ptcg" ? pokemonArtCrop({ game: g, id: h.id }, "hh-art", h.art) : h?.art ? `<img class="hh-art" src="${esc(h.art)}" alt="" referrerpolicy="no-referrer" data-art-sources="${esc(JSON.stringify([...new Set([h.art, h.artDirect].filter(Boolean))]))}" data-art-index="0">` : ""}<div class="hh-body"><div class="hh-credits">${cardAction ? `<button class="hh-credit" ${cardAction} aria-label="Explore ${esc(h.name)}, Card of the Day"><span>Card of the Day</span><b>${esc(h.name)}</b><span class="hh-daily-arrow" aria-hidden="true">↗</span></button>` : ""}</div></div></section>`;
 }
 // Retain the existing per-device daily picks and providers. Share in-flight work
 // per game/day; an old day's response may never overwrite today's selection.
@@ -540,20 +537,11 @@ function tcgStartPath(g) {
 }
 
 export function tcgHome() {
-  const g = game(),
-    G = GAMES[g],
-    v = collectionValue(g),
-    st = gs(g),
-    recent = st.decks.slice(-6).reverse();
-  const fresh = !st.collection.length && !st.decks.length;
-  return `${homeHero(g, v.copies ? "Welcome back." : "Let’s build from your cards.", !fresh)}
-  ${installNudge(v.copies)}
-  ${homeValue({ game: g, ...v, decks: st.decks.length, history: readTcgValueHistory(g) })}
-  ${homeEdition(g)}
+  const g = game(), v = collectionValue(g), st = gs(g);
+  return `<div class="home-overview"><h1 class="home-sr-only">${esc(GAMES[g].short)} dashboard</h1>${homeValue({ game: g, ...v, decks: st.decks.length, history: readTcgValueHistory(g) })}${homeHero(g)}</div>
+  ${homeResume(g, deck => formatOf(g, deck.format).name)}
   ${quickTiles(g)}
-  <div class="home-personal">${fresh && !startHidden(g) ? `<details class="home-start"><summary>New here? Start with your cards <span aria-hidden="true">＋</span></summary>${tcgStartPath(g)}</details>` : tcgNext(g)}</div>
-  ${recent.length ? `<section class="home-deck-section"><div class="section-head"><h2>Deck shelf</h2><button class="link" data-act="go" data-to="#decks">All decks →</button></div><div class="deck-grid">${recent.map((d) => deckTile(g, d)).join("")}</div></section>` : ""}
-  <p class="muted small">${esc(G.tagline)}. Card data and daily prices from ${esc(G.source)}.</p>`;
+  ${homeEdition(g)}`;
 }
 
 // Yu-Gi-Oh! has true artwork crops (through the Worker's image cache, then the source).
@@ -980,7 +968,7 @@ export function tcgDecks() {
   return `<div class="page-head"><h1>Decks</h1><div class="row"><button class="btn small" data-act="tImport">↥ Import</button><button class="btn ghost small" data-act="tNewDeck">＋ New</button></div></div>
   <div class="random-tools"><button class="btn ghost small" data-act="learnGame">How to play · keywords</button></div>
   ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Meta decks"]])}
-  <div class="random-tools"><button class="btn ghost small" data-act="randomDeckOptions">🎲 Random deck</button></div>
+  <div class="random-tools"><button class="btn ghost small" data-act="randomDeckOptions" data-home="1">🎲 Random deck</button></div>
   ${tab === "ideas" ? ideasView(g) : tab === "inspiration" ? metaView(g) : st.decks.length ? `<div class="deck-grid">${st.decks.slice().reverse().map((d) => deckTile(g, d)).join("")}</div>` : empty("No decks yet", `Pick a format and start adding cards, build from cards you own in Ideas, or copy a tournament deck from Meta decks.`, `<button class="btn" data-act="decksTab" data-id="ideas">✧ Ideas from my cards</button><button class="btn ghost" data-act="decksTab" data-id="inspiration">🏆 Meta decks</button>`)}`;
 }
 
@@ -1149,7 +1137,7 @@ function metaView(g) {
         cover = g === "ptcg" ? metaPokemonCover(best, a.cover) : null,
         art = g === "ygo" && best?.cover ? `https://images.ygoprodeck.com/images/cards_cropped/${encodeURIComponent(best.cover)}.jpg` : "",
         illustrated = art || cover;
-      return `<button class="arch ${illustrated ? "has-art" : "no-cover"}" data-act="tMetaDeck" data-key="${esc(a.best)}" ${a.best ? "" : "disabled"}>${cover ? pokemonArtCrop(cover, "arch-art") : art ? `<img class="arch-art" src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.closest('.arch').classList.add('no-cover')">` : `<span class="arch-art arch-art-fallback" aria-hidden="true"></span>`}<span class="arch-art-state">Art unavailable</span><span class="arch-icons">${g === "ptcg" ? (a.icons||[]).map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("") : ""}</span><b class="clamp2">${esc(a.name)}</b><small>${g === "ptcg" ? `${(a.share * 100).toFixed(1)}% of players · ${a.top8} in Top 8` : `${a.count} top finish${a.count === 1 ? "" : "es"}`}</small>${!a.best && g === "ptcg" ? `<small class="arch-list-state">No Top-8 list available</small>` : ""}${bar(a.share / (data.archetypes[0]?.share || 1))}</button>`;
+      return `<button class="arch ${illustrated ? "has-art" : "no-cover"}" data-act="tMetaDeck" data-key="${esc(a.best||a.representative?.key||'')}" ${a.best||a.representative ? "" : "disabled"}>${cover ? pokemonArtCrop(cover, "arch-art") : art ? `<img class="arch-art" src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.closest('.arch').classList.add('no-cover')">` : `<span class="arch-art arch-art-fallback" aria-hidden="true"></span>`}<span class="arch-art-state">Art unavailable</span><span class="arch-icons">${g === "ptcg" ? (a.icons||[]).map((i) => `<img class="pk-icon" src="${esc(ptcgIcon(i))}" alt="" loading="lazy" onerror="this.remove()">`).join("") : ""}</span><b class="clamp2">${esc(a.name)}</b><small>${g === "ptcg" ? `${(a.share * 100).toFixed(1)}% of players · ${a.top8} in Top 8` : `${a.count} top finish${a.count === 1 ? "" : "es"}`}</small>${!a.best && g === "ptcg" ? `<small class="arch-list-state">${a.representative?`View list · ${esc(a.representative.place)}`:"No published list available"}</small>` : ""}${bar(a.share / (data.archetypes[0]?.share || 1))}</button>`;
     })
     .join("")}</div>
   <div class="section-head"><h2>Most played cards</h2></div>
@@ -1674,7 +1662,7 @@ export function selectedYgoCard(card,printingKey='',edition='') {
   if(card?.game!=='ygo')return card;
   const q=presentationQuote('ygo',card,'reference',printingKey,edition);
   if(!q)return card;
-  return {...card,displayPrintingKey:q.editionKey,rarity:q.rarity||'',...(card.setContext?{setContext:{...card.setContext,printing:q.printing,printingAmbiguous:!q.printing,price:q.value}}:{}),prices:{...card.prices,usd:q.value}};
+  return {...card,displayPrintingKey:q.editionKey,displayEdition:edition,rarity:q.rarity||'',...(card.setContext?{setContext:{...card.setContext,printing:q.printing,printingAmbiguous:!q.printing,price:q.value}}:{}),prices:{...card.prices,usd:q.value}};
 }
 export function selectedSetRarity(card,rarity='') {
   if(card?.game!=='ygo'||card.setContext?.status!=='resolved'||!rarity||rarity==='all')return card;
@@ -1747,7 +1735,7 @@ export function tcgSet() {
   if(U.candidates?.length)return `<section class="panel set-release-chooser"><button class="link small" data-act="go" data-to="#sets">← All sets</button><p class="eyebrow">Choose the exact release</p><h1>More than one release uses ${esc(U.id)}</h1><p class="muted">This older link does not identify a unique release. Choose its name and release date; no edition has been assumed.</p><div class="set-list">${U.candidates.map(s=>`<button class="set-row" data-act="tSet" data-id="${esc(s.id)}">${setRowContent({name:s.name,code:s.code,image:s.image,detail:s.date||"Date unavailable",count:s.expectedUniqueCards,printingCount:s.printingCount})}</button>`).join('')}</div></section>`;
   const all=[...new Map(U.cards.map(raw=>[raw.id,setContextCard(g,{...(cardOf(g,raw.id)||raw),...(raw.setContext?{setContext:raw.setContext}:{})},info||raw.setContext,ui(g).sets.list,{variantKey:U.finish||""})])).values()].map(c=>g==="ygo"?selectedYgoCard(c):c);
   const own=c=>ownedInSet(g,c,info),ownedCount=all.filter(c=>own(c)>0).length,facets=setCardFacets(all,g),contents=U.contents||{},total=knownSetCount(g==="ygo"?contents.expectedUniqueCards??info?.expectedUniqueCards:info?.count);
-  let list=filterSortSetCards(all.map(c=>selectedSetRarity(c,U.rarity)),g,U);
+  let list=filterSortSetCards(all.map(c=>{const chosen=selectedSetRarity(c,U.rarity);return g==='ygo'?selectedYgoCard(chosen,chosen.displayPrintingKey||'',U.edition||''):chosen;}),g,U);
   if(U.filter!=="all")list=list.filter(c=>U.filter==="owned"?own(c)>0:own(c)===0);
   const progress=setProgressMarkup({key:g+":"+(info?.id||U.id),owned:ownedCount,total,loaded:all.length,complete:contents.completeness==="complete",previous:U.progressSnapshot});
   U.progressSnapshot=progress.snapshot;
@@ -1758,11 +1746,11 @@ export function tcgSet() {
   ${all.length?progress.html:""}
   ${contents.completeness!=="complete"&&all.length?`<p class="set-coverage-note" role="status">${esc(setCoverageText(contents,total,all.length,source))} <button class="link small" data-act="tSetRetry" ${U.busy?'disabled':''}>${U.busy?'Refreshing…':'Refresh card list'}</button></p>`:""}
   <div class="searchbar"><input type="search" value="${esc(U.q||'')}" placeholder="Search this set by name or number" data-input="tSetQ" aria-label="Search this set" autocomplete="off"></div>
-  <div class="set-controls">${segmented("tSetFilter",U.filter,[["all","All"],["owned","Owned"],["missing","Missing"]])}${facets.rarities.length?`<select data-change="tSetRarity" aria-label="Rarity">${options([["","All rarities"],...facets.rarities.map(x=>[x,x])],U.rarity||"")}</select>`:""}${facets.finishes.length?`<select data-change="tSetFinish" aria-label="${g==="ptcg"?'Version':'Finish'}">${options([["",g==="ptcg"?"All versions":"All finishes"],...facets.finishes.map(x=>[x,x.replaceAll('-',' ')])],U.finish||"")}</select>`:""}<select data-change="tSetSort" aria-label="Sort">${options(sortOptions,sortOptions.some(([key])=>key===U.sort)?U.sort:"name")}</select></div>
-  ${!U.busy&&!U.error&&!all.length?`<section class="panel mu-empty"><div class="mu-empty-mark" aria-hidden="true">◇</div><h3>No card list for this release yet</h3><p class="muted">${source} has not returned cards for ${esc(info?.name||"this release")}. This does not mean the release contains zero cards.</p><button class="btn ghost" data-act="tSetRetry">Try again</button></section>`:`<div class="list-bar"><p class="muted small">${U.busy?"Loading cards and prices…":`${list.length} shown · ${g==="ygo"?"selected-release references; editions not assumed":"daily market references"}`}</p>${viewControl(g,"set")}</div>`}
+  <div class="set-controls">${segmented("tSetFilter",U.filter,[["all","All"],["owned","Owned"],["missing","Missing"]])}${facets.rarities.length?`<select data-change="tSetRarity" aria-label="Rarity">${options([["","All rarities"],...facets.rarities.map(x=>[x,x])],U.rarity||"")}</select>`:""}${g==="ygo"?`<select data-change="tSetEdition" aria-label="Edition">${options([["","Edition unspecified"],["1st-edition","First Edition"],["unlimited","Unlimited"],["limited","Limited"]],U.edition||"")}</select>`:""}${facets.finishes.length?`<select data-change="tSetFinish" aria-label="${g==="ptcg"?'Version':'Finish'}">${options([["",g==="ptcg"?"All versions":"All finishes"],...facets.finishes.map(x=>[x,x.replaceAll('-',' ')])],U.finish||"")}</select>`:""}<select data-change="tSetSort" aria-label="Sort">${options(sortOptions,sortOptions.some(([key])=>key===U.sort)?U.sort:"name")}</select></div>
+  ${!U.busy&&!U.error&&!all.length?`<section class="panel mu-empty"><div class="mu-empty-mark" aria-hidden="true">◇</div><h3>No card list for this release yet</h3><p class="muted">${source} has not returned cards for ${esc(info?.name||"this release")}. This does not mean the release contains zero cards.</p><button class="btn ghost" data-act="tSetRetry">Try again</button></section>`:`<div class="list-bar"><p class="muted small">${U.busy?"Loading cards and prices…":`${list.length} shown · ${g==="ygo"?"selected-release references; choose rarity and edition":"daily market references"}`}</p>${viewControl(g,"set")}</div>`}
   ${remainingDetails?`<p class="set-coverage-note">Rarity and version filters use loaded card details. ${remainingDetails} ${remainingDetails===1?'card is':'cards are'} still waiting for details. <button class="link small" data-act="tSetDetails" ${U.busy||U.detailsBusy?'disabled':''}>${U.busy||U.detailsBusy?'Loading details…':'Load remaining details'}</button></p>`:''}
   ${all.length&&!list.length?empty("No cards match","Try another name or number, or clear your filters."):""}
-  <div class="card-grid set-grid">${list.slice(0,U.limit).map(c=>`<button class="grid-card ${own(c)?"own":""}" data-act="tCard" data-id="${esc(c.id)}" data-set-id="${esc(info?.id||U.id)}" ${U.finish?`data-set-variant="${esc(U.finish)}"`:""} ${g==="ygo"&&c.setContext?.printing?`data-printing="${esc(c.setContext.printing.code+"::"+c.setContext.printing.rarity)}"`:""} ${tcgRarityAttrs(c)} ${tierAttrs(tcgTier(c))}>${imgTag(c)}${tileBadges(c)}<span class="grid-meta"><span class="ellip">${setCardFields(c,g).number?"#"+esc(setCardFields(c,g).number)+" ":""}${esc(c.name)}</span><span>${c.brief?"…":price(c)===null?"—":usd(price(c))}</span></span>${own(c)?`<span class="owned-badge">×${own(c)}</span>`:""}</button>`).join('')}</div>
+  <div class="card-grid set-grid">${list.slice(0,U.limit).map(c=>`<button class="grid-card ${own(c)?"own":""}" data-act="tCard" data-id="${esc(c.id)}" data-set-id="${esc(info?.id||U.id)}" ${U.finish?`data-set-variant="${esc(U.finish)}"`:""} ${g==="ygo"&&c.setContext?.printing?`data-printing="${esc(c.setContext.printing.code+"::"+c.setContext.printing.rarity)}" data-edition="${esc(U.edition||'')}"`:""} ${tcgRarityAttrs(c)} ${tierAttrs(tcgTier(c))}>${imgTag(c)}${tileBadges(c)}<span class="grid-meta"><span class="ellip">${setCardFields(c,g).number?"#"+esc(setCardFields(c,g).number)+" ":""}${esc(c.name)}</span><span>${c.brief?"…":price(c)===null?(g==="ygo"&&c.setContext?.printingAmbiguous?"Choose rarity":g==="ygo"&&c.setContext?.printing?.quotes?.length&&!U.edition?"Choose edition":"—"):usd(price(c))}</span></span>${own(c)?`<span class="owned-badge">×${own(c)}</span>`:""}</button>`).join('')}</div>
   ${list.length>U.limit?`<button class="btn ghost block" data-act="tSetMore">Show more · ${list.length-U.limit} left</button>`:""}`;
 }
 
@@ -2279,12 +2267,13 @@ export function registerTcg(c) {
     return card ? withRelease({...scanCand(G, card, why, exact),detailsOnly:false,priceReady:true}) : null;
   };
   // Scanner matching (the scanner itself is scancam.js): exact printing codes first, then names.
-  c.scanMatch = async (read, lang, manual = false, status = () => {}, G0 = "") => {
+  c.scanMatch = async (read, lang, manual = false, status = () => {}, G0 = "", control = null) => {
+    const lookup=(key,fn,fallback=null)=>Promise.resolve().then(()=>control?control.run(JSON.stringify([G0||g(),...key]),fn):fn()).catch(e=>{if(control&&/^SCAN_/.test(e.code||""))throw e;return fallback;});
     const G = G0 || g(),
       getForScan=async id=>{
-        if(manual)return ensureCard(G,id);
+        if(manual)return lookup(["details",id],()=>ensureCard(G,id));
         const card=cache[G]?.[id];
-        return card&&!needsCardRefresh(G,card,true)?card:SOURCES[G].get(id,{printings:false,prices:false});
+        return card&&!needsCardRefresh(G,card,true)?card:lookup(["details",id],()=>SOURCES[G].get(id,{printings:false,prices:false}));
       },
       out = [],
       seen = new Set(),
@@ -2305,15 +2294,17 @@ export function registerTcg(c) {
       };
     const all = `${read.code}\n${read.full}`,
       names = manual ? [read.name] : nameCandidates(G, read.name || read.full);
+    let limited=false;
+    try {
     if (G === "ygo") {
       // The printed region is identity, not a preference. A JP or legacy
       // regionless code must never turn into an English printing.
       const codes = manual?ygoSetCodes(read.name):scanIdentifierEvidence(G,read).observations;
       for (const code of codes.slice(0, 4)) {
         tried.push(code);
-        const info = await fetch("https://db.ygoprodeck.com/api/v7/cardsetsinfo.php?setcode=" + encodeURIComponent(code)).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+        const info = await lookup(["setcode",code],()=>fetch("https://db.ygoprodeck.com/api/v7/cardsetsinfo.php?setcode=" + encodeURIComponent(code)).then((r) => (r.ok ? r.json() : null)));
         if (info?.id) {
-          const card=await getForScan(String(info.id)).catch(() => null);
+          const card=await getForScan(String(info.id));
           const printings=[...new Map((card?.sets||[]).filter(p=>p.code===code).map(p=>[JSON.stringify([p.code,p.rarity,p.name]),p])).values()];
           // cardsetsinfo can return only its first rarity. Expand the actual
           // card's rows before deciding certainty, even if the UI caps suggestions.
@@ -2321,26 +2312,26 @@ export function registerTcg(c) {
           if(card&&!printings.length)push(card,'Set details unavailable · check printing',false);
         }
       }
-      if (!manual) for (const id of ygoPasscodes(all)) if(!out.some(c=>String(c.id)===id))push(await getForScan(id).catch(() => null), "Passcode " + id, false);
+      if (!manual) for (const id of (control?ygoPasscodes(all).slice(0,4):ygoPasscodes(all))) if(!out.some(c=>String(c.id)===id))push(await getForScan(id), "Passcode " + id, false);
       for (const n of names) {
         if (out.length >= 3) break;
         if (out.some((o) => scanNameKey(o.name).includes(scanNameKey(n)))) continue;
         tried.push(n);
-        push(await SOURCES.ygo.byName(n).catch(() => null), "Name match", false);
+        push(await lookup(["name",n],()=>SOURCES.ygo.byName(n)), "Name match", false);
       }
       // Misread names ("DAR MACICTAN" → Dark Magician): closest spellings from the full name list.
       const misread = names.filter((x) => x.replace(/[^a-z]/gi, "").length >= 5).slice(0, 2);
       if (!out.length && misread.length) {
-        const list = await nameIndex("ygo", status).catch(() => []);
-        for (const n of misread) for (const name of closestNames(list, n)) if (out.length < 3) push(await SOURCES.ygo.byName(name).catch(() => null), `Closest name to “${n}”`, false);
+        const list = await lookup(["names"],()=>nameIndex("ygo", status),[]);
+        for (const n of misread) for (const name of closestNames(list, n)) if (out.length < 3) push(await lookup(["name",name],()=>SOURCES.ygo.byName(name)), `Closest name to “${n}”`, false);
       }
     } else {
-      const nums = manual ? [] : ptcgNumbers(all);
+      const nums = manual ? [] : (control?ptcgNumbers(all).slice(0,4):ptcgNumbers(all));
       for (const n of names.slice(0, 3))
         for (const x of nums) {
           tried.push(`${n} #${x.num}`);
-          for (const h of await SOURCES.ptcg.byNameNumber(n, x.num).catch(() => [])) {
-            const card = await getForScan(h.id).catch(() => null);
+          for (const h of (await lookup(["name-number",n,x.num],()=>SOURCES.ptcg.byNameNumber(n, x.num),[])).slice(0,control?6:Infinity)) {
+            const card = await getForScan(h.id);
             if (scanCandidateMatches(card, n, [x])) push(card, `Card #${x.num}/${x.total}`, true);
           }
         }
@@ -2350,15 +2341,16 @@ export function registerTcg(c) {
         tried.push(n);
         // Exact-ish names first; for misreads, search the first word's start and rank by spelling.
         // A substring hit ("wel" → Swellow) is not identification: whole-name matches only, unless typed.
-        let hits = (await SOURCES.ptcg.search({ q: n, size: 6 }).catch(() => ({ cards: [] }))).cards.filter((b) => manual || scanCandidateMatches(b, n));
+        let hits = (await lookup(["search",n,6],()=>SOURCES.ptcg.search({ q: n, size: 6 }),{cards:[]})).cards.filter((b) => manual || scanCandidateMatches(b, n));
         if (!hits.length && n.replace(/[^a-z]/gi, "").length >= 5) {
-          const list = await nameIndex("ptcg", status).catch(() => []);
-          for (const name of closestNames(list, n, 2)) hits.push(...(await SOURCES.ptcg.search({ q: name, size: 4 }).catch(() => ({ cards: [] }))).cards.filter((b) => b.name === name));
+          const list = await lookup(["names"],()=>nameIndex("ptcg", status),[]);
+          for (const name of closestNames(list, n, 2)) hits.push(...(await lookup(["search",name,4],()=>SOURCES.ptcg.search({ q: name, size: 4 }),{cards:[]})).cards.filter((b) => b.name === name));
         }
-        for (const b of hits.slice(0, 3 - out.length)) push(await getForScan(b.id).catch(() => null), "Same name. Check the number", false);
+        for (const b of hits.slice(0, 3 - out.length)) push(await getForScan(b.id), "Same name. Check the number", false);
       }
     }
-    return { cands: manual?out:rankScanCandidates(G,out,read), tried };
+    }catch(e){if(!control||e.code!=="SCAN_BUDGET"||!out.length)throw e;limited=true;}
+    return { cands: manual?out:rankScanCandidates(G,limited?out.map(c=>({...c,exact:false})):out,read), tried,...(limited?{budgetLimited:true}:{}) };
   };
   // Save a whole scan session at once: Pokémon finish → variant, Yu-Gi-Oh! finish → edition.
   c.scanAddMany = async (items, G = g()) => {
@@ -3563,10 +3555,10 @@ export function registerTcg(c) {
           return { ...request, qty: r.qty, kind: r.kind, price: basic ? 0 : card ? price(card) : null, owned, core: r.kind === "Pokemon" };
         });
       };
-      const resolve = async (rows, status) => {
+      const resolve = async (rows, status, {prices=true}={}) => {
         const std = formatOf("ptcg", "standard"), any = formatOf("ptcg", "unlimited"),
           requests = [...new Map(rows.map(row => { const request = pkRequest(row); return [request.key, request]; })).values()],
-          todo = requests.filter(r => needsCardRefresh("ptcg", pkByPrinting.get(r.key)) || price(pkByPrinting.get(r.key)) == null), failed = [];
+          todo = requests.filter(r => needsCardRefresh("ptcg", pkByPrinting.get(r.key)) || prices && price(pkByPrinting.get(r.key)) == null), failed = [];
         let i = 0;
         await inBatches(todo, 6, async (r) => {
           const prior = pkByPrinting.get(r.key), cached = r.set && r.number ? Object.values(cache.ptcg).find(c => !c.brief && ptcgPrintingMatches(c, r)) : null;
@@ -3574,7 +3566,9 @@ export function registerTcg(c) {
           try {
             if (prior || cached) {
               const known = prior || cached;
-              card = await ensureCard("ptcg", known.id, price(known) == null);
+              // Price availability is independent of the known exact printing.
+              // A transient refresh failure must not erase a resolved deck row.
+              card = await ensureCard("ptcg", known.id, price(known) == null).catch(()=>known);
             } else if (r.set || r.number) {
               // An explicit but unresolved printing is never replaced by a same-name card.
               card = r.set && r.number ? await SOURCES.ptcg.tournamentCard(r) : null;
@@ -3595,7 +3589,7 @@ export function registerTcg(c) {
       };
       save = async (rows, label) => {
         const savingSheet = S.ui.sheetCtx;
-        await resolve(rows, () => {});
+        await resolve(rows, () => {}, {prices:false});
         const zones = { main: [], extra: [], side: [] }, missed = [];
         for (const r of rows) {
           const card = pkByPrinting.get(pkKey(r));
@@ -3656,7 +3650,7 @@ export function registerTcg(c) {
   A.tMetaDeck = (t) => {
     const G = g(), captured = t.dataset.homeMetaOpen !== undefined ? homeMetaSnapshot(t, G) : null;
     if (t.dataset.homeMetaOpen !== undefined && !captured) return toast("This Home list has changed. Choose the current visible list.");
-    const d = captured?.deck || metaState(G).data?.decks.find((x) => x.key === t.dataset.key);
+    const d = captured?.deck || metaState(G).data?.decks.find((x) => x.key === t.dataset.key) || metaState(G).data?.archetypes?.map(a=>a.representative).find(d=>d?.key===t.dataset.key);
     if (d) c.openProven(tcgProvenSpec(G, d, captured?.data));
   };
   // Budget versions of a tournament deck: build around its signature cards.
@@ -4000,7 +3994,7 @@ export function registerTcg(c) {
     const G=expectedGame,U=ui(G).set,screen=navigationStamp();
     if(!force&&U.id===id&&(U.busy||U.loaded&&!U.error))return;
     const generation=(U.generation||0)+1;
-    Object.assign(U,{id,info:null,cards:[],contents:null,candidates:[],busy:true,detailsBusy:false,loaded:false,error:'',filter:'all',q:'',rarity:'',finish:'',limit:120,generation});
+    Object.assign(U,{id,info:null,cards:[],contents:null,candidates:[],busy:true,detailsBusy:false,loaded:false,error:'',filter:'all',q:'',rarity:'',finish:'',edition:'',priceStatus:'',limit:120,generation});
     const owns=()=>U.generation===generation,active=()=>owns()&&navigationCurrent(screen)&&g()===G&&S.ui.view==='set'&&(!S.ui.tsetId||S.ui.tsetId===id);
     render();
     try{
@@ -4022,6 +4016,16 @@ export function registerTcg(c) {
       U.contents=contents;U.cards=contents.cards;U.error=contents.loadError||'';
       for(const raw of U.cards){const {setContext,...globalCard}=raw;remember(globalCard);}
       render();
+      if(G==='ygo'&&!U.info.providerNameAmbiguous){
+        U.priceStatus='loading';render();
+        try{
+          const response=await fetch('api/prices/yugioh-set?'+new URLSearchParams({name:U.info.name,code:U.info.code}),{signal:AbortSignal.timeout(15000)});
+          const body=response.ok?await response.json():null;
+          if(!active())return;
+          U.priceStatus=body?.status==='ready'?'ready':'unavailable';
+          for(const raw of U.cards){const full=cardOf(G,raw.id)||raw;remember(applyYgoSetPrices(full,U.info,body));}
+        }catch{if(active())U.priceStatus='unavailable';}
+      }
       if(G==='ptcg')await ensureMany(G,U.cards.slice(0,120).map(x=>x.id),()=>active()&&render());
       if(!active())return;
       U.loaded=true;
@@ -4037,6 +4041,7 @@ export function registerTcg(c) {
   A.tSetRetry=()=>c.openSet(ui().set.id,true);
   A.tSetFilter=t=>{ui().set.filter=t.dataset.id;ui().set.limit=120;render();};
   C.tSetSort=t=>{ui().set.sort=t.value;render();};
+  C.tSetEdition=t=>{ui().set.edition=["1st-edition","unlimited","limited"].includes(t.value)?t.value:"";render();};
   C.tSetRarity=t=>{ui().set.rarity=t.value;ui().set.limit=120;render();};
   C.tSetFinish=t=>{ui().set.finish=t.value;ui().set.limit=120;render();};
   I.tSetQ=t=>{ui().set.q=t.value;ui().set.limit=120;c.rerenderKeepingFocus();};

@@ -10,8 +10,7 @@ for(const game of ['mtg','ptcg','ygo']) {
  assert.equal((html.match(/data-act="askOpen"/g)||[]).length,1,`${game}: one Ask entry on Search`);
  assert.match(html,/search-query/); assert.doesNotMatch(html,/ask-chip/);
  const hero=homeHero(game,'Your cards');
- assert.equal((hero.match(/data-act="askOpen"/g)||[]).length,1);
- assert.match(hero,/data-act="homeSearch">Search<\/button><button class="ask-launch"/);
+ assert.doesNotMatch(hero,/data-act="askOpen"|data-act="homeSearch"|data-suggest=/,`${game}: Search and Ask live in their tab, not the personal Home accent`);
 }
 // Small DOM boundary fake: hold network/tool completions while dialogs close and reopen.
 const dialogs=[];
@@ -46,7 +45,7 @@ for(let i=0;i<100;i++){
  const p=ask('cancel',()=>new Promise((r,j)=>reject=j));closeAsk();openAsk();
  reject(Error('stale failure'));await p;closeAsk();
 }
-console.log('PASS: one Ask on Search and Home in all three games; duplicate-submit guard, close/reopen network and tool races, 100 cancellation cycles, valid bounded tool JSON.');
+console.log('PASS: one Ask on Search, no Search/Ask prompts on personal Home in all three games; duplicate-submit guard, close/reopen network and tool races, 100 cancellation cycles, valid bounded tool JSON.');
 const {restartAsk,clearAskConversations}=await import('./ai-ask.js');
 clearAskConversations();
 const original=openAsk({game:'mtg'});

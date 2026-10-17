@@ -1,6 +1,6 @@
-import {detectCardQuad,warpPixels,normalizedQuality} from './scan-vision.js';
+import {detectCardQuad,analysisRegions,selectSensorProposal,warpPixels,normalizedQuality} from './scan-vision.js';
 import {BATCH_LIMIT,CAPTURE_BUFFER_LIMIT,CAPTURE_STORAGE_LIMIT,captureCapacity,batchStorageSummary,loadBatch,saveBatch,updateBatch,removeBatch,batchStorageHealthy,captureEntry,uniquePrintings,actualFinishes,resolveScanFinish,resolvedEntry,batchCounts} from './scan-batch.js';
-import {rankScanCandidates,signalEvidence,scanIdentifierEvidence,collectorKey} from './scan-signals.js';
+import {rankScanCandidates,signalEvidence,scanIdentifierEvidence,scanTitleEvidence,collectorKey} from './scan-signals.js';
 import { ask, askText } from "./dialog.js";
 // Card scanner for all three games:
 //   live camera → find card boundary → normalize perspective → readable text bands → local multi-signal match → confirm → add
@@ -135,11 +135,35 @@ let ocrLoading = null,
   worker = null,
   workerLang = "",
   workerLoading = null;
-export const SCAN_DEADLINES={worker:15000,ocr:12000,local:6000,remote:8000,hydration:6000,artwork:2500};
+export const SCAN_DEADLINES={worker:15000,ocr:12000,local:6000,remote:8000,hydration:6000,artwork:2500,total:45000};
 export function scanDeadline(work,ms,label,onTimeout=()=>{}) {
   let timer;
   return Promise.race([Promise.resolve().then(work),new Promise((_,reject)=>{timer=setTimeout(()=>{onTimeout();const e=Error(`${label} timed out. Capture saved for retry.`);e.code='SCAN_TIMEOUT';reject(e);},ms);})]).finally(()=>clearTimeout(timer));
 }
+// One logical capture, including its optional clearer-frame revision, owns this
+// finite budget. It is local-only; adapter rounds are not raw HTTP request counts.
+export const SCAN_LIMITS=Object.freeze({ocrCalls:18,initialOCR:12,refinementOCR:6,adapterRounds:3,adapterOperations:12,initialAdapterOperations:8,refinementAdapterOperations:4,refinements:1,refinementWindowMs:20000});
+export function createScanBudget(now=clockNow){
+ let deadline=null,expired=false,ocrCalls=0,adapterRounds=0,revisionOCR=0,revisionRounds=0,adapterOperations=0,revisionOperations=0,refined=false,ownedWorker=null,activeRevision=()=>true;
+ const remote=new Map(),operations=new Map();
+ const failure=()=>{const e=Error('Capture processing limit reached. Saved for review or explicit retry.');e.code='SCAN_BUDGET';return e;};
+ return {latest:null,beginRevision(isRefinement=false){refined=isRefinement;revisionOCR=0;revisionRounds=0;revisionOperations=0;},begin(){deadline??=now()+SCAN_DEADLINES.total;},get expired(){return expired;},get remaining(){return deadline==null?SCAN_DEADLINES.total:Math.max(0,deadline-now());},get counts(){return {ocrCalls,adapterRounds,adapterOperations};},get availableOCR(){return SCAN_LIMITS.ocrCalls-ocrCalls;},
+  bindCurrent(active){activeRevision=active;},
+  check(){if(!activeRevision()){const e=Error('Reading interrupted · retry');e.code='SCAN_CANCELED';throw e;}if(expired||this.remaining<=0){expired=true;throw failure();}},
+  ocr(){this.check();if(ocrCalls>=SCAN_LIMITS.ocrCalls||revisionOCR>=(refined?SCAN_LIMITS.refinementOCR:SCAN_LIMITS.initialOCR))throw failure();ocrCalls++;revisionOCR++;},
+  ownWorker(w){this.check();ownedWorker=w;},
+  async stage(trace,name,fn){this.begin();this.check();return trace.stage(name,()=>scanDeadline(fn,this.remaining,'Capture processing',()=>{expired=true;retireWorker(ownedWorker);}));},
+  cached(key){return remote.get(key)||null;},
+  async lookup(key,fn){this.check();if(remote.has(key))return remote.get(key);if(adapterRounds>=SCAN_LIMITS.adapterRounds||revisionRounds>=(refined?1:2))return {cands:[],tried:[],budgetLimited:true};adapterRounds++;revisionRounds++;const result=Promise.resolve().then(fn);remote.set(key,result);return result;},
+  adapterControl(active=()=>true){
+   const budget=this,until=now()+SCAN_DEADLINES.remote;let canceled=false;
+   const check=()=>{budget.check();if(canceled||now()>=until||!active()){const e=Error('Card lookup canceled or timed out. Capture saved for review.');e.code='SCAN_CANCELED';throw e;}};
+   return {cancel(){canceled=true;},check,async run(key,fn){check();let pending=operations.get(key);if(!pending){if(adapterOperations>=SCAN_LIMITS.adapterOperations||revisionOperations>=(refined?SCAN_LIMITS.refinementAdapterOperations:SCAN_LIMITS.initialAdapterOperations))throw failure();adapterOperations++;revisionOperations++;pending=Promise.resolve().then(()=>{check();return fn();});operations.set(key,pending);}const result=await pending;check();return result;}};
+  },
+  checkpoint(result){this.latest={...result,read:{...result.read,titles:result.read?.titles?.map(t=>({...t}))},cands:[...(result.cands||[])]};return result;}
+ };
+}
+export const scanQueryKey=(g,read={})=>JSON.stringify([g,[...new Set(nameCandidates(g,read.name||read.full).map(scanNameKey))],scanIdentifierEvidence(g,read).observations,scanIdentifierEvidence(g,read).passcodes||[]]);
 function retireWorker(w){if(worker===w){worker=null;workerLang='';}try{Promise.resolve(w?.terminate?.()).catch(()=>{});}catch{}}
 // The non-whitespace record separator prevents an orphan identifier in one
 // image region from being completed by unrelated pixels in the next region.
@@ -195,10 +219,11 @@ function regionCanvas(card, [fx, fy, fw, fh], scale = 2, invert = false) {
   ctx.drawImage(card, card.width * fx, card.height * fy, rw, card.height * fh, 0, 0, c.width, c.height);
   return c;
 }
-const recog = async (w, canvas, segmentation = 6) => {
+const recog = async (w, canvas, segmentation = 6, budget=null, observed=null) => {
   // Automatic page segmentation often discards a short name/footer strip entirely.
   // Use a text block for those crops and sparse text only for a whole card.
-  return scanDeadline(async()=>{await w.setParameters?.({tessedit_pageseg_mode:String(segmentation)});return ((await w.recognize(canvas)).data.text || "").trim();},SCAN_DEADLINES.ocr,'Text reading',()=>retireWorker(w));
+  budget?.ocr();budget?.ownWorker(w);
+  return scanDeadline(async()=>{await w.setParameters?.({tessedit_pageseg_mode:String(segmentation)});budget?.check();const data=(await w.recognize(canvas)).data;budget?.check();observed?.(Number.isFinite(data.confidence)?data.confidence:null);return (data.text || "").trim();},SCAN_DEADLINES.ocr,'Text reading',()=>retireWorker(w));
 };
 // Where the card is in a photo: the longest run of rows and of columns that differ from the
 // photo's border (a table, a playmat, a dark screen). Returns fractions, or null if no card shape.
@@ -251,13 +276,13 @@ export function preserveWholeCardPhoto(width,height,backgroundBox=null) {
 }
 
 // Read the name strip and the code strip separately; the whole card only as a fallback.
-export async function readCard(card, g, lang, progress = () => {}, { codeOnly = false, priorFull = '', cache = new Map(), trace = null } = {}) {
+export async function readCard(card, g, lang, progress = () => {}, { codeOnly = false, priorFull = '', cache = new Map(), trace = null, budget=null } = {}) {
   const w = await (trace?trace.stage('ocrWarmup',()=>getWorker(lang,progress)):getWorker(lang, progress)),
-    L = LAYOUT[g] || LAYOUT.mtg;
+    L = LAYOUT[g] || LAYOUT.mtg,titles=[];
   const band=(name,roi,scale,invert=false)=>{
     const key=JSON.stringify([roi,scale,invert]);
-    if(!cache.has(key))cache.set(key,trace?trace.stage(name,()=>recog(w,regionCanvas(card,roi,scale,invert))):recog(w,regionCanvas(card,roi,scale,invert)));
-    return cache.get(key);
+    if(!cache.has(key)){let confidence=null;const run=async()=>({text:await recog(w,regionCanvas(card,roi,scale,invert),6,budget,c=>confidence=c),confidence});cache.set(key,trace?trace.stage(name,run):run());}
+    return cache.get(key).then(result=>{if(name.startsWith('ocrName'))titles.push({text:result.text,source:'title',confidence:result.confidence});return result.text;});
   };
   // The artwork already named the card: only the set code / number is needed.
   if (codeOnly) {
@@ -275,15 +300,15 @@ export async function readCard(card, g, lang, progress = () => {}, { codeOnly = 
   let full = priorFull;
   if (!full&&!nameCandidates(g, name).length) {
     progress("Reading the whole card…");
-    full = await readFull(card, lang, progress);
+    full = await readFull(card, lang, progress,budget);
   }
-  return { name, code, full, stats:"" };
+  return { name, code, full, stats:"",titles };
 }
 // The whole card as text: for finding the name wherever it is and telling which game it is.
-export async function readFull(card, lang, progress = () => {}) {
+export async function readFull(card, lang, progress = () => {},budget=null) {
   const w = await getWorker(lang, progress);
   progress("Reading the whole card…");
-  return recog(w, regionCanvas(card, [0, 0, 1, 1], 1), 11);
+  return recog(w, regionCanvas(card, [0, 0, 1, 1], 1), 11,budget);
 }
 
 /* ---------- view ---------- */
@@ -350,6 +375,9 @@ function sessionPanel(g, p, list) {
     }</section>`;
 }
 
+// Decorative framing only. This never tracks a detector quad or gates capture.
+const calmFrame = `<div class="scan-frame-hint" aria-hidden="true"><svg viewBox="0 0 210 294" preserveAspectRatio="xMidYMid meet" focusable="false"><path d="M2 32V12Q2 2 12 2H32M178 2H198Q208 2 208 12V32M208 262V282Q208 292 198 292H178M32 292H12Q2 292 2 282V262"/><path class="scan-frame-accent" d="M11 22V14Q11 11 14 11H22M188 283H196Q199 283 199 280V272"/></svg></div>`;
+
 const GAME_LABEL = { mtg: "Magic", ygo: "Yu-Gi-Oh!", ptcg: "Pokémon" };
 
 function catalogControl(g, st) {
@@ -365,8 +393,8 @@ export function scanView(g, gameName) {
   const s=S.ui.scan,p=loadPrefs(g),live=(s.mode||"live")==="live",list=loadSession(g);
   const rail=`<div class="cam-rail">${s.torchCap?`<button class="${s.torch?"on":""}" data-act="scanTorch" aria-pressed="${!!s.torch}" aria-label="Flashlight">${TORCH}</button>`:""}<button data-act="scanSettings" aria-label="Scanner settings">${GEAR}</button></div>`;
   return `<div class="scan-workspace ${s.camOn?'is-live':''}"><div class="scan-toolbar"><h1>Scan</h1><span class="scan-auto-game">Auto game</span><button class="btn ghost small" data-act="scanMode" data-id="${live?'photo':'live'}">${live?'Photo':'Camera'}</button>${s.camOn?`<button class="icon" data-act="scanStop" aria-label="Stop camera">${STOP}</button>`:`<button class="icon" data-act="scanSettings" aria-label="Scanner settings">${GEAR}</button>`}</div>
-  <section class="panel scan-panel">${live?`<div class="cam-wrap ${s.camOn?'immersive':''}" id="camWrap">${s.camOn?`<div id="camSlot"></div><div class="cam-status" id="camStatus" role="status"><i class="cam-dot" aria-hidden="true"></i>${esc(s.guide?.msg||'Show one clear card')}</div>${rail}<div class="scan-flash" id="scanFlash" aria-live="polite"></div><button class="scan-shutter" id="scanCaptureBtn" data-act="scanCapture" aria-label="Capture card now">${CAMERA}</button>`:`<div class="scan-drop"><span class="scan-ghost" aria-hidden="true"></span><b>One card. Then the next.</b><span class="muted small">Magic, Pokémon and Yu-Gi-Oh! detected per card. No need to change the game above.</span><button class="btn scan-go" data-act="scanStart">${CAMERA} Start camera</button><small class="muted">Keep the name and bottom code sharp.</small></div>`}</div>`:`<div class="actions wrap"><label class="btn">${CAMERA} Take photo<input type="file" accept="image/*" capture="environment" data-change="scanFile" hidden></label><label class="btn ghost">Upload<input type="file" accept="image/*" data-change="scanFile" hidden></label></div>${s.url?`<div class="crop-wrap" id="cropWrap"><img id="cropImg" src="${esc(s.url)}" alt="Your photo"><div class="crop-box" id="cropBox"></div></div><div class="actions wrap"><button class="btn ghost small" data-act="scanRotate">Rotate</button><button class="btn ghost small" data-act="scanCropReset">Whole photo</button><button class="btn" data-act="scanRead" ${s.busy||s.photoLoading?'disabled':''}>${s.busy||s.photoLoading?'Reading…':'Read card'}</button></div>`:''}`}
-  <p class="scan-status-line" id="scanStatus" role="status">${esc(s.status||'Capture first. Review only what needs checking.')}</p></section>
+  <section class="panel scan-panel">${live?`<div class="cam-wrap ${s.camOn?'immersive':''}" id="camWrap">${s.camOn?`<div id="camSlot"></div>${calmFrame}<div class="cam-status" id="camStatus" role="status"><i class="cam-dot" aria-hidden="true"></i>${esc(s.guide?.msg||'Show one whole card anywhere')}</div>${rail}<div class="scan-flash" id="scanFlash" aria-live="polite"></div><button class="scan-shutter" id="scanCaptureBtn" data-act="scanCapture" aria-label="Capture card now">${CAMERA}</button>`:`<div class="scan-drop"><span class="scan-ghost" aria-hidden="true"></span><b>One card. Then the next.</b><span class="muted small">Magic, Pokémon and Yu-Gi-Oh! detected per card. No need to change the game above.</span><button class="btn scan-go" data-act="scanStart">${CAMERA} Start camera</button><small class="muted">Flat card, good light. Keep all four edges in view.</small></div>`}</div>`:`<div class="actions wrap"><label class="btn">${CAMERA} Take photo<input type="file" accept="image/*" capture="environment" data-change="scanFile" hidden></label><label class="btn ghost">Upload<input type="file" accept="image/*" data-change="scanFile" hidden></label></div>${s.url?`<div class="crop-wrap" id="cropWrap"><img id="cropImg" src="${esc(s.url)}" alt="Your photo"><div class="crop-box" id="cropBox"></div></div><div class="actions wrap"><button class="btn ghost small" data-act="scanRotate">Rotate</button><button class="btn ghost small" data-act="scanCropReset">Whole photo</button><button class="btn" data-act="scanRead" ${s.busy||s.photoLoading?'disabled':''}>${s.busy||s.photoLoading?'Reading…':'Read card'}</button></div>`:''}`}
+  <p class="scan-status-line" id="scanStatus" role="status">${esc(s.status||(s.camOn?'Keep the whole card visible. Exact alignment isn’t needed.':'Capture first. Review only what needs checking.'))}</p></section>
   ${batchTray(s)}${scanConfirmation(s.confirm?.game||g,s,p)}
   <p class="scan-disclosure">Finish and condition are not detected from a photo. ${p.finishConfirmed?`Batch finish: ${esc(finishLabel(g,null,p.finish))}.`:'Choose the finish during review, or set a batch default in settings.'}</p>
   ${list.length?`<details class="scan-legacy-session"><summary>${sessionCount(list)} cards in your previous scan list</summary>${sessionPanel(g,p,list)}</details>`:''}</div>`;
@@ -477,6 +505,24 @@ export function rotateCapture(source,turns=1) {
 export function canReuseCapture(candidate,signature,geometryMotion=0,now=Date.now()) {
   return !!candidate&&now-candidate.at<900&&geometryMotion<.015&&sigDiff(candidate.signature,signature)<9;
 }
+// An automatic refinement is not another copy. Require the same held-card
+// fingerprints, readable full geometry and substantial improvement in the worse
+// text band. Identical encodings are rejected again at durable admission.
+export function canRefineCapture(lock,entry,candidate,{paused=false,sourceSignature=null}={},now=Date.now()){
+ if(paused||!lock?.automatic||!entry||entry.id!==lock.id||entry.captureRevision!==lock.revision||entry.captureIntent!=='automatic'||!['unresolved','review'].includes(entry.status)||entry.printingVerified||entry.reviewTouched||entry.printingConfirmed||entry.reviewSource||Number.isInteger(entry.selectedIndex)||entry.finish||entry.refinementCount>=SCAN_LIMITS.refinements)return false;
+ if(!lock.settledAt||now-lock.settledAt>SCAN_LIMITS.refinementWindowMs||lock.refined||lock.refinementIdentical||lock.budget?.expired||lock.budget?.remaining<2500||lock.budget?.availableOCR<2)return false;
+ if(!candidate?.proposal?.cropSafe||!candidate.quality||!lock.quality||!candidate.signature||sigDiff(lock.geometrySignature,candidate.signature)>14||sigDiff(lock.signature,sourceSignature)>22)return false;
+ const a=lock.quality,b=candidate.quality;
+ return b.motion<T.motion&&b.glare<=T.glare&&b.sharp>=Math.max(T.sharp,a.sharp*1.35,a.sharp+75)&&b.nameSharp>=a.nameSharp*.95&&b.codeSharp>=a.codeSharp*.95;
+}
+export function supplementScanEvidence(first,result){
+ if(!first)return result;
+ const current=result.read||{},old=first.game===result.g?first.read||{}:{};
+ const read={...current,name:joinReads(old.name,current.name),code:joinReads(old.code,current.code),full:joinReads(old.full,current.full),stats:joinReads(old.stats,current.stats),titles:[...(old.titles||[{text:old.name||'',source:'title',confidence:null}]),...(current.titles||[{text:current.name||'',source:'title',confidence:null}])]};
+ // Keep each original evidence object intact at rest. A different game is a
+ // conflict too; it cannot be made equivalent by merging arbitrary text bands.
+ return {...result,read,cands:uniquePrintings([...(result.cands||[]),...(first.game===result.g?first.cands||[]:[])]).map(c=>({...c,exact:false,...(first.game!==result.g?{identityConflict:true}:{})})),supplemental:true};
+}
 export function createScanTrace(now=clockNow) {
   const started=now(),timings={},counts={};
   return {timings,counts,async stage(name,fn){const at=now();counts[name]=(counts[name]||0)+1;try{return await fn();}finally{timings[name]=(timings[name]||0)+Math.max(0,now()-at);}},finish(){return {timings:{...timings,totalMs:Math.max(0,now()-started)},counts:{...counts}};}};
@@ -529,10 +575,9 @@ export const indexCardId = (g, id) => (g === "ygo" ? id.split(":")[1] : id);
 // An art ranking is not a probability and cannot verify a printed identifier.
 export function textVerifiedMatch(g, cand, read = {}) {
   if (!cand?.exact || !cand.card || cand.printingAmbiguous || (g==='ygo'&&cand.setReleaseUnverified)) return false;
-  const evidence=signalEvidence(g,cand.card,read);
-  if(evidence.conflicts.length||evidence.identifierConflict)return false;
-  const names = nameCandidates(g, read.name || "");
-  if (!names.some(n => scanNameKey(n) === scanNameKey(cand.name))) return false;
+  const evidence=signalEvidence(g,{...cand.card,name:cand.card.name||cand.name},read);
+  if(evidence.conflicts.length||evidence.identifierConflict||evidence.signalConflict||evidence.nameConflict||cand.identityConflict||!evidence.exactMatch)return false;
+  const names = [cand.name];
   const identifiers=scanIdentifierEvidence(g,read).observations;
   if (g === "ptcg") return names.some(n => scanCandidateMatches(cand.card, n, identifiers)) && identifiers.length > 0;
   if (g === "ygo") return identifiers.some(code => code === String(cand.print || "").split("|")[0]);
@@ -570,26 +615,57 @@ export function fullCardNameHints(g,full) {
 // when text lookup fails, without turning visual similarity into a verified printing.
 export function recoverScanCandidates(g, result, visual, read = {}) {
   if(result.cands.some(c=>textVerifiedMatch(g,c,read)) || !visual?.cands?.length)return result;
-  const names=nameCandidates(g,read.name || "");
-  const compatible=visual.cands.filter(c=>names.some(n=>scanNameKey(n)===scanNameKey(c.name)));
-  if(result.cands.length && !compatible.length)return result;
-  const suggestions=(compatible.length?compatible:visual.cands).map(c=>({...c,exact:false,why:"Artwork suggestion · check the card and printing"}));
-  return {...visual,cands:suggestions,tried:[...(result.tried||[]),...(visual.tried||[])]};
+  const compatible=visual.cands.filter(c=>scanTitleEvidence(g,c.card||{name:c.name},read).exactMatch);
+  const suggestions=(compatible.length?compatible:visual.cands).map(c=>({...c,exact:false,identitySource:'artwork',identityConflict:!compatible.length&&result.cands.length>0,why:"Artwork suggestion · check the card and printing"}));
+  // An independent artwork suggestion is still useful against weak OCR, but
+  // contradictory identities remain alternatives, never verified printings.
+  return {...result,cands:uniquePrintings([...suggestions,...result.cands.map(c=>({...c,exact:false,...(!compatible.length?{identityConflict:true}:{})}))]),tried:[...(result.tried||[]),...(visual.tried||[])]};
+}
+
+// Conflicting OCR must be reviewed even when it yields only one candidate.
+export function initialReviewIndex(entry) {
+  const candidates=entry.cands||[];
+  if(Number.isInteger(entry.selectedIndex)&&entry.selectedIndex>=0&&entry.selectedIndex<candidates.length)return entry.selectedIndex;
+  return candidates.length===1&&!['identityConflict','identifierConflict','signalConflict'].some(key=>candidates[0][key])?0:-1;
+}
+
+export function scanSavedMarkup(item) {
+  const price=typeof item.price==='number'&&Number.isFinite(item.price)&&item.price>=0?item.price:null;
+  return `<div class="scan-saved-art" aria-hidden="true">${item.cand?.card?artworkHTML(item.cand.card,'',true):''}<span>✓</span></div><div><small>Added to Collection</small><strong>${esc(item.name)}</strong><span>${item.qty} × ${esc(item.condition)} · ${esc(item.finish)}</span><b>${price===null?'Condition price unavailable':money(price*item.qty)+' estimated value'}${price!==null&&item.qty>1?` <small>(${money(price)} each)</small>`:''}</b></div>`;
+}
+
+function showScanSaved(item) {
+  if(!globalThis.document?.body)return;
+  document.querySelector('.scan-saved-receipt')?.remove();
+  const receipt=document.createElement('div');receipt.className='scan-saved-receipt';receipt.setAttribute('role','status');receipt.setAttribute('aria-live','polite');receipt.innerHTML=scanSavedMarkup(item);document.body.append(receipt);
+  const target=[...document.querySelectorAll('[data-nav="collection"]')].find(n=>{const r=n.getBoundingClientRect();return r.width>0&&r.height>0;});
+  const art=receipt.querySelector('.scan-saved-art');
+  // Animate a decorative copy only after persistence succeeds; never move the
+  // camera, hide the receipt price, or delay the next capture.
+  if(target&&art?.animate&&!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches){
+    const a=art.getBoundingClientRect(),b=target.getBoundingClientRect(),fly=art.cloneNode(true);
+    fly.className='scan-saved-fly';Object.assign(fly.style,{left:a.left+'px',top:a.top+'px',width:a.width+'px',height:a.height+'px'});document.body.append(fly);
+    const animation=fly.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:`translate(${b.left+b.width/2-a.left-a.width/2}px,${b.top+b.height/2-a.top-a.height/2}px) scale(.18)`,opacity:0}],{duration:780,delay:500,easing:'cubic-bezier(.35,0,.2,1)',fill:'forwards'});
+    animation.finished.catch(()=>{}).finally(()=>fly.remove());
+  }
+  setTimeout(()=>receipt.remove(),4800);
 }
 
 export function scanConfirmation(g, st, prefs) {
   const q=st.confirm;if(!q)return "";
   const c=st.cands?.[q.i??0],isBatch=!!q.batchId,options=st.cands||[],chosen=q.i>=0;
+  const observations=st.supplement?`<details class="scan-review-more"><summary>Compare original and clearer frame</summary><figure><img class="scan-confirm-art" src="${esc(st.supplement.original)}" alt="First accepted original" width="96" height="134"><figcaption>First accepted original</figcaption></figure><figure><img class="scan-confirm-art" src="${esc(st.supplement.clearer)}" alt="Clearer supplemental frame" width="96" height="134"><figcaption>Clearer frame · review only</figcaption></figure></details>`:'';
   const close=`<button class="icon" data-act="scanDismiss" aria-label="Keep for later and continue scanning" ${q.saving?'disabled':''}>✕</button>`;
-  if(!options.length)return `<section class="scan-confirm scan-batch-review" role="region" aria-label="Review captured card"><header><b>Needs a clearer scan</b>${close}</header><div class="scan-confirm-card">${st.shot?`<img class="scan-confirm-art" src="${esc(st.shot)}" alt="Your captured card">`:''}<div><strong>Saved for later</strong><small>Show the name and bottom code with less glare. You can keep scanning other cards.</small></div></div><div class="scan-confirm-actions"><button class="btn ghost" data-act="scanDismiss">Keep scanning</button><button class="btn" data-act="scanRetry">Scan again</button></div>${isBatch?`<button class="link small" data-act="scanBatchDiscard">Remove this capture</button>`:''}</section>`;
+  if(!options.length)return `<section class="scan-confirm scan-batch-review" role="region" aria-label="Review captured card"><header><b>Needs a clearer scan</b>${close}</header><div class="scan-confirm-card">${st.shot?`<img class="scan-confirm-art" src="${esc(st.shot)}" alt="Your captured card">`:''}<div><strong>Saved for later</strong><small>Show the name and bottom code with less glare. You can keep scanning other cards.</small></div></div>${observations}<div class="scan-confirm-actions"><button class="btn ghost" data-act="scanDismiss">Keep scanning</button><button class="btn" data-act="scanRetry">Scan again</button></div>${isBatch?`<button class="link small" data-act="scanBatchDiscard">Remove this capture</button>`:''}</section>`;
   const candidate=c||options[0],fs=finishesFor(g,candidate),image=candidate.card?artworkHTML(candidate.card,"scan-confirm-art",true):candidate.image?`<img class="scan-confirm-art" src="${esc(candidate.image)}" alt="${esc(candidate.name)}">`:'';
   return `<section class="scan-confirm scan-batch-review" role="region" aria-label="Confirm scanned card" aria-busy="${!!q.saving}"><header><b>${GAME_LABEL[g]} · ${chosen?'Check finish':'Check printing'}</b>${close}</header>
-  <div class="scan-confirm-card">${image}<div><strong>${esc(candidate.name)}</strong><small>${esc(candidate.sub||'')}</small><small>${candidate.reviewSource==='printing-picker'?'Printing selected by you':chosen&&textVerifiedMatch(g,candidate,st.read)?'Printed identifier matched':'Possible match · check name and printing'}</small></div></div>
-  ${options.length>1||!chosen?`<div class="scan-confirm-options" role="group" aria-label="Possible printings">${options.slice(0,3).map((x,i)=>`<button class="btn ghost small" data-act="scanChoose" data-i="${i}" aria-pressed="${chosen&&i===q.i}">${esc(x.name)}<small>${esc(x.sub||'')}</small></button>`).join('')}</div>`:''}
-  <button class="btn ghost small" data-act="scanChangePrinting" ${q.saving||q.pickerOpening||!chosen?'disabled':''}>${q.pickerOpening?'Loading printings…':'Change printing'}</button>
+  <div class="scan-confirm-card">${image}<div><strong>${esc(candidate.name)}</strong><small>${esc(candidate.sub||'')}</small><small>${candidate.reviewSource==='printing-picker'?'Printing selected by you':candidate.identityConflict?'Title evidence disagrees · check card identity':chosen&&textVerifiedMatch(g,candidate,st.read)?'Printed identifier matched':'Possible match · check name and printing'}</small></div></div>
+  ${options.length>1||!chosen?`<div class="scan-confirm-options" role="group" aria-label="${options.some(x=>x.identityConflict)||new Set(options.map(x=>scanNameKey(x.name))).size>1?'Possible card identities':'Possible printings'}">${options.slice(0,3).map((x,i)=>`<button class="btn ghost small" data-act="scanChoose" data-i="${i}" aria-pressed="${chosen&&i===q.i}">${esc(x.name)}<small>${esc(x.sub||'')}</small></button>`).join('')}</div>`:''}
+  ${observations}<button class="btn ghost small" data-act="scanChangePrinting" ${q.saving||q.pickerOpening||!chosen?'disabled':''}>${q.pickerOpening?'Loading printings…':'Change printing'}</button>
   <div class="scan-confirm-controls"><label>Finish / edition<select data-change="scanConfirmFinish" aria-label="Scanned card finish" ${q.saving||!chosen?'disabled':''}><option value="" ${!q.finish?'selected':''}>Choose finish</option>${fs.map(f=>`<option value="${esc(f)}" ${q.finish===f?'selected':''}>${esc(finishLabel(g,candidate,f))}</option>`).join('')}</select></label><span class="ss-qty"><button data-act="scanConfirmQty" data-d="-1" aria-label="Fewer copies" ${q.saving||q.qty<=1?'disabled':''}>−</button><output aria-label="Copies to save">${q.qty}</output><button data-act="scanConfirmQty" data-d="1" aria-label="More copies" ${q.saving?'disabled':''}>＋</button></span></div>
   ${g==='ptcg'&&!fs.length?'<p class="scan-confirm-error">Exact finish unavailable for this source version. Choose another verified printing before adding.</p>':''}
   <details class="scan-review-more" ${q.detailsOpen?'open':''}><summary>${esc(label(CONDITIONS,q.condition))} · ${esc(label(LANGS,q.lang))} · ${q.price==null?(q.priceStatus==='deferred'?'Price lookup deferred':'Price unavailable'):'Estimated price '+money(q.price)}</summary><div class="scan-confirm-conditions" role="group" aria-label="Card condition">${CONDITIONS.map(([v,l])=>`<button data-act="scanConfirmCondition" data-condition="${esc(v)}" aria-label="${esc(v)}" aria-pressed="${q.condition===v}">${l}</button>`).join('')}</div><label>Language<select data-change="scanConfirmLanguage" aria-label="Scanned card language">${LANGS.map(([v,l])=>`<option value="${esc(v)}" ${q.lang===v?'selected':''}>${esc(LANG_NAME[v]||l)}</option>`).join('')}</select></label></details>
+  <div class="scan-condition-value" role="status"><span>${esc(q.condition)} · ${q.qty} ${q.qty===1?'copy':'copies'}</span><strong>${!chosen||!q.finish?'Choose printing and finish':q.price==null?(q.priceStatus==='deferred'?'Price lookup deferred':'Condition price unavailable'):money(q.price*q.qty)+' estimated value'}</strong></div>
   ${q.error?`<p class="scan-confirm-error" role="alert">${esc(q.error)}</p>`:''}<div class="scan-confirm-actions"><button class="btn ghost" data-act="scanRetry" ${q.saving?'disabled':''}>Scan again</button><button class="btn" data-act="scanConfirm" ${q.saving||!chosen||!q.finish?'disabled':''}>${q.saving?'Saving…':'Add to collection'}</button></div>${isBatch?`<button class="link small" data-act="scanBatchDiscard">Remove this capture</button>`:''}</section>`;
 }
 
@@ -678,7 +754,8 @@ export function registerScanner(ctx) {
     scanTicket++;
     s().busy = false;
     s().confirm = null;
-    clearInterval(loopTimer);
+    s().supplement = null;
+    clearTimeout(loopTimer);
     loopTimer = 0;
     if(!keepStream){
       stream?.getTracks().forEach((t) => t.stop());
@@ -708,31 +785,36 @@ export function registerScanner(ctx) {
   };
   // Capture-local evidence is never stored in shared UI state while reading.
   // A canceled/late result cannot overwrite the next card or a review panel.
-  const readFlow = async (card, selectedGame, snapshots, lang, progress, trace, active) => {
+  const boundedMatch=async(G,read,lang,progress,prefs,active,budget)=>{
+    const control=budget.adapterControl(active);
+    try{return await scanDeadline(()=>match(G,{...read},lang,false,progress,prefs,control),Math.min(SCAN_DEADLINES.remote,budget.remaining),'Card lookup',()=>control.cancel());}
+    finally{control.cancel();}
+  };
+  const readFlow = async (card, selectedGame, snapshots, lang, progress, trace, active,budget) => {
     let G=selectedGame,read;
-    const cache=new Map(),remoteCache=new Map();
+    const cache=new Map();
     const check=()=>{if(!active())throw Error('Reading interrupted · retry');};
     const stage=(name,fn)=>trace.stage(name,async()=>{check();const result=await fn();check();return result;});
-    const readLayout=priorFull=>readCard(card,G,lang,progress,{cache,trace,priorFull});
+    const readLayout=priorFull=>readCard(card,G,lang,progress,{cache,trace,priorFull,budget});
     read=await stage('ocrInitial',()=>readLayout(''));
     let other=detectGame(`${read.name}\n${read.code}\n${read.full}`);
     if(other&&other!==G){G=other;read=await stage('ocrGameCorrection',()=>readLayout(read.full));}
     // Detail bands affect ranking, not the remote adapter query. Reuse remote
     // candidates rather than repeating the same requests after every OCR band.
-    const queryKey=()=>JSON.stringify([G,nameCandidates(G,read.name||read.full),scanIdentifierEvidence(G,read).observations]);
+    const queryKey=()=>scanQueryKey(G,read);
     const hasIdentifier=()=>scanIdentifierEvidence(G,read).observations.length;
-    let remoteCalls=0,lastRemote=null;
     const lookup=async(remote=false)=>{
       const local=await stage('localLookup',()=>scanDeadline(()=>localScanMatch(G,read),SCAN_DEADLINES.local,'Local catalogue',()=>invalidateCatalogRead(G)));
       let result=local,key=queryKey();
-      if(remote&&!local.cands.some(c=>textVerifiedMatch(G,c,read))&&!remoteCache.has(key)&&remoteCalls<2){
-        remoteCalls++;
-        try{lastRemote={g:G,...await stage('remoteLookup',()=>scanDeadline(()=>match(G,{...read},lang,false,progress,snapshots[G]||{}),SCAN_DEADLINES.remote,'Card lookup'))};remoteCache.set(key,lastRemote);}
-        catch(e){if(e.code==='SCAN_TIMEOUT')throw e;check();remoteCache.set(key,{g:G,cands:[],tried:[]});}
+      if(local.cands?.length||!budget.latest)budget.checkpoint({...local,g:G,read,cands:rankScanCandidates(G,local.cands||[],read)});
+      let prior=null;
+      if(budget.cached(key)){try{prior={g:G,...await budget.cached(key)};}catch(e){if(e.code==='SCAN_TIMEOUT'||e.code==='SCAN_BUDGET'||e.code==='SCAN_CANCELED')throw e;}}
+      if(!prior&&remote&&!local.cands.some(c=>textVerifiedMatch(G,c,read))){
+        try{prior={g:G,...await budget.lookup(key,()=>stage('remoteLookup',()=>boundedMatch(G,read,lang,progress,snapshots[G]||{},active,budget)))};}
+        catch(e){if(e.code==='SCAN_TIMEOUT'||e.code==='SCAN_BUDGET'||e.code==='SCAN_CANCELED')throw e;check();}
       }
-      const prior=remoteCache.get(key)||lastRemote;
       if(prior?.g===G)result={...local,cands:uniquePrintings([...local.cands,...prior.cands].sort((a,b)=>Number(!!b.exact)-Number(!!a.exact))),tried:[...(local.tried||[]),...(prior.tried||[])]};
-      return {...result,cands:rankScanCandidates(G,result.cands||[],read)};
+      return budget.checkpoint({...result,g:G,read,cands:rankScanCandidates(G,result.cands||[],read)});
     };
     progress(`Reading ${GAME_LABEL[G]} printing…`);
     // Preserve the fast two-band path when both a name and identifier are read.
@@ -740,21 +822,21 @@ export function registerScanner(ctx) {
     let r=await lookup(!!hasIdentifier()&&nameCandidates(G,read.name).length>0);
     if(!r.cands.some(c=>textVerifiedMatch(G,c,read))){
       const roi=G==='ygo'?[.30,.82,.70,.15]:G==='mtg'?[.02,.37,.96,.59]:[.04,.46,.92,.40];
-      read.stats=await stage('ocrDetails',async()=>recog(await getWorker(lang,progress),regionCanvas(card,roi,2)));
+      read.stats=await stage('ocrDetails',async()=>recog(await getWorker(lang,progress),regionCanvas(card,roi,2),6,budget));
       r=await lookup();
     }
     if(!r.cands.some(c=>textVerifiedMatch(G,c,read))){
       const footer=G==='ygo'?[.35,.66,.65,.31]:[0,.83,1,.17];
-      const detail=await stage('ocrFooterRetry',async()=>recog(await getWorker(lang,progress),regionCanvas(card,footer,3)));
+      const detail=await stage('ocrFooterRetry',async()=>recog(await getWorker(lang,progress),regionCanvas(card,footer,3),6,budget));
       read.code=joinReads(read.code,detail);
       r=await lookup();
     }
     if(!r.cands.some(c=>textVerifiedMatch(G,c,read))){
-      read.full=read.full||await stage('ocrFull',()=>readFull(card,lang,progress));
+      read.full=read.full||await stage('ocrFull',()=>readFull(card,lang,progress,budget));
       other=detectGame(`${read.name}\n${read.code}\n${read.full}\n${read.stats}`);
       if(other&&other!==G){const full=read.full;G=other;read={...await stage('ocrGameCorrection',()=>readLayout(full)),full};}
       const anchored=fullCardNameHints(G,read.full);
-      if(anchored.length)read.name=[...anchored,read.name].join('\n');
+      if(anchored.length){read.titles=[...(read.titles||[]),...anchored.map(text=>({text,source:'full-hint',confidence:null}))];read.name=[...anchored,read.name].join('\n');}
       r=await lookup(true);
     }
     return {...r,g:G,read};
@@ -762,24 +844,29 @@ export function registerScanner(ctx) {
   // Recovery sees the original, not the failed crop. Two independent OCR
   // sources (whole frame and lower detail band) must still pass ordinary name,
   // identifier and conflict gates. Earlier contradictory observations survive.
-  const readOriginalEvidence=async(original,prior,entry,progress,trace,active)=>{
+  const readOriginalEvidence=async(original,prior,entry,progress,trace,active,budget)=>{
     const check=()=>{if(!active())throw Error('Reading interrupted · retry');},lang=entry.ocrLang||'eng';
     check();progress('Checking the original photo…');
-    const full=await trace.stage('ocrOriginalFull',()=>readFull(original,lang,progress));check();
+    const full=await trace.stage('ocrOriginalFull',()=>readFull(original,lang,progress,budget));check();
     const G=detectGame(full)||prior?.g||entry.game;
-    const code=await trace.stage('ocrOriginalFooter',async()=>recog(await getWorker(lang,progress),regionCanvas(original,[0,.40,1,.60],1),11));check();
+    const code=await trace.stage('ocrOriginalFooter',async()=>recog(await getWorker(lang,progress),regionCanvas(original,[0,.40,1,.60],1),11,budget));check();
     const previous=prior?.g===G?prior.read||{}:{},combinedFull=joinReads(previous.full,full),hints=fullCardNameHints(G,combinedFull);
-    const read={name:[...hints,previous.name].filter(Boolean).join('\n'),code:joinReads(previous.code,code),full:combinedFull,stats:previous.stats||''};
+    const read={name:[...hints,previous.name].filter(Boolean).join('\n'),code:joinReads(previous.code,code),full:combinedFull,stats:previous.stats||'',titles:[...(previous.titles||[]),...hints.map(text=>({text,source:anchoredNames(G,full).some(x=>scanNameKey(x)===scanNameKey(text))?'full-anchor':'full-hint',confidence:null}))]};
+    // A loose original has no reliable title band. A single top-of-frame hint
+    // may support a suggestion; with an independent footer it retains the
+    // existing full-frame recovery path, but cannot erase earlier contradictions.
+    if(!read.titles.some(t=>(t.source==='title'||t.source==='full-anchor')&&nameCandidates(G,t.text).length)&&hints.length===1)read.titles[read.titles.length-1]={...read.titles.at(-1),source:'original-title'};
     let r=await trace.stage('localOriginal',()=>scanDeadline(()=>localScanMatch(G,read),SCAN_DEADLINES.local,'Local catalogue',()=>invalidateCatalogRead(G)));check();
+    budget.checkpoint({...r,g:G,read,cands:rankScanCandidates(G,r.cands||[],read)});
     if(!r.cands.some(c=>textVerifiedMatch(G,c,read))&&nameCandidates(G,read.name).length){
-      try{const remote=await trace.stage('remoteOriginal',()=>scanDeadline(()=>match(G,{...read},lang,false,progress,entry.defaultsByGame?.[G]||{}),SCAN_DEADLINES.remote,'Original photo lookup'));r={...r,cands:uniquePrintings([...r.cands,...remote.cands].sort((a,b)=>Number(!!b.exact)-Number(!!a.exact))),tried:[...(r.tried||[]),...(remote.tried||[])]};}
-      catch(e){if(e.code==='SCAN_TIMEOUT')throw e;}
+      try{const remote=await budget.lookup(scanQueryKey(G,read),()=>trace.stage('remoteOriginal',()=>boundedMatch(G,read,lang,progress,entry.defaultsByGame?.[G]||{},active,budget)));r={...r,cands:uniquePrintings([...r.cands,...remote.cands].sort((a,b)=>Number(!!b.exact)-Number(!!a.exact))),tried:[...(r.tried||[]),...(remote.tried||[])]};}
+      catch(e){if(e.code==='SCAN_TIMEOUT'||e.code==='SCAN_BUDGET'||e.code==='SCAN_CANCELED')throw e;}
     }
     check();
     if(prior?.g===G)r.cands=uniquePrintings([...r.cands,...(prior.cands||[])].sort((a,b)=>Number(!!b.exact)-Number(!!a.exact)));
-    return {...r,g:G,read,cands:rankScanCandidates(G,r.cands,read)};
+    return budget.checkpoint({...r,g:G,read,cands:rankScanCandidates(G,r.cands,read)});
   };
-  const probeOrientations=async(packet,prior,entry,progress,trace,active)=>{
+  const probeOrientations=async(packet,prior,entry,progress,trace,active,budget)=>{
     const proposal=packet.proposal,lang=entry.ocrLang||'eng';
     if(!proposal?.quad)return prior;
     // This view is a hypothesis only, even for an unsafe art-window outline.
@@ -788,10 +875,10 @@ export function registerScanner(ctx) {
     for(const turn of turns){
       if(!active())throw Error('Reading interrupted · retry');
       progress('Checking card orientation…');const view=rotateCapture(native,turn),w=await getWorker(lang,progress);
-      const name=await trace.stage('ocrOrientationName',()=>recog(w,regionCanvas(view,[.02,.01,.96,.14],2.5)));
+      const name=await trace.stage('ocrOrientationName',()=>recog(w,regionCanvas(view,[.02,.01,.96,.14],2.5),6,budget));
       const G=detectGame(name)||prior.g||entry.game,L=LAYOUT[G];
-      const code=await trace.stage('ocrOrientationCode',()=>recog(w,regionCanvas(view,L.code,3)));
-      const pass=L.pass?await trace.stage('ocrOrientationPasscode',()=>recog(w,regionCanvas(view,L.pass,3))):'';
+      const code=await trace.stage('ocrOrientationCode',()=>recog(w,regionCanvas(view,L.code,3),6,budget));
+      const pass=L.pass?await trace.stage('ocrOrientationPasscode',()=>recog(w,regionCanvas(view,L.pass,3),6,budget)):'';
       reads.push({g:G,name,code:joinReads(code,pass)});
     }
     const plausible=reads.filter(r=>nameCandidates(r.g,r.name).length&&(r.g==='ptcg'?ptcgNumbers(r.code).length:r.g==='ygo'?ygoSetCodes(r.code).length:mtgCollector(r.code)));
@@ -800,15 +887,15 @@ export function registerScanner(ctx) {
     // Different plausible games/orientations are not a license to pick one.
     if(plausible.some(r=>r.g!==G))return {...prior,cands:prior.cands.map(c=>({...c,exact:false}))};
     const old=prior.g===G?prior.read||{}:{},sameGame=reads.filter(r=>r.g===G);
-    const read={...old,name:[...fullCardNameHints(G,old.full),...sameGame.map(r=>r.name),old.name].filter(Boolean).join('\n'),code:joinReads(old.code,...sameGame.map(r=>r.code))};
+    const read={...old,name:[...fullCardNameHints(G,old.full),...sameGame.map(r=>r.name),old.name].filter(Boolean).join('\n'),code:joinReads(old.code,...sameGame.map(r=>r.code)),titles:[...(old.titles||[]),...sameGame.map(r=>({text:r.name,source:'orientation',confidence:null}))]};
     let r=await trace.stage('localOrientation',()=>scanDeadline(()=>localScanMatch(G,read),SCAN_DEADLINES.local,'Local catalogue',()=>invalidateCatalogRead(G)));
     if(!r.cands.some(c=>textVerifiedMatch(G,c,read))){
-      const remote=await trace.stage('remoteOrientation',()=>scanDeadline(()=>match(G,{...read},lang,false,progress,entry.defaultsByGame?.[G]||{}),SCAN_DEADLINES.remote,'Orientation lookup'));
+      const remote=await budget.lookup(scanQueryKey(G,read),()=>trace.stage('remoteOrientation',()=>boundedMatch(G,read,lang,progress,entry.defaultsByGame?.[G]||{},active,budget)));
       r={...r,cands:uniquePrintings([...r.cands,...remote.cands].sort((a,b)=>Number(!!b.exact)-Number(!!a.exact))),tried:[...(r.tried||[]),...(remote.tried||[])]};
     }
     if(!active())throw Error('Reading interrupted · retry');
     if(prior.g===G)r.cands=uniquePrintings([...r.cands,...prior.cands].sort((a,b)=>Number(!!b.exact)-Number(!!a.exact)));
-    return {...r,g:G,read,cands:rankScanCandidates(G,r.cands,read)};
+    return budget.checkpoint({...r,g:G,read,cands:rankScanCandidates(G,r.cands,read)});
   };
   const captureBuffer=[];
   let draining=false;
@@ -823,13 +910,16 @@ export function registerScanner(ctx) {
   // remains independent, so a rejected crop or retry never starts from art-only pixels.
   const cardForCapture=packet=>packet.proposal?.quad&&packet.proposal.cropSafe===true?flattenCapture(packet.original,padQuad(packet.proposal.quad,packet.original.width,packet.original.height),packet.proposal):packet.original;
   const process = async (packet, entryId) => {
-    const st=s(),ticket=++scanTicket,trace=createScanTrace(),visitCurrent=scanCurrent();
+    const processingAt=clockNow(),st=s(),ticket=++scanTicket,baseTrace=createScanTrace(),budget=packet.budget||createScanBudget(),visitCurrent=scanCurrent();
+    budget.begin();budget.beginRevision(packet.refinement===true);budget.latest=null;
+    const trace={timings:baseTrace.timings,counts:baseTrace.counts,stage:(name,fn)=>budget.stage(baseTrace,name,fn),finish:()=>({...baseTrace.finish(),budget:budget.counts})};
     const entry=loadBatch().find(x=>x.id===entryId);
     if(!entry||packet.captureRevision!==entry.captureRevision)return;
     const current=()=>visitCurrent()&&ticket===scanTicket&&loadBatch().some(x=>x.id===entryId&&x.captureRevision===entry.captureRevision);
+    budget.bindCurrent(current);
     trace.timings.queueWaitMs=Math.max(0,clockNow()-packet.queuedAt);
     trace.timings.captureMs=Math.max(0,packet.captureMs||0);trace.timings.geometryMs=Math.max(0,packet.detectMs||0);trace.timings.frameAnalysisMs=Math.max(0,packet.frameAnalysisMs||0);trace.timings.firstEligibleToAcceptedMs=Math.max(0,packet.firstEligibleToAcceptedMs||0);trace.timings.stableMs=Math.max(0,packet.stableMs||0);trace.timings.persistMs=Math.max(0,packet.persistMs||0);
-    st.shot=entry.originalShot||entry.shot;st.busy=true;st.lensUrl='';st.cands=[];st.read=null;st.confirm=null;
+    st.supplement=null;st.shot=entry.originalShot||entry.shot;st.busy=true;st.lensUrl='';st.cands=[];st.read=null;st.confirm=null;
     updatePending(entry.id,{status:'reading'});render();
     let status='unresolved',recognitionError='';
     try {
@@ -837,17 +927,21 @@ export function registerScanner(ctx) {
       const snapshots=entry.defaultsByGame||{[entry.game]:{...loadPrefs(entry.game),...entry.defaults}};
       let r;
       const progress=m=>{if(current())setStatus(m);};
+      const checkpoint=budget.checkpoint.bind(budget);budget.checkpoint=result=>{if(result.cands?.length&&trace.timings.firstCandidateMs==null)trace.timings.firstCandidateMs=clockNow()-(packet.processingAt||processingAt);return checkpoint(result);};
       try {
         const rawFirst=entry.originalOnly||entry.geometryUncertain||packet.proposal?.cropSafe===false;
-        r=rawFirst?await readOriginalEvidence(packet.original,null,entry,progress,trace,current):await readFlow(card,entry.game,snapshots,entry.ocrLang||'eng',progress,trace,current);
-        if(!r.cands.some(c=>textVerifiedMatch(r.g,c,r.read))&&packet.proposal?.quad&&!rawFirst)r=await readOriginalEvidence(packet.original,r,entry,progress,trace,current);
+        r=rawFirst?await readOriginalEvidence(packet.original,null,entry,progress,trace,current,budget):await readFlow(card,entry.game,snapshots,entry.ocrLang||'eng',progress,trace,current,budget);
+        if(!r.cands.some(c=>textVerifiedMatch(r.g,c,r.read))&&packet.proposal?.quad&&!rawFirst)r=await readOriginalEvidence(packet.original,r,entry,progress,trace,current,budget);
         // Only failed orientation hypotheses get minimal name/footer probes:
         // 90° and 270° for native landscape, 180° for unverified portrait.
-        if(!r.cands.some(c=>textVerifiedMatch(r.g,c,r.read))&&packet.proposal?.orientation?.status==='unverified')r=await probeOrientations(packet,r,entry,progress,trace,current);
+        if(!r.cands.some(c=>textVerifiedMatch(r.g,c,r.read))&&packet.proposal?.orientation?.status==='unverified')r=await probeOrientations(packet,r,entry,progress,trace,current,budget);
       }
-      catch(e){recognitionError=e.message||'Reading failed. Capture saved for retry.';r={g:entry.game,read:{},cands:[],tried:[]};}
+      catch(e){recognitionError=e.message||'Reading failed. Capture saved for retry.';r=budget.latest||r||{g:entry.game,read:{},cands:[],tried:[]};r={...r,cands:r.cands.map(c=>({...c,exact:false}))};}
       if(!current())return;
-      const G=r.g||entry.game,read=r.read||{},scanPrefs=snapshots[G]||entry.defaults||{};
+      const G=r.g||entry.game;
+      if(entry.initialEvidence){entry.refinementEvidence={game:G,read:r.read||{},cands:r.cands||[]};updatePending(entry.id,{refinementEvidence:entry.refinementEvidence});r=supplementScanEvidence(entry.initialEvidence,{...r,g:G});}
+      const read=r.read||{};
+      const scanPrefs=snapshots[G]||entry.defaults||{};
       if(!r.cands.some(c=>textVerifiedMatch(G,c,read))&&!recognitionError){
         const local=await trace.stage('artwork',()=>scanDeadline(()=>localArtwork(card,G),SCAN_DEADLINES.artwork,'Artwork lookup')).catch(()=>null);
         if(local)r=recoverScanCandidates(G,r,local,read);
@@ -855,17 +949,21 @@ export function registerScanner(ctx) {
       if(!current())return;
       r.cands=uniquePrintings(rankScanCandidates(G,r.cands,read)).map(c=>textVerifiedMatch(G,c,read)?c:{...c,exact:false});
       if(r.cands.filter(c=>c.exact).length>1)r.cands=r.cands.map(c=>({...c,exact:false}));
-      const detailed=await trace.stage('hydration',()=>settleLimited(r.cands.slice(0,3),c=>c.localReference?scanDeadline(()=>hydrateCandidate(G,c,{identityOnly:true}),SCAN_DEADLINES.hydration,'Card details'):c,2));
-      if(detailed.some(x=>x.status==='rejected'&&x.reason?.code==='SCAN_TIMEOUT'))throw Error('Card details timed out. Capture saved for retry.');
+      const hydrationControl=budget.adapterControl(current);
+      const detailed=budget.expired||budget.remaining<=0?r.cands.slice(0,3).map(c=>({status:'fulfilled',value:{...c,exact:false}})):await trace.stage('hydration',()=>settleLimited(r.cands.slice(0,3),c=>{hydrationControl.check();return c.localReference?scanDeadline(()=>hydrateCandidate(G,c,{identityOnly:true,control:hydrationControl}),SCAN_DEADLINES.hydration,'Card details',()=>hydrationControl.cancel()):c;},2)).catch(e=>{recognitionError=e.message;return r.cands.slice(0,3).map(c=>({status:'fulfilled',value:{...c,exact:false}}));});
+      hydrationControl.cancel();
       r.cands=rankScanCandidates(G,detailed.map((x,i)=>x.status==='fulfilled'?x.value:{...r.cands[i],exact:false}).filter(Boolean),read);
       if(!current())return;
       const resolved=resolvedEntry(entry,G,r.cands,read,c=>textVerifiedMatch(G,c,read),scanPrefs);
-      if(entry.geometryUncertain&&resolved.status==='ready'){resolved.status='review';resolved.reason='Check the whole captured card';}
+      if(entry.initialEvidence){resolved.status=resolved.cands.length?'review':'unresolved';resolved.reason='Clearer frame added · compare with original';resolved.printingVerified=false;resolved.finish='';}
+      if(resolved.cands.some(c=>c.identityConflict)){resolved.reason='Check card identity and printing';resolved.printingVerified=false;resolved.finish='';resolved.status='review';}
+      if((entry.geometryUncertain||recognitionError)&&resolved.status==='ready'){resolved.status='review';resolved.reason='Check the whole captured card';}
       status=resolved.status;updatePending(entry.id,{...resolved,error:recognitionError});
+      if(captureLock?.id===entry.id&&captureLock.revision===entry.captureRevision){captureLock.status=status;captureLock.settledAt=Date.now();}
       st.tried=r.tried||[];
-      st.status=resolved.status==='ready'?`${resolved.cands[0].name} · ${GAME_LABEL[G]} printing ready.`:resolved.status==='review'?`${resolved.cands[0].name} captured. Check ${resolved.printingVerified?'finish':'printing'} later.`:'Capture saved. Keep scanning; retry this card later.';
+      st.status=resolved.status==='ready'?`${resolved.cands[0].name} · ${GAME_LABEL[G]} printing ready.`:resolved.status==='review'?`${resolved.cands[0].name} captured. Check ${resolved.cands.some(c=>c.identityConflict)?'card identity':resolved.printingVerified?'finish':'printing'} later.`:'Capture saved. Keep scanning; retry this card later.';
       lockMsg='Queued. Next card';
-    }catch(e){if(current()){recognitionError=String(e.message||e);updatePending(entry.id,{status:'unresolved',reason:'Retry this capture',error:recognitionError});st.status='Capture saved for retry. Keep scanning.';}}
+    }catch(e){if(current()){recognitionError=String(e.message||e);updatePending(entry.id,{status:'unresolved',reason:'Retry this capture',error:recognitionError});if(captureLock?.id===entry.id&&captureLock.revision===entry.captureRevision){captureLock.status='unresolved';captureLock.settledAt=Date.now();}st.status='Capture saved for retry. Keep scanning.';}}
     finally {
       const measured=trace.finish();
       if(current()){
@@ -874,7 +972,7 @@ export function registerScanner(ctx) {
         // OCR text, preference values or network telemetry are recorded here.
         (st.diagnostics ||= []).push({status,...measured});st.diagnostics.splice(0,Math.max(0,st.diagnostics.length-64));
         st.busy=false;render();
-      }else if(loadBatch().some(x=>x.id===entry.id&&x.captureRevision===entry.captureRevision&&x.status==='reading'))updatePending(entry.id,{status:'unresolved',reason:'Reading interrupted · retry',...measured});
+      }else {if(loadBatch().some(x=>x.id===entry.id&&x.captureRevision===entry.captureRevision&&x.status==='reading'))updatePending(entry.id,{status:'unresolved',reason:'Reading interrupted · retry',...measured});if(visitCurrent()&&ticket===scanTicket){st.busy=false;render();}}
     }
   };
   const drainCaptures=async()=>{
@@ -899,13 +997,16 @@ export function registerScanner(ctx) {
     if(suspended)return false;
     if(captureBuffer.length>=CAPTURE_BUFFER_LIMIT&&!captureBuffer.some(x=>x.id===replaceId))return rejectCapture('Reading queue full. Hold this card a moment.');
     const before=loadBatch(),prior=replaceId&&before.find(x=>x.id===replaceId);
+    if(capture.refinement&&(!prior||!canRefineCapture(captureLock,prior,capture,{paused:!!(s().confirm||s().reviewRequested||s().batchSaving),sourceSignature:sourceLockSignature(source.original,captureLock?.region)})))return false;
     if(!prior&&before.length>=BATCH_LIMIT)return rejectCapture('Batch full. Save or review some cards to continue.');
     if(s().storageBlockedAt!=null&&before.length>=s().storageBlockedAt&&Date.now()<(s().storageBlockedUntil||0))return rejectCapture('Storage full. This card is not queued. Save or review the current batch first.');
     const started=clockNow(),packet=source.original?freezeCapture(source.original,source.proposal):freezeCapture(source),G=prior?.game||capture.selectedGame||game(),snapshots=prior?.defaultsByGame||capture.defaultsByGame||capturePrefs(),p=snapshots[G]||prefs();
     // Serialize the original once at a fixed readable resolution and quality.
     // We never progressively shrink a card until it happens to fit storage.
     const originalShot=capture.originalShot||packet.original.toDataURL('image/jpeg',.86);
-    const entry=captureEntry(G,thumbnail(packet.original),p,{originalShot,proposal:packet.proposal?JSON.parse(JSON.stringify(packet.proposal)):null,defaultsByGame:JSON.parse(JSON.stringify(snapshots)),ocrLang:prior?.ocrLang||capture.ocrLang||scanLang(),capturedAt:capture.at||Date.now(),geometryUncertain:capture.geometryUncertain===true,originalOnly:capture.originalOnly===true,captureRevision:globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random()}`});
+    if(capture.refinement&&originalShot===prior.originalShot){captureLock.refinementIdentical=true;return false;}
+    const budget=capture.refinement?captureLock.budget:createScanBudget();
+    const entry=captureEntry(G,thumbnail(packet.original),p,{originalShot:capture.refinement?prior.originalShot:originalShot,...(capture.refinement?{refinementShot:originalShot,initialEvidence:{game:prior.game,read:prior.read||{},cands:prior.cands||[],proposal:prior.proposal},refinementEvidence:{game:prior.game,read:{},cands:[]},shot:prior.shot}:{}),proposal:packet.proposal?JSON.parse(JSON.stringify(packet.proposal)):null,defaultsByGame:JSON.parse(JSON.stringify(snapshots)),ocrLang:prior?.ocrLang||capture.ocrLang||scanLang(),capturedAt:capture.at||Date.now(),geometryUncertain:capture.geometryUncertain===true,originalOnly:capture.originalOnly===true,captureRevision:globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random()}`,captureIntent:capture.automatic?'automatic':'manual',refinementCount:capture.refinement?(prior.refinementCount||0)+1:0});
     if(prior)Object.assign(entry,{id:prior.id,qty:prior.qty,condition:prior.condition,lang:prior.lang,location:prior.location});
     const next=prior?before.map(x=>x.id===replaceId?entry:x):[...before,entry],capacity=captureCapacity(next,originalShot);
     if(!capacity.ok)return rejectCapture(capacity.reason);
@@ -916,9 +1017,10 @@ export function registerScanner(ctx) {
     }
     s().storageBlockedAt=null;s().capturePause='';s().lastCard=packet.original;
     for(let i=captureBuffer.length-1;i>=0;i--)if(captureBuffer[i].id===entry.id)captureBuffer.splice(i,1);
-    captureBuffer.push({...packet,id:entry.id,captureRevision:entry.captureRevision,queuedAt:clockNow(),captureMs:clockNow()-started+(capture.captureMs||0),detectMs:capture.detectMs,frameAnalysisMs:capture.frameAnalysisMs,firstEligibleToAcceptedMs:capture.firstEligibleAt?Date.now()-capture.firstEligibleAt:0,stableMs:capture.stableMs,persistMs:clockNow()-persistStarted});s().buffered=captureBuffer.length;
-    (s().queueAnimationIds ||= []).push(entry.id);
-    feedback('ok',prefs());flash('Queued · next card');render();void drainCaptures();return true;
+    enqueueCapture.lastAccepted={id:entry.id,revision:entry.captureRevision,budget};
+    captureBuffer.push({...packet,budget,refinement:capture.refinement===true,id:entry.id,captureRevision:entry.captureRevision,queuedAt:clockNow(),captureMs:clockNow()-started+(capture.captureMs||0),detectMs:capture.detectMs,frameAnalysisMs:capture.frameAnalysisMs,firstEligibleToAcceptedMs:capture.firstEligibleAt?Date.now()-capture.firstEligibleAt:0,stableMs:capture.stableMs,persistMs:clockNow()-persistStarted});s().buffered=captureBuffer.length;
+    if(!capture.refinement)(s().queueAnimationIds ||= []).push(entry.id);
+    feedback('ok',prefs());flash(capture.refinement?'Clearer frame · same capture':'Queued · next card');render();void drainCaptures();return true;
   };
   ctx.enqueueCapture=enqueueCapture;
 
@@ -935,23 +1037,28 @@ export function registerScanner(ctx) {
     // Freeze once, then derive detection, quality, signature and crop coordinates
     // from these exact pixels. No subsequent draw from the advancing video.
     const freezeAt=clockNow(),frame=freezeCapture(v).original,frameMs=clockNow()-freezeAt,fw=frame.width,fh=frame.height;
-    const cover=Math.max(v.clientWidth/fw,v.clientHeight/fh),sw=Math.min(fw,v.clientWidth/cover),sh=Math.min(fh,v.clientHeight/cover),sx=(fw-sw)/2,sy=(fh-sh)/2,scale=Math.min(SCAN_ANALYSIS_SIZE.width/sw,SCAN_ANALYSIS_SIZE.height/sh),W=Math.round(sw*scale),H=Math.round(sh*scale),c=(loop.c ||= document.createElement("canvas"));
-    c.width=W;c.height=H;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(frame,sx,sy,sw,sh,0,0,W,H);
-    const detectorStarted=clockNow(),pixels=x.getImageData(0,0,W,H),found=detectCardQuad(pixels.data,W,H);loop.detectMs=clockNow()-detectorStarted;
+    const detectorStarted=clockNow(),observations=analysisRegions(fw,fh,v.clientWidth,v.clientHeight,SCAN_ANALYSIS_SIZE).map(region=>{
+      const c=(loop.canvases ||= {})[region.kind] ||= document.createElement('canvas');
+      c.width=region.width;c.height=region.height;const x=c.getContext('2d',{willReadFrequently:true});
+      x.drawImage(frame,region.x,region.y,region.w,region.h,0,0,c.width,c.height);
+      const pixels=x.getImageData(0,0,c.width,c.height);
+      return {region,pixels,proposal:detectCardQuad(pixels.data,c.width,c.height)};
+    });
+    const found=selectSensorProposal(observations,fw,fh);loop.detectMs=clockNow()-detectorStarted;
     let m={edges:0,sharp:0,glare:0,bright:100,motion:0};
     if(found){
-      const next=found.quad.map(p=>({x:p.x/scale+sx,y:p.y/scale+sy}));
-      const geometryMotion=loop.quad?next.reduce((n,p,i)=>n+Math.hypot(p.x-loop.quad[i].x,p.y-loop.quad[i].y),0)/4/Math.hypot(sw,sh):1;
-      loop.geometryMotion=geometryMotion;loop.quad=next;loop.quadAt=Date.now();loop.proposal={...found,quad:next,alternatives:found.alternatives?.map(p=>({...p,quad:p.quad.map(q=>({x:q.x/scale+sx,y:q.y/scale+sy}))}))};
-      const qualityQuad=found.outputWidth>found.outputHeight?[found.quad[3],found.quad[0],found.quad[1],found.quad[2]]:found.quad;
+      const next=found.quad,analysis=found.analysis,observed=observations.find(o=>o.region===analysis.region),pixels=observed.pixels,W=observed.region.width,H=observed.region.height;
+      const geometryMotion=loop.quad?next.reduce((n,p,i)=>n+Math.hypot(p.x-loop.quad[i].x,p.y-loop.quad[i].y),0)/4/Math.hypot(fw,fh):1;
+      loop.geometryMotion=geometryMotion;loop.quad=next;loop.quadAt=Date.now();loop.proposal=found;
+      const qualityQuad=found.outputWidth>found.outputHeight?[analysis.quad[3],analysis.quad[0],analysis.quad[1],analysis.quad[2]]:analysis.quad;
       const normalized=warpPixels(pixels.data,W,H,qualityQuad,120,168),quality=normalizedQuality(normalized,120,168);
-      m={edges:found.edges??0,sharp:Math.min(quality.nameSharp,quality.codeSharp),bright:quality.bright,glare:Math.max(quality.nameSharp<T.sharp?quality.nameGlare:0,quality.codeSharp<T.sharp?quality.codeGlare:0),motion:Math.max(prevGray?sigDiff(quality.gray,prevGray):0,loop.geometryMotion*300)};prevGray=quality.gray;loop.signature=toGray(warpPixels(pixels.data,W,H,found.quad,16,22),16,22);
+      m={edges:found.edges??0,sharp:Math.min(quality.nameSharp,quality.codeSharp),nameSharp:quality.nameSharp,codeSharp:quality.codeSharp,bright:quality.bright,glare:Math.max(quality.nameSharp<T.sharp?quality.nameGlare:0,quality.codeSharp<T.sharp?quality.codeGlare:0),motion:Math.max(prevGray?sigDiff(quality.gray,prevGray):0,loop.geometryMotion*300)};prevGray=quality.gray;loop.signature=toGray(warpPixels(pixels.data,W,H,analysis.quad,16,22),16,22);
     }else {loop.quad=null;loop.proposal=null;loop.signature=null;prevGray=null;loop.bestCapture=null;}
     loop.quality=m;
-    loop.observation={original:frame,proposal:loop.proposal,frameAnalysisMs:clockNow()-freezeAt,signature:loop.signature&&Float32Array.from(loop.signature),at:Date.now(),selectedGame:game(),defaultsByGame:capturePrefs(),ocrLang:scanLang(),captureMs:frameMs,detectMs:loop.detectMs,geometryUncertain:!found||found.cropSafe!==true};
+    loop.observation={original:frame,proposal:loop.proposal,frameAnalysisMs:clockNow()-freezeAt,signature:loop.signature&&Float32Array.from(loop.signature),quality:{...m},at:Date.now(),selectedGame:game(),defaultsByGame:capturePrefs(),ocrLang:scanLang(),captureMs:frameMs,detectMs:loop.detectMs,geometryUncertain:!found||found.cropSafe!==true};
     if(!found||m.motion>=T.motion||m.sharp<T.sharp)loop.stableAt=0;else loop.stableAt ||=Date.now();
-    if (Array.isArray(window.__scanDebug)) {window.__scanDebug.push({ ...m, vw: v.videoWidth, vh: v.videoHeight });window.__scanDebug.splice(0,Math.max(0,window.__scanDebug.length-120));}
-    let st = found?.cropSafe===false?{state:'amber',icon:'◎',msg:'Show the whole card on a clear background'}:found?guideState(m, steady):{state:"red",icon:"◎",msg:"Show one clear card. No alignment needed"};
+    if (Array.isArray(window.__scanDebug)) {window.__scanDebug.push({ ...m, vw:v.videoWidth,vh:v.videoHeight,retainedWidth:fw,retainedHeight:fh,previewWidth:v.clientWidth,previewHeight:v.clientHeight,detectorPasses:observations.length,sensorOccupancy:found?.fraction||0,boundaryReason:found?.boundary?.reason||'no-proposal' });window.__scanDebug.splice(0,Math.max(0,window.__scanDebug.length-120));}
+    let st = found?.cropSafe===false?{state:'amber',icon:'◎',msg:'Show the whole card on a clear background'}:found?guideState(m, steady):{state:"red",icon:"◎",msg:"Show the whole card, including its name and bottom edge"};
     steady = st.state === "green" || (st.state === "amber" && st.msg === "Hold steady…") ? steady + 1 : 0;
     // After an add, wait for a different card (or the card to leave) before capturing again.
     // One automatic capture per card: wait for a different card (or the card to leave) first.
@@ -961,7 +1068,18 @@ export function registerScanner(ctx) {
     if (captureLock) {
       const signature=sourceLockSignature(frame,captureLock.region);
       if(observeCaptureLock(captureLock,signature,{paused:capacityPaused,missing:m.edges<2,geometrySignature:loop.signature,geometryComparable:captureLock.cropSafe&&found?.cropSafe===true})){captureLock=null;loop.bestCapture=null;steady=0;greenSince=0;}
-      else if (st.state === "green") st = { state: "green", icon: "✓", msg: s().busy ? "Reading card…" : lockMsg };
+      else {
+        const waiting=captureLock.automatic&&['unresolved','review'].includes(captureLock.status)&&!captureLock.refined&&!captureLock.refinementIdentical&&!captureLock.reviewTouched&&Date.now()-(captureLock.settledAt||0)<=SCAN_LIMITS.refinementWindowMs&&captureLock.budget?.remaining>=2500&&captureLock.budget?.availableOCR>=2;
+        const reason=waiting?'Saved. Hold steady with less glare for one clearer frame':captureLock.status==='unresolved'||captureLock.status==='review'?'Saved for review. Use Scan again to retry, or move to the next card':lockMsg;
+        st={state:st.state,icon:st.icon,msg:s().busy?'Reading card…':reason};
+        if(allowAuto&&s().auto!==false&&!capacityPaused&&waiting&&steady>=T.greenFrames){
+          const entry=loadBatch().find(row=>row.id===captureLock.id);
+          if(canRefineCapture(captureLock,entry,loop.observation,{sourceSignature:signature})){
+            const refinement={...loop.observation,automatic:true,refinement:true};
+            if(enqueueCapture(refinement,entry.id,refinement)){captureLock.refined=true;captureLock.revision=enqueueCapture.lastAccepted.revision;captureLock.status='reading';loop.bestCapture=null;st={state:'green',icon:'✓',msg:'Reading a clearer frame · same capture'};}
+          }
+        }
+      }
     }
     loop.observation.frameAnalysisMs=clockNow()-freezeAt;
     if(loop.bestCapture&&(!canReuseCapture(loop.bestCapture,loop.signature,loop.geometryMotion)||m.motion>=T.motion||loop.bestCapture.selectedGame!==loop.observation.selectedGame||loop.bestCapture.ocrLang!==loop.observation.ocrLang||JSON.stringify(loop.bestCapture.defaultsByGame)!==JSON.stringify(loop.observation.defaultsByGame)))loop.bestCapture=null;
@@ -975,9 +1093,10 @@ export function registerScanner(ctx) {
     else if(rowCount>=BATCH_LIMIT)st={state:'amber',icon:'…',msg:'Batch full. Save or review to continue.'};
     else if(s().capturePause&&/storage|too large/i.test(s().capturePause))st={state:'amber',icon:'…',msg:s().capturePause};
     s().guide = st;
-    s().boundaryReady=!!found&&found.cropSafe===true; // Internal capture state only: no visible outline or mask.
+    s().boundaryReady=!!found&&found.cropSafe===true; // Internal capture state only; the static decorative guide is independent.
     const el = document.getElementById("camStatus");
-    if (el) {
+    if (el && (el.dataset.guideState!==st.state || el.dataset.guideMessage!==st.msg)) {
+      el.dataset.guideState=st.state;el.dataset.guideMessage=st.msg;
       el.className = "cam-status " + st.state;
       el.innerHTML = `<i class="cam-dot" aria-hidden="true"></i>${esc(st.msg)}`;
     }
@@ -999,7 +1118,12 @@ export function registerScanner(ctx) {
     const v = videoEl;
     if (v.srcObject !== stream) v.srcObject = stream;
     if (v.paused) v.play?.().catch(() => {});
-    if(!loopTimer)loopTimer = setInterval(loop, 160);
+    if(!loopTimer){
+      // No interval backlog: detection is synchronous and each next observation
+      // is scheduled only after it finishes, with a minimum UI input/paint gap.
+      const tick=()=>{const started=clockNow();loop();if(loopTimer&&stream)loopTimer=setTimeout(tick,Math.max(40,160-(clockNow()-started)));};
+      loopTimer=setTimeout(tick,160);
+    }
   };
   const capture = (automatic=false) => {
     const v = document.getElementById("scanVideo");
@@ -1012,9 +1136,9 @@ export function registerScanner(ctx) {
     if(!automatic&&captureLock&&Date.now()-(s().lastCaptureAt||0)<600&&sigDiff(captureLock.signature,sourceLockSignature(candidate.original,captureLock.region))<9)return;
     const nextLock=acceptedCaptureLock(candidate);
     greenSince = 0;
-    if(enqueueCapture(candidate,s().retryBatchId||"",candidate)){
+    if(enqueueCapture(candidate,s().retryBatchId||"",{...candidate,automatic})){
       s().retryBatchId="";s().lastCaptureAt=Date.now();
-      captureLock=nextLock;loop.bestCapture=null;lockMsg="Captured. Next card";
+      captureLock={...nextLock,...enqueueCapture.lastAccepted,automatic,quality:{...candidate.quality},status:'captured',refined:false};loop.bestCapture=null;lockMsg="Captured. Next card";
     }
   };
   A.scanStart = async () => {
@@ -1173,7 +1297,7 @@ export function registerScanner(ctx) {
     const q = (document.getElementById(s().confirm ? "scanMatchName" : "scanName")?.value || "").trim();
     if (!q) return toast("Type the card name.");
     const st = s(),G=game(),current=scanCurrent();
-    st.lookup=true;
+    st.lookup=true;st.supplement=null;
     setStatus("Looking it up…");
     let r;
     try {r=await match(G, { name: q, code: q, full: "" }, scanLang(), true, m=>{if(current())setStatus(m);});}
@@ -1190,15 +1314,16 @@ export function registerScanner(ctx) {
     render();
   };
   const hydration=new Map();
-  const hydrateCandidate=(G,c,{identityOnly=false}={})=>{
+  const hydrateCandidate=(G,c,{identityOnly=false,control=null}={})=>{
     if(!c.localReference&&(!c.detailsOnly||identityOnly))return Promise.resolve(c);
     const key=JSON.stringify([G,c.id,c.print||'',c.setReleaseId||c.releaseName||'',!!c.setReleaseUnverified,identityOnly]);
     if(!hydration.has(key))hydration.set(key,(async()=>{
       for(let attempt=0;attempt<2;attempt++)try{
-        const full=await scanDeadline(()=>ctx.candById?.(G,c.id,c.why,c.exact,{identityOnly,print:c.print||'',releaseName:c.releaseName||'',setReleaseId:c.setReleaseId||'',setReleaseUnverified:!!c.setReleaseUnverified,printingAmbiguous:!!c.printingAmbiguous}),identityOnly?SCAN_DEADLINES.hydration:SCAN_DEADLINES.ocr,'Card details');
+        control?.check();const load=()=>ctx.candById?.(G,c.id,c.why,c.exact,{identityOnly,print:c.print||'',releaseName:c.releaseName||'',setReleaseId:c.setReleaseId||'',setReleaseUnverified:!!c.setReleaseUnverified,printingAmbiguous:!!c.printingAmbiguous});
+        const full=await scanDeadline(()=>control?control.run(JSON.stringify(['hydration',key]),load):load(),identityOnly?SCAN_DEADLINES.hydration:SCAN_DEADLINES.ocr,'Card details',()=>control?.cancel());control?.check();
         if(!full?.card || String(full.card.id)!==String(c.card?.id||c.id) || scanNameKey(full.name)!==scanNameKey(c.name))throw Error("Card details are unavailable. Connect and try again.");
-        return {...full,exact:c.exact===true&&full.exact!==false,print:c.print||full.print,sub:full.sub||c.sub,releaseName:c.releaseName||full.releaseName||'',setReleaseId:Object.hasOwn(full,'setReleaseId')?full.setReleaseId:c.setReleaseId||'',setReleaseUnverified:Object.hasOwn(full,'setReleaseUnverified')?full.setReleaseUnverified:!!c.setReleaseUnverified,printingAmbiguous:!!(c.printingAmbiguous||full.printingAmbiguous),localReference:false};
-      }catch(e){if(attempt===1||e.code==='SCAN_TIMEOUT')throw e;await new Promise(resolve=>setTimeout(resolve,250));}
+        return {...full,...(c.identitySource?{identitySource:c.identitySource}:{}),...(c.identityConflict?{identityConflict:true}:{}),...(c.identifierConflict?{identifierConflict:true}:{}),...(c.signalConflict?{signalConflict:true}:{}),exact:c.exact===true&&full.exact!==false,print:c.print||full.print,sub:full.sub||c.sub,releaseName:c.releaseName||full.releaseName||'',setReleaseId:Object.hasOwn(full,'setReleaseId')?full.setReleaseId:c.setReleaseId||'',setReleaseUnverified:Object.hasOwn(full,'setReleaseUnverified')?full.setReleaseUnverified:!!c.setReleaseUnverified,printingAmbiguous:!!(c.printingAmbiguous||full.printingAmbiguous),localReference:false};
+      }catch(e){if(attempt===1||/^SCAN_/.test(e.code||''))throw e;await new Promise(resolve=>setTimeout(resolve,250));}
     })().finally(()=>hydration.delete(key)));
     return hydration.get(key);
   };
@@ -1210,18 +1335,19 @@ export function registerScanner(ctx) {
   A.scanCatalogRemove=async()=>{const current=scanCurrent();await removeCatalog(game());if(current()){toast("Recognition text pack removed. Your collection is unchanged.");render();}};
   const persistReview=()=>{
     const q=s().confirm;if(!q?.batchId)return;
-    updatePending(q.batchId,{qty:q.qty,condition:q.condition,lang:q.lang,finish:q.finish,selectedIndex:q.i});
+    updatePending(q.batchId,{qty:q.qty,condition:q.condition,lang:q.lang,finish:q.finish,selectedIndex:q.i,cands:s().cands});
   };
   const resetConfirmation = (message) => {
-    Object.assign(s(),{confirm:null,cands:[],read:null,status:message});
+    Object.assign(s(),{confirm:null,supplement:null,cands:[],read:null,status:message});
     lockMsg=message;greenSince=0;render();void drainCaptures();
   };
   const openBatchReview=(id='')=>{
     const rows=loadBatch(),entry=rows.find(x=>x.id===id)||rows.find(x=>!['ready','reading','captured'].includes(x.status))||rows[0];
     if(!entry)return;
+    updatePending(entry.id,{reviewTouched:true});if(captureLock?.id===entry.id)captureLock.reviewTouched=true;
     if(s().busy){s().reviewRequested=entry.id;setStatus('Finishing this read, then opening review.');return;}
-    const cands=entry.cands||[],i=Number.isInteger(entry.selectedIndex)?entry.selectedIndex:(cands.length===1?0:-1),c=cands[i],G=entry.game;
-    Object.assign(s(),{shot:entry.originalShot||entry.shot,cands,read:entry.read||{},confirm:{batchId:entry.id,captureRevision:entry.captureRevision||'',game:G,i,qty:entry.qty||1,condition:entry.condition||'Near Mint',lang:entry.lang||'en',finish:entry.finish||'',price:c&&entry.finish?priceFor(G,c,entry.finish,entry):null,saving:false,error:'',unresolved:!cands.length}});
+    const cands=entry.cands||[],i=initialReviewIndex(entry),c=cands[i],G=entry.game;
+    Object.assign(s(),{shot:entry.originalShot||entry.shot,supplement:entry.refinementShot?{original:entry.originalShot,clearer:entry.refinementShot}:null,cands,read:entry.read||{},confirm:{batchId:entry.id,captureRevision:entry.captureRevision||'',game:G,i,qty:entry.qty||1,condition:entry.condition||'Near Mint',lang:entry.lang||'en',finish:entry.finish||'',price:c&&entry.finish?priceFor(G,c,entry.finish,entry):null,saving:false,error:'',unresolved:!cands.length}});
     render();requestReviewPrice();
   };
   A.scanBatchReview=t=>{if(!s().batchSaving&&!s().confirm?.saving)openBatchReview(t?.dataset?.id||'');};
@@ -1232,7 +1358,7 @@ export function registerScanner(ctx) {
   A.scanEditMatch=()=>{const q=s().confirm;if(q&&!q.saving){q.editing=!q.editing;render();}};
   A.scanChoose=t=>{
     const q=s().confirm,i=Number(t.dataset.i),c=s().cands?.[i],G=q?.game||game();
-    if(q&&!q.saving&&c){q.i=i;q.editing=false;const entry=q.batchId&&loadBatch().find(x=>x.id===q.batchId);q.finish=resolveScanFinish(G,c,entry?.defaultsByGame?.[G]||entry?.defaults||loadPrefs(G),s().read);q.price=q.finish?priceFor(G,c,q.finish,q):null;persistReview();render();requestReviewPrice();}
+    if(q&&!q.saving&&c){c.printingConfirmed=true;q.i=i;q.editing=false;const entry=q.batchId&&loadBatch().find(x=>x.id===q.batchId);q.finish=resolveScanFinish(G,c,entry?.defaultsByGame?.[G]||entry?.defaults||loadPrefs(G),s().read);q.price=q.finish?priceFor(G,c,q.finish,q):null;persistReview();render();requestReviewPrice();}
   };
   A.scanChangePrinting=async()=>{
     const st=s(),q=st.confirm,c=st.cands?.[q?.i??0],G=q?.game||game();
@@ -1262,7 +1388,7 @@ export function registerScanner(ctx) {
   A.scanRetry=async()=>{
     const st=s(),q=st.confirm,current=scanCurrent();if(suspended||st.busy||q?.saving)return;
     const entry=loadBatch().find(x=>x.id===q?.batchId);
-    st.confirm=null;st.cands=[];st.read=null;st.retryBatchId=entry?.id||'';
+    st.confirm=null;st.supplement=null;st.cands=[];st.read=null;st.retryBatchId=entry?.id||'';
     captureLock=null;greenSince=0;steady=0;
     if(st.camOn){st.status='Show this card again, with the name and bottom code clear.';render();return;}
     // A stored capture can be retried after reconnecting, without searching a catalogue.
@@ -1291,7 +1417,7 @@ export function registerScanner(ctx) {
       await ctx.addMany(G,[{...item,location:entry?.location??loadPrefs(G).location??''}]);
       const queueSaved=!q.batchId||removeBatch(q.batchId);
       feedback('ok',loadPrefs(G));
-      if(s()===st){flash(`Saved ${item.qty} × ${c.name}`);resetConfirmation(queueSaved?'Saved. Move to the next card.':'Saved to collection. Queue update failed; retrying is safe.');}
+      if(s()===st){flash(`Saved ${item.qty} × ${c.name}`);resetConfirmation(queueSaved?'Saved. Move to the next card.':'Saved to collection. Queue update failed; retrying is safe.');showScanSaved(item);}
     }catch(e){if(s()===st){q.saving=false;q.errorDetail=String(e?.stack||e?.message||e);q.error=e.message==='Choose the exact finish / edition before saving.'?e.message:"Couldn't save this card. Your match is still here; try again.";render();}}
   };
   A.scanBatchSave=async()=>{

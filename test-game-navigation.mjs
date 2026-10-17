@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import {recordHomeDeckWork} from './home-deck-activity.js';
 import {makeAskTools} from './ai-tools.js';
 import {GAME_ROUTES,routeSegments,normalizeRoute,gameSwitchRoute,historyEntry,createNavigationQueue} from './game-navigation.js';
 const rows=[['#home','#home'],['#search','#search'],['#collection','#collection/cards'],['#collection/cards','#collection/cards'],['#collection/binders','#collection/binders'],['#collection/value','#collection/value'],['#decks','#decks/mine'],['#decks/mine','#decks/mine'],['#decks/ideas','#decks/ideas'],['#decks/inspiration','#decks/inspiration'],['#deck/source-only/cards','#decks/mine'],['#tdeck/source-only/versions','#decks/mine'],['#sets','#sets'],['#set/source-only-release','#sets'],['#scan','#scan'],['#rules','#rules'],['#settings','#settings'],['#shared/private-token','#decks/inspiration']];
@@ -33,7 +34,7 @@ function harness(game='mtg',hash='#search'){
  const history={get state(){return entries[pos].state;},replaceState(state,_title,route){entries[pos]={state:structuredClone(state),hash:route};location.hash=route;},pushState(state,_title,route){entries.splice(++pos);entries.push({state:structuredClone(state),hash:route});location.hash=route;},go(delta){pos+=delta;location.hash=entries[pos].hash;handlers.popstate();handlers.hashchange();}};
  const T={game:()=>GAME_ROUTES.includes(S.state.settings?.game)?S.state.settings.game:"mtg",isTcg:()=>S.state.settings.game!=='mtg',ui:(g=S.state.settings.game)=>UI[g],invalidateTcgSearch:g=>hooks.push('search:'+g)};
  const content={setAttribute(){}};
- const context={S,T,location,history,routeSegments,normalizeRoute,gameSwitchRoute,historyEntry,createNavigationQueue,GAMES:Object.fromEntries(GAME_ROUTES.map(g=>[g,{}])),
+ const context={settingsPopup:{historyChanged:()=>false},S,T,location,history,routeSegments,normalizeRoute,gameSwitchRoute,historyEntry,createNavigationQueue,GAMES:Object.fromEntries(GAME_ROUTES.map(g=>[g,{}])),
  document:{querySelector:()=>null,querySelectorAll:selector=>selector==='dialog[open]'&&block?[{id:'dirty'}]:[],addEventListener(){}},window:{scrollY:175,scrollTo:arg=>scrolls.push(arg),addEventListener:(name,fn)=>handlers[name]=fn},$:()=>content,
  scanCtx:{beforeGameChange:(from,to)=>{hooks.push(['before',from,to]);return !scanSaving;},afterGameChange:g=>hooks.push(['after',g])},
  commit:async fn=>{if(slow)await new Promise((resolve,reject)=>jobs.push({resolve,reject}));if(reject)throw Error('fixture disk full');fn(S.state);},
@@ -135,7 +136,7 @@ function workspaceHarness(game='mtg',hash='#collection/cards',{real=false}={}) {
  clean.decks=[{id:'same-id',name:'Magic source',format:'Standard',cards:[]}];h.S.state=validateWorkspace(clean);h.S.catalog={};
  if(real){realStore.state=h.S.state;realStore.ui=h.S.ui;Object.defineProperty(h.S,'state',{get:()=>realStore.state,set:value=>{realStore.state=value;},configurable:true});}
  const io={writes:[],reject:false,gate:null};
- Object.assign(c,{A:{},C:{},structuredClone,normalize:validateWorkspace,blank,stripCache:s=>s,STORAGE:'workspace',RECOVERY:'recovery',
+ Object.assign(c,{A:{},C:{},structuredClone,recordHomeDeckWork,normalize:validateWorkspace,blank,stripCache:s=>s,STORAGE:'workspace',RECOVERY:'recovery',
   changedConditionLots:()=>[],refreshChangedConditions(){},afterLocalSave(){},refreshSheet(){},saveCatalogSoon(){},haptic(){},flyToCollection(){},autoEnrich(){},setTimeout(){},lastActTarget:null,
   ask:async()=>true,readBackup:async()=>({next:c.imported,cache:{}}),sumQty:rows=>rows.reduce((n,r)=>n+r.qty,0),slim:x=>x,
   readRecord:async key=>structuredClone(disk.get(key)),

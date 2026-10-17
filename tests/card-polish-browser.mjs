@@ -113,6 +113,12 @@ async function ygoSelection(app){
  // Follow the reported MP25 surface through real release loading and exact
  // provider-shaped edition data; never inject the selection or price into DOM.
  await closeSheet(page);await openSet(page,'ygo',MP25.id);const starlight=await cardTile(page,'ygo',EXPECTED.ygo.edition,MP25.id);assert.equal(await starlight.getAttribute('data-rarity-flair'),'yr4');assert.equal(await starlight.getAttribute('data-tier'),'tn');
+ await select(page,'[data-change="tSetEdition"]','1st-edition');
+ assert.equal(await (await cardTile(page,'ygo',EXPECTED.ygo.edition,MP25.id)).getAttribute('data-tier'),'t0');
+ assert.match(await (await cardTile(page,'ygo',EXPECTED.ygo.edition,MP25.id)).innerText(),/\$0.54/);
+ assert.equal(await (await cardTile(page,'ygo',EXPECTED.ygo.edition,MP25.id)).getAttribute('data-rarity-flair'),'yr4','Printed rarity survives a low market-price band');
+ await capture(page,'card-polish-ygo-set-edition');
+ await select(page,'[data-change="tSetEdition"]','');
  await openCard(page,'ygo',EXPECTED.ygo.edition,{setId:MP25.id});await page.waitForFunction(id=>window.__uiTestTcg.cache.ygo[id]?.sets?.find(p=>p.code==='MP25-EN003'&&p.rarity==='Starlight Rare')?.quotes?.length===2,EXPECTED.ygo.edition);await tab(page,'prices');
  const requestedEditions=[];
  for(const [edition,label,value]of [['','edition unspecified',null],['1st-edition','1st Edition',.54],['unlimited','Unlimited',.31],['limited','Limited',null],['','edition unspecified',null]]){

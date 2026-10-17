@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-v205";
+const CACHE = "cardforge-shell-v208";
 const ASSETS = [
   "./",
   "./index.html",
@@ -8,6 +8,7 @@ const ASSETS = [
   "./printing-picker.js",
   "./scanner-printing.js",
   "./app.js",
+  "./settings-dialog.js",
   "./condition-feed.js",
   "./condition-refresh-scheduler.js",
   "./rule-learning.js",
@@ -21,6 +22,7 @@ const ASSETS = [
   "./glass-select.js",
   "./home-swipe.js",
   "./home-ui.js",
+  "./home-deck-activity.js",
   "./game-navigation.js",
   "./community-feed.js",
   "./community-art.js",
@@ -39,6 +41,7 @@ const ASSETS = [
   "./deck-optimizer.js",
   "./rule-dex.js",
   "./ygo-prices.js",
+  "./ygo-set-prices.js",
   "./engine-map.js",
   "./strategy-risk.js",
   "./sharedprices.js",

@@ -38,7 +38,7 @@ for (const g of Object.keys(decks)) {
   assert.match(shortcut, /class="home-meta"/);
   assert.match(shortcut, /data-act="go" data-to="#decks\/inspiration"/);
   assert(shortcut.includes(expected[g]));
-  assert.match(shortcut, /<h2>Deck discovery<\/h2>/);
+  assert.match(shortcut, /<h2>Community Meta decks<\/h2>/);
 }
 assert.match(featureArticle('ptcg', slideFor('ptcg'), 0, 1), /community-art-scan/);
 assert.equal(communityDeckArtwork('ptcg', { ...decks.ptcg, name: 'Mewtwo', icons: [], cover: { imageLarge: expected.ptcg } }), null, 'never borrows a generic archetype cover or a different species');
@@ -97,7 +97,7 @@ const leaf = { textContent: '' };
 const tileNode = { dataset: { homeMeta: 'ptcg' }, contains: () => false, querySelector: q => q === '.home-meta-stage' ? { contains: () => false, set innerHTML(v) { shortcut = v; } } : leaf, querySelectorAll: () => [] };
 const refreshRoot = { querySelector: q => q.includes('data-home-meta') ? tileNode : feedNode };
 await refreshHomeCommunity('ptcg', refreshRoot, { now, loadNews: async () => {}, loadDecks: async () => {}, documentRef: { body: { dataset: { view: 'home', game: 'ptcg' } }, activeElement: null } });
-assert.match(carousel, /Community spotlight/); assert.match(shortcut, /data-meta-key="ptcg"/, 'async deck arrival also refreshes the existing shortcut without a whole-page render');
+assert.match(carousel, /<h2>News<\/h2>/); assert.match(shortcut, /data-meta-key="ptcg"/, 'async deck arrival also refreshes the existing shortcut without a whole-page render');
 const css = fs.readFileSync('style.css', 'utf8');
 assert.doesNotMatch(css, /\.community-art\s*\{[^}]*display\s*:\s*none/);
 assert.match(css, /\.community-art-image\[hidden\]\s*\{ display:none; \}/);

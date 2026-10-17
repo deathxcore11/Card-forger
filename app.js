@@ -1,3 +1,5 @@
+import {createSettingsDialog} from './settings-dialog.js';
+import { normalizeHomeDeckActivity, recordHomeDeckWork } from "./home-deck-activity.js";
 import { syncGameTabs, attachGameTabs, attachHomeCommunity, refreshHomeCommunity, isHomeRevealCurrent, homeDeckReveal, refreshHomeValue, homeValueCoverage, homeMetaSnapshot } from "./home-ui.js";
 import {attachRuleLearning} from './rule-learning.js';
 import {loadConditionQuotes,applyConditionQuotes,conditionRequest,CONDITION_IDENTITY} from './condition-feed.js';
@@ -93,7 +95,7 @@ const stripCache = (s) => {
   void cache;
   return keep;
 };
-const normalize = (s) => stripCache({ ...blank(), ...validateWorkspace(s) });
+const normalize = (s) => normalizeHomeDeckActivity(stripCache({ ...blank(), ...validateWorkspace(s) }));
 
 function setSaveStatus(text, cls = "") {
   const el = $("#saveStatus");
@@ -240,7 +242,7 @@ function replaceWorkspace(next, { recovery = false, clearRecovery = false, stamp
     return true;
   });
 }
-async function commit(fn, { msg = "", recovery = false, rerender = true, enrich = true, undo = "", guard = null, navigationWrite = false } = {}) {
+async function commit(fn, { msg = "", recovery = false, rerender = true, enrich = true, undo = "", guard = null, navigationWrite = false, recordDeckWork = true } = {}) {
   const transaction = async () => {
     // Confirm against the latest committed state, without allowing another queued edit to pass.
     if (guard && !await guard(S.state)) return;
@@ -249,6 +251,7 @@ async function commit(fn, { msg = "", recovery = false, rerender = true, enrich 
     const next = structuredClone(stripCache(S.state));
     const out = fn(next);
     const valid = normalize(next);
+    if (recordDeckWork && !navigationWrite) recordHomeDeckWork(previous, valid);
     valid.lastSavedAt = new Date().toISOString();
     const records = [[STORAGE, valid]];
     if (recovery) records.unshift([RECOVERY, stripCache(S.state)]);
@@ -428,7 +431,7 @@ async function autoEnrich() {
         }
         for (const d of [...s.decks, ...(s.references || [])]) for (const c of d.cards) if (r.matched.has(key(c.name))) c.name = r.matched.get(key(c.name));
       },
-      { enrich: false },
+      { enrich: false, recordDeckWork: false },
     );
     trackValue();
     await save();
@@ -840,6 +843,7 @@ function parseHash() {
 }
 
 function go(hash) {
+  if(normalizeRoute(hash)==="#settings"){settingsPopup.open();return Promise.resolve(true);}
   if(pendingRoute && Date.now()-pendingRoute.at<500 && pendingRoute.route!==hash && pendingRoute.game===T.game()){routeTrail.push(pendingRoute);if(routeTrail.length>12)routeTrail.shift();}pendingRoute=null;
   return navigate({ game: activeEntry?.game || T.game(), hash: normalizeRoute(hash), mode: "push" });
 }
@@ -870,6 +874,7 @@ function currentRulesOrigin() {
 }
 function dismissRulesGuide() { closeRulesAsk(); dismissRuleHint(); rulesGuideOrigin = null; }
 function render() {
+  if(settingsPopup?.isOpen){settingsPopup.refresh();return;}
   if (navigationPending && !navigationInstalling) return;
   const screen = navigationStamp();
   if (rulesGuideOrigin && JSON.stringify(currentRulesOrigin()) !== JSON.stringify(rulesGuideOrigin)) dismissRulesGuide();
@@ -1214,6 +1219,7 @@ function switchGame(game) {
   return navigate({...target,mode:game===source?'replace':'push'});
 }
 function applyHistory() {
+  if(settingsPopup.historyChanged())return;
   if(!navigationReady)return;
   const hash=normalizeRoute(location.hash), known=historyEntry(history.state,hash);
   if(known?.entryId===activeEntry?.entryId)rollbackHistoryId=null;
@@ -1934,7 +1940,10 @@ A.muUndo = async (t) => {
   const d = currentDeck();
   await commit((s) => { const x = s.decks.find((y) => y.id === d.id); x.results = (x.results || []).filter((g) => g.at !== t.dataset.at); }, { msg: "Game removed." });
 };
-A.menu = () => { closeSheet(); S.ui.settingsTab="account"; go("#settings"); };
+let settingsBaseState=null;
+const settingsPopup=createSettingsDialog({beforeOpen:()=>{settingsBaseState=S.state;},dialog:$("#settingsDialog"),markup:()=>`<header class="settings-dialog-head"><div><p class="eyebrow">ALL THREE GAMES</p><h2 id="settingsDialogTitle">Settings</h2></div><button class="icon" data-act="closeSettings" aria-label="Close settings">${ICON.close||'✕'}</button></header>${V.settings({popup:true})}`,afterPaint:()=>{if(S.ui.settingsTab==='backup')storageDetail();},afterClose:scroll=>{if(settingsBaseState!==S.state)render();window.scrollTo({top:scroll,behavior:'instant'});}});
+A.menu = () => settingsPopup.open();
+A.closeSettings = () => settingsPopup.close();
 
 /* =========================================================
    Card sheet, compare, printings
@@ -2212,7 +2221,7 @@ const tourArt = () => {
     header: document.querySelector('.topbar')?.outerHTML || '', nav: document.querySelector('.bottom-nav')?.outerHTML || '',
     cssUrl: new URL('./style.css', import.meta.url).href };
 };
-A.replayTour = () => { closeSheet(); openTour(tourArt()); };
+A.replayTour = () => { settingsPopup.close(); closeSheet(); openTour(tourArt()); };
 // Ask AI: the in-app assistant. Its tools are the app's own functions, run here on the device.
 let askTools = null;
 A.askRules = (button) => {
@@ -2448,6 +2457,13 @@ A.settingsTab = (t) => {
   for (const pane of document.querySelectorAll(".settings-pane")) pane.hidden = pane.id !== "settings-" + tab;
   for (const button of document.querySelectorAll('[data-act="settingsTab"][role="tab"]')) button.setAttribute("aria-selected",String(button.dataset.id === tab));
 };
+document.addEventListener('keydown',e=>{
+  const tab=e.target.closest?.('[data-act="settingsTab"][role="tab"]');
+  if(!tab||!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
+  const tabs=[...tab.parentElement.querySelectorAll('[role="tab"]')],i=tabs.indexOf(tab);
+  const next=tabs[e.key==='Home'?0:e.key==='End'?tabs.length-1:(i+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length];
+  e.preventDefault();A.settingsTab(next);next.focus();
+});
 A.authTab = (t) => {
   const mode = t.dataset.mode;
   if (!["login","signup","reset"].includes(mode)) return;
@@ -2791,7 +2807,7 @@ A.homeDailyCard = async (t) => {
   }
 };
 
-// Only update the art/credits. Never replace Home search, carousel, focus or scroll.
+// Only update the daily art/action. Never replace value, resume, carousel, focus or scroll.
 function paintHomeHero(g) {
   if (S.ui.view !== "home" || T.game() !== g) return;
   const el = $("#homeHero"), h = T.heroFor(g);
@@ -2802,7 +2818,7 @@ function paintHomeHero(g) {
   const oldArt = el.querySelector(".hh-art"), newArt = next.querySelector(".hh-art");
   if (oldArt) newArt ? oldArt.replaceWith(newArt) : oldArt.remove();
   else if (newArt) el.prepend(newArt);
-  for (const selector of [".hh-art-link", ".hh-credit"]) {
+  for (const selector of [".hh-credit"]) {
     const old = el.querySelector(selector), fresh = next.querySelector(selector);
     if (old && fresh) {
       // Keep the focused button node; only its exact-card identity/content changes.
@@ -2811,8 +2827,8 @@ function paintHomeHero(g) {
       old.innerHTML = fresh.innerHTML;
     } else if (old) old.remove();
     else if (fresh) {
-      if (selector === ".hh-art-link") el.querySelector(".hh-shade").after(fresh);
-      else el.querySelector(".hh-body").append(next.querySelector(".hh-credits"));
+      el.querySelector(".hh-credits")?.remove();
+      el.querySelector(".hh-body").append(next.querySelector(".hh-credits"));
     }
   }
   if (!h) el.querySelector(".hh-credits")?.remove();
@@ -3988,7 +4004,7 @@ A.refreshDeck = async (t) => {
     done = busy(t, "Refreshing…");
   try {
     const r = await resolveNames(d.cards.map((c) => c.name), (m) => toast(m), true);
-    await editDeck((x) => ({ ...x, cards: x.cards.map((c) => ({ ...c, name: r.matched.get(key(c.name)) || c.name })) }));
+    await editDeck((x) => ({ ...x, cards: x.cards.map((c) => ({ ...c, name: r.matched.get(key(c.name)) || c.name })) }), { recordDeckWork: false });
     toast(r.failed.length ? `${r.failed.length} cards not found: ${r.failed.slice(0, 3).join(", ")}` : "Card data and prices refreshed.");
   } finally {
     done();
@@ -4989,7 +5005,8 @@ async function mtgScanByText(phrases, full = "") {
     .slice(0, 5);
 }
 const scanKey = (x) => String(x || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-async function mtgScanMatch(read, lang, manual = false, prefs = {}) {
+async function mtgScanMatch(read, lang, manual = false, prefs = {}, control = null) {
+  const lookup=(key,fn)=>Promise.resolve().then(()=>control?control.run(JSON.stringify(["mtg",...key]),fn):fn()).catch(e=>{if(control&&/^SCAN_/.test(e.code||""))throw e;return null;});
   const out = [],
     seen = new Set(),
     tried = [],
@@ -4998,12 +5015,14 @@ async function mtgScanMatch(read, lang, manual = false, prefs = {}) {
       seen.add(c.id);
       out.push(mtgScanCand(c, why, exact));
     };
+  let limited=false;
+  try {
   // The set code + collector number at the bottom identify the exact printing.
   const at = manual ? null : mtgCollector(`${read.code}\n${read.full}`);
   if (at) {
     tried.push(`${at.set.toUpperCase()} #${at.number}`);
     for (const l of lang.includes("jpn") ? ["ja", ""] : [""]) {
-      const c = await api(`/cards/${encodeURIComponent(at.set)}/${encodeURIComponent(at.number)}${l ? "/" + l : ""}`).catch(() => null);
+      const c = await lookup(["printing",at.set,at.number,l],()=>api(`/cards/${encodeURIComponent(at.set)}/${encodeURIComponent(at.number)}${l ? "/" + l : ""}`));
       if (c?.name) {
         push(c, `Set ${at.set.toUpperCase()} #${at.number}`, true);
         break;
@@ -5017,17 +5036,18 @@ async function mtgScanMatch(read, lang, manual = false, prefs = {}) {
     if (out.some((o) => key(o.name).includes(key(n)))) continue;
     tried.push(n);
     // Lock set: look the name up in that set first.
-    const locked = prefs.lockSet ? await api("/cards/named?" + new URLSearchParams({ fuzzy: n, set: prefs.lockSet })).catch(() => null) : null;
-    let c = locked || (await api("/cards/named?" + new URLSearchParams({ fuzzy: n })).catch(() => null));
+    const locked = prefs.lockSet ? await lookup(["name",n,prefs.lockSet],()=>api("/cards/named?" + new URLSearchParams({ fuzzy: n, set: prefs.lockSet }))) : null;
+    let c = locked || (await lookup(["name",n],()=>api("/cards/named?" + new URLSearchParams({ fuzzy: n }))));
     // Ignore promos: prefer the regular printing of the same card.
     if (c && prefs.ignorePromos && (c.promo || c.set_type === "promo")) {
-      const r = await api("/cards/search?" + new URLSearchParams({ q: `!"${c.name}" -is:promo -st:promo`, order: "released", dir: "desc" })).catch(() => null);
+      const r = await lookup(["regular",c.name],()=>api("/cards/search?" + new URLSearchParams({ q: `!"${c.name}" -is:promo -st:promo`, order: "released", dir: "desc" })));
       if (r?.data?.[0]) c = r.data[0];
     }
     // A short fragment ("wel") is not identification: closest-spelling hits need a real word.
     if (c?.name && (key(c.name) === key(n) || manual || key(n).length >= 5)) push(c, key(c.name) === key(n) ? "Name match" : `Closest name to “${n}”`, false);
   }
-  return { cands: out, tried };
+  }catch(e){if(!control||e.code!=="SCAN_BUDGET"||!out.length)throw e;limited=true;}
+  return { cands: limited?out.map(c=>({...c,exact:false})):out, tried,...(limited?{budgetLimited:true}:{}) };
 }
 async function mtgScanAdd(cand) {
   const c = cand.card;
@@ -5097,7 +5117,7 @@ const scanCtx = {
   render: () => render(),
   toast: (m) => toast(m),
   game: () => T.game(),
-  match: (g, read, lang, manual, status, prefs = {}) => (g === "mtg" ? mtgScanMatch(read, lang, manual, prefs) : tcgCtx.scanMatch(read, lang, manual, status, g)),
+  match: (g, read, lang, manual, status, prefs = {}, control = null) => (g === "mtg" ? mtgScanMatch(read, lang, manual, prefs, control) : tcgCtx.scanMatch(read, lang, manual, status, g, control)),
   add: (g, c) => (g === "mtg" ? mtgScanAdd(c) : tcgCtx.scanAdd(c)),
   byText: (g, full) => (g === "mtg" ? mtgScanByText(textPhrases(full, 12), full) : tcgCtx.scanByText?.(g, full) ?? []),
   printings: (g, cand) => (g === "mtg" ? mtgScanPrintings(cand) : tcgCtx.scanPrintings?.(g, cand) ?? []),

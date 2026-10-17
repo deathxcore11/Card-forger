@@ -26,7 +26,7 @@ const RESULTS = resolve(ROOT, 'test-results');
 const NOW = Date.parse('2026-10-17T12:00:00.000Z');
 const TODAY = '2026-10-17';
 const ISO = new Date(NOW).toISOString();
-const WIDTHS = [320, 360, 390, 430, 700, 768, 900, 1024, 1200, 1440, 2560];
+const WIDTHS = [320, 360, 390, 430, 600, 700, 768, 899, 900, 1024, 1200, 1440, 2560];
 const EVIDENCE_WIDTHS = new Set([320, 390, 768, 1024, 1440, 2560]);
 const viewportHeight = width => width <= 430 ? 844 : width < 900 ? 1024 : width <= 1200 ? 768 : width <= 1440 ? 900 : 1440;
 const ORIENTATIONS = [{ width:844, height:390, label:'phone-landscape' }, { width:768, height:1024, label:'tablet-portrait' }, { width:1024, height:768, label:'tablet-landscape' }];
@@ -91,6 +91,14 @@ const normalize = raw => raw.category ? normalizePtcg(raw) : normalizeYgo(raw);
 const fresh = raw => ({ ...normalize(raw), fetchedAt: ISO, printPriceSchema: 1 });
 const heroes = { mtg: mtgHero, ygo: fresh(ygoHeroRaw), ptcg: fresh(ptcgHeroRaw) };
 const seeds = { mtg: mtgSeed, ygo: fresh(ygoSeedRaws[0]), ptcg: fresh(ptcgSeedRaw) };
+// Real longer titles in deterministic, cached daily-card fixtures. As with the
+// short fixtures, artwork/provider metadata is representative, not a live quote.
+const longDailyPicks = {
+  mtg: magic('Emrakul, the Promised End', '33333333-3333-4333-8333-333333333333'),
+  ygo: fresh(ygoSeedRaws[1]),
+  ptcg: fresh({ ...rawPtcg('Reshiram & Charizard-GX', 'sm10-20', 'Fire'), image:'https://assets.tcgdex.net/en/sm/sm10/20' }),
+};
+const oversizeDailyPick = magic('Asmoranomardicadaistinaculdacar', '44444444-4444-4444-8444-444444444444');
 const catalog = Object.fromEntries([mtgHero, mtgSeed, ...['Plains', 'Island', 'Swamp', 'Mountain', 'Forest', 'Wastes'].map((name, i) => magic(name, `fixture-basic-${i}`, { type_line: `Basic Land — ${name}`, prices: { usd: '0' }, cmc: 0, mana_cost: '', oracle_text: '', color_identity: [], colors: [] }))].map(c => [cardKey(c.name), c]));
 
 function feed(game, empty = false, options = {}) {
@@ -101,6 +109,7 @@ function feed(game, empty = false, options = {}) {
     items: empty ? [] : [
       { ...common, kind: 'news', title: `${game.toUpperCase()} dated fixture story`, summary: 'A dated story from a verified fixture source, distinct from a directory link.', url: s.host + s.news, publishedAt: '2026-10-16', image },
       { ...common, sourceId: game === 'ygo' ? 'konami-events' : '', kind: 'event', title: `${game.toUpperCase()} upcoming fixture event`, summary: 'A future event with its own start and end dates.', url: s.host + s.event, startsAt: '2026-10-20', endsAt: '2026-10-22' },
+      ...[1,2,3].map(i=>({...common, kind:'news', title:`${game.toUpperCase()} additional publisher headline ${i}: exact cards, release details and regional availability`, url:s.host+s.news+`-${i}`, publishedAt:'2026-10-16'})),
       { ...common, kind: 'news', title: 'UNSAFE FIXTURE MUST NOT RENDER', url: 'javascript:alert(1)', publishedAt: '2026-10-16' },
       { ...common, kind: 'news', title: 'UNTRUSTED FIXTURE MUST NOT RENDER', url: 'https://untrusted.invalid/news', publishedAt: '2026-10-16' },
     ] };
@@ -109,7 +118,7 @@ function metaFeed(game, empty = false, options = {}) {
   const c = seeds[game];
   const missing = options.deckArtMode === 'missing';
   const unsafe = options.deckArtMode === 'unsafe';
-  return { game, ...(game === 'ptcg' ? { artSchema: 1 } : {}), source: sources[game].label, fetchedAt: ISO, top: [], archetypes: [], events: [],
+  return { game, ...(game === 'ptcg' ? { artSchema: 2 } : {}), source: sources[game].label, fetchedAt: ISO, top: [], archetypes: [], events: [],
     decks: empty ? [] : [{ key: `fixture-${game}`, name: `${c.name} published fixture deck`, event: 'Fixture tournament', players: 32, place: 'Top 8', date: '2026-10-15', url: sources[game].deck,
       ...(game === 'mtg' ? { main: missing ? [] : [{ name: c.name, qty: 4 }], commanders: [], side: [], cover: unsafe ? 'javascript:invalid-cover' : c.name, art: unsafe ? UNSAFE_IMAGE : undefined } : game === 'ygo' ? { main: missing ? [] : [c.id], extra: [], side: [], cover: unsafe ? UNSAFE_IMAGE : c.id } : { list: missing ? [] : [{ name: c.name, qty: 4, set: unsafe ? '../BAD' : 'SSP', number: '57', kind: 'Pokemon' }] }) },
       ...(options.twoDecks ? [{ key: `fixture-${game}-second`, name: `${heroes[game].name} alternate fixture deck`, event: 'Second fixture tournament', players: 32, place: 'Winner', date: '2026-10-14', url: `${sources[game].deck}-second`,
@@ -130,6 +139,8 @@ function fixtures(options = {}) {
       ...(g === 'mtg' ? { format: 'Standard', commander: '', cards: [{ name: saved.name, qty: 4 }], side: [] } : { format: g === 'ygo' ? 'tcg' : 'standard', zones: { main: [{ name: saved.name, cardId: saved.id, qty: 3 }], extra: [], side: [] } }) }] : [];
   }
   state.activeDeck = decks ? 'saved-mtg' : null;
+  if(decks && !options.noWorkHistory)state.homeDeckActivity=Object.fromEntries(GAME_IDS.map(g=>[g,[{id:`saved-${g}`,at:'2026-10-16T12:00:00.000Z'}]]));
+  if(decks && options.twoSavedDecks)for(const g of GAME_IDS){const rows=g==='mtg'?state.decks:state.tcg[g].decks;rows.push({...structuredClone(rows[0]),id:`newest-${g}`,name:`${g.toUpperCase()} newest untouched deck`,createdAt:ISO});}
   const cache = { ygo: { [heroes.ygo.id]: heroes.ygo, ...Object.fromEntries(ygoSeedRaws.map(raw => [String(raw.id), fresh(raw)])) }, ptcg: { [heroes.ptcg.id]: heroes.ptcg, [seeds.ptcg.id]: seeds.ptcg } };
   const community = Object.fromEntries(GAME_IDS.map(g => [g, { at: fetchFeed ? 0 : NOW, data: fetchFeed ? null : feed(g, emptyFeed, options) }]));
   const meta = Object.fromEntries(GAME_IDS.map(g => {
@@ -142,7 +153,11 @@ function fixtures(options = {}) {
   const standard = metaFeed('mtg', emptyFeed, options);
   for (const deck of standard.decks) { deck.key += '-standard'; deck.name += ' Standard only'; deck.url = deck.url.replace('fixture-modern', 'fixture-standard'); }
   meta['mtg:Standard'] = { at: NOW, data: standard };
-  const hero = { date: heroDate, ...Object.fromEntries(GAME_IDS.map(g => [g, { game: g, date: heroDate, name: heroes[g].name, id: heroes[g].id, art: g === 'mtg' ? heroes[g].image_uris.art_crop : g === 'ygo' ? heroes[g].art : heroes[g].imageLarge, ...(g === 'ygo' ? { artDirect: heroes[g].artDirect } : {}) }])) };
+  const daily = { ...(options.longDailyNames ? longDailyPicks : heroes), ...(options.oversizeDailyName ? {mtg:oversizeDailyPick} : {}) };
+  const hero = { date: heroDate, ...Object.fromEntries(GAME_IDS.map(g => {
+    const c = daily[g], noArt = options.dailyArtMode === 'missing';
+    return [g, { game: g, date: heroDate, name: c.name, id: c.id, art: noArt ? '' : g === 'mtg' ? c.image_uris.art_crop : g === 'ygo' ? c.art : c.imageLarge, ...(g === 'ygo' ? { artDirect: noArt ? '' : c.artDirect } : {}) }];
+  })) };
   const sent = Object.fromEntries([...Object.values(catalog).map(c => [`mtg:${c.id}`, NOW]), ...Object.keys(cache.ygo).map(id => [`ygo:${id}`, NOW])]);
   return { state, cache, storage: {
     'cardforge-v2': state, 'cardforge-catalog-v1': catalog, 'cardforge-tcg-cache-v1': cache,
@@ -172,6 +187,16 @@ for (const game of GAME_IDS) {
   assert.equal(communityDeckArtwork(game, metaFeed(game, false, { deckArtMode: 'unsafe' }).decks[0]), null);
   assert.equal(safeCommunityImage(feed(game).items[0].image, game, sources[game].sourceId, sources[game].host + sources[game].news), NEWS_IMAGES[game]);
   assert.equal(safeCommunityImage(feed(game, false, { newsArtMode: 'unsafe' }).items[0].image, game, sources[game].sourceId, sources[game].host + sources[game].news), '');
+}
+for (const longDailyNames of [false, true]) for (const dailyArtMode of ['ready', 'missing']) for(const oversizeDailyName of [false,true]) {
+  const f = fixtures({ longDailyNames, dailyArtMode, oversizeDailyName });
+  assert.doesNotThrow(() => validateWorkspace(structuredClone(f.state)));
+  for (const game of GAME_IDS) {
+    const selected = f.storage['cardforge-hero-v1'][game], expected = oversizeDailyName && game==='mtg' ? oversizeDailyPick : (longDailyNames ? longDailyPicks : heroes)[game];
+    assert.equal(selected.name, expected.name); assert.equal(selected.id, expected.id);
+    assert.equal(selected.game, game); assert.equal(selected.date, TODAY);
+    assert.equal(!!selected.art, dailyArtMode === 'ready');
+  }
 }
 for (const game of GAME_IDS) for (const initialMetaLists of [0, 1]) {
   const pending = fixtures({game,fetchFeed:true,fetchMeta:true,initialMetaLists});
@@ -313,6 +338,7 @@ async function openApp(options = {}) {
       if (url.pathname.startsWith('/api/prices/')) return json({ points: [], series: [], cards: [], products: [], variants: [], prices: [], partial: false });
       if (!url.pathname.startsWith('/api/')) return route.continue();
     }
+    if(options.dailyUnavailable && (url.hostname==='api.scryfall.com' && url.pathname==='/cards/random' || url.hostname==='db.ygoprodeck.com' && url.searchParams.has('staple') || url.hostname==='api.tcgdex.net' && url.searchParams.has('rarity')))return json(url.hostname==='api.tcgdex.net'?[]:{data:[]});
     if (url.hostname === 'api.scryfall.com') {
       if (url.pathname === '/cards/random') return json(mtgSeed);
       if (url.pathname === '/cards/search') {
@@ -347,7 +373,13 @@ async function openApp(options = {}) {
   });
   const f = fixtures(options);
   await page.addInitScript(({ storage, now }) => {
-    const NativeDate = Date, offset = now - NativeDate.now();
+    const NativeDate = Date;
+    // Keep simulated time monotonic across reloads: saved activity must not
+    // become future-dated merely because this init script executes again.
+    const clockKey = 'home-fixture-clock-offset';
+    const savedOffset = sessionStorage.getItem(clockKey);
+    const offset = savedOffset === null ? now - NativeDate.now() : Number(savedOffset);
+    sessionStorage.setItem(clockKey, String(offset));
     window.__homeTimeAdvance = 0;
     globalThis.Date = class extends NativeDate {
       constructor(...args) { super(...(args.length ? args : [NativeDate.now() + offset + window.__homeTimeAdvance])); }
@@ -424,7 +456,7 @@ async function noOverflow(page, label) {
       await Promise.all(animations.map(a => a.finished.catch(() => {})));
     }
     const root = document.documentElement, body = document.body, content = document.querySelector('#content');
-    const selectors = ['.topbar', '#gameTabs', '.home-value', '.home-meta', '.home-meta-copy', '.home-meta-footer', '.home-editorial', '.home-community', '.home-discovery-actions', '.community-feature-copy', '.hh-search'];
+    const selectors = ['.topbar', '#gameTabs', '.home-value', '.home-meta', '.home-meta-copy', '.home-meta-footer', '.home-editorial', '.home-community', '.home-resume', '.community-feature-copy', '.home-overview'];
     return { viewport: innerWidth, root: root.scrollWidth, body: body.scrollWidth, content: content.scrollWidth, contentWidth: content.clientWidth,
       elements: selectors.map(selector => { const n = document.querySelector(selector); if (!n) return { selector, missing: true }; const r = n.getBoundingClientRect(); return { selector, left: r.left, right: r.right, scroll: n.scrollWidth, width: n.clientWidth }; }) };
   });
@@ -446,7 +478,7 @@ async function visibleHeaderArt(page) {
     const image = art?.matches('img') ? art : art?.querySelector('img');
     if (![hero, art, image].every(node => node?.isConnected) || !image.complete || image.naturalWidth <= 0) return false;
     const rect = art.getBoundingClientRect();
-    return rect.width >= 250 && rect.height >= 120 && [hero, art, image].every(node => {
+    return rect.width >= 50 && rect.width <= 58 && rect.height >= 48 && rect.height <= 54 && [hero, art, image].every(node => {
       const css = getComputedStyle(node);
       return css.display !== 'none' && css.visibility === 'visible' && Number(css.opacity) > 0;
     });
@@ -456,7 +488,7 @@ const deckIdentity = (game, second = false) => game === 'mtg' ? (second ? heroes
   : game === 'ygo' ? (second ? heroes : seeds)[game].id
     : second ? `${heroes.ptcg.name} · OBF 125` : `${seeds.ptcg.name} · SSP 57`;
 async function assertNoNewsArtwork(page, selector, { failed = false } = {}) {
-  const feature = page.locator(selector);
+  const feature = page.locator(selector).first();
   assert.equal(await feature.locator('.community-art-theme, .community-art-emblem').count(), 0, 'news never substitutes unrelated game artwork');
   if (failed) {
     await page.waitForFunction(selector => document.querySelector(`${selector} [data-community-art]`)?.hidden === true, selector);
@@ -471,7 +503,12 @@ async function assertCommunityArtwork(page, selector, game, { kind = 'card', sta
   assert.equal(await art.count(), 1, `${game}: one source-bound art treatment in ${selector}`);
   assert.equal(await art.getAttribute('data-art-game'), game);
   assert.equal(await art.getAttribute('data-art-kind'), kind);
-  const visual = await art.evaluate(node => {
+  const visual = await art.evaluate(async node => {
+    // A feed refresh can restart page-entry motion after scrollIntoView. Measure
+    // the completed layout, not its temporary .995 entry scale.
+    const animations=[];
+    for(let parent=node;parent;parent=parent.parentElement)animations.push(...parent.getAnimations().filter(a=>Number.isFinite(a.effect?.getComputedTiming().endTime)&&!['finished','idle'].includes(a.playState)));
+    await Promise.all(animations.map(a=>a.finished.catch(()=>{})));
     const rect = node.getBoundingClientRect(), css = getComputedStyle(node), image = node.querySelector('img[data-community-image]');
     return { width: rect.width, height: rect.height, display: css.display, visibility: css.visibility, opacity: Number(css.opacity),
       loaded: !!image?.complete && image.naturalWidth > 0, imageHidden: !image || image.hidden || getComputedStyle(image).display === 'none',
@@ -499,36 +536,79 @@ async function assertCommunityArtwork(page, selector, game, { kind = 'card', sta
     assert.equal(await art.getAttribute('data-art-card'), null, 'themed art never impersonates a real featured card');
   }
   if (state === 'ready') {
-    assert(visual.loaded && !visual.imageHidden && (visual.visibleCredit || selector.startsWith('[data-home-meta=')), `${game}: actual loaded image and honest source caption: ${JSON.stringify(visual)}`);
+    assert(visual.loaded && !visual.imageHidden && (visual.visibleCredit || selector.startsWith('[data-home-meta=') || kind === 'publisher'), `${game}: actual loaded image and honest source caption: ${JSON.stringify(visual)}`);
     if (selector.startsWith('[data-home-meta=')) assert.match(await page.locator(selector).textContent(), /Featured deck:.*Card preview:/s, 'compact art retains source/card provenance in its accessible text');
   }
   else assert(visual.imageHidden && visual.visibleFallback, `${game}: failed/missing image has a visible honest theme fallback, not a broken icon: ${JSON.stringify(visual)}`);
 }
 async function assertReadableArtwork(page, game) {
-  const geometry = await page.locator('.community-feature').evaluate(node => {
-    const copy = node.querySelector('.community-feature-copy'), art = node.querySelector('[data-community-art]'), shade = art.querySelector('.community-art-shade');
-    const copyCss = getComputedStyle(copy), artCss = getComputedStyle(art), shadeCss = getComputedStyle(shade);
-    return { copyZ: Number(copyCss.zIndex), artZ: Number(artCss.zIndex), shade: shadeCss.backgroundImage, shadeColor: shadeCss.backgroundColor,
-      text: [...copy.querySelectorAll('h3,p,a,.community-source')].map(n => { const c = getComputedStyle(n), r = n.getBoundingClientRect(); return { tag: n.tagName, width: r.width, height: r.height, clipped: n.scrollWidth > n.clientWidth + 2, color: c.color, opacity: Number(c.opacity), fontSize: parseFloat(c.fontSize) }; }) };
+  const geometry = await page.locator('.community-feature').first().evaluate(node => {
+    const copy = node.querySelector('.community-feature-copy'), art = node.querySelector('[data-community-art]');
+    const a=art.getBoundingClientRect(),c=copy.getBoundingClientRect(),row=node.getBoundingClientRect();
+    return { art:{left:a.left,right:a.right,width:a.width,height:a.height},copy:{left:c.left,right:c.right},rowHeight:row.height,
+      text: [...copy.querySelectorAll(':scope > h3,:scope > .eyebrow,:scope > .community-source,:scope > .community-context > summary')].map(n => { const c = getComputedStyle(n), r = n.getBoundingClientRect(); return { tag:n.tagName,width:r.width,height:r.height,clipped:n.scrollWidth>n.clientWidth+2,color:c.color,opacity:Number(c.opacity),fontSize:parseFloat(c.fontSize) }; }) };
   });
-  assert(geometry.copyZ > geometry.artZ, `${game}: copy is composited above artwork`);
-  assert(geometry.shade !== 'none' || !['transparent', 'rgba(0, 0, 0, 0)'].includes(geometry.shadeColor), `${game}: source art has a dedicated contrast shade`);
-  for (const text of geometry.text) assert(text.width > 0 && text.height > 0 && !text.clipped && text.opacity === 1 && text.fontSize >= 9, `${game}: readable, unclipped editorial text: ${JSON.stringify(text)}`);
+  assert(geometry.art.right+7<=geometry.copy.left,`${game}: publisher image sits beside, never behind the real headline`);
+  assert(geometry.art.width<=115 && geometry.art.height<=90,`${game}: matched publisher image is a restrained thumbnail`);
+  assert(geometry.rowHeight<240,`${game}: one news item is a compact editorial row, not a 390px hero`);
+  for(const text of geometry.text)assert(text.width>0 && text.height>0 && !text.clipped && text.opacity===1 && text.fontSize>=10,`${game}: readable naturally wrapping editorial text: ${JSON.stringify(text)}`);
 }
-async function assertDailyIdentity(page, game, card = heroes[game], date = TODAY) {
-  for (const selector of ['.hh-art-link', '.hh-credit']) {
-    assert.equal(await page.locator(selector).getAttribute('data-act'), 'homeDailyCard');
-    assert.equal(await page.locator(selector).getAttribute('data-game'), game);
-    assert.equal(await page.locator(selector).getAttribute('data-id'), card.id);
-    assert.equal(await page.locator(selector).getAttribute('data-date'), date);
+async function assertDailyIdentity(page, game, card = heroes[game], date = TODAY, { compact = true, allowOversizeWord = false } = {}) {
+  const control=page.locator('.hh-credit');
+  assert.equal(await page.locator('[data-act="homeDailyCard"]').count(),1,'one exact daily action, not duplicate artwork/credit buttons');
+  for(const [attribute,value] of Object.entries({'data-act':'homeDailyCard','data-game':game,'data-id':card.id,'data-name':card.name,'data-date':date}))assert.equal(await control.getAttribute(attribute),value);
+  assert.equal(await control.getAttribute('aria-label'),`Explore ${card.name}, Card of the Day`);
+  assert.equal((await page.locator('#homeHero').innerText()).match(/Card of the Day/gi)?.length,1);
+  assert.equal(await control.locator('b').textContent(),card.name);
+  assert.equal(await control.locator(':scope > span:first-child').innerText(),'Card of the Day');
+  assert.equal(await page.locator('.hh-art-link, .hh-search, #homeQ, .hh-deck-link').count(),0,'daily accent is not a search/welcome hero or saved-deck link');
+  const size=await control.evaluate(n=>{
+    const hero=n.closest('#homeHero'),art=hero.querySelector('.hh-art'),title=n.querySelector('b'),arrow=n.querySelector('.hh-daily-arrow');
+    const rect=node=>{const r=node.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
+    const c=getComputedStyle(n),box=rect(n),a=art?rect(art):null;
+    const text=[n.firstElementChild,title].map(node=>{
+      const css=getComputedStyle(node),range=document.createRange();range.selectNodeContents(node);
+      // Range rectangles prove every painted line fits, not merely that an
+      // ellipsized/clamped DOM node still contains the original full string.
+      const lines=[...range.getClientRects()].filter(r=>r.width>0).map(r=>({left:r.left,right:r.right,top:r.top,bottom:r.bottom}));
+      const words=[...node.firstChild.textContent.matchAll(/[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*/gu)].map(match=>{
+        range.setStart(node.firstChild,match.index);range.setEnd(node.firstChild,match.index+match[0].length);
+        const fragments=[...range.getClientRects()].filter(r=>r.width>0);
+        return {word:match[0],lines:fragments.length,width:fragments.reduce((sum,r)=>sum+r.width,0)};
+      });
+      return {text:node.textContent,lines,words,fontSize:parseFloat(css.fontSize),overflowWrap:css.overflowWrap,wordBreak:css.wordBreak,
+        clipped:node.scrollWidth>node.clientWidth+1||node.scrollHeight>node.clientHeight+1,lineClamp:css.webkitLineClamp};
+    });
+    const overlaps=(x,y)=>x.left<y.right&&x.right>y.left&&x.top<y.bottom&&x.bottom>y.top;
+    // Include the transparent action above the art and the Pokémon crop's
+    // nested image. The crop transform is intentional; blur is not.
+    const effects=[hero,...hero.querySelectorAll('*')].filter(node=>node===n||a&&overlaps(rect(node),a)).map(node=>{
+      const css=getComputedStyle(node);return {node:node.className,filter:css.filter,backdrop:css.backdropFilter,prefixedBackdrop:css.getPropertyValue('-webkit-backdrop-filter')};
+    });
+    return {height:rect(hero).height,art:a,box,arrow:rect(arrow),text,effects,
+      content:{left:box.left+parseFloat(c.paddingLeft),right:box.right-parseFloat(c.paddingRight),top:box.top+parseFloat(c.paddingTop),bottom:box.bottom-parseFloat(c.paddingBottom)}};
+  });
+  // This bound belongs to the normal fixtures, not every possible card name.
+  // Longer titles may grow naturally, never clip or shrink to satisfy a cap.
+  if(compact)assert(size.height<110,`${game}: daily accent stays unobtrusive: ${JSON.stringify(size)}`);
+  assert(size.box.height>=44 && size.box.width>=44,`${game}: exact daily identity keeps its touch target`);
+  assert(size.content.right+8<=size.arrow.left && size.arrow.right<=size.box.right,`${game}: text reserves space for the daily arrow`);
+  if(size.art){
+    assert(size.art.width<=58 && size.art.height<=54,`${game}: daily art is a small source-identified thumbnail`);
+    assert(size.art.right+8<=size.content.left,`${game}: daily name never overlaps the thumbnail`);
+    assert(size.art.top>=size.box.top && size.art.bottom<=size.box.bottom,`${game}: thumbnail fits within the daily action`);
   }
-  assert.equal(await page.locator('.hh-art-link').innerText(), '', 'clickable artwork has no redundant visual badge');
-  assert.match(await page.locator('.hh-art-link').getAttribute('aria-label'), /Explore .+ artwork/);
-  assert.equal((await page.locator('#homeHero').innerText()).match(/Card of the Day/gi)?.length, 1, `${game}: only one visible daily-card action`);
-  assert.match(await page.locator('.hh-credit').innerText(), /Card of the Day/i);
-  assert.match(await page.locator('.hh-credit').innerText(), new RegExp(card.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-  assert.doesNotMatch(await page.locator('.hh-credits').innerText(), /From your deck/);
-  assert.equal(await page.locator('.hh-deck-link').count(), 0, 'a daily card with no verified saved-deck membership does not gain a deck action');
+  for(const [index,text] of size.text.entries()){
+    assert(text.fontSize>=(index?13:10) && !text.clipped && ['none',''].includes(text.lineClamp),`${game}: daily text is readable and unclipped: ${JSON.stringify(text)}`);
+    assert.equal(text.overflowWrap,index?'break-word':'normal');assert.equal(text.wordBreak,'normal');
+    assert(text.lines.length>0 && text.lines.every(r=>r.left>=size.content.left-1&&r.right<=size.content.right+1&&r.top>=size.content.top-1&&r.bottom<=size.content.bottom+1),`${game}: all daily text lines fit the reserved reading area: ${JSON.stringify(size)}`);
+    assert(text.words.every(word=>word.lines===1||allowOversizeWord&&word.width>size.content.right-size.content.left+1),`${game}: ordinary words stay intact; only a token wider than the whole reading column can wrap: ${JSON.stringify(text.words)}`);
+  }
+  for(const effect of size.effects){
+    assert.equal(effect.filter,'none',`${game}: thumbnail/overlapping ${effect.node} has no blur filter`);
+    assert.equal(effect.backdrop,'none',`${game}: thumbnail/overlapping ${effect.node} does not blur the art behind it`);
+    assert(['none',''].includes(effect.prefixedBackdrop),`${game}: no prefixed backdrop blur on ${effect.node}`);
+  }
 }
 async function accessibleCarouselControls(page, label) {
   // A fixed mobile nav appearing partway through a full-page capture is normal.
@@ -545,7 +625,7 @@ async function accessibleCarouselControls(page, label) {
       return { focused: document.activeElement === node, hit: hit === node || node.contains(hit), width: rect.width, height: rect.height,
         top: rect.top, bottom: rect.bottom, clearBottom: navVisible ? navRect.top : innerHeight };
     });
-    assert(bounds.focused && bounds.hit, `${label}: carousel ${step} receives focus and unobstructed input: ${JSON.stringify(bounds)}`);
+    assert((await control.isDisabled() || bounds.focused) && bounds.hit, `${label}: carousel ${step} receives focus and unobstructed input: ${JSON.stringify(bounds)}`);
     assert(bounds.top >= 0 && bounds.bottom <= bounds.clearBottom, `${label}: carousel ${step} scrolls clear of the fixed nav: ${JSON.stringify(bounds)}`);
     assert(bounds.width >= 44 && bounds.height >= 44, `${label}: carousel ${step} keeps a 44px touch target`);
   }
@@ -573,8 +653,13 @@ async function chooseFormat(page, game) {
   await page.locator('#randomFormat').click();
   await page.locator('.glass-select-menu[open]').getByRole('option', { name: game === 'ygo' ? 'Advanced (TCG)' : 'Standard', exact: true }).click();
 }
+async function openDeckRandom(page) {
+  await page.evaluate(()=>{location.hash='#decks';});
+  await page.waitForFunction(()=>document.body.dataset.view==='decks');
+  await page.locator('[data-act="randomDeckOptions"]').first().click();
+}
 async function startReveal(page, game) {
-  await page.locator('[data-act="homeRandomDeck"]').click();
+  await openDeckRandom(page);
   await page.locator('#randomFormat').waitFor();
   assert.equal(await page.locator('#randomFormat').inputValue(), '', 'format is an explicit user choice');
   assert.equal(await page.locator('#randomTheme').inputValue(), '', 'theme stays optional');
@@ -636,7 +721,7 @@ try {
     }
     await p.evaluate(()=>{location.hash='#collection';});
     await p.waitForFunction(()=>document.body.dataset.view==='collection');
-    await p.evaluate(()=>{location.hash='#home';});await assertSelected(p,game);
+    await p.evaluate(()=>{location.hash='#home';});await p.waitForFunction(()=>document.body.dataset.view==='home');await assertSelected(p,game);
     assert(await oldCommunity.evaluate(n=>!n.isConnected));assert(await oldMeta.evaluate(n=>!n.isConnected));
     const currentMeta=await p.locator('[data-home-meta]').elementHandle();
     pending.homeSources.news.release();
@@ -665,16 +750,11 @@ try {
     assert.equal(await page.locator('[data-home-meta]').count(),1,`${game}: shared full-width lower Meta rail parity`);
     assert.equal(await page.locator('[data-home-discovery]').count(),1,`${game}: one unified discovery section`);
     assert.equal(await page.locator('.home-discover, .home-deal, .home-personal .quick, .home-personal .quick-btn').count(),0,`${game}: no duplicate random panel or cramped legacy split shortcuts`);
-    assert.equal(await page.locator('[data-act="homeRandomDeck"]').count(),1);
-    const surprise=page.locator('[data-home-discovery] [data-act="homeRandomDeck"]');
-    // The real glyph decorator replaces the aria-hidden symbol with drawn SVG,
-    // so verify its decoration separately from the exact visible/accessibility label.
-    await surprise.locator('svg[aria-hidden="true"]').waitFor({state:'attached'});
-    assert.equal(await surprise.innerText(),'Surprise me');
-    assert.equal(await page.locator('[data-home-discovery]').getByRole('button',{name:'Surprise me',exact:true}).getAttribute('data-act'),'homeRandomDeck');
-    assert.equal(await surprise.locator('[aria-hidden="true"] svg[aria-hidden="true"]').count(),1);
-    assert.equal(await page.locator('[data-home-discovery] [data-to="#decks/ideas"]').innerText(),'Build from my cards');
-    assert.equal(await page.locator('.home-personal [data-to="#decks/ideas"]').count(),0,'saved continuation does not compete with discovery');
+    assert.equal(await page.locator('[data-act="homeRandomDeck"], .home-discovery-actions, .home-deck-section, .home-start, #homeQ').count(),0,'no discovery prompts, duplicated shelf or search on personal Home');
+    assert.equal(await page.locator('[data-home-resume]').getAttribute('data-resume-deck'),`saved-${game}`);
+    assert.equal(await page.locator('[data-home-resume] button').getAttribute('data-to'),`#${game==='mtg'?'deck':'tdeck'}/saved-${game}/cards`);
+    const order=await page.locator('#content > *').evaluateAll(nodes=>nodes.filter(n=>!n.classList.contains('home-sr-only')).map(n=>n.className));
+    assert.deepEqual(order,['home-overview','home-resume','home-meta','home-editorial'],'personal-first four-section composition');
     assert.equal(await page.locator('.home-value-main strong').innerText(), '$25.00');
     assert.match(await page.locator('.home-value-note').innerText(), /Known subtotal.*1 unpriced/);
     for (const width of WIDTHS) {
@@ -690,7 +770,7 @@ try {
       const discoveryWidth=await page.locator('[data-home-discovery]').evaluate(n=>n.getBoundingClientRect().width);
       const valueWidth=await page.locator('[data-home-value]').evaluate(n=>n.getBoundingClientRect().width);
       assert(discoveryWidth>=valueWidth-2,`${game}: discovery stays full width at ${width}px`);
-      for(const selector of ['[data-home-discovery] [data-to="#decks/ideas"]','[data-home-discovery] [data-act="homeRandomDeck"]']) {
+      for(const selector of ['[data-home-resume] button','.hh-credit']) {
         const action=page.locator(selector);await action.evaluate(n=>n.scrollIntoView({block:'center',behavior:'instant'}));await action.focus();
         assert(await action.evaluate(n=>{const r=n.getBoundingClientRect();return r.height>=44&&r.width>=44&&n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}),`${game}: companion action is readable and directly hittable at ${width}px`);
       }
@@ -701,7 +781,7 @@ try {
     for(const viewport of ORIENTATIONS) {
       await page.setViewportSize({width:viewport.width,height:viewport.height});
       await noOverflow(page,`${game} ${viewport.label}`);
-      for(const selector of ['[data-home-discovery] [data-to="#decks/ideas"]','[data-home-discovery] [data-act="homeRandomDeck"]','.home-value-main']) {
+      for(const selector of ['[data-home-resume] button','.hh-credit','.home-value-main']) {
         const action=page.locator(selector);await action.evaluate(n=>n.scrollIntoView({block:'center',behavior:'instant'}));await action.focus();
         assert(await action.evaluate(n=>{const r=n.getBoundingClientRect();return r.height>=44&&n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}),`${game}: ${viewport.label} action unobscured`);
       }
@@ -711,30 +791,16 @@ try {
     await page.setViewportSize({ width: 390, height: 844 });
     const hero = heroes[game];
     const value = hero.id;
-    for (const selector of ['.hh-art-link', '.hh-credit']) {
+    for (const selector of ['.hh-credit']) {
       assert.equal(await page.locator(selector).getAttribute('data-id'), value);
-      // The redundant visual badge is gone. Use an actual exposed artwork
-      // point above the title/search panel, with a real hit test, never force.
-      const control = page.locator(selector);
-      if (selector === '.hh-art-link') {
-        await control.scrollIntoViewIfNeeded();
-        const point = await control.evaluate(node => {
-          const r = node.getBoundingClientRect(), header = document.querySelector('.topbar')?.getBoundingClientRect(), title = document.querySelector('.hh-body .eyebrow')?.getBoundingClientRect();
-          const top = Math.max(r.top, header?.bottom || 0) + 12, bottom = Math.min(r.bottom, title?.top || r.bottom, innerHeight) - 12;
-          if (bottom <= top) throw Error('No exposed daily artwork click area');
-          const x = r.width - 24, y = (top + bottom) / 2 - r.top, hit = document.elementFromPoint(r.left + x, r.top + y);
-          if (hit !== node && !node.contains(hit)) throw Error('Daily artwork is obstructed');
-          return { x, y };
-        });
-        await control.click({ position: point });
-      } else await control.click();
+      await page.locator(selector).click();
       await page.waitForFunction(({ game, value }) => { const c = window.__homeTestState.ui.sheetCtx; return game === 'mtg' ? c?.type === 'card' && c.print?.id === value : c?.type === 'tcard' && c.id === value; }, { game, value });
       assert.match(await page.locator('#sheetBody').innerText(), new RegExp(hero.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
       await closeSheet(page);
     }
     await assertDailyIdentity(page, game);
     assert.notEqual(hero.id, seeds[game].id, 'fixture daily card is deliberately different from the saved deck lead');
-    report.push(`${game}: all eleven widths; visible header, approved news and lower Meta artwork; exact daily printing actions unaffected by saved decks; partial value`);
+    report.push(`${game}: all ${WIDTHS.length} widths; visible header, approved news and lower Meta artwork; exact daily printing actions unaffected by saved decks; partial value`);
   }
   await selectGame(page, 'mtg');
   for (const [from, key, to] of [['mtg', 'ArrowRight', 'ygo'], ['ygo', 'ArrowRight', 'ptcg'], ['ptcg', 'ArrowRight', 'mtg'], ['mtg', 'ArrowLeft', 'ptcg'], ['ptcg', 'Home', 'mtg'], ['mtg', 'End', 'ptcg']]) {
@@ -755,7 +821,7 @@ try {
 
   for (const game of GAME_IDS) {
     await selectGame(page, game);
-    const article = page.locator('.community-stage .community-feature');
+    const article = page.locator('.community-stage .community-feature').first();
     assert.match(await article.getAttribute('class'), /feature-news/);
     assert.equal(await article.locator('time').getAttribute('datetime'), '2026-10-16');
     await safeSourceLink(article, game);
@@ -780,38 +846,30 @@ try {
       await page.screenshot({ path: resolve(RESULTS, `home-discovery-${game}-${width}.png`), fullPage: true, animations: 'disabled' });
     }
     await page.setViewportSize({ width: 390, height: 1100 });
-    await touchSwipe(page, '.community-feature-copy');
-    await assertSelected(page, game);
-    if(game==='ygo') {
-      assert.match(await article.getAttribute('class'), /feature-event/);
-      assert.deepEqual(await article.locator('time').evaluateAll(nodes => nodes.map(n => n.dateTime)), ['2026-10-20', '2026-10-22']);
-    } else {
-      assert.match(await article.getAttribute('class'), /feature-link/);
-      assert.equal(await article.locator('time').count(),0,'unsupported upcoming-event rows remain honest source links');
-      assert.doesNotMatch(await article.innerText(),/upcoming fixture event/);
+    const visibleRows=page.locator('.community-stage .community-feature');
+    assert.equal(await visibleRows.count(),3,'three compact rows share the first page');
+    if(game==='ygo'){
+      const event=page.locator('.community-feature.feature-event');
+      assert.deepEqual(await event.locator('time').evaluateAll(nodes=>nodes.map(n=>n.dateTime)),['2026-10-20','2026-10-22']);
+      await safeSourceLink(event,game);
     }
-    await safeSourceLink(article, game);
-    const eventId = await article.getAttribute('data-slide-id');
-    for (const width of [700, 768, 1024, 390]) {
-      await page.setViewportSize({ width, height: viewportHeight(width) });
-      await assertSelected(page, game);
-      assert.equal(await article.getAttribute('data-slide-id'), eventId, 'fold/tablet resize preserves carousel position');
-      await noOverflow(page, `${game} resized event at ${width}px`);
-      await accessibleCarouselControls(page, `${game} resized event at ${width}px`);
+    await touchSwipe(page, '.community-feature-copy');await assertSelected(page, game);
+    const secondPageId=await article.getAttribute('data-slide-id');assert.notEqual(secondPageId,firstId);
+    for(const width of [700,768,1024,390]){
+      await page.setViewportSize({width,height:viewportHeight(width)});await assertSelected(page,game);
+      assert.equal(await article.getAttribute('data-slide-id'),secondPageId,'same-mounted resize preserves the exact selected news page');
+      await noOverflow(page,`${game} resized news page ${width}`);await accessibleCarouselControls(page,`${game} page controls ${width}`);
     }
-    await page.locator('[data-community-step="1"]').focus();
-    await page.keyboard.press('ArrowLeft');
-    assert.equal(await article.getAttribute('data-slide-id'), firstId, 'news carousel keyboard is isolated from game keyboard and deck discovery');
-    await assertSelected(page, game);
-    await page.locator('[data-community-step="1"]').click();
-    if(game!=='mtg')await page.locator('[data-community-step="1"]').click();
-    assert.match(await article.getAttribute('class'), /feature-link/);
-    assert.match(await article.innerText(), /Source link · not a live headline/);
-    assert.equal(await article.locator('time').count(), 0, 'source directory is never misrepresented as dated news');
-    await safeSourceLink(article, game);
-    assert.doesNotMatch(await page.locator('#content').innerText(), /UNSAFE FIXTURE|UNTRUSTED FIXTURE/);
-    await page.locator('[data-community-step="1"]').click();
-    assert.equal(await article.getAttribute('data-slide-id'), firstId, 'next control wraps predictably');
+    await page.locator('[data-community-step="1"]').focus();await page.keyboard.press('ArrowLeft');
+    assert.equal(await article.getAttribute('data-slide-id'),firstId);await assertSelected(page,game);
+    assert(await page.locator('[data-community-step="1"]').evaluate(n=>n===document.activeElement),'stable page arrow keeps focus');
+    await article.locator('.community-open').focus();await page.keyboard.press('ArrowRight');
+    assert.equal(await article.getAttribute('data-slide-id'),secondPageId);
+    assert(await article.locator('.community-open').evaluate(n=>n===document.activeElement),'keyboard from a headline moves focus to the new page, not a detached link');
+    const links=page.locator('.community-feature.feature-link');
+    for(let i=0;i<await links.count();i++){assert.match(await links.nth(i).innerText(),/Source link · not a live headline/);assert.equal(await links.nth(i).locator('time').count(),0);await safeSourceLink(links.nth(i),game);}
+    assert.doesNotMatch(await page.locator('#content').innerText(),/UNSAFE FIXTURE|UNTRUSTED FIXTURE/);
+    await page.locator('[data-community-step="1"]').click();assert.equal(await article.getAttribute('data-slide-id'),firstId,'manual pages wrap predictably');
   }
   // Actual persistence is read, not reconstructed by a fake render helper.
   await selectGame(page, 'ygo');
@@ -824,6 +882,58 @@ try {
   await app.close();
   report.push('All-game tab clicks, keyboard focus/wrap, game swipe, isolated carousel touch/keyboard, safe links/dates, resize and durable reload');
 
+  // Fresh cached daily identities, not text patched into a test-only renderer.
+  // Check both real crop markup and the independent name-without-art fallback.
+  for(const scenario of [{},{dailyArtMode:'missing'},{longDailyNames:true},{longDailyNames:true,dailyArtMode:'missing'},{oversizeDailyName:true},{oversizeDailyName:true,dailyArtMode:'missing'}]){
+    const daily=await openApp({...scenario,width:390,reducedMotion:'reduce'}),p=daily.page;
+    for(const game of scenario.oversizeDailyName?['mtg']:GAME_IDS){
+      await selectGame(p,game);
+      if(scenario.dailyArtMode==='missing')assert.equal(await p.locator('#homeHero .hh-art').count(),0);
+      else await visibleHeaderArt(p);
+      await p.locator('.hh-credit').focus();
+      const mounted=await p.evaluateHandle(()=>({hero:document.querySelector('#homeHero'),action:document.querySelector('.hh-credit'),art:document.querySelector('#homeHero .hh-art')}));
+      for(const width of [320,390,600,700,768,899,900,1024,1440,2560,390]){
+        await p.setViewportSize({width,height:viewportHeight(width)});
+        await noOverflow(p,`${game} ${scenario.longDailyNames?'long':'normal'} daily ${scenario.dailyArtMode||'ready'} at ${width}px`);
+        const card=scenario.oversizeDailyName?oversizeDailyPick:(scenario.longDailyNames?longDailyPicks:heroes)[game];
+        await assertDailyIdentity(p,game,card,TODAY,{compact:!scenario.longDailyNames&&!scenario.oversizeDailyName,allowOversizeWord:!!scenario.oversizeDailyName});
+        assert(await mounted.evaluate(s=>s.hero===document.querySelector('#homeHero')&&s.action===document.querySelector('.hh-credit')&&s.art===document.querySelector('#homeHero .hh-art')&&document.activeElement===s.action),'daily identity, crop and keyboard focus survive the same-mounted responsive sequence');
+        if(scenario.dailyArtMode==='missing')assert.equal(await p.locator('.hh-credit').evaluate(n=>getComputedStyle(n).paddingLeft),'18px','no-art identity does not reserve an empty thumbnail column');
+      }
+      await mounted.dispose();
+    }
+    await daily.close();
+  }
+  report.push('All games: normal and longer actual daily titles retain complete words, exact accessible identity, unobscured thumbnails and focused same-mounted controls across 320–2560px, including 600/700/768/899/900px and no-art fallback; an exceptional single-token Magic name wraps only if wider than its reading column');
+
+  for(const game of GAME_IDS){
+    const work=await openApp({game,twoSavedDecks:true,noWorkHistory:true}),p=work.page;
+    assert.equal(await p.locator('[data-resume-deck]').count(),0,'unrecorded/created decks are not claimed as last-worked');
+    assert.match(await p.locator('[data-home-resume]').innerText(),/Choose a deck/);
+    const route=`#${game==='mtg'?'deck':'tdeck'}/saved-${game}/cards`;
+    await p.evaluate(route=>{location.hash=route;},route);
+    await p.waitForFunction(game=>document.body.dataset.view===(game==='mtg'?'deck':'tdeck')&&window.__homeTestState.ui[game==='mtg'?'deckId':'tdeckId']===`saved-${game}`,game);
+    await p.locator(`[data-act="${game==='mtg'?'deckMenu':'tDeckMenu'}"]`).first().click();
+    await p.locator(game==='mtg'?'#dmName':'#tDmName').fill(`${game.toUpperCase()} edited older deck`);
+    await p.locator(`[data-act="${game==='mtg'?'deckSaveInfo':'tDeckSave'}"]`).click();
+    await p.waitForFunction(()=>!document.querySelector('#sheet').open);
+    await p.evaluate(()=>{location.hash='#home';});await p.waitForFunction(()=>document.body.dataset.view==='home');await assertSelected(p,game);
+    assert.equal(await p.locator('[data-home-resume]').getAttribute('data-resume-deck'),`saved-${game}`,'real saved edit beats newer array order');
+    assert.match(await p.locator('[data-home-resume]').innerText(),/edited older deck/);
+    assert.equal(await p.locator('[data-home-resume] button').getAttribute('data-to'),route);
+    await p.locator('[data-home-resume] button').click();
+    await p.waitForFunction(({game,route})=>location.hash===route&&document.body.dataset.view===(game==='mtg'?'deck':'tdeck')&&window.__homeTestState.ui[game==='mtg'?'deckId':'tdeckId']===`saved-${game}`,{game,route});
+    await p.evaluate(game=>{location.hash=`#${game==='mtg'?'deck':'tdeck'}/newest-${game}/cards`;},game);
+    await p.waitForFunction(game=>location.hash.includes(`newest-${game}`)&&document.body.dataset.view===(game==='mtg'?'deck':'tdeck')&&window.__homeTestState.ui[game==='mtg'?'deckId':'tdeckId']===`newest-${game}`,game);
+    await p.evaluate(()=>{location.hash='#home';});await assertSelected(p,game);
+    assert.equal(await p.locator('[data-home-resume]').getAttribute('data-resume-deck'),`saved-${game}`,'opening another deck is not a successful edit');
+    await p.reload();await p.locator('#app.ready').waitFor();await preloadTestState(p);await assertSelected(p,game);
+    assert.equal(await p.locator('[data-home-resume]').getAttribute('data-resume-deck'),`saved-${game}`,'successful work survives durable reload');
+    assert.equal(await p.locator('[data-home-resume] button').getAttribute('data-to'),route);
+    await work.close();
+  }
+  report.push('All games: actual older-deck edit/save → truthful resume → exact deck route → unrelated open unchanged → durable reload; no newest-deck inference');
+
   const unknown = await openApp({ unpriced: true, decks: false, emptyFeed: true });
   for (const game of GAME_IDS) {
     await selectGame(unknown.page, game);
@@ -833,15 +943,36 @@ try {
     await visibleHeaderArt(unknown.page);
     assert.match(await unknown.page.locator('.hh-credit').innerText(), /Card of the Day/i);
     assert.equal(await unknown.page.locator('.hh-deck-link').count(), 0);
-    assert.equal(await unknown.page.locator('.community-feature.feature-link').count(), 1);
+    assert((await unknown.page.locator('.community-feature.feature-link').count()) >= 2);
     assert.equal(await unknown.page.locator('.community-feature time').count(), 0);
-    await noOverflow(unknown.page, `${game} unavailable source/unpriced state`);
+    for(const width of EVIDENCE_WIDTHS){
+      await unknown.page.setViewportSize({width,height:viewportHeight(width)});
+      await assertDailyIdentity(unknown.page,game);
+      await noOverflow(unknown.page,`${game} no decks/unpriced/unavailable sources at ${width}px`);
+      await unknown.page.evaluate(()=>scrollTo(0,0));
+      await unknown.page.screenshot({path:resolve(RESULTS,`home-empty-${game}-${width}.png`),fullPage:true,animations:'disabled'});
+    }
   }
   await unknown.close();
+  const noDaily = await openApp({heroDate:'2026-10-16',dailyUnavailable:true,width:1024});
+  for(const game of GAME_IDS){
+    await selectGame(noDaily.page,game);
+    await noDaily.page.waitForFunction(()=>!document.querySelector('.hh-credit'));
+    assert.equal(await noDaily.page.locator('#homeHero').isVisible(),false,'unavailable daily pick has no empty visual placeholder');
+    for(const width of EVIDENCE_WIDTHS){
+      await noDaily.page.setViewportSize({width,height:viewportHeight(width)});
+      const sizes=await noDaily.page.locator('.home-overview').evaluate(n=>({overview:n.clientWidth,value:n.querySelector('.home-value').getBoundingClientRect().width}));
+      assert(sizes.value>=sizes.overview-2,'without a daily result the value uses the entire overview, not an empty second column');
+      await noOverflow(noDaily.page,`${game} missing daily pick ${width}`);
+      await noDaily.page.evaluate(()=>scrollTo(0,0));
+      await noDaily.page.screenshot({path:resolve(RESULTS,`home-no-daily-${game}-${width}.png`),fullPage:true,animations:'disabled'});
+    }
+  }
+  await noDaily.close();
   const fetched = await openApp({ fetchFeed: true, timezoneId: 'America/Los_Angeles' });
-  await fetched.page.locator('.community-feature.feature-news').waitFor();
+  await fetched.page.locator('.community-feature.feature-news').first().waitFor();
   assert(fetched.requests.some(url => url.includes('/api/community?game=mtg')), 'uncached feed uses the real fetch/refresh integration');
-  assert.match(await fetched.page.locator('.community-feature time').innerText(), /Oct 16, 2026/, 'date-only source dates do not shift in a western timezone');
+  assert.match(await fetched.page.locator('.community-feature time').first().innerText(), /Oct 16, 2026/, 'date-only source dates do not shift in a western timezone');
   await fetched.close();
   report.push('All-unpriced is not $0; independent daily art; unavailable-source disclosure; real feed refresh; western-timezone date integrity');
 
@@ -885,12 +1016,12 @@ try {
     assert.equal(await alternating.page.locator('.home-meta-original').getAttribute('href'), `${sources[game].deck}-second`);
     assert.equal(await alternating.page.locator('[data-meta-step="1"]').evaluate(n=>n===document.activeElement),true,'changing selected-list art preserves control focus');
     assert.equal(await alternating.page.locator('.community-feature.feature-deck').count(),0,'news does not duplicate deck discovery');
-    await alternating.page.locator('#homeQ').fill('Keep my discovery search');
-    await alternating.page.evaluate(()=>{window.__foldHome={rail:document.querySelector('[data-home-meta]'),opener:document.querySelector('[data-home-meta-open]'),value:document.querySelector('.home-value-main'),search:document.querySelector('#homeQ'),key:document.querySelector('.home-meta-card').dataset.metaDeck,source:document.querySelector('.home-meta-original').href};});
+    await alternating.page.locator('[data-home-resume] button').focus();
+    await alternating.page.evaluate(()=>{window.__foldHome={rail:document.querySelector('[data-home-meta]'),opener:document.querySelector('[data-home-meta-open]'),value:document.querySelector('.home-value-main'),resume:document.querySelector('[data-home-resume] button'),key:document.querySelector('.home-meta-card').dataset.metaDeck,source:document.querySelector('.home-meta-original').href};});
     for(const viewport of FOLD_SEQUENCE) {
       await alternating.page.setViewportSize(viewport);await assertSelected(alternating.page,game);
-      assert(await alternating.page.evaluate(()=>{const s=window.__foldHome;return s.rail===document.querySelector('[data-home-meta]')&&s.opener===document.querySelector('[data-home-meta-open]')&&s.value===document.querySelector('.home-value-main')&&s.search===document.querySelector('#homeQ')&&s.key===document.querySelector('.home-meta-card').dataset.metaDeck&&s.source===document.querySelector('.home-meta-original').href;}),'fold/unfold keeps the exact mounted rail, visible list/source, value and search nodes');
-      assert.equal(await alternating.page.locator('#homeQ').inputValue(),'Keep my discovery search');
+      assert(await alternating.page.evaluate(()=>{const s=window.__foldHome;return s.rail===document.querySelector('[data-home-meta]')&&s.opener===document.querySelector('[data-home-meta-open]')&&s.value===document.querySelector('.home-value-main')&&s.resume===document.querySelector('[data-home-resume] button')&&s.key===document.querySelector('.home-meta-card').dataset.metaDeck&&s.source===document.querySelector('.home-meta-original').href;}),'fold/unfold keeps the exact mounted rail, visible list/source, value and resume nodes');
+      assert(await alternating.page.locator('[data-home-resume] button').evaluate(n=>n===document.activeElement),'same mounted resume focus survives resize');
       await noOverflow(alternating.page,`${game} same-mount fold ${viewport.width}x${viewport.height}`);
     }
     await touchSwipe(alternating.page, '.home-meta-copy', 150);
@@ -1033,10 +1164,10 @@ try {
     const random = await openApp({ game });
     const before = await inventorySnapshot(random.page);
     await startReveal(random.page, game);
-    await random.page.evaluate(()=>{window.__foldReveal={node:document.querySelector('.home-deck-reveal'),context:window.__homeTestState.ui.sheetCtx,home:document.querySelector('[data-home-discovery]'),value:document.querySelector('[data-home-value]')};});
+    await random.page.evaluate(()=>{window.__foldReveal={node:document.querySelector('.home-deck-reveal'),context:window.__homeTestState.ui.sheetCtx,decks:document.querySelector('#content'),opener:document.querySelector('[data-act="randomDeckOptions"]')};});
     for(const viewport of FOLD_SEQUENCE) {
       await random.page.setViewportSize(viewport);
-      assert(await random.page.evaluate(()=>{const r=window.__foldReveal;return r.node===document.querySelector('.home-deck-reveal')&&r.context===window.__homeTestState.ui.sheetCtx&&r.home===document.querySelector('[data-home-discovery]')&&r.value===document.querySelector('[data-home-value]');}),'resizing never restarts the random selection or remounts Home behind it');
+      assert(await random.page.evaluate(()=>{const r=window.__foldReveal;return r.node===document.querySelector('.home-deck-reveal')&&r.context===window.__homeTestState.ui.sheetCtx&&r.decks===document.querySelector('#content')&&r.opener===document.querySelector('[data-act="randomDeckOptions"]');}),'resizing never restarts the random selection or remounts the Decks page behind it');
       assert.equal(await random.page.locator('.home-deck-reveal h3').innerText(),seeds[game].name);
       assert.equal(await random.page.locator('.home-reveal-fan img').getAttribute('alt'),seeds[game].name);
     }
@@ -1063,7 +1194,7 @@ try {
     await random.close();
   }
   const cancel = await openApp();
-  await cancel.page.locator('[data-act="homeRandomDeck"]').click();
+  await openDeckRandom(cancel.page);
   await chooseFormat(cancel.page, 'mtg');
   const held = cancel.holdSelection();
   await cancel.page.locator('[data-act="randomDeckStart"]').click();
@@ -1072,12 +1203,13 @@ try {
     held.seen.then(() => { clearTimeout(timer); resolve(); }, reject);
   });
   await closeSheet(cancel.page);
-  await selectGame(cancel.page, 'ptcg');
+  await cancel.page.locator('#game-tab-ptcg').click();
+  await cancel.page.waitForFunction(()=>document.body.dataset.game==='ptcg');
   held.release();
   await cancel.page.waitForFunction(() => window.__homeTestState.catalog['llanowar elves']?.checkedAt > '2026-10-17T12:00:00.000Z');
   await cancel.page.waitForTimeout(200);
   assert.equal(await cancel.page.locator('.home-deck-reveal').count(), 0, 'late response cannot reveal across closed picker/game navigation');
-  await assertSelected(cancel.page, 'ptcg');
+  assert.equal(await cancel.page.locator('#game-tab-ptcg').getAttribute('aria-selected'),'true');
   await cancel.close();
   report.push('All-game explicit format → real provider-selected card → same seed/format builder, with no inventory mutation; busy Magic build preserved/retryable; late selection cancelled');
 

@@ -45,7 +45,15 @@ async function select(page,selector,value){
  // Native selectedIndex changes alone cannot satisfy the predicate above.
 }
 async function jump(page,target){
- await page.locator(`.card-price-summary [data-act="cardPriceJump"][data-target="${target}"]`).click();
+ // Buy is now outbound. Prices remains the actual in-app entry; then explicitly
+ // scroll to the unchanged lower seller list when that is the assertion target.
+ await page.locator('.card-price-summary [data-act="cardPriceJump"][data-target="history"]').click();
+ await page.waitForFunction(()=>{const n=document.querySelector('#card-history');return n?.isConnected&&document.activeElement===n&&document.querySelector('[data-act="cardTab"][data-tab="prices"]')?.getAttribute('aria-selected')==='true';});
+ if(target==='sellers')await page.evaluate(async()=>{
+  const {scrollDetailTarget}=await import('/pricing-presentation.js');
+  const scroll=()=>scrollDetailTarget(document.querySelector('#sheetBody'),document.querySelector('#card-sellers'),true);
+  scroll();await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));scroll();
+ });
  await page.waitForFunction(id=>{const n=document.querySelector('#card-'+id);return n?.isConnected&&document.activeElement===n&&document.querySelector('[data-act="cardTab"][data-tab="prices"]')?.getAttribute('aria-selected')==='true';},target);
  // Do not retain handles across async history/printing rerenders.
  try{await page.waitForFunction(id=>{const n=document.querySelector('#card-'+id),body=document.querySelector('#sheetBody'),head=body?.querySelector('.sheet-head'),tabs=body?.querySelector('.cs-tabs');if(!n?.isConnected||!head||!tabs)return false;const a=n.getBoundingClientRect(),h=head.getBoundingClientRect(),t=tabs.getBoundingClientRect();return a.top>=Math.max(h.bottom,t.bottom)-2&&a.top<innerHeight-20;},target);}catch(error){
@@ -77,33 +85,63 @@ async function mainArt(page){
 async function tabsKeyboard(page){
  await tab(page,'overview');await page.locator('#card-tab-overview').focus();await page.keyboard.press('End');const last=await page.locator('.cs-tabs [role="tab"]').last().getAttribute('id');assert.equal(await page.evaluate(()=>document.activeElement.id),last);await page.keyboard.press('Home');assert.equal(await page.evaluate(()=>document.activeElement.id),'card-tab-overview');await page.keyboard.press('ArrowRight');assert.equal(await page.locator('.cs-tabs [role="tab"][aria-selected="true"]').count(),1);assert.equal(await page.locator('.cs-tabs [role="tab"][tabindex="0"]').count(),1);const controls=await page.locator('.cs-tabs [aria-selected="true"]').getAttribute('aria-controls');assert.equal(await page.locator('#'+controls).getAttribute('role'),'tabpanel');assert(await page.locator('#'+controls).isVisible());await tab(page,'overview');
 }
+// Browser checks run only in hosted CI. The new tab is wholly synthetic: no
+// request ever reaches TCGplayer, a provider, a cart or an account.
+async function outboundBuy(app,expected,{search=false,activation='click'}={}){
+ const {page,context}=app,anchor=page.locator('.card-price-summary .card-buy-link'),calls=[];
+ const before=await page.evaluate(()=>({url:location.href,tab:window.__uiTestState.ui.sheetCtx.tab||'overview',entry:window.__uiTestState.ui.sheetCtx.entryId})),inventory=await inventorySnapshot(page);
+ assert.equal(await anchor.getAttribute('href'),expected);assert.equal(await anchor.getAttribute('target'),'_blank');assert.equal(await anchor.getAttribute('rel'),'noopener noreferrer');assert.equal(await anchor.getAttribute('referrerpolicy'),'no-referrer');assert.equal(await anchor.getAttribute('data-act'),null);
+ assert.match(await anchor.innerText(),search?/Search TCGplayer/:/^Buy/);assert.match(await anchor.getAttribute('aria-label'),/opens in a new tab/);
+ // Measure the final touch target, not the transient scale of entry motion.
+ // Keep the 44px threshold; settle only finite animations on this control's ancestors.
+ await anchor.evaluate(async n=>{
+  const animations=[];
+  for(let p=n;p;p=p.parentElement)animations.push(...p.getAnimations().filter(a=>Number.isFinite(a.effect?.getComputedTiming().endTime)&&!['finished','idle'].includes(a.playState)));
+  await Promise.allSettled(animations.map(a=>a.finished));
+ });
+ // focus() reacquires a connected locator if detail hydration replaces the row.
+ await anchor.focus();
+ const focusState=await anchor.evaluate(n=>({focused:document.activeElement===n,height:n.getBoundingClientRect().height,active:document.activeElement?.outerHTML.slice(0,300)}));
+ assert(focusState.focused&&focusState.height>=44,'Native Buy remains keyboard-focusable and at least a 44px touch target: '+JSON.stringify(focusState));
+ const intercept=async route=>{const req=route.request();calls.push({url:req.url(),method:req.method(),referer:req.headers().referer||'',navigation:req.isNavigationRequest()});await route.fulfill({status:200,contentType:'text/html',body:'<!doctype html><title>Synthetic retailer destination</title><link rel="icon" href="data:,"><p>Outbound link fixture only.</p>'});};
+ await context.route('https://www.tcgplayer.com/**',intercept);
+ try{
+  const opened=context.waitForEvent('page');
+  if(activation==='keyboard')await anchor.press('Enter');else if(activation==='touch')await anchor.tap();else await anchor.click();
+  const popup=await opened;await popup.waitForURL(expected);await popup.waitForLoadState('domcontentloaded');
+  assert.equal(await popup.evaluate(()=>window.opener),null,'Retailer cannot access the app window');await popup.close();
+  assert.deepEqual(calls,[{url:expected,method:'GET',referer:'',navigation:true}]);
+  assert.deepEqual(await page.evaluate(()=>({url:location.href,tab:window.__uiTestState.ui.sheetCtx.tab||'overview',entry:window.__uiTestState.ui.sheetCtx.entryId})),before,'Outbound Buy never switches the in-app Prices tab or current lot');
+  assert.equal(await inventorySnapshot(page),inventory,'Outbound Buy never changes collection/deck/account data');
+ }finally{await context.unroute('https://www.tcgplayer.com/**',intercept);}
+}
 async function currentDetail(app,game){
- const {page}=app,before=await inventorySnapshot(page);await openCard(page,game);await mainArt(page);await capture(page,`details-${game}-overview`);const art=await artSnapshot(page);assert(art.card,'Main card artwork is still present');await tabsKeyboard(page);
+ const {page}=app,before=await inventorySnapshot(page);await openCard(page,game);await mainArt(page);await capture(page,`details-${game}-overview`);const art=await artSnapshot(page);assert(art.card,'Main card artwork is still present');await outboundBuy(app,'https://www.tcgplayer.com/product/'+({mtg:42,ptcg:111,ygo:555}[game]));await tabsKeyboard(page);
  for(const width of WIDTHS){await page.setViewportSize({width,height:1000});await jump(page,'history');assert((await page.locator('#card-history .history-coverage').innerText()).length>20,'Graph has a readable non-hover summary');await jump(page,'sellers');await noOverflow(page,'#sheetBody',`${game} details ${width}px`);await capture(page,`details-${game}-${width}`);}
  await page.setViewportSize({width:844,height:390});await jump(page,'sellers');await noOverflow(page,'#sheetBody',`${game} detail short landscape`);assert(await page.locator('#sheet [data-act="closeSheet"]').isVisible());await capture(page,`details-${game}-landscape`);
  for(const width of [390,680,768,390]){await page.setViewportSize({width,height:1000});await jump(page,'sellers');await noOverflow(page,'#sheetBody',`${game} resized ${width}px`);}
  if(game==='mtg'){
   await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/42',amount:'$12.50',currency:'USD',action:'View listing'});await seller(page,'Cardmarket',{amount:'€9.30',currency:'EUR'});await seller(page,'Cardhoarder',{amount:'0.04 tix',currency:'TIX'});
   await select(page,'#sheet [data-change="cardPriceFinish"]','foil');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/42',amount:'$15.75',currency:'USD'});
-  await select(page,'#sheet [data-change="cardPriceFinish"]','etched');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/43',amount:'$21.25',currency:'USD'});await seller(page,'Cardmarket',{amount:'Check price',action:'Search store'});
+  await select(page,'#sheet [data-change="cardPriceFinish"]','etched');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/43',amount:'$21.25',currency:'USD'});await seller(page,'Cardmarket',{amount:'Check price',action:'Search store'});await outboundBuy(app,'https://www.tcgplayer.com/product/43',{activation:'touch'});
  }else if(game==='ptcg'){
   await select(page,'#sheet [data-change="cardPriceFinish"]','normal');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/111',amount:'$2.00',currency:'USD'});
   await select(page,'#sheet [data-change="cardPriceFinish"]','holofoil');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/222',amount:'$5.00',currency:'USD'});assert.match(await page.locator('.price-version').innerText(),/Holofoil/);
   await select(page,'#sheet [data-change="cardPriceFinish"]','reverse-holofoil');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/333',amount:'Check price',action:'View listing'});assert.match(await page.locator('.price-version').innerText(),/Current quote unavailable for this selection\. Seller searches remain available\./);
   assert.match(await page.locator('.price-version').innerText(),/Sword & Shield[\s\S]*#9[\s\S]*EN[\s\S]*Reverse holo/,'The unavailable quote still belongs to the exact set, collector number, language and finish');
-  const selected=await page.evaluate(async()=>{const ctx=window.__uiTestState.ui.sheetCtx,card=window.__uiTestTcg.cache.ptcg[ctx.id],{presentationQuote}=await import('/pricing-presentation.js');return {id:ctx.id,finish:ctx.priceFinish,value:presentationQuote('ptcg',card,ctx.priceFinish).value};});assert.deepEqual(selected,{id:CARDS.ptcg[0].id,finish:'reverse-holofoil',value:null});
+  const selected=await page.evaluate(async()=>{const ctx=window.__uiTestState.ui.sheetCtx,card=window.__uiTestTcg.cache.ptcg[ctx.id],{presentationQuote}=await import('/pricing-presentation.js');return {id:ctx.id,finish:ctx.priceFinish,value:presentationQuote('ptcg',card,ctx.priceFinish).value};});assert.deepEqual(selected,{id:CARDS.ptcg[0].id,finish:'reverse-holofoil',value:null});await outboundBuy(app,'https://www.tcgplayer.com/product/333',{activation:'touch'});
  }else{
   // Collection details restore the saved printing and edition, not the generic card reference.
   assert.deepEqual(await page.evaluate(()=>{const c=window.__uiTestState.ui.sheetCtx;return [c.priceEdition,c.priceYgoEdition];}),['SET-001::Rare','unlimited']);
   await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/555',amount:'$20.00',currency:'USD',action:'View listing'});assert.match(await page.locator('.price-version').innerText(),/SET-001 · Rare · Unlimited/);
   await select(page,'#sheet [data-change="historyEdition"]','');
-  await seller(page,'TCGplayer',{amount:'Check price',action:'Search store'});assert.match(await page.locator('.price-version').innerText(),/Reference card/);assert.equal(await row(page,'YGOPRODeck').count(),0,'Research site is not presented as a seller');
+  await seller(page,'TCGplayer',{amount:'Check price',action:'Search store'});assert.match(await page.locator('.price-version').innerText(),/Reference card/);assert.equal(await row(page,'YGOPRODeck').count(),0,'Research site is not presented as a seller');await outboundBuy(app,tcg('ygo',CARDS.ygo[0]).url,{search:true,activation:'touch'});
   await select(page,'#sheet [data-change="historyEdition"]','SET-001::Rare');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/555',amount:'Check price'});assert.equal(await page.locator('#sheet [data-change="historyYgoEdition"]').inputValue(),'','Reselecting a printing does not restore or infer its physical edition');assert.equal(await page.locator('#card-history').getAttribute('data-history-state'),'edition-required');assert.equal(await page.locator('#card-history .market-chart').count(),0,'No edition-selected graph exists before choosing an edition');
   await select(page,'#sheet [data-change="historyYgoEdition"]','unlimited');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/555',amount:'$20.00',currency:'USD'});assert.match(await page.locator('.price-version').innerText(),/SET-001 · Rare · Unlimited/);
   await select(page,'#sheet [data-change="historyEdition"]','SET-002::Common');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/556',amount:'$1.00',currency:'USD'});
   await select(page,'#sheet [data-change="historyEdition"]','SET-001::Super Rare');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/557',amount:'Check price'});
   await select(page,'#sheet [data-change="historyYgoEdition"]','1st-edition');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/557',amount:'$31.00',currency:'USD'});
-  await select(page,'#sheet [data-change="historyYgoEdition"]','unlimited');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/557',amount:'$11.00',currency:'USD'});
+  await select(page,'#sheet [data-change="historyYgoEdition"]','unlimited');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/557',amount:'$11.00',currency:'USD'});await outboundBuy(app,'https://www.tcgplayer.com/product/557',{activation:'keyboard'});
  }
  // The selected finish/rarity above deliberately differs from the saved lot.
  assert.equal(await page.locator('details[data-detail-key="owned-lot"]').count(),0,'A different selected finish/rarity cannot inherit the saved lot private value');
@@ -119,13 +157,14 @@ async function currentDetail(app,game){
  for(const vendor of vendors){const r=row(page,vendor.name);assert.equal(await r.count(),1);assert.equal(await r.getAttribute('href'),vendor.href,'Vendor identity and destination survive the prices refresh');await r.scrollIntoViewIfNeeded();await r.focus();const b=await r.evaluate((n,expected)=>{const r=n.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {width:r.width,height:r.height,connected:n.isConnected,identity:n.querySelector('.vendor-copy b').textContent===expected.name&&n.getAttribute('href')===expected.href,focus:document.activeElement===n,hit:hit===n||n.contains(hit)};},vendor);assert(b.connected&&b.identity&&b.focus&&b.hit&&b.height>=44,`Vendor row is current, correctly identified, focusable, unobstructed and at least 44px: ${JSON.stringify(b)}`);}
  await tab(page,'overview');await mainArt(page);assert.deepEqual(await artSnapshot(page),art,'Price changes preserve hero, main card art and identity');
  assert.equal(await inventorySnapshot(page),before,'Buy/Prices, tabs, ranges, finish, resize and source selection cannot change saved lot identity, condition, values, quantities or decks');
+ if(game!=='ygo')await outboundBuy(app,'https://www.tcgplayer.com/product/'+(game==='mtg'?42:111),{activation:'keyboard'});
  // Visible keyboard-accessible edit action, with no long-press requirement.
  await page.locator('.personal-price-edit').focus();assert.equal(await page.locator('.personal-price-edit').evaluate(n=>n===document.activeElement),true);await closeSheet(page);
- report.push(`${game}: exact vendor/currency/finish/product; graph then sellers; 320/390/768/1440/2560 plus landscape/fold; keyboard tabs; main art and exact saved lots unchanged.`);
+ report.push(`${game}: exact vendor/currency/finish/product; direct isolated Buy + separate Prices; graph then sellers; 320/390/768/1440/2560 plus landscape/fold; keyboard tabs; main art and exact saved lots unchanged.`);
 }
 async function missingQuotes(app,game){
  const {page}=app,before=await inventorySnapshot(page),unknown=game==='ygo'?2:1,personal=game==='ptcg'?2:3;
- await openCard(page,game,unknown);assert.match(await page.locator('.card-price-summary').innerText(),/No quote yet|Price unknown/);await jump(page,'sellers');const rows=await page.locator('#card-sellers .vendor-quote strong').allTextContents();assert(rows.length>0);assert(rows.every(t=>t==='Check price'),'Unknown quotes never invent an amount or stock availability');await closeSheet(page);
+ await openCard(page,game,unknown);const unknownBuy=tcg(game,CARDS[game][unknown]);await outboundBuy(app,unknownBuy.url,{search:!unknownBuy.direct,activation:'keyboard'});assert.match(await page.locator('.card-price-summary').innerText(),/No quote yet|Price unknown/);await jump(page,'sellers');const rows=await page.locator('#card-sellers .vendor-quote strong').allTextContents();assert(rows.length>0);assert(rows.every(t=>t==='Check price'),'Unknown quotes never invent an amount or stock availability');await closeSheet(page);
  await openCard(page,game,personal);assert.match(await page.locator('.card-price-summary').innerText(),/\$987\.65/);assert.match(await page.locator('.card-price-summary').innerText(),/private value|not a seller/i);await jump(page,'sellers');assert.doesNotMatch(await page.locator('#card-sellers').innerText(),/987\.65/);assert((await page.locator('#card-sellers .vendor-quote strong').allTextContents()).every(t=>t==='Check price'));await closeSheet(page);
  if(game==='mtg'){await openCard(page,game,2);assert.match(await page.locator('.card-price-summary').innerText(),/€9\.30/);await jump(page,'sellers');await seller(page,'TCGplayer',{amount:'Check price'});await seller(page,'Cardmarket',{amount:'€9.30',currency:'EUR'});assert.doesNotMatch(await row(page,'TCGplayer').innerText(),/9\.30/);await closeSheet(page);}
  if(game==='ptcg'){await openCard(page,game,3);assert.match(await page.locator('.card-price-summary').innerText(),/Last observed 2020-01-01/);await jump(page,'sellers');assert.match(await row(page,'TCGplayer').innerText(),/Last observed 2020-01-01/);assert.match(await page.locator('.price-version').innerText(),/not a current offer/);await closeSheet(page);}
@@ -147,7 +186,7 @@ async function deckArt(app,game){
  const {page}=app,before=await inventorySnapshot(page);await navigate(page,'#decks/inspiration');
  if(game==='ptcg'){
   const card=page.locator('.arch').filter({has:page.locator('b',{hasText:/^Dhelmise$/})}),none=page.locator('.arch').filter({has:page.locator('b',{hasText:/^No supplied cover$/})});
-  await card.waitFor();assert(await card.isDisabled());assert.equal(await card.getAttribute('data-key'),'');assert.match(await card.innerText(),/0 in Top 8/);assert.match(await card.locator('.arch-list-state').innerText(),/No Top-8 list available/);
+  await card.waitFor();assert(await card.isDisabled());assert.equal(await card.getAttribute('data-key'),'');assert.match(await card.innerText(),/0 in Top 8/);assert.match(await card.locator('.arch-list-state').innerText(),/No published list available/);
   assert.equal(await card.locator('.arch-art img').getAttribute('src'),DHELMISE_COVER.imageLarge,'Supplied lower-place exact cover URL, not an invented mascot');
   await page.waitForFunction(()=>{const card=[...document.querySelectorAll('.arch')].find(n=>n.querySelector('b')?.textContent==='Dhelmise'),img=card?.querySelector('.arch-art img');return img?.isConnected&&img.complete&&img.naturalWidth>0&&!img.hidden;});
   assert.match(await none.getAttribute('class'),/no-cover/);assert(await none.locator('.arch-art-fallback').isVisible());assert(await none.locator('.arch-art-state').isVisible());assert(await none.isDisabled());assert.equal(await none.locator('img').count(),0,'No supplied art stays an honest fallback');

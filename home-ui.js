@@ -5,6 +5,7 @@ import { communityState, communitySlides, metaDeckSlides, loadCommunity, communi
 import { loadMeta, metaState, DEFAULT_MTG_META_FORMAT } from './meta.js';
 import { communityArtwork, handleCommunityArtwork } from './community-art.js';
 import { S } from './store.js';
+import { lastWorkedDeck } from './home-deck-activity.js';
 
 export const homeMetaKey = g => g === 'mtg' ? `mtg:${S.ui.mtgMeta?.format || DEFAULT_MTG_META_FORMAT}` : g;
 const positions = new Map();
@@ -83,21 +84,35 @@ export function refreshHomeValue(game, root, options, documentRef = globalThis.d
   return true;
 }
 
+// One recent personal task, supported by a successful saved edit, never by
+// array position, an import timestamp, or Magic's legacy activeDeck fallback.
+export function homeResume(game, formatName = deck => deck.format) {
+  const recent = lastWorkedDeck(S.state, game), decks = (game === 'mtg' ? S.state : S.state.tcg?.[game])?.decks || [];
+  if (!recent) return `<section class="home-resume home-resume-empty" data-home-resume="${game}" aria-label="Resume a deck"><div><h2>Your deck</h2><p>${decks.length ? 'Choose a deck to pick up where you left off.' : 'No saved decks yet.'}</p></div><button type="button" class="link" data-act="go" data-to="#decks">${decks.length ? 'Choose a deck' : 'Open Decks'} <span aria-hidden="true">↗</span></button></section>`;
+  const { deck, at } = recent, count = (game === 'mtg' ? deck.cards : deck.zones?.main || []).reduce((total, row) => total + (Number(row.qty) || 0), 0);
+  const route = `#${game === 'mtg' ? 'deck' : 'tdeck'}/${encodeURIComponent(deck.id)}/cards`;
+  return `<section class="home-resume" data-home-resume="${game}" data-resume-deck="${esc(deck.id)}" aria-label="Resume your last-worked deck"><div><p class="eyebrow">Last worked on</p><h2>${esc(deck.name)}</h2><p>${esc(formatName(deck) || GAMES[game].short)} · ${count} ${game === 'ygo' ? 'main-deck cards' : 'cards'} · Edited <time datetime="${esc(at)}">${esc(displayDate(at))}</time></p></div><button type="button" class="home-resume-open" data-act="go" data-to="${esc(route)}" aria-label="Resume ${esc(deck.name)}">Resume <span aria-hidden="true">↗</span></button></section>`;
+}
+
 export function displayDate(value) {
   const date = value && new Date(value);
   return date && Number.isFinite(date.getTime()) ? date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', ...(/^\d{4}-\d{2}-\d{2}$/.test(String(value)) ? { timeZone: 'UTC' } : {}) }) : '';
 }
 export function featureArticle(g, slide, index, length) {
-  if (!slide) return `<article class="community-feature community-empty"><p class="eyebrow">From the community</p><h3>No live stories right now.</h3><p>News and deck sources are temporarily unavailable. Your collection and decks are still here.</p><button class="link" data-act="go" data-to="#decks/inspiration">Explore deck sources →</button></article>`;
+  if (!slide) return `<article class="community-feature community-empty feature-text-only"><div class="community-feature-copy"><h3>No live stories right now.</h3><p class="community-summary">News sources are temporarily unavailable. Your collection and decks are still here.</p></div></article>`;
   const kind = ['deck', 'event', 'news', 'link'].includes(slide.kind) ? slide.kind : 'link';
-  const label = { deck: 'Community deck', event: 'Events', news: 'In the news', link: 'Explore the source' }[kind];
+  const label = { deck: 'Community deck', event: 'Event', news: 'News', link: 'Source directory' }[kind];
   const date = displayDate(slide.publishedAt), fetched = displayDate(slide.fetchedAt), starts = displayDate(slide.startsAt), ends = displayDate(slide.endsAt);
   const dateHtml = kind === 'event' && starts ? `<span>Event dates <time datetime="${esc(slide.startsAt)}">${esc(starts)}</time>${ends && ends !== starts ? ` to <time datetime="${esc(slide.endsAt)}">${esc(ends)}</time>` : ''}</span>` : date ? `<span>${esc(slide.dateLabel || 'Published')} <time datetime="${esc(slide.publishedAt)}">${esc(date)}</time></span>` : `<span>${kind === 'event' ? 'Event date' : 'Publication date'} unavailable</span>`;
-  const href = communitySlideUrl(g, slide), art = communityArtwork(g, slide);
-  return `<article class="community-feature feature-${kind}${kind !== 'deck' && !art ? ' feature-text-only' : ''}" role="group" aria-roledescription="slide" aria-label="${index + 1} of ${length}" data-slide-id="${esc(slide.id || '')}"><div class="community-feature-copy"><p class="eyebrow"><span class="community-signal" aria-hidden="true"></span>${label}${slide.scope ? ` · ${esc(slide.scope)}` : ''}${slide.stale ? ' · Older snapshot' : ''}</p><h3>${esc(slide.title || 'Visit the source')}</h3>${slide.summary ? `<p class="community-summary">${esc(slide.summary)}</p>` : ''}${slide.methodology ? `<p class="community-methodology">${esc(slide.methodology)}</p>` : ''}<div class="community-source"><span>${esc(slide.source || 'Source')}</span>${kind === 'link' ? '<span>Source link · not a live headline</span>' : dateHtml}${kind !== 'link' && fetched ? `<span>Checked ${esc(fetched)}</span>` : ''}</div>${href && href !== '#' ? `<a class="community-open" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${kind === 'deck' ? 'View original deck' : kind === 'event' ? 'View event' : kind === 'news' ? 'Read at source' : 'Open source'} <span aria-hidden="true">↗</span><span class="home-sr-only"> (opens in a new tab)</span></a>` : '<p class="small muted">Source link unavailable.</p>'}</div>${art}</article>`;
+  const href = communitySlideUrl(g, slide), art = communityArtwork(g, slide), title = slide.title || 'Visit the source';
+  const action = kind === 'deck' ? 'View original deck' : kind === 'event' ? 'View event' : kind === 'news' ? 'Read at source' : 'Open source';
+  // Publisher headlines are never rewritten into promotional copy. Context and
+  // check dates remain available without competing with the source/date line.
+  const context = [slide.summary, slide.methodology].filter(Boolean).map(text => `<p>${esc(text)}</p>`).join('');
+  return `<article class="community-feature feature-${kind}${!art ? ' feature-text-only' : ''}" role="group" aria-label="${index + 1} of ${length}" data-slide-id="${esc(slide.id || '')}">${art}<div class="community-feature-copy"><p class="eyebrow">${label}${slide.scope ? ` · ${esc(slide.scope)}` : ''}${slide.stale ? ' · Older snapshot' : ''}</p><h3>${href && href !== '#' ? `<a class="community-open" href="${esc(href)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(title)}. ${action} (opens in a new tab)">${esc(title)}</a>` : esc(title)}</h3><div class="community-source"><span>${esc(slide.source || 'Source')}</span>${kind === 'link' ? '<span>Source link · not a live headline</span>' : dateHtml}</div>${context || kind !== 'link' && fetched ? `<details class="community-context"><summary>Source details</summary>${context}${kind !== 'link' && fetched ? `<p>Checked ${esc(fetched)}</p>` : ''}</details>` : ''}${!href || href === '#' ? '<p class="small muted">Source link unavailable.</p>' : ''}</div></article>`;
 }
 // Deck discovery has its own exact-list rail; news/events should not repeat it.
-function slidesFor(g) { return communitySlides(g, { metaState: metaState(homeMetaKey(g)), metaKey: homeMetaKey(g), format: g === 'mtg' ? homeMetaKey(g).slice(4) : undefined }).filter(slide => slide.kind !== 'deck' && slide.category !== 'decks'); }
+function slidesFor(g) { return communitySlides(g, { metaState: metaState(homeMetaKey(g)), metaKey: homeMetaKey(g), format: g === 'mtg' ? homeMetaKey(g).slice(4) : undefined }).filter(slide => slide.kind !== 'deck' && slide.category !== 'decks').sort((a, b) => Number(a.kind === 'link') - Number(b.kind === 'link')); }
 const metaPositions = new Map();
 // At most one rendered snapshot per game. A focused visible list remains an
 // exact action even after the provider atomically replaces its cache. Never put
@@ -140,8 +155,23 @@ export function homeMetaSlides(game) {
   const key = homeMetaKey(game);
   return metaDeckSlides(game, metaState(key), key, Date.now(), 6);
 }
+function homeMetaEmptyState(game) {
+  const state = metaState(homeMetaKey(game));
+  // The first Home render precedes its scheduled request. No data yet is not
+  // evidence of an empty result, even before the loader has marked itself busy.
+  if (state.busy || (!state.data && !state.error)) return 'loading';
+  return state.error ? 'unavailable' : 'empty';
+}
 export function homeMetaArticle(game, slide, index, count) {
-  if (!slide) { captureHomeMeta(game, null); return `<article class="home-meta-card home-meta-empty"><div class="home-meta-copy"><h3>No tournament lists available yet.</h3><p>Open Meta decks to check the current sources. No ranking or deck art has been invented.</p><button class="link" data-act="go" data-to="#decks/inspiration">Explore Meta decks →</button></div>${communityArtwork(game, { kind: 'deck' })}</article>`; }
+  if (!slide) {
+    captureHomeMeta(game, null);
+    const state = homeMetaEmptyState(game), [title, note] = {
+      loading: ['Loading tournament lists…', 'Checking the current sources.'],
+      unavailable: ['Tournament lists are unavailable right now.', 'Open Meta decks to check the sources or try again.'],
+      empty: ['No verified tournament lists to show.', 'Open Meta decks to explore the available source results.'],
+    }[state];
+    return `<article class="home-meta-card home-meta-empty" data-meta-state="${state}"><div class="home-meta-copy"><h3><span role="status">${esc(title)}</span></h3><p>${esc(note)}</p><button class="link" data-act="go" data-to="#decks/inspiration">Explore Meta decks →</button></div>${communityArtwork(game, { kind: 'deck' })}</article>`;
+  }
   const date = displayDate(slide.publishedAt), checked = displayDate(slide.fetchedAt);
   const format = game === 'mtg' ? slide.metaKey.slice(4) : game === 'ptcg' ? 'Standard' : 'TCG';
   const action = game === 'mtg' ? 'mtgProven' : 'tMetaDeck', token = captureHomeMeta(game, slide);
@@ -149,7 +179,7 @@ export function homeMetaArticle(game, slide, index, count) {
 }
 export function homeMetaCarousel(game) {
   const slides = homeMetaSlides(game), state = metaSelection(game, slides), disabled = slides.length < 2;
-  return `<section class="home-meta" data-home-meta="${game}" data-home-discovery="${game}" data-home-gesture="carousel" role="region" aria-roledescription="carousel" aria-label="${esc(GAMES[game].short)} deck discovery"><div class="home-meta-heading"><h2>Deck discovery</h2><button class="link small" data-act="go" data-to="#decks/inspiration">All Meta decks ↗</button></div><div class="home-meta-stage" aria-live="off" aria-atomic="true">${homeMetaArticle(game, slides[state.index], state.index, slides.length)}</div><div class="home-meta-footer"><div class="home-discovery-actions" aria-label="More ways to find a deck"><button type="button" data-act="go" data-to="#decks/ideas">Build from my cards</button><button type="button" data-act="homeRandomDeck"><span aria-hidden="true">✧</span> Surprise me</button></div><div class="home-meta-controls"><button type="button" data-meta-toggle aria-label="${state.paused ? 'Resume' : 'Pause'} automatic Meta slides" aria-pressed="${state.paused}"${disabled ? ' disabled' : ''}>${state.paused ? 'Resume' : 'Pause'}</button><button type="button" data-meta-step="-1" aria-label="Previous Meta deck"${disabled ? ' disabled' : ''}>←</button><span data-meta-position>${slides.length ? `${state.index + 1} / ${slides.length}` : '0 / 0'}</span><button type="button" data-meta-step="1" aria-label="Next Meta deck"${disabled ? ' disabled' : ''}>→</button></div></div></section>`;
+  return `<section class="home-meta" data-home-meta="${game}" data-home-discovery="${game}" data-home-gesture="carousel" role="region" aria-roledescription="carousel" aria-label="${esc(GAMES[game].short)} deck discovery"><div class="home-meta-heading"><h2>Community Meta decks</h2><button class="link small" data-act="go" data-to="#decks/inspiration">All Meta decks ↗</button></div><div class="home-meta-stage" aria-live="off" aria-atomic="true">${homeMetaArticle(game, slides[state.index], state.index, slides.length)}</div><div class="home-meta-footer"><div class="home-meta-controls"><button type="button" data-meta-toggle aria-label="${state.paused ? 'Resume' : 'Pause'} automatic Meta slides" aria-pressed="${state.paused}"${disabled ? ' disabled' : ''}>${state.paused ? 'Resume' : 'Pause'}</button><button type="button" data-meta-step="-1" aria-label="Previous Meta deck"${disabled ? ' disabled' : ''}>←</button><span data-meta-position>${slides.length ? `${state.index + 1} / ${slides.length}` : '0 / 0'}</span><button type="button" data-meta-step="1" aria-label="Next Meta deck"${disabled ? ' disabled' : ''}>→</button></div></div></section>`;
 }
 // Kept as an alias for callers that used the previous shortcut.
 export const homeMetaShortcut = homeMetaCarousel;
@@ -158,7 +188,7 @@ export function refreshHomeMeta(game, node, documentRef = globalThis.document) {
   const stage = node.querySelector?.('.home-meta-stage');
   if (!stage || stage.contains(documentRef?.activeElement)) return false;
   const slides = homeMetaSlides(game), state = metaSelection(game, slides);
-  const signature = `${state.index}:${state.signature}`;
+  const signature = `${state.index}:${state.signature}:${slides.length ? 'ready' : homeMetaEmptyState(game)}`;
   if (node.homeMetaSignature !== signature) {
     stage.innerHTML = homeMetaArticle(game, slides[state.index], state.index, slides.length);
     node.homeMetaSignature = signature;
@@ -223,10 +253,19 @@ export function attachHomeMeta(root, { documentRef = globalThis.document, view =
   return () => { disposed = true; clear(); releaseHomeMeta(mounted); observer?.disconnect(); documentRef?.removeEventListener?.('visibilitychange', sync); motion?.removeEventListener?.('change', sync); for (const [event, handler] of Object.entries(handlers)) root.removeEventListener(event, handler, event === 'click'); };
 }
 function positionFor(g, count) { return count ? ((positions.get(g) || 0) % count + count) % count : 0; }
+const COMMUNITY_PAGE_SIZE = 3;
+export function communityPage(g, slides = slidesFor(g)) {
+  const pages = Math.ceil(slides.length / COMMUNITY_PAGE_SIZE), index = positionFor(g, pages), start = index * COMMUNITY_PAGE_SIZE;
+  return { pages, index, start, slides: slides.slice(start, start + COMMUNITY_PAGE_SIZE), total: slides.length,
+    position: slides.length ? `${start + 1}–${Math.min(start + COMMUNITY_PAGE_SIZE, slides.length)} / ${slides.length}` : '0 / 0' };
+}
+function communityPageHtml(g, page) {
+  return page.slides.length ? page.slides.map((slide, i) => featureArticle(g, slide, page.start + i, page.total)).join('') : featureArticle(g, null, 0, 0);
+}
 export function homeCommunity(g) {
-  const slides = slidesFor(g), index = positionFor(g, slides.length), state = communityState(g);
-  const status = state.busy && !state.data ? 'Checking sources…' : (state.error || state.data?.error || state.data?.status === 'unavailable') ? 'Some sources are unavailable. Available links and cached items remain.' : 'Daily source check · recent stories kept for 7 days';
-  return `<section class="home-community" data-home-community="${g}" data-home-gesture="carousel" role="region" aria-roledescription="carousel" aria-label="${esc(GAMES[g].short)} community highlights"><div class="section-head"><div><p class="eyebrow">Beyond your binder</p><h2>Community spotlight</h2></div></div><div class="community-stage" aria-live="polite" aria-atomic="true">${featureArticle(g, slides[index], index, slides.length)}</div><div class="community-footer"><span class="community-status">${esc(status)}</span><div class="community-controls"><button class="community-arrow" type="button" data-community-step="-1" aria-label="Previous community highlight"${slides.length < 2 ? ' disabled' : ''}>←</button><span class="community-position" aria-live="off">${slides.length ? `${index + 1} / ${slides.length}` : '0 / 0'}</span><button class="community-arrow" type="button" data-community-step="1" aria-label="Next community highlight"${slides.length < 2 ? ' disabled' : ''}>→</button></div></div></section>`;
+  const page = communityPage(g), state = communityState(g);
+  const status = state.busy && !state.data ? 'Checking sources…' : (state.error || state.data?.error || state.data?.status === 'unavailable') ? 'Some sources unavailable · cached stories and source links shown' : 'Checked daily · recent stories';
+  return `<section class="home-community" data-home-community="${g}" data-home-gesture="carousel" role="region" aria-roledescription="carousel" aria-label="${esc(GAMES[g].short)} news and events"><div class="section-head"><h2>News</h2><span class="community-heading-note">${esc(GAMES[g].short)}</span></div><div class="community-stage" aria-live="polite" aria-atomic="true">${communityPageHtml(g, page)}</div><div class="community-footer"><span class="community-status">${esc(status)}</span><div class="community-controls"><button class="community-arrow" type="button" data-community-step="-1" aria-label="Previous news page"${page.pages < 2 ? ' disabled' : ''}>←</button><span class="community-position" aria-live="off">${page.position}</span><button class="community-arrow" type="button" data-community-step="1" aria-label="Next news page"${page.pages < 2 ? ' disabled' : ''}>→</button></div></div></section>`;
 }
 // Compatibility entrypoint, now the single shared discovery composition.
 export const homeDiscovery = homeMetaCarousel;
@@ -238,13 +277,13 @@ export function refreshHomeCommunity(g, root, { now = Date.now(), loadNews = loa
   const deckKey = homeMetaKey(g), requestKey = `${g}:${deckKey}`;
   let originCommunity = root.querySelector?.(`[data-home-community="${g}"]`);
   const originMeta = root.querySelector?.(`[data-home-meta="${g}"]`);
-  const paint = () => {
+  const paint = (metaOnly = false) => {
     if (documentRef?.body?.dataset.view !== 'home' || documentRef?.body?.dataset.game !== g || homeMetaKey(g) !== deckKey) return false;
     const node = root.querySelector?.(`[data-home-community="${g}"]`);
     const carousel = root.querySelector?.(`[data-home-meta="${g}"]`);
     const sameCommunity = node && node === originCommunity && node.isConnected !== false;
     const sameMeta = carousel && carousel === originMeta && carousel.isConnected !== false;
-    if (sameCommunity && !node.contains(documentRef.activeElement)) { node.outerHTML = homeCommunity(g); originCommunity = root.querySelector?.(`[data-home-community="${g}"]`); }
+    if (!metaOnly && sameCommunity && !node.contains(documentRef.activeElement)) { node.outerHTML = homeCommunity(g); originCommunity = root.querySelector?.(`[data-home-community="${g}"]`); }
     if (sameMeta) refreshHomeMeta(g, carousel, documentRef);
     return !!(sameCommunity || sameMeta);
   };
@@ -257,14 +296,22 @@ export function refreshHomeCommunity(g, root, { now = Date.now(), loadNews = loa
   }
   const request = { at: now, failed: false, pending: true, promise: null, mounts: new Map([[root, paint]]) };
   requests.set(requestKey, request);
-  const publish = () => { for (const [mount, update] of request.mounts) if (!update()) request.mounts.delete(mount); };
+  const publish = (metaOnly = false) => { for (const [mount, update] of request.mounts) if (!update(metaOnly)) request.mounts.delete(mount); };
   // A slow tournament source cannot hold fresh news hostage. Each completion
   // notifies the latest eligible mount; leaving cancels only its paint, not the
   // shared provider request or daily cache/backoff policy.
   const news = Promise.resolve().then(() => loadNews(g)).then(() => {
     request.failed ||= !!communityState(g).error; publish();
   }, () => { request.failed = true; publish(); });
-  const decks = Promise.resolve().then(() => loadDecks(deckKey)).then(publish, () => {
+  const decks = Promise.resolve().then(() => {
+    const pending = loadDecks(deckKey);
+    // Show a retry/empty-cache refresh immediately without replacing news.
+    if (metaState(deckKey).busy) publish(true);
+    return pending;
+  }).then(() => {
+    // Cached-data fallback resolves normally but still records a failed check.
+    request.failed ||= !!metaState(deckKey).error; publish();
+  }, () => {
     request.failed = true; publish();
   });
   request.promise = Promise.allSettled([news, decks]).finally(() => { request.pending = false; request.mounts.clear(); });
@@ -275,13 +322,16 @@ export function attachHomeCommunity(root) {
   const cleanupMeta = attachHomeMeta(root);
   let gesture = null, suppressUntil = 0;
   const step = (node, delta) => {
-    const g = node.dataset.homeCommunity, slides = slidesFor(g);
-    if (slides.length < 2) return;
-    const index = positionFor(g, slides.length) + delta;
-    positions.set(g, (index + slides.length) % slides.length);
-    const at = positionFor(g, slides.length);
-    node.querySelector('.community-stage').innerHTML = featureArticle(g, slides[at], at, slides.length);
-    node.querySelector('.community-position').textContent = `${at + 1} / ${slides.length}`;
+    const g = node.dataset.homeCommunity, slides = slidesFor(g), current = communityPage(g, slides);
+    if (current.pages < 2) return;
+    const stage = node.querySelector('.community-stage');
+    const focusInPage = stage.contains?.(globalThis.document?.activeElement);
+    positions.set(g, (current.index + delta + current.pages) % current.pages);
+    const page = communityPage(g, slides);
+    stage.innerHTML = communityPageHtml(g, page);
+    node.querySelector('.community-position').textContent = page.position;
+    // Keyboard pagination from a story must not strand focus on a detached link.
+    if (focusInPage) stage.querySelector?.('.community-open')?.focus({ preventScroll: true });
   };
   const click = e => {
     const carousel = e.target.closest?.('[data-home-community]');

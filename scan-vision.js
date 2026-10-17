@@ -145,6 +145,71 @@ export function selectCardProposal(input){
  return result;
 }
 
+// The cover preview can hide the top/bottom (or left/right) of a card that is
+// completely present in the retained camera frame. Keep that full-frame view
+// AND the existing closer preview view: the latter still resolves small cards
+// below the detector's unchanged six-percent full-frame area floor.
+export function analysisRegions(fw,fh,cw,ch,limits={width:192,height:256}){
+ if(![fw,fh,cw,ch].every(v=>Number.isFinite(v)&&v>0))return [];
+ const maxW=Math.min(192,limits.width??192),maxH=Math.min(256,limits.height??256);
+ if(![maxW,maxH].every(v=>Number.isFinite(v)&&v>0))return [];
+ const region=(kind,x,y,w,h)=>{
+  const scale=Math.min(maxW/w,maxH/h,1);
+  return {kind,x,y,w,h,width:Math.max(1,Math.round(w*scale)),height:Math.max(1,Math.round(h*scale))};
+ };
+ const sensor=region('sensor',0,0,fw,fh),cover=Math.max(cw/fw,ch/fh),w=Math.min(fw,cw/cover),h=Math.min(fh,ch/cover);
+ if(Math.abs(w-fw)<.01&&Math.abs(h-fh)<.01)return [sensor];
+ return [sensor,region('preview',(fw-w)/2,(fh-h)/2,w,h)];
+}
+
+// Each observation is {region,proposal}, from detectCardQuad at region.width /
+// region.height. All selected geometry and alternatives use retained-sensor
+// coordinates. analysis.region is the original input object, and analysis.quad
+// uses that region's analysis coordinates for bounded quality/signature warps.
+export function selectSensorProposal(observations,fw,fh){
+ if(!Array.isArray(observations)||![fw,fh].every(v=>Number.isFinite(v)&&v>0))return null;
+ const validRegion=r=>r&&[r.x,r.y,r.w,r.h,r.width,r.height].every(Number.isFinite)&&r.x>=0&&r.y>=0&&r.w>0&&r.h>0&&Number.isInteger(r.width)&&Number.isInteger(r.height)&&r.width>0&&r.height>0&&r.x+r.w<=fw+.01&&r.y+r.h<=fh+.01;
+ const views=observations.slice(0,2).filter(o=>validRegion(o?.region));
+ const fromSensor=(q,r)=>q.map(p=>({x:(p.x-r.x)*r.width/r.w,y:(p.y-r.y)*r.height/r.h}));
+ const map=(proposal,region)=>{
+  if(!proposal||!Array.isArray(proposal.quad)||proposal.quad.length!==4||!proposal.quad.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)))return null;
+  // Do not use one rounded scale for both axes: canvas rounds W and H
+  // independently, and even sub-pixel discrepancies can clip an identifier.
+  const quad=proposal.quad.map(p=>({x:region.x+p.x*region.w/region.width,y:region.y+p.y*region.h/region.height}));
+  const clippedEdge=region.kind==='preview'&&proposal.quad.some(p=>
+   (region.x>.01&&p.x<=4)||(region.y>.01&&p.y<=4)||
+   (region.x+region.w<fw-.01&&p.x>=region.width-5)||(region.y+region.h<fh-.01&&p.y>=region.height-5));
+  return {...proposal,quad,...quadShape(quad),fraction:quadArea(quad)/(fw*fh),
+   analysis:{region,quad:proposal.quad,cropSafe:proposal.cropSafe===true&&!clippedEdge,
+    reason:clippedEdge?'preview-edge-needs-sensor-boundary':proposal.boundary?.reason}};
+ };
+ const candidates=[];
+ for(const {region,proposal} of views){
+  const main=map(proposal,region);if(main)candidates.push(main);
+  for(const alternate of (proposal?.alternatives||[]).slice(0,2)){const mapped=map(alternate,region);if(mapped)candidates.push(mapped);}
+ }
+ // Re-use the existing conservative grouping/competition rules on a common
+ // coordinate system. In particular a second card/page must not disappear just
+ // because one view has a more attractive score. Full outer boundaries may
+ // dominate enclosed transverse artwork, not another independent card shape.
+ const chosen=selectCardProposal(candidates);if(!chosen)return null;
+ const observed=chosen.analysis;
+ if(!observed.cropSafe&&chosen.cropSafe){
+  chosen.cropSafe=false;
+  chosen.boundary={...chosen.boundary,status:'uncertain',reason:observed.reason||'view-boundary-not-established'};
+ }
+ // Prefer the higher-density view for quality only when it contains the ENTIRE
+ // selected boundary. This retains far-card title/footer resolution without
+ // evaluating a preview-clipped inner crop as if it were the full sensor card.
+ const qualityViews=views.map(({region})=>({region,quad:fromSensor(chosen.quad,region)}))
+  .filter(({region,quad})=>quad.every(p=>p.x>=0&&p.y>=0&&p.x<=region.width-1&&p.y<=region.height-1))
+  .sort((a,b)=>b.region.width*b.region.height/(b.region.w*b.region.h)-a.region.width*a.region.height/(a.region.w*a.region.h));
+ const quality=qualityViews[0]||{region:observed.region,quad:fromSensor(chosen.quad,observed.region)};
+ chosen.analysis={...quality,detectedRegion:observed.region};
+ chosen.alternatives=chosen.alternatives.map(p=>({...p,analysis:{region:p.analysis.region,quad:fromSensor(p.quad,p.analysis.region)}}));
+ return chosen;
+}
+
 // Cheap non-semantic texture check: a blank page is not sufficient evidence for
 // auto-cropping. This does NOT identify text or prove a title/footer is present.
 function proposalDetail(rgba,w,h,q){
@@ -179,12 +244,15 @@ export function detectCardQuad(rgba,w,h){
   if(fraction<.06||fraction>.94||aspect<.43||aspect>.94||Math.min(width,height)<24)continue;
   if(q.some((b,i)=>{const a=q[(i+3)%4],c=q[(i+1)%4];return Math.abs(((a.x-b.x)*(c.x-b.x)+(a.y-b.y)*(c.y-b.y))/(dist(a,b)*dist(c,b)))>.76;}))continue;
   const key=q.map(p=>Math.round(p.x)+','+Math.round(p.y)).join(';');if(seen.has(key))continue;seen.add(key);
+  // Refinement must not turn an image-clipped contour into a complete card by
+  // moving its missing outer edge onto a visible inner printed frame.
+  const observedTouchesFrame=q.some(p=>p.x<=1||p.y<=1||p.x>=w-2||p.y>=h-2);
   let sideSupport=quadEdgeSupport(rgba,w,h,q);
   if(sideSupport.filter(s=>s>=.55).length>=2&&Math.min(...sideSupport)<.9){q=refineQuadEdges(rgba,w,h,q);sideSupport=quadEdgeSupport(rgba,w,h,q);}
   const edgeSupport=Math.min(...sideSupport),meanSupport=sideSupport.reduce((a,b)=>a+b,0)/4,edges=sideSupport.filter(s=>s>=.58).length;
   if(edges!==4||meanSupport<.68)continue;
   const actual=quadShape(q),aspectScore=Math.max(0,1-Math.abs(actual.aspect-63/88)/.3),score=.58*edgeSupport+.25*meanSupport+.12*aspectScore+.05*Math.min(1,fraction/.25);
-  candidates.push({quad:q,score,fraction:quadArea(q)/(w*h),sideSupport,edgeSupport,edges,source,touchesFrame:q.some(p=>p.x<3||p.y<3||p.x>w-4||p.y>h-4),...actual,...proposalDetail(rgba,w,h,q)});accepted++;
+  candidates.push({quad:q,score,fraction:quadArea(q)/(w*h),sideSupport,edgeSupport,edges,source,touchesFrame:observedTouchesFrame||q.some(p=>p.x<3||p.y<3||p.x>w-4||p.y>h-4),...actual,...proposalDetail(rgba,w,h,q)});accepted++;
  }
  return accepted;};
  consider(contrast,'background-contrast');consider(edge,'gradient');

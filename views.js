@@ -1,5 +1,5 @@
 import {compactPriceSummary,selectedFinish,detailTabs,detailPanel} from "./pricing-presentation.js";
-import { homeValue, homeEdition, homeValueCoverage } from "./home-ui.js";
+import { homeValue, homeEdition, homeValueCoverage, homeResume } from "./home-ui.js";
 import {interactiveRules} from './rule-learning.js';
 import {brandMark} from './brand.js';
 import {conditionValueNote} from './condition-value.js';
@@ -84,27 +84,12 @@ const coverOf = (d) =>
 /* ---------- Home ---------- */
 
 export function home() {
-  const st = S.state,
-    copies = sumQty(st.collection),
-    value = collectionValue(st.collection, S.catalog, st.printings, st.decks),
-    active = deckById(st.activeDeck),
-    others = st.decks.filter((d) => d !== active).slice(-8).reverse();
-  const fresh = !st.collection.length && !st.decks.length,
-    lead = active || st.decks.at(-1);
-  // One next step for where you are; the 3-step guide only for brand-new users (and it can be hidden).
-  return `${homeHero("mtg", copies ? "Welcome back." : "Let’s build from your cards.", !fresh)}${installNudge(copies)}
+  const st = S.state, value = collectionValue(st.collection, S.catalog, st.printings, st.decks);
+  return `<div class="home-overview"><h1 class="home-sr-only">Magic dashboard</h1>${homeValue({ game: "mtg", ...value, decks: st.decks.length, history: st.valueHistory, valueRoute: "#collection/value" })}${homeHero("mtg")}</div>
   ${st.example ? `<div class="note warn">Example data is loaded. Reset it in Settings before adding real cards.</div>` : ""}
-  ${homeValue({ total: value.total, copies, decks: st.decks.length, unpriced: value.unpriced, history: st.valueHistory, valueRoute: "#collection/value" })}
-  ${homeEdition("mtg")}
+  ${homeResume("mtg", deck => formatOf(deck).name)}
   ${quickTiles("mtg")}
-  <div class="home-personal">${fresh && !startHidden("mtg") ? `<details class="home-start"><summary>New here? Start with your cards <span aria-hidden="true">＋</span></summary>${startPath()}</details>` : mtgNext(lead, copies)}</div>
-  ${others.length ? `<section class="home-deck-section"><div class="section-head"><h2>Deck shelf</h2><button class="link" data-act="go" data-to="#decks">All decks →</button></div><div class="shelf">${others.map((d) => deckTile(d)).join("")}</div></section>` : ""}
-  ${
-    value.spare.length && value.spareValue > 0
-      ? `<button class="banner" data-act="go" data-to="#collection/value"><span><b>${usd(value.spareValue, 0)}</b> sits in ${sumQty(value.spare)} cards no deck uses</span><span class="muted">Trade binder →</span></button>`
-      : ""
-  }
-  `;
+  ${homeEdition("mtg")}`;
 }
 
 const glossary = () => `<details class="glossary"><summary>New to Commander? 60-second glossary</summary><dl>
@@ -809,7 +794,7 @@ export function decks() {
   const tab = S.ui.decksTab;
   return `<div class="page-head"><h1>Decks</h1><div class="head-actions"><button class="btn small" data-act="importDeck">↥ Import</button><button class="btn small ghost" data-act="newDeck">＋ New</button></div></div>
   <div class="random-tools"><button class="btn ghost small" data-act="learnGame">How to play · keywords</button></div>
-  ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Meta decks"]])}<div class="random-tools"><button class="btn ghost small" data-act="randomDeck" aria-label="Random Commander deck">🎲 Random Commander</button><button class="btn ghost small" data-act="randomDeckOptions" aria-label="Random deck in any format">🎲 Random deck</button></div>
+  ${segmented("decksTab", tab, [["mine", "My decks"], ["ideas", "Ideas"], ["inspiration", "Meta decks"]])}<div class="random-tools"><button class="btn ghost small" data-act="randomDeck" aria-label="Random Commander deck">🎲 Random Commander</button><button class="btn ghost small" data-act="randomDeckOptions" data-home="1" aria-label="Random deck in any format">🎲 Random deck</button></div>
   ${tab === "ideas" ? ideasView() : tab === "inspiration" ? inspirationView() : myDecks()}`;
 }
 
@@ -1769,7 +1754,7 @@ export function accountPanel() {
       <label class="field">Bio<textarea id="pfBio" rows="2" maxlength="500">${esc(pr.bio || "")}</textarea></label>
       <button class="btn small" data-act="saveProfile">Save profile</button>
     </details>
-    <p class="foot">Private: only you can read your account copy. Cards and decks are saved on this device first, then synced a few seconds later.</p>
+    <p class="foot">Your collection and decks are private. Saved here first, then synced to your account.</p>
     <button class="link small" data-act="accountResetPassword">Reset / set password</button> · <button class="link small" data-act="signOut">Sign out</button> <span class="muted small">— your data stays on this device.</span>
     <details class="settings-disclosure settings-danger"><summary>Delete account</summary><p class="foot">Permanently deletes your CardStashy account and the collection, decks and profile synced to it. You can keep or erase this device's copy afterwards. <a href="delete-account.html" target="_blank" rel="noopener">How account deletion works</a></p><button class="btn ghost danger" data-act="deleteAccount">Delete my account</button></details></section>`;
 }
@@ -1792,19 +1777,18 @@ export function syncDecideSheet(p, local) {
   <button class="link small" data-act="syncChoice" data-choice="later">Decide later (sync stays paused)</button>`;
 }
 
-export function settings() {
+export function settings({popup=false}={}) {
   const st = S.state, tab = ["account","backup","app"].includes(S.ui.settingsTab) ? S.ui.settingsTab : "account";
   const saved = esc(st.lastSavedAt ? new Date(st.lastSavedAt).toLocaleString() : "Not yet");
-  return `<div class="settings-page"><header class="settings-header"><p class="eyebrow">YOUR WORKSPACE</p><h1>Settings</h1><p class="muted">Your account, your data, your preferences.</p></header>
+  return `<div class="settings-page">${popup?'':'<header class="settings-header"><p class="eyebrow">YOUR WORKSPACE</p><h1>Settings</h1><p class="muted">Your account, your data, your preferences.</p></header>'}
   <nav class="settings-tabs" role="tablist" aria-label="Settings sections">${[["account","Account"],["backup","Backup & data"],["app","App & sources"]].map(([id,label]) => `<button id="settingsTab-${id}" role="tab" aria-controls="settings-${id}" aria-selected="${id===tab}" data-act="settingsTab" data-id="${id}">${label}</button>`).join("")}</nav>
-  <button class="btn ghost small settings-tour" data-act="replayTour">▶ Replay the welcome tour</button>
   <div id="settings-account" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-account" ${tab === "account" ? "" : "hidden"}><div class="settings-account-layout">${accountPanel()}<aside class="settings-aside"><span class="settings-status-dot"></span><b>Saved on this device</b><p class="muted small">${cloudInfo().user ? "Your account adds a private cloud copy." : "You can keep building without signing in."}</p><span class="small muted">Last saved<br>${saved}</span><button class="link" data-act="settingsTab" data-id="backup">Manage backups →</button></aside></div></div>
   <div id="settings-backup" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-backup" ${tab === "backup" ? "" : "hidden"}><section class="panel settings-card"><div class="settings-card-heading"><span class="settings-icon" aria-hidden="true">↓</span><div><p class="eyebrow">YOUR DATA</p><h2>Keep a backup</h2></div></div><p class="muted small">Download a copy of your collection, decks and settings.</p><button class="btn" data-act="exportBackup">Download backup</button><p class="foot">Last saved: ${saved}</p><details class="settings-disclosure"><summary>Restore or check a backup</summary><div class="actions wrap"><label class="btn ghost">Restore file<input type="file" accept=".json" data-change="restoreBackup" hidden></label><label class="btn ghost">Check file<input type="file" accept=".json" data-change="checkBackup" hidden></label></div><p id="backupCheck" class="muted small" role="status"></p><button class="link" data-act="undoRestore">Use the automatic recovery copy</button></details></section>
   <section class="panel settings-card"><h3>Device storage</h3><p id="storageDetail" class="muted small">Checking…</p><button class="btn ghost" data-act="persist">Keep data on this device</button></section>
   <details class="settings-disclosure settings-danger"><summary>Start over or load examples</summary><p class="foot">Export a backup first. One recovery copy is kept on this device.</p><div class="actions wrap"><button class="btn ghost danger" data-act="reset">Clear this device</button><button class="btn ghost" data-act="loadExample">Load example data</button></div></details></div>
   <div id="settings-app" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-app" ${tab === "app" ? "" : "hidden"}><section class="panel settings-card"><div class="settings-card-heading"><div><p class="eyebrow">APPEARANCE</p><h2>Glass &amp; art backdrop</h2></div></div><label class="check"><input type="checkbox" data-change="setGlass" ${(() => { try { return localStorage.getItem("cardstashy-glass") !== "off"; } catch { return true; } })() ? "checked" : ""}> Frosted glass panels over a blurred copy of the game's featured art</label><p class="foot">Turn it off for plain solid panels (a little lighter on older phones).</p><label class="check"><input type="checkbox" data-change="setHaptics" ${hapticsOn() ? "checked" : ""}> Vibration when you tap, add or remove cards</label><p class="foot">On iPhone this uses the system tap (iOS 18 or later). Animations follow your phone’s “Reduce motion” setting.</p></section><section class="panel settings-card"><div class="settings-card-heading"><span class="settings-icon" aria-hidden="true">＋</span><div><p class="eyebrow">TAKE IT WITH YOU</p><h2>Install CardStashy</h2></div></div><p class="muted small">Open it from your home screen. Saved collections and decks work offline.</p><button class="btn" data-act="install">Install app</button><details class="settings-disclosure"><summary>Android installation help</summary><p class="foot">In Chrome, open ⋮ → Add to Home screen or Install app. Searches and updated prices need internet.</p></details></section>
   <details class="settings-disclosure settings-source"><summary>Card databases & prices</summary><ul class="sources"><li><b>Magic:</b> Scryfall card data, images and reference prices; MTGJSON precon lists.</li><li><b>Pokémon:</b> TCGdex card data and images, with supplied TCGplayer and Cardmarket prices.</li><li><b>Yu-Gi-Oh!:</b> YGOPRODeck card data, alternate art, printings and reference prices.</li><li><b>Imports:</b> Supported text and CSV exports from deck and collection tools.</li></ul><p class="foot">Prices are estimates; check edition, condition and shipping with the seller.</p></details>
-  <details class="settings-disclosure settings-source"><summary>About CardStashy</summary><p class="foot">Scores and test games are estimates, not win rates. CardStashy is an independent fan app, not affiliated with or endorsed by the publishers. Magic: The Gathering is a trademark of Wizards of the Coast; Yu-Gi-Oh! of Konami; Pokémon of Nintendo, Creatures and GAME FREAK. Cards and art belong to their owners.</p><span class="settings-version">Version ${APP_VERSION}</span></details></div></div>`;
+  <button class="btn ghost small settings-tour" data-act="replayTour">▶ Replay the welcome tour</button><details class="settings-disclosure settings-source"><summary>About CardStashy</summary><p class="foot">Scores and test games are estimates, not win rates. CardStashy is an independent fan app, not affiliated with or endorsed by the publishers. Magic: The Gathering is a trademark of Wizards of the Coast; Yu-Gi-Oh! of Konami; Pokémon of Nintendo, Creatures and GAME FREAK. Cards and art belong to their owners.</p><span class="settings-version">Version ${APP_VERSION}</span></details></div></div>`;
 }
 
 /* ---------- Deck idea sheet ---------- */

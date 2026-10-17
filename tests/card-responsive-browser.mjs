@@ -19,21 +19,21 @@ async function settledScroll(page){
  return page.locator('#sheetBody').evaluate(n=>({top:n.scrollTop,max:Math.max(0,n.scrollHeight-n.clientHeight),scrollHeight:n.scrollHeight,clientHeight:n.clientHeight}));
 }
 async function focusedSuggestions(game){
- const app=await openApp(browser,server.base,{game,width:1024,height:1000,hash:'#home'}),{page,context}=app,calls=[];
+ const app=await openApp(browser,server.base,{game,width:1024,height:1000,hash:'#search'}),{page,context}=app,calls=[];
  try{
   // Intercept only this lookup using each real provider's autocomplete shape.
-  // The mounted Home input and production suggestion lifecycle are unchanged.
+  // The mounted Search input and production suggestion lifecycle are unchanged.
   await context.route(url=>game==='mtg'?url.hostname==='api.scryfall.com'&&url.pathname==='/cards/autocomplete':game==='ptcg'?url.hostname==='api.tcgdex.net'&&url.pathname==='/v2/en/cards'&&url.searchParams.has('name'):url.hostname==='db.ygoprodeck.com'&&url.pathname.endsWith('/cardinfo.php')&&url.searchParams.has('fname'),async route=>{
    const request=route.request(),url=new URL(request.url()),query=url.searchParams.get(game==='mtg'?'q':game==='ptcg'?'name':'fname');calls.push({method:request.method(),url:request.url(),query});
    const names=['Fold query first','Fold query second'],body=game==='mtg'?{data:names}:game==='ptcg'?names.map((name,i)=>({id:'fold-'+i,name})):{data:names.map(name=>({name}))};
    await route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(body)});
   });
-  const search=page.locator('#homeQ');await search.fill('Fold query');await page.locator('#suggestBox [role=option]').first().waitFor();await page.locator('#suggestBox').evaluate(n=>Promise.all(n.getAnimations().map(a=>a.finished)));await search.press('ArrowDown');
-  await page.evaluate(()=>{const input=document.querySelector('#homeQ'),box=document.querySelector('#suggestBox');window.__focusedSuggestion={input,box,options:[...box.children],value:input.value,active:input.getAttribute('aria-activedescendant')};});
+  const search=page.locator('#content .search-query input[data-suggest]');await search.fill('Fold query');await page.locator('#suggestBox [role=option]').first().waitFor();await page.locator('#suggestBox').evaluate(n=>Promise.all(n.getAnimations().map(a=>a.finished)));await search.press('ArrowDown');
+  await page.evaluate(()=>{const input=document.querySelector('#content .search-query input[data-suggest]'),box=document.querySelector('#suggestBox');window.__focusedSuggestion={input,box,options:[...box.children],value:input.value,active:input.getAttribute('aria-activedescendant')};});
   for(const [width,height] of [[320,1000],[768,1000],[844,390],[1024,1000]]){
    await page.setViewportSize({width,height});await frame(page);
    const state=await page.evaluate(()=>{
-    const old=window.__focusedSuggestion,input=document.querySelector('#homeQ'),box=document.querySelector('#suggestBox'),a=input.getBoundingClientRect(),b=box?.getBoundingClientRect(),viewport=document.documentElement.clientWidth,w=Math.min(a.width,viewport);
+    const old=window.__focusedSuggestion,input=document.querySelector('#content .search-query input[data-suggest]'),box=document.querySelector('#suggestBox'),a=input.getBoundingClientRect(),b=box?.getBoundingClientRect(),viewport=document.documentElement.clientWidth,w=Math.min(a.width,viewport);
     return {same:input===old.input&&box===old.box&&old.options.every((n,i)=>n===box?.children[i]),focused:document.activeElement===input,value:input.value===old.value,active:input.getAttribute('aria-activedescendant')===old.active&&!!box?.querySelector('#'+old.active+'.on'),input:a.toJSON(),box:b?.toJSON(),viewport,documentWidth:document.documentElement.scrollWidth,expected:{left:Math.max(0,Math.min(a.left,viewport-w)),top:a.bottom+6,width:w}};
    });
    assert(state.same&&state.focused&&state.value&&state.active,`${game} ${width}x${height}: same focused input, popup, options, query and selected option ${JSON.stringify(state)}`);
@@ -84,8 +84,21 @@ async function conditionCollection(game){
  const app=await openApp(browser,server.base,{game,width:320,height:1000}),{page,context}=app,selector='#content .display-list > .lot:has(> .lot-side > .condition-value-note)',row=page.locator(selector),allRows=page.locator('#content .display-list > .lot');
  try{
   const inventory=await inventorySnapshot(page);assert.equal(await row.count(),1,'The real Collection fixture includes its condition-priced lot');assert.equal(await allRows.count(),CARDS[game].length);
-  const snapshot=()=>allRows.evaluateAll(nodes=>nodes.map(n=>({id:n.querySelector('.lot-art').dataset.entry,metadata:n.querySelector('.lot-sub').textContent.replace(/\s+/g,' ').trim(),icons:[...n.querySelectorAll('.lot-sub svg.emb')].map(x=>({role:x.getAttribute('role'),label:x.getAttribute('aria-label'),title:x.querySelector('title')?.textContent,hidden:x.getAttribute('aria-hidden'),parentLabel:x.parentElement.getAttribute('aria-label')})),note:n.querySelector('.condition-value-note')?.textContent||null,price:n.querySelector('.price').textContent,quantity:n.querySelector('.stepper b').textContent,actions:[...n.querySelectorAll('.lot-side button')].map(b=>[b.dataset.act,b.textContent,b.getAttribute('aria-label')])}))),original=await snapshot();
+  // Quantity controls can be enhanced from glyphs to decorative SVGs; their
+  // accessible action names and quantity remain the stable identity contract.
+  const snapshot=()=>allRows.evaluateAll(nodes=>nodes.map(n=>({id:n.querySelector('.lot-art').dataset.entry,metadata:n.querySelector('.lot-sub').textContent.replace(/\s+/g,' ').trim(),icons:[...n.querySelectorAll('.lot-sub svg.emb')].map(x=>({role:x.getAttribute('role'),label:x.getAttribute('aria-label'),title:x.querySelector('title')?.textContent,hidden:x.getAttribute('aria-hidden'),parentLabel:x.parentElement.getAttribute('aria-label')})),note:n.querySelector('.condition-value-note')?.textContent||null,price:n.querySelector('.price').textContent,quantity:n.querySelector('.stepper b').textContent,actions:[...n.querySelectorAll('.lot-side button')].map(b=>[b.dataset.act,b.dataset.act==='qty'?b.getAttribute('aria-label'):b.textContent,b.getAttribute('aria-label')])}))),original=await snapshot();
   if(game!=='mtg'){const label=game==='ptcg'?'Grass Energy':'LIGHT attribute';assert(original.find(n=>n.note).icons.some(n=>n.role==='img'&&n.label===label&&n.title===label),'The real condition fixture retains its exact accessible Energy/attribute emblem, not just non-rendering title text');}
+  const measureRow=async(item,mode,batch,width,previous=false)=>{
+   const targetSelector=`#content .display-list > .lot:has(> .lot-art[data-entry="${item.id}"])`;
+   await noOverflow(page,targetSelector,`${game} ${mode} ${item.id} ${width} batch ${batch}`,true);
+   // Resolve, scroll instantly and measure one exact current node in a single
+   // task. No remote row handle survives a stability or animation await.
+   const geometry=await page.evaluate(collectionRowGeometry,{id:item.id,game,mode,batch,width,previous,scroll:true});
+   assert(geometry.identity.connected&&geometry.identity.current&&geometry.identity.rootConnected&&geometry.identity.unique===1,'Geometry belongs to the exact connected current Collection row');assert.deepEqual(geometry.identity.data,item,'The atomically measured row retains its exact owned metadata, values and actions');
+   assert(geometry.identity.scroll.visible&&geometry.identity.scroll.same,'The exact current row is genuinely visible after native scrolling, not hidden or detached');
+   if(geometry.identity.previous)assert.deepEqual(geometry.identity.previous,{connected:false,replaced:true},'The real viewSave render replaces the prior node; the strict probe measures its current counterpart');
+   assert.deepEqual(geometry.bad,[],`${game} ${mode} ${width} ${item.id}: real visible words fit intact ${JSON.stringify(geometry)}`);return geometry;
+  };
   for(const mode of ['compact','symbols']){
    await page.evaluate(selector=>{const nodes=document.querySelectorAll(selector);if(nodes.length!==1||!nodes[0].isConnected)throw Error('Unique connected prior condition row required');window.__conditionPriorRow=nodes[0];},selector);await page.locator(`#content [data-act="viewSave"][data-mode="${mode}"]`).click();await page.waitForFunction(mode=>!window.__conditionPriorRow.isConnected&&document.querySelector('#content').classList.contains('view-'+mode),mode);
    for(const batch of [false,true]){
@@ -96,13 +109,7 @@ async function conditionCollection(game){
      // Non-condition batch rows must be measured too: the former 3/5 placement
      // created an implicit fourth symbols track and stretched their steppers.
      for(const item of original.filter(item=>batch||item.note)){
-      const targetSelector=`#content .display-list > .lot:has(> .lot-art[data-entry="${item.id}"])`,target=page.locator(targetSelector);
-      await noOverflow(page,targetSelector,`${game} ${mode} ${item.id} ${width} batch ${batch}`,true);await target.scrollIntoViewIfNeeded();await frame(page);
-      // Resolve the current unique row and measure synchronously, not through
-      // an ElementHandle that a real background Collection render can detach.
-      const geometry=await page.evaluate(collectionRowGeometry,{id:item.id,game,mode,batch,width,previous:!!item.note&&!batch&&width===320});
-      assert(geometry.identity.connected&&geometry.identity.current&&geometry.identity.rootConnected&&geometry.identity.unique===1,'Geometry belongs to the exact connected current Collection row');assert.deepEqual(geometry.identity.data,item,'The atomically measured row retains its exact owned metadata, values and actions');
-      if(geometry.identity.previous)assert.deepEqual(geometry.identity.previous,{connected:false,replaced:true},'The real viewSave render replaces the prior node; the strict probe measures its current counterpart');
+      const geometry=await measureRow(item,mode,batch,width,!!item.note&&!batch&&width===320);
       assert(geometry.words>=(item.note?5:1),'Actual printing/edition, condition, value and action words are audited');assert.deepEqual(geometry.bad,[],`${game} ${mode} ${width} ${item.id}: real visible words fit intact ${JSON.stringify(geometry)}`);
       assert.equal(!!geometry.mark,batch);assert.equal(!!geometry.art,mode==='compact');
       const columns=(mode==='compact'?2:1)+(batch?1:0)+(width>480?1:0);assert.equal(geometry.cols,columns,'Narrow rows retain only the correct explicit artwork/batch columns; wide layout is unchanged');
@@ -116,8 +123,8 @@ async function conditionCollection(game){
       for(let i=0;i<geometry.footer.length;i++)for(const other of geometry.footer.slice(i+1)){const a=geometry.footer[i];assert(!(Math.min(a.right,other.right)-Math.max(a.left,other.left)>2&&Math.min(a.bottom,other.bottom)-Math.max(a.top,other.top)>2),'Price, quantity, edit and note do not overlap');}
       report.push(`${game} condition/batch ${mode} ${width} batch ${batch} ${item.id}: ${JSON.stringify(geometry)}`);
      }
-     if(batch&&[768,1100].includes(width)){await row.scrollIntoViewIfNeeded();await capture(page,`card-responsive-${game}-batch-${mode}-${width}`);}
-     if(width===320){await row.scrollIntoViewIfNeeded();await capture(page,`card-responsive-${game}-condition-${mode}${batch?'-batch':''}`);if(batch){await allRows.last().scrollIntoViewIfNeeded();await capture(page,`card-responsive-${game}-all-batch-${mode}`);}}
+     if(batch&&[768,1100].includes(width)){await measureRow(original.find(item=>item.note),mode,batch,width);await capture(page,`card-responsive-${game}-batch-${mode}-${width}`);}
+     if(width===320){await measureRow(original.find(item=>item.note),mode,batch,width);await capture(page,`card-responsive-${game}-condition-${mode}${batch?'-batch':''}`);if(batch){await measureRow(original.at(-1),mode,batch,width);await capture(page,`card-responsive-${game}-all-batch-${mode}`);}}
     }
     if(batch){await page.locator('#content [data-act="batchStart"]').click();await row.locator(':scope > .batch-mark').waitFor({state:'detached'});}
    }

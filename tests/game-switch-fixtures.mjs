@@ -8,6 +8,8 @@ import {artworkSources} from '../artwork.js';
 import {pkCatalogueSymbolSources, pkRarity} from '../emblems.js';
 import {sharePayload, sharePayloadTcg, decodeShare} from '../share.js';
 import {SUPABASE} from '../config.js';
+import {communityState, communitySlides} from '../community-feed.js';
+import {communityPage} from '../home-ui.js';
 import {
   ROOT, RESULTS, NOW, ISO, CARDS, RAW, SETS, RELEASES, LOB, UNIQUE, GROUP_IDS,
   makeSearchFixtures, providerFixture as searchProvider, startServer,
@@ -81,7 +83,18 @@ function deck(game, id, card) {
     ...(game === 'mtg' ? {format: 'Standard', commander: '', cards: [{name: card.name, qty: 4}], side: []}
       : {format: game === 'ygo' ? 'tcg' : 'standard', zones: {main: [{cardId: card.id, name: card.name, qty: 3}], extra: [], side: []}})};
 }
-export function makeGameSwitchFixtures(game = 'mtg') {
+// Only carousel-isolation cases need multiple editorial pages. Keep all other
+// navigation fixtures unchanged; these are synthetic articles, not live claims.
+function carouselNewsFixture(game) {
+  const sourceId={mtg:'wizards',ygo:'konami',ptcg:'pokeguardian'}[game];
+  const prefix={mtg:'https://magic.wizards.com/en/news/announcements/synthetic-navigation-story-',ygo:'https://www.yugioh-card.com/en/news/synthetic-navigation-story-',ptcg:'https://www.pokeguardian.com/3412574_synthetic-navigation-story-'}[game];
+  return {game,status:'ready',fetchedAt:ISO,checkedAt:ISO,items:[1,2,3,4].map(i=>({game,sourceId,kind:'news',title:`Synthetic ${game} navigation story ${i}`,url:prefix+i,publishedAt:'2026-10-16',fetchedAt:ISO}))};
+}
+export function carouselPages(game) {
+  const ids=carouselNewsFixture(game).items.map(row=>row.url).concat(`link:${game}:events`,game==='ptcg'?[`link:${game}:news`]:[]),total=ids.length;
+  return [{position:`1–3 / ${total}`,ids:ids.slice(0,3)},{position:`4–${total} / ${total}`,ids:ids.slice(3)}];
+}
+export function makeGameSwitchFixtures(game = 'mtg', {carouselNews = false} = {}) {
   const f = makeSearchFixtures(game), {state, storage} = f;
   state.settings.binders = GAMES.map(g => ({id: `synthetic-binder-${g}`, game: g, title: `Synthetic ${g} binder`, rule: 'all', color: '#176b69', favorites: []}));
   state.settings.locations = ['Synthetic binder'];
@@ -102,6 +115,7 @@ export function makeGameSwitchFixtures(game = 'mtg') {
   storage[PREFS_KEY] = {shared: {sounds: false, haptics: false, qty: 3, condition: 'Lightly Played', lang: 'ja'},
     ...Object.fromEntries(GAMES.map(g => [g, {finish: finishFor(g), finishConfirmed: true, lockSet: 'synthetic-lock-' + g}]))};
   storage['cardforge-community-v2'] = storage['cardforge-community-v1'];
+  if(carouselNews){const entry={at:NOW,data:carouselNewsFixture(game)};storage['cardforge-community-v2'][game]=entry;storage['cardforge-community-v3']={[game]:entry};}
   storage['cardforge-precons-v1'] = {at: NOW, decks: []};
   return {...f, shared};
 }
@@ -169,6 +183,19 @@ export async function validateGameSwitchFixtures() {
     assert.equal(f.storage[SCAN_KEY].length, 3); assert.equal(checked.myPrices['89631139:nonfoil'].price, 987.65);
   }
   for(const g of GAMES) {
+    const fixture=makeGameSwitchFixtures(g,{carouselNews:true}),state=communityState(g),saved={...state};
+    try {
+      Object.assign(state,{data:fixture.storage['cardforge-community-v3'][g].data,at:NOW,error:''});
+      const slides=communitySlides(g,{now:NOW,metaState:{data:{decks:[],events:[]}}}).filter(row=>row.kind!=='deck'&&row.category!=='decks').sort((a,b)=>Number(a.kind==='link')-Number(b.kind==='link'));
+      const expected=carouselPages(g),page=communityPage(g,slides);
+      assert.equal(slides.filter(row=>row.kind==='news').length,4,'Every distinct synthetic story survives real provenance/date validation');
+      assert.equal(new Set(slides.map(row=>row.id)).size,slides.length);
+      assert.deepEqual(slides.map(row=>row.id),expected.flatMap(page=>page.ids));
+      assert.equal(page.pages,2);assert.equal(page.position,expected[0].position);assert.deepEqual(page.slides.map(row=>row.id),expected[0].ids);
+      assert.equal(makeGameSwitchFixtures(g).storage['cardforge-community-v3'],undefined,'Multi-page news is opt-in only, preserving the other navigation cases');
+    } finally {Object.assign(state,saved);}
+  }
+  for(const g of GAMES) {
     const f=makeScannerLifecycleFixture(g),review=f.rows.find(row=>row.id===f.reviewId);
     const manual=makeManualReviewFixture(g);assert.equal(manual.confirm.game,g);assert.equal(manual.confirm.batchId,undefined);assert.equal(manual.confirm.captureRevision,undefined);assert.equal(manual.cands[0].card.id,review.cands[0].card.id);
     assert.equal(f.rows.length,5);assert.equal(new Set(f.rows.map(row=>row.id)).size,5);
@@ -182,16 +209,16 @@ export async function validateGameSwitchFixtures() {
   assert.equal(providerFixture(new URL('https://unknown-provider.invalid/')), undefined);
   assert.equal(targetHash(BASE_ROWS.find(r => r.wanted), 'ygo'), '#collection/cards');
   assert.equal(targetHash(BASE_ROWS.find(r => r.wanted), 'mtg'), '#collection/wishlist');
-  return 'PASS: 216 base route/pair/mechanism cells, exact deck collision IDs, shared links, per-game search/filter sentinels, mixed-game scan drafts, interrupted queue/retry fixtures and durable record sentinels validate. No browser/server/network/screenshot started.';
+  return 'PASS: 216 base route/pair/mechanism cells, exact deck collision IDs, shared links, per-game search/filter sentinels, mixed-game scan drafts, interrupted queue/retry fixtures, durable record sentinels and opt-in exact two-page editorial fixtures validate. No browser/server/network/screenshot started.';
 }
 
 export const frames = page => page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
-export async function openGameSwitchApp(browser, base, {game = 'mtg', width = 390, height = 844, reducedMotion = 'reduce'} = {}) {
+export async function openGameSwitchApp(browser, base, {game = 'mtg', width = 390, height = 844, reducedMotion = 'reduce', carouselNews = false} = {}) {
   assert.equal(process.env.GITHUB_ACTIONS, 'true', 'Game-switch browser fixtures are approved-hosted-CI only');
   assert.match(base, /^http:\/\/127\.0\.0\.1:\d+$/);
   const context = await browser.newContext({viewport: {width, height}, deviceScaleFactor: 1, hasTouch: true, reducedMotion, serviceWorkers: 'block', locale: 'en-US', timezoneId: 'UTC'});
   const page = await context.newPage(); page.setDefaultTimeout(8000); page.setDefaultNavigationTimeout(15000);
-  const fixtures = makeGameSwitchFixtures(game), errors = [], unexpected = [], writes = [], requests = [], gates = [];
+  const fixtures = makeGameSwitchFixtures(game,{carouselNews}), errors = [], unexpected = [], writes = [], requests = [], gates = [];
   const staticPaths = new Set((await readdir(ROOT, {withFileTypes: true})).filter(d => d.isFile() && /\.(?:js|css|html|json|svg|png|ico|webmanifest)$/.test(d.name)).map(d => '/' + d.name));
   for (const dir of ['rulebooks', 'scanidx']) for (const d of await readdir(resolve(ROOT, dir), {withFileTypes: true})) if (d.isFile()) staticPaths.add('/' + dir + '/' + d.name);
   staticPaths.add('/');
@@ -230,7 +257,7 @@ export async function openGameSwitchApp(browser, base, {game = 'mtg', width = 39
         if (u.pathname === '/catalog.json') return fulfill({cards: [], snapshot_date: '2000-01-01'});
         if (u.pathname === '/api/community') return fulfill(fixtures.storage['cardforge-community-v2'][u.searchParams.get('game')]?.data || {items: [], status: 'unavailable'});
         if (['/api/prices/recent', '/api/prices/archive'].includes(u.pathname)) return fulfill(historyBody(u));
-        if (['/api/prices/pokemon', '/api/prices/yugioh', '/api/prices/conditions', '/api/prices/mtg'].includes(u.pathname)) return fulfill({status: 'unavailable', quotes: [], cards: [], products: [], variants: [], prices: {}, printings: [], partial: false});
+        if (['/api/prices/pokemon', '/api/prices/yugioh', '/api/prices/yugioh-set', '/api/prices/conditions', '/api/prices/mtg'].includes(u.pathname)) return fulfill({status: 'unavailable', quotes: [], cards: [], products: [], variants: [], prices: {}, printings: [], partial: false});
         if (/^\/api\/meta\/(?:mtg|ygo|ptcg)(?:\/[a-zA-Z0-9_-]+)?$/.test(u.pathname)) return fulfill({events: [], decks: [], archetypes: [], top: []});
         if (staticPaths.has(u.pathname)) {record.settled = true; return route.continue();}
       }

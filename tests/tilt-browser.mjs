@@ -28,17 +28,40 @@ const server=createServer(async(req,res)=>{try{
  const file=resolve(root,'.'+u.pathname);if(!file.startsWith(root+'/'))throw Error();res.setHeader('Content-Type',({'.js':'text/javascript','.css':'text/css'})[extname(file)]||'text/plain');res.end(await readFile(file));
 }catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.1:${server.address().port}`,browser=await chromium.launch();
-const turn=async(page,beta,gamma)=>{await page.evaluate(({beta,gamma})=>window.dispatchEvent(new DeviceOrientationEvent('deviceorientation',{beta,gamma})),{beta,gamma});await page.waitForTimeout(100);};
+// Only the sensor fixtures own a deterministic motion queue. Native rendering
+// and observer delivery continue, but each sample applies exactly one queued
+// frame regardless of a late intersection/load/resize scheduling the same work.
+// Geometry fixtures below keep the browser's untouched animation scheduler.
+const installMotionScheduler=page=>page.addInitScript(()=>{
+ const nativeFrame=window.requestAnimationFrame.bind(window),frames=new Map();let id=0;
+ window.requestAnimationFrame=callback=>{frames.set(++id,callback);return id;};
+ window.cancelAnimationFrame=key=>frames.delete(key);
+ window.__motionFrame=async()=>{
+  await new Promise(resolve=>nativeFrame(()=>nativeFrame(resolve)));
+  const pending=[...frames.values()];frames.clear();for(const callback of pending)callback(performance.now());
+ };
+});
+const motionFrame=page=>page.evaluate(()=>window.__motionFrame());
+const turn=async(page,beta,gamma)=>{await page.evaluate(({beta,gamma})=>window.dispatchEvent(new DeviceOrientationEvent('deviceorientation',{beta,gamma})),{beta,gamma});await motionFrame(page);};
 try{
- const old=await browser.newContext({...devices['Pixel 7']}),before=await old.newPage();await before.goto(base+'/__fixture?old');await turn(before,30,0);await turn(before,40,12);
+ const old=await browser.newContext({...devices['Pixel 7']}),before=await old.newPage();await installMotionScheduler(before);await before.goto(base+'/__fixture?old');await turn(before,30,0);await turn(before,40,12);
  assert.equal(await before.locator('#visible').evaluate(c=>c.classList.contains('gyro')),false);assert.equal(await before.locator('#background').evaluate(c=>c.classList.contains('gyro')),true);console.log('REPRODUCED: old sensor handler animates the background card instead of the card in the open sheet.');await old.close();
  for(const [name,viewport,hybrid] of [['Magic',{width:412,height:915},false],['Pokémon',{width:344,height:882},false],['Yu-Gi-Oh!',{width:884,height:1104},true]]){
   const context=await browser.newContext({...devices['Pixel 7'],viewport}),page=await context.newPage();
+  await installMotionScheduler(page);
   if(hybrid)await page.addInitScript(()=>{const mm=window.matchMedia.bind(window);window.matchMedia=q=>q==='(hover: none)'?new Proxy(mm(q),{get:(t,k)=>k==='matches'?false:typeof t[k]==='function'?t[k].bind(t):t[k]}):mm(q);});
   await page.goto(base+'/__fixture');await turn(page,30,0);await turn(page,40,12);
   const card=await page.locator('#visible').evaluate(c=>({tx:c.style.getPropertyValue('--tx'),transform:getComputedStyle(c).transform,gyro:c.classList.contains('gyro'),shine:c.classList.contains('shine-once'),holo:getComputedStyle(c,'::before').content}));
   assert(card.gyro);assert.notEqual(card.tx,'0deg');assert.notEqual(card.transform,'none');assert.equal(card.shine,false,'entrance animation cannot mask live sensor tilt');assert.notEqual(card.holo,'none');assert.equal(await page.locator('#background').evaluate(c=>c.classList.contains('gyro')),false);
-  await page.getByRole('button',{name:'Next card',exact:true}).click();await turn(page,60,20);assert.equal(await page.locator('#next').evaluate(c=>c.style.getPropertyValue('--tx')),'0deg','new printing resets resting angle');await turn(page,65,30);assert.notEqual(await page.locator('#next').evaluate(c=>c.style.getPropertyValue('--tx')),'0deg');
+  const original=await page.locator('#visible').elementHandle();
+  await page.getByRole('button',{name:'Next card',exact:true}).click();await motionFrame(page);
+  assert(await original.evaluate(c=>!c.isConnected&&document.querySelector('#next')!==c),'replacement is a genuinely new card node');
+  const replacement=await page.locator('#next').elementHandle();
+  const replacementTilt=()=>replacement.evaluate(c=>{if(!c.isConnected||document.querySelector('#next')!==c)throw Error('The calibrated replacement must remain the current connected node');return {gyro:c.classList.contains('gyro'),tx:c.style.getPropertyValue('--tx'),ty:c.style.getPropertyValue('--ty')};});
+  assert.deepEqual(await replacementTilt(),{gyro:true,tx:'0deg',ty:'0deg'},'mutation activates the new printing using the last 40/12 sample before another sensor event');
+  await turn(page,40,12);assert.equal((await replacementTilt()).tx,'0deg','the unchanged sample remains the new resting angle');
+  await turn(page,60,20);assert.equal((await replacementTilt()).tx,'3.92deg','changed sample tilts from the replacement baseline with exactly 2% drift');
+  await turn(page,65,30);assert.notEqual((await replacementTilt()).tx,'0deg');
   await page.getByRole('button',{name:'Close',exact:true}).click();await turn(page,30,0);await turn(page,40,10);assert(await page.locator('#background').evaluate(c=>c.classList.contains('gyro')));
   console.log(`PASS: ${name} shared card view: foreground tilt + holographic light, ${viewport.width}px viewport${hybrid?' with hover-capable touch input':''}, printing replacement/recalibration and popup dismissal.`);await context.close();
  }
@@ -78,5 +101,5 @@ try{
   console.log(`PASS: ${game} ${width}px at${Math.round(textScale*100)}% title, face-flip label, all tabs and collection/deck actions fit without text clipping.`);
   }catch(error){await layoutFailure(page,{game,width,textScale},error).catch(diagnosticError=>console.error('Tilt failure diagnostic error:',diagnosticError));throw error;}finally{await context.close();}
  }
- const reduced=await browser.newContext({...devices['Pixel 7'],reducedMotion:'reduce'}),p=await reduced.newPage();await p.goto(base+'/__fixture');await turn(p,30,0);await turn(p,50,15);assert.equal(await p.locator('#visible').evaluate(c=>c.classList.contains('gyro')),false);console.log('PASS: reduced-motion preference remains respected.');await reduced.close();
+ const reduced=await browser.newContext({...devices['Pixel 7'],reducedMotion:'reduce'}),p=await reduced.newPage();await installMotionScheduler(p);await p.goto(base+'/__fixture');await turn(p,30,0);await turn(p,50,15);assert.equal(await p.locator('#visible').evaluate(c=>c.classList.contains('gyro')),false);console.log('PASS: reduced-motion preference remains respected.');await reduced.close();
 }finally{await browser.close();await new Promise(r=>server.close(r));}
