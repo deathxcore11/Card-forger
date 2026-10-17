@@ -1,4 +1,4 @@
-import { syncGameTabs, attachGameTabs, attachHomeCommunity, refreshHomeCommunity, isHomeRevealCurrent, homeDeckReveal } from "./home-ui.js";
+import { syncGameTabs, attachGameTabs, attachHomeCommunity, refreshHomeCommunity, isHomeRevealCurrent, homeDeckReveal, refreshHomeValue, homeValueCoverage, homeMetaSnapshot } from "./home-ui.js";
 import {attachRuleLearning} from './rule-learning.js';
 import {loadConditionQuotes,applyConditionQuotes,conditionRequest,CONDITION_IDENTITY} from './condition-feed.js';
 import {createConditionRefreshScheduler,conditionCursorKey,selectConditionLots,changedConditionLots,conditionLotIdentity} from './condition-refresh-scheduler.js';
@@ -168,7 +168,15 @@ function decorateShell() {
 }
 
 // Saved locally; when signed in, the account copy follows a few seconds later.
+function refreshHomeValueGlance() {
+  if (S.ui.view !== 'home') return;
+  useMyPrices(S.state.myPrices);
+  const game = T.game(), state = game === 'mtg' ? S.state : T.gs(game);
+  const value = game === 'mtg' ? collectionValue(state.collection, S.catalog, state.printings, state.decks) : T.collectionValue(game);
+  refreshHomeValue(game, $('#content'), { ...value, decks: state.decks.length, history: game === 'mtg' ? state.valueHistory : T.readTcgValueHistory(game) });
+}
 function afterLocalSave() {
+  refreshHomeValueGlance();
   if (cloudInfo().user) {
     setSaveStatus(...statusLabel());
     scheduleSync();
@@ -630,6 +638,7 @@ function openSheet(html, ctx = null, scrollTop = 0) {
   dismissRuleHint();
   if (S.ui.sheetCtx !== ctx || $("#sheetBody")?.dataset?.detailIdentity !== detailContextIdentity(ctx)) dismissRulesGuide();
   const dlg = $("#sheet");
+  if (S.ui.sheetCtx !== ctx || !dlg.open) T.cancelProvenBuild();
   const detailState = dlg.open && S.ui.sheetCtx === ctx && !!detailContextIdentity(ctx) && $("#sheetBody").dataset.detailIdentity === detailContextIdentity(ctx) ? captureDetailState($("#sheetBody")) : null;
   const cardPopup = ["card","tcard"].includes(ctx?.type);
   const enteringCard = cardPopup && (!dlg.open || sheetKey(S.ui.sheetCtx) !== sheetKey(ctx));
@@ -702,6 +711,7 @@ function sheetScrolled() {
   body.style?.setProperty?.("--card-tabs-top",Math.max(0,on?head.getBoundingClientRect().bottom-body.getBoundingClientRect().top:0)+"px");
 }
 function closeSheet(rememberRoute=true) {
+  T.cancelProvenBuild();
   if (S.ui.sheetCtx?.type === "printing-picker") printingPicker.abandon();
   dismissRulesGuide();
   pendingRoute=rememberRoute && $("#sheet").open ? sheetSnapshot() : null;
@@ -835,6 +845,7 @@ function attachBrowseObserver() {
 }
 
 const autoMeta = new Set();
+const savedDeckMetaRequests = new Map();
 let lastPageKey = "";
 const cheapChecked = new Set();
 let tcgCheckedFor = "";
@@ -945,11 +956,26 @@ function render() {
   // Deck tiles lead with the Competitive score, so load each Magic format's tournament results
   // once when the deck list or Home shows decks in it.
   if (g === "mtg" && ["decks", "home"].includes(ui.view)) {
+    const origin = { view: ui.view, route: disclosureKey, root: content, mount: content.firstElementChild, state: S.state, sheet: ui.sheetCtx };
+    const current = () => navigationCurrent(screen) && T.game() === "mtg" && S.ui.view === origin.view && S.state === origin.state && S.ui.sheetCtx === origin.sheet &&
+      $("#content") === origin.root && content.isConnected && content.firstElementChild === origin.mount && content.dataset.disclosureKey === origin.route;
+    // Only noninteractive score leaves change. Search, deck buttons, value and
+    // discovery controls remain mounted even when this shares Home's request.
+    const paint = () => { if (current()) V.refreshDeckScores(content); };
     for (const k of new Set(S.state.decks.map((d) => mtgMetaKey(d)).filter(Boolean))) {
-      const M = metaState(k);
-      if (M?.data || M?.busy || autoMeta.has(k)) continue;
-      autoMeta.add(k);
-      setTimeout(() => loadMetaData(k).then(() => navigationCurrent(screen) && render()).catch(() => {}), 200);
+      const M = metaState(k), pending = savedDeckMetaRequests.get(k);
+      if (pending) { pending.current = current; pending.paint = paint; continue; }
+      if (M?.data || autoMeta.has(k)) continue;
+      const request = { current, paint };
+      savedDeckMetaRequests.set(k, request); autoMeta.add(k);
+      setTimeout(() => {
+        if (!request.current()) { savedDeckMetaRequests.delete(k); autoMeta.delete(k); return; }
+        // Home may have started the same provider in its earlier microtask.
+        // Subscribe to that promise; never launch a second request for it.
+        const active = metaState(k);
+        Promise.resolve(active.busy && active.promise ? active.promise : loadMetaData(k))
+          .then(() => request.paint()).catch(() => {}).finally(() => savedDeckMetaRequests.delete(k));
+      }, 200);
     }
   }
   if (ui.view === "settings") storageDetail();
@@ -959,7 +985,7 @@ function render() {
     if (ui.view === "set" && ui.tsetId && T.ui(g).set.id !== ui.tsetId) { const id=ui.tsetId; setTimeout(() => navigationCurrent(screen) && tcgCtx.openSet?.(id, false, g), 0); }
     // Ideas, Meta decks and Deck Power need the current tournament meta.
     const MS = T.metaState(g);
-    if ((ui.view === "tdeck" || (ui.view === "home" && T.gs(g).decks.length) || (ui.view === "decks" && (!ui.decksTab || ["ideas", "inspiration", "mine"].includes(ui.decksTab)))) && !MS.busy && T.metaNeedsRefresh(g) && !autoLoaded.has("meta" + g + MS.at)) {
+    if ((ui.view === "tdeck" || (ui.view === "decks" && (!ui.decksTab || ["ideas", "inspiration", "mine"].includes(ui.decksTab)))) && !MS.busy && T.metaNeedsRefresh(g) && !autoLoaded.has("meta" + g + MS.at)) {
       autoLoaded.add("meta" + g + MS.at);
       setTimeout(() => navigationCurrent(screen) && tcgCtx.loadMeta?.(g), 0);
     }
@@ -969,7 +995,7 @@ function render() {
     const k = g + ui.view + Math.floor(Date.now()/3600000) + ":" + [...new Set(missing)].sort().join(",");
     if (missing.length && navigator.onLine && !autoLoaded.has(k)) {
       autoLoaded.add(k);
-      T.ensureMany(g, missing, () => {}).then(() => navigationCurrent(screen) && render());
+      T.ensureMany(g, missing, () => {}).then(() => navigationCurrent(screen) && (S.ui.view === "home" ? refreshHomeValueGlance() : render()));
     }
     return;
   }
@@ -1525,7 +1551,7 @@ function fetchConditionValue(card,entry,game,done,options={}){
     if(saved){changed=true;await save();}
    });
   }
-  const output={...result,changed};if(current())done?.(output);return output;
+  const output={...result,changed};if(changed)refreshHomeValueGlance();if(current())done?.(output);return output;
  });
 }
 function refreshChangedConditions(changed){
@@ -1654,6 +1680,7 @@ $("#sheet").addEventListener("close", () => {
   // close() queues its event. A selection can already have opened the next sheet
   // by the time it arrives; that older event must not clear the new session.
   if ($("#sheet").open) return;
+  T.cancelProvenBuild();
   printingPicker.abandon();
   sheetTrail.clear();
   binderDragCleanup?.(); binderDragCleanup=null;
@@ -4442,11 +4469,13 @@ A.mtgMetaFormat = (t) => {
 };
 A.mtgMetaReload = () => loadMtgMeta(true);
 A.mtgProven = (t) => {
+  const captured = t.dataset.homeMetaOpen !== undefined ? homeMetaSnapshot(t, "mtg") : null;
+  if (t.dataset.homeMetaOpen !== undefined && !captured) return toast("This Home list has changed. Choose the current visible list.");
   // From a card's Meta tab, the deck may be from another format than the one on Meta decks.
   if (t.dataset.format && metaState("mtg:" + t.dataset.format).data) (S.ui.mtgMeta ||= {}).format = t.dataset.format;
-  const fmt = mtgMetaFormat(),
-    data = metaState("mtg:" + fmt).data,
-    d = data?.decks.find((x) => x.key === t.dataset.key);
+  const fmt = captured ? captured.metaKey.slice(4) : mtgMetaFormat(),
+    data = captured?.data || metaState("mtg:" + fmt).data,
+    d = captured?.deck || data?.decks.find((x) => x.key === t.dataset.key);
   if (!d) return;
   const appFormat = fmt === "EDH" ? "Commander" : fmt,
     kindOf = (name) => {
@@ -5149,13 +5178,14 @@ function trackValue() {
   for (const g of ["ptcg", "ygo"]) T.trackTcgValue?.(g);
   const v = collectionValue(S.state.collection, S.catalog, S.state.printings, []);
   if (!S.state.collection.length) return;
-  S.state.valueHistory = recordValuePoint(S.state.valueHistory, v.total, v.copies);
+  S.state.valueHistory = recordValuePoint(S.state.valueHistory, v.total, v.copies, homeValueCoverage(v));
 }
 
 // Background loads in game modules ask for a redraw.
-globalThis.addEventListener?.("cardstashy-rerender", () => render());
+globalThis.addEventListener?.("cardstashy-rerender", () => S.ui.view === "home" ? refreshHomeValueGlance() : render());
 // Shared daily prices arrive in the background: redraw whichever price chart is open.
 onSharedPrices(() => {
+  refreshHomeValueGlance();
   const ctx = S.ui.sheetCtx;
   if (!ctx || !$("#sheet")?.open) return;
   if (ctx.type === "market") A.marketRange?.({ dataset: { range: ctx.range || "30" } });
@@ -5177,7 +5207,7 @@ async function boot() {
     const r = await fetch("catalog.json", { signal: AbortSignal.timeout(2500) });
     if (r.ok) addRef(await r.json());
   } catch (e) {
-    if (e?.name === "TimeoutError" || e?.name === "AbortError") fetch("catalog.json").then((r) => (r.ok ? r.json() : null)).then((late) => { if (late) { addRef(late); render(); } }).catch(() => {});
+    if (e?.name === "TimeoutError" || e?.name === "AbortError") fetch("catalog.json").then((r) => (r.ok ? r.json() : null)).then((late) => { if (late) { addRef(late); if (S.ui.view === "home") refreshHomeValueGlance(); else render(); } }).catch(() => {});
   }
   try {
     const cat = await readRecord(CATALOG_RECORD);
@@ -5248,7 +5278,7 @@ async function boot() {
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
   // Scryfall role tags arrive after first paint; redraw Magic pages so Deck Power counts them.
   // TCGplayer prices for printings Scryfall leaves unpriced arrive in the background.
-  window.addEventListener("cf:tcg-prices", () => { if (S.ui.sheetCtx?.type === "card" && $("#sheet").open) refreshSheet(); else render(); });
+  window.addEventListener("cf:tcg-prices", () => { refreshHomeValueGlance(); if (S.ui.sheetCtx?.type === "card" && $("#sheet").open) refreshSheet(); else if (S.ui.view !== "home") render(); });
   window.addEventListener("cf:mtg-tags", () => { if ((S.state.settings?.game || "mtg") === "mtg") render(); });
   window.addEventListener("online", () => {
     setSaveStatus("Online", "ok");

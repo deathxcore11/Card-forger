@@ -27,20 +27,23 @@ const TODAY = '2026-10-17';
 const ISO = new Date(NOW).toISOString();
 const WIDTHS = [320, 360, 390, 430, 700, 768, 900, 1024, 1200, 1440, 2560];
 const EVIDENCE_WIDTHS = new Set([320, 390, 768, 1024, 1440, 2560]);
+const viewportHeight = width => width <= 430 ? 844 : width < 900 ? 1024 : width <= 1200 ? 768 : width <= 1440 ? 900 : 1440;
+const ORIENTATIONS = [{ width:844, height:390, label:'phone-landscape' }, { width:768, height:1024, label:'tablet-portrait' }, { width:1024, height:768, label:'tablet-landscape' }];
+const FOLD_SEQUENCE = [{width:390,height:844},{width:768,height:1024},{width:1024,height:768},{width:844,height:390},{width:390,height:844}];
 const IMAGE = 'https://home-fixtures.invalid';
 const NEWS_IMAGES = {
-  mtg: 'https://images.ctfassets.net/s5n2t79q9icq/home-regression/official-magic-news.jpg',
+  mtg: 'https://images.ctfassets.net/s5n2t79q9icq/homeRegression/0123456789abcdef0123456789abcdef/official-magic-news.jpg',
   ygo: 'https://www.yugioh-card.com/en/wp-content/uploads/home-regression-news.jpg',
-  ptcg: 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/home-regression-news.jpg',
+  ptcg: 'https://primary.jwwb.nl/public/h/t/i/temp-zjpebgcobmaxydcmrfwb/home-regression-news.jpg',
 };
 const UNSAFE_IMAGE = 'https://not-a-publisher.invalid/tracking.jpg';
 const MARKET_HISTORY = new URL('/functions/v1/market-history', SUPABASE.url);
 const historyFixture = url => ({ game: url.searchParams.get('game'), cardId: url.searchParams.get('id'), finish: url.searchParams.get('finish'), series: [], notice: 'No historical quotes in this deterministic Home fixture.' });
 const SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="630" height="880" viewBox="0 0 630 880"><defs><linearGradient id="a" x2="1" y2="1"><stop stop-color="#244567"/><stop offset=".5" stop-color="#ab7945"/><stop offset="1" stop-color="#382d59"/></linearGradient></defs><rect width="630" height="880" rx="30" fill="url(#a)"/><circle cx="405" cy="255" r="150" fill="#e9c479" opacity=".7"/><path d="M0 620 170 320 330 560 510 340 630 650V880H0Z" fill="#152739"/><text x="38" y="92" fill="#fff" font-family="sans-serif" font-size="28">Representative fixture art</text></svg>`;
 const sources = {
-  mtg: { host: 'https://magic.wizards.com', news: '/en/news/fixture-story', event: '/en/events/fixture-event', deck: 'https://www.mtgo.com/decklist/fixture-standard', label: 'Magic Online' },
-  ygo: { host: 'https://www.yugioh-card.com', news: '/en/news/fixture-story', event: '/en/events/fixture-event', deck: 'https://ygoprodeck.com/deck/fixture-blue-eyes', label: 'YGOPRODeck Tournament Meta Decks' },
-  ptcg: { host: 'https://www.pokemon.com', news: '/us/pokemon-news/fixture-story', event: '/us/play-pokemon/fixture-event', deck: 'https://play.limitlesstcg.com/tournament/fixture/player/1/decklist', label: 'Limitless' },
+  mtg: { sourceId: 'wizards', host: 'https://magic.wizards.com', news: '/en/news/announcements/fixture-story', event: '/en/events/fixture-event', deck: 'https://www.mtgo.com/decklist/fixture-standard', label: 'Magic Online' },
+  ygo: { sourceId: 'konami', host: 'https://www.yugioh-card.com', news: '/en/news/fixture-story', event: '/en/events-item/fixture-event/', deck: 'https://ygoprodeck.com/deck/fixture-blue-eyes', label: 'YGOPRODeck Tournament Meta Decks' },
+  ptcg: { sourceId: 'pokeguardian', host: 'https://www.pokeguardian.com', news: '/3412574_fixture-story', event: '/us/play-pokemon/fixture-event', deck: 'https://play.limitlesstcg.com/tournament/fixture/player/1/decklist', label: 'Limitless' },
 };
 
 function magic(name, id, extra = {}) {
@@ -74,11 +77,11 @@ const catalog = Object.fromEntries([mtgHero, mtgSeed, ...['Plains', 'Island', 'S
 function feed(game, empty = false, options = {}) {
   const s = sources[game];
   const image = options.newsArtMode === 'missing' ? '' : options.newsArtMode === 'unsafe' ? options.unsafeImage || UNSAFE_IMAGE : NEWS_IMAGES[game];
-  const common = { game, fetchedAt: ISO, source: `${game.toUpperCase()} official publisher`, sourceUrl: s.host };
+  const common = { game, sourceId: s.sourceId, fetchedAt: ISO, source: `${game.toUpperCase()} fixture publisher`, sourceUrl: s.host };
   return { game, fetchedAt: ISO, checkedAt: ISO, nextCheckAt: '2026-10-18T12:00:00.000Z', status: empty ? 'unavailable' : 'ready',
     items: empty ? [] : [
-      { ...common, kind: 'news', title: `${game.toUpperCase()} dated fixture story`, summary: 'A dated story from an official source, distinct from a directory link.', url: s.host + s.news, publishedAt: '2026-10-16', image },
-      { ...common, kind: 'event', title: `${game.toUpperCase()} upcoming fixture event`, summary: 'A future event with its own start and end dates.', url: s.host + s.event, startsAt: '2026-10-20', endsAt: '2026-10-22' },
+      { ...common, kind: 'news', title: `${game.toUpperCase()} dated fixture story`, summary: 'A dated story from a verified fixture source, distinct from a directory link.', url: s.host + s.news, publishedAt: '2026-10-16', image },
+      { ...common, sourceId: game === 'ygo' ? 'konami-events' : '', kind: 'event', title: `${game.toUpperCase()} upcoming fixture event`, summary: 'A future event with its own start and end dates.', url: s.host + s.event, startsAt: '2026-10-20', endsAt: '2026-10-22' },
       { ...common, kind: 'news', title: 'UNSAFE FIXTURE MUST NOT RENDER', url: 'javascript:alert(1)', publishedAt: '2026-10-16' },
       { ...common, kind: 'news', title: 'UNTRUSTED FIXTURE MUST NOT RENDER', url: 'https://untrusted.invalid/news', publishedAt: '2026-10-16' },
     ] };
@@ -110,12 +113,16 @@ function fixtures(options = {}) {
   state.activeDeck = decks ? 'saved-mtg' : null;
   const cache = { ygo: { [heroes.ygo.id]: heroes.ygo, ...Object.fromEntries(ygoSeedRaws.map(raw => [String(raw.id), fresh(raw)])) }, ptcg: { [heroes.ptcg.id]: heroes.ptcg, [seeds.ptcg.id]: seeds.ptcg } };
   const community = Object.fromEntries(GAME_IDS.map(g => [g, { at: fetchFeed ? 0 : NOW, data: fetchFeed ? null : feed(g, emptyFeed, options) }]));
-  const meta = Object.fromEntries(GAME_IDS.map(g => [g === 'mtg' ? 'mtg:Standard' : g, { at: NOW, data: metaFeed(g, emptyFeed, options) }]));
+  const meta = Object.fromEntries(GAME_IDS.map(g => {
+    const pending = options.fetchMeta && g === game, data = pending && options.initialMetaLists === 0 ? null : metaFeed(g, emptyFeed, options);
+    if (pending && data) for (const deck of data.decks) { deck.key += '-cached'; deck.name += ' cached old list'; }
+    return [g === 'mtg' ? 'mtg:Standard' : g, { at: pending ? 0 : NOW, data }];
+  }));
   const hero = { date: heroDate, ...Object.fromEntries(GAME_IDS.map(g => [g, { game: g, date: heroDate, name: heroes[g].name, id: heroes[g].id, art: g === 'mtg' ? heroes[g].image_uris.art_crop : g === 'ygo' ? heroes[g].art : heroes[g].imageLarge, ...(g === 'ygo' ? { artDirect: heroes[g].artDirect } : {}) }])) };
   const sent = Object.fromEntries([...Object.values(catalog).map(c => [`mtg:${c.id}`, NOW]), ...Object.keys(cache.ygo).map(id => [`ygo:${id}`, NOW])]);
   return { state, cache, storage: {
     'cardforge-v2': state, 'cardforge-catalog-v1': catalog, 'cardforge-tcg-cache-v1': cache,
-    'cardforge-hero-v1': hero, 'cardforge-meta-v1': meta, 'cardforge-community-v2': community,
+    'cardforge-hero-v1': hero, 'cardforge-meta-v1': meta, 'cardforge-community-v3': community,
     'cardforge-sets-v1': { at: NOW, sets: [{ code: 'fdn', name: 'Foundations', icon: `${IMAGE}/symbol.svg`, released_at: '2024-11-15', set_type: 'core' }] },
     'cardstashy-watch-sent-v1': sent,
   } };
@@ -139,8 +146,16 @@ for (const game of GAME_IDS) {
   assert.notEqual(communityDeckArtwork(game, deck).cardId, communityDeckArtwork(game, second).cardId);
   assert.equal(communityDeckArtwork(game, metaFeed(game, false, { deckArtMode: 'missing' }).decks[0]), null);
   assert.equal(communityDeckArtwork(game, metaFeed(game, false, { deckArtMode: 'unsafe' }).decks[0]), null);
-  assert.equal(safeCommunityImage(feed(game).items[0].image, game), NEWS_IMAGES[game]);
-  assert.equal(safeCommunityImage(feed(game, false, { newsArtMode: 'unsafe' }).items[0].image, game), '');
+  assert.equal(safeCommunityImage(feed(game).items[0].image, game, sources[game].sourceId, sources[game].host + sources[game].news), NEWS_IMAGES[game]);
+  assert.equal(safeCommunityImage(feed(game, false, { newsArtMode: 'unsafe' }).items[0].image, game, sources[game].sourceId, sources[game].host + sources[game].news), '');
+}
+for (const game of GAME_IDS) for (const initialMetaLists of [0, 1]) {
+  const pending = fixtures({game,fetchFeed:true,fetchMeta:true,initialMetaLists});
+  assert.doesNotThrow(()=>validateWorkspace(structuredClone(pending.state)));
+  const key=game==='mtg'?'mtg:Standard':game, selected=pending.storage['cardforge-meta-v1'][key];
+  assert.equal(selected.at,0);assert.equal(selected.data?.decks.length || 0,initialMetaLists);
+  if(initialMetaLists)assert.equal(selected.data.decks[0].key,`fixture-${game}-cached`);
+  assert.equal(pending.storage['cardforge-community-v3'][game].data,null);
 }
 if (process.argv.includes('--validate-fixtures')) {
   console.log('PASS: Home fixtures validate against real workspace, card adapters, collection pricing and exact all-game community-art source contracts; browser was not started.');
@@ -172,9 +187,12 @@ async function openApp(options = {}) {
   const { game = 'mtg', width = 390, reducedMotion = 'no-preference', timezoneId = 'UTC' } = options;
   const context = await browser.newContext({ viewport: { width, height: 1100 }, hasTouch: true, deviceScaleFactor: 1, reducedMotion, timezoneId, locale: 'en-US', serviceWorkers: 'block' });
   const page = await context.newPage();
+  if (options.clock) await page.clock.install({ time: new Date(NOW) });
   page.setDefaultTimeout(15000);
   const errors = [], writes = [], unexpected = [], requests = [];
   let gate = null;
+  const deferredGate = () => { let release,started;const wait=new Promise(r=>release=r),seen=new Promise(r=>started=r);return {wait,seen,release,started}; };
+  const homeSources = options.holdHomeSources ? { news:deferredGate(), decks:deferredGate(), counts:{news:0,decks:0} } : null;
   let releaseEmblems, seenEmblems;
   const emblemsWait = options.holdEmblems ? new Promise(resolve => { releaseEmblems = resolve; }) : null;
   const emblemsSeen = options.holdEmblems ? new Promise(resolve => { seenEmblems = resolve; }) : null;
@@ -184,6 +202,12 @@ async function openApp(options = {}) {
     const request = route.request(), url = new URL(request.url());
     const json = body => route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
     requests.push(`${request.method()} ${url.href}`);
+    const pendingHomeSource = homeSources && (
+      url.origin === BASE && url.pathname === '/api/community' && url.searchParams.get('game') === game ? 'news' :
+      game === 'mtg' && url.origin === BASE && url.pathname === '/api/meta/mtg' && url.searchParams.get('format') === 'Standard' ||
+      game === 'ygo' && url.origin === BASE && url.pathname === '/api/meta/ygo/decks' && url.searchParams.get('offset') === '0' ||
+      game === 'ptcg' && url.hostname === 'play.limitlesstcg.com' && url.pathname === '/api/tournaments' ? 'decks' : null);
+    if (pendingHomeSource) { homeSources.counts[pendingHomeSource]++; homeSources[pendingHomeSource].started(); await homeSources[pendingHomeSource].wait; }
     const isMarketHistory = url.origin === MARKET_HISTORY.origin && url.pathname === MARKET_HISTORY.pathname;
     if (isMarketHistory && request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-methods': 'GET', 'access-control-allow-headers': 'apikey' }, body: '' });
     if (!['GET', 'HEAD'].includes(request.method())) {
@@ -277,7 +301,7 @@ async function openApp(options = {}) {
     assert.deepEqual(writes, [], 'Home interactions never make network writes');
     assert.deepEqual(unexpected, [], 'all provider calls are explicitly local fixtures');
   };
-  return { page, context, requests, health, emblems: options.holdEmblems ? { seen: emblemsSeen, release: releaseEmblems } : null,
+  return { page, context, requests, health, homeSources, emblems: options.holdEmblems ? { seen: emblemsSeen, release: releaseEmblems } : null,
     holdSelection() {
       let release, started;
       const wait = new Promise(r => { release = r; });
@@ -325,7 +349,7 @@ async function noOverflow(page, label) {
   });
   const sizes = await page.evaluate(() => {
     const root = document.documentElement, body = document.body, content = document.querySelector('#content');
-    const selectors = ['.topbar', '#gameTabs', '.home-value', '.home-editorial', '.home-community', '.home-discover', '.home-discover > div:first-child', '.community-feature-copy', '.hh-search'];
+    const selectors = ['.topbar', '#gameTabs', '.home-value', '.home-meta', '.home-meta-copy', '.home-meta-footer', '.home-editorial', '.home-community', '.home-discovery-actions', '.community-feature-copy', '.hh-search'];
     return { viewport: innerWidth, root: root.scrollWidth, body: body.scrollWidth, content: content.scrollWidth, contentWidth: content.clientWidth,
       elements: selectors.map(selector => { const n = document.querySelector(selector); if (!n) return { selector, missing: true }; const r = n.getBoundingClientRect(); return { selector, left: r.left, right: r.right, scroll: n.scrollWidth, width: n.clientWidth }; }) };
   });
@@ -334,9 +358,7 @@ async function noOverflow(page, label) {
   for (const e of sizes.elements) {
     assert(!e.missing, `${label}: ${e.selector} exists`);
     assert(e.left >= -2 && e.right <= sizes.viewport + 2, `${label}: ${e.selector} outside viewport: ${JSON.stringify(e)}`);
-    // The decorative fan intentionally extends into the discovery panel's clip.
-    // Its real copy and every interactive section still must fit the viewport.
-    if (e.selector !== '.home-discover') assert(e.scroll <= e.width + 2, `${label}: ${e.selector} clips overflowing content: ${JSON.stringify(e)}`);
+    assert(e.scroll <= e.width + 2, `${label}: ${e.selector} clips overflowing content: ${JSON.stringify(e)}`);
   }
 }
 async function visibleHeaderArt(page) {
@@ -358,6 +380,15 @@ async function visibleHeaderArt(page) {
 const deckIdentity = (game, second = false) => game === 'mtg' ? (second ? heroes : seeds)[game].name
   : game === 'ygo' ? (second ? heroes : seeds)[game].id
     : second ? `${heroes.ptcg.name} · OBF 125` : `${seeds.ptcg.name} · SSP 57`;
+async function assertNoNewsArtwork(page, selector, { failed = false } = {}) {
+  const feature = page.locator(selector);
+  assert.equal(await feature.locator('.community-art-theme, .community-art-emblem').count(), 0, 'news never substitutes unrelated game artwork');
+  if (failed) {
+    await page.waitForFunction(selector => document.querySelector(`${selector} [data-community-art]`)?.hidden === true, selector);
+    assert.equal(await feature.locator('[data-community-art]').isVisible(), false, 'failed publisher image yields a clean text-only card');
+  } else assert.equal(await feature.locator('[data-community-art], img[data-community-image]').count(), 0, 'missing or unsafe publisher image creates no visual/request');
+  assert(await feature.locator('h3').isVisible(), 'headline remains readable without art');
+}
 async function assertCommunityArtwork(page, selector, game, { kind = 'card', state = 'ready', second = false, source = null } = {}) {
   const art = page.locator(selector).locator('[data-community-art]');
   await art.scrollIntoViewIfNeeded();
@@ -394,7 +425,7 @@ async function assertCommunityArtwork(page, selector, game, { kind = 'card', sta
   }
   if (state === 'ready') {
     assert(visual.loaded && !visual.imageHidden && (visual.visibleCredit || selector.startsWith('[data-home-meta=')), `${game}: actual loaded image and honest source caption: ${JSON.stringify(visual)}`);
-    if (selector.startsWith('[data-home-meta=')) assert.match(await page.locator(selector).getAttribute('aria-label') || await page.locator(selector).textContent(), /Featured deck:.*Card preview:/s, 'compact art retains source/card provenance in its accessible text');
+    if (selector.startsWith('[data-home-meta=')) assert.match(await page.locator(selector).textContent(), /Featured deck:.*Card preview:/s, 'compact art retains source/card provenance in its accessible text');
   }
   else assert(visual.imageHidden && visual.visibleFallback, `${game}: failed/missing image has a visible honest theme fallback, not a broken icon: ${JSON.stringify(visual)}`);
 }
@@ -452,8 +483,8 @@ async function closeSheet(page) {
 async function inventorySnapshot(page) {
   return page.evaluate(async () => { const { S } = await import('/store.js'); return JSON.stringify([S.state.collection, S.state.decks, S.state.tcg]); });
 }
-async function safeSourceLink(article, game) {
-  const link = article.locator('a.community-open');
+async function safeSourceLink(article, game, selector = 'a.community-open') {
+  const link = article.locator(selector);
   assert.equal(await link.count(), 1);
   assert.equal(await link.getAttribute('target'), '_blank');
   const rel = (await link.getAttribute('rel')).split(/\s+/);
@@ -512,16 +543,49 @@ try {
     await focused.close();
   }
   report.push('Delayed emblem-data completion keeps the original focused carousel button and source link connected, with fresh data cached');
+  // Leave/re-enter during the first shared request. Empty and single-list
+  // rails have no timer, so only correct mount subscription can paint this data.
+  for (const game of GAME_IDS) for (const initialMetaLists of [0, 1]) {
+    const pending = await openApp({ game, fetchFeed:true, fetchMeta:true, initialMetaLists, holdHomeSources:true, reducedMotion:'reduce' });
+    const p = pending.page;
+    await Promise.race([Promise.all([pending.homeSources.news.seen,pending.homeSources.decks.seen]),new Promise((_,reject)=>setTimeout(()=>reject(Error('Held Home providers were not observed')),15000))]);
+    const oldCommunity=await p.locator('[data-home-community]').elementHandle(),oldMeta=await p.locator('[data-home-meta]').elementHandle();
+    assert.equal(await p.locator('[data-home-meta-open]').count(),initialMetaLists);
+    await p.evaluate(()=>{location.hash='#collection';});
+    await p.waitForFunction(()=>document.body.dataset.view==='collection');
+    await p.evaluate(()=>{location.hash='#home';});await assertSelected(p,game);
+    assert(await oldCommunity.evaluate(n=>!n.isConnected));assert(await oldMeta.evaluate(n=>!n.isConnected));
+    const currentMeta=await p.locator('[data-home-meta]').elementHandle();
+    pending.homeSources.news.release();
+    await p.waitForFunction(game=>document.querySelector('.community-feature h3')?.textContent===`${game.toUpperCase()} dated fixture story`,game);
+    assert.equal(await p.locator('[data-home-meta-open]').count(),initialMetaLists,'news paints independently before decks resolve');
+    pending.homeSources.decks.release();
+    const expectedKey=game==='mtg'?'fixture-mtg':game==='ygo'?'ygo:fixture-ygo':'ptcg:fixture:1';
+    await p.waitForFunction(key=>document.querySelector('[data-home-meta-open]')?.dataset.key===key,expectedKey);
+    assert(await currentMeta.evaluate(n=>n.isConnected && n===document.querySelector('[data-home-meta]')),'late completion updates the new mount in place');
+    const originalUrl=await p.evaluate(async game=>(await import('/meta.js')).metaState(game==='mtg'?'mtg:Standard':game).data.decks[0].url,game);
+    assert.equal(await p.locator('.home-meta-original').getAttribute('href'),originalUrl);
+    assert.deepEqual(pending.homeSources.counts,{news:1,decks:1},'return never duplicates provider requests');
+    await oldCommunity.dispose();await oldMeta.dispose();await currentMeta.dispose();await pending.close();
+  }
+  report.push('All games: zero/one-list Home leave/re-enter shares the held provider request, independently paints new news/decks into the current mount while idle, and preserves original source identity');
   // One real boot, then all game changes/resizes go through production controls.
   const app = await openApp();
   const { page } = app;
   assert.deepEqual(await page.locator('#gameTabs [role="tab"]').evaluateAll(nodes => nodes.map(n => n.dataset.game)), GAME_IDS);
   for (const game of GAME_IDS) {
     await selectGame(page, game);
-    assert.equal(await page.locator('.home-value-main strong').innerText(), '$25');
+    assert.equal(await page.locator('[data-home-meta]').count(),1,`${game}: shared full-width lower Meta rail parity`);
+    assert.equal(await page.locator('[data-home-discovery]').count(),1,`${game}: one unified discovery section`);
+    assert.equal(await page.locator('.home-discover, .home-deal, .home-personal .quick, .home-personal .quick-btn').count(),0,`${game}: no duplicate random panel or cramped legacy split shortcuts`);
+    assert.equal(await page.locator('[data-act="homeRandomDeck"]').count(),1);
+    assert.equal(await page.locator('[data-home-discovery] [data-act="homeRandomDeck"]').innerText(),'✧ Surprise me');
+    assert.equal(await page.locator('[data-home-discovery] [data-to="#decks/ideas"]').innerText(),'Build from my cards');
+    assert.equal(await page.locator('.home-personal [data-to="#decks/ideas"]').count(),0,'saved continuation does not compete with discovery');
+    assert.equal(await page.locator('.home-value-main strong').innerText(), '$25.00');
     assert.match(await page.locator('.home-value-note').innerText(), /Known subtotal.*1 unpriced/);
     for (const width of WIDTHS) {
-      await page.setViewportSize({ width, height: 1100 });
+      await page.setViewportSize({ width, height: viewportHeight(width) });
       await page.evaluate(() => scrollTo(0, 0));
       await assertSelected(page, game);
       await visibleHeaderArt(page);
@@ -530,11 +594,28 @@ try {
       await assertCommunityArtwork(page, `[data-home-meta="${game}"]`, game);
       await assertReadableArtwork(page, game);
       await noOverflow(page, `${game} at ${width}px`);
+      const discoveryWidth=await page.locator('[data-home-discovery]').evaluate(n=>n.getBoundingClientRect().width);
+      const valueWidth=await page.locator('[data-home-value]').evaluate(n=>n.getBoundingClientRect().width);
+      assert(discoveryWidth>=valueWidth-2,`${game}: discovery stays full width at ${width}px`);
+      for(const selector of ['[data-home-discovery] [data-to="#decks/ideas"]','[data-home-discovery] [data-act="homeRandomDeck"]']) {
+        const action=page.locator(selector);await action.evaluate(n=>n.scrollIntoView({block:'center',behavior:'instant'}));await action.focus();
+        assert(await action.evaluate(n=>{const r=n.getBoundingClientRect();return r.height>=44&&r.width>=44&&n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}),`${game}: companion action is readable and directly hittable at ${width}px`);
+      }
       await accessibleCarouselControls(page, `${game} at ${width}px`);
       await page.evaluate(() => scrollTo(0, 0));
       if (EVIDENCE_WIDTHS.has(width)) await page.screenshot({ path: resolve(RESULTS, `home-${game}-${width}.png`), fullPage: true, animations: 'disabled' });
     }
-    await page.setViewportSize({ width: 390, height: 1100 });
+    for(const viewport of ORIENTATIONS) {
+      await page.setViewportSize({width:viewport.width,height:viewport.height});
+      await noOverflow(page,`${game} ${viewport.label}`);
+      for(const selector of ['[data-home-discovery] [data-to="#decks/ideas"]','[data-home-discovery] [data-act="homeRandomDeck"]','.home-value-main']) {
+        const action=page.locator(selector);await action.evaluate(n=>n.scrollIntoView({block:'center',behavior:'instant'}));await action.focus();
+        assert(await action.evaluate(n=>{const r=n.getBoundingClientRect();return r.height>=44&&n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}),`${game}: ${viewport.label} action unobscured`);
+      }
+      await page.evaluate(()=>scrollTo(0,0));
+      await page.screenshot({path:resolve(RESULTS,`home-discovery-${game}-${viewport.label}-${viewport.width}x${viewport.height}.png`),fullPage:true,animations:'disabled'});
+    }
+    await page.setViewportSize({ width: 390, height: 844 });
     const hero = heroes[game];
     const value = hero.id;
     for (const selector of ['.hh-art-link', '.hh-credit']) {
@@ -586,32 +667,37 @@ try {
     assert.equal(await article.locator('time').getAttribute('datetime'), '2026-10-16');
     await safeSourceLink(article, game);
     const firstId = await article.getAttribute('data-slide-id');
-    await page.locator('[data-community-step="1"]').click();
-    assert.match(await article.getAttribute('class'), /feature-deck/);
-    assert.equal(await article.locator('a.community-open').getAttribute('href'), sources[game].deck);
-    assert.equal(await article.locator('time').getAttribute('datetime'), '2026-10-15');
-    assert.match(await article.innerText(), game === 'ygo' ? /List submitted/ : /Event date/);
-    await safeSourceLink(article, game);
-    const deckId = await article.getAttribute('data-slide-id');
+    const selectedDeck=page.locator('.home-meta-card');
+    assert.match(await selectedDeck.innerText(), /Top Meta/);
+    assert.equal(await selectedDeck.locator('a.home-meta-original').getAttribute('href'), sources[game].deck);
+    assert.equal(await selectedDeck.locator('time').getAttribute('datetime'), '2026-10-15');
+    assert.match(await selectedDeck.innerText(), game === 'ygo' ? /List submitted/ : /Event date/);
+    await safeSourceLink(selectedDeck, game, 'a.home-meta-original');
     for (const width of EVIDENCE_WIDTHS) {
-      await page.setViewportSize({ width, height: 1100 });
-      await assertCommunityArtwork(page, '.community-feature', game);
+      await page.setViewportSize({ width, height: viewportHeight(width) });
+      await assertCommunityArtwork(page, '.community-feature', game, { kind:'publisher' });
       await assertCommunityArtwork(page, `[data-home-meta="${game}"]`, game);
       await assertReadableArtwork(page, game);
       await noOverflow(page, `${game} selected-deck art at ${width}px`);
       await accessibleCarouselControls(page, `${game} selected-deck art at ${width}px`);
       await page.evaluate(() => scrollTo(0, 0));
-      await page.screenshot({ path: resolve(RESULTS, `home-art-${game}-deck-${width}.png`), fullPage: true, animations: 'disabled' });
+      await page.screenshot({ path: resolve(RESULTS, `home-discovery-${game}-${width}.png`), fullPage: true, animations: 'disabled' });
     }
     await page.setViewportSize({ width: 390, height: 1100 });
     await touchSwipe(page, '.community-feature-copy');
     await assertSelected(page, game);
-    assert.match(await article.getAttribute('class'), /feature-event/);
-    assert.deepEqual(await article.locator('time').evaluateAll(nodes => nodes.map(n => n.dateTime)), ['2026-10-20', '2026-10-22']);
+    if(game==='ygo') {
+      assert.match(await article.getAttribute('class'), /feature-event/);
+      assert.deepEqual(await article.locator('time').evaluateAll(nodes => nodes.map(n => n.dateTime)), ['2026-10-20', '2026-10-22']);
+    } else {
+      assert.match(await article.getAttribute('class'), /feature-link/);
+      assert.equal(await article.locator('time').count(),0,'unsupported upcoming-event rows remain honest source links');
+      assert.doesNotMatch(await article.innerText(),/upcoming fixture event/);
+    }
     await safeSourceLink(article, game);
     const eventId = await article.getAttribute('data-slide-id');
     for (const width of [700, 768, 1024, 390]) {
-      await page.setViewportSize({ width, height: 1100 });
+      await page.setViewportSize({ width, height: viewportHeight(width) });
       await assertSelected(page, game);
       assert.equal(await article.getAttribute('data-slide-id'), eventId, 'fold/tablet resize preserves carousel position');
       await noOverflow(page, `${game} resized event at ${width}px`);
@@ -619,10 +705,10 @@ try {
     }
     await page.locator('[data-community-step="1"]').focus();
     await page.keyboard.press('ArrowLeft');
-    assert.equal(await article.getAttribute('data-slide-id'), deckId, 'carousel keyboard is isolated from game keyboard');
+    assert.equal(await article.getAttribute('data-slide-id'), firstId, 'news carousel keyboard is isolated from game keyboard and deck discovery');
     await assertSelected(page, game);
     await page.locator('[data-community-step="1"]').click();
-    await page.locator('[data-community-step="1"]').click();
+    if(game!=='mtg')await page.locator('[data-community-step="1"]').click();
     assert.match(await article.getAttribute('class'), /feature-link/);
     assert.match(await article.innerText(), /Source link · not a live headline/);
     assert.equal(await article.locator('time').count(), 0, 'source directory is never misrepresented as dated news');
@@ -637,7 +723,7 @@ try {
   await page.locator('#app.ready').waitFor();
   await preloadTestState(page);
   await assertSelected(page, 'ygo');
-  assert.equal(await page.locator('.home-value-main strong').innerText(), '$25');
+  assert.equal(await page.locator('.home-value-main strong').innerText(), '$25.00');
   app.health();
   await app.close();
   report.push('All-game tab clicks, keyboard focus/wrap, game swipe, isolated carousel touch/keyboard, safe links/dates, resize and durable reload');
@@ -678,12 +764,9 @@ try {
     for (const game of GAME_IDS) {
       await selectGame(fallback.page, game);
       await assertDailyIdentity(fallback.page, game);
-      await assertCommunityArtwork(fallback.page, '.community-feature', game, { kind: failed ? 'publisher' : 'theme', state: 'missing' });
+      await assertNoNewsArtwork(fallback.page, '.community-feature', { failed });
       await assertCommunityArtwork(fallback.page, `[data-home-meta="${game}"]`, game, { kind: failed ? 'card' : 'theme', state: 'missing' });
-      assert.match(await fallback.page.locator('.community-art-fallback').first().innerText(), /Game theme · not article artwork/);
-      await fallback.page.locator('[data-community-step="1"]').click();
-      await assertCommunityArtwork(fallback.page, '.community-feature', game, { kind: failed ? 'card' : 'theme', state: 'missing' });
-      assert.match(await fallback.page.locator('.community-feature .community-art-fallback').innerText(), /Game theme · deck art unavailable/);
+      assert.match(await fallback.page.locator('[data-home-discovery] .community-art-fallback').innerText(), /Game theme · deck art unavailable/);
       await noOverflow(fallback.page, `${game}: ${scenario.name} art fallback`);
       await accessibleCarouselControls(fallback.page, `${game}: ${scenario.name} art fallback`);
       if (['missing', 'unsafe-host', 'decode-failure'].includes(scenario.name)) await fallback.page.screenshot({ path: resolve(RESULTS, `home-art-${game}-${scenario.name}-390.png`), fullPage: true, animations: 'disabled' });
@@ -694,23 +777,30 @@ try {
   }
   report.push('All games: successful, missing, decode-failed and unsafe art states; exact provider allowlists; no unsafe URL requests; honest visible fallback and no broken image glyphs');
 
-  const alternating = await openApp({ twoDecks: true, width: 390 });
+  const alternating = await openApp({ twoDecks: true, width: 390, reducedMotion: 'reduce' });
   for (const game of GAME_IDS) {
     await selectGame(alternating.page, game);
-    await alternating.page.locator('[data-community-step="1"]').click();
-    await assertCommunityArtwork(alternating.page, '.community-feature', game);
-    await alternating.page.locator('[data-community-step="1"]').focus();
-    await alternating.page.keyboard.press('ArrowRight'); // event
-    await alternating.page.keyboard.press('ArrowRight'); // a different published deck
+    const rail=`[data-home-meta="${game}"]`;
+    await assertCommunityArtwork(alternating.page, rail, game);
+    await alternating.page.locator('[data-meta-step="1"]').focus();
+    await alternating.page.keyboard.press('ArrowRight');
     await assertSelected(alternating.page, game);
-    await assertCommunityArtwork(alternating.page, '.community-feature', game, { second: true });
-    assert.equal(await alternating.page.locator('.community-feature a.community-open').getAttribute('href'), `${sources[game].deck}-second`);
-    await assertCommunityArtwork(alternating.page, `[data-home-meta="${game}"]`, game);
-    assert.equal(await alternating.page.locator('[data-community-step="1"]').evaluate(n => n === document.activeElement), true, 'changing selected-list art preserves keyboard focus');
-    await touchSwipe(alternating.page, '.community-feature-copy', 150);
+    await assertCommunityArtwork(alternating.page, rail, game, { second:true });
+    assert.equal(await alternating.page.locator('.home-meta-original').getAttribute('href'), `${sources[game].deck}-second`);
+    assert.equal(await alternating.page.locator('[data-meta-step="1"]').evaluate(n=>n===document.activeElement),true,'changing selected-list art preserves control focus');
+    assert.equal(await alternating.page.locator('.community-feature.feature-deck').count(),0,'news does not duplicate deck discovery');
+    await alternating.page.locator('#homeQ').fill('Keep my discovery search');
+    await alternating.page.evaluate(()=>{window.__foldHome={rail:document.querySelector('[data-home-meta]'),opener:document.querySelector('[data-home-meta-open]'),value:document.querySelector('.home-value-main'),search:document.querySelector('#homeQ'),key:document.querySelector('.home-meta-card').dataset.metaDeck,source:document.querySelector('.home-meta-original').href};});
+    for(const viewport of FOLD_SEQUENCE) {
+      await alternating.page.setViewportSize(viewport);await assertSelected(alternating.page,game);
+      assert(await alternating.page.evaluate(()=>{const s=window.__foldHome;return s.rail===document.querySelector('[data-home-meta]')&&s.opener===document.querySelector('[data-home-meta-open]')&&s.value===document.querySelector('.home-value-main')&&s.search===document.querySelector('#homeQ')&&s.key===document.querySelector('.home-meta-card').dataset.metaDeck&&s.source===document.querySelector('.home-meta-original').href;}),'fold/unfold keeps the exact mounted rail, visible list/source, value and search nodes');
+      assert.equal(await alternating.page.locator('#homeQ').inputValue(),'Keep my discovery search');
+      await noOverflow(alternating.page,`${game} same-mount fold ${viewport.width}x${viewport.height}`);
+    }
+    await touchSwipe(alternating.page, '.home-meta-copy', 150);
     await assertSelected(alternating.page, game);
-    assert.match(await alternating.page.locator('.community-feature').getAttribute('class'), /feature-event/);
-    await alternating.page.locator(`[data-home-meta="${game}"]`).focus();
+    await assertCommunityArtwork(alternating.page, rail, game);
+    await alternating.page.locator(`[data-home-meta="${game}"] [data-to="#decks/inspiration"]`).focus();
     await alternating.page.keyboard.press('Enter');
     await alternating.page.waitForFunction(() => location.hash === '#decks/inspiration');
     await alternating.page.locator('.bottom-nav [data-nav="home"]').click();
@@ -718,7 +808,92 @@ try {
     await assertSelected(alternating.page, game);
   }
   await alternating.close();
-  report.push('A second selected deck changes to its own verified card and source; lower Meta preview stays bound to the first verified list; keyboard/focus/swipe and Meta navigation remain isolated from game changes');
+  report.push('Unified discovery changes to each exact verified deck/source, with no duplicate news deck slide; keyboard/focus/swipe and Meta navigation remain isolated from game changes');
+
+  // The compact Meta rail has its own timer and exact deck actions. All provider
+  // data/art stay synthetic and source-bound; these are not live rankings.
+  const metaRail = await openApp({ twoDecks: true, width: 390, clock: true });
+  for (const game of GAME_IDS) {
+    const p = metaRail.page;
+    await selectGame(p, game);
+    await p.clock.fastForward(3000); // finish the existing emblem warm-up first
+    const rail = p.locator(`[data-home-meta="${game}"]`), stage = rail.locator('.home-meta-card');
+    await rail.scrollIntoViewIfNeeded();
+    assert.equal(await rail.locator('[data-home-meta-open]').getAttribute('data-act'), game === 'mtg' ? 'mtgProven' : 'tMetaDeck');
+    assert.equal(await rail.locator('.home-meta-original').getAttribute('href'), sources[game].deck);
+    assert.match(await rail.innerText(), game === 'ygo' ? /List submitted/ : /Event date/);
+    await p.mouse.move(1, 1); await p.evaluate(() => document.activeElement?.blur());
+    const initial = await stage.getAttribute('data-meta-deck');
+    await p.clock.fastForward(8200);
+    assert.notEqual(await stage.getAttribute('data-meta-deck'), initial, `${game}: automatic Meta slideshow advances`);
+    const arrow = rail.locator('[data-meta-step="1"]');
+    await arrow.focus(); const focusedArrow = await arrow.elementHandle();
+    const stopped = await stage.getAttribute('data-meta-deck');
+    await p.clock.fastForward(17000);
+    assert.equal(await stage.getAttribute('data-meta-deck'), stopped, 'focus pauses automatic changes');
+    await p.keyboard.press('ArrowRight');
+    assert.notEqual(await stage.getAttribute('data-meta-deck'), stopped);
+    assert(await focusedArrow.evaluate(n => n.isConnected && n === document.activeElement), 'arrow focus survives manual rotation');
+    await p.locator('[data-meta-toggle]').click();
+    await p.evaluate(() => document.activeElement?.blur()); await p.mouse.move(1, 1);
+    await p.clock.fastForward(8200);
+    const afterResume = await stage.getAttribute('data-meta-deck');
+    await rail.hover(); await p.clock.fastForward(17000);
+    assert.equal(await stage.getAttribute('data-meta-deck'), afterResume, 'hover pauses without changing current game');
+    await touchSwipe(p, '.home-meta-copy');
+    await assertSelected(p, game);
+    assert.equal(await p.locator('[data-meta-toggle]').innerText(), 'Resume', 'touch interaction requires explicit resume');
+    const exactKey = await rail.locator('[data-home-meta-open]').getAttribute('data-key');
+    await rail.locator('[data-home-meta-open]').click();
+    await p.waitForFunction(key => window.__homeTestState.ui.sheetCtx?.type === 'proven' && window.__homeTestState.ui.sheetCtx.key === key, exactKey);
+    await closeSheet(p); await assertSelected(p, game);
+    const oldSource = await rail.locator('.home-meta-original').getAttribute('href');
+    await rail.locator('[data-home-meta-open]').focus();
+    const retainedOpener=await rail.locator('[data-home-meta-open]').elementHandle();
+    const retainedKey=await retainedOpener.getAttribute('data-key');
+    const retainedTitle=await retainedOpener.innerText();
+    await p.evaluate(async game => {
+      const { metaState } = await import('/meta.js'), ui = await import('/home-ui.js');
+      const state = metaState(ui.homeMetaKey(game)), row = structuredClone(state.data.decks[0]);
+      row.key = `fixture-${game}-replacement`; row.name += ' replacement'; row.url += '-replacement';
+      state.data = { ...state.data, decks: [row] };
+      ui.refreshHomeMeta(game, document.querySelector(`[data-home-meta="${game}"]`));
+    }, game);
+    assert(await retainedOpener.evaluate(n=>n.isConnected && n===document.activeElement),'cache replacement preserves the exact focused opener');
+    assert.equal(await rail.locator('.home-meta-original').getAttribute('href'),oldSource);
+    await p.keyboard.press('Enter');
+    await p.waitForFunction(key=>window.__homeTestState.ui.sheetCtx?.type==='proven' && window.__homeTestState.ui.sheetCtx.key===key,retainedKey);
+    assert.equal(await p.locator('#sheetBody .sheet-actions a').filter({hasText:game==='mtg'?'Magic Online event':game==='ygo'?'YGOPRODeck':'Limitless'}).first().getAttribute('href'),oldSource,'retained exact list opens its original verified source');
+    assert((await p.locator('#sheetBody').innerText()).includes(retainedTitle.replace(/\s*↗\s*$/,'')));
+    if(game!=='mtg') {
+      const captured=await p.evaluate(async()=>{const {proven}=await import('/tcg.js');return {token:proven.spec.buildMeta.token,source:proven.spec.buildMeta.data.source,keys:proven.spec.buildMeta.data.decks.map(d=>d.key)};});
+      assert.equal(await p.locator('#sheetBody [data-act="tMetaBuild"]').getAttribute('data-proven-build'),captured.token);
+      // Moving into the inspector permits Home to adopt its new snapshot. That
+      // must not revoke or silently redirect the inspector's exact build action.
+      await p.clock.fastForward(1);
+      await p.waitForFunction(game=>document.querySelector('[data-home-meta-open]')?.dataset.key===`fixture-${game}-replacement`,game);
+      await p.locator('#sheetBody [data-act="tMetaBuild"]').click();
+      await p.waitForFunction(({game,key})=>window.__homeTestState.ui.sheetCtx?.type==='tbuild' && window.__homeTestState.ui.tbuild?.game===game && window.__homeTestState.ui.tbuild?.metaKey===key,{game,key:retainedKey});
+      const built=await p.evaluate(()=>{const B=window.__homeTestState.ui.tbuild;return {game:B.metaSnapshot.game,source:B.metaSnapshot.data.source,keys:B.metaSnapshot.data.decks.map(d=>d.key)};});
+      assert.deepEqual(built,{game,source:captured.source,keys:captured.keys},'downstream builder retains original exact source dataset after rail replacement');
+    }
+    await closeSheet(p);
+    // Explicit close/cancel keeps the old list valid until focus is released.
+    await p.evaluate(() => document.activeElement?.blur()); await p.clock.fastForward(1);
+    await p.waitForFunction(game => document.querySelector(`[data-home-meta="${game}"] .home-meta-card`)?.dataset.metaDeck === `fixture-${game}-replacement`, game);
+    assert.notEqual(await rail.locator('.home-meta-original').getAttribute('href'), oldSource);
+    assert(await retainedOpener.evaluate(n=>!n.isConnected));
+    const newSource=await rail.locator('.home-meta-original').getAttribute('href');
+    await rail.locator('[data-home-meta-open]').click();
+    await p.waitForFunction(game=>window.__homeTestState.ui.sheetCtx?.key===`fixture-${game}-replacement`,game);
+    assert.equal(await p.locator('#sheetBody .sheet-actions a').filter({hasText:game==='mtg'?'Magic Online event':game==='ygo'?'YGOPRODeck':'Limitless'}).first().getAttribute('href'),newSource);
+    await closeSheet(p);await retainedOpener.dispose();
+    assert.equal(await rail.locator('[data-meta-step="1"]').isDisabled(), true, 'one fresh list replaces the old rotation');
+    for (const width of WIDTHS) { await p.setViewportSize({ width, height: 1100 }); await noOverflow(p, `${game} compact Meta controls ${width}`); }
+    await focusedArrow.dispose();
+  }
+  await metaRail.close();
+  report.push('All games: automatic compact Meta rotation, explicit resume, focus/hover/touch pause, stable control focus, exact actual deck actions, new snapshot replaces old lists, source/date identity and controls at 320–2560px');
 
   // Advance the actual clock in an already-running application, not a renderer
   // facsimile. Each game must independently replace yesterday's in-memory and
@@ -762,7 +937,14 @@ try {
     const random = await openApp({ game });
     const before = await inventorySnapshot(random.page);
     await startReveal(random.page, game);
-    assert.equal(await inventorySnapshot(random.page), before, 'revealing a card does not create a deck or alter the collection');
+    await random.page.evaluate(()=>{window.__foldReveal={node:document.querySelector('.home-deck-reveal'),context:window.__homeTestState.ui.sheetCtx,home:document.querySelector('[data-home-discovery]'),value:document.querySelector('[data-home-value]')};});
+    for(const viewport of FOLD_SEQUENCE) {
+      await random.page.setViewportSize(viewport);
+      assert(await random.page.evaluate(()=>{const r=window.__foldReveal;return r.node===document.querySelector('.home-deck-reveal')&&r.context===window.__homeTestState.ui.sheetCtx&&r.home===document.querySelector('[data-home-discovery]')&&r.value===document.querySelector('[data-home-value]');}),'resizing never restarts the random selection or remounts Home behind it');
+      assert.equal(await random.page.locator('.home-deck-reveal h3').innerText(),seeds[game].name);
+      assert.equal(await random.page.locator('.home-reveal-fan img').getAttribute('alt'),seeds[game].name);
+    }
+    assert.equal(await inventorySnapshot(random.page), before, 'revealing and resizing a card does not create a deck or alter the collection');
     if (game === 'mtg') {
       const running = await random.page.evaluate(async () => {
         const { S } = await import('/store.js');
@@ -803,10 +985,16 @@ try {
   await cancel.close();
   report.push('All-game explicit format → real provider-selected card → same seed/format builder, with no inventory mutation; busy Magic build preserved/retryable; late selection cancelled');
 
-  const reduced = await openApp({ reducedMotion: 'reduce', width: 390 });
+  const reduced = await openApp({ reducedMotion: 'reduce', width: 390, twoDecks: true, clock: true });
   await visibleHeaderArt(reduced.page);
   await assertCommunityArtwork(reduced.page, '.community-feature', 'mtg', { kind: 'publisher' });
   await assertCommunityArtwork(reduced.page, '[data-home-meta="mtg"]', 'mtg');
+  const reducedKey = await reduced.page.locator('.home-meta-card').getAttribute('data-meta-deck');
+  await reduced.page.clock.fastForward(20000);
+  assert.equal(await reduced.page.locator('.home-meta-card').getAttribute('data-meta-deck'), reducedKey, 'reduced motion disables automatic slides');
+  assert.equal(await reduced.page.locator('[data-meta-toggle]').isDisabled(), true);
+  await reduced.page.locator('[data-meta-step="1"]').click();
+  assert.notEqual(await reduced.page.locator('.home-meta-card').getAttribute('data-meta-deck'), reducedKey, 'reduced motion retains manual navigation');
   const artMotion = await reduced.page.locator('img[data-community-image]').evaluateAll(nodes => nodes.map(n => ({ transition: getComputedStyle(n).transitionDuration, animation: getComputedStyle(n).animationName })));
   assert(artMotion.length >= 2 && artMotion.every(n => n.transition === '0s' && n.animation === 'none'), 'reduced motion removes community and lower Meta artwork transitions');
   await reduced.page.screenshot({ path: resolve(RESULTS, 'home-mtg-390-reduced-motion.png'), fullPage: true, animations: 'disabled' });
@@ -816,7 +1004,7 @@ try {
   await reduced.page.screenshot({ path: resolve(RESULTS, 'home-mtg-reveal-reduced-motion.png'), fullPage: true, animations: 'disabled' });
   await reduced.close();
   report.push('Reduced-motion Home and actual card reveal evidence, with all reveal animations disabled');
-  await writeFile(resolve(RESULTS, 'home-browser-report.json'), JSON.stringify({ passed: true, widths: WIDTHS, games: GAME_IDS, screenshots: [...EVIDENCE_WIDTHS], checks: report }, null, 2));
+  await writeFile(resolve(RESULTS, 'home-browser-report.json'), JSON.stringify({ passed: true, widths: WIDTHS, games: GAME_IDS, screenshots: [...EVIDENCE_WIDTHS], orientations: ORIENTATIONS, statefulResize: FOLD_SEQUENCE, checks: report }, null, 2));
   console.log(`PASS: Home real-app regression\n${report.map(line => `  • ${line}`).join('\n')}`);
 } catch (error) {
   await writeFile(resolve(RESULTS, 'home-browser-report.json'), JSON.stringify({ passed: false, completed: report, error: error.stack || String(error) }, null, 2));

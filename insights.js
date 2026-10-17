@@ -624,10 +624,10 @@ export function collectionValue(entries, catalog, printings = {}, decks = []) {
   };
 }
 
-export function recordValuePoint(history = [], total, copies) {
+export function recordValuePoint(history = [], total, copies, coverage = null) {
   const day = new Date().toISOString().slice(0, 10),
     list = (history || []).filter((h) => h.date !== day);
-  list.push({ date: day, total: Math.round(total * 100) / 100, copies });
+  list.push({ date: day, total: Math.round(total * 100) / 100, copies, ...(coverage && Number.isFinite(coverage.unpriced) && coverage.unpriced >= 0 ? { unpriced: coverage.unpriced, currency: coverage.currency, basis: coverage.basis } : {}) });
   return list.slice(-365);
 }
 

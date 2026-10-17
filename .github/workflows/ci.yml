@@ -145,6 +145,11 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Test real Home shell, game tabs, community slides and responsive layouts
         run: node tests/home-browser.mjs
+      - name: Validate and test exact Home value updates with synthetic quotes
+        if: ${{ !cancelled() }}
+        run: |
+          node tests/home-value-browser.mjs --validate-fixtures
+          node tests/home-value-browser.mjs
       - name: Test exact all-game artwork recovery and exhaustion
         if: ${{ !cancelled() }}
         run: node tests/card-artwork-browser.mjs

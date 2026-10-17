@@ -28,7 +28,7 @@ MODULES = (
     "app.js", "core.js", "scancam.js", "scan-batch.js", "scan-signals.js", "scan.js", "scan-catalog.js",
     "scan-vision.js", "scansession.js", "tcg.js", "ptcg.js", "ui.js",
     "views.js", "confidence.js", "mtg-tcgprice.js", "style.css",
-    "home-ui.js", "home-swipe.js", "game-navigation.js", "tour-scenes.js", "community-feed.js", "community-art.js",
+    "home-ui.js", "home-swipe.js", "game-navigation.js", "tour-scenes.js", "community-feed.js", "community-art.js", "community-sources.js",
     "ai-rules.js", "ai-rules-panel.js",
     "pricing-presentation.js", "workbench-ui.js", "artwork.js", "zoom.js", "pokemon-art.js", "meta.js",
     "historical-archive.js", "recent-history.js", "shared-history.js", "ygo-history-identity.js",

@@ -1,5 +1,5 @@
 import {compactPriceSummary,selectedFinish,detailTabs,detailPanel} from "./pricing-presentation.js";
-import { homeValue, homeEdition } from "./home-ui.js";
+import { homeValue, homeEdition, homeValueCoverage } from "./home-ui.js";
 import {interactiveRules} from './rule-learning.js';
 import {brandMark} from './brand.js';
 import {conditionValueNote} from './condition-value.js';
@@ -87,9 +87,6 @@ export function home() {
   const st = S.state,
     copies = sumQty(st.collection),
     value = collectionValue(st.collection, S.catalog, st.printings, st.decks),
-    hist = recordValuePoint(st.valueHistory || [], value.total, value.copies),
-    prev = hist.length > 1 ? hist[hist.length - 2] : null,
-    change = prev ? value.total - prev.total : null,
     active = deckById(st.activeDeck),
     others = st.decks.filter((d) => d !== active).slice(-8).reverse();
   const fresh = !st.collection.length && !st.decks.length,
@@ -97,10 +94,10 @@ export function home() {
   // One next step for where you are; the 3-step guide only for brand-new users (and it can be hidden).
   return `${homeHero("mtg", copies ? "Welcome back." : "Let’s build from your cards.", !fresh)}${installNudge(copies)}
   ${st.example ? `<div class="note warn">Example data is loaded. Reset it in Settings before adding real cards.</div>` : ""}
-  ${homeValue({ total: value.total, copies, decks: st.decks.length, unpriced: value.unpriced, change, valueRoute: "#collection/value" })}
+  ${homeValue({ total: value.total, copies, decks: st.decks.length, unpriced: value.unpriced, history: st.valueHistory, valueRoute: "#collection/value" })}
   ${homeEdition("mtg")}
-  <div class="home-personal">${fresh && !startHidden("mtg") ? `<details class="home-start"><summary>New here? Start with your cards <span aria-hidden="true">＋</span></summary>${startPath()}</details>` : mtgNext(lead, copies)}
-  ${quickTiles("mtg", !!S.state.collection.length && !S.state.decks.length)}</div>
+  ${quickTiles("mtg")}
+  <div class="home-personal">${fresh && !startHidden("mtg") ? `<details class="home-start"><summary>New here? Start with your cards <span aria-hidden="true">＋</span></summary>${startPath()}</details>` : mtgNext(lead, copies)}</div>
   ${others.length ? `<section class="home-deck-section"><div class="section-head"><h2>Deck shelf</h2><button class="link" data-act="go" data-to="#decks">All decks →</button></div><div class="shelf">${others.map((d) => deckTile(d)).join("")}</div></section>` : ""}
   ${
     value.spare.length && value.spareValue > 0
@@ -122,8 +119,7 @@ const glossary = () => `<details class="glossary"><summary>New to Commander? 60-
 function mtgNext(d, copies) {
   if (!d && !copies)
     return nextCard({ title: "Add your collection", text: "Paste a list or upload a ManaBox, Moxfield, Archidekt or CSV export — or scan cards with your camera. Then CardStashy shows what you can build.", actions: `<button class="btn" data-act="importCollection">↥ Import a list</button><button class="btn ghost" data-act="go" data-to="#scan">▧ Scan</button><button class="btn ghost" data-act="loadExample">Explore an example</button>` });
-  if (!d)
-    return nextCard({ title: "Discover decks your cards support", text: `${copies} cards in your collection. See the commanders they support and the decks — precons, shared lists and tournament results — you can almost build.`, actions: `<button class="btn" data-act="go" data-to="#decks/ideas">✧ Deck ideas</button><button class="btn ghost" data-act="go" data-to="#decks/inspiration">🏆 Meta decks</button>` });
+  if (!d) return ""; // Discovery is the shared art-led section above.
   const t = totalsFor(d),
     f = formatOf(d),
     r = deckReview(d, S.catalog, S.state.collection, S.state.decks);
@@ -152,10 +148,27 @@ function startPath() {
   </ol><p class="foot">Everything is saved on this device. Export a backup in Settings any time.</p></section>`;
 }
 
+// A tournament-cache completion only refreshes noninteractive score leaves.
+// Keep every containing deck button and unrelated Home control in place.
+export function refreshDeckScores(root) {
+  for (const node of root?.querySelectorAll?.('[data-deck-score]') || []) {
+    if (node.isConnected === false) continue;
+    const deck = deckById(node.dataset.deckScore);
+    if (!deck) continue;
+    const html = powerChip(mtgPower(deck));
+    if (node.innerHTML !== html) node.innerHTML = html;
+  }
+}
+
 export function deckTile(d, wide = false) {
-  const t = totalsFor(d),
-    p = engineProfile(d, S.catalog),
-    v = deckValue(d.cards, S.catalog, S.state.priceChoices),
+  // A planned deck and its missing copies share one existing per-name USD
+  // resolution (including selected/cheapest known printings), main deck only.
+  const rows = rowsFor(d), t = comparisonTotals(rows),
+    v = rows.reduce((a, r) => ({ total: a.total + (r.price ?? 0) * r.qty, unpriced: a.unpriced + (r.price == null ? r.qty : 0) }), { total: 0, unpriced: 0 }),
+    valueAmount = v.unpriced && v.unpriced === t.copies ? "—" : usd(v.total, 0),
+    valueLabel = v.unpriced ? `${v.unpriced === t.copies ? "value unavailable" : "known deck subtotal"} · ${v.unpriced} unpriced` : "value",
+    gapAmount = t.unpriced && t.unpriced === t.missing ? "—" : usd(t.pricedGap, 0),
+    gapLabel = t.unpriced ? `${t.unpriced === t.missing ? "cost unavailable" : "known subtotal to finish"} · ${t.unpriced} unpriced` : "to finish",
     cover = coverOf(d),
     target = formatOf(d).size,
     owned = t.copies ? t.covered / t.copies : 0;
@@ -166,7 +179,7 @@ export function deckTile(d, wide = false) {
     <span class="tile-body">
       <b>${esc(d.name)}</b>
       <small>${esc(formatOf(d).commander ? d.commander || "No commander yet" : mtgPower(d).plan)} · ${t.copies}/${target}</small>
-      <span class="tile-stats">${powerChip(mtgPower(d))}<span><em>${Math.round(owned * 100)}%</em> owned</span><span><em>${usd(v.total, 0)}</em> value</span>${t.missing ? `<span><em>${usd(t.pricedGap, 0)}</em> to finish</span>` : ""}</span>
+      <span class="tile-stats"><span data-deck-score="${esc(d.id)}">${powerChip(mtgPower(d))}</span><span><em>${Math.round(owned * 100)}%</em> owned</span><span><em>${valueAmount}</em> ${valueLabel}</span>${t.missing ? `<span><em>${gapAmount}</em> ${gapLabel}</span>` : ""}</span>
       ${bar(owned, "thin")}
     </span>
   </button>`;
@@ -751,7 +764,7 @@ export function collectionList() {
 function collectionValueView() {
   const st = S.state,
     v = collectionValue(st.collection, S.catalog, st.printings, st.decks),
-    hist = recordValuePoint(st.valueHistory || [], v.total, v.copies),
+    hist = recordValuePoint(st.valueHistory || [], v.total, v.copies, homeValueCoverage(v)),
     colorNames = { W: "White", U: "Blue", B: "Black", R: "Red", G: "Green", Multi: "Multicolor", Colorless: "Colorless" },
     maxColor = Math.max(1, ...Object.values(v.colors));
   if (!st.collection.length) return empty("No value to track yet", "Add cards and CardStashy records your collection value once a day so you can watch it change.");
