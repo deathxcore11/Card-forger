@@ -7,7 +7,7 @@ const demoImages=['https://api.scryfall.com/cards/named?exact=Sol%20Ring&format=
 const svg='<svg xmlns="http://www.w3.org/2000/svg" width="630" height="880"><rect width="630" height="880" fill="#214957"/><text x="20" y="80" fill="white" font-size="26">SYNTHETIC DEMO ART</text></svg>';
 try{
  for(const game of ['mtg','ptcg','ygo']){
-  const app=await openSearchApp(browser,server.base,{game,width:390,height:1000}),{page}=app;
+  const app=await openSearchApp(browser,server.base,{game,width:390,height:1000,sandboxPreviews:true}),{page}=app;
   try{
    for(const url of demoImages)await page.route(url,route=>route.fulfill({contentType:'image/svg+xml',body:svg}));
    const original=await inventorySnapshot(page);
@@ -55,6 +55,6 @@ try{
    for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'.tabletop-dialog',`${game} tabletop ${width}`);}
    await capture(page,`synthetic-search-tabletop-${game}`);await page.locator('[data-table="new"]').click();await page.locator('.cf-dialog button[value="cancel"]').click();assert(await page.locator('.table-seats').isVisible());
    await page.keyboard.press('Escape');await page.keyboard.press('Escape');assert.equal(await inventorySnapshot(page),original);app.health();console.log(`PASS: ${game} responsive single Home/search, disabled Community, real demo state changes, safe reset, independent tabletop and no inventory mutation`);
-  }catch(error){try{app.health();}catch(health){error.message+='\n'+health.stack;}console.error('Guide failure context',JSON.stringify(await page.evaluate(()=>({view:document.body.dataset.view,sheet:window.__uiTestState.ui.sheetCtx,settings:document.querySelector('#settingsDialog')?.open,toast:document.querySelector('#toast')?.textContent,events:window.__settingsTrace}))),null,2);await capture(page,`synthetic-search-guide-failure-${game}`);throw error;}finally{await app.context.close();}
+  }catch(error){try{app.health();}catch(health){error.message+='\n'+health.stack;}console.error('Guide failure context',JSON.stringify(await page.evaluate(()=>({view:document.body.dataset.view,sheet:window.__uiTestState.ui.sheetCtx,settings:document.querySelector('#settingsDialog')?.open,toast:document.querySelector('#toast')?.textContent,events:window.__settingsTrace})),null,2));await capture(page,`synthetic-search-guide-failure-${game}`);throw error;}finally{await app.context.close();}
  }
 }finally{await browser.close();await server.close();}

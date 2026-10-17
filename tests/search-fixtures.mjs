@@ -139,13 +139,20 @@ export async function startServer(){
  await new Promise(r=>server.listen(0,'127.0.0.1',r));return {base:`http://127.0.0.1:${server.address().port}`,close:()=>new Promise(r=>server.close(r))};
 }
 const historyEndpoint=new URL('/functions/v1/market-history',SUPABASE.url);
-export async function openSearchApp(browser,base,{game='mtg',width=390,height=1000,pendingDetails=false,evidenceLabel=game}={}){
+export async function openSearchApp(browser,base,{game='mtg',width=390,height=1000,pendingDetails=false,evidenceLabel=game,sandboxPreviews=false}={}){
  assert.equal(process.env.GITHUB_ACTIONS,'true','Browser fixture execution is hosted-CI only');assert.match(base,/^http:\/\/127\.0\.0\.1:\d+$/);
- const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:1,hasTouch:true,reducedMotion:'reduce',locale:'en-US',timezoneId:'UTC',serviceWorkers:'block'}),page=await context.newPage();page.setDefaultTimeout(15000);
+ const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:1,hasTouch:true,reducedMotion:'reduce',locale:'en-US',timezoneId:'UTC',serviceWorkers:sandboxPreviews?'allow':'block'}),page=await context.newPage();page.setDefaultTimeout(15000);
  const errors=[],writes=[],unexpected=[],requests=[],gates=[],rules=[],fixtures=makeSearchFixtures(game,{pendingDetails});
  const diagnostics=()=>({errors:[...errors],writes:[...writes],unexpected:[...unexpected],requests:requests.map(r=>({...r}))});
  try{
  page.on('pageerror',e=>errors.push(e.stack||e.message));
+ // Playwright's built-in SW block injects a property read into every child frame,
+ // which itself throws in an opaque sandbox. Block registration in the top app
+ // instead for preview tests; sandbox frames cannot register workers themselves.
+ if(sandboxPreviews){
+  context.on('serviceworker',worker=>unexpected.push('SERVICE WORKER '+worker.url()));
+  await page.addInitScript(()=>{if(window!==window.top)return;Object.defineProperty(navigator.serviceWorker,'register',{value:()=>Promise.reject(new Error('Blocked by synthetic fixture')),writable:false});});
+ }
  assert.equal(typeof context.routeWebSocket,'function','Hosted Playwright must support fail-closed WebSocket interception');await context.routeWebSocket('**/*',ws=>{unexpected.push('WEBSOCKET '+ws.url());ws.close();});
  await context.route('**/*',async route=>{
   const req=route.request(),url=new URL(req.url()),record={method:req.method(),url:url.href,settled:false};requests.push(record);
@@ -168,7 +175,7 @@ export async function openSearchApp(browser,base,{game='mtg',width=390,height=10
   const fixture=providerFixture(url);if(fixture!==undefined)return fulfill(fixture);
   unexpected.push(`${req.method()} ${url.href}`);return fulfill({error:'Unmapped request blocked; no external request forwarded.'},451);
  });
- await page.addInitScript(({storage,now})=>{const NativeDate=Date,offset=now-NativeDate.now();globalThis.Date=class extends NativeDate{constructor(...args){super(...(args.length?args:[NativeDate.now()+offset]));}static now(){return NativeDate.now()+offset;}};Math.random=()=>0;for(const[k,v]of Object.entries(storage))localStorage.setItem(k,JSON.stringify(v));localStorage.setItem('cardstashy-tour-v1','done');localStorage.setItem('cardstashy-glass','off');},{storage:fixtures.storage,now:NOW});
+ await page.addInitScript(({storage,now})=>{if(window!==window.top)return;const NativeDate=Date,offset=now-NativeDate.now();globalThis.Date=class extends NativeDate{constructor(...args){super(...(args.length?args:[NativeDate.now()+offset]));}static now(){return NativeDate.now()+offset;}};Math.random=()=>0;for(const[k,v]of Object.entries(storage))localStorage.setItem(k,JSON.stringify(v));localStorage.setItem('cardstashy-tour-v1','done');localStorage.setItem('cardstashy-glass','off');},{storage:fixtures.storage,now:NOW});
  await page.goto(base+'/#search');await page.locator('#app.ready').waitFor();await page.evaluate(async()=>{window.__uiTestState=(await import('/store.js')).S;window.__uiTestTcg=await import('/tcg.js');});await page.waitForFunction(g=>document.body.dataset.game===g&&window.__uiTestState.state.settings.game===g,game);
  // Observe durable writes as well as final in-memory snapshots. Cache writes and
  // game settings are allowed; lot/deck/private-price mutations are never allowed.
