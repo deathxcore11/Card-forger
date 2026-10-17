@@ -28,7 +28,7 @@ try{
    }
    // A live fold keeps the same draft and moves the single input to the header.
    await page.locator('#homeQ').fill('Alpha fixture');await page.setViewportSize({width:1440,height:1000});assert.equal(await page.locator('#homeQ').inputValue(),'Alpha fixture');await page.keyboard.press('Escape');
-   await page.locator('.top-nav [data-nav="collection"]').click();assert(await page.locator('#desktopSearch #homeQ').isVisible());
+   await page.locator('.top-nav [data-nav="collection"]').click();await page.waitForFunction(()=>document.body.dataset.view==='collection'&&!document.querySelector('#content').inert);assert(await page.locator('#desktopSearch #homeQ').isVisible());
    // Sample guide manual steps actually change controls and show a receipt.
    await page.locator('[data-act="menu"]').click();await page.locator('#settingsTab-info').click();
    await page.locator('#infoQuery').fill('conditions');await page.locator('#info-collection summary').click();await page.locator('#info-collection [data-lesson="save"]').click();
@@ -55,6 +55,6 @@ try{
    for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'.tabletop-dialog',`${game} tabletop ${width}`);}
    await capture(page,`synthetic-search-tabletop-${game}`);await page.locator('[data-table="new"]').click();await page.locator('.cf-dialog button[value="cancel"]').click();assert(await page.locator('.table-seats').isVisible());
    await page.keyboard.press('Escape');await page.keyboard.press('Escape');assert.equal(await inventorySnapshot(page),original);app.health();console.log(`PASS: ${game} responsive single Home/search, disabled Community, real demo state changes, safe reset, independent tabletop and no inventory mutation`);
-  }finally{await app.context.close();}
+  }catch(error){try{app.health();}catch(health){error.message+='\n'+health.stack;}console.error('Guide failure context',await page.evaluate(()=>({view:document.body.dataset.view,sheet:window.__uiTestState.ui.sheetCtx,settings:document.querySelector('#settingsDialog')?.open,toast:document.querySelector('#toast')?.textContent})));await capture(page,`synthetic-search-guide-failure-${game}`);throw error;}finally{await app.context.close();}
  }
 }finally{await browser.close();await server.close();}

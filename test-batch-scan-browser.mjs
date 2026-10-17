@@ -6,7 +6,7 @@ import {readFile,mkdir} from 'node:fs/promises';
 import {resolve,extname} from 'node:path';
 import {chromium,devices} from 'playwright';
 const root=process.cwd(),output=process.env.SCAN_TEST_OUTPUT||'test-results';
-const fixture=`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/style.css"><body data-view="scan"><header class="topbar"><div class="brand">CardStashy</div><button class="btn ghost">Magic</button></header><main id="content"></main><nav class="bottom-nav"><button>Home</button><button>Search</button><button>Collection</button><button>Decks</button><button>Scan</button></nav><script type="module">
+const fixture=`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/style.css"><body data-view="scan"><div id="app" class="ready"><header class="topbar"><div class="brand">CardStashy</div><button class="btn ghost">Magic</button></header><main id="content"></main><nav class="bottom-nav"><button disabled>Community</button><button>Collection</button><button>Search</button><button>Decks</button><button>Scan</button></nav></div><script type="module">
 import {S,blank} from '/store.js';import {registerScanner,scanView} from '/scancam.js';import {loadBatch,saveBatch} from '/scan-batch.js';import {savePrefs} from '/scansession.js';
 S.state=blank();S.state.settings.game='mtg';S.ui.view='scan';S.ui.scan={mode:'live',auto:false};
 window.ocr=[];window.ocrDelay=150;window.saved=[];window.errors=[];

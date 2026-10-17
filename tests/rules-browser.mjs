@@ -21,8 +21,9 @@ async function reveal(locator){
 }
 async function openLearning(app){
  await navigate(app.page,'#decks/ideas');
+ await app.page.evaluate(()=>{window.__rulesClickTrace=[];for(const kind of ['pointerdown','pointerup','click'])document.addEventListener(kind,e=>window.__rulesClickTrace.push({kind,act:e.target.closest?.('[data-act]')?.dataset.act,tag:e.target.tagName,defaultPrevented:e.defaultPrevented}),true);});
  await app.page.locator('#content [data-act="learnGame"]').first().click();app.health();
- await app.page.locator('#sheet[open] [data-learning-root]').waitFor();
+ await app.page.locator('#sheet[open] [data-learning-root]').waitFor().catch(async e=>{e.message+='\nRules action state: '+JSON.stringify(await app.page.evaluate(()=>({clicks:window.__rulesClickTrace,toast:document.querySelector('#toast')?.textContent,context:window.__uiTestState.ui.sheetCtx,open:document.querySelector('#sheet')?.open,body:document.querySelector('#sheetBody')?.textContent.slice(0,180)})));throw e;});
 }
 async function rootSnapshot(page){return page.locator('[data-learning-root]').evaluate(root=>({step:root.querySelector('[data-learn-step][aria-pressed="true"]')?.dataset.learnStep,filter:root.querySelector('[data-learn-search]')?.value,search:root.querySelector('[data-rule-search]')?.value,details:[...root.querySelectorAll('[data-learning-home] details')].map(d=>d.open),top:document.querySelector('#sheetBody').scrollTop}));}
 async function sourceVisible(page,entry){
@@ -78,7 +79,7 @@ async function exactSources(app,game){
 }
 try{
  browser=await chromium.launch();
- for(const game of GAMES){const app=await openApp(browser,server.base,{game});try{await basicRules(app,game);await exactSources(app,game);await app.close();}catch(error){await capture(app.page,`rules-${game}-failure`).catch(()=>{});await app.context.close();throw error;}}
+ for(const game of GAMES){const app=await openApp(browser,server.base,{game});try{await basicRules(app,game);await exactSources(app,game);await app.close();}catch(error){try{app.health();}catch(health){error.message+='\n'+health.stack;}await capture(app.page,`rules-${game}-failure`).catch(()=>{});await app.context.close();throw error;}}
  // A starts a slow corpus request. Back selects B while A is still pending.
  // Both await the same real loader; only B may publish or take focus afterward.
  const race=await openApp(browser,server.base,{game:'ptcg',reducedMotion:'reduce'});await openLearning(race);await race.page.locator('[data-learn-start]').click();
