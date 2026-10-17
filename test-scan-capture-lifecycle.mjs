@@ -2,7 +2,8 @@
 // browser, camera hardware, network requests or private card photos.
 import assert from 'node:assert/strict';
 import {S,blank} from './store.js';
-import {registerScanner,releaseOCR,freezeCapture,canReuseCapture,SCAN_DEADLINES,createScanTrace} from './scancam.js';
+import {registerScanner,releaseOCR,freezeCapture,canReuseCapture,SCAN_DEADLINES,createScanTrace,fullCardNameHints,scanConfirmation} from './scancam.js';
+import {nameCandidates} from './scan.js';
 import {loadBatch,saveBatch,captureCapacity,CAPTURE_ORIGINAL_LIMIT,CAPTURE_STORAGE_LIMIT} from './scan-batch.js';
 import {savePrefs} from './scansession.js';
 const memory=new Map();globalThis.localStorage={getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,v)};
@@ -79,4 +80,22 @@ try{
 
  const downgrade=setup();let forbiddenWrites=0;downgrade.addMany=async()=>{forbiddenWrites++;};const ygo={id:'12345678',name:'Fixture Dragon',game:'ygo'},known={id:ygo.id,name:ygo.name,card:ygo,exact:true,detailsOnly:true,print:'REP-EN001|Rare',setReleaseId:'ygo:release-a',releaseName:'Release A'};downgrade.candById=async()=>({...known,exact:false,detailsOnly:false,setReleaseId:'',setReleaseUnverified:true,printingAmbiguous:true});saveBatch([{id:'downgrade',captureRevision:'one',game:'ygo',status:'review',qty:1,condition:'Near Mint',lang:'en',finish:'unlimited',cands:[known],read:{name:ygo.name,code:'REP-EN001'}}]);downgrade.A.scanBatchReview({dataset:{id:'downgrade'}});await downgrade.A.scanConfirm();assert.equal(forbiddenWrites,0);assert(S.ui.scan.confirm);assert.equal(S.ui.scan.confirm.finish,'');assert.match(S.ui.scan.confirm.error,/Printing details changed/);assert.equal(loadBatch()[0].status,'review');
  console.log('PASS: a known release cannot silently turn into an ambiguous/unknown release during explicit save hydration.');
+ // Public hosted OCR failure: cropped full read saw the true title, but a
+ // later original/footer observation supplied enough junk names to displace it.
+ await releaseOCR();
+ const croppedText=['YARN 1"1IAUICIAN\nEE ——————\nFy Tw YL YY.','?','?','ee ATK/2500 DEF/ i','?',
+   'DARK MAGICIAN ii) |\n\nii\n\n333339\n\nATK/3500 DEF/2100\nReplica - Not For Use in Sanctioned Tournaments.',
+   'Sudo Dice siren','?','?'];
+ const originalText=['on\n\na\n\nx2\n\n)\n\nA\n\n~&\n\nvO\n\nSVL\nIsp,\nBota\nATK/2500\nSudo Dice siren\nDEF/2100','VG\nPRMAL\nterms of attack and defense'];
+ window.Tesseract={createWorker:async()=>({recognize:async c=>({data:{text:(c.label==='cropped'?croppedText:originalText).shift()||'?'}}),terminate:async()=>{}})};
+ const dark={id:'46986414',name:'Dark Magician',game:'ygo',atk:2500,def:2100},dice={id:'41139112',name:'Summon Dice',game:'ygo'};
+ const retained=setup(async(g,read)=>{const names=nameCandidates(g,read.name),card=names.some(n=>n==='DARK MAGICIAN')?dark:names.some(n=>/Dice/.test(n))?dice:null;return {cands:card?[{id:card.id,name:card.name,card,exact:false}]:[],tried:names};});
+ S.state.settings.game='ygo';
+ retained.enqueueCapture(freezeCapture(canvas('public-original'),{...bad,orientation:{status:'unverified',rotation:0}}));await wait(settled);
+ const retainedRow=loadBatch()[0];assert.equal(retainedRow.cands[0]?.id,'46986414');assert.equal(retainedRow.status,'review');assert.equal(retainedRow.printingVerified,false);assert(retainedRow.cands.every(c=>!c.exact));assert(nameCandidates('ygo',retainedRow.read.name).includes('DARK MAGICIAN'));assert.match(retainedRow.read.full,/Sudo Dice/);
+ assert.deepEqual(fullCardNameHints('ygo','on\na\nx2\nStudio Dice\nSummon Dice'),[],'footer words are not searched as arbitrary replacement titles');
+ assert.deepEqual(fullCardNameHints('mtg','Lightning Bolt\nInstant\nCopyright Wizards'),['Lightning Bolt']);
+ assert.deepEqual(fullCardNameHints('ptcg','BASIC\nKyogre HP 130\nAqua Storm'),['Kyogre']);
+ assert.match(scanConfirmation('ygo',{cands:[{...retainedRow.cands[0],reviewSource:'printing-picker'}],confirm:{i:0,qty:1,condition:'Near Mint',lang:'en',finish:'unlimited'}},{}),/Printing selected by you/);
+ console.log('PASS: earlier full-card title survives later original/footer/orientation noise; real public Dark Magician identity stays review-only, with no name-only exact proof.');
 }finally{Object.assign(SCAN_DEADLINES,deadlineDefaults);await releaseOCR();}

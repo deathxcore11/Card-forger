@@ -120,11 +120,32 @@ async function lateCancelledScenario(app){
     await act(page,'scanChangePrinting').click();await bounded(gate.seen,'Held printing page');
     await act(page,'printingPickerCancel').click();await page.waitForFunction(()=>!document.querySelector('#sheet')?.open);
     await act(page,'scanDismiss').click();await page.locator('.scan-batch-thumb[data-id="synthetic-capture-B"]').click();
-    const before=await queue(page);gate.release();
+    const before=await queue(page);await frame(page);
+    // Native dialog close intentionally retains its hidden body. Observe the
+    // actual open/context/visibility contract, and independently reject any
+    // late repaint of that retained DOM rather than expecting its removal.
+    const closed=await page.evaluate(()=>{
+      const sheet=document.querySelector('#sheet'),body=document.querySelector('#sheetBody');
+      window.__scannerLatePickerMutations=[];
+      window.__scannerLatePickerObserver=new MutationObserver(records=>window.__scannerLatePickerMutations.push(...records.map(record=>({type:record.type,target:record.target.id||record.target.nodeName,attribute:record.attributeName}))));
+      window.__scannerLatePickerObserver.observe(body,{childList:true,characterData:true,attributes:true,subtree:true});
+      window.__scannerLatePickerObserver.observe(sheet,{attributes:true,attributeFilter:['open']});
+      return {open:sheet.open,context:window.__uiTestState.ui.sheetCtx,html:body.innerHTML};
+    });
+    assert.equal(closed.open,false);assert.equal(closed.context,null);gate.release();
     await bounded((async()=>{while(app.requests.some(row=>match(new URL(row.url))&&!row.settled))await new Promise(r=>setTimeout(r,10));})(),'Released/cancelled printing response');await frame(page);
     assert.deepEqual(await queue(page),before);assert.equal(before[0].originalShot,initial[0].originalShot);
     assert.equal(await page.evaluate(()=>window.__uiTestState.ui.scan.confirm.batchId),'synthetic-capture-B');
-    assert.equal(await page.locator('.printing-picker').count(),0,'Late A lookup cannot reopen over B');
+    const after=await page.evaluate(()=>{
+      const observer=window.__scannerLatePickerObserver,records=observer.takeRecords();
+      window.__scannerLatePickerMutations.push(...records.map(record=>({type:record.type,target:record.target.id||record.target.nodeName,attribute:record.attributeName})));observer.disconnect();
+      return {open:document.querySelector('#sheet').open,context:window.__uiTestState.ui.sheetCtx,html:document.querySelector('#sheetBody').innerHTML,mutations:window.__scannerLatePickerMutations};
+    });
+    assert.equal(after.open,false,'Late A lookup cannot reopen the native dialog over B');
+    assert.equal(after.context,null,'Cancelled A has no active sheet context');
+    assert.equal(await page.locator('.printing-picker:visible').count(),0,'No stale picker is visible over B');
+    assert.equal(after.html,closed.html,'Late A lookup cannot repaint the retained hidden sheet');
+    assert.deepEqual(after.mutations,[],'Cancelled lookup cannot mutate or transiently reopen the sheet');
   }finally{gate.release();}
 }
 function record(label,phase,error){failures.push({label,phase,error});return {phase,stack:error.stack};}

@@ -57,7 +57,7 @@ const server=createServer(async(req,res)=>{try{
  }catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const base=`http://127.0.0.1:${server.address().port}`,browser=await chromium.launch();
-const report={kind:'synthetic-public-scan-lifecycle',references:refs.map(({g,name,id,url,image})=>({g,name,id,url,image})),matrix,ocr:'deterministic lifecycle stub; not an accuracy benchmark',scenarios:[{id:'live-delayed-A-and-B',status:'pending'},{id:'bad-art-photo-timeout-late-completion-retry',status:'pending'}],results:[],limitations:['Not physical-camera validation.','OCR is deliberately deterministic here; the separate real OCR/public-printing gate is required.']};
+const report={kind:'synthetic-public-scan-lifecycle',references:refs.map(({g,name,id,url,image})=>({g,name,id,url,image})),matrix,ocr:'deterministic lifecycle stub; not an accuracy benchmark',scenarios:[{id:'live-delayed-A-and-B',status:'pending'},{id:'bad-art-photo-timeout-late-completion-retry',status:'pending'}],checkpoints:[],results:[],limitations:['Not physical-camera validation.','OCR is deliberately deterministic here; the separate real OCR/public-printing gate is required.']};
 
 async function app(){
  const context=await browser.newContext({...devices['Pixel 7'],serviceWorkers:'block'}),page=await context.newPage();page.setDefaultTimeout(15000);
@@ -171,32 +171,48 @@ try{
   assert.equal(first.condition,'Lightly Played');assert.equal(first.lang,'ja');assert.equal(second.condition,'Moderately Played');assert.equal(second.lang,'en');
   assert.equal(await page.evaluate(()=>window.__scannerHarness.calls.length),1,'B really queues while A OCR is pending');
   const aPixels=await pixelCheck(page,first.id,'A'),bPixels=await pixelCheck(page,second.id,'B');
+  report.checkpoints.push({scenario:'live-delayed-A-and-B',stage:'delayed-A-and-B-pixel-equality',status:'passed',aPixels,bPixels});
   assert.equal(await page.locator('#camGuide,.cam-guide,.cam-wrap polygon').count(),0,'No outline/mask is drawn on the feed');
   await page.getByRole('button',{name:'Flashlight',exact:true}).click();
   await page.waitForFunction(()=>window.__scannerHarness.torchAttempts===1);
   assert.equal(await page.getByRole('button',{name:'Flashlight',exact:true}).getAttribute('aria-pressed'),'false','Rejected hardware torch cannot claim to be on');
   await page.getByText("This camera's flashlight can't be controlled from the browser.",{exact:true}).waitFor();
   const beforeQuota=JSON.stringify(await rows(page));
-  await page.evaluate(()=>{const h=window.__scannerHarness;h.setItem=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(k==='cardstashy-scan-batch-v1')throw new DOMException('Test quota exhausted','QuotaExceededError');return h.setItem.call(this,k,v);};});
-  try{await page.getByRole('button',{name:'Capture card now',exact:true}).click();assert.equal(JSON.stringify(await rows(page)),beforeQuota,'Quota failure cannot alter/evict an accepted original');await page.waitForFunction(()=>/not queued/i.test(window.__scannerTest.state().status));}
+  await scene(page,'ptcg','rejected-quota');
+  await page.evaluate(()=>{const h=window.__scannerHarness;h.quotaFailures=0;h.setItem=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(k==='cardstashy-scan-batch-v1'){h.quotaFailures++;throw new DOMException('Test quota exhausted','QuotaExceededError');}return h.setItem.call(this,k,v);};});
+  try{await page.getByRole('button',{name:'Capture card now',exact:true}).click();assert.equal(JSON.stringify(await rows(page)),beforeQuota,'Quota failure cannot alter/evict an accepted original');assert(await page.evaluate(()=>window.__scannerHarness.quotaFailures>0),'Quota fixture reached durable storage, not shutter debounce');await page.waitForFunction(()=>/not queued/i.test(window.__scannerTest.state().status));}
   finally{await page.evaluate(()=>{Storage.prototype.setItem=window.__scannerHarness.setItem;});}
+  await scene(page,'mtg','restored-after-quota');
   // The production storage cooldown protects a rejected frame for 2 seconds.
   await page.waitForTimeout(2100);
   const limit=await page.evaluate(()=>window.__scannerTest.bufferLimit);
-  for(let count=3;count<=limit+1;count++)await capture(page,count);
-  const full=JSON.stringify(await rows(page));await page.getByRole('button',{name:'Capture card now',exact:true}).click();
+  // Fill capacity with actual card transitions, not rapid duplicate shutter
+  // taps: the production 600ms same-card debounce deliberately ignores those.
+  let finalGame='mtg';const bufferPixels=[];
+  for(let count=3;count<=limit+1;count++){
+   finalGame=finalGame==='mtg'?'ptcg':'mtg';const label=`buffer-${count}`;
+   await scene(page,finalGame,label);await capture(page,count);const accepted=(await rows(page)).at(-1);
+   bufferPixels.push(await pixelCheck(page,accepted.id,label,{cropMustContainBands:accepted.proposal?.cropSafe===true}));
+  }
+  const full=JSON.stringify(await rows(page));
+  // Offer a genuinely different sixth card, then immediately restore the last
+  // accepted physical card before testing held-card duplicate suppression.
+  await scene(page,finalGame==='mtg'?'ptcg':'mtg','rejected-full-buffer');
+  await page.getByRole('button',{name:'Capture card now',exact:true}).click();
+  await scene(page,finalGame,'restored-after-full-buffer');
   assert.equal(JSON.stringify(await rows(page)),full,'Queue full rejects only the new frame');
   assert.match(await page.evaluate(()=>window.__scannerTest.state().status),/queue full/i);
+  report.checkpoints.push({scenario:'live-delayed-A-and-B',stage:'quota-and-capacity-preserve-accepted-captures',status:'passed',accepted:limit+1,bufferPixels});
   assert.equal(await page.locator('.scan-confirm').count(),0,'Queued OCR never interrupts the camera with review');
   await screenshot(page,'held-a-queued-b');
   await page.evaluate(()=>window.__scannerHarness.release());await settled(page);
   await page.evaluate(()=>{window.__scannerTest.state().auto=true;});await page.waitForTimeout(1000);
-  assert.equal((await rows(page)).length,limit+1,'The same held B is not captured repeatedly when auto resumes');
-  await scene(page,'ptcg','A-return',.09);
+  assert.equal((await rows(page)).length,limit+1,'The same held card is not captured repeatedly when auto resumes');
+  await scene(page,finalGame==='mtg'?'ptcg':'mtg','next-auto',.09);
   await page.waitForFunction(n=>window.__scannerTest.rows().length===n,limit+2,{timeout:15000});await settled(page);
   await page.evaluate(()=>{window.__scannerTest.state().auto=false;});
   const finished=await rows(page);assert.equal(finished.length,limit+2);assert.equal(new Set(finished.map(x=>x.id)).size,limit+2);
-  const returnedPixels=await pixelCheck(page,finished.at(-1).id,'A-return');
+  const returnedPixels=await pixelCheck(page,finished.at(-1).id,'next-auto');
   assert.equal(finished[0].originalShot,first.originalShot);assert.equal(finished[1].originalShot,second.originalShot);
   assert(finished.every(r=>r.status==='unresolved'),'Empty deterministic OCR remains unresolved, never an invented identity');
   assert(finished.every(r=>Number.isFinite(r.timings?.totalMs)&&r.timings.totalMs>=0&&Number.isFinite(r.timings?.queueWaitMs)),'Every accepted row has measured timings');

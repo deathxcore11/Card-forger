@@ -16,7 +16,7 @@ const A={},C={},ctx={A,C,game:()=>S.state.settings.game,render:()=>{document.que
 registerScanner(ctx);document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(t)A[t.dataset.act]?.(t);});document.addEventListener('change',e=>C[e.target.dataset.change]?.(e.target));
 window.makeCard=()=>{const c=document.createElement('canvas');c.width=480;c.height=672;const x=c.getContext('2d');x.fillStyle='#e2b848';x.fillRect(0,0,480,672);x.fillStyle='#222';x.font='bold 32px Arial';x.fillText('Vikavolt HP150',24,45);x.font='20px Arial';x.fillText('101/264',25,638);for(let y=85;y<550;y+=30){x.fillStyle=y%60?'#999':'#436';x.fillRect(20,y,440,20);}return c;};
 window.enqueue=()=>ctx.enqueueCapture(window.makeCard());window.snapshot=()=>({rows:loadBatch(),busy:S.ui.scan.busy,buffered:S.ui.scan.buffered,globalGame:S.state.settings.game,confirm:S.ui.scan.confirm,saved:window.saved});window.resetBatch=()=>{saveBatch([]);S.ui.scan.confirm=null;ctx.render();};
-navigator.mediaDevices.getUserMedia=async()=>{const c=document.createElement('canvas');c.width=640;c.height=900;const x=c.getContext('2d'),card=window.makeCard();const draw=()=>{x.fillStyle='#25252b';x.fillRect(0,0,640,900);if(!window.hideCard)x.drawImage(card,140,160,340,476);};draw();window.cameraTimer=setInterval(draw,33);window.cameraStream=c.captureStream(30);return window.cameraStream;};
+navigator.mediaDevices.getUserMedia=async()=>{const c=document.createElement('canvas');c.width=640;c.height=900;const x=c.getContext('2d'),card=window.makeCard();const draw=()=>{x.fillStyle='#25252b';x.fillRect(0,0,640,900);if(!window.hideCard)x.drawImage(card,150,window.cameraCardY??212,340,476);};draw();window.cameraTimer=setInterval(draw,33);window.cameraStream=c.captureStream(30);return window.cameraStream;};
 window.ctx=ctx;window.store=S;ctx.render();window.fixtureReady=true;
 </script>`;
 const server=createServer(async(req,res)=>{try{
@@ -43,9 +43,18 @@ try{
  await page.getByRole('button',{name:'Capture card now'}).click();await page.waitForFunction(()=>window.snapshot().busy);
  const time=await page.locator('#scanVideo').evaluate(v=>v.currentTime);await page.waitForTimeout(350);assert(await page.locator('#scanVideo').evaluate((v,t)=>!v.paused&&v.currentTime>t&&v.srcObject===window.cameraStream,time),'same live video advances while recognition runs');assert.equal(await page.locator('.scan-confirm').count(),0);
  await page.waitForFunction(()=>window.snapshot().rows.length===1&&!window.snapshot().busy);await page.evaluate(()=>window.store.ui.scan.auto=true);await page.waitForTimeout(800);assert.equal((await page.evaluate(()=>window.snapshot())).rows.length,1,'same held card not duplicated');
+ // Deliberately reproduce the old edge-clipped scene. Auto must abstain,
+ // but the explicit shutter can retain the entire original for honest review.
+ await page.evaluate(()=>{window.store.ui.scan.auto=false;window.cameraCardY=160;window.ocrDelay=20;window.ocr=['Vikavolt HP150\n101/264','101/264'];});
+ await page.waitForFunction(()=>window.store.ui.scan.boundaryReady===false);
+ await page.getByRole('button',{name:'Capture card now'}).click();
+ await page.waitForFunction(()=>window.snapshot().rows.length===2&&!window.snapshot().busy);
+ const edge=await page.evaluate(()=>window.snapshot().rows.at(-1));
+ assert.equal(edge.geometryUncertain,true,'clipped preview never establishes a safe automatic crop');assert.equal(edge.status,'review');assert(edge.originalShot,'manual uncertain capture retains its original for review/retry');assert.equal((await page.evaluate(()=>window.snapshot())).saved.length,2,'uncertain capture is not an automatic collection write');
+ console.log('PASS: deliberately clipped preview abstains from automatic geometry but manual capture retains the full original in review.');
  await page.screenshot({path:resolve(output,'scanner-batch-phone.png'),fullPage:true});
  const title=await page.locator('.scan-toolbar h1').boundingBox(),top=await page.locator('.topbar').boundingBox(),tray=await page.locator('.scan-batch-tray').boundingBox(),nav=await page.locator('.bottom-nav').boundingBox();assert(title.y>=top.y+top.height-1,'scan heading below header');assert(tray.y+tray.height<=nav.y,'capture tray fits above bottom nav');
- await page.reload();await page.waitForFunction(()=>window.fixtureReady);assert.equal((await page.evaluate(()=>window.snapshot())).rows.length,1,'captured review survives reload');assert.equal(await page.locator('.scan-confirm').count(),0);
+ await page.reload();await page.waitForFunction(()=>window.fixtureReady);assert.equal((await page.evaluate(()=>window.snapshot())).rows.length,2,'both safe and uncertain captures survive reload');assert.equal(await page.locator('.scan-confirm').count(),0);
  assert.deepEqual(errors,[]);console.log('PASS: same live MediaStream during OCR, internal geometry without a visible outline, held-card duplicate guard, mobile layout and persisted review.');await context.close();
  const assertTray=async(p,label)=>{
   const frame=await p.evaluate(()=>{const nav=document.querySelector('.bottom-nav'),tray=document.querySelector('.scan-batch-tray').getBoundingClientRect();return {bottom:tray.bottom,limit:getComputedStyle(nav).display==='none'?innerHeight:nav.getBoundingClientRect().top};});

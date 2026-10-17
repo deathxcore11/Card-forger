@@ -518,15 +518,27 @@ export function textVerifiedMatch(g, cand, read = {}) {
 // A loose photo may put the title outside its usual band. These are layout
 // hints only; they cannot verify a printing without its independently read code.
 export function fullCardNameHints(g,full) {
-  const hints=anchoredNames(g,full),lines=String(full||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
-  if(g==='ptcg')for(let i=0;i<lines.length;i++){
-    if(/^evolves\s+from\b/i.test(lines[i])){
-      const prior=lines.slice(Math.max(0,i-3),i).reverse().find(x=>(x.match(/[A-Za-z]/g)||[]).length>=4);
-      if(prior)hints.push(prior);
+  const hints=[];
+  // Each OCR observation has its own top of card. Never search arbitrary
+  // footer/rules lines for a replacement title, and never let a later read
+  // discard an earlier title merely because it contains more plausible words.
+  for(const observation of String(full||'').split(/\n␞\n/).slice(0,4)){
+    const lines=observation.split(/\r?\n/).map(x=>x.trim()).filter(Boolean),anchored=anchoredNames(g,observation);
+    if(g==='ptcg')for(let i=0;i<lines.length;i++){
+      if(/^evolves\s+from\b/i.test(lines[i])){
+        const prior=lines.slice(Math.max(0,i-3),i).reverse().find(x=>(x.match(/[A-Za-z]/g)||[]).length>=4);
+        if(prior)anchored.push(prior);
+      }
+      if(/^(?:HP\s*\d{2,3}|\d{2,3}\s*HP)\W*$/i.test(lines[i]))anchored.push(...lines.slice(Math.max(0,i-1),i),...lines.slice(i+1,i+2));
     }
-    if(/^(?:HP\s*\d{2,3}|\d{2,3}\s*HP)\W*$/i.test(lines[i]))hints.push(...lines.slice(Math.max(0,i-1),i),...lines.slice(i+1,i+2));
+    const title=lines.slice(0,3).find(line=>(line.match(/[A-Za-z]/g)||[]).length>=4&&
+      !/©|copyright|studio\s+dice|shueisha|konami|nintendo|creatures|game\s*freak|\b(?:ATK|DEF)\s*[/:]|\b(?:replica|tournaments)\b/i.test(line)&&
+      !/^\W*(?:BASIC|STAGE\s*[12]|(?:SPELLCASTER|DRAGON|WARRIOR)\s*[/]\s*(?:NORMAL|EFFECT)|HP\s*\d+|\d+\s*HP)\W*$/i.test(line));
+    // Keep one primary hypothesis per observation before expanding name words.
+    const primary=anchored[0]||title;
+    if(primary)hints.push(nameCandidates(g,primary)[0]||primary);
   }
-  return [...new Set(hints)].slice(0,5);
+  return [...new Set(hints)].slice(0,4);
 }
 
 // OCR can produce plausible-looking nonsense. Keep visual suggestions reviewable
@@ -547,7 +559,7 @@ export function scanConfirmation(g, st, prefs) {
   if(!options.length)return `<section class="scan-confirm scan-batch-review" role="region" aria-label="Review captured card"><header><b>Needs a clearer scan</b>${close}</header><div class="scan-confirm-card">${st.shot?`<img class="scan-confirm-art" src="${esc(st.shot)}" alt="Your captured card">`:''}<div><strong>Saved for later</strong><small>Show the name and bottom code with less glare. You can keep scanning other cards.</small></div></div><div class="scan-confirm-actions"><button class="btn ghost" data-act="scanDismiss">Keep scanning</button><button class="btn" data-act="scanRetry">Scan again</button></div>${isBatch?`<button class="link small" data-act="scanBatchDiscard">Remove this capture</button>`:''}</section>`;
   const candidate=c||options[0],fs=finishesFor(g,candidate),image=candidate.card?artworkHTML(candidate.card,"scan-confirm-art",true):candidate.image?`<img class="scan-confirm-art" src="${esc(candidate.image)}" alt="${esc(candidate.name)}">`:'';
   return `<section class="scan-confirm scan-batch-review" role="region" aria-label="Confirm scanned card" aria-busy="${!!q.saving}"><header><b>${GAME_LABEL[g]} · ${chosen?'Check finish':'Check printing'}</b>${close}</header>
-  <div class="scan-confirm-card">${image}<div><strong>${esc(candidate.name)}</strong><small>${esc(candidate.sub||'')}</small><small>${chosen&&textVerifiedMatch(g,candidate,st.read)?'Printed identifier matched':'Possible match · check name and printing'}</small></div></div>
+  <div class="scan-confirm-card">${image}<div><strong>${esc(candidate.name)}</strong><small>${esc(candidate.sub||'')}</small><small>${candidate.reviewSource==='printing-picker'?'Printing selected by you':chosen&&textVerifiedMatch(g,candidate,st.read)?'Printed identifier matched':'Possible match · check name and printing'}</small></div></div>
   ${options.length>1||!chosen?`<div class="scan-confirm-options" role="group" aria-label="Possible printings">${options.slice(0,3).map((x,i)=>`<button class="btn ghost small" data-act="scanChoose" data-i="${i}" aria-pressed="${chosen&&i===q.i}">${esc(x.name)}<small>${esc(x.sub||'')}</small></button>`).join('')}</div>`:''}
   <button class="btn ghost small" data-act="scanChangePrinting" ${q.saving||q.pickerOpening||!chosen?'disabled':''}>${q.pickerOpening?'Loading printings…':'Change printing'}</button>
   <div class="scan-confirm-controls"><label>Finish / edition<select data-change="scanConfirmFinish" aria-label="Scanned card finish" ${q.saving||!chosen?'disabled':''}><option value="" ${!q.finish?'selected':''}>Choose finish</option>${fs.map(f=>`<option value="${esc(f)}" ${q.finish===f?'selected':''}>${esc(finishLabel(g,candidate,f))}</option>`).join('')}</select></label><span class="ss-qty"><button data-act="scanConfirmQty" data-d="-1" aria-label="Fewer copies" ${q.saving||q.qty<=1?'disabled':''}>−</button><output aria-label="Copies to save">${q.qty}</output><button data-act="scanConfirmQty" data-d="1" aria-label="More copies" ${q.saving?'disabled':''}>＋</button></span></div>
@@ -690,8 +702,8 @@ export function registerScanner(ctx) {
     const full=await trace.stage('ocrOriginalFull',()=>readFull(original,lang,progress));check();
     const G=detectGame(full)||prior?.g||entry.game;
     const code=await trace.stage('ocrOriginalFooter',async()=>recog(await getWorker(lang,progress),regionCanvas(original,[0,.40,1,.60],1),11));check();
-    const hints=fullCardNameHints(G,full),names=hints.length?hints:nameCandidates(G,full),previous=prior?.g===G?prior.read||{}:{};
-    const read={name:[...names,previous.name].filter(Boolean).join('\n'),code:joinReads(previous.code,code),full:joinReads(previous.full,full),stats:previous.stats||''};
+    const previous=prior?.g===G?prior.read||{}:{},combinedFull=joinReads(previous.full,full),hints=fullCardNameHints(G,combinedFull);
+    const read={name:[...hints,previous.name].filter(Boolean).join('\n'),code:joinReads(previous.code,code),full:combinedFull,stats:previous.stats||''};
     let r=await trace.stage('localOriginal',()=>scanDeadline(()=>localScanMatch(G,read),SCAN_DEADLINES.local,'Local catalogue',()=>invalidateCatalogRead(G)));check();
     if(!r.cands.some(c=>textVerifiedMatch(G,c,read))&&nameCandidates(G,read.name).length){
       try{const remote=await trace.stage('remoteOriginal',()=>scanDeadline(()=>match(G,{...read},lang,false,progress,entry.defaultsByGame?.[G]||{}),SCAN_DEADLINES.remote,'Original photo lookup'));r={...r,cands:uniquePrintings([...r.cands,...remote.cands].sort((a,b)=>Number(!!b.exact)-Number(!!a.exact))),tried:[...(r.tried||[]),...(remote.tried||[])]};}
@@ -722,7 +734,7 @@ export function registerScanner(ctx) {
     // Different plausible games/orientations are not a license to pick one.
     if(plausible.some(r=>r.g!==G))return {...prior,cands:prior.cands.map(c=>({...c,exact:false}))};
     const old=prior.g===G?prior.read||{}:{},sameGame=reads.filter(r=>r.g===G);
-    const read={...old,name:[...sameGame.map(r=>r.name),old.name].filter(Boolean).join('\n'),code:joinReads(old.code,...sameGame.map(r=>r.code))};
+    const read={...old,name:[...fullCardNameHints(G,old.full),...sameGame.map(r=>r.name),old.name].filter(Boolean).join('\n'),code:joinReads(old.code,...sameGame.map(r=>r.code))};
     let r=await trace.stage('localOrientation',()=>scanDeadline(()=>localScanMatch(G,read),SCAN_DEADLINES.local,'Local catalogue',()=>invalidateCatalogRead(G)));
     if(!r.cands.some(c=>textVerifiedMatch(G,c,read))){
       const remote=await trace.stage('remoteOrientation',()=>scanDeadline(()=>match(G,{...read},lang,false,progress,entry.defaultsByGame?.[G]||{}),SCAN_DEADLINES.remote,'Orientation lookup'));

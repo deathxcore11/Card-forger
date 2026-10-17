@@ -125,6 +125,99 @@ p1=jump('history');current={type:'tcard',game:'ptcg',id:'new',tab:'prices'};pend
 p1=jump('history');open=false;pending.shift()();assert.equal(await p1,false,'closed sheet never receives a late jump');open=true;
 p1=jump('history');current.id='changed-in-place';pending.shift()();assert.equal(await p1,false,'same context object with changed identity is still a different card');
 p1=jump('history');current.tab='overview';pending.shift()();assert.equal(await p1,false,'user navigation wins over pending price jump');
+// Deterministic native-scroll model: smooth scroll does not move immediately;
+// assigning scrollTop while rebuilding the sheet cancels the animation. This is
+// the history-refresh race seen with a focused seller still below the viewport.
+function detailScrollFixture(){
+ let top=0,scheduled=null,active=null,headerHeight=50,current={type:'tcard',game:'ptcg',id:'dated',tab:'overview'},open=true;
+ const listeners=new Map(),scrolls=[],nodes=new Map();
+ const body={dataset:{detailIdentity:detailIdentity(current)},scrollHeight:2400,clientHeight:920,
+  get scrollTop(){return top;},set scrollTop(value){top=Math.max(0,Math.min(value,this.scrollHeight-this.clientHeight));scheduled=null;},
+  getBoundingClientRect:()=>({top:79,bottom:999,height:920}),contains:n=>[...nodes.values()].includes(n),
+  querySelector:s=>s==='.sheet-head'?head:s==='.cs-tabs'?tabs:nodes.get(s),
+  querySelectorAll:s=>s==='details'?[]:[...nodes.values()],
+  addEventListener(type,fn){if(!listeners.has(type))listeners.set(type,new Set());listeners.get(type).add(fn);},
+  removeEventListener(type,fn){listeners.get(type)?.delete(fn);},
+  scrollTo(options){scrolls.push(options);if(options.behavior==='smooth')scheduled=options.top;else this.scrollTop=options.top;}
+ };
+ const emit=(type,target=active)=>{for(const fn of [...(listeners.get(type)||[])])fn({type,target});};
+ const head={getBoundingClientRect:()=>({height:headerHeight,bottom:79+headerHeight})};
+ const tabs={scrollLeft:44,getBoundingClientRect:()=>({height:64,bottom:79+headerHeight+64})};
+ const install=(shift=0)=>{headerHeight=50;for(const n of nodes.values())n.isConnected=false;nodes.clear();for(const [id,offset] of [['history',1200],['sellers',1720]]){
+  const n={id:'card-'+id,isConnected:true,dataset:{},closest:()=>null,getBoundingClientRect:()=>({top:offset+shift-body.scrollTop}),focus:()=>{active=n;emit('focusin',n);}};nodes.set('#'+n.id,n);
+ }};
+ const refreshOffsets=()=>{headerHeight=body.scrollTop>110?104:50;};
+ install();
+ const jump=createDetailJump({getContext:()=>current,isOpen:()=>open,getBody:()=>body,showPrices:async()=>{current.tab='prices';},refreshOffsets});
+ return {body,head,tabs,scrolls,jump,emit,get active(){return active;},get current(){return current;},get scheduled(){return scheduled;},
+  node:id=>nodes.get('#card-'+id),listenerCount:()=>[...listeners.values()].reduce((sum,fns)=>sum+fns.size,0),
+  finish(){if(scheduled!==null){const next=scheduled;body.scrollTop=next;refreshOffsets();emit('scroll');emit('scrollend');}},
+  move(value){body.scrollTop=value;refreshOffsets();},close(){open=false;},reopen(){open=true;},changeCard(){current={...current,id:'new'};body.dataset.detailIdentity=detailIdentity(current);},
+  snapshot:()=>captureDetailState(body,active),
+  rerender(state=captureDetailState(body,active),shift=0){install(shift);active=null;body.scrollTop=0;restoreDetailState(body,state);refreshOffsets();}
+ };
+}
+for(const progress of [0,80,400]){
+ const fixture=detailScrollFixture();await fixture.jump('sellers');
+ assert.equal(fixture.scheduled,1515,'ordinary Buy still requests a smooth scroll');
+ if(progress)fixture.move(progress);
+ fixture.rerender();fixture.finish();
+ const rect=fixture.node('sellers').getBoundingClientRect(),boundary=fixture.tabs.getBoundingClientRect().bottom;
+ assert.equal(fixture.active,fixture.node('sellers'),'history refresh focuses the current connected section');
+ assert.ok(rect.top>=boundary&&rect.top<999,'history refresh preserves the destination, not the not-yet-scrolled position');
+ assert.equal(fixture.listenerCount(),0,'restored intent is consumed without timers or permanent listeners');
+ fixture.move(200);fixture.rerender();assert.equal(fixture.body.scrollTop,200,'a completed jump does not pin later refreshes to sellers');
+}
+
+// A changed history height is resolved against the replacement target, rather
+// than applying the old pixel destination. Both price sections obey the rule.
+for(const target of ['history','sellers']){
+ const fixture=detailScrollFixture();await fixture.jump(target);
+ await Promise.resolve().then(()=>fixture.rerender(undefined,75));
+ const rect=fixture.node(target).getBoundingClientRect();
+ assert.equal(fixture.active,fixture.node(target));assert.ok(rect.top>=fixture.tabs.getBoundingClientRect().bottom&&rect.top<999);
+}
+// Input can interrupt native scrolling without changing document.activeElement
+// (wheel/touch in particular). A later data refresh must preserve that choice.
+for(const event of ['wheel','touchstart','pointerdown','keydown','focusin']){
+ const fixture=detailScrollFixture();await fixture.jump('sellers');
+ if(event==='focusin')fixture.node('history').focus();else fixture.emit(event);fixture.move(80);fixture.rerender();
+ assert.equal(fixture.body.scrollTop,80,event+' cancels a pending destination');
+ assert.equal(fixture.scrolls.length,1,event+' cannot trigger a corrective jump');
+ assert.equal(fixture.listenerCount(),0,event+' removes every temporary listener');
+ if(event==='focusin')assert.equal(fixture.active,fixture.node('history'),'new keyboard focus wins over a pending seller jump');
+}
+for(const change of ['close','card','identity','tab']){
+ const fixture=detailScrollFixture();await fixture.jump('sellers');
+ if(change==='close')fixture.close();else if(change==='card')fixture.changeCard();else if(change==='identity')fixture.current.id='changed-in-place';else fixture.current.tab='overview';
+ fixture.move(80);fixture.rerender();assert.equal(fixture.body.scrollTop,80,change+' invalidates a started jump');assert.equal(fixture.scrolls.length,1);
+ assert.equal(fixture.listenerCount(),0,change+' clears obsolete navigation bookkeeping');
+}
+{
+ const fixture=detailScrollFixture();await fixture.jump('sellers');const stale=fixture.snapshot();
+ fixture.emit('wheel');fixture.move(80);fixture.rerender(stale);
+ assert.equal(fixture.scrolls.length,1,'a snapshot cannot revive an interrupted intent');
+}
+{
+ const fixture=detailScrollFixture();await fixture.jump('history');fixture.finish();
+ assert.equal(fixture.listenerCount(),0,'natural smooth-scroll completion removes temporary listeners');
+ fixture.move(80);fixture.rerender();assert.equal(fixture.body.scrollTop,80,'finished scrolls cannot replay on data refresh');
+}
+{
+ const fixture=detailScrollFixture();await fixture.jump('sellers');await fixture.jump('history');fixture.rerender();
+ assert.equal(fixture.active,fixture.node('history'),'the latest target also wins after a smooth scroll has started');
+ assert.ok(fixture.node('history').getBoundingClientRect().top<999);
+ assert.equal(fixture.listenerCount(),0,'superseded and restored intents both clean up');
+}
+{
+ const fixture=detailScrollFixture();await fixture.jump('sellers');const stale=fixture.snapshot();
+ assert.deepEqual(JSON.parse(JSON.stringify(stale)),stale,'history snapshots contain only serializable state, never a DOM node or navigation callback');
+ fixture.close();await Promise.resolve();fixture.reopen();fixture.rerender(stale);
+ assert.equal(fixture.scrolls.length,1,'Back to the same context object on a later turn cannot revive a saved jump');
+ assert.equal(fixture.listenerCount(),0,'an outgoing snapshot expires unconsumed navigation intent');
+}
+console.log('PASS: deterministic smooth-scroll/history-render race at 0/80/400px, new layout destinations, input/focus/close/card/tab cancellation, latest target wins, one-shot restoration and listener cleanup.');
+
 console.log('PASS: detail seller/quote identity, real fallback labels, currencies and private values isolated, explicit YGO printing/edition, dated-vs-current, unchanged condition resolver, tabs and async focus/race guards.');
 
 // Exercise actual renderers with deterministic mocked history and no live network access.
