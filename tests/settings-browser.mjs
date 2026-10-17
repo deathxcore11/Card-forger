@@ -18,7 +18,7 @@ try{
     for(const tab of ['account','backup','app']){
      await page.locator('#settingsTab-'+tab).click();await noOverflow(page,'#settingsDialog',`${game} ${tab} ${width}`);
     }
-    if([390,768].includes(width))await capture(page,`settings-${game}-${width}`);
+    if([390,768].includes(width))await capture(page,`synthetic-search-settings-${game}-${width}`);
    }
    await page.locator('#settingsTab-app').focus();await page.keyboard.press('Home');
    assert.equal(await page.evaluate(()=>document.activeElement.id),'settingsTab-account');

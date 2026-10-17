@@ -94,7 +94,8 @@ async function outboundBuy(app,expected,{search=false,activation='click'}={}){
  assert.match(await anchor.innerText(),search?/Search TCGplayer/:/^Buy/);assert.match(await anchor.getAttribute('aria-label'),/opens in a new tab/);
  // focus() reacquires a connected locator if detail hydration replaces the row.
  await anchor.focus();
- assert(await anchor.evaluate(n=>document.activeElement===n&&n.getBoundingClientRect().height>=44),'Native Buy remains keyboard-focusable and at least a 44px touch target');
+ const focusState=await anchor.evaluate(n=>({focused:document.activeElement===n,height:n.getBoundingClientRect().height,active:document.activeElement?.outerHTML.slice(0,300)}));
+ assert(focusState.focused&&focusState.height>=44,'Native Buy remains keyboard-focusable and at least a 44px touch target: '+JSON.stringify(focusState));
  const intercept=async route=>{const req=route.request();calls.push({url:req.url(),method:req.method(),referer:req.headers().referer||'',navigation:req.isNavigationRequest()});await route.fulfill({status:200,contentType:'text/html',body:'<!doctype html><title>Synthetic retailer destination</title><link rel="icon" href="data:,"><p>Outbound link fixture only.</p>'});};
  await context.route('https://www.tcgplayer.com/**',intercept);
  try{

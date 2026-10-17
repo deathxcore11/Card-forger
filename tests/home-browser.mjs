@@ -373,7 +373,13 @@ async function openApp(options = {}) {
   });
   const f = fixtures(options);
   await page.addInitScript(({ storage, now }) => {
-    const NativeDate = Date, offset = now - NativeDate.now();
+    const NativeDate = Date;
+    // Keep simulated time monotonic across reloads: saved activity must not
+    // become future-dated merely because this init script executes again.
+    const clockKey = 'home-fixture-clock-offset';
+    const savedOffset = sessionStorage.getItem(clockKey);
+    const offset = savedOffset === null ? now - NativeDate.now() : Number(savedOffset);
+    sessionStorage.setItem(clockKey, String(offset));
     window.__homeTimeAdvance = 0;
     globalThis.Date = class extends NativeDate {
       constructor(...args) { super(...(args.length ? args : [NativeDate.now() + offset + window.__homeTimeAdvance])); }
