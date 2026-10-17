@@ -164,9 +164,24 @@ export async function openApp(browser,base,{game='mtg',width=390,height=1000,red
 export async function navigate(page,hash){await page.evaluate(h=>{location.hash=h;},hash);await page.waitForFunction(h=>location.hash===h&&window.__uiTestState.ui.view===h.slice(1).split('/')[0],hash);}
 export async function closeSheet(page){await page.locator('#sheet [data-act="closeSheet"]').first().click();await page.waitForFunction(()=>!document.querySelector('#sheet').open);}
 export async function inventorySnapshot(page){return page.evaluate(()=>JSON.stringify([window.__uiTestState.state.collection,window.__uiTestState.state.printings,window.__uiTestState.state.decks,window.__uiTestState.state.tcg]));}
+// Serialized by waitForFunction, and exercised directly by the pure lifecycle
+// regression. Match the real cache TTL: a retained stale entry is not completion
+// while its replacement request and synchronous refresh callback are pending.
+export function detailHistoryReady(){
+ const old=window.__openingDetail,ctx=window.__uiTestState.ui.sheetCtx,body=document.querySelector('#sheetBody'),entry=window.__responsiveHistory.sharedHistory.get(old.key),now=Date.now();
+ const complete=entry?.series?.some(s=>s.points?.length>2&&now-Date.parse(s.points.at(-1).date)<3*864e5);
+ return document.querySelector('#sheet').open&&ctx===old.ctx&&body===old.body&&body.dataset.detailIdentity===old.identity&&entry?.game===old.quote.game&&entry.cardId===old.quote.cardId&&entry.finish===old.quote.finish&&Number.isFinite(entry.checked)&&now-entry.checked<(complete?3600000:30000)&&['ready','empty','unsupported','unavailable'].includes(entry.status);
+}
 // Card detail tabs are an intentional horizontal scroller. Their focus/visibility
 // is asserted independently; they must not create page or sheet overflow.
-export async function noOverflow(page,scope,label,settleFinite=false){
+// Collection alone has a second known rail. Admit a clipped source select only
+// after the caller has proved keyboard/touch access at this exact game/width and
+// selection snapshot. Generic scrollers, hidden controls and other roots fail.
+export function auditedCollectionControl(control,audit){
+ const r=control.rail,known={tCollSet:[''],tCollSort:[''],tCollKind:['kind','rarity','show']};
+ return !!audit&&control.root==='content'&&control.view==='collection'&&['ptcg','ygo'].includes(control.game)&&audit.game===control.game&&audit.width===control.viewport&&control.tag==='SELECT'&&known[control.change]?.includes(control.field)&&r?.direct&&r.known&&/^(auto|scroll)$/.test(r.overflow)&&r.left>=-.5&&r.right<=control.viewport+.5&&r.client>0&&r.scroll>=r.client&&control.width<=r.client+2&&control.left+r.position>=r.left-2&&control.right+r.position<=r.left+r.scroll+2&&audit.controls?.some(n=>n.change===control.change&&n.field===control.field&&n.value===control.value);
+}
+export async function noOverflow(page,scope,label,settleFinite=false,collectionAudit=null){
  const result=await page.locator(scope).evaluate(async(root,settleFinite)=>{
   // Opt-in page-entry settlement, matching Home. Never disable motion; measure
   // in the same evaluation after real finite subtree animations have finished.
@@ -174,8 +189,10 @@ export async function noOverflow(page,scope,label,settleFinite=false){
    const animations=root.getAnimations({subtree:true}).filter(a=>Number.isFinite(a.effect?.getComputedTiming().endTime)&&!['finished','idle'].includes(a.playState));
    if(!animations.length)break;await Promise.all(animations.map(a=>a.finished.catch(()=>{})));
   }
-  const r=root.getBoundingClientRect();return {width:innerWidth,root:document.documentElement.scrollWidth,scope:root.scrollWidth,client:root.clientWidth,rect:{left:r.left,right:r.right},bad:[...root.querySelectorAll('button,input,select,summary,a')].filter(n=>n.getClientRects().length&&!n.closest('[hidden]')&&!n.closest('.cs-tabs')).filter(n=>{const b=n.getBoundingClientRect();return b.left<-.5||b.right>innerWidth+.5;}).map(n=>({text:n.textContent.slice(0,90),class:n.className}))};},settleFinite);
- assert(result.root<=result.width+2&&result.scope<=result.client+2,`${label}: no horizontal overflow ${JSON.stringify(result)}`);assert.deepEqual(result.bad,[],`${label}: all visible controls fit the viewport`);
+  const r=root.getBoundingClientRect();return {width:innerWidth,root:document.documentElement.scrollWidth,scope:root.scrollWidth,client:root.clientWidth,rect:{left:r.left,right:r.right},bad:[...root.querySelectorAll('button,input,select,summary,a')].filter(n=>n.getClientRects().length&&!n.closest('[hidden]')&&!n.closest('.cs-tabs')).filter(n=>{const b=n.getBoundingClientRect();return b.left<-.5||b.right>innerWidth+.5;}).map(n=>{
+   const b=n.getBoundingClientRect(),rail=n.closest('.filter-pills'),a=rail?.getBoundingClientRect();return {text:n.tagName==='SELECT'?n.selectedOptions[0]?.label:n.textContent.slice(0,90),class:n.className,tag:n.tagName,change:n.dataset.change,field:n.dataset.field||'',value:n.value,root:root.id,view:document.body.dataset.view,game:document.body.dataset.game,viewport:innerWidth,left:b.left,right:b.right,width:b.width,rail:rail&&{known:rail.matches('.coll-tools > .filter-pills'),direct:n.parentElement===rail,left:a.left,right:a.right,client:rail.clientWidth,scroll:rail.scrollWidth,position:rail.scrollLeft,overflow:getComputedStyle(rail).overflowX}};
+  })};},settleFinite);
+ assert(result.root<=result.width+2&&result.scope<=result.client+2,`${label}: no horizontal overflow ${JSON.stringify(result)}`);assert.deepEqual(result.bad.filter(n=>!auditedCollectionControl(n,collectionAudit)),[],`${label}: all visible controls fit the viewport or the specifically audited Collection rail`);
 }
 export async function capture(page,name){await page.screenshot({path:resolve(RESULTS,name+'.png'),fullPage:true,animations:'disabled'});}
 export async function saveReport(name,report,error){await mkdir(RESULTS,{recursive:true});await writeFile(resolve(RESULTS,name+'.json'),JSON.stringify({generatedAt:new Date().toISOString(),artEvidence,status:error?'failed':'passed',checks:report,...(error?{error:String(error.stack||error)}:{})},null,2));}

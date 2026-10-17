@@ -3,8 +3,41 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {gunzipSync} from 'node:zlib';
 import {attachTilt,motionCard} from './feel.js';
-import {rememberDetailViewport,restoreDetailViewport} from './pricing-presentation.js';
+import {rememberDetailViewport,restoreDetailViewport,quoteForContext} from './pricing-presentation.js';
 import {visibleRulePassage,ygoTurnStructureDisplay} from './rule-reference.js';
+import {auditedCollectionControl,detailHistoryReady,CARDS} from './tests/detail-rules-fixtures.mjs';
+import {loadSharedHistory,sharedHistory,historyKey,setHistoryRefresh} from './shared-history.js';
+const audit={game:'ptcg',width:320,controls:[{change:'tCollSort',field:'',value:'name'}]},railControl={root:'content',view:'collection',game:'ptcg',viewport:320,tag:'SELECT',change:'tCollSort',field:'',value:'name',left:238,right:418,width:180,rail:{known:true,direct:true,overflow:'auto',left:16,right:304,client:288,scroll:402,position:0}};
+assert(auditedCollectionControl(railControl,audit),'Only the measured and independently accessed Collection rail admits its partially visible Sort');
+for(const change of [{root:'sheetBody'},{view:'search'},{game:'mtg'},{viewport:390},{tag:'BUTTON'},{change:'unknown'},{field:'unknown'},{value:'set-order'},{width:400},{left:-40},{right:500}])assert(!auditedCollectionControl({...railControl,...change},audit),JSON.stringify(change));
+for(const change of [{known:false},{direct:false},{overflow:'hidden'},{left:-2},{right:322},{client:0},{scroll:200}])assert(!auditedCollectionControl({...railControl,rail:{...railControl.rail,...change}},audit),JSON.stringify(change));
+for(const missing of [null,{...audit,controls:[]},{...audit,game:'ygo'},{...audit,width:390}])assert(!auditedCollectionControl(railControl,missing),'Missing/stale proof never exempts offscreen controls');
+console.log('PASS: default-deny Collection rail classification, exact game/width/selection proof, bounded local scrolling and no generic scroller or native-control exemption.');
+// Actual history module with intercepted responses only. A ready entry is written
+// before its synchronous mount-refresh callback, and awaiting completion observes
+// that callback finished. The browser probe reads this state, never starts a load.
+const historyContext={type:'tcard',game:'ptcg',id:CARDS.ptcg[0].id,priceFinish:'normal',entryId:'lot-ptcg-0'},quote=quoteForContext('ptcg',CARDS.ptcg[0],historyContext),historyId=historyKey(quote),savedFetch=globalThis.fetch,savedWindow=globalThis.window,savedDocument=globalThis.document;
+const historyBody={dataset:{detailIdentity:'ptcg:'+quote.cardId}},historySheet={open:true};
+let releaseHistory,historyCalls=0,refreshed=false,mountGeneration=1;
+try{
+ globalThis.window={__openingDetail:{ctx:historyContext,body:historyBody,identity:historyBody.dataset.detailIdentity,key:historyId,quote},__uiTestState:{ui:{sheetCtx:historyContext}},__responsiveHistory:{sharedHistory}};
+ globalThis.document={querySelector:selector=>selector==='#sheet'?historySheet:historyBody};
+ globalThis.fetch=async url=>{historyCalls++;if(String(url).startsWith('api/prices/archive?'))await new Promise(resolve=>{releaseHistory=resolve;});return {ok:true,json:async()=>({game:quote.game,cardId:quote.cardId,finish:quote.finish,status:'empty',series:[]})};};
+ setHistoryRefresh((key,q)=>{assert.equal(key,historyId);assert.equal(q,quote);assert(Number.isFinite(sharedHistory.get(key)?.checked));refreshed=true;mountGeneration++;});
+ const pending=loadSharedHistory(quote);for(let i=0;i<12;i++)await Promise.resolve();
+ assert.equal(historyCalls,3);assert.equal(refreshed,false);assert.equal(sharedHistory.has(historyId),false);assert.equal(mountGeneration,1);assert(!detailHistoryReady());
+ releaseHistory();const entry=await pending;assert.equal(entry,sharedHistory.get(historyId));assert.equal(entry.status,'empty');assert(refreshed);assert.equal(mountGeneration,2);assert(detailHistoryReady());
+ const stale={...entry,checked:Date.now()-31000};sharedHistory.set(historyId,stale);refreshed=false;releaseHistory=null;
+ const refreshing=loadSharedHistory(quote);for(let i=0;i<12;i++)await Promise.resolve();
+ assert.equal(historyCalls,6);assert.equal(sharedHistory.get(historyId),stale,'Real refresh retains its old entry until all sources complete');assert(!detailHistoryReady(),'An expired but checked terminal entry cannot declare the pending replacement settled');assert(!refreshed);assert.equal(mountGeneration,2);
+ releaseHistory();const updated=await refreshing;assert.notEqual(updated,stale);assert(refreshed);assert.equal(mountGeneration,3);assert(detailHistoryReady());
+ const recentPoints=Array.from({length:3},(_,i)=>({date:new Date(Date.now()-(2-i)*864e5).toISOString().slice(0,10),value:i+1}));
+ sharedHistory.set(historyId,{...updated,checked:Date.now()-60000,series:[{points:recentPoints}]});assert(detailHistoryReady(),'A complete recent series legitimately has the real one-hour cache lifetime');
+ sharedHistory.set(historyId,{...updated,checked:Date.now()-60000,series:[{points:recentPoints.slice(1)}]});assert(!detailHistoryReady(),'Two-point fixture history still expires after 30 seconds');
+ sharedHistory.set(historyId,updated);window.__uiTestState.ui.sheetCtx={...historyContext};assert(!detailHistoryReady(),'Even fresh matching history cannot settle a different live context');window.__uiTestState.ui.sheetCtx=historyContext;
+ historyBody.dataset.detailIdentity='different';assert(!detailHistoryReady(),'A different mounted identity cannot inherit readiness');
+}finally{releaseHistory?.();globalThis.fetch=savedFetch;globalThis.window=savedWindow;globalThis.document=savedDocument;setHistoryRefresh(()=>{});sharedHistory.delete(historyId);}
+console.log('PASS: exact real history completion follows its synchronous refresh callback; delayed initial and stale-cache refreshes remain pending, with real TTL and context/mount identity checks and no extra requests.');
 class Node {
  constructor(classes='') { this.classes=new Set(classes.split(' '));this.values={};this.dataset={};this.handlers={};this.bounds={width:140,height:200,left:10,right:150,top:10,bottom:210};this.classList={add:(...v)=>v.forEach(x=>this.classes.add(x)),remove:(...v)=>v.forEach(x=>this.classes.delete(x)),contains:v=>this.classes.has(v)};this.style={setProperty:(k,v)=>this.values[k]=v}; }
  addEventListener(k,f) {(this.handlers[k]||=[]).push(f);}

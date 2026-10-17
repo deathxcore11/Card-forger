@@ -1,7 +1,7 @@
 // Actual app/dialog checks, authorized hosted CI only. No private reference media.
 // The local path validates data without importing Playwright or starting a server.
 import assert from 'node:assert/strict';
-import {GAMES,CARDS,validateFixtures,startServer,openApp,navigate,closeSheet,inventorySnapshot,noOverflow,capture,saveReport} from './detail-rules-fixtures.mjs';
+import {GAMES,CARDS,validateFixtures,startServer,openApp,navigate,closeSheet,inventorySnapshot,detailHistoryReady,noOverflow,capture,saveReport} from './detail-rules-fixtures.mjs';
 console.log(await validateFixtures());
 if(process.argv.includes('--validate-fixtures'))process.exit(0);
 if(process.env.GITHUB_ACTIONS!=='true')throw Error('Responsive browser execution is restricted to hosted GitHub Actions. Use --validate-fixtures locally.');
@@ -48,13 +48,29 @@ async function focusedSuggestions(game){
  }catch(error){await capture(page,`card-responsive-${game}-focused-popup-failure`).catch(()=>{});await context.close();throw error;}
 }
 async function turn(page,beta,gamma){await page.evaluate(({beta,gamma})=>window.dispatchEvent(new DeviceOrientationEvent('deviceorientation',{beta,gamma})),{beta,gamma});await frame(page);}
-async function openCard(page,game,scrollToCard=true){
+async function openCard(page,game,scrollToCard=true,onInitial=null){
+ await page.evaluate(async()=>{window.__responsivePricing ||= await import('/pricing-presentation.js');window.__responsiveHistory ||= await import('/shared-history.js');});
+ if(game!=='mtg')assert.equal(await page.evaluate(({game,id})=>window.__uiTestTcg.needsCardRefresh(game,window.__uiTestTcg.cardOf(game,id),true),{game,id:CARDS[game][0].id}),false,'This cached first-open fixture has genuine complete current card data, not an ignored provider hydration');
  await page.locator(`#content .lot-art[data-entry="lot-${game}-0"]`).click();
  await page.waitForFunction(({game,name})=>{const c=window.__uiTestState.ui.sheetCtx;return document.querySelector('#sheet')?.open&&!c?.detailsBusy&&!c?.printsBusy&&(game!=='ygo'||!window.__uiTestTcg.ui(game).sets.busy)&&c?.entryId==='lot-'+game+'-0'&&document.querySelector('#sheet .cs-title h2')?.textContent===name;},{game,name:CARDS[game][0].name});
- // Let the real cached TCG ensureCard/openSheet continuation complete, then use
- // only connected production nodes. No substitute card markup is injected.
+ // Cached ensureCard still has an awaited continuation. History has another
+ // real refreshSheet continuation, even while the Overview panel is selected.
  await frame(page);await page.waitForFunction(()=>{const im=document.querySelector('#sheet .cs-card .card-img');return im?.complete&&im.naturalWidth>0;});
+ const pending=await page.evaluate(game=>{
+  const ctx=window.__uiTestState.ui.sheetCtx,card=game==='mtg'?ctx.print:window.__uiTestTcg.cardOf(game,ctx.id),quote=window.__responsivePricing.quoteForContext(game,card,ctx),key=window.__responsiveHistory.historyKey(quote),body=document.querySelector('#sheetBody');
+  window.__openingDetail={ctx,body,identity:body.dataset.detailIdentity,key,quote,card:body.querySelector('.cs-card'),generation:body.detailMountGeneration};
+  return {key,game:quote.game,id:quote.cardId,finish:quote.finish,entry:ctx.entryId,generation:body.detailMountGeneration};
+ },game);
+ assert.equal(pending.game,game);assert.equal(pending.id,CARDS[game][0].id);assert.equal(pending.entry,'lot-'+game+'-0');
+ if(onInitial)await onInitial();
+ await page.waitForFunction(detailHistoryReady);
+ // sharedHistory.set is followed by the synchronous real refresh callback;
+ // this next polling task therefore observes its completed mount replacement.
+ await page.waitForFunction(()=>{const im=document.querySelector('#sheet .cs-card .card-img');return im?.isConnected&&im.complete&&im.naturalWidth>0;});
+ const ready=await page.evaluate(()=>{const old=window.__openingDetail,body=document.querySelector('#sheetBody');window.__readyDetail={ctx:old.ctx,body,card:body.querySelector('.cs-card'),generation:body.detailMountGeneration,identity:body.dataset.detailIdentity};return {key:old.key,generation:body.detailMountGeneration,status:window.__responsiveHistory.sharedHistory.get(old.key).status};});
  if(scrollToCard)await page.locator('#sheet .cs-card').scrollIntoViewIfNeeded();await frame(page);
+ assert(await page.evaluate(()=>{const old=window.__readyDetail,body=document.querySelector('#sheetBody');return old.ctx===window.__uiTestState.ui.sheetCtx&&old.body===body&&old.card===body.querySelector('.cs-card')&&old.card.isConnected&&old.generation===body.detailMountGeneration&&old.identity===body.dataset.detailIdentity;}),'Completed exact history mount remains connected through the original scroll, without retry/reopen');
+ report.push(`${game} real detail readiness: ${JSON.stringify({pending,ready})}`);
 }
 async function noBrokenActionWords(page,scope,selector='.btn'){
  const broken=await page.locator(scope).evaluate((root,selector)=>{
@@ -78,6 +94,78 @@ async function cardColumns(page,game,stacked){
  if(geometry.statCols!==null)assert.equal(geometry.statCols,2,`${game}: retain compact two-column stats`);
  if(stacked){assert(geometry.artWidth<=220.5);assert.deepEqual(geometry.cellOverflow,[],`${game}: real stat content remains inside its own cell`);await noBrokenActionWords(page,'#sheetBody','.btn,.cs-card-side .stat-grid small,.cs-card-side .stat-grid b,.cs-card-side .stat-grid span');}
  report.push(`${game} ${stacked?'320px at 125%':'320px at 100%'} actual card: ${JSON.stringify(geometry)}`);
+}
+async function collectionRail(page,context,game,width,expectedSort){
+ const rail=page.locator('#content .coll-tools > .filter-pills');
+ if(!await rail.count()){assert.equal(game,'mtg','TCG Collection must retain its real filter rail');return null;}
+ assert(['ptcg','ygo'].includes(game));assert.equal(await rail.count(),1);
+ await page.locator('#content').evaluate(async root=>{for(;;){const a=root.getAnimations({subtree:true}).filter(a=>Number.isFinite(a.effect?.getComputedTiming().endTime)&&!['finished','idle'].includes(a.playState));if(!a.length)break;await Promise.all(a.map(a=>a.finished.catch(()=>{})));}});
+ const snapshot=()=>rail.locator(':scope > select').evaluateAll(nodes=>nodes.map(n=>({change:n.dataset.change,field:n.dataset.field||'',value:n.value,label:n.getAttribute('aria-label')})));
+ const controls=await snapshot();assert(controls.length>=3);assert.equal(controls.filter(n=>n.change==='tCollSort').length,1);
+ for(const n of controls)assert.equal(n.label,n.change==='tCollSet'?'Set':n.change==='tCollSort'?'Sort':({kind:'Kind',rarity:'Rarity',show:'Show'})[n.field],'Every real filter has its expected nonempty accessible name');
+ const originalSort=controls.find(n=>n.change==='tCollSort').value;if(expectedSort!==undefined)assert.equal(originalSort,expectedSort,'Selected sort survives same-page fold/rotation');
+ const keyboard=async()=>{
+  // A real click establishes the preceding input, then trusted Tab reaches every
+  // native select. Never focus/scroll an offscreen select programmatically.
+  await page.locator('#content .coll-tools > input').click();
+  await page.evaluate(()=>{if(window.__railKeyHandler)document.removeEventListener('keydown',window.__railKeyHandler,true);window.__railKeys=[];window.__railKeyHandler=e=>{if(e.key==='Tab')window.__railKeys.push({trusted:e.isTrusted,key:e.key});};document.addEventListener('keydown',window.__railKeyHandler,true);});
+  const measured=[];
+  for(const control of await snapshot()){
+   await page.keyboard.press('Tab');await frame(page);
+   const state=await rail.evaluate(n=>{
+    const el=document.activeElement,r=n.getBoundingClientRect(),a=el.getBoundingClientRect(),s=getComputedStyle(el),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');ctx.font=[s.fontStyle,s.fontVariant,s.fontWeight,s.fontSize,s.fontFamily].join(' ');
+    const label=el.selectedOptions?.[0]?.label||'',icon=getComputedStyle(el,'::picker-icon'),available=el.clientWidth-parseFloat(s.paddingLeft)-parseFloat(s.paddingRight)-(parseFloat(icon.width)||0)-(parseFloat(s.columnGap)||0),words=label.split(/\s+/),longest=Math.max(...words.map(w=>ctx.measureText(w).width));
+    let lines=1,line='';for(const word of words){const next=line?line+' '+word:word;if(line&&ctx.measureText(next).width>available){lines++;line=word;}else line=next;}
+    const nowrap=['nowrap','pre'].includes(s.whiteSpace),lineHeight=parseFloat(s.lineHeight)||parseFloat(s.fontSize)*1.2,hit=document.elementFromPoint(a.left+a.width/2,a.top+a.height/2);
+    return {inside:el.parentElement===n,change:el.dataset.change,field:el.dataset.field||'',value:el.value,label,accessible:el.getAttribute('aria-label'),tabIndex:el.tabIndex,disabled:el.disabled,selectedWordWidth:longest,selectedTextWidth:ctx.measureText(label).width,labelWidth:available,nowrap,requiredTextHeight:(nowrap?1:lines)*lineHeight,labelHeight:el.clientHeight-parseFloat(s.paddingTop)-parseFloat(s.paddingBottom),ellipsis:s.textOverflow==='ellipsis',scrollWidth:el.scrollWidth,clientWidth:el.clientWidth,scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,rect:a.toJSON(),rail:r.toJSON(),railWidth:n.clientWidth,railScroll:n.scrollWidth,position:n.scrollLeft,overflow:getComputedStyle(n).overflowX,hit:hit===el||el.contains(hit)};
+   });
+   assert(state.inside&&state.change===control.change&&state.field===control.field&&state.value===control.value&&state.accessible&&state.accessible===control.label&&!state.disabled&&state.tabIndex>=0,`Tab reaches the actual accessible selected control ${JSON.stringify(state)}`);
+   assert(state.rail.left>=-.5&&state.rail.right<=width+.5&&/^(auto|scroll)$/.test(state.overflow),'Known Collection rail stays locally bounded');
+   assert(state.rect.left>=state.rail.left-2&&state.rect.right<=state.rail.right+2&&state.hit,`Keyboard reveals each complete trigger without document scrolling sideways ${JSON.stringify(state)}`);
+   assert(state.label&&state.selectedWordWidth<=state.labelWidth+2&&(!state.nowrap||state.selectedTextWidth<=state.labelWidth+2)&&state.requiredTextHeight<=state.labelHeight+2&&!state.ellipsis&&state.scrollWidth<=state.clientWidth+2&&state.scrollHeight<=state.clientHeight+2,`Selected label has intact word space and full height, not hidden clipping ${JSON.stringify(state)}`);measured.push(state);
+  }
+  const events=await page.evaluate(()=>{document.removeEventListener('keydown',window.__railKeyHandler,true);delete window.__railKeyHandler;return window.__railKeys;});assert.equal(events.length,measured.length);assert(events.every(e=>e.trusted),'Rail keyboard path uses one trusted Tab per control');return measured;
+ };
+ const keys=await keyboard();
+ // Return to the first control using keyboard navigation, not scrollLeft writes.
+ for(let i=1;i<controls.length;i++)await page.keyboard.press('Shift+Tab');await frame(page);
+ const initial=await rail.evaluate(n=>({left:n.scrollLeft,max:n.scrollWidth-n.clientWidth,rect:n.getBoundingClientRect().toJSON()}));
+ let touch=null;
+ if(initial.max>2){
+  const point=await rail.evaluate(n=>{const r=n.getBoundingClientRect(),x=r.right-28,y=r.bottom-1,hit=document.elementFromPoint(x,y);window.__railTouch=[];window.__railTouchAbort?.abort();window.__railTouchAbort=new AbortController();for(const type of ['touchstart','touchmove','touchend'])n.addEventListener(type,e=>window.__railTouch.push({type,trusted:e.isTrusted,inside:n.contains(e.target)}),{passive:true,signal:window.__railTouchAbort.signal});return {x,y,inside:!!hit&&n.contains(hit)};});
+  assert(point.inside,'Trusted pan starts on the actual visible Collection rail');
+  const cdp=await context.newCDPSession(page),distance=Math.min(220,initial.rect.width-60);let ended=false;
+  try{await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:point.x,y:point.y,id:7}]});
+   for(let i=1;i<=8;i++){await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:point.x-distance*i/8,y:point.y,id:7}]});await frame(page);}
+   await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});ended=true;
+  }finally{if(!ended)await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]}).catch(()=>{});await cdp.detach();await page.evaluate(()=>{window.__railTouchAbort?.abort();delete window.__railTouchAbort;});}
+  await page.waitForFunction(before=>document.querySelector('#content .filter-pills').scrollLeft>before+10,initial.left);
+  await page.evaluate(()=>{window.__railScrollSample=null;});await page.waitForFunction(()=>{const left=document.querySelector('#content .filter-pills').scrollLeft,now=performance.now(),old=window.__railScrollSample;if(!old||old.left!==left){window.__railScrollSample={left,since:now};return false;}return now-old.since>=100;});
+  touch=await rail.evaluate(n=>({left:n.scrollLeft,events:window.__railTouch,game:document.body.dataset.game,view:document.body.dataset.view,hash:location.hash}));
+  assert(touch.left>initial.left+10&&touch.events.some(e=>e.type==='touchstart')&&touch.events.some(e=>e.type==='touchmove')&&touch.events.some(e=>e.type==='touchend')&&touch.events.every(e=>e.trusted&&e.inside),`Actual trusted pan moved the local rail ${JSON.stringify(touch)}`);
+  assert.equal(touch.game,game);assert.equal(touch.view,'collection');assert.equal(touch.hash,'#collection','Rail gesture never leaks into game/route swipe');
+  assert.equal(await page.locator('.glass-select-menu[open]').count(),0,'Pan is not a select activation');
+ }
+ assert.deepEqual(await snapshot(),controls,'Keyboard access and horizontal pan preserve all current selected filter values');
+ await noOverflow(page,'#content',`${game} Collection ${width} original selected state`,true,{game,width,controls});
+ const sort=rail.locator('select[data-change="tCollSort"]'),target=await sort.evaluate(n=>{const a=n.getBoundingClientRect(),r=n.parentElement.getBoundingClientRect(),x=a.left+a.width/2,y=a.top+a.height/2;return {x,y,full:a.left>=r.left-2&&a.right<=r.right+2,hit:document.elementFromPoint(x,y)===n,rect:a.toJSON(),rail:r.toJSON(),value:n.value};});
+ assert(target.full&&target.hit,`Sort is genuinely fully reachable before tapping, without locator auto-scroll ${JSON.stringify(target)}`);await page.touchscreen.tap(target.x,target.y);
+ const menu=page.locator('.glass-select-menu[open]');await menu.waitFor();
+ const options=await sort.evaluate(n=>[...n.options].map(o=>({value:o.value,label:o.label}))),selected=options.find(o=>o.value===originalSort);
+ const selectedOption=menu.locator('[role=option][aria-selected=true]');assert.equal(await selectedOption.count(),1);assert.equal(await selectedOption.locator('span').first().textContent(),selected.label);assert.equal(await selectedOption.locator('span').last().textContent(),'✓');assert.equal(await selectedOption.locator('span').last().getAttribute('aria-hidden'),'true');assert.equal(await menu.getAttribute('aria-label'),'Sort');
+ const selectedGeometry=await selectedOption.evaluate(n=>{const menu=n.closest('dialog'),m=menu.getBoundingClientRect(),r=n.getBoundingClientRect(),label=n.querySelector('span'),l=label.getBoundingClientRect();return {menu:m.toJSON(),row:r.toJSON(),label:l.toJSON(),viewport:innerHeight,labelClient:label.clientWidth,labelScroll:label.scrollWidth};});
+ assert(selectedGeometry.menu.top>=-.5&&selectedGeometry.menu.bottom<=selectedGeometry.viewport+.5&&selectedGeometry.row.top>=selectedGeometry.menu.top-2&&selectedGeometry.row.bottom<=selectedGeometry.menu.bottom+2&&selectedGeometry.label.left>=selectedGeometry.row.left-2&&selectedGeometry.label.right<=selectedGeometry.row.right+2&&selectedGeometry.label.top>=selectedGeometry.row.top-2&&selectedGeometry.label.bottom<=selectedGeometry.row.bottom+2&&selectedGeometry.labelScroll<=selectedGeometry.labelClient+2,`Selected menu row and its complete label are visibly contained ${JSON.stringify(selectedGeometry)}`);
+ await noOverflow(page,'.glass-select-menu[open]',game+' reachable Collection choices');await noBrokenActionWords(page,'.glass-select-menu[open]','.glass-select-options button');
+ // A non-default choice exercises the actual render path; subsequent widths
+ // must retain it, and its newly rendered rail must remain keyboard reachable.
+ const next=expectedSort===undefined?'name':originalSort,index=options.findIndex(o=>o.value===next);assert(index>=0);
+ await page.keyboard.press('Home');for(let i=0;i<index;i++)await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');await menu.waitFor({state:'detached'});
+ await page.waitForFunction(value=>document.querySelector('#content select[data-change="tCollSort"]')?.value===value,next);
+ const afterKeys=await keyboard(),after=await snapshot();assert.equal(after.find(n=>n.change==='tCollSort').value,next);assert.deepEqual(after.filter(n=>n.change!=='tCollSort'),controls.filter(n=>n.change!=='tCollSort'),'Sort does not change the other selected filters');
+ assert.deepEqual(await page.evaluate(()=>({game:document.body.dataset.game,uiGame:window.__uiTestState.state.settings.game,view:window.__uiTestState.ui.view,hash:location.hash})),{game,uiGame:game,view:'collection',hash:'#collection'},'Keyboard/touch selection preserves the current game and route');
+ report.push(`${game} Collection ${width}: ${JSON.stringify({initial,keyboard:keys,touch,afterKeyboard:afterKeys,selected:after})}`);
+ await capture(page,`card-responsive-${game}-collection-rail-${width}`);
+ return {game,width,controls:after};
 }
 async function remember(page){return page.evaluate(()=>{
  const body=document.querySelector('#sheetBody'),card=body.querySelector('.cs-card');window.__mountedDetail={dialog:document.querySelector('#sheet'),body,card,generation:body.detailMountGeneration,context:window.__uiTestState.ui.sheetCtx,title:body.querySelector('.cs-title h2').textContent,art:card.querySelector('img').src,tab:body.querySelector('[role=tab][aria-selected=true]').id,identity:body.dataset.detailIdentity,choice:JSON.stringify([...body.querySelectorAll('select[data-change="historyEdition"],select[data-change="historyYgoEdition"],select[data-change="cardPriceFinish"]')].map(n=>[n.dataset.change,n.value])),top:body.scrollTop};return {top:body.scrollTop};
@@ -157,7 +245,18 @@ async function scrollLifecycle(page,game){
 async function scenario(game){
  const app=await openApp(browser,server.base,{game,width:390,height:1000}),{page,context}=app;
  try{
-  const inventory=await inventorySnapshot(page);await turn(page,30,0);await openCard(page,game);
+  const inventory=await inventorySnapshot(page);await turn(page,30,0);
+  const held=game==='ptcg'?app.hold(url=>url.origin===server.base&&url.pathname==='/api/prices/archive'&&url.searchParams.get('game')==='ptcg'&&url.searchParams.get('id')===CARDS.ptcg[0].id&&url.searchParams.get('finish')==='normal'):null;
+  try{await openCard(page,game,true,held?async()=>{
+   let timeout;try{await Promise.race([held.seen,new Promise((_,reject)=>{timeout=setTimeout(()=>reject(Error('The exact initial Pokémon archive request was not observed')),15000);})]);}finally{clearTimeout(timeout);}
+   assert.equal(await page.locator('dialog.zoom').count(),0);await turn(page,35,6);
+   const initial=await page.evaluate(()=>{const old=window.__openingDetail,card=document.querySelector('#sheet .cs-card .cd-img');window.__heldInitial={ctx:old.ctx,body:old.body,card,generation:old.body.detailMountGeneration,identity:old.identity};return {connected:card.isConnected,gyro:card.classList.contains('gyro'),tx:card.style.getPropertyValue('--tx'),history:window.__responsiveHistory.sharedHistory.get(old.key)?.checked||null,generation:old.body.detailMountGeneration};});
+   assert(initial.connected&&initial.gyro&&initial.tx!=='0deg'&&!initial.history,`Initial cached card tilts before its held history response can replace it ${JSON.stringify(initial)}`);report.push('ptcg held initial tilt: '+JSON.stringify(initial));held.release();
+  }:null);}finally{held?.release();}
+  if(held){
+   const replacement=await page.evaluate(()=>{const old=window.__heldInitial,body=document.querySelector('#sheetBody'),card=body.querySelector('.cs-card .cd-img');return {sameContext:old.ctx===window.__uiTestState.ui.sheetCtx,sameBody:body===old.body,sameIdentity:body.dataset.detailIdentity===old.identity,newMount:body.detailMountGeneration>old.generation,newCard:card!==old.card,oldDetached:!old.card.isConnected,connected:card.isConnected};});
+   assert.deepEqual(replacement,{sameContext:true,sameBody:true,sameIdentity:true,newMount:true,newCard:true,oldDetached:true,connected:true});await turn(page,50,25);assert(await page.locator('#sheet .cs-card .cd-img').evaluate(n=>n.classList.contains('gyro')&&n.style.getPropertyValue('--tx')!=='0deg'),'Late exact-history replacement rebinds tilt without enlarged-art detour');report.push('ptcg real history replacement tilt: '+JSON.stringify(replacement));
+  }
   assert.equal(await page.locator('dialog.zoom').count(),0,'First open has never visited enlarged artwork');
   const card=page.locator('#sheet .cs-card .cd-img');await turn(page,40,12);
   assert(await card.evaluate(n=>n.classList.contains('gyro')&&n.style.getPropertyValue('--tx')!=='0deg'),'Actual first-open card responds to phone motion without zoom round trip');
@@ -183,7 +282,8 @@ async function scenario(game){
   // each real production card (including Pokémon's actual full-row .stat-reg).
   const priorZoom=await page.evaluate(()=>document.body.style.zoom);
   try{
-   await page.evaluate(()=>{document.body.style.zoom='1.25';});await frame(page);await noOverflow(page,'#sheetBody',game+' actual 320px at 125%');await cardColumns(page,game,true);await noBrokenActionWords(page,'#sheetBody');await capture(page,`card-responsive-${game}-zoom125`);
+   await page.evaluate(()=>{document.body.style.zoom='1.25';});await frame(page);await noOverflow(page,'#sheetBody',game+' actual 320px at 125%');await cardColumns(page,game,true);await noBrokenActionWords(page,'#sheetBody');
+   for(const [selector,suffix]of [['.cd-art-stack','-art'],['.cs-card-side',''],['.card-actions','-actions']]){await page.locator('#sheet '+selector).scrollIntoViewIfNeeded();await frame(page);await capture(page,`card-responsive-${game}-zoom125${suffix}`);}
   }finally{await page.evaluate(value=>{document.body.style.zoom=value;},priorZoom);}
   await frame(page);await cardColumns(page,game,false);await page.setViewportSize({width:390,height:1000});await page.locator('#sheet .cs-card').scrollIntoViewIfNeeded();await frame(page);await resizeInPlace(page,game,'overview');
   await scrollLifecycle(page,game);
@@ -196,8 +296,8 @@ async function scenario(game){
   await closeSheet(page);
   // Actual reused surface audit, not a blanket cosmetic redesign.
   for(const hash of ['#home','#collection','#search','#sets','#decks']){
-   await navigate(page,hash);await frame(page);
-   for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await frame(page);await noOverflow(page,'#content',`${game} ${hash} ${width}`,true);await noBrokenActionWords(page,'#content');}
+   await navigate(page,hash);await frame(page);let railAudit=null;
+   for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await frame(page);if(hash==='#collection')railAudit=await collectionRail(page,context,game,width,railAudit?.controls.find(n=>n.change==='tCollSort')?.value);await noOverflow(page,'#content',`${game} ${hash} ${width}`,true,railAudit);await noBrokenActionWords(page,'#content');}
   }
   await navigate(page,'#decks/ideas');await page.locator('#content [data-act="learnGame"]').first().click();await page.locator('#sheet[open] [data-learning-root]').waitFor();
   for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await frame(page);await noOverflow(page,'#sheetBody',`${game} learning ${width}`);await noBrokenActionWords(page,'#sheetBody');}
