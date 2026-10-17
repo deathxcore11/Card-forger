@@ -3,12 +3,14 @@ export function searchQuery(
   name,
   { color = "", cardColor = "", type = "", format = "", maxPrice = "", rarity = "", mv = "", set = "" } = {},
 ) {
+  const error = magicFilterError({ set, maxPrice, mv });
+  if (error) throw Error(error);
   const parts = ["game:paper"];
   if (name.trim()) parts.push(name.trim());
   if (color) parts.push("id<=" + color);
   // Card color (what's printed), separate from Commander color identity above.
   if (cardColor) parts.push(cardColor === "M" ? "c:m" : cardColor === "C" ? "c:c" : "c:" + cardColor.toLowerCase());
-  if (type) parts.push("t:" + type);
+  if (type) parts.push(...String(type).trim().split(/\s+/).map((part) => "t:" + part));
   if (format) parts.push("legal:" + format);
   if (rarity) parts.push("r:" + rarity);
   if (mv !== "" && /^\d+\+?$/.test(mv)) parts.push(mv.endsWith("+") ? "mv>=" + parseInt(mv, 10) : "mv=" + mv);
@@ -21,6 +23,74 @@ export function searchQuery(
     parts.push("usd<=" + Number(maxPrice));
   return parts.join(" ");
 }
+// Validate before submitting: a visible constraint must never silently disappear.
+export function magicFilterError({ set = "", maxPrice = "", mv = "" } = {}) {
+  if (String(set).trim() && !/^[a-z0-9]{2,6}$/i.test(String(set).trim())) return "Enter a set code with 2–6 letters or numbers (for example FDN), or remove the Set filter.";
+  if (String(maxPrice).trim() && (!Number.isFinite(Number(maxPrice)) || Number(maxPrice) < 0)) return "Enter a maximum price of 0 or more, or remove the price filter.";
+  if (String(mv).trim() && !/^\d+\+?$/.test(String(mv))) return "Choose a valid mana value, or remove the mana value filter.";
+  return "";
+}
+export function hasMagicSearchQuery(term, filters = {}) {
+  return !!(String(term || "").trim() || ["color", "cardColor", "type", "rarity", "mv", "set", "format", "maxPrice"].some(k => String(filters[k] ?? "").trim()));
+}
+export function magicSearchSpec(term, filters = {}) {
+  const frozen = Object.freeze(Object.fromEntries(["color", "cardColor", "type", "format", "maxPrice", "rarity", "mv", "set", "sort", "own", "fits"].map(k => [k, String(filters[k] ?? "").trim()])));
+  term = String(term || "").trim();
+  const query = searchQuery(term, frozen);
+  if (!hasMagicSearchQuery(term, frozen)) throw Error("Type a card name or pick a filter.");
+  const syntax = /[:<>=]/.test(term), order = frozen.sort === "usdAsc" ? "usd" : frozen.sort || (syntax ? "edhrec" : "name");
+  return Object.freeze({ term, filters: frozen, query, syntax, order, dir: frozen.sort === "usdAsc" ? "asc" : ["usd", "released", "rarity"].includes(order) ? "desc" : "auto" });
+}
+// Continuations are provider paths, not arbitrary URLs. Reject cycles in the caller.
+export function scryfallSearchPath(cursor) {
+  const url = new URL(cursor, "https://api.scryfall.com");
+  if (url.origin !== "https://api.scryfall.com" || url.pathname !== "/cards/search" || url.username || url.password) throw Error("Unexpected card database continuation link.");
+  return url.pathname + url.search;
+}
+// The printing browser is independent of Search and always scoped to one oracle identity.
+export async function loadMagicPrintingPage(card, { cursor = null, signal, request } = {}) {
+  if (!card?.oracle_id) throw Error("This card has no verified Magic identity. Reopen its card details and try again.");
+  const path = cursor ? scryfallSearchPath(cursor) : "/cards/search?" + new URLSearchParams({ q: "oracleid:" + card.oracle_id + " game:paper", unique: "prints", order: "released", dir: "desc" });
+  if (signal?.aborted) throw Error("Printing lookup cancelled.");
+  const result = await request(path, { signal });
+  if (signal?.aborted) throw Error("Printing lookup cancelled.");
+  if (!Array.isArray(result?.data)) throw Error("The card database returned incomplete printings. Try again.");
+  if (result.has_more && !result.next_page) throw Error("The card database did not return the next printing page. Try again.");
+  // /cards/search supplies full Scryfall card objects, not brief name-only rows.
+  const cards = mergeMagicCards([], result.data.filter(p => p?.id && p.oracle_id === card.oracle_id && (!Array.isArray(p.games) || p.games.includes("paper"))).map(p => ({...p, full:true})), { printings: true });
+  const nextCursor = result.has_more ? scryfallSearchPath(result.next_page) : null;
+  if (nextCursor && nextCursor === path) throw Error("The card database repeated a printing page. Try again.");
+  return { cards, nextCursor, complete: !nextCursor, total: Number(result.total_cards) || null, note: cards.length !== result.data.length ? "Only verified paper printings of this exact card are shown." : "" };
+}
+export function mergeMagicCards(previous, incoming, { printings = false } = {}) {
+  const seen = new Set();
+  return [...previous, ...incoming].filter(card => {
+    const id = printings ? card?.id : card?.oracle_id || card?.id || String(card?.name || "").toLowerCase();
+    if (!id || seen.has(id)) return false;
+    seen.add(id); return true;
+  });
+}
+const searchFocusKey = el => {
+  if (!el) return "";
+  if (el.id) return "id:" + el.id;
+  if (el.tagName === "SUMMARY") return "summary:" + (el.parentElement?.id || "");
+  const d = el.dataset || {};
+  return JSON.stringify([el.tagName, d.input || "", d.change || "", d.act || "", d.field || "", d.q || "", d.i || "", d.name || "", d.id || "", d.game || "", d.setId || "", d.tab || "", d.to || ""]);
+};
+// Keep a draft and selection intact when an asynchronous result redraws Search.
+export function captureSearchFocus(root, active = globalThis.document?.activeElement) {
+  if (!active || !root?.contains?.(active)) return null;
+  return { key: searchFocusKey(active), value: /^(INPUT|TEXTAREA)$/.test(active.tagName) ? active.value : undefined, start: active.selectionStart, end: active.selectionEnd, direction: active.selectionDirection };
+}
+export function restoreSearchFocus(root, state) {
+  if (!state) return;
+  const el = [...(root?.querySelectorAll?.("input,select,button,summary,textarea") || [])].find(node => searchFocusKey(node) === state.key);
+  if (!el || el.disabled) return;
+  if (state.value !== undefined) el.value = state.value;
+  el.focus?.({ preventScroll: true });
+  if (Number.isInteger(state.start)) try { el.setSelectionRange(state.start, state.end, state.direction); } catch {}
+}
+
 // Best name matches first: exact name, then names starting with the words, then names with a word
 // starting with them, then everything else in the order the source gave (stable).
 export function rankByName(list, term, nameOf = (c) => c.name) {

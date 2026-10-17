@@ -21,6 +21,7 @@ import {attachCardGestures, CompareSelection, cardActionButtons, HOLD_MS, moved 
 import {tcgCompareSheet} from './tcgcompare.js';
 import {artworkHTML} from './artwork.js';
 import {attachAutomaticBrowse} from './auto-browse.js';
+import { createPrintingPicker } from "./printing-picker.js";
 import {SheetHistory,BROWSE_TYPES,sheetKey} from "./sheet-history.js";
 import {handleArtworkError} from "./artwork.js";
 import {selectedFinish,detailIdentity,captureDetailState,restoreDetailState,detailTabKey,createDetailJump} from "./pricing-presentation.js";
@@ -57,7 +58,7 @@ import { mtgConstructedPower } from "./deckpower.js";
 import { fieldStore, celebrate, calibrateField } from "./matchups-ui.js";
 import { completionPlan, commanderTheme } from "./planner.js";
 import { sourceCredit, mtgjsonDeck, collectionIdeas, upgradeSuggestions, applyUpgradeSwaps } from "./strategy.js";
-import { searchQuery, rankByName } from "./catalog-tools.js";
+import { searchQuery, rankByName, magicFilterError, hasMagicSearchQuery, magicSearchSpec, scryfallSearchPath, mergeMagicCards, loadMagicPrintingPage, captureSearchFocus, restoreSearchFocus } from "./catalog-tools.js";
 import { promptInstall, dismissInstall, onInstallable, isIOS } from "./install.js";
 import { attachGlassSelects } from "./glass-select.js";
 import { attachSuggest } from "./suggest.js";
@@ -268,9 +269,13 @@ let apiChain = Promise.resolve(),
   lastActTarget = null;
 function api(path, options = {}) {
   const op = async () => {
+    if (options.signal?.aborted) throw Error("Card lookup cancelled.");
     await new Promise((r) => setTimeout(r, 110));
+    if (options.signal?.aborted) throw Error("Card lookup cancelled.");
     const ctl = new AbortController(),
+      cancel = () => ctl.abort(),
       timer = setTimeout(() => ctl.abort(), 16000);
+    options.signal?.addEventListener?.("abort", cancel, {once:true});
     try {
       // Busy (429) or a dropped connection: wait a moment and try again, twice, before giving up.
       let r, d;
@@ -292,9 +297,10 @@ function api(path, options = {}) {
       if (!r.ok) throw Error(d.details || "Card database unavailable.");
       return d;
     } catch (e) {
-      throw Error(e.name === "AbortError" ? "Card lookup timed out. Check your connection and try again." : e.message);
+      throw Error(e.name === "AbortError" ? options.signal?.aborted ? "Card lookup cancelled." : "Card lookup timed out. Check your connection and try again." : e.message);
     } finally {
       clearTimeout(timer);
+      options.signal?.removeEventListener?.("abort", cancel);
     }
   };
   const result = apiChain.then(op, op);
@@ -570,14 +576,14 @@ const sheetTrail=new SheetHistory(), routeTrail=[];
 let restoringSheet=false,pendingRoute=null;
 function sheetSnapshot(){
  const ctx=S.ui.sheetCtx;if(!ctx||!BROWSE_TYPES.has(ctx.type))return null;
- return {ctx,html:$("#sheetBody").innerHTML,scroll:$("#sheetBody").scrollTop,route:location.hash,game:T.game(),pageScroll:window.scrollY,
+ return {ctx,html:$("#sheetBody").innerHTML,detailState:captureDetailState($("#sheetBody")),scroll:$("#sheetBody").scrollTop,route:location.hash,game:T.game(),pageScroll:window.scrollY,
    proven:ctx.type === "proven"?{...T.proven}:null,build:ctx.type === "tbuild"?{...T.ui(T.game()).build}:null};
 }
 function restoreSheet(snapshot){
  if(snapshot.proven)Object.assign(T.proven,snapshot.proven);
  if(snapshot.build)Object.assign(T.ui(snapshot.game).build,snapshot.build);
  restoringSheet=true;
- try{openSheet(snapshot.html,snapshot.ctx,snapshot.scroll);refreshSheet();wireSheetBack();}
+ try{openSheet(snapshot.html,snapshot.ctx,snapshot.scroll);refreshSheet();wireSheetBack();restoreDetailState($("#sheetBody"),snapshot.detailState);}
  finally{restoringSheet=false;}
 }
 function wireSheetBack(){
@@ -680,6 +686,7 @@ function sheetScrolled() {
   body.style?.setProperty?.("--card-tabs-top",Math.max(0,on?head.getBoundingClientRect().bottom-body.getBoundingClientRect().top:0)+"px");
 }
 function closeSheet(rememberRoute=true) {
+  if (S.ui.sheetCtx?.type === "printing-picker") printingPicker.abandon();
   dismissRulesGuide();
   pendingRoute=rememberRoute && $("#sheet").open ? sheetSnapshot() : null;
   if(pendingRoute)pendingRoute.at=Date.now();
@@ -858,6 +865,8 @@ function render() {
   if(previousDisclosureKey)disclosureStates.set(previousDisclosureKey,captureDisclosures(content));
   if(disclosureStates.size>100)disclosureStates.delete(disclosureStates.keys().next().value);
   const disclosureKey=[g,ui.view,ui.deckId,ui.tdeckId,ui.set?.code,ui.tsetId,ui.collTab,ui.decksTab,ui.deckTab].join(':');
+  const searchFocus=ui.view === "search" && previousDisclosureKey === disclosureKey ? captureSearchFocus(content) : null;
+  if (searchFocus?.key === "id:dbTerm") searchFocus.value = ui.db.term;
   if(content?.dataset)content.dataset.disclosureKey=disclosureKey;
   document.body.dataset.game = g;
   document.body.style?.setProperty("--game-color", GAME_COLOR[g]);
@@ -889,6 +898,7 @@ function render() {
   $("#content").innerHTML = (g !== "mtg" && tcgViews[ui.view] ? tcgViews[ui.view] : views[ui.view] || V.home)();
   restoreDisclosures(content,disclosureStates.get(disclosureKey));
   content.dataset.disclosureKey=disclosureKey;
+  restoreSearchFocus(content,searchFocus);
   if (ui.view === "home") refreshHomeCommunity(g, content).catch(() => {});
   if(!cloudInfo().user)restoreAuthFields(document,authFields);
   const displayArea=["deck","tdeck"].includes(ui.view)?"deck":ui.view === "search"?"search":ui.view === "set"?"set":ui.view === "collection" && (g === "mtg" ? ui.collTab === "wishlist" : T.ui(g).coll.tab === "wishlist")?"wishlist":ui.view === "collection" && (g === "mtg" ? ui.collTab === "cards" : !T.ui(g).coll.tab || T.ui(g).coll.tab === "cards")?"collection":null;
@@ -1003,6 +1013,7 @@ function restoreScroll(top) {
   step();
 }
 window.addEventListener("hashchange", (e) => {
+  if (S.ui.sheetCtx?.type === "printing-picker") closeSheet(false);
   dismissRulesGuide();
   const from = routeKey(e.oldURL), to = routeKey(location.hash);
   scrollMem.set(from, window.scrollY);
@@ -1030,6 +1041,8 @@ A.aiDeckReview = t => showAiReview(t.dataset.ai, render);
 const C = {}; // change handlers
 C.chooseLocation = t => chooseLocation(t);
 const I = {}; // input handlers
+function restoreSheetHistory() { const saved=sheetTrail.pop(); if(saved)restoreSheet(saved); else closeSheet(false); }
+const printingPicker = createPrintingPicker({ A, C, I, openSheet, getContext:()=>S.ui.sheetCtx, getBody:()=>$("#sheetBody"), back:restoreSheetHistory });
 registerWorkbench({A,C,commit,render,openSheet,closeSheet,refreshSheet,toast,
  getGame:T.game,
  getCard:(g,e,context)=>g === "mtg" ? (e.printingVerified && S.state.printings?.[e.printingId]) || (context?.print && key(context.print.name) === key(e.name) ? context.print : meta(e.name)) : contextTcgCard(g,e.cardId,context || null),
@@ -1038,7 +1051,7 @@ registerWorkbench({A,C,commit,render,openSheet,closeSheet,refreshSheet,toast,
 });
 
 // Yu-Gi-Oh! and Pokémon actions (tcg.js).
-setTimeout(() => Object.assign(tcgCtx, { A, C, I, commit, render, openSheet, closeSheet, refreshSheet, toast, go, download, copyText, busy, rerenderKeepingFocus, writeRecord }) && (T.registerTcg(tcgCtx), registerCardMenus()), 0);
+setTimeout(() => Object.assign(tcgCtx, { A, C, I, commit, render, openSheet, closeSheet, refreshSheet, toast, go, download, copyText, busy, rerenderKeepingFocus, writeRecord, invalidateMagicSearch: () => dbInvalidate(false), openPrintingPicker: printingPicker.open }) && (T.registerTcg(tcgCtx), registerCardMenus()), 0);
 
 // Press and hold (data-hold="action"): runs that action instead of the tap's, with a haptic tick.
 let holdTimer = null, heldTarget = null, holdAt = null;
@@ -1262,7 +1275,7 @@ attachCardGestures({onSelect:target=>{
 },onHold:t=>safely(cardQuickMenu(t)),onPick:t=>safely(pickCompareCard(t)),choosing:()=>comparison.active});
 
 document.addEventListener("pointerdown", ripple, { passive: true });
-attachGestures({ closeSheet: () => closeSheet() });
+attachGestures({ closeSheet: () => A.closeSheet() });
 attachGameTabs($("#gameTabs"));
 attachHomeCommunity($("#content"));
 attachHomeSwipe($("#content"), {
@@ -1390,9 +1403,16 @@ document.addEventListener("keydown", (e) => {
   safely(A[t.dataset.enter](t, e));
 });
 $("#sheet").addEventListener("click", (e) => {
-  if (e.target.id === "sheet") closeSheet();
+  if (e.target.id === "sheet") A.closeSheet();
+});
+$("#sheet").addEventListener("cancel", (e) => {
+  if (S.ui.sheetCtx?.type === "printing-picker") { e.preventDefault(); printingPicker.cancel(); }
 });
 $("#sheet").addEventListener("close", () => {
+  // close() queues its event. A selection can already have opened the next sheet
+  // by the time it arrives; that older event must not clear the new session.
+  if ($("#sheet").open) return;
+  printingPicker.abandon();
   sheetTrail.clear();
   binderDragCleanup?.(); binderDragCleanup=null;
   S.ui.sheetCtx = null;
@@ -1426,8 +1446,8 @@ A.go = (t) => {
   closeSheet();
   go(t.dataset.to);
 };
-A.closeSheet = () => closeSheet(false);
-A.sheetHistoryBack=()=>{const saved=sheetTrail.pop();if(saved)restoreSheet(saved);};
+A.closeSheet = () => S.ui.sheetCtx?.type === "printing-picker" ? printingPicker.cancel() : closeSheet(false);
+A.sheetHistoryBack = () => S.ui.sheetCtx?.type === "printing-picker" ? printingPicker.cancel() : restoreSheetHistory();
 A.routeHistoryBack=()=>{const saved=routeTrail.pop();if(!saved || saved.game!==T.game())return;closeSheet(false);go(saved.route);setTimeout(()=>{if(location.hash!==saved.route)return;restoreSheet(saved);window.scrollTo(0,saved.pageScroll);},0);};
 document.addEventListener?.("error",handleArtworkError,true);
 if(typeof MutationObserver !== "undefined"){
@@ -1615,11 +1635,21 @@ A.card = async (t) => {
 
 // Full card (flavor text, artist) + every paper printing with prices, loaded in the background.
 async function loadCardExtras(ctx) {
+  if (ctx.detailsBusy) return;
   let c = ctx.print || meta(ctx.name);
   const still = () => S.ui.sheetCtx === ctx && $("#sheet").open;
+  ctx.detailsBusy = true;
+  const oldDetailsError = ctx.detailsError;
+  ctx.detailsError = "";
+  if (!ctx.prints || ctx.printsError === oldDetailsError) ctx.printsError = "";
   try {
     if (c?.id && !c.full) {
       const full = await api("/cards/" + encodeURIComponent(c.id));
+      if (!still()) {
+        ctx.detailsError = ctx.printsError = "Extra details paused. Retry to finish loading this card.";
+        return;
+      }
+      if (full.id !== c.id) throw Error("The card database returned a different printing. Retry this card’s details.");
       if(ctx.print){
         // Exact-printing enrichment stays in this sheet. It cannot replace the
         // name-wide default used by decks and the rest of the collection.
@@ -1630,27 +1660,49 @@ async function loadCardExtras(ctx) {
         c = cacheCard({ ...full, full: true }, [ctx.name]);
         saveCatalogSoon();
       }
-      if (still()) $("#sheetBody").innerHTML = V.cardSheet(c, ctx);
+      if (still()) refreshSheet();
     }
     if (!c?.oracle_id) return;
-    const prints = [];
-    let path = "/cards/search?" + new URLSearchParams({ q: "oracleid:" + c.oracle_id + " game:paper", unique: "prints", order: "released", dir: "desc" });
-    for (let page = 0; page < 3 && path; page++) {
-      const d = await api(path);
-      prints.push(...d.data);
-      path = d.has_more && d.next_page ? new URL(d.next_page).pathname + new URL(d.next_page).search : null;
-    }
-    ctx.prints = prints;
-    ctx.pricesAt = new Date().toISOString();
-    ensureTcgPrices(prints);
-    S.ui.prints = prints;
-    if (still()) refreshSheet();
+    if (!still()) return;
+    // Hydrating a selected printing must not replace an already paged version list.
+    if (!Array.isArray(ctx.prints)) await loadMagicVersions(ctx);
+
   } catch (e) {
-    ctx.prints = ctx.prints || [];
-    if (still()) {
-      refreshSheet();
-      const l = $("#cardLoading");
-      if (l) l.textContent = "Couldn’t load extra details: " + e.message;
+    ctx.detailsError = ctx.printsError = e.message;
+  } finally {
+    ctx.detailsBusy = false;
+    if (still()) refreshSheet();
+  }
+}
+// Versions load one honest page at a time; a retry retains already verified printings.
+async function loadMagicVersions(ctx, next = false) {
+  if (ctx?.type !== "card" || ctx.printsBusy || (next && !ctx.printsNext)) return;
+  const card = ctx.print || meta(ctx.name), cursor = next ? ctx.printsNext : null;
+  const still = () => S.ui.sheetCtx === ctx && $("#sheet").open && T.game() === "mtg";
+  if (!still()) return;
+  const token = Symbol("magic-versions");
+  ctx.printsRequest = token; ctx.printsBusy = true; ctx.printsError = "";
+  refreshSheet();
+  try {
+    const page = await loadMagicPrintingPage(card, { cursor, request: api });
+    if (!still() || ctx.printsRequest !== token) return;
+    const pages = [...(next ? ctx.printsPages || [] : []), ...(cursor ? [cursor] : [])];
+    const repeated = page.nextCursor && pages.includes(page.nextCursor);
+    ctx.prints = mergeMagicCards(next ? ctx.prints || [] : [], page.cards, { printings: true });
+    ctx.printsNext = repeated ? null : page.nextCursor;
+    ctx.printsComplete = !repeated && page.complete;
+    ctx.printsTotal = page.total;
+    ctx.printsPages = pages;
+    ctx.pricesAt = new Date().toISOString();
+    if (repeated) ctx.printsError = "The card database repeated a printing page. Showing the verified printings loaded so far.";
+    ensureTcgPrices(page.cards);
+  } catch (e) {
+    if (still() && ctx.printsRequest === token) ctx.printsError = e.message;
+  } finally {
+    if (ctx.printsRequest === token) {
+      ctx.printsBusy = false;
+      if (!still() && !ctx.prints) ctx.printsError = "Printing lookup paused. Retry to load this card’s printings.";
+      if (still()) refreshSheet();
     }
   }
 }
@@ -1662,9 +1714,37 @@ A.viewPrint = (t) => {
   ctx.print = print;
   ctx.setId = print.set || "";
   ctx.priceFinish = selectedFinish("mtg",print,ctx.priceFinish);
+  ctx.entryId = ""; delete ctx.entry;
+  ctx.setVariant = ctx.priceFinish;
   ctx.face = 0;
   refreshSheet();
   $("#sheetBody").scrollTo({ top: 0, behavior: globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+};
+A.magicVersionsMore = () => {
+  const ctx = S.ui.sheetCtx;
+  if (ctx?.type !== "card" || ctx.detailsBusy) return;
+  const card = ctx.print || meta(ctx.name);
+  if (ctx.printsNext) return loadMagicVersions(ctx, true);
+  return !card?.full ? loadCardExtras(ctx) : loadMagicVersions(ctx);
+};
+A.magicPrintings = () => {
+  const ctx = S.ui.sheetCtx, card = ctx?.print || meta(ctx?.name);
+  if (ctx?.type !== "card" || T.game() !== "mtg" || !card?.oracle_id) return toast("This card's verified Magic identity is not loaded yet. Try again in a moment.");
+  return printingPicker.open({ game: "mtg", card, parentContext: ctx,
+    loadPage: ({cursor, signal}) => loadMagicPrintingPage(card, { cursor, signal, request: api }),
+    onSelect: (selection, parent) => {
+      if (S.ui.sheetCtx !== parent || T.game() !== "mtg" || selection.card.oracle_id !== card.oracle_id) return;
+      parent.print = selection.card;
+      parent.setId = selection.releaseId;
+      parent.priceFinish = selection.finish;
+      // Viewing another printing/finish is not editing the lot that opened it.
+      // Do not let artwork long-press or quantity actions inherit that old lot.
+      parent.entryId = ""; delete parent.entry;
+      parent.setVariant = selection.finish;
+      parent.face = 0;
+      refreshSheet();
+    }
+  });
 };
 A.flipFace = () => {
   const ctx = S.ui.sheetCtx;
@@ -1684,6 +1764,7 @@ A.setCommander = async (t) => {
 A.formatSearch = () => {
   const f = formatOf(currentDeck());
   S.ui.db.filters = { color: "", type: "", format: f.legality || "", maxPrice: "" };
+  dbInvalidate();
   go("#search");
 };
 
@@ -2348,6 +2429,7 @@ A.homeSearch = () => {
     if (q) A.tSearch();
   } else {
     S.ui.db.term = q;
+    dbInvalidate();
     go("#search");
     if (q) A.dbSearch();
   }
@@ -3642,19 +3724,30 @@ A.acqConfirm = async (t) => {
    Search (Scryfall)
    ========================================================= */
 
-I.dbTerm = (t) => (S.ui.db.term = t.value);
-// Filters apply straight away once there's something to search for; "Show" only re-filters the page.
-const dbHasQuery = () => {
-  const f = S.ui.db.filters;
-  return !!(S.ui.db.term.trim() || f.color || f.cardColor || f.type || f.rarity || f.mv || f.set || f.format);
+function dbInvalidate(clear = true) {
+  const db = S.ui.db;
+  db.generation = (db.generation || 0) + 1;
+  db.abort?.abort();
+  db.abort = null;
+  db.busy = false;
+  if (clear) Object.assign(db, { results: [], total: 0, next: null, note: "", error: "", submitted: null, pages: [] });
+}
+I.dbTerm = (t) => {
+  if (S.ui.db.term === t.value) return;
+  const redraw = S.ui.db.busy || S.ui.db.results.length || S.ui.db.next || S.ui.db.error || S.ui.db.note;
+  S.ui.db.term = t.value;
+  dbInvalidate();
+  if (redraw) render();
 };
+// Every provider query is an immutable snapshot; replacements can supersede in-flight work.
+const dbHasQuery = () => hasMagicSearchQuery(S.ui.db.term, S.ui.db.filters);
 C.dbFilter = (t) => {
   const f = S.ui.db.filters;
   f[t.dataset.field] = t.value;
   if (["format", "color"].includes(t.dataset.field)) delete f.fits;
-  if (t.dataset.field === "own") return render();
-  if (dbHasQuery()) dbSearch();
-  else render();
+  if (dbHasQuery()) return dbSearch();
+  dbInvalidate();
+  render();
 };
 A.dbChip = (t) => {
   const f = S.ui.db.filters,
@@ -3664,32 +3757,32 @@ A.dbChip = (t) => {
     f.format = "";
     f.color = "";
   } else f[k] = "";
-  if (k === "own" || !dbHasQuery()) {
-    if (!dbHasQuery()) Object.assign(S.ui.db, { results: [], total: 0, next: null });
-    return render();
-  }
-  dbSearch();
+  if (!dbHasQuery()) { dbInvalidate(); return render(); }
+  return dbSearch();
 };
 A.dbClear = () => {
   S.ui.db.filters = { color: "", type: "", format: "", maxPrice: "" };
-  if (S.ui.db.term.trim()) dbSearch();
+  if (S.ui.db.term.trim()) return dbSearch();
   else {
-    Object.assign(S.ui.db, { results: [], total: 0, next: null });
+    dbInvalidate();
     render();
   }
 };
 // Cards that fit the active deck: its format's legality and its commander's color identity.
 A.dbFitDeck = () => {
-  const d = currentDeck(),
-    f = formatOf(d),
+  const d = currentDeck();
+  if (!d) return;
+  const f = formatOf(d),
     comm = d.commander ? meta(d.commander) : null,
     F = S.ui.db.filters;
   F.format = f.legality || "";
   F.color = comm ? (comm.color_identity?.length ? comm.color_identity.join("") : "C") : "";
   F.fits = d.name.slice(0, 24);
-  dbSearch();
+  return dbSearch();
 };
 A.dbSave = () => {
+  const error = magicFilterError(S.ui.db.filters);
+  if (error) return toast(error);
   const db = S.ui.db,
     chips = V.mtgFilterChips(db.filters).filter(([k]) => k !== "sort"),
     label = [db.term.trim() && `“${db.term.trim().slice(0, 24)}”`, ...chips.map(([, l]) => l)].filter(Boolean).join(" · ").slice(0, 60) || "Search",
@@ -3703,7 +3796,7 @@ A.dbSaved = (t) => {
   if (!x) return;
   S.ui.db.term = x.term || "";
   S.ui.db.filters = { color: "", type: "", format: "", maxPrice: "", ...x.filters };
-  dbSearch();
+  return dbSearch();
 };
 A.dbSavedDel = (t) => {
   const list = T.savedSearches("mtg");
@@ -3727,10 +3820,15 @@ A.undo = async () => {
 };
 A.nextFact = (t) => nextFact(t);
 A.dbRandom = async () => {
-  if(S.ui.db.busy)return;
-  S.ui.db.busy=true;
-  try{const c=cacheCard(await api("/cards/random?"+new URLSearchParams({q:"game:paper"})));saveCatalogSoon();await A.card({dataset:{name:c.name,random:"1"}});}
-  finally{S.ui.db.busy=false;}
+  const db = S.ui.db, generation = db.generation;
+  if (db.randomBusy || T.game() !== "mtg") return;
+  db.randomBusy = true;
+  try {
+    const card = await api("/cards/random?" + new URLSearchParams({q:"game:paper"}));
+    if (S.ui.db !== db || db.generation !== generation || T.game() !== "mtg") return;
+    const c = cacheCard(card); saveCatalogSoon();
+    await A.card({dataset:{name:c.name,random:"1"}});
+  } finally { db.randomBusy = false; }
 };
 let randomDeckBusy=false,lastRandomCommander="";
 A.randomDeck=async()=>{
@@ -3754,55 +3852,69 @@ A.randomDeck=async()=>{
 };
 A.dbTry = (t) => {
   S.ui.db.term = t.dataset.q;
-  dbSearch();
+  return dbSearch();
 };
-async function dbSearch(next = false, random = false) {
+async function dbSearch(next = false) {
   const db = S.ui.db;
-  if (db.busy) return;
+  if (T.game() !== "mtg") return;
+  if (next && (db.busy || !db.next || !db.submitted)) return;
+  let spec;
+  if (next) spec = db.submitted;
+  else {
+    dbInvalidate();
+    try { spec = magicSearchSpec(db.term, db.filters); }
+    catch (e) { db.error = e.message; if (S.ui.view === "search") render(); return; }
+    db.submitted = spec;
+  }
+  const generation = db.generation, cursor = next ? db.next : null, abort = new AbortController();
+  db.abort = abort;
+  const current = () => S.ui.db === db && db.generation === generation && db.submitted === spec && T.game() === "mtg";
   db.busy = true;
   db.error = "";
   if (S.ui.view === "search") render();
   try {
-    let d;
-    if (random) {
-      const c = await api("/cards/random?" + new URLSearchParams({ q: "game:paper" + (db.filters.format ? " legal:" + db.filters.format : "") }));
-      cacheCard(c);
-      db.busy = false;
-      render();
-      return A.card({ dataset: { name: c.name, random: "1" } });
-    }
+    let d, note = next ? db.note || "" : "", requestPath;
     if (next) {
-      const u = new URL(db.next);
-      if (u.origin !== "https://api.scryfall.com") throw Error("Unexpected link.");
-      d = await api(u.pathname + u.search);
+      requestPath = scryfallSearchPath(cursor);
+      if (db.pages?.includes(requestPath)) throw Error("The card database repeated a page. Search again to refresh the results.");
+      d = await api(requestPath, {signal:abort.signal});
     } else {
-      const F = db.filters;
-      if (!dbHasQuery()) throw Error("Type a card name or pick a filter.");
-      const syntax = /[:<>=]/.test(db.term),
-        order = F.sort === "usdAsc" ? "usd" : F.sort || (syntax ? "edhrec" : "name");
-      const run = (term) => api("/cards/search?" + new URLSearchParams({ q: searchQuery(term, F), unique: "cards", order, dir: F.sort === "usdAsc" ? "asc" : ["usd", "released", "rarity"].includes(order) ? "desc" : "auto" }));
-      db.note = "";
-      try {
-        d = await run(db.term);
-      } catch (e) {
-        // Plain words that match no card name ("draw a card"): look in the rules text instead.
-        const words = db.term.trim();
-        if (syntax || !words.includes(" ") || !/didn.t match any cards|no cards found/i.test(e.message)) throw e;
+      const run = term => api("/cards/search?" + new URLSearchParams({ q: searchQuery(term, spec.filters), unique: "cards", order: spec.order, dir: spec.dir }), {signal:abort.signal});
+      try { d = await run(spec.term); }
+      catch (e) {
+        if (!current()) return;
+        const words = spec.term;
+        if (spec.syntax || !words.includes(" ") || !/didn.t match any cards|no cards found/i.test(e.message)) throw e;
         d = await run(`o:"${words.replace(/"/g, "")}"`);
-        db.note = `No card names match “${words}”, so these are cards whose text says it.`;
+        note = `No card names match “${words}”, so these are cards whose text says it.`;
       }
     }
+    if (!current()) return;
+    if (!Array.isArray(d?.data)) throw Error("The card database returned an incomplete response. Try again.");
+    let continuation = d.has_more ? d.next_page : null;
+    if (d.has_more && !continuation) throw Error("The card database did not return its next page. Try again.");
+    if (continuation) continuation = scryfallSearchPath(continuation);
+    const pages = [...(db.pages || []), ...(requestPath ? [requestPath] : [])];
+    const repeated = continuation && pages.includes(continuation);
     for (const c of d.data) cacheCard(c);
-    db.results = next ? [...db.results, ...d.data] : !db.filters.sort && !db.note ? rankByName(d.data, db.term) : d.data;
-    db.total = d.total_cards || db.results.length;
-    db.next = d.has_more ? d.next_page : null;
+    const cards = mergeMagicCards(next ? db.results : [], d.data);
+    db.results = !next && !spec.filters.sort && !note ? rankByName(cards, spec.term) : cards;
+    db.total = Number(d.total_cards) || (next ? db.total : 0) || db.results.length;
+    db.next = repeated ? null : continuation;
+    db.pages = pages;
+    db.note = note;
+    if (repeated) db.error = "The card database repeated a page. Showing the unique cards loaded so far; search again to refresh.";
   } catch (e) {
+    if (!current()) return;
     db.error = /didn.t match any cards|no cards found/i.test(e.message) ? "No cards match that search." : e.message;
-    if (!next) db.results = [];
+    // Failed pagination preserves its cursor and loaded cards for an explicit retry.
   } finally {
-    db.busy = false;
-    saveCatalogSoon();
-    if (S.ui.view === "search") render();
+    if (current()) {
+      db.busy = false;
+      db.abort = null;
+      saveCatalogSoon();
+      if (S.ui.view === "search") render();
+    }
   }
 }
 

@@ -317,6 +317,40 @@ export const YGO_RACES = ["Aqua", "Beast", "Beast-Warrior", "Cyberse", "Dinosaur
 export const YGO_SPELL_KINDS = ["Normal", "Quick-Play", "Continuous", "Equip", "Field", "Ritual"];
 export const YGO_TRAP_KINDS = ["Normal", "Continuous", "Counter"];
 
+// Normalize category-dependent controls at both the UI and adapter boundary.
+// Incompatible hidden fields must never survive a saved search or direct caller.
+export function normalizeYgoSearch(spec = {}) {
+  const out = { ...spec };
+  const nonMonster = /Spell|Trap|Skill|Token/.test(out.type || ""), link = /Link/.test(out.type || "");
+  const races = out.type === "Spell Card" ? YGO_SPELL_KINDS : out.type === "Trap Card" ? YGO_TRAP_KINDS : YGO_RACES;
+  if (out.race && !races.includes(out.race) && (out.type || [...YGO_SPELL_KINDS, ...YGO_TRAP_KINDS].includes(out.race))) delete out.race;
+  if (nonMonster) for (const key of ["attribute", "level", "atk", "def"]) delete out[key];
+  if (link) for (const key of ["level", "def"]) delete out[key];
+  if ((nonMonster && /^(atk|def|level)/.test(out.sort || "")) || (link && /^(def|level)/.test(out.sort || ""))) out.sort = "name";
+  return out;
+}
+// Provider guide: https://portal.ygoprodeck.com/api-guide/ (checked 2026-10-17).
+// Query formats and misc_info.formats are different documented lists. OCG is
+// membership data, not a supported format query; Edison is documented in neither.
+const searchPoolKey = value => String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+const YGO_SEARCH_POOLS = new Set(["tcg", "ocg", "master duel", "goat", "ocg goat", "duel links", "rush duel", "speed duel"]);
+const YGO_SEARCH_QUERY_FORMATS = new Set(["tcg", "goat", "ocg goat", "speed duel", "master duel", "rush duel", "duel links", "genesys"]);
+export const ygoSearchFormatSupported = format => !format?.pool || YGO_SEARCH_POOLS.has(searchPoolKey(format.pool));
+export function ygoSearchFormatLabel(format) {
+  if (!format?.pool) return "All cards · no legality check";
+  if (!ygoSearchFormatSupported(format)) return format.name + " · verification unavailable";
+  return format.ban ? "Legal in " + format.name : "Card pool: " + format.name;
+}
+export function ygoSearchEligibility(card, format) {
+  if (!format) return "legal";
+  if (!ygoSearchFormatSupported(format)) return "unknown";
+  // This projection is Search-only: leave source records and deck helpers
+  // unchanged, while accepting documented lowercase and older cached casing.
+  const pools = Array.isArray(card.pools) ? card.pools.map(searchPoolKey).filter(Boolean) : [];
+  if (format.pool && !pools.length) return "unknown";
+  return ygoLegality({ ...card, pools }, { ...format, pool:searchPoolKey(format.pool) });
+}
+
 export const looseName = (q) =>
   String(q)
     .trim()
@@ -343,7 +377,8 @@ let randomTotal = 14000,
 export const ygoSource = {
   game: "ygo",
   formats: YGO_FORMATS,
-  async search({ q = "", text = "", type = "", attribute = "", race = "", level = "", format = "", set = "", archetype = "", sort = "name", page = 0, size = 60 }) {
+  async search(spec = {}) {
+    const { q = "", text = "", type = "", attribute = "", race = "", level = "", format = "", set = "", archetype = "", sort = "name", page = 0, size = 60, paging = null } = normalizeYgoSearch(spec);
     // YGOPRODeck sorts stats low to high only, so "high to low" pages from the end and reverses.
     const desc = /^(atk|def|level)Desc$/.test(sort),
       p = { num: size, offset: page * size, misc: "yes", sort: desc ? sort.slice(0, -4) : ["new", "atk", "def", "level"].includes(sort) ? sort : "name" };
@@ -356,20 +391,20 @@ export const ygoSource = {
     if (attribute) p.attribute = attribute;
     if (set) p.cardset = set;
     if (archetype) p.archetype = archetype;
-    const pool = { TCG: "tcg", GOAT: "goat", "Speed Duel": "speed duel", "Master Duel": "master duel", "Duel Links": "duel links", Edison: "edison" }[YGO_FORMATS.find((x) => x.id === format)?.pool];
+    const selectedPool = searchPoolKey(YGO_FORMATS.find(x => x.id === format)?.pool), pool = YGO_SEARCH_QUERY_FORMATS.has(selectedPool) ? selectedPool : "";
     if (race) p.race = race;
     if (level) p.level = level;
     if (pool) p.format = pool;
     if (desc) {
-      const total = (await get("/cardinfo.php", { ...p, num: 1, offset: 0 })).meta?.total_rows || 0,
+      const total = paging?.sort === p.sort && Number.isSafeInteger(paging.total) && paging.total >= 0 ? paging.total : Number((await get("/cardinfo.php", { ...p, num: 1, offset: 0 })).meta?.total_rows) || 0,
         end = Math.max(0, total - page * size),
         start = Math.max(0, end - size);
-      if (!end) return { cards: [], total, more: false };
+      if (!end) return { cards: [], total, more: false, paging: { sort:p.sort, total } };
       const d = await get("/cardinfo.php", { ...p, num: end - start, offset: start });
-      return { cards: (d.data || []).map(normalizeYgo).reverse(), total, more: start > 0 };
+      return { cards: (d.data || []).map(normalizeYgo).reverse(), total, more: start > 0, paging: { sort:p.sort, total } };
     }
     const d = await get("/cardinfo.php", p);
-    return { cards: (d.data || []).map(normalizeYgo), total: d.meta?.total_rows ?? (d.data || []).length, more: !!d.meta?.rows_remaining };
+    return { cards: (d.data || []).map(normalizeYgo), total: d.meta?.total_rows ?? (d.data || []).length, more: Number(d.meta?.rows_remaining) > 0 };
   },
   async get(id,{printings=true}={}) {
     const d = await get("/cardinfo.php", { id, misc: "yes" });

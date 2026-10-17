@@ -298,7 +298,7 @@ const SET_ALIAS = { rc: { from: "bw11", prefix: /^RC\d/ } };
 // Listed by TCGdex with no cards in any source (Jumbo cards, Sample, W Promotional): left out of
 // the set list rather than shown as a set that never fills in.
 const NO_CARDS = new Set(["jumbo", "sp", "wp"]);
-const searchCache = new Map();
+const searchCache = new Map(), searchLoads = new Map();
 let rankPromise = null;
 // Set id → position in release order (higher = newer), from the series list.
 function setRank() {
@@ -315,6 +315,13 @@ function setRank() {
 export const PTCG_RARITIES = ["Common", "Uncommon", "Rare", "Rare Holo", "Double rare", "Ultra Rare", "Illustration rare", "Special illustration rare", "Hyper rare", "Mega Hyper Rare", "ACE SPEC Rare", "Shiny rare", "Shiny Ultra Rare", "Black White Rare", "Secret Rare", "Radiant Rare", "Amazing Rare", "Holo Rare V", "Holo Rare VMAX", "Holo Rare VSTAR", "Full Art Trainer", "Classic Collection", "Rare PRIME", "Rare Holo LV.X", "LEGEND", "Promo"];
 export const PTCG_STAGES = [["Basic", "Basic"], ["Stage1", "Stage 1"], ["Stage2", "Stage 2"], ["MEGA", "Mega"], ["VMAX", "VMAX"], ["VSTAR", "VSTAR"], ["V-UNION", "V-UNION"], ["BREAK", "BREAK"], ["LEVEL-UP", "LV.X"], ["RESTORED", "Restored"], ["Baby", "Baby"]];
 export const PTCG_TYPES = ["Grass", "Fire", "Water", "Lightning", "Psychic", "Fighting", "Darkness", "Metal", "Dragon", "Colorless", "Fairy"];
+
+// Trainer and Energy searches must not silently retain Pokémon-only filters.
+export function normalizePtcgSearch(spec = {}) {
+  const out = { ...spec };
+  if (["Trainer", "Energy"].includes(out.category)) for (const key of ["type", "stage", "hp"]) delete out[key];
+  return out;
+}
 
 let standardPokemon = null,
   randomSets = null;
@@ -339,7 +346,8 @@ export const ptcgSource = {
   formats: PTCG_FORMATS,
   // TCGdex can't sort by release date, so fetch every match once, order it by each
   // set's real release order, and page through it here.
-  async search({ q = "", category = "", type = "", set = "", rarity = "", stage = "", hp = "", format = "", sort = "new", page = 0, size = 48 }) {
+  async search(spec = {}) {
+    const { q = "", category = "", type = "", set = "", rarity = "", stage = "", hp = "", format = "", sort = "new", page = 0, size = 48, exactName = false } = normalizePtcgSearch(spec);
     // Empty search browses the complete physical-card catalogue, paged below.
     const p = {},
       legal = PTCG_FORMATS.find((f) => f.id === format)?.legal;
@@ -353,14 +361,22 @@ export const ptcgSource = {
     if (legal) p["legal." + legal] = "true";
     const key = JSON.stringify(p);
     if (!searchCache.has(key)) {
-      const [d, rank] = await Promise.all([get("/cards", p), setRank()]);
-      const all = (d || []).map(brief).filter((c) => !c.pocket);
-      searchCache.set(key, { all, rank });
+      if (!searchLoads.has(key)) {
+        const pending = Promise.all([get("/cards", p), setRank()]).then(([d, rank]) => {
+          if (d !== null && !Array.isArray(d)) throw Error("Pokémon card database returned an invalid list.");
+          const all = [...new Map((d || []).map(brief).filter(c => c.id && !c.pocket).map(c => [c.id, c])).values()];
+          searchCache.set(key, { all, rank });
+        }).finally(() => searchLoads.delete(key));
+        searchLoads.set(key, pending);
+      }
+      await searchLoads.get(key);
     }
     const { all, rank } = searchCache.get(key),
       setOf = (id) => id.slice(0, id.lastIndexOf("-")),
       num = (id) => parseInt(id.slice(id.lastIndexOf("-") + 1), 10) || 0,
-      sorted = [...all].sort(sort === "name" ? (a, b) => a.name.localeCompare(b.name) || (rank.get(setOf(b.id)) ?? -1) - (rank.get(setOf(a.id)) ?? -1) : (a, b) => (rank.get(setOf(b.id)) ?? -1) - (rank.get(setOf(a.id)) ?? -1) || num(a.id) - num(b.id));
+      nameKey = value => String(value || "").normalize("NFC").trim().replace(/\s+/g, " ").toLocaleLowerCase(),
+      family = exactName ? all.filter(card => nameKey(card.name) === nameKey(q)) : all,
+      sorted = [...family].sort(sort === "name" ? (a, b) => a.name.localeCompare(b.name) || (rank.get(setOf(b.id)) ?? -1) - (rank.get(setOf(a.id)) ?? -1) || a.id.localeCompare(b.id) : (a, b) => (rank.get(setOf(b.id)) ?? -1) - (rank.get(setOf(a.id)) ?? -1) || num(a.id) - num(b.id) || a.id.localeCompare(b.id));
     return { cards: sorted.slice(page * size, (page + 1) * size), total: sorted.length, more: (page + 1) * size < sorted.length };
   },
   async get(id) {

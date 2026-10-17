@@ -44,8 +44,8 @@ import { sharePayloadTcg, encodeShare } from "./share.js";
 import { factBox, factsFor } from "./facts.js";
 import { ygoEmblems, energyIcon, attackLine, tcgSetBadge, ygoPrintBadge, pkRarity, pkSetSymbol } from "./emblems.js";
 import { buildYgo, buildPtcg, YGO_STAPLES, PTCG_STAPLES, PTCG_SUPPORT_BASICS, energyName } from "./tcgbuild.js";
-import { ygoSource, ygoImageDirect, YGO_SET_CACHE_KEY, YGO_SET_LEGACY_CACHE_KEY, normalizeYgoSets, migrateYgoSetCache, resolveYgoSet, ygoSetPrintings, YGO_TYPES, YGO_ATTRIBUTES, YGO_RACES, YGO_SPELL_KINDS, YGO_TRAP_KINDS } from "./ygo.js";
-import { ptcgSource, ptcgPrintingMatches, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES, plainText } from "./ptcg.js";
+import { ygoSource, ygoImageDirect, YGO_SET_CACHE_KEY, YGO_SET_LEGACY_CACHE_KEY, normalizeYgoSets, migrateYgoSetCache, resolveYgoSet, ygoSetPrintings, normalizeYgoSearch, ygoSearchFormatLabel, ygoSearchFormatSupported, ygoSearchEligibility, YGO_TYPES, YGO_ATTRIBUTES, YGO_RACES, YGO_SPELL_KINDS, YGO_TRAP_KINDS } from "./ygo.js";
+import { ptcgSource, ptcgPrintingMatches, normalizePtcgSearch, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES, plainText } from "./ptcg.js";
 import { loadMeta, metaState, ptcgIcon, allCachedMeta, cleanName } from "./meta.js";
 import { tcgPower, powerPanel, powerChip, shownPower, asShown, powerReadiness } from "./power.js";
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
@@ -71,7 +71,7 @@ export const cardOf = (g, id) => cache[g][id] || null;
 const UI = {};
 export const ui = (g = game()) =>
   (UI[g] ||= {
-    search: { q: "", f: {}, sort: g === "ygo" ? "name" : "new", maxPrice: "", page: 0, results: [], more: false, busy: false, error: "", ran: false },
+    search: { q: "", f: {}, sort: g === "ygo" ? "name" : "new", maxPrice: "", page: 0, results: [], more: false, busy: false, error: "", ran: false, generation: 0, request: null, submitted: null, detailsBusy: false },
     sets: { list: [], busy: false, error: "", q: "", limit: 80 },
     set: { id: "", info: null, cards: [], busy: false, loaded: false, error: "", filter: "all", sort: "number", q: "", rarity: "", finish: "", limit: 120, generation: 0, contents: null, candidates: [] },
     coll: { limit: 120, q: "", sort: "set-order", set: "", kind: "", rarity: "" },
@@ -118,11 +118,11 @@ export async function ensureCard(g, id, force = false,printings=true) {
   }
 }
 // Load details for many cards, a few at a time, calling `tick` as they arrive.
-export async function ensureMany(g, ids, tick = () => {}, force = false,printings=false) {
+export async function ensureMany(g, ids, tick = () => {}, force = false,printings=false, isCurrent = () => true) {
   const queue = [...new Set(ids)].filter(id=>force||needsCardRefresh(g,cache[g][id],printings));
   let done = 0;
   const worker = async () => {
-    while (queue.length) {
+    while (queue.length && isCurrent()) {
       const id = queue.shift();
       await ensureCard(g, id, force,printings).catch(() => {});
       if (++done % 8 === 0) tick(done);
@@ -524,76 +524,99 @@ function deckTile(g, d) {
 
 /* ---------- search ---------- */
 
+const defaultSearchSort = g => g === "ygo" ? "name" : "new";
+const priceSearchSort = sort => sort === "price" || sort === "priceAsc";
+export function normalizeTcgSearch(g, U) {
+  const normalized = (g === "ygo" ? normalizeYgoSearch : normalizePtcgSearch)({ ...U.f, sort: U.sort });
+  U.sort = normalized.sort || defaultSearchSort(g);
+  delete normalized.sort;
+  const allowed = g === "ygo" ? ["type", "attribute", "race", "level", "format", "set", "setName", "archetype"] : ["category", "type", "rarity", "stage", "hp", "format", "set", "setName"];
+  U.f = Object.fromEntries(Object.entries(normalized).filter(([key, value]) => allowed.includes(key) && typeof value === "string" && value));
+  const choices = g === "ygo" ? {type:YGO_TYPES, attribute:YGO_ATTRIBUTES} : {category:["Pokemon", "Trainer", "Energy"], type:PTCG_TYPES, stage:PTCG_STAGES.map(([key]) => key), rarity:PTCG_RARITIES};
+  for (const [key, values] of Object.entries(choices)) if (U.f[key] && !values.includes(U.f[key])) delete U.f[key];
+  if (U.f.level && (!Number.isInteger(Number(U.f.level)) || Number(U.f.level) < 1 || Number(U.f.level) > 13)) delete U.f.level;
+  if (U.f.hp && (!Number.isInteger(Number(U.f.hp)) || Number(U.f.hp) <= 0)) delete U.f.hp;
+  if (U.f.format && !formatsOf(g).some(f => f.id === U.f.format)) delete U.f.format;
+  if (!U.f.set) delete U.f.setName;
+  const sorts = ["name", "new", "price", "priceAsc", ...(g === "ygo" ? ["atkDesc", "defDesc", "levelDesc"] : [])];
+  if (!sorts.includes(U.sort)) U.sort = defaultSearchSort(g);
+  U.q = typeof U.q === "string" ? U.q : "";
+  U.own = ["owned", "missing"].includes(U.own) ? U.own : "";
+  U.maxPrice = U.maxPrice == null || U.maxPrice === "" || !Number.isFinite(Number(U.maxPrice)) ? "" : String(Math.max(0, Number(U.maxPrice)));
+  return U;
+}
+export function invalidateTcgSearch(g, clear = false) {
+  if (!SOURCES[g]) return;
+  const U = ui(g).search;
+  U.generation = (U.generation || 0) + 1;
+  Object.assign(U, { busy: false, request: null, detailsBusy: false, detailJobs: 0 });
+  if (clear) Object.assign(U, { page: 0, results: [], more: false, total: null, error: "", ran: false, submitted: null, failedPage: null, providerPaging: null });
+}
+
 export function tcgSearch() {
-  const g = game(),
-    U = ui(g).search,
-    m = ownedMap(g),
-    max = U.maxPrice === "" ? null : Number(U.maxPrice),
-    fid = U.f.format || "",
-    f = fid ? formatOf(g, fid) : null;
-  let list = U.results.map((c) => cardOf(g, c.id) || c);
-  if (max !== null) list = list.filter((c) => price(c) !== null && price(c) <= max);
-  if (f && g === "ptcg") list = list.filter((c) => c.brief || SOURCES.ptcg.legality(c, f) === "legal");
-  if (U.own) list = list.filter((c) => (U.own === "owned" ? ownedOf(g, c, m) > 0 : !ownedOf(g, c, m)));
+  const g = game(), U = ui(g).search, m = ownedMap(g), max = U.maxPrice === "" ? null : Number(U.maxPrice),
+    fid = U.f.format || "", f = fid ? formatsOf(g).find(f => f.id === fid) : null,
+    loaded = U.results.map(c => cardOf(g, c.id) || c),
+    unverifiedFormat = g === "ygo" && f && !ygoSearchFormatSupported(f),
+    needsDetails = !!(max !== null || (f && g === "ptcg" && (f.legal || f.noRuleBox))),
+    pending = loaded.filter(c => c.brief && needsDetails).length,
+    unknownLegality = g === "ygo" && f && !unverifiedFormat ? loaded.filter(c => ygoSearchEligibility(c, f) === "unknown").length : 0;
+  let list = loaded;
+  if (max !== null) list = list.filter(c => !c.brief && price(c) !== null && price(c) <= max);
+  if (f && !unverifiedFormat) list = list.filter(c => g === "ygo" ? ["legal", "limited", "semi"].includes(ygoSearchEligibility(c, f)) : (!c.brief || !needsDetails) && SOURCES.ptcg.legality(c, f) === "legal");
+  if (U.own) list = list.filter(c => U.own === "owned" ? ownedOf(g, c, m) > 0 : !ownedOf(g, c, m));
   if (U.sort === "price") list = [...list].sort((a, b) => (price(b) ?? -1) - (price(a) ?? -1));
-  // Low to high: cards without a price go last, never counted as free.
   if (U.sort === "priceAsc") list = [...list].sort((a, b) => (price(a) ?? Infinity) - (price(b) ?? Infinity));
-  const st = U.f.type || "",
+  const st = U.f.type || "", nonMonster = /Spell|Trap|Skill|Token/.test(st), link = /Link/.test(st),
+    pokemonOnly = !["Trainer", "Energy"].includes(U.f.category),
     kinds = st === "Spell Card" ? YGO_SPELL_KINDS : st === "Trap Card" ? YGO_TRAP_KINDS : YGO_RACES,
-    filters =
-      g === "ygo"
-        ? `<label>Card type<select data-change="tFilter" data-field="type">${options([["", "Any"], ...YGO_TYPES.map((x) => [x, x])], st)}</select></label>
-         <label>Attribute<select data-change="tFilter" data-field="attribute">${options([["", "Any"], ...YGO_ATTRIBUTES.map((x) => [x, x])], U.f.attribute || "")}</select></label>
-         <label>${st === "Spell Card" ? "Spell kind" : st === "Trap Card" ? "Trap kind" : "Monster type"}<select data-change="tFilter" data-field="race">${options([["", "Any"], ...kinds.map((x) => [x, x])], kinds.includes(U.f.race) ? U.f.race : "")}</select></label>
-         ${/Spell|Trap/.test(st) ? "" : `<label>Level / Rank<select data-change="tFilter" data-field="level">${options([["", "Any"], ...Array.from({ length: 13 }, (_, i) => [String(i + 1), String(i + 1)])], U.f.level || "")}</select></label>`}`
-        : `<label>Card type<select data-change="tFilter" data-field="category">${options([["", "Any"], ["Pokemon", "Pokémon"], ["Trainer", "Trainer"], ["Energy", "Energy"]], U.f.category || "")}</select></label>
-         <label>Energy type<select data-change="tFilter" data-field="type">${options([["", "Any"], ...PTCG_TYPES.map((x) => [x, x])], U.f.type || "")}</select></label>
-         <label>Rarity<select data-change="tFilter" data-field="rarity">${options([["", "Any"], ...PTCG_RARITIES.map((x) => [x, x])], U.f.rarity || "")}</select></label>
-         <label>Stage<select data-change="tFilter" data-field="stage">${options([["", "Any"], ...PTCG_STAGES], U.f.stage || "")}</select></label>
-         <label>HP at least<select data-change="tFilter" data-field="hp">${options([["", "Any"], ...[60, 100, 150, 200, 250, 300].map((x) => [String(x), String(x)])], U.f.hp || "")}</select></label>`,
-    sorts =
-      g === "ygo"
-        ? [["name", "Name"], ["new", "Newest"], ["atkDesc", "ATK: high to low"], ["defDesc", "DEF: high to low"], ["levelDesc", "Level: high to low"], ["priceAsc", "Price: low to high"], ["price", "Price: high to low"]]
-        : [["new", "Newest"], ["name", "Name"], ["priceAsc", "Price: low to high"], ["price", "Price: high to low"]];
-  const L = (list, v) => (list.find((x) => x[0] === v) || [v, v])[1],
+    filters = g === "ygo"
+      ? `<label>Card type<select data-change="tFilter" data-field="type">${options([["", "Any"], ...YGO_TYPES.map(x => [x, x])], st)}</select></label>
+         ${nonMonster ? "" : `<label>Attribute<select data-change="tFilter" data-field="attribute">${options([["", "Any"], ...YGO_ATTRIBUTES.map(x => [x, x])], U.f.attribute || "")}</select></label>`}
+         <label>${st === "Spell Card" ? "Spell kind" : st === "Trap Card" ? "Trap kind" : "Monster type"}<select data-change="tFilter" data-field="race">${options([["", "Any"], ...kinds.map(x => [x, x])], U.f.race || "")}</select></label>
+         ${nonMonster || link ? "" : `<label>Level / Rank<select data-change="tFilter" data-field="level">${options([["", "Any"], ...Array.from({length:13}, (_, i) => [String(i + 1), String(i + 1)])], U.f.level || "")}</select></label>`}`
+      : `<label>Card type<select data-change="tFilter" data-field="category">${options([["", "Any"], ["Pokemon", "Pokémon"], ["Trainer", "Trainer"], ["Energy", "Energy"]], U.f.category || "")}</select></label>
+         ${pokemonOnly ? `<label>Pokémon type<select data-change="tFilter" data-field="type">${options([["", "Any"], ...PTCG_TYPES.map(x => [x, x])], U.f.type || "")}</select></label>` : ""}
+         <label>Rarity<select data-change="tFilter" data-field="rarity">${options([["", "Any"], ...PTCG_RARITIES.map(x => [x, x])], U.f.rarity || "")}</select></label>
+         ${pokemonOnly ? `<label>Stage<select data-change="tFilter" data-field="stage">${options([["", "Any"], ...PTCG_STAGES], U.f.stage || "")}</select></label>
+         <label>HP at least<select data-change="tFilter" data-field="hp">${options([["", "Any"], ...[60,100,150,200,250,300].map(x => [String(x),String(x)])], U.f.hp || "")}</select></label>` : ""}`,
+    sorts = g === "ygo"
+      ? [["name", "Name"], ["new", "Newest"], ...(!nonMonster ? [["atkDesc", "ATK: high to low"]] : []), ...(!nonMonster && !link ? [["defDesc", "DEF: high to low"], ["levelDesc", "Level: high to low"]] : []), ["priceAsc", "Price: low to high (loaded)"], ["price", "Price: high to low (loaded)"]]
+      : [["new", "Newest"], ["name", "Name"], ["priceAsc", "Price: low to high (loaded)"], ["price", "Price: high to low (loaded)"]];
+  const L = (list, v) => (list.find(x => x[0] === v) || [v, v])[1],
+    formatLabel = id => g === "ygo" ? ygoSearchFormatLabel(formatOf(g, id)) : "Legal in " + formatOf(g, id).name,
     chips = [
-      ...Object.entries(U.f)
-        .filter(([k, v]) => v && !["setName"].includes(k))
-        .map(([k, v]) => [k, k === "set" ? `Set: ${U.f.setName || v}` : k === "format" ? `Legal in ${formatOf(g, v).name}` : k === "hp" ? `HP ${v}+` : k === "level" ? `Level ${v}` : k === "stage" ? (PTCG_STAGES.find((x) => x[0] === v) || [v, v])[1] : k === "category" ? (v === "Pokemon" ? "Pokémon" : v) : k === "archetype" ? `Archetype: ${v}` : v]),
-      ...(U.maxPrice !== "" ? [["maxPrice", `Under ${usd(Number(U.maxPrice))}`]] : []),
+      ...Object.entries(U.f).filter(([k,v]) => v && k !== "setName").map(([k,v]) => [k, k === "set" ? `Set: ${U.f.setName || v}` : k === "format" ? formatLabel(v) : k === "hp" ? `HP ${v}+` : k === "level" ? `Level ${v}` : k === "stage" ? (PTCG_STAGES.find(x => x[0] === v) || [v,v])[1] : k === "category" ? (v === "Pokemon" ? "Pokémon" : v) : k === "archetype" ? `Archetype: ${v}` : v]),
+      ...(U.maxPrice !== "" ? [["maxPrice", `At most ${usd(Number(U.maxPrice))}`]] : []),
       ...(U.own ? [["own", U.own === "owned" ? "Owned" : "Not owned"]] : []),
-      ...(U.sort && U.sort !== (g === "ygo" ? "name" : "new") ? [["sort", `Sort: ${L(sorts, U.sort)}`]] : []),
-    ];
+      ...(U.sort !== defaultSearchSort(g) ? [["sort", `Sort: ${L(sorts, U.sort)}`]] : []),
+    ],
+    count = `${list.length.toLocaleString()} shown · ${loaded.length.toLocaleString()} loaded${Number.isFinite(U.total) ? ` · ${U.total.toLocaleString()} provider matches before local filters` : ""}`;
   return `<div class="page-head"><h1>Search cards</h1>${viewControl(g,"search")}<div class="search-tools"><button class="chip tool-chip" data-act="tCompareOpen" aria-label="Compare cards">${actionIcon("compare")}<span>Compare</span></button><button class="chip tool-chip" data-act="go" data-to="#sets" aria-label="Browse sets">◈ Sets</button><button class="chip tool-chip" data-act="tRandomCard" aria-label="Random card">🎲 Random</button></div></div>
-  <div class="searchbar search-query"><input type="search" data-suggest="${g}" value="${esc(U.q)}" placeholder="${g === "ygo" ? "Card name, e.g. Dark Magician" : "Card name, e.g. Charizard"}" data-input="tQ" data-enter="tSearch" aria-label="Search cards" autocomplete="off"><button class="btn" data-act="tSearch" ${U.busy ? "disabled" : ""}>${U.busy ? "…" : "Search"}</button><button class="ask-launch" data-act="askOpen" aria-label="Ask AI"><span aria-hidden="true">✦</span>Ask</button></div>
-  ${chips.length ? `<div class="filter-chips" aria-label="Active filters">${chips.map(([k, l]) => `<button class="fchip" data-act="tChip" data-field="${esc(k)}" aria-label="Remove ${esc(l)}">${esc(l)} <span aria-hidden="true">×</span></button>`).join("")}<button class="link small" data-act="tClear">Clear all</button></div>` : ""}
-  ${savedSearches(g).length ? `<div class="saved-searches"><span class="muted small">Saved:</span>${savedSearches(g).map((x, i) => `<span class="schip"><button data-act="tSaved" data-i="${i}">${esc(x.label)}</button><button data-act="tSavedDel" data-i="${i}" aria-label="Delete saved search ${esc(x.label)}">×</button></span>`).join("")}</div>` : ""}
-  <details class="filters"><summary>Filters${chips.length ? ` · ${chips.length} on` : ""}</summary><div class="grid2">
+  <div class="searchbar search-query"><input type="search" data-suggest="${g}" value="${esc(U.q)}" placeholder="${g === "ygo" ? "Card name, e.g. Dark Magician" : "Card name, e.g. Charizard"}" data-input="tQ" data-enter="tSearch" aria-label="Search cards" autocomplete="off"><button class="btn" data-act="tSearch">${U.busy ? "Search again" : "Search"}</button><button class="ask-launch" data-act="askOpen" aria-label="Ask AI"><span aria-hidden="true">✦</span>Ask</button></div>
+  ${chips.length ? `<div class="filter-chips" aria-label="Active filters">${chips.map(([k,l]) => `<button class="fchip" data-act="tChip" data-field="${esc(k)}" aria-label="Remove ${esc(l)}">${esc(l)} <span aria-hidden="true">×</span></button>`).join("")}<button class="link small" data-act="tClear">Clear all</button></div>` : ""}
+  ${savedSearches(g).length ? `<div class="saved-searches"><span class="muted small">Saved:</span>${savedSearches(g).map((x,i) => `<span class="schip"><button data-act="tSaved" data-i="${i}">${esc(x.label)}</button><button data-act="tSavedDel" data-i="${i}" aria-label="Delete saved search ${esc(x.label)}">×</button></span>`).join("")}</div>` : ""}
+  <details class="filters" id="tcg-search-filters-${g}" data-detail-key="tcg-search-filters-${g}"><summary>Filters${chips.length ? ` · ${chips.length} on` : ""}</summary><div class="grid2">
     <label>Show<select data-change="tOwnFilter">${options([["", "All cards"], ["owned", "Cards I own"], ["missing", "Cards I don’t own"]], U.own || "")}</select></label>
     ${filters}
-    <label>Legal in<select data-change="tFilter" data-field="format">${options([["", "Any format"], ...formatsOf(g).map((x) => [x.id, x.name])], fid)}</select></label>
+    <label>${g === "ygo" ? "Format / card pool" : "Legal in"}<select data-change="tFilter" data-field="format">${options([["", "Any format"], ...formatsOf(g).map(x => [x.id, g === "ygo" ? ygoSearchFormatLabel(x) : x.name])], fid)}</select></label>
     <label>Sort<select data-change="tSort">${options(sorts, U.sort)}</select></label>
     <label${g === "ygo" ? "" : ' class="span2"'}>Max price $<input type="number" min="0" step="0.5" value="${esc(U.maxPrice)}" placeholder="Any" data-change="tMax"></label>
   </div></details>
-  ${U.error ? `<div class="note warn">${esc(U.error)}</div>` : ""}
-  ${U.f.set ? `<p class="small">Set: <b>${esc(U.f.setName || U.f.set)}</b> <button class="link small" data-act="tFilterClear" data-field="set">✕ clear</button></p>` : ""}
-  ${U.f.archetype ? `<p class="small">Archetype: <b>${esc(U.f.archetype)}</b> <button class="link small" data-act="tFilterClear" data-field="archetype">✕ clear</button></p>` : ""}
-  ${U.busy && !list.length ? skeletonGrid() : ""}
-  ${
-    list.length
-      ? `<div class="row between"><p class="muted small">${U.total ? U.total.toLocaleString() : list.length + (U.more ? "+" : "")} cards · daily market prices</p><button class="link small" data-act="tSaveSearch">☆ Save this search</button></div><div class="card-grid">${list
-          .map((c) => {
-            const own = ownedOf(g, c, m),
-              p = price(c);
-            return `<button class="grid-card" data-act="tCard" data-id="${esc(c.id)}" ${tierAttrs(tcgTier(c))}>${imgTag(c)}${tileBadges(c)}<span class="grid-meta"><span class="ellip">${esc(c.name)}</span><span>${c.brief ? "…" : p === null ? "—" : usd(p)}</span></span>${own ? `<span class="owned-badge">×${own}</span>` : ""}</button>`;
-          })
-          .join("")}</div>${U.more ? `<button class="btn ghost block" data-act="tMore" ${U.busy ? "disabled" : ""}>Load more</button>` : ""}`
-      : U.ran && !U.busy
-        ? empty("No cards found", "Try a shorter name or clear a filter.")
-        : U.busy
-          ? `<p class="muted center pad">Searching…</p>`
-          : `<p class="muted small">Search by name, or leave it blank and pick filters. ${g === "ptcg" ? "Pokémon TCG Pocket (digital) cards are left out." : ""}</p>`
-  }`;
+  ${unverifiedFormat ? `<p class="note warn" role="status">${esc(f.name)} verification unavailable. The source does not document this card pool or its banlist. Results below match your other filters only; no ${esc(f.name)} format filter is applied.</p>` : g === "ygo" && f && !f.ban ? `<p class="foot">${f.pool ? "Card pool only. This format’s banlist is unavailable; membership does not confirm legality." : "Casual includes all cards without a tournament legality check."}</p>` : ""}
+  ${U.error ? `<div class="note warn" role="status">${esc(U.error)}${U.failedPage === 0 ? ' <button class="link small" data-act="tRetrySearch">Retry search</button>' : ""}</div>` : ""}
+  ${U.submitted && U.q.trim() !== U.submitted.q ? `<p class="foot">Results for ${U.submitted.q ? `“${esc(U.submitted.q)}”` : "the submitted filters"}. Press Search to use the edited name.</p>` : ""}
+  ${U.ran ? `<div class="row between"><p class="muted small" role="status">${count}</p><button class="link small" data-act="tSaveSearch">☆ Save this search</button></div>` : ""}
+  ${priceSearchSort(U.sort) ? '<p class="foot">Price order applies to loaded cards only; loading more can change the order. Unknown prices sort last.</p>' : ""}
+  ${pending ? `<p class="note small" role="status">${pending} ${pending === 1 ? "card" : "cards"} ${U.detailsBusy ? "awaiting card details" : "with details unavailable"}; not yet counted as matching the price or legality filters.</p>` : ""}
+  ${unknownLegality ? `<p class="note small">${unknownLegality} ${unknownLegality === 1 ? "card has" : "cards have"} unverified format membership and ${unknownLegality === 1 ? "is" : "are"} excluded from this format filter.</p>` : ""}
+  ${U.busy && !loaded.length ? skeletonGrid() : ""}
+  ${list.length ? `<div class="card-grid">${list.map(c => {
+    const own = ownedOf(g,c,m), p = price(c);
+    return `<button class="grid-card" data-act="tCard" data-id="${esc(c.id)}" ${tierAttrs(tcgTier(c))}>${imgTag(c)}${tileBadges(c)}<span class="grid-meta"><span class="ellip">${esc(c.name)}</span><span>${c.brief ? "Details not loaded" : p === null ? "—" : usd(p)}</span></span>${own ? `<span class="owned-badge">×${own}</span>` : ""}</button>`;
+  }).join("")}</div>` : U.ran && !U.busy ? empty(loaded.length || U.more ? "No matches among loaded cards" : "No cards found", pending ? "Card details are needed to check these filters." : U.more ? "More provider results are available. Load more or clear a filter." : "Try a shorter name or clear a filter.") : U.busy ? '<p class="muted center pad">Searching…</p>' : `<p class="muted small">Search by name, or leave it blank and pick filters. ${g === "ptcg" ? "Pokémon TCG Pocket (digital) cards are left out." : ""}</p>`}
+  ${U.more ? `<button class="btn ghost block" data-act="tMore" ${U.busy ? "disabled" : ""}>${U.failedPage > 0 ? "Retry load more" : U.busy ? "Loading…" : "Load more"}</button>` : ""}
+  ${g === "ptcg" && loaded.some(c => c.brief) && !U.detailsBusy && !U.busy ? '<button class="btn ghost block" data-act="tSearchDetails">Retry details</button>' : ""}`;
 }
 
 /* ---------- card sheet ---------- */
@@ -689,7 +712,7 @@ export function tcgCardSheet(c, sctx = {}) {
   ${panel("overview", tab, overview)}
   ${panel("meta", tab, tcgCardMeta(g, c))}
   ${panel("guide", tab, tcgCardGuide(g, c))}
-  ${panel("versions", tab, versions)}
+  ${panel("versions", tab, `<div class="actions wrap"><button class="btn ghost" data-act="tOtherPrintings" data-id="${esc(c.id)}" data-name="${esc(c.name)}">Find a printing · sort & filter</button></div>` + versions)}
   ${tab === "trade" ? panel("trade", tab, tcgTradePanel(g, c, own, sctx)) : ""}
   ${panel("prices", tab, priceOverview(g,c,sctx,SOURCES[g].buy(c)) + `<details class="market-details"><summary>Market details · sources & finishes</summary>` + prices + `<p class="foot">${esc(p.source || "")}${p.updated ? " · updated " + esc(new Date(p.updated).toLocaleDateString()) : c.fetchedAt ? " · checked " + esc(new Date(c.fetchedAt).toLocaleDateString()) : ""}. Condition prices and stock are on the store’s page.</p>` + `</details>`)}
   ${panel("rulings", tab, rulings)}
@@ -1832,6 +1855,8 @@ export function registerTcg(c) {
   A.setGame = async (t) => {
     const id = t.dataset.game;
     if (!GAMES[id] || id === game()) return;
+    ctx.invalidateMagicSearch?.();
+    invalidateTcgSearch(game());
     await commit((s) => (s.settings.game = id), { rerender: false });
     document.body.dataset.game = id;
     closeSheet();
@@ -1847,118 +1872,115 @@ export function registerTcg(c) {
   A.gameMenu = () =>
     openSheet(`<div class="sheet-head"><h2>Choose a game</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p class="muted small">Each game keeps its own collection, decks and formats.</p>${gameBinders(game())}`, { type: "game" });
 
-  // search
-  const runSearch = async (append = false) => {
-    const G = g(),
-      U = ui(G).search;
-    if (U.busy) return;
-    U.busy = true;
-    U.error = "";
-    U.ran = true;
+  // Each submitted query owns its pages. Live price/ownership presentation never
+  // changes provider order or borrows a new draft name for the next page.
+  const renderSearch = G => { if (game() === G && S.ui.view === "search") render(); };
+  const hydrateSearch = async (G, ids) => {
+    const U = ui(G).search, generation = U.generation;
+    const current = () => U.generation === generation && game() === G;
+    U.detailJobs = (U.detailJobs || 0) + 1;
+    U.detailsBusy = true;
+    try { await ensureMany(G, ids, () => current() && renderSearch(G), false, false, current); }
+    finally { if (current()) { U.detailJobs--; U.detailsBusy = U.detailJobs > 0; renderSearch(G); } }
+  };
+  const runSearch = async (append = false, retry = false) => {
+    const G = g(), U = ui(G).search;
+    if (append && (U.busy || !U.more || !U.submitted)) return;
     if (!append) {
-      U.page = 0;
-      U.results = [];
+      normalizeTcgSearch(G, U);
+      const previous = retry ? U.submitted : null;
+      invalidateTcgSearch(G, true);
+      U.submitted = previous || Object.freeze({ q: U.q.trim(), f: Object.freeze({ ...U.f }), sort: priceSearchSort(U.sort) ? defaultSearchSort(G) : U.sort });
     }
-    render();
+    const generation = U.generation, spec = U.submitted, page = append ? U.page + 1 : 0, request = {};
+    Object.assign(U, { busy: true, error: "", ran: true, request, failedPage: null });
+    const current = () => U.generation === generation && U.request === request && game() === G;
+    renderSearch(G);
     try {
-      const r = await SOURCES[G].search({ q: U.q, ...U.f, sort: U.sort === "price" || U.sort === "priceAsc" ? (G === "ygo" ? "name" : "new") : U.sort, page: U.page });
-      for (const x of r.cards) remember(x);
-      U.results.push(...(append || (U.sort && U.sort !== (G === "ygo" ? "name" : "new")) ? r.cards : rankByName(r.cards, U.q || "")));
-      U.more = r.more;
-      U.total = r.total;
-      if (G === "ptcg") ensureMany(G, r.cards.map((x) => x.id), () => S.ui.view === "search" && game() === G && render());
+      const r = await SOURCES[G].search({ ...spec.f, q: spec.q, sort: spec.sort, page, ...(append && U.providerPaging ? {paging:{...U.providerPaging}} : {}) });
+      if (!current()) return;
+      if (!Array.isArray(r?.cards)) throw Error("The card database returned an invalid result. Please retry.");
+      const seen = new Set(U.results.map(c => String(c.id))), fresh = [];
+      for (const card of r.cards) {
+        if (!card?.id || card.game !== G || seen.has(String(card.id))) continue;
+        seen.add(String(card.id)); fresh.push(remember(card));
+      }
+      U.results.push(...(!append && spec.sort === defaultSearchSort(G) ? rankByName(fresh, spec.q) : fresh));
+      U.page = page; U.more = !!r.more; U.total = Number.isFinite(r.total) ? r.total : null;
+      if (r.paging) U.providerPaging = Object.freeze({ ...r.paging });
+      // A repeated nonempty provider page cannot create an endless Load more loop.
+      if (append && r.cards.length && !fresh.length && U.more) {
+        U.more = false;
+        U.error = "The provider repeated a page. Loaded results are preserved; search again to refresh.";
+      }
+      if (G === "ptcg" && fresh.length) void hydrateSearch(G, fresh.map(c => c.id));
     } catch (e) {
-      U.error = e.message;
+      if (current()) { U.error = e.message || "Search unavailable. Please retry."; U.failedPage = page; }
     } finally {
-      U.busy = false;
-      render();
+      if (current()) { U.busy = false; U.request = null; renderSearch(G); }
     }
   };
-  I.tQ = (t) => (ui().search.q = t.value);
+  I.tQ = t => (ui().search.q = t.value);
   A.tSearch = () => runSearch();
-  A.tMore = async () => {
-    const U=ui().search;if(U.busy)return;
-    const previous=U.page;U.page++;
-    await runSearch(true);
-    if(U.error)U.page=previous; // A retry requests the failed page, never skips cards.
+  A.tRetrySearch = () => runSearch(false, true);
+  A.tMore = () => runSearch(true);
+  A.tSearchDetails = () => {
+    const G = g(), U = ui(G).search;
+    if (U.detailsBusy) return;
+    return hydrateSearch(G, U.results.filter(c => (cardOf(G, c.id) || c).brief).map(c => c.id));
   };
-  C.tFilter = (t) => {
-    const U = ui().search;
-    U.f[t.dataset.field] = t.value;
-    if (t.dataset.field === "type" && g() === "ygo") delete U.f.race;
-    runSearch();
+  C.tFilter = t => {
+    ui().search.f[t.dataset.field] = t.value;
+    return runSearch();
   };
-  A.tFilterClear = (t) => {
+  A.tFilterClear = t => {
     const U = ui().search;
     delete U.f[t.dataset.field];
-    delete U.f.setName;
-    runSearch();
+    if (t.dataset.field === "set") delete U.f.setName;
+    return runSearch();
   };
-  C.tSort = (t) => {
+  C.tSort = t => {
     const U = ui().search;
     U.sort = t.value;
-    // Price sorts the cards already loaded; the others ask the database for a new order.
-    if (t.value === "price" || t.value === "priceAsc") render();
-    else runSearch();
+    normalizeTcgSearch(g(), U);
+    if (priceSearchSort(U.sort) && U.ran) return render();
+    return runSearch();
   };
-  C.tOwnFilter = (t) => {
-    ui().search.own = t.value;
-    render();
+  C.tOwnFilter = t => { const U = ui().search; U.own = t.value; if (!U.ran && U.own) return runSearch(); render(); };
+  const runOrClear = () => {
+    const U = normalizeTcgSearch(g(), ui().search);
+    if (U.q.trim() || Object.values(U.f).some(Boolean) || U.maxPrice !== "" || U.own) return runSearch();
+    invalidateTcgSearch(g(), true); render();
   };
-  A.tChip = (t) => {
-    const U = ui().search,
-      k = t.dataset.field;
+  A.tChip = t => {
+    const U = ui().search, k = t.dataset.field;
     if (k === "maxPrice") U.maxPrice = "";
     else if (k === "own") U.own = "";
-    else if (k === "sort") U.sort = g() === "ygo" ? "name" : "new";
-    else {
-      delete U.f[k];
-      if (k === "set") delete U.f.setName;
-      if (k === "type") delete U.f.race;
-    }
+    else if (k === "sort") U.sort = defaultSearchSort(g());
+    else { delete U.f[k]; if (k === "set") delete U.f.setName; }
     if (k === "maxPrice" || k === "own") return render();
-    if (U.q.trim() || Object.values(U.f).some(Boolean)) runSearch();
-    else {
-      Object.assign(U, { results: [], ran: false, error: "" });
-      render();
-    }
+    return runOrClear();
   };
   A.tClear = () => {
     const U = ui().search;
-    Object.assign(U, { f: {}, maxPrice: "", own: "", sort: g() === "ygo" ? "name" : "new" });
-    if (U.q.trim()) runSearch();
-    else {
-      Object.assign(U, { results: [], ran: false, error: "" });
-      render();
-    }
+    Object.assign(U, { f: {}, maxPrice: "", own: "", sort: defaultSearchSort(g()) });
+    return runOrClear();
   };
   A.tSaveSearch = () => {
-    const G = g(),
-      U = ui(G).search,
-      parts = [U.q.trim() && `“${U.q.trim().slice(0, 24)}”`, ...Object.entries(U.f).filter(([k, v]) => v && k !== "setName").map(([k, v]) => (k === "set" ? U.f.setName || v : k === "format" ? formatOf(G, v).name : v)), U.maxPrice !== "" && `under $${U.maxPrice}`].filter(Boolean),
-      label = parts.join(" · ").slice(0, 60) || "Search";
-    setSavedSearches(G, [{ label, q: U.q, f: structuredClone(U.f), maxPrice: U.maxPrice, own: U.own || "", sort: U.sort }, ...savedSearches(G).filter((x) => x.label !== label)]);
-    toast("Search saved.");
-    render();
+    const G = g(), U = normalizeTcgSearch(G, ui(G).search),
+      parts = [U.q.trim() && `“${U.q.trim().slice(0,24)}”`, ...Object.entries(U.f).filter(([k,v]) => v && k !== "setName").map(([k,v]) => k === "set" ? U.f.setName || v : k === "format" ? formatOf(G,v).name : v), U.maxPrice !== "" && `at most $${U.maxPrice}`].filter(Boolean),
+      label = parts.join(" · ").slice(0,60) || "Search";
+    setSavedSearches(G, [{label, q:U.q, f:{...U.f}, maxPrice:U.maxPrice, own:U.own, sort:U.sort}, ...savedSearches(G).filter(x => x.label !== label)]);
+    toast("Search saved."); render();
   };
-  A.tSaved = (t) => {
-    const G = g(),
-      x = savedSearches(G)[Number(t.dataset.i)],
-      U = ui(G).search;
+  A.tSaved = t => {
+    const G = g(), x = savedSearches(G)[Number(t.dataset.i)], U = ui(G).search;
     if (!x) return;
-    Object.assign(U, { q: x.q || "", f: { ...x.f }, maxPrice: x.maxPrice || "", own: x.own || "", sort: x.sort || U.sort });
-    runSearch();
+    Object.assign(U, { q:x.q || "", f:{...x.f}, maxPrice:x.maxPrice ?? "", own:x.own || "", sort:x.sort || defaultSearchSort(G) });
+    return runSearch();
   };
-  A.tSavedDel = (t) => {
-    const list = savedSearches(g());
-    list.splice(Number(t.dataset.i), 1);
-    setSavedSearches(g(), list);
-    render();
-  };
-  C.tMax = (t) => {
-    ui().search.maxPrice = t.value === "" ? "" : String(Math.max(0, Number(t.value) || 0));
-    render();
-  };
+  A.tSavedDel = t => { const list = savedSearches(g()); list.splice(Number(t.dataset.i),1); setSavedSearches(g(),list); render(); };
+  C.tMax = t => { const U = ui().search; U.maxPrice = t.value; normalizeTcgSearch(g(), U); if (!U.ran && U.maxPrice !== "") return runSearch(); render(); };
 
   // card sheet
   A.tCard = async (t) => {
@@ -1966,7 +1988,7 @@ export function registerTcg(c) {
       id = t.dataset.id,
       lot=t.dataset.entry?gs(G).collection.find(e=>e.id===t.dataset.entry&&String(e.cardId)===String(id)):null,
       setId=t.dataset.setId||(G==="ygo"?lot?.setReleaseId:"")||"",setReleaseUnverified=!!(G==="ygo"&&lot?.setReleaseUnverified),
-      sctx = { type: "tcard", game: G, id, setId, setReleaseUnverified, setVariant:t.dataset.setVariant || lot?.variant || "", priceFinish:t.dataset.setVariant || lot?.variant || "", priceEdition:G==="ygo"&&lot?.printing&&lot?.rarity?lot.printing+"::"+lot.rarity:"",priceYgoEdition:G==="ygo"?lot?.edition||"":"", entryId:lot?.id || "",random: !!t.dataset.random, deckId: t.dataset.deck || (S.ui.view === "tdeck" ? S.ui.tdeckId : null) };
+      sctx = { type: "tcard", game: G, id, setId, setReleaseUnverified, setVariant:t.dataset.setVariant || lot?.variant || "", priceFinish:t.dataset.setVariant || lot?.variant || "", priceEdition:G==="ygo"?(t.dataset.printing||(lot?.printing&&lot?.rarity?lot.printing+"::"+lot.rarity:"")):"",priceYgoEdition:G==="ygo"?(t.dataset.edition||lot?.edition||""):"", entryId:lot?.id || "",random: !!t.dataset.random, deckId: t.dataset.deck || (S.ui.view === "tdeck" ? S.ui.tdeckId : null) };
     const sourceMembership=t.setMembership||(ui(G).set.info?.id===sctx.setId?ui(G).set.cards.find(card=>card.id===id)?.setContext:null);
     if(sourceMembership?.membership==='set-response'&&sourceMembership.game===G&&sourceMembership.cardId===id&&sourceMembership.releaseId===sctx.setId)sctx.setMembership={...sourceMembership};
     const known = cardOf(G, id);
@@ -2389,13 +2411,67 @@ export function registerTcg(c) {
     go("#search");
     runSearch();
   };
-  A.tOtherPrintings = (t) => {
-    const U = ui().search;
-    U.q = t.dataset.name;
-    U.f = {};
-    closeSheet();
-    go("#search");
-    runSearch();
+  let printingLaunch = 0;
+  const exactPrintingName = value => String(value || "").normalize("NFC").trim().replace(/\s+/g, " ").toLocaleLowerCase();
+  A.tOtherPrintings = async (t) => {
+    const G = g(), parentContext = S.ui.sheetCtx, launch = ++printingLaunch,
+      originView = S.ui.view, originRoute = globalThis.location?.hash;
+    const originCurrent = () => launch === printingLaunch && g() === G && S.ui.sheetCtx === parentContext && S.ui.view === originView && globalThis.location?.hash === originRoute;
+    if (!ctx.openPrintingPicker) return toast("Printing browser is still loading. Please try again.");
+    const name = String(t.dataset.name || cardOf(G, t.dataset.id)?.name || "").trim();
+    if (!name) return toast("Choose a card first.");
+    const sameName = card => exactPrintingName(card?.name) === exactPrintingName(name);
+    let card = cardOf(G, t.dataset.id || parentContext?.id), firstPage = null;
+    const unresolvedDetails = new Set();
+    if (!card || !sameName(card)) card = Object.values(cache[G]).find(sameName);
+    try {
+      // Name links in deck/meta views may not have a loaded printing yet. Resolve
+      // one real ID, then reuse that page instead of making a duplicate request.
+      if (!card && G === "ptcg") {
+        firstPage = await SOURCES.ptcg.search({ q: name, sort: "new", page: 0, exactName: true });
+        card = firstPage.cards.find(sameName);
+      }
+      if (!originCurrent()) return;
+      if (!card) return toast("No exact-name printing was returned. Try opening a specific card first.");
+      return ctx.openPrintingPicker({
+        game: G, card, parentContext, catalogue: G === "ygo" ? currentYgoCatalogue() : ui(G).sets.list,
+        projectCard: (source, release, opts) => setContextCard(G, source, release, G === "ygo" ? currentYgoCatalogue() : ui(G).sets.list, opts),
+        loadPage: async ({ cursor, signal }) => {
+          const active = () => !signal.aborted && g() === G && S.ui.view === originView && globalThis.location?.hash === originRoute;
+          if (!active()) throw Error("Printing lookup cancelled.");
+          if (G === "ygo") {
+            const source = await ensureCard(G, card.id);
+            if (!active()) throw Error("Printing lookup cancelled.");
+            if (!currentYgoCatalogue().length) await loadSets(G);
+            if (!active()) throw Error("Printing lookup cancelled.");
+            const catalogue = currentYgoCatalogue();
+            return { cards:[source], catalogue, nextCursor:null, complete:catalogue.length > 0, note:catalogue.length ? "Only releases returned for this card by the source are listed." : "The release catalogue is unavailable. Reload to retry; release identity is not assumed." };
+          }
+          const page = cursor === null ? 0 : Number(cursor);
+          if (!Number.isInteger(page) || page < 0) throw Error("Invalid printing page. Reopen this card to retry.");
+          const result = firstPage && page === 0 ? firstPage : await SOURCES.ptcg.search({ q:name, sort:"new", page, exactName:true });
+          firstPage = null;
+          if (!active()) throw Error("Printing lookup cancelled.");
+          const matches = result.cards.filter(sameName);
+          for (const match of matches) remember(match);
+          await ensureMany(G, matches.map(match => match.id), () => {}, false, false, active);
+          if (!active()) throw Error("Printing lookup cancelled.");
+          const cards = matches.map(match => cardOf(G, match.id) || match);
+          if (page === 0) unresolvedDetails.clear();
+          for (const match of cards) { if (match.brief) unresolvedDetails.add(match.id); else unresolvedDetails.delete(match.id); }
+          return { cards, nextCursor:result.more ? page + 1 : null, complete:!result.more && !unresolvedDetails.size,
+            note:unresolvedDetails.size ? `${unresolvedDetails.size} card details could not be loaded. Reload to retry; no version is assumed.` : "Exact printed names only; differently named Pokémon are excluded." };
+        },
+        onSelect: (selection, parent) => {
+          if (g() !== G || S.ui.sheetCtx !== parent || S.ui.view !== originView || globalThis.location?.hash !== originRoute) return;
+          // New detail context, not an owned-lot mutation. Never carry a prior
+          // release membership or condition/entry identity to another printing.
+          return A.tCard({ dataset:{ id:selection.cardId, setId:selection.releaseId, setVariant:selection.variantKey || "", printing:selection.printingKey || "", edition:selection.edition || "", deck:parent?.deckId || "" }, setMembership:G === "ptcg" ? selection.projectedCard?.setContext : undefined });
+        },
+      });
+    } catch (error) {
+      if (originCurrent()) toast(error.message || "Could not load printings. Please retry.");
+    }
   };
 
   // decks
