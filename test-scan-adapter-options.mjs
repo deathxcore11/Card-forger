@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {conditionValue} from './condition-value.js';
+import {conditionRequest,CONDITION_IDENTITY} from './condition-feed.js';
 
 // Exercise the actual app adapter rather than a copied implementation. This
 // test has no browser, account, collection or outbound provider requests.
@@ -23,11 +24,11 @@ console.log('PASS: actual scanner app adapter forwards identity-only TCG options
 
 // The real shared condition-fetch entry point must not spend provider capacity
 // on a saved scanner release it cannot distinguish. No network is used here.
-const fetchSource=source.slice(source.indexOf('function fetchConditionValue('),source.indexOf('\nlet magicPriceRefresh='));
+const fetchSource=source.slice(source.indexOf('function conditionCardFor('),source.indexOf('\nlet magicPriceRefresh='));
 let requested=0,projection={setContext:{status:'resolved',printings:[{code:'LOB-EN005',rarity:'Ultra Rare'}]}};
 const single={id:'46986414',sets:[{code:'LOB-EN005',rarity:'Ultra Rare',name:'Original'}]};
 let raw=single;
-const fetchContext={T:{cardOf:()=>raw,setContextCard:()=>projection,currentYgoCatalogue:()=>[]},loadConditionQuotes:()=>{requested++;return Promise.resolve({changed:false});}};
+const fetchContext={conditionWorkspaceRevision:0,navigator:{onLine:true},conditionValue,conditionRequest,CONDITION_IDENTITY,conditionScheduler:{request:(_key,run)=>Promise.resolve(run())},T:{cardOf:()=>raw,setContextCard:()=>projection,currentYgoCatalogue:()=>[]},loadConditionQuotes:()=>{requested++;return Promise.resolve({changed:false});}};
 vm.createContext(fetchContext);vm.runInContext(fetchSource,fetchContext);
 const entry={printing:'LOB-EN005',rarity:'Ultra Rare',edition:'unlimited',condition:'Lightly Played'};
 fetchContext.fetchConditionValue(single,{...entry,setReleaseUnverified:true},'ygo');assert.equal(requested,0);

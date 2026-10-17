@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import {blank, S} from './store.js';
+import {blank, S, slim} from './store.js';
 import {validateWorkspace} from './confidence.js';
 import {inventory, gaps, validateDeck, effectiveCopyLimit, sumQty} from './core.js';
 import {collectionList} from './views.js';
@@ -11,13 +11,14 @@ import {detailIdentity,captureDetailState,restoreDetailState} from './pricing-pr
 import {isEmptyWorkspace} from './cloud.js';
 import {formatOf,hasCommander} from './formats.js';
 import {writeRecords, readRecord} from './storage.js';
+import {changedConditionLots} from './condition-refresh-scheduler.js';
 const memory = new Map();
 globalThis.localStorage = {getItem:k => memory.get(k) ?? null, setItem:(k,v) => memory.set(k,v), removeItem:k => memory.delete(k)};
 const source = fs.readFileSync('app.js','utf8');
 const segment = (a,b) => source.slice(source.indexOf(a),source.indexOf(b));
 const fresh = () => ({...blank(),collection:[{id:'a',name:'Sol Ring',qty:1,finish:'nonfoil'},{id:'b',name:'Island',qty:1,finish:'nonfoil'}]});
 let fail = false;
-const ctx = {S:{state:fresh()},structuredClone,normalize:validateWorkspace,stripCache:s=>s,STORAGE:'safety-only',RECOVERY:'safety-recovery',writeRecords:async r=>{if(fail){fail=false;throw Error('disk full');}return writeRecords(r);},afterLocalSave(){},saveCatalogSoon(){},render(){},refreshSheet(){},haptic(){},flyToCollection(){},toast(){},autoEnrich(){},setTimeout(){},lastActTarget:null,A:{},blank,meta:()=>null,go(){},uid:()=>''};
+const ctx = {S:{state:fresh()},slim,changedConditionLots,refreshChangedConditions(){},structuredClone,normalize:validateWorkspace,stripCache:s=>s,STORAGE:'safety-only',RECOVERY:'safety-recovery',writeRecords:async r=>{if(fail){fail=false;throw Error('disk full');}return writeRecords(r);},afterLocalSave(){},saveCatalogSoon(){},render(){},refreshSheet(){},haptic(){},flyToCollection(){},toast(){},autoEnrich(){},setTimeout(){},lastActTarget:null,A:{},blank,meta:()=>null,go(){},uid:()=>''};
 vm.createContext(ctx);
 vm.runInContext(segment('let lastUndo = null;','\nconst safely =')+'\n'+segment('A.qty = async','\nI.collSearch ='),ctx);
 await Promise.all(['a','b'].map(id=>ctx.A.qty({dataset:{id,delta:'1'}})));
@@ -118,7 +119,7 @@ function replacementHarness() {
   let release,started,observed,storageQueue=Promise.resolve(),writes=0;
   const gate=new Promise(r=>{release=r;}),firstWrite=new Promise(r=>{started=r;}),replacementQueued=new Promise(r=>{observed=r;});
   const events=[];
-  const c={S:{state:initial,catalog:{}},structuredClone,normalize:validateWorkspace,stripCache:s=>s,STORAGE:'queue-state',RECOVERY:'queue-recovery',blank,A:{},C:{},sumQty,isEmptyWorkspace,
+  const c={S:{state:initial,catalog:{}},changedConditionLots,refreshChangedConditions(){},structuredClone,normalize:validateWorkspace,stripCache:s=>s,STORAGE:'queue-state',RECOVERY:'queue-recovery',blank,A:{},C:{},sumQty,isEmptyWorkspace,
     writeRecords(records){const snapshots=structuredClone(records);const transaction=async()=>{const n=++writes;if(n===1){started();await gate;}if(c.failAt===n)throw Error('disk full');for(const [k,v] of snapshots)disk.set(k,v);};const result=storageQueue.then(transaction,transaction);storageQueue=result.catch(()=>{});return result;},
     readRecord:async k=>structuredClone(disk.get(k)),readBackup:async()=>({next:c.imported,cache:{}}),slim:x=>x,
     afterLocalSave(){events.push('save-notify');},saveCatalogSoon(){},render(){},refreshSheet(){},haptic(){},flyToCollection(){},toast(text){events.push(text);},autoEnrich(){},setTimeout(){},lastActTarget:null,

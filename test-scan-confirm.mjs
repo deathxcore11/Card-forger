@@ -34,7 +34,7 @@ for(const g of ['mtg','ptcg','ygo']){
  const setup=()=>{S.ui.scan={mode:'live',camOn:true,cands:[cand],read:{name:'Demo card',code:''},confirm:{i:0,qty:1,condition:'Near Mint',lang:'en',finish:{mtg:'nonfoil',ptcg:'normal',ygo:'unlimited'}[g],price:1.5,saving:false,error:''}};};
  setup();
  const html=scanView(g,g);
- assert.match(html,/id="camSlot"/);assert.match(html,/Confirm scanned card/);assert.match(html,/Add to collection/);assert.doesNotMatch(html,/sc-compare|Which one is it/);assert.match(html,/Reference price/);assert.match(html,/Scanned card language/);assert.doesNotMatch(html,/Defaults for scanned cards|Capture automatically|Scanned cards/,'one set of controls while confirming');
+ assert.match(html,/id="camSlot"/);assert.match(html,/Confirm scanned card/);assert.match(html,/Add to collection/);assert.doesNotMatch(html,/sc-compare|Which one is it/);assert.match(html,/Estimated price/);assert.match(html,/Scanned card language/);assert.doesNotMatch(html,/Defaults for scanned cards|Capture automatically|Scanned cards/,'one set of controls while confirming');
  assert.match(scanConfirmation(g,S.ui.scan,{}),/Possible match/);
  A.scanConfirmQty({dataset:{d:'-1'}});assert.equal(S.ui.scan.confirm.qty,1);
  A.scanConfirmQty({dataset:{d:'1'}});A.scanConfirmQty({dataset:{d:'1'}});A.scanConfirmCondition({dataset:{condition:'Lightly Played'}});C.scanConfirmLanguage({value:'ja'});

@@ -589,7 +589,7 @@ export function scanConfirmation(g, st, prefs) {
   <button class="btn ghost small" data-act="scanChangePrinting" ${q.saving||q.pickerOpening||!chosen?'disabled':''}>${q.pickerOpening?'Loading printings…':'Change printing'}</button>
   <div class="scan-confirm-controls"><label>Finish / edition<select data-change="scanConfirmFinish" aria-label="Scanned card finish" ${q.saving||!chosen?'disabled':''}><option value="" ${!q.finish?'selected':''}>Choose finish</option>${fs.map(f=>`<option value="${esc(f)}" ${q.finish===f?'selected':''}>${esc(finishLabel(g,candidate,f))}</option>`).join('')}</select></label><span class="ss-qty"><button data-act="scanConfirmQty" data-d="-1" aria-label="Fewer copies" ${q.saving||q.qty<=1?'disabled':''}>−</button><output aria-label="Copies to save">${q.qty}</output><button data-act="scanConfirmQty" data-d="1" aria-label="More copies" ${q.saving?'disabled':''}>＋</button></span></div>
   ${g==='ptcg'&&!fs.length?'<p class="scan-confirm-error">Exact finish unavailable for this source version. Choose another verified printing before adding.</p>':''}
-  <details class="scan-review-more" ${q.detailsOpen?'open':''}><summary>${esc(label(CONDITIONS,q.condition))} · ${esc(label(LANGS,q.lang))} · ${q.price==null?'Price unavailable':'Reference price '+money(q.price)}</summary><div class="scan-confirm-conditions" role="group" aria-label="Card condition">${CONDITIONS.map(([v,l])=>`<button data-act="scanConfirmCondition" data-condition="${esc(v)}" aria-label="${esc(v)}" aria-pressed="${q.condition===v}">${l}</button>`).join('')}</div><label>Language<select data-change="scanConfirmLanguage" aria-label="Scanned card language">${LANGS.map(([v,l])=>`<option value="${esc(v)}" ${q.lang===v?'selected':''}>${esc(LANG_NAME[v]||l)}</option>`).join('')}</select></label></details>
+  <details class="scan-review-more" ${q.detailsOpen?'open':''}><summary>${esc(label(CONDITIONS,q.condition))} · ${esc(label(LANGS,q.lang))} · ${q.price==null?(q.priceStatus==='deferred'?'Price lookup deferred':'Price unavailable'):'Estimated price '+money(q.price)}</summary><div class="scan-confirm-conditions" role="group" aria-label="Card condition">${CONDITIONS.map(([v,l])=>`<button data-act="scanConfirmCondition" data-condition="${esc(v)}" aria-label="${esc(v)}" aria-pressed="${q.condition===v}">${l}</button>`).join('')}</div><label>Language<select data-change="scanConfirmLanguage" aria-label="Scanned card language">${LANGS.map(([v,l])=>`<option value="${esc(v)}" ${q.lang===v?'selected':''}>${esc(LANG_NAME[v]||l)}</option>`).join('')}</select></label></details>
   ${q.error?`<p class="scan-confirm-error" role="alert">${esc(q.error)}</p>`:''}<div class="scan-confirm-actions"><button class="btn ghost" data-act="scanRetry" ${q.saving?'disabled':''}>Scan again</button><button class="btn" data-act="scanConfirm" ${q.saving||!chosen||!q.finish?'disabled':''}>${q.saving?'Saving…':'Add to collection'}</button></div>${isBatch?`<button class="link small" data-act="scanBatchDiscard">Remove this capture</button>`:''}</section>`;
 }
 
@@ -599,6 +599,29 @@ export function registerScanner(ctx) {
   const prefs = () => loadPrefs(game());
   const priceFor=(G,c,finish,selection={})=>ctx.priceOf(G,c,finish,{condition:selection.condition||'Near Mint',language:String(selection.lang||selection.language||'en').toLowerCase().replace('_','-')});
   const refreshReviewPrice=()=>{const q=s().confirm,c=s().cands?.[q?.i??0];if(q)q.price=c&&q.finish?priceFor(q.game||game(),c,q.finish,q):null;};
+  // Only explicit review actions request a quote. Camera frames, OCR and ordinary
+  // renders remain cache-only. A replacement capture or changed selection retires
+  // this callback without reopening a review or touching the next card.
+  const requestReviewPrice=()=>{
+    const st=s(),q=st.confirm,c=st.cands?.[q?.i??0];
+    if(!q||q.saving||q.i<0||!c||!q.finish||typeof ctx.requestConditionPrice!=='function')return;
+    q.priceReviewRequested=true;
+    const G=q.game||game(),sheet=S.ui.sheetCtx,token=Symbol('condition-review');
+    const identity=()=>JSON.stringify([q.batchId||'',q.captureRevision||'',q.i,q.game||game(),c.id,c.card?.id,c.print||'',c.setReleaseId||'',!!c.setReleaseUnverified,q.finish,q.condition,q.lang]);
+    const selected=identity(),captureId=String(q.batchId||''),revision=String(q.captureRevision||'');
+    const current=()=>s()===st&&st.confirm===q&&q.priceRequest===token&&st.cands?.[q.i]===c&&
+      S.ui.view==='scan'&&S.ui.sheetCtx===sheet&&!q.saving&&!q.pickerOpening&&identity()===selected&&
+      (!captureId||loadBatch().some(row=>row.id===captureId&&String(row.captureRevision||'')===revision));
+    q.priceRequest=token;
+    const selection={condition:q.condition||'Near Mint',language:String(q.lang||'en').toLowerCase().replace('_','-')};
+    Promise.resolve(ctx.requestConditionPrice(G,c,q.finish,selection,result=>{
+      if(!current())return;
+      const price=priceFor(G,c,q.finish,q),status=result.status,reason=result.reason||'';
+      const changed=q.price!==price||q.priceStatus!==status||q.priceReason!==reason;
+      Object.assign(q,{price,priceStatus:status,priceReason:reason});if(changed)render();
+    },current)).catch(()=>{});
+  };
+
   // A reload cannot resume an in-memory OCR promise, but the image is retained for retry.
   const interrupted=loadBatch();
   if(interrupted.some(x=>['captured','reading'].includes(x.status)))saveBatch(interrupted.map(x=>['captured','reading'].includes(x.status)?{...x,status:'unresolved',reason:'Reading interrupted · retry'}:x));
@@ -1166,17 +1189,17 @@ export function registerScanner(ctx) {
     if(s().busy){s().reviewRequested=entry.id;setStatus('Finishing this read, then opening review.');return;}
     const cands=entry.cands||[],i=Number.isInteger(entry.selectedIndex)?entry.selectedIndex:(cands.length===1?0:-1),c=cands[i],G=entry.game;
     Object.assign(s(),{shot:entry.originalShot||entry.shot,cands,read:entry.read||{},confirm:{batchId:entry.id,captureRevision:entry.captureRevision||'',game:G,i,qty:entry.qty||1,condition:entry.condition||'Near Mint',lang:entry.lang||'en',finish:entry.finish||'',price:c&&entry.finish?priceFor(G,c,entry.finish,entry):null,saving:false,error:'',unresolved:!cands.length}});
-    render();
+    render();requestReviewPrice();
   };
   A.scanBatchReview=t=>{if(!s().batchSaving&&!s().confirm?.saving)openBatchReview(t?.dataset?.id||'');};
   A.scanConfirmQty=t=>{const q=s().confirm;if(q&&!q.saving){q.qty=Math.min(999,Math.max(1,q.qty+Number(t.dataset.d)));persistReview();render();}};
-  A.scanConfirmCondition=t=>{const q=s().confirm;if(q&&!q.saving&&CONDITIONS.some(([v])=>v===t.dataset.condition)){q.condition=t.dataset.condition;q.detailsOpen=true;refreshReviewPrice();persistReview();render();}};
-  C.scanConfirmLanguage=t=>{const q=s().confirm;if(q&&!q.saving&&LANGS.some(([v])=>v===t.value)){q.lang=t.value;q.detailsOpen=true;refreshReviewPrice();persistReview();render();}};
-  C.scanConfirmFinish=t=>{const q=s().confirm,c=s().cands?.[q?.i??0],G=q?.game||game();if(q&&!q.saving&&c&&finishesFor(G,c).includes(t.value)){q.finish=t.value;q.price=priceFor(G,c,q.finish,q);persistReview();render();}};
+  A.scanConfirmCondition=t=>{const q=s().confirm;if(q&&!q.saving&&CONDITIONS.some(([v])=>v===t.dataset.condition)){q.condition=t.dataset.condition;q.detailsOpen=true;refreshReviewPrice();persistReview();render();requestReviewPrice();}};
+  C.scanConfirmLanguage=t=>{const q=s().confirm;if(q&&!q.saving&&LANGS.some(([v])=>v===t.value)){q.lang=t.value;q.detailsOpen=true;refreshReviewPrice();persistReview();render();requestReviewPrice();}};
+  C.scanConfirmFinish=t=>{const q=s().confirm,c=s().cands?.[q?.i??0],G=q?.game||game();if(q&&!q.saving&&c&&finishesFor(G,c).includes(t.value)){q.finish=t.value;q.price=priceFor(G,c,q.finish,q);persistReview();render();requestReviewPrice();}};
   A.scanEditMatch=()=>{const q=s().confirm;if(q&&!q.saving){q.editing=!q.editing;render();}};
   A.scanChoose=t=>{
     const q=s().confirm,i=Number(t.dataset.i),c=s().cands?.[i],G=q?.game||game();
-    if(q&&!q.saving&&c){q.i=i;q.editing=false;const entry=q.batchId&&loadBatch().find(x=>x.id===q.batchId);q.finish=resolveScanFinish(G,c,entry?.defaultsByGame?.[G]||entry?.defaults||loadPrefs(G),s().read);q.price=q.finish?priceFor(G,c,q.finish,q):null;persistReview();render();}
+    if(q&&!q.saving&&c){q.i=i;q.editing=false;const entry=q.batchId&&loadBatch().find(x=>x.id===q.batchId);q.finish=resolveScanFinish(G,c,entry?.defaultsByGame?.[G]||entry?.defaults||loadPrefs(G),s().read);q.price=q.finish?priceFor(G,c,q.finish,q):null;persistReview();render();requestReviewPrice();}
   };
   A.scanChangePrinting=async()=>{
     const st=s(),q=st.confirm,c=st.cands?.[q?.i??0],G=q?.game||game();
@@ -1196,7 +1219,7 @@ export function registerScanner(ctx) {
           st.cands=[candidate];Object.assign(q,{i:0,finish:result.finish,printingConfirmed:true,reviewSource:'printing-picker',pickerOpening:false,error:'',unresolved:false});
           q.price=q.finish?priceFor(G,candidate,q.finish,q):null;
           if(captureId)updatePending(captureId,{cands:st.cands,selectedIndex:0,finish:q.finish,status:'review',printingVerified:false,printingConfirmed:true,reviewSource:'printing-picker',printingSelection:result.selection,reason:'Printing selected by you · review before adding'});
-          render();return true;
+          render();requestReviewPrice();return true;
         },
         onCancel:()=>{if(!isCurrent())return false;q.pickerOpening=false;render();return true;},
       });
@@ -1509,7 +1532,7 @@ export function registerScanner(ctx) {
       const q=st.confirm,c=st.cands?.[q.i??0],reviewGame=q.game||G;q.presented=true;
       if((c?.localReference||c?.detailsOnly) && q.detailStartedFor!==JSON.stringify([c.id,c.print,c.setReleaseId||c.releaseName])){
         q.detailStartedFor=JSON.stringify([c.id,c.print,c.setReleaseId||c.releaseName]);
-        hydrateCandidate(reviewGame,c).then(full=>{if(s()===st&&st.confirm===q&&st.cands[q.i??0]===c){st.cands[q.i??0]=full;const fs=finishesFor(reviewGame,full);if(q.finish&&!fs.includes(q.finish))q.finish="";q.price=q.finish?priceFor(reviewGame,full,q.finish,q):null;render();}}).catch(()=>{});
+        hydrateCandidate(reviewGame,c).then(full=>{if(s()===st&&st.confirm===q&&st.cands[q.i??0]===c){st.cands[q.i??0]=full;const fs=finishesFor(reviewGame,full);if(q.finish&&!fs.includes(q.finish))q.finish="";q.price=q.finish?priceFor(reviewGame,full,q.finish,q):null;render();if(q.priceReviewRequested)requestReviewPrice();}}).catch(()=>{});
       }
     }
     if (s().camOn) attach();

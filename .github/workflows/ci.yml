@@ -99,7 +99,7 @@ jobs:
           path: test-results/
   scanner-adversarial-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -111,6 +111,7 @@ jobs:
         run: |
           node tests/scanner-adversarial-browser.mjs --validate-fixtures
           node tests/scanner-printing-browser.mjs --validate-fixtures
+          node tests/condition-refresh-browser.mjs --validate-fixtures
       - name: Install pinned browser test runner
         run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
       - name: Install test browser
@@ -120,6 +121,9 @@ jobs:
       - name: Test scanner review through shared all-game printing picker
         if: ${{ !cancelled() }}
         run: node tests/scanner-printing-browser.mjs
+      - name: Test bounded exact-condition refresh and large collections
+        if: ${{ !cancelled() }}
+        run: node tests/condition-refresh-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
