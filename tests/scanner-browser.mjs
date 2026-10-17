@@ -57,7 +57,7 @@ try{
    await page.locator('#sheet[open] [data-act="closeSheet"]').first().click();
    // Playwright 1.62 polls predicate return values synchronously. Import once;
    // never return a truthy Promise from the polling predicate itself.
-   await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js'),{S}=await import('/store.js');window.__scannerTestRead={loadBatch,state:()=>S.ui.scan};});
+   await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js'),{S}=await import('/store.js');window.__scannerTestRead={loadBatch,state:()=>S.ui.scan,collection:g=>(g==='mtg'?S.state:S.state.tcg[g]).collection};});
    await page.getByRole('button',{name:'Photo',exact:true}).click();
    const upload=page.locator('input[data-change="scanFile"]').last();
    await upload.setInputFiles({name:ref.g+(ref.g==='ptcg'?'.webp':'.jpg'),mimeType:ref.mime,buffer:ref.bytes});
@@ -206,22 +206,49 @@ try{
    assert(shellTray.y+shellTray.height<=shellNav.y,'production app shell keeps the complete live tray above navigation');
    await page.screenshot({path:`test-results/scanner-${ref.g}-live.png`,fullPage:false});
    const retainedBatch=await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js');return loadBatch().map(x=>x.id);});
-   for(const viewport of [{width:320,height:568},{width:700,height:500},{width:844,height:390},{width:1024,height:600}]){
-    await page.setViewportSize(viewport);await page.evaluate(()=>window.scrollTo(0,0));
-    const layout=await page.evaluate(()=>{
-     const box=s=>{const r=document.querySelector(s).getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height};};
-     const nav=document.querySelector('.bottom-nav'),tray=box('.scan-batch-tray'),camera=box('.cam-wrap.immersive'),shutter=document.querySelector('#scanCaptureBtn'),s=shutter.getBoundingClientRect();
-     const hit=document.elementFromPoint(s.left+s.width/2,s.top+s.height/2);
-     return {tray,camera,clearBottom:getComputedStyle(nav).display==='none'?innerHeight:nav.getBoundingClientRect().top,shutterClear:hit===shutter||shutter.contains(hit),overflow:document.documentElement.scrollWidth>innerWidth};
-    });
-    assert(layout.tray.top>=0&&layout.tray.bottom<=layout.clearBottom,`real shell tray clears navigation at ${JSON.stringify(viewport)}: ${JSON.stringify(layout)}`);
-    assert(layout.camera.height>=100&&layout.shutterClear&&!layout.overflow,`real shell keeps camera and capture usable at ${JSON.stringify(viewport)}: ${JSON.stringify(layout)}`);
-    assert(await page.locator('#scanVideo').evaluate(v=>v.srcObject===window.__cameraStream&&v.srcObject.getTracks()[0].readyState==='live'),'fold/landscape resize preserves camera stream');
-    assert(await page.evaluate(()=>window.__cameraCanvas.toDataURL()===window.__cameraPixels),'DOM resize cannot reframe the synthetic physical camera pixels');
-    assert.deepEqual(await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js');return loadBatch().map(x=>x.id);}),retainedBatch,'fold/landscape resize preserves each captured card');
-    if(viewport.width===844)await page.screenshot({path:`test-results/scanner-${ref.g}-landscape.png`,fullPage:false});
+   // Neutralize only the original expiry timer, then expose the real saved toast
+   // as an active fixture for every measurement. Passing with an expired/hidden
+   // toast is forbidden; no markup, event handler, Undo state or OCR is replaced.
+   await page.waitForFunction(()=>{const t=document.querySelector('#toast');return t&&!t.classList.contains('show')&&!t.classList.contains('has-action');},null,{timeout:10000});
+   assert.equal(await page.locator('#toast .toast-undo[data-act="undo"]').count(),1,'the actual scan-save toast retains its real Undo action');
+   const originalToast=await page.evaluate(()=>{const t=document.querySelector('#toast'),before={classes:t.className,html:t.innerHTML};t.classList.add('show','has-action');return before;});
+   try{
+    for(const viewport of [{width:320,height:568},{width:700,height:500},{width:844,height:390},{width:1024,height:600}]){
+     await page.setViewportSize(viewport);await page.evaluate(()=>window.scrollTo(0,0));
+     await page.evaluate(async()=>{await Promise.all(document.querySelector('#toast').getAnimations().map(a=>a.finished.catch(()=>{})));});
+     const layout=await page.evaluate(()=>{
+      const box=n=>{const r=n.getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height};};
+      const describe=n=>n?{tag:n.tagName,id:n.id,classes:n.className}:null;
+      const hit=n=>{const r=box(n),target=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {clear:target===n||n.contains(target),target:describe(target)};};
+      const nav=document.querySelector('.bottom-nav'),tray=box(document.querySelector('.scan-batch-tray')),camera=box(document.querySelector('.cam-wrap.immersive'));
+      const shutter=document.querySelector('#scanCaptureBtn'),toast=document.querySelector('#toast'),undo=toast.querySelector('.toast-undo[data-act="undo"]');
+      const clearBottom=getComputedStyle(nav).display==='none'?innerHeight:nav.getBoundingClientRect().top,t=box(toast),s=box(shutter),u=undo&&box(undo),css=getComputedStyle(toast);
+      const disjoint=(a,b)=>a.right<=b.left||a.left>=b.right||a.bottom<=b.top||a.top>=b.bottom;
+      const inView=r=>!!r&&r.width>0&&r.height>0&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=clearBottom;
+      const shutterHit=hit(shutter),undoHit=undo?hit(undo):{clear:false,target:null};
+      return {tray,camera,shutter:s,toast:t,undo:u,clearBottom,shutterHit,undoHit,shutterClear:shutterHit.clear,overflow:document.documentElement.scrollWidth>innerWidth,
+       toastActive:toast.classList.contains('show')&&toast.classList.contains('has-action')&&css.display!=='none'&&css.visibility==='visible'&&Number(css.opacity)>0,
+       toastOutside:[camera,tray,s].every(r=>disjoint(t,r)),controlsInView:inView(t)&&inView(s)&&inView(u),undoEnabled:!!undo&&!undo.disabled};
+     });
+     assert(layout.tray.top>=0&&layout.tray.bottom<=layout.clearBottom,`real shell tray clears navigation at ${JSON.stringify(viewport)}: ${JSON.stringify(layout)}`);
+     assert(layout.camera.height>=100&&layout.shutterClear&&!layout.overflow,`real shell keeps camera and capture usable at ${JSON.stringify(viewport)}: ${JSON.stringify(layout)}`);
+     assert(layout.toastActive&&layout.toastOutside&&layout.controlsInView&&layout.undoEnabled&&layout.undoHit.clear,`active Undo toast clears camera/tray/shutter and both controls remain reachable at ${JSON.stringify(viewport)}: ${JSON.stringify(layout)}`);
+     assert(await page.locator('#scanVideo').evaluate(v=>v.srcObject===window.__cameraStream&&v.srcObject.getTracks()[0].readyState==='live'),'fold/landscape resize preserves camera stream');
+     assert(await page.evaluate(()=>window.__cameraCanvas.toDataURL()===window.__cameraPixels),'DOM resize cannot reframe the synthetic physical camera pixels');
+     assert.deepEqual(await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js');return loadBatch().map(x=>x.id);}),retainedBatch,'fold/landscape resize preserves each captured card');
+     if(viewport.width===844)await page.screenshot({path:`test-results/scanner-${ref.g}-landscape.png`,fullPage:false});
+    }
+    assert.equal(await page.evaluate(g=>window.__scannerTestRead.collection(g).length,ref.g),1,'layout checks do not change the saved collection');
+    await page.locator('#toast.show.has-action').getByRole('button',{name:'Undo',exact:true}).click();
+    await page.waitForFunction(g=>window.__scannerTestRead.collection(g).length===0,ref.g);
+    await page.waitForFunction(()=>{const v=document.querySelector('#scanVideo');return v?.isConnected&&v.srcObject===window.__cameraStream&&!v.paused&&v.videoWidth>0&&v.srcObject.getTracks()[0]?.readyState==='live';});
+    assert.deepEqual(await page.evaluate(()=>window.__scannerTestRead.loadBatch().map(x=>x.id)),retainedBatch,'real Undo removes the saved lot, never the pending live captures');
+    assert.match(await page.locator('#toast').innerText(),/^Undone:/,'the real Undo handler confirms its collection change');
+   }finally{
+    // Do not overwrite the production handler's newer "Undone" notification.
+    await page.evaluate(before=>{const t=document.querySelector('#toast');if(t?.innerHTML===before.html)t.className=before.classes;},originalToast);
    }
-   console.log(`PASS: ${ref.game}: off-centre rotated reference MediaStream → automatic boundary + perspective warp → queued recognition → explicit review → playback continues → dismiss retains the same active camera track.`);
+   console.log(`PASS: ${ref.game}: off-centre rotated reference MediaStream → automatic boundary + perspective warp → queued recognition → explicit review → playback continues → active Undo toast clears all resized controls → real Undo retains pending captures and the same camera track.`);
   }catch(e){
    console.error(`FAIL ${ref.game}: ${e.stack}`);console.error('Scan save diagnostic:',await page.evaluate(async()=>{const {S}=await import('/store.js');return S.ui.scan.confirm?.errorDetail||'No save exception';}));console.error((await page.locator('main').innerText()).slice(0,6000));
    console.error('Final capture diagnostic:',await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js'),{S}=await import('/store.js');return {busy:S.ui.scan.busy,error:S.ui.scan.recognitionError,tried:S.ui.scan.tried,read:S.ui.scan.read,batch:loadBatch().map(({id,status,read,error,cands})=>({id,status,read,error,candidates:(cands||[]).map(({id,name,exact})=>({id,name,exact}))}))};}));

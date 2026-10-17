@@ -31,6 +31,7 @@
     <button class="icon" data-act="menu" aria-label="Settings">⚙</button>
   </header>
   <main id="content" role="tabpanel" aria-labelledby="game-tab-mtg"><p class="muted center pad">Loading your cards…</p></main>
+  <div id="toast" role="status" aria-live="polite"></div>
   <nav class="bottom-nav" aria-label="Main">
     <button data-act="go" data-to="#home" data-nav="home"><span aria-hidden="true">⌂</span>Home</button>
     <button data-act="go" data-to="#search" data-nav="search"><span aria-hidden="true">⌕</span>Search</button>
@@ -40,7 +41,6 @@
   </nav>
 </div>
 <dialog id="sheet" class="sheet" aria-label="Details"><div id="sheetBody"></div></dialog>
-<div id="toast" role="status" aria-live="polite"></div>
 <!-- modulepreload:start -->
 <link rel="modulepreload" href="adapt.js">
 <link rel="modulepreload" href="ai-ask.js">

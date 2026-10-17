@@ -3578,6 +3578,23 @@ body[data-view="scan"] #app:has(.scan-workspace.is-live) {
   padding-bottom:var(--scan-nav-space); overflow:hidden;
 }
 body[data-view="scan"] #app:has(.scan-workspace.is-live) > .topbar { flex:none; }
+/* A saved-card Undo message must not cover the shutter or the next capture.
+   In live scanning it owns a real row; elsewhere the same toast stays fixed. */
+body[data-view="scan"] #app:has(.scan-workspace.is-live) > #toast {
+  position:relative; left:auto; bottom:auto; transform:none; opacity:1;
+  display:none; flex:none; align-self:center; width:calc(100% - 2 * var(--gutter));
+  max-width:720px; margin:0 auto 8px; padding:6px 12px; transition:none;
+}
+body[data-view="scan"] #app:has(.scan-workspace.is-live) > #toast.show { display:flex; }
+body[data-view="scan"] #app:has(.scan-workspace.is-live) > #toast > span { flex:1; min-width:0; overflow-wrap:anywhere; max-height:72px; overflow:auto; }
+body[data-view="scan"] #app:has(.scan-workspace.is-live) > #toast .toast-undo { min-height:44px; }
+@media (min-width:700px) and (max-width:899px) and (max-height:450px) {
+  /* Landscape phones retain all three game controls and Settings in one row. */
+  body[data-view="scan"] #app:has(.scan-workspace.is-live) > .topbar { grid-template-columns:minmax(0,1fr) auto; }
+  body[data-view="scan"] #app:has(.scan-workspace.is-live) > .topbar > :is(.brand,.save-status) { display:none; }
+  body[data-view="scan"] #app:has(.scan-workspace.is-live) > .topbar > .game-tabs { grid-column:1; grid-row:1; width:100%; }
+  body[data-view="scan"] #app:has(.scan-workspace.is-live) > .topbar > button.icon { grid-column:2; grid-row:1; }
+}
 body[data-view="scan"] #app:has(.scan-workspace.is-live) > #content {
   display:flex; flex-direction:column; flex:1 1 0; min-height:0;
   width:100%; padding-top:10px; padding-bottom:8px; overflow:hidden;
