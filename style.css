@@ -2750,9 +2750,10 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .game-choice-icon .ico.game-mark { width: 24px; height: 24px; color: #fff; }
 
 /* Direction-aware page moves: forward pages arrive from the right, going back slides the page
-   you came from in from the left, already at the spot you left it (no re-dealing the grid). */
-@keyframes page-fwd { from { opacity: 0; transform: translateX(22px) scale(.995); } to { opacity: 1; transform: none; } }
-@keyframes page-back { from { opacity: 0; transform: translateX(-22px) scale(.995); } to { opacity: 1; transform: none; } }
+   you came from in from the left, already at the spot you left it (no re-dealing the grid).
+   Keep the travel inside the gutter so narrow-page controls never move offscreen. */
+@keyframes page-fwd { from { opacity: 0; transform: translateX(min(22px, var(--gutter))) scale(.995); } to { opacity: 1; transform: none; } }
+@keyframes page-back { from { opacity: 0; transform: translateX(calc(-1 * min(22px, var(--gutter)))) scale(.995); } to { opacity: 1; transform: none; } }
 #content.page-enter.page-fwd > * { animation-name: page-fwd; }
 #content.page-enter.page-back > * { animation: page-back .32s cubic-bezier(.2, .8, .2, 1) both !important; }
 #content.page-enter.page-back :is(.card-grid, .deck-grid, .tdeck-list) > * { animation: none !important; }

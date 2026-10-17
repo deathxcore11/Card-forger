@@ -137,11 +137,19 @@ async function deckArt(app,game){
  }
  assert.equal(await inventorySnapshot(page),before);report.push(`${game}: deck browsing preserves inventory; ${game==='ptcg'?'Dhelmise lower-place supplied cover keeps 0 Top 8, no clickable list, and honest no-art fallback; ':''}${game==='mtg'?'existing Magic Ideas preserved':'Ideas crop and original card/Build IDs stable across five widths'}.`);
 }
-try{
- browser=await chromium.launch();
- for(const game of GAMES){const app=await openApp(browser,server.base,{game});try{await currentDetail(app,game);await missingQuotes(app,game);await deckArt(app,game);await app.close();}catch(error){await capture(app.page,`details-${game}-failure`).catch(()=>{});await app.context.close();throw error;}}
+async function historyRace(app){
  // Run the actual price jump with motion and glass both disabled. A pending
  // history response must not steal a newer card, target or keyboard focus.
- const app=await openApp(browser,server.base,{game:'ptcg',reducedMotion:'reduce',glass:false});const before=await inventorySnapshot(app.page),gate=app.hold(u=>u.pathname.endsWith('/market-history')&&u.searchParams.get('id')===CARDS.ptcg[0].id);await openCard(app.page,'ptcg');await gate.seen;await jump(app.page,'sellers');await closeSheet(app.page);await openCard(app.page,'ptcg',1);const oldResponse=app.page.waitForResponse(r=>{const u=new URL(r.url());return u.pathname.endsWith('/market-history')&&u.searchParams.get('id')===CARDS.ptcg[0].id;});gate.release();await oldResponse;await app.page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));await jump(app.page,'history');assert.equal(await app.page.locator('.cs-title h2').innerText(),CARDS.ptcg[1].name);assert.equal(await app.page.evaluate(()=>window.__uiTestState.ui.sheetCtx.id),CARDS.ptcg[1].id);assert.equal(await inventorySnapshot(app.page),before);await capture(app.page,'details-reduced-motion-history-race');await app.close();report.push('Reduced motion, glass disabled and late history A → newer card B retain B and saved data.');
+ const before=await inventorySnapshot(app.page),gate=app.hold(u=>u.pathname.endsWith('/market-history')&&u.searchParams.get('id')===CARDS.ptcg[0].id);await openCard(app.page,'ptcg');await gate.seen;await jump(app.page,'sellers');await closeSheet(app.page);await openCard(app.page,'ptcg',1);const oldResponse=app.page.waitForResponse(r=>{const u=new URL(r.url());return u.pathname.endsWith('/market-history')&&u.searchParams.get('id')===CARDS.ptcg[0].id;});gate.release();await oldResponse;await app.page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));await jump(app.page,'history');assert.equal(await app.page.locator('.cs-title h2').innerText(),CARDS.ptcg[1].name);assert.equal(await app.page.evaluate(()=>window.__uiTestState.ui.sheetCtx.id),CARDS.ptcg[1].id);assert.equal(await inventorySnapshot(app.page),before);await capture(app.page,'details-reduced-motion-history-race');report.push('Reduced motion, glass disabled and late history A → newer card B retain B and saved data.');
+}
+try{
+ browser=await chromium.launch();const failures=[];
+ const runScenario=async(name,game,run,options={})=>{let app;try{app=await openApp(browser,server.base,{game,...options});await run(app,game);await app.close();}catch(error){failures.push({name,error});console.error('FAIL: '+name+'\n'+String(error.stack||error));if(app){await capture(app.page,'details-'+name+'-failure').catch(()=>{});await app.context.close();}}};
+ // Each scenario has a fresh, deterministic app context. A failed Magic flip
+ // cannot hide Pokémon/Yu-Gi-Oh pricing or any game's independent deck art.
+ // Preserve every original assertion and make every captured stack fatal.
+ for(const game of GAMES)for(const [name,run] of [['current',currentDetail],['missing-quotes',missingQuotes],['deck-art',deckArt]])await runScenario(game+'-'+name,game,run);
+ await runScenario('reduced-motion-history-race','ptcg',historyRace,{reducedMotion:'reduce',glass:false});
+ if(failures.length)throw new AggregateError(failures.map(f=>f.error),failures.map(f=>f.name+': '+String(f.error.stack||f.error)).join('\n\n'));
  console.log('PASS: '+report.join('\nPASS: '));
 }catch(error){failure=error;throw error;}finally{await saveReport('detail-rules-browser',report,failure);await browser?.close();await server.close();}

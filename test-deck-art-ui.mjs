@@ -169,3 +169,11 @@ const magicSource = await readFile(new URL('./views.js', import.meta.url), 'utf8
 assert.match(magicSource, /img\(art\(i.commander\), i.commander.name\)/);
 assert.match(magicSource, /data-act="openIdea"/);
 console.log('PASS: exact archetype art, Top-8 invariants, deterministic supplied-list selection, honest missing art, bounded persisted cache migration, unchanged owned/build IDs and scoped all-game artwork.');
+
+// Directional page motion must fit inside the actual gutter, not make a
+// 320px deck page scroll sideways before the entry animation completes.
+const css=await readFile(new URL('./style.css',import.meta.url),'utf8');
+assert.match(css,/@keyframes page-fwd \{ from \{[^}]*translateX\(min\(22px, var\(--gutter\)\)\)/);
+assert.match(css,/@keyframes page-back \{ from \{[^}]*translateX\(calc\(-1 \* min\(22px, var\(--gutter\)\)\)\)/);
+for(const width of [320,390,768,1440])for(const gutter of [16,24]){const shift=Math.min(22,gutter),content=width-2*gutter;assert(gutter+content+shift<=width);assert(gutter-shift>=0);}
+console.log('PASS: forward/back page movement stays within the gutter instead of overflowing narrow deck controls.');
