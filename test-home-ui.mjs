@@ -41,21 +41,22 @@ assert.match(event,/Event dates/);assert.match(event,/datetime="2026-10-20"/);as
 const link=featureArticle('ptcg',{kind:'link',title:'Official news',url:'https://www.pokemon.com/us/pokemon-news',publishedAt:'2026-10-17'},0,3);
 assert.match(link,/Source link · not a live headline/);assert.doesNotMatch(link,/<time/);
 for(const g of GAME_IDS){
-  const h={name:'Exact displayed card',id:'exact-card',art:'https://example.org/card.png',deck:true,deckId:'saved-deck'};
-  const html=homeHero(g,'Welcome back.',h,true);
+  const date=new Date().toISOString().slice(0,10);
+  heroState[g]={game:g,date,name:'Exact daily card',id:'daily-card-'+g,art:'https://example.org/daily.png'};
+  const html=homeHero(g,'Welcome back.',true);
   assert.equal((html.match(/id="homeHero"/g)||[]).length,1);
   assert.match(html,/class="hh-art-link"/);assert.match(html,/class="hh-credit"/);
-  assert.equal((html.match(g==='mtg'?/data-name="Exact displayed card"/g:/data-id="exact-card"/g)||[]).length,2,'artwork and credit open the identical displayed card');
-  assert.match(html,new RegExp(`data-to="#${g==='mtg'?'deck':'tdeck'}/saved-deck"`));
-  assert.match(html,/From your deck/);assert.doesNotMatch(html,/Card of the day/);
+  assert.equal((html.match(/data-act="homeDailyCard"/g)||[]).length,2,'artwork and credit use the same daily-card action');
+  assert.equal((html.match(new RegExp('data-id="daily-card-'+g+'"','g'))||[]).length,2,'artwork and credit open the exact daily printing');
+  assert.match(html,/Card of the Day/);assert.doesNotMatch(html,/From your deck|Open deck|data-to="#(?:deck|tdeck)\//);
 }
 let dailyFetches=0,magicPicks=0;
 globalThis.fetch=async url=>{dailyFetches++;return {json:async()=>String(url).includes('ygoprodeck')?{data:[{id:123,name:'Daily YGO',type:'Normal Monster',desc:'',card_images:[{image_url:'https://images.ygoprodeck.com/images/cards/123.jpg',image_url_cropped:'https://images.ygoprodeck.com/images/cards_cropped/123.jpg'}]}]}:[{id:'sv1-1',name:'Daily Pokémon',image:'https://assets.tcgdex.net/en/sv/sv01/001'}]};};
 for(const g of GAME_IDS){
   delete heroState[g];
-  assert.equal(await loadHero(g,async()=>{magicPicks++;return{name:'Daily Magic',image_uris:{art_crop:'https://example.org/daily.jpg'}};}),true);
+  assert.equal(await loadHero(g,async()=>{magicPicks++;return{id:'daily-magic',name:'Daily Magic',image_uris:{art_crop:'https://example.org/daily.jpg'}};}),true);
   assert(heroFor(g)?.name);assert.equal(await loadHero(g,()=>{throw Error('daily card must be cached');}),false);
-  assert.match(homeHero(g,'Hello'),/Card of the day/);
+  assert.match(homeHero(g,'Hello'),/Card of the Day/);
 }
 assert.equal(magicPicks,1);assert.equal(dailyFetches,2,'existing provider selection is called once for each non-Magic game');
 const picker = {}, origin = { game:'mtg', view:'home', sheet:picker };
@@ -84,7 +85,7 @@ refreshHomeCommunity('ygo',feedRoot,{documentRef:doc,loadDecks:()=>new Promise((
  const now=new Date().toISOString();communityState('ygo').data={items:[{id:'live',game:'ygo',kind:'news',title:'Independent fresh headline',url:'https://www.yugioh-card.com/en/news/real-test',source:'Konami',publishedAt:now,fetchedAt:now}],status:'ready'};
 }});
 await new Promise(r=>setTimeout(r,0));assert.match(painted,/Independent fresh headline/,'fresh news paints even when tournament request never settles');
-console.log('PASS: Home tabs/keyboard, honest partial values, safe dated source slides, exact header card/deck targets, actual daily-card caches, gesture isolation, reduced motion and navigation-safe reveal.');
+console.log('PASS: Home tabs/keyboard, honest partial values, safe dated source slides, exact independent daily-header targets, actual daily-card caches, gesture isolation, reduced motion and navigation-safe reveal.');
 
 // Execute the actual delayed emblem callback, not a duplicate guard. A visitor
 // can focus a Home control after the request starts but before its data arrives.

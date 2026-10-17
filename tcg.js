@@ -1,5 +1,5 @@
 import {compactPriceSummary,detailTabs,detailPanel} from "./pricing-presentation.js";
-import { homeValue, homeEdition } from "./home-ui.js";
+import { homeValue, homeEdition, homeMetaShortcut } from "./home-ui.js";
 import {interactiveRules} from './rule-learning.js';
 import {referenceQuote,referenceLabel} from './price-reference.js';
 import {brandMark} from './brand.js';
@@ -34,7 +34,7 @@ import { haptic } from "./feel.js";
 import { tileChrome } from "./tiles.js";
 // Yu-Gi-Oh! and Pokémon: collection, search, sets and deck building, sharing one
 // set of screens. Each game's data, rules and formats come from its adapter.
-import { S, uid } from "./store.js";
+import { S, uid, slim } from "./store.js";
 import { esc, safeHref, usd, empty, bar, options, segmented } from "./ui.js";
 import { GAMES, GAME_ICON, GAME_COLOR, GAME_IDS, blankGame, gameOf } from "./games.js";
 import { ICON, actionIcon } from "./icons.js";
@@ -45,7 +45,7 @@ import { factBox, factsFor } from "./facts.js";
 import { ygoEmblems, energyIcon, attackLine, tcgSetBadge, ygoPrintBadge, pkRarity, pkSetSymbol } from "./emblems.js";
 import { buildYgo, buildPtcg, YGO_STAPLES, PTCG_STAPLES, PTCG_SUPPORT_BASICS, energyName } from "./tcgbuild.js";
 import { ygoSource, ygoImageDirect, YGO_SET_CACHE_KEY, YGO_SET_LEGACY_CACHE_KEY, normalizeYgoSets, migrateYgoSetCache, resolveYgoSet, ygoSetPrintings, normalizeYgoSearch, ygoSearchFormatLabel, ygoSearchFormatSupported, ygoSearchEligibility, YGO_TYPES, YGO_ATTRIBUTES, YGO_RACES, YGO_SPELL_KINDS, YGO_TRAP_KINDS } from "./ygo.js";
-import { ptcgSource, ptcgPrintingMatches, normalizePtcgSearch, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES, plainText } from "./ptcg.js";
+import { ptcgSource, ptcgImage, ptcgPrintingMatches, normalizePtcgSearch, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES, plainText } from "./ptcg.js";
 import { loadMeta, metaState, ptcgIcon, allCachedMeta, cleanName } from "./meta.js";
 import { tcgPower, powerPanel, powerChip, shownPower, asShown, powerReadiness } from "./power.js";
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
@@ -327,55 +327,108 @@ function legalChips(g, c) {
 /* ---------- art hero (all games) ---------- */
 
 const HERO_KEY = "cardforge-hero-v1";
-const today = () => new Date().toISOString().slice(0, 10);
+export const heroDate = () => new Date().toISOString().slice(0, 10);
 export const heroState = {};
-const readHero = () => {
+const heroRequests = new Map();
+// v1 saved Magic art without its printing ID. Recover only an ID proved by
+// Scryfall's own artwork URL, never guess a printing from a card's name.
+function legacyHeroId(art) {
+  try {
+    const url = new URL(art);
+    return url.protocol === "https:" && !url.username && !url.password && ["cards.scryfall.io", "c1.scryfall.com"].includes(url.hostname)
+      ? url.pathname.match(/\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\.(?:jpg|png)$/i)?.[1] || "" : "";
+  } catch { return ""; }
+}
+function dailyArt(g, id, value) {
+  if (typeof value !== "string") return "";
+  if (g === "ygo" && /^\d+$/.test(id) && value === `img/ygo/a/${id}.jpg`) return value;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" || url.username || url.password || url.port) return "";
+    if (g === "mtg") return legacyHeroId(value) === id && /^\/art_crop\//.test(url.pathname) ? value : "";
+    if (g === "ygo") return /^\d+$/.test(id) && url.hostname === "images.ygoprodeck.com" && url.pathname === `/images/cards_cropped/${id}.jpg` ? value : "";
+    if (g === "ptcg" && url.hostname === "assets.tcgdex.net") {
+      const path = url.pathname.match(/^\/en\/[^/]+\/([^/]+)\/([^/]+)\/(?:high|low)\.(?:webp|png|jpg)$/);
+      const split = id.lastIndexOf("-"), canonical = x => x.toLowerCase().replace(/\d+/g, n => String(Number(n)));
+      return path && split > 0 && canonical(path[1]) === canonical(id.slice(0, split)) && canonical(path[2]) === canonical(id.slice(split + 1)) ? value : "";
+    }
+    return "";
+  } catch { return ""; }
+}
+function dailyHero(g, h, date) {
+  if (!GAME_IDS.includes(g) || !h || h.deck || h.game && h.game !== g || h.date && h.date !== date) return null;
+  const id = String(h.id || (g === "mtg" ? legacyHeroId(h.art) : ""));
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$/.test(id) || typeof h.name !== "string" || !h.name.trim()) return null;
+  return { game: g, date, id, name: h.name, art: dailyArt(g, id, h.art), artDirect: dailyArt(g, id, h.artDirect),
+    ...(g === "mtg" && h.printing?.id === id && h.printing.name === h.name && typeof h.printing.set === "string" ? { printing: h.printing } : {}) };
+}
+const readHero = (date = heroDate()) => {
   try {
     const h = JSON.parse(localStorage.getItem(HERO_KEY) || "null");
-    return h?.date === today() ? h : { date: today() };
-  } catch {
-    return { date: today() };
-  }
+    return h?.date === date ? h : { date };
+  } catch { return { date }; }
 };
-// Today's art for a game: your newest deck's lead card, else a "card of the day".
-export function heroFor(g, deckArt = null) {
-  if (deckArt) return deckArt;
-  return heroState[g] || readHero()[g] || null;
+// The same daily selection is shown regardless of collection or saved decks.
+export function heroFor(g) {
+  const date = heroDate(), memory = heroState[g];
+  if (memory?.date !== date) delete heroState[g];
+  const h = dailyHero(g, heroState[g] || readHero(date)[g], date);
+  if (h) heroState[g] = h;
+  return h;
 }
-export function homeHero(g, title, deckArt = null, compact = false) {
-  const h = heroFor(g, deckArt), G = GAMES[g],
-    cardAction = h?.name ? (g === "mtg" ? `data-act="card" data-name="${esc(h.name)}"` : h.id ? `data-act="tCard" data-id="${esc(h.id)}"` : "") : "";
-  return `<section class="home-hero ${g} ${compact ? "compact" : ""} ${h?.art ? "has-art" : "no-art"}" id="homeHero">${h?.art && g === "ptcg" ? pokemonArtCrop(null, "hh-art", h.art) : h?.art ? `<img class="hh-art" src="${esc(h.art)}" alt="" referrerpolicy="no-referrer" onerror="${h.artDirect ? `if(!this.dataset.f){this.dataset.f=1;this.src='${esc(h.artDirect)}'}else ` : ""}this.remove()">` : ""}<div class="hh-shade"></div>
-    ${cardAction ? `<button class="hh-art-link" ${cardAction} aria-label="Explore ${esc(h.name)}"><span>${h.deck ? "From your deck" : "Card of the day"} <span aria-hidden="true">↗</span></span></button>` : ""}
+export function homeHero(g, title, compact = false) {
+  const h = heroFor(g), G = GAMES[g],
+    cardAction = h ? `data-act="homeDailyCard" data-game="${g}" data-id="${esc(h.id)}" data-name="${esc(h.name)}" data-date="${h.date}"` : "";
+  return `<section class="home-hero ${g} ${compact ? "compact" : ""} ${h?.art ? "has-art" : "no-art"}" id="homeHero" data-game="${g}" data-daily-date="${h?.date || ""}" data-daily-id="${esc(h?.id || "")}">${h?.art && g === "ptcg" ? pokemonArtCrop({ game: g, id: h.id }, "hh-art", h.art) : h?.art ? `<img class="hh-art" src="${esc(h.art)}" alt="" referrerpolicy="no-referrer" data-art-sources="${esc(JSON.stringify([...new Set([h.art, h.artDirect].filter(Boolean))]))}" data-art-index="0">` : ""}<div class="hh-shade"></div>
+    ${cardAction ? `<button class="hh-art-link" ${cardAction} aria-label="Explore ${esc(h.name)} artwork"></button>` : ""}
     <div class="hh-body"><p class="eyebrow">${esc(G.name)}</p><h1>${title}</h1>
       <div class="hh-search"><input id="homeQ" type="search" data-suggest="${g}" placeholder="Search ${esc(G.short)} cards" data-enter="homeSearch" aria-label="Search ${esc(G.short)} cards" autocomplete="off"><button class="btn" data-act="homeSearch">Search</button><button class="ask-launch" data-act="askOpen" aria-label="Ask AI"><span aria-hidden="true">✦</span>Ask</button></div>
-      ${cardAction ? `<div class="hh-credits"><button class="hh-credit" ${cardAction}>${h.deck ? "From your deck" : "Card of the day"} · <b>${esc(h.name)}</b> <span aria-hidden="true">›</span></button>${h.deckId ? `<button class="hh-deck-link" data-act="go" data-to="#${g === "mtg" ? "deck" : "tdeck"}/${esc(h.deckId)}">Open deck <span aria-hidden="true">↗</span></button>` : ""}</div>` : ""}
+      ${cardAction ? `<div class="hh-credits"><button class="hh-credit" ${cardAction}>Card of the Day · <b>${esc(h.name)}</b> <span aria-hidden="true">›</span></button></div>` : ""}
     </div></section>`;
 }
-// Fetch today's card for a game once per day (cached on the device).
+// Retain the existing per-device daily picks and providers. Share in-flight work
+// per game/day; an old day's response may never overwrite today's selection.
 export async function loadHero(g, mtgRandom) {
-  if (heroState[g] || readHero()[g]) return false;
-  const pickDay = (n) => Number(today().replace(/-/g, "")) % n;
-  let h = null;
-  if (g === "mtg") {
-    const c = await mtgRandom();
-    h = { name: c.name, art: c.image_uris?.art_crop || c.card_faces?.[0]?.image_uris?.art_crop || "" };
-  } else if (g === "ygo") {
-    const list = await fetch("https://db.ygoprodeck.com/api/v7/cardinfo.php?staple=yes&misc=yes").then((r) => r.json());
-    const c = remember((await import("./ygo.js")).normalizeYgo(list.data[pickDay(list.data.length)]));
-    h = { id: c.id, name: c.name, art: c.art, artDirect: c.artDirect };
-  } else {
-    const list = await fetch("https://api.tcgdex.net/v2/en/cards?rarity=eq:Special%20illustration%20rare").then((r) => r.json());
-    const c = list[pickDay(list.length)];
-    h = { id: c.id, name: c.name, art: c.image + "/high.webp" };
-  }
-  heroState[g] = h;
-  try {
-    const all = readHero();
-    all[g] = h;
-    localStorage.setItem(HERO_KEY, JSON.stringify(all));
-  } catch {}
-  return true;
+  if (!GAME_IDS.includes(g) || heroFor(g)) return false;
+  const date = heroDate(), pending = heroRequests.get(g);
+  if (pending?.date === date) return pending.promise;
+  const request = { date, promise: null };
+  heroRequests.set(g, request);
+  const pickDay = n => Number(date.replace(/-/g, "")) % n;
+  request.promise = (async () => {
+    let h;
+    if (g === "mtg") {
+      const c = await mtgRandom();
+      h = { id: c.id, name: c.name, art: c.image_uris?.art_crop || c.card_faces?.[0]?.image_uris?.art_crop || "", printing: slim({ ...c, full: true }) };
+    } else if (g === "ygo") {
+      const response = await fetch("https://db.ygoprodeck.com/api/v7/cardinfo.php?staple=yes&misc=yes");
+      if (response.ok === false) throw Error("Daily card source is unavailable.");
+      const list = await response.json();
+      if (!Array.isArray(list.data) || !list.data.length) throw Error("No daily cards were returned.");
+      const c = (await import("./ygo.js")).normalizeYgo(list.data[pickDay(list.data.length)]);
+      h = { id: c.id, name: c.name, art: c.art, artDirect: c.artDirect };
+    } else {
+      const response = await fetch("https://api.tcgdex.net/v2/en/cards?rarity=eq:Special%20illustration%20rare");
+      if (response.ok === false) throw Error("Daily card source is unavailable.");
+      const list = await response.json();
+      if (!Array.isArray(list) || !list.length) throw Error("No daily cards were returned.");
+      const c = list[pickDay(list.length)];
+      h = { id: c.id, name: c.name, art: ptcgImage(c.image, "high") };
+    }
+    if (heroRequests.get(g) !== request || heroDate() !== date) return false;
+    h = dailyHero(g, h, date);
+    if (!h) throw Error("Daily card identity is unavailable.");
+    // Another tab may have completed the same day's selection while we waited.
+    if (heroFor(g)) return false;
+    heroState[g] = h;
+    try {
+      const all = readHero(date);
+      all[g] = h;
+      localStorage.setItem(HERO_KEY, JSON.stringify(all));
+    } catch {}
+    return true;
+  })().finally(() => { if (heroRequests.get(g) === request) heroRequests.delete(g); });
+  return request.promise;
 }
 
 /* ---------- home ---------- */
@@ -452,7 +505,7 @@ export function quickTiles(g, skipIdeas = false) {
     tile = (act, to, icon, title, sub, cls = "") => `<button class="quick-btn ${cls}" data-act="${act}" ${to ? `data-to="${to}"` : ""}><span>${icon}</span><b>${title}</b><small>${sub}</small></button>`;
   return `<div class="quick">
     ${skipIdeas ? "" : tile("go", "#decks/ideas", "✧", "Deck ideas", mtg ? "Commanders your cards support" : "Build from your collection")}
-    ${tile("go", "#decks/inspiration", "🏆", "Meta decks", mtg ? "Tournament decks, precons and shared lists, with what you own" : "Today’s tournament decks, with what you own")}
+    ${homeMetaShortcut(g)}
     </div>`;
 }
 export const randomTools = (g) =>
@@ -482,11 +535,8 @@ export function tcgHome() {
     v = collectionValue(g),
     st = gs(g),
     recent = st.decks.slice(-6).reverse();
-  const lead = st.decks.at(-1),
-    leadCard = lead ? cardOf(g, (lead.zones.main || [])[0]?.cardId) : null,
-    deckArt = leadCard ? { id: leadCard.id, name: leadCard.name, art: g === "ygo" ? leadCard.art : leadCard.imageLarge, artDirect: g === "ygo" ? leadCard.artDirect : "", deck: true, deckId: lead.id } : null;
   const fresh = !st.collection.length && !st.decks.length;
-  return `${homeHero(g, v.copies ? "Welcome back." : "Let’s build from your cards.", deckArt, !fresh)}
+  return `${homeHero(g, v.copies ? "Welcome back." : "Let’s build from your cards.", !fresh)}
   ${installNudge(v.copies)}
   ${homeValue({ total: v.total, copies: v.copies, decks: st.decks.length, unpriced: v.unpriced })}
   ${homeEdition(g)}
@@ -1985,6 +2035,7 @@ export function registerTcg(c) {
 
   // card sheet
   A.tCard = async (t) => {
+    if (t.dataset.game && t.dataset.game !== g()) return;
     const G = g(),
       id = t.dataset.id,
       lot=t.dataset.entry?gs(G).collection.find(e=>e.id===t.dataset.entry&&String(e.cardId)===String(id)):null,
@@ -1992,16 +2043,17 @@ export function registerTcg(c) {
       sctx = { type: "tcard", game: G, id, setId, setReleaseUnverified, setVariant:t.dataset.setVariant || lot?.variant || "", priceFinish:t.dataset.setVariant || lot?.variant || "", priceEdition:G==="ygo"?(t.dataset.printing||(lot?.printing&&lot?.rarity?lot.printing+"::"+lot.rarity:"")):"",priceYgoEdition:G==="ygo"?(t.dataset.edition||lot?.edition||""):"", entryId:lot?.id || "",random: !!t.dataset.random, deckId: t.dataset.deck || (S.ui.view === "tdeck" ? S.ui.tdeckId : null) };
     const sourceMembership=t.setMembership||(ui(G).set.info?.id===sctx.setId?ui(G).set.cards.find(card=>card.id===id)?.setContext:null);
     if(sourceMembership?.membership==='set-response'&&sourceMembership.game===G&&sourceMembership.cardId===id&&sourceMembership.releaseId===sctx.setId)sctx.setMembership={...sourceMembership};
+    const still = () => S.ui.sheetCtx === sctx && g() === G && document.querySelector("#sheet")?.open;
     const known = cardOf(G, id);
     openSheet(known ? tcgCardSheet(known, sctx) : `<div class="sheet-head"><h2>Loading…</h2><button class="icon" data-act="closeSheet">✕</button></div>`, sctx);
     try {
       const card = await ensureCard(G, id);
-      if (S.ui.sheetCtx === sctx) openSheet(tcgCardSheet(card, sctx), sctx, document.querySelector("#sheetBody").scrollTop);
+      if (still()) openSheet(tcgCardSheet(card, sctx), sctx, document.querySelector("#sheetBody").scrollTop);
       // The set row shows a card's first release; that needs the set list's dates (loaded once).
       if (G === "ygo" && !ygoSetIndex().size)
-        loadSets("ygo").then(() => S.ui.sheetCtx === sctx && openSheet(tcgCardSheet(cardOf(G, id), sctx), sctx, document.querySelector("#sheetBody").scrollTop)).catch(() => {});
+        loadSets("ygo").then(() => still() && openSheet(tcgCardSheet(cardOf(G, id), sctx), sctx, document.querySelector("#sheetBody").scrollTop)).catch(() => {});
     } catch (e) {
-      if (S.ui.sheetCtx === sctx) openSheet(`<div class="sheet-head"><h2>Couldn’t load card</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="note warn">${esc(e.message)}</div>`, sctx);
+      if (still()) openSheet(`<div class="sheet-head"><h2>Couldn’t load card</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="note warn">${esc(e.message)}</div>`, sctx);
     }
   };
   // ----- random -----

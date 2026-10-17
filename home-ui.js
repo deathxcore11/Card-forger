@@ -3,6 +3,7 @@ import { GAMES, GAME_IDS, GAME_ICON } from './games.js';
 import { esc, safeHref, usd } from './ui.js';
 import { communityState, communitySlides, loadCommunity } from './community-feed.js';
 import { loadMeta, metaState } from './meta.js';
+import { communityArtwork, handleCommunityArtwork } from './community-art.js';
 
 export const homeMetaKey = g => g === 'mtg' ? 'mtg:Standard' : g;
 const positions = new Map();
@@ -51,9 +52,16 @@ export function featureArticle(g, slide, index, length) {
   const date = displayDate(slide.publishedAt), fetched = displayDate(slide.fetchedAt), starts = displayDate(slide.startsAt), ends = displayDate(slide.endsAt);
   const dateHtml = kind === 'event' && starts ? `<span>Event dates <time datetime="${esc(slide.startsAt)}">${esc(starts)}</time>${ends && ends !== starts ? ` to <time datetime="${esc(slide.endsAt)}">${esc(ends)}</time>` : ''}</span>` : date ? `<span>${esc(slide.dateLabel || 'Published')} <time datetime="${esc(slide.publishedAt)}">${esc(date)}</time></span>` : `<span>${kind === 'event' ? 'Event date' : 'Publication date'} unavailable</span>`;
   const href = safeHref(slide.url);
-  return `<article class="community-feature feature-${kind}" role="group" aria-roledescription="slide" aria-label="${index + 1} of ${length}" data-slide-id="${esc(slide.id || '')}"><div class="community-feature-copy"><p class="eyebrow"><span class="community-signal" aria-hidden="true"></span>${label}${slide.stale ? ' · Older snapshot' : ''}</p><h3>${esc(slide.title || 'Visit the source')}</h3>${slide.summary ? `<p class="community-summary">${esc(slide.summary)}</p>` : ''}${slide.methodology ? `<p class="community-methodology">${esc(slide.methodology)}</p>` : ''}<div class="community-source"><span>${esc(slide.source || 'Source')}</span>${kind === 'link' ? '<span>Source link · not a live headline</span>' : dateHtml}${kind !== 'link' && fetched ? `<span>Checked ${esc(fetched)}</span>` : ''}</div>${href && href !== '#' ? `<a class="community-open" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${kind === 'deck' ? 'View original deck' : kind === 'event' ? 'View event' : kind === 'news' ? 'Read at source' : 'Open source'} <span aria-hidden="true">↗</span><span class="home-sr-only"> (opens in a new tab)</span></a>` : '<p class="small muted">Source link unavailable.</p>'}</div><div class="community-art" aria-hidden="true"><span class="community-orbit"></span><span class="community-card community-card-back"></span><span class="community-card community-card-front">${GAME_ICON[g]}</span></div></article>`;
+  return `<article class="community-feature feature-${kind}" role="group" aria-roledescription="slide" aria-label="${index + 1} of ${length}" data-slide-id="${esc(slide.id || '')}"><div class="community-feature-copy"><p class="eyebrow"><span class="community-signal" aria-hidden="true"></span>${label}${slide.stale ? ' · Older snapshot' : ''}</p><h3>${esc(slide.title || 'Visit the source')}</h3>${slide.summary ? `<p class="community-summary">${esc(slide.summary)}</p>` : ''}${slide.methodology ? `<p class="community-methodology">${esc(slide.methodology)}</p>` : ''}<div class="community-source"><span>${esc(slide.source || 'Source')}</span>${kind === 'link' ? '<span>Source link · not a live headline</span>' : dateHtml}${kind !== 'link' && fetched ? `<span>Checked ${esc(fetched)}</span>` : ''}</div>${href && href !== '#' ? `<a class="community-open" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${kind === 'deck' ? 'View original deck' : kind === 'event' ? 'View event' : kind === 'news' ? 'Read at source' : 'Open source'} <span aria-hidden="true">↗</span><span class="home-sr-only"> (opens in a new tab)</span></a>` : '<p class="small muted">Source link unavailable.</p>'}</div>${communityArtwork(g, slide)}</article>`;
 }
 function slidesFor(g) { return communitySlides(g, { metaState: metaState(homeMetaKey(g)), metaKey: homeMetaKey(g), format: g === 'mtg' ? 'Standard' : undefined }); }
+// The existing Meta decks shortcut, with a quiet preview of the exact first
+// tournament list. It keeps its action and footprint; no new deck section.
+export function homeMetaShortcut(g) {
+  const slide = slidesFor(g).find(item => item.kind === 'deck') || { kind: 'link' };
+  const label = slide.artwork ? `Featured deck: ${slide.title}, via ${slide.source}. Card preview: ${slide.artwork.cardId}, when artwork is available.` : `${GAMES[g].short} game theme; no verified deck artwork is available.`;
+  return `<button class="quick-btn home-meta-shortcut" data-home-meta="${g}" data-act="go" data-to="#decks/inspiration">${communityArtwork(g, slide, { compact: true })}<span class="home-meta-icon" aria-hidden="true">🏆</span><b>Meta decks</b><small>${g === 'mtg' ? 'Tournament decks, precons and shared lists, with what you own' : 'Today’s tournament decks, with what you own'}</small><span class="home-sr-only">${esc(label)}</span></button>`;
+}
 function positionFor(g, count) { return count ? ((positions.get(g) || 0) % count + count) % count : 0; }
 export function homeCommunity(g) {
   const slides = slidesFor(g), index = positionFor(g, slides.length), state = communityState(g);
@@ -78,6 +86,8 @@ export function refreshHomeCommunity(g, root, { now = Date.now(), loadNews = loa
     // Do not replace the article while a user has focus in its source link.
     if (node.contains(documentRef.activeElement)) return;
     node.outerHTML = homeCommunity(g);
+    const shortcut = root.querySelector?.(`[data-home-meta="${g}"]`);
+    if (shortcut?.dataset?.homeMeta === g && !shortcut.contains(documentRef.activeElement)) shortcut.outerHTML = homeMetaShortcut(g);
   };
   // A slow or hung tournament source cannot hold fresh bounded news hostage.
   // Each source paints independently; neither invalidates the other's cache.
@@ -130,9 +140,10 @@ export function attachHomeCommunity(root) {
     step(old.node, dx < 0 ? 1 : -1); suppressUntil = Date.now() + 450;
   };
   const cancel = () => { gesture = null; };
+  root.addEventListener('load', handleCommunityArtwork, true); root.addEventListener('error', handleCommunityArtwork, true);
   root.addEventListener('click', click, true); root.addEventListener('keydown', key);
   root.addEventListener('touchstart', start, { passive: true }); root.addEventListener('touchend', end); root.addEventListener('touchcancel', cancel);
-  return () => { root.removeEventListener('click', click, true); root.removeEventListener('keydown', key); root.removeEventListener('touchstart', start); root.removeEventListener('touchend', end); root.removeEventListener('touchcancel', cancel); };
+  return () => { root.removeEventListener('load', handleCommunityArtwork, true); root.removeEventListener('error', handleCommunityArtwork, true); root.removeEventListener('click', click, true); root.removeEventListener('keydown', key); root.removeEventListener('touchstart', start); root.removeEventListener('touchend', end); root.removeEventListener('touchcancel', cancel); };
 }
 
 // Pending selection may only reveal in the exact game, route and picker that requested it.
