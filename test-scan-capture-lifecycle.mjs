@@ -2,7 +2,8 @@
 // browser, camera hardware, network requests or private card photos.
 import assert from 'node:assert/strict';
 import {S,blank} from './store.js';
-import {registerScanner,releaseOCR,freezeCapture,canReuseCapture,SCAN_DEADLINES,createScanTrace,fullCardNameHints,scanConfirmation} from './scancam.js';
+import {registerScanner,releaseOCR,freezeCapture,canReuseCapture,SCAN_DEADLINES,createScanTrace,fullCardNameHints,scanConfirmation,captureLockSignature,observeCaptureLock} from './scancam.js';
+import {field,rectangle} from './tests/fixtures/scan-geometry-fixtures.mjs';
 import {nameCandidates} from './scan.js';
 import {loadBatch,saveBatch,captureCapacity,CAPTURE_ORIGINAL_LIMIT,CAPTURE_STORAGE_LIMIT} from './scan-batch.js';
 import {savePrefs} from './scansession.js';
@@ -98,4 +99,29 @@ try{
  assert.deepEqual(fullCardNameHints('ptcg','BASIC\nKyogre HP 130\nAqua Storm'),['Kyogre']);
  assert.match(scanConfirmation('ygo',{cands:[{...retainedRow.cands[0],reviewSource:'printing-picker'}],confirm:{i:0,qty:1,condition:'Near Mint',lang:'en',finish:'unlimited'}},{}),/Printing selected by you/);
  console.log('PASS: earlier full-card title survives later original/footer/orientation noise; real public Dark Magician identity stays review-only, with no name-only exact proof.');
+ // Source-stable duplicate latch: synthetic pixels, not fixture card photos.
+ {
+  const w=192,h=256,region=rectangle(42,44,108,168).map(p=>({x:p.x/(w-1),y:p.y/(h-1)}));
+  const scene=(kind='a',dx=0,dy=0,angle=0)=>{const data=field(w,h,[65,80,75]),co=Math.cos(angle),si=Math.sin(angle);for(let y=0;y<h;y++)for(let x=0;x<w;x++){const a=x-96-dx,b=y-128-dy,u=co*a+si*b+96,v=-si*a+co*b+128;if(u<42||u>=150||v<44||v>=212)continue;const pattern=((Math.floor(u/7)+Math.floor(v/11))%2)*38;data.set(kind==='a'?[190+pattern,160+pattern,100+pattern]:[25+pattern,35+pattern,90+pattern],(y*w+x)*4);}return data;};
+  const sig=data=>captureLockSignature(data,w,h,region),a=sig(scene()),b=sig(scene('b')),geometryA=Float32Array.from(a,()=>0),geometryB=Float32Array.from(a,()=>100),lock=()=>({region,signature:a,geometrySignature:geometryA});
+  const unchanged=lock();for(let i=0;i<8;i++)assert.equal(observeCaptureLock(unchanged,sig(scene()),{geometrySignature:geometryB,geometryComparable:false,missing:i%2===0}),false,'changing detector geometry/preview or intermittent missing outline cannot unlock unchanged source');
+  for(const source of [scene('a',3,0),scene('a',0,0,Math.PI/60)]){const held=lock();for(let i=0;i<6;i++)assert.equal(observeCaptureLock(held,sig(source),{geometryComparable:false}),false,'uncertain accepted source tolerates modest translation/rotation without duplicate');}
+  const normalized=lock();for(let i=0;i<4;i++)assert.equal(observeCaptureLock(normalized,b,{geometrySignature:geometryA,geometryComparable:true}),false,'supported same normalized card vetoes motion-induced source changes');
+  const replacement=lock();assert.deepEqual([1,2,3].map(()=>observeCaptureLock(replacement,b,{geometrySignature:geometryB,geometryComparable:true})),[false,false,true],'different card rearms after three observed frames');
+  const removed=lock();assert.deepEqual([1,2,3].map(()=>observeCaptureLock(removed,sig(field(w,h,[65,80,75])),{missing:true})),[false,false,true],'actual card removal rearms');
+  const paused=lock();for(let i=0;i<7;i++)assert.equal(observeCaptureLock(paused,b,{paused:true}),false);assert.equal(paused.changedFrames,0);for(let i=0;i<5;i++)assert.equal(observeCaptureLock(paused,a),false,'rejected different card then restored accepted card stays locked');
+  for(let i=0;i<3;i++)observeCaptureLock(paused,b,{paused:true});assert.deepEqual([1,2,3].map(()=>observeCaptureLock(paused,b)),[false,false,true],'held rejected card rearms only after capacity resumes, not from accumulated pause counters');
+  const acceptedB={signature:b};for(let i=0;i<5;i++)assert.equal(observeCaptureLock(acceptedB,b),false,'new accepted card locks exactly once');
+ }
+ console.log('PASS: fixed accepted-source area fingerprint survives crop/layout refinement, minor movement and rotation; real changes/removal rearm, and capacity pause cannot forget the accepted card.');
+
+ // Invoke the real manual shutter rather than enqueue directly: same-frame
+ // double taps debounce for600ms, but a deliberate additional copy is allowed.
+ await releaseOCR();window.Tesseract={createWorker:async()=>({recognize:async()=>({data:{text:'?'}}),terminate:async()=>{}})};
+ const manualCopies=setup(),getElement=document.getElementById,realDateNow=Date.now;let manualTime=realDateNow();
+ const manualVideo={...canvas('same-manual-frame',640,900),videoWidth:640,videoHeight:900,clientWidth:378,clientHeight:400};
+ try{document.getElementById=id=>id==='scanVideo'?manualVideo:null;Date.now=()=>manualTime;manualCopies.A.scanCapture();assert.equal(loadBatch().length,1);manualCopies.A.scanCapture();assert.equal(loadBatch().length,1,'immediate double tap never creates a second capture');manualTime+=601;manualCopies.A.scanCapture();assert.equal(loadBatch().length,2,'intentional same-card manual copy remains available after debounce');}
+ finally{document.getElementById=getElement;Date.now=realDateNow;}
+ await wait(settled);assert.equal(loadBatch().length,2);manualCopies.stopCamera();
+ console.log('PASS: real manual shutter retains600ms same-frame debounce without prohibiting deliberate additional copies.');
 }finally{Object.assign(SCAN_DEADLINES,deadlineDefaults);await releaseOCR();}

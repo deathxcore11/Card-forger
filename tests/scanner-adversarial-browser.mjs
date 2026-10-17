@@ -20,7 +20,8 @@ const matrix=[
  'Camera playback survives processing; no guide overlay; unsupported/error torch is honest',
  'An explicit art-only photo crop never destroys the full original or its title/footer',
  'OCR deadline retires its worker; late success cannot mutate a finished/retried row',
- 'Retry keeps the same capture ID and original bytes; completed originals survive reload'
+ 'Retry keeps the same capture ID and original bytes; completed originals survive reload',
+ 'A rejected new card held in view queues exactly once when reading capacity becomes available'
 ];
 if(process.argv.includes('--validate-fixtures')){
  assert.equal(refs.length,2);assert(refs.every(r=>new URL(r.url).protocol==='https:'));
@@ -57,15 +58,16 @@ const server=createServer(async(req,res)=>{try{
  }catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const base=`http://127.0.0.1:${server.address().port}`,browser=await chromium.launch();
-const report={kind:'synthetic-public-scan-lifecycle',references:refs.map(({g,name,id,url,image})=>({g,name,id,url,image})),matrix,ocr:'deterministic lifecycle stub; not an accuracy benchmark',scenarios:[{id:'live-delayed-A-and-B',status:'pending'},{id:'bad-art-photo-timeout-late-completion-retry',status:'pending'}],checkpoints:[],results:[],limitations:['Not physical-camera validation.','OCR is deliberately deterministic here; the separate real OCR/public-printing gate is required.']};
+const report={kind:'synthetic-public-scan-lifecycle',references:refs.map(({g,name,id,url,image})=>({g,name,id,url,image})),matrix,ocr:'deterministic lifecycle stub; not an accuracy benchmark',scenarios:[{id:'live-delayed-A-and-B',status:'pending'},{id:'bad-art-photo-timeout-late-completion-retry',status:'pending'},{id:'rejected-next-card-held-until-capacity',status:'pending'}],checkpoints:[],results:[],limitations:['Not physical-camera validation.','OCR is deliberately deterministic here; the separate real OCR/public-printing gate is required.']};
 
+const failures=[];
 async function app(){
  const context=await browser.newContext({...devices['Pixel 7'],serviceWorkers:'block'}),page=await context.newPage();page.setDefaultTimeout(15000);
  // Lifecycle tests are offline except for our static app and already-downloaded
  // reference fixtures. This never substitutes a fake capture or queue handler.
  await context.route('**/*',route=>new URL(route.request().url()).origin===base?route.continue():route.abort('internetdisconnected'));
  await page.addInitScript(()=>{
-  const h=window.__scannerHarness={calls:[],workers:0,terminated:[],held:[],holdFirst:true,text:'',released:false};
+  const h=window.__scannerHarness={calls:[],events:[],workers:0,terminated:[],held:[],holdFirst:true,text:'',released:false};
   window.Tesseract={createWorker:async()=>{
    const id=++h.workers;
    return {setParameters:async()=>{},terminate:async()=>{h.terminated.push(id);},recognize:async canvas=>{
@@ -73,12 +75,12 @@ async function app(){
     // object-labelled pretend canvas cannot satisfy this harness.
     const rgba=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
     let hash=2166136261;for(let i=0;i<rgba.length;i+=Math.max(4,Math.floor(rgba.length/4096/4)*4))hash=Math.imul(hash^rgba[i],16777619)>>>0;
-    const call={worker:id,width:canvas.width,height:canvas.height,hash,completed:false};h.calls.push(call);
+    const call={worker:id,width:canvas.width,height:canvas.height,hash,startedAt:Date.now(),completed:false};h.calls.push(call);
     if(h.holdFirst&&!h.released&&h.calls.length===1)await new Promise(resolve=>h.held.push(resolve));
-    call.completed=true;return {data:{text:h.text}};
+    call.completed=true;call.completedAt=Date.now();return {data:{text:h.text}};
    }};
   }};
-  h.release=(text='')=>{h.text=text;h.released=true;for(const resolve of h.held.splice(0))resolve();};
+  h.release=(text='')=>{h.events.push({event:'release-ocr',at:Date.now()});h.text=text;h.released=true;for(const resolve of h.held.splice(0))resolve();};
  });
  await page.goto(base+'/#scan');await page.getByRole('heading',{name:'Scan',exact:true}).waitFor();
  const skip=page.getByRole('button',{name:'Skip',exact:true});try{await skip.waitFor({state:'visible',timeout:1500});await skip.click();}catch{}
@@ -92,7 +94,7 @@ async function app(){
 const rows=page=>page.evaluate(()=>window.__scannerTest.rows());
 const settled=page=>page.waitForFunction(()=>{const t=window.__scannerTest;return !t.state().busy&&t.rows().every(r=>!['captured','reading'].includes(r.status));},null,{timeout:20000});
 async function screenshot(page,name){await page.screenshot({path:resolve(out,`scanner-adversarial-${name}.png`),fullPage:false});}
-async function diagnostic(page,name){const data=await page.evaluate(()=>({state:{busy:window.__scannerTest.state().busy,buffered:window.__scannerTest.state().buffered,status:window.__scannerTest.state().status,guide:window.__scannerTest.state().guide,boundaryReady:window.__scannerTest.state().boundaryReady},rows:window.__scannerTest.rows().map(({id,status,proposal,error,timings,counts})=>({id,status,proposal,error,timings,counts})),ocr:window.__scannerHarness.calls}));await writeFile(resolve(out,`scanner-adversarial-${name}.json`),JSON.stringify(data,null,2));}
+async function diagnostic(page,name){const data=await page.evaluate(()=>({state:{busy:window.__scannerTest.state().busy,buffered:window.__scannerTest.state().buffered,status:window.__scannerTest.state().status,guide:window.__scannerTest.state().guide,boundaryReady:window.__scannerTest.state().boundaryReady},rows:window.__scannerTest.rows().map(({id,status,capturedAt,proposal,error,timings,counts})=>({id,status,capturedAt,proposal,error,timings,counts})),events:window.__scannerHarness.events,ocr:window.__scannerHarness.calls}));await writeFile(resolve(out,`scanner-adversarial-${name}.json`),JSON.stringify(data,null,2));}
 async function camera(page){
  await page.evaluate(async()=>{
   const h=window.__scannerHarness;h.images={};h.expected={};
@@ -119,7 +121,7 @@ async function camera(page){
 }
 async function scene(page,g,label,angle=0){
  await page.evaluate(async({g,label,angle})=>{
-  const h=window.__scannerHarness;h.scene={g,angle};h.draw();h.remember(label);
+  const h=window.__scannerHarness;h.events.push({event:'scene',g,label,angle,at:Date.now()});h.scene={g,angle};h.draw();h.remember(label);
   const v=document.querySelector('#scanVideo');
   // Wait only for physical delivery of the newly drawn frame, not for the next
   // 160ms detector tick. This exposes stale best-frame/sampling reuse.
@@ -235,7 +237,7 @@ try{
   assert.deepEqual(retained,originals,'Reload retains every original, not just artwork thumbnails');
   report.scenarios[0].status='passed';report.results.push({case:'live-delayed-A-and-B',accepted:finished.length,aPixels,bPixels,returnedPixels,timings:finished.map(({timings,counts})=>({timings,counts})),passed:true});
   console.log('PASS: delayed A / immediate B pixel identity, title/footer, quota, bounded queue, honest torch error, no overlay, playback and reload.');
- }catch(e){report.scenarios[0]={...report.scenarios[0],status:'failed',error:String(e.message||e)};await diagnostic(page,'queue-failure').catch(()=>{});await screenshot(page,'queue-failure').catch(()=>{});throw e;}finally{await context.close();}
+ }catch(e){report.scenarios[0]={...report.scenarios[0],status:'failed',error:String(e.message||e)};await diagnostic(page,'queue-failure').catch(()=>{});await screenshot(page,'queue-failure').catch(()=>{});failures.push(e);console.error('FAILED: live-delayed-A-and-B:',e.message);}finally{await context.close();}
 
  // CASE 2: simulate a bad art-only proposal using the actual photo crop gesture.
  // Recognition times out; neither that crop nor retry may overwrite the source.
@@ -277,8 +279,40 @@ try{
   await screenshot(page,'original-after-bad-art-retry');await diagnostic(page,'timeout-retry');
   report.scenarios[1].status='passed';report.results.push({case:'bad-art-photo-timeout-late-completion-retry',photoPixels,timeout:{timings:original.timings,counts:original.counts},retry:{timings:retry.timings,counts:retry.counts},passed:true});
   console.log('PASS: actual art-only drag crop retains original title/footer; deadline retires worker; late result is quarantined; retry preserves ID/source.');
- }catch(e){report.scenarios[1]={...report.scenarios[1],status:'failed',error:String(e.message||e)};await diagnostic(photo.page,'photo-failure').catch(()=>{});await screenshot(photo.page,'photo-failure').catch(()=>{});throw e;}finally{await photo.context.close();}
+ }catch(e){report.scenarios[1]={...report.scenarios[1],status:'failed',error:String(e.message||e)};await diagnostic(photo.page,'photo-failure').catch(()=>{});await screenshot(photo.page,'photo-failure').catch(()=>{});failures.push(e);console.error('FAILED: bad-art-photo-timeout-late-completion-retry:',e.message);}finally{await photo.context.close();}
+ // CASE 3: unlike the transient rejected-card-and-restore path above, keep
+ // the unaccepted next card in view while the full queue drains. It must not
+ // disappear just because the original manual attempt was rejected.
+ const held=await app();
+ report.scenarios[2].status='running';
+ try{
+  const {page}=held;await camera(page);await scene(page,'ptcg','held-first');await capture(page,1);
+  await page.waitForFunction(()=>window.__scannerHarness.calls.length===1);
+  const limit=await page.evaluate(()=>window.__scannerTest.bufferLimit);let finalGame='ptcg';
+  for(let count=2;count<=limit+1;count++){
+   finalGame=finalGame==='ptcg'?'mtg':'ptcg';await scene(page,finalGame,`held-buffer-${count}`);await capture(page,count);
+  }
+  const accepted=(await rows(page)).map(({id,originalShot})=>({id,originalShot}));
+  const rejectedGame=finalGame==='ptcg'?'mtg':'ptcg';await scene(page,rejectedGame,'held-rejected-next');
+  await page.getByRole('button',{name:'Capture card now',exact:true}).click();
+  assert.match(await page.evaluate(()=>window.__scannerTest.state().status),/queue full/i);
+  assert.deepEqual((await rows(page)).map(({id,originalShot})=>({id,originalShot})),accepted,'A full queue cannot accept or evict a card prematurely');
+  await page.evaluate(()=>{window.__scannerTest.state().auto=true;});await page.waitForTimeout(650);
+  assert.equal((await rows(page)).length,limit+1,'Held next card still waits while capacity is exhausted');
+  await page.evaluate(()=>window.__scannerHarness.release());
+  await page.waitForFunction(n=>window.__scannerTest.rows().length===n,limit+2,{timeout:15000});await settled(page);
+  await page.waitForTimeout(1000);const finished=await rows(page);
+  assert.equal(finished.length,limit+2,'The rejected but held next card automatically queues exactly once');
+  assert.deepEqual(finished.slice(0,limit+1).map(({id,originalShot})=>({id,originalShot})),accepted,'Accepting the held next card preserves every earlier original');
+  const nextPixels=await pixelCheck(page,finished.at(-1).id,'held-rejected-next');
+  assert.equal(await page.evaluate(()=>window.__scannerTest.collectionCount()),0);
+  await page.evaluate(()=>{window.__scannerTest.state().auto=false;});
+  await screenshot(page,'held-next-after-capacity');await diagnostic(page,'held-next-after-capacity');
+  report.scenarios[2].status='passed';report.results.push({case:'rejected-next-card-held-until-capacity',accepted:finished.length,nextPixels,timings:finished.map(({timings,counts})=>({timings,counts})),passed:true});
+  console.log('PASS: rejected next card waits at capacity, then automatically queues exactly once without losing earlier originals.');
+ }catch(e){report.scenarios[2]={...report.scenarios[2],status:'failed',error:String(e.message||e)};await diagnostic(held.page,'held-next-failure').catch(()=>{});await screenshot(held.page,'held-next-failure').catch(()=>{});failures.push(e);console.error('FAILED: rejected-next-card-held-until-capacity:',e.message);}finally{await held.context.close();}
 }finally{
  await writeFile(resolve(out,'scanner-adversarial-report.json'),JSON.stringify(report,null,2));await browser.close();await new Promise(r=>server.close(r));
 }
+if(failures.length)throw new AggregateError(failures,`${failures.length} hosted scanner lifecycle scenario(s) failed`);
 console.log('PASS: hosted synthetic/public-scan lifecycle matrix. Physical-camera and real-OCR claims are intentionally separate.');

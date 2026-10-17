@@ -408,16 +408,10 @@ let stream = null,
   loopTimer = 0,
   prevGray = null,
   steady = 0,
-  lockSig = null,
+  captureLock = null,
   lockMsg = "",
   greenSince = 0;
-const sigOf = (canvas) => {
-  const c = document.createElement("canvas");
-  c.width = 16;
-  c.height = 22;
-  c.getContext("2d").drawImage(canvas, 0, 0, 16, 22);
-  return toGray(c.getContext("2d").getImageData(0, 0, 16, 22).data, 16, 22);
-};
+
 const loadImage = (url) =>
   new Promise((ok, bad) => {
     const img = new Image();
@@ -429,6 +423,37 @@ const sigDiff = (a, b) => (a && b ? a.reduce((x, v, i) => x + Math.abs(v - b[i])
 
 export const CAPTURE_MAX_EDGE=1280;
 export const SCAN_ANALYSIS_SIZE=Object.freeze({width:192,height:256});
+// Duplicate identity has a fixed coordinate system chosen by the accepted
+// original. A refined detector quad or resized preview is not a new card.
+export function captureLockSignature(rgba,width,height,region=null){
+  const quad=region?.length===4?region.map(p=>({x:p.x*(width-1),y:p.y*(height-1)})):[{x:0,y:0},{x:width-1,y:0},{x:width-1,y:height-1},{x:0,y:height-1}];
+  // Average a small area per cell rather than aliasing one point. A modest
+  // handheld translation/rotation should not look like entirely new artwork.
+  const gray=toGray(warpPixels(rgba,width,height,quad,64,88),64,88),signature=new Float32Array(16*22);
+  for(let y=0;y<22;y++)for(let x=0;x<16;x++)for(let dy=0;dy<4;dy++)for(let dx=0;dx<4;dx++)signature[y*16+x]+=gray[(y*4+dy)*64+x*4+dx]/16;
+  return signature;
+}
+export function observeCaptureLock(lock,signature,{paused=false,missing=false,geometrySignature=null,geometryComparable=false}={}){
+  if(!lock)return false;
+  if(paused){lock.changedFrames=0;lock.missingFrames=0;return false;}
+  const delta=sigDiff(lock.signature,signature),sameMovingCard=geometryComparable&&lock.geometrySignature&&geometrySignature&&sigDiff(lock.geometrySignature,geometrySignature)<=22;
+  lock.changedFrames=delta>22&&!sameMovingCard?(lock.changedFrames||0)+1:0;
+  // An intermittent outline failure on unchanged pixels must not rearm either.
+  lock.missingFrames=missing&&delta>22?(lock.missingFrames||0)+1:0;
+  return lock.changedFrames>=3||lock.missingFrames>=3;
+}
+let lockCanvas=null;
+const sourceLockSignature=(source,region=null)=>{
+  const c=lockCanvas ||= document.createElement('canvas'),scale=Math.min(SCAN_ANALYSIS_SIZE.width/source.width,SCAN_ANALYSIS_SIZE.height/source.height);
+  c.width=Math.max(1,Math.round(source.width*scale));c.height=Math.max(1,Math.round(source.height*scale));
+  const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(source,0,0,c.width,c.height);
+  return captureLockSignature(x.getImageData(0,0,c.width,c.height).data,c.width,c.height,region);
+};
+const acceptedCaptureLock=candidate=>{
+  const source=candidate.original,region=candidate.proposal?.quad?.map(p=>({x:p.x/Math.max(1,source.width-1),y:p.y/Math.max(1,source.height-1)}))||null;
+  return {region,signature:sourceLockSignature(source,region),geometrySignature:candidate.signature&&Float32Array.from(candidate.signature),cropSafe:candidate.proposal?.cropSafe===true,changedFrames:0,missingFrames:0};
+};
+
 const clockNow=()=>globalThis.performance?.now?.()??Date.now();
 // The only retained full-size canvas is the immutable original. A quadrilateral
 // is a crop proposal, not proof that all of the card is inside it.
@@ -626,7 +651,7 @@ export function registerScanner(ctx) {
     s().camOn = false;s().boundaryReady=false;
     for(const pending of captureBuffer)updateBatch(pending.id,{status:"unresolved",reason:"Reading interrupted · retry"});
     captureBuffer.length=0;s().buffered=0;
-    prevGray=null;steady=0;lockSig=null;greenSince=0;loop.quad=null;loop.proposal=null;loop.signature=null;loop.observation=null;loop.bestCapture=null;loop.missingFrames=0;loop.changedFrames=0;
+    prevGray=null;steady=0;captureLock=null;greenSince=0;loop.quad=null;loop.proposal=null;loop.signature=null;loop.observation=null;loop.bestCapture=null;
   };
   ctx.stopCamera = stopCamera;
 
@@ -820,7 +845,7 @@ export function registerScanner(ctx) {
       if(s().reviewRequested){const id=s().reviewRequested;s().reviewRequested='';openBatchReview(id);break;}
     }}finally{draining=false;s().buffered=captureBuffer.length;}
   };
-  const rejectCapture=message=>{s().capturePause=message;s().capturePauseRows=loadBatch().length;s().capturePauseSignature=loop.signature&&Float32Array.from(loop.signature);setStatus(message);return false;};
+  const rejectCapture=message=>{observeCaptureLock(captureLock,null,{paused:true});s().capturePause=message;s().capturePauseRows=loadBatch().length;s().capturePauseSignature=/too large/i.test(message)&&loop.observation?.original?sourceLockSignature(loop.observation.original):null;setStatus(message);return false;};
   const enqueueCapture=(source,replaceId='',capture={})=>{
     if(captureBuffer.length>=CAPTURE_BUFFER_LIMIT&&!captureBuffer.some(x=>x.id===replaceId))return rejectCapture('Reading queue full. Hold this card a moment.');
     const before=loadBatch(),prior=replaceId&&before.find(x=>x.id===replaceId);
@@ -880,22 +905,22 @@ export function registerScanner(ctx) {
     steady = st.state === "green" || (st.state === "amber" && st.msg === "Hold steady…") ? steady + 1 : 0;
     // After an add, wait for a different card (or the card to leave) before capturing again.
     // One automatic capture per card: wait for a different card (or the card to leave) first.
-    if (lockSig) {
-      const now = loop.signature;
-      loop.missingFrames=m.edges<2?(loop.missingFrames||0)+1:0;
-      loop.changedFrames=now&&sigDiff(now,lockSig)>22?(loop.changedFrames||0)+1:0;
-      if (loop.missingFrames>=3 || loop.changedFrames>=3) {lockSig=null;loop.bestCapture=null;steady=0;greenSince=0;}
+    const rowCount=batchStorageSummary().count;
+    if(rowCount<(s().capturePauseRows||0)||(/too large/i.test(s().capturePause||'')&&sigDiff(s().capturePauseSignature,sourceLockSignature(frame))>9))s().capturePause='';
+    const capacityPaused=captureBuffer.length>=CAPTURE_BUFFER_LIMIT||rowCount>=BATCH_LIMIT||!!(s().capturePause&&/storage|too large/i.test(s().capturePause));
+    if (captureLock) {
+      const signature=sourceLockSignature(frame,captureLock.region);
+      if(observeCaptureLock(captureLock,signature,{paused:capacityPaused,missing:m.edges<2,geometrySignature:loop.signature,geometryComparable:captureLock.cropSafe&&found?.cropSafe===true})){captureLock=null;loop.bestCapture=null;steady=0;greenSince=0;}
       else if (st.state === "green") st = { state: "green", icon: "✓", msg: s().busy ? "Reading card…" : lockMsg };
     }
+    loop.observation.frameAnalysisMs=clockNow()-freezeAt;
     if(loop.bestCapture&&(!canReuseCapture(loop.bestCapture,loop.signature,loop.geometryMotion)||m.motion>=T.motion||loop.bestCapture.selectedGame!==loop.observation.selectedGame||loop.bestCapture.ocrLang!==loop.observation.ocrLang||JSON.stringify(loop.bestCapture.defaultsByGame)!==JSON.stringify(loop.observation.defaultsByGame)))loop.bestCapture=null;
-    if(found&&found.cropSafe===true&&!lockSig&&m.motion<T.motion&&m.sharp>=T.sharp&&m.glare<=T.glare){
+    if(found&&found.cropSafe===true&&!captureLock&&m.motion<T.motion&&m.sharp>=T.sharp&&m.glare<=T.glare){
       const qualityScore=m.sharp/(1+m.motion);
       if(!loop.bestCapture||qualityScore>loop.bestCapture.score){
         loop.bestCapture={...loop.observation,score:qualityScore,stableMs:Date.now()-(loop.stableAt||Date.now()),firstEligibleAt:loop.stableAt};
       }
     }
-    const rowCount=batchStorageSummary().count;
-    if(rowCount<(s().capturePauseRows||0)||(/too large/i.test(s().capturePause||'')&&sigDiff(s().capturePauseSignature,loop.signature)>9))s().capturePause='';
     if(captureBuffer.length>=CAPTURE_BUFFER_LIMIT)st={state:'amber',icon:'…',msg:'Reading queue full. Hold this card a moment.'};
     else if(rowCount>=BATCH_LIMIT)st={state:'amber',icon:'…',msg:'Batch full. Save or review to continue.'};
     else if(s().capturePause&&/storage|too large/i.test(s().capturePause))st={state:'amber',icon:'…',msg:s().capturePause};
@@ -906,7 +931,7 @@ export function registerScanner(ctx) {
       el.className = "cam-status " + st.state;
       el.innerHTML = `<i class="cam-dot" aria-hidden="true"></i>${esc(st.msg)}`;
     }
-    if (st.state === "green" && !lockSig) {
+    if (st.state === "green" && !captureLock) {
       greenSince ||= Date.now();
       if (allowAuto && s().auto !== false && captureBuffer.length<CAPTURE_BUFFER_LIMIT && Date.now() - greenSince > 160) capture(true);
     } else greenSince = 0;
@@ -934,12 +959,12 @@ export function registerScanner(ctx) {
     if(automatic&&(!loop.quad||Date.now()-loop.quadAt>1000))return;
     if(loop.proposal?.cropSafe===true&&(loop.quality?.sharp||0)<T.sharp){setStatus('Keep the name and bottom code readable. Hold steady.');return;}
     const candidate=canReuseCapture(loop.bestCapture,loop.signature,loop.geometryMotion)?loop.bestCapture:loop.observation;
-    const acceptedSignature=candidate.signature||sigOf(candidate.original);
-    if(!automatic&&lockSig&&Date.now()-(s().lastCaptureAt||0)<600&&sigDiff(lockSig,acceptedSignature)<9)return;
+    if(!automatic&&captureLock&&Date.now()-(s().lastCaptureAt||0)<600&&sigDiff(captureLock.signature,sourceLockSignature(candidate.original,captureLock.region))<9)return;
+    const nextLock=acceptedCaptureLock(candidate);
     greenSince = 0;
     if(enqueueCapture(candidate,s().retryBatchId||"",candidate)){
       s().retryBatchId="";s().lastCaptureAt=Date.now();
-      lockSig=Float32Array.from(acceptedSignature);loop.missingFrames=0;loop.changedFrames=0;loop.bestCapture=null;lockMsg="Captured. Next card";
+      captureLock=nextLock;loop.bestCapture=null;lockMsg="Captured. Next card";
     }
   };
   A.scanStart = async () => {
@@ -1182,7 +1207,7 @@ export function registerScanner(ctx) {
     const st=s(),q=st.confirm;if(st.busy||q?.saving)return;
     const entry=loadBatch().find(x=>x.id===q?.batchId);
     st.confirm=null;st.cands=[];st.read=null;st.retryBatchId=entry?.id||'';
-    lockSig=null;greenSince=0;steady=0;
+    captureLock=null;greenSince=0;steady=0;
     if(st.camOn){st.status='Show this card again, with the name and bottom code clear.';render();return;}
     // A stored capture can be retried after reconnecting, without searching a catalogue.
     if(entry?.originalShot||entry?.shot){
@@ -1255,7 +1280,7 @@ export function registerScanner(ctx) {
     toSession(c);
     // The same card still sitting in front of the camera won't be captured again.
     if (s().lastCard) {
-      lockSig = sigOf(s().lastCard);
+      captureLock = acceptedCaptureLock({original:s().lastCard});
       lockMsg = "Added. Next card";
     }
     s().cands = [];
