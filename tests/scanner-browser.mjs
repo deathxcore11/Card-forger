@@ -75,6 +75,23 @@ try{
    assert.equal(await popup.count(),1,`${ref.game} reference photo must produce a candidate, not a blank result`);
    assert.equal(await popup.getByText(ref.name,{exact:true}).count(),1,`${ref.game} correct card title`);
    assert.equal(await popup.getByRole('img',{name:ref.name,exact:true}).count(),1,'card copy is shown');
+   let reviewedPrinting=null;
+   if(ref.g==='ygo'){
+    // This public image is marked Replica and has no actual set code. Its
+    // artwork/name identifies Dark Magician, not CT13 or a 25th printing.
+    assert.match(read.read.code,/Replica/i,'fixture has no proof of a retail printing');
+    assert(await popup.locator('[data-change="scanConfirmFinish"]').isDisabled(),'edition waits for explicit printing review');
+    assert(await popup.getByRole('button',{name:'Add to collection',exact:true}).isDisabled(),'ambiguous printing cannot be added');
+    const pending=await page.evaluate(async()=>{const {S}=await import('/store.js');return {selected:S.ui.scan.confirm.i,options:S.ui.scan.cands.map((c,i)=>({i,id:String(c.card?.id||c.id),name:c.name,print:c.print,exact:c.exact})),saved:S.state.tcg.ygo.collection.length};});
+    assert.equal(pending.selected,-1,'no first-result printing is silently chosen');assert.equal(pending.saved,0);
+    assert(pending.options.length>=2&&pending.options.length<=3,'ambiguous printing offers a compact review');
+    assert(pending.options.every(c=>c.name===ref.name&&c.id===ref.id&&!c.exact),'same-name suggestions are not OCR-proven printings');
+    reviewedPrinting=pending.options[1];assert(reviewedPrinting.print,'offered printing has explicit set/rarity identity');
+    await popup.locator(`[data-act="scanChoose"][data-i="${reviewedPrinting.i}"]`).click();
+    const selected=await page.evaluate(async()=>{const {S}=await import('/store.js');const q=S.ui.scan.confirm,c=S.ui.scan.cands[q.i];return {i:q.i,print:c.print,exact:c.exact};});
+    assert.equal(selected.i,reviewedPrinting.i);assert.equal(selected.print,reviewedPrinting.print);assert.equal(selected.exact,false,'manual review does not fabricate OCR proof');
+    assert(await popup.locator('[data-change="scanConfirmFinish"]').isEnabled(),'reviewing printing enables edition choice');
+   }
    await popup.getByRole('button',{name:'More copies',exact:true}).click();await popup.getByRole('button',{name:'More copies',exact:true}).click();
    const finish=await popup.locator('[data-change="scanConfirmFinish"] option').evaluateAll(opts=>opts.find(x=>x.value)?.value);
    assert(finish,'printing exposes a finish to explicitly confirm');
@@ -87,6 +104,11 @@ try{
    await popup.waitFor({state:'detached'});
    const saved=await page.evaluate(async g=>{const {S}=await import('/store.js');return (g==='mtg'?S.state:S.state.tcg[g]).collection;},ref.g);
    assert.equal(saved.length,1);assert.equal(saved[0].name,ref.name);if(ref.id)assert.equal(String(saved[0].cardId),ref.id,'same name is insufficient: save the correct indexed card/printing');assert.equal(saved[0].qty,3);assert.equal(saved[0].condition,'Lightly Played');assert.equal(saved[0].language,'ja');
+   if(reviewedPrinting){
+    const [printing,rarity]=reviewedPrinting.print.split('|');
+    assert.equal(saved[0].printing,printing,'save retains the explicitly reviewed set code');assert.equal(saved[0].rarity,rarity,'save retains the explicitly reviewed rarity');assert.equal(saved[0].edition,finish,'save retains the explicitly confirmed edition');
+    console.log(`PASS: Yu-Gi-Oh! replica remains unverified; explicit user review selects ${reviewedPrinting.print}, not an inferred photo printing.`);
+   }
    await page.getByRole('navigation',{name:'Main',exact:true}).getByRole('button',{name:'Collection',exact:true}).click();
    await page.getByRole('heading',{name:'Collection',exact:true}).waitFor();await page.locator('main').getByRole('img',{name:ref.name,exact:true}).first().waitFor({state:'visible'});
    console.log(`PASS: ${ref.game}: reference photo → OCR batch → explicit review → finish/dropdown edit → 3 LP/Japanese copies saved once → collection screen.`);
@@ -121,6 +143,10 @@ try{
    assert(await page.locator('#scanVideo').evaluate((v,t)=>!v.paused&&v.currentTime>t&&v.srcObject===window.__cameraStream&&v.srcObject.getTracks()[0].readyState==='live',beforeTime),'video keeps playing behind confirmation');
    await page.getByRole('button',{name:'Keep for later and continue scanning',exact:true}).click();
    assert(await page.locator('#scanVideo').evaluate(v=>v.srcObject===window.__cameraStream&&v.srcObject.getTracks()[0].readyState==='live'),'dismiss keeps the same live camera stream');
+   await page.evaluate(()=>window.scrollTo(0,0));
+   const shellTray=await page.locator('.scan-batch-tray').boundingBox(),shellNav=await page.getByRole('navigation',{name:'Main',exact:true}).boundingBox();
+   assert(shellTray.y+shellTray.height<=shellNav.y,'production app shell keeps the complete live tray above navigation');
+   await page.screenshot({path:`test-results/scanner-${ref.g}-live.png`,fullPage:false});
    console.log(`PASS: ${ref.game}: off-centre rotated reference MediaStream → automatic boundary + perspective warp → queued recognition → explicit review → playback continues → dismiss retains the same active camera track.`);
   }catch(e){
    console.error(`FAIL ${ref.game}: ${e.stack}`);console.error('Scan save diagnostic:',await page.evaluate(async()=>{const {S}=await import('/store.js');return S.ui.scan.confirm?.errorDetail||'No save exception';}));console.error((await page.locator('main').innerText()).slice(0,6000));

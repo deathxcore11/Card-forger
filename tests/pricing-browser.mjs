@@ -5,7 +5,7 @@ import {readFile,mkdir} from 'node:fs/promises';
 import {resolve,extname} from 'node:path';
 import {chromium,devices} from 'playwright';
 const root=process.cwd();
-const fixture=`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/style.css"><body data-game="mtg"><dialog id="sheet" open><div id="sheetBody"></div></dialog><script type="module">
+const fixture=`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/style.css"><body data-game="mtg"><dialog id="sheet" open><div id="sheetBody"></div></dialog><script type="module">
 import {S,blank} from '/store.js';import {registerTcg,proven,provenSheetHtml} from '/tcg.js';
 S.state=blank();S.state.settings.game='mtg';let attempt=0;const A={},C={},I={};let rows=[{key:'known',name:'Known-price card',qty:2,price:5,owned:0,kind:'creature'},{key:'missing',name:'Unavailable-price card',qty:3,price:null,owned:0,kind:'creature'}],side=[{key:'side',name:'Sideboard price pending',qty:1,price:null,owned:0,kind:'spell'}];
 const ctx={A,C,I,commit:async f=>f(S.state),render(){},openSheet:(html,context)=>{document.querySelector('#sheetBody').innerHTML=html;S.ui.sheetCtx=context;},closeSheet(){},toast(){},go(){},copyText(){},download(){},busy:()=>()=>{}};registerTcg(ctx);

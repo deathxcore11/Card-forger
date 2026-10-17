@@ -260,6 +260,8 @@ details > summary::-webkit-details-marker { display: none; }
 .group { margin: 12px 0; }
 .group > summary { display: flex; justify-content: space-between; cursor: pointer; padding: 6px 2px; font: 800 13px Manrope, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .group > summary em { font-style: normal; color: var(--faint); margin-left: 6px; }
+.side-group > summary { flex-wrap:wrap;align-items:baseline;gap:6px 12px; }
+.side-group > summary > span:first-child { flex-shrink:0;white-space:nowrap; }
 .list.compact { gap: 0; }
 .mini-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; padding: 9px 2px; border: 0; border-bottom: 1px solid var(--line); background: none; text-align: left; font-size: 14px; min-width: 0; }
 .mini-row:last-child { border-bottom: 0; }

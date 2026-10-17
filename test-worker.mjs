@@ -1,6 +1,20 @@
 // The Worker's /api/meta/mtg route with every source stubbed: Magic Online and EDHTop16 work
 // without a key; TopDeck covers the rest when TOPDECK_KEY is set. Cache, outages, bad formats.
 import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+
+// Preview build settings are explicit and isolated, not copied credentials or
+// production resource identifiers. Owner testing-mode quotas stay unchanged.
+{
+  const config=JSON.parse(readFileSync(new URL('./wrangler.jsonc',import.meta.url),'utf8').replace(/^\s*\/\/.*$/gm,''));
+  assert.equal(config.name,'cardforge2');
+  assert.deepEqual(config.vars,{AI_LIMITS_ENABLED:'false',CONDITION_DAILY_LIMIT:'30',CONDITION_MONTHLY_LIMIT:'900',CONDITION_MINUTE_LIMIT:'8'});
+  assert.deepEqual(Object.keys(config.previews).sort(),['durable_objects','vars']);
+  assert.deepEqual(config.previews.vars,config.vars);
+  assert.deepEqual(config.previews.durable_objects,config.durable_objects);
+  for(const binding of config.previews.durable_objects.bindings)assert.deepEqual(Object.keys(binding).sort(),['class_name','name'],'no production script or namespace identifier is shared');
+  console.log('PASS: explicit preview config preserves owner quotas and uses only isolated same-Worker Durable Objects, no credentials.');
+}
 
 const store = new Map();
 globalThis.caches = { default: { match: async (r) => store.get(r.url)?.clone(), put: async (r, res) => void store.set(r.url, res.clone()) } };
