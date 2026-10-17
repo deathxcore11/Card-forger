@@ -147,6 +147,21 @@ try{
    const shellTray=await page.locator('.scan-batch-tray').boundingBox(),shellNav=await page.getByRole('navigation',{name:'Main',exact:true}).boundingBox();
    assert(shellTray.y+shellTray.height<=shellNav.y,'production app shell keeps the complete live tray above navigation');
    await page.screenshot({path:`test-results/scanner-${ref.g}-live.png`,fullPage:false});
+   const retainedBatch=await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js');return loadBatch().map(x=>x.id);});
+   for(const viewport of [{width:320,height:568},{width:700,height:500},{width:844,height:390},{width:1024,height:600}]){
+    await page.setViewportSize(viewport);await page.evaluate(()=>window.scrollTo(0,0));
+    const layout=await page.evaluate(()=>{
+     const box=s=>{const r=document.querySelector(s).getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height};};
+     const nav=document.querySelector('.bottom-nav'),tray=box('.scan-batch-tray'),camera=box('.cam-wrap.immersive'),shutter=document.querySelector('#scanCaptureBtn'),s=shutter.getBoundingClientRect();
+     const hit=document.elementFromPoint(s.left+s.width/2,s.top+s.height/2);
+     return {tray,camera,clearBottom:getComputedStyle(nav).display==='none'?innerHeight:nav.getBoundingClientRect().top,shutterClear:hit===shutter||shutter.contains(hit),overflow:document.documentElement.scrollWidth>innerWidth};
+    });
+    assert(layout.tray.top>=0&&layout.tray.bottom<=layout.clearBottom,`real shell tray clears navigation at ${JSON.stringify(viewport)}: ${JSON.stringify(layout)}`);
+    assert(layout.camera.height>=100&&layout.shutterClear&&!layout.overflow,`real shell keeps camera and capture usable at ${JSON.stringify(viewport)}: ${JSON.stringify(layout)}`);
+    assert(await page.locator('#scanVideo').evaluate(v=>v.srcObject===window.__cameraStream&&v.srcObject.getTracks()[0].readyState==='live'),'fold/landscape resize preserves camera stream');
+    assert.deepEqual(await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js');return loadBatch().map(x=>x.id);}),retainedBatch,'fold/landscape resize preserves each captured card');
+    if(viewport.width===844)await page.screenshot({path:`test-results/scanner-${ref.g}-landscape.png`,fullPage:false});
+   }
    console.log(`PASS: ${ref.game}: off-centre rotated reference MediaStream → automatic boundary + perspective warp → queued recognition → explicit review → playback continues → dismiss retains the same active camera track.`);
   }catch(e){
    console.error(`FAIL ${ref.game}: ${e.stack}`);console.error('Scan save diagnostic:',await page.evaluate(async()=>{const {S}=await import('/store.js');return S.ui.scan.confirm?.errorDetail||'No save exception';}));console.error((await page.locator('main').innerText()).slice(0,6000));

@@ -17,6 +17,8 @@ import { validateWorkspace } from '../confidence.js';
 import { normalizeYgo } from '../ygo.js';
 import { normalizePtcg } from '../ptcg.js';
 import { GAME_IDS } from '../games.js';
+import { SUPABASE } from '../config.js';
+import { validateHistory } from '../shared-history.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const RESULTS = resolve(ROOT, 'test-results');
@@ -26,6 +28,8 @@ const ISO = new Date(NOW).toISOString();
 const WIDTHS = [320, 360, 390, 430, 700, 768, 900, 1024, 1200, 1440, 2560];
 const EVIDENCE_WIDTHS = new Set([320, 390, 768, 1440, 2560]);
 const IMAGE = 'https://home-fixtures.invalid';
+const MARKET_HISTORY = new URL('/functions/v1/market-history', SUPABASE.url);
+const historyFixture = url => ({ game: url.searchParams.get('game'), cardId: url.searchParams.get('id'), finish: url.searchParams.get('finish'), series: [], notice: 'No historical quotes in this deterministic Home fixture.' });
 const SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="630" height="880" viewBox="0 0 630 880"><defs><linearGradient id="a" x2="1" y2="1"><stop stop-color="#244567"/><stop offset=".5" stop-color="#ab7945"/><stop offset="1" stop-color="#382d59"/></linearGradient></defs><rect width="630" height="880" rx="30" fill="url(#a)"/><circle cx="405" cy="255" r="150" fill="#e9c479" opacity=".7"/><path d="M0 620 170 320 330 560 510 340 630 650V880H0Z" fill="#152739"/><text x="38" y="92" fill="#fff" font-family="sans-serif" font-size="28">Representative fixture art</text></svg>`;
 const sources = {
   mtg: { host: 'https://magic.wizards.com', news: '/en/news/fixture-story', event: '/en/events/fixture-event', deck: 'https://www.mtgo.com/decklist/fixture-standard', label: 'Magic Online' },
@@ -112,6 +116,12 @@ for (const unpriced of [false, true]) {
   assert.equal(value.unpriced, unpriced ? 3 : 1);
   for (const game of ['ygo', 'ptcg']) assert.equal(f.cache[game][heroes[game].id].prices.usd, 12.5);
 }
+for (const game of GAME_IDS) {
+  const query = { game, cardId: heroes[game].id, finish: game === 'mtg' ? 'nonfoil' : 'reference' };
+  const url = new URL(MARKET_HISTORY);
+  url.search = new URLSearchParams({ game, id: query.cardId, finish: query.finish });
+  assert.deepEqual(validateHistory(historyFixture(url), query).series, []);
+}
 if (process.argv.includes('--validate-fixtures')) {
   console.log('PASS: Home fixtures validate against real workspace, card adapters and collection pricing; browser was not started.');
   process.exit(0);
@@ -149,10 +159,16 @@ async function openApp(options = {}) {
     const request = route.request(), url = new URL(request.url());
     const json = body => route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
     requests.push(`${request.method()} ${url.href}`);
+    const isMarketHistory = url.origin === MARKET_HISTORY.origin && url.pathname === MARKET_HISTORY.pathname;
+    if (isMarketHistory && request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-methods': 'GET', 'access-control-allow-headers': 'apikey' }, body: '' });
     if (!['GET', 'HEAD'].includes(request.method())) {
       writes.push(`${request.method()} ${url.href}`);
       return json({ ok: false, error: 'Writes are forbidden in the Home regression' });
     }
+    // Card details request public history even while their Prices tab is hidden.
+    // Keep that real path active, but fulfill only the configured host and exact
+    // history endpoint locally, with matching printing identity and honest gaps.
+    if (isMarketHistory) return json(historyFixture(url));
     const selection = url.hostname === 'api.scryfall.com' && url.pathname === '/cards/random'
       || url.hostname === 'db.ygoprodeck.com' && url.pathname.endsWith('/archetypes.php')
       || url.hostname === 'api.tcgdex.net' && url.pathname === '/v2/en/cards' && url.searchParams.get('category') === 'Pokemon';
@@ -285,6 +301,26 @@ async function visibleHeaderArt(page) {
   assert(art.display !== 'none' && art.visibility !== 'hidden' && Number(art.opacity) > 0);
   assert.equal(await page.locator('#homeHero.has-art').count(), 1);
 }
+async function accessibleCarouselControls(page, label) {
+  // A fixed mobile nav appearing partway through a full-page capture is normal.
+  // Test the actual viewport instead: the controls must scroll into clear space,
+  // accept keyboard focus, and remain directly hit-testable without forced clicks.
+  await page.locator('.community-controls').evaluate(node => node.scrollIntoView({ block: 'center', behavior: 'instant' }));
+  for (const step of ['-1', '1']) {
+    const control = page.locator(`[data-community-step="${step}"]`);
+    await control.focus();
+    const bounds = await control.evaluate(node => {
+      const rect = node.getBoundingClientRect(), nav = document.querySelector('.bottom-nav');
+      const navRect = nav?.getBoundingClientRect(), navVisible = nav && getComputedStyle(nav).display !== 'none';
+      const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      return { focused: document.activeElement === node, hit: hit === node || node.contains(hit), width: rect.width, height: rect.height,
+        top: rect.top, bottom: rect.bottom, clearBottom: navVisible ? navRect.top : innerHeight };
+    });
+    assert(bounds.focused && bounds.hit, `${label}: carousel ${step} receives focus and unobstructed input: ${JSON.stringify(bounds)}`);
+    assert(bounds.top >= 0 && bounds.bottom <= bounds.clearBottom, `${label}: carousel ${step} scrolls clear of the fixed nav: ${JSON.stringify(bounds)}`);
+    assert(bounds.width >= 44 && bounds.height >= 44, `${label}: carousel ${step} keeps a 44px touch target`);
+  }
+}
 async function closeSheet(page) {
   const button = page.locator('#sheet [data-act="closeSheet"]').first();
   if (await button.isVisible()) await button.click();
@@ -343,6 +379,8 @@ try {
       await assertSelected(page, game);
       await visibleHeaderArt(page);
       await noOverflow(page, `${game} at ${width}px`);
+      await accessibleCarouselControls(page, `${game} at ${width}px`);
+      await page.evaluate(() => scrollTo(0, 0));
       if (EVIDENCE_WIDTHS.has(width)) await page.screenshot({ path: resolve(RESULTS, `home-${game}-${width}.png`), fullPage: true, animations: 'disabled' });
     }
     await page.setViewportSize({ width: 390, height: 1100 });
@@ -365,7 +403,8 @@ try {
     await page.locator('.hh-deck-link').click();
     await page.waitForFunction(hash => location.hash === hash, route);
     assert.match(await page.locator('#content').innerText(), new RegExp(`${game.toUpperCase()} saved fixture deck`));
-    await page.locator('.brand').click();
+    await page.locator('.bottom-nav [data-nav="home"]').click();
+    await page.waitForFunction(() => location.hash === '#home' && document.body.dataset.view === 'home');
     await assertSelected(page, game);
     report.push(`${game}: all eleven widths, visible actual art, exact card and saved deck actions, partial value`);
   }
@@ -411,6 +450,7 @@ try {
       await assertSelected(page, game);
       assert.equal(await article.getAttribute('data-slide-id'), eventId, 'fold/tablet resize preserves carousel position');
       await noOverflow(page, `${game} resized event at ${width}px`);
+      await accessibleCarouselControls(page, `${game} resized event at ${width}px`);
     }
     await page.locator('[data-community-step="1"]').focus();
     await page.keyboard.press('ArrowLeft');
