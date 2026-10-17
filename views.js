@@ -95,7 +95,7 @@ export function home() {
   const fresh = !st.collection.length && !st.decks.length,
     lead = active || st.decks.at(-1);
   // One next step for where you are; the 3-step guide only for brand-new users (and it can be hidden).
-  return `${homeHero("mtg", copies ? "Welcome back." : "Let’s build from your cards.", mtgDeckArt(active), !fresh)}${installNudge(copies)}
+  return `${homeHero("mtg", copies ? "Welcome back." : "Let’s build from your cards.", !fresh)}${installNudge(copies)}
   ${st.example ? `<div class="note warn">Example data is loaded. Reset it in Settings before adding real cards.</div>` : ""}
   ${homeValue({ total: value.total, copies, decks: st.decks.length, unpriced: value.unpriced, change, valueRoute: "#collection/value" })}
   ${homeEdition("mtg")}
@@ -117,12 +117,6 @@ const glossary = () => `<details class="glossary"><summary>New to Commander? 60-
     <dt>Engine score</dt><dd>A 0–100 build-health check of those ingredients plus synergy and curve. It is not a win rate.</dd>
     <dt>Owned vs. deck</dt><dd>A deck is a plan. Your collection is what you physically own. Importing a deck never adds cards to your collection.</dd>
   </dl></details>`;
-
-// The active deck's commander art leads the Home banner.
-function mtgDeckArt(d) {
-  const c = d ? meta(d.commander) || d.cards.map((x) => meta(x.name)).find((x) => art(x)) : null;
-  return c && art(c) ? { name: c.name, art: art(c), deck: true, deckId: d.id } : null;
-}
 
 // Three steps for a new visitor; disappears once they have cards and a deck.
 function mtgNext(d, copies) {

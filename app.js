@@ -107,8 +107,8 @@ function setSaveStatus(text, cls = "") {
     mark.title = text;
   }
 }
-// Glass look: frosted surfaces over a blurred copy of the game's hero art (the card of the day or
-// one from your decks). The art is remembered per game so every screen shares the same backdrop.
+// Glass look: frosted surfaces over a blurred copy of the game's daily-card art.
+// The art is remembered per game so every screen shares the same backdrop.
 const AMBIENT_KEY = "cardstashy-ambient-v1",
   GLASS_KEY = "cardstashy-glass";
 const glassOn = () => {
@@ -2519,16 +2519,76 @@ A.homeSearch = () => {
     if (q) A.dbSearch();
   }
 };
-// Load today's banner art, then swap just the banner in place.
+// A daily feature opens its actual printing, never a name-wide/default deck card.
+A.homeDailyCard = async (t) => {
+  const g = t.dataset.game, h = T.heroFor(g);
+  if (S.ui.view !== "home" || T.game() !== g) return;
+  if (!h || h.id !== t.dataset.id || h.date !== t.dataset.date) return heroArt(g);
+  if (g !== "mtg") return A.tCard({ dataset: { id: h.id, game: g } });
+  if (h.printing) return A.card({ dataset: { name: h.name }, printing: h.printing });
+  // Existing v1 caches retained only art; its proved ID can load the exact print.
+  const ctx = { type: "card", name: h.name, dailyId: h.id };
+  openSheet(`<div class="sheet-head"><h2>${esc(h.name)}</h2><button class="icon" data-act="closeSheet">✕</button></div><p class="muted">Loading this printing…</p>`, ctx);
+  const still = () => S.ui.sheetCtx === ctx && $("#sheet").open && S.ui.view === "home" && T.game() === g;
+  try {
+    const print = await api("/cards/" + encodeURIComponent(h.id));
+    if (!still()) return;
+    if (print.id !== h.id || key(print.name) !== key(h.name) || typeof print.set !== "string") throw Error("The card source returned a different printing. Please try again.");
+    return A.card({ dataset: { name: h.name }, printing: slim({ ...print, full: true }) });
+  } catch (e) {
+    if (still()) $("#sheetBody").innerHTML = `<div class="sheet-head"><h2>${esc(h.name)}</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="note warn">${esc(e.message)}</div>`;
+  }
+};
+
+// Only update the art/credits. Never replace Home search, carousel, focus or scroll.
+function paintHomeHero(g) {
+  if (S.ui.view !== "home" || T.game() !== g) return;
+  const el = $("#homeHero"), h = T.heroFor(g);
+  if (!el || el.dataset.game !== g || el.dataset.dailyDate === (h?.date || "") && el.dataset.dailyId === (h?.id || "")) return;
+  const template = document.createElement("template");
+  template.innerHTML = T.homeHero(g, "");
+  const next = template.content.firstElementChild;
+  const oldArt = el.querySelector(".hh-art"), newArt = next.querySelector(".hh-art");
+  if (oldArt) newArt ? oldArt.replaceWith(newArt) : oldArt.remove();
+  else if (newArt) el.prepend(newArt);
+  for (const selector of [".hh-art-link", ".hh-credit"]) {
+    const old = el.querySelector(selector), fresh = next.querySelector(selector);
+    if (old && fresh) {
+      // Keep the focused button node; only its exact-card identity/content changes.
+      for (const attr of [...old.attributes]) old.removeAttribute(attr.name);
+      for (const attr of [...fresh.attributes]) old.setAttribute(attr.name, attr.value);
+      old.innerHTML = fresh.innerHTML;
+    } else if (old) old.remove();
+    else if (fresh) {
+      if (selector === ".hh-art-link") el.querySelector(".hh-shade").after(fresh);
+      else el.querySelector(".hh-body").append(next.querySelector(".hh-credits"));
+    }
+  }
+  if (!h) el.querySelector(".hh-credits")?.remove();
+  el.dataset.dailyDate = h?.date || "";
+  el.dataset.dailyId = h?.id || "";
+  el.classList.toggle("has-art", !!h?.art);
+  el.classList.toggle("no-art", !h?.art);
+  updateAmbient();
+}
+let heroRolloverTimer = null;
+function scheduleHeroRollover() {
+  clearTimeout(heroRolloverTimer);
+  if (document.hidden || S.ui.view !== "home") return;
+  heroRolloverTimer = setTimeout(() => heroArt(T.game()), 86400000 - Date.now() % 86400000 + 20);
+  heroRolloverTimer?.unref?.();
+}
 function heroArt(g) {
-  T.loadHero(g, () => api("/cards/random?" + new URLSearchParams({ q: "game:paper is:hires (rarity:mythic or rarity:rare) -is:digital" })))
-    .then((fresh) => {
-      if (!fresh || S.ui.view !== "home" || T.game() !== g) return;
-      const el = $("#homeHero");
-      if (el && !el.querySelector(".hh-art")) render();
-    })
+  if (S.ui.view !== "home" || T.game() !== g) return;
+  scheduleHeroRollover();
+  paintHomeHero(g); // Clear yesterday's art even if today's provider is offline.
+  return T.loadHero(g, () => api("/cards/random?" + new URLSearchParams({ q: "game:paper is:hires (rarity:mythic or rarity:rare) -is:digital" })))
+    .then(() => paintHomeHero(g))
     .catch(() => {});
 }
+// Suspended/mobile tabs recheck the day when foregrounded, not only on navigation.
+document.addEventListener("visibilitychange", () => { if (!document.hidden && S.ui.view === "home") heroArt(T.game()); });
+window.addEventListener("focus", () => { if (S.ui.view === "home") heroArt(T.game()); });
 
 /* ---------- rules reference ---------- */
 A.rulesList = async (t) => {

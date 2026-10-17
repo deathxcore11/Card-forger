@@ -28,7 +28,7 @@ MODULES = (
     "app.js", "core.js", "scancam.js", "scan-batch.js", "scan-signals.js", "scan.js", "scan-catalog.js",
     "scan-vision.js", "scansession.js", "tcg.js", "ptcg.js", "ui.js",
     "views.js", "confidence.js", "mtg-tcgprice.js", "style.css",
-    "home-ui.js", "home-swipe.js", "community-feed.js",
+    "home-ui.js", "home-swipe.js", "community-feed.js", "community-art.js",
     "ai-rules.js", "ai-rules-panel.js",
     "pricing-presentation.js", "workbench-ui.js", "artwork.js", "meta.js",
     "rules.js", "rule-learning.js", "rule-lessons.js", "rule-dex.js", "rule-reference.js", "rule-corpus.js",

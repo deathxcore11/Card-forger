@@ -1,4 +1,5 @@
 import { metaState as readMetaState } from './meta.js';
+import { communityDeckArtwork, safeCommunityImage } from './community-art.js';
 
 // Home is a view of the existing tournament cache, not a second deck provider.
 // Only the small publisher feed has its own daily cache. All dates retain their
@@ -28,9 +29,6 @@ const saved = (key = KEY) => { try { const s = JSON.parse(storage()?.getItem(key
 export function safeCommunityUrl(value, game) {
   try { const u = new URL(value); return u.protocol === 'https:' && !u.username && !u.password && !u.port && hosts[game]?.includes(u.hostname) ? u.href : ''; } catch { return ''; }
 }
-function safeImage(value) {
-  try { const u = new URL(value); return u.protocol === 'https:' && !u.username && !u.password && !u.port && ['images.ctfassets.net', 'assets.pokemon.com', 'img.yugioh-card.com', 'www.yugioh-card.com'].includes(u.hostname) ? u.href : ''; } catch { return ''; }
-}
 function validItems(items, game, now) {
   const seen = new Set();
   return (Array.isArray(items) ? items : []).slice(0, 36).map(x => {
@@ -39,7 +37,7 @@ function validItems(items, game, now) {
     if (!url || !title || !fetchedAt || seen.has(url) || now - Date.parse(fetchedAt) > RETENTION || Date.parse(fetchedAt) > now + 60000) return null;
     if (x.kind === 'news' ? !publishedAt || Date.parse(publishedAt) > now || now - Date.parse(publishedAt) > RETENTION : !startsAt || !endsAt || Date.parse(endsAt) + COMMUNITY_TTL <= now || Date.parse(startsAt) > now + 90 * COMMUNITY_TTL) return null;
     seen.add(url);
-    return { id: url, game, kind: x.kind, title, summary: text(x.summary), url, source: text(x.source, 100), sourceUrl: safeCommunityUrl(x.sourceUrl, game), publishedAt, startsAt, endsAt, dateLabel: x.kind === 'news' ? 'Published' : 'Event dates', fetchedAt, stale: !!x.stale || now - Date.parse(fetchedAt) >= COMMUNITY_TTL, image: safeImage(x.image), important: !!x.important };
+    return { id: url, game, kind: x.kind, title, summary: text(x.summary), url, source: text(x.source, 100), sourceUrl: safeCommunityUrl(x.sourceUrl, game), publishedAt, startsAt, endsAt, dateLabel: x.kind === 'news' ? 'Published' : 'Event dates', fetchedAt, stale: !!x.stale || now - Date.parse(fetchedAt) >= COMMUNITY_TTL, image: safeCommunityImage(x.image, game), important: !!x.important };
   }).filter(Boolean).slice(0, 18);
 }
 export function communityState(game) {
@@ -96,9 +94,9 @@ function deckSlides(game, M, metaKey, now) {
   const methodology = game === 'ptcg' ? 'Top 8 lists from recent Standard events on Limitless.' : game === 'ygo' ? 'Lists curated as Tournament Meta Decks by YGOPRODeck.' : /Magic Online|MTGO/i.test(data.source || '') ? 'Published Magic Online Challenge and 5–0 League lists; not a global popularity ranking.' : /EDHTop16/i.test(data.source || '') ? 'Competitive Commander tournament results from EDHTop16.' : 'Published tournament lists; not a global popularity ranking.';
   const seen = new Set();
   return data.decks.slice(0, 100).filter(d => {
-    if (!d?.key || seen.has(d.key)) return false; seen.add(d.key); return !!safeCommunityUrl(d.url || d.eventUrl, game);
+    if (!d?.key || seen.has(d.key)) return false; seen.add(d.key); return !!(safeCommunityUrl(d.url, game) || safeCommunityUrl(d.eventUrl, game));
   }).slice(0, 3).map(d => ({
-    id: `deck:${game}:${d.key}`, game, kind: 'deck', title: text(d.name || 'Tournament deck'), summary: [text(d.place, 35), text(d.event, 110)].filter(Boolean).join(' · '), url: safeCommunityUrl(d.url || d.eventUrl, game), source: text(data.source, 160), publishedAt: stamp(d.date), dateLabel: game === 'ygo' ? 'List submitted' : 'Event date', fetchedAt, stale, deckKey: d.key, metaKey, methodology,
+    id: `deck:${game}:${d.key}`, game, kind: 'deck', title: text(d.name || 'Tournament deck'), summary: [text(d.place, 35), text(d.event, 110)].filter(Boolean).join(' · '), url: safeCommunityUrl(d.url, game) || safeCommunityUrl(d.eventUrl, game), artwork: communityDeckArtwork(game, d), source: text(data.source, 160), publishedAt: stamp(d.date), dateLabel: game === 'ygo' ? 'List submitted' : 'Event date', fetchedAt, stale, deckKey: d.key, metaKey, methodology,
   }));
 }
 function resultSlide(game, M, now) {
