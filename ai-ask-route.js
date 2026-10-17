@@ -1,3 +1,4 @@
+import { prepareRulesQuestion, finishRulesQuestion } from './ai-rules-route.js';
 // Ask AI: an in-app assistant. OpenAI decides which of the app's own functions to call; the app
 // runs them on the device (cards, prices, sets, collection, meta decks, decks, builder) and sends
 // the results back. No web access, no external links: the model only sees what the app returns.
@@ -79,7 +80,11 @@ export async function aiAskRoute(request, env, { fetcher = fetch } = {}) {
   if (origin !== new URL(request.url).origin || request.headers.get('Sec-Fetch-Site') === 'cross-site') return reply({ message: 'Open Ask AI from this app.' }, 403);
   if (!/^application\/json(?:;|$)/i.test(request.headers.get('Content-Type') || '')) return reply({ message: 'Send JSON.' }, 415);
   try {
-    const turn = cleanTurn(await readBounded(request));
+    const raw = await readBounded(request);
+    if (raw?.mode && !['search', 'rules'].includes(raw.mode)) throw fail('Choose a supported assistant mode.');
+    const rules = raw?.mode === 'rules' ? await prepareRulesQuestion(raw, env) : null;
+    if (rules?.immediate) return reply(rules.immediate);
+    const turn = rules ? { rounds: 0 } : cleanTurn(raw);
     if (turn.rounds > 12) throw fail('That question needed too many steps. Try asking something narrower.', 400);
     // Every paid provider invocation consumes allowance. Client-supplied tool history
     // is untrusted and must never grant free or replayable continuation calls.
@@ -89,7 +94,7 @@ export async function aiAskRoute(request, env, { fetcher = fetch } = {}) {
       const gate = env.AI_REVIEW_LIMITS.get(env.AI_REVIEW_LIMITS.idFromName('global'));
       if (!(await gate.fetch('https://limit/reserve', { method: 'POST', body: JSON.stringify({ hash }) })).ok) return reply({ code: 'app_limit', message: 'Ask AI limit reached. Try later.' }, 429);
     }
-    const upstream = await fetcher('https://api.openai.com/v1/responses', { method: 'POST', signal: AbortSignal.timeout(60000), headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: env.OPENAI_MODEL || 'gpt-4.1-mini', store: false, max_output_tokens: 1500, instructions: instructions + `\nThe player has ${{ mtg: 'Magic: The Gathering', ygo: 'Yu-Gi-Oh!', ptcg: 'Pokémon' }[turn.game]} open. Today is ${new Date().toISOString().slice(0, 10)}.`, input: turn.items, tools: TOOLS, tool_choice: 'required', parallel_tool_calls: true }) });
+    const upstream = await fetcher('https://api.openai.com/v1/responses', { method: 'POST', signal: AbortSignal.timeout(60000), headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify(rules?.payload || { model: env.OPENAI_MODEL || 'gpt-4.1-mini', store: false, max_output_tokens: 1500, instructions: instructions + `\nThe player has ${{ mtg: 'Magic: The Gathering', ygo: 'Yu-Gi-Oh!', ptcg: 'Pokémon' }[turn.game]} open. Today is ${new Date().toISOString().slice(0, 10)}.`, input: turn.items, tools: TOOLS, tool_choice: 'required', parallel_tool_calls: true }) });
     if (!upstream.ok) {
       let detail = {}; try { detail = (await upstream.json()).error || {}; } catch {}
       if (['credit_balance_exhausted', 'insufficient_quota'].includes(detail.code) || detail.type === 'insufficient_quota') return reply({ code: 'billing', message: 'OpenAI API credits need attention before Ask AI can answer.' }, 503);
@@ -97,6 +102,7 @@ export async function aiAskRoute(request, env, { fetcher = fetch } = {}) {
       if (upstream.status === 401) return reply({ code: 'authentication', message: 'The server API key needs attention.' }, 503);
       return reply({ code: 'provider_unavailable', message: 'Ask AI is temporarily unavailable. Try again soon.' }, 502);
     }
-    return reply(readTurn(await upstream.json()));
+    const result = await upstream.json();
+    return reply(rules ? finishRulesQuestion(result, rules) : readTurn(result));
   } catch (e) { return reply({ message: e.status ? e.message : 'Ask AI timed out. Try again.' }, e.status || 502); }
 }

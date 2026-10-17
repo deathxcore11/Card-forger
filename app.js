@@ -6,13 +6,14 @@ import {ownedCardLots,quickQuantity} from './quick-quantity.js';
 import {conditionName,conditionValue,conditionPriceHtml} from './condition-value.js';
 import { showAiReview } from './ai-review.js';
 import { openAsk, clearAskConversations } from './ai-ask.js';
+import { openRulesAsk, closeRulesAsk, clearRulesConversations } from './ai-rules.js';
 import { makeAskTools } from './ai-tools.js';
 import { ask, askText } from "./dialog.js";
 import { attachHomeSwipe } from "./home-swipe.js";
 import { useMyPrices, myPriceKey, ensureTcgPrices } from "./mtg-tcgprice.js";
 import { buyOnTcgplayer, massLines } from "./buy.js";
 import {applySwapsToCards} from './insights.js';
-import {showRuleHint} from './rule-dex.js';
+import {showRuleHint,dismissRuleHint} from './rule-dex.js';
 import {bestBudgetDecks,purchaseCost,comparePower,refineCandidates,towardDeck,spendUp,cardQuality} from './deck-optimizer.js';
 import { playRate } from './importance.js';
 import { budgetNotes, variantsFrom, difficultyOf } from './deck-optimizer.js';
@@ -22,6 +23,7 @@ import {artworkHTML} from './artwork.js';
 import {attachAutomaticBrowse} from './auto-browse.js';
 import {SheetHistory,BROWSE_TYPES,sheetKey} from "./sheet-history.js";
 import {handleArtworkError} from "./artwork.js";
+import {selectedFinish,detailIdentity,captureDetailState,restoreDetailState,detailTabKey,createDetailJump} from "./pricing-presentation.js";
 import {modeFor,registerWorkbench,quoteModel,recordQuote} from "./workbench-ui.js";
 import { locationPicker, rememberLocation, chooseLocation } from "./collection-locations.js";
 import { captureAuthFields, restoreAuthFields, authFeedback } from "./auth-form.js";
@@ -575,8 +577,12 @@ function wireRouteBack(){
  const saved=routeTrail.at(-1);if(saved.game!==T.game()){routeTrail.length=0;return;}
  const button=document.createElement("button");button.className="link browse-return";button.dataset.act="routeHistoryBack";button.textContent="← Back to "+(saved.ctx.name || "previous card or deck");main.prepend(button);
 }
+const detailContextIdentity=ctx=>detailIdentity(ctx,ctx?.type==="card"?ctx.print||meta(ctx.name):null);
 function openSheet(html, ctx = null, scrollTop = 0) {
+  dismissRuleHint();
+  if (S.ui.sheetCtx !== ctx || $("#sheetBody")?.dataset?.detailIdentity !== detailContextIdentity(ctx)) dismissRulesGuide();
   const dlg = $("#sheet");
+  const detailState = dlg.open && S.ui.sheetCtx === ctx && !!detailContextIdentity(ctx) && $("#sheetBody").dataset.detailIdentity === detailContextIdentity(ctx) ? captureDetailState($("#sheetBody")) : null;
   const cardPopup = ["card","tcard"].includes(ctx?.type);
   const enteringCard = cardPopup && (!dlg.open || sheetKey(S.ui.sheetCtx) !== sheetKey(ctx));
   dlg.dataset.cardPopup = String(cardPopup);
@@ -586,6 +592,7 @@ function openSheet(html, ctx = null, scrollTop = 0) {
   const stepKey = [ctx?.type,ctx?.tab,ctx?.id || ctx?.name,ctx?.finish].join(":");
   S.ui.sheetCtx = ctx;
   $("#sheetBody").innerHTML = html;
+  $("#sheetBody").dataset.detailIdentity = detailContextIdentity(ctx);
   if (lastSheetStep && lastSheetStep !== stepKey) {
     $("#sheetBody").classList.remove("sheet-step");
     void $("#sheetBody").offsetWidth;
@@ -607,6 +614,7 @@ function openSheet(html, ctx = null, scrollTop = 0) {
   sheetScrolled();
   refreshConditionPrice();
   wireSheetBack();
+  if (detailState) { restoreDetailState($("#sheetBody"),detailState); sheetScrolled(); }
   if (!sheetScrollWired) {
     sheetScrollWired = true;
     $("#sheetBody").addEventListener?.("scroll", sheetScrolled, { passive: true });
@@ -646,6 +654,7 @@ function sheetScrolled() {
   body.style?.setProperty?.("--card-tabs-top",Math.max(0,on?head.getBoundingClientRect().bottom-body.getBoundingClientRect().top:0)+"px");
 }
 function closeSheet(rememberRoute=true) {
+  dismissRulesGuide();
   pendingRoute=rememberRoute && $("#sheet").open ? sheetSnapshot() : null;
   if(pendingRoute)pendingRoute.at=Date.now();
   sheetTrail.clear();
@@ -657,20 +666,22 @@ function closeSheet(rememberRoute=true) {
 function refreshSheet() {
   const ctx = S.ui.sheetCtx;
   if (!ctx || !$("#sheet").open) return;
+  if (["card","tcard","buy"].includes(ctx.type)) {
+    const c = ctx.type === "card" ? meta(ctx.name) : ctx.type === "tcard" ? T.cardOf(ctx.game,ctx.id) : ctx.print;
+    if (!c && ctx.type !== "buy") return;
+    const body = $("#sheetBody"), saved = body.dataset.detailIdentity === detailContextIdentity(ctx) ? captureDetailState(body) : null;
+    body.innerHTML = ctx.type === "card" ? V.cardSheet(c,ctx) : ctx.type === "tcard" ? T.tcgCardSheet(c,ctx) : V.buySheet(ctx);
+    body.dataset.detailIdentity = detailContextIdentity(ctx);
+    wireSheetBack();
+    restoreDetailState(body,saved);
+    sheetScrolled();
+    return;
+  }
   if (ctx.type === "idea") return openIdea(ctx.i);
   if (ctx.type === "proven") return tcgCtx.refreshProven?.();
   if (ctx.type === "tbuild") {
     const top = $("#sheetBody").scrollTop;
     $("#sheetBody").innerHTML = T.tcgBuildSheet();
-    $("#sheetBody").scrollTop = top;
-    return;
-  }
-  if (ctx.type === "tcard") {
-    const c = T.cardOf(ctx.game, ctx.id),
-      left = $("#sheetBody .cs-tabs")?.scrollLeft || 0,
-      top = $("#sheetBody").scrollTop;
-    if (c) $("#sheetBody").innerHTML = T.tcgCardSheet(c, ctx);
-    if($("#sheetBody .cs-tabs"))$("#sheetBody .cs-tabs").scrollLeft=left;
     $("#sheetBody").scrollTop = top;
     return;
   }
@@ -680,19 +691,11 @@ function refreshSheet() {
     $("#sheetBody").scrollTop = top;
     return;
   }
-  if (ctx.type === "buy" || ctx.type === "review") {
+  if (ctx.type === "review") {
     const top = $("#sheetBody").scrollTop;
-    $("#sheetBody").innerHTML = ctx.type === "buy" ? V.buySheet(ctx) : V.deckReviewSheet(deckById(ctx.deckId) || currentDeck());
+    $("#sheetBody").innerHTML = V.deckReviewSheet(deckById(ctx.deckId) || currentDeck());
     $("#sheetBody").scrollTop = top;
     return;
-  }
-  if (ctx.type === "card") {
-    const c = meta(ctx.name),
-      left = $("#sheetBody .cs-tabs")?.scrollLeft || 0,
-      top = $("#sheetBody").scrollTop;
-    if (c) $("#sheetBody").innerHTML = V.cardSheet(c, ctx);
-    if($("#sheetBody .cs-tabs"))$("#sheetBody .cs-tabs").scrollLeft=left;
-    $("#sheetBody").scrollTop = top;
   }
 }
 
@@ -795,7 +798,15 @@ let lastPageKey = "";
 const cheapChecked = new Set();
 let tcgCheckedFor = "";
 const disclosureStates=new Map();
+let rulesGuideOrigin = null;
+function currentRulesOrigin() {
+  const game = T.game(), view = S.ui.view;
+  const deck = view === "deck" && game === "mtg" ? deckById(S.ui.deckId) : view === "tdeck" && game !== "mtg" ? T.gs(game).decks.find(d => d.id === S.ui.tdeckId) : null;
+  return { game, route: location.hash, deckFormat: deck?.format || "" };
+}
+function dismissRulesGuide() { closeRulesAsk(); dismissRuleHint(); rulesGuideOrigin = null; }
 function render() {
+  if (rulesGuideOrigin && JSON.stringify(currentRulesOrigin()) !== JSON.stringify(rulesGuideOrigin)) dismissRulesGuide();
   if(S.ui.view==='collection'){setTimeout(refreshCollectionConditions,0);if(T.game()==='mtg')setTimeout(()=>refreshMagicCollectionPrices().catch(()=>{}),0);}
   useMyPrices(S.state.myPrices);
   // Owned printings Scryfall leaves unpriced get TCGplayer's price (once per collection size).
@@ -898,7 +909,7 @@ function render() {
     if (ui.view === "set" && ui.tsetId && T.ui(g).set.id !== ui.tsetId) setTimeout(() => tcgCtx.openSet?.(ui.tsetId), 0);
     // Ideas, Meta decks and Deck Power need the current tournament meta.
     const MS = T.metaState(g);
-    if ((ui.view === "tdeck" || (ui.view === "home" && T.gs(g).decks.length) || (ui.view === "decks" && (!ui.decksTab || ["ideas", "inspiration", "mine"].includes(ui.decksTab)))) && !MS.busy && (!MS.data || Date.now() - MS.at > 12 * 3600e3) && !autoLoaded.has("meta" + g + MS.at)) {
+    if ((ui.view === "tdeck" || (ui.view === "home" && T.gs(g).decks.length) || (ui.view === "decks" && (!ui.decksTab || ["ideas", "inspiration", "mine"].includes(ui.decksTab)))) && !MS.busy && T.metaNeedsRefresh(g) && !autoLoaded.has("meta" + g + MS.at)) {
       autoLoaded.add("meta" + g + MS.at);
       setTimeout(() => tcgCtx.loadMeta?.(g), 0);
     }
@@ -962,6 +973,7 @@ function restoreScroll(top) {
   step();
 }
 window.addEventListener("hashchange", (e) => {
+  dismissRulesGuide();
   const from = routeKey(e.oldURL), to = routeKey(location.hash);
   scrollMem.set(from, window.scrollY);
   if (scrollMem.size > 60) scrollMem.delete(scrollMem.keys().next().value);
@@ -1575,10 +1587,13 @@ async function loadCardExtras(ctx) {
 A.viewPrint = (t) => {
   const ctx = S.ui.sheetCtx;
   if (!ctx?.prints) return;
-  ctx.print = ctx.prints[Number(t.dataset.i)];
+  const print = ctx.prints[Number(t.dataset.i)];
+  if (!print) return;
+  ctx.print = print;
+  ctx.priceFinish = selectedFinish("mtg",print,ctx.priceFinish);
   ctx.face = 0;
   refreshSheet();
-  $("#sheetBody").scrollTo({ top: 0, behavior: "smooth" });
+  $("#sheetBody").scrollTo({ top: 0, behavior: globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
 };
 A.flipFace = () => {
   const ctx = S.ui.sheetCtx;
@@ -1712,6 +1727,19 @@ const tourArt = () => {
 A.replayTour = () => { closeSheet(); openTour(tourArt()); };
 // Ask AI: the in-app assistant. Its tools are the app's own functions, run here on the device.
 let askTools = null;
+A.askRules = (button) => {
+  const scope = button?.closest?.('[data-learning-root]');
+  const game = button?.dataset?.game || scope?.dataset?.game || T.game();
+  const origin = currentRulesOrigin();
+  const format = button?.dataset?.ruleFormat ?? scope?.dataset?.ruleFormat ?? (origin.game === game ? origin.deckFormat : "");
+  let cards = [], references = [];
+  const context = button?.closest?.('[data-rule-card-context]')?.dataset?.ruleCardContext;
+  if (context) { const card = JSON.parse(context); if (card.game === game) cards = [card]; }
+  if (button?.dataset?.rulesReferences) references = JSON.parse(button.dataset.rulesReferences);
+  const trigger = button?.closest?.(".rule-glass") ? dismissRuleHint() || button : button;
+  openRulesAsk({ game, format, cards, references, trigger });
+  rulesGuideOrigin = origin;
+};
 A.askOpen = () => {
   askTools ||= makeAskTools({ S, T, A, go, esc, api, resolve, cacheCard, loadSetIndex, loadMetaData, metaState, MTG_META_FORMATS, allMeta: () => Object.fromEntries(Object.entries(allCachedMeta()).map(([k, v]) => [k, v.data])), priceOf, inv, meta, collectionValue, lotPrice, mtgPower, shownPower, tcgCtx,
     openMtgBuild: (seed, fmt, budget) => { Object.assign(S.ui.build, { baseDeck: null, seed, results: {}, msg: "", openTier: null, format: formatOf(fmt).name, custom: budget ? String(budget) : "" }); openSheet(V.buildSheet(), { type: "build" }); runBuild(); },
@@ -2300,12 +2328,13 @@ A.rulesList = async (t) => {
 A.ruleHint = showRuleHint;
 A.cardTab = async (t) => {
   const ctx = S.ui.sheetCtx;
-  if (!ctx) return;
+  if (!["card","tcard"].includes(ctx?.type) || !["overview","meta","guide","versions","prices","rulings","legal","trade"].includes(t.dataset.tab)) return;
   ctx.tab = t.dataset.tab;
   for (const b of $$("#sheetBody .cs-tabs [data-tab]")) {
     const on = b.dataset.tab === ctx.tab;
     b.classList.toggle("on", on);
     b.setAttribute("aria-selected", on);
+    b.tabIndex = on ? 0 : -1;
   }
   for (const p of $$("#sheetBody .cs-panel")) {
     p.hidden = p.dataset.tab !== ctx.tab;
@@ -2322,9 +2351,10 @@ A.cardTab = async (t) => {
   // Keep the reader’s vertical place when switching pills; the bar stays sticky.
   if(ctx.tab === "prices" && ["card","tcard"].includes(ctx.type)){
     const g=ctx.type === "card"?"mtg":ctx.game,c=ctx.type === "card"?ctx.print||meta(ctx.name):T.cardOf(g,ctx.id);
-    await commit(s=>recordQuote(s,quoteModel(g,c,ctx.priceFinish || (g === "mtg"?(c?.finishes?.includes("nonfoil")?"nonfoil":c?.finishes?.[0]||"nonfoil"):"reference"))),{rerender:false,enrich:false});
+    await commit(s=>recordQuote(s,quoteModel(g,c,selectedFinish(g,c,ctx.priceFinish),ctx.priceEdition,ctx.priceYgoEdition)),{rerender:false,enrich:false});
     if(S.ui.sheetCtx === ctx)refreshSheet();
   }
+  sheetScrolled();
   // Official rulings load the first time the tab opens.
   if (ctx.tab === "rulings" && ctx.type === "card" && !ctx.rulings) {
     const c = ctx.print || meta(ctx.name);
@@ -2337,6 +2367,32 @@ A.cardTab = async (t) => {
     if (S.ui.sheetCtx === ctx) refreshSheet();
   }
 };
+const jumpToCardPrices = createDetailJump({
+  getContext:()=>S.ui.sheetCtx,identityOf:detailContextIdentity,isOpen:()=>$("#sheet").open,getBody:()=>$("#sheetBody"),
+  showPrices:()=>A.cardTab({dataset:{tab:"prices"}}),refreshOffsets:sheetScrolled,
+  reducedMotion:()=>!!globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches,
+});
+A.cardPriceJump = t => {
+  const ctx = S.ui.sheetCtx;
+  if (!["card","tcard"].includes(ctx?.type)) return;
+  if (t.dataset.finish) {
+    const g=ctx.type==="card"?"mtg":ctx.game,c=ctx.type==="card"?ctx.print||meta(ctx.name):T.cardOf(g,ctx.id);
+    ctx.priceFinish=selectedFinish(g,c,t.dataset.finish);
+  }
+  return jumpToCardPrices(t.dataset.target);
+};
+// Automatic-activation card tabs: range/finish buttons use ordinary pressed-button semantics.
+document.addEventListener("keydown", e => {
+  const tab=e.target.closest?.('.cs-tabs [role="tab"]');
+  if (!tab || !$("#sheetBody").contains(tab)) return;
+  const tabs=$$("#sheetBody .cs-tabs [role=tab]"), index=detailTabKey(e.key,tabs.indexOf(tab),tabs.length);
+  if (index===null) return;
+  e.preventDefault();tabs[index].focus({preventScroll:true});tabs[index].scrollIntoView?.({block:"nearest",inline:"nearest",behavior:"auto"});
+  safely(A.cardTab(tabs[index]));
+});
+const resizeCardSheet=()=>{if(["card","tcard","buy","market"].includes(S.ui.sheetCtx?.type))sheetScrolled();};
+globalThis.addEventListener?.("resize",resizeCardSheet,{passive:true});
+globalThis.visualViewport?.addEventListener?.("resize",resizeCardSheet,{passive:true});
 A.priceSource = (t) => {
   const ctx = S.ui.sheetCtx;
   if (!ctx) return;
@@ -2345,11 +2401,13 @@ A.priceSource = (t) => {
 };
 
 /* ---------- buy this card ---------- */
+let buyRequestToken = 0;
 A.buyCard = async (t) => {
+  const request=++buyRequestToken,origin=S.ui.sheetCtx,originGame=T.game(),originRoute=location.hash;
   let back = S.ui.sheetCtx?.type === "card" && $("#sheet").open ? S.ui.sheetCtx : null;
   const backScroll = back ? $("#sheetBody").scrollTop : 0;
   let print;
-  if(t.dataset.lot){const lot=S.state.collection.find(e=>e.id === t.dataset.lot); if(!lot)return; print=(lot.printingVerified && S.state.printings?.[lot.printingId]) || meta(lot.name); back={type:"card",name:lot.name};}
+  if(t.dataset.lot){const lot=S.state.collection.find(e=>e.id === t.dataset.lot); if(!lot)return; print=(lot.printingVerified && S.state.printings?.[lot.printingId]) || meta(lot.name); back={type:"card",name:lot.name,entryId:lot.id};}
   else if (back) {
     print = t.dataset.i !== undefined && back.prints ? back.prints[Number(t.dataset.i)] : back.print || meta(back.name);
   } else {
@@ -2358,19 +2416,14 @@ A.buyCard = async (t) => {
     print = c;
   }
   const fromPrints = back.prints && back.prints.includes(print);
-  const ctx = { type: "buy", name: back.name, deckId: back.deckId, print, finish: t.dataset.finish || "nonfoil", asOf: fromPrints ? back.pricesAt : print?.checkedAt, back, backScroll };
+  const ctx = { type: "buy", entryId: back.entryId, name: back.name, deckId: back.deckId, print, finish: selectedFinish("mtg",print,t.dataset.finish || back.priceFinish), asOf: fromPrints ? back.pricesAt : print?.checkedAt, back, backScroll };
   await commit(s=>recordQuote(s,quoteModel("mtg",print,ctx.finish)),{rerender:false,enrich:false});
+  if(request!==buyRequestToken||S.ui.sheetCtx!==origin||T.game()!==originGame||location.hash!==originRoute)return;
   openSheet(V.buySheet(ctx), ctx);
 };
-// Card sheet price: one tap opens this exact printing on TCGplayer.
+// Card sheet purchase actions reveal the matched sellers without opening a store.
 const sheetPrint = () => { const ctx = S.ui.sheetCtx; return ctx?.type === "card" ? ctx.print || meta(ctx.name) : null; };
-A.buyDirect = (t) => {
-  const print = sheetPrint();
-  if (!print) return;
-  const url = print.purchase_uris?.tcgplayer || "https://www.tcgplayer.com/search/magic/product?q=" + encodeURIComponent(print.name);
-  window.open(url, "_blank", "noopener");
-  commit((s) => recordQuote(s, quoteModel("mtg", print, t.dataset.finish || "nonfoil")), { rerender: false, enrich: false });
-};
+A.buyDirect = t => A.cardPriceJump({dataset:{target:"sellers",finish:t.dataset.finish}});
 // Press and hold a price: the player's own price for this printing and finish. Saved with their
 // data, shown only to them, and only counted where no store prices the card.
 A.myPriceSet = async (t) => {
@@ -2391,13 +2444,11 @@ A.myPriceSet = async (t) => {
   toast(v.trim() ? `Your price saved: ${usd(Math.round(n * 100) / 100)}` : "Your price removed");
   refreshSheet();
 };
-// Pokémon / Yu-Gi-Oh! card pages: the same tap-to-buy and press-and-hold price as Magic.
-A.tBuyDirect = (t) => {
-  const g = t.dataset.game, c = T.cardOf(g, t.dataset.id);
-  if (!c) return;
-  // The exact TCGplayer product when known (Pokémon: the card's product; Yu-Gi-Oh!: one priced printing), else a search.
-  const pid = g === "ptcg" ? (c.variants || []).find((v) => v.productId)?.productId : (c.sets || []).filter((s) => s.productId).length === 1 ? c.sets.find((s) => s.productId).productId : null;
-  window.open(pid ? `https://www.tcgplayer.com/product/${pid}` : `https://www.tcgplayer.com/search/${g === "ptcg" ? "pokemon" : "yugioh"}/product?q=${encodeURIComponent(c.name)}`, "_blank", "noopener");
+// Pokémon / Yu-Gi-Oh! reuse the same selected-version seller jump as Magic.
+A.tBuyDirect = t => {
+  const ctx=S.ui.sheetCtx;
+  if(ctx?.type!=="tcard"||ctx.game!==t.dataset.game||ctx.id!==t.dataset.id)return;
+  return A.cardPriceJump({dataset:{target:"sellers",finish:t.dataset.finish}});
 };
 A.tMyPriceSet = async (t) => {
   const g = t.dataset.game, c = T.cardOf(g, t.dataset.id);
@@ -2419,7 +2470,7 @@ A.tMyPriceSet = async (t) => {
 A.buyFinish = async (t) => {
   const ctx = S.ui.sheetCtx;
   if (ctx?.type !== "buy") return;
-  ctx.finish = t.dataset.finish;
+  ctx.finish = selectedFinish("mtg",ctx.print,t.dataset.finish);
   await commit(s=>recordQuote(s,quoteModel("mtg",ctx.print,ctx.finish)),{rerender:false,enrich:false});
   if(S.ui.sheetCtx === ctx) refreshSheet();
 };
@@ -4497,6 +4548,8 @@ A.reset = async () => {
   if (cloudInfo().user) await signOut();
   detachDeviceSync();
   clearAskConversations();
+  clearRulesConversations();
+  rulesGuideOrigin = null;
   await replaceWorkspace(blank(), { recovery: true });
   go("#home");
 };
@@ -4637,7 +4690,7 @@ async function boot() {
   }
   $("#app").classList.add("ready");
   initCloud({
-    accountChanged: () => clearAskConversations(),
+    accountChanged: () => { clearAskConversations(); clearRulesConversations(); rulesGuideOrigin = null; },
     passwordRecovery: () => { S.ui.settingsTab = "account"; go("#settings"); },
     getState: () => stripCache(S.state),
     // Replace this device's workspace with the account copy.

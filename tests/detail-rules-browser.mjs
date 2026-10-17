@@ -1,0 +1,130 @@
+// Detail / seller / Meta / Ideas real-shell regression for hosted CI only.
+// No production provider, payment or AI traffic is permitted by the fixture.
+// Run schema checks without any browser: --validate-fixtures.
+import assert from 'node:assert/strict';
+import {GAMES,WIDTHS,CARDS,DHELMISE_COVER,validateFixtures,startServer,openApp,navigate,closeSheet,inventorySnapshot,noOverflow,capture,saveReport} from './detail-rules-fixtures.mjs';
+import {sellerModels,presentationQuote} from '../pricing-presentation.js';
+
+console.log(await validateFixtures());
+const tcg=(game,card,ctx={})=>sellerModels(game,card,ctx,game==='mtg'?Object.entries(card.purchase_uris||{}):[]).find(r=>r.key==='tcgplayer');
+assert.equal(tcg('mtg',CARDS.mtg[0],{priceFinish:'etched'}).url,'https://www.tcgplayer.com/product/43');
+assert.equal(tcg('ptcg',CARDS.ptcg[0],{priceFinish:'holofoil'}).url,'https://www.tcgplayer.com/product/222');
+assert.equal(tcg('ptcg',CARDS.ptcg[0],{priceFinish:'holofoil'}).value,5);
+assert.equal(tcg('ptcg',CARDS.ptcg[0],{priceFinish:'reverse-holofoil'}).value,null);
+assert.equal(tcg('ygo',CARDS.ygo[0]).value,null,'Aggregate card reference must not masquerade as exact printing vendor amount');
+assert.equal(tcg('ygo',CARDS.ygo[0],{priceEdition:'SET-001::Rare'}).value,20);
+assert.equal(tcg('ygo',CARDS.ygo[0],{priceEdition:'SET-001::Super Rare'}).value,null,'Multiple editions without selection cannot invent a printing amount');
+assert.equal(tcg('ygo',CARDS.ygo[0],{priceEdition:'SET-001::Super Rare',priceYgoEdition:'1st-edition'}).value,31);
+assert.equal(presentationQuote('ptcg',CARDS.ptcg[3],'normal').observedAt,'2020-01-01');
+for(const card of CARDS.mtg.slice(1,4))assert.equal(tcg('mtg',card).value,null,'Missing, EUR-only and private quotes cannot become USD seller amounts');
+if(process.argv.includes('--validate-fixtures'))process.exit(0);
+const {chromium}=await import('playwright');
+const server=await startServer();let browser,failure;const report=[];
+async function openCard(page,game,index=0){
+ await navigate(page,'#collection');await page.locator(`#content .lot-art[data-entry="lot-${game}-${index}"]`).click();
+ await page.waitForFunction(({game,id,name})=>{const sheet=document.querySelector('#sheet'),s=window.__uiTestState.ui.sheetCtx;return sheet?.open&&s?.type===(game==='mtg'?'card':'tcard')&&(game==='mtg'?s.name===name:s.id===id)&&document.querySelector('#sheet .card-price-summary');},{game,id:CARDS[game][index].id,name:CARDS[game][index].name});
+ assert.equal(await page.locator('#sheet .cs-title h2').innerText(),CARDS[game][index].name);
+ assert.equal(await page.evaluate(()=>window.__uiTestState.ui.sheetCtx.entryId),`lot-${game}-${index}`,'Collection detail retains exact saved lot identity');
+}
+async function select(page,selector,value){
+ const control=page.locator(selector),label=await control.locator('option').evaluateAll((nodes,v)=>nodes.find(n=>n.value===v)?.label,value);assert(label,`Option ${value} exists in ${selector}`);await control.click();await page.locator('.glass-select-menu[open]').getByRole('option',{name:label,exact:true}).click();await page.waitForFunction(({selector,value})=>{const n=document.querySelector(selector),c=window.__uiTestState.ui.sheetCtx;const stored=selector.includes('historyYgoEdition')?c?.priceYgoEdition:selector.includes('historyEdition')?c?.priceEdition:c?.priceFinish;return n?.isConnected&&n.value===value&&stored===value&&[...n.options].find(o=>o.value===value)?.hasAttribute('selected');},{selector,value});
+ // The selected HTML attribute is emitted only by the completed renderer.
+ // Native selectedIndex changes alone cannot satisfy the predicate above.
+}
+async function jump(page,target){
+ await page.locator(`.card-price-summary [data-act="cardPriceJump"][data-target="${target}"]`).click();
+ await page.waitForFunction(id=>{const n=document.querySelector('#card-'+id);return n?.isConnected&&document.activeElement===n&&document.querySelector('[data-act="cardTab"][data-tab="prices"]')?.getAttribute('aria-selected')==='true';},target);
+ // Do not retain handles across async history/printing rerenders.
+ await page.waitForFunction(id=>{const n=document.querySelector('#card-'+id),body=document.querySelector('#sheetBody'),head=body?.querySelector('.sheet-head'),tabs=body?.querySelector('.cs-tabs');if(!n?.isConnected||!head||!tabs)return false;const a=n.getBoundingClientRect(),h=head.getBoundingClientRect(),t=tabs.getBoundingClientRect();return a.top>=Math.max(h.bottom,t.bottom)-2&&a.top<innerHeight-20;},target);
+ assert.equal(await page.locator('#card-'+target).getAttribute('tabindex'),'-1');
+ const order=await page.evaluate(()=>{const h=document.querySelector('#card-history'),s=document.querySelector('#card-sellers');return !!(h.compareDocumentPosition(s)&Node.DOCUMENT_POSITION_FOLLOWING);});assert(order,'Seller section comes after, not above, the graph');
+ assert.equal(await page.locator('#card-sellers').count(),1,'No competing duplicate seller sections');
+}
+const row=(page,name)=>page.locator('#card-sellers .vendor-row').filter({has:page.locator('.vendor-copy b',{hasText:new RegExp('^'+name+'$')})});
+async function seller(page,name,{href,amount,currency,action}){
+ const r=row(page,name);assert.equal(await r.count(),1,`${name} has exactly one seller row`);if(href)assert.equal(await r.getAttribute('href'),href);assert.equal(await r.locator('.vendor-quote strong').innerText(),amount);if(currency)assert.match(await r.locator('.vendor-quote small').innerText(),new RegExp('^'+currency+' · '));if(action)assert.match(await r.locator('.vendor-action').innerText(),new RegExp(action));assert.equal(await r.getAttribute('target'),'_blank');assert.match(await r.getAttribute('rel'),/noopener/);return r;
+}
+async function artSnapshot(page){return page.evaluate(()=>({hero:document.querySelector('.cs-banner .cs-art')?.getAttribute('src')||document.querySelector('.cs-banner img')?.getAttribute('src'),card:document.querySelector('.cs-card .card-img')?.getAttribute('src'),title:document.querySelector('.cs-title h2')?.textContent}));}
+async function tab(page,id){await page.locator(`#sheet [data-act="cardTab"][data-tab="${id}"]`).click();await page.waitForFunction(id=>document.querySelector(`#card-tab-${id}`)?.getAttribute('aria-selected')==='true',id);}
+async function mainArt(page){
+ await page.waitForFunction(()=>{const n=document.querySelector('#sheet[open] .cs-card .card-img');return n?.isConnected&&n.complete&&n.naturalWidth>0&&n.getClientRects().length>0;});
+ assert.equal(await page.locator('#sheet .cd-zoom').first().getAttribute('data-name'),await page.locator('.cs-title h2').innerText());
+}
+async function tabsKeyboard(page){
+ await tab(page,'overview');await page.locator('#card-tab-overview').focus();await page.keyboard.press('End');const last=await page.locator('.cs-tabs [role="tab"]').last().getAttribute('id');assert.equal(await page.evaluate(()=>document.activeElement.id),last);await page.keyboard.press('Home');assert.equal(await page.evaluate(()=>document.activeElement.id),'card-tab-overview');await page.keyboard.press('ArrowRight');assert.equal(await page.locator('.cs-tabs [role="tab"][aria-selected="true"]').count(),1);assert.equal(await page.locator('.cs-tabs [role="tab"][tabindex="0"]').count(),1);const controls=await page.locator('.cs-tabs [aria-selected="true"]').getAttribute('aria-controls');assert.equal(await page.locator('#'+controls).getAttribute('role'),'tabpanel');assert(await page.locator('#'+controls).isVisible());await tab(page,'overview');
+}
+async function currentDetail(app,game){
+ const {page}=app,before=await inventorySnapshot(page);await openCard(page,game);await mainArt(page);await capture(page,`details-${game}-overview`);const art=await artSnapshot(page);assert(art.card,'Main card artwork is still present');await tabsKeyboard(page);
+ for(const width of WIDTHS){await page.setViewportSize({width,height:1000});await jump(page,'history');assert((await page.locator('#card-history .history-coverage').innerText()).length>20,'Graph has a readable non-hover summary');await jump(page,'sellers');await noOverflow(page,'#sheetBody',`${game} details ${width}px`);await capture(page,`details-${game}-${width}`);}
+ await page.setViewportSize({width:844,height:390});await jump(page,'sellers');await noOverflow(page,'#sheetBody',`${game} detail short landscape`);assert(await page.locator('#sheet [data-act="closeSheet"]').isVisible());await capture(page,`details-${game}-landscape`);
+ for(const width of [390,680,768,390]){await page.setViewportSize({width,height:1000});await jump(page,'sellers');await noOverflow(page,'#sheetBody',`${game} resized ${width}px`);}
+ if(game==='mtg'){
+  await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/42',amount:'$12.50',currency:'USD',action:'View listing'});await seller(page,'Cardmarket',{amount:'€9.30',currency:'EUR'});await seller(page,'Cardhoarder',{amount:'0.04 tix',currency:'TIX'});
+  await select(page,'#sheet [data-change="cardPriceFinish"]','foil');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/42',amount:'$15.75',currency:'USD'});
+  await select(page,'#sheet [data-change="cardPriceFinish"]','etched');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/43',amount:'$21.25',currency:'USD'});await seller(page,'Cardmarket',{amount:'Check price',action:'Search store'});
+ }else if(game==='ptcg'){
+  await select(page,'#sheet [data-change="cardPriceFinish"]','normal');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/111',amount:'$2.00',currency:'USD'});
+  await select(page,'#sheet [data-change="cardPriceFinish"]','holofoil');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/222',amount:'$5.00',currency:'USD'});assert.match(await page.locator('.price-version').innerText(),/Holofoil/);
+  await select(page,'#sheet [data-change="cardPriceFinish"]','reverse-holofoil');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/333',amount:'Check price',action:'View listing'});assert.match(await page.locator('.price-version').innerText(),/No verified USD quote/);
+ }else{
+  await seller(page,'TCGplayer',{amount:'Check price',action:'Search store'});assert.match(await page.locator('.price-version').innerText(),/Reference card/);assert.equal(await row(page,'YGOPRODeck').count(),0,'Research site is not presented as a seller');
+  await select(page,'#sheet [data-change="historyEdition"]','SET-001::Rare');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/555',amount:'$20.00',currency:'USD'});assert.match(await page.locator('.price-version').innerText(),/SET-001 · Rare/);
+  await select(page,'#sheet [data-change="historyEdition"]','SET-002::Common');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/556',amount:'$1.00',currency:'USD'});
+  await select(page,'#sheet [data-change="historyEdition"]','SET-001::Super Rare');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/557',amount:'Check price'});
+  await select(page,'#sheet [data-change="historyYgoEdition"]','1st-edition');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/557',amount:'$31.00',currency:'USD'});
+  await select(page,'#sheet [data-change="historyYgoEdition"]','unlimited');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/557',amount:'$11.00',currency:'USD'});
+ }
+ // The selected finish/rarity above deliberately differs from the saved lot.
+ assert.equal(await page.locator('details[data-detail-key="owned-lot"]').count(),0,'A different selected finish/rarity cannot inherit the saved lot private value');
+ assert.doesNotMatch(await page.locator('#card-sellers').innerText(),/\$1\.75/,'A manual condition value is never a seller quote');
+ if(game==='ygo'){
+  await select(page,'#sheet [data-change="historyEdition"]','SET-001::Rare');
+  await select(page,'#sheet [data-change="historyYgoEdition"]','unlimited');
+ }else await select(page,'#sheet [data-change="cardPriceFinish"]',game==='mtg'?'nonfoil':'normal');
+ assert.equal(await page.evaluate(()=>window.__uiTestState.ui.sheetCtx.entryId),`lot-${game}-0`,'Restoring the exact saved version preserves its original lot ID');
+ const lot=page.locator('details[data-detail-key="owned-lot"]');if(await lot.getAttribute('open')===null)await lot.locator('summary').click();assert.match(await lot.innerText(),/Lightly Played/);assert.match(await lot.innerText(),/\$1\.75/);
+ await tab(page,'prices');
+ for(const r of await page.locator('#card-sellers .vendor-row').all()){await r.scrollIntoViewIfNeeded();await r.focus();const b=await r.evaluate(n=>{const r=n.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {width:r.width,height:r.height,focus:document.activeElement===n,hit:hit===n||n.contains(hit)};});assert(b.focus&&b.hit&&b.height>=44,`Vendor row is focusable, unobstructed and at least 44px: ${JSON.stringify(b)}`);}
+ await tab(page,'overview');await mainArt(page);assert.deepEqual(await artSnapshot(page),art,'Price changes preserve hero, main card art and identity');
+ assert.equal(await inventorySnapshot(page),before,'Buy/Prices, tabs, ranges, finish, resize and source selection cannot change saved lot identity, condition, values, quantities or decks');
+ // Visible keyboard-accessible edit action, with no long-press requirement.
+ await page.locator('.personal-price-edit').focus();assert.equal(await page.locator('.personal-price-edit').evaluate(n=>n===document.activeElement),true);await closeSheet(page);
+ report.push(`${game}: exact vendor/currency/finish/product; graph then sellers; 320/390/768/1440/2560 plus landscape/fold; keyboard tabs; main art and exact saved lots unchanged.`);
+}
+async function missingQuotes(app,game){
+ const {page}=app,before=await inventorySnapshot(page),unknown=game==='ygo'?2:1,personal=game==='ptcg'?2:3;
+ await openCard(page,game,unknown);assert.match(await page.locator('.card-price-summary').innerText(),/No quote yet|Price unknown/);await jump(page,'sellers');const rows=await page.locator('#card-sellers .vendor-quote strong').allTextContents();assert(rows.length>0);assert(rows.every(t=>t==='Check price'),'Unknown quotes never invent an amount or stock availability');await closeSheet(page);
+ await openCard(page,game,personal);assert.match(await page.locator('.card-price-summary').innerText(),/\$987\.65/);assert.match(await page.locator('.card-price-summary').innerText(),/private value|not a seller/i);await jump(page,'sellers');assert.doesNotMatch(await page.locator('#card-sellers').innerText(),/987\.65/);assert((await page.locator('#card-sellers .vendor-quote strong').allTextContents()).every(t=>t==='Check price'));await closeSheet(page);
+ if(game==='mtg'){await openCard(page,game,2);assert.match(await page.locator('.card-price-summary').innerText(),/€9\.30/);await jump(page,'sellers');await seller(page,'TCGplayer',{amount:'Check price'});await seller(page,'Cardmarket',{amount:'€9.30',currency:'EUR'});assert.doesNotMatch(await row(page,'TCGplayer').innerText(),/9\.30/);await closeSheet(page);}
+ if(game==='ptcg'){await openCard(page,game,3);assert.match(await page.locator('.card-price-summary').innerText(),/Last observed 2020-01-01/);await jump(page,'sellers');assert.match(await row(page,'TCGplayer').innerText(),/Last observed 2020-01-01/);assert.match(await page.locator('.price-version').innerText(),/not a current offer/);await closeSheet(page);}
+ if(game==='mtg'){await openCard(page,game,4);await mainArt(page);const first=await artSnapshot(page);await page.locator('[data-act="flipFace"]').click();await page.waitForFunction(()=>document.querySelector('.cs-card .card-img')?.src.endsWith('/dual-dusk.png'));assert.notEqual((await artSnapshot(page)).card,first.card);await page.locator('[data-act="flipFace"]').click();await page.waitForFunction(()=>document.querySelector('.cs-card .card-img')?.src.endsWith('/dual-dawn.png'));assert.deepEqual(await artSnapshot(page),first);await closeSheet(page);}
+ assert.equal(await inventorySnapshot(page),before);report.push(`${game}: unknown and private values never become seller quotes${game==='mtg'?'; EUR remains only EUR':''}${game==='ptcg'?'; dated quote is explicitly not current':''}.`);
+}
+async function deckArt(app,game){
+ const {page}=app,before=await inventorySnapshot(page);await navigate(page,'#decks/inspiration');
+ if(game==='ptcg'){
+  const card=page.locator('.arch').filter({has:page.locator('b',{hasText:/^Dhelmise$/})}),none=page.locator('.arch').filter({has:page.locator('b',{hasText:/^No supplied cover$/})});
+  await card.waitFor();assert(await card.isDisabled());assert.equal(await card.getAttribute('data-key'),'');assert.match(await card.innerText(),/0 in Top 8/);assert.match(await card.locator('.arch-list-state').innerText(),/No Top-8 list available/);
+  assert.equal(await card.locator('.arch-art img').getAttribute('src'),DHELMISE_COVER.imageLarge,'Supplied lower-place exact cover URL, not an invented mascot');
+  await page.waitForFunction(()=>{const card=[...document.querySelectorAll('.arch')].find(n=>n.querySelector('b')?.textContent==='Dhelmise'),img=card?.querySelector('.arch-art img');return img?.isConnected&&img.complete&&img.naturalWidth>0&&!img.hidden;});
+  assert.match(await none.getAttribute('class'),/no-cover/);assert(await none.locator('.arch-art-fallback').isVisible());assert(await none.locator('.arch-art-state').isVisible());assert(await none.isDisabled());assert.equal(await none.locator('img').count(),0,'No supplied art stays an honest fallback');
+  for(const width of WIDTHS){await page.setViewportSize({width,height:1000});await noOverflow(page,'#content',`Pokémon Meta ${width}`);await capture(page,`meta-ptcg-${width}`);}
+ }
+ await navigate(page,'#decks/ideas');
+ if(game!=='mtg'){
+  const tile=page.locator('.collection-ideas-grid > .collection-idea').first();await tile.waitFor();const open=tile.locator('.idea-card-open[data-act="tCard"]'),build=tile.locator('[data-act="tBuildMulti"]');
+  const contracts=await tile.evaluate(n=>({id:n.querySelector('[data-act="tCard"]').dataset.id,ids:n.querySelector('[data-act="tBuildMulti"]').dataset.ids}));
+  assert(CARDS[game].some(c=>c.id===contracts.id));assert(contracts.ids.split(',').every(id=>CARDS[game].some(c=>c.id===id)));assert((await open.getAttribute('aria-label')).length>5);
+  for(const width of WIDTHS){await page.setViewportSize({width,height:1000});await noOverflow(page,'#content',`${game} Ideas ${width}`);const shape=await tile.locator('.idea-row-art').boundingBox();assert(shape.width>shape.height,`${game} uses a landscape crop at ${width}px`);assert.equal(await open.getAttribute('data-id'),contracts.id);assert.equal(await build.getAttribute('data-ids'),contracts.ids);if(game==='ptcg')assert.equal(await tile.locator('.idea-row-art.pk-crop').count(),1);await capture(page,`ideas-${game}-${width}`);}
+  await open.click();await page.waitForFunction(id=>window.__uiTestState.ui.sheetCtx?.id===id&&document.querySelector('#sheet').open,contracts.id);await closeSheet(page);assert.equal(await build.getAttribute('data-ids'),contracts.ids,'Opening card does not change Build seed IDs');
+ }
+ assert.equal(await inventorySnapshot(page),before);report.push(`${game}: deck browsing preserves inventory; ${game==='ptcg'?'Dhelmise lower-place supplied cover keeps 0 Top 8, no clickable list, and honest no-art fallback; ':''}${game==='mtg'?'existing Magic Ideas preserved':'Ideas crop and original card/Build IDs stable across five widths'}.`);
+}
+try{
+ browser=await chromium.launch();
+ for(const game of GAMES){const app=await openApp(browser,server.base,{game});try{await currentDetail(app,game);await missingQuotes(app,game);await deckArt(app,game);await app.close();}catch(error){await capture(app.page,`details-${game}-failure`).catch(()=>{});await app.context.close();throw error;}}
+ // Run the actual price jump with motion and glass both disabled. A pending
+ // history response must not steal a newer card, target or keyboard focus.
+ const app=await openApp(browser,server.base,{game:'ptcg',reducedMotion:'reduce',glass:false});const before=await inventorySnapshot(app.page),gate=app.hold(u=>u.pathname.endsWith('/market-history')&&u.searchParams.get('id')===CARDS.ptcg[0].id);await openCard(app.page,'ptcg');await gate.seen;await jump(app.page,'sellers');await closeSheet(app.page);await openCard(app.page,'ptcg',1);const oldResponse=app.page.waitForResponse(r=>{const u=new URL(r.url());return u.pathname.endsWith('/market-history')&&u.searchParams.get('id')===CARDS.ptcg[0].id;});gate.release();await oldResponse;await app.page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));await jump(app.page,'history');assert.equal(await app.page.locator('.cs-title h2').innerText(),CARDS.ptcg[1].name);assert.equal(await app.page.evaluate(()=>window.__uiTestState.ui.sheetCtx.id),CARDS.ptcg[1].id);assert.equal(await inventorySnapshot(app.page),before);await capture(app.page,'details-reduced-motion-history-race');await app.close();report.push('Reduced motion, glass disabled and late history A → newer card B retain B and saved data.');
+ console.log('PASS: '+report.join('\nPASS: '));
+}catch(error){failure=error;throw error;}finally{await saveReport('detail-rules-browser',report,failure);await browser?.close();await server.close();}

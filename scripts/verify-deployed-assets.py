@@ -26,6 +26,9 @@ MODULES = (
     "scan-vision.js", "scansession.js", "tcg.js", "ptcg.js", "ui.js",
     "views.js", "confidence.js", "mtg-tcgprice.js", "style.css",
     "home-ui.js", "home-swipe.js", "community-feed.js",
+    "ai-rules.js", "ai-rules-panel.js",
+    "pricing-presentation.js", "workbench-ui.js", "artwork.js", "meta.js",
+    "rules.js", "rule-learning.js", "rule-lessons.js", "rule-dex.js", "rule-reference.js", "rule-corpus.js",
 )
 MAX_BYTES = 8 * 1024 * 1024
 REQUEST_TIMEOUT = 15

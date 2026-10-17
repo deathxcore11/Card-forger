@@ -40,3 +40,39 @@ export const RULE_CHECKS={
  ptcg:[check('Can the player going first play a Supporter on their first turn?',false,'The first player cannot play a Supporter or attack on their first turn.','Supporter'),check('Does a bonus against Pokémon ex automatically work against Pokémon-GX?',false,'Those are different categories. Use the exact category named in the attack or effect.','Pokémon-GX'),check('Does attacking normally discard every Energy used for its cost?',false,'Energy stays attached unless the attack, retreat cost or another rule/effect tells you to discard it.','Energy'),check('Are old Pokémon Tool cards still Item cards?',false,'The current errata makes all Pokémon Tools their own Trainer category, including older printings.','Pokémon Tool')],
  ygo:[check('Can a Spell Speed 2 Quick Effect chain to a Counter Trap?',false,'Counter Traps are Spell Speed 3. A response to one must also meet Spell Speed 3 and its activation requirements.','Spell Speed'),check('Must a newly Fusion Summoned monster use an Extra Monster Zone or linked zone?',false,'The later official update permits a Main Monster Zone for Fusion, Synchro and Xyz summons from the Extra Deck.','2021 Rules Update'),check('Can I normally activate a Quick-Play Spell in the same turn I Set it?',false,'Once Set, it normally cannot be activated that turn. A Quick-Play Spell in your hand has different permissions during your turn.','Quick-Play'),check('Does destroying a monster automatically negate its effect already on the Chain?',false,'Removing a source is not automatically negation. Check the effect and whether it specifically needs that source to remain.','Chains')]
 };
+
+export const CORE_RULES = {
+  mtg: [
+    ["How you win", "Reduce your opponent to 0 life, make them draw from an empty library, or give them 10 poison counters. Commander adds a loss at 21 combat damage from one commander."],
+    ["Turn order", "Untap → Upkeep → Draw → Main phase 1 → Combat (beginning, declare attackers, declare blockers, damage, end) → Main phase 2 → End step → Cleanup. The player going first skips their first draw in two-player games."],
+    ["Mana & lands", "Play one land per turn during a main phase. Tap lands and other sources for mana to cast spells; unused mana empties between steps."],
+    ["Casting & the stack", "Creatures, artifacts, enchantments, planeswalkers and sorceries are cast in your main phase when the stack is empty. Instants and abilities can be cast whenever you have priority; the last thing added to the stack resolves first."],
+    ["Combat", "Creatures can attack the turn after they come under your control (unless they have haste). Each blocker blocks one attacker; damage is dealt at the same time."],
+    ["Mulligans", "London mulligan: shuffle and draw 7 again, then put one card on the bottom for each mulligan taken. In multiplayer Commander the first mulligan is free."],
+    ["Commander basics", "100 cards including your commander, one copy of each card except basic lands, every card within the commander's color identity, 40 life. Casting your commander from the command zone costs {2} more for each previous time."],
+  ],
+  ygo: [
+    ["How you win", "Reduce your opponent's Life Points from 8000 to 0, or they need to draw with no cards left in their Deck. Some cards win the game on their own."],
+    ["Turn order", "Draw Phase → Standby Phase → Main Phase 1 → Battle Phase → Main Phase 2 → End Phase. The player who goes first doesn't draw on their first turn and can't attack that turn."],
+    ["Summoning", "One Normal Summon or Set per turn. Level 5–6 monsters need 1 Tribute, Level 7+ need 2. Special Summons have no limit unless a card says so."],
+    ["Extra Deck monsters", "Fusion (fuse listed materials), Synchro (Tuner + non-Tuners whose Levels add up), Xyz (monsters of the same Level as materials), Link (materials equal to the Link Rating). Fusion, Synchro and Xyz can be summoned to any Main Monster Zone; Link monsters and face-up Pendulums from the Extra Deck go to the Extra Monster Zone or a zone a Link Monster points to."],
+    ["Chains", "Responding to an effect builds a Chain; it resolves last-in, first-out. Spell Speed 1 can't respond, Speed 2 (Quick-Play Spells, Traps, Quick Effects) can, Speed 3 responses require an eligible Counter Trap. Activation conditions and Damage Step restrictions still apply."],
+    ["Deck rules", "Main Deck 40–60, Extra Deck up to 15, Side Deck up to 15, at most 3 copies of a card. Forbidden = 0, Limited = 1, Semi-Limited = 2."],
+  ],
+  ptcg: [
+    ["How you win", "Take all 6 of your Prize cards, Knock Out your opponent's last Pokémon in play, or your opponent can't draw at the start of their turn."],
+    ["Setup", "Draw 7. If you have no Basic Pokémon, reveal, shuffle and draw again (your opponent may draw a card for each). Place an Active Pokémon, up to 5 on the Bench, then 6 Prize cards."],
+    ["Your turn", "Draw a card, then in any order: put Basic Pokémon on the Bench, evolve (not a Pokémon played this turn, and not on either player's first turn), attach 1 Energy, play Item cards, 1 Supporter, 1 Stadium, retreat once, use Abilities. Attacking ends your turn."],
+    ["First turn", "The player who goes first can't attack and can't play a Supporter on their first turn."],
+    ["Damage & conditions", "Weakness usually doubles damage; Resistance usually reduces it by 30. Special Conditions: Asleep, Burned, Confused, Paralyzed, Poisoned."],
+    ["Prizes", "Knocking Out a Pokémon takes 1 Prize; Pokémon ex and V give 2; Mega Evolution Pokémon ex and VMAX give 3."],
+    ["Deck rules", "Exactly 60 cards, at most 4 with the same name (basic Energy excepted), 1 ACE SPEC and 1 Radiant Pokémon per deck, at least one Basic Pokémon."],
+  ],
+};
+
+// A gentle entry point. Full existing lessons and source excerpts stay available below.
+export const BEGINNER_START={
+ mtg:{title:'Build mana. Cast spells. Take your turn.',overview:'You and your opponent take turns playing lands and spells. Your creatures attack to reduce the other player’s life to zero. Card text can change the usual rules.',example:'You play a land, tap it for mana, then cast a creature you can afford. Unless it has haste, that creature normally waits until a later turn to attack.',path:['Make mana','Cast & respond','Attack'],goal:'Usually start at 20 life; Commander starts at 40.'},
+ ptcg:{title:'Build your team, then choose an attack.',overview:'Your Active Pokémon battles while your Bench prepares. Attach Energy, play helpful Trainers and evolve your team. Taking all your Prize cards is one way to win.',example:'Your Active Pokémon has an attack that needs one Energy. Attach the matching Energy, then attack if permitted. That Energy normally stays attached, and your turn ends.',path:['Prepare your team','Attach Energy','Attack'],goal:'Start with six Prize cards. Read each Pokémon’s Prize rule.'},
+ ygo:{title:'Summon a monster. Plan your next move.',overview:'Take turns using Monsters, Spells and Traps. Build a field, respond when permitted and battle to bring your opponent’s Life Points to zero.',example:'In Main Phase 1, you can normally Normal Summon one Level 4 monster without a Tribute. If you went first, you cannot enter the Battle Phase that turn.',path:['Build your field','Respond in Chains','Battle'],goal:'The usual TCG Duel starts at 8000 Life Points.'}
+};

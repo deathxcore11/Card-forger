@@ -1,4 +1,5 @@
 import { tallyResults } from "./matchup.js";
+import { pokemonDeckCover } from "./artwork.js";
 // Live "what's winning right now" data for Yu-Gi-Oh! and Pokémon.
 // · Yu-Gi-Oh!: YGOPRODeck's curated Tournament Meta Decks (recent WCQ/YCS top cuts) and the
 //   most-played cards in them. YGOPRODeck doesn't allow cross-site calls, so the site's
@@ -8,7 +9,8 @@ import { tallyResults } from "./matchup.js";
 // Results are cached on the device for 12 hours.
 
 const KEY = "cardforge-meta-v1",
-  TTL = 12 * 3600 * 1000;
+  TTL = 12 * 3600 * 1000,
+  PTCG_ART_SCHEMA = 1;
 const state = {};
 
 const readCache = () => {
@@ -36,12 +38,39 @@ export const allCachedMeta = () => {
   return all;
 };
 
-export const metaState = (g) => (state[g] ||= { data: readCache()[g]?.data || null, at: readCache()[g]?.at || 0, busy: false, error: "" });
+export const metaState = (g) => {
+  if (!state[g]) {
+    const saved = readCache()[g];
+    state[g] = { data: saved?.data || null, at: saved?.at || 0, artRefreshAttempted: !!saved?.artRefreshAttempted, busy: false, error: "" };
+  }
+  return state[g];
+};
+
+const needsArtworkRefresh = (g, M) => g === "ptcg" && M.data && M.data.artSchema !== PTCG_ART_SCHEMA && !M.artRefreshAttempted;
+export const metaNeedsRefresh = (g) => {
+  const M = metaState(g);
+  return !M.data || Date.now() - M.at >= TTL || !!needsArtworkRefresh(g, M);
+};
+
+// One schema-refresh attempt per saved snapshot, persisted before requesting.
+// A failed/offline refresh leaves its data and original update time intact. Normal
+// TTL expiry and the user's explicit Refresh remain available; render never loops.
+function markArtworkRefresh(g, M) {
+  M.artRefreshAttempted = true;
+  try {
+    const all = readCache();
+    if (all[g]?.at === M.at) {
+      all[g].artRefreshAttempted = true;
+      localStorage.setItem(KEY, JSON.stringify(all));
+    }
+  } catch {}
+}
 
 export async function loadMeta(g, force = false) {
   const M = metaState(g);
   if (M.busy) return M.promise;
-  if (!force && M.data && Date.now() - M.at < TTL) return M.data;
+  if (!force && !metaNeedsRefresh(g)) return M.data;
+  if (needsArtworkRefresh(g, M)) markArtworkRefresh(g, M);
   M.busy = true;
   M.error = "";
   M.code = "";
@@ -49,6 +78,7 @@ export async function loadMeta(g, force = false) {
     .then((data) => {
       M.data = data;
       M.at = Date.now();
+      M.artRefreshAttempted = false;
       writeCache(g, data);
       version++;
       return data;
@@ -191,16 +221,24 @@ export async function ptcgMeta() {
   let players = 0;
   for (const { t, s } of standings)
     for (const p of s || []) {
-      if (!p.deck?.id) continue;
+      if (!p?.deck?.id) continue;
       players++;
-      const a = arch.get(p.deck.id) || { id: p.deck.id, name: p.deck.name, icons: p.deck.icons || [], count: 0, top8: 0, best: null };
+      const a = arch.get(p.deck.id) || { id: p.deck.id, name: p.deck.name, icons: Array.isArray(p.deck.icons) ? p.deck.icons : [], count: 0, top8: 0, best: null, cover: null };
       a.count++;
       if (p.placing && p.placing <= 8) a.top8++;
       arch.set(p.deck.id, a);
-      if (p.placing && p.placing <= 8 && p.decklist) {
+      if (p.decklist) {
         const rows = [];
         for (const [kind, key] of [["Pokemon", "pokemon"], ["Trainer", "trainer"], ["Energy", "energy"]])
-          for (const c of p.decklist[key] || []) rows.push({ qty: c.count, name: c.name, set: c.set || "", number: c.number || "", kind });
+          for (const c of Array.isArray(p.decklist[key]) ? p.decklist[key] : []) if (c && typeof c.name === "string") rows.push({ qty: c.count, name: c.name, set: c.set || "", number: c.number || "", kind });
+        const cover = pokemonDeckCover({ name: a.name, icons: a.icons, list: rows }), rank = Number(p.placing) > 0 ? Number(p.placing) : Infinity;
+        if (cover && (!a.cover || rank < a.coverRank)) {
+          a.cover = { ...cover, source: { eventId: t.id, rank: Number.isFinite(rank) ? rank : null } };
+          a.coverRank = rank;
+        }
+        // Art may come from an actual lower-place list. Top-8 lists, ranking,
+        // card statistics and click destinations remain strictly Top 8 only.
+        if (!(p.placing && p.placing <= 8)) continue;
         const d = { key: "ptcg:" + t.id + ":" + p.placing, name: p.deck.name, archetype: p.deck.id, icons: p.deck.icons || [], event: cleanName(t.name), place: p.placing === 1 ? "Winner" : p.placing === 2 ? "Runner-Up" : "Top " + (p.placing <= 4 ? 4 : 8), rank: p.placing, players: t.players, player: p.name || "", date: t.date?.slice(0, 10) || "", list: rows, url: `https://play.limitlesstcg.com/tournament/${t.id}/player/${encodeURIComponent(p.player || "")}/decklist` };
         decks.push(d);
         if (!a.best || d.rank < a.best.rank) a.best = d;
@@ -217,11 +255,12 @@ export async function ptcgMeta() {
     }
   return {
     game: "ptcg",
+    artSchema: PTCG_ART_SCHEMA,
     results: games.length ? { ...tallyResults(games), events: resultEvents.length } : null,
     source: "Limitless — " + events.length + " recent Standard events, " + players + " players",
     events: events.map((t) => ({ name: cleanName(t.name), players: t.players, date: t.date?.slice(0, 10) })),
     decks: decks.sort((a, b) => a.rank - b.rank || b.players - a.players),
-    archetypes: [...arch.values()].filter((a) => a.id !== "other").sort((a, b) => b.count - a.count).map((a) => ({ id: a.id, name: a.name, icons: a.icons, count: a.count, top8: a.top8, share: a.count / Math.max(1, players), best: a.best?.key || "" })),
+    archetypes: [...arch.values()].filter((a) => a.id !== "other").sort((a, b) => b.count - a.count).map((a) => ({ id: a.id, name: a.name, icons: a.icons, count: a.count, top8: a.top8, share: a.count / Math.max(1, players), best: a.best?.key || "", cover: pokemonDeckCover(a.best) || a.cover })),
     top: [...cards.values()].map((c) => ({ name: c.name, kind: c.kind, pct: (c.decks / Math.max(1, decks.length)) * 100, avg: c.copies / c.decks })).sort((a, b) => b.pct - a.pct),
   };
 }

@@ -7,6 +7,7 @@ import {inventory, gaps, validateDeck, effectiveCopyLimit, sumQty} from './core.
 import {collectionList} from './views.js';
 import {safeHref,esc} from './ui.js';
 import {SheetHistory} from './sheet-history.js';
+import {detailIdentity,captureDetailState,restoreDetailState} from './pricing-presentation.js';
 import {isEmptyWorkspace} from './cloud.js';
 import {formatOf,hasCommander} from './formats.js';
 import {writeRecords, readRecord} from './storage.js';
@@ -93,8 +94,8 @@ assert.equal(ctx.S.state.decks[0].name,'Edited deck');assert.equal(ctx.S.state.d
 // Render actual controller Back/refresh logic against a small DOM boundary.
 const makeButton=()=>({dataset:{},attrs:{},setAttribute(k,v){this.attrs[k]=v;},getAttribute(k){return this.attrs[k];},remove(){head.buttons=head.buttons.filter(b=>b!==this);}});
 const head={buttons:[],querySelector(q){return q==='[data-history-back]'?this.buttons.find(b=>b.dataset.historyBack):null;},prepend(b){this.buttons.unshift(b);}};
-let bodyHtml='';const body={scrollTop:0,get innerHTML(){return bodyHtml;},set innerHTML(v){bodyHtml=v;head.buttons=[];},querySelector(q){return q==='.sheet-head'?head:null;}};
-const navigation={S:{ui:{sheetCtx:null}},T:{proven:{}},sheetTrail:new SheetHistory(),restoringSheet:false,ICON:{back:'←'},document:{createElement:makeButton},meta:name=>({name}),V:{cardSheet:c=>`<div class="sheet-head">Fresh ${c.name}</div>`},$:(q)=>q==='#sheetBody'?body:q==='#sheet'?{open:true}:null};
+let bodyHtml='';const body={dataset:{},scrollTop:0,querySelectorAll(){return [];},get innerHTML(){return bodyHtml;},set innerHTML(v){bodyHtml=v;head.buttons=[];},querySelector(q){return q==='.sheet-head'?head:null;}};
+const navigation={detailContextIdentity:detailIdentity,captureDetailState,restoreDetailState,sheetScrolled(){},S:{ui:{sheetCtx:null}},T:{proven:{}},sheetTrail:new SheetHistory(),restoringSheet:false,ICON:{back:'←'},document:{createElement:makeButton},meta:name=>({name}),V:{cardSheet:c=>`<div class="sheet-head">Fresh ${c.name}</div>`},$:(q)=>q==='#sheetBody'?body:q==='#sheet'?{open:true}:null};
 vm.createContext(navigation);
 vm.runInContext(segment('function restoreSheet(','\nfunction wireRouteBack')+'\n'+segment('function refreshSheet()','\nfunction download('),navigation);
 navigation.openSheet=(html,ctx,scroll)=>{navigation.S.ui.sheetCtx=ctx;body.innerHTML=html;body.scrollTop=scroll;navigation.wireSheetBack();};
@@ -122,7 +123,7 @@ function replacementHarness() {
     readRecord:async k=>structuredClone(disk.get(k)),readBackup:async()=>({next:c.imported,cache:{}}),slim:x=>x,
     afterLocalSave(){events.push('save-notify');},saveCatalogSoon(){},render(){},refreshSheet(){},haptic(){},flyToCollection(){},toast(text){events.push(text);},autoEnrich(){},setTimeout(){},lastActTarget:null,
     ask:async()=>true,askText:async()=> 'DELETE',busy:()=>()=>{},deleteAccount:async()=>{c.owner=null;},
-    cloudInfo:()=>({user:c.owner}),signOut:async()=>{events.push('sign-out');if(c.signOutError)throw Error('sign-out failed');c.owner=null;},detachDeviceSync(){events.push('detach');},clearAskConversations(){},go(){},owner:null};
+    cloudInfo:()=>({user:c.owner}),signOut:async()=>{events.push('sign-out');if(c.signOutError)throw Error('sign-out failed');c.owner=null;},detachDeviceSync(){events.push('detach');},clearAskConversations(){},clearRulesConversations(){},rulesGuideOrigin:null,go(){},owner:null};
   vm.createContext(c);
   vm.runInContext(segment('let lastUndo = null;','\nconst safely =')+'\n'+segment('A.undo = async','\nA.nextFact =')+'\n'+segment('C.restoreBackup = async','\nA.loadExample =')+'\n'+segment('A.deleteAccount = async','\nA.signOut ='),c);
   vm.runInContext('cloudHooks = ({'+segment('    apply: async (data) => {','    backup: async')+'});',c);

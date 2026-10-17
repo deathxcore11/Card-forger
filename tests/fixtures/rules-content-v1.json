@@ -1,0 +1,72 @@
+{
+  "base": "ffb8bc4a",
+  "description": "Exact pre-redesign educational content digests. All remains reachable after progressive disclosure.",
+  "games": {
+    "mtg": {
+      "LESSONS": {
+        "count": 8,
+        "sha256": "c18bd585aa24679f38e21cc4718f6342b56b0d72f9820212f6bec9d30662294d"
+      },
+      "TURN_STEPS": {
+        "count": 6,
+        "sha256": "6804f3684ac52e056e4a43c8b9b7b48b87b587bc6c470cf7ac3c8ca88acb1095"
+      },
+      "RULE_CHECKS": {
+        "count": 4,
+        "sha256": "f5168ea9d02cf8229f9de224d5c0b927ce1101212787d0df51e26b8dd9c0d249"
+      },
+      "CORE_RULES": {
+        "count": 7,
+        "sha256": "c10dfd9be4fe262bd525f9a68035ff3a48d06b9be3b6ea19138cdf41a0c211f8"
+      },
+      "RULE_DEX": {
+        "count": 18,
+        "sha256": "4b010092ab0a57f9b29c6b0082d7e74bf7b352e30df876713f0abc1c00cbf44f"
+      }
+    },
+    "ptcg": {
+      "LESSONS": {
+        "count": 8,
+        "sha256": "e06d6b9f664abfc4323d15b8d80df4656b58a400e7aa3b19efe870d54d714ed0"
+      },
+      "TURN_STEPS": {
+        "count": 6,
+        "sha256": "175e7d8e731c8e619df0e69dea8f90cd7318126e7fcde3f6994da1f8534e421f"
+      },
+      "RULE_CHECKS": {
+        "count": 4,
+        "sha256": "51b42dc08555ed7bd45c980ebfc6cbd1f7bf44425d21b0dec4dad37128c0c8e3"
+      },
+      "CORE_RULES": {
+        "count": 7,
+        "sha256": "6698254ff34a8ac7139899180c01d1c0fa99eafd0bb067981e2fe383ecb1e348"
+      },
+      "RULE_DEX": {
+        "count": 13,
+        "sha256": "586a0e80ba33dd3db2005f6c0d05e45b24da13ae88f65c36299db43e52c23329"
+      }
+    },
+    "ygo": {
+      "LESSONS": {
+        "count": 8,
+        "sha256": "a5b40cbba6fcdfd048ff7c8cea54bd0d3a4fbe5d7645930c927717c551cbaae8"
+      },
+      "TURN_STEPS": {
+        "count": 6,
+        "sha256": "cec5c5ce07650413303b6e62dcba9838d24d51ee2b395d3c7d01234a2ceeb5ed"
+      },
+      "RULE_CHECKS": {
+        "count": 4,
+        "sha256": "dda98e11aec80cf5dcaccfdb33bf9c907d2a17bc1014c2aae2de37c053cd83ee"
+      },
+      "CORE_RULES": {
+        "count": 6,
+        "sha256": "03ac01f5ced49516a093d9d5dbb13f1712823b31b7d433713a9b36ee6c4c1cae"
+      },
+      "RULE_DEX": {
+        "count": 10,
+        "sha256": "f1d206c575db3b5d502d5a75d3b4dbec7be4b1aba84e53cce87d6a776d529f1d"
+      }
+    }
+  }
+}

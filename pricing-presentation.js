@@ -1,0 +1,176 @@
+// Presentation only: keep provider/condition resolution in the existing pricing modules.
+import {esc,usd} from './ui.js';
+import {productIdOf,tcgFallback,myPrice} from './mtg-tcgprice.js';
+import {referenceQuote,referenceLabel} from './price-reference.js';
+import {editionPrice} from './ygo-prices.js';
+
+export const priceAmount=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v))&&Number(v)>=0?Number(v):null;
+export const finishLabel=f=>({nonfoil:'Regular',foil:'Foil',etched:'Etched foil',reference:'Reference quote'}[f]||f);
+const dateText=v=>v&&Number.isFinite(Date.parse(v))?String(v).slice(0,10):'';
+const editionNames={'1st-edition':'1st Edition',unlimited:'Unlimited',limited:'Limited'};
+const norm=v=>String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+export function supportedFinishes(game,c){
+ if(game==='mtg')return ['nonfoil','foil','etched'].filter(f=>(c.finishes?.length?c.finishes:['nonfoil']).includes(f));
+ return game==='ptcg'?['reference',...(c.variants||[]).map(v=>v.key)]:['reference'];
+}
+export function selectedFinish(game,c,wanted){
+ const choices=supportedFinishes(game,c||{});return choices.includes(wanted)?wanted:choices[0]||'reference';
+}
+function referenceVariant(c){
+ const priced=(c.variants||[]).filter(v=>priceAmount(v.usd??v.market)!==null);
+ const chosen=priced.find(v=>v.key==='normal')||priced[0];
+ return chosen&&priceAmount(chosen.usd??chosen.market)===priceAmount(c.prices?.usd)?chosen:null;
+}
+export function selectedPrinting(c,key){
+ if(!key)return null;
+ const hits=(c.sets||[]).filter(s=>s.code+'::'+s.rarity===key||s.code===key);
+ return hits.length===1?hits[0]:null;
+}
+// No personal prices, currency conversion or condition multipliers belong in a market quote.
+export function presentationQuote(game,c,finish='reference',printingKey='',edition=''){
+ if(!c?.id)return null;
+ let value=null,source='TCGplayer reference',label='Reference quote · finish not specified',kind='market',observedAt='',scope='card',variant=null,printing=null;
+ if(game==='mtg'){
+  label=finishLabel(finish);scope='printing';source='Scryfall / TCGplayer';
+  if(supportedFinishes(game,c).includes(finish)){
+   value=priceAmount(c.prices?.[finish==='nonfoil'?'usd':'usd_'+finish]);
+   if(value===null){const fallback=tcgFallback(c,finish);if(fallback){value=fallback.value;kind=fallback.kind;source='TCGplayer via TCGCSV';}}
+  }
+ }else if(game==='ptcg'){
+  variant=finish==='reference'?referenceVariant(c):(c.variants||[]).find(v=>v.key===finish);
+  value=finish==='reference'?priceAmount(c.prices?.usd):priceAmount(variant?.usd??variant?.market);
+  if(variant){source=variant.productFallback?'TCGplayer market via TCGCSV':variant.fallback?'TCGplayer / Pokémon TCG API':'TCGplayer / TCGdex';label=variant.label||finish;kind=variant.priceKind||c.prices?.referenceKind||'market';observedAt=variant.historyQuote||'';scope='printing';}
+  else if(finish!=='reference'){label=finish;scope='printing';}
+  else {kind=c.prices?.referenceKind||'market';if(/dated quote/i.test(c.prices?.source||''))observedAt=c.prices?.updated||'';}
+ }else{
+  label='Reference card · printing and edition not specified';value=priceAmount(c.prices?.usd);
+  printing=selectedPrinting(c,printingKey);
+  if(printing){
+   scope='printing';source=printing.priceSource||'TCGplayer printing reference';label=[printing.code,printing.rarity,editionNames[edition]||'Edition not specified'].join(' · ');
+   if(edition){value=editionPrice(printing,edition);const q=(printing.quotes||[]).find(q=>norm(q.edition)===norm(editionNames[edition]));kind=referenceQuote(q)?.kind||'market';}
+   else if(printing.quotes?.length===1){const q=referenceQuote(printing.quotes[0]);value=q?.value??null;kind=q?.kind||'market';label=[printing.code,printing.rarity,printing.quotes[0].edition||'Edition not specified'].join(' · ');}
+   else if(printing.quotes?.length){value=null;}
+   else {value=priceAmount(printing.price);kind=printing.priceKind||'market';}
+  }
+ }
+ const editions=game==='ygo'?[...new Map((c.sets||[]).map(s=>[s.code+'::'+s.rarity,{code:s.code,rarity:s.rarity,key:s.code+'::'+s.rarity,label:[s.code,s.rarity,s.name].filter(Boolean).join(' · ')}])).values()]:[];
+ const fallbackMtg=game==='mtg'&&source==='TCGplayer via TCGCSV';
+ const checkedAt=fallbackMtg?null:printing?.checkedAt||c.checkedAt||c.fetchedAt||null,sourceUpdatedAt=fallbackMtg?null:printing?null:c.prices?.updated||null;
+ const key=[game,c.id,source,'USD',finish,...(printing?[printing.code,printing.rarity,edition]:[])].join('|');
+ return {edition:printing?.code||'',rarity:printing?.rarity||'',editionKey:printing?printing.code+'::'+printing.rarity:'',selectedEdition:edition,editions,key,name:c.name,game,cardId:c.id,source,currency:'USD',finish,label,value,kind,scope,variant,printing,checkedAt,sourceUpdatedAt,observedAt,asOf:observedAt||sourceUpdatedAt||checkedAt,cardReferenceValue:priceAmount(c.prices?.usd)};
+}
+export const quoteIsStale=(q,now=Date.now())=>{const date=q?.observedAt||q?.sourceUpdatedAt||q?.checkedAt;return !!date&&Number.isFinite(Date.parse(date))&&now-Date.parse(date)>3*864e5;};
+// A saved condition value may be shown only beside the same game/card/version.
+export function matchingLot(game,card,ctx,state){
+ const id=ctx.entryId||ctx.entry,rows=game==='mtg'?state.collection:state.tcg?.[game]?.collection||[],lot=rows.find(e=>e.id===id);
+ if(!lot||!card?.id)return null;
+ const finish=selectedFinish(game,card,ctx.priceFinish||ctx.finish);
+ if(game==='mtg')return lot.printingVerified&&lot.printingId===card.id&&(lot.finish||'nonfoil')===finish?lot:null;
+ if(String(lot.cardId)!==String(card.id))return null;
+ if(game==='ptcg'){const variant=finish==='reference'?referenceVariant(card)?.key:finish;return (lot.variant||'reference')===(variant||'reference')?lot:null;}
+ const print=selectedPrinting(card,ctx.priceEdition||ctx.edition);
+ return print&&lot.printing===print.code&&lot.rarity===print.rarity&&(lot.edition||'')===(ctx.priceYgoEdition||ctx.ygoEdition||'')?lot:null;
+}
+export function quoteTiming(q){
+ if(!q)return '';
+ const observed=dateText(q.observedAt),updated=dateText(q.sourceUpdatedAt),checked=dateText(q.checkedAt);
+ return [observed?'Last observed '+observed:updated?'Source updated '+updated:'Source date unavailable',checked?'Checked '+checked:'',quoteIsStale(q)?'Stale reference':''].filter(Boolean).join(' · ');
+}
+const currencyValue=(value,currency)=>value===null?'Check price':currency==='EUR'?'€'+value.toFixed(2):currency==='TIX'?value.toFixed(2)+' tix':usd(value);
+const safeURL=url=>{try{const u=new URL(url);return u.protocol==='https:'&&!u.username&&!u.password?u.href:'';}catch{return '';}};
+const sellerNames={tcgplayer:'TCGplayer',cardmarket:'Cardmarket',cardhoarder:'Cardhoarder',cardkingdom:'Card Kingdom',ebay:'eBay'};
+const vendorKey=(_name,url)=>{
+ const safe=safeURL(url);if(!safe)return 'invalid';
+ const host=new URL(safe).hostname.toLowerCase();
+ for(const [key,domain] of [['tcgplayer','tcgplayer.com'],['cardmarket','cardmarket.com'],['cardhoarder','cardhoarder.com'],['cardkingdom','cardkingdom.com'],['ebay','ebay.com']])if(host===domain||host.endsWith('.'+domain))return key;
+ return host==='ygoprodeck.com'||host.endsWith('.ygoprodeck.com')?'research':'other:'+host;
+};
+const productURL=id=>/^\d+$/.test(String(id||''))?`https://www.tcgplayer.com/product/${id}`:'';
+const searchURL=(game,c)=>`https://www.tcgplayer.com/search/${{mtg:'magic',ptcg:'pokemon',ygo:'yugioh'}[game]}/product?q=${encodeURIComponent([c.name,c.collector_number||c.set?.number||''].filter(Boolean).join(' '))}`;
+export function sellerModels(game,c,ctx={},links=[]){
+ const finish=selectedFinish(game,c,ctx.priceFinish||ctx.finish),q=presentationQuote(game,c,finish,ctx.priceEdition||ctx.edition,ctx.priceYgoEdition||ctx.ygoEdition);
+ const candidates=[...links];if(!candidates.some(([n,u])=>vendorKey(n,u)==='tcgplayer'))candidates.unshift(['TCGplayer',searchURL(game,c)]);
+ const seen=new Set(),rows=[];
+ for(const [name,rawURL] of candidates){
+  const key=vendorKey(name,rawURL);if(key==='research'||seen.has(key))continue;
+  let url=safeURL(rawURL);if(!url)continue;seen.add(key);
+  let value=null,currency='USD',kind='market',scope='',direct=false,source='',observedAt='',sourceUpdatedAt=q?.sourceUpdatedAt,checkedAt=q?.checkedAt;
+  if(key==='tcgplayer'){
+   const pid=game==='mtg'?(finish==='etched'?c.tcgplayer_etched_id:productIdOf(c,finish)):game==='ptcg'?q?.variant?.productId:q?.printing?.productId;
+   // A finish change must not retain another variant's product link.
+   url=productURL(pid)||searchURL(game,c);direct=!!productURL(pid);
+   if(direct){value=q?.value??null;kind=q?.kind||'market';scope=q?.label||'';source=q?.source||'';observedAt=q?.observedAt||'';}
+  }else if(key==='cardmarket'){
+   currency='EUR';source='Cardmarket';
+   if(game==='mtg'&&finish!=='etched'){
+    direct=safeURL(c.purchase_uris?.cardmarket)===url&&(/\/Products\/Singles\//i.test(url)||/[?&]idProduct=\d+(?:&|$)/.test(url));
+    if(direct){value=priceAmount(c.prices?.[finish==='foil'?'eur_foil':'eur']);scope=finishLabel(finish);}
+   }else if(game==='ptcg'){
+    const cm=q?.variant?.cmProduct||(q?.variant?.key==='normal'?c.cmProduct:null);
+    if(cm&&/^\d+$/.test(String(cm))){
+     url=`https://www.cardmarket.com/en/Pokemon/Products?idProduct=${cm}`;direct=true;scope=q.variant.label||'Normal';
+     // Base EUR statistics belong to the base Cardmarket product, not every Normal variant.
+     if(q.variant.key==='normal'&&c.cmProduct&&String(cm)===String(c.cmProduct))value=priceAmount(c.cardmarket?.trend??c.cardmarket?.avg);
+    }
+    else {url=`https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=${encodeURIComponent(c.name)}`;}
+   }
+   if(!direct&&game==='mtg')url=`https://www.cardmarket.com/en/Magic/Products/Search?searchString=${encodeURIComponent(c.name)}`;
+  }else if(key==='cardhoarder'&&game==='mtg'){
+   currency='TIX';direct=safeURL(c.purchase_uris?.cardhoarder)===url&&/\/cards\/\d+(?:[/?#]|$)/.test(url);source='Scryfall / Cardhoarder';scope='Magic Online · not a paper card';if(finish==='nonfoil'&&direct)value=priceAmount(c.prices?.tix);
+  }
+  rows.push({key,name:sellerNames[key]||(Object.keys(sellerNames).some(k=>norm(name).startsWith(k))?new URL(url).hostname:name),url,direct,value,currency,kind,scope,source,observedAt,sourceUpdatedAt,checkedAt});
+ }
+ return rows;
+}
+export function sellerRows(game,c,ctx={},links=[]){
+ const rows=sellerModels(game,c,ctx,links);
+ return `<section class="market-sellers" id="card-sellers" tabindex="-1" aria-labelledby="card-sellers-title"><div class="market-section-head"><h3 id="card-sellers-title">Find sellers</h3><span class="small muted">Prices & buying</span></div><p class="foot">Provider references, not live stock offers. Confirm finish, condition and shipping at the store.</p><div class="vendor-list">${rows.map(r=>`<a class="vendor-row" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(r.name+' · '+currencyValue(r.value,r.currency)+' · '+(r.direct?'View listing':'Search store'))}"><span class="vendor-copy"><b>${esc(r.name)}</b><small>${esc(r.direct?r.scope||'Product listing · check exact finish':'Search · choose your printing and finish')}</small>${r.value!==null?`<small class="vendor-provenance">${esc(r.source)} · ${esc(quoteTiming(r))}</small>`:''}</span><span class="vendor-quote"><strong>${currencyValue(r.value,r.currency)}</strong>${r.value!==null?`<small>${esc(r.currency)} · ${esc(referenceLabel(r.kind))}${r.observedAt?' · last observed':''}</small>`:''}<span class="vendor-action">${r.direct?'View listing':'Search store'} <span aria-hidden="true">↗</span></span></span></a>`).join('')||'<p class="muted small">Seller links are unavailable for this card.</p>'}</div></section>`;
+}
+export function compactPriceSummary(game,c,ctx={},lastObserved=null){
+ const finish=selectedFinish(game,c,ctx.priceFinish),q=presentationQuote(game,c,finish,ctx.priceEdition,ctx.priceYgoEdition);
+ let value=q?.value??null,currency='USD',label=q?.label||finishLabel(finish),note=referenceLabel(q?.kind);
+ if(value===null&&game==='mtg'&&finish!=='etched') {const eur=priceAmount(c.prices?.[finish==='foil'?'eur_foil':'eur']);if(eur!==null){value=eur;currency='EUR';note='Cardmarket reference';}}
+ if(value===null&&finish==='reference'&&lastObserved){value=priceAmount(lastObserved.value);note='Last observed '+lastObserved.date;label=lastObserved.finish||label;}
+ if(value===null){const mine=myPrice(c,game==='mtg'?finish:'nonfoil');if(mine!==null){value=mine;note='Your private value · not a seller quote';}}
+ if(q?.observedAt&&q.value!==null)note='Last observed '+dateText(q.observedAt);
+ if(q?.value!==null&&quoteIsStale(q))note+=' · stale';
+ const edit=game==='mtg'?`data-act="myPriceSet" data-finish="${esc(finish)}"`:`data-act="tMyPriceSet" data-game="${esc(game)}" data-id="${esc(c.id)}"`;
+ return `<div class="card-price-summary"><div class="card-price-reference"><strong>${value===null?c.brief?'Loading price…':'No quote yet':currencyValue(value,currency)}</strong><span>${esc(value===null?'Price unknown':note)}${value!==null?' · '+currency:''}</span><small>${esc(label)}</small></div><div class="card-price-actions"><button class="btn ghost small" data-act="cardPriceJump" data-target="history" aria-label="View price history">Prices</button><button class="btn small" data-act="cardPriceJump" data-target="sellers" aria-label="View sellers for selected version">Buy <span aria-hidden="true">↓</span></button><button class="link small personal-price-edit" ${edit}>Your price</button></div></div>`;
+}
+export const detailIdentity=(ctx,shown=null)=>['card','tcard','buy','market'].includes(ctx?.type)?JSON.stringify([ctx.type,ctx.game||'mtg',ctx.id||ctx.card?.id||ctx.name||'',ctx.print?.id||ctx.card?.id||shown?.id||'',ctx.priceEdition||ctx.edition||'']):'';
+export const detailTabs=(tab,items)=>`<nav class="cs-tabs" role="tablist" aria-label="Card details">${items.map(([id,label])=>`<button id="card-tab-${esc(id)}" role="tab" aria-controls="card-panel-${esc(id)}" aria-selected="${id===tab}" tabindex="${id===tab?'0':'-1'}" class="${id===tab?'on':''}" data-act="cardTab" data-tab="${esc(id)}">${label}</button>`).join('')}</nav>`;
+export const detailPanel=(id,tab,html)=>`<div id="card-panel-${esc(id)}" class="cs-panel" data-tab="${esc(id)}" role="tabpanel" aria-labelledby="card-tab-${esc(id)}" tabindex="0" ${id===tab?'':'hidden'}>${html}</div>`;
+
+// Small DOM helpers keep focus/disclosures stable without replacing the sheet context.
+const focusKey=el=>el?.id?'id:'+el.id:el?.dataset?.focusKey?'key:'+el.dataset.focusKey:el?.dataset?.change?'change:'+el.dataset.change:el?.dataset?.act?'act:'+JSON.stringify([el.dataset.act,el.dataset.tab,el.dataset.target,el.dataset.finish,el.dataset.range,el.dataset.src,el.dataset.game,el.dataset.id]):el?.tagName==='SUMMARY'?'summary:'+el.textContent:el?.tagName==='A'?'link:'+el.getAttribute('href'):'';
+export function captureDetailState(body,active=globalThis.document?.activeElement){
+ const details=[...(body?.querySelectorAll?.('details')||[])];
+ return {top:body?.scrollTop||0,left:body?.querySelector?.('.cs-tabs')?.scrollLeft||0,focus:body?.contains?.(active)?focusKey(active):'',details:details.map((el,i)=>[el.dataset.detailKey||el.id||el.querySelector('summary')?.textContent||String(i),el.open]),pointValue:active?.dataset?.change==='marketPoint'?active.value:null,selection:active&&typeof active.selectionStart==='number'?[active.selectionStart,active.selectionEnd]:null};
+}
+export function restoreDetailState(body,state){
+ if(!body||!state)return;
+ for(const [i,el] of [...(body.querySelectorAll?.('details')||[])].entries()){const key=el.dataset.detailKey||el.id||el.querySelector('summary')?.textContent||String(i),saved=state.details.find(x=>x[0]===key);if(saved)el.open=saved[1];}
+ const target=state.focus&&[...(body.querySelectorAll?.('button,input,select,textarea,a,summary,[tabindex]')||[])].find(el=>focusKey(el)===state.focus&&!el.closest?.('[hidden]'));
+ if(target&&state.pointValue!==null&&target.dataset?.change==='marketPoint'&&[...(target.options||[])].some(o=>o.value===state.pointValue))target.value=state.pointValue;
+ target?.focus?.({preventScroll:true});if(target&&state.selection)try{target.setSelectionRange?.(...state.selection);}catch{}
+ body.scrollTop=state.top;const tabs=body.querySelector?.('.cs-tabs');if(tabs)tabs.scrollLeft=state.left;
+}
+export function detailTabKey(key,index,length){return key==='Home'?0:key==='End'?length-1:key==='ArrowRight'?(index+1)%length:key==='ArrowLeft'?(index+length-1)%length:null;}
+export function scrollDetailTarget(body,target,reduced=false){
+ if(!body||!target)return false;
+ const head=body.querySelector?.('.sheet-head'),tabs=body.querySelector?.('.cs-tabs'),clearance=(head?.getBoundingClientRect?.().height||0)+(tabs?.getBoundingClientRect?.().height||0)+12;
+ const top=Math.max(0,body.scrollTop+target.getBoundingClientRect().top-body.getBoundingClientRect().top-clearance);
+ target.focus?.({preventScroll:true});body.scrollTo?.({top,behavior:reduced?'auto':'smooth'});return true;
+}
+// The latest jump wins. A late render may never move focus in a different card or closed sheet.
+export function createDetailJump({getContext,isOpen,showPrices,getBody,refreshOffsets=()=>{},reducedMotion=()=>false,identityOf=detailIdentity}){
+ let sequence=0;
+ return async target=>{
+  const ctx=getContext(),token=++sequence,identity=identityOf(ctx);
+  if(!['card','tcard'].includes(ctx?.type))return false;
+  await showPrices();
+  if(token!==sequence||getContext()!==ctx||identityOf(ctx)!==identity||ctx.tab!=='prices'||!isOpen())return false;
+  const body=getBody(),node=body?.querySelector?.(target==='sellers'?'#card-sellers':'#card-history');
+  refreshOffsets();return scrollDetailTarget(body,node,reducedMotion());
+ };
+}

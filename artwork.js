@@ -49,10 +49,20 @@ export function pokemonArtCrop(c, cls = "", src = "") {
 // Tournament rows carry the exact English set abbreviation and collector number.
 // Pick the archetype's featured Pokémon; never substitute an unrelated mascot.
 export function pokemonDeckCover(deck){
- const key=s=>String(s||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
- const title=key(deck?.name),rows=(deck?.list||[]).filter(r=>r.kind==='Pokemon'&&/^[A-Z0-9]{2,8}$/i.test(r.set||'')&&/^\d{1,3}$/.test(String(r.number||'')));
- const scored=rows.map(r=>{const n=key(r.name).replace(/(?:ex|vmax|vstar|gx|v)$/,'');return {r,score:(n.length>3&&title.includes(n)?100:0)+Number(r.qty||0)};}).sort((a,b)=>b.score-a.score);
+ const words=s=>String(s||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/['’]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+ const title=` ${words(deck?.name)} `,
+  icons=(Array.isArray(deck?.icons)?deck.icons:[]).filter(i=>typeof i==='string').map(i=>words(i).split(' ').filter(Boolean)),
+  rows=(Array.isArray(deck?.list)?deck.list:[]).filter(r=>r?.kind==='Pokemon'&&typeof r.name==='string'&&/^[A-Z0-9]{2,8}$/i.test(r.set||'')&&/^\d{1,3}$/.test(String(r.number||''))&&Number(r.number)>0&&Number.isInteger(Number(r.qty))&&Number(r.qty)>0);
+ // A generic archetype label (for example Basic Box) can identify its lead via
+ // its supplied species icons. A plentiful support Pokémon alone is not evidence.
+ const scored=rows.map(r=>{
+  const name=words(r.name).replace(/\s+(?:ex|vmax|vstar|gx|v)$/,''),parts=name.split(' ');
+  // Tokens avoid Mew matching Mewtwo, while form labels may change order:
+  // "ogerpon-teal" still identifies "Teal Mask Ogerpon", not another Pokémon.
+  const featured=name.length>=3&&title.includes(` ${name} `)?2:icons.some(i=>i.join('').length>=3&&i.every(part=>parts.includes(part)))?1:0;
+  return {r,featured};
+ }).filter(x=>x.featured).sort((a,b)=>b.featured-a.featured||Number(b.r.qty)-Number(a.r.qty));
  if(!scored.length)return null;
  const r=scored[0].r,set=String(r.set).toUpperCase(),number=String(Number(r.number)).padStart(3,'0');
- return {game:'ptcg',name:r.name,imageLarge:`https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpci/${set}/${set}_${number}_R_EN.png`};
+ return {game:'ptcg',name:r.name,printing:{name:r.name,set,number:String(r.number)},imageLarge:`https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpci/${set}/${set}_${number}_R_EN.png`};
 }
