@@ -115,6 +115,28 @@ export function pkSetSymbol(set, cls = "pks") {
   const tcgdex = set.symbol ? `<img class="${cls}" src="${esc(/\.(?:png|webp|jpe?g)(?:\?|$)/i.test(set.symbol)?set.symbol:set.symbol+".png")}" alt="" loading="lazy" onerror="this.remove()">` : "";
   return slug ? symImg("s", slug, set.name || "", tcgdex, cls) : tcgdex;
 }
+// Catalogue-only sources. Reuse the card-symbol identity mapping above, not a
+// logo or a neighboring release. Keep the established card/detail renderer intact.
+export function pkCatalogueSymbolSources(set) {
+  if (!set?.id || !/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(String(set.id))) return [];
+  const mapped = Object.hasOwn(PK_SET_SLUG, set.id), slug = mapped ? PK_SET_SLUG[set.id] : slugify(set.name);
+  // The original Base Set has no expansion symbol. Its real code is the fallback.
+  if (mapped && !slug) return [];
+  const sources = /^[a-z0-9_-]{1,80}$/.test(slug) ? [`img/pks/s/${slug}.png`, `https://pokesymbols.com/images/tcg/sets/symbols/${slug}.png`] : [];
+  // Only accept an actual symbol endpoint from the existing image providers.
+  // No executable/data URL, credentials, arbitrary host, logo or injected HTML.
+  try {
+    const url = new URL(set.symbol);
+    const symbolPath = url.hostname === 'images.pokemontcg.io' ? /^\/[a-z0-9._-]+\/symbol\.(?:png|webp|jpe?g)$/i.test(url.pathname)
+      : url.hostname === 'assets.tcgdex.net' ? /^\/[a-z0-9._/-]+\/symbol(?:\.(?:png|webp|jpe?g))?$/i.test(url.pathname)
+      : url.hostname === 'images.scrydex.com' && /^\/pokemon\/[a-z0-9._-]+-symbol\/symbol(?:\.(?:png|webp|jpe?g))?$/i.test(url.pathname);
+    if (url.protocol === 'https:' && !url.username && !url.password && !url.port && !url.hash && symbolPath) {
+      if (url.hostname === 'assets.tcgdex.net' && url.pathname.endsWith('/symbol')) url.pathname += '.webp';
+      sources.push(url.href);
+    }
+  } catch { /* Missing or invalid provider symbols leave a real set-code tile. */ }
+  return [...new Set(sources)];
+}
 const PK_RARITY_SLUG = { "rare holo": "rare", "holo rare": "rare" };
 const PK_RARITY_FILES = new Set(["ace-spec-rare", "black-white-rare", "common", "double-rare", "hyper-rare", "illustration-rare", "mega-attack-rare", "mega-hyper-rare", "rare", "shiny-rare", "shiny-ultra-rare", "special-illustration-rare", "ultra-rare", "uncommon"]);
 export function pkRarity(r) {

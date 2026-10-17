@@ -54,3 +54,11 @@ export const tierAttrs = (t) => `data-tier="${t.key}" style="--tier:${t.color}"`
 export const tierStyle = (t) => `--tier:${t.color}`;
 // A small gem with the tier name, for the corner of a card.
 export const tierGem = (t) => `<span class="tier-gem" title="${t.label} tier"><i aria-hidden="true"></i>${t.label}</span>`;
+
+// Printed-rarity decoration is separate from the price scale. Callers must prove
+// a single selected YGO printing before supplying its rarity; absence is neutral.
+export function ygoRarityFlair(rarity) {
+  const r=String(rarity||'').trim().toLowerCase();
+  if(!r || !/^(?:common|short print|normal parallel rare)$/.test(r) && !/rare/.test(r))return '';
+  return 'yr'+rarityTier('ygo',r);
+}

@@ -13,6 +13,13 @@
 .set-year-grid .set-row-main > b > span { overflow-wrap:anywhere; }
 .set-year-grid .set-media { width:104px; height:84px; background:rgba(255,255,255,.035); border-radius:12px; }
 .set-year-grid .set-media img { padding:8px; }
+/* Pokémon catalogue only: one authentic monochrome symbol, never a mixed logo.
+   Preserve its internal light/dark detail, including promo lettering. */
+.set-year-grid .set-media-pokemon-symbol > .set-catalogue-symbol { grid-area:1 / 1; padding:14px; filter:grayscale(1) invert(1); }
+.set-year-grid .set-media-pokemon-symbol.no-art > .set-catalogue-symbol { display:block; opacity:0; }
+.set-year-grid .set-media-pokemon-symbol > .set-catalogue-symbol[hidden] { display:none; }
+.set-year-grid .set-media-pokemon-symbol > .set-media-fallback { grid-area:1 / 1; width:100%; min-width:0; padding:8px; box-sizing:border-box; }
+.set-year-grid .set-media-pokemon-symbol .set-art-code { max-width:100%; overflow-wrap:anywhere; text-align:center; line-height:1.35; }
 .set-year-grid .set-row-count { min-width:48px; max-width:86px; flex:none; }
 .set-year-grid .set-row-count > b { font-size:22px; font-weight:650; letter-spacing:-.04em; }
 .set-year-grid .set-row-count > .count-unknown { font-size:12px; letter-spacing:0; color:var(--muted); }

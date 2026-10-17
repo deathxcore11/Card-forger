@@ -9,6 +9,8 @@ import {validateWorkspace} from '../confidence.js';
 import {normalizePtcg} from '../ptcg.js';
 import {normalizeYgo, normalizeYgoSets, ygoSetId, summarizeYgoSetContents, resolveYgoSet} from '../ygo.js';
 import {artworkSources} from '../artwork.js';
+import {pkCatalogueSymbolSources} from '../emblems.js';
+import {setRowContent} from '../set-list-ui.js';
 import {SUPABASE} from '../config.js';
 import {capture as captureEvidence} from './detail-rules-fixtures.mjs';
 export {startServer, navigate, closeSheet, inventorySnapshot, noOverflow, capture, saveReport, WIDTHS, RESULTS} from './detail-rules-fixtures.mjs';
@@ -32,6 +34,10 @@ export const SETS={
  ptcg:[{id:'fixturea',name:'Synthetic Pokémon A',releaseDate:'2025-01-01',cardCount:{total:123,official:123},logo:`${IMAGE}/ptcg-a`},{id:'fixtureb',name:'Synthetic Pokémon B',releaseDate:'2024-01-01',cardCount:{total:3,official:3},logo:`${IMAGE}/broken-set`},{id:'fixtureunknown',name:'Synthetic unknown Pokémon',releaseDate:'',cardCount:{},logo:`${IMAGE}/unknown`},...Array.from({length:121},(_,i)=>({id:`fixture${digits(i)}`,name:`Synthetic Pokémon set ${digits(i)}`,releaseDate:`${2023-i%3}-01-01`,cardCount:{total:10}}))],
  ygo:RELEASES
 };
+// The catalogue now tries symbols, not the supplied logo. Fail every exact
+// source for this one release without permitting a wildcard external host.
+export const BROKEN_SET_SYMBOL_SOURCES=Object.freeze(pkCatalogueSymbolSources(SETS.ptcg.find(s=>s.id==='fixtureb')));
+export const isBrokenSetSymbol=(url,base)=>BROKEN_SET_SYMBOL_SOURCES.some(source=>new URL(source,base+'/').href===url.href);
 // These exact derived icon requests are part of the synthetic fixtures: the
 // colorless Magic tile emblem and the promo row with no supplied icon URL.
 // Never wildcard an external image host or forward a missing asset to it.
@@ -100,6 +106,13 @@ export function providerFixture(url){
 const historyEndpoint=new URL('/functions/v1/market-history',SUPABASE.url);
 const history=url=>({game:url.searchParams.get('game'),cardId:url.searchParams.get('id'),finish:url.searchParams.get('finish'),series:[],notice:'Synthetic fixture has no matching history quote.'});
 export async function validateSetsFixtures(){
+ const broken=SETS.ptcg.find(s=>s.id==='fixtureb'),base='http://127.0.0.1:1';
+ assert.deepEqual(BROKEN_SET_SYMBOL_SOURCES,['img/pks/s/synthetic-pokemon-b.png','https://pokesymbols.com/images/tcg/sets/symbols/synthetic-pokemon-b.png']);
+ assert.deepEqual(BROKEN_SET_SYMBOL_SOURCES,pkCatalogueSymbolSources({...broken,symbol:''}),'The failure fixture follows the real normalized catalogue symbol chain');
+ for(const source of BROKEN_SET_SYMBOL_SOURCES)assert(isBrokenSetSymbol(new URL(source,base+'/'),base),'Every real symbol fallback is intercepted as an exact synthetic failure');
+ for(const source of pkCatalogueSymbolSources(SETS.ptcg[0]))assert.equal(isBrokenSetSymbol(new URL(source,base+'/'),base),false,'The neighboring release must not inherit the failed-symbol rule');
+ const brokenMarkup=setRowContent({name:broken.name,code:'FIXTUREB',pokemonSet:broken});
+ assert(brokenMarkup.includes('src="'+BROKEN_SET_SYMBOL_SOURCES[0]+'"'));assert(brokenMarkup.includes('data-symbol-next="'+BROKEN_SET_SYMBOL_SOURCES[1]+'"'));assert(!brokenMarkup.includes('data-symbol-last='));assert(!brokenMarkup.includes(broken.logo),'A broken logo alone cannot exercise catalogue symbol fallback');
  assert.equal(new Set(SYNTHETIC_ICON_URLS).size,2);
  assert.deepEqual(SYNTHETIC_ICON_URLS,['https://svgs.scryfall.io/card-symbols/C.svg','https://svgs.scryfall.io/sets/fxpromo.svg']);
  assert.equal(SETS.mtg.find(s=>s.code==='fxpromo').icon_svg_uri,undefined,'Promo fixture exercises the derived icon URL');
@@ -137,7 +150,7 @@ export async function openSetsApp(browser,base,{game='ygo',hash='#sets',width=39
   for(const gate of gates){if(!gate.used&&gate.match(url,req)){gate.used=true;gate.started();await gate.wait;}}
   const planned=rules.find(r=>r.remaining>0&&r.match(url,req));if(planned){planned.remaining--;return fulfill({error:'Deterministic source outage',message:'Synthetic source unavailable'},planned.status);}
   if(url.hostname==='fonts.googleapis.com')return fulfill('/* synthetic fixtures use system fonts */',200,'text/css');
-  if(req.resourceType()==='image'&&(url.hostname==='sets-fixtures.invalid'||artURLs.has(url.href)||url.origin===base&&/^\/img\/pks\/(s|r)\//.test(url.pathname))){images.push(url.href);return fulfill(url.href.includes('broken-set')?'':SVG,url.href.includes('broken-set')?404:200,'image/svg+xml');}
+  if(req.resourceType()==='image'&&(isBrokenSetSymbol(url,base)||url.hostname==='sets-fixtures.invalid'||artURLs.has(url.href)||url.origin===base&&/^\/img\/pks\/(s|r)\//.test(url.pathname))){images.push(url.href);const broken=url.href.includes('broken-set')||isBrokenSetSymbol(url,base);return fulfill(broken?'':SVG,broken?404:200,'image/svg+xml');}
   if(url.origin===historyEndpoint.origin&&url.pathname===historyEndpoint.pathname)return fulfill(history(url));
   if(url.origin===base){
    if(url.pathname==='/catalog.json')return fulfill({cards:[],snapshot_date:'2000-01-01'});

@@ -1,4 +1,4 @@
-import {compactPriceSummary,detailTabs,detailPanel} from "./pricing-presentation.js";
+import {compactPriceSummary,detailTabs,detailPanel,presentationQuote,quoteForContext} from "./pricing-presentation.js";
 import { homeValue, homeEdition, homeMetaShortcut } from "./home-ui.js";
 import {interactiveRules} from './rule-learning.js';
 import {referenceQuote,referenceLabel} from './price-reference.js';
@@ -21,7 +21,7 @@ import { installNudge } from "./install.js";
 import { rankByName } from "./catalog-tools.js";
 import {setRowContent,knownSetCount,setYearSections,setCardFields,setCardFacets,filterSortSetCards,setProgressMarkup} from './set-list-ui.js';
 import {artworkHTML,artworkSources,pokemonArtCrop,pokemonDeckCover} from "./artwork.js";
-import { tierOf, tierAttrs, tierStyle, tierGem } from "./tier.js";
+import { tierOf, tierAttrs, tierStyle, tierGem, ygoRarityFlair } from "./tier.js";
 import {viewControl,selectionControl,selectionMark,selectionTray,historyPanel,quoteModel,priceOverview,quoteWarning} from "./workbench-ui.js";
 import { locationPicker, rememberLocation } from "./collection-locations.js";
 import { zoneCountLabel } from "./deck-safety.js";
@@ -142,8 +142,15 @@ export const gameEmblems = (c) => (!c || c.brief ? "" : c.game === "ygo" ? ygoEm
 const tileBadges = (c) => tileChrome(c?.game, c);
 // Rarity/price tier (tier.js). Yu-Gi-Oh! rarity lives on the printing you own, when known.
 const tcgTier = (c, e = null, p = undefined) => tierOf(c?.game, e?.rarity || c?.rarity || "", p === undefined ? price(c) : p);
+export function tcgRarityAttrs(c,e=null) {
+  if(c?.game!=="ygo")return "";
+  if(e?.setReleaseId)c=setContextCard("ygo",c,e.setReleaseId,currentYgoCatalogue());
+  if(e?.setReleaseUnverified)return "";
+  const key=e?.printing&&e?.rarity?e.printing+"::"+e.rarity:c.displayPrintingKey||"",q=presentationQuote("ygo",c,"reference",key,e?.edition||""),flair=q?.printing&&ygoRarityFlair(q.rarity);
+  return flair?`data-rarity-flair="${flair}" data-printed-rarity="${esc(q.rarity)}"`:"";
+}
 const rowBadges = (c) => (!c || c.brief ? "" : `${gameEmblems(c)}${tcgSetBadge(c)} `);
-const imgTag = (c,cls="card-img",large=false) => artworkHTML(c,cls,large);
+const imgTag = (c,cls="card-img",large=false,knownPrice=undefined) => artworkHTML(knownPrice===undefined?c:{...c,prices:{...c?.prices,usd:knownPrice},...(c?.setContext?{setContext:{...c.setContext,price:knownPrice}}:{})},cls,large);
 
 // A printed variant can share art, but that is not proof of its stamp/finish.
 export function variantArtwork(card, variant = {}) {
@@ -184,6 +191,9 @@ function tcgTradePanel(g, c, own, ctx={}) {
 
 // A stat on the card page. The regulation mark gets what it means for you, not just a letter.
 function statCell(c, k, v) {
+  // Old normalized caches may still contain Level:null on Link cards. Keep
+  // their real Link/ATK and zero-valued stats; never invent a Level or Rank.
+  if(c.game==="ygo"&&["Level","Rank"].includes(k)&&(v==null||String(v).trim()===""||/link/i.test(c.frame+" "+c.typeLine)))return "";
   if (k !== "Regulation") return `<div><small>${esc(k)}</small><b>${esc(String(v))}</b></div>`;
   const where = c.legal?.standard ? ["ok-text", "Playable in Standard"] : c.legal?.expanded ? ["warn-text", "Rotated out of Standard · Expanded only"] : ["muted", "Not tournament legal"];
   return `<div class="stat-reg"><small>Regulation mark</small><b>${esc(String(v))}</b><span class="${where[0]}">${where[1]}</span></div>`;
@@ -684,6 +694,7 @@ export function tcgCardSheet(c, sctx = {}) {
     if(membership?.game===c.game&&membership.cardId===c.id&&membership.releaseId===sctx.setId&&membership.membership==='set-response')c={...c,setContext:membership};
     c=setContextCard(c.game,c,sctx.setId,c.game==='ygo'?currentYgoCatalogue():ui(c.game).sets.list,{variantKey:sctx.setVariant||'',unverifiedRelease:!!sctx.setReleaseUnverified});
   }
+  if(c.game==='ygo')c=selectedYgoCard(c,sctx.priceEdition||'',sctx.priceYgoEdition||'');
   const g = c.game,
     tab = sctx.tab && sctx.tab !== "trade" ? sctx.tab : "overview", // Trade tab retired for now
     own = c.setContext ? setCardOwnedCount(g,c,c.setContext.releaseId) : ownedOf(g, c),
@@ -699,7 +710,7 @@ export function tcgCardSheet(c, sctx = {}) {
     heroSrc = g === "ygo" ? c.art || c.imageLarge : artworkSources(c,true)[0],
     heroFallback = g === "ygo" ? c.artDirect || "" : "";
   const overview = `
-    <div class="cs-card"><div class="cd-art-stack"><div class="cd-img"><button class="cd-zoom" data-hold-card="true" data-id="${esc(c.id)}" data-entry="${esc(sctx.entryId||'')}" data-act="zoomCard" data-src="${esc(artworkSources(c,true)[0] || "")}" data-hi="${esc(g === "ygo" ? ygoImageDirect(c.id, false) : c.imageLarge || "")}" data-fallback="${esc(artworkSources(c,true)[1] || "")}" data-art="${esc(g === "ygo" ? c.artDirect || "" : "")}" data-name="${esc(c.name)}" aria-label="Enlarge ${esc(c.name)}">${imgTag(c, "card-img", true)}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button></div></div>
+    <div class="cs-card"><div class="cd-art-stack"><div class="cd-img" ${tcgRarityAttrs(c)}><button class="cd-zoom" data-hold-card="true" data-id="${esc(c.id)}" data-entry="${esc(sctx.entryId||'')}" data-act="zoomCard" data-src="${esc(artworkSources(c,true)[0] || "")}" data-hi="${esc(g === "ygo" ? ygoImageDirect(c.id, false) : c.imageLarge || "")}" data-fallback="${esc(artworkSources(c,true)[1] || "")}" data-art="${esc(g === "ygo" ? c.artDirect || "" : "")}" data-name="${esc(c.name)}" aria-label="Enlarge ${esc(c.name)}">${imgTag(c, "card-img", true)}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button></div></div>
       <div class="cs-card-side">${c.setContext?'':alertStatus(g,trackedQuote(g,c)?.id,c.name)}
         <p class="small own-line">${savedUnverifiedLot ? `<b class="ok-text">Owned copy</b> <span class="muted">· printing unverified</span>` : own ? `<b class="ok-text">You own ${own}</b>` : "Not in your collection"}</p>
         ${deck ? `<p class="small deck-legal ${SOURCES[g].legality(c, f) === "legal" ? "ok-text" : "bad-text"}">${SOURCES[g].legality(c, f) === "legal" ? "✓ Legal" : "● Not allowed"} in ${esc(f.name)} <span class="muted">(${esc(deck.name)})</span></p>` : ""}
@@ -753,7 +764,7 @@ export function tcgCardSheet(c, sctx = {}) {
   <div class="cs-title"><div><h2>${esc(c.name)}</h2><p class="type-line">${esc(c.typeLine || "")}</p></div>${gameEmblems(c)}</div></div>
   ${emblemChips(g, c)}
   <div class="cs-meta">
-    ${g === "ygo" ? ygoSetRow(c) : ""}
+    ${g === "ygo" ? ygoSetRow(c,sctx) : ""}
     ${c.set ? `<button class="cd-set" data-act="tSet" data-id="${esc(c.set.id)}">${pkSetSymbol(c.set, "pks big")}<div><b>${esc(c.set.name)} <span class="set-go">›</span></b><small>#${esc(c.set.number || "")}${c.set.total ? "/" + c.set.total : ""}${c.rarity ? ` · ${pkRarity(c.rarity)} ${esc(c.rarity)}` : ""}</small></div></button>` : c.archetype ? `<button class="cd-set" data-act="tArchetype" data-name="${esc(c.archetype)}"><div><b>${esc(c.archetype)} <span class="set-go">›</span></b><small>Archetype · ${c.sets?.length || 0} printings</small></div></button>` : ""}
     ${compactPriceSummary(g,c,sctx,p.usd==null?lastQuote(g,c):null)}
   </div>
@@ -847,11 +858,11 @@ function readYgoSetCache(){
 export function currentYgoCatalogue(){const list=ui('ygo').sets.list;return list.length?list:readYgoSetCache()?.list||[];}
 const ygoSetIndex=()=>new Map([...releaseIndex(currentYgoCatalogue()).names].filter(([,sets])=>sets.length===1).map(([name,sets])=>[name,sets[0]]));
 
-function ygoSetRow(c) {
+function ygoSetRow(c,ctx={}) {
   const context=c.setContext,idx=ygoSetIndex();
   if(context){
-    const set=ui('ygo').sets.list.find(s=>s.id===context.releaseId),printing=context.printing;
-    return `<button class="cd-set" data-act="tSet" data-id="${esc(context.releaseId)}">${set?.image?`<img class="ygo-pack" src="${esc(set.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`:''}<div><b>${esc(context.name||context.code||context.releaseId)} <span class="set-go">›</span></b><small>${printing?ygoPrintBadge(printing):esc(context.code||'')} ${context.date?esc(context.date)+' · ':''}${context.status==='resolved'?'Selected release':'Release unverified'} · ${printing?'edition unspecified':'choose a printing; edition unspecified'}</small></div></button>`;
+    const set=ui('ygo').sets.list.find(s=>s.id===context.releaseId),printing=context.printing,quote=quoteForContext("ygo",c,ctx),edition=quote?.printing&&new Map([["1st-edition","1st Edition"],["unlimited","Unlimited"],["limited","Limited"]]).get(quote.selectedEdition);
+    return `<button class="cd-set" data-act="tSet" data-id="${esc(context.releaseId)}">${set?.image?`<img class="ygo-pack" src="${esc(set.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`:''}<div><b>${esc(context.name||context.code||context.releaseId)} <span class="set-go">›</span></b><small>${printing?ygoPrintBadge(printing):esc(context.code||'')} ${context.date?esc(context.date)+' · ':''}${context.status==='resolved'?'Selected release':'Release unverified'} · ${printing?esc(edition||'edition unspecified'):'choose a printing; edition unspecified'}</small></div></button>`;
   }
   if(!c.sets?.length)return '';
   const dated=c.sets.map(print=>({...print,release:idx.get(print.name)})),known=dated.filter(p=>p.release?.date).sort((a,b)=>a.release.date.localeCompare(b.release.date)),pick=known[0]||dated[0],release=pick.release;
@@ -931,7 +942,7 @@ export function tcgCollection() {
       if (w) return wantedLot(g, w, c, i);
       const p = entryPrice(c, e);
       const t = tcgTier(c, e, p);
-      return `<div class="lot" data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}">${selectionMark(g,e.id)}<button class="lot-art" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${imgTag(c)}${tileBadges(c)}${tierGem(t)}</button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem(g, c)}</button><span class="lot-sub">${rowBadges(c)}${esc(setLabel({ e, c }) || "")}${e.printing ? " · " + esc(e.printing) : ""}${e.rarity ? " · " + esc(e.rarity) : ""}${e.variant ? " · " + esc(c?.variants?.find((v) => v.key === e.variant)?.label || e.variantLabel || e.variant) : ""}${e.edition ? " · " + esc({"1st-edition":"First Edition",unlimited:"Unlimited",limited:"Limited Edition"}[e.edition] || e.edition) : ""}${e.condition && e.condition !== "Near Mint" ? " · " + esc(e.condition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></div><div class="lot-side"><button class="price link" data-act="marketOpen" data-game="${g}" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" data-finish="${esc(e.variant||"reference")}" aria-label="Price history and sellers for ${esc(e.name)}">${p === null ? "—" : usd(p * e.qty)}</button>${e.condition&&e.condition!=="Near Mint"?`<small class="condition-value-note">${esc(conditionValueNote(e,[...(c?.conditionQuotes||[]),...(e.conditionQuotes||[])]))}</small>`:""}<span class="stepper"><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="-1" aria-label="One fewer">−</button><b>${e.qty}</b><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="1" aria-label="One more">＋</button></span></div></div>`;
+      return `<div class="lot" ${tcgRarityAttrs(c,e)} data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}">${selectionMark(g,e.id)}<button class="lot-art" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${imgTag(c,"card-img",false,g==="ygo"?p:undefined)}${tileBadges(c)}${tierGem(t)}</button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem(g, c)}</button><span class="lot-sub">${rowBadges(c)}${esc(setLabel({ e, c }) || "")}${e.printing ? " · " + esc(e.printing) : ""}${e.rarity ? " · " + esc(e.rarity) : ""}${e.variant ? " · " + esc(c?.variants?.find((v) => v.key === e.variant)?.label || e.variantLabel || e.variant) : ""}${e.edition ? " · " + esc({"1st-edition":"First Edition",unlimited:"Unlimited",limited:"Limited Edition"}[e.edition] || e.edition) : ""}${e.condition && e.condition !== "Near Mint" ? " · " + esc(e.condition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></div><div class="lot-side"><button class="price link" data-act="marketOpen" data-game="${g}" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" data-finish="${esc(e.variant||"reference")}" aria-label="Price history and sellers for ${esc(e.name)}">${p === null ? "—" : usd(p * e.qty)}</button>${e.condition&&e.condition!=="Near Mint"?`<small class="condition-value-note">${esc(conditionValueNote(e,[...(c?.conditionQuotes||[]),...(e.conditionQuotes||[])]))}</small>`:""}<span class="stepper"><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="-1" aria-label="One fewer">−</button><b>${e.qty}</b><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="1" aria-label="One more">＋</button></span></div></div>`;
     })
     .join("")}</div>${selectionTray(g)}${!rows.length ? empty("No matching cards", "Try a different search or filter.") : ""}${rows.length > (U.limit || 120) ? `<button class="btn ghost block" data-act="tCollMore">Load more · ${rows.length-(U.limit || 120)} remaining</button>` : ""}`
   : empty(`No ${esc(GAMES[g].short)} cards yet`, "Search for a card and tap “Add to collection”, or import a list.", `<button class="btn" data-act="go" data-to="#search">Find cards</button><button class="btn ghost" data-act="tImportColl">Paste a list</button>`)}
@@ -1653,6 +1664,19 @@ export function setContextCard(g, card, release, catalogue = ui(g).sets.list, {v
   const setContext={game:g,cardId:card.id,releaseId:resolved.id,releaseAmbiguous,name:resolved.name,code:resolved.code,date:resolved.date,printings:exact,status:releaseVerified?"resolved":exact.length?"ambiguous":"missing",printingAmbiguous:!printing,printing,edition:"unknown",price:selectedPrice};
   return {...card,sets:exact,...(exact.some(p=>p.releasePriceAmbiguous)?{conditionQuotes:[]}:{}),rarity:printing?.rarity||"",setContext,prices:{usd:selectedPrice,eur:null,others:[],source:printing?"Selected release reference · edition unspecified":"Selected release price unavailable"}};
 }
+// A display-only selection retains all choices and exact release identity. It
+// never writes a printing's quote or rarity back into the shared card cache.
+export function selectedYgoCard(card,printingKey='',edition='') {
+  if(card?.game!=='ygo')return card;
+  const q=presentationQuote('ygo',card,'reference',printingKey,edition);
+  if(!q)return card;
+  return {...card,displayPrintingKey:q.editionKey,rarity:q.rarity||'',...(card.setContext?{setContext:{...card.setContext,printing:q.printing,printingAmbiguous:!q.printing,price:q.value}}:{}),prices:{...card.prices,usd:q.value}};
+}
+export function selectedSetRarity(card,rarity='') {
+  if(card?.game!=='ygo'||card.setContext?.status!=='resolved'||!rarity||rarity==='all')return card;
+  const hits=card.setContext.printings.filter(p=>p.rarity===rarity);
+  return hits.length===1?selectedYgoCard(card,hits[0].code+'::'+hits[0].rarity):card;
+}
 // Strict release ownership is deliberately separate from gameplay's name-equivalent inventory.
 export function ownedInSet(g, card, release, collection = gs(g).collection, catalogue = ui(g).sets.list) {
   if (!card||!release) return 0;
@@ -1681,7 +1705,7 @@ export function tcgSets() {
   ${U.error?`<div class="note warn">${esc(U.error)} <button class="link" data-act="tSetsReload">Try again</button></div>`:""}
   ${U.busy&&!U.list.length?'<p class="muted center pad">Loading every set…</p>':""}
   <div class="set-controls set-catalog-controls">${g==="ygo"?`<label>Release category<select data-change="tSetKind" aria-label="Set category">${options([["all","All releases"],["boosters","Booster releases"],["decks","Starter & Structure Decks"],["collections","Collections & reprints"],["promos","Promos & tournaments"]],U.kind||"all")}</select></label>`:""}<label>Order<select data-change="tSetsSort" aria-label="Set catalogue order">${options([["new","Newest releases"],["old","Oldest releases"],["name","Name within each year"]],U.sort||"new")}</select></label><p class="muted small">Separated by release year${g==="ygo"?" · categories inferred from names":""}</p></div>
-  ${setYearSections(list.slice(0,U.limit),s=>`<button class="set-row" data-act="tSet" data-id="${esc(s.id)}">${setRowContent({name:s.name,code:s.code,image:s.image,symbol:g==="ptcg"?pkSetSymbol(s):'',detail:[s.series,s.date].filter(Boolean).join(' · '),count:g==="ygo"?s.expectedUniqueCards:s.count,printingCount:g==="ygo"?s.printingCount:null,owned:owned.get(s.id)||0})}</button>`)}
+  ${setYearSections(list.slice(0,U.limit),s=>`<button class="set-row" data-act="tSet" data-id="${esc(s.id)}">${setRowContent({name:s.name,code:s.code,image:s.image,pokemonSet:g==="ptcg"?s:null,detail:[s.series,s.date].filter(Boolean).join(' · '),count:g==="ygo"?s.expectedUniqueCards:s.count,printingCount:g==="ygo"?s.printingCount:null,owned:owned.get(s.id)||0})}</button>`)}
   ${U.list.length&&!list.length?empty("No sets match","Try a set name or code, or refresh the catalogue."):""}
   ${list.length>U.limit?`<button class="btn ghost block" data-act="tSetsMore">Show more · ${list.length-U.limit} left</button>`:""}
   ${g==="ptcg"?'<p class="foot">Set and rarity symbols from <a href="https://pokesymbols.com" target="_blank" rel="noopener">pokesymbols.com</a>.</p>':'<p class="foot">Unique card totals are shown only where verified. Other source totals describe printings, not collection completion.</p>'}`;
@@ -1717,9 +1741,9 @@ const setCoverageText=(contents,total,loaded,source)=>{
 export function tcgSet() {
   const g=game(),U=ui(g).set,info=U.info,source=g==="ptcg"?"TCGdex":"YGOPRODeck";
   if(U.candidates?.length)return `<section class="panel set-release-chooser"><button class="link small" data-act="go" data-to="#sets">← All sets</button><p class="eyebrow">Choose the exact release</p><h1>More than one release uses ${esc(U.id)}</h1><p class="muted">This older link does not identify a unique release. Choose its name and release date; no edition has been assumed.</p><div class="set-list">${U.candidates.map(s=>`<button class="set-row" data-act="tSet" data-id="${esc(s.id)}">${setRowContent({name:s.name,code:s.code,image:s.image,detail:s.date||"Date unavailable",count:s.expectedUniqueCards,printingCount:s.printingCount})}</button>`).join('')}</div></section>`;
-  const all=[...new Map(U.cards.map(raw=>[raw.id,setContextCard(g,{...(cardOf(g,raw.id)||raw),...(raw.setContext?{setContext:raw.setContext}:{})},info||raw.setContext,ui(g).sets.list,{variantKey:U.finish||""})])).values()];
+  const all=[...new Map(U.cards.map(raw=>[raw.id,setContextCard(g,{...(cardOf(g,raw.id)||raw),...(raw.setContext?{setContext:raw.setContext}:{})},info||raw.setContext,ui(g).sets.list,{variantKey:U.finish||""})])).values()].map(c=>g==="ygo"?selectedYgoCard(c):c);
   const own=c=>ownedInSet(g,c,info),ownedCount=all.filter(c=>own(c)>0).length,facets=setCardFacets(all,g),contents=U.contents||{},total=knownSetCount(g==="ygo"?contents.expectedUniqueCards??info?.expectedUniqueCards:info?.count);
-  let list=filterSortSetCards(all,g,U);
+  let list=filterSortSetCards(all.map(c=>selectedSetRarity(c,U.rarity)),g,U);
   if(U.filter!=="all")list=list.filter(c=>U.filter==="owned"?own(c)>0:own(c)===0);
   const progress=setProgressMarkup({key:g+":"+(info?.id||U.id),owned:ownedCount,total,loaded:all.length,complete:contents.completeness==="complete",previous:U.progressSnapshot});
   U.progressSnapshot=progress.snapshot;
@@ -1734,7 +1758,7 @@ export function tcgSet() {
   ${!U.busy&&!U.error&&!all.length?`<section class="panel mu-empty"><div class="mu-empty-mark" aria-hidden="true">◇</div><h3>No card list for this release yet</h3><p class="muted">${source} has not returned cards for ${esc(info?.name||"this release")}. This does not mean the release contains zero cards.</p><button class="btn ghost" data-act="tSetRetry">Try again</button></section>`:`<div class="list-bar"><p class="muted small">${U.busy?"Loading cards and prices…":`${list.length} shown · ${g==="ygo"?"selected-release references; editions not assumed":"daily market references"}`}</p>${viewControl(g,"set")}</div>`}
   ${remainingDetails?`<p class="set-coverage-note">Rarity and version filters use loaded card details. ${remainingDetails} ${remainingDetails===1?'card is':'cards are'} still waiting for details. <button class="link small" data-act="tSetDetails" ${U.busy||U.detailsBusy?'disabled':''}>${U.busy||U.detailsBusy?'Loading details…':'Load remaining details'}</button></p>`:''}
   ${all.length&&!list.length?empty("No cards match","Try another name or number, or clear your filters."):""}
-  <div class="card-grid set-grid">${list.slice(0,U.limit).map(c=>`<button class="grid-card ${own(c)?"own":""}" data-act="tCard" data-id="${esc(c.id)}" data-set-id="${esc(info?.id||U.id)}" ${U.finish?`data-set-variant="${esc(U.finish)}"`:""} ${tierAttrs(tcgTier(c))}>${imgTag(c)}${tileBadges(c)}<span class="grid-meta"><span class="ellip">${setCardFields(c,g).number?"#"+esc(setCardFields(c,g).number)+" ":""}${esc(c.name)}</span><span>${c.brief?"…":price(c)===null?"—":usd(price(c))}</span></span>${own(c)?`<span class="owned-badge">×${own(c)}</span>`:""}</button>`).join('')}</div>
+  <div class="card-grid set-grid">${list.slice(0,U.limit).map(c=>`<button class="grid-card ${own(c)?"own":""}" data-act="tCard" data-id="${esc(c.id)}" data-set-id="${esc(info?.id||U.id)}" ${U.finish?`data-set-variant="${esc(U.finish)}"`:""} ${g==="ygo"&&c.setContext?.printing?`data-printing="${esc(c.setContext.printing.code+"::"+c.setContext.printing.rarity)}"`:""} ${tcgRarityAttrs(c)} ${tierAttrs(tcgTier(c))}>${imgTag(c)}${tileBadges(c)}<span class="grid-meta"><span class="ellip">${setCardFields(c,g).number?"#"+esc(setCardFields(c,g).number)+" ":""}${esc(c.name)}</span><span>${c.brief?"…":price(c)===null?"—":usd(price(c))}</span></span>${own(c)?`<span class="owned-badge">×${own(c)}</span>`:""}</button>`).join('')}</div>
   ${list.length>U.limit?`<button class="btn ghost block" data-act="tSetMore">Show more · ${list.length-U.limit} left</button>`:""}`;
 }
 

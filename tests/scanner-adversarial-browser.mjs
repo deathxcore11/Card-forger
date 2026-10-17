@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {mkdir,readFile,writeFile} from 'node:fs/promises';
 import {resolve,extname} from 'node:path';
+import {runInNewContext} from 'node:vm';
 
 const refs=[
  {g:'ptcg',name:'Kyogre',id:'cel25-3',url:'https://api.tcgdex.net/v2/en/cards/cel25-3'},
@@ -23,7 +24,33 @@ const matrix=[
  'Retry keeps the same capture ID and original bytes; completed originals survive reload',
  'A rejected new card held in view queues exactly once when reading capacity becomes available'
 ];
+// Execute the actual crop/read/freeze handlers without browser, provider reads
+// or pixels. Fake canvas proves metadata/control flow ONLY; hosted pixelCheck
+// remains responsible for the full original title/footer and image integrity.
+async function validatePhotoCropHandlers(){
+ const source=await readFile(new URL('../scancam.js',import.meta.url),'utf8');
+ const readStart=source.indexOf('  A.scanRead = async () => {'),readEnd=source.indexOf('  // Confirm & add',readStart);
+ const freezeStart=source.indexOf('export function freezeCapture('),freezeEnd=source.indexOf('export function rotateCapture(',freezeStart);
+ assert(readStart>=0&&readEnd>readStart&&freezeStart>=0&&freezeEnd>freezeStart);
+ const st={url:'fixture:public-card',crop:null},rect={left:20,top:30,width:500,height:700},box={hidden:true,style:{}},wrap={getBoundingClientRect:()=>rect,setPointerCapture:()=>{}};
+ const packets=[],canvas=()=>({width:0,height:0,getContext:()=>({drawImage(){}})});let decode;
+ const scope={A:{},s:()=>st,S:{ui:{view:'scan'}},CAPTURE_MAX_EDGE:1280,document:{getElementById:id=>id==='cropWrap'?wrap:box,createElement:canvas},loadImage:()=>new Promise(resolve=>{decode=resolve;}),autoBox:()=>null,preserveWholeCardPhoto:()=>true,enqueueCapture:packet=>{packets.push(packet);return true;},toast:message=>{throw Error(message);}};
+ runInNewContext(source.slice(freezeStart,freezeEnd).replace('export ','')+source.slice(readStart,readEnd)+';this.attachCrop=attachCrop;',scope);
+ const image={naturalWidth:1000,naturalHeight:1400};
+ assert.equal(wrap.onpointerdown,undefined,'Decode alone does not bind the asynchronously attached crop gesture');
+ let read=scope.A.scanRead();decode(image);await read;assert.equal(packets[0].proposal,null,'Read without a crop produces the observed null proposal, not delayed manual metadata');
+ scope.attachCrop();
+ const pointer=(x,y)=>({clientX:rect.left+rect.width*x,clientY:rect.top+rect.height*y,pointerId:1,preventDefault(){}});
+ wrap.onpointerdown(pointer(.13,.20));wrap.onpointermove(pointer(.87,.59));wrap.onpointerup();
+ for(const [key,value]of Object.entries({x:.13,y:.20,w:.74,h:.39}))assert(Math.abs(st.crop[key]-value)<1e-10);
+ assert.equal(box.hidden,false);read=scope.A.scanRead();st.crop=null;decode(image);await read;
+ const packet=packets[1];assert.equal(packet.proposal.boundary.source,'manual','Read snapshots an established crop before asynchronous decode');assert(packet.proposal.outputWidth>packet.proposal.outputHeight,'The actual proposal remains a transverse art-only crop');
+ assert.equal(packet.original.width,914);assert.equal(packet.original.height,1280,'freezeCapture retains full-source dimensions');
+ for(const [i,[x,y]]of [[.13,.20],[.87,.20],[.87,.59],[.13,.59]].entries()){assert(Math.abs(packet.proposal.quad[i].x-x*packet.original.width)<1e-8);assert(Math.abs(packet.proposal.quad[i].y-y*packet.original.height)<1e-8);}
+ assert.equal(st.photoLoading,false);return 'PASS: actual attachCrop → scanRead → freezeCapture handlers preserve established manual crop geometry across async decode; image-pixel assertions remain hosted-only.';
+}
 if(process.argv.includes('--validate-fixtures')){
+ console.log(await validatePhotoCropHandlers());
  assert.equal(refs.length,2);assert(refs.every(r=>new URL(r.url).protocol==='https:'));
  assert.equal(new Set(refs.map(r=>r.id)).size,2);
  console.log(JSON.stringify({kind:'hosted-only-synthetic-public-scan-lifecycle',references:refs,matrix,limitations:['No physical camera or photographed-table accuracy claim.','Deterministic OCR does not establish recognition accuracy; scanner-browser.mjs remains required.','No private user images or derived pixels.']},null,2));
@@ -86,7 +113,7 @@ async function app(){
  const skip=page.getByRole('button',{name:'Skip',exact:true});try{await skip.waitFor({state:'visible',timeout:1500});await skip.click();}catch{}
  await page.evaluate(async()=>{
   const {S}=await import('/store.js'),batch=await import('/scan-batch.js'),cam=await import('/scancam.js'),prefs=await import('/scansession.js');
-  window.__scannerTest={state:()=>S.ui.scan,rows:batch.loadBatch,cam,prefs,bufferLimit:batch.CAPTURE_BUFFER_LIMIT,collectionCount:()=>S.state.collection.length+Object.values(S.state.tcg||{}).reduce((n,g)=>n+(g.collection?.length||0),0)};
+  window.__scannerTest={bootReady:()=>!S.ui.sets.busy,state:()=>S.ui.scan,rows:batch.loadBatch,cam,prefs,bufferLimit:batch.CAPTURE_BUFFER_LIMIT,collectionCount:()=>S.state.collection.length+Object.values(S.state.tcg||{}).reduce((n,g)=>n+(g.collection?.length||0),0)};
   S.ui.scan.auto=false;cam.SCAN_DEADLINES.ocr=60000;
  });
  return {context,page};
@@ -94,7 +121,7 @@ async function app(){
 const rows=page=>page.evaluate(()=>window.__scannerTest.rows());
 const settled=page=>page.waitForFunction(()=>{const t=window.__scannerTest;return !t.state().busy&&t.rows().every(r=>!['captured','reading'].includes(r.status));},null,{timeout:20000});
 async function screenshot(page,name){await page.screenshot({path:resolve(out,`scanner-adversarial-${name}.png`),fullPage:false});}
-async function diagnostic(page,name){const data=await page.evaluate(()=>({state:{busy:window.__scannerTest.state().busy,buffered:window.__scannerTest.state().buffered,status:window.__scannerTest.state().status,guide:window.__scannerTest.state().guide,boundaryReady:window.__scannerTest.state().boundaryReady},rows:window.__scannerTest.rows().map(({id,status,capturedAt,proposal,error,timings,counts})=>({id,status,capturedAt,proposal,error,timings,counts})),events:window.__scannerHarness.events,ocr:window.__scannerHarness.calls}));await writeFile(resolve(out,`scanner-adversarial-${name}.json`),JSON.stringify(data,null,2));}
+async function diagnostic(page,name){const data=await page.evaluate(()=>({state:{busy:window.__scannerTest.state().busy,buffered:window.__scannerTest.state().buffered,status:window.__scannerTest.state().status,guide:window.__scannerTest.state().guide,boundaryReady:window.__scannerTest.state().boundaryReady,crop:window.__scannerTest.state().crop,cropBound:typeof document.querySelector('#cropWrap')?.onpointerdown==='function',cropRect:document.querySelector('#cropWrap')?.getBoundingClientRect().toJSON()},rows:window.__scannerTest.rows().map(({id,status,capturedAt,proposal,error,timings,counts})=>({id,status,capturedAt,proposal,error,timings,counts})),events:window.__scannerHarness.events,ocr:window.__scannerHarness.calls}));await writeFile(resolve(out,`scanner-adversarial-${name}.json`),JSON.stringify(data,null,2));}
 async function camera(page){
  await page.evaluate(async()=>{
   const h=window.__scannerHarness;h.images={};h.expected={};
@@ -248,17 +275,25 @@ try{
   await page.evaluate(()=>{window.__scannerTest.cam.SCAN_DEADLINES.ocr=180;});
   await page.getByRole('button',{name:'Photo',exact:true}).click();
   await page.locator('input[data-change="scanFile"]').last().setInputFiles({name:'public-kyogre.webp',mimeType:ref.mime,buffer:ref.bytes});
-  await page.locator('#cropImg').evaluate(image=>image.decode());
+  await page.waitForFunction(()=>window.__scannerTest.bootReady());
+  // render schedules attachCrop on a later task. Decoded pixels alone do not
+  // establish a bound pointer handler, a current photo, or hittable coordinates.
+  await page.locator('#cropWrap').scrollIntoViewIfNeeded();
+  await page.waitForFunction(()=>{const wrap=document.querySelector('#cropWrap'),image=document.querySelector('#cropImg');return wrap?.isConnected&&image?.complete&&image.naturalWidth>0&&image.src===window.__scannerTest.state().url&&['onpointerdown','onpointermove','onpointerup'].every(key=>typeof wrap[key]==='function');});
   await page.evaluate(()=>{
    const image=document.querySelector('#cropImg'),canvas=document.createElement('canvas'),scale=Math.min(1,window.__scannerTest.cam.CAPTURE_MAX_EDGE/Math.max(image.naturalWidth,image.naturalHeight));canvas.width=Math.round(image.naturalWidth*scale);canvas.height=Math.round(image.naturalHeight*scale);canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
    window.__scannerHarness.expected={photo:{canvas,quad:[{x:0,y:0},{x:canvas.width,y:0},{x:canvas.width,y:canvas.height},{x:0,y:canvas.height}]}};
   });
+  await page.waitForFunction(()=>{const wrap=document.querySelector('#cropWrap'),r=wrap?.getBoundingClientRect();return r?.width>0&&r.height>0&&[[.13,.20],[.87,.59]].every(([x,y])=>{const px=r.x+r.width*x,py=r.y+r.height*y;return px>0&&px<innerWidth&&py>0&&py<innerHeight&&wrap.contains(document.elementFromPoint(px,py));});});
   const crop=await page.locator('#cropWrap').boundingBox();assert(crop?.width>0&&crop.height>0);
   await page.mouse.move(crop.x+crop.width*.13,crop.y+crop.height*.20);await page.mouse.down();await page.mouse.move(crop.x+crop.width*.87,crop.y+crop.height*.59,{steps:5});await page.mouse.up();
+  await page.waitForFunction(()=>{const crop=window.__scannerTest.state().crop,box=document.querySelector('#cropBox');return crop&&box&&!box.hidden&&Object.entries({x:.13,y:.20,w:.74,h:.39}).every(([key,value])=>Math.abs(crop[key]-value)<.01);});
+  const drawn=await page.evaluate(()=>{const crop={...window.__scannerTest.state().crop},canvas=window.__scannerHarness.expected.photo.canvas;window.__scannerHarness.events.push({event:'manual-crop-established',crop,at:Date.now()});return {crop,width:canvas.width,height:canvas.height};});
   await page.getByRole('button',{name:'Read card',exact:true}).click();await page.waitForFunction(()=>window.__scannerTest.rows().length===1);await settled(page);
   const original=(await rows(page))[0];assert(original,'Photo was accepted');assert.equal(original.status,'unresolved');assert.match(original.error,/timed out/i);
   assert.equal(original.proposal?.boundary?.source,'manual','Bad-art fixture traverses the actual photo crop handler');
   assert(original.proposal.outputWidth>original.proposal.outputHeight,'Fixture is deliberately a transverse art-only crop');
+  const {x,y,w,h}=drawn.crop;for(const [i,[u,v]]of [[x,y],[x+w,y],[x+w,y+h],[x,y+h]].entries()){assert(Math.abs(original.proposal.quad[i].x-u*drawn.width)<.01,'Queued quad preserves the actual drag x coordinate');assert(Math.abs(original.proposal.quad[i].y-v*drawn.height)<.01,'Queued quad preserves the actual drag y coordinate');}
   const photoPixels=await pixelCheck(page,original.id,'photo',{cropMustContainBands:false});
   assert(await page.evaluate(()=>window.__scannerHarness.terminated.length>0),'Timed-out OCR worker is retired');
   const timedOut=JSON.stringify(await rows(page));
