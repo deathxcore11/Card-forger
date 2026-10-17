@@ -21,7 +21,7 @@ async function reveal(locator){
 }
 async function openLearning(app){
  await navigate(app.page,'#decks/ideas');
- await app.page.locator('#content [data-act="learnGame"]').first().click();
+ await app.page.locator('#content [data-act="learnGame"]').first().click();app.health();
  await app.page.locator('#sheet[open] [data-learning-root]').waitFor();
 }
 async function rootSnapshot(page){return page.locator('[data-learning-root]').evaluate(root=>({step:root.querySelector('[data-learn-step][aria-pressed="true"]')?.dataset.learnStep,filter:root.querySelector('[data-learn-search]')?.value,search:root.querySelector('[data-rule-search]')?.value,details:[...root.querySelectorAll('[data-learning-home] details')].map(d=>d.open),top:document.querySelector('#sheetBody').scrollTop}));}

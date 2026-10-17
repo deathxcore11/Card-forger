@@ -79,7 +79,7 @@ const server=await startServer();let browser,failure;const report=[EVIDENCE];
 const D='.rules-ask-dialog[open]';
 async function flush(page){await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));}
 async function openHub(app){
- const {page}=app;await navigate(page,'#decks/ideas');await page.locator('#content [data-act="learnGame"]').first().click();await page.locator('#sheet[open] [data-learning-root]').waitFor();
+ const {page}=app;await navigate(page,'#decks/ideas');await page.locator('#content [data-act="learnGame"]').first().click();app.health();await page.locator('#sheet[open] [data-learning-root]').waitFor();
  await page.locator('#sheet [data-act="askRules"]').click();await page.locator(D).waitFor();
  assert.equal(await page.locator(D+' [data-learning-root]').getAttribute('data-game'),app.fixtures.state.settings.game);
  assert.equal(await page.evaluate(()=>document.activeElement?.matches('[data-rules-close]')),true,'Opening uses a noneditable control, not keyboard focus');

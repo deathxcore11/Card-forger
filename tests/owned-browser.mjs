@@ -99,9 +99,9 @@ try{for(const g of GAMES){
    &&rect.width>0&&rect.height>0&&button.clientHeight>0&&n.clientHeight<=button.clientHeight+22;
  });
  await page.locator(g==='mtg'?'#sheet [data-act="own"]':'#sheet [data-act="tOwn"]').first().click();const preview=page.getByRole('status',{name:'Selected condition value',exact:true});await preview.waitFor();assert.match(await preview.innerText(),/\$100.00/);
- await page.getByLabel('Condition',{exact:true}).click();await page.locator('.glass-select-menu[open]').getByRole('option',{name:'Lightly Played',exact:true}).click();assert.match(await preview.innerText(),/Lightly Played[\s\S]*Condition price unavailable/);
+ await page.getByLabel('Condition',{exact:true}).click();await page.locator('.glass-select-menu[open]').getByRole('option',{name:'Lightly Played',exact:true}).click();assert.match(await preview.innerText(),/Lightly Played[\s\S]*Condition lookup unavailable/);
  await page.locator('#lotManualValue').fill('60');assert.match(await preview.innerText(),/\$60.00/);
- await page.getByLabel('Condition',{exact:true}).click();await page.locator('.glass-select-menu[open]').getByRole('option',{name:'Damaged',exact:true}).click();assert.match(await preview.innerText(),/Damaged[\s\S]*Condition price unavailable/);assert.equal(await page.locator('#lotManualValue').inputValue(),'');
+ await page.getByLabel('Condition',{exact:true}).click();await page.locator('.glass-select-menu[open]').getByRole('option',{name:'Damaged',exact:true}).click();assert.match(await preview.innerText(),/Damaged[\s\S]*Condition lookup unavailable/);assert.equal(await page.locator('#lotManualValue').inputValue(),'');
  assert.deepEqual(errors,[]);
  console.log(`PASS: ${g} owned tile +/−, saved-lot selection, independent wishlist, condition-bound value, full-image hold and reload persistence; branded header survives saving.`);await context.close();
 }}finally{await browser.close();await new Promise(r=>server.close(r));}

@@ -4195,3 +4195,16 @@ dialog.action-tour{inset:0;width:100%;height:100%;max-width:none;max-height:none
 #content.view-gallery .set-grid>.grid-card[data-rarity-flair="yr0"][data-tier="tn"]>.card-img{border-width:2px;box-shadow:0 8px 20px -12px #000c;animation:none}
 .set-grid .grid-meta{min-width:0;gap:8px;align-items:start}.set-grid .grid-meta>span:last-child{flex-shrink:0;font-variant-numeric:tabular-nums}.set-coverage-note{font-size:12px;line-height:1.6;max-width:80ch}
 @media(prefers-reduced-motion:reduce){#content.view-gallery .set-grid>.grid-card[data-rarity-flair][data-tier="tn"]>.card-img{animation:none}}
+
+/* Keep the full sample form and save action visible inside the script-free demo. */
+.tour-v3 .tour-preview{height:520px}.demo-main{overflow:auto}
+
+/* Keep artwork within the desktop content track; mobile retains its edge bleed. */
+@media(min-width:900px){body[data-view="home"] #content > #homeHero.home-art-header{width:100%;margin:0 0 18px}}
+/* Help cards use a vertical summary even alongside the generic panel rules. */
+.settings-dialog .settings-page details.info-topic.panel{padding:0}
+details.info-topic.panel > summary{display:grid;min-width:0;overflow-wrap:anywhere}
+.info-topic-body,.info-search,.info-search input{min-width:0;max-width:100%}
+/* Camera controls own the available height while the camera is running. */
+body[data-view="scan"] #content:has(.scan-workspace.is-live) > .context-guide{display:none}
+@media(min-width:900px) and (max-width:1199px){body[data-view="scan"] #app:has(.scan-workspace.is-live){--scan-nav-space:calc(var(--nav-h) + env(safe-area-inset-bottom))}}
