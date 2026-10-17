@@ -45,13 +45,11 @@ try{
    await page.locator('[data-act="menu"]').click();await page.locator('#settingsTab-info').click();await page.locator('#infoQuery').fill('tabletop');await page.locator('#info-tabletop summary').click();await page.locator('#info-tabletop [data-act="infoGo"]').click();
    await page.locator('[data-table="start"]').click();const field=game==='ptcg'?'pokemon:0:damage':'life';
    await page.setViewportSize({width:1440,height:1200});
-   const touches=await page.locator('.tabletop-dialog').evaluate((root,field)=>[0,1].map(id=>{const b=root.querySelector(`button[data-seat="${id}"][data-field="${field}"][data-table-delta]`),r=b.getBoundingClientRect();if(r.top<0||r.bottom>innerHeight)throw Error('Both seats must be visible for real simultaneous touch');return {id:id+1,x:r.x+r.width/2,y:r.y+r.height/2};}),field);
+   const touches=await page.locator('.tabletop-dialog').evaluate((root,field)=>[0,1].map(id=>{const b=root.querySelector(`button[data-seat="${id}"][data-field="${field}"][data-table-delta${field.startsWith('pokemon:')?'="10"':''}]`),r=b.getBoundingClientRect();if(r.top<0||r.bottom>innerHeight)throw Error('Both seats must be visible for real simultaneous touch');return {id:id+1,x:r.x+r.width/2,y:r.y+r.height/2};}),field);
    const touchSession=await app.context.newCDPSession(page);await touchSession.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:touches});await touchSession.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await touchSession.detach();
-   const outputs=await page.locator(`[data-table-output$=":${field}"]`).allTextContents();if(game!=='ptcg')assert.equal(Number(outputs[0]),game==='mtg'?19:7500);
-   // Positive Pokémon damage, because zero damage cannot be decremented.
-   if(game==='ptcg')await page.locator('[data-seat="0"][data-field="pokemon:0:damage"][data-table-delta="10"]').click();
+   const outputs=await page.locator(`[data-table-output$=":${field}"]`).allTextContents();assert.deepEqual(outputs.map(Number),game==='mtg'?[19,19]:game==='ygo'?[7500,7500]:[10,10]);
    await page.locator('[data-table-undo="0"]').click();assert.equal(await page.locator(`[data-table-output="0:${field}"]`).innerText(),game==='mtg'?'20':game==='ygo'?'8000':'0');
-   if(game!=='ptcg')assert.equal(await page.locator(`[data-table-output="1:${field}"]`).innerText(),game==='mtg'?'19':'7500');
+   assert.equal(await page.locator(`[data-table-output="1:${field}"]`).innerText(),game==='mtg'?'19':game==='ygo'?'7500':'10');
    for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'.tabletop-dialog',`${game} tabletop ${width}`);}
    await capture(page,`synthetic-search-tabletop-${game}`);await page.locator('[data-table="new"]').click();await page.locator('.cf-dialog button[value="cancel"]').click();assert(await page.locator('.table-seats').isVisible());
    await page.keyboard.press('Escape');await page.keyboard.press('Escape');assert.equal(await inventorySnapshot(page),original);app.health();console.log(`PASS: ${game} responsive single Home/search, disabled Community, real demo state changes, safe reset, independent tabletop and no inventory mutation`);

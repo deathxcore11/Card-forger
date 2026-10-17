@@ -26,3 +26,15 @@ console.log('PASS: basic resources and missing quotes counted; readable grouped 
 const T=await import('./tcg.js'),{S,blank}=await import('./store.js'),{blankGame}=await import('./games.js');S.state=blank();S.state.settings.game='ptcg';S.state.tcg={ptcg:blankGame(),ygo:blankGame()};
 const release={id:'example',name:'Example Set',count:1},card={...variants[0],id:'example-1',game:'ptcg',set:{id:'example',name:'Example Set',number:'1'},prices:{usd:999},variants:[{...variants[0].variants[0],usd:12.34}]};T.cache.ptcg[card.id]=card;T.ui('ptcg').sets.list=[release];Object.assign(T.ui('ptcg').set,{id:release.id,info:release,cards:[card],finish:selected,filter:'all',q:'',sort:'number',limit:80,contents:{completeness:'complete'}});
 const setHtml=T.tcgSet();assert.match(setHtml,/\$12\.34/);assert.doesNotMatch(setHtml,/\$999/);assert.match(setHtml,/data-set-variant="detail:opaque-a"/);assert.doesNotMatch(setHtml,/>detail:opaque/);console.log('PASS: selected readable set version renders its exact quote and opens the exact product.');
+
+// Rapid close → reopen must survive the asynchronous browser Back event.
+{
+ const {createSettingsDialog}=await import('./settings-dialog.js');
+ const dialog={open:false,innerHTML:'',scrollTop:0,contains:()=>false,querySelectorAll:()=>[],querySelector:()=>null,addEventListener(){},showModal(){this.open=true;},close(){this.open=false;}};
+ const history={state:{route:'collection'},backs:0,pushState(s){this.state=s;},back(){this.backs++;}};
+ const document={activeElement:null,documentElement:{classList:{add(){},remove(){}}}};
+ const popup=createSettingsDialog({dialog,markup:()=>'<p>Settings</p>',history,document,location:{href:'#collection'}});
+ popup.open();popup.close();popup.open();assert.equal(dialog.open,false);assert.equal(history.backs,1);
+ history.state={route:'collection'};assert(popup.historyChanged());assert(dialog.open,'The deferred reopen runs after Back settles');assert(history.state.cardstashySettings);
+}
+console.log('PASS: rapid Settings close/reopen preserves a single modal history entry.');

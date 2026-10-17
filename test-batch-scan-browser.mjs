@@ -43,9 +43,9 @@ try{
  await page.getByRole('button',{name:'Capture card now'}).click();await page.waitForFunction(()=>window.snapshot().busy);
  const time=await page.locator('#scanVideo').evaluate(v=>v.currentTime);await page.waitForTimeout(350);assert(await page.locator('#scanVideo').evaluate((v,t)=>!v.paused&&v.currentTime>t&&v.srcObject===window.cameraStream,time),'same live video advances while recognition runs');assert.equal(await page.locator('.scan-confirm').count(),0);
  await page.waitForFunction(()=>window.snapshot().rows.length===1&&!window.snapshot().busy);await page.evaluate(()=>window.store.ui.scan.auto=true);await page.waitForTimeout(800);assert.equal((await page.evaluate(()=>window.snapshot())).rows.length,1,'same held card not duplicated');
- // Deliberately reproduce the old edge-clipped scene. Auto must abstain,
+ // Deliberately clip the source card beyond the top sensor edge. Auto must abstain,
  // but the explicit shutter can retain the entire original for honest review.
- await page.evaluate(()=>{window.store.ui.scan.auto=false;window.cameraCardY=160;window.ocrDelay=20;window.ocr=['Vikavolt HP150\n101/264','101/264'];});
+ await page.evaluate(()=>{window.store.ui.scan.auto=false;window.cameraCardY=-40;window.ocrDelay=20;window.ocr=['Vikavolt HP150\n101/264','101/264'];});
  await page.waitForFunction(()=>window.store.ui.scan.boundaryReady===false);
  await page.getByRole('button',{name:'Capture card now'}).click();
  await page.waitForFunction(()=>window.snapshot().rows.length===2&&!window.snapshot().busy);
