@@ -47,7 +47,7 @@ export function setCardFields(card, game) {
   numbers:values(game==='ygo'?printings.map(p=>p.code):[game==='mtg'?card.collector_number:card.set?.number]),
   rarities:values(game==='ygo'?(single?[single.rarity]:printings.map(p=>p.rarity)):[card.rarity]),
   finishes:values(game==='mtg'?card.finishes||[]:game==='ptcg'?(card.variants||[]).map(pokemonSetFinish):printings.map(p=>p.finish)),
-  price:context?context.price:card.prices?.usd??null };
+  price:game==='ygo'&&card.setBrowseReference?card.setBrowseReference.low:context?context.price:card.prices?.usd??null };
 }
 // Only offer facets that the actual returned cards can substantiate.
 export function setCardFacets(cards, game) {

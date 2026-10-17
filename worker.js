@@ -195,7 +195,7 @@ export default {
     if (url.pathname === "/api/lens") return lensUpload(request, url);
     if (url.pathname === "/api/prices/recent") return recentHistoryRoute(url,ctx);
     if (url.pathname === "/api/prices/archive") return archivePriceRoute(url,ctx);
-    if (url.pathname === "/api/prices/conditions") return conditionFeedRoute(url,env,ctx);
+    if (url.pathname === "/api/prices/conditions") return conditionFeedRoute(url,env,ctx,fetch,{request});
     if (url.pathname === "/api/prices/yugioh-set") return ygoSetPriceRoute(url,ctx);
     if (url.pathname === "/api/prices/yugioh") return ygoPriceRoute(url,ctx);
     if (url.pathname === "/api/prices/pokemon") return pokemonPriceRoute(url,ctx);

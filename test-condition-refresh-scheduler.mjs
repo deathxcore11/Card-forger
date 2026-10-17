@@ -176,7 +176,7 @@ function harness(){
   setTimeout(fn,ms){scheduled.push({fn,ms});return scheduled.length;}
  };
  vm.createContext(c);
- vm.runInContext(segment('function save()','// Transactional change:')+segment('let lastUndo =','const safely =')+segment('const conditionScheduler=','let magicPriceRefresh='),c);
+ vm.runInContext(segment('function save()','// Transactional change:')+segment('let lastUndo =','const safely =')+segment('let conditionScheduler=','let magicPriceRefresh='),c);
  return {c,card,lot,disk,scheduled,firstWrite,releaseWrite,start:()=>c.fetchConditionValue(card,lot,'mtg',()=>quoteCallbacks++,{source:'review'}),resolveQuote:()=>body.resolve({status:'available',quotes:[{condition:'Lightly Played',price:7.25,currency:'USD',priceStatus:'current',validUntil:new Date(Date.now()+86400000).toISOString()}]}),get networkCalls(){return networkCalls;},get writes(){return writes;},get quoteCallbacks(){return quoteCallbacks;},get homeRefreshes(){return homeRefreshes;}};
 }
 {
@@ -213,7 +213,7 @@ function harness(){
 
 }
 {
-const source=app.slice(app.indexOf('const conditionScheduler='),app.indexOf('function refreshChangedConditions('));
+const source=app.slice(app.indexOf('let conditionScheduler='),app.indexOf('function refreshChangedConditions('));
 const card={id:'88000001',game:'ygo',name:'Synthetic reused-code card',sets:[{code:'SET-EN001',rarity:'Rare'}]};let raw=card,resolve,requests=0,callbacks=0;
 const response=new Promise(r=>resolve=r),entry={cardId:card.id,printing:'SET-EN001',rarity:'Rare',edition:'unlimited',language:'en',condition:'Lightly Played',setReleaseId:'release-A',setReleaseUnverified:false};
 const context={S:{state:{collection:[],tcg:{ygo:{collection:[]}}},ui:{}},navigator:{onLine:true},conditionWorkspaceRevision:0,CONDITION_IDENTITY,conditionRequest,applyConditionQuotes,conditionValue,createConditionRefreshScheduler:()=>createConditionRefreshScheduler({intervalMs:0}),loadConditionQuotes:(...args)=>loadConditionQuotes(...args,async()=>{requests++;return {ok:true,json:()=>response};}),queueWorkspaceWrite:fn=>fn(),key:s=>s,meta:()=>null,T:{cardOf:()=>raw,currentYgoCatalogue:()=>[],setContextCard:()=>({setContext:{status:'resolved',printings:raw.sets}}),gs:()=>({collection:[]}),persistQuoteCache(){}}};

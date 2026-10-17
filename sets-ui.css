@@ -45,3 +45,10 @@
 @media (max-width:699px) { .set-year-sections { gap:26px; } .set-year-grid { grid-template-columns:minmax(0,1fr); gap:10px; } .set-year-grid > .set-row { min-height:100px; gap:12px; padding:12px; border-radius:15px; } .set-year-grid .set-media { width:80px; height:72px; } .set-year-grid .set-row-count > b { font-size:19px; } .set-year-grid .set-row-main > b { font-size:14px; } .set-catalog-controls > p { margin:0; flex-basis:100%; } .set-collection-progress { padding:17px; margin-top:18px; } .set-progress-top > strong { font-size:25px; } }
 @media (max-width:380px) { .set-year-grid .set-media { width:62px; height:62px; } .set-year-grid > .set-row { gap:9px; padding:10px; } .set-year-grid .set-row-count { max-width:65px; } .set-year-grid .set-row-count > b { font-size:17px; } .set-progress-top p { font-size:13px; } }
 @media (prefers-reduced-motion:reduce) { .progress-changed .set-progress-track > span { animation:none; } .set-year-grid > .set-row { transition:none; } .set-year-grid > .set-row:hover { transform:none; } }
+
+/* Set references are legible at every card width, including multi-edition ranges. */
+.set-grid .grid-meta.ygo-set-meta{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;text-align:left}
+.set-grid .ygo-set-meta>.ellip{white-space:normal;overflow:visible;overflow-wrap:anywhere;line-height:1.4}
+.set-grid .ygo-set-meta .set-price{display:flex;flex-wrap:wrap;gap:3px 7px;min-width:0;white-space:normal;overflow-wrap:anywhere;font-weight:700}
+.set-grid .set-price>small{font-size:11px;font-weight:400;color:var(--muted)}
+.set-grid>.grid-card[data-tier="tn"]>.card-img{border:3px solid var(--rarity-edge,var(--line));border-radius:12px}

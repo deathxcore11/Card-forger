@@ -1,3 +1,4 @@
+import {addScannedEntry} from './collection-stack.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -19,7 +20,7 @@ const source = fs.readFileSync('app.js','utf8');
 const segment = (a,b) => source.slice(source.indexOf(a),source.indexOf(b));
 const fresh = () => ({...blank(),collection:[{id:'a',name:'Sol Ring',qty:1,finish:'nonfoil'},{id:'b',name:'Island',qty:1,finish:'nonfoil'}]});
 let fail = false;
-const ctx = {S:{state:fresh()},slim,changedConditionLots,recordHomeDeckWork,refreshChangedConditions(){},structuredClone,normalize:validateWorkspace,stripCache:s=>s,STORAGE:'safety-only',RECOVERY:'safety-recovery',writeRecords:async r=>{if(fail){fail=false;throw Error('disk full');}return writeRecords(r);},afterLocalSave(){},saveCatalogSoon(){},render(){},refreshSheet(){},haptic(){},flyToCollection(){},toast(){},autoEnrich(){},setTimeout(){},lastActTarget:null,A:{},blank,meta:()=>null,go(){},uid:()=>''};
+const ctx = {addScannedEntry,S:{state:fresh()},slim,changedConditionLots,recordHomeDeckWork,refreshChangedConditions(){},structuredClone,normalize:validateWorkspace,stripCache:s=>s,STORAGE:'safety-only',RECOVERY:'safety-recovery',writeRecords:async r=>{if(fail){fail=false;throw Error('disk full');}return writeRecords(r);},afterLocalSave(){},saveCatalogSoon(){},render(){},refreshSheet(){},haptic(){},flyToCollection(){},toast(){},autoEnrich(){},setTimeout(){},lastActTarget:null,A:{},blank,meta:()=>null,go(){},uid:()=>''};
 vm.createContext(ctx);
 vm.runInContext(segment('let lastUndo = null;','\nconst safely =')+'\n'+segment('A.qty = async','\nI.collSearch ='),ctx);
 await Promise.all(['a','b'].map(id=>ctx.A.qty({dataset:{id,delta:'1'}})));
@@ -207,6 +208,6 @@ const scanCard={id:'printing-1',name:'Bolt',set:'tst',collector_number:'1',finis
 const scanItem={captureId:'capture-one',qty:1,finish:'nonfoil',lang:'en',condition:'Lightly Played',cand:{exact:true,card:scanCard}};
 await Promise.all([ctx.mtgScanAddMany([scanItem]),ctx.mtgScanAddMany([scanItem])]);
 assert.equal(ctx.S.state.collection.length,1);assert.equal(ctx.S.state.collection[0].scanCaptureId,'capture-one');
-await ctx.mtgScanAddMany([{...scanItem,captureId:'capture-two'}]);assert.equal(ctx.S.state.collection.length,2);
-await assert.rejects(ctx.mtgScanAddMany([{...scanItem,finish:'foil'}]),/already saved/);assert.equal(ctx.S.state.collection.length,2);
-console.log('PASS: queued Magic capture retries are idempotent without merging distinct physical captures.');
+await ctx.mtgScanAddMany([{...scanItem,captureId:'capture-two'}]);assert.equal(ctx.S.state.collection.length,1);assert.equal(ctx.S.state.collection[0].qty,2);
+await assert.rejects(ctx.mtgScanAddMany([{...scanItem,finish:'foil'}]),/already saved/);assert.equal(ctx.S.state.collection.length,1);assert.equal(ctx.S.state.collection[0].qty,2);
+console.log('PASS: queued Magic capture retries are idempotent while stacking distinct physical captures.');

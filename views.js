@@ -1,3 +1,4 @@
+import {profileAvatar,profilePhotoControl} from './profile-art.js';
 import {infoPanel} from './app-info.js';
 import {compactPriceSummary,selectedFinish,detailTabs,detailPanel} from "./pricing-presentation.js";
 import { homeValue, homeEdition, homeValueCoverage, homeResume } from "./home-ui.js";
@@ -1734,22 +1735,22 @@ export function signedOutAccount(a, mode = "login") {
 }
 
 export function accountPanel() {
-  const a = cloudInfo();
+  const a = cloudInfo(),photo=profilePhotoControl(S.state.settings.cardAvatar,a.profile||{}),localProfile=`<section class="panel account"><h3>Profile</h3>${photo}</section>`;
   if (!a.configured)
-    return `<section class="panel account"><h3>Account</h3><p class="muted small">Accounts aren’t switched on for this site yet, so everything is saved on this device. Export a backup to move it to another phone or computer.</p></section>`;
+    return `<section class="panel account"><h3>Account</h3><p class="muted small">Accounts aren’t switched on for this site yet, so everything is saved on this device. Export a backup to move it to another phone or computer.</p>${photo}</section>`;
   if (!a.ready)
     return `<section class="panel account"><h3>Account</h3><p class="muted small">${a.status.state === "error" ? esc(a.status.msg) : "Connecting…"}</p></section>`;
   if (a.recoveringPassword && a.user)
     return `<section class="panel account"><h3>Choose a new password</h3><p class="muted small">Your reset link was accepted. Set a password for your CardStashy account.</p><label class="field">New password<input id="resetPassword" type="password" autocomplete="new-password" minlength="8"></label><label class="field">Confirm password<input id="resetConfirm" type="password" autocomplete="new-password" data-enter="finishPasswordReset"></label><button class="btn block" data-act="finishPasswordReset">Save new password</button><button class="link small" data-act="signOut">Cancel and sign out</button></section>`;
-  if (!a.user) return signedOutAccount(a, S.ui.authMode || "login");
+  if (!a.user) return signedOutAccount(a, S.ui.authMode || "login")+localProfile;
   const pr = a.profile || {},
     st = a.status,
     label = { synced: "Synced", syncing: "Syncing…", error: "Sync paused", decide: "Needs your decision", offline: "Offline — will sync when you’re back online", local: "Account sync not confirmed" }[st.state] || "Account sync not confirmed";
-  return `<section class="panel account"><div class="account-head">${pr.avatar_url ? `<img class="avatar" src="${esc(pr.avatar_url)}" alt="" referrerpolicy="no-referrer">` : `<span class="avatar">${esc((pr.display_name || a.user.email || "?").slice(0, 1).toUpperCase())}</span>`}<div><b>${esc(pr.display_name || a.user.email)}</b><small class="muted">${esc(a.user.email || "")}${pr.username ? " · @" + esc(pr.username) : ""}</small></div></div>
+  return `<section class="panel account"><div class="account-head">${profileAvatar(S.state.settings.cardAvatar,pr)}<div><b>${esc(pr.display_name || a.user.email)}</b><small class="muted">${esc(a.user.email || "")}${pr.username ? " · @" + esc(pr.username) : ""}</small></div></div>
     <div class="sync-line ${st.state}"><span><b>${label}</b>${st.state === "synced" && st.at ? ` · ${esc(when(st.at))}` : ""}</span><button class="btn ghost small" data-act="syncNow">Sync now</button></div>
     ${st.state === "error" && st.msg ? `<p class="small bad-text">${esc(st.msg)} Your cards are still saved on this device.</p>` : ""}
     ${a.pending ? `<button class="btn block" data-act="syncDecide">Choose which copy to keep</button>` : ""}
-    <details><summary class="small"><b>Profile</b></summary>
+    <details><summary class="small"><b>Profile</b></summary>${photo}
       <label class="field">Display name<input id="pfName" maxlength="60" value="${esc(pr.display_name || "")}"></label>
       <label class="field">Username <span class="muted small">(for sharing later)</span><input id="pfUser" maxlength="30" value="${esc(pr.username || "")}" placeholder="letters, numbers, _"></label>
       <label class="field">Bio<textarea id="pfBio" rows="2" maxlength="500">${esc(pr.bio || "")}</textarea></label>

@@ -54,7 +54,8 @@ S.state=blank();const atomic={...c,commit:async fn=>{const next=structuredClone(
 const repeat=item(p,'normal',{captureId:'capture-persisted-1',condition:'Lightly Played',lang:'en'});
 await atomic.scanAddMany([repeat],'ptcg');await atomic.scanAddMany([repeat],'ptcg');
 assert.equal(S.state.tcg.ptcg.collection.length,1);assert.equal(S.state.tcg.ptcg.collection[0].scanCaptureId,repeat.captureId);
-await atomic.scanAddMany([{...repeat,captureId:'capture-persisted-2'}],'ptcg');assert.equal(S.state.tcg.ptcg.collection.length,2,'a different physical capture still adds a copy');
-await assert.rejects(atomic.scanAddMany([{...repeat,qty:2}],'ptcg'),/already saved/);assert.equal(S.state.tcg.ptcg.collection.length,2);
+await atomic.scanAddMany([{...repeat,captureId:'capture-persisted-2'}],'ptcg');assert.equal(S.state.tcg.ptcg.collection.length,1,'a different physical capture stacks');assert.equal(S.state.tcg.ptcg.collection[0].qty,2);
+await atomic.scanAddMany([repeat],'ptcg');assert.equal(S.state.tcg.ptcg.collection[0].qty,2,'retry after stacking is still idempotent');
+await assert.rejects(atomic.scanAddMany([{...repeat,qty:2}],'ptcg'),/already saved/);assert.equal(S.state.tcg.ptcg.collection.length,1);
 await assert.rejects(atomic.scanAddMany([item(y,'unlimited',{captureId:repeat.captureId,print:'LOB-005|Ultra Rare'})],'ygo'),/already saved/);
 console.log('PASS: stale queued-capture retries cannot double-add saved lots, distinct captures add normally, and conflicting retries stop.');

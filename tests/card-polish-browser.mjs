@@ -112,7 +112,7 @@ async function ygoSelection(app){
  await select(page,'[data-change="historyEdition"]','');await historyState(page,'printing-required');assert.equal(await page.locator('#sheet .cd-img').first().getAttribute('data-rarity-flair'),null,'Clearing the selection clears exact rarity flair');await historySafety(app);assert.equal(await inventorySnapshot(page),before);assert.equal(await cacheSnapshot(page),cache);
  // Follow the reported MP25 surface through real release loading and exact
  // provider-shaped edition data; never inject the selection or price into DOM.
- await closeSheet(page);await openSet(page,'ygo',MP25.id);const starlight=await cardTile(page,'ygo',EXPECTED.ygo.edition,MP25.id);assert.equal(await starlight.getAttribute('data-rarity-flair'),'yr4');assert.equal(await starlight.getAttribute('data-tier'),'tn');
+ await closeSheet(page);await openSet(page,'ygo',MP25.id);const starlight=await cardTile(page,'ygo',EXPECTED.ygo.edition,MP25.id);assert.equal(await starlight.getAttribute('data-rarity-flair'),'yr4');assert.equal(await starlight.getAttribute('data-tier'),'t0');assert.match(await starlight.innerText(),/\$0.31–\$0.54/);assert.match(await starlight.innerText(),/Market range/);
  await select(page,'[data-change="tSetEdition"]','1st-edition');
  assert.equal(await (await cardTile(page,'ygo',EXPECTED.ygo.edition,MP25.id)).getAttribute('data-tier'),'t0');
  assert.match(await (await cardTile(page,'ygo',EXPECTED.ygo.edition,MP25.id)).innerText(),/\$0.54/);

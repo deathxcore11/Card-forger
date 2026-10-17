@@ -6,7 +6,7 @@ import {T,guideState,canReuseCapture,observeCaptureLock,canRefineCapture,SCAN_LI
 import {scanTitleEvidence,rankScanCandidates,scanIdentifierEvidence} from './scan-signals.js';
 import {captureEntry,captureCapacity,CAPTURE_STORAGE_LIMIT,BATCH_LIMIT,CAPTURE_BUFFER_LIMIT,resolvedEntry} from './scan-batch.js';
 const source=fs.readFileSync(new URL('./scancam.js',import.meta.url),'utf8');
-const presentation=fs.readFileSync(new URL('./style.css',import.meta.url),'utf8');assert.match(presentation,/\.scan-workspace \.scan-frame-hint \{[^}]*pointer-events:none/);assert.match(presentation,/@media \(max-height:700px\) \{ \.scan-workspace \.scan-frame-hint \{ display:none/);assert.match(source,/Flat card, good light\. Keep all four edges in view\./);assert.match(source,/Keep the whole card visible\. Exact alignment isn’t needed\./);
+assert.match(source,/Move closer until the name and bottom number are clear\./);
 const loopSource=source.slice(source.indexOf('  const loop = (allowAuto=true)'),source.indexOf('  // One <video>'));
 assert(!/calmFrame|scan-frame-hint/.test(loopSource),'decorative guide cannot affect detector, admission or stability');
 const captureSource=source.slice(source.indexOf('  const capture = (automatic=false)'),source.indexOf('  A.scanStart ='));

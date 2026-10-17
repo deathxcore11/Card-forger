@@ -1,6 +1,7 @@
 // Optional server-only condition feed. No key is shipped with the static app.
 import {pokemonPriceRoute} from './pokemon-prices.js';
 import {rarityKey,ygoPriceRoute} from './ygo-prices.js';
+import {SUPABASE} from './config.js';
 const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
 const CONDITIONS=['Near Mint','Lightly Played','Moderately Played','Heavily Played','Damaged'];
 const UA={'Accept':'application/json','User-Agent':'CardStashy/3.73.13 (cached condition valuation; github.com/deathxcore11/Card-forger)'};
@@ -25,7 +26,19 @@ export function pokemonConditionPrintings(v,{bare=false}={}){
  const stamps=Array.isArray(v.stamp)?v.stamp:[v.stamp],edition=stamps.includes('1st-edition')?'1st Edition':['unlimited','shadowless'].includes(v.subtype)?'Unlimited':'';
  return [...new Set(edition?[edition+' '+finish,edition,...(bare?[finish]:[])]:[finish])];
 }
-export async function conditionFeedRoute(url,env,ctx,fetchImpl=fetch){
+// Only the Auth server's verified user ID can grant the owner's exemption.
+// Query parameters, client headers and editable profile metadata grant nothing.
+export async function conditionOwner(request,env,fetchImpl=fetch){
+ const id=env.CONDITION_OWNER_ID,authorization=request?.headers?.get('Authorization');
+ if(!id||!authorization||!/^Bearer [A-Za-z0-9._-]+$/.test(authorization)||authorization.length>8192)return false;
+ try{
+  const url=(env.SUPABASE_URL||SUPABASE.url).replace(/\/$/,'')+'/auth/v1/user';
+  const response=await fetchImpl(url,{headers:{apikey:env.SUPABASE_ANON_KEY||SUPABASE.key,Authorization:authorization},signal:AbortSignal.timeout(8000)});
+  if(!response.ok)return false;
+  const user=await response.json();return user.id===id&&!!user.email_confirmed_at&&!user.is_anonymous;
+ }catch{return false;}
+}
+export async function conditionFeedRoute(url,env,ctx,fetchImpl=fetch,{request}={}){
  const game=url.searchParams.get('game'),id=url.searchParams.get('id')||'';
  const empty=(status,notice)=>Response.json({status,quotes:[],notice},{headers:{'Cache-Control':'no-store'}});
  if(!['mtg','ptcg','ygo'].includes(game)||!(/^[a-zA-Z0-9.!?_-]{1,80}$/.test(id)))return Response.json({error:'Invalid card'},{status:400});
@@ -77,9 +90,10 @@ export async function conditionFeedRoute(url,env,ctx,fetchImpl=fetch){
   if(!/^[A-Za-z ]{2,30}$/.test(language))return empty('unmapped','Language is not supported.');
   // Durable cache and atomic caps prevent each visitor or edge region spending a new credit.
   const stub=env.CONDITION_PRICES.get(env.CONDITION_PRICES.idFromName('shared-condition-prices'));
-  const response=await stub.fetch('https://condition-cache/?product='+product);
+  const owner=await conditionOwner(request,env,fetchImpl);
+  const response=await stub.fetch('https://condition-cache/?product='+product,{headers:owner?{'X-Condition-Owner':'verified'}:{}});
   const data=await response.json();
-  if(data.status!=='available')return empty(data.status||'unavailable',data.status==='rate_limited'?'Condition lookup budget reached. Existing valid quotes are retained.':'Condition pricing is temporarily unavailable.');
+  if(data.status!=='available')return empty(data.status||'unavailable',data.status==='rate_limited'?(data.reason==='provider_rate'?'JustTCG is temporarily limiting requests. Saved quotes remain available.':owner?'Condition pricing is temporarily busy. Try again shortly.':'The app’s shared lookup allowance has been reached. Owner access requires signing in to the owner account.'):'Condition pricing is temporarily unavailable.');
   const quotes=normalizeConditionVariants(data,product,printings,language,data.cachedAt||Date.now());
   return Response.json({status:quotes.length?'available':'unpriced',quotes,productId:product,source:'JustTCG',notice:quotes.length?'':'No current quote matches this version, language and condition.'},{headers:{'Cache-Control':'public,max-age=3600'}});
  }catch{return empty('unavailable','Condition pricing is temporarily unavailable.');}

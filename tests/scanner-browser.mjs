@@ -267,8 +267,9 @@ try{
     navigator.mediaDevices.getUserMedia=async()=>{
      const canvas=document.createElement('canvas');canvas.width=640;canvas.height=900;const x=canvas.getContext('2d');
      // A real camera's physical pixels do not rescale when a DOM tray appears.
-     // Keep the same rotated/off-centre source frame throughout attachment and resize.
-     const guide=guideRect(640,900),draw=()=>{x.fillStyle='#567064';x.fillRect(0,0,640,900);x.save();x.translate(guide.x+guide.w*.44,guide.y+guide.h*.48);x.rotate(.13);x.drawImage(image,-guide.w*.36,-guide.h*.36,guide.w*.72,guide.h*.72);x.restore();};draw();setInterval(draw,33);
+     // Fill most of the sensor with a large rotated/off-centre card; no tiny guide.
+     // Keep these source pixels unchanged throughout attachment and resize.
+     const guide=guideRect(640,900),draw=()=>{x.fillStyle='#567064';x.fillRect(0,0,640,900);x.save();x.translate(guide.x+guide.w*.51,guide.y+guide.h*.48);x.rotate(.13);x.drawImage(image,-guide.w*.46,-guide.h*.46,guide.w*.92,guide.h*.92);x.restore();};draw();setInterval(draw,33);
      window.__cameraCanvas=canvas;window.__cameraPixels=canvas.toDataURL();
      window.__cameraStream=canvas.captureStream(30);return window.__cameraStream;
     };
@@ -280,9 +281,10 @@ try{
    await page.locator('#scanVideo').waitFor();
    await page.waitForFunction(()=>document.querySelector('#scanVideo')?.videoWidth>0);
    await page.evaluate(()=>{const r=document.querySelector('#scanVideo').getBoundingClientRect();window.__cameraInitialBox={width:r.width,height:r.height};});
-   await page.waitForFunction(()=>window.__scannerTestRead.state().boundaryReady);
-   assert.equal(await page.locator('.scan-frame-hint').count(),1,'one calm fixed guide is present');assert.equal(await page.locator('#camGuide,.cam-wrap polygon').count(),0,'detector geometry never paints a tracking outline');assert.equal(await page.locator('.scan-frame-hint').evaluate(el=>getComputedStyle(el).pointerEvents),'none');
-   const fixedGuide=await page.locator('.scan-frame-hint').boundingBox();await page.waitForTimeout(320);assert.deepEqual(await page.locator('.scan-frame-hint').boundingBox(),fixedGuide,'scene detection never jitters or reshapes the fixed guide');
+   // A close card near the sensor edge may correctly fail the conservative auto
+   // contour gate. The shutter must still preserve the full sensor and read it.
+   await page.getByRole('button',{name:'Capture card now',exact:true}).waitFor();
+   assert.equal(await page.locator('.scan-frame-hint,#camGuide,.cam-wrap polygon').count(),0,'camera has no fixed alignment target or detector overlay');
    const priorCaptureIds=await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js');return loadBatch().map(x=>x.id);});
    await page.getByRole('button',{name:'Capture card now',exact:true}).click();
    const captureHandle=await page.waitForFunction(prior=>window.__scannerTestRead.loadBatch().find(x=>!prior.includes(x.id))?.id,priorCaptureIds,{timeout:15000});
@@ -329,18 +331,17 @@ try{
       const hit=n=>{const r=box(n),target=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {clear:target===n||n.contains(target),target:describe(target)};};
       const nav=document.querySelector('.bottom-nav'),tray=box(document.querySelector('.scan-batch-tray')),camera=box(document.querySelector('.cam-wrap.immersive'));
       const statusNode=document.querySelector('#camStatus'),priorStatus=statusNode.innerHTML;if(innerWidth===320&&innerHeight>700)statusNode.replaceChildren(statusNode.querySelector('.cam-dot').cloneNode(true),document.createTextNode('Saved for review. Use Scan again to retry, or move to the next card'));
-      const guide=document.querySelector('.scan-frame-hint'),guideCss=getComputedStyle(guide),guideBox=box(guide),railBox=box(document.querySelector('.cam-rail')),statusBox=box(statusNode);statusNode.innerHTML=priorStatus;
-      const beforeVideo=box(document.querySelector('#scanVideo')),oldDisplay=guide.style.display;guide.style.display='none';const withoutGuide=box(document.querySelector('#scanVideo'));guide.style.display=oldDisplay;
+      statusNode.innerHTML=priorStatus;
       const shutter=document.querySelector('#scanCaptureBtn'),toast=document.querySelector('#toast'),undo=toast.querySelector('.toast-undo[data-act="undo"]');
       const clearBottom=getComputedStyle(nav).display==='none'?innerHeight:nav.getBoundingClientRect().top,t=box(toast),s=box(shutter),u=undo&&box(undo),css=getComputedStyle(toast);
       const disjoint=(a,b)=>a.right<=b.left||a.left>=b.right||a.bottom<=b.top||a.top>=b.bottom;
       const inView=r=>!!r&&r.width>0&&r.height>0&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=clearBottom;
       const shutterHit=hit(shutter),undoHit=undo?hit(undo):{clear:false,target:null};
-      return {guideVisible:guideCss.display!=='none',guideBox,guideClear:guideCss.pointerEvents==='none'&&guideCss.animationName==='none'&&guideCss.transitionDuration==='0s',guideControlsClear:[s,railBox,statusBox].every(r=>disjoint(guideBox,r)),guideInside:guideBox.left>=camera.left&&guideBox.right<=camera.right&&guideBox.top>=camera.top&&guideBox.bottom<=camera.bottom,videoUnchanged:JSON.stringify(beforeVideo)===JSON.stringify(withoutGuide),tray,camera,shutter:s,toast:t,undo:u,clearBottom,shutterHit,undoHit,shutterClear:shutterHit.clear,overflow:document.documentElement.scrollWidth>innerWidth,
+      return {tray,camera,shutter:s,toast:t,undo:u,clearBottom,shutterHit,undoHit,shutterClear:shutterHit.clear,overflow:document.documentElement.scrollWidth>innerWidth,
        toastActive:toast.classList.contains('show')&&toast.classList.contains('has-action')&&css.display!=='none'&&css.visibility==='visible'&&Number(css.opacity)>0,
        toastOutside:[camera,tray,s].every(r=>disjoint(t,r)),controlsInView:inView(t)&&inView(s)&&inView(u),undoEnabled:!!undo&&!undo.disabled};
      });
-     assert(layout.videoUnchanged,'decorative guide cannot resize or crop the video');assert(layout.guideClear,'guide is noninteractive, nonanimated and never tracks geometry');if(viewport.height<=700)assert(!layout.guideVisible,'decorative guide yields on short/folded views');else assert(layout.guideVisible&&layout.guideInside&&layout.guideControlsClear,'generous guide stays clear of title/footer control rows');
+     assert.equal(await page.locator('.scan-frame-hint,#camGuide,.cam-wrap polygon').count(),0,'no alignment target at any size');
      assert(layout.tray.top>=0&&layout.tray.bottom<=layout.clearBottom,`real shell tray clears navigation at ${JSON.stringify(viewport)}: ${JSON.stringify(layout)}`);
      assert(layout.camera.height>=100&&layout.shutterClear&&!layout.overflow,`real shell keeps camera and capture usable at ${JSON.stringify(viewport)}: ${JSON.stringify(layout)}`);
      assert(layout.toastActive&&layout.toastOutside&&layout.controlsInView&&layout.undoEnabled&&layout.undoHit.clear,`active Undo toast clears camera/tray/shutter and both controls remain reachable at ${JSON.stringify(viewport)}: ${JSON.stringify(layout)}`);

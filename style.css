@@ -3392,7 +3392,7 @@ body[data-view="scan"] #content { padding-top:14px; }
 @media (max-width:380px) { .scan-toolbar h1 { font-size:20px; }.scan-batch-summary .btn { padding:7px 8px; } }
 @media (min-width:900px) { .scan-workspace .cam-wrap.immersive { height:min(62dvh,620px); }.scan-workspace .scan-batch-review { bottom:20px; } }
 /* Detection is internal. No live outline/mask, including stale scanner markup. */
-.scan-workspace .cam-guide { display:none!important; }
+.scan-workspace .cam-guide,.scan-workspace .scan-frame-hint { display:none!important; }
 .scan-batch-thumb { transform-origin:center bottom; }
 
 /* Home / editorial edition: one artwork, one story, space to discover. */
@@ -4087,13 +4087,6 @@ body[data-view="home"] .home-meta-copy h3 { font-size:clamp(22px,3vw,28px); }
 
 .home-overview:not(:has(.hh-credit)) { grid-template-columns:minmax(0,1fr); }
 
-/* Calm scanner corners are decorative, not the detected outline or crop area.
-   Reserve both control rows; short/folded layouts keep the feed, not this hint. */
-.scan-workspace .scan-frame-hint { position:absolute; inset:56px 16px 112px; min-height:0; pointer-events:none; z-index:1; opacity:.74; }
-.scan-workspace .scan-frame-hint svg { display:block; width:100%; height:100%; fill:none; stroke:#fff; stroke-width:2.5; stroke-linecap:round; filter:drop-shadow(0 1px 2px #0009); }
-.scan-workspace .scan-frame-hint .scan-frame-accent { stroke:var(--game-color,#7ce3bb); stroke-width:2; }
-@media (max-height:700px) { .scan-workspace .scan-frame-hint { display:none; } }
-
 /* App-wide preferences sit over the current task, with no game navigation inside. */
 .settings-dialog {width:min(760px,calc(100vw - 24px));max-width:760px;max-height:calc(100dvh - 32px);margin:auto;padding:0;border:1px solid var(--line);border-radius:26px;background:var(--bg,#14161b);color:var(--text);overflow:auto;overscroll-behavior:contain;box-shadow:0 28px 100px #0009;}
 .settings-dialog::backdrop {background:#05070cb8;backdrop-filter:blur(8px);}
@@ -4222,3 +4215,56 @@ body[data-view="scan"] #content:has(.scan-workspace.is-live) > .context-guide{di
 /* The full Community label fits the narrowest 64px navigation target. */
 .bottom-nav [data-nav="community"]{letter-spacing:-.035em}
 @media(max-width:359px){.bottom-nav [data-nav="community"]{letter-spacing:-.075em}}
+
+/* One reachable header row on phones and tablets. The selected game's name
+   stays visible; the other games retain their distinct symbols and full labels. */
+@media(max-width:1199px){
+ .topbar{grid-template-columns:auto minmax(0,1fr) auto;gap:8px;padding-block:8px}
+ .topbar>.brand-home{grid-column:1;grid-row:1;margin:0}
+ .topbar>.game-tabs{grid-column:2;grid-row:1;width:100%}
+ .topbar>button.icon{grid-column:3;grid-row:1;width:44px;height:44px;min-height:44px}
+ .topbar>.save-status{display:none}
+ .brand-home .brand-wordmark{display:none}
+ .brand-home .brand-home-label{display:inline!important}
+}
+@media(max-width:599px){
+ .topbar{gap:6px;padding-inline:max(10px,env(safe-area-inset-left)) max(10px,env(safe-area-inset-right))}
+ .topbar>.brand-home{width:46px;height:48px;min-height:48px;padding:4px;justify-content:center}
+ .topbar .brand-home .brand-home-label{display:none!important}
+ .topbar .brand-home .mark{width:36px;height:36px;flex:none}
+ .topbar>.game-tabs{display:flex;gap:2px;padding:3px;border-radius:16px}
+ .topbar .game-tab{flex:0 0 44px;min-height:44px;padding:6px 3px;gap:4px}
+ .topbar .game-tab[aria-selected="true"]{flex:1 1 auto}
+ .topbar .game-tab-mark .ico{width:20px;height:20px}
+ .topbar .game-tab-name{font-size:11.5px}
+ .topbar .game-tab:not([aria-selected="true"]) .game-tab-name{display:none}
+}
+#desktopSearch{display:flex;align-items:center;gap:10px}
+#desktopSearch>.home-search-wrap{order:0;flex:1;min-width:0}
+#desktopSearch>.header-sets{order:1;flex:none;display:flex;align-items:center;gap:6px;min-height:48px;padding:10px 13px;border-radius:18px;font-size:13px}
+.header-sets svg{width:19px;height:19px;flex:none}
+.header-sets.on{border-color:var(--gold);color:var(--gold)}
+@media(min-width:1200px) and (max-width:1399px){.topbar{column-gap:12px;grid-template-columns:auto 280px minmax(0,1fr) auto}.topbar .home-search-pill input{font-size:12px}}
+
+/* The profile crop is the same responsive circle in the editor and the shell. */
+.profile-avatar{position:relative;display:inline-grid;place-items:center;flex:none;width:48px;height:48px;overflow:hidden;border-radius:50%;background:radial-gradient(circle at 20% 10%,color-mix(in srgb,var(--gold) 24%,var(--surface)),var(--surface));color:var(--gold);border:1px solid color-mix(in srgb,var(--gold) 45%,var(--line));isolation:isolate}
+.profile-avatar>svg{width:72%;height:72%}.profile-avatar>span{font-size:20px;font-weight:800}
+.profile-avatar>img,.profile-crop>img{position:absolute;max-width:none!important;object-fit:fill;pointer-events:none;user-select:none}
+.profile-avatar>img.profile-avatar-photo{inset:0;width:100%;height:100%;object-fit:cover}
+.profile-avatar>img[hidden]{display:none}
+.topbar>button.profile-menu{border-radius:50%;padding:2px;background:transparent;border:0;width:48px;height:48px;min-width:44px;min-height:44px}
+.profile-menu>.profile-avatar{width:100%;height:100%}
+.profile-photo-control{display:flex;align-items:center;gap:14px;width:100%;padding:14px 0;margin:10px 0;background:none;text-align:left}
+.profile-photo-control>span:nth-child(2){display:grid;gap:5px;flex:1;min-width:0;overflow-wrap:anywhere}
+.profile-photo-control small{color:var(--muted);font-size:12px}
+.profile-art-dialog{width:min(520px,calc(100vw - 24px));max-height:calc(100dvh - 32px);margin:auto;padding:24px;border:1px solid var(--line);border-radius:26px;color:var(--text);background:radial-gradient(ellipse at top left,color-mix(in srgb,var(--gold) 9%,var(--surface)),var(--bg));overflow:auto;box-shadow:0 30px 100px #0009}
+.profile-art-dialog::backdrop{background:#07090eb8;backdrop-filter:blur(12px)}
+.profile-picker-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:20px}.profile-picker-head h2{margin:2px 0;font-size:26px}.profile-picker-head .eyebrow{margin:0;font-size:10px}.profile-picker-head button{flex:none}
+.profile-art-search{display:grid;gap:12px;margin:20px 0}.profile-art-search>label{min-width:0}.profile-art-search input,.profile-art-search select{width:100%}
+.profile-art-results{display:grid;gap:8px}.profile-art-results>button{display:flex;align-items:center;gap:14px;padding:12px;border:1px solid var(--line);background:var(--surface);border-radius:16px;text-align:left;min-width:0}.profile-art-results>button>img{width:44px;height:62px;object-fit:cover;border-radius:5px;flex:none}.profile-art-results>button>span{display:grid;gap:4px;min-width:0;overflow-wrap:anywhere}.profile-art-results small{font-size:11px;color:var(--muted)}
+.profile-art-name{overflow-wrap:anywhere;margin:20px 0 8px}.profile-crop-stage{display:grid;place-items:center;padding:22px 0}.profile-crop{position:relative;width:min(280px,100%);aspect-ratio:1;overflow:hidden;border-radius:50%;background:var(--surface);border:2px solid var(--gold);box-shadow:0 0 0 8px #ffffff06,0 14px 45px #0005;touch-action:none;cursor:grab}.profile-crop:active{cursor:grabbing}.profile-crop:focus-visible{outline:2px solid var(--text);outline-offset:6px}.profile-zoom{display:flex;align-items:center;gap:15px}.profile-zoom input{flex:1;min-width:0;min-height:44px;padding:0;accent-color:var(--gold)}
+.profile-crop-footer{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:18px}.profile-crop-footer .btn{margin-left:auto}.profile-avatar-preview{width:44px;height:44px}
+@media(max-width:380px){.profile-art-dialog{padding:18px}.profile-crop-footer>.small{flex:1}.profile-crop-footer>.btn{width:100%}.profile-crop-stage{padding:16px 8px}}
+
+/* CSS owns breakpoint visibility immediately, even before the search dock moves. */
+@media(max-width:1199px){.topbar>#desktopSearch{display:none!important}}

@@ -2,6 +2,9 @@
 // version is requested once per hour, never once per camera frame.
 export const CONDITION_IDENTITY=['cardId','printingId','printing','rarity','variant','edition','finish','language'];
 const attempted=new Map();
+let accessToken=async()=>'';
+export function configureConditionAuth(readToken){accessToken=readToken;}
+export const clearConditionAttempts=()=>attempted.clear();
 let active=0;const waiting=[];
 async function limitedFetch(fetcher,...args){
  if(active>=2)await new Promise(resolve=>waiting.push(resolve));
@@ -21,7 +24,8 @@ export function loadConditionQuotes(card,entry,game,fetcher=fetch){
  attempted.set(url,Date.now());
  return (async()=>{
   try{
-   const r=await limitedFetch(fetcher,url,{headers:{Accept:'application/json'}});
+   const token=await accessToken();
+   const r=await limitedFetch(fetcher,url,{headers:{Accept:'application/json',...(token?{Authorization:'Bearer '+token}:{})}});
    if(!r.ok)return {changed:false,status:r.status===429?'rate_limited':'unavailable'};
    const data=await r.json();
    if(!['available','unpriced','unmapped'].includes(data.status))return {changed:false,status:data.status||'unavailable',notice:data.notice||''};

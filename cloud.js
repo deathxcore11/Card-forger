@@ -11,6 +11,11 @@ const META = "cardforge-cloud-v1";
 const PUSH_DELAY = 2500;
 
 export const cloudConfigured = () => !!(SUPABASE.url && SUPABASE.key);
+// The browser sends its session token; the Worker independently verifies it.
+export async function cloudAccessToken(){
+ if(!client)return '';
+ try{const {data,error}=await client.auth.getSession();return error?'':data?.session?.access_token||'';}catch{return '';}
+}
 
 /* ---------- pure helpers (tested) ---------- */
 

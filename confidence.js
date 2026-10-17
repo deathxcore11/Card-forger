@@ -1,3 +1,4 @@
+import {stackWorkspaceCollections,withoutCollectionSource} from './collection-stack.js';
 import { isFormatName } from "./formats.js";
 import { cardKey, aggregateCards, cardPrice } from "./core.js";
 const canon = (s) => String(s ?? "").trim();
@@ -259,6 +260,7 @@ export function lotKey(e) {
         e.language || "en",
       ].join("|"),
     e.finish || "nonfoil",
+    e.language || "en",
     e.condition || "Near Mint",
     e.location || "",
     !!e.signed,
@@ -315,7 +317,7 @@ export function applyImport(collection, preview, mode, sourceKey, createId) {
     mode === "replace-all"
       ? []
       : mode === "replace-source"
-        ? collection.filter((e) => e.sourceKey !== sourceKey)
+        ? collection.map((e) => withoutCollectionSource(e,sourceKey)).filter(Boolean)
         : collection.slice();
   return [...kept, ...imported];
 }
@@ -513,7 +515,7 @@ export function validateWorkspace(input) {
     }
   }
   s.activeDeck = did.has(s.activeDeck) ? s.activeDeck : s.decks[0]?.id || null;
-  return s;
+  return stackWorkspaceCollections(s);
 }
 export function pricingObservation(item, catalog, choices = {}) {
   const selected = choices[cardKey(item.name)],
