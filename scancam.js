@@ -230,6 +230,16 @@ export function findCardBox(data, W, H) {
   return { x: bx, y: by, w: Math.min(1 - bx, w + 2 * m), h: Math.min(1 - by, h + 2 * m) };
 }
 
+// A card-filling upload has no pixels outside its physical border. The contour
+// detector can therefore see only internal frames (including a sideways art
+// window), not prove an outer boundary. Preserve that already card-shaped photo
+// when the background box finder also found nothing to crop. This is a photo
+// preprocessing decision, never evidence of card identity or a live-camera edge.
+export function preserveWholeCardPhoto(width,height,backgroundBox=null) {
+  const ratio=width/height;
+  return !backgroundBox && Number.isFinite(ratio) && ratio>=.67 && ratio<=.735;
+}
+
 // Read the name strip and the code strip separately; the whole card only as a fallback.
 export async function readCard(card, g, lang, progress = () => {}, { codeOnly = false } = {}) {
   const w = await getWorker(lang, progress),
@@ -857,14 +867,15 @@ export function registerScanner(ctx) {
     // Crop to the box (fractions of the photo as shown).
     const rw = r.naturalWidth,
       rh = r.naturalHeight,
-      cr = st.crop || autoBox(r) || { x: 0, y: 0, w: 1, h: 1 },
+      backgroundBox = st.crop ? null : autoBox(r),
+      cr = st.crop || backgroundBox || { x: 0, y: 0, w: 1, h: 1 },
       k = Math.min(3, 1100 / (rw * cr.w)),
       c = document.createElement("canvas");
     c.width = Math.max(1, Math.round(rw * cr.w * k));
     c.height = Math.max(1, Math.round(rh * cr.h * k));
     c.getContext("2d").drawImage(r, rw * cr.x, rh * cr.y, rw * cr.w, rh * cr.h, 0, 0, c.width, c.height);
     let chosen=c;
-    if(!st.crop){const scale=Math.min(320/rw,400/rh),sample=document.createElement("canvas");sample.width=Math.round(rw*scale);sample.height=Math.round(rh*scale);const x=sample.getContext("2d",{willReadFrequently:true});x.drawImage(r,0,0,sample.width,sample.height);const found=detectCardQuad(x.getImageData(0,0,sample.width,sample.height).data,sample.width,sample.height);if(found)chosen=flattenCapture(r,padQuad(found.quad,sample.width,sample.height).map(p=>({x:p.x/scale,y:p.y/scale})));}
+    if(!st.crop&&!preserveWholeCardPhoto(rw,rh,backgroundBox)){const scale=Math.min(320/rw,400/rh),sample=document.createElement("canvas");sample.width=Math.round(rw*scale);sample.height=Math.round(rh*scale);const x=sample.getContext("2d",{willReadFrequently:true});x.drawImage(r,0,0,sample.width,sample.height);const found=detectCardQuad(x.getImageData(0,0,sample.width,sample.height).data,sample.width,sample.height);if(found)chosen=flattenCapture(r,padQuad(found.quad,sample.width,sample.height).map(p=>({x:p.x/scale,y:p.y/scale})));}
     st.lastCard = chosen;
     if(enqueueCapture(chosen,s().retryBatchId||""))s().retryBatchId="";
   };

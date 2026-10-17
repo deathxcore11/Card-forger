@@ -60,6 +60,12 @@ try{
    await upload.setInputFiles({name:ref.g+(ref.g==='ptcg'?'.webp':'.jpg'),mimeType:ref.mime,buffer:ref.bytes});
    await page.getByRole('button',{name:'Read card',exact:true}).click();
    await page.waitForFunction(async()=>{const {loadBatch}=await import('/scan-batch.js');return loadBatch().some(x=>!['captured','reading'].includes(x.status));},{},{timeout:120000});
+   const framing=await page.evaluate(async g=>{
+    const {S}=await import('/store.js'),image=new Image();image.src='/__reference/'+g;await image.decode();
+    const card=S.ui.scan.lastCard;
+    return {source:image.naturalWidth/image.naturalHeight,capture:card.width/card.height};
+   },ref.g);
+   assert(Math.abs(framing.source-framing.capture)<.002,`${ref.game} full-card upload preserves title/footer and original portrait framing, never the sideways artwork window`);
    assert.equal(await page.locator('.scan-confirm').count(),0,'OCR does not interrupt capture with a picker');
    await page.locator('[data-act="scanBatchReview"]').first().click();
    await page.locator('.scan-confirm').waitFor({state:'visible',timeout:15000});
