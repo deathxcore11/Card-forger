@@ -93,7 +93,11 @@ try{
    // Feed actual reference artwork through a browser MediaStream. This exercises
    // capture and retained playback, without claiming a physical camera test.
    await page.getByRole('navigation',{name:'Main',exact:true}).getByRole('button',{name:'Scan',exact:true}).click();
-   const cameraMode=page.getByRole('button',{name:'Camera',exact:true});if(await cameraMode.count())await cameraMode.click();
+   await page.getByRole('heading',{name:'Scan',exact:true}).waitFor();
+   // Route rendering is asynchronous. Wait for the retained photo-mode toggle
+   // rather than using count() against the previous Collection DOM.
+   await page.locator('[data-act="scanMode"][data-id="live"]').click();
+   await page.getByRole('button',{name:'Start camera',exact:true}).waitFor();
    await page.evaluate(async g=>{
     const {visibleGuide}=await import('/scancam.js'),image=new Image();image.src='/__reference/'+g;await image.decode();
     navigator.mediaDevices.getUserMedia=async()=>{

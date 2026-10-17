@@ -47,6 +47,19 @@ try{
  const title=await page.locator('.scan-toolbar h1').boundingBox(),top=await page.locator('.topbar').boundingBox(),tray=await page.locator('.scan-batch-tray').boundingBox(),nav=await page.locator('.bottom-nav').boundingBox();assert(title.y>=top.y+top.height-1,'scan heading below header');assert(tray.y+tray.height<=nav.y,'capture tray fits above bottom nav');
  await page.reload();await page.waitForFunction(()=>window.fixtureReady);assert.equal((await page.evaluate(()=>window.snapshot())).rows.length,1,'captured review survives reload');assert.equal(await page.locator('.scan-confirm').count(),0);
  assert.deepEqual(errors,[]);console.log('PASS: same live MediaStream during OCR, internal geometry without a visible outline, held-card duplicate guard, mobile layout and persisted review.');await context.close();
- for(const width of [320,360,390,430,700,768,1024,1440,2560]){const c=await browser.newContext({viewport:{width,height:900}}),p=await c.newPage();await p.goto(base+'/fixture');await p.waitForFunction(()=>window.fixtureReady);assert(await p.locator('body').evaluate(x=>x.scrollWidth<=innerWidth+1),`${width}px no horizontal overflow`);await p.evaluate(async()=>{const {captureEntry,saveBatch}=await import('/scan-batch.js');saveBatch([{...captureEntry('ptcg','',{}),status:'unresolved'}]);window.ctx.render();});const nextWidth=width<700?700:390;await p.setViewportSize({width:nextWidth,height:520});assert.equal((await p.evaluate(()=>window.snapshot())).rows.length,1,'fold/unfold or orientation resize preserves pending capture');assert(await p.locator('body').evaluate(x=>x.scrollWidth<=innerWidth+1),`${width}px to ${nextWidth}px resize has no overflow`);await c.close();}
+ const assertTray=async(p,label)=>{
+  const frame=await p.evaluate(()=>{const nav=document.querySelector('.bottom-nav'),tray=document.querySelector('.scan-batch-tray').getBoundingClientRect();return {bottom:tray.bottom,limit:getComputedStyle(nav).display==='none'?innerHeight:nav.getBoundingClientRect().top};});
+  assert(frame.bottom<=frame.limit,`${label}: complete live capture tray stays above navigation (${JSON.stringify(frame)})`);
+ };
+ for(const width of [320,360,390,430,700,768,1024,1440,2560]){
+  const c=await browser.newContext({viewport:{width,height:900}}),p=await c.newPage();await p.goto(base+'/fixture');await p.waitForFunction(()=>window.fixtureReady);
+  assert(await p.locator('body').evaluate(x=>x.scrollWidth<=innerWidth+1),`${width}px no horizontal overflow`);
+  await p.evaluate(async()=>{const {captureEntry,saveBatch}=await import('/scan-batch.js');saveBatch([{...captureEntry('ptcg','',{}),status:'unresolved'}]);window.ctx.render();});
+  await p.getByRole('button',{name:'Start camera',exact:true}).click();await p.waitForFunction(()=>document.querySelector('#scanVideo')?.videoWidth>0);await assertTray(p,`${width}px`);
+  const nextWidth=width<700?700:390;await p.setViewportSize({width:nextWidth,height:520});
+  assert.equal((await p.evaluate(()=>window.snapshot())).rows.length,1,'fold/unfold or orientation resize preserves pending capture');
+  assert(await p.locator('body').evaluate(x=>x.scrollWidth<=innerWidth+1),`${width}px to ${nextWidth}px resize has no overflow`);await assertTray(p,`${width}px to ${nextWidth}px short viewport`);
+  assert(await p.locator('#scanVideo').evaluate(v=>v.srcObject===window.cameraStream&&v.srcObject.getTracks()[0].readyState==='live'),'resize retains the same active camera track');await c.close();
+ }
  console.log('PASS: scanner layout has no horizontal overflow across 320–2560px; fold/unfold/orientation resize retains the pending tray.');
 }finally{await browser.close();await new Promise(r=>server.close(r));}

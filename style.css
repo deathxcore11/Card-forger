@@ -3315,7 +3315,10 @@ body[data-view="scan"] #content { padding-top:14px; }
 .scan-auto-game { font-size:11px;color:var(--muted);margin-right:auto;white-space:nowrap; }
 .scan-toolbar .icon { width:40px;height:40px;min-height:40px; }
 .scan-workspace .scan-panel { padding:0;overflow:hidden;margin:0; }
-.scan-workspace .cam-wrap.immersive { height:clamp(260px,calc(100dvh - 320px - env(safe-area-inset-top) - env(safe-area-inset-bottom)),620px);border-radius:16px; }
+/* Reserve the header, status, complete capture tray and bottom navigation,
+   including on short/folded screens. The preview yields space, never the tray. */
+.scan-workspace .cam-wrap.immersive { height:clamp(120px,calc(100dvh - 400px - env(safe-area-inset-top) - env(safe-area-inset-bottom)),620px);border-radius:16px; }
+.scan-workspace #camSlot { height:100%; }
 .scan-workspace .cam-rail { display:flex;gap:2px;padding:3px;right:9px;top:9px;border-radius:14px; }
 .scan-workspace .cam-rail button { width:40px;height:40px; }
 .scan-workspace .cam-status { bottom:16px;left:12px;transform:none;max-width:calc(100% - 96px);padding:8px 12px;font-size:12px;white-space:normal; }
@@ -3352,7 +3355,7 @@ body[data-view="scan"] #content { padding-top:14px; }
 .scan-batch-review>.link { display:block;margin:8px auto 0; }
 .scan-legacy-session { margin-top:16px; }
 .scan-legacy-session summary { font-size:12px;color:var(--muted); }
-@media (max-width:380px) { .scan-toolbar h1 { font-size:20px; }.scan-batch-summary .btn { padding:7px 8px; }.scan-workspace .cam-wrap.immersive { min-height:230px; } }
+@media (max-width:380px) { .scan-toolbar h1 { font-size:20px; }.scan-batch-summary .btn { padding:7px 8px; } }
 @media (min-width:900px) { .scan-workspace .cam-wrap.immersive { height:min(62dvh,620px); }.scan-workspace .scan-batch-review { bottom:20px; } }
 /* Detection is internal. No live outline/mask, including stale scanner markup. */
 .scan-workspace .cam-guide { display:none!important; }
