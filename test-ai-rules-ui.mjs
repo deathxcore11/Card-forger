@@ -78,6 +78,35 @@ assert.match(node.querySelector('.rules-ai-log').innerHTML, /Ask without selecte
 await askRules('Does this work?'); assert.ok(node.querySelector('.rules-ai-log').children.some(n => n.innerHTML.includes('data-rules-drop-cards')), 'remove action remains available after clarification');
 node = removeRulesCardContext(); assert.equal(node.querySelector('.rules-ai-log').children.length, 0, 'removal starts a clean general-rules session'); await askRules('How does drawing work?'); assert.deepEqual(historyBodies.at(-1).cards, []); assert.deepEqual(historyBodies.at(-1).references, []); assert.ok(!historyBodies.at(-1).priorQuestions);
 clearRulesConversations();
+for (const [game, firstFormat, secondFormat] of [['mtg', 'Commander', 'Modern'], ['ptcg', 'Standard', 'Expanded'], ['ygo', 'Advanced TCG', 'Traditional TCG']]) {
+  const posted = [];
+  const fetcher = async (_url, init) => { const body = JSON.parse(init.body); posted.push(body); return fallbackResponse(body); };
+  const firstNode = openRulesAsk({ game, format: firstFormat, trigger, fetcher });
+  await askRules('Explain the draw step.');
+  const savedRows = [...firstNode.querySelector('.rules-ai-log').children];
+  const firstSelect = firstNode.querySelector('[data-rules-format]');
+  firstSelect.matches = q => q === '[data-rules-format]';
+  firstSelect.value = secondFormat; // A native change mutates the old session DOM first.
+  firstNode.handlers.change[0]({ target: firstSelect });
+  const secondNode = dialogs.at(-1), secondSelect = secondNode.querySelector('[data-rules-format]');
+  // The fake DOM does not parse selected <option> markup on new shells.
+  // Model the native selected value before the second real change event.
+  secondSelect.value = secondFormat;
+  secondSelect.matches = q => q === '[data-rules-format]';
+  secondSelect.value = firstFormat;
+  secondNode.handlers.change[0]({ target: secondSelect });
+  assert.equal(dialogs.at(-1), firstNode, 'Returning restores the same cached answer session');
+  assert.equal(firstSelect.value, firstFormat, 'Visible format must match restored answer and request context');
+  assert.deepEqual(firstNode.querySelector('.rules-ai-log').children, savedRows);
+  assert.equal(posted.length, 1, 'Format switching and answer restoration never submit');
+  await askRules('What happens next?');
+  assert.equal(posted.at(-1).format, firstFormat);
+  firstSelect.value = secondFormat;
+  assert.equal(openRulesAsk({ game, format: firstFormat, trigger, fetcher }), firstNode);
+  assert.equal(firstSelect.value, firstFormat, 'Same-session opening also repairs stale native selection');
+  clearRulesConversations();
+}
+console.log('PASS: cached all-game format controls, answer sessions and explicit request context stay aligned without automatic calls.');
 console.log('PASS: bounded user-only clarification continuity, no prior model answers, fresh context isolation, explicit incomplete-card removal and no silent truncation.');
 console.log('PASS: zero calls on open, double-submit guard, pending/completed/error reopen, context changes, New chat stale suppression, synchronous failure recovery, close focus and no automatic retries.');
 const source = readFileSync('ai-rules.js', 'utf8');

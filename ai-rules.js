@@ -64,7 +64,7 @@ function paint(session) {
 }
 export function openRulesAsk(options = {}) {
   const context = rulesContext(options), key = rulesContextKey(context);
-  if (current?.key === key) { current.node.querySelector('[data-rules-close]')?.focus({ preventScroll: true }); return current.node; }
+  if (current?.key === key) { current.node.querySelector('[data-rules-format]').value = current.context.format; current.node.querySelector('[data-rules-close]')?.focus({ preventScroll: true }); return current.node; }
   closeRulesAsk();
   let session = sessions.get(key);
   if (!session) {
@@ -90,6 +90,10 @@ export function openRulesAsk(options = {}) {
   }
   session.trigger = options.trigger || document.activeElement;
   session.fetcher = options.fetcher || fetch;
+  // Native change mutates the previous session's select before we detach it.
+  // Reopening that cached answer must restore its authoritative format without
+  // dispatching change or accidentally starting another request.
+  session.node.querySelector('[data-rules-format]').value = session.context.format;
   current = session; document.body.append(session.node); paint(session);
   session.node.showModal ? session.node.showModal() : session.node.setAttribute('open', '');
   // Opening the guide, reopening an answer, and reading a source never summon a keyboard.

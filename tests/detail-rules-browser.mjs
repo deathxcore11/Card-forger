@@ -45,7 +45,15 @@ async function seller(page,name,{href,amount,currency,action}){
  const r=row(page,name);assert.equal(await r.count(),1,`${name} has exactly one seller row`);if(href)assert.equal(await r.getAttribute('href'),href);assert.equal(await r.locator('.vendor-quote strong').innerText(),amount);if(currency)assert.match(await r.locator('.vendor-quote small').innerText(),new RegExp('^'+currency+' · '));if(action)assert.match(await r.locator('.vendor-action').innerText(),new RegExp(action));assert.equal(await r.getAttribute('target'),'_blank');assert.match(await r.getAttribute('rel'),/noopener/);return r;
 }
 async function artSnapshot(page){return page.evaluate(()=>({hero:document.querySelector('.cs-banner .cs-art')?.getAttribute('src')||document.querySelector('.cs-banner img')?.getAttribute('src'),card:document.querySelector('.cs-card .card-img')?.getAttribute('src'),title:document.querySelector('.cs-title h2')?.textContent}));}
-async function tab(page,id){await page.locator(`#sheet [data-act="cardTab"][data-tab="${id}"]`).click();await page.waitForFunction(id=>document.querySelector(`#card-tab-${id}`)?.getAttribute('aria-selected')==='true',id);}
+async function tab(page,id){
+ // A.cardTab exposes aria-selected immediately, before its awaited recordQuote
+ // commit and refreshSheet. Prices assertions require that completed render,
+ // not the old panel which is about to be detached by the actual user action.
+ if(id==='prices')await page.evaluate(()=>{window.__priceTabBefore={panel:document.querySelector('#card-sellers'),state:window.__uiTestState.state};});
+ await page.locator(`#sheet [data-act="cardTab"][data-tab="${id}"]`).click();
+ await page.waitForFunction(id=>{const button=document.querySelector(`#card-tab-${id}`);if(!button?.isConnected||button.getAttribute('aria-selected')!=='true')return false;if(id!=='prices')return true;const panel=document.querySelector('#card-sellers'),before=window.__priceTabBefore;return panel?.isConnected&&panel!==before.panel&&!before.panel.isConnected&&window.__uiTestState.state!==before.state&&window.__uiTestState.ui.sheetCtx?.tab==='prices';},id);
+ if(id==='prices')await page.evaluate(()=>{delete window.__priceTabBefore;});
+}
 async function mainArt(page){
  await page.waitForFunction(()=>{const n=document.querySelector('#sheet[open] .cs-card .card-img');return n?.isConnected&&n.complete&&n.naturalWidth>0&&n.getClientRects().length>0;});
  assert.equal(await page.locator('#sheet .cd-zoom').first().getAttribute('data-name'),await page.locator('.cs-title h2').innerText());
@@ -84,7 +92,8 @@ async function currentDetail(app,game){
  assert.equal(await page.evaluate(()=>window.__uiTestState.ui.sheetCtx.entryId),`lot-${game}-0`,'Restoring the exact saved version preserves its original lot ID');
  const lot=page.locator('details[data-detail-key="owned-lot"]');if(await lot.getAttribute('open')===null)await lot.locator('summary').click();assert.match(await lot.innerText(),/Lightly Played/);assert.match(await lot.innerText(),/\$1\.75/);
  await tab(page,'prices');
- for(const r of await page.locator('#card-sellers .vendor-row').all()){await r.scrollIntoViewIfNeeded();await r.focus();const b=await r.evaluate(n=>{const r=n.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {width:r.width,height:r.height,focus:document.activeElement===n,hit:hit===n||n.contains(hit)};});assert(b.focus&&b.hit&&b.height>=44,`Vendor row is focusable, unobstructed and at least 44px: ${JSON.stringify(b)}`);}
+ const vendors=await page.locator('#card-sellers .vendor-row').evaluateAll(nodes=>nodes.map(n=>({name:n.querySelector('.vendor-copy b').textContent,href:n.getAttribute('href')})));assert(vendors.length>0);assert.equal(new Set(vendors.map(v=>v.name)).size,vendors.length,'Every vendor has a stable unique merchant identity');
+ for(const vendor of vendors){const r=row(page,vendor.name);assert.equal(await r.count(),1);assert.equal(await r.getAttribute('href'),vendor.href,'Vendor identity and destination survive the prices refresh');await r.scrollIntoViewIfNeeded();await r.focus();const b=await r.evaluate((n,expected)=>{const r=n.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {width:r.width,height:r.height,connected:n.isConnected,identity:n.querySelector('.vendor-copy b').textContent===expected.name&&n.getAttribute('href')===expected.href,focus:document.activeElement===n,hit:hit===n||n.contains(hit)};},vendor);assert(b.connected&&b.identity&&b.focus&&b.hit&&b.height>=44,`Vendor row is current, correctly identified, focusable, unobstructed and at least 44px: ${JSON.stringify(b)}`);}
  await tab(page,'overview');await mainArt(page);assert.deepEqual(await artSnapshot(page),art,'Price changes preserve hero, main card art and identity');
  assert.equal(await inventorySnapshot(page),before,'Buy/Prices, tabs, ranges, finish, resize and source selection cannot change saved lot identity, condition, values, quantities or decks');
  // Visible keyboard-accessible edit action, with no long-press requirement.
