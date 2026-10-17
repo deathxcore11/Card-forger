@@ -314,3 +314,73 @@ for(const source of GAME_ROUTES)for(const action of ['reset','example','import',
  else {assert.equal(h.S.ui.scan.confirm,null,'foreign source review is not copied into the default MTG scan');await c.switchGame(source);assert.equal(h.S.ui.scan.confirm.qty,7,'real scanner retains the source draft');}
 }
 console.log('PASS: real Reset/Load Example/file import/recovery/Undo and direct legacy adoption resolve missing/unsupported game as MTG through the real scanner lifecycle, without rewriting replacement settings.');
+
+// Real Undo and real scanner hooks together: retaining a device is not an
+// exemption from the workspace revision, write/save gates or later navigation.
+const {releaseOCR}=await import('./scancam.js');
+const {loadBatch,saveBatch}=await import('./scan-batch.js');
+const scanStorage=new Map();
+globalThis.localStorage={getItem:k=>scanStorage.get(k)||null,setItem:(k,v)=>scanStorage.set(k,v)};
+document.getElementById=()=>null;
+window.Tesseract={createWorker:async()=>({recognize:async()=>({data:{text:''}}),terminate:async()=>{}})};
+function liveWorkspace(game='mtg'){
+ const h=workspaceHarness(game,'#scan',{real:true}),ctx=h.c.scanCtx;let stops=0,opens=0;
+ h.c.T.game=RealT.game;h.c.T.isTcg=RealT.isTcg;h.S.ui.scan={};scanStorage.clear();
+ const track={readyState:'live',stop(){stops++;this.readyState='ended';},getCapabilities:()=>({})};
+ navigator.mediaDevices={getUserMedia:async()=>{opens++;return {getTracks:()=>[track],getVideoTracks:()=>[track]};}};
+ registerScanner(Object.assign(ctx,{A:{},C:{},game:RealT.game,render(){},toast(){}}));
+ return {...h,ctx,track,get stops(){return stops;},get opens(){return opens;}};
+}
+for(const game of GAME_ROUTES)for(const failure of [false,true]){
+ const h=liveWorkspace(game),c=h.c;
+ try{
+  await h.ctx.A.scanStart();saveBatch([{id:'pending',game,captureRevision:'pending-v1',status:'review',qty:2}]);
+  await c.commit(s=>{(game==='mtg'?s.collection:s.tcg[game].collection).push({id:'saved-lot',cardId:'fixture-card',name:'Fixture card',qty:1,finish:'nonfoil',condition:'Near Mint',lang:'en'});},{undo:'Added fixture card',enrich:false});
+  const stamp=h.run('navigationStamp()'),batch=JSON.stringify(loadBatch());h.io.reject=failure;
+  if(failure)await assert.rejects(c.A.undo(),/disk full/);else await c.A.undo();
+  aligned(h);assert.equal(h.S.ui.scan.camOn,true);assert.equal(h.track.readyState,'live');assert.equal(h.stops,0);assert.equal(h.opens,1);
+  assert.equal((game==='mtg'?h.S.state.collection:h.S.state.tcg[game].collection).length,failure?1:0,'Undo rolls back only a successfully persisted lot');
+  assert.equal(JSON.stringify(loadBatch()),batch);assert.equal(h.run('navigationCurrent')(stamp),false,'Undo retires old workspace callbacks even on the same game/route');
+  if(failure){assert.equal(h.run('lastUndo.label'),'Added fixture card');h.io.reject=false;await c.A.undo();assert.equal(h.stops,0);}
+ }finally{h.ctx.stopCamera();}
+}
+for(const action of ['import','recovery','cloud','direct']){
+ const h=liveWorkspace(),c=h.c,next=structuredClone(h.S.state);
+ try{
+  await h.ctx.A.scanStart();c.imported=next;h.disk.set('recovery',next);
+  if(action==='import')await c.C.restoreBackup({files:[{}]});else if(action==='recovery')await c.A.undoRestore();else if(action==='cloud')await c.cloudHooks.apply(next);else await c.replaceWorkspace(next);
+  aligned(h);assert.equal(h.stops,1);assert.equal(h.S.ui.scan.camOn,false,action+' does not inherit Undo camera continuity');assert.equal(h.opens,1);
+ }finally{h.ctx.stopCamera();}
+}
+for(const later of ['navigation','replacement']){
+ const h=liveWorkspace(),c=h.c,gate=deferred();
+ try{
+  await h.ctx.A.scanStart();await c.commit(s=>s.settings.authorName='Undo me',{undo:'Edited profile',enrich:false});
+  h.io.gate=gate;const undo=c.A.undo();await tick();assert.equal(h.stops,0);
+  const next=structuredClone(h.S.state);next.settings.game='ygo';next.settings.authorName='Replacement';
+  const newer=later==='navigation'?c.switchGame('ygo'):c.replaceWorkspace(next);
+  gate.resolve();await Promise.all([undo,newer]);aligned(h);assert.equal(h.S.state.settings.game,'ygo');assert.equal(h.stops,1);assert.equal(h.S.ui.scan.camOn,false);assert.equal(h.opens,1);
+ }finally{h.ctx.stopCamera();}
+}
+{
+ const h=liveWorkspace(),c=h.c,gate=deferred();
+ try{
+  await h.ctx.A.scanStart();await c.commit(s=>s.settings.authorName='Undo me',{undo:'Edited profile',enrich:false});
+  h.io.gate=gate;const undo=c.A.undo();await tick();
+  const switching=c.switchGame('ygo'),next=structuredClone(h.S.state);next.settings.authorName='Unrelated replacement';
+  const replacing=c.replaceWorkspace(next);gate.resolve();await Promise.all([undo,switching,replacing]);await tick();
+  aligned(h);assert.equal(h.S.state.settings.game,'mtg');assert.equal(h.S.state.settings.authorName,'Unrelated replacement');
+  assert.equal(h.stops,1,'an unrelated same-game replacement must not inherit suspended Undo camera authority');assert.equal(h.S.ui.scan.camOn,false);
+ }finally{h.ctx.stopCamera();}
+}
+{
+ const h=liveWorkspace(),c=h.c;
+ try{
+  await h.ctx.A.scanStart();await c.commit(s=>s.settings.authorName='Keep this edit',{undo:'Edited profile',enrich:false});
+  for(const flag of ['batchSaving','sessionSaving']){
+   const writes=h.io.writes.length;h.S.ui.scan[flag]=true;await assert.rejects(c.A.undo(),/saving your scans/);assert.equal(h.io.writes.length,writes);assert.equal(h.stops,0);assert.equal(h.run('lastUndo.label'),'Edited profile');h.S.ui.scan[flag]=false;
+  }
+ }finally{h.ctx.stopCamera();}
+}
+await releaseOCR();
+console.log('PASS: real Undo rolls back saved lots while retaining live devices and pending captures for all games; failed writes retry, replacements stop, old workspace authority retires, and newer navigation/save gates remain authoritative.');

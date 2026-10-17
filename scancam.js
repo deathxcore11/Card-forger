@@ -673,21 +673,27 @@ export function registerScanner(ctx) {
     if (el) el.textContent = m;
   };
   let camTicket = 0, scanTicket = 0;
-  const stopCamera = () => {
+  const suspendCamera = (keepStream = false) => {
     camTicket++;
     scanTicket++;
     s().busy = false;
     s().confirm = null;
     clearInterval(loopTimer);
     loopTimer = 0;
-    stream?.getTracks().forEach((t) => t.stop());
-    stream = null;
-    if (videoEl) videoEl.srcObject = null;
-    s().camOn = false;s().boundaryReady=false;
+    if(!keepStream){
+      stream?.getTracks().forEach((t) => t.stop());
+      stream = null;
+      if (videoEl) videoEl.srcObject = null;
+    }
+    s().camOn = !!stream;s().boundaryReady=false;
     for(const pending of captureBuffer)updateBatch(pending.id,{status:"unresolved",reason:"Reading interrupted · retry"});
     captureBuffer.length=0;s().buffered=0;
-    prevGray=null;steady=0;captureLock=null;greenSince=0;loop.quad=null;loop.proposal=null;loop.signature=null;loop.observation=null;loop.bestCapture=null;
+    // Keeping the physical feed must not recapture the same held card after
+    // Undo. Retain only its accepted-source duplicate latch, never an old frame.
+    if(keepStream)observeCaptureLock(captureLock,null,{paused:true});else captureLock=null;
+    prevGray=null;steady=0;greenSince=0;loop.quad=null;loop.proposal=null;loop.signature=null;loop.observation=null;loop.bestCapture=null;
   };
+  const stopCamera = () => suspendCamera();
   ctx.stopCamera = stopCamera;
 
   // Only an unusually close, separated local fingerprint may precede OCR. It is
@@ -1558,7 +1564,7 @@ export function registerScanner(ctx) {
 
   // App-owned game transitions suspend before committing settings, then restore
   // after success (target) or failure (source). Neither hook renders or starts a camera.
-  ctx.beforeGameChange = (sourceGame=game(),targetGame,{workspace=false}={}) => {
+  ctx.beforeGameChange = (sourceGame=game(),targetGame,{workspace=false,kind=""}={}) => {
     if(sourceGame===targetGame&&!workspace)return true;
     if(!Object.hasOwn(GAME_LABEL,sourceGame)||!Object.hasOwn(GAME_LABEL,targetGame))return false;
     const st=s();
@@ -1573,11 +1579,16 @@ export function registerScanner(ctx) {
     photoDrafts.set(sourceGame,photoDraft(st));
     // Retain an unsaved manual review too if the settings commit rejects. A
     // successful switch leaves captured reviews in their explicit-game batch.
-    switchSource={game:sourceGame,review:st.confirm?{...st.confirm,pickerOpening:false,detailStartedFor:null,priceRequest:null,pickerRequest:null}:null,cands:st.cands,read:st.read,shot:st.shot,status:st.status};
+    // Undo rolls back a saved edit, not the live capture device. Only this
+    // explicit same-game action may retain an already-open stream. It still
+    // retires every old callback/read; import, recovery, reset and game changes
+    // use the full stop even when their saved game happens to match.
+    const keepCamera=workspace&&kind==='undo'&&sourceGame===targetGame&&S.ui.view==='scan'&&st.camOn&&!!stream;
+    switchSource={game:sourceGame,keepCamera,torch:st.torch,torchCap:st.torchCap,lastCaptureAt:st.lastCaptureAt,review:st.confirm?{...st.confirm,pickerOpening:false,detailStartedFor:null,priceRequest:null,pickerRequest:null}:null,cands:st.cands,read:st.read,shot:st.shot,status:st.status};
     lifecycleGeneration++;
     suspended=true;
     closePop();
-    stopCamera();
+    suspendCamera(keepCamera);
     const rows=loadBatch();
     if(rows.some(row=>['captured','reading'].includes(row.status)))saveBatch(rows.map(row=>['captured','reading'].includes(row.status)?{...row,status:'unresolved',reason:'Reading interrupted · retry'}:row));
     st.photoLoading=false;st.lookup=false;st.reviewRequested='';
@@ -1585,9 +1596,13 @@ export function registerScanner(ctx) {
   };
   ctx.afterGameChange = targetGame => {
     if(!suspended||!Object.hasOwn(GAME_LABEL,targetGame))return false;
+    const keepCamera=switchSource?.keepCamera&&switchSource.game===targetGame&&!!stream;
+    // A newer cross-game intent can supersede Undo while its write is pending.
+    if(stream&&!keepCamera)stopCamera();
     const draft=photoDrafts.get(targetGame);
     photoDrafts.delete(targetGame); // Active UI now owns this URL; switching never revokes it.
     S.ui.scan=idleScan(draft);
+    if(keepCamera)Object.assign(s(),{camOn:true,torch:switchSource.torch,torchCap:switchSource.torchCap,lastCaptureAt:switchSource.lastCaptureAt});
     if(switchSource?.game===targetGame){
       const {review,cands,read,shot,status}=switchSource;
       Object.assign(s(),{confirm:review,cands:cands||[],read:read||null,shot,status:status||''});

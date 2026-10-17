@@ -1,10 +1,11 @@
 // Hosted real-shell fixtures. Import/validation never starts a server, browser,
 // screenshot, camera, OCR worker or provider request. All records are synthetic.
 import assert from 'node:assert/strict';
-import {readdir, mkdir, writeFile} from 'node:fs/promises';
+import {readdir, mkdir, writeFile, readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {validateWorkspace} from '../confidence.js';
 import {artworkSources} from '../artwork.js';
+import {pkCatalogueSymbolSources, pkRarity} from '../emblems.js';
 import {sharePayload, sharePayloadTcg, decodeShare} from '../share.js';
 import {SUPABASE} from '../config.js';
 import {
@@ -19,7 +20,17 @@ export const PAIRS = GAMES.flatMap(from => GAMES.filter(to => to !== from).map(t
 })));
 export const METHODS = ['header', 'touch'];
 export const WIDTHS = [320, 390, 768, 1440];
-export const EVIDENCE = 'SYNTHETIC GAME-NAVIGATION FIXTURES. Real application shell with intercepted provider responses and trusted Chromium protocol touch input. No real collection, credentials, paid providers, physical camera, OCR-accuracy or live-artwork claim. Browser/server execution is restricted to approved hosted CI. This suite does not take screenshots.';
+export const EVIDENCE = 'SYNTHETIC GAME-NAVIGATION FIXTURES. Real application shell with intercepted provider responses and trusted Chromium protocol touch input. No real collection, credentials, paid providers, physical camera, OCR-accuracy or live-artwork claim. Browser/server execution is restricted to approved hosted CI. Representative synthetic header screenshots are captured only in approved hosted CI.';
+export const SWIPE_BLOCKED_SELECTOR = 'input,textarea,select,button,a,label,summary,[role="slider"],[contenteditable="true"],[draggable="true"],.deck-tile,[data-hold-card],.zoom-stage,.cam-wrap,.cam-stage,.scan-stage,#cropWrap,.crop-wrap,canvas,video,.scan-batch-strip,.scan-confirm,.hh-art-link,.hh-credit,[data-no-game-swipe],.lot';
+// Exact rendered fixture identities only. Do not wildcard either provider or proxy.
+export function pokemonSymbolFixtureUrls(base) {
+  const sources=SETS.ptcg.flatMap(pkCatalogueSymbolSources);
+  for(const rarity of new Set(CARDS.ptcg.map(c=>c.rarity).filter(Boolean))) {
+    const html=pkRarity(rarity);
+    for(const match of html.matchAll(/(?:src|data-direct)="([^"]+)"/g))sources.push(match[1]);
+  }
+  return [...new Set(sources.map(source=>new URL(source,base+'/').href))];
+}
 export const COLLISION_ID = 'synthetic-shared-deck-id';
 export const SET_IDS = {mtg: 'fxa', ptcg: 'fxa', ygo: LOB.id};
 export const DECK_TABS = {
@@ -132,6 +143,15 @@ export function providerFixture(url) {
   return searchProvider(url);
 }
 export async function validateGameSwitchFixtures() {
+  const symbolBase='http://127.0.0.1:41279',symbols=pokemonSymbolFixtureUrls(symbolBase);
+  assert.deepEqual(symbols.slice().sort(),[
+    ...['synthetic-search-a','synthetic-search-b'].flatMap(slug=>[`${symbolBase}/img/pks/s/${slug}.png`,`https://pokesymbols.com/images/tcg/sets/symbols/${slug}.png`]),
+    ...['common','rare'].flatMap(slug=>[`${symbolBase}/img/pks/r/${slug}.png`,`https://pokesymbols.com/images/tcg/rarities/${slug}.png`]),
+  ].sort(),'Only exact symbols rendered by these synthetic cards/sets are allowed');
+  for(const bad of [`${symbolBase}/img/pks/s/real-set.png`,'https://pokesymbols.com/images/tcg/rarities/unmapped.png'])assert(!symbols.includes(bad));
+  const swipeSource=await readFile(resolve(ROOT,'home-swipe.js'),'utf8'),productionBlocked=swipeSource.match(/target\.closest\?\.\('([^']+)'\)/)?.[1];
+  assert(productionBlocked,'Production swipe exclusions remain inspectable');
+  for(const selector of productionBlocked.split(','))assert(selector==='[data-home-gesture]'||SWIPE_BLOCKED_SELECTOR.split(',').includes(selector),'Fixture refuses every production-excluded gesture target: '+selector);
   assert.equal(PAIRS.length, 6); assert.equal(new Set(PAIRS.map(p => p.from + ':' + p.to)).size, 6);
   assert.equal(BASE_ROWS.length * PAIRS.length * METHODS.length, 216);
   for (const g of GAMES) {
@@ -175,7 +195,7 @@ export async function openGameSwitchApp(browser, base, {game = 'mtg', width = 39
   const staticPaths = new Set((await readdir(ROOT, {withFileTypes: true})).filter(d => d.isFile() && /\.(?:js|css|html|json|svg|png|ico|webmanifest)$/.test(d.name)).map(d => '/' + d.name));
   for (const dir of ['rulebooks', 'scanidx']) for (const d of await readdir(resolve(ROOT, dir), {withFileTypes: true})) if (d.isFile()) staticPaths.add('/' + dir + '/' + d.name);
   staticPaths.add('/');
-  const images = new Set();
+  const images = new Set(pokemonSymbolFixtureUrls(base));
   for (const c of Object.values(CARDS).flat()) {
     const urls = [...artworkSources(c, false), ...artworkSources(c, true), ...Object.values(c.image_uris || {}), c.image, c.imageLarge, c.art, c.artDirect];
     for (const u of urls.filter(u => typeof u === 'string' && u)) images.add(new URL(u, base + '/').href);
@@ -217,7 +237,7 @@ export async function openGameSwitchApp(browser, base, {game = 'mtg', width = 39
       const body = providerFixture(u); if (body !== undefined) return fulfill(body);
       unexpected.push(`${req.method()} ${u.href}`); return fulfill({error: 'Unexpected request blocked; no external traffic forwarded'}, 'application/json', 451);
     });
-    await page.addInitScript(({storage, now}) => {
+    await page.addInitScript(({storage, now, swipeBlocked}) => {
       const NativeDate = Date, offset = now - NativeDate.now();
       globalThis.Date = class extends NativeDate {constructor(...args) {super(...(args.length ? args : [NativeDate.now() + offset]));} static now() {return NativeDate.now() + offset;}};
       // Preserve genuine Date progression so trusted swipes retain real duration.
@@ -233,11 +253,11 @@ export async function openGameSwitchApp(browser, base, {game = 'mtg', width = 39
       }
       for (const type of ['touchstart', 'touchmove', 'touchend', 'touchcancel']) document.addEventListener(type, e => {
         const t = e.touches[0] || e.changedTouches[0];
-        window.__gameSwitchAudit.touches.push({type, trusted: e.isTrusted, x: t?.clientX, y: t?.clientY, target: e.target.id || e.target.className || e.target.tagName, carousel: !!e.target.closest?.('[data-home-community]')});
+        window.__gameSwitchAudit.touches.push({type, trusted: e.isTrusted, x: t?.clientX, y: t?.clientY, target: e.target.id || e.target.className || e.target.tagName, carousel: !!e.target.closest?.('[data-home-community]'), blocked: !!e.target.closest?.(swipeBlocked), isolated: !!e.target.closest?.('[data-home-gesture]'), inContent: !!e.target.closest?.('#content'), at: performance.now()});
       }, {capture: true, passive: true});
       if (navigator.mediaDevices) navigator.mediaDevices.getUserMedia = async () => {window.__gameSwitchAudit.cameraCalls++; throw Error('Camera acquisition is forbidden in idle navigation tests');};
       window.Tesseract = {createWorker: async () => {window.__gameSwitchAudit.ocrWarmups++; return {setParameters:async()=>{},terminate:async()=>{},recognize:async()=>{window.__gameSwitchAudit.ocrCalls++;throw Error('Recognition is forbidden in idle navigation tests');}};}};
-    }, {storage: fixtures.storage, now: NOW});
+    }, {storage: fixtures.storage, now: NOW, swipeBlocked: SWIPE_BLOCKED_SELECTOR});
     await page.goto(base + '/#home'); await page.locator('#app.ready').waitFor();
     await page.evaluate(async ({search, cards, sets, releases}) => {
       const S = (await import('/store.js')).S, T = await import('/tcg.js');
@@ -258,6 +278,14 @@ export async function openGameSwitchApp(browser, base, {game = 'mtg', width = 39
       async close() {for (const gate of gates) gate.release(); await context.close();},
     };
   } catch (error) {error.fixtureDiagnostics = diagnostics(); for (const gate of gates) gate.release(); await context.close(); throw error;}
+}
+
+export async function captureNavigation(page, name) {
+  assert.equal(process.env.GITHUB_ACTIONS,'true','Synthetic navigation screenshots are hosted-only');
+  await mkdir(RESULTS,{recursive:true});
+  const filename='game-switch-'+name+'.png';
+  await page.screenshot({path:resolve(RESULTS,filename),fullPage:true,animations:'disabled'});
+  return filename;
 }
 
 export async function savedSnapshot(page) {

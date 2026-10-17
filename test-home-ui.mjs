@@ -135,3 +135,27 @@ for (const scenario of [
   }
 }
 console.log('PASS: delayed production emblem refresh caches fresh data without replacing focused Home controls; unfocused/non-Home redraws and input/sheet guards remain intact.');
+
+// Exercise the hosted regression's actual readiness/measurement helper without
+// importing its server or Playwright. A child transition can be replaced by a
+// feed refresh while settling; an infinite decorative animation never blocks.
+const browserSource=fs.readFileSync('tests/home-browser.mjs','utf8');
+const overflowSource=browserSource.slice(browserSource.indexOf('async function noOverflow('),browserSource.indexOf('async function visibleHeaderArt('));
+assert(overflowSource.startsWith('async function noOverflow('));
+let animations=[],measured=0,rootWidth=390,contentWidth=390,copyRight=374,copyScroll=358;
+const finite=()=>{let finish;const animation={playState:'running',effect:{getComputedTiming:()=>({endTime:580})},finished:new Promise(resolve=>{finish=()=>{animation.playState='finished';resolve();};})};return {animation,finish};};
+const infinite={playState:'running',effect:{getComputedTiming:()=>({endTime:Infinity})},finished:new Promise(()=>{})};
+const contentNode={clientWidth:390,get scrollWidth(){measured++;return contentWidth;},getAnimations:options=>{assert.equal(options.subtree,true,'wait includes the animated page children');return [...animations,infinite];}};
+const fixtureDocument={documentElement:{get scrollWidth(){measured++;return rootWidth;}},body:{get scrollWidth(){measured++;return rootWidth;}},querySelector:selector=>selector==='#content'?contentNode:{clientWidth:358,get scrollWidth(){return copyScroll;},getBoundingClientRect:()=>({left:16,right:copyRight})}};
+const noOverflow=vm.runInNewContext(overflowSource+'\nnoOverflow;',{assert,document:fixtureDocument,innerWidth:390});
+const fakePage={evaluate:fn=>fn()},firstMotion=finite(),replacementMotion=finite();
+animations=[firstMotion.animation];const settling=noOverflow(fakePage,'settled descendants');
+await Promise.resolve();assert.equal(measured,0,'never measure while the first descendant is moving');
+animations=[replacementMotion.animation];firstMotion.finish();await Promise.resolve();await Promise.resolve();
+assert.equal(measured,0,'a replacement descendant must settle too');replacementMotion.finish();await settling;assert(measured>0);
+animations=[];
+rootWidth=402;await assert.rejects(noOverflow(fakePage,'persistent root overflow'),/document overflow/);rootWidth=390;
+contentWidth=402;await assert.rejects(noOverflow(fakePage,'persistent content overflow'),/content overflow/);contentWidth=390;
+copyRight=399;await assert.rejects(noOverflow(fakePage,'persistent descendant overflow'),/outside viewport/);copyRight=374;
+copyScroll=368;await assert.rejects(noOverflow(fakePage,'persistent copy clipping'),/clips overflowing content/);copyScroll=358;
+console.log('PASS: hosted overflow helper awaits actual finite descendant/replacement motion, ignores infinite decoration, and still rejects persistent document/content/element overflow and clipped copy.');

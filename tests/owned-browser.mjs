@@ -51,10 +51,14 @@ try{for(const g of GAMES){
   const {S,blank,STORAGE,CATALOG_RECORD}=await import('/store.js'),{cache,TCG_CACHE}=await import('/tcg.js'),{cardKey}=await import('/core.js'),{writeRecord}=await import('/storage.js');
   // Poll the preloaded live state synchronously, never a truthy import Promise.
   window.__ownedTestState=S;
-  S.state=blank();S.state.settings.game=g;const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);S.state.valueHistory=[{date:yesterday,total:300,copies:3}];localStorage.setItem('cardstashy-value-hist-'+g,JSON.stringify([{date:yesterday,total:300,copies:3}]));S.state.tcg={ptcg:{collection:[],decks:[],wishlist:[]},ygo:{collection:[],decks:[],wishlist:[]}};
+  S.state=blank();const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);S.state.valueHistory=[{date:yesterday,total:300,copies:3}];localStorage.setItem('cardstashy-value-hist-'+g,JSON.stringify([{date:yesterday,total:300,copies:3}]));S.state.tcg={ptcg:{collection:[],decks:[],wishlist:[]},ygo:{collection:[],decks:[],wishlist:[]}};
   if(g==='mtg')S.catalog[cardKey(card.name)]=card;else cache[g][card.id]=card;
   (g==='mtg'?S.state:S.state.tcg[g]).collection=lots;await writeRecord(STORAGE,S.state);await writeRecord(CATALOG_RECORD,S.catalog);await writeRecord(TCG_CACHE,cache);
  },{g,...fixture});
+ // Synthetic data setup does not bypass the controller's active game entry.
+ await page.locator(`#gameTabs [role="tab"][data-game="${g}"]`).click();
+ await page.waitForFunction(g=>document.body.dataset.game===g&&window.__ownedTestState.state.settings.game===g&&history.state?.cardstashy?.game===g,g);
+ assert.equal(await page.locator('#gameTabs [aria-selected="true"]').getAttribute('data-game'),g);
  await page.getByRole('navigation',{name:'Main',exact:true}).getByRole('button',{name:'Collection',exact:true}).click();await page.getByRole('heading',{name:'Collection',exact:true}).waitFor();
  const tile=page.locator('[data-entry="owned-nm"].lot-art').first();await tile.waitFor();
  await tile.click({button:'right'});const owned=page.getByRole('region',{name:'Owned copies',exact:true});

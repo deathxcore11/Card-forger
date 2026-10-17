@@ -320,10 +320,16 @@ async function touchSwipe(page, selector, dx = -150, dy = 0) {
   await page.waitForTimeout(480);
 }
 async function noOverflow(page, label) {
-  await page.evaluate(async () => {
-    await Promise.all(document.querySelector('#content').getAnimations().filter(a => a.effect?.getTiming().iterations !== Infinity).map(a => a.finished.catch(() => {})));
-  });
-  const sizes = await page.evaluate(() => {
+  const sizes = await page.evaluate(async () => {
+    // Page entry animates children, not #content itself. Await real finite
+    // subtree animations/transitions, including replacements from feed refresh,
+    // then measure in the same evaluation without changing motion or clipping.
+    for (;;) {
+      const animations = document.querySelector('#content').getAnimations({ subtree: true })
+        .filter(a => Number.isFinite(a.effect?.getComputedTiming().endTime) && !['finished', 'idle'].includes(a.playState));
+      if (!animations.length) break;
+      await Promise.all(animations.map(a => a.finished.catch(() => {})));
+    }
     const root = document.documentElement, body = document.body, content = document.querySelector('#content');
     const selectors = ['.topbar', '#gameTabs', '.home-value', '.home-editorial', '.home-community', '.home-discover', '.home-discover > div:first-child', '.community-feature-copy', '.hh-search'];
     return { viewport: innerWidth, root: root.scrollWidth, body: body.scrollWidth, content: content.scrollWidth, contentWidth: content.clientWidth,

@@ -1,10 +1,11 @@
 // Run only in approved hosted CI: node tests/game-switch-browser.mjs
 // Safe local schema check: node tests/game-switch-browser.mjs --validate-fixtures
 // Transitions use actual header clicks or Chromium Input.dispatchTouchEvent.
-// No DOM event constructors, setGame calls, screenshots or live providers.
+// No DOM event constructors, direct setGame calls or live providers.
+// Representative synthetic screenshots are captured only by approved hosted CI.
 import assert from 'node:assert/strict';
 import {
-  GAMES, PAIRS, METHODS, BASE_ROWS, WIDTHS, EVIDENCE, SEARCH, SET_IDS,
+  GAMES, PAIRS, METHODS, BASE_ROWS, WIDTHS, EVIDENCE, SEARCH, SET_IDS, SWIPE_BLOCKED_SELECTOR, captureNavigation,
   sourceHash, targetHash, finishFor, validateGameSwitchFixtures, makeScannerLifecycleFixture, makeManualReviewFixture, COLLISION_ID,
   startServer, openGameSwitchApp, frames, savedSnapshot, searchSnapshots, historySnapshot, saveReport,
 } from './game-switch-fixtures.mjs';
@@ -27,7 +28,8 @@ const read = page => page.evaluate(() => {
     busySearch: g === 'mtg' ? S.ui.db.busy : T.ui(g).search.busy};
 });
 async function waitRoute(page, game, hash) {
-  await page.waitForFunction(({game, hash}) => document.body.dataset.game === game && window.__uiTestTcg.game() === game && location.hash === hash, {game, hash});
+  try {await page.waitForFunction(({game, hash}) => document.body.dataset.game === game && window.__uiTestTcg.game() === game && location.hash === hash && !document.querySelector('#content').inert && document.querySelector('#content').getAttribute('aria-busy')!=='true', {game, hash});}
+  catch(error){error.stack+='\nRoute/touch diagnostics: '+JSON.stringify({expected:{game,hash},actual:await read(page),touches:await page.evaluate(()=>window.__gameSwitchAudit.touches.slice(-12))});throw error;}
   await frames(page);
 }
 async function prepare(app, pair, row) {
@@ -92,54 +94,78 @@ async function assertTarget(page, pair, row) {
 
 // Choose a physically hittable safe background in the real UI, never add a
 // test-only gesture surface or disable pointer events on production controls.
+async function settledContent(page) {
+  await page.waitForFunction(()=>{const root=document.querySelector('#content');return root&&!root.inert&&root.getAttribute('aria-busy')!=='true'&&root.getAnimations({subtree:true}).every(a=>a.playState==='finished'||a.playState==='idle'||!Number.isFinite(a.effect?.getComputedTiming().iterations));});
+  await frames(page);
+}
 async function safePoint(page, dx, {carousel = false} = {}) {
   if (carousel) await page.locator('[data-home-community]').scrollIntoViewIfNeeded();
   else await page.evaluate(() => scrollTo(0, 0));
-  await frames(page);
-  const point = await page.evaluate(({dx, carousel}) => {
-    const root = document.querySelector(carousel ? '[data-home-community]' : '#content'), r = root.getBoundingClientRect();
-    const blocked = 'input,textarea,select,button,a,label,summary,[role="slider"],[contenteditable="true"],[draggable="true"],.deck-tile,[data-hold-card],.zoom-stage,.cam-wrap,.cam-stage,.scan-stage,.crop-wrap,canvas,video,.scan-batch-strip,.scan-confirm,[data-no-game-swipe]';
-    const left = Math.max(26, r.left + 8), right = Math.min(innerWidth - 26, r.right - 8);
-    for (let y = Math.max(r.top + 10, document.querySelector('header')?.getBoundingClientRect().bottom || 0, 80); y < Math.min(r.bottom - 10, innerHeight - 90); y += 6) {
-      for (let x = left; x <= right; x += 8) {
-        if (x + dx < left || x + dx > right) continue;
-        const target = document.elementFromPoint(x, y);
-        if (!target || !root.contains(target) || target.closest(blocked) || !carousel && target.closest('[data-home-gesture]')) continue;
-        let scroller = false;
-        for (let el = target; el && el !== root; el = el.parentElement) if (el.scrollWidth > el.clientWidth + 8 && /auto|scroll/.test(getComputedStyle(el).overflowX)) scroller = true;
-        if (!scroller) return {x, y, tag: target.tagName, id: target.id, carousel: !!target.closest('[data-home-community]')};
-      }
+  await settledContent(page);
+  // A one-pixel padding gap is not a real touch surface: Chromium may retarget
+  // the contact to an adjacent button. Require clear space around the whole path.
+  const point = await page.evaluate(({dx, carousel, blocked}) => {
+    const root=document.querySelector(carousel?'[data-home-community]':'#content'),r=root.getBoundingClientRect();
+    const left=Math.max(32,r.left+12),right=Math.min(innerWidth-32,r.right-12);
+    const eligible=(x,y)=>{const target=document.elementFromPoint(x,y);if(!target||!root.contains(target)||target.closest(blocked)||!carousel&&target.closest('[data-home-gesture],.home-hero'))return null;
+      for(let el=target;el&&el!==root;el=el.parentElement)if(el.scrollWidth>el.clientWidth+8&&/auto|scroll/.test(getComputedStyle(el).overflowX))return null;
+      return target;
+    };
+    for(let y=Math.max(r.top+18,(document.querySelector('.topbar')?.getBoundingClientRect().bottom||0)+18,80);y<Math.min(r.bottom-18,innerHeight-100);y+=6)for(let x=left;x<=right;x+=8){
+      if(x+dx<left||x+dx>right)continue;
+      const path=Array.from({length:7},(_,i)=>x+dx*i/6);
+      if(!path.every(px=>[-10,0,10].every(ox=>[-10,0,10].every(oy=>eligible(px+ox,y+oy)))))continue;
+      const target=eligible(x,y);return {x,y,tag:target.tagName,id:target.id,className:target.className,carousel:!!target.closest('[data-home-community]')};
     }
     return null;
-  }, {dx, carousel});
-  assert(point, 'A real safe swipe background is physically reachable at this viewport');
+  }, {dx, carousel, blocked:SWIPE_BLOCKED_SELECTOR});
+  assert(point, 'A real clear swipe background is physically reachable at this viewport');
   assert.equal(point.carousel, carousel); return point;
 }
 async function trustedSwipe(app, dx, {carousel = false} = {}) {
-  const {page, context} = app, point = await safePoint(page, dx, {carousel});
-  const start = await page.evaluate(() => window.__gameSwitchAudit.touches.length);
-  const session = await context.newCDPSession(page);
+  const {page,context}=app,point=await safePoint(page,dx,{carousel});
+  const start=await page.evaluate(()=>window.__gameSwitchAudit.touches.length),session=await context.newCDPSession(page);
+  let events;
   try {
-    await session.send('Input.dispatchTouchEvent', {type: 'touchStart', touchPoints: [{x: point.x, y: point.y, radiusX: 4, radiusY: 4, force: 1, id: 1}]});
-    for (let i = 1; i <= 6; i++) {
+    await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:point.x,y:point.y,radiusX:4,radiusY:4,force:1,id:1}]});
+    await page.waitForFunction(start=>window.__gameSwitchAudit.touches.length>start,start);
+    const first=await page.evaluate(start=>window.__gameSwitchAudit.touches[start],start);
+    assert(first.trusted&&first.type==='touchstart'&&first.inContent&&!first.blocked&&first.carousel===carousel&&(carousel||!first.isolated),'Trusted touch hit a permitted real region: '+JSON.stringify({point,first}));
+    for(let i=1;i<=6;i++){
       await delay(24);
-      await session.send('Input.dispatchTouchEvent', {type: 'touchMove', touchPoints: [{x: point.x + dx * i / 6, y: point.y, radiusX: 4, radiusY: 4, force: 1, id: 1}]});
+      await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:point.x+dx*i/6,y:point.y,radiusX:4,radiusY:4,force:1,id:1}]});
     }
-    await session.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []});
-  } finally {await session.detach();}
-  const events = await page.evaluate(start => window.__gameSwitchAudit.touches.slice(start), start);
-  assert(events.length >= 3 && events.every(e => e.trusted), 'Protocol injection produced trusted browser touch events');
-  assert.equal(events[0].type, 'touchstart'); assert.equal(events.at(-1).type, 'touchend');
-  assert(events.some(e => e.type === 'touchmove')); assert.equal(events[0].carousel, carousel, 'Touch hit the intended real region');
-  return {point, events};
+    await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    await page.waitForFunction(start=>window.__gameSwitchAudit.touches.slice(start).some(e=>e.type==='touchend'||e.type==='touchcancel'),start);
+    events=await page.evaluate(start=>window.__gameSwitchAudit.touches.slice(start),start);
+  } catch(error){error.stack+='\nTrusted touch diagnostics: '+JSON.stringify({point,events:await page.evaluate(start=>window.__gameSwitchAudit.touches.slice(start),start)});throw error;}
+  finally {await session.detach();}
+  assert(events.length>=3&&events.every(e=>e.trusted),'Protocol injection produced trusted browser touch events: '+JSON.stringify({point,events}));
+  assert.equal(events[0].type,'touchstart');assert.equal(events.at(-1).type,'touchend');
+  assert(events.some(e=>e.type==='touchmove'));assert.equal(events[0].carousel,carousel,'Touch hit the intended real region');
+  assert(!events.some(e=>e.type==='touchcancel'),'The input remained an uninterrupted real touch gesture');
+  return {point,events};
 }
 async function switchGame(app, pair, row, method) {
   if (method === 'header') {assert.equal(await tab(app.page, pair.to).count(), 1); await tab(app.page, pair.to).click();}
   else await trustedSwipe(app, pair.dx);
   await waitRoute(app.page, pair.to, targetHash(row, pair.to));
 }
+async function bottomNavEvidence(page) {
+  const geometry=await page.locator('.bottom-nav').evaluate(nav=>({width:innerWidth,nav:nav.getBoundingClientRect().toJSON(),scroll:nav.scrollWidth,client:nav.clientWidth,
+    buttons:[...nav.querySelectorAll('button')].map(button=>{const rect=button.getBoundingClientRect(),labelNodes=[...button.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim()),label=labelNodes.map(n=>n.textContent.trim()).join(''),labels=labelNodes.flatMap(node=>{const range=document.createRange();range.selectNodeContents(node);return [...range.getClientRects()].map(r=>r.toJSON());}),icon=button.querySelector('span').getBoundingClientRect(),hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);return {label,rect:rect.toJSON(),labels,icon:icon.toJSON(),scroll:button.scrollWidth,client:button.clientWidth,hit:!!hit&&(hit===button||button.contains(hit))};})}));
+  assert.deepEqual(geometry.buttons.map(b=>b.label),['Home','Search','Collection','Decks','Scan'],'All five full section labels remain visible');
+  assert(geometry.scroll<=geometry.client+1&&geometry.nav.right<=geometry.width+.5,'Bottom navigation itself fits the viewport');
+  for(const button of geometry.buttons){
+    assert(button.rect.width>=44&&button.rect.height>=44&&button.rect.left>=-.5&&button.rect.right<=geometry.width+.5&&button.hit,'Every bottom navigation target is full-sized, visible and physically reachable: '+JSON.stringify(button));
+    assert(button.scroll<=button.client+1,'Bottom navigation content does not overflow its track');
+    for(const rect of [button.icon,...button.labels])assert(rect.left>=button.rect.left-.5&&rect.right<=button.rect.right+.5&&rect.top>=button.rect.top-.5&&rect.bottom<=button.rect.bottom+.5,'Full icon and readable label stay inside their own target: '+JSON.stringify(button));
+  }
+  return {filename:await captureNavigation(page,`bottom-nav-${geometry.width}`),geometry};
+}
 async function semanticCase(app, pair, row, method) {
   await prepare(app, pair, row);
+  const bottomNavigation=row.id==='R01'&&pair.from==='mtg'&&pair.to==='ygo'&&method==='header'&&[320,390].includes(app.page.viewportSize().width)?await bottomNavEvidence(app.page):undefined;
   const before = await savedSnapshot(app.page), searches = await searchSnapshots(app.page), history = await historySnapshot(app.page);
   await switchGame(app, pair, row, method); await assertTarget(app.page, pair, row);
   const after = await historySnapshot(app.page);
@@ -147,7 +173,7 @@ async function semanticCase(app, pair, row, method) {
   assert.equal(after.pushes, history.pushes + 1, 'The game transition pushes exactly once');
   assert.equal(await savedSnapshot(app.page), before, 'Saved collection/decks/versions/wishlist/binders/locations/scans are byte-equivalent except settings game/save timestamp');
   assert.deepEqual(await searchSnapshots(app.page), searches, 'All per-game queries, filters, loaded results and paging survive without copying');
-  return {hash: after.hash, historyDelta: after.length - history.length};
+  return {hash: after.hash, historyDelta: after.length - history.length,...(bottomNavigation?{bottomNavigation}:{})};
 }
 async function historyCase(app, pair, method) {
   const row = BASE_ROWS.find(r => r.search);
@@ -217,10 +243,38 @@ async function dirtyFormCase(app, game) {
   assert.equal(await savedSnapshot(page), before, 'Closing a draft then switching cannot silently create a deck');
   return {game, nativeModal:true, blockedTraversal:true, preservedUnsavedName:true};
 }
+async function deckHeaderEvidence(app) {
+  const {page}=app,original=page.viewportSize(),evidence=[];
+  for(const width of [320,390,768,900,1440]){
+    await page.setViewportSize({width,height:original.height});await page.evaluate(()=>scrollTo(0,0));await settledContent(page);
+    await page.waitForFunction(()=>{const header=document.querySelector('.topbar');return Math.abs(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--shell-header-height'))-header.getBoundingClientRect().height)<1.1;});
+    assert.equal(await page.locator('#gameTabs [role="tab"]').count(),3);
+    for(const game of GAMES){
+      const control=tab(page,game);assert(await control.isVisible(),'The '+game+' header tab is visible inside the deck workspace');
+      const rect=await control.boundingBox();assert(rect.width>=44&&rect.height>=44&&rect.x>=-.5&&rect.x+rect.width<=width+.5,'Each game tab is a contained, full-size touch target');
+      const label=await control.evaluate(button=>{const name=button.querySelector('.game-tab-name'),range=document.createRange();range.selectNodeContents(name);return {text:name.textContent,rect:button.getBoundingClientRect().toJSON(),labelRects:[...range.getClientRects()].map(r=>r.toJSON()),scroll:name.scrollWidth,client:name.clientWidth};});
+      assert.equal(label.text,{mtg:'Magic',ygo:'Yu-Gi-Oh!',ptcg:'Pokémon'}[game],'Game names are complete, never abbreviated to fit');
+      assert(label.scroll<=label.client+1&&label.labelRects.length>0,'The full game name fits its label box');
+      for(const r of label.labelRects)assert(r.left>=label.rect.left-.5&&r.right<=label.rect.right+.5&&r.top>=label.rect.top-.5&&r.bottom<=label.rect.bottom+.5,'No game label is clipped by its tab: '+JSON.stringify(label));
+    }
+    const initial=await page.evaluate(()=>{const h=document.querySelector('.topbar'),tabs=document.querySelector('#content .tabs'),content=document.querySelector('#content');return {header:h.getBoundingClientRect().toJSON(),tabs:tabs.getBoundingClientRect().toJSON(),display:getComputedStyle(h).display,width:innerWidth,root:document.documentElement.scrollWidth,content:content.scrollWidth,client:content.clientWidth,workspaceHeight:content.scrollHeight};});
+    assert.equal(initial.display,'grid','Deck retains the shared responsive header grid');
+    assert(initial.root<=width+2&&initial.content<=initial.client+2,'Deck header and workspace retain horizontal containment: '+JSON.stringify(initial));
+    assert(initial.tabs.top>=initial.header.bottom-1,'Deck subtabs start below, not under, the game header');
+    const filename=await captureNavigation(page,`deck-header-${width}`);
+    await page.evaluate(()=>{const tabs=document.querySelector('#content .tabs'),header=document.querySelector('.topbar');scrollTo(0,scrollY+tabs.getBoundingClientRect().top-header.getBoundingClientRect().height+80);});await frames(page);
+    const sticky=await page.evaluate(()=>{const h=document.querySelector('.topbar').getBoundingClientRect(),tabs=document.querySelector('#content .tabs'),r=tabs.getBoundingClientRect(),button=tabs.querySelector('[aria-selected="true"]')||tabs.querySelector('button'),b=button.getBoundingClientRect(),hit=document.elementFromPoint(b.left+b.width/2,b.top+b.height/2);return {headerBottom:h.bottom,top:r.top,bottom:r.bottom,hit:!!hit&&(hit===button||button.contains(hit)),scrollY};});
+    assert(sticky.top>=sticky.headerBottom-1,'Sticky deck subtabs stay beneath the measured header after scrolling: '+JSON.stringify(sticky));
+    assert(sticky.hit,'The active deck subtab stays physically reachable below the header');
+    evidence.push({width,filename,headerHeight:initial.header.height,workspaceHeight:initial.workspaceHeight,sticky});
+  }
+  await page.setViewportSize(original);await page.evaluate(()=>scrollTo(0,0));await settledContent(page);return evidence;
+}
 async function nestedHistoryCase(app, game, kind) {
   const {page} = app, target = GAMES[(GAMES.indexOf(game) + 1) % GAMES.length], third = GAMES[(GAMES.indexOf(game) + 2) % GAMES.length];
   const row = kind === 'set' ? {set:true,target:'#sets'} : {deckTab:'versions',collision:true,target:'#decks/mine'};
   await prepare(app, {from:game}, row);
+  const headerEvidence=game==='mtg'&&kind==='deck'?await deckHeaderEvidence(app):undefined;
   const source = await historySnapshot(page), before = await savedSnapshot(page), parent = row.target;
   await tab(page, target).click(); await waitRoute(page, target, parent);
   const middle = await historySnapshot(page);
@@ -253,7 +307,7 @@ async function nestedHistoryCase(app, game, kind) {
   await page.goBack();await waitRoute(page,target,parent);await page.goBack();await assertSource();
   await page.goForward();await waitRoute(page,target,parent);await page.goForward();await waitRoute(page,third,parent);
   assert.equal((await historySnapshot(page)).length,last.length);
-  return {game,kind,resource:source.hash,sameHash:parent,reloadTraversal:true};
+  return {game,kind,resource:source.hash,sameHash:parent,reloadTraversal:true,...(headerEvidence?{headerEvidence}:{})};
 }
 async function scannerLifecycleCase(app, game) {
   const {page}=app,target=GAMES[(GAMES.indexOf(game)+1)%GAMES.length],fixture=makeScannerLifecycleFixture(game);
@@ -281,8 +335,9 @@ async function scannerLifecycleCase(app, game) {
   assert.equal(await review.locator('[data-change="scanConfirmLanguage"]').inputValue(),'de');
   await review.locator('.scan-review-more summary').click();
   assert.equal(await review.getByRole('button',{name:'Moderately Played',exact:true}).getAttribute('aria-pressed'),'true');
-  // One narrowly scoped synthetic failure keeps the already-saved capture queued.
-  // Retrying the real Add action after switching must reuse its capture identity.
+  // One narrowly scoped removal failure leaves the old durable queue intact.
+  // saveBatch intentionally keeps the attempted post-removal state in memory;
+  // reload must recover the durable capture and retry its original identity.
   await page.evaluate(id=>{
     const native=Storage.prototype.setItem;let fail=true;
     Storage.prototype.setItem=function(key,value){
@@ -300,7 +355,15 @@ async function scannerLifecycleCase(app, game) {
   for(const g of GAMES)assert.deepEqual(once[g].filter(row=>row.scanCaptureId!==fixture.reviewId),initialCollections[g]);
   assert.equal(Object.values(once).flat().filter(row=>row.scanCaptureId===fixture.reviewId).length,1);
   assert.equal(await page.evaluate(()=>window.__gameSwitchAudit.queueRemovalFailures),1);
-  assert((await batchRows(page)).some(row=>row.id===fixture.reviewId),'Failed removal retains a retryable capture');
+  const removal=await page.evaluate(async()=>{const batch=await import('/scan-batch.js');return {memory:batch.loadBatch(),durable:JSON.parse(localStorage.getItem('cardstashy-scan-batch-v1')),healthy:batch.batchStorageHealthy()};});
+  assert.equal(removal.healthy,false,'Failed persistence is not represented as durable success');
+  assert.deepEqual(removal.memory,afterSwitch.filter(row=>row.id!==fixture.reviewId),'In-memory fallback contains the attempted post-removal queue, preserving every other capture');
+  assert.deepEqual(removal.durable,afterSwitch,'Failed storage removal retains the complete durable capture, pixels, revision and edited fields');
+  await page.reload();await page.locator('#app.ready').waitFor();
+  await page.evaluate(async()=>{window.__uiTestState=(await import('/store.js')).S;window.__uiTestTcg=await import('/tcg.js');});
+  await waitRoute(page,game,'#scan');
+  assert.deepEqual(await batchRows(page),afterSwitch,'Reload recovers the original durable capture for a real retry');
+  assert.deepEqual(await collections(page),once,'The saved lot is already durable before any retry');
   await tab(page,target).click();await waitRoute(page,target,'#scan');await tab(page,game).click();await waitRoute(page,game,'#scan');
   await page.locator(`.scan-batch-thumb[data-id="${fixture.reviewId}"]`).click();await review.waitFor();
   await review.getByRole('button',{name:'Add to collection',exact:true}).click();await page.waitForFunction(()=>!window.__uiTestState.ui.scan.confirm);
@@ -308,8 +371,10 @@ async function scannerLifecycleCase(app, game) {
   assert.deepEqual(await batchRows(page),afterSwitch.filter(row=>row.id!==fixture.reviewId),'Other games and interrupted queue rows remain byte-equivalent');
   const persisted=await page.evaluate(async()=>{const s=await(await import('/storage.js')).readRecord('cardforge-v2');return Object.fromEntries(['mtg','ygo','ptcg'].map(g=>[g,(g==='mtg'?s:s.tcg[g]).collection]));});
   assert.deepEqual(persisted,once,'Exactly-once collection result is durable');
+  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('cardstashy-scan-batch-v1'))),afterSwitch.filter(row=>row.id!==fixture.reviewId),'Successful retry removes only the same capture durably');
+  assert.equal(await page.evaluate(async()=>(await import('/scan-batch.js')).batchStorageHealthy()),true);
   const audit=await page.evaluate(()=>window.__gameSwitchAudit);assert.equal(audit.cameraCalls,0);assert.equal(audit.ocrCalls,0);
-  return {game,editedReviewPreserved:true,interruptedRows:2,queueRemovalFailures:1,savedCopies:qty,duplicateLots:0};
+  return {game,editedReviewPreserved:true,interruptedRows:2,queueRemovalFailures:1,durableReloadRetry:true,savedCopies:qty,duplicateLots:0};
 }
 
 async function workspaceReplacementCase(app, game) {
@@ -326,7 +391,7 @@ async function workspaceReplacementCase(app, game) {
   await prepare(app,{from:other},{hash:'#settings',settings:true});
   const marker='Imported fixture '+importGame,next=await page.evaluate(()=>structuredClone(window.__uiTestState.state));
   next.settings.game=importGame;next.settings.authorName=marker;
-  await page.locator('#settings-backup .settings-disclosure summary').click();
+  await page.locator('#settings-backup .settings-disclosure > summary').filter({hasText:/^Restore or check a backup$/}).click();
   await page.locator('input[data-change="restoreBackup"]').setInputFiles({name:'synthetic-workspace.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(next))});
   // This is the genuine confirmation, including its asynchronous close animation.
   await page.locator('dialog.cf-dialog[open] [value="ok"]').click();await waitRoute(page,importGame,'#settings');
@@ -335,7 +400,7 @@ async function workspaceReplacementCase(app, game) {
   await page.goBack();await waitRoute(page,other,'#collection/cards');
   assert.equal(await page.evaluate(()=>window.__uiTestState.state.settings.authorName),marker,'Back changes the visit, never revives pre-import workspace data');
   await page.goForward();await waitRoute(page,importGame,'#settings');
-  await page.locator('#settingsTab-backup').click();await page.locator('#settings-backup .settings-disclosure summary').click();
+  await page.locator('#settingsTab-backup').click();await page.locator('#settings-backup .settings-disclosure > summary').filter({hasText:/^Restore or check a backup$/}).click();
   await page.locator('[data-act="undoRestore"]').click();await page.locator('dialog.cf-dialog[open] [value="ok"]').click();
   await waitRoute(page,other,'#settings');assert.deepEqual(await collections(page),original);
   assert.notEqual(await page.evaluate(()=>window.__uiTestState.state.settings.authorName),marker);

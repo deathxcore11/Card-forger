@@ -1,3 +1,5 @@
+import vm from 'node:vm';
+import {readFileSync} from 'node:fs';
 import {captureDisclosures,restoreDisclosures} from './ui.js';
 import {atLeastOne} from './deckaudit.js';
 import {buildDeck} from './builder.js';
@@ -36,3 +38,36 @@ const before=[details('Filters',true),details('Advanced',false),details('Advance
 const state=captureDisclosures({querySelectorAll:()=>before});
 const after=[details('Filters',false),details('Advanced',true),details('Advanced',false),details('New section',true)];
 restoreDisclosures({querySelectorAll:()=>after},state);assert.deepEqual(after.map(d=>d.open),[true,false,true,true],'both open and closed disclosures survive refresh, including duplicate summaries');
+
+// Source-only layout contracts supplement, never replace, hosted geometry checks.
+const layout=readFileSync(new URL('./style.css',import.meta.url),'utf8');
+assert.doesNotMatch(layout,/body\[data-view=["']deck["']\]\s+\.topbar\s*\{[^}]*display\s*:/,'Deck workspaces inherit the same responsive game-switch header grid as every section');
+const wrapping=layout.match(/\.actions\.wrap\s*>\s*\.btn\s*\{([^}]+)\}/)?.[1]||'';
+for(const rule of [/min-width\s*:\s*0/,/max-width\s*:\s*100%/,/white-space\s*:\s*normal/,/overflow-wrap\s*:\s*anywhere/])assert.match(wrapping,rule,'Long action labels shrink and wrap instead of overflowing narrow panels');
+assert.doesNotMatch(wrapping,/overflow(?:-x)?\s*:\s*(?:hidden|clip)|font-size\s*:/,'Containment must not clip labels or reduce their type size');
+console.log('PASS: shared deck header grid and naturally wrapping action groups retain responsive layout without clipping or smaller text.');
+
+// Execute the actual shared-shell observer against changing measured geometry.
+const application=readFileSync(new URL('./app.js',import.meta.url),'utf8');
+const observerStart=application.indexOf('function observeShellHeader('),observerEnd=application.indexOf('attachGameTabs($("#gameTabs"));',observerStart);
+assert(observerStart>=0&&observerEnd>observerStart);
+assert.equal((application.match(/  observeShellHeader\(\);/g)||[]).length,1,'The long-lived shell installs one header observer during boot');
+const observeHeader=vm.runInNewContext(application.slice(observerStart,observerEnd)+';observeShellHeader');
+let measured=124.25,callback,observed,disconnected=0,created=0;const updates=[];
+const header={getBoundingClientRect:()=>({height:measured})},root={style:{setProperty:(key,value)=>updates.push([key,value])}};
+const cleanup=observeHeader(header,root,{ResizeObserver:class{constructor(fn){created++;callback=fn;}observe(node){observed=node;}disconnect(){disconnected++;}}});
+assert.equal(created,1);assert.equal(observed,header);assert.deepEqual(updates,[['--shell-header-height','125px']]);
+for(const height of [124.25,169.1,80,80,0,Infinity,121]){measured=height;callback();}
+assert.deepEqual(updates.map(([,value])=>value),['125px','170px','80px','0px','121px'],'Resize updates follow real phone/tablet/desktop heights, coalesce unchanged values and reject invalid geometry');
+cleanup();assert.equal(disconnected,1);
+let listener,removed;const fallback=observeHeader(header,root,{addEventListener:(event,fn)=>{assert.equal(event,'resize');listener=fn;},removeEventListener:(event,fn)=>{assert.equal(event,'resize');removed=fn;}});
+measured=88;listener();assert.equal(updates.at(-1)[1],'88px');fallback();assert.equal(removed,listener);
+assert.match(layout,/\.tabs\s*\{[^}]*top:\s*var\(--shell-header-height,\s*0px\)/);
+assert.doesNotMatch(layout,/\.tabs\s*\{\s*top:\s*61px/);
+console.log('PASS: actual shared shell header observer measures once, tracks live resize without polling and cleans up its observer/fallback listener.');
+
+assert.match(layout,/\.bottom-nav\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/,'All five bottom navigation tracks can fit a 320px viewport');
+assert.match(layout,/\.bottom-nav button\s*\{[^}]*min-width:\s*0/);
+assert.match(layout,/\.bottom-nav button\s*\{[^}]*padding-inline:\s*2px/);
+assert.match(layout,/\.bottom-nav button span\s*\{[^}]*max-width:\s*100%/);
+console.log('PASS: bottom navigation retains five equal shrinkable tracks and full-label space without clipping.');

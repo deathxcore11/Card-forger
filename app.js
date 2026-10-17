@@ -211,7 +211,7 @@ function queueWorkspaceWrite(transaction) {
 }
 // A replacement joins the same queue as edits, so no older edit can revive a cleared
 // workspace. Recovery captures the latest committed state, not the state before waiting.
-function replaceWorkspace(next, { recovery = false, clearRecovery = false, stamp = false, notify = false, guard = null } = {}) {
+function replaceWorkspace(next, { recovery = false, clearRecovery = false, stamp = false, notify = false, guard = null, kind = "replace" } = {}) {
   return queueWorkspaceWrite(async () => {
     if (guard && !await guard()) return false;
     const value = typeof next === "function" ? next() : next;
@@ -221,7 +221,7 @@ function replaceWorkspace(next, { recovery = false, clearRecovery = false, stamp
     const records = [[STORAGE, valid]];
     if (clearRecovery) records.unshift([RECOVERY, blank()]);
     else if (typeof recovery === "function" ? recovery(S.state) : recovery) records.unshift([RECOVERY, stripCache(S.state)]);
-    const transition = workspaceTransition?.begin(valid);
+    const transition = workspaceTransition?.begin(valid, {kind});
     try { await writeRecords(records); }
     catch (error) { workspaceTransition?.failed(transition); throw error; }
     S.state = valid;
@@ -1035,9 +1035,14 @@ function gameChangeBlocked() {
   const chooser=S.ui.sheetCtx?.type === "game";
   return !!document.querySelector('#resetPassword')?.value || !!document.querySelector('#resetConfirm')?.value || !!document.querySelector('.tour, .zoom-overlay, [role="dialog"]') || [...document.querySelectorAll('dialog[open]')].some(d => !(chooser && d.id === "sheet") && !d.matches?.("dialog.cf-dialog.closing"));
 }
-function suspendGame(target, workspace = false) {
-  if(suspendedGame)return true;
-  if(scanCtx.beforeGameChange?.(activeEntry?.game || T.game(),target,{workspace}) === false)return false;
+function suspendGame(target, workspace = false, kind = "") {
+  if(suspendedGame){
+    // A pending Undo may retain its source camera. A later game change or
+    // unrelated replacement revokes that exception even before installation.
+    if(target!==suspendedGame || workspace&&kind!=="undo")scanCtx.stopCamera?.();
+    return true;
+  }
+  if(scanCtx.beforeGameChange?.(activeEntry?.game || T.game(),target,{workspace,kind}) === false)return false;
   suspendedGame=activeEntry?.game || T.game();
   dbInvalidate(false);
   if(T.isTcg())T.invalidateTcgSearch(T.game());
@@ -1102,13 +1107,13 @@ const navigation = createNavigationQueue({
 // Pause navigation while its existing serialized storage transaction settles.
 // Older intents retire only on success; a failure lets the prior visit/intents resume.
 workspaceTransition = {
-  begin(next) {
+  begin(next, {kind = "replace"} = {}) {
     if(!navigationReady)return null;
     if(gameChangeBlocked())throw Error("Close the current edit before replacing the workspace.");
     // Legacy/blank workspaces intentionally omit game; resolve like T.game()
     // without adding or rewriting a saved setting during adoption.
     const source=activeEntry?.game || T.game(), target=GAMES[next.settings?.game] ? next.settings.game : "mtg";
-    if(!suspendGame(target,true))throw Error("Finish saving your scans before replacing the workspace.");
+    if(!suspendGame(target,true,kind))throw Error("Finish saving your scans before replacing the workspace.");
     const ticket=navigation.pause(); workspaceVisitRevision++;
     const route=source===target ? {game:target,hash:activeEntry?.route || normalizeRoute(location.hash)} : gameSwitchRoute(gameContext(source),target);
     return {ticket,source,route};
@@ -1439,6 +1444,24 @@ attachCardGestures({onSelect:target=>{
 
 document.addEventListener("pointerdown", ripple, { passive: true });
 attachGestures({ closeSheet: () => A.closeSheet() });
+// One shared shell measurement keeps sticky section tabs below the responsive
+// game header through live viewport/fold changes without fixing workspace height.
+function observeShellHeader(header = document.querySelector(".topbar"), root = document.documentElement, view = window) {
+  if (!header || !root) return () => {};
+  let previous = -1;
+  const measure = () => {
+    const height = Math.max(0, Math.ceil(header.getBoundingClientRect().height));
+    if (Number.isFinite(height) && height !== previous) {
+      previous = height;
+      root.style.setProperty("--shell-header-height", `${height}px`);
+    }
+  };
+  measure();
+  const observer = typeof view.ResizeObserver === "function" ? new view.ResizeObserver(measure) : null;
+  if (observer) observer.observe(header);
+  else view.addEventListener("resize", measure, { passive: true });
+  return () => { observer?.disconnect(); if (!observer) view.removeEventListener("resize", measure); };
+}
 attachGameTabs($("#gameTabs"));
 attachHomeCommunity($("#content"));
 attachHomeSwipe($("#content"), {
@@ -4116,7 +4139,7 @@ A.undo = async () => {
     if (!lastUndo) return null;
     label = lastUndo.label;
     return lastUndo.state;
-  }, { stamp: true, notify: true });
+  }, { stamp: true, notify: true, kind: "undo" });
   if (!restored) return toast("Nothing to undo.");
   render();
   refreshSheet();
@@ -5218,6 +5241,7 @@ async function boot() {
       decks = S.state.decks.length + ["ptcg", "ygo"].reduce((n, g) => n + T.gs(g).decks.length, 0);
     if (shouldTour({ cards, decks }) && !location.hash.startsWith("#shared")) setTimeout(() => openTour(tourArt()), 600);
   }
+  observeShellHeader();
   $("#app").classList.add("ready");
   initCloud({
     accountChanged: () => { clearAskConversations(); clearRulesConversations(); rulesGuideOrigin = null; },

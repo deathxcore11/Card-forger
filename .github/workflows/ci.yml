@@ -273,7 +273,9 @@ jobs:
         if: always()
         with:
           name: game-switch-browser-evidence
-          path: test-results/game-switch-browser.json
+          path: |
+            test-results/game-switch-browser.json
+            test-results/game-switch-*.png
           if-no-files-found: warn
   database-safety:
     runs-on: ubuntu-latest

@@ -42,6 +42,18 @@ function setup(game='mtg',overrides={}){
 }
 function change(ctx,target){const source=S.state.settings.game;assert.equal(ctx.beforeGameChange(source,target),true);S.state.settings.game=target;assert.equal(ctx.afterGameChange(target),true);}
 function roundTrip(ctx){const source=S.state.settings.game,target=games.find(g=>g!==source);change(ctx,target);change(ctx,source);}
+function replace(ctx,kind='replace',target=S.state.settings.game){const source=S.state.settings.game;assert.equal(ctx.beforeGameChange(source,target,{workspace:true,kind}),true);S.state.settings.game=target;assert.equal(ctx.afterGameChange(target),true);}
+async function liveCamera(ctx){
+  let stops=0,opens=0,attachments=0;
+  const track={readyState:'live',stop(){stops++;this.readyState='ended';},getCapabilities:()=>({torch:true})};
+  const stream={getTracks:()=>[track],getVideoTracks:()=>[track]},create=document.createElement;
+  navigator.mediaDevices.getUserMedia=async()=>{opens++;return stream;};
+  const video={paused:false,setAttribute(){},play:async()=>{video.paused=false;}};
+  document.createElement=tag=>tag==='video'?video:create(tag);
+  const attach=()=>{Object.assign(S.ui.scan,{catalogInitGame:S.state.settings.game,ocrWarm:true});elements.set('camSlot',{replaceWith:v=>{assert.equal(v,video);attachments++;elements.set('scanVideo',v);}});ctx.afterRender();};
+  try{await ctx.A.scanStart();attach();}finally{document.createElement=create;}
+  return {track,stream,video,attach,get stops(){return stops;},get opens(){return opens;},get attachments(){return attachments;}};
+}
 const resolveImage=()=>{const img=images.shift();assert(img);img.onload();return img;};
 
 try{
@@ -100,6 +112,49 @@ try{
   }
   console.log('PASS: live tracks stop, delayed camera streams are released, stale failures cannot paint or reopen permission, and target never auto-starts.');
 
+  // Only explicit same-game Undo may retain an already-live device. Each
+  // transition still installs a fresh callback owner and preserves capture IDs.
+  for(const source of games)for(const kind of ['undo','replace','import','recovery','reset']){
+    const {ctx}=setup(source),cam=await liveCamera(ctx);saveBatch([row('pending',source)]);const before=JSON.stringify(loadBatch()),old=S.ui.scan;
+    S.ui.scan.torch=true;replace(ctx,kind);cam.attach();
+    assert.notEqual(S.ui.scan,old,'a retained stream does not retain async callback authority');
+    assert.equal(JSON.stringify(loadBatch()),before);assert.equal(cam.opens,1,'replacement never requests fresh camera permission');
+    assert.equal(S.ui.scan.camOn,kind==='undo');assert.equal(cam.stops,kind==='undo'?0:1);
+    assert.equal(cam.video.srcObject,kind==='undo'?cam.stream:null);
+    if(kind==='undo'){assert.equal(cam.track.readyState,'live');assert.equal(S.ui.scan.torch,true);assert.equal(cam.attachments,2,'the same video is moved into the fresh render');}
+  }
+  for(const target of ['ygo','ptcg']){
+    const {ctx}=setup(),cam=await liveCamera(ctx);replace(ctx,'undo',target);
+    assert.equal(cam.stops,1);assert.equal(S.ui.scan.camOn,false,'cross-game Undo is a full stop');
+  }
+  {
+    const {ctx}=setup(),cam=await liveCamera(ctx);
+    assert.equal(ctx.beforeGameChange('mtg','mtg',{workspace:true,kind:'undo'}),true);assert.equal(cam.stops,0);
+    S.state.settings.game='ygo';assert.equal(ctx.afterGameChange('ygo'),true);
+    assert.equal(cam.stops,1);assert.equal(cam.video.srcObject,null);assert.equal(S.ui.scan.camOn,false,'newer cross-game intent cannot inherit the retained device');
+  }
+  for(const outcome of ['resolve','reject']){
+    const {ctx,counts}=setup(),gate=deferred();let stops=0,opens=0;
+    savePrefs('mtg',{camera:'chosen-camera'});navigator.mediaDevices.getUserMedia=()=>{opens++;return gate.promise;};
+    const pending=ctx.A.scanStart();replace(ctx,'undo');const renders=counts.renders;
+    if(outcome==='resolve')gate.resolve({getTracks:()=>[{stop:()=>stops++}],getVideoTracks:()=>[]});else gate.reject(Error('NotAllowed'));
+    await pending;assert.equal(stops,outcome==='resolve'?1:0);assert.equal(opens,1);assert.equal(S.ui.scan.camOn,false);assert.equal(counts.renders,renders);
+  }
+  console.log('PASS: same-game Undo retains the same live stream/video only; ordinary replacements, cross-game Undo and superseding navigation stop it, and pending camera callbacks remain retired.');
+
+  {
+    const {ctx}=setup(),cam=await liveCamera(ctx),now=Date.now;let time=now();
+    Object.assign(cam.video,{videoWidth:640,videoHeight:900,clientWidth:378,clientHeight:400,label:'held-same-card'});
+    try{
+      Date.now=()=>time;ctx.A.scanCapture();assert.equal(loadBatch().length,1);const firstId=loadBatch()[0].id;
+      replace(ctx,'undo');cam.attach();ctx.A.scanCapture();
+      assert.equal(loadBatch().length,1,'Undo preserves the held-card latch and same-frame debounce');assert.equal(loadBatch()[0].id,firstId);
+      time+=601;ctx.A.scanCapture();assert.equal(loadBatch().length,2,'a deliberate later manual copy remains available');assert.equal(cam.stops,0);
+    }finally{Date.now=now;cam.video.videoWidth=0;}
+    await wait(()=>!S.ui.scan.busy);ctx.stopCamera();
+  }
+  console.log('PASS: same-game Undo preserves held-card duplicate suppression and the real shutter debounce without blocking a deliberate later copy.');
+
   // Image decoding and the later rotation blob callback each retire independently.
   for(const action of ['scanRead','scanRotate']){
     const {ctx,counts}=setup();Object.assign(S.ui.scan,{url:'blob:source',mode:'photo',rot:2,crop:{x:.1,y:.1,w:.7,h:.7}});
@@ -142,6 +197,23 @@ try{
   }
   console.log('PASS: lookup progress/results/errors, quote, printing picker callbacks, review hydration and device enumeration remain retired across A → B → A.');
 
+  for(const kind of ['undo','replace']){
+    const lookup=deferred(),picker=deferred();let progress,selection,quote;
+    const {ctx,counts}=setup('mtg',{match:async(g,r,l,m,status)=>{progress=status;return lookup.promise;},requestConditionPrice:(g,c,f,s,callback,isCurrent)=>{quote={callback,isCurrent};},openPrintingPicker:options=>{selection=options;return picker.promise;}});
+    const cam=await liveCamera(ctx);elements.set('scanName',{value:'Lightning Bolt'});const pending=ctx.A.scanFind();replace(ctx,kind);const renders=counts.renders;
+    progress('Old result');lookup.resolve({cands:[candidate],tried:['old']});await pending;
+    assert.equal(counts.renders,renders);assert.deepEqual(S.ui.scan.cands,[]);assert.equal(S.ui.scan.confirm,null);
+    saveBatch([row()]);ctx.A.scanBatchReview({dataset:{id:'review'}});const old=quote,printing=ctx.A.scanChangePrinting();replace(ctx,kind);
+    // Same textual capture ID, different capture identity: no old picker/quote
+    // may overwrite this newer review after the workspace transaction.
+    saveBatch([{...row(),captureRevision:'new-revision',qty:11}]);ctx.A.scanBatchReview({dataset:{id:'review'}});
+    const batch=JSON.stringify(loadBatch()),paint=counts.renders;
+    assert.equal(old.isCurrent(),false);old.callback({status:'ready'});assert.equal(selection.isCurrent(),false);assert.equal(selection.onSelect({candidate:{...candidate,game:'mtg'},finish:'foil'}),false);assert.equal(selection.onCancel(),false);
+    picker.reject(Error('old picker error'));await printing;
+    assert.equal(counts.renders,paint);assert.equal(JSON.stringify(loadBatch()),batch);assert.equal(S.ui.scan.confirm.qty,11);assert.equal(cam.stops,kind==='undo'?0:1);
+  }
+  console.log('PASS: same-game Undo/replacement invalidates late lookup, price and picker callbacks even when capture IDs collide.');
+
   // Keep late device/canvas callbacks from mutating or opening the new visit.
   {
     const gate=deferred(),{ctx,counts}=setup();let stopped=0;
@@ -164,14 +236,15 @@ try{
 
   // An in-flight source OCR plus queued capture are retained as retryable; an
   // explicit new capture in the returned game drains after the retired read.
-  {
+  for(const kind of ['game','undo']){
     await releaseOCR();const first=deferred();let started=false;const reads=new Map();
     window.Tesseract={createWorker:async()=>({recognize:async c=>{const n=reads.get(c.label)||0;reads.set(c.label,n+1);if(c.label==='old-first'&&n===0){started=true;await first.promise;}return {data:{text:n%2?'U 0806\nMSC EN':'Lightning Bolt'}};},terminate:async()=>{}})};
-    const {ctx}=setup();ctx.enqueueCapture(canvas('old-first'));await wait(()=>started);ctx.enqueueCapture(canvas('old-second'));const originals=loadBatch();roundTrip(ctx);
+    const {ctx}=setup(),cam=kind==='undo'?await liveCamera(ctx):null;ctx.enqueueCapture(canvas('old-first'));await wait(()=>started);ctx.enqueueCapture(canvas('old-second'));const originals=loadBatch();if(kind==='undo')replace(ctx,'undo');else roundTrip(ctx);
     assert.equal(S.ui.scan.busy,false);assert.equal(S.ui.scan.buffered,undefined);const retired=loadBatch();assert.deepEqual(retired.map(x=>x.status),['unresolved','unresolved']);
     for(let i=0;i<originals.length;i++)for(const key of ['id','game','captureRevision','originalShot','shot','qty','condition','lang','location','defaults','defaultsByGame'])assert.deepEqual(retired[i][key],originals[i][key]);
     assert(ctx.enqueueCapture(canvas('new-third')));first.resolve();await wait(()=>loadBatch().length===3&&loadBatch()[2].status==='ready'&&!S.ui.scan.busy);
     assert.deepEqual(loadBatch().slice(0,2),retired);assert(!reads.has('old-second'));assert(reads.has('new-third'));assert.equal(S.ui.scan.confirm,null);
+    if(cam){assert.equal(cam.stops,0);assert.equal(cam.video.srcObject,cam.stream);assert.equal(S.ui.scan.camOn,true);}
     await releaseOCR();
   }
   console.log('PASS: active/queued OCR becomes retryable without losing capture identity or metadata; no stale render or old-frame reuse, and new capture drains normally.');
@@ -180,7 +253,7 @@ try{
   for(const action of ['scanConfirm','scanBatchSave','sessCommit'])for(const failure of [false,true]){
     const gate=deferred();let started=false;const {ctx}=setup('mtg',{addMany:async()=>{started=true;await gate.promise;}});
     saveBatch([{...row(),status:action==='scanBatchSave'?'ready':'review'}]);if(action==='scanConfirm')ctx.A.scanBatchReview({dataset:{id:'review'}});if(action==='sessCommit')saveSession('mtg',[{id:'saved-session',qty:2}]);
-    const saving=ctx.A[action]();await wait(()=>started);assert.equal(ctx.beforeGameChange('mtg','ygo'),false);assert.equal(S.state.settings.game,'mtg');
+    const saving=ctx.A[action]();await wait(()=>started);assert.equal(ctx.beforeGameChange('mtg','ygo'),false);assert.equal(ctx.beforeGameChange('mtg','mtg',{workspace:true,kind:'undo'}),false);assert.equal(ctx.beforeGameChange('mtg','mtg',{workspace:true}),false);assert.equal(S.state.settings.game,'mtg');
     if(failure)gate.reject(Error('fixture save rejected'));else gate.resolve();await saving.catch(e=>{assert.equal(action,'sessCommit');assert.equal(e.message,'fixture save rejected');});
     if(failure){assert.equal(loadBatch().length,1);if(action==='scanConfirm')assert.match(S.ui.scan.confirm.error,/Couldn.t save/);if(action==='scanBatchSave')assert.match(S.ui.scan.batchError,/fixture save rejected/);if(action==='sessCommit')assert.equal(loadSession('mtg').length,1);}
     assert.equal(S.state.settings.game,'mtg','failed or completed save never resumes a previously blocked switch');
