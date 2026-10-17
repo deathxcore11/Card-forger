@@ -194,7 +194,7 @@ export function mtgFilterChips(f) {
   if (f.rarity) chips.push(["rarity", f.rarity[0].toUpperCase() + f.rarity.slice(1)]);
   if (f.mv) chips.push(["mv", `Mana value ${f.mv}`]);
   if (f.set) chips.push(["set", `Set ${f.set.toUpperCase()}`]);
-  if (f.maxPrice) chips.push(["maxPrice", `Under ${usd(Number(f.maxPrice))}`]);
+  if (String(f.maxPrice ?? "").trim()) chips.push(["maxPrice", `At most ${usd(Number(f.maxPrice))}`]);
   if (f.own) chips.push(["own", f.own === "owned" ? "Owned" : "Not owned"]);
   if (f.sort) chips.push(["sort", `Sort: ${L(MTG_SORTS, f.sort)}`]);
   return chips;
@@ -211,10 +211,10 @@ export function search() {
     chips = mtgFilterChips(f),
     shown = db.results.filter((c) => (f.own === "owned" ? inv(c.name).owned > 0 : f.own === "missing" ? !inv(c.name).owned : true));
   return `<div class="page-head"><h1>Search cards</h1>${viewControl("mtg","search")}<div class="search-tools"><button class="chip tool-chip" data-act="compareOpen" aria-label="Compare cards">${actionIcon("compare")}<span>Compare</span></button><button class="chip tool-chip" data-act="go" data-to="#sets" aria-label="Browse sets">◈ Sets</button><button class="chip tool-chip" data-act="dbRandom" aria-label="Random card">🎲 Random</button></div></div>
-  <div class="searchbar search-query"><input id="dbTerm" type="search" data-suggest="mtg" value="${esc(db.term)}" placeholder="Card name, or words like “draw a card”" data-input="dbTerm" data-enter="dbSearch" aria-label="Search all cards" autocomplete="off"><button class="btn" data-act="dbSearch" ${db.busy ? "disabled" : ""}>${db.busy ? "…" : "Search"}</button><button class="ask-launch" data-act="askOpen" aria-label="Ask AI"><span aria-hidden="true">✦</span>Ask</button></div>
+  <div class="searchbar search-query"><input id="dbTerm" type="search" data-suggest="mtg" value="${esc(db.term)}" placeholder="Card name, or words like “draw a card”" data-input="dbTerm" data-enter="dbSearch" aria-label="Search all cards" autocomplete="off"><button class="btn" data-act="dbSearch">${db.busy ? "Search again" : "Search"}</button><button class="ask-launch" data-act="askOpen" aria-label="Ask AI"><span aria-hidden="true">✦</span>Ask</button></div>
   ${chipRow(chips, "dbChip", "dbClear")}
   ${savedRow(savedSearches("mtg"), "dbSaved", "dbSavedDel")}
-  <details class="filters"><summary>Filters${chips.length ? ` · ${chips.length} on` : ""}</summary>
+  <details class="filters" id="magic-search-filters"><summary>Filters${chips.length ? ` · ${chips.length} on` : ""}</summary>
     <p class="list-head">Everyday</p><div class="grid2">
     <label>Show<select data-change="dbFilter" data-field="own">${options([["", "All cards"], ["owned", "Cards I own"], ["missing", "Cards I don’t own"]], f.own || "")}</select></label>
     <label>Max price $<input type="number" min="0" step="0.5" value="${esc(f.maxPrice)}" data-change="dbFilter" data-field="maxPrice" placeholder="Any"></label>
@@ -227,15 +227,15 @@ export function search() {
     <label title="Commander rules: every mana symbol on the card must be within these colors">Commander identity within<select data-change="dbFilter" data-field="color">${options([["", "Any"], ...COLOR_ID], f.color)}</select></label>
     <label class="span2">Legal in<select data-change="dbFilter" data-field="format">${options([["", "Any format"], ...ALL_FORMATS.filter((x) => x.legality).map((x) => [x.legality, x.name])], f.format)}</select></label>
     </div>
-    <details class="advanced"><summary>Advanced</summary><div class="grid2">
+    <details class="advanced" id="magic-search-advanced"><summary>Advanced</summary><div class="grid2">
     <label>Rarity<select data-change="dbFilter" data-field="rarity">${options([["", "Any"], ["common", "Common"], ["uncommon", "Uncommon"], ["rare", "Rare"], ["mythic", "Mythic"], ["special", "Special"]], f.rarity || "")}</select></label>
     <label>Mana value<select data-change="dbFilter" data-field="mv">${options([["", "Any"], ...["0", "1", "2", "3", "4", "5", "6", "7+"].map((x) => [x, x])], f.mv || "")}</select></label>
     <label class="span2">Set code<input value="${esc(f.set || "")}" placeholder="e.g. FDN" maxlength="6" data-change="dbFilter" data-field="set" autocapitalize="characters"></label>
     </div><p class="foot">The search box also takes Scryfall syntax, e.g. <code>t:angel o:draw id&lt;=w</code>.</p></details>
   </details>
-  <div class="row between"><span class="muted small">${db.results.length ? `${db.total.toLocaleString()} cards${f.own ? ` · ${shown.length} ${f.own === "owned" ? "owned" : "not owned"} on this page` : ""}` : "Live from Scryfall"}</span>${db.term.trim() || chips.length ? `<button class="link small" data-act="dbSave">☆ Save this search</button>` : ""}</div>
+  <div class="row between"><span class="muted small">${db.results.length ? `${db.total.toLocaleString()} cards${f.own ? ` · ${shown.length} ${f.own === "owned" ? "owned" : "not owned"} among loaded cards` : ""}` : "Live from Scryfall"}</span>${db.term.trim() || chips.length ? `<button class="link small" data-act="dbSave">☆ Save this search</button>` : ""}</div>
   ${db.error ? `<div class="note warn">${esc(db.error)}</div>` : db.note && db.results.length ? `<p class="small muted">${esc(db.note)}</p>` : ""}
-  ${f.own && db.results.length && !shown.length ? `<p class="small muted">None of the cards on this page are ${f.own === "owned" ? "in your collection" : "missing from your collection"}. ${db.next ? "Load more, or " : ""}<button class="link small" data-act="dbChip" data-field="own">show all</button>.</p>` : ""}
+  ${f.own && db.results.length && !shown.length ? `<p class="small muted">None of the loaded cards are ${f.own === "owned" ? "in your collection" : "missing from your collection"}. ${db.next ? "Load more, or " : ""}<button class="link small" data-act="dbChip" data-field="own">show all</button>.</p>` : ""}
   ${db.busy && !db.results.length ? skeletonGrid() : ""}
   ${
     db.results.length
@@ -244,11 +244,11 @@ export function search() {
             const own = inv(c.name).owned;
             return `<button class="grid-card" data-act="card" data-name="${esc(c.name)}" ${tierAttrs(tierOf("mtg", c.rarity, c.prices?.usd ?? c.prices?.usd_foil))}>${img(cardImage(c), c.name, "card-img")}${tileChrome("mtg", c)}<span class="grid-meta"><span class="ellip">${esc(c.name)} ${setBadge(c)}</span><span>${usd(c.prices?.usd ?? c.prices?.usd_foil)}</span></span>${own ? `<span class="owned-badge">×${own}</span>` : ""}</button>`;
           })
-          .join("")}</div>${db.next ? `<button class="btn ghost block" data-act="dbMore" ${db.busy ? "disabled" : ""}>Load more</button>` : ""}`
+          .join("")}</div>`
       : `<div class="hints"><p class="muted small">Try:</p>${[["Cheap card draw", "o:\"draw a card\" usd<1"], ["Angels", "t:angel"], ["Red legends", "t:legendary t:creature id=r"], ["Token makers", "o:\"create\" o:token"]]
           .map(([l, q]) => `<button class="chip" data-act="dbTry" data-q="${esc(q)}">${esc(l)}</button>`)
           .join("")}</div>`
-  }`;
+  }${db.next ? `<button class="btn ghost block" data-act="dbMore" ${db.busy ? "disabled" : ""}>${db.busy ? "Loading…" : db.error ? "Retry loading more" : "Load more"}</button>` : ""}`;
 }
 
 /* ---------- Card sheet ---------- */
@@ -369,7 +369,7 @@ export function cardSheet(c, ctx = {}) {
       <div class="pt-row"><span class="pt-label">${esc(shown.set_name || "This printing")} <small class="muted">${esc((shown.set || "").toUpperCase())} #${esc(shown.collector_number || "?")}</small></span>${Object.values(src[3]).map((k) => `<span>${money(shown.prices?.[k], src[2])}</span>`).join("")}</div>
     </div>
     <p class="foot">${esc(src[1])} ${src[2] === "TIX" ? "price for Magic Online tickets" : "market estimate"} from Scryfall, updated daily${shown.checkedAt ? " · checked " + esc(new Date(shown.checkedAt).toLocaleDateString()) : ""}. Condition prices (NM, LP…) and stock are on the store’s page.</p>
-    ${prints ? `<p class="small">Across ${prints.length} printings: <b class="ok-text">${usd(cheapest(prints))}</b> cheapest · <b>${usd(dearest(prints))}</b> priciest <button class="link small" data-act="cardTab" data-tab="versions">Compare all →</button></p>` : ""}
+    ${prints ? `<p class="small">${ctx.printsComplete ? "Across" : "Among"} ${prints.length} ${ctx.printsComplete ? "printings" : "loaded printings"}: <b class="ok-text">${usd(cheapest(prints))}</b> cheapest · <b>${usd(dearest(prints))}</b> priciest <button class="link small" data-act="cardTab" data-tab="versions">Compare all →</button></p>` : ""}
     ${chosen ? `<p class="small">Your shopping price: <b>${usd(chosen.price)}</b> · ${esc(chosen.label)}</p>` : ""}
     </details>`;
   const rulings = ctx.rulings
@@ -398,13 +398,13 @@ export function cardSheet(c, ctx = {}) {
     </section>`,
     )
     .join("")}
-  ${!c.full ? `<p class="muted small center" id="cardLoading">Loading flavor text and printings…</p>` : ""}
+  ${!c.full ? `<p class="muted small center" id="cardLoading">${ctx.detailsError ? esc(ctx.detailsError) : "Loading flavor text and printings…"}</p>` : ""}
   <div class="card-rules-entry"><button type="button" class="chip" data-act="learnGame" data-game="mtg">Interactive rules · how to play →</button></div>
-  ${cardTabs(tab, [["overview", "Overview"], ["meta", "Meta"], ["guide", "Play guide"], ["versions", `Versions${prints ? " · " + prints.length : ""}`], ["prices", "Prices"], ["rulings", "Rulings"], ["legal", "Legality"]])}
+  ${cardTabs(tab, [["overview", "Overview"], ["meta", "Meta"], ["guide", "Play guide"], ["versions", `Versions${prints ? " · " + prints.length + (ctx.printsNext ? "+" : "") : ""}`], ["prices", "Prices"], ["rulings", "Rulings"], ["legal", "Legality"]])}
   ${cardPanel("overview", tab, overview)}
   ${cardPanel("meta", tab, mtgCardMeta(c))}
   ${cardPanel("guide", tab, mtgCardGuide(c))}
-  ${cardPanel("versions", tab, `<section class="prints">${prints ? printList(prints, shown, name, chosen) : `<p class="muted small">Loading every printing…</p>`}</section>`)}
+  ${cardPanel("versions", tab, `<section class="prints"><button class="btn ghost block" data-act="magicPrintings">Browse all printings · sort &amp; filter</button>${ctx.printsError ? `<p class="note warn" role="status">${esc(ctx.printsError)}</p>` : ""}${prints ? printList(prints, shown, name, chosen) : `<p class="muted small">${ctx.printsError ? "Printings could not be loaded." : "Loading printings…"}</p>`}${ctx.printsNext || ctx.printsError ? `<button class="btn ghost block" data-act="magicVersionsMore" ${ctx.printsBusy || ctx.detailsBusy ? "disabled" : ""}>${ctx.printsBusy || ctx.detailsBusy ? "Loading…" : ctx.printsError ? "Retry printings" : "Load more printings"}</button>` : ""}${prints && !ctx.printsComplete ? `<p class="foot">${prints.length} verified printings loaded${ctx.printsTotal ? ` of ${ctx.printsTotal}` : ""}. Prices and sorting cover loaded printings only.</p>` : ""}</section>`)}
   ${cardPanel("prices", tab, pricesTab)}
   ${tab === "trade" ? cardPanel("trade", tab, mtgTradePanel(name, shown, ctx)) : ""}
   ${cardPanel("rulings", tab, rulings)}

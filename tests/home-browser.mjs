@@ -153,6 +153,9 @@ async function openApp(options = {}) {
   page.setDefaultTimeout(15000);
   const errors = [], writes = [], unexpected = [], requests = [];
   let gate = null;
+  let releaseEmblems, seenEmblems;
+  const emblemsWait = options.holdEmblems ? new Promise(resolve => { releaseEmblems = resolve; }) : null;
+  const emblemsSeen = options.holdEmblems ? new Promise(resolve => { seenEmblems = resolve; }) : null;
   page.on('pageerror', e => errors.push(`pageerror: ${e.message}`));
   page.on('console', m => { if (m.type() === 'error') errors.push(`console: ${m.text()}`); });
   await context.route('**/*', async route => {
@@ -179,7 +182,10 @@ async function openApp(options = {}) {
     if (url.origin === BASE) {
       if (url.pathname === '/catalog.json') return json({ cards: [], snapshot_date: '2000-01-01' });
       if (url.pathname === '/api/community') return json(feed(url.searchParams.get('game'), options.emptyFeed));
-      if (url.pathname === '/api/meta/mtg') return json(metaFeed('mtg', options.emptyFeed));
+      if (url.pathname === '/api/meta/mtg') {
+        if (emblemsWait && url.searchParams.get('format') === 'Modern') { seenEmblems(); await emblemsWait; }
+        return json(metaFeed('mtg', options.emptyFeed));
+      }
       if (url.pathname.startsWith('/api/prices/')) return json({ points: [], series: [], cards: [], products: [], variants: [], prices: [], partial: false });
       if (!url.pathname.startsWith('/api/')) return route.continue();
     }
@@ -235,7 +241,7 @@ async function openApp(options = {}) {
     assert.deepEqual(writes, [], 'Home interactions never make network writes');
     assert.deepEqual(unexpected, [], 'all provider calls are explicitly local fixtures');
   };
-  return { page, context, requests, health,
+  return { page, context, requests, health, emblems: options.holdEmblems ? { seen: emblemsSeen, release: releaseEmblems } : null,
     holdSelection() {
       let release, started;
       const wait = new Promise(r => { release = r; });
@@ -377,6 +383,30 @@ async function startReveal(page, game) {
 
 try {
   browser = await chromium.launch();
+  // A real delayed background response must not detach a keyboard user's
+  // existing Home control. Hold Modern (the emblem source), not the already
+  // cached Standard community source, and never refocus after releasing it.
+  for (const selector of ['[data-community-step="-1"]', '.community-open']) {
+    const focused = await openApp({ holdEmblems: true, width: 1440 });
+    await Promise.race([focused.emblems.seen, new Promise((_, reject) => setTimeout(() => reject(Error('Delayed emblem request was not observed')), 15000))]);
+    const control = focused.page.locator(selector).first();
+    await control.scrollIntoViewIfNeeded();
+    await control.focus();
+    const original = await control.elementHandle();
+    assert(await original.evaluate(node => node.isConnected && document.activeElement === node), 'original Home control has focus before delayed data');
+    focused.emblems.release();
+    await focused.page.evaluate(async () => {
+      const { metaState } = await import('/meta.js');
+      const state = metaState('mtg:Modern');
+      await state.promise;
+      await new Promise(resolve => setTimeout(resolve, 0));
+      if (state.busy || !state.data) throw Error('Emblem data did not finish and remain cached');
+    });
+    assert(await original.evaluate(node => node.isConnected && document.activeElement === node), 'delayed emblem response preserves the original focused Home node without refocusing');
+    await original.dispose();
+    await focused.close();
+  }
+  report.push('Delayed emblem-data completion keeps the original focused carousel button and source link connected, with fresh data cached');
   // One real boot, then all game changes/resizes go through production controls.
   const app = await openApp();
   const { page } = app;
