@@ -57,7 +57,7 @@ export function presentationQuote(game,c,finish='reference',printingKey='',editi
   if(printing){
    scope='printing';source=printing.priceSource||'TCGplayer printing reference';label=[printing.code,printing.rarity,editionNames[edition]||'Edition not specified'].join(' · ');
    if(edition){value=editionPrice(printing,edition);const q=(printing.quotes||[]).find(q=>norm(q.edition)===norm(editionNames[edition]));kind=referenceQuote(q)?.kind||'market';}
-   else if(printing.quotes?.length===1){const q=referenceQuote(printing.quotes[0]);value=q?.value??null;kind=q?.kind||'market';label=[printing.code,printing.rarity,printing.quotes[0].edition||'Edition not specified'].join(' · ');}
+   // A provider having only one edition quote does not select that edition for the user.
    else if(printing.quotes?.length){value=null;}
    else {value=priceAmount(printing.price);kind=printing.priceKind||'market';}
   }
@@ -73,6 +73,12 @@ export function presentationQuote(game,c,finish='reference',printingKey='',editi
 export function quoteForContext(game,card,ctx={}) {
  const quote=presentationQuote(game,card,selectedFinish(game,card,ctx.priceFinish||ctx.finish),ctx.priceEdition||ctx.edition,ctx.priceYgoEdition||ctx.ygoEdition);
  return !quote || validSetContext(game,card,ctx) ? quote : {...quote,value:null,printing:null,variant:null,selectionVerified:false,label:'Selected release does not match this card'};
+}
+export function priceSelectionState(quote){
+ if(!quote||quote.selectionVerified===false)return 'unverified';
+ if(quote.game==='ygo'&&!quote.printing)return 'printing-required';
+ if(quote.game==='ygo'&&quote.printing?.quotes?.length&&!quote.selectedEdition)return 'edition-required';
+ return 'selected';
 }
 export const quoteIsStale=(q,now=Date.now())=>{const date=q?.observedAt||q?.sourceUpdatedAt||q?.checkedAt;return !!date&&Number.isFinite(Date.parse(date))&&now-Date.parse(date)>3*864e5;};
 // A saved condition value may be shown only beside the same game/card/version.
@@ -176,7 +182,14 @@ function rememberDetailScroll(body,target,top,refreshOffsets,isCurrent){
   body.removeEventListener('focusin',focusChanged,true);body.removeEventListener('scroll',scrolled);
  }};
  const focusChanged=e=>{if(e.target!==target)intent.cancel();};
- const scrolled=()=>{if(!isCurrent()||Math.abs(body.scrollTop-goal)<=1)intent.cancel();};
+ const scrolled=()=>{
+  if(!isCurrent()){intent.cancel();return;}
+  if(Math.abs(body.scrollTop-goal)>1)return;
+  intent.cancel();
+  // Smooth scrolling can expand a multi-line sticky title after its initial
+  // measurement. Settle the current target once, never after user navigation.
+  settleDetailClearance(body,target,refreshOffsets);
+ };
  detailScrolls.set(body,intent);
  for(const type of input)body.addEventListener(type,intent.cancel,{capture:true,passive:true});
  body.addEventListener('focusin',focusChanged,true);body.addEventListener('scroll',scrolled,{passive:true});
@@ -209,6 +222,17 @@ export function restoreDetailState(body,state){
  const tabs=body.querySelector?.('.cs-tabs');if(tabs)tabs.scrollLeft=state.left;
 }
 export function detailTabKey(key,index,length){return key==='Home'?0:key==='End'?length-1:key==='ArrowRight'?(index+1)%length:key==='ArrowLeft'?(index+length-1)%length:null;}
+function settleDetailClearance(body,target,refreshOffsets){
+ const head=body.querySelector?.('.sheet-head'),tabs=body.querySelector?.('.cs-tabs');
+ for(let pass=0;pass<2;pass++){
+  refreshOffsets();
+  const boundary=Math.max(body.getBoundingClientRect().top,head?.getBoundingClientRect?.().bottom||0,tabs?.getBoundingClientRect?.().bottom||0)+12;
+  const overlap=target.getBoundingClientRect().top-boundary;
+  if(overlap>=-1)break;
+  const corrected=Math.max(0,body.scrollTop+overlap);if(corrected===body.scrollTop)break;
+  body.scrollTo?.({top:corrected,behavior:'auto'});
+ }
+}
 export function scrollDetailTarget(body,target,reduced=false,refreshOffsets=()=>{},isCurrent=()=>true){
  if(!body||!target)return false;
  cancelDetailScroll(body);
@@ -220,14 +244,7 @@ export function scrollDetailTarget(body,target,reduced=false,refreshOffsets=()=>
  // An instant jump can expand the sticky title before the next scroll event.
  // Measure the final boundary now, while this card/context is still current.
  // No delayed correction may take focus or scrolling away from later navigation.
- if(reduced)for(let pass=0;pass<2;pass++){
-  refreshOffsets();
-  const boundary=Math.max(body.getBoundingClientRect().top,head?.getBoundingClientRect?.().bottom||0,tabs?.getBoundingClientRect?.().bottom||0)+12;
-  const overlap=target.getBoundingClientRect().top-boundary;
-  if(overlap>=-1)break;
-  const corrected=Math.max(0,body.scrollTop+overlap);if(corrected===body.scrollTop)break;
-  body.scrollTo?.({top:corrected,behavior:'auto'});
- }
+ if(reduced)settleDetailClearance(body,target,refreshOffsets);
  return true;
 }
 // The latest jump wins. A late render may never move focus in a different card or closed sheet.

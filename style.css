@@ -3854,3 +3854,31 @@ html:has(.rules-ask-dialog[open]),html:has(.rules-ask-dialog[open]) body{overflo
 @media(max-width:380px){.rules-ask-dialog .rules-ai-destination{padding:14px}.rules-ask-intro{gap:10px}.rules-ask-dialog .ask-bar{padding-inline:10px}.rules-ask-dialog .ask-log{padding-inline:12px}}
 @media(prefers-reduced-motion:reduce){.rules-ask-dialog .rules-ai-answer,.rules-ask-dialog .ask-orb,.rules-ask-dialog .ask-item{animation:none!important;transition:none!important}.rules-ask-dialog *{scroll-behavior:auto!important}}
 .rules-ask-dialog .rules-ai-format{display:block;margin-top:6px;max-width:100%}.rules-ask-dialog .rules-ai-format select{font:inherit;font-size:12px;max-width:100%;width:min(100%,230px);padding:5px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);color:inherit}
+
+/* YGO printed rarity is an independent edge, never a substitute price tier.
+   Keep the existing price ring inside it and leave uncertain printings neutral. */
+[data-rarity-flair="yr0"] {--rarity-edge:#a5adb8;--rarity-light:#d8dde4;}
+[data-rarity-flair="yr1"] {--rarity-edge:#c7d5e6;--rarity-light:#ffffff;}
+[data-rarity-flair="yr2"] {--rarity-edge:#65cfc5;--rarity-light:#d7fff7;}
+[data-rarity-flair="yr3"] {--rarity-edge:#e3b958;--rarity-light:#fff3c5;}
+[data-rarity-flair="yr4"] {--rarity-edge:#c294ed;--rarity-light:#c8f7ff;}
+.card-grid > .grid-card[data-rarity-flair] > .card-img,
+.cd-img[data-rarity-flair] .card-img,
+.display-list .lot[data-rarity-flair] .lot-art {border:2px solid var(--rarity-edge);}
+.card-grid > .grid-card:is([data-rarity-flair="yr2"],[data-rarity-flair="yr3"],[data-rarity-flair="yr4"]) > .card-img,
+.cd-img:is([data-rarity-flair="yr2"],[data-rarity-flair="yr3"],[data-rarity-flair="yr4"]) .card-img {border-color:var(--rarity-edge);}
+/* A small separate inset glint can coexist with the price ring's animation. */
+#content.view-gallery .display-list .lot:is([data-rarity-flair="yr2"],[data-rarity-flair="yr3"],[data-rarity-flair="yr4"])[data-tier="tn"] .lot-art,
+.card-grid > .grid-card[data-rarity-flair="yr2"][data-tier="tn"] > .card-img,
+.card-grid > .grid-card[data-rarity-flair="yr3"][data-tier="tn"] > .card-img,
+.card-grid > .grid-card[data-rarity-flair="yr4"][data-tier="tn"] > .card-img,
+.cd-img[data-rarity-flair]:not([data-rarity-flair="yr0"]):not([data-rarity-flair="yr1"]) .card-img:not([data-tier]) {animation:rarity-edge-glint 3.8s ease-in-out infinite alternate;}
+@keyframes rarity-edge-glint {from{border-color:var(--rarity-edge);box-shadow:0 0 9px -5px var(--rarity-edge);}to{border-color:var(--rarity-light);box-shadow:0 0 14px -5px var(--rarity-edge);}}
+:is(.view-compact,.view-symbols) .card-grid > .grid-card[data-rarity-flair] {border-inline-start:3px solid var(--rarity-edge);}
+#sheetBody .printing-rarity-label {display:inline-flex;align-self:start;width:fit-content;padding:4px 8px;border-inline-start:3px solid var(--rarity-edge);background:color-mix(in srgb,var(--rarity-edge) 8%,transparent);color:var(--text);font-size:11px;line-height:1.5;}
+#sheetBody #card-price-selection {scroll-margin-top:calc(var(--card-tabs-top,52px) + 76px);}
+#sheetBody [data-history-state]:not([data-history-state="ready"]):not([data-history-state="range-empty"]) .history-empty {min-height:80px;}
+#sheetBody [data-act="historyChoosePrinting"] {min-height:44px;margin-top:8px;}
+@media (prefers-reduced-motion:reduce) {
+ .card-grid > .grid-card[data-rarity-flair] > .card-img,.cd-img[data-rarity-flair] .card-img,.display-list .lot[data-rarity-flair] .lot-art {animation:none !important;}
+}

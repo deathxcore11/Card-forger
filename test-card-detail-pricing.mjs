@@ -157,6 +157,11 @@ function detailScrollFixture(){
   rerender(state=captureDetailState(body,active),shift=0){install(shift);active=null;body.scrollTop=0;restoreDetailState(body,state);refreshOffsets();}
  };
 }
+{
+ const fixture=detailScrollFixture();await fixture.jump('history');fixture.finish();
+ assert.ok(fixture.node('history').getBoundingClientRect().top>=fixture.tabs.getBoundingClientRect().bottom+11,'completed smooth scroll clears the expanded sticky heading without waiting for a history refresh');
+ assert.equal(fixture.listenerCount(),0,'settled smooth scroll removes its listeners');
+}
 for(const progress of [0,80,400]){
  const fixture=detailScrollFixture();await fixture.jump('sellers');
  assert.equal(fixture.scheduled,1515,'ordinary Buy still requests a smooth scroll');

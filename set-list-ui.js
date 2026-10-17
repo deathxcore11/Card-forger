@@ -1,16 +1,26 @@
 import {esc} from './ui.js';
+import {pkCatalogueSymbolSources} from './emblems.js';
 // Decode provider entities as text, then escape at the HTML boundary.
 export function catalogueText(value) {
  return String(value ?? '').replace(/&(?:apos|#39|#x27);/gi,"'").replace(/&quot;/gi,'"').replace(/&amp;/gi,'&').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>');
 }
 export const knownSetCount = value => ['number','string'].includes(typeof value) && value !== '' && Number.isSafeInteger(Number(value)) && Number(value) > 0 ? Number(value) : null;
+// Symbols belong in the catalogue's reserved artwork slot. A real code stays
+// visible while loading and after every source fails, without changing geometry.
+function pokemonCatalogueMedia(set, name, code) {
+ const sources=pkCatalogueSymbolSources(set),label=code?`${name} (${code})`:name;
+ const next=sources[1]?` data-symbol-next="${esc(sources[1])}"`:'',last=sources[2]?` data-symbol-last="${esc(sources[2])}"`:'';
+ const symbol=sources.length?`<img class="set-catalogue-symbol" src="${esc(sources[0])}"${next}${last} alt="" aria-hidden="true" loading="lazy" decoding="async" referrerpolicy="no-referrer" onload="this.parentElement.classList.remove('no-art')" onerror="this.parentElement.classList.add('no-art');const next=this.dataset.symbolNext||this.dataset.symbolLast;if(next){if(this.dataset.symbolNext){delete this.dataset.symbolNext}else{delete this.dataset.symbolLast}this.src=next}else{this.onerror=null;this.onload=null;this.hidden=true}">`:'';
+ return `<span class="set-media set-media-pokemon-symbol no-art" data-set-symbol-id="${esc(set.id||'')}" role="img" aria-label="${esc(label)}">${symbol}<span class="set-media-fallback" aria-hidden="true"><span class="set-art-code">${esc(code||'—')}</span></span></span>`;
+}
 // Shared emblem treatment. Use verified set logos/symbols; unknown sets keep their code.
-export function setRowContent({name,code,image='',symbol='',detail='',count=null,owned=null,printingCount=null}){
+export function setRowContent({name,code,image='',symbol='',pokemonSet=null,detail='',count=null,owned=null,printingCount=null}){
  name=catalogueText(name);detail=catalogueText(detail);
  // A remote symbol can fail with the artwork URL too. The fallback must be
  // real text, not the same unavailable image painted through a CSS mask.
  const fallback=`<span class="set-art-code">${esc(code)}</span>`,total=knownSetCount(count),prints=knownSetCount(printingCount);
- return `<span class="set-media ${image?'':'no-art'}">${image?`<img src="${esc(image)}" alt="${esc(name)} set artwork" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.parentElement.classList.add('no-art')">`:''}<span class="set-media-fallback" aria-hidden="true">${fallback}</span></span><span class="set-row-main"><b>${symbol}<span>${esc(name)}</span></b><span class="set-row-detail"><span class="set-code-mark">${esc(code)}</span><span>${esc(detail)}</span></span></span><span class="set-row-count">${total!==null?`<b>${total.toLocaleString()}</b><small>${total===1?'card':'cards'}</small>`:prints!==null?`<b>${prints.toLocaleString()}</b><small>printings listed</small><small>unique total unverified</small>`:'<small>Card total</small><b class="count-unknown">Unknown</b>'}${owned>0?`<small class="ok-text">${Number(owned).toLocaleString()} owned</small>`:''}</span>`;
+ const media=pokemonSet?pokemonCatalogueMedia(pokemonSet,name,code):`<span class="set-media ${image?'':'no-art'}">${image?`<img src="${esc(image)}" alt="${esc(name)} set artwork" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.parentElement.classList.add('no-art')">`:''}<span class="set-media-fallback" aria-hidden="true">${fallback}</span></span>`;
+ return `${media}<span class="set-row-main"><b>${pokemonSet?'':symbol}<span>${esc(name)}</span></b><span class="set-row-detail"><span class="set-code-mark">${esc(code)}</span><span>${esc(detail)}</span></span></span><span class="set-row-count">${total!==null?`<b>${total.toLocaleString()}</b><small>${total===1?'card':'cards'}</small>`:prints!==null?`<b>${prints.toLocaleString()}</b><small>printings listed</small><small>unique total unverified</small>`:'<small>Card total</small><b class="count-unknown">Unknown</b>'}${owned>0?`<small class="ok-text">${Number(owned).toLocaleString()} owned</small>`:''}</span>`;
 }
 // Headings live outside each year’s grid, so a heading can never consume a card slot.
 export function setYearSections(sets, renderRow, dateOf = set => set.date) {
