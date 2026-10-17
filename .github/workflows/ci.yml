@@ -249,6 +249,34 @@ jobs:
         with:
           name: search-printing-browser-evidence
           path: test-results/
+  game-switch-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate bounded navigation and scanner lifecycle fixtures
+        run: node tests/game-switch-browser.mjs --validate-fixtures
+      - name: Install pinned browser test runner
+        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - name: Install test browser
+        run: npx playwright install --with-deps chromium
+      - name: Test semantic game navigation, history, dirty editors and scanner retries
+        run: node tests/game-switch-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: game-switch-browser-evidence
+          path: |
+            test-results/game-switch-browser.json
+            test-results/game-switch-*.png
+          if-no-files-found: warn
   database-safety:
     runs-on: ubuntu-latest
     steps:

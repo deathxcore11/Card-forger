@@ -1293,7 +1293,7 @@ export function tcgDeck(id) {
     zones = g === "ygo" ? [["main", "Main Deck", `${f.main[0]}–${f.main[1]}`], ["extra", "Extra Deck", `0–${f.extra}`], ["side", "Side Deck", `0–${f.side}`]] : [["main", "Deck", "60"]],
     zoneCount = (z) => (d.zones[z] || []).reduce((a, r) => a + r.qty, 0),
     cover = cardOf(g, (d.zones.main || [])[0]?.cardId);
-  const tab = S.ui.tdeckTab?.[d.id] || "cards";
+  const tab = S.ui.tdeckTab?.[g+":"+d.id] || "cards";
   return `<section class="deck-hero">${g === "ptcg" && cover ? pokemonArtCrop(cover, "hero-art") : imgTag(cover, "hero-art", true)}<div class="hero-shade"></div><div class="hero-body">
     <div class="row between"><button class="icon light" data-act="go" data-to="#decks" aria-label="Back">←</button><button class="icon light" data-act="tDeckMenu" data-id="${esc(d.id)}" aria-label="Deck options">⋯</button></div>
     <h1>${esc(d.name)}</h1><p><button class="chip dark fmt-chip" data-act="tDeckMenu" data-id="${esc(d.id)}">${esc(GAMES[g].short)} · ${esc(f.name)}</button></p>
@@ -1925,8 +1925,7 @@ export function registerTcg(c) {
   ctx = c;
   const { A, C, I, commit, render, openSheet, closeSheet, toast, go, download, copyText, busy } = c;
   const g = () => game();
-  const mutate = (fn, opts) => {
-    const G = g();
+  const mutate = (fn, opts, G = g()) => {
     return commit((s) => {
       s.tcg = s.tcg || {};
       s.tcg[G] = s.tcg[G] || blankGame();
@@ -1934,32 +1933,27 @@ export function registerTcg(c) {
     }, opts);
   };
 
-  A.setGame = async (t) => {
-    const id = t.dataset.game;
-    if (!GAMES[id] || id === game()) return;
-    ctx.invalidateMagicSearch?.();
-    invalidateTcgSearch(game());
-    await commit((s) => (s.settings.game = id), { rerender: false });
-    document.body.dataset.game = id;
-    closeSheet();
-    const v = S.ui.view;
-    go(["deck", "tdeck", "set", "shared"].includes(v) ? "#home" : "#" + (v === "settings" ? "settings" : v));
-    render();
-  };
+  // The app owns route, history and scanner lifecycle for every entry mechanism.
+  A.setGame = async t => ctx.switchGame?.(t.dataset.game);
+  const navigationStamp = () => ctx.navigationStamp?.();
+  const navigationCurrent = stamp => !stamp || ctx.navigationCurrent?.(stamp) !== false;
   A.hideStart = (t) => {
     setStartHidden(t.dataset.game, true);
     toast("Hidden. The next step stays on Home.");
     render();
   };
-  A.gameMenu = () =>
-    openSheet(`<div class="sheet-head"><h2>Choose a game</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p class="muted small">Each game keeps its own collection, decks and formats.</p>${gameBinders(game())}`, { type: "game" });
+  A.gameMenu = () => {
+    const previous=S.ui.sheetCtx;
+    const origin=previous?.origin || (previous?.type === 'binder' ? {section:'collection',tab:'binders'} : previous?.type === 'idea' || previous?.type === 'tbuild' ? {section:'decks',tab:'ideas'} : previous?.type === 'proven' ? {section:'decks',tab:'inspiration'} : null);
+    openSheet(`<div class="sheet-head"><h2>Choose a game</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p class="muted small">Each game keeps its own collection, decks and formats.</p>${gameBinders(game())}`, { type: "game", origin });
+  };
 
   // Each submitted query owns its pages. Live price/ownership presentation never
   // changes provider order or borrows a new draft name for the next page.
   const renderSearch = G => { if (game() === G && S.ui.view === "search") render(); };
   const hydrateSearch = async (G, ids) => {
-    const U = ui(G).search, generation = U.generation;
-    const current = () => U.generation === generation && game() === G;
+    const U = ui(G).search, generation = U.generation, screen = navigationStamp();
+    const current = () => U.generation === generation && game() === G && navigationCurrent(screen);
     U.detailJobs = (U.detailJobs || 0) + 1;
     U.detailsBusy = true;
     try { await ensureMany(G, ids, () => current() && renderSearch(G), false, false, current); }
@@ -1974,9 +1968,9 @@ export function registerTcg(c) {
       invalidateTcgSearch(G, true);
       U.submitted = previous || Object.freeze({ q: U.q.trim(), f: Object.freeze({ ...U.f }), sort: priceSearchSort(U.sort) ? defaultSearchSort(G) : U.sort });
     }
-    const generation = U.generation, spec = U.submitted, page = append ? U.page + 1 : 0, request = {};
+    const generation = U.generation, spec = U.submitted, page = append ? U.page + 1 : 0, request = {}, screen = navigationStamp();
     Object.assign(U, { busy: true, error: "", ran: true, request, failedPage: null });
-    const current = () => U.generation === generation && U.request === request && game() === G;
+    const current = () => U.generation === generation && U.request === request && game() === G && navigationCurrent(screen);
     renderSearch(G);
     try {
       const r = await SOURCES[G].search({ ...spec.f, q: spec.q, sort: spec.sort, page, ...(append && U.providerPaging ? {paging:{...U.providerPaging}} : {}) });
@@ -2067,14 +2061,14 @@ export function registerTcg(c) {
   // card sheet
   A.tCard = async (t) => {
     if (t.dataset.game && t.dataset.game !== g()) return;
-    const G = g(),
+    const G = g(), screen=navigationStamp(),
       id = t.dataset.id,
       lot=t.dataset.entry?gs(G).collection.find(e=>e.id===t.dataset.entry&&String(e.cardId)===String(id)):null,
       setId=t.dataset.setId||(G==="ygo"?lot?.setReleaseId:"")||"",setReleaseUnverified=!!(G==="ygo"&&lot?.setReleaseUnverified),
       sctx = { type: "tcard", game: G, id, setId, setReleaseUnverified, setVariant:t.dataset.setVariant || lot?.variant || "", priceFinish:t.dataset.setVariant || lot?.variant || "", priceEdition:G==="ygo"?(t.dataset.printing||(lot?.printing&&lot?.rarity?lot.printing+"::"+lot.rarity:"")):"",priceYgoEdition:G==="ygo"?(t.dataset.edition||lot?.edition||""):"", entryId:lot?.id || "",random: !!t.dataset.random, deckId: t.dataset.deck || (S.ui.view === "tdeck" ? S.ui.tdeckId : null) };
     const sourceMembership=t.setMembership||(ui(G).set.info?.id===sctx.setId?ui(G).set.cards.find(card=>card.id===id)?.setContext:null);
     if(sourceMembership?.membership==='set-response'&&sourceMembership.game===G&&sourceMembership.cardId===id&&sourceMembership.releaseId===sctx.setId)sctx.setMembership={...sourceMembership};
-    const still = () => S.ui.sheetCtx === sctx && g() === G && document.querySelector("#sheet")?.open;
+    const still = () => navigationCurrent(screen) && S.ui.sheetCtx === sctx && g() === G && document.querySelector("#sheet")?.open;
     const known = cardOf(G, id);
     openSheet(known ? tcgCardSheet(known, sctx) : `<div class="sheet-head"><h2>Loading…</h2><button class="icon" data-act="closeSheet">✕</button></div>`, sctx);
     try {
@@ -2090,13 +2084,14 @@ export function registerTcg(c) {
   // ----- random -----
   let randomBusy = false, randomDeckRequest = null;
   A.tRandomCard = async () => {
+    const screen=navigationStamp();
     if (randomBusy || randomDeckRequest?.isCurrent()) return;
     randomBusy = true;
     const G = g();
     toast("Picking a random card…");
     try {
       const card = remember(await SOURCES[G].random());
-      await A.tCard({ dataset: { id: card.id, random: "1" } });
+      if(navigationCurrent(screen) && g()===G)await A.tCard({ dataset: { id: card.id, game:G, random: "1" } });
     } catch (e) {
       toast(e.message);
     } finally {
@@ -2166,14 +2161,17 @@ export function registerTcg(c) {
     A.tCompareOpen();
   };
   A.tCompareLookup = async (t) => {
-    const i = Number(t.dataset.i),
-      G = g(),
-      q = (document.getElementById("tcmp" + i)?.value || "").trim();
-    if (!q) return;
-    const r = await SOURCES[G].search({ q, size: 20 }).catch(() => null),
-      hit = rankByName(r?.cards || [], q)[0];
-    if (!hit) return toast("No card with that name.");
-    cmp()[i] = (await ensureCard(G, hit.id).catch(() => null)) || hit;
+    const i=Number(t.dataset.i),G=g(),screen=navigationStamp(),sheet=S.ui.sheetCtx,
+      q=(document.getElementById("tcmp"+i)?.value || "").trim();
+    const current=()=>navigationCurrent(screen)&&g()===G&&S.ui.sheetCtx===sheet;
+    if(!q)return;
+    const r=await SOURCES[G].search({q,size:20}).catch(()=>null);
+    if(!current())return;
+    const hit=rankByName(r?.cards || [],q)[0];
+    if(!hit)return toast("No card with that name.");
+    const card=(await ensureCard(G,hit.id).catch(()=>null)) || hit;
+    if(!current())return;
+    (ui(G).compare ||= [null,null])[i]=card;
     A.tCompareOpen();
   };
   A.tOwn = (t) => {
@@ -2418,11 +2416,12 @@ export function registerTcg(c) {
     return entryPrice(card, card.game === "ptcg" ? {...entry,variant: finish} : {...entry,printing,rarity,edition:finish,setReleaseId:cand.setReleaseId||'',setReleaseUnverified:!!cand.setReleaseUnverified});
   };
   c.scanAdd = async (cand) => {
-    const G = g(),
+    const G = cand.card?.game || g(),
       card = cand.card,
       [printing, rarity] = cand.print ? cand.print.split("|") : ["", ""];
-    await mutate(
-      (st) => {
+    await commit(
+      (state) => {
+        state.tcg ||= {}; const st=state.tcg[G] ||= blankGame();
         st.collection.push({ id: uid(), cardId: card.id, name: card.name, key: SOURCES[G].ownKey(card), qty: 1, printing, rarity, variant: "", condition: "Near Mint", location: "", addedAt: new Date().toISOString(), source: "scan" });
       },
       { undo: `Added 1 × ${card.name}${printing ? ` (${printing})` : ""}.` },
@@ -2473,7 +2472,7 @@ export function registerTcg(c) {
     c.refreshSheet?.();
   };
   A.tEntryQty = async (t) => {
-    const delta = Number(t.dataset.delta);
+    const G=g(),delta = Number(t.dataset.delta);
     await mutate((st) => {
       const e = st.collection.find((x) => x.id === t.dataset.id);
       if (!e) return;
@@ -2622,15 +2621,16 @@ export function registerTcg(c) {
     closeSheet();
     go("#tdeck/" + d.id);
   };
-  const addToDeck = (st, deckId, card, zone, n = 1) => {
+  const addToDeck = (st, deckId, card, zone, n = 1, G) => {
     const d = st.decks.find((x) => x.id === deckId);
     if (!d) return null;
+    if (!SOURCES[G] || card?.game && card.game!==G) throw Error("This card belongs to a different game.");
     if (!card) throw Error("Load the card’s details before adding it.");
-    zone = zone || SOURCES[g()].zoneFor(card);
-    const f=formatOf(g(),d.format), limit=SOURCES[g()].limit(card,f), totalCopies=["main","extra","side"].reduce((a,z)=>a+(d.zones[z] || []).filter(r=>r.name===card.name).reduce((a,r)=>a+r.qty,0),0), cap=g()==="ygo"?(zone==="main"?f.main[1]:f[zone]):60;
-    if(g()==="ygo" && zone==="extra" && !card.extra)throw Error("Only Extra Deck monsters belong in this zone.");
-    if(g()==="ygo" && zone==="main" && card.extra) throw Error("This monster belongs in the Extra Deck.");
-    if(SOURCES[g()].legality(card,f)==="not_legal")throw Error("This printing is not legal in the selected format.");
+    zone = zone || SOURCES[G].zoneFor(card);
+    const f=formatOf(G,d.format), limit=SOURCES[G].limit(card,f), totalCopies=["main","extra","side"].reduce((a,z)=>a+(d.zones[z] || []).filter(r=>r.name===card.name).reduce((a,r)=>a+r.qty,0),0), cap=G==="ygo"?(zone==="main"?f.main[1]:f[zone]):60;
+    if(G==="ygo" && zone==="extra" && !card.extra)throw Error("Only Extra Deck monsters belong in this zone.");
+    if(G==="ygo" && zone==="main" && card.extra) throw Error("This monster belongs in the Extra Deck.");
+    if(SOURCES[G].legality(card,f)==="not_legal")throw Error("This printing is not legal in the selected format.");
     if(limit===0)throw Error("This card is forbidden in the selected format.");
     if(totalCopies+n>limit)throw Error(`This format allows ${limit} copies of ${card.name}.`);
     if((d.zones[zone] || []).reduce((a,r)=>a+r.qty,0)+n>cap)throw Error(`${zone} deck is full (${cap} cards maximum). Make a cut before adding.`);
@@ -2641,27 +2641,28 @@ export function registerTcg(c) {
     return d;
   };
   A.tAddToDeck = async (t) => {
-    const card = cardOf(g(), t.dataset.id),
+    const G=g(), card = cardOf(G, t.dataset.id),
       deckId = document.querySelector("#tToDeck").value;
-    await mutate((st) => addToDeck(st, deckId, card), { msg: `${card.name} added.` });
+    await mutate((st) => addToDeck(st, deckId, card, undefined, 1, G), { msg: `${card.name} added.` });
   };
   I.tDeckQ = (t) => (ui().deckAdd.q = t.value);
   A.tDeckFind = async () => {
-    const G = g(),
+    const G = g(),screen=navigationStamp(),
       A2 = ui(G).deckAdd;
     if (!A2.q.trim()) return;
     A2.busy = true;
     render();
     try {
       const r = await SOURCES[G].search({ q: A2.q, size: 12 });
+      if(!navigationCurrent(screen))return;
       A2.results = r.cards.slice(0, 12).map(remember);
-      if (G === "ptcg") ensureMany(G, A2.results.map((x) => x.id), () => S.ui.view === "tdeck" && render());
+      if (G === "ptcg") ensureMany(G, A2.results.map((x) => x.id), () => navigationCurrent(screen) && S.ui.view === "tdeck" && render());
       if (!A2.results.length) toast("No cards found.");
     } catch (e) {
-      toast(e.message);
+      if(navigationCurrent(screen))toast(e.message);
     } finally {
       A2.busy = false;
-      render();
+      if(navigationCurrent(screen))render();
     }
   };
   const reviewUpgrade = (card,deckId) => {
@@ -2685,7 +2686,7 @@ export function registerTcg(c) {
       if(!row||row.qty<1)throw Error("The cut is no longer in this deck. Review the upgrade again.");
       const beforeIssues=SOURCES[G].validate(d,x=>cardOf(G,x),formatOf(G,d.format)).filter(x=>x.level==='bad').map(x=>x.text);
       try {
-        row.qty--;d.zones[zone]=d.zones[zone].filter(r=>r.qty>0);addToDeck(st,d.id,card,zone);
+        row.qty--;d.zones[zone]=d.zones[zone].filter(r=>r.qty>0);addToDeck(st,d.id,card,zone,1,G);
         const newIssues=SOURCES[G].validate(d,x=>cardOf(G,x),formatOf(G,d.format)).filter(x=>x.level==='bad'&&!beforeIssues.includes(x.text));
         if(newIssues.length)throw Error(newIssues[0].text);
         (d.versions ||= []).push({id:uid(),label:'Before upgrade swap',at:Date.now(),zones:before.zones});
@@ -2694,20 +2695,23 @@ export function registerTcg(c) {
   };
   // Resolve an exact legal printing before reviewing the swap.
   A.tDeckAddName = async (t) => {
-    const G = g(),
-      r = await SOURCES[G].search({ q: t.dataset.name, size: 8 }).catch(() => ({ cards: [] })),
-      hit = r.cards.find((x) => x.name.toLowerCase() === String(t.dataset.name).toLowerCase() && SOURCES[G].legality(x,formatOf(G,gs(G).decks.find(d=>d.id===t.dataset.deck)?.format)) === "legal");
-    if (!hit) return toast("Couldn’t find that card right now.");
-    const card = await ensureCard(G, hit.id).catch(() => remember(hit));
-    if(t.dataset.upgrade)return reviewUpgrade(card,t.dataset.deck);
-    await mutate((st) => addToDeck(st, t.dataset.deck, card), { msg: `${card.name} added.` });
+    const G=g(), screen=navigationStamp(), data={...t.dataset},
+      r=await SOURCES[G].search({q:data.name,size:8}).catch(()=>({cards:[]}));
+    if(!navigationCurrent(screen))return;
+    const hit=r.cards.find(x=>x.name.toLowerCase()===String(data.name).toLowerCase()&&SOURCES[G].legality(x,formatOf(G,gs(G).decks.find(d=>d.id===data.deck)?.format))==="legal");
+    if(!hit)return toast("Couldn’t find that card right now.");
+    const card=await ensureCard(G,hit.id).catch(()=>remember(hit));
+    if(!navigationCurrent(screen))return;
+    if(data.upgrade)return reviewUpgrade(card,data.deck);
+    await mutate(st=>addToDeck(st,data.deck,card,undefined,1,G),{msg:`${card.name} added.`,guard:()=>navigationCurrent(screen)},G);
   };
   // From the Power panel: look up a card the tournament list plays, ready to add.
   A.tDeckFindName = async (t) => {
-    const G = g();
+    const G = g(),screen=navigationStamp();
     ui(G).deckAdd.q = t.dataset.name || "";
-    if (S.ui.tdeckId) (S.ui.tdeckTab ||= {})[S.ui.tdeckId] = "cards";
+    if (S.ui.tdeckId) (S.ui.tdeckTab ||= {})[G+":"+S.ui.tdeckId] = "cards";
     await A.tDeckFind();
+    if(!navigationCurrent(screen))return;
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   A.tDeckAddClose = () => {
@@ -2715,19 +2719,21 @@ export function registerTcg(c) {
     render();
   };
   A.tDeckAdd = async (t) => {
-    const G = g(),
-      card = await ensureCard(G, t.dataset.id).catch(() => cardOf(G, t.dataset.id));
+    const G=g(),screen=navigationStamp(),data={...t.dataset},
+      card=await ensureCard(G,data.id).catch(()=>cardOf(G,data.id));
+    if(!navigationCurrent(screen))return;
     if(!card)return toast("Couldn’t load this card right now.");
-    if(t.dataset.upgrade)return reviewUpgrade(card,t.dataset.deck);
-    await mutate((st) => addToDeck(st, t.dataset.deck, card), { msg: `${card.name} added.` });
+    if(data.upgrade)return reviewUpgrade(card,data.deck);
+    await mutate(st=>addToDeck(st,data.deck,card,undefined,1,G),{msg:`${card.name} added.`,guard:()=>navigationCurrent(screen)},G);
   };
-  // Open a card from a name (Play guide lists from tournament decks, which only carry names).
+  // Open a card from a name only while the requesting visit still owns the sheet.
   A.tFindName = async (t) => {
-    const G = g(),
-      r = await SOURCES[G].search({ q: t.dataset.name, size: 8 }).catch(() => ({ cards: [] })),
-      hit = r.cards.find((x) => x.name.toLowerCase() === t.dataset.name.toLowerCase()) || r.cards[0];
-    if (hit) A.tCard({ dataset: { id: hit.id } });
-    else toast("Couldn’t find that card right now.");
+    const G=g(),screen=navigationStamp(),name=String(t.dataset.name||''),
+      r=await SOURCES[G].search({q:name,size:8}).catch(()=>({cards:[]}));
+    if(!navigationCurrent(screen))return;
+    const hit=r.cards.find(x=>x.name.toLowerCase()===name.toLowerCase())||r.cards[0];
+    if(hit)return A.tCard({dataset:{id:hit.id,game:G}});
+    toast("Couldn’t find that card right now.");
   };
   // Play guide: rank cards that pair well (pairing.js). Candidates: Yu-Gi-Oh! — its archetype,
   // cards named in its text, the race/attribute it supports; Pokémon — its evolution line, role
@@ -2832,7 +2838,7 @@ export function registerTcg(c) {
       if (!row) return;
       row.qty--;
       if (row.qty < 1) d.zones.main = d.zones.main.filter((r) => r !== row);
-      addToDeck(st, d.id, add, "main", 1);
+      addToDeck(st, d.id, add, "main", 1, G);
     }, { undo: `Swapped ${cardOf(G, t.dataset.out)?.name || "a card"} for ${add.name}.` });
   };
   A.tDeckQty = async (t) => {
@@ -2842,7 +2848,7 @@ export function registerTcg(c) {
         list = d?.zones[t.dataset.zone] || [],
         row = list.find((r) => r.cardId === t.dataset.id);
       if (!row) return;
-      if(delta>0) { addToDeck(st,d.id,cardOf(g(),row.cardId),t.dataset.zone,delta); return; }
+      if(delta>0) { addToDeck(st,d.id,cardOf(G,row.cardId),t.dataset.zone,delta,G); return; }
       row.qty += delta;
       if (row.qty < 1) d.zones[t.dataset.zone] = list.filter((r) => r !== row);
     }, delta < 0 ? { undo: `−1 ${cardOf(g(), t.dataset.id)?.name || "card"}` } : {});
@@ -2859,11 +2865,11 @@ export function registerTcg(c) {
       if (row.qty < 1) d.zones[from] = list.filter((r) => r !== row);
       const card = cardOf(G, row.cardId) || { id: row.cardId, name: row.name },
         to = from === "side" ? SOURCES[G].zoneFor(card) : "side";
-      addToDeck(st, d.id, card, to);
+      addToDeck(st, d.id, card, to, 1, G);
     }, { undo: `Moved ${cardOf(G, t.dataset.id)?.name || "card"} ${t.dataset.zone === "side" ? "out of" : "to"} the Side Deck.` });
   };
   A.tIssues = (t) => {
-    (S.ui.tdeckTab ||= {})[t.dataset.deck] = "cards";
+    (S.ui.tdeckTab ||= {})[g()+":"+t.dataset.deck] = "cards";
     render();
     setTimeout(() => { const panel=document.querySelector("#tIssuesPanel"); const details=panel?.querySelector("details"); if(details)details.open=true; panel?.scrollIntoView({ behavior: "smooth", block: "center" }); }, 50);
   };
@@ -2918,8 +2924,8 @@ export function registerTcg(c) {
     await mutate((s2) => { const x = s2.decks.find((y) => y.id === d.id); x.results = (x.results || []).filter((r) => r.at !== t.dataset.at); }, { msg: "Game removed." });
   };
   A.tDeckTab = (t) => {
-    (S.ui.tdeckTab ||= {})[t.dataset.deck] = t.dataset.id;
-    render();
+    (S.ui.tdeckTab ||= {})[g()+":"+t.dataset.deck] = t.dataset.id;
+    go("#tdeck/"+encodeURIComponent(t.dataset.deck)+"/"+encodeURIComponent(t.dataset.id));
   };
   C.tStarter = async (t) => {
     await mutate((st) => {
@@ -2999,16 +3005,18 @@ export function registerTcg(c) {
       <div class="share-link"><input id="shareLink" readonly value="${esc(link)}" aria-label="Share link"><div class="actions wrap"><button class="btn" data-act="tShareCopy">Copy link</button>${navigator.share ? `<button class="btn ghost" data-act="tShareNative">Share…</button>` : ""}<a class="btn ghost" href="${esc(safeHref(link))}" target="_blank" rel="noopener">Preview ↗</a></div></div>`, { type: "tshare", link, name: d.name });
   };
   A.tSharedBuild = async () => {
-    const sd = S.ui.shared.deck;
+    const sd = S.ui.shared.deck,screen=navigationStamp();
     if (!sd?.game) return;
     const d = { id: uid(), name: sd.name + " · my version", format: sd.format, zones: structuredClone(sd.zones), about: sd.about, source: { kind: "Shared deck", author: sd.author, url: location.href.length <= 2000 ? location.href : "" }, createdAt: new Date().toISOString() };
     await commit((s) => {
-      s.settings.game = sd.game;
       s.tcg = s.tcg || {};
       s.tcg[sd.game] = s.tcg[sd.game] || blankGame();
       s.tcg[sd.game].decks.push(d);
-    }, { msg: "Your version is ready. Your collection is unchanged." });
-    go("#tdeck/" + d.id);
+    }, { msg: "Your version is ready. Your collection is unchanged.",rerender:false,guard:()=>navigationCurrent(screen) });
+    if(!navigationCurrent(screen))return;
+    if(g()!==sd.game && await ctx.switchGame?.(sd.game) === false)return;
+    if(g()!==sd.game)return;
+    return go("#tdeck/" + d.id);
   };
   // ----- deck generator -----
   const nameLookups=new Map();
@@ -3388,7 +3396,7 @@ export function registerTcg(c) {
     const x = tierDeck(t.dataset.i);
     if (!x) return;
     await mutate((st) => st.decks.push(x.d), { msg: `Saved “${x.d.name}”.` });
-    (S.ui.tdeckTab ||= {})[x.d.id] = t.dataset.to;
+    (S.ui.tdeckTab ||= {})[g()+":"+x.d.id] = t.dataset.to;
     closeSheet();
     go("#tdeck/" + x.d.id);
   };
@@ -3421,12 +3429,12 @@ export function registerTcg(c) {
   let metaCardsLoading = false;
   // Load the meta (and, for Yu-Gi-Oh!, the cards in it, for names and prices).
   c.loadMeta = async (G, force = false) => {
-    const M = metaState(G);
+    const M = metaState(G),screen=navigationStamp();
     if (M.busy) return;
     const p = loadMeta(G, force).catch(() => null);
-    setTimeout(render, 0);
+    setTimeout(()=>navigationCurrent(screen)&&render(), 0);
     const data = await p;
-    render();
+    if(navigationCurrent(screen))render();
     if (G === "ygo" && data && !metaCardsLoading) {
       const need = [...new Set(data.decks.flatMap((d) => [...d.main, ...d.extra]))].filter((id) => !cardOf("ygo", id));
       if (need.length) {
@@ -3435,7 +3443,7 @@ export function registerTcg(c) {
           (await SOURCES.ygo.byIds(need)).forEach(remember);
         } catch {}
         metaCardsLoading = false;
-        if (S.ui.view === "decks" && game() === "ygo") render();
+        if (navigationCurrent(screen) && S.ui.view === "decks" && game() === "ygo") render();
       }
     }
   };
@@ -3762,8 +3770,9 @@ export function registerTcg(c) {
   // Pokémon decks hold exact printings: swap each card for its cheapest printing with the same
   // game text that is legal in the deck's format (an owned printing wins). Versions keep the old list.
   A.tDeckCheapest = async (t) => {
-    const G = g(), d = gs(G).decks.find((x) => x.id === t.dataset.id);
+    const G = g(),screen=navigationStamp(), d = gs(G).decks.find((x) => x.id === t.dataset.id);
     if (G !== "ptcg" || !d) return;
+    const original=JSON.stringify(d.zones);
     const f = formatOf(G, d.format), done = busy(t, "Finding cheaper printings…");
     try {
       const rows = (d.zones.main || []).filter((r) => cardOf(G, r.cardId)),
@@ -3771,18 +3780,20 @@ export function registerTcg(c) {
       let saved = 0;
       for (const r of rows) {
         const c = cardOf(G, r.cardId), best = await ptcgCheapest(c, f);
+        if(!navigationCurrent(screen))return;
         if (best && best.id !== c.id && SOURCES.ptcg.legality(best, f) === "legal" && (best.name === c.name || (best.basicEnergy && c.basicEnergy))) { swaps.set(r.cardId, best); saved += ((c.prices?.usd ?? 0) - (best.prices?.usd ?? 0)) * r.qty; }
       }
       if (!swaps.size) return toast("Every card is already its cheapest legal printing.");
       await mutate((s2) => {
         const x = s2.decks.find((y) => y.id === d.id), main = new Map();
+        if(!x || JSON.stringify(x.zones)!==original)throw Error("This deck changed while looking up printings. Try again.");
         x.versions = [...(x.versions || []), { id: uid(), at: new Date().toISOString(), label: "Before cheapest printings", zones: structuredClone(x.zones) }].slice(-30);
         for (const r of x.zones.main || []) {
           const b = swaps.get(r.cardId), id = b ? b.id : r.cardId, row = main.get(id);
           if (row) row.qty += r.qty; else main.set(id, { ...r, cardId: id, name: b ? b.name : r.name });
         }
         x.zones.main = [...main.values()];
-      }, { msg: `${swaps.size} card${swaps.size === 1 ? "" : "s"} switched to the same card's cheapest printing${saved > 0.5 ? ` · about ${usd(saved, 0)} less` : ""}. The old list is in Versions.` });
+      }, { msg: `${swaps.size} card${swaps.size === 1 ? "" : "s"} switched to the same card's cheapest printing${saved > 0.5 ? ` · about ${usd(saved, 0)} less` : ""}. The old list is in Versions.`,guard:()=>navigationCurrent(screen) },G);
     } finally {
       done();
     }
@@ -3923,7 +3934,7 @@ export function registerTcg(c) {
   // Set catalogue loading is shared while in flight, but each refresh owns a generation.
   const SETS_KEY=G=>G==='ygo'?YGO_SET_CACHE_KEY:'cardforge-'+G+'-sets-v2',setLoads=new Map();
   const loadSets=(G,force=false)=>{
-    const U=ui(G).sets;
+    const U=ui(G).sets,screen=navigationStamp();
     if(setLoads.has(G)&&!force)return setLoads.get(G);
     const generation=(U.generation||0)+1;U.generation=generation;
     const current=()=>U.generation===generation;
@@ -3933,10 +3944,10 @@ export function registerTcg(c) {
         if(cached?.list?.length){
           U.list=cached.list;
           if(G==='ygo')try{localStorage.setItem(SETS_KEY(G),JSON.stringify(cached));}catch{}
-          if(!force&&!cached.needsRefresh&&Date.now()-cached.at<3*864e5){U.busy=false;U.error='';setTimeout(()=>current()&&g()===G&&render(),0);return;}
+          if(!force&&!cached.needsRefresh&&Date.now()-cached.at<3*864e5){U.busy=false;U.error='';setTimeout(()=>current()&&g()===G&&navigationCurrent(screen)&&render(),0);return;}
         }
       }catch{}
-      U.busy=true;U.error='';if(g()===G)render();
+      U.busy=true;U.error='';if(g()===G&&navigationCurrent(screen))render();
       try{
         const list=await SOURCES[G].sets();
         if(!current())return;
@@ -3946,7 +3957,7 @@ export function registerTcg(c) {
         U.list=normalized;
         try{localStorage.setItem(SETS_KEY(G),JSON.stringify({schema:G==='ygo'?3:2,at:Date.now(),list:U.list}));}catch{}
       }catch(e){if(current())U.error=e.message;}
-      finally{if(current()){U.busy=false;if(g()===G)render();}}
+      finally{if(current()){U.busy=false;if(g()===G&&navigationCurrent(screen))render();}}
     })();
     setLoads.set(G,task);task.finally(()=>{if(setLoads.get(G)===task)setLoads.delete(G);});return task;
   };
@@ -3957,22 +3968,30 @@ export function registerTcg(c) {
   A.tSetsMore=()=>{ui().sets.limit+=120;render();};
   A.tSetsReload=()=>loadSets(g(),true);
   let setNavigationGeneration=0;
+  c.invalidateNavigation=()=>{
+    setNavigationGeneration++;
+    for(const G of ['ygo','ptcg']){
+      const U=ui(G).set;U.generation=(U.generation||0)+1;U.busy=false;U.detailsBusy=false;
+      if(!U.loaded){U.id='';U.info=null;U.cards=[];U.contents=null;}
+    }
+  };
   A.tSet=t=>{setNavigationGeneration++;closeSheet();go('#set/'+encodeURIComponent(t.dataset.id));};
   A.tSetByName=async t=>{
-    const G=g(),name=t.dataset.name,sheet=S.ui.sheetCtx,navigation=++setNavigationGeneration;
+    const G=g(),name=t.dataset.name,sheet=S.ui.sheetCtx,navigation=++setNavigationGeneration,screen=navigationStamp();
     if(!ui(G).sets.list.length)await loadSets(G);
-    if(g()!==G||S.ui.sheetCtx!==sheet||navigation!==setNavigationGeneration)return;
+    if(g()!==G||S.ui.sheetCtx!==sheet||navigation!==setNavigationGeneration||!navigationCurrent(screen))return;
     const result=G==='ygo'?resolveSetRelease(ui(G).sets.list,name):{set:ui(G).sets.list.find(x=>x.name===name)};
     closeSheet();
     // Ambiguous old names/codes reach the release chooser, never the first array entry.
     go('#set/'+encodeURIComponent(result.set?.id||name));
   };
-  c.openSet=async(id,force=false)=>{
-    const G=g(),U=ui(G).set;
+  c.openSet=async(id,force=false,expectedGame=g())=>{
+    if(expectedGame!==g())return;
+    const G=expectedGame,U=ui(G).set,screen=navigationStamp();
     if(!force&&U.id===id&&(U.busy||U.loaded&&!U.error))return;
     const generation=(U.generation||0)+1;
     Object.assign(U,{id,info:null,cards:[],contents:null,candidates:[],busy:true,detailsBusy:false,loaded:false,error:'',filter:'all',q:'',rarity:'',finish:'',limit:120,generation});
-    const owns=()=>U.generation===generation,active=()=>owns()&&g()===G&&S.ui.view==='set'&&(!S.ui.tsetId||S.ui.tsetId===id);
+    const owns=()=>U.generation===generation,active=()=>owns()&&navigationCurrent(screen)&&g()===G&&S.ui.view==='set'&&(!S.ui.tsetId||S.ui.tsetId===id);
     render();
     try{
       if(!ui(G).sets.list.length)await loadSets(G);
@@ -4012,16 +4031,16 @@ export function registerTcg(c) {
   C.tSetFinish=t=>{ui().set.finish=t.value;ui().set.limit=120;render();};
   I.tSetQ=t=>{ui().set.q=t.value;ui().set.limit=120;c.rerenderKeepingFocus();};
   A.tSetDetails=async()=>{
-    const G=g(),U=ui(G).set,generation=U.generation,id=U.id;
+    const G=g(),U=ui(G).set,generation=U.generation,id=U.id,screen=navigationStamp();
     if(G!=='ptcg'||U.busy||U.detailsBusy)return;
-    const active=()=>g()===G&&U.generation===generation&&S.ui.view==='set'&&(!S.ui.tsetId||S.ui.tsetId===id);
+    const active=()=>navigationCurrent(screen)&&g()===G&&U.generation===generation&&S.ui.view==='set'&&(!S.ui.tsetId||S.ui.tsetId===id);
     U.detailsBusy=true;render();
     try{await ensureMany(G,U.cards.map(x=>x.id),()=>active()&&render());}
     finally{if(U.generation===generation){U.detailsBusy=false;if(active())render();}}
   };
   A.tSetMore=async()=>{
-    const G=g(),U=ui(G).set,generation=U.generation,id=U.id;
-    const active=()=>g()===G&&U.generation===generation&&S.ui.view==='set'&&(!S.ui.tsetId||S.ui.tsetId===id);
+    const G=g(),U=ui(G).set,generation=U.generation,id=U.id,screen=navigationStamp();
+    const active=()=>navigationCurrent(screen)&&g()===G&&U.generation===generation&&S.ui.view==='set'&&(!S.ui.tsetId||S.ui.tsetId===id);
     U.limit+=120;render();
     if(G==='ptcg')await ensureMany(G,U.cards.slice(0,U.limit).map(x=>x.id),()=>active()&&render());
     if(active())render();

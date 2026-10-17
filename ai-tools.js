@@ -210,17 +210,19 @@ export function makeAskTools(x) {
   // What a tapped answer item opens, in the right game.
   tools.open = async (s) => {
     s=tools.canonicalItem(s);
-    if (s.game !== T.game()) await x.A.setGame({ dataset: { game: s.game } });
+    if (s.game !== T.game() && await x.A.setGame({ dataset: { game: s.game } }) === false) return;
+    const screen=x.navigationStamp?.(),current=()=>!screen || x.navigationCurrent?.(screen)!==false;
     if (s.kind === 'build') return builders.get(s.ref)?.();
     if (s.kind === 'deck') return x.go((s.game === 'mtg' ? '#deck/' : '#tdeck/') + encodeURIComponent(s.ref));
     if (s.kind === 'set') {
-      if (s.game === 'mtg') { const rows=await mtgSets(),code=rows.find(y=>y.code.toLowerCase()===s.ref.toLowerCase()),names=rows.filter(y=>y.name.toLowerCase()===s.ref.toLowerCase()),st=code||(names.length===1?names[0]:null); return x.go(st?'#set/'+encodeURIComponent(st.code):'#sets'); }
-      const rows=await tcgSets(s.game),matches=s.game==='ygo'?resolveYgoSet(rows,s.ref).candidates:rows.filter(y=>String(y.id)===s.ref||y.name.toLowerCase()===s.ref.toLowerCase()); const st=matches.length===1?matches[0]:null; return x.go(s.game!=='ygo'&&!st?'#sets':'#set/' + encodeURIComponent(st?.id || s.ref));
+      if (s.game === 'mtg') { const rows=await mtgSets(),code=rows.find(y=>y.code.toLowerCase()===s.ref.toLowerCase()),names=rows.filter(y=>y.name.toLowerCase()===s.ref.toLowerCase()),st=code||(names.length===1?names[0]:null); return current() && x.go(st?'#set/'+encodeURIComponent(st.code):'#sets'); }
+      const rows=await tcgSets(s.game),matches=s.game==='ygo'?resolveYgoSet(rows,s.ref).candidates:rows.filter(y=>String(y.id)===s.ref||y.name.toLowerCase()===s.ref.toLowerCase()); const st=matches.length===1?matches[0]:null; return current() && x.go(s.game!=='ygo'&&!st?'#sets':'#set/' + encodeURIComponent(st?.id || s.ref));
     }
     if (s.kind === 'meta') {
       const data = s.game === 'mtg' ? Object.values(x.allMeta?.() || {}) : [T.metaState(s.game).data];
       const deck = data.flatMap((d) => d?.decks || []).find((d) => d.key === s.ref) || data.flatMap((d) => (d?.archetypes || []).map((a) => ({ a, d }))).filter(({ a }) => (a.name || a.id) === s.ref).map(({ a, d }) => d.decks.find((y) => y.key === a.best))[0];
       if (!deck) return x.go('#decks/inspiration');
+      if(!current())return;
       return s.game === 'mtg' ? x.A.mtgProven({ dataset: { key: deck.key } }) : x.A.tMetaDeck({ dataset: { key: deck.key } });
     }
     const exact=s.kind==='card'?exactCardFor(s):null;
@@ -228,7 +230,8 @@ export function makeAskTools(x) {
     if(s.kind==='card' && (String(s.ref).startsWith('set-card-') || exactAliases.has(s.game+':'+s.ref)))return x.go('#sets');
     if (s.game === 'mtg') return x.A.card({ dataset: { name: s.ref } });
     const id = T.cardOf(s.game, s.ref) ? s.ref : (await T.SOURCES[s.game].byName(s.ref).catch(() => null))?.id;
-    return id ? x.A.tCard({ dataset: { id: String(id) } }) : x.go('#search');
+    if(!current())return;
+    return id ? x.A.tCard({ dataset: { id: String(id), game:s.game } }) : x.go('#search');
   };
   // Answer items as small cards: art from the app's card data when it has it.
   tools.preview = (s, i) => {

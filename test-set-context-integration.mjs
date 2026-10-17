@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import {routeSegments} from './game-navigation.js';
 import {CONDITION_IDENTITY} from './condition-feed.js';
 import {normalizeYgoSets,YGO_SET_CACHE_KEY} from './ygo.js';
 import * as T from './tcg.js';
@@ -113,7 +114,7 @@ assert.doesNotMatch(compactPriceSummary('ygo',a,{setId:anniversary.id}),/\$11\.0
 // Run the actual Magic pagination loader; stale completions cannot touch newer objects/retries.
 const loader=app.slice(app.indexOf('const setCache = new Map();'),app.indexOf('\n/* =========================================================',app.indexOf('const setCache = new Map();')));
 const fresh=code=>({code,cards:[],info:null,total:0,loaded:false,busy:false,error:''});
-const jobs=[],store={ui:{view:'set',set:fresh('fxa')}},loadHarness={S:store,T:{game:()=> 'mtg'},api:path=>new Promise((resolve,reject)=>jobs.push({path,resolve,reject})),render(){},slim:c=>c,ensureTcgPrices(){},URLSearchParams,URL};
+const jobs=[],store={ui:{view:'set',set:fresh('fxa')}},loadHarness={navigationStamp:()=>({}),navigationCurrent:()=>true,S:store,T:{game:()=> 'mtg'},api:path=>new Promise((resolve,reject)=>jobs.push({path,resolve,reject})),render(){},slim:c=>c,ensureTcgPrices(){},URLSearchParams,URL};
 vm.createContext(loadHarness);vm.runInContext(loader,loadHarness);
 const tick=()=>new Promise(r=>setTimeout(r,0));
 const loadingA=loadHarness.loadSet('fxa');const oldSet=store.ui.set;store.ui.set=fresh('fxb');const loadingB=loadHarness.loadSet('fxb');
@@ -154,9 +155,9 @@ assert.equal(readTurn({output:[{type:'function_call',name:'answer',arguments:JSO
 console.log('PASS: AI exact-card previews/open retain release snapshots, ambiguous generic refs never guess, and full 2000+ character canonical IDs survive list → server answer → open → set_cards without JSON truncation.');
 
 // The real route parser decodes individual segments, keeping slash-bearing names whole.
-const routeCode=app.slice(app.indexOf('const LEGACY ='),app.indexOf('\nfunction go(hash)'));
+const routeCode=app.slice(app.indexOf('const VIEWS ='),app.indexOf('\nfunction go(hash)'));
 const routeState={ui:{view:'home',set:fresh(''),q:{},shared:{}},state:{settings:{game:'ygo'}}};
-const routeHarness={S:routeState,T:{isTcg:()=>true,ui:()=>({coll:{}})},location:{hash:'#set/'+encodeURIComponent(longRelease.id)},deckById(){},openShared(){},save(){}};
+const routeHarness={routeSegments,S:routeState,T:{isTcg:()=>true,ui:()=>({coll:{}})},location:{hash:'#set/'+encodeURIComponent(longRelease.id)},deckById(){},openShared(){},save(){}};
 vm.createContext(routeHarness);vm.runInContext(routeCode,routeHarness);routeHarness.parseHash();assert.equal(routeState.ui.tsetId,longRelease.id);
 routeHarness.location.hash='#set/'+encodeURIComponent('Release A/B');routeHarness.parseHash();assert.equal(routeState.ui.tsetId,'Release A/B');
 routeHarness.location.hash='#set/%E0%A4%A';assert.doesNotThrow(()=>routeHarness.parseHash());assert.equal(routeState.ui.view,'sets');
@@ -165,7 +166,7 @@ console.log('PASS: malformed set routes fail safely and encoded slash names/cano
 // Long-press follows exactly the same release and only offers its saved lots.
 const actionCode=app.slice(app.indexOf('async function resolveActionCard('),app.indexOf('\nfunction startCardCompare'));
 S.ui.sheetCtx=null;S.state.settings.game='ygo';T.ui('ygo').sets.list=releases;
-const actionHarness={S,T:{...T,ensureCard:async()=>ygo},location:{hash:'#set/'+encodeURIComponent(anniversary.id)},key:s=>String(s).toLowerCase(),meta:()=>m2,ownedCardLots:()=>{throw Error('Set quick actions must not use name-wide lots');}};
+const actionHarness={navigationStamp:()=>({}),navigationCurrent:()=>true,S,T:{...T,ensureCard:async()=>ygo},location:{hash:'#set/'+encodeURIComponent(anniversary.id)},key:s=>String(s).toLowerCase(),meta:()=>m2,ownedCardLots:()=>{throw Error('Set quick actions must not use name-wide lots');}};
 vm.createContext(actionHarness);vm.runInContext(actionCode,actionHarness);
 const held=await actionHarness.resolveActionCard({dataset:{id:ygo.id,setId:anniversary.id}});
 assert.equal(held.card.setContext.releaseId,anniversary.id);
@@ -180,14 +181,14 @@ S.state.settings.game='mtg';
 const extras=app.slice(app.indexOf('async function loadCardExtras('),app.indexOf('\nA.viewPrint'));
 const exactMagic={type:'card',name:m1.name,print:{...m1,full:false},setId:'fxa'};
 S.ui.sheetCtx=exactMagic;let cacheWrites=0;
-const extraHarness={S,meta:()=>m2,$:q=>q==='#sheet'?{open:true}:{innerHTML:''},api:async path=>path.startsWith('/cards/search')?{data:[],has_more:false}:{...m1,oracle_id:'same-oracle'},cacheCard:c=>{cacheWrites++;return c;},slim:c=>c,saveCatalogSoon(){},V:{cardSheet:()=>''},ensureTcgPrices(){},refreshSheet(){},URLSearchParams,URL};
+const extraHarness={navigationStamp:()=>({}),navigationCurrent:()=>true,S,meta:()=>m2,$:q=>q==='#sheet'?{open:true}:{innerHTML:''},api:async path=>path.startsWith('/cards/search')?{data:[],has_more:false}:{...m1,oracle_id:'same-oracle'},cacheCard:c=>{cacheWrites++;return c;},slim:c=>c,saveCatalogSoon(){},V:{cardSheet:()=>''},ensureTcgPrices(){},refreshSheet(){},URLSearchParams,URL};
 vm.createContext(extraHarness);vm.runInContext(extras,extraHarness);await extraHarness.loadCardExtras(exactMagic);
 assert.equal(cacheWrites,0);assert.equal(exactMagic.print.id,m1.id);assert.equal(exactMagic.print.full,true);
 const foilCard={...m1,finishes:['nonfoil','foil'],prices:{usd:'1',usd_foil:'100'}};
 S.ui.set={code:'fxa',cards:[foilCard],info:{code:'fxa',name:'Fixture A'},total:1,complete:true,q:'',filter:'all',rarity:'all',finish:'foil',sort:'price',limit:120};
 assert.match(setPage(),/\$100\.00/);assert.match(setPage(),/data-set-finish="foil"/);
 const cardAction=app.slice(app.indexOf('A.card = async'),app.indexOf('// Full card (flavor text'));
-let addPreset;const cardHarness={A:{},S,T:{game:()=> 'mtg'},key:s=>String(s).toLowerCase(),$:()=>({open:true}),currentDeck:()=>null,meta:()=>m2,selectedFinish,openSheet:(_html,ctx)=>{S.ui.sheetCtx=ctx;},V:{cardSheet:()=>''},loadCardExtras(){},esc:String,toast(){},deckById(){},addSheet:(_e,p)=>addPreset=p};
+let addPreset;const cardHarness={navigationStamp:()=>({}),navigationCurrent:()=>true,A:{},S,T:{game:()=> 'mtg'},key:s=>String(s).toLowerCase(),$:()=>({open:true}),currentDeck:()=>null,meta:()=>m2,selectedFinish,openSheet:(_html,ctx)=>{S.ui.sheetCtx=ctx;},V:{cardSheet:()=>''},loadCardExtras(){},esc:String,toast(){},deckById(){},addSheet:(_e,p)=>addPreset=p};
 vm.createContext(cardHarness);vm.runInContext(cardAction+'\n'+app.slice(app.indexOf('A.own = async'),app.indexOf('A.addLookup = async')),cardHarness);
 await cardHarness.A.card({dataset:{name:m1.name,setI:'0',setFinish:'foil'}});assert.equal(S.ui.sheetCtx.print.id,m1.id);assert.equal(S.ui.sheetCtx.priceFinish,'foil');
 await cardHarness.A.own({dataset:{name:m1.name}});assert.equal(addPreset.card.id,m1.id);assert.equal(addPreset.set,'FXA');assert.equal(addPreset.number,'1');assert.equal(addPreset.finish,'foil');

@@ -597,6 +597,16 @@ export function registerScanner(ctx) {
   const { A, C, render, toast, game, match, add, details } = ctx,
     s = () => S.ui.scan;
   const prefs = () => loadPrefs(game());
+  // Every async screen callback belongs to one visit, not merely one game name.
+  // A → B → A must not make an old A callback current again.
+  let lifecycleGeneration = 0, suspended = false, switchSource = null;
+  const photoDrafts = new Map(); // At most one owned object URL per supported game.
+  const scanCurrent = () => {
+    const generation=lifecycleGeneration,st=s(),G=game();
+    return () => !suspended&&generation===lifecycleGeneration&&s()===st&&game()===G&&S.ui.view==='scan';
+  };
+  const photoDraft = st => ({mode:st.mode||'live',url:st.url||null,rot:st.rot||0,crop:st.crop&&typeof st.crop==='object'?{...st.crop}:null,auto:st.auto!==false,...(st.confirm&&!st.confirm.batchId?{confirm:{...st.confirm,pickerOpening:false,detailStartedFor:null,priceRequest:null,pickerRequest:null},cands:st.cands,read:st.read,shot:st.shot,status:st.status}:{})});
+  const idleScan = draft => ({mode:'live',url:null,rot:0,crop:null,auto:true,cands:[],confirm:null,read:null,busy:false,status:'',camOn:false,photoLoading:false,...draft});
   const priceFor=(G,c,finish,selection={})=>ctx.priceOf(G,c,finish,{condition:selection.condition||'Near Mint',language:String(selection.lang||selection.language||'en').toLowerCase().replace('_','-')});
   const refreshReviewPrice=()=>{const q=s().confirm,c=s().cands?.[q?.i??0];if(q)q.price=c&&q.finish?priceFor(q.game||game(),c,q.finish,q):null;};
   // Only explicit review actions request a quote. Camera frames, OCR and ordinary
@@ -606,10 +616,10 @@ export function registerScanner(ctx) {
     const st=s(),q=st.confirm,c=st.cands?.[q?.i??0];
     if(!q||q.saving||q.i<0||!c||!q.finish||typeof ctx.requestConditionPrice!=='function')return;
     q.priceReviewRequested=true;
-    const G=q.game||game(),sheet=S.ui.sheetCtx,token=Symbol('condition-review');
+    const G=q.game||game(),sheet=S.ui.sheetCtx,token=Symbol('condition-review'),visitCurrent=scanCurrent();
     const identity=()=>JSON.stringify([q.batchId||'',q.captureRevision||'',q.i,q.game||game(),c.id,c.card?.id,c.print||'',c.setReleaseId||'',!!c.setReleaseUnverified,q.finish,q.condition,q.lang]);
     const selected=identity(),captureId=String(q.batchId||''),revision=String(q.captureRevision||'');
-    const current=()=>s()===st&&st.confirm===q&&q.priceRequest===token&&st.cands?.[q.i]===c&&
+    const current=()=>visitCurrent()&&st.confirm===q&&q.priceRequest===token&&st.cands?.[q.i]===c&&
       S.ui.view==='scan'&&S.ui.sheetCtx===sheet&&!q.saving&&!q.pickerOpening&&identity()===selected&&
       (!captureId||loadBatch().some(row=>row.id===captureId&&String(row.captureRevision||'')===revision));
     q.priceRequest=token;
@@ -638,12 +648,14 @@ export function registerScanner(ctx) {
     const item = { ...(overrides.captureId || overrides.batchId ? {captureId: overrides.captureId || overrides.batchId} : {}), id: c.card?.id || c.id, name: c.name, image: c.image || c.card?.image || "", setCode: ctx.setOf(G, c), number: ctx.numberOf(G, c), finish, variantKey: finish, productId, print: c.print || "", condition: p.condition, lang: p.lang, qty: p.qty, price: priceFor(G,c,finish,p), releaseName:c.releaseName||'',setReleaseId:c.setReleaseId||'',setReleaseUnverified:!!c.setReleaseUnverified,printingAmbiguous:!!c.printingAmbiguous,cand: { ...c, id: c.id, name: c.name, image: c.image, sub: c.sub, exact: c.exact, printingConfirmed: overrides.printingConfirmed === true || c.exact === true, print: c.print, card: c.card } };
     return item;
   };
-  const toSession = (c) => {
-    const G = game(), p = prefs(), item = makeItem(c);
+  const toSession = (c, G = game(), present = true) => {
+    const p = loadPrefs(G), item = makeItem(c,{},G);
     saveSession(G, addToSession(loadSession(G), item));
     feedback("ok", p);
-    s().lastAdded = `+${item.qty} ${c.name}${item.price != null && p.showValue ? ` · $${(item.price * item.qty).toFixed(2)}` : ""}`;
-    flash(s().lastAdded);
+    if(present&&game()===G&&!suspended){
+      s().lastAdded = `+${item.qty} ${c.name}${item.price != null && p.showValue ? ` · $${(item.price * item.qty).toFixed(2)}` : ""}`;
+      flash(s().lastAdded);
+    }
     return item;
   };
   const flash = (msg) => {
@@ -661,21 +673,27 @@ export function registerScanner(ctx) {
     if (el) el.textContent = m;
   };
   let camTicket = 0, scanTicket = 0;
-  const stopCamera = () => {
+  const suspendCamera = (keepStream = false) => {
     camTicket++;
     scanTicket++;
     s().busy = false;
     s().confirm = null;
     clearInterval(loopTimer);
     loopTimer = 0;
-    stream?.getTracks().forEach((t) => t.stop());
-    stream = null;
-    if (videoEl) videoEl.srcObject = null;
-    s().camOn = false;s().boundaryReady=false;
+    if(!keepStream){
+      stream?.getTracks().forEach((t) => t.stop());
+      stream = null;
+      if (videoEl) videoEl.srcObject = null;
+    }
+    s().camOn = !!stream;s().boundaryReady=false;
     for(const pending of captureBuffer)updateBatch(pending.id,{status:"unresolved",reason:"Reading interrupted · retry"});
     captureBuffer.length=0;s().buffered=0;
-    prevGray=null;steady=0;captureLock=null;greenSince=0;loop.quad=null;loop.proposal=null;loop.signature=null;loop.observation=null;loop.bestCapture=null;
+    // Keeping the physical feed must not recapture the same held card after
+    // Undo. Retain only its accepted-source duplicate latch, never an old frame.
+    if(keepStream)observeCaptureLock(captureLock,null,{paused:true});else captureLock=null;
+    prevGray=null;steady=0;greenSince=0;loop.quad=null;loop.proposal=null;loop.signature=null;loop.observation=null;loop.bestCapture=null;
   };
+  const stopCamera = () => suspendCamera();
   ctx.stopCamera = stopCamera;
 
   // Only an unusually close, separated local fingerprint may precede OCR. It is
@@ -805,10 +823,10 @@ export function registerScanner(ctx) {
   // remains independent, so a rejected crop or retry never starts from art-only pixels.
   const cardForCapture=packet=>packet.proposal?.quad&&packet.proposal.cropSafe===true?flattenCapture(packet.original,padQuad(packet.proposal.quad,packet.original.width,packet.original.height),packet.proposal):packet.original;
   const process = async (packet, entryId) => {
-    const st=s(),ticket=++scanTicket,trace=createScanTrace();
+    const st=s(),ticket=++scanTicket,trace=createScanTrace(),visitCurrent=scanCurrent();
     const entry=loadBatch().find(x=>x.id===entryId);
     if(!entry||packet.captureRevision!==entry.captureRevision)return;
-    const current=()=>ticket===scanTicket&&s()===st&&S.ui.view==='scan'&&loadBatch().some(x=>x.id===entryId&&x.captureRevision===entry.captureRevision);
+    const current=()=>visitCurrent()&&ticket===scanTicket&&loadBatch().some(x=>x.id===entryId&&x.captureRevision===entry.captureRevision);
     trace.timings.queueWaitMs=Math.max(0,clockNow()-packet.queuedAt);
     trace.timings.captureMs=Math.max(0,packet.captureMs||0);trace.timings.geometryMs=Math.max(0,packet.detectMs||0);trace.timings.frameAnalysisMs=Math.max(0,packet.frameAnalysisMs||0);trace.timings.firstEligibleToAcceptedMs=Math.max(0,packet.firstEligibleToAcceptedMs||0);trace.timings.stableMs=Math.max(0,packet.stableMs||0);trace.timings.persistMs=Math.max(0,packet.persistMs||0);
     st.shot=entry.originalShot||entry.shot;st.busy=true;st.lensUrl='';st.cands=[];st.read=null;st.confirm=null;
@@ -860,16 +878,25 @@ export function registerScanner(ctx) {
     }
   };
   const drainCaptures=async()=>{
-    if(draining||s().busy||s().confirm||s().batchSaving)return;
+    if(suspended||draining||s().busy||s().confirm||s().batchSaving)return;
+    const generation=lifecycleGeneration;
     draining=true;
-    try{while(captureBuffer.length&&S.ui.view==='scan'&&!s().confirm&&!s().batchSaving){
+    try{while(generation===lifecycleGeneration&&!suspended&&captureBuffer.length&&S.ui.view==='scan'&&!s().confirm&&!s().batchSaving){
       const next=captureBuffer.shift();s().buffered=captureBuffer.length;
       await process(next,next.id);
+      if(generation!==lifecycleGeneration||suspended)break;
       if(s().reviewRequested){const id=s().reviewRequested;s().reviewRequested='';openBatchReview(id);break;}
-    }}finally{draining=false;s().buffered=captureBuffer.length;}
+    }}finally{
+      draining=false;
+      if(generation===lifecycleGeneration&&!suspended)s().buffered=captureBuffer.length;
+      // A new visit may already have accepted another capture while the retired
+      // reader was settling. Drain it only after that reader has released its turn.
+      if(generation!==lifecycleGeneration&&!suspended)void drainCaptures();
+    }
   };
   const rejectCapture=message=>{observeCaptureLock(captureLock,null,{paused:true});s().capturePause=message;s().capturePauseRows=loadBatch().length;s().capturePauseSignature=/too large/i.test(message)&&loop.observation?.original?sourceLockSignature(loop.observation.original):null;setStatus(message);return false;};
   const enqueueCapture=(source,replaceId='',capture={})=>{
+    if(suspended)return false;
     if(captureBuffer.length>=CAPTURE_BUFFER_LIMIT&&!captureBuffer.some(x=>x.id===replaceId))return rejectCapture('Reading queue full. Hold this card a moment.');
     const before=loadBatch(),prior=replaceId&&before.find(x=>x.id===replaceId);
     if(!prior&&before.length>=BATCH_LIMIT)return rejectCapture('Batch full. Save or review some cards to continue.');
@@ -991,15 +1018,15 @@ export function registerScanner(ctx) {
     }
   };
   A.scanStart = async () => {
+    if(suspended)return;
     if (!navigator.mediaDevices?.getUserMedia) return toast("This browser can’t open the camera here. Use Photo instead.");
+    const ticket=++camTicket,visitCurrent=scanCurrent(),cam=prefs().camera;
     try {
-      const ticket = ++camTicket,
-        cam = prefs().camera,
-        got = await navigator.mediaDevices
+      const got = await navigator.mediaDevices
           .getUserMedia({ video: { ...(cam ? { deviceId: { exact: cam } } : { facingMode: { ideal: "environment" } }), width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false })
-          .catch((e) => (cam ? navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false }) : Promise.reject(e)));
+          .catch((e) => (cam&&visitCurrent()&&ticket===camTicket ? navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false }) : Promise.reject(e)));
       // Closed, switched to Photo or left the page while the permission prompt was open: release it.
-      if (ticket !== camTicket || s().mode === "photo" || S.ui.view !== "scan") return got.getTracks().forEach((t) => t.stop());
+      if (!visitCurrent() || ticket !== camTicket || s().mode === "photo") return got.getTracks().forEach((t) => t.stop());
       stream = got;
       const track=got.getVideoTracks()[0],caps=track?.getCapabilities?.()||{};
       if(caps.focusMode?.includes?.("continuous"))track.applyConstraints({advanced:[{focusMode:"continuous"}]}).catch(()=>{});
@@ -1013,6 +1040,7 @@ export function registerScanner(ctx) {
       render();
       window.scrollTo?.({top:0});
     } catch (e) {
+      if(!visitCurrent()||ticket!==camTicket)return;
       s().status = /denied|NotAllowed/i.test(e.name + e.message) ? "Camera permission was declined. Allow it in your browser settings, or use Photo." : "Couldn’t open the camera. Use Photo instead.";
       render();
     }
@@ -1038,6 +1066,7 @@ export function registerScanner(ctx) {
 
   // Photo: rotate, drag a crop box, read
   C.scanFile = (t) => {
+    if(suspended)return;
     const f = t.files[0],
       st = s();
     if (!f) return;
@@ -1048,10 +1077,10 @@ export function registerScanner(ctx) {
   };
   // Rotate the photo itself (not just its display), so the crop box always matches the pixels.
   A.scanRotate = async () => {
-    const st = s();
-    if (!st.url) return;
+    const st = s(),current=scanCurrent();
+    if (!st.url||suspended) return;
     const url=st.url,img = await loadImage(url).catch(() => null);
-    if (!img||s()!==st||st.url!==url) return;
+    if (!img||!current()||st.url!==url) return;
     const c = document.createElement("canvas");
     c.width = img.naturalHeight;
     c.height = img.naturalWidth;
@@ -1060,9 +1089,10 @@ export function registerScanner(ctx) {
     x.rotate(Math.PI / 2);
     x.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
     const blob = await new Promise((ok) => c.toBlob(ok, "image/jpeg", 0.92));
-    if(s()!==st||st.url!==url)return;
+    if(!current()||st.url!==url||!blob)return;
     URL.revokeObjectURL(url);
     st.url = URL.createObjectURL(blob);
+    st.rot = ((st.rot||0)+1)%4;
     st.crop = null;
     render();
   };
@@ -1080,12 +1110,12 @@ export function registerScanner(ctx) {
     return findCardBox(x.getImageData(0, 0, W, H).data, W, H);
   };
   A.scanRead = async () => {
-    const st = s();
-    if (!st.url || st.busy || st.confirm || st.photoLoading) return;
+    const st = s(),current=scanCurrent();
+    if (suspended || !st.url || st.busy || st.confirm || st.photoLoading) return;
     const url=st.url,crop=st.crop&&{...st.crop};st.photoLoading=true;
     try {
     const r = await loadImage(url).catch(() => null);
-    if(s()!==st||st.url!==url||S.ui.view!=='scan')return;
+    if(!current()||st.url!==url)return;
     if (!r) return toast("Couldn’t open that photo.");
     const rw=r.naturalWidth,rh=r.naturalHeight,backgroundBox=crop?null:autoBox(r),cr=crop||backgroundBox;
     let proposal=null;
@@ -1098,12 +1128,13 @@ export function registerScanner(ctx) {
     }
     const packet=freezeCapture(r,proposal);st.lastCard=packet.original;
     if(enqueueCapture(packet,s().retryBatchId||""))s().retryBatchId="";
-    }finally{st.photoLoading=false;}
+    }finally{if(current())st.photoLoading=false;}
   };
   const attachCrop = () => {
     const wrap = document.getElementById("cropWrap"),
       box = document.getElementById("cropBox");
     if (!wrap || !box) return;
+    const current=scanCurrent();
     const show = () => {
       const c = s().crop;
       box.hidden = !c;
@@ -1116,17 +1147,19 @@ export function registerScanner(ctx) {
       return { x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)) };
     };
     wrap.onpointerdown = (e) => {
+      if(!current())return;
       start = pt(e);
       wrap.setPointerCapture(e.pointerId);
       e.preventDefault();
     };
     wrap.onpointermove = (e) => {
-      if (!start) return;
+      if (!current()||!start) return;
       const p = pt(e);
       s().crop = { x: Math.min(start.x, p.x), y: Math.min(start.y, p.y), w: Math.abs(p.x - start.x), h: Math.abs(p.y - start.y) };
       show();
     };
     wrap.onpointerup = () => {
+      if(!current())return;
       start = null;
       const c = s().crop;
       if (c && (c.w < 0.08 || c.h < 0.08)) s().crop = null;
@@ -1136,17 +1169,17 @@ export function registerScanner(ctx) {
 
   // Confirm & add
   A.scanFind = async () => {
-    if(s().busy || s().confirm?.saving || s().lookup)return;
+    if(suspended || s().busy || s().confirm?.saving || s().lookup)return;
     const q = (document.getElementById(s().confirm ? "scanMatchName" : "scanName")?.value || "").trim();
     if (!q) return toast("Type the card name.");
-    const st = s(),G=game();
+    const st = s(),G=game(),current=scanCurrent();
     st.lookup=true;
     setStatus("Looking it up…");
     let r;
-    try {r=await match(G, { name: q, code: q, full: "" }, scanLang(), true, setStatus);}
-    catch {if(s()===st && game()===G){st.lookup=false;if(st.confirm)st.confirm.error="Couldn’t look up this card. Try again.";render();}return;}
+    try {r=await match(G, { name: q, code: q, full: "" }, scanLang(), true, m=>{if(current())setStatus(m);});}
+    catch {if(current()){st.lookup=false;if(st.confirm)st.confirm.error="Couldn’t look up this card. Try again.";render();}return;}
+    if(!current())return;
     st.lookup=false;
-    if(s()!==st || game()!==G)return;
     if(st.confirm && !r.cands.length){st.confirm.error="No matching cards. Try another name or skip this scan.";render();return;}
     st.cands = r.cands;
     st.read={name:q,code:"",full:""};
@@ -1170,11 +1203,11 @@ export function registerScanner(ctx) {
     return hydration.get(key);
   };
   A.scanCatalogDownload=async()=>{
-    const G=game();
-    try{await downloadCatalog(G,()=>{if(game()===G&&S.ui.view==="scan"){render();const control=document.querySelector?.('.scan-catalog-settings .scan-catalog-control');if(control)control.outerHTML=catalogControl(G,s());}});toast("Recognition pack saved on this device.");}
-    catch(e){toast(e.message);}
+    const G=game(),current=scanCurrent();
+    try{await downloadCatalog(G,()=>{if(current()){render();const control=document.querySelector?.('.scan-catalog-settings .scan-catalog-control');if(control)control.outerHTML=catalogControl(G,s());}});if(current())toast("Recognition pack saved on this device.");}
+    catch(e){if(current())toast(e.message);}
   };
-  A.scanCatalogRemove=async()=>{await removeCatalog(game());toast("Recognition text pack removed. Your collection is unchanged.");render();};
+  A.scanCatalogRemove=async()=>{const current=scanCurrent();await removeCatalog(game());if(current()){toast("Recognition text pack removed. Your collection is unchanged.");render();}};
   const persistReview=()=>{
     const q=s().confirm;if(!q?.batchId)return;
     updatePending(q.batchId,{qty:q.qty,condition:q.condition,lang:q.lang,finish:q.finish,selectedIndex:q.i});
@@ -1205,8 +1238,8 @@ export function registerScanner(ctx) {
     const st=s(),q=st.confirm,c=st.cands?.[q?.i??0],G=q?.game||game();
     if(!q||q.i<0||!c||q.saving||q.pickerOpening)return;
     if(typeof ctx.openPrintingPicker!=='function'){q.error='Printing choices are unavailable. Try again later.';render();return;}
-    const request=Symbol('printing-review'),revision=String(q.captureRevision||''),captureId=String(q.batchId||'');
-    const isCurrent=()=>s()===st&&st.confirm===q&&q.pickerRequest===request&&S.ui.view==='scan'&&
+    const request=Symbol('printing-review'),revision=String(q.captureRevision||''),captureId=String(q.batchId||''),visitCurrent=scanCurrent();
+    const isCurrent=()=>visitCurrent()&&st.confirm===q&&q.pickerRequest===request&&
       (!captureId||loadBatch().some(row=>row.id===captureId&&String(row.captureRevision||'')===revision));
     q.pickerRequest=request;q.pickerOpening=true;render();
     try{
@@ -1227,15 +1260,15 @@ export function registerScanner(ctx) {
     finally{if(isCurrent()){q.pickerOpening=false;render();}}
   };
   A.scanRetry=async()=>{
-    const st=s(),q=st.confirm;if(st.busy||q?.saving)return;
+    const st=s(),q=st.confirm,current=scanCurrent();if(suspended||st.busy||q?.saving)return;
     const entry=loadBatch().find(x=>x.id===q?.batchId);
     st.confirm=null;st.cands=[];st.read=null;st.retryBatchId=entry?.id||'';
     captureLock=null;greenSince=0;steady=0;
     if(st.camOn){st.status='Show this card again, with the name and bottom code clear.';render();return;}
     // A stored capture can be retried after reconnecting, without searching a catalogue.
     if(entry?.originalShot||entry?.shot){
-      try{const img=await loadImage(entry.originalShot||entry.shot),c=document.createElement('canvas');c.width=img.naturalWidth||img.width;c.height=img.naturalHeight||img.height;c.getContext('2d').drawImage(img,0,0);if(enqueueCapture({original:c,proposal:null},entry.id,{...entry,selectedGame:entry.game,originalOnly:true}))st.retryBatchId='';}
-      catch{st.status='Open the camera or upload a clearer photo to retry this capture.';render();}
+      try{const img=await loadImage(entry.originalShot||entry.shot);if(!current())return;const c=document.createElement('canvas');c.width=img.naturalWidth||img.width;c.height=img.naturalHeight||img.height;c.getContext('2d').drawImage(img,0,0);if(enqueueCapture({original:c,proposal:null},entry.id,{...entry,selectedGame:entry.game,originalOnly:true}))st.retryBatchId='';}
+      catch{if(current()){st.status='Open the camera or upload a clearer photo to retry this capture.';render();}}
     }else {st.status='Open the camera or choose a clearer photo.';render();}
   };
   A.scanDismiss=()=>{if(!s().confirm?.saving){persistReview();resetConfirmation('Kept for later. Move to the next card.');}};
@@ -1291,16 +1324,21 @@ export function registerScanner(ctx) {
   };
   if(typeof document!=="undefined")document.addEventListener?.("keydown",e=>{if(S.ui.view==="scan")ctx.confirmKey(e);});
   A.scanAdd = async (t) => {
-    const c = s().cands?.[Number(t.dataset.i)],
-      other = s().foundIn;
-    if (!c) return;
+    const st=s(),c = st.cands?.[Number(t.dataset.i)],
+      other = st.foundIn,G=other||game(),sourceGeneration=lifecycleGeneration,switching=other&&other!==game();
+    if (!c||suspended) return;
     // A card from another game: switch to that game, then put it on that game's list.
-    if (other && other !== game()) {
-      await A.setGame({ dataset: { game: other } });
-      toast(`Switched to ${GAME_LABEL[other]}.`);
+    if (switching) {
+      const switched=await A.setGame({ dataset: { game: other } });
+      if(switched===false)return;
     }
+    // The switch may have replaced scan UI or yielded to a newer navigation.
+    // Session ownership is the captured destination, never mutable game().
+    const present=game()===G&&!suspended&&S.ui.view==='scan'&&lifecycleGeneration<=sourceGeneration+1;
+    toSession(c,G,present);
+    if(!present)return;
+    if(switching)toast(`Switched to ${GAME_LABEL[G]}.`);
     s().foundIn = "";
-    toSession(c);
     // The same card still sitting in front of the camera won't be captured again.
     if (s().lastCard) {
       captureLock = acceptedCaptureLock({original:s().lastCard});
@@ -1315,7 +1353,7 @@ export function registerScanner(ctx) {
   // straight from other sites) and the results open in a new tab. The tab opens during the tap so
   // it isn't blocked as a pop-up; if it is blocked anyway, a link to the results appears instead.
   A.scanLens = async () => {
-    const card = s().lastCard;
+    const current=scanCurrent(),card = s().lastCard;
     if (!card?.toBlob) return toast("Scan or photograph a card first.");
     const tab = window.open("", "_blank");
     try {
@@ -1323,7 +1361,9 @@ export function registerScanner(ctx) {
     } catch {}
     setStatus("Sending the picture to Google Lens…");
     const blob = await new Promise((ok) => card.toBlob(ok, "image/jpeg", 0.9));
+    if(!current()){tab?.close();return;}
     const r = blob ? await fetch("api/lens", { method: "POST", body: blob, headers: { "Content-Type": "image/jpeg" } }).then((x) => x.json()).catch(() => null) : null;
+    if(!current()){tab?.close();return;}
     if (!r?.url) {
       tab?.close();
       s().lensUrl = "";
@@ -1417,12 +1457,14 @@ export function registerScanner(ctx) {
     render();
   };
   A.scanTorch = async () => {
-    const track = stream?.getVideoTracks()[0];
+    const current=scanCurrent(),track = stream?.getVideoTracks()[0];
     if (!track || !s().torchCap || !track.getCapabilities?.().torch) return;
     try {
       await track.applyConstraints({ advanced: [{ torch: !s().torch }] });
+      if(!current()||stream?.getVideoTracks()[0]!==track)return;
       s().torch = !s().torch;
     } catch {
+      if(!current())return;
       toast("This camera's flashlight can't be controlled from the browser.");
     }
     render();
@@ -1448,10 +1490,12 @@ export function registerScanner(ctx) {
       <details class="settings-disclosure"><summary>Scanning tips</summary><ul class="guide-list small"><li>Plain, contrasting surface; one card at a time.</li><li>No exact alignment needed. Keep the whole card, name and bottom code readable.</li><li>Tilt slightly or use the flashlight off-axis to kill foil glare.</li><li>Sorting a single set? Lock it for faster, surer matches.</li><li>Swap cards after the capture chime; review the uncertain ones when finished.</li></ul></details>`;
   };
   A.scanSettings = async () => {
+    const current=scanCurrent();
     ctx.openSheet(settingsSheet(), { type: "scan-settings" });
+    const sheet=S.ui.sheetCtx;
     try {
       const cams = (await navigator.mediaDevices?.enumerateDevices?.() || []).filter((d) => d.kind === "videoinput");
-      if (cams.length && document.querySelector("#sheet[open]")) ctx.openSheet(settingsSheet(cams), { type: "scan-settings" });
+      if (current() && S.ui.sheetCtx===sheet && cams.length && document.querySelector("#sheet[open]")) ctx.openSheet(settingsSheet(cams), { type: "scan-settings" });
     } catch {}
   };
   C.scanPref = (t) => {
@@ -1490,15 +1534,17 @@ export function registerScanner(ctx) {
       }
     });
   A.sessCommit = async () => {
-    const G = game(),
-      list = loadSession(G);
-    if (!list.length) return;
+    const st=s(),G = game(),list = loadSession(G);
+    if (suspended||st.sessionSaving||!list.length) return;
     const location = (document.getElementById("sessLoc")?.value || "").trim().slice(0, 100);
     savePrefs(G, { location });
-    await ctx.addMany(G, list.map((x) => ({ ...x, location })));
-    saveSession(G, []);
-    toast(`Saved ${sessionCount(list)} card${sessionCount(list) === 1 ? "" : "s"} to your collection${location ? ` · ${location}` : ""}.`);
-    render();
+    st.sessionSaving=true;
+    try{
+      await ctx.addMany(G, list.map((x) => ({ ...x, location })));
+      saveSession(G, []);
+      toast(`Saved ${sessionCount(list)} card${sessionCount(list) === 1 ? "" : "s"} to your collection${location ? ` · ${location}` : ""}.`);
+      render();
+    }finally{st.sessionSaving=false;}
   };
   A.sessCopy = async () => {
     const text = sessionText(loadSession(game()));
@@ -1510,9 +1556,60 @@ export function registerScanner(ctx) {
     }
   };
   A.sessClear = async () => {
-    if (!await ask("Clear the scanned list? Cards already saved to your collection stay there.")) return;
-    saveSession(game(), []);
+    const G=game(),current=scanCurrent();
+    if (!await ask("Clear the scanned list? Cards already saved to your collection stay there.")||!current()) return;
+    saveSession(G, []);
     render();
+  };
+
+  // App-owned game transitions suspend before committing settings, then restore
+  // after success (target) or failure (source). Neither hook renders or starts a camera.
+  ctx.beforeGameChange = (sourceGame=game(),targetGame,{workspace=false,kind=""}={}) => {
+    if(sourceGame===targetGame&&!workspace)return true;
+    if(!Object.hasOwn(GAME_LABEL,sourceGame)||!Object.hasOwn(GAME_LABEL,targetGame))return false;
+    const st=s();
+    if(st.batchSaving||st.confirm?.saving||st.sessionSaving){
+      toast('Finish saving your scans before switching games.');
+      return false;
+    }
+    if(suspended)return false;
+    persistReview();
+    const oldDraft=photoDrafts.get(sourceGame);
+    if(oldDraft?.url&&oldDraft.url!==st.url)URL.revokeObjectURL(oldDraft.url);
+    photoDrafts.set(sourceGame,photoDraft(st));
+    // Retain an unsaved manual review too if the settings commit rejects. A
+    // successful switch leaves captured reviews in their explicit-game batch.
+    // Undo rolls back a saved edit, not the live capture device. Only this
+    // explicit same-game action may retain an already-open stream. It still
+    // retires every old callback/read; import, recovery, reset and game changes
+    // use the full stop even when their saved game happens to match.
+    const keepCamera=workspace&&kind==='undo'&&sourceGame===targetGame&&S.ui.view==='scan'&&st.camOn&&!!stream;
+    switchSource={game:sourceGame,keepCamera,torch:st.torch,torchCap:st.torchCap,lastCaptureAt:st.lastCaptureAt,review:st.confirm?{...st.confirm,pickerOpening:false,detailStartedFor:null,priceRequest:null,pickerRequest:null}:null,cands:st.cands,read:st.read,shot:st.shot,status:st.status};
+    lifecycleGeneration++;
+    suspended=true;
+    closePop();
+    suspendCamera(keepCamera);
+    const rows=loadBatch();
+    if(rows.some(row=>['captured','reading'].includes(row.status)))saveBatch(rows.map(row=>['captured','reading'].includes(row.status)?{...row,status:'unresolved',reason:'Reading interrupted · retry'}:row));
+    st.photoLoading=false;st.lookup=false;st.reviewRequested='';
+    return true;
+  };
+  ctx.afterGameChange = targetGame => {
+    if(!suspended||!Object.hasOwn(GAME_LABEL,targetGame))return false;
+    const keepCamera=switchSource?.keepCamera&&switchSource.game===targetGame&&!!stream;
+    // A newer cross-game intent can supersede Undo while its write is pending.
+    if(stream&&!keepCamera)stopCamera();
+    const draft=photoDrafts.get(targetGame);
+    photoDrafts.delete(targetGame); // Active UI now owns this URL; switching never revokes it.
+    S.ui.scan=idleScan(draft);
+    if(keepCamera)Object.assign(s(),{camOn:true,torch:switchSource.torch,torchCap:switchSource.torchCap,lastCaptureAt:switchSource.lastCaptureAt});
+    if(switchSource?.game===targetGame){
+      const {review,cands,read,shot,status}=switchSource;
+      Object.assign(s(),{confirm:review,cands:cands||[],read:read||null,shot,status:status||''});
+    }
+    switchSource=null;
+    suspended=false;
+    return true;
   };
 
   // Called after every render of the scan screen (the page HTML is rebuilt on render).
@@ -1522,17 +1619,18 @@ export function registerScanner(ctx) {
       if (stream) stopCamera();
       return;
     }
-    const st=s(),G=game();
+    const st=s(),G=game(),current=scanCurrent();
+    if(suspended)return;
     if(st.catalogInitGame!==G){
       st.catalogInitGame=G;
-      Promise.all([initCatalog(G),catalogManifest().catch(()=>null)]).then(([,m])=>{if(s()===st&&game()===G&&S.ui.view==="scan"){st.catalogMeta=m?.games?.[G];render();}});
+      Promise.all([initCatalog(G),catalogManifest().catch(()=>null)]).then(([,m])=>{if(current()){st.catalogMeta=m?.games?.[G];render();}});
     }
     if(!st.ocrWarm){st.ocrWarm=true;getWorker(scanLang(),()=>{}).catch(()=>{});}
     if(st.confirm){
       const q=st.confirm,c=st.cands?.[q.i??0],reviewGame=q.game||G;q.presented=true;
       if((c?.localReference||c?.detailsOnly) && q.detailStartedFor!==JSON.stringify([c.id,c.print,c.setReleaseId||c.releaseName])){
         q.detailStartedFor=JSON.stringify([c.id,c.print,c.setReleaseId||c.releaseName]);
-        hydrateCandidate(reviewGame,c).then(full=>{if(s()===st&&st.confirm===q&&st.cands[q.i??0]===c){st.cands[q.i??0]=full;const fs=finishesFor(reviewGame,full);if(q.finish&&!fs.includes(q.finish))q.finish="";q.price=q.finish?priceFor(reviewGame,full,q.finish,q):null;render();if(q.priceReviewRequested)requestReviewPrice();}}).catch(()=>{});
+        hydrateCandidate(reviewGame,c).then(full=>{if(current()&&st.confirm===q&&st.cands[q.i??0]===c){st.cands[q.i??0]=full;const fs=finishesFor(reviewGame,full);if(q.finish&&!fs.includes(q.finish))q.finish="";q.price=q.finish?priceFor(reviewGame,full,q.finish,q):null;render();if(q.priceReviewRequested)requestReviewPrice();}}).catch(()=>{});
       }
     }
     if (s().camOn) attach();

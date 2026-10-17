@@ -1,3 +1,5 @@
+import vm from 'node:vm';
+import {readFileSync} from 'node:fs';
 import {captureDisclosures,restoreDisclosures} from './ui.js';
 import {atLeastOne} from './deckaudit.js';
 import {buildDeck} from './builder.js';
@@ -36,3 +38,64 @@ const before=[details('Filters',true),details('Advanced',false),details('Advance
 const state=captureDisclosures({querySelectorAll:()=>before});
 const after=[details('Filters',false),details('Advanced',true),details('Advanced',false),details('New section',true)];
 restoreDisclosures({querySelectorAll:()=>after},state);assert.deepEqual(after.map(d=>d.open),[true,false,true,true],'both open and closed disclosures survive refresh, including duplicate summaries');
+
+// Source-only layout contracts supplement, never replace, hosted geometry checks.
+const layout=readFileSync(new URL('./style.css',import.meta.url),'utf8');
+assert.doesNotMatch(layout,/body\[data-view=["']deck["']\]\s+\.topbar\s*\{[^}]*display\s*:/,'Deck workspaces inherit the same responsive game-switch header grid as every section');
+const wrapping=layout.match(/\.actions\.wrap\s*>\s*\.btn\s*\{([^}]+)\}/)?.[1]||'';
+for(const rule of [/min-width\s*:\s*0/,/max-width\s*:\s*100%/,/white-space\s*:\s*normal/,/overflow-wrap\s*:\s*anywhere/])assert.match(wrapping,rule,'Long action labels shrink and wrap instead of overflowing narrow panels');
+assert.doesNotMatch(wrapping,/overflow(?:-x)?\s*:\s*(?:hidden|clip)|font-size\s*:/,'Containment must not clip labels or reduce their type size');
+console.log('PASS: shared deck header grid and naturally wrapping action groups retain responsive layout without clipping or smaller text.');
+
+// Execute the actual shared-shell observer against changing measured geometry.
+const application=readFileSync(new URL('./app.js',import.meta.url),'utf8');
+const observerStart=application.indexOf('function readSectionTabRail('),observerEnd=application.indexOf('attachGameTabs($("#gameTabs"));',observerStart);
+assert(observerStart>=0&&observerEnd>observerStart);
+assert.equal((application.match(/  observeShellHeader\(\);/g)||[]).length,1,'The long-lived shell installs one header observer during boot');
+const {observeShellHeader:observeHeader,readSectionTabRail:readRail,restoreSectionTabRail:restoreRail}=vm.runInNewContext(application.slice(observerStart,observerEnd)+';({observeShellHeader,readSectionTabRail,restoreSectionTabRail})');
+let measured=124.25,callback,observed,disconnected=0,created=0;const updates=[];
+const header={getBoundingClientRect:()=>({height:measured})},root={style:{setProperty:(key,value)=>updates.push([key,value])}};
+const cleanup=observeHeader(header,root,{ResizeObserver:class{constructor(fn){created++;callback=fn;}observe(node){observed=node;}disconnect(){disconnected++;}}});
+assert.equal(created,1);assert.equal(observed,header);assert.deepEqual(updates,[['--shell-header-height','125px']]);
+for(const height of [124.25,169.1,80,80,0,Infinity,121]){measured=height;callback();}
+assert.deepEqual(updates.map(([,value])=>value),['125px','170px','80px','0px','121px'],'Resize updates follow real phone/tablet/desktop heights, coalesce unchanged values and reject invalid geometry');
+cleanup();assert.equal(disconnected,1);
+let listener,removed;const fallback=observeHeader(header,root,{addEventListener:(event,fn)=>{assert.equal(event,'resize');listener=fn;},removeEventListener:(event,fn)=>{assert.equal(event,'resize');removed=fn;}});
+measured=88;listener();assert.equal(updates.at(-1)[1],'88px');fallback();assert.equal(removed,listener);
+assert.match(layout,/\.tabs\s*\{[^}]*top:\s*var\(--shell-header-height,\s*0px\)/);
+assert.doesNotMatch(layout,/\.tabs\s*\{\s*top:\s*61px/);
+console.log('PASS: actual shared shell header observer measures once, tracks live resize without polling and cleans up its observer/fallback listener.');
+
+assert.match(layout,/\.bottom-nav\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/,'All five bottom navigation tracks can fit a 320px viewport');
+assert.match(layout,/\.bottom-nav button\s*\{[^}]*min-width:\s*0/);
+assert.match(layout,/\.bottom-nav button\s*\{[^}]*padding-inline:\s*0/);
+assert.match(layout,/\.bottom-nav button span\s*\{[^}]*max-width:\s*100%/);
+console.log('PASS: bottom navigation retains five equal shrinkable tracks and full-label space without clipping.');
+
+// Real rail helper with layout-aware scroll geometry. Deliberately omit window
+// scrolling APIs: the helper may move only the horizontal section rail.
+function tabRail(width=390,start=600,id='versions'){
+ let left=0;
+ const active={dataset:{id},getBoundingClientRect:()=>({left:10+start-left,right:10+start-left+100,width:100})};
+ return {width,active,get scrollLeft(){return left;},set scrollLeft(value){left=Math.max(0,Math.min(value,900-this.width));},
+  getBoundingClientRect(){return {left:10,right:10+this.width,width:this.width};},querySelector:()=>active};
+}
+let rail=tabRail(),scrollListener,removedScroll;
+const content={querySelector:()=>rail,addEventListener:(name,fn,capture)=>{assert.equal(name,'scroll');assert.equal(capture,true);scrollListener=fn;},removeEventListener:(name,fn,capture)=>{assert.equal(name,'scroll');assert.equal(capture,true);removedScroll=fn;}};
+assert.equal(readRail({}),null,'Non-layout action harness has no section rail');
+restoreRail(content);assert.equal(rail.scrollLeft,310);assert.equal(readRail(content).visible,true,'Fresh Versions selection is fully visible');
+let previous=readRail(content);rail=tabRail();restoreRail(content,previous);assert.equal(rail.scrollLeft,310,'Same-route render restores the rail without scrolling the page');
+rail.scrollLeft=0;previous=readRail(content);rail=tabRail(320);restoreRail(content,previous);assert.equal(rail.scrollLeft,0,'Manual scroll-away remains deliberate on refresh');
+rail=tabRail(320,0,'cards');restoreRail(content,previous);assert.equal(readRail(content).visible,true,'A different selected tab has its own reveal');
+rail=tabRail(768);let shellWidth=768,shellHeight=125,resizeRail,railDisconnected=0;const railUpdates=[];
+const railRoot={ownerDocument:{getElementById:id=>{assert.equal(id,'content');return content;}},style:{setProperty:(key,value)=>railUpdates.push([key,value])}};
+const disposeRail=observeHeader({getBoundingClientRect:()=>({height:shellHeight,width:shellWidth})},railRoot,{ResizeObserver:class{constructor(fn){resizeRail=fn;}observe(){}disconnect(){railDisconnected++;}}});
+assert.equal(rail.scrollLeft,0);assert.equal(readRail(content).visible,true);
+shellWidth=rail.width=320;resizeRail();assert.equal(rail.scrollLeft,380);assert.equal(readRail(content).visible,true,'Same-mounted width-only resize reveals the previously visible active tab');
+assert.equal(railUpdates.length,1,'Width-only resizing does not fabricate a header height change');
+rail.scrollLeft=0;scrollListener({target:rail});shellWidth=rail.width=390;resizeRail();assert.equal(rail.scrollLeft,0,'Manual scroll-away survives a later viewport resize');
+restoreRail(content);const selectedPosition=rail.scrollLeft;scrollListener({target:{}});shellHeight=170;resizeRail();assert.equal(rail.scrollLeft,selectedPosition,'Unrelated scroll and height-only updates preserve rail position');
+assert.equal(railUpdates.at(-1)[1],'170px');disposeRail();assert.equal(railDisconnected,1);assert.equal(removedScroll,scrollListener);
+assert.match(application,/const priorSectionRail=previousDisclosureKey === disclosureKey \? readSectionTabRail\(content\) : null/,'Only the same rendered section restores a prior manual position');
+assert.match(application,/restoreSectionTabRail\(content,priorSectionRail\)/,'Real render restores or reveals after replacing content');
+console.log('PASS: selected section rail stays visible on render and width-only resize; manual position, window scroll, shared observer count and cleanup remain intact.');

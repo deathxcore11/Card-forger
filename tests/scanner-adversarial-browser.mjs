@@ -62,13 +62,14 @@ async function validateSceneFrameReadiness(){
  const source=await readFile(new URL('../scancam.js',import.meta.url),'utf8'),app=await readFile(new URL('../app.js',import.meta.url),'utf8');
  const between=(start,end)=>{const a=source.indexOf(start),b=source.indexOf(end,a);assert(a>=0&&b>a);return source.slice(a,b);};
  const attach=between('  const attach = () => {','  const capture = (automatic=false) => {'),torch=between('  A.scanTorch = async () => {','  const settingsSheet = (cams = []) => {');
- const schedule=app.match(/setTimeout\(\(\) => scanCtx\.afterRender\?\.\(\), 0\);/),replace=app.match(/\$\("#content"\)\.innerHTML = \(g !== "mtg"[^\n]+/);assert(schedule&&replace,'Exercise the actual scheduled attach and synchronous content replacement');
+ const lifecycle=between('  let lifecycleGeneration = 0','  const photoDraft ='),navigation=app.match(/^const navigationStamp[^\n]+\nconst navigationCurrent[^\n]+/m);
+ const schedule=app.match(/setTimeout\(\(\) => navigationCurrent\(screen\) && scanCtx\.afterRender\?\.\(\), 0\);/),replace=app.match(/\$\("#content"\)\.innerHTML = \(g !== "mtg"[^\n]+/);assert(navigation&&schedule&&replace,'Exercise the actual visit guards, scheduled attach and synchronous content replacement');
  const timers=new Map(),callbacks=new Map(),state={camOn:true,torch:false,torchCap:true},h={events:[],camera:{width:640,height:900},draws:0,remembers:0,draw(){this.draws++;},remember(){this.remembers++;}};let id=0,current,requests=0;
  const track={readyState:'live',getCapabilities:()=>({torch:true}),applyConstraints:async()=>{throw Error('Synthetic torch rejection');},requestFrame(){requests++;},stop(){throw Error('Torch must not stop the camera');}},stream={active:true,getVideoTracks:()=>[track]};
  const video={srcObject:stream,paused:false,isConnected:true,readyState:2,videoWidth:640,videoHeight:900,currentTime:5,requestVideoFrameCallback(fn){callbacks.set(++id,fn);return id;},cancelVideoFrameCallback(key){callbacks.delete(key);}};current=video;h.stream=stream;
  const slot={replaceWith(v){assert.equal(v,video);current=v;v.isConnected=true;}},content={set innerHTML(html){assert(html.includes('camSlot'));current=null;video.isConnected=false;}};
- const scope={A:{},s:()=>state,stream,videoEl:video,document:{getElementById:key=>key==='camSlot'?current?null:slot:current,querySelector:()=>current},window:{__scannerHarness:h},toast(){},loopTimer:1,loop(){},scanCtx:{},setTimeout(fn,ms){timers.set(++id,{fn,ms});return id;},clearTimeout:key=>timers.delete(key),$:()=>content,g:'mtg',tcgViews:{},views:{scan:()=>'<div id="camSlot"></div>'},ui:{view:'scan'},V:{}};
- runInNewContext(attach+'\nscanCtx.afterRender=attach;\nfunction render(){'+schedule[0]+replace[0]+'}\n'+torch+'\nthis.deliverSceneFrame='+deliverSceneFrame.toString(),scope);
+ const scope={A:{},s:()=>state,game:()=> 'mtg',S:{ui:{view:'scan'}},T:{game:()=> 'mtg'},navigation:{revision:0},workspaceVisitRevision:0,location:{hash:'#scan'},stream,videoEl:video,document:{getElementById:key=>key==='camSlot'?current?null:slot:current,querySelector:()=>current},window:{__scannerHarness:h},toast(){},loopTimer:1,loop(){},scanCtx:{},setTimeout(fn,ms){timers.set(++id,{fn,ms});return id;},clearTimeout:key=>timers.delete(key),$:()=>content,g:'mtg',tcgViews:{},views:{scan:()=>'<div id="camSlot"></div>'},ui:{view:'scan'},V:{}};
+ runInNewContext(lifecycle+navigation[0]+'\n'+attach+'\nscanCtx.afterRender=attach;\nfunction render(){const screen=navigationStamp();'+schedule[0]+replace[0]+'}\n'+torch+'\nthis.deliverSceneFrame='+deliverSceneFrame.toString(),scope);
  const tick=ms=>{const entry=[...timers].find(([,task])=>task.ms===ms);assert(entry,`Expected timer ${ms}`);timers.delete(entry[0]);entry[1].fn();},present=mediaTime=>{const [key,fn]=callbacks.entries().next().value;callbacks.delete(key);fn(0,{mediaTime});};
  await scope.A.scanTorch();assert.equal(current,null,'Torch render leaves the expected pre-attach DOM gap');assert.equal(state.camOn,true);assert.equal(state.torch,false);assert.equal(video.srcObject,stream);assert.equal(track.readyState,'live');
  let complete=false;const pending=scope.deliverSceneFrame({g:'mtg',label:'after-torch'}).then(()=>{complete=true;});
@@ -89,11 +90,13 @@ async function validatePhotoCropHandlers(){
  const source=await readFile(new URL('../scancam.js',import.meta.url),'utf8');
  const readStart=source.indexOf('  A.scanRead = async () => {'),readEnd=source.indexOf('  // Confirm & add',readStart);
  const freezeStart=source.indexOf('export function freezeCapture('),freezeEnd=source.indexOf('export function rotateCapture(',freezeStart);
- assert(readStart>=0&&readEnd>readStart&&freezeStart>=0&&freezeEnd>freezeStart);
+ const lifecycleStart=source.indexOf('  let lifecycleGeneration = 0'),lifecycleEnd=source.indexOf('  const photoDraft =',lifecycleStart);
+ assert(readStart>=0&&readEnd>readStart&&freezeStart>=0&&freezeEnd>freezeStart&&lifecycleStart>=0&&lifecycleEnd>lifecycleStart);
  const st={url:'fixture:public-card',crop:null},rect={left:20,top:30,width:500,height:700},box={hidden:true,style:{}},wrap={getBoundingClientRect:()=>rect,setPointerCapture:()=>{}};
  const packets=[],canvas=()=>({width:0,height:0,getContext:()=>({drawImage(){}})});let decode;
- const scope={A:{},s:()=>st,S:{ui:{view:'scan'}},CAPTURE_MAX_EDGE:1280,document:{getElementById:id=>id==='cropWrap'?wrap:box,createElement:canvas},loadImage:()=>new Promise(resolve=>{decode=resolve;}),autoBox:()=>null,preserveWholeCardPhoto:()=>true,enqueueCapture:packet=>{packets.push(packet);return true;},toast:message=>{throw Error(message);}};
- runInNewContext(source.slice(freezeStart,freezeEnd).replace('export ','')+source.slice(readStart,readEnd)+';this.attachCrop=attachCrop;',scope);
+ const scope={A:{},s:()=>st,game:()=> 'mtg',S:{ui:{view:'scan'}},CAPTURE_MAX_EDGE:1280,document:{getElementById:id=>id==='cropWrap'?wrap:box,createElement:canvas},loadImage:()=>new Promise(resolve=>{decode=resolve;}),autoBox:()=>null,preserveWholeCardPhoto:()=>true,enqueueCapture:packet=>{packets.push(packet);return true;},toast:message=>{throw Error(message);}};
+ // Keep the real visit-lifecycle guard alongside the extracted read/crop handlers.
+ runInNewContext(source.slice(lifecycleStart,lifecycleEnd)+source.slice(freezeStart,freezeEnd).replace('export ','')+source.slice(readStart,readEnd)+';this.attachCrop=attachCrop;',scope);
  const image={naturalWidth:1000,naturalHeight:1400};
  assert.equal(wrap.onpointerdown,undefined,'Decode alone does not bind the asynchronously attached crop gesture');
  let read=scope.A.scanRead();decode(image);await read;assert.equal(packets[0].proposal,null,'Read without a crop produces the observed null proposal, not delayed manual metadata');

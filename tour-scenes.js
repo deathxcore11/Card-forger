@@ -24,7 +24,7 @@ export function tourScenes(game = 'mtg') {
         else { S.state.tcg ||= {}; S.state.tcg[game] ||= blankGame(); S.state.tcg[game].decks.push(deck); }
       }
       if (mtg) { S.ui.deckId = deck.id; S.ui.deckTab = tab === 'power' ? 'engine' : tab; return deckPanel(V.deckPage()); }
-      (S.ui.tdeckTab ||= {})[deck.id] = tab === 'power' ? 'insights' : tab; return deckPanel(T.tcgDeck(deck.id));
+      (S.ui.tdeckTab ||= {})[game+":"+deck.id] = tab === 'power' ? 'insights' : tab; return deckPanel(T.tcgDeck(deck.id));
     };
     const home = mtg ? V.home() : T.tcgHome();
     const collect = collection();

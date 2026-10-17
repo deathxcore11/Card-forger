@@ -11,6 +11,7 @@ import { openRulesAsk, closeRulesAsk, clearRulesConversations } from './ai-rules
 import { makeAskTools } from './ai-tools.js';
 import { ask, askText } from "./dialog.js";
 import { attachHomeSwipe } from "./home-swipe.js";
+import { routeSegments, normalizeRoute, gameSwitchRoute, historyEntry, createNavigationQueue } from "./game-navigation.js";
 import { useMyPrices, myPriceKey, ensureTcgPrices } from "./mtg-tcgprice.js";
 import { buyOnTcgplayer, massLines } from "./buy.js";
 import {applySwapsToCards} from './insights.js';
@@ -202,6 +203,7 @@ function save() {
 let lastUndo = null;
 let commitQueue = Promise.resolve();
 let conditionWorkspaceRevision = 0;
+let workspaceTransition = null;
 function queueWorkspaceWrite(transaction) {
   const result = commitQueue.then(transaction, transaction);
   commitQueue = result.catch(() => {});
@@ -209,7 +211,7 @@ function queueWorkspaceWrite(transaction) {
 }
 // A replacement joins the same queue as edits, so no older edit can revive a cleared
 // workspace. Recovery captures the latest committed state, not the state before waiting.
-function replaceWorkspace(next, { recovery = false, clearRecovery = false, stamp = false, notify = false, guard = null } = {}) {
+function replaceWorkspace(next, { recovery = false, clearRecovery = false, stamp = false, notify = false, guard = null, kind = "replace" } = {}) {
   return queueWorkspaceWrite(async () => {
     if (guard && !await guard()) return false;
     const value = typeof next === "function" ? next() : next;
@@ -219,15 +221,18 @@ function replaceWorkspace(next, { recovery = false, clearRecovery = false, stamp
     const records = [[STORAGE, valid]];
     if (clearRecovery) records.unshift([RECOVERY, blank()]);
     else if (typeof recovery === "function" ? recovery(S.state) : recovery) records.unshift([RECOVERY, stripCache(S.state)]);
-    await writeRecords(records);
+    const transition = workspaceTransition?.begin(valid, {kind});
+    try { await writeRecords(records); }
+    catch (error) { workspaceTransition?.failed(transition); throw error; }
     S.state = valid;
     conditionWorkspaceRevision++;
     lastUndo = null;
+    workspaceTransition?.finished(transition);
     if (notify) afterLocalSave();
     return true;
   });
 }
-async function commit(fn, { msg = "", recovery = false, rerender = true, enrich = true, undo = "", guard = null } = {}) {
+async function commit(fn, { msg = "", recovery = false, rerender = true, enrich = true, undo = "", guard = null, navigationWrite = false } = {}) {
   const transaction = async () => {
     // Confirm against the latest committed state, without allowing another queued edit to pass.
     if (guard && !await guard(S.state)) return;
@@ -239,8 +244,11 @@ async function commit(fn, { msg = "", recovery = false, rerender = true, enrich 
     valid.lastSavedAt = new Date().toISOString();
     const records = [[STORAGE, valid]];
     if (recovery) records.unshift([RECOVERY, stripCache(S.state)]);
-    await writeRecords(records);
+    const transition = !navigationWrite && valid.settings.game !== previous.settings.game ? workspaceTransition?.begin(valid) : null;
+    try { await writeRecords(records); }
+    catch (error) { workspaceTransition?.failed(transition); throw error; }
     S.state = valid;
+    workspaceTransition?.finished(transition);
     const changedLots = changedConditionLots(previous, valid);
     if (changedLots.length) setTimeout(() => refreshChangedConditions(changedLots), 0);
     afterLocalSave();
@@ -434,7 +442,7 @@ async function autoEnrich() {
    ========================================================= */
 const SET_INDEX = "cardforge-sets-v1";
 async function loadSetIndex(force = false) {
-  const ui = S.ui.sets;
+  const ui = S.ui.sets, screen=navigationStamp();
   let cached = null;
   try {
     cached = JSON.parse(localStorage.getItem(SET_INDEX) || "null");
@@ -460,16 +468,16 @@ async function loadSetIndex(force = false) {
   } finally {
     ui.busy = false;
     // Redraw with the official set symbols, unless the user is typing somewhere.
-    if (!document.activeElement?.matches?.("input:not([data-input=setsSearch]), textarea, select")) render();
+    if (navigationCurrent(screen) && !document.activeElement?.matches?.("input:not([data-input=setsSearch]), textarea, select")) render();
   }
 }
 
 // Every printing in a set, straight from Scryfall, so new sets appear as soon as Scryfall has them.
 const setCache = new Map();
 async function loadSet(code) {
-  const st = S.ui.set, generation = (st.generation || 0) + 1;
+  const st = S.ui.set, generation = (st.generation || 0) + 1, screen=navigationStamp();
   st.generation = generation;
-  const current = () => S.ui.set === st && st.code === code && st.generation === generation;
+  const current = () => S.ui.set === st && st.code === code && st.generation === generation && navigationCurrent(screen);
   if (setCache.has(code)) {
     Object.assign(st, setCache.get(code), { loaded: true, busy: false });
     return render();
@@ -518,24 +526,25 @@ async function loadSet(code) {
    Shared deck links and the "almost build" finder
    ========================================================= */
 async function openShared(code) {
-  const sh = S.ui.shared;
+  const sh = S.ui.shared, screen=navigationStamp();
+  const current=()=>navigationCurrent(screen)&&S.ui.shared===sh&&sh.code===code&&S.ui.view==="shared";
   Object.assign(sh, { code, deck: null, error: "" });
   try {
     const deck = await decodeShare(code);
-    if (sh.code !== code) return;
+    if (!current()) return;
     sh.deck = deck;
     render();
     if (deck.game) {
       // Yu-Gi-Oh! / Pokémon: load every card by id, then redraw.
-      await T.ensureMany(deck.game, ["main", "extra", "side"].flatMap((z) => (deck.zones[z] || []).map((r) => r.cardId)), () => S.ui.view === "shared" && render());
-      if (S.ui.view === "shared") render();
+      await T.ensureMany(deck.game, ["main", "extra", "side"].flatMap((z) => (deck.zones[z] || []).map((r) => r.cardId)), () => current() && render());
+      if (current()) render();
       return;
     }
     const r = await resolveNames(deck.cards.map((c) => c.name).concat(deck.commander || []));
-    if (r.total && S.ui.view === "shared") render();
+    if (r.total && current()) render();
   } catch (e) {
-    if (sh.code === code) sh.error = e.message;
-    if (S.ui.view === "shared") render();
+    if (current()) sh.error = e.message;
+    if (current()) render();
   }
 }
 // Link back to a shared deck for attribution; very long links fall back to the site address.
@@ -543,17 +552,17 @@ const sharedSourceURL = () => (location.href.length <= 2000 ? location.href : lo
 
 const PRECON_RECORD = "cardforge-precons-v1";
 async function loadPreconCache() {
-  const F = S.ui.finder;
+  const F = S.ui.finder,screen=navigationStamp();
   F.cacheLoaded = true;
   try {
     const rec = await readRecord(PRECON_RECORD);
     if (rec?.decks?.length) {
       F.precons = rec.decks;
-      render();
+      if(navigationCurrent(screen))render();
       const names = rec.decks.flatMap((d) => d.cards.map((c) => c.name)).filter((n) => !meta(n));
       if (names.length && navigator.onLine) {
         await resolveNames(names);
-        if (S.ui.view === "decks") render();
+        if (navigationCurrent(screen) && S.ui.view === "decks") render();
       }
     }
   } catch {}
@@ -664,7 +673,7 @@ function openSheet(html, ctx = null, scrollTop = 0) {
 // game's data quietly in the background once per session if it's missing or older than 12 hours.
 const warmed = new Set();
 function warmEmblems() {
-  const g = T.game(),
+  const screen=navigationStamp(), g = T.game(),
     k = g === "mtg" ? "mtg:" + mtgMetaFormat() : g;
   if (warmed.has(k)) return;
   warmed.add(k);
@@ -672,7 +681,7 @@ function warmEmblems() {
   if (M.busy || (M.data && Date.now() - M.at < 12 * 3600e3)) return;
   setTimeout(() => loadMetaData(k).then(() => {
     // Keep Home's focused controls intact; the cached emblems appear on the next natural render.
-    if (!document.querySelector("input:focus, textarea:focus") && !$("#sheet").open && !(S.ui.view === "home" && $("#content")?.contains(document.activeElement))) render();
+    if (navigationCurrent(screen) && !document.querySelector("input:focus, textarea:focus") && !$("#sheet").open && !(S.ui.view === "home" && $("#content")?.contains(document.activeElement))) render();
   }).catch(() => {}), 2500);
 }
 let sheetReturn = null,
@@ -764,31 +773,20 @@ const fileSafe = (s) => String(s).replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g,
    Routing
    ========================================================= */
 
-const LEGACY = {
-  catalog: "search", builder: "deck", discover: "decks/ideas", library: "decks/inspiration",
-  wishlist: "collection/wishlist", compare: "search", playtest: "deck/active/playtest",
-  guides: "deck/active/engine", sources: "settings",
-};
 const VIEWS = ["home", "search", "collection", "decks", "deck", "scan", "settings", "sets", "set", "shared", "tdeck", "rules"];
 
 function parseHash() {
-  const raw = location.hash.slice(1) || "home";
-  let segments;
-  try { segments = raw.split("/").map(part=>decodeURIComponent(part)); }
-  catch { segments = [/^set(?:s|\/|$)/.test(raw) ? "sets" : "home"]; }
-  const head = segments[0];
-  if (LEGACY[head]) segments = [...LEGACY[head].split("/"),...segments.slice(1)];
-  if(segments[0] === "set" && (String(segments[1] || "").length > 4096 || /[\u0000-\u001f\u007f]/.test(segments[1] || "")))segments=["sets"];
+  const segments = routeSegments(location.hash);
   const [v, a, b] = segments;
   const ui = S.ui,
     prev = ui.view + ui.deckId;
   ui.view = VIEWS.includes(v) ? v : "home";
   if (ui.view === "collection" && ["cards", "binders", "value", "wishlist"].includes(a)) {
     ui.collTab = a;
-    if(T.isTcg() && ["cards","binders","wishlist"].includes(a))T.ui().coll.tab=a;
+    if(T.isTcg()) { T.ui().coll.tab = a === "wishlist" ? "cards" : a; if(a === "wishlist")T.ui().coll.show="wanted"; }
   }
   if (ui.view === "shared" && a !== ui.shared.code) openShared(a);
-  if (ui.view === "tdeck") ui.tdeckId = a;
+  if (ui.view === "tdeck") { ui.tdeckId = a; if (b && ["cards","insights","matchups","upgrade","versions","playtest","rules"].includes(b)) (ui.tdeckTab ||= {})[T.game()+":"+a]=b; }
   if (ui.view === "set" && T.isTcg()) {
     if (!a) ui.view = "sets";
     else ui.tsetId = a;
@@ -821,8 +819,7 @@ function parseHash() {
 
 function go(hash) {
   if(pendingRoute && Date.now()-pendingRoute.at<500 && pendingRoute.route!==hash && pendingRoute.game===T.game()){routeTrail.push(pendingRoute);if(routeTrail.length>12)routeTrail.shift();}pendingRoute=null;
-  if (location.hash === hash) render();
-  else location.hash = hash;
+  return navigate({ game: activeEntry?.game || T.game(), hash: normalizeRoute(hash), mode: "push" });
 }
 
 const autoLoaded = new Set();
@@ -850,6 +847,8 @@ function currentRulesOrigin() {
 }
 function dismissRulesGuide() { closeRulesAsk(); dismissRuleHint(); rulesGuideOrigin = null; }
 function render() {
+  if (navigationPending && !navigationInstalling) return;
+  const screen = navigationStamp();
   if (rulesGuideOrigin && JSON.stringify(currentRulesOrigin()) !== JSON.stringify(rulesGuideOrigin)) dismissRulesGuide();
   if(S.ui.view==='collection'){setTimeout(refreshCollectionConditions,0);if(T.game()==='mtg')setTimeout(()=>refreshMagicCollectionPrices().catch(()=>{}),0);}
   useMyPrices(S.state.myPrices);
@@ -859,10 +858,13 @@ function render() {
     ensureTcgPrices(S.state.collection.map((e) => (e.printingVerified && S.state.printings?.[e.printingId]) || null).filter(Boolean));
   }
   const authFields=S.ui.view === "settings" && !cloudInfo().user ? captureAuthFields(document) : [];
+  // Ordinary unsaved profile fields survive Settings→Settings game changes.
+  // Authentication remains in the existing render-local path, never history/storage.
+  const profileFields=S.ui.view === "settings" ? ["pfName","pfUser","pfBio"].flatMap(id=>{const field=$("#"+id);return field?[{id,value:field.value}]:[];}) : [];
   browseCleanup?.();
   const ui = S.ui;
   // The scanner keeps its camera stream across renders (or stops it when you leave the page).
-  setTimeout(() => scanCtx.afterRender?.(), 0);
+  setTimeout(() => navigationCurrent(screen) && scanCtx.afterRender?.(), 0);
   warmEmblems();
   setTimeout(updateAmbient, 0);
   for (const b of $$("[data-nav]")) b.classList.toggle("on", b.dataset.nav === (ui.view === "deck" ? "decks" : ui.view === "set" || ui.view === "sets" ? "search" : ui.view));
@@ -875,6 +877,7 @@ function render() {
   const searchFocus=["search","collection"].includes(ui.view) && previousDisclosureKey === disclosureKey ? captureSearchFocus(content) : null;
   if (searchFocus?.key === "id:dbTerm") searchFocus.value = ui.db.term;
   if(content?.dataset)content.dataset.disclosureKey=disclosureKey;
+  const priorSectionRail=previousDisclosureKey === disclosureKey ? readSectionTabRail(content) : null;
   document.body.dataset.game = g;
   document.body.style?.setProperty("--game-color", GAME_COLOR[g]);
   syncGameTabs($("#gameTabs"), g);
@@ -890,7 +893,7 @@ function render() {
     scan: () => scanView(g, GAMES[g].short),
   };
   if (g !== "mtg" && ui.view === "deck") ui.view = "decks";
-  if (ui.view === "home") setTimeout(() => heroArt(g), 0);
+  if (ui.view === "home") setTimeout(() => navigationCurrent(screen) && heroArt(g), 0);
   $("#content").className="";
   if (ui.view === "rules") {
     $("#content").innerHTML = rulesPage(g, ui.rules[g] || (ui.rules[g] = { list: "", busy: false, error: "", data: {} }));
@@ -906,13 +909,15 @@ function render() {
   restoreDisclosures(content,disclosureStates.get(disclosureKey));
   content.dataset.disclosureKey=disclosureKey;
   restoreSearchFocus(content,searchFocus);
+  restoreSectionTabRail(content,priorSectionRail);
   if (ui.view === "home") refreshHomeCommunity(g, content).catch(() => {});
   if(!cloudInfo().user)restoreAuthFields(document,authFields);
+  for(const {id,value} of profileFields){const field=$("#"+id);if(field)field.value=value;}
   const displayArea=["deck","tdeck"].includes(ui.view)?"deck":ui.view === "search"?"search":ui.view === "set"?"set":ui.view === "collection" && (g === "mtg" ? ui.collTab === "wishlist" : T.ui(g).coll.tab === "wishlist")?"wishlist":ui.view === "collection" && (g === "mtg" ? ui.collTab === "cards" : !T.ui(g).coll.tab || T.ui(g).coll.tab === "cards")?"collection":null;
   $("#content").className=displayArea ? "view-"+modeFor(g,displayArea) : "";
   if (comparison.active && comparison.game !== g) { comparison.cancel(); updateCompareTray(); }
   // A new page (not a refresh of the same one) glides in; totals count up.
-  const pageKey = [g, ui.view, ui.collTab, ui.decksTab, ui.deckTab, g === "mtg" ? "" : T.ui(g).coll.tab, g === "mtg" ? "" : ui.tdeckTab?.[ui.tdeckId]].join(":");
+  const pageKey = [g, ui.view, ui.collTab, ui.decksTab, ui.deckTab, g === "mtg" ? "" : T.ui(g).coll.tab, g === "mtg" ? "" : ui.tdeckTab?.[g+":"+ui.tdeckId]].join(":");
   if (pageKey !== lastPageKey) {
     lastPageKey = pageKey;
     $("#content").classList.add("page-enter");
@@ -924,7 +929,7 @@ function render() {
   if (ui.view === "deck" && g === "mtg" && currentDeck() && !cheapChecked.has(currentDeck().id)) {
     const d = currentDeck();
     cheapChecked.add(d.id);
-    refreshCheapest([...d.cards, ...(d.side || [])].map((r) => r.name).filter((n) => !/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(n)), { api, key, limit: 80 }).then((n) => n && S.ui.view === "deck" && render()).catch(() => {});
+    refreshCheapest([...d.cards, ...(d.side || [])].map((r) => r.name).filter((n) => !/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(n)), { api, key, limit: 80 }).then((n) => n && navigationCurrent(screen) && render()).catch(() => {});
   }
   // Deck Power needs the field: load tournament results once per format, the first time a
   // Power tab opens without them.
@@ -946,19 +951,19 @@ function render() {
       const M = metaState(k);
       if (M?.data || M?.busy || autoMeta.has(k)) continue;
       autoMeta.add(k);
-      setTimeout(() => loadMetaData(k).then(() => render()).catch(() => {}), 200);
+      setTimeout(() => loadMetaData(k).then(() => navigationCurrent(screen) && render()).catch(() => {}), 200);
     }
   }
   if (ui.view === "settings") storageDetail();
   if (g !== "mtg") {
     const SU = T.ui(g).sets;
-    if (["sets","collection"].includes(ui.view) && !SU.list.length && !SU.busy && !SU.error) setTimeout(() => tcgCtx.loadSets?.(g), 0);
-    if (ui.view === "set" && ui.tsetId && T.ui(g).set.id !== ui.tsetId) setTimeout(() => tcgCtx.openSet?.(ui.tsetId), 0);
+    if (["sets","collection"].includes(ui.view) && !SU.list.length && !SU.busy && !SU.error) setTimeout(() => navigationCurrent(screen) && tcgCtx.loadSets?.(g), 0);
+    if (ui.view === "set" && ui.tsetId && T.ui(g).set.id !== ui.tsetId) { const id=ui.tsetId; setTimeout(() => navigationCurrent(screen) && tcgCtx.openSet?.(id, false, g), 0); }
     // Ideas, Meta decks and Deck Power need the current tournament meta.
     const MS = T.metaState(g);
     if ((ui.view === "tdeck" || (ui.view === "home" && T.gs(g).decks.length) || (ui.view === "decks" && (!ui.decksTab || ["ideas", "inspiration", "mine"].includes(ui.decksTab)))) && !MS.busy && T.metaNeedsRefresh(g) && !autoLoaded.has("meta" + g + MS.at)) {
       autoLoaded.add("meta" + g + MS.at);
-      setTimeout(() => tcgCtx.loadMeta?.(g), 0);
+      setTimeout(() => navigationCurrent(screen) && tcgCtx.loadMeta?.(g), 0);
     }
     // Load card data and prices for what's on screen.
     const ids = ui.view === "collection" && (!T.ui(g).coll.tab || T.ui(g).coll.tab === "cards") ? [...document.querySelectorAll(".lot-art[data-id]")].map(e=>e.dataset.id) : ui.view === "collection" || (ui.view === "decks" && ui.decksTab === "ideas") ? T.gs(g).collection.map((e) => e.cardId) : ui.view === "tdeck" ? (T.gs(g).decks.find((d) => d.id === ui.tdeckId)?.zones ? ["main", "extra", "side"].flatMap((z) => T.gs(g).decks.find((d) => d.id === ui.tdeckId).zones[z].map((r) => r.cardId)) : []) : ui.view === "home" || ui.view === "decks" ? T.gs(g).decks.flatMap((d) => (d.zones.main || []).slice(0, 1).map((r) => r.cardId)) : [];
@@ -966,7 +971,7 @@ function render() {
     const k = g + ui.view + Math.floor(Date.now()/3600000) + ":" + [...new Set(missing)].sort().join(",");
     if (missing.length && navigator.onLine && !autoLoaded.has(k)) {
       autoLoaded.add(k);
-      T.ensureMany(g, missing, () => {}).then(() => render());
+      T.ensureMany(g, missing, () => {}).then(() => navigationCurrent(screen) && render());
     }
     return;
   }
@@ -977,13 +982,13 @@ function render() {
     const MS = metaState(mk);
     if (!MS.busy && (!MS.data || Date.now() - MS.at > 12 * 3600e3)) {
       autoLoaded.add("meta" + mk);
-      loadMetaData(mk).then(() => render()).catch(() => {});
+      loadMetaData(mk).then(() => navigationCurrent(screen) && render()).catch(() => {});
     }
   }
   if (deck && navigator.onLine && !autoLoaded.has(deck.id) && deck.cards.some((c) => !meta(c.name))) {
     autoLoaded.add(deck.id);
     resolveNames(deck.cards.map((c) => c.name)).then((r) => {
-      if (r.total) render();
+      if (r.total && navigationCurrent(screen)) render();
     });
   }
   if (ui.view === "decks" && ui.decksTab === "inspiration" && !ui.finder.cacheLoaded) loadPreconCache();
@@ -992,7 +997,7 @@ function render() {
   if (ui.view === "set" && !ui.set.loaded && !ui.set.busy && !ui.set.error) loadSet(ui.set.code);
   if (ui.view === "decks" && ui.decksTab === "ideas" && !ui.ideas.cache.length && !ui.ideas.busy && !ui.ideas.ran) {
     ui.ideas.ran = true;
-    setTimeout(() => buildIdeas(), 30);
+    setTimeout(() => navigationCurrent(screen) && buildIdeas(), 30);
   }
 }
 
@@ -1002,9 +1007,9 @@ const tcgCtx = {};
 // came from, like "All sets") returns you to that spot instead of the top; going forward starts a
 // new page at the top. Lists that fill in after the page draws (set grids, results) are waited for.
 try { history.scrollRestoration = "manual"; } catch {}
-const scrollMem = new Map(), navStack = [];
+const scrollMem = new Map();
 let navDir = "", scrollRestore = 0;
-const routeKey = (hash) => T.game() + (decodeURIComponent((hash || "").split("#")[1] || "home"));
+
 function restoreScroll(top) {
   const run = ++scrollRestore, until = Date.now() + 2500;
   const stop = () => { scrollRestore++; off(); };
@@ -1019,25 +1024,183 @@ function restoreScroll(top) {
   };
   step();
 }
-window.addEventListener("hashchange", (e) => {
-  if (S.ui.sheetCtx?.type === "printing-picker") closeSheet(false);
-  dismissRulesGuide();
-  const from = routeKey(e.oldURL), to = routeKey(location.hash);
-  scrollMem.set(from, window.scrollY);
-  if (scrollMem.size > 60) scrollMem.delete(scrollMem.keys().next().value);
-  if (navStack.at(-1) !== from) navStack.push(from);
-  const back = navStack.at(-2) === to;
-  if (back) navStack.pop(); else navStack.push(to);
-  if (navStack.length > 40) navStack.shift();
-  const [fv, fa] = from.slice(T.game().length).split("/"), [tv, ta] = to.slice(T.game().length).split("/");
-  const newPage = fv !== tv || (["set", "tdeck", "shared", "deck"].includes(tv) && fa !== ta);
-  navDir = newPage ? (back ? "back" : "fwd") : "";
-  const changed = parseHash();
-  render();
-  navDir = "";
-  if (back && scrollMem.has(to)) restoreScroll(scrollMem.get(to));
-  else if (changed || newPage) { scrollRestore++; window.scrollTo({ top: 0 }); }
+// Public hashes stay compatible; entry metadata is the source of truth for the game.
+let activeEntry = null, entrySequence = 0, navigationPending = false, navigationInstalling = false, suspendedGame = null, navigationReady = false, workspaceVisitRevision = 0;
+const entryOrigins = new Map();
+let rollbackHistoryId=null;
+const makeEntry = (game, route, index) => ({ version:1, game, route, entryId:Date.now().toString(36)+"-"+(++entrySequence), index });
+const navigationStamp = () => ({ revision:navigation.revision, workspace:workspaceVisitRevision, game:T.game(), hash:location.hash });
+const navigationCurrent = stamp => stamp.revision === navigation.revision && stamp.workspace === workspaceVisitRevision && stamp.game === T.game() && stamp.hash === location.hash;
+function rememberScroll() { if(activeEntry) { scrollMem.set(activeEntry.entryId,window.scrollY); if(scrollMem.size>100)scrollMem.delete(scrollMem.keys().next().value); } }
+function replaceEntry(entry) { history.replaceState({...history.state,cardstashy:entry},"",entry.route); }
+function gameChangeBlocked() {
+  const chooser=S.ui.sheetCtx?.type === "game";
+  return !!document.querySelector('#resetPassword')?.value || !!document.querySelector('#resetConfirm')?.value || !!document.querySelector('.tour, .zoom-overlay, [role="dialog"]') || [...document.querySelectorAll('dialog[open]')].some(d => !(chooser && d.id === "sheet") && !d.matches?.("dialog.cf-dialog.closing"));
+}
+function suspendGame(target, workspace = false, kind = "") {
+  if(suspendedGame){
+    // A pending Undo may retain its source camera. A later game change or
+    // unrelated replacement revokes that exception even before installation.
+    if(target!==suspendedGame || workspace&&kind!=="undo")scanCtx.stopCamera?.();
+    return true;
+  }
+  if(scanCtx.beforeGameChange?.(activeEntry?.game || T.game(),target,{workspace,kind}) === false)return false;
+  suspendedGame=activeEntry?.game || T.game();
+  dbInvalidate(false);
+  if(T.isTcg())T.invalidateTcgSearch(T.game());
+  if(S.ui.set?.busy) { S.ui.set.generation=(S.ui.set.generation||0)+1; S.ui.set.busy=false; }
+  tcgCtx.invalidateNavigation?.();
+  endHold(); heldTarget=null; browseCleanup?.(); browseCleanup=null;
+  return true;
+}
+function clearGameContext() {
+  closeSheet(false); sheetReturn=null; sheetTrail.clear(); routeTrail.length=0; pendingRoute=null;
+  quickCard=null; comparison.cancel(); updateCompareTray(); S.ui.sheetBack=null;
+  S.ui.deckId=null; S.ui.tdeckId=null; S.ui.tsetId=null;
+  S.ui.shared={...S.ui.shared,code:"",deck:null,error:""};
+}
+function installNavigation(intent) {
+    const old=activeEntry, changedGame=old && old.game!==intent.game;
+    const origin=entryOrigins.get(old?.entryId), returningParent=!changedGame && origin?.game===intent.game && origin.route===intent.hash ? origin : null;
+    if(changedGame)clearGameContext();
+    else if(S.ui.sheetCtx?.type === "printing-picker")closeSheet(false);
+    dismissRulesGuide();
+    if(intent.mode === "push") {
+      rememberScroll();
+      if(old)replaceEntry({...old,scroll:window.scrollY});
+      activeEntry=makeEntry(intent.game,intent.hash,(old?.index || 0)+1);
+      history.pushState({...history.state,cardstashy:activeEntry},"",intent.hash);
+      if(old)entryOrigins.set(activeEntry.entryId,old);
+      if(entryOrigins.size>100)entryOrigins.delete(entryOrigins.keys().next().value);
+    } else {
+      activeEntry=intent.entry || makeEntry(intent.game,intent.hash,old?.index || 0);
+      replaceEntry(activeEntry);
+    }
+    if(intent.wanted && intent.game!=="mtg")T.ui(intent.game).coll.show="wanted";
+    if(suspendedGame){scanCtx.afterGameChange?.(intent.game);suspendedGame=null;}
+    navDir=returningParent || intent.mode === "pop" && old && activeEntry.index<old.index ? "back" : "fwd";
+    parseHash();
+    navigationInstalling=true;
+    try{render();}finally{navigationInstalling=false;navDir="";}
+    if(intent.mode === "pop")restoreScroll(scrollMem.get(activeEntry.entryId) ?? activeEntry.scroll ?? 0);
+    else if(returningParent)restoreScroll(scrollMem.get(returningParent.entryId) ?? returningParent.scroll ?? 0);
+    else {scrollRestore++;window.scrollTo({top:0});}
+}
+const navigation = createNavigationQueue({
+  readGame:T.game,
+  persistGame:(game,current) => commit(s => {s.settings.game=game;}, {rerender:false,enrich:false,navigationWrite:true,guard:current}),
+  pending:value => { navigationPending=value; const content=$("#content"); if(content){content.inert=value;content.setAttribute("aria-busy",String(value));} },
+  install:installNavigation,
+  failed:async (error,intent) => {
+    // A superseded write may have completed. Reconcile to the still-visible game.
+    if(activeEntry && T.game()!==activeEntry.game) {
+      try{await commit(s=>{s.settings.game=activeEntry.game;},{rerender:false,enrich:false,navigationWrite:true});}
+      catch{S.state.settings.game=activeEntry.game;}
+    }
+    if(suspendedGame){scanCtx.afterGameChange?.(suspendedGame);suspendedGame=null;}
+    if(activeEntry) {
+      restoreActiveHistory(intent);
+    }
+    navigationInstalling=true;try{render();}finally{navigationInstalling=false;}
+    toast("Couldn’t switch games. Your current page and drafts are still here. "+(error.message || "Please try again."));
+  },
 });
+// Undo/import/recovery/account adoption owns the workspace, including its game.
+// Pause navigation while its existing serialized storage transaction settles.
+// Older intents retire only on success; a failure lets the prior visit/intents resume.
+workspaceTransition = {
+  begin(next, {kind = "replace"} = {}) {
+    if(!navigationReady)return null;
+    if(gameChangeBlocked())throw Error("Close the current edit before replacing the workspace.");
+    // Legacy/blank workspaces intentionally omit game; resolve like T.game()
+    // without adding or rewriting a saved setting during adoption.
+    const source=activeEntry?.game || T.game(), target=GAMES[next.settings?.game] ? next.settings.game : "mtg";
+    if(!suspendGame(target,true,kind))throw Error("Finish saving your scans before replacing the workspace.");
+    const ticket=navigation.pause(); workspaceVisitRevision++;
+    const route=source===target ? {game:target,hash:activeEntry?.route || normalizeRoute(location.hash)} : gameSwitchRoute(gameContext(source),target);
+    return {ticket,source,route};
+  },
+  finished(transition) {
+    if(!transition)return;
+    const {ticket,route}=transition;
+    // A newer user tab/link/traversal owns the destination. It must apply against
+    // the adopted workspace, not let an older game write revive prior settings.
+    try {
+      if(!navigation.hasNewer(ticket)) {
+        clearGameContext(); entryOrigins.clear();
+        installNavigation({...route,mode:"workspace",entry:makeEntry(route.game,route.hash,activeEntry?.index || 0)});
+      }
+    } finally {navigation.resume(ticket,true);}
+  },
+  failed(transition) {
+    if(!transition)return;
+    if(!navigation.hasWork && suspendedGame) {scanCtx.afterGameChange?.(suspendedGame);suspendedGame=null;}
+    navigation.resume(transition.ticket);
+    if(!navigation.busy)render();
+  },
+};
+function gameContext(source=activeEntry?.game || T.game()) {
+  return {game:source,hash:activeEntry?.route || location.hash,view:S.ui.view,collectionTab:source==='mtg'?S.ui.collTab:T.ui(source).coll.tab,collectionShow:source==='mtg'?'':T.ui(source).coll.show,decksTab:S.ui.decksTab,origin:S.ui.sheetCtx?.origin};
+}
+function restoreActiveHistory(intent) {
+  const distance=intent.mode === "pop" ? activeEntry?.index-intent.entry?.index : 0;
+  if(Number.isInteger(distance)&&distance) {
+    if(rollbackHistoryId===intent.entry?.entryId)return;
+    rollbackHistoryId=intent.entry?.entryId;history.go(distance);
+  } else if(activeEntry)replaceEntry(activeEntry);
+}
+function navigate(intent) {
+  if(!navigationReady)return Promise.resolve(false);
+  const current=activeEntry || {game:T.game(),route:normalizeRoute(location.hash)};
+  intent.hash=normalizeRoute(intent.hash);
+  if(!navigation.busy && current.game===intent.game && current.route===intent.hash && !["pop","boot"].includes(intent.mode)) {render();return Promise.resolve(false);}
+  if(intent.game!==current.game && (gameChangeBlocked() || !suspendGame(intent.game))) {
+    if(intent.mode === "pop") {
+      restoreActiveHistory(intent);
+    }
+    toast("Finish saving or close the current edit before switching games.");return Promise.resolve(false);
+  }
+  if(current.route!==intent.hash && !navigation.busy && !suspendedGame) {
+    dbInvalidate(false); if(T.isTcg())T.invalidateTcgSearch(T.game());
+    tcgCtx.invalidateNavigation?.();
+    if(S.ui.set?.busy){S.ui.set.generation=(S.ui.set.generation||0)+1;S.ui.set.busy=false;}
+  }
+  return navigation.request(intent);
+}
+function switchGame(game) {
+  if(!GAMES[game])return Promise.resolve(false);
+  const source=activeEntry?.game || T.game();
+  if(game===source && !navigation.busy)return Promise.resolve(false);
+  const context=gameContext(source);
+  const target=game===source ? {game,hash:activeEntry.route} : gameSwitchRoute(context,game);
+  return navigate({...target,mode:game===source?'replace':'push'});
+}
+function applyHistory() {
+  if(!navigationReady)return;
+  const hash=normalizeRoute(location.hash), known=historyEntry(history.state,hash);
+  if(known?.entryId===activeEntry?.entryId)rollbackHistoryId=null;
+  else if(known?.entryId===rollbackHistoryId)return;
+  if(known && known.entryId===activeEntry?.entryId && known.route===activeEntry.route && !navigation.busy)return;
+  rememberScroll();
+  const entry=known || makeEntry(activeEntry?.game || T.game(),hash,(activeEntry?.index || 0)+1);
+  // popstate and hashchange can describe the same traversal while its game write waits.
+  if(navigationPending && pendingHistoryId===entry.entryId)return;
+  pendingHistoryId=entry.entryId;
+  void navigate({game:entry.game,hash,entry,mode:known?'pop':'legacy'}).finally(()=>{if(pendingHistoryId===entry.entryId)pendingHistoryId=null;});
+}
+let pendingHistoryId=null;
+window.addEventListener("popstate",applyHistory);
+window.addEventListener("hashchange",applyHistory);
+// App links use the same history path, including same-hash game changes.
+document.addEventListener("click",e=>{
+  const a=e.target.closest?.('a[href^="#"]');
+  if(!a || a.tagName!=="A" || e.defaultPrevented || e.button>0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)return;
+  e.preventDefault();go(a.getAttribute('href'));
+},true);
+// Old page actions cannot mutate a newly committed game's workspace while a write waits.
+for(const name of ['click','input','change'])document.addEventListener(name,e=>{
+  if(navigationPending && !e.target.closest?.('#gameTabs,[data-act="setGame"],a[href^="#"],[data-nav]')){e.preventDefault();e.stopImmediatePropagation();}
+},true);
 
 /* =========================================================
    Event delegation
@@ -1058,7 +1221,7 @@ registerWorkbench({A,C,commit,render,openSheet,closeSheet,refreshSheet,toast,
 });
 
 // Yu-Gi-Oh! and Pokémon actions (tcg.js).
-setTimeout(() => Object.assign(tcgCtx, { A, C, I, commit, render, openSheet, closeSheet, refreshSheet, toast, go, download, copyText, busy, rerenderKeepingFocus, writeRecord, invalidateMagicSearch: () => dbInvalidate(false), openPrintingPicker: printingPicker.open }) && (T.registerTcg(tcgCtx), registerCardMenus()), 0);
+setTimeout(() => Object.assign(tcgCtx, { A, C, I, commit, render, openSheet, closeSheet, refreshSheet, toast, go, download, copyText, busy, rerenderKeepingFocus, writeRecord, invalidateMagicSearch: () => dbInvalidate(false), switchGame, navigationStamp, navigationCurrent, openPrintingPicker: printingPicker.open }) && (T.registerTcg(tcgCtx), registerCardMenus()), 0);
 
 // Press and hold (data-hold="action"): runs that action instead of the tap's, with a haptic tick.
 let holdTimer = null, heldTarget = null, holdAt = null;
@@ -1098,7 +1261,7 @@ function updateCompareTray() {
   tray.innerHTML = `<div>${first ? artworkHTML(first,"compare-thumb") : actionIcon("compare")}<span><b>${first ? esc(first.name) : "Compare cards"}</b><small>${first ? "Tap another card to compare" : "Tap your first card"}</small></span></div><button class="icon" data-act="cancelCardCompare" aria-label="Cancel comparison">${actionIcon("close")}</button>`;
 }
 async function resolveActionCard(t) {
-  const game = T.game(), dataset = {...t.dataset}, origin = S.ui.sheetCtx, route = location.hash;
+  const game = T.game(), dataset = {...t.dataset}, origin = S.ui.sheetCtx, route = location.hash, screen=navigationStamp();
   const matchingSheet = game === "mtg" ? origin?.type === "card" && key(origin.name) === key(dataset.name) : origin?.game === game && String(origin.id) === String(dataset.id);
   let card, setId=dataset.setId || (matchingSheet ? origin.setId : "") || "",setMembership=matchingSheet?origin.setMembership:null,setVariant=dataset.setVariant || dataset.setFinish || (matchingSheet ? origin.setVariant || origin.priceFinish : "") || "";
   if (game === "mtg") {
@@ -1120,7 +1283,7 @@ async function resolveActionCard(t) {
     if(setId)card=T.setContextCard(game,setMembership?{...card,setContext:setMembership}:card,setId,T.ui(game).sets.list,{variantKey:setVariant});
     if(card?.setContext?.membership==='set-response')setMembership={...card.setContext};
   }
-  if (T.game() !== game || location.hash !== route || S.ui.sheetCtx !== origin) return null;
+  if (!navigationCurrent(screen) || T.game() !== game || location.hash !== route || S.ui.sheetCtx !== origin) return null;
   if(setId)dataset.setId=setId;
   if(setVariant)dataset.setVariant=setVariant;
   return {game,card,dataset,setId,setMembership,setVariant,priceEdition:matchingSheet?origin.priceEdition||origin.edition||"":"",priceYgoEdition:matchingSheet?origin.priceYgoEdition||origin.ygoEdition||"":""};
@@ -1184,7 +1347,7 @@ function tileMenu(tile) {
 }
 A.tileOpen = (t) => {
   closeSheet(false);
-  if (t.dataset.tcg) { (S.ui.tdeckTab ||= {})[t.dataset.deck] = t.dataset.tab; go("#tdeck/" + t.dataset.deck); }
+  if (t.dataset.tcg) { (S.ui.tdeckTab ||= {})[T.game()+":"+t.dataset.deck] = t.dataset.tab; go("#tdeck/" + t.dataset.deck); }
   else go(`#deck/${t.dataset.deck}/${t.dataset.tab}`);
 };
 A.tileOptions = (t) => {
@@ -1283,10 +1446,58 @@ attachCardGestures({onSelect:target=>{
 
 document.addEventListener("pointerdown", ripple, { passive: true });
 attachGestures({ closeSheet: () => A.closeSheet() });
+// One shared shell measurement keeps sticky section tabs below the responsive
+// game header through live viewport/fold changes without fixing workspace height.
+function readSectionTabRail(content) {
+  const rail=content?.querySelector?.(":scope > .tabs"),active=rail?.querySelector('[aria-selected="true"]');
+  if(!rail||!active)return null;
+  const box=rail.getBoundingClientRect(),tab=active.getBoundingClientRect();
+  return {rail,active:active.dataset.id,left:rail.scrollLeft,width:box.width,visible:tab.left>=box.left-.5&&tab.right<=box.right+.5};
+}
+let sectionRailMemory=null;
+function restoreSectionTabRail(content,previous=null) {
+  const state=readSectionTabRail(content);if(!state){sectionRailMemory=null;return;}
+  const rail=state.rail,active=rail.querySelector('[aria-selected="true"]');
+  if(previous?.active===state.active){
+    rail.scrollLeft=previous.left;
+    // A visitor who deliberately scrolled away from the active item keeps that
+    // position through same-section refreshes and viewport changes.
+    if(!previous.visible){sectionRailMemory=readSectionTabRail(content);return;}
+  }
+  const box=rail.getBoundingClientRect(),tab=active.getBoundingClientRect();
+  if(tab.left<box.left)rail.scrollLeft+=tab.left-box.left;
+  else if(tab.right>box.right)rail.scrollLeft+=tab.right-box.right;
+  sectionRailMemory=readSectionTabRail(content);
+}
+function observeShellHeader(header = document.querySelector(".topbar"), root = document.documentElement, view = window) {
+  if (!header || !root) return () => {};
+  let previous = -1, previousWidth = -1;
+  const content=root.ownerDocument?.getElementById("content");
+  const trackRail=event=>{if(event.target===content?.querySelector?.(":scope > .tabs"))sectionRailMemory=readSectionTabRail(content);};
+  content?.addEventListener("scroll",trackRail,true);
+  const measure = () => {
+    const box=header.getBoundingClientRect(),height=Math.max(0,Math.ceil(box.height));
+    if(Number.isFinite(box.width)&&box.width!==previousWidth){
+      previousWidth=box.width;
+      const rail=content?.querySelector?.(":scope > .tabs");
+      restoreSectionTabRail(content,sectionRailMemory?.rail===rail?sectionRailMemory:null);
+    }
+    if (Number.isFinite(height) && height !== previous) {
+      previous = height;
+      root.style.setProperty("--shell-header-height", `${height}px`);
+    }
+  };
+  measure();
+  const observer = typeof view.ResizeObserver === "function" ? new view.ResizeObserver(measure) : null;
+  if (observer) observer.observe(header);
+  else view.addEventListener("resize", measure, { passive: true });
+  return () => { observer?.disconnect(); content?.removeEventListener("scroll",trackRail,true); if (!observer) view.removeEventListener("resize", measure); };
+}
 attachGameTabs($("#gameTabs"));
 attachHomeCommunity($("#content"));
 attachHomeSwipe($("#content"), {
-  enabled: () => S.ui.view === "home" && !document.documentElement.classList.contains("sheet-open") && !document.querySelector('[role="dialog"], dialog[open], .tour, .zoom-overlay'),
+  enabled: () => !navigationPending && !comparison.active && !document.documentElement.classList.contains("sheet-open") && !gameChangeBlocked(),
+  context: () => JSON.stringify([navigation.revision,workspaceVisitRevision,activeEntry?.entryId,location.hash]),
   current: () => S.state.settings.game || "mtg",
   switchGame: id => A.setGame({ dataset: { game: id } }),
 });
@@ -1691,6 +1902,7 @@ A.menu = () => { closeSheet(); S.ui.settingsTab="account"; go("#settings"); };
    ========================================================= */
 
 A.card = async (t) => {
+  const screen=navigationStamp();
   S.ui.sheetBack = S.ui.sheetCtx?.type === "idea" && $("#sheet").open ? { type: "idea", i: S.ui.sheetCtx.i } : null;
   const name = t.dataset.name,
     ctx = { type: "card", name, entryId:t.dataset.entry||"", deckId: t.dataset.deck || (S.ui.view === "deck" ? currentDeck()?.id : null), random: !!t.dataset.random };
@@ -1706,9 +1918,9 @@ A.card = async (t) => {
     openSheet(`<div class="sheet-head"><h2>${esc(name)}</h2><button class="icon" data-act="closeSheet">✕</button></div><p class="muted">Loading card data…</p>`, ctx);
     try {
       c = await resolve(name, true);
-      if(S.ui.sheetCtx !== ctx || T.game() !== "mtg" || !$("#sheet").open)return;
+      if(!navigationCurrent(screen) || S.ui.sheetCtx !== ctx || T.game() !== "mtg" || !$("#sheet").open)return;
     } catch (e) {
-      if(S.ui.sheetCtx !== ctx || T.game() !== "mtg" || !$("#sheet").open)return;
+      if(!navigationCurrent(screen) || S.ui.sheetCtx !== ctx || T.game() !== "mtg" || !$("#sheet").open)return;
       $("#sheetBody").innerHTML = `<div class="sheet-head"><h2>${esc(name)}</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="note warn">${esc(e.message)}</div><p class="muted small">Check the spelling. You can fix the name by removing this card and adding the correct one.</p>${ctx.deckId ? `<button class="link danger" data-act="deckRemove" data-name="${esc(name)}">Remove from deck</button>` : ""}`;
       return;
     }
@@ -1722,7 +1934,7 @@ A.card = async (t) => {
 async function loadCardExtras(ctx) {
   if (ctx.detailsBusy) return;
   let c = ctx.print || meta(ctx.name);
-  const still = () => S.ui.sheetCtx === ctx && $("#sheet").open;
+  const screen=navigationStamp(), still = () => navigationCurrent(screen) && S.ui.sheetCtx === ctx && $("#sheet").open;
   ctx.detailsBusy = true;
   const oldDetailsError = ctx.detailsError;
   ctx.detailsError = "";
@@ -1763,7 +1975,7 @@ async function loadCardExtras(ctx) {
 async function loadMagicVersions(ctx, next = false) {
   if (ctx?.type !== "card" || ctx.printsBusy || (next && !ctx.printsNext)) return;
   const card = ctx.print || meta(ctx.name), cursor = next ? ctx.printsNext : null;
-  const still = () => S.ui.sheetCtx === ctx && $("#sheet").open && T.game() === "mtg";
+  const screen=navigationStamp(), still = () => navigationCurrent(screen) && S.ui.sheetCtx === ctx && $("#sheet").open && T.game() === "mtg";
   if (!still()) return;
   const token = Symbol("magic-versions");
   ctx.printsRequest = token; ctx.printsBusy = true; ctx.printsError = "";
@@ -1978,7 +2190,7 @@ A.askRules = (button) => {
   rulesGuideOrigin = origin;
 };
 A.askOpen = () => {
-  askTools ||= makeAskTools({ S, T, A, go, esc, api, resolve, cacheCard, loadSetIndex, loadMetaData, metaState, MTG_META_FORMATS, allMeta: () => Object.fromEntries(Object.entries(allCachedMeta()).map(([k, v]) => [k, v.data])), priceOf, inv, meta, collectionValue, lotPrice, mtgPower, shownPower, tcgCtx,
+  askTools ||= makeAskTools({ S, T, A, go, navigationStamp, navigationCurrent, esc, api, resolve, cacheCard, loadSetIndex, loadMetaData, metaState, MTG_META_FORMATS, allMeta: () => Object.fromEntries(Object.entries(allCachedMeta()).map(([k, v]) => [k, v.data])), priceOf, inv, meta, collectionValue, lotPrice, mtgPower, shownPower, tcgCtx,
     openMtgBuild: (seed, fmt, budget) => { Object.assign(S.ui.build, { baseDeck: null, seed, results: {}, msg: "", openTier: null, format: formatOf(fmt).name, custom: budget ? String(budget) : "" }); openSheet(V.buildSheet(), { type: "build" }); runBuild(); },
     openTcgBuild: async (g, id, budget) => { await A.tBuild({ dataset: { id } }); if (budget) C.tBuildCustom({ value: String(budget) }); } });
   openAsk({ game: T.game(), tools: askTools, show: (s) => safely(askTools.open(s)) });
@@ -2579,11 +2791,12 @@ function scheduleHeroRollover() {
   heroRolloverTimer?.unref?.();
 }
 function heroArt(g) {
+  const screen=navigationStamp();
   if (S.ui.view !== "home" || T.game() !== g) return;
   scheduleHeroRollover();
   paintHomeHero(g); // Clear yesterday's art even if today's provider is offline.
   return T.loadHero(g, () => api("/cards/random?" + new URLSearchParams({ q: "game:paper is:hires (rarity:mythic or rarity:rare) -is:digital" })))
-    .then(() => paintHomeHero(g))
+    .then(() => navigationCurrent(screen) && paintHomeHero(g))
     .catch(() => {});
 }
 // Suspended/mobile tabs recheck the day when foregrounded, not only on navigation.
@@ -2592,6 +2805,7 @@ window.addEventListener("focus", () => { if (S.ui.view === "home") heroArt(T.gam
 
 /* ---------- rules reference ---------- */
 A.rulesList = async (t) => {
+  const screen=navigationStamp();
   const g = T.game(),
     R = (S.ui.rules[g] ||= { list: "", busy: false, error: "", data: {} }),
     id = t.dataset.id;
@@ -2623,7 +2837,7 @@ A.rulesList = async (t) => {
     R.error = "Couldn’t load the list: " + e.message;
   } finally {
     R.busy = false;
-    render();
+    if(navigationCurrent(screen))render();
   }
 };
 
@@ -3956,7 +4170,7 @@ A.undo = async () => {
     if (!lastUndo) return null;
     label = lastUndo.label;
     return lastUndo.state;
-  }, { stamp: true, notify: true });
+  }, { stamp: true, notify: true, kind: "undo" });
   if (!restored) return toast("Nothing to undo.");
   render();
   refreshSheet();
@@ -3976,6 +4190,7 @@ A.dbRandom = async () => {
 };
 let randomDeckBusy=false,lastRandomCommander="";
 A.randomDeck=async()=>{
+  const screen=navigationStamp();
   if(randomDeckBusy)return;
   randomDeckBusy=true;
   toast("Choosing a random Commander deck idea…");
@@ -3989,6 +4204,7 @@ A.randomDeck=async()=>{
       const own=inv(c.name),deck={id:"random:"+c.id,name:c.name+" · random idea",format:"Commander",commander:c.name,strategy:"Auto",budget:25,locked:false,cards:[{name:c.name,qty:1}]};
       S.ui.ideas.cache.push({commander:c,deck,plan:"Random",owned:own.owned,available:Math.min(1,own.available),slots:1,open:99,themeCards:0,reason:"Random legal commander; review the generated plan",difficulty:"Review sequencing"});index=S.ui.ideas.cache.length-1;
     }
+    if(!navigationCurrent(screen))return;
     lastRandomCommander=S.ui.ideas.cache[index].commander.name;
     S.ui.ideas.open=null;S.ui.ideas.sel=new Set();openIdea(index);
     saveCatalogSoon();
@@ -4010,9 +4226,9 @@ async function dbSearch(next = false) {
     catch (e) { db.error = e.message; if (S.ui.view === "search") render(); return; }
     db.submitted = spec;
   }
-  const generation = db.generation, cursor = next ? db.next : null, abort = new AbortController();
+  const generation = db.generation, cursor = next ? db.next : null, abort = new AbortController(), screen=navigationStamp();
   db.abort = abort;
-  const current = () => S.ui.db === db && db.generation === generation && db.submitted === spec && T.game() === "mtg";
+  const current = () => S.ui.db === db && db.generation === generation && db.submitted === spec && T.game() === "mtg" && navigationCurrent(screen);
   db.busy = true;
   db.error = "";
   if (S.ui.view === "search") render();
@@ -4260,18 +4476,18 @@ I.refSearch = (t) => {
 // ----- Magic tournament results (TopDeck.gg via the Worker) -----
 const mtgMetaFormat = () => (S.ui.mtgMeta ||= { format: "Modern" }).format;
 function loadMtgMeta(force = false) {
-  const key = "mtg:" + mtgMetaFormat(),
+  const screen=navigationStamp(), key = "mtg:" + mtgMetaFormat(),
     M = metaState(key);
   if (M.busy || (!force && (M.data || M.error) && (M.data ? Date.now() - M.at < 12 * 3600e3 : true))) return;
   loadMetaData(key, force)
     .then(async (data) => {
-      render();
+      if(navigationCurrent(screen))render();
       // Card data (prices, art, types) for the lists on screen.
       const names = [...new Set(data.decks.slice(0, 30).flatMap((d) => [...d.commanders, ...d.main].map((r) => r.name)))];
-      if ((await resolveNames(names)).total) render();
+      if ((await resolveNames(names)).total && navigationCurrent(screen)) render();
     })
-    .catch(() => render());
-  setTimeout(render, 0);
+    .catch(() => navigationCurrent(screen) && render());
+  setTimeout(()=>navigationCurrent(screen)&&render(), 0);
 }
 A.mtgMetaFormat = (t) => {
   S.ui.mtgMeta = { format: t.dataset.id };
@@ -4920,7 +5136,7 @@ A.loadExample = async () => {
   const st = blank();
   st.example = true;
   st.collection = names.filter((n) => meta(n)).map((n) => ({ id: uid(), name: n, qty: ["Mountain", "Island"].includes(n) ? 12 : 1, set: "", collectorNumber: "", finish: "nonfoil", condition: "Near Mint", language: "en", location: "Example", reserved: 0, printingVerified: false, raw: {} }));
-  await commit((s) => { for (const field of Object.keys(s)) delete s[field]; Object.assign(s, st); }, { recovery: true, rerender: false, enrich: false });
+  await replaceWorkspace(st, { recovery: true, notify: true });
   go("#collection");
 };
 A.persist = async () => {
@@ -5036,11 +5252,19 @@ async function boot() {
         S.state.collection = Object.values(legacy.collection).filter((c) => c.qty > 0).map((c) => ({ id: uid(), name: c.name, qty: c.qty, set: "", collectorNumber: "", finish: "nonfoil", condition: "Near Mint", language: "en", location: "Earlier CardStashy", reserved: c.reserved || 0, printingVerified: false, raw: {} }));
     } catch {}
   }
+  const restored=historyEntry(history.state,location.hash);
+  if(restored)S.state.settings.game=restored.game;
+  activeEntry=restored || makeEntry(T.game(),normalizeRoute(location.hash),0);
+  replaceEntry(activeEntry);
   trackValue();
   await save();
-  parseHash();
-  loadSetIndex(); // cached set symbols first; refreshes from Scryfall every few days
+  // No navigation may write the blank workspace while boot is reading storage.
+  // Re-read history after the await: a Back/Forward during startup owns this visit.
+  const latest=historyEntry(history.state,location.hash);
+  navigationReady=true;
   decorateShell();
+  await navigate({game:latest?.game || T.game(),hash:normalizeRoute(location.hash),entry:latest || makeEntry(T.game(),normalizeRoute(location.hash),0),mode:"boot"});
+  loadSetIndex(); // cached set symbols first; refreshes from Scryfall every few days
   render();
   // First visit opens automatically; replay is available in Settings.
   {
@@ -5048,6 +5272,7 @@ async function boot() {
       decks = S.state.decks.length + ["ptcg", "ygo"].reduce((n, g) => n + T.gs(g).decks.length, 0);
     if (shouldTour({ cards, decks }) && !location.hash.startsWith("#shared")) setTimeout(() => openTour(tourArt()), 600);
   }
+  observeShellHeader();
   $("#app").classList.add("ready");
   initCloud({
     accountChanged: () => { clearAskConversations(); clearRulesConversations(); rulesGuideOrigin = null; },

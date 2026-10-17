@@ -149,7 +149,7 @@ try{
 
  const app=fs.readFileSync(new URL('./app.js',import.meta.url),'utf8');
  assert(!app.includes('lots.slice(0,100)'));
- assert.match(app,/await writeRecords\(records\);\s*S\.state = valid;\s*const changedLots = changedConditionLots/,'newlot scheduling follows successful persistence');
+ assert.match(app,/try \{ await writeRecords\(records\); \}\s*catch \(error\) \{ workspaceTransition\?\.failed\(transition\); throw error; \}\s*S\.state = valid;\s*workspaceTransition\?\.finished\(transition\);\s*const changedLots = changedConditionLots/,'newlot scheduling follows successful persistence');
  assert.match(app,/await queueWorkspaceWrite\(async\(\)=>\{/,'condition persistence joins workspace write queue');
  console.log('PASS: condition scheduling hooks are post-commit and quote persistence is serialized.');
 {
