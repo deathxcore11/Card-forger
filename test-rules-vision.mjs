@@ -37,7 +37,7 @@ const {S,blank}=await import('./store.js'),V=await import('./views.js'),T=await 
 for(const g of ['mtg','ptcg','ygo']){
  S.state=blank();S.state.settings.game=g;S.state.tcg={ptcg:{collection:[],decks:[],wishlist:[]},ygo:{collection:[],decks:[],wishlist:[]}};
  if(g==='mtg'){S.state.decks=[{id:'rules-deck',name:'Rules deck',format:'Commander',cards:[]}];S.ui.deckId='rules-deck';S.ui.deckTab='rules';assert.match(V.deckPage(),/data-learning-root/);}
- else {S.state.tcg[g].decks=[{id:'rules-deck',name:'Rules deck',format:g==='ptcg'?'Standard':'Advanced',zones:{main:[],extra:[],side:[]}}];S.ui.tdeckTab={['rules-deck']:'rules'};assert.match(T.tcgDeck('rules-deck'),/data-learning-root/);}
+ else {S.state.tcg[g].decks=[{id:'rules-deck',name:'Rules deck',format:g==='ptcg'?'Standard':'Advanced',zones:{main:[],extra:[],side:[]}}];S.ui.tdeckTab={[g+':rules-deck']:'rules'};assert.match(T.tcgDeck('rules-deck'),/data-learning-root/);}
 }
 console.log('PASS: Rules pill renders the shared interactive learning view inside actual deck pages for all three games.');
 

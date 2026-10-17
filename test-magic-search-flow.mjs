@@ -10,7 +10,7 @@ const source=fs.readFileSync('app.js','utf8'),start=source.indexOf('function dbI
 const card=(id,name=id,oracle_id=id)=>({id,name,oracle_id,set:'fdn',prices:{usd:null}});
 const queued=[],cached=[],toasts=[],saved=[];let renders=0,game='mtg';
 const db={term:'Alpha',filters:{},results:[],next:null,total:0,busy:false,error:''};
-const context={A:{},C:{},I:{},S:{ui:{db,view:'search'}},T:{game:()=>game,savedSearches:()=>saved,setSavedSearches:(_g,x)=>saved.splice(0,saved.length,...x)},URL,URLSearchParams,AbortController,structuredClone,searchQuery,rankByName,magicFilterError,hasMagicSearchQuery,magicSearchSpec,scryfallSearchPath,mergeMagicCards,
+const context={navigationStamp:()=>({}),navigationCurrent:()=>true,A:{},C:{},I:{},S:{ui:{db,view:'search'}},T:{game:()=>game,savedSearches:()=>saved,setSavedSearches:(_g,x)=>saved.splice(0,saved.length,...x)},URL,URLSearchParams,AbortController,structuredClone,searchQuery,rankByName,magicFilterError,hasMagicSearchQuery,magicSearchSpec,scryfallSearchPath,mergeMagicCards,
  api:(path,options={})=>new Promise((resolve,reject)=>queued.push({path,signal:options.signal,resolve,reject})),cacheCard:c=>cached.push(c),saveCatalogSoon(){},render:()=>renders++,toast:m=>toasts.push(m),V:{mtgFilterChips:()=>[]},currentDeck:()=>null};
 vm.createContext(context);vm.runInContext(source.slice(start,end),context);
 const {A,C,I}=context,tick=()=>new Promise(r=>setTimeout(r,0));
@@ -39,15 +39,11 @@ assert.throws(()=>searchQuery('',{set:'wrong set'}),/set code/);assert.equal(sea
 db.filters={};db.term='old';old=A.dbSearch();saved.push({term:'saved',filters:{type:'legendary creature',sort:'released'}});fresh=A.dbSaved({dataset:{i:'0'}});
 assert.match(decodeURIComponent(queued.at(-1).path).replaceAll('+',' '),/t:legendary t:creature/);const latest=queued.at(-1);queued.at(-2).reject(Error('late saved-replaced'));await old;latest.resolve(response([card('saved')]));await fresh;
 assert.equal(db.results[0].id,'saved');db.filters.type='land';assert.equal(saved[0].filters.type,'legendary creature');
-// Actual shared game action invokes invalidation before async commit, including away/back.
+// The registered game action delegates to the app-owned lifecycle controller.
 const tcgSource=fs.readFileSync('tcg.js','utf8');
-if(tcgSource.includes('ctx.invalidateMagicSearch?.()')) {
- const switchCode=tcgSource.slice(tcgSource.indexOf('  A.setGame = async'),tcgSource.indexOf('  A.hideStart ='));
- const switchCtx={A:{},ctx:{invalidateMagicSearch:()=>context.dbInvalidate(false)},GAMES:{mtg:{},ptcg:{},ygo:{}},game:()=>game,commit:async fn=>{const state={settings:{game}};fn(state);game=state.settings.game;},document:{body:{dataset:{}}},S:context.S,closeSheet(){},go(){},render(){},invalidateSearch:()=>{},invalidateTcgSearch:()=>{},ui:()=>({search:{}})};
- vm.runInNewContext(switchCode,switchCtx);old=A.dbSearch();await switchCtx.A.setGame({dataset:{game:'ptcg'}});await switchCtx.A.setGame({dataset:{game:'mtg'}});queued.at(-1).resolve(response([card('wrong-game')]));await old;assert.equal(db.results.length,0);
-} else {
- old=A.dbSearch();context.dbInvalidate();game='ptcg';game='mtg';queued.at(-1).resolve(response([card('wrong-game')]));await old;assert.equal(db.results.length,0);
-}
+const switchCode=tcgSource.slice(tcgSource.indexOf('  A.setGame = async'),tcgSource.indexOf('  A.hideStart ='));
+const switchCtx={A:{},ctx:{switchGame:async target=>{context.dbInvalidate(false);game=target;return true;}}};
+vm.runInNewContext(switchCode,switchCtx);old=A.dbSearch();await switchCtx.A.setGame({dataset:{game:'ptcg'}});await switchCtx.A.setGame({dataset:{game:'mtg'}});queued.at(-1).resolve(response([card('wrong-game')]));await old;assert.equal(db.results.length,0);
 // A stale no-match response cannot launch a fallback against a newer query.
 db.term='draw old';db.filters={};old=A.dbSearch();I.dbTerm({value:'draw new'});const fallbackCount=queued.length;queued.at(-1).reject(Error("didn't match any cards"));await old;assert.equal(queued.length,fallbackCount);
 fresh=A.dbSearch();queued.at(-1).reject(Error("didn't match any cards"));await tick();assert.match(decodeURIComponent(queued.at(-1).path).replaceAll('+',' '),/o:"draw new"/);queued.at(-1).resolve(response([card('rules')]));await fresh;assert.match(db.note,/draw new/);

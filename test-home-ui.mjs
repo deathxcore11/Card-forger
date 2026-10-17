@@ -107,6 +107,7 @@ for (const scenario of [
   const calls = [];
   let timer, finish, renders = 0;
   const context = {
+    navigationStamp:()=>({}),navigationCurrent:()=>true,
     S: { ui: { view: scenario.view } }, T: { game: () => 'mtg' }, mtgMetaFormat: () => 'Modern',
     metaState: () => cache, document: documentRef, $: selector => nodes[selector],
     setTimeout: (callback, delay) => { timer = { callback, delay }; },

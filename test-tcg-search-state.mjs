@@ -12,7 +12,7 @@ globalThis.fetch=async url=>{throw Error('Unmocked network: '+url);};
 S.state=blank();S.state.tcg={ygo:blankGame(),ptcg:blankGame()};S.state.settings.game='ygo';S.ui.view='search';
 let renders=0,magicInvalidations=0;
 const A={},C={},I={};
-registerTcg({A,C,I,commit:async f=>f(S.state),render:()=>renders++,toast(){},go(){},closeSheet(){S.ui.sheetCtx=null;},openSheet(){},writeRecord:async()=>{},invalidateMagicSearch:()=>magicInvalidations++});
+registerTcg({A,C,I,commit:async f=>f(S.state),render:()=>renders++,toast(){},go(){},closeSheet(){S.ui.sheetCtx=null;},openSheet(){},writeRecord:async()=>{},invalidateMagicSearch:()=>magicInvalidations++,switchGame:async game=>{magicInvalidations++;invalidateTcgSearch(S.state.settings.game);S.state.settings.game=game;return true;}});
 const realYgo=SOURCES.ygo.search,realPtcg=SOURCES.ptcg.search,realGet=SOURCES.ptcg.get;
 const requests=[];
 const deferred=()=>{let resolve,reject;const promise=new Promise((r,j)=>{resolve=r;reject=j;});return {promise,resolve,reject};};

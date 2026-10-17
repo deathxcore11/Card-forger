@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import {routeSegments} from './game-navigation.js';
 import {gunzipSync} from 'node:zlib';
 import {createHash,webcrypto} from 'node:crypto';
 import {LESSONS,TURN_STEPS,RULE_CHECKS,CORE_RULES,BEGINNER_START} from './rule-lessons.js';
@@ -10,10 +11,10 @@ import {RULE_SOURCES,RULE_VERSIONS,lessonReference,entryReference,resolveRuleRef
 // Exercise the real hash parser: a rendered Rules tab must be reachable from
 // its actual deck URL, including refresh and the active-deck alias.
 {
- const app=fs.readFileSync('app.js','utf8'),start=app.indexOf('const LEGACY ='),end=app.indexOf('\nfunction go(',start);
+ const app=fs.readFileSync('app.js','utf8'),start=app.indexOf('const VIEWS ='),end=app.indexOf('\nfunction go(',start);
  assert(start>=0&&end>start);
  const location={hash:'#deck/saved-mtg/rules'},S={ui:{view:'home',deckId:null,deckTab:'cards',q:{}},state:{activeDeck:'saved-mtg'}};
- const parse=Function('location','S','T','deckById','save',app.slice(start,end)+'; return parseHash;')(location,S,{isTcg:()=>false},id=>id==='saved-mtg'?{id,format:'Commander'}:null,()=>{});
+ const parse=Function('location','S','T','deckById','save','routeSegments',app.slice(start,end)+'; return parseHash;')(location,S,{isTcg:()=>false},id=>id==='saved-mtg'?{id,format:'Commander'}:null,()=>{},routeSegments);
  parse();assert.equal(S.ui.view,'deck');assert.equal(S.ui.deckId,'saved-mtg');assert.equal(S.ui.deckTab,'rules','The actual Rules tab hash must select its renderer');
  for(const tab of ['cards','engine','matchups','upgrade','versions','playtest','shop','rules']){location.hash='#deck/active/'+tab;parse();assert.equal(S.ui.deckId,'saved-mtg');assert.equal(S.ui.deckTab,tab,'Existing and Rules tabs remain routable');}
  location.hash='#deck/saved-mtg/not-a-tab';parse();assert.equal(S.ui.deckTab,'rules','Unknown tabs cannot replace a valid deck view');

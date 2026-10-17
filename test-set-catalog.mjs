@@ -33,7 +33,7 @@ console.log('PASS: complete set catalogue survives partial and total enrichment 
 // HTTP request with no usable catalogue is a retryable failure, not another render/load cycle.
 const autoLoadLine=fs.readFileSync(new URL('./app.js',import.meta.url),'utf8').split('\n').find(line=>line.includes('["sets","collection"]')&&line.includes('tcgCtx.loadSets'));
 assert.ok(autoLoadLine,'the real app automatic set-loader condition is covered');
-const scheduleCatalogue=new Function('ui','SU','tcgCtx','g','setTimeout',autoLoadLine);
+const scheduleCatalogue=new Function('ui','SU','tcgCtx','g','setTimeout','screen = null','navigationCurrent = () => true',autoLoadLine);
 const priorState=S.state,priorView=S.ui.view,priorStorage=globalThis.localStorage,sourceSets={ygo:SOURCES.ygo.sets,ptcg:SOURCES.ptcg.sets};
 const records=new Map();globalThis.localStorage={getItem:key=>records.get(key)||null,setItem:(key,value)=>records.set(key,String(value))};
 try{
