@@ -159,24 +159,64 @@ export const detailPanel=(id,tab,html)=>`<div id="card-panel-${esc(id)}" class="
 
 // Small DOM helpers keep focus/disclosures stable without replacing the sheet context.
 const focusKey=el=>el?.id?'id:'+el.id:el?.dataset?.focusKey?'key:'+el.dataset.focusKey:el?.dataset?.change?'change:'+el.dataset.change:el?.dataset?.act?'act:'+JSON.stringify([el.dataset.act,el.dataset.tab,el.dataset.target,el.dataset.finish,el.dataset.range,el.dataset.src,el.dataset.game,el.dataset.id]):el?.tagName==='SUMMARY'?'summary:'+el.textContent:el?.tagName==='A'?'link:'+el.getAttribute('href'):'';
+// A history response can replace the sheet before a native smooth scroll has
+// moved at all. Keep that one navigation intent separate from its current top.
+// User input, another focus target, completion or newer navigation ends it.
+const detailScrolls=new WeakMap(),detailStateJumps=new WeakMap();
+const cancelDetailScroll=body=>detailScrolls.get(body)?.cancel();
+function rememberDetailScroll(body,target,top,refreshOffsets,isCurrent){
+ if(!focusKey(target)||!body.addEventListener)return;
+ const max=Number.isFinite(body.scrollHeight)&&Number.isFinite(body.clientHeight)?Math.max(0,body.scrollHeight-body.clientHeight):top,goal=Math.min(top,max);
+ if(Math.abs(body.scrollTop-goal)<=1)return;
+ const input=['wheel','touchstart','pointerdown','keydown'];
+ const intent={target,identity:body.dataset?.detailIdentity,refreshOffsets,isCurrent,cancel:()=>{
+  if(detailScrolls.get(body)!==intent)return;
+  detailScrolls.delete(body);
+  for(const type of input)body.removeEventListener(type,intent.cancel,true);
+  body.removeEventListener('focusin',focusChanged,true);body.removeEventListener('scroll',scrolled);
+ }};
+ const focusChanged=e=>{if(e.target!==target)intent.cancel();};
+ const scrolled=()=>{if(!isCurrent()||Math.abs(body.scrollTop-goal)<=1)intent.cancel();};
+ detailScrolls.set(body,intent);
+ for(const type of input)body.addEventListener(type,intent.cancel,{capture:true,passive:true});
+ body.addEventListener('focusin',focusChanged,true);body.addEventListener('scroll',scrolled,{passive:true});
+}
 export function captureDetailState(body,active=globalThis.document?.activeElement){
- const details=[...(body?.querySelectorAll?.('details')||[])];
- return {top:body?.scrollTop||0,left:body?.querySelector?.('.cs-tabs')?.scrollLeft||0,focus:body?.contains?.(active)?focusKey(active):'',details:details.map((el,i)=>[el.dataset.detailKey||el.id||el.querySelector('summary')?.textContent||String(i),el.open]),pointValue:active?.dataset?.change==='marketPoint'?active.value:null,selection:active&&typeof active.selectionStart==='number'?[active.selectionStart,active.selectionEnd]:null};
+ const details=[...(body?.querySelectorAll?.('details')||[])],intent=detailScrolls.get(body);
+ const jump=intent&&intent.target===active&&body.contains?.(active)&&intent.identity===body.dataset?.detailIdentity&&intent.isCurrent()?intent:null;
+ if(intent&&!jump)intent.cancel();
+ const state={top:body?.scrollTop||0,left:body?.querySelector?.('.cs-tabs')?.scrollLeft||0,focus:body?.contains?.(active)?focusKey(active):'',details:details.map((el,i)=>[el.dataset.detailKey||el.id||el.querySelector('summary')?.textContent||String(i),el.open]),pointValue:active?.dataset?.change==='marketPoint'?active.value:null,selection:active&&typeof active.selectionStart==='number'?[active.selectionStart,active.selectionEnd]:null};
+ if(jump){
+  // Only the synchronous capture/render/restore may consume this intent. Back
+  // snapshots stay plain data and cannot revive navigation on a later turn.
+  detailStateJumps.set(state,jump);
+  queueMicrotask(()=>{detailStateJumps.delete(state);jump.cancel();});
+ }
+ return state;
 }
 export function restoreDetailState(body,state){
  if(!body||!state)return;
  for(const [i,el] of [...(body.querySelectorAll?.('details')||[])].entries()){const key=el.dataset.detailKey||el.id||el.querySelector('summary')?.textContent||String(i),saved=state.details.find(x=>x[0]===key);if(saved)el.open=saved[1];}
  const target=state.focus&&[...(body.querySelectorAll?.('button,input,select,textarea,a,summary,[tabindex]')||[])].find(el=>focusKey(el)===state.focus&&!el.closest?.('[hidden]'));
  if(target&&state.pointValue!==null&&target.dataset?.change==='marketPoint'&&[...(target.options||[])].some(o=>o.value===state.pointValue))target.value=state.pointValue;
- target?.focus?.({preventScroll:true});if(target&&state.selection)try{target.setSelectionRange?.(...state.selection);}catch{}
- body.scrollTop=state.top;const tabs=body.querySelector?.('.cs-tabs');if(tabs)tabs.scrollLeft=state.left;
+ const jump=detailStateJumps.get(state);
+ if(target&&jump&&detailScrolls.get(body)===jump&&jump.identity===body.dataset?.detailIdentity&&jump.isCurrent()){
+  // Complete once against the replacement layout. Replaying the old top would
+  // cancel native smooth scrolling at 0 (or midway), leaving focus off-screen.
+  scrollDetailTarget(body,target,true,jump.refreshOffsets);
+ }else{target?.focus?.({preventScroll:true});body.scrollTop=state.top;}
+ if(target&&state.selection)try{target.setSelectionRange?.(...state.selection);}catch{}
+ const tabs=body.querySelector?.('.cs-tabs');if(tabs)tabs.scrollLeft=state.left;
 }
 export function detailTabKey(key,index,length){return key==='Home'?0:key==='End'?length-1:key==='ArrowRight'?(index+1)%length:key==='ArrowLeft'?(index+length-1)%length:null;}
-export function scrollDetailTarget(body,target,reduced=false,refreshOffsets=()=>{}){
+export function scrollDetailTarget(body,target,reduced=false,refreshOffsets=()=>{},isCurrent=()=>true){
  if(!body||!target)return false;
+ cancelDetailScroll(body);
  const head=body.querySelector?.('.sheet-head'),tabs=body.querySelector?.('.cs-tabs'),clearance=(head?.getBoundingClientRect?.().height||0)+(tabs?.getBoundingClientRect?.().height||0)+12;
  const top=Math.max(0,body.scrollTop+target.getBoundingClientRect().top-body.getBoundingClientRect().top-clearance);
- target.focus?.({preventScroll:true});body.scrollTo?.({top,behavior:reduced?'auto':'smooth'});
+ target.focus?.({preventScroll:true});
+ if(!reduced)rememberDetailScroll(body,target,top,refreshOffsets,isCurrent);
+ body.scrollTo?.({top,behavior:reduced?'auto':'smooth'});
  // An instant jump can expand the sticky title before the next scroll event.
  // Measure the final boundary now, while this card/context is still current.
  // No delayed correction may take focus or scrolling away from later navigation.
@@ -195,10 +235,12 @@ export function createDetailJump({getContext,isOpen,showPrices,getBody,refreshOf
  let sequence=0;
  return async target=>{
   const ctx=getContext(),token=++sequence,identity=identityOf(ctx);
+  cancelDetailScroll(getBody());
   if(!['card','tcard'].includes(ctx?.type))return false;
   await showPrices();
-  if(token!==sequence||getContext()!==ctx||identityOf(ctx)!==identity||ctx.tab!=='prices'||!isOpen())return false;
+  const isCurrent=()=>token===sequence&&getContext()===ctx&&identityOf(ctx)===identity&&ctx.tab==='prices'&&isOpen();
+  if(!isCurrent())return false;
   const body=getBody(),node=body?.querySelector?.(target==='sellers'?'#card-sellers':'#card-history');
-  refreshOffsets();return scrollDetailTarget(body,node,reducedMotion(),refreshOffsets);
+  refreshOffsets();return scrollDetailTarget(body,node,reducedMotion(),refreshOffsets,isCurrent);
  };
 }

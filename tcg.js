@@ -51,6 +51,7 @@ import { tcgPower, powerPanel, powerChip, shownPower, asShown, powerReadiness } 
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
 import { rankPairs, ygoTags, ptcgTags } from "./pairing.js";
 import { nameCandidates, scanCandidateMatches, ygoSetCodes, ygoPasscodes, ptcgNumbers, similarity, scanNameKey, textPhrases, attackNames } from "./scan.js";
+import {rankScanCandidates,scanIdentifierEvidence} from './scan-signals.js';
 import { adaptList, ownedDraft, engineOf, similarLists, swapPool, costToFinish, unpricedCopies } from "./adapt.js";
 export { metaState, similarLists };
 export { metaNeedsRefresh } from "./meta.js";
@@ -2134,8 +2135,8 @@ export function registerTcg(c) {
       .map((x) => x.name);
 
   // A scan candidate for the scanner's list.
-  const scanCand = (G, card, why, exact, print = "", m = ownedMap(G)) => {
-    remember(card);
+  const scanCand = (G, card, why, exact, print = "", m = ownedMap(G), cacheResult = true) => {
+    if(cacheResult)remember(card);
     const ps = G === "ygo" && print ? card.sets?.find((x) => `${x.code}|${x.rarity}` === print) : null;
     return { id: card.id, name: card.name, image: G === "ygo" ? ygoImageDirect(card.id, false) : card.imageLarge, sub: G === "ygo" ? (ps ? `${ps.name} · ${ps.code} · ${ps.rarity}` : card.typeLine) : `${card.set?.name || ""} · #${card.set?.number || ""}${card.set?.total ? "/" + card.set.total : ""} · ${card.rarity || ""}`, why, exact, print, owned: ownedOf(G, card, m), card };
   };
@@ -2172,33 +2173,77 @@ export function registerTcg(c) {
       }
     return [...tally].sort((a, b) => b[1] - a[1]).map((x) => x[0]).slice(0, 5);
   };
-  c.scanCandById = async (G, id, why, exact) => {
+  const scanReleaseContext=(card,selection={})=>{
+    const catalogue=currentYgoCatalogue(),[code,rarity]=String(selection.print||'').split('|');
+    const wanted=selection.setReleaseId||selection.releaseName||'',resolved=wanted?resolveYgoSet(catalogue,wanted):null;
+    const projected=resolved?.status==='resolved'?setContextCard('ygo',card,resolved.set.id,catalogue):null;
+    const matching=(projected?.setContext?.printings||[]).filter(p=>p.code===code&&p.rarity===rarity);
+    const verified=projected?.setContext?.status==='resolved'&&matching.length===1;
+    return {card:verified?projected:setContextCard('ygo',card,'',catalogue,{unverifiedRelease:true}),
+      print:selection.print||'',releaseName:selection.releaseName||resolved?.set?.name||'',setReleaseId:verified?resolved.set.id:'',setReleaseUnverified:!verified,printingAmbiguous:!!selection.printingAmbiguous||!verified};
+  };
+  c.scanCandById = async (G, id, why, exact, selection = {}) => {
+    const {identityOnly=false}=selection;
+    const withRelease=candidate=>{
+      if(!candidate||G!=='ygo')return candidate;
+      const release=scanReleaseContext(candidate.card,selection);
+      return {...candidate,...release,exact:!!candidate.exact&&!release.setReleaseUnverified};
+    };
+    if(identityOnly){
+      const cached=cache[G]?.[id];
+      if(cached&&!needsCardRefresh(G,cached,true))return withRelease({...scanCand(G,cached,why,exact),detailsOnly:false,priceReady:true});
+      const card=await SOURCES[G].get(id,{printings:false,prices:false}).catch(()=>null);
+      // Never store incomplete price work in the shared Search/collection cache.
+      return card?withRelease({...scanCand(G,card,why,exact,'',ownedMap(G),false),detailsOnly:true,priceReady:false}):null;
+    }
+    if(G==='ygo'&&!currentYgoCatalogue().length&&(selection.setReleaseId||selection.releaseName))await loadSets('ygo');
     const card = await ensureCard(G, id).catch(() => null);
-    return card ? scanCand(G, card, why, exact) : null;
+    return card ? withRelease({...scanCand(G, card, why, exact),detailsOnly:false,priceReady:true}) : null;
   };
   // Scanner matching (the scanner itself is scancam.js): exact printing codes first, then names.
   c.scanMatch = async (read, lang, manual = false, status = () => {}, G0 = "") => {
     const G = G0 || g(),
+      getForScan=async id=>{
+        if(manual)return ensureCard(G,id);
+        const card=cache[G]?.[id];
+        return card&&!needsCardRefresh(G,card,true)?card:SOURCES[G].get(id,{printings:false,prices:false});
+      },
       out = [],
       seen = new Set(),
       tried = [],
       m = ownedMap(G),
-      push = (card, why, exact, print = "") => {
-        if (!card || seen.has(card.id) || out.length >= 3) return;
-        seen.add(card.id);
-        out.push(scanCand(G, card, why, exact, print, m));
+      push = (card, why, exact, print = "", printing = null, printingAmbiguous = false) => {
+        const identity=JSON.stringify([card?.id,G==='ygo'?print:'',printing?.name||'']);
+        if (!card || seen.has(identity) || out.length >= 3) return;
+        seen.add(identity);
+        const detailsOnly=!manual&&!(cache[G]?.[card.id]===card&&!needsCardRefresh(G,card,true));
+        let candidate={...scanCand(G, card, why, exact, print, m,manual),detailsOnly,priceReady:!detailsOnly};
+        if(printing)Object.assign(candidate,{sub:`${printing.name || 'Release unavailable'} · ${printing.code} · ${printing.rarity || 'Rarity unavailable'}`,releaseName:printing.name||'',printingAmbiguous});
+        if(G==='ygo'){
+          const release=scanReleaseContext(card,{print,releaseName:printing?.name||'',printingAmbiguous});
+          candidate={...candidate,...release,exact:!!candidate.exact&&!release.setReleaseUnverified};
+        }
+        out.push(candidate);
       };
     const all = `${read.code}\n${read.full}`,
       names = manual ? [read.name] : nameCandidates(G, read.name || read.full);
     if (G === "ygo") {
-      // Japanese/other-region codes (DUNE-JP001) also try the English printing (DUNE-EN001).
-      const codes = ygoSetCodes(manual ? read.name : all).flatMap((c) => [c, c.replace(/-([A-Z]{1,2})(\d{3})$/, "-EN$2")]).filter((c, i, a) => a.indexOf(c) === i);
+      // The printed region is identity, not a preference. A JP or legacy
+      // regionless code must never turn into an English printing.
+      const codes = manual?ygoSetCodes(read.name):scanIdentifierEvidence(G,read).observations;
       for (const code of codes.slice(0, 4)) {
         tried.push(code);
         const info = await fetch("https://db.ygoprodeck.com/api/v7/cardsetsinfo.php?setcode=" + encodeURIComponent(code)).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-        if (info?.id) push(await ensureCard("ygo", String(info.id)).catch(() => null), `Set code ${info.set_code}`, true, `${info.set_code}|${info.set_rarity}`);
+        if (info?.id) {
+          const card=await getForScan(String(info.id)).catch(() => null);
+          const printings=[...new Map((card?.sets||[]).filter(p=>p.code===code).map(p=>[JSON.stringify([p.code,p.rarity,p.name]),p])).values()];
+          // cardsetsinfo can return only its first rarity. Expand the actual
+          // card's rows before deciding certainty, even if the UI caps suggestions.
+          for(const printing of printings)push(card,printings.length===1?`Set code ${code}`:'Set code matches multiple releases or rarities · check printing',printings.length===1,`${printing.code}|${printing.rarity}`,printing,printings.length!==1);
+          if(card&&!printings.length)push(card,'Set details unavailable · check printing',false);
+        }
       }
-      if (!manual) for (const id of ygoPasscodes(all)) push(await ensureCard("ygo", id).catch(() => null), "Passcode " + id, false);
+      if (!manual) for (const id of ygoPasscodes(all)) if(!out.some(c=>String(c.id)===id))push(await getForScan(id).catch(() => null), "Passcode " + id, false);
       for (const n of names) {
         if (out.length >= 3) break;
         if (out.some((o) => scanNameKey(o.name).includes(scanNameKey(n)))) continue;
@@ -2217,7 +2262,7 @@ export function registerTcg(c) {
         for (const x of nums) {
           tried.push(`${n} #${x.num}`);
           for (const h of await SOURCES.ptcg.byNameNumber(n, x.num).catch(() => [])) {
-            const card = await ensureCard("ptcg", h.id).catch(() => null);
+            const card = await getForScan(h.id).catch(() => null);
             if (scanCandidateMatches(card, n, [x])) push(card, `Card #${x.num}/${x.total}`, true);
           }
         }
@@ -2232,14 +2277,25 @@ export function registerTcg(c) {
           const list = await nameIndex("ptcg", status).catch(() => []);
           for (const name of closestNames(list, n, 2)) hits.push(...(await SOURCES.ptcg.search({ q: name, size: 4 }).catch(() => ({ cards: [] }))).cards.filter((b) => b.name === name));
         }
-        for (const b of hits.slice(0, 3 - out.length)) push(await ensureCard("ptcg", b.id).catch(() => null), "Same name. Check the number", false);
+        for (const b of hits.slice(0, 3 - out.length)) push(await getForScan(b.id).catch(() => null), "Same name. Check the number", false);
       }
     }
-    return { cands: out, tried };
+    return { cands: manual?out:rankScanCandidates(G,out,read), tried };
   };
   // Save a whole scan session at once: Pokémon finish → variant, Yu-Gi-Oh! finish → edition.
   c.scanAddMany = async (items, G = g()) => {
     if (!SOURCES[G]) throw Error("Choose a supported scan game before saving.");
+    if(G==='ygo')items=items.map(it=>{
+      const setReleaseId=it.setReleaseId||it.cand?.setReleaseId||'',releaseName=it.releaseName||it.cand?.releaseName||'';
+      if(setReleaseId){
+        const resolved=scanReleaseContext(it.cand?.card,{print:it.print||it.cand?.print||'',setReleaseId,releaseName});
+        if(resolved.setReleaseUnverified)throw Error('This scanned printing is not verified for the selected release. Review the release before saving.');
+        return {...it,setReleaseId:resolved.setReleaseId,setReleaseUnverified:false,releaseName:resolved.releaseName};
+      }
+      // A legacy or explicitly unknown scan has no dated release proof. Preserve
+      // its observed code/rarity, but never assign a catalogue's first release.
+      return {...it,setReleaseId:'',setReleaseUnverified:true,releaseName};
+    });
     for (const it of items) {
       const card = it.cand?.card, finish = it.variantKey || it.finish;
       if (!card?.id || card.game !== G) throw Error("A scanned card belongs to a different game. Review the batch before saving.");
@@ -2262,20 +2318,21 @@ export function registerTcg(c) {
             print = it.print || it.cand.print || "", [printing, rarity] = print ? print.split("|") : ["", ""], captureId = it.captureId || "";
           const prior = captureId && [...state.collection, ...Object.values(state.tcg || {}).flatMap(game => game.collection || [])].find(e => e.scanCaptureId === captureId);
           if (prior) {
-            if (prior.cardId !== card.id || prior.qty !== it.qty || prior.printing !== printing || prior.rarity !== rarity || prior.variant !== (G === "ptcg" ? finish : "") || prior.edition !== (G === "ygo" ? finish : "") || prior.condition !== (it.condition || "Near Mint") || prior.language !== (it.lang || "en")) throw Error("This capture is already saved with different details. Check its collection entry before trying again.");
+            if (prior.cardId !== card.id || prior.qty !== it.qty || prior.printing !== printing || prior.rarity !== rarity || prior.variant !== (G === "ptcg" ? finish : "") || prior.edition !== (G === "ygo" ? finish : "") || (G==='ygo'&&((prior.setReleaseId||'')!==(it.setReleaseId||'')||(!prior.setReleaseId||!!prior.setReleaseUnverified)!==(!it.setReleaseId||!!it.setReleaseUnverified)||(!prior.setReleaseId&&prior.releaseName&&it.releaseName&&prior.releaseName!==it.releaseName))) || prior.condition !== (it.condition || "Near Mint") || prior.language !== (it.lang || "en")) throw Error("This capture is already saved with different details. Check its collection entry before trying again.");
             continue;
           }
-          st.collection.push({ id: uid(), scanCaptureId: captureId, cardId: card.id, name: card.name, key: SOURCES[G].ownKey(card), qty: it.qty, printing, rarity, variant: G === "ptcg" ? finish : "", variantLabel: G === "ptcg" ? variant?.label || "" : "", productId: it.productId || variant?.productId || "", edition: G === "ygo" ? finish : "", condition: it.condition || "Near Mint", language: it.lang || "en", location: it.location || "", addedAt: new Date().toISOString(), source: "scan" });
+          st.collection.push({ id: uid(), scanCaptureId: captureId, cardId: card.id, name: card.name, key: SOURCES[G].ownKey(card), qty: it.qty, printing, rarity, ...(G==='ygo'?{setReleaseId:it.setReleaseId||'',setReleaseUnverified:!!it.setReleaseUnverified,releaseName:it.releaseName||''}:{}),variant: G === "ptcg" ? finish : "", variantLabel: G === "ptcg" ? variant?.label || "" : "", productId: it.productId || variant?.productId || "", edition: G === "ygo" ? finish : "", condition: it.condition || "Near Mint", language: it.lang || "en", location: it.location || "", addedAt: new Date().toISOString(), source: "scan" });
         }
       },
       { undo: `Added ${n} scanned card${n === 1 ? "" : "s"}.` },
     );
   };
-  c.scanPrice = (cand, finish) => {
+  c.scanPrice = (cand, finish, selection = {}) => {
     const card = cand.card;
     if (!card || !finish) return null;
     const [printing, rarity] = cand.print ? cand.print.split("|") : ["", ""];
-    return entryPrice(card, card.game === "ptcg" ? {variant: finish} : {printing, rarity, edition: finish});
+    const entry={condition:'Near Mint',language:'en',...selection,cardId:card.id};
+    return entryPrice(card, card.game === "ptcg" ? {...entry,variant: finish} : {...entry,printing,rarity,edition:finish,setReleaseId:cand.setReleaseId||'',setReleaseUnverified:!!cand.setReleaseUnverified});
   };
   c.scanAdd = async (cand) => {
     const G = g(),

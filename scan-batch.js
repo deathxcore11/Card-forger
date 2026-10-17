@@ -2,28 +2,41 @@
 // A failed storage write keeps the batch in memory and is surfaced by the UI.
 export const BATCH_LIMIT = 48;
 export const CAPTURE_BUFFER_LIMIT = 4;
+// localStorage is shared with the rest of the app. These are conservative
+// application ceilings, not a promise that the browser has this much space.
+export const CAPTURE_ORIGINAL_LIMIT = 256000;
+export const CAPTURE_STORAGE_LIMIT = 3000000;
+export function captureCapacity(rows, originalShot = '') {
+  const chars=JSON.stringify(rows).length;
+  if(originalShot.length>CAPTURE_ORIGINAL_LIMIT)return {ok:false,chars,reason:'Photo is too large to keep safely. This card is not queued. Move closer or save this batch first.'};
+  if(chars>CAPTURE_STORAGE_LIMIT)return {ok:false,chars,reason:'Photo storage full. This card is not queued. Save or review this batch first.'};
+  return {ok:true,chars,remaining:CAPTURE_STORAGE_LIMIT-chars};
+}
 const KEY = 'cardstashy-scan-batch-v1';
-let fallback = null;
+let fallback = null,summary=null;
+globalThis.addEventListener?.('storage',event=>{if(event.key===KEY)summary=null;});
 export function loadBatch() {
   if (fallback) return fallback;
   try { const value=JSON.parse(localStorage.getItem(KEY)||'[]'); return Array.isArray(value)?value.filter(x=>x&&typeof x.id==='string'):[]; } catch { return []; }
 }
 export function saveBatch(rows) {
-  try { localStorage.setItem(KEY,JSON.stringify(rows));fallback=null;return true; }
-  catch { fallback=rows;return false; }
+  try { const raw=JSON.stringify(rows);localStorage.setItem(KEY,raw);fallback=null;summary={count:rows.length,chars:raw.length};return true; }
+  catch { fallback=rows;summary=null;return false; }
 }
+// Camera ticks need only capacity, not another parse of every retained image.
+export function batchStorageSummary(){if(!summary){const rows=loadBatch();summary={count:rows.length,chars:JSON.stringify(rows).length};}return summary;}
 export const batchStorageHealthy=()=>fallback===null;
 export function updateBatch(id, patch) { const rows=loadBatch().map(x=>x.id===id?{...x,...patch}:x);saveBatch(rows);return rows.find(x=>x.id===id); }
 export function removeBatch(id) { return saveBatch(loadBatch().filter(x=>x.id!==id)); }
-export function captureEntry(game,shot,prefs={}) {
-  return {id:globalThis.crypto?.randomUUID?.()||`scan-${Date.now()}-${Math.random().toString(36).slice(2)}`,game,shot,at:Date.now(),status:'captured',cands:[],read:{},qty:Math.max(1,Number(prefs.qty)||1),condition:prefs.condition||'Near Mint',lang:prefs.lang||'en',finish:'',defaults:{finish:prefs.finish,finishConfirmed:prefs.finishConfirmed===true,lockSet:prefs.lockSet||''}};
+export function captureEntry(game,shot,prefs={},capture={}) {
+  return {id:globalThis.crypto?.randomUUID?.()||`scan-${Date.now()}-${Math.random().toString(36).slice(2)}`,game,shot,at:Date.now(),status:'captured',cands:[],read:{},qty:Math.max(1,Number(prefs.qty)||1),condition:prefs.condition||'Near Mint',lang:prefs.lang||'en',location:prefs.location||'',finish:'',defaults:{finish:prefs.finish,finishConfirmed:prefs.finishConfirmed===true,lockSet:prefs.lockSet||'',ignorePromos:prefs.ignorePromos===true},...capture};
 }
-export const printingKey=c=>[c?.id||c?.card?.id,c?.print||''].join('|');
+export const printingKey=c=>[c?.id||c?.card?.id,c?.print||'',c?.setReleaseId||c?.releaseName||''].join('|');
 export function uniquePrintings(cands=[]) { const seen=new Set();return cands.filter(c=>{const k=printingKey(c);if(seen.has(k))return false;seen.add(k);return true;}); }
 export function actualFinishes(g,c) {
   const card=c?.card||{};
   if(g==='mtg')return [...new Set((card.finishes||[]).filter(x=>['nonfoil','foil','etched'].includes(x)))];
-  if(g==='ptcg')return [...new Set((card.variants||[]).map(v=>v.key).filter(Boolean))];
+  if(g==='ptcg')return [...new Set((card.variants||[]).filter(v=>!/unconfirmed/i.test(v.label||'')).map(v=>v.key).filter(Boolean))];
   return []; // A set code/rarity does not establish 1st vs unlimited edition.
 }
 export function resolveScanFinish(g,c,prefs={},read={}) {

@@ -154,25 +154,44 @@ export function ygoSetCodes(text) {
   for (const m of String(text).toUpperCase().matchAll(/\b([A-Z0-9]{2,4})\s?-\s?([A-Z]{1,2})?\s?([0-9OIL]{3})\b/g)) {
     const num = m[3].replace(/O/g, "0").replace(/[IL]/g, "1");
     if (!/^\d{3}$/.test(num) || !/[A-Z]/.test(m[1])) continue;
-    out.push(`${m[1]}-${m[2] || "EN"}${num}`);
+    // No region is itself a real printed identity (LOB-001). Never manufacture EN.
+    out.push(`${m[1]}-${m[2] || ""}${num}`);
   }
-  return [...new Set(out)].slice(0, 3);
+  return [...new Set(out)];
 }
 // The 8-digit passcode printed bottom-left identifies the card itself.
 export const ygoPasscodes = (text) => [...new Set([...String(text).matchAll(/(?<!\d)(\d{8})(?!\d)/g)].map((m) => String(Number(m[1]))))].slice(0, 2);
 
-// Pokémon collector number: 053/128, 4/102, SV123 → { num, total }.
+// Keep the entire printed token: SV038/SV122, TG03/TG30 and 24a/119
+// must never become the unrelated numeric printings 38/122, 3/30 or 24/119.
+export const scanCollectorKey = value => String(value ?? '').trim().toLowerCase().replace(/^([a-z]*)0+(?=\d)/, '$1');
+export function ptcgIdentifierKey(num, total) {
+  const number = scanCollectorKey(num), denominator = scanCollectorKey(total);
+  const n = number.match(/^([a-z]*)(\d+)([a-z]?)$/), d = denominator.match(/^([a-z]*)(\d+)$/);
+  if (!n || !d || (d[1] && d[1] !== n[1])) return '';
+  return number + '/' + d[2];
+}
+export const ptcgNumberMatches = (card, observation) => {
+  const observed = ptcgIdentifierKey(observation.num, observation.total);
+  return !!observed && observed === ptcgIdentifierKey(card?.set?.number, card?.set?.total);
+};
 export function ptcgNumbers(text) {
   const out = [];
-  for (const m of String(text).matchAll(/(?<![\d/])(\d{1,3})\s?\/\s?(\d{2,3})(?![\d/])/g)) if (Number(m[1]) > 0 && Number(m[2]) >= 10) out.push({ num: m[1], total: m[2] });
-  // OCR-confusable letters are corrected only inside a compact fraction token.
-  if(!out.length)for(const m of String(text).matchAll(/(?<![A-Za-z0-9])([0-9OIlLSBZ]{1,3})\s*[\/\\]\s*([0-9OIlLSBZ]{2,3})(?![A-Za-z0-9])/g)){
-    const fix=x=>x.replace(/[OIlLSBZ]/g,c=>({O:'0',I:'1',l:'1',L:'1',S:'5',B:'8',Z:'2'}[c]));
-    const num=fix(m[1]),total=fix(m[2]);if(/\d/.test(m[1]+m[2])&&Number(num)>0&&Number(total)>=10)out.push({num,total});
+  const knownPrefix = /^(?:AR|BW|CC|DP|GG|H|HGSS|RC|RT|SH|SL|SM|SV|SWSH|TG|XY)\d/i;
+  const fix = token => {
+    if (knownPrefix.test(token) || /^\d+[a-z]$/i.test(token)) return token;
+    return /^[0-9OIlLSBZ]+$/.test(token) ? token.replace(/[OIlLSBZ]/g,c=>({O:'0',I:'1',l:'1',L:'1',S:'5',B:'8',Z:'2'}[c])) : token;
+  };
+  for (const m of String(text).matchAll(/(?<![A-Za-z0-9/])([A-Za-z0-9]{1,12})[ \t]*[\/\\][ \t]*([A-Za-z0-9]{1,12})(?![A-Za-z0-9/])/g)) {
+    if (!/\d/.test(m[1] + m[2])) continue;
+    const num=fix(m[1]),total=fix(m[2]);
+    // Preserve even a conflicting denominator suffix as an observation. It cannot
+    // match a catalogue row, but must not disappear beside another valid reading.
+    if (/^[A-Za-z]{0,5}\d{1,4}[A-Za-z]?$/.test(num) && /^[A-Za-z]{0,5}\d{1,4}[A-Za-z]?$/.test(total) && Number(num.match(/\d+/)[0])>0 && Number(total.match(/\d+/)[0])>=10) out.push({num,total});
   }
   // The small slash often reads as 7, 1 or l: "0537128" → 053/128.
-  if (!out.length) for (const m of String(text).matchAll(/(?<!\d)(\d{3})[71l|I](\d{3})(?!\d)/g)) if (Number(m[1]) > 0 && Number(m[2]) >= 10) out.push({ num: m[1], total: m[2] });
-  return out.slice(0, 3);
+  if (!out.length) for (const m of String(text).matchAll(/(?<![A-Za-z0-9])(\d{3})[71l|I](\d{3})(?![A-Za-z0-9])/g)) if (Number(m[1]) > 0 && Number(m[2]) >= 10) out.push({ num: m[1], total: m[2] });
+  return [...new Map(out.map(n => [ptcgIdentifierKey(n.num,n.total) || scanCollectorKey(n.num)+'/'+scanCollectorKey(n.total),n])).values()];
 }
 
 // Magic footer observations must keep a number beside its own set/language line.
@@ -285,5 +304,5 @@ export const scanNameKey = name => String(name || "").normalize("NFKD").replace(
 export function scanCandidateMatches(card, name, numbers = []) {
   if (!card || scanNameKey(card.name) !== scanNameKey(name)) return false;
   if (!numbers.length) return true;
-  return numbers.some(n => Number(card.set?.number) === Number(n.num) && Number(card.set?.total) === Number(n.total));
+  return numbers.some(n => ptcgNumberMatches(card, n));
 }

@@ -97,6 +97,34 @@ jobs:
         with:
           name: scanner-browser-evidence
           path: test-results/
+  scanner-adversarial-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate public scanner lifecycle fixture contract without a browser
+        run: |
+          node tests/scanner-adversarial-browser.mjs --validate-fixtures
+          node tests/scanner-printing-browser.mjs --validate-fixtures
+      - name: Install pinned browser test runner
+        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - name: Install test browser
+        run: npx playwright install --with-deps chromium
+      - name: Test accepted frame pixels, durable queue and expired reader isolation
+        run: node tests/scanner-adversarial-browser.mjs
+      - name: Test scanner review through shared all-game printing picker
+        if: ${{ !cancelled() }}
+        run: node tests/scanner-printing-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: scanner-adversarial-evidence
+          path: test-results/
   home-browser:
     runs-on: ubuntu-latest
     timeout-minutes: 10

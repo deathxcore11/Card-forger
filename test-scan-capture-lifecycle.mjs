@@ -1,0 +1,127 @@
+// Deterministic production-pipeline tests. Synthetic labels/pixels only, no
+// browser, camera hardware, network requests or private card photos.
+import assert from 'node:assert/strict';
+import {S,blank} from './store.js';
+import {registerScanner,releaseOCR,freezeCapture,canReuseCapture,SCAN_DEADLINES,createScanTrace,fullCardNameHints,scanConfirmation,captureLockSignature,observeCaptureLock} from './scancam.js';
+import {field,rectangle} from './tests/fixtures/scan-geometry-fixtures.mjs';
+import {nameCandidates} from './scan.js';
+import {loadBatch,saveBatch,captureCapacity,CAPTURE_ORIGINAL_LIMIT,CAPTURE_STORAGE_LIMIT} from './scan-batch.js';
+import {savePrefs} from './scansession.js';
+const memory=new Map();globalThis.localStorage={getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,v)};
+const imageLoads=[],scripts=[];
+function canvas(label='empty',width=480,height=672){
+ const c={width,height,label};
+ c.getContext=()=>({drawImage(source){c.label=source.label;},getImageData(x,y,w=16,h=22){return {data:new Uint8ClampedArray(w*h*4).fill(110)};},putImageData(){c.label='cropped';},translate(){},rotate(){}});
+ c.toDataURL=()=>c.label==='oversize'?'data:image/jpeg;base64,'+'x'.repeat(CAPTURE_ORIGINAL_LIMIT):`data:image/jpeg;base64,${c.label}`;
+ return c;
+}
+globalThis.ImageData=class{constructor(data,width,height){Object.assign(this,{data,width,height});}};
+globalThis.Image=class{set src(url){imageLoads.push(url);this.label=url.split(',')[1];this.naturalWidth=480;this.naturalHeight=672;queueMicrotask(()=>this.onload());}};
+globalThis.document={createElement:tag=>tag==='script'?{}:canvas(),getElementById:()=>null,addEventListener(){},querySelector:()=>null,head:{appendChild:s=>scripts.push(s)}};
+globalThis.location={href:'http://fixture/'};
+globalThis.window={};
+const bolt={id:'bolt',name:'Lightning Bolt',set:'msc',collector_number:'806',finishes:['nonfoil']};
+const bug={id:'swsh8-101',name:'Vikavolt',game:'ptcg',hp:150,set:{id:'swsh8',number:'101',total:264},variants:[{key:'normal'},{key:'reverse-holofoil'}]};
+const wait=async predicate=>{const start=Date.now();while(!predicate()){assert(Date.now()-start<3000,'fixture pipeline settles');await new Promise(r=>setTimeout(r,2));}};
+const settled=()=>!S.ui.scan.busy&&loadBatch().every(r=>!['captured','reading'].includes(r.status));
+function setup(match){S.state=blank();S.state.settings.game='mtg';S.ui.view='scan';S.ui.scan={};saveBatch([]);const ctx={A:{},C:{},render(){},toast(){},game:()=>S.state.settings.game,priceOf:()=>null,setOf:()=>'',numberOf:()=>'',addMany:async()=>{},match:match||(async(g,read)=>({cands:read.name.includes('Lightning Bolt')?[{id:bolt.id,name:bolt.name,card:bolt,exact:true}]:[],tried:[]}))};registerScanner(ctx);return ctx;}
+const deadlineDefaults={...SCAN_DEADLINES};Object.assign(SCAN_DEADLINES,{worker:45,ocr:45,remote:45,hydration:45,artwork:45});
+try{
+ const source=canvas('original',1920,1080),proposal={quad:[{x:300,y:20},{x:600,y:20},{x:600,y:600},{x:300,y:600}],cropSafe:true,boundary:{status:'supported'},alternatives:[{quad:[{x:1,y:2}],cropSafe:false}]};
+ const frozen=freezeCapture(source,proposal);assert.equal(frozen.original.width,1280);assert.equal(frozen.original.height,720);assert.equal(frozen.proposal.quad[0].x,200);source.label='later-frame';proposal.quad[0].x=0;proposal.boundary.status='changed';assert.equal(frozen.original.label,'original');assert.equal(frozen.proposal.quad[0].x,200);assert.equal(frozen.proposal.boundary.status,'supported');
+ const a=Float32Array.from([10,20,30]),b=Float32Array.from([90,100,110]),best={at:100,signature:a};assert(canReuseCapture(best,a,0,200));assert(!canReuseCapture(best,b,0,200),'A cannot supply pixels for B');assert(!canReuseCapture(best,a,.02,200));assert(!canReuseCapture(best,a,0,1000));
+ let now=0;const trace=createScanTrace(()=>now);await trace.stage('unit',()=>{now+=3;});assert.deepEqual(trace.finish(),{timings:{unit:3,totalMs:3},counts:{unit:1}});
+ assert(!captureCapacity([], 'x'.repeat(CAPTURE_ORIGINAL_LIMIT+1)).ok);assert(!captureCapacity([{id:'large',originalShot:'x'.repeat(CAPTURE_STORAGE_LIMIT)}]).ok);
+ console.log('PASS: immutable1280 original/proposal cloning, changed-card best-frame invalidation, explicit byte caps and finite stage timing.');
+
+ let release,seen=0;const gate=new Promise(r=>release=r),counts=new Map(),langs=[],calls=[];
+ window.Tesseract={createWorker:async lang=>{langs.push(lang);return {recognize:async c=>{const n=counts.get(c.label)||0;counts.set(c.label,n+1);seen++;if(c.label==='first'&&n===0)await gate;return {data:{text:c.label==='first'?(n%2?'101/264':'Vikavolt HP150'):(n%2?'U 0806\nMSC EN':'Lightning Bolt')}};},terminate:async()=>{}};}};
+ const ctx=setup(async(g,r,lang,manual,status,p)=>{calls.push({g,lang,p:{...p}});const card=g==='ptcg'?bug:bolt;return {cands:[{id:card.id,name:card.name,card,exact:true}],tried:[]};});
+ savePrefs('mtg',{condition:'Lightly Played',lang:'ja',qty:2,location:'Box one',lockSet:'old'});savePrefs('ptcg',{finish:'reverse-holofoil'});localStorage.setItem('cardforge-scan-lang','eng');const frame=canvas('first'),input=freezeCapture(frame);assert(ctx.enqueueCapture(input));input.original.label='external-mutation';await wait(()=>seen>0);
+ savePrefs('ptcg',{finish:'normal'});savePrefs('mtg',{condition:'Moderately Played',lang:'en',qty:3,location:'Box two',lockSet:'captured'});localStorage.setItem('cardforge-scan-lang','jpn+eng');frame.label='second';assert(ctx.enqueueCapture(frame));savePrefs('mtg',{lockSet:'too-late'});frame.label='camera-moved';release();await wait(settled);
+ const rows=loadBatch();assert.equal(rows[0].finish,'reverse-holofoil','detected-game default comes from capture time');assert.equal(rows[0].condition,'Lightly Played');assert.equal(rows[0].qty,2);assert.equal(rows[0].location,'Box one');assert.equal(rows[1].condition,'Moderately Played');assert.equal(rows[1].qty,3);assert.equal(rows[1].location,'Box two');assert.equal(calls.find(x=>x.g==='mtg').p.lockSet,'captured');assert.deepEqual(langs,['eng','jpn+eng']);assert.equal(rows[0].originalShot,'data:image/jpeg;base64,first');assert.equal(rows[1].originalShot,'data:image/jpeg;base64,second');assert.equal(rows[0].counts.remoteLookup,1);assert(!JSON.stringify(S.ui.scan.diagnostics).includes('Lightning'));assert(!JSON.stringify(S.ui.scan.diagnostics).includes('data:image'));assert(Object.values(rows[0].timings).every(Number.isFinite));
+ const prior=JSON.stringify(loadBatch()),animations=S.ui.scan.queueAnimationIds.length;assert.equal(ctx.enqueueCapture(canvas('oversize')),false);assert.equal(JSON.stringify(loadBatch()),prior);assert.equal(S.ui.scan.queueAnimationIds.length,animations,'oversize image never accepted or animated');
+ console.log('PASS: delayed A→B reads preserve original images, all-game defaults, condition/quantity/location, OCR language and lock-set snapshots; oversized image rejection leaves prior cards unchanged.');
+
+ await releaseOCR();let made=0,terminated=0,late,readCalls=0;
+ window.Tesseract={createWorker:async()=>{const index=++made;return {recognize:async()=>{if(index===1)return new Promise(r=>late=r);return {data:{text:++readCalls%2?'Lightning Bolt':'U 0806\nMSC EN'}};},terminate:async()=>{terminated++;}};}};
+ const timeouts=setup();assert(timeouts.enqueueCapture(canvas('hung')));assert(timeouts.enqueueCapture(canvas('after-hang')));await wait(settled);assert.equal(loadBatch()[0].status,'unresolved');assert.match(loadBatch()[0].error,/timed out/);assert.equal(loadBatch()[1].status,'ready');assert(terminated>0);const afterTimeout=JSON.stringify(loadBatch());S.ui.scan.read={sentinel:'review'};late({data:{text:'stale card'}});await new Promise(r=>setTimeout(r,10));assert.equal(JSON.stringify(loadBatch()),afterTimeout);assert.deepEqual(S.ui.scan.read,{sentinel:'review'});
+ console.log('PASS: wedged OCR retires reader, retains original as unresolved, drains B with a fresh reader, and ignores late A evidence.');
+
+ await releaseOCR();delete window.Tesseract;scripts.length=0;let factoryCalls=0;
+ const loading=setup();assert(loading.enqueueCapture(canvas('blocked-script')));assert(loading.enqueueCapture(canvas('fresh-script')));await wait(()=>scripts.length===2);let n=0;window.Tesseract={createWorker:async()=>{factoryCalls++;return {recognize:async()=>({data:{text:++n%2?'Lightning Bolt':'U 0806\nMSC EN'}}),terminate:async()=>{}};}};scripts[1].onload();await wait(settled);assert.equal(loadBatch()[0].status,'unresolved');assert.equal(loadBatch()[1].status,'ready');scripts[0].onload();await new Promise(r=>setTimeout(r,10));assert.equal(factoryCalls,1,'a stale script callback cannot create or overwrite the newer worker');
+ console.log('PASS: a script that never loads cannot wedge the queue; a later stale load cannot replace the recovered reader.');
+
+ await releaseOCR();let networkCalls=0;window.Tesseract={createWorker:async()=>({recognize:async()=>({data:{text:'Unreadable'}}),terminate:async()=>{}})};const misses=setup(async()=>{networkCalls++;return {cands:[],tried:[]};});assert(misses.enqueueCapture(canvas('unreadable')));await wait(settled);assert.equal(networkCalls,1,'unresolved readable-name fixture no longer repeats four remote rounds');assert.equal(loadBatch()[0].counts.remoteLookup,1);assert.equal(loadBatch()[0].status,'unresolved');
+ console.log('PASS: unchanged secondary evidence does not duplicate the remote lookup (four baseline rounds reduced to one in this fixture).');
+
+ await releaseOCR();const readLabels=[];window.Tesseract={createWorker:async()=>({recognize:async c=>{readLabels.push(c.label);return {data:{text:c.label==='cropped'?'?':'Lightning Bolt\nU 0806\nMSC EN'}};},terminate:async()=>{}})};const recovery=setup();const raw=canvas('whole-original',480,672),bad={quad:[{x:50,y:100},{x:400,y:100},{x:400,y:500},{x:50,y:500}],cropSafe:true,outputWidth:480,outputHeight:672,orientation:{status:'unverified',rotation:0},nativeAspect:.7};assert(recovery.enqueueCapture(freezeCapture(raw,bad)));await wait(settled);assert(readLabels.includes('cropped'));assert(readLabels.includes('whole-original'),'failed crop falls back to original text');assert.equal(loadBatch()[0].status,'ready');assert.equal(loadBatch()[0].counts.ocrOriginalFull,1);assert.equal(loadBatch()[0].counts.ocrOriginalFooter,1);assert.equal(loadBatch()[0].originalShot,'data:image/jpeg;base64,whole-original');
+ const saved={...loadBatch()[0],id:'raw-retry',status:'unresolved',shot:'data:image/jpeg;base64,bad-thumbnail',originalShot:'data:image/jpeg;base64,retry-original',cands:[]};saveBatch([saved]);readLabels.length=0;imageLoads.length=0;recovery.A.scanBatchReview({dataset:{id:saved.id}});await recovery.A.scanRetry();await wait(settled);assert.equal(imageLoads[0],saved.originalShot);assert(readLabels.every(x=>x==='retry-original'));assert.equal(loadBatch()[0].proposal,null,'explicit retry does not reapply the failed crop');assert.equal(loadBatch()[0].id,'raw-retry');assert.equal(loadBatch()[0].status,'ready');
+ console.log('PASS: failed crop recovery uses full original plus independent detail band; explicit retry never reuses art-only thumbnail or failed geometry.');
+
+ await releaseOCR();let resolveNetwork,remoteCount=0;const perFrame=new Map();window.Tesseract={createWorker:async()=>({recognize:async c=>{const n=perFrame.get(c.label)||0;perFrame.set(c.label,n+1);return {data:{text:n%2?'U 0806\nMSC EN':'Lightning Bolt'}};},terminate:async()=>{}})};
+ const network=setup(async()=>{if(++remoteCount===1)return new Promise(r=>resolveNetwork=r);return {cands:[{id:bolt.id,name:bolt.name,card:bolt,exact:true}],tried:[]};});network.enqueueCapture(canvas('remote-hung'));network.enqueueCapture(canvas('remote-next'));await wait(settled);assert.equal(loadBatch()[0].status,'unresolved');assert.equal(loadBatch()[1].status,'ready');const noLateNetwork=JSON.stringify(loadBatch());resolveNetwork({cands:[{id:bolt.id,name:bolt.name,card:bolt,exact:true}],tried:[]});await new Promise(r=>setTimeout(r,5));assert.equal(JSON.stringify(loadBatch()),noLateNetwork);
+ console.log('PASS: remote timeout preserves unresolved original, unblocks next capture and ignores late network completion.');
+
+ await releaseOCR();let resolveStopped,started=false;const stoppedCounts=new Map();window.Tesseract={createWorker:async()=>({recognize:async c=>{const n=stoppedCounts.get(c.label)||0;stoppedCounts.set(c.label,n+1);if(c.label==='stopped'&&n===0){started=true;await new Promise(r=>resolveStopped=r);}return {data:{text:n%2?'U 0806\nMSC EN':'Lightning Bolt'}};},terminate:async()=>{}})};
+ const stopped=setup();stopped.enqueueCapture(canvas('stopped'));await wait(()=>started);stopped.stopCamera();stopped.enqueueCapture(canvas('after-stop'));resolveStopped();await wait(settled);assert.equal(loadBatch()[0].status,'unresolved');assert.equal(loadBatch()[1].status,'ready');assert.equal(S.ui.scan.read,null,'canceled OCR never leaks into shared UI read state');
+ console.log('PASS: camera stop invalidates old work without deleting accepted original or overwriting a newly queued card.');
+
+ await releaseOCR();let detailReads=0;window.Tesseract={createWorker:async()=>({recognize:async()=>({data:{text:++detailReads%2?'Lightning Bolt':'U 0806\nMSC EN'}}),terminate:async()=>{}})};
+ const detailCalls=[],details=setup(async()=>({cands:[{id:bolt.id,name:bolt.name,card:bolt,exact:true,localReference:true}],tried:[]}));
+ details.candById=async(g,id,why,exact,options)=>{detailCalls.push(options);return {id:bolt.id,name:bolt.name,card:bolt,exact,detailsOnly:options.identityOnly,priceReady:!options.identityOnly};};let writes=0;details.addMany=async()=>{writes++;};S.ui.scan.diagnostics=Array.from({length:70},()=>({status:'old',timings:{},counts:{}}));details.enqueueCapture(canvas('identity-only'));await wait(settled);assert.equal(detailCalls.length,1);assert.equal(detailCalls[0].identityOnly,true);assert.equal(loadBatch()[0].cands[0].detailsOnly,true);assert.equal(loadBatch()[0].cands[0].priceReady,false);assert.equal(S.ui.scan.diagnostics.length,64);await details.A.scanBatchSave();assert.equal(detailCalls.length,2);assert.equal(detailCalls[1].identityOnly,false);assert.equal(writes,1);assert.equal(loadBatch().length,0);
+ console.log('PASS: OCR drain asks only for identity metadata, preserves price-not-ready state, full save hydrates separately, and local diagnostics stay capped at64.');
+
+ await releaseOCR();let releaseFront,frontStarted=false;const replacedCounts=new Map();window.Tesseract={createWorker:async()=>({recognize:async c=>{const n=replacedCounts.get(c.label)||0;replacedCounts.set(c.label,n+1);if(c.label==='front'&&n===0){frontStarted=true;await new Promise(r=>releaseFront=r);}return {data:{text:n%2?'U 0806\nMSC EN':'Lightning Bolt'}};},terminate:async()=>{}})};
+ const replacements=setup();savePrefs('mtg',{lockSet:'original-default'});replacements.enqueueCapture(canvas('front'));await wait(()=>frontStarted);replacements.enqueueCapture(canvas('superseded'));const pending=loadBatch()[1];savePrefs('mtg',{lockSet:'later-default'});localStorage.setItem('cardforge-scan-lang','eng');assert(replacements.enqueueCapture(canvas('replacement'),pending.id));assert.equal(loadBatch()[1].id,pending.id);assert.notEqual(loadBatch()[1].captureRevision,pending.captureRevision);assert.equal(loadBatch()[1].defaultsByGame.mtg.lockSet,'original-default','replacement keeps original capture defaults');assert.equal(loadBatch()[1].ocrLang,pending.ocrLang);releaseFront();await wait(settled);assert(!replacedCounts.has('superseded'),'superseded queued pixels cannot process against replacement row');assert(replacedCounts.has('replacement'));assert.equal(loadBatch()[1].originalShot,'data:image/jpeg;base64,replacement');
+ console.log('PASS: queued retry keeps stable logicalID/defaults but new frame revision; superseded pending pixels never run against replacement metadata.');
+
+ const prices=setup(),quoteCalls=[];prices.priceOf=(g,c,finish,selection)=>{quoteCalls.push({g,finish,...selection});return selection.condition==='Heavily Played'&&selection.language==='ja'?7:12;};let savedPrice;prices.addMany=async(g,items)=>{savedPrice=items[0].price;};saveBatch([{id:'condition-price',captureRevision:'fixed',game:'mtg',status:'review',qty:1,condition:'Near Mint',lang:'en',finish:'nonfoil',cands:[{id:bolt.id,name:bolt.name,card:bolt,exact:true}],read:{name:bolt.name,code:'U 0806\nMSC EN'}}]);prices.A.scanBatchReview({dataset:{id:'condition-price'}});prices.A.scanConfirmCondition({dataset:{condition:'Heavily Played'}});prices.C.scanConfirmLanguage({value:'ja'});assert.equal(S.ui.scan.confirm.price,7);assert.deepEqual(quoteCalls.at(-1),{g:'mtg',finish:'nonfoil',condition:'Heavily Played',language:'ja'});await prices.A.scanConfirm();assert.equal(savedPrice,7);
+ console.log('PASS: review condition/language changes and saved price use the same explicit selection without scanner provider requests.');
+
+ const downgrade=setup();let forbiddenWrites=0;downgrade.addMany=async()=>{forbiddenWrites++;};const ygo={id:'12345678',name:'Fixture Dragon',game:'ygo'},known={id:ygo.id,name:ygo.name,card:ygo,exact:true,detailsOnly:true,print:'REP-EN001|Rare',setReleaseId:'ygo:release-a',releaseName:'Release A'};downgrade.candById=async()=>({...known,exact:false,detailsOnly:false,setReleaseId:'',setReleaseUnverified:true,printingAmbiguous:true});saveBatch([{id:'downgrade',captureRevision:'one',game:'ygo',status:'review',qty:1,condition:'Near Mint',lang:'en',finish:'unlimited',cands:[known],read:{name:ygo.name,code:'REP-EN001'}}]);downgrade.A.scanBatchReview({dataset:{id:'downgrade'}});await downgrade.A.scanConfirm();assert.equal(forbiddenWrites,0);assert(S.ui.scan.confirm);assert.equal(S.ui.scan.confirm.finish,'');assert.match(S.ui.scan.confirm.error,/Printing details changed/);assert.equal(loadBatch()[0].status,'review');
+ console.log('PASS: a known release cannot silently turn into an ambiguous/unknown release during explicit save hydration.');
+ // Public hosted OCR failure: cropped full read saw the true title, but a
+ // later original/footer observation supplied enough junk names to displace it.
+ await releaseOCR();
+ const croppedText=['YARN 1"1IAUICIAN\nEE ——————\nFy Tw YL YY.','?','?','ee ATK/2500 DEF/ i','?',
+   'DARK MAGICIAN ii) |\n\nii\n\n333339\n\nATK/3500 DEF/2100\nReplica - Not For Use in Sanctioned Tournaments.',
+   'Sudo Dice siren','?','?'];
+ const originalText=['on\n\na\n\nx2\n\n)\n\nA\n\n~&\n\nvO\n\nSVL\nIsp,\nBota\nATK/2500\nSudo Dice siren\nDEF/2100','VG\nPRMAL\nterms of attack and defense'];
+ window.Tesseract={createWorker:async()=>({recognize:async c=>({data:{text:(c.label==='cropped'?croppedText:originalText).shift()||'?'}}),terminate:async()=>{}})};
+ const dark={id:'46986414',name:'Dark Magician',game:'ygo',atk:2500,def:2100},dice={id:'41139112',name:'Summon Dice',game:'ygo'};
+ const retained=setup(async(g,read)=>{const names=nameCandidates(g,read.name),card=names.some(n=>n==='DARK MAGICIAN')?dark:names.some(n=>/Dice/.test(n))?dice:null;return {cands:card?[{id:card.id,name:card.name,card,exact:false}]:[],tried:names};});
+ S.state.settings.game='ygo';
+ retained.enqueueCapture(freezeCapture(canvas('public-original'),{...bad,orientation:{status:'unverified',rotation:0}}));await wait(settled);
+ const retainedRow=loadBatch()[0];assert.equal(retainedRow.cands[0]?.id,'46986414');assert.equal(retainedRow.status,'review');assert.equal(retainedRow.printingVerified,false);assert(retainedRow.cands.every(c=>!c.exact));assert(nameCandidates('ygo',retainedRow.read.name).includes('DARK MAGICIAN'));assert.match(retainedRow.read.full,/Sudo Dice/);
+ assert.deepEqual(fullCardNameHints('ygo','on\na\nx2\nStudio Dice\nSummon Dice'),[],'footer words are not searched as arbitrary replacement titles');
+ assert.deepEqual(fullCardNameHints('mtg','Lightning Bolt\nInstant\nCopyright Wizards'),['Lightning Bolt']);
+ assert.deepEqual(fullCardNameHints('ptcg','BASIC\nKyogre HP 130\nAqua Storm'),['Kyogre']);
+ assert.match(scanConfirmation('ygo',{cands:[{...retainedRow.cands[0],reviewSource:'printing-picker'}],confirm:{i:0,qty:1,condition:'Near Mint',lang:'en',finish:'unlimited'}},{}),/Printing selected by you/);
+ console.log('PASS: earlier full-card title survives later original/footer/orientation noise; real public Dark Magician identity stays review-only, with no name-only exact proof.');
+ // Source-stable duplicate latch: synthetic pixels, not fixture card photos.
+ {
+  const w=192,h=256,region=rectangle(42,44,108,168).map(p=>({x:p.x/(w-1),y:p.y/(h-1)}));
+  const scene=(kind='a',dx=0,dy=0,angle=0)=>{const data=field(w,h,[65,80,75]),co=Math.cos(angle),si=Math.sin(angle);for(let y=0;y<h;y++)for(let x=0;x<w;x++){const a=x-96-dx,b=y-128-dy,u=co*a+si*b+96,v=-si*a+co*b+128;if(u<42||u>=150||v<44||v>=212)continue;const pattern=((Math.floor(u/7)+Math.floor(v/11))%2)*38;data.set(kind==='a'?[190+pattern,160+pattern,100+pattern]:[25+pattern,35+pattern,90+pattern],(y*w+x)*4);}return data;};
+  const sig=data=>captureLockSignature(data,w,h,region),a=sig(scene()),b=sig(scene('b')),geometryA=Float32Array.from(a,()=>0),geometryB=Float32Array.from(a,()=>100),lock=()=>({region,signature:a,geometrySignature:geometryA});
+  const unchanged=lock();for(let i=0;i<8;i++)assert.equal(observeCaptureLock(unchanged,sig(scene()),{geometrySignature:geometryB,geometryComparable:false,missing:i%2===0}),false,'changing detector geometry/preview or intermittent missing outline cannot unlock unchanged source');
+  for(const source of [scene('a',3,0),scene('a',0,0,Math.PI/60)]){const held=lock();for(let i=0;i<6;i++)assert.equal(observeCaptureLock(held,sig(source),{geometryComparable:false}),false,'uncertain accepted source tolerates modest translation/rotation without duplicate');}
+  const normalized=lock();for(let i=0;i<4;i++)assert.equal(observeCaptureLock(normalized,b,{geometrySignature:geometryA,geometryComparable:true}),false,'supported same normalized card vetoes motion-induced source changes');
+  const replacement=lock();assert.deepEqual([1,2,3].map(()=>observeCaptureLock(replacement,b,{geometrySignature:geometryB,geometryComparable:true})),[false,false,true],'different card rearms after three observed frames');
+  const removed=lock();assert.deepEqual([1,2,3].map(()=>observeCaptureLock(removed,sig(field(w,h,[65,80,75])),{missing:true})),[false,false,true],'actual card removal rearms');
+  const paused=lock();for(let i=0;i<7;i++)assert.equal(observeCaptureLock(paused,b,{paused:true}),false);assert.equal(paused.changedFrames,0);for(let i=0;i<5;i++)assert.equal(observeCaptureLock(paused,a),false,'rejected different card then restored accepted card stays locked');
+  for(let i=0;i<3;i++)observeCaptureLock(paused,b,{paused:true});assert.deepEqual([1,2,3].map(()=>observeCaptureLock(paused,b)),[false,false,true],'held rejected card rearms only after capacity resumes, not from accumulated pause counters');
+  const acceptedB={signature:b};for(let i=0;i<5;i++)assert.equal(observeCaptureLock(acceptedB,b),false,'new accepted card locks exactly once');
+ }
+ console.log('PASS: fixed accepted-source area fingerprint survives crop/layout refinement, minor movement and rotation; real changes/removal rearm, and capacity pause cannot forget the accepted card.');
+
+ // Invoke the real manual shutter rather than enqueue directly: same-frame
+ // double taps debounce for600ms, but a deliberate additional copy is allowed.
+ await releaseOCR();window.Tesseract={createWorker:async()=>({recognize:async()=>({data:{text:'?'}}),terminate:async()=>{}})};
+ const manualCopies=setup(),getElement=document.getElementById,realDateNow=Date.now;let manualTime=realDateNow();
+ const manualVideo={...canvas('same-manual-frame',640,900),videoWidth:640,videoHeight:900,clientWidth:378,clientHeight:400};
+ try{document.getElementById=id=>id==='scanVideo'?manualVideo:null;Date.now=()=>manualTime;manualCopies.A.scanCapture();assert.equal(loadBatch().length,1);manualCopies.A.scanCapture();assert.equal(loadBatch().length,1,'immediate double tap never creates a second capture');manualTime+=601;manualCopies.A.scanCapture();assert.equal(loadBatch().length,2,'intentional same-card manual copy remains available after debounce');}
+ finally{document.getElementById=getElement;Date.now=realDateNow;}
+ await wait(settled);assert.equal(loadBatch().length,2);manualCopies.stopCamera();
+ console.log('PASS: real manual shutter retains600ms same-frame debounce without prohibiting deliberate additional copies.');
+}finally{Object.assign(SCAN_DEADLINES,deadlineDefaults);await releaseOCR();}

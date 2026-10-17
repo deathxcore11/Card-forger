@@ -379,13 +379,16 @@ export const ptcgSource = {
       sorted = [...family].sort(sort === "name" ? (a, b) => a.name.localeCompare(b.name) || (rank.get(setOf(b.id)) ?? -1) - (rank.get(setOf(a.id)) ?? -1) || a.id.localeCompare(b.id) : (a, b) => (rank.get(setOf(b.id)) ?? -1) - (rank.get(setOf(a.id)) ?? -1) || num(a.id) - num(b.id) || a.id.localeCompare(b.id));
     return { cards: sorted.slice(page * size, (page + 1) * size), total: sorted.length, more: (page + 1) * size < sorted.length };
   },
-  async get(id) {
+  async get(id, {prices = true} = {}) {
     const d = await get("/cards/" + encodeURIComponent(id));
     if (!d) throw Error("Card not found.");
     const c = normalizePtcg(d);
     // No price from TCGdex (common for new sets): ask the Pokémon TCG API, which also carries
     // TCGplayer market prices.
-    if (c.prices.usd == null) await fillPrices(c);
+    if (prices && c.prices.usd == null) await fillPrices(c);
+    // Recognition can use authoritative variants/stats without waiting on quote
+    // enrichment. Such a result must not satisfy normal pricing cache freshness.
+    if (!prices) c.priceFallbackSchema = 0;
     return c;
   },
   // Exact printing from a scan: name plus collector number (053 or 53).
