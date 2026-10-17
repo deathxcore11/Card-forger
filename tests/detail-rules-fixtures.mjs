@@ -166,8 +166,15 @@ export async function closeSheet(page){await page.locator('#sheet [data-act="clo
 export async function inventorySnapshot(page){return page.evaluate(()=>JSON.stringify([window.__uiTestState.state.collection,window.__uiTestState.state.printings,window.__uiTestState.state.decks,window.__uiTestState.state.tcg]));}
 // Card detail tabs are an intentional horizontal scroller. Their focus/visibility
 // is asserted independently; they must not create page or sheet overflow.
-export async function noOverflow(page,scope,label){
- const result=await page.locator(scope).evaluate(root=>{const r=root.getBoundingClientRect();return {width:innerWidth,root:document.documentElement.scrollWidth,scope:root.scrollWidth,client:root.clientWidth,rect:{left:r.left,right:r.right},bad:[...root.querySelectorAll('button,input,select,summary,a')].filter(n=>n.getClientRects().length&&!n.closest('[hidden]')&&!n.closest('.cs-tabs')).filter(n=>{const b=n.getBoundingClientRect();return b.left<-.5||b.right>innerWidth+.5;}).map(n=>({text:n.textContent.slice(0,90),class:n.className}))};});
+export async function noOverflow(page,scope,label,settleFinite=false){
+ const result=await page.locator(scope).evaluate(async(root,settleFinite)=>{
+  // Opt-in page-entry settlement, matching Home. Never disable motion; measure
+  // in the same evaluation after real finite subtree animations have finished.
+  if(settleFinite)for(;;){
+   const animations=root.getAnimations({subtree:true}).filter(a=>Number.isFinite(a.effect?.getComputedTiming().endTime)&&!['finished','idle'].includes(a.playState));
+   if(!animations.length)break;await Promise.all(animations.map(a=>a.finished.catch(()=>{})));
+  }
+  const r=root.getBoundingClientRect();return {width:innerWidth,root:document.documentElement.scrollWidth,scope:root.scrollWidth,client:root.clientWidth,rect:{left:r.left,right:r.right},bad:[...root.querySelectorAll('button,input,select,summary,a')].filter(n=>n.getClientRects().length&&!n.closest('[hidden]')&&!n.closest('.cs-tabs')).filter(n=>{const b=n.getBoundingClientRect();return b.left<-.5||b.right>innerWidth+.5;}).map(n=>({text:n.textContent.slice(0,90),class:n.className}))};},settleFinite);
  assert(result.root<=result.width+2&&result.scope<=result.client+2,`${label}: no horizontal overflow ${JSON.stringify(result)}`);assert.deepEqual(result.bad,[],`${label}: all visible controls fit the viewport`);
 }
 export async function capture(page,name){await page.screenshot({path:resolve(RESULTS,name+'.png'),fullPage:true,animations:'disabled'});}
