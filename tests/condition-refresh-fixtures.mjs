@@ -14,7 +14,7 @@ export function candidate(game,card=primary(game)){
 export const finish=game=>game==='mtg'?'nonfoil':game==='ptcg'?'normal':'1st-edition';
 export function manyLots(count=150){
  const cards=Array.from({length:count},(_,i)=>({...structuredClone(MAGIC_PRINTS[0]),id:`synthetic-condition-${String(i).padStart(3,'0')}`,name:`Synthetic condition lot ${String(i).padStart(3,'0')}`,oracle_id:`synthetic-condition-oracle-${i}`,collector_number:String(i+1),checkedAt:ISO,conditionQuotes:[]}));
- const lots=cards.map((c,i)=>({id:`synthetic-lot-${String(i).padStart(3,'0')}`,name:c.name,qty:1,printingId:c.id,printingVerified:true,nameVerified:true,set:c.set.toUpperCase(),collectorNumber:c.collector_number,finish:'nonfoil',condition:LP,language:'en',location:'Synthetic test binder',addedAt:ISO}));
+ const lots=cards.map((c,i)=>({id:`synthetic-lot-${String(i).padStart(3,'0')}`,name:c.name,qty:1,printingId:c.id,printingVerified:true,nameVerified:true,set:c.set.toUpperCase(),collectorNumber:c.collector_number,finish:'nonfoil',condition:LP,language:'en',location:'Synthetic test binder',addedAt:ISO,raw:{}}));
  return {cards,lots};
 }
 export async function validateConditionFixtures(){
@@ -66,6 +66,11 @@ export async function seedLots(page,{count=150,filter='',cursor=''}={}){
  const data=manyLots(count);await page.evaluate(async({data,filter,cursor})=>{
   const {S}=await import('/store.js'),{cardKey}=await import('/core.js');S.state.collection=data.lots;S.state.printings=Object.fromEntries(data.cards.map(c=>[c.id,c]));for(const c of data.cards)S.catalog[cardKey(c.name)]=c;
   S.ui.q.coll=filter;S.ui.collSort='name';S.ui.collLimit=120;localStorage.setItem('cardstashy-condition-cursor:mtg',cursor);
+  // Match Search's ordinary synthetic watch-cache setup for these extra IDs.
+  // Keep the fail-closed POST guard intact; no watch submission is permitted.
+  const watched=JSON.parse(localStorage.getItem('cardstashy-watch-sent-v1')||'{}'),now=Date.now();
+  for(const card of data.cards)watched['mtg:'+card.id]=now;
+  localStorage.setItem('cardstashy-watch-sent-v1',JSON.stringify(watched));
   // Persist only synthetic fixtures through the app's ordinary local storage.
   await (await import('/storage.js')).writeRecords([['cardforge-v2',S.state],['cardforge-catalog-v1',S.catalog]]);
  },{data,filter,cursor});return data;
