@@ -1,0 +1,40 @@
+/* Release catalogues: distinct years, quiet artwork and a measured sense of progress. */
+.set-year-sections { display:grid; gap:32px; margin:24px 0 28px; min-width:0; }
+.set-year-section { min-width:0; }
+.set-hero-main h1,.set-release-chooser h1 { overflow-wrap:anywhere; }
+.set-year-heading { display:flex; align-items:baseline; gap:14px; margin:0 0 14px; }
+.set-year-heading h2 { margin:0; color:var(--text); font-size:clamp(22px,2.3vw,30px); letter-spacing:-.045em; line-height:1; font-variant-numeric:tabular-nums; }
+.set-year-heading > span { flex:none; color:var(--muted); font-size:11px; letter-spacing:.035em; }
+.set-year-heading > i { flex:1; height:1px; background:linear-gradient(90deg,var(--line),transparent); align-self:center; }
+.set-year-grid { gap:12px; }
+.set-year-grid > .set-row { min-height:118px; padding:16px; gap:18px; position:relative; border-radius:18px; background:linear-gradient(135deg,color-mix(in srgb,var(--surface) 92%,var(--game-color)),var(--surface)); transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease; }
+.set-year-grid > .set-row:focus-visible { outline:2px solid var(--gold); outline-offset:4px; }
+.set-year-grid .set-row-main > b { font-size:15px; line-height:1.4; }
+.set-year-grid .set-row-main > b > span { overflow-wrap:anywhere; }
+.set-year-grid .set-media { width:104px; height:84px; background:rgba(255,255,255,.035); border-radius:12px; }
+.set-year-grid .set-media img { padding:8px; }
+.set-year-grid .set-row-count { min-width:48px; max-width:86px; flex:none; }
+.set-year-grid .set-row-count > b { font-size:22px; font-weight:650; letter-spacing:-.04em; }
+.set-year-grid .set-row-count > .count-unknown { font-size:12px; letter-spacing:0; color:var(--muted); }
+.set-year-grid .set-row-count > small { line-height:1.35; }
+.set-catalog-controls { align-items:end; gap:12px; padding:8px 0; }
+.set-catalog-controls > label { display:grid; gap:5px; color:var(--muted); font-size:11px; min-width:155px; }
+.set-catalog-controls > p { margin:0 0 9px auto; }
+.set-release-chooser .set-list { margin-top:20px; }
+.set-collection-progress { margin:22px 0 18px; padding:20px 22px; border:1px solid color-mix(in srgb,var(--game-color) 24%,var(--line)); border-radius:20px; background:linear-gradient(115deg,color-mix(in srgb,var(--game-color) 8%,var(--surface)),var(--surface)); }
+.set-progress-top { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.set-progress-top .eyebrow { display:block; font-size:10px; margin:0 0 6px; color:var(--muted); }
+.set-progress-top p { margin:0; font-size:15px; font-variant-numeric:tabular-nums; }
+.set-progress-top > strong { font-size:28px; letter-spacing:-.04em; font-weight:650; font-variant-numeric:tabular-nums; }
+.set-progress-track { height:8px; overflow:hidden; border-radius:99px; background:color-mix(in srgb,var(--text) 8%,transparent); margin:16px 0 11px; }
+.set-progress-track > span { display:block; height:100%; width:100%; border-radius:inherit; transform-origin:left; background:linear-gradient(90deg,color-mix(in srgb,var(--game-color) 66%,#74c7ad),#a3d7ad); }
+.set-progress-caption { margin:10px 0 0; color:var(--muted); font-size:11px; line-height:1.6; }
+.set-coverage-note { color:var(--muted); font-size:12px; line-height:1.65; padding:0 4px; }
+.set-coverage-note .link { white-space:nowrap; }
+.progress-changed .set-progress-track > span { animation:set-earned-progress 420ms cubic-bezier(.2,.7,.3,1) both; }
+@keyframes set-earned-progress { from { transform:scaleX(var(--progress-from)); } to { transform:scaleX(var(--progress-to)); } }
+@media (hover:hover) and (pointer:fine) { .set-year-grid > .set-row:hover { transform:translateY(-2px); box-shadow:0 7px 20px rgba(0,0,0,.12); border-color:color-mix(in srgb,var(--gold) 65%,var(--line)); } }
+@media (min-width:1000px) { .set-year-sections { gap:40px; margin-top:30px; } .set-year-grid { gap:16px; } .set-year-heading { margin-bottom:17px; } .set-year-grid > .set-row { min-height:128px; padding:18px; } }
+@media (max-width:699px) { .set-year-sections { gap:26px; } .set-year-grid { grid-template-columns:minmax(0,1fr); gap:10px; } .set-year-grid > .set-row { min-height:100px; gap:12px; padding:12px; border-radius:15px; } .set-year-grid .set-media { width:80px; height:72px; } .set-year-grid .set-row-count > b { font-size:19px; } .set-year-grid .set-row-main > b { font-size:14px; } .set-catalog-controls > p { margin:0; flex-basis:100%; } .set-collection-progress { padding:17px; margin-top:18px; } .set-progress-top > strong { font-size:25px; } }
+@media (max-width:380px) { .set-year-grid .set-media { width:62px; height:62px; } .set-year-grid > .set-row { gap:9px; padding:10px; } .set-year-grid .set-row-count { max-width:65px; } .set-year-grid .set-row-count > b { font-size:17px; } .set-progress-top p { font-size:13px; } }
+@media (prefers-reduced-motion:reduce) { .progress-changed .set-progress-track > span { animation:none; } .set-year-grid > .set-row { transition:none; } .set-year-grid > .set-row:hover { transform:none; } }

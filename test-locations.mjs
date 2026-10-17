@@ -15,14 +15,21 @@ let focused=false;const input={value:'',hidden:true,focus:()=>focused=true};cons
 chooseLocation({dataset:{field:'loc'},value:'location:Blue box'},root);assert.equal(input.value,'Blue box');assert.equal(input.hidden,true);
 chooseLocation({dataset:{field:'loc'},value:'new'},root);assert.equal(input.value,'');assert.equal(input.hidden,false);assert.equal(focused,true);
 // Exercise real add actions for both adapters: two locations must not be merged.
-S.state=blank();const A={},C={},I={},nodes=new Map(Object.entries({'#tQty':{value:'1'},'#tCond':{value:'Near Mint'},'#tPrint':{value:''},'#tEdition':{value:''},'#tLoc':{value:'Deck'}}));
+S.state=blank();S.ui.sheetCtx=null;const A={},C={},I={},nodes=new Map(Object.entries({'#tQty':{value:'1'},'#tCond':{value:'Near Mint'},'#tPrint':{value:''},'#tEdition':{value:''},'#tLoc':{value:'Deck'}}));
 globalThis.document={querySelector:s=>nodes.get(s)};
-registerTcg({A,C,I,commit:async fn=>{const next=structuredClone(S.state);fn(next);S.state=validateWorkspace(next);},closeSheet(){},render(){},openSheet(){},toast(){},go(){},busy:()=>()=>{}});
+registerTcg({A,C,I,commit:async (fn,opts)=>{if(opts?.guard&&!opts.guard())return false;const next=structuredClone(S.state),result=fn(next);S.state=validateWorkspace(next);return result;},closeSheet(){S.ui.sheetCtx=null;},render(){},openSheet(_html,ctx){S.ui.sheetCtx=ctx;},toast(){},go(){},busy:()=>()=>{}});
 for(const game of ['ygo','ptcg']){
  S.state.settings.game=game;cache[game].card={game,id:'card',name:'Fixture card',category:game==='ptcg'?'Pokemon':'Monster',typeLine:'Effect Monster',variants:[]};
- nodes.get('#tLoc').value='Deck';await A.tOwnSave({dataset:{id:'card'}});
- nodes.get('#tLoc').value='Box';await A.tOwnSave({dataset:{id:'card'}});
- nodes.get('#tLoc').value='Deck';await A.tOwnSave({dataset:{id:'card'}});
+ // Every production Add button comes from tOwn, which creates a fresh guarded tadd sheet.
+ for(const location of ['Deck','Box','Deck']){
+  A.tOwn({dataset:{id:'card'}});
+  assert.equal(S.ui.sheetCtx.type,'tadd');assert.equal(S.ui.sheetCtx.game,game);assert.equal(S.ui.sheetCtx.setId,'');
+  nodes.get('#tLoc').value=location;await A.tOwnSave({dataset:{id:'card'}});
+  assert.equal(S.ui.sheetCtx,null,'successful generic Add closes its own sheet');
+ }
+ const saved=JSON.stringify(S.state.tcg[game].collection);
+ await A.tOwnSave({dataset:{id:'card'}});
+ assert.equal(JSON.stringify(S.state.tcg[game].collection),saved,'a stale save after Add closes cannot add another copy');
  const rows=S.state.tcg[game].collection;assert.equal(rows.length,2);assert.equal(rows.find(e=>e.location==='Deck').qty,2);assert.equal(rows.find(e=>e.location==='Box').qty,1);
  assert.deepEqual(savedLocations(S.state,game),['Box','Deck']);assert.match(tcgAddSheet(cache[game].card),/value="location:Deck" selected/);
  const restored=validateWorkspace(JSON.parse(JSON.stringify(S.state)));assert.equal(restored.settings.lastLocation[game],'Deck');assert.deepEqual(savedLocations(restored,game),['Box','Deck']);

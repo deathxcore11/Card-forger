@@ -1,3 +1,5 @@
+import {cardPrice} from './core.js';
+import {resolveYgoSet} from './ygo.js';
 import { pokemonArtCrop } from './artwork.js';
 import { ptcgIcon } from './meta.js';
 // The app functions Ask AI may use. Each runs on this device against the app's own data and
@@ -10,11 +12,28 @@ const lim = (n, d, max) => Math.max(1, Math.min(max, Number.isInteger(n) && n > 
 const BASICS = /^(?:snow-covered )?(?:plains|island|swamp|mountain|forest|wastes)$/i;
 const mtgText = (c) => [c?.oracle_text, ...(c?.card_faces || []).map((f) => f.oracle_text)].filter(Boolean).join(' // ');
 const mtgImg = (c) => c?.image_uris?.normal || c?.image_uris?.small || c?.card_faces?.[0]?.image_uris?.normal || '';
-const tcgSet = (c) => c?.set?.name || c?.setName || c?.sets?.[0]?.name || c?.sets?.[0]?.set || '';
+const tcgSet = (c) => c?.setContext?.name || c?.set?.name || c?.setName || c?.sets?.[0]?.name || c?.sets?.[0]?.set || '';
 
 export function makeAskTools(x) {
   const { S, T } = x;
-  const visuals = new Map();
+  const visuals = new Map(), exactCards = new Map(), exactAliases = new Map();
+  let exactCardSequence = 0;
+  function exactCardResult(game,card,releaseId,result) {
+    const ref='set-card-'+(++exactCardSequence),record={game,card,releaseId,ref};
+    exactCards.set(ref,record);
+    while(exactCards.size>500)exactCards.delete(exactCards.keys().next().value);
+    for(const alias of [String(card.id),card.name]) {
+      const key=game+':'+alias,existing=exactAliases.get(key)||[];
+      exactAliases.set(key,[...existing.filter(r=>r.releaseId!==releaseId),record]);
+    }
+    return {...result,ref};
+  }
+  function exactCardFor(item) {
+    const direct=exactCards.get(item.ref);
+    if(direct)return direct.game===item.game?direct:null;
+    const matches=exactAliases.get(item.game+':'+item.ref)||[];
+    return matches.length===1?matches[0]:null;
+  }
   let suggestions = [], buildId = 0;
   const builders = new Map();
   const visualKey = s => [s.game,s.kind,s.ref].join(':');
@@ -52,7 +71,8 @@ export function makeAskTools(x) {
   }
   const g0 = (g) => (GAMES.includes(g) ? g : T.game());
   const mtgCard = (c) => ({ name: c.name, type: clip(c.type_line, 80), cost: c.mana_cost || '', set: c.set_name, setCode: c.set, rarity: c.rarity, price: num(x.priceOf(c.name)), owned: x.inv(c.name).owned || 0 });
-  const tcgCard = (g, c) => ({ id: String(c.id), name: c.name, type: clip(c.typeLine || c.type || c.category, 80), set: tcgSet(c), rarity: c.rarity || '', price: num(c.prices?.usd), owned: T.ownedMap(g).get(T.SOURCES[g].ownKey(c)) || 0 });
+  const mtgSetCard = c => ({...mtgCard(c),price:num(cardPrice(c)),owned:(S.state.collection || []).filter(e=>e.printingVerified && e.printingId===c.id).reduce((n,e)=>n+Math.max(0,Number(e.qty)||0),0)});
+  const tcgCard = (g, c) => ({ id: String(c.id), name: c.name, type: clip(c.typeLine || c.type || c.category, 80), set: tcgSet(c), rarity: c.rarity || '', price: num(c.setContext ? c.setContext.price : c.prices?.usd), owned: c.setContext ? T.setCardOwnedCount(g,c,c.setContext.releaseId) : T.ownedMap(g).get(T.SOURCES[g].ownKey(c)) || 0 });
   async function mtgSearch(q, limit) {
     const run = (query) => x.api('/cards/search?' + new URLSearchParams({ q: query + ' game:paper', order: 'edhrec' })).catch(() => null);
     const d = (await run(q)) || (await run(`o:"${q.replace(/"/g, '')}"`));
@@ -94,15 +114,15 @@ export function makeAskTools(x) {
         return { game: g, totalValue: num(v.total), copies: v.copies, unpriced: v.unpriced, cards: rows.slice(0, n).map(({ e, value }) => ({ name: e.name, qty: e.qty, set: e.setName || e.set || '', value: num(value), each: num(value / Math.max(1, e.qty)) })) };
       }
       const col = T.gs(g).collection, v = T.collectionValue(g);
-      let rows = col.map((e, i) => { const c = T.cardOf(g, e.cardId), each = c ? T.entryPrice(c, e) ?? c.prices?.usd : null; return { e, i, c, each: num(each), value: num((each || 0) * e.qty) }; });
+      let rows = col.map((e, i) => { const c = T.cardOf(g, e.cardId), each = c ? T.entryPrice(c, e) ?? (e.setReleaseId || e.setReleaseUnverified ? null : c.prices?.usd) : null; return { e, i, c, each: num(each), value: num((each || 0) * e.qty) }; });
       rows.sort(sort === 'quantity' ? (a, b) => b.e.qty - a.e.qty : sort === 'recent' ? (a, b) => b.i - a.i : (a, b) => (b.value || 0) - (a.value || 0));
-      return { game: g, totalValue: num(v.total), copies: v.copies, unpriced: v.unpriced, cards: rows.slice(0, n).map((r) => ({ id: String(r.e.cardId), name: r.e.name, qty: r.e.qty, set: r.e.printing || tcgSet(r.c), each: r.each, value: r.value })) };
+      return { game: g, totalValue: num(v.total), copies: v.copies, unpriced: v.unpriced, cards: rows.slice(0, n).map((r) => ({ id: String(r.e.cardId), name: r.e.name, qty: r.e.qty, set: r.e.printing || (r.e.setReleaseUnverified ? 'Printing not verified' : tcgSet(r.c)), each: r.each, value: r.value })) };
     },
     async list_sets({ game, query, order, limit }) {
       const g = g0(game), n = lim(limit, 10, 30), q = clip(query, 60).toLowerCase();
       // Real card sets only (no token, promo or art-series sets), each marked released or upcoming.
       const today = new Date().toISOString().slice(0, 10), skip = /^(token|memorabilia|minigame|promo|art_series|alchemy|treasure_chest|vanguard)$/;
-      let sets = g === 'mtg' ? (await mtgSets()).filter((s) => !skip.test(s.set_type || '') || q).map((s) => ({ code: s.code, name: s.name, date: s.released_at, cards: s.card_count, type: s.set_type })) : (await tcgSets(g)).map((s) => ({ code: s.id, name: s.name, date: s.date, cards: s.count, series: s.series }));
+      let sets = g === 'mtg' ? (await mtgSets()).filter((s) => !skip.test(s.set_type || '') || q).map((s) => ({ code: s.code, name: s.name, date: s.released_at, cards: s.card_count, type: s.set_type })) : (await tcgSets(g)).map((s) => ({ id: s.id, code: s.code || s.id, name: s.name, date: s.date || '', cards: s.count, series: s.series }));
       sets = sets.map((s) => ({ ...s, status: s.date && s.date > today ? 'upcoming' : 'released' }));
       if (q) sets = sets.filter((s) => s.name.toLowerCase().includes(q) || String(s.code).toLowerCase() === q);
       if (order !== 'largest') sets = sets.filter((s) => s.date);
@@ -111,21 +131,39 @@ export function makeAskTools(x) {
       return { game: g, today, latestReleased: latest, upcoming, sets: sets.slice(0, n) };
     },
     async set_cards({ game, set, limit }) {
-      const g = g0(game), n = lim(limit, 8, 20), q = clip(set, 80).toLowerCase();
-      if (g === 'mtg') {
-        const s = (await mtgSets()).find((s) => s.code.toLowerCase() === q || s.name.toLowerCase() === q) || (await mtgSets()).find((s) => s.name.toLowerCase().includes(q));
-        if (!s) return { error: `No Magic set matching ${set}.` };
-        const d = await x.api('/cards/search?' + new URLSearchParams({ q: `set:${s.code} game:paper`, order: 'usd', dir: 'desc' })).catch(() => null);
-        return { game: g, set: { code: s.code, name: s.name, date: s.released_at }, cards: (d?.data || []).slice(0, n).map((c) => mtgCard(x.cacheCard(c))) };
+      const g = g0(game), n = lim(limit, 8, 20);
+      // Canonical release IDs are case-sensitive and can exceed 80 characters. Reject
+      // oversized/malformed input rather than silently turning it into another release.
+      if(typeof set !== 'string' || !set.trim() || set.length > 4096 || /[\u0000-\u001f\u007f]/.test(set))return {error:'Choose a set name, code or full release ID (up to 4096 characters).'};
+      const query = set.normalize('NFC').trim(), q = query.toLowerCase();
+      const sets = g === 'mtg' ? await mtgSets() : await tcgSets(g);
+      const choice = s => ({id:s.id || s.code,code:s.code || s.id,name:s.name,date:s.date || s.released_at || ''});
+      let candidates;
+      if(g === 'ygo') candidates = resolveYgoSet(sets,query).candidates;
+      else {
+        candidates=sets.filter(s=>String(s.id || s.code)===query);
+        if(!candidates.length)candidates=sets.filter(s=>String(s.code || s.id).toLowerCase()===q || s.name.toLowerCase()===q);
       }
-      const sets = await tcgSets(g), s = sets.find((s) => String(s.id).toLowerCase() === q || s.name.toLowerCase() === q) || sets.find((s) => s.name.toLowerCase().includes(q));
-      if (!s) return { error: `No set matching ${set}.` };
-      let cards = await T.SOURCES[g].setCards(s).catch(() => T.SOURCES[g].setCards(s.id).catch(() => []));
+      if(!candidates.length) {
+        const matches=sets.filter(s=>s.name.toLowerCase().includes(q));
+        return {game:g,error:matches.length?'Choose an exact release from these matches.':`No set matching ${query}.`,requiresChoice:!!matches.length,candidates:matches.slice(0,30).map(choice)};
+      }
+      if(candidates.length!==1)return {game:g,error:'That name or code identifies more than one release. Choose a full release ID.',requiresChoice:true,candidates:candidates.slice(0,30).map(choice)};
+      const s = candidates[0];
+      if (g === 'mtg') {
+        const d = await x.api('/cards/search?' + new URLSearchParams({ q: `set:${s.code} game:paper`, order: 'usd', dir: 'desc' })).catch(() => null);
+        return { game: g, set: { code: s.code, name: s.name, date: s.released_at }, cards: (d?.data || []).slice(0, n).map(c => exactCardResult(g,c,s.code,mtgSetCard(c))) };
+      }
+      let cards = await T.SOURCES[g].setCards(s).catch(() => []);
       cards = Array.isArray(cards) ? cards : cards?.cards || [];
-      // Brief cards carry no prices: load full data for up to 60 to rank by price.
-      const full = await Promise.all(cards.slice(0, 60).map((c) => (c.prices?.usd != null ? c : T.ensureCard(g, c.id, false, false).catch(() => c))));
-      const priced = full.filter((c) => c?.prices?.usd != null).sort((a, b) => b.prices.usd - a.prices.usd);
-      return { game: g, set: { code: s.id, name: s.name, date: s.date, cards: s.count }, cards: priced.slice(0, n).map((c) => tcgCard(g, c)), unpricedChecked: full.length - priced.length, checked: full.length };
+      const unique = [...new Map(cards.filter(c=>c?.id).map(c=>[String(c.id),c])).values()];
+      const full = await Promise.all(unique.slice(0, 60).map(async c => {
+        const loaded = c.prices?.usd != null && !c.brief ? c : await T.ensureCard(g, c.id, false, false).catch(() => c);
+        return T.setContextCard(g, {...loaded,setContext:c.setContext}, s, sets);
+      }));
+      const priced = full.filter(c=>c.setContext?.price != null).sort((a,b)=>b.setContext.price-a.setContext.price);
+      const unpriced = full.filter(c=>c.setContext?.price == null);
+      return { game: g, set: { ...choice(s), cards: s.count }, cards: [...priced,...unpriced].slice(0,n).map(c=>exactCardResult(g,c,s.id,tcgCard(g,c))), unpricedChecked: unpriced.length, checked: full.length };
     },
     async meta_decks({ game, format }) {
       const g = g0(game);
@@ -165,18 +203,19 @@ export function makeAskTools(x) {
     },
   };
   // A builder prepared during this question appears as one more tappable item.
-  tools.reset = () => { x.pending = null; suggestions = []; };
+  tools.reset = () => { x.pending = null; suggestions = []; exactAliases.clear(); };
   tools.suggestedItems = () => suggestions;
-  tools.canonicalItem = s => s.kind === 'meta' ? suggestions.find(x=>x.game===s.game && (x.ref===s.ref || x.label===s.ref || x.label===s.label)) || s : s;
+  tools.canonicalItem = s => { const exact=s.kind==='card'?exactCardFor(s):null; return exact?{...s,ref:exact.ref,label:s.label||exact.card.name}:s.kind==='meta'?suggestions.find(x=>x.game===s.game&&(x.ref===s.ref||x.label===s.ref||x.label===s.label))||s:s; };
   tools.pendingItem = () => { if (!x.pending) return null; const ref = 'builder-' + (++buildId); builders.set(ref,x.pending); return {kind:'build',game:x.pendingGame,ref,label:'Open the deck builder'}; };
   // What a tapped answer item opens, in the right game.
   tools.open = async (s) => {
+    s=tools.canonicalItem(s);
     if (s.game !== T.game()) await x.A.setGame({ dataset: { game: s.game } });
     if (s.kind === 'build') return builders.get(s.ref)?.();
     if (s.kind === 'deck') return x.go((s.game === 'mtg' ? '#deck/' : '#tdeck/') + encodeURIComponent(s.ref));
     if (s.kind === 'set') {
-      if (s.game === 'mtg') { const st = (await mtgSets()).find((y) => y.code.toLowerCase() === s.ref.toLowerCase() || y.name.toLowerCase() === s.ref.toLowerCase()); return x.go('#set/' + (st?.code || s.ref).toLowerCase()); }
-      const st = (await tcgSets(s.game)).find((y) => String(y.id) === s.ref || y.name.toLowerCase() === s.ref.toLowerCase()); return x.go('#set/' + encodeURIComponent(st?.id || s.ref));
+      if (s.game === 'mtg') { const rows=await mtgSets(),code=rows.find(y=>y.code.toLowerCase()===s.ref.toLowerCase()),names=rows.filter(y=>y.name.toLowerCase()===s.ref.toLowerCase()),st=code||(names.length===1?names[0]:null); return x.go(st?'#set/'+encodeURIComponent(st.code):'#sets'); }
+      const rows=await tcgSets(s.game),matches=s.game==='ygo'?resolveYgoSet(rows,s.ref).candidates:rows.filter(y=>String(y.id)===s.ref||y.name.toLowerCase()===s.ref.toLowerCase()); const st=matches.length===1?matches[0]:null; return x.go(s.game!=='ygo'&&!st?'#sets':'#set/' + encodeURIComponent(st?.id || s.ref));
     }
     if (s.kind === 'meta') {
       const data = s.game === 'mtg' ? Object.values(x.allMeta?.() || {}) : [T.metaState(s.game).data];
@@ -184,16 +223,23 @@ export function makeAskTools(x) {
       if (!deck) return x.go('#decks/inspiration');
       return s.game === 'mtg' ? x.A.mtgProven({ dataset: { key: deck.key } }) : x.A.tMetaDeck({ dataset: { key: deck.key } });
     }
+    const exact=s.kind==='card'?exactCardFor(s):null;
+    if(exact)return s.game==='mtg'?x.A.card({dataset:{name:exact.card.name},printing:exact.card}):x.A.tCard({dataset:{id:String(exact.card.id),setId:exact.releaseId},setMembership:exact.card.setContext});
+    if(s.kind==='card' && (String(s.ref).startsWith('set-card-') || exactAliases.has(s.game+':'+s.ref)))return x.go('#sets');
     if (s.game === 'mtg') return x.A.card({ dataset: { name: s.ref } });
     const id = T.cardOf(s.game, s.ref) ? s.ref : (await T.SOURCES[s.game].byName(s.ref).catch(() => null))?.id;
     return id ? x.A.tCard({ dataset: { id: String(id) } }) : x.go('#search');
   };
   // Answer items as small cards: art from the app's card data when it has it.
   tools.preview = (s, i) => {
+    s=tools.canonicalItem(s);
     let img = '', price = null, card = null;
     const deck = s.kind === 'meta' || s.kind === 'deck', visual = visuals.get(visualKey(s));
     if (s.kind === 'card') {
-      if (s.game === 'mtg') { card = x.meta(s.ref); img = mtgImg(card); price = card ? x.priceOf(card.name) : null; }
+      const exact=exactCardFor(s),ambiguous=String(s.ref).startsWith('set-card-')||exactAliases.has(s.game+':'+s.ref);
+      if(exact){card=exact.card;img=s.game==='mtg'?mtgImg(card):card.imageLarge||card.image||'';price=s.game==='mtg'?cardPrice(card):card.setContext?.price??null;}
+      else if(ambiguous){price=null;}
+      else if (s.game === 'mtg') { card = x.meta(s.ref); img = mtgImg(card); price = card ? x.priceOf(card.name) : null; }
       else { card = T.cardOf(s.game, s.ref) || Object.values(T.cache?.[s.game] || {}).find(c=>c.name===s.ref); img = card?.imageLarge || card?.image || ''; price = card?.prices?.usd ?? null; }
     } else if (deck) {
       img = visual?.image || '';

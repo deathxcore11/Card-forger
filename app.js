@@ -454,35 +454,50 @@ async function loadSetIndex(force = false) {
 // Every printing in a set, straight from Scryfall, so new sets appear as soon as Scryfall has them.
 const setCache = new Map();
 async function loadSet(code) {
-  const st = S.ui.set;
+  const st = S.ui.set, generation = (st.generation || 0) + 1;
+  st.generation = generation;
+  const current = () => S.ui.set === st && st.code === code && st.generation === generation;
   if (setCache.has(code)) {
     Object.assign(st, setCache.get(code), { loaded: true, busy: false });
     return render();
   }
   st.busy = true;
   st.error = "";
+  st.complete = false;
+  st.cards = [];
   try {
-    st.info = await api("/sets/" + encodeURIComponent(code));
-    render();
+    const info = await api("/sets/" + encodeURIComponent(code));
+    if(!current())return;
+    st.info = info;
+    if(T.game() === "mtg" && S.ui.view === "set")render();
     let path = "/cards/search?" + new URLSearchParams({ q: "e:" + code, unique: "prints", order: "set", dir: "asc", include_extras: "true", include_variations: "true" });
-    for (let page = 0; path && page < 30 && S.ui.set.code === code; page++) {
+    const cards = new Map();
+    for (let page = 0; path && page < 30 && current(); page++) {
       const d = await api(path);
+      if(!current())return;
       st.total = d.total_cards || st.total;
-      st.cards.push(...(d.data || []).map((c) => slim(c)));
+      for(const c of d.data || [])if(c.id && c.set === code)cards.set(c.id,slim(c));
+      st.cards = [...cards.values()];
       path = d.has_more && d.next_page ? new URL(d.next_page).pathname + new URL(d.next_page).search : null;
-      if (S.ui.view === "set") render();
+      if(T.game() === "mtg" && S.ui.view === "set")render();
     }
-    if (S.ui.set.code === code) {
+    if (current()) {
       st.loaded = true;
-      setCache.set(code, { info: st.info, cards: st.cards, total: st.total });
+      st.complete = !path;
+      if(st.complete)setCache.set(code, { info: st.info, cards: st.cards, total: st.total, complete: true });
+      else st.error = "The provider list is incomplete. Refresh to try again.";
       ensureTcgPrices(st.cards);
     }
   } catch (e) {
-    st.error = st.cards.length ? "Some cards didn’t load: " + e.message : e.message;
-    st.loaded = !!st.cards.length;
+    if(current()){
+      st.error = st.cards.length ? "Some cards didn’t load: " + e.message : e.message;
+      st.loaded = !!st.cards.length;
+    }
   } finally {
-    st.busy = false;
-    if (S.ui.view === "set") render();
+    if(current()){
+      st.busy = false;
+      if(T.game() === "mtg" && S.ui.view === "set")render();
+    }
   }
 }
 
@@ -577,6 +592,17 @@ function wireRouteBack(){
  const saved=routeTrail.at(-1);if(saved.game!==T.game()){routeTrail.length=0;return;}
  const button=document.createElement("button");button.className="link browse-return";button.dataset.act="routeHistoryBack";button.textContent="← Back to "+(saved.ctx.name || "previous card or deck");main.prepend(button);
 }
+// Release projections belong to the current card, never to the global cache or another game.
+function contextTcgCard(game, id, ctx = S.ui.sheetCtx) {
+  if (!["ptcg", "ygo"].includes(game)) return null;
+  const card = T.cardOf(game, id);
+  if (!card || (card.game && card.game !== game)) return null;
+  const contextId = ctx?.id ?? ctx?.card?.id;
+  const scoped = ["tcard", "tadd", "market"].includes(ctx?.type) && ctx.game === game && String(contextId) === String(id);
+  const membership = ctx?.setMembership;
+  const source = scoped && membership?.membership === "set-response" && membership.game === game && String(membership.cardId) === String(id) && membership.releaseId === ctx.setId ? {...card,setContext:membership} : card;
+  return scoped && (ctx.setId || ctx.setReleaseUnverified) ? T.setContextCard(game, source, ctx.setId, game === "ygo" ? T.currentYgoCatalogue() : T.ui(game).sets.list, {variantKey:ctx.setVariant || "",unverifiedRelease:!!ctx.setReleaseUnverified}) : card;
+}
 const detailContextIdentity=ctx=>detailIdentity(ctx,ctx?.type==="card"?ctx.print||meta(ctx.name):null);
 function openSheet(html, ctx = null, scrollTop = 0) {
   dismissRuleHint();
@@ -667,7 +693,7 @@ function refreshSheet() {
   const ctx = S.ui.sheetCtx;
   if (!ctx || !$("#sheet").open) return;
   if (["card","tcard","buy"].includes(ctx.type)) {
-    const c = ctx.type === "card" ? meta(ctx.name) : ctx.type === "tcard" ? T.cardOf(ctx.game,ctx.id) : ctx.print;
+    const c = ctx.type === "card" ? ctx.print || meta(ctx.name) : ctx.type === "tcard" ? contextTcgCard(ctx.game,ctx.id,ctx) : ctx.print;
     if (!c && ctx.type !== "buy") return;
     const body = $("#sheetBody"), saved = body.dataset.detailIdentity === detailContextIdentity(ctx) ? captureDetailState(body) : null;
     body.innerHTML = ctx.type === "card" ? V.cardSheet(c,ctx) : ctx.type === "tcard" ? T.tcgCardSheet(c,ctx) : V.buySheet(ctx);
@@ -732,10 +758,14 @@ const LEGACY = {
 const VIEWS = ["home", "search", "collection", "decks", "deck", "scan", "settings", "sets", "set", "shared", "tdeck", "rules"];
 
 function parseHash() {
-  let h = decodeURIComponent(location.hash.slice(1) || "home");
-  const head = h.split("/")[0];
-  if (LEGACY[head]) h = LEGACY[head] + h.slice(head.length);
-  const [v, a, b] = h.split("/");
+  const raw = location.hash.slice(1) || "home";
+  let segments;
+  try { segments = raw.split("/").map(part=>decodeURIComponent(part)); }
+  catch { segments = [/^set(?:s|\/|$)/.test(raw) ? "sets" : "home"]; }
+  const head = segments[0];
+  if (LEGACY[head]) segments = [...LEGACY[head].split("/"),...segments.slice(1)];
+  if(segments[0] === "set" && (String(segments[1] || "").length > 4096 || /[\u0000-\u001f\u007f]/.test(segments[1] || "")))segments=["sets"];
+  const [v, a, b] = segments;
   const ui = S.ui,
     prev = ui.view + ui.deckId;
   ui.view = VIEWS.includes(v) ? v : "home";
@@ -750,7 +780,7 @@ function parseHash() {
     else ui.tsetId = a;
   } else if (ui.view === "set") {
     if (!a) ui.view = "sets";
-    else if (a.toLowerCase() !== ui.set.code) ui.set = { ...ui.set, code: a.toLowerCase(), info: null, cards: [], total: 0, loaded: false, error: "", q: "", filter: "all", rarity: "all", limit: 120 };
+    else if (a.toLowerCase() !== ui.set.code) ui.set = { ...ui.set, code: a.toLowerCase(), info: null, cards: [], total: 0, loaded: false, busy: false, error: "", q: "", filter: "all", rarity: "all", finish: "all", complete: false, limit: 120 };
   }
   if (ui.view === "decks") ui.decksTab = ["mine", "ideas", "inspiration"].includes(a) ? a : "mine";
   if (ui.view === "deck") {
@@ -1002,7 +1032,7 @@ C.chooseLocation = t => chooseLocation(t);
 const I = {}; // input handlers
 registerWorkbench({A,C,commit,render,openSheet,closeSheet,refreshSheet,toast,
  getGame:T.game,
- getCard:(g,e)=>g === "mtg" ? (e.printingVerified && S.state.printings?.[e.printingId]) || meta(e.name) : T.cardOf(g,e.cardId),
+ getCard:(g,e,context)=>g === "mtg" ? (e.printingVerified && S.state.printings?.[e.printingId]) || (context?.print && key(context.print.name) === key(e.name) ? context.print : meta(e.name)) : contextTcgCard(g,e.cardId,context || null),
  links:(g,c)=>g === "mtg" ? Object.entries(c.purchase_uris||{}).map(([name,url])=>[name,url]) : T.SOURCES[g].buy(c),
  zoneFor:(g,c)=>T.SOURCES[g].zoneFor(c),ownKey:(g,c)=>T.SOURCES[g].ownKey(c)
 });
@@ -1048,17 +1078,42 @@ function updateCompareTray() {
   tray.innerHTML = `<div>${first ? artworkHTML(first,"compare-thumb") : actionIcon("compare")}<span><b>${first ? esc(first.name) : "Compare cards"}</b><small>${first ? "Tap another card to compare" : "Tap your first card"}</small></span></div><button class="icon" data-act="cancelCardCompare" aria-label="Cancel comparison">${actionIcon("close")}</button>`;
 }
 async function resolveActionCard(t) {
-  const game = T.game(), dataset = {...t.dataset};
-  let card;
+  const game = T.game(), dataset = {...t.dataset}, origin = S.ui.sheetCtx, route = location.hash;
+  const matchingSheet = game === "mtg" ? origin?.type === "card" && key(origin.name) === key(dataset.name) : origin?.game === game && String(origin.id) === String(dataset.id);
+  let card, setId=dataset.setId || (matchingSheet ? origin.setId : "") || "",setMembership=matchingSheet?origin.setMembership:null,setVariant=dataset.setVariant || dataset.setFinish || (matchingSheet ? origin.setVariant || origin.priceFinish : "") || "";
   if (game === "mtg") {
     const entry = S.state.collection.find(e => e.id === dataset.entry);
     card = entry?.printingVerified ? S.state.printings?.[entry.printingId] : null;
-    card ||= dataset.setI !== undefined ? S.ui.set.cards[Number(dataset.setI)] : meta(dataset.name);
+    if(dataset.setI !== undefined){
+      const selected=S.ui.set.cards[Number(dataset.setI)];
+      if(!selected || key(selected.name)!==key(dataset.name) || selected.set!==S.ui.set.code)return null;
+      card=selected;setId=selected.set;
+    }
+    card ||= matchingSheet && origin.print ? origin.print : meta(dataset.name);
     card ||= await resolve(dataset.name, true);
-  } else card = await T.ensureCard(game, dataset.id);
-  if (T.game() !== game) return null;
-  return {game,card,dataset};
+  } else {
+    if(!setMembership && setId && T.ui(game).set.info?.id===setId){
+      const membership=T.ui(game).set.cards.find(c=>String(c.id)===String(dataset.id))?.setContext;
+      if(membership?.membership==='set-response'&&membership.game===game&&String(membership.cardId)===String(dataset.id)&&membership.releaseId===setId)setMembership={...membership};
+    }
+    card = await T.ensureCard(game, dataset.id);
+    if(setId)card=T.setContextCard(game,setMembership?{...card,setContext:setMembership}:card,setId,T.ui(game).sets.list,{variantKey:setVariant});
+    if(card?.setContext?.membership==='set-response')setMembership={...card.setContext};
+  }
+  if (T.game() !== game || location.hash !== route || S.ui.sheetCtx !== origin) return null;
+  if(setId)dataset.setId=setId;
+  if(setVariant)dataset.setVariant=setVariant;
+  return {game,card,dataset,setId,setMembership,setVariant,priceEdition:matchingSheet?origin.priceEdition||origin.edition||"":"",priceYgoEdition:matchingSheet?origin.priceYgoEdition||origin.ygoEdition||"":""};
 }
+// Keep quick +/- and manual values on the exact set slot that opened the menu.
+// Other screens retain their existing gameplay/name-equivalent ownership behavior.
+function quickCardLots(ref,entries) {
+  if(!ref.setId)return ownedCardLots(entries,ref.card);
+  if(ref.game==='mtg')return entries.filter(e=>Number(e.qty)>0&&e.printingVerified&&e.printingId===ref.card.id&&(!ref.setVariant||(e.finish||'nonfoil')===ref.setVariant));
+  const release={...ref.card.setContext,id:ref.setId};
+  return entries.filter(e=>T.ownedInSet(ref.game,ref.card,release,[e],T.ui(ref.game).sets.list)>0&&(!ref.setVariant||ref.setVariant==='reference'||ref.game!=='ptcg'||e.variant===ref.setVariant)&&(!ref.priceEdition||ref.game!=='ygo'||e.printing+'::'+e.rarity===ref.priceEdition)&&(!ref.priceYgoEdition||ref.game!=='ygo'||e.edition===ref.priceYgoEdition));
+}
+
 function startCardCompare(game, first = null) {
   comparison.start(game,first); closeSheet(false); updateCompareTray();
   if (!["search","set","collection","deck","tdeck"].includes(S.ui.view)) go("#search");
@@ -1082,10 +1137,10 @@ async function cardQuickMenu(t) {
   const ref = t?.quickRef || await resolveActionCard(t); if (!ref) return;
   quickCard = ref; haptic("tap");
   const st = ref.game === "mtg" ? S.state : T.gs(ref.game);
-  const lots=ownedCardLots(st.collection,ref.card);ref.selectedLot=lots.some(e=>e.id===ref.selectedLot)?ref.selectedLot:lots.some(e=>e.id===ref.dataset.entry)?ref.dataset.entry:lots[0]?.id;
+  const lots=quickCardLots(ref,st.collection);ref.selectedLot=lots.some(e=>e.id===ref.selectedLot)?ref.selectedLot:lots.some(e=>e.id===ref.dataset.entry)?ref.dataset.entry:lots[0]?.id;
   if(ref.selectedLot)ref.dataset.entry=ref.selectedLot;
   const wished = st.wishlist.some(w => ref.game === "mtg" ? key(w.name) === key(ref.card.name) : w.cardId === ref.card.id);
-  openSheet(`<div class="sheet-head"><h2>Card actions</h2><button class="icon" data-act="closeSheet" aria-label="Close">${actionIcon("close")}</button></div><div class="quick-card-heading">${artworkHTML(ref.card,"quick-card-thumb")}<div><b>${esc(ref.card.name)}</b><small>${esc(ref.card.set_name || ref.card.set?.name || ref.card.typeLine || "")}</small></div></div>${cardActionButtons({game:ref.game,wished,existing:lots.length>0,quantityHtml:quickQuantity(lots,ref.selectedLot,ref.qtyBusy),second:comparison.active && comparison.cards.length>0})}`,{type:"card-actions",game:ref.game,id:ref.card.id});
+  openSheet(`<div class="sheet-head"><h2>Card actions</h2><button class="icon" data-act="closeSheet" aria-label="Close">${actionIcon("close")}</button></div><div class="quick-card-heading">${artworkHTML(ref.card,"quick-card-thumb")}<div><b>${esc(ref.card.name)}</b><small>${esc(ref.card.set_name || ref.card.set?.name || ref.card.typeLine || "")}</small></div></div>${cardActionButtons({game:ref.game,wished,existing:lots.length>0,quantityHtml:quickQuantity(lots,ref.selectedLot,ref.qtyBusy),second:comparison.active && comparison.cards.length>0})}`,{type:"card-actions",game:ref.game,id:ref.card.id,setId:ref.setId||"",setMembership:ref.setMembership,setVariant:ref.setVariant,priceEdition:ref.priceEdition,priceYgoEdition:ref.priceYgoEdition});
 }
 // Hold a deck or binder tile for its quick actions, the same gesture as holding a card.
 // Every action is also reachable inside the deck or binder; this is a shortcut, not a hiding place.
@@ -1151,21 +1206,22 @@ function registerCardMenus() {
   C.quickLot=t=>{if(quickCard){quickCard.selectedLot=t.value;cardQuickMenu({quickRef:quickCard});}};
   A.quickQty=async t=>{
     const ref=quickCard;if(!ref||ref.qtyBusy||ref.game!==T.game()||![-1,1].includes(Number(t.dataset.delta)))return;
-    const lots=ownedCardLots((ref.game==='mtg'?S.state:T.gs(ref.game)).collection,ref.card),lot=lots.find(e=>e.id===ref.selectedLot)||lots[0];if(!lot)return;
+    const lots=quickCardLots(ref,(ref.game==='mtg'?S.state:T.gs(ref.game)).collection),lot=lots.find(e=>e.id===ref.selectedLot)||lots[0];if(!lot)return;
     ref.qtyBusy=true;await cardQuickMenu({quickRef:ref});
     try{await A[ref.game==='mtg'?'qty':'tEntryQty']({dataset:{id:lot.id,delta:t.dataset.delta}});}finally{ref.qtyBusy=false;if(quickCard===ref&&S.ui.sheetCtx?.type==='card-actions')await cardQuickMenu({quickRef:ref});}
   };
   A.quickValueSave=async()=>{
     const ref=quickCard;if(!ref||ref.qtyBusy||ref.game!==T.game())return;const input=document.querySelector('#quickLotValue'),raw=input?.value||'',value=raw===''?null:Number(raw);
     if(value!==null&&(!Number.isFinite(value)||value<0))return toast('Enter a non-negative value or leave it blank.');
-    await commit(state=>{const st=ref.game==='mtg'?state:state.tcg[ref.game],e=st.collection.find(x=>x.id===ref.selectedLot);if(e){e.manualValue=value;e.manualValueCondition=conditionName(e.condition);}}, {undo:'Updated this copy’s value.'});
+    const selectedLot=ref.selectedLot;
+    await commit(state=>{const st=ref.game==='mtg'?state:state.tcg[ref.game],e=quickCardLots(ref,st.collection).find(x=>x.id===selectedLot);if(e){e.manualValue=value;e.manualValueCondition=conditionName(e.condition);}}, {undo:'Updated this copy’s value.'});
     if(quickCard===ref)await cardQuickMenu({quickRef:ref});
   };
   A.quickOwn = () => {
     if (!quickCard || quickCard.game !== T.game()) return;
     const {game,card} = quickCard;
-    if (game === "mtg") addSheet(null,{card,name:card.name,set:card.set,number:card.collector_number});
-    else A.tOwn({dataset:{id:card.id}});
+    if (game === "mtg") addSheet(null,{card,name:card.name,set:card.set,number:card.collector_number,finish:quickCard.setVariant||undefined});
+    else A.tOwn({dataset:{id:card.id,setId:quickCard.setId||"",setVariant:quickCard.setVariant||"",print:(quickCard.priceEdition||"").replace("::","|"),edition:quickCard.priceYgoEdition||""},setMembership:quickCard.setMembership});
   };
   A.quickWish = async () => {
     if (!quickCard || quickCard.game !== T.game()) return;
@@ -1241,7 +1297,7 @@ function fetchConditionValue(card,entry,game,done){
   if(result.changed){
    if(game==='mtg'){S.catalogDirty=true;saveCatalogSoon();}else T.persistQuoteCache();
    const lots=game==='mtg'?S.state.collection:T.gs(game).collection;
-   for(const lot of lots)if((game==='mtg'?key(lot.name)===key(card.name):lot.cardId===card.id)&&CONDITION_IDENTITY.every(k=>String(lot[k]||'')===String(entry[k]||'')))lot.conditionQuotes=result.quotes;
+   for(const lot of lots)if((game==='mtg'?key(lot.name)===key(card.name):lot.cardId===card.id)&&(!entry.setReleaseId||lot.setReleaseId===entry.setReleaseId)&&CONDITION_IDENTITY.every(k=>String(lot[k]||'')===String(entry[k]||'')))lot.conditionQuotes=result.quotes;
    save();
   }
   done?.(result);
@@ -1293,12 +1349,14 @@ function refreshConditionPrice(){
  const raw=$("#lotManualValue")?.value??'',manualValue=raw===''?null:Number(raw);
  let entry,price,sourceCard,sourceGame;
  if(ctx.type==='tadd'){
-  const game=T.game(),card=T.cardOf(game,ctx.id),pr=$("#tPrint")?.value||'',[printing,rarity]=game==='ygo'?pr.split('|'):['',''];
-  entry={cardId:card?.id,condition:$("#tCond")?.value,variant:game==='ptcg'?pr:'',printing:printing||'',rarity:rarity||'',edition:$("#tEdition")?.value||'',manualValue,manualValueCondition:conditionName($("#tCond")?.value)};
-  price=T.entryPrice(card,entry);sourceCard=card;sourceGame=game;
+  const game=ctx.game;if(!['ptcg','ygo'].includes(game)||game!==T.game())return;const card=contextTcgCard(game,ctx.id,ctx),pr=$("#tPrint")?.value||'',[printing,rarity]=game==='ygo'?pr.split('|'):['',''];
+  entry={cardId:card?.id,...(ctx.setId?{setReleaseId:ctx.setId}:{}),condition:$("#tCond")?.value,variant:game==='ptcg'?pr:'',printing:printing||'',rarity:rarity||'',edition:$("#tEdition")?.value||'',manualValue,manualValueCondition:conditionName($("#tCond")?.value)};
+  const exact = !ctx.setId || (card?.setContext?.status === 'resolved' && (game !== 'ygo' || card.setContext.printings.filter(p=>p.code===printing&&p.rarity===rarity&&!p.releasePriceAmbiguous).length === 1 && (T.cardOf(game,ctx.id)?.sets||[]).filter(p=>p.code===printing&&p.rarity===rarity).length === 1));
+  price=exact?T.entryPrice(card,entry):conditionValue(null,entry,[]).price;
+  if(exact){sourceCard=card;sourceGame=game;}
  }else if(ctx.type==='add'){
   const card=(ctx.entry?.printingVerified&&S.state.printings?.[ctx.entry.printingId])||ctx.lookup;entry={...ctx.entry,condition:$("#addCondition")?.value,finish:$("#addFinish")?.value,language:$("#addLanguage")?.value,manualValue,manualValueCondition:conditionName($("#addCondition")?.value)};
-  price=conditionValue(cardPrice(card,entry.finish)??cardPrice(card),entry,card?.conditionQuotes||[]).price;
+  price=conditionValue(cardPrice(card,entry.finish),entry,card?.conditionQuotes||[]).price;
   const set=$('#addSet')?.value?.trim().toLowerCase(),number=$('#addNumber')?.value?.trim();
   if((set&&set!==String(card?.set||'').toLowerCase())||(number&&number!==String(card?.collector_number||'')))price=null;
   else {sourceCard=card;sourceGame='mtg';}
@@ -1531,17 +1589,21 @@ A.card = async (t) => {
   S.ui.sheetBack = S.ui.sheetCtx?.type === "idea" && $("#sheet").open ? { type: "idea", i: S.ui.sheetCtx.i } : null;
   const name = t.dataset.name,
     ctx = { type: "card", name, entryId:t.dataset.entry||"", deckId: t.dataset.deck || (S.ui.view === "deck" ? currentDeck()?.id : null), random: !!t.dataset.random };
-  const print = t.dataset.setI !== undefined ? S.ui.set.cards[Number(t.dataset.setI)] : null;
-  if (print) {
-    if (!meta(name)) cacheCard(print);
+  const print = t.printing || (t.dataset.setI !== undefined ? S.ui.set.cards[Number(t.dataset.setI)] : null);
+  if (print?.id && key(print.name) === key(name) && (t.printing ? typeof print.set === "string" : print.set === S.ui.set.code)) {
     ctx.print = print;
+    ctx.setId = print.set;
+    ctx.priceFinish = selectedFinish("mtg",print,t.dataset.setFinish);
   }
-  let c = meta(name);
+  if(t.dataset.setI !== undefined && !ctx.print)return toast("This set changed. Open the card again.");
+  let c = ctx.print || meta(name);
   if (!c) {
     openSheet(`<div class="sheet-head"><h2>${esc(name)}</h2><button class="icon" data-act="closeSheet">✕</button></div><p class="muted">Loading card data…</p>`, ctx);
     try {
       c = await resolve(name, true);
+      if(S.ui.sheetCtx !== ctx || T.game() !== "mtg" || !$("#sheet").open)return;
     } catch (e) {
+      if(S.ui.sheetCtx !== ctx || T.game() !== "mtg" || !$("#sheet").open)return;
       $("#sheetBody").innerHTML = `<div class="sheet-head"><h2>${esc(name)}</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="note warn">${esc(e.message)}</div><p class="muted small">Check the spelling. You can fix the name by removing this card and adding the correct one.</p>${ctx.deckId ? `<button class="link danger" data-act="deckRemove" data-name="${esc(name)}">Remove from deck</button>` : ""}`;
       return;
     }
@@ -1553,13 +1615,21 @@ A.card = async (t) => {
 
 // Full card (flavor text, artist) + every paper printing with prices, loaded in the background.
 async function loadCardExtras(ctx) {
-  let c = meta(ctx.name);
+  let c = ctx.print || meta(ctx.name);
   const still = () => S.ui.sheetCtx === ctx && $("#sheet").open;
   try {
     if (c?.id && !c.full) {
       const full = await api("/cards/" + encodeURIComponent(c.id));
-      c = cacheCard({ ...full, full: true }, [ctx.name]);
-      saveCatalogSoon();
+      if(ctx.print){
+        // Exact-printing enrichment stays in this sheet. It cannot replace the
+        // name-wide default used by decks and the rest of the collection.
+        if(full.id !== c.id)return;
+        c = slim({ ...full, full: true, checkedAt: new Date().toISOString() });
+        if(ctx.print.id === c.id)ctx.print = c;
+      }else{
+        c = cacheCard({ ...full, full: true }, [ctx.name]);
+        saveCatalogSoon();
+      }
       if (still()) $("#sheetBody").innerHTML = V.cardSheet(c, ctx);
     }
     if (!c?.oracle_id) return;
@@ -1590,6 +1660,7 @@ A.viewPrint = (t) => {
   const print = ctx.prints[Number(t.dataset.i)];
   if (!print) return;
   ctx.print = print;
+  ctx.setId = print.set || "";
   ctx.priceFinish = selectedFinish("mtg",print,ctx.priceFinish);
   ctx.face = 0;
   refreshSheet();
@@ -2220,7 +2291,7 @@ A.setsReload = () => {
 };
 A.setReload = () => {
   setCache.delete(S.ui.set.code);
-  Object.assign(S.ui.set, { info: null, cards: [], loaded: false, error: "" });
+  Object.assign(S.ui.set, { info: null, cards: [], loaded: false, busy: false, complete: false, error: "", generation: (S.ui.set.generation || 0) + 1 });
   render();
 };
 I.setSearch = (t) => {
@@ -2230,6 +2301,11 @@ I.setSearch = (t) => {
 };
 A.setFilter = (t) => {
   S.ui.set.filter = t.dataset.id;
+  S.ui.set.limit = 120;
+  render();
+};
+C.setFinish = (t) => {
+  S.ui.set.finish = t.value;
   S.ui.set.limit = 120;
   render();
 };
@@ -2346,11 +2422,11 @@ A.cardTab = async (t) => {
   // The Play guide looks up cards that pair well the first time it's opened.
   if (ctx.tab === "guide") {
     if (ctx.type === "card") mtgGuideLoad(meta(ctx.name));
-    else if (ctx.type === "tcard") tcgCtx.guideLoad?.(ctx.game, T.cardOf(ctx.game, ctx.id));
+    else if (ctx.type === "tcard") tcgCtx.guideLoad?.(ctx.game, contextTcgCard(ctx.game, ctx.id, ctx));
   }
   // Keep the reader’s vertical place when switching pills; the bar stays sticky.
   if(ctx.tab === "prices" && ["card","tcard"].includes(ctx.type)){
-    const g=ctx.type === "card"?"mtg":ctx.game,c=ctx.type === "card"?ctx.print||meta(ctx.name):T.cardOf(g,ctx.id);
+    const g=ctx.type === "card"?"mtg":ctx.game,c=ctx.type === "card"?ctx.print||meta(ctx.name):contextTcgCard(g,ctx.id,ctx);
     await commit(s=>recordQuote(s,quoteModel(g,c,selectedFinish(g,c,ctx.priceFinish),ctx.priceEdition,ctx.priceYgoEdition)),{rerender:false,enrich:false});
     if(S.ui.sheetCtx === ctx)refreshSheet();
   }
@@ -2376,8 +2452,9 @@ A.cardPriceJump = t => {
   const ctx = S.ui.sheetCtx;
   if (!["card","tcard"].includes(ctx?.type)) return;
   if (t.dataset.finish) {
-    const g=ctx.type==="card"?"mtg":ctx.game,c=ctx.type==="card"?ctx.print||meta(ctx.name):T.cardOf(g,ctx.id);
+    const g=ctx.type==="card"?"mtg":ctx.game,c=ctx.type==="card"?ctx.print||meta(ctx.name):contextTcgCard(g,ctx.id,ctx);
     ctx.priceFinish=selectedFinish(g,c,t.dataset.finish);
+    if(ctx.setId && g === "ptcg")ctx.setVariant=ctx.priceFinish;
   }
   return jumpToCardPrices(t.dataset.target);
 };
@@ -2451,16 +2528,21 @@ A.tBuyDirect = t => {
   return A.cardPriceJump({dataset:{target:"sellers",finish:t.dataset.finish}});
 };
 A.tMyPriceSet = async (t) => {
-  const g = t.dataset.game, c = T.cardOf(g, t.dataset.id);
+  const ctx = S.ui.sheetCtx, g = t.dataset.game;
+  if(ctx?.type !== "tcard" || ctx.game !== g || String(ctx.id) !== String(t.dataset.id))return;
+  const c = contextTcgCard(g,t.dataset.id,ctx);
   if (!c) return;
-  const k = myPriceKey(c), cur = S.state.myPrices?.[k]?.price;
-  const v = await askText(`Your price for ${c.name}. Only you see it; leave empty to remove.`, cur != null ? String(cur) : "", { title: "Set your price" });
-  if (v === null) return;
+  const identity = detailContextIdentity(ctx), k = myPriceKey(c,"nonfoil",ctx);
+  if(!k)return toast("Choose a verified printing before recording its private value.");
+  const cur = S.state.myPrices?.[k]?.price;
+  const selected = quoteModel(g,c,selectedFinish(g,c,ctx.priceFinish),ctx.priceEdition,ctx.priceYgoEdition);
+  const v = await askText(`Your price for ${c.name}${c.setContext?" · "+c.setContext.name+" · "+(selected?.label||"Selected version"):""}. Only you see it; leave empty to remove.`, cur != null ? String(cur) : "", { title: "Set your price" });
+  if (v === null || S.ui.sheetCtx !== ctx || detailContextIdentity(ctx) !== identity || myPriceKey(contextTcgCard(g,t.dataset.id,ctx),"nonfoil",ctx) !== k) return;
   const n = Number(String(v).replace(/[$,\s]/g, ""));
   if (v.trim() && !(n >= 0 && Number.isFinite(n))) return toast("Enter a price like 12.50");
   await commit((s) => {
     s.myPrices ||= {};
-    if (v.trim()) s.myPrices[k] = { price: Math.round(n * 100) / 100, name: c.name, game: g, at: new Date().toISOString() };
+    if (v.trim()) s.myPrices[k] = { price: Math.round(n * 100) / 100, name: c.name, game: g, ...(c.setContext?{releaseId:c.setContext.releaseId,printing:selected?.edition||"",rarity:selected?.rarity||"",finish:selected?.finish||"",edition:selected?.selectedEdition||""}:{}), at: new Date().toISOString() };
     else delete s.myPrices[k];
   }, { rerender: false, enrich: false });
   useMyPrices(S.state.myPrices);
@@ -2599,7 +2681,7 @@ A.addToDeck = async (t) => {
    ========================================================= */
 
 function addSheet(entry = null, preset = {}) {
-  const lookup = entry ? meta(entry.name) : preset.card || null;
+  const lookup = entry ? (entry.printingVerified && S.state.printings?.[entry.printingId]) || meta(entry.name) : preset.card || null;
   S.ui.sheetCtx = { type: "add", entry, lookup };
   openSheet(
     `<div class="sheet-head"><h2>${entry ? "Edit card" : "Add to collection"}</h2><button class="icon" data-act="closeSheet">✕</button></div>
@@ -2634,9 +2716,11 @@ A.own = async (t) => {
     row = d ? V.rowsFor(d).find((r) => key(r.name) === key(name)) : null,
     // The printing being looked at (card details or Buy sheet), so the copy is saved as that edition.
     print = ctx?.print && key(ctx.print.name) === key(name) ? ctx.print : null;
-  addSheet(null, { card: print || meta(name), name, qty: row?.missing || 1, set: print?.set?.toUpperCase(), number: print?.collector_number, finish: ctx?.type === "buy" ? ctx.finish : null });
+  addSheet(null, { card: print || meta(name), name, qty: row?.missing || 1, set: print?.set?.toUpperCase(), number: print?.collector_number, finish: ctx?.type === "buy" ? ctx.finish : print && ctx?.priceFinish ? selectedFinish("mtg",print,ctx.priceFinish) : null });
 };
 A.addLookup = async () => {
+  const ctx = S.ui.sheetCtx;
+  if(ctx?.type !== "add")return;
   const name = $("#addName").value.trim();
   if (!name) return;
   $("#addError").textContent = "";
@@ -2644,13 +2728,16 @@ A.addLookup = async () => {
   if($("#lotManualValue"))$("#lotManualValue").value="";
   try {
     const c = await resolve(name, true);
-    S.ui.sheetCtx.lookup = c;
+    if(S.ui.sheetCtx !== ctx)return;
+    if(ctx.lookup && key(ctx.lookup.name) !== key(c.name)){ $("#addSet").value=""; $("#addNumber").value=""; }
+    ctx.lookup = c;
     $("#addName").value = c.name;
     $("#addPreview").innerHTML = addPreview(c);
     $("#addSaveBtn").disabled = false;
     refreshConditionPrice();
   } catch (e) {
-    S.ui.sheetCtx.lookup = null;
+    if(S.ui.sheetCtx !== ctx)return;
+    ctx.lookup = null;
     $("#addPreview").innerHTML = "";
     $("#addError").textContent = e.message;
     $("#addSaveBtn").disabled = true;
@@ -2711,7 +2798,7 @@ async function saveLot(unverified) {
       { msg: editing ? "Saved." : `${qty}× ${name} added.` },
     );
     S.pendingPrintings = null;
-    closeSheet();
+    if(S.ui.sheetCtx === ctx)closeSheet();
   } catch (x) {
     err.textContent = x.message;
   } finally {

@@ -3,9 +3,47 @@ import {esc} from './ui.js';
 export function catalogueText(value) {
  return String(value ?? '').replace(/&(?:apos|#39|#x27);/gi,"'").replace(/&quot;/gi,'"').replace(/&amp;/gi,'&').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>');
 }
+export const knownSetCount = value => ['number','string'].includes(typeof value) && value !== '' && Number.isSafeInteger(Number(value)) && Number(value) > 0 ? Number(value) : null;
 // Shared emblem treatment. Use verified set logos/symbols; unknown sets keep their code.
-export function setRowContent({name,code,image='',symbol='',detail='',count=0,owned=null}){
+export function setRowContent({name,code,image='',symbol='',detail='',count=null,owned=null,printingCount=null}){
  name=catalogueText(name);detail=catalogueText(detail);
- const fallback=symbol||`<span class="set-art-code">${esc(code)}</span>`;
- return `<span class="set-media ${image?'':'no-art'}">${image?`<img src="${esc(image)}" alt="${esc(name)} set artwork" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.parentElement.classList.add('no-art')">`:''}<span class="set-media-fallback" aria-hidden="true">${fallback}</span></span><span class="set-row-main"><b>${symbol}<span>${esc(name)}</span></b><span class="set-row-detail"><span class="set-code-mark">${esc(code)}</span><span>${esc(detail)}</span></span></span><span class="set-row-count"><b>${Number(count).toLocaleString()}</b><small>${Number(count)===1?'card':'cards'}</small>${owned>0?`<small class="ok-text">${Number(owned).toLocaleString()} owned</small>`:''}</span>`;
+ const fallback=symbol||`<span class="set-art-code">${esc(code)}</span>`,total=knownSetCount(count),prints=knownSetCount(printingCount);
+ return `<span class="set-media ${image?'':'no-art'}">${image?`<img src="${esc(image)}" alt="${esc(name)} set artwork" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.parentElement.classList.add('no-art')">`:''}<span class="set-media-fallback" aria-hidden="true">${fallback}</span></span><span class="set-row-main"><b>${symbol}<span>${esc(name)}</span></b><span class="set-row-detail"><span class="set-code-mark">${esc(code)}</span><span>${esc(detail)}</span></span></span><span class="set-row-count">${total!==null?`<b>${total.toLocaleString()}</b><small>${total===1?'card':'cards'}</small>`:prints!==null?`<b>${prints.toLocaleString()}</b><small>printings listed</small><small>unique total unverified</small>`:'<small>Card total</small><b class="count-unknown">Unknown</b>'}${owned>0?`<small class="ok-text">${Number(owned).toLocaleString()} owned</small>`:''}</span>`;
+}
+// Headings live outside each year’s grid, so a heading can never consume a card slot.
+export function setYearSections(sets, renderRow, dateOf = set => set.date) {
+ const groups=new Map();
+ for(const set of sets){const date=String(dateOf(set)||''),year=/^\d{4}/.test(date)?date.slice(0,4):'Date unavailable';if(!groups.has(year))groups.set(year,[]);groups.get(year).push(set);}
+ return `<div class="set-year-sections">${[...groups].map(([year,rows])=>`<section class="set-year-section" aria-label="${esc(year)} releases"><header class="set-year-heading"><h2 class="year">${esc(year)}</h2><span>${rows.length.toLocaleString()} ${rows.length===1?'release':'releases'}</span><i aria-hidden="true"></i></header><div class="set-list set-year-grid">${rows.map(renderRow).join('')}</div></section>`).join('')}</div>`;
+}
+const values = xs => [...new Set(xs.filter(x=>x!==null&&x!==undefined&&x!==''))].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
+export function setCardFields(card, game) {
+ const context=card.setContext,printings=context?.printings||[],single=context?.printing||(!context?.printingAmbiguous&&printings.length===1?printings[0]:null);
+ return { set:game==='mtg'?card.set_name||card.set||'':game==='ptcg'?card.set?.name||card.set?.id||'':context?.name||'',
+  number:game==='mtg'?card.collector_number||'':game==='ptcg'?card.set?.number||'':values(printings.map(p=>String(p.code||'').split('-').slice(1).join('-'))).length===1?String(printings[0]?.code||'').split('-').slice(1).join('-'):'',
+  numbers:values(game==='ygo'?printings.map(p=>p.code):[game==='mtg'?card.collector_number:card.set?.number]),
+  rarities:values(game==='ygo'?(single?[single.rarity]:printings.map(p=>p.rarity)):[card.rarity]),
+  finishes:values(game==='mtg'?card.finishes||[]:game==='ptcg'?(card.variants||[]).map(v=>v.key):printings.map(p=>p.finish)),
+  price:context?context.price:card.prices?.usd??null };
+}
+// Only offer facets that the actual returned cards can substantiate.
+export function setCardFacets(cards, game) {
+ const rows=cards.map(c=>setCardFields(c,game));
+ return {sets:values(rows.map(r=>r.set)),numbers:values(rows.flatMap(r=>r.numbers)),rarities:values(rows.flatMap(r=>r.rarities)),finishes:values(rows.flatMap(r=>r.finishes))};
+}
+export function filterSortSetCards(cards, game, {q='',set='',rarity='',finish='',sort='number'}={}) {
+ const query=String(q).trim().toLocaleLowerCase(),rows=cards.map(card=>({card,fields:setCardFields(card,game)})).filter(({card,fields:f})=>(!query||[card.name,f.number,...f.numbers].some(x=>String(x||'').toLocaleLowerCase().includes(query)))&&(!set||f.set===set)&&(!rarity||rarity==='all'||f.rarities.includes(rarity))&&(!finish||finish==='all'||f.finishes.includes(finish)));
+ const text=(a,b)=>String(a||'').localeCompare(String(b||''),undefined,{numeric:true,sensitivity:'base'});
+ const knownFirst=(a,b)=>!a&&!b?0:!a?1:!b?-1:text(a,b);
+ rows.sort((a,b)=>{let cmp=0;switch(sort){case 'name':cmp=text(a.card.name,b.card.name);break;case 'price':cmp=(Number.isFinite(Number(b.fields.price))&&b.fields.price!==null?Number(b.fields.price):-1)-(Number.isFinite(Number(a.fields.price))&&a.fields.price!==null?Number(a.fields.price):-1);break;case 'set':cmp=knownFirst(a.fields.set,b.fields.set);break;case 'rarity':cmp=knownFirst(a.fields.rarities.join(' · '),b.fields.rarities.join(' · '));break;case 'finish':cmp=knownFirst(a.fields.finishes.join(' · '),b.fields.finishes.join(' · '));break;default:cmp=knownFirst(a.fields.number,b.fields.number);}
+  return cmp||knownFirst(a.fields.number,b.fields.number)||text(a.card.name,b.card.name)||text(a.card.id,b.card.id);});return rows.map(x=>x.card);
+}
+// A previous measurement is optional. Only a real ownership change animates, never page entry,
+// catalogue hydration or an unrelated rerender. An unknown unique total has no percentage bar.
+export function setProgressMarkup({key,owned=0,total=null,loaded=0,complete=false,previous=null}) {
+ total=knownSetCount(total);owned=Math.max(0,Math.floor(Number(owned)||0));loaded=Math.max(0,Math.floor(Number(loaded)||0));
+ const ratio=total&&owned<=total&&loaded<=total?Math.min(1,owned/total):null,snapshot={key,owned,total},changed=ratio!==null&&previous?.key===key&&previous.total===total&&previous.owned!==owned;
+ const label=total?`${owned.toLocaleString()} of ${total.toLocaleString()} unique cards`:`${owned.toLocaleString()} verified ${owned===1?'card':'cards'} owned`,percent=ratio===null?'':`${Math.round(ratio*100)}%`,coverage=complete?'Your collection, one unique card at a time.':`${loaded.toLocaleString()} unique cards loaded${total?` of ${total.toLocaleString()}`:''}. ${total?'Progress counts verified ownership only; catalogue coverage is incomplete.':'The unique-card total is not verified, so no completion percentage is shown.'}`;
+ const from=changed?Math.min(1,Math.max(0,previous.owned/total)):ratio;
+ return {snapshot,html:`<section class="set-collection-progress${changed?' progress-changed':''}" aria-label="Set collection progress"><div class="set-progress-top"><div><span class="eyebrow">Your collection</span><p>${esc(label)}</p></div>${percent?`<strong>${percent}</strong>`:''}</div>${ratio!==null?`<div class="set-progress-track" role="progressbar" aria-label="Verified unique cards owned" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${Math.min(total,owned)}" aria-valuetext="${esc(label)}${complete?'':' · incomplete catalogue coverage'}"><span style="--progress-from:${from};--progress-to:${ratio};transform:scaleX(${ratio})"></span></div>`:''}<p class="set-progress-caption">${esc(coverage)}</p></section>`};
 }

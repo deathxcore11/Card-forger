@@ -143,7 +143,9 @@ export function tcgSetBadge(c, compact = false) {
     if (compact && sym) return `<span class="tset" title="${esc(c.set?.name || "")} #${esc(c.set?.number || "")}${c.rarity ? " · " + esc(c.rarity) : ""}">${sym}${pkRarity(c.rarity)}</span>`;
     return code ? `<span class="tset" title="${esc(c.set?.name || "")}${c.rarity ? " · " + esc(c.rarity) : ""}">${sym}${pkRarity(c.rarity)}<b>${esc(code)}</b>${c.set?.number ? `<small>${esc(c.set.number)}</small>` : ""}</span>` : "";
   }
-  const s = c.sets?.[0];
+  const context=c.setContext;
+  const s=context?(context.printing||(!context.printingAmbiguous&&context.printings?.length===1?context.printings[0]:null)):c.sets?.[0];
+  if(context&&!s)return `<span class="tset" title="${esc(context.name||'Selected release')} · ${context.status==='resolved'?'printing not selected':'release unverified'} · edition unspecified"><b>${esc(context.code||'Unverified')}</b></span>`;
   if (!s) return "";
   const code = ygoRarityCode(s.rarity);
   return `<span class="tset ${rarityTone(code)}" title="${esc(s.name)} · ${esc(s.rarity || "")}"><b>${esc(String(s.code).split("-")[0])}</b>${code ? `<small>${esc(code)}</small>` : ""}</span>`;
