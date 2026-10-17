@@ -42,6 +42,7 @@ try{
     await page.getByRole('button',{name:'Switch game',exact:true}).getByText(ref.game,{exact:true}).waitFor();
    }
    // Exercise the user's explicit opt-in download, integrity check and durable cache.
+   await page.getByRole('button',{name:'Scanner settings',exact:true}).first().click();
    await page.locator('[data-act="scanCatalogDownload"]').click();
    await page.getByText(/local card records ready/).waitFor({timeout:45000});
    const local=await page.evaluate(async g=>{
@@ -52,19 +53,50 @@ try{
     try{const r=await c.localScanMatch(g,read);return {names:r.cands.map(x=>x.name),ids:r.cands.map(x=>x.id),exact:r.cands[0]?.exact,ms:performance.now()-start};}finally{window.fetch=prior;}
    },ref.g);
    assert(local.names.includes(ref.name));assert(local.exact);if(ref.id)assert(local.ids.includes(ref.id));console.log(`${ref.game} cached identifier lookup, HTTP blocked: ${JSON.stringify(local)}`);
-   await page.reload();await page.getByText(/local card records ready/).waitFor({timeout:15000});
-   await page.getByRole('tab',{name:'Photo',exact:true}).click();
+   await page.reload();await page.getByRole('button',{name:'Scanner settings',exact:true}).first().click();await page.getByText(/local card records ready/).waitFor({timeout:15000});
+   await page.locator('#sheet[open] [data-act="closeSheet"]').first().click();
+   await page.getByRole('button',{name:'Photo',exact:true}).click();
    const upload=page.locator('input[data-change="scanFile"]').last();
    await upload.setInputFiles({name:ref.g+(ref.g==='ptcg'?'.webp':'.jpg'),mimeType:ref.mime,buffer:ref.bytes});
    await page.getByRole('button',{name:'Read card',exact:true}).click();
-   await page.locator('.scan-confirm').waitFor({state:'visible',timeout:120000});
+   await page.waitForFunction(async()=>{const {loadBatch}=await import('/scan-batch.js');return loadBatch().some(x=>!['captured','reading'].includes(x.status));},{},{timeout:120000});
+   const framing=await page.evaluate(async g=>{
+    const {S}=await import('/store.js'),image=new Image();image.src='/__reference/'+g;await image.decode();
+    const card=S.ui.scan.lastCard;
+    return {source:image.naturalWidth/image.naturalHeight,capture:card.width/card.height};
+   },ref.g);
+   assert(Math.abs(framing.source-framing.capture)<.002,`${ref.game} full-card upload preserves title/footer and original portrait framing, never the sideways artwork window`);
+   assert.equal(await page.locator('.scan-confirm').count(),0,'OCR does not interrupt capture with a picker');
+   await page.locator('[data-act="scanBatchReview"]').first().click();
+   await page.locator('.scan-confirm').waitFor({state:'visible',timeout:15000});
    const read=await page.evaluate(async()=>{const {S}=await import('/store.js');return {read:S.ui.scan.read,status:S.ui.scan.status,tried:S.ui.scan.tried,recognitionMs:S.ui.scan.recognitionMs};});
    console.log(`${ref.game} real OCR: ${JSON.stringify(read)}`);
    const popup=page.getByRole('region',{name:'Confirm scanned card',exact:true});
    assert.equal(await popup.count(),1,`${ref.game} reference photo must produce a candidate, not a blank result`);
    assert.equal(await popup.getByText(ref.name,{exact:true}).count(),1,`${ref.game} correct card title`);
    assert.equal(await popup.getByRole('img',{name:ref.name,exact:true}).count(),1,'card copy is shown');
+   let reviewedPrinting=null;
+   if(ref.g==='ygo'){
+    // This public image is marked Replica and has no actual set code. Its
+    // artwork/name identifies Dark Magician, not CT13 or a 25th printing.
+    assert.match(read.read.code,/Replica/i,'fixture has no proof of a retail printing');
+    assert(await popup.locator('[data-change="scanConfirmFinish"]').isDisabled(),'edition waits for explicit printing review');
+    assert(await popup.getByRole('button',{name:'Add to collection',exact:true}).isDisabled(),'ambiguous printing cannot be added');
+    const pending=await page.evaluate(async()=>{const {S}=await import('/store.js');return {selected:S.ui.scan.confirm.i,options:S.ui.scan.cands.map((c,i)=>({i,id:String(c.card?.id||c.id),name:c.name,print:c.print,exact:c.exact})),saved:S.state.tcg.ygo.collection.length};});
+    assert.equal(pending.selected,-1,'no first-result printing is silently chosen');assert.equal(pending.saved,0);
+    assert(pending.options.length>=2&&pending.options.length<=3,'ambiguous printing offers a compact review');
+    assert(pending.options.every(c=>c.name===ref.name&&c.id===ref.id&&!c.exact),'same-name suggestions are not OCR-proven printings');
+    reviewedPrinting=pending.options[1];assert(reviewedPrinting.print,'offered printing has explicit set/rarity identity');
+    await popup.locator(`[data-act="scanChoose"][data-i="${reviewedPrinting.i}"]`).click();
+    const selected=await page.evaluate(async()=>{const {S}=await import('/store.js');const q=S.ui.scan.confirm,c=S.ui.scan.cands[q.i];return {i:q.i,print:c.print,exact:c.exact};});
+    assert.equal(selected.i,reviewedPrinting.i);assert.equal(selected.print,reviewedPrinting.print);assert.equal(selected.exact,false,'manual review does not fabricate OCR proof');
+    assert(await popup.locator('[data-change="scanConfirmFinish"]').isEnabled(),'reviewing printing enables edition choice');
+   }
    await popup.getByRole('button',{name:'More copies',exact:true}).click();await popup.getByRole('button',{name:'More copies',exact:true}).click();
+   const finish=await popup.locator('[data-change="scanConfirmFinish"] option').evaluateAll(opts=>opts.find(x=>x.value)?.value);
+   assert(finish,'printing exposes a finish to explicitly confirm');
+   await popup.locator('[data-change="scanConfirmFinish"]').selectOption(finish,{force:true});
+   await popup.locator('.scan-review-more summary').click();
    await popup.getByRole('button',{name:'Lightly Played',exact:true}).click();
    await popup.getByRole('combobox',{name:'Scanned card language',exact:true}).tap();
    await page.locator('.glass-select-menu[open]').getByRole('option',{name:'Japanese',exact:true}).tap();
@@ -72,13 +104,22 @@ try{
    await popup.waitFor({state:'detached'});
    const saved=await page.evaluate(async g=>{const {S}=await import('/store.js');return (g==='mtg'?S.state:S.state.tcg[g]).collection;},ref.g);
    assert.equal(saved.length,1);assert.equal(saved[0].name,ref.name);if(ref.id)assert.equal(String(saved[0].cardId),ref.id,'same name is insufficient: save the correct indexed card/printing');assert.equal(saved[0].qty,3);assert.equal(saved[0].condition,'Lightly Played');assert.equal(saved[0].language,'ja');
+   if(reviewedPrinting){
+    const [printing,rarity]=reviewedPrinting.print.split('|');
+    assert.equal(saved[0].printing,printing,'save retains the explicitly reviewed set code');assert.equal(saved[0].rarity,rarity,'save retains the explicitly reviewed rarity');assert.equal(saved[0].edition,finish,'save retains the explicitly confirmed edition');
+    console.log(`PASS: Yu-Gi-Oh! replica remains unverified; explicit user review selects ${reviewedPrinting.print}, not an inferred photo printing.`);
+   }
    await page.getByRole('navigation',{name:'Main',exact:true}).getByRole('button',{name:'Collection',exact:true}).click();
    await page.getByRole('heading',{name:'Collection',exact:true}).waitFor();await page.locator('main').getByRole('img',{name:ref.name,exact:true}).first().waitFor({state:'visible'});
-   console.log(`PASS: ${ref.game}: reference photo → local artwork/OCR → illustrated popup → dropdown edit → 3 LP/Japanese copies saved once → collection screen.`);
+   console.log(`PASS: ${ref.game}: reference photo → OCR batch → explicit review → finish/dropdown edit → 3 LP/Japanese copies saved once → collection screen.`);
    // Feed actual reference artwork through a browser MediaStream. This exercises
    // capture and retained playback, without claiming a physical camera test.
    await page.getByRole('navigation',{name:'Main',exact:true}).getByRole('button',{name:'Scan',exact:true}).click();
-   await page.getByRole('tab',{name:'Live camera',exact:true}).click();
+   await page.getByRole('heading',{name:'Scan',exact:true}).waitFor();
+   // Route rendering is asynchronous. Wait for the retained photo-mode toggle
+   // rather than using count() against the previous Collection DOM.
+   await page.locator('[data-act="scanMode"][data-id="live"]').click();
+   await page.getByRole('button',{name:'Start camera',exact:true}).waitFor();
    await page.evaluate(async g=>{
     const {visibleGuide}=await import('/scancam.js'),image=new Image();image.src='/__reference/'+g;await image.decode();
     navigator.mediaDevices.getUserMedia=async()=>{
@@ -89,17 +130,24 @@ try{
    },ref.g);
    await page.getByRole('button',{name:'Start camera',exact:true}).click();
    await page.locator('#scanVideo').waitFor();
-   const auto=page.getByLabel('Capture automatically',{exact:true});if(await auto.count())await auto.uncheck();
+   await page.evaluate(async()=>{const {S}=await import('/store.js');S.ui.scan.auto=false;});
    await page.waitForFunction(()=>document.querySelector('#scanVideo')?.videoWidth>0);
-   await page.waitForFunction(()=>document.querySelector('#camGuide.auto-boundary')?.style.opacity==='1');
-   await page.getByRole('button',{name:'Capture',exact:true}).click();
-   await page.getByRole('region',{name:'Confirm scanned card',exact:true}).waitFor({timeout:120000});
+   await page.waitForFunction(async()=>{const {S}=await import('/store.js');return S.ui.scan.boundaryReady;});
+   assert.equal(await page.locator('#camGuide,.cam-guide,.cam-wrap polygon').count(),0,'internal boundary detection never overlays the feed');
+   await page.getByRole('button',{name:'Capture card now',exact:true}).click();
+   await page.waitForFunction(async()=>{const {loadBatch}=await import('/scan-batch.js');return loadBatch().some(x=>!['captured','reading'].includes(x.status));},{},{timeout:120000});
+   await page.locator('[data-act="scanBatchReview"]').first().click();
+   await page.getByRole('region',{name:'Confirm scanned card',exact:true}).waitFor({timeout:15000});
    await page.getByRole('region',{name:'Confirm scanned card',exact:true}).getByText(ref.name,{exact:true}).waitFor();
    const beforeTime=await page.locator('#scanVideo').evaluate(v=>v.currentTime);await page.waitForTimeout(250);
    assert(await page.locator('#scanVideo').evaluate((v,t)=>!v.paused&&v.currentTime>t&&v.srcObject===window.__cameraStream&&v.srcObject.getTracks()[0].readyState==='live',beforeTime),'video keeps playing behind confirmation');
-   await page.getByRole('button',{name:'Skip this scan',exact:true}).click();
+   await page.getByRole('button',{name:'Keep for later and continue scanning',exact:true}).click();
    assert(await page.locator('#scanVideo').evaluate(v=>v.srcObject===window.__cameraStream&&v.srcObject.getTracks()[0].readyState==='live'),'dismiss keeps the same live camera stream');
-   console.log(`PASS: ${ref.game}: off-centre rotated reference MediaStream → automatic boundary + perspective warp → correct popup → playback continues → dismiss retains the same active camera track.`);
+   await page.evaluate(()=>window.scrollTo(0,0));
+   const shellTray=await page.locator('.scan-batch-tray').boundingBox(),shellNav=await page.getByRole('navigation',{name:'Main',exact:true}).boundingBox();
+   assert(shellTray.y+shellTray.height<=shellNav.y,'production app shell keeps the complete live tray above navigation');
+   await page.screenshot({path:`test-results/scanner-${ref.g}-live.png`,fullPage:false});
+   console.log(`PASS: ${ref.game}: off-centre rotated reference MediaStream → automatic boundary + perspective warp → queued recognition → explicit review → playback continues → dismiss retains the same active camera track.`);
   }catch(e){
    console.error(`FAIL ${ref.game}: ${e.stack}`);console.error('Scan save diagnostic:',await page.evaluate(async()=>{const {S}=await import('/store.js');return S.ui.scan.confirm?.errorDetail||'No save exception';}));console.error((await page.locator('main').innerText()).slice(0,6000));
    await page.screenshot({path:`test-results/scanner-${ref.g}-failure.png`,fullPage:true});throw e;

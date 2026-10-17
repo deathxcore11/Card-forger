@@ -36,12 +36,12 @@ import { factBox, factsFor } from "./facts.js";
 import { tcgFallback, myPrice, ensureTcgPrices } from "./mtg-tcgprice.js";
 import { S, meta, inv, deckById, currentDeck, priceOf } from "./store.js";
 import {
-  esc, usd, pct, signed, art, cardImage, img, manaCost, colorDots, segmented,
+  esc, safeHref, usd, pct, signed, art, cardImage, img, manaCost, colorDots, segmented,
   options, bar, ring, curveChart, lineChart, empty, setBadge, sym, symbolText, setIconUrl,
 } from "./ui.js";
 import {
   cardKey as key, sumQty, rulesText, typeText, isLand, validateDeck,
-  atLeastLands, aggregateCards, commanderEligible, isBasic, cardPrice,
+  atLeastLands, aggregateCards, commanderEligible, isBasic, cardPrice, namePrice, inventory,
 } from "./core.js";
 import { deckComparison, comparisonTotals } from "./deck-flow.js";
 import { printingState } from "./confidence.js";
@@ -381,7 +381,7 @@ export function cardSheet(c, ctx = {}) {
     ${S.state.decks.length ? `<div class="inline-pick"><select id="toDeck" aria-label="Deck to add to">${options(S.state.decks.map((d) => [d.id, d.name]), deck?.id || S.state.activeDeck)}</select><button class="btn ghost" data-act="addToDeck" data-name="${esc(name)}">Add to deck</button></div>` : ""}
     ${factBox(factsFor(c, prints), c.oracle_id || name)}
     <div class="links research"><span class="muted small">Research</span>
-      <a href="${esc(c.scryfall_uri || "https://scryfall.com/search?q=" + encodeURIComponent(name))}" target="_blank" rel="noopener">Scryfall ↗</a>
+      <a href="${esc(safeHref(c.scryfall_uri || "https://scryfall.com/search?q=" + encodeURIComponent(name)))}" target="_blank" rel="noopener">Scryfall ↗</a>
       <a href="https://edhrec.com/cards/${esc(name.toLowerCase().split(" // ")[0].replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""))}" target="_blank" rel="noopener">EDHREC ↗</a>
       <button class="link" data-act="buyCard">Where to buy ›</button>
     </div>`;
@@ -393,7 +393,7 @@ export function cardSheet(c, ctx = {}) {
     <p class="foot">${esc(src[1])} ${src[2] === "TIX" ? "price for Magic Online tickets" : "market estimate"} from Scryfall, updated daily${shown.checkedAt ? " · checked " + esc(new Date(shown.checkedAt).toLocaleDateString()) : ""}. Condition prices (NM, LP…) and stock are on the store’s page.</p>
     ${prints ? `<p class="small">Across ${prints.length} printings: <b class="ok-text">${usd(cheapest(prints))}</b> cheapest · <b>${usd(dearest(prints))}</b> priciest <button class="link small" data-act="cardTab" data-tab="versions">Compare all →</button></p>` : ""}
     ${chosen ? `<p class="small">Your shopping price: <b>${usd(chosen.price)}</b> · ${esc(chosen.label)}</p>` : ""}
-    <div class="actions wrap"><button class="btn" data-act="buyCard" data-finish="${finishes[0] || "nonfoil"}">Buy this printing ›</button>${shown.purchase_uris?.[src[0]] ? `<a class="btn ghost" href="${esc(shown.purchase_uris[src[0]])}" target="_blank" rel="noopener noreferrer">${esc(src[1])} listing ↗</a>` : ""}</div></details>`;
+    <div class="actions wrap"><button class="btn" data-act="buyCard" data-finish="${finishes[0] || "nonfoil"}">Buy this printing ›</button>${shown.purchase_uris?.[src[0]] ? `<a class="btn ghost" href="${esc(safeHref(shown.purchase_uris[src[0]]))}" target="_blank" rel="noopener noreferrer">${esc(src[1])} listing ↗</a>` : ""}</div></details>`;
   const rulings = ctx.rulings
     ? ctx.rulings.length
       ? `<ul class="rulings">${ctx.rulings.map((r) => `<li><p>${symbolText(r.comment)}</p><small class="muted">${esc(r.source === "wotc" ? "Wizards of the Coast" : "Scryfall")} · ${esc(r.published_at || "")}</small></li>`).join("")}</ul>`
@@ -664,12 +664,12 @@ export function buySheet(ctx) {
   <h3>This exact printing</h3>
   ${
     exact.length
-      ? `<div class="list compact">${exact.map(([k, label]) => `<a class="mini-row store" href="${esc(p.purchase_uris[k])}" target="_blank" rel="noopener noreferrer"><span><b>${label}</b><small class="muted"> · ${esc(p.set ? p.set.toUpperCase() + " #" + p.collector_number : "this printing")}</small></span><span class="btn ghost small">View listing ↗</span></a>`).join("")}</div>${finish !== "nonfoil" ? `<p class="foot">Choose ${esc(FINISH[finish].toLowerCase())} on the listing page.</p>` : ""}`
+      ? `<div class="list compact">${exact.map(([k, label]) => `<a class="mini-row store" href="${esc(safeHref(p.purchase_uris[k]))}" target="_blank" rel="noopener noreferrer"><span><b>${label}</b><small class="muted"> · ${esc(p.set ? p.set.toUpperCase() + " #" + p.collector_number : "this printing")}</small></span><span class="btn ghost small">View listing ↗</span></a>`).join("")}</div>${finish !== "nonfoil" ? `<p class="foot">Choose ${esc(FINISH[finish].toLowerCase())} on the listing page.</p>` : ""}`
       : `<p class="muted small">No direct listing link for this printing. Use a name search below, then pick the set.</p>`
   }
   <h3>Search by card name</h3>
   <p class="foot">These show every printing, not just this one.</p>
-  <div class="links">${nameSearch(name).map(([l, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${l} ↗</a>`).join("")}</div>
+  <div class="links">${nameSearch(name).map(([l, u]) => `<a href="${esc(safeHref(u))}" target="_blank" rel="noopener noreferrer">${l} ↗</a>`).join("")}</div>
   <div class="actions wrap">
     <button class="btn ghost" data-act="buyCompare">Compare cheaper printings${low !== null && est !== null && low < est ? ` · from ${usd(low)}` : ""}</button>
     <button class="btn" data-act="own" data-name="${esc(name)}">＋ Add to collection</button>
@@ -801,11 +801,11 @@ export function collectionList() {
         <button class="lot-art" data-act="card" data-name="${esc(e.name)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${img(cardImage(c), e.name)}${c ? tileChrome("mtg", c) : ""}${tierGem(t)}</button>
         <div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(e.name)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem("mtg", c)} ${setBadge(e.printingVerified ? c : {set:e.set,set_name:e.setName,collector_number:e.collectorNumber}, {physical:true,unspecified:!e.set&&!e.printingVerified})}</button>
           <span class="lot-sub">${manaCost(c)}<span>${esc((e.set || e.setName || "Any printing").toUpperCase())}${e.collectorNumber ? " #" + esc(e.collectorNumber) : ""}${e.finish !== "nonfoil" ? ` · <b class="foil">${esc(e.finish)}</b>` : ""}${e.condition && e.condition !== "Near Mint" ? " · " + esc(e.condition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></span>
-          ${e.lookupFailed ? `<button class="tag warn" data-act="editLot" data-id="${e.id}">Not found — tap to fix name</button>` : !c ? `<span class="tag muted">Looking up…</span>` : ""}
+          ${e.lookupFailed ? `<button class="tag warn" data-act="editLot" data-id="${esc(e.id)}">Not found — tap to fix name</button>` : !c ? `<span class="tag muted">Looking up…</span>` : ""}
         </div>
         <div class="lot-side"><button class="price link" data-act="buyCard" data-name="${esc(e.name)}" data-lot="${esc(e.id)}" data-finish="${esc(e.finish||"nonfoil")}" aria-label="Price history and sellers for ${esc(e.name)}">${usd(unit === null ? null : unit * e.qty)}</button>${e.condition&&e.condition!=="Near Mint"?`<small class="condition-value-note">${esc(conditionValueNote(e,e.conditionQuotes||[]))}</small>`:""}
-          <span class="stepper"><button data-act="qty" data-id="${e.id}" data-delta="-1" aria-label="Remove one">−</button><b>${e.qty}</b><button data-act="qty" data-id="${e.id}" data-delta="1" aria-label="Add one">＋</button></span>
-          <button class="link small" data-act="editLot" data-id="${e.id}">Edit</button>
+          <span class="stepper"><button data-act="qty" data-id="${esc(e.id)}" data-delta="-1" aria-label="Remove one">−</button><b>${e.qty}</b><button data-act="qty" data-id="${esc(e.id)}" data-delta="1" aria-label="Add one">＋</button></span>
+          <button class="link small" data-act="editLot" data-id="${esc(e.id)}">Edit</button>
         </div>
       </div>`;
     })
@@ -967,7 +967,7 @@ function inspirationView() {
   <div class="deck-grid">${refs
     .map((d) => {
       const t = comparisonTotals(rowsFor({ ...d, id: "reference:" + d.id }));
-      return `<article class="idea"><div class="idea-art">${img(coverOf(d), d.name)}<span class="chip dark">${esc(d.source?.kind || d.format)}</span></div><div class="idea-body"><b>${esc(d.name)}</b><small>${esc(d.commander || "")}${d.source?.author ? " · by " + esc(d.source.author) : ""}${d.source?.website ? " · " + esc(d.source.website) : ""}</small><div class="row between small"><span><b>${t.covered}</b>/${t.copies} owned</span><span>${usd(t.pricedGap, 0)} to finish</span></div>${bar(t.copies ? t.covered / t.copies : 0, "thin")}<div class="actions wrap"><button class="btn small" data-act="copyRef" data-id="${esc(d.id)}">Build my version</button>${d.source?.url ? `<a class="link small" href="${esc(d.source.url)}" target="_blank" rel="noopener noreferrer">Original ↗</a>` : ""}<button class="link small" data-act="exportRef" data-id="${esc(d.id)}">Export</button><button class="link small danger" data-act="deleteRef" data-id="${esc(d.id)}">Remove</button></div></div></article>`;
+      return `<article class="idea"><div class="idea-art">${img(coverOf(d), d.name)}<span class="chip dark">${esc(d.source?.kind || d.format)}</span></div><div class="idea-body"><b>${esc(d.name)}</b><small>${esc(d.commander || "")}${d.source?.author ? " · by " + esc(d.source.author) : ""}${d.source?.website ? " · " + esc(d.source.website) : ""}</small><div class="row between small"><span><b>${t.covered}</b>/${t.copies} owned</span><span>${usd(t.pricedGap, 0)} to finish</span></div>${bar(t.copies ? t.covered / t.copies : 0, "thin")}<div class="actions wrap"><button class="btn small" data-act="copyRef" data-id="${esc(d.id)}">Build my version</button>${d.source?.url ? `<a class="link small" href="${esc(safeHref(d.source.url))}" target="_blank" rel="noopener noreferrer">Original ↗</a>` : ""}<button class="link small" data-act="exportRef" data-id="${esc(d.id)}">Export</button><button class="link small danger" data-act="deleteRef" data-id="${esc(d.id)}">Remove</button></div></div></article>`;
     })
     .join("")}</div>
   <section class="panel"><h3>Precons</h3><p class="muted small">Find a preconstructed Commander deck by product name (MTGJSON), preview it against your collection, then save it.</p><div class="toolbar"><button class="btn ghost" data-act="loadPrecons" ${S.ui.precon.busy ? "disabled" : ""}>${S.ui.precon.index.length ? "Reload list" : "Load precon list"}</button>${S.ui.precon.index.length ? `<input type="search" value="${esc(S.ui.q.precon)}" placeholder="Product or deck name…" data-input="preconSearch">` : ""}</div>${S.ui.precon.msg ? `<p class="muted small">${esc(S.ui.precon.msg)}</p>` : ""}<div id="preconList">${preconList()}</div></section>`;
@@ -1105,7 +1105,7 @@ export function shareSheet(d, link = "") {
   <label class="field">About this deck <span class="muted small">(optional)</span><textarea id="shareAbout" rows="5" maxlength="1500" placeholder="How it wins, what to keep in an opening hand, weak spots, budget swaps…">${esc(d.about || "")}</textarea></label>
   <div class="note"><b>What’s shared:</b> deck name, commander, format, focus, budget, your note and the card list.<br><b>Never shared:</b> your collection, which cards you own, values or play log.</div>
   <button class="btn block" data-act="shareMake">${link ? "Update link" : "Create link"}</button>
-  ${link ? `<div class="share-link"><input id="shareLink" readonly value="${esc(link)}" aria-label="Share link"><div class="actions wrap"><button class="btn" data-act="shareCopy">Copy link</button>${typeof navigator !== "undefined" && navigator.share ? `<button class="btn ghost" data-act="shareNative">Share…</button>` : ""}<a class="btn ghost" href="${esc(link)}" target="_blank" rel="noopener">Preview ↗</a></div><p class="foot">${link.length.toLocaleString()} characters. The link holds the list itself, so changes you make later need a new link.</p></div>` : ""}`;
+  ${link ? `<div class="share-link"><input id="shareLink" readonly value="${esc(link)}" aria-label="Share link"><div class="actions wrap"><button class="btn" data-act="shareCopy">Copy link</button>${typeof navigator !== "undefined" && navigator.share ? `<button class="btn ghost" data-act="shareNative">Share…</button>` : ""}<a class="btn ghost" href="${esc(safeHref(link))}" target="_blank" rel="noopener">Preview ↗</a></div><p class="foot">${link.length.toLocaleString()} characters. The link holds the list itself, so changes you make later need a new link.</p></div>` : ""}`;
 }
 
 export function preconList() {
@@ -1171,7 +1171,7 @@ export function deckReviewSheet(d) {
       <div class="row between"><b>${esc(x.title)}</b><span class="chip">${x.level === "bad" ? "Rule" : x.heuristic ? "Guideline" : "Check"}</span></div>
       <p class="small muted">${esc(x.detail)}</p>
       ${x.cards?.length ? `<p class="small">${x.cards.slice(0, 8).map((n) => `<button class="link" data-act="card" data-name="${esc(n)}" data-deck="${esc(d.id)}">${esc(n)}</button>`).join(", ")}${x.cards.length > 8 ? ` +${x.cards.length - 8} more` : ""}</p>` : ""}
-      ${x.action ? `<button class="btn ghost small" data-act="${x.action.act}"${x.action.id ? ` data-id="${x.action.id}"` : ""}${x.action.role ? ` data-role="${x.action.role}"` : ""}>${esc(x.action.label)} →</button>` : ""}
+      ${x.action ? `<button class="btn ghost small" data-act="${x.action.act}"${x.action.id ? ` data-id="${esc(x.action.id)}"` : ""}${x.action.role ? ` data-role="${x.action.role}"` : ""}>${esc(x.action.label)} →</button>` : ""}
     </div></div>`,
     )
     .join("")}</div>`
@@ -1287,10 +1287,10 @@ function mtgSideboard(d) {
   const side = (d.side || []).filter((r) => r.qty > 0);
   if (!side.length) return "";
   const n = sumQty(side),
-    rows = side.map((r) => { const c = meta(r.name), own = Math.min(r.qty, inv(r.name).owned || 0), price = c ? Number(c.prices?.usd ?? c.prices?.usd_foil) || 0 : 0; return { ...r, c, own, cost: (r.qty - own) * price }; }),
+    rows = aggregateCards(side).map((r) => { const c = meta(r.name), main = sumQty(d.cards.filter((m) => key(m.name) === key(r.name))), available = inventory(S.state.collection, r.name, S.state.decks, d.id).available, own = Math.min(r.qty, Math.max(0, available - main)), price = namePrice(c, (finish) => priceOf(r.name, finish)); return { ...r, c, own, price, cost: price === null ? 0 : (r.qty - own) * price }; }),
     cost = rows.reduce((a, r) => a + r.cost, 0),
     need = rows.reduce((a, r) => a + r.qty - r.own, 0),
-    unpriced = rows.filter((r) => r.qty > r.own && !(r.cost > 0)).reduce((a, r) => a + r.qty - r.own, 0),
+    unpriced = rows.filter((r) => r.qty > r.own && r.price === null).reduce((a, r) => a + r.qty - r.own, 0),
     // Unpriced isn't owned: say what's missing even when it has no price yet.
     status = !need ? "all owned ✓" : `${need} to get${cost ? " · " + usd(cost, 0) : ""}${unpriced ? ` · ${unpriced} unpriced` : ""}`;
   return `<details class="group side-group" open><summary><span>Sideboard <em>${n}</em>${n > 15 ? ` <span class="warn-text small">· over 15</span>` : ""}</span><span class="muted small">${status}</span></summary>
@@ -1697,7 +1697,7 @@ function deckVersions(d) {
   <section class="panel"><div class="row between"><h3>History</h3><button class="btn ghost small" data-act="snapshot">Save current</button></div><div class="list compact">${versions
     .slice()
     .reverse()
-    .map((v) => `<div class="mini-row"><span class="ellip"><b>${esc(v.label)}</b> <span class="muted small">${new Date(v.date).toLocaleString()} · ${sumQty(v.cards)} cards${v.spent ? " · " + usd(v.spent) + " planned" : ""}</span></span><span class="row"><button class="link small" data-act="restoreVer" data-id="${v.id}">Restore</button><button class="link small danger" data-act="deleteVer" data-id="${v.id}" aria-label="Delete version">✕</button></span></div>`)
+    .map((v) => `<div class="mini-row"><span class="ellip"><b>${esc(v.label)}</b> <span class="muted small">${new Date(v.date).toLocaleString()} · ${sumQty(v.cards)} cards${v.spent ? " · " + usd(v.spent) + " planned" : ""}</span></span><span class="row"><button class="link small" data-act="restoreVer" data-id="${esc(v.id)}">Restore</button><button class="link small danger" data-act="deleteVer" data-id="${esc(v.id)}" aria-label="Delete version">✕</button></span></div>`)
     .join("")}</div></section>`;
 }
 
@@ -1719,7 +1719,7 @@ function deckPlaytest(d) {
   <section class="panel"><div class="row between"><h3>Game log</h3><span class="chip">${wins}W · ${losses}L</span></div>
   <div class="log-form"><select id="logResult" aria-label="Result">${options([["Win", "Win"], ["Loss", "Loss"], ["Learning game", "Learning"]], "Win")}</select><input id="logTurn" type="number" min="1" max="40" placeholder="Turn" aria-label="Ending turn"><input id="logNote" placeholder="What worked or stalled?" maxlength="1000" aria-label="Note"><button class="btn" data-act="logGame">Save</button></div>
   <p class="foot">Games are tagged with the current deck version, so Versions can show real results next to the simulations.</p>
-  ${notes.map((n) => `<div class="note-row"><span class="chip ${n.result === "Win" ? "ok" : n.result === "Loss" ? "warn" : ""}">${esc(n.result)}</span><span class="ellip small">${esc(n.date)}${n.turn ? " · T" + n.turn : ""} ${n.note ? "· " + esc(n.note) : ""}</span><button class="link small danger" data-act="deleteNote" data-id="${n.id}" aria-label="Delete game">✕</button></div>`).join("")}
+  ${notes.map((n) => `<div class="note-row"><span class="chip ${n.result === "Win" ? "ok" : n.result === "Loss" ? "warn" : ""}">${esc(n.result)}</span><span class="ellip small">${esc(n.date)}${n.turn ? " · T" + n.turn : ""} ${n.note ? "· " + esc(n.note) : ""}</span><button class="link small danger" data-act="deleteNote" data-id="${esc(n.id)}" aria-label="Delete game">✕</button></div>`).join("")}
   </section>`;
 }
 

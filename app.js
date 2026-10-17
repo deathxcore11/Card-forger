@@ -36,13 +36,13 @@ import { playedAlongside } from "./guide.js";
 import { mtgPairQueries, rankPairs, edhPop } from "./pairing.js";
 import { nextFact } from "./facts.js";
 import { S, STORAGE, CATALOG_RECORD, RECOVERY, blank, uid, meta, inv, deckById, currentDeck, priceOf, cacheCard, slim } from "./store.js";
-import { $, $$, esc, usd, img, art, cardImage, options, segmented, customBudget, registerSetIcons, captureDisclosures, restoreDisclosures } from "./ui.js";
+import { $, $$, esc, safeHref, usd, img, art, cardImage, options, segmented, customBudget, registerSetIcons, captureDisclosures, restoreDisclosures } from "./ui.js";
 import * as V from "./views.js";
 import { refreshCheapest, cheapestKnown } from "./mtg-cheap.js";
 import { readRecord, writeRecord, writeRecords, persistenceStatus, requestPersistence } from "./storage.js";
 import {
   cardKey as key, sumQty, typeText, rulesText, isLand, commanderEligible, mergeDeckCard,
-  cardPrice, drawHand, exportDeck, exportDeckText, aggregateCards, inventory,
+  cardPrice, namePrice, drawHand, exportDeck, exportDeckText, aggregateCards, inventory,
 } from "./core.js";
 import {
   parseImport, previewImport, applyImport, printingState, importErrorsCSV, exportCollectionCSV,
@@ -74,7 +74,7 @@ import { rulesPage, learnSheet } from "./rules.js";
 import { GAMES, GAME_ICON, GAME_COLOR } from "./games.js";
 import { ICON, actionIcon, decorateGlyphs } from "./icons.js";
 import { openZoom, scryfallHi } from "./zoom.js";
-import { initCloud, cloudInfo, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
+import { initCloud, cloudInfo, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact, lotPrice } from "./insights.js";
 
 /* =========================================================
@@ -194,36 +194,66 @@ function save() {
 // Transactional change: mutate a copy, validate, write, then swap in.
 // The state before the last undoable change (deck edits, removals, deletions).
 let lastUndo = null;
-async function commit(fn, { msg = "", recovery = false, rerender = true, enrich = true, undo = "" } = {}) {
-  const before = undo ? structuredClone(stripCache(S.state)) : null;
-  const next = structuredClone(stripCache(S.state));
-  const out = fn(next);
-  const valid = normalize(next);
-  valid.lastSavedAt = new Date().toISOString();
-  const records = [[STORAGE, valid]];
-  if (recovery) records.unshift([RECOVERY, stripCache(S.state)]);
-  await writeRecords(records);
-  S.state = valid;
-  afterLocalSave();
-  saveCatalogSoon();
-  if (rerender) {
-    render();
-    refreshSheet();
-  }
-  // Feel it: a removal buzzes twice, anything else gets the success beat; an added card flies
-  // into Collection from where you tapped.
-  const said = msg || undo;
-  if (said) {
-    const removed = /^(−|-|Removed|Deleted|Cleared|Undid)/.test(said);
-    haptic(removed ? "warn" : "success");
-    if (/^Added\b/.test(said)) flyToCollection(lastActTarget);
-  }
-  if (undo) {
-    lastUndo = { state: before, label: undo };
-    toast(msg || undo, { undo: true });
-  } else if (msg) toast(msg);
-  if (enrich) setTimeout(autoEnrich, 50);
-  return out;
+let commitQueue = Promise.resolve();
+function queueWorkspaceWrite(transaction) {
+  const result = commitQueue.then(transaction, transaction);
+  commitQueue = result.catch(() => {});
+  return result;
+}
+// A replacement joins the same queue as edits, so no older edit can revive a cleared
+// workspace. Recovery captures the latest committed state, not the state before waiting.
+function replaceWorkspace(next, { recovery = false, clearRecovery = false, stamp = false, notify = false, guard = null } = {}) {
+  return queueWorkspaceWrite(async () => {
+    if (guard && !await guard()) return false;
+    const value = typeof next === "function" ? next() : next;
+    if (typeof next === "function" && value == null) return false;
+    const valid = normalize(structuredClone(value));
+    if (stamp) valid.lastSavedAt = new Date().toISOString();
+    const records = [[STORAGE, valid]];
+    if (clearRecovery) records.unshift([RECOVERY, blank()]);
+    else if (typeof recovery === "function" ? recovery(S.state) : recovery) records.unshift([RECOVERY, stripCache(S.state)]);
+    await writeRecords(records);
+    S.state = valid;
+    lastUndo = null;
+    if (notify) afterLocalSave();
+    return true;
+  });
+}
+async function commit(fn, { msg = "", recovery = false, rerender = true, enrich = true, undo = "", guard = null } = {}) {
+  const transaction = async () => {
+    // Confirm against the latest committed state, without allowing another queued edit to pass.
+    if (guard && !await guard(S.state)) return;
+    const before = undo ? structuredClone(stripCache(S.state)) : null;
+    const next = structuredClone(stripCache(S.state));
+    const out = fn(next);
+    const valid = normalize(next);
+    valid.lastSavedAt = new Date().toISOString();
+    const records = [[STORAGE, valid]];
+    if (recovery) records.unshift([RECOVERY, stripCache(S.state)]);
+    await writeRecords(records);
+    S.state = valid;
+    afterLocalSave();
+    saveCatalogSoon();
+    if (rerender) {
+      render();
+      refreshSheet();
+    }
+    // Feel it: a removal buzzes twice, anything else gets the success beat; an added card flies
+    // into Collection from where you tapped.
+    const said = msg || undo;
+    if (said) {
+      const removed = /^(−|-|Removed|Deleted|Cleared|Undid)/.test(said);
+      haptic(removed ? "warn" : "success");
+      if (/^Added\b/.test(said)) flyToCollection(lastActTarget);
+    }
+    if (undo) {
+      lastUndo = { state: before, label: undo };
+      toast(msg || undo, { undo: true });
+    } else if (msg) toast(msg);
+    if (enrich) setTimeout(autoEnrich, 50);
+    return out;
+  };
+  return queueWorkspaceWrite(transaction);
 }
 const safely = (p) => Promise.resolve(p).catch((e) => toast(e.message || String(e)));
 
@@ -295,7 +325,7 @@ async function resolveNames(names, progress = () => {}, refresh = false) {
         cacheCard(c, aliases);
         for (const a of aliases) matched.set(key(a), c.name);
       }
-      for (const n of chunk) if (!meta(n)) failed.push(n);
+      for (const n of chunk) if (!matched.has(key(n))) failed.push(n);
     } catch {
       failed.push(...chunk);
     }
@@ -528,7 +558,9 @@ function sheetSnapshot(){
 function restoreSheet(snapshot){
  if(snapshot.proven)Object.assign(T.proven,snapshot.proven);
  if(snapshot.build)Object.assign(T.ui(snapshot.game).build,snapshot.build);
- restoringSheet=true;openSheet(snapshot.html,snapshot.ctx,snapshot.scroll);restoringSheet=false;
+ restoringSheet=true;
+ try{openSheet(snapshot.html,snapshot.ctx,snapshot.scroll);refreshSheet();wireSheetBack();}
+ finally{restoringSheet=false;}
 }
 function wireSheetBack(){
  const head=$("#sheetBody")?.querySelector?.(".sheet-head");if(!head)return;
@@ -1942,8 +1974,7 @@ A.deleteAccount = async (t) => {
   catch (e) { done(); return toast(e.message || "Couldn't delete the account. Try again."); }
   done();
   if (await ask("Your account is deleted. Also erase the collection and decks saved on this device?", { ok: "Erase this device", cancel: "Keep on this device", danger: true })) {
-    await writeRecords([[RECOVERY, blank()], [STORAGE, blank()]]);
-    S.state = blank();
+    await replaceWorkspace(blank(), { clearRecovery: true });
   }
   go("#home");
   toast("Your account and its synced data were deleted.");
@@ -2659,13 +2690,19 @@ A.qty = async (t) => {
     delta = Number(t.dataset.delta),
     e = S.state.collection.find((x) => x.id === id);
   if (!e) return;
-  if (e.qty + delta <= 0 && !await ask(`Remove ${e.name} from your collection?`)) return;
   await commit((s) => {
     const x = s.collection.find((y) => y.id === id);
+    if (!x) return;
     x.qty = Math.max(0, x.qty + delta);
     x.reserved = Math.min(x.reserved || 0, x.qty);
     s.collection = s.collection.filter((y) => y.qty > 0);
-  }, delta < 0 ? { undo: e.qty + delta <= 0 ? `Removed ${e.name} from your collection.` : `−1 ${e.name}` } : {});
+  }, {
+    undo: delta < 0 ? `−1 ${e.name}` : "",
+    guard: async (s) => {
+      const current = s.collection.find((x) => x.id === id);
+      return !!current && (current.qty + delta > 0 || await ask(`Remove ${current.name} from your collection?`));
+    },
+  });
 };
 I.collSearch = (t) => {
   S.ui.q.coll = t.value;
@@ -3175,7 +3212,7 @@ A.deckMenu = () => {
       <button data-act="deckDup">⧉ Duplicate deck</button>
       <button data-act="importDeck">↥ Re-import / replace list</button>
       <button data-act="deckDelete" class="danger">✕ Delete deck</button>
-    </div>${d.source ? `<p class="muted small">Source: ${esc(d.source.kind || "")} · ${esc(d.source.website || "")}${d.source.author ? " · by " + esc(d.source.author) : ""}${d.source.url ? ` · <a href="${esc(d.source.url)}" target="_blank" rel="noopener noreferrer">original ↗</a>` : ""}</p>` : ""}`,
+    </div>${d.source ? `<p class="muted small">Source: ${esc(d.source.kind || "")} · ${esc(d.source.website || "")}${d.source.author ? " · by " + esc(d.source.author) : ""}${d.source.url ? ` · <a href="${esc(safeHref(d.source.url))}" target="_blank" rel="noopener noreferrer">original ↗</a>` : ""}</p>` : ""}`,
     { type: "deckMenu" },
   );
 };
@@ -3187,8 +3224,11 @@ const editDeck = (fn, opts = {}) => {
   }, opts);
 };
 A.deckSaveInfo = async () => {
-  const format = formatOf($("#dmFormat")?.value).name;
-  await editDeck((d) => ({ ...d, name: $("#dmName").value.trim() || d.name, budget: Math.max(0, Number($("#dmBudget").value) || 0), strategy: $("#dmStrategy").value, format, commander: hasCommander(format) ? d.commander : "" }), { msg: "Saved." });
+  const format = formatOf($("#dmFormat")?.value).name,
+    name = $("#dmName").value.trim(),
+    budget = Math.max(0, Number($("#dmBudget").value) || 0),
+    strategy = $("#dmStrategy").value;
+  await editDeck((d) => ({ ...d, name: name || d.name, budget, strategy, format, commander: hasCommander(format) ? d.commander : "" }), { msg: "Saved." });
   closeSheet();
 };
 // Play guide (Magic): rank cards that pair well — synergy searches on Scryfall plus the cards
@@ -3500,14 +3540,13 @@ A.dbSavedDel = (t) => {
 A.dbSearch = () => dbSearch();
 A.dbMore = () => dbSearch(true);
 A.undo = async () => {
-  if (!lastUndo) return toast("Nothing to undo.");
-  const { state, label } = lastUndo;
-  lastUndo = null;
-  const valid = normalize(structuredClone(state));
-  valid.lastSavedAt = new Date().toISOString();
-  await writeRecords([[STORAGE, valid]]);
-  S.state = valid;
-  afterLocalSave();
+  let label = "";
+  const restored = await replaceWorkspace(() => {
+    if (!lastUndo) return null;
+    label = lastUndo.label;
+    return lastUndo.state;
+  }, { stamp: true, notify: true });
+  if (!restored) return toast("Nothing to undo.");
   render();
   refreshSheet();
   toast(`Undone: ${label.replace(/\.$/, "")}.`);
@@ -3822,7 +3861,7 @@ A.mtgProven = (t) => {
       const tl = meta(name)?.type_line || meta(name)?.card_faces?.[0]?.type_line || "";
       return /Land/.test(tl) ? "land" : /Creature/.test(tl) ? "creature" : tl ? "spell" : "card";
     },
-    rowsOf = (deck) => [...deck.commanders.map((r) => ({ ...r, commander: true })), ...deck.main].map((r) => ({ key: key(r.name), name: r.name, qty: r.qty, kind: r.commander ? "commander" : r.land ? "land" : kindOf(r.name), price: meta(r.name) ? Number(meta(r.name).prices?.usd ?? meta(r.name).prices?.usd_foil) || (/^(Plains|Island|Swamp|Mountain|Forest|Wastes)$/.test(r.name) ? 0 : null) : null, owned: inv(r.name).owned, core: r.commander })),
+    rowsOf = (deck) => [...deck.commanders.map((r) => ({ ...r, commander: true })), ...deck.main].map((r) => ({ key: key(r.name), name: r.name, qty: r.qty, kind: r.commander ? "commander" : r.land ? "land" : kindOf(r.name), price: namePrice(meta(r.name), (finish) => priceOf(r.name, finish)), owned: inv(r.name).owned, core: r.commander })),
     all = data.decks.map(rowsOf),
     seen = new Map();
   for (const l of all) for (const k of new Set(l.map((r) => r.key))) seen.set(k, (seen.get(k) || 0) + 1);
@@ -3838,13 +3877,17 @@ A.mtgProven = (t) => {
     sourceLabel: data.source.startsWith("Magic Online") ? "Magic Online event" : data.source.startsWith("EDHTop16") ? "Decklist" : "TopDeck.gg event",
     rowsFn: () => rowsOf(d),
     // The 15-card sideboard travels with the list (not in Commander, which has none).
-    sideRowsFn: () => (fmt === "EDH" ? [] : (d.side || []).map((r) => ({ key: key(r.name), name: r.name, qty: r.qty, kind: kindOf(r.name), price: meta(r.name) ? Number(meta(r.name).prices?.usd ?? meta(r.name).prices?.usd_foil) || null : null, owned: inv(r.name).owned }))),
+    sideRowsFn: () => (fmt === "EDH" ? [] : (d.side || []).map((r) => ({ key: key(r.name), name: r.name, qty: r.qty, kind: kindOf(r.name), price: namePrice(meta(r.name), (finish) => priceOf(r.name, finish)), owned: Math.max(0, inv(r.name).owned - sumQty([...d.commanders, ...d.main].filter((m) => key(m.name) === key(r.name)))) }))),
     listsFn: () => data.decks.map(rowsOf),
     // Format staples played across unrelated decks aren't this deck's engine.
     generic: (k) => (seen.get(k) || 0) / Math.max(1, data.decks.length) >= 0.3,
     load: async (status) => {
       const sim = T.similarLists(rowsOf(d), data.decks.map(rowsOf));
-      await resolveNames([...rowsOf(d), ...sim.flat(), ...(d.side || [])].map((r) => r.name), status);
+      const names = [...new Set([...rowsOf(d), ...sim.flat(), ...(d.side || [])].map((r) => r.name))];
+      const refresh = names.filter((name) => { const c = meta(name); return !c || namePrice(c) === null || !c.checkedAt || Date.now() - new Date(c.checkedAt).getTime() > 86400000; });
+      const result = await resolveNames(refresh, status, true);
+      await ensureTcgPrices(names.map(meta).filter(Boolean), { retry: true });
+      return result;
     },
     save: async (rows, labelText) => {
       const commander = rows.find((r) => r.kind === "commander")?.name || "";
@@ -4152,10 +4195,9 @@ A.drawOne = () => {
   render();
 };
 A.logGame = async () => {
-  const d = currentDeck();
-  await commit((s) => {
-    s.notes.push({ id: uid(), deckId: d.id, sig: cardSig(d.cards), date: new Date().toLocaleDateString(), author: "", table: "", result: $("#logResult").value, turn: Number($("#logTurn").value) || null, note: $("#logNote").value.trim().slice(0, 1000) });
-  }, { msg: "Game saved." });
+  const d = currentDeck(),
+    note = { id: uid(), deckId: d.id, sig: cardSig(d.cards), date: new Date().toLocaleDateString(), author: "", table: "", result: $("#logResult").value, turn: Number($("#logTurn").value) || null, note: $("#logNote").value.trim().slice(0, 1000) };
+  await commit((s) => s.notes.push(note), { msg: "Game saved." });
 };
 
 /* ---------- life tracker ---------- */
@@ -4311,12 +4353,24 @@ async function mtgScanAdd(cand) {
 }
 // Save a whole scan session at once (one undo), with each row's finish, condition, language and quantity.
 async function mtgScanAddMany(items) {
+  if (!Array.isArray(items) || !items.length || items.some((it) => {
+    const c = it.cand?.card;
+    return !c?.id || !c.name || (it.cand.game && it.cand.game !== "mtg") ||
+      !(it.cand.exact || it.cand.printingConfirmed) || !Number.isInteger(it.qty) || it.qty < 1 || it.qty > 100000 ||
+      !["nonfoil", "foil", "etched"].includes(it.finish) || !c.finishes?.includes(it.finish) ||
+      (it.captureId != null && (typeof it.captureId !== "string" || !/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,199}$/.test(it.captureId)));
+  })) throw Error("Confirm each card's exact printing and finish before saving this scan batch.");
   const n = items.reduce((t, x) => t + x.qty, 0);
   await commit(
     (s) => {
       for (const it of items) {
-        const c = it.cand.card;
-        s.collection.push({ id: uid(), name: c.name, qty: it.qty, set: c.set.toUpperCase(), setName: c.set_name, collectorNumber: c.collector_number, finish: it.finish || "nonfoil", language: it.lang || c.lang || "en", condition: it.condition || "Near Mint", location: it.location || "", reserved: 0, printingId: it.cand.exact ? c.id : null, oracleId: c.oracle_id, printingVerified: !!it.cand.exact, nameVerified: true, raw: { acquisition: "Scanned" } });
+        const c = it.cand.card, captureId = it.captureId || "";
+        const prior = captureId && [...s.collection, ...Object.values(s.tcg || {}).flatMap(g => g.collection || [])].find(e => e.scanCaptureId === captureId);
+        if (prior) {
+          if (prior.printingId !== c.id || prior.finish !== it.finish || prior.qty !== it.qty || prior.language !== (it.lang || c.lang || "en") || prior.condition !== (it.condition || "Near Mint")) throw Error("This capture is already saved with different details. Check its collection entry before trying again.");
+          continue;
+        }
+        s.collection.push({ id: uid(), scanCaptureId: captureId, name: c.name, qty: it.qty, set: c.set.toUpperCase(), setName: c.set_name, collectorNumber: c.collector_number, finish: it.finish, language: it.lang || c.lang || "en", condition: it.condition || "Near Mint", location: it.location || "", reserved: 0, printingId: c.id, oracleId: c.oracle_id, printingVerified: !!(it.cand.exact || it.cand.printingConfirmed), nameVerified: true, raw: { acquisition: "Scanned" } });
       }
     },
     { undo: `Added ${n} scanned card${n === 1 ? "" : "s"}.` },
@@ -4332,7 +4386,7 @@ const scanCtx = {
   C,
   openSheet: (...x) => openSheet(...x),
   closeSheet: () => closeSheet(),
-  addMany: (g, items) => (g === "mtg" ? mtgScanAddMany(items) : tcgCtx.scanAddMany(items)),
+  addMany: (g, items) => (g === "mtg" ? mtgScanAddMany(items) : tcgCtx.scanAddMany(items, g)),
   priceOf: (g, cand, finish) => (g === "mtg" ? mtgScanPrice(cand, finish) : tcgCtx.scanPrice?.(cand, finish) ?? null),
   setOf: (g, cand) => (g === "mtg" ? cand.card?.set || "" : g === "ygo" ? String(cand.print || "").split("|")[0].split("-")[0] : cand.card?.set?.id || ""),
   numberOf: (g, cand) => (g === "mtg" ? cand.card?.collector_number || "" : g === "ygo" ? String(cand.print || "").split("|")[0] : cand.card?.set?.number || ""),
@@ -4385,8 +4439,7 @@ C.restoreBackup = async (t) => {
     if (!await ask(`Replace everything here with ${sumQty(next.collection)} cards and ${next.decks.length} decks from the backup? The current data is kept as a recovery copy.`)) return;
     for (const [k, c] of Object.entries(cache)) if (!S.catalog[k]) S.catalog[k] = slim(c);
     S.catalogDirty = true;
-    await writeRecords([[RECOVERY, stripCache(S.state)], [STORAGE, next]]);
-    S.state = next;
+    await replaceWorkspace(next, { recovery: true });
     saveCatalogSoon();
     render();
     toast("Backup restored.");
@@ -4399,8 +4452,7 @@ A.undoRestore = async () => {
   if (!raw) return toast("No recovery copy yet.");
   const next = normalize(raw);
   if (!await ask(`Switch to the recovery copy (${sumQty(next.collection)} cards, ${next.decks.length} decks)? What you have now becomes the recovery copy.`)) return;
-  await writeRecords([[RECOVERY, stripCache(S.state)], [STORAGE, next]]);
-  S.state = next;
+  await replaceWorkspace(next, { recovery: true });
   render();
   toast("Recovery copy restored.");
 };
@@ -4409,18 +4461,17 @@ A.reset = async () => {
   if (cloudInfo().user) await signOut();
   detachDeviceSync();
   clearAskConversations();
-  await writeRecords([[RECOVERY, stripCache(S.state)], [STORAGE, blank()]]);
-  S.state = blank();
+  await replaceWorkspace(blank(), { recovery: true });
   go("#home");
 };
 A.loadExample = async () => {
-  if (S.state.collection.length && !await ask("Replace your data with example data? Your current data becomes the recovery copy.")) return;
+  const hasData = [S.state, ...Object.values(S.state.tcg || {})].some((game) => ["collection", "decks", "wishlist", "references", "notes"].some((field) => game[field]?.length));
+  if (hasData && !await ask("Replace all collections, decks, wishlists and notes across every game with example data? Your current workspace becomes the recovery copy.")) return;
   const names = ["Krenko, Mob Boss", "Goblin Instigator", "Sol Ring", "Arcane Signet", "Talrand, Sky Summoner", "Counterspell", "Mountain", "Island"];
   const st = blank();
   st.example = true;
   st.collection = names.filter((n) => meta(n)).map((n) => ({ id: uid(), name: n, qty: ["Mountain", "Island"].includes(n) ? 12 : 1, set: "", collectorNumber: "", finish: "nonfoil", condition: "Near Mint", language: "en", location: "Example", reserved: 0, printingVerified: false, raw: {} }));
-  await writeRecords([[RECOVERY, stripCache(S.state)], [STORAGE, st]]);
-  S.state = normalize(st);
+  await commit((s) => { for (const field of Object.keys(s)) delete s[field]; Object.assign(s, st); }, { recovery: true, rerender: false, enrich: false });
   go("#collection");
 };
 A.persist = async () => {
@@ -4555,9 +4606,13 @@ async function boot() {
     getState: () => stripCache(S.state),
     // Replace this device's workspace with the account copy.
     apply: async (data) => {
-      const valid = normalize(data);
-      await writeRecord(STORAGE, valid);
-      S.state = valid;
+      const owner = cloudInfo().user?.id;
+      const applied = await replaceWorkspace(data, {
+        recovery: (state) => !isEmptyWorkspace(state),
+        // Account changes while this operation waits must not load the old account.
+        guard: () => !!owner && cloudInfo().user?.id === owner,
+      });
+      if (!applied) return;
       render();
       setTimeout(autoEnrich, 200);
     },

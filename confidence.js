@@ -411,15 +411,22 @@ export function migrateWorkspace(input) {
   }));
   return s;
 }
+// Imported identifiers are data, never markup. Renderers still escape every attribute.
+const safeWorkspaceId = (id) => typeof id === "string" && /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,199}$/.test(id);
 export function validateWorkspace(input) {
   const s = migrateWorkspace(input);
+  const validateSide = (side) => {
+    if (side == null) return;
+    if (!Array.isArray(side) || side.some((c) => !c || typeof c.name !== "string" || !c.name.trim() || !Number.isInteger(c.qty) || c.qty < 1 || c.qty > 100000))
+      throw Error("Invalid sideboard card or quantity.");
+  };
   for (const name of ["collection", "decks", "wishlist", "notes"])
     if (!Array.isArray(s[name])) throw Error("Invalid " + name + " in backup.");
   if (s.collection.length > 50000 || s.decks.length > 500)
     throw Error("Backup exceeds workspace limits.");
   const ids = new Set();
   for (const e of s.collection) {
-    if (typeof e.id !== "string" || !e.id || ids.has(e.id))
+    if (!safeWorkspaceId(e.id) || ids.has(e.id))
       throw Error("Collection entry IDs must be unique.");
     ids.add(e.id);
     if (
@@ -442,8 +449,9 @@ export function validateWorkspace(input) {
   if (s.references.length > 500)
     throw Error("Reference library exceeds 500 decks.");
   for (const d of s.references) {
+    validateSide(d.side);
     if (
-      typeof d.id !== "string" ||
+      !safeWorkspaceId(d.id) ||
       typeof d.name !== "string" ||
       !Array.isArray(d.cards) ||
       !isFormatName(d.format)
@@ -460,9 +468,10 @@ export function validateWorkspace(input) {
   }
   const did = new Set();
   for (const d of s.decks) {
+    validateSide(d.side);
+    for (const version of d.versions || []) validateSide(version.side);
     if (
-      typeof d.id !== "string" ||
-      !d.id ||
+      !safeWorkspaceId(d.id) ||
       did.has(d.id) ||
       typeof d.name !== "string" ||
       !Array.isArray(d.cards) ||
@@ -495,6 +504,14 @@ export function validateWorkspace(input) {
     )
       throw Error("Invalid settings.");
   if (Number(s.settings.tax) > 100) throw Error("Invalid tax setting.");
+  for (const game of [s, ...Object.values(s.tcg || {})]) {
+    for (const field of ["collection", "decks", "wishlist", "notes", "references"]) {
+      for (const record of game[field] || []) {
+        if (record.id !== undefined && !safeWorkspaceId(record.id)) throw Error("Invalid record ID in backup.");
+        for (const version of record.versions || []) if (version.id !== undefined && !safeWorkspaceId(version.id)) throw Error("Invalid version ID in backup.");
+      }
+    }
+  }
   s.activeDeck = did.has(s.activeDeck) ? s.activeDeck : s.decks[0]?.id || null;
   return s;
 }

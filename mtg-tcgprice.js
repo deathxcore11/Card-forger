@@ -42,9 +42,9 @@ const FIELD = { nonfoil: "usd", foil: "usd_foil", etched: "usd_etched" };
 export const needsTcgPrices = (c) => !!c?.set && (Array.isArray(c.finishes) && c.finishes.length ? c.finishes : ["nonfoil"]).some((f) => FIELD[f] && !(Number(c.prices?.[FIELD[f]]) > 0) && productIdOf(c, f) && (f !== "etched" || c.tcgplayer_etched_id));
 
 // Fetch the sets of any unpriced printings among `cards`; fires "cf:tcg-prices" when new prices land.
-export async function ensureTcgPrices(cards) {
+export async function ensureTcgPrices(cards, { retry = false } = {}) {
   if (typeof fetch !== "function" || typeof location === "undefined") return;
-  const codes = [...new Set((cards || []).filter(needsTcgPrices).map((c) => c.set))].filter((code) => !store().has(code) && !pending.has(code) && !(Date.now() - (failed.get(code) || 0) < 600000)).slice(0, 8);
+  const codes = [...new Set((cards || []).filter(needsTcgPrices).map((c) => c.set))].filter((code) => !store().has(code) && !pending.has(code) && (retry || !(Date.now() - (failed.get(code) || 0) < 600000))).slice(0, 8);
   if (!codes.length) return;
   codes.forEach((code) => pending.add(code));
   let got = false;

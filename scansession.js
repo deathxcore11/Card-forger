@@ -35,14 +35,15 @@ export function loadPrefs(g) {
   p.quick = p.quick === true && all.shared?.quickVersion === 2;
   p.finish = all[g]?.finish || (p.preferFoil ? FINISHES[g][1][0] : FINISHES[g][0][0]);
   p.lockSet = all[g]?.lockSet || "";
+  p.finishConfirmed = all[g]?.finishConfirmed === true;
   return p;
 }
 export function savePrefs(g, patch) {
   const all = read(PREFS_KEY, {}) || {};
-  const { finish, lockSet, ...shared } = patch;
+  const { finish, finishConfirmed, lockSet, ...shared } = patch;
   if (Object.hasOwn(patch, "quick")) shared.quickVersion = 2;
   all.shared = { ...(all.shared || {}), ...shared };
-  all[g] = { ...(all[g] || {}), ...(finish !== undefined ? { finish } : {}), ...(lockSet !== undefined ? { lockSet } : {}) };
+  all[g] = { ...(all[g] || {}), ...(finish !== undefined ? { finish, finishConfirmed: finishConfirmed !== false } : {}), ...(finishConfirmed !== undefined ? { finishConfirmed } : {}), ...(lockSet !== undefined ? { lockSet } : {}) };
   write(PREFS_KEY, all);
   return loadPrefs(g);
 }
@@ -51,7 +52,7 @@ export const loadSession = (g) => (Array.isArray(read(SESSION_KEY(g), [])) ? rea
 export const saveSession = (g, list) => write(SESSION_KEY(g), list);
 
 // Same printing, finish, condition and language stack into one row.
-export const itemKey = (it) => [it.id, it.finish, it.condition, it.lang].join("|");
+export const itemKey = (it) => [it.id, it.print || it.cand?.print || "", it.variantKey || it.finish, it.productId || "", it.condition, it.lang].join("|");
 export function addToSession(list, item) {
   const k = itemKey(item),
     same = list.find((x) => itemKey(x) === k);

@@ -79,8 +79,8 @@ export function inventory(entries, name, decks = [], excludeId) {
       .reduce(
         (a, d) =>
           a +
-          d.cards
-            .filter((c) => cardKey(c.name) === k)
+          [...(Array.isArray(d.cards) ? d.cards : []), ...(Array.isArray(d.side) ? d.side : [])]
+            .filter((c) => c && cardKey(c.name) === k && Number.isInteger(c.qty) && c.qty > 0 && c.qty <= 100000)
             .reduce((s, c) => s + c.qty, 0),
         0,
       );
@@ -113,8 +113,17 @@ export function aggregateCards(cards) {
   }
   return [...map.values()];
 }
+// One physical pool serves both zones; the same owned copy cannot be in main and side.
+export const physicalRequirements = (deck) => aggregateCards([...(deck.cards || []), ...(deck.side || [])]);
+export function effectiveCopyLimit(card, format) {
+  if (legalityIn(card, format) === "restricted") return 1;
+  if (isBasic(card) || /any number of cards named/i.test(rulesText(card))) return Infinity;
+  const printed = rulesText(card).match(/up to (\w+) (?:of )?cards named/i)?.[1]?.toLowerCase();
+  const words = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
+  return printed ? words[printed] || Number(printed) || format.copies : format.copies;
+}
 export function gaps(deck, entries, decks) {
-  return aggregateCards(deck.cards)
+  return physicalRequirements(deck)
     .map((c) => ({ ...c, ...inventory(entries, c.name, decks, deck.id) }))
     .map((c) => ({ ...c, missing: Math.max(0, c.qty - c.available) }));
 }
@@ -130,6 +139,16 @@ export function cardPrice(c, finish = "nonfoil") {
   if (p !== null && p !== undefined && p !== "" && Number.isFinite(Number(p))) return Number(p);
   // Unpriced on Scryfall: TCGplayer's price for the same product, then the player's own price.
   return tcgFallback(c, finish)?.value ?? myPrice(c, finish);
+}
+// A name-based deck can use another available finish when a printing has no regular price.
+// Physical collection lots still use cardPrice with their exact finish.
+export function namePrice(card, quote = (finish) => cardPrice(card, finish)) {
+  for (const finish of ["nonfoil", "foil", "etched"]) {
+    if (finish !== "nonfoil" && Array.isArray(card?.finishes) && !card.finishes.includes(finish)) continue;
+    const value = quote(finish);
+    if (value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value)) && Number(value) >= 0) return Number(value);
+  }
+  return null;
 }
 export function validateDeck(deck, catalog, entries, decks = []) {
   const f = formatOf(deck),
@@ -176,27 +195,11 @@ export function validateDeck(deck, catalog, entries, decks = []) {
         kind: "legality",
         text: c.name + ": " + (legal === "banned" ? "banned" : "not legal") + " in " + f.name + ".",
       });
-    if (legal === "restricted" && c.qty > 1)
-      issues.push({
-        kind: "copies",
-        text: c.name + ": restricted in " + f.name + " — one copy only.",
-      });
-    const exception = rulesText(m).match(
-      /(?:any number|up to (\w+)) of cards named/i,
-    );
-    if (c.qty > f.copies && !isBasic(m) && !exception)
-      issues.push({
-        kind: f.copies === 1 ? "singleton" : "copies",
-        text: c.name + (f.copies === 1 ? ": singleton limit exceeded." : `: more than ${f.copies} copies.`),
-      });
-    if (exception && exception[1]) {
-      const limits = { nine: 9, seven: 7 };
-      if (limits[exception[1]] && c.qty > limits[exception[1]])
-        issues.push({
-          kind: "singleton",
-          text: c.name + ": printed copy limit exceeded.",
-        });
-    }
+    const limit = effectiveCopyLimit(m, f);
+    if (c.qty > limit) issues.push({
+      kind: limit === 1 && legal !== "restricted" ? "singleton" : "copies",
+      text: c.name + (legal === "restricted" ? ": restricted in " + f.name + " — one copy only." : `: more than ${limit} copies.`),
+    });
   }
   // Sideboard: at most 15 cards, legal in the format, and the copy limit counts main + side.
   const side = aggregateCards(deck.side || []).filter((r) => r.qty > 0),
@@ -205,13 +208,14 @@ export function validateDeck(deck, catalog, entries, decks = []) {
     issues.push({ kind: "sideboard", text: `Sideboard has ${sideN} cards; the limit is 15.` });
   for (const r of side) {
     const m = catalog[cardKey(r.name)];
-    if (!m) continue;
+    if (!m) { issues.push({ kind: "unverified", text: r.name + " (sideboard): card data not resolved." }); continue; }
     const legal = legalityIn(m, f);
     if (legal === "banned" || legal === "not_legal")
       issues.push({ kind: "legality", text: `${r.name} (sideboard): ${legal === "banned" ? "banned" : "not legal"} in ${f.name}.` });
     const inMain = (deck.cards || []).filter((c) => cardKey(c.name) === cardKey(r.name)).reduce((a, c) => a + c.qty, 0);
-    if (inMain + r.qty > f.copies && !isBasic(m) && !/any number of cards named/i.test(rulesText(m)))
-      issues.push({ kind: "copies", text: `${r.name}: ${inMain + r.qty} copies across main deck and sideboard; ${f.name} allows ${f.copies}.` });
+    const limit = effectiveCopyLimit(m, f);
+    if (inMain + r.qty > limit)
+      issues.push({ kind: "copies", text: `${r.name}: ${inMain + r.qty} copies across main deck and sideboard; ${f.name} allows ${limit}${legal === "restricted" ? " (restricted)" : ""}.` });
   }
   const missing = gaps(deck, entries, decks).reduce((a, c) => a + c.missing, 0);
   return {

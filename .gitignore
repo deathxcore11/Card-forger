@@ -7,3 +7,8 @@ scripts/__pycache__/
 .dev.vars
 .dev.vars.*
 .wrangler
+
+# Local test dependencies and results.
+node_modules/
+test-results/
+supabase/.temp/

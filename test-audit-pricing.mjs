@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import {cardKey,cardPrice,namePrice,sumQty} from './core.js';
+import {setTcgPrices,useMyPrices} from './mtg-tcgprice.js';
+import {esc} from './ui.js';
+globalThis.localStorage={getItem:()=>null,setItem(){}};
+const source=fs.readFileSync('app.js','utf8'),section=(a,b)=>source.slice(source.indexOf(a),source.indexOf(b,source.indexOf(a)));
+let fail=true,calls=0;
+const catalog={'foilonly':{name:'FoilOnly',finishes:['foil'],prices:{usd:null,usd_foil:'5.00'},checkedAt:new Date().toISOString()},'etchedonly':{name:'EtchedOnly',finishes:['etched'],prices:{usd:null,usd_etched:'7.00'},checkedAt:new Date().toISOString()},'known':{name:'Known',prices:{usd:'4'},checkedAt:'2020-01-01'},'unknown':{name:'Unknown',prices:{usd:null}},'free':{name:'Free',prices:{usd:'0'},checkedAt:new Date().toISOString()},'fallback':{name:'Fallback',set:'tst',tcgplayer_id:1,finishes:['nonfoil'],prices:{usd:null}},'personal':{id:'mine',name:'Personal',prices:{usd:null}}};
+setTcgPrices('tst',{1:{Normal:{marketPrice:3}}});useMyPrices({'mine:nonfoil':{price:2}});
+const data={decks:[{key:'deck',name:'Deck',commanders:[],main:Object.keys(catalog).map(name=>({name,qty:1})),side:[{name:'Unknown',qty:1},{name:'FoilOnly',qty:1},{name:'EtchedOnly',qty:1}]}],source:'test',days:1};
+let spec;
+const context={A:{},key:cardKey,cardPrice,namePrice,sumQty,priceOf:(n,f)=>cardPrice(catalog[cardKey(n)],f),meta:n=>catalog[cardKey(n)]??null,api:async()=>{calls++;if(fail)throw Error('outage');return {data:[{name:'Known',prices:{usd:'5'}},{name:'Unknown',prices:{usd:'6'}},{name:'Fallback',prices:{usd:null},set:'tst',tcgplayer_id:1,finishes:['nonfoil']},{name:'Personal',id:'mine',prices:{usd:null}}]};},cacheCard:(c)=>catalog[cardKey(c.name)]={...c,checkedAt:new Date().toISOString()},saveCatalogSoon(){},S:{ui:{},state:{}},mtgMetaFormat:()=>'Modern',metaState:()=>({data}),inv:()=>({owned:0}),esc,MTG_META_FORMATS:[],tcgCtx:{openProven:s=>{spec=s;}},T:{similarLists:()=>[]},ensureTcgPrices:async(cards,options)=>assert.equal(options.retry,true)};
+vm.createContext(context);vm.runInContext(section('async function resolveNames(','\n\n/*')+ '\n'+ section('A.mtgProven =','\nA.copyRef ='),context);
+context.A.mtgProven({dataset:{key:'deck'}});
+assert.equal(spec.rowsFn().find(r=>r.key==='free').price,0);
+assert.equal(spec.rowsFn().find(r=>r.key==='foilonly').price,5);
+assert.equal(spec.rowsFn().find(r=>r.key==='etchedonly').price,7);
+assert.equal(namePrice({finishes:['nonfoil'],prices:{usd:null,usd_foil:'9'}}),null,'do not invent an unavailable finish');
+assert.equal(namePrice({finishes:['foil'],prices:{usd:null,usd_foil:'0'}}),0);
+assert.equal(spec.rowsFn().find(r=>r.key==='fallback').price,3);
+assert.equal(spec.rowsFn().find(r=>r.key==='personal').price,2);
+let result=await spec.load(()=>{});assert.equal(calls,1);assert(result.failed.includes('Unknown'));assert(result.failed.includes('known'));
+fail=false;result=await spec.load(()=>{});assert.equal(calls,2);assert.equal(result.failed.length,0);
+assert.equal(spec.sideRowsFn()[0].price,6);assert.equal(spec.sideRowsFn()[1].price,5);assert.equal(spec.sideRowsFn()[2].price,7);assert.equal(spec.rowsFn().find(r=>r.key==='known').price,5,'stale priced cached card refreshed');
+
+console.log('PASS: stale/unpriced refresh, outage retry, shared provider/personal fallback, zero versus unknown, foil/etched-only estimates and sideboard price recovery.');

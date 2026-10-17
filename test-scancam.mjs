@@ -53,3 +53,12 @@ console.log("PASS: scan guide — red (no card / off-frame / dark), amber (blur,
   assert.equal(r[2].status, "rejected");
   console.log("PASS: limited parallel downloads.");
 }
+
+// A full-card reference has no outside pixels. Its internal artwork must not
+// replace the title/footer with a rotated art-only quadrilateral.
+const {preserveWholeCardPhoto}=await import('./scancam.js');
+for(const [w,h] of [[488,680],[600,825],[421,614]])assert(preserveWholeCardPhoto(w,h),'card-aspect uploads retain the complete title and footer');
+assert.equal(preserveWholeCardPhoto(1200,1600),false,'ordinary phone photos still get free-angle detection');
+assert.equal(preserveWholeCardPhoto(1600,1200),false,'landscape photos still get free-angle detection');
+assert.equal(preserveWholeCardPhoto(488,680,{x:.2,y:.2,w:.5,h:.5}),false,'observed background still allows cropping the card');
+console.log('PASS: already card-shaped photo uploads preserve name/footer instead of rotating an internal art window.');
