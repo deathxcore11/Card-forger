@@ -613,7 +613,13 @@ try {
     assert.equal(await page.locator('[data-home-discovery]').count(),1,`${game}: one unified discovery section`);
     assert.equal(await page.locator('.home-discover, .home-deal, .home-personal .quick, .home-personal .quick-btn').count(),0,`${game}: no duplicate random panel or cramped legacy split shortcuts`);
     assert.equal(await page.locator('[data-act="homeRandomDeck"]').count(),1);
-    assert.equal(await page.locator('[data-home-discovery] [data-act="homeRandomDeck"]').innerText(),'✧ Surprise me');
+    const surprise=page.locator('[data-home-discovery] [data-act="homeRandomDeck"]');
+    // The real glyph decorator replaces the aria-hidden symbol with drawn SVG,
+    // so verify its decoration separately from the exact visible/accessibility label.
+    await surprise.locator('svg[aria-hidden="true"]').waitFor({state:'attached'});
+    assert.equal(await surprise.innerText(),'Surprise me');
+    assert.equal(await page.locator('[data-home-discovery]').getByRole('button',{name:'Surprise me',exact:true}).getAttribute('data-act'),'homeRandomDeck');
+    assert.equal(await surprise.locator('[aria-hidden="true"] svg[aria-hidden="true"]').count(),1);
     assert.equal(await page.locator('[data-home-discovery] [data-to="#decks/ideas"]').innerText(),'Build from my cards');
     assert.equal(await page.locator('.home-personal [data-to="#decks/ideas"]').count(),0,'saved continuation does not compete with discovery');
     assert.equal(await page.locator('.home-value-main strong').innerText(), '$25.00');
