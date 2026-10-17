@@ -178,6 +178,31 @@ jobs:
           path: |
             test-results/card-polish-*.png
             test-results/card-polish-browser.json
+  ygo-history-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate exact history fixtures without a browser
+        run: node tests/ygo-history-browser.mjs --validate-fixtures
+      - name: Install pinned browser test runner
+        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - name: Install test browser
+        run: npx playwright install --with-deps chromium
+      - name: Test exact editions, history identity and interrupted selections in the real shell
+        run: node tests/ygo-history-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ygo-history-browser-evidence
+          path: |
+            test-results/ygo-history-*.png
+            test-results/ygo-history-browser.json
   sets-browser:
     runs-on: ubuntu-latest
     timeout-minutes: 15

@@ -77,7 +77,7 @@ export function quoteForContext(game,card,ctx={}) {
 export function priceSelectionState(quote){
  if(!quote||quote.selectionVerified===false)return 'unverified';
  if(quote.game==='ygo'&&!quote.printing)return 'printing-required';
- if(quote.game==='ygo'&&quote.printing?.quotes?.length&&!quote.selectedEdition)return 'edition-required';
+ if(quote.game==='ygo'&&quote.printing&&!Object.hasOwn(editionNames,quote.selectedEdition))return 'edition-required';
  return 'selected';
 }
 export const quoteIsStale=(q,now=Date.now())=>{const date=q?.observedAt||q?.sourceUpdatedAt||q?.checkedAt;return !!date&&Number.isFinite(Date.parse(date))&&now-Date.parse(date)>3*864e5;};

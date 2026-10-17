@@ -55,12 +55,13 @@ assert.match(artworkHTML({game:'ptcg',id:'fixture-1',name:'Pokemon',image:'https
 
 const unresolved=presentationQuote('ygo',projected),selected=presentationQuote('ygo',superRare);
 html=historyPanel(unresolved);assert.match(html,/data-history-state="printing-required"/);assert.match(html,/data-act="historyChoosePrinting"/);assert.match(html,/>Select printing</);assert.doesNotMatch(html,/No recorded quotes|\$0\.00|temporarily unavailable/);
-html=historyPanel(selected);assert.match(html,/data-history-state="exact-unavailable"/);assert.equal((html.match(/History unavailable for this exact printing\./g)||[]).length,1);assert.doesNotMatch(html,/historyChoosePrinting|No recorded quotes|\$0\.00/);
-html=priceOverview('ygo',priced,{type:'tcard',setId:release.id});assert.match(html,/\$12\.50/);assert.match(html,/History unavailable for this exact printing/);assert.doesNotMatch(html,/Current quote unavailable/);
-html=priceOverview('ygo',superRare,{type:'tcard',setId:release.id});assert.match(html,/Current quote unavailable for this selection/);
+html=historyPanel(selected);assert.match(html,/data-history-state="edition-required"/);assert.equal((html.match(/Select an edition to check history for this printing\./g)||[]).length,1);assert.match(html,/historyChoosePrinting/);assert.doesNotMatch(html,/No recorded quotes|\$0\.00/);
+html=priceOverview('ygo',priced,{type:'tcard',setId:release.id});assert.match(html,/\$12\.50/);assert.match(html,/Select an edition to check history for this printing/);assert.doesNotMatch(html,/Current quote unavailable/);
+html=priceOverview('ygo',superRare,{type:'tcard',setId:release.id,priceYgoEdition:'1st-edition'});assert.match(html,/Current quote unavailable for this selection/);
 const quoted=setContextCard('ygo',{...card,sets:[{...print('VASM-EN003','Ultra Rare',77),quotes:[{edition:'1st Edition',market:40}]}]},release,releases);
 const noEdition=presentationQuote('ygo',quoted);assert.equal(noEdition.value,null);assert.equal(noEdition.selectedEdition,'');assert.match(noEdition.label,/Edition not specified/);assert.equal(priceSelectionState(noEdition),'edition-required');assert.match(historyPanel(noEdition),/>Select edition</);
 const first=presentationQuote('ygo',quoted,'reference','VASM-EN003::Ultra Rare','1st-edition');assert.equal(first.value,40);assert.notEqual(first.key,noEdition.key);
+const selectedExact=presentationQuote('ygo',superRare,'reference','VASM-EN001::Super Rare','1st-edition');
 // Reconstruct public card/release metadata visible in the reported MP25 case.
 // Quote amounts are deterministic fixtures, not assertions of today's market.
 const [mp25]=normalizeYgoSets([{set_name:'2025 Mega-Pack Tin',set_code:'MP25',tcg_date:'2025-09-04'}]);
@@ -87,9 +88,9 @@ for(const [frame,type,level,key]of [['effect','Effect Monster',4,'Level'],['xyz'
 }
 for(const missing of [null,undefined,'']){const c=normalizeYgo({...rawLink,type:'Effect Monster',frameType:'effect',level:missing,linkval:undefined});assert(!c.stats.some(([key])=>key==='Level'));}
 ui('ygo').sets.list=releases;
-const otherRelease={...selected,releaseId:'other-release',key:selected.key.replace(release.id,'other-release')};
+const otherRelease={...selectedExact,releaseId:'other-release',key:selected.key.replace(release.id,'other-release')};
 recordQuote(S.state,{...otherRelease,value:888},'2026-10-16T00:00:00Z');assert.doesNotMatch(historyPanel(selected,'all'),/\$888/);
-recordQuote(S.state,{...selected,value:12.5},'2026-10-16T00:00:00Z');html=historyPanel(selected,'all');assert.match(html,/data-history-state="ready"/);assert.match(html,/1 verified observation/);assert.match(html,/\$12\.50/);
+recordQuote(S.state,{...selectedExact,value:12.5},'2026-10-16T00:00:00Z');html=historyPanel(selectedExact,'all');assert.match(html,/data-history-state="ready"/);assert.match(html,/1 verified observation/);assert.match(html,/\$12\.50/);
 assert.equal(calls,0,'contextual rendering and selection do not contact generic history providers');
 
 const generic={game:'ptcg',id:'state-fixture',name:'Fixture',prices:{usd:null}},q=presentationQuote('ptcg',generic);

@@ -12,6 +12,7 @@ import {applyYgoPrices} from '../ygo-prices.js';
 import {presentationQuote} from '../pricing-presentation.js';
 import {setContextCard} from '../tcg.js';
 import {SUPABASE} from '../config.js';
+import {exactYgoHistoryIdentity,readExactYgoHistoryRequest} from '../ygo-history-identity.js';
 import {historyResponseStatus} from '../shared-history.js';
 import {capture} from './detail-rules-fixtures.mjs';
 export {startServer,navigate,closeSheet,noOverflow,capture,inventorySnapshot,RESULTS} from './detail-rules-fixtures.mjs';
@@ -63,7 +64,7 @@ export const SYMBOLS={
 };
 const historyEndpoint=new URL('/functions/v1/market-history',SUPABASE.url);
 export const isHistoryURL=url=>url.origin===historyEndpoint.origin&&url.pathname===historyEndpoint.pathname||['/api/prices/archive','/api/prices/recent'].includes(url.pathname);
-export const emptyHistory=url=>({game:url.searchParams.get('game'),cardId:url.searchParams.get('id'),finish:url.searchParams.get('finish'),series:[],notice:'No recorded quotes for this selection.'});
+export const emptyHistory=url=>({...(url.searchParams.has('releaseId')?{...exactYgoHistoryIdentity(readExactYgoHistoryRequest(url)),status:'empty'}:{}),game:url.searchParams.get('game'),cardId:url.searchParams.get('id'),finish:url.searchParams.get('finish'),series:[],notice:'No recorded quotes for this selection.'});
 const ART='<svg xmlns="http://www.w3.org/2000/svg" width="630" height="880"><rect width="630" height="880" rx="28" fill="#233c59"/><circle cx="315" cy="300" r="160" fill="#a27637"/><path d="M0 650 200 430 420 700 630 450V880H0Z" fill="#174b46"/><text x="22" y="50" fill="white" font-size="26">SYNTHETIC CARD FIXTURE</text><text x="22" y="845" fill="white" font-size="23">NOT REAL CARD ART</text></svg>';
 const SYMBOL='<svg xmlns="http://www.w3.org/2000/svg" width="120" height="100" viewBox="0 0 120 100"><path d="M60 5 76 35 114 38 87 62 95 95 60 78 25 95 33 62 6 38 44 35Z" fill="#18232d"/><text x="33" y="57" fill="#c58b35" font-size="11">FIXTURE</text></svg>';
 const LOGO='<svg xmlns="http://www.w3.org/2000/svg" width="320" height="110"><rect width="320" height="110" rx="20" fill="#1764bb"/><text x="12" y="65" font-size="24" fill="#ffc52a">SYNTHETIC SET LOGO</text></svg>';
@@ -187,7 +188,7 @@ export async function validateFixtures(){
  return 'PASS: exact VASM code/rarity collisions, unique rarity proof, poisoned generic prices, all-game $12.50 references, empty provider histories and Pokemon missing/failed-symbol fixtures. No browser/server or network started.';
 }
 
-export async function openApp(browser,base,{game='ygo',hash='#sets',width=390,height=1000,reducedMotion='no-preference',failSymbols=false,evidenceLabel=game}={}){
+export async function openApp(browser,base,{game='ygo',hash='#sets',width=390,height=1000,reducedMotion='no-preference',failSymbols=false,evidenceLabel=game,historyReply=url=>({body:emptyHistory(url)}),extraStorage={}}={}){
  assert.equal(process.env.GITHUB_ACTIONS,'true','Browser fixtures are hosted Actions only.');
  assert.match(base,/^http:\/\/127\.0\.0\.1:\d+$/);
  const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:1,hasTouch:true,reducedMotion,locale:'en-US',timezoneId:'UTC',serviceWorkers:'block'}),page=await context.newPage();page.setDefaultTimeout(15000);
@@ -213,7 +214,7 @@ export async function openApp(browser,base,{game='ygo',hash='#sets',width=390,he
   if(req.method()==='OPTIONS')return fulfill('',204,'text/plain');
   if(url.hostname==='fonts.googleapis.com')return fulfill('/* fixture system fonts */',200,'text/css');
   if(req.resourceType()==='image'&&artURLs.has(url.href)){images.push(url.href);const failed=failSymbols&&symbolURLs.has(url.href)||brokenURLs.has(url.href);return fulfill(failed?'not an image':/\/logo\.(?:png|webp)$/.test(url.pathname)?LOGO:symbolURLs.has(url.href)||url.hostname==='svgs.scryfall.io'?SYMBOL:ART,200,'image/svg+xml');}
-  if(isHistoryURL(url))return fulfill(emptyHistory(url));
+  if(isHistoryURL(url)){const reply=await historyReply(url,record);return fulfill(reply.body,reply.status||200);}
   if(url.origin===base){
    if(url.pathname==='/catalog.json')return fulfill({cards:[],snapshot_date:'2000-01-01'});
    if(url.pathname==='/api/community')return fulfill({game:url.searchParams.get('game'),status:'unavailable',items:[],fetchedAt:ISO});
@@ -225,7 +226,7 @@ export async function openApp(browser,base,{game='ygo',hash='#sets',width=390,he
   const fixture=providerFixture(url);if(fixture!==undefined)return fulfill(fixture);
   unexpected.push(req.method()+' '+url.href);return fulfill({error:'Unmapped request blocked; no external traffic forwarded.'},451);
  });
- await page.addInitScript(({storage,now})=>{const NativeDate=Date,offset=now-NativeDate.now();globalThis.Date=class extends NativeDate{constructor(...args){super(...(args.length?args:[NativeDate.now()+offset]));}static now(){return NativeDate.now()+offset;}};Math.random=()=>0;if(!localStorage.getItem('card-polish-fixtures-installed')){for(const[k,v]of Object.entries(storage))localStorage.setItem(k,JSON.stringify(v));localStorage.setItem('cardstashy-tour-v1','done');localStorage.setItem('cardstashy-glass','off');localStorage.setItem('card-polish-fixtures-installed','1');}}, {storage:fixtures.storage,now:NOW});
+ await page.addInitScript(({storage,now})=>{const NativeDate=Date,offset=now-NativeDate.now();globalThis.Date=class extends NativeDate{constructor(...args){super(...(args.length?args:[NativeDate.now()+offset]));}static now(){return NativeDate.now()+offset;}};Math.random=()=>0;if(!localStorage.getItem('card-polish-fixtures-installed')){for(const[k,v]of Object.entries(storage))localStorage.setItem(k,JSON.stringify(v));localStorage.setItem('cardstashy-tour-v1','done');localStorage.setItem('cardstashy-glass','off');localStorage.setItem('card-polish-fixtures-installed','1');}}, {storage:{...fixtures.storage,...extraStorage},now:NOW});
  await page.addInitScript(observeSymbolMounts);
  await page.goto(base+'/'+hash);await page.locator('#app.ready').waitFor();await page.evaluate(async()=>{window.__uiTestState=(await import('/store.js')).S;window.__uiTestTcg=await import('/tcg.js');window.__polishPricing=await import('/pricing-presentation.js');});
  await page.waitForFunction(g=>document.body.dataset.game===g&&window.__uiTestState.state.settings.game===g,game);
