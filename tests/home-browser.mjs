@@ -298,14 +298,20 @@ async function noOverflow(page, label) {
   }
 }
 async function visibleHeaderArt(page) {
-  await page.waitForFunction(() => { const image = document.querySelector('#homeHero img.hh-art, #homeHero .hh-art img'); return image?.complete && image.naturalWidth > 0; });
-  const art = await page.locator('#homeHero .hh-art').evaluate(node => {
-    const rect = node.getBoundingClientRect(), css = getComputedStyle(node);
-    return { width: rect.width, height: rect.height, opacity: css.opacity, display: css.display, visibility: css.visibility };
+  // Background refresh replaces Home markup. Inspect the current connected
+  // hero, artwork and loaded image together, never a previously resolved handle.
+  await page.waitForFunction(() => {
+    const heroes = document.querySelectorAll('#homeHero.has-art');
+    if (heroes.length !== 1) return false;
+    const hero = heroes[0], art = hero.querySelector('.hh-art');
+    const image = art?.matches('img') ? art : art?.querySelector('img');
+    if (![hero, art, image].every(node => node?.isConnected) || !image.complete || image.naturalWidth <= 0) return false;
+    const rect = art.getBoundingClientRect();
+    return rect.width >= 250 && rect.height >= 120 && [hero, art, image].every(node => {
+      const css = getComputedStyle(node);
+      return css.display !== 'none' && css.visibility === 'visible' && Number(css.opacity) > 0;
+    });
   });
-  assert(art.width >= 250 && art.height >= 120, `header artwork occupies a visible feature area: ${JSON.stringify(art)}`);
-  assert(art.display !== 'none' && art.visibility !== 'hidden' && Number(art.opacity) > 0);
-  assert.equal(await page.locator('#homeHero.has-art').count(), 1);
 }
 async function accessibleCarouselControls(page, label) {
   // A fixed mobile nav appearing partway through a full-page capture is normal.

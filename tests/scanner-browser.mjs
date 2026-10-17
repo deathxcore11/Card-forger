@@ -79,6 +79,23 @@ try{
    assert.equal(await popup.getByText(ref.name,{exact:true}).count(),1,`${ref.game} correct card title`);
    assert.equal(await popup.getByRole('img',{name:ref.name,exact:true}).count(),1,'card copy is shown');
    let reviewedPrinting=null;
+   if(ref.g==='mtg'){
+    const pending=await page.evaluate(async expectedId=>{
+     const {S}=await import('/store.js'),{mtgCollectors}=await import('/scan.js'),{textVerifiedMatch}=await import('/scancam.js'),s=S.ui.scan,i=s.cands.findIndex(c=>String(c.id)===expectedId),c=s.cands[i];
+     return {selected:s.confirm.i,i,id:c?.id,set:c?.card?.set,number:c?.card?.collector_number,exact:c?.exact,verified:!!c&&textVerifiedMatch('mtg',c,s.read),observations:mtgCollectors(s.read.code,s.read.full),saved:S.state.collection.length};
+    },ref.id);
+    assert.equal(pending.id,ref.id,'photo review retains the exact reference printing, not just its name');assert.equal(pending.set,'msc');assert.equal(String(pending.number).replace(/^0+/,''),'806');assert.equal(pending.saved,0);
+    if(pending.observations.length>1){assert.equal(pending.selected,-1,'conflicting photo readings cannot silently select a printing');assert.equal(pending.exact,false);assert.equal(pending.verified,false);}
+    if(pending.selected<0){
+     assert.equal(pending.verified,false,'an unverified printing needs an explicit choice');
+     assert(await popup.locator('[data-change="scanConfirmFinish"]').isDisabled(),'finish waits for printing review');
+     assert(await popup.getByRole('button',{name:'Add to collection',exact:true}).isDisabled(),'unreviewed printing cannot be saved');
+     await popup.locator(`[data-act="scanChoose"][data-i="${pending.i}"]`).click();
+     const selected=await page.evaluate(async()=>{const {S}=await import('/store.js'),{textVerifiedMatch}=await import('/scancam.js'),s=S.ui.scan,c=s.cands[s.confirm.i];return {id:c.id,exact:c.exact,verified:textVerifiedMatch('mtg',c,s.read)};});
+     assert.equal(selected.id,ref.id);assert.equal(selected.exact,pending.exact,'manual review does not fabricate OCR proof');assert.equal(selected.verified,false);
+    }else assert.equal(pending.selected,pending.i,'only the actual reference printing may already be selected');
+    assert(await popup.locator('[data-change="scanConfirmFinish"]').isEnabled(),'explicit printing review enables finish choice');
+   }
    if(ref.g==='ygo'){
     // This public image is marked Replica and has no actual set code. Its
     // artwork/name identifies Dark Magician, not CT13 or a 25th printing.
@@ -98,7 +115,7 @@ try{
    await popup.getByRole('button',{name:'More copies',exact:true}).click();await popup.getByRole('button',{name:'More copies',exact:true}).click();
    const finish=await popup.locator('[data-change="scanConfirmFinish"] option').evaluateAll(opts=>opts.find(x=>x.value)?.value);
    assert(finish,'printing exposes a finish to explicitly confirm');
-   await popup.locator('[data-change="scanConfirmFinish"]').selectOption(finish,{force:true});
+   await popup.locator('[data-change="scanConfirmFinish"]').selectOption(finish);
    await popup.locator('.scan-review-more summary').click();
    await popup.getByRole('button',{name:'Lightly Played',exact:true}).click();
    await popup.getByRole('combobox',{name:'Scanned card language',exact:true}).tap();
