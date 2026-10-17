@@ -15,7 +15,7 @@ export const ROOT=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 export const RESULTS=resolve(ROOT,'test-results');
 export const GAMES=['mtg','ptcg','ygo'], WIDTHS=[320,390,768,1440];
 export const NOW=Date.parse('2026-10-17T12:00:00.000Z'), ISO=new Date(NOW).toISOString();
-export const ART_EVIDENCE='SYNTHETIC SEARCH FIXTURE. All card and symbol images are intercepted with labeled SVG artwork. This suite verifies identity, navigation and layout, not real illustrations, live prices or provider availability. No screenshots are taken.';
+export const ART_EVIDENCE='SYNTHETIC SEARCH FIXTURE. All card and symbol images are intercepted with labeled SVG artwork. This suite verifies identity, navigation and layout, not real illustrations, live prices or provider availability. PNG evidence is captured only by the approved hosted CI job. All displayed lots and prices are synthetic fixture data, not a real collection.';
 const IMAGE='https://search-fixtures.invalid';
 const SVG='<svg xmlns="http://www.w3.org/2000/svg" width="630" height="880"><rect width="630" height="880" fill="#18354c"/><circle cx="315" cy="330" r="180" fill="#997c49"/><text x="20" y="64" fill="white" font-size="26">SYNTHETIC SEARCH FIXTURE</text><text x="20" y="835" fill="white" font-size="25">NOT REAL CARD ART</text></svg>';
 const pad=n=>String(n).padStart(3,'0');
@@ -139,7 +139,7 @@ export async function startServer(){
  await new Promise(r=>server.listen(0,'127.0.0.1',r));return {base:`http://127.0.0.1:${server.address().port}`,close:()=>new Promise(r=>server.close(r))};
 }
 const historyEndpoint=new URL('/functions/v1/market-history',SUPABASE.url);
-export async function openSearchApp(browser,base,{game='mtg',width=390,height=1000,pendingDetails=false}={}){
+export async function openSearchApp(browser,base,{game='mtg',width=390,height=1000,pendingDetails=false,evidenceLabel=game}={}){
  assert.equal(process.env.GITHUB_ACTIONS,'true','Browser fixture execution is hosted-CI only');assert.match(base,/^http:\/\/127\.0\.0\.1:\d+$/);
  const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:1,hasTouch:true,reducedMotion:'reduce',locale:'en-US',timezoneId:'UTC',serviceWorkers:'block'}),page=await context.newPage();page.setDefaultTimeout(15000);
  const errors=[],writes=[],unexpected=[],requests=[],gates=[],rules=[],fixtures=makeSearchFixtures(game,{pendingDetails});
@@ -185,8 +185,15 @@ export async function openSearchApp(browser,base,{game='mtg',width=390,height=10
   hold(match){let started,release;const seen=new Promise(r=>started=r),wait=new Promise(r=>release=r),gate={match,started,wait,release,used:false};gates.push(gate);return {seen,release};},
   releaseAll(){for(const g of gates)g.release?.();},
  };
- }catch(error){error.fixtureDiagnostics=diagnostics();for(const g of gates)g.release?.();try{await context.close();}catch(close){error.fixtureDiagnostics.cleanupError=close.stack;}throw error;}
+ }catch(error){error.fixtureDiagnostics=diagnostics();try{await capture(page,'synthetic-search-bootstrap-failure-'+evidenceLabel,{settle:false});}catch(captureError){error.fixtureDiagnostics.screenshotError=captureError.stack;}for(const g of gates)g.release?.();try{await context.close();}catch(close){error.fixtureDiagnostics.cleanupError=close.stack;}throw error;}
 }
 export async function inventorySnapshot(page){return page.evaluate(()=>{const s=window.__uiTestState.state;return JSON.stringify({collection:s.collection,decks:s.decks,printings:s.printings,wishlist:s.wishlist,tcg:s.tcg,myPrices:s.myPrices,priceChoices:s.priceChoices});});}
 export async function noOverflow(page,scope,label){const r=await page.locator(scope).evaluate(root=>({width:innerWidth,doc:document.documentElement.scrollWidth,scroll:root.scrollWidth,client:root.clientWidth,bad:[...root.querySelectorAll('button,input,select,summary,a')].filter(n=>n.getClientRects().length&&!n.closest('[hidden]')&&!n.closest('.cs-tabs')).filter(n=>{const r=n.getBoundingClientRect();return r.left<-.5||r.right>innerWidth+.5;}).map(n=>({text:n.textContent.slice(0,90),id:n.id,class:n.className}))}));assert(r.doc<=r.width+2&&r.scroll<=r.client+2,`${label}: no horizontal overflow ${JSON.stringify(r)}`);assert.deepEqual(r.bad,[],`${label}: visible controls fit viewport`);}
-export async function saveReport(outcomes,failures){await mkdir(RESULTS,{recursive:true});await writeFile(resolve(RESULTS,'search-browser.json'),JSON.stringify({generatedAt:new Date().toISOString(),artEvidence:ART_EVIDENCE,status:failures.length?'failed':'passed',outcomes,failures:failures.map(f=>({scenario:f.label,phase:f.phase,stack:f.error.stack}))},null,2));}
+const screenshots=[];
+export async function capture(page,name,{settle=true}={}){
+ assert.equal(process.env.GITHUB_ACTIONS,'true','Screenshots are restricted to approved hosted CI');assert.match(page.url(),/^http:\/\/127\.0\.0\.1:\d+\//,'Only the local synthetic app fixture may be captured');assert.match(name,/^synthetic-search-[a-z0-9-]+$/);
+ await mkdir(RESULTS,{recursive:true});
+ if(settle){await page.waitForFunction(()=>[...document.images].filter(n=>{const r=n.getBoundingClientRect();return r.width&&r.height&&r.bottom>0&&r.top<innerHeight;}).every(n=>n.complete));await page.evaluate(async()=>{await document.fonts.ready;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));});}
+ const file=name+'.png';await page.screenshot({path:resolve(RESULTS,file),fullPage:true,animations:'disabled',timeout:10000});screenshots.push({file,viewport:page.viewportSize(),synthetic:true,kind:settle?'settled-layout':'failure-state'});
+}
+export async function saveReport(outcomes,failures){await mkdir(RESULTS,{recursive:true});await writeFile(resolve(RESULTS,'search-browser.json'),JSON.stringify({generatedAt:new Date().toISOString(),artEvidence:ART_EVIDENCE,status:failures.length?'failed':'passed',screenshots,outcomes,failures:failures.map(f=>({scenario:f.label,phase:f.phase,stack:f.error.stack}))},null,2));}
