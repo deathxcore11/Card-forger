@@ -206,6 +206,23 @@ replacement.bounds={...replacement.bounds,top:1100,bottom:1300};assert.equal(mot
 let permissionCalls=0;DeviceOrientationEvent.requestPermission=()=>{permissionCalls++;return Promise.resolve('granted');};const permittedRoot=new Node();permittedRoot.querySelector=()=>null;attachTilt(permittedRoot);assert.equal(win.handlers.deviceorientation.length,2,'Platforms with an existing permission also listen immediately');assert.equal(permissionCalls,0,'Registering for existing motion never prompts for new permission');delete DeviceOrientationEvent.requestPermission;
 reduce=true;const reducedRoot=new Node();attachTilt(reducedRoot);assert.deepEqual(reducedRoot.handlers,{});reduce=false;
 console.log('PASS: first-open sensor activation, active-touch/late-observer race, release-timer race, cancellation, foreground ownership, replacement calibration, scrolling, rotation and reduced motion.');
+// Isolated scheduler regression for the hosted printing-replacement ordering.
+// Keep the preceding touch/mouse/overlay lifecycle and its input history intact.
+{
+ const fixture=new Node(),popup=new Node(),first=new Node('cd-img'),next=new Node('cd-img');
+ popup.cards=[first];fixture.cards=[first];fixture.querySelectorAll=s=>s==='dialog[open]'?[popup]:s.includes('data-shone')?fixture.cards.filter(c=>!c.dataset.shone):fixture.cards;
+ attachTilt(fixture);const turn=win.handlers.deviceorientation.at(-1);
+ turn({beta:30,gamma:0});flush();turn({beta:40,gamma:12});flush();assert.notEqual(first.values['--tx'],'0deg');
+ const oldTilt={...first.values};popup.cards=[next];fixture.cards=[next];assert.notEqual(next,first);assert(!next.classes.has('gyro'));
+ mutation();assert.equal(frames.length,1,'replacement mutation schedules motion before any new orientation event');flush();
+ assert(next.classes.has('gyro'),'the new node becomes sensor-owned immediately');
+ assert.equal(next.values['--tx'],'0deg','replacement calibrates against the last 40/12 sample');assert.equal(next.values['--ty'],'0deg');
+ turn({beta:40,gamma:12});assert.equal(frames.length,1);flush();assert.equal(next.values['--tx'],'0deg','same sample preserves the new baseline');assert.equal(next.values['--ty'],'0deg');
+ turn({beta:60,gamma:20});assert.equal(frames.length,1);flush();assert.equal(next.values['--tx'],'3.92deg','changed sample applies 2% drift exactly once, rather than incorrectly recalibrating');assert.equal(next.values['--ty'],'-9deg');
+ assert.equal(frames.length,0,'each explicit motion frame drains without a hidden retry');assert.deepEqual(first.values,oldTilt,'the detached old card is never animated by replacement samples');
+}
+console.log('PASS: replacement mutation consumes last40/12 before the next sample; same sample stays flat and changed60/20 produces exactly3.92deg, with no retries.');
+
 const pack=JSON.parse(gunzipSync(readFileSync('rulebooks/ygo-rules-v1.json.gz'))),entry=pack.entries.find(e=>e.id==='0-p20'),before=structuredClone(entry),display=visibleRulePassage('ygo',entry);
 assert.equal(display.fullText,entry.text);assert.deepEqual(entry,before);assert(display.text.startsWith('Turn Structure\n\nA Duel'));assert(!display.text.startsWith('How\nTo\nPlay'));assert(display.text.includes('IMPORTANT: The player who goes first cannot draw during the Draw Phase of their first turn.'));
 for(const label of ['Draw Phase','Standby Phase','Main Action in this Phase','Possible Other Actions'])assert.equal(display.text.split(label).length,entry.text.split(label).length,'Legitimate repeated '+label+' remains intact');

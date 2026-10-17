@@ -3649,6 +3649,7 @@ body[data-view="scan"] #app:has(.scan-workspace.is-live) > #content {
 #sheetBody .card-price-reference span,#sheetBody .card-price-reference small {font-size:11px;line-height:1.4;color:var(--muted);overflow-wrap:anywhere;}
 #sheetBody .card-price-actions {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 6px;flex:0 0 auto;max-width:52%;}
 #sheetBody .card-price-actions .btn {min-height:44px;padding:8px 12px;white-space:normal;line-height:1.3;}
+#sheetBody .card-buy-link > span:first-child {min-width:0;overflow-wrap:anywhere;}
 #sheetBody .card-price-actions .personal-price-edit {grid-column:1/-1;justify-self:end;min-height:44px;padding:6px 4px;font-size:11px;color:var(--muted);}
 #sheetBody :is(.price-version,#card-history,.market-sellers,.market-details) {min-width:0;max-width:100%;overflow-wrap:anywhere;}
 #sheetBody .price-version {gap:6px;padding:16px 0;border:0;border-bottom:1px solid var(--line);border-radius:0;}
@@ -3685,7 +3686,7 @@ body[data-view="scan"] #app:has(.scan-workspace.is-live) > #content {
 #sheetBody .vendor-quote strong {font-size:17px;line-height:1.3;font-variant-numeric:tabular-nums;}
 #sheetBody .vendor-action {font-size:11px;color:var(--gold);line-height:1.5;}
 #sheetBody :is(#card-history,#card-sellers) {scroll-margin-top:calc(var(--card-tabs-top,52px) + 76px);}
-#sheetBody :is(.vendor-row,.card-price-actions button,.history-ranges button,.history-values summary,.history-about summary,.cs-tabs button):focus-visible {outline:2px solid var(--gold);outline-offset:-3px;border-radius:6px;}
+#sheetBody :is(.vendor-row,.card-price-actions :is(button,a),.history-ranges button,.history-values summary,.history-about summary,.cs-tabs button):focus-visible {outline:2px solid var(--gold);outline-offset:-3px;border-radius:6px;}
 #sheetBody :is(#card-history,#card-sellers):focus-visible {outline:2px solid var(--gold);outline-offset:4px;}
 @media (max-width:380px) {
  #sheetBody .card-price-summary {gap:8px;flex-wrap:wrap;}
@@ -4003,10 +4004,11 @@ html:has(.rules-ask-dialog[open]),html:has(.rules-ask-dialog[open]) body{overflo
 .home-overview .home-daily > .hh-art, .home-overview .home-daily.ptcg > .hh-art.pk-crop { position:absolute; inset:12px auto auto 18px; width:56px; height:52px; border-radius:10px; object-fit:cover; object-position:center 30%; pointer-events:none; }
 .home-overview .home-daily .hh-body { position:relative; z-index:1; padding:0; width:100%; }
 .home-overview .home-daily .hh-credits { display:block; margin:0; }
-.home-overview .home-daily .hh-credit { position:relative; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:2px; width:100%; max-width:none; min-height:76px; margin:0; padding:12px 48px 12px 88px; border:0; border-radius:0; background:transparent; text-align:left; color:var(--text); font-size:12px; line-height:1.5; }
+.home-overview .home-daily .hh-credit { position:relative; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:2px; width:100%; max-width:none; min-height:76px; margin:0; padding:12px 48px 12px 88px; border:0; border-radius:0; background:transparent; backdrop-filter:none; -webkit-backdrop-filter:none; text-align:left; color:var(--text); font-size:12px; line-height:1.5; white-space:normal; overflow-wrap:normal; word-break:normal; }
 .home-overview .home-daily.no-art .hh-credit { padding-left:18px; }
 .home-overview .home-daily .hh-credit > span:first-child { color:var(--muted); font-size:10px; }
-.home-overview .home-daily .hh-credit b { font-size:13px; overflow-wrap:anywhere; }
+/* Only an exceptional token wider than the reading column may break. */
+.home-overview .home-daily .hh-credit b { font-size:13px; max-width:100%; overflow-wrap:break-word; }
 .home-overview .home-daily .hh-daily-arrow { position:absolute; right:20px; top:50%; transform:translateY(-50%); font-size:18px; color:var(--gold); }
 .home-overview .home-daily .hh-credit:hover { background:#ffffff05; }
 .home-overview .home-daily .hh-credit:focus-visible { outline:2px solid var(--gold); outline-offset:-4px; }
@@ -4055,8 +4057,6 @@ body[data-view="home"] .home-meta-copy h3 { font-size:clamp(22px,3vw,28px); }
 .home-community .community-position { font-size:10px; min-width:48px; }
 .home-community .community-arrow { width:44px; height:44px; background:transparent; border-color:transparent; }
 @media (min-width:600px) {
-  .home-overview { display:grid; grid-template-columns:minmax(0,1fr) minmax(180px,32%); align-items:center; }
-  .home-overview .home-daily.home-hero { border:0; border-left:1px solid #ffffff0d; border-radius:0; margin-right:10px; }
   .home-overview .home-value { padding:24px; }
   .home-community > .section-head { padding:20px 22px 13px; }
   .home-community .community-feature { grid-template-columns:112px minmax(0,1fr); gap:18px; padding:18px 22px; }
@@ -4064,6 +4064,12 @@ body[data-view="home"] .home-meta-copy h3 { font-size:clamp(22px,3vw,28px); }
   .home-community .community-feature > .community-art { width:112px; height:86px; }
   .home-community .community-feature h3 { font-size:18px; }
   .home-community .community-footer { padding-inline:18px; }
+}
+/* Keep real reading width beside the thumbnail and arrow. Narrow/tablet
+   overviews retain the full-width daily row instead of splitting card names. */
+@media (min-width:900px) {
+  .home-overview { display:grid; grid-template-columns:minmax(0,1fr) minmax(280px,32%); align-items:center; }
+  .home-overview .home-daily.home-hero { border:0; border-left:1px solid #ffffff0d; border-radius:0; margin-right:10px; }
 }
 @media (max-width:360px) {
   .home-overview .home-value { padding-inline:14px; gap:8px; }
@@ -4080,3 +4086,10 @@ body[data-view="home"] .home-meta-copy h3 { font-size:clamp(22px,3vw,28px); }
 }
 
 .home-overview:not(:has(.hh-credit)) { grid-template-columns:minmax(0,1fr); }
+
+/* Calm scanner corners are decorative, not the detected outline or crop area.
+   Reserve both control rows; short/folded layouts keep the feed, not this hint. */
+.scan-workspace .scan-frame-hint { position:absolute; inset:56px 16px 112px; min-height:0; pointer-events:none; z-index:1; opacity:.74; }
+.scan-workspace .scan-frame-hint svg { display:block; width:100%; height:100%; fill:none; stroke:#fff; stroke-width:2.5; stroke-linecap:round; filter:drop-shadow(0 1px 2px #0009); }
+.scan-workspace .scan-frame-hint .scan-frame-accent { stroke:var(--game-color,#7ce3bb); stroke-width:2; }
+@media (max-height:700px) { .scan-workspace .scan-frame-hint { display:none; } }

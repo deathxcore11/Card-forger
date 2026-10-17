@@ -26,7 +26,7 @@ const RESULTS = resolve(ROOT, 'test-results');
 const NOW = Date.parse('2026-10-17T12:00:00.000Z');
 const TODAY = '2026-10-17';
 const ISO = new Date(NOW).toISOString();
-const WIDTHS = [320, 360, 390, 430, 700, 768, 900, 1024, 1200, 1440, 2560];
+const WIDTHS = [320, 360, 390, 430, 600, 700, 768, 899, 900, 1024, 1200, 1440, 2560];
 const EVIDENCE_WIDTHS = new Set([320, 390, 768, 1024, 1440, 2560]);
 const viewportHeight = width => width <= 430 ? 844 : width < 900 ? 1024 : width <= 1200 ? 768 : width <= 1440 ? 900 : 1440;
 const ORIENTATIONS = [{ width:844, height:390, label:'phone-landscape' }, { width:768, height:1024, label:'tablet-portrait' }, { width:1024, height:768, label:'tablet-landscape' }];
@@ -91,6 +91,14 @@ const normalize = raw => raw.category ? normalizePtcg(raw) : normalizeYgo(raw);
 const fresh = raw => ({ ...normalize(raw), fetchedAt: ISO, printPriceSchema: 1 });
 const heroes = { mtg: mtgHero, ygo: fresh(ygoHeroRaw), ptcg: fresh(ptcgHeroRaw) };
 const seeds = { mtg: mtgSeed, ygo: fresh(ygoSeedRaws[0]), ptcg: fresh(ptcgSeedRaw) };
+// Real longer titles in deterministic, cached daily-card fixtures. As with the
+// short fixtures, artwork/provider metadata is representative, not a live quote.
+const longDailyPicks = {
+  mtg: magic('Emrakul, the Promised End', '33333333-3333-4333-8333-333333333333'),
+  ygo: fresh(ygoSeedRaws[1]),
+  ptcg: fresh({ ...rawPtcg('Reshiram & Charizard-GX', 'sm10-20', 'Fire'), image:'https://assets.tcgdex.net/en/sm/sm10/20' }),
+};
+const oversizeDailyPick = magic('Asmoranomardicadaistinaculdacar', '44444444-4444-4444-8444-444444444444');
 const catalog = Object.fromEntries([mtgHero, mtgSeed, ...['Plains', 'Island', 'Swamp', 'Mountain', 'Forest', 'Wastes'].map((name, i) => magic(name, `fixture-basic-${i}`, { type_line: `Basic Land — ${name}`, prices: { usd: '0' }, cmc: 0, mana_cost: '', oracle_text: '', color_identity: [], colors: [] }))].map(c => [cardKey(c.name), c]));
 
 function feed(game, empty = false, options = {}) {
@@ -145,7 +153,11 @@ function fixtures(options = {}) {
   const standard = metaFeed('mtg', emptyFeed, options);
   for (const deck of standard.decks) { deck.key += '-standard'; deck.name += ' Standard only'; deck.url = deck.url.replace('fixture-modern', 'fixture-standard'); }
   meta['mtg:Standard'] = { at: NOW, data: standard };
-  const hero = { date: heroDate, ...Object.fromEntries(GAME_IDS.map(g => [g, { game: g, date: heroDate, name: heroes[g].name, id: heroes[g].id, art: g === 'mtg' ? heroes[g].image_uris.art_crop : g === 'ygo' ? heroes[g].art : heroes[g].imageLarge, ...(g === 'ygo' ? { artDirect: heroes[g].artDirect } : {}) }])) };
+  const daily = { ...(options.longDailyNames ? longDailyPicks : heroes), ...(options.oversizeDailyName ? {mtg:oversizeDailyPick} : {}) };
+  const hero = { date: heroDate, ...Object.fromEntries(GAME_IDS.map(g => {
+    const c = daily[g], noArt = options.dailyArtMode === 'missing';
+    return [g, { game: g, date: heroDate, name: c.name, id: c.id, art: noArt ? '' : g === 'mtg' ? c.image_uris.art_crop : g === 'ygo' ? c.art : c.imageLarge, ...(g === 'ygo' ? { artDirect: noArt ? '' : c.artDirect } : {}) }];
+  })) };
   const sent = Object.fromEntries([...Object.values(catalog).map(c => [`mtg:${c.id}`, NOW]), ...Object.keys(cache.ygo).map(id => [`ygo:${id}`, NOW])]);
   return { state, cache, storage: {
     'cardforge-v2': state, 'cardforge-catalog-v1': catalog, 'cardforge-tcg-cache-v1': cache,
@@ -175,6 +187,16 @@ for (const game of GAME_IDS) {
   assert.equal(communityDeckArtwork(game, metaFeed(game, false, { deckArtMode: 'unsafe' }).decks[0]), null);
   assert.equal(safeCommunityImage(feed(game).items[0].image, game, sources[game].sourceId, sources[game].host + sources[game].news), NEWS_IMAGES[game]);
   assert.equal(safeCommunityImage(feed(game, false, { newsArtMode: 'unsafe' }).items[0].image, game, sources[game].sourceId, sources[game].host + sources[game].news), '');
+}
+for (const longDailyNames of [false, true]) for (const dailyArtMode of ['ready', 'missing']) for(const oversizeDailyName of [false,true]) {
+  const f = fixtures({ longDailyNames, dailyArtMode, oversizeDailyName });
+  assert.doesNotThrow(() => validateWorkspace(structuredClone(f.state)));
+  for (const game of GAME_IDS) {
+    const selected = f.storage['cardforge-hero-v1'][game], expected = oversizeDailyName && game==='mtg' ? oversizeDailyPick : (longDailyNames ? longDailyPicks : heroes)[game];
+    assert.equal(selected.name, expected.name); assert.equal(selected.id, expected.id);
+    assert.equal(selected.game, game); assert.equal(selected.date, TODAY);
+    assert.equal(!!selected.art, dailyArtMode === 'ready');
+  }
 }
 for (const game of GAME_IDS) for (const initialMetaLists of [0, 1]) {
   const pending = fixtures({game,fetchFeed:true,fetchMeta:true,initialMetaLists});
@@ -520,17 +542,62 @@ async function assertReadableArtwork(page, game) {
   assert(geometry.rowHeight<240,`${game}: one news item is a compact editorial row, not a 390px hero`);
   for(const text of geometry.text)assert(text.width>0 && text.height>0 && !text.clipped && text.opacity===1 && text.fontSize>=10,`${game}: readable naturally wrapping editorial text: ${JSON.stringify(text)}`);
 }
-async function assertDailyIdentity(page, game, card = heroes[game], date = TODAY) {
+async function assertDailyIdentity(page, game, card = heroes[game], date = TODAY, { compact = true, allowOversizeWord = false } = {}) {
   const control=page.locator('.hh-credit');
   assert.equal(await page.locator('[data-act="homeDailyCard"]').count(),1,'one exact daily action, not duplicate artwork/credit buttons');
-  for(const [attribute,value] of Object.entries({'data-act':'homeDailyCard','data-game':game,'data-id':card.id,'data-date':date}))assert.equal(await control.getAttribute(attribute),value);
-  assert.match(await control.getAttribute('aria-label'),/Explore .+, Card of the Day/);
+  for(const [attribute,value] of Object.entries({'data-act':'homeDailyCard','data-game':game,'data-id':card.id,'data-name':card.name,'data-date':date}))assert.equal(await control.getAttribute(attribute),value);
+  assert.equal(await control.getAttribute('aria-label'),`Explore ${card.name}, Card of the Day`);
   assert.equal((await page.locator('#homeHero').innerText()).match(/Card of the Day/gi)?.length,1);
-  assert((await control.innerText()).includes(card.name));
+  assert.equal(await control.locator('b').textContent(),card.name);
+  assert.equal(await control.locator(':scope > span:first-child').innerText(),'Card of the Day');
   assert.equal(await page.locator('.hh-art-link, .hh-search, #homeQ, .hh-deck-link').count(),0,'daily accent is not a search/welcome hero or saved-deck link');
-  const size=await page.locator('#homeHero').evaluate(n=>{const a=n.querySelector('.hh-art')?.getBoundingClientRect();return {height:n.getBoundingClientRect().height,art:a?{width:a.width,height:a.height}:null};});
-  assert(size.height<110,`${game}: daily accent stays unobtrusive`);
-  if(size.art)assert(size.art.width<=58 && size.art.height<=54,`${game}: daily art is a small source-identified thumbnail`);
+  const size=await control.evaluate(n=>{
+    const hero=n.closest('#homeHero'),art=hero.querySelector('.hh-art'),title=n.querySelector('b'),arrow=n.querySelector('.hh-daily-arrow');
+    const rect=node=>{const r=node.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
+    const c=getComputedStyle(n),box=rect(n),a=art?rect(art):null;
+    const text=[n.firstElementChild,title].map(node=>{
+      const css=getComputedStyle(node),range=document.createRange();range.selectNodeContents(node);
+      // Range rectangles prove every painted line fits, not merely that an
+      // ellipsized/clamped DOM node still contains the original full string.
+      const lines=[...range.getClientRects()].filter(r=>r.width>0).map(r=>({left:r.left,right:r.right,top:r.top,bottom:r.bottom}));
+      const words=[...node.firstChild.textContent.matchAll(/[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*/gu)].map(match=>{
+        range.setStart(node.firstChild,match.index);range.setEnd(node.firstChild,match.index+match[0].length);
+        const fragments=[...range.getClientRects()].filter(r=>r.width>0);
+        return {word:match[0],lines:fragments.length,width:fragments.reduce((sum,r)=>sum+r.width,0)};
+      });
+      return {text:node.textContent,lines,words,fontSize:parseFloat(css.fontSize),overflowWrap:css.overflowWrap,wordBreak:css.wordBreak,
+        clipped:node.scrollWidth>node.clientWidth+1||node.scrollHeight>node.clientHeight+1,lineClamp:css.webkitLineClamp};
+    });
+    const overlaps=(x,y)=>x.left<y.right&&x.right>y.left&&x.top<y.bottom&&x.bottom>y.top;
+    // Include the transparent action above the art and the Pokémon crop's
+    // nested image. The crop transform is intentional; blur is not.
+    const effects=[hero,...hero.querySelectorAll('*')].filter(node=>node===n||a&&overlaps(rect(node),a)).map(node=>{
+      const css=getComputedStyle(node);return {node:node.className,filter:css.filter,backdrop:css.backdropFilter,prefixedBackdrop:css.getPropertyValue('-webkit-backdrop-filter')};
+    });
+    return {height:rect(hero).height,art:a,box,arrow:rect(arrow),text,effects,
+      content:{left:box.left+parseFloat(c.paddingLeft),right:box.right-parseFloat(c.paddingRight),top:box.top+parseFloat(c.paddingTop),bottom:box.bottom-parseFloat(c.paddingBottom)}};
+  });
+  // This bound belongs to the normal fixtures, not every possible card name.
+  // Longer titles may grow naturally, never clip or shrink to satisfy a cap.
+  if(compact)assert(size.height<110,`${game}: daily accent stays unobtrusive: ${JSON.stringify(size)}`);
+  assert(size.box.height>=44 && size.box.width>=44,`${game}: exact daily identity keeps its touch target`);
+  assert(size.content.right+8<=size.arrow.left && size.arrow.right<=size.box.right,`${game}: text reserves space for the daily arrow`);
+  if(size.art){
+    assert(size.art.width<=58 && size.art.height<=54,`${game}: daily art is a small source-identified thumbnail`);
+    assert(size.art.right+8<=size.content.left,`${game}: daily name never overlaps the thumbnail`);
+    assert(size.art.top>=size.box.top && size.art.bottom<=size.box.bottom,`${game}: thumbnail fits within the daily action`);
+  }
+  for(const [index,text] of size.text.entries()){
+    assert(text.fontSize>=(index?13:10) && !text.clipped && ['none',''].includes(text.lineClamp),`${game}: daily text is readable and unclipped: ${JSON.stringify(text)}`);
+    assert.equal(text.overflowWrap,index?'break-word':'normal');assert.equal(text.wordBreak,'normal');
+    assert(text.lines.length>0 && text.lines.every(r=>r.left>=size.content.left-1&&r.right<=size.content.right+1&&r.top>=size.content.top-1&&r.bottom<=size.content.bottom+1),`${game}: all daily text lines fit the reserved reading area: ${JSON.stringify(size)}`);
+    assert(text.words.every(word=>word.lines===1||allowOversizeWord&&word.width>size.content.right-size.content.left+1),`${game}: ordinary words stay intact; only a token wider than the whole reading column can wrap: ${JSON.stringify(text.words)}`);
+  }
+  for(const effect of size.effects){
+    assert.equal(effect.filter,'none',`${game}: thumbnail/overlapping ${effect.node} has no blur filter`);
+    assert.equal(effect.backdrop,'none',`${game}: thumbnail/overlapping ${effect.node} does not blur the art behind it`);
+    assert(['none',''].includes(effect.prefixedBackdrop),`${game}: no prefixed backdrop blur on ${effect.node}`);
+  }
 }
 async function accessibleCarouselControls(page, label) {
   // A fixed mobile nav appearing partway through a full-page capture is normal.
@@ -722,7 +789,7 @@ try {
     }
     await assertDailyIdentity(page, game);
     assert.notEqual(hero.id, seeds[game].id, 'fixture daily card is deliberately different from the saved deck lead');
-    report.push(`${game}: all eleven widths; visible header, approved news and lower Meta artwork; exact daily printing actions unaffected by saved decks; partial value`);
+    report.push(`${game}: all ${WIDTHS.length} widths; visible header, approved news and lower Meta artwork; exact daily printing actions unaffected by saved decks; partial value`);
   }
   await selectGame(page, 'mtg');
   for (const [from, key, to] of [['mtg', 'ArrowRight', 'ygo'], ['ygo', 'ArrowRight', 'ptcg'], ['ptcg', 'ArrowRight', 'mtg'], ['mtg', 'ArrowLeft', 'ptcg'], ['ptcg', 'Home', 'mtg'], ['mtg', 'End', 'ptcg']]) {
@@ -804,6 +871,30 @@ try {
   await app.close();
   report.push('All-game tab clicks, keyboard focus/wrap, game swipe, isolated carousel touch/keyboard, safe links/dates, resize and durable reload');
 
+  // Fresh cached daily identities, not text patched into a test-only renderer.
+  // Check both real crop markup and the independent name-without-art fallback.
+  for(const scenario of [{},{dailyArtMode:'missing'},{longDailyNames:true},{longDailyNames:true,dailyArtMode:'missing'},{oversizeDailyName:true},{oversizeDailyName:true,dailyArtMode:'missing'}]){
+    const daily=await openApp({...scenario,width:390,reducedMotion:'reduce'}),p=daily.page;
+    for(const game of scenario.oversizeDailyName?['mtg']:GAME_IDS){
+      await selectGame(p,game);
+      if(scenario.dailyArtMode==='missing')assert.equal(await p.locator('#homeHero .hh-art').count(),0);
+      else await visibleHeaderArt(p);
+      await p.locator('.hh-credit').focus();
+      const mounted=await p.evaluateHandle(()=>({hero:document.querySelector('#homeHero'),action:document.querySelector('.hh-credit'),art:document.querySelector('#homeHero .hh-art')}));
+      for(const width of [320,390,600,700,768,899,900,1024,1440,2560,390]){
+        await p.setViewportSize({width,height:viewportHeight(width)});
+        await noOverflow(p,`${game} ${scenario.longDailyNames?'long':'normal'} daily ${scenario.dailyArtMode||'ready'} at ${width}px`);
+        const card=scenario.oversizeDailyName?oversizeDailyPick:(scenario.longDailyNames?longDailyPicks:heroes)[game];
+        await assertDailyIdentity(p,game,card,TODAY,{compact:!scenario.longDailyNames&&!scenario.oversizeDailyName,allowOversizeWord:!!scenario.oversizeDailyName});
+        assert(await mounted.evaluate(s=>s.hero===document.querySelector('#homeHero')&&s.action===document.querySelector('.hh-credit')&&s.art===document.querySelector('#homeHero .hh-art')&&document.activeElement===s.action),'daily identity, crop and keyboard focus survive the same-mounted responsive sequence');
+        if(scenario.dailyArtMode==='missing')assert.equal(await p.locator('.hh-credit').evaluate(n=>getComputedStyle(n).paddingLeft),'18px','no-art identity does not reserve an empty thumbnail column');
+      }
+      await mounted.dispose();
+    }
+    await daily.close();
+  }
+  report.push('All games: normal and longer actual daily titles retain complete words, exact accessible identity, unobscured thumbnails and focused same-mounted controls across 320–2560px, including 600/700/768/899/900px and no-art fallback; an exceptional single-token Magic name wraps only if wider than its reading column');
+
   for(const game of GAME_IDS){
     const work=await openApp({game,twoSavedDecks:true,noWorkHistory:true}),p=work.page;
     assert.equal(await p.locator('[data-resume-deck]').count(),0,'unrecorded/created decks are not claimed as last-worked');
@@ -843,7 +934,13 @@ try {
     assert.equal(await unknown.page.locator('.hh-deck-link').count(), 0);
     assert((await unknown.page.locator('.community-feature.feature-link').count()) >= 2);
     assert.equal(await unknown.page.locator('.community-feature time').count(), 0);
-    await noOverflow(unknown.page, `${game} unavailable source/unpriced state`);
+    for(const width of EVIDENCE_WIDTHS){
+      await unknown.page.setViewportSize({width,height:viewportHeight(width)});
+      await assertDailyIdentity(unknown.page,game);
+      await noOverflow(unknown.page,`${game} no decks/unpriced/unavailable sources at ${width}px`);
+      await unknown.page.evaluate(()=>scrollTo(0,0));
+      await unknown.page.screenshot({path:resolve(RESULTS,`home-empty-${game}-${width}.png`),fullPage:true,animations:'disabled'});
+    }
   }
   await unknown.close();
   const noDaily = await openApp({heroDate:'2026-10-16',dailyUnavailable:true,width:1024});
@@ -851,11 +948,13 @@ try {
     await selectGame(noDaily.page,game);
     await noDaily.page.waitForFunction(()=>!document.querySelector('.hh-credit'));
     assert.equal(await noDaily.page.locator('#homeHero').isVisible(),false,'unavailable daily pick has no empty visual placeholder');
-    for(const width of [320,390,768,1024,1440,2560]){
+    for(const width of EVIDENCE_WIDTHS){
       await noDaily.page.setViewportSize({width,height:viewportHeight(width)});
       const sizes=await noDaily.page.locator('.home-overview').evaluate(n=>({overview:n.clientWidth,value:n.querySelector('.home-value').getBoundingClientRect().width}));
       assert(sizes.value>=sizes.overview-2,'without a daily result the value uses the entire overview, not an empty second column');
       await noOverflow(noDaily.page,`${game} missing daily pick ${width}`);
+      await noDaily.page.evaluate(()=>scrollTo(0,0));
+      await noDaily.page.screenshot({path:resolve(RESULTS,`home-no-daily-${game}-${width}.png`),fullPage:true,animations:'disabled'});
     }
   }
   await noDaily.close();

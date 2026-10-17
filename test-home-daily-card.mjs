@@ -58,6 +58,22 @@ for (const g of GAME_IDS) {
   heroState[g] = { ...approved[g], game: g, date: heroDate(), id: g === 'mtg' ? 'ffffffff-ffff-ffff-ffff-ffffffffffff' : g === 'ygo' ? '999' : 'me02.5-288' };
   assert.equal(heroFor(g).art, '', g + ': another card’s art cannot describe this card');
 }
+const longNames = { mtg:['Emrakul, the Promised End','Asmoranomardicadaistinaculdacar'], ygo:['Blue-Eyes Alternative White Dragon'], ptcg:['Reshiram & Charizard-GX'] };
+for (const g of GAME_IDS) for (const title of longNames[g]) for (const art of [approved[g].art, '']) {
+  heroState[g] = { ...approved[g], game:g, date:heroDate(), name:title, art };
+  const html=homeHero(g),name=title.replaceAll('&','&amp;');
+  assert(html.includes(`<b>${name}</b>`),`${g}: full longer title is never shortened`);
+  assert(html.includes(`aria-label="Explore ${name}, Card of the Day"`));
+  assert(html.includes(`data-name="${name}"`));
+  assert.equal(html.includes('has-art'),!!art,`${g}: missing art preserves the same named daily action`);
+}
+const css=fs.readFileSync('style.css','utf8'),personalCss=css.slice(css.indexOf('/* Personal-first Home.'));
+const dailyCss=personalCss.match(/\.home-overview \.home-daily \.hh-credit \{([^}]+)\}/)[1];
+for(const declaration of ['backdrop-filter:none;','-webkit-backdrop-filter:none;','overflow-wrap:normal;','word-break:normal;','white-space:normal;'])assert(dailyCss.includes(declaration),`daily action resets inherited ${declaration}`);
+assert.match(personalCss,/@media \(min-width:900px\) \{\s*\.home-overview \{[^}]*minmax\(280px,32%\)/,'daily side column starts only when both the value and intact names have reading width');
+assert.match(personalCss,/\.home-overview \.home-daily \.hh-credit b \{[^}]*max-width:100%;[^}]*overflow-wrap:break-word;/,'only the title gets an emergency wrap for an oversized token, without clipping or shrinking');
+assert.match(personalCss,/\.home-overview \.home-daily\.no-art \.hh-credit \{ padding-left:18px;/);
+assert.match(css,/\.hh-credit \{[^}]*backdrop-filter: blur\(6px\)/,'the daily reset does not globally remove unrelated glass treatments');
 clear(); let picks = 0;
 assert.equal(await loadHero('mtg', async () => { picks++; return magic(); }), true);
 assert.equal(heroFor('mtg').printing.id, 'daily-print');

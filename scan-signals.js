@@ -16,11 +16,33 @@ export function readScanSignals(g,read={}){
  const mana=g==='mtg'?(String(read.mana||header).match(/(?:\{(?:\d+|[WUBRGCSXP]|[WUBRG]\/[WUBRGP]|2\/[WUBRG])\})+/gi)||[]).join('').toUpperCase():'';
  return {hp:g==='ptcg'?number(/\bHP\s*(\d{2,3})\b/i,header)??number(/\b(\d{2,3})\s*HP\b/i,header):null,atk:g==='ygo'?number(/\bATK\s*[/:]?\s*(\d{1,5})(?![\d/])\b/i):null,def:g==='ygo'?number(/\bDEF\s*[/:]?\s*(\d{1,5})(?![\d/])\b/i):null,level:g==='ygo'?number(/\b(?:LEVEL|LV[.]?)\s*[:/]?\s*(\d{1,2})\b/i,header+'\n'+String(read.level||'')):null,stage:g==='ptcg'?header.match(/\b(STAGE\s*[12]|BASIC)\b/i)?.[1]?.replace(/\s/g,'').toLowerCase()||'':'',mana,pt:g==='mtg'?stats.match(/\b(\d{1,2})\s*\/\s*(\d{1,2})\b/)?.slice(1).map(Number):null,text};
 }
+// Keep primary title readings separate from search substrings and from rules/footer
+// hints. A fuzzy search hit is not evidence that a different printed title agrees.
+export function scanTitleEvidence(g,card,read={}){
+ const canonical=String(card?.name||''),faces=[canonical,...(card?.card_faces||[]).map(c=>c.name),...canonical.split(/\s+\/\/\s+/)].map(scanNameKey).filter(Boolean);
+ const observations=Array.isArray(read.titles)&&read.titles.length?read.titles:[{text:String(read.name||''),source:'title',confidence:null}];
+ const primary=[],weak=[];
+ // Recognition already caps observations; never discard a later contradictory title.
+ for(const observation of observations){
+  const lines=String(observation.text||'').split(/\r?\n/).map(line=>line.replace(/\{[^}]*\}/g,'').replace(g==='ptcg'?/^\s*(?:BASIC|STAGE\s*[12])\s+/i:/^$/,'').replace(g==='ptcg'?/\bH\s?P\s*\d+.*$/i:/^$/,'').trim())
+   .filter(line=>line&&!/^(?:BASIC|STAGE\s*[12]|HP\s*\d+|\d+\s*HP|TRAINER|ITEM|SUPPORTER|STADIUM|INSTANT|SORCERY|LAND|SPELL CARD|TRAP CARD)\W*$/i.test(line)&&!/^evolves from\b|^©|^copyright|^illus\b|^ATK\b|^DEF\b|^\[/i.test(line)&&(faces.includes(scanNameKey(line))||!(g==='mtg'?/^(?:legendary|creature|artifact|enchantment|planeswalker|battle)\b/i:g==='ygo'?/^(?:DARK|LIGHT|EARTH|FIRE|WATER|WIND|DIVINE|LEVEL\s*\d+)$/i:/^(?:weakness|resistance|retreat|ability)$/i).test(line)));
+  const combined=scanNameKey(lines.join(' ')),strong=observation.source!=='full-hint'&&observation.source!=='orientation'&&(observation.confidence==null||observation.confidence>=70);
+  // Wrapped titles and split-card faces are one observation. Keep meaningful
+  // digits, slashes, qualifiers and suffixes; fuzzy search fragments never count.
+  if(lines.length&&faces.includes(combined)){(strong?primary:weak).push(combined);continue;}
+  for(const line of lines){
+   const clean=/^[A-Za-zÀ-ž][A-Za-zÀ-ž0-9 ,'’.:!&/–—-]*$/.test(line)&&(!/[A-Za-z]\d|\d[A-Za-z]/.test(line)||faces.includes(scanNameKey(line))),key=scanNameKey(line);if(!key||key.length<3)continue;
+   (strong&&clean?primary:weak).push(key);
+  }
+ }
+ const known=[...new Set(primary)],matches=known.filter(n=>faces.includes(n)),incompatible=known.filter(n=>!faces.includes(n));
+ return {exactMatch:matches.length>0,weakMatch:weak.some(n=>faces.includes(n)),nameConflict:incompatible.length>0,titleConflict:matches.length>0&&incompatible.length>0,observations:known.length,weakObservations:weak.length};
+}
 export function signalEvidence(g,card,read={}){
- const s=readScanSignals(g,read),conflicts=[],agrees=[],numeric=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
- for(const [field,label] of [['hp','HP'],['atk','ATK'],['def','DEF'],['level','level']])if(s[field]!==null&&numeric(card?.[field])){if(s[field]!==Number(card[field]))conflicts.push(label);else agrees.push(label);}
+ const s=readScanSignals(g,read),conflicts=[],agrees=[],header=[read.name||'',...(read.titles||[]).map(t=>t.text||'')].join('\n'),hpReadings=g==='ptcg'?[...new Set([...header.matchAll(/\bHP\s*(\d{2,3})\b|\b(\d{2,3})\s*HP\b/gi)].map(m=>Number(m[1]||m[2])))]:[],stages=g==='ptcg'?[...new Set([...header.matchAll(/\b(STAGE\s*[12]|BASIC)\b/gi)].map(m=>m[1].replace(/\s/g,'').toLowerCase()))]:[],signalConflict=hpReadings.length>1||stages.length>1,numeric=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
+ for(const [field,label] of [['hp','HP'],['atk','ATK'],['def','DEF'],['level','level']])if(s[field]!==null&&numeric(card?.[field])){if(field==='hp'&&hpReadings.length? !hpReadings.includes(Number(card[field])):s[field]!==Number(card[field]))conflicts.push(label);else agrees.push(label);}
  if(s.pt&&numeric(card?.power)&&numeric(card?.toughness)){if(s.pt[0]!==Number(card.power)||s.pt[1]!==Number(card.toughness))conflicts.push('power/toughness');else agrees.push('power/toughness');}
- if(s.stage&&card?.stage){if(s.stage!==String(card.stage).replace(/\s/g,'').toLowerCase())conflicts.push('stage');else agrees.push('stage');}
+ if(s.stage&&card?.stage){if(!stages.includes(String(card.stage).replace(/\s/g,'').toLowerCase()))conflicts.push('stage');else agrees.push('stage');}
  if(s.mana&&card?.mana_cost){if(s.mana!==String(card.mana_cost).toUpperCase())conflicts.push('mana cost');else agrees.push('mana cost');}
  const {observations,passcodes=[],identifierConflict}=scanIdentifierEvidence(g,read);
  if(g==='ptcg'){if(observations.length&&card?.set?.number&&card?.set?.total){if(!observations.some(n=>ptcgNumberMatches(card,n)))conflicts.push('collector number');else agrees.push('collector number');}}
@@ -31,10 +53,17 @@ export function signalEvidence(g,card,read={}){
  }
  const attacks=[...new Set([...(card?.attackNames||[]),...(card?.attacks||[]).map(x=>x.name)])];
  for(const name of attacks)if(scanNameKey(name).length>=5&&scanNameKey(s.text).includes(scanNameKey(name)))agrees.push('attack '+name);
- return {conflicts,agrees,score:agrees.length*20,identifierConflict};
+ const title=scanTitleEvidence(g,card,read);
+ return {conflicts,agrees,score:agrees.length*20+(title.exactMatch?30:0),identifierConflict,signalConflict,...title};
 }
 export function rankScanCandidates(g,cands,read={}){
- return cands.map(c=>{const e=signalEvidence(g,c.card,read),codes=g==='ygo'?scanIdentifierEvidence(g,read).observations:[];if(codes.length&&c.print&&!codes.includes(c.print.split('|')[0]))e.conflicts.push('set code');return {c,e};}).filter(x=>!x.e.conflicts.length).sort((a,b)=>b.e.score-a.e.score).map(({c,e})=>({...c,exact:e.identifierConflict?false:c.exact,...(e.identifierConflict?{identifierConflict:true}:{}),why:e.identifierConflict?'Conflicting printed identifiers · check printing':e.agrees.length?`${e.agrees.join(' + ')} agree · ${c.exact?'check finish and edition':'check printing'}`:c.why,signalMatches:e.agrees}));
+ const ranked=cands.map(c=>{const e=signalEvidence(g,{...c.card,name:c.card?.name||c.name},read),codes=g==='ygo'?scanIdentifierEvidence(g,read).observations:[];if(codes.length&&c.print&&!codes.includes(c.print.split('|')[0]))e.conflicts.push('set code');return {c,e};});
+ const supported=ranked.some(({e})=>e.exactMatch&&!e.conflicts.length);
+ return ranked.filter(({c,e})=>!e.conflicts.length&&(!supported||!e.nameConflict||e.exactMatch||c.identitySource==='artwork'))
+ .sort((a,b)=>b.e.score-a.e.score).map(({c,e})=>{
+  const identityConflict=e.nameConflict||c.identityConflict===true,conflict=e.identifierConflict||identityConflict||e.signalConflict;
+  return {...c,exact:conflict?false:c.exact,...(e.identifierConflict?{identifierConflict:true}:{}),...(e.signalConflict?{signalConflict:true}:{}),...(identityConflict?{identityConflict:true}:{}),why:e.signalConflict?'Conflicting printed stats · check card identity':e.identifierConflict?'Conflicting printed identifiers · check printing'+(identityConflict?' and card identity':''):identityConflict?'Conflicting title evidence · check card identity':e.agrees.length?`${e.agrees.join(' + ')} agree · ${c.exact?'check finish and edition':'check printing'}`:c.why,signalMatches:e.agrees};
+ });
 }
 // Bounded edit distance is a suggestion tool; fuzzy names alone never verify a printing.
 export function nameDistance(a,b,limit=2){a=scanNameKey(a);b=scanNameKey(b);if(Math.abs(a.length-b.length)>limit)return limit+1;let prev=Array.from({length:b.length+1},(_,i)=>i);for(let i=1;i<=a.length;i++){const row=[i];for(let j=1;j<=b.length;j++)row[j]=Math.min(row[j-1]+1,prev[j]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));if(Math.min(...row)>limit)return limit+1;prev=row;}return prev[b.length];}

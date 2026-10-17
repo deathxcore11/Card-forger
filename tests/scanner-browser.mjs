@@ -25,12 +25,113 @@ for(const ref of refs){
 const server=createServer(async(req,res)=>{try{
  const url=new URL(req.url,'http://localhost'),ref=refs.find(r=>url.pathname==='/__reference/'+r.g);
  if(ref){res.setHeader('Content-Type',ref.mime);return res.end(ref.bytes);}
+ if(url.pathname==='/__synthetic-scanner.html'){
+  res.setHeader('Content-Type','text/html');
+  return res.end('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>#scanVideo{display:block;width:378px;height:416px;object-fit:cover}</style><div id="camSlot"></div><div id="camStatus"></div><div id="scanStatus"></div>');
+ }
  const file=resolve(root,'.'+(url.pathname==='/'?'/index.html':url.pathname));if(!file.startsWith(root+'/')){res.writeHead(403);return res.end();}
  res.setHeader('Content-Type',({'.js':'text/javascript','.css':'text/css','.html':'text/html','.json':'application/json'})[extname(file)]||'application/octet-stream');res.end(await readFile(file));
 }catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const base=`http://127.0.0.1:${server.address().port}`,browser=await chromium.launch();
 await mkdir('test-results',{recursive:true});
+// Hosted CI only: real browser canvas/MediaStream/detector/automatic admission,
+// but deterministic local OCR/provider outputs. This is not a physical-phone or
+// OCR-accuracy test. It neither asks for camera permission nor writes a collection.
+async function syntheticRefinementCase(){
+ const context=await browser.newContext({...devices['Pixel 7']}),page=await context.newPage(),outsideRequests=[];
+ page.setDefaultTimeout(15000);
+ await context.route('**/*',route=>{
+  if(new URL(route.request().url()).origin===base)return route.continue();
+  outsideRequests.push(route.request().url());return route.abort('blockedbyclient');
+ });
+ try{
+  await page.goto(base+'/__synthetic-scanner.html');
+  await page.evaluate(async()=>{
+   const {S,blank}=await import('/store.js'),{registerScanner,releaseOCR,T,SCAN_LIMITS}=await import('/scancam.js'),{loadBatch,saveBatch}=await import('/scan-batch.js'),{savePrefs}=await import('/scansession.js');
+   localStorage.clear();S.state=blank();S.state.settings.game='mtg';S.ui.view='scan';
+   const idle=()=>({mode:'live',auto:true,camOn:false,busy:false,cands:[],confirm:null,read:null,status:'',catalogInitGame:'mtg'});
+   S.ui.scan=idle();saveBatch([]);savePrefs('mtg',{sounds:false,haptics:false});
+   const fixture={phase:'initial',ink:135,ocrCalls:0,adapterCalls:0,writes:0,frames:0};
+   const canvas=document.createElement('canvas');canvas.width=640;canvas.height=900;
+   const x=canvas.getContext('2d'),frames=new Map();
+   const pixels=ink=>{
+    if(frames.has(ink))return frames.get(ink);
+    const image=x.createImageData(canvas.width,canvas.height),data=image.data;
+    for(let y=0;y<canvas.height;y++)for(let xx=0;xx<canvas.width;xx++){
+     const u=(xx-120)/400,v=(y-170)/560;let rgb=[35,47,50];
+     if(u>=0&&u<1&&v>=0&&v<1){
+      rgb=[220,195,60];
+      if(u>.045&&u<.955&&v>.025&&v<.975)rgb=[205,205,205];
+      if(u>.07&&u<.93&&v>.18&&v<.60)rgb=[65+Math.floor(u*12)%3*20,75+Math.floor(v*10)%3*20,90];
+      if(u>.08&&u<.92&&((v>.05&&v<.105)||(v>.90&&v<.94)))rgb=Math.floor(u*40)%3<2?[ink,ink,ink]:[205,205,205];
+     }
+     data.set([...rgb,255],(y*canvas.width+xx)*4);
+    }
+    frames.set(ink,image);return image;
+   };
+   fixture.draw=()=>{x.putImageData(pixels(fixture.ink),0,0);fixture.frames++;};fixture.draw();
+   fixture.drawTimer=setInterval(fixture.draw,33);
+   navigator.mediaDevices.getUserMedia=async()=>{fixture.stream=canvas.captureStream(30);return fixture.stream;};
+   window.Tesseract={createWorker:async()=>({recognize:async()=>{fixture.ocrCalls++;return {data:{text:fixture.phase==='initial'?'':'Lightning Bolt\nU 0806\nMSC EN'}};},terminate:async()=>{}})};
+   const bolt={id:'synthetic-lightning-bolt',name:'Lightning Bolt',set:'msc',collector_number:'806',finishes:['nonfoil']};
+   const ctx={A:{},C:{},game:()=>S.state.settings.game,render:()=>ctx.afterRender?.(),toast(){},priceOf:()=>null,setOf:()=>bolt.set,numberOf:()=>bolt.collector_number,
+    match:async()=>{fixture.adapterCalls++;return {cands:fixture.phase==='initial'?[]:[{id:bolt.id,name:bolt.name,card:bolt,exact:true}],tried:[]};},
+    addMany:async()=>{fixture.writes++;throw Error('Synthetic camera must never save a collection');}};
+   registerScanner(ctx);window.__scanDebug=[];
+   Object.assign(fixture,{ctx,state:()=>S.ui.scan,rows:loadBatch,limits:SCAN_LIMITS,thresholds:T,
+    improve(){fixture.phase='improved';fixture.ink=35;fixture.draw();window.__scanDebug=[];},
+    async reset(){ctx.stopCamera();saveBatch([]);fixture.phase='initial';fixture.ink=135;fixture.draw();S.ui.scan=idle();window.__scanDebug=[];await ctx.A.scanStart();},
+    async stop(){ctx.stopCamera();clearInterval(fixture.drawTimer);await releaseOCR();}});
+   window.__refinement=fixture;await ctx.A.scanStart();
+  });
+  const settledFirst=()=>page.waitForFunction(()=>{const f=window.__refinement,r=f.rows();return r.length===1&&r[0].status==='unresolved'&&!f.state().busy;},null,{timeout:20000});
+  const liveTicks=async(n=12)=>{await page.evaluate(()=>{window.__scanDebug=[];});await page.waitForFunction(n=>window.__scanDebug.length>=n,n,{timeout:10000});};
+  await settledFirst();
+  const initial=await page.evaluate(()=>{const f=window.__refinement,r=f.rows()[0];f.first=r;return {id:r.id,revision:r.captureRevision,intent:r.captureIntent,original:!!r.originalShot,refinements:r.refinementCount,quality:window.__scanDebug.at(-1),writes:f.writes};});
+  assert.equal(initial.intent,'automatic');assert(initial.original);assert.equal(initial.refinements,0);assert.equal(initial.writes,0);
+  await liveTicks();
+  assert(await page.evaluate(()=>{const f=window.__refinement,r=f.rows();return r.length===1&&r[0].id===f.first.id&&r[0].captureRevision===f.first.captureRevision&&!r[0].refinementShot;}),'unchanged live frames cannot refine or make another row');
+  await page.evaluate(()=>window.__refinement.improve());
+  await page.waitForFunction(()=>{const f=window.__refinement,r=f.rows();return r.length===1&&r[0].id===f.first.id&&r[0].captureRevision!==f.first.captureRevision&&r[0].status==='review'&&!f.state().busy;},null,{timeout:15000});
+  const refined=await page.evaluate(()=>{
+   const f=window.__refinement,r=f.rows()[0];f.refined=r;
+   return {id:r.id,revision:r.captureRevision,status:r.status,refinements:r.refinementCount,originalRetained:r.originalShot===f.first.originalShot,
+    differentSupplement:!!r.refinementShot&&r.refinementShot!==r.originalShot,initialEvidenceRetained:JSON.stringify(r.initialEvidence?.read)===JSON.stringify(f.first.read)&&JSON.stringify(r.initialEvidence?.cands)===JSON.stringify(f.first.cands),
+    printingVerified:r.printingVerified,finish:r.finish,candidates:r.cands.length,budget:r.budget,writes:f.writes,quality:window.__scanDebug.at(-1)};
+  });
+  assert.equal(refined.id,initial.id);assert.notEqual(refined.revision,initial.revision);assert.equal(refined.refinements,1);
+  assert(refined.originalRetained&&refined.differentSupplement&&refined.initialEvidenceRetained,'first original and first evidence survive as a distinct clearer frame is appended');
+  assert(refined.candidates>0);assert.equal(refined.status,'review');assert.equal(refined.printingVerified,false);assert.equal(refined.finish,'');assert.equal(refined.writes,0);
+  assert(refined.budget.ocrCalls<=18&&refined.budget.adapterRounds<=3,'initial and supplemental recognition share one finite capture budget');
+  await liveTicks();
+  assert(await page.evaluate(()=>{const f=window.__refinement,r=f.rows();return r.length===1&&r[0].captureRevision===f.refined.captureRevision&&r[0].refinementCount===1;}),'the held clearer frame cannot trigger another supplement or another row');
+  await page.waitForFunction(()=>Date.now()-window.__refinement.state().lastCaptureAt>=600);
+  await page.evaluate(()=>window.__refinement.ctx.A.scanCapture());
+  await page.waitForFunction(()=>{const f=window.__refinement;return f.rows().length===2&&!f.state().busy&&f.rows().every(r=>!['captured','reading'].includes(r.status));});
+  const manual=await page.evaluate(()=>{const f=window.__refinement,r=f.rows();return {ids:r.map(x=>x.id),intents:r.map(x=>x.captureIntent),firstRevision:r[0].captureRevision,writes:f.writes};});
+  assert.notEqual(manual.ids[0],manual.ids[1]);assert.deepEqual(manual.intents,['automatic','manual']);assert.equal(manual.firstRevision,refined.revision);assert.equal(manual.writes,0);
+
+  // A separate fresh automatic capture tests review protection before it has
+  // consumed the one-refinement allowance; otherwise that test would be vacuous.
+  await page.evaluate(()=>window.__refinement.reset());await settledFirst();
+  await page.evaluate(()=>{
+   const f=window.__refinement;f.touched=f.rows()[0];f.beforeReviewQuality=window.__scanDebug.at(-1);
+   f.ctx.A.scanBatchReview({dataset:{id:f.touched.id}});f.ctx.A.scanDismiss();f.ocrAtReview=f.ocrCalls;f.improve();
+  });
+  await liveTicks(16);
+  const touched=await page.evaluate(()=>{
+   const f=window.__refinement,r=f.rows();return {rows:r.length,id:r[0]?.id,sameRevision:r[0]?.captureRevision===f.touched.captureRevision,reviewTouched:r[0]?.reviewTouched,
+    refinements:r[0]?.refinementCount,supplement:!!r[0]?.refinementShot,extraOCR:f.ocrCalls-f.ocrAtReview,quality:window.__scanDebug.at(-1),beforeQuality:f.beforeReviewQuality,writes:f.writes};
+  });
+  assert.equal(touched.rows,1);assert(touched.sameRevision&&touched.reviewTouched);assert.equal(touched.refinements,0);assert.equal(touched.supplement,false);assert.equal(touched.extraOCR,0);assert.equal(touched.writes,0);
+  assert(touched.quality.sharp>=Math.max(150,touched.beforeQuality.sharp*1.35,touched.beforeQuality.sharp+75),'review test really presents materially clearer pixels, rather than relying on unchanged-frame rejection');
+  assert.deepEqual(outsideRequests,[],'synthetic refinement uses no external OCR/provider/image request');
+  console.log(`PASS: synthetic live automatic capture → unresolved → one same-ID clearer-frame revision → review only; unchanged frames and reviewed rows cannot refine; deliberate manual second copy remains distinct. ${JSON.stringify({initial,refined,manual,touched})}`);
+ }finally{
+  await page.evaluate(()=>window.__refinement?.stop()).catch(()=>{});await context.close();
+ }
+}
 try{
  for(const ref of refs){
   const context=await browser.newContext({...devices['Pixel 7']}),page=await context.newPage();page.setDefaultTimeout(15000);
@@ -175,7 +276,8 @@ try{
    await page.waitForFunction(()=>document.querySelector('#scanVideo')?.videoWidth>0);
    await page.evaluate(()=>{const r=document.querySelector('#scanVideo').getBoundingClientRect();window.__cameraInitialBox={width:r.width,height:r.height};});
    await page.waitForFunction(()=>window.__scannerTestRead.state().boundaryReady);
-   assert.equal(await page.locator('#camGuide,.cam-guide,.cam-wrap polygon').count(),0,'internal boundary detection never overlays the feed');
+   assert.equal(await page.locator('.scan-frame-hint').count(),1,'one calm fixed guide is present');assert.equal(await page.locator('#camGuide,.cam-wrap polygon').count(),0,'detector geometry never paints a tracking outline');assert.equal(await page.locator('.scan-frame-hint').evaluate(el=>getComputedStyle(el).pointerEvents),'none');
+   const fixedGuide=await page.locator('.scan-frame-hint').boundingBox();await page.waitForTimeout(320);assert.deepEqual(await page.locator('.scan-frame-hint').boundingBox(),fixedGuide,'scene detection never jitters or reshapes the fixed guide');
    const priorCaptureIds=await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js');return loadBatch().map(x=>x.id);});
    await page.getByRole('button',{name:'Capture card now',exact:true}).click();
    const captureHandle=await page.waitForFunction(prior=>window.__scannerTestRead.loadBatch().find(x=>!prior.includes(x.id))?.id,priorCaptureIds,{timeout:15000});
@@ -213,7 +315,7 @@ try{
    assert.equal(await page.locator('#toast .toast-undo[data-act="undo"]').count(),1,'the actual scan-save toast retains its real Undo action');
    const originalToast=await page.evaluate(()=>{const t=document.querySelector('#toast'),before={classes:t.className,html:t.innerHTML};t.classList.add('show','has-action');return before;});
    try{
-    for(const viewport of [{width:320,height:568},{width:700,height:500},{width:844,height:390},{width:1024,height:600}]){
+    for(const viewport of [{width:320,height:568},{width:320,height:844},{width:390,height:844},{width:768,height:1024},{width:1024,height:768},{width:1440,height:900},{width:2560,height:1440},{width:700,height:500},{width:844,height:390},{width:1024,height:600}]){
      await page.setViewportSize(viewport);await page.evaluate(()=>window.scrollTo(0,0));
      await page.evaluate(async()=>{await Promise.all(document.querySelector('#toast').getAnimations().map(a=>a.finished.catch(()=>{})));});
      const layout=await page.evaluate(()=>{
@@ -221,15 +323,19 @@ try{
       const describe=n=>n?{tag:n.tagName,id:n.id,classes:n.className}:null;
       const hit=n=>{const r=box(n),target=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {clear:target===n||n.contains(target),target:describe(target)};};
       const nav=document.querySelector('.bottom-nav'),tray=box(document.querySelector('.scan-batch-tray')),camera=box(document.querySelector('.cam-wrap.immersive'));
+      const statusNode=document.querySelector('#camStatus'),priorStatus=statusNode.innerHTML;if(innerWidth===320&&innerHeight>700)statusNode.replaceChildren(statusNode.querySelector('.cam-dot').cloneNode(true),document.createTextNode('Saved for review. Use Scan again to retry, or move to the next card'));
+      const guide=document.querySelector('.scan-frame-hint'),guideCss=getComputedStyle(guide),guideBox=box(guide),railBox=box(document.querySelector('.cam-rail')),statusBox=box(statusNode);statusNode.innerHTML=priorStatus;
+      const beforeVideo=box(document.querySelector('#scanVideo')),oldDisplay=guide.style.display;guide.style.display='none';const withoutGuide=box(document.querySelector('#scanVideo'));guide.style.display=oldDisplay;
       const shutter=document.querySelector('#scanCaptureBtn'),toast=document.querySelector('#toast'),undo=toast.querySelector('.toast-undo[data-act="undo"]');
       const clearBottom=getComputedStyle(nav).display==='none'?innerHeight:nav.getBoundingClientRect().top,t=box(toast),s=box(shutter),u=undo&&box(undo),css=getComputedStyle(toast);
       const disjoint=(a,b)=>a.right<=b.left||a.left>=b.right||a.bottom<=b.top||a.top>=b.bottom;
       const inView=r=>!!r&&r.width>0&&r.height>0&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=clearBottom;
       const shutterHit=hit(shutter),undoHit=undo?hit(undo):{clear:false,target:null};
-      return {tray,camera,shutter:s,toast:t,undo:u,clearBottom,shutterHit,undoHit,shutterClear:shutterHit.clear,overflow:document.documentElement.scrollWidth>innerWidth,
+      return {guideVisible:guideCss.display!=='none',guideBox,guideClear:guideCss.pointerEvents==='none'&&guideCss.animationName==='none'&&guideCss.transitionDuration==='0s',guideControlsClear:[s,railBox,statusBox].every(r=>disjoint(guideBox,r)),guideInside:guideBox.left>=camera.left&&guideBox.right<=camera.right&&guideBox.top>=camera.top&&guideBox.bottom<=camera.bottom,videoUnchanged:JSON.stringify(beforeVideo)===JSON.stringify(withoutGuide),tray,camera,shutter:s,toast:t,undo:u,clearBottom,shutterHit,undoHit,shutterClear:shutterHit.clear,overflow:document.documentElement.scrollWidth>innerWidth,
        toastActive:toast.classList.contains('show')&&toast.classList.contains('has-action')&&css.display!=='none'&&css.visibility==='visible'&&Number(css.opacity)>0,
        toastOutside:[camera,tray,s].every(r=>disjoint(t,r)),controlsInView:inView(t)&&inView(s)&&inView(u),undoEnabled:!!undo&&!undo.disabled};
      });
+     assert(layout.videoUnchanged,'decorative guide cannot resize or crop the video');assert(layout.guideClear,'guide is noninteractive, nonanimated and never tracks geometry');if(viewport.height<=700)assert(!layout.guideVisible,'decorative guide yields on short/folded views');else assert(layout.guideVisible&&layout.guideInside&&layout.guideControlsClear,'generous guide stays clear of title/footer control rows');
      assert(layout.tray.top>=0&&layout.tray.bottom<=layout.clearBottom,`real shell tray clears navigation at ${JSON.stringify(viewport)}: ${JSON.stringify(layout)}`);
      assert(layout.camera.height>=100&&layout.shutterClear&&!layout.overflow,`real shell keeps camera and capture usable at ${JSON.stringify(viewport)}: ${JSON.stringify(layout)}`);
      assert(layout.toastActive&&layout.toastOutside&&layout.controlsInView&&layout.undoEnabled&&layout.undoHit.clear,`active Undo toast clears camera/tray/shutter and both controls remain reachable at ${JSON.stringify(viewport)}: ${JSON.stringify(layout)}`);
@@ -255,4 +361,5 @@ try{
    await page.screenshot({path:`test-results/scanner-${ref.g}-failure.png`,fullPage:true});throw e;
   }finally{await context.close();}
  }
+ await syntheticRefinementCase();
 }finally{await browser.close();await new Promise(r=>server.close(r));}

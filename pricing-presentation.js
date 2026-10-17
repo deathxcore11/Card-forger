@@ -1,6 +1,6 @@
 // Presentation only: keep provider/condition resolution in the existing pricing modules.
 import {esc,usd} from './ui.js';
-import {productIdOf,tcgFallback,myPrice} from './mtg-tcgprice.js';
+import {tcgFallback,myPrice} from './mtg-tcgprice.js';
 import {referenceQuote,referenceLabel} from './price-reference.js';
 import {editionPrice} from './ygo-prices.js';
 
@@ -107,10 +107,18 @@ const vendorKey=(_name,url)=>{
  for(const [key,domain] of [['tcgplayer','tcgplayer.com'],['cardmarket','cardmarket.com'],['cardhoarder','cardhoarder.com'],['cardkingdom','cardkingdom.com'],['ebay','ebay.com']])if(host===domain||host.endsWith('.'+domain))return key;
  return host==='ygoprodeck.com'||host.endsWith('.ygoprodeck.com')?'research':'other:'+host;
 };
-const productURL=id=>/^\d+$/.test(String(id||''))?`https://www.tcgplayer.com/product/${id}`:'';
+const productURL=id=>/^[1-9]\d*$/.test(String(id||''))&&Number.isSafeInteger(Number(id))?`https://www.tcgplayer.com/product/${id}`:'';
+// Retailer links authenticate their host and product path before using a legacy URL ID.
+// Never promote an arbitrary URL's /product/N text into a trusted exact listing.
+const magicSellerProduct=(c,finish)=>{
+ if(finish==='etched')return c.tcgplayer_etched_id;
+ if(c.tcgplayer_id)return c.tcgplayer_id;
+ const url=safeURL(c.purchase_uris?.tcgplayer);
+ return url&&vendorKey('',url)==='tcgplayer'?new URL(url).pathname.match(/^\/product\/([1-9]\d*)(?:\/|$)/)?.[1]:null;
+};
 const searchURL=(game,c)=>`https://www.tcgplayer.com/search/${{mtg:'magic',ptcg:'pokemon',ygo:'yugioh'}[game]}/product?q=${encodeURIComponent([c.name,c.collector_number||c.set?.number||''].filter(Boolean).join(' '))}`;
 export function sellerModels(game,c,ctx={},links=[]){
- const finish=selectedFinish(game,c,ctx.priceFinish||ctx.finish),q=quoteForContext(game,c,ctx);
+ const wanted=ctx.priceFinish||ctx.finish||c.setContext?.variantKey,finish=selectedFinish(game,c,wanted),q=quoteForContext(game,c,ctx);
  const candidates=[...links];if(!candidates.some(([n,u])=>vendorKey(n,u)==='tcgplayer'))candidates.unshift(['TCGplayer',searchURL(game,c)]);
  const seen=new Set(),rows=[];
  for(const [name,rawURL] of candidates){
@@ -118,7 +126,11 @@ export function sellerModels(game,c,ctx={},links=[]){
   let url=safeURL(rawURL);if(!url)continue;seen.add(key);
   let value=null,currency='USD',kind='market',scope='',direct=false,source='',observedAt='',sourceUpdatedAt=q?.sourceUpdatedAt,checkedAt=q?.checkedAt;
   if(key==='tcgplayer'){
-   const pid=!q?.selectionVerified?null:game==='mtg'?(finish==='etched'?c.tcgplayer_etched_id:productIdOf(c,finish)):game==='ptcg'?q?.variant?.productId:q?.printing?.productId;
+   const supported=!wanted||supportedFinishes(game,c).includes(wanted),variants=c.variants||[],contextVariant=c.setContext?.variantKey;
+   // A projected invalid/ambiguous finish must not silently become Reference/Normal.
+   // A reference price is not a product identity when multiple variants share it.
+   const uniqueVariant=game!=='ptcg'||!!q?.variant&&!c.setContext?.printingAmbiguous&&(!contextVariant||contextVariant===finish)&&variants.filter(v=>v.key===q.variant.key).length===1&&(finish!=='reference'||variants.filter(v=>priceAmount(v.usd??v.market)!==null&&priceAmount(v.usd??v.market)===q.value).length===1);
+   const pid=!q?.selectionVerified||!supported||!uniqueVariant?null:game==='mtg'?magicSellerProduct(c,finish):game==='ptcg'?q.variant.productId:q?.printing?.productId;
    // A finish change must not retain another variant's product link.
    url=productURL(pid)||searchURL(game,c);direct=!!productURL(pid);
    if(direct){value=q?.value??null;kind=q?.kind||'market';scope=q?.label||'';source=q?.source||'';observedAt=q?.observedAt||'';}
@@ -156,8 +168,9 @@ export function compactPriceSummary(game,c,ctx={},lastObserved=null){
  if(value===null&&q?.selectionVerified){const mine=myPrice(c,game==='mtg'?finish:'nonfoil',ctx);if(mine!==null){value=mine;note='Your private value · not a seller quote';}}
  if(q?.observedAt&&q.value!==null)note='Last observed '+dateText(q.observedAt);
  if(q?.value!==null&&quoteIsStale(q))note+=' · stale';
+ const buy=sellerModels(game,c,ctx).find(r=>r.key==='tcgplayer');
  const edit=game==='mtg'?`data-act="myPriceSet" data-finish="${esc(finish)}"`:`data-act="tMyPriceSet" data-game="${esc(game)}" data-id="${esc(c.id)}"`;
- return `<div class="card-price-summary"><div class="card-price-reference"><strong>${value===null?c.brief?'Loading price…':'No quote yet':currencyValue(value,currency)}</strong><span>${esc(value===null?'Price unknown':note)}${value!==null?' · '+currency:''}</span><small>${esc(label)}</small></div><div class="card-price-actions"><button class="btn ghost small" data-act="cardPriceJump" data-target="history" aria-label="View price history">Prices</button><button class="btn small" data-act="cardPriceJump" data-target="sellers" aria-label="View sellers for selected version">Buy <span aria-hidden="true">↓</span></button><button class="link small personal-price-edit" ${edit}>Your price</button></div></div>`;
+ return `<div class="card-price-summary"><div class="card-price-reference"><strong>${value===null?c.brief?'Loading price…':'No quote yet':currencyValue(value,currency)}</strong><span>${esc(value===null?'Price unknown':note)}${value!==null?' · '+currency:''}</span><small>${esc(label)}</small></div><div class="card-price-actions"><button class="btn ghost small" data-act="cardPriceJump" data-target="history" aria-label="View price history">Prices</button><a class="btn small card-buy-link" href="${esc(buy.url)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" aria-label="${buy.direct?'Buy on TCGplayer · selected product listing':'Search TCGplayer · exact product not verified'} · opens in a new tab" title="${buy.direct?'Confirm finish, edition, condition and price on TCGplayer':'Search TCGplayer and choose your printing and finish'}"><span>${buy.direct?'Buy':'Search TCGplayer'}</span><span aria-hidden="true">↗</span></a><button class="link small personal-price-edit" ${edit}>Your price</button></div></div>`;
 }
 export const detailIdentity=(ctx,shown=null)=>['card','tcard','buy','market'].includes(ctx?.type)?JSON.stringify([ctx.type,ctx.game||'mtg',ctx.id||ctx.card?.id||ctx.name||'',ctx.print?.id||ctx.card?.id||shown?.id||'',ctx.priceEdition||ctx.edition||'',ctx.setId||ctx.card?.setContext?.releaseId||shown?.setContext?.releaseId||'',ctx.priceYgoEdition||ctx.ygoEdition||'',ctx.setReleaseUnverified?'unverified':'']):'';
 export const detailTabs=(tab,items)=>`<nav class="cs-tabs" role="tablist" aria-label="Card details">${items.map(([id,label])=>`<button id="card-tab-${esc(id)}" role="tab" aria-controls="card-panel-${esc(id)}" aria-selected="${id===tab}" tabindex="${id===tab?'0':'-1'}" class="${id===tab?'on':''}" data-act="cardTab" data-tab="${esc(id)}">${label}</button>`).join('')}</nav>`;

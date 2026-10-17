@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import {cheapestQuery} from '../mtg-cheap.js';
 import {
   GAMES, PAIRS, METHODS, BASE_ROWS, WIDTHS, EVIDENCE, SEARCH, SET_IDS, CARDS, SWIPE_BLOCKED_SELECTOR, captureNavigation,
-  sourceHash, targetHash, finishFor, validateGameSwitchFixtures, makeScannerLifecycleFixture, makeManualReviewFixture, COLLISION_ID,
+  sourceHash, targetHash, finishFor, carouselPages, validateGameSwitchFixtures, makeScannerLifecycleFixture, makeManualReviewFixture, COLLISION_ID,
   startServer, openGameSwitchApp, frames, savedSnapshot, searchSnapshots, historySnapshot, saveReport,
 } from './game-switch-fixtures.mjs';
 
@@ -217,14 +217,19 @@ async function historyCase(app, pair, method) {
   return {sameHash: original, reloadTraversal: true};
 }
 async function carouselCase(app, game) {
-  const initial = await historySnapshot(app.page), before = await savedSnapshot(app.page), indicator = app.page.locator('[data-home-community] .community-position');
-  const positions = [];
-  for (const dx of [-120, 120, 120, -120]) {
-    const prior = await indicator.innerText(); positions.push(prior);
+  const initial = await historySnapshot(app.page), before = await savedSnapshot(app.page), expected=carouselPages(game);
+  const snapshot=()=>app.page.locator(`[data-home-community="${game}"]`).evaluate(node=>({position:node.querySelector('.community-position').textContent,ids:[...node.querySelectorAll('.community-stage [data-slide-id]')].map(row=>row.dataset.slideId)}));
+  const positions = [await snapshot()];assert.deepEqual(positions[0],expected[0],'The first page contains the exact first three validated stories');
+  // Forward, backward, backward boundary wrap, forward boundary wrap.
+  for (const [dx,index] of [[-120,1],[120,0],[120,1],[-120,0]]) {
+    const prior=positions.at(-1);
     await trustedSwipe(app, dx, {carousel: true}); await frames(app.page);
-    assert.notEqual(await indicator.innerText(), prior, 'Trusted touch changes the carousel slide, including boundary wrap');
+    const current=await snapshot();positions.push(current);
+    assert.notEqual(current.position,prior.position,'Trusted touch changes the editorial page, including boundary wrap');
+    assert.deepEqual(current,expected[index],'The exact page range and story/source IDs follow the trusted swipe');
     const state = await historySnapshot(app.page);
     assert.equal(state.game, game); assert.equal(state.hash, '#home'); assert.equal(state.length, initial.length); assert.equal(state.pushes, initial.pushes);
+    assert.equal(await savedSnapshot(app.page), before,'Each carousel gesture preserves all saved game data');
     await delay(460); // Next independent input is outside carousel click suppression.
   }
   assert.equal(await savedSnapshot(app.page), before); return {positions};
@@ -512,7 +517,7 @@ try {
     const pair = PAIRS[i % PAIRS.length];
     for (const method of METHODS) await run(`responsive-${row.id}-${pair.from}-${pair.to}-${method}-${width}`, {game: pair.from, width}, app => semanticCase(app, pair, row, method));
   }
-  for (const game of GAMES) await run(`carousel-isolation-${game}`, {game}, app => carouselCase(app, game));
+  for (const game of GAMES) await run(`carousel-isolation-${game}`, {game,carouselNews:true}, app => carouselCase(app, game));
 } catch (error) {failures.push({label: 'suite', phase: 'setup/run', error});}
 finally {
   try {await browser?.close();} catch (error) {failures.push({label: 'suite', phase: 'browser cleanup', error});}

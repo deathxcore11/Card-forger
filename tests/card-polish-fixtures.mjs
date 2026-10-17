@@ -218,6 +218,7 @@ export async function openApp(browser,base,{game='ygo',hash='#sets',width=390,he
   if(url.origin===base){
    if(url.pathname==='/catalog.json')return fulfill({cards:[],snapshot_date:'2000-01-01'});
    if(url.pathname==='/api/community')return fulfill({game:url.searchParams.get('game'),status:'unavailable',items:[],fetchedAt:ISO});
+   if(url.pathname==='/api/prices/yugioh-set')return fulfill({name:url.searchParams.get('name'),code:url.searchParams.get('code'),status:'ready',source:MP25_PRICE.source,updatedAt:ISO,products:url.searchParams.get('name')===MP25.name?MP25_PRICE.printings.map(p=>({...p,name:'Ancient Gear Dark Golem'})):[]});
    if(url.pathname==='/api/prices/yugioh'&&url.searchParams.get('id')===MP25_PRICE.cardId)return fulfill(MP25_PRICE);
    if(url.pathname.startsWith('/api/prices/'))return fulfill({points:[],series:[],cards:[],products:[],variants:[],prices:{},partial:false});
    if(url.pathname.startsWith('/api/meta/'))return fulfill({events:[],decks:[],archetypes:[],top:[]});

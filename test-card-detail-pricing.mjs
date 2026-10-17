@@ -245,7 +245,7 @@ const {cardSheet,buySheet}=await import('./views.js');const {tcgCardSheet}=await
 for(const [game,card] of [['mtg',S.catalog.fixture],['ptcg',{...pk,stats:[]}],['ygo',{...ygo,stats:[]}]]){
  html=game==='mtg'?cardSheet(card,{tab:'prices'}):tcgCardSheet(card,{tab:'prices'});
  assert.match(html,/class="cs-banner/);assert.match(html,/class="cs-card"/);assert.match(html,/data-act="zoomCard"/);
- assert.match(html,/data-act="cardPriceJump" data-target="history"/);assert.match(html,/data-act="cardPriceJump" data-target="sellers"/);
+ assert.match(html,/data-act="cardPriceJump" data-target="history"/);assert.match(html,/<a class="btn small card-buy-link" href="https:\/\/www\.tcgplayer\.com\//);
  assert.match(html,/class="vendor-row"/);assert.match(html,/role="tabpanel"/);assert.doesNotMatch(html,/Tap a price to buy|Press and hold it|class="price-pill/);
 }
 html=buySheet({name:mtg.name,print:mtg,finish:'nonfoil',type:'buy'});assert.match(html,/class="vendor-row"/);assert.match(html,/\$12.50/);assert.doesNotMatch(html,/This exact printing<\/h3>|Search by card name<\/h3>/);

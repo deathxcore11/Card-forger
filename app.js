@@ -4991,7 +4991,8 @@ async function mtgScanByText(phrases, full = "") {
     .slice(0, 5);
 }
 const scanKey = (x) => String(x || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-async function mtgScanMatch(read, lang, manual = false, prefs = {}) {
+async function mtgScanMatch(read, lang, manual = false, prefs = {}, control = null) {
+  const lookup=(key,fn)=>Promise.resolve().then(()=>control?control.run(JSON.stringify(["mtg",...key]),fn):fn()).catch(e=>{if(control&&/^SCAN_/.test(e.code||""))throw e;return null;});
   const out = [],
     seen = new Set(),
     tried = [],
@@ -5000,12 +5001,14 @@ async function mtgScanMatch(read, lang, manual = false, prefs = {}) {
       seen.add(c.id);
       out.push(mtgScanCand(c, why, exact));
     };
+  let limited=false;
+  try {
   // The set code + collector number at the bottom identify the exact printing.
   const at = manual ? null : mtgCollector(`${read.code}\n${read.full}`);
   if (at) {
     tried.push(`${at.set.toUpperCase()} #${at.number}`);
     for (const l of lang.includes("jpn") ? ["ja", ""] : [""]) {
-      const c = await api(`/cards/${encodeURIComponent(at.set)}/${encodeURIComponent(at.number)}${l ? "/" + l : ""}`).catch(() => null);
+      const c = await lookup(["printing",at.set,at.number,l],()=>api(`/cards/${encodeURIComponent(at.set)}/${encodeURIComponent(at.number)}${l ? "/" + l : ""}`));
       if (c?.name) {
         push(c, `Set ${at.set.toUpperCase()} #${at.number}`, true);
         break;
@@ -5019,17 +5022,18 @@ async function mtgScanMatch(read, lang, manual = false, prefs = {}) {
     if (out.some((o) => key(o.name).includes(key(n)))) continue;
     tried.push(n);
     // Lock set: look the name up in that set first.
-    const locked = prefs.lockSet ? await api("/cards/named?" + new URLSearchParams({ fuzzy: n, set: prefs.lockSet })).catch(() => null) : null;
-    let c = locked || (await api("/cards/named?" + new URLSearchParams({ fuzzy: n })).catch(() => null));
+    const locked = prefs.lockSet ? await lookup(["name",n,prefs.lockSet],()=>api("/cards/named?" + new URLSearchParams({ fuzzy: n, set: prefs.lockSet }))) : null;
+    let c = locked || (await lookup(["name",n],()=>api("/cards/named?" + new URLSearchParams({ fuzzy: n }))));
     // Ignore promos: prefer the regular printing of the same card.
     if (c && prefs.ignorePromos && (c.promo || c.set_type === "promo")) {
-      const r = await api("/cards/search?" + new URLSearchParams({ q: `!"${c.name}" -is:promo -st:promo`, order: "released", dir: "desc" })).catch(() => null);
+      const r = await lookup(["regular",c.name],()=>api("/cards/search?" + new URLSearchParams({ q: `!"${c.name}" -is:promo -st:promo`, order: "released", dir: "desc" })));
       if (r?.data?.[0]) c = r.data[0];
     }
     // A short fragment ("wel") is not identification: closest-spelling hits need a real word.
     if (c?.name && (key(c.name) === key(n) || manual || key(n).length >= 5)) push(c, key(c.name) === key(n) ? "Name match" : `Closest name to “${n}”`, false);
   }
-  return { cands: out, tried };
+  }catch(e){if(!control||e.code!=="SCAN_BUDGET"||!out.length)throw e;limited=true;}
+  return { cands: limited?out.map(c=>({...c,exact:false})):out, tried,...(limited?{budgetLimited:true}:{}) };
 }
 async function mtgScanAdd(cand) {
   const c = cand.card;
@@ -5099,7 +5103,7 @@ const scanCtx = {
   render: () => render(),
   toast: (m) => toast(m),
   game: () => T.game(),
-  match: (g, read, lang, manual, status, prefs = {}) => (g === "mtg" ? mtgScanMatch(read, lang, manual, prefs) : tcgCtx.scanMatch(read, lang, manual, status, g)),
+  match: (g, read, lang, manual, status, prefs = {}, control = null) => (g === "mtg" ? mtgScanMatch(read, lang, manual, prefs, control) : tcgCtx.scanMatch(read, lang, manual, status, g, control)),
   add: (g, c) => (g === "mtg" ? mtgScanAdd(c) : tcgCtx.scanAdd(c)),
   byText: (g, full) => (g === "mtg" ? mtgScanByText(textPhrases(full, 12), full) : tcgCtx.scanByText?.(g, full) ?? []),
   printings: (g, cand) => (g === "mtg" ? mtgScanPrintings(cand) : tcgCtx.scanPrintings?.(g, cand) ?? []),

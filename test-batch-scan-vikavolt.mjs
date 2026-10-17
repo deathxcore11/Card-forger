@@ -15,7 +15,13 @@ assert.equal(textVerifiedMatch('ptcg',{name:wrong.name,card:wrong,exact:true},re
 const rawRead={name:'mat texture was outside the card title',code:'E) 101/264 * = Wok pathos\n©2021 Pokémon / Nintendo / Creatures / GAME FREAK',full:'w150 4%\nSEES Vikavolt\noe\nEvolves from Charjabug\nBite\nElectro Blaster\nweakness resistance retreat'};
 const hints=fullCardNameHints('ptcg',rawRead.full);assert(hints.includes('SEES Vikavolt'));rawRead.name=[...hints,rawRead.name].join('\n');
 const pack=compileCatalog(JSON.parse(gunzipSync(readFileSync('scanidx/ptcg-catalog-v1.json.gz'))));
-const found=lookupCatalog(pack,rawRead);assert.equal(found.cands[0]?.id,'swsh8-101','layout-anchored full read plus independent collector code recovers Fusion Strike printing');assert.equal(textVerifiedMatch('ptcg',found.cands[0],rawRead),true);assert(found.cands.every(c=>c.card.set.total!==84));
+const found=lookupCatalog(pack,rawRead);assert.equal(found.cands[0]?.id,'swsh8-101','layout-anchored full read plus independent collector code recovers Fusion Strike printing');assert.equal(textVerifiedMatch('ptcg',found.cands[0],rawRead),false,'mixed background and fuzzy title recover a review candidate, not an exact printing');assert(found.cands.every(c=>c.card.set.total!==84));
+// Conservative contract correction: exact title provenance, not a search-word
+// expansion, is required in addition to the independent printed identifier.
+const exactTitle={...rawRead,titles:[{text:'Vikavolt HP150',source:'title',confidence:95},{text:'SEES Vikavolt',source:'full-hint',confidence:null},{text:'mat texture was outside the card title',source:'full-hint',confidence:null}]};
+const exactCandidate=lookupCatalog(pack,exactTitle).cands[0];assert.equal(exactCandidate.id,'swsh8-101');
+assert.equal(textVerifiedMatch('ptcg',exactCandidate,exactTitle),true,'exact primary title plus independent101/264 survives weak full-frame hints');
+for(const other of ['Charjabug','Vikavolt V'])assert.equal(textVerifiedMatch('ptcg',exactCandidate,{...exactTitle,titles:[...exactTitle.titles,{text:other,source:'title',confidence:95}]}),false,'strong competing primary title keeps printing review-only');
 const missingCode={...rawRead,code:'',full:'SEES Vikavolt\noe\nEvolves from Charjabug\nElectro Blaster'};assert(lookupCatalog(pack,missingCode).cands.every(c=>!textVerifiedMatch('ptcg',c,missingCode)),'title/attack alone cannot prove set or variation');
-globalThis.localStorage={getItem:()=>null};S.state=blank();S.ui.scan={camOn:true};assert.doesNotMatch(scanView('ptcg','Pokémon'),/camGuide|cam-guide|<polygon/,'live camera has no visible outline');
-console.log('PASS: Vikavolt HP150101/264 rejects HP160026/84; raw-photo OCR layout hint recovers swsh8-101 without private image or invented exactness; no live outline.');
+globalThis.localStorage={getItem:()=>null};S.state=blank();S.ui.scan={camOn:true};assert.match(scanView('ptcg','Pokémon'),/class="scan-frame-hint" aria-hidden="true"/,'live camera has a static decorative guide');assert.doesNotMatch(scanView('ptcg','Pokémon'),/id="camGuide"|<polygon/,'no detector-tracking outline is rendered');
+console.log('PASS: Vikavolt HP150101/264 rejects HP160026/84; raw-photo OCR layout hint recovers swsh8-101 review-only; independent exact title+footer verifies, strong title conflict rejects; static guidance never renders detector polygons.');
