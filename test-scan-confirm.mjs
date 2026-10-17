@@ -4,6 +4,7 @@ import {textVerifiedMatch,scanConfirmation,scanView,registerScanner,recoverScanC
 import {S,blank} from './store.js';
 import {savePrefs,loadPrefs,loadSession,DEFAULT_PREFS} from './scansession.js';
 import {registerTcg,SOURCES,cache} from './tcg.js';
+globalThis.fetch=async url=>{throw Error('Unexpected external request in scanner confirmation fixture: '+String(url));};
 globalThis.localStorage={m:new Map(),getItem(k){return this.m.get(k)??null;},setItem(k,v){this.m.set(k,v)}};
 globalThis.document={getElementById:()=>null,addEventListener(){}};
 const names=['Kyogre','Cosmog','Reshiram'];
@@ -47,7 +48,7 @@ for(const g of ['mtg','ptcg','ygo']){
 }
 // A real lookup returning a wrong total and an ex suffix cannot become an exact Pokémon match.
 S.state=blank();S.state.settings.game='ptcg';
-const cards=[{id:'correct',name:'Kyogre',game:'ptcg',set:{number:'3',total:25}}, {id:'wrong-total',name:'Kyogre',game:'ptcg',set:{number:'3',total:197}}, {id:'wrong-suffix',name:'Kyogre ex',game:'ptcg',set:{number:'3',total:25}}].map(c=>({...c,variantSchema:9,fetchedAt:new Date().toISOString(),variants:[],prices:{},image:`https://assets.tcgdex.net/en/test/${c.id}/high.webp`}));
+const cards=[{id:'correct',name:'Kyogre',game:'ptcg',set:{number:'3',total:25}}, {id:'wrong-total',name:'Kyogre',game:'ptcg',set:{number:'3',total:197}}, {id:'wrong-suffix',name:'Kyogre ex',game:'ptcg',set:{number:'3',total:25}}].map(c=>({...c,variantSchema:9,priceFallbackSchema:3,fetchedAt:new Date().toISOString(),variants:[],prices:{},image:`https://assets.tcgdex.net/en/test/${c.id}/high.webp`}));
 for(const c of cards)cache.ptcg[c.id]=c;
 const old={search:SOURCES.ptcg.search,byNameNumber:SOURCES.ptcg.byNameNumber};
 SOURCES.ptcg.byNameNumber=async()=>cards;
@@ -59,7 +60,7 @@ const prints=await tcg.scanPrintings('ptcg',{name:'Kyogre'});assert.ok(prints.le
 Object.assign(SOURCES.ptcg,old);
 const source=fs.readFileSync('scancam.js','utf8');
 assert.doesNotMatch(source,/id="camGuide"|<polygon/,'camera detection has no visible outline or mask');
-assert.match(source,/if \(s\(\)\.confirm\)/);assert.match(source,/flattenCapture\(v,padQuad\(loop.quad/);
+assert.match(source,/if \(s\(\)\.confirm\)/);assert.match(source,/frame=freezeCapture\(v\).original/);assert.doesNotMatch(source,/flattenCapture\(v,/,'live original is frozen before any crop is derived');
 console.log('PASS: all-game identifier gates, Pokémon suffix/number collisions, compact live confirmation, quantity/condition, direct save, duplicate-submit protection, failed-save recovery and camera continuity.');
 
 for(const g of ['mtg','ptcg','ygo']){
@@ -73,7 +74,7 @@ for(const g of ['mtg','ptcg','ygo']){
 console.log('PASS: noisy-title visual recovery and nonblocking retry review in all games; unverified artwork never becomes an exact printing.');
 
 S.state=blank();S.state.settings.game='ptcg';S.ui.view='scan';let lookups=0,writes=0;
-const retryA={};registerScanner({A:retryA,C:{},render(){},toast(){},game:()=> 'ptcg',setOf:()=>'',numberOf:()=>'',priceOf:()=>null,async candById(){if(++lookups===1)throw Error('temporary lookup outage');return {id:'retry-card',name:'Retry card',card:{id:'retry-card',name:'Retry card',game:'ptcg',variants:[]}};},async addMany(){writes++;}});
+const retryA={};registerScanner({A:retryA,C:{},render(){},toast(){},game:()=> 'ptcg',setOf:()=>'',numberOf:()=>'',priceOf:()=>null,async candById(){if(++lookups===1)throw Error('temporary lookup outage');return {id:'retry-card',name:'Retry card',card:{id:'retry-card',name:'Retry card',game:'ptcg',variants:[{key:'normal'}]}};},async addMany(){writes++;}});
 S.ui.scan={camOn:true,cands:[{id:'retry-card',name:'Retry card',localReference:true,card:{id:'retry-card',name:'Retry card'}}],confirm:{i:0,qty:1,condition:'Near Mint',lang:'en',finish:'normal'}};
 await retryA.scanConfirm();assert.equal(lookups,2);assert.equal(writes,1);assert.equal(S.ui.scan.confirm,null);assert.equal(S.ui.scan.camOn,true);
 console.log('PASS: transient identifier hydration is retried once; collection writes still happen only once.');

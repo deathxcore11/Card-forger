@@ -22,6 +22,7 @@ import {tcgCompareSheet} from './tcgcompare.js';
 import {artworkHTML} from './artwork.js';
 import {attachAutomaticBrowse} from './auto-browse.js';
 import { createPrintingPicker } from "./printing-picker.js";
+import { createScannerPrintingPicker } from "./scanner-printing.js";
 import {SheetHistory,BROWSE_TYPES,sheetKey} from "./sheet-history.js";
 import {handleArtworkError} from "./artwork.js";
 import {selectedFinish,detailIdentity,captureDetailState,restoreDetailState,detailTabKey,createDetailJump} from "./pricing-presentation.js";
@@ -1305,6 +1306,19 @@ attachRuleLearning();
 attachSuggest();
 attachGlassSelects();
 function fetchConditionValue(card,entry,game,done){
+ // The existing condition provider key does not encode a dated YGO release.
+ // Do not spend a request or attach a quote when the same printed code/rarity
+ // refers to multiple releases, or the saved lot explicitly remains unverified.
+ if(game==='ygo'){
+  if(entry.setReleaseUnverified)return;
+  const raw=T.cardOf(game,card?.id)||card;
+  const matches=(raw?.sets||[]).filter(p=>p.code===entry.printing&&(!entry.rarity||p.rarity===entry.rarity));
+  if(matches.length>1)return;
+  if(entry.setReleaseId){
+   const scoped=T.setContextCard(game,raw,entry.setReleaseId,T.currentYgoCatalogue());
+   if(scoped?.setContext?.status!=='resolved'||scoped.setContext.printings.filter(p=>p.code===entry.printing&&p.rarity===entry.rarity&&!p.releasePriceAmbiguous).length!==1)return;
+  }
+ }
  const request=loadConditionQuotes(card,entry,game);if(!request)return;
  request.then(result=>{
   if(result.changed){
@@ -4662,18 +4676,25 @@ async function mtgScanAddMany(items) {
     { undo: `Added ${n} scanned card${n === 1 ? "" : "s"}.` },
   );
 }
-const mtgScanPrice = (cand, finish) => {
-  const p = cand.card?.prices || {},
-    v = finish === "foil" ? p.usd_foil : finish === "etched" ? p.usd_etched : p.usd;
-  return v == null || v === "" ? null : Number(v);
+const mtgScanPrice = (cand, finish, selection = {}) => {
+  const card=cand.card,p=card?.prices||{},v=finish==="foil"?p.usd_foil:finish==="etched"?p.usd_etched:p.usd;
+  return conditionValue(v==null||v===""?null:Number(v),{...selection,printingId:card?.id||"",finish},card?.conditionQuotes||[]).price;
 };
+const scannerPrintingPicker = createScannerPrintingPicker({
+  openPicker: config => printingPicker.open(config), requestMagic: api, sources: T.SOURCES,
+  ensureCard: (g,id) => T.ensureCard(g,id,false,false),
+  getCatalogue: g => g === "mtg" ? [] : g === "ygo" ? T.currentYgoCatalogue() : T.ui(g).sets.list,
+  loadCatalogue: async g => { await tcgCtx.loadSets(g); return g === "ygo" ? T.currentYgoCatalogue() : T.ui(g).sets.list; },
+  projectCard: (g,c,r,catalogue,options) => T.setContextCard(g,c,r,catalogue,options)
+});
 const scanCtx = {
   A,
   C,
   openSheet: (...x) => openSheet(...x),
   closeSheet: () => closeSheet(),
   addMany: (g, items) => (g === "mtg" ? mtgScanAddMany(items) : tcgCtx.scanAddMany(items, g)),
-  priceOf: (g, cand, finish) => (g === "mtg" ? mtgScanPrice(cand, finish) : tcgCtx.scanPrice?.(cand, finish) ?? null),
+  priceOf: (g, cand, finish, selection = {}) => (g === "mtg" ? mtgScanPrice(cand, finish, selection) : tcgCtx.scanPrice?.(cand, finish, selection) ?? null),
+  openPrintingPicker: config => scannerPrintingPicker.open(config),
   setOf: (g, cand) => (g === "mtg" ? cand.card?.set || "" : g === "ygo" ? String(cand.print || "").split("|")[0].split("-")[0] : cand.card?.set?.id || ""),
   numberOf: (g, cand) => (g === "mtg" ? cand.card?.collector_number || "" : g === "ygo" ? String(cand.print || "").split("|")[0] : cand.card?.set?.number || ""),
   render: () => render(),
@@ -4683,7 +4704,7 @@ const scanCtx = {
   add: (g, c) => (g === "mtg" ? mtgScanAdd(c) : tcgCtx.scanAdd(c)),
   byText: (g, full) => (g === "mtg" ? mtgScanByText(textPhrases(full, 12), full) : tcgCtx.scanByText?.(g, full) ?? []),
   printings: (g, cand) => (g === "mtg" ? mtgScanPrintings(cand) : tcgCtx.scanPrintings?.(g, cand) ?? []),
-  candById: async (g, id, why, exact) => (g === "mtg" ? api("/cards/" + encodeURIComponent(id)).then((c) => mtgScanCand(c, why, exact)).catch(() => null) : tcgCtx.scanCandById?.(g, id, why, exact) ?? null),
+  candById: async (g, id, why, exact, options = {}) => (g === "mtg" ? api("/cards/" + encodeURIComponent(id)).then((c) => mtgScanCand(c, why, exact)).catch(() => null) : tcgCtx.scanCandById?.(g, id, why, exact, options) ?? null),
   candOf: async (g, p, why, exact) => (g === "mtg" ? (p.card ? mtgScanCand(p.card, why, exact) : null) : tcgCtx.scanCandById?.(g, p.id, why, exact) ?? null),
   details: (g, c) => (g === "mtg" ? A.card({ dataset: { name: c.name } }) : A.tCard({ dataset: { id: c.id } })),
 };

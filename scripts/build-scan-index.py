@@ -87,7 +87,7 @@ def list_mtg():
 
 def list_ptcg():
     cards = json.loads(get("https://api.tcgdex.net/v2/en/cards", timeout=120))
-    return [(c["id"], c["image"] + "/low.webp") for c in cards if c.get("image") and not c["id"].startswith(("A", "P-A"))]
+    return [(c["id"], c["image"] + "/low.webp") for c in cards if c.get("image") and "/tcgp/" not in c["image"].lower() and not c["id"].startswith(("A", "P-A"))]
 
 
 def list_ygo():

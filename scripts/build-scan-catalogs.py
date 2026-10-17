@@ -26,7 +26,7 @@ for line in (out/'ptcg-ids.txt').read_text().splitlines():
 rows=[]
 for c in json.loads((src/'scan-ptcg-cards.json').read_text()):
  sid=c['id'].rsplit('-',1)[0]
- if sid.startswith(('A','P-A')):continue
+ if sid.startswith(('A','P-A')) or any('/tcgp/' in '/'+str(path).lower() for path in (c.get('image',''),paths.get(c['id'],''))):continue
  st=sets.get(sid,{})
  rows.append([c['id'],c['name'],sid,c.get('localId',c['id'].rsplit('-',1)[-1]),st.get('cardCount',{}).get('official'),st.get('name',sid),paths.get(c['id'],'')])
 save('ptcg',rows)

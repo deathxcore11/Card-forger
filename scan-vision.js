@@ -11,7 +11,8 @@ export function normalizeQuad(points){
  if(points.length!==4)return null;
  const q=[...points],first=q.reduce((best,p,i)=>p.x+p.y<q[best].x+q[best].y?i:best,0);let a=[...q.slice(first),...q.slice(0,first)];
  if(cross(a[0],a[1],a[2])<0)a=[a[0],a[3],a[2],a[1]];
- if((dist(a[0],a[1])+dist(a[2],a[3]))>(dist(a[1],a[2])+dist(a[3],a[0])))a=[a[1],a[2],a[3],a[0]];
+ // Corner ordering is geometric, not a claim about text orientation. In
+ // particular, never turn a wide internal artwork window into a portrait card.
  return a;
 }
 function hullQuad(points){
@@ -88,40 +89,123 @@ function luminanceSplit(gray){
  for(let i=0;i<255;i++){weight+=hist[i];lower+=hist[i]*i;if(!weight||weight===gray.length)continue;const delta=lower/weight-(sum-lower)/(gray.length-weight),score=weight*(gray.length-weight)*delta*delta;if(score>best){best=score;split=i;}}
  return split;
 }
+const containsQuad=(outer,inner)=>{
+ const margin=Math.max(2,Math.max(...outer.map((p,i)=>dist(p,outer[(i+1)%4])))*.03);
+ return inner.every(p=>outer.every((a,i)=>cross(a,outer[(i+1)%4],p)>=-margin*dist(a,outer[(i+1)%4])));
+};
+const quadShape=q=>{
+ const width=(dist(q[0],q[1])+dist(q[2],q[3]))/2,height=(dist(q[1],q[2])+dist(q[3],q[0]))/2;
+ return {width,height,nativeAspect:width/height,aspect:Math.min(width,height)/Math.max(width,height)};
+};
+const sameBoundary=(a,b)=>Math.abs(a.fraction-b.fraction)<.035&&a.quad.every((p,i)=>dist(p,b.quad[i])<5);
+const sameCardFrame=(a,b)=>{
+ const outer=a.fraction>b.fraction?a:b,inner=outer===a?b:a,length=Math.max(outer.width,outer.height);
+ const centre=q=>({x:q.reduce((s,p)=>s+p.x,0)/4,y:q.reduce((s,p)=>s+p.y,0)/4});
+ return (a.nativeAspect>1)===(b.nativeAspect>1)&&outer.fraction<inner.fraction*1.6&&dist(centre(a.quad),centre(b.quad))<length*.075&&outer.quad.every((p,i)=>dist(p,inner.quad[i])<length*.20);
+};
+
+// Supported outlines are proposals, not proof of a whole card or its identity.
+// A page/book surrounding a card is not automatically better just because it
+// is larger. Only a card-shaped envelope around a transverse art-shaped region
+// has a defensible completeness preference; competing full-card shapes abstain.
+export function selectCardProposal(input){
+ const candidates=[],frameGroups=[];
+ for(const c of [...input].sort((a,b)=>b.score-a.score)){
+  const at=candidates.findIndex((p,i)=>frameGroups[i].every(member=>sameBoundary(member,c)||sameCardFrame(member,c)));
+  if(at<0){candidates.push(c);frameGroups.push([c]);}
+  // Near-concentric printed frames belong to one proposal: keep its observed
+  // outer edge so a sharp inner border cannot trim title/footer pixels.
+  else {frameGroups[at].push(c);if(c.fraction>candidates[at].fraction)candidates[at]=c;}
+ }
+ candidates.sort((a,b)=>b.score-a.score);
+ if(!candidates.length)return null;
+ const plausible=c=>c.aspect>=.64&&c.aspect<=.82;
+ const transverse=(a,b)=>(a.nativeAspect>1)!==(b.nativeAspect>1);
+ const encloses=(a,b)=>a.fraction>b.fraction*1.35&&a.fraction<b.fraction*4.5&&containsQuad(a.quad,b.quad);
+ const dominated=new Set();
+ for(const outer of candidates)for(const inner of candidates){
+  if(outer!==inner&&plausible(outer)&&(!plausible(inner)||outer.endBandsDetailed===true)&&encloses(outer,inner)&&transverse(outer,inner))dominated.add(inner);
+ }
+ const available=candidates.filter(c=>!dominated.has(c));
+ let chosen=available[0];
+ const competitors=available.filter(c=>c!==chosen&&plausible(c));
+ const ambiguous=competitors.length>0;
+ const reason=ambiguous?'competing-card-or-page-boundaries':chosen.touchesFrame?'frame-edge-needs-full-card-proof':!plausible(chosen)?'outline-aspect-does-not-establish-full-card':chosen.interiorDetail===false?'no-interior-card-detail':chosen.endBandsDetailed===false?'identifier-bands-not-established':chosen.nativeAspect>1?'landscape-region-needs-full-card-proof':'supported-outer-boundary';
+ const describe=c=>{
+  // Preserve the native source axes and physical aspect. OCR may try rotated
+  // COPIES later, but only independent identifiers may confirm orientation.
+  const outputWidth=c.nativeAspect<=1?Math.max(1,Math.round(672*c.nativeAspect)):672;
+  const outputHeight=c.nativeAspect<=1?672:Math.max(1,Math.round(672/c.nativeAspect));
+  return {...c,outputWidth,outputHeight,orientation:{status:'unverified',rotation:0},fullCard:{status:'unverified',reason:'text-identifiers-not-checked'}};
+ };
+ const result=describe(chosen);
+ result.cropSafe=reason==='supported-outer-boundary';
+ result.boundary={status:result.cropSafe?'supported':'uncertain',reason,source:chosen.source,sideSupport:[...chosen.sideSupport],edgeSupport:chosen.edgeSupport};
+ result.alternatives=available.filter(c=>c!==chosen).slice(0,2).map(c=>({...describe(c),cropSafe:false,boundary:{status:'uncertain',reason:'alternative-boundary',source:c.source,sideSupport:[...c.sideSupport],edgeSupport:c.edgeSupport}}));
+ return result;
+}
+
+// Cheap non-semantic texture check: a blank page is not sufficient evidence for
+// auto-cropping. This does NOT identify text or prove a title/footer is present.
+function proposalDetail(rgba,w,h,q){
+ const nativeAspect=quadShape(q).nativeAspect;
+ const variance=(from,to)=>{
+  let sum=0,sq=0,n=0;
+  for(let y=0;y<6;y++)for(let x=0;x<18;x++){
+   const across=.06+.88*(x+.5)/18,along=from+(to-from)*(y+.5)/6;
+   const p=quadPoint(q,nativeAspect<=1?across:along,nativeAspect<=1?along:across),i=(Math.max(0,Math.min(h-1,Math.round(p.y)))*w+Math.max(0,Math.min(w-1,Math.round(p.x))))*4;
+   const v=.299*rgba[i]+.587*rgba[i+1]+.114*rgba[i+2];sum+=v;sq+=v*v;n++;
+  }
+  return Math.max(0,sq/n-(sum/n)**2);
+ };
+ const interior=variance(.05,.95),first=variance(.035,.18),last=variance(.84,.98);
+ return {interiorDetail:interior>64,endBandsDetailed:first>64&&last>64,endBandVariance:{first,last}};
+}
 export function detectCardQuad(rgba,w,h){
- if(w<20||h<20||rgba.length!==w*h*4)return null;
- const gray=new Float32Array(w*h),border=[[],[],[]];for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=(y*w+x)*4;gray[y*w+x]=.299*rgba[i]+.587*rgba[i+1]+.114*rgba[i+2];if((x<3||y<3||x>w-4||y>h-4)&&(x+y)%3===0)for(let c=0;c<3;c++)border[c].push(rgba[i+c]);}
+ if(!Number.isInteger(w)||!Number.isInteger(h)||w<20||h<20||!rgba||rgba.length!==w*h*4)return null;
+ const gray=new Float32Array(w*h),border=[[],[],[]],chroma=[new Float32Array(w*h),new Float32Array(w*h),new Float32Array(w*h)],chromaSum=[0,0,0],chromaSq=[0,0,0];
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+  const p=y*w+x,i=p*4;gray[p]=.299*rgba[i]+.587*rgba[i+1]+.114*rgba[i+2];
+  const v=[(rgba[i]-rgba[i+1]+255)/2,(rgba[i]-rgba[i+2]+255)/2,(rgba[i+1]-rgba[i+2]+255)/2];
+  for(let c=0;c<3;c++){chroma[c][p]=v[c];chromaSum[c]+=v[c];chromaSq[c]+=v[c]*v[c];}
+  if((x<3||y<3||x>w-4||y>h-4)&&(x+y)%3===0)for(let c=0;c<3;c++)border[c].push(rgba[i+c]);
+ }
  const bg=border.map(a=>a.sort((a,b)=>a-b)[Math.floor(a.length/2)]),contrast=new Uint8Array(w*h),edge=new Uint8Array(w*h);
  for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const p=y*w+x,i=p*4;contrast[p]=Math.abs(rgba[i]-bg[0])+Math.abs(rgba[i+1]-bg[1])+Math.abs(rgba[i+2]-bg[2])>55?1:0;const grad=Math.hypot(gray[p+1]-gray[p-1],gray[p+w]-gray[p-w]);if(grad>18)for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)edge[p+dy*w+dx]=1;}
- let best=null;
- const contains=(outer,inner)=>inner.every(p=>outer.every((a,i)=>cross(a,outer[(i+1)%4],p)>=-2));
- const consider=mask=>{for(const component of components(mask,w,h)){
-  let q=hullQuad(component.points);if(!q)continue;const area=quadArea(q),fraction=area/(w*h),width=(dist(q[0],q[1])+dist(q[2],q[3]))/2,height=(dist(q[1],q[2])+dist(q[3],q[0]))/2,ratio=width/height;
-  if(fraction<.06||fraction>.94||ratio<.43||ratio>.94||Math.min(width,height)<24)continue;
+ const candidates=[],seen=new Set();
+ const consider=(mask,source)=>{let accepted=0;for(const component of components(mask,w,h)){
+  let q=hullQuad(component.points);if(!q)continue;
+  const fraction=quadArea(q)/(w*h),shape=quadShape(q),{width,height,aspect}=shape;
+  if(fraction<.06||fraction>.94||aspect<.43||aspect>.94||Math.min(width,height)<24)continue;
   if(q.some((b,i)=>{const a=q[(i+3)%4],c=q[(i+1)%4];return Math.abs(((a.x-b.x)*(c.x-b.x)+(a.y-b.y)*(c.y-b.y))/(dist(a,b)*dist(c,b)))>.76;}))continue;
+  const key=q.map(p=>Math.round(p.x)+','+Math.round(p.y)).join(';');if(seen.has(key))continue;seen.add(key);
   let sideSupport=quadEdgeSupport(rgba,w,h,q);
   if(sideSupport.filter(s=>s>=.55).length>=2&&Math.min(...sideSupport)<.9){q=refineQuadEdges(rgba,w,h,q);sideSupport=quadEdgeSupport(rgba,w,h,q);}
   const edgeSupport=Math.min(...sideSupport),meanSupport=sideSupport.reduce((a,b)=>a+b,0)/4,edges=sideSupport.filter(s=>s>=.58).length;
   if(edges!==4||meanSupport<.68)continue;
-  // Image evidence dominates. Area saturates, so a large background hull cannot
-  // beat a smaller card simply by covering more of the camera preview.
-  const aspect=Math.max(0,1-Math.abs(ratio-63/88)/.3),score=.58*edgeSupport+.25*meanSupport+.12*aspect+.05*Math.min(1,fraction/.25);
-  const candidate={quad:q,score,fraction:quadArea(q)/(w*h),sideSupport,edgeSupport,edges};
-  // The wide art window itself can look like a card rotated by 90 degrees.
-  // Prefer its well-supported enclosing card, not an arbitrary larger hull.
-  const outer=best&&candidate.fraction>best.fraction*1.4&&candidate.fraction<best.fraction*4.5&&edgeSupport>=.8&&contains(q,best.quad);
-  const inner=best&&best.fraction>candidate.fraction*1.4&&best.fraction<candidate.fraction*4.5&&best.edgeSupport>=.8&&contains(best.quad,q);
-  if(!best||outer||(!inner&&score>best.score))best=candidate;
- }};
- consider(contrast);consider(edge);
- // Different foreground masks find a card even when background texture joins
- // all gradient pixels into one component. Both polarities support dark borders
- // on light desks; thresholds depend on this frame rather than card/game colours.
+  const actual=quadShape(q),aspectScore=Math.max(0,1-Math.abs(actual.aspect-63/88)/.3),score=.58*edgeSupport+.25*meanSupport+.12*aspectScore+.05*Math.min(1,fraction/.25);
+  candidates.push({quad:q,score,fraction:quadArea(q)/(w*h),sideSupport,edgeSupport,edges,source,touchesFrame:q.some(p=>p.x<3||p.y<3||p.x>w-4||p.y>h-4),...actual,...proposalDetail(rgba,w,h,q)});accepted++;
+ }
+ return accepted;};
+ consider(contrast,'background-contrast');consider(edge,'gradient');
  const split=luminanceSplit(gray);
  for(const threshold of [...new Set([split,Math.max(12,split-24),Math.min(242,split+24)])])for(const light of [true,false]){
-  const mask=new Uint8Array(w*h);for(let i=0;i<gray.length;i++)mask[i]=light?gray[i]>threshold:gray[i]<=threshold;consider(mask);consider(erodeMask(mask,w,h));
+  const mask=new Uint8Array(w*h);for(let i=0;i<gray.length;i++)mask[i]=light?gray[i]>threshold:gray[i]<=threshold;
+  consider(mask,'luminance');consider(erodeMask(mask,w,h),'luminance-eroded');
  }
- return best;
+ // Luminance-only masks merge similarly bright card stock and stone/wood desks.
+ // Two strongest opponent-colour axes add bounded, colour-agnostic proposals.
+ // They are still checked against four real boundaries, never assumed cards.
+ const axes=[0,1,2].map(i=>({i,variance:chromaSq[i]/gray.length-(chromaSum[i]/gray.length)**2})).sort((a,b)=>b.variance-a.variance).slice(0,2);
+ for(const {i,variance} of axes){
+  if(variance<16)continue;
+  const channel=chroma[i],threshold=luminanceSplit(channel);
+  for(const light of [true,false]){
+   const mask=new Uint8Array(w*h);for(let p=0;p<channel.length;p++)mask[p]=light?channel[p]>threshold:channel[p]<=threshold;
+   if(!consider(mask,'opponent-colour'))consider(erodeMask(mask,w,h),'opponent-colour-eroded');
+  }
+ }
+ return selectCardProposal(candidates);
 }
 // Unit-square coordinates -> source quadrilateral, including perspective skew.
 export function quadPoint(q,u,v){
