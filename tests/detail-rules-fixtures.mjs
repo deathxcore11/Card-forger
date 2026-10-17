@@ -183,6 +183,42 @@ export function detailHistoryReady(){
  const complete=entry?.series?.some(s=>s.points?.length>2&&now-Date.parse(s.points.at(-1).date)<3*864e5);
  return document.querySelector('#sheet').open&&ctx===old.ctx&&body===old.body&&body.dataset.detailIdentity===old.identity&&entry?.game===old.quote.game&&entry.cardId===old.quote.cardId&&entry.finish===old.quote.finish&&Number.isFinite(entry.checked)&&now-entry.checked<(complete?3600000:30000)&&['ready','empty','unsupported','unavailable'].includes(entry.status);
 }
+// Both browser and pure regressions use this exact fractional CSS-space probe.
+// clientWidth/clientHeight are integer-rounded and cannot decide line wrapping.
+export function collectionControlGeometry(n){
+ const el=document.activeElement,r=n.getBoundingClientRect(),a=el.getBoundingClientRect(),s=getComputedStyle(el),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');ctx.font=[s.fontStyle,s.fontVariant,s.fontWeight,s.fontSize,s.fontFamily].join(' ');
+ const num=v=>parseFloat(v)||0,px=num(s.paddingLeft)+num(s.paddingRight),py=num(s.paddingTop)+num(s.paddingBottom),bx=num(s.borderLeftWidth)+num(s.borderRightWidth),by=num(s.borderTopWidth)+num(s.borderBottomWidth);
+ const boxWidth=num(s.width)+(s.boxSizing==='border-box'?0:px+bx),boxHeight=num(s.height)+(s.boxSizing==='border-box'?0:py+by),scaleX=a.width/boxWidth,scaleY=a.height/boxHeight;
+ const contentWidth=a.width/scaleX-bx-px,contentHeight=a.height/scaleY-by-py,label=el.selectedOptions?.[0]?.label||'',icon=getComputedStyle(el,'::picker-icon'),available=contentWidth-num(icon.width)-num(s.columnGap),words=label.split(/\s+/),longest=Math.max(...words.map(w=>ctx.measureText(w).width));
+ let lines=1,line='';for(const word of words){const next=line?line+' '+word:word;if(line&&ctx.measureText(next).width>available){lines++;line=word;}else line=next;}
+ const nowrap=['nowrap','pre'].includes(s.whiteSpace),lineHeight=num(s.lineHeight)||num(s.fontSize)*1.2,hit=document.elementFromPoint(a.left+a.width/2,a.top+a.height/2);
+ return {inside:el.parentElement===n,change:el.dataset.change,field:el.dataset.field||'',value:el.value,label,accessible:el.getAttribute('aria-label'),tabIndex:el.tabIndex,disabled:el.disabled,selectedWordWidth:longest,selectedTextWidth:ctx.measureText(label).width,labelWidth:available,nowrap,requiredTextHeight:(nowrap?1:lines)*lineHeight,labelHeight:contentHeight,scaleX,scaleY,ellipsis:s.textOverflow==='ellipsis',scrollWidth:el.scrollWidth,clientWidth:el.clientWidth,scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,rect:a.toJSON(),rail:r.toJSON(),railWidth:n.clientWidth,railScroll:n.scrollWidth,position:n.scrollLeft,overflow:getComputedStyle(n).overflowX,hit:hit===el||el.contains(hit)};
+}
+// SVG title/desc are accessible metadata, not rendered glyphs. Nothing else,
+// including hidden HTML or real SVG text/tspan without rectangles, is exempt.
+export function collectionRowGeometry(n){
+ const rect=x=>x.getBoundingClientRect().toJSON(),info=n.querySelector('.lot-info'),side=n.querySelector('.lot-side'),art=n.querySelector('.lot-art'),mark=n.querySelector('.batch-mark'),targets=[...n.querySelectorAll('.lot-sub,.condition-value-note,.lot-side .price,.lot-side .stepper b,.lot-side button')],bad=[],icons=[],metadata=new Set();let words=0;
+ for(const target of targets){for(const icon of target.querySelectorAll('svg.emb'))metadata.add(icon);const bound=target.getBoundingClientRect();if(!bound.width||!bound.height||getComputedStyle(target).visibility!=='visible'||target.scrollWidth>target.clientWidth+2)bad.push({text:target.textContent,reason:'hidden or clipped metadata'});const walker=document.createTreeWalker(target,NodeFilter.SHOW_TEXT);let text;
+  while((text=walker.nextNode())){
+   let meta=null;for(let p=text.parentElement;p&&p!==target;p=p.parentElement)if(p.namespaceURI==='http://www.w3.org/2000/svg'&&['title','desc'].includes(p.localName)){meta=p;break;}
+   if(meta){metadata.add(meta.ownerSVGElement);continue;}
+   for(const word of text.textContent.matchAll(/[\p{L}\p{N}]+/gu)){if(word[0].length<3)continue;words++;const range=document.createRange();range.setStart(text,word.index);range.setEnd(text,word.index+word[0].length);const rects=[...range.getClientRects()].filter(r=>r.width&&r.height),rows=new Set(rects.map(r=>Math.round(r.top)));if(!rects.length||rows.size>1||rects.some(r=>r.left<bound.left-2||r.right>bound.right+2||r.top<bound.top-2||r.bottom>bound.bottom+2))bad.push({word:word[0],rects:rects.map(r=>r.toJSON()),bound:bound.toJSON()});}
+  }
+ }
+ for(const icon of metadata){
+  if(!icon){bad.push({reason:'SVG metadata has no visible owner'});continue;}
+  const parent=icon.parentElement,r=icon.getBoundingClientRect(),p=parent.getBoundingClientRect(),title=icon.querySelector('title')?.textContent.trim(),label=icon.getAttribute('aria-label'),parentLabel=parent.getAttribute('aria-label'),decorative=icon.matches('svg.emb.star[aria-hidden="true"]')&&parent.matches('.lvl');
+  const visible=r.width>0&&r.height>0&&getComputedStyle(icon).visibility==='visible'&&getComputedStyle(icon).opacity!=='0'&&getComputedStyle(parent).opacity!=='0',named=decorative?/^(Level|Rank) \d+$/.test(parentLabel||'')&&parentLabel.split(' ').at(-1)===parent.textContent.trim():icon.getAttribute('aria-hidden')!=='true'&&icon.getAttribute('role')==='img'&&!!label&&!!title&&label===title;
+  icons.push({label,title,parentLabel,decorative,rect:rect(icon),visible,named});if(!visible||!named||r.left<p.left-2||r.right>p.right+2||r.top<p.top-2||r.bottom>p.bottom+2)bad.push({reason:'Accessible icon is hidden, clipped or unnamed',label,parentLabel,rect:rect(icon)});
+ }
+ const controls=[...side.querySelectorAll('button,.stepper')].map(x=>({text:x.textContent,rect:rect(x)})),footer=[...side.children].map(rect),steppers=[...side.querySelectorAll('.stepper')].map(x=>{const s=getComputedStyle(x),r=x.getBoundingClientRect();return {height:r.height,buttonHeight:Math.max(...[...x.querySelectorAll('button')].map(b=>b.getBoundingClientRect().height)),chrome:['paddingTop','paddingBottom','borderTopWidth','borderBottomWidth'].reduce((sum,k)=>sum+(parseFloat(s[k])||0),0)};});return {row:rect(n),info:rect(info),side:rect(side),art:art.getClientRects().length?rect(art):null,mark:mark?rect(mark):null,cols:getComputedStyle(n).gridTemplateColumns.split(' ').length,words,bad,icons,controls,footer,steppers};
+}
+// Read-only ownership diagnostics use the exact replacement reference, never a
+// locator that could silently follow another render while proving sensor motion.
+export function detailMotionState(){
+ const old=window.__motionProof,body=document.querySelector('#sheetBody'),card=body.querySelector('.cs-card .cd-img'),r=card.getBoundingClientRect(),sheet=body.getBoundingClientRect();
+ return {same:card===old.card&&body===old.body&&old.ctx===window.__uiTestState.ui.sheetCtx&&body.detailMountGeneration===old.generation&&body.dataset.detailIdentity===old.identity,connected:card.isConnected,generation:body.detailMountGeneration,foreground:window.__responsiveFeel.motionCard()===card,foregroundDialog:[...document.querySelectorAll('dialog[open]')].at(-1)?.id,visible:r.bottom>Math.max(0,sheet.top)&&r.top<Math.min(innerHeight,sheet.bottom)&&r.right>0&&r.left<innerWidth,rect:r.toJSON(),hover:card.matches(':hover'),hovered:[...document.querySelectorAll(':hover')].slice(-4).map(n=>n.tagName+'.'+n.className),pointer:window.__openingPointer.slice(),gyro:card.classList.contains('gyro'),tx:card.style.getPropertyValue('--tx'),ty:card.style.getPropertyValue('--ty')};
+}
 // Card detail tabs are an intentional horizontal scroller. Their focus/visibility
 // is asserted independently; they must not create page or sheet overflow.
 // Collection alone has a second known rail. Admit a clipped source select only

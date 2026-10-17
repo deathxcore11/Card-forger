@@ -5,10 +5,52 @@ import {gunzipSync} from 'node:zlib';
 import {attachTilt,motionCard} from './feel.js';
 import {rememberDetailViewport,restoreDetailViewport,quoteForContext} from './pricing-presentation.js';
 import {visibleRulePassage,ygoTurnStructureDisplay} from './rule-reference.js';
-import {auditedCollectionControl,detailHistoryContext,detailHistoryReady,CARDS} from './tests/detail-rules-fixtures.mjs';
+import {auditedCollectionControl,detailHistoryContext,detailHistoryReady,collectionControlGeometry,collectionRowGeometry,CARDS} from './tests/detail-rules-fixtures.mjs';
 import {loadSharedHistory,sharedHistory,historyKey,setHistoryRefresh} from './shared-history.js';
 import * as responsiveStore from './store.js';
 import {cardKey} from './core.js';
+// The exact serialized native-control probe must keep subpixel dimensions and
+// canvas font metrics in CSS space, at both unit scale and visual zoom.
+{
+ const saved={document:globalThis.document,getComputedStyle:globalThis.getComputedStyle};
+ const rectangle=(width,height=36,scale=1)=>({left:16,top:20,right:16+width*scale,bottom:20+height*scale,width:width*scale,height:height*scale,toJSON(){return {...this,toJSON:undefined};}});
+ let scale=1,width=107.484375,label='All kinds';const s={width:'107.484375px',height:'36px',boxSizing:'border-box',paddingLeft:'12px',paddingRight:'12px',paddingTop:'6px',paddingBottom:'6px',borderLeftWidth:'1px',borderRightWidth:'1px',borderTopWidth:'1px',borderBottomWidth:'1px',columnGap:'10px',fontSize:'13px',fontFamily:'sans-serif',fontStyle:'normal',fontWeight:'400',fontVariant:'normal',whiteSpace:'normal',lineHeight:'18.85px',textOverflow:'clip'};
+ const rail={getBoundingClientRect:()=>rectangle(288),clientWidth:288,scrollWidth:430,scrollLeft:0},el={getBoundingClientRect:()=>rectangle(width,36,scale),parentElement:rail,dataset:{change:'tCollKind',field:'kind'},value:'',get selectedOptions(){return [{label}];},getAttribute:()=> 'Kind',tabIndex:0,disabled:false,clientWidth:105,clientHeight:34,scrollWidth:105,scrollHeight:34,contains:()=>false};
+ try{
+  globalThis.document={activeElement:el,elementFromPoint:()=>el,createElement:()=>({getContext:()=>({measureText:text=>({width:text==='All kinds'?62.89892578125:text==='All'?18:40})})})};globalThis.getComputedStyle=(node,pseudo)=>pseudo?{width:'8.57812px'}:node===rail?{overflowX:'auto'}:s;
+  let measured=collectionControlGeometry(rail);assert(Math.abs(measured.labelWidth-62.906255)<1e-6);assert.equal(measured.requiredTextHeight,18.85);assert.equal(measured.labelHeight,22);assert(measured.selectedTextWidth<=measured.labelWidth,'The exact hosted one-line label fits without any tolerance change');
+  scale=1.25;measured=collectionControlGeometry(rail);assert.equal(measured.scaleX,1.25);assert.equal(measured.labelHeight,22);assert(Math.abs(measured.labelWidth-62.906255)<1e-6);assert.equal(measured.requiredTextHeight,18.85,'Zoomed rects are converted to the same CSS space as the font metrics');
+  s.boxSizing='content-box';s.width='81.484375px';s.height='22px';measured=collectionControlGeometry(rail);assert(Math.abs(measured.labelWidth-62.906255)<1e-6);assert.equal(measured.labelHeight,22);
+  width=107;s.width='81px';measured=collectionControlGeometry(rail);assert(measured.selectedTextWidth>measured.labelWidth);assert.equal(measured.requiredTextHeight,37.7,'A genuinely narrower wrapping label still fails the unchanged height assertion');assert(measured.requiredTextHeight>measured.labelHeight+2);
+  s.whiteSpace='nowrap';width=100;s.width='74px';measured=collectionControlGeometry(rail);assert(measured.selectedTextWidth>measured.labelWidth+2,'A genuinely clipped nowrap label still fails the unchanged width assertion');
+ }finally{Object.assign(globalThis,saved);}
+}
+console.log('PASS: exact fractional select content box, border/content-box and zoom coordinate parity; genuine wrap/nowrap clipping still fails.');
+// Run the same TreeWalker/range callback as hosted CI with deliberately empty,
+// split and clipped glyph ranges. Only SVG title/desc metadata are non-rendering.
+{
+ const saved={document:globalThis.document,getComputedStyle:globalThis.getComputedStyle,NodeFilter:globalThis.NodeFilter},svgNS='http://www.w3.org/2000/svg',htmlNS='http://www.w3.org/1999/xhtml';
+ const rect=(left=0,top=0,width=100,height=30)=>({left,top,right:left+width,bottom:top+height,width,height,toJSON(){return {...this,toJSON:undefined};}});
+ const make=()=>({getBoundingClientRect:()=>rect(),getClientRects:()=>[rect()],clientWidth:100,scrollWidth:100,textContent:'Printing',children:[],querySelectorAll:()=>[],getAttribute:()=>null,matches:()=>false,style:{visibility:'visible',opacity:'1',gridTemplateColumns:'100px 100px'}});
+ const info=make(),side=make(),art=make(),target=make(),row=make(),icon=make();icon.parentElement=target;icon.getBoundingClientRect=()=>rect(2,2,20,20);icon.getAttribute=k=>k==='role'?'img':k==='aria-label'?'Grass Energy':null;icon.querySelector=()=>({textContent:'Grass Energy'});
+ const title={namespaceURI:svgNS,localName:'title',parentElement:icon,ownerSVGElement:icon},text={textContent:'Grass Energy',parentElement:title,rects:[]};let texts=[text];
+ row.querySelector=selector=>({'.lot-info':info,'.lot-side':side,'.lot-art':art,'.batch-mark':null})[selector];row.querySelectorAll=()=>[target];target.querySelectorAll=()=>[icon];
+ try{
+  globalThis.NodeFilter={SHOW_TEXT:4};globalThis.getComputedStyle=n=>n.style;globalThis.document={createTreeWalker:()=>{let i=0;return {nextNode:()=>texts[i++]||null};},createRange:()=>{let text;return {setStart:n=>{text=n;},setEnd:()=>{},getClientRects:()=>text.rects};}};
+  let value=collectionRowGeometry(row);assert.deepEqual(value.bad,[]);assert.equal(value.words,0);assert.equal(value.icons.length,1);assert(value.icons[0].visible&&value.icons[0].named);
+  title.localName='desc';assert.deepEqual(collectionRowGeometry(row).bad,[],'SVG description is metadata too');
+  title.namespaceURI=htmlNS;value=collectionRowGeometry(row);assert(value.bad.some(x=>x.word==='Grass'),'An HTML title/description element is not the SVG metadata exemption');
+  title.namespaceURI=svgNS;for(const tag of ['text','tspan']){title.localName=tag;assert(collectionRowGeometry(row).bad.some(x=>x.word==='Grass'),'Real SVG '+tag+' with missing glyphs fails');}
+  text.parentElement=target;assert(collectionRowGeometry(row).bad.some(x=>x.word==='Grass'),'Arbitrary zero-rectangle HTML text is not silently discarded');
+  text.textContent='Printing';text.rects=[rect(0,0,20,10),rect(0,12,20,10)];assert(collectionRowGeometry(row).bad.some(x=>x.word==='Printing'),'A real split word still fails');
+  text.rects=[rect(95,0,20,10)];assert(collectionRowGeometry(row).bad.some(x=>x.word==='Printing'),'Clipped visible word still fails');
+  text.rects=[rect(0,0,40,10)];assert.deepEqual(collectionRowGeometry(row).bad,[]);target.style.visibility='hidden';assert(collectionRowGeometry(row).bad.some(x=>x.reason==='hidden or clipped metadata'));target.style.visibility='visible';
+  text.parentElement=title;title.localName='title';icon.getAttribute=()=>null;assert(collectionRowGeometry(row).bad.some(x=>x.reason==='Accessible icon is hidden, clipped or unnamed'),'Excluding metadata still requires the visible named icon');
+  icon.getAttribute=k=>k==='role'?'img':'Grass Energy';texts=[];icon.querySelector=()=>null;assert(collectionRowGeometry(row).bad.some(x=>x.reason==='Accessible icon is hidden, clipped or unnamed'),'An emblem with removed metadata is audited independently of the text walker');icon.querySelector=()=>({textContent:'Grass Energy'});icon.style.opacity='0';assert(collectionRowGeometry(row).bad.some(x=>x.reason==='Accessible icon is hidden, clipped or unnamed'),'Transparent accessible icons are not accepted');
+  icon.style.opacity='1';icon.querySelector=()=>null;icon.getAttribute=k=>k==='aria-hidden'?'true':null;icon.matches=()=>true;target.matches=selector=>selector==='.lvl';target.textContent='8';target.getAttribute=()=> 'Level 8';assert.deepEqual(collectionRowGeometry(row).bad,[],'The exact decorative YGO star is visible and named by its real Level parent');target.getAttribute=()=>null;assert(collectionRowGeometry(row).bad.length,'An unnamed star parent fails');target.getAttribute=()=> 'Rank 7';assert(collectionRowGeometry(row).bad.length,'Parent name must match its visible level/rank');target.getAttribute=()=> 'Level 8';target.matches=()=>false;assert(collectionRowGeometry(row).bad.length,'Unrelated aria-hidden emblems are not broadly exempt');
+ }finally{Object.assign(globalThis,saved);}
+}
+console.log('PASS: only SVG namespace title/desc skipped as glyphs, independently visible named icons required; hidden, missing, split and clipped HTML/SVG text all fail.');
 const audit={game:'ptcg',width:320,controls:[{change:'tCollSort',field:'',value:'name'}]},railControl={root:'content',view:'collection',game:'ptcg',viewport:320,tag:'SELECT',change:'tCollSort',field:'',value:'name',left:238,right:418,width:180,rail:{known:true,direct:true,overflow:'auto',left:16,right:304,client:288,scroll:402,position:0}};
 assert(auditedCollectionControl(railControl,audit),'Only the measured and independently accessed Collection rail admits its partially visible Sort');
 for(const change of [{root:'sheetBody'},{view:'search'},{game:'mtg'},{viewport:390},{tag:'BUTTON'},{change:'unknown'},{field:'unknown'},{value:'set-order'},{width:400},{left:-40},{right:500}])assert(!auditedCollectionControl({...railControl,...change},audit),JSON.stringify(change));
@@ -84,6 +126,7 @@ root.emit('pointerup',{target:card});root.emit('pointerdown',{target:card});awai
 root.emit('pointercancel',{target:card});assert(!card.classes.has('tilting'),'scroll cancellation releases touch immediately');
 win.emit('deviceorientation',{beta:48,gamma:15});flush();assert(card.classes.has('gyro'));
 const replacement=new Node('cd-img');dialog.cards=[replacement];root.cards=[background,replacement];mutation();flush();assert.equal(replacement.values['--tx'],'0deg','replacement printing gets its own resting angle');win.emit('deviceorientation',{beta:55,gamma:25});flush();assert.notEqual(replacement.values['--tx'],'0deg');
+const mouseCard=replacement,priorMouse=[replacement.values['--tx'],replacement.values['--ty']];root.emit('pointerover',{target:mouseCard,pointerType:'mouse'});root.emit('pointermove',{target:mouseCard,pointerType:'mouse',clientX:35,clientY:35});const mouseOwned=mouseCard.values['--tx'];assert(mouseOwned!==priorMouse[0]||mouseCard.values['--ty']!==priorMouse[1],'Actual mouse move changes the preceding sensor transform');win.emit('deviceorientation',{beta:60,gamma:30});flush();assert.equal(mouseCard.values['--tx'],mouseOwned,'Sensor leaves a genuine mouse-owned replacement transform untouched');root.emit('pointerout',{target:mouseCard,pointerType:'mouse',relatedTarget:background});win.emit('deviceorientation',{beta:62,gamma:32});flush();assert.equal(dialog.cards[0],mouseCard);assert.notEqual(mouseCard.values['--tx'],mouseOwned,'Mouse exit resumes the same replacement, not a reopen or retry');
 const overlay=new Node();overlay.cards=[];root.dialogs.push(overlay);assert.equal(motionCard(root),null,'a non-card foreground modal never animates a background card');const held=replacement.values['--tx'];win.emit('deviceorientation',{beta:70,gamma:35});flush();assert.equal(replacement.values['--tx'],held);
 root.dialogs.pop();mutation();flush();assert.notEqual(replacement.values['--tx'],held,'closing overlay resumes existing card without re-opening it');
 win.emit('orientationchange');flush();assert.equal(replacement.values['--tx'],'0deg','rotation recalibrates rather than throwing the card to an extreme');
@@ -99,6 +142,12 @@ for(const changed of [{...entry,id:'0-p21'},{...entry,doc:1},{...entry,text:'Rul
 for(const game of ['mtg','ptcg'])assert.equal(visibleRulePassage(game,{id:'new',text:'Rule 1\nRule 1\nDraw Phase\nDraw Phase'}).text,'Rule 1\nRule 1\nDraw Phase\nDraw Phase');
 console.log('PASS: exact-page display cleanup preserves every rule token and legitimate repeated phase label, complete raw text, canonical entry and all other sources.');
 const css=readFileSync('style.css','utf8'),app=readFileSync('app.js','utf8');assert.match(css,/@container \(max-width:520px\)/);assert.match(css,/\.ca-main \{ grid-template-columns:1fr;/);assert.match(app,/window.addEventListener\?\.\("resize"/);assert.doesNotMatch(app,/resize[^\n]*(refreshSheet|location\.reload)/);
+const batchLayout=css.slice(css.indexOf('/* Narrow Collection batch rows'),css.indexOf('.view-compact .card-grid .grid-meta',css.indexOf('/* Narrow Collection batch rows')));
+assert.match(batchLayout,/@media\(max-width:480px\)/);assert.equal((batchLayout.match(/body\[data-view="collection"\]/g)||[]).length,3);assert.equal((batchLayout.match(/\.display-list > \.lot:has\(> \.batch-mark\)/g)||[]).length,3);
+for(const declaration of ['grid-template-columns:30px 58px minmax(0,1fr)','grid-template-columns:auto minmax(0,1fr)','grid-column:1/-1;grid-row:2','display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center'])assert(batchLayout.includes(declaration),declaration);
+assert.doesNotMatch(batchLayout,/view-gallery|font-size|overflow|word-break|white-space|display:none|grid-column:3\/5/);assert(!css.includes('grid-column:3/5'),'The legacy implicit symbols track cannot return');
+assert(css.indexOf('/* Narrow Collection batch rows')<css.indexOf('/* A condition explanation'),'Later, more-specific condition footer retains its independent layout');
+console.log('PASS: narrow direct Collection batch rows only, explicit art/batch tracks and aligned full-row actions; ordinary/gallery/wide styles unchanged.');
 const conditionLayout=css.slice(css.indexOf('/* A condition explanation'),css.indexOf('@media(prefers-reduced-motion:reduce){.brand-idle',css.indexOf('/* A condition explanation')));
 assert.match(conditionLayout,/@media \(max-width:480px\)/);assert.equal((conditionLayout.match(/body\[data-view="collection"\]/g)||[]).length,7);assert.equal((conditionLayout.match(/:has\(> \.lot-side > \.condition-value-note\)/g)||[]).length,7);
 for(const declaration of ['grid-template-columns:58px minmax(0,1fr)','grid-template-columns:30px 58px minmax(0,1fr)','grid-template-columns:minmax(0,1fr)','grid-template-columns:auto minmax(0,1fr)','grid-column:1/-1;grid-row:2','max-width:none'])assert(conditionLayout.includes(declaration),declaration);

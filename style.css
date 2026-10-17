@@ -1325,7 +1325,13 @@ details.trouble code { word-break: break-word; }
 .compare-facts > div { display:flex; justify-content:space-between; gap:8px; }
 .compare-facts dt { color:var(--muted); }
 .compare-facts dd { margin:0; font-weight:600; }
-@media(max-width:480px) { .view-compact .display-list .lot:has(> .batch-mark) > .lot-side,.view-symbols .display-list .lot:has(> .batch-mark) > .lot-side { grid-column:3/5; display:flex; justify-content:flex-end; gap:10px; } }
+/* Narrow Collection batch rows have explicit art/selection tracks; actions do
+   not create an implicit fourth symbols track or squeeze the metadata column. */
+@media(max-width:480px) {
+  body[data-view="collection"] #content.view-compact .display-list > .lot:has(> .batch-mark) {grid-template-columns:30px 58px minmax(0,1fr);}
+  body[data-view="collection"] #content.view-symbols .display-list > .lot:has(> .batch-mark) {grid-template-columns:auto minmax(0,1fr);}
+  body[data-view="collection"] #content:is(.view-compact,.view-symbols) .display-list > .lot:has(> .batch-mark) > .lot-side {grid-column:1/-1;grid-row:2;display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:8px 10px;}
+}
 .view-compact .card-grid .grid-meta,.view-symbols .card-grid .grid-meta { font-size:14px; line-height:1.5; }
 .view-compact .card-grid .grid-meta > span:last-child,.view-symbols .card-grid .grid-meta > span:last-child { font-size:13px; }
 

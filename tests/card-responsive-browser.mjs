@@ -1,7 +1,7 @@
 // Actual app/dialog checks, authorized hosted CI only. No private reference media.
 // The local path validates data without importing Playwright or starting a server.
 import assert from 'node:assert/strict';
-import {GAMES,CARDS,validateFixtures,startServer,openApp,navigate,closeSheet,inventorySnapshot,detailHistoryContext,detailHistoryReady,noOverflow,capture,saveReport} from './detail-rules-fixtures.mjs';
+import {GAMES,CARDS,validateFixtures,startServer,openApp,navigate,closeSheet,inventorySnapshot,detailHistoryContext,detailHistoryReady,collectionControlGeometry,collectionRowGeometry,detailMotionState,noOverflow,capture,saveReport} from './detail-rules-fixtures.mjs';
 console.log(await validateFixtures());
 if(process.argv.includes('--validate-fixtures'))process.exit(0);
 if(process.env.GITHUB_ACTIONS!=='true')throw Error('Responsive browser execution is restricted to hosted GitHub Actions. Use --validate-fixtures locally.');
@@ -48,11 +48,11 @@ async function focusedSuggestions(game){
  }catch(error){await capture(page,`card-responsive-${game}-focused-popup-failure`).catch(()=>{});await context.close();throw error;}
 }
 async function turn(page,beta,gamma){await page.evaluate(({beta,gamma})=>window.dispatchEvent(new DeviceOrientationEvent('deviceorientation',{beta,gamma})),{beta,gamma});await frame(page);}
-async function openCard(page,game,scrollToCard=true,onInitial=null){
+async function openCard(page,game,scrollToCard=true,onInitial=null,gesture='mouse'){
  await page.evaluate(async()=>{window.__responsivePricing ||= await import('/pricing-presentation.js');window.__responsiveHistory ||= await import('/shared-history.js');window.__responsiveStore ||= await import('/store.js');window.__responsiveFeel ||= await import('/feel.js');});
- if(onInitial)await page.evaluate(()=>{window.__openingPointer=[];window.__openingPointerAbort?.abort();window.__openingPointerAbort=new AbortController();for(const type of ['pointerover','pointerdown','pointerup','pointerout','scroll'])document.addEventListener(type,e=>{const card=e.target.closest?.('.cd-img,.lot-art');window.__openingPointer.push({type,pointer:e.pointerType,card:card?.className||null,connected:card?.isConnected,top:card?.getBoundingClientRect().top});},{capture:true,passive:true,signal:window.__openingPointerAbort.signal});});
+ if(onInitial)await page.evaluate(()=>{window.__openingPointer=[];window.__openingPointerAbort?.abort();window.__openingPointerAbort=new AbortController();for(const type of ['pointerover','pointermove','pointerdown','pointerup','pointerout','pointercancel','scroll'])document.addEventListener(type,e=>{const card=e.target.closest?.('.cd-img,.lot-art');window.__openingPointer.push({type,trusted:e.isTrusted,pointer:e.pointerType,id:e.pointerId,buttons:e.buttons,x:e.clientX,y:e.clientY,card:card?.className||null,connected:card?.isConnected,top:card?.getBoundingClientRect().top});},{capture:true,passive:true,signal:window.__openingPointerAbort.signal});});
  if(game!=='mtg')assert.equal(await page.evaluate(({game,id})=>window.__uiTestTcg.needsCardRefresh(game,window.__uiTestTcg.cardOf(game,id),true),{game,id:CARDS[game][0].id}),false,'This cached first-open fixture has genuine complete current card data, not an ignored provider hydration');
- await page.locator(`#content .lot-art[data-entry="lot-${game}-0"]`).click();
+ const opener=page.locator(`#content .lot-art[data-entry="lot-${game}-0"]`);if(gesture==='touch')await opener.tap();else await opener.click();
  await page.waitForFunction(({game,name})=>{const c=window.__uiTestState.ui.sheetCtx;return document.querySelector('#sheet')?.open&&!c?.detailsBusy&&!c?.printsBusy&&(game!=='ygo'||!window.__uiTestTcg.ui(game).sets.busy)&&c?.entryId==='lot-'+game+'-0'&&document.querySelector('#sheet .cs-title h2')?.textContent===name;},{game,name:CARDS[game][0].name});
  // Cached ensureCard still has an awaited continuation. History has another
  // real refreshSheet continuation, even while the Overview panel is selected.
@@ -81,31 +81,35 @@ async function noBrokenActionWords(page,scope,selector='.btn'){
  },selector);assert.deepEqual(broken,[],'Labels must wrap between words, never inside Compare/Another/collection or card stat words');
 }
 async function conditionCollection(game){
- const app=await openApp(browser,server.base,{game,width:320,height:1000}),{page,context}=app,selector='#content .display-list > .lot:has(> .lot-side > .condition-value-note)',row=page.locator(selector);
+ const app=await openApp(browser,server.base,{game,width:320,height:1000}),{page,context}=app,selector='#content .display-list > .lot:has(> .lot-side > .condition-value-note)',row=page.locator(selector),allRows=page.locator('#content .display-list > .lot');
  try{
-  const inventory=await inventorySnapshot(page);assert.equal(await row.count(),1,'The real Collection fixture includes its condition-priced lot');
-  const snapshot=()=>row.evaluate(n=>({metadata:n.querySelector('.lot-sub').textContent.replace(/\s+/g,' ').trim(),note:n.querySelector('.condition-value-note').textContent,price:n.querySelector('.price').textContent,quantity:n.querySelector('.stepper b').textContent})),original=await snapshot();
+  const inventory=await inventorySnapshot(page);assert.equal(await row.count(),1,'The real Collection fixture includes its condition-priced lot');assert.equal(await allRows.count(),CARDS[game].length);
+  const snapshot=()=>allRows.evaluateAll(nodes=>nodes.map(n=>({id:n.querySelector('.lot-art').dataset.entry,metadata:n.querySelector('.lot-sub').textContent.replace(/\s+/g,' ').trim(),icons:[...n.querySelectorAll('.lot-sub svg.emb')].map(x=>({role:x.getAttribute('role'),label:x.getAttribute('aria-label'),title:x.querySelector('title')?.textContent,hidden:x.getAttribute('aria-hidden'),parentLabel:x.parentElement.getAttribute('aria-label')})),note:n.querySelector('.condition-value-note')?.textContent||null,price:n.querySelector('.price').textContent,quantity:n.querySelector('.stepper b').textContent,actions:[...n.querySelectorAll('.lot-side button')].map(b=>[b.dataset.act,b.textContent,b.getAttribute('aria-label')])}))),original=await snapshot();
+  if(game!=='mtg'){const label=game==='ptcg'?'Grass Energy':'LIGHT attribute';assert(original.find(n=>n.note).icons.some(n=>n.role==='img'&&n.label===label&&n.title===label),'The real condition fixture retains its exact accessible Energy/attribute emblem, not just non-rendering title text');}
   for(const mode of ['compact','symbols']){
    await row.evaluate(n=>{window.__conditionPriorRow=n;});await page.locator(`#content [data-act="viewSave"][data-mode="${mode}"]`).click();await page.waitForFunction(mode=>!window.__conditionPriorRow.isConnected&&document.querySelector('#content').classList.contains('view-'+mode),mode);
    for(const batch of [false,true]){
-    if(batch){await page.locator('#content [data-act="batchStart"]').click();await row.locator(':scope > .batch-mark').waitFor();}
+    if(batch){await page.locator('#content [data-act="batchStart"]').click();await row.locator(':scope > .batch-mark').waitFor();assert.equal(await allRows.locator(':scope > .batch-mark').count(),original.length,'Every owned row participates in the batch layout audit');}
     for(const width of [320,390,768]){
-     await page.setViewportSize({width,height:1000});await frame(page);await noOverflow(page,selector,`${game} ${mode} condition row ${width} batch ${batch}`,true);await row.scrollIntoViewIfNeeded();await frame(page);
-     assert.deepEqual(await snapshot(),original,'Reflow preserves every metadata/condition word, price and quantity');
-     const geometry=await row.evaluate(n=>{
-      const rect=x=>x.getBoundingClientRect().toJSON(),info=n.querySelector('.lot-info'),side=n.querySelector('.lot-side'),art=n.querySelector('.lot-art'),mark=n.querySelector('.batch-mark'),targets=[n.querySelector('.lot-sub'),n.querySelector('.condition-value-note')],bad=[];let words=0;
-      for(const target of targets){const bound=target.getBoundingClientRect();if(!bound.width||!bound.height||getComputedStyle(target).visibility!=='visible'||target.scrollWidth>target.clientWidth+2)bad.push({text:target.textContent,reason:'hidden or clipped metadata'});const walker=document.createTreeWalker(target,NodeFilter.SHOW_TEXT);let text;
-       while((text=walker.nextNode()))for(const word of text.textContent.matchAll(/[\p{L}\p{N}]+/gu)){if(word[0].length<3)continue;words++;const range=document.createRange();range.setStart(text,word.index);range.setEnd(text,word.index+word[0].length);const rects=[...range.getClientRects()].filter(r=>r.width&&r.height),rows=new Set(rects.map(r=>Math.round(r.top)));if(!rects.length||rows.size>1||rects.some(r=>r.left<bound.left-2||r.right>bound.right+2||r.top<bound.top-2||r.bottom>bound.bottom+2))bad.push({word:word[0],rects:rects.map(r=>r.toJSON()),bound:bound.toJSON()});}
-      }
-      const controls=[...side.querySelectorAll('button,.stepper')].map(x=>({text:x.textContent,rect:rect(x)}));return {row:rect(n),info:rect(info),side:rect(side),art:art.getClientRects().length?rect(art):null,mark:mark?rect(mark):null,cols:getComputedStyle(n).gridTemplateColumns.split(' ').length,words,bad,controls};
-     });
-     assert(geometry.words>=5,'The actual condition and printing/edition words are audited');assert.deepEqual(geometry.bad,[],`${game} ${mode} ${width}: real metadata words fit intact ${JSON.stringify(geometry)}`);
-     assert.equal(!!geometry.mark,batch);assert.equal(!!geometry.art,mode==='compact');
-     const columns=(mode==='compact'?2:1)+(batch?1:0)+(width>480?1:0);assert.equal(geometry.cols,columns,'Narrow condition rows retain correct artwork/batch columns; wide layout is unchanged');
-     if(width<=480)assert(geometry.side.top>=Math.max(geometry.info.bottom,geometry.art?.bottom||0,geometry.mark?.bottom||0)-2&&geometry.side.left>=geometry.row.left-2&&geometry.side.right<=geometry.row.right+2,'Value, quantity and note have their own full-width row, not the metadata column');
-     else assert(geometry.side.left>=geometry.info.right-2,'Wide condition row retains its original side column');
-     for(const control of geometry.controls)assert(control.rect.left>=geometry.side.left-2&&control.rect.right<=geometry.side.right+2&&control.rect.top>=geometry.side.top-2&&control.rect.bottom<=geometry.side.bottom+2,`Condition actions remain inside their row ${JSON.stringify(control)}`);
-     report.push(`${game} condition ${mode} ${width} batch ${batch}: ${JSON.stringify(geometry)}`);if(width===320)await capture(page,`card-responsive-${game}-condition-${mode}${batch?'-batch':''}`);
+     await page.setViewportSize({width,height:1000});await frame(page);
+     assert.deepEqual(await snapshot(),original,'Reflow preserves every row metadata/condition word, price, quantity and action');
+     // Non-condition batch rows must be measured too: the former 3/5 placement
+     // created an implicit fourth symbols track and stretched their steppers.
+     for(const item of original.filter(item=>batch||item.note)){
+      const targetSelector=`#content .display-list > .lot:has(> .lot-art[data-entry="${item.id}"])`,target=page.locator(targetSelector);
+      await noOverflow(page,targetSelector,`${game} ${mode} ${item.id} ${width} batch ${batch}`,true);await target.scrollIntoViewIfNeeded();await frame(page);
+      const geometry=await target.evaluate(collectionRowGeometry);
+      assert(geometry.words>=(item.note?5:1),'Actual printing/edition, condition, value and action words are audited');assert.deepEqual(geometry.bad,[],`${game} ${mode} ${width} ${item.id}: real visible words fit intact ${JSON.stringify(geometry)}`);
+      assert.equal(!!geometry.mark,batch);assert.equal(!!geometry.art,mode==='compact');
+      const columns=(mode==='compact'?2:1)+(batch?1:0)+(width>480?1:0);assert.equal(geometry.cols,columns,'Narrow rows retain only the correct explicit artwork/batch columns; wide layout is unchanged');
+      if(width<=480)assert(geometry.side.top>=Math.max(geometry.info.bottom,geometry.art?.bottom||0,geometry.mark?.bottom||0)-2&&geometry.side.left>=geometry.row.left-2&&geometry.side.right<=geometry.row.right+2,'Value, quantity and actions have their own full-width row, not the metadata column');
+      else assert(geometry.side.left>=geometry.info.right-2,'Wide row retains its original side column');
+      for(const control of geometry.controls)assert(control.rect.width>0&&control.rect.height>0&&control.rect.left>=geometry.side.left-2&&control.rect.right<=geometry.side.right+2&&control.rect.top>=geometry.side.top-2&&control.rect.bottom<=geometry.side.bottom+2,`Actions remain visibly inside their row ${JSON.stringify(control)}`);
+      for(const stepper of geometry.steppers)assert(stepper.height<=stepper.buttonHeight+stepper.chrome+2,'Quantity control is not stretched to the metadata row height');
+      for(let i=0;i<geometry.footer.length;i++)for(const other of geometry.footer.slice(i+1)){const a=geometry.footer[i];assert(!(Math.min(a.right,other.right)-Math.max(a.left,other.left)>2&&Math.min(a.bottom,other.bottom)-Math.max(a.top,other.top)>2),'Price, quantity, edit and note do not overlap');}
+      report.push(`${game} condition/batch ${mode} ${width} batch ${batch} ${item.id}: ${JSON.stringify(geometry)}`);
+     }
+     if(width===320){await row.scrollIntoViewIfNeeded();await capture(page,`card-responsive-${game}-condition-${mode}${batch?'-batch':''}`);if(batch){await allRows.last().scrollIntoViewIfNeeded();await capture(page,`card-responsive-${game}-all-batch-${mode}`);}}
     }
     if(batch){await page.locator('#content [data-act="batchStart"]').click();await row.locator(':scope > .batch-mark').waitFor({state:'detached'});}
    }
@@ -142,13 +146,7 @@ async function collectionRail(page,context,game,width,expectedSort){
   const measured=[];
   for(const control of await snapshot()){
    await page.keyboard.press('Tab');await frame(page);
-   const state=await rail.evaluate(n=>{
-    const el=document.activeElement,r=n.getBoundingClientRect(),a=el.getBoundingClientRect(),s=getComputedStyle(el),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');ctx.font=[s.fontStyle,s.fontVariant,s.fontWeight,s.fontSize,s.fontFamily].join(' ');
-    const label=el.selectedOptions?.[0]?.label||'',icon=getComputedStyle(el,'::picker-icon'),available=el.clientWidth-parseFloat(s.paddingLeft)-parseFloat(s.paddingRight)-(parseFloat(icon.width)||0)-(parseFloat(s.columnGap)||0),words=label.split(/\s+/),longest=Math.max(...words.map(w=>ctx.measureText(w).width));
-    let lines=1,line='';for(const word of words){const next=line?line+' '+word:word;if(line&&ctx.measureText(next).width>available){lines++;line=word;}else line=next;}
-    const nowrap=['nowrap','pre'].includes(s.whiteSpace),lineHeight=parseFloat(s.lineHeight)||parseFloat(s.fontSize)*1.2,hit=document.elementFromPoint(a.left+a.width/2,a.top+a.height/2);
-    return {inside:el.parentElement===n,change:el.dataset.change,field:el.dataset.field||'',value:el.value,label,accessible:el.getAttribute('aria-label'),tabIndex:el.tabIndex,disabled:el.disabled,selectedWordWidth:longest,selectedTextWidth:ctx.measureText(label).width,labelWidth:available,nowrap,requiredTextHeight:(nowrap?1:lines)*lineHeight,labelHeight:el.clientHeight-parseFloat(s.paddingTop)-parseFloat(s.paddingBottom),ellipsis:s.textOverflow==='ellipsis',scrollWidth:el.scrollWidth,clientWidth:el.clientWidth,scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,rect:a.toJSON(),rail:r.toJSON(),railWidth:n.clientWidth,railScroll:n.scrollWidth,position:n.scrollLeft,overflow:getComputedStyle(n).overflowX,hit:hit===el||el.contains(hit)};
-   });
+   const state=await rail.evaluate(collectionControlGeometry);
    assert(state.inside&&state.change===control.change&&state.field===control.field&&state.value===control.value&&state.accessible&&state.accessible===control.label&&!state.disabled&&state.tabIndex>=0,`Tab reaches the actual accessible selected control ${JSON.stringify(state)}`);
    assert(state.rail.left>=-.5&&state.rail.right<=width+.5&&/^(auto|scroll)$/.test(state.overflow),'Known Collection rail stays locally bounded');
    assert(state.rect.left>=state.rail.left-2&&state.rect.right<=state.rail.right+2&&state.hit,`Keyboard reveals each complete trigger without document scrolling sideways ${JSON.stringify(state)}`);
@@ -287,11 +285,24 @@ async function scenario(game){
    const initial=await page.evaluate(()=>{const old=window.__heldInitial,body=document.querySelector('#sheetBody'),card=body.querySelector('.cs-card .cd-img'),r=card.getBoundingClientRect(),sheet=body.getBoundingClientRect();return {connected:card.isConnected,same:card===old.card&&body===old.body&&old.ctx===window.__uiTestState.ui.sheetCtx&&body.detailMountGeneration===old.generation&&body.dataset.detailIdentity===old.identity,foreground:window.__responsiveFeel.motionCard()===card,foregroundDialog:[...document.querySelectorAll('dialog[open]')].at(-1)?.id,visible:r.bottom>Math.max(0,sheet.top)&&r.top<Math.min(innerHeight,sheet.bottom)&&r.right>0&&r.left<innerWidth,rect:r.toJSON(),hover:card.matches(':hover'),hovered:[...document.querySelectorAll(':hover')].slice(-4).map(n=>n.tagName+'.'+n.className),pointer:window.__openingPointer,gyro:card.classList.contains('gyro'),tx:card.style.getPropertyValue('--tx'),history:window.__responsiveHistory.sharedHistory.get(window.__openingDetail.key)?.checked||null,generation:body.detailMountGeneration};});
    assert(initial.same&&initial.foreground&&initial.foregroundDialog==='sheet'&&initial.visible,`Held initial card stays mounted and is actually visible in the foreground ${JSON.stringify(initial)}`);
    assert(initial.connected&&initial.gyro&&initial.tx!=='0deg'&&!initial.history,`Initial cached card tilts before its held history response can replace it ${JSON.stringify(initial)}`);report.push('ptcg held initial tilt: '+JSON.stringify(initial));held.release();
-  }:null);}finally{held?.release();await page.evaluate(()=>{window.__openingPointerAbort?.abort();delete window.__openingPointerAbort;});}
+  }:null,held?'touch':'mouse');}finally{held?.release();}
   if(held){
-   const replacement=await page.evaluate(()=>{const old=window.__heldInitial,body=document.querySelector('#sheetBody'),card=body.querySelector('.cs-card .cd-img');return {sameContext:old.ctx===window.__uiTestState.ui.sheetCtx,sameBody:body===old.body,sameIdentity:body.dataset.detailIdentity===old.identity,newMount:body.detailMountGeneration>old.generation,newCard:card!==old.card,oldDetached:!old.card.isConnected,connected:card.isConnected};});
-   assert.deepEqual(replacement,{sameContext:true,sameBody:true,sameIdentity:true,newMount:true,newCard:true,oldDetached:true,connected:true});await turn(page,50,25);assert(await page.locator('#sheet .cs-card .cd-img').evaluate(n=>n.classList.contains('gyro')&&n.style.getPropertyValue('--tx')!=='0deg'),'Late exact-history replacement rebinds tilt without enlarged-art detour');report.push('ptcg real history replacement tilt: '+JSON.stringify(replacement));
+   const replacement=await page.evaluate(()=>{const old=window.__heldInitial,body=document.querySelector('#sheetBody'),card=body.querySelector('.cs-card .cd-img');window.__motionProof={ctx:old.ctx,body,card,generation:body.detailMountGeneration,identity:body.dataset.detailIdentity};return {sameContext:old.ctx===window.__uiTestState.ui.sheetCtx,sameBody:body===old.body,sameIdentity:body.dataset.detailIdentity===old.identity,newMount:body.detailMountGeneration>old.generation,newCard:card!==old.card,oldDetached:!old.card.isConnected,connected:card.isConnected};});
+   assert.deepEqual(replacement,{sameContext:true,sameBody:true,sameIdentity:true,newMount:true,newCard:true,oldDetached:true,connected:true});
+   const probe=async label=>{const value=await page.evaluate(detailMotionState);report.push('ptcg replacement '+label+': '+JSON.stringify(value));assert(value.same&&value.connected&&value.foreground&&value.foregroundDialog==='sheet'&&value.visible,`Exact replacement is visible and foreground throughout ${label}: ${JSON.stringify(value)}`);return value;};
+   const before=await probe('before calibration');assert(before.pointer.some(e=>e.type==='pointerdown'&&e.pointer==='touch'&&e.trusted&&e.card?.includes('lot-art')),'The held phone case genuinely opens with trusted touch, not a stationary mouse hover');
+   await turn(page,45,15);const calibrated=await probe('calibrated');assert(calibrated.gyro&&Number.isFinite(parseFloat(calibrated.tx))&&Number.isFinite(parseFloat(calibrated.ty)),'Replacement binds its own resting angle; zero is valid for calibration');
+   await turn(page,55,28);const moved=await probe('distinct sample');assert(moved.gyro&&moved.tx!=='0deg'&&moved.tx!==calibrated.tx,'A different orientation moves the same replacement mount after calibration, without enlarged artwork');
+   // Independently preserve genuine desktop pointer ownership. A sensor event
+   // cannot steal its transform; exiting the card resumes this same mount.
+   const bodyBox=await page.locator('#sheetBody').boundingBox(),r=moved.rect,x=r.left+r.width*.2,y=Math.max(r.top,bodyBox.y)+Math.min(30,(Math.min(r.bottom,bodyBox.y+bodyBox.height)-Math.max(r.top,bodyBox.y))/2);
+   assert(await page.evaluate(({x,y})=>document.elementFromPoint(x,y)?.closest('.cd-img')===window.__motionProof.card,{x,y}),'Mouse proof hits the actual visible replacement card');
+   await page.mouse.move(x,y);await frame(page);const owned=await probe('mouse owned');assert(owned.hover&&owned.pointer.some(e=>e.type==='pointermove'&&e.pointer==='mouse'&&e.trusted&&e.card?.includes('cd-img')),'Trusted mouse owns the real replacement card');assert(Number.isFinite(parseFloat(owned.tx))&&owned.tx!=='0deg'&&(owned.tx!==moved.tx||owned.ty!==moved.ty),'Trusted mouse movement actually changes the preceding sensor transform');
+   await turn(page,60,35);const suppressed=await probe('sensor while mouse owned');assert.equal(suppressed.tx,owned.tx);assert.equal(suppressed.ty,owned.ty,'Sensor cannot overwrite either mouse-owned axis');
+   await page.mouse.move(1,1);await turn(page,65,40);const resumed=await probe('mouse exit');assert(!resumed.hover&&resumed.gyro&&resumed.tx!=='0deg'&&resumed.tx!==owned.tx&&resumed.pointer.some(e=>e.type==='pointerout'&&e.pointer==='mouse'&&e.trusted&&e.card?.includes('cd-img')),'Trusted exit resumes phone motion on the exact same mount');
+   report.push('ptcg real history replacement tilt: '+JSON.stringify(replacement));
   }
+  await page.evaluate(()=>{window.__openingPointerAbort?.abort();delete window.__openingPointerAbort;});
   assert.equal(await page.locator('dialog.zoom').count(),0,'First open has never visited enlarged artwork');
   const card=page.locator('#sheet .cs-card .cd-img');await turn(page,40,12);
   assert(await card.evaluate(n=>n.classList.contains('gyro')&&n.style.getPropertyValue('--tx')!=='0deg'),'Actual first-open card responds to phone motion without zoom round trip');
@@ -345,7 +356,7 @@ async function scenario(game){
   assert.equal(await inventorySnapshot(page),inventory,'Presentation/format viewing never changes inventory or deck data');
   report.push(`${game}: actual first-open touch and simulated phone orientation, no zoom detour, compact stats, intact action words, same mounted dialog 390x600→768→1024→844 landscape→390x1000→390x600 with exact clamp/roundtrip, actual latest trusted user scroll across geometries, fresh close/reopen scroll lifetime, selected printing/tab/scroll, and actual Home/Collection/Search/Sets/Decks roots.`);
   await app.close();
- }catch(error){await capture(page,`card-responsive-${game}-failure`).catch(()=>{});await context.close();throw error;}
+ }catch(error){await page.evaluate(()=>{window.__openingPointerAbort?.abort();delete window.__openingPointerAbort;}).catch(()=>{});await capture(page,`card-responsive-${game}-failure`).catch(()=>{});await context.close();throw error;}
 }
 try{
  browser=await chromium.launch();const failures=[];for(const game of GAMES)for(const check of [focusedSuggestions,scenario,conditionCollection])try{await check(game);}catch(error){failures.push(error);report.push(game+' '+check.name+': '+String(error.stack||error));}
