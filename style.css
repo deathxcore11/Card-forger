@@ -3392,7 +3392,7 @@ body[data-view="scan"] #content { padding-top:14px; }
 @media (max-width:380px) { .scan-toolbar h1 { font-size:20px; }.scan-batch-summary .btn { padding:7px 8px; } }
 @media (min-width:900px) { .scan-workspace .cam-wrap.immersive { height:min(62dvh,620px); }.scan-workspace .scan-batch-review { bottom:20px; } }
 /* Detection is internal. No live outline/mask, including stale scanner markup. */
-.scan-workspace .cam-guide { display:none!important; }
+.scan-workspace .cam-guide,.scan-workspace .scan-frame-hint { display:none!important; }
 .scan-batch-thumb { transform-origin:center bottom; }
 
 /* Home / editorial edition: one artwork, one story, space to discover. */
@@ -4087,13 +4087,6 @@ body[data-view="home"] .home-meta-copy h3 { font-size:clamp(22px,3vw,28px); }
 
 .home-overview:not(:has(.hh-credit)) { grid-template-columns:minmax(0,1fr); }
 
-/* Calm scanner corners are decorative, not the detected outline or crop area.
-   Reserve both control rows; short/folded layouts keep the feed, not this hint. */
-.scan-workspace .scan-frame-hint { position:absolute; inset:56px 16px 112px; min-height:0; pointer-events:none; z-index:1; opacity:.74; }
-.scan-workspace .scan-frame-hint svg { display:block; width:100%; height:100%; fill:none; stroke:#fff; stroke-width:2.5; stroke-linecap:round; filter:drop-shadow(0 1px 2px #0009); }
-.scan-workspace .scan-frame-hint .scan-frame-accent { stroke:var(--game-color,#7ce3bb); stroke-width:2; }
-@media (max-height:700px) { .scan-workspace .scan-frame-hint { display:none; } }
-
 /* App-wide preferences sit over the current task, with no game navigation inside. */
 .settings-dialog {width:min(760px,calc(100vw - 24px));max-width:760px;max-height:calc(100dvh - 32px);margin:auto;padding:0;border:1px solid var(--line);border-radius:26px;background:var(--bg,#14161b);color:var(--text);overflow:auto;overscroll-behavior:contain;box-shadow:0 28px 100px #0009;}
 .settings-dialog::backdrop {background:#05070cb8;backdrop-filter:blur(8px);}
@@ -4272,3 +4265,6 @@ body[data-view="scan"] #content:has(.scan-workspace.is-live) > .context-guide{di
 .profile-art-name{overflow-wrap:anywhere;margin:20px 0 8px}.profile-crop-stage{display:grid;place-items:center;padding:22px 0}.profile-crop{position:relative;width:min(280px,100%);aspect-ratio:1;overflow:hidden;border-radius:50%;background:var(--surface);border:2px solid var(--gold);box-shadow:0 0 0 8px #ffffff06,0 14px 45px #0005;touch-action:none;cursor:grab}.profile-crop:active{cursor:grabbing}.profile-crop:focus-visible{outline:2px solid var(--text);outline-offset:6px}.profile-zoom{display:flex;align-items:center;gap:15px}.profile-zoom input{flex:1;min-width:0;min-height:44px;padding:0;accent-color:var(--gold)}
 .profile-crop-footer{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:18px}.profile-crop-footer .btn{margin-left:auto}.profile-avatar-preview{width:44px;height:44px}
 @media(max-width:380px){.profile-art-dialog{padding:18px}.profile-crop-footer>.small{flex:1}.profile-crop-footer>.btn{width:100%}.profile-crop-stage{padding:16px 8px}}
+
+/* CSS owns breakpoint visibility immediately, even before the search dock moves. */
+@media(max-width:1199px){.topbar>#desktopSearch{display:none!important}}

@@ -4,10 +4,8 @@ import {rankScanCandidates,signalEvidence,scanIdentifierEvidence,scanTitleEviden
 import { ask, askText } from "./dialog.js";
 // Card scanner for all three games:
 //   live camera → find card boundary → normalize perspective → readable text bands → local multi-signal match → confirm → add
-// Text recognition runs on the phone (Tesseract). The guide's colour is about capture quality only:
-//   red    = no card edges in the guide (or far too dark)
-//   amber  = card found but moving, blurry or glared
-//   green  = edges, sharpness, light and stillness all pass for several frames → ready to capture
+// Text recognition runs on the phone (Tesseract). Capture quality is shown
+// in the status message. There is no alignment outline or fixed-size target.
 // Thresholds are starting points tuned on test images; they should be refined with real phone photos.
 import { S } from "./store.js";
 import {catalogState,catalogManifest,initCatalog,invalidateCatalogRead,downloadCatalog,removeCatalog,localScanMatch,localIndexCandidate} from "./scan-catalog.js";
@@ -100,11 +98,11 @@ export function frameMetrics(gray, w, h, g0, prev = null) {
 // Turn the checks into the guide's state, with words (never colour alone).
 export function guideState(m, steady = 0) {
   if (m.bright < T.dark) return { state: "red", icon: "◐", msg: "Too dark. Find more light" };
-  if (m.edges < 3) return { state: "red", icon: "▢", msg: "Move the whole card inside the frame" };
+  if (m.edges < 3) return { state: "red", icon: "▢", msg: "Keep all four card edges visible" };
   if (m.motion > T.motion) return { state: "amber", icon: "✋", msg: "Hold steady" };
   if (m.glare > T.glare) return { state: "amber", icon: "☀", msg: "Tilt slightly to reduce glare" };
   if (m.sharp < T.sharp) return { state: "amber", icon: "◎", msg: "Blurry. Hold still" };
-  if (m.edges < 4) return { state: "amber", icon: "▢", msg: "Line the edges up with the frame" };
+  if (m.edges < 4) return { state: "amber", icon: "▢", msg: "Keep the name and bottom number visible" };
   return steady + 1 >= T.greenFrames ? { state: "green", icon: "✓", msg: "Got it" } : { state: "amber", icon: "✋", msg: "Hold steady…" };
 }
 
@@ -375,9 +373,6 @@ function sessionPanel(g, p, list) {
     }</section>`;
 }
 
-// Decorative framing only. This never tracks a detector quad or gates capture.
-const calmFrame = `<div class="scan-frame-hint" aria-hidden="true"><svg viewBox="0 0 210 294" preserveAspectRatio="xMidYMid meet" focusable="false"><path d="M2 32V12Q2 2 12 2H32M178 2H198Q208 2 208 12V32M208 262V282Q208 292 198 292H178M32 292H12Q2 292 2 282V262"/><path class="scan-frame-accent" d="M11 22V14Q11 11 14 11H22M188 283H196Q199 283 199 280V272"/></svg></div>`;
-
 const GAME_LABEL = { mtg: "Magic", ygo: "Yu-Gi-Oh!", ptcg: "Pokémon" };
 
 function catalogControl(g, st) {
@@ -393,8 +388,8 @@ export function scanView(g, gameName) {
   const s=S.ui.scan,p=loadPrefs(g),live=(s.mode||"live")==="live",list=loadSession(g);
   const rail=`<div class="cam-rail">${s.torchCap?`<button class="${s.torch?"on":""}" data-act="scanTorch" aria-pressed="${!!s.torch}" aria-label="Flashlight">${TORCH}</button>`:""}<button data-act="scanSettings" aria-label="Scanner settings">${GEAR}</button></div>`;
   return `<div class="scan-workspace ${s.camOn?'is-live':''}"><div class="scan-toolbar"><h1>Scan</h1><span class="scan-auto-game">Auto game</span><button class="btn ghost small" data-act="scanMode" data-id="${live?'photo':'live'}">${live?'Photo':'Camera'}</button>${s.camOn?`<button class="icon" data-act="scanStop" aria-label="Stop camera">${STOP}</button>`:`<button class="icon" data-act="scanSettings" aria-label="Scanner settings">${GEAR}</button>`}</div>
-  <section class="panel scan-panel">${live?`<div class="cam-wrap ${s.camOn?'immersive':''}" id="camWrap">${s.camOn?`<div id="camSlot"></div>${calmFrame}<div class="cam-status" id="camStatus" role="status"><i class="cam-dot" aria-hidden="true"></i>${esc(s.guide?.msg||'Show one whole card anywhere')}</div>${rail}<div class="scan-flash" id="scanFlash" aria-live="polite"></div><button class="scan-shutter" id="scanCaptureBtn" data-act="scanCapture" aria-label="Capture card now">${CAMERA}</button>`:`<div class="scan-drop"><span class="scan-ghost" aria-hidden="true"></span><b>One card. Then the next.</b><span class="muted small">Magic, Pokémon and Yu-Gi-Oh! detected per card. No need to change the game above.</span><button class="btn scan-go" data-act="scanStart">${CAMERA} Start camera</button><small class="muted">Flat card, good light. Keep all four edges in view.</small></div>`}</div>`:`<div class="actions wrap"><label class="btn">${CAMERA} Take photo<input type="file" accept="image/*" capture="environment" data-change="scanFile" hidden></label><label class="btn ghost">Upload<input type="file" accept="image/*" data-change="scanFile" hidden></label></div>${s.url?`<div class="crop-wrap" id="cropWrap"><img id="cropImg" src="${esc(s.url)}" alt="Your photo"><div class="crop-box" id="cropBox"></div></div><div class="actions wrap"><button class="btn ghost small" data-act="scanRotate">Rotate</button><button class="btn ghost small" data-act="scanCropReset">Whole photo</button><button class="btn" data-act="scanRead" ${s.busy||s.photoLoading?'disabled':''}>${s.busy||s.photoLoading?'Reading…':'Read card'}</button></div>`:''}`}
-  <p class="scan-status-line" id="scanStatus" role="status">${esc(s.status||(s.camOn?'Keep the whole card visible. Exact alignment isn’t needed.':'Capture first. Review only what needs checking.'))}</p></section>
+  <section class="panel scan-panel">${live?`<div class="cam-wrap ${s.camOn?'immersive':''}" id="camWrap">${s.camOn?`<div id="camSlot"></div><div class="cam-status" id="camStatus" role="status"><i class="cam-dot" aria-hidden="true"></i>${esc(s.guide?.msg||'Show one whole card anywhere')}</div>${rail}<div class="scan-flash" id="scanFlash" aria-live="polite"></div><button class="scan-shutter" id="scanCaptureBtn" data-act="scanCapture" aria-label="Capture card now">${CAMERA}</button>`:`<div class="scan-drop"><span class="scan-ghost" aria-hidden="true"></span><b>One card. Then the next.</b><span class="muted small">Magic, Pokémon and Yu-Gi-Oh! detected per card. No need to change the game above.</span><button class="btn scan-go" data-act="scanStart">${CAMERA} Start camera</button><small class="muted">Flat card, good light. Keep all four edges in view.</small></div>`}</div>`:`<div class="actions wrap"><label class="btn">${CAMERA} Take photo<input type="file" accept="image/*" capture="environment" data-change="scanFile" hidden></label><label class="btn ghost">Upload<input type="file" accept="image/*" data-change="scanFile" hidden></label></div>${s.url?`<div class="crop-wrap" id="cropWrap"><img id="cropImg" src="${esc(s.url)}" alt="Your photo"><div class="crop-box" id="cropBox"></div></div><div class="actions wrap"><button class="btn ghost small" data-act="scanRotate">Rotate</button><button class="btn ghost small" data-act="scanCropReset">Whole photo</button><button class="btn" data-act="scanRead" ${s.busy||s.photoLoading?'disabled':''}>${s.busy||s.photoLoading?'Reading…':'Read card'}</button></div>`:''}`}
+  <p class="scan-status-line" id="scanStatus" role="status">${esc(s.status||(s.camOn?'Move closer until the name and bottom number are clear. Keep all four edges visible.':'Capture first. Review only what needs checking.'))}</p></section>
   ${batchTray(s)}${scanConfirmation(s.confirm?.game||g,s,p)}
   <p class="scan-disclosure">Finish and condition are not detected from a photo. ${p.finishConfirmed?`Batch finish: ${esc(finishLabel(g,null,p.finish))}.`:'Choose the finish during review, or set a batch default in settings.'}</p>
   ${list.length?`<details class="scan-legacy-session"><summary>${sessionCount(list)} cards in your previous scan list</summary>${sessionPanel(g,p,list)}</details>`:''}</div>`;

@@ -6,11 +6,12 @@ import {S,blank} from './store.js';
 const [release]=normalizeYgoSets([{set_name:'2025 Mega-Pack Tin',set_code:'MP25',tcg_date:'2025-09-04'}]);
 const card={game:'ygo',id:'64603182',name:'Ancient Gear Dark Golem',category:'Monster',stats:[],sets:[{name:release.name,code:'MP25-EN003',rarity:'Starlight Rare',price:null}],prices:{usd:999}};
 let calls=0;const saved=new Map(),writes=[];globalThis.caches={default:{match:async k=>saved.get(k.url)?.clone(),put:async(k,v)=>saved.set(k.url,v)}};
-const provider=async url=>{calls++;return Response.json({results:url.endsWith('/groups')?[{name:'2025 Mega-Pack',abbreviation:'MP25',groupId:24308}]:url.endsWith('/products')?[{name:card.name,groupId:24308,categoryId:2,productId:651403,extendedData:[{name:'Number',value:'MP25-EN003'},{name:'Rarity',value:'Starlight Rare'}]}]:[{productId:651403,subTypeName:'1st Edition',marketPrice:.54,midPrice:.59,lowPrice:.12}]});};
+const provider=async (url,options)=>{assert.match(options.headers['User-Agent'],/^CardStashy\//);calls++;return Response.json({results:url.endsWith('/groups')?[{name:'2025 Mega-Pack',abbreviation:'MP25',groupId:24308}]:url.endsWith('/products')?[{name:card.name,groupId:24308,categoryId:2,productId:651403,extendedData:[{name:'Number',value:'MP25-EN003'},{name:'Rarity',value:'Starlight Rare'}]}]:[{productId:651403,subTypeName:'1st Edition',marketPrice:.54,midPrice:.59,lowPrice:.12}]});};
 const url=new URL('https://app.test/api/prices/yugioh-set?'+new URLSearchParams({name:release.name,code:release.code}));
 const [a,b]=await Promise.all([ygoSetPriceRoute(url,{waitUntil:p=>writes.push(p)},provider),ygoSetPriceRoute(url,{waitUntil:p=>writes.push(p)},provider)]);
 assert.equal(calls,3,'Concurrent set lookups share three free source requests');
-const body=await a.json();assert.deepEqual(body,await b.json());await Promise.all(writes);await ygoSetPriceRoute(url,{},provider);assert.equal(calls,3,'Six-hour response cache reused');
+assert.equal(a.headers.get('Cache-Control'),'public,max-age=86400');
+const body=await a.json();assert.deepEqual(body,await b.json());await Promise.all(writes);await ygoSetPriceRoute(url,{},provider);assert.equal(calls,3,'Daily response cache reused');
 const enriched=applyYgoSetPrices(card,release,body);assert.equal(card.sets[0].quotes,undefined,'No original mutation');assert.equal(enriched.sets[0].quotes[0].market,.54);
 const selected=selectedYgoCard(setContextCard('ygo',enriched,release,[release]),'MP25-EN003::Starlight Rare','1st-edition');assert.equal(selected.prices.usd,.54);assert.match(tcgRarityAttrs(selected),/yr4/);
 assert.equal(selectedYgoCard(setContextCard('ygo',enriched,release,[release])).prices.usd,null,'Edition remains an explicit choice');
@@ -23,6 +24,8 @@ ui('ygo').set.edition='';html=tcgSet();assert.match(html,/\$0.54/);assert.match(
 const collector={...card,sets:[{...card.sets[0],rarity:"Collector's Rare"}]},collectorBody={...body,products:[{...body.products[0],name:card.name+' (CR)',rarity:"Collector's Rare"}]};
 assert.equal(applyYgoSetPrices(collector,release,collectorBody).sets[0].quotes[0].market,.54);
 assert.equal(applyYgoSetPrices(collector,release,{...collectorBody,products:[{...collectorBody.products[0],name:card.name+' (Starlight Rare)'}]}).sets[0].quotes,undefined,'Only the exact rarity suffix can be removed');
+assert.equal([...saved.keys()].filter(k=>k.startsWith('https://tcgcsv.com/')).length,3,'Each public source object is cached for other set lookups');
+saved.delete('https://tcgcsv.com/tcgplayer/2/groups');
 const failure=await ygoSetPriceRoute(new URL(url.href.replace('MP25','BAD')),{},async()=>{throw Error('offline')});assert.equal(failure.status,503);
 console.log('PASS: exact cached set-price hydration, three bounded source requests, deduplication, missing/ambiguous/name/rarity rejection, explicit edition, actual grid prices/tier and rarity coexistence.');
 

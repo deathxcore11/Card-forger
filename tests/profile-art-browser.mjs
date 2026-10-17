@@ -26,7 +26,7 @@ try{
    await circle.focus();await page.keyboard.press('ArrowRight');assert.notEqual(await circle.locator('img').getAttribute('style'),beforeStyle,'Keyboard pans the crop');
    const r=await circle.boundingBox();await page.mouse.move(r.x+r.width/2,r.y+r.height/2);await page.mouse.down();await page.mouse.move(r.x+r.width/2+28,r.y+r.height/2+18,{steps:4});await page.mouse.up();
    for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:900});await noOverflow(page,'.profile-art-dialog','Profile crop '+width);}
-   await capture(page,'synthetic-profile-crop-'+game);
+   await capture(page,'synthetic-search-profile-crop-'+game);
    if(game!=='ygo')await page.locator('[data-avatar-back]').click();
   }
   await page.locator('[data-avatar-save]').click();await page.waitForFunction(()=>!document.querySelector('.profile-art-dialog'));
@@ -37,5 +37,5 @@ try{
   assert.deepEqual(await page.evaluate(()=>window.__uiTestState.state.settings.cardAvatar),saved,'Cancel discards crop changes');
   await page.reload();await page.locator('#app.ready').waitFor();assert.equal(await page.locator('.topbar .profile-avatar img').getAttribute('src'),saved.image,'Avatar survives reload');
   app.health();console.log('PASS: compact header, desktop Sets shortcut, all-game card lookup, mouse/keyboard crop, save/cancel/reload and unchanged inventory.');
- }catch(error){await capture(page,'synthetic-profile-failure');throw error;}finally{await app.context.close();}
+ }catch(error){console.error(error.stack);await capture(page,'synthetic-search-profile-failure').catch(e=>console.error(e.message));throw error;}finally{await app.context.close();}
 }finally{await browser.close();await server.close();}
