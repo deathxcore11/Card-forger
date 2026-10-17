@@ -122,7 +122,10 @@ export function retainCommunityItems(items, now = Date.now()) {
 async function boundedHtml(url, fetchImpl) {
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 6500);
   try {
-    const r = await fetchImpl(url, { redirect: 'error', signal: controller.signal, headers: { Accept: 'text/html', 'User-Agent': 'CardStashy (public publisher news; cached daily)' } });
+    // Workers accepts only follow/manual. Never follow even a same-host redirect:
+    // Location is untrusted and must not expand the fixed publisher allowlist.
+    const r = await fetchImpl(url, { redirect: 'manual', signal: controller.signal, headers: { Accept: 'text/html', 'User-Agent': 'CardStashy (public publisher news; cached daily)' } });
+    if (r.status >= 300 && r.status < 400) throw Error('Publisher redirects are not allowed');
     if (!r.ok) throw Error(`Publisher returned ${r.status}`);
     if (!/text\/html|application\/xhtml/i.test(r.headers.get('Content-Type') || '')) throw Error('Publisher did not return a news page');
     if (Number(r.headers.get('Content-Length')) > MAX_BYTES) throw Error('Publisher page exceeded the size limit');
@@ -170,11 +173,24 @@ export async function communityFeedRoute(request, url, ctx, { fetchImpl = fetch,
   if (request.method !== 'GET') return json({ error: 'GET only' }, 405, 0);
   const game = url.searchParams.get('game');
   if (!Object.hasOwn(COMMUNITY_SOURCES, game || '') || [...url.searchParams.keys()].some(k => k !== 'game') || url.searchParams.getAll('game').length !== 1) return json({ error: 'Choose mtg, ptcg or ygo only' }, 400, 0);
-  const key = new Request(`https://cardforge.cache/community/v1/${game}`);
+  const key = new Request(`https://cardforge.cache/community/v2/${game}`);
   let old = null; try { old = await (await cache?.match(key))?.json(); } catch {}
+  // Recover once from v1's unsupported redirect mode without losing valid news.
+  // Only v2 controls backoff; old snapshots remain bounded by normal retention.
+  if (!old && !snapshots.has(game)) {
+    try {
+      const legacy = await (await cache?.match(new Request(`https://cardforge.cache/community/v1/${game}`)))?.json();
+      if (legacy?.game === game && Array.isArray(legacy.items)) old = { ...legacy, nextCheckAt: '' };
+    } catch {}
+  }
+  // Recheck after asynchronous legacy lookup: another caller may have completed
+  // the corrected refresh while this one was reading its old snapshot.
   const memory = snapshots.get(game);
-  if (memory && (!old || Date.parse(memory.checkedAt) > Date.parse(old.checkedAt))) old = memory;
-  if (old && Date.parse(old.nextCheckAt) > now && Date.parse(old.checkedAt) <= now) return json({ ...old, items: retainCommunityItems(old.items, now) });
+  if (memory && (!old || !old.nextCheckAt || Date.parse(memory.checkedAt) > Date.parse(old.checkedAt))) old = memory;
+  // A later-started caller can finish while this request awaits cache I/O. Its
+  // in-process result is trusted even if checkedAt is newer than our start time;
+  // future-dated external cache entries must still trigger a bounded refresh.
+  if (old && Date.parse(old.nextCheckAt) > now && (old === memory || Date.parse(old.checkedAt) <= now)) return json({ ...old, items: retainCommunityItems(old.items, now) });
   if (!pending.has(game)) pending.set(game, refresh(game, old, cache, key, fetchImpl, now).finally(() => pending.delete(game)));
   return json(await pending.get(game));
 }
