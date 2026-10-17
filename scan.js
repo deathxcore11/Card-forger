@@ -175,13 +175,62 @@ export function ptcgNumbers(text) {
   return out.slice(0, 3);
 }
 
-// Magic: collector number and set code from the bottom line ("0123/0281 R" … "FDN • EN").
-export function mtgCollector(text) {
-  const t = String(text).toUpperCase(),
-    num = t.match(/(?<![\d/])0*(\d{1,4})\s?\/\s?\d{2,4}(?![\d/])/)?.[1] || t.match(/\b[CURMLST]\s+0*(\d{1,4})\b/)?.[1] || "",
-    // The dot between set code and language reads as almost anything ("M21 + EN", "M21 « EN", "M21 EN").
-    set = t.match(/\b([A-Z0-9]{3,5})\s*[^A-Z0-9\s]{0,2}\s*(?:EN|ES|FR|DE|IT|PT|JA|JP)\b/)?.[1] || "";
-  return num && set ? { set: set.toLowerCase(), number: num } : null;
+// Magic footer observations must keep a number beside its own set/language line.
+// OCR retries can disagree. Keep every distinct pair; never splice the first number
+// in one read to an unrelated set elsewhere, or treat a majority as verification.
+export function mtgCollectors(...texts) {
+  const observations = new Map();
+  const token = '(?:[A-Z0-9]{1,8}-)?[A-Z]{0,5}0*\\d{1,4}(?:[A-Z]|[★†][A-Z]?)?';
+  const add = (set, number) => {
+    const pair = { set: set.toLowerCase(), number: number.replace(/^0+(?=\d)/, '').toLowerCase() };
+    observations.set(pair.set + ':' + pair.number, pair);
+  };
+  for (const text of texts) {
+    let pending = [], copyrightBridge = false;
+    for (const line of String(text || '').toUpperCase().split(/\r?\n/).map(s => s.trim()).filter(Boolean)) {
+      // A complete alphanumeric collector token is indivisible: 123a is not 123.
+      const fractions = [...line.matchAll(new RegExp('(?<![A-Z0-9/★†-])(' + token + ')[ \t]?/[ \t]?\\d{2,4}(?![A-Z0-9/★†-])', 'g'))];
+      const marked = [...line.matchAll(new RegExp('\\b[CURMLST][ \t]+(' + token + ')(?![A-Z0-9/★†-])', 'g'))];
+      const sets = [...line.matchAll(/\b([A-Z0-9]{3,5})(?:[ \t]+|[ \t]*[^A-Z0-9\s]{1,2}[ \t]*)(?:EN|ES|FR|DE|IT|PT|JA|JP)\b/g)];
+      // On old footers the rarity follows the fraction, sometimes with OCR noise
+      // ("162/274 R 2"). Prefer that fraction within its own footer, not over a
+      // separate numbered footer that happens to share the same OCR line.
+      const group = m => sets.findIndex(s => s.index >= m.index + m[0].length);
+      const numbers = [...fractions, ...marked.filter(m => !fractions.some(f => group(f) === group(m)))]
+        .sort((a, b) => a.index - b.index).map(m => ({ value: m[1], start: m.index, end: m.index + m[0].length }));
+      if (sets.length) {
+        let afterSet = 0;
+        for (const [i, set] of sets.entries()) {
+          const nearby = numbers.filter(n => n.start >= afterSet && n.end <= set.index);
+          for (const n of nearby.length ? nearby : i === 0 ? pending : []) add(set[1], n.value);
+          afterSet = set.index + set[0].length;
+        }
+        pending = numbers.filter(n => n.start >= afterSet);
+        // Also accept a self-contained reversed footer on one line, not across
+        // separate lines/reads where its number could belong to another footer.
+        if (sets.length === 1 && numbers.length && pending.length === numbers.length) {
+          for (const n of pending) add(sets[0][1], n.value);
+          pending = [];
+        }
+        copyrightBridge = false;
+      } else if (numbers.length) {
+        pending = numbers;
+        copyrightBridge = false;
+      } else if (pending.length && !copyrightBridge && /^(?:©|\(C\))[ \t]*[A-Z][A-Z \t.]*$/.test(line)) {
+        copyrightBridge = true;
+      } else {
+        pending = [];
+        copyrightBridge = false;
+      }
+    }
+  }
+  return [...observations.values()];
+}
+
+// Existing exact-identifier consumers need one unambiguous tuple, not a winner.
+export function mtgCollector(...texts) {
+  const observations = mtgCollectors(...texts);
+  return observations.length === 1 ? observations[0] : null;
 }
 
 // Plausible card names in a noisy name strip, best first: the cleaned line, then the line without

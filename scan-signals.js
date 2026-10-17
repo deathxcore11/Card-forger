@@ -1,4 +1,4 @@
-import {scanNameKey,ptcgNumbers,mtgCollector,ygoSetCodes} from './scan.js';
+import {scanNameKey,ptcgNumbers,mtgCollectors,ygoSetCodes} from './scan.js';
 export const collectorKey=value=>String(value??'').trim().replace(/^0+(?=\d)/,'').toLowerCase();
 export function readScanSignals(g,read={}){
  const header=String(read.name||''),stats=String(read.stats||''),text=header+'\n'+stats+'\n'+String(read.full||'');
@@ -14,18 +14,19 @@ export function signalEvidence(g,card,read={}){
  if(s.stage&&card?.stage){if(s.stage!==String(card.stage).replace(/\s/g,'').toLowerCase())conflicts.push('stage');else agrees.push('stage');}
  if(s.mana&&card?.mana_cost){if(s.mana!==String(card.mana_cost).toUpperCase())conflicts.push('mana cost');else agrees.push('mana cost');}
  const code=String(read.code||'')+'\n'+String(read.full||'');
+ let identifierConflict=false;
  if(g==='ptcg'){const ns=ptcgNumbers(code);if(ns.length&&card?.set?.number&&card?.set?.total){if(!ns.some(n=>collectorKey(n.num)===collectorKey(card.set.number)&&Number(n.total)===Number(card.set.total)))conflicts.push('collector number');else agrees.push('collector number');}}
- if(g==='mtg'){const c=mtgCollector(code);if(c&&card?.set&&card?.collector_number){if(c.set!==card.set||collectorKey(c.number)!==collectorKey(card.collector_number))conflicts.push('set / collector number');else agrees.push('set / collector number');}}
+ if(g==='mtg'){const cs=mtgCollectors(read.code,read.full);identifierConflict=cs.length>1;if(cs.length&&card?.set&&card?.collector_number){if(!cs.some(c=>c.set===String(card.set).toLowerCase()&&collectorKey(c.number)===collectorKey(card.collector_number)))conflicts.push('set / collector number');else agrees.push('set / collector number');}}
  if(g==='ygo'){
   const ids=String(read.code||'').split(/\r?\n/).map(x=>x.trim()).filter(x=>/^\d{8}$/.test(x));
   if(ids.length&&/^\d+$/.test(String(card?.id||''))){if(!ids.some(x=>Number(x)===Number(card.id)))conflicts.push('passcode');else agrees.push('passcode');}
  }
  const attacks=[...new Set([...(card?.attackNames||[]),...(card?.attacks||[]).map(x=>x.name)])];
  for(const name of attacks)if(scanNameKey(name).length>=5&&scanNameKey(s.text).includes(scanNameKey(name)))agrees.push('attack '+name);
- return {conflicts,agrees,score:agrees.length*20};
+ return {conflicts,agrees,score:agrees.length*20,identifierConflict};
 }
 export function rankScanCandidates(g,cands,read={}){
- return cands.map(c=>{const e=signalEvidence(g,c.card,read),codes=g==='ygo'?ygoSetCodes(`${read.code||''}\n${read.full||''}`):[];if(codes.length&&c.print&&!codes.includes(c.print.split('|')[0]))e.conflicts.push('set code');return {c,e};}).filter(x=>!x.e.conflicts.length).sort((a,b)=>b.e.score-a.e.score).map(({c,e})=>({...c,why:e.agrees.length?`${e.agrees.join(' + ')} agree · ${c.exact?'check finish and edition':'check printing'}`:c.why,signalMatches:e.agrees}));
+ return cands.map(c=>{const e=signalEvidence(g,c.card,read),codes=g==='ygo'?ygoSetCodes(`${read.code||''}\n${read.full||''}`):[];if(codes.length&&c.print&&!codes.includes(c.print.split('|')[0]))e.conflicts.push('set code');return {c,e};}).filter(x=>!x.e.conflicts.length).sort((a,b)=>b.e.score-a.e.score).map(({c,e})=>({...c,exact:e.identifierConflict?false:c.exact,...(e.identifierConflict?{identifierConflict:true}:{}),why:e.identifierConflict?'Conflicting printed identifiers · check printing':e.agrees.length?`${e.agrees.join(' + ')} agree · ${c.exact?'check finish and edition':'check printing'}`:c.why,signalMatches:e.agrees}));
 }
 // Bounded edit distance is a suggestion tool; fuzzy names alone never verify a printing.
 export function nameDistance(a,b,limit=2){a=scanNameKey(a);b=scanNameKey(b);if(Math.abs(a.length-b.length)>limit)return limit+1;let prev=Array.from({length:b.length+1},(_,i)=>i);for(let i=1;i<=a.length;i++){const row=[i];for(let j=1;j<=b.length;j++)row[j]=Math.min(row[j-1]+1,prev[j]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));if(Math.min(...row)>limit)return limit+1;prev=row;}return prev[b.length];}

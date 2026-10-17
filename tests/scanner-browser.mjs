@@ -5,7 +5,7 @@ import {readFile,mkdir} from 'node:fs/promises';
 import {resolve,extname} from 'node:path';
 import {chromium,devices} from 'playwright';
 const root=process.cwd(),refs=[
- {game:'Magic',g:'mtg',name:'Lightning Bolt',url:'https://api.scryfall.com/cards/7673784e-db4b-43a1-8d55-1bb9fc1e284f'},
+ {game:'Magic',g:'mtg',name:'Lightning Bolt',id:'7673784e-db4b-43a1-8d55-1bb9fc1e284f',url:'https://api.scryfall.com/cards/7673784e-db4b-43a1-8d55-1bb9fc1e284f'},
  {game:'Pokémon',g:'ptcg',name:'Kyogre',id:'cel25-3',url:'https://api.tcgdex.net/v2/en/cards/cel25-3'},
  {game:'Yu-Gi-Oh!',g:'ygo',name:'Dark Magician',id:'46986414',url:'https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Dark%20Magician'}
 ];
@@ -150,6 +150,15 @@ try{
     const {loadBatch}=await import('/scan-batch.js'),{S}=await import('/store.js'),v=document.querySelector('#scanVideo'),r=v.getBoundingClientRect();
     return {initialBox:window.__cameraInitialBox,video:{width:v.videoWidth,height:v.videoHeight,boxWidth:r.width,boxHeight:r.height},capture:{width:S.ui.scan.lastCard?.width,height:S.ui.scan.lastCard?.height},batch:loadBatch().map(({id,status,read,error,cands})=>({id,status,read,error,candidates:(cands||[]).map(({id,name,exact})=>({id,name,exact}))}))};
    }))}`);
+   const liveMatch=await page.evaluate(async({captureId,expectedId})=>{
+    const {loadBatch}=await import('/scan-batch.js'),{mtgCollectors}=await import('/scan.js'),{textVerifiedMatch}=await import('/scancam.js'),entry=loadBatch().find(x=>x.id===captureId),candidate=entry?.cands?.find(x=>String(x.id)===expectedId);
+    return {status:entry?.status,id:candidate?.id,set:candidate?.card?.set,number:candidate?.card?.collector_number,exact:candidate?.exact,verified:!!candidate&&textVerifiedMatch(entry.game,candidate,entry.read),observations:entry?.game==='mtg'?mtgCollectors(entry.read?.code,entry.read?.full):[]};
+   },{captureId:liveCaptureId,expectedId:ref.id});
+   assert.equal(String(liveMatch.id),ref.id,`${ref.game} live recognition must retain the actual reference printing, never only a matching name`);
+   if(ref.g==='mtg'){
+    assert.equal(liveMatch.set,'msc');assert.equal(String(liveMatch.number).replace(/^0+/,''),'806');
+    if(liveMatch.observations.length>1){assert.equal(liveMatch.status,'review','conflicting OCR requires explicit review, never automatic ready');assert.equal(liveMatch.exact,false);assert.equal(liveMatch.verified,false);}
+   }
    await page.locator(`[data-act="scanBatchReview"][data-id="${liveCaptureId}"]`).click();
    await page.getByRole('region',{name:'Confirm scanned card',exact:true}).waitFor({timeout:15000});
    await page.getByRole('region',{name:'Confirm scanned card',exact:true}).getByText(ref.name,{exact:true}).waitFor();

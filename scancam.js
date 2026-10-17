@@ -462,7 +462,7 @@ export function textVerifiedMatch(g, cand, read = {}) {
   const text = `${read.code || ""}\n${read.full || ""}`;
   if (g === "ptcg") return names.some(n => scanCandidateMatches(cand.card, n, ptcgNumbers(text))) && ptcgNumbers(text).length > 0;
   if (g === "ygo") return ygoSetCodes(text).some(code => code === String(cand.print || "").split("|")[0]);
-  const code = mtgCollector(text);
+  const code = mtgCollector(read.code, read.full);
   return !!code && code.set === String(cand.card.set || "").toLowerCase() && collectorKey(code.number) === collectorKey(cand.card.collector_number);
 }
 
