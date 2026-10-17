@@ -6,7 +6,7 @@ import {selectSetProduct,magicSetArtwork} from './set-art.js';
 assert.equal(pokemonFallback({id:'svp-205'}),'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpci/SVP/SVP_205_R_EN.png');
 assert.equal(pokemonFallback({id:'svp-216'}).includes('SVP_216_R_EN'),true);assert.equal(pokemonFallback({id:'unknown-205'}),'');assert.equal(pokemonFallback({id:'svp-ABC'}),'');
 assert.equal(ptcgImage('https://example.com/card.png'),'https://example.com/card.png');
-const urls=artworkSources({game:'ptcg',id:'svp-205',image:'https://example.com/broken.webp'});assert.equal(urls.length,3);assert.equal(urls[2],'img/ptcg/s/svp-205.jpg','TCGplayer image is the last resort');
+const urls=artworkSources({game:'ptcg',id:'svp-205',image:'https://example.com/broken.webp'});assert.equal(urls.length,3);assert.equal(urls[2],'img/ptcg/s/svp-205.jpg?v=2','TCGplayer image is the last resort');
 let appended=0;const image={dataset:{artSources:JSON.stringify(urls),artIndex:'0'},className:'card-img',insertAdjacentHTML(){appended++;}};
 handleArtworkError({target:image});assert.equal(image.src,urls[1]);assert.equal(appended,0);handleArtworkError({target:image});assert.equal(image.src,urls[2]);handleArtworkError({target:image});assert.equal(image.hidden,true);handleArtworkError({target:image});assert.equal(appended,1);
 const trail=new SheetHistory(2),a={type:'tcard',id:'a'},b={type:'proven',key:'b'},c={type:'tcard',id:'c'};

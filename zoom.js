@@ -4,9 +4,23 @@
 
 const MAX = 6;
 
-export function openZoom({ src, hi, alt = "Card", art = "", artHi = "", fallback = "", holdCard=null }) {
-  const views = [{ id: "card", label: "Card", src, hi: hi || src }];
-  if (art) views.push({ id: "art", label: "Art", src: art, hi: artHi || art });
+// Reuse the picture that actually loaded, not a button's stale first URL.
+export function zoomCardOptions(target) {
+  const data = target.dataset || {}, image = target.querySelector?.("img[data-art-sources]") || target.querySelector?.("img");
+  let sources = [];
+  try { const parsed = JSON.parse(image?.dataset?.artSources || "[]"); if (Array.isArray(parsed)) sources = parsed; } catch {}
+  const src = image?.complete && image.naturalWidth > 0 && !image.hidden ? image.currentSrc || image.src : data.src;
+  return { src, sources, hi:data.hi || (/scryfall\.io/.test(src || "") ? scryfallHi(src) : ""), art:data.art, alt:data.name || "Card", fallback:data.fallback || "", holdCard:{holdCard:"true",id:data.id || "",name:data.name || "",entry:data.entry || ""} };
+}
+export function zoomSources(values, base) {
+  return [...new Set(values.filter(value => typeof value === "string" && value).flatMap(value => {
+    try { const url = new URL(value, base); return ["https:", "http:", "blob:"].includes(url.protocol) || /^data:image\//i.test(value) ? [url.href] : []; } catch { return []; }
+  }))];
+}
+export function openZoom({ src, hi, sources = [], alt = "Card", art = "", artHi = "", fallback = "", holdCard=null }) {
+  const base = document.baseURI;
+  const views = [{ id: "card", label: "Card", sources:zoomSources([src, ...sources, fallback, hi], base), hi:zoomSources([hi], base)[0] }];
+  if (art) views.push({ id: "art", label: "Art", sources:zoomSources([art, artHi], base), hi:zoomSources([artHi], base)[0] });
   const dlg = document.createElement("dialog");
   dlg.className = "zoom";
   dlg.setAttribute("aria-label", `${alt} — enlarged`);
@@ -23,7 +37,7 @@ export function openZoom({ src, hi, alt = "Card", art = "", artHi = "", fallback
   const stage = dlg.querySelector(".zoom-stage"),
     im = dlg.querySelector(".zoom-img"),
     res = dlg.querySelector(".zoom-res");
-  let s = 1, tx = 0, ty = 0, view = 0;
+  let s = 1, tx = 0, ty = 0, view = 0, loadId = 0;
   const pts = new Map();
   let pinch = null, pan = null, lastTap = 0, swipe = null;
 
@@ -59,17 +73,25 @@ export function openZoom({ src, hi, alt = "Card", art = "", artHi = "", fallback
 
   const load = (i) => {
     view = i;
-    const v = views[i];
+    const v = views[i], current = ++loadId, tried = new Set();
+    const active = () => loadId === current && dlg.isConnected;
+    const show = url => { tried.add(url); im.hidden = false; im.src = url; };
+    const recover = () => {
+      if (!active()) return;
+      const next = v.sources.find(url => !tried.has(url));
+      if (next) show(next);
+      else { im.hidden = true; res.textContent = "Artwork unavailable"; }
+    };
     s = 1; tx = ty = 0; apply();
-    im.src = v.src;
-    im.onerror = () => { if (fallback && i === 0 && im.src !== fallback) im.src = fallback; };
-    res.textContent = v.hi !== v.src ? "Loading high resolution…" : "";
-    if (v.hi === v.src) im.onload = () => { if (view === i) res.textContent = `${im.naturalWidth}×${im.naturalHeight}`; };
-    if (v.hi && v.hi !== v.src) {
+    im.onerror = recover;
+    im.onload = () => { if (active()) { im.hidden = false; res.textContent = `${im.naturalWidth}×${im.naturalHeight}`; } };
+    res.textContent = v.hi && v.hi !== v.sources[0] ? "Loading high resolution…" : "";
+    recover();
+    if (v.hi && v.hi !== v.sources[0]) {
       const pre = new Image();
       pre.referrerPolicy = "no-referrer";
-      pre.onload = () => { if (view === i) { im.src = v.hi; res.textContent = `${pre.naturalWidth}×${pre.naturalHeight}`; } };
-      pre.onerror = () => { if (view === i) res.textContent = ""; };
+      pre.onload = () => { if (active() && !tried.has(v.hi)) show(v.hi); };
+      pre.onerror = () => { if (active()) { tried.add(v.hi); if (!im.hidden) res.textContent = im.complete && im.naturalWidth ? `${im.naturalWidth}×${im.naturalHeight}` : ""; } };
       pre.src = v.hi;
     }
     for (const b of dlg.querySelectorAll('[data-z="view"]')) b.setAttribute("aria-selected", String(Number(b.dataset.i) === i));
@@ -79,6 +101,7 @@ export function openZoom({ src, hi, alt = "Card", art = "", artHi = "", fallback
 
   const close = () => {
     if (!dlg.isConnected) return;
+    loadId++;
     dlg.close();
     dlg.remove();
     document.documentElement.classList.remove("zoom-open");

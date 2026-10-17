@@ -79,7 +79,7 @@ import * as T from "./tcg.js";
 import { rulesPage, learnSheet } from "./rules.js";
 import { GAMES, GAME_ICON, GAME_COLOR } from "./games.js";
 import { ICON, actionIcon, decorateGlyphs } from "./icons.js";
-import { openZoom, scryfallHi } from "./zoom.js";
+import { openZoom, zoomCardOptions } from "./zoom.js";
 import { initCloud, cloudInfo, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact, lotPrice } from "./insights.js";
 
@@ -3676,8 +3676,7 @@ C.setGlass = (t) => {
   updateAmbient();
 };
 // Tap a card image: full-screen, high-resolution, zoomable.
-A.zoomCard = (t) =>
-  openZoom({ src: t.dataset.src, hi: t.dataset.hi || (/scryfall\.io/.test(t.dataset.src) ? scryfallHi(t.dataset.src) : ""), art: t.dataset.art, alt: t.dataset.name || "Card", fallback: t.dataset.fallback || "", holdCard:{holdCard:"true",id:t.dataset.id||"",name:t.dataset.name||"",entry:t.dataset.entry||""} });
+A.zoomCard = (t) => openZoom(zoomCardOptions(t));
 // Card sheet Meta tab: fetch tournament results, then redraw the open sheet.
 A.deckMetaLoad = (t) => {
   const p = loadMetaData(t.dataset.key).catch(() => toast("Couldn’t load tournament results right now."));

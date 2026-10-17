@@ -1,0 +1,438 @@
+{
+  "retrieved": "2026-10-17",
+  "description": "Exact public provider card samples and selected product/group rows. Live source fields are retained; these are test data, not an alternative production catalogue.",
+  "sources": {
+    "pokemon": [
+      "https://api.tcgdex.net/v2/en/cards/tk-xy-n-5",
+      "https://api.tcgdex.net/v2/en/cards/tk-xy-n-6",
+      "https://api.tcgdex.net/v2/en/cards/tk-xy-n-7",
+      "https://api.tcgdex.net/v2/en/cards/tk-xy-n-8"
+    ],
+    "groups": "https://tcgcsv.com/tcgplayer/3/groups",
+    "products": "https://tcgcsv.com/tcgplayer/3/1532/products",
+    "ygo": "https://db.ygoprodeck.com/api/v7/cardinfo.php?name=Dark%20Magician"
+  },
+  "pokemon": [
+    {
+      "category": "Energy",
+      "id": "tk-xy-n-5",
+      "localId": "5",
+      "name": "Psychic Energy",
+      "rarity": "Common",
+      "set": {
+        "cardCount": {
+          "official": 30,
+          "total": 30
+        },
+        "id": "tk-xy-n",
+        "name": "XY trainer Kit (Noivern)",
+        "symbol": "https://assets.tcgdex.net/univ/tk/tk-xy-n/symbol"
+      },
+      "variants": {
+        "firstEdition": false,
+        "holo": false,
+        "normal": true,
+        "reverse": false,
+        "wPromo": false
+      },
+      "variants_detailed": [
+        {
+          "type": "normal",
+          "size": "standard",
+          "variantId": "generated"
+        }
+      ],
+      "energyType": "Normal",
+      "legal": {
+        "standard": true,
+        "expanded": true
+      },
+      "updated": "2025-08-16T20:39:55Z",
+      "thirdParty": {
+        "tcgplayer": 98000
+      },
+      "pricing": {
+        "cardmarket": null,
+        "tcgplayer": {
+          "unit": "USD",
+          "updated": "2026-10-14T22:54:53.945Z",
+          "normal": {
+            "productId": 98000,
+            "lowPrice": 0.25,
+            "midPrice": 0.33,
+            "highPrice": 19.8,
+            "marketPrice": 0.3,
+            "directLowPrice": null
+          }
+        }
+      }
+    },
+    {
+      "category": "Energy",
+      "id": "tk-xy-n-6",
+      "localId": "6",
+      "name": "Psychic Energy",
+      "rarity": "Common",
+      "set": {
+        "cardCount": {
+          "official": 30,
+          "total": 30
+        },
+        "id": "tk-xy-n",
+        "name": "XY trainer Kit (Noivern)",
+        "symbol": "https://assets.tcgdex.net/univ/tk/tk-xy-n/symbol"
+      },
+      "variants": {
+        "firstEdition": false,
+        "holo": false,
+        "normal": true,
+        "reverse": false,
+        "wPromo": false
+      },
+      "variants_detailed": [
+        {
+          "type": "normal",
+          "size": "standard",
+          "variantId": "generated"
+        }
+      ],
+      "energyType": "Normal",
+      "legal": {
+        "standard": true,
+        "expanded": true
+      },
+      "updated": "2025-08-16T20:39:55Z",
+      "thirdParty": {
+        "tcgplayer": 98001
+      },
+      "pricing": {
+        "cardmarket": null,
+        "tcgplayer": {
+          "unit": "USD",
+          "updated": "2026-10-14T22:54:53.945Z",
+          "normal": {
+            "productId": 98001,
+            "lowPrice": 0.25,
+            "midPrice": 0.47,
+            "highPrice": 19.8,
+            "marketPrice": 0.45,
+            "directLowPrice": null
+          }
+        }
+      }
+    },
+    {
+      "category": "Energy",
+      "id": "tk-xy-n-7",
+      "localId": "7",
+      "name": "Psychic Energy",
+      "rarity": "Common",
+      "set": {
+        "cardCount": {
+          "official": 30,
+          "total": 30
+        },
+        "id": "tk-xy-n",
+        "name": "XY trainer Kit (Noivern)",
+        "symbol": "https://assets.tcgdex.net/univ/tk/tk-xy-n/symbol"
+      },
+      "variants": {
+        "firstEdition": false,
+        "holo": false,
+        "normal": true,
+        "reverse": false,
+        "wPromo": false
+      },
+      "variants_detailed": [
+        {
+          "type": "normal",
+          "size": "standard",
+          "variantId": "generated"
+        }
+      ],
+      "energyType": "Normal",
+      "legal": {
+        "standard": true,
+        "expanded": true
+      },
+      "updated": "2025-08-16T20:39:55Z",
+      "thirdParty": {
+        "tcgplayer": 98002
+      },
+      "pricing": {
+        "cardmarket": null,
+        "tcgplayer": {
+          "unit": "USD",
+          "updated": "2026-10-14T22:54:53.945Z",
+          "normal": {
+            "productId": 98002,
+            "lowPrice": 0.15,
+            "midPrice": 0.4,
+            "highPrice": 19.8,
+            "marketPrice": 0.16,
+            "directLowPrice": null
+          }
+        }
+      }
+    },
+    {
+      "category": "Energy",
+      "id": "tk-xy-n-8",
+      "localId": "8",
+      "name": "Psychic Energy",
+      "rarity": "Common",
+      "set": {
+        "cardCount": {
+          "official": 30,
+          "total": 30
+        },
+        "id": "tk-xy-n",
+        "name": "XY trainer Kit (Noivern)",
+        "symbol": "https://assets.tcgdex.net/univ/tk/tk-xy-n/symbol"
+      },
+      "variants": {
+        "firstEdition": false,
+        "holo": false,
+        "normal": true,
+        "reverse": false,
+        "wPromo": false
+      },
+      "variants_detailed": [
+        {
+          "type": "normal",
+          "size": "standard",
+          "variantId": "generated"
+        }
+      ],
+      "energyType": "Normal",
+      "legal": {
+        "standard": true,
+        "expanded": true
+      },
+      "updated": "2025-08-16T20:39:55Z",
+      "thirdParty": {
+        "tcgplayer": 98003
+      },
+      "pricing": {
+        "cardmarket": null,
+        "tcgplayer": {
+          "unit": "USD",
+          "updated": "2026-10-14T22:54:53.945Z",
+          "normal": {
+            "productId": 98003,
+            "lowPrice": 0.15,
+            "midPrice": 0.25,
+            "highPrice": 19.8,
+            "marketPrice": 0.25,
+            "directLowPrice": null
+          }
+        }
+      }
+    }
+  ],
+  "groups": [
+    {
+      "groupId": 1532,
+      "name": "XY Trainer Kit: Sylveon & Noivern",
+      "abbreviation": "PR",
+      "isSupplemental": false,
+      "publishedOn": "2014-03-12T00:00:00",
+      "modifiedOn": "2026-08-10T16:07:20.71",
+      "categoryId": 3
+    }
+  ],
+  "products": [
+    {
+      "productId": 98000,
+      "name": "Psychic Energy (#5)",
+      "cleanName": "Psychic Energy 5",
+      "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/98000_200w.jpg",
+      "categoryId": 3,
+      "groupId": 1532,
+      "url": "https://www.tcgplayer.com/product/98000/pokemon-xy-trainer-kit-sylveon-and-noivern-psychic-energy-5",
+      "modifiedOn": "2022-12-19T17:23:03.953",
+      "imageCount": 1,
+      "presaleInfo": {
+        "isPresale": false,
+        "releasedOn": null,
+        "note": null
+      },
+      "extendedData": [
+        {
+          "name": "Number",
+          "displayName": "Card Number",
+          "value": "5/30"
+        },
+        {
+          "name": "Rarity",
+          "displayName": "Rarity",
+          "value": "Common"
+        },
+        {
+          "name": "Card Type",
+          "displayName": "Card Type",
+          "value": "Basic Energy"
+        }
+      ]
+    },
+    {
+      "productId": 98001,
+      "name": "Psychic Energy (#6)",
+      "cleanName": "Psychic Energy 6",
+      "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/98001_200w.jpg",
+      "categoryId": 3,
+      "groupId": 1532,
+      "url": "https://www.tcgplayer.com/product/98001/pokemon-xy-trainer-kit-sylveon-and-noivern-psychic-energy-6",
+      "modifiedOn": "2022-12-19T17:23:17.25",
+      "imageCount": 1,
+      "presaleInfo": {
+        "isPresale": false,
+        "releasedOn": null,
+        "note": null
+      },
+      "extendedData": [
+        {
+          "name": "Number",
+          "displayName": "Card Number",
+          "value": "6/30"
+        },
+        {
+          "name": "Rarity",
+          "displayName": "Rarity",
+          "value": "Common"
+        },
+        {
+          "name": "Card Type",
+          "displayName": "Card Type",
+          "value": "Basic Energy"
+        }
+      ]
+    },
+    {
+      "productId": 98002,
+      "name": "Psychic Energy (#7)",
+      "cleanName": "Psychic Energy 7",
+      "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/98002_200w.jpg",
+      "categoryId": 3,
+      "groupId": 1532,
+      "url": "https://www.tcgplayer.com/product/98002/pokemon-xy-trainer-kit-sylveon-and-noivern-psychic-energy-7",
+      "modifiedOn": "2022-12-19T17:23:29.46",
+      "imageCount": 1,
+      "presaleInfo": {
+        "isPresale": false,
+        "releasedOn": null,
+        "note": null
+      },
+      "extendedData": [
+        {
+          "name": "Number",
+          "displayName": "Card Number",
+          "value": "7/30"
+        },
+        {
+          "name": "Rarity",
+          "displayName": "Rarity",
+          "value": "Common"
+        },
+        {
+          "name": "Card Type",
+          "displayName": "Card Type",
+          "value": "Basic Energy"
+        }
+      ]
+    },
+    {
+      "productId": 98003,
+      "name": "Psychic Energy (#8)",
+      "cleanName": "Psychic Energy 8",
+      "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/98003_200w.jpg",
+      "categoryId": 3,
+      "groupId": 1532,
+      "url": "https://www.tcgplayer.com/product/98003/pokemon-xy-trainer-kit-sylveon-and-noivern-psychic-energy-8",
+      "modifiedOn": "2022-12-19T17:23:45.047",
+      "imageCount": 1,
+      "presaleInfo": {
+        "isPresale": false,
+        "releasedOn": null,
+        "note": null
+      },
+      "extendedData": [
+        {
+          "name": "Number",
+          "displayName": "Card Number",
+          "value": "8/30"
+        },
+        {
+          "name": "Rarity",
+          "displayName": "Rarity",
+          "value": "Common"
+        },
+        {
+          "name": "Card Type",
+          "displayName": "Card Type",
+          "value": "Basic Energy"
+        }
+      ]
+    }
+  ],
+  "ygo": {
+    "id": 46986414,
+    "name": "Dark Magician",
+    "card_images": [
+      {
+        "id": 46986414,
+        "image_url": "https://images.ygoprodeck.com/images/cards/46986414.jpg",
+        "image_url_small": "https://images.ygoprodeck.com/images/cards_small/46986414.jpg",
+        "image_url_cropped": "https://images.ygoprodeck.com/images/cards_cropped/46986414.jpg"
+      },
+      {
+        "id": 46986415,
+        "image_url": "https://images.ygoprodeck.com/images/cards/46986415.jpg",
+        "image_url_small": "https://images.ygoprodeck.com/images/cards_small/46986415.jpg",
+        "image_url_cropped": "https://images.ygoprodeck.com/images/cards_cropped/46986415.jpg"
+      },
+      {
+        "id": 46986416,
+        "image_url": "https://images.ygoprodeck.com/images/cards/46986416.jpg",
+        "image_url_small": "https://images.ygoprodeck.com/images/cards_small/46986416.jpg",
+        "image_url_cropped": "https://images.ygoprodeck.com/images/cards_cropped/46986416.jpg"
+      },
+      {
+        "id": 46986417,
+        "image_url": "https://images.ygoprodeck.com/images/cards/46986417.jpg",
+        "image_url_small": "https://images.ygoprodeck.com/images/cards_small/46986417.jpg",
+        "image_url_cropped": "https://images.ygoprodeck.com/images/cards_cropped/46986417.jpg"
+      },
+      {
+        "id": 46986418,
+        "image_url": "https://images.ygoprodeck.com/images/cards/46986418.jpg",
+        "image_url_small": "https://images.ygoprodeck.com/images/cards_small/46986418.jpg",
+        "image_url_cropped": "https://images.ygoprodeck.com/images/cards_cropped/46986418.jpg"
+      },
+      {
+        "id": 46986419,
+        "image_url": "https://images.ygoprodeck.com/images/cards/46986419.jpg",
+        "image_url_small": "https://images.ygoprodeck.com/images/cards_small/46986419.jpg",
+        "image_url_cropped": "https://images.ygoprodeck.com/images/cards_cropped/46986419.jpg"
+      },
+      {
+        "id": 36996508,
+        "image_url": "https://images.ygoprodeck.com/images/cards/36996508.jpg",
+        "image_url_small": "https://images.ygoprodeck.com/images/cards_small/36996508.jpg",
+        "image_url_cropped": "https://images.ygoprodeck.com/images/cards_cropped/36996508.jpg"
+      },
+      {
+        "id": 46986420,
+        "image_url": "https://images.ygoprodeck.com/images/cards/46986420.jpg",
+        "image_url_small": "https://images.ygoprodeck.com/images/cards_small/46986420.jpg",
+        "image_url_cropped": "https://images.ygoprodeck.com/images/cards_cropped/46986420.jpg"
+      },
+      {
+        "id": 46986421,
+        "image_url": "https://images.ygoprodeck.com/images/cards/46986421.jpg",
+        "image_url_small": "https://images.ygoprodeck.com/images/cards_small/46986421.jpg",
+        "image_url_cropped": "https://images.ygoprodeck.com/images/cards_cropped/46986421.jpg"
+      }
+    ]
+  }
+}

@@ -325,7 +325,7 @@ export function cardSheet(c, ctx = {}) {
     faces = facesOf(shown),
     face = ctx.face && faces[ctx.face] ? ctx.face : 0,
     imgFaces = shown.card_faces?.filter((f) => f.image_uris),
-    image = imgFaces?.length > 1 ? imgFaces[face]?.image_uris?.normal : cardImage(shown),
+    image = cardImage(shown, "normal", face),
     // A placeholder scan (foreign printing shown in English with a banner, display commanders)
     // borrows the clean art of a printing with the same illustration for the hero.
     clean = shown.image_status === "placeholder" ? (ctx.prints || []).find((p) => p.illustration_id && p.illustration_id === shown.illustration_id && p.image_status === "highres_scan" && p.image_uris?.art_crop) : null,

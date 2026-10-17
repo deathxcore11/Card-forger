@@ -58,10 +58,23 @@ export const art = (c) =>
     c,
   );
 
-export const cardImage = (c, size = "normal") =>
-  remember(c?.image_uris?.[size] || c?.card_faces?.[0]?.image_uris?.[size] || "", c);
+// Only the provider's full-card sizes for this printing and this face. Never
+// borrow the back face, a crop, or another printing to conceal a missing scan.
+export function magicArtworkSources(c, size = "normal", face = 0) {
+  const sizes = ["normal", "large", "png", "small"], top = c?.image_uris;
+  const images = sizes.some(key => top?.[key]) ? top : c?.card_faces?.[face]?.image_uris || {};
+  return [...new Set([sizes.includes(size) ? size : "normal", ...sizes].map(key => images[key]).filter(url => typeof url === "string" && /^https?:\/\//.test(url)))];
+}
+const fullCardSources = new Map();
+export const cardImage = (c, size = "normal", face = 0) => {
+  const urls = magicArtworkSources(c, size, face), url = urls[0] || "";
+  if (url && (fullCardSources.has(url) || fullCardSources.size < 20000)) fullCardSources.set(url, urls);
+  return remember(url, c);
+};
 
 export function img(url, alt, cls = "") {
+  const sources = fullCardSources.get(url);
+  if (sources?.length) return `<img class="${esc(cls)}" src="${esc(url)}"${tierRing(url, cls)} data-art-sources="${esc(JSON.stringify(sources))}" data-art-index="0" alt="${esc(alt)}" loading="lazy" referrerpolicy="no-referrer">`;
   return url
     ? `<img class="${cls}" src="${esc(url)}"${tierRing(url, cls)} alt="${esc(alt)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.insertAdjacentHTML('afterend','<span class=&quot;${cls} img-missing&quot; role=&quot;img&quot; aria-label=&quot;Artwork unavailable&quot;>◇<small>Art unavailable</small></span>')">`
     : `<span class="${cls} img-missing" role="img" aria-label="Artwork unavailable">◇<small>Art unavailable</small></span>`;

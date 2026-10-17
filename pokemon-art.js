@@ -1,3 +1,4 @@
+import { ptcgProduct } from "./ptcg-product.js";
 // Last-resort Pokémon card art: the TCGplayer product image for the exact card, for printings
 // TCGdex has no scan of (promos, McDonald's sets, Shiny Vault, gallery subsets…). The card's own
 // TCGplayer product id comes from TCGdex; without one, the product is matched in the set's
@@ -33,7 +34,18 @@ export function pickProduct(products, card) {
   const n = numKey(card.localId), name = norm(card.name), list = products || [];
   if(!n||!name)return null;
   // Only known finish/collector annotations may follow the name. EX/GX/V are identities.
-  const nameOf=p=>norm(String(p.name||"").replace(/\s*\((?:Holo|Holofoil|Reverse Holo(?:foil)?|Non-Holo)\)\s*$/i,"").replace(/\s+-\s+[A-Z]*\d+(?:\/\d+)?$/i,""));
+  const nameOf=p=>{
+    let title=String(p.name||"").replace(/\s*\((?:Holo|Holofoil|Reverse Holo(?:foil)?|Non-Holo)\)\s*$/i,"");
+    // Trainer kits repeat Energy names. TCGplayer's (#5) annotation is a
+    // collector number, not part of the name, but must agree with Number.
+    const numbered=title.match(/\s+(?:\(#([A-Z]*\d+(?:\/\d+)?)\)|-\s+([A-Z]*\d+(?:\/\d+)?))\s*$/i);
+    if(numbered){
+      const number=numKey((p.extendedData||[]).find(x=>x.name==="Number")?.value);
+      if(numKey(numbered[1]||numbered[2])!==number)return "";
+      title=title.slice(0,numbered.index);
+    }
+    return norm(title);
+  };
   const exact = list.filter(p=>numKey((p.extendedData||[]).find(x=>x.name==="Number")?.value)===n && nameOf(p)===name);
   if(exact.length || card.set?.cardCount?.official!==0)return exact.length===1?exact[0]:null;
   const named=list.filter(p=>(p.extendedData||[]).some(x=>x.name==="Number")&&nameOf(p)===name);
@@ -43,13 +55,22 @@ export function pickProduct(products, card) {
 export async function pokemonProductId(id, get) {
   const card = await get("https://api.tcgdex.net/v2/en/cards/" + encodeURIComponent(id));
   if (card?.id !== id) return null;
-  const direct = (card.variants_detailed || []).map((v) => Number(v.thirdParty?.tcgplayer)).find(Boolean);
-  if (direct) return direct;
+  // Use the same conservative reference product as price history: older sets
+  // often have this exact ID only under pricing.tcgplayer.<finish>.productId.
+  const direct = ptcgProduct(card)?.productId;
+  if (Number.isSafeInteger(direct) && direct > 0) return direct;
+  // Conflicting variants must not be bypassed by a looser set/name match.
+  if ((card.variants_detailed || []).some(v => v.thirdParty?.tcgplayer)) return null;
+  // TCGdex also publishes a card-level identity even when pricing is absent.
+  const cardProduct = Number(card.thirdParty?.tcgplayer);
+  if (Number.isSafeInteger(cardProduct) && cardProduct > 0) return cardProduct;
   const groups = await get("https://tcgcsv.com/tcgplayer/3/groups");
   const group = pickGroup(groups?.results, card.set?.name);
-  if (!group) return null;
-  const products = await get(`https://tcgcsv.com/tcgplayer/3/${group.groupId}/products`);
-  return pickProduct(products?.results, card)?.productId || null;
+  const groupId = Number(group?.groupId);
+  if (!Number.isSafeInteger(groupId) || groupId < 1) return null;
+  const products = await get(`https://tcgcsv.com/tcgplayer/3/${groupId}/products`);
+  const productId = Number(pickProduct(products?.results, card)?.productId);
+  return Number.isSafeInteger(productId) && productId > 0 ? productId : null;
 }
 
 // GET /img/ptcg/(s|l)/<card id>.jpg — small for grids, large for the card page and zoom.
