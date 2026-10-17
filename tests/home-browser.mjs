@@ -539,10 +539,21 @@ try {
     const value = hero.id;
     for (const selector of ['.hh-art-link', '.hh-credit']) {
       assert.equal(await page.locator(selector).getAttribute('data-id'), value);
-      // The full-art control's center is behind the search/credit panel. Click
-      // its exposed upper-right label, as an actual visitor would.
-      const control = page.locator(selector === '.hh-art-link' ? '.hh-art-link > span' : selector);
-      await control.click();
+      // The redundant visual badge is gone. Use an actual exposed artwork
+      // point above the title/search panel, with a real hit test, never force.
+      const control = page.locator(selector);
+      if (selector === '.hh-art-link') {
+        await control.scrollIntoViewIfNeeded();
+        const point = await control.evaluate(node => {
+          const r = node.getBoundingClientRect(), header = document.querySelector('.topbar')?.getBoundingClientRect(), title = document.querySelector('.hh-body .eyebrow')?.getBoundingClientRect();
+          const top = Math.max(r.top, header?.bottom || 0) + 12, bottom = Math.min(r.bottom, title?.top || r.bottom, innerHeight) - 12;
+          if (bottom <= top) throw Error('No exposed daily artwork click area');
+          const x = r.width - 24, y = (top + bottom) / 2 - r.top, hit = document.elementFromPoint(r.left + x, r.top + y);
+          if (hit !== node && !node.contains(hit)) throw Error('Daily artwork is obstructed');
+          return { x, y };
+        });
+        await control.click({ position: point });
+      } else await control.click();
       await page.waitForFunction(({ game, value }) => { const c = window.__homeTestState.ui.sheetCtx; return game === 'mtg' ? c?.type === 'card' && c.print?.id === value : c?.type === 'tcard' && c.id === value; }, { game, value });
       assert.match(await page.locator('#sheetBody').innerText(), new RegExp(hero.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
       await closeSheet(page);
