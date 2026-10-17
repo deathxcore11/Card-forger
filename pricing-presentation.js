@@ -156,11 +156,23 @@ export function restoreDetailState(body,state){
  body.scrollTop=state.top;const tabs=body.querySelector?.('.cs-tabs');if(tabs)tabs.scrollLeft=state.left;
 }
 export function detailTabKey(key,index,length){return key==='Home'?0:key==='End'?length-1:key==='ArrowRight'?(index+1)%length:key==='ArrowLeft'?(index+length-1)%length:null;}
-export function scrollDetailTarget(body,target,reduced=false){
+export function scrollDetailTarget(body,target,reduced=false,refreshOffsets=()=>{}){
  if(!body||!target)return false;
  const head=body.querySelector?.('.sheet-head'),tabs=body.querySelector?.('.cs-tabs'),clearance=(head?.getBoundingClientRect?.().height||0)+(tabs?.getBoundingClientRect?.().height||0)+12;
  const top=Math.max(0,body.scrollTop+target.getBoundingClientRect().top-body.getBoundingClientRect().top-clearance);
- target.focus?.({preventScroll:true});body.scrollTo?.({top,behavior:reduced?'auto':'smooth'});return true;
+ target.focus?.({preventScroll:true});body.scrollTo?.({top,behavior:reduced?'auto':'smooth'});
+ // An instant jump can expand the sticky title before the next scroll event.
+ // Measure the final boundary now, while this card/context is still current.
+ // No delayed correction may take focus or scrolling away from later navigation.
+ if(reduced)for(let pass=0;pass<2;pass++){
+  refreshOffsets();
+  const boundary=Math.max(body.getBoundingClientRect().top,head?.getBoundingClientRect?.().bottom||0,tabs?.getBoundingClientRect?.().bottom||0)+12;
+  const overlap=target.getBoundingClientRect().top-boundary;
+  if(overlap>=-1)break;
+  const corrected=Math.max(0,body.scrollTop+overlap);if(corrected===body.scrollTop)break;
+  body.scrollTo?.({top:corrected,behavior:'auto'});
+ }
+ return true;
 }
 // The latest jump wins. A late render may never move focus in a different card or closed sheet.
 export function createDetailJump({getContext,isOpen,showPrices,getBody,refreshOffsets=()=>{},reducedMotion=()=>false,identityOf=detailIdentity}){
@@ -171,6 +183,6 @@ export function createDetailJump({getContext,isOpen,showPrices,getBody,refreshOf
   await showPrices();
   if(token!==sequence||getContext()!==ctx||identityOf(ctx)!==identity||ctx.tab!=='prices'||!isOpen())return false;
   const body=getBody(),node=body?.querySelector?.(target==='sellers'?'#card-sellers':'#card-history');
-  refreshOffsets();return scrollDetailTarget(body,node,reducedMotion());
+  refreshOffsets();return scrollDetailTarget(body,node,reducedMotion(),refreshOffsets);
  };
 }

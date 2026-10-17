@@ -109,6 +109,15 @@ restoreDetailState(body,saved);assert.deepEqual(details.map(d=>d.open),[true,fal
 const scrolls=[],focuses=[],dest={getBoundingClientRect:()=>({top:500}),focus:()=>focuses.push('target')};
 const jumpBody={scrollTop:100,getBoundingClientRect:()=>({top:50}),querySelector:s=>s==='#card-history'||s==='#card-sellers'?dest:{getBoundingClientRect:()=>({height:44})},scrollTo:o=>scrolls.push(o)};
 assert.equal(scrollDetailTarget(jumpBody,dest,true),true);assert.deepEqual(scrolls.pop(),{top:450,behavior:'auto'});
+// Reduced-motion scrolling changes the sticky header synchronously. Re-measure the
+// final sticky boundary before returning, without a timer that can steal a later card.
+let stickyHeight=44,stickyRefreshes=0,stickyFocus=0;
+const stickyScrolls=[],stickyTarget={getBoundingClientRect:()=>({top:700-stickyBody.scrollTop}),focus:()=>stickyFocus++};
+const stickyBody={scrollTop:0,getBoundingClientRect:()=>({top:50}),querySelector:s=>s==='.sheet-head'?{getBoundingClientRect:()=>({height:stickyHeight,bottom:50+stickyHeight})}:{getBoundingClientRect:()=>({height:44,bottom:50+stickyHeight+44})},scrollTo:o=>{stickyScrolls.push(o);stickyBody.scrollTop=o.top;}};
+assert.equal(scrollDetailTarget(stickyBody,stickyTarget,true,()=>{stickyRefreshes++;stickyHeight=stickyBody.scrollTop>110?104:44;}),true);
+assert.ok(stickyTarget.getBoundingClientRect().top>=50+104+44+12,'target clears the actual expanded sticky header and tabs');
+assert.equal(stickyFocus,1,'geometry adjustment does not move focus again');assert.ok(stickyRefreshes>=1);
+assert.ok(stickyScrolls.every(s=>s.behavior==='auto'),'reduced motion never animates a corrective scroll');
 let current={type:'tcard',game:'ptcg',id:'one',tab:'overview'},open=true,pending=[];
 const jump=createDetailJump({getContext:()=>current,isOpen:()=>open,getBody:()=>jumpBody,showPrices:()=>{current.tab='prices';return new Promise(resolve=>pending.push(resolve));},reducedMotion:()=>true});
 let p1=jump('history'),p2=jump('sellers');pending.shift()();assert.equal(await p1,false);pending.shift()();assert.equal(await p2,true,'latest repeated jump wins');

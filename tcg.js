@@ -3590,7 +3590,9 @@ export function registerTcg(c) {
     U.error = "";
     render();
     try {
-      U.list = await SOURCES[G].sets();
+      const list = await SOURCES[G].sets();
+      if (!Array.isArray(list) || !list.length || list.some(set=>!set || typeof set!=="object" || !set.id || !set.name)) throw Error("The source returned an empty or invalid set catalogue. Try again.");
+      U.list = list;
       try {
         localStorage.setItem(SETS_KEY(G), JSON.stringify({ at: Date.now(), list: U.list }));
       } catch {}
