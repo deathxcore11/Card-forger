@@ -32,6 +32,13 @@ export const SETS={
  ptcg:[{id:'fixturea',name:'Synthetic Pokémon A',releaseDate:'2025-01-01',cardCount:{total:123,official:123},logo:`${IMAGE}/ptcg-a`},{id:'fixtureb',name:'Synthetic Pokémon B',releaseDate:'2024-01-01',cardCount:{total:3,official:3},logo:`${IMAGE}/broken-set`},{id:'fixtureunknown',name:'Synthetic unknown Pokémon',releaseDate:'',cardCount:{},logo:`${IMAGE}/unknown`},...Array.from({length:121},(_,i)=>({id:`fixture${digits(i)}`,name:`Synthetic Pokémon set ${digits(i)}`,releaseDate:`${2023-i%3}-01-01`,cardCount:{total:10}}))],
  ygo:RELEASES
 };
+// These exact derived icon requests are part of the synthetic fixtures: the
+// colorless Magic tile emblem and the promo row with no supplied icon URL.
+// Never wildcard an external image host or forward a missing asset to it.
+export const SYNTHETIC_ICON_URLS=Object.freeze([
+ 'https://svgs.scryfall.io/card-symbols/C.svg',
+ 'https://svgs.scryfall.io/sets/fxpromo.svg'
+]);
 const magic=(set,n)=>({id:`fixture-mtg-set-${set==='fxa'?'a':'b'}-${digits(n)}`,oracle_id:n===1?'same-oracle-both-printings':`fixture-oracle-${set}-${n}`,name:n===1?'Fixture exact printing':'Fixture Magic '+digits(n),lang:'en',type_line:'Artifact',oracle_text:'Synthetic fixture text.',cmc:0,mana_cost:'',colors:[],color_identity:[],keywords:[],legalities:{standard:'legal',commander:'legal'},set,set_name:SETS.mtg.find(s=>s.code===set).name,collector_number:String(n),rarity:n%2?'common':'rare',finishes:['nonfoil','foil'],image_uris:{normal:`${IMAGE}/mtg-${set}-${n}.svg`,small:`${IMAGE}/mtg-${set}-${n}.svg`,art_crop:`${IMAGE}/mtg-${set}-${n}.svg`},prices:{usd:n===1?null:String(n),usd_foil:n===1?null:String(n+1)},checkedAt:ISO,full:true,released_at:SETS.mtg.find(s=>s.code===set).released_at});
 const pokemon=(set,n)=>({id:`${set}-${digits(n)}`,localId:digits(n),name:n===1?'Fixture same-name Trainer':'Fixture Pokémon '+digits(n),category:n===1?'Trainer':'Pokemon',trainerType:n===1?'Supporter':undefined,stage:n===1?undefined:'Basic',hp:n===1?undefined:80,types:n===1?[]:['Colorless'],rarity:n%2?'Common':'Rare',image:`${IMAGE}/ptcg-${set}-${n}`,set:SETS.ptcg.find(s=>s.id===set),legal:{standard:true,expanded:true},variants:{normal:true,holo:true},pricing:{tcgplayer:{normal:{marketPrice:n===1?null:n},holofoil:{marketPrice:n===1?null:n+1},updated:'2026-10-17'}},attacks:n===1?[]:[{name:'Fixture attack',cost:[],damage:10}],effect:n===1?'Synthetic Trainer fixture text.':''});
 const ygo=(id,name,prints)=>({id,name,type:'Spell Card',frameType:'spell',race:'Normal',desc:'Synthetic provider rows. Not a live printing or price claim.',card_images:[{id}],card_sets:prints,card_prices:[{tcgplayer_price:'999.00',cardmarket_price:'888.00'}],misc_info:[{formats:['TCG','OCG'],tcg_date:'2002-03-08'}]});
@@ -93,6 +100,9 @@ export function providerFixture(url){
 const historyEndpoint=new URL('/functions/v1/market-history',SUPABASE.url);
 const history=url=>({game:url.searchParams.get('game'),cardId:url.searchParams.get('id'),finish:url.searchParams.get('finish'),series:[],notice:'Synthetic fixture has no matching history quote.'});
 export async function validateSetsFixtures(){
+ assert.equal(new Set(SYNTHETIC_ICON_URLS).size,2);
+ assert.deepEqual(SYNTHETIC_ICON_URLS,['https://svgs.scryfall.io/card-symbols/C.svg','https://svgs.scryfall.io/sets/fxpromo.svg']);
+ assert.equal(SETS.mtg.find(s=>s.code==='fxpromo').icon_svg_uri,undefined,'Promo fixture exercises the derived icon URL');
  assert.notEqual(LOB.id,ANNIVERSARY.id);assert.equal(LOB.expectedUniqueCards,126);assert.equal(LOB.printingCount,744);
  assert.equal(resolveYgoSet(RELEASES,'LOB').status,'ambiguous');assert.equal(resolveYgoSet(RELEASES,LOB.id).set.id,LOB.id);
  const normal=RAW.ygo.map(normalizeYgo),before=JSON.stringify(normal),summary=summarizeYgoSetContents(LOB,[...normal,...normal]);
@@ -112,6 +122,7 @@ export async function openSetsApp(browser,base,{game='ygo',hash='#sets',width=39
  const diagnostics=()=>({errors:[...errors],writes:[...writes],unexpected:[...unexpected],requests:requests.map(r=>({...r}))});
  try{
  const artURLs=new Set(CARDS.mtg.flatMap(c=>Object.values(c.image_uris)).concat(...Object.values(CARDS).flat().map(c=>[...artworkSources(c,false),...artworkSources(c,true),c.art,c.artDirect]).flat()).filter(Boolean).map(u=>new URL(u,base+'/').href));
+ for(const url of SYNTHETIC_ICON_URLS)artURLs.add(url);
  for(const code of RELEASES.map(s=>s.code))artURLs.add(`https://images.ygoprodeck.com/images/sets/${encodeURIComponent(code)}.jpg`);
  for(const s of SETS.ptcg)for(const suffix of ['symbol.png','logo.png'])artURLs.add(`https://images.pokemontcg.io/${s.id}/${suffix}`);
  page.on('pageerror',e=>errors.push(e.message));

@@ -50,6 +50,9 @@ assert.doesNotMatch(setProgressMarkup({key:original.id,owned:2,total:126,loaded:
 assert.doesNotMatch(setProgressMarkup({key:'unknown',owned:1,total:null,loaded:14}).html,/role="progressbar"|\d+%/);
 assert.doesNotMatch(setProgressMarkup({key:'overflow',owned:127,total:126,loaded:127}).html,/role="progressbar"|\d+%/);
 assert.match(setRowContent({name:'Unknown',code:'X',count:null}),/Unknown/);assert.doesNotMatch(setRowContent({name:'Unknown',code:'X',count:null}),/<b>0<\/b>/);
+const failedLogo=setRowContent({name:'Broken logo',code:'<FXB>',image:'https://example.invalid/logo.svg',symbol:'<span class="set-icon" style="--icon:url(https://example.invalid/logo.svg)"></span>'});
+assert.match(failedLogo,/<span class="set-media-fallback" aria-hidden="true"><span class="set-art-code">&lt;FXB&gt;<\/span><\/span>/,'Missing artwork has escaped set-code text, not another request for the failed symbol');
+assert.match(failedLogo,/<span class="set-row-main"><b><span class="set-icon"/,'Normal header symbol remains available independently of image fallback');
 const years=setYearSections(catalogue,s=>`<button data-id="${s.id}"></button>`);assert.equal((years.match(/class="set-year-section"/g)||[]).length,3);assert.doesNotMatch(years,/<div class="set-list set-year-grid"><h2/);
 const css=fs.readFileSync('sets-ui.css','utf8');assert.match(css,/420ms/);assert.match(css,/prefers-reduced-motion:reduce/);assert.doesNotMatch(css,/\.bar[^}]*animation/);
 

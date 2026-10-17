@@ -7,7 +7,9 @@ export const knownSetCount = value => ['number','string'].includes(typeof value)
 // Shared emblem treatment. Use verified set logos/symbols; unknown sets keep their code.
 export function setRowContent({name,code,image='',symbol='',detail='',count=null,owned=null,printingCount=null}){
  name=catalogueText(name);detail=catalogueText(detail);
- const fallback=symbol||`<span class="set-art-code">${esc(code)}</span>`,total=knownSetCount(count),prints=knownSetCount(printingCount);
+ // A remote symbol can fail with the artwork URL too. The fallback must be
+ // real text, not the same unavailable image painted through a CSS mask.
+ const fallback=`<span class="set-art-code">${esc(code)}</span>`,total=knownSetCount(count),prints=knownSetCount(printingCount);
  return `<span class="set-media ${image?'':'no-art'}">${image?`<img src="${esc(image)}" alt="${esc(name)} set artwork" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.parentElement.classList.add('no-art')">`:''}<span class="set-media-fallback" aria-hidden="true">${fallback}</span></span><span class="set-row-main"><b>${symbol}<span>${esc(name)}</span></b><span class="set-row-detail"><span class="set-code-mark">${esc(code)}</span><span>${esc(detail)}</span></span></span><span class="set-row-count">${total!==null?`<b>${total.toLocaleString()}</b><small>${total===1?'card':'cards'}</small>`:prints!==null?`<b>${prints.toLocaleString()}</b><small>printings listed</small><small>unique total unverified</small>`:'<small>Card total</small><b class="count-unknown">Unknown</b>'}${owned>0?`<small class="ok-text">${Number(owned).toLocaleString()} owned</small>`:''}</span>`;
 }
 // Headings live outside each year’s grid, so a heading can never consume a card slot.
