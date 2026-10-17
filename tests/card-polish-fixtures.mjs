@@ -5,7 +5,8 @@ import {blank} from '../store.js';
 import {cardKey} from '../core.js';
 import {validateWorkspace} from '../confidence.js';
 import {normalizeYgo,normalizeYgoSets,summarizeYgoSetContents} from '../ygo.js';
-import {normalizePtcg} from '../ptcg.js';
+import {normalizePtcg,ptcgSource} from '../ptcg.js';
+import {pkCatalogueSymbolSources} from '../emblems.js';
 import {artworkSources} from '../artwork.js';
 import {presentationQuote} from '../pricing-presentation.js';
 import {setContextCard} from '../tcg.js';
@@ -26,7 +27,11 @@ export const SETS={
  ptcg:[
   {id:'sv08',name:'Surging Sparks',releaseDate:'2024-11-08',cardCount:{total:2,official:2},logo:'https://assets.tcgdex.net/en/sv/sv08/logo',symbol:'https://assets.tcgdex.net/en/sv/sv08/symbol'},
   {id:'sv03',name:'Obsidian Flames',releaseDate:'2023-08-11',cardCount:{total:1,official:1},logo:'https://assets.tcgdex.net/en/sv/sv03/logo',symbol:'https://assets.tcgdex.net/en/sv/sv03/symbol'},
-  {id:'synthetic-missing',name:'',releaseDate:'2022-01-01',cardCount:{}},
+  // A catalogue entry still needs a real name when artwork metadata is absent.
+  // Its existing name-derived fallback chain is tested separately from Base
+  // Set's intentional no-expansion-symbol path (which must create no image).
+  {id:'synthetic-missing',name:'Synthetic Missing Symbol',releaseDate:'2022-01-01',cardCount:{}},
+  {id:'base1',name:'Base Set',releaseDate:'1999-01-09',cardCount:{total:102,official:102}},
  ],
  ygo:YGO_SETS,
 };
@@ -49,6 +54,7 @@ export const EXPECTED={mtg:{set:'fdn',known:CARDS.mtg[0].id,unknown:CARDS.mtg[1]
 export const SYMBOLS={
  normal:['/img/pks/s/surging-sparks.png','https://pokesymbols.com/images/tcg/sets/symbols/surging-sparks.png','https://assets.tcgdex.net/en/sv/sv08/symbol.webp'],
  broken:['/img/pks/s/obsidian-flames.png','https://pokesymbols.com/images/tcg/sets/symbols/obsidian-flames.png','https://assets.tcgdex.net/en/sv/sv03/symbol.webp'],
+ missing:['/img/pks/s/synthetic-missing-symbol.png','https://pokesymbols.com/images/tcg/sets/symbols/synthetic-missing-symbol.png'],
 };
 const historyEndpoint=new URL('/functions/v1/market-history',SUPABASE.url);
 export const isHistoryURL=url=>url.origin===historyEndpoint.origin&&url.pathname===historyEndpoint.pathname||['/api/prices/archive','/api/prices/recent'].includes(url.pathname);
@@ -95,7 +101,7 @@ export function providerFixture(url){
  if(host==='api.pokemontcg.io'&&path==='/v2/cards')return {data:[]};
  return undefined;
 }
-export function validateFixtures(){
+export async function validateFixtures(){
  assert.equal(VASM.code,'VASM');assert.equal(VASM.name,'Valiant Smashers');
  const summary=summarizeYgoSetContents(VASM,CARDS.ygo),multi=setContextCard('ygo',CARDS.ygo.find(c=>c.id===EXPECTED.ygo.multiple),VASM,YGO_SETS),known=setContextCard('ygo',CARDS.ygo.find(c=>c.id===EXPECTED.ygo.known),VASM,YGO_SETS);
  assert.equal(summary.loadedUniqueCards,4);assert.equal(multi.setContext.printings.length,4);assert.equal(multi.setContext.printingAmbiguous,true);assert.equal(multi.setContext.price,null);
@@ -104,7 +110,20 @@ export function validateFixtures(){
  assert.equal(presentationQuote('mtg',CARDS.mtg[0],'nonfoil').value,12.5);assert.equal(presentationQuote('ptcg',CARDS.ptcg[0],'normal').value,12.5);
  for(const game of GAMES)assert.equal(validateWorkspace(structuredClone(makeFixtures(game).state)).settings.game,game);
  assert.notEqual(CARDS.mtg[0].name,CARDS.mtg[1].name);assert.notEqual(CARDS.mtg[0].collector_number,CARDS.mtg[1].collector_number);
- assert.equal(SETS.ptcg[2].name,'');assert.equal(SETS.ptcg[2].symbol,undefined);assert.equal(SETS.ptcg[2].logo,undefined);
+ assert.equal(SETS.ptcg[2].name,'Synthetic Missing Symbol');assert.equal(SETS.ptcg[2].symbol,undefined);assert.equal(SETS.ptcg[2].logo,undefined);
+ // Run the production provider adapter without a server or network. A fixture
+ // can normalize cards correctly yet still invalidate the whole set catalogue.
+ const originalFetch=globalThis.fetch,providerCalls=[];let pokemonSets;
+ try{
+  globalThis.fetch=async input=>{const url=new URL(String(input)),data=providerFixture(url);assert.equal(url.hostname,'api.tcgdex.net','Pure provider validation cannot contact another host');assert.notEqual(data,undefined,'Every adapter read has an explicit fixture: '+url.href);providerCalls.push(url.pathname);return {ok:true,status:200,json:async()=>structuredClone(data)};};
+  pokemonSets=await ptcgSource.sets();
+  assert.deepEqual(providerCalls,['/v2/en/sets','/v2/en/series']);
+  assert.deepEqual(pokemonSets.map(s=>s.id),SETS.ptcg.map(s=>s.id),'Every valid release survives the real provider adapter');
+  assert(pokemonSets.every(s=>s.id&&s.name),'The app rejects the entire catalogue if any release lacks id or name');
+  for(const [id,key]of [['sv08','normal'],['sv03','broken'],['synthetic-missing','missing']])assert.deepEqual(pkCatalogueSymbolSources(pokemonSets.find(s=>s.id===id)),SYMBOLS[key].map(u=>u.startsWith('/')?u.slice(1):u),'Exact declared symbol chain for '+id);
+  assert.deepEqual(pkCatalogueSymbolSources(pokemonSets.find(s=>s.id==='base1')),[],'Base Set has no expansion symbol and must create no image');
+  const cards=await ptcgSource.setCards(pokemonSets[0]);assert.deepEqual(cards.map(c=>c.id),CARDS.ptcg.map(c=>c.id));assert(cards.every(c=>c.set.id===EXPECTED.ptcg.set),'Set response preserves exact release identity');
+ }finally{globalThis.fetch=originalFetch;}
  for(const game of GAMES){const history=emptyHistory(new URL('https://fixture.invalid/api/prices/recent?'+new URLSearchParams({game,id:EXPECTED[game].known,finish:'reference'})));assert.equal(history.series.length,0);assert.equal(historyResponseStatus(history),'empty','The fixture must exercise a verified empty response, not a provider outage.');}
  return 'PASS: exact VASM code/rarity collisions, unique rarity proof, poisoned generic prices, all-game $12.50 references, empty provider histories and Pokemon missing/failed-symbol fixtures. No browser/server or network started.';
 }
@@ -122,10 +141,10 @@ export async function openApp(browser,base,{game='ygo',hash='#sets',width=390,he
  for(const code of ['VASM','OTHR'])artURLs.add('https://images.ygoprodeck.com/images/sets/'+code+'.jpg');
  for(const set of SETS.ptcg)for(const suffix of ['symbol.png','logo.png'])artURLs.add('https://images.pokemontcg.io/'+set.id+'/'+suffix);
  for(const suffix of ['logo.webp','symbol.webp'])for(const id of ['sv08','sv03'])artURLs.add('https://assets.tcgdex.net/en/sv/'+id+'/'+suffix);
- for(const path of [...SYMBOLS.normal,...SYMBOLS.broken])artURLs.add(new URL(path,base+'/').href);
+ for(const path of Object.values(SYMBOLS).flat())artURLs.add(new URL(path,base+'/').href);
  for(const slug of ['rare','common','ultra-rare'])for(const path of ['/img/pks/r/'+slug+'.png','https://pokesymbols.com/images/tcg/rarities/'+slug+'.png'])artURLs.add(new URL(path,base+'/').href);
  artURLs.add('https://svgs.scryfall.io/card-symbols/C.svg');
- const symbolURLs=new Set([...SYMBOLS.normal,...SYMBOLS.broken].map(u=>new URL(u,base+'/').href)),brokenURLs=new Set(SYMBOLS.broken.map(u=>new URL(u,base+'/').href));
+ const symbolURLs=new Set(Object.values(SYMBOLS).flat().map(u=>new URL(u,base+'/').href)),brokenURLs=new Set([...SYMBOLS.broken,...SYMBOLS.missing].map(u=>new URL(u,base+'/').href));
  page.on('pageerror',error=>errors.push(error.message));
  assert.equal(typeof context.routeWebSocket,'function');await context.routeWebSocket('**/*',ws=>{unexpected.push('WEBSOCKET '+ws.url());ws.close();});
  await context.route('**/*',async route=>{

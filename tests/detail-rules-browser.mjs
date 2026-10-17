@@ -12,7 +12,9 @@ assert.equal(tcg('ptcg',CARDS.ptcg[0],{priceFinish:'holofoil'}).url,'https://www
 assert.equal(tcg('ptcg',CARDS.ptcg[0],{priceFinish:'holofoil'}).value,5);
 assert.equal(tcg('ptcg',CARDS.ptcg[0],{priceFinish:'reverse-holofoil'}).value,null);
 assert.equal(tcg('ygo',CARDS.ygo[0]).value,null,'Aggregate card reference must not masquerade as exact printing vendor amount');
-assert.equal(tcg('ygo',CARDS.ygo[0],{priceEdition:'SET-001::Rare'}).value,20);
+assert.equal(tcg('ygo',CARDS.ygo[0],{priceEdition:'SET-001::Rare'}).value,null,'One available edition quote is not an explicit physical-edition selection');
+assert.equal(tcg('ygo',CARDS.ygo[0],{priceEdition:'SET-001::Rare',priceYgoEdition:'unlimited'}).value,20,'Explicit Unlimited preserves the exact known $20 quote');
+assert.equal(tcg('ygo',CARDS.ygo[0],{priceEdition:'SET-001::Rare',priceYgoEdition:'1st-edition'}).value,null,'An unavailable edition cannot borrow the single Unlimited quote');
 assert.equal(tcg('ygo',CARDS.ygo[0],{priceEdition:'SET-001::Super Rare'}).value,null,'Multiple editions without selection cannot invent a printing amount');
 assert.equal(tcg('ygo',CARDS.ygo[0],{priceEdition:'SET-001::Super Rare',priceYgoEdition:'1st-edition'}).value,31);
 assert.equal(presentationQuote('ptcg',CARDS.ptcg[3],'normal').observedAt,'2020-01-01');
@@ -91,7 +93,8 @@ async function currentDetail(app,game){
   await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/555',amount:'$20.00',currency:'USD',action:'View listing'});assert.match(await page.locator('.price-version').innerText(),/SET-001 · Rare · Unlimited/);
   await select(page,'#sheet [data-change="historyEdition"]','');
   await seller(page,'TCGplayer',{amount:'Check price',action:'Search store'});assert.match(await page.locator('.price-version').innerText(),/Reference card/);assert.equal(await row(page,'YGOPRODeck').count(),0,'Research site is not presented as a seller');
-  await select(page,'#sheet [data-change="historyEdition"]','SET-001::Rare');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/555',amount:'$20.00',currency:'USD'});assert.match(await page.locator('.price-version').innerText(),/SET-001 · Rare/);
+  await select(page,'#sheet [data-change="historyEdition"]','SET-001::Rare');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/555',amount:'Check price'});assert.equal(await page.locator('#sheet [data-change="historyYgoEdition"]').inputValue(),'','Reselecting a printing does not restore or infer its physical edition');assert.equal(await page.locator('#card-history').getAttribute('data-history-state'),'edition-required');assert.equal(await page.locator('#card-history .market-chart').count(),0,'No edition-selected graph exists before choosing an edition');
+  await select(page,'#sheet [data-change="historyYgoEdition"]','unlimited');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/555',amount:'$20.00',currency:'USD'});assert.match(await page.locator('.price-version').innerText(),/SET-001 · Rare · Unlimited/);
   await select(page,'#sheet [data-change="historyEdition"]','SET-002::Common');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/556',amount:'$1.00',currency:'USD'});
   await select(page,'#sheet [data-change="historyEdition"]','SET-001::Super Rare');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/557',amount:'Check price'});
   await select(page,'#sheet [data-change="historyYgoEdition"]','1st-edition');await seller(page,'TCGplayer',{href:'https://www.tcgplayer.com/product/557',amount:'$31.00',currency:'USD'});

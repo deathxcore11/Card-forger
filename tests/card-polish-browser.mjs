@@ -5,33 +5,46 @@ import {writeFile,mkdir} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {WIDTHS,GAMES,SETS,VASM,CARDS,EXPECTED,SYMBOLS,ART_EVIDENCE,RESULTS,validateFixtures,startServer,openApp,navigate,closeSheet,noOverflow,capture,inventorySnapshot,isHistoryURL} from './card-polish-fixtures.mjs';
 
-console.log(validateFixtures());
+console.log(await validateFixtures());
 if(process.argv.includes('--validate-fixtures'))process.exit(0);
 if(process.env.GITHUB_ACTIONS!=='true')throw Error('Card-polish browser execution is restricted to the authorized hosted GitHub Actions job. Use --validate-fixtures for local checks.');
 const {chromium}=await import('playwright');
 const server=await startServer();let browser;const outcomes=[],failures=[],report=[ART_EVIDENCE];
 const frame=page=>page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
 const tiles=page=>page.locator('#content .set-grid > .grid-card');
-async function readyIndex(page){await page.locator('.set-year-section .set-row').first().waitFor();await page.waitForFunction(()=>{const g=window.__uiTestState.state.settings.game;return !(g==='mtg'?window.__uiTestState.ui.sets:window.__uiTestTcg.ui(g).sets).busy;});}
-async function readySet(page,game,id=EXPECTED[game].set){await page.waitForFunction(({game,id})=>{const s=game==='mtg'?window.__uiTestState.ui.set:window.__uiTestTcg.ui(game).set;return window.__uiTestState.ui.view==='set'&&(game==='mtg'?s.code===id:s.id===id)&&!s.busy&&s.cards.length>0;},{game,id});await tiles(page).first().waitFor();}
+async function readyCatalogues(page){
+ // Boot refreshes the shared Scryfall symbol index even in another game. Its
+ // completion redraws the current page, so the game's own busy flag is not
+ // enough to establish that initial catalogue hydration has finished.
+ await page.waitForFunction(()=>{const S=window.__uiTestState,g=S.state.settings.game,shared=S.ui.sets,active=g==='mtg'?shared:window.__uiTestTcg.ui(g).sets;return !shared.busy&&(shared.list.length||shared.error)&&!active.busy&&(active.list.length||active.error);});
+ const state=await page.evaluate(()=>{const S=window.__uiTestState,g=S.state.settings.game;return {shared:S.ui.sets.error,active:(g==='mtg'?S.ui.sets:window.__uiTestTcg.ui(g).sets).error};});assert.deepEqual(state,{shared:'',active:''},'Both real catalogue loads completed without a provider/schema error');
+}
+async function readyIndex(page){await readyCatalogues(page);await page.waitForFunction(()=>window.__uiTestState.ui.view==='sets');await page.locator('.set-year-section .set-row').first().waitFor();}
+async function readySet(page,game,id=EXPECTED[game].set){await readyCatalogues(page);await page.waitForFunction(({game,id})=>{const S=window.__uiTestState,s=game==='mtg'?S.ui.set:window.__uiTestTcg.ui(game).set;return S.state.settings.game===game&&S.ui.view==='set'&&(game==='mtg'?s.code===id:s.id===id)&&s.loaded&&!s.busy&&!s.detailsBusy&&s.cards.length>0;},{game,id});assert.equal(await page.evaluate(g=>(g==='mtg'?window.__uiTestState.ui.set:window.__uiTestTcg.ui(g).set).error,game),'','Exact set finished loading without an error');await tiles(page).first().waitFor();}
 async function openSet(page,game,id=EXPECTED[game].set){await navigate(page,'#set/'+encodeURIComponent(id));await readySet(page,game,id);}
 async function cardTile(page,game,id){
- const ids=await tiles(page).evaluateAll((nodes,g)=>nodes.map(n=>g==='mtg'?window.__uiTestState.ui.set.cards[Number(n.dataset.setI)]?.id:n.dataset.id),game),i=ids.indexOf(id);
- assert(i>=0,`Exact ${game} card ${id} exists`);const target=tiles(page).nth(i);await target.scrollIntoViewIfNeeded();await frame(page);return target;
+ await readySet(page,game);
+ // Never retain a visual position across a rerender. TCG tiles expose exact
+ // card/release IDs; Magic exposes the provider-array slot plus card name.
+ const selector=game==='mtg'?await page.evaluate(id=>{const cards=window.__uiTestState.ui.set.cards,i=cards.findIndex(c=>c.id===id);return i<0?null:`[data-set-i="${i}"][data-name=${JSON.stringify(cards[i].name)}]`;},id):`[data-id=${JSON.stringify(id)}][data-set-id=${JSON.stringify(EXPECTED[game].set)}]`;
+ assert(selector,`Exact ${game} card ${id} exists`);const target=page.locator('#content .set-grid > .grid-card'+selector);await target.waitFor();assert.equal(await target.count(),1,'One exact card/release tile');assert.equal(await target.evaluate((n,g)=>g==='mtg'?window.__uiTestState.ui.set.cards[Number(n.dataset.setI)]?.id:n.dataset.id,game),id);
+ // Locator click/focus handles scrolling and reacquires the exact node if it
+ // detaches. An eager scrollIntoViewIfNeeded pins a transient element instead.
+ return target;
 }
 async function select(page,selector,value){
  const control=page.locator(selector);assert.equal(await control.count(),1,'One real control '+selector);const label=await control.locator('option').evaluateAll((nodes,v)=>nodes.find(n=>n.value===v)?.label,value);assert(label,'Provider-backed option '+value+' exists');
  await control.click();await page.locator('.glass-select-menu[open]').getByRole('option',{name:label,exact:true}).click();
  await page.waitForFunction(({selector,value})=>{const n=document.querySelector(selector);return n?.isConnected&&n.value===value&&[...n.options].find(o=>o.value===value)?.hasAttribute('selected');},{selector,value});await frame(page);
 }
-async function openCard(page,game,id){
- await(await cardTile(page,game,id)).click();await page.waitForFunction(({game,id})=>{const ctx=window.__uiTestState.ui.sheetCtx;return document.querySelector('#sheet')?.open&&(game==='mtg'?ctx?.print?.id===id:ctx?.id===id)&&!!document.querySelector('.card-price-summary');},{game,id});
+async function openCard(page,game,id,{keyboard=false}={}){
+ const target=await cardTile(page,game,id);if(keyboard){await target.focus();await page.keyboard.press('Enter');}else await target.click();await page.waitForFunction(({game,id})=>{const ctx=window.__uiTestState.ui.sheetCtx;return document.querySelector('#sheet')?.open&&(game==='mtg'?ctx?.print?.id===id:ctx?.id===id)&&!!document.querySelector('.card-price-summary');},{game,id});
  assert.equal(await page.evaluate(()=>window.__uiTestState.ui.sheetCtx.setId),EXPECTED[game].set,'Detail keeps exact release identity');
  await page.waitForFunction(()=>{const img=document.querySelector('#sheet .cs-card .card-img');return img?.complete&&img.naturalWidth>0;});
 }
-async function tab(page,id){
+async function tab(page,id,{keyboard=false}={}){
  if(id==='prices')await page.evaluate(()=>{window.__polishTabBefore={panel:document.querySelector('#card-history'),state:window.__uiTestState.state};});
- await page.locator(`#card-tab-${id}`).click();await page.waitForFunction(id=>{if(document.querySelector('#card-tab-'+id)?.getAttribute('aria-selected')!=='true')return false;if(id!=='prices')return true;const old=window.__polishTabBefore,n=document.querySelector('#card-history');return n?.isConnected&&n!==old.panel&&!old.panel.isConnected&&window.__uiTestState.state!==old.state&&window.__uiTestState.ui.sheetCtx?.tab==='prices';},id);await frame(page);
+ const target=page.locator(`#card-tab-${id}`);if(keyboard){await target.focus();await page.keyboard.press('Enter');}else await target.click();await page.waitForFunction(id=>{if(document.querySelector('#card-tab-'+id)?.getAttribute('aria-selected')!=='true')return false;if(id!=='prices')return true;const old=window.__polishTabBefore,n=document.querySelector('#card-history');return n?.isConnected&&n!==old.panel&&!old.panel.isConnected&&window.__uiTestState.state!==old.state&&window.__uiTestState.ui.sheetCtx?.tab==='prices';},id);await frame(page);
 }
 async function activeQuote(page){return page.evaluate(()=>{const ctx=window.__uiTestState.ui.sheetCtx,g=ctx.game||'mtg';let card=g==='mtg'?ctx.print:window.__uiTestTcg.cardOf(g,ctx.id);if(g!=='mtg')card=window.__uiTestTcg.setContextCard(g,card,ctx.setId,window.__uiTestTcg.ui(g).sets.list);return window.__polishPricing.quoteForContext(g,card,ctx);});}
 async function cacheSnapshot(page){return page.evaluate(()=>JSON.stringify(Object.fromEntries(['ygo','ptcg'].map(g=>[g,Object.fromEntries(Object.entries(window.__uiTestTcg.cache[g]).map(([id,c])=>[id,{id:c.id,sets:c.sets,prices:c.prices,setContext:c.setContext,rarity:c.rarity}]))]))));}
@@ -46,6 +59,11 @@ async function jump(page,target='history'){
 }
 async function historyState(page,state){await page.waitForFunction(state=>document.querySelector('#card-history')?.dataset.historyState===state,state);const history=page.locator('#card-history');assert.equal(await history.locator('.market-chart').count(),0,'Missing matching history never produces an invented graph');assert.equal(await history.locator('.history-empty').count(),1,'One concise empty-state paragraph');assert.equal(await history.locator('.history-coverage').count(),0,'No duplicated empty-state summary');return history;}
 async function historySafety(app){assert.equal(app.requests.filter(r=>{const u=new URL(r.url);return isHistoryURL(u)&&u.searchParams.get('game')==='ygo';}).length,0,'Release-bound YGO must not query a card-level endpoint that lacks release identity');}
+async function failedSymbol(page,id){
+ await page.waitForFunction(id=>{const slot=document.querySelector('[data-set-symbol-id="'+id+'"]'),img=slot?.querySelector('img.set-catalogue-symbol');return slot?.classList.contains('no-art')&&(!img||img.complete&&img.hidden&&img.onload===null&&img.onerror===null&&!img.dataset.symbolNext&&!img.dataset.symbolLast);},id);
+ const row=page.locator('.set-row[data-id="'+id+'"]');assert(await row.locator('.set-media-fallback').isVisible());assert.equal(await row.locator('.set-art-code').innerText(),id.toUpperCase());assert(await row.locator('.set-art-code').isVisible(),'An actual readable code replaces failed/missing art');assert.equal(await row.locator('.set-media-fallback img,.set-media-fallback svg').count(),0);
+}
+function symbolAttempts(app,key){const expected=SYMBOLS[key].map(u=>new URL(u,server.base+'/').href);assert.deepEqual(app.images.filter(u=>expected.includes(u)),expected,key+': every declared fallback attempted once, in order');}
 
 async function ygoFacets(app){
  const {page}=app;await readyIndex(page);await openSet(page,'ygo');const before=await inventorySnapshot(page),cache=await cacheSnapshot(page);
@@ -91,28 +109,30 @@ async function knownPrice(app,game){
 }
 
 async function pokemonSymbols(app){
- const {page}=app;await readyIndex(page);const before=await inventorySnapshot(page),normal=page.locator('.set-row[data-id="sv08"]'),broken=page.locator('.set-row[data-id="sv03"]'),missing=page.locator('.set-row[data-id="synthetic-missing"]');
- for(const row of [normal,broken,missing]){await row.scrollIntoViewIfNeeded();assert.equal(await row.locator('.set-media-pokemon-symbol').count(),1);assert.equal(await row.locator('.set-row-main .pks').count(),0,'No duplicate tiny title symbol');}
+ const {page}=app;await readyIndex(page);const before=await inventorySnapshot(page),normal=page.locator('.set-row[data-id="sv08"]'),broken=page.locator('.set-row[data-id="sv03"]'),missing=page.locator('.set-row[data-id="synthetic-missing"]'),symbolLess=page.locator('.set-row[data-id="base1"]');
+ for(const row of [normal,broken,missing,symbolLess]){await row.scrollIntoViewIfNeeded();assert.equal(await row.locator('.set-media-pokemon-symbol').count(),1);assert.equal(await row.locator('.set-row-main .pks').count(),0,'No duplicate tiny title symbol');}
  const img=normal.locator('img.set-catalogue-symbol');await page.waitForFunction(()=>{const n=document.querySelector('[data-set-symbol-id="sv08"] img.set-catalogue-symbol');return n?.complete&&n.naturalWidth>0&&!n.parentElement.classList.contains('no-art');});assert.equal(await img.getAttribute('src'),'img/pks/s/surging-sparks.png');
  const normalStyle=await img.evaluate(n=>({filter:getComputedStyle(n).filter,fit:getComputedStyle(n).objectFit,opacity:getComputedStyle(n).opacity}));assert.match(normalStyle.filter,/grayscale\(1\).*invert\(1\)/);assert.equal(normalStyle.fit,'contain');assert.equal(normalStyle.opacity,'1');
- await page.waitForFunction(()=>{const n=document.querySelector('[data-set-symbol-id="sv03"] img.set-catalogue-symbol');return n?.hidden&&n.parentElement.classList.contains('no-art');});
- for(const [row,id]of [[broken,'SV03'],[missing,'SYNTHETIC-MISSING']]){assert(await row.locator('.set-media-fallback').isVisible());assert.equal(await row.locator('.set-art-code').innerText(),id);assert(await row.locator('.set-art-code').isVisible(),'An actual readable code replaces failed/missing art');assert.equal(await row.locator('.set-media-fallback img,.set-media-fallback svg').count(),0);}
- assert.equal(await missing.locator('img.set-catalogue-symbol').count(),0,'No metadata means no speculative blank image');
- const brokenURLs=SYMBOLS.broken.map(u=>new URL(u,server.base+'/').href),count=()=>app.images.filter(u=>brokenURLs.includes(u));assert.deepEqual(count(),brokenURLs,'Failure chain is bounded proxy → direct → exact provider symbol, once each');await page.waitForTimeout(350);assert.equal(count().length,3,'Exhausted fallback cannot loop');
+ for(const id of ['sv03','synthetic-missing','base1'])await failedSymbol(page,id);
+ assert.equal(await symbolLess.locator('img.set-catalogue-symbol').count(),0,'A release known to have no expansion symbol must not create a speculative image');
+ assert.equal(await missing.locator('img.set-catalogue-symbol').count(),1,'Missing provider metadata uses one bounded name-derived image, never duplicate images');
+ symbolAttempts(app,'broken');symbolAttempts(app,'missing');
  await layout(page,'#content','pokemon-white-symbols',['.set-row','[data-change="tSetsSort"]']);
+ // Terminal DOM state, not a timed quiet period, proves fallback cannot loop.
+ for(const id of ['sv03','synthetic-missing','base1'])await failedSymbol(page,id);symbolAttempts(app,'broken');symbolAttempts(app,'missing');
  const dimensions=await page.locator('.set-media-pokemon-symbol').evaluateAll(ns=>ns.map(n=>({w:n.getBoundingClientRect().width,h:n.getBoundingClientRect().height})));assert(dimensions.every(d=>d.w===dimensions[0].w&&d.h===dimensions[0].h),'All symbol/code slots have uniform dimensions');
- await openSet(page,'ptcg');const logoInfo=await page.locator('.set-hero img').evaluateAll(ns=>ns.map(n=>({src:n.getAttribute('src'),filter:getComputedStyle(n).filter,complete:n.complete,width:n.naturalWidth,class:n.className})));const colored=logoInfo.find(x=>x.src==='https://assets.tcgdex.net/en/sv/sv08/logo.webp');assert(colored,'Inside-set detail retains authentic provider colored-logo URL');assert.equal(colored.filter,'none','Catalogue whitening cannot affect set-detail logo');
- await capture(page,'card-polish-pokemon-colored-set-logo');assert.equal(await inventorySnapshot(page),before);report.push('Pokemon catalogue uses a single uniform source-backed white symbol; proxy/direct/provider failure ends in readable exact code, missing metadata never paints a blank tile, and the in-set colored logo is unchanged.');
+ await openSet(page,'ptcg');await page.waitForFunction(()=>{const n=document.querySelector('.set-hero img.set-logo');return n?.complete&&n.naturalWidth>0;});const logoInfo=await page.locator('.set-hero img').evaluateAll(ns=>ns.map(n=>({src:n.getAttribute('src'),filter:getComputedStyle(n).filter,complete:n.complete,width:n.naturalWidth,class:n.className})));const colored=logoInfo.find(x=>x.src==='https://assets.tcgdex.net/en/sv/sv08/logo.webp');assert(colored,'Inside-set detail retains authentic provider colored-logo URL');assert.equal(colored.filter,'none','Catalogue whitening cannot affect set-detail logo');assert(colored.complete&&colored.width>0,'The exact colored logo really decoded');
+ await capture(page,'card-polish-pokemon-colored-set-logo');assert.equal(await inventorySnapshot(page),before);report.push('Pokemon catalogue uses a single uniform source-backed white symbol; exact-provider and missing-metadata fallback chains end in readable codes, Base Set creates no expansion-symbol image, and the in-set colored logo is unchanged.');
 }
 async function pokemonAllSymbolsFail(app){
- const {page}=app;await readyIndex(page);for(const id of ['sv08','sv03','synthetic-missing']){const row=page.locator('.set-row[data-id="'+id+'"]');await row.scrollIntoViewIfNeeded();await page.waitForFunction(id=>{const n=document.querySelector('[data-set-symbol-id="'+id+'"]'),img=n?.querySelector('img');return n?.classList.contains('no-art')&&(!img||img.hidden);},id);assert.equal(await row.locator('.set-art-code').innerText(),id.toUpperCase());assert(await row.locator('.set-art-code').isVisible());}
- const all=Object.values(SYMBOLS).flat().map(u=>new URL(u,server.base+'/').href),calls=app.images.filter(u=>all.includes(u));assert.equal(calls.length,6,'All six declared attempts terminate, never retry indefinitely');await page.waitForTimeout(350);assert.equal(app.images.filter(u=>all.includes(u)).length,6);await noOverflow(page,'#content','all symbols failed');await capture(page,'card-polish-pokemon-all-symbols-failed');
+ const {page}=app;await readyIndex(page);for(const id of ['sv08','sv03','synthetic-missing','base1']){const row=page.locator('.set-row[data-id="'+id+'"]');await row.scrollIntoViewIfNeeded();await failedSymbol(page,id);}
+ for(const key of Object.keys(SYMBOLS))symbolAttempts(app,key);const all=Object.values(SYMBOLS).flat().map(u=>new URL(u,server.base+'/').href);assert.equal(app.images.filter(u=>all.includes(u)).length,8,'All eight declared attempts terminate with disabled handlers, never retry indefinitely');assert.equal(await page.locator('[data-set-symbol-id="base1"] img').count(),0);await noOverflow(page,'#content','all symbols failed');await capture(page,'card-polish-pokemon-all-symbols-failed');for(const key of Object.keys(SYMBOLS))symbolAttempts(app,key);
 }
 async function magicCatalogue(app){
  const {page}=app;await readyIndex(page);const row=page.locator('.set-row[data-code="fdn"]');assert.equal(await row.locator('.set-media-pokemon-symbol,.set-catalogue-symbol').count(),0);const image=row.locator('.set-media > img');assert.equal(await image.getAttribute('src'),SETS.mtg[0].icon_svg_uri);const filter=await image.evaluate(n=>getComputedStyle(n).filter);assert.match(filter,/invert\(0\.9\)/,'Magic retains its established 90% invert treatment');assert.doesNotMatch(filter,/grayscale/,'Pokemon-only grayscale cannot change Magic');await layout(page,'#content','magic-catalogue-unchanged',['.set-row']);report.push('Magic keeps its original set emblem/layout path, with no Pokemon-only symbol wrapper or recoloring.');
 }
 async function reducedMotion(app){
- const {page}=app;await readyIndex(page);await openSet(page,'ygo');const c=await cardTile(page,'ygo',EXPECTED.ygo.unknown);await c.focus();await page.keyboard.press('Enter');await page.waitForFunction(()=>document.querySelector('#sheet')?.open&&window.__uiTestState.ui.sheetCtx?.id==='99020003');await page.locator('#card-tab-prices').focus();await page.keyboard.press('Enter');await historyState(page,'exact-unavailable');await jump(page);
+ const {page}=app;await readyIndex(page);await openSet(page,'ygo');await openCard(page,'ygo',EXPECTED.ygo.unknown,{keyboard:true});await tab(page,'prices',{keyboard:true});await historyState(page,'exact-unavailable');await jump(page);
  const motion=await page.locator('#sheet .cd-img[data-rarity-flair]').evaluateAll(ns=>ns.flatMap(n=>[n,...n.querySelectorAll('.card-img')].flatMap(el=>[null,'::before','::after'].map(pseudo=>{const s=getComputedStyle(el,pseudo);return {animation:s.animationName,duration:s.animationDuration,transition:s.transitionDuration};}))));
  assert(motion.length>0,'Selected rarity detail is present in reduced-motion mode');for(const m of motion){assert(m.animation==='none'||m.duration.split(',').every(t=>parseFloat(t)===0),'Reduced motion removes rarity animation '+JSON.stringify(m));}
  await noOverflow(page,'#sheetBody','Reduced motion selected rarity');await capture(page,'card-polish-reduced-motion');await historySafety(app);report.push('Reduced-motion and keyboard navigation retain exact rarity/printing without animated flair or obscured history headings.');
