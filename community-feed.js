@@ -4,7 +4,7 @@ import { metaState as readMetaState } from './meta.js';
 // Only the small publisher feed has its own daily cache. All dates retain their
 // original meaning: publication, event, or YGOPRODeck submission date.
 export const COMMUNITY_TTL = 864e5;
-const RETENTION = 7 * COMMUNITY_TTL, KEY = 'cardforge-community-v1';
+const RETENTION = 7 * COMMUNITY_TTL, KEY = 'cardforge-community-v2', LEGACY_KEY = 'cardforge-community-v1';
 const games = ['mtg', 'ptcg', 'ygo'], states = Object.create(null);
 const hosts = {
   mtg: ['magic.wizards.com', 'www.magic.wizards.com', 'www.mtgo.com', 'mtgo.com', 'edhtop16.com', 'topdeck.gg', 'magic.gg', 'www.magic.gg', 'locator.wizards.com'],
@@ -24,7 +24,7 @@ const stamp = value => {
   const date = new Date(n); return Number.isFinite(date.getTime()) && n > 0 ? date.toISOString() : '';
 };
 const storage = () => { try { return globalThis.localStorage; } catch { return null; } };
-const saved = () => { try { const s = JSON.parse(storage()?.getItem(KEY) || '{}'); return record(s) ? s : {}; } catch { return {}; } };
+const saved = (key = KEY) => { try { const s = JSON.parse(storage()?.getItem(key) || '{}'); return record(s) ? s : {}; } catch { return {}; } };
 export function safeCommunityUrl(value, game) {
   try { const u = new URL(value); return u.protocol === 'https:' && !u.username && !u.password && !u.port && hosts[game]?.includes(u.hostname) ? u.href : ''; } catch { return ''; }
 }
@@ -45,7 +45,7 @@ function validItems(items, game, now) {
 export function communityState(game) {
   if (!games.includes(game)) return { data: null, at: 0, busy: false, error: 'Unknown game' };
   if (!states[game]) {
-    const old = saved()[game], raw = old?.data;
+    const current = saved()[game], legacy = !current && saved(LEGACY_KEY)[game], old = current || legacy, raw = old?.data;
     // Browser storage is an untrusted boundary. A malformed cache must not
     // crash Home, impersonate a checked source, or block a valid next response.
     const data = record(raw) && raw.game === game && Array.isArray(raw.items) ? {
@@ -53,7 +53,9 @@ export function communityState(game) {
       fetchedAt: stamp(raw.fetchedAt), checkedAt: stamp(raw.checkedAt), nextCheckAt: stamp(raw.nextCheckAt), stale: !!raw.stale,
       status: ['ready', 'partial', 'unavailable'].includes(raw.status) ? raw.status : 'unavailable', error: text(raw.error, 250),
     } : null;
-    const at = data && typeof old?.at === 'number' && stamp(old.at) ? old.at : 0;
+    // Keep v1 items, but give each game one corrected request. Persisting v2 even
+    // on failure restores the daily backoff across reloads without a cache purge.
+    const at = !legacy && data && typeof old?.at === 'number' && stamp(old.at) ? old.at : 0;
     states[game] = { data, at, busy: false, error: data?.error || '' };
   }
   return states[game];
@@ -68,7 +70,7 @@ export function loadCommunity(game, { fetchImpl = globalThis.fetch, now = Date.n
   if (state.at && now >= state.at && now - state.at < COMMUNITY_TTL) return Promise.resolve(state.data);
   state.busy = true; state.error = '';
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 16000);
-  state.promise = Promise.resolve().then(() => fetchImpl(`api/community?game=${game}`, { signal: controller.signal, headers: { Accept: 'application/json' } })).then(async response => {
+  state.promise = Promise.resolve().then(() => fetchImpl(`api/community?game=${game}`, { cache: 'no-store', signal: controller.signal, headers: { Accept: 'application/json' } })).then(async response => {
     if (!response.ok) throw Error('Community headlines are temporarily unavailable.');
     const payload = await response.text();
     if (payload.length > 100000) throw Error('Community headline response was too large.');
