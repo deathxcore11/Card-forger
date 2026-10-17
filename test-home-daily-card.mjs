@@ -21,7 +21,8 @@ for (const g of GAME_IDS) {
   const html = homeHero(g, 'Welcome back.', true);
   assert.equal((html.match(/data-act="homeDailyCard"/g) || []).length, 2);
   assert.equal((html.match(new RegExp(`data-id="daily-${g}"`, 'g')) || []).length, 2);
-  assert.equal((html.match(/Card of the Day/g) || []).length, 2);
+  assert.equal((html.match(/Card of the Day/g) || []).length, 1, `${g}: one visible daily-card label, not a duplicate artwork badge`);
+  assert.match(html, /class="hh-art-link"[^>]+aria-label="Explore [^"]+ artwork"><\/button>/);
   assert.doesNotMatch(html, /From your deck|hh-deck-link|onerror=/);
 }
 // Exercise the actual three Home entry points with saved deck leaders present.

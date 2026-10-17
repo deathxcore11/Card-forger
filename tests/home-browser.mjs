@@ -373,6 +373,10 @@ async function assertCommunityArtwork(page, selector, game, { kind = 'card', sta
       visibleCredit: [...node.querySelectorAll('.community-art-credit')].some(n => getComputedStyle(n).display !== 'none' && getComputedStyle(n).visibility === 'visible' && Number(getComputedStyle(n).opacity) > 0) };
   });
   assert(visual.width >= 80 && visual.height >= 65 && visual.display !== 'none' && visual.visibility === 'visible' && visual.opacity > 0.1, `${game}: visible art on phones as well as desktop: ${JSON.stringify(visual)}`);
+  if (selector.startsWith('[data-home-meta=')) {
+    const cover = await art.evaluate(node => { const a = node.getBoundingClientRect(), b = node.parentElement.getBoundingClientRect(); return { width: a.width, height: a.height, parentWidth: b.width, parentHeight: b.height, display: getComputedStyle(node).display, gridArea: getComputedStyle(node).gridArea }; });
+    assert(cover.display === 'block' && cover.width >= cover.parentWidth - 3 && cover.height >= cover.parentHeight - 3, `${game}: decorative shortcut art fills its whole control, not the text grid rows: ${JSON.stringify(cover)}`);
+  }
   if (kind === 'card') {
     assert.equal(await art.getAttribute('data-art-card'), deckIdentity(game, second));
     assert.equal(await art.getAttribute('data-art-deck'), `fixture-${game}${second ? '-second' : ''}`);
@@ -412,6 +416,9 @@ async function assertDailyIdentity(page, game, card = heroes[game], date = TODAY
     assert.equal(await page.locator(selector).getAttribute('data-id'), card.id);
     assert.equal(await page.locator(selector).getAttribute('data-date'), date);
   }
+  assert.equal(await page.locator('.hh-art-link').innerText(), '', 'clickable artwork has no redundant visual badge');
+  assert.match(await page.locator('.hh-art-link').getAttribute('aria-label'), /Explore .+ artwork/);
+  assert.equal((await page.locator('#homeHero').innerText()).match(/Card of the Day/gi)?.length, 1, `${game}: only one visible daily-card action`);
   assert.match(await page.locator('.hh-credit').innerText(), /Card of the Day/i);
   assert.match(await page.locator('.hh-credit').innerText(), new RegExp(card.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.doesNotMatch(await page.locator('.hh-credits').innerText(), /From your deck/);

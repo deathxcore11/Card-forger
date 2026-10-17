@@ -380,7 +380,7 @@ export function homeHero(g, title, compact = false) {
   const h = heroFor(g), G = GAMES[g],
     cardAction = h ? `data-act="homeDailyCard" data-game="${g}" data-id="${esc(h.id)}" data-name="${esc(h.name)}" data-date="${h.date}"` : "";
   return `<section class="home-hero ${g} ${compact ? "compact" : ""} ${h?.art ? "has-art" : "no-art"}" id="homeHero" data-game="${g}" data-daily-date="${h?.date || ""}" data-daily-id="${esc(h?.id || "")}">${h?.art && g === "ptcg" ? pokemonArtCrop({ game: g, id: h.id }, "hh-art", h.art) : h?.art ? `<img class="hh-art" src="${esc(h.art)}" alt="" referrerpolicy="no-referrer" data-art-sources="${esc(JSON.stringify([...new Set([h.art, h.artDirect].filter(Boolean))]))}" data-art-index="0">` : ""}<div class="hh-shade"></div>
-    ${cardAction ? `<button class="hh-art-link" ${cardAction} aria-label="Explore ${esc(h.name)}"><span>Card of the Day <span aria-hidden="true">↗</span></span></button>` : ""}
+    ${cardAction ? `<button class="hh-art-link" ${cardAction} aria-label="Explore ${esc(h.name)} artwork"></button>` : ""}
     <div class="hh-body"><p class="eyebrow">${esc(G.name)}</p><h1>${title}</h1>
       <div class="hh-search"><input id="homeQ" type="search" data-suggest="${g}" placeholder="Search ${esc(G.short)} cards" data-enter="homeSearch" aria-label="Search ${esc(G.short)} cards" autocomplete="off"><button class="btn" data-act="homeSearch">Search</button><button class="ask-launch" data-act="askOpen" aria-label="Ask AI"><span aria-hidden="true">✦</span>Ask</button></div>
       ${cardAction ? `<div class="hh-credits"><button class="hh-credit" ${cardAction}>Card of the Day · <b>${esc(h.name)}</b> <span aria-hidden="true">›</span></button></div>` : ""}
