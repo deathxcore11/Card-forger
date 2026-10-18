@@ -72,13 +72,14 @@ const realArt = {
  ygo: {url:'https://images.ygoprodeck.com/images/cards/89631139.jpg',type:'image/jpeg',name:'Blue-Eyes White Dragon'},
  mtg: {url:'https://api.scryfall.com/cards/cmr/133',metadata:true,type:'image/jpeg',name:'Miara, Thorn of the Glade'}
 };
-for(const art of Object.values(realArt)){
- if(art.metadata){const metadata=await fetch(art.url,{signal:AbortSignal.timeout(30000)});assert(metadata.ok,'Exact Magic printing metadata must load: '+metadata.status);const card=await metadata.json();assert.equal(card.set,'cmr');assert.equal(card.collector_number,'133');art.name=card.name;art.url=card.image_uris.normal;}
- const response=await fetch(art.url,{signal:AbortSignal.timeout(30000)});
+async function loadRealArt(art){
+ if(art.metadata){const metadata=await fetch(art.url,{headers:{'User-Agent':'CardStashy-Frame-QA/3.85.10','Accept':'application/json,image/*;q=0.9,*/*;q=0.8'},signal:AbortSignal.timeout(30000)});assert(metadata.ok,'Exact Magic printing metadata must load: '+metadata.status);const card=await metadata.json();assert.equal(card.set,'cmr');assert.equal(card.collector_number,'133');art.name=card.name;art.url=card.image_uris.normal;}
+ const response=await fetch(art.url,{headers:{'User-Agent':'CardStashy-Frame-QA/3.85.10','Accept':'application/json,image/*;q=0.9,*/*;q=0.8'},signal:AbortSignal.timeout(30000)});
  assert(response.ok,'Actual comparison art must load: '+art.url);
  art.bytes=Buffer.from(await response.arrayBuffer());assert(art.bytes.length>5000,'Real card artwork is nonempty');
 }
 for(const game of ['ptcg','mtg','ygo']){
+ await loadRealArt(realArt[game]);
  const app=await openApp(browser,server.base,{game,width:390,isMobile:true}),{page}=app;
  try{
   const art=realArt[game],url=server.base+'/tests/actual-frame-'+game;
