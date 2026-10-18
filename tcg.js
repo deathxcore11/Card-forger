@@ -24,7 +24,7 @@ import {editionPrice,rarityKey} from './ygo-prices.js';
 import {buildOverlay} from './build-overlay.js';
 import { tierCardHtml } from './tier-card.js';
 import {bestBudgetDecks,purchaseCost,comparePower,swappedZones,sameCardLogic,budgetComparisonHtml,refineCandidates,towardDeck,spendUp,cardQuality,budgetNotes,variantsFrom,fillOpen,difficultyOf} from './deck-optimizer.js';
-import {collectionOrder} from "./collection-order.js";
+import {collectionSortControls,compareCollectionRows} from "./collection-sort.js";
 import {POKEMON_SET_ART} from "./pokemon-set-art.js";
 import {pokemonCatalogueSetEntry} from './pokemon-catalogue-supplement.js';
 import { recordCardPrice, trackedQuote, priceHistoryHtml, alertsPanel, alertStatus } from "./pricehist.js";
@@ -109,7 +109,7 @@ export const ui = (g = game()) =>
     search: { q: "", f: {}, sort: g === "ygo" ? "name" : "new", maxPrice: "", page: 0, results: [], more: false, busy: false, error: "", ran: false, generation: 0, request: null, submitted: null, detailsBusy: false },
     sets: { list: [], busy: false, error: "", q: "", limit: 80 },
     set: { id: "", info: null, cards: [], busy: false, loaded: false, error: "", filter: "all", sort: "number", q: "", rarity: "", finish: "", limit: 120, generation: 0, contents: null, candidates: [] },
-    coll: { limit: 120, q: "", sort: "set-order", set: "", kind: "", rarity: "" },
+    coll: { limit: 120, q: "", sort: "recent", set: "", kind: "", rarity: "" },
     deckAdd: { q: "", results: [], busy: false },
   });
 
@@ -944,15 +944,15 @@ export function tcgCollection() {
     kindOk = (c, k) => !k || (!!c && (k === "meta" ? hasEmblem(g, c) : k === "extra" ? !!c.extra : k.startsWith("attr:") ? c.attribute === k.slice(5) : k.startsWith("type:") ? (c.types || []).includes(k.slice(5)) : c.category === k));
   if (U.kind) rows = rows.filter((x) => kindOk(x.c, U.kind));
   if (U.rarity) rows = rows.filter((x) => rarityOf(x) === U.rarity);
-  const val = (x) => (x.w ? price(x.c) ?? -1 : (entryPrice(x.c, x.e) ?? -1) * x.e.qty);
-  const orderOf=x=>({name:x.e.name,set:setLabel(x),number:g==='ptcg'?x.c?.set?.number:x.e.printing?.split('-').at(-1),date:g==='ptcg'?x.c?.released || ui(g).sets.list.find(s=>s.id===x.c?.set?.id)?.date || POKEMON_SET_ART[x.c?.set?.id]?.date:ygoSetIndex().get(setLabel(x))?.date || x.c?.released});
-  rows.sort(U.sort === "set-order" ? (a,b)=>collectionOrder(orderOf(a),orderOf(b)) : U.sort === "impact" ? (a, b) => impactScore(g, b.c) - impactScore(g, a.c) || val(b) - val(a) : U.sort === "name" ? (a, b) => a.e.name.localeCompare(b.e.name) : U.sort === "recent" ? (a, b) => String(b.e.addedAt).localeCompare(String(a.e.addedAt)) : U.sort === "set" ? (a, b) => setLabel(a).localeCompare(setLabel(b)) || a.e.name.localeCompare(b.e.name) : U.sort === "rarity" ? (a, b) => rarityOf(a).localeCompare(rarityOf(b)) || a.e.name.localeCompare(b.e.name) : (a, b) => val(b) - val(a));
+  const descriptor=x=>{const unit=x.w?price(x.c):entryPrice(x.c,x.e);return {id:x.e.id,name:x.e.name,set:setLabel(x),number:g==='ptcg'?x.c?.set?.number:x.e.printing?.split('-').at(-1),date:g==='ptcg'?x.c?.released||ui(g).sets.list.find(s=>s.id===x.c?.set?.id)?.date||POKEMON_SET_ART[x.c?.set?.id]?.date:ygoSetIndex().get(setLabel(x))?.date||x.c?.released,
+   value:unit==null?null:unit*(x.w?1:x.e.qty),impact:x.c?impactScore(g,x.c):null,rarity:rarityOf(x),recent:Number.isFinite(Date.parse(x.e.addedAt))?Date.parse(x.e.addedAt):null};};
+  rows.sort((a,b)=>compareCollectionRows(descriptor(a),descriptor(b),U.sort,U.direction));
   if (U.tab === "value") return tcgValueView(g);
   if (U.tab === "binders") return `<div class="page-head"><h1>Collection</h1><button class="btn ghost small" data-act="go" data-to="#search">＋ Add cards</button></div>${segmented("tCollTab","binders",[["cards","Cards"],["binders","Binders"],["value","Value"]])}${binderShelf(st.collection.map(entry=>({entry,card:cardOf(g,entry.cardId),image:cardOf(g,entry.cardId)?.variants?.find(v=>v.key===entry.variant)?.image || cardOf(g,entry.cardId)?.image || "",game:g})),g,S.state.settings.binders || [])}`;
   return `<div class="page-head"><h1>Collection</h1><div class="head-actions">${viewControl(g,"collection")}${selectionControl(g)}<button class="btn ghost small" data-act="go" data-to="#search">＋ Add cards</button></div></div>
   ${segmented("tCollTab", "cards", [["cards", "Cards"], ["binders", "Binders"], ["value", "Value"]])}
   ${st.collection.length || wantRows.length ? `<div class="coll-summary"><button class="cs-value" data-act="tCollTab" data-id="value" aria-label="See collection value"><b data-count="${Math.round(v.total)}" data-money="1">${usd(v.total, 0)}</b><span>${v.copies} card${v.copies === 1 ? "" : "s"}${wantRows.length ? ` · ${wantRows.length} wanted` : ""}${Math.min(rows.length, U.limit || 120) < rows.length ? ` · showing ${Math.min(rows.length, U.limit || 120)} of ${rows.length}` : rows.length !== st.collection.length + wantRows.length ? ` · showing ${rows.length}` : ""}${v.unpriced ? ` · ${v.unpriced} unpriced` : ""}</span></button><button class="icon" data-act="tRefreshPrices" aria-label="Refresh prices">${actionIcon("refresh")}</button></div>` : ""}
-  ${st.collection.length || wantRows.length ? `<div class="coll-tools"><input type="search" value="${esc(U.q)}" placeholder="Search your cards" data-input="tCollQ" aria-label="Search collection"><div class="filter-pills"><select data-change="tCollSet" aria-label="Set">${options([["", "All sets"], ...setNames.map((x) => [x, x])], U.set)}</select><select data-change="tCollKind" data-field="kind" aria-label="Kind">${options([["", "All kinds"], ...kinds], U.kind)}</select>${rarities.length > 1 ? `<select data-change="tCollKind" data-field="rarity" aria-label="Rarity">${options([["", "All rarities"], ...rarities.map((x) => [x, x])], U.rarity)}</select>` : ""}${wantRows.length ? `<select data-change="tCollKind" data-field="show" aria-label="Show">${options([["all", "Owned + wanted"], ["owned", "Owned"], ["wanted", `Wanted · ${wantRows.length}`]], show)}</select>` : ""}<select data-change="tCollSort" aria-label="Sort">${options([["set-order","Set year · card number"], ["value", "Value"], ["impact", "Deck-building value"], ["name", "Name"], ["set", "Set"], ["rarity", "Rarity"], ["recent", "Recently added"]], U.sort)}</select></div></div>
+  ${st.collection.length || wantRows.length ? `<div class="coll-tools"><div class="collection-primary-tools">${collectionSortControls(g,U.sort,U.direction)}<input type="search" value="${esc(U.q)}" placeholder="Search your cards" data-input="tCollQ" aria-label="Search collection"></div><div class="filter-pills"><select data-change="tCollSet" aria-label="Set">${options([["", "All sets"], ...setNames.map((x) => [x, x])], U.set)}</select><select data-change="tCollKind" data-field="kind" aria-label="Kind">${options([["", "All kinds"], ...kinds], U.kind)}</select>${rarities.length > 1 ? `<select data-change="tCollKind" data-field="rarity" aria-label="Rarity">${options([["", "All rarities"], ...rarities.map((x) => [x, x])], U.rarity)}</select>` : ""}${wantRows.length ? `<select data-change="tCollKind" data-field="show" aria-label="Show">${options([["all", "Owned + wanted"], ["owned", "Owned"], ["wanted", `Wanted · ${wantRows.length}`]], show)}</select>` : ""}</div></div>
   <div class="list display-list deal">${rows.slice(0,U.limit || 120)
     .map(({ e, c, w }, i) => {
       if (w) return wantedLot(g, w, c, i);
@@ -2536,8 +2536,10 @@ export function registerTcg(c) {
   C.tCollSort = (t) => {
     ui().coll.limit = 120;
     ui().coll.sort = t.value;
+    ui().coll.direction = undefined;
     render();
   };
+  C.tCollDirection = t => {ui().coll.limit=120;ui().coll.direction=t.value;render();};
   A.tRefreshPrices = async (t) => {
 
     const G = g(),

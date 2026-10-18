@@ -3,6 +3,7 @@ import {esc,symbolText} from './ui.js';
 import {LESSONS} from './rule-lessons.js';
 import {keywordReference,resolveRuleReference,sourceDestination} from './rule-reference.js';
 import {loadRulePack} from './rule-corpus.js';
+import {installRuleHover} from './rule-hover.js';
 const SOURCES={mtg:'https://magic.wizards.com/en/rules',ygo:'https://www.yugioh-card.com/en/play/psct/',ptcg:'https://play.pokemon.com/en-us/resources/rules/'};
 const entry=(label,definition,tip)=>({label,definition,tip});
 export const RULE_DEX={
@@ -101,8 +102,11 @@ export function keywordHelp(game,key){
 }
 
 let closeHint=()=>{},hintTrigger=null;
-export function dismissRuleHint(){const trigger=hintTrigger;closeHint();return trigger?.isConnected?trigger:null;}
+let closePreview=()=>{};
+export function attachRuleHover(root=document){closePreview=installRuleHover(root,keywordHelp);}
+export function dismissRuleHint(){closePreview();const trigger=hintTrigger;closeHint();return trigger?.isConnected?trigger:null;}
 export function showRuleHint(button){
+ closePreview();
  const game=button.dataset.game,r=keywordHelp(game,button.dataset.rule);if(!r)return;closeHint();hintTrigger=button;
  let context=null;try{const raw=button.closest('[data-rule-card-context]')?.dataset.ruleCardContext;if(raw){const value=JSON.parse(raw);if(value.game===game&&typeof value.text==='string')context=value;}}catch{}
  const cardContext=context?`<div class="rule-card-context"><p class="eyebrow">Selected card</p><b>${esc(context.name||'Unnamed card')}</b><p class="foot">${esc([context.set,context.number&&'#'+context.number,context.id].filter(Boolean).join(' · '))}</p><p class="small muted">${esc([context.typeLine,context.manaCost].filter(Boolean).join(' · '))}</p><details><summary>Read this card’s exact wording</summary><p class="rule-source-text">${esc(context.text||'Full card text is not available in this record.')}</p>${(context.faces||[]).map(f=>`<p class="foot">${esc([f.name,f.typeLine,f.manaCost].filter(Boolean).join(' · '))}</p>`).join('')}</details><p class="small muted">${context.complete?'This mechanic reminder is not a ruling on this particular board state. Check the complete wording, costs, targets, timing and restrictions.':'Full card text may be missing. Do not infer an interaction from this reminder alone.'}</p></div>`:'<p class="small muted">General mechanic reminder. The exact card wording and game state can change the result.</p>';

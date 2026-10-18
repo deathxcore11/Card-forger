@@ -33,7 +33,7 @@ import { routeSegments, normalizeRoute, gameSwitchRoute, historyEntry, createNav
 import { useMyPrices, myPriceKey, ensureTcgPrices } from "./mtg-tcgprice.js";
 import { buyOnTcgplayer, massLines } from "./buy.js";
 import {applySwapsToCards} from './insights.js';
-import {showRuleHint,dismissRuleHint} from './rule-dex.js';
+import {showRuleHint,dismissRuleHint,attachRuleHover} from './rule-dex.js';
 import {bestBudgetDecks,purchaseCost,comparePower,refineCandidates,towardDeck,spendUp,cardQuality} from './deck-optimizer.js';
 import { playRate } from './importance.js';
 import { budgetNotes, variantsFrom, difficultyOf } from './deck-optimizer.js';
@@ -1604,6 +1604,7 @@ const tierSync = () => {
 if (typeof MutationObserver !== "undefined") new MutationObserver(() => { if (!tierQueued) { tierQueued = true; requestAnimationFrame(tierSync); } }).observe(document.body, { childList: true, subtree: true });
 attachRuleLearning();
 const dismissConditionInfo=attachConditionInfo();
+attachRuleHover();
 attachSuggest({lookup:homeLookup});
 attachGlassSelects();
 configureConditionAuth(cloudAccessToken);
@@ -3686,8 +3687,11 @@ I.collSearch = (t) => {
 };
 C.collSort = (t) => {
   S.ui.collSort = t.value;
-  $("#collList").innerHTML = V.collectionList();
+  S.ui.collDirection = undefined;
+  S.ui.collLimit = 120;
+  render();
 };
+C.collDirection = t => {S.ui.collDirection=t.value;S.ui.collLimit=120;$("#collList").innerHTML=V.collectionList();};
 C.collFilter = (t) => {
   S.ui.collFilter = t.value;
   $("#collList").innerHTML = V.collectionList();

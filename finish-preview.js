@@ -9,7 +9,7 @@ const reduced=()=>!!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').
 export function finishAttrs(game,c,ctx={},view='large'){
  const p=resolveFinish(game,c,ctx);
  p.materialProfile=finishMaterialProfile(game,c,p);
- return `data-finish-surface="${view}" data-finish-effect="${esc(p.effect)}" data-finish-model="${esc(JSON.stringify(p))}"`;
+ return `data-finish-game="${esc(game)}" data-finish-surface="${view}" data-finish-effect="${esc(p.effect)}" data-finish-model="${esc(JSON.stringify(p))}"`;
 }
 export function finishPreview(game,c,ctx={}){
  const choices=finishChoices(game,c,ctx),p=resolveFinish(game,c,ctx);

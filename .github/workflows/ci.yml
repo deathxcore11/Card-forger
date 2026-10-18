@@ -414,3 +414,31 @@ jobs:
         with:
           name: account-browser-evidence
           path: test-results/synthetic-search-*
+
+  collection-polish-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install pinned browser test runner
+        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - name: Install test browser
+        run: npx playwright install --with-deps chromium
+      - name: Test Collection sorting and Pokemon card surfaces
+        run: |
+          node tests/collection-sort-browser.mjs
+          node tests/pokemon-card-surface-browser.mjs
+          node test-rule-hover-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collection-polish-browser-evidence
+          path: |
+            test-results/collection-sort-*
+            test-results/pokemon-*
+            test-results/rule-hover-*

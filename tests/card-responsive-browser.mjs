@@ -152,17 +152,16 @@ async function cardColumns(page,game,stacked){
 }
 async function collectionRail(page,context,game,width,expectedSort){
  const rail=page.locator('#content .coll-tools > .filter-pills');
- if(!await rail.count()){assert.equal(game,'mtg','TCG Collection must retain its real filter rail');return null;}
- assert(['ptcg','ygo'].includes(game));assert.equal(await rail.count(),1);
+ assert.equal(await rail.count(),1,'Every game retains its separate filter rail');
  await page.locator('#content').evaluate(async root=>{for(;;){const a=root.getAnimations({subtree:true}).filter(a=>Number.isFinite(a.effect?.getComputedTiming().endTime)&&!['finished','idle'].includes(a.playState));if(!a.length)break;await Promise.all(a.map(a=>a.finished.catch(()=>{})));}});
  const snapshot=()=>rail.locator(':scope > select').evaluateAll(nodes=>nodes.map(n=>({change:n.dataset.change,field:n.dataset.field||'',value:n.value,label:n.getAttribute('aria-label')})));
- const controls=await snapshot();assert(controls.length>=3);assert.equal(controls.filter(n=>n.change==='tCollSort').length,1);
- for(const n of controls)assert.equal(n.label,n.change==='tCollSet'?'Set':n.change==='tCollSort'?'Sort':({kind:'Kind',rarity:'Rarity',show:'Show'})[n.field],'Every real filter has its expected nonempty accessible name');
- const originalSort=controls.find(n=>n.change==='tCollSort').value;if(expectedSort!==undefined)assert.equal(originalSort,expectedSort,'Selected sort survives same-page fold/rotation');
+ const controls=await snapshot();assert(controls.length>=(game==='mtg'?1:2));assert.equal(controls.filter(n=>/CollSort|collSort/.test(n.change)).length,0,'Sort is separate from the filter rail');
+ for(const n of controls)assert.equal(n.label,n.change==='collFilter'?'Filter':n.change==='tCollSet'?'Set':({kind:'Kind',rarity:'Rarity',show:'Show'})[n.field],'Every real filter has its expected nonempty accessible name');
+ const sort=page.getByRole('combobox',{name:'Sort collection',exact:true}),originalSort=await sort.inputValue();if(expectedSort!==undefined)assert.equal(originalSort,expectedSort,'Selected sort survives same-page fold/rotation');
  const keyboard=async()=>{
   // A real click establishes the preceding input, then trusted Tab reaches every
   // native select. Never focus/scroll an offscreen select programmatically.
-  await page.locator('#content .coll-tools > input').click();
+  await page.locator('#content .collection-primary-tools > input').click();
   await page.evaluate(()=>{if(window.__railKeyHandler)document.removeEventListener('keydown',window.__railKeyHandler,true);window.__railKeys=[];window.__railKeyHandler=e=>{if(e.key==='Tab')window.__railKeys.push({trusted:e.isTrusted,key:e.key});};document.addEventListener('keydown',window.__railKeyHandler,true);});
   const measured=[];
   for(const control of await snapshot()){
@@ -197,11 +196,13 @@ async function collectionRail(page,context,game,width,expectedSort){
  }
  assert.deepEqual(await snapshot(),controls,'Keyboard access and horizontal pan preserve all current selected filter values');
  await noOverflow(page,'#content',`${game} Collection ${width} original selected state`,true,{game,width,controls});
- const sort=rail.locator('select[data-change="tCollSort"]'),target=await sort.evaluate(n=>{const a=n.getBoundingClientRect(),r=n.parentElement.getBoundingClientRect(),x=a.left+a.width/2,y=a.top+a.height/2;return {x,y,full:a.left>=r.left-2&&a.right<=r.right+2,hit:document.elementFromPoint(x,y)===n,rect:a.toJSON(),rail:r.toJSON(),value:n.value};});
+ // The separate upper-left sort is not part of the horizontally panned filter rail.
+ await sort.scrollIntoViewIfNeeded();
+ const target=await sort.evaluate(n=>{const a=n.getBoundingClientRect(),r=n.parentElement.getBoundingClientRect(),x=a.left+a.width/2,y=a.top+a.height/2;return {x,y,full:a.left>=r.left-2&&a.right<=r.right+2,hit:document.elementFromPoint(x,y)===n,rect:a.toJSON(),rail:r.toJSON(),value:n.value};});
  assert(target.full&&target.hit,`Sort is genuinely fully reachable before tapping, without locator auto-scroll ${JSON.stringify(target)}`);await page.touchscreen.tap(target.x,target.y);
  const menu=page.locator('.glass-select-menu[open]');await menu.waitFor();
  const options=await sort.evaluate(n=>[...n.options].map(o=>({value:o.value,label:o.label}))),selected=options.find(o=>o.value===originalSort);
- const selectedOption=menu.locator('[role=option][aria-selected=true]');assert.equal(await selectedOption.count(),1);assert.equal(await selectedOption.locator('span').first().textContent(),selected.label);assert.equal(await selectedOption.locator('span').last().textContent(),'✓');assert.equal(await selectedOption.locator('span').last().getAttribute('aria-hidden'),'true');assert.equal(await menu.getAttribute('aria-label'),'Sort');
+ const selectedOption=menu.locator('[role=option][aria-selected=true]');assert.equal(await selectedOption.count(),1);assert.equal(await selectedOption.locator('span').first().textContent(),selected.label);assert.equal(await selectedOption.locator('span').last().textContent(),'✓');assert.equal(await selectedOption.locator('span').last().getAttribute('aria-hidden'),'true');assert.equal(await menu.getAttribute('aria-label'),'Sort collection');
  const selectedGeometry=await selectedOption.evaluate(n=>{const menu=n.closest('dialog'),m=menu.getBoundingClientRect(),r=n.getBoundingClientRect(),label=n.querySelector('span'),l=label.getBoundingClientRect();return {menu:m.toJSON(),row:r.toJSON(),label:l.toJSON(),viewport:innerHeight,labelClient:label.clientWidth,labelScroll:label.scrollWidth};});
  assert(selectedGeometry.menu.top>=-.5&&selectedGeometry.menu.bottom<=selectedGeometry.viewport+.5&&selectedGeometry.row.top>=selectedGeometry.menu.top-2&&selectedGeometry.row.bottom<=selectedGeometry.menu.bottom+2&&selectedGeometry.label.left>=selectedGeometry.row.left-2&&selectedGeometry.label.right<=selectedGeometry.row.right+2&&selectedGeometry.label.top>=selectedGeometry.row.top-2&&selectedGeometry.label.bottom<=selectedGeometry.row.bottom+2&&selectedGeometry.labelScroll<=selectedGeometry.labelClient+2,`Selected menu row and its complete label are visibly contained ${JSON.stringify(selectedGeometry)}`);
  await noOverflow(page,'.glass-select-menu[open]',game+' reachable Collection choices');await noBrokenActionWords(page,'.glass-select-menu[open]','.glass-select-options button');
@@ -209,12 +210,12 @@ async function collectionRail(page,context,game,width,expectedSort){
  // must retain it, and its newly rendered rail must remain keyboard reachable.
  const next=expectedSort===undefined?'name':originalSort,index=options.findIndex(o=>o.value===next);assert(index>=0);
  await page.keyboard.press('Home');for(let i=0;i<index;i++)await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');await menu.waitFor({state:'detached'});
- await page.waitForFunction(value=>document.querySelector('#content select[data-change="tCollSort"]')?.value===value,next);
- const afterKeys=await keyboard(),after=await snapshot();assert.equal(after.find(n=>n.change==='tCollSort').value,next);assert.deepEqual(after.filter(n=>n.change!=='tCollSort'),controls.filter(n=>n.change!=='tCollSort'),'Sort does not change the other selected filters');
+ await page.waitForFunction(value=>document.querySelector('#content select[aria-label="Sort collection"]')?.value===value,next);
+ const afterKeys=await keyboard(),after=await snapshot();assert.equal(await sort.inputValue(),next);assert.deepEqual(after,controls,'Sort does not change the other selected filters');
  assert.deepEqual(await page.evaluate(()=>({game:document.body.dataset.game,uiGame:window.__uiTestState.state.settings.game,view:window.__uiTestState.ui.view,hash:location.hash})),{game,uiGame:game,view:'collection',hash:'#collection'},'Keyboard/touch selection preserves the current game and route');
  report.push(`${game} Collection ${width}: ${JSON.stringify({initial,keyboard:keys,touch,afterKeyboard:afterKeys,selected:after})}`);
  await capture(page,`card-responsive-${game}-collection-rail-${width}`);
- return {game,width,controls:after};
+ return {game,width,controls:after,sort:next};
 }
 async function remember(page){return page.evaluate(()=>{
  const body=document.querySelector('#sheetBody'),card=body.querySelector('.cs-card');window.__mountedDetail={dialog:document.querySelector('#sheet'),body,card,generation:body.detailMountGeneration,context:window.__uiTestState.ui.sheetCtx,title:body.querySelector('.cs-title h2').textContent,art:card.querySelector('img').src,tab:body.querySelector('[role=tab][aria-selected=true]').id,identity:body.dataset.detailIdentity,choice:JSON.stringify([...body.querySelectorAll('select[data-change="historyEdition"],select[data-change="historyYgoEdition"],select[data-change="cardPriceFinish"]')].map(n=>[n.dataset.change,n.value])),top:body.scrollTop};return {top:body.scrollTop};
@@ -388,7 +389,7 @@ async function scenario(game){
   // Actual reused surface audit, not a blanket cosmetic redesign.
   for(const hash of ['#home','#collection','#search','#sets','#decks']){
    await navigate(page,hash);await frame(page);let railAudit=null;
-   for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await frame(page);if(hash==='#collection')railAudit=await collectionRail(page,context,game,width,railAudit?.controls.find(n=>n.change==='tCollSort')?.value);await noOverflow(page,'#content',`${game} ${hash} ${width}`,true,railAudit);await noBrokenActionWords(page,'#content');}
+   for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await frame(page);if(hash==='#collection')railAudit=await collectionRail(page,context,game,width,railAudit?.sort);await noOverflow(page,'#content',`${game} ${hash} ${width}`,true,railAudit);await noBrokenActionWords(page,'#content');}
   }
   await navigate(page,'#decks/ideas');await page.locator('#content [data-act="learnGame"]').first().click();await page.locator('#sheet[open] [data-learning-root]').waitFor();
   for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await frame(page);await noOverflow(page,'#sheetBody',`${game} learning ${width}`);await noBrokenActionWords(page,'#sheetBody');}

@@ -95,7 +95,9 @@
 [data-material-profile=classic-holo] .finish-pattern,[data-material-profile=cosmos-holo] .finish-pattern{background-image:url('assets/finishes/cosmos.svg'),radial-gradient(ellipse at var(--finish-x) var(--finish-y),#b9e3ff55,transparent 45%);background-size:100% 100%;}
 [data-material-profile=classic-holo] .finish-pattern{opacity:.3}
 [data-material-profile=reverse-water] .finish-pattern{background-image:url('assets/finishes/water-pattern.svg');background-size:100% 100%;mix-blend-mode:soft-light;opacity:.65}
-[data-material-profile=line-holo] .finish-pattern{background-image:repeating-linear-gradient(92deg,transparent 0 2px,#b5e7ff60 2px 2.7px,transparent 2.7px 8px);opacity:.35}
+/* Celebrations line texture stays inside its existing artwork mask. Match the
+   generic material selector's specificity so the quieter opacity actually wins. */
+.finish-overlay[data-material-profile="line-holo"] .finish-pattern{background-image:repeating-linear-gradient(92deg,transparent 0 3px,#b5e7ff20 3.6px,#b5e7ff30 4px,#b5e7ff20 4.4px,transparent 5px 10px);opacity:.18}
 [data-material-profile=textured-holo] .finish-micro{background-image:url('assets/finishes/relief-flow.svg');background-size:100% 100%;mix-blend-mode:soft-light;opacity:.65}
 [data-material-profile=textured-holo] .finish-pattern{background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#d1e7ff33,transparent 45%);opacity:.4}
 [data-material-profile=ygo-secret] .finish-secret{background-image:repeating-linear-gradient(135deg,transparent 0 4px,#92d8e0 4px 4.5px,#e9cbe8 4.5px 5px,transparent 5px 9px),linear-gradient(120deg,transparent 15%,#9abae9 35%,#c093cc 48%,#efce8e 60%,transparent 85%);background-size:120% 120%;opacity:.46}
