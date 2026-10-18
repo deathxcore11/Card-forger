@@ -4459,3 +4459,6 @@ body.glass .cs-tabs button:not(.on):not([aria-selected="true"]) {background:tran
 
 .settings-dialog .account .btn{max-width:100%;white-space:normal;overflow-wrap:break-word}
 .settings-dialog .account,.settings-dialog .settings-aside{min-width:0}
+
+.home-ai-submit .ask-orb{overflow:hidden;contain:layout paint}
+.home-ai-submit .ask-orb .stashy-logo{width:100%;height:100%}
