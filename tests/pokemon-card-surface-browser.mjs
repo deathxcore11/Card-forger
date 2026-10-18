@@ -105,11 +105,13 @@ for(const game of ['ptcg','mtg','ygo']){
    assert.equal(geometry.padding,'5px','All games retain full shared frame weight');assert.equal(geometry.radius,'12px');assert.equal(geometry.innerRadius,'7px');
    if(game==='ptcg'){for(const side of ['left','right','top','bottom'])assert(Math.abs(geometry[side]-5)<.2,'No black internal moat '+side);assert(Math.abs(geometry.ratio-geometry.natural)<.002);assert.equal(geometry.fit,'contain');}
    await capture(page,'pokemon-actual-frame-'+game+'-'+width);
-   await tile.screenshot({path:RESULTS+'/pokemon-actual-corners-'+game+'-'+width+'.png'});
+   const cornerShot=await tile.screenshot({path:RESULTS+'/pokemon-actual-corners-'+game+'-'+width+'.png'});
+   const cornerPixels=await page.evaluate(async bytes=>{const bitmap=await createImageBitmap(new Blob([new Uint8Array(bytes)],{type:'image/png'})),c=document.createElement('canvas');c.width=bitmap.width;c.height=bitmap.height;const ctx=c.getContext('2d');ctx.drawImage(bitmap,0,0);return [[1,1],[c.width-2,1],[1,c.height-2],[c.width-2,c.height-2]].map(([x,y])=>Array.from(ctx.getImageData(x,y,1,1).data));},Array.from(cornerShot));
+   assert(cornerPixels.every(p=>Math.max(...p.slice(0,3))<110),'Rounded outer corners must show only dark background/soft glow, never a solid tier-colored cap: '+JSON.stringify(cornerPixels));
    const bounds=await tile.boundingBox();await page.mouse.move(bounds.x+bounds.width*.75,bounds.y+bounds.height*.3);
    await tile.screenshot({path:RESULTS+'/pokemon-actual-tilt-'+game+'-'+width+'.png'});
    await page.mouse.move(0,0);
-   report.push({game,width,actualArtSource:art.url,artName:art.name,geometry,physicalPhoneVerified:false});
+   report.push({game,width,actualArtSource:art.url,artName:art.name,geometry,cornerPixels,physicalPhoneVerified:false});
   }
  }finally{await app.close();}
 }

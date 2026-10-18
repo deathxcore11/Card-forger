@@ -2199,9 +2199,9 @@ details.ingredient[open] > summary b { color: var(--accent); }
 #content.view-gallery .display-list .lot.wanted .want-x { width: 28px; height: 28px; font-size: 16px; flex: none; }
 
 /* ===== Tier effects on collection cards: thicker ring; purple swirls, gold shines, orange glitters ===== */
-#content.view-gallery .display-list .lot:not(.wanted) .lot-art { box-shadow: 0 0 0 3px var(--tier, #9aa3ad), 0 10px 24px -14px rgba(0,0,0,.8); isolation: isolate; }
-#content.view-gallery .display-list .lot[data-tier="t0"]:not(.wanted) .lot-art { box-shadow: 0 0 0 3px #8b939c, 0 10px 24px -14px rgba(0,0,0,.8); }
-#content.view-gallery .display-list .lot[data-tier="t2"]:not(.wanted) .lot-art { box-shadow: 0 0 0 3px var(--tier), 0 0 18px -4px var(--tier), 0 10px 24px -14px rgba(0,0,0,.8); }
+#content.view-gallery .display-list .lot:not(.wanted) .lot-art { box-shadow: 0 0 14px -6px var(--tier, #9aa3ad), 0 10px 24px -14px rgba(0,0,0,.8); isolation: isolate; }
+#content.view-gallery .display-list .lot[data-tier="t0"]:not(.wanted) .lot-art { box-shadow: 0 0 14px -6px #8b939c, 0 10px 24px -14px rgba(0,0,0,.8); }
+#content.view-gallery .display-list .lot[data-tier="t2"]:not(.wanted) .lot-art { box-shadow: 0 0 18px -4px var(--tier), 0 10px 24px -14px rgba(0,0,0,.8); }
 #content.view-gallery .display-list .lot:is([data-tier="t3"], [data-tier="t4"], [data-tier="t5"]):not(.wanted) .lot-art::after { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; border-radius: inherit; }
 /* Purple: a slow holographic swirl over the card and a breathing glow. */
 #content.view-gallery .display-list .lot[data-tier="t3"]:not(.wanted) .lot-art { animation: tier-breathe 3.2s ease-in-out infinite; }
