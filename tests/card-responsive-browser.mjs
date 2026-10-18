@@ -21,6 +21,8 @@ async function settledScroll(page){
 async function focusedSuggestions(game){
  const app=await openApp(browser,server.base,{game,width:1024,height:1000,hash:'#search'}),{page,context}=app,calls=[];
  try{
+  // Keep cached/provider identities consistent: the same printing cannot have two names.
+  if(game!=='mtg')await page.evaluate(({game,ids})=>{ids.forEach((id,i)=>{window.__uiTestTcg.cache[game][id].name=['Fold query first','Fold query second'][i];});},{game,ids:RAW[game].slice(0,2).map(c=>String(c.id))});
   // Intercept the rich lookup using each real provider's card shape.
   // The mounted Search input and production suggestion lifecycle are unchanged.
   await context.route(url=>game==='mtg'?url.hostname==='api.scryfall.com'&&url.pathname==='/cards/search':game==='ptcg'?url.hostname==='api.tcgdex.net'&&url.pathname==='/v2/en/cards'&&url.searchParams.has('name'):url.hostname==='db.ygoprodeck.com'&&url.pathname.endsWith('/cardinfo.php')&&url.searchParams.has('fname'),async route=>{

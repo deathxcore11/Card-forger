@@ -86,6 +86,7 @@ try{
   assert.equal(await page.locator('#sheet [data-act="editBinder"],#sheet .pocket-star').count(),0,'Shared binder is read-only');
   await page.locator('#sheet [aria-label="Next binder page"]').click();await page.waitForFunction(()=>window.__uiTestState.ui.sheetCtx.page===1);assert.equal(await page.locator('#sheet .pocket-open').count(),3);await page.locator('#sheet [aria-label="Previous binder page"]').click();await page.waitForFunction(()=>window.__uiTestState.ui.sheetCtx.page===0);assert.equal(await page.locator('#sheet .pocket-open').count(),9);
   assert.match(await page.locator('#sheet .community-binder-value').innerText(),/\$7.00/);
+  await page.locator('#sheet .stash-open-book').evaluate(async n=>{await Promise.all(n.getAnimations({subtree:true}).filter(a=>Number.isFinite(a.effect.getComputedTiming().endTime)).map(a=>a.finished.catch(()=>{})));});
   await page.screenshot({path:'test-results/synthetic-search-shared-binder.png',fullPage:false});
   await page.locator('#sheet .pocket-open').first().click();await page.locator('#sheet .cs-card').waitFor();await page.locator('[data-act="sheetHistoryBack"]').click();await page.locator('#sheet .stash-open-book').waitFor();
   await page.locator('#sheet [data-act="closeSheet"]').first().click();
