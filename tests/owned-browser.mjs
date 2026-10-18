@@ -73,14 +73,23 @@ try{for(const g of GAMES){
  assert.equal(await page.locator('.brand .mark .stashy-logo').count(),1,'save status cannot replace app logo');
  const saved=await page.evaluate(async g=>{const {S}=await import('/store.js');return(g==='mtg'?S.state:S.state.tcg[g]).collection;},g);assert.equal(saved.length,2);assert.equal(saved[0].qty,2);assert.equal(saved[1].qty,1);assert.equal(saved[1].condition,'Damaged');assert.equal(saved[1].manualValueCondition,'Damaged');assert.deepEqual(lotIdentity(saved),lotIdentity(fixture.lots),'Artwork and menu interactions preserve exact lot identity, quantities and conditions');
  await page.locator('#sheet').getByRole('button',{name:'Close',exact:true}).click();await tile.click();
- await page.locator('[data-owned-group="owned-nm"]').waitFor();assert.equal(await page.locator('.owned-group').count(),2,'Saved conditions get separate controls');
- assert.equal(await page.locator('#sheet [data-act="'+(g==='mtg'?'own':'tOwn')+'"]').count(),1,'Add another condition or printing is always available');
+ await page.locator('[data-owned-group="owned-nm"]:visible').waitFor();assert.equal(await page.locator('.owned-group:visible').count(),2,'Saved conditions get separate controls');
+ assert.equal(await page.locator('#sheet [data-act="'+(g==='mtg'?'own':'tOwn')+'"]:visible').count(),1,'Add another condition or printing is always available');
  const qty=async id=>page.evaluate(({g,id})=>{const S=window.__ownedTestState;return(g==='mtg'?S.state:S.state.tcg[g]).collection.find(e=>e.id===id)?.qty||0;},{g,id});
- await page.locator('[data-act="cardOwnedQty"][data-lot="owned-nm"][data-delta="1"]').click();await page.waitForFunction(g=>{const S=window.__ownedTestState;return(g==='mtg'?S.state:S.state.tcg[g]).collection.find(e=>e.id==='owned-nm').qty===3;},g);assert.equal(await qty('owned-damaged'),1);
- await page.locator('[data-act="cardOwnedQty"][data-lot="owned-nm"][data-delta="-1"]').click();await page.waitForFunction(g=>{const S=window.__ownedTestState;return(g==='mtg'?S.state:S.state.tcg[g]).collection.find(e=>e.id==='owned-nm').qty===2;},g);
- await page.locator('[data-act="cardOwnedQty"][data-lot="owned-damaged"][data-delta="-1"]').click();await page.locator('[data-owned-group="owned-damaged"]').waitFor({state:'detached'});assert.equal(await qty('owned-nm'),2);
- await page.locator('#toast [data-act="undo"]').click();await page.waitForFunction(g=>{const S=window.__ownedTestState;return(g==='mtg'?S.state:S.state.tcg[g]).collection.some(e=>e.id==='owned-damaged');},g);console.log('Undo restored',g,await page.evaluate(()=>({ctx:window.__ownedTestState.ui.sheetCtx,open:document.querySelector('#sheet').open,groups:[...document.querySelectorAll('[data-owned-group]')].map(n=>n.dataset.ownedGroup),toast:document.querySelector('#toast')?.textContent})));await page.locator('[data-owned-group="owned-damaged"]').waitFor();assert.equal(await qty('owned-damaged'),1);assert.equal(await qty('owned-nm'),2);
-await page.locator('#sheet .cd-zoom[data-hold-card]').waitFor();
+ await page.locator('[data-act="cardOwnedQty"][data-lot="owned-nm"][data-delta="1"]:visible').click();await page.waitForFunction(g=>{const S=window.__ownedTestState;return(g==='mtg'?S.state:S.state.tcg[g]).collection.find(e=>e.id==='owned-nm').qty===3;},g);assert.equal(await qty('owned-damaged'),1);
+ await page.locator('[data-act="cardOwnedQty"][data-lot="owned-nm"][data-delta="-1"]:visible').click();await page.waitForFunction(g=>{const S=window.__ownedTestState;return(g==='mtg'?S.state:S.state.tcg[g]).collection.find(e=>e.id==='owned-nm').qty===2;},g);
+ await page.locator('[data-act="cardOwnedQty"][data-lot="owned-damaged"][data-delta="-1"]:visible').click();await page.locator('[data-owned-group="owned-damaged"]:visible').waitFor({state:'detached'});assert.equal(await qty('owned-nm'),2);
+ await page.locator('#toast [data-act="undo"]').click();await page.waitForFunction(g=>{const S=window.__ownedTestState;return(g==='mtg'?S.state:S.state.tcg[g]).collection.some(e=>e.id==='owned-damaged');},g);console.log('Undo restored',g,await page.evaluate(()=>({ctx:window.__ownedTestState.ui.sheetCtx,open:document.querySelector('#sheet').open,groups:[...document.querySelectorAll('[data-owned-group]')].map(n=>n.dataset.ownedGroup),toast:document.querySelector('#toast')?.textContent})));await page.locator('[data-owned-group="owned-damaged"]:visible').waitFor();assert.equal(await qty('owned-damaged'),1);assert.equal(await qty('owned-nm'),2);
+ if(g==='ptcg'){
+  await page.locator('#sheet [data-act="cardTab"][data-tab="versions"]').click();
+  assert.equal(await page.locator('.owned-group:visible').count(),2,'Versions preserves independent saved conditions');
+  await page.locator('[data-act="cardOwnedQty"][data-lot="owned-damaged"][data-delta="1"]:visible').click();
+  await page.waitForFunction(()=>window.__ownedTestState.state.tcg.ptcg.collection.find(e=>e.id==='owned-damaged').qty===2);assert.equal(await qty('owned-nm'),2);
+  await page.locator('[data-act="cardOwnedQty"][data-lot="owned-damaged"][data-delta="-1"]:visible').click();
+  await page.waitForFunction(()=>window.__ownedTestState.state.tcg.ptcg.collection.find(e=>e.id==='owned-damaged').qty===1);assert.equal(await qty('owned-nm'),2);
+  await page.locator('#sheet [data-act="cardTab"][data-tab="overview"]').click();
+ }
+ await page.locator('#sheet .cd-zoom[data-hold-card]').waitFor();
  // Do not mistake an available button or placeholder for the actual card scan.
  // Query the current sheet each time because its background refresh replaces DOM.
  for(const selector of ['#sheet .cd-zoom img.card-img','dialog.zoom .zoom-img[data-hold-card]']){
