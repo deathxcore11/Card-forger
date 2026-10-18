@@ -18,7 +18,7 @@ try{for(const game of ['mtg','ptcg','ygo']){
    assert.equal(initial.animation,'finish-gallery-light','Visible foil grids animate before any hover or tilt');
    await page.waitForFunction(({selector,position})=>{const n=document.querySelector(selector);return n&&getComputedStyle(n).getPropertyValue('--finish-x')!==position;},{selector:`#content .lot-art[data-entry="lot-${game}-0"] .finish-auto`,position:initial.position});
    await capture(page,`finish-effects-${game}-automatic-grid`);
-   await page.setViewportSize({width:390,height:600});await page.locator('#content .lot-art').last().evaluate(n=>n.scrollIntoView({block:'end',behavior:'instant'}));
+   await page.setViewportSize({width:390,height:320});await page.locator('#content .lot-art').last().evaluate(n=>n.scrollIntoView({block:'end',behavior:'instant'}));
    await page.waitForFunction(game=>{const n=document.querySelector(`#content .lot-art[data-entry="lot-${game}-0"]`);return n.getBoundingClientRect().bottom<=0&&!n.querySelector('.finish-overlay');},game);
    await opener.scrollIntoViewIfNeeded();await opener.locator('.finish-auto').waitFor();
    await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));});

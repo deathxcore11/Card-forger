@@ -56,6 +56,12 @@ async function seed(app,game){
   await app.page.locator('[data-act="go"][data-to="#scan"]:visible').first().click();
   await app.page.getByRole('heading',{name:'Scan',exact:true}).waitFor();
   await app.page.evaluate(()=>{window.__uiTestState.ui.scan.auto=false;});
+  if(game==='mtg')for(const viewport of [{width:320,height:568},{width:390,height:844}]){
+    await app.page.setViewportSize(viewport);await frame(app.page);
+    const reachable=await app.page.getByRole('button',{name:'Start camera',exact:true}).evaluate(n=>{const r=n.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return r.top>=0&&r.bottom<=innerHeight&&(hit===n||n.contains(hit));});
+    assert(reachable,'Start camera remains reachable on the compact idle screen');
+    await capture(app.page,`synthetic-search-scanner-idle-${viewport.width}`);
+  }
   await app.page.getByRole('button',{name:'Start camera',exact:true}).click();
   await app.page.waitForFunction(()=>document.querySelector('#scanVideo')?.videoWidth===320);
   if(game==='mtg'){
