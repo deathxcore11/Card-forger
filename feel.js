@@ -355,13 +355,13 @@ function attachMotionTilt(root, pressed) {
     c.style.setProperty("--my", `${50 + y * 45}%`);
   };
   const onTurn = (e) => {
-    if(reduced() || globalThis.document?.hidden || !hero())return;
+    if(reduced() || globalThis.document?.hidden)return;
     if (!Number.isFinite(e.beta) || !Number.isFinite(e.gamma)) return;
     asked = true; // A delivered sample already proves access; do not ask again.
     last = { b: e.beta, g: e.gamma };
     schedule();
   };
-  const schedule = () => { if (!reduced() && !globalThis.document?.hidden && last && !frame) frame = requestAnimationFrame(apply); };
+  const schedule = () => { if (!reduced() && !globalThis.document?.hidden && last && hero() && !frame) frame = requestAnimationFrame(apply); };
   const listen = () => {
     if (listening) return;
     listening = true;
