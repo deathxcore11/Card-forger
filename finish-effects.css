@@ -21,10 +21,9 @@
 /* A restrained geometric approximation, not a claim to reproduce the printed Paldea pattern. */
 .finish-tiles{background-image:repeating-linear-gradient(45deg,transparent 0 10px,#b8ded977 10px 11px,transparent 11px 20px),repeating-linear-gradient(135deg,transparent 0 10px,#d8c3eb66 10px 11px,transparent 11px 20px);mask-image:radial-gradient(ellipse at var(--mx,50%) var(--my,50%),#000,#0005 80%);background-size:110% 110%}
 .zoom-badge{z-index:3}
-/* Replace legacy physical-card rainbow/price glitter, retaining static decorative frames. */
-.cd-img::before,.cd-img::after,.tile-art.tilting::before,.lot-art.tilting::before{display:none!important}
+/* Replace legacy physical-card rainbow/price glitter; preserve decorative price frames. */
+.cd-img::before,.cd-img::after,.tile-art::before,.lot-art::before{display:none!important}
 #content.view-gallery .display-list .lot:not(.wanted) .lot-art::after{display:none!important;animation:none!important}
-#content .display-list .lot .lot-art,#content .card-grid>.grid-card>img.card-img{animation:none!important}
 :is(.view-compact,.view-symbols) .finish-overlay{display:none!important}
 :is(.view-compact,.view-symbols) .lot-art::after{background:none!important;animation:none!important}
 @media(prefers-reduced-motion:reduce){.finish-overlay{display:none!important}.zoom-card-surface{transition:none!important}}

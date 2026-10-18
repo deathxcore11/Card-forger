@@ -132,10 +132,15 @@ async function syntheticRefinementCase(){
   await page.evaluate(()=>window.__refinement?.stop()).catch(()=>{});await context.close();
  }
 }
+const failures=[];
 try{
  for(const ref of refs){
   const context=await browser.newContext({...devices['Pixel 7']}),page=await context.newPage();page.setDefaultTimeout(15000);
   const lookupNetwork=[];const track=(kind,url,extra='')=>{if(url.startsWith('https://api.scryfall.com/')){lookupNetwork.push({kind,url,extra,at:Date.now()});if(lookupNetwork.length>40)lookupNetwork.shift();}};page.on('request',r=>track('request',r.url()));page.on('response',r=>track('response',r.url(),r.status()));page.on('requestfailed',r=>track('failed',r.url(),r.failure()?.errorText));
+  const browserErrors=[];page.on('console',m=>{if(m.type()==='error')browserErrors.push(m.text().slice(0,700));});
+  const cdp=await context.newCDPSession(page);await cdp.send('Network.enable');const lookupIds=new Set();
+  cdp.on('Network.requestWillBeSent',e=>{if(e.request.url.startsWith('https://api.scryfall.com/'))lookupIds.add(e.requestId);});
+  cdp.on('Network.loadingFailed',e=>{if(lookupIds.has(e.requestId))lookupNetwork.push({kind:'browser-network-error',error:e.errorText,blockedReason:e.blockedReason,cors:e.corsErrorStatus});});
   try{
    await page.goto(base+'/#scan');await page.getByRole('heading',{name:'Scan',exact:true}).waitFor();
    const skip=page.getByRole('button',{name:'Skip',exact:true});try{await skip.waitFor({state:'visible',timeout:2000});await skip.click();}catch{}
@@ -363,10 +368,11 @@ try{
    }
    console.log(`PASS: ${ref.game}: off-centre rotated reference MediaStream → automatic boundary + perspective warp → queued recognition → explicit review → playback continues → active Undo toast clears all resized controls → real Undo retains pending captures and the same camera track.`);
   }catch(e){
-   console.error(`FAIL ${ref.game}: ${e.stack}`);console.error('Public lookup network:',JSON.stringify(lookupNetwork));console.error('Scan save diagnostic:',await page.evaluate(async()=>{const {S}=await import('/store.js');return S.ui.scan.confirm?.errorDetail||'No save exception';}));console.error((await page.locator('main').innerText()).slice(0,6000));
+   console.error(`FAIL ${ref.game}: ${e.stack}`);console.error('Public lookup network:',JSON.stringify(lookupNetwork));console.error('Browser errors:',JSON.stringify(browserErrors.slice(-12)));console.error('Scan save diagnostic:',await page.evaluate(async()=>{const {S}=await import('/store.js');return S.ui.scan.confirm?.errorDetail||'No save exception';}));console.error((await page.locator('main').innerText()).slice(0,6000));
    console.error('Final capture diagnostic:',await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js'),{S}=await import('/store.js');return {busy:S.ui.scan.busy,error:S.ui.scan.recognitionError,tried:S.ui.scan.tried,read:S.ui.scan.read,batch:loadBatch().map(({id,status,read,error,cands})=>({id,status,read,error,candidates:(cands||[]).map(({id,name,exact})=>({id,name,exact}))}))};}));
-   await page.screenshot({path:`test-results/scanner-${ref.g}-failure.png`,fullPage:true});throw e;
+   await page.screenshot({path:`test-results/scanner-${ref.g}-failure.png`,fullPage:true});failures.push(e);
   }finally{await context.close();}
  }
- await syntheticRefinementCase();
+ try{await syntheticRefinementCase();}catch(e){failures.push(e);}
+ if(failures.length)throw new AggregateError(failures,'Live scanner regression failures; all games attempted.');
 }finally{await browser.close();await new Promise(r=>server.close(r));}

@@ -117,12 +117,7 @@ function setSaveStatus(text, cls = "") {
     el.textContent = text;
     el.className = "save-status " + cls;
   }
-  // The brand mark doubles as the save/sync light: syncing spins, problems turn red.
-  const mark = $(".brand .mark");
-  if (mark) {
-    mark.dataset.state = cls === "bad" ? "bad" : /sync|sav|upload/i.test(text) && !/synced|saved/i.test(text) ? "busy" : cls === "ok" || /synced|saved/i.test(text) ? "ok" : "";
-    mark.title = text;
-  }
+  // Account saving is shown inside Settings; browsing stays quiet.
 }
 // Glass look: frosted surfaces over a blurred copy of the game's daily-card art.
 // The art is remembered per game so every screen shares the same backdrop.
@@ -882,7 +877,7 @@ function render() {
   const authFields=S.ui.view === "settings" && !cloudInfo().user ? captureAuthFields(document) : [];
   // Ordinary unsaved profile fields survive Settings→Settings game changes.
   // Authentication remains in the existing render-local path, never history/storage.
-  const profileFields=S.ui.view === "settings" ? ["pfName","pfUser","pfBio"].flatMap(id=>{const field=$("#"+id);return field?[{id,value:field.value}]:[];}) : [];
+  const profileFields=S.ui.view === "settings" ? ["pfUser","pfBio"].flatMap(id=>{const field=$("#"+id);return field?[{id,value:field.value}]:[];}) : [];
   browseCleanup?.();
   const ui = S.ui;
   // The scanner keeps its camera stream across renders (or stops it when you leave the page).
@@ -1966,7 +1961,7 @@ const settingsPopup=createSettingsDialog({beforeOpen:()=>{settingsBaseState=S.st
 A.menu = () => settingsPopup.open();
 A.addFriend=()=>community.add();
 A.friendRequests=()=>community.requests();
-A.myCommunity=()=>{settingsPopup.close();go("#community");};
+A.myCommunity=()=>community.mine();
 A.closeSettings = () => settingsPopup.close();
 
 /* =========================================================
@@ -2606,7 +2601,9 @@ A.syncChoice = async (t) => {
 A.saveProfile = async (t) => {
   const done = busy(t, "Saving…");
   try {
-    await saveProfile({ display_name: $("#pfName").value, username: $("#pfUser").value, bio: $("#pfBio").value });
+    const username=$("#pfUser").value.trim();
+    if(!username)throw Error("Choose a username for your player profile.");
+    await saveProfile({ display_name: username, username, bio: $("#pfBio").value });
     toast("Profile saved.");
   } finally {
     done();
@@ -2869,7 +2866,7 @@ const community=createCommunity({account:cloudInfo,request:communityRequest,rere
  onChange:data=>{S.ui.communityRequests=incomingRequestCount(data);refreshProfileAvatar();if(settingsPopup.isOpen)settingsPopup.refresh();},
  copyDeck:async item=>{const generation=accountGeneration,owner=cloudInfo().user?.id;if(accountLocked||!owner)throw Error('Sign in before saving a deck.');const d=sharedDeckCopy(item,uid());await commit(state=>{(item.game==='mtg'?state:state.tcg[item.game]).decks.push(d);},{enrich:false,guard:()=>{if(accountLocked||generation!==accountGeneration||cloudInfo().user?.id!==owner)throw Error('Your account changed. Please try again.');return true;}});},
  editItem:async item=>{const generation=accountGeneration;if(accountLocked)return;await navigate({game:item.game,hash:item.kind==='binder'?'#collection':item.game==='mtg'?'#deck/'+item.key.slice(('deck:'+item.game+':').length)+'/cards':'#tdeck/'+item.key.slice(('deck:'+item.game+':').length),mode:'push'});if(generation!==accountGeneration||T.game()!==item.game)return;if(item.kind==='binder')A.editBinder({dataset:{binder:item.key.slice(7)}});},
- chooseArt:kind=>(kind==='header'?headerPicker:profilePicker).open(),editProfile:()=>{S.ui.settingsTab='account';settingsPopup.open();},signIn:()=>{S.ui.settingsTab='account';settingsPopup.open();},
+ chooseArt:kind=>(kind==='header'?headerPicker:profilePicker).open(),editProfile:()=>{community.close();S.ui.settingsTab='account';settingsPopup.open();},signIn:()=>{S.ui.settingsTab='account';settingsPopup.open();},
  openArt:a=>openZoom({src:a.image,alt:a.name}),
  showcaseChoices:()=>{
   const result=[];
@@ -5556,7 +5553,8 @@ async function boot() {
       refreshProfileAvatar();
       if (["settings","community"].includes(S.ui.view)||settingsPopup.isOpen) render();
     },
-    decide: (p) => openSheet(V.syncDecideSheet(p, stripCache(S.state)), { type: "sync" }),
+    // A conflict stays safely paused until the user opens Account settings.
+    decide: () => { if(settingsPopup.isOpen)settingsPopup.refresh();else if(S.ui.view==="settings")render(); },
   }).catch(() => {});
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
   // Scryfall role tags arrive after first paint; redraw Magic pages so Deck Power counts them.

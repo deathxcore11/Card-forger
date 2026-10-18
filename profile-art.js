@@ -25,7 +25,7 @@ export function profileArt(value){
 const cropStyle=value=>{const c=profileCrop(value);return `width:${c.width*100}%;height:${c.height*100}%;left:${50-c.x*c.width*100}%;top:${50-c.y*c.height*100}%`;};
 const person='<svg viewBox="0 0 40 40" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="20" cy="14" r="6"/><path d="M8 33c0-8 5-12 12-12s12 4 12 12"/></svg>';
 export function profileAvatar(value,profile={}){
- const art=profileArt(value),photo=https(profile.avatar_url),initial=String(profile.display_name||'').trim().slice(0,1).toUpperCase();
+ const art=profileArt(value),photo=https(profile.avatar_url),initial=String(profile.username||profile.display_name||'').trim().slice(0,1).toUpperCase();
  return `<span class="profile-avatar" aria-hidden="true">${initial?`<span>${esc(initial)}</span>`:person}${art?`<img src="${esc(art.image)}" style="${cropStyle(art)}" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true">`:photo?`<img class="profile-avatar-photo" src="${esc(photo)}" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true">`:''}</span>`;
 }
 export function profilePhotoControl(value,profile={}){

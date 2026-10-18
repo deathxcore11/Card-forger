@@ -16,7 +16,12 @@ const fixture={people:{A:[{id:'C',display_name:'Incoming friend',relationship:'p
 fixture.profiles.C={display_name:'Friend C',username:'friend_c'};fixture.items.C=[{key:'deck:mtg:friend-deck',kind:'deck',game:'mtg',title:'Friend deck',format:'Modern',deckSchema:1,cards:[{...sharedCard,zone:'main',qty:2},{...sharedCard,zone:'side',qty:1}]},{key:'binder:friend-binder',kind:'binder',game:'mtg',title:'Friend binder',cards:[{...sharedCard,referenceUSD:3.5,qty:2}]}];
 const ready=async(page,id)=>page.waitForFunction(async id=>{const c=(await import('/cloud.js')).cloudInfo();return !c.switching&&(c.user?.id||null)===id;},id);
 const avatar=page=>page.locator('.topbar [data-act="menu"] .profile-avatar img');
-const later=async page=>{await page.locator('[data-act="syncChoice"][data-choice="later"]').click();};
+const later=async page=>{
+ assert.equal(await page.locator('#sheet[open] [data-act="syncChoice"]').count(),0,'Sync conflicts do not interrupt browsing');
+ await page.locator('[data-act="menu"]').click();await page.locator('[data-act="syncDecide"]').click();
+ await page.locator('[data-act="syncChoice"][data-choice="later"]').click();await page.locator('[data-act="closeSettings"]').click();
+ await page.waitForFunction(()=>!history.state?.cardstashySettings);
+};
 try{
  const app=await openSearchApp(browser,server.base,{width:390,accountFixture:fixture}),{page}=app;
  try{
@@ -33,6 +38,20 @@ try{
   await page.reload();await page.locator('#app.ready').waitFor();await ready(page,'B');await page.waitForFunction(async()=>!!(await import('/cloud.js')).cloudInfo().pending);await later(page);
   await page.evaluate(async()=>{window.__uiTestState=(await import('/store.js')).S;});assert.equal(await page.evaluate(()=>window.__uiTestState.state.collection[0].qty),5);assert.match(await avatar(page).getAttribute('src'),/Mew-B/);
   await page.locator('[data-act="menu"]').click();
+  assert.equal(await page.locator('.topbar #saveStatus').count(),0,'Sync status is confined to Account settings');
+  assert.equal(await page.locator('#settingsDialog [data-act="syncNow"]').count(),1);
+  assert.equal(await page.locator('#pfName').count(),0,'There is one player-name field');
+  assert.match(await page.locator('.account-head').innerText(),/account_b/);
+  await page.locator('#pfUser').evaluate(n=>n.closest('details').open=true);
+  await page.locator('#pfUser').fill('player_b');await page.locator('[data-act="saveProfile"]').click();
+  await page.waitForFunction(()=>document.querySelector('.account-head b')?.textContent==='player_b');
+  assert.equal(await page.evaluate(()=>window.__accountFixture.model.profiles.B.display_name),'player_b');
+  const underlying=await page.evaluate(()=>location.hash);
+  await page.locator('[data-act="myCommunity"]').click();await page.locator('.community-dialog .community-profile-card').waitFor();
+  assert.equal(await page.locator('.community-dialog h1').innerText(),'player_b');
+  assert.equal(await page.evaluate(()=>location.hash),underlying,'My profile opens a popup without changing the current page');
+  for(const width of [320,390,768,1024,1440]){await page.setViewportSize({width,height:900});await noOverflow(page,'.community-dialog',`my profile popup ${width}`);if([390,1440].includes(width))await capture(page,`synthetic-search-my-profile-${width}`);}
+  await page.locator('[data-community-close]').click();
   for(const width of [320,390,768,1024,1440]){await page.setViewportSize({width,height:900});await noOverflow(page,'#settingsDialog',`account settings ${width}`);if([390,768,1440].includes(width))await capture(page,`synthetic-search-account-settings-${width}`);}
   await page.locator('[data-act="closeSettings"]').click();
   await page.evaluate(()=>window.__accountFixture.switch('A'));await ready(page,'A');await page.waitForFunction(()=>document.querySelector('.topbar .profile-avatar img')?.src.includes('Gengar-A'));
@@ -52,6 +71,13 @@ try{
   await page.locator('[data-community-filter]').fill('no match');assert.equal(await page.locator('.community-share-choices [data-community-preview]').count(),0);await page.locator('[data-community-filter]').fill('');
   for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'.community-dialog',`sharing picker ${width}`);if([390,1440].includes(width))await capture(page,`synthetic-search-community-sharing-${width}`);}
   await page.locator('[data-community-close]').click();await page.locator('[data-act="menu"]').click();assert.equal(await page.locator('[data-act="friendRequests"] .account-inline-count').textContent(),'1');
+  await page.locator('[data-act="addFriend"]').click();await page.locator('[data-community-search]').waitFor();
+  for(const query of ['C@example.invalid','friend_c']){
+   await page.locator('[data-community-search] input').fill(query);await page.locator('[data-community-search] button').click();
+   await page.waitForFunction(()=>!document.querySelector('[data-community-search] button').disabled);
+   assert.match(await page.locator('[data-community-found]').innerText(),/friend_c/);
+  }
+  await page.locator('[data-community-close]').click();
   await page.locator('[data-act="friendRequests"]').click();await page.locator('[data-community-action="accept"]').click();await page.locator('.community-dialog').waitFor({state:'detached'});assert.equal(await page.locator('[data-act="friendRequests"] .account-inline-count').count(),0);await page.locator('[data-act="closeSettings"]').click();
   const ownerSnapshot=await page.evaluate(()=>JSON.stringify(window.__accountFixture.model.items.C));const myCards=await page.evaluate(()=>JSON.stringify(window.__uiTestState.state.collection));
   await page.locator('[data-community-person="C"]').click();await page.locator('[data-community-item="binder:friend-binder"]').waitFor();assert.equal(await page.locator('.community-dialog [data-community-source]').count(),0,'friend has no edit controls');

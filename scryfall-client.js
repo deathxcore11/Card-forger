@@ -38,7 +38,7 @@ export function createScryfallClient({fetcher=(...args)=>fetch(...args),timeoutM
        const header=r.headers?.get('Retry-After'),seconds=Number(header),advised=header?(Number.isFinite(seconds)?seconds*1000:Date.parse(header)-Date.now()):1000;
        nextStart=Math.max(nextStart,Date.now()+Math.max(1000,Number.isFinite(advised)?advised:1000));
       }
-      if(r.status===429||r.status>=500)throw Object.assign(Error('The card database is busy. Try again in a moment.'),{retry:true,status:r.status});
+      if(r.status===429||r.status>=500)throw Object.assign(Error(r.status===429?'The card database is busy. Try again in a moment.':'The card database is temporarily unavailable. Try again in a moment.'),{retry:true,status:r.status});
       const data=await r.json();
       if(!r.ok)throw Object.assign(Error(data.details||'Card database unavailable.'),{status:r.status});
       return data;

@@ -12,7 +12,8 @@ const html=printingCarouselHTML({game:'ptcg',card,rows,filters:{},loaded:true,co
 assert.match(html,/Celebrations/);assert.match(html,/023\/25/);assert.match(html,/Choose finish/);assert.match(html,/disabled>Use this printing/,'multiple finishes require deliberate selection');assert.match(html,/data-search="true"/);
 const clean=showcaseItem({key:'deck:x',kind:'deck',game:'ptcg',title:'Friends',notes:'PRIVATE',cards:[{id:'x',name:'Card',qty:2,image:'https://example.invalid/art.jpg',manualValue:100,notes:'PRIVATE',email:'PRIVATE'}]});
 assert(!JSON.stringify(clean).includes('PRIVATE'));assert(!JSON.stringify(clean).includes('manualValue'));
-const page=communityPage({account:{user:{id:'A'},profile:{display_name:'A'}},data:{people:[{id:'B',display_name:'Pending',relationship:'pending'},{id:'C',display_name:'Friend',relationship:'accepted'}],items:[]}});
+const page=communityPage({account:{user:{id:'A'},profile:{display_name:'Old display',username:'player_a'}},data:{people:[{id:'B',display_name:'Pending',relationship:'pending'},{id:'C',display_name:'Friend',relationship:'accepted'}],items:[]}});
+assert.match(page,/<h1>player_a<\/h1>/);assert.doesNotMatch(page,/Old display/);
 assert.match(page,/Showcase<\/span><small>Coming soon/);assert.match(page,/Deck discussions<\/span><small>Coming soon/);assert.match(page,/data-community-person="C"/);assert.doesNotMatch(page,/data-community-person="B"/);
 console.log('PASS: normalized collector fractions, exact number prefixes, grouped finish identities, explicit finish choice, private showcase fields and accepted-friend-only profiles');
 
