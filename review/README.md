@@ -39,6 +39,8 @@ The deployed public condition route returned `provider_shared_limit` / `EXCESSIV
 
 The patch preserves a single absolute retry deadline across server, editor, scanner and refresh scheduler. Calendar budget rollover no longer clears provider cooldown. New provider failures retain a safe observation timestamp and whether Retry-After was provider-supplied or a fallback. No raw headers, secret or provider body are exposed. Saved quotes remain usable during cooldown; unavailable condition quotes do not become reference valuations.
 
+The user’s October 18 dashboard screenshot shows an active Free plan with 60/1,000 monthly requests used and 27 requests today. This confirms that the displayed account’s monthly allowance was not exhausted; it does not link that account to the deployed Worker. The screenshot and masked key are not included in this public repository.
+
 Still required: after the actual stored cooldown expires, one controlled lookup through the deployed connection, and verification that the configured account/plan is the intended one in Cloudflare/JustTCG dashboards. Do not clear cooldown, rotate identities to evade restrictions, or describe price checking as restored until a real response succeeds. No dashboard changes were performed.
 
 ## Saved data and deployment

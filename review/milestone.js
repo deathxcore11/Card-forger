@@ -62,4 +62,5 @@ media.addEventListener('change',()=>{if(media.matches){setPlaying(false);cancelA
 window.addEventListener('pagehide',()=>{window.removeEventListener('deviceorientation',orientation);cancelAnimationFrame(frame);});
 $('#playBox').addEventListener('click',()=>{const open=$('#sampleBox').classList.toggle('open');$('#playBox').setAttribute('aria-pressed',String(open));$('#playBox').textContent=open?'Close sample box':'Play box opening';});
 $('#openDeck').addEventListener('click',()=>{$('#sampleCards').hidden=false;$('#deckStatus').textContent='Sample cards are open.';});
-const initial=cases.find(c=>c.key===new URLSearchParams(location.hash.slice(1)).get('case'))||cases[0];selectGame(initial.game,initial.key);
+function selectFromHash(){const initial=cases.find(c=>c.key===new URLSearchParams(location.hash.slice(1)).get('case'))||cases[0];selectGame(initial.game,initial.key);}
+window.addEventListener('hashchange',selectFromHash);selectFromHash();

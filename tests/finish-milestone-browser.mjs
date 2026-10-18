@@ -31,7 +31,7 @@ try{
   await page.locator('#comparison').screenshot({path:`${out}/${c.key}-tilted.png`});
   result.cases.push({key:c.key,widths:[390,768,1440],aligned:true,imagesLoaded:true});
  }
- await page.goto(base+'/review/index.html#case=ygo-abyss-ultra');await page.waitForFunction(()=>document.documentElement.dataset.ready==='true');
+ await page.goto(base+'/review/index.html#case=ygo-abyss-ultra');await page.waitForFunction(()=>document.documentElement.dataset.case==='ygo-abyss-ultra');
  await page.locator('#motion').click();assert.equal(await page.locator('#motion').getAttribute('aria-pressed'),'true');
  await page.emulateMedia({reducedMotion:'reduce'});await page.waitForFunction(()=>document.querySelector('#motion').getAttribute('aria-pressed')==='false');
  assert.equal(await page.locator('.candidate .review-card').evaluate(n=>getComputedStyle(n).transform),'none');
