@@ -11,7 +11,7 @@ export function finishAttrs(game,c,ctx={},view='large'){
 }
 export function finishPreview(game,c,ctx={}){
  const choices=finishChoices(game,c,ctx),p=resolveFinish(game,c,ctx);
- return `<div class="finish-preview" role="group" aria-label="Card finish"><span class="small muted">Finish</span><div>${choices.map(v=>`<button type="button" class="chip" ${game==='ygo'?'':`data-act="cardFinishPreview" data-game="${esc(game)}" data-card-id="${esc(c.id)}" data-finish="${esc(v.key)}"`} aria-pressed="${v.key===p.key}">${esc(v.label)}</button>`).join('')}</div><p class="foot" role="status">${esc(p.effect==='plain'?'Nonfoil · no simulated shine':p.status==='unknown'?'Finish preview unavailable for this printing.':p.reason||'Simulated finish')}</p></div>`;
+ return `<div class="finish-preview" role="group" aria-label="Card finish"><span class="small muted">Finish</span><div>${game==='ygo'&&!choices.length?'<button type="button" class="chip" data-act="cardTab" data-tab="prices">Choose printing</button>':''}${choices.map(v=>`<button type="button" class="chip" ${game==='ygo'?'':`data-act="cardFinishPreview" data-game="${esc(game)}" data-card-id="${esc(c.id)}" data-finish="${esc(v.key)}"`} aria-pressed="${v.key===p.key}">${esc(v.label)}</button>`).join('')}</div><p class="foot" role="status">${esc(p.effect==='plain'?'Nonfoil · no simulated shine':p.status==='unknown'?(game==='ygo'&&!choices.length?'Choose the set code and rarity to preview its finish.':'Finish preview unavailable for this printing.'):p.reason||'Simulated finish')}</p></div>`;
 }
 // Object-fit: contain geometry in untransformed CSS pixels; the same parent transforms both layers.
 export function containedImageBox(width,height,naturalWidth,naturalHeight){
@@ -55,7 +55,7 @@ export function attachFinishPreview(root){
   if(el.dataset.finishSurface==='large'){const phase=String(p.printingId||'').split('').reduce((n,c)=>n+c.charCodeAt(0),0)%80;overlay.style.animationDelay=`-${phase/10}s`;}
   overlay.setAttribute('aria-hidden','true');
   if(detail){const light=img.ownerDocument.createElement('span');light.className='finish-spotlight';overlay.append(light);}
-  for(const l of p.layers||[]){if(!FINISH_MASKS[l.mask])continue;const part=img.ownerDocument.createElement('span');part.className=`finish-layer finish-${l.material}`;part.style.clipPath=FINISH_MASKS[l.mask];overlay.append(part);}
+  for(const l of p.layers||[]){if(!FINISH_MASKS[l.mask])continue;const part=img.ownerDocument.createElement('span');part.className=`finish-layer finish-${l.material}${l.mask==='ygo-name'?' finish-name-region':''}`;part.style.clipPath=FINISH_MASKS[l.mask];overlay.append(part);}
   host.append(overlay);mounted.set(el,{img,host,overlay,model:el.dataset.finishModel});ro?.observe(img);size(el);
  };
  const io=typeof IntersectionObserver==='undefined'?null:new IntersectionObserver(entries=>{for(const x of entries){if(!x.isIntersecting)unmount(x.target);else mount(x.target);}}, {threshold:0});

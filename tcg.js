@@ -1,3 +1,4 @@
+import {ygoRarity} from './ygo-identity.js';
 import {sharedDeckSheet} from './shared-deck-view.js';
 import {finishAttrs,finishPreview,finishArtworkCard} from './finish-preview.js';
 import {deckBoxMarkup,deckBoxFields,readDeckBox} from './deck-box.js';
@@ -100,7 +101,7 @@ const saveCacheSoon = () => {
 export async function loadCache(readRecord) {
   try {
     const rec = await readRecord(TCG_CACHE);
-    if (rec) for (const g of Object.keys(cache)) Object.assign(cache[g], rec[g] || {});
+    if (rec) for (const g of Object.keys(cache)) {Object.assign(cache[g], rec[g] || {});for(const c of Object.values(cache[g])){if(g==='ygo')for(const row of c.sets||[]){row.rarityRaw??=row.rarity;row.rarity=ygoRarity(row.rarity);}if(g==='ptcg'&&/^(none|null|unknown)$/i.test(c.rarity||''))c.rarity='';}}
   } catch {}
 }
 const remember = (card) => {
@@ -220,12 +221,10 @@ function regulationHelp(c) {
 }
 
 // Already in the collection: − count + right there. Not yet: an Add button.
-const variantEntries = (g, c, v) => gs(g).collection.filter((e) => e.cardId === c.id && (e.variant || "normal") === (v.key || "normal"));
-function variantOwnControl(g, c, v) {
-  const n = variantEntries(g, c, v).reduce((t, e) => t + e.qty, 0);
-  return n
-    ? `<span class="stepper owned" title="In your collection"><button data-act="tVariantQty" data-id="${esc(c.id)}" data-print="${esc(v.key)}" data-delta="-1" aria-label="One fewer ${esc(v.label)}">−</button><b>${n}</b><button data-act="tVariantQty" data-id="${esc(c.id)}" data-print="${esc(v.key)}" data-delta="1" aria-label="One more ${esc(v.label)}">＋</button></span>`
-    : `<button class="btn ghost small" data-act="tOwn" data-id="${esc(c.id)}" data-print="${esc(v.key)}" aria-label="Add ${esc(v.label)}">Add</button>`;
+const variantEntries = (g, c, v) => gs(g).collection.filter((e) => e.cardId === c.id && e.variant === v.key && !!v.key);
+function variantOwnControl(g,c,v){
+  const lots=variantEntries(g,c,v);
+  return `${detailOwnedGroups(g,lots,c)}<button class="btn ghost small" data-act="tOwn" data-id="${esc(c.id)}" data-print="${esc(v.key)}">Add ${esc(v.label||v.key)}</button>`;
 }
 
 /* ---------- ownership & value ---------- */
@@ -568,7 +567,7 @@ function deckTile(g, d) {
   return `<button class="deck-tile tcg-tile tile-${g}" data-act="go" data-to="#tdeck/${esc(d.id)}">
     <span class="tile-art">${g === "ygo" && cover ? ygoCropArt(cover) : g === "ptcg" && cover ? pokemonArtCrop(cover, "tile-pk") : imgTag(cover, "tile-card-art", true)}</span>
     <span class="tile-shade"></span>
-    <span class="tile-top"><span class="deck-format-stack"><span class="chip dark">${esc(f.name)}</span>${deckBoxMarkup(d,{game:g,images:(d.zones.main||[]).slice(0,3).map(r=>artworkSources(cardOf(g,r.cardId)).find(u=>u.startsWith("https://")))})}</span>${issues.length ? `<span class="chip dark bad-chip">${issues.length} to fix</span>` : s.total ? `<span class="chip dark ok-chip">Legal</span>` : ""}</span>
+    <span class="tile-top"><span class="deck-format-stack"><span class="chip dark">${esc(f.name)}</span>${deckBoxMarkup(d,{game:g,images:(d.zones.main||[]).slice(0,3).map(r=>artworkSources(cardOf(g,r.cardId)).find(u=>u.startsWith("https://")))})}</span>${issues.length ? `<span class="chip dark bad-chip">${esc(deckCheckLabel(issues))}</span>` : s.total ? `<span class="chip dark ok-chip">Legal</span>` : ""}</span>
     <span class="tile-body">
       <b>${esc(d.name)}</b>
       <small>${esc(pw?.plan || GAMES[g].short)} · ${main}${g === "ygo" ? " main" : "/60"}</small>
@@ -1281,6 +1280,7 @@ export function tcgPickSheet() {
   <div class="sheet-foot"><button class="btn block" id="seedGo" data-act="tSeedGo" data-ids="" disabled>Pick cards to build around</button></div>`;
 }
 
+const deckCheckLabel=issues=>issues.some(x=>x.level==='bad')?`${issues.filter(x=>x.level==='bad').length} to fix`:issues.length?'Unverified · card data pending':'Legal';
 export function tcgDeck(id) {
   const g = game(),
     d = gs(g).decks.find((x) => x.id === id);
@@ -1296,7 +1296,7 @@ export function tcgDeck(id) {
   return `<section class="deck-hero">${g === "ptcg" && cover ? pokemonArtCrop(cover, "hero-art") : imgTag(cover, "hero-art", true)}<div class="hero-shade"></div><div class="hero-body">
     <div class="row between"><button class="icon light" data-act="go" data-to="#decks" aria-label="Back">←</button>${deckBoxMarkup(d,{game:g,images:(d.zones.main||[]).slice(0,3).map(r=>artworkSources(cardOf(g,r.cardId)).find(u=>u.startsWith("https://"))),open:true,button:true})}</div>
     <h1>${esc(d.name)}</h1><p><button class="chip dark fmt-chip" data-act="tDeckMenu" data-id="${esc(d.id)}">${esc(GAMES[g].short)} · ${esc(f.name)}</button></p>
-    <button class="review-badge ${issues.length ? "bad" : "ok"}" data-act="tIssues" data-deck="${esc(d.id)}">${issues.length ? `● ${issues.length} to fix` : s.total ? "✓ Legal in " + esc(f.name) : "Add cards to check legality"}</button>
+    <button class="review-badge ${issues.length ? "bad" : "ok"}" data-act="tIssues" data-deck="${esc(d.id)}">${issues.length ? esc(deckCheckLabel(issues)) : s.total ? "✓ Legal in " + esc(f.name) : "Add cards to check legality"}</button>
     <div class="hero-stats"><span><b>${zoneCount("main")}</b>${g === "ygo" ? "main" : "/60 cards"}</span><span><b>${s.total ? Math.round((s.owned / s.total) * 100) : 0}%</b>owned</span><span><b>${usd(s.buy, 0)}${s.unknown ? "+" : ""}</b>to finish${s.unknown ? " · some unpriced" : ""}</span>${s.total ? `<button data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="insights"><b>${shownPower(tcgPower(g, d, f, (x) => cardOf(g, x)))}</b>power</button>` : ""}</div>
   </div></section>
   <nav class="tabs" role="tablist">${[["cards", "Cards"], ["rules", "Rules"], ["insights", "Power"], ["matchups", "Matchups"], ["upgrade", "Upgrade lab"], ["playtest", "Playtest"], ["versions", "Versions"]].map(([id, l]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="${id}">${l}</button>`).join("")}</nav>
@@ -1820,7 +1820,7 @@ export function tcgBuildSheet() {
     return tierCardHtml({
       title: `${t.total < t.size ? `Draft — ${t.size - t.total} slot${t.size - t.total === 1 ? "" : "s"} open · ` : ""}${t.meta ? `🏆 ${esc(t.label)}` : esc(tierName(t))}`,
       format: f.name,
-      legal: issues.length ? { ok: false, text: issues.length + " to fix" } : { ok: true, text: "Legal" },
+      legal: issues.length ? { ok: false, text: deckCheckLabel(issues) } : { ok: true, text: "Legal" },
       cost: t.cost, unknown: t.unknown, difficulty: t.difficulty, power: t.power, powerKind: t.powerKind, engine: t.engine,
       sizeText: zoneCountLabel(g, t.total, f), extraText: g === "ygo" ? `${(t.zones.extra || []).reduce((a, r) => a + r.qty, 0)} extra` : "",
       owned: all.length ? owned / all.reduce((a, r) => a + r.qty, 0) : 0,
@@ -1855,7 +1855,7 @@ export function tcgSharedPage(sd) {
   return `<section class="deck-hero">${g === "ptcg" && cover ? pokemonArtCrop(cover, "hero-art") : imgTag(cover, "hero-art", true)}<div class="hero-shade"></div><div class="hero-body">
     <div class="row between"><button class="icon light" data-act="go" data-to="#home" aria-label="Home">←</button><span class="chip dark">Shared ${esc(GAMES[g].short)} deck</span></div>
     <h1>${esc(sd.name)}</h1><p><span class="chip dark">${esc(f.name)}</span>${sd.author ? ` · by <b>${esc(sd.author)}</b>` : ""}</p>
-    <div class="hero-stats"><span><b>${total}</b>cards</span><span><b>${total ? Math.round((own / total) * 100) : 0}%</b>you own</span><span><b>${usd(cost, 0)}</b>to finish</span><span><b class="${issues.length ? "warn-text" : ""}">${issues.length ? issues.length + " issues" : "Legal"}</b>${esc(f.name)}</span></div></div></section>
+    <div class="hero-stats"><span><b>${total}</b>cards</span><span><b>${total ? Math.round((own / total) * 100) : 0}%</b>you own</span><span><b>${usd(cost, 0)}</b>to finish</span><span><b class="${issues.length ? "warn-text" : ""}">${issues.length ? deckCheckLabel(issues) : "Legal"}</b>${esc(f.name)}</span></div></div></section>
   <div class="actions wrap share-actions"><button class="btn" data-act="tSharedBuild">Make my version</button></div>
   ${sd.about ? `<section class="panel"><h3>About this deck</h3><p class="about">${esc(sd.about)}</p></section>` : ""}
   ${issues.length ? `<section class="panel issues-panel"><h3>Rules check (${esc(f.name)})</h3><ul class="issues">${issues.map((i) => `<li>${esc(i.text)}</li>`).join("")}</ul></section>` : ""}
@@ -1932,6 +1932,8 @@ export function registerTcg(c) {
       return fn(s.tcg[G], s);
     }, opts);
   };
+  const captureCommit=()=>c.commit.scoped?.()||c.commit;
+  const scopedMutate=(write=commit.scoped?.()||commit)=>{const origin=g();return(fn,opts,G=origin)=>write(state=>{state.tcg||={};state.tcg[G]||=blankGame();return fn(state.tcg[G],state);},opts);};
 
   // The app owns route, history and scanner lifecycle for every entry mechanism.
   A.setGame = async t => ctx.switchGame?.(t.dataset.game);
@@ -2060,6 +2062,7 @@ export function registerTcg(c) {
 
   // card sheet
   A.tCard = async (t) => {
+
     if (t.dataset.game && t.dataset.game !== g()) return;
     const G = g(), screen=navigationStamp(),
       id = t.dataset.id,
@@ -2088,6 +2091,7 @@ export function registerTcg(c) {
   // ----- random -----
   let randomBusy = false, randomDeckRequest = null;
   A.tRandomCard = async () => {
+
     const screen=navigationStamp();
     if (randomBusy || randomDeckRequest?.isCurrent()) return;
     randomBusy = true;
@@ -2104,6 +2108,7 @@ export function registerTcg(c) {
   };
   // A random deck: a random archetype (Yu-Gi-Oh!) or Standard-legal Pokémon, then the deck builder.
   A.tRandomDeck = async (t = {dataset:{}}) => {
+
     if (randomBusy || randomDeckRequest?.isCurrent()) return;
     // A closed Home picker no longer owns the random-selection lock. Keep each
     // request's identity so its late completion cannot unlock a newer picker.
@@ -2165,6 +2170,7 @@ export function registerTcg(c) {
     A.tCompareOpen();
   };
   A.tCompareLookup = async (t) => {
+
     const i=Number(t.dataset.i),G=g(),screen=navigationStamp(),sheet=S.ui.sheetCtx,
       q=(document.getElementById("tcmp"+i)?.value || "").trim();
     const current=()=>navigationCurrent(screen)&&g()===G&&S.ui.sheetCtx===sheet;
@@ -2433,6 +2439,7 @@ export function registerTcg(c) {
 
   const pendingOwnSaves=new WeakSet(),completedOwnSaves=new WeakSet();
   A.tOwnSave = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const G=g(),sheet=S.ui.sheetCtx;
     if(sheet?.type!=='tadd'||sheet.game!==G||sheet.id!==t.dataset.id||completedOwnSaves.has(sheet))return toast('Reopen Add to collection before saving this card.');
     if(pendingOwnSaves.has(sheet))return;
@@ -2458,21 +2465,8 @@ export function registerTcg(c) {
     }finally{pendingOwnSaves.delete(sheet);}
   };
   // − / + on a version you own: changes the copy you already have (one undo per tap).
-  A.tVariantQty = async (t) => {
-    const G = g(), c = cardOf(G, t.dataset.id), d = Number(t.dataset.delta);
-    if (!c) return;
-    const v = (c.variants || []).find((x) => x.key === t.dataset.print) || { key: t.dataset.print };
-    const id = variantEntries(G, c, v).at(-1)?.id;
-    if (!id) return;
-    await mutate((st) => {
-      const e = st.collection.find((x) => x.id === id);
-      if (!e) return;
-      e.qty += d;
-      if (e.qty <= 0) st.collection = st.collection.filter((x) => x.id !== id);
-    }, { undo: `${d > 0 ? "Added" : "Removed"} 1 × ${c.name} (${v.label || v.key}).` });
-    c.refreshSheet?.();
-  };
   A.tEntryQty = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const G=g(),delta = Number(t.dataset.delta);
     await mutate((st) => {
       const e = st.collection.find((x) => x.id === t.dataset.id);
@@ -2503,6 +2497,7 @@ export function registerTcg(c) {
     render();
   };
   A.tRefreshPrices = async (t) => {
+
     const G = g(),
       done = busy(t, "Refreshing…");
     try {
@@ -2529,6 +2524,7 @@ export function registerTcg(c) {
     render();
   };
   A.tWish = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const G = g(),
       card = cardOf(G, t.dataset.id);
     let added = false;
@@ -2554,6 +2550,7 @@ export function registerTcg(c) {
   let printingLaunch = 0;
   const exactPrintingName = value => String(value || "").normalize("NFC").trim().replace(/\s+/g, " ").toLocaleLowerCase();
   A.tOtherPrintings = async (t) => {
+
     const G = g(), parentContext = S.ui.sheetCtx, launch = ++printingLaunch,
       originView = S.ui.view, originRoute = globalThis.location?.hash;
     const originCurrent = () => launch === printingLaunch && g() === G && S.ui.sheetCtx === parentContext && S.ui.view === originView && globalThis.location?.hash === originRoute;
@@ -2617,6 +2614,7 @@ export function registerTcg(c) {
   // decks
   A.tNewDeck = (t) => openSheet(tcgNewDeckSheet(t?.dataset?.format), { type: "tnew" });
   A.tNewDeckSave = async () => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const d = { id: uid(), name: document.querySelector("#tDeckName").value.trim().slice(0, 100) || "New deck", format: document.querySelector("#tDeckFormat").value, zones: { main: [], extra: [], side: [] }, createdAt: new Date().toISOString() };
     await mutate((st) => st.decks.push(d), { msg: "Deck created. Add cards with the search box." });
     closeSheet();
@@ -2642,12 +2640,14 @@ export function registerTcg(c) {
     return d;
   };
   A.tAddToDeck = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const G=g(), card = cardOf(G, t.dataset.id),
       deckId = document.querySelector("#tToDeck").value;
     await mutate((st) => addToDeck(st, deckId, card, undefined, 1, G), { msg: `${card.name} added.` });
   };
   I.tDeckQ = (t) => (ui().deckAdd.q = t.value);
   A.tDeckFind = async () => {
+
     const G = g(),screen=navigationStamp(),
       A2 = ui(G).deckAdd;
     if (!A2.q.trim()) return;
@@ -2680,6 +2680,7 @@ export function registerTcg(c) {
     openSheet(`<div class="sheet-head"><h2>Review upgrade</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p>Add 1× <b>${esc(card.name)}</b> to ${esc(d.name)}.</p><p class="muted small">${total} cards in ${zone}. Ranked with the same Power and engine checks as your deck. A neutral or lower estimate is a trade-off, not a claimed upgrade. Choose one copy to cut. Each swap preserves the count and saves a version you can restore.</p><div class="card-action-list">${actions}</div>${total<target?`<button class="btn" data-act="tDeckAdd" data-deck="${esc(d.id)}" data-id="${esc(card.id)}">Fill one open slot (${target-total} open)</button>`:''}`,{type:'upgrade',id:card.id});
   };
   A.tUpgradeSwap = async t => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const G=g(),card=cardOf(G,t.dataset.in);if(!card)return toast("Load this card again before swapping.");
     await mutate(st=>{
       const d=st.decks.find(x=>x.id===t.dataset.deck);if(!d)throw Error("Deck no longer exists.");
@@ -2696,6 +2697,7 @@ export function registerTcg(c) {
   };
   // Resolve an exact legal printing before reviewing the swap.
   A.tDeckAddName = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const G=g(), screen=navigationStamp(), data={...t.dataset},
       r=await SOURCES[G].search({q:data.name,size:8}).catch(()=>({cards:[]}));
     if(!navigationCurrent(screen))return;
@@ -2708,6 +2710,7 @@ export function registerTcg(c) {
   };
   // From the Power panel: look up a card the tournament list plays, ready to add.
   A.tDeckFindName = async (t) => {
+
     const G = g(),screen=navigationStamp();
     ui(G).deckAdd.q = t.dataset.name || "";
     if (S.ui.tdeckId) (S.ui.tdeckTab ||= {})[G+":"+S.ui.tdeckId] = "cards";
@@ -2720,6 +2723,7 @@ export function registerTcg(c) {
     render();
   };
   A.tDeckAdd = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const G=g(),screen=navigationStamp(),data={...t.dataset},
       card=await ensureCard(G,data.id).catch(()=>cardOf(G,data.id));
     if(!navigationCurrent(screen))return;
@@ -2729,6 +2733,7 @@ export function registerTcg(c) {
   };
   // Open a card from a name only while the requesting visit still owns the sheet.
   A.tFindName = async (t) => {
+
     const G=g(),screen=navigationStamp(),name=String(t.dataset.name||''),
       r=await SOURCES[G].search({q:name,size:8}).catch(()=>({cards:[]}));
     if(!navigationCurrent(screen))return;
@@ -2830,6 +2835,7 @@ export function registerTcg(c) {
     c.refreshSheet?.();
   };
   A.tDeckEmbSwap = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const G = g(),
       add = cardOf(G, t.dataset.in);
     if (!add) return;
@@ -2843,6 +2849,7 @@ export function registerTcg(c) {
     }, { undo: `Swapped ${cardOf(G, t.dataset.out)?.name || "a card"} for ${add.name}.` });
   };
   A.tDeckQty = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const delta = Number(t.dataset.delta);
     await mutate((st) => {
       const d = st.decks.find((x) => x.id === t.dataset.deck),
@@ -2855,6 +2862,7 @@ export function registerTcg(c) {
     }, delta < 0 ? { undo: `−1 ${cardOf(g(), t.dataset.id)?.name || "card"}` } : {});
   };
   A.tDeckMove = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const G = g();
     await mutate((st) => {
       const d = st.decks.find((x) => x.id === t.dataset.deck),
@@ -2877,6 +2885,7 @@ export function registerTcg(c) {
   // ----- matchups -----
   const muDeck = () => gs(g()).decks.find((x) => x.id === S.ui.tdeckId);
   A.tMuRun = async () => {
+
     const G = g(), d = muDeck();
     if (!d) return;
     const st = muStateT(G, d), f = formatOf(G, META_FORMAT[G]);
@@ -2912,6 +2921,7 @@ export function registerTcg(c) {
   };
   A.tMuFirst = (t) => { muStateT(g(), muDeck()).first = t.dataset.v !== "second"; render(); };
   A.tMuLog = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const G = g(), d = muDeck(), st = muStateT(G, d),
       opp = t.dataset.opp || document.querySelector("#tMuOtherName")?.value.trim();
     if (!opp) return;
@@ -2921,6 +2931,7 @@ export function registerTcg(c) {
     await mutate((s2) => { const x = s2.decks.find((y) => y.id === d.id); (x.results ||= []).push(game); }, { msg: `${game.res === "W" ? "Win" : game.res === "L" ? "Loss" : "Draw"} vs ${opp} logged.` });
   };
   A.tMuUndo = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const d = muDeck();
     await mutate((s2) => { const x = s2.decks.find((y) => y.id === d.id); x.results = (x.results || []).filter((r) => r.at !== t.dataset.at); }, { msg: "Game removed." });
   };
@@ -2929,6 +2940,7 @@ export function registerTcg(c) {
     go("#tdeck/"+encodeURIComponent(t.dataset.deck)+"/"+encodeURIComponent(t.dataset.id));
   };
   C.tStarter = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     await mutate((st) => {
       const d = st.decks.find((x) => x.id === t.dataset.deck),
         set = new Set(d.starters || []);
@@ -2972,6 +2984,7 @@ export function registerTcg(c) {
     render();
   };
   A.tSnap = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const label = await askText("Name this version", "Version " + ((gs(g()).decks.find((x) => x.id === t.dataset.deck)?.versions || []).length + 1));
     if (label === null) return;
     await mutate((st) => {
@@ -2980,6 +2993,7 @@ export function registerTcg(c) {
     }, { msg: "Version saved." });
   };
   A.tRestore = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     if (!await ask("Restore this version? The current list is saved as a version first.")) return;
     await mutate((st) => {
       const d = st.decks.find((x) => x.id === t.dataset.deck),
@@ -2990,6 +3004,7 @@ export function registerTcg(c) {
     }, { msg: "Version restored." });
   };
   A.tDelVersion = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     await mutate((st) => {
       const d = st.decks.find((x) => x.id === t.dataset.deck);
       d.versions = (d.versions || []).filter((v) => v.id !== t.dataset.id);
@@ -2997,6 +3012,7 @@ export function registerTcg(c) {
   };
   // Share links work for every game; the link carries only the deck.
   A.tShare = async (t) => {
+
     const G = g(),
       d = gs(G).decks.find((x) => x.id === t.dataset.id),
       author = S.state.settings.authorName || "",
@@ -3006,6 +3022,7 @@ export function registerTcg(c) {
       <div class="share-link"><input id="shareLink" readonly value="${esc(link)}" aria-label="Share link"><div class="actions wrap"><button class="btn" data-act="tShareCopy">Copy link</button>${navigator.share ? `<button class="btn ghost" data-act="tShareNative">Share…</button>` : ""}<a class="btn ghost" href="${esc(safeHref(link))}" target="_blank" rel="noopener">Preview ↗</a></div></div>`, { type: "tshare", link, name: d.name });
   };
   A.tSharedBuild = async () => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const sd = S.ui.shared.deck,screen=navigationStamp();
     if (!sd?.game) return;
     const d = { id: uid(), name: sd.name + " · my version", format: sd.format, zones: structuredClone(sd.zones), about: sd.about, source: { kind: "Shared deck", author: sd.author, url: location.href.length <= 2000 ? location.href : "" }, createdAt: new Date().toISOString() };
@@ -3324,6 +3341,7 @@ export function registerTcg(c) {
     if (fmts.length) runTBuild();
   };
   A.tOptimizeDeck = async t => {
+
     const G=g(),d=gs(G).decks.find(x=>x.id===t.dataset.deck);if(!d)return;
     await ensureMany(G,Object.values(d.zones || {}).flat().map(r=>r.cardId));
     const anchors=d.zones.main.filter(r=>{const card=cardOf(G,r.cardId);return G==='ptcg'?card?.category==='Pokemon':card?.category==='Monster' && !!card.archetype;}).sort((a,b)=>b.qty-a.qty);
@@ -3331,6 +3349,7 @@ export function registerTcg(c) {
     openBuild(G,[anchor.cardId],"",d);
   };
   A.tBuild = async (t) => {
+
     const G = g(),
       card = await ensureCard(G, t.dataset.id);
     if(t.dataset.format&&!buildable(G,card).some(f=>f.id===t.dataset.format))return toast("This card cannot seed that format. Choose another card.");
@@ -3338,6 +3357,7 @@ export function registerTcg(c) {
   };
   // Build around several cards at once (e.g. everything you own from one archetype).
   A.tBuildMulti = async (t) => {
+
     const G = g(),
       ids = String(t.dataset.ids || "").split(",").filter(Boolean).slice(0, 60);
     if (!ids.length) return toast("Pick at least one card.");
@@ -3380,6 +3400,7 @@ export function registerTcg(c) {
       });
   };
   A.tTierSave = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const B = S.ui.tbuild,
       tier = B.results[B.format][Number(t.dataset.i)],
       seed = cardOf(B.game, B.seed),
@@ -3395,6 +3416,7 @@ export function registerTcg(c) {
   };
   // Save, then open the new deck on the tab you asked for (Matchups, Playtest).
   A.tTierSaveGo = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const x = tierDeck(t.dataset.i);
     if (!x) return;
     await mutate((st) => st.decks.push(x.d), { msg: `Saved “${x.d.name}”.` });
@@ -3408,6 +3430,7 @@ export function registerTcg(c) {
   };
   // The cards this version needs that you don't own, copied for TCGplayer's Mass Entry.
   A.tTierBuy = async (t) => {
+
     const x = tierDeck(t.dataset.i), G = S.ui.tbuild.game;
     if (!x) return;
     const m = ownedMap(G), rows = [];
@@ -3419,6 +3442,7 @@ export function registerTcg(c) {
     if (!(await buyOnTcgplayer(G, lines))) toast("You own every card in this version.");
   };
   A.tTierSaveAll = async () => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const B = S.ui.tbuild,
       tiers = B.results[B.format] || [],
       seed = cardOf(B.game, B.seed),
@@ -3487,6 +3511,7 @@ export function registerTcg(c) {
     await loadProven(spec, sctx);
   };
   A.provenRetry = async () => {
+
     if (proven.busy || !proven.spec || S.ui.sheetCtx?.type !== "proven" || S.ui.sheetCtx.key !== proven.spec.key) return;
     await loadProven(proven.spec, S.ui.sheetCtx);
   };
@@ -3499,6 +3524,7 @@ export function registerTcg(c) {
     refreshProven();
   };
   A.provenSave = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const spec = proven.current;
     if (!spec) return;
     if (proven.mode === "budget" && unpricedCopies([...(spec.rowsFn ? spec.rowsFn() : spec.rows), ...(spec.sideRowsFn?.() || [])])) return toast("Retry prices before saving a budget adaptation. The total is incomplete.");
@@ -3543,9 +3569,10 @@ export function registerTcg(c) {
           status(`Loading ${need.length} cards…`);
           (await SOURCES.ygo.byIds(need)).forEach(remember);
         }
-        return { failed: need.filter(id => needsCardRefresh("ygo", cardOf("ygo", id)) || price(cardOf("ygo", id)) == null).map(id => cardOf("ygo", id)?.name || id) };
+        return { failed: [...new Set([...d.main,...d.extra])].filter(id => needsCardRefresh("ygo", cardOf("ygo", id)) || price(cardOf("ygo", id)) == null).map(id => cardOf("ygo", id)?.name || id) };
       };
       save = async (rows, label) => {
+        const mutate=scopedMutate();
         const savingSheet = S.ui.sheetCtx;
         const zones = { main: [], extra: [], side: [] };
         for (const r of rows) zones[r.zone === "extra" ? "extra" : "main"].push({ cardId: r.key, name: r.name, qty: r.qty });
@@ -3602,6 +3629,7 @@ export function registerTcg(c) {
         return resolve([...rows, ...swapPool(rows, sim)], status);
       };
       save = async (rows, label) => {
+        const mutate=scopedMutate();
         const savingSheet = S.ui.sheetCtx;
         await resolve(rows, () => {}, {prices:false});
         const zones = { main: [], extra: [], side: [] }, missed = [];
@@ -3656,6 +3684,7 @@ export function registerTcg(c) {
     };
   };
   A.tMuSee = async (t) => {
+
     const G = g();
     if (!metaState(G).data) await metaFor(G);
     if (!metaState(G).data?.decks?.some((x) => x.key === t.dataset.key)) return toast("That tournament list is no longer in the current results. Simulate again to refresh the field.");
@@ -3669,6 +3698,7 @@ export function registerTcg(c) {
   };
   // Budget versions of a tournament deck: build around its signature cards.
   A.tMetaBuild = async (t) => {
+
     const G = g(), spec = proven.spec, captured = spec?.buildMeta,
       origin = S.ui.sheetCtx, sheet = document.querySelector("#sheet");
     // This inspector owns its exact snapshot independently of Home's current
@@ -3732,6 +3762,7 @@ export function registerTcg(c) {
   };
   A.tShareCopy = () => copyText(S.ui.sheetCtx?.link || "", "Link copied.");
   A.tShareNative = async () => {
+
     try {
       await navigator.share({ title: S.ui.sheetCtx?.name || "Deck", url: S.ui.sheetCtx?.link });
     } catch {}
@@ -3749,6 +3780,7 @@ export function registerTcg(c) {
     );
   };
   A.tDeckSave = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const appearance=readDeckBox(),name=document.querySelector("#tDmName").value.trim().slice(0,100),format=document.querySelector("#tDmFormat").value,id=t.dataset.id;
     await mutate((st) => {
       const d = st.decks.find((x) => x.id === id);if(!d)throw Error('This deck is no longer available.');
@@ -3757,6 +3789,7 @@ export function registerTcg(c) {
     closeSheet();
   };
   A.tDeckDup = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const d = structuredClone(gs(g()).decks.find((x) => x.id === t.dataset.id));
     d.id = uid();
     d.name += " (copy)";
@@ -3765,6 +3798,7 @@ export function registerTcg(c) {
     go("#tdeck/" + d.id);
   };
   A.tDeckDelete = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     if (!await ask("Delete this deck? Your collection isn’t affected.")) return;
     const name = gs(g()).decks.find((x) => x.id === t.dataset.id)?.name || "deck";
     await mutate((st) => (st.decks = st.decks.filter((x) => x.id !== t.dataset.id)), { undo: `Deleted ${name}.` });
@@ -3779,6 +3813,7 @@ export function registerTcg(c) {
     download(d.name.replace(/[^a-z0-9]+/gi, "_") + "." + SOURCES[G].exportExt, SOURCES[G].exportText(d, (id) => cardOf(G, id)));
   };
   A.tDeckCopyMissing = async (t) => {
+
     const G = g(),
       d = gs(G).decks.find((x) => x.id === t.dataset.id),
       s = deckStats(G, d),
@@ -3789,6 +3824,7 @@ export function registerTcg(c) {
   // Pokémon decks hold exact printings: swap each card for its cheapest printing with the same
   // game text that is legal in the deck's format (an owned printing wins). Versions keep the old list.
   A.tDeckCheapest = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const G = g(),screen=navigationStamp(), d = gs(G).decks.find((x) => x.id === t.dataset.id);
     if (G !== "ptcg" || !d) return;
     const original=JSON.stringify(d.zones);
@@ -3818,6 +3854,7 @@ export function registerTcg(c) {
     }
   };
   A.tDeckRefresh = async (t) => {
+
     const G = g(),
       d = gs(G).decks.find((x) => x.id === t.dataset.id),
       done = busy(t, "Refreshing…");
@@ -3834,6 +3871,7 @@ export function registerTcg(c) {
   A.tImport = () => openSheet(tcgImportSheet("deck"), { type: "timport" });
   A.tImportColl = () => openSheet(tcgImportSheet("coll"), { type: "timport" });
   C.tImpFile = async (t) => {
+
     const f = t.files[0];
     if (!f) return;
     if (f.size > 2e6) return toast("Use a file under 2 MB.");
@@ -3881,6 +3919,7 @@ export function registerTcg(c) {
     if(!rows.length) throw Error("No cards matched. Nothing saved.");
   };
   A.tImpDeck = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const G = g(),
       text = document.querySelector("#tImpText").value,
       {status,active} = importGuard(G),
@@ -3929,6 +3968,7 @@ export function registerTcg(c) {
     }
   };
   A.tImpColl = async (t) => {
+    const commit=captureCommit(),mutate=scopedMutate(commit);
     const G = g(),
       text = document.querySelector("#tImpText").value,
       {status,active} = importGuard(G),
@@ -3996,6 +4036,7 @@ export function registerTcg(c) {
   };
   A.tSet=t=>{setNavigationGeneration++;closeSheet();go('#set/'+encodeURIComponent(t.dataset.id));};
   A.tSetByName=async t=>{
+
     const G=g(),name=t.dataset.name,sheet=S.ui.sheetCtx,navigation=++setNavigationGeneration,screen=navigationStamp();
     if(!ui(G).sets.list.length)await loadSets(G);
     if(g()!==G||S.ui.sheetCtx!==sheet||navigation!==setNavigationGeneration||!navigationCurrent(screen))return;
@@ -4061,6 +4102,7 @@ export function registerTcg(c) {
   C.tSetFinish=t=>{ui().set.finish=t.value;ui().set.limit=120;render();};
   I.tSetQ=t=>{ui().set.q=t.value;ui().set.limit=120;c.rerenderKeepingFocus();};
   A.tSetDetails=async()=>{
+
     const G=g(),U=ui(G).set,generation=U.generation,id=U.id,screen=navigationStamp();
     if(G!=='ptcg'||U.busy||U.detailsBusy)return;
     const active=()=>navigationCurrent(screen)&&g()===G&&U.generation===generation&&S.ui.view==='set'&&(!S.ui.tsetId||S.ui.tsetId===id);
@@ -4069,6 +4111,7 @@ export function registerTcg(c) {
     finally{if(U.generation===generation){U.detailsBusy=false;if(active())render();}}
   };
   A.tSetMore=async()=>{
+
     const G=g(),U=ui(G).set,generation=U.generation,id=U.id,screen=navigationStamp();
     const active=()=>navigationCurrent(screen)&&g()===G&&U.generation===generation&&S.ui.view==='set'&&(!S.ui.tsetId||S.ui.tsetId===id);
     U.limit+=120;render();

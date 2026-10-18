@@ -170,7 +170,7 @@ export function normalizePtcg(c) {
     typeLine: [c.category === "Pokemon" ? "Pokémon" : c.category, c.stage?.replace(/^Stage(\d)/, "Stage $1"), c.trainerType, c.energyType && c.energyType + " Energy", c.types?.join("/")].filter(Boolean).join(" · "),
     text,
     stats,
-    rarity: c.rarity || "",
+    rarity: /^(none|null|unknown)$/i.test(c.rarity||"")?"":c.rarity || "",
     illustrator: c.illustrator || "",
     set: c.set ? { id: c.set.id, name: c.set.name, number: c.localId, total: c.set.cardCount?.official, symbol: c.set.symbol || "" } : null,
     sets: c.set ? [{ code: c.set.id + " " + c.localId, name: c.set.name, rarity: c.rarity, price: best?.usd ?? null }] : [],
@@ -241,7 +241,8 @@ export function validatePtcg(deck, cardOf, f) {
     basics = 0;
   for (const r of rows) {
     const c = cardOf(r.cardId);
-    if (!c) continue;
+    if (!c) {issues.push({level:"pending",text:`${r.qty}× ${r.name||r.cardId}: card details not loaded.`});continue;}
+    if(!c.basicEnergy&&f.legal&&typeof c.legal?.[f.legal]!=="boolean")issues.push({level:"pending",text:`${c.name}: format legality not loaded.`});
     if (!c.basicEnergy) byName.set(c.name, (byName.get(c.name) || 0) + r.qty);
     if (c.aceSpec) ace += r.qty;
     if (c.radiant) radiant += r.qty;

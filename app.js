@@ -67,7 +67,7 @@ import { refreshCheapest, cheapestKnown } from "./mtg-cheap.js";
 import { readRecord, writeRecord, writeRecords, persistenceStatus, requestPersistence } from "./storage.js";
 import {
   cardKey as key, sumQty, typeText, rulesText, isLand, commanderEligible, mergeDeckCard,
-  cardPrice, namePrice, drawHand, exportDeck, exportDeckText, aggregateCards, inventory,
+  cardPrice, namePrice, drawHand, exportDeck, exportDeckText, aggregateCards, physicalRequirements, inventory,
 } from "./core.js";
 import {
   parseImport, previewImport, applyImport, printingState, importErrorsCSV, exportCollectionCSV,
@@ -92,14 +92,14 @@ import { mtgCollector, nameCandidates, textPhrases } from "./scan.js";
 import { registerScanner, scanView } from "./scancam.js";
 import { newGame, proxyList, proxySheetHTML, podSpeed } from "./extras.js";
 import { sharePayload, encodeShare, decodeShare } from "./share.js";
-import { FORMATS, formatOf, hasCommander, canLead, sizeLabel } from "./formats.js";
+import { FORMATS, formatOf, hasCommander, canLead, verifyLeader, sizeLabel } from "./formats.js";
 import { buildTiers, formatsFor, themeQuery, BUDGET_TIERS, upgradePool, copyLimit, fitFor } from "./builder.js";
 import * as T from "./tcg.js";
 import { rulesPage, learnSheet } from "./rules.js";
 import { GAMES, GAME_ICON, GAME_COLOR } from "./games.js";
 import { ICON, actionIcon, decorateGlyphs } from "./icons.js";
 import { openZoom, zoomCardOptions } from "./zoom.js";
-import { initCloud, communityRequest, cloudAccessToken, cloudInfo, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
+import { initCloud, pauseLocalConflict, communityRequest, cloudAccessToken, cloudInfo, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact, lotPrice } from "./insights.js";
 
 /* =========================================================
@@ -210,7 +210,10 @@ function saveCatalogSoon() {
   }, 1200);
 }
 
-function save() {
+function save({queued=false}={}) {
+ const scope=mutationScope();
+ const transaction=async()=>{
+  if(!mutationCurrent(scope))return false;
   if(accountLocked && navigationReady)return Promise.resolve(false);
   S.state.lastSavedAt = new Date().toISOString();
   setSaveStatus("Saving…");
@@ -222,6 +225,8 @@ function save() {
       toast("Couldn’t save on this device. Export a backup from Settings.");
       return false;
     });
+ };
+ return queued?transaction():queueWorkspaceWrite(transaction);
 }
 
 // Transactional change: mutate a copy, validate, write, then swap in.
@@ -261,13 +266,15 @@ function replaceWorkspace(next, { recovery = false, clearRecovery = false, stamp
     return true;
   });
 }
-async function commit(fn, { msg = "", recovery = false, rerender = true, enrich = true, undo = "", guard = null, navigationWrite = false, recordDeckWork = true } = {}) {
-  const accountTicket=accountGeneration;
+async function commit(fn, { msg = "", recovery = false, rerender = true, enrich = true, undo = "", guard = null, navigationWrite = false, recordDeckWork = true, scope = {account:accountGeneration,workspace:null} } = {}) {
+  const accountTicket=scope.account;
+  const scopeCurrent=()=>!accountLocked&&accountTicket===accountGeneration&&(navigationWrite||scope.workspace===null||scope.workspace===conditionWorkspaceRevision);
   const flight=typeof captureCollectionFlight==='function'&&/^Added\b/.test(msg||undo)?captureCollectionFlight(lastActTarget):null;
   const transaction = async () => {
-    if(accountLocked || accountTicket!==accountGeneration)throw Error('Your account changed. Please try again in the current account.');
+    if(accountLocked||accountTicket!==accountGeneration)throw Error('Your account or workspace changed. Please try again in the current account.');
     // Confirm against the latest committed state, without allowing another queued edit to pass.
     if (guard && !await guard(S.state)) return;
+    if(!scopeCurrent())throw Error("Your account or workspace changed. Please try again.");
     const before = undo ? structuredClone(stripCache(S.state)) : null;
     const previous = S.state;
     const next = structuredClone(stripCache(S.state));
@@ -282,6 +289,7 @@ async function commit(fn, { msg = "", recovery = false, rerender = true, enrich 
     catch (error) { workspaceTransition?.failed(transition); throw error; }
     S.state = valid;
     workspaceTransition?.finished(transition);
+    if(!scopeCurrent())throw Error("Your account or workspace changed. Please try again.");
     const changedLots = changedConditionLots(previous, valid);
     if (changedLots.length) setTimeout(() => refreshChangedConditions(changedLots), 0);
     afterLocalSave();
@@ -307,6 +315,11 @@ async function commit(fn, { msg = "", recovery = false, rerender = true, enrich 
   };
   return queueWorkspaceWrite(transaction);
 }
+const mutationScope=()=>({account:accountGeneration,workspace:conditionWorkspaceRevision});
+const mutationCurrent=scope=>!accountLocked&&scope.account===accountGeneration&&scope.workspace===conditionWorkspaceRevision;
+function scopedEditDeck(write){const id=currentDeck()?.id;return(fn,opts={})=>write(s=>{const i=s.decks.findIndex(d=>d.id===id);if(i<0)throw Error("This deck is no longer available.");s.decks[i]=fn(s.decks[i])||s.decks[i];},opts);}
+function scopedCommit(){const scope=mutationScope();return (fn,opts={})=>commit(fn,{...opts,scope});}
+commit.scoped=scopedCommit;
 const safely = (p) => Promise.resolve(p).catch((e) => toast(e.message || String(e)));
 
 /* =========================================================
@@ -359,6 +372,7 @@ async function resolveNames(names, progress = () => {}, refresh = false) {
 let enriching = false,
   enrichAgain = false;
 async function autoEnrich() {
+ const commit=scopedCommit(),scope=mutationScope();
   if (enriching) return void (enrichAgain = true);
   if (!navigator.onLine) return;
   const st = S.state,
@@ -369,7 +383,8 @@ async function autoEnrich() {
       ...(st.references || []).flatMap((d) => d.cards.map((c) => c.name)),
       ...st.wishlist.map((w) => w.name),
     ].filter((n) => n && !meta(n));
-  if (!lots.length && !names.length) return;
+  const leaders=[...st.decks,...(st.references||[])].filter(d=>formatOf(d).id==="paupercommander"&&d.commander&&typeof meta(d.commander)?.pdhCommander!=="boolean");
+  if (!lots.length && !names.length && !leaders.length) return;
   enriching = true;
   const status = (m) => setSaveStatus(m);
   try {
@@ -396,6 +411,7 @@ async function autoEnrich() {
       } catch {}
     }
     const r = names.length ? await resolveNames(names, status) : { matched: new Map(), failed: [] };
+    for(const d of leaders){const c=meta(d.commander);if(c)try{await verifyLeader(c,formatOf(d),api);S.catalogDirty=true;}catch{}}
     const failed = new Set(r.failed.map(key));
     await commit(
       (s) => {
@@ -415,6 +431,7 @@ async function autoEnrich() {
       },
       { enrich: false, recordDeckWork: false },
     );
+    if(!mutationCurrent(scope))return;
     trackValue();
     await save();
     const bad = S.state.collection.filter((e) => e.lookupFailed).length;
@@ -1078,7 +1095,7 @@ function rememberScroll() { if(activeEntry) { scrollMem.set(activeEntry.entryId,
 function replaceEntry(entry) { history.replaceState({...history.state,cardstashy:entry},"",entry.route); }
 function gameChangeBlocked({allowCardSheet=false}={}) {
   const chooser=S.ui.sheetCtx?.type === "game";
-  return !!document.querySelector('#resetPassword')?.value || !!document.querySelector('#resetConfirm')?.value || !!document.querySelector('.tour, .zoom-overlay, [role="dialog"]') || [...document.querySelectorAll('dialog[open]')].some(d => !(d.id === "sheet" && (chooser || allowCardSheet && ["card","tcard"].includes(S.ui.sheetCtx?.type))) && !d.matches?.("dialog.cf-dialog.closing"));
+  return !!document.querySelector('#resetPassword')?.value || !!document.querySelector('#resetConfirm')?.value || !!document.querySelector('.tour[open], .zoom-overlay, [role="dialog"]') || [...document.querySelectorAll('dialog[open]')].some(d => !(d.id === "sheet" && (chooser || allowCardSheet && ["card","tcard"].includes(S.ui.sheetCtx?.type))) && !d.matches?.("dialog.cf-dialog.closing"));
 }
 function suspendGame(target, workspace = false, kind = "") {
   if(suspendedGame){
@@ -1424,7 +1441,8 @@ function registerCardMenus() {
   A.cancelCardCompare = () => { comparison.cancel(); updateCompareTray(); };
   A.compareOpen = A.tCompareOpen = () => startCardCompare(T.game());
   A.compareReset = () => startCardCompare("mtg");
-  A.compareFrom = async t => { const ref = await resolveActionCard(t); if(ref)startCardCompare(ref.game,ref.card); };
+  A.compareFrom = async t => {
+ const ref = await resolveActionCard(t); if(ref)startCardCompare(ref.game,ref.card); };
   A.tCompareFrom = A.compareFrom;
   A.tCompareClear = t => { const G=T.game(), other=T.ui(G).compare?.[1-Number(t.dataset.i)]; startCardCompare(G,other); };
   A.quickCompare = () => {
@@ -1434,12 +1452,14 @@ function registerCardMenus() {
   };
   C.quickLot=t=>{if(quickCard){quickCard.selectedLot=t.value;cardQuickMenu({quickRef:quickCard});}};
   A.quickQty=async t=>{
+
     const ref=quickCard;if(!ref||ref.qtyBusy||ref.game!==T.game()||![-1,1].includes(Number(t.dataset.delta)))return;
     const lots=quickCardLots(ref,(ref.game==='mtg'?S.state:T.gs(ref.game)).collection),lot=lots.find(e=>e.id===ref.selectedLot)||(lots.length===1?lots[0]:null);if(!lot)return toast('Choose the saved version to change.');
     ref.qtyBusy=true;await cardQuickMenu({quickRef:ref});
     try{await A[ref.game==='mtg'?'qty':'tEntryQty']({dataset:{id:lot.id,delta:t.dataset.delta}});}finally{ref.qtyBusy=false;if(quickCard===ref&&S.ui.sheetCtx?.type==='card-actions')await cardQuickMenu({quickRef:ref});}
   };
   A.quickValueSave=async()=>{
+  const commit=scopedCommit();
     const ref=quickCard;if(!ref||ref.qtyBusy||ref.game!==T.game())return;const input=document.querySelector('#quickLotValue'),raw=input?.value||'',value=raw===''?null:Number(raw);
     if(value!==null&&(!Number.isFinite(value)||value<0))return toast('Enter a non-negative value or leave it blank.');
     const selectedLot=ref.selectedLot;
@@ -1453,6 +1473,7 @@ function registerCardMenus() {
     else A.tOwn({dataset:{id:card.id,setId:quickCard.setId||"",setVariant:quickCard.setVariant||"",print:(quickCard.priceEdition||"").replace("::","|"),edition:quickCard.priceYgoEdition||""},setMembership:quickCard.setMembership});
   };
   A.quickWish = async () => {
+
     if (!quickCard || quickCard.game !== T.game()) return;
     const {game,card} = quickCard;
     await A[game === "mtg" ? "wish" : "tWish"]({dataset:{name:card.name,id:card.id}}); closeSheet(false);
@@ -1463,6 +1484,7 @@ function registerCardMenus() {
     openSheet(`<div class="sheet-head"><h2>Add to deck</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p class="muted small">${esc(quickCard.card.name)} · Choose a deck</p><div class="card-action-list">${decks.map(d=>`<button data-act="quickDeckSave" data-deck="${esc(d.id)}"><span>${esc(d.name)}<small>${esc(d.format || "")}</small></span>${ICON.back}</button>`).join("")}</div>${!decks.length?'<p>Create your first deck, then add cards from this menu.</p>':''}<button class="btn ghost" data-act="${quickCard.game === "mtg" ? "newDeck" : "tNewDeck"}">Create a deck</button>`,{type:"card-deck-picker"});
   };
   A.quickDeckSave = async t => {
+
     if (!quickCard || quickCard.game !== T.game()) return;
     const {game,card}=quickCard;
     await A[game === "mtg" ? "addToDeck" : "tDeckAdd"]({dataset:{name:card.name,id:card.id,deck:t.dataset.deck}}); closeSheet(false);
@@ -1473,6 +1495,7 @@ function registerCardMenus() {
     openSheet(`<div class="sheet-head"><h2>${quickCard.dataset.entry ? "Move to binder" : "Add to binder"}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p class="muted small">Choose a physical binder for ${esc(quickCard.card.name)}. Filtered binders include matching cards automatically.</p><div class="card-action-list">${binders.map(b=>`<button data-act="quickBinderSave" data-binder="${esc(b.id)}"><span class="binder-swatch" style="--binder-color:${/^#[a-f0-9]{6}$/i.test(b.color)?b.color:'#7d75bb'}"></span><span>${esc(b.title)}</span></button>`).join("")}</div><button class="btn ghost" data-act="quickBinderNew">Create a binder</button>`,{type:"card-binder-picker"});
   };
   A.quickBinderSave = async t => {
+  const commit=scopedCommit();
     if (!quickCard || quickCard.game !== T.game()) return;
     const {game,card,dataset}=quickCard,b=(S.state.settings.binders || []).find(b=>b.id===t.dataset.binder && b.game===game && b.rule==="location"); if(!b)return;
     if (dataset.entry) {
@@ -1628,7 +1651,7 @@ function fetchConditionValue(card,entry,game,done,options={}){
       lot.conditionQuotes=quotes;saved=true;
     }
     if(changed){if(game==='mtg'){S.catalogDirty=true;saveCatalogSoon();}else T.persistQuoteCache();}
-    if(saved){changed=true;await save();}
+    if(saved){changed=true;await save({queued:true});}
    });
   }
   const output={...result,changed};if(changed)refreshHomeValueGlance();if(current())done?.(output);return output;
@@ -1861,6 +1884,7 @@ C.binderImage = async t => {
 };
 A.clearBinderImage = ()=>{if($("#binderBgData"))$("#binderBgData").value="";if($("#binderBackground"))$("#binderBackground").value="";if($("#binderImageStatus"))$("#binderImageStatus").textContent="";};
 A.saveBinder = async t => {
+  const commit=scopedCommit();
   const title=$("#binderTitle").value.trim(),rule=$("#binderRule").value,game=t.dataset.game,value=rule==='set'?(game==='ygo'?$("#binderValue").value.trim().toUpperCase():$("#binderValue").value.trim().toLowerCase()):$("#binderValue").value.trim() || (rule === "location"?title:""),color=$("#binderColor").value,background=$("#binderBgData")?.value || $("#binderBackground").value.trim();
   if(!title)throw Error("Give your binder a name.");
   if(!["all","rare"].includes(rule)&&!value)throw Error("Enter the set, rarity, type, color or location to match.");
@@ -1873,11 +1897,13 @@ A.saveBinder = async t => {
   closeSheet(); if(game==="mtg")S.ui.collTab="binders";else T.ui(game).coll.tab="binders";go("#collection/binders");render();if(old)setTimeout(()=>{if(T.game()===game)showBinder({type:"binder",game,binder:b.id,page:returnPage});},0);toast("Binder saved. Owned quantities are unchanged.");
 };
 A.removeBinder = async t => {
+  const commit=scopedCommit();
  const b=binderById(t.dataset.binder);if(!b || b.game!==T.game())return;
  await commit(st=>{st.settings.binders=(st.settings.binders || []).filter(x=>x.id!==b.id);},{rerender:false,enrich:false,undo:`Deleted binder “${b.title}”. Your cards stay in the collection.`});
  closeSheet();render();
 };
 A.featureBinderCard = async t => {
+  const commit=scopedCommit();
   const data=S.ui.sheetCtx,b=binderById(data?.binder);if(!b)return;
   const rows=binderRows(b.game).filter(r=>binderMatches(r,b)),id=t.dataset.entry;if(!rows.some(r=>r.entry.id===id))return;
   const fav=binderFavorites(b),on=fav.includes(id);
@@ -1895,6 +1921,7 @@ A.deckTab = (t) => {
 /* ---------- Matchups (Magic) ---------- */
 const muState = (d) => ((S.ui.mu ||= {})[d.id] ||= { first: true });
 A.muRun = async () => {
+
   const d = currentDeck(), mk = d && mtgMetaKey(d);
   if (!d || !mk) return;
   const st = muState(d);
@@ -1936,6 +1963,7 @@ A.muRun = async () => {
 };
 // Their list, in the same deck window as Meta decks (the field may be cached from an earlier visit).
 A.muSee = async (t) => {
+
   const mk = "mtg:" + t.dataset.format;
   if (!metaState(mk).data) await loadMetaData(mk).catch(() => null);
   if (!metaState(mk).data?.decks?.some((x) => x.key === t.dataset.key)) return toast("That tournament list is no longer in the current results. Simulate again to refresh the field.");
@@ -1949,6 +1977,7 @@ async function logGame(t, save) {
   return { at: new Date().toISOString(), opp, res: t.dataset.res, first: save.first !== false, sig: V.mtgListSig(currentDeck()) };
 }
 A.muLog = async (t) => {
+  const commit=scopedCommit();
   const d = currentDeck(), st = muState(d), g = await logGame(t, st);
   if (!g) return;
   st.openName = t.dataset.opp || null;
@@ -1956,6 +1985,7 @@ A.muLog = async (t) => {
   await commit((s) => { const x = s.decks.find((y) => y.id === d.id); (x.results ||= []).push(g); }, { msg: `${g.res === "W" ? "Win" : g.res === "L" ? "Loss" : "Draw"} vs ${g.opp} logged.` });
 };
 A.muUndo = async (t) => {
+  const commit=scopedCommit();
   const d = currentDeck();
   await commit((s) => { const x = s.decks.find((y) => y.id === d.id); x.results = (x.results || []).filter((g) => g.at !== t.dataset.at); }, { msg: "Game removed." });
 };
@@ -1972,6 +2002,7 @@ A.closeSettings = () => settingsPopup.close();
    ========================================================= */
 
 A.card = async (t) => {
+
   const screen=navigationStamp();
   S.ui.sheetBack = S.ui.sheetCtx?.type === "idea" && $("#sheet").open ? { type: "idea", i: S.ui.sheetCtx.i } : null;
   const name = t.dataset.name,
@@ -2119,10 +2150,12 @@ A.flipFace = () => {
   refreshSheet();
 };
 A.setCommander = async (t) => {
+  const commit=scopedCommit(),editDeck=scopedEditDeck(commit);
   const name = t?.dataset?.name || $("#cmdName")?.value.trim();
   if (!name) return toast("Tap a card or type a name.");
   const c = await resolve(name, true),
     fm = formatOf(currentDeck());
+  await verifyLeader(c,fm,api);
   if (!canLead(c, fm)) return toast(`${c.name} can’t lead a ${fm.name} deck.`);
   await editDeck((d) => ({ ...d, commander: c.name, name: d.name === "Imported deck" ? c.name.split(",")[0] + " deck" : d.name, cards: d.cards.some((x) => key(x.name) === key(c.name)) ? d.cards : [{ name: c.name, qty: 1 }, ...d.cards] }), { msg: c.name + " is now your commander." });
 };
@@ -2182,6 +2215,7 @@ async function runBuild() {
   B.openTier = null;
   refreshSheet();
   try {
+    if(f.id==="paupercommander"){await verifyLeader(seed,f,api);if(!canLead(seed,f))throw Error(`${seed.name} is not a verified Pauper Commander leader.`);saveCatalogSoon();}
     const colors = seed.color_identity?.length ? seed.color_identity : ["C"];
     await loadFormatPool(f, colors, seed, buildMsg);
     buildMsg("Building versions…");
@@ -2250,7 +2284,8 @@ A.replayTour = (t) => openTour({...tourArt(),lesson:t?.dataset?.lesson||'',choos
 const tableArtFor=createTableArtResolver(T.SOURCES);
 A.tabletop=()=>openTabletop({game:T.game(),confirm:ask,judge:game=>A.askRules({dataset:{game}}),artFor:tableArtFor});
 A.dismissGuide=t=>{markGuide(t.dataset.id);t.closest('[data-guide]')?.remove();};
-A.resetOnboarding=async()=>{if(!await ask('Reset guide history? Only tutorials will reset. Your cards, decks, account and preferences stay saved.'))return;resetOnboarding();introPending=true;toast('Guides reset. The introduction will return on Home when you finish your current task.');};
+A.resetOnboarding=async()=>{
+if(!await ask('Reset guide history? Only tutorials will reset. Your cards, decks, account and preferences stay saved.'))return;resetOnboarding();introPending=true;toast('Guides reset. The introduction will return on Home when you finish your current task.');};
 A.helpOpen=t=>{const id=t?.dataset?.id||'start';if(!INFO_TOPICS.some(x=>x.id===id))return;S.ui.settingsTab='info';settingsPopup.open();A.settingsTab({dataset:{id:'info'}});const topic=document.getElementById('info-'+id);if(topic){topic.hidden=false;topic.open=true;topic.querySelector('summary')?.focus();topic.scrollIntoView({block:'nearest'});}};
 A.infoGo=t=>{const topic=INFO_TOPICS.find(x=>x.id===t.dataset.id);if(!topic)return;if(topic.id==='tabletop')return A.tabletop();if(topic.route==='#settings')return A.settingsTab({dataset:{id:'account'}});settingsPopup.close();go(topic.route);};
 document.addEventListener('input',e=>{if(e.target.id!=='infoQuery')return;const matches=new Set(findInfo(e.target.value).map(t=>t.id)),root=e.target.closest('.info-centre');root.querySelectorAll('[data-info-topic]').forEach(n=>n.hidden=!matches.has(n.dataset.infoTopic));root.querySelector('#infoCount').textContent=matches.size+' topics';root.querySelector('.info-empty').hidden=matches.size>0;});
@@ -2276,6 +2311,7 @@ A.askOpen = (options={}) => {
   openAsk({ game: T.game(), prefill:typeof options.query==='string'?options.query:'', tools: askTools, show: (s) => safely(askTools.open(s)) });
 };
 A.buildFrom = async (t) => {
+
   const c = meta(t.dataset.name) || (await resolve(t.dataset.name, true)),
     B = S.ui.build,
     options = formatsFor(c, FORMATS),
@@ -2286,6 +2322,7 @@ A.buildFrom = async (t) => {
   if (B.format) runBuild();
 };
 A.optimizeMtgDeck = async () => {
+
  const d=currentDeck();if(!d)return;await resolveNames(d.cards.map(r=>r.name));
  const seed=d.commander || [...d.cards].filter(r=>!isLand(meta(r.name))).sort((a,b)=>b.qty-a.qty)[0]?.name;if(!seed)return;
  Object.assign(S.ui.build,{seed,baseDeck:d.id,results:{},format:formatOf(d).name,openTier:null,msg:''});openSheet(V.buildSheet(),{type:'build'});runBuild();
@@ -2327,6 +2364,7 @@ A.randomDeckOptions = (t) => {
  openSheet(`<div class="sheet-head"><h2>Discover a deck</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p class="muted">Choose a format. Leave the theme blank for a surprise.</p><label>Format<select id="randomFormat" required>${options([["","Choose a format"],...formats.map(f=>[f.id,f.name])],"")}</select></label><label>Optional theme or card type<input id="randomTheme" maxlength="80" placeholder="${g === "mtg" ? "Dragons, artifacts, graveyard…" : g === "ygo" ? "An archetype or monster type…" : "Fire, Water, Psychic…"}"></label><button class="btn block" data-act="randomDeckStart">Find my deck</button>`,{type:"random-deck-options",game:g,homeReveal:t?.dataset?.home === "1"});
 };
 A.randomDeckStart = async (t) => {
+
  const g=T.game(),id=$("#randomFormat")?.value,theme=$("#randomTheme")?.value.trim() || "";
  const f=(g === "mtg" ? FORMATS : T.formatsOf(g)).find(f=>f.id===id);
  if(!f)return toast("Choose a format first.");
@@ -2347,17 +2385,19 @@ A.randomDeckStart = async (t) => {
  } finally { if (homePickBusy === pickRequest) homePickBusy = null; done(); }
 };
 A.buildRandom = async (t) => {
+
   const B = S.ui.build,
     f = formatOf(t.dataset.format || B.format || "Standard"),
-    lead = f.commander === "planeswalker" ? " t:planeswalker" : f.commander ? " is:commander" : "",
+    lead = f.id==="paupercommander"?" is:paupercommander":f.commander === "planeswalker" ? " t:planeswalker" : f.commander ? " is:commander" : "",
     theme = String(t.dataset.theme || "").replace(/[^\p{L}\p{N} '-]/gu, "").slice(0,80),
-    q = `${f.legality ? "f:" + f.legality : "game:paper"} -t:land -t:basic${lead}${theme ? ` (t:"${theme}" or o:"${theme}")` : ""}`;
+    q = `${f.id==="paupercommander"?"game:paper":f.legality ? "f:" + f.legality : "game:paper"} -t:land -t:basic${lead}${theme ? ` (t:"${theme}" or o:"${theme}")` : ""}`;
   if (B.busy && !t.onPick) return toast("Your current Magic build is still running. Try again when it finishes.");
   if (!t.onPick && (!$("#sheet").open || S.ui.sheetCtx?.type !== "build")) {
     Object.assign(B, { seed: "", results: {}, msg: "Picking a random card…", format: f.name });
     openSheet(V.buildSheet(), { type: "build" });
   }
   const c = cacheCard(await api("/cards/random?" + new URLSearchParams({ q })));
+  if(f.id==="paupercommander"){c.pdhCommander=true;c.pdhCommanderCheckedAt=new Date().toISOString();saveCatalogSoon();}
   const start = () => {
     if (B.busy) return toast("Your current Magic build is still running. Try again when it finishes.");
     Object.assign(B, { baseDeck:null,seed:c.name,results:{},format:f.name,openTier:null });
@@ -2378,6 +2418,7 @@ function generatedDeck(t, seedName) {
   return withSnapshot({ id: uid(), name: `${seedName.split(",")[0]} · ${t.format} · ${t.budget===Infinity?"unlimited":t.budget ? "$" + t.budget : "my cards"}`, format: t.format, commander: t.commander, strategy: "Auto", budget: t.budget===Infinity?null:t.budget, locked: false, cards: t.cards.map((r) => ({ name: r.name, qty: r.qty })), versions: [], source: t.source || sourceCredit({ kind: "Generated", description: `Generated by CardStashy around ${seedName} with ${t.budget===Infinity?"an unlimited":`a $${t.budget}`} budget.` }) }, "Generated");
 }
 A.tierSave = async (t) => {
+  const commit=scopedCommit();
   const B = S.ui.build,
     tier = B.results[B.format]?.[Number(t.dataset.i)];
   if (!tier) return;
@@ -2395,6 +2436,7 @@ async function buyMtg(items) {
   return buyOnTcgplayer("mtg", await massLines("mtg", rows));
 }
 A.tierSaveGo = async (t) => {
+  const commit=scopedCommit();
   const B = S.ui.build, tier = B.results[B.format]?.[Number(t.dataset.i)];
   if (!tier) return;
   await resolveNames(tier.cards.map(r=>r.name));
@@ -2409,12 +2451,14 @@ A.tierCopy = (t) => {
 };
 // The cards this version needs that you don't own (basic lands aside), for TCGplayer's Mass Entry.
 A.tierBuy = async (t) => {
+
   const B = S.ui.build, tier = B.results[B.format]?.[Number(t.dataset.i)];
   if (!tier) return;
   const rows = tier.cards.filter((r) => !/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(r.name)).map((r) => ({ qty: r.qty - Math.min(r.qty, B.avail?.(r.name) ?? 0), name: r.name })).filter((r) => r.qty > 0);
   if (!(await buyMtg(rows))) toast("You own every card in this version.");
 };
 A.tierSaveAll = async () => {
+  const commit=scopedCommit();
   const B = S.ui.build,
     tiers = B.results[B.format] || [];
   const ds = tiers.map((t) => generatedDeck(t, B.seed));
@@ -2422,6 +2466,7 @@ A.tierSaveAll = async () => {
 };
 // Non-Commander decks: complete the current list at several budgets.
 A.suggestFormatUpgrades = async () => {
+
  const d=currentDeck(),B=S.ui.build,f=formatOf(d);if(B.busy)return;
  B.busy=true;B.fillDeck=d.id;B.msg="Finding same-role, lower-cost spells…";render();
  try{await resolveNames(d.cards.map(r=>r.name));const seeds=d.cards.map(r=>meta(r.name)).filter(c=>c&&!isLand(c));const colors=[...new Set(seeds.flatMap(c=>c.color_identity||[]))];
@@ -2431,20 +2476,24 @@ A.suggestFormatUpgrades = async () => {
  }catch(e){B.msg=e.message;}finally{B.busy=false;render();}
 };
 A.applyFormatUpgrade = async t => {
+  const commit=scopedCommit(),editDeck=scopedEditDeck(commit);
  const B=S.ui.build,d=currentDeck(),swap=B.formatSwaps?.[Number(t.dataset.i)];if(!swap||B.fillDeck!==d.id||B.swapSignature!==JSON.stringify(d.cards))throw Error("Your deck changed. Refresh suggestions first.");
  const cards=applyFormatSwap(d,swap,S.catalog);await editDeck(d=>withSnapshot({...withSnapshot(d,"Before suggested swap"),cards},"Reviewed spell swap"),{msg:"One card in, one card out. Previous list saved in Versions."});B.formatSwaps=null;render();
 };
 A.reviewTrim = async () => {
+
   const d=currentDeck(); await resolveNames(d.cards.map(r=>r.name));
   const review=cutToTarget(d,S.catalog);
   openSheet(`<div class="sheet-head"><h2>Review consistency cuts</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p class="muted">${review.total} → ${review.target} cards. Constructed Magic can allow more than 60. These are curve-based suggestions, not a tournament verdict.</p><div class="list">${review.cuts.map(r=>`<div class="mini-row">${img(art(meta(r.name)),r.name,"mini-art")}<span>${r.qty}× ${esc(r.name)}<small class="muted">${esc(r.reason)}</small></span></div>`).join("")}</div><button class="btn block" data-act="applyTrim" data-deck="${esc(d.id)}">Apply reviewed cuts</button>`,{type:"trim",deck:d.id,signature:JSON.stringify(d.cards),review});
 };
 A.applyTrim = async t => {
+  const commit=scopedCommit(),editDeck=scopedEditDeck(commit);
   const ctx=S.ui.sheetCtx, d=currentDeck();
   if(ctx?.type!=="trim" || ctx.deck!==d.id || ctx.signature!==JSON.stringify(d.cards))throw Error("The deck changed. Review the cuts again.");
   await editDeck(d=>withSnapshot({...withSnapshot(d,"Before consistency cuts"),cards:ctx.review.cards},"Consistency cuts"),{msg:"Cuts applied. Your previous list is saved in Versions."});closeSheet();
 };
 A.fillAny = async () => {
+
   const d = currentDeck(),
     B = S.ui.build,
     f = formatOf(d);
@@ -2473,6 +2522,7 @@ A.fillAny = async () => {
   }
 };
 A.tierApply = async (t) => {
+  const commit=scopedCommit(),editDeck=scopedEditDeck(commit);
   const tier = S.ui.build.results.__fill?.[Number(t.dataset.i)];
   if (!tier) return;
   await editDeck((d) => withSnapshot({ ...withSnapshot(d, "Before filling"), cards: tier.cards.map((r) => ({ name: r.name, qty: r.qty })) }, `Filled at ${tier.budget ? "$" + tier.budget : "$0"}`), { msg: "Deck updated. The previous list is in Versions." });
@@ -2508,6 +2558,7 @@ A.authTab = (t) => {
   document.querySelector("#auth-" + mode + " input")?.focus();
 };
 A.signGoogle = async (t) => {
+
   const done = busy(t, "Opening Google…");
   try {
     await signInGoogle();
@@ -2516,6 +2567,7 @@ A.signGoogle = async (t) => {
   }
 };
 A.signEmail = async (t) => {
+
   const email = $("#signEmail")?.value.trim() || "",
     done = busy(t?.tagName === "BUTTON" ? t : $('[data-act="signEmail"]'), "Sending…");
   try {
@@ -2554,10 +2606,12 @@ A.forgotPassword = t => runAuth(t,"Sending…",async()=>{
  await requestPasswordReset($("#resetEmail")?.value.trim() || "");return "If an account exists, a reset link will arrive. Open it in this browser.";
 });
 A.accountResetPassword = async (t) => {
+
   const email = cloudInfo().user?.email || "", done = busy(t,"Sending…");
   try { await requestPasswordReset(email); toast("Check your email for a password-reset link. Open it in this browser."); } finally { done(); }
 };
 A.finishPasswordReset = async (t) => {
+
   const password = $("#resetPassword")?.value || "", confirmPassword = $("#resetConfirm")?.value || "";
   const done = busy(t?.tagName === "BUTTON" ? t : $('[data-act="finishPasswordReset"]'),"Saving…");
   try { await finishPasswordReset(password,confirmPassword); render(); toast("Password saved. You’re signed in."); }
@@ -2566,6 +2620,7 @@ A.finishPasswordReset = async (t) => {
 // Delete the account and everything synced to it (Google Play requires this in the app). Typed
 // confirmation; then the player chooses whether this device's copy goes too.
 A.deleteAccount = async (t) => {
+
   const owner = cloudInfo().user?.id, email = cloudInfo().user?.email || "your account";
   const v = await askText(`This permanently deletes ${email} and the collection, decks and profile synced to it. It can't be undone. Type DELETE to confirm.`, "", { title: "Delete account", ok: "Delete account", danger: true });
   if (v === null) return;
@@ -2582,6 +2637,7 @@ A.deleteAccount = async (t) => {
   toast("Your account and its synced data were deleted.");
 };
 A.signOut = async () => {
+
   if (!await ask("Sign out? Your account’s cards and profile will be hidden. They’ll be here when you sign back in.")) return;
   const result = await signOut();
   render();
@@ -2593,6 +2649,7 @@ A.syncDecide = () => {
   if (p) openSheet(V.syncDecideSheet(p, stripCache(S.state)), { type: "sync" });
 };
 A.syncChoice = async (t) => {
+
   const c = t.dataset.choice, pending = cloudInfo().pending;
   if (c === "device" && pending?.cloud && !await ask("Replace your account copy with this device’s? The account copy is downloaded as a backup first.")) return;
   if (pending !== cloudInfo().pending) return;
@@ -2602,6 +2659,7 @@ A.syncChoice = async (t) => {
   if (c === "account") toast("Loaded your account copy. This device’s previous data was downloaded as a backup.");
 };
 A.saveProfile = async (t) => {
+
   const done = busy(t, "Saving…");
   try {
     const username=$("#pfUser").value.trim();
@@ -2640,6 +2698,7 @@ A.finderMore = () => {
 };
 // Download the next 10 Commander precons from MTGJSON and keep just their card lists.
 A.finderPrecons = async () => {
+  const commit=scopedCommit();
   const F = S.ui.finder,
     P = S.ui.precon;
   if (F.busy) return;
@@ -2688,11 +2747,13 @@ async function makeMyVersion(base, source, label) {
   go(`#deck/${d.id}/cards`);
 }
 A.finderBuild = async (t) => {
+
   if (t.dataset.kind === "saved") return A.copyRef(t);
   const p = S.ui.finder.precons.find((x) => x.file === t.dataset.id);
   if (p) await makeMyVersion(p, preconCredit(p), "From precon " + p.name);
 };
 A.finderSave = async (t) => {
+  const commit=scopedCommit();
   const p = S.ui.finder.precons.find((x) => x.file === t.dataset.id);
   if (!p) return;
   await commit((s) => (s.references = [...(s.references || []), { id: uid(), name: p.name, format: "Commander", commander: p.commander, strategy: "Auto", locked: false, source: preconCredit(p), cards: p.cards }]), { msg: "Saved to your decks to watch." });
@@ -2701,10 +2762,12 @@ A.finderSave = async (t) => {
 /* ---------- shared decks ---------- */
 const sharedCredit = (d) => sourceCredit({ url: sharedSourceURL(), author: d.author, description: d.about, kind: "Shared deck" });
 A.sharedBuild = async () => {
+
   const d = S.ui.shared.deck;
   if (d) await makeMyVersion(d, sharedCredit(d), "From a deck shared by " + (d.author || "a player"));
 };
 A.sharedSave = async () => {
+  const commit=scopedCommit();
   const d = S.ui.shared.deck;
   if (!d) return;
   if ((S.state.references || []).some((r) => r.source?.url === sharedSourceURL())) return toast("Already in your saved decks.");
@@ -2716,6 +2779,7 @@ A.deckShare = () => {
   if (d) openSheet(V.shareSheet(d), { type: "share", deckId: d.id });
 };
 A.shareMake = async () => {
+  const commit=scopedCommit();
   const ctx = S.ui.sheetCtx,
     author = $("#shareAuthor").value.trim().slice(0, 60),
     about = $("#shareAbout").value.trim().slice(0, 1500);
@@ -2734,6 +2798,7 @@ A.shareMake = async () => {
 };
 A.shareCopy = () => copyText(S.ui.sheetCtx?.link || "", "Link copied — paste it anywhere.");
 A.shareNative = async () => {
+
   const d = deckById(S.ui.sheetCtx?.deckId);
   try {
     await navigator.share({ title: d?.name || "CardStashy deck", text: "Check out my deck on CardStashy", url: S.ui.sheetCtx.link });
@@ -2892,6 +2957,7 @@ async function openSharedShowcase(item,profileDialog){
  }});
 }
 A.sharedCard=async t=>{
+
  const ctx=S.ui.sheetCtx,item=ctx?.sharedItem||(ctx?.type==='proven'?T.proven.spec?.sharedItem:null),c=item?.cards[Number(t.dataset.index)];
  if(!c||item.game!==T.game())return;
  const generation=accountGeneration;
@@ -2908,14 +2974,17 @@ window.addEventListener('focus',checkCommunityNotices);document.addEventListener
 A.profileSource=()=>{const a=profileArt(cloudInfo().art?.avatar||community.data?.art?.avatar||S.state.settings.cardAvatar);if(a)openZoom({src:a.image,alt:a.name});else profilePicker.open();};
 A.profileHeader=()=>headerPicker.open();
 A.quickArtwork=()=>{if(!quickCard)return;const ref=quickCard;openSheet(`<div class="sheet-head"><h2>Use artwork as…</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="actions"><button class="btn" data-act="quickArtworkAvatar">Avatar</button><button class="btn ghost" data-act="quickArtworkHeader">Profile header</button></div>`,{type:"artwork-actions"});A.quickArtworkAvatar=()=>profilePicker.open({card:ref.card,game:ref.game});A.quickArtworkHeader=()=>headerPicker.open({card:ref.card,game:ref.game});};
-A.cardProfileHeader=async t=>{const ref=await resolveActionCard(t);if(ref)headerPicker.open({card:ref.card,game:ref.game});};
+A.cardProfileHeader=async t=>{
+const ref=await resolveActionCard(t);if(ref)headerPicker.open({card:ref.card,game:ref.game});};
 A.profilePhoto=()=>profilePicker.open();
 A.cardProfilePhoto=async t=>{
+
  const image=zoomCardOptions(t.closest?.('.cd-art-stack')?.querySelector('[data-act="zoomCard"]')||t).src;
  const ref=await resolveActionCard(t);if(ref)profilePicker.open({card:ref.card,game:ref.game,image});
 };
 const ownedQuantityBusy=new Set();
 A.cardOwnedQty=async t=>{
+  const commit=scopedCommit();
  const game=t.dataset.game,id=t.dataset.lot,delta=Number(t.dataset.delta),generation=accountGeneration;
  if(game!==T.game()||![-1,1].includes(delta)||ownedQuantityBusy.has(id))return;
  const workspace=game==='mtg'?S.state:S.state.tcg[game],lot=workspace?.collection.find(e=>e.id===id);if(!lot)return;
@@ -2928,11 +2997,13 @@ A.cardOwnedQty=async t=>{
  }finally{ownedQuantityBusy.delete(id);if(t.isConnected)t.disabled=false;}
 };
 A.cardOwnedDetails=async t=>{
+
  const game=t.dataset.game,id=t.dataset.lot,generation=accountGeneration;
  if(game!==T.game())return;const ref=await resolveActionCard(t);
  if(ref&&generation===accountGeneration)await cardQuickMenu({quickRef:{...ref,selectedLot:id,dataset:{...ref.dataset,entry:id}}});
 };
 A.cardWishlist=async t=>{
+  const commit=scopedCommit();
  const game=t.dataset.game,name=t.dataset.name,id=t.dataset.id;if(game!==T.game())return;
  let added=false;
  await commit(state=>{const st=game==='mtg'?state:state.tcg[game],matches=w=>game==='mtg'?key(w.name)===key(name):String(w.cardId)===String(id);
@@ -2946,6 +3017,7 @@ A.cardDeckPicker=t=>{
  openSheet(`<div class="sheet-head"><h2>Add to deck</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p>${esc(ctx.name)}</p>${decks.length?`<label>Deck<select id="${game==='mtg'?'toDeck':'tToDeck'}">${options(decks.map(d=>[d.id,d.name]),game==='mtg'?S.state.activeDeck:decks.at(-1).id)}</select></label><button class="btn block" data-act="cardDeckAdd">Add to deck</button>`:`<p class="muted">Create a deck first to add this card.</p><button class="btn" data-act="go" data-to="${game==='mtg'?'#decks':'#tdecks'}">Open Decks</button>`}`,ctx);
 };
 A.cardDeckAdd=async()=>{
+
  const ctx=S.ui.sheetCtx;if(ctx?.type!=='card-deck-picker'||ctx.game!==T.game())return;
  await A[ctx.game==='mtg'?'addToDeck':'tAddToDeck']({dataset:{id:ctx.id,name:ctx.name}});
  if(S.ui.sheetCtx===ctx)A.sheetHistoryBack();
@@ -2965,6 +3037,7 @@ const homeSearchController=attachHomeSearch({game:T.game,lookup:homeLookup,submi
 }});
 // A daily feature opens its actual printing, never a name-wide/default deck card.
 A.homeDailyCard = async (t) => {
+
   const g = t.dataset.game, h = T.heroFor(g);
   if (S.ui.view !== "home" || T.game() !== g) return;
   if (!h || h.id !== t.dataset.id || h.date !== t.dataset.date) return heroArt(g);
@@ -3037,6 +3110,7 @@ window.addEventListener("focus", () => { if (S.ui.view === "home") heroArt(T.gam
 
 /* ---------- rules reference ---------- */
 A.rulesList = async (t) => {
+
   const screen=navigationStamp();
   const g = T.game(),
     R = (S.ui.rules[g] ||= { list: "", busy: false, error: "", data: {} }),
@@ -3076,6 +3150,7 @@ A.rulesList = async (t) => {
 /* ---------- card page tabs ---------- */
 A.ruleHint = showRuleHint;
 A.cardTab = async (t) => {
+  const commit=scopedCommit();
   const ctx = S.ui.sheetCtx;
   if (!["card","tcard"].includes(ctx?.type) || !["overview","meta","guide","versions","prices","rulings","legal","trade"].includes(t.dataset.tab)) return;
   ctx.tab = t.dataset.tab === "legal" ? "rulings" : t.dataset.tab;
@@ -3165,6 +3240,7 @@ A.priceSource = (t) => {
 /* ---------- buy this card ---------- */
 let buyRequestToken = 0;
 A.buyCard = async (t) => {
+  const commit=scopedCommit();
   const request=++buyRequestToken,origin=S.ui.sheetCtx,originGame=T.game(),originRoute=location.hash;
   let back = S.ui.sheetCtx?.type === "card" && $("#sheet").open ? S.ui.sheetCtx : null;
   const backScroll = back ? $("#sheetBody").scrollTop : 0;
@@ -3189,6 +3265,7 @@ A.buyDirect = t => A.cardPriceJump({dataset:{target:"sellers",finish:t.dataset.f
 // Press and hold a price: the player's own price for this printing and finish. Saved with their
 // data, shown only to them, and only counted where no store prices the card.
 A.myPriceSet = async (t) => {
+  const commit=scopedCommit();
   const print = sheetPrint();
   if (!print) return;
   const finish = t.dataset.finish || "nonfoil", k = myPriceKey(print, finish), cur = S.state.myPrices?.[k]?.price;
@@ -3213,6 +3290,7 @@ A.tBuyDirect = t => {
   return A.cardPriceJump({dataset:{target:"sellers",finish:t.dataset.finish}});
 };
 A.tMyPriceSet = async (t) => {
+  const commit=scopedCommit();
   const ctx = S.ui.sheetCtx, g = t.dataset.game;
   if(ctx?.type !== "tcard" || ctx.game !== g || String(ctx.id) !== String(t.dataset.id))return;
   const c = contextTcgCard(g,t.dataset.id,ctx);
@@ -3235,6 +3313,7 @@ A.tMyPriceSet = async (t) => {
   refreshSheet();
 };
 A.buyFinish = async (t) => {
+  const commit=scopedCommit();
   const ctx = S.ui.sheetCtx;
   if (ctx?.type !== "buy") return;
   ctx.finish = selectedFinish("mtg",ctx.print,t.dataset.finish);
@@ -3274,6 +3353,7 @@ A.compareReset = () => {
   A.compareOpen();
 };
 A.compareLookup = async (t) => {
+
   const i = Number(t.dataset.i),
     v = $("#cmp" + i)?.value.trim();
   if (!v) return;
@@ -3286,6 +3366,7 @@ A.compareLookup = async (t) => {
   }
 };
 A.compareSwap = async () => {
+  const commit=scopedCommit();
   const [a, b] = S.ui.compare,
     d = currentDeck();
   if (!a || !b || !d) return;
@@ -3303,6 +3384,7 @@ A.compareSwap = async () => {
 };
 
 A.printings = async (t) => {
+
   const c = meta(t.dataset.name);
   if (!c?.oracle_id) return;
   const box = $("#printings");
@@ -3325,6 +3407,7 @@ A.printings = async (t) => {
   }
 };
 A.choosePrint = async (t) => {
+  const commit=scopedCommit();
   const p = (S.ui.sheetCtx?.prints || S.ui.prints)?.[Number(t.dataset.i)],
     f = t.dataset.finish,
     name = t.dataset.name;
@@ -3335,12 +3418,14 @@ A.choosePrint = async (t) => {
   }, { msg: "Using that printing’s price. Ownership unchanged." });
 };
 A.clearPrint = async (t) => {
+  const commit=scopedCommit();
   await commit((s) => {
     if (s.priceChoices) delete s.priceChoices[key(t.dataset.name)];
   });
 };
 
 A.wish = async (t) => {
+  const commit=scopedCommit();
   const name = t.dataset.name,
     own = inventory(S.state.collection, name, S.state.decks).available;
   await commit((s) => {
@@ -3351,6 +3436,7 @@ A.wish = async (t) => {
 };
 
 A.addToDeck = async (t) => {
+  const commit=scopedCommit();
   const id = t.dataset.deck || $("#toDeck")?.value,
     d = deckById(id),
     name = t.dataset.name;
@@ -3395,6 +3481,7 @@ A.addCard = () => addSheet();
 A.addMode = (t) => (t.dataset.id === "list" ? importCollectionSheet() : addSheet());
 A.editLot = (t) => addSheet(S.state.collection.find((e) => e.id === t.dataset.id));
 A.own = async (t) => {
+
   const ctx = S.ui.sheetCtx,
     name = t.dataset.name,
     d = ctx?.deckId ? deckById(ctx.deckId) : null,
@@ -3404,6 +3491,7 @@ A.own = async (t) => {
   addSheet(null, { card: print || meta(name), name, qty: row?.missing || 1, set: print?.set?.toUpperCase(), number: print?.collector_number, finish: ctx?.type === "buy" ? ctx.finish : print && ctx?.priceFinish ? selectedFinish("mtg",print,ctx.priceFinish) : null });
 };
 A.addLookup = async () => {
+
   const ctx = S.ui.sheetCtx;
   if(ctx?.type !== "add")return;
   const name = $("#addName").value.trim();
@@ -3432,6 +3520,7 @@ A.addLookup = async () => {
 A.addSave = () => saveLot(false);
 A.addSaveRaw = () => saveLot(true);
 A.addDelete = async () => {
+  const commit=scopedCommit();
   const e = S.ui.sheetCtx?.entry;
   if (!e || !await ask(`Delete ${e.qty}× ${e.name} from your collection?`)) return;
   await commit((s) => (s.collection = s.collection.filter((x) => x.id !== e.id)), { msg: "Removed from collection." });
@@ -3439,6 +3528,7 @@ A.addDelete = async () => {
 };
 
 async function saveLot(unverified) {
+  const commit=scopedCommit(),scope=mutationScope();
   const ctx = S.ui.sheetCtx,
     editing = ctx?.entry,
     name = unverified ? $("#addName").value.trim() : ctx?.lookup?.name,
@@ -3466,24 +3556,27 @@ async function saveLot(unverified) {
     raw: editing?.raw || {},
   };
   delete e.lookupFailed;
+  const createBinder=$("#addLocationPicker")?.value === "binder:new";
   const done = busy($("#addSaveBtn"), "Saving…");
   try {
     if (!unverified && e.set && e.collectorNumber) {
       const c = await verifyPhysical(e);
+      if(!mutationCurrent(scope)||S.ui.sheetCtx!==ctx)return;
       if (key(c.name) !== key(name)) throw Error(`That set and number is ${c.name}, not ${name}.`);
       Object.assign(e, verifiedLot(e, c));
     } else if (!unverified) e.nameVerified = true;
     await commit(
       (s) => {
-        e.location=rememberLocation(s,"mtg",e.location,{createBinder:$("#addLocationPicker")?.value === "binder:new"});
+        e.location=rememberLocation(s,"mtg",e.location,{createBinder});
         s.collection = editing ? s.collection.map((x) => (x.id === e.id ? e : x)) : [...s.collection, e];
         s.example = false;
         s.printings = { ...s.printings, ...(S.pendingPrintings || {}) };
       },
-      { msg: editing ? "Saved." : `${qty}× ${name} added.` },
+      { msg: editing ? "Saved." : `${qty}× ${name} added.`,guard:()=>mutationCurrent(scope)&&S.ui.sheetCtx===ctx },
     );
+    if(!mutationCurrent(scope)||S.ui.sheetCtx!==ctx)return;
     S.pendingPrintings = null;
-    if(S.ui.sheetCtx === ctx)closeSheet();
+    closeSheet();
   } catch (x) {
     err.textContent = x.message;
   } finally {
@@ -3545,6 +3638,7 @@ async function verifyLot(e) {
 /* collection list actions */
 
 A.qty = async (t) => {
+  const commit=scopedCommit();
   const id = t.dataset.id,
     delta = Number(t.dataset.delta),
     e = S.state.collection.find((x) => x.id === id);
@@ -3590,9 +3684,11 @@ A.collMenu = () =>
   </div><p class="muted small" id="collMenuMsg"></p>`);
 A.exportCSV = () => download("CardStashy_Collection.csv", exportCollectionCSV(S.state.collection), "text/csv");
 A.retryLookups = async () => {
+  const commit=scopedCommit();
   await commit((s) => s.collection.forEach((e) => delete e.lookupFailed), { msg: "Looking cards up again…" });
 };
 A.loadAllData = async (t) => {
+  const commit=scopedCommit();
   const done = busy(t, "Loading…"),
     msg = (x) => ($("#collMenuMsg") ? ($("#collMenuMsg").textContent = x) : toast(x));
   try {
@@ -3612,10 +3708,12 @@ A.loadAllData = async (t) => {
   }
 };
 A.refreshPrices = async (t) => {
+
   const done = busy(t, "Refreshing…");
   try {
     const r = await resolveNames(S.state.collection.map((e) => e.name), (m) => toast(m), true);
     await refreshMagicCollectionPrices(true);
+    if(!mutationCurrent(scope))return;
     trackValue();
     await save();
     render();
@@ -3625,6 +3723,7 @@ A.refreshPrices = async (t) => {
   }
 };
 A.verifyAll = async (t) => {
+  const commit=scopedCommit();
   const done = busy(t, "Checking…"),
     list = S.state.collection.filter((e) => !e.printingVerified && (e.printingId || ((e.set || e.setName) && e.collectorNumber)));
   try {
@@ -3651,6 +3750,7 @@ A.copySpare = () => {
 /* wishlist & shopping */
 
 A.wishAdd = async () => {
+
   const input = $("#wishName"),
     name = input?.value.trim();
   if (!name) return;
@@ -3715,6 +3815,7 @@ C.impFile = async (t) => {
   await A.impPreview();
 };
 A.impPreview = async () => {
+
   try {
     const raw = $("#impText").value,
       parsed = parseImport(raw),
@@ -3762,6 +3863,7 @@ C.impPrinting = (t) => {
 };
 A.impErrors = () => download("CardStashy_Import_Errors.csv", importErrorsCSV(impDraft.errors), "text/csv");
 A.impVerify = async () => {
+
   if (!impDraft || impBusy) return;
   impBusy = true;
   drawImport();
@@ -3783,6 +3885,7 @@ A.impVerify = async () => {
   }
 };
 A.impApply = async () => {
+  const commit=scopedCommit();
   if (!impDraft || impBusy) return;
   const rows = impDraft.lots.filter((e) => e.include !== false),
     mode = $("#impMode").value,
@@ -3857,6 +3960,7 @@ A.newDeck = (t) => {
   );
 };
 A.newDeckSave = async (t) => {
+  const commit=scopedCommit();
   const done = busy(t, "Checking…"),
     format = $("#ndFormat").value,
     cn = $("#ndCommander").value.trim();
@@ -3866,6 +3970,7 @@ A.newDeckSave = async (t) => {
     if (fm.commander) {
       if (!cn) throw Error(fm.commander === "planeswalker" ? "Enter your Oathbreaker (a planeswalker)." : "Enter a commander.");
       c = await resolve(cn, true);
+      await verifyLeader(c,fm,api);
       if (!canLead(c, fm)) throw Error(`${c.name} can’t lead a ${fm.name} deck.`);
     }
     const d = {
@@ -3971,6 +4076,7 @@ function drawDeckImport() {
   $("#dImpSave").disabled = dImpBusy;
 }
 A.dImpPreview = async () => {
+
   if (dImpBusy) return;
   const raw = $("#dImpText").value;
   try {
@@ -4006,6 +4112,7 @@ A.dImpPreview = async () => {
   }
 };
 A.dImpSave = async (t) => {
+  const commit=scopedCommit();
   if (!dImp || dImpBusy) return;
   const done = busy(t, "Saving…");
   try {
@@ -4014,6 +4121,7 @@ A.dImpSave = async (t) => {
     if (d.name === "Imported deck" && d.commander) d.name = d.commander.split(",")[0] + " deck";
     if (d.commander) {
       const c = await resolve(d.commander, true);
+      await verifyLeader(c,formatOf(d),api);
       if (!canLead(c, formatOf(d))) throw Error(`${c.name} can’t lead a ${formatOf(d).name} deck.`);
       d.commander = c.name;
       if (!d.cards.some((x) => key(x.name) === key(c.name))) d.cards.unshift({ name: c.name, qty: 1 });
@@ -4084,6 +4192,7 @@ const editDeck = (fn, opts = {}) => {
   }, opts);
 };
 A.deckSaveInfo = async () => {
+  const commit=scopedCommit(),editDeck=scopedEditDeck(commit);
   const format = formatOf($("#dmFormat")?.value).name,
     name = $("#dmName").value.trim(),
     budget = Math.max(0, Number($("#dmBudget").value) || 0),
@@ -4161,6 +4270,7 @@ A.deckEmbSwap = (t) =>
   );
 C.deckLock = (t) => editDeck((d) => ({ ...d, locked: t.checked }), { msg: t.checked ? "Copies reserved for this deck." : "Reservation released." });
 A.snapshot = async () => {
+  const commit=scopedCommit(),editDeck=scopedEditDeck(commit);
   const label = await askText("Name this version", "Version " + ((currentDeck().versions || []).length + 1));
   if (label === null) return;
   const before = (currentDeck().versions || []).length;
@@ -4170,6 +4280,7 @@ A.snapshot = async () => {
 A.deckCopy = () => copyText(exportDeckText(currentDeck()), "Decklist copied.");
 A.deckExport = () => download(`CardStashy_${fileSafe(currentDeck().name)}.txt`, exportDeckText(currentDeck()) + "\n");
 A.deckDup = async () => {
+  const commit=scopedCommit();
   const d = currentDeck(),
     copy = { ...structuredClone(d), id: uid(), name: d.name + " (copy)", locked: false };
   await commit((s) => {
@@ -4180,6 +4291,7 @@ A.deckDup = async () => {
   go("#deck/" + copy.id);
 };
 A.deckDelete = async () => {
+  const commit=scopedCommit();
   const d = currentDeck();
   if (!await ask(`Delete ${d.name}? Your collection is not affected.`)) return;
   await commit((s) => {
@@ -4190,6 +4302,7 @@ A.deckDelete = async () => {
   go("#decks");
 };
 A.refreshDeck = async (t) => {
+  const commit=scopedCommit(),editDeck=scopedEditDeck(commit);
   const d = currentDeck(),
     done = busy(t, "Refreshing…");
   try {
@@ -4202,6 +4315,7 @@ A.refreshDeck = async (t) => {
 };
 
 A.deckAdd = async () => {
+  const commit=scopedCommit(),editDeck=scopedEditDeck(commit);
   const input = $("#deckAddName"),
     name = input.value.trim();
   if (!name) return;
@@ -4211,6 +4325,7 @@ A.deckAdd = async () => {
   if (again) again.focus();
 };
 A.deckQty = async (t) => {
+  const commit=scopedCommit(),editDeck=scopedEditDeck(commit);
   const name = t.dataset.name,
     delta = Number(t.dataset.delta),
     d = currentDeck() || deckById(S.ui.sheetCtx?.deckId);
@@ -4220,6 +4335,7 @@ A.deckQty = async (t) => {
   await editDeck((x) => mergeDeckCard(x, name, delta), delta < 0 ? { undo: `−1 ${name}` } : {});
 };
 A.deckRemove = async (t) => {
+  const commit=scopedCommit(),editDeck=scopedEditDeck(commit);
   await editDeck((d) => ({ ...d, cards: d.cards.filter((c) => key(c.name) !== key(t.dataset.name)) }), { undo: `Removed ${t.dataset.name}.` });
   closeSheet();
 };
@@ -4272,7 +4388,7 @@ let acqMode = "missing";
 function acquireSheet(mode) {
   acqMode = mode;
   const d = currentDeck(),
-    rows = mode === "purchase" ? aggregateCards(d.cards).map((r) => ({ name: r.name, qty: r.qty, max: r.qty })) : V.rowsFor(d).filter((r) => r.missing).map((r) => ({ name: r.name, qty: r.missing, max: r.missing }));
+    rows = mode === "purchase" ? physicalRequirements(d).map((r) => ({ name: r.name, qty: r.qty, max: r.qty })) : V.rowsFor(d).filter((r) => r.missing).map((r) => ({ name: r.name, qty: r.missing, max: r.missing }));
   openSheet(
     `<div class="sheet-head"><h2>${mode === "purchase" ? "Add the whole deck to my collection" : "Cards I got"}</h2><button class="icon" data-act="closeSheet">✕</button></div>
     <p class="muted small">${mode === "purchase" ? "For a precon or deck you bought: every card below is added as new copies, on top of what you already own." : "Tick the cards you now physically have. They’ll be added to your collection and the shopping gap updates."}</p>
@@ -4287,6 +4403,7 @@ A.acquire = () => acquireSheet("missing");
 A.deckBought = () => acquireSheet("purchase");
 A.acqAll = (t) => $$(".acq-check").forEach((c) => (c.checked = !!t.dataset.on));
 A.acqConfirm = async (t) => {
+  const commit=scopedCommit();
   const d = currentDeck(),
     done = busy(t, "Saving…");
   try {
@@ -4410,6 +4527,7 @@ A.dbSavedDel = (t) => {
 A.dbSearch = () => dbSearch();
 A.dbMore = () => dbSearch(true);
 A.undo = async () => {
+
   let label = "";
   const restored = await replaceWorkspace(() => {
     if (!lastUndo) return null;
@@ -4423,6 +4541,7 @@ A.undo = async () => {
 };
 A.nextFact = (t) => nextFact(t);
 A.dbRandom = async () => {
+
   const db = S.ui.db, generation = db.generation;
   if (db.randomBusy || T.game() !== "mtg") return;
   db.randomBusy = true;
@@ -4435,6 +4554,7 @@ A.dbRandom = async () => {
 };
 let randomDeckBusy=false,lastRandomCommander="";
 A.randomDeck=async()=>{
+
   const screen=navigationStamp();
   if(randomDeckBusy)return;
   randomDeckBusy=true;
@@ -4539,6 +4659,7 @@ function buildIdeas() {
   if (S.ui.view === "decks") render();
 }
 A.analyze = async () => {
+  const commit=scopedCommit();
   const I2 = S.ui.ideas;
   if (I2.busy) return;
   I2.busy = true;
@@ -4598,6 +4719,7 @@ A.sheetBack = () => {
   if (b?.type === "idea") openIdea(b.i);
 };
 A.ideaCustomBudget = async () => {
+
  const value=customBudget($("#ideaCustomBudget").value);
  S.ui.ideas.defaultBudget=value;
  await A.ideaBudget({dataset:{v:String(value)}});
@@ -4605,6 +4727,7 @@ A.ideaCustomBudget = async () => {
 C.fillCustom = (t) => {S.ui.fill.budget=customBudget(t.value);S.ui.fill.plan=null;render();};
 C.upCustom = (t) => {S.ui.upgrade.budget=customBudget(t.value);S.ui.upgrade.selected=new Set();render();};
 A.ideaBudget = async (t) => {
+
   const I2 = S.ui.ideas,
     o = I2.open,
     idea = I2.cache[o.i],
@@ -4656,6 +4779,7 @@ const ideaPicked = () => {
   return aggregateCards(d.cards).filter((c) => sel.has(c.name));
 };
 A.ideaSaveAll = async () => {
+  const commit=scopedCommit();
   if(S.ui.ideas.open?.busy)return toast("Wait for the full deck preview.");
   const idea = S.ui.ideas.cache[S.ui.ideas.open.i],
     d = withSnapshot({ ...structuredClone(ideaDeck()), id: uid(), name: idea.commander.name.split(",")[0] + " · " + idea.plan, versions: [] }, "Started from a deck idea");
@@ -4667,6 +4791,7 @@ A.ideaSaveAll = async () => {
   go(`#deck/${d.id}/cards`);
 };
 A.ideaToDeck = async () => {
+  const commit=scopedCommit();
   const picked = ideaPicked(),
     id = $("#ideaDeckPick")?.value,
     d = deckById(id);
@@ -4680,6 +4805,7 @@ A.ideaToDeck = async () => {
   }, { msg: `${picked.length} cards added to ${d.name}.` });
 };
 A.ideaWish = async () => {
+  const commit=scopedCommit();
   const picked = ideaPicked();
   if (!picked.length) return toast("Tick some cards first.");
   await commit((s) => {
@@ -4690,6 +4816,7 @@ A.ideaWish = async () => {
   }, { msg: `${picked.length} cards added to your wishlist.` });
 };
 A.ideaOwn = async () => {
+  const commit=scopedCommit();
   const picked = ideaPicked();
   if (!picked.length) return toast("Tick the cards you own.");
   if (!await ask(`Add ${sumQty(picked)} cards to your collection as cards you own?`)) return;
@@ -4803,6 +4930,7 @@ A.mtgProven = (t) => {
 };
 
 A.copyRef = async (t) => {
+  const commit=scopedCommit();
   const r = S.state.references.find((x) => x.id === t.dataset.id),
     d = withSnapshot({ ...structuredClone(r), id: uid(), name: r.name + " · my version", locked: false, versions: [] }, "From " + (r.source?.author || r.source?.website || "inspiration"));
   await commit((s) => {
@@ -4816,6 +4944,7 @@ A.exportRef = (t) => {
   download(`CardStashy_${fileSafe(r.name)}.txt`, exportDeckText(r) + "\n");
 };
 A.deleteRef = async (t) => {
+  const commit=scopedCommit();
   if (!await ask("Remove this saved idea?")) return;
   await commit((s) => (s.references = s.references.filter((x) => x.id !== t.dataset.id)));
 };
@@ -4831,6 +4960,7 @@ async function fetchJSON(url) {
   }
 }
 A.loadPrecons = async () => {
+
   const P = S.ui.precon;
   P.busy = true;
   P.msg = "Loading…";
@@ -4851,6 +4981,7 @@ I.preconSearch = (t) => {
   $("#preconList").innerHTML = V.preconList();
 };
 A.previewPrecon = async (t) => {
+
   const f = t.dataset.file;
   if (!/^[A-Za-z0-9_.-]+$/.test(f)) return toast("Invalid product.");
   toast("Loading decklist…");
@@ -4913,6 +5044,7 @@ C.fill = (t) => {
   F.plan = null;
 };
 A.fillRun = async () => {
+
   const F = S.ui.fill,
     d = currentDeck();
   if (F.busy) return;
@@ -4939,6 +5071,7 @@ A.fillRun = async () => {
   }
 };
 A.fillApply = async () => {
+  const commit=scopedCommit(),editDeck=scopedEditDeck(commit);
   const F = S.ui.fill,
     d = currentDeck();
   if (!F.plan || F.deckId !== d.id) return;
@@ -4959,6 +5092,7 @@ C.upSimple = (t) => {
   S.ui.upgrade.plans = {};
 };
 A.upRun = async () => {
+
   const U = S.ui.upgrade,
     d = currentDeck();
   if (U.busy) return;
@@ -5023,6 +5157,7 @@ A.upExport = () => {
   buyMtg(buy);
 };
 A.upApply = async () => {
+  const commit=scopedCommit(),editDeck=scopedEditDeck(commit);
   const U = S.ui.upgrade,
     d = currentDeck(),
     swaps = pickedSwaps();
@@ -5058,12 +5193,14 @@ C.verB = (t) => {
   render();
 };
 A.restoreVer = async (t) => {
+  const commit=scopedCommit(),editDeck=scopedEditDeck(commit);
   const d = currentDeck(),
     v = (d.versions || []).find((x) => x.id === t.dataset.id);
   if (!v || !await ask(`Restore “${v.label}”? Your current list is saved as a version first.`)) return;
   await editDeck((x) => ({ ...withSnapshot(x, "Before restoring " + v.label), cards: structuredClone(v.cards), side: structuredClone(v.side || []) }), { msg: "Version restored." });
 };
 A.deleteVer = async (t) => {
+  const commit=scopedCommit(),editDeck=scopedEditDeck(commit);
   if (!await ask("Delete this saved version?")) return;
   await editDeck((x) => ({ ...x, versions: (x.versions || []).filter((v) => v.id !== t.dataset.id) }));
 };
@@ -5088,6 +5225,7 @@ A.drawOne = () => {
   render();
 };
 A.logGame = async () => {
+  const commit=scopedCommit();
   const d = currentDeck(),
     note = { id: uid(), deckId: d.id, sig: cardSig(d.cards), date: new Date().toLocaleDateString(), author: "", table: "", result: $("#logResult").value, turn: Number($("#logTurn").value) || null, note: $("#logNote").value.trim().slice(0, 1000) };
   await commit((s) => s.notes.push(note), { msg: "Game saved." });
@@ -5119,11 +5257,13 @@ C.lifeName = (t) => {
   if (pl) pl.name = t.value.trim().slice(0, 24) || pl.name;
 };
 A.lifeEnd = async () => {
+
   if (!await ask("End this game without logging it?")) return;
   S.ui.life = null;
   render();
 };
 A.lifeLog = async (t) => {
+  const commit=scopedCommit();
   const d = currentDeck(),
     g = S.ui.life;
   if (!g) return;
@@ -5361,6 +5501,7 @@ C.restoreBackup = async (t) => {
   }
 };
 A.undoRestore = async () => {
+
   const owner=cloudInfo().user?.id,generation=accountGeneration;
   const current=()=>!accountLocked&&cloudInfo().user?.id===owner&&accountGeneration===generation;
   const raw = await readRecord(RECOVERY);
@@ -5373,6 +5514,7 @@ A.undoRestore = async () => {
   toast("Recovery copy restored.");
 };
 A.reset = async () => {
+
   if (!await ask("Clear this device and sign out? Any existing account copy stays separate. A recovery copy is kept here; export a backup first if your latest changes have not synced.")) return;
   if (cloudInfo().user) await signOut();
   detachDeviceSync();
@@ -5383,6 +5525,7 @@ A.reset = async () => {
   go("#home");
 };
 A.loadExample = async () => {
+
   const hasData = [S.state, ...Object.values(S.state.tcg || {})].some((game) => ["collection", "decks", "wishlist", "references", "notes"].some((field) => game[field]?.length));
   if (hasData && !await ask("Replace all collections, decks, wishlists and notes across every game with example data? Your current workspace becomes the recovery copy.")) return;
   const names = ["Krenko, Mob Boss", "Goblin Instigator", "Sol Ring", "Arcane Signet", "Talrand, Sky Summoner", "Counterspell", "Mountain", "Island"];
@@ -5393,10 +5536,12 @@ A.loadExample = async () => {
   go("#collection");
 };
 A.persist = async () => {
+
   toast((await requestPersistence()) ? "The browser will keep your data. Still export backups." : "The browser declined. Export backups regularly.");
   storageDetail();
 };
 A.install = async () => {
+
   if (!(await promptInstall())) toast(isIOS() ? "In Safari, tap Share, then Add to Home Screen." : "Use your browser menu, then Add to Home screen.");
   if (S.ui.view === "home") render();
 };
@@ -5407,6 +5552,7 @@ A.priceAlert = (t) => {
   openSheet(alertSheet(g, id, name || "This card", value), { type: "alert", back:S.ui.sheetCtx });
 };
 A.priceAlertSave = async (t) => {
+
   const { game: g, id, name } = t.dataset,
     num = (x) => (x === "" || x == null || !(Number(x) > 0) || !Number.isFinite(Number(x)) ? null : Math.round(Number(x) * 100) / 100),
     below = num($("#alertBelow")?.value),
@@ -5512,7 +5658,7 @@ async function boot() {
   activeEntry=restored || makeEntry(T.game(),normalizeRoute(location.hash),0);
   replaceEntry(activeEntry);
   trackValue();
-  await save();
+  // Durable writes start only after the owner/revision boundary is opened.
   // No navigation may write the blank workspace while boot is reading storage.
   // Re-read history after the await: a Back/Forward during startup owns this visit.
   const latest=historyEntry(history.state,location.hash);
@@ -5521,14 +5667,9 @@ async function boot() {
   await navigate({game:latest?.game || T.game(),hash:normalizeRoute(location.hash),entry:latest || makeEntry(T.game(),normalizeRoute(location.hash),0),mode:"boot"});
   loadSetIndex(); // cached set symbols first; refreshes from Scryfall every few days
   render();
-  // First visit opens automatically; replay is available in Settings.
-  {
-    const cards = S.state.collection.length + ["ptcg", "ygo"].reduce((n, g) => n + T.gs(g).collection.length, 0),
-      decks = S.state.decks.length + ["ptcg", "ygo"].reduce((n, g) => n + T.gs(g).decks.length, 0);
-    if (shouldTour({ cards, decks }) && !location.hash.startsWith("#shared")) setTimeout(() => openTour(tourArt()), 600);
-  }
   observeShellHeader();
   $("#app").classList.add("ready");
+  let accountOpenedOnce=false;
   initCloud({
     accountChanged: () => {
       dismissConditionInfo();
@@ -5549,11 +5690,14 @@ async function boot() {
       S.state=result.state;conditionWorkspaceRevision++;lastUndo=null;
       return result;
     }),
+    canSync:()=>accountWorkspaces.current(),
     accountOpened:()=>{
       accountLocked=false;clearGameContext();queueMicrotask(()=>community.refresh());
       const game=GAMES[S.state.settings.game]?S.state.settings.game:'mtg';
-      installNavigation({game,hash:'#home',mode:'workspace',entry:makeEntry(game,'#home',activeEntry?.index||0)});
+      const hash=accountOpenedOnce?'#home':normalizeRoute(location.hash);accountOpenedOnce=true;
+      installNavigation({game,hash,mode:'workspace',entry:makeEntry(game,hash,activeEntry?.index||0)});
       render();
+      if(shouldTour()&&!location.hash.startsWith('#shared'))setTimeout(()=>{if(!accountLocked&&shouldTour())openTour(tourArt());},600);
     },
     passwordRecovery: () => { S.ui.settingsTab = "account"; go("#settings"); },
     getState: () => stripCache(S.state),
@@ -5577,11 +5721,19 @@ async function boot() {
     status: ([text, cls]) => setSaveStatus(text, cls),
     changed: () => {
       refreshProfileAvatar();
-      if (["settings","community"].includes(S.ui.view)||settingsPopup.isOpen) render();
+      if (accountLocked||["settings","community"].includes(S.ui.view)||settingsPopup.isOpen) render();
     },
     // A conflict stays safely paused until the user opens Account settings.
     decide: () => { if(settingsPopup.isOpen)settingsPopup.refresh();else if(S.ui.view==="settings")render(); },
   }).catch(() => {});
+  window.addEventListener('storage',async event=>{
+    if(event.key!=='cardstashy-workspace-changed'||accountLocked)return;
+    if(!await accountWorkspaces.current()){
+      accountLocked=true;accountGeneration++;pauseLocalConflict();
+      for(const dialog of document.querySelectorAll('dialog[open]'))dialog.close();
+      render();
+    }
+  });
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
   // Scryfall role tags arrive after first paint; redraw Magic pages so Deck Power counts them.
   // TCGplayer prices for printings Scryfall leaves unpriced arrive in the background.

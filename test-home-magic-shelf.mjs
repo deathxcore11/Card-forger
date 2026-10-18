@@ -46,6 +46,6 @@ html=deckTile(partial);assert.match(html,/known deck subtotal · 2 unpriced/);as
 html=deckTile(make([{name:'Unknown card',qty:2}]));assert.match(html,/>100%<\/em> owned/);assert.match(html,/value unavailable/);assert.doesNotMatch(html,/to finish|cost unavailable/);
 S.state.collection=[];
 const side=make([{name:'Swamp',qty:60}],[{name:'Priced card',qty:1},{name:'Unknown card',qty:3}]);
-html=deckTile(side);assert.equal(totalsFor(side).copies,60);assert.match(html,/\$0<\/em> value/);assert.match(html,/\$0<\/em> to finish/);assert.doesNotMatch(html,/unpriced/);
+html=deckTile(side);assert.equal(totalsFor(side).copies,64);assert.match(html,/known deck subtotal · 3 unpriced/);assert.match(html,/known subtotal to finish/);
 assert.equal(networkAttempts,0);
-console.log('PASS: actual Magic shelf uses one main-deck USD row basis for total/missing cost; cache-only/cheaper/selected quotes, partial/all-unpriced/genuine zero, owned quantities and sideboard exclusion stay honest with no fetch.');
+console.log('PASS: actual Magic shelf uses one main-plus-sideboard USD row basis for total/missing cost; cache-only/cheaper/selected quotes, partial/all-unpriced/genuine zero, owned quantities and sideboard inclusion stay honest with no fetch.');

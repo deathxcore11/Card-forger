@@ -60,6 +60,7 @@ const text = (c) => [c?.oracle_text, ...(c?.card_faces || []).map((x) => x.oracl
 // Whether `c` may lead a deck of this format.
 export function canLead(c, f) {
   if (!c || !f.commander) return false;
+  if(f.id==="paupercommander")return c.pdhCommander===true;
   const t = type(c),
     legendCreature = /\bLegendary\b/.test(t) && /\bCreature\b/.test(t),
     says = /can be your commander/i.test(text(c));
@@ -76,3 +77,14 @@ export const legalityIn = (c, f) => (f.legality && c?.legalities ? c.legalities[
 export const LEGALITY_WORD = { legal: "Legal", banned: "Banned", restricted: "Restricted", not_legal: "Not legal" };
 
 export const sizeLabel = (f) => (f.exact ? `${f.size} cards` : `${f.size}+ cards`) + (f.copies === 1 ? ", singleton" : "");
+
+// Scryfall's main-deck legality is distinct from PDH commander membership.
+// Query Oracle identity: the selected printing's rarity cannot decide eligibility.
+export async function verifyLeader(card,format,api){
+ if(format.id!=="paupercommander"||!card)return card;
+ const identity=card.oracle_id?`oracleid:${card.oracle_id}`:`!"${String(card.name).replace(/["\\]/g,"")}"`;
+ try{const result=await api("/cards/search?"+new URLSearchParams({q:`is:paupercommander ${identity}`}));
+ card.pdhCommander=(result.data||[]).some(c=>card.oracle_id?c.oracle_id===card.oracle_id:c.name===card.name);
+ }catch(e){if(e.status===404)card.pdhCommander=false;else throw e;}
+ card.pdhCommanderCheckedAt=new Date().toISOString();return card;
+}

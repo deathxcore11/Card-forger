@@ -5,7 +5,7 @@ import {noOverflow} from './search-fixtures.mjs';
 if(process.env.GITHUB_ACTIONS!=='true')throw Error('Finish browser QA runs only in hosted GitHub Actions.');
 const {chromium}=await import('playwright');
 const server=await startServer(),browser=await chromium.launch();
-try{for(const game of ['mtg','ptcg','ygo']){
+try{for(const game of ['ygo','ptcg','mtg']){
  const app=await openApp(browser,server.base,{game,width:390}),{page}=app;
  try{
   // Deliberately seed a foil-owned fixture before the user-flow snapshot.

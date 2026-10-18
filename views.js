@@ -996,7 +996,7 @@ export function sharedPage() {
     br = d.format === "Commander" ? bracketEstimate(d, S.catalog) : null,
     fm = formatOf(d),
     v = validateDeck(d, S.catalog, [], []),
-    rules = v.issues.filter((i) => i.kind !== "unverified"),
+    rules = v.issues,
     target = fm.size,
     g = goldfishFor(d),
     lands = p.counts.Lands,
@@ -1022,7 +1022,7 @@ export function sharedPage() {
     <p class="foot">Counts only your free copies${sc.skipped ? ` and assumes you have the ${sc.skipped} basic lands (change this under Decks → Find decks)` : ""}. The person who shared this can’t see your collection, and their link doesn’t include theirs.</p></section>
   <section class="panel"><h3>Automated checks</h3>
     <ul class="checks">
-      <li class="${rules.length ? "bad-text" : "ok-text"}">${rules.length ? `● ${rules.length} rules issue${rules.length > 1 ? "s" : ""}: ${esc(rules.slice(0, 3).map((i) => i.text).join(" "))}` : "✓ Card count, colors, legality and copy limits pass"}</li>
+      <li class="${rules.length ? "bad-text" : "ok-text"}">${rules.length ? `● ${rules.length} checks outstanding${rules.length > 1 ? "s" : ""}: ${esc(rules.slice(0, 3).map((i) => i.text).join(" "))}` : "✓ Card count, colors, legality and copy limits pass"}</li>
       <li>Lands <b>${lands}</b> · ramp <b>${p.counts.Ramp}</b> · draw <b>${p.counts.Draw}</b> · removal <b>${p.counts.Removal}</b> · average mana value <b>${p.avg === null ? "—" : p.avg.toFixed(2)}</b></li>
       ${odds !== null ? `<li>${pct(odds)} of opening hands have 3+ lands</li>` : ""}
       ${g ? `<li>Test games: ${pct(g.landsBy4)} hit 4 lands by turn 4${g.commander ? ` · commander on curve ${pct(g.commander.onCurve ?? 0)}` : ""}</li>` : ""}

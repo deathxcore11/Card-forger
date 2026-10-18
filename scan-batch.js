@@ -1,3 +1,4 @@
+import {isYgoEdition} from './ygo-identity.js';
 import {privateKey} from './account-scope.js';
 // Captures are staged, never collection writes. Mixed-game review survives reloads.
 // A failed storage write keeps the batch in memory and is surfaced by the UI.
@@ -44,7 +45,8 @@ export function actualFinishes(g,c) {
 }
 export function resolveScanFinish(g,c,prefs={},read={}) {
   const valid=actualFinishes(g,c);
-  if(prefs.finishConfirmed && (valid.includes(prefs.finish)||(g==='ygo'&&['unlimited','1st-edition'].includes(prefs.finish))))return prefs.finish;
+  if(prefs.finishConfirmed && (valid.includes(prefs.finish)||(g==='ygo'&&isYgoEdition(prefs.finish))))return prefs.finish;
+  if(g==='ygo'&&/\blimited\s+edition\b/i.test(`${read.code||''}\n${read.full||''}\n${read.stats||''}`))return 'limited';
   if(g==='ygo'&&/\b1st\s+edition\b/i.test(`${read.code||''}\n${read.full||''}\n${read.stats||''}`))return '1st-edition';
   // A coarse 'First Edition · finish unconfirmed' bucket is not an exact finish.
   if(valid.length===1 && !/unconfirmed/i.test(c?.card?.variants?.find(v=>v.key===valid[0])?.label||''))return valid[0];

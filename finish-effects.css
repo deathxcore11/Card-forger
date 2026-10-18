@@ -51,3 +51,10 @@
 @media(prefers-reduced-motion:reduce){.finish-spotlight{animation:none}}
 
 .finish-micro{background-image:repeating-linear-gradient(32deg,transparent 0 1.4px,#d4e7ff99 1.4px 1.8px,transparent 1.8px 3px);background-size:100% 100%;mask-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#000 0%,#0005 28%,transparent 66%);mix-blend-mode:soft-light;opacity:.25}
+
+/* Keep source pixels and masks in one coordinate system. The generic 488/680
+   cover crop cut the taller Yu-Gi-Oh artwork while the overlay used contain. */
+.cd-zoom > .card-img{aspect-ratio:auto;height:auto;object-fit:contain;}
+.cd-zoom:active .card-img{transform:none;}
+/* Feather the name treatment within the lettering band, including Secret Rare. */
+.finish-layer.finish-name-region{mask-image:linear-gradient(transparent 5.5%,#000 6.3%,#000 9.4%,transparent 10.3%);opacity:.2;}

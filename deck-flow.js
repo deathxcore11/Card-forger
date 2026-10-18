@@ -1,6 +1,7 @@
 import {
   cardKey,
   aggregateCards,
+  physicalRequirements,
   inventory,
   cardPrice,
   typeText,
@@ -120,7 +121,7 @@ export function deckComparison(
   catalog,
   { useReserved = false } = {},
 ) {
-  return aggregateCards(deck.cards).map((c) => {
+  return physicalRequirements(deck).map((c) => {
     const stock = inventory(collection, c.name, decks, deck.id),
       available = useReserved ? stock.owned : stock.available,
       covered = Math.min(c.qty, available),

@@ -19,10 +19,16 @@ export function pokemonFallback(c){
  if(!code||!/^\d{1,3}$/.test(raw)||Number(raw)<1)return '';
  return `https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpci/${code}/${code}_${String(Number(raw)).padStart(3,'0')}_R_EN.png`;
 }
+// These exact provider references were confirmed as card backs in the 3.84.2
+// audit (2026-10-18), even with HTTP 200. Quarantine those references only;
+// a genuine exact-printing alternative remains eligible. Recheck before removing.
+export function knownPokemonPlaceholder(url){
+ return /^https:\/\/images\.pokemontcg\.io\/me55c\/(?:[1-9]|1[0-2])(?:_hires)?\.png(?:\?.*)?$/.test(String(url||''));
+}
 export function artworkSources(c,large=false){
  if(!c)return [];
  const urls=c.game==='ptcg'?[POKEMON_CARD_ART[c.id],large?c.imageLarge:c.image,large?c.image:c.imageLarge,pokemonFallback(c),c.id?`img/ptcg/${large?'l':'s'}/${encodeURIComponent(c.id)}.jpg?v=2`:'']:c.game==='ygo'?[large?c.imageLarge:c.image,large?c.image:c.imageLarge,...(/^\d{1,12}$/.test(String(c.id||''))?[`https://images.ygoprodeck.com/images/cards${large?'':'_small'}/${c.id}.jpg`,`https://images.ygoprodeck.com/images/cards${large?'_small':''}/${c.id}.jpg`]:[])]:magicArtworkSources(c,large?'large':'normal');
- return [...new Set(urls.filter(u=>typeof u==='string'&&(/^(https?:\/\/|img\/)/.test(u))))];
+ return [...new Set(urls.filter(u=>!knownPokemonPlaceholder(u)&&typeof u==='string'&&(/^(https?:\/\/|img\/)/.test(u))))];
 }
 export function artworkHTML(c,cls='card-img',large=false){
  const urls=artworkSources(c,large),fallback=`<span class="${cls} img-missing" role="img" aria-label="Artwork unavailable">◇<small>Art unavailable</small></span>`;
@@ -45,7 +51,7 @@ export function handleArtworkError(e){
 // same framing Magic's art crops and Yu-Gi-Oh!'s artwork give). The window keeps its shape and
 // covers whatever box it sits in.
 export function pokemonArtCrop(c, cls = "", src = "", {loading = "lazy"} = {}) {
-  const urls = src ? [src, ...artworkSources(c, true).filter((u) => u !== src)] : artworkSources(c, true);
+  const urls = src&&!knownPokemonPlaceholder(src) ? [src, ...artworkSources(c, true).filter((u) => u !== src)] : artworkSources(c, true);
   if (!urls.length) return `<span class="${cls} pk-crop img-missing" role="img" aria-label="Artwork unavailable">◇</span>`;
   return `<span class="${cls} pk-crop" aria-hidden="true"><span class="pk-win"><img src="${esc(urls[0])}" data-art-sources="${esc(JSON.stringify(urls))}" data-art-index="0" alt="" loading="${loading === "eager" ? "eager" : "lazy"}" referrerpolicy="no-referrer"></span></span>`;
 }

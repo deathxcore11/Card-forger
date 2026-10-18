@@ -78,7 +78,7 @@ const helper=app.slice(app.indexOf('function contextTcgCard('),app.indexOf('cons
 const callbacks=app.slice(app.indexOf('A.cardTab = async'),app.indexOf('const jumpToCardPrices'));
 let rendered=0,recorded;
 const harness={S,T,A:{},$:()=>null,$$:()=>[],selectedFinish,quoteModel,recordQuote:(_s,q)=>{recorded=q;},commit:async fn=>fn(S.state),refreshSheet:()=>rendered++,sheetScrolled(){},tcgCtx:{},meta(){},mtgGuideLoad(){},api(){}};
-vm.createContext(harness);vm.runInContext(helper+'\n'+callbacks,harness);
+harness.scopedCommit=()=>harness.commit;vm.createContext(harness);vm.runInContext(helper+'\n'+callbacks,harness);
 S.ui.sheetCtx=ctxB;await harness.A.cardTab({dataset:{tab:'prices'}});assert.equal(recorded.value,22);assert.equal(recorded.releaseId,anniversary.id);assert.equal(rendered,1);
 assert.equal(harness.contextTcgCard('ygo',ygo.id,{...ctxB,id:'other'}),ygo);
 assert.equal(harness.contextTcgCard('ygo',ygo.id,{...ctxB,game:'ptcg'}),ygo);

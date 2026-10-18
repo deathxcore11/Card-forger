@@ -1,0 +1,62 @@
+{
+  "id": 74586817,
+  "name": "PSY-Framelord Omega",
+  "type": "Synchro Monster",
+  "card_sets": [
+    {
+      "set_code": "RA02-EN028",
+      "set_rarity": "Collector's Rare",
+      "set_name": "25th Anniversary Rarity Collection II"
+    },
+    {
+      "set_code": "RA02-EN028",
+      "set_rarity": "Platinum Secret Rare",
+      "set_name": "25th Anniversary Rarity Collection II"
+    },
+    {
+      "set_code": "RA02-EN028",
+      "set_rarity": "Quarter Century Secret Rare",
+      "set_name": "25th Anniversary Rarity Collection II"
+    },
+    {
+      "set_code": "RA02-EN028",
+      "set_rarity": "Secret Rare",
+      "set_name": "25th Anniversary Rarity Collection II"
+    },
+    {
+      "set_code": "RA02-EN028",
+      "set_rarity": "Super Rare",
+      "set_name": "25th Anniversary Rarity Collection II"
+    },
+    {
+      "set_code": "RA02-EN028",
+      "set_rarity": "Ultimate Rare",
+      "set_name": "25th Anniversary Rarity Collection II"
+    },
+    {
+      "set_code": "RA02-EN028",
+      "set_rarity": "Ultra Rare",
+      "set_name": "25th Anniversary Rarity Collection II"
+    },
+    {
+      "set_code": "BLLR-EN061",
+      "set_rarity": "Secret Rare",
+      "set_name": "Battles of Legend: Light's Revenge"
+    },
+    {
+      "set_code": "DUOV-EN080",
+      "set_rarity": "Ultra Rare",
+      "set_name": "Duel Overload"
+    },
+    {
+      "set_code": "HSRD-EN035",
+      "set_rarity": "Secret Rare",
+      "set_name": "High-Speed Riders"
+    },
+    {
+      "set_code": "MGED-EN076",
+      "set_rarity": "Rare",
+      "set_name": "Maximum Gold: El Dorado"
+    }
+  ]
+}

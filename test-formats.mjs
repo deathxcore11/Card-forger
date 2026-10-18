@@ -41,7 +41,7 @@ const pw = card("Chandra, Torch of Defiance", "Legendary Planeswalker — Chandr
 const elf = card("Llanowar Elves", "Creature — Elf Druid");
 assert.ok(canLead(legend, formatOf("Commander")) && !canLead(pw, formatOf("Commander")));
 assert.ok(canLead(pw, formatOf("Oathbreaker")) && !canLead(legend, formatOf("Oathbreaker")));
-assert.ok(canLead(elf, formatOf("Pauper Commander")) && !canLead(elf, formatOf("Commander")));
+assert.ok(!canLead(elf, formatOf("Pauper Commander")) && !canLead(elf, formatOf("Commander")));
 assert.ok(canLead(pw, formatOf("Brawl")));
 // Oathbreaker: exactly 60, singleton, planeswalker leads.
 const oath = cat(pw, bolt, mountain);

@@ -7,7 +7,7 @@ import {initCloud,cloudInfo,startSync,resolvePending,scheduleSync,signOut,worksp
 import {passwordField,togglePassword} from './auth-form.js';
 const storage=new Map();
 globalThis.localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)};
-Object.defineProperty(globalThis,'navigator',{value:{onLine:true,userAgent:'Isolation tests'},configurable:true});
+Object.defineProperty(globalThis,'navigator',{value:{onLine:true,userAgent:'Isolation tests',locks:{request:async(_name,run)=>run()}},configurable:true});
 globalThis.document={addEventListener(){},visibilityState:'visible'};globalThis.window={addEventListener(){}};
 globalThis.location={search:'',hash:'',origin:'https://cardstashy.com',pathname:'/'};
 globalThis.fetch=async()=>Response.json({external:{email:true}});
@@ -40,8 +40,8 @@ assert.deepEqual(local,B);assert.equal(result.meta.userId,'B');
 result=await vault.switchTo('A',result.meta);local=result.state;assert.deepEqual(local,A);
 // Another tab switches ownership. Stale edits cannot overwrite its active copy.
 await writeRecord(ACCOUNT_OWNER,{owner:'B'});
-await assert.rejects(writeRecord('workspace',A,{guardRecord:vault.guard}),/another tab/);
-await assert.rejects(vault.switchTo('A',legacyMeta),/another tab/);
+await assert.rejects(writeRecord('workspace',A,{guardRecord:vault.guard}),/another tab/i);
+await assert.rejects(vault.switchTo('A',legacyMeta),/another tab/i);
 assert.deepEqual(await readRecord('workspace'),A,'guard failure performs no write');
 
 // Pending captures are private, including the in-memory fallback and legacy queue.
@@ -50,7 +50,7 @@ setAccountScope('B','A');assert.deepEqual(loadBatch(),[]);
 saveBatch([{id:'B capture'}]);setAccountScope('A','A');assert.equal(loadBatch()[0].id,'A capture');
 setAccountScope('B');assert.equal(loadBatch()[0].id,'B capture');
 assert.notEqual(privateKey('recovery'),'recovery');
-await writeRecord(ACCOUNT_OWNER,{owner:'A'});
+await writeRecord(ACCOUNT_OWNER,vault.guard.value);
 await vault.eraseArchived('B');assert.deepEqual((await readRecord(accountRecord('B'))).state,empty());assert.deepEqual(await vault.guest(),guest);assert.deepEqual((await readRecord(LEGACY_ARCHIVE)).state,A);
 await assert.rejects(vault.eraseArchived('A'),/Sign out/);
 

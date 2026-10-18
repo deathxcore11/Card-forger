@@ -6,7 +6,7 @@ import { SUPABASE } from "./config.js";
 import { createPasswordAuth, authError } from "./password-auth.js";
 let recoveringPassword = false, authNotice = "";
 
-const LIB = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/+esm";
+const LIB = "./vendor/supabase-js-2.110.0.js";
 const META = "cardforge-cloud-v1";
 const PUSH_DELAY = 2500;
 
@@ -80,14 +80,18 @@ let providers = { email: true }, // sign-in methods enabled on the project
   pending = null; // { kind: "offer" | "choose" | "conflict", cloud }
 const status = { state: "local", msg: "", at: null };
 
-const readMeta = () => {
+let tabMeta;
+const persistedMeta = () => {
   try {
     return JSON.parse(localStorage.getItem(META) || "null");
   } catch {
     return null;
   }
 };
+// The baseline belongs to the exact workspace this tab loaded, never another tab.
+const readMeta = () => tabMeta === undefined ? (tabMeta = persistedMeta()) : tabMeta;
 const writeMeta = (m) => {
+  tabMeta = m ? structuredClone(m) : null;
   try {
     if (m) localStorage.setItem(META, JSON.stringify(m));
     else localStorage.removeItem(META);
@@ -135,18 +139,24 @@ function friendly(e) {
   return m || "Something went wrong while syncing.";
 }
 
-export async function initCloud(h, { createClient: factory } = {}) {
+const boundedStartup=(promise,ms)=>{let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error("Account service timed out.")),ms);})]).finally(()=>clearTimeout(timer));};
+export async function initCloud(h, { createClient: factory, startupTimeoutMs=12000 } = {}) {
   hooks = h;
+  readMeta();
   const callbackQuery = new URLSearchParams(location.search), callbackHash = new URLSearchParams((location.hash || "").slice(1));
   const callbackCode = callbackQuery.has("code"), callbackError = callbackQuery.get("error_description") || callbackHash.get("error_description");
-  if (!cloudConfigured()) return;
+  if (!cloudConfigured()) { await changeAccount(null); return; }
   try {
-    const createClient = factory || (await import(/* @vite-ignore */ LIB)).createClient;
+    const createClient = factory || (await boundedStartup(import(/* @vite-ignore */ LIB),startupTimeoutMs)).createClient;
     client = createClient(SUPABASE.url, SUPABASE.key, { global: { fetch: timedFetch }, auth: { flowType: "pkce", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true } });
   } catch {
     status.state = "error";
     status.msg = "Couldn’t load the account service. Your cards are still saved on this device.";
+    client = null;
     hooks.changed();
+    await changeAccount(null);
+    authNotice = "Account service unavailable. You’re using this device’s guest workspace. Retry by reopening the app.";
+    setStatus("error",authNotice);
     return;
   }
   // Which sign-in buttons to show (public endpoint; failures just keep the email option).
@@ -159,7 +169,9 @@ export async function initCloud(h, { createClient: factory } = {}) {
       }
     })
     .catch(() => {});
-  client.auth.onAuthStateChange((event, session) => {
+  let acceptingAuth=true;
+  const authListener=client.auth.onAuthStateChange((event, session) => {
+    if(!acceptingAuth)return;
     if (event === "PASSWORD_RECOVERY" && session?.user) {
       recoveringPassword = true;
       setTimeout(() => { hooks.passwordRecovery?.(); hooks.changed(); }, 0);
@@ -169,7 +181,16 @@ export async function initCloud(h, { createClient: factory } = {}) {
     // Never await a Supabase call inside its auth callback (it holds the auth lock).
     changeAccount(next).catch(() => {});
   });
-  const { data, error } = await client.auth.getSession();
+  let sessionResult;
+  try {sessionResult=await boundedStartup(client.auth.getSession(),startupTimeoutMs);}
+  catch {
+    acceptingAuth=false;authListener?.data?.subscription?.unsubscribe?.();
+    client?.auth.stopAutoRefresh?.();client=null;
+    await changeAccount(null);
+    authNotice="Account service unavailable. You’re using this device’s guest workspace. Reopen the app to retry sign-in.";
+    setStatus("error",authNotice);return;
+  }
+  const { data, error } = sessionResult;
   // Capture callback parameters before the SDK consumes them, then remove only
   // authentication parameters. Keep normal page routing and unrelated query data.
   const hadCallbackError = !!(error || callbackError);
@@ -326,6 +347,7 @@ export async function startSync() {
   setStatus("syncing");
   try {
     loadProfile().catch(() => {});
+    if(hooks.canSync && !await hooks.canSync())return setStatus("error","Another tab changed this workspace. Reload before syncing.");
     const cloud = await fetchCloud();
     if (!current()) return;
     const meta = readMeta(),
@@ -415,6 +437,7 @@ async function pushNow(first = false) {
   pushing = operation;
   setStatus("syncing");
   try {
+    if(hooks.canSync && !await hooks.canSync())return setStatus("error","Another tab changed this workspace. Reload before syncing.");
     const data = hooks.getState(),
       meta = readMeta(),
       sig = workspaceSig(data);
@@ -471,3 +494,5 @@ async function checkRemote() {
   } catch {}
 }
 export const syncNow = () => startSync();
+
+export function pauseLocalConflict(){ syncEpoch++;clearTimeout(pushTimer);pushTimer=null;accountReady=false;setStatus("error","Another tab changed this workspace. Reload to use the latest saved copy."); }

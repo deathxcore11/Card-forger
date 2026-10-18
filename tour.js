@@ -37,6 +37,7 @@ export function openTour({onDone=()=>{},onTry=()=>{},game='mtg',scenes={},cssUrl
  }
  const visibility=()=>{clear();if(!document.hidden)play();};document.addEventListener('visibilitychange',visibility);
  const finish=(how)=>{if(finished)return;finished=true;clear();document.removeEventListener('visibilitychange',visibility);if(!lesson&&!choose)markSeen();if(!menu)markGuide(steps[i].key);el.close();el.remove();if(launcher?.isConnected)launcher.focus({preventScroll:true});onDone(how);if(how==='try')onTry(steps[i].key);};
+ el.addEventListener('close',()=>finish('closed'));
  el.addEventListener('cancel',e=>{e.preventDefault();finish('skip');});
  el.addEventListener('click',e=>{const selected=e.target.closest('button[data-lesson]')?.dataset.lesson;if(selected){lesson=selected;steps=LESSONS.filter(s=>s.key===selected);i=0;frame=0;menu=false;playing=!reduced();draw();return;}const action=e.target.closest('[data-tour]')?.dataset.tour;
   if(action==='skip'||action==='close')finish('skip');

@@ -3,7 +3,7 @@ import { functionalIn } from "./deck-safety.js";
 // seed cards, preferring cards you own and staying inside a purchase budget.
 // Works for every constructed format in formats.js (60-card, singleton and
 // command-zone formats). Scores are transparent rules of thumb, not predictions.
-import { cardKey, rulesText, typeText, isLand, isBasic, roles, aggregateCards, sumQty } from "./core.js";
+import { effectiveCopyLimit, cardKey, rulesText, typeText, isLand, isBasic, roles, aggregateCards, sumQty } from "./core.js";
 import { engineRoles } from "./insights.js";
 import { formatOf, canLead, legalityIn } from "./formats.js";
 import { splitBasics } from "./extras.js";
@@ -68,7 +68,7 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
   if (f.commander && !lead) throw Error(`${f.name} decks need a card that can lead them (${f.commander === "planeswalker" ? "a planeswalker" : "a legendary creature"}).`);
   const legalStatus = (c) => legalityIn(c, f),
     isLegal = (c) => functionalIn(c,f) && (!f.legality || ["legal", "restricted"].includes(legalStatus(c))),
-    maxCopies = (c) => (isBasic(c) || /any number of cards named/i.test(rulesText(c)) ? Infinity : legalStatus(c) === "restricted" ? 1 : f.copies);
+    maxCopies = (c) => effectiveCopyLimit(c,f);
   // Colors: the leader's identity, else the seeds', else the base list's.
   let deckColors = colors || (lead ? ident(lead) : [...new Set([...seeds, ...base.map((b) => catalog[cardKey(b.name)])].flatMap(ident))]);
   if (!deckColors.length) deckColors = ["C"];

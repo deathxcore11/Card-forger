@@ -1,3 +1,4 @@
+import {ygoRarity} from './ygo-identity.js';
 // One free, cached TCGCSV set response; never one paid condition request per tile.
 import {rarityKey} from './ygo-prices.js';
 import {referenceQuote} from './price-reference.js';
@@ -52,12 +53,13 @@ export function applyYgoSetPrices(card,release,body){
  if(card?.game!=='ygo'||!release||release.providerNameAmbiguous||body?.status!=='ready'||body.name!==release.name||body.code!==release.code||!Array.isArray(body.products))return card;
  const sets=(card.sets||[]).map(p=>{
   if(p.name!==release.name||p.releasePriceAmbiguous)return p;
-  const matches=body.products.filter(x=>x.code===p.code&&rarityKey(x.rarity)===rarityKey(p.rarity)&&productNameMatches(x.name,card.name,p.rarity));
+  const known=ygoRarity(p.rarity);
+  const matches=body.products.filter(x=>x.code===p.code&&ygoRarity(x.rarity)&&(!known||rarityKey(x.rarity)===rarityKey(known))&&productNameMatches(x.name,card.name,known||x.rarity));
   if(matches.length!==1)return p;const row=matches[0];
   if(!Number.isSafeInteger(row.productId)||row.productId<1||!Array.isArray(row.quotes))return p;
   const quotes=row.quotes.filter(q=>['1st Edition','Unlimited','Limited'].includes(q.edition)&&referenceQuote(q));
   // Keep edition identity attached. Never turn a first-edition quote into a generic one.
-  return {...p,quotes,productId:row.productId,url:'https://www.tcgplayer.com/product/'+row.productId,priceSource:body.source,checkedAt:body.updatedAt};
+  return {...p,rarity:known||ygoRarity(row.rarity),quotes,productId:row.productId,url:'https://www.tcgplayer.com/product/'+row.productId,priceSource:body.source,checkedAt:body.updatedAt};
  });
  return {...card,sets};
 }

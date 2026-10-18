@@ -5,7 +5,7 @@ import {strategicRisk,riskPanel} from "./strategy-risk.js";
 import { S } from "./store.js";
 import { ygoSource } from './ygo.js';
 import { ptcgSource } from './ptcg.js';
-import { legalityIn } from './formats.js';
+import { legalityIn,canLead } from './formats.js';
 
 export function powerReadiness(game,deck,format,cardOf) {
  const rows=game==='mtg'?deck.cards || []:Object.entries(deck.zones || {}).flatMap(([zone,rs])=>rs.map(r=>({...r,zone})));
@@ -14,20 +14,22 @@ export function powerReadiness(game,deck,format,cardOf) {
   const total=rows.reduce((n,r)=>n+r.qty,0),byName=new Map();
   if(total<format.size || (format.exact && total!==format.size))issues.push(`${total}/${format.size} cards`);
   for(const r of rows){const c=cardOf(r.name);if(!c)continue;const k=cardKey(r.name);byName.set(k,(byName.get(k)||0)+r.qty);
-   if(format.legality && c.legalities && !['legal','restricted'].includes(legalityIn(c,format)))issues.push(`${r.name} is not legal in ${format.name}`);
+   if(format.id==='paupercommander'&&cardKey(r.name)===cardKey(deck.commander)){if(!canLead(c,format))issues.push('Commander eligibility needs verification');}
+   else if(format.legality && !['legal','restricted'].includes(legalityIn(c,format)))issues.push(`${r.name} is not legal in ${format.name}`);
    if(format.commander && deck.commander && cardKey(r.name)!==cardKey(deck.commander)){const identity=cardOf(deck.commander)?.color_identity;if(identity && (c.color_identity || []).some(x=>!identity.includes(x)))issues.push(`${r.name} is outside the commander’s color identity`);}
   }
-  for(const [k,n] of byName){const c=cardOf(k);if(c&&!/^Basic(?: Snow)? Land/.test(c.type_line || '')&&!/any number of cards named/i.test(c.oracle_text || '')&&n>(legalityIn(c,format)==='restricted'?1:format.copies))issues.push(`${n} copies of ${c.name}`);}
+  for(const [k,n] of byName){const c=cardOf(k);if(c&&n>effectiveCopyLimit(c,format))issues.push(`${n} copies of ${c.name}`);}
   if(format.commander&&!deck.commander)issues.push('Choose a commander');
   // The sideboard follows the same rules check as the deck page: 15 cards, legal, and copies
   // counted with the main deck.
   const sideN=(deck.side||[]).reduce((n,r)=>n+r.qty,0);
   if(sideN>15)issues.push(`Sideboard has ${sideN} cards (limit 15)`);
   const sideBy=new Map();for(const r of deck.side||[]){const k=cardKey(r.name);sideBy.set(k,{name:r.name,qty:(sideBy.get(k)?.qty||0)+r.qty});}
-  for(const [k,r] of sideBy){const c=cardOf(r.name);if(!c)continue;const n=(byName.get(k)||0)+r.qty,limit=legalityIn(c,format)==='restricted'?1:format.copies;
-   if(format.legality && c.legalities && !['legal','restricted'].includes(legalityIn(c,format)))issues.push(`${r.name} (sideboard) is not legal in ${format.name}`);
+  for(const [k,r] of sideBy){const c=cardOf(r.name);if(!c)continue;const n=(byName.get(k)||0)+r.qty,limit=effectiveCopyLimit(c,format);
+   if(format.id==='paupercommander'&&cardKey(r.name)===cardKey(deck.commander)){if(!canLead(c,format))issues.push('Commander eligibility needs verification');}
+   else if(format.legality && !['legal','restricted'].includes(legalityIn(c,format)))issues.push(`${r.name} (sideboard) is not legal in ${format.name}`);
    if(!/^Basic(?: Snow)? Land/.test(c.type_line||'')&&!/any number of cards named/i.test(c.oracle_text||'')&&n>limit&&(byName.get(k)||0)<=limit)issues.push(`${n} copies of ${c.name} across main deck and sideboard`);}
- }else issues.push(...(game==='ygo'?ygoSource:ptcgSource).validate(deck,cardOf,format).filter(x=>x.level==='bad').map(x=>x.text));
+ }else issues.push(...(game==='ygo'?ygoSource:ptcgSource).validate(deck,cardOf,format).filter(x=>x.level==='bad'||x.level==='pending').map(x=>x.text));
  return {unknown,total,issues:[...new Set(issues)],provisional:unknown>0||issues.length>0};
 }
 const readinessLabel=p=>p.readiness?.provisional?'Provisional · resolve deck checks':p.from==='meta'?powerGrade(p.score,p.from):p.score>=85?'Strong engine estimate':p.score>=68?'Solid engine estimate':p.score>=50?'Developing engine':'Engine needs work';
@@ -36,7 +38,7 @@ import { esc, ring, bar, pct } from "./ui.js";
 import { review } from "./deckaudit.js";
 import { scoutingReport, competitiveScore, competitiveTier, verdictTier } from "./scouting.js";
 import { mtgGoldfish } from "./goldfish.js";
-import { cardKey } from "./core.js";
+import { cardKey, effectiveCopyLimit } from "./core.js";
 import { mtgTagsReady } from "./mtg-tags.js";
 import { engineProfile } from "./insights.js";
 import { formatOf, isCommanderLike } from "./formats.js";

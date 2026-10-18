@@ -1,0 +1,27 @@
+{
+  "id": 9753964,
+  "name": "Hot Red Dragon Archfiend Abyss",
+  "type": "Synchro Monster",
+  "card_sets": [
+    {
+      "set_code": "DUPO-EN057",
+      "set_rarity": "Ultra Rare",
+      "set_name": "Duel Power"
+    },
+    {
+      "set_code": "HSRD-EN041",
+      "set_rarity": "Ultra Rare",
+      "set_name": "High-Speed Riders"
+    },
+    {
+      "set_code": "MGED-EN068",
+      "set_rarity": "Rare",
+      "set_name": "Maximum Gold: El Dorado"
+    },
+    {
+      "set_code": "SDCK-EN042",
+      "set_rarity": "Common",
+      "set_name": "Structure Deck: The Crimson King"
+    }
+  ]
+}

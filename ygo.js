@@ -1,3 +1,4 @@
+import {ygoRarity} from './ygo-identity.js';
 import {applyYgoPrices} from './ygo-prices.js';
 // Yu-Gi-Oh! adapter. Data: YGOPRODeck (db.ygoprodeck.com) — card text, every
 // printing with set rarity and price, TCG/OCG/GOAT banlists, and prices from
@@ -235,7 +236,7 @@ export function normalizeYgo(c) {
     def: c.linkval === undefined ? c.def ?? null : null,
     link: c.linkval ?? null,
     archetype: c.archetype || "",
-    sets: (c.card_sets || []).map((s) => ({ code: s.set_code, name: s.set_name, rarity: s.set_rarity, price: num(s.set_price) })),
+    sets: (c.card_sets || []).map((s) => ({ code: s.set_code, name: s.set_name, rarity: ygoRarity(s.set_rarity), rarityRaw:s.set_rarity, price: num(s.set_price) })),
     prices: {
       usd: num(p.tcgplayer_price),
       eur: num(p.cardmarket_price),
@@ -291,12 +292,14 @@ export function validateYgo(deck, cardOf, f) {
   if (main < f.main[0] || main > f.main[1]) issues.push({ level: "bad", text: `Main Deck has ${main} cards; ${f.name} needs ${f.main[0]}–${f.main[1]}.` });
   if (extra > f.extra) issues.push({ level: "bad", text: `Extra Deck has ${extra}; the limit is ${f.extra}.` });
   if (side > f.side) issues.push({ level: "bad", text: `Side Deck has ${side}; the limit is ${f.side}.` });
+  if(f.note)issues.push({level:"pending",text:f.note});
   const totals = new Map();
   for (const zone of ["main", "extra", "side"])
     for (const r of z[zone] || []) {
       totals.set(r.cardId, (totals.get(r.cardId) || 0) + r.qty);
       const c = cardOf(r.cardId);
-      if (!c) continue;
+      if (!c) {issues.push({level:"pending",text:`${r.qty}× ${r.name||r.cardId}: card details not loaded.`});continue;}
+      if(f.pool&&(!c.pools?.length||!c.ban&&f.ban))issues.push({level:"pending",text:`${c.name}: format data not verified.`});
       if (zone === "main" && c.extra) issues.push({ level: "bad", text: `${c.name} is an Extra Deck monster — move it to the Extra Deck.` });
       if (zone === "extra" && !c.extra) issues.push({ level: "bad", text: `${c.name} can’t go in the Extra Deck.` });
     }

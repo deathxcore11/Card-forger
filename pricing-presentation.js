@@ -71,7 +71,7 @@ export function presentationQuote(game,c,finish='reference',printingKey='',editi
 }
 // UI selectors and the projected card must refer to the same release.
 export function quoteForContext(game,card,ctx={}) {
- const quote=presentationQuote(game,card,selectedFinish(game,card,ctx.priceFinish||ctx.finish),ctx.priceEdition||ctx.edition,ctx.priceYgoEdition||ctx.ygoEdition);
+ const quote=presentationQuote(game,card,selectedFinish(game,card,ctx.priceFinish||ctx.finish),ctx.priceEdition||ctx.edition||card.displayPrintingKey,ctx.priceYgoEdition||ctx.ygoEdition||card.displayEdition);
  return !quote || validSetContext(game,card,ctx) ? quote : {...quote,value:null,printing:null,variant:null,selectionVerified:false,label:'Selected release does not match this card'};
 }
 export function priceSelectionState(quote){

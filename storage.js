@@ -51,24 +51,29 @@ export async function readRecord(key) {
   return raw ? JSON.parse(raw) : null;
 }
 export function writeRecords(records, {guardRecord = null} = {}) {
+  let advanced;
+  let expected;
+  const conflict=()=>Object.assign(Error("Another tab changed this workspace or account. Reload before saving; your latest saved copy is protected."),{code:"WORKSPACE_CONFLICT"});
   const snapshots = records.map(([key, value]) => [
     key,
     structuredClone(value),
   ]);
   const task = async () => {
+    expected=guardRecord?.value;
+    advanced=guardRecord?.advance ? {...expected,revision:(Number(expected?.revision)||0)+1}:null;
     const db = await database();
     if (db) {
       await new Promise((resolve, reject) => {
         const tx = db.transaction("records", "readwrite");
         const store=tx.objectStore('records');
-        const put=()=>{for(const [key,value] of snapshots)store.put(value,key);};
+        const put=()=>{for(const [key,value] of snapshots)store.put(value,key);if(advanced)store.put(advanced,guardRecord.key);};
         let guardError;
         if(guardRecord){
           const check=store.get(guardRecord.key);
           check.onsuccess=()=>{
             const actual=check.result??JSON.parse(localStorage.getItem(guardRecord.key)||'null');
-            if(JSON.stringify(actual)!==JSON.stringify(guardRecord.value??null)){
-              guardError=Error('The account changed in another tab. Reload CardStashy before saving.');tx.abort();
+            if(JSON.stringify(actual)!==JSON.stringify(expected??null)){
+              guardError=conflict();tx.abort();
             }else put();
           };
         }else put();
@@ -78,10 +83,12 @@ export function writeRecords(records, {guardRecord = null} = {}) {
       });
       return;
     }
-    if(guardRecord && JSON.stringify(JSON.parse(localStorage.getItem(guardRecord.key)||'null'))!==JSON.stringify(guardRecord.value??null))throw Error('The account changed in another tab. Reload CardStashy before saving.');
-    const before = snapshots.map(([k]) => [k, localStorage.getItem(k)]);
+    const fallback=()=>{
+    if(guardRecord && JSON.stringify(JSON.parse(localStorage.getItem(guardRecord.key)||'null'))!==JSON.stringify(expected??null))throw conflict();
+    const values=advanced?[...snapshots,[guardRecord.key,advanced]]:snapshots;
+    const before = values.map(([k]) => [k, localStorage.getItem(k)]);
     try {
-      for (const [k, v] of snapshots)
+      for (const [k, v] of values)
         localStorage.setItem(k, JSON.stringify(v));
     } catch (e) {
       for (const [k, v] of before) {
@@ -92,8 +99,13 @@ export function writeRecords(records, {guardRecord = null} = {}) {
       }
       throw e;
     }
+    };
+    if(globalThis.navigator?.locks?.request)return navigator.locks.request("cardstashy-local-workspace",fallback);
+    if(guardRecord?.advance)throw Error("This browser cannot safely coordinate local saves. Enable browser storage or use a browser with IndexedDB support.");
+    return fallback();
   };
-  const result = writeQueue.then(task, task);
+  const run=async()=>{await task();if(advanced){guardRecord.onCommit?.(advanced);try{localStorage.setItem("cardstashy-workspace-changed",JSON.stringify({...advanced,at:Date.now()}));}catch{}}};
+  const result = writeQueue.then(run, run);
   writeQueue = result.catch(() => {});
   return result;
 }

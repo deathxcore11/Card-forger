@@ -19,6 +19,8 @@ assert.equal(ygoLimit(semi, tcg), 2);
 assert.equal(ygoLegality(ocgOnly, tcg), "not_legal");
 const deck = (main, extra = [], side = []) => ({ zones: { main, extra, side } });
 const forty = [{ cardId: "1", name: "Dark Magician", qty: 3 }, ...Array.from({ length: 37 }, (_, i) => ({ cardId: "x" + i, name: "Filler " + i, qty: 1 }))];
+assert(validateYgo(deck(forty),of,tcg).some(i=>i.level==='pending'),'unresolved filler cards are unverified');
+for(let i=0;i<37;i++)cards["x"+i]=ygo("x"+i,"Filler "+i);
 assert.deepEqual(validateYgo(deck(forty), of, tcg), []);
 const t = (d, f = tcg) => validateYgo(d, of, f).map((i) => i.text).join(" | ");
 assert.match(t(deck(forty.slice(0, 10))), /needs 40–60/);

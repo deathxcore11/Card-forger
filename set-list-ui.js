@@ -1,3 +1,4 @@
+import {ygoRarity} from './ygo-identity.js';
 import {esc} from './ui.js';
 import {pkCatalogueSymbolSources} from './emblems.js';
 // Decode provider entities as text, then escape at the HTML boundary.
@@ -45,7 +46,7 @@ export function setCardFields(card, game) {
  return { set:game==='mtg'?card.set_name||card.set||'':game==='ptcg'?card.set?.name||card.set?.id||'':context?.name||'',
   number:game==='mtg'?card.collector_number||'':game==='ptcg'?card.set?.number||'':values(printings.map(p=>String(p.code||'').split('-').slice(1).join('-'))).length===1?String(printings[0]?.code||'').split('-').slice(1).join('-'):'',
   numbers:values(game==='ygo'?printings.map(p=>p.code):[game==='mtg'?card.collector_number:card.set?.number]),
-  rarities:values(game==='ygo'?(single?[single.rarity]:printings.map(p=>p.rarity)):[card.rarity]),
+  rarities:values(game==='ygo'?(single?[single.rarity]:printings.map(p=>p.rarity)).map(ygoRarity):[card.rarity]),
   finishes:values(game==='mtg'?card.finishes||[]:game==='ptcg'?(card.variants||[]).map(pokemonSetFinish):printings.map(p=>p.finish)),
   price:game==='ygo'&&card.setBrowseReference?card.setBrowseReference.low:context?context.price:card.prices?.usd??null };
 }

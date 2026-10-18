@@ -17,14 +17,17 @@ export const FINISH_MASKS = Object.freeze({
  'pk-expedition-field':'inset(51.5% 4% 14% 12%)',
  'pk-base-art':'polygon(24% 11.8%,89.8% 11.8%,89.8% 51.6%,10.8% 51.6%,10.8% 18%,19% 18%,24% 14%)',
  'pk-cel-art':'inset(9.5% 6.6% 51.3% 6.6%)',
+ // Sword & Shield art window (734 × 1024 reference); reverse excludes its silver frame/caption too.
+ 'pk-swsh-art':'inset(9.8% 8% 52.5% 8%)',
+ 'pk-swsh-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,7% 9.1%,7% 50.7%,93% 50.7%,93% 9.1%,7% 9.1%)',
  'pk-standard-art':'inset(12.3% 8.2% 47.5% 8.2%)',
  'pk-standard-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,8.2% 12.3%,8.2% 52.5%,91.8% 52.5%,91.8% 12.3%,8.2% 12.3%)',
  'pk-trainer-art':'inset(18% 8.2% 40% 8.2%)',
  'pk-sv-art':'inset(9.8% 7.8% 52.5% 7.8%)',
  'pk-sv-surround':'polygon(evenodd, 5.5% 3%,94.5% 3%,94.5% 97%,5.5% 97%,5.5% 3%,7% 9.2%,7% 50.5%,93% 50.5%,93% 9.2%,7% 9.2%)',
  'mtg-frame':'polygon(evenodd, 3% 2%,97% 2%,97% 98%,3% 98%,3% 2%,9% 12%,9% 54%,91% 54%,91% 12%,9% 12%,9% 60%,9% 90%,91% 90%,91% 60%,9% 60%)',
- 'ygo-art':'inset(18.5% 11.8% 29.7% 11.8%)',
- 'ygo-name':'inset(5.5% 18% 88.4% 8%)',
+ 'ygo-art':'inset(18.3% 11.7% 29.4% 11.7%)',
+ 'ygo-name':'inset(5.5% 18% 89.7% 7.2%)',
  'ygo-broad':'inset(2.3% 3.2% round 1%)',
 });
 export const FINISH_MATERIALS = Object.freeze(['holo','rainbow','metal','silver','gold','secret','prismatic','starlight','tiles','micro']);
@@ -83,8 +86,8 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
   }
   const modern=/^(?:swsh|sm|xy|bw|dp|pl|hgss|sv)/i.test(set)||set==='cel25';
   if(modern&&category==='pokemon'){
-   if(physicalFinish==='holofoil')return preset(key,label,'ptcg-holo',[layer(set==='cel25'?'pk-cel-art':/^sv/i.test(set)?'pk-sv-art':'pk-standard-art','holo')],FINISH_SOURCES.pokemon);
-   if(physicalFinish==='reverse-holofoil')return preset(key,label,'ptcg-reverse',[layer(/^sv/i.test(set)?'pk-sv-surround':'pk-standard-surround',/^sv/i.test(set)?'tiles':'rainbow')],FINISH_SOURCES.pokemon);
+   if(physicalFinish==='holofoil')return preset(key,label,'ptcg-holo',[layer(set==='cel25'?'pk-cel-art':/^swsh/i.test(set)?'pk-swsh-art':/^sv/i.test(set)?'pk-sv-art':'pk-standard-art','holo')],FINISH_SOURCES.pokemon);
+   if(physicalFinish==='reverse-holofoil')return preset(key,label,'ptcg-reverse',[layer(/^swsh/i.test(set)?'pk-swsh-surround':/^sv/i.test(set)?'pk-sv-surround':'pk-standard-surround',/^sv/i.test(set)?'tiles':'rainbow')],FINISH_SOURCES.pokemon);
   }
   // Trainer and unusual layouts remain unmasked until their geometry is known.
   return unknown(key,label);

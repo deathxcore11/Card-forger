@@ -1,3 +1,4 @@
+import {YGO_EDITIONS} from './ygo-identity.js';
 import {privateKey} from './account-scope.js';
 // Scan sessions: defaults you set once (finish, condition, language, quantity), a running list of
 // everything scanned with prices, and one tap to save it all to the collection. Kept per game on
@@ -6,7 +7,7 @@ import {privateKey} from './account-scope.js';
 export const FINISHES = {
   mtg: [["nonfoil", "Normal"], ["foil", "Foil"], ["etched", "Etched"]],
   ptcg: [["normal", "Normal"], ["holofoil", "Holo"], ["reverse-holofoil", "Reverse"]],
-  ygo: [["unlimited", "Unlimited"], ["1st-edition", "1st Ed."]],
+  ygo: YGO_EDITIONS,
 };
 export const CONDITIONS = [["Near Mint", "NM"], ["Lightly Played", "LP"], ["Moderately Played", "MP"], ["Heavily Played", "HP"], ["Damaged", "DMG"]];
 export const LANGS = [["en", "EN"], ["ja", "JA"], ["de", "DE"], ["fr", "FR"], ["it", "IT"], ["es", "ES"], ["pt", "PT"], ["ko", "KO"], ["zhs", "ZH"]];

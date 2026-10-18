@@ -1,0 +1,32 @@
+-- Disposable test database only. No production test users or deletions.
+begin;
+create temporary table delete_test_ids(a uuid,b uuid);
+insert into delete_test_ids values(gen_random_uuid(),gen_random_uuid());
+grant select on delete_test_ids to authenticated;
+insert into auth.users(id,email) select a,'delete-a@example.invalid' from delete_test_ids union all select b,'keep-b@example.invalid' from delete_test_ids;
+insert into public.workspaces(user_id,data) select a,'{"test":"a"}'::jsonb from delete_test_ids union all select b,'{"test":"b"}'::jsonb from delete_test_ids;
+insert into community_private.profile_art(user_id,avatar) select a,'{}'::jsonb from delete_test_ids union all select b,'{}'::jsonb from delete_test_ids;
+insert into community_private.friendships(low_id,high_id,sender,status) select least(a,b),greatest(a,b),a,'accepted' from delete_test_ids;
+insert into community_private.showcase(owner_id,item_key,item) select a,'deck:mtg:delete','{}'::jsonb from delete_test_ids union all select b,'deck:mtg:keep','{}'::jsonb from delete_test_ids;
+create function pg_temp.assert_delete(ok boolean,message text) returns void language plpgsql as $$begin if ok is distinct from true then raise exception 'FAILED: %',message;end if;end$$;
+select pg_temp.assert_delete(not has_function_privilege('anon','public.delete_my_account()','EXECUTE'),'anon cannot delete');
+select pg_temp.assert_delete(has_function_privilege('authenticated','public.delete_my_account()','EXECUTE'),'signed-in deletion available');
+set local role authenticated;
+select set_config('request.jwt.claim.sub','',true);
+do $$begin
+ begin perform public.delete_my_account();raise exception 'FAILED: anonymous claim accepted';
+ exception when others then if sqlerrm <> 'Not signed in' then raise;end if;end;
+end$$;
+select set_config('request.jwt.claim.sub',a::text,true) from delete_test_ids;
+select public.delete_my_account();
+reset role;
+select pg_temp.assert_delete(not exists(select 1 from auth.users where id=(select a from delete_test_ids)),'own auth row removed');
+select pg_temp.assert_delete(not exists(select 1 from public.profiles where id=(select a from delete_test_ids)),'own profile removed');
+select pg_temp.assert_delete(not exists(select 1 from public.workspaces where user_id=(select a from delete_test_ids)),'own workspace removed');
+select pg_temp.assert_delete(exists(select 1 from auth.users where id=(select b from delete_test_ids)),'other auth row preserved');
+select pg_temp.assert_delete(exists(select 1 from public.workspaces where user_id=(select b from delete_test_ids) and data->>'test'='b'),'other workspace preserved');
+select pg_temp.assert_delete(not exists(select 1 from community_private.profile_art where user_id=(select a from delete_test_ids)),'own artwork cascades');
+select pg_temp.assert_delete(not exists(select 1 from community_private.friendships where (select a from delete_test_ids) in (low_id,high_id)),'friendship cascades');
+select pg_temp.assert_delete(not exists(select 1 from community_private.showcase where owner_id=(select a from delete_test_ids)),'own showcase cascades');
+select pg_temp.assert_delete(exists(select 1 from community_private.showcase where owner_id=(select b from delete_test_ids)),'other showcase preserved');
+rollback;

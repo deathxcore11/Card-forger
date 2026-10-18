@@ -150,7 +150,7 @@ try{
 
  const app=fs.readFileSync(new URL('./app.js',import.meta.url),'utf8');
  assert(!app.includes('lots.slice(0,100)'));
- assert.match(app,/try \{ await writeRecords\(records,accountStorageOptions\(\)\); \}\s*catch \(error\) \{ workspaceTransition\?\.failed\(transition\); throw error; \}\s*S\.state = valid;\s*workspaceTransition\?\.finished\(transition\);\s*const changedLots = changedConditionLots/,'newlot scheduling follows successful persistence');
+ assert.match(app,/try \{ await writeRecords\(records,accountStorageOptions\(\)\); \}\s*catch \(error\) \{ workspaceTransition\?\.failed\(transition\); throw error; \}\s*S\.state = valid;\s*workspaceTransition\?\.finished\(transition\);\s*if\(!scopeCurrent\(\)\)throw Error\([^;]+;\s*const changedLots = changedConditionLots/,'newlot scheduling follows successful persistence');
  assert.match(app,/await queueWorkspaceWrite\(async\(\)=>\{/,'condition persistence joins workspace write queue');
  console.log('PASS: condition scheduling hooks are post-commit and quote persistence is serialized.');
 {
@@ -177,7 +177,7 @@ function harness(){
  };
  Object.assign(c,{cloudInfo:c.cloudInfo||(()=>({configured:false})),createAccountWorkspaces:()=>({guard:null}),readRecord:c.readRecord|| (async()=>null)});
 vm.createContext(c);
- vm.runInContext(segment('function save()','// Transactional change:')+segment('let lastUndo =','const safely =')+segment('let conditionScheduler=','let magicPriceRefresh='),c);
+ vm.runInContext(segment('function save(','// Transactional change:')+segment('let lastUndo =','const safely =')+segment('let conditionScheduler=','let magicPriceRefresh='),c);
  return {c,card,lot,disk,scheduled,firstWrite,releaseWrite,start:()=>c.fetchConditionValue(card,lot,'mtg',()=>quoteCallbacks++,{source:'review'}),resolveQuote:()=>body.resolve({status:'available',quotes:[{condition:'Lightly Played',price:7.25,currency:'USD',priceStatus:'current',validUntil:new Date(Date.now()+86400000).toISOString()}]}),get networkCalls(){return networkCalls;},get writes(){return writes;},get quoteCallbacks(){return quoteCallbacks;},get homeRefreshes(){return homeRefreshes;}};
 }
 {

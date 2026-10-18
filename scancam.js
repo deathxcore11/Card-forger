@@ -337,7 +337,7 @@ const label = (list, v) => (list.find((x) => (Array.isArray(x) ? x[0] : x) === v
 // The defaults every scan uses. Each opens a glass dropdown with the full choices.
 const LANG_NAME = { en: "English", ja: "Japanese", de: "German", fr: "French", it: "Italian", es: "Spanish", pt: "Portuguese", ko: "Korean", zhs: "Chinese" };
 export function pickOptions(g, k) {
-  if (k === "finish") return FINISHES[g].map(([v, l]) => ({ v, l, sub: { nonfoil: "Non-foil", foil: "Traditional foil", etched: "Etched foil", normal: "No holo", holofoil: "Holo art", "reverse-holofoil": "Reverse holo", unlimited: "Unlimited print run", "1st-edition": "1st Edition stamp" }[v] }));
+  if (k === "finish") return FINISHES[g].map(([v, l]) => ({ v, l, sub: { nonfoil: "Non-foil", foil: "Traditional foil", etched: "Etched foil", normal: "No holo", holofoil: "Holo art", "reverse-holofoil": "Reverse holo", unlimited: "Unlimited print run", "1st-edition": "1st Edition stamp", limited:"Limited Edition stamp" }[v] }));
   if (k === "condition") return CONDITIONS.map(([v, l]) => ({ v, l, sub: v }));
   if (k === "lang") return LANGS.map(([v, l]) => ({ v, l, sub: LANG_NAME[v] }));
   return QTYS.map((n) => ({ v: n, l: "×" + n, sub: `${n} cop${n === 1 ? "y" : "ies"} per scan` }));
@@ -1669,7 +1669,11 @@ export function registerScanner(ctx) {
     editRow(t.dataset.k, (it, list) => {
       const G = game(),
         opts = finishesFor(G, it.cand);
+      if(!opts.length)return;
       it.finish = opts[(opts.indexOf(it.finish) + 1) % opts.length];
+      it.variantKey=it.finish;
+      it.productId=G==='ptcg'?(it.cand?.card?.variants||[]).find(v=>v.key===it.finish)?.productId||'':'';
+      if(it.cand?.printingSelection)it.cand={...it.cand,printingSelection:null};
       it.price = priceFor(G,it.cand,it.finish,it);
       // Merge with an identical row if the change made one.
       const twin = list.find((x) => x !== it && itemKey(x) === itemKey(it));

@@ -1,17 +1,18 @@
+import {ygoRarity} from './ygo-identity.js';
 import {referenceQuote} from './price-reference.js';
 // Exact Yu-Gi-Oh! set code + rarity + edition pricing from the daily TCGCSV feed.
 const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
-export const rarityKey=s=>norm(({ScR:'Secret Rare',StR:'Starlight Rare',UR:'Ultra Rare',SR:'Super Rare',R:'Rare',C:'Common',QCR:'Quarter Century Secret Rare'})[s] || s);
+export const rarityKey=s=>norm(ygoRarity(s));
 export function ygoProductMatches(set,products){
  return products.filter(p=>{
   const fields=Object.fromEntries((p.extendedData || []).map(x=>[norm(x.name),x.value]));
-  return norm(fields.number || fields.cardnumber)===norm(set.code) && rarityKey(fields.rarity)===rarityKey(set.rarity);
+  return !!rarityKey(set.rarity) && norm(fields.number || fields.cardnumber)===norm(set.code) && rarityKey(fields.rarity)===rarityKey(set.rarity);
  });
 }
 export function applyYgoPrices(card,body){
  if(body?.cardId!==card.id)return false;let changed=false;
  for(const s of card.sets || []){
-  const matches=(body.printings || []).filter(x=>x.code===s.code && rarityKey(x.rarity)===rarityKey(s.rarity));
+  const matches=(body.printings || []).filter(x=>!!rarityKey(s.rarity) && x.code===s.code && rarityKey(x.rarity)===rarityKey(s.rarity));
   if(matches.length!==1)continue;const q=matches[0];
   s.quotes=q.quotes;s.productId=q.productId;s.url=q.url;s.priceSource=body.source;s.checkedAt=body.updatedAt;
   // Edition-unspecified printing price is a reference only; exact edition quotes stay attached.

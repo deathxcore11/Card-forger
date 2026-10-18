@@ -164,7 +164,8 @@ export function validateDeck(deck, catalog, entries, decks = []) {
         : `${count} cards. ${f.name} needs at least ${target}; ${target - count} to go.`,
     });
   if (f.commander) {
-    if (!canLead(comm, f))
+    if(f.id==="paupercommander"&&comm&&typeof comm.pdhCommander!=="boolean")issues.push({kind:"unverified",text:"Commander eligibility has not been verified for Pauper Commander."});
+    else if (!canLead(comm, f))
       issues.push({
         kind: "commander",
         text: f.commander === "planeswalker" ? "Choose a planeswalker as your Oathbreaker." : `Choose a card that can lead a ${f.name} deck.`,
@@ -189,7 +190,9 @@ export function validateDeck(deck, catalog, entries, decks = []) {
         kind: "color",
         text: c.name + ": outside commander color identity.",
       });
-    const legal = legalityIn(m, f);
+    const leader=f.id==="paupercommander"&&cardKey(c.name)===cardKey(deck.commander);
+    const legal = leader?(m.pdhCommander===true?"legal":m.pdhCommander===false?"not_legal":null):legalityIn(m, f);
+    if(f.legality&&legal===null)issues.push({kind:"unverified",text:`${c.name}: legality data not loaded.`});
     if (legal === "banned" || legal === "not_legal")
       issues.push({
         kind: "legality",
@@ -209,7 +212,9 @@ export function validateDeck(deck, catalog, entries, decks = []) {
   for (const r of side) {
     const m = catalog[cardKey(r.name)];
     if (!m) { issues.push({ kind: "unverified", text: r.name + " (sideboard): card data not resolved." }); continue; }
-    const legal = legalityIn(m, f);
+    const leader=f.id==="paupercommander"&&cardKey(c.name)===cardKey(deck.commander);
+    const legal = leader?(m.pdhCommander===true?"legal":m.pdhCommander===false?"not_legal":null):legalityIn(m, f);
+    if(f.legality&&legal===null)issues.push({kind:"unverified",text:`${r.name}: legality data not loaded.`});
     if (legal === "banned" || legal === "not_legal")
       issues.push({ kind: "legality", text: `${r.name} (sideboard): ${legal === "banned" ? "banned" : "not legal"} in ${f.name}.` });
     const inMain = (deck.cards || []).filter((c) => cardKey(c.name) === cardKey(r.name)).reduce((a, c) => a + c.qty, 0);
