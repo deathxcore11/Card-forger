@@ -36,6 +36,10 @@ try{
   assert.equal(await page.evaluate(()=>window.__uiTestState.state.collection[0].qty),a.collection[0].qty);assert.deepEqual(await page.evaluate(()=>window.__accountFixture.model.rows.A.data),a);
   assert.deepEqual(await page.evaluate(()=>window.__accountFixture.model.writes),[]);
   const backup=await page.evaluate(async()=>{const r=await import('/storage.js');return r.readRecord('cardstashy-before-account-isolation-v1');});assert.deepEqual(backup.state.collection,a.collection.map(e=>({...e,raw:{}})),'legacy cards are preserved separately');assert.deepEqual(backup.state.settings.cardAvatar,a.settings.cardAvatar,'legacy artwork is preserved');
+  await page.locator('[data-nav="community"]:visible').first().click();await page.locator('.community-layout[aria-busy="false"]').waitFor();
+  for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'.community-page',`signed-in Community ${width}`);if([390,1440].includes(width))await capture(page,`synthetic-search-community-account-${width}`);}
+  assert.match(await page.locator('.community-avatar-open img').getAttribute('src'),/Gengar-A/,'Community renders the current account avatar');
+  assert.equal(await page.locator('[data-community-add]').count(),1);assert.deepEqual(await page.evaluate(()=>window.__accountFixture.model.writes),[]);
   app.health();console.log('PASS: browser A → sign out → B, immediate avatar clearing, paused edit/reload/offline/reconnect, account restore, preserved backup and 320–1440px settings');
  }catch(error){await capture(page,"synthetic-search-account-failure",{settle:false});throw error;}finally{await app.context.close();}
  // Independent clean browser contexts cannot inherit the first device's art.
