@@ -324,11 +324,12 @@ async function scenario(game){
   const card=page.locator('#sheet .cs-card .cd-img');await turn(page,40,12);
   assert(await card.evaluate(n=>n.classList.contains('gyro')&&n.style.getPropertyValue('--tx')!=='0deg'),'Actual first-open card responds to phone motion without zoom round trip');
   const session=await context.newCDPSession(page),box=await card.boundingBox();assert(box);
-  const x=box.x+box.width*.2,y=box.y+Math.min(box.height*.3,70);
+  const {x,y}=await card.evaluate(card=>{const r=card.getBoundingClientRect(),body=document.querySelector('#sheetBody').getBoundingClientRect(),rail=document.querySelector('#sheet .cs-tabs').getBoundingClientRect(),top=Math.max(r.top,body.top,rail.bottom),bottom=Math.min(r.bottom,body.bottom,innerHeight);if(bottom-top<44)throw Error('Card must expose a usable touch surface below navigation');return {x:r.left+r.width*.2,y:top+Math.min(70,(bottom-top)/2)};});
+  assert(await card.evaluate((card,{x,y})=>document.elementFromPoint(x,y)?.closest('.cd-img')===card,{x,y}),'Trusted touch hits the visible interactive card, not its sticky navigation');
   // The real touch stream targets the mounted artwork, then cancels, so it cannot
   // accidentally click Enlarge and mask the first-open regression.
   await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y,id:1}]});await frame(page);
-  const touch=await card.evaluate(n=>({tx:n.style.getPropertyValue('--tx'),shine:n.classList.contains('shine-once'),transform:getComputedStyle(n).transform}));assert.notEqual(touch.tx,'0deg');assert(!touch.shine);assert.notEqual(touch.transform,'none');
+  const touch=await card.evaluate(n=>({tx:n.style.getPropertyValue('--tx'),shine:n.classList.contains('shine-once'),tilting:n.classList.contains('tilting'),transform:getComputedStyle(n).transform}));assert(touch.tilting,'Trusted finger owns the card before the sensor sample');assert.notEqual(touch.tx,'0deg');assert(!touch.shine);assert.notEqual(touch.transform,'none');
   await turn(page,55,25);assert.equal(await card.evaluate(n=>n.style.getPropertyValue('--tx')),touch.tx,'Phone sample cannot steal transform from active finger');
   await session.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});await turn(page,60,30);assert(await card.evaluate(n=>n.classList.contains('gyro')));assert.equal(await page.locator('dialog.zoom').count(),0);
   // Reproduce the entrance-animation timing directly on the same real surface.

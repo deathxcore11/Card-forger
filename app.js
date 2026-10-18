@@ -1114,9 +1114,9 @@ const navigationStamp = () => ({ revision:navigation.revision, workspace:workspa
 const navigationCurrent = stamp => stamp.revision === navigation.revision && stamp.workspace === workspaceVisitRevision && stamp.game === T.game() && stamp.hash === location.hash;
 function rememberScroll() { if(activeEntry) { scrollMem.set(activeEntry.entryId,window.scrollY); if(scrollMem.size>100)scrollMem.delete(scrollMem.keys().next().value); } }
 function replaceEntry(entry) { history.replaceState({...history.state,cardstashy:entry},"",entry.route); }
-function gameChangeBlocked() {
+function gameChangeBlocked({allowCardSheet=false}={}) {
   const chooser=S.ui.sheetCtx?.type === "game";
-  return !!document.querySelector('#resetPassword')?.value || !!document.querySelector('#resetConfirm')?.value || !!document.querySelector('.tour, .zoom-overlay, [role="dialog"]') || [...document.querySelectorAll('dialog[open]')].some(d => !(chooser && d.id === "sheet") && !d.matches?.("dialog.cf-dialog.closing"));
+  return !!document.querySelector('#resetPassword')?.value || !!document.querySelector('#resetConfirm')?.value || !!document.querySelector('.tour, .zoom-overlay, [role="dialog"]') || [...document.querySelectorAll('dialog[open]')].some(d => !(d.id === "sheet" && (chooser || allowCardSheet && ["card","tcard"].includes(S.ui.sheetCtx?.type))) && !d.matches?.("dialog.cf-dialog.closing"));
 }
 function suspendGame(target, workspace = false, kind = "") {
   if(suspendedGame){
@@ -1192,10 +1192,10 @@ const navigation = createNavigationQueue({
 workspaceTransition = {
   begin(next, {kind = "replace"} = {}) {
     if(!navigationReady)return null;
-    if(gameChangeBlocked())throw Error("Close the current edit before replacing the workspace.");
     // Legacy/blank workspaces intentionally omit game; resolve like T.game()
     // without adding or rewriting a saved setting during adoption.
     const source=activeEntry?.game || T.game(), target=GAMES[next.settings?.game] ? next.settings.game : "mtg";
+    if(gameChangeBlocked({allowCardSheet:kind==="undo"&&source===target}))throw Error("Close the current edit before replacing the workspace.");
     if(!suspendGame(target,true,kind))throw Error("Finish saving your scans before replacing the workspace.");
     const ticket=navigation.pause(); workspaceVisitRevision++;
     const route=source===target ? {game:target,hash:activeEntry?.route || normalizeRoute(location.hash)} : gameSwitchRoute(gameContext(source),target);

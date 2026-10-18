@@ -179,6 +179,14 @@ for(const reason of ['disk','scan','dialog','account']) {
  h.c.document.querySelectorAll=selector=>selector==='dialog[open]'?[{matches:s=>s==='dialog.cf-dialog.closing'}]:[];
  await h.c.replaceWorkspace(next);aligned(h);assert.equal(h.S.state.settings.game,'mtg');
 }
+// Undo may keep a read-only card open, but never bypass an editor or another modal.
+{
+ const h=harness(),dialogs=[{id:'sheet',matches:()=>false}];
+ h.context.document.querySelectorAll=selector=>selector==='dialog[open]'?dialogs:[];
+ for(const type of ['card','tcard']){h.S.ui.sheetCtx={type};assert.equal(h.run('gameChangeBlocked()'),true);assert.equal(h.run('gameChangeBlocked({allowCardSheet:true})'),false);}
+ h.S.ui.sheetCtx={type:'own'};assert.equal(h.run('gameChangeBlocked({allowCardSheet:true})'),true);
+ h.S.ui.sheetCtx={type:'card'};dialogs.push({id:'settingsDialog',matches:()=>false});assert.equal(h.run('gameChangeBlocked({allowCardSheet:true})'),true);
+}
 // New user intent during adoption wins; old navigation writes cannot overwrite it.
 for(const fail of [false,true]) {
  const h=workspaceHarness('mtg','#set/source-only'),c=h.c,gate=deferred(),next=structuredClone(h.S.state);next.settings.game='ptcg';next.settings.authorName='Replacement';h.io.gate=gate;
