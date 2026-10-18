@@ -18,6 +18,9 @@ export const FINISH_MASKS = Object.freeze({
  'pk-base-art':'polygon(24% 11.8%,89.8% 11.8%,89.8% 51.6%,10.8% 51.6%,10.8% 18%,19% 18%,24% 14%)',
  'pk-base1-4-art':'inset(12% 10.3333% 48.3636% 11%)',
  'pk-base4-20-art':'inset(11.8788% 11.1667% 49.0909% 11.3333%)',
+ // Exact Neo Genesis Lugia illustration window, visually checked against source art.
+ // Approximation: no character silhouette, edition stamp or authenticity claim.
+ 'pk-neo1-9-art':'inset(12.1% 11.4% 48.8% 11.1%)',
  'pk-cel-art':'inset(9.5% 6.6% 51.3% 6.6%)',
  // Sword & Shield art window (734 × 1024 reference); reverse excludes its silver frame/caption too.
  'pk-swsh-art':'inset(9.8% 8% 52.5% 8%)',
@@ -77,6 +80,7 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
   // Base Set standard holo Pokemon have this illustration-only layout. Exclude promos/reprints.
   if(set==='base1'&&/^base1-(?:[1-9]|1[0-6])$/.test(c.id)&&physicalFinish==='holofoil')return preset(key,label,'ptcg-holo',[layer(c.id==='base1-4'?'pk-base1-4-art':'pk-base-art','holo')],FINISH_SOURCES.base);
   if(set==='base4'&&c.id==='base4-20'&&physicalFinish==='holofoil')return preset(key,label,'ptcg-holo',[layer('pk-base4-20-art','holo')],'https://api.tcgdex.net/v2/en/cards/base4-20');
+  if(set==='neo1'&&c.id==='neo1-9'&&physicalFinish==='holofoil')return {...preset(key,label,'ptcg-holo',[layer('pk-neo1-9-art','holo')],'https://api.tcgdex.net/v2/en/cards/neo1-9'),reason:'Simulated illustration-window holo'};
   // Deliberately bounded to the base Scarlet & Violet expansion, whose publisher guide is cited.
   if(['sv01','sv1'].includes(set)&&category==='pokemon'&&physicalFinish==='reverse-holofoil'&&['common','uncommon','rare'].includes(rarity))return preset(key,label,'ptcg-reverse',[layer('pk-sv-surround','tiles')],FINISH_SOURCES.pokemon);
   // Finish availability is still source-supplied. Layout identifies where that

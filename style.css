@@ -4617,3 +4617,6 @@ body[data-game="ygo"] .ask-launch{--ask-a:#b697ef;--ask-b:#697db5;--ask-c:#dbb26
 .community-profile-header{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 16%,var(--surface)),var(--surface-2))}
 
 .scan-selected-finish{display:grid;gap:3px;font-size:11px;color:var(--muted);flex:1}.scan-selected-finish b{font-size:14px;color:var(--text)}
+
+/* Keep exact-printing artwork exhaustion from collapsing the mini rail. */
+.card-printing-mini .printing-mini-art.img-missing{display:flex;width:88px;height:123px;align-items:center;justify-content:center;flex-direction:column;border-radius:5px;background:var(--surface-2);color:var(--muted)}

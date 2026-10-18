@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {miniPrintingMarkup} from './card-detail-extras.js';
+import {knownPokemonPlaceholder,artworkSources,handleArtworkError} from './artwork.js';
+const card={game:'ptcg',id:'neo1-9',name:'Lugia',set:{id:'neo1',name:'Neo Genesis',number:'9',total:111},image:'https://assets.tcgdex.net/en/neo/neo1/9/high.webp',imageLarge:'https://assets.tcgdex.net/en/neo/neo1/9/high.webp'};
+const html=miniPrintingMarkup({game:'ptcg',card,cards:[card],busy:true});
+assert.match(html,/data-art-sources=/);assert.match(html,/Loading more printing details/);assert.match(html,/Neo Genesis/);assert.match(html,/#9/);assert.doesNotMatch(html,/onerror=/);
+assert.match(miniPrintingMarkup({game:'ptcg',card,cards:[card],error:'network'}),/Some printings couldn’t load/);
+assert.match(miniPrintingMarkup({game:'ptcg',card,cards:[card],more:true}),/Showing a preview/);
+assert(knownPokemonPlaceholder('https://images.pokemontcg.io/me55c/29_hires.png'));
+assert(!knownPokemonPlaceholder('https://images.pokemontcg.io/me55c/28_hires.png'));
+assert(!artworkSources({game:'ptcg',id:'30th-c-029',image:'https://images.pokemontcg.io/me55c/29_hires.png'}).some(x=>x.includes('me55c/29')));
+const fallback=[];const image={dataset:{artSources:JSON.stringify(['https://a/1.png','https://a/2.png']),artIndex:'0'},className:'printing-mini-art',insertAdjacentHTML:(_,s)=>fallback.push(s)};
+handleArtworkError({target:image});assert.equal(image.src,'https://a/2.png');assert(!image.hidden);handleArtworkError({target:image});assert(image.hidden);assert.equal(fallback.length,1);assert.match(fallback[0],/Art unavailable/);handleArtworkError({target:image});assert.equal(fallback.length,1);
+console.log('PASS: mini printing exact art fallback, exhausted placeholder, known card-back quarantine and independent partial/error/loading states.');

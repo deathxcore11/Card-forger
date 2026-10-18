@@ -5,7 +5,7 @@ export function finishMaterialProfile(game,card,model){
  if(game==='mtg')return model.effect==='mtg-etched'?'etched':model.effect==='mtg-foil'?'traditional':'';
  if(game==='ygo')return model.effect==='ygo-starlight'?'starlight':model.effect;
  if(card.id==='base1-4'&&model.effect==='ptcg-holo')return 'classic-holo';
- if(card.id==='base4-20'&&model.effect==='ptcg-holo')return 'cosmos-holo';
+ if(['base4-20','neo1-9'].includes(card.id)&&model.effect==='ptcg-holo')return 'cosmos-holo';
  if(card.set?.id==='cel25'&&model.effect==='ptcg-holo')return 'line-holo';
  if(model.texture==='micro-ridges')return 'textured-holo';
  // The reviewed water pattern is confined to this known Sword & Shield layout.

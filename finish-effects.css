@@ -1,7 +1,10 @@
 /* Finish simulation belongs to the exact printing, never to the price tier. */
-.finish-preview{margin:.65rem 0;max-width:100%}
-.finish-preview>div{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.35rem}
-.finish-preview .chip{min-height:44px;white-space:normal}
+.finish-preview{margin:.65rem 0;width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+.finish-choice-rail{display:flex;flex-wrap:nowrap;gap:.35rem;margin-top:.35rem;padding:.15rem .1rem .35rem;width:100%;min-width:0;max-width:100%;box-sizing:border-box;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-behavior:auto;scrollbar-width:thin;scrollbar-color:var(--line,#686868) transparent}
+.finish-choice-rail .chip{flex:0 0 auto;min-height:44px;white-space:nowrap}
+.finish-choice-rail::-webkit-scrollbar{height:4px}
+.finish-choice-rail::-webkit-scrollbar-thumb{background:var(--line,#686868);border-radius:4px}
+.finish-choice-hint{float:right;font-size:.72rem}
 .finish-preview [aria-pressed="true"]{border-color:var(--accent,var(--gold));background:var(--surface2,var(--surface-2))}
 .finish-preview .foot{margin:.45rem 0}
 .cd-zoom,.zoom-card-surface,[data-finish-surface="large"]{position:relative}

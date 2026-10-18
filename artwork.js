@@ -21,9 +21,10 @@ export function pokemonFallback(c){
 }
 // These exact provider references were confirmed as card backs in the 3.84.2
 // audit (2026-10-18), even with HTTP 200. Quarantine those references only;
-// a genuine exact-printing alternative remains eligible. Recheck before removing.
+// me55c/29 was also confirmed as a card back in the 3.85.6 live review.
+// A genuine exact-printing alternative remains eligible. Recheck before removing.
 export function knownPokemonPlaceholder(url){
- return /^https:\/\/images\.pokemontcg\.io\/me55c\/(?:[1-9]|1[0-2])(?:_hires)?\.png(?:\?.*)?$/.test(String(url||''));
+ return /^https:\/\/images\.pokemontcg\.io\/me55c\/(?:[1-9]|1[0-2]|29)(?:_hires)?\.png(?:\?.*)?$/.test(String(url||''));
 }
 export function artworkSources(c,large=false){
  if(!c)return [];

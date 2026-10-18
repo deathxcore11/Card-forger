@@ -13,7 +13,25 @@ export function finishAttrs(game,c,ctx={},view='large'){
 }
 export function finishPreview(game,c,ctx={}){
  const choices=finishChoices(game,c,ctx),p=resolveFinish(game,c,ctx);
- return `<div class="finish-preview" role="group" aria-label="Card finish"><span class="small muted">Finish</span><div>${game==='ygo'&&!choices.length?'<button type="button" class="chip" data-act="cardTab" data-tab="prices">Choose printing</button>':''}${choices.map(v=>`<button type="button" class="chip" ${game==='ygo'?'':`data-act="cardFinishPreview" data-game="${esc(game)}" data-card-id="${esc(c.id)}" data-finish="${esc(v.key)}"`} aria-pressed="${v.key===p.key}">${esc(v.label)}</button>`).join('')}</div><p class="foot" role="status">${esc(p.effect==='plain'?'Nonfoil · no simulated shine':p.status==='unknown'?(game==='ygo'&&!choices.length?'Choose the set code and rarity to preview its finish.':'Finish preview unavailable for this printing.'):p.reason||'Simulated finish')}</p></div>`;
+ return `<div class="finish-preview" role="group" aria-label="Card finish"><span class="small muted">Finish</span><span class="finish-choice-hint small muted" hidden aria-hidden="true">Scroll ↔</span><div class="finish-choice-rail" tabindex="0" aria-label="Card finishes, scroll horizontally">${game==='ygo'&&!choices.length?'<button type="button" class="chip" data-act="cardTab" data-tab="prices">Choose printing</button>':''}${choices.map(v=>`<button type="button" class="chip" ${game==='ygo'?'':`data-act="cardFinishPreview" data-game="${esc(game)}" data-card-id="${esc(c.id)}" data-finish="${esc(v.key)}"`} aria-pressed="${v.key===p.key}">${esc(v.label)}</button>`).join('')}</div><p class="foot" role="status">${esc(p.effect==='plain'?'Nonfoil · no simulated shine':p.status==='unknown'?(game==='ygo'&&!choices.length?'Choose the set code and rarity to preview its finish.':'Finish preview unavailable for this printing.'):p.reason||'Simulated finish')}</p></div>`;
+}
+// Reveal a newly selected finish within its own rail, never by scrollIntoView
+// (which can move the card sheet or page). Repeated renders must respect swipes.
+const finishChoiceStates=new WeakMap();
+export function syncFinishChoiceRail(rail,{force=false}={}){
+ if(!rail||rail.isConnected===false)return;
+ const width=Number(rail.clientWidth)||0;
+ if(width<=0)return; // A hidden panel has no useful geometry yet.
+ const max=Math.max(0,(Number(rail.scrollWidth)||0)-width),overflow=max>1,
+   hint=rail.parentElement?.querySelector?.('.finish-choice-hint');
+ if(hint&&hint.hidden===overflow)hint.hidden=!overflow;
+ const selected=rail.querySelector?.('[aria-pressed="true"]'),previous=finishChoiceStates.get(rail);
+ finishChoiceStates.set(rail,{selected,width,max});
+ if(!selected||!overflow||(!force&&previous?.selected===selected&&previous.width===width&&previous.max===max))return;
+ const viewport=rail.getBoundingClientRect(),button=selected.getBoundingClientRect(),
+   left=viewport.left+(rail.clientLeft||0),right=left+width,
+   delta=button.width>width||button.left<left?button.left-left:button.right>right?button.right-right:0;
+ if(delta)rail.scrollLeft=Math.max(0,Math.min(max,(Number(rail.scrollLeft)||0)+delta));
 }
 // Object-fit: contain geometry in untransformed CSS pixels; the same parent transforms both layers.
 export function containedImageBox(width,height,naturalWidth,naturalHeight){
@@ -30,7 +48,7 @@ const attached=new WeakMap();
 export function attachFinishPreview(root){
  if(!root)return ()=>{};
  if(attached.has(root))return attached.get(root);
- const mounted=new Map(),watched=new Set(),cleanups=[];
+ const mounted=new Map(),watched=new Set(),choiceRails=new Set(),cleanups=[];
  const on=(el,type,fn,options)=>{el?.addEventListener?.(type,fn,options);cleanups.push(()=>el?.removeEventListener?.(type,fn,options));};
  const visible=el=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&r.bottom>0&&r.top<(globalThis.innerHeight||Infinity)&&r.right>0&&r.left<(globalThis.innerWidth||Infinity);};
  const foreground=el=>{const top=[...(globalThis.document?.querySelectorAll?.('dialog[open]')||[])].at(-1);return !top||top.contains(el);};
@@ -46,7 +64,7 @@ export function attachFinishPreview(root){
   if(ancestor!==host){if(!overlay.hidden)overlay.hidden=true;return;}
   Object.assign(overlay.style,{left:`${x+box.left}px`,top:`${y+box.top}px`,width:`${box.width}px`,height:`${box.height}px`});if(overlay.hidden)overlay.hidden=false;
  };
- const ro=typeof ResizeObserver==='undefined'?null:new ResizeObserver(entries=>{for(const [el,m] of mounted)if(entries.some(x=>x.target===m.img))size(el);});
+ const ro=typeof ResizeObserver==='undefined'?null:new ResizeObserver(entries=>{for(const [el,m] of mounted)if(entries.some(x=>x.target===m.img))size(el);for(const entry of entries)if(choiceRails.has(entry.target))syncFinishChoiceRail(entry.target);});
  const mount=el=>{
   if(!allowed(el)||!visible(el))return unmount(el);
   const p=modelOf(el),detail=['detail','zoom'].includes(el.dataset.finishSurface);if(!p.layers?.length&&!detail)return unmount(el);
@@ -70,6 +88,8 @@ export function attachFinishPreview(root){
  let pending=false;
  const sync=()=>{
   pending=false;
+  for(const rail of choiceRails)if(rail.isConnected===false){ro?.unobserve(rail);choiceRails.delete(rail);}
+  for(const rail of root.querySelectorAll?.('.finish-choice-rail')||[]){if(!choiceRails.has(rail)){choiceRails.add(rail);ro?.observe(rail);}syncFinishChoiceRail(rail);}
   for(const el of watched)if(!el.isConnected||!finishEligible(el)){io?.unobserve(el);watched.delete(el);unmount(el);}
   for(const el of root.querySelectorAll?.('[data-finish-surface]')||[]){
    if(!finishEligible(el))continue;
@@ -92,14 +112,14 @@ export function attachFinishPreview(root){
   };
   setInteraction();cleanups.push(()=>{for(const [type,options] of interactionEvents)root.removeEventListener?.(type,interact,options);});
   on(globalThis.document,'visibilitychange',sync);
-  on(globalThis,'resize',()=>{for(const el of mounted.keys())size(el);},{passive:true});
+  on(globalThis,'resize',()=>{for(const el of mounted.keys())size(el);for(const rail of choiceRails)syncFinishChoiceRail(rail,{force:true});},{passive:true});
   const media=globalThis.matchMedia?.('(prefers-reduced-motion: reduce)');on(media,'change',()=>{setInteraction();sync();});
   if(typeof MutationObserver!=='undefined'){
    const mo=new MutationObserver(records=>{if(records.some(r=>r.type==='attributes'||[...r.addedNodes,...r.removedNodes].some(n=>!n.classList?.contains('finish-overlay'))))queue();});
-   mo.observe(root===document?document.body:root,{childList:true,subtree:true,attributes:true,attributeFilter:['class','open','hidden','data-finish-model']});cleanups.push(()=>mo.disconnect());
+   mo.observe(root===document?document.body:root,{childList:true,subtree:true,attributes:true,attributeFilter:['class','open','hidden','data-finish-model','aria-pressed']});cleanups.push(()=>mo.disconnect());
   }
   sync();
  }
- const dispose=()=>{for(const fn of cleanups)fn();io?.disconnect();ro?.disconnect();for(const el of mounted.keys())unmount(el);watched.clear();attached.delete(root);};
+ const dispose=()=>{for(const fn of cleanups)fn();io?.disconnect();ro?.disconnect();for(const el of mounted.keys())unmount(el);watched.clear();choiceRails.clear();attached.delete(root);};
  attached.set(root,dispose);return dispose;
 }

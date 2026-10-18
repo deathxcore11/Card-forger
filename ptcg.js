@@ -3,7 +3,7 @@ import {pokemonPrintedName,pokemonPrintedNameKey} from './pokemon-identity.js';
 import {applyProductPrices} from "./pokemon-prices.js";
 import {POKEMON_SET_ART} from './pokemon-set-art.js';
 import {pokemonFallback} from "./artwork.js";
-import {pokemonCatalogueFallback,pokemonSupplementIds} from './pokemon-catalogue-supplement.js';
+import {pokemonCatalogueFallback,pokemonCatalogueOverlay,pokemonCatalogueSet} from './pokemon-catalogue-supplement.js';
 // Pokémon TCG adapter. Data: TCGdex (api.tcgdex.net) — every physical card and set,
 // Standard/Expanded legality, regulation marks, and daily TCGplayer (USD) and
 // Cardmarket (EUR) prices per variant. Pokémon TCG Pocket (digital) cards are excluded.
@@ -125,9 +125,51 @@ async function fillPricesNow(c) {
   }
 }
 
-// Newer TCGdex text carries markup for energy symbols ("<span class=\"energy-symbol Fire\" …>Fire</span>"):
-// keep the words, drop the tags.
-export const plainText = (t) => String(t ?? "").replace(/<span[^>]*\btitle="([^"]+)"[^>]*>[^<]*<\/span>/gi, "$1").replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&");
+// Energy icons may be empty/nested elements or images. Read only explicit,
+// recognized labels, never infer rules from an attack's cost or an icon URL.
+const ENERGY_WORDS = ['Grass','Fire','Water','Lightning','Psychic','Fighting','Darkness','Metal','Dragon','Colorless','Fairy'];
+function energyMarkupLabel(attributes) {
+  const labels = [...attributes.matchAll(/\b(?:title|alt|aria-label)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi)].map(m => m[1] ?? m[2] ?? m[3]);
+  for (const label of labels) {
+    const word = ENERGY_WORDS.find(w => new RegExp('^' + w + '(?: Energy)?$', 'i').test(label.trim()));
+    if (word) return word;
+  }
+  const classes = attributes.match(/\bclass\s*=\s*(?:"([^"]*)"|'([^']*)')/i);
+  const tokens = (classes?.[1] || classes?.[2] || '').split(/\s+/);
+  return tokens.includes('energy-symbol') ? ENERGY_WORDS.find(w => tokens.some(t => t.toLowerCase() === w.toLowerCase())) || '' : '';
+}
+export function plainText(t) {
+  let text = String(t ?? '').replace(/<img\b([^>]*)\/?\s*>/gi, (_, attributes) => energyMarkupLabel(attributes));
+  // Repeated passes handle a labelled icon nested inside an unlabelled span.
+  for (let i = 0; i < 4; i++) text = text.replace(/<(span|i|abbr|svg)\b([^>]*)>([\s\S]*?)<\/\1>/gi, (_, tag, attributes, body) => energyMarkupLabel(attributes) || body);
+  return text.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&');
+}
+
+const BROKEN_LUGIA_EFFECT = 'Discard a Energy card, a Energy card, and a Energy card attached to Lugia in order to use this attack.';
+const LUGIA_EFFECT = 'Discard a Fire Energy card, a Water Energy card, and a Lightning Energy card attached to Lugia in order to use this attack.';
+function normalizedAttack(card, attack) {
+  const sourceEffect = String(attack.effect ?? ''), effect = plainText(sourceEffect);
+  const corrected = card.id === 'neo1-9' && card.name === 'Lugia' && (!card.set?.id || card.set.id === 'neo1') &&
+    (!card.localId || /^0*9$/.test(String(card.localId))) && attack.name === 'Elemental Blast' && effect === BROKEN_LUGIA_EFFECT;
+  return {cost:attack.cost || [], name:attack.name, damage:attack.damage ?? '', effect:corrected ? LUGIA_EFFECT : effect,
+    sourceEffect, ...(corrected ? {effectProvenance:{source:'Neo Genesis 9/111 printed card',
+      url:'https://images.pokemontcg.io/neo1/9_hires.png',
+      corroboratedBy:'https://www.tcgcollector.com/cards/979/lugia-neo-genesis-9-111',
+      verified:'2026-10-18',correction:'Restored the printed Fire, Water and Lightning discard symbols.'}} : {}),
+    ...(!corrected && /\ba\s+Energy\b/.test(effect) ? {effectIncomplete:true} : {})};
+}
+
+const catalogueSets = new Map();
+function cardSet(c) {
+  // TCGdex's card ID is set-id plus a collector token. Keep zeros and prefixes;
+  // reject malformed/path-shaped IDs rather than inventing an unrelated set.
+  const parsed = String(c.id || '').match(/^([A-Za-z0-9][A-Za-z0-9.-]*)-([A-Za-z]*\d+[A-Za-z]?)$/);
+  const id = c.set?.id || parsed?.[1];
+  if (!id) return null;
+  const known = catalogueSets.get(id) || {}, set = pokemonCatalogueSet({...known,...c.set,id});
+  return {id, name:set.name || '', number:String(c.localId ?? c.set?.number ?? parsed?.[2] ?? ''),
+    total:set.cardCount?.official ?? set.total ?? set.count, symbol:set.symbol || '', releaseDate:set.releaseDate || set.date || ''};
+}
 export function normalizePtcg(c) {
   // TCGdex has no stage for many older EX/GX cards (Celebi-EX, Palkia GX). A Pokémon that
   // evolves from nothing is a Basic Pokémon.
@@ -154,18 +196,19 @@ export function normalizePtcg(c) {
   if (c.resistances?.length) stats.push(["Resistance", c.resistances.map((w) => w.type + " " + (w.value || "")).join(", ")]);
   if (c.retreat !== undefined) stats.push(["Retreat", c.retreat]);
   if (c.regulationMark) stats.push(["Regulation", c.regulationMark]);
+  const attacks = (c.attacks || []).map(a => normalizedAttack(c,a)), set = cardSet(c);
   const text = [
     ...(c.abilities || []).map((a) => `${a.type || "Ability"}: ${a.name}\n${plainText(a.effect)}`),
-    ...(c.attacks || []).map((a) => `[${(a.cost || []).join(" · ") || "—"}] ${a.name}${a.damage ? " — " + a.damage : ""}${a.effect ? "\n" + plainText(a.effect) : ""}`),
+    ...attacks.map((a) => `[${a.cost.join(" · ") || "—"}] ${a.name}${a.damage ? " — " + a.damage : ""}${a.effect ? "\n" + a.effect : ""}${a.effectIncomplete ? '\nRules text may be incomplete; check the printed card.' : ''}`),
     plainText(c.effect),
     c.description && !c.attacks ? plainText(c.description) : "",
   ].filter(Boolean).join("\n\n");
   return {
     game: "ptcg",
-    variantSchema: 9,
+    variantSchema: 10,
     priceFallbackSchema: 3,
     ...(c.catalogueProvenance?{catalogueProvenance:{...c.catalogueProvenance}}:{}),
-    released:c.set?.releaseDate || "",
+    released:set?.releaseDate || "",
     id: c.id,
     name: c.name,
     category: c.category || "Pokemon",
@@ -174,8 +217,8 @@ export function normalizePtcg(c) {
     stats,
     rarity: /^(none|null|unknown)$/i.test(c.rarity||"")?"":c.rarity || "",
     illustrator: c.illustrator || "",
-    set: c.set ? { id: c.set.id, name: c.set.name, number: c.localId, total: c.set.cardCount?.official, symbol: c.set.symbol || "" } : null,
-    sets: c.set ? [{ code: c.set.id + " " + c.localId, name: c.set.name, rarity: c.rarity, price: best?.usd ?? null }] : [],
+    set,
+    sets: set ? [{ code: set.id + " " + set.number, name: set.name, rarity: c.rarity, price: best?.usd ?? null }] : [],
     variants,
     prices: { usd: best?.usd ?? null, referenceKind:best?.priceKind||"market", eur: n(cm.trend) ?? n(cm.avg), others: [], source: "TCGplayer market (USD) · Cardmarket trend (EUR)", updated: tp.updated || cm.updated || null },
     cardmarket: { low: n(cm.low), avg: n(cm.avg), trend: n(cm.trend), avg30: n(cm.avg30), holoLow: n(cm["low-holo"]), holoAvg: n(cm["avg-holo"]), holoTrend: n(cm["trend-holo"]) },
@@ -185,7 +228,8 @@ export function normalizePtcg(c) {
     stage: c.stage || "",
     hp: c.hp || null,
     abilities: (c.abilities || []).map((a) => ({ type: a.type || "Ability", name: a.name, effect: plainText(a.effect) })),
-    attacks: (c.attacks || []).map((a) => ({ cost: a.cost || [], name: a.name, damage: a.damage ?? "", effect: plainText(a.effect) })),
+    attacks,
+    rulesIncomplete:attacks.some(a => a.effectIncomplete),
     effect: plainText(c.effect),
     weak: (c.weaknesses || []).map((w) => ({ type: w.type, value: w.value || "" })),
     resist: (c.resistances || []).map((w) => ({ type: w.type, value: w.value || "" })),
@@ -214,7 +258,15 @@ export function normalizePtcg(c) {
 
 // A search hit before details load (no price yet).
 const ptcgImageAsset = url => /\.(?:png|webp|jpe?g)(?:\?|$)/i.test(url) ? url : url+".webp";
-const brief = (c) => ({ game: "ptcg", id: c.id, name: c.name, image: ptcgImage(c.image, "low") || pokemonFallback(c), imageLarge: ptcgImage(c.image, "high") || pokemonFallback(c), brief: true, prices: {}, sets: [], stats: [], pocket: isPocket(c) });
+export function normalizePtcgBrief(c) {
+  const set = cardSet(c);
+  return {game:'ptcg',id:c.id,name:c.name,set,released:set?.releaseDate || '',
+    ...(c.category ? {category:c.category} : {}), ...(c.rarity ? {rarity:c.rarity} : {}),
+    ...(c.catalogueProvenance ? {catalogueProvenance:{...c.catalogueProvenance},variants:pokemonVariants(c)} : {}),
+    image:ptcgImage(c.image,'low') || pokemonFallback(c),imageLarge:ptcgImage(c.image,'high') || pokemonFallback(c),
+    brief:true,prices:{},sets:set ? [{code:set.id+' '+set.number,name:set.name,rarity:c.rarity,price:null}] : [],stats:[],pocket:isPocket(c)};
+}
+const brief = normalizePtcgBrief;
 
 export const PTCG_FORMATS = [
   { id: "standard", name: "Standard", legal: "standard", copies: 4 },
@@ -291,11 +343,11 @@ export const playSig = (c) => JSON.stringify([
   c.attacks || c.abilities ? "" : sigText(c.text),
 ]);
 const cheapMemo = new Map();
-// Candidate printings for the cheapest-printing check: TCGdex's own data only (no slow price
-// backfill); printings without a TCGdex price simply rank last.
+// Candidate printings for the cheapest-printing check: catalogue data only (no
+// slow price backfill); supplements with unknown prices simply rank last.
 const liteCards = new Map();
 const getCard = (id) => {
-  if (!liteCards.has(id)) liteCards.set(id, get("/cards/" + encodeURIComponent(id)).then((d) => (d ? normalizePtcg(d) : null)).catch(() => null));
+  if (!liteCards.has(id)) liteCards.set(id, get("/cards/" + encodeURIComponent(id)).then(d => d || pokemonCatalogueFallback(id)).then((d) => (d ? normalizePtcg(d) : null)).catch(() => null));
   return liteCards.get(id);
 };
 const SET_ALIAS = { rc: { from: "bw11", prefix: /^RC\d/ } };
@@ -338,6 +390,22 @@ const collectorKey = (number) => String(number ?? "").trim().toLowerCase().repla
 // Tournament exports sometimes omit "Basic" from the nine basic Energy types.
 // Normalize only that prefix: Special Energy and every set/number stay distinct.
 const printingName = value => String(value ?? '').normalize('NFC').trim().toLowerCase().replace(/^basic (?=(?:grass|fire|water|lightning|psychic|fighting|darkness|metal|fairy) energy$)/,'');
+const discoveryName = value => printingName(pokemonPrintedName(value));
+function supplementMatches(card, spec = {}) {
+  const {q = '',category = '',type = '',set = '',rarity = '',stage = '',hp = '',format = '',number = '',exactName = false} = normalizePtcgSearch(spec);
+  const query = discoveryName(q), name = discoveryName(card.name), f = PTCG_FORMATS.find(f => f.id === format);
+  if (query && !(exactName ? name === query : name.includes(query) || pokemonPrintedNameKey(card.name).includes(pokemonPrintedNameKey(q)))) return false;
+  if (set && String(card.set?.id).toLowerCase() !== String(set).toLowerCase()) return false;
+  if (number && collectorKey(card.localId) !== collectorKey(number)) return false;
+  if (category && card.category !== category) return false;
+  if (rarity && String(card.rarity).toLowerCase() !== String(rarity).toLowerCase()) return false;
+  if (type && !card.types?.includes(type)) return false;
+  if (stage && card.stage !== stage) return false;
+  if (Number(hp) > 0 && !(Number(card.hp) >= Number(hp))) return false;
+  if (format && !f) return false;
+  if (f && ptcgLegality(normalizePtcg(card),f) !== 'legal') return false;
+  return true;
+}
 // A name is not a printing identity. Keep this check shared by imports and
 // tournament matching, including when only one provider candidate is returned.
 export function ptcgPrintingMatches(card, row, set = card?.set) {
@@ -354,7 +422,7 @@ export const ptcgSource = {
   // TCGdex can't sort by release date, so fetch every match once, order it by each
   // set's real release order, and page through it here.
   async search(spec = {}) {
-    const { q = "", category = "", type = "", set = "", rarity = "", stage = "", hp = "", format = "", sort = "new", page = 0, size = 48, exactName = false } = normalizePtcgSearch(spec);
+    const { q = "", category = "", type = "", set = "", rarity = "", stage = "", hp = "", format = "", number = "", sort = "new", page = 0, size = 48, exactName = false } = normalizePtcgSearch(spec);
     // Empty search browses the complete physical-card catalogue, paged below.
     const p = {},
       legal = PTCG_FORMATS.find((f) => f.id === format)?.legal;
@@ -362,16 +430,17 @@ export const ptcgSource = {
     if (category) p.category = category;
     if (type) p.types = type;
     if (set) p["set.id"] = set;
+    if (number) p.localId = number;
     if (rarity) p.rarity = "eq:" + rarity;
     if (stage) p.stage = "eq:" + stage;
     if (Number(hp) > 0) p.hp = "gte:" + Number(hp);
     if (legal) p["legal." + legal] = "true";
-    const key = JSON.stringify(p);
+    const key = JSON.stringify([p,format,exactName]);
     if (!searchCache.has(key)) {
       if (!searchLoads.has(key)) {
         const pending = Promise.all([get("/cards", p), setRank()]).then(([d, rank]) => {
           if (d !== null && !Array.isArray(d)) throw Error("Pokémon card database returned an invalid list.");
-          const all = [...new Map((d || []).map(brief).filter(c => c.id && !c.pocket).map(c => [c.id, c])).values()];
+          const all = pokemonCatalogueOverlay(d || [],card => supplementMatches(card,{q,category,type,set,rarity,stage,hp,format,number,exactName})).map(brief).filter(c => c.id && !c.pocket && (!number || collectorKey(c.set?.number) === collectorKey(number)));
           searchCache.set(key, { all, rank });
         }).finally(() => searchLoads.delete(key));
         searchLoads.set(key, pending);
@@ -381,7 +450,7 @@ export const ptcgSource = {
     const { all, rank } = searchCache.get(key),
       setOf = (id) => id.slice(0, id.lastIndexOf("-")),
       num = (id) => parseInt(id.slice(id.lastIndexOf("-") + 1), 10) || 0,
-      nameKey = pokemonPrintedNameKey,
+      nameKey = discoveryName,
       family = exactName ? all.filter(card => nameKey(card.name) === nameKey(q)) : all,
       sorted = [...family].sort(sort === "name" ? (a, b) => a.name.localeCompare(b.name) || (rank.get(setOf(b.id)) ?? -1) - (rank.get(setOf(a.id)) ?? -1) || a.id.localeCompare(b.id) : (a, b) => (rank.get(setOf(b.id)) ?? -1) - (rank.get(setOf(a.id)) ?? -1) || num(a.id) - num(b.id) || a.id.localeCompare(b.id));
     return { cards: sorted.slice(page * size, (page + 1) * size), total: sorted.length, more: (page + 1) * size < sorted.length };
@@ -429,20 +498,19 @@ export const ptcgSource = {
   async byNameNumber(name, num) {
     name=pokemonPrintedName(name);
     num = String(num).trim();
-    const supplement=pokemonSupplementIds.map(pokemonCatalogueFallback).filter(c=>collectorKey(c.localId)===collectorKey(num)&&(!name||printingName(c.name).includes(printingName(name)))).map(brief);
-    const merged=hits=>[...new Map([...supplement,...hits].map(c=>[c.id,c])).values()];
+    const merged=hits=>pokemonCatalogueOverlay(hits,c=>supplementMatches(c,{q:name,number:num})).map(brief);
     const tries = [...new Set(/^\d+$/.test(num) ? [num, String(Number(num)), String(Number(num)).padStart(3, "0")] : [num, num.toUpperCase()])];
     for (const n of tries) {
       const d = (await get("/cards", { ...(name?{name}:{}), localId: n })) || [];
       // TCGdex matches localId loosely ("053" also finds "SWSH153"); keep exact numbers only.
-      const hits = d.map(brief).filter((c) => !c.pocket && collectorKey(c.id.slice(c.id.lastIndexOf("-") + 1)) === collectorKey(num));
+      const hits = d.filter((c) => !isPocket(c) && collectorKey(c.localId ?? c.set?.number ?? c.id.slice(c.id.lastIndexOf("-") + 1)) === collectorKey(num));
       if (hits.length) return merged(hits);
     }
-    return supplement;
+    return merged([]);
   },
   async byName(name) {
     const d = (await get("/cards", { name: "eq:" + name, "sort:field": "id", "sort:order": "DESC", "pagination:itemsPerPage": 20 })) || [];
-    const hit = d.map(brief).find((c) => !c.pocket);
+    const hit = pokemonCatalogueOverlay(d,c=>supplementMatches(c,{q:name,exactName:true})).map(brief).find((c) => !c.pocket);
     return hit ? this.get(hit.id) : null;
   },
   async sets() {
@@ -457,8 +525,10 @@ export const ptcgSource = {
       for(const st of sd.sets || []) enriched.set(st.id,{...st,series:sd.name,seriesDate:sd.releaseDate || "",order:order++});
     }
     return catalogue.filter(st => !/^(?:[A-Z]\d|P-A)/.test(st.id) && !NO_CARDS.has(st.id)).map((st,i) => {
-      const extra=enriched.get(st.id)||{}, art=POKEMON_SET_ART[st.id]||{}, data={...extra,...st};
-      return {id:st.id,name:st.name,code:st.id.toUpperCase(),count:data.cardCount?.total ?? data.cardCount?.official ?? 0,date:data.releaseDate || art.date || "",series:extra.series || art.series || "Other sets",seriesDate:extra.seriesDate || "",order:extra.order ?? i,image:data.logo ? ptcgImageAsset(data.logo) : art.logo || "",symbol:data.symbol ? ptcgImageAsset(data.symbol) : art.symbol || ""};
+      const extra=enriched.get(st.id)||{}, art=POKEMON_SET_ART[st.id]||{}, data=pokemonCatalogueSet({...extra,...st});
+      const result = {id:st.id,name:data.name,code:st.id.toUpperCase(),count:data.cardCount?.total ?? data.cardCount?.official ?? 0,date:data.releaseDate || art.date || "",series:extra.series || art.series || "Other sets",seriesDate:extra.seriesDate || "",order:extra.order ?? i,image:data.logo ? ptcgImageAsset(data.logo) : art.logo || "",symbol:data.symbol ? ptcgImageAsset(data.symbol) : art.symbol || ""};
+      catalogueSets.set(st.id,result);
+      return result;
     }).sort((a,b)=>String(b.date||b.seriesDate).localeCompare(String(a.date||a.seriesDate))||b.order-a.order);
 
   },
@@ -495,7 +565,11 @@ export const ptcgSource = {
       const parent = await get("/sets/" + alias.from);
       if (parent) d = { ...parent, cards: (parent.cards || []).filter((c) => alias.prefix.test(c.localId)) };
     }
-    return (d?.cards || []).map((c) => ({ ...brief({...c,set:{id:d.id,number:c.localId}}), set: { id: d.id, name: d.name, number: c.localId } }));
+    const release = pokemonCatalogueSet(d || set);
+    if (release?.id) catalogueSets.set(release.id,release);
+    return pokemonCatalogueOverlay((d?.cards || []).map(c => ({...c,set:{...release,...c.set}})),c => c.set?.id === set.id)
+      .map(brief).filter(c => !c.pocket)
+      .sort((a,b) => String(a.set?.number || '').localeCompare(String(b.set?.number || ''),undefined,{numeric:true}) || a.id.localeCompare(b.id));
   },
   // The same card at the lowest cost: reprints and alternate arts with the same name and the same
   // game text (HP, attacks, abilities, retreat, rules) play identically, so a deck only needs the
@@ -507,7 +581,8 @@ export const ptcgSource = {
     const run = (async () => {
       // Basic Energy is named both "Water Energy" and "Basic Water Energy" depending on the set.
       const names = card.basicEnergy ? [card.name.replace(/^Basic /, ""), "Basic " + card.name.replace(/^Basic /, "")] : [card.name];
-      const briefs = (await Promise.all(names.map((n) => get("/cards", { name: "eq:" + n }).catch(() => [])))).flat().filter((c) => c && !isPocket(c) && c.id !== card.id),
+      const upstream = (await Promise.all(names.map((n) => get("/cards", { name: "eq:" + n }).catch(() => [])))).flat(),
+        briefs = pokemonCatalogueOverlay(upstream,c => names.some(q => supplementMatches(c,{q,exactName:true}))).filter((c) => c && !isPocket(c) && c.id !== card.id),
         rank = await setRank(),
         setOf = (id) => id.slice(0, id.lastIndexOf("-"));
       briefs.sort((a, b) => (rank.get(setOf(b.id)) ?? -1) - (rank.get(setOf(a.id)) ?? -1));
