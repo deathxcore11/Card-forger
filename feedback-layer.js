@@ -10,7 +10,7 @@ export function feedbackHost(doc=document){
 }
 export function mountFeedback(node){
  if(!globalThis.document?.body||!node)return node;
- managed.add(node);const move=()=>{const host=feedbackHost();for(const el of managed){if(el.dataset.feedbackDone==='true'){managed.delete(el);continue;}if(el.parentElement!==host)host.append?.(el);}};
+ managed.add(node);const move=()=>{const host=feedbackHost();for(const el of managed){if(el.dataset.feedbackDone==='true'){managed.delete(el);continue;}const target=el.id==='toast'&&host===document.body?(document.getElementById('app')||host):host;if(el.parentElement!==target)target.append?.(el);}};
  move();
  if(!observing&&globalThis.MutationObserver){observing=true;new MutationObserver(records=>{for(const r of records){if(r.type==='attributes'&&r.target.tagName==='DIALOG'&&r.target.open)order.set(r.target,++serial);for(const n of r.addedNodes||[])if(n.nodeType===1){if(n.matches?.('dialog[open]'))order.set(n,++serial);for(const d of n.querySelectorAll?.('dialog[open]')||[])order.set(d,++serial);}}move();}).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['open']});}
  return node;

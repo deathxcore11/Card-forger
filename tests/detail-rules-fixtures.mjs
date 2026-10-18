@@ -234,7 +234,7 @@ export function collectionRowGeometry(n){
   while((text=walker.nextNode())){
    let meta=null;for(let p=text.parentElement;p&&p!==target;p=p.parentElement)if(p.namespaceURI==='http://www.w3.org/2000/svg'&&['title','desc'].includes(p.localName)){meta=p;break;}
    if(meta){metadata.add(meta.ownerSVGElement);continue;}
-   for(const word of text.textContent.matchAll(/[\p{L}\p{N}]+/gu)){if(word[0].length<3)continue;words++;const range=document.createRange();range.setStart(text,word.index);range.setEnd(text,word.index+word[0].length);const rects=[...range.getClientRects()].filter(r=>r.width&&r.height),rows=new Set(rects.map(r=>Math.round(r.top)));if(!rects.length||rows.size>1||rects.some(r=>r.left<bound.left-2||r.right>bound.right+2||r.top<bound.top-2||r.bottom>bound.bottom+2))bad.push({word:word[0],rects:rects.map(r=>r.toJSON()),bound:bound.toJSON()});}
+   for(const word of text.textContent.matchAll(/[\p{L}\p{N}]+/gu)){if(word[0].length<3&&!target.matches('.condition-badge'))continue;words++;const range=document.createRange();range.setStart(text,word.index);range.setEnd(text,word.index+word[0].length);const rects=[...range.getClientRects()].filter(r=>r.width&&r.height),rows=new Set(rects.map(r=>Math.round(r.top)));if(!rects.length||rows.size>1||rects.some(r=>r.left<bound.left-2||r.right>bound.right+2||r.top<bound.top-2||r.bottom>bound.bottom+2))bad.push({word:word[0],rects:rects.map(r=>r.toJSON()),bound:bound.toJSON()});}
   }
  }
  for(const icon of metadata){

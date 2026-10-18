@@ -112,7 +112,7 @@ assert.equal(await row.count(),1,'The real Collection fixture includes its condi
      // created an implicit fourth symbols track and stretched their steppers.
      for(const item of original.filter(item=>batch||item.note)){
       const geometry=await measureRow(item,mode,batch,width,!!item.note&&!batch&&width===320);
-      assert(geometry.words>=(item.note?5:1),'Actual printing/edition, condition, value and action words are audited');assert.deepEqual(geometry.bad,[],`${game} ${mode} ${width} ${item.id}: real visible words fit intact ${JSON.stringify(geometry)}`);
+      assert(geometry.words>=1,'Visible printing, condition badge, value and action text is audited; full condition details are checked in the tooltip');assert.deepEqual(geometry.bad,[],`${game} ${mode} ${width} ${item.id}: real visible words fit intact ${JSON.stringify(geometry)}`);
       assert.equal(!!geometry.mark,batch);assert.equal(!!geometry.art,mode==='compact');
       const columns=(mode==='compact'?2:1)+(batch?1:0)+(width>480?1:0);assert.equal(geometry.cols,columns,'Narrow rows retain only the correct explicit artwork/batch columns; wide layout is unchanged');
       assert(Number.isFinite(geometry.contentWidth)&&geometry.contentWidth>0,'Measure the actual row content box, not the viewport or a collapsed intrinsic track');

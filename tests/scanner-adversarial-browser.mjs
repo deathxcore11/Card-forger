@@ -94,7 +94,7 @@ async function validatePhotoCropHandlers(){
  assert(readStart>=0&&readEnd>readStart&&freezeStart>=0&&freezeEnd>freezeStart&&lifecycleStart>=0&&lifecycleEnd>lifecycleStart);
  const st={url:'fixture:public-card',crop:null},rect={left:20,top:30,width:500,height:700},box={hidden:true,style:{}},wrap={getBoundingClientRect:()=>rect,setPointerCapture:()=>{}};
  const packets=[],canvas=()=>({width:0,height:0,getContext:()=>({drawImage(){}})});let decode;
- const scope={A:{},s:()=>st,game:()=> 'mtg',S:{ui:{view:'scan'}},CAPTURE_MAX_EDGE:1280,document:{getElementById:id=>id==='cropWrap'?wrap:box,createElement:canvas},loadImage:()=>new Promise(resolve=>{decode=resolve;}),autoBox:()=>null,preserveWholeCardPhoto:()=>true,enqueueCapture:packet=>{packets.push(packet);return true;},toast:message=>{throw Error(message);}};
+ const scope={ctx:{I:{}},A:{},s:()=>st,game:()=> 'mtg',S:{ui:{view:'scan'}},CAPTURE_MAX_EDGE:1280,document:{getElementById:id=>id==='cropWrap'?wrap:box,createElement:canvas},loadImage:()=>new Promise(resolve=>{decode=resolve;}),autoBox:()=>null,preserveWholeCardPhoto:()=>true,enqueueCapture:packet=>{packets.push(packet);return true;},toast:message=>{throw Error(message);}};
  // Keep the real visit-lifecycle guard alongside the extracted read/crop handlers.
  runInNewContext(source.slice(lifecycleStart,lifecycleEnd)+source.slice(freezeStart,freezeEnd).replace('export ','')+source.slice(readStart,readEnd)+';this.attachCrop=attachCrop;',scope);
  const image={naturalWidth:1000,naturalHeight:1400};

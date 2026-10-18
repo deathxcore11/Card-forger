@@ -30,14 +30,14 @@ try{
   await page.reload();await page.locator('#app.ready').waitFor();await ready(page,'B');await page.waitForFunction(async()=>!!(await import('/cloud.js')).cloudInfo().pending);await later(page);
   await page.evaluate(async()=>{window.__uiTestState=(await import('/store.js')).S;});assert.equal(await page.evaluate(()=>window.__uiTestState.state.collection[0].qty),5);assert.match(await avatar(page).getAttribute('src'),/Mew-B/);
   await page.locator('[data-act="menu"]').click();
-  for(const width of [320,390,768,1024,1440]){await page.setViewportSize({width,height:900});await noOverflow(page,'#settingsDialog',`account settings ${width}`);if([390,768,1440].includes(width))await capture(page,`synthetic-account-settings-${width}`);}
+  for(const width of [320,390,768,1024,1440]){await page.setViewportSize({width,height:900});await noOverflow(page,'#settingsDialog',`account settings ${width}`);if([390,768,1440].includes(width))await capture(page,`synthetic-search-account-settings-${width}`);}
   await page.locator('[data-act="closeSettings"]').click();
   await page.evaluate(()=>window.__accountFixture.switch('A'));await ready(page,'A');await page.waitForFunction(()=>document.querySelector('.topbar .profile-avatar img')?.src.includes('Gengar-A'));
   assert.equal(await page.evaluate(()=>window.__uiTestState.state.collection[0].qty),a.collection[0].qty);assert.deepEqual(await page.evaluate(()=>window.__accountFixture.model.rows.A.data),a);
   assert.deepEqual(await page.evaluate(()=>window.__accountFixture.model.writes),[]);
   const backup=await page.evaluate(async()=>{const r=await import('/storage.js');return r.readRecord('cardstashy-before-account-isolation-v1');});assert.deepEqual(backup.state.collection,a.collection,'legacy cards are preserved separately');assert.deepEqual(backup.state.settings.cardAvatar,a.settings.cardAvatar,'legacy artwork is preserved');
   app.health();console.log('PASS: browser A → sign out → B, immediate avatar clearing, paused edit/reload/offline/reconnect, account restore, preserved backup and 320–1440px settings');
- }finally{await app.context.close();}
+ }catch(error){await capture(page,"synthetic-search-account-failure",{settle:false});throw error;}finally{await app.context.close();}
  // Independent clean browser contexts cannot inherit the first device's art.
  for(const id of ['A','B']){
   const clean={...structuredClone(fixture),user:{id,email:id+'@example.invalid'},storage:{'cardforge-v2':blank()},writes:[]};

@@ -1199,17 +1199,18 @@ workspaceTransition = {
     if(!suspendGame(target,true,kind))throw Error("Finish saving your scans before replacing the workspace.");
     const ticket=navigation.pause(); workspaceVisitRevision++;
     const route=source===target ? {game:target,hash:activeEntry?.route || normalizeRoute(location.hash)} : gameSwitchRoute(gameContext(source),target);
-    return {ticket,source,route};
+    return {ticket,source,route,undoSheet:kind==="undo"&&source===target&&["card","tcard"].includes(S.ui.sheetCtx?.type)?sheetSnapshot():null};
   },
   finished(transition) {
     if(!transition)return;
-    const {ticket,route}=transition;
+    const {ticket,route,undoSheet}=transition;
     // A newer user tab/link/traversal owns the destination. It must apply against
     // the adopted workspace, not let an older game write revive prior settings.
     try {
       if(!navigation.hasNewer(ticket)) {
         clearGameContext(); entryOrigins.clear();
         installNavigation({...route,mode:"workspace",entry:makeEntry(route.game,route.hash,activeEntry?.index || 0)});
+        if(undoSheet)restoreSheet(undoSheet);
       }
     } finally {navigation.resume(ticket,true);}
   },

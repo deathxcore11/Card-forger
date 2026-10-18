@@ -7,13 +7,13 @@ try{
   const app=await openSearchApp(browser,server.base,{game,width:390}),{page}=app;
   try{
    const before=await inventorySnapshot(page),card=CARDS[game].find(c=>c.id===PRINT_IDS[game]);
-   await page.evaluate(({game,card})=>{const b=document.createElement('button');b.id='qa-open-card';b.textContent='Open fixture card';Object.assign(b.dataset,{act:game==='mtg'?'card':'tCard',name:card.name,id:card.id});document.body.append(b);},{game,card});
+   await page.evaluate(({game,card})=>{const b=document.createElement('button');b.id='qa-open-card';b.textContent='Open fixture card';Object.assign(b.dataset,{act:game==='mtg'?'card':'tCard',name:card.name,id:card.id});document.querySelector("#content").prepend(b);},{game,card});
    await page.locator('#qa-open-card').click();
    for(const width of [320,390,768,1440]){
     await page.setViewportSize({width,height:1000});await page.locator('.cs-card').waitFor();
     const layout=await page.locator('.cs-card').evaluate(root=>{const art=root.querySelector('.cd-art-stack').getBoundingClientRect(),side=root.querySelector('.cs-card-side').getBoundingClientRect(),panel=root.closest('.cs-panel');return {width:panel.clientWidth,columns:getComputedStyle(root).gridTemplateColumns.split(' ').length,art:art.toJSON(),side:side.toJSON(),actions:!!root.querySelector('.cs-card-side .card-actions')};});
     assert(layout.actions,'Ownership and actions stay beside the full card');assert.equal(layout.columns,layout.width<=600?1:2);assert(layout.width<=600?layout.side.top>=layout.art.bottom:layout.side.left>=layout.art.right);await noOverflow(page,'#sheetBody',`${game} Overview ${width}`);
-    await page.locator('.cs-card').scrollIntoViewIfNeeded();await capture(page,`synthetic-overview-${game}-${width}`);
+    await page.locator('.cs-card').scrollIntoViewIfNeeded();await capture(page,`synthetic-search-overview-${game}-${width}`);
    }
    assert.equal(await page.locator('.cs-tabs [role="tab"]').count(),6);assert.equal(await page.locator('#card-tab-legal').count(),0);await page.locator('#card-tab-rulings').click();await page.locator('#card-panel-rulings h3').filter({hasText:'Format legality'}).waitFor();assert(await page.locator('#card-panel-rulings h3').filter({hasText:'Official rulings'}).isVisible());
    await page.locator('#card-tab-versions').click();
@@ -25,7 +25,7 @@ try{
    for(const width of [320,390,768,1024,1440,390]){
     await page.setViewportSize({width,height:900});await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
     await noOverflow(page,'.printing-picker-controls',`${game} carousel controls ${width}`);assert(await center()<3,'selected card stays centered through fold/resize');
-    if([390,768,1440].includes(width))await capture(page,`synthetic-carousel-${game}-${width}`);
+    if([390,768,1440].includes(width))await capture(page,`synthetic-search-carousel-${game}-${width}`);
    }
    await page.locator('[data-act="printingPickerStep"][data-d="1"]').click();await page.waitForFunction(()=>document.querySelector('[data-printing-position]').textContent.startsWith('2 /'));
    await page.locator('.printing-carousel').focus();await page.keyboard.press('Home');await page.waitForFunction(()=>document.querySelector('[data-printing-position]').textContent.startsWith('1 /'));

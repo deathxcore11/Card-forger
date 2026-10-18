@@ -34,11 +34,11 @@ export function attachConditionInfo(root=document){
   tip.style.top=Math.max(8,Math.min(vh-h-8,r.top>=h+14?r.top-h-8:r.bottom+8))+'px';
  };
  root.addEventListener('pointerover',e=>{const b=e.target.closest?.('[data-condition-info]');if(b?.dataset?.conditionInfo&&e.pointerType!=='touch')show(b);});
- root.addEventListener('pointerout',e=>{if(!pinned&&anchor&&!anchor.contains(e.relatedTarget)&&!tip?.contains(e.relatedTarget))close();});
+ root.addEventListener('pointerout',e=>{if(!pinned&&anchor&&root.activeElement!==anchor&&!anchor.contains(e.relatedTarget)&&!tip?.contains(e.relatedTarget))close();});
  root.addEventListener('focusin',e=>{const b=e.target.closest?.('[data-condition-info]');if(b?.dataset?.conditionInfo)show(b);else if(!pinned)close();});
  root.addEventListener('click',e=>{const b=e.target.closest?.('[data-condition-info]');if(b?.dataset?.conditionInfo){if(anchor===b&&pinned)close();else show(b,true);}else if(!tip?.contains(e.target))close();});
  root.addEventListener('keydown',e=>{if(e.key==='Escape'&&tip){e.preventDefault();e.stopPropagation();close();}},true);
- root.addEventListener('scroll',close,true);window.addEventListener('resize',close);
+ root.addEventListener('scroll',()=>{if(anchor?.isConnected&&root.activeElement===anchor)show(anchor);else close();},true);window.addEventListener('resize',close);
  return close;
 }
 export function conditionPriceHtml(price,entry={},quotes=[],lookup={}){
