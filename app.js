@@ -5667,7 +5667,6 @@ async function boot() {
   await navigate({game:latest?.game || T.game(),hash:normalizeRoute(location.hash),entry:latest || makeEntry(T.game(),normalizeRoute(location.hash),0),mode:"boot"});
   render();
   observeShellHeader();
-  $("#app").classList.add("ready");
   let accountOpenedOnce=false;
   initCloud({
     accountChanged: () => {
@@ -5725,7 +5724,7 @@ async function boot() {
     },
     // A conflict stays safely paused until the user opens Account settings.
     decide: () => { if(settingsPopup.isOpen)settingsPopup.refresh();else if(S.ui.view==="settings")render(); },
-  }).catch(() => {});
+  }).catch(() => {}).finally(() => $("#app").classList.add("ready"));
   window.addEventListener('storage',async event=>{
     if(event.key!=='cardstashy-workspace-changed'||accountLocked)return;
     if(!await accountWorkspaces.current()){

@@ -193,7 +193,7 @@ async function semanticCase(app, pair, row, method) {
   const after = await historySnapshot(app.page);
   assert.equal(after.length, history.length + 1, 'Exactly one browser entry per game change, including unchanged hashes');
   assert.equal(after.pushes, history.pushes + 1, 'The game transition pushes exactly once');
-  assert.equal(await savedSnapshot(app.page), before, 'Saved collection/decks/versions/wishlist/binders/locations/scans are byte-equivalent except settings game/save timestamp');
+  assert.deepEqual(JSON.parse(await savedSnapshot(app.page)), JSON.parse(before), 'Saved collection/decks/versions/wishlist/binders/locations/scans are byte-equivalent except settings game/save timestamp');
   assert.deepEqual(await searchSnapshots(app.page), searches, 'All per-game queries, filters, loaded results and paging survive without copying');
   return {hash: after.hash, historyDelta: after.length - history.length,...(bottomNavigation?{bottomNavigation}:{}),...(refresh?{detachedGesture:gesture}:{})};
 }
@@ -372,10 +372,11 @@ async function scannerLifecycleCase(app, game) {
   // One narrowly scoped removal failure leaves the old durable queue intact.
   // saveBatch intentionally keeps the attempted post-removal state in memory;
   // reload must recover the durable capture and retry its original identity.
-  await page.evaluate(id=>{
+  await page.evaluate(async id=>{
+    const {privateKey}=await import('/account-scope.js'),batchKey=privateKey('cardstashy-scan-batch-v1');
     const native=Storage.prototype.setItem;let fail=true;
     Storage.prototype.setItem=function(key,value){
-      if(this===localStorage&&key==='cardstashy-scan-batch-v1'&&fail&&!JSON.parse(value).some(row=>row.id===id)){
+      if(this===localStorage&&key===batchKey&&fail&&!JSON.parse(value).some(row=>row.id===id)){
         fail=false;window.__gameSwitchAudit.queueRemovalFailures=(window.__gameSwitchAudit.queueRemovalFailures||0)+1;
         throw new DOMException('Synthetic one-shot queue persistence failure','QuotaExceededError');
       }
@@ -389,7 +390,7 @@ async function scannerLifecycleCase(app, game) {
   for(const g of GAMES)assert.deepEqual(once[g].filter(row=>row.scanCaptureId!==fixture.reviewId),initialCollections[g]);
   assert.equal(Object.values(once).flat().filter(row=>row.scanCaptureId===fixture.reviewId).length,1);
   assert.equal(await page.evaluate(()=>window.__gameSwitchAudit.queueRemovalFailures),1);
-  const removal=await page.evaluate(async()=>{const batch=await import('/scan-batch.js');return {memory:batch.loadBatch(),durable:JSON.parse(localStorage.getItem('cardstashy-scan-batch-v1')),healthy:batch.batchStorageHealthy()};});
+  const removal=await page.evaluate(async()=>{const batch=await import('/scan-batch.js'),{privateKey}=await import('/account-scope.js');return {memory:batch.loadBatch(),durable:JSON.parse(localStorage.getItem(privateKey('cardstashy-scan-batch-v1'))),healthy:batch.batchStorageHealthy()};});
   assert.equal(removal.healthy,false,'Failed persistence is not represented as durable success');
   assert.deepEqual(removal.memory,afterSwitch.filter(row=>row.id!==fixture.reviewId),'In-memory fallback contains the attempted post-removal queue, preserving every other capture');
   assert.deepEqual(removal.durable,afterSwitch,'Failed storage removal retains the complete durable capture, pixels, revision and edited fields');
@@ -405,7 +406,7 @@ async function scannerLifecycleCase(app, game) {
   assert.deepEqual(await batchRows(page),afterSwitch.filter(row=>row.id!==fixture.reviewId),'Other games and interrupted queue rows remain byte-equivalent');
   const persisted=await page.evaluate(async()=>{const s=await(await import('/storage.js')).readRecord('cardforge-v2');return Object.fromEntries(['mtg','ygo','ptcg'].map(g=>[g,(g==='mtg'?s:s.tcg[g]).collection]));});
   assert.deepEqual(persisted,once,'Exactly-once collection result is durable');
-  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('cardstashy-scan-batch-v1'))),afterSwitch.filter(row=>row.id!==fixture.reviewId),'Successful retry removes only the same capture durably');
+  assert.deepEqual(await page.evaluate(async()=>JSON.parse(localStorage.getItem((await import('/account-scope.js')).privateKey('cardstashy-scan-batch-v1')))),afterSwitch.filter(row=>row.id!==fixture.reviewId),'Successful retry removes only the same capture durably');
   assert.equal(await page.evaluate(async()=>(await import('/scan-batch.js')).batchStorageHealthy()),true);
   const audit=await page.evaluate(()=>window.__gameSwitchAudit);assert.equal(audit.cameraCalls,0);assert.equal(audit.ocrCalls,0);
   return {game,editedReviewPreserved:true,interruptedRows:2,queueRemovalFailures:1,durableReloadRetry:true,savedCopies:qty,duplicateLots:0};

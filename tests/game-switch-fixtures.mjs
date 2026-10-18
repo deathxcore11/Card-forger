@@ -329,7 +329,8 @@ export async function savedSnapshot(page) {
   return page.evaluate(async () => {
     const pick = state => {const s = structuredClone(state); delete s.settings.game; delete s.lastSavedAt; return s;};
     const S = window.__uiTestState, saved = await (await import('/storage.js')).readRecord('cardforge-v2');
-    const scan = Object.fromEntries(Object.keys(localStorage).filter(k => k.startsWith('cardstashy-scan-session-v1-') || k === 'cardstashy-scan-batch-v1' || k === 'cardstashy-scan-prefs-v1').sort().map(k => [k, localStorage.getItem(k)]));
+    const {privateKey}=await import('/account-scope.js');
+    const scan = Object.fromEntries(['cardstashy-scan-batch-v1','cardstashy-scan-prefs-v1',...['mtg','ptcg','ygo'].map(g=>'cardstashy-scan-session-v1-'+g)].map(k=>[k,localStorage.getItem(privateKey(k))]));
     return JSON.stringify({state: pick(S.state), saved: pick(saved), scan});
   });
 }

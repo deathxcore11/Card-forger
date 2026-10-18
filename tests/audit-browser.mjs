@@ -25,8 +25,9 @@ try{
   await page.waitForFunction(async()=>{const c=(await import('/cloud.js')).cloudInfo();return !c.switching&&!!c.authNotice;});
   assert.equal(await page.locator('.account-opening').count(),0);
   assert.equal(await page.evaluate(()=>window.__uiTestState.state.collection.length),0,'SDK failure opens the separate guest workspace, never the prior owner');
+  assert.equal(await page.evaluate(async()=> (await (await import('/storage.js')).readRecord('cardstashy-workspace-v1:A'))?.state?.collection?.length),original.collection.length,'SDK failure preserves the owner archive before retry');
   await capture(page,'synthetic-search-sdk-failure-guest');
-  fixture.sdkFailure=false;await page.reload();
+  fixture.sdkFailure=false;await page.reload();await page.locator('#app.ready').waitFor();
   await page.waitForFunction(async()=>{const c=(await import('/cloud.js')).cloudInfo();return !c.switching&&c.user?.id==='A';});
   assert.equal(await page.evaluate(async()=> (await import('/store.js')).S.state.collection.length),original.collection.length,'retry restores the preserved owner workspace');
   console.log('PASS: blocked SDK recovers to a usable private guest workspace and reload retry restores the account.');
