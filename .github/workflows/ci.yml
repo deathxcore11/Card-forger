@@ -73,9 +73,6 @@ jobs:
       - name: Test account isolation, paused sync and responsive profile UI
         if: ${{ !cancelled() }}
         run: node tests/account-browser.mjs
-      - name: Test editable deck boxes and navigation animation
-        if: ${{ !cancelled() }}
-        run: node tests/deck-box-browser.mjs
       - name: Test ownership controls and condition values in the real app
         if: ${{ !cancelled() }}
         run: node tests/owned-browser.mjs
@@ -340,3 +337,25 @@ jobs:
         with:
           name: responsive-card-browser-evidence
           path: test-results/card-responsive-*
+
+  deck-box-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install pinned browser test runner
+        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - name: Install test browser
+        run: npx playwright install --with-deps chromium
+      - name: Test editable deck boxes and navigation animation
+        run: node tests/deck-box-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deck-box-browser-evidence
+          path: test-results/synthetic-search-deck-box-*
