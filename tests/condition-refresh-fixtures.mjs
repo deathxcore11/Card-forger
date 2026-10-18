@@ -1,3 +1,4 @@
+import {openCapturedCard} from './scanner-review-controls.mjs';
 // Synthetic condition refresh helpers. Importing/validating this module starts
 // no browser, server, OCR, provider request, or camera. Existing Search fixtures
 // supply the real app shell and fail-closed network routing.
@@ -91,7 +92,7 @@ export async function seedReviews(page,game,{cards=[primary(game),primary(game)]
  }
  await navigate(page,'scan');return candidates;
 }
-export async function openReview(page,index=0){await page.locator(`.scan-batch-thumb[data-id="synthetic-condition-capture-${index}"]`).click();await page.locator('.scan-confirm').waitFor();await frames(page);}
+export async function openReview(page,index=0){await openCapturedCard(page,`synthetic-condition-capture-${index}`);await page.locator('.scan-confirm').waitFor();await frames(page);}
 export async function reviewState(page){return page.evaluate(()=>{const q=window.__uiTestState.ui.scan.confirm,c=window.__uiTestState.ui.scan.cands?.[q?.i??0];return q?{capture:q.batchId,revision:q.captureRevision,price:q.price,condition:q.condition,language:q.lang,finish:q.finish,cardId:c?.card?.id,game:q.game,saving:q.saving}:null;});}
 export async function savedLots(page,game='mtg'){return page.evaluate(g=>structuredClone((g==='mtg'?window.__uiTestState.state:window.__uiTestState.state.tcg[g]).collection),game);}
 export async function protectedState(page){return page.evaluate(()=>{const s=window.__uiTestState.state;return JSON.stringify({decks:s.decks,wishlist:s.wishlist,myPrices:s.myPrices,priceChoices:s.priceChoices,otherGames:s.tcg});});}

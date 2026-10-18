@@ -1,3 +1,4 @@
+import {openCapturedCard} from './scanner-review-controls.mjs';
 // Real OCR + real public lookup APIs + production popup/save handlers, before release.
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -309,7 +310,7 @@ try{
     assert.equal(liveMatch.set,'msc');assert.equal(String(liveMatch.number).replace(/^0+/,''),'806');
     if(liveMatch.observations.length>1){assert.equal(liveMatch.status,'review','conflicting OCR requires explicit review, never automatic ready');assert.equal(liveMatch.exact,false);assert.equal(liveMatch.verified,false);}
    }
-   await page.locator(`[data-act="scanBatchReview"][data-id="${liveCaptureId}"]`).click();
+   await openCapturedCard(page,liveCaptureId);
    await page.getByRole('region',{name:'Confirm scanned card',exact:true}).waitFor({timeout:15000});
    await page.getByRole('region',{name:'Confirm scanned card',exact:true}).getByText(ref.name,{exact:true}).waitFor();
    const beforeTime=await page.locator('#scanVideo').evaluate(v=>v.currentTime);await page.waitForTimeout(250);

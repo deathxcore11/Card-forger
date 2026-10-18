@@ -1,3 +1,4 @@
+import {openCapturedCard} from './tests/scanner-review-controls.mjs';
 // Real DOM, camera MediaStream and production handlers. OCR/API responses are deterministic
 // fixtures: this test checks capture concurrency and safety, not physical-phone recognition.
 import assert from 'node:assert/strict';
@@ -31,8 +32,8 @@ try{
  const during=await page.evaluate(()=>window.snapshot());assert(during.busy);assert.equal(during.rows.length,2);assert.notEqual(during.rows[0].id,during.rows[1].id);assert.equal(during.buffered,1,'second capture is queued while first OCR is busy');assert.equal(await page.locator('.scan-confirm').count(),0,'capture does not open a blocking picker');
  await page.waitForFunction(()=>window.snapshot().rows.length===2&&!window.snapshot().busy&&window.snapshot().rows.every(x=>!['reading','captured'].includes(x.status)));
  const after=await page.evaluate(()=>window.snapshot());assert.equal(after.globalGame,'mtg');assert.equal(after.rows[0].game,'ptcg','wrong selected game recovered within capture');assert.equal(after.rows[0].status,'review');assert.equal(after.rows[0].finish,'');assert.equal(after.rows[1].status,'ready');assert.equal(after.saved.length,0);
- await page.getByRole('button',{name:'Review 1 matches',exact:true}).click();await page.getByRole('region',{name:'Confirm scanned card'}).waitFor();await page.getByRole('button',{name:'Add to collection',exact:true}).click();assert.equal((await page.evaluate(()=>window.snapshot())).saved[0].g,'mtg');
- await page.getByRole('button',{name:'Review 1',exact:true}).click();await page.getByRole('region',{name:'Confirm scanned card'}).waitFor();assert(await page.getByRole('button',{name:'Add to collection',exact:true}).isDisabled());
+ await openCapturedCard(page,after.rows[1].id);await page.getByRole('region',{name:'Confirm scanned card'}).waitFor();await page.getByRole('button',{name:'Add to collection',exact:true}).click();assert.equal((await page.evaluate(()=>window.snapshot())).saved[0].g,'mtg');
+ await openCapturedCard(page,after.rows[0].id);await page.getByRole('region',{name:'Confirm scanned card'}).waitFor();assert(await page.getByRole('button',{name:'Add to collection',exact:true}).isDisabled());
  await page.getByRole('combobox',{name:'Scanned card finish'}).selectOption('reverse-holofoil');await page.getByRole('button',{name:'Add to collection',exact:true}).click();
  const saved=await page.evaluate(()=>window.snapshot());assert.equal(saved.rows.length,0);assert.equal(saved.saved[1].g,'ptcg');assert.equal(saved.saved[1].items[0].productId,99);assert.equal(saved.globalGame,'mtg');
  console.log('PASS: asynchronous capture buffer → per-card auto game → no modal → exact ready save → finish-only review → exact variant saved without switching collection.');

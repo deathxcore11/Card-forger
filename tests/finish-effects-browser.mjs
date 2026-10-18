@@ -35,7 +35,7 @@ try{for(const game of ['mtg','ptcg','ygo']){
   if(game!=='ygo')await preview.locator(`[data-finish="${game==='mtg'?'foil':'reverse-holofoil'}"]`).click();
   const selection=await page.evaluate(()=>JSON.stringify((c=>[c.type,c.game,c.id,c.print?.id,c.priceFinish,c.setVariant,c.priceEdition,c.priceYgoEdition])(window.__uiTestState.ui.sheetCtx)));
   for(const width of [320,390,673,768,1024,1440]){
-   await page.setViewportSize({width,height:1000});await preview.scrollIntoViewIfNeeded();await noOverflow(page,'#sheetBody',`${game} finish ${width}`);
+   await page.setViewportSize({width,height:1000});await preview.evaluate(n=>n.scrollIntoView({block:'center',behavior:'instant'}));await noOverflow(page,'#sheetBody',`${game} finish ${width}`);
    await capture(page,`finish-effects-${game}-${width}`);
   }
   await page.locator('#sheet .cd-img').scrollIntoViewIfNeeded();

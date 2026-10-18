@@ -1,3 +1,4 @@
+import {openCapturedCard} from './scanner-review-controls.mjs';
 // Run only in approved hosted CI: node tests/game-switch-browser.mjs
 // Safe local schema check: node tests/game-switch-browser.mjs --validate-fixtures
 // Transitions use actual header clicks or Chromium Input.dispatchTouchEvent.
@@ -87,7 +88,7 @@ async function assertTarget(page, pair, row) {
     const scan = await page.evaluate(async g => ({prefs: (await import('/scansession.js')).loadPrefs(g), camera: window.__gameSwitchAudit.cameraCalls, ocr: window.__gameSwitchAudit.ocrCalls, confirm: !!window.__uiTestState.ui.scan.confirm, camOn: !!window.__uiTestState.ui.scan.camOn}), pair.to);
     assert.equal(scan.prefs.finish, finishFor(pair.to)); assert.equal(scan.prefs.lockSet, 'synthetic-lock-' + pair.to);
     assert.equal(scan.camera, 0); assert.equal(scan.ocr, 0); assert.equal(scan.confirm, false); assert.equal(scan.camOn, false);
-    assert.equal(await page.locator('.scan-batch-thumb').count(), 3, 'All original mixed-game captures stay reviewable');
+    assert.equal(await page.locator('.scan-batch-tray').getAttribute('data-count'), '3', 'The pile retains all original mixed-game captures for review');
   }
   if (row.settings) assert.equal(await page.locator('#settingsTab-account').getAttribute('aria-selected'), 'true', 'Settings subsection survives');
   if (view === 'rules') assert.equal(await page.locator('[data-learning-root]').getAttribute('data-game'), pair.to, 'Rules use target-game context');
@@ -345,7 +346,7 @@ async function scannerLifecycleCase(app, game) {
   await page.evaluate(async rows=>{(await import('/scan-batch.js')).saveBatch(rows);},fixture.rows);
   await prepare(app,{from:game},{hash:'#scan',target:'#scan'});
   const initialCollections=await collections(page),initialRows=await batchRows(page);
-  await page.locator(`.scan-batch-thumb[data-id="${fixture.reviewId}"]`).click();
+  await openCapturedCard(page,fixture.reviewId);
   const review=page.locator('.scan-confirm');await review.waitFor();
   await review.getByRole('button',{name:'More copies',exact:true}).click();
   await review.locator('.scan-review-more summary').click();
@@ -363,7 +364,7 @@ async function scannerLifecycleCase(app, game) {
   assert.deepEqual(await collections(page),initialCollections,'Switching and editing a review never saves a card');
   assert.equal(await page.locator('.scan-confirm').count(),0,'Target scan is idle, not the source review');
   await tab(page,game).click();await waitRoute(page,game,'#scan');
-  await page.locator(`.scan-batch-thumb[data-id="${fixture.reviewId}"]`).click();await review.waitFor();
+  await openCapturedCard(page,fixture.reviewId);await review.waitFor();
   assert.equal(Number(await review.getByLabel('Copies to save',{exact:true}).innerText()),qty);
   assert.equal(await review.locator('[data-change="scanConfirmLanguage"]').inputValue(),'de');
   await review.locator('.scan-review-more summary').click();
@@ -398,7 +399,7 @@ async function scannerLifecycleCase(app, game) {
   assert.deepEqual(await batchRows(page),afterSwitch,'Reload recovers the original durable capture for a real retry');
   assert.deepEqual(await collections(page),once,'The saved lot is already durable before any retry');
   await tab(page,target).click();await waitRoute(page,target,'#scan');await tab(page,game).click();await waitRoute(page,game,'#scan');
-  await page.locator(`.scan-batch-thumb[data-id="${fixture.reviewId}"]`).click();await review.waitFor();
+  await openCapturedCard(page,fixture.reviewId);await review.waitFor();
   await review.getByRole('button',{name:'Add to collection',exact:true}).click();await page.waitForFunction(()=>!window.__uiTestState.ui.scan.confirm);
   assert.deepEqual(await collections(page),once,'Retry after switching is idempotent: no duplicate lot or extra quantity');
   assert.deepEqual(await batchRows(page),afterSwitch.filter(row=>row.id!==fixture.reviewId),'Other games and interrupted queue rows remain byte-equivalent');
