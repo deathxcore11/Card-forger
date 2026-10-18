@@ -1,11 +1,15 @@
 // Hosted actual-app Value QA. Synthetic ownership/values only; pinned source art
 // is layout evidence, not identity/price verification or live provider proof.
 import assert from 'node:assert/strict';
-import {readFile} from 'node:fs/promises';
-import {startServer,openApp,closeSheet,capture,saveReport,noOverflow,makeFixtures,CARDS} from './detail-rules-fixtures.mjs';
+import {readFile,mkdir,writeFile} from 'node:fs/promises';
+import {startServer,openApp,closeSheet,capture,noOverflow,makeFixtures,CARDS} from './detail-rules-fixtures.mjs';
 import {valueBrowserFixture} from './value-page-fixtures.mjs';
 const GAMES=['mtg','ptcg','ygo'], WIDTHS=[320,390,768,1440];
-const EVIDENCE='Isolated local app fixtures. Holdings and manual values are synthetic. Pinned publisher-provided card pictures from tests/frame-art are visual-fit samples only, reused across fixture cards; they do not prove those fixture identities, current provider availability or prices. No physical phone or real account was used.';
+const EVIDENCE='Isolated local app fixtures. Holdings and manual values are synthetic. Priced-layout screenshots use pinned publisher-provided card pictures from tests/frame-art as visual-fit samples only, reused across fixture cards. Other UI imagery uses the base harness synthetic SVG fixtures. Neither proves those fixture identities, current provider availability or prices. No physical phone or real account was used.';
+async function saveValueReport(checks,error){
+ await mkdir(new URL('../test-results/',import.meta.url),{recursive:true});
+ await writeFile(new URL('../test-results/value-page-browser.json',import.meta.url),JSON.stringify({generatedAt:new Date().toISOString(),artEvidence:EVIDENCE,status:error?'failed':'passed',checks,...(error?{error:String(error.stack||error)}:{})},null,2));
+}
 for(const game of GAMES){const base=makeFixtures(game),side=game==='mtg'?base.state:base.state.tcg[game],f=valueBrowserFixture(game,{cards:CARDS[game],collection:side.collection});assert.equal(f.collection.reduce((sum,e)=>sum+e.qty,0),7);assert.equal(Math.round(f.collection.reduce((sum,e)=>sum+e.qty*e.manualValue,0)*100)/100,19.43);assert.equal(f.collection.length,5);assert.equal(f.expected.groups.length,4);assert(!Object.hasOwn(f.unpriced,'manualValue'));}
 if(process.argv.includes('--validate-fixtures')){console.log('PASS: all-game actual-app Value fixture identities, exact duplicate lots, synthetic manual values, four composition groups and hosted-only source-art contract. No browser/server/network started.');process.exit(0);}
 assert.equal(process.env.GITHUB_ACTIONS,'true','Value browser QA is hosted-only; use --validate-fixtures locally.');
@@ -18,8 +22,17 @@ const snapshot=page=>page.evaluate(()=>JSON.stringify({collection:window.__uiTes
 const todaySnapshot=(page,game)=>page.evaluate(g=>{const S=window.__uiTestState,side=g==='mtg'?S.state:S.state.tcg[g];return side.valueHistory.find(p=>p.date===new Date().toISOString().slice(0,10));},game);
 async function render(page){await page.evaluate(()=>dispatchEvent(new Event('cardstashy-rerender')));await frames(page);await page.locator('.collection-value-page').waitFor();}
 async function waitCurrent(page,game,copies,unpriced,total){await page.waitForFunction(({game,copies,unpriced,total})=>{const S=window.__uiTestState,side=game==='mtg'?S.state:S.state.tcg[game],point=side.valueHistory.find(p=>p.date===new Date().toISOString().slice(0,10));return point&&point.copies===copies&&point.unpriced===unpriced&&point.total===total;},{game,copies,unpriced,total});await frames(page);}
-async function seed(page,game,artUrl){return page.evaluate(async({game,artUrl})=>{
- const S=window.__uiTestState,T=window.__uiTestTcg,{valueBrowserFixture}=await import('/tests/value-page-fixtures.mjs'),{cardKey}=await import('/core.js'),side=game==='mtg'?S.state:S.state.tcg[game],cards=side.collection.map(entry=>game==='mtg'?S.state.printings[entry.printingId]||S.catalog[cardKey(entry.name)]:T.cardOf(game,entry.cardId)),f=valueBrowserFixture(game,{cards,collection:side.collection},new Date().toISOString().slice(0,10));
+async function seed(page,game,artUrl){
+ // Test-only .mjs files are intentionally not browser modules on the fixture
+ // server. Build the fixture in Node, then inject only serialized local data.
+ const source=await page.evaluate(async game=>{
+  const S=window.__uiTestState,T=window.__uiTestTcg,{cardKey}=await import('/core.js'),side=game==='mtg'?S.state:S.state.tcg[game];
+  return {cards:side.collection.map(entry=>game==='mtg'?S.state.printings[entry.printingId]||S.catalog[cardKey(entry.name)]:T.cardOf(game,entry.cardId)),collection:side.collection,today:new Date().toISOString().slice(0,10)};
+ },game);
+ assert(source.cards.slice(0,4).every(card=>card?.id),'Value seed requires four existing normalized fixture cards');
+ const f=valueBrowserFixture(game,source,source.today);
+ return page.evaluate(async({game,artUrl,f})=>{
+ const S=window.__uiTestState,T=window.__uiTestTcg,{cardKey}=await import('/core.js'),side=game==='mtg'?S.state:S.state.tcg[game];
  for(const card of f.cards){
   if(game==='mtg'){card.image_uris={...card.image_uris,normal:artUrl,large:artUrl,small:artUrl};S.catalog[cardKey(card.name)]=card;S.state.printings[card.id]=card;}
   else{card.image=artUrl;card.imageLarge=artUrl;card.fetchedAt=new Date().toISOString();T.cache[game][card.id]=card;}
@@ -28,7 +41,7 @@ async function seed(page,game,artUrl){return page.evaluate(async({game,artUrl})=
  localStorage.setItem('cardstashy-meta-trend-v1',JSON.stringify({[game]:[{at:Date.now(),pct:{}}]}));
  window.__valueFixture={...f,game};
  return f.expected;
-},{game,artUrl});}
+},{game,artUrl,f});}
 async function layout(page,label){await noOverflow(page,'#content',label,true);return page.evaluate(()=>{
  const box=n=>{const r=n.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom};},page=document.querySelector('.collection-value-page'),chart=page.querySelector('.value-chart svg'),amount=page.querySelector('[data-value-amount]'),refresh=page.querySelector('[data-value-refresh]');
  return {viewport:innerWidth,root:box(page),chart:box(chart),amount:box(amount),refresh:box(refresh),groups:[...page.querySelectorAll('[data-value-group]')].map(n=>({key:n.dataset.valueGroup,text:n.textContent,box:box(n)})),lots:[...page.querySelectorAll('.value-lot')].map(n=>{const img=n.querySelector('img'),css=img&&getComputedStyle(img);return {entry:n.dataset.entry,text:n.innerText,box:box(n),image:img?{complete:img.complete,naturalWidth:img.naturalWidth,src:img.currentSrc,fit:css.objectFit,...box(img)}:null};})};
@@ -104,5 +117,5 @@ try{
    app.health();console.log(`PASS ${game}: actual Value UI, 320/390/768/1440 layout, pinned art, composition, exact lot keyboard action, gaps and all coverage/history states.`);
   }catch(error){if(app)await capture(app.page,`value-page-${game}-failure`).catch(()=>{});throw error;}finally{if(app)await app.context.close();}
  }
- await saveReport('value-page-browser',report);
-}catch(error){await saveReport('value-page-browser',report,error);throw error;}finally{await browser.close();await server.close();}
+ await saveValueReport(report);
+}catch(error){await saveValueReport(report,error);throw error;}finally{await browser.close();await server.close();}

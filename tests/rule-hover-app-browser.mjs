@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {writeFile} from 'node:fs/promises';
 import {CARDS,RAW,startServer,openApp,RESULTS} from './detail-rules-fixtures.mjs';
 if(process.env.GITHUB_ACTIONS!=='true')throw Error('Run only in hosted GitHub Actions.');
-const ability={type:'Ability',name:'Fixture ability',effect:'When this Pokémon is Knocked Out, draw a card.'};
+const ability={type:'Ability',name:'Fixture ability',effect:'You may use this Ability when this Pokémon is Knocked Out.'};
 RAW.ptcg[0].abilities=[ability];CARDS.ptcg[0].abilities=[ability];CARDS.ptcg[0].text='Ability: Fixture ability\n'+ability.effect;
 const {chromium}=await import('playwright');const server=await startServer();let browser,app;
 try{
