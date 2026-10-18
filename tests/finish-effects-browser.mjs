@@ -18,6 +18,13 @@ try{for(const game of ['mtg','ptcg','ygo']){
    assert.equal(initial.animation,'finish-gallery-light','Visible foil grids animate before any hover or tilt');
    await page.waitForFunction(({selector,position})=>{const n=document.querySelector(selector);return n&&getComputedStyle(n).getPropertyValue('--finish-x')!==position;},{selector:`#content .lot-art[data-entry="lot-${game}-0"] .finish-auto`,position:initial.position});
    await capture(page,`finish-effects-${game}-automatic-grid`);
+   await page.setViewportSize({width:390,height:600});await page.locator('#content .lot-art').last().evaluate(n=>n.scrollIntoView({block:'end',behavior:'instant'}));
+   await page.waitForFunction(game=>{const n=document.querySelector(`#content .lot-art[data-entry="lot-${game}-0"]`);return n.getBoundingClientRect().bottom<=0&&!n.querySelector('.finish-overlay');},game);
+   await opener.scrollIntoViewIfNeeded();await opener.locator('.finish-auto').waitFor();
+   await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));});
+   await page.waitForFunction(()=>!document.querySelector('.finish-overlay'));
+   await page.evaluate(()=>{delete document.hidden;document.dispatchEvent(new Event('visibilitychange'));});await opener.locator('.finish-auto').waitFor();
+   await page.setViewportSize({width:390,height:1000});
   }
   await opener.hover();
   assert.equal(await opener.evaluate(n=>getComputedStyle(n,'::before').display),'none','Legacy color-dodge hover rings cannot cover collection cards');
@@ -43,7 +50,7 @@ try{for(const game of ['mtg','ptcg','ygo']){
    await page.evaluate(()=>window.dispatchEvent(new DeviceOrientationEvent('deviceorientation',{beta:40,gamma:14})));
    await page.waitForFunction(initial=>getComputedStyle(document.querySelector('#sheet .finish-overlay')).getPropertyValue('--finish-x')!==initial,initial);
    const light=await page.locator('#sheet .cd-img').evaluate(n=>({pointer:n.style.getPropertyValue('--mx'),foil:getComputedStyle(n.querySelector('.finish-overlay')).getPropertyValue('--finish-x'),animation:getComputedStyle(n.querySelector('.finish-overlay')).animationName,spot:getComputedStyle(n.querySelector('.finish-layer'),'::after').backgroundImage}));
-   assert.equal(parseFloat(light.pointer),parseFloat(light.foil),'Gyroscope spotlight and foil use the same coordinates');assert.equal(light.animation,'none','Detail foil follows tilt without a competing automatic grid loop');assert.match(light.spot,/radial-gradient/);
+   assert(Math.abs(parseFloat(light.pointer)-parseFloat(light.foil))<0.000001,'Gyroscope spotlight and foil use the same coordinates within CSS serialization precision');assert.equal(light.animation,'none','Detail foil follows tilt without a competing automatic grid loop');assert.match(light.spot,/radial-gradient/);
    await capture(page,'finish-effects-mtg-gyro-light');
   }
   // Controls alter preview state only; a deliberate toggle never changes ownership.

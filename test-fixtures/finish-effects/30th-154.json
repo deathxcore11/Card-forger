@@ -1,0 +1,31 @@
+{
+  "id": "30th-154",
+  "name": "Gengar ex",
+  "localId": "154",
+  "category": "Pokemon",
+  "set": {
+    "cardCount": {
+      "official": 128,
+      "total": 158
+    },
+    "id": "30th",
+    "name": "30th Celebration"
+  },
+  "rarity": "Special illustration rare",
+  "variants": {
+    "firstEdition": false,
+    "holo": false,
+    "normal": true,
+    "reverse": false,
+    "wPromo": false
+  },
+  "image": "https://assets.tcgdex.net/en/me/30th/154",
+  "variants_detailed": [
+    {
+      "type": "normal",
+      "size": "standard",
+      "variantId": "generated"
+    }
+  ],
+  "_source": "https://api.tcgdex.net/v2/en/cards/30th-154"
+}

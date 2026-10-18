@@ -355,6 +355,8 @@ async function scannerLifecycleCase(app, game) {
   const edited=await batchRows(page),savedReview=edited.find(row=>row.id===fixture.reviewId),qty=savedReview.qty;
   assert.equal(qty,initialRows.find(row=>row.id===fixture.reviewId).qty+1);assert.equal(savedReview.condition,'Moderately Played');assert.equal(savedReview.lang,'de');
   assert.equal(savedReview.finish,finishFor(game));
+  const reviewGeometry=await review.evaluate(n=>{const r=n.getBoundingClientRect(),header=document.querySelector('.topbar').getBoundingClientRect(),nav=document.querySelector('.bottom-nav');return {top:r.top,header:header.bottom,bottom:r.bottom,limit:getComputedStyle(nav).display==='none'?innerHeight:nav.getBoundingClientRect().top};});
+  assert(reviewGeometry.top>=reviewGeometry.header&&reviewGeometry.bottom<=reviewGeometry.limit,'Scan review leaves the game tabs and navigation physically reachable: '+JSON.stringify(reviewGeometry));
   await tab(page,target).click();await waitRoute(page,target,'#scan');
   const afterSwitch=await batchRows(page);
   assert.deepEqual(afterSwitch,edited.map(row=>['captured','reading'].includes(row.status)?{...row,status:'unresolved',reason:'Reading interrupted · retry'}:row),'Only interrupted queue status changes; original pixels, identities and edited review fields survive');

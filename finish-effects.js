@@ -4,6 +4,7 @@ export const FINISH_SOURCES = Object.freeze({
  pokemon:'https://www.pokemon.com/us/pokemon-news/pokemon-tcg-scarlet-and-violet-revamps-pokemon-tcg-card-aesthetic',
  base:'https://images.pokemontcg.io/base1/4_hires.png',
  expedition:'https://api.tcgdex.net/v2/en/cards/ecard1-1',
+ gengar30:'https://api.tcgdex.net/v2/en/cards/30th-154',
  scryfall:'https://scryfall.com/docs/api/cards',
  etched:'https://magic.wizards.com/en/news/feature/collecting-commander-legends-battle-for-baldurs-gate',
  ygo:'https://www.yugioh-card.com/en/about/new-to-ygo/',
@@ -56,6 +57,9 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
  }
  if(game==='ptcg'){
   const set=c.set?.id||'',rarity=norm(c.rarity),category=norm(c.category||'Pokemon');
+  // Exact full-card illustration shown in the user's Holofoil detail screenshot.
+  // The source currently has generated availability; this never creates a foil option.
+  if(set==='30th'&&c.id==='30th-154'&&physicalFinish==='holofoil')return preset(key,label,'ptcg-full-art',[layer('card','rainbow')],FINISH_SOURCES.gengar30);
   // Exact Expedition Alakazam layout shown by the user; standard and jumbo retain separate keys.
   if(set==='ecard1'&&['ecard1-1','ecard1-33'].includes(c.id)){
    if(physicalFinish==='holofoil')return preset(key,label,'ptcg-expedition-holo',[layer('pk-expedition-art','holo')],FINISH_SOURCES.expedition);

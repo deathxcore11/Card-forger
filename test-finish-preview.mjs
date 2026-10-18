@@ -100,3 +100,11 @@ const regular=normalizePtcg(await fixture('sv01-001'));
 assert(finishChoices('ptcg',regular).some(v=>v.effect==='ptcg-reverse'));
 assert(!finishChoices('ptcg',regular).some(v=>v.effect==='ptcg-holo'));
 console.log('PASS: real no-price Expedition standard/jumbo identities, actual SV reverse availability and full-art provider rarity.');
+
+const gengar30=normalizePtcg(await fixture('30th-154'));
+assert.deepEqual(finishChoices('ptcg',gengar30).map(v=>v.key),['normal'],'Incomplete current catalogue must not manufacture a Holofoil option from rarity or the screenshot');
+// Only an exact source-supplied Holofoil variant unlocks the calibrated region.
+const gengarFoil={...gengar30,variants:[{key:'holofoil',label:'Holofoil',usd:null}]};
+assert.equal(finishEffect('ptcg',gengarFoil,{priceFinish:'holofoil'}),'ptcg-full-art');
+assert.equal(finishEffect('ptcg',{...gengarFoil,id:'30th-090'},{priceFinish:'holofoil'}),'unknown','Do not copy the special illustration region to another Gengar printing');
+console.log('PASS: exact Gengar 154/128 full-art region is supported only with explicit Holofoil availability; generated catalogue data and another printing do not inherit it.');
