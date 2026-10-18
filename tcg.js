@@ -1,3 +1,5 @@
+import {valuePageOverview,valueTopLots,valuePageAttrs} from './value-page.js';
+import {recordValueObservation} from './value-history.js';
 import {dailyDate, nextDailyReset} from './daily-clock.js';
 import {ygoRarity} from './ygo-identity.js';
 import {sharedDeckSheet} from './shared-deck-view.js';
@@ -28,7 +30,7 @@ import {collectionSortControls,compareCollectionRows} from "./collection-sort.js
 import {POKEMON_SET_ART} from "./pokemon-set-art.js";
 import {pokemonCatalogueSetEntry} from './pokemon-catalogue-supplement.js';
 import { recordCardPrice, trackedQuote, priceHistoryHtml, alertsPanel, alertStatus } from "./pricehist.js";
-import { lineChart, skeletonGrid } from "./ui.js";
+import { skeletonGrid } from "./ui.js";
 import { installNudge } from "./install.js";
 import { rankByName } from "./catalog-tools.js";
 import {setRowContent,knownSetCount,setYearSections,setCardFields,setCardFacets,setFinishLabel,setVariantKey,filterSortSetCards,setProgressMarkup} from './set-list-ui.js';
@@ -166,6 +168,29 @@ export async function ensureMany(g, ids, tick = () => {}, force = false,printing
   await Promise.all(Array.from({ length: 6 }, worker));
   tick(done);
   return done;
+}
+
+// Explicit price refreshes must distinguish fresh provider results from the
+// cached fallback used by ensureCard/ensureMany for ordinary browsing.
+export async function refreshPriceCards(g,ids,isCurrent=()=>true){
+ const queue=[...new Set(ids.filter(Boolean).map(String))];
+ const result={total:queue.length,refreshed:0,failed:0,cancelled:false};
+ const worker=async()=>{
+  while(queue.length&&isCurrent()){
+   const id=queue.shift();
+   try{
+    const card=await SOURCES[g].get(id,{printings:true});
+    if(!isCurrent())break;
+    // A failed exact-printing enrichment must not replace saved YGO prices
+    // with an incomplete reference-only card and report a successful refresh.
+    if(!card||String(card.id)!==id||card.game!==g||card.brief||(g==='ygo'&&card.printPriceSchema!==1))throw Error('Incomplete card price refresh.');
+    remember(card);result.refreshed++;
+   }catch{if(isCurrent())result.failed++;}
+  }
+ };
+ await Promise.all(Array.from({length:Math.min(6,queue.length)},worker));
+ result.cancelled=!isCurrent();
+ return result;
 }
 
 // A store's price, else the player's own (press and hold a price; only they see it).
@@ -887,41 +912,31 @@ function tcgDetailSetSummary(c,ctx={}) {
 
 /* ---------- collection ---------- */
 
-// Collection value over time (one point a day, kept on this device), top cards and alerts.
+// Shared workspace observations sync and export with the collection. Legacy keys
+// remain untouched as a rollback source and are imported only by the ready account.
 const VALUE_KEY = (g) => `cardstashy-value-hist-${g}`;
-export function readTcgValueHistory(g) {
+export function readLegacyTcgValueHistory(g) {
   try { const history = JSON.parse(localStorage.getItem(privateKey(VALUE_KEY(g))) || '[]'); return Array.isArray(history) ? history : []; } catch { return []; }
 }
-export function trackTcgValue(g, v = collectionValue(g)) {
-  if (!gs(g).collection.length) return [];
-  let h = readTcgValueHistory(g);
-  const day = new Date().toISOString().slice(0, 10);
-  h = h.filter((x) => x.date !== day);
-  h.push({ date: day, total: Math.round(v.total * 100) / 100, copies: v.copies, ...homeValueCoverage(v) });
-  h = h.slice(-365);
-  try {
-    localStorage.setItem(privateKey(VALUE_KEY(g)), JSON.stringify(h));
-  } catch {}
-  return h;
+export function readTcgValueHistory(g, s = S.state) { return gs(g, s).valueHistory || []; }
+export function trackTcgValue(g, v = collectionValue(g), s = S.state) {
+  const side = gs(g, s);
+  if (!side.collection.length && !side.valueHistory?.length) return [];
+  side.valueHistory = recordValueObservation(side.valueHistory, v.total, v.copies, homeValueCoverage(v));
+  return side.valueHistory;
 }
 function tcgValueView(g) {
-  const st = gs(g),
-    v = collectionValue(g),
-    hist = trackTcgValue(g, v),
-    m = new Map();
-  for (const e of st.collection) {
-    const c = cardOf(g, e.cardId), p = entryPrice(c, e);
-    if (p != null) m.set(e.id, { e, c, each: p, total: p * e.qty });
-  }
-  const top = [...m.values()].sort((a, b) => b.total - a.total).slice(0, 10);
-  const tabs = segmented("tCollTab", "value", [["cards", "Cards"], ["binders", "Binders"], ["value", "Value"]]);
-  if (!st.collection.length) return `<div class="page-head"><h1>Collection</h1></div>${tabs}<section class="empty"><h3>No value to track yet</h3><p>Add cards and CardStashy records your collection value once a day so you can watch it change.</p></section>${alertsPanel(g)}`;
-  return `<div class="page-head"><h1>Collection</h1></div>${tabs}
-  <section class="panel"><p class="eyebrow">Your collection value</p><p class="big" data-count="${v.total.toFixed(2)}" data-money="1">${usd(v.total)}</p><p class="muted small">${v.copies} cards${v.unpriced ? ` · ${v.unpriced} without a price` : ""}</p>${lineChart(hist)}</section>
-  <section class="panel"><h3>Most valuable</h3><div class="list compact">${top.map((x) => `<button class="mini-row" data-act="tCard" data-id="${esc(x.e.cardId)}"><span class="ellip">${x.e.qty > 1 ? x.e.qty + "× " : ""}${esc(x.e.name)}</span><b>${usd(x.total)}</b></button>`).join("")}</div></section>
+  const st = gs(g), v = collectionValue(g),
+    rows = st.collection.map(entry => { const card=cardOf(g,entry.cardId); return {entry,card,unit:entryPrice(card,entry)}; }),
+    tabs = segmented("tCollTab", "value", [["cards", "Cards"], ["binders", "Binders"], ["value", "Value"]]);
+  if (!st.collection.length && !st.valueHistory?.length) return `<div class="page-head"><h1>Collection</h1></div>${tabs}<section class="empty"><h3>No value to track yet</h3><p>Add cards to start recording your collection’s value over time.</p></section>${alertsPanel(g)}`;
+  return `<div class="page-head"><h1>Collection</h1></div>${tabs}<div ${valuePageAttrs(g)}>
+  ${valuePageOverview({game:g,value:v,history:st.valueHistory || [],rows})}
   ${tcgTradeAdvice(g)}
-  ${alertsPanel(g)}`;
+  ${alertsPanel(g)}
+  ${valueTopLots({game:g,rows})}</div>`;
 }
+
 export function tcgCollection() {
   const g = game(),
     U = ui(g).coll,
@@ -2540,16 +2555,31 @@ export function registerTcg(c) {
     render();
   };
   C.tCollDirection = t => {ui().coll.limit=120;ui().coll.direction=t.value;render();};
+  let priceRefresh=null;
   A.tRefreshPrices = async (t) => {
-
-    const G = g(),
-      done = busy(t, "Refreshing…");
+    if(priceRefresh?.current())return toast("A price refresh is already running.");
+    const G=g(),screen=navigationStamp(),write=captureCommit(),request={};
+    const current=()=>priceRefresh===request&&navigationCurrent(screen)&&g()===G;
+    request.current=current;priceRefresh=request;
+    const done=busy(t,"Refreshing…");
     try {
-      const n = await ensureMany(G, gs(G).collection.map((e) => e.cardId), () => {}, true);
-      render();
-      toast(`Prices refreshed for ${n} cards.`);
-    } finally {
-      done();
+      if(globalThis.navigator?.onLine===false)return toast("You’re offline. Saved prices have been kept.");
+      const r=await refreshPriceCards(G,gs(G).collection.map(e=>e.cardId),current);
+      if(!current()||r.cancelled)return;
+      if(!r.total)return toast("No cards to refresh.");
+      if(r.refreshed){
+        // The shared commit hook records all game histories on the guarded
+        // workspace copy; a rendered page is not a persistence boundary.
+        const saved=await write(()=>true,{guard:current,rerender:false,enrich:false,recordDeckWork:false});
+        if(!current()||saved!==true)return;
+        render();
+        toast(`Price data refreshed for ${r.refreshed} ${r.refreshed===1?'card':'cards'}.${r.failed?` ${r.failed} ${r.failed===1?'lookup':'lookups'} failed; saved prices were kept.`:''}`);
+      }else toast("Couldn’t refresh prices. Saved prices have been kept.");
+    }catch{
+      if(current())toast("Couldn’t finish refreshing prices. Please try again.");
+    }finally{
+      if(current())done();
+      if(priceRefresh===request)priceRefresh=null;
     }
   };
   A.tExportColl = () => {

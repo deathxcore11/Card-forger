@@ -27,14 +27,15 @@ console.log('PASS: Pokémon natural-ratio collection geometry, scoped quiet Cele
 // Installed-shell upgrade: precache the corrected CSS, retire only old shell
 // caches, and keep the network-first stylesheet path for already-open clients.
 const sw=readFileSync('sw.js','utf8'),events={},added=[],removed=[],put=[];
+const currentCache=sw.match(/const CACHE = "([^"]+)"/)[1],previousCache=currentCache.replace(/\d+$/,n=>String(Number(n)-1));
 const cached={addAll:async paths=>added.push(...paths),put:async(...args)=>put.push(args)};
 const waits=[];let claimed=false;
-vm.runInNewContext(sw,{self:{location:{origin:'https://fixture.test'},clients:{claim:async()=>{claimed=true;}},addEventListener:(name,fn)=>events[name]=fn},caches:{open:async key=>{assert.equal(key,'cardforge-shell-v227');return cached;},keys:async()=>['cardforge-shell-v226','cardforge-shell-v227','personal-data'],delete:async key=>removed.push(key),match:async()=>new Response('old-css')},fetch:async()=>new Response('corrected-five-pixel-css'),URL,Response,setTimeout:()=>0,Promise});
+vm.runInNewContext(sw,{self:{location:{origin:'https://fixture.test'},clients:{claim:async()=>{claimed=true;}},addEventListener:(name,fn)=>events[name]=fn},caches:{open:async key=>{assert.equal(key,currentCache);return cached;},keys:async()=>[previousCache,currentCache,'personal-data'],delete:async key=>removed.push(key),match:async()=>new Response('old-css')},fetch:async()=>new Response('corrected-five-pixel-css'),URL,Response,setTimeout:()=>0,Promise});
 events.install({waitUntil:p=>waits.push(p)});await Promise.all(waits);assert(added.includes('./style.css'));
-events.activate({waitUntil:p=>waits.push(p)});await Promise.all(waits);assert.deepEqual(removed,['cardforge-shell-v226']);assert(claimed);
+events.activate({waitUntil:p=>waits.push(p)});await Promise.all(waits);assert.deepEqual(removed,[previousCache]);assert(claimed);
 let response;events.fetch({request:{url:'https://fixture.test/style.css',method:'GET',mode:'cors'},respondWith:p=>response=p});
 assert.equal(await (await response).text(),'corrected-five-pixel-css');assert.equal(put.length,1);
-console.log('PASS: installed shell v227 precaches corrected stylesheet, retires only obsolete shell cache, and serves fresh network CSS.');
+console.log('PASS: installed shell precaches corrected stylesheet, retires only obsolete shell cache, and serves fresh network CSS.');
 
 assert.match(style,/lot-art\[data-finish-game="ptcg"\] \{ aspect-ratio:auto; border-radius:12px;/);
 assert.match(style,/lot-art\[data-finish-game="ptcg"\] > img\.card-img \{[^}]*border-radius:7px;/);

@@ -1,3 +1,4 @@
+import {normalizeValueHistory} from './value-history.js';
 import {stackWorkspaceCollections,withoutCollectionSource} from './collection-stack.js';
 import { isFormatName } from "./formats.js";
 import { cardKey, aggregateCards, cardPrice } from "./core.js";
@@ -388,6 +389,7 @@ export function migrateWorkspace(input) {
     throw Error("Unsupported backup version.");
   const s = structuredClone(input);
   s.version = 3;
+  s.valueHistory = normalizeValueHistory(s.valueHistory);
   if (s.references !== undefined && !Array.isArray(s.references))
     throw Error("Invalid reference library.");
   s.references = s.references || [];
@@ -403,6 +405,7 @@ export function migrateWorkspace(input) {
       collection: Array.isArray(x.collection) ? x.collection.filter((e) => e && typeof e.cardId === "string" && Number.isInteger(e.qty) && e.qty > 0) : [],
       decks: Array.isArray(x.decks) ? x.decks.filter((d) => d && typeof d.id === "string").map((d) => ({ ...d, zones: { main: d.zones?.main || [], extra: d.zones?.extra || [], side: d.zones?.side || [] } })) : [],
       wishlist: Array.isArray(x.wishlist) ? x.wishlist : [],
+      valueHistory: normalizeValueHistory(x.valueHistory),
     };
   }
   s.collection = (s.collection || []).map((e) => ({

@@ -14,4 +14,4 @@ export const gameOf = (id) => GAMES[id] || GAMES.mtg;
 export const GAME_ICON = GAME_MARK;
 export { GAME_COLOR };
 
-export const blankGame = () => ({ collection: [], decks: [], wishlist: [] });
+export const blankGame = () => ({ collection: [], decks: [], wishlist: [], valueHistory: [] });

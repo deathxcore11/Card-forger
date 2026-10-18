@@ -1,0 +1,74 @@
+/* One quiet, art-led Value surface; game identity stays in its color and cards. */
+.collection-value-page { min-width:0; --value-accent:var(--gold); }
+.collection-value-page .value-panel { padding:18px; border-color:rgba(151,165,188,.19); background:linear-gradient(135deg,rgba(255,255,255,.035),transparent 60%),var(--surface); box-shadow:0 8px 28px rgba(0,0,0,.10); }
+.collection-value-page .value-overview { border-top:2px solid var(--value-accent); }
+.collection-value-page .value-overview-head { display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; }
+.collection-value-page .value-overview-main { min-width:0; }
+.collection-value-page .value-game-label { display:flex; align-items:center; gap:7px; margin:0 0 9px; font-size:10px; letter-spacing:.075em; }
+.collection-value-page .value-game-label > span { display:inline-flex; color:var(--value-accent); width:18px; height:18px; }
+.collection-value-page .value-game-label svg { width:100%; height:100%; }
+.collection-value-page .value-amount { font:800 clamp(32px,6vw,46px)/1.15 Manrope,sans-serif; letter-spacing:-.045em; font-variant-numeric:tabular-nums; margin:0 0 4px; overflow-wrap:anywhere; }
+.collection-value-page .value-coverage { font-size:12px; color:var(--muted); margin:0; }
+.collection-value-page .value-overview-main > .small { margin:6px 0 0; }
+.collection-value-page .value-refresh { min-height:44px; flex:none; }
+.collection-value-page .value-chart { border-top:1px solid var(--line); margin-top:18px; padding-top:16px; }
+.collection-value-page .value-section-head { display:flex; justify-content:space-between; gap:8px 16px; align-items:baseline; flex-wrap:wrap; margin-bottom:12px; }
+.collection-value-page .value-section-head h3,.collection-value-page .value-chart-empty h3 { margin:0; font-size:14px; }
+.collection-value-page .value-section-head > span { font-size:11px; }
+.collection-value-page .value-chart svg { display:block; width:100%; height:auto; overflow:visible; }
+.collection-value-page .value-chart-grid { stroke:var(--line); stroke-dasharray:3 5; stroke-width:1; }
+.collection-value-page .value-chart-axis { fill:var(--muted); font:11px 'DM Sans',sans-serif; }
+.collection-value-page .value-chart-line { stroke:var(--value-accent); stroke-width:2.5; fill:none; stroke-linecap:round; }
+.collection-value-page .value-chart-point { stroke:var(--value-accent); stroke-width:2; fill:var(--value-accent); }
+.collection-value-page .value-chart-point.partial { fill:var(--surface); stroke:var(--warn); }
+.collection-value-page .value-chart-point.legacy { fill:var(--surface); stroke:var(--muted); }
+.collection-value-page .value-chart-gap { stroke:var(--muted); stroke-width:1.5; }
+.collection-value-page .value-chart-change { display:flex; align-items:baseline; flex-wrap:wrap; gap:4px 10px; margin:0 0 8px; font-size:11px; color:var(--muted); }
+.collection-value-page .value-chart-change strong { font-size:14px; color:var(--text); font-variant-numeric:tabular-nums; }
+.collection-value-page .value-chart-change.up strong { color:var(--good); }
+.collection-value-page .value-chart-change.down strong { color:var(--bad); }
+.collection-value-page .value-chart-dates { display:flex; justify-content:space-between; gap:8px; font-size:10px; color:var(--muted); }
+.collection-value-page .value-chart-note,.collection-value-page .value-source-note { font-size:11px; line-height:1.6; color:var(--muted); margin:12px 0 0; }
+.collection-value-page .value-source-note { border-top:1px solid var(--line); padding-top:12px; }
+.collection-value-page .value-chart-legend { display:flex; flex-wrap:wrap; gap:8px 16px; font-size:10px; color:var(--muted); margin-top:12px; }
+.collection-value-page .value-chart-legend > span { display:inline-flex; align-items:center; gap:5px; }
+.collection-value-page .value-chart-legend i { width:8px; height:8px; border:1.5px solid var(--muted); border-radius:50%; }
+.collection-value-page .value-chart-legend .partial { border-color:var(--warn); }
+.collection-value-page .value-chart-legend .unavailable { width:auto; height:auto; font-style:normal; border:0; }
+.collection-value-page .value-history-details { margin-top:10px; font-size:11px; color:var(--muted); }
+.collection-value-page .value-history-details summary { min-height:32px; display:flex; align-items:center; cursor:pointer; }
+.collection-value-page .value-history-details summary::before { content:'▸'; margin-right:7px; }
+.collection-value-page .value-history-details[open] summary::before { content:'▾'; }
+.collection-value-page .value-history-details ol { list-style:none; padding:0; margin:4px 0; max-height:230px; overflow:auto; }
+.collection-value-page .value-history-details li { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:3px 10px; padding:7px 0; border-top:1px solid var(--line); }
+.collection-value-page .value-history-details li > span { grid-column:1/-1; }
+.collection-value-page .value-history-details strong { color:var(--text); font-variant-numeric:tabular-nums; }
+.collection-value-page .value-meter { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px 12px; align-items:center; padding:9px 0; }
+.collection-value-page .value-meter-name { min-width:0; display:flex; align-items:center; gap:7px; font-size:12px; overflow-wrap:anywhere; }
+.collection-value-page .value-meter-name > i { width:8px; height:8px; border-radius:50%; flex:none; }
+.collection-value-page .value-meter > b { font-size:12px; font-variant-numeric:tabular-nums; }
+.collection-value-page .value-meter-track { height:5px; background:rgba(151,165,188,.12); border-radius:8px; overflow:hidden; }
+.collection-value-page .value-meter-track > i { display:block; height:100%; border-radius:8px; }
+.collection-value-page .value-meter > small { font-size:10px; color:var(--muted); }
+.collection-value-page .value-lots { display:grid; gap:0; }
+.collection-value-page .value-lot { width:100%; min-width:0; display:grid; grid-template-columns:44px minmax(0,1fr) auto; gap:12px; align-items:center; text-align:left; padding:12px 0; border-top:1px solid var(--line); border-radius:0; color:var(--text); }
+.collection-value-page .value-lot:first-child { border-top:0; padding-top:0; }
+.collection-value-page .value-lot:last-child { padding-bottom:0; }
+.collection-value-page .value-lot-art { display:block; width:44px; height:62px; position:relative; border-radius:4px; }
+.collection-value-page .value-card-art { display:block; width:100%; height:100%; object-fit:contain; border-radius:4px; }
+.collection-value-page .value-card-art.img-missing { display:flex; align-items:center; justify-content:center; flex-direction:column; background:var(--surface-2); font-size:15px; color:var(--muted); }
+.collection-value-page .value-card-art.img-missing small { font-size:7px; line-height:1.2; text-align:center; }
+.collection-value-page .value-lot-info { display:grid; gap:4px; min-width:0; }
+.collection-value-page .value-lot-info > strong { font-size:13px; line-height:1.35; overflow-wrap:anywhere; }
+.collection-value-page .value-lot-details { color:var(--muted); font-size:10px; line-height:1.5; overflow-wrap:anywhere; }
+.collection-value-page .value-lot-copies { font-size:10px; color:var(--muted); }
+.collection-value-page .value-lot-total { font-size:14px; font-weight:700; font-variant-numeric:tabular-nums; text-align:right; }
+.collection-value-page .value-lot:focus-visible,.collection-value-page .value-history-details summary:focus-visible { outline:2px solid var(--value-accent); outline-offset:4px; border-radius:4px; }
+@media (hover:hover) { .collection-value-page .value-lot:hover .value-lot-info > strong { color:var(--value-accent); } }
+@media (max-width:420px) {
+ .collection-value-page .value-panel { padding:14px; }
+ .collection-value-page .value-lot { grid-template-columns:38px minmax(0,1fr) auto; gap:9px; }
+ .collection-value-page .value-lot-art { width:38px; height:54px; }
+ .collection-value-page .value-lot-total { font-size:12px; max-width:90px; overflow-wrap:anywhere; }
+ .collection-value-page .value-game-label { font-size:9px; }
+}

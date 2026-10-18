@@ -445,3 +445,43 @@ jobs:
             test-results/collection-sort-*
             test-results/pokemon-*
             test-results/rule-hover-*
+
+  value-page-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - name: Inspect shared all-game Value pages in actual app
+        run: node tests/value-page-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: value-page-browser-evidence
+          path: test-results/value-page-*
+
+  rule-hover-app-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - name: Trace actual native dialog Escape handling
+        run: node tests/rule-hover-app-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rule-hover-app-browser-evidence
+          path: test-results/rule-hover-app-*

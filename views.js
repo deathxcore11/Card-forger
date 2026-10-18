@@ -1,3 +1,4 @@
+import {valuePageOverview,valueTopLots,valuePageAttrs} from './value-page.js';
 import {finishEffectsOn} from './finish-preview.js';
 import {finishAttrs,finishPreview} from './finish-preview.js';
 import {deckBoxMarkup} from './deck-box.js';
@@ -7,7 +8,7 @@ import {detailOwnedGroups} from './quick-quantity.js';
 import {profileAvatar,profilePhotoControl} from './profile-art.js';
 import {infoPanel} from './app-info.js';
 import {buyContext,compactPriceSummary,selectedFinish,detailTabs,detailPanel} from "./pricing-presentation.js";
-import { homeValue, homeEdition, homeValueCoverage, homeResume } from "./home-ui.js";
+import { homeValue, homeEdition, homeResume } from "./home-ui.js";
 import {interactiveRules} from './rule-learning.js';
 import {brandMark} from './brand.js';
 import {conditionBadge} from './condition-value.js';
@@ -47,7 +48,7 @@ import { ensureTcgPrices } from "./mtg-tcgprice.js";
 import { S, meta, inv, deckById, currentDeck, priceOf } from "./store.js";
 import {
   esc, safeHref, usd, pct, signed, art, cardImage, img, manaCost, colorDots, segmented,
-  options, bar, ring, curveChart, lineChart, empty, setBadge, sym, symbolText, setIconUrl,
+  options, bar, ring, curveChart, empty, setBadge, sym, symbolText, setIconUrl,
 } from "./ui.js";
 import {
   cardKey as key, sumQty, rulesText, typeText, isLand, validateDeck,
@@ -58,7 +59,7 @@ import { printingState } from "./confidence.js";
 import { complexity } from "./planner.js";
 import {
   engineProfile, engineRoles, goldfish, scoreGrade, diffCards, deckValue,
-  collectionValue, recordValuePoint, lotPrice, swapImpact, applySwapsToCards, cardSig,
+  collectionValue, lotPrice, swapImpact, applySwapsToCards, cardSig,
 } from "./insights.js";
 import { bracketEstimate, manaBase, isOut, deckReview, explainSwap, podSpeed } from "./extras.js";
 import { buildability, rankBuildable } from "./share.js";
@@ -751,29 +752,19 @@ export function collectionList() {
 function collectionValueView() {
   const st = S.state,
     v = collectionValue(st.collection, S.catalog, st.printings, st.decks),
-    hist = recordValuePoint(st.valueHistory || [], v.total, v.copies, homeValueCoverage(v)),
-    colorNames = { W: "White", U: "Blue", B: "Black", R: "Red", G: "Green", Multi: "Multicolor", Colorless: "Colorless" },
-    maxColor = Math.max(1, ...Object.values(v.colors));
-  if (!st.collection.length) return empty("No value to track yet", "Add cards and CardStashy records your collection value once a day so you can watch it change.");
-  return `<section class="panel">
-    <div class="row between"><div><p class="eyebrow">Your collection value</p><p class="big" data-count="${v.total.toFixed(2)}" data-money="1">${usd(v.total)}</p><p class="muted small">${v.copies} copies${v.unpriced ? ` · ${v.unpriced} without a price` : ""}</p></div><button class="btn ghost small" data-act="refreshPrices">↻ Refresh prices</button></div>
-    ${lineChart(hist)}
-  </section>
-  <section class="panel"><h3>By color</h3>${Object.entries(v.colors)
-    .filter(([, x]) => x > 0)
-    .sort((a, b) => b[1] - a[1])
-    .map(([k, x]) => `<div class="meter"><span>${colorNames[k]}</span>${bar(x / maxColor, "c-" + k)}<b>${usd(x, 0)}</b></div>`)
-    .join("")}</section>
+    spareCopies = sumQty(v.spare), spareUnpriced = sumQty(v.spare.filter(t=>t.value===null)),
+    rows = st.collection.map(entry => ({entry, card:(entry.printingVerified && st.printings?.[entry.printingId]) || meta(entry.name), unit:lotPrice(entry,S.catalog,st.printings)}));
+  if (!st.collection.length && !st.valueHistory?.length) return empty("No value to track yet", "Add cards to start recording your collection’s value over time.");
+  return `<div ${valuePageAttrs("mtg")}>
+  ${valuePageOverview({game:"mtg",value:v,history:st.valueHistory || [],rows})}
   ${mtgTradeAdvice()}
   ${alertsPanel("mtg")}
-  <section class="panel"><h3>Most valuable</h3><div class="list compact">${v.top
-    .map((t) => `<button class="mini-row" data-act="card" data-name="${esc(t.entry.name)}"><span class="ellip">${t.entry.qty > 1 ? t.entry.qty + "× " : ""}${esc(t.entry.name)}${t.entry.finish !== "nonfoil" ? ` <b class="foil">${esc(t.entry.finish)}</b>` : ""}</span><b>${usd(t.value)}</b></button>`)
-    .join("")}</div></section>
-  <section class="panel"><div class="row between"><div><h3>Trade binder</h3><p class="muted small">Owned cards no deck uses: ${sumQty(v.spare)} copies · ${usd(v.spareValue)}</p></div>${v.spare.length ? `<button class="btn ghost small" data-act="copySpare">Copy list</button>` : ""}</div><div class="list compact">${v.spare
+  ${valueTopLots({game:"mtg",rows})}
+  <section class="panel"><div class="row between"><div><h3>Trade binder</h3><p class="muted small">Owned cards no deck uses: ${spareCopies} ${spareCopies===1?'copy':'copies'} · ${usd(spareCopies>0&&spareUnpriced===spareCopies?null:v.spareValue)}${spareUnpriced?' known subtotal':''}</p></div>${v.spare.length ? `<button class="btn ghost small" data-act="copySpare">Copy list</button>` : ""}</div><div class="list compact">${v.spare
     .slice(0, 30)
     .map((t) => `<button class="mini-row" data-act="card" data-name="${esc(t.name)}"><span class="ellip">${t.qty > 1 ? t.qty + "× " : ""}${esc(t.name)}</span><b>${usd(t.value)}</b></button>`)
-    .join("") || '<p class="muted small">Every card you own is used by a deck.</p>'}</div></section>
-  <p class="foot">Scryfall reference prices for the printing and finish you recorded (or a default printing). Real offers vary by condition and seller.</p>`;
+    .join("") || `<p class="muted small">${st.collection.length?'Every card you own is used by a deck.':'No spare cards yet.'}</p>`}</div></section>
+  <p class="foot">Scryfall reference prices for the printing and finish you recorded (or a default printing). Real offers vary by condition and seller.</p></div>`;
 }
 
 export function wishlistItems() {

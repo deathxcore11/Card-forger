@@ -395,9 +395,12 @@ async function adopt(cloud, local, download = false, decisionCurrent=()=>true) {
   const applied=await hooks.apply(cloud.data,{owner,current:unchanged});
   if(!current())return;
   if(applied===false){if(!unchanged())edited();return;}
-  writeMeta({ userId: owner, revision: cloud.revision, sig: workspaceSig(hooks.getState()) });
+  // Normalized remote baseline must not claim newly merged local history was uploaded.
+  const remoteSig=workspaceSig(applied?.cloudBaseline ?? cloud.data);
+  writeMeta({ userId: owner, revision: cloud.revision, sig: remoteSig });
   pending = null;
-  setStatus("synced");
+  if(workspaceSig(hooks.getState())!==remoteSig){setStatus("syncing");scheduleSync();}
+  else setStatus("synced");
 }
 
 // The user's answer to an "offer", "choose" or "conflict" prompt.

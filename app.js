@@ -1,3 +1,4 @@
+import {mergeLegacyGameHistories,mergeValueHistory} from './value-history.js';
 import {sharedBinderRows,sharedBinderValue} from './community-profile.js';
 import {setFinishEffects} from './finish-preview.js';
 import {createScryfallClient} from './scryfall-client.js';
@@ -237,6 +238,7 @@ let commitQueue = Promise.resolve();
 let conditionWorkspaceRevision = 0;
 let workspaceTransition = null;
 let accountLocked=cloudInfo().configured,accountGeneration=0;
+let valueHistoryReady=false, valueObservationPending=false;
 const accountWorkspaces=createAccountWorkspaces({read:readRecord,write:writeRecords,getState:()=>stripCache(S.state),blank,normalize,storage:STORAGE,recovery:RECOVERY});
 const accountStorageOptions=()=>({guardRecord:accountWorkspaces.guard});
 function queueWorkspaceWrite(transaction) {
@@ -281,6 +283,7 @@ async function commit(fn, { msg = "", recovery = false, rerender = true, enrich 
     const next = structuredClone(stripCache(S.state));
     const out = fn(next);
     const valid = normalize(next);
+    if (valueHistoryReady && !navigationWrite) trackValue(valid);
     if (recordDeckWork && !navigationWrite) recordHomeDeckWork(previous, valid);
     valid.lastSavedAt = new Date().toISOString();
     const records = [[STORAGE, valid]];
@@ -889,6 +892,7 @@ function render() {
   if (rulesGuideOrigin && JSON.stringify(currentRulesOrigin()) !== JSON.stringify(rulesGuideOrigin)) dismissRulesGuide();
   if(S.ui.view==='collection'){setTimeout(refreshCollectionConditions,0);if(T.game()==='mtg')setTimeout(()=>refreshMagicCollectionPrices().catch(()=>{}),0);}
   useMyPrices(S.state.myPrices);
+  if(valueHistoryReady && S.ui.view==='collection') scheduleValueObservation();
   // Owned printings Scryfall leaves unpriced get TCGplayer's price (once per collection size).
   if (S.ui.view === "collection" && String(S.state.collection.length)+":"+Math.floor(Date.now()/86400000) !== tcgCheckedFor) {
     tcgCheckedFor = String(S.state.collection.length)+":"+Math.floor(Date.now()/86400000);
@@ -1686,35 +1690,72 @@ function refreshChangedConditions(changed){
 let magicPriceRefresh=null;
 const magicPriceAttempts=new Map();
 async function refreshMagicCollectionPrices(force=false){
- if(magicPriceRefresh)return magicPriceRefresh;
- if(!navigator.onLine)return;
- const now=Date.now(),cards=new Map();
+ const scope=mutationScope(),screen=navigationStamp(),write=scopedCommit();
+ const current=()=>mutationCurrent(scope)&&navigationCurrent(screen)&&T.game()==='mtg';
+ const result={total:0,refreshed:0,failed:0,skipped:0,cancelled:false,committed:false,offline:false};
+ if(!current())return {...result,cancelled:true};
+ if(navigator.onLine===false)return {...result,offline:true};
+ const pending=magicPriceRefresh;
+ if(pending?.current()){
+  const previous=await pending.promise;
+  // A manual refresh must not inherit the automatic pass's 150-card limit.
+  if(force&&!pending.force&&current())return refreshMagicCollectionPrices(true);
+  return previous;
+ }
+ const now=Date.now(),requests=new Map();
  for(const e of S.state.collection){
   const c=(e.printingVerified&&S.state.printings?.[e.printingId])||meta(e.name);
-  if(!c?.id)continue;
-  const time=Date.parse(c.checkedAt);
-  if(force||((!Number.isFinite(time)||now-time>=86400000)&&now-(magicPriceAttempts.get(c.id)||0)>=3600000))cards.set(c.id,c);
- }
- const ids=[...cards.keys()].slice(0,force?5000:150);
- if(!ids.length)return;
- ids.forEach(id=>magicPriceAttempts.set(id,now));
- magicPriceRefresh=(async()=>{
-  let changed=false;
-  for(let i=0;i<ids.length;i+=75){
-   try{
-    const data=await api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers:ids.slice(i,i+75).map(id=>({id}))})});
-    for(const c of data.data||[]){
-     const old=cards.get(c.id);if(!old)continue;
-     const fresh=slim({...c,conditionQuotes:old.conditionQuotes,checkedAt:new Date().toISOString()});
-     if(S.state.printings?.[c.id])S.state.printings[c.id]=fresh;
-     if(meta(c.name)?.id===c.id)cacheCard(fresh);
-     changed=true;
-    }
-   }catch{}
+  if(!c?.id){
+   if(force&&e.name){const token='name:'+key(e.name);requests.set(token,{token,name:e.name,identifier:{name:e.name.split(' // ')[0]}});}
+   continue;
   }
-  if(changed){saveCatalogSoon();trackValue();await save();if(S.ui.view==='collection')render();}
+  const time=Date.parse(c.checkedAt),token='id:'+c.id;
+  if(force||((!Number.isFinite(time)||now-time>=86400000)&&now-(magicPriceAttempts.get(c.id)||0)>=3600000))requests.set(token,{token,card:c,identifier:{id:c.id}});
+ }
+ const queue=[...requests.values()].slice(0,force?5000:150);
+ result.total=requests.size;result.skipped=result.total-queue.length;
+ if(!queue.length)return result;
+ const job={force,current,promise:null};
+ magicPriceRefresh=job;
+ job.promise=(async()=>{
+  const updated=new Map();
+  for(let i=0;i<queue.length&&current();i+=75){
+   const batch=queue.slice(i,i+75);
+   batch.forEach(r=>{if(r.card)magicPriceAttempts.set(r.card.id,now);});
+   try{
+    const data=await api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers:batch.map(r=>r.identifier)})});
+    // cacheCard also evaluates personal alerts. Do not call it for a retired
+    // account, workspace or game even though the catalogue itself is public.
+    if(!current())break;
+    const matched=new Set();
+    for(const c of data.data||[]){
+     const names=new Set([c.name,c.name?.split(' // ')[0],...(c.card_faces||[]).map(f=>f.name)].filter(Boolean).map(key));
+     const matches=batch.filter(r=>r.card?r.card.id===c.id:names.has(key(r.name))||names.has(key(r.name.split(' // ')[0])));
+     if(!c.id||!matches.length)continue;
+     const old=matches.find(r=>r.card)?.card;
+     const fresh=slim({...c,conditionQuotes:old?.conditionQuotes,checkedAt:new Date().toISOString()});
+     updated.set(c.id,fresh);
+     const aliases=matches.filter(r=>r.name).map(r=>r.name);
+     if(aliases.length||meta(c.name)?.id===c.id)cacheCard(fresh,aliases);
+     matches.forEach(r=>matched.add(r.token));
+    }
+    result.refreshed+=matched.size;result.failed+=batch.length-matched.size;
+   }catch{if(current())result.failed+=batch.length;}
+  }
+  result.cancelled=!current();
+  if(result.cancelled)return result;
+  if(updated.size){
+   saveCatalogSoon();
+   result.committed=await write(s=>{
+    for(const [id,fresh] of updated)if(s.printings?.[id])s.printings[id]={...fresh,conditionQuotes:s.printings[id].conditionQuotes||fresh.conditionQuotes};
+    return true;
+   },{guard:current,rerender:false,enrich:false,recordDeckWork:false})===true;
+   result.cancelled=!current();
+   if(!force&&result.committed&&current()&&S.ui.view==='collection')render();
+  }
+  return result;
  })();
- try{await magicPriceRefresh;}finally{magicPriceRefresh=null;}
+ try{return await job.promise;}finally{if(magicPriceRefresh===job)magicPriceRefresh=null;}
 }
 function refreshCollectionConditions(){
  if(S.ui.view!=='collection'||!conditionScheduler.canScheduleCollection()||navigator.onLine===false)return;
@@ -3734,18 +3775,22 @@ A.loadAllData = async (t) => {
   }
 };
 A.refreshPrices = async (t) => {
-
+  const scope=mutationScope(),screen=navigationStamp();
+  const current=()=>mutationCurrent(scope)&&navigationCurrent(screen)&&T.game()==='mtg';
   const done = busy(t, "Refreshing…");
   try {
-    const r = await resolveNames(S.state.collection.map((e) => e.name), (m) => toast(m), true);
-    await refreshMagicCollectionPrices(true);
-    if(!mutationCurrent(scope))return;
-    trackValue();
-    await save();
-    render();
-    toast(`Prices refreshed for ${r.total - r.failed.length} cards.`);
+    const r = await refreshMagicCollectionPrices(true);
+    if(!current()||r.cancelled)return;
+    if(r.offline)return toast("You’re offline. Saved prices have been kept.");
+    if(!r.total)return toast("No cards to refresh.");
+    if(r.refreshed){
+      render();
+      toast(`Price data refreshed for ${r.refreshed} ${r.refreshed===1?'card':'cards'}.${r.failed?` ${r.failed} ${r.failed===1?'lookup':'lookups'} failed; saved prices were kept.`:''}${r.skipped?` ${r.skipped} cards were not checked.`:''}`);
+    }else toast("Couldn’t refresh prices. Saved prices have been kept.");
+  } catch {
+    if(current())toast("Couldn’t finish refreshing prices. Please try again.");
   } finally {
-    done();
+    if(current())done();
   }
 };
 A.verifyAll = async (t) => {
@@ -5627,11 +5672,36 @@ async function storageDetail() {
    Boot
    ========================================================= */
 
-function trackValue() {
-  for (const g of ["ptcg", "ygo"]) T.trackTcgValue?.(g);
-  const v = collectionValue(S.state.collection, S.catalog, S.state.printings, []);
-  if (!S.state.collection.length) return;
-  S.state.valueHistory = recordValuePoint(S.state.valueHistory, v.total, v.copies, homeValueCoverage(v));
+function trackValue(state = S.state) {
+  if (!valueHistoryReady || accountLocked) return;
+  // A commit observes its validated draft, not the previous render's price map.
+  // This is synchronous; restore the active workspace map before yielding.
+  useMyPrices(state.myPrices);
+  try {
+    for (const g of ["ptcg", "ygo"]) T.trackTcgValue(g, T.collectionValue(g, state), state);
+    const v = collectionValue(state.collection, S.catalog, state.printings, []);
+    if (!state.collection.length && !state.valueHistory?.length) return;
+    state.valueHistory = recordValuePoint(state.valueHistory, v.total, v.copies, homeValueCoverage(v));
+  } finally { useMyPrices(S.state.myPrices); }
+}
+
+function valueHistories(state) { return JSON.stringify([state.valueHistory,state.tcg?.ptcg?.valueHistory,state.tcg?.ygo?.valueHistory]); }
+function valueObservationDraft(state) { return {...state,tcg:Object.fromEntries(Object.entries(state.tcg||{}).map(([g,side])=>[g,{...side}]))}; }
+function scheduleValueObservation() {
+  if(valueObservationPending || !valueHistoryReady || accountLocked)return;
+  const next=valueObservationDraft(S.state);trackValue(next);
+  if(valueHistories(next)===valueHistories(S.state))return;
+  const write=scopedCommit();valueObservationPending=true;
+  // Existing account/workspace transaction boundary owns the save. No render writes.
+  safely(write(()=>{}, {enrich:false,recordDeckWork:false}).finally(()=>{valueObservationPending=false;}));
+}
+function importReadyValueHistory() {
+  if(!valueHistoryReady || accountLocked)return;
+  const legacy=Object.fromEntries(['ptcg','ygo'].map(g=>[g,T.readLegacyTcgValueHistory(g)]));
+  const next=valueObservationDraft(S.state);mergeLegacyGameHistories(next,legacy);trackValue(next);
+  if(valueHistories(next)===valueHistories(S.state))return;
+  const write=scopedCommit();
+  safely(write(state=>mergeLegacyGameHistories(state,legacy),{enrich:false,recordDeckWork:false}));
 }
 
 // Background loads in game modules ask for a redraw.
@@ -5698,7 +5768,7 @@ async function boot() {
   initCloud({
     accountChanged: () => {
       dismissConditionInfo();
-      accountLocked=true;accountGeneration++;workspaceVisitRevision++;lastUndo=null;
+      accountLocked=true;valueHistoryReady=false;accountGeneration++;workspaceVisitRevision++;lastUndo=null;
       community.reset();deckBoxTransitions.reset();clearConditionAttempts();conditionScheduler=createConditionRefreshScheduler();
       clearAskConversations();clearRulesConversations();rulesGuideOrigin=null;
       scanCtx.accountChanged?.();profilePicker.close(true);headerPicker.close(true);
@@ -5720,7 +5790,8 @@ async function boot() {
       accountLocked=false;clearGameContext();queueMicrotask(()=>community.refresh());
       // Device price histories are private records too; never touch a previous
       // owner's legacy keys while the current account is still being resolved.
-      for(const g of ['ptcg','ygo'])T.trackTcgValue?.(g);
+      valueHistoryReady=true;
+      importReadyValueHistory();
       const game=GAMES[S.state.settings.game]?S.state.settings.game:'mtg';
       const hash=accountOpenedOnce?'#home':normalizeRoute(location.hash);accountOpenedOnce=true;
       installNavigation({game,hash,mode:'workspace',entry:makeEntry(game,hash,activeEntry?.index||0)});
@@ -5732,8 +5803,18 @@ async function boot() {
     getState: () => stripCache(S.state),
     // Replace this device's workspace with the account copy.
     apply: async (data,{owner,current}={}) => {
+      const cloudBaseline=stripCache(normalize(data));
       owner ||= cloudInfo().user?.id;
-      const applied = await replaceWorkspace(data, {
+      const applied = await replaceWorkspace(() => {
+        const incoming=normalize(data);
+        // Same-account observations from this device remain useful on cloud
+        // adoption. Incoming workspace wins duplicate dates; holdings are not merged.
+        incoming.valueHistory=mergeValueHistory(S.state.valueHistory,incoming.valueHistory);
+        for(const game of ['ptcg','ygo'])incoming.tcg[game].valueHistory=mergeValueHistory(
+          mergeValueHistory(T.readLegacyTcgValueHistory(game),S.state.tcg?.[game]?.valueHistory),
+          incoming.tcg[game].valueHistory);
+        return incoming;
+      }, {
         recovery: (state) => !isEmptyWorkspace(state),
         // Account changes while this operation waits must not load the old account.
         guard: () => !accountLocked && !!owner && cloudInfo().user?.id === owner && (!current || current()),
@@ -5741,7 +5822,7 @@ async function boot() {
       if (!applied) return false;
       render();refreshProfileAvatar();
       setTimeout(autoEnrich, 200);
-      return true;
+      return {cloudBaseline};
     },
     backup: async (state, label, file) => {
       await writeRecord(RECOVERY, state,accountStorageOptions());
