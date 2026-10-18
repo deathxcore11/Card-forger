@@ -69,9 +69,10 @@ try{for(const width of [320,390,768,1440]){
 // Values and ownership remain isolated fixtures; these images prove visual fit only.
 const realArt = {
  ptcg: {url:'https://assets.tcgdex.net/en/base/base4/20/high.webp',type:'image/webp',name:'Zapdos · Base Set 2'},
- mtg: {url:'https://cards.scryfall.io/normal/front/4/1/41a76adc-42e1-4f65-940c-d0a5555c0633.jpg?1783928835',type:'image/jpeg',name:'Miara, Thorn of the Glade'}
+ mtg: {url:'https://api.scryfall.com/cards/cmr/133',metadata:true,type:'image/jpeg',name:'Miara, Thorn of the Glade'}
 };
 for(const art of Object.values(realArt)){
+ if(art.metadata){const metadata=await fetch(art.url,{signal:AbortSignal.timeout(30000)});assert(metadata.ok,'Exact Magic printing metadata must load: '+metadata.status);const card=await metadata.json();assert.equal(card.set,'cmr');assert.equal(card.collector_number,'133');art.name=card.name;art.url=card.image_uris.normal;}
  const response=await fetch(art.url,{signal:AbortSignal.timeout(30000)});
  assert(response.ok,'Actual comparison art must load: '+art.url);
  art.bytes=Buffer.from(await response.arrayBuffer());assert(art.bytes.length>5000,'Real card artwork is nonempty');
@@ -97,7 +98,7 @@ for(const game of ['ptcg','mtg']){
    const geometry=await tile.evaluate(n=>{const img=n.querySelector('img.card-img'),r=n.getBoundingClientRect(),i=img.getBoundingClientRect();return {padding:getComputedStyle(n).paddingTop,left:i.left-r.left,right:r.right-i.right,top:i.top-r.top,bottom:r.bottom-i.bottom,ratio:i.width/i.height,natural:img.naturalWidth/img.naturalHeight,fit:getComputedStyle(img).objectFit};});
    assert.equal(geometry.padding,'5px','Both games retain full shared frame weight');
    if(game==='ptcg'){for(const side of ['left','right','top','bottom'])assert(Math.abs(geometry[side]-5)<.2,'No black internal moat '+side);assert(Math.abs(geometry.ratio-geometry.natural)<.002);assert.equal(geometry.fit,'contain');}
-   await capture(page,'actual-frame-'+game+'-'+width);
+   await capture(page,'pokemon-actual-frame-'+game+'-'+width);
    report.push({game,width,actualArtSource:art.url,artName:art.name,geometry,physicalPhoneVerified:false});
   }
  }finally{await app.close();}
