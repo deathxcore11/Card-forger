@@ -1,3 +1,4 @@
+import {chooseInlinePrinting} from './scanner-review-controls.mjs';
 // HOSTED ONLY. Actual app Search, scanner review/save and collection scheduler.
 // Mocked synthetic quotes do NOT prove a deployed key or paid provider is live.
 import assert from 'node:assert/strict';
@@ -114,12 +115,12 @@ async function delayedIsolation(app,kind){
   await condition(page,'Damaged');app.condition.respond(()=>available({quotes:[quote()]}));app.condition.release();await settle(app);assert.equal((await reviewState(page)).condition,'Damaged');assert.equal((await reviewState(page)).price,null,'Late LP response is not current Damaged quote');await condition(page,LP);await waitPrice(page,7.25);assert.equal(app.condition.records.length,1);
  }
  if(kind==='finish'||kind==='language'){
-  if(kind==='finish')await select(page,'[data-change="scanConfirmFinish"]','foil');else{await moreControls(page);await select(page,'[data-change="scanConfirmLanguage"]','ja');}
+  if(kind==='finish')await chooseInlinePrinting(page,MAGIC_PRINTS[0].id,'foil');else{await moreControls(page);await select(page,'[data-change="scanConfirmLanguage"]','ja');}
   await advance(page);await waitRequest(app,p=>kind==='finish'?p.finish==='foil':p.language==='ja');const expected=await reviewState(page);assert.equal(expected.price,null);app.condition.release(row=>row===first);await waitUntil(()=>first.settled,'Old identity response');await frames(page);assert.deepEqual(await reviewState(page),expected,'Late quote for old finish/language cannot update new selection');
   await act(page,'scanDismiss').click();app.condition.release();await settle(app);assert.equal(await reviewState(page),null,'New identity late response also stays dismissed');
  }
  if(kind==='printing'){
-  await act(page,'scanChangePrinting').click();await page.locator('[data-act="printingPickerView"][data-id="grid"]').click();await page.locator('.printing-picker-results[aria-busy="false"]').waitFor();const selected=await page.locator('.printing-picker-choice').evaluateAll((nodes,id)=>nodes.map(node=>({...node.dataset})).find(row=>row.cardId===id&&JSON.parse(row.key)[5]==='foil'),MAGIC_PRINTS[1].id);assert(selected,'Existing picker exposes exact second printing foil row');await page.locator(`.printing-picker-choice[data-key=${JSON.stringify(selected.key)}]`).click();await page.waitForFunction(()=>!document.querySelector('#sheet').open);await advance(page);await waitRequest(app,p=>p.id===MAGIC_PRINTS[1].id);const expected=await reviewState(page);assert.equal(expected.cardId,MAGIC_PRINTS[1].id);app.condition.release(row=>row===first);await waitUntil(()=>first.settled,'Old printing response');await frames(page);assert.deepEqual(await reviewState(page),expected);app.condition.release();await settle(app);
+  await chooseInlinePrinting(page,MAGIC_PRINTS[1].id,'foil');await advance(page);await waitRequest(app,p=>p.id===MAGIC_PRINTS[1].id);const expected=await reviewState(page);assert.equal(expected.cardId,MAGIC_PRINTS[1].id);app.condition.release(row=>row===first);await waitUntil(()=>first.settled,'Old printing response');await frames(page);assert.deepEqual(await reviewState(page),expected);app.condition.release();await settle(app);
  }
  assert.deepEqual(collectionCore(await savedLots(page)),before);assert.equal(await page.evaluate(()=>window.__conditionReview.ocrCalls),0);
 }

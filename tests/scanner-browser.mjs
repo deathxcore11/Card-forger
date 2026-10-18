@@ -1,3 +1,4 @@
+import {chooseInlinePrinting} from './scanner-review-controls.mjs';
 import {openCapturedCard} from './scanner-review-controls.mjs';
 // Real OCR + real public lookup APIs + production popup/save handlers, before release.
 import assert from 'node:assert/strict';
@@ -165,7 +166,7 @@ try{
    await page.locator('#sheet[open] [data-act="closeSheet"]').first().click();
    // Playwright 1.62 polls predicate return values synchronously. Import once;
    // never return a truthy Promise from the polling predicate itself.
-   await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js'),{S}=await import('/store.js');window.__scannerTestRead={loadBatch,state:()=>S.ui.scan,collection:g=>(g==='mtg'?S.state:S.state.tcg[g]).collection};});
+   await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js'),{S}=await import('/store.js');window.__uiTestState=S;window.__scannerTestRead={loadBatch,state:()=>S.ui.scan,collection:g=>(g==='mtg'?S.state:S.state.tcg[g]).collection};});
    await page.getByRole('button',{name:'Photo',exact:true}).click();
    const upload=page.locator('input[data-change="scanFile"]').last();
    await upload.setInputFiles({name:ref.g+(ref.g==='ptcg'?'.webp':'.jpg'),mimeType:ref.mime,buffer:ref.bytes});
@@ -184,63 +185,23 @@ try{
    console.log(`${ref.game} real OCR: ${JSON.stringify(read)}`);
    const popup=page.getByRole('region',{name:'Confirm scanned card',exact:true});
    assert.equal(await popup.count(),1,`${ref.game} reference photo must produce a candidate, not a blank result`);
-   assert.equal(await popup.getByText(ref.name,{exact:true}).count(),1,`${ref.game} correct card title`);
-   assert.equal(await popup.getByRole('img',{name:ref.name,exact:true}).count(),1,'card copy is shown');
-   let reviewedPrinting=null;
-   if(ref.g==='mtg'){
-    const pending=await page.evaluate(async expectedId=>{
-     const {S}=await import('/store.js'),{mtgCollectors}=await import('/scan.js'),{textVerifiedMatch}=await import('/scancam.js'),s=S.ui.scan,i=s.cands.findIndex(c=>String(c.id)===expectedId),c=s.cands[i];
-     return {selected:s.confirm.i,i,id:c?.id,set:c?.card?.set,number:c?.card?.collector_number,exact:c?.exact,verified:!!c&&textVerifiedMatch('mtg',c,s.read),observations:mtgCollectors(s.read.code,s.read.full),saved:S.state.collection.length};
-    },ref.id);
-    assert.equal(pending.id,ref.id,'photo review retains the exact reference printing, not just its name');assert.equal(pending.set,'msc');assert.equal(String(pending.number).replace(/^0+/,''),'806');assert.equal(pending.saved,0);
-    if(pending.observations.length>1){assert.equal(pending.selected,-1,'conflicting photo readings cannot silently select a printing');assert.equal(pending.exact,false);assert.equal(pending.verified,false);}
-    if(pending.selected<0){
-     assert.equal(pending.verified,false,'an unverified printing needs an explicit choice');
-     assert(await popup.locator('[data-change="scanConfirmFinish"]').isDisabled(),'finish waits for printing review');
-     assert(await popup.getByRole('button',{name:'Add to collection',exact:true}).isDisabled(),'unreviewed printing cannot be saved');
-     await popup.locator(`[data-act="scanChoose"][data-i="${pending.i}"]`).click();
-     const selected=await page.evaluate(async()=>{const {S}=await import('/store.js'),{textVerifiedMatch}=await import('/scancam.js'),s=S.ui.scan,c=s.cands[s.confirm.i];return {id:c.id,exact:c.exact,verified:textVerifiedMatch('mtg',c,s.read)};});
-     assert.equal(selected.id,ref.id);assert.equal(selected.exact,pending.exact,'manual review does not fabricate OCR proof');assert.equal(selected.verified,false);
-    }else assert.equal(pending.selected,pending.i,'only the actual reference printing may already be selected');
-    assert(await popup.locator('[data-change="scanConfirmFinish"]').isEnabled(),'explicit printing review enables finish choice');
-   }
-   if(ref.g==='ptcg'){
-    const pending=await page.evaluate(async expectedId=>{
-     const {S}=await import('/store.js'),{textVerifiedMatch}=await import('/scancam.js'),s=S.ui.scan,i=s.cands.findIndex(c=>String(c.id)===expectedId),c=s.cands[i];
-     return {selected:s.confirm.i,i,id:c?.id,exact:c?.exact,verified:!!c&&textVerifiedMatch('ptcg',c,s.read),saved:S.state.tcg.ptcg.collection.length};
-    },ref.id);
-    assert.equal(pending.id,ref.id,'Pokémon photo offers the exact reference printing');assert.equal(pending.saved,0);
-    if(pending.selected<0){
-     assert(await popup.locator('[data-change="scanConfirmFinish"]').isDisabled());assert(await popup.getByRole('button',{name:'Add to collection',exact:true}).isDisabled());
-     await popup.locator(`[data-act="scanChoose"][data-i="${pending.i}"]`).click();
-     const selected=await page.evaluate(async()=>{const {S}=await import('/store.js'),{textVerifiedMatch}=await import('/scancam.js'),s=S.ui.scan,c=s.cands[s.confirm.i];return {id:c.id,exact:c.exact,verified:textVerifiedMatch('ptcg',c,s.read)};});
-     assert.equal(selected.id,ref.id);assert.equal(selected.exact,pending.exact);assert.equal(selected.verified,pending.verified,'manual review preserves, not invents, OCR evidence');
-    }else assert.equal(pending.selected,pending.i,'only the reference Pokémon printing may already be selected');
-    assert(await popup.locator('[data-change="scanConfirmFinish"]').isEnabled());
-   }
-   if(ref.g==='ygo'){
-    // This public image is marked Replica and has no actual set code. Its
-    // artwork/name identifies Dark Magician, not CT13 or a 25th printing.
-    assert.match(read.read.code,/Replica/i,'fixture has no proof of a retail printing');
-    assert(await popup.locator('[data-change="scanConfirmFinish"]').isDisabled(),'edition waits for explicit printing review');
-    assert(await popup.getByRole('button',{name:'Add to collection',exact:true}).isDisabled(),'ambiguous printing cannot be added');
-    const pending=await page.evaluate(async()=>{const {S}=await import('/store.js');return {selected:S.ui.scan.confirm.i,options:S.ui.scan.cands.map((c,i)=>({i,id:String(c.card?.id||c.id),name:c.name,print:c.print,exact:c.exact})),saved:S.state.tcg.ygo.collection.length};});
-    assert.equal(pending.selected,-1,'no first-result printing is silently chosen');assert.equal(pending.saved,0);
-    assert(pending.options.length>=2&&pending.options.length<=3,'ambiguous printing offers a compact review');
-    assert(pending.options.every(c=>c.name===ref.name&&c.id===ref.id&&!c.exact),'same-name suggestions are not OCR-proven printings');
-    reviewedPrinting=pending.options[1];assert(reviewedPrinting.print,'offered printing has explicit set/rarity identity');
-    await popup.locator(`[data-act="scanChoose"][data-i="${reviewedPrinting.i}"]`).click();
-    const selected=await page.evaluate(async()=>{const {S}=await import('/store.js');const q=S.ui.scan.confirm,c=S.ui.scan.cands[q.i];return {i:q.i,print:c.print,exact:c.exact};});
-    assert.equal(selected.i,reviewedPrinting.i);assert.equal(selected.print,reviewedPrinting.print);assert.equal(selected.exact,false,'manual review does not fabricate OCR proof');
-    assert(await popup.locator('[data-change="scanConfirmFinish"]').isEnabled(),'reviewing printing enables edition choice');
-   }
+   await popup.locator('.scan-inline-printings .printing-carousel[aria-busy="false"]').waitFor();
+   assert.equal(await popup.locator('.printing-slide.is-current').getByText(ref.name,{exact:true}).count(),1,`${ref.game} correct card title`);
+   assert.equal(await popup.locator('.printing-slide.is-current .printing-slide-art img').count(),1,'card copy is shown');
+   const evidence=await page.evaluate(async g=>{const {S}=await import('/store.js'),{textVerifiedMatch}=await import('/scancam.js');return S.ui.scan.cands.map(c=>({id:String(c.id),exact:c.exact,verified:textVerifiedMatch(g,c,S.ui.scan.read)}));},ref.g);
+   assert(evidence.some(c=>c.id===ref.id),'Recognized candidate retains the reference ID');
+   if(ref.g==='ygo'){assert.match(read.read.code,/Replica/i);assert(evidence.every(c=>!c.exact&&!c.verified),'Replica artwork cannot prove a retail printing');}
+   const row=await chooseInlinePrinting(page,ref.id);
+   const selected=await page.evaluate(async()=>{const {S}=await import('/store.js');return {candidate:S.ui.scan.cands[0],finish:S.ui.scan.confirm.finish};});
+   assert.equal(selected.candidate.exact,false,'Choosing a printing never fabricates OCR proof');assert.equal(selected.candidate.printingConfirmed,true);
+   const reviewedPrinting=ref.g==='ygo'?{print:selected.candidate.print}:null;
    await popup.getByRole('button',{name:'More copies',exact:true}).click();await popup.getByRole('button',{name:'More copies',exact:true}).click();
-   // Detail hydration can replace this row after recognition. Wait for an actual
-   // offered finish instead of reading the temporary empty option collection.
-   await popup.locator('[data-change="scanConfirmFinish"] option:not([value=""])').first().waitFor({state:'attached'});
-   const finish=await popup.locator('[data-change="scanConfirmFinish"] option').evaluateAll(opts=>opts.find(x=>x.value)?.value);
-   assert(finish,'printing exposes a finish to explicitly confirm');
-   await popup.locator('[data-change="scanConfirmFinish"]').selectOption(finish);
+   let finish=selected.finish;
+   if(!finish){
+    await popup.locator('[data-change="scanConfirmFinish"] option:not([value=""])').first().waitFor({state:'attached'});
+    finish=await popup.locator('[data-change="scanConfirmFinish"] option').evaluateAll(opts=>opts.find(x=>x.value)?.value);
+    assert(finish);await popup.locator('[data-change="scanConfirmFinish"]').selectOption(finish);
+   }
    await popup.locator('.scan-review-more summary').click();
    await popup.getByRole('button',{name:'Lightly Played',exact:true}).click();
    await popup.getByRole('combobox',{name:'Scanned card language',exact:true}).tap();

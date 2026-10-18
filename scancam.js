@@ -720,7 +720,7 @@ export function registerScanner(ctx) {
     const identity=()=>JSON.stringify([q.batchId||'',q.captureRevision||'',q.i,q.game||game(),c.id,c.card?.id,c.print||'',c.setReleaseId||'',!!c.setReleaseUnverified,q.finish,q.condition,q.lang]);
     const selected=identity(),captureId=String(q.batchId||''),revision=String(q.captureRevision||'');
     const current=()=>visitCurrent()&&st.confirm===q&&q.priceRequest===token&&st.cands?.[q.i]===c&&
-      S.ui.view==='scan'&&S.ui.sheetCtx===sheet&&!q.saving&&!q.pickerOpening&&identity()===selected&&
+      S.ui.view==='scan'&&S.ui.sheetCtx===sheet&&!q.saving&&(!q.pickerOpening||ctx.inlinePrinting)&&identity()===selected&&
       (!captureId||loadBatch().some(row=>row.id===captureId&&String(row.captureRevision||'')===revision));
     q.priceRequest=token;
     const selection={condition:q.condition||'Near Mint',language:String(q.lang||'en').toLowerCase().replace('_','-')};

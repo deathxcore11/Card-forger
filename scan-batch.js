@@ -6,7 +6,9 @@ export const BATCH_LIMIT = 48;
 export const CAPTURE_BUFFER_LIMIT = 4;
 // localStorage is shared with the rest of the app. These are conservative
 // application ceilings, not a promise that the browser has this much space.
-export const CAPTURE_ORIGINAL_LIMIT = 256000;
+// A detailed 1280px card can exceed 256KB after JPEG/base64 encoding. Keep
+// its readable original; the unchanged total budget still bounds every batch.
+export const CAPTURE_ORIGINAL_LIMIT = 512000;
 export const CAPTURE_STORAGE_LIMIT = 3000000;
 export function captureCapacity(rows, originalShot = '') {
   const chars=JSON.stringify(rows).length;

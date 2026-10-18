@@ -55,3 +55,11 @@ for(const game of ['mtg','ptcg','ygo']){
  const good=A.scanIdentifyAI();resolve({game,readable:true,name:'Fixture',number:'123'});await good;assert.equal(catalogueCalls,1);assert.equal(S.ui.scan.cands[0].exact,false);assert.equal(S.ui.scan.confirm.finish,'');assert.equal(S.ui.scan.confirm.qty,2);assert.equal(S.ui.scan.confirm.lang,'ja');assert.equal(writes,0);
 }
 console.log('PASS: inline carousel/filter identity; real Bewear number lookup; all-game strict matching; AI request validation/budget; unreadable, late and successful AI responses never autosave.');
+
+// Loading printings in the same panel must not cancel an already confirmed
+// condition selection; only changing the actual card/finish invalidates it.
+S.state=blank();S.state.settings.game='mtg';S.ui.view='scan';S.ui.sheetCtx=null;
+const pricingActions={};let finishLoad,quoteCurrent=false;
+registerScanner({A:pricingActions,C:{},inlinePrinting:true,game:()=> 'mtg',render(){},toast(){},priceOf:()=>7.25,openPrintingPicker:()=>new Promise(r=>finishLoad=r),requestConditionPrice:(_g,_c,_f,_s,_done,current)=>{quoteCurrent=current();return {status:'available'};}});
+S.ui.scan={cands:[{id:card.id,name:card.name,card,printingConfirmed:true}],confirm:{game:'mtg',i:0,finish:'nonfoil',condition:'Lightly Played',lang:'en',qty:1,priceStatus:'unavailable'}};
+const opening=pricingActions.scanChangePrinting();pricingActions.scanRetryConditionPrice();assert(quoteCurrent,'An inline catalogue request does not pause condition pricing');finishLoad();await opening;
