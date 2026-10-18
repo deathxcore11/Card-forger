@@ -56,6 +56,6 @@ console.log('PASS: first-day graph remains visible and selected condition price 
 for(const game of ['mtg','ptcg','ygo']){
  const card={id:'card',name:'Test card'},st={collection:conditions.map((condition,i)=>({id:'lot-'+i,cardId:card.id,name:card.name,condition,qty:1,finish:i===2?'foil':'nonfoil',language:i===3?'ja':'en'}))};
  const html=detailOwnedGroups(game,st.collection,card);assert.equal((html.match(/class="owned-group"/g)||[]).length,5);assert.match(html,/Lightly Played/);assert.match(html,/JA/);assert.match(html,/foil/);
- assert(adjustOwnedLot(st,'lot-1',1));assert.deepEqual(st.collection.map(e=>e.qty),[1,2,1,1,1]);assert(adjustOwnedLot(st,'lot-0',-1));assert.equal(st.collection.length,4);assert.equal(adjustOwnedLot(st,'lot-0',-1),false);assert.equal(adjustOwnedLot(st,'lot-1',-99),false);assert.equal(st.collection[0].qty,2);
+ assert(adjustOwnedLot(st,'lot-1',1));assert.equal(Object.hasOwn(st.collection[1],'reserved'),false,'Changing quantity does not add reservation metadata to an unreserved lot');assert.deepEqual(st.collection.map(e=>e.qty),[1,2,1,1,1]);assert(adjustOwnedLot(st,'lot-0',-1));assert.equal(st.collection.length,4);assert.equal(adjustOwnedLot(st,'lot-0',-1),false);assert.equal(adjustOwnedLot(st,'lot-1',-99),false);assert.equal(st.collection[0].qty,2);
 }
 console.log('PASS: all-game condition groups preserve printing/finish/language identity, exact-lot increments, zero removal and invalid-delta rejection.');

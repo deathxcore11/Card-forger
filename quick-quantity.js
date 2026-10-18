@@ -5,7 +5,7 @@ export function detailOwnedLots(game,entries,card){return game==='mtg'?ownedCard
 export function adjustOwnedLot(workspace,id,delta){
  if(![-1,1].includes(delta))return false;
  const lot=workspace.collection.find(e=>e.id===id);if(!lot||lot.qty+delta>100000)return false;
- lot.qty=Math.max(0,lot.qty+delta);lot.reserved=Math.min(lot.reserved||0,lot.qty);
+ lot.qty=Math.max(0,lot.qty+delta);if(Object.hasOwn(lot,"reserved"))lot.reserved=Math.min(lot.reserved||0,lot.qty);
  workspace.collection=workspace.collection.filter(e=>e.qty>0);return true;
 }
 export function detailOwnedGroups(game,entries,card){
