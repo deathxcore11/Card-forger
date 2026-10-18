@@ -2462,10 +2462,10 @@ img[data-tier="t5"] { animation: tier-fire-ring 2.4s ease-in-out infinite; }
 /* Pokémon collection art follows its intrinsic ratio. A fixed 63/88 host plus
    contain was adding dark letterboxing inside the decorative tier frame. */
 #content.view-gallery .display-list .lot:not(.wanted) .lot-art[data-finish-game="ptcg"] { aspect-ratio:auto; border-radius:4.6% / 3.3%; }
-#content.view-gallery .display-list .lot[data-tier]:not([data-tier="tn"]):not(.wanted) .lot-art[data-finish-game="ptcg"] { padding:2px; }
+#content.view-gallery .display-list .lot[data-tier]:not([data-tier="tn"]):not(.wanted) .lot-art[data-finish-game="ptcg"] { padding:5px; }
 #content.view-gallery .display-list .lot:not(.wanted) .lot-art[data-finish-game="ptcg"] > img.card-img { display:block; width:100%; height:auto; aspect-ratio:auto; object-fit:contain; border-radius:4.2% / 3%; }
-#content.view-gallery .display-list .lot:not(.wanted) .lot-art[data-finish-game="ptcg"]::after { inset:2px; border-radius:4.2% / 3%; }
-#content.view-gallery .display-list .lot:not(.wanted) .lot-art[data-finish-game="ptcg"] .tile-chrome { left:2px; right:2px; top:2px; }
+#content.view-gallery .display-list .lot:not(.wanted) .lot-art[data-finish-game="ptcg"]::after { inset:5px; border-radius:4.2% / 3%; }
+#content.view-gallery .display-list .lot:not(.wanted) .lot-art[data-finish-game="ptcg"] .tile-chrome { left:5px; right:5px; top:5px; }
 /* Selection never remounts the card or interrupts its tier animation. */
 .display-list .lot:has(.batch-mark) { position:relative; }
 #content.view-gallery .display-list .lot > .batch-mark { position:absolute; top:12px; left:12px; z-index:8; padding:6px; border-radius:10px; background:rgba(12,16,23,.85); }

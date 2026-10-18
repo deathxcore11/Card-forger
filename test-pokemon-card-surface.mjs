@@ -10,11 +10,11 @@ assert.equal(finishMaterialProfile('ptcg',card,model),'line-holo');
 assert.equal(model.layers[0].mask,'pk-cel-art','Quiet texture must retain its artwork-only mask');
 const style=readFileSync('style.css','utf8'),foil=readFileSync('finish-effects.css','utf8');
 assert.match(style,/#content\.view-gallery \.display-list \.lot:not\(\.wanted\) \.lot-art\[data-finish-game="ptcg"\] \{ aspect-ratio:auto;/);
-assert.match(style,/\.lot\[data-tier\]:not\(\[data-tier="tn"\]\):not\(\.wanted\) \.lot-art\[data-finish-game="ptcg"\] \{ padding:2px;/);
+assert.match(style,/\.lot\[data-tier\]:not\(\[data-tier="tn"\]\):not\(\.wanted\) \.lot-art\[data-finish-game="ptcg"\] \{ padding:5px;/);
 assert.match(style,/\.lot-art\[data-finish-game="ptcg"\] > img\.card-img \{[^}]*height:auto; aspect-ratio:auto; object-fit:contain;/);
 assert.match(foil,/\.finish-overlay\[data-material-profile="line-holo"\] \.finish-pattern\{[^}]*opacity:\.18\}/,'Scoped opacity must equal generic selector specificity, not be silently overridden');
 for(const width of [150,240,390]){
- const inner=width-4,height=inner*825/600;
+ const inner=width-10,height=inner*825/600;
  const box=containedImageBox(inner,height,600,825);
  assert(Math.abs(box.top)<1e-9&&Math.abs(box.left)<1e-9,'Natural ratio creates no internal letterbox');
  assert(Math.abs(box.height-height)<1e-9&&Math.abs(box.width-inner)<1e-9,'Foil plane covers exactly the uncropped image');

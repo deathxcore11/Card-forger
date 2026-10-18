@@ -17,7 +17,7 @@ try{for(const width of [320,390,768,1440]){
   await page.waitForFunction(()=>{const n=document.querySelector('#content .lot-art[data-entry="lot-ptcg-0"] img.card-img');return n.complete&&n.naturalWidth===600;});
   const measureGeometry=n=>{const img=n.querySelector('img.card-img'),o=n.querySelector('.finish-overlay'),s=getComputedStyle(n),i=getComputedStyle(img),r=n.getBoundingClientRect(),ir=img.getBoundingClientRect(),or=o.getBoundingClientRect();return {padding:parseFloat(s.paddingTop),ratio:ir.width/ir.height,natural:img.naturalWidth/img.naturalHeight,fit:i.objectFit,top:ir.top-r.top,left:ir.left-r.left,right:r.right-ir.right,bottom:r.bottom-ir.bottom,frameRadius:s.borderTopLeftRadius,imageRadius:i.borderTopLeftRadius,glitterInset:getComputedStyle(n,'::after').inset,overlay:{x:or.left-ir.left,y:or.top-ir.top,w:or.width-ir.width,h:or.height-ir.height},opacity:getComputedStyle(o.querySelector('.finish-pattern')).opacity};};
   const geometry=await tile.evaluate(measureGeometry);
-  assert.equal(geometry.padding,2);assert.equal(geometry.fit,'contain');assert(Math.abs(geometry.ratio-geometry.natural)<.002);assert(Math.abs(geometry.top-2)<.1);assert(Math.abs(geometry.left-2)<.1);assert(Math.abs(geometry.right-2)<.1);assert(Math.abs(geometry.bottom-2)<.1);assert.equal(geometry.glitterInset,'2px');for(const value of Object.values(geometry.overlay))assert(Math.abs(value)<1.1);assert.equal(geometry.opacity,'0.18');
+  assert.equal(geometry.padding,5);assert.equal(geometry.fit,'contain');assert(Math.abs(geometry.ratio-geometry.natural)<.002);assert(Math.abs(geometry.top-5)<.1);assert(Math.abs(geometry.left-5)<.1);assert(Math.abs(geometry.right-5)<.1);assert(Math.abs(geometry.bottom-5)<.1);assert.equal(geometry.glitterInset,'5px');for(const value of Object.values(geometry.overlay))assert(Math.abs(value)<1.1);assert.equal(geometry.opacity,'0.18');
   await tile.click();await page.locator('#sheet .cs-banner .cs-art').first().waitFor();
   // The context already requests no-preference. Diagnose Playwright's
   // per-page emulateMedia replacement on a separate page so it cannot clear
@@ -42,7 +42,7 @@ try{for(const width of [320,390,768,1440]){
     await page.waitForFunction(()=>{const n=document.querySelector('#content .lot-art[data-entry="lot-ptcg-0"] img.card-img');return n?.complete&&n.naturalWidth===600;});
     await tile.locator('.finish-overlay').waitFor();
     const g=await tile.evaluate(measureGeometry);
-    assert.equal(g.padding,2);assert(Math.abs(g.ratio-g.natural)<.002);assert(Math.abs(g.top-2)<.1);assert(Math.abs(g.left-2)<.1);assert(Math.abs(g.right-2)<.1);assert(Math.abs(g.bottom-2)<.1);assert.equal(g.glitterInset,'2px');for(const value of Object.values(g.overlay))assert(Math.abs(value)<1.1);
+    assert.equal(g.padding,5);assert(Math.abs(g.ratio-g.natural)<.002);assert(Math.abs(g.top-5)<.1);assert(Math.abs(g.left-5)<.1);assert(Math.abs(g.right-5)<.1);assert(Math.abs(g.bottom-5)<.1);assert.equal(g.glitterInset,'5px');for(const value of Object.values(g.overlay))assert(Math.abs(value)<1.1);
     resizeChecks.push({width:resizedWidth,geometry:g});
    }
   }
@@ -63,6 +63,43 @@ try{for(const width of [320,390,768,1440]){
    assert.equal(scope.ruleCount,5,'All five geometry rules inspected');assert.deepEqual(scope.matchingRules,[],mode+' must not match gallery-only geometry overrides');unchangedViews.push({mode,...scope});
   }
   report.push({width,geometry,motion,midway,mediaBefore,mediaAfter,beforeCapture,afterCapture,resizeChecks,unchangedViews,physicalPhoneVerified:false});
+ }finally{await app.close();}
+}
+// Actual publisher-provided card pixels, not synthetic art, for frame-weight review.
+// Values and ownership remain isolated fixtures; these images prove visual fit only.
+const realArt = {
+ ptcg: {url:'https://assets.tcgdex.net/en/base/base4/20/high.webp',type:'image/webp',name:'Zapdos · Base Set 2'},
+ mtg: {url:'https://cards.scryfall.io/normal/front/4/1/41a76adc-42e1-4f65-940c-d0a5555c0633.jpg?1783928835',type:'image/jpeg',name:'Miara, Thorn of the Glade'}
+};
+for(const art of Object.values(realArt)){
+ const response=await fetch(art.url,{signal:AbortSignal.timeout(30000)});
+ assert(response.ok,'Actual comparison art must load: '+art.url);
+ art.bytes=Buffer.from(await response.arrayBuffer());assert(art.bytes.length>5000,'Real card artwork is nonempty');
+}
+for(const game of ['ptcg','mtg']){
+ const app=await openApp(browser,server.base,{game,width:390,isMobile:true}),{page}=app;
+ try{
+  const art=realArt[game],url=server.base+'/tests/actual-frame-'+game;
+  await page.route(url,r=>r.fulfill({status:200,contentType:art.type,body:art.bytes}));
+  await page.evaluate(({game,url})=>{
+   const S=window.__uiTestState,T=window.__uiTestTcg;
+   if(game==='ptcg')for(const c of Object.values(T.cache.ptcg)){c.image=url;c.imageLarge=url;}
+   else for(const c of [...Object.values(S.catalog),...Object.values(S.state.printings||{})]){c.image_uris={...(c.image_uris||{}),normal:url,large:url,small:url};}
+  },{game,url});
+  await page.locator('#content [data-act="viewSave"][data-mode="gallery"]').click();
+  const tile=page.locator('#content .lot-art[data-entry]').first();
+  for(const width of [390,320,768,1440,390]){
+   await page.setViewportSize({width,height:1000});await tile.scrollIntoViewIfNeeded();
+   await page.waitForFunction(url=>{const img=document.querySelector('#content .lot-art[data-entry] img.card-img');return img?.complete&&img.naturalWidth>300&&img.currentSrc===url;},url);
+   // Use the same public price-band color for a like-for-like visual comparison.
+   await tile.evaluate(n=>n.closest('.lot').dataset.tier='t2');
+   await noOverflow(page,'#content','Actual '+game+' frame '+width,true);
+   const geometry=await tile.evaluate(n=>{const img=n.querySelector('img.card-img'),r=n.getBoundingClientRect(),i=img.getBoundingClientRect();return {padding:getComputedStyle(n).paddingTop,left:i.left-r.left,right:r.right-i.right,top:i.top-r.top,bottom:r.bottom-i.bottom,ratio:i.width/i.height,natural:img.naturalWidth/img.naturalHeight,fit:getComputedStyle(img).objectFit};});
+   assert.equal(geometry.padding,'5px','Both games retain full shared frame weight');
+   if(game==='ptcg'){for(const side of ['left','right','top','bottom'])assert(Math.abs(geometry[side]-5)<.2,'No black internal moat '+side);assert(Math.abs(geometry.ratio-geometry.natural)<.002);assert.equal(geometry.fit,'contain');}
+   await capture(page,'actual-frame-'+game+'-'+width);
+   report.push({game,width,actualArtSource:art.url,artName:art.name,geometry,physicalPhoneVerified:false});
+  }
  }finally{await app.close();}
 }
 await saveReport('pokemon-card-surface',report);
