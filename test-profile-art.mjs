@@ -17,6 +17,7 @@ for(const game of ['mtg','ptcg','ygo']){
 for(const image of ['javascript:alert(1)','data:text/html,<script>','https://user:secret@example.test/a','file:///etc/passwd'])assert.equal(profileArt({game:'ygo',cardId:'1',image}),null);
 assert.equal(profileArt({game:'other',cardId:'1',image:'https://example.test/a'}),null);
 assert.match(profileAvatar(null,{display_name:'Randall'}),/>R</);
+assert.match(profileAvatar(null,{username:'player',display_name:'Old name'}),/>P</);
 console.log('PASS: circular crop geometry, bounded positions/zoom, safe source URLs, cross-game metadata persistence and unchanged inventory.');
 
 assert.equal(profileArt({game:'ygo',cardId:'123',image:'img/ygo/123.jpg'}).image,'img/ygo/123.jpg');

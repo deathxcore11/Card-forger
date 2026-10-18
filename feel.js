@@ -1,3 +1,4 @@
+import {attachFinishPreview} from './finish-preview.js';
 import {mountFeedback,removeFeedback} from './feedback-layer.js';
 // How the app feels: haptics and motion.
 // Haptics: vibration patterns on Android; on iPhone (no web vibration) a hidden system switch is
@@ -257,11 +258,16 @@ export function attachGestures({ closeSheet }) {
 /* ---------- card tilt (TCG Pocket style) ---------- */
 // Card art leans toward your finger or cursor, with a holographic shine that follows it.
 // Touch: only while pressing (a press that turns into a scroll lets go at once).
-const TILT = ".lot-art, .cd-img, .tile-art, .scan-cand2 .sc-img, .quick-card-thumb";
+const TILT = ".lot-art, .cd-img, .tile-art, .scan-cand2 .sc-img, .quick-card-thumb, .view-gallery .grid-card[data-finish-surface]";
+const tiltRoots = new WeakSet();
 export function attachTilt(root = typeof document === "undefined" ? null : document) {
-  if (!root || reduced()) return;
+  if (!root || tiltRoots.has(root)) return;
+  tiltRoots.add(root);
+  attachFinishPreview(root);
+  if (reduced()) return;
   let el = null, release = 0;
   const set = (e) => {
+    if(reduced() || globalThis.document?.hidden)return;
     // A live finger/cursor owns the transform, even during the entrance sweep.
     el.classList.remove("shine-once");
     const r = el.getBoundingClientRect(),
@@ -332,7 +338,7 @@ function attachMotionTilt(root, pressed) {
   const apply = () => {
     frame = 0;
     const c = hero();
-    if (!c || !last || pressed() === c) return;
+    if (reduced() || globalThis.document?.hidden || !c || !last || pressed() === c) return;
     const clamp = (v) => Math.max(-1, Math.min(1, v / 18));
     if(c!==currentCard){currentCard=c;base=null;}
     if (!base) base = { ...last };
@@ -349,12 +355,13 @@ function attachMotionTilt(root, pressed) {
     c.style.setProperty("--my", `${50 + y * 45}%`);
   };
   const onTurn = (e) => {
+    if(reduced() || globalThis.document?.hidden)return;
     if (!Number.isFinite(e.beta) || !Number.isFinite(e.gamma)) return;
     asked = true; // A delivered sample already proves access; do not ask again.
     last = { b: e.beta, g: e.gamma };
     schedule();
   };
-  const schedule = () => { if (last && !frame) frame = requestAnimationFrame(apply); };
+  const schedule = () => { if (!reduced() && !globalThis.document?.hidden && last && hero() && !frame) frame = requestAnimationFrame(apply); };
   const listen = () => {
     if (listening) return;
     listening = true;

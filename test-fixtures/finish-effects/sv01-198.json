@@ -1,0 +1,38 @@
+{
+  "id": "sv01-198",
+  "name": "Youngster",
+  "localId": "198",
+  "category": "Trainer",
+  "set": {
+    "cardCount": {
+      "official": 198,
+      "total": 258
+    },
+    "id": "sv01",
+    "logo": "https://assets.tcgdex.net/en/sv/sv01/logo",
+    "name": "Scarlet & Violet",
+    "symbol": "https://assets.tcgdex.net/univ/sv/sv01/symbol"
+  },
+  "rarity": "Uncommon",
+  "variants": {
+    "firstEdition": false,
+    "holo": false,
+    "normal": true,
+    "reverse": true,
+    "wPromo": false
+  },
+  "image": "https://assets.tcgdex.net/en/sv/sv01/198",
+  "variants_detailed": [
+    {
+      "type": "reverse",
+      "size": "standard",
+      "variantId": "cm4kqul3x1bwlz1f"
+    },
+    {
+      "type": "normal",
+      "size": "standard",
+      "variantId": "endfynwn4n10gzq"
+    }
+  ],
+  "_source": "https://api.tcgdex.net/v2/en/cards/sv01-198"
+}

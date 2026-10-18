@@ -3232,7 +3232,7 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .cs-tabs[data-indicator-ready] button.on {background:transparent;border-color:transparent;}
 @media(min-width:700px){.cs-banner > .cs-hero:not(.compact){height:300px;}}
 @media(prefers-reduced-motion:no-preference){
- .cs-banner:not(.no-art) .cs-art,.deck-hero > .hero-art {animation:header-breathe 24s ease-in-out infinite alternate;}
+ .cs-banner:not(.no-art) .cs-art,.deck-hero > .hero-art {animation:header-breathe 20s ease-in-out infinite alternate;}
 }
 @keyframes header-breathe {from{scale:1}to{scale:1.035}}
 @media(prefers-reduced-motion:reduce){.cs-tab-indicator{transition:none!important}.cs-banner .cs-art,.deck-hero > .hero-art{animation:none!important;scale:1}}
@@ -3630,59 +3630,76 @@ body.glass .home-hero { mask-image:none; -webkit-mask-image:none; }
 @keyframes home-reveal-back-right { from { transform:rotate(0) translateY(15px); opacity:0; } to { transform:rotate(13deg) translate(9px,6px); opacity:1; } }
 @media (prefers-reduced-motion:reduce) { .home-reveal-fan > * { animation:none!important; } }
 
-/* The live scanner uses the shell's actual header height, not a viewport guess.
-   Its preview yields space to the complete tray and the fixed navigation. */
-body[data-view="scan"] #app:has(.scan-workspace.is-live) {
+/* Camera workspace fills the shell between its real header and navigation.
+   Capture review stays in a deliberate popup, reached from the card pile. */
+body[data-view="scan"] #app:has(.scan-workspace.is-camera) {
   --scan-nav-space:calc(var(--nav-h) + env(safe-area-inset-bottom));
-  display:flex; flex-direction:column; height:100dvh; min-height:0;
-  padding-bottom:var(--scan-nav-space); overflow:hidden;
+  display:flex;flex-direction:column;height:100dvh;min-height:0;
+  padding-bottom:var(--scan-nav-space);overflow:hidden;
 }
-body[data-view="scan"] #app:has(.scan-workspace.is-live) > .topbar { flex:none; }
-/* A saved-card Undo message must not cover the shutter or the next capture.
-   In live scanning it owns a real row; elsewhere the same toast stays fixed. */
-body[data-view="scan"] #app:has(.scan-workspace.is-live) > #toast {
-  position:relative; left:auto; bottom:auto; transform:none; opacity:1;
-  display:none; flex:none; align-self:center; width:calc(100% - 2 * var(--gutter));
-  max-width:720px; margin:0 auto 8px; padding:6px 12px; transition:none;
+body[data-view="scan"] #app:has(.scan-workspace.is-camera) > .topbar {flex:none;}
+body[data-view="scan"] #app:has(.scan-workspace.is-camera) > #content {
+  display:flex;flex-direction:column;flex:1 1 0;min-height:0;
+  width:100%;max-width:none;padding:0;overflow:hidden;
 }
-body[data-view="scan"] #app:has(.scan-workspace.is-live) > #toast.show { display:flex; }
-body[data-view="scan"] #app:has(.scan-workspace.is-live) > #toast > span { flex:1; min-width:0; overflow-wrap:anywhere; max-height:72px; overflow:auto; }
-body[data-view="scan"] #app:has(.scan-workspace.is-live) > #toast .toast-undo { min-height:44px; }
-@media (min-width:700px) and (max-width:899px) and (max-height:450px) {
-  /* Landscape phones retain all three game controls and Settings in one row. */
-  body[data-view="scan"] #app:has(.scan-workspace.is-live) > .topbar { grid-template-columns:minmax(0,1fr) auto; }
-  body[data-view="scan"] #app:has(.scan-workspace.is-live) > .topbar > :is(.brand,.save-status) { display:none; }
-  body[data-view="scan"] #app:has(.scan-workspace.is-live) > .topbar > .game-tabs { grid-column:1; grid-row:1; width:100%; }
-  body[data-view="scan"] #app:has(.scan-workspace.is-live) > .topbar > button.icon { grid-column:2; grid-row:1; }
+#app .scan-workspace.is-camera {position:relative;display:flex;flex-direction:column;flex:1 1 0;min-height:0;width:100%;max-width:none;margin:0;}
+#app .scan-workspace.is-camera > .scan-toolbar {position:absolute;z-index:5;top:12px;left:max(14px,env(safe-area-inset-left));right:max(14px,env(safe-area-inset-right));margin:0;padding:6px 8px 6px 14px;border:1px solid #ffffff20;border-radius:20px;background:#15181fbf;backdrop-filter:blur(16px);color:#fff;}
+#app .scan-workspace.is-camera > .scan-toolbar .scan-auto-game {color:#d4d7df;}
+#app .scan-workspace.is-camera > .scan-panel {position:relative;display:flex;flex-direction:column;flex:1 1 0;min-height:0;max-height:none;border:0;border-radius:0;background:var(--surface);}
+#app .scan-workspace.is-camera .cam-wrap {flex:1 1 0;height:auto;min-height:0;max-height:none;border-radius:0;margin:0;}
+#app .scan-workspace.is-camera .cam-wrap::after {content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(transparent 65%,#080b12b8);}
+#app .scan-workspace.is-camera .cam-rail {top:80px;right:max(14px,env(safe-area-inset-right));}
+#app .scan-workspace.is-camera .cam-status {z-index:3;bottom:112px;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 32px);text-align:center;}
+#app .scan-workspace.is-camera .scan-shutter {left:50%;right:auto;transform:translateX(-50%);bottom:20px;width:64px;height:64px;border-width:4px;outline:1px solid #ffffff65;outline-offset:4px;background:#ffffffed;}
+#app .scan-workspace.is-camera .scan-status-line {position:absolute;z-index:3;left:20px;right:20px;bottom:112px;min-height:0;padding:0;text-align:center;}
+#app .scan-workspace.is-live .scan-status-line {width:1px;height:1px;padding:0;clip-path:inset(50%);overflow:hidden;white-space:nowrap;}
+#app .scan-workspace.is-camera .scan-drop {position:absolute;inset:76px 16px 150px;width:auto;max-width:460px;max-height:none;min-height:0;aspect-ratio:auto;margin:auto;padding:20px 12px;display:flex;flex-direction:column;justify-content:center;gap:18px;background:none;}
+#app .scan-workspace.is-camera .scan-drop::before,#app .scan-workspace.is-camera .scan-ghost {display:none;}
+#app .scan-workspace.is-camera .scan-drop .scan-go {flex:none;}
+#app .scan-workspace.is-camera .scan-drop .scan-status-line {position:static;flex:none;margin:0;width:100%;padding:0;color:var(--text);}
+#app .scan-workspace.is-camera .scan-drop .scan-status-line:empty {display:none;}
+#app .scan-workspace.is-camera > .scan-legacy-session {position:absolute;z-index:4;top:82px;left:16px;max-width:min(48%,300px);max-height:55%;overflow:auto;margin:0;padding:8px;border-radius:12px;background:var(--surface);}
+.scan-pile-tray {position:absolute;z-index:4;right:max(14px,env(safe-area-inset-right));bottom:14px;padding:0;width:94px;}
+.scan-pile {display:flex;flex-direction:column;align-items:center;gap:8px;width:94px;min-height:88px;border:0;border-radius:14px;padding:4px 0;background:transparent;color:#fff;cursor:pointer;font:700 11px/1.2 Manrope,sans-serif;text-shadow:0 1px 4px #000;}
+.scan-pile:disabled {opacity:.65;cursor:default;}
+.scan-pile-cards {position:relative;display:block;width:44px;height:59px;transform-origin:center bottom;}
+.scan-pile-cards i {position:absolute;inset:0;border:1px solid #ffffff9c;border-radius:5px;background:linear-gradient(145deg,color-mix(in srgb,var(--game-color,var(--gold)) 30%,#262c39),#151923);box-shadow:0 3px 8px #0006;overflow:hidden;}
+.scan-pile-cards i:first-child {transform:translate(-5px,0) rotate(-12deg);}
+.scan-pile-cards i:nth-child(2) {transform:translate(4px,-3px) rotate(9deg);}
+.scan-pile-cards i:last-of-type {transform:translate(0,0);}
+.scan-pile-cards img {display:block;width:100%;height:100%;object-fit:cover;}
+.scan-pile-cards b {position:absolute;z-index:1;right:-12px;top:-8px;display:grid;place-items:center;min-width:23px;height:23px;padding:0 5px;border:2px solid var(--surface);border-radius:99px;background:var(--game-color,var(--gold));color:#101116;text-shadow:none;font-size:12px;}
+.scan-pile-alerts {position:absolute;right:0;bottom:102px;width:min(330px,calc(100vw - 28px));padding:10px 12px;border:1px solid var(--bad);border-radius:12px;background:var(--surface);}
+.scan-review-queue {margin:8px 0 12px;}
+.scan-review-queue>small {color:var(--muted);font-size:12px;}
+.scan-review-queue .scan-batch-thumb {width:44px;height:61px;}
+.scan-review-queue .scan-batch-thumb[aria-current=true] {border:2px solid var(--game-color,var(--gold));box-shadow:0 0 0 1px var(--game-color,var(--gold));}
+/* Undo owns a shell row and never obscures capture or review controls. */
+body[data-view="scan"] #app:has(.scan-workspace.is-camera) > #toast {position:relative;left:auto;bottom:auto;transform:none;opacity:1;display:none;flex:none;align-self:center;width:calc(100% - 2 * var(--gutter));max-width:720px;margin:0 auto 8px;padding:6px 12px;transition:none;}
+body[data-view="scan"] #app:has(.scan-workspace.is-camera) > #toast.show {display:flex;}
+body[data-view="scan"] #app:has(.scan-workspace.is-camera) > #toast>span {flex:1;min-width:0;overflow-wrap:anywhere;max-height:72px;overflow:auto;}
+body[data-view="scan"] #app:has(.scan-workspace.is-camera) > #toast .toast-undo {min-height:44px;}
+@media(min-width:1200px) {body[data-view="scan"] #app:has(.scan-workspace.is-camera) {--scan-nav-space:env(safe-area-inset-bottom);}}
+@media(max-height:600px) {
+  body[data-view="scan"] #app:has(.scan-workspace.is-camera) > .topbar {row-gap:6px;padding-top:calc(env(safe-area-inset-top) + 6px);padding-bottom:6px;}
+  #app .scan-workspace.is-camera > .scan-toolbar {top:6px;padding-block:2px;min-height:40px;}
+  #app .scan-workspace.is-camera .scan-drop {inset:56px 16px 82px;gap:10px;padding:4px;}
+  #app .scan-workspace.is-camera .scan-drop>small {display:none;}
+  #app .scan-workspace.is-camera .scan-drop b {font-size:18px;}
+  #app .scan-workspace.is-camera .scan-go {min-height:44px;padding:8px 16px;}
+  #app .scan-workspace.is-camera .cam-rail {top:60px;}
+  #app .scan-workspace.is-camera .cam-status {bottom:96px;font-size:11px;}
+  #app .scan-workspace.is-camera .scan-shutter {width:54px;height:54px;bottom:16px;}
+  .scan-pile-tray {bottom:8px;}
 }
-body[data-view="scan"] #app:has(.scan-workspace.is-live) > #content {
-  display:flex; flex-direction:column; flex:1 1 0; min-height:0;
-  width:100%; padding-top:10px; padding-bottom:8px; overflow:hidden;
-}
-#app .scan-workspace.is-live { display:flex; flex-direction:column; flex:1 1 0; min-height:0; width:100%; }
-#app .scan-workspace.is-live > :is(.scan-toolbar,.scan-batch-tray,.scan-disclosure,.scan-legacy-session) { flex:none; }
-#app .scan-workspace.is-live > .scan-panel { display:flex; flex-direction:column; flex:1 1 0; min-height:0; max-height:652px; }
-#app .scan-workspace.is-live .cam-wrap.immersive { flex:1 1 0; height:auto; min-height:0; max-height:620px; margin-bottom:0; }
-#app .scan-workspace.is-live .scan-status-line { flex:none; }
-#app .scan-workspace.is-live > .scan-legacy-session[open] { flex:0 1 auto; min-height:0; max-height:25%; overflow:auto; }
-@media (min-width:900px) {
-  body[data-view="scan"] #app:has(.scan-workspace.is-live) { --scan-nav-space:env(safe-area-inset-bottom); }
-}
-@media (max-height:600px) {
-  body[data-view="scan"] #app:has(.scan-workspace.is-live) > .topbar { row-gap:6px; padding-top:calc(env(safe-area-inset-top) + 6px); padding-bottom:6px; }
-  #app .scan-workspace.is-live > .scan-toolbar { min-height:40px; margin-bottom:6px; }
-  #app .scan-workspace.is-live .scan-status-line { min-height:24px; padding:4px 10px; font-size:10px; }
-  #app .scan-workspace.is-live > .scan-batch-tray { padding-top:6px; padding-bottom:2px; }
-  #app .scan-workspace.is-live .scan-batch-strip { padding-top:6px; padding-bottom:2px; }
-  #app .scan-workspace.is-live > .scan-disclosure { margin-block:4px; font-size:10px; line-height:1.35; }
-}
-@media (min-width:700px) and (max-height:600px) {
-  #app .scan-workspace.is-live { display:grid; grid-template-columns:minmax(0,1fr) minmax(240px,.7fr); grid-template-rows:auto minmax(0,1fr) auto auto; column-gap:16px; }
-  #app .scan-workspace.is-live > .scan-toolbar { grid-column:1 / -1; grid-row:1; }
-  #app .scan-workspace.is-live > .scan-panel { grid-column:1; grid-row:2 / 5; }
-  #app .scan-workspace.is-live > .scan-batch-tray { grid-column:2; grid-row:2; min-height:0; overflow:auto; }
-  #app .scan-workspace.is-live > .scan-disclosure { grid-column:2; grid-row:3; }
-  #app .scan-workspace.is-live > .scan-legacy-session { grid-column:2; grid-row:4; max-height:80px; overflow:auto; }
+@media(min-width:700px) and (max-height:450px) {
+  body[data-view="scan"] #app:has(.scan-workspace.is-camera) > .topbar {grid-template-columns:minmax(0,1fr) auto;}
+  body[data-view="scan"] #app:has(.scan-workspace.is-camera) > .topbar > .brand {display:none;}
+  body[data-view="scan"] #app:has(.scan-workspace.is-camera) > .topbar > .game-tabs {grid-column:1;grid-row:1;width:100%;}
+  body[data-view="scan"] #app:has(.scan-workspace.is-camera) > .topbar > button.icon {grid-column:2;grid-row:1;}
+  #app .scan-workspace.is-camera > .scan-toolbar {right:100px;}
+  #app .scan-workspace.is-camera .cam-rail {top:8px;}
+  #app .scan-workspace.is-camera .cam-status {bottom:24px;left:14px;transform:none;max-width:calc(50% - 64px);text-align:left;}
 }
 
 /* Card-detail pricing: one compact entry point, one quiet graph, one seller list.
@@ -4378,7 +4395,9 @@ body[data-view="scan"] #content:has(.scan-workspace.is-live) > .context-guide{di
 .profile-photo-row{display:flex;gap:12px;align-items:center}.profile-photo-source{padding:0;border:0;background:transparent;border-radius:50%}.profile-photo-row .profile-photo-control{flex:1;min-width:0}
 .home-search-pill{grid-template-columns:minmax(0,1fr) 46px 46px;padding-right:5px}.home-ai-submit{border:1px solid color-mix(in srgb,var(--gold) 45%,transparent);background:#262333;border-radius:50%;width:40px;height:40px;display:grid;place-items:center;padding:5px}.home-ai-submit .ask-orb{margin:0;width:28px;height:28px;min-width:28px}.home-search-submit{width:40px;margin-right:4px}
 .scan-name-correction{display:flex;gap:10px;align-items:end;margin:14px 0}.scan-name-correction label{flex:1;min-width:0;margin:0;font-size:12px}.scan-name-correction input{width:100%;min-width:0}.scan-name-correction button{min-height:44px;flex:0 0 auto}
-.scan-confirm.scan-batch-review{max-height:min(88dvh,900px);width:min(760px,calc(100% - 24px));border-radius:26px}.scan-confirm-card .scan-confirm-art{width:clamp(90px,23vw,170px);height:clamp(126px,32vw,238px);object-fit:contain}
+/* Review stays between the actual shell header and bottom navigation. */
+.scan-confirm.scan-batch-review{--scan-review-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 12px);bottom:var(--scan-review-bottom);max-height:min(900px,calc(100dvh - var(--shell-header-height,92px) - var(--scan-review-bottom) - 12px));width:min(760px,calc(100% - 24px));border-radius:26px}
+@media(min-width:1200px){.scan-confirm.scan-batch-review{--scan-review-bottom:max(20px,env(safe-area-inset-bottom))}}.scan-confirm-card .scan-confirm-art{width:clamp(90px,23vw,170px);height:clamp(126px,32vw,238px);object-fit:contain}
 #toast{position:fixed;z-index:2147483000;max-width:min(520px,calc(100vw - 24px));box-sizing:border-box;white-space:normal;border-radius:18px;padding:12px 16px;backdrop-filter:blur(16px);background:#222834f5;color:var(--text);border:1px solid #ffffff30;box-shadow:0 12px 38px #0006;bottom:max(18px,env(safe-area-inset-bottom));pointer-events:none}
 #toast.show{pointer-events:auto}#toast .toast-undo{min-width:60px;min-height:40px;color:var(--gold);background:#ffffff0a;border-radius:12px}#toast.ok{background:#20352ff5;color:#e8fff0}.fly-card,.scan-saved-fly{pointer-events:none}
 @media(min-width:980px){.community-layout{grid-template-columns:minmax(0,1fr) 300px}.community-friends{position:sticky;top:150px}}
@@ -4462,3 +4481,73 @@ body.glass .cs-tabs button:not(.on):not([aria-selected="true"]) {background:tran
 
 .home-ai-submit .ask-orb{overflow:hidden;contain:layout paint}
 .home-ai-submit .ask-orb .stashy-logo{width:100%;height:100%}
+
+/* Shared binders and decks retain distinct physical silhouettes. */
+.community-kind-section+.community-kind-section{margin-top:28px;padding-top:6px;border-top:1px solid var(--line)}
+.community-showcase-grid,.community-share-choices{grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr))}
+.community-item-actions{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:6px 12px}
+.community-item-actions .btn{min-height:38px}.community-item-actions .link{font-size:12px}
+.community-picker-tabs{display:flex;gap:4px;padding:5px;background:var(--surface);border:1px solid var(--line);border-radius:18px;margin:18px 0}
+.community-picker-tabs button{flex:1;min-height:44px;border:0;border-radius:13px;color:var(--muted);background:transparent}
+.community-picker-tabs [aria-selected=true]{background:var(--surface-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line)}
+.community-share-search{margin-bottom:18px}.community-share-choices .community-showcase-open{display:flex}
+.community-showcase-art{position:relative;isolation:isolate;perspective:700px;height:160px;overflow:hidden;background:radial-gradient(ellipse at 50% 90%,color-mix(in srgb,var(--gold) 12%,transparent),#080b1240)}
+.community-showcase-art img{position:absolute;left:calc(50% - 35px);top:22px;width:70px;max-width:none;height:100px;transform:translateX(-8px) rotate(-3deg);filter:drop-shadow(0 4px 5px #0005);z-index:2}
+.community-showcase-art img:nth-of-type(2){transform:translateX(0) rotate(0deg)}.community-showcase-art img:nth-of-type(3){transform:translateX(8px) rotate(3deg)}
+.community-object-shell{position:absolute;left:calc(50% - 48px);top:44px;width:96px;height:100px;border:1px solid color-mix(in srgb,var(--gold) 65%,var(--line));border-radius:9px 9px 14px 14px;background:linear-gradient(120deg,var(--surface-2),color-mix(in srgb,var(--gold) 18%,var(--surface)));box-shadow:inset 6px 0 0 #0003,0 10px 16px #0004;z-index:3}
+.community-object-deck .community-object-shell:before{content:'';position:absolute;inset:-21px -1px auto;height:26px;background:var(--surface-2);border:1px solid var(--line);border-radius:9px 9px 3px 3px;transform-origin:bottom;transform:rotateX(12deg)}
+.community-object-deck .community-object-shell:after{content:'';position:absolute;left:33px;top:28px;width:28px;height:39px;border:1px solid var(--gold);border-radius:4px;transform:rotate(-10deg);opacity:.7}
+.community-object-binder .community-object-shell{top:18px;left:calc(50% - 54px);width:108px;height:128px;transform-origin:left;border-radius:4px 10px 10px 4px;box-shadow:inset 9px 0 0 #0004,inset -4px 0 0 #ffffff18,0 8px 18px #0004}
+.community-object-binder .community-object-shell:after{content:'';position:absolute;inset:18px 18px 20px 25px;border:1px solid color-mix(in srgb,var(--gold) 60%,transparent);border-radius:5px;background:#ffffff08}
+.community-object-binder img{z-index:4;top:39px;height:82px;width:58px;left:calc(50% - 24px);transform:none}.community-object-binder img:nth-of-type(n+2){display:none}
+.profile-menu{position:relative;overflow:visible!important}.account-notice-badge{position:absolute;left:-5px;top:-4px;min-width:19px;height:19px;display:grid;place-items:center;padding:0 4px;border-radius:20px;background:var(--gold);color:#171310;border:2px solid var(--bg,#111);font-size:10px;font-weight:800;line-height:1;z-index:2}
+.account-inline-count{display:inline-grid;place-items:center;min-width:20px;padding:1px 5px;border-radius:20px;background:var(--gold);color:#171310;font-size:11px}
+@media(prefers-reduced-motion:no-preference){.community-showcase-art img,.community-object-shell,.community-object-shell:before{transition:transform .35s ease,translate .35s ease}.community-showcase-open:is(:hover,:focus-visible) .community-object-deck img:nth-of-type(1){transform:translate(-24px,-23px) rotate(-12deg)}.community-showcase-open:is(:hover,:focus-visible) .community-object-deck img:nth-of-type(2){transform:translate(0,-34px)}.community-showcase-open:is(:hover,:focus-visible) .community-object-deck img:nth-of-type(3){transform:translate(24px,-22px) rotate(12deg)}.community-showcase-open:is(:hover,:focus-visible) .community-object-deck .community-object-shell:before{transform:rotateX(125deg)}.community-showcase-open:is(:hover,:focus-visible) .community-object-binder .community-object-shell{transform:rotateY(-16deg)}}
+@media(max-width:500px){.community-showcase-grid,.community-share-choices{grid-template-columns:1fr}.community-showcase-art{height:160px}.community-showcase-art img{height:100px}.community-object-binder img{height:82px}}
+
+.card-set-progress{width:100%;min-width:0}.card-set-progress .set-collection-progress{margin:8px 0;padding:12px 16px;border-radius:16px;background:color-mix(in srgb,var(--surface) 85%,transparent)}
+.card-set-progress .set-progress-top strong{font-size:21px}.card-set-progress .set-progress-caption{font-size:10px;margin-bottom:0}.card-set-progress .set-progress-top p{font-size:12px}.card-set-progress .set-progress-track{height:5px;margin:8px 0}
+.card-printing-preview{width:100%;min-width:0;margin-top:18px;padding:12px;border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--surface) 85%,transparent)}
+.card-printing-preview h3{font-size:14px;margin:0}.card-printing-preview>.row{gap:8px;flex-wrap:wrap}.card-printing-preview .foot{font-size:10px;margin:8px 0 0}
+.card-printing-mini-rail{display:flex;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;padding:14px 2px 8px;scrollbar-width:thin;min-width:0}
+.card-printing-mini{flex:0 0 100px;min-width:0;display:flex;flex-direction:column;gap:5px;scroll-snap-align:start;align-items:center;border:0;border-radius:10px;padding:5px;background:transparent;color:var(--text);text-align:center}
+.card-printing-mini img{width:88px;height:123px;object-fit:contain;border-radius:5px}.card-printing-mini b{font-size:10px;line-height:1.3;overflow-wrap:anywhere}.card-printing-mini small{font-size:10px;color:var(--muted)}.card-printing-mini:hover,.card-printing-mini:focus-visible{background:var(--surface-2)}
+
+/* A small, editable physical box connects deck tiles to their open card list. */
+.deck-format-stack{display:flex;flex-direction:column;align-items:flex-start;gap:9px}.deck-box{--deck-box-color:#7664a0;display:inline-block;position:relative;width:50px;height:54px;flex:none;perspective:400px;isolation:isolate;vertical-align:middle}
+.deck-box-case{position:absolute;inset:14px 3px 0;border:1px solid #ffffff60;border-radius:4px 4px 7px 7px;background:linear-gradient(125deg,color-mix(in srgb,var(--deck-box-color) 85%,white),var(--deck-box-color));box-shadow:inset 5px 0 0 #0003,3px 5px 9px #0005;overflow:hidden;z-index:3}
+.deck-box-case>img{position:absolute;inset:5px 7px;width:calc(100% - 14px);height:calc(100% - 10px);object-fit:cover;object-position:50% 25%;border-radius:3px;opacity:.9}.deck-box-mark{display:grid;place-items:center;height:100%;font-size:26px;color:#fff9}
+.deck-box-lid{position:absolute;inset:7px 2px auto;height:17px;border:1px solid #ffffff65;border-radius:5px 5px 3px 3px;background:color-mix(in srgb,var(--deck-box-color) 78%,white);transform-origin:bottom;z-index:5;box-shadow:0 2px 3px #0004}
+.deck-box-cards{position:absolute;inset:5px 9px 7px;z-index:2}.deck-box-cards>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:3px;border:1px solid #fff8;transform:translateY(0);box-shadow:0 2px 3px #0003}
+.deck-box-control{border:0;padding:0;background:transparent;color:inherit;cursor:pointer;width:64px;height:64px;touch-action:manipulation}.deck-box-control:focus-visible{outline:2px solid var(--accent);outline-offset:7px;border-radius:8px}
+.deck-box.is-open .deck-box-lid{transform:rotateX(130deg)}.deck-box.is-open .deck-box-cards>img:nth-child(1){transform:translate(-9px,-12px) rotate(-12deg)}.deck-box.is-open .deck-box-cards>img:nth-child(2){transform:translateY(-18px)}.deck-box.is-open .deck-box-cards>img:nth-child(3){transform:translate(9px,-10px) rotate(12deg)}
+.deck-hero:has(.deck-box-control){overflow:visible;margin-top:22px;isolation:isolate}.deck-hero:has(.deck-box-control)>.hero-art,.deck-hero:has(.deck-box-control)>.hero-shade{border-radius:inherit;clip-path:inset(0 round 18px)}.deck-hero .deck-box-control{margin-top:-25px;margin-right:8px;z-index:4}.deck-hero:has(.deck-box-control) .hero-body{overflow:visible}
+.deck-box-flight{position:fixed;pointer-events:none;z-index:9999;transform-origin:top left}.deck-box-flight .deck-box{width:100%;height:100%}.deck-box-settings{margin:16px 0}.deck-box-settings>summary{cursor:pointer;font-weight:650}.deck-box-settings .grid2{margin-top:12px}
+@media(hover:hover) and (prefers-reduced-motion:no-preference){.deck-box-lid,.deck-box-cards>img{transition:transform .3s ease}.deck-tile:hover .deck-box-lid,.deck-tile:focus-visible .deck-box-lid{transform:rotateX(125deg)}.deck-tile:hover .deck-box-cards>img:first-child,.deck-tile:focus-visible .deck-box-cards>img:first-child{transform:translate(-8px,-10px) rotate(-10deg)}.deck-tile:hover .deck-box-cards>img:nth-child(2),.deck-tile:focus-visible .deck-box-cards>img:nth-child(2){transform:translateY(-15px)}.deck-tile:hover .deck-box-cards>img:nth-child(3),.deck-tile:focus-visible .deck-box-cards>img:nth-child(3){transform:translate(8px,-9px) rotate(10deg)}}
+@media(max-width:600px){.deck-box{width:42px;height:46px}.deck-format-stack{gap:6px}.deck-box-control{width:54px;height:58px}.deck-hero .deck-box-control{margin-top:-20px;margin-right:4px}}
+
+@media(prefers-reduced-motion:no-preference){.deck-box-flight .deck-box-lid,.deck-box-flight .deck-box-cards>img{transition:transform .3s ease}}
+
+/* Shared previews expose reading and copying, never ownership controls. */
+.community-shared-card{display:flex;flex-direction:column;gap:6px;width:100%;padding:0;background:none;border:0;color:var(--text);text-align:left;cursor:zoom-in}
+.community-shared-card img{width:100%;object-fit:contain}.community-shared-card small{color:var(--muted)}
+.community-binder-value{display:grid;gap:5px;padding:16px;border:1px solid var(--line);border-radius:16px;margin:12px 0 20px;background:var(--surface)}
+.community-binder-value strong{font-size:24px}.community-binder-value small{color:var(--muted)}
+.community-dialog footer{position:sticky;bottom:0;padding:14px 0;background:var(--surface);border-top:1px solid var(--line)}
+#sheetBody :is(button,a,input,select,summary){scroll-margin-top:145px;scroll-margin-bottom:24px}
+.brand-cycle{display:none;pointer-events:none}.ai-sigil .stashy-logo{width:48px;height:48px}.ai-sigil{background:transparent;border:0}
+@media(prefers-reduced-motion:no-preference){
+ .brand-breathing{animation:stashy-breathe 6s ease-in-out infinite;transform-origin:center}
+ .brand-breathing .brand-cycle{display:block;transform-origin:64px 98px;transform-box:view-box;opacity:0}
+ .brand-breathing .brand-cycle-left{animation:stashy-cycle-left 18s ease-in-out infinite}
+ .brand-breathing .brand-cycle-right{animation:stashy-cycle-right 18s ease-in-out infinite}
+ @keyframes stashy-breathe{0%,100%{transform:translateY(0) scale(.98)}50%{transform:translateY(-1.5px) scale(1.025)}}
+ @keyframes stashy-cycle-left{0%,24%,50%,100%{opacity:0;transform:rotate(-19deg)}26%{opacity:1;transform:translate(-10px,-7px) rotate(-30deg)}32%,43%{opacity:1;transform:translate(15px,-5px) rotate(0deg)}48%{opacity:1;transform:rotate(-19deg)}}
+ @keyframes stashy-cycle-right{0%,57%,85%,100%{opacity:0;transform:rotate(19deg)}59%{opacity:1;transform:translate(10px,-7px) rotate(30deg)}65%,77%{opacity:1;transform:translate(-17px,-5px) rotate(0deg)}83%{opacity:1;transform:rotate(19deg)}}
+}
+/* AI entry points share one quiet shell; motion belongs to the card emblem. */
+.ask-launch{background:var(--surface);color:var(--text);border:1px solid var(--line);box-shadow:none;animation:none}
+.ask-launch .brand-backplate{fill:transparent}
+
+/* Finish previews follow verified printing availability, independently of ownership. */
+/* Printing-aware finish styling is in finish-effects.css. */

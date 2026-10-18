@@ -1,0 +1,55 @@
+{
+  "id": "ecard1-1",
+  "name": "Alakazam",
+  "localId": "1",
+  "category": "Pokemon",
+  "set": {
+    "cardCount": {
+      "official": 165,
+      "total": 165
+    },
+    "id": "ecard1",
+    "logo": "https://assets.tcgdex.net/en/ecard/ecard1/logo",
+    "name": "Expedition Base Set",
+    "symbol": "https://assets.tcgdex.net/univ/ecard/ecard1/symbol"
+  },
+  "rarity": "Holo Rare",
+  "variants": {
+    "firstEdition": false,
+    "holo": true,
+    "normal": false,
+    "reverse": true,
+    "wPromo": false
+  },
+  "image": "https://assets.tcgdex.net/en/ecard/ecard1/1",
+  "variants_detailed": [
+    {
+      "type": "holo",
+      "size": "standard",
+      "thirdParty": {
+        "tcgplayer": 83497,
+        "cardmarket": 274876
+      },
+      "variantId": "jr7oetx1mqug9"
+    },
+    {
+      "type": "reverse",
+      "size": "standard",
+      "thirdParty": {
+        "tcgplayer": 83497,
+        "cardmarket": 274876
+      },
+      "variantId": "cm4kqul3x1bwlz1f"
+    },
+    {
+      "type": "reverse",
+      "size": "jumbo",
+      "thirdParty": {
+        "cardmarket": 362878,
+        "tcgplayer": 180715
+      },
+      "variantId": "i9mbmj3vu33ud"
+    }
+  ],
+  "_source": "https://api.tcgdex.net/v2/en/cards/ecard1-1"
+}

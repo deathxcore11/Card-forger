@@ -1,7 +1,10 @@
+import {createScryfallClient} from './scryfall-client.js';
+import {selectPreviewFinish} from './finish-preview.js';
+import {deckBoxFields,readDeckBox,createDeckBoxTransitions} from './deck-box.js';
 import {setAccountScope} from './account-scope.js';
 import {createAccountWorkspaces} from './account-workspaces.js';
 import {mountFeedback} from './feedback-layer.js';
-import {createCommunity} from './community-profile.js';
+import {createCommunity,incomingRequestCount,sharedDeckCopy} from './community-profile.js';
 import {addScannedEntry} from './collection-stack.js';
 import {profileAvatar,profileArt,createProfileArtPicker} from './profile-art.js';
 import {openTabletop} from './tabletop.js';
@@ -114,12 +117,7 @@ function setSaveStatus(text, cls = "") {
     el.textContent = text;
     el.className = "save-status " + cls;
   }
-  // The brand mark doubles as the save/sync light: syncing spins, problems turn red.
-  const mark = $(".brand .mark");
-  if (mark) {
-    mark.dataset.state = cls === "bad" ? "bad" : /sync|sav|upload/i.test(text) && !/synced|saved/i.test(text) ? "busy" : cls === "ok" || /synced|saved/i.test(text) ? "ok" : "";
-    mark.title = text;
-  }
+  // Account saving is shown inside Settings; browsing stays quiet.
 }
 // Glass look: frosted surfaces over a blurred copy of the game's daily-card art.
 // The art is remembered per game so every screen shares the same backdrop.
@@ -313,48 +311,8 @@ const safely = (p) => Promise.resolve(p).catch((e) => toast(e.message || String(
    Card data (Scryfall)
    ========================================================= */
 
-let apiChain = Promise.resolve(),
-  lastActTarget = null;
-function api(path, options = {}) {
-  const op = async () => {
-    if (options.signal?.aborted) throw Error("Card lookup cancelled.");
-    await new Promise((r) => setTimeout(r, 110));
-    if (options.signal?.aborted) throw Error("Card lookup cancelled.");
-    const ctl = new AbortController(),
-      cancel = () => ctl.abort(),
-      timer = setTimeout(() => ctl.abort(), 16000);
-    options.signal?.addEventListener?.("abort", cancel, {once:true});
-    try {
-      // Busy (429) or a dropped connection: wait a moment and try again, twice, before giving up.
-      let r, d;
-      for (let attempt = 0; ; attempt++) {
-        try {
-          r = await fetch("https://api.scryfall.com" + path, {
-            ...options,
-            headers: { Accept: "application/json", ...options.headers },
-            signal: ctl.signal,
-          });
-          if ((r.status === 429 || r.status >= 500) && attempt < 2) throw Object.assign(Error("busy"), { retry: true });
-          d = await r.json();
-          break;
-        } catch (e) {
-          if (e.name === "AbortError" || attempt >= 2) throw e.retry ? Error("The card database is busy. Try again in a moment.") : e;
-          await new Promise((ok) => setTimeout(ok, attempt ? 1500 : 600));
-        }
-      }
-      if (!r.ok) throw Object.assign(Error(d.details || "Card database unavailable."),{status:r.status});
-      return d;
-    } catch (e) {
-      throw Object.assign(Error(e.name === "AbortError" ? options.signal?.aborted ? "Card lookup cancelled." : "Card lookup timed out. Check your connection and try again." : e.message),{status:e.status});
-    } finally {
-      clearTimeout(timer);
-      options.signal?.removeEventListener?.("abort", cancel);
-    }
-  };
-  const result = apiChain.then(op, op);
-  apiChain = result.catch(() => {});
-  return result;
-}
+const api = createScryfallClient();
+let lastActTarget = null;
 
 async function resolve(name, fuzzy = false, refresh = false) {
   if (!String(name || "").trim()) throw Error("No card name given.");
@@ -919,7 +877,7 @@ function render() {
   const authFields=S.ui.view === "settings" && !cloudInfo().user ? captureAuthFields(document) : [];
   // Ordinary unsaved profile fields survive Settings→Settings game changes.
   // Authentication remains in the existing render-local path, never history/storage.
-  const profileFields=S.ui.view === "settings" ? ["pfName","pfUser","pfBio"].flatMap(id=>{const field=$("#"+id);return field?[{id,value:field.value}]:[];}) : [];
+  const profileFields=S.ui.view === "settings" ? ["pfUser","pfBio"].flatMap(id=>{const field=$("#"+id);return field?[{id,value:field.value}]:[];}) : [];
   browseCleanup?.();
   const ui = S.ui;
   // The scanner keeps its camera stream across renders (or stops it when you leave the page).
@@ -967,7 +925,9 @@ function render() {
     restoreDisclosures(content,disclosureStates.get(disclosureKey));
     return;
   }
+  deckBoxTransitions.beforeRender();
   $("#content").innerHTML = (g !== "mtg" && tcgViews[ui.view] ? tcgViews[ui.view] : views[ui.view] || V.home)();
+  deckBoxTransitions.afterRender();
   restoreDisclosures(content,disclosureStates.get(disclosureKey));
   content.dataset.disclosureKey=disclosureKey;
   restoreSearchFocus(content,searchFocus);
@@ -1997,10 +1957,11 @@ A.muUndo = async (t) => {
   await commit((s) => { const x = s.decks.find((y) => y.id === d.id); x.results = (x.results || []).filter((g) => g.at !== t.dataset.at); }, { msg: "Game removed." });
 };
 let settingsBaseState=null;
-const settingsPopup=createSettingsDialog({beforeOpen:()=>{settingsBaseState=S.state;},dialog:$("#settingsDialog"),markup:()=>`<header class="settings-dialog-head"><div><p class="eyebrow">ALL THREE GAMES</p><h2 id="settingsDialogTitle">Settings</h2></div><button class="icon" data-act="closeSettings" aria-label="Close settings">${ICON.close||'✕'}</button></header>${V.settings({popup:true})}`,afterPaint:()=>{if(S.ui.settingsTab==='backup')storageDetail();},afterClose:scroll=>{profilePicker.close();if(settingsBaseState!==S.state)render();window.scrollTo({top:scroll,behavior:'instant'});setTimeout(safeIntro,50);}});
+const settingsPopup=createSettingsDialog({beforeOpen:()=>{settingsBaseState=S.state;},dialog:$("#settingsDialog"),markup:()=>`<header class="settings-dialog-head"><div><p class="eyebrow">ALL THREE GAMES</p><h2 id="settingsDialogTitle">Settings</h2></div><button class="icon" data-act="closeSettings" aria-label="Close settings">${ICON.close||'✕'}</button></header>${V.settings({popup:true})}`,afterPaint:()=>{if(S.ui.settingsTab==='backup')storageDetail();},afterClose:scroll=>{profilePicker.close();if(settingsBaseState!==S.state||S.ui.view==='community')render();window.scrollTo({top:scroll,behavior:'instant'});setTimeout(safeIntro,50);}});
 A.menu = () => settingsPopup.open();
-A.addFriend=()=>{settingsPopup.close();community.add();};
-A.myCommunity=()=>{settingsPopup.close();go("#community");};
+A.addFriend=()=>community.add();
+A.friendRequests=()=>community.requests();
+A.myCommunity=()=>community.mine();
 A.closeSettings = () => settingsPopup.close();
 
 /* =========================================================
@@ -2640,7 +2601,9 @@ A.syncChoice = async (t) => {
 A.saveProfile = async (t) => {
   const done = busy(t, "Saving…");
   try {
-    await saveProfile({ display_name: $("#pfName").value, username: $("#pfUser").value, bio: $("#pfBio").value });
+    const username=$("#pfUser").value.trim();
+    if(!username)throw Error("Choose a username for your player profile.");
+    await saveProfile({ display_name: username, username, bio: $("#pfBio").value });
     toast("Profile saved.");
   } finally {
     done();
@@ -2878,9 +2841,12 @@ async function submitHome(q,mode){
 A.homeSearch=()=>submitHome($('#homeQ')?.value,'cards');
 A.homeAsk=()=>{const q=$('#homeQ')?.value||'';homeSearchController.close();A.askOpen();const input=document.querySelector('.ask-dialog .ask-input');if(input){input.value=q;input.focus();}};
 window.matchMedia?.("(min-width:1200px)").addEventListener?.("change",()=>placeGlobalSearch(T.game(),S.ui.view));
+const deckBoxTransitions=createDeckBoxTransitions();
 function refreshProfileAvatar(){
  const button=document.querySelector('.topbar [data-act="menu"]');if(!button)return;
- const html=accountLocked ? profileAvatar(null,{}) : profileAvatar(cloudInfo().art?.avatar||S.state.settings.cardAvatar,cloudInfo().profile||{});
+ const a=cloudInfo(),requests=accountLocked?0:(S.ui.communityRequests||0),important=!accountLocked&&a.user&&(a.pending||a.status.state==='error')?1:0,count=requests+important;
+ const html=(accountLocked ? profileAvatar(null,{}) : profileAvatar(a.art?.avatar||S.state.settings.cardAvatar,a.profile||{}))+(count?`<span class="account-notice-badge" aria-hidden="true">${count>99?'99+':count}</span>`:'');
+ button.setAttribute('aria-label',`Profile and settings${count?`, ${count} notification${count===1?'':'s'}`:''}`);
  if(button.innerHTML!==html)button.innerHTML=html;
  button.classList.add('profile-menu');button.title='Profile & settings';
 }
@@ -2897,17 +2863,23 @@ const artworkSaved=()=>{refreshProfileAvatar();settingsPopup.refresh();void comm
 const profilePicker=createProfileArtPicker({lookup:homeLookup,currentGame:T.game,read:()=>cloudInfo().art?.avatar||community.data?.art?.avatar||S.state.settings.cardAvatar,save:value=>saveProfileArtwork('avatar',value),onSaved:artworkSaved});
 const headerPicker=createProfileArtPicker({purpose:'header',lookup:homeLookup,currentGame:T.game,read:()=>cloudInfo().art?.header||community.data?.art?.header||S.state.settings.profileHeader,save:value=>saveProfileArtwork('header',value),onSaved:artworkSaved});
 const community=createCommunity({account:cloudInfo,request:communityRequest,rerender:render,active:()=>S.ui.view==='community',localArt:()=>({avatar:S.state.settings.cardAvatar,header:S.state.settings.profileHeader}),toast,
- chooseArt:kind=>(kind==='header'?headerPicker:profilePicker).open(),editProfile:()=>{S.ui.settingsTab='account';settingsPopup.open();},signIn:()=>{S.ui.settingsTab='account';settingsPopup.open();},
+ onChange:data=>{S.ui.communityRequests=incomingRequestCount(data);refreshProfileAvatar();if(settingsPopup.isOpen)settingsPopup.refresh();},
+ copyDeck:async item=>{const generation=accountGeneration,owner=cloudInfo().user?.id;if(accountLocked||!owner)throw Error('Sign in before saving a deck.');const d=sharedDeckCopy(item,uid());await commit(state=>{(item.game==='mtg'?state:state.tcg[item.game]).decks.push(d);},{enrich:false,guard:()=>{if(accountLocked||generation!==accountGeneration||cloudInfo().user?.id!==owner)throw Error('Your account changed. Please try again.');return true;}});},
+ editItem:async item=>{const generation=accountGeneration;if(accountLocked)return;await navigate({game:item.game,hash:item.kind==='binder'?'#collection':item.game==='mtg'?'#deck/'+item.key.slice(('deck:'+item.game+':').length)+'/cards':'#tdeck/'+item.key.slice(('deck:'+item.game+':').length),mode:'push'});if(generation!==accountGeneration||T.game()!==item.game)return;if(item.kind==='binder')A.editBinder({dataset:{binder:item.key.slice(7)}});},
+ chooseArt:kind=>(kind==='header'?headerPicker:profilePicker).open(),editProfile:()=>{community.close();S.ui.settingsTab='account';settingsPopup.open();},signIn:()=>{S.ui.settingsTab='account';settingsPopup.open();},
  openArt:a=>openZoom({src:a.image,alt:a.name}),
  showcaseChoices:()=>{
   const result=[];
-  for(const b of S.state.settings.binders||[])result.push({key:'binder:'+b.id,kind:'binder',game:b.game,title:b.title,cards:binderRows(b.game).filter(r=>binderMatches(r,b)).map(r=>({id:r.card?.id||r.entry.cardId||r.entry.printingId,name:r.entry.name,qty:r.entry.qty,image:r.image,set:r.card?.set_name||r.card?.set?.name,number:r.card?.collector_number||r.card?.set?.number,version:r.version}))});
+  for(const b of S.state.settings.binders||[])result.push({key:'binder:'+b.id,kind:'binder',game:b.game,title:b.title,cards:binderRows(b.game).filter(r=>binderMatches(r,b)).map(r=>({id:r.card?.id||r.entry.cardId||r.entry.printingId,name:r.entry.name,qty:r.entry.qty,image:r.image,set:r.card?.set_name||r.card?.set?.name,number:r.card?.collector_number||r.card?.set?.number,version:r.version,referenceUSD:r.card?.prices?.usd??null}))});
   for(const game of ['mtg','ptcg','ygo'])for(const d of (game==='mtg'?S.state:T.gs(game)).decks){
-   const rows=game==='mtg'?[...(d.cards||[]),...(d.side||[])]:['main','extra','side'].flatMap(z=>d.zones?.[z]||[]);
-   result.push({key:'deck:'+game+':'+d.id,kind:'deck',game,title:d.name,cards:rows.map(r=>{const c=game==='mtg'?meta(r.name):T.cardOf(game,r.cardId);return {id:c?.id||r.cardId,name:c?.name||r.name,qty:r.qty,image:cardImage(c)||c?.image,set:c?.set_name||c?.set?.name,number:c?.collector_number||c?.set?.number};})});
+   const rows=game==='mtg'?[...(d.cards||[]).map(r=>({...r,zone:'main'})),...(d.side||[]).map(r=>({...r,zone:'side'}))]:['main','extra','side'].flatMap(z=>(d.zones?.[z]||[]).map(r=>({...r,zone:z})));
+   result.push({key:'deck:'+game+':'+d.id,kind:'deck',game,title:d.name,format:d.format,commander:d.commander,deckSchema:1,cards:rows.map(r=>{const c=game==='mtg'?meta(r.name):T.cardOf(game,r.cardId);return {id:c?.id||r.cardId,name:c?.name||r.name,qty:r.qty,image:cardImage(c)||c?.image,set:c?.set_name||c?.set?.name,number:c?.collector_number||c?.set?.number,zone:r.zone};})});
   }
   return result;
  }});
+let communityNoticeChecked=0;
+const checkCommunityNotices=()=>{if(document.hidden||accountLocked||!cloudInfo().user||Date.now()-communityNoticeChecked<30000)return;communityNoticeChecked=Date.now();void community.refresh();};
+window.addEventListener('focus',checkCommunityNotices);document.addEventListener('visibilitychange',checkCommunityNotices);
 A.profileSource=()=>{const a=profileArt(cloudInfo().art?.avatar||community.data?.art?.avatar||S.state.settings.cardAvatar);if(a)openZoom({src:a.image,alt:a.name});else profilePicker.open();};
 A.profileHeader=()=>headerPicker.open();
 A.quickArtwork=()=>{if(!quickCard)return;const ref=quickCard;openSheet(`<div class="sheet-head"><h2>Use artwork as…</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="actions"><button class="btn" data-act="quickArtworkAvatar">Avatar</button><button class="btn ghost" data-act="quickArtworkHeader">Profile header</button></div>`,{type:"artwork-actions"});A.quickArtworkAvatar=()=>profilePicker.open({card:ref.card,game:ref.game});A.quickArtworkHeader=()=>headerPicker.open({card:ref.card,game:ref.game});};
@@ -3124,6 +3096,18 @@ const jumpToCardPrices = createDetailJump({
   showPrices:()=>A.cardTab({dataset:{tab:"prices"}}),refreshOffsets:sheetScrolled,
   reducedMotion:()=>!!globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches,
 });
+A.cardFinishPreview = t => {
+  const ctx=S.ui.sheetCtx;
+  if(!["card","tcard"].includes(ctx?.type))return;
+  const game=ctx.type==="card"?"mtg":ctx.game;
+  const card=game==="mtg"?ctx.print||meta(ctx.name):contextTcgCard(game,ctx.id,ctx);
+  if(game!==t.dataset.game||String(card?.id)!==String(t.dataset.cardId))return;
+  if(!selectPreviewFinish(game,card,ctx,t.dataset.finish))return;
+  // Reuse this same context for prices, enlargement and the explicit Add form.
+  refreshSheet();
+  const buttons=$$("#sheetBody [data-act=cardFinishPreview]");
+  buttons.find(b=>b.dataset.finish===ctx.priceFinish)?.focus({preventScroll:true});
+};
 A.cardPriceJump = t => {
   const ctx = S.ui.sheetCtx;
   if (!["card","tcard"].includes(ctx?.type)) return;
@@ -4049,6 +4033,7 @@ A.deckMenu = () => {
   openSheet(
     `<div class="sheet-head"><h2>Deck options</h2><button class="icon" data-act="closeSheet">✕</button></div>
     <div class="grid2"><label class="span2">Name<input id="dmName" maxlength="100" value="${esc(d.name)}"></label><label class="span2">Format${formatSelect("dmFormat", d.format)}</label><label>Budget $<input id="dmBudget" type="number" min="0" value="${d.budget ?? 25}"></label><label>Focus<select id="dmStrategy">${options(["Auto", "Tokens", "Dragons", "Graveyard", "Spells", "Artifacts", "Lifegain", "Landfall", "Creature"].map((x) => [x, x]), d.strategy || "Auto")}</select></label></div>
+    ${deckBoxFields(d,(d.cards||[]).map(r=>({name:r.name,image:cardImage(meta(r.name))})))}
     <button class="btn block" data-act="deckSaveInfo">Save</button>
     <label class="check toggle"><input type="checkbox" data-change="deckLock" ${d.locked ? "checked" : ""}> <span><b>Assembled</b> — reserve these copies so other decks don’t count them as free</span></label>
     <div class="menu-list">
@@ -4077,8 +4062,8 @@ A.deckSaveInfo = async () => {
   const format = formatOf($("#dmFormat")?.value).name,
     name = $("#dmName").value.trim(),
     budget = Math.max(0, Number($("#dmBudget").value) || 0),
-    strategy = $("#dmStrategy").value;
-  await editDeck((d) => ({ ...d, name: name || d.name, budget, strategy, format, commander: hasCommander(format) ? d.commander : "" }), { msg: "Saved." });
+    strategy = $("#dmStrategy").value,boxAppearance=readDeckBox();
+  await editDeck((d) => ({ ...d, name: name || d.name, budget, strategy, format, boxAppearance, commander: hasCommander(format) ? d.commander : "" }), { msg: "Saved." });
   closeSheet();
 };
 // Play guide (Magic): rank cards that pair well — synergy searches on Scryfall plus the cards
@@ -5279,13 +5264,13 @@ const scanCtx = {
   closeSheet: () => closeSheet(),
   addMany: (g, items) => (g === "mtg" ? mtgScanAddMany(items) : tcgCtx.scanAddMany(items, g)),
   priceOf: (g, cand, finish, selection = {}) => (g === "mtg" ? mtgScanPrice(cand, finish, selection) : tcgCtx.scanPrice?.(cand, finish, selection) ?? null),
-  requestConditionPrice: (g,cand,finish,selection,done,current) => {
+  requestConditionPrice: (g,cand,finish,selection,done,current,options={}) => {
     const card=cand.card;
-    if(!card||!finish||cand.localReference||cand.detailsOnly||!(cand.exact||cand.printingConfirmed))return;
+    if(!card||!finish||cand.localReference||cand.detailsOnly||!(cand.exact||cand.printingConfirmed))return {status:'deferred',reason:'unverified-selection',notice:'Confirm the exact printing before checking its condition price.'};
     const [printing,rarity]=String(cand.print||'').split('|');
     const entry=g==='mtg'?{...selection,printingId:card.id,printingVerified:true,finish}:
       {...selection,cardId:card.id,...(g==='ptcg'?{variant:finish}:{printing:printing||'',rarity:rarity||'',edition:finish,setReleaseId:cand.setReleaseId||'',setReleaseUnverified:!!cand.setReleaseUnverified})};
-    return fetchConditionValue(card,entry,g,done,{source:'review',current});
+    return fetchConditionValue(card,entry,g,done,{source:'review',current,retry:!!options.retry});
   },
   openPrintingPicker: config => scannerPrintingPicker.open(config),
   setOf: (g, cand) => (g === "mtg" ? cand.card?.set || "" : g === "ygo" ? String(cand.print || "").split("|")[0].split("-")[0] : cand.card?.set?.id || ""),
@@ -5297,7 +5282,7 @@ const scanCtx = {
   add: (g, c) => (g === "mtg" ? mtgScanAdd(c) : tcgCtx.scanAdd(c)),
   byText: (g, full) => (g === "mtg" ? mtgScanByText(textPhrases(full, 12), full) : tcgCtx.scanByText?.(g, full) ?? []),
   printings: (g, cand) => (g === "mtg" ? mtgScanPrintings(cand) : tcgCtx.scanPrintings?.(g, cand) ?? []),
-  candById: async (g, id, why, exact, options = {}) => (g === "mtg" ? api("/cards/" + encodeURIComponent(id)).then((c) => mtgScanCand(c, why, exact)).catch(() => null) : tcgCtx.scanCandById?.(g, id, why, exact, options) ?? null),
+  candById: async (g, id, why, exact, options = {}) => (g === "mtg" ? api("/cards/" + encodeURIComponent(id), {signal:options.signal}).then((c) => mtgScanCand(c, why, exact)).catch(() => null) : tcgCtx.scanCandById?.(g, id, why, exact, options) ?? null),
   candOf: async (g, p, why, exact) => (g === "mtg" ? (p.card ? mtgScanCand(p.card, why, exact) : null) : tcgCtx.scanCandById?.(g, p.id, why, exact) ?? null),
   details: (g, c) => (g === "mtg" ? A.card({ dataset: { name: c.name } }) : A.tCard({ dataset: { id: c.id } })),
 };
@@ -5522,7 +5507,7 @@ async function boot() {
     accountChanged: () => {
       dismissConditionInfo();
       accountLocked=true;accountGeneration++;workspaceVisitRevision++;lastUndo=null;
-      community.reset();clearConditionAttempts();conditionScheduler=createConditionRefreshScheduler();
+      community.reset();deckBoxTransitions.reset();clearConditionAttempts();conditionScheduler=createConditionRefreshScheduler();
       clearAskConversations();clearRulesConversations();rulesGuideOrigin=null;
       scanCtx.accountChanged?.();profilePicker.close(true);headerPicker.close(true);
       settingsPopup.close(false);clearGameContext();disclosureStates.clear();
@@ -5539,7 +5524,7 @@ async function boot() {
       return result;
     }),
     accountOpened:()=>{
-      accountLocked=false;clearGameContext();
+      accountLocked=false;clearGameContext();queueMicrotask(()=>community.refresh());
       const game=GAMES[S.state.settings.game]?S.state.settings.game:'mtg';
       installNavigation({game,hash:'#home',mode:'workspace',entry:makeEntry(game,'#home',activeEntry?.index||0)});
       render();
@@ -5568,7 +5553,8 @@ async function boot() {
       refreshProfileAvatar();
       if (["settings","community"].includes(S.ui.view)||settingsPopup.isOpen) render();
     },
-    decide: (p) => openSheet(V.syncDecideSheet(p, stripCache(S.state)), { type: "sync" }),
+    // A conflict stays safely paused until the user opens Account settings.
+    decide: () => { if(settingsPopup.isOpen)settingsPopup.refresh();else if(S.ui.view==="settings")render(); },
   }).catch(() => {});
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
   // Scryfall role tags arrive after first paint; redraw Magic pages so Deck Power counts them.

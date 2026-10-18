@@ -15,6 +15,7 @@ try{
     assert(layout.actions,'Ownership and actions stay beside the full card');assert.equal(layout.columns,layout.width<=600?1:2);assert(layout.width<=600?layout.side.top>=layout.art.bottom:layout.side.left>=layout.art.right);await noOverflow(page,'#sheetBody',`${game} Overview ${width}`);
     await page.evaluate(()=>document.querySelector('#sheet .cs-card').scrollIntoView({block:'start',behavior:'instant'}));await capture(page,`synthetic-search-overview-${game}-${width}`);
    }
+   assert.equal(await page.locator('.card-set-progress').count(),1,'set progress is visible in all games');assert.equal(await page.locator('.card-printing-preview').count(),1,'printing previews sit below the main artwork');
    assert.equal(await page.locator('.cs-tabs [role="tab"]').count(),6);assert.equal(await page.locator('#card-tab-legal').count(),0);await page.locator('#card-tab-rulings').click();await page.locator('#card-panel-rulings h3').filter({hasText:'Format legality'}).waitFor();assert(await page.locator('#card-panel-rulings h3').filter({hasText:'Official rulings'}).isVisible());
    await page.locator('#card-tab-versions').click();
    await page.locator(`#card-panel-versions [data-act="${game==='mtg'?'magicPrintings':'tOtherPrintings'}"]`).first().click();

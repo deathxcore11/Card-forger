@@ -1,3 +1,6 @@
+import {finishAttrs,finishPreview,finishArtworkCard} from './finish-preview.js';
+import {deckBoxMarkup,deckBoxFields,readDeckBox} from './deck-box.js';
+import {detailSetProgress,miniPrintingMarkup} from './card-detail-extras.js';
 import {privateKey} from './account-scope.js';
 import {detailOwnedGroups} from './quick-quantity.js';
 import {addCollectionEntry,addScannedEntry} from './collection-stack.js';
@@ -317,7 +320,7 @@ function deckStats(g, d) {
       const need = free ? 0 : r.qty - got;
       if (p !== null) value += p * r.qty;
       if (need) p === null ? (unknown += need) : (buy += p * need);
-      rows.push({ zone, r, c, need, got });
+      rows.push({ zone, r: {...r,name:r.name||c?.name||r.cardId}, c, need, got });
     }
   return { total, owned, buy, unknown, value, rows };
 }
@@ -564,7 +567,7 @@ function deckTile(g, d) {
   return `<button class="deck-tile tcg-tile tile-${g}" data-act="go" data-to="#tdeck/${esc(d.id)}">
     <span class="tile-art">${g === "ygo" && cover ? ygoCropArt(cover) : g === "ptcg" && cover ? pokemonArtCrop(cover, "tile-pk") : imgTag(cover, "tile-card-art", true)}</span>
     <span class="tile-shade"></span>
-    <span class="tile-top"><span class="chip dark">${esc(f.name)}</span>${issues.length ? `<span class="chip dark bad-chip">${issues.length} to fix</span>` : s.total ? `<span class="chip dark ok-chip">Legal</span>` : ""}</span>
+    <span class="tile-top"><span class="deck-format-stack"><span class="chip dark">${esc(f.name)}</span>${deckBoxMarkup(d,{game:g,images:(d.zones.main||[]).slice(0,3).map(r=>artworkSources(cardOf(g,r.cardId)).find(u=>u.startsWith("https://")))})}</span>${issues.length ? `<span class="chip dark bad-chip">${issues.length} to fix</span>` : s.total ? `<span class="chip dark ok-chip">Legal</span>` : ""}</span>
     <span class="tile-body">
       <b>${esc(d.name)}</b>
       <small>${esc(pw?.plan || GAMES[g].short)} · ${main}${g === "ygo" ? " main" : "/60"}</small>
@@ -665,7 +668,7 @@ export function tcgSearch() {
   ${U.busy && !loaded.length ? skeletonGrid() : ""}
   ${list.length ? `<div class="card-grid">${list.map(c => {
     const own = ownedOf(g,c,m), p = price(c);
-    return `<button class="grid-card" data-act="tCard" data-id="${esc(c.id)}" ${tierAttrs(tcgTier(c))}>${imgTag(c)}${tileBadges(c)}<span class="grid-meta"><span class="ellip">${esc(c.name)}</span><span>${c.brief ? "Details not loaded" : p === null ? "—" : usd(p)}</span></span>${own ? `<span class="owned-badge">×${own}</span>` : ""}</button>`;
+    return `<button class="grid-card" ${finishAttrs(g,c,{})}  data-act="tCard" data-id="${esc(c.id)}" ${tierAttrs(tcgTier(c))}>${imgTag(c)}${tileBadges(c)}<span class="grid-meta"><span class="ellip">${esc(c.name)}</span><span>${c.brief ? "Details not loaded" : p === null ? "—" : usd(p)}</span></span>${own ? `<span class="owned-badge">×${own}</span>` : ""}</button>`;
   }).join("")}</div>` : U.ran && !U.busy ? empty(loaded.length || U.more ? "No matches among loaded cards" : "No cards found", pending ? "Card details are needed to check these filters." : U.more ? "More provider results are available. Load more or clear a filter." : "Try a shorter name or clear a filter.") : U.busy ? '<p class="muted center pad">Searching…</p>' : `<p class="muted small">Search by name, or leave it blank and pick filters. ${g === "ptcg" ? "Pokémon TCG Pocket (digital) cards are left out." : ""}</p>`}
   ${U.more ? `<button class="btn ghost block" data-act="tMore" ${U.busy ? "disabled" : ""}>${U.failedPage > 0 ? "Retry load more" : U.busy ? "Loading…" : "Load more"}</button>` : ""}
   ${g === "ptcg" && loaded.some(c => c.brief) && !U.detailsBusy && !U.busy ? '<button class="btn ghost block" data-act="tSearchDetails">Retry details</button>' : ""}`;
@@ -686,6 +689,7 @@ export function tcgCardSheet(c, sctx = {}) {
     c=setContextCard(c.game,c,sctx.setId,c.game==='ygo'?currentYgoCatalogue():ui(c.game).sets.list,{variantKey:sctx.setVariant||'',unverifiedRelease:!!sctx.setReleaseUnverified});
   }
   if(c.game==='ygo')c=selectedYgoCard(c,sctx.priceEdition||'',sctx.priceYgoEdition||'');
+  c=finishArtworkCard(c.game,c,sctx);
   const g = c.game,
     tab = sctx.tab === "legal" ? "rulings" : sctx.tab && sctx.tab !== "trade" ? sctx.tab : "overview", // Trade tab retired for now
     own = c.setContext ? setCardOwnedCount(g,c,c.setContext.releaseId) : ownedOf(g, c),
@@ -706,7 +710,7 @@ export function tcgCardSheet(c, sctx = {}) {
   <div class="card-rules-entry"><button type="button" class="chip" data-act="learnGame" data-game="${g}">Interactive rules · how to play →</button></div>
   </div>`;
   const overview = `
-    <div class="cs-card"><div class="cd-art-stack"><div class="cd-img" ${tcgRarityAttrs(c)}><button class="cd-zoom" data-hold-card="true" data-id="${esc(c.id)}" data-entry="${esc(sctx.entryId||'')}" data-act="zoomCard" data-src="${esc(artworkSources(c,true)[0] || "")}" data-hi="${esc(g === "ygo" ? ygoImageDirect(c.id, false) : c.imageLarge || "")}" data-fallback="${esc(artworkSources(c,true)[1] || "")}" data-art="${esc(g === "ygo" ? c.artDirect || "" : "")}" data-name="${esc(c.name)}" aria-label="Enlarge ${esc(c.name)}">${imgTag(c, "card-img", true)}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button></div><button class="btn ghost small card-profile-photo" data-act="cardProfilePhoto" data-id="${esc(c.id)}">Use as profile photo</button></div>
+    <div class="cs-card"><div class="cd-art-stack"><div class="cd-img" ${tcgRarityAttrs(c)} ${finishAttrs(g,c,sctx,'detail')}><button class="cd-zoom" data-hold-card="true" data-id="${esc(c.id)}" data-entry="${esc(sctx.entryId||'')}" data-act="zoomCard" data-src="${esc(artworkSources(c,true)[0] || "")}" data-hi="${esc(g === "ygo" ? ygoImageDirect(c.id, false) : c.imageLarge || "")}" data-fallback="${esc(artworkSources(c,true)[1] || "")}" data-art="${esc(g === "ygo" ? c.artDirect || "" : "")}" data-name="${esc(c.name)}" aria-label="Enlarge ${esc(c.name)}">${imgTag(c, "card-img", true)}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button></div>${finishPreview(g,c,sctx)}<button class="btn ghost small card-profile-photo" data-act="cardProfilePhoto" data-id="${esc(c.id)}">Use as profile photo</button>${miniPrintingMarkup({game:g,card:c,cards:g==='ygo'?[c]:(sctx.previewPrints||Object.values(cache[g]).filter(p=>p.name===c.name)),catalogue:g==='ygo'?currentYgoCatalogue():ui(g).sets.list,projectCard:(source,release,opts)=>setContextCard(g,source,release,g==='ygo'?currentYgoCatalogue():ui(g).sets.list,opts),busy:sctx.previewBusy,error:sctx.previewError})}</div>
       <div class="cs-card-side">${readableText}${c.setContext?'':alertStatus(g,trackedQuote(g,c)?.id,c.name)}
         ${detailOwnedGroups(g,ownedLots,c)||'<p class="small muted own-line">Not in your collection</p>'}${savedUnverifiedLot?'<p class="small own-line">Printing unverified</p>':''}
         ${deck ? `<p class="small deck-legal ${SOURCES[g].legality(c, f) === "legal" ? "ok-text" : "bad-text"}">${SOURCES[g].legality(c, f) === "legal" ? "✓ Legal" : "● Not allowed"} in ${esc(f.name)} <span class="muted">(${esc(deck.name)})</span></p>` : ""}
@@ -761,6 +765,7 @@ export function tcgCardSheet(c, sctx = {}) {
   <div class="cs-meta">
     ${g === "ygo" ? ygoSetRow(c,sctx) : ""}
     ${c.set ? `<button class="cd-set" data-act="tSet" data-id="${esc(c.set.id)}">${pkSetSymbol(c.set, "pks big")}<div><b>${esc(c.set.name)} <span class="set-go">›</span></b><small>#${esc(c.set.number || "")}${c.set.total ? "/" + c.set.total : ""}${c.rarity ? ` · ${pkRarity(c.rarity)} ${esc(c.rarity)}` : ""}</small></div></button>` : c.archetype ? `<button class="cd-set" data-act="tArchetype" data-name="${esc(c.archetype)}"><div><b>${esc(c.archetype)} <span class="set-go">›</span></b><small>Archetype · ${c.sets?.length || 0} printings</small></div></button>` : ""}
+    ${(()=>{const catalogue=g==='ygo'?currentYgoCatalogue():ui(g).sets.list,first=g==='ygo'&&!c.setContext?((c.sets||[]).map(p=>ygoSetIndex().get(p.name)).filter(Boolean).sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'))[0]):null,id=c.setContext?.releaseId||c.set?.id||first?.id,st=ui(g).set,info=catalogue.find(s=>s.id===id)||(st.info?.id===id?st.info:null),release=info||(id?{id}:null),cards=[...new Map(gs(g).collection.filter(e=>Number(e.qty)>0).map(e=>[e.cardId,cardOf(g,e.cardId)]).filter(([,v])=>v)).values()],count=release?cards.filter(card=>ownedInSet(g,card,release,gs(g).collection,catalogue)>0).length:0;return detailSetProgress({key:g+':'+(id||'unknown'),owned:id?count:null,total:g==='ygo'?info?.expectedUniqueCards:info?.count,loaded:st.info?.id===id?st.cards.length:count,complete:st.info?.id===id&&st.contents?.completeness==='complete'});})()}
     ${compactPriceSummary(g,c,sctx,p.usd==null?lastQuote(g,c):null)}
   </div>
   ${panel("overview", tab, overview)}
@@ -933,7 +938,7 @@ export function tcgCollection() {
       if (w) return wantedLot(g, w, c, i);
       const p = entryPrice(c, e);
       const t = tcgTier(c, e, p);
-      return `<div class="lot" ${tcgRarityAttrs(c,e)} data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}">${selectionMark(g,e.id)}<button class="lot-art" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${imgTag(c,"card-img",false,g==="ygo"?p:undefined)}${tileBadges(c)}${tierGem(t)}</button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem(g, c)}</button><span class="lot-sub">${rowBadges(c)}${esc(setLabel({ e, c }) || "")}${e.printing ? " · " + esc(e.printing) : ""}${e.rarity ? " · " + esc(e.rarity) : ""}${e.variant ? " · " + esc(c?.variants?.find((v) => v.key === e.variant)?.label || e.variantLabel || e.variant) : ""}${e.edition ? " · " + esc({"1st-edition":"First Edition",unlimited:"Unlimited",limited:"Limited Edition"}[e.edition] || e.edition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></div><div class="lot-side"><span class="lot-value"><button class="price link" data-act="marketOpen" data-game="${g}" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" data-finish="${esc(e.variant||"reference")}" aria-label="Price history and sellers for ${esc(e.name)}">${p === null ? "—" : usd(p * e.qty)}</button>${conditionBadge(e,[...(c?.conditionQuotes||[]),...(e.conditionQuotes||[])])}</span><span class="stepper"><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="-1" aria-label="One fewer">−</button><b>${e.qty}</b><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="1" aria-label="One more">＋</button></span></div></div>`;
+      return `<div class="lot" ${tcgRarityAttrs(c,e)} data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}">${selectionMark(g,e.id)}<button class="lot-art" ${finishAttrs(g,c,{priceFinish:e.variant,priceEdition:e.printing&&e.rarity?e.printing+'::'+e.rarity:'',priceYgoEdition:e.edition})}  data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${imgTag(c,"card-img",false,g==="ygo"?p:undefined)}${tileBadges(c)}${tierGem(t)}</button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem(g, c)}</button><span class="lot-sub">${rowBadges(c)}${esc(setLabel({ e, c }) || "")}${e.printing ? " · " + esc(e.printing) : ""}${e.rarity ? " · " + esc(e.rarity) : ""}${e.variant ? " · " + esc(c?.variants?.find((v) => v.key === e.variant)?.label || e.variantLabel || e.variant) : ""}${e.edition ? " · " + esc({"1st-edition":"First Edition",unlimited:"Unlimited",limited:"Limited Edition"}[e.edition] || e.edition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></div><div class="lot-side"><span class="lot-value"><button class="price link" data-act="marketOpen" data-game="${g}" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" data-finish="${esc(e.variant||"reference")}" aria-label="Price history and sellers for ${esc(e.name)}">${p === null ? "—" : usd(p * e.qty)}</button>${conditionBadge(e,[...(c?.conditionQuotes||[]),...(e.conditionQuotes||[])])}</span><span class="stepper"><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="-1" aria-label="One fewer">−</button><b>${e.qty}</b><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="1" aria-label="One more">＋</button></span></div></div>`;
     })
     .join("")}</div>${selectionTray(g)}${!rows.length ? empty("No matching cards", "Try a different search or filter.") : ""}${rows.length > (U.limit || 120) ? `<button class="btn ghost block" data-act="tCollMore">Load more · ${rows.length-(U.limit || 120)} remaining</button>` : ""}`
   : empty(`No ${esc(GAMES[g].short)} cards yet`, "Search for a card and tap “Add to collection”, or import a list.", `<button class="btn" data-act="go" data-to="#search">Find cards</button><button class="btn ghost" data-act="tImportColl">Paste a list</button>`)}
@@ -944,7 +949,7 @@ export function tcgCollection() {
 function wantedLot(g, w, c, i) {
   const p = price(c);
   const t = tcgTier(c, null, p);
-  return `<div class="lot wanted" data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}"><button class="lot-art" data-act="tCard" data-id="${esc(w.cardId)}" aria-label="Open ${esc(w.name)} (wanted, not owned)">${imgTag(c)}${tileBadges(c)}<span class="want-tag" aria-hidden="true">${actionIcon("heart")}Wanted</span></button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(w.cardId)}">${esc(w.name)}</button><span class="lot-sub"><span class="want-chip">Not owned</span>${rowBadges(c)}${esc(c?.set?.name || "")}</span></div><div class="lot-side"><span class="price">${p == null ? "—" : usd(p)}</span><span class="want-actions"><button class="btn small want-got" data-act="tOwn" data-id="${esc(w.cardId)}">＋ Got it</button><button class="want-x" data-act="tWish" data-id="${esc(w.cardId)}" aria-label="Remove ${esc(w.name)} from wishlist">×</button></span></div></div>`;
+  return `<div class="lot wanted" data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}"><button class="lot-art" ${finishAttrs(g,c,{})}  data-act="tCard" data-id="${esc(w.cardId)}" aria-label="Open ${esc(w.name)} (wanted, not owned)">${imgTag(c)}${tileBadges(c)}<span class="want-tag" aria-hidden="true">${actionIcon("heart")}Wanted</span></button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(w.cardId)}">${esc(w.name)}</button><span class="lot-sub"><span class="want-chip">Not owned</span>${rowBadges(c)}${esc(c?.set?.name || "")}</span></div><div class="lot-side"><span class="price">${p == null ? "—" : usd(p)}</span><span class="want-actions"><button class="btn small want-got" data-act="tOwn" data-id="${esc(w.cardId)}">＋ Got it</button><button class="want-x" data-act="tWish" data-id="${esc(w.cardId)}" aria-label="Remove ${esc(w.name)} from wishlist">×</button></span></div></div>`;
 }
 // Owned cards worth trading or holding, from tournament play rates (see importance.js).
 function tcgTradeAdvice(g) {
@@ -1287,7 +1292,7 @@ export function tcgDeck(id) {
     cover = cardOf(g, (d.zones.main || [])[0]?.cardId);
   const tab = S.ui.tdeckTab?.[g+":"+d.id] || "cards";
   return `<section class="deck-hero">${g === "ptcg" && cover ? pokemonArtCrop(cover, "hero-art") : imgTag(cover, "hero-art", true)}<div class="hero-shade"></div><div class="hero-body">
-    <div class="row between"><button class="icon light" data-act="go" data-to="#decks" aria-label="Back">←</button><button class="icon light" data-act="tDeckMenu" data-id="${esc(d.id)}" aria-label="Deck options">⋯</button></div>
+    <div class="row between"><button class="icon light" data-act="go" data-to="#decks" aria-label="Back">←</button>${deckBoxMarkup(d,{game:g,images:(d.zones.main||[]).slice(0,3).map(r=>artworkSources(cardOf(g,r.cardId)).find(u=>u.startsWith("https://"))),open:true,button:true})}</div>
     <h1>${esc(d.name)}</h1><p><button class="chip dark fmt-chip" data-act="tDeckMenu" data-id="${esc(d.id)}">${esc(GAMES[g].short)} · ${esc(f.name)}</button></p>
     <button class="review-badge ${issues.length ? "bad" : "ok"}" data-act="tIssues" data-deck="${esc(d.id)}">${issues.length ? `● ${issues.length} to fix` : s.total ? "✓ Legal in " + esc(f.name) : "Add cards to check legality"}</button>
     <div class="hero-stats"><span><b>${zoneCount("main")}</b>${g === "ygo" ? "main" : "/60 cards"}</span><span><b>${s.total ? Math.round((s.owned / s.total) * 100) : 0}%</b>owned</span><span><b>${usd(s.buy, 0)}${s.unknown ? "+" : ""}</b>to finish${s.unknown ? " · some unpriced" : ""}</span>${s.total ? `<button data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="insights"><b>${shownPower(tcgPower(g, d, f, (x) => cardOf(g, x)))}</b>power</button>` : ""}</div>
@@ -1338,11 +1343,11 @@ function deckCardsTab(g, d, f, s, issues) {
       return `<div class="section-head"><h2>${label} <span class="muted small">${zoneCount(z)} · ${rule}</span></h2></div>${
         rows.length
           ? `<div class="list display-list">${rows
-              .sort((a, b) => (a.c?.category || "").localeCompare(b.c?.category || "") || a.r.name.localeCompare(b.r.name))
+              .sort((a, b) => (a.c?.category || "").localeCompare(b.c?.category || "") || String(a.r.name||a.c?.name||a.r.cardId||"").localeCompare(String(b.r.name||b.c?.name||b.r.cardId||"")))
               .map(({ r, c, need }) => {
                 const lim = c ? SOURCES[g].limit(c, f) : 3;
                 const t = tcgTier(c);
-                return `<div class="lot deck-row ${need ? "short" : ""}" data-tier="${t.key}" style="${tierStyle(t)}"><button class="lot-art" data-act="tCard" data-id="${esc(r.cardId)}" data-deck="${esc(d.id)}" aria-label="Open ${esc(r.name)}">${imgTag(c)}${tileBadges(c)}<span class="art-price">${usd(price(c))}</span></button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(r.cardId)}" data-deck="${esc(d.id)}">${esc(r.name)}</button><span class="lot-sub">${rowBadges(c)}${lim === 0 ? ' <span class="tag bad">Forbidden</span>' : lim === 1 && g === "ygo" ? ' <span class="tag warn">Limited</span>' : lim === 2 ? ' <span class="tag warn">Semi-Limited</span>' : ""}${c && SOURCES[g].legality(c, f) === "not_legal" ? ' <span class="tag bad">Not legal</span>' : ""}</span><span class="own ${need ? "no" : "yes"}">${need ? "Need " + need : "Owned"}</span></div><div class="lot-side"><span class="stepper"><button data-act="tDeckQty" data-deck="${esc(d.id)}" data-zone="${z}" data-id="${esc(r.cardId)}" data-delta="-1" aria-label="One fewer">−</button><b>${r.qty}</b><button data-act="tDeckQty" data-deck="${esc(d.id)}" data-zone="${z}" data-id="${esc(r.cardId)}" data-delta="1" aria-label="One more">＋</button></span>${g === "ygo" ? `<button class="link small" data-act="tDeckMove" data-deck="${esc(d.id)}" data-zone="${z}" data-id="${esc(r.cardId)}">${z === "side" ? "→ deck" : "→ side"}</button>` : ""}</div></div>`;
+                return `<div class="lot deck-row ${need ? "short" : ""}" data-tier="${t.key}" style="${tierStyle(t)}"><button class="lot-art" ${finishAttrs(g,c,{})}  data-act="tCard" data-id="${esc(r.cardId)}" data-deck="${esc(d.id)}" aria-label="Open ${esc(r.name)}">${imgTag(c)}${tileBadges(c)}<span class="art-price">${usd(price(c))}</span></button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(r.cardId)}" data-deck="${esc(d.id)}">${esc(r.name)}</button><span class="lot-sub">${rowBadges(c)}${lim === 0 ? ' <span class="tag bad">Forbidden</span>' : lim === 1 && g === "ygo" ? ' <span class="tag warn">Limited</span>' : lim === 2 ? ' <span class="tag warn">Semi-Limited</span>' : ""}${c && SOURCES[g].legality(c, f) === "not_legal" ? ' <span class="tag bad">Not legal</span>' : ""}</span><span class="own ${need ? "no" : "yes"}">${need ? "Need " + need : "Owned"}</span></div><div class="lot-side"><span class="stepper"><button data-act="tDeckQty" data-deck="${esc(d.id)}" data-zone="${z}" data-id="${esc(r.cardId)}" data-delta="-1" aria-label="One fewer">−</button><b>${r.qty}</b><button data-act="tDeckQty" data-deck="${esc(d.id)}" data-zone="${z}" data-id="${esc(r.cardId)}" data-delta="1" aria-label="One more">＋</button></span>${g === "ygo" ? `<button class="link small" data-act="tDeckMove" data-deck="${esc(d.id)}" data-zone="${z}" data-id="${esc(r.cardId)}">${z === "side" ? "→ deck" : "→ side"}</button>` : ""}</div></div>`;
               })
               .join("")}</div>`
           : `<p class="muted small">Empty.</p>`
@@ -1477,7 +1482,7 @@ function deckInsights(g, d, f, s) {
     <section class="panel"><h3>Monster levels</h3>${levelChart(levels)}<p class="foot">Level 5–6 monsters need 1 Tribute, 7+ need 2, unless their text says otherwise.</p></section>
     <section class="panel"><h3>Card by card</h3>
       <p class="muted small">Chance to draw at least one copy (exact odds). Going first you draw 5; going second, 6. Labels show each card's job in the deck; the hand simulation above combines them.</p>
-      <table class="metrics"><thead><tr><th>Card</th><th class="num">Qty</th><th class="num" title="Going first: 5 cards">1st (5)</th><th class="num" title="Going second: 6 cards">2nd (6)</th></tr></thead><tbody>${main.sort((a, b) => b.r.qty - a.r.qty || a.r.name.localeCompare(b.r.name)).map((x) => oddsRow(x, [5, 6])).join("")}</tbody></table>
+      <table class="metrics"><thead><tr><th>Card</th><th class="num">Qty</th><th class="num" title="Going first: 5 cards">1st (5)</th><th class="num" title="Going second: 6 cards">2nd (6)</th></tr></thead><tbody>${main.sort((a, b) => b.r.qty - a.r.qty || String(a.r.name||a.c?.name||a.r.cardId||"").localeCompare(String(b.r.name||b.c?.name||b.r.cardId||""))).map((x) => oddsRow(x, [5, 6])).join("")}</tbody></table>
     </section>${valuePanel}`;
   }
   // Pokémon
@@ -1496,7 +1501,7 @@ function deckInsights(g, d, f, s) {
     ${needTypes.length ? `<div class="note warn">Attacks need ${needTypes.map(esc).join(", ")} Energy, but the deck has no basic ${needTypes.map(esc).join("/")} Energy.</div>` : ""}
   </section>
   <section class="panel"><h3>Card by card</h3><p class="muted small">Chance to have at least one copy (exact odds). Six cards go to your Prizes, so a single copy is prized about ${pctTxt(6 / Math.max(N, 1))} of games. Labels show each card's job in the deck.</p>
-    <table class="metrics"><thead><tr><th>Card</th><th class="num">Qty</th><th class="num" title="Opening hand of 7">In 7</th><th class="num" title="By turn 2: 9 cards">By T2</th></tr></thead><tbody>${main.sort((a, b) => b.r.qty - a.r.qty || a.r.name.localeCompare(b.r.name)).filter((x) => !x.c?.basicEnergy).map((x) => oddsRow(x, [7, 9])).join("")}</tbody></table></section>${valuePanel}`;
+    <table class="metrics"><thead><tr><th>Card</th><th class="num">Qty</th><th class="num" title="Opening hand of 7">In 7</th><th class="num" title="By turn 2: 9 cards">By T2</th></tr></thead><tbody>${main.sort((a, b) => b.r.qty - a.r.qty || String(a.r.name||a.c?.name||a.r.cardId||"").localeCompare(String(b.r.name||b.c?.name||b.r.cardId||""))).filter((x) => !x.c?.basicEnergy).map((x) => oddsRow(x, [7, 9])).join("")}</tbody></table></section>${valuePanel}`;
 }
 function levelChart(levels) {
   const max = Math.max(1, ...levels);
@@ -1758,7 +1763,7 @@ export function tcgSet() {
   ${g==='ygo'&&all.length?`<p class="set-coverage-note">Ranges cover the available printings in this release. Borders follow the lowest displayed reference; saved cards use their own condition and edition.${U.priceStatus==='unavailable'?' <span role="status">The price source is unavailable. Existing references are shown where available.</span>':''}</p>`:''}
   ${remainingDetails?`<p class="set-coverage-note">Rarity and version filters use loaded card details. ${remainingDetails} ${remainingDetails===1?'card is':'cards are'} still waiting for details. <button class="link small" data-act="tSetDetails" ${U.busy||U.detailsBusy?'disabled':''}>${U.busy||U.detailsBusy?'Loading details…':'Load remaining details'}</button></p>`:''}
   ${all.length&&!list.length?empty("No cards match","Try another name or number, or clear your filters."):""}
-  <div class="card-grid set-grid">${list.slice(0,U.limit).map(c=>{const ref=c.setBrowseReference,p=ref?.low??price(c),amount=ref?(ref.range?`${usd(ref.low)}–${usd(ref.high)}`:usd(ref.low)):c.brief?"…":p===null?"No quote yet":usd(p);return `<button class="grid-card ${own(c)?"own":""}" data-act="tCard" data-id="${esc(c.id)}" data-set-id="${esc(info?.id||U.id)}" ${U.finish?`data-set-variant="${esc(g==="ptcg"?setVariantKey(c,U.finish):U.finish)}"`:""} ${g==="ygo"&&c.setContext?.printing?`data-printing="${esc(c.setContext.printing.code+"::"+c.setContext.printing.rarity)}" data-edition="${esc(U.edition||'')}"`:""} ${tcgRarityAttrs(c)} ${tierAttrs(tcgTier(c,null,p))}>${imgTag(c,"card-img",false,p)}${tileBadges(c)}<span class="grid-meta ${g==='ygo'?'ygo-set-meta':''}"><span class="ellip">${setCardFields(c,g).number?"#"+esc(setCardFields(c,g).number)+" ":""}${esc(c.name)}</span><span class="set-price" ${ref?`data-price-scope="set-reference" title="${esc(ref.scope+' · '+ref.label+' · '+(U.rarity||'all rarities')+' · '+(U.edition||'all editions')+' · not a condition value')}"`:''}>${esc(amount)}${ref?`<small>${esc(ref.label)}</small>`:''}</span></span>${own(c)?`<span class="owned-badge">×${own(c)}</span>`:""}</button>`;}).join('')}</div>
+  <div class="card-grid set-grid">${list.slice(0,U.limit).map(c=>{const ref=c.setBrowseReference,p=ref?.low??price(c),amount=ref?(ref.range?`${usd(ref.low)}–${usd(ref.high)}`:usd(ref.low)):c.brief?"…":p===null?"No quote yet":usd(p);return `<button ${finishAttrs(g,c,{setId:info?.id||U.id,priceFinish:g==='ptcg'&&U.finish?setVariantKey(c,U.finish):'',priceEdition:g==='ygo'&&c.setContext?.printing?c.setContext.printing.code+'::'+c.setContext.printing.rarity:''})} class="grid-card ${own(c)?"own":""}" data-act="tCard" data-id="${esc(c.id)}" data-set-id="${esc(info?.id||U.id)}" ${U.finish?`data-set-variant="${esc(g==="ptcg"?setVariantKey(c,U.finish):U.finish)}"`:""} ${g==="ygo"&&c.setContext?.printing?`data-printing="${esc(c.setContext.printing.code+"::"+c.setContext.printing.rarity)}" data-edition="${esc(U.edition||'')}"`:""} ${tcgRarityAttrs(c)} ${tierAttrs(tcgTier(c,null,p))}>${imgTag(c,"card-img",false,p)}${tileBadges(c)}<span class="grid-meta ${g==='ygo'?'ygo-set-meta':''}"><span class="ellip">${setCardFields(c,g).number?"#"+esc(setCardFields(c,g).number)+" ":""}${esc(c.name)}</span><span class="set-price" ${ref?`data-price-scope="set-reference" title="${esc(ref.scope+' · '+ref.label+' · '+(U.rarity||'all rarities')+' · '+(U.edition||'all editions')+' · not a condition value')}"`:''}>${esc(amount)}${ref?`<small>${esc(ref.label)}</small>`:''}</span></span>${own(c)?`<span class="owned-badge">×${own(c)}</span>`:""}</button>`;}).join('')}</div>
   ${list.length>U.limit?`<button class="btn ghost block" data-act="tSetMore">Show more · ${list.length-U.limit} left</button>`:""}`;
 }
 
@@ -1806,7 +1811,7 @@ export function tcgBuildSheet() {
         const card = cardOf(g, r.cardId), have = Math.min(r.qty, ownedOf(g, card)), basic = !!card?.basicEnergy;
         const need = basic ? 0 : Math.max(0, r.qty - have), tt = tcgTier(card);
         // The same card tile as the deck page: art with price, set and type badges, owned or needed.
-        const tile = `<div class="lot deck-row tier-row ${need ? "short" : ""}" data-tier="${tt.key}" style="${tierStyle(tt)}"><button class="lot-art" data-act="tCard" data-id="${esc(r.cardId)}" aria-label="Open ${esc(r.name)}">${imgTag(card)}${tileBadges(card)}<span class="art-price">${usd(price(card))}</span></button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(r.cardId)}">${esc(r.name)}</button><span class="lot-sub">${rowBadges(card)}${r.why ? `<small class="muted">${esc(r.why)}</small>` : ""}</span><span class="own ${need ? "no" : "yes"}">${need ? "Need " + need : basic && !have ? "Basic Energy" : "Owned"}</span></div><div class="lot-side"><span class="tier-qty">×${r.qty}</span></div></div>`;
+        const tile = `<div class="lot deck-row tier-row ${need ? "short" : ""}" data-tier="${tt.key}" style="${tierStyle(tt)}"><button class="lot-art" ${finishAttrs(g,card,{})}  data-act="tCard" data-id="${esc(r.cardId)}" aria-label="Open ${esc(r.name)}">${imgTag(card)}${tileBadges(card)}<span class="art-price">${usd(price(card))}</span></button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(r.cardId)}">${esc(r.name)}</button><span class="lot-sub">${rowBadges(card)}${r.why ? `<small class="muted">${esc(r.why)}</small>` : ""}</span><span class="own ${need ? "no" : "yes"}">${need ? "Need " + need : basic && !have ? "Basic Energy" : "Owned"}</span></div><div class="lot-side"><span class="tier-qty">×${r.qty}</span></div></div>`;
         groups[groupOf(card, zone)].push({ qty: r.qty, name: r.name, tile, need, art: imgTag(card, "mini-art"), act: `data-act="tCard" data-id="${esc(r.cardId)}"`, why: r.why || "", status: basic ? "basic" : have >= r.qty ? "✓ Owned" : `Need ${r.qty - have}`, ok: basic || have >= r.qty });
       }
     for (const k of order) groups[k].sort((x, y) => y.qty - x.qty || x.name.localeCompare(y.name));
@@ -1852,7 +1857,7 @@ export function tcgSharedPage(sd) {
   <div class="actions wrap share-actions"><button class="btn" data-act="tSharedBuild">Make my version</button></div>
   ${sd.about ? `<section class="panel"><h3>About this deck</h3><p class="about">${esc(sd.about)}</p></section>` : ""}
   ${issues.length ? `<section class="panel issues-panel"><h3>Rules check (${esc(f.name)})</h3><ul class="issues">${issues.map((i) => `<li>${esc(i.text)}</li>`).join("")}</ul></section>` : ""}
-  ${["main", "extra", "side"].filter((z) => (sd.zones[z] || []).length).map((z) => `<div class="section-head"><h2>${z === "main" ? (g === "ygo" ? "Main Deck" : "Deck") : z === "extra" ? "Extra Deck" : "Side Deck"}</h2></div><div class="card-grid">${rows.filter((x) => x.z === z).map((x) => { const have = x.c ? ownedOf(g, x.c, m) : 0; return `<button class="grid-card ${have >= x.r.qty ? "own" : ""}" data-act="tCard" data-id="${esc(x.r.cardId)}">${imgTag(x.c)}${tileBadges(x.c)}<span class="grid-meta"><span class="ellip">${x.r.qty}× ${esc(x.r.name)}</span><span>${have >= x.r.qty ? "owned" : usd(price(x.c))}</span></span></button>`; }).join("")}</div>`).join("")}
+  ${["main", "extra", "side"].filter((z) => (sd.zones[z] || []).length).map((z) => `<div class="section-head"><h2>${z === "main" ? (g === "ygo" ? "Main Deck" : "Deck") : z === "extra" ? "Extra Deck" : "Side Deck"}</h2></div><div class="card-grid">${rows.filter((x) => x.z === z).map((x) => { const have = x.c ? ownedOf(g, x.c, m) : 0; return `<button ${finishAttrs(g,x.c,{})} class="grid-card ${have >= x.r.qty ? "own" : ""}" data-act="tCard" data-id="${esc(x.r.cardId)}">${imgTag(x.c)}${tileBadges(x.c)}<span class="grid-meta"><span class="ellip">${x.r.qty}× ${esc(x.r.name)}</span><span>${have >= x.r.qty ? "owned" : usd(price(x.c))}</span></span></button>`; }).join("")}</div>`).join("")}
   <p class="foot">The person who shared this can’t see your collection, and the link doesn’t include theirs.</p>`;
 }
 
@@ -2067,9 +2072,13 @@ export function registerTcg(c) {
     try {
       const card = await ensureCard(G, id);
       if (still()) openSheet(tcgCardSheet(card, sctx), sctx, document.querySelector("#sheetBody").scrollTop);
+      if(G==='ptcg'&&still()){
+        sctx.previewBusy=true;
+        SOURCES.ptcg.search({q:card.name,sort:'new',page:0,exactName:true}).then(result=>{if(!still())return;sctx.previewPrints=result.cards.filter(p=>p.name.normalize('NFC').toLowerCase()===card.name.normalize('NFC').toLowerCase());sctx.previewPrints.forEach(remember);}).catch(e=>{if(still())sctx.previewError=e.message;}).finally(()=>{if(still()){sctx.previewBusy=false;openSheet(tcgCardSheet(cardOf(G,id),sctx),sctx,document.querySelector('#sheetBody').scrollTop);}});
+      }
       // The set row shows a card's first release; that needs the set list's dates (loaded once).
-      if (G === "ygo" && !ygoSetIndex().size)
-        loadSets("ygo").then(() => still() && openSheet(tcgCardSheet(cardOf(G, id), sctx), sctx, document.querySelector("#sheetBody").scrollTop)).catch(() => {});
+      if (!ui(G).sets.list.length)
+        loadSets(G).then(() => still() && openSheet(tcgCardSheet(cardOf(G, id), sctx), sctx, document.querySelector("#sheetBody").scrollTop)).catch(() => {});
     } catch (e) {
       if (still()) openSheet(`<div class="sheet-head"><h2>Couldn’t load card</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="note warn">${esc(e.message)}</div>`, sctx);
     }
@@ -2168,7 +2177,7 @@ export function registerTcg(c) {
     A.tCompareOpen();
   };
   A.tOwn = (t) => {
-    const G=g(),previous=S.ui.sheetCtx,same=previous?.game===G&&previous?.id===t.dataset.id,setId=t.dataset.setId||(same?previous.setId:"")||"",setVariant=t.dataset.setVariant||(same?previous.setVariant:"")||"",setReleaseUnverified=!!(G==="ygo"&&same&&previous.setReleaseUnverified);
+    const G=g(),previous=S.ui.sheetCtx,same=previous?.game===G&&previous?.id===t.dataset.id,setId=t.dataset.setId||(same?previous.setId:"")||"",setVariant=t.dataset.setVariant||(same?previous.priceFinish||previous.setVariant:"")||"",setReleaseUnverified=!!(G==="ygo"&&same&&previous.setReleaseUnverified);
     let raw=cardOf(G,t.dataset.id);
     const membership=t.setMembership||(same?previous.setMembership:null);
     if(raw&&membership?.game===G&&membership.cardId===raw.id&&membership.releaseId===setId&&membership.membership==='set-response')raw={...raw,setContext:membership};
@@ -3731,16 +3740,17 @@ export function registerTcg(c) {
     openSheet(
       `<div class="sheet-head"><h2>Deck options</h2><button class="icon" data-act="closeSheet">✕</button></div>
       <div class="grid2"><label class="span2">Name<input id="tDmName" maxlength="100" value="${esc(d.name)}"></label><label class="span2">Format<select id="tDmFormat">${options(formatsOf(G).map((f) => [f.id, f.name]), d.format)}</select></label></div>
+      ${deckBoxFields(d,(d.zones.main||[]).map(r=>{const c=cardOf(G,r.cardId);return {name:c?.name||r.cardId,image:artworkSources(c).find(u=>u.startsWith("https://"))};}))}
       <button class="btn block" data-act="tDeckSave" data-id="${esc(d.id)}">Save</button>
       <div class="menu-list"><button data-act="tShare" data-id="${esc(d.id)}">🔗 Share this deck (link)</button><button data-act="tDeckExport" data-id="${esc(d.id)}">↓ Export ${SOURCES[G].exportExt === "ydk" ? ".ydk" : "list"}</button><button data-act="tDeckCopy" data-id="${esc(d.id)}">⧉ Copy list</button><button data-act="tDeckDup" data-id="${esc(d.id)}">⧉ Duplicate</button><button class="danger" data-act="tDeckDelete" data-id="${esc(d.id)}">✕ Delete deck</button></div>`,
       { type: "tdeckmenu" },
     );
   };
   A.tDeckSave = async (t) => {
+    const appearance=readDeckBox(),name=document.querySelector("#tDmName").value.trim().slice(0,100),format=document.querySelector("#tDmFormat").value,id=t.dataset.id;
     await mutate((st) => {
-      const d = st.decks.find((x) => x.id === t.dataset.id);
-      d.name = document.querySelector("#tDmName").value.trim().slice(0, 100) || d.name;
-      d.format = document.querySelector("#tDmFormat").value;
+      const d = st.decks.find((x) => x.id === id);if(!d)throw Error('This deck is no longer available.');
+      d.name = name || d.name;d.format = format;d.boxAppearance=appearance;
     }, { msg: "Saved." });
     closeSheet();
   };

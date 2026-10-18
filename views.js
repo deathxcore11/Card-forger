@@ -1,3 +1,6 @@
+import {finishAttrs,finishPreview} from './finish-preview.js';
+import {deckBoxMarkup} from './deck-box.js';
+import {detailSetProgress,miniPrintingMarkup} from './card-detail-extras.js';
 import {passwordField} from './auth-form.js';
 import {detailOwnedGroups} from './quick-quantity.js';
 import {profileAvatar,profilePhotoControl} from './profile-art.js';
@@ -164,7 +167,7 @@ export function deckTile(d, wide = false) {
   return `<button class="deck-tile ${wide ? "wide" : ""}" data-act="go" data-to="#deck/${esc(d.id)}">
     <span class="tile-art">${img(cover, d.name)}</span>
     <span class="tile-shade"></span>
-    <span class="tile-top"><span class="chip dark">${esc(formatOf(d).name)}</span>${colorDots(meta(d.commander))}</span>
+    <span class="tile-top"><span class="deck-format-stack"><span class="chip dark">${esc(formatOf(d).name)}</span>${deckBoxMarkup(d,{images:d.cards.slice(0,3).map(r=>cardImage(meta(r.name)))})}</span>${colorDots(meta(d.commander))}</span>
     <span class="tile-body">
       <b>${esc(d.name)}</b>
       <small>${esc(formatOf(d).commander ? d.commander || "No commander yet" : mtgPower(d).plan)} · ${t.copies}/${target}</small>
@@ -238,7 +241,7 @@ export function search() {
       ? `<div class="card-grid">${shown
           .map((c) => {
             const own = inv(c.name).owned;
-            return `<button class="grid-card" data-act="card" data-name="${esc(c.name)}" ${tierAttrs(tierOf("mtg", c.rarity, c.prices?.usd ?? c.prices?.usd_foil))}>${img(cardImage(c), c.name, "card-img")}${tileChrome("mtg", c)}<span class="grid-meta"><span class="ellip">${esc(c.name)} ${setBadge(c)}</span><span>${usd(c.prices?.usd ?? c.prices?.usd_foil)}</span></span>${own ? `<span class="owned-badge">×${own}</span>` : ""}</button>`;
+            return `<button class="grid-card" ${finishAttrs('mtg',c,{})} data-act="card" data-name="${esc(c.name)}" ${tierAttrs(tierOf("mtg", c.rarity, c.prices?.usd ?? c.prices?.usd_foil))}>${img(cardImage(c), c.name, "card-img")}${tileChrome("mtg", c)}<span class="grid-meta"><span class="ellip">${esc(c.name)} ${setBadge(c)}</span><span>${usd(c.prices?.usd ?? c.prices?.usd_foil)}</span></span>${own ? `<span class="owned-badge">×${own}</span>` : ""}</button>`;
           })
           .join("")}</div>`
       : `<div class="hints"><p class="muted small">Try:</p>${[["Cheap card draw", "o:\"draw a card\" usd<1"], ["Angels", "t:angel"], ["Red legends", "t:legendary t:creature id=r"], ["Token makers", "o:\"create\" o:token"]]
@@ -354,7 +357,7 @@ export function cardSheet(c, ctx = {}) {
   </div>`;
   const overview = `
     <div class="cs-card">
-      <div class="cd-art-stack"><div class="cd-img"><button class="cd-zoom" data-hold-card="true" data-entry="${esc(ctx.entryId||ctx.entry||'')}" data-act="zoomCard" data-src="${esc(image || "")}" data-hi="${esc(imgFaces?.length > 1 ? imgFaces[face]?.image_uris?.png || "" : shown.image_uris?.png || "")}" data-art="${esc(heroArt || "")}" data-name="${esc(name)}" aria-label="Enlarge ${esc(name)}">${img(image, name, "card-img")}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button></div>${imgFaces?.length > 1 ? `<button class="btn ghost small block" data-act="flipFace">↻ Flip to ${esc(imgFaces[face ? 0 : 1].name)}</button>` : ""}<button class="btn ghost small card-profile-photo" data-act="cardProfilePhoto" data-name="${esc(name)}">Use as profile photo</button></div>
+      <div class="cd-art-stack"><div class="cd-img" ${finishAttrs('mtg',shown,ctx,'detail')}><button class="cd-zoom" data-hold-card="true" data-entry="${esc(ctx.entryId||ctx.entry||'')}" data-act="zoomCard" data-src="${esc(image || "")}" data-hi="${esc(imgFaces?.length > 1 ? imgFaces[face]?.image_uris?.png || "" : shown.image_uris?.png || "")}" data-art="${esc(heroArt || "")}" data-name="${esc(name)}" aria-label="Enlarge ${esc(name)}">${img(image, name, "card-img")}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button></div>${imgFaces?.length > 1 ? `<button class="btn ghost small block" data-act="flipFace">↻ Flip to ${esc(imgFaces[face ? 0 : 1].name)}</button>` : ""}${finishPreview('mtg',shown,ctx)}<button class="btn ghost small card-profile-photo" data-act="cardProfilePhoto" data-name="${esc(name)}">Use as profile photo</button>${miniPrintingMarkup({game:'mtg',card:shown,cards:ctx.prints||[],busy:ctx.printsBusy||ctx.detailsBusy,error:ctx.printsError})}</div>
       <div class="cs-card-side">${readableText}${alertStatus("mtg",trackedQuote("mtg",shown)?.id,name)}
         ${detailOwnedGroups('mtg',S.state.collection,c)}
         ${inDecks.length ? `<p class="small own-line">In ${inDecks.map((d) => esc(d.name)).join(", ")}</p>` : ""}
@@ -395,6 +398,7 @@ export function cardSheet(c, ctx = {}) {
   ${emblemChips("mtg", c)}
   <div class="cs-meta">
     <button class="cd-set" data-act="set" data-code="${esc(shown.set || "")}" ${shown.set ? "" : "disabled"} aria-label="See every card in ${esc(shown.set_name || "this set")}">${setIcon(shown.set, shown.rarity, 24)}<div><b>${esc(shown.set_name || (shown.set || "").toUpperCase())} <span class="set-go">›</span></b><small>${esc((shown.set || "").toUpperCase())} #${esc(shown.collector_number || "?")} · ${esc(RARITY[shown.rarity] || shown.rarity || "")}${shown.released_at ? " · " + esc(shown.released_at.slice(0, 4)) : ""}</small></div></button>
+    ${(()=>{const st=S.ui.set,info=S.ui.sets.list.find(s=>s.code===shown.set)||(st.code===shown.set?st.info:null),owned=ownedPrintings(),prints=Object.values(S.state.printings||{}).filter(p=>p.set===shown.set),count=new Set(prints.filter(p=>owned.has(String(p.id))).map(p=>p.id)).size;return detailSetProgress({key:'mtg:'+shown.set,owned:count,total:st.code===shown.set&&st.complete?st.cards.length:info?.card_count||null,loaded:st.code===shown.set?st.cards.length:prints.length,complete:st.code===shown.set&&!!st.complete});})()}
     ${compactPriceSummary("mtg",shown,{...ctx,priceFinish})}
   </div>
   ${cardPanel("overview", tab, overview)}
@@ -515,7 +519,7 @@ export function setPage() {
       const i = st.cards.indexOf(c),
         n = ownedOf(c),
         other = !n && inv(c.name).owned;
-      return `<button class="grid-card ${n ? "own" : ""}" data-act="card" data-name="${esc(c.name)}" data-set-i="${i}" data-set-finish="${esc(st.finish&&st.finish!=="all"?st.finish:"")}" ${tierAttrs(tierOf("mtg", c.rarity, Number.isFinite(price(c)) ? price(c) : null))}>${img(cardImage(c, "normal"), c.name, "card-img")}${tileChrome("mtg", c)}<span class="grid-meta"><span class="ellip">#${esc(c.collector_number)} ${esc(c.name)}</span><span>${Number.isFinite(price(c)) ? usd(price(c)) : "—"}</span></span>${n ? `<span class="owned-badge">×${n}</span>` : other ? `<span class="owned-badge other" title="You own a different printing">other ed.</span>` : ""}</button>`;
+      return `<button ${finishAttrs('mtg',c,{priceFinish:st.finish&&st.finish!=='all'?st.finish:''})} class="grid-card ${n ? "own" : ""}" data-act="card" data-name="${esc(c.name)}" data-set-i="${i}" data-set-finish="${esc(st.finish&&st.finish!=="all"?st.finish:"")}" ${tierAttrs(tierOf("mtg", c.rarity, Number.isFinite(price(c)) ? price(c) : null))}>${img(cardImage(c, "normal"), c.name, "card-img")}${tileChrome("mtg", c)}<span class="grid-meta"><span class="ellip">#${esc(c.collector_number)} ${esc(c.name)}</span><span>${Number.isFinite(price(c)) ? usd(price(c)) : "—"}</span></span>${n ? `<span class="owned-badge">×${n}</span>` : other ? `<span class="owned-badge other" title="You own a different printing">other ed.</span>` : ""}</button>`;
     })
     .join("")}</div>
   ${list.length > st.limit ? `<button class="btn ghost block" data-act="setMore">Show more · ${(list.length - st.limit).toLocaleString()} left</button>` : ""}
@@ -537,7 +541,7 @@ function tierCard(t, i, mode, tierList = null) {
       basic = isBasic(c) || /^(Plains|Island|Swamp|Mountain|Forest|Wastes)$/.test(r.name);
     const need = basic ? 0 : Math.max(0, r.qty - free), tt = tierOf("mtg", c?.rarity || "", priceOf(r.name)), why = r.why === "Already in your list" ? "Kept in this version" : r.why || "";
     // The same card tile as the deck page: art with price, set and mana, owned or needed.
-    const tile = `<div class="lot deck-row tier-row ${need ? "short" : ""}" data-tier="${tt.key}" style="${tierStyle(tt)}"><button class="lot-art" data-act="card" data-name="${esc(r.name)}" aria-label="Open ${esc(r.name)}">${img(cardImage(c), r.name)}${c ? tileChrome("mtg", c) : ""}<span class="art-price">${usd(priceOf(r.name))}</span></button><div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(r.name)}">${esc(r.name)}</button><span class="lot-sub">${manaCost(c)}${why ? `<small class="muted">${esc(why)}</small>` : ""}</span><span class="own ${need ? "no" : "yes"}">${need ? "Need " + need : basic && !free ? "Basic land" : "Owned"}</span></div><div class="lot-side"><span class="tier-qty">×${r.qty}</span></div></div>`;
+    const tile = `<div class="lot deck-row tier-row ${need ? "short" : ""}" data-tier="${tt.key}" style="${tierStyle(tt)}"><button class="lot-art" ${finishAttrs('mtg',c,{})} data-act="card" data-name="${esc(r.name)}" aria-label="Open ${esc(r.name)}">${img(cardImage(c), r.name)}${c ? tileChrome("mtg", c) : ""}<span class="art-price">${usd(priceOf(r.name))}</span></button><div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(r.name)}">${esc(r.name)}</button><span class="lot-sub">${manaCost(c)}${why ? `<small class="muted">${esc(why)}</small>` : ""}</span><span class="own ${need ? "no" : "yes"}">${need ? "Need " + need : basic && !free ? "Basic land" : "Owned"}</span></div><div class="lot-side"><span class="tier-qty">×${r.qty}</span></div></div>`;
     groups[g].push({ qty: r.qty, name: r.name, tile, need, art: img(art(c), r.name, "mini-art"), act: `data-act="card" data-name="${esc(r.name)}"`, why, status: basic ? "basic" : free >= r.qty ? "✓ Owned" : `Need ${r.qty - free}`, ok: basic || free >= r.qty });
   }
   for (const k of Object.keys(groups)) groups[k].sort((a, b) => b.qty - a.qty || a.name.localeCompare(b.name));
@@ -729,13 +733,13 @@ export function collectionList() {
         const c = meta(e.name),
           p = priceOf(e.name, e.wanted.finish);
         const t = tierOf("mtg", c?.rarity, p);
-        return `<div class="lot wanted" data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}"><button class="lot-art" data-act="card" data-name="${esc(e.name)}" aria-label="Open ${esc(e.name)} (wanted, not owned)">${img(cardImage(c), e.name)}${c ? tileChrome("mtg", c) : ""}<span class="want-tag" aria-hidden="true">${actionIcon("heart")}Wanted</span></button><div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(e.name)}">${esc(e.name)}</button><span class="lot-sub"><span class="want-chip">${e.wanted.need > 1 ? `Need ${e.wanted.need}` : "Not owned"}</span>${manaCost(c)}${S.state.decks.some((d) => d.cards.some((x) => key(x.name) === key(e.name))) ? "<span>In a deck</span>" : ""}</span></div><div class="lot-side"><span class="price">${usd(p === null ? null : p * e.wanted.need)}</span><span class="want-actions"><button class="btn small want-got" data-act="own" data-name="${esc(e.name)}">＋ Got it</button><button class="want-x" data-act="wishRemove" data-id="${esc(e.wanted.id)}" aria-label="Remove ${esc(e.name)} from wishlist">×</button></span></div></div>`;
+        return `<div class="lot wanted" data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}"><button class="lot-art" ${finishAttrs('mtg',c,{priceFinish:e.wanted.finish})} data-act="card" data-name="${esc(e.name)}" aria-label="Open ${esc(e.name)} (wanted, not owned)">${img(cardImage(c), e.name)}${c ? tileChrome("mtg", c) : ""}<span class="want-tag" aria-hidden="true">${actionIcon("heart")}Wanted</span></button><div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(e.name)}">${esc(e.name)}</button><span class="lot-sub"><span class="want-chip">${e.wanted.need > 1 ? `Need ${e.wanted.need}` : "Not owned"}</span>${manaCost(c)}${S.state.decks.some((d) => d.cards.some((x) => key(x.name) === key(e.name))) ? "<span>In a deck</span>" : ""}</span></div><div class="lot-side"><span class="price">${usd(p === null ? null : p * e.wanted.need)}</span><span class="want-actions"><button class="btn small want-got" data-act="own" data-name="${esc(e.name)}">＋ Got it</button><button class="want-x" data-act="wishRemove" data-id="${esc(e.wanted.id)}" aria-label="Remove ${esc(e.name)} from wishlist">×</button></span></div></div>`;
       }
       const c = (e.printingVerified && st.printings?.[e.printingId]) || meta(e.name),
         unit = lotPrice(e, S.catalog, st.printings);
       const t = tierOf("mtg", c?.rarity, unit);
       return `<div class="lot" data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}">${selectionMark("mtg",e.id)}
-        <button class="lot-art" data-act="card" data-name="${esc(e.name)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${img(cardImage(c), e.name)}${c ? tileChrome("mtg", c) : ""}${tierGem(t)}</button>
+        <button class="lot-art" ${finishAttrs('mtg',e.printingVerified?c:null,{priceFinish:e.finish||'nonfoil'})} data-act="card" data-name="${esc(e.name)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${img(cardImage(c), e.name)}${c ? tileChrome("mtg", c) : ""}${tierGem(t)}</button>
         <div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(e.name)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem("mtg", c)} ${setBadge(e.printingVerified ? c : {set:e.set,set_name:e.setName,collector_number:e.collectorNumber}, {physical:true,unspecified:!e.set&&!e.printingVerified})}</button>
           <span class="lot-sub">${manaCost(c)}<span>${esc((e.set || e.setName || "Any printing").toUpperCase())}${e.collectorNumber ? " #" + esc(e.collectorNumber) : ""}${e.finish !== "nonfoil" ? ` · <b class="foil">${esc(e.finish)}</b>` : ""}${e.location ? " · " + esc(e.location) : ""}</span></span>
           ${e.lookupFailed ? `<button class="tag warn" data-act="editLot" data-id="${esc(e.id)}">Not found — tap to fix name</button>` : !c ? `<span class="tag muted">Looking up…</span>` : ""}
@@ -1071,7 +1075,7 @@ export function deckPage() {
     tabs = [["cards", "Cards"], ["rules", "Rules"], ["engine", "Power"], ["matchups", "Matchups"], ["upgrade", "Upgrade lab"], ["versions", "Versions"], ["playtest", "Playtest"], ["shop", t.missing ? `Shop · ${t.missing}` : "Shop"]];
   return `<section class="deck-hero">${img(coverOf(d), d.name, "hero-art")}<div class="hero-shade"></div>
     <div class="hero-body">
-      <div class="row between"><button class="icon light" data-act="go" data-to="#decks" aria-label="Back to decks">←</button><button class="icon light" data-act="deckMenu" aria-label="Deck options">⋯</button></div>
+      <div class="row between"><button class="icon light" data-act="go" data-to="#decks" aria-label="Back to decks">←</button>${deckBoxMarkup(d,{images:d.cards.slice(0,3).map(r=>cardImage(meta(r.name))),open:true,button:true})}</div>
       <h1>${esc(d.name)}</h1>
       <p>${fm.commander ? colorDots(meta(d.commander)) + " " + esc(d.commander || "No commander yet") + " · " : ""}<button class="chip dark fmt-chip" data-act="deckMenu" title="${esc(sizeLabel(fm))}${fm.note ? " · " + esc(fm.note) : ""}">${esc(fm.name)}</button>${d.locked ? ' · <span class="chip dark">Assembled</span>' : ""}</p>
       ${reviewBadge(d)}
@@ -1289,7 +1293,7 @@ function deckRow(r, d) {
     ok = r.missing === 0,
     t = tierOf("mtg", c?.rarity, r.price ?? c?.prices?.usd ?? c?.prices?.usd_foil);
   return `<div class="lot deck-row ${ok ? "" : "short"}" data-tier="${t.key}" style="${tierStyle(t)}">
-    <button class="lot-art" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(d.id)}">${img(cardImage(c), r.name)}${c ? tileChrome("mtg", c) : ""}<span class="art-price">${usd(r.price)}</span></button>
+    <button class="lot-art" ${finishAttrs('mtg',c,{})} data-act="card" data-name="${esc(r.name)}" data-deck="${esc(d.id)}">${img(cardImage(c), r.name)}${c ? tileChrome("mtg", c) : ""}<span class="art-price">${usd(r.price)}</span></button>
     <div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(d.id)}">${esc(r.name)} ${setBadge(c)}</button>
       <span class="lot-sub">${manaCost(c) || (c ? "" : '<span class="tag warn">Unresolved</span>')}${legalTag(c, d)}</span>
       <span class="own ${ok ? "yes" : "no"}">${ok ? "Owned" : r.covered ? `${r.covered}/${r.qty} owned · need ${r.missing}` : "Need " + r.missing}${r.reserved ? ` · ${r.reserved} in other decks` : ""}</span>
@@ -1300,7 +1304,7 @@ function deckRow(r, d) {
 
 function deckGridCard(r) {
   const c = meta(r.name);
-  return `<button class="grid-card ${r.missing ? "short" : ""}" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(currentDeck().id)}">${img(cardImage(c), r.name, "card-img")}${c ? tileChrome("mtg", c) : ""}<span class="grid-set">${setBadge(c)}</span><span class="grid-meta"><span>${r.qty > 1 ? r.qty + "× " : ""}${r.missing ? "need " + r.missing : "owned"}</span><span>${usd(r.price)}</span></span></button>`;
+  return `<button ${finishAttrs('mtg',c,{})} class="grid-card ${r.missing ? "short" : ""}" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(currentDeck().id)}">${img(cardImage(c), r.name, "card-img")}${c ? tileChrome("mtg", c) : ""}<span class="grid-set">${setBadge(c)}</span><span class="grid-meta"><span>${r.qty > 1 ? r.qty + "× " : ""}${r.missing ? "need " + r.missing : "owned"}</span><span>${usd(r.price)}</span></span></button>`;
 }
 
 /* Engine */
@@ -1747,13 +1751,12 @@ export function accountPanel() {
   const pr = a.profile || {},
     st = a.status,
     label = { synced: "Synced", syncing: "Syncing…", error: "Sync paused", decide: "Needs your decision", offline: "Offline — will sync when you’re back online", local: "Account sync not confirmed" }[st.state] || "Account sync not confirmed";
-  return `<section class="panel account"><div class="account-head">${profileAvatar(a.art?.avatar||S.state.settings.cardAvatar,pr)}<div><b>${esc(pr.display_name || a.user.email)}</b><small class="muted">${esc(a.user.email || "")}${pr.username ? " · @" + esc(pr.username) : ""}</small></div></div>
-    <div class="actions wrap"><button class="btn small" data-act="myCommunity">My profile</button><button class="btn ghost small" data-act="addFriend">Add friend</button></div><div class="sync-line ${st.state}"><span><b>${label}</b>${st.state === "synced" && st.at ? ` · ${esc(when(st.at))}` : ""}</span><button class="btn ghost small" data-act="syncNow">Sync now</button></div>
+  return `<section class="panel account"><div class="account-head">${profileAvatar(a.art?.avatar||S.state.settings.cardAvatar,pr)}<div><b>${esc(pr.username || pr.display_name || "Collector")}</b><small class="muted">${esc(a.user.email || "")}</small></div></div>
+    <div class="actions wrap"><button class="btn small" data-act="myCommunity">My profile</button><button class="btn ghost small" data-act="addFriend">Add friend</button><button class="btn ghost small" data-act="friendRequests">Friend requests${S.ui.communityRequests?` <span class="account-inline-count">${S.ui.communityRequests}</span>`:''}</button></div><div class="sync-line ${st.state}"><span><b>${label}</b>${st.state === "synced" && st.at ? ` · ${esc(when(st.at))}` : ""}</span><button class="btn ghost small" data-act="syncNow">Sync now</button></div>
     ${st.state === "error" && st.msg ? `<p class="small bad-text">${esc(st.msg)} Your cards are still saved on this device.</p>` : ""}
     ${a.pending ? `<button class="btn block" data-act="syncDecide">Choose which copy to keep</button>` : ""}
     <details><summary class="small"><b>Profile</b></summary>${photo}<button class="btn ghost small" data-act="profileHeader">Choose profile header</button>
-      <label class="field">Display name<input id="pfName" maxlength="60" value="${esc(pr.display_name || "")}"></label>
-      <label class="field">Username <span class="muted small">(friends can find you with this)</span><input id="pfUser" maxlength="30" value="${esc(pr.username || "")}" placeholder="letters, numbers, _"></label>
+      <label class="field">Username <span class="muted small">Your displayed player name. Friends can search for it.</span><input id="pfUser" minlength="3" maxlength="30" required autocomplete="nickname" value="${esc(pr.username || "")}" placeholder="letters, numbers, _"></label>
       <label class="field">Bio<textarea id="pfBio" rows="2" maxlength="500">${esc(pr.bio || "")}</textarea></label>
       <button class="btn small" data-act="saveProfile">Save profile</button>
     </details>
@@ -1785,7 +1788,7 @@ export function settings({popup=false}={}) {
   const saved = esc(st.lastSavedAt ? new Date(st.lastSavedAt).toLocaleString() : "Not yet");
   return `<div class="settings-page">${popup?'':'<header class="settings-header"><p class="eyebrow">YOUR WORKSPACE</p><h1>Settings</h1><p class="muted">Your account, your data, your preferences.</p></header>'}
   <nav class="settings-tabs" role="tablist" aria-label="Settings sections">${[["account","Account"],["app","App settings"],["info","Info"]].map(([id,label]) => `<button id="settingsTab-${id}" role="tab" aria-controls="settings-${id}" aria-selected="${id===tab || id==='account'&&tab==='backup'}" data-act="settingsTab" data-id="${id}">${label}</button>`).join("")}</nav>
-  <div id="settings-account" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-account" ${tab === "account" ? "" : "hidden"}><div class="settings-account-layout">${accountPanel()}<aside class="settings-aside"><span class="settings-status-dot"></span><b>Saved on this device</b><p class="muted small">${cloudInfo().user ? "Your account adds a private cloud copy." : "You can keep building without signing in."}</p><span class="small muted">Last saved<br>${saved}</span><button class="link" data-act="settingsTab" data-id="backup">Manage backups →</button></aside></div></div>
+  <div id="settings-account" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-account" ${tab === "account" ? "" : "hidden"}><div class="settings-account-layout">${accountPanel()}<aside class="settings-aside"><span class="settings-status-dot"></span><b id="saveStatus" class="save-status" role="status">Saved on this device</b><p class="muted small">${cloudInfo().user ? "Your account adds a private cloud copy." : "You can keep building without signing in."}</p><span class="small muted">Last saved<br>${saved}</span><button class="link" data-act="settingsTab" data-id="backup">Manage backups →</button></aside></div></div>
   <div id="settings-backup" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-account" ${tab === "backup" ? "" : "hidden"}><button class="link" data-act="settingsTab" data-id="account">← Account</button><section class="panel settings-card"><div class="settings-card-heading"><span class="settings-icon" aria-hidden="true">↓</span><div><p class="eyebrow">YOUR DATA</p><h2>Keep a backup</h2></div></div><p class="muted small">Download a copy of your collection, decks and settings.</p><button class="btn" data-act="exportBackup">Download backup</button><p class="foot">Last saved: ${saved}</p><details class="settings-disclosure"><summary>Restore or check a backup</summary><div class="actions wrap"><label class="btn ghost">Restore file<input type="file" accept=".json" data-change="restoreBackup" hidden></label><label class="btn ghost">Check file<input type="file" accept=".json" data-change="checkBackup" hidden></label></div><p id="backupCheck" class="muted small" role="status"></p><button class="link" data-act="undoRestore">Use the automatic recovery copy</button></details></section>
   <section class="panel settings-card"><h3>Device storage</h3><p id="storageDetail" class="muted small">Checking…</p><button class="btn ghost" data-act="persist">Keep data on this device</button></section>
   <details class="settings-disclosure settings-danger account-delete"><summary>Start over or load examples</summary><p class="foot">Export a backup first. One recovery copy is kept on this device.</p><div class="actions wrap"><button class="btn ghost danger" data-act="reset">Clear this device</button><button class="btn ghost" data-act="loadExample">Load example data</button></div></details></div>

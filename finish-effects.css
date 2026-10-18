@@ -1,0 +1,36 @@
+/* Finish simulation belongs to the exact printing, never to the price tier. */
+.finish-preview{margin:.65rem 0;max-width:100%}
+.finish-preview>div{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.35rem}
+.finish-preview .chip{min-height:44px;white-space:normal}
+.finish-preview [aria-pressed="true"]{border-color:var(--accent,var(--gold));background:var(--surface2,var(--surface-2))}
+.finish-preview .foot{margin:.45rem 0}
+.cd-zoom,.zoom-card-surface,[data-finish-surface="large"]{position:relative}
+.zoom-card-surface{display:grid;place-items:center;width:max-content;max-width:100%;line-height:0}
+.zoom-card-surface .zoom-img{display:block}
+@property --finish-x{syntax:"<percentage>";inherits:true;initial-value:50%}
+@property --finish-y{syntax:"<percentage>";inherits:true;initial-value:50%}
+.finish-overlay{--finish-x:var(--mx,50%);--finish-y:var(--my,50%);position:absolute;display:block;overflow:hidden;border-radius:4% / 3%;pointer-events:none!important;z-index:2;isolation:isolate}
+.finish-layer{position:absolute;inset:0;pointer-events:none!important;opacity:.16;mix-blend-mode:screen;background-size:220% 220%;background-position:var(--finish-x) var(--finish-y)}
+.tilting .finish-layer,.zoom-card-surface:hover .finish-layer{opacity:.26}
+/* The same soft light catches only each material’s masked foil region. */
+.finish-layer::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#fff9 0%,#fff3 18%,transparent 58%);opacity:.45}
+.finish-auto{animation:finish-gallery-light 8s ease-in-out infinite}
+.finish-auto .finish-layer{opacity:.22}
+@keyframes finish-gallery-light{0%,100%{--finish-x:16%;--finish-y:26%}50%{--finish-x:84%;--finish-y:74%}}
+.finish-holo{background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#e2f3ffb3,transparent 62%),linear-gradient(120deg,transparent 15%,#69e3d7 38%,#c6a7fa 53%,#f5d5a0 64%,transparent 85%)}
+.finish-rainbow{background-image:linear-gradient(116deg,transparent 18%,#86c9ea 35%,#ce9bcc 46%,#e5ce91 57%,#90caaa 68%,transparent 84%)}
+.finish-metal{mix-blend-mode:soft-light;opacity:.23;background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#f0dfbb,transparent 65%),repeating-linear-gradient(33deg,#c7c7b777 0 .6px,#232b2944 .6px 1.6px);background-size:100% 100%,3px 3px}
+.finish-silver,.finish-gold{opacity:.24;background-image:linear-gradient(115deg,transparent 25%,#c6d2db 43%,#fff 50%,#8393a8 57%,transparent 72%)}
+.finish-gold{background-image:linear-gradient(115deg,transparent 25%,#e3c67a 43%,#fff0b0 50%,#c2964b 57%,transparent 72%)}
+.finish-secret{background-image:repeating-linear-gradient(133deg,transparent 0 5px,#cbdcffaa 5px 6px,transparent 6px 10px);mask-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#000 5%,#0004 70%);background-size:110% 110%}
+.finish-prismatic{background-image:repeating-linear-gradient(0deg,transparent 0 5px,#e9c6fa99 5px 6px),repeating-linear-gradient(90deg,transparent 0 5px,#c2ecfa99 5px 6px);mask-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#000,#0003 70%);background-size:110% 110%}
+.finish-starlight{background-image:repeating-linear-gradient(0deg,transparent 0 2px,#e5cafa99 2px 2.5px),repeating-linear-gradient(90deg,transparent 0 2px,#bce0fa99 2px 2.5px),linear-gradient(115deg,#80bbd477,#d0b5f077,#e5d3ad66);mask-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#000,#0004 75%);background-size:110% 110%}
+/* A restrained geometric approximation, not a claim to reproduce the printed Paldea pattern. */
+.finish-tiles{background-image:repeating-linear-gradient(45deg,transparent 0 10px,#b8ded977 10px 11px,transparent 11px 20px),repeating-linear-gradient(135deg,transparent 0 10px,#d8c3eb66 10px 11px,transparent 11px 20px);mask-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#000,#0005 80%);background-size:110% 110%}
+.zoom-badge{z-index:3}
+/* Replace legacy physical-card rainbow/price glitter; preserve decorative price frames. */
+.cd-img::before,.cd-img::after,.tile-art::before,:is(.view-gallery,.view-compact) .lot-art::before,.lot-art.tilting::before{display:none!important}
+#content.view-gallery .display-list .lot:not(.wanted) .lot-art::after{display:none!important;animation:none!important}
+:is(.view-compact,.view-symbols) .finish-overlay{display:none!important}
+:is(.view-compact,.view-symbols) .lot-art::after{background:none!important;animation:none!important}
+@media(prefers-reduced-motion:reduce){.finish-overlay{display:none!important}.zoom-card-surface{transition:none!important}}

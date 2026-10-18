@@ -1,0 +1,33 @@
+{
+  "id": "sv01-199",
+  "name": "Tarountula",
+  "localId": "199",
+  "category": "Pokemon",
+  "set": {
+    "cardCount": {
+      "official": 198,
+      "total": 258
+    },
+    "id": "sv01",
+    "logo": "https://assets.tcgdex.net/en/sv/sv01/logo",
+    "name": "Scarlet & Violet",
+    "symbol": "https://assets.tcgdex.net/univ/sv/sv01/symbol"
+  },
+  "rarity": "Illustration rare",
+  "variants": {
+    "firstEdition": false,
+    "holo": true,
+    "normal": false,
+    "reverse": false,
+    "wPromo": false
+  },
+  "image": "https://assets.tcgdex.net/en/sv/sv01/199",
+  "variants_detailed": [
+    {
+      "type": "holo",
+      "size": "standard",
+      "variantId": "jr7oetx1mqug9"
+    }
+  ],
+  "_source": "https://api.tcgdex.net/v2/en/cards/sv01-199"
+}

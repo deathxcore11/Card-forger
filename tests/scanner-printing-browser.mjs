@@ -1,3 +1,4 @@
+import {openCapturedCard} from './scanner-review-controls.mjs';
 // HOSTED ONLY. Real app scanner review -> existing printing picker -> review.
 // Every queued card, camera pixel, catalogue response and screenshot is synthetic.
 // This checks UI/lifecycle/identity, not OCR or physical-camera recognition.
@@ -55,9 +56,42 @@ async function seed(app,game){
   await app.page.locator('[data-act="go"][data-to="#scan"]:visible').first().click();
   await app.page.getByRole('heading',{name:'Scan',exact:true}).waitFor();
   await app.page.evaluate(()=>{window.__uiTestState.ui.scan.auto=false;});
+  if(game==='mtg')for(const viewport of [{width:320,height:568},{width:390,height:844}]){
+    await app.page.setViewportSize(viewport);await frame(app.page);
+    const reachable=await app.page.getByRole('button',{name:'Start camera',exact:true}).evaluate(n=>{const r=n.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return r.top>=0&&r.bottom<=innerHeight&&(hit===n||n.contains(hit));});
+    assert(reachable,'Start camera remains reachable on the compact idle screen');
+    await capture(app.page,`synthetic-search-scanner-idle-${viewport.width}`);
+    if(viewport.width===320){
+      await app.page.evaluate(()=>{window.__scannerReviewTest.media=navigator.mediaDevices.getUserMedia;navigator.mediaDevices.getUserMedia=async()=>{throw new DOMException('Synthetic permission denial','NotAllowedError');};});
+      await app.page.getByRole('button',{name:'Start camera',exact:true}).click();
+      await app.page.locator('#scanStatus').filter({hasText:'Camera permission was declined'}).waitFor();
+      const disjoint=await app.page.evaluate(()=>{const a=document.querySelector('.scan-go').getBoundingClientRect(),b=document.querySelector('#scanStatus').getBoundingClientRect();return a.bottom<=b.top&&b.bottom<=document.querySelector('.bottom-nav').getBoundingClientRect().top;});
+      assert(disjoint,'Permission guidance stays below the start button and above navigation');
+      await capture(app.page,'synthetic-search-scanner-permission-320');
+      await app.page.evaluate(()=>{navigator.mediaDevices.getUserMedia=window.__scannerReviewTest.media;});
+    }
+
+  }
   await app.page.getByRole('button',{name:'Start camera',exact:true}).click();
   await app.page.waitForFunction(()=>document.querySelector('#scanVideo')?.videoWidth===320);
-  await app.page.locator('.scan-batch-thumb[data-id="synthetic-capture-A"]').click();
+  if(game==='mtg'){
+    for(const viewport of [{width:320,height:568},{width:390,height:844},{width:673,height:840},{width:768,height:1024},{width:1024,height:768},{width:1440,height:900},{width:844,height:390}]){
+      await app.page.setViewportSize(viewport);await frame(app.page);
+      const layout=await app.page.evaluate(()=>{
+        const box=n=>n.getBoundingClientRect(),camera=box(document.querySelector('.cam-wrap')),header=box(document.querySelector('.topbar')),nav=document.querySelector('.bottom-nav'),bottom=getComputedStyle(nav).display==='none'?innerHeight:box(nav).top,pile=box(document.querySelector('.scan-pile'));
+        const hit=n=>{const r=box(n),target=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return target===n||n.contains(target);};
+        return {cameraHeight:camera.height,available:bottom-header.bottom,cameraTop:camera.top,headerBottom:header.bottom,cameraBottom:camera.bottom,bottom,pileBottom:pile.bottom,pileRight:pile.right,width:innerWidth,clear:[...document.querySelectorAll('.scan-pile,#scanCaptureBtn,.scan-toolbar button,.cam-rail button')].every(hit),overflow:document.documentElement.scrollWidth>innerWidth};
+      });
+      assert(layout.cameraHeight>=layout.available*.95,'The camera fills the usable shell: '+JSON.stringify(layout));
+      assert(layout.cameraTop>=layout.headerBottom-1&&layout.cameraBottom<=layout.bottom+1,'Header and navigation remain visible');
+      assert(layout.pileBottom<=layout.bottom&&layout.pileRight>layout.width*.8,'Capture pile stays at the lower right');
+      assert(layout.clear&&!layout.overflow,'Camera controls stay physically reachable without horizontal overflow: '+JSON.stringify(layout));
+      assert.equal((await queue(app.page)).length,2,'Resizing retains both captures');
+      await capture(app.page,`synthetic-search-scanner-camera-${viewport.width}`);
+    }
+    await app.page.setViewportSize({width:390,height:844});await frame(app.page);
+  }
+  await openCapturedCard(app.page,'synthetic-capture-A');
   await app.page.locator('.scan-confirm').waitFor();return queue(app.page);
 }
 async function openPicker(page){await act(page,'scanChangePrinting').click();await ready(page);}
@@ -96,14 +130,14 @@ async function reviewScenario(app,game){
   assert.equal(await page.evaluate(()=>window.__scannerReviewTest.ocrCalls),0,'Review does not generate another capture or OCR');
   assert.deepEqual((await queue(page)).map(row=>row.id),initial.map(row=>row.id));
   if(game==='ptcg'){
-    await page.locator('.scan-batch-thumb[data-id="synthetic-capture-A"]').click();await openPicker(page);
+    await openCapturedCard(page,'synthetic-capture-A');await openPicker(page);
     await page.locator(`.printing-picker-choice[data-card-id="${POKEMON_PRINTS[1].id}"][data-variant="firstEdition"]`).click();
     await page.waitForFunction(()=>!document.querySelector('#sheet')?.open);
     const coarse=(await queue(page))[0];assert.equal(coarse.finish,'');assert.equal(coarse.cands[0].printingSelection.variantKey,'firstEdition');
     assert.equal(await act(page,'scanConfirm').isEnabled(),false,'Edition-only source metadata cannot auto-ready or enable saving an assumed finish');
   }
   if(game==='ygo'){
-    await page.locator('.scan-batch-thumb[data-id="synthetic-capture-A"]').click();await openPicker(page);
+    await openCapturedCard(page,'synthetic-capture-A');await openPicker(page);
     const unknown=page.locator('.printing-picker-choice[data-edition=""][data-printing="LOB-001::Rare"]').first();
     const identity=await unknown.evaluate(node=>({...node.dataset}));await unknown.click();
     await page.waitForFunction(()=>!document.querySelector('#sheet')?.open);
@@ -119,7 +153,7 @@ async function lateCancelledScenario(app){
   try{
     await act(page,'scanChangePrinting').click();await bounded(gate.seen,'Held printing page');
     await act(page,'printingPickerCancel').click();await page.waitForFunction(()=>!document.querySelector('#sheet')?.open);
-    await act(page,'scanDismiss').click();await page.locator('.scan-batch-thumb[data-id="synthetic-capture-B"]').click();
+    await act(page,'scanDismiss').click();await openCapturedCard(page,'synthetic-capture-B');
     const before=await queue(page);await frame(page);
     // Native dialog close intentionally retains its hidden body. Observe the
     // actual open/context/visibility contract, and independently reject any

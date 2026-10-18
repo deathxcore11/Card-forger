@@ -1,0 +1,66 @@
+{
+  "id": "base1-4",
+  "name": "Charizard",
+  "localId": "4",
+  "category": "Pokemon",
+  "set": {
+    "cardCount": {
+      "official": 102,
+      "total": 102
+    },
+    "id": "base1",
+    "logo": "https://assets.tcgdex.net/en/base/base1/logo",
+    "name": "Base Set"
+  },
+  "rarity": "Rare",
+  "variants": {
+    "firstEdition": true,
+    "holo": true,
+    "normal": false,
+    "reverse": false,
+    "wPromo": false
+  },
+  "image": "https://assets.tcgdex.net/en/base/base1/4",
+  "variants_detailed": [
+    {
+      "type": "holo",
+      "subtype": "unlimited",
+      "size": "standard",
+      "thirdParty": {
+        "cardmarket": 273699,
+        "tcgplayer": 42382
+      },
+      "variantId": "4ffrmhcfiaejakhepqdkx7o"
+    },
+    {
+      "type": "holo",
+      "subtype": "shadowless",
+      "size": "standard",
+      "stamp": [
+        "1st-edition"
+      ],
+      "thirdParty": {
+        "tcgplayer": 106999,
+        "cardmarket": 660224
+      },
+      "variantId": "mtltux8qtgdu4exu903oasum21juxbvx6lx"
+    },
+    {
+      "type": "holo",
+      "subtype": "shadowless",
+      "size": "standard",
+      "thirdParty": {
+        "tcgplayer": 106999,
+        "cardmarket": 660224
+      },
+      "variantId": "3takscxpcqoqcfnxk1ivs2y6"
+    },
+    {
+      "type": "holo",
+      "subtype": "1999-2000-copyright",
+      "size": "standard",
+      "variantId": "zqq5g2u9n0st0gren5bssktmac2ywqaw"
+    }
+  ],
+  "_source": "https://api.tcgdex.net/v2/en/cards/base1-4"
+}

@@ -37,6 +37,11 @@ try {
  const selected=S.ui.sheetCtx;assert.equal(selected.id,next.id);assert.equal(selected.setId,'setb');assert.equal(selected.setVariant,'holofoil');assert.equal(selected.priceFinish,'holofoil');assert.equal(selected.entryId,'');assert.equal(selected.setMembership.releaseId,'setb','new selection carries its own proven membership even without Sets catalogue');assert.equal(selected.setMembership.cardId,next.id);
  const projection=setContextCard('ptcg',{...next,setContext:selected.setMembership},selected.setId,[],{variantKey:selected.setVariant});assert.equal(presentationQuote('ptcg',projection,'holofoil').value,8);
  assert.deepEqual(ui('ptcg').search,searchBefore);assert.deepEqual(S.state,stateBefore);
+ const {selectPreviewFinish}=await import('./finish-effects.js');
+ assert(selectPreviewFinish('ptcg',projection,selected,'normal'));
+ A.tOwn({dataset:{id:next.id}});
+ assert.equal(S.ui.sheetCtx.type,'tadd');assert.equal(S.ui.sheetCtx.setVariant,'normal','Explicit Add inherits the previewed finish');
+ assert.deepEqual(S.state,stateBefore,'Opening Add still does not mutate ownership');S.ui.sheetCtx=selected;
  // Cancellation stops hydration queue and never changes Search or selected detail.
  S.ui.sheetCtx=parent;await A.tOtherPrintings({dataset:{id:source.id,name:source.name}});const abort=new AbortController();abort.abort();const count=calls.length;await assert.rejects(config.loadPage({cursor:null,signal:abort.signal}),/cancelled/);assert.equal(calls.length,count);
  // Name-only links resolve a real exact card and reuse the first source page.

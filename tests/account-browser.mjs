@@ -10,10 +10,18 @@ a.settings.cardAvatar=art('Gengar-A');b.settings.cardAvatar=art('Mew-B');
 const card=CARDS.mtg.find(c=>c.name.startsWith('Alpha fixture'));
 b.collection=[{...b.collection[0],id:'B-lot',name:card.name,printingId:card.id,qty:4}];b.printings[card.id]=card;
 const cloudB=structuredClone(b);cloudB.collection[0].qty=9;
-const fixture={user:{id:'A',email:'A@example.invalid'},profiles:{A:{display_name:'Account A',username:'account_a'},B:{display_name:'Account B',username:'account_b'}},art:{A:{avatar:art('Gengar-A')},B:{avatar:art('Mew-B')}},rows:{A:{data:a,revision:1},B:{data:cloudB,revision:2}},writes:[],storage:{'cardforge-v2':a,'cardforge-cloud-v1':{userId:'A',revision:1,sig:workspaceSig(a)},'cardstashy-workspace-v1:B':{state:b,recovery:blank(),meta:null}}};
+a.decks=[{id:'profile-deck',name:'Profile deck',format:'Standard',cards:[{name:card.name,qty:1}],side:[]}];a.settings.binders=[{id:'profile-binder',title:'Profile binder',game:'mtg',rule:'all',color:'#7468b5'}];
+const sharedCard={id:card.id,name:card.name,qty:1,image:card.image_uris.normal};
+const fixture={people:{A:[{id:'C',display_name:'Incoming friend',relationship:'pending',incoming:true}]},items:{A:[{key:'deck:mtg:profile-deck',kind:'deck',game:'mtg',title:'Profile deck',cards:[sharedCard]},{key:'binder:profile-binder',kind:'binder',game:'mtg',title:'Profile binder',cards:[sharedCard]}]},user:{id:'A',email:'A@example.invalid'},profiles:{A:{display_name:'Account A',username:'account_a'},B:{display_name:'Account B',username:'account_b'}},art:{A:{avatar:art('Gengar-A')},B:{avatar:art('Mew-B')}},rows:{A:{data:a,revision:1},B:{data:cloudB,revision:2}},writes:[],storage:{'cardforge-v2':a,'cardforge-cloud-v1':{userId:'A',revision:1,sig:workspaceSig(a)},'cardstashy-workspace-v1:B':{state:b,recovery:blank(),meta:null}}};
+fixture.profiles.C={display_name:'Friend C',username:'friend_c'};fixture.items.C=[{key:'deck:mtg:friend-deck',kind:'deck',game:'mtg',title:'Friend deck',format:'Modern',deckSchema:1,cards:[{...sharedCard,zone:'main',qty:2},{...sharedCard,zone:'side',qty:1}]},{key:'binder:friend-binder',kind:'binder',game:'mtg',title:'Friend binder',cards:[{...sharedCard,referenceUSD:3.5,qty:2}]}];
 const ready=async(page,id)=>page.waitForFunction(async id=>{const c=(await import('/cloud.js')).cloudInfo();return !c.switching&&(c.user?.id||null)===id;},id);
 const avatar=page=>page.locator('.topbar [data-act="menu"] .profile-avatar img');
-const later=async page=>{await page.locator('[data-act="syncChoice"][data-choice="later"]').click();};
+const later=async page=>{
+ assert.equal(await page.locator('#sheet[open] [data-act="syncChoice"]').count(),0,'Sync conflicts do not interrupt browsing');
+ await page.locator('[data-act="menu"]').click();await page.locator('[data-act="syncDecide"]').click();
+ await page.locator('[data-act="syncChoice"][data-choice="later"]').click();await page.locator('[data-act="closeSettings"]').click();
+ await page.waitForFunction(()=>!history.state?.cardstashySettings);
+};
 try{
  const app=await openSearchApp(browser,server.base,{width:390,accountFixture:fixture}),{page}=app;
  try{
@@ -30,6 +38,20 @@ try{
   await page.reload();await page.locator('#app.ready').waitFor();await ready(page,'B');await page.waitForFunction(async()=>!!(await import('/cloud.js')).cloudInfo().pending);await later(page);
   await page.evaluate(async()=>{window.__uiTestState=(await import('/store.js')).S;});assert.equal(await page.evaluate(()=>window.__uiTestState.state.collection[0].qty),5);assert.match(await avatar(page).getAttribute('src'),/Mew-B/);
   await page.locator('[data-act="menu"]').click();
+  assert.equal(await page.locator('.topbar #saveStatus').count(),0,'Sync status is confined to Account settings');
+  assert.equal(await page.locator('#settingsDialog [data-act="syncNow"]').count(),1);
+  assert.equal(await page.locator('#pfName').count(),0,'There is one player-name field');
+  assert.match(await page.locator('.account-head').innerText(),/account_b/);
+  await page.locator('#pfUser').evaluate(n=>n.closest('details').open=true);
+  await page.locator('#pfUser').fill('player_b');await page.locator('[data-act="saveProfile"]').click();
+  await page.waitForFunction(()=>document.querySelector('.account-head b')?.textContent==='player_b');
+  assert.equal(await page.evaluate(()=>window.__accountFixture.model.profiles.B.display_name),'player_b');
+  const underlying=await page.evaluate(()=>location.hash);
+  await page.locator('[data-act="myCommunity"]').click();await page.locator('.community-dialog .community-profile-card').waitFor();
+  assert.equal(await page.locator('.community-dialog h1').innerText(),'player_b');
+  assert.equal(await page.evaluate(()=>location.hash),underlying,'My profile opens a popup without changing the current page');
+  for(const width of [320,390,768,1024,1440]){await page.setViewportSize({width,height:900});await noOverflow(page,'.community-dialog',`my profile popup ${width}`);if([390,1440].includes(width))await capture(page,`synthetic-search-my-profile-${width}`);}
+  await page.locator('[data-community-close]').click();
   for(const width of [320,390,768,1024,1440]){await page.setViewportSize({width,height:900});await noOverflow(page,'#settingsDialog',`account settings ${width}`);if([390,768,1440].includes(width))await capture(page,`synthetic-search-account-settings-${width}`);}
   await page.locator('[data-act="closeSettings"]').click();
   await page.evaluate(()=>window.__accountFixture.switch('A'));await ready(page,'A');await page.waitForFunction(()=>document.querySelector('.topbar .profile-avatar img')?.src.includes('Gengar-A'));
@@ -41,6 +63,28 @@ try{
   for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'.community-page',`signed-in Community ${width}`);if([390,1440].includes(width))await capture(page,`synthetic-search-community-account-${width}`);}
   assert.match(await page.locator('.community-avatar-open img').getAttribute('src'),/Gengar-A/,'Community renders the current account avatar');
   assert.equal(await page.locator('[data-community-add]').count(),1);assert.deepEqual(await page.evaluate(()=>window.__accountFixture.model.writes),[]);
+  assert.equal(await page.locator('[data-community-requests]').count(),0,'Requests live in Account');
+  assert.equal(await page.locator('.community-kind-section').count(),2);
+  await page.locator('[data-community-share="deck"]').click();await page.locator('.community-dialog[open]').waitFor();
+  assert.equal(await page.locator('[data-community-kind="deck"]').getAttribute('aria-selected'),'true');assert.equal(await page.locator('.community-share-choices [data-community-preview]').count(),1);
+  await page.locator('[data-community-kind="binder"]').click();assert.equal(await page.locator('.community-share-choices [data-community-preview="binder:profile-binder"]').count(),1);
+  await page.locator('[data-community-filter]').fill('no match');assert.equal(await page.locator('.community-share-choices [data-community-preview]').count(),0);await page.locator('[data-community-filter]').fill('');
+  for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'.community-dialog',`sharing picker ${width}`);if([390,1440].includes(width))await capture(page,`synthetic-search-community-sharing-${width}`);}
+  await page.locator('[data-community-close]').click();await page.locator('[data-act="menu"]').click();assert.equal(await page.locator('[data-act="friendRequests"] .account-inline-count').textContent(),'1');
+  await page.locator('[data-act="addFriend"]').click();await page.locator('[data-community-search]').waitFor();
+  for(const query of ['C@example.invalid','friend_c']){
+   await page.locator('[data-community-search] input').fill(query);await page.locator('[data-community-search] button').click();
+   await page.waitForFunction(()=>!document.querySelector('[data-community-search] button').disabled);
+   assert.match(await page.locator('[data-community-found]').innerText(),/friend_c/);
+  }
+  await page.locator('[data-community-close]').click();
+  await page.locator('[data-act="friendRequests"]').click();await page.locator('[data-community-action="accept"]').click();await page.locator('.community-dialog').waitFor({state:'detached'});assert.equal(await page.locator('[data-act="friendRequests"] .account-inline-count').count(),0);await page.locator('[data-act="closeSettings"]').click();
+  const ownerSnapshot=await page.evaluate(()=>JSON.stringify(window.__accountFixture.model.items.C));const myCards=await page.evaluate(()=>JSON.stringify(window.__uiTestState.state.collection));
+  await page.locator('[data-community-person="C"]').click();await page.locator('[data-community-item="binder:friend-binder"]').waitFor();assert.equal(await page.locator('.community-dialog [data-community-source]').count(),0,'friend has no edit controls');
+  await page.locator('[data-community-item="binder:friend-binder"]').click();assert.match(await page.locator('.community-binder-value').textContent(),/\$7.00/);assert.equal(await page.locator('[data-community-copy]').count(),0);await page.locator('[data-community-close]').click();
+  await page.locator('[data-community-person="C"]').click();await page.locator('[data-community-item="deck:mtg:friend-deck"]').click();
+  for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'.community-dialog',`shared deck ${width}`);if([390,1440].includes(width))await capture(page,`synthetic-search-shared-deck-${width}`);}
+  await page.locator('[data-community-copy]').click();await page.locator('.community-dialog').waitFor({state:'detached'});const copy=await page.evaluate(()=>window.__uiTestState.state.decks.find(d=>d.name==='Friend deck'));assert(copy&&copy.id!=='friend-deck');assert.equal(copy.cards[0].qty,2);assert.equal(copy.side[0].qty,1);assert.equal(copy.format,'Modern');assert.equal(await page.evaluate(()=>JSON.stringify(window.__accountFixture.model.items.C)),ownerSnapshot);assert.equal(await page.evaluate(()=>JSON.stringify(window.__uiTestState.state.collection)),myCards);assert.deepEqual(await page.evaluate(()=>window.__accountFixture.model.writes),[],'saving a shared copy respects paused sync');
   app.health();console.log('PASS: browser A → sign out → B, immediate avatar clearing, paused edit/reload/offline/reconnect, account restore, preserved backup and 320–1440px settings');
  }catch(error){await capture(page,"synthetic-search-account-failure",{settle:false});throw error;}finally{await app.context.close();}
  // Independent clean browser contexts cannot inherit the first device's art.

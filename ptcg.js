@@ -33,12 +33,12 @@ export function pokemonVariants(c) {
     const bare = !special && !bucket && !d.pricing && !d.thirdParty?.tcgplayer;
     const key = !special && bucket ? bucket : bare ? wanted[0] : "detail:" + (d.variantId || JSON.stringify([d.type,d.subtype,d.stamp,d.size]));
     const label = [first ? "First Edition" : "", d.subtype ? title(d.subtype) : "", ...(d.stamp || []).filter(x => x !== "1st-edition").map(title), d.size && d.size !== "standard" ? title(d.size) : "", {holo:"Holofoil",reverse:"Reverse Holo",normal:"Normal"}[d.type] || title(d.type || "Version")].filter(Boolean).join(" · ");
-    out.set(key, { key, label, usd:referenceQuote(q)?.value??null, priceKind:referenceQuote(q)?.kind, low:n(q.lowPrice), mid:n(q.midPrice), market:n(q.marketPrice), productId:q.productId || d.thirdParty?.tcgplayer, cmProduct:d.thirdParty?.cardmarket, detailed:true, image: typeof d.image === "string" ? (/[.](?:webp|png|jpe?g)(?:[?]|$)/i.test(d.image) ? d.image : ptcgImage(d.image)) : "", imageLarge: typeof d.image === "string" ? (/[.](?:webp|png|jpe?g)(?:[?]|$)/i.test(d.image) ? d.image : ptcgImage(d.image,"high")) : "" });
+    out.set(key, { key, label, finish, size:d.size||"standard", subtype:d.subtype||"", stamps:[...(d.stamp||[])], usd:referenceQuote(q)?.value??null, priceKind:referenceQuote(q)?.kind, low:n(q.lowPrice), mid:n(q.midPrice), market:n(q.marketPrice), productId:q.productId || d.thirdParty?.tcgplayer, cmProduct:d.thirdParty?.cardmarket, detailed:true, image: typeof d.image === "string" ? (/[.](?:webp|png|jpe?g)(?:[?]|$)/i.test(d.image) ? d.image : ptcgImage(d.image)) : "", imageLarge: typeof d.image === "string" ? (/[.](?:webp|png|jpe?g)(?:[?]|$)/i.test(d.image) ? d.image : ptcgImage(d.image,"high")) : "" });
   }
   for (const v of legacy) {
     const have = out.get(v.key);
     if (!have) out.set(v.key,v);
-    else if (have.usd == null && !have.productId) out.set(v.key,{ ...have, ...v, label: have.label, image: have.image, imageLarge: have.imageLarge });
+    else if (have.usd == null && !have.productId) out.set(v.key,{ ...have, ...v, label: have.label, finish: have.finish, image: have.image, imageLarge: have.imageLarge });
   }
   // Older/incomplete responses still expose version availability flags.
   for (const [flag,key,label] of [["normal","normal","Normal"],["holo","holofoil","Holofoil"],["reverse","reverse-holofoil","Reverse Holo"]]) {

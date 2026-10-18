@@ -12,6 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Manrope:wght@600;700;800&display=swap">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="finish-effects.css">
 <link rel="stylesheet" href="sets-ui.css">
 <link rel="stylesheet" href="printing-picker.css">
 <title>CardStashy</title>
@@ -29,7 +30,6 @@
       <button data-act="go" data-to="#decks" data-nav="decks">Decks</button>
       <button data-act="go" data-to="#scan" data-nav="scan">Scan</button>
     </nav>
-    <span id="saveStatus" class="save-status" role="status" data-act="go" data-to="#settings" title="Your cards are stored in this browser on this device. Tap for backup options."></span>
     <button class="icon" data-act="menu" aria-label="Settings">⚙</button>
   </header>
   <main id="content" role="tabpanel" aria-labelledby="game-tab-mtg"><p class="muted center pad">Loading your cards…</p></main>
@@ -64,6 +64,7 @@
 <link rel="modulepreload" href="builder.js">
 <link rel="modulepreload" href="buy.js">
 <link rel="modulepreload" href="card-actions.js">
+<link rel="modulepreload" href="card-detail-extras.js">
 <link rel="modulepreload" href="catalog-tools.js">
 <link rel="modulepreload" href="cloud.js">
 <link rel="modulepreload" href="collection-locations.js">
@@ -79,6 +80,7 @@
 <link rel="modulepreload" href="confidence.js">
 <link rel="modulepreload" href="config.js">
 <link rel="modulepreload" href="core.js">
+<link rel="modulepreload" href="deck-box.js">
 <link rel="modulepreload" href="deck-flow.js">
 <link rel="modulepreload" href="deck-optimizer.js">
 <link rel="modulepreload" href="deck-safety.js">
@@ -91,6 +93,8 @@
 <link rel="modulepreload" href="facts.js">
 <link rel="modulepreload" href="feedback-layer.js">
 <link rel="modulepreload" href="feel.js">
+<link rel="modulepreload" href="finish-effects.js">
+<link rel="modulepreload" href="finish-preview.js">
 <link rel="modulepreload" href="format-upgrades.js">
 <link rel="modulepreload" href="formats.js">
 <link rel="modulepreload" href="game-navigation.js">
@@ -146,6 +150,7 @@
 <link rel="modulepreload" href="scanner-printing.js">
 <link rel="modulepreload" href="scansession.js">
 <link rel="modulepreload" href="scouting.js">
+<link rel="modulepreload" href="scryfall-client.js">
 <link rel="modulepreload" href="set-list-ui.js">
 <link rel="modulepreload" href="settings-dialog.js">
 <link rel="modulepreload" href="share.js">

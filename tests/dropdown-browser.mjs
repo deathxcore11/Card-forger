@@ -83,7 +83,7 @@ try{
    try{await menu.waitFor({state:'detached',timeout:2000});}catch(e){console.log('PICKER FAILURE '+name+' '+game,JSON.stringify(await page.evaluate(()=>({trace:window.__pickerTrace,html:document.querySelector('.glass-select-menu')?.outerHTML,viewport:{width:innerWidth,height:innerHeight,scale:visualViewport?.scale}}))));throw e;}
    assert.equal((await page.locator('select[data-field="sort"], select[data-change="tSort"]').inputValue()).toLowerCase(),'name',`${game} real sort handler saved Name`);
   }
-  await page.getByRole('button',{name:'Settings',exact:true}).click();
+  await page.getByRole('button',{name:/^Profile and settings(?:,|$)/}).click();
   await page.getByRole('heading',{name:'Settings',exact:true}).waitFor();
   const settingsSelect=page.locator('#sheet[open] select:visible').first();
   if(await settingsSelect.count()){

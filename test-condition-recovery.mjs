@@ -26,7 +26,7 @@ const card={id:'base1-63'},entry={cardId:card.id,variant:'normal',condition:'Mod
 const client=await loadConditionQuotes(card,entry,'ptcg',async()=>Response.json(response));
 assert.equal(client.providerCode,failed.providerCode);assert.equal(client.reason,failed.reason);
 const html=conditionPriceHtml(null,entry,[],{...client,reference:6.74,retryAction:'retryConditionPrice'});
-assert.match(html,/\$6.74/);assert.match(html,/Provider shared-hosting restriction/);assert.match(html,/Retry condition price/);assert.match(html,/not a verified Moderately Played price/);
+assert.match(html,/\$6.74/);assert.match(html,/Condition lookup paused/);assert.match(html,/Retry condition price/);assert.match(html,/not a verified Moderately Played price/);
 assert.equal(conditionValue(6.74,entry).price,null,'Reference display must not silently value a played copy');
 forgetConditionAttempt(conditionRequest(card,entry,'ptcg'));
 const recovered=await loadConditionQuotes(card,entry,'ptcg',async()=>Response.json({status:'available',quotes:[{condition:'Moderately Played',currency:'USD',price:2.5,priceStatus:'current',validUntil:new Date(now+86400000).toISOString()}]}));
@@ -55,3 +55,14 @@ try{
  assert.equal((await (await guest).json()).reason,'app_budget');assert.equal((await verified).status,'available','Concurrent guest rejection cannot cap the owner');
 }finally{globalThis.fetch=savedFetch;clearConditionAttempts();}
 console.log('PASS: provider error diagnostics, exact Retry-After, queued notice retention, explicit retry recovery, reference/condition separation, cache availability and concurrent owner exemption.');
+
+const {conditionRetryTime}=await import('./condition-value.js');assert.equal(conditionRetryTime(1334*60000),'23 hours');assert.equal(conditionRetryTime(60000),'1 minute');assert.equal(conditionRetryTime(49*3600000),'3 days');
+
+const {scanConditionNotice}=await import('./scancam.js');
+const review={i:0,finish:'normal',condition:'Lightly Played',price:null,priceStatus:'rate_limited',priceReason:'provider_shared_limit',priceNotice:response.notice};
+assert.match(scanConditionNotice(review),/even when your own lookup allowance remains/);
+assert.match(scanConditionNotice(review),/data-act="scanRetryConditionPrice"/);
+assert.doesNotMatch(scanConditionNotice({...review,price:.12}),/Retry/);
+assert.doesNotMatch(scanConditionNotice({...review,i:-1}),/Retry/);
+assert.match(scanConditionNotice({...review,priceNotice:'<img onerror=alert(1)>'}),/&lt;img/);
+console.log('PASS: scanner exposes exact provider reason and deliberate retry without mislabeling an owner quota or rendering untrusted markup.');

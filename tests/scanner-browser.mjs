@@ -1,3 +1,4 @@
+import {openCapturedCard} from './scanner-review-controls.mjs';
 // Real OCR + real public lookup APIs + production popup/save handlers, before release.
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -33,7 +34,7 @@ const server=createServer(async(req,res)=>{try{
  res.setHeader('Content-Type',({'.js':'text/javascript','.css':'text/css','.html':'text/html','.json':'application/json'})[extname(file)]||'application/octet-stream');let body=await readFile(file);if(file.endsWith("/config.js"))body=Buffer.from(body.toString().replace(/key:\s*"[^"]*"/,'key: ""'));res.end(body);
 }catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
-const base=`http://127.0.0.1:${server.address().port}`,browser=await chromium.launch();
+const base=`http://127.0.0.1:${server.address().port}`,browser=await chromium.launch(process.env.SCANNER_BROWSER_TRANSPORT==='http1'?{args:['--disable-http2','--disable-quic']}:{});
 await mkdir('test-results',{recursive:true});
 // Hosted CI only: real browser canvas/MediaStream/detector/automatic admission,
 // but deterministic local OCR/provider outputs. This is not a physical-phone or
@@ -132,9 +133,15 @@ async function syntheticRefinementCase(){
   await page.evaluate(()=>window.__refinement?.stop()).catch(()=>{});await context.close();
  }
 }
+const failures=[];
 try{
  for(const ref of refs){
   const context=await browser.newContext({...devices['Pixel 7']}),page=await context.newPage();page.setDefaultTimeout(15000);
+  const lookupNetwork=[];const track=(kind,url,extra='')=>{if(url.startsWith('https://api.scryfall.com/')){lookupNetwork.push({kind,url,extra,at:Date.now()});if(lookupNetwork.length>40)lookupNetwork.shift();}};page.on('request',r=>track('request',r.url()));page.on('response',r=>track('response',r.url(),r.status()));page.on('requestfailed',r=>track('failed',r.url(),r.failure()?.errorText));
+  const browserErrors=[];page.on('console',m=>{if(m.type()==='error')browserErrors.push(m.text().slice(0,700));});
+  const cdp=await context.newCDPSession(page);await cdp.send('Network.enable');const lookupIds=new Set();
+  cdp.on('Network.requestWillBeSent',e=>{if(e.request.url.startsWith('https://api.scryfall.com/'))lookupIds.add(e.requestId);});
+  cdp.on('Network.loadingFailed',e=>{if(lookupIds.has(e.requestId))lookupNetwork.push({kind:'browser-network-error',error:e.errorText,blockedReason:e.blockedReason,cors:e.corsErrorStatus});});
   try{
    await page.goto(base+'/#scan');await page.getByRole('heading',{name:'Scan',exact:true}).waitFor();
    const skip=page.getByRole('button',{name:'Skip',exact:true});try{await skip.waitFor({state:'visible',timeout:2000});await skip.click();}catch{}
@@ -303,7 +310,7 @@ try{
     assert.equal(liveMatch.set,'msc');assert.equal(String(liveMatch.number).replace(/^0+/,''),'806');
     if(liveMatch.observations.length>1){assert.equal(liveMatch.status,'review','conflicting OCR requires explicit review, never automatic ready');assert.equal(liveMatch.exact,false);assert.equal(liveMatch.verified,false);}
    }
-   await page.locator(`[data-act="scanBatchReview"][data-id="${liveCaptureId}"]`).click();
+   await openCapturedCard(page,liveCaptureId);
    await page.getByRole('region',{name:'Confirm scanned card',exact:true}).waitFor({timeout:15000});
    await page.getByRole('region',{name:'Confirm scanned card',exact:true}).getByText(ref.name,{exact:true}).waitFor();
    const beforeTime=await page.locator('#scanVideo').evaluate(v=>v.currentTime);await page.waitForTimeout(250);
@@ -362,10 +369,19 @@ try{
    }
    console.log(`PASS: ${ref.game}: off-centre rotated reference MediaStream → automatic boundary + perspective warp → queued recognition → explicit review → playback continues → active Undo toast clears all resized controls → real Undo retains pending captures and the same camera track.`);
   }catch(e){
-   console.error(`FAIL ${ref.game}: ${e.stack}`);console.error('Scan save diagnostic:',await page.evaluate(async()=>{const {S}=await import('/store.js');return S.ui.scan.confirm?.errorDetail||'No save exception';}));console.error((await page.locator('main').innerText()).slice(0,6000));
+   console.error(`FAIL ${ref.game}: ${e.stack}`);console.error('Public lookup network:',JSON.stringify(lookupNetwork));console.error('Browser errors:',JSON.stringify(browserErrors.slice(-12)));console.error('Scan save diagnostic:',await page.evaluate(async()=>{const {S}=await import('/store.js');return S.ui.scan.confirm?.errorDetail||'No save exception';}));console.error((await page.locator('main').innerText()).slice(0,6000));
    console.error('Final capture diagnostic:',await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js'),{S}=await import('/store.js');return {busy:S.ui.scan.busy,error:S.ui.scan.recognitionError,tried:S.ui.scan.tried,read:S.ui.scan.read,batch:loadBatch().map(({id,status,read,error,cands})=>({id,status,read,error,candidates:(cands||[]).map(({id,name,exact})=>({id,name,exact}))}))};}));
-   await page.screenshot({path:`test-results/scanner-${ref.g}-failure.png`,fullPage:true});throw e;
+   await page.screenshot({path:`test-results/scanner-${ref.g}-failure.png`,fullPage:true});failures.push(e);
+   if(ref.g==='mtg'){
+    // Read-only transport diagnosis, outside all app queues/caches. It never
+    // supplies scanner results or turns a failed scanner gate into a pass.
+    const probe=await context.newPage();await probe.goto(base+'/__synthetic-scanner.html');
+    const native=await probe.evaluate(async url=>{try{const r=await fetch(url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(7000)});return {status:r.status,id:(await r.json()).id};}catch(e){return {error:e.name+': '+e.message};}},ref.url);
+    let service;try{const r=await context.request.get(ref.url,{timeout:7000,headers:{Accept:'application/json'}});service={status:r.status(),id:(await r.json()).id};}catch(e){service={error:e.message.slice(0,200)};}
+    console.error('Independent public Scryfall transport diagnostic:',JSON.stringify({nativeBrowser:native,requestClient:service}));await probe.close();
+   }
   }finally{await context.close();}
  }
- await syntheticRefinementCase();
+ try{await syntheticRefinementCase();}catch(e){failures.push(e);}
+ if(failures.length)throw new AggregateError(failures,'Live scanner regression failures; all games attempted.');
 }finally{await browser.close();await new Promise(r=>server.close(r));}
