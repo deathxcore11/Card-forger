@@ -13,7 +13,7 @@ try{
     await page.setViewportSize({width,height:1000});await page.locator('.cs-card').waitFor();
     const layout=await page.locator('.cs-card').evaluate(root=>{const art=root.querySelector('.cd-art-stack').getBoundingClientRect(),side=root.querySelector('.cs-card-side').getBoundingClientRect(),panel=root.closest('.cs-panel');return {width:panel.clientWidth,columns:getComputedStyle(root).gridTemplateColumns.split(' ').length,art:art.toJSON(),side:side.toJSON(),actions:!!root.querySelector('.cs-card-side .card-actions')};});
     assert(layout.actions,'Ownership and actions stay beside the full card');assert.equal(layout.columns,layout.width<=600?1:2);assert(layout.width<=600?layout.side.top>=layout.art.bottom:layout.side.left>=layout.art.right);await noOverflow(page,'#sheetBody',`${game} Overview ${width}`);
-    await page.locator('.cs-card').scrollIntoViewIfNeeded();await capture(page,`synthetic-search-overview-${game}-${width}`);
+    await page.evaluate(()=>document.querySelector('#sheet .cs-card').scrollIntoView({block:'start',behavior:'instant'}));await capture(page,`synthetic-search-overview-${game}-${width}`);
    }
    assert.equal(await page.locator('.cs-tabs [role="tab"]').count(),6);assert.equal(await page.locator('#card-tab-legal').count(),0);await page.locator('#card-tab-rulings').click();await page.locator('#card-panel-rulings h3').filter({hasText:'Format legality'}).waitFor();assert(await page.locator('#card-panel-rulings h3').filter({hasText:'Official rulings'}).isVisible());
    await page.locator('#card-tab-versions').click();

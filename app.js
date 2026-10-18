@@ -1208,9 +1208,9 @@ workspaceTransition = {
     // the adopted workspace, not let an older game write revive prior settings.
     try {
       if(!navigation.hasNewer(ticket)) {
-        clearGameContext(); entryOrigins.clear();
+        if(!undoSheet)clearGameContext(); entryOrigins.clear();
         installNavigation({...route,mode:"workspace",entry:makeEntry(route.game,route.hash,activeEntry?.index || 0)});
-        if(undoSheet)restoreSheet(undoSheet);
+        if(undoSheet)refreshSheet();
       }
     } finally {navigation.resume(ticket,true);}
   },

@@ -172,12 +172,13 @@ async function missingQuotes(app,game){
  assert.equal(await inventorySnapshot(page),before);report.push(`${game}: unknown and private values never become seller quotes${game==='mtg'?'; EUR remains only EUR':''}${game==='ptcg'?'; dated quote is explicitly not current':''}.`);
 }
 async function ideaActionLabels(page,game,width){
+ await page.locator('.build-own').evaluate(n=>Promise.all(n.getAnimations({subtree:true}).filter(a=>a.effect?.getTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>{}))));
  const buttons=await page.locator('.build-own .actions > .btn').evaluateAll(nodes=>nodes.map(button=>{const r=button.getBoundingClientRect(),p=button.closest('.build-own').getBoundingClientRect(),walker=document.createTreeWalker(button,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.textContent.trim()&&!n.parentElement.closest('svg,[aria-hidden="true"]')?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT}),text=[];while(walker.nextNode()){const range=document.createRange();range.selectNodeContents(walker.currentNode);text.push(...[...range.getClientRects()].map(rect=>rect.toJSON()));}return {label:button.textContent.trim(),rect:r.toJSON(),panel:p.toJSON(),text,scroll:button.scrollWidth,client:button.clientWidth,fontSize:parseFloat(getComputedStyle(button).fontSize)};}));
  assert.equal(buttons.length,2,'Both original build actions remain available');
  assert.match(buttons[0].label,/Use my whole collection$/);assert.match(buttons[1].label,/Pick cards to build around$/);
  for(const button of buttons){
   assert(button.rect.left>=button.panel.left&&button.rect.right<=button.panel.right&&button.scroll<=button.client+1,`${game} Ideas ${width}: build action fits its panel`);
-  assert(button.rect.height>=42&&button.fontSize>=15,'Wrapping preserves original full-sized readable actions');
+  assert(button.rect.height>=42&&button.fontSize>=15,`Wrapping preserves original full-sized readable actions: ${JSON.stringify(button)}`);
   assert(button.text.length>0,'The action retains visible text');
   for(const r of button.text)assert(r.left>=button.rect.left-.5&&r.right<=button.rect.right+.5&&r.top>=button.rect.top-.5&&r.bottom<=button.rect.bottom+.5,`${game} Ideas ${width}: complete action text is contained without clipping ${JSON.stringify(button)}`);
  }
