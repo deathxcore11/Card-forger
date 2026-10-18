@@ -6,8 +6,8 @@ Prepared 2026-10-18 UTC (2026-10-17 evening in America/New_York).
 
 - Production branch: `claude/edit-publish-github-bpm8zu`, checked at `68d11b59a5a4a255c55c56fefe43d5131896cb76` (package version 3.84.0).
 - Integrated test branch: `codex/finish-effects-3841`.
-- Tested code commit: `dfbf644afdceb78797604fb447e7b16c937cd01c`; tree `d1bbf3ae1f1067753261a9afccccd8b143a5a531`.
-- Hosted verification: https://github.com/deathxcore11/Card-forger/actions/runs/39093366328
+- Tested code commit: `86a4790ace4913db0e68b6a805115d314a362cd8`; tree `fd8458a5a09fb732090fe9eec7b46159c7c0d2a5`.
+- Hosted verification: https://github.com/deathxcore11/Card-forger/actions/runs/39093694296
 - The other chat's checkout is unchanged at `29e0aa642898c296a7b13aa8eca63101e9836a21`. Its outstanding CI/deck-test edits were included. Its remote branch remains `87cc473c9e9afb7461e32d03f4bc3bb261bf39c3`.
 - No production branch update, live deployment or production database write was performed in this continuation. Pages publishing is skipped on the test branch. The user authorized publishing only after successful testing; that condition is not yet satisfied.
 
@@ -31,7 +31,7 @@ Prepared 2026-10-18 UTC (2026-10-17 evening in America/New_York).
 - Hosted finish controls passed for Magic, Pokémon and Yu-Gi-Oh! at 320, 390, 673, 768, 1024 and 1440px, including auto shimmer, emulated orientation/light alignment, off/reduced-motion/hidden/offscreen cleanup, zoom and unchanged ownership.
 - Hosted scanner layout/review checks passed at 320, 390, 673, 768, 1024, 1440 and landscape 844px. Screenshots were inspected. The test feed and cards are synthetic; this is not physical-phone camera or sensor testing.
 - Mixed-game capture/browser tests passed from 320–2560px, including fold/landscape resizing, preserved captures and the same live MediaStream. Real-reference Pokémon and Yu-Gi-Oh! OCR/review/save/Undo flows also passed, including an active Undo toast at short screen sizes.
-- Account, deck-box, responsive card, Sets, Search, pricing and exact-artwork checks passed on the integrated code. Final navigation/home/dropdown results are recorded in the linked run.
+- Account, deck-box, responsive card, Sets, Search, pricing and exact-artwork checks passed on the integrated code. The complete preceding run (`39093366328`) passed 15 of 16 job groups, including game navigation, Home and dropdowns; only the live scanner group failed on Magic. The subsequent code change places idle scanner permission guidance in normal layout below Start camera instead of overlaying the button. The linked follow-up run passed the full Node suite, finish checks and scanner lifecycle/review tests, including the 320px start screen and declined-permission layout; corrected screenshots were inspected.
 
 ## Open release checks
 
