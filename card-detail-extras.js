@@ -2,9 +2,19 @@ import {esc} from './ui.js';
 import {artworkHTML} from './artwork.js';
 import {printingRows} from './printing-picker.js';
 import {setProgressMarkup} from './set-list-ui.js';
-export function detailSetProgress({key,owned,total,loaded=0,complete=false}){
- if(owned===null)return '<div class="card-set-progress"><p class="muted small">Choose a verified release to see your set progress.</p></div>';
- return `<div class="card-set-progress">${setProgressMarkup({key,owned,total,loaded,complete}).html}</div>`;
+export function detailSetProgress({key,owned,total,loaded=0,complete=false},compact=false){
+ const html=owned===null?'<div class="card-set-progress"><p class="muted small">Choose a verified release to see your set progress.</p></div>':`<div class="card-set-progress">${setProgressMarkup({key,owned,total,loaded,complete}).html}</div>`;
+ // Button contents must stay phrasing-only, while retaining shared progress truth and ARIA.
+ return compact?html.replace(/<(\/?)(?:div|section|p)(?=[ >])/g,'<$1span'):html;
+}
+// One focus target opens the selected release from either its identity or progress.
+// Callers supply escaped, non-interactive identity markup and verified action attributes.
+export function detailSetSummary({identity,action='',progress}){
+ const tag=action?'button':'div';
+ return `<${tag} class="cd-set card-set-summary"${action?` type="button" ${action}`:''}><span class="card-set-identity">${identity}</span>${detailSetProgress(progress,true)}</${tag}>`;
+}
+export function detailOwnedSummary(total){
+ return `<span class="card-owned-summary" aria-label="${Number(total)||0} total copies in your collection">Owned · ${Number(total)||0}</span>`;
 }
 export function miniPrintingMarkup({game,card,cards=[],catalogue=[],projectCard,busy=false,error='',more=null}){
  const rows=printingRows(game,cards,{source:card,catalogue,projectCard}),seen=new Set(),items=[];

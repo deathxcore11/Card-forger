@@ -4620,3 +4620,47 @@ body[data-game="ygo"] .ask-launch{--ask-a:#b697ef;--ask-b:#697db5;--ask-c:#dbb26
 
 /* Keep exact-printing artwork exhaustion from collapsing the mini rail. */
 .card-printing-mini .printing-mini-art.img-missing{display:flex;width:88px;height:123px;align-items:center;justify-content:center;flex-direction:column;border-radius:5px;background:var(--surface-2);color:var(--muted)}
+
+/* Card detail polish: one selected-set surface, then a deliberate quick-action grid.
+   The illustrated banner, navigation, artwork and finish rail keep their geometry. */
+.card-owned-summary{display:inline-block;margin-inline-start:8px;padding:3px 8px;border:1px solid #ffffff38;border-radius:999px;background:#11151c88;font-size:11px;font-weight:600;line-height:1.4;white-space:nowrap;vertical-align:middle}
+#sheetBody .cs-meta{container:card-detail-meta / inline-size;display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin:12px 0 14px}
+#sheetBody .card-set-summary{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,.85fr);align-items:center;gap:16px;width:100%;min-width:0;padding:14px 16px;text-align:left;color:var(--text);font:inherit;border:1px solid var(--line);border-radius:18px;background:linear-gradient(135deg,#ffffff09,#ffffff03);box-shadow:inset 0 1px #ffffff0a;backdrop-filter:blur(16px)}
+#sheetBody button.card-set-summary{cursor:pointer}
+#sheetBody button.card-set-summary:hover{border-color:color-mix(in srgb,var(--gold) 55%,var(--line));background:color-mix(in srgb,var(--surface) 92%,var(--gold))}
+#sheetBody .card-set-summary .card-set-identity{display:flex;align-items:center;margin:0;min-width:0;gap:12px}
+#sheetBody .card-set-summary .card-set-identity>span{min-width:0}
+#sheetBody .card-set-summary .card-set-identity b{font-size:14px;line-height:1.4;overflow-wrap:anywhere}
+#sheetBody .card-set-summary .card-set-identity small{display:block;margin-top:4px;line-height:1.45;overflow-wrap:anywhere}
+#sheetBody .card-set-summary .card-set-progress{display:block}
+#sheetBody .card-set-summary .set-collection-progress{display:block;margin:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none}
+#sheetBody .card-set-summary .set-progress-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#sheetBody .card-set-summary .set-progress-top>span{display:grid;gap:3px}
+#sheetBody .card-set-summary .set-progress-top>span>span:last-child{font-size:12px;line-height:1.4}
+#sheetBody .card-set-summary .set-progress-top strong{font-size:20px}
+#sheetBody .card-set-summary .set-progress-track{display:block;margin:8px 0;height:5px}
+#sheetBody .card-set-summary .set-progress-caption{display:block;margin:0;font-size:11px;line-height:1.5;color:var(--muted)}
+#sheetBody .card-price-summary{display:block;width:100%;padding:0;border:0}
+#sheetBody .card-quick-actions{display:grid;grid-template-columns:max-content minmax(0,1fr) max-content max-content;grid-template-areas:"buy market manual add";align-items:center;gap:10px;width:100%;min-width:0}
+#sheetBody .card-quick-actions>.card-buy-link{grid-area:buy;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:100px;min-height:48px;line-height:1.25}
+#sheetBody .card-buy-brand{font-size:10px;font-weight:700;letter-spacing:.02em}
+#sheetBody .card-quick-actions>.card-price-reference{grid-area:market;display:grid;gap:2px;align-content:center;min-width:0;min-height:48px;padding:4px 0;border:0;border-radius:8px;background:transparent;text-align:left;color:var(--text);cursor:pointer}
+#sheetBody .card-quick-actions>.card-price-reference strong{font-size:clamp(18px,2.6vw,22px)}
+#sheetBody .card-quick-actions>.personal-price-edit{grid-area:manual;justify-self:stretch;margin:0;padding:8px 12px;font-size:12px;color:var(--text)}
+#sheetBody .card-quick-actions>.card-add-collection{grid-area:add;min-width:0}
+#sheetBody .card-quick-actions>.btn{min-height:48px;line-height:1.35}
+#sheetBody .card-secondary-actions{display:grid;gap:12px;margin-top:8px;padding-top:12px;border-top:1px solid var(--line);min-width:0}
+#sheetBody .card-secondary-actions .ca-main{display:flex}
+#sheetBody .card-secondary-actions .ca-main>.btn{flex:1}
+#sheetBody .card-evolution{margin:0 0 12px;line-height:1.5}
+#sheetBody :is(button.card-set-summary,.card-quick-actions>:is(button,a)):focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+@container card-detail-meta (max-width:620px){
+ #sheetBody .card-set-summary{grid-template-columns:minmax(0,1fr);gap:12px;padding:12px}
+ #sheetBody .card-quick-actions{grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);grid-template-areas:"buy market" "manual add";align-items:stretch;gap:8px 12px}
+ #sheetBody .card-quick-actions>.card-buy-link{min-width:0}
+ #sheetBody .card-quick-actions>.card-price-reference{padding:4px}
+}
+@container card-detail-meta (max-width:280px){
+ #sheetBody .card-quick-actions{grid-template-columns:minmax(0,1fr);grid-template-areas:"buy" "market" "manual" "add"}
+ #sheetBody .card-owned-summary{margin-inline-start:0}
+}

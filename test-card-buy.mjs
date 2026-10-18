@@ -14,15 +14,15 @@ const href=html=>buy(html).match(/href="([^"]+)"/)[1].replaceAll('&amp;','&');
 function link(game,card,ctx={}){
  const html=compactPriceSummary(game,card,ctx),anchor=buy(html),url=new URL(href(html));
  assert.equal(url.origin,'https://www.tcgplayer.com');assert.equal(url.username,'');assert.equal(url.password,'');
- assert.match(html,/<button class="btn ghost small" data-act="cardPriceJump" data-target="history" aria-label="View price history">Prices<\/button>/);
+ assert.match(html,/<button type="button" class="card-price-reference" data-act="cardPriceJump" data-target="history" aria-label="View price history"><strong>/);
  assert.doesNotMatch(anchor,/data-act|data-hold|onclick|role="button"|tabindex="-1"|↓/);
  assert.match(anchor,/target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer"/);
- assert.match(anchor,/opens in a new tab/);assert.match(anchor,/aria-hidden="true">↗/);
+ assert.match(anchor,/opens in a new tab/);assert.doesNotMatch(anchor,/↗/);assert.match(anchor,/<span class="card-buy-brand">TCGplayer<\/span><span>Buy<\/span>/);
  assert.equal(href(html),sellerModels(game,card,ctx).find(r=>r.key==='tcgplayer').url,'Top Buy and lower TCGplayer seller share one resolver');
  return {html,anchor,url};
 }
 function exact(game,card,ctx,id){const result=link(game,card,ctx);assert.equal(result.url.origin+result.url.pathname,'https://www.tcgplayer.com/product/'+id);assert.match(result.anchor,/<span>Buy<\/span>/);assert.doesNotMatch(result.anchor,/\$|€|in stock|exact edition|Near Mint/);return result;}
-function search(game,card,ctx={}){const result=link(game,card,ctx);assert.equal(result.url.pathname,`/search/${{mtg:'magic',ptcg:'pokemon',ygo:'yugioh'}[game]}/product`);assert.deepEqual([...result.url.searchParams.keys()],['q']);assert.match(result.anchor,/<span>Search TCGplayer<\/span>/);assert.match(result.anchor,/exact product not verified/);return result;}
+function search(game,card,ctx={}){const result=link(game,card,ctx);assert.equal(result.url.pathname,`/search/${{mtg:'magic',ptcg:'pokemon',ygo:'yugioh'}[game]}/product`);assert.deepEqual([...result.url.searchParams.keys()],['q']);assert.match(result.anchor,/<span>Buy<\/span>/);assert.match(result.html,/<small class="card-buy-search-note">Buy searches TCGplayer<\/small>/);assert.match(result.anchor,/exact product not verified/);return result;}
 const mtg=CARDS.mtg[0],pk=CARDS.ptcg[0],ygo=CARDS.ygo[0];
 exact('mtg',mtg,{priceFinish:'nonfoil'},42);exact('mtg',mtg,{priceFinish:'foil'},42);exact('mtg',mtg,{priceFinish:'etched'},43);
 exact('mtg',{...mtg,id:'different-printing',tcgplayer_id:84,tcgplayer_etched_id:85},{priceFinish:'etched'},85);
@@ -75,7 +75,7 @@ const f=makeFixtures();S.state=f.state;S.catalog=f.catalog;const before=JSON.str
 ui('ptcg').sets.list=[pokemonRelease];
 globalThis.fetch=async url=>{fixtureRequests.push(String(url));return {ok:false,json:async()=>({})};};
 for(const [card,ctx] of [[pk,{type:'tcard',game:'ptcg',id:pk.id,setId:pk.set.id,setVariant:'missing-variant'}],[{...pk,variants:[...pk.variants,{...pk.variants[1],productId:999}]},{type:'tcard',game:'ptcg',id:pk.id,setId:pk.set.id,setVariant:'holofoil'}],[samePrice,{type:'tcard',game:'ptcg',id:pk.id}],[samePriceWithNormal,{type:'tcard',game:'ptcg',id:pk.id}]]){
- const html=tcgCardSheet(card,ctx);assert.match(buy(html),/<span>Search TCGplayer<\/span>/);assert.match(href(html),/\/search\/pokemon\/product\?/,'Actual renderer must not replace invalid/ambiguous projected variants with the Normal or first-priced product');
+ const html=tcgCardSheet(card,ctx);assert.match(buy(html),/search, exact product not verified/);assert.match(html,/<small class="card-buy-search-note">Buy searches TCGplayer<\/small>/);assert.match(href(html),/\/search\/pokemon\/product\?/,'Actual renderer must not replace invalid/ambiguous projected variants with the Normal or first-priced product');
 }
 
 globalThis.fetch=undefined;

@@ -91,7 +91,7 @@ async function outboundBuy(app,expected,{search=false,activation='click'}={}){
  const {page,context}=app,anchor=page.locator('.card-price-summary .card-buy-link'),calls=[];
  const before=await page.evaluate(()=>({url:location.href,tab:window.__uiTestState.ui.sheetCtx.tab||'overview',entry:window.__uiTestState.ui.sheetCtx.entryId})),inventory=await inventorySnapshot(page);
  const actual=await anchor.getAttribute('href');if(search||new URL(expected).search)assert.equal(actual,expected);else {const u=new URL(actual);assert.equal(u.origin+u.pathname,expected);assert.equal(u.searchParams.get('Language'),'English');}expected=actual;assert.equal(await anchor.getAttribute('target'),'_blank');assert.equal(await anchor.getAttribute('rel'),'noopener noreferrer');assert.equal(await anchor.getAttribute('referrerpolicy'),'no-referrer');assert.equal(await anchor.getAttribute('data-act'),null);
- assert.match(await anchor.innerText(),search?/Search TCGplayer/:/^Buy/);assert.match(await anchor.getAttribute('aria-label'),/opens in a new tab/);
+ assert.match(await anchor.innerText(),/^TCGplayer\s+Buy$/);assert.doesNotMatch(await anchor.innerText(),/↗/);assert.match(await anchor.getAttribute('aria-label'),/Buy on TCGplayer.*opens in a new tab/);if(search){assert.match(await anchor.getAttribute('aria-label'),/search, exact product not verified/);assert.equal(await page.locator('.card-price-summary .card-buy-search-note').innerText(),'Buy searches TCGplayer');}
  // Measure the final touch target, not the transient scale of entry motion.
  // Keep the 44px threshold; settle only finite animations on this control's ancestors.
  await anchor.evaluate(async n=>{

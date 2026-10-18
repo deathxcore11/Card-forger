@@ -44,3 +44,12 @@ export function pokemonCatalogueSet(set) {
   official:Math.max(16,Number(set.cardCount?.official)||0),
   total:Math.max(16,Number(set.cardCount?.total)||0,Number(set.cardCount?.official)||0)}};
 }
+
+// The UI/persisted catalogue stores normalized entries with `count`, rather
+// than the provider's cardCount object. Repair only this verified set, retaining
+// newer totals and every unrelated entry; a cache hit must not bypass the overlay.
+export function pokemonCatalogueSetEntry(set) {
+ if (set?.id !== 'mee') return set;
+ const count = Math.max(16,Number(set.count)||0,Number(set.cardCount?.official)||0,Number(set.cardCount?.total)||0);
+ return set.count === count ? set : {...set,count};
+}

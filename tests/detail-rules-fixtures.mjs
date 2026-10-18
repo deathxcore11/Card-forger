@@ -254,12 +254,21 @@ export function detailMotionState(){
 }
 // Card detail tabs are an intentional horizontal scroller. Their focus/visibility
 // is asserted independently; they must not create page or sheet overflow.
-// Collection alone has a second known rail. Admit a clipped source select only
+// Collection has its own audited filter rail. Admit a clipped source select only
 // after the caller has proved keyboard/touch access at this exact game/width and
 // selection snapshot. Generic scrollers, hidden controls and other roots fail.
 export function auditedCollectionControl(control,audit){
  const r=control.rail,known={tCollSet:[''],tCollSort:[''],tCollKind:['kind','rarity','show']};
  return !!audit&&control.root==='content'&&control.view==='collection'&&['ptcg','ygo'].includes(control.game)&&audit.game===control.game&&audit.width===control.viewport&&control.tag==='SELECT'&&known[control.change]?.includes(control.field)&&r?.direct&&r.known&&/^(auto|scroll)$/.test(r.overflow)&&r.left>=-.5&&r.right<=control.viewport+.5&&r.client>0&&r.scroll>=r.client&&control.width<=r.client+2&&control.left+r.position>=r.left-2&&control.right+r.position<=r.left+r.scroll+2&&audit.controls?.some(n=>n.change===control.change&&n.field===control.field&&n.value===control.value);
+}
+// A finish choice may sit beyond the viewport only inside its actual, contained
+// horizontal rail. This is not an exemption for generic scrollers or buttons.
+export function auditedFinishChoiceControl(control){
+ const r=control.finishRail;
+ return control.root==='sheetBody'&&['mtg','ptcg','ygo'].includes(control.game)&&control.tag==='BUTTON'&&r?.known&&r.direct&&r.connected&&r.visible&&r.focusable&&r.chip&&r.type==='button'&&['true','false'].includes(r.pressed)&&
+  (control.game==='ygo'?!r.action:r.action==='cardFinishPreview'&&r.game===control.game&&!!r.cardId&&!!r.finish)&&
+  /^(auto|scroll)$/.test(r.overflow)&&r.display==='flex'&&r.wrap==='nowrap'&&r.left>=-.5&&r.right<=control.viewport+.5&&r.right>r.left&&r.client>0&&r.scroll>r.client+1&&r.scale>0&&r.position>=-1&&r.position<=r.scroll-r.client+2&&
+  Number.isFinite(r.scroll)&&control.width>0&&control.width<=r.scroll+2&&Math.abs(control.right-control.left-control.width)<.5&&control.height>=44*r.scale-.5&&control.left+r.position>=r.contentLeft-2&&control.right+r.position<=r.contentLeft+r.scroll+2&&control.top>=r.top-2&&control.bottom<=r.bottom+2;
 }
 export async function noOverflow(page,scope,label,settleFinite=false,collectionAudit=null){
  const result=await page.evaluate(async({scope,settleFinite})=>{
@@ -276,9 +285,16 @@ export async function noOverflow(page,scope,label,settleFinite=false,collectionA
   }
   const r=root.getBoundingClientRect(),style=getComputedStyle(root);if(!r.width||!r.height||root.clientWidth<=0||style.visibility!=='visible'||style.opacity==='0')throw Error('Overflow scope is hidden or zero-sized: '+scope);
   return {connected:root.isConnected,current:document.querySelectorAll(scope)[0]===root,settlement:{passes,replacements},width:innerWidth,root:document.documentElement.scrollWidth,scope:root.scrollWidth,client:root.clientWidth,rect:{left:r.left,right:r.right},bad:[...root.querySelectorAll('button,input,select,summary,a')].filter(n=>n.getClientRects().length&&!n.closest('[hidden]')&&!n.closest('.cs-tabs')).filter(n=>{const b=n.getBoundingClientRect();return b.left<-.5||b.right>innerWidth+.5;}).map(n=>{
-   const b=n.getBoundingClientRect(),rail=n.closest('.filter-pills'),a=rail?.getBoundingClientRect();return {text:n.tagName==='SELECT'?n.selectedOptions[0]?.label:n.textContent.slice(0,90),class:n.className,tag:n.tagName,change:n.dataset.change,field:n.dataset.field||'',value:n.value,root:root.id,view:document.body.dataset.view,game:document.body.dataset.game,viewport:innerWidth,left:b.left,right:b.right,width:b.width,rail:rail&&{known:rail.matches('.coll-tools > .filter-pills'),direct:n.parentElement===rail,left:a.left,right:a.right,client:rail.clientWidth,scroll:rail.scrollWidth,position:rail.scrollLeft,overflow:getComputedStyle(rail).overflowX}};
+   const b=n.getBoundingClientRect(),rail=n.closest('.filter-pills'),a=rail?.getBoundingClientRect(),finish=n.closest('.finish-choice-rail');
+   let finishRail=null;
+   if(finish){
+    const r=finish.getBoundingClientRect(),css=getComputedStyle(finish),scale=r.width/finish.offsetWidth;
+    let visible=true;for(let ancestor=n;ancestor&&ancestor!==root;ancestor=ancestor.parentElement){const s=getComputedStyle(ancestor);if(s.visibility!=='visible'||s.opacity==='0'||s.display==='none')visible=false;}
+    finishRail={known:finish.matches('.finish-preview > .finish-choice-rail')&&finish.parentElement?.parentElement?.matches('.cd-art-stack'),direct:n.parentElement===finish,connected:finish.isConnected&&n.isConnected,visible,focusable:n.tabIndex>=0&&!n.disabled,chip:n.matches('.chip'),type:n.type,pressed:n.getAttribute('aria-pressed'),action:n.dataset.act||'',game:n.dataset.game||'',cardId:n.dataset.cardId||'',finish:n.dataset.finish||'',left:r.left,right:r.right,top:r.top,bottom:r.bottom,scale,contentLeft:r.left+finish.clientLeft*scale,client:finish.clientWidth*scale,scroll:finish.scrollWidth*scale,position:finish.scrollLeft*scale,overflow:css.overflowX,display:css.display,wrap:css.flexWrap};
+   }
+   return {text:n.tagName==='SELECT'?n.selectedOptions[0]?.label:n.textContent.slice(0,90),class:n.className,tag:n.tagName,change:n.dataset.change,field:n.dataset.field||'',value:n.value,root:root.id,view:document.body.dataset.view,game:document.body.dataset.game,viewport:innerWidth,left:b.left,right:b.right,top:b.top,bottom:b.bottom,width:b.width,height:b.height,rail:rail&&{known:rail.matches('.coll-tools > .filter-pills'),direct:n.parentElement===rail,left:a.left,right:a.right,client:rail.clientWidth,scroll:rail.scrollWidth,position:rail.scrollLeft,overflow:getComputedStyle(rail).overflowX},finishRail};
   })};},{scope,settleFinite});
- assert(result.connected&&result.current,`${label}: current connected overflow scope`);assert(result.root<=result.width+2&&result.scope<=result.client+2,`${label}: no horizontal overflow ${JSON.stringify(result)}`);assert.deepEqual(result.bad.filter(n=>!auditedCollectionControl(n,collectionAudit)),[],`${label}: all visible controls fit the viewport or the specifically audited Collection rail`);return result;
+ assert(result.connected&&result.current,`${label}: current connected overflow scope`);assert(result.root<=result.width+2&&result.scope<=result.client+2,`${label}: no horizontal overflow ${JSON.stringify(result)}`);assert.deepEqual(result.bad.filter(n=>!auditedCollectionControl(n,collectionAudit)&&!auditedFinishChoiceControl(n)),[],`${label}: all visible controls fit the viewport or a specifically verified clipped rail`);return result;
 }
 export async function capture(page,name){await page.screenshot({path:resolve(RESULTS,name+'.png'),fullPage:true,animations:'disabled'});}
 export async function saveReport(name,report,error){await mkdir(RESULTS,{recursive:true});await writeFile(resolve(RESULTS,name+'.json'),JSON.stringify({generatedAt:new Date().toISOString(),artEvidence,status:error?'failed':'passed',checks:report,...(error?{error:String(error.stack||error)}:{})},null,2));}

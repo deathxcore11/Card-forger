@@ -8,11 +8,11 @@ export function adjustOwnedLot(workspace,id,delta){
  lot.qty=Math.max(0,lot.qty+delta);if(Object.hasOwn(lot,"reserved"))lot.reserved=Math.min(lot.reserved||0,lot.qty);
  workspace.collection=workspace.collection.filter(e=>e.qty>0);return true;
 }
-export function detailOwnedGroups(game,entries,card){
+export function detailOwnedGroups(game,entries,card,{compact=false}={}){
  const lots=detailOwnedLots(game,entries,card);if(!lots.length)return '';
- return `<section class="owned-groups" aria-label="Your saved copies"><small class="muted">${lots.reduce((n,e)=>n+e.qty,0)} owned total</small>${lots.map(e=>{
+ return `<section class="owned-groups" aria-label="Your saved copies">${compact?'':`<small class="muted">${lots.reduce((n,e)=>n+e.qty,0)} owned total</small>`}${lots.map(e=>{
   const label=[conditionName(e.condition),e.setName||e.set||e.printing||e.cardId,e.collectorNumber||e.number?`#${e.collectorNumber||e.number}`:'',e.variantLabel||e.variant||e.finish,e.rarity,e.edition,(e.language||'en').toUpperCase(),e.signed?'Signed':'',e.altered?'Altered':'',e.misprint?'Misprint':'',e.proxy?'Proxy':'',e.graded?[e.gradingCompany,e.grade].filter(Boolean).join(' ')||'Graded':'',e.location].filter(Boolean).join(' · ');
-  return `<div class="owned-group" data-owned-group="${esc(e.id)}"><span class="owned-group-label">${esc(label)}</span><div class="owned-pill"><button type="button" data-act="cardOwnedQty" data-game="${game}" data-lot="${esc(e.id)}" data-delta="-1" aria-label="Remove one ${esc(label)}">−</button><button type="button" class="owned-copy-details" data-act="cardOwnedDetails" data-game="${game}" data-lot="${esc(e.id)}" data-id="${esc(card.id)}" data-name="${esc(card.name)}" aria-label="Copy details: ${esc(label)}"><span>Owned:</span> <b>${e.qty}</b></button><button type="button" data-act="cardOwnedQty" data-game="${game}" data-lot="${esc(e.id)}" data-delta="1" aria-label="Add one ${esc(label)}">＋</button></div></div>`;
+  return `<div class="owned-group" data-owned-group="${esc(e.id)}"><span class="owned-group-label">${esc(label)}</span><div class="owned-pill"><button type="button" data-act="cardOwnedQty" data-game="${game}" data-lot="${esc(e.id)}" data-delta="-1" aria-label="Remove one ${esc(label)}">−</button><button type="button" class="owned-copy-details" data-act="cardOwnedDetails" data-game="${game}" data-lot="${esc(e.id)}" data-id="${esc(card.id)}" data-name="${esc(card.name)}" aria-label="Copy details: ${esc(label)}">${compact?'':'<span>Owned:</span> '}<b>${e.qty}</b></button><button type="button" data-act="cardOwnedQty" data-game="${game}" data-lot="${esc(e.id)}" data-delta="1" aria-label="Add one ${esc(label)}">＋</button></div></div>`;
  }).join('')}</section>`;
 }
 export function quickQuantity(lots,selected,busy=false){

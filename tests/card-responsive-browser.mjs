@@ -344,6 +344,23 @@ async function scenario(game){
    const stat=await page.locator('#sheet .cs-card-side .stat-grid').evaluate(n=>({cols:getComputedStyle(n).gridTemplateColumns.split(' ').length,height:n.getBoundingClientRect().height,count:n.children.length}));assert.equal(stat.cols,2);assert.equal(stat.count,6);assert(stat.height<260,'Six stats no longer form a giant one-stat column');
   }
   await noBrokenActionWords(page,'#sheetBody');
+  // Exercise the actual meta container, not the sibling overview container.
+  for(const width of [320,375,768,1440]){
+   await page.setViewportSize({width,height:1000});await frame(page);
+   const geometry=await page.locator('#sheetBody .cs-meta').evaluate(meta=>{
+    const box=n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
+    const rail=meta.querySelector('.card-quick-actions'),summary=meta.querySelector('.card-set-summary');
+    return {viewport:document.documentElement.clientWidth,pageWidth:document.documentElement.scrollWidth,meta:box(meta),summary:{...box(summary),client:summary.clientWidth,scroll:summary.scrollWidth},areas:getComputedStyle(rail).gridTemplateAreas,controls:[...rail.children].map(n=>({class:n.className,rect:box(n),client:n.clientWidth,scroll:n.scrollWidth})),setTargets:meta.querySelectorAll('.card-set-summary').length,add:rail.querySelectorAll('.card-add-collection').length,owned:document.querySelectorAll('#sheetBody .card-owned-summary').length};
+   });
+   assert.equal(geometry.setTargets,1);assert.equal(geometry.add,1);assert.equal(geometry.owned,1);
+   assert(geometry.pageWidth<=geometry.viewport+2,`${game}: quick actions do not widen the document ${JSON.stringify(geometry)}`);
+   assert(geometry.summary.left>=geometry.meta.left-2&&geometry.summary.right<=geometry.meta.right+2&&geometry.summary.scroll<=geometry.summary.client+2,`${game}: set summary fits at ${width}: ${JSON.stringify(geometry)}`);
+   for(const item of geometry.controls){assert(item.rect.height>=44&&item.rect.left>=geometry.meta.left-2&&item.rect.right<=geometry.meta.right+2&&item.scroll<=item.client+2,`${game}: complete readable quick action fits at ${width}: ${JSON.stringify(geometry)}`);}
+   if(width<=375)assert.notEqual(geometry.areas,'"buy market manual add"',`${game}: narrow meta uses its own responsive container`);
+   await page.locator('#sheetBody .cs-meta').scrollIntoViewIfNeeded();await frame(page);await capture(page,`card-responsive-${game}-meta-${width}`);
+   report.push(`${game} quick actions ${width}: ${JSON.stringify(geometry)}`);
+  }
+  await page.setViewportSize({width:320,height:1000});await frame(page);
   const largeText=await page.addStyleTag({content:'.card-actions .btn { font-size:18.75px; } .cs-card-side .stat-grid b { font-size:18.75px; }'});await page.setViewportSize({width:320,height:1000});await frame(page);await noOverflow(page,'#sheetBody',game+' larger text');await noBrokenActionWords(page,'#sheetBody');await capture(page,`card-responsive-${game}-larger-text`);await largeText.evaluate(n=>n.remove());
   await frame(page);await cardColumns(page,game,false);
   // Keep the generic long-label tilt stress test, and independently exercise

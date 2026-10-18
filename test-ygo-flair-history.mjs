@@ -72,7 +72,7 @@ for(const [edition,label,amount]of [['','edition unspecified',null],['1st-editio
  const ctx={type:'tcard',game:'ygo',id:darkGolem.id,setId:mp25.id,priceEdition:'MP25-EN003::Starlight Rare',priceYgoEdition:edition,tab:'overview'};
  const projected=setContextCard('ygo',darkGolem,mp25,ui('ygo').sets.list),quote=presentationQuote('ygo',projected,'reference',ctx.priceEdition,edition),sheet=tcgCardSheet(darkGolem,ctx);
  assert.equal(quote.value,amount);assert.equal(quote.selectedEdition,edition);
- const badge=sheet.match(/<button class="cd-set"[\s\S]*?<\/button>/)?.[0],summary=sheet.match(/<div class="card-price-reference">([\s\S]*?)<\/div>/)?.[1];
+ const badge=sheet.match(/<button class="cd-set card-set-summary"[\s\S]*?<\/button>/)?.[0],summary=sheet.match(/<button type="button" class="card-price-reference"[^>]*>([\s\S]*?)<\/button>/)?.[1];
  assert(badge?.includes('MP25-EN003'));assert(badge.includes('Selected release · '+label));
  assert(summary?.includes(amount===null?'No quote yet':'$'+amount.toFixed(2)));assert(summary.includes('MP25-EN003 · Starlight Rare · '+(edition?label:'Edition not specified')));
  assert.match(sheet,/class="cd-img" data-rarity-flair="yr4" data-printed-rarity="Starlight Rare"/,'Starlight edge is present with or without a supported quote');

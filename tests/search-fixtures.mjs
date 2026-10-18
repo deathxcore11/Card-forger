@@ -9,6 +9,7 @@ import {blank} from '../store.js';
 import {cardKey} from '../core.js';
 import {validateWorkspace} from '../confidence.js';
 import {normalizePtcg} from '../ptcg.js';
+import {pokemonCatalogueFallback,pokemonSupplementIds} from '../pokemon-catalogue-supplement.js';
 import {normalizeYgo, normalizeYgoSets} from '../ygo.js';
 import {SUPABASE} from '../config.js';
 export const ROOT=resolve(dirname(fileURLToPath(import.meta.url)),'..');
@@ -18,6 +19,11 @@ export const NOW=Date.parse('2026-10-17T12:00:00.000Z'), ISO=new Date(NOW).toISO
 export const ART_EVIDENCE='SYNTHETIC SEARCH FIXTURE. All card and symbol images are intercepted with labeled SVG artwork. This suite verifies identity, navigation and layout, not real illustrations, live prices or provider availability. PNG evidence is captured only by the approved hosted CI job. All displayed lots and prices are synthetic fixture data, not a real collection.';
 const IMAGE='https://search-fixtures.invalid';
 const SVG='<svg xmlns="http://www.w3.org/2000/svg" width="630" height="880"><rect width="630" height="880" fill="#18354c"/><circle cx="315" cy="330" r="180" fill="#997c49"/><text x="20" y="64" fill="white" font-size="26">SYNTHETIC SEARCH FIXTURE</text><text x="20" y="835" fill="white" font-size="25">NOT REAL CARD ART</text></svg>';
+// The production overlay contributes only these eight exact identities. Keep
+// unknown requests blocked and render their art as the same synthetic SVG.
+const supplementFixtures=new Map(pokemonSupplementIds.map(id=>[id,pokemonCatalogueFallback(id)]));
+const supplementImages=new Set([...supplementFixtures.values()].map(card=>card.image));
+export const isSupplementFixtureImage=url=>supplementImages.has(String(url));
 const pad=n=>String(n).padStart(3,'0');
 const original={set_code:'LOB',set_name:'Legend of Blue Eyes White Dragon',tcg_date:'2002-03-08',num_of_cards:126};
 const anniversary={set_code:'LOB',set_name:'Legend of Blue Eyes White Dragon (25th Anniversary Edition)',tcg_date:'2023-04-21',num_of_cards:126};
@@ -107,7 +113,7 @@ export function providerFixture(url){
    if(url.searchParams.get('category'))rows=rows.filter(c=>c.category===url.searchParams.get('category'));if(url.searchParams.get('rarity'))rows=rows.filter(c=>c.rarity===url.searchParams.get('rarity').replace(/^eq:/,''));
    return [...rows,...(group==='Paged'?rows.slice(0,1):[])];
   }
-  if(path.startsWith('/v2/en/cards/'))return RAW.ptcg.find(c=>c.id===decodeURIComponent(path.split('/').at(-1)));
+  if(path.startsWith('/v2/en/cards/')){const id=decodeURIComponent(path.split('/').at(-1));return RAW.ptcg.find(c=>c.id===id)||supplementFixtures.get(id);}
  }
  if(host==='api.pokemontcg.io'&&path==='/v2/cards')return {data:[],page:1,pageSize:250,count:0,totalCount:0};
  if(host==='db.ygoprodeck.com'){
@@ -129,6 +135,8 @@ export async function validateSearchFixtures(){
  const m=providerFixture(new URL('https://api.scryfall.com/cards/search?q=Paged')),m2=providerFixture(new URL(m.next_page));assert.equal(m.data.length,3);assert.equal(m2.data[0].id,m.data.at(-1).id);assert.equal(providerFixture(new URL('https://api.scryfall.com/cards/search?q=EmptyPage')).has_more,true);assert.equal(providerFixture(new URL('https://api.scryfall.com/cards/search?q=EmptyPage')).data.length,0);
  const y=providerFixture(new URL('https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=Paged&offset=60&num=60'));assert.equal(y.data.length,5);assert.equal(String(y.data[0].id),GROUP_IDS.ygo.Paged[59]);assert.equal(y.meta.rows_remaining,0);
  assert.equal(isSearchRequest('mtg',new URL('https://api.scryfall.com/cards/autocomplete?q=Paged')),false);assert.equal(isSearchRequest('ptcg',new URL('https://api.tcgdex.net/v2/en/cards?name=Paged&pagination:itemsPerPage=40')),false);assert.equal(isSearchRequest('ygo',new URL('https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=Paged&num=12&offset=0')),false);assert.equal(providerFixture(new URL('https://api.scryfall.com/cards/autocomplete?q=Paged')).data.length,7,'Real Search suggestions are intercepted without being mistaken for submitted source pages');
+ for(const id of pokemonSupplementIds){const card=providerFixture(new URL('https://api.tcgdex.net/v2/en/cards/'+id));assert.equal(card.id,id);assert.equal(normalizePtcg(card).prices.usd,null);assert(isSupplementFixtureImage(card.image));}
+ assert.equal(providerFixture(new URL('https://api.tcgdex.net/v2/en/cards/mee-999')),undefined);assert(!isSupplementFixtureImage('https://tcgplayer-cdn.tcgplayer.com/product/999999_in_1000x1000.jpg'));
  assert.equal(providerFixture(new URL('https://unmapped.example.invalid')),undefined);assert.match(SVG,/NOT REAL CARD ART/);
  return 'PASS: Search fixtures validate exact IDs, condition/private-value sentinels, overlapping pages, empty-page continuation, suffix/pocket exclusion, same-code canonical releases, unknown edition/finish and fail-closed routing. No browser, server, screenshot or provider call started.';
 }
@@ -166,7 +174,7 @@ export async function openSearchApp(browser,base,{game='mtg',width=390,height=10
   for(const gate of gates)if(!gate.used&&gate.match(url,req)){gate.used=true;gate.started();await gate.wait;}
   const planned=rules.find(r=>r.remaining>0&&r.match(url,req));if(planned){planned.remaining--;return fulfill({error:'Synthetic source outage',message:'Synthetic source unavailable'},planned.status);}
   if(url.hostname==='fonts.googleapis.com')return fulfill('/* synthetic fixture system fonts */',200,'text/css');
-  if(req.resourceType()==='image'&&(url.hostname==='search-fixtures.invalid'||url.hostname==='svgs.scryfall.io'||url.hostname==='images.ygoprodeck.com'||url.hostname==='images.pokemontcg.io'||url.origin===base&&/^\/img\/(ygo|pks)\//.test(url.pathname)))return fulfill(SVG,200,'image/svg+xml');
+  if(req.resourceType()==='image'&&(isSupplementFixtureImage(url.href)||url.hostname==='search-fixtures.invalid'||url.hostname==='svgs.scryfall.io'||url.hostname==='images.ygoprodeck.com'||url.hostname==='images.pokemontcg.io'||url.origin===base&&/^\/img\/(ygo|pks)\//.test(url.pathname)))return fulfill(SVG,200,'image/svg+xml');
   if(url.origin===historyEndpoint.origin&&url.pathname===historyEndpoint.pathname)return fulfill({game:url.searchParams.get('game'),cardId:url.searchParams.get('id'),finish:url.searchParams.get('finish'),series:[]});
   if(url.origin===base){
    if(url.pathname==='/catalog.json')return fulfill({cards:[],snapshot_date:'2000-01-01'});

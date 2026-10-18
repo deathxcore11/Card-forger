@@ -1,7 +1,7 @@
 import {finishEffectsOn} from './finish-preview.js';
 import {finishAttrs,finishPreview} from './finish-preview.js';
 import {deckBoxMarkup} from './deck-box.js';
-import {detailSetProgress,miniPrintingMarkup} from './card-detail-extras.js';
+import {detailSetSummary,detailOwnedSummary,miniPrintingMarkup} from './card-detail-extras.js';
 import {passwordField} from './auth-form.js';
 import {detailOwnedGroups} from './quick-quantity.js';
 import {profileAvatar,profilePhotoControl} from './profile-art.js';
@@ -360,21 +360,24 @@ export function cardSheet(c, ctx = {}) {
     <div class="cs-card">
       <div class="cd-art-stack"><div class="cd-img" ${finishAttrs('mtg',shown,ctx,'detail')}><button class="cd-zoom" data-hold-card="true" data-entry="${esc(ctx.entryId||ctx.entry||'')}" data-act="zoomCard" data-src="${esc(image || "")}" data-hi="${esc(imgFaces?.length > 1 ? imgFaces[face]?.image_uris?.png || "" : shown.image_uris?.png || "")}" data-art="${esc(heroArt || "")}" data-name="${esc(name)}" aria-label="Enlarge ${esc(name)}">${img(image, name, "card-img")}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button></div>${imgFaces?.length > 1 ? `<button class="btn ghost small block" data-act="flipFace">↻ Flip to ${esc(imgFaces[face ? 0 : 1].name)}</button>` : ""}${finishPreview('mtg',shown,ctx)}<button class="btn ghost small card-profile-photo" data-act="cardProfilePhoto" data-name="${esc(name)}">Use as profile photo</button>${miniPrintingMarkup({game:'mtg',card:shown,cards:ctx.prints||[],busy:ctx.printsBusy||ctx.detailsBusy,error:ctx.printsError})}</div>
       <div class="cs-card-side">${readableText}${alertStatus("mtg",trackedQuote("mtg",shown)?.id,name)}
-        ${detailOwnedGroups('mtg',S.state.collection,c)}
+
         ${inDecks.length ? `<p class="small own-line">In ${inDecks.map((d) => esc(d.name)).join(", ")}</p>` : ""}
         ${deck ? deckLegalLine(c, deck) : ""}
     ${row ? `<div class="panel tight"><div class="row between"><b>In ${esc(deck.name)}</b><span class="stepper"><button data-act="deckQty" data-name="${esc(name)}" data-delta="-1" aria-label="One fewer">−</button><b>${row.qty}</b><button data-act="deckQty" data-name="${esc(name)}" data-delta="1" aria-label="One more">＋</button></span></div>${key(name) !== key(deck.commander) ? `<button class="link danger small" data-act="deckRemove" data-name="${esc(name)}">Remove from deck</button>` : ""}</div>` : ""}
-    <div class="card-actions">
-      <div class="ca-main"><button class="btn" data-act="own" data-name="${esc(name)}">＋ Add to collection</button><button class="btn ghost wishlist-toggle" data-act="cardWishlist" data-game="mtg" data-name="${esc(name)}" aria-pressed="${S.state.wishlist.some(w=>key(w.name)===key(name))}">${S.state.wishlist.some(w=>key(w.name)===key(name))?'♥':'♡'} Wishlist</button></div>
-      <div class="ca-more"><button class="btn ghost small" data-act="cardDeckPicker" data-game="mtg" data-name="${esc(name)}">Add to deck</button><button class="btn ghost small" data-act="compareFrom" data-name="${esc(name)}">⇄ Compare</button>${isLand(c) ? "" : `<button class="btn ghost small" data-act="buildFrom" data-name="${esc(name)}">⚒ Build decks</button>`}${ctx.random ? `<button class="btn ghost small" data-act="dbRandom">🎲 Another</button>` : ""}</div>
-    </div>
     <div class="cs-secondary"><div class="chips">${roles.map((r) => `<span class="chip role-${r.toLowerCase()}">${r}</span>`).join("")}${c.edhrec_rank ? `<span class="chip">EDHREC #${Number(c.edhrec_rank).toLocaleString()}</span>` : ""}${c.reserved ? `<span class="chip">Reserved List</span>` : ""}${c.game_changer ? `<span class="chip warn">Game Changer</span>` : ""}</div>
     ${factBox(overviewFacts(c, prints), c.oracle_id || name)}
     <div class="links research"><span class="muted small">Research</span>
       <a href="${esc(safeHref(c.scryfall_uri || "https://scryfall.com/search?q=" + encodeURIComponent(name)))}" target="_blank" rel="noopener">Scryfall ↗</a>
       <a href="https://edhrec.com/cards/${esc(name.toLowerCase().split(" // ")[0].replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""))}" target="_blank" rel="noopener">EDHREC ↗</a>
       <button class="link" data-act="cardPriceJump" data-target="sellers">Where to buy ›</button>
-    </div></div></div></div>`;
+    </div></div>
+    <section class="card-secondary-actions" aria-label="Collection and deck actions">
+        ${detailOwnedGroups('mtg',S.state.collection,c,{compact:true})}
+    <div class="card-actions">
+      <div class="ca-main"><button class="btn ghost wishlist-toggle" data-act="cardWishlist" data-game="mtg" data-name="${esc(name)}" aria-pressed="${S.state.wishlist.some(w=>key(w.name)===key(name))}">${S.state.wishlist.some(w=>key(w.name)===key(name))?'♥':'♡'} Wishlist</button></div>
+      <div class="ca-more"><button class="btn ghost small" data-act="cardDeckPicker" data-game="mtg" data-name="${esc(name)}">Add to deck</button><button class="btn ghost small" data-act="compareFrom" data-name="${esc(name)}">⇄ Compare</button>${isLand(c) ? "" : `<button class="btn ghost small" data-act="buildFrom" data-name="${esc(name)}">⚒ Build decks</button>`}${ctx.random ? `<button class="btn ghost small" data-act="dbRandom">🎲 Another</button>` : ""}</div>
+    </div>
+    </section></div></div>`;
   const pricesTab = `${priceOverview("mtg",shown,ctx,Object.entries(shown.purchase_uris||{}))}<details class="market-details"><summary>Market details · sources & finishes</summary>
     <div class="src-row" role="group" aria-label="Price source">${MTG_SOURCES.map(([id, label]) => `<button class="chip pick ${id === src[0] ? "on" : ""}" aria-pressed="${id === src[0]}" data-act="priceSource" data-src="${id}">${esc(label)}</button>`).join("")}</div>
     <div class="price-table" style="--cols:${Object.keys(src[3]).length}"><div class="pt-head"><span></span>${Object.keys(src[3]).map((f) => `<b class="${f}">${FINISH[f]}</b>`).join("")}</div>
@@ -394,12 +397,11 @@ export function cardSheet(c, ctx = {}) {
     <p class="foot">From Scryfall’s current data. Green = legal, red = banned, gold = restricted. <button class="link small" data-act="go" data-to="#rules">Banned lists & format rules →</button></p>`;
   return `<div class="sheet-head overlay">${S.ui.sheetBack ? `<button class="icon" data-act="sheetBack" aria-label="Back to deck idea">←</button>` : "<span></span>"}<button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   <div class="cs-banner"><div class="cs-hero mtg">${img(heroArt, name, "cs-art")}<div class="cs-shade"></div></div>
-  <div class="cs-title"><div><h2>${esc(name)}</h2><p class="type-line">${esc(faces[face]?.type_line || typeText(shown))}</p></div>${manaCost(faces[face] || shown)}</div></div>
+  <div class="cs-title"><div><h2>${esc(name)}</h2><p class="type-line">${esc(faces[face]?.type_line || typeText(shown))} ${detailOwnedSummary(i.owned)}</p></div>${manaCost(faces[face] || shown)}</div></div>
   ${cardTabs(tab, [["overview", "Overview"], ["meta", "Meta"], ["guide", "Play guide"], ["versions", `Versions${prints ? " · " + prints.length + (ctx.printsNext ? "+" : "") : ""}`], ["prices", "Prices"], ["rulings", "Rules & legality"]])}
   ${emblemChips("mtg", c)}
   <div class="cs-meta">
-    <button class="cd-set" data-act="set" data-code="${esc(shown.set || "")}" ${shown.set ? "" : "disabled"} aria-label="See every card in ${esc(shown.set_name || "this set")}">${setIcon(shown.set, shown.rarity, 24)}<div><b>${esc(shown.set_name || (shown.set || "").toUpperCase())} <span class="set-go">›</span></b><small>${esc((shown.set || "").toUpperCase())} #${esc(shown.collector_number || "?")} · ${esc(RARITY[shown.rarity] || shown.rarity || "")}${shown.released_at ? " · " + esc(shown.released_at.slice(0, 4)) : ""}</small></div></button>
-    ${(()=>{const st=S.ui.set,info=S.ui.sets.list.find(s=>s.code===shown.set)||(st.code===shown.set?st.info:null),owned=ownedPrintings(),prints=Object.values(S.state.printings||{}).filter(p=>p.set===shown.set),count=new Set(prints.filter(p=>owned.has(String(p.id))).map(p=>p.id)).size;return detailSetProgress({key:'mtg:'+shown.set,owned:count,total:st.code===shown.set&&st.complete?st.cards.length:info?.card_count||null,loaded:st.code===shown.set?st.cards.length:prints.length,complete:st.code===shown.set&&!!st.complete});})()}
+    ${(()=>{const st=S.ui.set,info=S.ui.sets.list.find(s=>s.code===shown.set)||(st.code===shown.set?st.info:null),owned=ownedPrintings(),prints=Object.values(S.state.printings||{}).filter(p=>p.set===shown.set),count=new Set(prints.filter(p=>owned.has(String(p.id))).map(p=>p.id)).size;return detailSetSummary({action:shown.set?`data-act="set" data-code="${esc(shown.set)}"`:'',identity:`${setIcon(shown.set, shown.rarity, 24)}<span><b>${esc(shown.set_name || (shown.set || "").toUpperCase())}${shown.set?' <span class="set-go">›</span>':''}</b><small>${esc((shown.set || "").toUpperCase())} #${esc(shown.collector_number || "?")} · ${esc(RARITY[shown.rarity] || shown.rarity || "")}${shown.released_at ? " · " + esc(shown.released_at.slice(0, 4)) : ""}</small></span>`,progress:{key:'mtg:'+shown.set,owned:shown.set?count:null,total:st.code===shown.set&&st.complete?st.cards.length:info?.card_count||null,loaded:st.code===shown.set?st.cards.length:prints.length,complete:st.code===shown.set&&!!st.complete}});})()}
     ${compactPriceSummary("mtg",shown,buyContext("mtg",shown,{...ctx,priceFinish},S.state))}
   </div>
   ${cardPanel("overview", tab, overview)}
