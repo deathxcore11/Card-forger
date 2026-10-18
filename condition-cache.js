@@ -25,20 +25,20 @@ export class ConditionPriceCache {
   if(!/^\d{1,12}$/.test(product||''))return reply({status:'unmapped'},400);
   if(!this.env.JUSTTCG_API_KEY&&!tcgplayerConfigured(this.env))return reply({status:'not_configured'});
   const owner=request.headers.get('X-Condition-Owner')==='verified';
-  const category=new URL(request.url).searchParams.get('category'),pendingKey=product+':'+(category||'');
+  const params=new URL(request.url).searchParams,category=params.get('category'),forceBackup=params.get('fallback')==='1',pendingKey=product+':'+(category||'')+':'+forceBackup;
   if(this.pending.has(pendingKey)){
    const result=await this.pending.get(pendingKey);
    // A guest's app-budget rejection must not become the owner's result.
    if(!owner||result.reason!=='app_budget')return reply(result);
    return this.fetch(request);
   }
-  const job=this.load(product,owner,category);this.pending.set(pendingKey,job);
+  const job=this.load(product,owner,category,forceBackup);this.pending.set(pendingKey,job);
   try{return reply(await job);}finally{this.pending.delete(pendingKey);}
  }
- async load(product,owner=false,category){
+ async load(product,owner=false,category,forceBackup=false){
   if(!tcgplayerConfigured(this.env))return {...await this.loadBackup(product,owner),providers:{tcgplayer:'not_configured',justtcg:'configured'}};
   const primary=await this.primary.load(product,category,owner);
-  if(primary.status==='unmapped'||primary.status==='available'&&primary.complete)return {...primary,providers:{tcgplayer:primary.status,justtcg:this.env.JUSTTCG_API_KEY?'standby':'not_configured'}};
+  if(primary.status==='unmapped'||primary.status==='available'&&primary.complete&&!forceBackup)return {...primary,providers:{tcgplayer:primary.status,justtcg:this.env.JUSTTCG_API_KEY?'standby':'not_configured'}};
   const backup=this.env.JUSTTCG_API_KEY?await this.loadBackup(product,owner):null;
   return {...mergeConditionSources(product,primary,backup),providers:{tcgplayer:primary.reason||primary.status,justtcg:backup?.reason||backup?.status||'not_configured'}};
  }

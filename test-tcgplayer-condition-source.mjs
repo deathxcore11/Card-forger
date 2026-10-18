@@ -12,10 +12,10 @@ const skus=catalog.languages.flatMap(l=>catalog.printings.flatMap(p=>catalog.con
 const prices=skus.map((s,i)=>({skuId:s.skuId,marketPrice:i===4?0:50-i,lowPrice:999,lowestShipping:777}));
 const env={TCGPLAYER_PUBLIC_KEY:'synthetic-public',TCGPLAYER_PRIVATE_KEY:'synthetic-private',JUSTTCG_API_KEY:'synthetic-backup',CONDITION_DAILY_LIMIT:1000,CONDITION_MONTHLY_LIMIT:1000,CONDITION_MINUTE_LIMIT:1000};
 function storage(){const rows=new Map();let chain=Promise.resolve();const s={rows,get:async k=>structuredClone(rows.get(k)),put:async(k,v)=>rows.set(k,structuredClone(v)),delete:async k=>rows.delete(k),list:async({prefix})=>new Map([...rows].filter(([k])=>k.startsWith(prefix))),getAlarm:async()=>1,setAlarm:async()=>{},transaction:fn=>{const job=chain.then(()=>fn(s));chain=job.catch(()=>{});return job;}};return s;}
-function fixture({partial=false,tcgFailure=0,backupFailure=false,wrongCategory=false}={}){
+function fixture({partial=false,tcgFailure=0,backupFailure=false,wrongCategory=false,backupPrinting='Holofoil'}={}){
  const calls=[];globalThis.fetch=async(url,opts={})=>{
   calls.push({url,method:opts.method||'GET'});
-  if(url.includes('api.justtcg.com'))return backupFailure?Response.json({code:'EXCESSIVE_FREE_TIER_USAGE'},{status:429,headers:{'Retry-After':'60'}}):Response.json({data:[{tcgplayerId:89828,variants:conditions.map((condition,i)=>({condition,printing:'Holofoil',language:'English',price:20-i,priceStatus:'current',lastUpdated:Math.floor(now/1000)}))}]});
+  if(url.includes('api.justtcg.com'))return backupFailure?Response.json({code:'EXCESSIVE_FREE_TIER_USAGE'},{status:429,headers:{'Retry-After':'60'}}):Response.json({data:[{tcgplayerId:89828,variants:conditions.map((condition,i)=>({condition,printing:backupPrinting,language:'English',price:20-i,priceStatus:'current',lastUpdated:Math.floor(now/1000)}))}]});
   assert(url.startsWith('https://api.tcgplayer.com/'));assert.equal(opts.redirect,'error');
   if(url.endsWith('/token')){assert.equal(new URLSearchParams(opts.body).get('client_secret'),'synthetic-private');return Response.json({access_token:'synthetic-token',expires_in:3600});}
   assert.equal(opts.headers.Authorization,'Bearer synthetic-token');
@@ -68,5 +68,10 @@ try{
  // TCGplayer-only deployment is accepted by the real identity route.
  const routeEnv={TCGPLAYER_PUBLIC_KEY:'fixture',TCGPLAYER_PRIVATE_KEY:'fixture',CONDITION_PRICES:{idFromName:n=>n,get:()=>({fetch:async u=>{assert.equal(new URL(u).searchParams.get('category'),'3');return Response.json({...fresh,cachedAt:now});}})}};
  const route=await conditionFeedRoute(new URL('https://app/api/prices/conditions?game=ptcg&id=ex4-10&variant=holofoil'),routeEnv,null,async()=>Response.json({id:'ex4-10',pricing:{tcgplayer:{holofoil:{productId:89828}}}}));assert.equal((await route.json()).quotes.length,5);
+ // A successfully fetched product can still lack the selected finish entirely.
+ const coverageCalls=fixture({backupPrinting:'Normal'}),coverageCache=new ConditionPriceCache({storage:storage()},env),coverageEnv={...env,CONDITION_PRICES:{idFromName:n=>n,get:()=>({fetch:(url,options)=>coverageCache.fetch(new Request(url,options))})}};
+ const selectedUrl=new URL('https://app/api/prices/conditions?game=ptcg&id=ex4-10&variant=normal'),identity=async()=>Response.json({id:'ex4-10',pricing:{tcgplayer:{normal:{productId:89828}}}});
+ const coverage=await (await conditionFeedRoute(selectedUrl,coverageEnv,null,identity)).json();assert.equal(coverage.quotes.length,5);assert(coverage.quotes.every(q=>q.source==='JustTCG'));assert.equal(coverageCalls.length,8,'One primary batch and one shared backup product, not one call per condition');
+ await conditionFeedRoute(selectedUrl,coverageEnv,null,identity);assert.equal(coverageCalls.length,8,'The selection fallback also reuses both shared caches');
  console.log('PASS: official batched SKU matching, all-condition reuse, shared durable primary cache, exact partial fallback, isolated provider pauses, shared caps, no credential leakage, honest timestamps and stale-price isolation.');
 }finally{globalThis.fetch=originalFetch;Date.now=clock;clearConditionAttempts();}

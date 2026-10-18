@@ -103,9 +103,15 @@ export async function conditionFeedRoute(url,env,ctx,fetchImpl=fetch,{request}={
   // Durable cache and atomic caps prevent each visitor or edge region spending a new credit.
   const stub=env.CONDITION_PRICES.get(env.CONDITION_PRICES.idFromName('shared-condition-prices'));
   const owner=await conditionOwner(request,env,fetchImpl);
-  const response=await stub.fetch('https://condition-cache/?product='+product+'&category='+{mtg:1,ygo:2,ptcg:3}[game],{headers:owner?{'X-Condition-Owner':'verified'}:{}});
-  const data=await response.json();
-  const quotes=normalizeConditionVariants(data,product,printings,language,data.cachedAt||Date.now());
+  const cacheUrl='https://condition-cache/?product='+product+'&category='+{mtg:1,ygo:2,ptcg:3}[game],cacheOptions={headers:owner?{'X-Condition-Owner':'verified'}:{}};
+  let data=await (await stub.fetch(cacheUrl,cacheOptions)).json();
+  let quotes=normalizeConditionVariants(data,product,printings,language,data.cachedAt||Date.now());
+  // A complete product response may not cover this language/finish. Ask the
+  // backup once for all conditions; the primary result is already cached.
+  if(data.status==='available'&&data.providers?.justtcg==='standby'&&quotes.length<CONDITIONS.length){
+   data=await (await stub.fetch(cacheUrl+'&fallback=1',cacheOptions)).json();
+   quotes=normalizeConditionVariants(data,product,printings,language,data.cachedAt||Date.now());
+  }
   if(data.status!=='available'){
    const messages={provider_rate:'JustTCG is temporarily limiting requests. Saved quotes remain available.',provider_daily:'JustTCG reports its daily request allowance is used. It resets at midnight UTC.',provider_monthly:'JustTCG reports its monthly request allowance is used. Check the provider plan and billing reset.',provider_shared_limit:'JustTCG blocked this request under its shared-hosting Free tier protection. This can happen even when your own lookup allowance remains.',provider_auth:'JustTCG rejected the connected API key or subscription. Check the provider connection.',app_budget:owner?'Condition pricing is temporarily busy. Try again shortly.':'The app’s shared lookup allowance has been reached. Sign in to the owner account for owner access.'};
    messages.tcgplayer_auth='TCGplayer rejected the configured API connection. Saved prices remain available.';
