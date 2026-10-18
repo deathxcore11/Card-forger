@@ -263,9 +263,10 @@ try{
   assert.equal(await page.getByRole('button',{name:'Flashlight',exact:true}).getAttribute('aria-pressed'),'false','Rejected hardware torch cannot claim to be on');
   await page.getByText("This camera's flashlight can't be controlled from the browser.",{exact:true}).waitFor();
   const beforeQuota=JSON.stringify(await rows(page));
-  await scene(page,'ptcg','rejected-quota');
   await page.evaluate(()=>{const h=window.__scannerHarness;h.quotaFailures=0;h.setItem=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(k==='cardstashy-scan-batch-v1'){h.quotaFailures++;throw new DOMException('Test quota exhausted','QuotaExceededError');}return h.setItem.call(this,k,v);};});
-  try{await page.getByRole('button',{name:'Capture card now',exact:true}).click();assert.equal(JSON.stringify(await rows(page)),beforeQuota,'Quota failure cannot alter/evict an accepted original');assert(await page.evaluate(()=>window.__scannerHarness.quotaFailures>0),'Quota fixture reached durable storage, not shutter debounce');await page.waitForFunction(()=>/not queued/i.test(window.__scannerTest.state().status));}
+  // Install the failure before presenting a new frame: automatic capture can
+  // legitimately accept it while scene() waits for the camera frame callback.
+  try{await scene(page,'ptcg','rejected-quota');await page.getByRole('button',{name:'Capture card now',exact:true}).click();assert.deepEqual(await rows(page),JSON.parse(beforeQuota),'Quota failure cannot alter/evict an accepted original');assert(await page.evaluate(()=>window.__scannerHarness.quotaFailures>0),'Quota fixture reached durable storage, not shutter debounce');await page.waitForFunction(()=>/not queued/i.test(window.__scannerTest.state().status));}
   finally{await page.evaluate(()=>{Storage.prototype.setItem=window.__scannerHarness.setItem;});}
   await scene(page,'mtg','restored-after-quota');
   // The production storage cooldown protects a rejected frame for 2 seconds.

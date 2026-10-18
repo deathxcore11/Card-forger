@@ -101,3 +101,19 @@ const bad=normalizeYgo({id:1,name:'Numeric rarity',card_sets:[{set_code:'SDWD-EN
 assert(knownPokemonPlaceholder('https://images.pokemontcg.io/me55c/1_hires.png'));
 const art=artworkSources({game:'ptcg',id:'me55c-001',set:{id:'me55c',number:'001'},image:'https://images.pokemontcg.io/me55c/1_hires.png'},true);assert(!art.some(knownPokemonPlaceholder));assert(art.some(u=>u.includes('/me55c-001.jpg')));assert(!art.some(u=>u.includes('base1')));
 console.log('PASS: Oracle-level PDH membership, body-versus-leader legality, Common reverse holo, missing-price YGO finish, invalid rarity and known card-back references.');
+
+// Slow account startup is bounded; late auth callbacks cannot reopen that session.
+{
+ const module=await import('./cloud.js?audit-startup-timeout');let callback,unsubscribed=false,stopped=false;const owners=[];
+ await module.initCloud({changed(){},status(){},accountChanged(u){owners.push(u?.id||null);},switchWorkspace:async()=>({meta:null}),getState:()=>ws([])}, {startupTimeoutMs:5,createClient:()=>({auth:{onAuthStateChange(fn){callback=fn;return {data:{subscription:{unsubscribe(){unsubscribed=true;}}}};},getSession:()=>new Promise(()=>{}),stopAutoRefresh(){stopped=true;}}})});
+ assert.equal(module.cloudInfo().switching,false);assert.equal(module.cloudInfo().ready,false);assert.match(module.cloudInfo().authNotice,/guest workspace/);assert(unsubscribed&&stopped);callback('SIGNED_IN',{user:{id:'late-owner'}});await Promise.resolve();assert.deepEqual(owners,[null]);
+}
+// An account switch while obtaining the deletion session cancels before any RPC.
+{
+ const module=await import('./cloud.js?audit-delete-race');let callback,release,calls=0,getCount=0;
+ const fixtureClient={auth:{onAuthStateChange(fn){callback=fn;},getSession(){return ++getCount===1?Promise.resolve({data:{session:{user:{id:'A'},access_token:'fixture-a'}}}):new Promise(r=>release=r);}},rpc(){calls++;throw Error('Must not delete');}};
+ await module.initCloud({changed(){},status(){},accountChanged(){},switchWorkspace:async()=>({meta:null}),canSync:async()=>false,getState:()=>ws([])}, {createClient:()=>fixtureClient});
+ const deleting=module.deleteAccount();await Promise.resolve();await Promise.resolve();
+ callback('SIGNED_IN',{user:{id:'B'}});release({data:{session:{user:{id:'A'},access_token:'fixture-a'}}});await assert.rejects(deleting,/cancelled/);assert.equal(calls,0);assert.equal(module.cloudInfo().user.id,'B');
+}
+console.log('PASS: bounded startup, ignored late auth, and deletion cancelled after an account switch.');

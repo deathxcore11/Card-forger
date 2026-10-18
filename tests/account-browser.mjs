@@ -58,7 +58,7 @@ try{
   await page.evaluate(()=>window.__accountFixture.switch('A'));await ready(page,'A');await page.waitForFunction(()=>document.querySelector('.topbar .profile-avatar img')?.src.includes('Gengar-A'));
   assert.equal(await page.evaluate(()=>window.__uiTestState.state.collection[0].qty),a.collection[0].qty);assert.deepEqual(await page.evaluate(()=>window.__accountFixture.model.rows.A.data),a);
   assert.deepEqual(await page.evaluate(()=>window.__accountFixture.model.writes),[]);
-  const backup=await page.evaluate(async()=>{const r=await import('/storage.js');return r.readRecord('cardstashy-before-account-isolation-v1');});assert.deepEqual(backup.state.collection,a.collection.map(e=>({...e,raw:{}})),'legacy cards are preserved separately');assert.deepEqual(backup.state.settings.cardAvatar,a.settings.cardAvatar,'legacy artwork is preserved');
+  const backup=await page.evaluate(async()=>{const r=await import('/storage.js');return r.readRecord('cardstashy-before-account-isolation-v1');});assert.deepEqual(backup.state.collection,a.collection,'legacy cards are preserved exactly as stored');assert.deepEqual(backup.state.settings.cardAvatar,a.settings.cardAvatar,'legacy artwork is preserved');
   await page.waitForFunction(async()=>!!(await import('/cloud.js')).cloudInfo().pending);await later(page);
   await page.locator('[data-nav="community"]:visible').first().click();await page.locator('.community-layout[aria-busy="false"]').waitFor();
   for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'.community-page',`signed-in Community ${width}`);if([390,1440].includes(width))await capture(page,`synthetic-search-community-account-${width}`);}

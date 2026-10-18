@@ -279,11 +279,20 @@ export async function signOut() {
 // delete_my_account database function. Data on this device is left for the caller to clear.
 export async function deleteAccount() {
   if (!client || !user) throw Error("Sign in first to delete your account.");
+  const owner=user.id,epoch=syncEpoch,accountClient=client;
+  const current=()=>client===accountClient&&user?.id===owner&&syncEpoch===epoch;
   await flushPush().catch(() => {});
-  const { error } = await client.rpc("delete_my_account");
+  if(!current())throw Error('Your account changed. Account deletion was cancelled.');
+  const {data:sessionData,error:sessionError}=await accountClient.auth.getSession();
+  if(!current()||sessionError||sessionData?.session?.user?.id!==owner||!sessionData.session.access_token)throw Error('Your sign-in changed. Account deletion was cancelled.');
+  // Freeze this request to the confirmed account even if another tab changes auth.
+  const { error } = await client.rpc("delete_my_account").setHeader('Authorization','Bearer '+sessionData.session.access_token);
   if (error) throw Error(/function .*does not exist|PGRST202/i.test(error.message + error.code) ? "Account deletion isn't set up on the server yet. Please try again later." : authError(error));
-  await client.auth.signOut().catch(() => {});
+  if(!current())return;
+  await accountClient.auth.signOut({scope:'local'}).catch(() => {});
+  if(user?.id && user.id!==owner)return;
   await changeAccount(null);
+  if(user)return;
   user = null;
   profile = null;
   pending = null;

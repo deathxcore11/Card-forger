@@ -5665,7 +5665,6 @@ async function boot() {
   navigationReady=true;
   decorateShell();
   await navigate({game:latest?.game || T.game(),hash:normalizeRoute(location.hash),entry:latest || makeEntry(T.game(),normalizeRoute(location.hash),0),mode:"boot"});
-  loadSetIndex(); // cached set symbols first; refreshes from Scryfall every few days
   render();
   observeShellHeader();
   $("#app").classList.add("ready");
@@ -5696,6 +5695,7 @@ async function boot() {
       const game=GAMES[S.state.settings.game]?S.state.settings.game:'mtg';
       const hash=accountOpenedOnce?'#home':normalizeRoute(location.hash);accountOpenedOnce=true;
       installNavigation({game,hash,mode:'workspace',entry:makeEntry(game,hash,activeEntry?.index||0)});
+      loadSetIndex(); // hydrate the new UI after its account reset, including other games
       render();
       if(shouldTour()&&!location.hash.startsWith('#shared'))setTimeout(()=>{if(!accountLocked&&shouldTour())openTour(tourArt());},600);
     },

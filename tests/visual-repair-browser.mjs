@@ -4,6 +4,7 @@ import {startServer,openApp,inventorySnapshot} from './detail-rules-fixtures.mjs
 import {noOverflow} from './search-fixtures.mjs';
 if(process.env.GITHUB_ACTIONS!=='true')throw Error('Hosted browser QA only.');
 const {chromium}=await import('playwright'),server=await startServer(),browser=await chromium.launch();
+const failures=[];
 const cases=[
  ['ygo','hot-red-dragon-abyss','hot-red-dragon-abyss.jpg','ygo-art','holo','HSRD-EN041::Ultra Rare'],
  ['ygo','psy-framegear-gamma','psy-framegear-gamma.jpg','ygo-art','holo','HSRD-EN031::Ultra Rare'],
@@ -43,7 +44,8 @@ try{for(const [game,id,file,mask,material,selection] of cases){
   await page.waitForFunction(first=>document.querySelector('#sheet .cd-img').style.getPropertyValue('--mx')!==first,first);
   assert.equal(await card.locator('.finish-spotlight').count(),1,'Neutral soft tilt light exists independently of the material');
   for(const width of [320,390,673,768,1024,1440]){
-   await page.setViewportSize({width,height:1050});await card.evaluate(n=>n.scrollIntoView({block:'center',behavior:'instant'}));await noOverflow(page,'#sheetBody',id+' '+width);
+   await page.setViewportSize({width,height:1050});await card.evaluate(n=>n.scrollIntoView({block:'center',behavior:'instant'}));await card.evaluate(async n=>{await Promise.all(n.getAnimations({subtree:true}).filter(a=>Number.isFinite(a.effect.getComputedTiming().endTime)).map(a=>a.finished.catch(()=>{})));});
+   const overflow=await page.locator('#sheetBody').evaluate(root=>{if(root.scrollWidth<=root.clientWidth+2)return null;const box=root.getBoundingClientRect();return [...root.querySelectorAll('*')].filter(n=>n.getClientRects().length&&!n.closest('.cs-tabs,.card-printing-mini-rail,[hidden]')).map(n=>{const r=n.getBoundingClientRect(),s=getComputedStyle(n);return {tag:n.tagName,cls:n.className,left:r.left,right:r.right,width:r.width,scroll:n.scrollWidth,client:n.clientWidth,transform:s.transform};}).filter(r=>r.right>box.right+.5||r.left<box.left-.5).slice(0,30);});if(overflow)console.log('OVERFLOW',id,width,JSON.stringify(overflow));await noOverflow(page,'#sheetBody',id+' '+width);
    const geometry=await card.locator('img').first().evaluate(img=>{const s=getComputedStyle(img),w=img.clientWidth-parseFloat(s.paddingLeft)-parseFloat(s.paddingRight),h=img.clientHeight-parseFloat(s.paddingTop)-parseFloat(s.paddingBottom);return {fit:s.objectFit,error:Math.abs(w/h-img.naturalWidth/img.naturalHeight)};});assert.equal(geometry.fit,'contain');assert(geometry.error<.003,id+' keeps the complete source aspect ratio');
    assert(await page.locator('#sheet .card-buy-link > span:first-child').evaluate(n=>{const c=document.createElement('canvas').getContext('2d'),s=getComputedStyle(n);c.font=s.font;return Math.max(...n.textContent.split(/\s+/).map(w=>c.measureText(w).width))<=n.getBoundingClientRect().width+1;}),'Seller words never break across lines');
    await page.screenshot({path:'test-results/finish-effects-real-'+id.toLowerCase().replace(/[^a-z0-9]+/g,'-')+'-'+width+'.png',fullPage:false});
@@ -60,5 +62,5 @@ try{for(const [game,id,file,mask,material,selection] of cases){
   await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('.zoom-card-surface'));
   assert.equal(await inventorySnapshot(page),before);
   console.log('PASS: real printing '+id+' correct region/material, soft moving gyro light, responsive full card.');
- }catch(error){await page.screenshot({path:'test-results/finish-effects-real-failure-'+id+'.png',fullPage:false});throw error;}finally{await context.close();}
-}}finally{await browser.close();await server.close();}
+ }catch(error){await page.screenshot({path:'test-results/finish-effects-real-failure-'+id+'.png',fullPage:false});failures.push(error);}finally{await context.close();}
+}if(failures.length)throw new AggregateError(failures,'Source printing stress checks failed');}finally{await browser.close();await server.close();}
