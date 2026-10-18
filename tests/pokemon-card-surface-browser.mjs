@@ -57,6 +57,8 @@ try{for(const width of [320,390,768,1440]){
   const unchangedViews=[];
   for(const mode of ['compact','symbols']){
    await page.locator(`#content [data-act="viewSave"][data-mode="${mode}"]`).click();
+   await page.waitForFunction(mode=>document.querySelector('#content')?.classList.contains('view-'+mode),mode);
+   await noOverflow(page,'#content','Pokémon unchanged '+mode+' settled',true);
    const scope=await page.evaluate(()=>{const rules=[...document.styleSheets].filter(s=>!s.href||new URL(s.href).origin===location.origin).flatMap(s=>[...s.cssRules]).filter(r=>r.selectorText?.includes('[data-finish-game="ptcg"]'));return {ruleCount:rules.length,matchingRules:rules.filter(r=>document.querySelector(r.selectorText)).map(r=>r.selectorText)};});
    assert.equal(scope.ruleCount,5,'All five geometry rules inspected');assert.deepEqual(scope.matchingRules,[],mode+' must not match gallery-only geometry overrides');unchangedViews.push({mode,...scope});
   }
