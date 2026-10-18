@@ -36,7 +36,7 @@ export async function validateOwnedGameAdoption(ownedFixture,lotIdentity){
   const context=vm.createContext({S,GAMES,blank,validateWorkspace,normalizeHomeDeckActivity,recordHomeDeckWork,STORAGE,structuredClone,gameSwitchRoute,history,document,window:{__ownedTestState:S},
    activeEntry:{game:'mtg',route:'#home'},gameContext:()=>({hash:'#home'}),queueWorkspaceWrite:transaction=>transaction(),
    writeRecords:async records=>writes.push(records[0][1].settings.game),workspaceTransition:null,
-   accountLocked:false,accountGeneration:0,accountStorageOptions:()=>({guardRecord:null}),
+   valueHistoryReady:false,accountLocked:false,accountGeneration:0,accountStorageOptions:()=>({guardRecord:null}),
    changedConditionLots:()=>[],afterLocalSave(){},saveCatalogSoon(){}});
   vm.runInContext(`${setup}\n${commit}\nconst T={game:${currentGame.toString()}};\n${switchGame}\npersistGame=${persist};`,context);
   context.navigation=createNavigationQueue({readGame:vm.runInContext('T.game',context),persistGame:context.persistGame,install:intent=>{
