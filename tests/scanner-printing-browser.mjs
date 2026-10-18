@@ -61,6 +61,16 @@ async function seed(app,game){
     const reachable=await app.page.getByRole('button',{name:'Start camera',exact:true}).evaluate(n=>{const r=n.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return r.top>=0&&r.bottom<=innerHeight&&(hit===n||n.contains(hit));});
     assert(reachable,'Start camera remains reachable on the compact idle screen');
     await capture(app.page,`synthetic-search-scanner-idle-${viewport.width}`);
+    if(viewport.width===320){
+      await app.page.evaluate(()=>{window.__scannerReviewTest.media=navigator.mediaDevices.getUserMedia;navigator.mediaDevices.getUserMedia=async()=>{throw new DOMException('Synthetic permission denial','NotAllowedError');};});
+      await app.page.getByRole('button',{name:'Start camera',exact:true}).click();
+      await app.page.locator('#scanStatus').filter({hasText:'Camera permission was declined'}).waitFor();
+      const disjoint=await app.page.evaluate(()=>{const a=document.querySelector('.scan-go').getBoundingClientRect(),b=document.querySelector('#scanStatus').getBoundingClientRect();return a.bottom<=b.top&&b.bottom<=document.querySelector('.bottom-nav').getBoundingClientRect().top;});
+      assert(disjoint,'Permission guidance stays below the start button and above navigation');
+      await capture(app.page,'synthetic-search-scanner-permission-320');
+      await app.page.evaluate(()=>{navigator.mediaDevices.getUserMedia=window.__scannerReviewTest.media;});
+    }
+
   }
   await app.page.getByRole('button',{name:'Start camera',exact:true}).click();
   await app.page.waitForFunction(()=>document.querySelector('#scanVideo')?.videoWidth===320);

@@ -3656,6 +3656,8 @@ body[data-view="scan"] #app:has(.scan-workspace.is-camera) > #content {
 #app .scan-workspace.is-camera .scan-drop {position:absolute;inset:76px 16px 150px;width:auto;max-width:460px;max-height:none;min-height:0;aspect-ratio:auto;margin:auto;padding:20px 12px;display:flex;flex-direction:column;justify-content:center;gap:18px;background:none;}
 #app .scan-workspace.is-camera .scan-drop::before,#app .scan-workspace.is-camera .scan-ghost {display:none;}
 #app .scan-workspace.is-camera .scan-drop .scan-go {flex:none;}
+#app .scan-workspace.is-camera .scan-drop .scan-status-line {position:static;flex:none;margin:0;width:100%;padding:0;color:var(--text);}
+#app .scan-workspace.is-camera .scan-drop .scan-status-line:empty {display:none;}
 #app .scan-workspace.is-camera > .scan-legacy-session {position:absolute;z-index:4;top:82px;left:16px;max-width:min(48%,300px);max-height:55%;overflow:auto;margin:0;padding:8px;border-radius:12px;background:var(--surface);}
 .scan-pile-tray {position:absolute;z-index:4;right:max(14px,env(safe-area-inset-right));bottom:14px;padding:0;width:94px;}
 .scan-pile {display:flex;flex-direction:column;align-items:center;gap:8px;width:94px;min-height:88px;border:0;border-radius:14px;padding:4px 0;background:transparent;color:#fff;cursor:pointer;font:700 11px/1.2 Manrope,sans-serif;text-shadow:0 1px 4px #000;}
