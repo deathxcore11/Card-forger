@@ -1,3 +1,4 @@
+import {detailSetProgress,miniPrintingMarkup} from './card-detail-extras.js';
 import {passwordField} from './auth-form.js';
 import {detailOwnedGroups} from './quick-quantity.js';
 import {profileAvatar,profilePhotoControl} from './profile-art.js';
@@ -354,7 +355,7 @@ export function cardSheet(c, ctx = {}) {
   </div>`;
   const overview = `
     <div class="cs-card">
-      <div class="cd-art-stack"><div class="cd-img"><button class="cd-zoom" data-hold-card="true" data-entry="${esc(ctx.entryId||ctx.entry||'')}" data-act="zoomCard" data-src="${esc(image || "")}" data-hi="${esc(imgFaces?.length > 1 ? imgFaces[face]?.image_uris?.png || "" : shown.image_uris?.png || "")}" data-art="${esc(heroArt || "")}" data-name="${esc(name)}" aria-label="Enlarge ${esc(name)}">${img(image, name, "card-img")}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button></div>${imgFaces?.length > 1 ? `<button class="btn ghost small block" data-act="flipFace">↻ Flip to ${esc(imgFaces[face ? 0 : 1].name)}</button>` : ""}<button class="btn ghost small card-profile-photo" data-act="cardProfilePhoto" data-name="${esc(name)}">Use as profile photo</button></div>
+      <div class="cd-art-stack"><div class="cd-img"><button class="cd-zoom" data-hold-card="true" data-entry="${esc(ctx.entryId||ctx.entry||'')}" data-act="zoomCard" data-src="${esc(image || "")}" data-hi="${esc(imgFaces?.length > 1 ? imgFaces[face]?.image_uris?.png || "" : shown.image_uris?.png || "")}" data-art="${esc(heroArt || "")}" data-name="${esc(name)}" aria-label="Enlarge ${esc(name)}">${img(image, name, "card-img")}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button></div>${imgFaces?.length > 1 ? `<button class="btn ghost small block" data-act="flipFace">↻ Flip to ${esc(imgFaces[face ? 0 : 1].name)}</button>` : ""}<button class="btn ghost small card-profile-photo" data-act="cardProfilePhoto" data-name="${esc(name)}">Use as profile photo</button>${miniPrintingMarkup({game:'mtg',card:shown,cards:ctx.prints||[],busy:ctx.printsBusy||ctx.detailsBusy,error:ctx.printsError})}</div>
       <div class="cs-card-side">${readableText}${alertStatus("mtg",trackedQuote("mtg",shown)?.id,name)}
         ${detailOwnedGroups('mtg',S.state.collection,c)}
         ${inDecks.length ? `<p class="small own-line">In ${inDecks.map((d) => esc(d.name)).join(", ")}</p>` : ""}
@@ -395,6 +396,7 @@ export function cardSheet(c, ctx = {}) {
   ${emblemChips("mtg", c)}
   <div class="cs-meta">
     <button class="cd-set" data-act="set" data-code="${esc(shown.set || "")}" ${shown.set ? "" : "disabled"} aria-label="See every card in ${esc(shown.set_name || "this set")}">${setIcon(shown.set, shown.rarity, 24)}<div><b>${esc(shown.set_name || (shown.set || "").toUpperCase())} <span class="set-go">›</span></b><small>${esc((shown.set || "").toUpperCase())} #${esc(shown.collector_number || "?")} · ${esc(RARITY[shown.rarity] || shown.rarity || "")}${shown.released_at ? " · " + esc(shown.released_at.slice(0, 4)) : ""}</small></div></button>
+    ${(()=>{const st=S.ui.set,info=S.ui.sets.list.find(s=>s.code===shown.set)||(st.code===shown.set?st.info:null),owned=ownedPrintings(),prints=Object.values(S.state.printings||{}).filter(p=>p.set===shown.set),count=new Set(prints.filter(p=>owned.has(String(p.id))).map(p=>p.id)).size;return detailSetProgress({key:'mtg:'+shown.set,owned:count,total:st.code===shown.set&&st.complete?st.cards.length:info?.card_count||null,loaded:st.code===shown.set?st.cards.length:prints.length,complete:st.code===shown.set&&!!st.complete});})()}
     ${compactPriceSummary("mtg",shown,{...ctx,priceFinish})}
   </div>
   ${cardPanel("overview", tab, overview)}
@@ -1748,7 +1750,7 @@ export function accountPanel() {
     st = a.status,
     label = { synced: "Synced", syncing: "Syncing…", error: "Sync paused", decide: "Needs your decision", offline: "Offline — will sync when you’re back online", local: "Account sync not confirmed" }[st.state] || "Account sync not confirmed";
   return `<section class="panel account"><div class="account-head">${profileAvatar(a.art?.avatar||S.state.settings.cardAvatar,pr)}<div><b>${esc(pr.display_name || a.user.email)}</b><small class="muted">${esc(a.user.email || "")}${pr.username ? " · @" + esc(pr.username) : ""}</small></div></div>
-    <div class="actions wrap"><button class="btn small" data-act="myCommunity">My profile</button><button class="btn ghost small" data-act="addFriend">Add friend</button></div><div class="sync-line ${st.state}"><span><b>${label}</b>${st.state === "synced" && st.at ? ` · ${esc(when(st.at))}` : ""}</span><button class="btn ghost small" data-act="syncNow">Sync now</button></div>
+    <div class="actions wrap"><button class="btn small" data-act="myCommunity">My profile</button><button class="btn ghost small" data-act="addFriend">Add friend</button><button class="btn ghost small" data-act="friendRequests">Friend requests${S.ui.communityRequests?` <span class="account-inline-count">${S.ui.communityRequests}</span>`:''}</button></div><div class="sync-line ${st.state}"><span><b>${label}</b>${st.state === "synced" && st.at ? ` · ${esc(when(st.at))}` : ""}</span><button class="btn ghost small" data-act="syncNow">Sync now</button></div>
     ${st.state === "error" && st.msg ? `<p class="small bad-text">${esc(st.msg)} Your cards are still saved on this device.</p>` : ""}
     ${a.pending ? `<button class="btn block" data-act="syncDecide">Choose which copy to keep</button>` : ""}
     <details><summary class="small"><b>Profile</b></summary>${photo}<button class="btn ghost small" data-act="profileHeader">Choose profile header</button>

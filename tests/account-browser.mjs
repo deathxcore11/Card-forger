@@ -10,7 +10,9 @@ a.settings.cardAvatar=art('Gengar-A');b.settings.cardAvatar=art('Mew-B');
 const card=CARDS.mtg.find(c=>c.name.startsWith('Alpha fixture'));
 b.collection=[{...b.collection[0],id:'B-lot',name:card.name,printingId:card.id,qty:4}];b.printings[card.id]=card;
 const cloudB=structuredClone(b);cloudB.collection[0].qty=9;
-const fixture={user:{id:'A',email:'A@example.invalid'},profiles:{A:{display_name:'Account A',username:'account_a'},B:{display_name:'Account B',username:'account_b'}},art:{A:{avatar:art('Gengar-A')},B:{avatar:art('Mew-B')}},rows:{A:{data:a,revision:1},B:{data:cloudB,revision:2}},writes:[],storage:{'cardforge-v2':a,'cardforge-cloud-v1':{userId:'A',revision:1,sig:workspaceSig(a)},'cardstashy-workspace-v1:B':{state:b,recovery:blank(),meta:null}}};
+a.decks=[{id:'profile-deck',name:'Profile deck',format:'Standard',cards:[{name:card.name,qty:1}],side:[]}];a.settings.binders=[{id:'profile-binder',title:'Profile binder',game:'mtg',rule:'all',color:'#7468b5'}];
+const sharedCard={id:card.id,name:card.name,qty:1,image:card.image_uris.normal};
+const fixture={people:{A:[{id:'C',display_name:'Incoming friend',relationship:'pending',incoming:true}]},items:{A:[{key:'deck:mtg:profile-deck',kind:'deck',game:'mtg',title:'Profile deck',cards:[sharedCard]},{key:'binder:profile-binder',kind:'binder',game:'mtg',title:'Profile binder',cards:[sharedCard]}]},user:{id:'A',email:'A@example.invalid'},profiles:{A:{display_name:'Account A',username:'account_a'},B:{display_name:'Account B',username:'account_b'}},art:{A:{avatar:art('Gengar-A')},B:{avatar:art('Mew-B')}},rows:{A:{data:a,revision:1},B:{data:cloudB,revision:2}},writes:[],storage:{'cardforge-v2':a,'cardforge-cloud-v1':{userId:'A',revision:1,sig:workspaceSig(a)},'cardstashy-workspace-v1:B':{state:b,recovery:blank(),meta:null}}};
 const ready=async(page,id)=>page.waitForFunction(async id=>{const c=(await import('/cloud.js')).cloudInfo();return !c.switching&&(c.user?.id||null)===id;},id);
 const avatar=page=>page.locator('.topbar [data-act="menu"] .profile-avatar img');
 const later=async page=>{await page.locator('[data-act="syncChoice"][data-choice="later"]').click();};
@@ -41,6 +43,15 @@ try{
   for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'.community-page',`signed-in Community ${width}`);if([390,1440].includes(width))await capture(page,`synthetic-search-community-account-${width}`);}
   assert.match(await page.locator('.community-avatar-open img').getAttribute('src'),/Gengar-A/,'Community renders the current account avatar');
   assert.equal(await page.locator('[data-community-add]').count(),1);assert.deepEqual(await page.evaluate(()=>window.__accountFixture.model.writes),[]);
+  assert.equal(await page.locator('[data-community-requests]').count(),0,'Requests live in Account');
+  assert.equal(await page.locator('.community-kind-section').count(),2);
+  await page.locator('[data-community-share="deck"]').click();await page.locator('.community-dialog[open]').waitFor();
+  assert.equal(await page.locator('[data-community-kind="deck"]').getAttribute('aria-selected'),'true');assert.equal(await page.locator('.community-share-choices [data-community-preview]').count(),1);
+  await page.locator('[data-community-kind="binder"]').click();assert.equal(await page.locator('.community-share-choices [data-community-preview="binder:profile-binder"]').count(),1);
+  await page.locator('[data-community-filter]').fill('no match');assert.equal(await page.locator('.community-share-choices [data-community-preview]').count(),0);await page.locator('[data-community-filter]').fill('');
+  for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'.community-dialog',`sharing picker ${width}`);if([390,1440].includes(width))await capture(page,`synthetic-search-community-sharing-${width}`);}
+  await page.locator('[data-community-close]').click();await page.locator('[data-act="menu"]').click();assert.equal(await page.locator('[data-act="friendRequests"] .account-inline-count').textContent(),'1');
+  await page.locator('[data-act="friendRequests"]').click();await page.locator('[data-community-action="accept"]').click();await page.locator('.community-dialog').waitFor({state:'detached'});assert.equal(await page.locator('[data-act="friendRequests"] .account-inline-count').count(),0);await page.locator('[data-act="closeSettings"]').click();
   app.health();console.log('PASS: browser A → sign out → B, immediate avatar clearing, paused edit/reload/offline/reconnect, account restore, preserved backup and 320–1440px settings');
  }catch(error){await capture(page,"synthetic-search-account-failure",{settle:false});throw error;}finally{await app.context.close();}
  // Independent clean browser contexts cannot inherit the first device's art.

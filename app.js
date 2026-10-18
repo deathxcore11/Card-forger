@@ -1,7 +1,7 @@
 import {setAccountScope} from './account-scope.js';
 import {createAccountWorkspaces} from './account-workspaces.js';
 import {mountFeedback} from './feedback-layer.js';
-import {createCommunity} from './community-profile.js';
+import {createCommunity,incomingRequestCount} from './community-profile.js';
 import {addScannedEntry} from './collection-stack.js';
 import {profileAvatar,profileArt,createProfileArtPicker} from './profile-art.js';
 import {openTabletop} from './tabletop.js';
@@ -1999,7 +1999,8 @@ A.muUndo = async (t) => {
 let settingsBaseState=null;
 const settingsPopup=createSettingsDialog({beforeOpen:()=>{settingsBaseState=S.state;},dialog:$("#settingsDialog"),markup:()=>`<header class="settings-dialog-head"><div><p class="eyebrow">ALL THREE GAMES</p><h2 id="settingsDialogTitle">Settings</h2></div><button class="icon" data-act="closeSettings" aria-label="Close settings">${ICON.close||'✕'}</button></header>${V.settings({popup:true})}`,afterPaint:()=>{if(S.ui.settingsTab==='backup')storageDetail();},afterClose:scroll=>{profilePicker.close();if(settingsBaseState!==S.state)render();window.scrollTo({top:scroll,behavior:'instant'});setTimeout(safeIntro,50);}});
 A.menu = () => settingsPopup.open();
-A.addFriend=()=>{settingsPopup.close();community.add();};
+A.addFriend=()=>community.add();
+A.friendRequests=()=>community.requests();
 A.myCommunity=()=>{settingsPopup.close();go("#community");};
 A.closeSettings = () => settingsPopup.close();
 
@@ -2880,7 +2881,9 @@ A.homeAsk=()=>{const q=$('#homeQ')?.value||'';homeSearchController.close();A.ask
 window.matchMedia?.("(min-width:1200px)").addEventListener?.("change",()=>placeGlobalSearch(T.game(),S.ui.view));
 function refreshProfileAvatar(){
  const button=document.querySelector('.topbar [data-act="menu"]');if(!button)return;
- const html=accountLocked ? profileAvatar(null,{}) : profileAvatar(cloudInfo().art?.avatar||S.state.settings.cardAvatar,cloudInfo().profile||{});
+ const a=cloudInfo(),requests=accountLocked?0:(S.ui.communityRequests||0),important=!accountLocked&&a.user&&(a.pending||a.status.state==='error')?1:0,count=requests+important;
+ const html=(accountLocked ? profileAvatar(null,{}) : profileAvatar(a.art?.avatar||S.state.settings.cardAvatar,a.profile||{}))+(count?`<span class="account-notice-badge" aria-hidden="true">${count>99?'99+':count}</span>`:'');
+ button.setAttribute('aria-label',`Profile and settings${count?`, ${count} notification${count===1?'':'s'}`:''}`);
  if(button.innerHTML!==html)button.innerHTML=html;
  button.classList.add('profile-menu');button.title='Profile & settings';
 }
@@ -2897,6 +2900,8 @@ const artworkSaved=()=>{refreshProfileAvatar();settingsPopup.refresh();void comm
 const profilePicker=createProfileArtPicker({lookup:homeLookup,currentGame:T.game,read:()=>cloudInfo().art?.avatar||community.data?.art?.avatar||S.state.settings.cardAvatar,save:value=>saveProfileArtwork('avatar',value),onSaved:artworkSaved});
 const headerPicker=createProfileArtPicker({purpose:'header',lookup:homeLookup,currentGame:T.game,read:()=>cloudInfo().art?.header||community.data?.art?.header||S.state.settings.profileHeader,save:value=>saveProfileArtwork('header',value),onSaved:artworkSaved});
 const community=createCommunity({account:cloudInfo,request:communityRequest,rerender:render,active:()=>S.ui.view==='community',localArt:()=>({avatar:S.state.settings.cardAvatar,header:S.state.settings.profileHeader}),toast,
+ onChange:data=>{S.ui.communityRequests=incomingRequestCount(data);refreshProfileAvatar();if(settingsPopup.isOpen)settingsPopup.refresh();},
+ editItem:async item=>{const generation=accountGeneration;if(accountLocked)return;await navigate({game:item.game,hash:item.kind==='binder'?'#collection':item.game==='mtg'?'#deck/'+item.key.slice(('deck:'+item.game+':').length)+'/cards':'#tdeck/'+item.key.slice(('deck:'+item.game+':').length),mode:'push'});if(generation!==accountGeneration||T.game()!==item.game)return;if(item.kind==='binder')A.editBinder({dataset:{binder:item.key.slice(7)}});},
  chooseArt:kind=>(kind==='header'?headerPicker:profilePicker).open(),editProfile:()=>{S.ui.settingsTab='account';settingsPopup.open();},signIn:()=>{S.ui.settingsTab='account';settingsPopup.open();},
  openArt:a=>openZoom({src:a.image,alt:a.name}),
  showcaseChoices:()=>{
@@ -2908,6 +2913,9 @@ const community=createCommunity({account:cloudInfo,request:communityRequest,rere
   }
   return result;
  }});
+let communityNoticeChecked=0;
+const checkCommunityNotices=()=>{if(document.hidden||accountLocked||!cloudInfo().user||Date.now()-communityNoticeChecked<30000)return;communityNoticeChecked=Date.now();void community.refresh();};
+window.addEventListener('focus',checkCommunityNotices);document.addEventListener('visibilitychange',checkCommunityNotices);
 A.profileSource=()=>{const a=profileArt(cloudInfo().art?.avatar||community.data?.art?.avatar||S.state.settings.cardAvatar);if(a)openZoom({src:a.image,alt:a.name});else profilePicker.open();};
 A.profileHeader=()=>headerPicker.open();
 A.quickArtwork=()=>{if(!quickCard)return;const ref=quickCard;openSheet(`<div class="sheet-head"><h2>Use artwork as…</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="actions"><button class="btn" data-act="quickArtworkAvatar">Avatar</button><button class="btn ghost" data-act="quickArtworkHeader">Profile header</button></div>`,{type:"artwork-actions"});A.quickArtworkAvatar=()=>profilePicker.open({card:ref.card,game:ref.game});A.quickArtworkHeader=()=>headerPicker.open({card:ref.card,game:ref.game});};
@@ -5539,7 +5547,7 @@ async function boot() {
       return result;
     }),
     accountOpened:()=>{
-      accountLocked=false;clearGameContext();
+      accountLocked=false;clearGameContext();queueMicrotask(()=>community.refresh());
       const game=GAMES[S.state.settings.game]?S.state.settings.game:'mtg';
       installNavigation({game,hash:'#home',mode:'workspace',entry:makeEntry(game,'#home',activeEntry?.index||0)});
       render();
