@@ -45,7 +45,7 @@ export function createConditionRefreshScheduler({automatic=CONDITION_REFRESH_LIM
    if(stopped&&source!=='collection'&&(retry||now()>=stoppedUntil)){stopped='';stopResult=null;}
    // A deliberate retry may recheck the server cache; server provider backoff
    // and owner verification still apply. Never repeat an in-flight request.
-   if(retry&&jobs.get(key)?.done&&!['available','manual'].includes(jobs.get(key).result?.status))jobs.delete(key);
+   if(retry&&jobs.get(key)?.done)jobs.delete(key);
    const old=jobs.get(key);
    if(old){
     if(!old.done){old.current.push(current);if(source!=='collection')old.background=false;}

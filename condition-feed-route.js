@@ -22,6 +22,8 @@ export function normalizeConditionVariants(body,product,printings,language='Engl
   const q={condition:v.condition,price,currency:'USD',source,kind:'provider-estimate',sku:String(v.tcgplayerSkuId||v.uuid||v.id||''),...(source==='TCGplayer'?{checkedAt:new Date(time).toISOString()}:{observedAt:new Date(time).toISOString()}),validUntil:new Date(cacheTime+86400000).toISOString(),priceStatus:lastKnown?'last_known':'current'};
   if(source==='TCGplayer'&&v.method==='public-web-test'){
    q.method=v.method;
+   q.priceType='market-reference';q.retrievalMethod='structured';
+   q.sourceUrl='https://www.tcgplayer.com/product/'+product+'?'+new URLSearchParams({Language:v.language,Printing:v.printing,Condition:v.condition});
    const calculated=Date.parse(v.calculatedAt);
    if(Number.isFinite(calculated)&&calculated<=time+300000)q.calculatedAt=new Date(calculated).toISOString();
   }

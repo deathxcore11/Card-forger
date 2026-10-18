@@ -71,5 +71,5 @@ export class ConditionPriceCache {
    return {status:'available',...data};
   }catch{return withSaved({status:'unavailable'});}
  }
- async alarm(){let count=0;for(const prefix of ['product:','tcg-product:','tcg-catalog:','tcg-web-product:','tcg-web-catalog:']){const rows=await this.storage.list({prefix});for(const [key,value] of rows){if(Date.now()-value.cachedAt>=(prefix.includes('catalog:')?7*DAY:RETAIN))await this.storage.delete(key);else count++;}}if(count)await this.storage.setAlarm(Date.now()+DAY);}
+ async alarm(){let count=0;for(const prefix of ['product:','tcg-product:','tcg-catalog:','tcg-web-product:','tcg-web-catalog:','tcg-web-failure:']){const rows=await this.storage.list({prefix});for(const [key,value] of rows){if(Date.now()-value.cachedAt>=(prefix==='tcg-web-failure:'?60000:prefix.includes('catalog:')?7*DAY:RETAIN))await this.storage.delete(key);else count++;}}if(count)await this.storage.setAlarm(Date.now()+DAY);}
 }

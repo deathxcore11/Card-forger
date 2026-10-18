@@ -40,7 +40,9 @@ export class TcgplayerConditionSource {
  }
  async http(path,options,owner){
   await this.reserve(owner);
-  let r;try{r=await fetch(API+path,{...options,redirect:'error',signal:AbortSignal.timeout(8000)});}catch{throw failure();}
+  // Workers supports manual/follow only. Reject returned redirects below so
+  // authorization headers can never be forwarded to a different destination.
+  let r;try{r=await fetch(API+path,{...options,redirect:'manual',signal:AbortSignal.timeout(8000)});}catch{throw failure();}
   if([401,403,429].includes(r.status)){
    const now=Date.now(),header=r.headers.get('Retry-After'),seconds=header?.trim()?Number(header):NaN;
    const delay=Number.isFinite(seconds)?seconds*1000:header?Date.parse(header)-now:NaN;

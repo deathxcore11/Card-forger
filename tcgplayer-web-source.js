@@ -29,7 +29,9 @@ export class TcgplayerWebSource extends TcgplayerConditionSource {
  async webRequest(url,options,owner){
   await this.reserve(owner);
   const step=url===PRICES?'prices':'catalog';
-  let r;try{r=await fetch(url,{...options,headers:{Accept:'application/json',...options?.headers},credentials:'omit',redirect:'error',signal:AbortSignal.timeout(8000)});}catch{throw failure('tcgplayer_web_error',{webDiagnostic:{step,result:'network'}});}
+  // Workers rejects redirect:'error' before sending a request. Manual mode
+  // returns redirects unchanged; the non-2xx guard below still rejects them.
+  let r;try{r=await fetch(url,{...options,headers:{Accept:'application/json',...options?.headers},credentials:'omit',redirect:'manual',signal:AbortSignal.timeout(8000)});}catch{throw failure('tcgplayer_web_error',{webDiagnostic:{step,result:'network'}});}
   if([401,403,429].includes(r.status)){
    const now=Date.now(),header=r.headers.get('Retry-After'),seconds=header?.trim()?Number(header):NaN;
    const advised=Number.isFinite(seconds)?seconds*1000:header?Date.parse(header)-now:NaN;
@@ -58,6 +60,9 @@ export class TcgplayerWebSource extends TcgplayerConditionSource {
   if(!validId(product)||![1,2,3].includes(Number(category)))return {status:'unmapped'};
   const key='tcg-web-product:'+product,now=Date.now(),old=await this.storage.get(key);
   if(old?.category===Number(category)&&now-old.cachedAt<DAY)return {status:'available',...old};
+  const failureKey='tcg-web-failure:'+product,recent=await this.storage.get(failureKey);
+  const withSaved=result=>old?.category===Number(category)&&now-old.cachedAt<RETAIN?{...result,...old,stale:true,complete:false}:result;
+  if(recent?.category===Number(category)&&recent.nextRetryAt>now)return withSaved(recent.result);
   try{
    const catalog=await this.webCatalog(product,owner);
    if(Number(catalog.productLineId)!==Number(category))return {status:'unmapped'};
@@ -68,10 +73,17 @@ export class TcgplayerWebSource extends TcgplayerConditionSource {
    }
    const checkedAt=Date.now(),{variants,complete}=webConditionVariants(product,catalog,prices,checkedAt);
    const data={category:Number(category),cachedAt:checkedAt,complete,source:'TCGplayer',method:'public-web-test',data:[{tcgplayerId:String(product),variants}]};
-   await this.storage.put(key,data);return {status:'available',...data};
+   await this.storage.put(key,data);await this.storage.delete(failureKey);return {status:'available',...data};
   }catch(error){
    const result=['app_budget','tcgplayer_rate','tcgplayer_auth','tcgplayer_web_access','tcgplayer_web_error'].includes(error?.reason)?error:failure();
-   return old?.category===Number(category)&&now-old.cachedAt<RETAIN?{...result,...old,stale:true,complete:false}:result;
+   if(result.reason==='tcgplayer_web_error'){
+    // Share a short failure result too: repeated visitors must not exhaust the
+    // allowance while a source is unavailable. This never clears provider pauses.
+    Object.assign(result,{retryAfterMs:60000,nextRetryAt:Date.now()+60000});
+    await this.storage.put(failureKey,{category:Number(category),cachedAt:Date.now(),nextRetryAt:result.nextRetryAt,result});
+    if(!await this.storage.getAlarm())await this.storage.setAlarm(Date.now()+DAY);
+   }
+   return withSaved(result);
   }
  }
 }

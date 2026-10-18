@@ -19,7 +19,7 @@ async function limitedFetch(fetcher,...args){
  try{const [url,options]=args;return await fetcher(url,{...options,signal:AbortSignal.timeout(15000)});}finally{active--;waiting.shift()?.();}
 }
 export function conditionRequest(card,entry,game){
- if(!card?.id)return null;
+ if(!card?.id||entry.graded)return null;
  if(game==='mtg' && entry.printingVerified && entry.printingId!==card.id)return null;
  const params=new URLSearchParams({game,id:String(card.id)});
  for(const key of ['variant','printing','rarity','edition','finish','language'])if(entry[key])params.set(key,entry[key]);

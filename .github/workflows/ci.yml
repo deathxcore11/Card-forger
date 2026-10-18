@@ -5,6 +5,19 @@ on:
   pull_request:
 
 jobs:
+  pricing-worker-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install pinned Workers runtime test harness
+        run: npm install --no-save --package-lock=false miniflare@4.20260730.0
+      - name: Reproduce and guard condition pricing in the actual runtime
+        run: node tests/condition-worker-runtime.mjs
   deployment-verifier:
     runs-on: ubuntu-latest
     steps:

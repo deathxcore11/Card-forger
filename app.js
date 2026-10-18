@@ -1386,7 +1386,7 @@ async function cardQuickMenu(t) {
   const lots=quickCardLots(ref,st.collection);ref.selectedLot=lots.some(e=>e.id===ref.selectedLot)?ref.selectedLot:lots.some(e=>e.id===ref.dataset.entry)?ref.dataset.entry:lots.length===1?lots[0].id:null;
   if(ref.selectedLot)ref.dataset.entry=ref.selectedLot;
   const wished = st.wishlist.some(w => ref.game === "mtg" ? key(w.name) === key(ref.card.name) : w.cardId === ref.card.id);
-  openSheet(`<div class="sheet-head"><h2>Card actions</h2><button class="icon" data-act="closeSheet" aria-label="Close">${actionIcon("close")}</button></div><div class="quick-card-heading">${artworkHTML(ref.card,"quick-card-thumb")}<div><b>${esc(ref.card.name)}</b><small>${esc(ref.card.set_name || ref.card.set?.name || ref.card.typeLine || "")}</small></div></div>${cardActionButtons({game:ref.game,wished,existing:lots.length>0,quantityHtml:quickQuantity(lots,ref.selectedLot,ref.qtyBusy),second:comparison.active && comparison.cards.length>0})}<div class="quick-art-actions"><button class="btn ghost" data-act="quickArtwork">Use artwork as…</button></div>`,{type:"card-actions",game:ref.game,id:ref.card.id,setId:ref.setId||"",setMembership:ref.setMembership,setVariant:ref.setVariant,priceEdition:ref.priceEdition,priceYgoEdition:ref.priceYgoEdition});
+  openSheet(`<div class="sheet-head"><h2>Card actions</h2><button class="icon" data-act="closeSheet" aria-label="Close">${actionIcon("close")}</button></div><div class="quick-card-heading">${artworkHTML(ref.card,"quick-card-thumb")}<div><b>${esc(ref.card.name)}</b><small>${esc(ref.card.set_name || ref.card.set?.name || ref.card.typeLine || "")}</small></div></div>${cardActionButtons({game:ref.game,wished,existing:lots.length>0,quantityHtml:quickQuantity(lots,ref.selectedLot,ref.qtyBusy),second:comparison.active && comparison.cards.length>0})}<div class="quick-art-actions">${lots.length?`<button class="btn ghost" data-act="quickPriceRefresh" ${!ref.selectedLot||ref.priceBusy?'disabled':''}>${ref.priceBusy?'Checking price…':'Refresh price'}</button>`:''}<button class="btn ghost" data-act="quickArtwork">Use artwork as…</button></div>`,{type:"card-actions",game:ref.game,id:ref.card.id,setId:ref.setId||"",setMembership:ref.setMembership,setVariant:ref.setVariant,priceEdition:ref.priceEdition,priceYgoEdition:ref.priceYgoEdition});
 }
 // Hold a deck or binder tile for its quick actions, the same gesture as holding a card.
 // Every action is also reachable inside the deck or binder; this is a shortcut, not a hiding place.
@@ -1465,6 +1465,19 @@ function registerCardMenus() {
     const selectedLot=ref.selectedLot;
     await commit(state=>{const st=ref.game==='mtg'?state:state.tcg[ref.game],e=quickCardLots(ref,st.collection).find(x=>x.id===selectedLot);if(e){e.manualValue=value;e.manualValueCondition=conditionName(e.condition);}}, {undo:'Updated this copy’s value.'});
     if(quickCard===ref)await cardQuickMenu({quickRef:ref});
+  };
+  A.quickPriceRefresh=async()=>{
+    const ref=quickCard;if(!ref||ref.priceBusy||ref.game!==T.game())return;
+    const lot=quickCardLots(ref,(ref.game==='mtg'?S.state:T.gs(ref.game)).collection).find(e=>e.id===ref.selectedLot);
+    if(!lot)return toast('Choose a saved copy first.');
+    const card=conditionCardFor(lot,ref.game);if(!card)return toast('Open the exact printing before checking its price.');
+    ref.priceBusy=true;await cardQuickMenu({quickRef:ref});
+    try{
+      const result=await fetchConditionValue(card,lot,ref.game,null,{source:'explicit',retry:true,current:()=>quickCard===ref&&T.game()===ref.game});
+      if(quickCard!==ref||T.game()!==ref.game)return;
+      const quote=conditionValue(null,{...lot,manualValue:null},[...(card.conditionQuotes||[]),...(lot.conditionQuotes||[])]);
+      toast(result.status==='deferred'&&result.reason==='offline'?'You are offline. Saved prices are still available.':quote.kind==='condition-quote'?'Price checked. Your own value is kept if set.':'No matching price returned. Saved values are kept.');
+    }finally{ref.priceBusy=false;if(quickCard===ref&&S.ui.sheetCtx?.type==='card-actions')await cardQuickMenu({quickRef:ref});}
   };
   A.quickOwn = () => {
     if (!quickCard || quickCard.game !== T.game()) return;
@@ -1622,8 +1635,8 @@ function fetchConditionValue(card,entry,game,done,options={}){
  const identityMatches=q=>CONDITION_IDENTITY.every(k=>String(q[k]||'')===String(selected[k]||''));
  const cached=[...new Map([...(card.conditionQuotes||[]),...(selected.conditionQuotes||[])].filter(identityMatches).map(q=>[JSON.stringify(q),q])).values()];
  const value=conditionValue(null,selected,cached);
- if(value.kind==='manual')return Promise.resolve({changed:false,status:'manual'});
- const request=value.kind==='condition-quote'?Promise.resolve({changed:false,status:'available',rawQuotes:cached,reused:true}):
+ if(value.kind==='manual'&&!options.retry)return Promise.resolve({changed:false,status:'manual'});
+ const request=value.kind==='condition-quote'&&!options.retry?Promise.resolve({changed:false,status:'available',rawQuotes:cached,reused:true}):
   conditionScheduler.request(conditionRequest(card,selected,game),()=>{
    if(!conditionSelectionAllowed(card,selected,game))return {changed:false,status:'deferred',reason:'unverified-selection'};
    if(options.retry)forgetConditionAttempt(conditionRequest(card,selected,game));
@@ -1731,7 +1744,7 @@ function refreshConditionPrice(retry=false){
  let entry,price,sourceCard,sourceGame,reference=null,referenceLabel='Reference price';
  if(ctx.type==='tadd'){
   const game=ctx.game;if(!['ptcg','ygo'].includes(game)||game!==T.game())return;const card=contextTcgCard(game,ctx.id,ctx),pr=$("#tPrint")?.value||'',[printing,rarity]=game==='ygo'?pr.split('|'):['',''];
-  entry={cardId:card?.id,...(ctx.setId?{setReleaseId:ctx.setId}:{}),condition:$("#tCond")?.value,variant:game==='ptcg'?pr:'',printing:printing||'',rarity:rarity||'',edition:$("#tEdition")?.value||'',manualValue,manualValueCondition:conditionName($("#tCond")?.value)};
+  entry={cardId:card?.id,...(ctx.setId?{setReleaseId:ctx.setId}:{}),condition:$("#tCond")?.value,language:$("#tLanguage")?.value||'en',variant:game==='ptcg'?pr:'',printing:printing||'',rarity:rarity||'',edition:$("#tEdition")?.value||'',manualValue,manualValueCondition:conditionName($("#tCond")?.value)};
   const exact = !ctx.setId || (card?.setContext?.status === 'resolved' && (game !== 'ygo' || card.setContext.printings.filter(p=>p.code===printing&&p.rarity===rarity&&!p.releasePriceAmbiguous).length === 1 && (T.cardOf(game,ctx.id)?.sets||[]).filter(p=>p.code===printing&&p.rarity===rarity).length === 1));
   price=exact?T.entryPrice(card,entry):conditionValue(null,entry,[]).price;
   if(exact){sourceCard=card;sourceGame=game;
@@ -1762,7 +1775,7 @@ function refreshConditionPrice(retry=false){
  }
 }
 A.retryConditionPrice=()=>refreshConditionPrice(true);
-document.addEventListener("change",e=>{if(e.target.matches?.("#addCondition,#addFinish,#addLanguage,#tCond,#tPrint,#tEdition")){for(const n of document.querySelectorAll("#lotManualValue,#quickLotValue"))n.value="";refreshConditionPrice();}});
+document.addEventListener("change",e=>{if(e.target.matches?.("#addCondition,#addFinish,#addLanguage,#tCond,#tPrint,#tEdition,#tLanguage")){for(const n of document.querySelectorAll("#lotManualValue,#quickLotValue"))n.value="";refreshConditionPrice();}});
 document.addEventListener("input",e=>{if(e.target.matches?.('#addSet,#addNumber')){if($('#lotManualValue'))$('#lotManualValue').value='';refreshConditionPrice();}else if(e.target.id==='lotManualValue')refreshConditionPrice();});
 document.addEventListener("submit",e=>{
  const form=e.target.closest?.('[data-auth-action]');if(!form)return;

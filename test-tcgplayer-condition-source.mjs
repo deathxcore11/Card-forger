@@ -16,7 +16,7 @@ function fixture({partial=false,tcgFailure=0,backupFailure=false,wrongCategory=f
  const calls=[];globalThis.fetch=async(url,opts={})=>{
   calls.push({url,method:opts.method||'GET'});
   if(url.includes('api.justtcg.com'))return backupFailure?Response.json({code:'EXCESSIVE_FREE_TIER_USAGE'},{status:429,headers:{'Retry-After':'60'}}):Response.json({data:[{tcgplayerId:89828,variants:conditions.map((condition,i)=>({condition,printing:backupPrinting,language:'English',price:20-i,priceStatus:'current',lastUpdated:Math.floor(now/1000)}))}]});
-  assert(url.startsWith('https://api.tcgplayer.com/'));assert.equal(opts.redirect,'error');
+  assert(url.startsWith('https://api.tcgplayer.com/'));assert.equal(opts.redirect,'manual');
   if(url.endsWith('/token')){assert.equal(new URLSearchParams(opts.body).get('client_secret'),'synthetic-private');return Response.json({access_token:'synthetic-token',expires_in:3600});}
   assert.equal(opts.headers.Authorization,'Bearer synthetic-token');
   if(tcgFailure)return Response.json({rawSecret:'must never escape'},{status:tcgFailure,headers:{'Retry-After':'120'}});

@@ -830,6 +830,7 @@ export function tcgAddSheet(c, preset = "", presetEdition = "") {
   <div class="grid2">
     <label>Copies<input id="tQty" type="number" min="1" max="999" value="1"></label>
     <label>Condition<select id="tCond" aria-label="Condition">${options(["Near Mint", "Lightly Played", "Moderately Played", "Heavily Played", "Damaged"].map((x) => [x, x]), "Near Mint")}</select></label>
+    <label class="span2">Language<select id="tLanguage">${options([["en","English"],["ja","Japanese"],["de","German"],["fr","French"],["es","Spanish"],["it","Italian"],["pt","Portuguese"],["ko","Korean"],["zh","Chinese"]],c.lang||c.language||"en")}</select></label>
     ${opts.length ? `<label class="span2">${g === "ygo" ? "Printing (set code · rarity)" : "Version"}<select id="tPrint">${options([["", g === "ygo" ? "Not sure / any printing" : "Not sure"], ...opts], opts.some((o) => o[0] === preset) ? preset : "")}</select></label>` : ""}
     ${g === "ygo" ? `<label class="span2">Edition<select id="tEdition">${options([["", "Not sure"], ["1st-edition", "First Edition"], ["unlimited", "Unlimited"], ["limited", "Limited Edition"]], ["1st-edition","unlimited","limited"].includes(presetEdition)?presetEdition:"")}</select></label><p class="foot span2">Set prices do not distinguish editions. An edition-specific value stays unknown; verify it with the seller.</p>` : `<p class="foot span2">Versions without a price are still collectible. The source image may represent a different edition; confirm stamps and borders yourself.</p>`}
     ${locationPicker(S.state,g,"tLoc")}
@@ -2448,7 +2449,7 @@ export function registerTcg(c) {
     const card=cardOf(G,t.dataset.id);if(!card)return toast('This card is no longer available. Reopen it and try again.');
     const qty=Math.max(1,Math.min(999,Math.floor(Number(document.querySelector('#tQty')?.value)||1))),pr=document.querySelector('#tPrint')?.value||'',
       [printing,rarity]=G==='ygo'&&pr?pr.split('|'):['',''],edition=G==='ygo'?document.querySelector('#tEdition')?.value||'':'',
-      variantLabel=G==='ptcg'?card.variants?.find(v=>v.key===pr)?.label||pr:'',condition=document.querySelector('#tCond')?.value||'Near Mint',
+      variantLabel=G==='ptcg'?card.variants?.find(v=>v.key===pr)?.label||pr:'',condition=document.querySelector('#tCond')?.value||'Near Mint',language=document.querySelector('#tLanguage')?.value||'en',
       locationName=document.querySelector('#tLoc')?.value||'',createBinder=document.querySelector('#tLocPicker')?.value==='binder:new',
       setId=t.dataset.setId||sheet.setId||'',contextual=setId||sheet.setReleaseUnverified?setContextCard(G,card,setId,G==='ygo'?currentYgoCatalogue():ui(G).sets.list,{unverifiedRelease:!!sheet.setReleaseUnverified}):null;
     if(setId!==sheet.setId)return toast('The selected release changed. Reopen Add to collection.');
@@ -2458,7 +2459,7 @@ export function registerTcg(c) {
     try{
     const saved=await mutate((st,state)=>{
       const location=rememberLocation(state,G,locationName,{createBinder});
-      addCollectionEntry(st.collection,G,{id:uid(),cardId:card.id,name:card.name,key:SOURCES[G].ownKey(card),qty,printing,rarity,edition,setReleaseId,setReleaseUnverified,variantLabel,variant:G==='ptcg'?pr:'',manualValue,manualValueCondition:conditionName(condition),condition,location,addedAt:new Date().toISOString()});
+      addCollectionEntry(st.collection,G,{id:uid(),cardId:card.id,name:card.name,key:SOURCES[G].ownKey(card),qty,printing,rarity,edition,setReleaseId,setReleaseUnverified,variantLabel,variant:G==='ptcg'?pr:'',manualValue,manualValueCondition:conditionName(condition),condition,language,location,addedAt:new Date().toISOString()});
       return true;
     },{msg:`Added ${qty}× ${card.name}.`,guard:()=>S.ui.sheetCtx===sheet&&g()===G&&!completedOwnSaves.has(sheet)});
     if(saved){completedOwnSaves.add(sheet);if(S.ui.sheetCtx===sheet)closeSheet();}

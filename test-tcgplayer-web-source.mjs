@@ -18,7 +18,7 @@ function fixture({catalogue=catalog,quoteRows=prices,status=200,backupFails=fals
  const calls=[];globalThis.fetch=async(url,opts={})=>{
   calls.push({url,opts});
   if(url.includes('api.justtcg.com'))return backupFails?Response.json({code:'EXCESSIVE_FREE_TIER_USAGE'},{status:429,headers:{'Retry-After':'3600'}}):Response.json({data:[{tcgplayerId:250317,variants:conditions.map((condition,i)=>({condition,printing:'Holofoil',language:'English',price:20+i,priceStatus:'current',lastUpdated:Math.floor(now/1000)}))}]});
-  assert.equal(opts.credentials,'omit');assert.equal(opts.redirect,'error');assert(!opts.headers.Authorization&&!opts.headers.Cookie&&!opts.headers['x-api-key']);
+  assert.equal(opts.credentials,'omit');assert.equal(opts.redirect,'manual');assert(!opts.headers.Authorization&&!opts.headers.Cookie&&!opts.headers['x-api-key']);
   if(status!==200)return Response.json({privateDiagnostic:'do not expose'},{status,headers:{'Retry-After':'120'}});
   if(html)return new Response('<html>Access check</html>',{headers:{'Content-Type':'text/html'}});
   if(url==='https://mp-search-api.tcgplayer.com/v2/product/250317/details')return Response.json(catalogue);
@@ -30,6 +30,8 @@ try{
  const s=storage(),calls=fixture(),cache=new ConditionPriceCache({storage:s},env);
  const results=await Promise.all(Array.from({length:8},()=>call(cache)));assert.equal(calls.length,2,'Concurrent viewers share one catalog and one all-condition batch');
  const q=normalizeConditionVariants(results[0],250317,['Holofoil'],'English');assert.equal(q.length,5);assert.deepEqual(q.map(v=>v.price),[1,1.3,1.6,1.9,2.2]);assert(q.every(v=>v.method==='public-web-test'&&v.calculatedAt===prices[0].calculatedAt&&!v.observedAt));
+ assert(q.every(v=>v.priceType==='market-reference'&&v.retrievalMethod==='structured'));
+ const sourceURL=new URL(q[1].sourceUrl);assert.equal(sourceURL.pathname,'/product/250317');assert.equal(sourceURL.searchParams.get('Language'),'English');assert.equal(sourceURL.searchParams.get('Printing'),'Holofoil');assert.equal(sourceURL.searchParams.get('Condition'),'Lightly Played');
  assert.equal(normalizeConditionVariants(results[0],250317,['Holofoil'],'Japanese').at(-1).price,0);assert.equal(normalizeConditionVariants(results[0],250317,['Foil'],'English').length,0);
  await call(new ConditionPriceCache({storage:s},env));assert.equal(calls.length,2,'Durable prices survive isolate restart');assert(!JSON.stringify(s.rows.get('tcg-web-catalog:250317')).includes('marketPrice'),'Product-wide market price is not persisted as a condition quote');
  const card={id:'cel25-22'},entry={cardId:card.id,variant:'holofoil',condition:'Moderately Played',language:'English'};applyConditionQuotes(card,entry,q);assert.equal(conditionValue(null,entry,card.conditionQuotes).price,1.6);assert.equal(conditionValue(null,{...entry,language:'Japanese'},card.conditionQuotes).price,null);
@@ -42,7 +44,9 @@ try{
  for(const row of badCases)assert.equal(webConditionVariants(250317,{...catalog,skus:[catalog.skus[0]]},[row],now).variants.length,0);
  assert.equal(webConditionVariants(250317,{...catalog,skus:[catalog.skus[0]]},[prices[0],prices[0]],now).variants.length,0);assert.equal(webConditionVariants(250317,{...catalog,skus:[catalog.skus[0],catalog.skus[0]]},[prices[0]],now).variants.length,0);
  const wrongCalls=fixture({catalogue:{...catalog,productLineId:1}});assert.equal((await call(new ConditionPriceCache({storage:storage()},env))).status,'unmapped');assert.equal(wrongCalls.length,1,'Wrong game cannot borrow fallback prices');
- const htmlCalls=fixture({html:true});assert.equal((await new TcgplayerWebSource(storage(),env).load(250317,3)).status,'unavailable');assert.equal(htmlCalls.length,1);
+ const htmlCalls=fixture({html:true}),htmlStorage=storage();const htmlResult=await new TcgplayerWebSource(htmlStorage,env).load(250317,3);assert.equal(htmlResult.status,'unavailable');assert.equal(htmlCalls.length,1);
+ assert.equal((await new TcgplayerWebSource(htmlStorage,env).load(250317,3)).nextRetryAt,htmlResult.nextRetryAt);assert.equal(htmlCalls.length,1,'Failed content is shared across isolate restarts for one minute');
+ now+=60001;await new TcgplayerWebSource(htmlStorage,env).load(250317,3);assert.equal(htmlCalls.length,2,'A bounded explicit retry is possible after the failure expires');
  for(const status of [401,403,429]){
   const paused=storage(),requests=fixture({status}),reader=new TcgplayerWebSource(paused,env),first=await reader.load(250317,3,true);assert.equal(first.reason,status===429?'tcgplayer_rate':'tcgplayer_web_access');await reader.load(250317,3,true);assert.equal(requests.length,1,'Even owner honors provider refusal/cooldown');assert(!JSON.stringify(first).includes('privateDiagnostic'));
  }

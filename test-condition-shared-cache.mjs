@@ -7,7 +7,7 @@ import {conditionBuyLink,sellerModels} from './pricing-presentation.js';
 const day=86400000,now=Date.now(),observed=Math.floor((now-2*day)/1000);
 const raw={cachedAt:now-2*day,data:[{tcgplayerId:89828,variants:[{condition:'Moderately Played',printing:'Holofoil',language:'English',price:93.45,priceStatus:'current',lastUpdated:observed}]}]};
 const rows=new Map([['product:89828',raw],['usage',{blockedUntil:now+day,blockedReason:'provider_shared_limit'}]]);
-const storage={get:async k=>structuredClone(rows.get(k)),put:async(k,v)=>rows.set(k,structuredClone(v)),transaction:fn=>fn(storage),getAlarm:async()=>1,list:async()=>new Map([...rows].filter(([k])=>k.startsWith('product:'))),delete:async k=>rows.delete(k),setAlarm:async()=>{}};
+const storage={get:async k=>structuredClone(rows.get(k)),put:async(k,v)=>rows.set(k,structuredClone(v)),transaction:fn=>fn(storage),getAlarm:async()=>1,list:async({prefix})=>new Map([...rows].filter(([k])=>k.startsWith(prefix))),delete:async k=>rows.delete(k),setAlarm:async()=>{}};
 const previous=globalThis.fetch;let requests=0;
 try{
  globalThis.fetch=async()=>{requests++;throw Error('Cooldown must prevent upstream calls');};
