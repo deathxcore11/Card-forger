@@ -30,13 +30,15 @@ export function attachFinishPreview(root){
  const mounted=new Map(),watched=new Set(),cleanups=[];
  const on=(el,type,fn,options)=>{el?.addEventListener?.(type,fn,options);cleanups.push(()=>el?.removeEventListener?.(type,fn,options));};
  const visible=el=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&r.bottom>0&&r.top<(globalThis.innerHeight||Infinity)&&r.right>0&&r.left<(globalThis.innerWidth||Infinity);};
- const allowed=el=>finishEffectsOn()&&!reduced()&&!globalThis.document?.hidden&&finishEligible(el)&&el.isConnected!==false;
+ const foreground=el=>{const top=[...(globalThis.document?.querySelectorAll?.('dialog[open]')||[])].at(-1);return !top||top.contains(el);};
+ const allowed=el=>finishEffectsOn()&&!reduced()&&!globalThis.document?.hidden&&finishEligible(el)&&el.isConnected!==false&&foreground(el);
  const unmount=el=>{const m=mounted.get(el);if(m){ro?.unobserve(m.img);m.overlay.remove();mounted.delete(el);}};
  const size=el=>{
   const m=mounted.get(el);if(!m)return;
-  const {img,overlay,host}=m,box=containedImageBox(img.clientWidth,img.clientHeight,img.naturalWidth,img.naturalHeight);
+  const {img,overlay,host}=m,css=globalThis.getComputedStyle?.(img),px=v=>parseFloat(v)||0;
+  const left=px(css?.paddingLeft),top=px(css?.paddingTop),box=containedImageBox(img.clientWidth-left-px(css?.paddingRight),img.clientHeight-top-px(css?.paddingBottom),img.naturalWidth,img.naturalHeight);
   if(!box||img.hidden){if(!overlay.hidden)overlay.hidden=true;return;}
-  let x=img.offsetLeft||0,y=img.offsetTop||0,ancestor=img.offsetParent;
+  let x=(img.offsetLeft||0)+(img.clientLeft||0)+left,y=(img.offsetTop||0)+(img.clientTop||0)+top,ancestor=img.offsetParent;
   while(ancestor&&ancestor!==host){x+=ancestor.offsetLeft||0;y+=ancestor.offsetTop||0;ancestor=ancestor.offsetParent;}
   if(ancestor!==host){if(!overlay.hidden)overlay.hidden=true;return;}
   Object.assign(overlay.style,{left:`${x+box.left}px`,top:`${y+box.top}px`,width:`${box.width}px`,height:`${box.height}px`});if(overlay.hidden)overlay.hidden=false;
@@ -48,11 +50,13 @@ export function attachFinishPreview(root){
   if(mounted.has(el)){const old=mounted.get(el);if(old.model===el.dataset.finishModel&&old.overlay.isConnected)return size(el);unmount(el);}
   const img=el.querySelector?.('img'),host=el.dataset.finishSurface==='detail'?(el.querySelector('.cd-zoom')||el):el;
   if(!img||!img.complete||!img.naturalWidth||img.hidden)return;
-  const overlay=img.ownerDocument.createElement('span');overlay.className='finish-overlay';overlay.setAttribute('aria-hidden','true');
+  const overlay=img.ownerDocument.createElement('span');overlay.className='finish-overlay'+(el.dataset.finishSurface==='large'?' finish-auto':'');
+  if(el.dataset.finishSurface==='large'){const phase=String(p.printingId||'').split('').reduce((n,c)=>n+c.charCodeAt(0),0)%80;overlay.style.animationDelay=`-${phase/10}s`;}
+  overlay.setAttribute('aria-hidden','true');
   for(const l of p.layers){if(!FINISH_MASKS[l.mask])continue;const part=img.ownerDocument.createElement('span');part.className=`finish-layer finish-${l.material}`;part.style.clipPath=FINISH_MASKS[l.mask];overlay.append(part);}
   host.append(overlay);mounted.set(el,{img,host,overlay,model:el.dataset.finishModel});ro?.observe(img);size(el);
  };
- const io=typeof IntersectionObserver==='undefined'?null:new IntersectionObserver(entries=>{for(const x of entries){if(!x.isIntersecting)unmount(x.target);else if(x.target.dataset.finishSurface!=='large')mount(x.target);}}, {threshold:0});
+ const io=typeof IntersectionObserver==='undefined'?null:new IntersectionObserver(entries=>{for(const x of entries){if(!x.isIntersecting)unmount(x.target);else mount(x.target);}}, {threshold:0});
  let pending=false;
  const sync=()=>{
   pending=false;
@@ -60,7 +64,7 @@ export function attachFinishPreview(root){
   for(const el of root.querySelectorAll?.('[data-finish-surface]')||[]){
    if(!finishEligible(el))continue;
    if(!watched.has(el)){watched.add(el);io?.observe(el);}
-   if(el.dataset.finishSurface!=='large')mount(el);
+   mount(el);
   }
   for(const el of mounted.keys())if(!allowed(el))unmount(el);
  };
@@ -71,7 +75,8 @@ export function attachFinishPreview(root){
   for(const b of root.querySelectorAll?.('[data-finish-toggle]')||[]){b.setAttribute('aria-pressed',String(enabled));b.textContent=`Visual effects ${enabled?'on':'off'}`;}
   sync();
  });
- // Lightweight delegates only. No per-card motion listener or animation loop is installed.
+ // Visible large cards use a shared CSS light sweep. The existing detail tilt owns
+ // its light coordinates. No per-card JavaScript animation loop is installed.
  const interact=e=>{const el=e.target.closest?.('[data-finish-surface]');if(el)mount(el);};
  if(root.querySelectorAll&&globalThis.document){
   let interactionOn=false;
