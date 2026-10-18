@@ -34,7 +34,23 @@ try{
    await page.locator('[data-act="menu"]').click();await page.locator('#settingsTab-info').click();
    await page.locator('#infoQuery').fill('conditions');await page.locator('#info-collection summary').click();await page.locator('#info-collection [data-lesson="save"]').click();
    const tour=page.locator('.action-tour');await tour.waitFor();const guideHistory=await page.evaluate(()=>history.length);assert.equal(await tour.getAttribute('data-frame'),'0');
-   for(let n=1;n<5;n++){await tour.locator('[data-tour="frame"]').click();assert.equal(await tour.getAttribute('data-frame'),String(n));await page.frameLocator('.action-tour iframe').locator('.demo-main').waitFor();const fits=await page.frameLocator('.action-tour iframe').locator('.demo-main').evaluate(n=>n.scrollHeight<=n.clientHeight+2&&n.scrollWidth<=n.clientWidth+2);assert(fits,game+' sample action '+n+' must fit the preview');}
+   for(let n=1;n<5;n++){
+    await tour.locator('[data-tour="frame"]').click();assert.equal(await tour.getAttribute('data-frame'),String(n));
+    const preview=page.frameLocator('.action-tour iframe').locator('.demo-main');await preview.waitFor();
+    // Every step replaces the sandbox iframe. Visible HTML can precede its
+    // external stylesheet, image and font layout; measure the loaded frame.
+    const fit=await preview.evaluate(async node=>{
+     const doc=node.ownerDocument,win=doc.defaultView;let timer,loaded;
+     const ready=await Promise.race([
+      (async()=>{if(doc.readyState!=='complete')await new Promise(resolve=>{loaded=resolve;win.addEventListener('load',loaded,{once:true});});await doc.fonts.ready;await new Promise(resolve=>win.requestAnimationFrame(()=>win.requestAnimationFrame(resolve)));return true;})(),
+      new Promise(resolve=>{timer=win.setTimeout(()=>resolve(false),5000);})
+     ]);
+     win.clearTimeout(timer);if(loaded)win.removeEventListener('load',loaded);
+     return {ready,state:doc.readyState,fonts:doc.fonts.status,scrollHeight:node.scrollHeight,clientHeight:node.clientHeight,scrollWidth:node.scrollWidth,clientWidth:node.clientWidth};
+    });
+    assert(fit.ready,game+' sample action '+n+' preview resources must load: '+JSON.stringify(fit));
+    assert(fit.scrollHeight<=fit.clientHeight+2&&fit.scrollWidth<=fit.clientWidth+2,game+' sample action '+n+' must fit the preview: '+JSON.stringify(fit));
+   }
    assert.equal(await page.evaluate(()=>history.length),guideHistory,'Demo playback must not create browser history entries');
    const iframe=page.frameLocator('.action-tour iframe');assert.match(await iframe.locator('.demo-receipt').innerText(),/Added 2 copies/);assert.match(await iframe.locator('.demo-receipt').innerText(),/Lightly Played/);
    await tour.locator('[data-tour="replay"]').click();assert.equal(await tour.getAttribute('data-frame'),'0');

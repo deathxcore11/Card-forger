@@ -7,12 +7,12 @@ export function ruleHoverPosition(rect, size, viewport, pointer){
 }
 export function installRuleHover(root,resolve){
  const win=root.defaultView;if(!win)return ()=>{};
- let tip=null,anchor=null,timer=null,keyboard=false;
+ let tip=null,anchor=null,timer=null,keyboard=false,keyboardTip=false;
  const selector='[data-act="ruleHint"][data-game][data-rule]';
  const fine=()=>win.matchMedia?.('(any-hover: hover) and (any-pointer: fine)').matches;
  const button=target=>target?.closest?.(selector);
  const clearTimer=()=>{win.clearTimeout(timer);timer=null;};
- const close=()=>{clearTimer();if(anchor){const ids=(anchor.getAttribute('aria-describedby')||'').split(/\s+/).filter(id=>id&&id!=='rule-hover-tip');if(ids.length)anchor.setAttribute('aria-describedby',ids.join(' '));else anchor.removeAttribute('aria-describedby');}tip?.remove();tip=null;anchor=null;};
+ const close=()=>{clearTimer();if(anchor){const ids=(anchor.getAttribute('aria-describedby')||'').split(/\s+/).filter(id=>id&&id!=='rule-hover-tip');if(ids.length)anchor.setAttribute('aria-describedby',ids.join(' '));else anchor.removeAttribute('aria-describedby');}tip?.remove();tip=null;anchor=null;keyboardTip=false;};
  const position=pointer=>{if(!tip||!anchor)return;const p=ruleHoverPosition(anchor.getBoundingClientRect(),{width:tip.offsetWidth,height:tip.offsetHeight},{width:win.innerWidth,height:win.innerHeight},pointer);tip.style.left=p.left+'px';tip.style.top=p.top+'px';};
  const show=(target,pointer)=>{
   clearTimer();if(!target||root.querySelector('.rule-glass'))return;
@@ -22,7 +22,7 @@ export function installRuleHover(root,resolve){
    (target.closest('dialog')||root.body).append(tip);
    const ids=(target.getAttribute('aria-describedby')||'').split(/\s+/).filter(Boolean);target.setAttribute('aria-describedby',[...ids,tip.id].join(' '));
    try{tip.showPopover?.();}catch{} // Fixed portal remains usable in older browsers.
-  }position(pointer);
+  }keyboardTip=!pointer&&keyboard&&root.activeElement===target;position(pointer);
  };
  const leave=()=>{clearTimer();timer=win.setTimeout(close,140);};
  root.addEventListener('pointerover',e=>{if(e.pointerType==='touch'||!fine())return;if(tip?.contains(e.target)){clearTimer();return;}const target=button(e.target);if(target)show(target,{x:e.clientX,y:e.clientY});});
@@ -32,7 +32,17 @@ export function installRuleHover(root,resolve){
  root.addEventListener('keydown',e=>{if(e.key==='Tab')keyboard=true;if(e.key==='Escape'&&tip){close();e.preventDefault();e.stopImmediatePropagation();}},true);
  root.addEventListener('focusin',e=>{const target=button(e.target);if(keyboard&&target)show(target);});
  root.addEventListener('focusout',e=>{if(anchor===e.target)close();});
- root.addEventListener('scroll',e=>{if(!tip?.contains(e.target))close();},true);
+ root.addEventListener('scroll',e=>{
+  if(tip?.contains(e.target))return;
+  // Native Tab focus can queue a scroll after focusin already opened the preview.
+  // Keep only that still-focused keyboard preview anchored to its current position.
+  // Pointer previews still dismiss; Escape never reopens a removed preview.
+  if(tip&&keyboardTip&&anchor?.isConnected&&root.activeElement===anchor&&!anchor.closest('[hidden]')&&!anchor.closest('dialog:not([open])')){
+   const rect=anchor.getBoundingClientRect();
+   if(rect.bottom>0&&rect.top<win.innerHeight&&rect.right>0&&rect.left<win.innerWidth){position();return;}
+  }
+  close();
+ },true);
  root.addEventListener('close',close,true);root.addEventListener('cancel',close,true);
  win.addEventListener('resize',close);win.addEventListener('blur',close);
  root.addEventListener('visibilitychange',()=>{if(root.hidden)close();});

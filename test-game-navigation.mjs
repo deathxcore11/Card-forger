@@ -191,6 +191,27 @@ for(const reason of ['disk','scan','dialog','account']) {
  h.S.ui.sheetCtx={type:'own'};assert.equal(h.run('gameChangeBlocked({allowCardSheet:true})'),true);
  h.S.ui.sheetCtx={type:'card'};dialogs.push({id:'settingsDialog',matches:()=>false});assert.equal(h.run('gameChangeBlocked({allowCardSheet:true})'),true);
 }
+// Confirmed restore may originate inside Settings, without exempting any editor.
+for(const action of ['import','recovery','journal']) {
+ const h=workspaceHarness('mtg','#search'),c=h.c,next=structuredClone(h.S.state);next.settings.authorName='Confirmed '+action;
+ c.document.querySelectorAll=selector=>selector==='dialog[open]'?[{id:'settingsDialog',matches:()=>false},{matches:s=>s==='dialog.cf-dialog.closing'}]:[];
+ c.imported=next;h.disk.set('recovery',next);
+ if(action==='import')await c.C.restoreBackup({files:[{}]});else if(action==='recovery')await c.A.undoRestore();else await c.replaceWorkspace(next,{recovery:true,kind:'recovery-restore'});
+ assert.equal(h.S.state.settings.authorName,'Confirmed '+action);assert.equal(h.disk.get('workspace').settings.authorName,'Confirmed '+action);aligned(h);
+}
+for(const kind of ['replace','undo','cloud']) {
+ const h=workspaceHarness(),next=structuredClone(h.S.state);
+ h.c.document.querySelectorAll=selector=>selector==='dialog[open]'?[{id:'settingsDialog',matches:()=>false}]:[];
+ await assert.rejects(h.c.replaceWorkspace(next,{kind}),/current edit/);assert.equal(h.io.writes.length,0,'Generic navigation/adoption cannot bypass Settings');
+}
+for(const blocker of ['password','confirmPassword','editor','tour','scan'])for(const kind of ['restore','recovery-restore']) {
+ const h=workspaceHarness(),next=structuredClone(h.S.state),before=JSON.stringify(h.S.state);
+ h.c.document.querySelectorAll=selector=>selector==='dialog[open]'?[{id:'settingsDialog',matches:()=>false},...(blocker==='editor'?[{id:'deck-editor',matches:()=>false}]:[])]:[];
+ h.c.document.querySelector=selector=>blocker==='password'&&selector==='#resetPassword'||blocker==='confirmPassword'&&selector==='#resetConfirm'?{value:'unsaved-secret'}:blocker==='tour'&&selector==='.tour[open], .zoom-overlay, [role="dialog"]'?{}:null;
+ if(blocker==='scan')h.scanSaving(true);
+ await assert.rejects(h.c.replaceWorkspace(next,{kind}),blocker==='scan'?/saving your scans/:/current edit/);
+ assert.equal(h.io.writes.length,0);assert.equal(JSON.stringify(h.S.state),before,'Confirmed restore cannot bypass '+blocker);
+}
 // New user intent during adoption wins; old navigation writes cannot overwrite it.
 for(const fail of [false,true]) {
  const h=workspaceHarness('mtg','#set/source-only'),c=h.c,gate=deferred(),next=structuredClone(h.S.state);next.settings.game='ptcg';next.settings.authorName='Replacement';h.io.gate=gate;

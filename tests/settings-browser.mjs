@@ -47,7 +47,7 @@ try{
    await page.keyboard.press('End');assert.equal(await page.evaluate(()=>document.activeElement.id),'settingsTab-app');
    await page.keyboard.press('ArrowRight');assert.equal(await page.evaluate(()=>document.activeElement.id),'settingsTab-account');
    await page.keyboard.press('ArrowLeft');assert.equal(await page.evaluate(()=>document.activeElement.id),'settingsTab-app');
-   await page.locator('#settingsTab-info').click();assert(await page.locator('[data-act="replayTour"]').isVisible());
+   await page.locator('#settingsTab-info').click();assert(await page.locator('.settings-tour[data-act="replayTour"]').isVisible());
    await page.locator('#infoQuery').fill('scan');assert(await page.locator('#info-scan').isVisible());
    await page.locator('#settingsTab-app').click();assert(await page.locator('[data-act="resetOnboarding"]').isVisible());
    await page.locator('#settingsTheme-light').check();

@@ -283,7 +283,7 @@ function replaceWorkspace(next, { recovery = false, clearRecovery = false, stamp
     return true;
   });
 }
-async function commit(fn, { msg = "", recovery = false, rerender = true, enrich = true, undo = "", guard = null, navigationWrite = false, recordDeckWork = true, observeValue = true, scope = {account:accountGeneration,workspace:null} } = {}) {
+async function commit(fn, { msg = "", recovery = false, rerender = true, enrich = true, undo = "", guard = null, navigationWrite = false, recordDeckWork = true, observeValue = true, valueGames = null, scope = {account:accountGeneration,workspace:null} } = {}) {
   const accountTicket=scope.account;
   const scopeCurrent=()=>!accountLocked&&accountTicket===accountGeneration&&(navigationWrite||scope.workspace===null||scope.workspace===conditionWorkspaceRevision);
   const flight=typeof captureCollectionFlight==='function'&&/^Added\b/.test(msg||undo)?captureCollectionFlight(lastActTarget):null;
@@ -297,7 +297,7 @@ async function commit(fn, { msg = "", recovery = false, rerender = true, enrich 
     const next = structuredClone(stripCache(S.state));
     const out = fn(next);
     const valid = normalize(next);
-    if (valueHistoryReady && !navigationWrite && observeValue) trackValue(valid);
+    if (valueHistoryReady && !navigationWrite && observeValue) trackValue(valid, previous, valueGames);
     if (recordDeckWork && !navigationWrite) recordHomeDeckWork(previous, valid);
     valid.lastSavedAt = new Date().toISOString();
     const records = [[STORAGE, valid]];
@@ -1112,9 +1112,9 @@ const navigationStamp = () => ({ revision:navigation.revision, workspace:workspa
 const navigationCurrent = stamp => stamp.revision === navigation.revision && stamp.workspace === workspaceVisitRevision && stamp.game === T.game() && stamp.hash === location.hash;
 function rememberScroll() { if(activeEntry) { scrollMem.set(activeEntry.entryId,window.scrollY); if(scrollMem.size>100)scrollMem.delete(scrollMem.keys().next().value); } }
 function replaceEntry(entry) { history.replaceState({...history.state,cardstashy:entry},"",entry.route); }
-function gameChangeBlocked({allowCardSheet=false}={}) {
+function gameChangeBlocked({allowCardSheet=false,allowSettings=false}={}) {
   const chooser=S.ui.sheetCtx?.type === "game";
-  return !!document.querySelector('#resetPassword')?.value || !!document.querySelector('#resetConfirm')?.value || !!document.querySelector('.tour[open], .zoom-overlay, [role="dialog"]') || [...document.querySelectorAll('dialog[open]')].some(d => !(d.id === "sheet" && (chooser || allowCardSheet && ["card","tcard"].includes(S.ui.sheetCtx?.type))) && !d.matches?.("dialog.cf-dialog.closing"));
+  return !!document.querySelector('#resetPassword')?.value || !!document.querySelector('#resetConfirm')?.value || !!document.querySelector('.tour[open], .zoom-overlay, [role="dialog"]') || [...document.querySelectorAll('dialog[open]')].some(d => !(allowSettings && d.id === "settingsDialog") && !(d.id === "sheet" && (chooser || allowCardSheet && ["card","tcard"].includes(S.ui.sheetCtx?.type))) && !d.matches?.("dialog.cf-dialog.closing"));
 }
 function suspendGame(target, workspace = false, kind = "") {
   if(suspendedGame){
@@ -1194,7 +1194,9 @@ workspaceTransition = {
     // Legacy/blank workspaces intentionally omit game; resolve like T.game()
     // without adding or rewriting a saved setting during adoption.
     const source=activeEntry?.game || T.game(), target=GAMES[next.settings?.game] ? next.settings.game : "mtg";
-    if(gameChangeBlocked({allowCardSheet:kind==="undo"&&source===target}))throw Error("Close the current edit before replacing the workspace.");
+    // Confirmed restore actions originate in Settings, which is not an editor.
+    // Only those actions may retain that modal; passwords and other edits still block.
+    if(gameChangeBlocked({allowCardSheet:kind==="undo"&&source===target,allowSettings:kind==="restore"||kind==="recovery-restore"}))throw Error("Close the current edit before replacing the workspace.");
     if(!suspendGame(target,true,kind))throw Error("Finish saving your scans before replacing the workspace.");
     const ticket=navigation.pause(); workspaceVisitRevision++;
     const route=source===target ? {game:target,hash:activeEntry?.route || normalizeRoute(location.hash)} : gameSwitchRoute(gameContext(source),target);
@@ -1764,7 +1766,7 @@ async function refreshMagicCollectionPrices(force=false){
    result.committed=await write(s=>{
     for(const [id,fresh] of updated)if(s.printings?.[id])s.printings[id]={...fresh,conditionQuotes:s.printings[id].conditionQuotes||fresh.conditionQuotes};
     return true;
-   },{guard:current,rerender:false,enrich:false,recordDeckWork:false})===true;
+   },{guard:current,rerender:false,enrich:false,recordDeckWork:false,valueGames:["mtg"]})===true;
    result.cancelled=!current();
    if(!force&&result.committed&&current()&&S.ui.view==='collection')render();
   }
@@ -4010,7 +4012,7 @@ A.impVerify = async () => {
   }
 };
 A.impApply = async () => {
-  const commit=scopedCommit();
+  const scope=mutationScope(),commit=scopedCommit();
   if (!impDraft || impBusy) return;
   const rows = impDraft.lots.filter((e) => e.include !== false),
     mode = $("#impMode").value,
@@ -4018,7 +4020,7 @@ A.impApply = async () => {
   try {
     if (!sourceKey) throw Error("Give this import a source name.");
     if (mode === "replace-all" && !await ask("Replace your whole collection? A recovery copy is kept, but export a backup first.")) return;
-    await commit(
+    const saved = await commit(
       (s) => {
         const lots = rows.map((e) => {
           const { candidates, review, rawRows, include, ...lot } = e;
@@ -4032,12 +4034,12 @@ A.impApply = async () => {
       },
       { msg: `${sumQty(rows)} cards imported.`, recovery: mode === "replace-all" },
     );
+    if(saved===false||!mutationCurrent(scope))return;
     S.pendingPrintings = null;
-    trackValue();
     closeSheet();
     go("#collection/cards");
   } catch (e) {
-    $("#impError").textContent = e.message;
+    if(mutationCurrent(scope)&&$("#impError"))$("#impError").textContent = e.message;
   }
 };
 
@@ -4528,7 +4530,7 @@ A.acquire = () => acquireSheet("missing");
 A.deckBought = () => acquireSheet("purchase");
 A.acqAll = (t) => $$(".acq-check").forEach((c) => (c.checked = !!t.dataset.on));
 A.acqConfirm = async (t) => {
-  const commit=scopedCommit();
+  const scope=mutationScope(),commit=scopedCommit();
   const d = currentDeck(),
     done = busy(t, "Saving…");
   try {
@@ -4540,7 +4542,7 @@ A.acqConfirm = async (t) => {
       });
     if (!picked.length) throw Error("Tick the cards you have.");
     const extra = { finish: $("#acqFinish").value, condition: $("#acqCond").value, language: "en" };
-    await commit(
+    const saved = await commit(
       (s) => {
         for(const p of picked)p.location=rememberLocation(s,"mtg",p.location,{createBinder:$("#acqLocPicker")?.value === "binder:new"});
         if (acqMode === "purchase") {
@@ -4556,12 +4558,12 @@ A.acqConfirm = async (t) => {
       },
       { msg: `${sumQty(picked)} cards added to your collection.` },
     );
-    trackValue();
+    if(saved===false||!mutationCurrent(scope))return;
     closeSheet();
   } catch (e) {
-    $("#acqError").textContent = e.message;
+    if(mutationCurrent(scope)&&$("#acqError"))$("#acqError").textContent = e.message;
   } finally {
-    done();
+    if(mutationCurrent(scope))done();
   }
 };
 
@@ -5763,13 +5765,17 @@ async function storageDetail() {
    Boot
    ========================================================= */
 
-function trackValue(state = S.state) {
+function trackValue(state = S.state, previous = null, valueGames = null) {
   if (!valueHistoryReady || accountLocked) return;
   // A commit observes its validated draft, not the previous render's price map.
   // This is synchronous; restore the active workspace map before yielding.
   useMyPrices(state.myPrices);
   try {
-    for (const g of ["ptcg", "ygo"]) T.trackTcgValue(g, T.collectionValue(g, state), state);
+    // Only changed owned-value inputs produce an observation. Preferences,
+    // profile art, quote browsing and another game's edits are not price events.
+    const changed = (a,b) => JSON.stringify(a ?? null) !== JSON.stringify(b ?? null);
+    for (const g of ["ptcg", "ygo"]) if (valueGames?.includes(g) || previous && changed(previous.tcg?.[g]?.collection, state.tcg?.[g]?.collection)) T.trackTcgValue(g, T.collectionValue(g, state), state);
+    if (!valueGames?.includes("mtg") && (valueGames || previous && !changed(previous.collection,state.collection) && !changed(previous.myPrices,state.myPrices))) return;
     const v = collectionValue(state.collection, S.catalog, state.printings, []);
     if (!state.collection.length && !state.valueHistory?.length) return;
     state.valueHistory = recordValuePoint(state.valueHistory, v.total, v.copies, homeValueCoverage(v));
@@ -5784,7 +5790,7 @@ function scheduleValueObservation() {
   if(valueHistories(next)===valueHistories(S.state))return;
   const write=scopedCommit();valueObservationPending=true;
   // Existing account/workspace transaction boundary owns the save. No render writes.
-  safely(write(()=>{}, {enrich:false,recordDeckWork:false}).finally(()=>{valueObservationPending=false;}));
+  safely(write(()=>{}, {enrich:false,recordDeckWork:false,valueGames:["mtg"]}).finally(()=>{valueObservationPending=false;}));
 }
 function importReadyValueHistory() {
   if(!valueHistoryReady || accountLocked)return;

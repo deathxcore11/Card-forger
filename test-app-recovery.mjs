@@ -67,3 +67,33 @@ function harness(){
 }
 const renderStart=src.indexOf('function render() {');assert(!src.slice(renderStart,src.indexOf('\nfunction ',renderStart+1)).includes('scheduleValueObservation();'),'render must not dirty account with cached price history');
 console.log('PASS: actual app Recovery journal/restore/download hooks, atomic failure, delayed owner/queue guards, private account scope, legacy restore sync, and no history-on-render writes.');
+
+// Exercise actual import/acquire handlers after their async scoped save resolves.
+// A canceled save must not mutate a replacement workspace's history or draft,
+// close its sheet, navigate it, or update its unrelated busy/error controls.
+for(const action of ['impApply','acqConfirm'])for(const outcome of ['success','false','account','workspace','account-error']){
+ const gate=deferred(),started=deferred(),events=[],errors={textContent:''};
+ const c={A:{},S:{state:{collection:[],decks:[],printings:{}},pendingPrintings:{original:true}},accountGeneration:1,conditionWorkspaceRevision:1,accountLocked:false,
+  impDraft:{lots:[{name:'Fixture',qty:2}],hash:'fixture'},impBusy:false,acqMode:'purchase',
+  $:selector=>selector.endsWith('Error')?errors:selector.startsWith('.acq-qty')?{dataset:{name:'Fixture'},value:'2'}:{value:({'#impMode':'append','#impSource':'fixture','#acqLoc':'Binder','#acqFinish':'nonfoil','#acqCond':'Near Mint'})[selector]||''},
+  $$:()=>[{checked:true,dataset:{i:'0'}}],currentDeck:()=>({id:'deck'}),busy:()=>()=>events.push('done'),
+  sumQty:rows=>rows.reduce((n,row)=>n+row.qty,0),uid:()=> 'lot',applyImport:(_old,draft)=>draft.lots,rememberLocation:(_s,_g,loc)=>loc,meta:()=>true,
+  trackValue:()=>events.push('history'),closeSheet:()=>events.push('close'),go:()=>events.push('navigate'),ask:async()=>true,
+  commit:async(fn,opts)=>{started.resolve();await gate.promise;if(outcome==='account-error')throw Error('Old request failed');if(outcome==='false'||opts.scope.account!==c.accountGeneration||opts.scope.workspace!==c.conditionWorkspaceRevision)return false;fn(c.S.state);return undefined;}};
+ vm.createContext(c);vm.runInContext(mutationGuards+'\n'+between('function scopedCommit(){','commit.scoped=scopedCommit;')+'\n'+between('A.'+action+' = async ', '\n};')+'\n};',c);
+ const run=c.A[action]({});await started.promise;
+ if(outcome.startsWith('account'))c.accountGeneration++;
+ if(outcome==='workspace')c.conditionWorkspaceRevision++;
+ if(outcome.startsWith('account')||outcome==='workspace')c.S={state:{collection:[{id:'replacement',qty:7}],decks:[],valueHistory:[{total:42}]},pendingPrintings:{replacement:true}};
+ const before=structuredClone(c.S);gate.resolve();await run;
+ if(outcome==='success'){
+  assert.equal(c.S.state.collection[0].qty,2,action+' applies its actual owned-lot mutation');
+  assert(events.includes('close'));assert.equal(events.includes('navigate'),action==='impApply');
+  assert(!events.includes('history'),'commit, not an unguarded post-save hook, owns history');
+ }else{
+  assert.deepEqual(c.S,before,action+' '+outcome+' leaves replacement state and draft unchanged');
+  assert(!events.includes('close'));assert(!events.includes('navigate'));assert(!events.includes('history'));assert.equal(errors.textContent,'');
+  if(outcome!=='false')assert(!events.includes('done'),'stale busy cleanup cannot touch replacement UI');
+ }
+}
+console.log('PASS: actual Magic import/acquire success and delayed canceled/account/workspace/error completions preserve replacement data, history, drafts and UI.');

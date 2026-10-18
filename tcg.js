@@ -2542,9 +2542,9 @@ export function registerTcg(c) {
       if(!current()||r.cancelled)return;
       if(!r.total)return toast("No cards to refresh.");
       if(r.refreshed){
-        // The shared commit hook records all game histories on the guarded
+        // The shared commit hook records this game history on the guarded
         // workspace copy; a rendered page is not a persistence boundary.
-        const saved=await write(()=>true,{guard:current,rerender:false,enrich:false,recordDeckWork:false});
+        const saved=await write(()=>true,{guard:current,rerender:false,enrich:false,recordDeckWork:false,valueGames:[G]});
         if(!current()||saved!==true)return;
         render();
         toast(`Price data refreshed for ${r.refreshed} ${r.refreshed===1?'card':'cards'}.${r.failed?` ${r.failed} ${r.failed===1?'lookup':'lookups'} failed; saved prices were kept.`:''}`);

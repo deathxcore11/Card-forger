@@ -45,7 +45,7 @@ async function seed(page,game,artUrl){
  }
  side.collection=f.collection;side.valueHistory=f.history;
  localStorage.setItem('cardstashy-meta-trend-v1',JSON.stringify({[game]:[{at:Date.now(),pct:{}}]}));
- window.__valueFixture={...f,game};
+ window.__valueFixture={...structuredClone(f),game};
  return f.expected;
 },{game,artUrl,f});}
 async function layout(page,label){await noOverflow(page,'#content',label,true);return page.evaluate(()=>{

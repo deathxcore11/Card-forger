@@ -73,7 +73,7 @@ for(const interruption of ['account','workspace','game','navigation','lock']){
  const h=harness('magic',state),running=h.action();
  h.S.state.printings.a.conditionQuotes=[{condition:'Lightly Played',price:3}];
  finishMagic(h,0,[card('a',{prices:{usd:'12'}}),card('split',{name:'Front // Back',card_faces:[{name:'Front'},{name:'Back'}]})]);await running;
- assert.equal(h.writes.length,1);assert.equal(h.S.state.printings.a.prices.usd,'12');assert.equal(h.S.state.printings.b.prices.usd,'22');
+ assert.equal(h.writes.length,1);assert.equal(h.S.state.printings.a.prices.usd,'12');assert.deepEqual(Array.from(h.writes[0].options.valueGames),['mtg'],'Explicit Magic refresh observes only Magic');assert.equal(h.S.state.printings.b.prices.usd,'22');
  assert.equal(h.S.state.printings.a.conditionQuotes[0].price,3,'Refresh preserves newer condition quotes');
  assert.equal(h.S.state.collection[0].manualValue,7);assert.equal(h.S.state.myPrices['a:nonfoil'].price,7);
  assert.equal(h.catalog.front.id,'split','Unknown names retain exact-name/face aliases');
@@ -128,7 +128,7 @@ for(const interruption of ['account','workspace','game','navigation']){
  const state=initial();state.tcg.ptcg.collection=[{cardId:'a',manualValue:7},{cardId:'a'},{cardId:'b'}];
  const h=harness('tcg',state),running=h.action();assert.equal(h.reads.length,2);
  h.reads[0].wait.resolve(card('a',{game:'ptcg'}));h.reads[1].wait.reject(Error('Provider outage'));await running;
- assert.equal(h.writes.length,1);assert.equal(h.cacheWrites.length,1);assert.equal(h.S.state.tcg.ptcg.collection[0].manualValue,7);
+ assert.equal(h.writes.length,1);assert.equal(h.cacheWrites.length,1);assert.deepEqual(Array.from(h.writes[0].options.valueGames),['ptcg'],'Explicit Pokemon refresh observes only Pokemon');assert.equal(h.S.state.tcg.ptcg.collection[0].manualValue,7);
  assert.match(h.toasts.at(-1),/refreshed for 1 card.*1 lookup failed/);assert.equal(h.S.state.valueHistory.length,1);
 }
 {

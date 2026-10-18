@@ -30,7 +30,7 @@ assert.equal(data.get('cardstashy-value-hist-ptcg::account:a'),before,'Legacy ro
 const source=fs.readFileSync('app.js','utf8');
 assert.match(source,/accountLocked=true;valueHistoryReady=false/);
 assert.match(source,/valueHistoryReady=true;\s*importReadyValueHistory\(\)/);
-assert.match(source,/if \(valueHistoryReady && !navigationWrite && observeValue\) trackValue\(valid\)/);
+assert.match(source,/if \(valueHistoryReady && !navigationWrite && observeValue\) trackValue\(valid, previous, valueGames\)/);
 console.log('PASS: all-game persisted history roundtrip, per-account legacy merge isolation/idempotence, preserved metadata and >365 records, unchanged rollback keys, zero after removing holdings, ready-only observation hooks.');
 // Run the actual synchronous observation hook while a non-Collection editor commits
 // a new custom price. The rendering global still points at the old workspace map.
@@ -43,9 +43,21 @@ const oldState=blank();oldState.collection=[{name:card.name,qty:1,condition:'Nea
 const draft=structuredClone(oldState);draft.myPrices[card.id+':nonfoil'].price=99;
 useMyPrices(oldState.myPrices);
 const ctx={valueHistoryReady:true,accountLocked:false,S:{state:oldState,catalog:{},ui:{view:'search'}},T,useMyPrices,collectionValue,recordValuePoint,homeValueCoverage:v=>({unpriced:v.unpriced,currency:'USD',basis:'exact-owned-v1'})};
-vm.createContext(ctx);vm.runInContext(source.slice(source.indexOf('function trackValue(state = S.state)'),source.indexOf('\nfunction valueHistories')),ctx);
+vm.createContext(ctx);vm.runInContext(source.slice(source.indexOf('function trackValue(state = S.state, previous = null, valueGames = null)'),source.indexOf('\nfunction valueHistories')),ctx);
 ctx.trackValue(draft);assert.equal(draft.valueHistory.at(-1).total,99,'Draft custom price observed outside Collection');assert.equal(collectionValue(oldState.collection,{},oldState.printings).total,7,'Active rendering map restored');
 ctx.valueHistoryReady=false;const beforeHistory=JSON.stringify(draft.valueHistory);ctx.trackValue(draft);assert.equal(JSON.stringify(draft.valueHistory),beforeHistory,'No observation before owner scope is ready');
 console.log('PASS: real observation hook uses draft-owned custom prices outside Collection and restores current account map synchronously.');
 
 assert.match(source,/observeValue:false/,"legacy migration does not observe device cache as a new value");
+
+// Actual observation hook: view/profile/quote edits never dirty any game history.
+ctx.valueHistoryReady=true;
+const viewing=structuredClone(oldState);viewing.settings.displayModes={collection:'grid'};viewing.profile={avatar:'art'};viewing.quoteHistory=[{price:123}];
+ctx.trackValue(viewing,oldState);assert.deepEqual(viewing.valueHistory,oldState.valueHistory);
+assert.deepEqual(viewing.tcg,oldState.tcg);
+const edited=structuredClone(oldState);edited.myPrices[card.id+':nonfoil'].price=99;ctx.trackValue(edited,oldState);assert.equal(edited.valueHistory.at(-1).total,99);assert.deepEqual(edited.tcg,oldState.tcg,'Magic edit cannot create Pokemon/YGO observations');
+const removed=structuredClone(edited);removed.collection=[];ctx.trackValue(removed,edited);assert.equal(removed.valueHistory.at(-1).total,0,'Removing actual holdings still observes zero');
+console.log('PASS: only changed owned-value inputs are observed, not navigation/profile/display/reference quotes or unrelated games.');
+const tcgEdited=structuredClone(oldState);tcgEdited.tcg={};tcgEdited.tcg.ptcg={collection:[{id:'p',name:'Fixture',cardId:'p',qty:1,condition:'Near Mint',manualValue:3,manualValueCondition:'Near Mint',manualValueCurrency:'USD'}],decks:[],wishlist:[],valueHistory:[]};ctx.trackValue(tcgEdited,oldState);assert.equal(tcgEdited.tcg.ptcg.valueHistory.at(-1).total,3);assert.deepEqual(tcgEdited.valueHistory,oldState.valueHistory,'Pokemon edit cannot create Magic observations');
+
+const refreshed=structuredClone(oldState);ctx.trackValue(refreshed,oldState,['mtg']);assert.equal(refreshed.valueHistory.at(-1).total,7,'Explicit refresh observes unchanged collection');
