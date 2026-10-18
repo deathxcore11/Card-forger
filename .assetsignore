@@ -41,3 +41,9 @@ test-results
 RELEASE-*.md
 *.patch
 *.bundle
+
+# Server-only condition providers and operator guide.
+condition-cache.js
+condition-feed-route.js
+tcgplayer-condition-source.js
+CONDITION_PRICING.md

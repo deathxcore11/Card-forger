@@ -46,14 +46,14 @@ export function loadConditionQuotes(card,entry,game,fetcher=fetch){
 // Endpoint identity fields may be absent, but conflicting fields must never be
 // relabeled as the requested printing. Cached responses can then safely fan out.
 function compatibleConditionQuote(q,entry){
- return q&&['current','last_known'].includes(q.priceStatus)&&q.currency==='USD'&&typeof q.price==='number'&&Number.isFinite(q.price)&&q.price>=0&&(Date.parse(q.validUntil)>Date.now()||q.priceStatus==='last_known'&&Date.parse(q.observedAt)>Date.now()-30*86400000)&&
+ return q&&['current','last_known'].includes(q.priceStatus)&&q.currency==='USD'&&typeof q.price==='number'&&Number.isFinite(q.price)&&q.price>=0&&(Date.parse(q.validUntil)>Date.now()||q.priceStatus==='last_known'&&Date.parse(q.observedAt||q.checkedAt)>Date.now()-30*86400000)&&
   CONDITION_IDENTITY.every(k=>q[k]==null||String(q[k])===String(entry[k]||''));
 }
 export function applyConditionQuotes(card,entry,rawQuotes=[]){
  const identity=Object.fromEntries(CONDITION_IDENTITY.map(k=>[k,entry[k]||'']));
  const quotes=rawQuotes.filter(q=>compatibleConditionQuote(q,entry)).map(q=>({...q,...identity}));
  const same=q=>CONDITION_IDENTITY.every(k=>String(q[k]||'')===String(identity[k]||''));
- const old=card.conditionQuotes||[],next=[...old.filter(q=>(!same(q)||!quotes.some(n=>n.condition===q.condition))&&(!q.validUntil||Date.parse(q.validUntil)>Date.now()||Date.parse(q.observedAt)>Date.now()-30*86400000)),...quotes].slice(-80);
+ const old=card.conditionQuotes||[],next=[...old.filter(q=>(!same(q)||!quotes.some(n=>n.condition===q.condition))&&(!q.validUntil||Date.parse(q.validUntil)>Date.now()||Date.parse(q.observedAt||q.checkedAt)>Date.now()-30*86400000)),...quotes].slice(-80);
  const changed=JSON.stringify(old)!==JSON.stringify(next);card.conditionQuotes=next;
  return {changed,quotes};
 }

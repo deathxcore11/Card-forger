@@ -1,8 +1,9 @@
-// A single durable coordinator shares paid product responses across users and edge regions.
+import {TcgplayerConditionSource,tcgplayerConfigured,mergeConditionSources} from './tcgplayer-condition-source.js';
+// A single durable coordinator shares product responses across users and edge regions.
 // Limits are requests, not cards; provider failures count too. No browser can change the caps.
 const DAY=86400000;
 const RETAIN=30*DAY;
-export const compactConditionData=(raw,product)=>({data:(raw?.data||[]).filter(c=>String(c.tcgplayerId)===String(product)).map(c=>({tcgplayerId:c.tcgplayerId,variants:(c.variants||[]).map(v=>({condition:v.condition,printing:v.printing,language:v.language,price:v.price,priceStatus:v.priceStatus,lastUpdated:v.lastUpdated,tcgplayerSkuId:v.tcgplayerSkuId}))})),cachedAt:Date.now()});
+export const compactConditionData=(raw,product)=>({data:(raw?.data||[]).filter(c=>String(c.tcgplayerId)===String(product)).map(c=>({tcgplayerId:c.tcgplayerId,variants:(c.variants||[]).map(v=>({condition:v.condition,printing:v.printing,language:v.language,price:v.price,lastKnownPrice:v.lastKnownPrice,priceStatus:v.priceStatus,lastUpdated:v.lastUpdated,tcgplayerSkuId:v.tcgplayerSkuId}))})),cachedAt:Date.now()});
 const reply=(body,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'no-store'}});
 // Preserve the provider's public error code, never its raw response or API key.
 export async function conditionProviderFailure(response,now=Date.now()){
@@ -18,22 +19,30 @@ export async function conditionProviderFailure(response,now=Date.now()){
  return {status:limited?'rate_limited':'unavailable',reason,providerCode,retryAfterMs,nextRetryAt:now+retryAfterMs,providerObservedAt:now,retrySource:Number.isFinite(advised)&&advised>0?'provider-header':'fallback'};
 }
 export class ConditionPriceCache {
- constructor(ctx,env){this.storage=ctx.storage;this.env=env;this.pending=new Map();}
+ constructor(ctx,env){this.storage=ctx.storage;this.env=env;this.pending=new Map();this.primary=new TcgplayerConditionSource(ctx.storage,env);}
  async fetch(request){
   const product=new URL(request.url).searchParams.get('product');
   if(!/^\d{1,12}$/.test(product||''))return reply({status:'unmapped'},400);
-  if(!this.env.JUSTTCG_API_KEY)return reply({status:'not_configured'});
+  if(!this.env.JUSTTCG_API_KEY&&!tcgplayerConfigured(this.env))return reply({status:'not_configured'});
   const owner=request.headers.get('X-Condition-Owner')==='verified';
-  if(this.pending.has(product)){
-   const result=await this.pending.get(product);
+  const category=new URL(request.url).searchParams.get('category'),pendingKey=product+':'+(category||'');
+  if(this.pending.has(pendingKey)){
+   const result=await this.pending.get(pendingKey);
    // A guest's app-budget rejection must not become the owner's result.
    if(!owner||result.reason!=='app_budget')return reply(result);
    return this.fetch(request);
   }
-  const job=this.load(product,owner);this.pending.set(product,job);
-  try{return reply(await job);}finally{this.pending.delete(product);}
+  const job=this.load(product,owner,category);this.pending.set(pendingKey,job);
+  try{return reply(await job);}finally{this.pending.delete(pendingKey);}
  }
- async load(product,owner=false){
+ async load(product,owner=false,category){
+  if(!tcgplayerConfigured(this.env))return {...await this.loadBackup(product,owner),providers:{tcgplayer:'not_configured',justtcg:'configured'}};
+  const primary=await this.primary.load(product,category,owner);
+  if(primary.status==='unmapped'||primary.status==='available'&&primary.complete)return {...primary,providers:{tcgplayer:primary.status,justtcg:this.env.JUSTTCG_API_KEY?'standby':'not_configured'}};
+  const backup=this.env.JUSTTCG_API_KEY?await this.loadBackup(product,owner):null;
+  return {...mergeConditionSources(product,primary,backup),providers:{tcgplayer:primary.reason||primary.status,justtcg:backup?.reason||backup?.status||'not_configured'}};
+ }
+ async loadBackup(product,owner=false){
   const now=Date.now(),key='product:'+product,old=await this.storage.get(key);
   if(old&&now-old.cachedAt<DAY)return {status:'available',...old};
   // Keep the original observation/cache times. An outage never makes an old
@@ -61,5 +70,5 @@ export class ConditionPriceCache {
    return {status:'available',...data};
   }catch{return withSaved({status:'unavailable'});}
  }
- async alarm(){const rows=await this.storage.list({prefix:'product:'});for(const [key,value] of rows)if(Date.now()-value.cachedAt>=RETAIN)await this.storage.delete(key);if(rows.size)await this.storage.setAlarm(Date.now()+DAY);}
+ async alarm(){let count=0;for(const prefix of ['product:','tcg-product:','tcg-catalog:']){const rows=await this.storage.list({prefix});for(const [key,value] of rows){if(Date.now()-value.cachedAt>=(prefix==='tcg-catalog:'?7*DAY:RETAIN))await this.storage.delete(key);else count++;}}if(count)await this.storage.setAlarm(Date.now()+DAY);}
 }

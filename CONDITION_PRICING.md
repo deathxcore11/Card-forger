@@ -1,8 +1,26 @@
 # Condition pricing activation
 
-The optional Worker adapter uses JustTCG v1 for NM / LP / MP / HP / Damaged prices across Magic, Pokémon and Yu-Gi-Oh. It is disabled without a server credential; static code contains no credential.
+The Worker supports the official TCGplayer API as primary and JustTCG v1 as fallback for NM / LP / MP / HP / Damaged prices across Magic, Pokémon and Yu-Gi-Oh. A source is disabled without its server credentials; static code contains no credential.
 
-## Activate
+## TCGplayer primary (3.85.1)
+
+TCGplayer is currently not issuing new API access. This adapter requires an existing approved developer account. A product URL is an identity, not authorization to retrieve prices. No marketplace-page scraper, private website endpoint, proxy rotation, or condition discount model is used.
+
+An operator with approved access can add `TCGPLAYER_PUBLIC_KEY` and `TCGPLAYER_PRIVATE_KEY` as encrypted secrets to the existing `cardforge2` Worker, then deploy. Do not place either in source, browser settings, screenshots, or chat. The Worker exchanges them for a short-lived bearer token kept in memory; it does not send credentials to the client or follow upstream redirects. This release does not purchase or activate an account.
+
+The existing exact game/printing resolver identifies the same product used by the filtered Buy URL. The primary adapter verifies its category, loads its SKU catalog, and joins condition, printing and language IDs against the official category dictionaries. It fetches all SKU market prices in batches of up to 100; null market prices never fall back to low/asking/shipping prices. Catalog data is cached for seven days and product prices for one day, shared across visitors and edge regions. Changes of condition reuse those rows locally.
+
+Fresh exact TCGplayer rows take priority. When primary coverage is incomplete or the connection fails, JustTCG can fill missing exact combinations; fresh fallback beats stale primary data. Ambiguous rows remain unpriced. Each source keeps its own provider cooldown, while every outbound call, including token/catalog calls and failures, consumes the same existing app request budget. The verified owner exemption still applies only to app caps, never provider restrictions.
+
+TCGplayer's SKU-price response has no source observation timestamp. Its quotes show **checked** time and explicitly state that the observation date is unavailable. JustTCG quotes retain their reported **last observed** time. Both may be retained for up to 30 days as last known, excluded from current condition totals. JustTCG's explicit `expired` + `lastKnownPrice` rows are now retained with the same treatment.
+
+The condition response exposes only non-secret source status under `providers`. `tcgplayer: not_configured` means the adapter is ready but has no primary connection; it must not be described as live TCGplayer condition pricing. Live recovery needs a real successful response from a configured provider. The tests use synthetic quotes and cannot establish recovery.
+
+Documentation: https://docs.tcgplayer.com/docs/getting-started · https://docs.tcgplayer.com/reference/catalog_getskusbyproductid · https://docs.tcgplayer.com/reference/pricing_getproductconditionprices-1
+
+`node test-tcgplayer-condition-source.mjs` verifies batching, all-condition reuse, durable caching, partial results, source priority, exact dimensions, rate limits, shared budget enforcement, honest timestamp labels and stale-price isolation without contacting either provider.
+
+## Activate JustTCG fallback
 
 1. Obtain a JustTCG account and a plan licensed for the app's use. Commercial use requires a paid plan. No subscription is purchased by this release.
 2. Add `JUSTTCG_API_KEY` as an **encrypted secret** in Cloudflare Workers → `cardforge2` → Settings → Variables and Secrets, then deploy. Alternatively use `npx wrangler secret put JUSTTCG_API_KEY` in an authenticated operator terminal. Never put it in config.js, GitHub source, a screenshot or chat.

@@ -2,6 +2,7 @@
 import {pokemonPriceRoute} from './pokemon-prices.js';
 import {rarityKey,ygoPriceRoute} from './ygo-prices.js';
 import {SUPABASE} from './config.js';
+import {tcgplayerConfigured} from './tcgplayer-condition-source.js';
 const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
 const CONDITIONS=['Near Mint','Lightly Played','Moderately Played','Heavily Played','Damaged'];
 const UA={'Accept':'application/json','User-Agent':'CardStashy/3.73.13 (cached condition valuation; github.com/deathxcore11/Card-forger)'};
@@ -10,13 +11,19 @@ export function normalizeConditionVariants(body,product,printings,language='Engl
  if(cards.length!==1)return [];
  const buckets=new Map();
  for(const v of cards[0].variants||[]){
-  if(!CONDITIONS.includes(v.condition)||v.priceStatus!=='current'||v.price===null||typeof v.price!=='number'||!Number.isFinite(v.price)||v.price<0||!printings.some(p=>norm(p)===norm(v.printing))||norm(v.language||'English')!==norm(language))continue;
-  const time=Number(v.lastUpdated)*1000;if(!Number.isFinite(time)||time<=0||time>now+300000)continue;
-  const q={condition:v.condition,price:v.price,currency:'USD',source:'JustTCG',kind:'provider-estimate',sku:String(v.tcgplayerSkuId||v.uuid||v.id||''),observedAt:new Date(time).toISOString(),validUntil:new Date(now+86400000).toISOString(),priceStatus:body.stale||now+86400000<=Date.now()?'last_known':'current'};
+  const source=v.source==='TCGplayer'||body.source==='TCGplayer'?'TCGplayer':'JustTCG';
+  const expired=source==='JustTCG'&&v.priceStatus==='expired',price=expired?v.lastKnownPrice:v.price;
+  if(!CONDITIONS.includes(v.condition)||!['current','expired'].includes(v.priceStatus)||price===null||typeof price!=='number'||!Number.isFinite(price)||price<0||!printings.some(p=>norm(p)===norm(v.printing))||norm(v.language||'English')!==norm(language))continue;
+  const cacheTime=Number(v.cacheTime)||now,time=source==='TCGplayer'?Number(v.checkedAt):Number(v.lastUpdated)*1000;
+  if(!Number.isFinite(time)||time<=0||time>cacheTime+300000||time>Date.now()+300000)continue;
+  const lastKnown=expired||body.stale||v.stale||cacheTime+86400000<=Date.now();
+  if(lastKnown&&time<=Date.now()-30*86400000)continue;
+  const q={condition:v.condition,price,currency:'USD',source,kind:'provider-estimate',sku:String(v.tcgplayerSkuId||v.uuid||v.id||''),...(source==='TCGplayer'?{checkedAt:new Date(time).toISOString()}:{observedAt:new Date(time).toISOString()}),validUntil:new Date(cacheTime+86400000).toISOString(),priceStatus:lastKnown?'last_known':'current'};
   const list=buckets.get(v.condition)||[];list.push(q);buckets.set(v.condition,list);
  }
  // Ambiguous parallel variants are unavailable, not whichever came first.
- return [...buckets.values()].filter(xs=>xs.length===1).map(xs=>xs[0]);
+ const rank=q=>(q.priceStatus==='current'?0:2)+(q.source==='TCGplayer'?0:1);
+ return [...buckets.values()].map(xs=>xs.filter(q=>rank(q)===Math.min(...xs.map(rank)))).filter(xs=>xs.length===1).map(xs=>xs[0]);
 }
 // Some Pokémon products encode the edition in the printing label (for example
 // Unlimited Holofoil), while TCGdex calls that same finish simply holofoil.
@@ -42,7 +49,7 @@ export async function conditionFeedRoute(url,env,ctx,fetchImpl=fetch,{request}={
  const game=url.searchParams.get('game'),id=url.searchParams.get('id')||'';
  const empty=(status,notice,details={})=>Response.json({status,quotes:[],notice,...details},{headers:{'Cache-Control':'no-store'}});
  if(!['mtg','ptcg','ygo'].includes(game)||!(/^[a-zA-Z0-9.!?_-]{1,80}$/.test(id)))return Response.json({error:'Invalid card'},{status:400});
- if(!env?.JUSTTCG_API_KEY)return empty('not_configured','Condition pricing requires a connected provider. Reference prices are still available; you can record your own value for this condition.');
+ if(!env?.JUSTTCG_API_KEY&&!tcgplayerConfigured(env))return empty('not_configured','Condition pricing requires a connected provider. Reference prices are still available; you can record your own value for this condition.');
  if(!env.CONDITION_PRICES)return empty('unavailable','Condition price cache is not configured.');
  const cache=globalThis.caches?.default;
  const get=async u=>{const key=new Request(u);const hit=await cache?.match(key);if(hit)return hit.json();const r=await fetchImpl(u,{headers:UA,signal:AbortSignal.timeout(12000)});if(!r.ok)throw Error('Card identity lookup unavailable');const d=await r.json();ctx?.waitUntil?.(cache?.put(key,Response.json(d,{headers:{'Cache-Control':'public,max-age=86400'}})));return d;};
@@ -96,13 +103,15 @@ export async function conditionFeedRoute(url,env,ctx,fetchImpl=fetch,{request}={
   // Durable cache and atomic caps prevent each visitor or edge region spending a new credit.
   const stub=env.CONDITION_PRICES.get(env.CONDITION_PRICES.idFromName('shared-condition-prices'));
   const owner=await conditionOwner(request,env,fetchImpl);
-  const response=await stub.fetch('https://condition-cache/?product='+product,{headers:owner?{'X-Condition-Owner':'verified'}:{}});
+  const response=await stub.fetch('https://condition-cache/?product='+product+'&category='+{mtg:1,ygo:2,ptcg:3}[game],{headers:owner?{'X-Condition-Owner':'verified'}:{}});
   const data=await response.json();
   const quotes=normalizeConditionVariants(data,product,printings,language,data.cachedAt||Date.now());
   if(data.status!=='available'){
    const messages={provider_rate:'JustTCG is temporarily limiting requests. Saved quotes remain available.',provider_daily:'JustTCG reports its daily request allowance is used. It resets at midnight UTC.',provider_monthly:'JustTCG reports its monthly request allowance is used. Check the provider plan and billing reset.',provider_shared_limit:'JustTCG blocked this request under its shared-hosting Free tier protection. This can happen even when your own lookup allowance remains.',provider_auth:'JustTCG rejected the connected API key or subscription. Check the provider connection.',app_budget:owner?'Condition pricing is temporarily busy. Try again shortly.':'The app’s shared lookup allowance has been reached. Sign in to the owner account for owner access.'};
-   return empty(data.status||'unavailable',messages[data.reason]||'Condition pricing is temporarily unavailable.',{quotes,reason:data.reason||'',providerCode:data.providerCode||'',retryAfterMs:data.retryAfterMs||60000,...(Number.isFinite(data.nextRetryAt)&&data.nextRetryAt>0?{nextRetryAt:data.nextRetryAt}:{}),ownerVerified:owner,...(Number.isFinite(data.providerObservedAt)&&data.providerObservedAt>0?{providerObservedAt:data.providerObservedAt}:{}),...(['provider-header','fallback'].includes(data.retrySource)?{retrySource:data.retrySource}:{})});
+   messages.tcgplayer_auth='TCGplayer rejected the configured API connection. Saved prices remain available.';
+   messages.tcgplayer_rate='TCGplayer is temporarily limiting requests. Saved prices remain available.';
+   return empty(data.status||'unavailable',messages[data.reason]||'Condition pricing is temporarily unavailable.',{quotes,providers:data.providers,reason:data.reason||'',providerCode:data.providerCode||'',retryAfterMs:data.retryAfterMs||60000,...(Number.isFinite(data.nextRetryAt)&&data.nextRetryAt>0?{nextRetryAt:data.nextRetryAt}:{}),ownerVerified:owner,...(Number.isFinite(data.providerObservedAt)&&data.providerObservedAt>0?{providerObservedAt:data.providerObservedAt}:{}),...(['provider-header','fallback'].includes(data.retrySource)?{retrySource:data.retrySource}:{})});
   }
-  return Response.json({status:quotes.length?'available':'unpriced',quotes,productId:product,source:'JustTCG',notice:quotes.length?'':'No current quote matches this version, language and condition.'},{headers:{'Cache-Control':'public,max-age=3600'}});
+  return Response.json({status:quotes.length?'available':'unpriced',quotes,providers:data.providers,productId:product,source:data.source||'JustTCG',notice:quotes.length?'':'No current quote matches this version, language and condition.'},{headers:{'Cache-Control':'public,max-age=3600'}});
  }catch{return empty('unavailable','Condition pricing is temporarily unavailable.');}
 }
