@@ -50,7 +50,8 @@ assert.match(lineChart([{date:'2026-10-16',total:215}]),/Starting value/);
 assert.doesNotMatch(lineChart([{date:'2026-10-16',total:215}]),/second day of tracking/);
 const {conditionPriceHtml}=await import('./condition-value.js');
 assert.match(conditionPriceHtml(null,{condition:'LP'}),/Lightly Played[\s\S]*Condition price unavailable/);
-assert.match(conditionPriceHtml(60,{condition:'Damaged',manualValue:60}),/\$60.00/);
+assert.match(conditionPriceHtml(60,{condition:'Damaged',manualValue:60,manualValueCondition:'Damaged'}),/\$60.00/);
+assert.doesNotMatch(conditionPriceHtml(60,{condition:'Damaged',manualValue:60}),/\$60.00/,'An unbound legacy amount cannot become a condition-specific custom value');
 console.log('PASS: first-day graph remains visible and selected condition price is explicit.');
 
 for(const game of ['mtg','ptcg','ygo']){

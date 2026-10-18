@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import { S, blank } from './store.js';
 import { blankGame, GAME_IDS } from './games.js';
-import { heroState, heroDate, heroFor, homeHero, loadHero, tcgHome, cache } from './tcg.js';
+import { heroState, heroDate, heroResetAt, heroFor, homeHero, loadHero, tcgHome, cache } from './tcg.js';
 import { home } from './views.js';
 const RealDate = Date;
 let now = RealDate.parse('2026-10-17T12:00:00Z');
@@ -14,7 +14,7 @@ globalThis.localStorage = { getItem: k => storage.get(k) || null, setItem: (k, v
 const clear = () => { storage.clear(); for (const g of GAME_IDS) delete heroState[g]; };
 const magic = (id = 'daily-print', name = 'Daily Magic') => ({ id, name, set: 'tst', oracle_id: 'daily-oracle', image_uris: { art_crop: 'https://example.test/' + id + '.jpg', normal: 'https://example.test/' + id + '-full.jpg' } });
 const daily = g => ({ id: 'daily-' + g, name: 'Daily ' + g, art: 'https://example.test/daily-' + g + '.jpg', game: g, date: heroDate() });
-const writeDaily = () => storage.set('cardforge-hero-v1', JSON.stringify({ date: heroDate(), ...Object.fromEntries(GAME_IDS.map(g => [g, daily(g)])) }));
+const writeDaily = () => storage.set('cardforge-hero-v2', JSON.stringify({ date: heroDate(), ...Object.fromEntries(GAME_IDS.map(g => [g, daily(g)])) }));
 writeDaily();
 for (const g of GAME_IDS) {
   assert.equal(heroFor(g, { id: 'owned-lead', name: 'Owned lead', deck: true }).id, 'daily-' + g, 'saved-deck argument never overrides daily identity');
@@ -76,23 +76,19 @@ assert.match(personalCss,/@media \(min-width:900px\) \{\s*\.home-overview \{[^}]
 assert.match(personalCss,/\.home-overview \.home-daily \.hh-credit b \{[^}]*max-width:100%;[^}]*overflow-wrap:break-word;/,'only the title gets an emergency wrap for an oversized token, without clipping or shrinking');
 assert.match(personalCss,/\.home-overview \.home-daily\.no-art \.hh-credit \{ padding-left:18px;/);
 assert.match(css,/\.hh-credit \{[^}]*backdrop-filter: blur\(6px\)/,'the daily reset does not globally remove unrelated glass treatments');
+const serverReply = (g, card, date = heroDate()) => ({ ok: true, json: async () => ({game:g, date, card}) });
 clear(); let picks = 0;
-assert.equal(await loadHero('mtg', async () => { picks++; return magic(); }), true);
-assert.equal(heroFor('mtg').printing.id, 'daily-print');
-assert.equal(await loadHero('mtg', () => { throw Error('Must reuse selected daily card'); }), false);
+globalThis.fetch = async url => { assert.equal(url, '/api/daily-card?game=mtg'); picks++; return serverReply('mtg', {...daily('mtg'), printing: magic('daily-mtg', 'Daily mtg')}); };
+assert.equal(await loadHero('mtg'), true);
+assert.equal(heroFor('mtg').printing.id, 'daily-mtg');
+assert.equal(await loadHero('mtg'), false);
 const reload = await import('./tcg.js?daily-cache-reload');
-assert.equal(reload.heroFor('mtg').id, 'daily-print');
-assert.equal(await reload.loadHero('mtg', () => { throw Error('Reload must not reroll'); }), false);
+assert.equal(reload.heroFor('mtg').id, 'daily-mtg');
+assert.equal(await reload.loadHero('mtg'), false);
 assert.equal(picks, 1);
-// Legacy v1 cache preserves the exact selected art/printing, without a new pick.
-clear(); const oldId = '12345678-1234-1234-1234-123456789abc';
-storage.set('cardforge-hero-v1', JSON.stringify({ date: heroDate(), mtg: { name: 'Legacy daily', art: `https://cards.scryfall.io/art_crop/front/1/2/${oldId}.jpg?1` } }));
-assert.equal(heroFor('mtg').id, oldId);
-assert.equal(await loadHero('mtg', () => { throw Error('Keep the existing daily selection'); }), false);
-for (const art of [`http://cards.scryfall.io/art_crop/front/1/2/${oldId}.jpg`, `https://evil.test/art_crop/front/1/2/${oldId}.jpg`, `https://user:pass@cards.scryfall.io/art_crop/front/1/2/${oldId}.jpg`]) {
-  clear(); storage.set('cardforge-hero-v1', JSON.stringify({ date: heroDate(), mtg: { name: 'Unproved identity', art } }));
-  assert.equal(heroFor('mtg'), null);
-}
+// Per-device v1 picks must not survive the move to server-owned daily picks.
+clear(); storage.set('cardforge-hero-v1', JSON.stringify({date:heroDate(), mtg:daily('mtg')}));
+assert.equal(heroFor('mtg'), null);
 clear();
 heroState.mtg = { ...daily('mtg'), art: 'javascript:alert(1)', artDirect: "https://example.test/'alert(1)'" };
 assert.doesNotMatch(homeHero('mtg', 'Hi'), /javascript:|onerror=/);
@@ -101,26 +97,28 @@ clear(); writeDaily(); now += 86400000;
 for (const g of GAME_IDS) assert.equal(heroFor(g), null, 'yesterday is not displayed or reused');
 // Two calls share a request; an older date cannot clear or overwrite the new one.
 let oldFinish, newFinish, calls = 0;
-const old = loadHero('mtg', () => { calls++; return new Promise(resolve => oldFinish = resolve); });
-const same = loadHero('mtg', () => { throw Error('Duplicate request'); });
+globalThis.fetch = () => { calls++; return new Promise(resolve => calls === 1 ? oldFinish = resolve : newFinish = resolve); };
+const oldDate = heroDate(), old = loadHero('mtg'), same = loadHero('mtg');
 now += 86400000;
-const current = loadHero('mtg', () => { calls++; return new Promise(resolve => newFinish = resolve); });
-oldFinish(magic('old-day')); assert.equal(await old, false); assert.equal(await same, false);
-const currentAgain = loadHero('mtg', () => { throw Error('Old completion cleared current request'); });
-newFinish(magic('new-day')); assert.equal(await current, true); assert.equal(await currentAgain, true);
+const current = loadHero('mtg');
+oldFinish(serverReply('mtg', {...daily('mtg'), id:'old-day'}, oldDate)); assert.equal(await old, false); assert.equal(await same, false);
+const currentAgain = loadHero('mtg');
+newFinish(serverReply('mtg', {...daily('mtg'), id:'new-day'})); assert.equal(await current, true); assert.equal(await currentAgain, true);
 assert.equal(heroFor('mtg').id, 'new-day'); assert.equal(calls, 2);
-assert.equal(JSON.parse(storage.get('cardforge-hero-v1')).date, heroDate());
-// Parallel games keep provider identities separate and fetch once each.
+assert.equal(JSON.parse(storage.get('cardforge-hero-v2')).date, heroDate());
+// Parallel games keep server identities separate and fetch once each.
 let fetches = 0;
-globalThis.fetch = async url => { fetches++; return { ok: true, json: async () => String(url).includes('ygoprodeck') ? { data: [{ id: 123, name: 'Daily YGO', type: 'Normal Monster', card_images: [] }] } : [{ id: 'sv01-1', name: 'Daily Pokémon', image: 'https://assets.tcgdex.net/en/sv/sv01/001' }] }; };
+globalThis.fetch = async url => { fetches++; const g = new URL(url, 'https://test').searchParams.get('game'); return serverReply(g, approved[g]); };
 await Promise.all([loadHero('ygo'), loadHero('ptcg')]);
-assert.equal(heroFor('ygo').id, '123'); assert.equal(heroFor('ptcg').id, 'sv01-1');
+assert.equal(heroFor('ygo').id, '123'); assert.equal(heroFor('ptcg').id, 'me02.5-287');
 assert.equal(heroFor('mtg').id, 'new-day'); assert.equal(fetches, 2);
 assert.match(heroFor('ptcg').art, /\/high\.webp$/);
 await Promise.all([loadHero('ygo'), loadHero('ptcg')]); assert.equal(fetches, 2);
 clear(); globalThis.fetch = async () => ({ ok: true, json: async () => [] });
 await assert.rejects(loadHero('ptcg'), /No daily cards/); assert.equal(heroFor('ptcg'), null);
 globalThis.fetch = async () => ({ ok: false }); await assert.rejects(loadHero('ygo'), /unavailable/);
+globalThis.fetch = async () => serverReply('ptcg', approved.ptcg, '2000-01-01');
+await assert.rejects(loadHero('ptcg'), /No daily cards/, 'stale server responses are rejected');
 // Run the production registered daily click callback, not a duplicate routing model.
 const app = fs.readFileSync('app.js', 'utf8');
 const actionSource = app.slice(app.indexOf('A.homeDailyCard ='), app.indexOf('// Only update the daily art/action.'));
@@ -149,18 +147,18 @@ pending.at(-1).resolve(magic('wrong-print', 'Shown exact')); await loading;
 assert.equal(events.length, count); assert.match(body.innerHTML, /different printing/);
 for (const g of ['ygo', 'ptcg']) { game = g; selected = daily(g); await A.homeDailyCard(click()); assert.equal(events.at(-1)[1].dataset.id, selected.id); assert.equal(events.at(-1)[1].dataset.game, g); }
 await A.homeDailyCard({ dataset: { ...click().dataset, date: '2000-01-01' } }); assert.equal(refreshes, 1);
-// Production rollover timer uses UTC day boundary and resume hooks; it never rerenders all Home.
-assert.match(app, /86400000 - Date\.now\(\) % 86400000/);
+// Production rollover timer uses the shared New York boundary and resume hooks; it never rerenders all Home.
+assert.match(app, /T\.heroResetAt\(\)/);
 assert.match(app, /addEventListener\("visibilitychange"/); assert.match(app, /addEventListener\("focus"/);
 const paint = app.slice(app.indexOf('function paintHomeHero('), app.indexOf('/* ---------- rules reference ---------- */'));
 assert.doesNotMatch(paint, /\brender\(/); assert.match(paint, /old\.setAttribute/);
 // Execute the actual scheduler and actual stale repaint guard.
 const schedulerSource = app.slice(app.indexOf('let heroRolloverTimer ='), app.indexOf('function heroArt(g)'));
 let scheduled, cleared, refreshedGame;
-const scheduler = { document: { hidden: false }, S: { ui: { view: 'home' } }, T: { game: () => 'ptcg' }, Date,
+const scheduler = { document: { hidden: false }, S: { ui: { view: 'home' } }, T: { game: () => 'ptcg', heroResetAt }, Date,
   setTimeout: (fn, delay) => (scheduled = { fn, delay }), clearTimeout: timer => { cleared = timer; }, heroArt: g => { refreshedGame = g; } };
 vm.runInNewContext(schedulerSource + '\nscheduleHeroRollover();', scheduler);
-assert.equal(scheduled.delay, 86400000 - now % 86400000 + 20);
+assert.equal(scheduled.delay, heroResetAt() - now + 20);
 scheduled.fn(); assert.equal(refreshedGame, 'ptcg');
 scheduler.document.hidden = true; vm.runInNewContext('scheduleHeroRollover();', scheduler);
 assert.equal(cleared, scheduled, 'suspending cancels the active daily timer');
@@ -169,4 +167,4 @@ for (const scenario of [{ view: 'collection', game: 'mtg' }, { view: 'home', gam
   vm.runInNewContext(repaintSource + '\npaintHomeHero("mtg");', { S: { ui: { view: scenario.view } }, T: { game: () => scenario.game }, $: () => { throw Error('A late daily result touched another view/game'); } });
 }
 globalThis.Date = RealDate;
-console.log('PASS: all-game daily identity with owned decks, exact shared art/control targets, v1 printing preservation, cache/reload/date isolation, concurrent rollover, provider failure/retry, safe artwork fallback and stale exact-print click guards.');
+console.log('PASS: all-game daily identity with owned decks, exact shared art/control targets, v1 cache retirement, cache/reload/date isolation, concurrent rollover, provider failure/retry, safe artwork fallback and stale exact-print click guards.');

@@ -1,3 +1,5 @@
+export {DailyCards} from './daily-card-route.js';
+import {dailyCardRoute} from './daily-card-route.js';
 export {ConditionPriceCache} from './condition-cache.js';
 import {conditionFeedRoute} from './condition-feed-route.js';
 import {communityFeedRoute} from './community-feed-route.js';
@@ -178,6 +180,7 @@ export default {
   },
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    if (url.pathname === '/api/daily-card') return dailyCardRoute(request, env);
     if (url.pathname === '/api/community') return communityFeedRoute(request, url, ctx);
     if (url.pathname === "/api/ai/deck-review") return aiReviewRoute(request, env);
     if (url.pathname === "/api/ai/ask") return aiAskRoute(request, env);

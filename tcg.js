@@ -1,3 +1,4 @@
+import {dailyDate, nextDailyReset} from './daily-clock.js';
 import {ygoRarity} from './ygo-identity.js';
 import {sharedDeckSheet} from './shared-deck-view.js';
 import {finishAttrs,finishPreview,finishArtworkCard} from './finish-preview.js';
@@ -352,8 +353,9 @@ function legalChips(g, c) {
 
 /* ---------- art hero (all games) ---------- */
 
-const HERO_KEY = "cardforge-hero-v1";
-export const heroDate = () => new Date().toISOString().slice(0, 10);
+const HERO_KEY = "cardforge-hero-v2";
+export const heroDate = dailyDate;
+export const heroResetAt = nextDailyReset;
 export const heroState = {};
 const heroRequests = new Map();
 // v1 saved Magic art without its printing ID. Recover only an ID proved by
@@ -406,39 +408,21 @@ export function homeHero(g) {
   const h=heroFor(g),G=GAMES[g],cardAction=h?`data-act="homeDailyCard" data-game="${g}" data-id="${esc(h.id)}" data-name="${esc(h.name)}" data-date="${h.date}"`:'';
   return `<section class="home-hero home-art-header ${g} ${h?.art?'has-art':'no-art'}" id="homeHero" data-game="${g}" data-daily-date="${h?.date||''}" data-daily-id="${esc(h?.id||'')}">${h?.art&&g==='ptcg'?pokemonArtCrop({game:g,id:h.id},'hh-art',h.art,{loading:'eager'}):h?.art?`<img class="hh-art" src="${esc(h.art)}" alt="" referrerpolicy="no-referrer" data-art-sources="${esc(JSON.stringify([...new Set([h.art,h.artDirect].filter(Boolean))]))}" data-art-index="0">`:''}<div class="hh-shade"></div><div class="hh-body"><p class="eyebrow">${esc(G.name)}</p><h1>Your cards. Your next adventure.</h1><div id="homeSearchDock">${homeSearchMarkup(g)}</div><div class="hh-credits">${cardAction?`<button class="hh-credit" ${cardAction} aria-label="Explore ${esc(h.name)}, Card of the Day"><span>Card of the Day</span><b>${esc(h.name)}</b><span class="hh-daily-arrow" aria-hidden="true">↗</span></button>`:''}</div></div></section>`;
 }
-// Retain the existing per-device daily picks and providers. Share in-flight work
-// per game/day; an old day's response may never overwrite today's selection.
-export async function loadHero(g, mtgRandom) {
+// Cache only the server's shared selection. The old per-device v1 cache is
+// deliberately ignored so everyone moves to the same midnight schedule.
+export async function loadHero(g) {
   if (!GAME_IDS.includes(g) || heroFor(g)) return false;
   const date = heroDate(), pending = heroRequests.get(g);
   if (pending?.date === date) return pending.promise;
   const request = { date, promise: null };
   heroRequests.set(g, request);
-  const pickDay = n => Number(date.replace(/-/g, "")) % n;
   request.promise = (async () => {
-    let h;
-    if (g === "mtg") {
-      const c = await mtgRandom();
-      h = { id: c.id, name: c.name, art: c.image_uris?.art_crop || c.card_faces?.[0]?.image_uris?.art_crop || "", printing: slim({ ...c, full: true }) };
-    } else if (g === "ygo") {
-      const response = await fetch("https://db.ygoprodeck.com/api/v7/cardinfo.php?staple=yes&misc=yes");
-      if (response.ok === false) throw Error("Daily card source is unavailable.");
-      const list = await response.json();
-      if (!Array.isArray(list.data) || !list.data.length) throw Error("No daily cards were returned.");
-      const c = (await import("./ygo.js")).normalizeYgo(list.data[pickDay(list.data.length)]);
-      h = { id: c.id, name: c.name, art: c.art, artDirect: c.artDirect };
-    } else {
-      const response = await fetch("https://api.tcgdex.net/v2/en/cards?rarity=eq:Special%20illustration%20rare");
-      if (response.ok === false) throw Error("Daily card source is unavailable.");
-      const list = await response.json();
-      if (!Array.isArray(list) || !list.length) throw Error("No daily cards were returned.");
-      const c = list[pickDay(list.length)];
-      h = { id: c.id, name: c.name, art: ptcgImage(c.image, "high") };
-    }
+    const response = await fetch(`/api/daily-card?game=${g}`, { cache: 'no-store' });
+    if (!response.ok) throw Error("Daily card source is unavailable.");
+    const data = await response.json();
     if (heroRequests.get(g) !== request || heroDate() !== date) return false;
-    h = dailyHero(g, h, date);
-    if (!h) throw Error("Daily card identity is unavailable.");
-    // Another tab may have completed the same day's selection while we waited.
+    const h = data.game === g && data.date === date ? dailyHero(g, data.card, date) : null;
+    if (!h) throw Error("No daily cards were returned for today.");
     if (heroFor(g)) return false;
     heroState[g] = h;
     try {
@@ -824,7 +808,7 @@ const panel = detailPanel;
 export function tcgAddSheet(c, preset = "", presetEdition = "") {
   if(!preset&&c.setContext?.printing)preset=c.setContext.printing.code+"|"+c.setContext.printing.rarity;
   const g = c.game,
-    opts = g === "ygo" ? c.sets?.map((s) => [s.code + "|" + s.rarity, `${s.code} · ${s.rarity}${s.price ? " · " + usd(s.price) : ""}`]) || [] : c.variants?.map((v) => [v.key, `${v.label}${v.usd ? " · " + usd(v.usd) + " reference" : ""}`]) || [];
+    opts = g === "ygo" ? c.sets?.map((s) => [s.code + "|" + s.rarity, `${s.code} · ${s.rarity}`]) || [] : c.variants?.map((v) => [v.key, v.label]) || [];
   return `<div class="sheet-head"><h2>Add to collection</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   <div class="build-seed">${imgTag(c, "mini-art")}<div><b>${esc(c.name)}</b><small class="muted">${esc(c.typeLine || "")}</small></div><span></span></div>
   <div class="grid2">
@@ -832,11 +816,11 @@ export function tcgAddSheet(c, preset = "", presetEdition = "") {
     <label>Condition<select id="tCond" aria-label="Condition">${options(["Near Mint", "Lightly Played", "Moderately Played", "Heavily Played", "Damaged"].map((x) => [x, x]), "Near Mint")}</select></label>
     <label class="span2">Language<select id="tLanguage">${options([["en","English"],["ja","Japanese"],["de","German"],["fr","French"],["es","Spanish"],["it","Italian"],["pt","Portuguese"],["ko","Korean"],["zh","Chinese"]],c.lang||c.language||"en")}</select></label>
     ${opts.length ? `<label class="span2">${g === "ygo" ? "Printing (set code · rarity)" : "Version"}<select id="tPrint">${options([["", g === "ygo" ? "Not sure / any printing" : "Not sure"], ...opts], opts.some((o) => o[0] === preset) ? preset : "")}</select></label>` : ""}
-    ${g === "ygo" ? `<label class="span2">Edition<select id="tEdition">${options([["", "Not sure"], ["1st-edition", "First Edition"], ["unlimited", "Unlimited"], ["limited", "Limited Edition"]], ["1st-edition","unlimited","limited"].includes(presetEdition)?presetEdition:"")}</select></label><p class="foot span2">Set prices do not distinguish editions. An edition-specific value stays unknown; verify it with the seller.</p>` : `<p class="foot span2">Versions without a price are still collectible. The source image may represent a different edition; confirm stamps and borders yourself.</p>`}
+    ${g === "ygo" ? `<label class="span2">Edition<select id="tEdition">${options([["", "Not sure"], ["1st-edition", "First Edition"], ["unlimited", "Unlimited"], ["limited", "Limited Edition"]], ["1st-edition","unlimited","limited"].includes(presetEdition)?presetEdition:"")}</select></label><p class="foot span2">Match the set code, rarity and edition on your card. Condition prices below use that exact selection when available.</p>` : `<p class="foot span2">Match the finish, stamps and borders on your card. The source image may show a different edition.</p>`}
     ${locationPicker(S.state,g,"tLoc")}
   </div>
   <section id="conditionPricePreview" class="condition-price-preview" role="status" aria-label="Selected condition value"></section>
-  <details class="more" open><summary>Value for this condition</summary><label>Your value per copy (USD, optional)<input id="lotManualValue" type="number" min="0" step="0.01" placeholder="No condition quote"></label><p class="foot">Reference amounts in Version describe that printing, not its condition. Played or damaged copies without a matching quote are excluded from totals unless you enter a value.</p></details>
+  <details class="more" open><summary>Custom value (optional)</summary><label>Your value per copy (USD, optional)<input id="lotManualValue" type="number" min="0" step="0.01" placeholder="Enter custom value (optional)" aria-describedby="lotManualHelp"></label><p class="foot" id="lotManualHelp">Your custom value is used for your collection total. Clear it to use the source value. Played or damaged copies without a quote or custom value are excluded from totals.</p></details>
   <button class="btn block" data-act="tOwnSave" data-id="${esc(c.id)}" ${c.setContext?`data-set-id="${esc(c.setContext.releaseId)}"`:""}>Add to collection</button>`;
 }
 

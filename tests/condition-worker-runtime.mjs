@@ -37,3 +37,26 @@ async function run({legacy=false,status=200}={}){
 }
 await run({legacy:true});await run();await run({status:302});await run({status:403});
 console.log('PASS: actual Workers runtime reproduces the old pre-network failure; fixed reader returns NM/LP, reuses durable cache, rejects redirects and respects refusals.');
+
+// The new daily selection uses the same real Workers runtime, persisted SQLite
+// storage and alarm API. No live card provider is contacted by this fixture.
+const dailySources=await Promise.all(['daily-card-route.js','daily-clock.js'].map(async name=>({type:'ESModule',path:path.join(root,name),contents:await readFile(path.join(root,name),'utf8')})));
+const dailyEntry={type:'ESModule',path:path.join(root,'daily-runtime-test-entry.js'),contents:`
+ export {DailyCards} from './daily-card-route.js';
+ import {dailyCardRoute} from './daily-card-route.js';
+ export default {fetch:dailyCardRoute};`};
+const dailyCalls={mtg:0,ygo:0,ptcg:0};
+const dailyRuntime=new Miniflare({modulesRoot:root,modules:[dailyEntry,...dailySources],compatibilityDate:'2026-07-30',durableObjects:{DAILY_CARDS:{className:'DailyCards',useSQLite:true}},
+ outboundService:async request=>{
+  const g=request.url.includes('scryfall')?'mtg':request.url.includes('ygoprodeck')?'ygo':'ptcg';dailyCalls[g]++;
+  return Response.json(g==='mtg'?{id:'runtime-magic',name:'Runtime Magic',image_uris:{art_crop:'https://example.test/magic.jpg'}}:g==='ygo'?{data:[{id:1,name:'One'},{id:2,name:'Two'}]}:[{id:'sv01-1',name:'One',image:'https://assets.tcgdex.net/en/sv/sv01/001'},{id:'sv01-2',name:'Two',image:'https://assets.tcgdex.net/en/sv/sv01/002'}]);
+ }});
+try{
+ for(const game of ['mtg','ygo','ptcg']){
+  const replies=await Promise.all([1,2,3].map(()=>dailyRuntime.dispatchFetch('https://app.test/api/daily-card?game='+game)));
+  assert(replies.every(r=>r.status===200));const data=await Promise.all(replies.map(r=>r.json()));
+  assert(data.every(d=>d.card.id===data[0].card.id));assert.equal(data[0].timeZone,'America/New_York');assert(Date.parse(data[0].nextResetAt)>Date.now());assert.equal(dailyCalls[game],1);
+ }
+ assert.equal((await dailyRuntime.dispatchFetch('https://app.test/api/daily-card?game=invalid')).status,400);
+}finally{await dailyRuntime.dispose();}
+console.log('PASS: shared daily cards execute in the real Workers runtime with durable SQLite storage, concurrent request deduplication and midnight alarms.');

@@ -161,7 +161,7 @@ function fixtures(options = {}) {
   const sent = Object.fromEntries([...Object.values(catalog).map(c => [`mtg:${c.id}`, NOW]), ...Object.keys(cache.ygo).map(id => [`ygo:${id}`, NOW])]);
   return { state, cache, storage: {
     'cardforge-v2': state, 'cardforge-catalog-v1': catalog, 'cardforge-tcg-cache-v1': cache,
-    'cardforge-hero-v1': hero, 'cardforge-meta-v1': meta, 'cardforge-community-v3': community,
+    'cardforge-hero-v2': hero, 'cardforge-meta-v1': meta, 'cardforge-community-v3': community,
     'cardforge-sets-v1': { at: NOW, sets: [{ code: 'fdn', name: 'Foundations', icon: `${IMAGE}/symbol.svg`, released_at: '2024-11-15', set_type: 'core' }] },
     'cardstashy-watch-sent-v1': sent,
   } };
@@ -192,7 +192,7 @@ for (const longDailyNames of [false, true]) for (const dailyArtMode of ['ready',
   const f = fixtures({ longDailyNames, dailyArtMode, oversizeDailyName });
   assert.doesNotThrow(() => validateWorkspace(structuredClone(f.state)));
   for (const game of GAME_IDS) {
-    const selected = f.storage['cardforge-hero-v1'][game], expected = oversizeDailyName && game==='mtg' ? oversizeDailyPick : (longDailyNames ? longDailyPicks : heroes)[game];
+    const selected = f.storage['cardforge-hero-v2'][game], expected = oversizeDailyName && game==='mtg' ? oversizeDailyPick : (longDailyNames ? longDailyPicks : heroes)[game];
     assert.equal(selected.name, expected.name); assert.equal(selected.id, expected.id);
     assert.equal(selected.game, game); assert.equal(selected.date, TODAY);
     assert.equal(!!selected.art, dailyArtMode === 'ready');
@@ -313,7 +313,7 @@ async function openApp(options = {}) {
     // Keep that real path active, but fulfill only the configured host and exact
     // history endpoint locally, with matching printing identity and honest gaps.
     if (isMarketHistory) return json(historyFixture(url));
-    const selection = url.hostname === 'api.scryfall.com' && url.pathname === '/cards/random'
+    const selection = url.origin === BASE && url.pathname === '/api/daily-card' || url.hostname === 'api.scryfall.com' && url.pathname === '/cards/random'
       || url.hostname === 'db.ygoprodeck.com' && url.pathname.endsWith('/archetypes.php')
       || url.hostname === 'api.tcgdex.net' && url.pathname === '/v2/en/cards' && url.searchParams.get('category') === 'Pokemon';
     if (selection && gate) { const active = gate; gate = null; active.started(); await active.wait; }
@@ -328,6 +328,12 @@ async function openApp(options = {}) {
     if (url.hostname === 'fonts.googleapis.com') return route.fulfill({ status: 200, contentType: 'text/css', body: '/* deterministic system fonts */' });
     if (url.origin === BASE) {
       if (url.pathname === '/catalog.json') return json({ cards: [], snapshot_date: '2000-01-01' });
+      if (url.pathname === '/api/daily-card') {
+        if (options.dailyUnavailable) return json({error:'Daily fixture unavailable'});
+        const g = url.searchParams.get('game'), date = await page.evaluate(() => new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()));
+        const c = seeds[g];
+        return json({game:g,date,card:{game:g,date,id:c.id,name:c.name,art:g==='mtg'?c.image_uris.art_crop:g==='ygo'?c.art:c.imageLarge,artDirect:g==='ygo'?c.artDirect:''}});
+      }
       if (url.pathname === '/api/community') return json(feed(url.searchParams.get('game'), options.emptyFeed, options));
       if (url.pathname === '/api/meta/mtg') {
         if (emblemsWait && url.searchParams.get('format') === DEFAULT_MTG_META_FORMAT) { seenEmblems(); await emblemsWait; }
@@ -1137,7 +1143,7 @@ try {
   await selectGame(rollover.page, 'ygo');
   await rollover.page.waitForFunction(id => document.querySelector('.hh-credit')?.dataset.id === id, seeds.ygo.id);
   delayedDaily.release();
-  await rollover.page.waitForFunction(id => JSON.parse(localStorage.getItem('cardforge-hero-v1'))?.mtg?.id === id, seeds.mtg.id);
+  await rollover.page.waitForFunction(id => JSON.parse(localStorage.getItem('cardforge-hero-v2'))?.mtg?.id === id, seeds.mtg.id);
   await assertDailyIdentity(rollover.page, 'ygo', seeds.ygo, '2026-10-18');
   await assertSelected(rollover.page, 'ygo');
   for (const game of GAME_IDS) {
@@ -1148,19 +1154,19 @@ try {
     }, { game, id: seeds[game].id });
     await assertDailyIdentity(rollover.page, game, seeds[game], '2026-10-18');
     await visibleHeaderArt(rollover.page);
-    const stored = await rollover.page.evaluate(() => JSON.parse(localStorage.getItem('cardforge-hero-v1')));
+    const stored = await rollover.page.evaluate(() => JSON.parse(localStorage.getItem('cardforge-hero-v2')));
     assert.equal(stored.date, '2026-10-18');
     assert.equal(stored[game].id, seeds[game].id);
     assert.equal(stored[game].game, game);
     assert.equal(stored[game].date, '2026-10-18');
   }
   assert.equal(await inventorySnapshot(rollover.page), originalInventory, 'daily-card rollover never changes the owned collection or saved decks');
-  const dailyCalls = rollover.requests.filter(line => /\/cards\/random\?|cardinfo\.php\?staple=|\/v2\/en\/cards\?rarity=/.test(line));
-  assert.equal(dailyCalls.length, 3, 'one daily selection per game after UTC rollover');
+  const dailyCalls = rollover.requests.filter(line => /\/api\/daily-card\?game=/.test(line));
+  assert.equal(dailyCalls.length, 3, 'one daily selection per game after New York rollover');
   for (const game of GAME_IDS) { await selectGame(rollover.page, game); await assertDailyIdentity(rollover.page, game, seeds[game], '2026-10-18'); }
-  assert.equal(rollover.requests.filter(line => /\/cards\/random\?|cardinfo\.php\?staple=|\/v2\/en\/cards\?rarity=/.test(line)).length, 3, 'same-day navigation reuses each game’s own new daily card');
+  assert.equal(rollover.requests.filter(line => /\/api\/daily-card\?game=/.test(line)).length, 3, 'same-day navigation reuses each game’s own new daily card');
   await rollover.close();
-  report.push('Open-session UTC daily-card rollover, delayed previous-game response isolation, separate all-game storage identities, one fetch per game, same-day cache reuse and no ownership/deck mutation');
+  report.push('Open-session New York daily-card rollover, delayed previous-game response isolation, separate all-game storage identities, one fetch per game, same-day cache reuse and no ownership/deck mutation');
 
   for (const game of GAME_IDS) {
     const random = await openApp({ game });

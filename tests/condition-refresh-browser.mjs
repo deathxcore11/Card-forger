@@ -62,6 +62,7 @@ async function searchPath(app,game,{recovery=false}={}){
   assert.match(await preview.innerText(),/Synthetic temporary provider limit/,'The exact provider reason survives the scheduler');
   assert.match(await preview.locator('.condition-reference').innerText(),/Reference price/,'A known market price stays visible during an outage');
   assert.match(await preview.innerText(),/excluded from your total/,'A reference is not relabeled as a played-condition quote');
+  assert.equal(await page.locator('#lotManualValue').getAttribute('placeholder'),'No market quote — enter value');
   await capture(page,'synthetic-search-condition-reference-paused');
   const before=app.condition.records.length;app.condition.respond(()=>available());
   await act(page,'retryConditionPrice').click();await advance(page);await settle(app);
@@ -69,6 +70,15 @@ async function searchPath(app,game,{recovery=false}={}){
  }
  await page.waitForFunction(()=>/\$7\.25/.test(document.querySelector('#conditionPricePreview')?.textContent||''));const count=app.condition.records.length;
  await select(page,game==='mtg'?'#addCondition':'#tCond',MP);await page.waitForFunction(()=>/\$3\.50/.test(document.querySelector('#conditionPricePreview')?.textContent||''));await advance(page);assert.equal(app.condition.records.length,count);
+ const preview=page.locator('#conditionPricePreview'),manual=page.locator('#lotManualValue');
+ assert.equal(await preview.locator('.condition-price-amount').innerText(),'$3.50');
+ assert.equal(await manual.getAttribute('placeholder'),'Enter custom value (optional)');
+ if(game!=='mtg')assert.doesNotMatch((await page.locator('#tPrint option').allTextContents()).join(' '),/\$/,'Printing choices identify versions without competing prices');
+ await manual.fill('75.50');await frames(page);
+ assert.equal(await preview.locator('.condition-price-amount').innerText(),'$75.50');assert.equal(await preview.locator('.condition-price-kind').innerText(),'Custom');assert.match(await preview.locator('.condition-market-secondary').innerText(),/\$3\.50/);
+ for(const width of [320,390,768]){await page.setViewportSize({width,height:950});await frames(page);await noOverflow(page,'#sheet',`${game} custom price ${width}px`);}
+ await page.setViewportSize({width:390,height:950});await capture(page,`synthetic-condition-${game}-custom-comparison`);
+ await manual.fill('');await frames(page);assert.equal(await preview.locator('.condition-price-amount').innerText(),'$3.50');assert.equal(await preview.locator('.condition-market-secondary').count(),0);assert.equal(app.condition.records.length,count,'Typing and clearing a custom value reuses the condition bundle');
  await capture(page,`synthetic-search-condition-${game}-search-parity`);
 }
 async function savedTail(app){

@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import { gameTabs, syncGameTabs, attachGameTabs, homeValue, featureArticle, homeEdition, homeDiscovery, isHomeRevealCurrent, homeDeckReveal, displayDate, refreshHomeCommunity } from './home-ui.js';
 import { communityState } from './community-feed.js';
 import { GAME_IDS } from './games.js';
-import { homeHero, heroState, loadHero, heroFor } from './tcg.js';
+import { homeHero, heroState, loadHero, heroFor, heroDate } from './tcg.js';
 import { attachHomeSwipe } from './home-swipe.js';
 const store = new Map();
 globalThis.localStorage = { getItem: k => store.get(k) || null, setItem: (k,v) => store.set(k,v) };
@@ -43,7 +43,7 @@ assert.match(event,/Event dates/);assert.match(event,/datetime="2026-10-20"/);as
 const link=featureArticle('ptcg',{kind:'link',title:'Official news',url:'https://www.pokemon.com/us/pokemon-news',publishedAt:'2026-10-17'},0,3);
 assert.match(link,/Source link · not a live headline/);assert.doesNotMatch(link,/<time/);
 for(const g of GAME_IDS){
-  const date=new Date().toISOString().slice(0,10);
+  const date=heroDate();
   heroState[g]={game:g,date,name:'Exact daily card',id:'daily-card-'+g,art:'https://example.org/daily.png'};
   const html=homeHero(g,'Welcome back.',true);
   assert.equal((html.match(/id="homeHero"/g)||[]).length,1);
@@ -52,15 +52,15 @@ for(const g of GAME_IDS){
   assert.equal((html.match(new RegExp('data-id="daily-card-'+g+'"','g'))||[]).length,1,'the action opens the exact daily printing');
   assert.match(html,/Card of the Day/);assert.doesNotMatch(html,/From your deck|Open deck|data-to="#(?:deck|tdeck)\//);
 }
-let dailyFetches=0,magicPicks=0;
-globalThis.fetch=async url=>{dailyFetches++;return {json:async()=>String(url).includes('ygoprodeck')?{data:[{id:123,name:'Daily YGO',type:'Normal Monster',desc:'',card_images:[{image_url:'https://images.ygoprodeck.com/images/cards/123.jpg',image_url_cropped:'https://images.ygoprodeck.com/images/cards_cropped/123.jpg'}]}]}:[{id:'sv1-1',name:'Daily Pokémon',image:'https://assets.tcgdex.net/en/sv/sv01/001'}]};};
+let dailyFetches=0;
+globalThis.fetch=async url=>{dailyFetches++;const g=new URL(url,'https://test').searchParams.get('game');return {ok:true,json:async()=>({game:g,date:heroDate(),card:{id:'daily-'+g,name:'Daily '+g,art:''}})};};
 for(const g of GAME_IDS){
   delete heroState[g];
-  assert.equal(await loadHero(g,async()=>{magicPicks++;return{id:'daily-magic',name:'Daily Magic',image_uris:{art_crop:'https://example.org/daily.jpg'}};}),true);
-  assert(heroFor(g)?.name);assert.equal(await loadHero(g,()=>{throw Error('daily card must be cached');}),false);
+  assert.equal(await loadHero(g),true);
+  assert(heroFor(g)?.name);assert.equal(await loadHero(g),false);
   assert.match(homeHero(g,'Hello'),/Card of the Day/);
 }
-assert.equal(magicPicks,1);assert.equal(dailyFetches,2,'existing provider selection is called once for each non-Magic game');
+assert.equal(dailyFetches,3,'one server request per game');
 const picker = {}, origin = { game:'mtg', view:'home', sheet:picker };
 assert.equal(isHomeRevealCurrent(origin,{...origin,open:true}),true);
 for(const patch of [{game:'ptcg'},{view:'collection'},{sheet:{}},{open:false}]) assert.equal(isHomeRevealCurrent(origin,{...origin,open:true,...patch}),false,'navigation, game, closed or replaced picker cancels the actual-card reveal');

@@ -22,7 +22,7 @@ import {configureConditionAuth,clearConditionAttempts,forgetConditionAttempt,loa
 import {createConditionRefreshScheduler,conditionCursorKey,selectConditionLots,changedConditionLots,conditionLotIdentity} from './condition-refresh-scheduler.js';
 import {brandMark} from './brand.js';
 import {ownedCardLots,quickQuantity,adjustOwnedLot} from './quick-quantity.js';
-import {conditionName,conditionValue,conditionPriceHtml,attachConditionInfo} from './condition-value.js';
+import {conditionName,conditionValue,conditionPriceHtml,conditionManualPlaceholder,attachConditionInfo} from './condition-value.js';
 import { showAiReview } from './ai-review.js';
 import { openAsk, clearAskConversations } from './ai-ask.js';
 import { openRulesAsk, closeRulesAsk, clearRulesConversations } from './ai-rules.js';
@@ -1746,7 +1746,7 @@ function refreshConditionPrice(retry=false){
   const game=ctx.game;if(!['ptcg','ygo'].includes(game)||game!==T.game())return;const card=contextTcgCard(game,ctx.id,ctx),pr=$("#tPrint")?.value||'',[printing,rarity]=game==='ygo'?pr.split('|'):['',''];
   entry={cardId:card?.id,...(ctx.setId?{setReleaseId:ctx.setId}:{}),condition:$("#tCond")?.value,language:$("#tLanguage")?.value||'en',variant:game==='ptcg'?pr:'',printing:printing||'',rarity:rarity||'',edition:$("#tEdition")?.value||'',manualValue,manualValueCondition:conditionName($("#tCond")?.value)};
   const exact = !ctx.setId || (card?.setContext?.status === 'resolved' && (game !== 'ygo' || card.setContext.printings.filter(p=>p.code===printing&&p.rarity===rarity&&!p.releasePriceAmbiguous).length === 1 && (T.cardOf(game,ctx.id)?.sets||[]).filter(p=>p.code===printing&&p.rarity===rarity).length === 1));
-  price=exact?T.entryPrice(card,entry):conditionValue(null,entry,[]).price;
+  price=exact?T.entryPrice(card,{...entry,manualValue:null}):null;
   if(exact){sourceCard=card;sourceGame=game;
    reference=T.referenceEntryPrice(card,entry);
    if(reference==null&&game==='ygo'){
@@ -1756,21 +1756,29 @@ function refreshConditionPrice(retry=false){
   }
  }else if(ctx.type==='add'){
   const card=(ctx.entry?.printingVerified&&S.state.printings?.[ctx.entry.printingId])||ctx.lookup;entry={...ctx.entry,condition:$("#addCondition")?.value,finish:$("#addFinish")?.value,language:$("#addLanguage")?.value,manualValue,manualValueCondition:conditionName($("#addCondition")?.value)};
-  price=conditionValue(cardPrice(card,entry.finish),entry,card?.conditionQuotes||[]).price;
+  price=conditionValue(cardPrice(card,entry.finish),{...entry,manualValue:null},card?.conditionQuotes||[]).price;
   const set=$('#addSet')?.value?.trim().toLowerCase(),number=$('#addNumber')?.value?.trim();
   if((set&&set!==String(card?.set||'').toLowerCase())||(number&&number!==String(card?.collector_number||'')))price=null;
   else {sourceCard=card;sourceGame='mtg';reference=cardPrice(card,entry.finish);}
  }else return;
  const referenceInfo={reference,referenceLabel,retryAction:sourceCard?'retryConditionPrice':'',buyLink:sourceCard?conditionBuyLink(sourceGame,sourceCard,entry):null};
- node.innerHTML=conditionPriceHtml(price,entry,[...(sourceCard?.conditionQuotes||[]),...(entry.conditionQuotes||[])],referenceInfo);
- const selectionKey=JSON.stringify([...CONDITION_IDENTITY.map(k=>entry[k]||''),entry.condition||'',manualValue]);node.conditionSelectionKey=selectionKey;
+ const paint=(value,quotes,lookup)=>{
+  // A source response may arrive while the user edits their value. Read the
+  // live field without replacing it; only exact card/condition changes retire
+  // this response. This keeps the comparison current without a second fetch.
+  const input=$("#lotManualValue"),raw=input?.value??'',currentEntry={...entry,manualValue:raw===''?null:Number(raw)};
+  node.innerHTML=conditionPriceHtml(value,currentEntry,quotes,lookup);
+  if(input)input.placeholder=conditionManualPlaceholder(currentEntry,quotes,lookup);
+ };
+ paint(price,[...(sourceCard?.conditionQuotes||[]),...(entry.conditionQuotes||[])],referenceInfo);
+ const selectionKey=JSON.stringify([...CONDITION_IDENTITY.map(k=>entry[k]||''),entry.condition||'']);node.conditionSelectionKey=selectionKey;
  const current=()=>node.isConnected&&S.ui.sheetCtx===ctx&&node.conditionSelectionKey===selectionKey;
  if(sourceCard){
-  if(price==null)node.innerHTML=conditionPriceHtml(price,entry,[...(sourceCard.conditionQuotes||[]),...(entry.conditionQuotes||[])],{...referenceInfo,status:'loading'});
+  if(price==null)paint(price,[...(sourceCard.conditionQuotes||[]),...(entry.conditionQuotes||[])],{...referenceInfo,status:'loading'});
   Promise.resolve(fetchConditionValue(sourceCard,entry,sourceGame,null,{source:'search',current,retry})).then(result=>{
    if(!current()||!result)return;
-   const quotes=[...(sourceCard.conditionQuotes||[]),...(entry.conditionQuotes||[])],fresh=conditionValue(price,entry,quotes).price;
-   node.innerHTML=conditionPriceHtml(fresh,entry,quotes,{...referenceInfo,...result});
+   const quotes=[...(sourceCard.conditionQuotes||[]),...(entry.conditionQuotes||[])],fresh=conditionValue(price,{...entry,manualValue:null},quotes).price;
+   paint(fresh,quotes,{...referenceInfo,...result});
   });
  }
 }
@@ -3105,7 +3113,7 @@ let heroRolloverTimer = null;
 function scheduleHeroRollover() {
   clearTimeout(heroRolloverTimer);
   if (document.hidden || S.ui.view !== "home") return;
-  heroRolloverTimer = setTimeout(() => heroArt(T.game()), 86400000 - Date.now() % 86400000 + 20);
+  heroRolloverTimer = setTimeout(() => heroArt(T.game()), Math.max(20, T.heroResetAt() - Date.now() + 20));
   heroRolloverTimer?.unref?.();
 }
 function heroArt(g) {
@@ -3113,7 +3121,7 @@ function heroArt(g) {
   if (S.ui.view !== "home" || T.game() !== g) return;
   scheduleHeroRollover();
   paintHomeHero(g); // Clear yesterday's art even if today's provider is offline.
-  return T.loadHero(g, () => api("/cards/random?" + new URLSearchParams({ q: "game:paper is:hires (rarity:mythic or rarity:rare) -is:digital" })))
+  return T.loadHero(g)
     .then(() => navigationCurrent(screen) && paintHomeHero(g))
     .catch(() => {});
 }
@@ -3481,7 +3489,7 @@ function addSheet(entry = null, preset = {}) {
     </div>
     <details class="more" ${entry?.set || preset.set ? "open" : ""}><summary>Exact printing (optional)</summary><div class="grid2"><label>Set code<input id="addSet" placeholder="e.g. CMM" value="${esc(entry?.set || preset.set || "")}"></label><label>Collector #<input id="addNumber" value="${esc(entry?.collectorNumber || preset.number || "")}"></label></div><p class="muted small">Leave blank if unsure — CardStashy never guesses an edition.</p></details>
     <section id="conditionPricePreview" class="condition-price-preview" role="status" aria-label="Selected condition value"></section>
-    <details class="more" open><summary>Value for this condition</summary><label>Your value per copy (USD, optional)<input id="lotManualValue" type="number" min="0" step="0.01" value="${Number.isFinite(entry?.manualValue)?entry.manualValue:''}" placeholder="No condition quote"></label><p class="foot">A played or damaged copy without a matching quote is excluded from value totals. Enter your own value to include it.</p></details>
+    <details class="more" open><summary>Custom value (optional)</summary><label>Your value per copy (USD, optional)<input id="lotManualValue" type="number" min="0" step="0.01" value="${Number.isFinite(entry?.manualValue)?entry.manualValue:''}" placeholder="Enter custom value (optional)" aria-describedby="lotManualHelp"></label><p class="foot" id="lotManualHelp">Your custom value is used for your collection total. Clear it to use the source value. Played or damaged copies without a quote or custom value are excluded from totals.</p></details>
     <p id="addError" class="error" role="alert"></p>
     <div class="actions"><button class="btn" data-act="addSave" ${lookup ? "" : "disabled"} id="addSaveBtn">${entry ? "Save changes" : "Add to collection"}</button><button class="link small" data-act="addSaveRaw">Save without lookup</button>${entry ? `<button class="link small danger" data-act="addDelete">Delete</button>` : ""}</div>`,
     S.ui.sheetCtx,

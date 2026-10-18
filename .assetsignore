@@ -48,3 +48,6 @@ condition-feed-route.js
 tcgplayer-condition-source.js
 tcgplayer-web-source.js
 CONDITION_PRICING.md
+
+# Shared daily selection is server-owned.
+daily-card-route.js

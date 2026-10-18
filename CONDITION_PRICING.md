@@ -76,3 +76,15 @@ The private testing deployment sets the app cap to 60 requests/day (900/month, 8
 Pokémon and Yu-Gi-Oh collection forms now retain selected language in lookup, saved lot and filtered source link. TCGplayer web observations identify their market-reference type, structured retrieval, exact filtered source URL and original calculation date. They are not CardStashy aggregate estimates or completed-sales observations.
 
 Explicit Refresh price is available in the saved-copy action menu and the existing form price detail. It rechecks the shared coordinator and can reuse an unexpired source observation. It never clears a provider pause or a manual override. Raw condition prices are not assigned to graded lots. Refresh does not create an AI call, perform a sale-history crawl or add a collection copy.
+
+## 3.85.4 price presentation
+
+Collection-form printing selectors now show identity only. A single primary amount has a condition/Market, Estimate, General reference or Custom badge. Calculation/observation and check dates remain distinct. Seller asking prices may differ; the UI does not claim a verified sale, a seller average, a Near Mint baseline, or an unsupported shipping treatment.
+
+A custom value is primary while its exact current source quote remains a muted comparison. Clearing the field restores the source value; zero is valid. A delayed response updates the comparison without replacing the typed value. Placeholders follow the current selection and lookup result. Missing/expired or other-language quotes cannot become current comparisons. Personal values and provider storage are unchanged.
+
+The form-controller regressions cover all three games and delayed custom-value edits. Hosted condition-form tests exercise overrides, clearing, request reuse, missing quotes and 320/390/768px widths. Provider adapters and request budgets are unchanged in this release.
+
+### Daily cards (3.85.4)
+
+`/api/daily-card?game=mtg|ygo|ptcg` reads one shared server selection per game from the `DailyCards` Durable Object. A midnight **America/New_York** alarm warms all three games; every request also checks the server date, so an alarm delay cannot serve yesterday as today. DST follows local midnight. Consecutive selections exclude the previous card ID and name. Browser v1 picks are retired, the v2 cache expires at the same boundary, and open/foregrounded Home screens refresh without touching owned cards or decks. Source failures keep a bounded retry cooldown and never relabel yesterday’s card.
