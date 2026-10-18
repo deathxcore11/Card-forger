@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { S, blank } from './store.js';
 import { registerTcg, cache, SOURCES, ptcglIdentity, ptcglName } from './tcg.js';
 import { normalizePtcg, ptcgSource, ptcgPrintingMatches } from './ptcg.js';
+import {pokemonSupplementIds} from './pokemon-catalogue-supplement.js';
 
 const pk = (id, name = 'Pikachu', attack = id) => normalizePtcg({id, name, localId:id.split('-').at(-1), category:'Pokemon', stage:'Basic', attacks:[{name:attack,damage:10}], set:{id:id.slice(0,id.lastIndexOf('-')),name:'Fixture set'}, pricing:{tcgplayer:{normal:{marketPrice:1}}}});
 const a=pk('base1-58'), b=pk('sv04-027');
@@ -81,10 +82,19 @@ try {
   assert.deepEqual(await ptcgSource.byNameNumber('Charizard','TG01'),[]);
   globalThis.fetch=async()=>Response.json([{id:'swsh1-TG01',name:'Charizard'}]);
   assert.equal((await ptcgSource.byNameNumber('Charizard','tg01'))[0]?.id,'swsh1-TG01','case-insensitive alphanumeric identity');
-  globalThis.fetch=async value=>{const u=new URL(value);assert.equal(u.searchParams.get('name'),'psychic energy');return Response.json([{id:'mee-013',name:'Basic Psychic Energy'},{id:'mee-005',name:'Psychic Energy'}]);};
+  globalThis.fetch=async value=>{const u=new URL(value);assert.equal(u.searchParams.get('name'),'Psychic Energy');return Response.json([{id:'mee-013',name:'Basic Psychic Energy'},{id:'mee-005',name:'Psychic Energy'}]);};
   ptcgSource.get=async id=>id===psychic.id?psychic:null;
   assert.equal((await ptcgSource.tournamentCard({name:'Psychic Energy',set:'MEE',number:'13'}))?.id,'mee-013');
   assert.equal((await ptcgSource.tournamentCard({name:'Basic Psychic Energy',set:'MEE',number:'013'}))?.id,'mee-013');
+  // The production API currently returns 404 for MEE 009–016. Use the exact
+  // pinned upstream records, never SVE 013 or a made-up price/normal finish.
+  ptcgSource.get=original.get;let missingRequests=0;
+  globalThis.fetch=async value=>{missingRequests++;const u=new URL(value);if(u.pathname.endsWith('/cards'))return Response.json([]);if(/\/cards\/mee-\d{3}$/.test(u.pathname))return new Response('',{status:404});throw Error('Unexpected fallback request: '+value);};
+  const restored=await ptcgSource.tournamentCard({name:'Psychic Energy',set:'MEE',number:'13'});
+  assert.equal(restored.id,'mee-013');assert.equal(restored.prices.usd,null);assert.equal(restored.variants.length,1);assert.equal(restored.variants[0].productId,713252);assert.deepEqual(restored.variants[0].stamps,['30th-anniversary']);assert.equal(restored.variants[0].finish,'holofoil');assert(restored.catalogueProvenance.commit);
+  assert(missingRequests<=4,'Missing catalogue entries do not trigger repeated price-provider work');
+  for(const id of pokemonSupplementIds){const known=await ptcgSource.get(id);assert(known.basicEnergy);assert.equal(known.id,id);assert.equal(known.set.total,16);assert.equal(known.prices.usd,null);}
+  await assert.rejects(ptcgSource.get('mee-999'),/Card not found/);
 } finally {
   Object.assign(ptcgSource,{get:original.get,byName:original.byName,tournamentCard:original.tournamentCard});globalThis.fetch=original.fetch;
 }

@@ -141,6 +141,7 @@ const ASSETS = [
   "./tcg.js",
   "./ygo.js",
   "./ptcg.js",
+  "./pokemon-catalogue-supplement.js",
   "./tcgbuild.js",
   "./emblems.js",
   "./facts.js",

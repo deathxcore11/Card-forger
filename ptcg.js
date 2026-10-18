@@ -3,6 +3,7 @@ import {pokemonPrintedName,pokemonPrintedNameKey} from './pokemon-identity.js';
 import {applyProductPrices} from "./pokemon-prices.js";
 import {POKEMON_SET_ART} from './pokemon-set-art.js';
 import {pokemonFallback} from "./artwork.js";
+import {pokemonCatalogueFallback,pokemonSupplementIds} from './pokemon-catalogue-supplement.js';
 // Pokémon TCG adapter. Data: TCGdex (api.tcgdex.net) — every physical card and set,
 // Standard/Expanded legality, regulation marks, and daily TCGplayer (USD) and
 // Cardmarket (EUR) prices per variant. Pokémon TCG Pocket (digital) cards are excluded.
@@ -163,6 +164,7 @@ export function normalizePtcg(c) {
     game: "ptcg",
     variantSchema: 9,
     priceFallbackSchema: 3,
+    ...(c.catalogueProvenance?{catalogueProvenance:{...c.catalogueProvenance}}:{}),
     released:c.set?.releaseDate || "",
     id: c.id,
     name: c.name,
@@ -385,12 +387,12 @@ export const ptcgSource = {
     return { cards: sorted.slice(page * size, (page + 1) * size), total: sorted.length, more: (page + 1) * size < sorted.length };
   },
   async get(id, {prices = true} = {}) {
-    const d = await get("/cards/" + encodeURIComponent(id));
+    const d = await get("/cards/" + encodeURIComponent(id)) || pokemonCatalogueFallback(id);
     if (!d) throw Error("Card not found.");
     const c = normalizePtcg(d);
     // No price from TCGdex (common for new sets): ask the Pokémon TCG API, which also carries
     // TCGplayer market prices.
-    if (prices && c.prices.usd == null) await fillPrices(c);
+    if (prices && c.prices.usd == null && !c.catalogueProvenance) await fillPrices(c);
     // Recognition can use authoritative variants/stats without waiting on quote
     // enrichment. Such a result must not satisfy normal pricing cache freshness.
     if (!prices) c.priceFallbackSchema = 0;
@@ -414,7 +416,8 @@ export const ptcgSource = {
   },
   async tournamentCard(row) {
     if(!row.set || !row.number)return null;
-    const candidates=await this.byNameNumber(printingName(row.name),String(row.number));
+    const queryName=String(row.name||'').replace(/^Basic (?=(?:Grass|Fire|Water|Lightning|Psychic|Fighting|Darkness|Metal|Fairy) Energy$)/i,'');
+    const candidates=await this.byNameNumber(queryName,String(row.number));
     for(const brief of candidates.filter(c=>printingName(c.name)===printingName(row.name))){
       const setId=brief.id.slice(0,brief.id.lastIndexOf('-'));
       const set=String(setId).toLowerCase()===String(row.set).toLowerCase()?{id:setId}:await get('/sets/'+encodeURIComponent(setId)).catch(()=>null);
@@ -426,14 +429,16 @@ export const ptcgSource = {
   async byNameNumber(name, num) {
     name=pokemonPrintedName(name);
     num = String(num).trim();
+    const supplement=pokemonSupplementIds.map(pokemonCatalogueFallback).filter(c=>collectorKey(c.localId)===collectorKey(num)&&(!name||printingName(c.name).includes(printingName(name)))).map(brief);
+    const merged=hits=>[...new Map([...supplement,...hits].map(c=>[c.id,c])).values()];
     const tries = [...new Set(/^\d+$/.test(num) ? [num, String(Number(num)), String(Number(num)).padStart(3, "0")] : [num, num.toUpperCase()])];
     for (const n of tries) {
       const d = (await get("/cards", { ...(name?{name}:{}), localId: n })) || [];
       // TCGdex matches localId loosely ("053" also finds "SWSH153"); keep exact numbers only.
       const hits = d.map(brief).filter((c) => !c.pocket && collectorKey(c.id.slice(c.id.lastIndexOf("-") + 1)) === collectorKey(num));
-      if (hits.length) return hits;
+      if (hits.length) return merged(hits);
     }
-    return [];
+    return supplement;
   },
   async byName(name) {
     const d = (await get("/cards", { name: "eq:" + name, "sort:field": "id", "sort:order": "DESC", "pagination:itemsPerPage": 20 })) || [];
