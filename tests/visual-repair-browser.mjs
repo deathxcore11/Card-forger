@@ -36,6 +36,7 @@ try{for(const [game,id,file,mask,material] of cases){
   assert.equal(await card.locator('.finish-spotlight').count(),1,'Neutral soft tilt light exists independently of the material');
   for(const width of [390,673,768,1440]){
    await page.setViewportSize({width,height:1050});await card.evaluate(n=>n.scrollIntoView({block:'center',behavior:'instant'}));await noOverflow(page,'#sheetBody',id+' '+width);
+   assert(await page.locator('#sheet .card-buy-link > span:first-child').evaluate(n=>{const c=document.createElement('canvas').getContext('2d'),s=getComputedStyle(n);c.font=s.font;return Math.max(...n.textContent.split(/\s+/).map(w=>c.measureText(w).width))<=n.getBoundingClientRect().width+1;}),'Seller words never break across lines');
    await page.screenshot({path:'test-results/finish-effects-real-'+id.toLowerCase().replace(/[^a-z0-9]+/g,'-')+'-'+width+'.png',fullPage:false});
   }
   assert.equal(await inventorySnapshot(page),before);
