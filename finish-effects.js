@@ -113,6 +113,9 @@ export function finishChoices(game,c,ctx={}){
  if(game==='mtg')return ['nonfoil','foil','etched'].filter(key=>c.finishes?.includes(key)).map(key=>effectFor(game,c,key,{nonfoil:'Nonfoil',foil:'Traditional foil',etched:'Etched foil'}[key],ctx,key));
  if(game==='ptcg')return [...new Map((c.variants||[]).filter(v=>v.key).map(v=>[v.key,v])).values()].map(v=>{
   const finish=variantFinish(v);
+  // Pattern metadata is real identity, not permission to fake a generic texture.
+  // Keep the selectable variant while its distinct physical pattern is unsupported.
+  if(v.foil)return {...unknown(v.key,v.label||v.key),reason:'Patterned finish preview unavailable for this printing.'};
   // Preserve a known variant even when its finish cannot be previewed.
   return finish?effectFor(game,c,v.key,v.label||v.key,ctx,finish):unknown(v.key,v.label||v.key);
  });
@@ -145,7 +148,14 @@ export function resolveFinish(game,c,ctx={}){
  let selected=choices.find(x=>x.key===wanted);
  if(game==='ygo')selected=choices[0];
  else if(!wanted){
-  if(game==='ptcg')selected=commonPokemonPresentation(c,choices);
+  if(game==='ptcg'){
+   // Browse-only preference: an ordinary, source-supported Holofoil option.
+   // Never auto-select a stamped/patterned/edition-specific version or mutate
+   // the price/add context. Explicit owned finishes above always win.
+   const regular=c?.variants?.find(v=>v.key==='holofoil'&&variantFinish(v)==='holofoil'&&!v.foil&&!v.subtype&&!v.stamps?.length&&(!v.size||v.size==='standard'));
+   const holo=regular&&choices.find(p=>p.key===regular.key&&p.status!=='unknown');
+   selected=holo?{...holo,browseDefault:true,reason:'Holofoil preview · confirm your finish when adding'}:commonPokemonPresentation(c,choices);
+  }
   else selected=choices.find(x=>x.key==='nonfoil')||(choices.length===1?choices[0]:null);
  }
  return {...(selected||unknown(wanted||ctx.priceFinish||'')),game,printingId:c?.id||'',face:Number(ctx.face||0)};

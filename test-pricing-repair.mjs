@@ -22,8 +22,8 @@ assert.equal(conditionValue(15,{condition:'Lightly Played'}).price,null,'mixed-c
 const oldNow=Date.now;let now=oldNow();Date.now=()=>now;
 try{
  setTcgPrices('test',{7:{Normal:{market:2}}});const c={set:'test',tcgplayer_id:7};assert.equal(tcgFallback(c).value,2);now+=86400001;assert.equal(tcgFallback(c),null,'in-memory price expires without restart');
- assert.equal(needsCardRefresh('ptcg',{variantSchema:10,priceFallbackSchema:3,fetchedAt:new Date(now).toISOString()}),false);
- assert.equal(needsCardRefresh('ptcg',{variantSchema:10,priceFallbackSchema:3,fetchedAt:'bad'}),true);
+ assert.equal(needsCardRefresh('ptcg',{variantSchema:11,priceFallbackSchema:3,fetchedAt:new Date(now).toISOString()}),false);
+ assert.equal(needsCardRefresh('ptcg',{variantSchema:11,priceFallbackSchema:3,fetchedAt:'bad'}),true);
  assert.equal(needsCardRefresh('ptcg',{variantSchema:9,priceFallbackSchema:3,fetchedAt:new Date(now).toISOString()}),true,'Refresh prior rules schema');
 }finally{Date.now=oldNow;}
 // The actual durable coordinator: simultaneous clients, region-independent persistence,

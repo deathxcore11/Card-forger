@@ -138,7 +138,7 @@ const remember = (card) => {
 export function needsCardRefresh(g,c,printings=false){
  const time=Date.parse(c?.fetchedAt);
  return !c||c.brief||!Number.isFinite(time)||time>Date.now()+300000||Date.now()-time>=PRICE_TTL||
- (g==='ptcg'&&(c.variantSchema!==10||c.priceFallbackSchema!==3))||
+ (g==='ptcg'&&(c.variantSchema!==11||c.priceFallbackSchema!==3))||
  (g==='ygo'&&(c.artSchema!==1||(printings&&c.printPriceSchema!==1)));
 }
 // Full card with prices no older than a day.

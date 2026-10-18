@@ -47,13 +47,18 @@ try{for(const game of ['mtg','ptcg','ygo']){
   }
   for(const width of [320,390,768,1440]){
    await page.setViewportSize({width,height:1000});await settle(page);
-   const geometry=await page.evaluate(()=>{const root=document.querySelector('.collection-primary-tools'),sort=root.querySelector('.collection-sort-controls'),search=root.querySelector('input'),filters=root.nextElementSibling,box=n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,height:r.height};};return {width:innerWidth,doc:document.documentElement.scrollWidth,root:box(root),sort:box(sort),search:box(search),filters:box(filters),controls:[...sort.querySelectorAll('select')].map(box),first:root.firstElementChild===sort};});
+   for(const layoutSort of options){
+   await selected(page,'Sort collection').selectOption(layoutSort);await selected(page,'Collection sort direction').selectOption('desc');await settle(page);
+   const geometry=await page.evaluate(()=>{const root=document.querySelector('.collection-primary-tools'),sort=root.querySelector('.collection-sort-controls'),search=root.querySelector('input'),filters=root.nextElementSibling,box=n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,height:r.height};};return {width:innerWidth,doc:document.documentElement.scrollWidth,root:box(root),sort:box(sort),search:box(search),filters:box(filters),controls:[...sort.querySelectorAll('select')].map(n=>{const s=getComputedStyle(n),icon=getComputedStyle(n,'::picker-icon'),num=x=>parseFloat(x)||0,canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');ctx.font=[s.fontStyle,s.fontVariant,s.fontWeight,s.fontSize,s.fontFamily].join(' ');const label=n.selectedOptions[0].label,available=n.clientWidth-num(s.paddingLeft)-num(s.paddingRight)-num(icon.width)-num(s.columnGap);return {...box(n),label,available,text:ctx.measureText(label).width,scroll:n.scrollWidth,client:n.clientWidth};}),first:root.firstElementChild===sort};});
    assert(geometry.first,'Sort is first, not hidden among filters');assert(geometry.doc<=width+2,'No horizontal document overflow '+JSON.stringify(geometry));
    assert(geometry.sort.left<=geometry.root.left+2&&geometry.sort.top<=geometry.search.top+2,'Sort occupies upper-left');
    assert(geometry.filters.top>=Math.max(geometry.sort.bottom,geometry.search.bottom)-2,'Filters follow primary controls');
-   for(const c of geometry.controls)assert(c.height>=44&&c.left>=0&&c.right<=width+1,'Readable touch-sized sort controls '+JSON.stringify(geometry));
+   for(const c of geometry.controls){assert(c.height>=44&&c.left>=0&&c.right<=width+1,'Readable touch-sized sort controls '+JSON.stringify(geometry));assert(c.text<=c.available+2&&c.scroll<=c.client+2,'Selected text and picker icon fit inside the control, not across the search field '+JSON.stringify(c));}
+   assert.deepEqual([...(await ids(page))].sort(),all,'Layout selections preserve exact lots');
+   if(layoutSort==='name')await capture(page,`collection-sort-${game}-${width}`);
+   }
+   await selected(page,'Sort collection').selectOption('name');await selected(page,'Collection sort direction').selectOption('desc');
    assert.deepEqual(await ids(page),chosen,'Resize does not reorder chosen lots');
-   await capture(page,`collection-sort-${game}-${width}`);
   }
   assert.equal(await inventorySnapshot(page),before,'Sorting/filtering/resizing never changes lots, values or decks');app.health();
   console.log(`PASS ${game}: timestamp order, unknown prices last both ways, all sorts/directions preserve lots, explicit selection/search/filters and320/390/768/1440 layout.`);

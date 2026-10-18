@@ -25,16 +25,25 @@ export function pokemonVariants(c) {
   const title = value => String(value).split("-").map(x => x.charAt(0).toUpperCase()+x.slice(1)).join(" ");
   for (const d of c.variants_detailed || []) {
     const first = d.stamp?.includes("1st-edition"), finish = { holo:"holofoil", reverse:"reverse-holofoil", normal:"normal" }[d.type];
+    const foil = typeof d.foil === "string" ? d.foil.trim() : "";
     const special = d.subtype && d.subtype !== "unlimited" || (d.stamp || []).some(x => x !== "1st-edition") || d.size && d.size !== "standard";
     const wanted = first ? [d.type === "holo" ? "1st-edition-holofoil" : "1st-edition"] : d.subtype === "unlimited" || c.variants?.firstEdition ? [d.type === "holo" ? "unlimited-holofoil" : "unlimited", finish] : [finish];
     const bucket = wanted.find(k => d.pricing?.tcgplayer?.[k]);
-    const q = bucket ? d.pricing.tcgplayer[bucket] : {};
+    // Patterned reverse products are sold in a Holofoil bucket, but remain
+    // physically reverse foil. Never borrow another product's quote.
+    const patterned = d.type === "reverse" && ["pokeball", "masterball"].includes(foil);
+    const patternQuote = patterned ? d.pricing?.tcgplayer?.holofoil : null;
+    const exactPatternQuote = patternQuote && d.thirdParty?.tcgplayer && String(patternQuote.productId) === String(d.thirdParty.tcgplayer) ? patternQuote : null;
+    const bucketQuote = bucket ? d.pricing.tcgplayer[bucket] : null;
+    const exactBucketQuote = !foil || bucketQuote && d.thirdParty?.tcgplayer && String(bucketQuote.productId) === String(d.thirdParty.tcgplayer) ? bucketQuote : null;
+    const q = exactBucketQuote || exactPatternQuote || {};
     // A plain finish TCGdex knows nothing more about (no price, no product) is the same version
     // as the per-finish price below: key it by finish so the two merge instead of listing twice.
     const bare = !special && !bucket && !d.pricing && !d.thirdParty?.tcgplayer;
     const key = !special && bucket ? bucket : bare ? wanted[0] : "detail:" + (d.variantId || JSON.stringify([d.type,d.subtype,d.stamp,d.size]));
-    const label = [first ? "First Edition" : "", d.subtype ? title(d.subtype) : "", ...(d.stamp || []).filter(x => x !== "1st-edition").map(title), d.size && d.size !== "standard" ? title(d.size) : "", {holo:"Holofoil",reverse:"Reverse Holo",normal:"Normal"}[d.type] || title(d.type || "Version")].filter(Boolean).join(" · ");
-    out.set(key, { key, label, finish, size:d.size||"standard", subtype:d.subtype||"", stamps:[...(d.stamp||[])], usd:referenceQuote(q)?.value??null, priceKind:referenceQuote(q)?.kind, low:n(q.lowPrice), mid:n(q.midPrice), market:n(q.marketPrice), productId:q.productId || d.thirdParty?.tcgplayer, cmProduct:d.thirdParty?.cardmarket, detailed:true, image: typeof d.image === "string" ? (/[.](?:webp|png|jpe?g)(?:[?]|$)/i.test(d.image) ? d.image : ptcgImage(d.image)) : "", imageLarge: typeof d.image === "string" ? (/[.](?:webp|png|jpe?g)(?:[?]|$)/i.test(d.image) ? d.image : ptcgImage(d.image,"high")) : "" });
+    const foilLabel = {pokeball:"Poké Ball",masterball:"Master Ball"}[foil] || (foil ? title(foil) : "");
+    const label = [first ? "First Edition" : "", d.subtype ? title(d.subtype) : "", ...(d.stamp || []).filter(x => x !== "1st-edition").map(x => x === "set-logo" ? "Set-logo stamped" : title(x)), d.size && d.size !== "standard" ? title(d.size) : "", {holo:"Holofoil",reverse:"Reverse Holo",normal:"Normal"}[d.type] || title(d.type || "Version"), foilLabel].filter(Boolean).join(" · ");
+    out.set(key, { key, label, finish, foil, ...(exactPatternQuote && q === exactPatternQuote ? {pricePrinting:"Holofoil"} : {}), size:d.size||"standard", subtype:d.subtype||"", stamps:[...(d.stamp||[])], usd:referenceQuote(q)?.value??null, priceKind:referenceQuote(q)?.kind, low:n(q.lowPrice), mid:n(q.midPrice), market:n(q.marketPrice), productId:q.productId || d.thirdParty?.tcgplayer, cmProduct:d.thirdParty?.cardmarket, detailed:true, image: typeof d.image === "string" ? (/[.](?:webp|png|jpe?g)(?:[?]|$)/i.test(d.image) ? d.image : ptcgImage(d.image)) : "", imageLarge: typeof d.image === "string" ? (/[.](?:webp|png|jpe?g)(?:[?]|$)/i.test(d.image) ? d.image : ptcgImage(d.image,"high")) : "" });
   }
   for (const v of legacy) {
     const have = out.get(v.key);
@@ -205,7 +214,7 @@ export function normalizePtcg(c) {
   ].filter(Boolean).join("\n\n");
   return {
     game: "ptcg",
-    variantSchema: 10,
+    variantSchema: 11,
     priceFallbackSchema: 3,
     ...(c.catalogueProvenance?{catalogueProvenance:{...c.catalogueProvenance}}:{}),
     released:set?.releaseDate || "",

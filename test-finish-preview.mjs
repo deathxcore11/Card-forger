@@ -29,7 +29,7 @@ assert.equal(finishEffect('ptcg',{...sv,id:'sv01-199',rarity:'Illustration Rare'
 assert.equal(finishEffect('ptcg',{...sv,rarity:'Full Art'},{priceFinish:'holofoil'}),'ptcg-full-art','Full art layout applies only after explicit holo availability');
 assert(finishChoices('ptcg',sv).some(x=>x.key==='firstEdition'&&x.status==='unknown'));
 assert.deepEqual(finishChoices('ptcg',sv,{setId:'wrong'}),[]);
-assert.equal(finishEffect('ptcg',sv,{priceFinish:'reference'}),'unknown');
+assert.equal(finishEffect('ptcg',sv,{priceFinish:'reference'}),'ptcg-holo','Ordinary source-supported holo is now the Pokémon browse preview default');
 const ctx={priceFinish:'normal',entryId:'owned-1'},snapshot=JSON.stringify(sv);
 assert(selectPreviewFinish('ptcg',sv,ctx,'reverse-holofoil'));
 assert.equal(ctx.setVariant,'reverse-holofoil');assert.equal(ctx.entryId,'owned-1');assert.equal(JSON.stringify(sv),snapshot);

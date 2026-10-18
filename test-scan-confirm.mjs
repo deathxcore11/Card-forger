@@ -48,7 +48,7 @@ for(const g of ['mtg','ptcg','ygo']){
 }
 // A real lookup returning a wrong total and an ex suffix cannot become an exact Pokémon match.
 S.state=blank();S.state.settings.game='ptcg';
-const cards=[{id:'correct',name:'Kyogre',game:'ptcg',set:{number:'3',total:25}}, {id:'wrong-total',name:'Kyogre',game:'ptcg',set:{number:'3',total:197}}, {id:'wrong-suffix',name:'Kyogre ex',game:'ptcg',set:{number:'3',total:25}}].map(c=>({...c,variantSchema:10,priceFallbackSchema:3,fetchedAt:new Date().toISOString(),variants:[],prices:{},image:`https://assets.tcgdex.net/en/test/${c.id}/high.webp`}));
+const cards=[{id:'correct',name:'Kyogre',game:'ptcg',set:{number:'3',total:25}}, {id:'wrong-total',name:'Kyogre',game:'ptcg',set:{number:'3',total:197}}, {id:'wrong-suffix',name:'Kyogre ex',game:'ptcg',set:{number:'3',total:25}}].map(c=>({...c,variantSchema:11,priceFallbackSchema:3,fetchedAt:new Date().toISOString(),variants:[],prices:{},image:`https://assets.tcgdex.net/en/test/${c.id}/high.webp`}));
 for(const c of cards)cache.ptcg[c.id]=c;
 const old={search:SOURCES.ptcg.search,byNameNumber:SOURCES.ptcg.byNameNumber};
 SOURCES.ptcg.byNameNumber=async()=>cards;

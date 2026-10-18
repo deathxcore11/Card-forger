@@ -130,6 +130,7 @@ function filteredProductURL(url,game,c,ctx,q,finish){
  if(game==='ptcg'){
   const v=q.variant,physical=v?.key?.startsWith('detail:')?v.finish:v?.key;
   printing={normal:'Normal',nonfoil:'Normal',holo:'Holofoil',holofoil:'Holofoil',reverse:'Reverse Holofoil','reverse-holofoil':'Reverse Holofoil','1st-edition':'1st Edition','1st-edition-holofoil':'1st Edition Holofoil',unlimited:'Unlimited','unlimited-holofoil':'Unlimited Holofoil'}[physical]||'';
+  if(v?.pricePrinting==='Holofoil'&&['pokeball','masterball'].includes(v.foil)&&v.productId)printing='Holofoil';
   if(!printing&&v?.productFallback&&/^(?:1st Edition|Unlimited) (?:Holofoil|Normal)$/.test(v.label||''))printing=v.label;
   if(v?.key?.startsWith('detail:')&&v.stamps?.includes('1st-edition')&&printing)printing='1st Edition '+printing;
   else if(v?.key?.startsWith('detail:')&&['unlimited','shadowless'].includes(v.subtype)&&printing)printing='Unlimited '+printing;

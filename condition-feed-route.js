@@ -42,6 +42,8 @@ export function normalizeConditionVariants(body,product,printings,language='Engl
 // Unlimited Holofoil), while TCGdex calls that same finish simply holofoil.
 // Derive aliases from the exact provider variant, never from the card name.
 export function pokemonConditionPrintings(v,{bare=false}={}){
+ const patternQuote=v?.pricing?.tcgplayer?.holofoil;
+ if(v?.foil)return v.type==='reverse'&&['pokeball','masterball'].includes(v.foil)&&v.thirdParty?.tcgplayer&&String(patternQuote?.productId)===String(v.thirdParty.tcgplayer)?['Holofoil']:[];
  const finish={normal:'Normal',holo:'Holofoil',reverse:'Reverse Holofoil'}[v?.type];if(!finish)return [];
  const stamps=Array.isArray(v.stamp)?v.stamp:[v.stamp],edition=stamps.includes('1st-edition')?'1st Edition':['unlimited','shadowless'].includes(v.subtype)?'Unlimited':'';
  return [...new Set(edition?[edition+' '+finish,edition,...(bare?[finish]:[])]:[finish])];

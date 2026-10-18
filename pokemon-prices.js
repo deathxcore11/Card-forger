@@ -21,7 +21,7 @@ export function applyProductPrices(card,body){
  }
  for(const v of card.variants || []){
   if(v.usd!=null||!v.productId)continue;
-  const matches=(body.quotes || []).filter(q=>String(q.productId)===String(v.productId)&&String(q.subTypeName).toLowerCase()===(/1st edition/i.test(v.label)?'1st edition ':/unlimited/i.test(v.label)?'unlimited ':'')+(/reverse/i.test(v.label)?'reverse holofoil':/holo/i.test(v.label)?'holofoil':'normal'));
+  const matches=(body.quotes || []).filter(q=>String(q.productId)===String(v.productId)&&String(q.subTypeName).toLowerCase()===(/1st edition/i.test(v.label)?'1st edition ':/unlimited/i.test(v.label)?'unlimited ':'')+(v.pricePrinting==='Holofoil'&&['pokeball','masterball'].includes(v.foil)?'holofoil':/reverse/i.test(v.label)?'reverse holofoil':/holo/i.test(v.label)?'holofoil':'normal'));
   if(matches.length!==1||!referenceQuote(matches[0]))continue;
   const q=matches[0];Object.assign(v,{usd:referenceQuote(q).value,priceKind:referenceQuote(q).kind,market:q.marketPrice,low:q.lowPrice,mid:q.midPrice,productFallback:true});changed=true;
  }

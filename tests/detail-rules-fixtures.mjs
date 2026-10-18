@@ -97,8 +97,8 @@ export async function startServer(){
 export function isAllowedRulesFixtureRequest(base,url,method,body,enabled=false){
  return !!enabled&&method==='POST'&&url.origin===base&&url.pathname==='/api/ai/ask'&&!url.search&&body?.mode==='rules';
 }
-export async function openApp(browser,base,{game='mtg',width=390,height=1000,reducedMotion='no-preference',hash='#collection',glass=true,rulesResponder=null}={}){
- const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:1,hasTouch:true,reducedMotion,locale:'en-US',timezoneId:'UTC',serviceWorkers:'block'}),page=await context.newPage();page.setDefaultTimeout(15000);
+export async function openApp(browser,base,{game='mtg',width=390,height=1000,reducedMotion='no-preference',hash='#collection',glass=true,rulesResponder=null,isMobile=false}={}){
+ const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:1,hasTouch:true,isMobile,reducedMotion,locale:'en-US',timezoneId:'UTC',serviceWorkers:'block'}),page=await context.newPage();page.setDefaultTimeout(15000);
  const errors=[],writes=[],unexpected=[],requests=[],images=[],rulesRequests=[];let gate=null,failRulebook=false;
  const artURLs=new Set([DHELMISE_COVER.imageLarge,...Object.values(CARDS).flatMap(cards=>cards.flatMap(c=>[...artworkSources(c,true),...artworkSources(c,false),c.art,c.artDirect,c.image_uris?.art_crop].filter(Boolean))).map(u=>new URL(u,base+'/').href)]);
  page.on('pageerror',e=>errors.push(e.message));

@@ -5,7 +5,7 @@ if(process.env.GITHUB_ACTIONS!=='true')throw Error('Browser QA runs only in host
 const {chromium}=await import('playwright');
 const server=await startServer(),browser=await chromium.launch(),report=[];
 try{for(const width of [320,390,768,1440]){
- const app=await openApp(browser,server.base,{game:'ptcg',width}),{page}=app;
+ const app=await openApp(browser,server.base,{game:'ptcg',width,isMobile:true}),{page}=app;
  try{
   await page.route(server.base+'/tests/shape-600x825.svg',r=>r.fulfill({status:200,contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="600" height="825"><rect width="600" height="825" rx="24" fill="#ffe14d"/><rect x="48" y="81" width="504" height="310" fill="#315876"/><circle cx="300" cy="225" r="95" fill="#bb9274"/><text x="48" y="480" font-size="24">SYNTHETIC GEOMETRY FIXTURE</text></svg>'}));
   await page.evaluate(()=>{const T=window.__uiTestTcg,S=window.__uiTestState,c=T.cache.ptcg['swsh1-9'];c.set={...c.set,id:'cel25'};c.name='Synthetic Celebrations geometry';S.state.tcg.ptcg.collection.find(e=>e.cardId===c.id).variant='holofoil';});
