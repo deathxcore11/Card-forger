@@ -273,7 +273,7 @@ try{
    }
    await openCapturedCard(page,liveCaptureId);
    await page.getByRole('region',{name:'Confirm scanned card',exact:true}).waitFor({timeout:15000});
-   await page.getByRole('region',{name:'Confirm scanned card',exact:true}).getByText(ref.name,{exact:true}).waitFor();
+   await page.getByRole('region',{name:'Confirm scanned card',exact:true}).locator('.printing-slide[aria-current="true"]').getByText(ref.name,{exact:true}).waitFor();
    const beforeTime=await page.locator('#scanVideo').evaluate(v=>v.currentTime);await page.waitForTimeout(250);
    assert(await page.locator('#scanVideo').evaluate((v,t)=>!v.paused&&v.currentTime>t&&v.srcObject===window.__cameraStream&&v.srcObject.getTracks()[0].readyState==='live',beforeTime),'video keeps playing behind confirmation');
    await page.getByRole('button',{name:'Keep for later and continue scanning',exact:true}).click();

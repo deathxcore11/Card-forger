@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {gunzipSync} from 'node:zlib';
 import {compileCatalog} from './scan-catalog.js';
-import {createScannerLookup,scannerLookupMatches,scannerNumberParts} from './scanner-lookup.js';
+import {createScannerLookup,scannerLookupMatches,scannerNumberParts,reviewLookupCatalog} from './scanner-lookup.js';
 import {createScannerBrowse,scannerBrowseHTML,scannerBrowseFilters,scannerLookupHTML} from './scanner-review.js';
 import {scanIdentifyRoute,cleanScanHints} from './scan-identify-route.js';
 import {registerScanner} from './scancam.js';
@@ -20,6 +20,18 @@ assert.deepEqual(scannerNumberParts('mtg','MH3 0123'),{set:'mh3',number:'0123',t
 assert.equal(scannerLookupMatches('ygo',{card:{name:'Card'},print:'LOB-JP001|Rare'},{number:'LOB-EN001'}),false);
 assert.equal(scannerLookupMatches('mtg',{card:{set:'mh3',collector_number:'123',name:'Card'}},{number:'MH3 0123'}),true);
 assert.deepEqual(await lookup('ptcg',{name:'Bewear'},{isCurrent:()=>false}),[]);
+
+// A first-time number-only lookup must use the complete denominator index,
+// without relying on the first page of a remote card-number search.
+const offlineFetch=globalThis.fetch,packRequests=[];
+globalThis.fetch=async url=>{packRequests.push(url);if(url==='scanidx/catalog-manifest.json')return Response.json(JSON.parse(fs.readFileSync(url)));if(url==='scanidx/ptcg-catalog-v1.json.gz')return new Response(fs.readFileSync(url));throw Error('Unexpected lookup download: '+url);};
+assert.equal(await reviewLookupCatalog('mtg',{number:'MH3 123'}),null);
+assert.equal(await reviewLookupCatalog('ptcg'),null);assert.equal(packRequests.length,0);
+const coldLookup=createScannerLookup({candById:async()=>null,sources:{ptcg:{byNameNumber:()=>{throw Error('Exact fraction must resolve from our identity pack');}}}});
+assert((await coldLookup('ptcg',{number:'56/111'})).some(c=>c.id==='sm4-56'));
+assert((await coldLookup('ptcg',{name:'Bewear',number:'56/111'})).some(c=>c.id==='sm4-56'));
+assert.deepEqual(packRequests,['scanidx/catalog-manifest.json','scanidx/ptcg-catalog-v1.json.gz'],'One compact identity download, shared across subsequent lookups');
+globalThis.fetch=offlineFetch;
 
 const card={id:'fixture',oracle_id:'oracle',name:'Fixture',set:'one',set_name:'First set',collector_number:'123',finishes:['nonfoil','foil'],image_uris:{normal:'https://example.test/card.jpg'}};
 let current=true,selected=0,preview=0,release;
