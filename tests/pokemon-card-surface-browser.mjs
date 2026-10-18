@@ -22,7 +22,13 @@ try{for(const width of [320,390,768,1440]){
   const before=await page.addStyleTag({content:'#content.view-gallery .display-list .lot:not(.wanted) .lot-art[data-finish-game="ptcg"]{aspect-ratio:63/88;padding:5px;border-radius:12px}#content.view-gallery .display-list .lot:not(.wanted) .lot-art[data-finish-game="ptcg"]>img.card-img{height:100%;aspect-ratio:488/680;border-radius:7px}.finish-overlay[data-material-profile="line-holo"] .finish-pattern{background-image:repeating-linear-gradient(92deg,transparent 0 2px,#b5e7ff60 2px 2.7px,transparent 2.7px 8px);opacity:.46}'});
   await capture(page,'pokemon-surface-before-'+width);await before.evaluate(n=>n.remove());
   await tile.click();await page.locator('#sheet .cs-banner .cs-art').first().waitFor();
-  await page.emulateMedia({reducedMotion:'no-preference'});
+  // The context already requests no-preference. Diagnose Playwright's
+  // per-page emulateMedia replacement on a separate page so it cannot clear
+  // the real touch context's pointer media features before header assertions.
+  const mediaProbe=await page.context().newPage();
+  const mediaState=()=>({coarse:matchMedia('(pointer:coarse)').matches,fine:matchMedia('(pointer:fine)').matches,anyCoarse:matchMedia('(any-pointer:coarse)').matches,touchPoints:navigator.maxTouchPoints,ua:navigator.userAgent,reduced:matchMedia('(prefers-reduced-motion:reduce)').matches});
+  const mediaBefore=await mediaProbe.evaluate(mediaState);await mediaProbe.emulateMedia({reducedMotion:'no-preference'});const mediaAfter=await mediaProbe.evaluate(mediaState);await mediaProbe.close();
+  console.log('Touch media diagnostic',JSON.stringify({width,mediaBefore,mediaAfter,main:await page.evaluate(mediaState)}));
   const hero=page.locator('#sheet .cs-banner .cs-art').first();
   const motion=await hero.evaluate(n=>{const a=n.getAnimations().find(a=>a.animationName==='header-breathe');return {name:getComputedStyle(n).animationName,scaleSupported:CSS.supports('scale','1.035'),running:a?.playState,coarse:matchMedia('(pointer:coarse)').matches};});
   assert.equal(motion.coarse,true,'Touch fixture exercises coarse pointer policy');assert.equal(motion.name,'header-breathe');assert.equal(motion.running,'running');
@@ -36,7 +42,7 @@ try{for(const width of [320,390,768,1440]){
    const scope=await page.evaluate(()=>{const rules=[...document.styleSheets].filter(s=>!s.href||new URL(s.href).origin===location.origin).flatMap(s=>[...s.cssRules]).filter(r=>r.selectorText?.includes('[data-finish-game="ptcg"]'));return {ruleCount:rules.length,matchingRules:rules.filter(r=>document.querySelector(r.selectorText)).map(r=>r.selectorText)};});
    assert.equal(scope.ruleCount,5,'All five geometry rules inspected');assert.deepEqual(scope.matchingRules,[],mode+' must not match gallery-only geometry overrides');unchangedViews.push({mode,...scope});
   }
-  report.push({width,geometry,motion,midway,unchangedViews,physicalPhoneVerified:false});
+  report.push({width,geometry,motion,midway,mediaBefore,mediaAfter,unchangedViews,physicalPhoneVerified:false});
  }finally{await app.close();}
 }
 await saveReport('pokemon-card-surface',report);

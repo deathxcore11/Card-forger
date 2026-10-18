@@ -5,6 +5,17 @@ import {noOverflow} from './search-fixtures.mjs';
 if(process.env.GITHUB_ACTIONS!=='true')throw Error('Finish browser QA runs only in hosted GitHub Actions.');
 const {chromium}=await import('playwright');
 const server=await startServer(),browser=await chromium.launch();
+// Resizing a just-opened sheet can sample a finite entrance/transform transition.
+// Record both states, then retain the original strict overflow assertion unchanged.
+async function settleSheetGeometry(page,label){
+ const sample=()=>{const root=document.querySelector('#sheetBody'),r=root.getBoundingClientRect();return {scroll:root.scrollWidth,client:root.clientWidth,animations:document.querySelector('#sheet').getAnimations({subtree:true}).filter(a=>Number.isFinite(a.effect?.getComputedTiming().endTime)&&!['finished','idle'].includes(a.playState)).map(a=>({name:a.animationName||a.transitionProperty||'',state:a.playState})),outside:[...root.querySelectorAll('*')].filter(n=>{const b=n.getBoundingClientRect();return b.width&&b.right>r.right+2;}).slice(0,12).map(n=>({tag:n.tagName,class:n.className,transform:getComputedStyle(n).transform,right:n.getBoundingClientRect().right}))};};
+ const before=await page.evaluate(sample);
+ await page.evaluate(()=>document.fonts.ready);
+ await page.waitForFunction(()=>!document.querySelector('#sheet').getAnimations({subtree:true}).some(a=>Number.isFinite(a.effect?.getComputedTiming().endTime)&&!['finished','idle'].includes(a.playState)),null,{timeout:5000});
+ await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+ const after=await page.evaluate(sample);console.log('Sheet geometry readiness',label,JSON.stringify({before,after}));
+}
+
 try{for(const game of ['ygo','ptcg','mtg']){
  const app=await openApp(browser,server.base,{game,width:390}),{page}=app;
  try{
@@ -47,7 +58,7 @@ try{for(const game of ['ygo','ptcg','mtg']){
   if(game!=='ygo')await preview.locator(`[data-finish="${game==='mtg'?'foil':'reverse-holofoil'}"]`).click();
   const selection=await page.evaluate(()=>JSON.stringify((c=>[c.type,c.game,c.id,c.print?.id,c.priceFinish,c.setVariant,c.priceEdition,c.priceYgoEdition])(window.__uiTestState.ui.sheetCtx)));
   for(const width of [320,390,673,768,1024,1440]){
-   await page.setViewportSize({width,height:1000});await preview.evaluate(n=>n.scrollIntoView({block:'center',behavior:'instant'}));await noOverflow(page,'#sheetBody',`${game} finish ${width}`);
+   await page.setViewportSize({width,height:1000});await preview.evaluate(n=>n.scrollIntoView({block:'center',behavior:'instant'}));await settleSheetGeometry(page,`${game} finish ${width}`);await noOverflow(page,'#sheetBody',`${game} finish ${width}`);
    await capture(page,`finish-effects-${game}-${width}`);
   }
   await page.locator('#sheet .cd-img').scrollIntoViewIfNeeded();
