@@ -35,3 +35,6 @@ events.activate({waitUntil:p=>waits.push(p)});await Promise.all(waits);assert.de
 let response;events.fetch({request:{url:'https://fixture.test/style.css',method:'GET',mode:'cors'},respondWith:p=>response=p});
 assert.equal(await (await response).text(),'corrected-five-pixel-css');assert.equal(put.length,1);
 console.log('PASS: installed shell v227 precaches corrected stylesheet, retires only obsolete shell cache, and serves fresh network CSS.');
+
+assert.match(style,/lot-art\[data-finish-game="ptcg"\] \{ aspect-ratio:auto; border-radius:12px;/);
+assert.match(style,/lot-art\[data-finish-game="ptcg"\] > img\.card-img \{[^}]*border-radius:7px;/);
