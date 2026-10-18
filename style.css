@@ -3232,7 +3232,7 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .cs-tabs[data-indicator-ready] button.on {background:transparent;border-color:transparent;}
 @media(min-width:700px){.cs-banner > .cs-hero:not(.compact){height:300px;}}
 @media(prefers-reduced-motion:no-preference){
- .cs-banner:not(.no-art) .cs-art,.deck-hero > .hero-art {animation:header-breathe 24s ease-in-out infinite alternate;}
+ .cs-banner:not(.no-art) .cs-art,.deck-hero > .hero-art {animation:header-breathe 20s ease-in-out infinite alternate;}
 }
 @keyframes header-breathe {from{scale:1}to{scale:1.035}}
 @media(prefers-reduced-motion:reduce){.cs-tab-indicator{transition:none!important}.cs-banner .cs-art,.deck-hero > .hero-art{animation:none!important;scale:1}}
@@ -4526,3 +4526,6 @@ body.glass .cs-tabs button:not(.on):not([aria-selected="true"]) {background:tran
  @keyframes stashy-cycle-left{0%,24%,50%,100%{opacity:0;transform:rotate(-19deg)}26%{opacity:1;transform:translate(-10px,-7px) rotate(-30deg)}32%,43%{opacity:1;transform:translate(15px,-5px) rotate(0deg)}48%{opacity:1;transform:rotate(-19deg)}}
  @keyframes stashy-cycle-right{0%,57%,85%,100%{opacity:0;transform:rotate(19deg)}59%{opacity:1;transform:translate(10px,-7px) rotate(30deg)}65%,77%{opacity:1;transform:translate(-17px,-5px) rotate(0deg)}83%{opacity:1;transform:rotate(19deg)}}
 }
+/* AI entry points share one quiet shell; motion belongs to the card emblem. */
+.ask-launch{background:var(--surface);color:var(--text);border:1px solid var(--line);box-shadow:none;animation:none}
+.ask-launch .brand-backplate{fill:transparent}
