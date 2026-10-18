@@ -20,7 +20,13 @@ const server=await startServer(),browser=await chromium.launch(),report=[];
 const frames=page=>page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
 const snapshot=page=>page.evaluate(()=>JSON.stringify({collection:window.__uiTestState.state.collection,tcg:window.__uiTestState.state.tcg,valueHistory:window.__uiTestState.state.valueHistory,decks:window.__uiTestState.state.decks,manual:window.__uiTestState.state.myPrices}));
 const todaySnapshot=(page,game)=>page.evaluate(g=>{const S=window.__uiTestState,side=g==='mtg'?S.state:S.state.tcg[g];return side.valueHistory.find(p=>p.date===new Date().toISOString().slice(0,10));},game);
-async function render(page){await page.evaluate(()=>dispatchEvent(new Event('cardstashy-rerender')));await frames(page);await page.locator('.collection-value-page').waitFor();}
+async function seedObservation(page,game){await page.evaluate(async game=>{
+ const S=window.__uiTestState,T=window.__uiTestTcg,side=game==='mtg'?S.state:S.state.tcg[game];
+ const {recordValueObservation}=await import('/value-history.js'),{collectionValue}=await import('/insights.js'),{useMyPrices}=await import('/mtg-tcgprice.js');
+ useMyPrices(S.state.myPrices);const value=game==='mtg'?collectionValue(side.collection,S.catalog,S.state.printings,[]):T.collectionValue(game,S.state);
+ side.valueHistory=recordValueObservation(side.valueHistory,value.total,value.copies,{unpriced:value.unpriced,currency:'USD',basis:'exact-owned-v1'});
+ },game);}
+async function render(page){const before=await snapshot(page);await page.evaluate(()=>dispatchEvent(new Event('cardstashy-rerender')));await frames(page);await page.locator('.collection-value-page').waitFor();assert.equal(await snapshot(page),before,'render never creates device-cache observations or sync edits');}
 async function waitCurrent(page,game,copies,unpriced,total){await page.waitForFunction(({game,copies,unpriced,total})=>{const S=window.__uiTestState,side=game==='mtg'?S.state:S.state.tcg[game],point=side.valueHistory.find(p=>p.date===new Date().toISOString().slice(0,10));return point&&point.copies===copies&&point.unpriced===unpriced&&point.total===total;},{game,copies,unpriced,total});await frames(page);}
 async function seed(page,game,artUrl){
  // Test-only .mjs files are intentionally not browser modules on the fixture
@@ -52,7 +58,7 @@ try{
   try{
    app=await openApp(browser,server.base,{game,width:390,isMobile:true});const {page}=app,artUrl=server.base+'/tests/value-page-art-'+game;
    await app.context.route(artUrl,route=>route.fulfill({status:200,contentType:art[game].type,body:art[game].bytes}));
-   const expected=await seed(page,game,artUrl);
+   const expected=await seed(page,game,artUrl);await seedObservation(page,game);
    await page.locator(`#content [data-act="${game==='mtg'?'collTab':'tCollTab'}"][data-id="value"]`).first().click();
    await page.locator(`.collection-value-page[data-value-game="${game}"]`).waitFor();await waitCurrent(page,game,7,0,19.43);
    await page.waitForFunction(url=>[...document.querySelectorAll('.value-lot img')].every(img=>img.complete&&img.naturalWidth>300&&img.currentSrc===url),artUrl);
@@ -74,17 +80,17 @@ try{
    const summary=page.locator('.value-history-details summary');await summary.scrollIntoViewIfNeeded();await summary.focus();await summary.press('Enter');assert.equal(await page.locator('.value-history-details').getAttribute('open'),'');assert.equal(await page.locator('.value-history-details li').count(),6);await summary.press('Enter');
    report.push({game,phase:'priced-layout-and-actions',evidence:EVIDENCE,artSource:art[game].url,expected,geometries});
    // Missing coverage is a subtotal, then unknown, never a synthetic zero loss.
-   await page.evaluate(game=>{const S=window.__uiTestState,side=game==='mtg'?S.state:S.state.tcg[game];side.collection.push(structuredClone(window.__valueFixture.unpriced));},game);await render(page);await waitCurrent(page,game,8,1,19.43);
+   await page.evaluate(game=>{const S=window.__uiTestState,side=game==='mtg'?S.state:S.state.tcg[game];side.collection.push(structuredClone(window.__valueFixture.unpriced));},game);await seedObservation(page,game);await render(page);await waitCurrent(page,game,8,1,19.43);
    assert.equal(await page.locator('[data-value-amount]').innerText(),'$19.43');assert.equal(await page.locator('[data-value-coverage]').innerText(),'Known subtotal · USD');assert.equal(await page.locator('.value-chart-change').count(),0);assert.match(await page.locator('.value-overview').innerText(),/1 copy without a price/);await layout(page,`${game} partial coverage`);await capture(page,`value-page-${game}-partial`);
-   await page.evaluate(game=>{const S=window.__uiTestState,side=game==='mtg'?S.state:S.state.tcg[game];for(const e of side.collection){delete e.manualValue;delete e.manualValueCondition;delete e.manualValueCurrency;e.condition='Unknown condition';e.conditionQuotes=[];}},game);await render(page);await waitCurrent(page,game,8,8,0);
+   await page.evaluate(game=>{const S=window.__uiTestState,side=game==='mtg'?S.state:S.state.tcg[game];for(const e of side.collection){delete e.manualValue;delete e.manualValueCondition;delete e.manualValueCurrency;e.condition='Unknown condition';e.conditionQuotes=[];}},game);await seedObservation(page,game);await render(page);await waitCurrent(page,game,8,8,0);
    assert.equal(await page.locator('[data-value-amount]').innerText(),'—');assert.equal(await page.locator('[data-value-coverage]').innerText(),'Value unavailable');assert.equal(await page.locator('.value-chart-change').count(),0);assert.equal(await page.locator('.value-lot').count(),0);assert((await page.locator('.value-chart-gap').count())>=2);await layout(page,`${game} unavailable coverage`);await capture(page,`value-page-${game}-unavailable`);
    // A genuine user-entered zero remains $0.00, with singular copy wording.
-   await page.evaluate(game=>{const S=window.__uiTestState,side=game==='mtg'?S.state:S.state.tcg[game],entry=structuredClone(window.__valueFixture.collection.at(-1));entry.qty=1;entry.manualValue=0;entry.condition='Near Mint';entry.manualValueCondition='Near Mint';side.collection=[entry];},game);await render(page);await waitCurrent(page,game,1,0,0);
+   await page.evaluate(game=>{const S=window.__uiTestState,side=game==='mtg'?S.state:S.state.tcg[game],entry=structuredClone(window.__valueFixture.collection.at(-1));entry.qty=1;entry.manualValue=0;entry.condition='Near Mint';entry.manualValueCondition='Near Mint';side.collection=[entry];},game);await seedObservation(page,game);await render(page);await waitCurrent(page,game,1,0,0);
    assert.equal(await page.locator('[data-value-amount]').innerText(),'$0.00');assert.match(await page.locator('.value-overview').innerText(),/1 copy\b/);assert.equal(await page.locator('.value-lot').count(),1);await capture(page,`value-page-${game}-custom-zero`);
-   await page.evaluate(game=>{const S=window.__uiTestState;(game==='mtg'?S.state:S.state.tcg[game]).collection=[];},game);await render(page);await waitCurrent(page,game,0,0,0);
+   await page.evaluate(game=>{const S=window.__uiTestState;(game==='mtg'?S.state:S.state.tcg[game]).collection=[];},game);await seedObservation(page,game);await render(page);await waitCurrent(page,game,0,0,0);
    assert.equal(await page.locator('.value-chart').count(),1);assert.equal(await page.locator('[data-value-amount]').innerText(),'$0.00');assert.match(await page.locator('.value-overview').innerText(),/0 copies/);assert.doesNotMatch(await page.locator('#content').innerText(),/No value to track yet/);await capture(page,`value-page-${game}-empty-history`);
    // First-day display has exactly the recorded current observation, no backfill.
-   await page.evaluate(game=>{const S=window.__uiTestState,side=game==='mtg'?S.state:S.state.tcg[game];side.collection=[structuredClone(window.__valueFixture.collection[1])];side.valueHistory=[];},game);await render(page);await waitCurrent(page,game,1,0,12.34);
+   await page.evaluate(game=>{const S=window.__uiTestState,side=game==='mtg'?S.state:S.state.tcg[game];side.collection=[structuredClone(window.__valueFixture.collection[1])];side.valueHistory=[];},game);await seedObservation(page,game);await render(page);await waitCurrent(page,game,1,0,12.34);
    assert.equal(await page.locator('.value-chart-point').count(),1);assert.equal(await page.locator('.value-chart-line').count(),0);assert.match(await page.locator('.value-chart').innerText(),/No earlier values have been estimated/);assert.equal((await todaySnapshot(page,game)).total,12.34);await capture(page,`value-page-${game}-first-day`);
    // 500 usable observations plus one bad-clock future point: visible window
    // remains bounded without deleting any real saved records or future input.
@@ -106,10 +112,11 @@ try{
      refreshReads.push(identifiers.map(row=>row.id));return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify({data:identifiers.map(row=>allowed[row.id]),has_more:false,not_found:[]})});
     });
    }
+   await page.evaluate(game=>{const S=window.__uiTestState,side=game==='mtg'?S.state:S.state.tcg[game];side.valueHistory=side.valueHistory.filter(p=>p.date!==new Date().toISOString().slice(0,10));},game);assert.equal(await todaySnapshot(page,game),undefined);
    await page.locator('[data-value-refresh]').click();
    await page.waitForFunction(()=>document.querySelector('#toast')?.textContent.includes('Price data refreshed for 1 card.'));
    await page.waitForFunction(()=>{const n=document.querySelector('[data-value-refresh]');return n&&!n.disabled&&!n.textContent.includes('Refreshing');});await frames(page);
-   assert.equal(await page.locator('[data-value-amount]').innerText(),'$12.34','refresh keeps the selected custom value');
+   await waitCurrent(page,game,1,0,12.34);assert.equal(await page.locator('[data-value-amount]').innerText(),'$12.34','refresh keeps the selected custom value');
    assert.equal(await page.evaluate(()=>{const s=window.__uiTestState.state;return JSON.stringify({magic:s.collection,ptcg:s.tcg.ptcg.collection,ygo:s.tcg.ygo.collection,myPrices:s.myPrices});}),protectedBefore,'actual refresh preserves owned lots and manual values');
    assert.deepEqual(refreshErrors,[]);if(game==='mtg')assert.equal(refreshReads.length,1);else assert(app.requests.slice(requestStart).some(request=>game==='ptcg'?request.includes('api.tcgdex.net/v2/en/cards/'):request.includes('db.ygoprodeck.com/api/v7/cardinfo.php')),'actual refresh reached the mocked game provider');
    assert.doesNotMatch(await page.locator('#toast').innerText(),/Couldn’t|failed|offline/);

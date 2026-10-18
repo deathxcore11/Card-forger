@@ -1,3 +1,4 @@
+import {recoveryKey,appendRecoverySnapshot,createRecoverySnapshot} from './recovery-store.js';
 // Pure production helpers and transactional hooks; no server, browser or provider.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -55,7 +56,7 @@ const context={S:{state:makeState()},structuredClone,normalize:state=>normalizeH
  writeRecords:async records=>{if(hold)await hold;if(reject)throw Error('Disk full');writes.push(structuredClone(records));},
  changedConditionLots:()=>[],afterLocalSave(){},saveCatalogSoon(){},render(){},refreshSheet(){},haptic(){},flyToCollection(){},toast(){},autoEnrich(){},lastActTarget:null,setTimeout(){}};
 Object.assign(context,{cloudInfo:context.cloudInfo||(()=>({configured:false})),createAccountWorkspaces:()=>({guard:null}),readRecord:context.readRecord|| (async()=>null)});
-vm.createContext(context);vm.runInContext(transaction,context);
+Object.assign(context,{recoveryKey,appendRecoverySnapshot,createRecoverySnapshot});vm.createContext(context);vm.runInContext(transaction,context);
 let release;hold=new Promise(resolve=>release=resolve);
 const saving=context.commit(state=>state.decks[0].cards[0].qty++,{undo:'Added a card.'});
 await Promise.resolve();assert.equal(lastWorkedDeck(context.S.state,'mtg'),null,'candidate activity does not leak before durable write');

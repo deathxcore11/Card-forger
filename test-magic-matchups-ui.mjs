@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import { matchupState,resetMatchups,renderMagicMatchups } from './magic-matchups-ui.js';
+const deck={id:'d1',name:'Your deck',format:'Standard',cards:[{name:'Test creature',qty:60}],side:[]};
+const s=matchupState(deck);assert.equal(s,matchupState(structuredClone(deck)));assert.equal(s.mode,'bo1');
+let html=renderMagicMatchups(deck);
+for(const action of ['amColor','amSelection','amPaste','amSelect','amMode'])assert.ok(html.includes(`data-act="${action}"`));
+assert.ok(html.includes('data-input="amQuestion"'));assert.ok(!html.includes('2,000'));assert.ok(!html.includes('data-autorun'));assert.ok(!html.includes('data-act="amAnalyze"'));
+s.question='"><script>alert(1)</script>';s.opponent={name:'<img src=x onerror=alert(1)>',format:'Standard',main:[{name:'<script>bad</script>',qty:60}],art:'javascript:alert(1)',provenance:{kind:'meta',source:'<script>source</script>',date:'2026-10-18',url:'javascript:alert(1)'}};
+s.request={player:{cards:[{id:'p0',name:'Your card'}]},opponent:{cards:[{id:'o0',name:'Their card'}]},warnings:['Legality unverified.']};
+const sc=title=>({title,setup:'Assume a hand.',plan:'Develop carefully.',risk:'Removal.',lesson:'Hold a second threat.',cardIds:['p0','o0']});
+s.result={summary:'<svg onload=alert(1)>',outlook:'uncertain',confidence:'limited',scenarios:[sc('On play'),sc('On draw'),sc('Disrupted')],coaching:[{title:'First priority',text:'<script>attack</script>',cardIds:['p0']}],assumptions:['Hypothetical draws'],limitations:['Incomplete evidence'],recommendation:null};
+html=renderMagicMatchups(deck);assert.ok(!html.includes('<script>'));assert.ok(!html.includes('<svg onload'));assert.ok(!html.includes('src="javascript:'));assert.ok(!html.includes('href="javascript:'));assert.equal((html.match(/class="panel am-scenario"/g)||[]).length,3);assert.ok(html.includes('data-act="amAnalyze"'));assert.ok(html.includes('Legality unverified.'));assert.ok(html.includes('both decklists and your question'));
+s.busy=true;html=renderMagicMatchups(deck);assert.ok(html.includes('data-act="amCancel"'));assert.ok(html.includes('data-act="amAnalyze" disabled'));
+let aborted=0;s.controller={abort(){aborted++;}};s.result={summary:'old'};
+const changed=matchupState({...deck,cards:[{name:'Changed card',qty:60}]});assert.notEqual(changed,s);assert.equal(aborted,1);assert.equal(s.active,false);assert.equal(changed.result,null);assert.equal(changed.opponent,null);
+changed.controller={abort(){aborted++;}};resetMatchups();assert.equal(changed.active,false);assert.equal(aborted,2);assert.notEqual(matchupState(deck),changed);
+console.log('Magic Matchups renderer: escaped data, pills/previews, three scenarios, busy state, deck revisions and reset passed.');

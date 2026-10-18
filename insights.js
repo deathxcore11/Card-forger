@@ -1,3 +1,4 @@
+import {printedCardColors} from './magic-card-color.js';
 import {recordValueObservation} from './value-history.js';
 import {conditionValue} from './condition-value.js';
 import { hasCommander, isCommanderLike, formatOf } from "./formats.js";
@@ -578,12 +579,12 @@ export function collectionValue(entries, catalog, printings = {}, decks = []) {
   let total = 0,
     unpriced = 0;
   const lots = [],
-    colors = { W: 0, U: 0, B: 0, R: 0, G: 0, Multi: 0, Colorless: 0 },
+    colors = { W: 0, U: 0, B: 0, R: 0, G: 0, Multi: 0, Colorless: 0, Unknown: 0 },
     owned = new Map(),
     used = new Map();
   for (const e of entries) {
     const p = lotPrice(e, catalog, printings),
-      c = catalog[cardKey(e.name)];
+      c = (e.printingVerified && printings[e.printingId]) || catalog[cardKey(e.name)];
     owned.set(cardKey(e.name), (owned.get(cardKey(e.name)) || 0) + e.qty);
     if (p === null || p === undefined) {
       unpriced += e.qty;
@@ -592,8 +593,8 @@ export function collectionValue(entries, catalog, printings = {}, decks = []) {
     const v = p * e.qty;
     total += v;
     lots.push({ entry: e, unit: p, value: v });
-    const id = c?.color_identity || [];
-    colors[id.length > 1 ? "Multi" : id.length ? id[0] : "Colorless"] += v;
+    const id = printedCardColors(c);
+    colors[id === null ? "Unknown" : id.length > 1 ? "Multi" : id.length ? id[0] : "Colorless"] += v;
   }
   for (const d of decks)
     for (const c of aggregateCards(d.cards))

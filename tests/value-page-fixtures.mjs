@@ -13,7 +13,7 @@ export const VALUE_HISTORY = [
 ];
 const art = id => `https://value-fixtures.invalid/${id}.png`;
 const lot = (id,name,extra={}) => ({id,name,qty:1,condition:'Near Mint',language:'en',...extra});
-const mtg = (id,name,color_identity,prices) => ({id,name,game:'mtg',set:'val',set_name:'Value fixture',collector_number:'7',color_identity,prices,image_uris:{normal:art(id)},finishes:['nonfoil','foil'],full:true});
+const mtg = (id,name,color_identity,prices) => ({id,name,game:'mtg',set:'val',set_name:'Value fixture',collector_number:'7',color_identity,colors:[...color_identity],prices,image_uris:{normal:art(id)},finishes:['nonfoil','foil'],full:true});
 const pokemon = (id,name,category,types,price) => ({id,name,game:'ptcg',category,types,set:{id:'val',name:'Value fixture',number:'8'},prices:{usd:price},image:art(id),variants:[{key:'normal',label:'Normal',usd:price,finish:'nonfoil'}]});
 const ygo = (id,name,category,attribute,price) => ({id,name,game:'ygo',category,attribute,typeLine:category==='Monster'?'Effect Monster':category+' Card',prices:{usd:price},image:art(id),sets:[]});
 const red=mtg('magic-red','Cinder Sprite',['R'],{usd:'2.15',usd_foil:'8.25'}),multi=mtg('magic-multi','Many-colored Sage',['W','U'],{usd:'0.65'}),zero=mtg('magic-zero','Personal Relic',[],{});
@@ -34,7 +34,7 @@ export function valueBrowserFixture(game, source, today='2026-10-17') {
   const selected={...collection[0],id:'value-selected-'+game,qty:1,manualValue:12.34};collection.splice(1,0,selected);
   const unpriced={...original[3],id:'value-unpriced-'+game,qty:1,condition:'Unknown condition'};
   for(const key of ['manualValue','manualValueCondition','manualValueCurrency','conditionQuotes'])delete unpriced[key];
-  if(game==='mtg')cards.forEach((card,i)=>card.color_identity=[['R','U'],['B'],[],['G']][i]);
+  if(game==='mtg')cards.forEach((card,i)=>{card.color_identity=[['R','U'],['B'],[],['G']][i];card.colors=[...card.color_identity];if(card.card_faces?.[0])card.card_faces[0].colors=[...card.colors];});
   else if(game==='ptcg')cards.forEach((card,i)=>{card.category=['Pokemon','Trainer','Energy','Pokemon'][i];card.types=[['Fire','Water'],[],['Fire'],[]][i];});
   else cards.forEach((card,i)=>{card.category=['Monster','Spell','Trap','Monster'][i];card.attribute=['LIGHT','','',''][i];});
   const history=structuredClone(VALUE_HISTORY).map(point=>point.date==='2026-10-18'?{...point,date:today,total:19.43,copies:7,unpriced:0}:point);

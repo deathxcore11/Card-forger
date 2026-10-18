@@ -1,4 +1,5 @@
 import { timedFetch } from "./auth-form.js";
+import { mergeAccountWorkspaces, workspaceContentSig } from "./sync-merge.js";
 // Accounts and cloud saving (Supabase). Device storage stays the source the app
 // works from; the account holds a private copy that follows you to other devices.
 // Writes are revision-checked, so two devices never silently overwrite each other.
@@ -19,10 +20,13 @@ export async function cloudAccessToken(){
 
 /* ---------- pure helpers (tested) ---------- */
 
-// Fingerprint of a workspace, ignoring the save timestamp.
+// Fingerprint of syncable data. Save time and the current screen/selected deck
+// are device navigation, not edits to the account. Real preferences stay included.
 export function workspaceSig(state) {
-  const { lastSavedAt, ...rest } = state || {};
-  void lastSavedAt;
+  const { lastSavedAt, activeDeck, settings, tcg, ...rest } = state || {};
+  void lastSavedAt; void activeDeck;
+  if(settings){const {game,...preferences}=settings;void game;rest.settings=preferences;}
+  if(tcg)rest.tcg=Object.fromEntries(Object.entries(tcg).map(([game,side])=>{const {activeDeck,...saved}=side||{};void activeDeck;return [game,saved];}));
   const text = JSON.stringify(rest);
   let h = 5381;
   for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) >>> 0;
@@ -78,7 +82,7 @@ let providers = { email: true }, // sign-in methods enabled on the project
   pushTimer = null,
   pushing = false,
   pending = null; // { kind: "offer" | "choose" | "conflict", cloud }
-const status = { state: "local", msg: "", at: null };
+const status = { state: "local", msg: "", at: null, recoveryNotice: "" };
 
 let tabMeta;
 const persistedMeta = () => {
@@ -112,6 +116,7 @@ function setStatus(state, msg = "") {
   status.state = state;
   status.msg = msg;
   if (state === "synced") status.at = new Date().toISOString();
+  if(accountReady && ["synced","local","offline","decide"].includes(state))hooks?.reconciled?.();
   hooks?.status(statusLabel());
   hooks?.changed();
 }
@@ -140,7 +145,7 @@ function friendly(e) {
 }
 
 const boundedStartup=(promise,ms)=>{let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error("Account service timed out.")),ms);})]).finally(()=>clearTimeout(timer));};
-export async function initCloud(h, { createClient: factory, startupTimeoutMs=12000 } = {}) {
+export async function initCloud(h, { createClient: factory, startupTimeoutMs=12000, remotePollMs=15000 } = {}) {
   hooks = h;
   readMeta();
   const callbackQuery = new URLSearchParams(location.search), callbackHash = new URLSearchParams((location.hash || "").slice(1));
@@ -207,6 +212,13 @@ export async function initCloud(h, { createClient: factory, startupTimeoutMs=120
     if (document.visibilityState === "visible" && user && !pending) checkRemote();
   });
   window.addEventListener("online", () => user && !pending && startSync());
+  window.addEventListener("focus", () => user && !pending && checkRemote());
+  // A foreground phone also catches edits while the app remains open. This is
+  // a revision-only poll, not a second database subscription or new permission.
+  if (hooks.accountFirst && remotePollMs > 0) {
+    const timer=setInterval(() => {if(document.visibilityState === "visible" && navigator.onLine && user && !pending)checkRemote();},Math.max(5000,remotePollMs));
+    timer.unref?.();
+  }
 }
 
 function changeAccount(next) {
@@ -214,7 +226,7 @@ function changeAccount(next) {
   accountInitialized=true;
   const previous=user,baseline=readMeta(),epoch=++syncEpoch;
   clearTimeout(pushTimer);pushTimer=null;pending=null;pushing=false;accountReady=false;
-  user=next;profile=null;accountArt=null;status.at=null;
+  user=next;profile=null;accountArt=null;status.at=null;status.recoveryNotice="";
   hooks?.accountChanged?.(next,previous);
   accountSwitch=accountSwitch.catch(()=>{}).then(async()=>{
     // The hook serializes with local edits and atomically saves the old owner.
@@ -224,6 +236,7 @@ function changeAccount(next) {
     accountReady=true;
     setStatus(next?'syncing':'local');
     hooks?.accountOpened?.();
+    if(!next)hooks?.reconciled?.();
     if(next)setTimeout(()=>startSync(),0);
   }).catch(e=>{
     if(epoch===syncEpoch)setStatus('error','Couldn’t open this account’s saved workspace. '+friendly(e));
@@ -356,7 +369,9 @@ export async function startSync() {
   setStatus("syncing");
   try {
     loadProfile().catch(() => {});
-    if(hooks.canSync && !await hooks.canSync())return setStatus("error","Another tab changed this workspace. Reload before syncing.");
+    const allowed=hooks.canSync ? await hooks.canSync() : true;
+    if(!current())return;
+    if(!allowed)return setStatus("error","Another tab changed this workspace. Reload before syncing.");
     const cloud = await fetchCloud();
     if (!current()) return;
     const meta = readMeta(),
@@ -372,10 +387,28 @@ async function act(action, cloud, local, current) {
   if(!current())return;
   if (action === "upload") return pushNow(true);
   if (action === "push") return pushNow();
-  if (action === "none") return setStatus("synced");
+  if (action === "none") {
+    if(hooks.saveSyncBaseline)await hooks.saveSyncBaseline(user.id,cloud.revision,structuredClone(local));
+    if(current()){if(workspaceSig(hooks.getState())!==workspaceSig(local)){setStatus("syncing");scheduleSync();}else setStatus("synced");}
+    return;
+  }
   if (action === "link") {
+    if(hooks.saveSyncBaseline)await hooks.saveSyncBaseline(user.id,cloud.revision,structuredClone(local));
+    if(!current())return;
     writeMeta({ userId: user.id, revision: cloud.revision, sig: workspaceSig(local) });
+    if(workspaceSig(hooks.getState())!==workspaceSig(local)){setStatus("syncing");scheduleSync();return;}
     return setStatus("synced");
+  }
+  const meta=readMeta();
+  // Only an already-linked account and a verified newer server revision may
+  // resolve automatically. First sign-in, owner mismatch and rollback still ask.
+  if(["adopt","conflict","choose"].includes(action) && hooks.accountFirst === true && meta?.userId === user.id && Number.isSafeInteger(meta.revision) && meta.revision > 0 && Number.isSafeInteger(cloud?.revision) && cloud.revision > meta.revision) {
+    const base=await hooks.readSyncBaseline?.(user.id);
+    if(!current())return;
+    const trusted=base?.owner===user.id && base.revision===meta.revision ? base.state : null;
+    const merged=mergeAccountWorkspaces(trusted,local,cloud.data);
+    const authored=workspaceContentSig(local)!==workspaceContentSig(trusted||cloud.data);
+    return adopt({...cloud,data:merged.state},local,false,current,{automatic:true,baseline:cloud.data,reason:merged.conflicts.length?"account-conflict":"account-merge",notice:authored?(merged.conflicts.length?"Your account copy is active. This device’s other edits are saved in Recovery.":"Changes from both devices were combined. The previous device copy is saved in Recovery."):""});
   }
   if (action === "adopt") return adopt(cloud, local, false, current);
   pending = { kind: action, cloud, owner: user.id, epoch: syncEpoch };
@@ -383,22 +416,27 @@ async function act(action, cloud, local, current) {
   hooks.decide(pending);
 }
 
-// `download` also saves a backup file; automatic syncs keep only the on-device recovery copy.
-async function adopt(cloud, local, download = false, decisionCurrent=()=>true) {
+// `download` also saves a file; automatic syncs durably journal the device copy.
+async function adopt(cloud, local, download = false, decisionCurrent=()=>true, options={}) {
   const owner=user?.id,epoch=syncEpoch,current=()=>user?.id===owner&&syncEpoch===epoch&&accountReady&&decisionCurrent();
   if(!owner||!current())return;
   const sig=workspaceSig(local),unchanged=()=>current()&&workspaceSig(hooks.getState())===sig;
-  const edited=()=>{if(!current())return;pending={kind:'conflict',cloud,owner,epoch};setStatus('decide');hooks.decide(pending);};
-  if (!isEmptyWorkspace(local)) await hooks.backup(local, "Before loading your account copy", download);
+  const edited=()=>{if(!current())return;if(options.automatic){setStatus('syncing');setTimeout(()=>{if(current())startSync();},0);return;}pending={kind:'conflict',cloud,owner,epoch};setStatus('decide');hooks.decide(pending);};
+  if (!isEmptyWorkspace(local) || options.automatic) await hooks.backup(local, "Before loading your account copy", download,{owner,revision:typeof readMeta === "function" ? readMeta()?.revision ?? null : null,reason:options.reason||"account-adopt"});
   if(!current())return;
   if(!unchanged())return edited();
   const applied=await hooks.apply(cloud.data,{owner,current:unchanged});
   if(!current())return;
   if(applied===false){if(!unchanged())edited();return;}
   // Normalized remote baseline must not claim newly merged local history was uploaded.
-  const remoteSig=workspaceSig(applied?.cloudBaseline ?? cloud.data);
+  const baseline=options.baseline ?? applied?.cloudBaseline ?? cloud.data;
+  const remoteSig=workspaceSig(baseline);
+  if(hooks.saveSyncBaseline)await hooks.saveSyncBaseline(owner,cloud.revision,structuredClone(baseline));
+  if(!current())return;
   writeMeta({ userId: owner, revision: cloud.revision, sig: remoteSig });
   pending = null;
+  if(options.notice){status.recoveryNotice=options.notice;hooks.recovered?.(options.notice);}
+  hooks.reconciled?.();
   if(workspaceSig(hooks.getState())!==remoteSig){setStatus("syncing");scheduleSync();}
   else setStatus("synced");
 }
@@ -449,8 +487,10 @@ async function pushNow(first = false) {
   pushing = operation;
   setStatus("syncing");
   try {
-    if(hooks.canSync && !await hooks.canSync())return setStatus("error","Another tab changed this workspace. Reload before syncing.");
-    const data = hooks.getState(),
+    const allowed=hooks.canSync ? await hooks.canSync() : true;
+    if(user?.id!==owner || syncEpoch!==epoch || !accountReady)return;
+    if(!allowed)return setStatus("error","Another tab changed this workspace. Reload before syncing.");
+    const data = structuredClone(hooks.getState()),
       meta = readMeta(),
       sig = workspaceSig(data);
     if (meta?.userId === owner && meta.sig === sig && !first) return setStatus("synced");
@@ -475,8 +515,11 @@ async function pushNow(first = false) {
       row = r.data[0];
     }
     if (user?.id !== owner || syncEpoch !== epoch) return;
+    if(hooks.saveSyncBaseline)await hooks.saveSyncBaseline(owner,row.revision,structuredClone(data));
+    if (user?.id !== owner || syncEpoch !== epoch) return;
     writeMeta({ userId: owner, revision: row.revision, sig });
-    setStatus("synced");
+    if(workspaceSig(hooks.getState())!==sig){setStatus("syncing");scheduleSync();}
+    else setStatus("synced");
   } catch (e) {
     if (user?.id === owner && syncEpoch === epoch) setStatus("error", friendly(e));
   } finally {

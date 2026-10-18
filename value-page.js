@@ -1,3 +1,4 @@
+import {printedCardColors} from './magic-card-color.js';
 // Read-only Collection Value presentation shared by all three games. The caller
 // supplies resolved owned-lot prices; this module never fetches or records value.
 import { esc, usd } from './ui.js';
@@ -21,8 +22,8 @@ const dateLabel = date => new Date(date + 'T00:00:00Z').toLocaleDateString('en-U
 function bucket(game, card) {
   if (!card) return 'Unknown';
   if (game === 'mtg') {
-    if (!Array.isArray(card.color_identity)) return 'Unknown';
-    const colors = [...new Set(card.color_identity)];
+    const colors = printedCardColors(card);
+    if (colors === null) return 'Unknown';
     if (colors.some(c => !MAGIC_COLORS[c])) return 'Unknown';
     return colors.length > 1 ? 'Multicolor' : MAGIC_COLORS[colors[0]] || 'Colorless';
   }

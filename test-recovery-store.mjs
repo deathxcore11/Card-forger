@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {recoveryKey,syncBaselineKey,createRecoverySnapshot,appendRecoverySnapshot,readRecoverySnapshots,createSyncBaseline,readSyncBaseline} from './recovery-store.js';
+const one={collection:[{id:'a',qty:4}],decks:[],settings:{theme:'dark'}},two={collection:[],decks:[{id:'b'}],settings:{theme:'light'}};
+let raw=appendRecoverySnapshot(null,createRecoverySnapshot(one,{owner:'A',id:'one',revision:3,reason:'account-conflict'}));
+for(let i=0;i<25;i++)raw=appendRecoverySnapshot(raw,createRecoverySnapshot({...two,n:i},{owner:'A',id:'more-'+i}));
+assert.equal(raw.snapshots.length,26);assert.equal(raw.snapshots.at(-1).id,'one','routine later snapshots cannot evict unsynced recovery');
+const snap=readRecoverySnapshots(raw,'A').at(-1);assert.deepEqual(snap.state,one);snap.state.collection[0].qty=99;assert.equal(raw.snapshots.at(-1).state.collection[0].qty,4);
+assert.deepEqual(readRecoverySnapshots(raw,'B'),[]);assert.notEqual(recoveryKey('A'),recoveryKey('B'));assert.notEqual(recoveryKey('A'),recoveryKey(null));assert.notEqual(syncBaselineKey('A'),recoveryKey('A'));
+raw=appendRecoverySnapshot(raw,createRecoverySnapshot(one,{owner:'A',id:'duplicate'}));assert.equal(raw.snapshots.length,26);
+const baseline=createSyncBaseline('A',9,one);one.settings.theme='light';assert.equal(baseline.state.settings.theme,'dark');assert.equal(readSyncBaseline(baseline,'A',9).revision,9);assert.equal(readSyncBaseline(baseline,'B',9),null);assert.equal(readSyncBaseline(baseline,'A',8),null);assert.throws(()=>createSyncBaseline(null,1,two));
+assert.throws(()=>appendRecoverySnapshot({version:99,owner:'A',snapshots:[]},createRecoverySnapshot(two,{owner:'A'})),/could not be verified/);
+assert.throws(()=>appendRecoverySnapshot(raw,createRecoverySnapshot(two,{owner:'B'})),/could not be verified/);
+console.log('PASS: account-private durable recovery journal, no silent eviction, exact-state dedupe, immutable snapshots, summaries and owner/revision baseline checks.');

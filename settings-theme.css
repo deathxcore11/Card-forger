@@ -1,0 +1,92 @@
+/* Loaded after style.css. The four sections remain one readable horizontal rail. */
+.settings-page .settings-tabs {position:relative;width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:var(--muted) transparent;scroll-padding-inline:5px;touch-action:pan-x pan-y;}
+.settings-page .settings-tabs button,.settings-dialog .settings-tabs button {flex:1 0 auto;min-width:max-content;min-height:46px;padding:12px 16px;white-space:nowrap;font-size:13px;}
+.settings-page .settings-tabs button[aria-selected="true"] {box-shadow:inset 0 -2px var(--gold),0 2px 8px #0002;}
+.settings-page .settings-tabs button:focus-visible {outline:2px solid var(--gold);outline-offset:-3px;}
+.settings-pane {min-width:0;}
+.settings-page .save-status {display:block;}
+.settings-sync-notice {display:grid;gap:8px;margin-bottom:18px;padding:14px 16px;border:1px solid var(--line);border-inline-start:3px solid var(--gold);border-radius:14px;background:var(--surface-2);}
+.settings-sync-notice p {margin:0;}.settings-sync-notice .link {justify-self:start;text-align:left;}
+.settings-theme {border:0;min-width:0;margin:0;padding:0;}
+.settings-theme legend {font-size:13px;font-weight:650;margin-bottom:12px;}
+.settings-theme-options {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.settings-theme-choice {position:relative;display:grid;grid-template-columns:20px minmax(0,1fr);gap:12px 10px;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--surface-2);cursor:pointer;min-width:0;}
+.settings-theme-choice:has(input:checked) {border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold);}
+.settings-theme-choice:has(input:focus-visible) {outline:2px solid var(--gold);outline-offset:3px;}
+.settings-theme-choice input {width:18px;height:18px;margin:3px 0 0;accent-color:var(--gold);}
+.settings-theme-choice > span:last-child {grid-column:1/-1;display:grid;gap:4px;}
+.settings-theme-choice b {font-size:15px;}
+.settings-theme-choice small {color:var(--muted);font-size:12px;line-height:1.4;}
+.settings-theme-swatch {height:52px;display:grid;grid-template-columns:17px 1fr;grid-template-rows:12px 1fr;gap:5px;border-radius:8px;padding:7px;box-shadow:inset 0 0 0 1px #79839755;}
+.settings-theme-swatch i {display:block;border-radius:3px;}
+.settings-theme-swatch i:first-child {grid-row:1/-1;}
+.settings-theme-swatch-light {background:#f0f3f7;}.settings-theme-swatch-light i {background:#c1cbd9;}.settings-theme-swatch-light i:last-child {background:#fff;}
+.settings-theme-swatch-dark {background:#10141b;}.settings-theme-swatch-dark i {background:#4b5568;}.settings-theme-swatch-dark i:last-child {background:#252e3c;}
+.settings-recovery-head {display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;}
+.settings-recovery-head .settings-card-heading {margin-bottom:0;}
+.settings-recovery-list {display:grid;gap:12px;margin-top:16px;}
+.settings-recovery-list:empty {display:none;}
+.recovery-snapshot {display:grid;gap:8px;border:1px solid var(--line);background:var(--surface-2);border-radius:14px;padding:14px;min-width:0;overflow-wrap:anywhere;}
+.recovery-snapshot p {margin:0;}.recovery-snapshot .actions {margin-top:4px;}
+.settings-page .settings-help-actions {display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:20px 0;}
+.settings-page .settings-help-actions .settings-tour {margin:0;}
+@media(max-width:480px) {.settings-page .settings-tabs button,.settings-dialog .settings-tabs button {padding-inline:13px;font-size:12px;}.settings-theme-options{gap:10px}.settings-theme-choice{padding:12px;gap:10px 6px}.settings-card-heading h2{font-size:21px}.settings-recovery-head .btn{min-height:44px}}
+
+/* Light mode uses the same art and layouts, with readable, game-colored ink. */
+:root[data-theme="light"] {
+ --bg:#f3f5f8;--surface:#ffffff;--surface-2:#e7ecf3;--panel:#ffffff;
+ --line:#c2cbd8;--text:#172337;--muted:#47566b;--faint:#536278;
+ --gold:#79520a;--gold-ink:#ffffff;--accent:var(--gold);
+ --good:#176b43;--bad:#ad322b;--warn:#79520a;
+ --picker-bg:rgba(250,252,255,.98);--picker-border:#b6c1d1;color-scheme:light;
+}
+:root[data-theme="light"] body[data-game="ptcg"] {--gold:#ae3029;--gold-ink:#fff;}
+:root[data-theme="light"] body[data-game="ygo"] {--gold:#6738ad;--gold-ink:#fff;}
+:root[data-theme="light"] body {--accent:var(--gold);}
+:root[data-theme="light"] body.glass {--glass:rgba(255,255,255,.88);--glass-2:rgba(235,240,247,.94);--glass-line:rgba(85,105,135,.26);--glass-hi:inset 0 1px 0 #fff,inset 0 0 0 1px #ffffff70;}
+:root[data-theme="light"] body.glass #ambient .amb-art {filter:blur(42px) saturate(.9) brightness(1.15);opacity:.26;}
+:root[data-theme="light"] body.glass #ambient::after {background:radial-gradient(80% 55% at 85% 0%,color-mix(in srgb,var(--game-color) 10%,transparent),transparent 70%),linear-gradient(180deg,#f3f5f8bd,#f3f5f8eb 60%,#f3f5f8fa);}
+:root[data-theme="light"] body :is(.topbar,.bottom-nav) {background:rgba(246,249,253,.94);border-color:var(--line);}
+:root[data-theme="light"] :is(.tabs,.sticky-bar,.sticky-summary,.scan-confirm,.scan-confirm-actions) {background:rgba(246,249,253,.97);border-color:var(--line);}
+:root[data-theme="light"] .game-tabs {background:#e7ecf3;border-color:var(--line);}
+:root[data-theme="light"] .game-tab {color:var(--muted);}
+:root[data-theme="light"] .game-tab[aria-selected="true"] {background:#fff;color:var(--text);border-color:var(--gold);box-shadow:0 2px 8px #24364b14;}
+:root[data-theme="light"] .game-tab:hover {color:var(--text);background:#f8faff;}
+:root[data-theme="light"] .set-media > img[src*="svgs.scryfall.io"],:root[data-theme="light"] .set-media > img[src*="/sets/"][src$=".svg"],:root[data-theme="light"] .set-year-grid .set-media-pokemon-symbol > .set-catalogue-symbol {filter:none;}
+:root[data-theme="light"] body.glass dialog.sheet {background:linear-gradient(180deg,#ffffffef,#f6f8fbed);border-color:var(--line);box-shadow:0 -12px 55px #23334d26;}
+:root[data-theme="light"] body.glass .sheet-head:not(.overlay),:root[data-theme="light"] body.glass .sheet-head.overlay.scrolled {background:rgba(250,252,255,.97);border-color:var(--line);}
+:root[data-theme="light"] body.glass :is(.panel,.kpi,.game-choice,.lot,.meta-row,.print,.cd-text,.price-pill,.advice,.deck-emb,.pair-row,.guide-limits span,.imp-chip,.proven-sum,.settings-card) {box-shadow:var(--glass-hi),0 8px 25px #23334d0d;}
+:root[data-theme="light"] body.glass .seg :is(button.on,[aria-selected="true"]) {background:#fff;box-shadow:inset 0 1px #fff,0 1px 4px #24364b1a;}
+:root[data-theme="light"] :is(.settings-dialog,.settings-dialog-head) {box-shadow:none;}
+:root[data-theme="light"] .settings-dialog {box-shadow:0 24px 80px #17233733;}
+:root[data-theme="light"] .settings-aside .save-status {display:block;}
+:root[data-theme="light"] :is(.suggest,.rule-glass,.batch-tray,.market-panel,.home-search-pill,.home-suggestions,.tour-card,.scan-condition-value,.scan-saved-receipt) {background:linear-gradient(135deg,#fff,color-mix(in srgb,var(--gold) 4%,var(--surface)));border-color:var(--line);color:var(--text);box-shadow:0 12px 38px #24364b1a;}
+:root[data-theme="light"] :is(.suggest button:hover,.suggest button.on,.home-suggestions .home-result[aria-selected="true"],.home-suggestions .home-result:hover) {background:var(--surface-2);}
+:root[data-theme="light"] .home-result-actions .home-assistant-action {background:linear-gradient(115deg,#eee6f6,#e7eef8);}
+:root[data-theme="light"] .home-ai-submit {background:#ebe6f4;}
+:root[data-theme="light"] .home-search-submit {color:#fff;}
+:root[data-theme="light"] :is(.home-overview,.home-resume,.home-community) {background:linear-gradient(135deg,#ffffffd9,#ffffff8c);border-color:var(--line);}
+:root[data-theme="light"] .home-community .community-source > span:first-child {color:var(--text);}
+:root[data-theme="light"] .logic-condition {color:var(--gold);}
+:root[data-theme="light"] .quote-warning summary {color:var(--warn);}
+:root[data-theme="light"] :is(.note.warn,.air-check.warn) {color:var(--warn);}
+:root[data-theme="light"] :is(.auth-feedback.error,.air-check.bad) {color:var(--bad);}
+:root[data-theme="light"] .auth-feedback.success {color:var(--good);}
+:root[data-theme="light"] :is(.account-notice-badge,.account-inline-count,.scan-saved-art span,.scan-saved-fly span) {color:var(--gold-ink);}
+:root[data-theme="light"] :is(.ai-review-steps .current,.ai-orbit span) {color:#6738ad;}
+:root[data-theme="light"] :is(.chip.ok-chip,.power-chip.p-hi em) {color:var(--good);}
+:root[data-theme="light"] :is(.chip.bad-chip,.power-chip.p-lo em) {color:var(--bad);}
+:root[data-theme="light"] .power-chip.p-mid em {color:var(--warn);}
+:root[data-theme="light"] #toast {background:#f8fafff7;color:var(--text);border-color:var(--line);}
+:root[data-theme="light"] #toast.ok {background:#e4f3eb;color:#145637;}
+:root[data-theme="light"] #toast .toast-undo {background:#dfe7f0;}
+:root[data-theme="light"] .cf-dialog.danger .btn.danger {color:#fff;}
+:root[data-theme="light"] .cf-dialog-check svg {stroke:#fff;}
+/* Art overlays remain dark-backed with light ink; card images and foil pixels never invert. */
+:root[data-theme="light"] :is(.tile-chrome,.chip.dark,.icon.light,.hh-credit,.hero-body,.deck-hero,.community-art,.home-meta-card,.tabletop-dialog,.community-profile-header,.stash-open-book,.tv-phone,.air-fan,.scan-defaults,.cam-rail,.img-missing) {--text:#f4f6fb;--muted:#d0d8e6;--faint:#bac5d7;--gold:#edc777;--gold-ink:#201808;--good:#8bdfaf;--bad:#ffb4a8;color:var(--text);}
+:root[data-theme="light"] .home-overview .home-daily .hh-credit {--text:#172337;--muted:#47566b;--faint:#536278;--gold:inherit;color:var(--text);}
+:root[data-theme="light"] .tabletop-dialog {--surface:#17202d;--surface-2:#243144;--panel:#17202d;--line:#5c6d86;--picker-bg:#17202df7;--picker-border:#5c6d86;color-scheme:dark;}
+:root[data-theme="light"] .card-owned-summary {background:var(--surface-2);border-color:var(--line);color:var(--text);}
+@media(prefers-reduced-transparency:reduce) {
+ :root[data-theme="light"] body.glass :is(.panel,.kpi,.game-choice,.lot,.meta-row,.print,.cd-text,.price-pill,.advice,.deck-emb,.pair-row,.proven-sum,.settings-card,dialog.sheet,.topbar,.bottom-nav) {background:var(--surface);backdrop-filter:none;}
+}

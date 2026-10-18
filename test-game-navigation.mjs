@@ -1,3 +1,4 @@
+import {recoveryKey,recoverySummary,appendRecoverySnapshot,createRecoverySnapshot} from './recovery-store.js';
 // Deterministic semantic mapping, real app controller and history tests. No browser/network.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -35,13 +36,13 @@ function harness(game='mtg',hash='#search'){
  const history={get state(){return entries[pos].state;},replaceState(state,_title,route){entries[pos]={state:structuredClone(state),hash:route};location.hash=route;},pushState(state,_title,route){entries.splice(++pos);entries.push({state:structuredClone(state),hash:route});location.hash=route;},go(delta){pos+=delta;location.hash=entries[pos].hash;handlers.popstate();handlers.hashchange();}};
  const T={game:()=>GAME_ROUTES.includes(S.state.settings?.game)?S.state.settings.game:"mtg",isTcg:()=>S.state.settings.game!=='mtg',ui:(g=S.state.settings.game)=>UI[g],invalidateTcgSearch:g=>hooks.push('search:'+g)};
  const content={setAttribute(){}};
- const context={settingsPopup:{historyChanged:()=>false},S,T,location,history,routeSegments,normalizeRoute,gameSwitchRoute,historyEntry,createNavigationQueue,GAMES:Object.fromEntries(GAME_ROUTES.map(g=>[g,{}])),
+ const context={aiMatchups:{cancel(){}},settingsPopup:{historyChanged:()=>false},S,T,location,history,routeSegments,normalizeRoute,gameSwitchRoute,historyEntry,createNavigationQueue,GAMES:Object.fromEntries(GAME_ROUTES.map(g=>[g,{}])),
  document:{querySelector:()=>null,querySelectorAll:selector=>selector==='dialog[open]'&&block?[{id:'dirty'}]:[],addEventListener(){}},window:{scrollY:175,scrollTo:arg=>scrolls.push(arg),addEventListener:(name,fn)=>handlers[name]=fn},$:()=>content,
  scanCtx:{beforeGameChange:(from,to)=>{hooks.push(['before',from,to]);return !scanSaving;},afterGameChange:g=>hooks.push(['after',g])},
  commit:async fn=>{if(slow)await new Promise((resolve,reject)=>jobs.push({resolve,reject}));if(reject)throw Error('fixture disk full');fn(S.state);},
  render:()=>paints.push({game:T.game(),hash:location.hash,view:S.ui.view,deckId:S.ui.deckId,tdeckId:S.ui.tdeckId,tsetId:S.ui.tsetId}),
  toast:m=>toasts.push(m),closeSheet(){S.ui.sheetCtx=null;},dismissRulesGuide(){},endHold(){},heldTarget:null,browseCleanup:null,dbInvalidate:()=>hooks.push('magic'),tcgCtx:{invalidateNavigation:()=>hooks.push('retire')},sheetReturn:null,sheetTrail:{clear(){}},routeTrail:[],pendingRoute:null,quickCard:null,comparison:{cancel(){}},updateCompareTray(){},navDir:'',scrollRestore:0,scrollMem:new Map(),restoreScroll:top=>scrolls.push(top),deckById:id=>S.state.decks.find(d=>d.id===id),save(){},openShared(){},console,Date,Promise,Set,Map};
- vm.createContext(context);vm.runInContext(routing+'\n'+controller,context);
+ Object.assign(context,{recoveryKey,recoverySummary,appendRecoverySnapshot,createRecoverySnapshot});vm.createContext(context);vm.runInContext(routing+'\n'+controller,context);
  vm.runInContext('navigationReady=true;activeEntry=makeEntry(T.game(),normalizeRoute(location.hash),0);replaceEntry(activeEntry);parseHash();',context);
  return {context,S,UI,entries,paints,toasts,hooks,scrolls,jobs,history,handlers,location,run:script=>vm.runInContext(script,context),block:value=>block=value,scanSaving:value=>scanSaving=value,reject:value=>reject=value,slow:value=>slow=value};
 }
@@ -161,9 +162,10 @@ for(const action of ['import','recovery','cloud','direct']) {
  const h=workspaceHarness('ygo','#tdeck/same-id/versions'),c=h.c,next=structuredClone(h.S.state);next.settings.game='mtg';next.settings.authorName='Adopted '+action;
  c.imported=next;h.disk.set('recovery',next);
  if(action==='import')await c.C.restoreBackup({files:[{}]});else if(action==='recovery')await c.A.undoRestore();else if(action==='cloud')await c.cloudHooks.apply(next);else await c.replaceWorkspace(next);
- aligned(h);assert.equal(h.location.hash,'#decks/mine');assert.equal(h.S.ui.tdeckId,null);assert.equal(h.S.state.settings.authorName,'Adopted '+action);assert.equal(h.disk.get('workspace').settings.game,'mtg');
- assert(h.hooks.some(x=>Array.isArray(x)&&x[0]==='before'&&x[1]==='ygo'&&x[2]==='mtg'));
- await c.go('#search');aligned(h);assert.equal(h.S.state.settings.game,'mtg');
+ const targetGame=action==='cloud'?'ygo':'mtg';
+ aligned(h);assert.equal(h.location.hash,action==='cloud'?'#tdeck/same-id/versions':'#decks/mine');assert.equal(h.S.ui.tdeckId,action==='cloud'?'same-id':null);assert.equal(h.S.state.settings.authorName,'Adopted '+action);assert.equal(h.disk.get('workspace').settings.game,targetGame);
+ assert(h.hooks.some(x=>Array.isArray(x)&&x[0]==='before'&&x[1]==='ygo'&&x[2]===targetGame));
+ await c.go('#search');aligned(h);assert.equal(h.S.state.settings.game,targetGame,'automatic cloud adoption preserves device navigation; explicit restore adopts the selected backup');
 }
 // Failed writes and existing ownership/save gates keep source state, route and Undo.
 for(const reason of ['disk','scan','dialog','account']) {

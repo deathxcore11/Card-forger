@@ -7,10 +7,11 @@ export function createSettingsDialog({dialog,markup,beforeOpen=()=>{},afterPaint
   const next=markup();if(next===html)return;
   const focused=document.activeElement,focusId=dialog.contains(focused)?focused.id:'',selection=focusId&&typeof focused.selectionStart==='number'?[focused.selectionStart,focused.selectionEnd]:null;
   const fields=[...dialog.querySelectorAll('input:not([type=file]):not([type=checkbox]):not([type=radio]),textarea')].filter(n=>n.id).map(n=>({id:n.id,value:n.value}));
-  const disclosures=[...dialog.querySelectorAll('details')].map((n,i)=>n.open?i:-1),top=dialog.scrollTop;
+  const disclosures=[...dialog.querySelectorAll('details')].map((n,i)=>n.open?i:-1),top=dialog.scrollTop,railLeft=dialog.querySelector('.settings-tabs')?.scrollLeft||0;
   dialog.innerHTML=next;html=next;
   for(const field of fields){const n=dialog.querySelector('#'+field.id);if(n)n.value=field.value;}
   for(const [i,n]of [...dialog.querySelectorAll('details')].entries())if(disclosures.includes(i))n.open=true;
+  const rail=dialog.querySelector('.settings-tabs');if(rail)rail.scrollLeft=railLeft;
   const target=focusId&&dialog.querySelector('#'+focusId);if(target){target.focus({preventScroll:true});if(selection)try{target.setSelectionRange(...selection);}catch{}}
   dialog.scrollTop=top;afterPaint();
  };

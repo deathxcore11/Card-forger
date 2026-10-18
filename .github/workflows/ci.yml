@@ -485,3 +485,43 @@ jobs:
         with:
           name: rule-hover-app-browser-evidence
           path: test-results/rule-hover-app-*
+
+  magic-matchups-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - name: Inspect explicit Magic AI Matchups with synthetic responses
+        run: node tests/magic-matchups-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: magic-matchups-browser-evidence
+          path: test-results/magic-matchups-*
+
+  recovery-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - name: Inspect synthetic device recovery and restore controls
+        run: node tests/recovery-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: recovery-browser-evidence
+          path: test-results/recovery-*

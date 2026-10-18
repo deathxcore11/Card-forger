@@ -1,3 +1,4 @@
+import {recoveryKey,recoverySummary,appendRecoverySnapshot,createRecoverySnapshot} from './recovery-store.js';
 import {mergeValueHistory} from './value-history.js';
 import {addScannedEntry} from './collection-stack.js';
 import assert from 'node:assert/strict';
@@ -23,7 +24,7 @@ const fresh = () => ({...blank(),collection:[{id:'a',name:'Sol Ring',qty:1,finis
 let fail = false;
 const ctx = {addScannedEntry,S:{state:fresh()},slim,changedConditionLots,recordHomeDeckWork,refreshChangedConditions(){},structuredClone,normalize:validateWorkspace,stripCache:s=>s,STORAGE:'safety-only',RECOVERY:'safety-recovery',writeRecords:async r=>{if(fail){fail=false;throw Error('disk full');}return writeRecords(r);},afterLocalSave(){},saveCatalogSoon(){},render(){},refreshSheet(){},haptic(){},flyToCollection(){},toast(){},autoEnrich(){},setTimeout(){},lastActTarget:null,A:{},blank,meta:()=>null,go(){},uid:()=>''};
 Object.assign(ctx,{cloudInfo:ctx.cloudInfo||(()=>({configured:false})),refreshProfileAvatar(){},createAccountWorkspaces:()=>({guard:null}),readRecord:ctx.readRecord|| (async()=>null)});
-vm.createContext(ctx);
+Object.assign(ctx,{recoveryKey,recoverySummary,appendRecoverySnapshot,createRecoverySnapshot});vm.createContext(ctx);
 vm.runInContext(segment('let lastUndo = null;','\nconst safely =')+'\n'+segment('A.qty = async','\nI.collSearch ='),ctx);
 await Promise.all(['a','b'].map(id=>ctx.A.qty({dataset:{id,delta:'1'}})));
 assert.deepEqual(ctx.S.state.collection.map(e=>e.qty),[2,2]);
@@ -130,7 +131,7 @@ function replacementHarness() {
     ask:async()=>true,askText:async()=> 'DELETE',busy:()=>()=>{},deleteAccount:async()=>{c.owner=null;},
     cloudInfo:()=>({user:c.owner}),signOut:async()=>{events.push('sign-out');if(c.signOutError)throw Error('sign-out failed');c.owner=null;},detachDeviceSync(){events.push('detach');},clearAskConversations(){},clearRulesConversations(){},rulesGuideOrigin:null,go(){},owner:null};
   Object.assign(c,{mergeValueHistory,T:{readLegacyTcgValueHistory:()=>[]},refreshProfileAvatar(){},createAccountWorkspaces:()=>({guard:null})});
-  vm.createContext(c);
+  Object.assign(c,{recoveryKey,recoverySummary,appendRecoverySnapshot,createRecoverySnapshot});vm.createContext(c);
   vm.runInContext(segment('let lastUndo = null;','\nconst safely =')+'\n'+segment('A.undo = async','\nA.nextFact =')+'\n'+segment('C.restoreBackup = async','\nA.loadExample =')+'\n'+segment('A.deleteAccount = async','\nA.signOut ='),c);
   vm.runInContext('cloudHooks = ({'+segment('    apply: async (data,{owner,current}={}) => {','    backup: async')+'});',c);
   const replace=c.replaceWorkspace;c.replaceWorkspace=(...args)=>{const result=replace(...args);observed();return result;};
@@ -153,7 +154,7 @@ async function raceReplacement(kind) {
   assert.deepEqual(names(disk.get('queue-recovery')),recovery,kind+' preserves latest pre-replacement recovery');
   assert.equal(vm.runInContext('lastUndo',c),null,kind+' invalidates old-workspace Undo');
   if(kind==='reset'){assert(h.events.indexOf('sign-out')<h.events.indexOf('detach'));assert.equal(c.owner,null);}
-  if(kind!=='undo')assert.equal(h.events.filter(e=>e==='save-notify').length,2,'replacement must not schedule a blank or adopted account upload');
+  if(kind!=='undo')assert.equal(h.events.filter(e=>e==='save-notify').length,['restore','recovery'].includes(kind)?3:2,'explicit restore schedules a new account update; blank reset and cloud adoption do not');
   await c.A.undo();assert.deepEqual(names(c.S.state),expected,'stale Undo cannot revive the replaced workspace');
 }
 for(const kind of ['reset','restore','recovery','undo','cloud'])await raceReplacement(kind);

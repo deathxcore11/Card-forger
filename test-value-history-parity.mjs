@@ -30,7 +30,7 @@ assert.equal(data.get('cardstashy-value-hist-ptcg::account:a'),before,'Legacy ro
 const source=fs.readFileSync('app.js','utf8');
 assert.match(source,/accountLocked=true;valueHistoryReady=false/);
 assert.match(source,/valueHistoryReady=true;\s*importReadyValueHistory\(\)/);
-assert.match(source,/if \(valueHistoryReady && !navigationWrite\) trackValue\(valid\)/);
+assert.match(source,/if \(valueHistoryReady && !navigationWrite && observeValue\) trackValue\(valid\)/);
 console.log('PASS: all-game persisted history roundtrip, per-account legacy merge isolation/idempotence, preserved metadata and >365 records, unchanged rollback keys, zero after removing holdings, ready-only observation hooks.');
 // Run the actual synchronous observation hook while a non-Collection editor commits
 // a new custom price. The rendering global still points at the old workspace map.
@@ -47,3 +47,5 @@ vm.createContext(ctx);vm.runInContext(source.slice(source.indexOf('function trac
 ctx.trackValue(draft);assert.equal(draft.valueHistory.at(-1).total,99,'Draft custom price observed outside Collection');assert.equal(collectionValue(oldState.collection,{},oldState.printings).total,7,'Active rendering map restored');
 ctx.valueHistoryReady=false;const beforeHistory=JSON.stringify(draft.valueHistory);ctx.trackValue(draft);assert.equal(JSON.stringify(draft.valueHistory),beforeHistory,'No observation before owner scope is ready');
 console.log('PASS: real observation hook uses draft-owned custom prices outside Collection and restores current account map synchronously.');
+
+assert.match(source,/observeValue:false/,"legacy migration does not observe device cache as a new value");

@@ -1,3 +1,8 @@
+import {createMagicMatchups,matchupFingerprint} from './magic-matchups-controller.js';
+import {matchupState,resetMatchups} from './magic-matchups-ui.js';
+import {buildMatchupRequest} from './ai-matchup-core.js';
+import {initTheme,applyTheme,normalizeSettingsTab,activateSettingsTab} from './settings-theme.js';
+import {recoveryKey,syncBaselineKey,createRecoverySnapshot,appendRecoverySnapshot,readRecoverySnapshots,createSyncBaseline,recoverySummary} from './recovery-store.js';
 import {mergeLegacyGameHistories,mergeValueHistory} from './value-history.js';
 import {sharedBinderRows,sharedBinderValue} from './community-profile.js';
 import {setFinishEffects} from './finish-preview.js';
@@ -125,6 +130,7 @@ function setSaveStatus(text, cls = "") {
 }
 // Glass look: frosted surfaces over a blurred copy of the game's daily-card art.
 // The art is remembered per game so every screen shares the same backdrop.
+initTheme();
 const AMBIENT_KEY = "cardstashy-ambient-v1",
   GLASS_KEY = "cardstashy-glass";
 const glassOn = () => {
@@ -249,7 +255,9 @@ function queueWorkspaceWrite(transaction) {
 // A replacement joins the same queue as edits, so no older edit can revive a cleared
 // workspace. Recovery captures the latest committed state, not the state before waiting.
 function replaceWorkspace(next, { recovery = false, clearRecovery = false, stamp = false, notify = false, guard = null, kind = "replace" } = {}) {
+  const generation=accountGeneration;
   return queueWorkspaceWrite(async () => {
+    if(generation!==accountGeneration)return false;
     if (guard && !await guard()) return false;
     const value = typeof next === "function" ? next() : next;
     if (typeof next === "function" && value == null) return false;
@@ -257,7 +265,13 @@ function replaceWorkspace(next, { recovery = false, clearRecovery = false, stamp
     if (stamp) valid.lastSavedAt = new Date().toISOString();
     const records = [[STORAGE, valid]];
     if (clearRecovery) records.unshift([RECOVERY, blank()]);
-    else if (typeof recovery === "function" ? recovery(S.state) : recovery) records.unshift([RECOVERY, stripCache(S.state)]);
+    else if (typeof recovery === "function" ? recovery(S.state) : recovery) {
+      const owner=cloudInfo().user?.id||null;
+      const raw=await readRecord(recoveryKey(owner));
+      if(generation!==accountGeneration)return false;
+      if (guard && !await guard()) return false;
+      records.unshift([recoveryKey(owner),appendRecoverySnapshot(raw,createRecoverySnapshot(stripCache(S.state),{owner,label:"Before workspace replacement",reason:kind}))],[RECOVERY,stripCache(S.state)]);
+    }
     const transition = workspaceTransition?.begin(valid, {kind});
     try { await writeRecords(records,accountStorageOptions()); }
     catch (error) { workspaceTransition?.failed(transition); throw error; }
@@ -269,7 +283,7 @@ function replaceWorkspace(next, { recovery = false, clearRecovery = false, stamp
     return true;
   });
 }
-async function commit(fn, { msg = "", recovery = false, rerender = true, enrich = true, undo = "", guard = null, navigationWrite = false, recordDeckWork = true, scope = {account:accountGeneration,workspace:null} } = {}) {
+async function commit(fn, { msg = "", recovery = false, rerender = true, enrich = true, undo = "", guard = null, navigationWrite = false, recordDeckWork = true, observeValue = true, scope = {account:accountGeneration,workspace:null} } = {}) {
   const accountTicket=scope.account;
   const scopeCurrent=()=>!accountLocked&&accountTicket===accountGeneration&&(navigationWrite||scope.workspace===null||scope.workspace===conditionWorkspaceRevision);
   const flight=typeof captureCollectionFlight==='function'&&/^Added\b/.test(msg||undo)?captureCollectionFlight(lastActTarget):null;
@@ -283,7 +297,7 @@ async function commit(fn, { msg = "", recovery = false, rerender = true, enrich 
     const next = structuredClone(stripCache(S.state));
     const out = fn(next);
     const valid = normalize(next);
-    if (valueHistoryReady && !navigationWrite) trackValue(valid);
+    if (valueHistoryReady && !navigationWrite && observeValue) trackValue(valid);
     if (recordDeckWork && !navigationWrite) recordHomeDeckWork(previous, valid);
     valid.lastSavedAt = new Date().toISOString();
     const records = [[STORAGE, valid]];
@@ -892,7 +906,7 @@ function render() {
   if (rulesGuideOrigin && JSON.stringify(currentRulesOrigin()) !== JSON.stringify(rulesGuideOrigin)) dismissRulesGuide();
   if(S.ui.view==='collection'){setTimeout(refreshCollectionConditions,0);if(T.game()==='mtg')setTimeout(()=>refreshMagicCollectionPrices().catch(()=>{}),0);}
   useMyPrices(S.state.myPrices);
-  if(valueHistoryReady && S.ui.view==='collection') scheduleValueObservation();
+  // Painting an adopted workspace must not create device-specific price observations.
   // Owned printings Scryfall leaves unpriced get TCGplayer's price (once per collection size).
   if (S.ui.view === "collection" && String(S.state.collection.length)+":"+Math.floor(Date.now()/86400000) !== tcgCheckedFor) {
     tcgCheckedFor = String(S.state.collection.length)+":"+Math.floor(Date.now()/86400000);
@@ -1125,6 +1139,7 @@ function clearGameContext() {
   S.ui.shared={...S.ui.shared,code:"",deck:null,error:""};
 }
 function installNavigation(intent) {
+    aiMatchups.cancel();
     const old=activeEntry, changedGame=old && old.game!==intent.game;
     const origin=entryOrigins.get(old?.entryId), returningParent=!changedGame && origin?.game===intent.game && origin.route===intent.hash ? origin : null;
     if(changedGame)clearGameContext();
@@ -1982,7 +1997,47 @@ A.deckTab = (t) => {
   closeSheet();
   go("#deck/" + currentDeck().id + "/" + t.dataset.id);
 };
-/* ---------- Matchups (Magic) ---------- */
+const aiMatchups=createMagicMatchups({getDeck:()=>T.game()==='mtg'?currentDeck():null,state:matchupState,lookup:meta,loadMeta:async key=>{const data=await loadMetaData(key),cached=metaState(key);return {...data,stale:!!cached.error||Date.now()-cached.at>12*3600000,fetchedAt:cached.at?new Date(cached.at).toISOString():''};},metaKey:mtgMetaKey,resolveNames,capture:()=>({scope:mutationScope(),visit:navigationStamp()}),current:ticket=>mutationCurrent(ticket.scope)&&navigationCurrent(ticket.visit)&&T.game()==='mtg',render});
+A.amSelect=()=>aiMatchups.select();
+A.amAnalyze=()=>aiMatchups.analyze();
+A.amCancel=()=>{aiMatchups.cancel();render();};
+const amChange=fn=>{const deck=currentDeck();if(T.game()!=='mtg'||!deck)return;aiMatchups.cancel();const state=matchupState(deck);fn(state);state.result=null;state.request=null;render();};
+A.amColor=t=>amChange(state=>{const color=t.dataset.id;if(!'WUBRG'.includes(color)||color.length!==1)return;state.colors=state.colors.includes(color)?state.colors.filter(c=>c!==color):[...state.colors,color];state.opponent=null;});
+A.amSelection=t=>amChange(state=>{state.selectionMode=t.dataset.id==='random'?'random':'top';state.opponent=null;});
+A.amMode=t=>amChange(state=>{state.mode=t.dataset.id==='bo3'?'bo3':'bo1';});
+I.amQuestion=t=>{const deck=currentDeck();if(!deck||T.game()!=='mtg')return;aiMatchups.cancel();const state=matchupState(deck);state.question=t.value.slice(0,500);state.result=null;state.request=null;if(state.opponent?.provenance?.kind==='meta')state.opponent=null;const position=t.selectionStart;render();const input=document.querySelector('[data-input=amQuestion]');input?.focus();input?.setSelectionRange(position,position);};
+let matchupImport=null;
+A.amPaste=async()=>{
+ const deck=currentDeck();if(!deck||T.game()!=='mtg')return;
+ aiMatchups.cancel();const scope=mutationScope(),visit=navigationStamp(),fingerprint=matchupFingerprint(deck);let text='';
+ try{text=await navigator.clipboard.readText();}catch{}
+ if(!mutationCurrent(scope)||!navigationCurrent(visit)||matchupFingerprint(currentDeck())!==fingerprint)return;
+ matchupImport={scope,visit,fingerprint,deckId:deck.id,format:deck.format,opponent:null};
+ openSheet(`<div class="sheet-head"><h2>Preview an opponent</h2><p>Paste a Magic deck list. This will not save a deck or change your collection.</p></div><label>Opponent name<input id="amImportName" data-input="amImportEdit" maxlength="180" value="Pasted opponent"></label><label>Deck list<textarea id="amImportText" data-input="amImportEdit" rows="8" maxlength="40000" placeholder="4 Lightning Bolt&#10;20 Mountain">${esc(text.slice(0,40000))}</textarea></label><p class="muted">Format: ${esc(deck.format)}. The same format as your deck is required.</p><div id="amImportStatus" role="status"></div><div id="amImportPreview"></div><div class="actions wrap"><button class="btn" data-act="amImportPreview">Preview & match</button><button class="btn" id="amImportUse" data-act="amImportUse" disabled>Use opponent</button></div>`,{type:'matchup-import'});
+};
+const matchupImportCurrent=token=>matchupImport===token&&mutationCurrent(token.scope)&&navigationCurrent(token.visit)&&matchupFingerprint(currentDeck())===token.fingerprint&&S.ui.sheetCtx?.type==='matchup-import'&&$('#sheet')?.open;
+I.amImportEdit=()=>{if(!matchupImport)return;matchupImport.revision=(matchupImport.revision||0)+1;matchupImport.opponent=null;$('#amImportUse').disabled=true;$('#amImportPreview').innerHTML='';$('#amImportStatus').textContent='List changed. Preview again before using this opponent.';};
+A.amImportPreview=async()=>{
+ const token=matchupImport;if(!token||!matchupImportCurrent(token)||token.busy)return;
+ token.busy=true;token.opponent=null;$('#amImportUse').disabled=true;
+ try{
+  const inputText=$('#amImportText').value,inputName=$('#amImportName').value,inputRevision=token.revision||0;
+  const parsed=parseDeckImport(inputText);if(!parsed.cards?.length)throw Error('Paste at least one recognizable card entry.');
+  if(parsed.cards.length+(parsed.side?.length||0)>150)throw Error('Use no more than 150 distinct card entries.');
+  if(parsed.multipleCommanders)throw Error('Paired commander text is not supported by this importer yet. Use a source list with explicit commander metadata.');
+  const names=[...parsed.cards,...(parsed.side||[])].map(row=>row.name);if(parsed.commander)names.push(parsed.commander);
+  $('#amImportStatus').textContent='Matching card names…';await resolveNames(names);if(!matchupImportCurrent(token)||(token.revision||0)!==inputRevision||$('#amImportText').value!==inputText||$('#amImportName').value!==inputName)return;
+  const missing=names.filter(name=>!meta(name)?.type_line);if(missing.length)throw Error(`${missing.length} card names could not be verified. Correct them before using this opponent.`);
+  const opponent={...parsed,name:inputName.trim()||'Pasted opponent',format:token.format,provenance:{kind:'import',source:'Your pasted list'}};
+  buildMatchupRequest({deck:currentDeck(),opponent,lookup:meta,mode:matchupState(currentDeck()).mode});
+  token.opponent=opponent;
+  $('#amImportPreview').innerHTML=`<p>${sumQty(parsed.cards)} main-deck cards · ${sumQty(parsed.side||[])} sideboard cards</p><div class="list compact">${parsed.cards.map(row=>`<div class="mini-row">${row.qty} × ${esc(row.name)}</div>`).join('')}</div>`;
+  $('#amImportStatus').textContent='Names matched. Review the list, then use it as your opponent. Format legality and incomplete lists will be disclosed in the analysis.';$('#amImportUse').disabled=false;
+ }catch(error){if(matchupImportCurrent(token))$('#amImportStatus').textContent=error.message;}finally{token.busy=false;}
+};
+A.amImportUse=()=>{const token=matchupImport;if(!token?.opponent||!matchupImportCurrent(token))return;const state=matchupState(currentDeck());state.opponent=token.opponent;state.sampleCount=0;state.result=null;state.request=buildMatchupRequest({deck:currentDeck(),opponent:token.opponent,lookup:meta,mode:state.mode,question:state.question});matchupImport=null;closeSheet();render();};
+
+/* ---------- Legacy match logging (not the AI renderer) ---------- */
 const muState = (d) => ((S.ui.mu ||= {})[d.id] ||= { first: true });
 A.muRun = async () => {
 
@@ -2054,7 +2109,7 @@ A.muUndo = async (t) => {
   await commit((s) => { const x = s.decks.find((y) => y.id === d.id); x.results = (x.results || []).filter((g) => g.at !== t.dataset.at); }, { msg: "Game removed." });
 };
 let settingsBaseState=null;
-const settingsPopup=createSettingsDialog({beforeOpen:()=>{settingsBaseState=S.state;},dialog:$("#settingsDialog"),markup:()=>`<header class="settings-dialog-head"><div><p class="eyebrow">ALL THREE GAMES</p><h2 id="settingsDialogTitle">Settings</h2></div><button class="icon" data-act="closeSettings" aria-label="Close settings">${ICON.close||'✕'}</button></header>${V.settings({popup:true})}`,afterPaint:()=>{if(S.ui.settingsTab==='backup')storageDetail();},afterClose:scroll=>{profilePicker.close();if(settingsBaseState!==S.state||S.ui.view==='community')render();window.scrollTo({top:scroll,behavior:'instant'});setTimeout(safeIntro,50);}});
+const settingsPopup=createSettingsDialog({beforeOpen:()=>{settingsBaseState=S.state;},dialog:$("#settingsDialog"),markup:()=>`<header class="settings-dialog-head"><div><p class="eyebrow">ALL THREE GAMES</p><h2 id="settingsDialogTitle">Settings</h2></div><button class="icon" data-act="closeSettings" aria-label="Close settings">${ICON.close||'✕'}</button></header>${V.settings({popup:true})}`,afterPaint:()=>{if(normalizeSettingsTab(S.ui.settingsTab)==='recovery'){storageDetail();void renderRecoverySnapshots();}},afterClose:scroll=>{profilePicker.close();if(settingsBaseState!==S.state||S.ui.view==='community')render();window.scrollTo({top:scroll,behavior:'instant'});setTimeout(safeIntro,50);}});
 A.menu = () => settingsPopup.open();
 A.addFriend=()=>community.add();
 A.friendRequests=()=>community.requests();
@@ -2596,13 +2651,12 @@ A.tierApply = async (t) => {
 
 /* ---------- account ---------- */
 A.settingsTab = (t) => {
-  const tab = t.dataset.id;
-  if (!["account","backup","app","info"].includes(tab)) return;
-  S.ui.settingsTab = tab;
-  if (tab === "backup") storageDetail();
-  for (const pane of document.querySelectorAll(".settings-pane")) pane.hidden = pane.id !== "settings-" + tab;
-  for (const button of document.querySelectorAll('[data-act="settingsTab"][role="tab"]')) button.setAttribute("aria-selected",String(button.dataset.id === tab || button.dataset.id === "account" && tab === "backup"));
+  const tab=normalizeSettingsTab(t.dataset.id);
+  S.ui.settingsTab=tab;
+  activateSettingsTab(document,tab);
+  if(tab==='recovery'){storageDetail();void renderRecoverySnapshots();}
 };
+C.setTheme=t=>{const result=applyTheme(t.value);if(!result.saved)toast('Theme changed for this visit. Your browser could not save it.');};
 document.addEventListener('keydown',e=>{
   const tab=e.target.closest?.('[data-act="settingsTab"][role="tab"]');
   if(!tab||!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
@@ -5543,6 +5597,43 @@ A.exportBackup = () => {
   download("CardStashy_Backup_" + new Date().toISOString().slice(0, 10) + ".json", backupPayload(), "application/json");
   toast("Backup downloaded. Keep it somewhere safe (Drive, email to yourself…).");
 };
+async function recoverySnapshot(id) {
+  const owner=cloudInfo().user?.id||null,generation=accountGeneration;
+  const raw=await readRecord(recoveryKey(owner));
+  if(accountLocked||generation!==accountGeneration||(cloudInfo().user?.id||null)!==owner)return null;
+  return readRecoverySnapshots(raw,owner).find(item=>item.id===id)||null;
+}
+async function renderRecoverySnapshots(){
+  const owner=cloudInfo().user?.id||null,generation=accountGeneration;
+  const host=document.getElementById('recoverySnapshots');if(!host)return;
+  try{
+    const raw=await readRecord(recoveryKey(owner));
+    if(accountLocked||generation!==accountGeneration||(cloudInfo().user?.id||null)!==owner||!host.isConnected)return;
+    const snapshots=readRecoverySnapshots(raw,owner);
+    const status=document.getElementById("recoveryStatus");if(status)status.textContent=`${snapshots.length} saved recovery ${snapshots.length===1?"copy":"copies"} on this device for ${owner?"this account":"guest mode"}.`;
+    host.innerHTML=snapshots.length?snapshots.map(item=>{
+      const summary=recoverySummary(item.state);
+      return `<article class="panel recovery-snapshot"><strong>${esc(item.label)}</strong><p class="muted">${esc(new Date(item.createdAt).toLocaleString())} · ${summary.copies} copies · ${summary.decks} decks across all games</p><div class="actions wrap"><button class="btn ghost small" data-act="downloadRecovery" data-id="${esc(item.id)}">Download</button><button class="btn small" data-act="restoreRecovery" data-id="${esc(item.id)}">Review & restore</button></div></article>`;
+    }).join(''):'<p class="muted">No automatic recovery copies yet. Copies saved before sync conflicts and restores will appear here.</p>';
+  }catch{if(host.isConnected)host.textContent='Recovery copies could not be read. Your saved data has not been changed.';}
+}
+A.recoveryRefresh=()=>renderRecoverySnapshots();
+A.downloadRecovery=async t=>{
+  const item=await recoverySnapshot(t.dataset.id);if(!item)return toast('That recovery copy is not available in this account.');
+  download(`CardStashy_Recovery_${fileSafe(item.label)}.json`,JSON.stringify(backupEnvelope(item.state)),'application/json');
+};
+A.restoreRecovery=async t=>{
+  const owner=cloudInfo().user?.id||null,generation=accountGeneration;
+  const current=()=>!accountLocked&&generation===accountGeneration&&(cloudInfo().user?.id||null)===owner;
+  const item=await recoverySnapshot(t.dataset.id);if(!item)return toast('That recovery copy is not available in this account.');
+  const summary=recoverySummary(item.state);
+  if(!await ask(`Restore ${summary.copies} card copies, ${summary.decks} decks and ${summary.wishlist} wishlist entries across all games from ${new Date(item.createdAt).toLocaleString()}? ${owner?"This replaces this account's current workspace and will sync to your other devices.":"This replaces the guest workspace on this device only."} Your current workspace will be saved as another recovery copy first.`))return;
+  try{
+    if(await replaceWorkspace(item.state,{recovery:true,guard:current,notify:true,stamp:true,kind:'recovery-restore'})===false)return;
+    render();toast('Recovery copy restored. Your previous workspace remains in Recovery.');
+  }catch(error){toast('Recovery could not be restored. '+error.message);}
+};
+
 async function readBackup(file) {
   if (file.size > 60e6) throw Error("Backup is larger than 60 MB.");
   const raw = JSON.parse(await file.text());
@@ -5551,7 +5642,7 @@ async function readBackup(file) {
 C.checkBackup = async (t) => {
   try {
     const { next } = await readBackup(t.files[0]);
-    $("#backupCheck").textContent = `✓ Valid backup: ${sumQty(next.collection)} cards, ${next.decks.length} decks, exported ${next.exportedAt ? new Date(next.exportedAt).toLocaleString() : "date unknown"}.`;
+    $("#backupCheck").textContent = `✓ Valid backup: ${recoverySummary(next).copies} card copies, ${recoverySummary(next).decks} decks across all games, exported ${next.exportedAt ? new Date(next.exportedAt).toLocaleString() : "date unknown"}.`;
   } catch (e) {
     $("#backupCheck").textContent = "✕ Not a valid backup: " + e.message;
   }
@@ -5561,11 +5652,11 @@ C.restoreBackup = async (t) => {
   const current=()=>!accountLocked&&cloudInfo().user?.id===owner&&accountGeneration===generation;
   try {
     const { next, cache } = await readBackup(t.files[0]);
-    if (!await ask(`Replace everything here with ${sumQty(next.collection)} cards and ${next.decks.length} decks from the backup? The current data is kept as a recovery copy.`)) return;
+    if (!await ask(`Replace the workspace across all games with ${recoverySummary(next).copies} card copies and ${recoverySummary(next).decks} decks from this backup? ${owner?"The restored workspace will sync to your other devices.":"This changes guest data on this device only."} Your current data is saved as a recovery copy first.`)) return;
     if(!current())return;
     for (const [k, c] of Object.entries(cache)) if (!S.catalog[k]) S.catalog[k] = slim(c);
     S.catalogDirty = true;
-    if(await replaceWorkspace(next, { recovery: true, guard:current })===false)return;
+    if(await replaceWorkspace(next, { recovery: true, guard:current, notify:true, stamp:true, kind:"restore" })===false)return;
     saveCatalogSoon();
     render();
     toast("Backup restored.");
@@ -5581,8 +5672,8 @@ A.undoRestore = async () => {
   if(!current())return;
   if (!raw) return toast("No recovery copy yet.");
   const next = normalize(raw);
-  if (!await ask(`Switch to the recovery copy (${sumQty(next.collection)} cards, ${next.decks.length} decks)? What you have now becomes the recovery copy.`)) return;
-  if(await replaceWorkspace(next, { recovery: true, guard:current })===false)return;
+  if (!await ask(`Switch to the recovery copy across all games (${recoverySummary(next).copies} card copies, ${recoverySummary(next).decks} decks)? ${owner?"The restored workspace will sync to your other devices.":"This changes guest data on this device only."} What you have now is saved as another recovery copy first.`)) return;
+  if(await replaceWorkspace(next, { recovery: true, guard:current, notify:true, stamp:true, kind:"restore" })===false)return;
   render();
   toast("Recovery copy restored.");
 };
@@ -5698,10 +5789,10 @@ function scheduleValueObservation() {
 function importReadyValueHistory() {
   if(!valueHistoryReady || accountLocked)return;
   const legacy=Object.fromEntries(['ptcg','ygo'].map(g=>[g,T.readLegacyTcgValueHistory(g)]));
-  const next=valueObservationDraft(S.state);mergeLegacyGameHistories(next,legacy);trackValue(next);
+  const next=valueObservationDraft(S.state);mergeLegacyGameHistories(next,legacy);
   if(valueHistories(next)===valueHistories(S.state))return;
   const write=scopedCommit();
-  safely(write(state=>mergeLegacyGameHistories(state,legacy),{enrich:false,recordDeckWork:false}));
+  safely(write(state=>mergeLegacyGameHistories(state,legacy),{enrich:false,recordDeckWork:false,observeValue:false}));
 }
 
 // Background loads in game modules ask for a redraw.
@@ -5766,8 +5857,19 @@ async function boot() {
   observeShellHeader();
   let accountOpenedOnce=false;
   initCloud({
+    accountFirst:true,
+    readSyncBaseline:owner=>readRecord(syncBaselineKey(owner)),
+    saveSyncBaseline:(owner,revision,state)=>{const generation=accountGeneration;return queueWorkspaceWrite(async()=>{
+      if(accountLocked||generation!==accountGeneration||cloudInfo().user?.id!==owner)throw Error('Account changed before saving sync baseline.');
+      const baseline=createSyncBaseline(owner,revision,state),existing=await readRecord(syncBaselineKey(owner));
+      if(accountLocked||generation!==accountGeneration||cloudInfo().user?.id!==owner)throw Error('Account changed before saving sync baseline.');
+      if(JSON.stringify(existing)===JSON.stringify(baseline))return;
+      await writeRecord(syncBaselineKey(owner),baseline,{guardRecord:{...accountWorkspaces.guard,advance:false}});
+    });},
+    reconciled:()=>{if(!accountLocked&&!valueHistoryReady){valueHistoryReady=true;importReadyValueHistory();}},
+    recovered:()=>{if(settingsPopup.isOpen)settingsPopup.refresh();},
     accountChanged: () => {
-      dismissConditionInfo();
+      dismissConditionInfo();aiMatchups.reset();resetMatchups();matchupImport=null;
       accountLocked=true;valueHistoryReady=false;accountGeneration++;workspaceVisitRevision++;lastUndo=null;
       community.reset();deckBoxTransitions.reset();clearConditionAttempts();conditionScheduler=createConditionRefreshScheduler();
       clearAskConversations();clearRulesConversations();rulesGuideOrigin=null;
@@ -5790,8 +5892,7 @@ async function boot() {
       accountLocked=false;clearGameContext();queueMicrotask(()=>community.refresh());
       // Device price histories are private records too; never touch a previous
       // owner's legacy keys while the current account is still being resolved.
-      valueHistoryReady=true;
-      importReadyValueHistory();
+      // Observations begin after cloud reconciliation, not before it.
       const game=GAMES[S.state.settings.game]?S.state.settings.game:'mtg';
       const hash=accountOpenedOnce?'#home':normalizeRoute(location.hash);accountOpenedOnce=true;
       installNavigation({game,hash,mode:'workspace',entry:makeEntry(game,hash,activeEntry?.index||0)});
@@ -5808,6 +5909,10 @@ async function boot() {
       const applied = await replaceWorkspace(() => {
         const incoming=normalize(data);
         cloudBaseline=stripCache(structuredClone(incoming));
+        incoming.settings.game=S.state.settings.game;
+        for(const [target,local] of [[incoming,S.state],...['ptcg','ygo'].map(game=>[incoming.tcg[game],S.state.tcg?.[game]])]){
+          target.activeDeck=local?.activeDeck&&target.decks?.some(deck=>deck.id===local.activeDeck)?local.activeDeck:null;
+        }
         // Same-account observations from this device remain useful on cloud
         // adoption. Incoming workspace wins duplicate dates; holdings are not merged.
         incoming.valueHistory=mergeValueHistory(S.state.valueHistory,incoming.valueHistory);
@@ -5825,9 +5930,17 @@ async function boot() {
       setTimeout(autoEnrich, 200);
       return {cloudBaseline};
     },
-    backup: async (state, label, file) => {
-      await writeRecord(RECOVERY, state,accountStorageOptions());
-      if (file) download(`CardStashy_Backup_${fileSafe(label)}_${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(backupEnvelope(state)), "application/json");
+    backup: async (state,label,file,metadata={}) => {
+      const owner=metadata.owner||cloudInfo().user?.id||null,generation=accountGeneration;
+      await queueWorkspaceWrite(async()=>{
+        const current=()=>!accountLocked&&generation===accountGeneration&&(cloudInfo().user?.id||null)===owner;
+        if(!current())throw Error('Account changed before saving recovery.');
+        const raw=await readRecord(recoveryKey(owner));
+        if(!current())throw Error('Account changed before saving recovery.');
+        const journal=appendRecoverySnapshot(raw,createRecoverySnapshot(state,{...metadata,owner,label}));
+        await writeRecords([[recoveryKey(owner),journal],[RECOVERY,state]],accountStorageOptions());
+      });
+      if(file)download(`CardStashy_Backup_${fileSafe(label)}_${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(backupEnvelope(state)),"application/json");
     },
     status: ([text, cls]) => setSaveStatus(text, cls),
     changed: () => {

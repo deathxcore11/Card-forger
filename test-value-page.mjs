@@ -40,6 +40,12 @@ try {
   // Removing all holdings leaves the historical graph available, not a blank-start screen.
   S.state=structuredClone(state);const emptySide=game==='mtg'?S.state:S.state.tcg[game];emptySide.collection=[];const empty=game==='mtg'?magicCollection():tcgCollection();assert.match(empty,/value-chart/);assert.match(empty,/0 copies/);assert.doesNotMatch(empty,/No value to track yet/);
  }
+ const colorRow=(card,unit=1,qty=1)=>({entry:{qty},card,unit});
+ const eirdu={name:'Eirdu, Carrier of Dawn // Isilu, Carrier of Twilight',layout:'transform',color_identity:['W','B'],card_faces:[{colors:['W']},{colors:['B']}]};
+ const actualColors=valueComposition('mtg',[colorRow(eirdu,3.52),colorRow(eirdu,2.78),colorRow({name:'Bonded Construct',colors:[],color_identity:[]},.04)]);
+ assert.deepEqual(actualColors.map(({key,total,copies})=>({key,total,copies})),[{key:'White',total:6.3,copies:2},{key:'Colorless',total:.04,copies:1}]);
+ for(const [card,expected]of [[{colors:['W'],color_identity:['W','B']},'White'],[{colors:[],color_identity:['B']},'Colorless'],[{colors:['R','U'],color_identity:['R','U']},'Multicolor'],[{color_identity:['W']},'Unknown'],[{layout:'transform',color_identity:['W','B'],card_faces:[{}, {colors:['B']}]},'Unknown'],[{layout:'split',colors:['R','U'],card_faces:[{colors:['R']},{colors:['U']}]},'Multicolor']])assert.equal(valueComposition('mtg',[colorRow(card)])[0].key,expected);
+ const ownedColors=magicValue([{name:eirdu.name,qty:1,manualValue:3.52,condition:'Near Mint',manualValueCondition:'Near Mint'},{name:eirdu.name,qty:1,manualValue:2.78,condition:'Near Mint',manualValueCondition:'Near Mint'}],{[cardKey(eirdu.name)]:eirdu}).colors;assert.equal(ownedColors.W,6.3);assert.equal(ownedColors.Multi,0);
  const before=JSON.stringify(VALUE_HISTORY),model=valueHistoryModel(VALUE_HISTORY,VALUE_NOW);
  assert.equal(JSON.stringify(VALUE_HISTORY),before);assert.equal(model.points.length,6);assert(!model.points.some(p=>p.date>'2026-10-18'));
  assert.deepEqual(model.points.map(p=>p.status),['legacy','complete','partial','unavailable','complete','complete']);assert.equal(model.change.delta,1.22);assert.equal(model.change.date,'2026-10-16');

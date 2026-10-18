@@ -1,5 +1,16 @@
-const CACHE = "cardforge-shell-v228";
+const CACHE = "cardforge-shell-v229";
 const ASSETS = [
+  "./settings-theme.css",
+  "./theme-init.js",
+  "./magic-matchups.css",
+  "./settings-theme.js",
+  "./sync-merge.js",
+  "./recovery-store.js",
+  "./magic-card-color.js",
+  "./ai-matchup-core.js",
+  "./magic-matchups-ui.js",
+  "./magic-matchups-controller.js",
+
   "./",
   "./index.html",
   "./style.css",
