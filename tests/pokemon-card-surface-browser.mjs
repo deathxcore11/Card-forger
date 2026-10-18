@@ -42,8 +42,11 @@ try{for(const width of [320,390,768,1440]){
     await tile.waitFor({state:'visible'});
     await page.waitForFunction(()=>{const n=document.querySelector('#content .lot-art[data-entry="lot-ptcg-0"] img.card-img');return n?.complete&&n.naturalWidth===600;});
     await tile.locator('.finish-overlay').waitFor();
+    // ResizeObserver publishes overlay dimensions during the rendering cycle.
+    // Wait for that cycle before the single geometry assertion, never retry it.
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
     const g=await tile.evaluate(measureGeometry);
-    assert.equal(g.padding,5);assert(Math.abs(g.ratio-g.natural)<.002);assert(Math.abs(g.top-5)<.1);assert(Math.abs(g.left-5)<.1);assert(Math.abs(g.right-5)<.1);assert(Math.abs(g.bottom-5)<.1);assert.equal(g.glitterInset,'5px');for(const value of Object.values(g.overlay))assert(Math.abs(value)<1.1);
+    assert.equal(g.padding,5);assert(Math.abs(g.ratio-g.natural)<.002);assert(Math.abs(g.top-5)<.1);assert(Math.abs(g.left-5)<.1);assert(Math.abs(g.right-5)<.1);assert(Math.abs(g.bottom-5)<.1);assert.equal(g.glitterInset,'5px');for(const value of Object.values(g.overlay))assert(Math.abs(value)<1.1,JSON.stringify({resizedWidth,geometry:g}));
     resizeChecks.push({width:resizedWidth,geometry:g});
    }
   }
