@@ -184,6 +184,7 @@ async function cardForPicker(app,game){
  const card=game==='mtg'?tiles(page).filter({hasText:name}):page.locator(`#content .grid-card[data-id="${PRINT_IDS[game]}"]`);assert.equal(await card.count(),1);await card.click();await page.locator('#sheet[open]').waitFor();
  if(game==='mtg')await page.waitForFunction(()=>!window.__uiTestState.ui.sheetCtx.printsBusy&&Array.isArray(window.__uiTestState.ui.sheetCtx.prints));
  if(game==='ygo')await page.waitForFunction(()=>window.__uiTestTcg.currentYgoCatalogue().length>0);
+ if(game==='ptcg')await page.waitForFunction(()=>window.__uiTestState.ui.sheetCtx.previewBusy===false);
  await page.locator('#card-tab-versions').click();await pickerEntry(page,game).waitFor();await frame(page);
  const searchBefore=await searchState(page,game);await pickerEntry(page,game).scrollIntoViewIfNeeded();await pickerEntry(page,game).focus();const detailBefore=await parentDetail(page);await page.evaluate(()=>window.__fixturePickerParentContext=window.__uiTestState.ui.sheetCtx);
  return {searchBefore,detailBefore};

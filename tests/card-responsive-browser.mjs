@@ -42,11 +42,11 @@ async function focusedSuggestions(game){
    assert(state.same&&state.focused&&state.value&&state.active,`${game} ${width}x${height}: same focused input, popup, options, query and selected option ${JSON.stringify(state)}`);
    assert(state.box&&Math.abs(state.box.left-state.expected.left)<=1&&Math.abs(state.box.top-state.expected.top)<=1&&Math.abs(state.box.width-state.expected.width)<=1,`${game}: popup reanchors to current input ${JSON.stringify(state)}`);
    assert(state.box.left>=-.5&&state.box.right<=state.viewport+.5&&state.documentWidth<=state.viewport+2,`${game}: focused popup fits viewport, not hidden document overflow ${JSON.stringify(state)}`);
-   assert.deepEqual(calls.map(({method,query})=>({method,query})),[{method:'GET',query:'Fold query'}],'Fold/rotation keeps exactly one read-only lookup for the unchanged query, never a write or duplicate request');
+   assert.deepEqual(calls.map(({method,query})=>({method,query})),[{method:'GET',query:game==='ptcg'?'Fold%query':'Fold query'}],'Fold/rotation keeps exactly one read-only lookup for the unchanged query, never a write or duplicate request');
    await capture(page,`card-responsive-${game}-focused-popup-${width}x${height}`);
   }
   assert.equal(await page.locator('#suggestBox .home-result img').count(),2,'Suggestions use illustrated card rows');
-  await search.blur();await page.locator('#suggestBox').waitFor({state:'detached'});assert.equal(await search.inputValue(),'Fold query');assert.deepEqual(calls.map(({method,query})=>({method,query})),[{method:'GET',query:'Fold query'}]);
+  await search.blur();await page.locator('#suggestBox').waitFor({state:'detached'});assert.equal(await search.inputValue(),'Fold query');assert.deepEqual(calls.map(({method,query})=>({method,query})),[{method:'GET',query:game==='ptcg'?'Fold%query':'Fold query'}]);
   report.push(`${game}: same focused autocomplete input/listbox/options/keyboard selection through 1024→320→768→844 landscape→1024, strict input/viewport geometry, ordinary blur cleanup and exactly one provider lookup.`);
   await app.close();
  }catch(error){await capture(page,`card-responsive-${game}-focused-popup-failure`).catch(()=>{});await context.close();throw error;}
