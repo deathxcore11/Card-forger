@@ -2897,7 +2897,7 @@ A.sharedCard=async t=>{
  const generation=accountGeneration;
  if(item.game==='mtg'){
   let printing=Object.values(S.state.printings||{}).find(p=>p.id===c.id)||Object.values(S.catalog||{}).find(p=>p.id===c.id);
-  if(!printing&&c.id)try{printing=slim(await api('/cards/'+encodeURIComponent(c.id)));}catch{}
+  if(!printing&&c.id)try{printing=slim(await api('/cards/'+encodeURIComponent(c.id)));}catch{if(generation===accountGeneration&&S.ui.sheetCtx===ctx)toast('This printing could not load. Please try again.');return;}
   if(generation!==accountGeneration||S.ui.sheetCtx!==ctx||!$('#sheet').open)return;
   await A.card({dataset:{name:c.name},printing});
  }else await A.tCard({dataset:{id:c.id}});

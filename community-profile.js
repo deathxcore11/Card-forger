@@ -39,7 +39,7 @@ export function repairOwnShowcase(item,choices){
  if(signature(item)!==signature(local))return item;
  if(item.presentationSchema===1&&(item.kind!=='deck'||item.deckSchema===1))return item;
  const pool=local.cards.map(c=>({...c}));
- const next=showcaseItem({...item,appearance:local.appearance,format:local.format,commander:local.commander,deckSchema:local.deckSchema,cards:item.cards.map(c=>{const i=pool.findIndex(r=>(r.id||r.name)===(c.id||c.name)&&r.qty===c.qty),match=pool.splice(i,1)[0];return {...c,zone:match?.zone||c.zone};})});
+ const next=showcaseItem({...item,appearance:local.appearance,format:item.deckSchema===1?item.format:local.format,commander:item.deckSchema===1?item.commander:local.commander,deckSchema:item.deckSchema===1?1:local.deckSchema,cards:item.cards.map(c=>{const i=pool.findIndex(r=>(r.id||r.name)===(c.id||c.name)&&r.qty===c.qty),match=pool.splice(i,1)[0];return {...c,zone:item.deckSchema===1?c.zone:match?.zone||c.zone};})});
  return next;
 }
 export function sharedBinderRows(item){return item.cards.map((c,index)=>({index,entry:{id:'shared-'+index,cardId:c.id,name:c.name,qty:c.qty},game:item.game,image:c.image,version:c.version,card:{id:c.id,game:item.game,name:c.name,image:c.image,imageLarge:c.image,image_uris:item.game==='mtg'?{normal:c.image}:undefined}}));}

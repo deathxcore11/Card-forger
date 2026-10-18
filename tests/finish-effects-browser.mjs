@@ -12,7 +12,7 @@ try{for(const game of ['mtg','ptcg','ygo']){
   if(game==='mtg')await page.evaluate(()=>{window.__uiTestState.state.collection[0].finish='foil';});
   await page.locator('#content [data-act="viewSave"][data-mode="gallery"]').click();
   if(game==='ptcg'){
-   await page.evaluate(()=>{const S=window.__uiTestState,T=window.__uiTestTcg,c=Object.values(T.cache.ptcg).find(c=>c.id==='sv08-002'),base=S.state.tcg.ptcg.collection.find(e=>e.cardId===c.id);for(const variant of ['normal','holofoil','reverse-holofoil'])S.state.tcg.ptcg.collection.push({...base,id:'owned-'+variant,variant});});
+   await page.evaluate(()=>{const S=window.__uiTestState,T=window.__uiTestTcg,c=Object.values(T.cache.ptcg).find(c=>c.id==='sv08-002'),base=S.state.tcg.ptcg.collection.find(e=>e.cardId===c.id);S.state.tcg.ptcg.collection=S.state.tcg.ptcg.collection.filter(e=>e.cardId!==c.id);for(const variant of ['normal','holofoil','reverse-holofoil'])S.state.tcg.ptcg.collection.push({...base,id:'owned-'+variant,variant});});
    await page.locator('#content [data-act="viewSave"][data-mode="compact"]').click();await page.locator('#content [data-act="viewSave"][data-mode="gallery"]').click();
    const snapshot=await inventorySnapshot(page);
    for(const [variant,effect,mask] of [['normal','plain',null],['holofoil','ptcg-holo','pk-sv-art'],['reverse-holofoil','ptcg-reverse','pk-sv-surround']]){

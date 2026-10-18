@@ -372,7 +372,9 @@ jobs:
       - name: Check finish controls across phone, foldable, tablet and desktop widths
         run: |
           node tests/finish-effects-browser.mjs
-          node tests/visual-repair-browser.mjs
+      - name: Inspect actual printing masks and moving detail light
+        if: ${{ !cancelled() }}
+        run: node tests/visual-repair-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
