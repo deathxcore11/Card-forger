@@ -90,18 +90,18 @@ for(const game of ['ptcg','mtg','ygo']){
   },{game,url});
   const galleryButton=page.locator('#content [data-act="viewSave"][data-mode="gallery"]');await galleryButton.focus();await galleryButton.press('Enter');
   await page.waitForFunction(()=>document.querySelector('#content.view-gallery .lot-art[data-entry]'));
-  await page.waitForFunction(url=>{const img=document.querySelector('#content .lot-art[data-entry] img.card-img');return img?.complete&&img.naturalWidth>300&&img.currentSrc===url;},url);
+  await page.waitForFunction(url=>{const img=document.querySelector('#content .lot-art[data-entry] img');return img?.complete&&img.naturalWidth>300&&img.currentSrc===url;},url);
   await noOverflow(page,'#content','Actual '+game+' initial gallery settled',true);
   const tile=page.locator('#content .lot-art[data-entry]').first();
   for(const width of [390,320,768,1440,390]){
    await page.setViewportSize({width,height:1000});
    await noOverflow(page,'#content','Actual '+game+' resized gallery settled',true);
    await tile.waitFor({state:'visible'});
-   await page.waitForFunction(url=>{const img=document.querySelector('#content .lot-art[data-entry] img.card-img');return img?.complete&&img.naturalWidth>300&&img.currentSrc===url;},url);
+   await page.waitForFunction(url=>{const img=document.querySelector('#content .lot-art[data-entry] img');return img?.complete&&img.naturalWidth>300&&img.currentSrc===url;},url);
    // Use the same public price-band color for a like-for-like visual comparison.
    await tile.evaluate(n=>n.closest('.lot').dataset.tier='t2');
    await noOverflow(page,'#content','Actual '+game+' frame '+width,true);
-   const geometry=await tile.evaluate(n=>{const img=n.querySelector('img.card-img'),r=n.getBoundingClientRect(),i=img.getBoundingClientRect();return {padding:getComputedStyle(n).paddingTop,radius:getComputedStyle(n).borderTopLeftRadius,innerRadius:getComputedStyle(img).borderTopLeftRadius,left:i.left-r.left,right:r.right-i.right,top:i.top-r.top,bottom:r.bottom-i.bottom,ratio:i.width/i.height,natural:img.naturalWidth/img.naturalHeight,fit:getComputedStyle(img).objectFit};});
+   const geometry=await tile.evaluate(n=>{const img=n.querySelector('img'),r=n.getBoundingClientRect(),i=img.getBoundingClientRect();return {padding:getComputedStyle(n).paddingTop,radius:getComputedStyle(n).borderTopLeftRadius,innerRadius:getComputedStyle(img).borderTopLeftRadius,left:i.left-r.left,right:r.right-i.right,top:i.top-r.top,bottom:r.bottom-i.bottom,ratio:i.width/i.height,natural:img.naturalWidth/img.naturalHeight,fit:getComputedStyle(img).objectFit};});
    assert.equal(geometry.padding,'5px','All games retain full shared frame weight');assert.equal(geometry.radius,'12px');assert.equal(geometry.innerRadius,'7px');
    if(game==='ptcg'){for(const side of ['left','right','top','bottom'])assert(Math.abs(geometry[side]-5)<.2,'No black internal moat '+side);assert(Math.abs(geometry.ratio-geometry.natural)<.002);assert.equal(geometry.fit,'contain');}
    await capture(page,'pokemon-actual-frame-'+game+'-'+width);
