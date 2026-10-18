@@ -356,7 +356,7 @@ async function scenario(game){
   await page.evaluate(()=>{window.__beforeResponsivePrices=document.querySelector('#card-sellers');});await page.locator('#card-tab-prices').click();await page.waitForFunction(()=>document.querySelector('#card-tab-prices')?.getAttribute('aria-selected')==='true'&&window.__uiTestState.ui.sheetCtx?.tab==='prices'&&!window.__beforeResponsivePrices.isConnected);await frame(page);
   if(game==='ygo'){await choose(page,'#sheet [data-change="historyEdition"]','SET-001::Super Rare');await choose(page,'#sheet [data-change="historyYgoEdition"]','1st-edition');}
   else await choose(page,'#sheet [data-change="cardPriceFinish"]',game==='mtg'?'foil':'holofoil');
-  await page.locator('#sheet #card-sellers').scrollIntoViewIfNeeded();await frame(page);await resizeInPlace(page,game,'selected-printing');
+  await page.evaluate(()=>document.querySelector('#sheet #card-sellers').scrollIntoView({block:'nearest',behavior:'instant'}));await frame(page);await resizeInPlace(page,game,'selected-printing');
   await closeSheet(page);
   // Actual reused surface audit, not a blanket cosmetic redesign.
   for(const hash of ['#home','#collection','#search','#sets','#decks']){
