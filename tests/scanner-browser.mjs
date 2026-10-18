@@ -34,7 +34,7 @@ const server=createServer(async(req,res)=>{try{
  res.setHeader('Content-Type',({'.js':'text/javascript','.css':'text/css','.html':'text/html','.json':'application/json'})[extname(file)]||'application/octet-stream');let body=await readFile(file);if(file.endsWith("/config.js"))body=Buffer.from(body.toString().replace(/key:\s*"[^"]*"/,'key: ""'));res.end(body);
 }catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
-const base=`http://127.0.0.1:${server.address().port}`,browser=await chromium.launch();
+const base=`http://127.0.0.1:${server.address().port}`,browser=await chromium.launch(process.env.SCANNER_BROWSER_TRANSPORT==='http1'?{args:['--disable-http2','--disable-quic']}:{});
 await mkdir('test-results',{recursive:true});
 // Hosted CI only: real browser canvas/MediaStream/detector/automatic admission,
 // but deterministic local OCR/provider outputs. This is not a physical-phone or

@@ -1,0 +1,33 @@
+name: Diagnose scanner browser transport
+on:
+  push:
+    branches: [codex/finish-effects-3841]
+    paths:
+      - tests/scryfall-transport-browser.mjs
+      - .github/workflows/scanner-transport.yml
+permissions:
+  contents: read
+jobs:
+  transport:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - name: Compare independent native browser transports
+        run: node tests/scryfall-transport-browser.mjs
+      - name: Run unchanged scanner assertions with HTTP1 transport
+        env:
+          SCANNER_BROWSER_TRANSPORT: http1
+        run: node tests/scanner-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: scanner-transport-evidence
+          path: test-results/
