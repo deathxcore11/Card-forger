@@ -371,6 +371,14 @@ try{
    console.error(`FAIL ${ref.game}: ${e.stack}`);console.error('Public lookup network:',JSON.stringify(lookupNetwork));console.error('Browser errors:',JSON.stringify(browserErrors.slice(-12)));console.error('Scan save diagnostic:',await page.evaluate(async()=>{const {S}=await import('/store.js');return S.ui.scan.confirm?.errorDetail||'No save exception';}));console.error((await page.locator('main').innerText()).slice(0,6000));
    console.error('Final capture diagnostic:',await page.evaluate(async()=>{const {loadBatch}=await import('/scan-batch.js'),{S}=await import('/store.js');return {busy:S.ui.scan.busy,error:S.ui.scan.recognitionError,tried:S.ui.scan.tried,read:S.ui.scan.read,batch:loadBatch().map(({id,status,read,error,cands})=>({id,status,read,error,candidates:(cands||[]).map(({id,name,exact})=>({id,name,exact}))}))};}));
    await page.screenshot({path:`test-results/scanner-${ref.g}-failure.png`,fullPage:true});failures.push(e);
+   if(ref.g==='mtg'){
+    // Read-only transport diagnosis, outside all app queues/caches. It never
+    // supplies scanner results or turns a failed scanner gate into a pass.
+    const probe=await context.newPage();await probe.goto(base+'/__synthetic-scanner.html');
+    const native=await probe.evaluate(async url=>{try{const r=await fetch(url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(7000)});return {status:r.status,id:(await r.json()).id};}catch(e){return {error:e.name+': '+e.message};}},ref.url);
+    let service;try{const r=await context.request.get(ref.url,{timeout:7000,headers:{Accept:'application/json'}});service={status:r.status(),id:(await r.json()).id};}catch(e){service={error:e.message.slice(0,200)};}
+    console.error('Independent public Scryfall transport diagnostic:',JSON.stringify({nativeBrowser:native,requestClient:service}));await probe.close();
+   }
   }finally{await context.close();}
  }
  try{await syntheticRefinementCase();}catch(e){failures.push(e);}
