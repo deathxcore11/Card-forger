@@ -7,6 +7,11 @@ import {tcgplayerWebConfigured} from './tcgplayer-web-source.js';
 const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
 const CONDITIONS=['Near Mint','Lightly Played','Moderately Played','Heavily Played','Damaged'];
 const UA={'Accept':'application/json','User-Agent':'CardStashy/3.73.13 (cached condition valuation; github.com/deathxcore11/Card-forger)'};
+export function missingConditionNotice(game,printings,language,data,product){
+ const editions=game==='ygo'?[...new Set((data?.data||[]).filter(c=>String(c.tcgplayerId)===String(product)).flatMap(c=>c.variants||[]).filter(v=>norm(v.language||'English')===norm(language)&&['1st Edition','Unlimited','Limited','Limited Edition'].includes(v.printing)&&typeof v.price==='number'&&Number.isFinite(v.price)&&v.price>=0).map(v=>v.printing))]:[];
+ if(editions.length&&!editions.some(e=>printings.some(p=>norm(p)===norm(e))))return `No ${printings[0]} quote is listed for this printing in ${language}. Editions with prices: ${editions.join(', ')}. Check the edition on your card; your selection has not been changed.`;
+ return 'No current quote matches this version, language and condition.';
+}
 export function normalizeConditionVariants(body,product,printings,language='English',now=Date.now()){
  const cards=(body?.data||[]).filter(c=>String(c.tcgplayerId)===String(product));
  if(cards.length!==1)return [];
@@ -128,6 +133,6 @@ export async function conditionFeedRoute(url,env,ctx,fetchImpl=fetch,{request}={
    messages.tcgplayer_web_error='TCGplayer’s web price data could not be read. Saved prices remain available.';
    return empty(data.status||'unavailable',messages[data.reason]||'Condition pricing is temporarily unavailable.',{quotes,providers:data.providers,...(data.diagnostics?{diagnostics:data.diagnostics}:{}),reason:data.reason||'',providerCode:data.providerCode||'',retryAfterMs:data.retryAfterMs||60000,...(Number.isFinite(data.nextRetryAt)&&data.nextRetryAt>0?{nextRetryAt:data.nextRetryAt}:{}),ownerVerified:owner,...(Number.isFinite(data.providerObservedAt)&&data.providerObservedAt>0?{providerObservedAt:data.providerObservedAt}:{}),...(['provider-header','fallback'].includes(data.retrySource)?{retrySource:data.retrySource}:{})});
   }
-  return Response.json({status:quotes.length?'available':'unpriced',quotes,providers:data.providers,...(data.diagnostics?{diagnostics:data.diagnostics}:{}),productId:product,source:data.source||'JustTCG',notice:quotes.length?'':'No current quote matches this version, language and condition.'},{headers:{'Cache-Control':'public,max-age=3600'}});
+  return Response.json({status:quotes.length?'available':'unpriced',quotes,providers:data.providers,...(data.diagnostics?{diagnostics:data.diagnostics}:{}),productId:product,source:data.source||'JustTCG',notice:quotes.length?'':missingConditionNotice(game,printings,language,data,product)},{headers:{'Cache-Control':'public,max-age=3600'}});
  }catch{return empty('unavailable','Condition pricing is temporarily unavailable.');}
 }

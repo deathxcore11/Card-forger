@@ -4,6 +4,7 @@ import {registerTcg,cache,tcgAddSheet} from './tcg.js';
 import {conditionRequest,applyConditionQuotes} from './condition-feed.js';
 import {conditionValue,conditionPriceHtml} from './condition-value.js';
 import {createConditionRefreshScheduler} from './condition-refresh-scheduler.js';
+import {missingConditionNotice} from './condition-feed-route.js';
 const originalDocument=globalThis.document;
 try{
  for(const game of ['ptcg','ygo']){
@@ -31,5 +32,9 @@ try{
  const first=scheduler.request('exact',()=>{calls++;return waiting;},{retry:true});
  const duplicate=scheduler.request('exact',()=>{throw Error('Duplicate refresh');},{retry:true});
  resolve({status:'available'});await Promise.all([first,duplicate]);assert.equal(calls,2);
+ const data={data:[{tcgplayerId:658304,variants:[{printing:'Unlimited',language:'English',price:.48}]}]};
+ assert.match(missingConditionNotice('ygo',['1st Edition'],'English',data,658304),/Editions with prices: Unlimited/);
+ assert.doesNotMatch(missingConditionNotice('ygo',['1st Edition'],'Japanese',data,658304),/Unlimited/);
+ assert.doesNotMatch(missingConditionNotice('ygo',['1st Edition'],'English',data,123),/Unlimited/);
  console.log('PASS: normal collection save retains language, quantity and manual value; dated quotes cannot cross language or grade; explicit refresh is deduplicated.');
 }finally{globalThis.document=originalDocument;}
