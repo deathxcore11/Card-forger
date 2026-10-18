@@ -141,6 +141,8 @@ function filteredProductURL(url,game,c,ctx,q,finish){
 }
 export function conditionBuyLink(game,c,entry={}){
  if(!c)return null;
+ if(game==='ptcg'&&(!entry.variant||entry.variant==='reference'))return null;
+ if(game==='ygo'&&(!entry.printing||!entry.rarity||!editionNames[entry.edition]))return null;
  if(game==='mtg'&&entry.printingId&&entry.printingId!==c.id)return null;
  return sellerModels(game,c,{priceFinish:game==='ptcg'?entry.variant:entry.finish,priceEdition:game==='ygo'?[entry.printing,entry.rarity].join('::'):'',priceYgoEdition:entry.edition,condition:entry.condition,language:entry.language}).find(r=>r.key==='tcgplayer');
 }

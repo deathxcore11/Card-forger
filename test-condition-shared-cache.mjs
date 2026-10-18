@@ -36,6 +36,7 @@ for(const ambiguous of [false,true]){
  assert.equal(result.status,ambiguous?'unmapped':'available');assert.equal(identityCalls,1,'Exact detail avoids an unnecessary catalogue fallback');
 }
 const pk={id:'ex4-10',game:'ptcg',name:"Team Magma's Houndoom",variants:[{key:'holofoil',label:'Holofoil',subtype:'unlimited',finish:'holofoil',productId:89828},{key:'reverse-holofoil',label:'Reverse Holo',productId:89828}]};
+assert.equal(conditionBuyLink('ptcg',pk,{condition:'Moderately Played'}),null,'Not sure must not claim an exact condition/version link');
 for(const [variant,printing] of [['holofoil','Holofoil'],['reverse-holofoil','Reverse Holofoil']]){
  const link=conditionBuyLink('ptcg',pk,{variant,condition:'Moderately Played',language:'en'}),url=new URL(link.url);
  assert(link.direct);assert.equal(url.pathname,'/product/89828');assert.equal(url.searchParams.get('Printing'),printing);assert.equal(url.searchParams.get('Language'),'English');assert.equal(url.searchParams.get('Condition'),'Moderately Played');
@@ -43,6 +44,7 @@ for(const [variant,printing] of [['holofoil','Holofoil'],['reverse-holofoil','Re
 const mtg={id:'m',finishes:['foil','etched'],tcgplayer_id:42,tcgplayer_etched_id:43};
 const m=new URL(conditionBuyLink('mtg',mtg,{printingId:'m',finish:'etched',language:'ja',condition:'Damaged'}).url);assert.equal(m.pathname,'/product/43');assert.equal(m.searchParams.get('Language'),'Japanese');assert.equal(m.searchParams.get('Printing'),'Etched Foil');
 const y={id:'1',sets:[{code:'S-1',rarity:'Ultra Rare',productId:9}]};
+assert.equal(conditionBuyLink('ygo',y,{printing:'S-1',rarity:'Ultra Rare',condition:'Near Mint'}),null,'An unspecified YGO edition is not selected by a reference quote');
 const yurl=new URL(conditionBuyLink('ygo',y,{printing:'S-1',rarity:'Ultra Rare',edition:'1st-edition',condition:'Lightly Played',language:'en'}).url);assert.equal(yurl.searchParams.get('Printing'),'1st Edition');
 const unknown=sellerModels('ptcg',pk,{priceFinish:'missing',condition:'Damaged'})[0];assert(!unknown.direct);assert.equal(new URL(unknown.url).searchParams.has('Condition'),false);
 console.log('PASS: shared stale cache during cooldown, original observation dates, no stale valuation, retention, exact legacy mapping, ambiguity refusal and game/condition/finish/language Buy filters.');
