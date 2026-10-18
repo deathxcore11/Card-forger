@@ -41,7 +41,7 @@ export class ConditionPriceCache {
   const primary=await this.primary.load(product,category,owner);
   if(primary.status==='unmapped'||primary.status==='available'&&primary.complete&&!forceBackup)return {...primary,providers:{tcgplayer:primary.status,justtcg:this.env.JUSTTCG_API_KEY?'standby':'not_configured'}};
   const backup=this.env.JUSTTCG_API_KEY?await this.loadBackup(product,owner):null;
-  return {...mergeConditionSources(product,primary,backup),providers:{tcgplayer:primary.reason||primary.status,justtcg:backup?.reason||backup?.status||'not_configured'}};
+  return {...mergeConditionSources(product,primary,backup),...(primary.webDiagnostic?{diagnostics:{tcgplayer:primary.webDiagnostic}}:{}),providers:{tcgplayer:primary.reason||primary.status,justtcg:backup?.reason||backup?.status||'not_configured'}};
  }
  async loadBackup(product,owner=false){
   const now=Date.now(),key='product:'+product,old=await this.storage.get(key);

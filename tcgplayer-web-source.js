@@ -28,24 +28,25 @@ export function webConditionVariants(product,catalog,prices,checkedAt=Date.now()
 export class TcgplayerWebSource extends TcgplayerConditionSource {
  async webRequest(url,options,owner){
   await this.reserve(owner);
-  let r;try{r=await fetch(url,{...options,headers:{Accept:'application/json',...options?.headers},credentials:'omit',redirect:'error',signal:AbortSignal.timeout(8000)});}catch{throw failure();}
+  const step=url===PRICES?'prices':'catalog';
+  let r;try{r=await fetch(url,{...options,headers:{Accept:'application/json',...options?.headers},credentials:'omit',redirect:'error',signal:AbortSignal.timeout(8000)});}catch{throw failure('tcgplayer_web_error',{webDiagnostic:{step,result:'network'}});}
   if([401,403,429].includes(r.status)){
    const now=Date.now(),header=r.headers.get('Retry-After'),seconds=header?.trim()?Number(header):NaN;
    const advised=Number.isFinite(seconds)?seconds*1000:header?Date.parse(header)-now:NaN;
    const retryAfterMs=Math.max(1000,Number.isFinite(advised)&&advised>0?advised:r.status===429?60000:3600000);
-   const result=failure(r.status===429?'tcgplayer_rate':'tcgplayer_web_access',{retryAfterMs,nextRetryAt:now+retryAfterMs});
+   const result=failure(r.status===429?'tcgplayer_rate':'tcgplayer_web_access',{retryAfterMs,nextRetryAt:now+retryAfterMs,webDiagnostic:{step,result:'refused',httpStatus:r.status}});
    await this.storage.put('tcgplayer-pause',result);throw result;
   }
-  if(!r.ok)throw failure();
+  if(!r.ok)throw failure('tcgplayer_web_error',{webDiagnostic:{step,result:'http_error',httpStatus:r.status}});
   // A challenge, login page or unexpected format must never become a price.
-  if(!r.headers.get('Content-Type')?.toLowerCase().includes('application/json'))throw failure();
-  try{return await r.json();}catch{throw failure();}
+  if(!r.headers.get('Content-Type')?.toLowerCase().includes('application/json'))throw failure('tcgplayer_web_error',{webDiagnostic:{step,result:'unexpected_content',httpStatus:r.status}});
+  try{return await r.json();}catch{throw failure('tcgplayer_web_error',{webDiagnostic:{step,result:'invalid_json',httpStatus:r.status}});}
  }
  async webCatalog(product,owner){
   const key='tcg-web-catalog:'+product,old=await this.storage.get(key);
   if(old&&Date.now()-old.cachedAt<7*DAY)return old.catalog;
   const catalog=await this.webRequest(DETAILS+product+'/details',{},owner);
-  if(String(catalog?.productId)!==String(product)||!Array.isArray(catalog.skus)||catalog.skus.length>500)throw failure();
+  if(String(catalog?.productId)!==String(product)||!Array.isArray(catalog.skus)||catalog.skus.length>500)throw failure('tcgplayer_web_error',{webDiagnostic:{step:'catalog',result:'unexpected_schema'}});
   // Persist only identity fields, never the product-wide reference/listing price.
   const compact={productId:catalog.productId,productLineId:catalog.productLineId,skus:catalog.skus.map(s=>({sku:s.sku,condition:s.condition,variant:s.variant,language:s.language}))};
   await this.storage.put(key,{catalog:compact,cachedAt:Date.now()});
@@ -63,7 +64,7 @@ export class TcgplayerWebSource extends TcgplayerConditionSource {
    const ids=[...new Set(catalog.skus.map(s=>s.sku).filter(validId))],prices=[];
    for(let i=0;i<ids.length;i+=100){
     const batch=await this.webRequest(PRICES,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({skuIds:ids.slice(i,i+100)})},owner);
-    if(!Array.isArray(batch)||batch.length>500)throw failure();prices.push(...batch);
+    if(!Array.isArray(batch)||batch.length>500)throw failure('tcgplayer_web_error',{webDiagnostic:{step:'prices',result:'unexpected_schema'}});prices.push(...batch);
    }
    const checkedAt=Date.now(),{variants,complete}=webConditionVariants(product,catalog,prices,checkedAt);
    const data={category:Number(category),cachedAt:checkedAt,complete,source:'TCGplayer',method:'public-web-test',data:[{tcgplayerId:String(product),variants}]};
