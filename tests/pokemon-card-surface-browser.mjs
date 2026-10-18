@@ -1,6 +1,6 @@
 // Real Collection DOM, synthetic 600x825 art: geometry evidence, not physical-foil fidelity.
 import assert from 'node:assert/strict';
-import {startServer,openApp,closeSheet,capture,saveReport} from './detail-rules-fixtures.mjs';
+import {startServer,openApp,closeSheet,capture,saveReport,noOverflow} from './detail-rules-fixtures.mjs';
 if(process.env.GITHUB_ACTIONS!=='true')throw Error('Browser QA runs only in hosted GitHub Actions.');
 const {chromium}=await import('playwright');
 const server=await startServer(),browser=await chromium.launch(),report=[];
@@ -10,6 +10,8 @@ try{for(const width of [320,390,768,1440]){
   await page.route(server.base+'/tests/shape-600x825.svg',r=>r.fulfill({status:200,contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="600" height="825"><rect width="600" height="825" rx="24" fill="#ffe14d"/><rect x="48" y="81" width="504" height="310" fill="#315876"/><circle cx="300" cy="225" r="95" fill="#bb9274"/><text x="48" y="480" font-size="24">SYNTHETIC GEOMETRY FIXTURE</text></svg>'}));
   await page.evaluate(()=>{const T=window.__uiTestTcg,S=window.__uiTestState,c=T.cache.ptcg['swsh1-9'];c.set={...c.set,id:'cel25'};c.name='Synthetic Celebrations geometry';S.state.tcg.ptcg.collection.find(e=>e.cardId===c.id).variant='holofoil';});
   await page.locator('#content [data-act="viewSave"][data-mode="gallery"]').click();
+  await page.waitForFunction(()=>document.querySelector('#content.view-gallery .lot-art[data-entry="lot-ptcg-0"]'));
+  await noOverflow(page,'#content','Pokémon surface gallery settled',true);
   const tile=page.locator('#content .lot-art[data-entry="lot-ptcg-0"]');await tile.scrollIntoViewIfNeeded();
   await tile.locator('img.card-img').evaluate((n,url)=>{n.removeAttribute('srcset');n.src=url;},server.base+'/tests/shape-600x825.svg');
   await tile.locator('.finish-overlay').waitFor();
