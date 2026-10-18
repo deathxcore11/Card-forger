@@ -32,7 +32,7 @@ const before=JSON.stringify(ygo),a=T.setContextCard('ygo',ygo,original.id),b=T.s
 assert.equal(JSON.stringify(ygo),before,'context projection cannot mutate cache');
 assert.equal(presentationQuote('ygo',a).value,11);assert.equal(presentationQuote('ygo',b).value,22);
 assert.notEqual(presentationQuote('ygo',a).key,presentationQuote('ygo',b).key);
-assert.equal(sellerModels('ygo',b,{},[])[0].url,'https://www.tcgplayer.com/product/222');
+assert.equal(sellerModels('ygo',b,{},[])[0].url,'https://www.tcgplayer.com/product/222?Language=English');
 assert.equal(sellerModels('ygo',b,{},[])[0].value,22);
 const unknown=T.setContextCard('ygo',ygo,'LOB');
 assert.equal(presentationQuote('ygo',unknown).value,null);
@@ -65,7 +65,7 @@ const pk={id:'pk-a-1',game:'ptcg',name:'Potion',set:{id:'pk-a',name:'Set A',numb
 const pkA=T.setContextCard('ptcg',pk,releaseA),pkWrong=T.setContextCard('ptcg',pk,releaseB);
 assert.equal(presentationQuote('ptcg',pkWrong,'holofoil').value,null);assert.equal(sellerModels('ptcg',pkWrong,{priceFinish:'holofoil'})[0].direct,false);assert.equal(myPriceKey(pkWrong),null);
 assert.notEqual(myPriceKey(pkA,'nonfoil',{priceFinish:'normal'}),myPriceKey(pkA,'nonfoil',{priceFinish:'holofoil'}));
-assert.equal(sellerModels('ptcg',pkA,{priceFinish:'holofoil'})[0].url,'https://www.tcgplayer.com/product/302');
+assert.equal(sellerModels('ptcg',pkA,{priceFinish:'holofoil'})[0].url,'https://www.tcgplayer.com/product/302?Language=English&Printing=Holofoil');
 assert.equal(presentationQuote('ygo',pkA).value,null,'cross-game card context rejected');
 assert.equal(T.ownedInSet('ptcg',pkA,releaseA,[{cardId:'pk-b-1',name:'Potion',qty:12}]),0,'cross-set name-equivalent trainers do not count');
 const history=new SheetHistory(),ctxA={type:'tcard',game:'ygo',id:ygo.id,setId:original.id},ctxB={...ctxA,setId:anniversary.id};
