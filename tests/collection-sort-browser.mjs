@@ -7,7 +7,7 @@ const server=await startServer(),browser=await chromium.launch();
 const rows=page=>page.locator('#content .lot-art[data-entry]').evaluateAll(nodes=>nodes.map(n=>({id:n.dataset.entry,name:n.closest('.lot').querySelector('.lot-name').textContent.trim(),value:n.closest('.lot').querySelector('.lot-value .price').textContent.trim()})));
 const ids=async page=>(await rows(page)).map(r=>r.id);
 const selected=(page,label)=>page.getByRole('combobox',{name:label,exact:true});
-const settle=async page=>{await page.evaluate(()=>document.fonts.ready);await page.waitForFunction(()=>!document.querySelector('#content').getAnimations({subtree:true}).some(a=>a.animationName==='page-in'&&a.playState==='running'),null,{timeout:2500});};
+const settle=async page=>{await page.evaluate(()=>document.fonts.ready);await page.waitForFunction(()=>!document.querySelector('#content').getAnimations({subtree:true}).some(a=>Number.isFinite(a.effect?.getComputedTiming().endTime)&&!['finished','idle'].includes(a.playState)),null,{timeout:5000});};
 try{for(const game of ['mtg','ptcg','ygo']){
  const app=await openApp(browser,server.base,{game,width:390}),{page}=app;
  try{

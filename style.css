@@ -4677,7 +4677,7 @@ body[data-game="ygo"] .ask-launch{--ask-a:#b697ef;--ask-b:#697db5;--ask-c:#dbb26
 .collection-sort-controls{display:flex;align-items:end;gap:6px;max-width:100%;flex:0 1 auto;min-width:0}
 .collection-sort-controls label{display:grid;gap:4px;min-width:0;font-size:12px;font-weight:700;color:var(--muted)}
 .collection-sort-label{flex:1 1 175px}.collection-direction-label{flex:0 1 136px}
-.collection-sort-controls select{width:100%;min-width:0;min-height:44px;border-radius:999px;font-size:13px;padding-left:12px}
+.collection-sort-controls select{width:100%;min-width:0;height:44px;min-height:44px;white-space:nowrap;border-radius:999px;font-size:13px;padding-left:12px}
 .collection-primary-tools>input[type="search"]{flex:1 1 200px;min-width:0;width:auto;min-height:44px}
 @media(max-width:480px){.collection-primary-tools{display:grid;grid-template-columns:minmax(0,1fr)}.collection-sort-controls{width:100%}.collection-primary-tools>input[type="search"]{width:100%}}
 
