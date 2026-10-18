@@ -21,9 +21,9 @@ async function run(game, mode) {
   try {
     app = await openConditionApp(browser,server.base,{game,label:`home-value-${label}`,hold:true});
     const { page } = app;
-    await page.evaluate(game => {
+    await page.evaluate(async game => {
       const S=window.__uiTestState, row={date:'2026-10-16',total:8.33,copies:5,unpriced:0,currency:'USD',basis:'exact-owned-v1'};
-      if(game==='mtg')S.state.valueHistory=[row];else localStorage.setItem(`cardstashy-value-hist-${game}`,JSON.stringify([row]));
+      if(game==='mtg')S.state.valueHistory=[row];else localStorage.setItem((await import('/account-scope.js')).privateKey(`cardstashy-value-hist-${game}`),JSON.stringify([row]));
     },game);
     await navigate(page,'home');
     assert.equal(await page.locator('[data-value-amount]').innerText(),'$8.75');
