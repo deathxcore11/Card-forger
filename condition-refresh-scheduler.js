@@ -12,9 +12,9 @@ export function createConditionRefreshScheduler({automatic=CONDITION_REFRESH_LIM
   const completed=[...jobs.values()].filter(job=>job.done);
   for(const job of completed.slice(0,Math.max(0,completed.length-cacheEntries)))jobs.delete(job.key);
  };
- const finish=(job,result)=>{job.done=true;job.result=result;job.expires=now()+conditionRetryMs(result,retryMs);job.resolve(result);trim();};
+ const finish=(job,result)=>{job.done=true;job.result=result;job.expires=now()+conditionRetryMs(result,retryMs,now());job.resolve(result);trim();};
  const discard=(job,reason)=>{jobs.delete(job.key);finish(job,deferred(reason));};
- const paused=()=>({...stopResult,changed:false,status:'deferred',reason:stopped,limitReason:stopResult?.reason||'',retryAfterMs:Math.max(0,stoppedUntil-now())});
+ const paused=()=>({...stopResult,changed:false,status:'deferred',reason:stopped,limitReason:stopResult?.reason||'',nextRetryAt:stoppedUntil,retryAfterMs:Math.max(0,stoppedUntil-now())});
  const wake=()=>{if(timer!==null)clearTimer(timer);timer=null;if(!queue.length||stopped||active>=concurrent)return;timer=setTimer(pump,Math.max(0,nextStart-now()));};
  function pump(){
   timer=null;
@@ -28,8 +28,9 @@ export function createConditionRefreshScheduler({automatic=CONDITION_REFRESH_LIM
   nextStart=now()+intervalMs;
   Promise.resolve().then(job.run).then(result=>{
    result ||= deferred('recent-attempt');
+   if(Number(result.retryAfterMs)>0&&!Number.isFinite(result.nextRetryAt))result={...result,nextRetryAt:now()+conditionRetryMs(result,retryMs,now())};
    if(['not_configured','rate_limited'].includes(result.status)){
-    stopped=result.status;stopResult=result;stoppedUntil=now()+conditionRetryMs(result,retryMs);
+    stopped=result.status;stopResult=result;stoppedUntil=now()+conditionRetryMs(result,retryMs,now());
     for(const pending of queue.splice(0)){jobs.delete(pending.key);finish(pending,paused());}
    }
    finish(job,result);

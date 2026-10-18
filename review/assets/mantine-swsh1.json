@@ -1,0 +1,121 @@
+{
+  "category": "Pokemon",
+  "id": "swsh1-52",
+  "illustrator": "Jumpei Akasaka",
+  "image": "https://assets.tcgdex.net/en/swsh/swsh1/52",
+  "localId": "52",
+  "name": "Mantine",
+  "rarity": "Uncommon",
+  "set": {
+    "cardCount": {
+      "official": 202,
+      "total": 216
+    },
+    "id": "swsh1",
+    "logo": "https://assets.tcgdex.net/en/swsh/swsh1/logo",
+    "name": "Sword & Shield",
+    "symbol": "https://assets.tcgdex.net/univ/swsh/swsh1/symbol"
+  },
+  "variants": {
+    "firstEdition": false,
+    "holo": false,
+    "normal": true,
+    "reverse": true,
+    "wPromo": false
+  },
+  "variants_detailed": [
+    {
+      "type": "normal",
+      "size": "standard",
+      "variantId": "generated"
+    },
+    {
+      "type": "reverse",
+      "size": "standard",
+      "variantId": "generated"
+    }
+  ],
+  "dexId": [
+    226
+  ],
+  "hp": 110,
+  "types": [
+    "Water"
+  ],
+  "description": "If it builds up enough speed swimming, it can jump out above the waves and glide for over 300 feet.",
+  "stage": "Basic",
+  "attacks": [
+    {
+      "cost": [
+        "Water"
+      ],
+      "name": "Water Reserve",
+      "effect": "Search your deck for up to 3 Water Energy cards, reveal them, and put them into your hand. Then, shuffle your deck."
+    },
+    {
+      "cost": [
+        "Water",
+        "Water"
+      ],
+      "name": "Wave Splash",
+      "damage": 60
+    }
+  ],
+  "weaknesses": [
+    {
+      "type": "Lightning",
+      "value": "\u00d72"
+    }
+  ],
+  "retreat": 1,
+  "regulationMark": "D",
+  "legal": {
+    "standard": false,
+    "expanded": true
+  },
+  "updated": "2026-08-16T22:12:40+01:00",
+  "thirdParty": {
+    "cardmarket": 436409,
+    "tcgplayer": 208350
+  },
+  "pricing": {
+    "cardmarket": {
+      "updated": "2026-10-17T22:54:32.852Z",
+      "unit": "EUR",
+      "idProduct": 436409,
+      "avg": 0.13,
+      "low": 0.02,
+      "trend": 0.12,
+      "avg1": 0.02,
+      "avg7": 0.14,
+      "avg30": 0.14,
+      "avg-holo": 0.7,
+      "low-holo": 0.2,
+      "trend-holo": 0.69,
+      "avg1-holo": 1.49,
+      "avg7-holo": 0.79,
+      "avg30-holo": 0.93
+    },
+    "tcgplayer": {
+      "unit": "USD",
+      "updated": "2026-10-14T22:55:04.537Z",
+      "reverse-holofoil": {
+        "productId": 208350,
+        "lowPrice": 0.14,
+        "midPrice": 0.6,
+        "highPrice": 19.8,
+        "marketPrice": 0.62,
+        "directLowPrice": null
+      },
+      "normal": {
+        "productId": 208350,
+        "lowPrice": 0.02,
+        "midPrice": 0.25,
+        "highPrice": 19.8,
+        "marketPrice": 0.27,
+        "directLowPrice": 0.06
+      }
+    }
+  },
+  "_source": "https://api.tcgdex.net/v2/en/cards/swsh1-52"
+}

@@ -58,3 +58,23 @@
 .cd-zoom:active .card-img{transform:none;}
 /* Feather the name treatment within the lettering band, including Secret Rare. */
 .finish-layer.finish-name-region{mask-image:linear-gradient(transparent 5.5%,#000 6.3%,#000 9.4%,transparent 10.3%);opacity:.2;}
+
+/* Direct inspection owns the lamp. Pausing the animation would freeze its
+   custom properties over the pointer values, so remove it while interacting. */
+[data-finish-surface].tilting .finish-auto,
+[data-finish-surface].gyro .finish-auto{animation:none;--finish-x:var(--mx,50%);--finish-y:var(--my,50%)}
+
+/* Material-specific, restrained approximations. Patterns stay in the existing
+   printing masks; no extra finish availability or edition marks are invented. */
+.finish-secret:not(.finish-name-region){
+ background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#e9f3ff66,transparent 52%),repeating-linear-gradient(133deg,transparent 0 5px,#cbdcff99 5px 5.7px,#d9bde655 5.7px 6.2px,transparent 6.2px 10px);
+ background-size:100% 100%,110% 110%;
+}
+.finish-metal{
+ background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#e5e6da99,transparent 58%),repeating-linear-gradient(33deg,#c7c7b744 0 .6px,#232b2933 .6px 1.6px),repeating-linear-gradient(123deg,transparent 0 1.3px,#fff2 1.3px 1.7px);
+ background-size:100% 100%,3px 3px,4px 4px;
+}
+.finish-micro{
+ background-image:repeating-linear-gradient(32deg,transparent 0 1.4px,#d4e7ff77 1.4px 1.8px,transparent 1.8px 3px),repeating-linear-gradient(122deg,transparent 0 7px,#fff2 7px 7.4px,transparent 7.4px 10px);
+ background-size:100% 100%;
+}

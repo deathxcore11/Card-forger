@@ -11,6 +11,7 @@ import { ask, askText } from "./dialog.js";
 import { S } from "./store.js";
 import {catalogState,catalogManifest,initCatalog,invalidateCatalogRead,downloadCatalog,removeCatalog,localScanMatch,localIndexCandidate} from "./scan-catalog.js";
 import { esc } from "./ui.js";
+import {conditionRetryFeedback} from './condition-value.js';
 import { nameCandidates, detectGame, anchoredNames, scanNameKey, scanCandidateMatches, ptcgNumbers, ygoSetCodes, mtgCollector } from "./scan.js";
 import { hashCanvas, nearest } from "./scanart.js";
 import { artworkHTML, artworkSources } from "./artwork.js";
@@ -663,7 +664,8 @@ export function scanConditionNotice(q) {
  const messages={loading:'Checking this printing, finish, language and condition…',unpriced:'No current quote matches this condition and version.',available:'No current quote matches this condition and version.',unmapped:'This exact version could not be matched to a price product.',unavailable:'The price service could not complete this lookup.',deferred:q.priceReason==='offline'?'Reconnect to check this condition.':'This price lookup is waiting for another attempt.',not_configured:'Condition pricing is not connected on this deployment.',rate_limited:'The price service paused this lookup.'};
  const notice=q.priceNotice||messages[q.priceStatus]||'';
  const retry=['unavailable','deferred','rate_limited','unpriced','unmapped','available'].includes(q.priceStatus);
- return notice?`<p class="foot scan-price-notice" role="status">${esc(notice)}</p>${retry?'<button class="link small" data-act="scanRetryConditionPrice">Retry condition price</button>':''}`:'';
+ const {timing,retryLabel}=conditionRetryFeedback({reason:q.priceReason,nextRetryAt:q.priceNextRetryAt,retryAfterMs:q.priceRetryAfterMs});
+ return notice?`<p class="foot scan-price-notice" role="status">${esc(notice+timing)}</p>${retry?`<button class="link small" data-act="scanRetryConditionPrice">${esc(retryLabel)}</button>`:''}`:'';
 }
 
 export function scanConfirmation(g, st, prefs) {
@@ -719,10 +721,10 @@ export function registerScanner(ctx) {
     const apply=result=>{
       if(!result||!current())return;
       const price=priceFor(G,c,q.finish,q),status=result.status,reason=result.limitReason||result.reason||'',notice=result.notice||'';
-      const changed=q.price!==price||q.priceStatus!==status||q.priceReason!==reason||q.priceNotice!==notice;
-      Object.assign(q,{price,priceStatus:status,priceReason:reason,priceNotice:notice,priceOwnerVerified:result.ownerVerified});if(changed)render();
+      const changed=q.price!==price||q.priceStatus!==status||q.priceReason!==reason||q.priceNotice!==notice||q.priceNextRetryAt!==result.nextRetryAt;
+      Object.assign(q,{price,priceStatus:status,priceReason:reason,priceNotice:notice,priceOwnerVerified:result.ownerVerified,priceNextRetryAt:result.nextRetryAt,priceRetryAfterMs:result.retryAfterMs});if(changed)render();
     };
-    Object.assign(q,{priceStatus:'loading',priceReason:'',priceNotice:''});render();
+    Object.assign(q,{priceStatus:'loading',priceReason:'',priceNotice:'',priceNextRetryAt:undefined,priceRetryAfterMs:undefined});render();
     Promise.resolve(ctx.requestConditionPrice(G,c,q.finish,selection,apply,current,{retry})).then(apply).catch(()=>apply({status:'unavailable'}));
   };
 

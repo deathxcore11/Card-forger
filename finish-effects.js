@@ -116,13 +116,32 @@ export function finishChoices(game,c,ctx={}){
  }
  return [];
 }
+// A pricing reference is not a physical finish or an edition selection.
+const requestedVariant=(c,ctx)=>[ctx.priceFinish,ctx.finish,ctx.setVariant,c?.setContext?.variantKey].find(key=>key&&key!=='reference')||'';
+function commonPokemonPresentation(c,choices){
+ if(!choices.length||choices.some(p=>p.status==='unknown'))return null;
+ const variants=new Map((c.variants||[]).map(v=>[v.key,v]));
+ const physical=choices.map(p=>variantFinish(variants.get(p.key)||{}));
+ if(!physical[0]||physical.some(f=>f!==physical[0]))return null;
+ const signature=p=>JSON.stringify([p.effect,p.layers,p.coverage||'',p.texture||'']);
+ if(choices.some(p=>signature(p)!==signature(choices[0])))return null;
+ // Share only presentation. A blank key must not mark a commercial edition
+ // selected, substitute its image, or leak into owned lots and price quotes.
+ const first=choices[0],status=choices.every(p=>p.status==='verified')?'verified':'approximate';
+ const label={nonfoil:'Nonfoil',holofoil:'Holofoil','reverse-holofoil':'Reverse holo'}[physical[0]]||physical[0];
+ return {...first,key:'',label,status,sharedFinish:true,physicalFinish:physical[0],
+  reason:physical[0]==='nonfoil'?'Nonfoil · no simulated shine':`${label} · shared finish preview; edition not selected${status==='approximate'?' · approximate coverage':''}`};
+}
 export function resolveFinish(game,c,ctx={}){
- const choices=finishChoices(game,c,ctx),wanted=ctx.priceFinish||ctx.finish||c?.setContext?.variantKey;
- // An invalid explicit choice must not silently switch to the only other available finish.
+ const choices=finishChoices(game,c,ctx),wanted=game==='ptcg'?requestedVariant(c,ctx):(ctx.priceFinish||ctx.finish||c?.setContext?.variantKey);
+ // Invalid/unsupported explicit selections must never borrow another variant.
  let selected=choices.find(x=>x.key===wanted);
  if(game==='ygo')selected=choices[0];
- else if(!wanted)selected=choices.find(x=>x.key==='nonfoil')||(choices.length===1?choices[0]:null);
- return {...(selected||unknown(wanted||'')),game,printingId:c?.id||'',face:Number(ctx.face||0)};
+ else if(!wanted){
+  if(game==='ptcg')selected=commonPokemonPresentation(c,choices);
+  else selected=choices.find(x=>x.key==='nonfoil')||(choices.length===1?choices[0]:null);
+ }
+ return {...(selected||unknown(wanted||ctx.priceFinish||'')),game,printingId:c?.id||'',face:Number(ctx.face||0)};
 }
 export const finishEffect=(game,c,ctx={})=>resolveFinish(game,c,ctx).effect;
 // Mutates view context only, never a card, owned lot or saved state.
@@ -135,7 +154,7 @@ export function selectPreviewFinish(game,card,ctx,key){
 
 export function finishArtworkCard(game,c,ctx={}){
  if(game!=='ptcg'||!c||!validSetContext(game,c,ctx))return c;
- const key=ctx.priceFinish||ctx.finish||c.setContext?.variantKey;
+ const key=requestedVariant(c,ctx);
  const variant=c.variants?.find(v=>v.key===key);
  return variant?.image||variant?.imageLarge?{...c,image:variant.image||variant.imageLarge,imageLarge:variant.imageLarge||variant.image}:c;
 }

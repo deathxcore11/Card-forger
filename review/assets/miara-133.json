@@ -1,0 +1,29 @@
+{
+  "id": "41a76adc-42e1-4f65-940c-d0a5555c0633",
+  "name": "Miara, Thorn of the Glade",
+  "set": "cmr",
+  "collector_number": "133",
+  "finishes": [
+    "nonfoil",
+    "foil"
+  ],
+  "layout": "normal",
+  "frame_effects": [
+    "legendary"
+  ],
+  "image_uris": {
+    "small": "https://cards.scryfall.io/small/front/4/1/41a76adc-42e1-4f65-940c-d0a5555c0633.jpg?1783928835",
+    "normal": "https://cards.scryfall.io/normal/front/4/1/41a76adc-42e1-4f65-940c-d0a5555c0633.jpg?1783928835",
+    "large": "https://cards.scryfall.io/large/front/4/1/41a76adc-42e1-4f65-940c-d0a5555c0633.jpg?1783928835",
+    "png": "https://cards.scryfall.io/png/front/4/1/41a76adc-42e1-4f65-940c-d0a5555c0633.png?1783928835",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/4/1/41a76adc-42e1-4f65-940c-d0a5555c0633.jpg?1783928835",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/4/1/41a76adc-42e1-4f65-940c-d0a5555c0633.jpg?1783928835",
+    "thumb": "https://cards.scryfall.io/thumb/front/4/1/41a76adc-42e1-4f65-940c-d0a5555c0633.webp?1783928835",
+    "grid": "https://cards.scryfall.io/grid/front/4/1/41a76adc-42e1-4f65-940c-d0a5555c0633.webp?1783928835",
+    "display": "https://cards.scryfall.io/display/front/4/1/41a76adc-42e1-4f65-940c-d0a5555c0633.webp?1783928835",
+    "art": "https://cards.scryfall.io/art/front/4/1/41a76adc-42e1-4f65-940c-d0a5555c0633.webp?1783928835",
+    "crop": "https://cards.scryfall.io/crop/front/4/1/41a76adc-42e1-4f65-940c-d0a5555c0633.webp?1783928835",
+    "jpeg": "https://cards.scryfall.io/normal/front/4/1/41a76adc-42e1-4f65-940c-d0a5555c0633.jpg?1783928835"
+  },
+  "rarity": "uncommon"
+}

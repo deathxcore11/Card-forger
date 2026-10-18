@@ -1,0 +1,41 @@
+[
+  {
+    "mask": "abyss-title.svg",
+    "sourceImage": "hot-red-dragon-abyss.jpg",
+    "sha256": "4dcd41511873cd9fab6128b6a5a99df8aec85c5068df93bdf6ab41a406d0ca69",
+    "region": [
+      57,
+      63,
+      672,
+      122
+    ],
+    "method": "dark-title-pixel runs within audited title bounds; no font substitution",
+    "status": "review-required"
+  },
+  {
+    "mask": "gamma-title.svg",
+    "sourceImage": "psy-framegear-gamma.jpg",
+    "sha256": "aabad1d0da6e913f705f61bda15736e87f9821acbb98dda9a13b8116c9e52936",
+    "region": [
+      57,
+      63,
+      672,
+      122
+    ],
+    "method": "dark-title-pixel runs within audited title bounds; no font substitution",
+    "status": "review-required"
+  },
+  {
+    "mask": "omega-title.svg",
+    "sourceImage": "psy-framelord-omega.jpg",
+    "sha256": "9fcc800132cfb053df4dfc3d5b2c3d93301e53129cee1eeb6b23463574b07f8a",
+    "region": [
+      57,
+      63,
+      672,
+      122
+    ],
+    "method": "dark-title-pixel runs within audited title bounds; no font substitution",
+    "status": "review-required"
+  }
+]

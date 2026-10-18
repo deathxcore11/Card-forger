@@ -1,0 +1,29 @@
+name: Finish milestone preview
+on:
+  push:
+    branches: [codex/finish-milestone-review]
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify retained review case identities
+        run: node scripts/build-finish-review.mjs
+      - name: Install pinned browser runner
+        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - name: Install browser
+        run: npx playwright install --with-deps chromium
+      - name: Render before and after comparisons
+        run: node tests/finish-milestone-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: finish-milestone-visuals
+          path: test-results/finish-milestone/
+          retention-days: 14

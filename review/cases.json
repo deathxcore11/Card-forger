@@ -1,0 +1,723 @@
+{
+  "baseline": "0896479cbb5b0d103a46907e057354fe9bebf57a",
+  "scope": "approval-preview-only",
+  "cases": [
+    {
+      "key": "pk-charizard-base-holo",
+      "game": "ptcg",
+      "name": "Charizard",
+      "printing": "Base Set · 4/102 · Unlimited",
+      "finish": "Holofoil",
+      "image": "assets/base1-4.png",
+      "profile": "classic-holo",
+      "source": "https://api.tcgdex.net/v2/en/cards/base1-4",
+      "foilMask": "assets/base1-4-foil.svg",
+      "note": "Illustration-only simulation. The supplied catalogue scan is retained unchanged.",
+      "before": {
+        "key": "detail:4ffrmhcfiaejakhepqdkx7o",
+        "label": "Unlimited · Holofoil",
+        "effect": "ptcg-holo",
+        "layers": [
+          {
+            "mask": "pk-base-art",
+            "material": "holo"
+          }
+        ],
+        "source": "https://images.pokemontcg.io/base1/4_hires.png",
+        "status": "approximate",
+        "reason": "Simulated finish · approximate coverage",
+        "game": "ptcg",
+        "printingId": "base1-4",
+        "face": 0
+      },
+      "after": {
+        "key": "detail:4ffrmhcfiaejakhepqdkx7o",
+        "label": "Unlimited · Holofoil",
+        "effect": "ptcg-holo",
+        "layers": [
+          {
+            "mask": "pk-base-art",
+            "material": "holo"
+          }
+        ],
+        "source": "https://images.pokemontcg.io/base1/4_hires.png",
+        "status": "approximate",
+        "reason": "Simulated finish · approximate coverage",
+        "game": "ptcg",
+        "printingId": "base1-4",
+        "face": 0
+      },
+      "identity": {
+        "cardId": "base1-4",
+        "context": {
+          "priceFinish": "detail:4ffrmhcfiaejakhepqdkx7o"
+        }
+      }
+    },
+    {
+      "key": "pk-zapdos-base2-holo",
+      "game": "ptcg",
+      "name": "Zapdos",
+      "printing": "Base Set 2 · 20/130 · English",
+      "finish": "Holofoil",
+      "image": "assets/base4-20.png",
+      "profile": "cosmos-holo",
+      "source": "https://api.tcgdex.net/v2/en/cards/base4-20",
+      "foilMask": "assets/base4-20-foil.svg",
+      "note": "New, exact-layout preview. Approximate light response; no edition or price inferred.",
+      "before": {
+        "key": "holofoil",
+        "label": "Holofoil",
+        "effect": "unknown",
+        "status": "unknown",
+        "layers": [],
+        "source": "",
+        "reason": "Finish preview unavailable for this printing.",
+        "game": "ptcg",
+        "printingId": "base4-20",
+        "face": 0
+      },
+      "after": {
+        "key": "holofoil",
+        "label": "Holofoil",
+        "effect": "unknown",
+        "status": "unknown",
+        "layers": [],
+        "source": "",
+        "reason": "Finish preview unavailable for this printing.",
+        "game": "ptcg",
+        "printingId": "base4-20",
+        "face": 0
+      },
+      "identity": {
+        "cardId": "base4-20",
+        "context": {
+          "priceFinish": "holofoil"
+        }
+      }
+    },
+    {
+      "key": "pk-mantine-normal",
+      "game": "ptcg",
+      "name": "Mantine",
+      "printing": "Sword & Shield · 052/202 · English",
+      "finish": "Normal",
+      "image": "assets/mantine-swsh1.png",
+      "profile": "plain",
+      "source": "https://api.tcgdex.net/v2/en/cards/swsh1-52",
+      "note": "Plain control: no foil layer.",
+      "before": {
+        "key": "normal",
+        "label": "Normal",
+        "effect": "plain",
+        "layers": [],
+        "source": "catalog",
+        "status": "verified",
+        "reason": "",
+        "game": "ptcg",
+        "printingId": "swsh1-52",
+        "face": 0
+      },
+      "after": {
+        "key": "normal",
+        "label": "Normal",
+        "effect": "plain",
+        "layers": [],
+        "source": "catalog",
+        "status": "verified",
+        "reason": "",
+        "game": "ptcg",
+        "printingId": "swsh1-52",
+        "face": 0
+      },
+      "identity": {
+        "cardId": "swsh1-52",
+        "context": {
+          "priceFinish": "normal"
+        }
+      }
+    },
+    {
+      "key": "pk-mantine-reverse",
+      "game": "ptcg",
+      "name": "Mantine",
+      "printing": "Sword & Shield · 052/202 · English",
+      "finish": "Reverse Holofoil",
+      "image": "assets/mantine-swsh1.png",
+      "profile": "reverse-water",
+      "source": "https://api.tcgdex.net/v2/en/cards/swsh1-52",
+      "note": "Mask excludes the art window and its silver caption. Pattern is a stylized material approximation.",
+      "before": {
+        "key": "reverse-holofoil",
+        "label": "Reverse Holo",
+        "effect": "ptcg-reverse",
+        "layers": [
+          {
+            "mask": "pk-swsh-surround",
+            "material": "rainbow"
+          }
+        ],
+        "source": "https://www.pokemon.com/us/pokemon-news/pokemon-tcg-scarlet-and-violet-revamps-pokemon-tcg-card-aesthetic",
+        "status": "approximate",
+        "reason": "Simulated finish · approximate coverage",
+        "game": "ptcg",
+        "printingId": "swsh1-52",
+        "face": 0
+      },
+      "after": {
+        "key": "reverse-holofoil",
+        "label": "Reverse Holo",
+        "effect": "ptcg-reverse",
+        "layers": [
+          {
+            "mask": "pk-swsh-surround",
+            "material": "rainbow"
+          }
+        ],
+        "source": "https://www.pokemon.com/us/pokemon-news/pokemon-tcg-scarlet-and-violet-revamps-pokemon-tcg-card-aesthetic",
+        "status": "approximate",
+        "reason": "Simulated finish · approximate coverage",
+        "game": "ptcg",
+        "printingId": "swsh1-52",
+        "face": 0
+      },
+      "identity": {
+        "cardId": "swsh1-52",
+        "context": {
+          "priceFinish": "reverse-holofoil"
+        }
+      }
+    },
+    {
+      "key": "pk-zekrom-holo",
+      "game": "ptcg",
+      "name": "Zekrom",
+      "printing": "Celebrations · 010/025 · English",
+      "finish": "Holofoil",
+      "image": "assets/zekrom.png",
+      "profile": "line-holo",
+      "source": "https://api.tcgdex.net/v2/en/cards/cel25-10",
+      "note": "Foil remains within this printing’s illustration.",
+      "before": {
+        "key": "detail:jr7oetx1mqug9",
+        "label": "Holofoil",
+        "effect": "ptcg-holo",
+        "layers": [
+          {
+            "mask": "pk-cel-art",
+            "material": "holo"
+          }
+        ],
+        "source": "https://www.pokemon.com/us/pokemon-news/pokemon-tcg-scarlet-and-violet-revamps-pokemon-tcg-card-aesthetic",
+        "status": "approximate",
+        "reason": "Simulated finish · approximate coverage",
+        "game": "ptcg",
+        "printingId": "cel25-10",
+        "face": 0
+      },
+      "after": {
+        "key": "detail:jr7oetx1mqug9",
+        "label": "Holofoil",
+        "effect": "ptcg-holo",
+        "layers": [
+          {
+            "mask": "pk-cel-art",
+            "material": "holo"
+          }
+        ],
+        "source": "https://www.pokemon.com/us/pokemon-news/pokemon-tcg-scarlet-and-violet-revamps-pokemon-tcg-card-aesthetic",
+        "status": "approximate",
+        "reason": "Simulated finish · approximate coverage",
+        "game": "ptcg",
+        "printingId": "cel25-10",
+        "face": 0
+      },
+      "identity": {
+        "cardId": "cel25-10",
+        "context": {
+          "priceFinish": "detail:jr7oetx1mqug9"
+        }
+      }
+    },
+    {
+      "key": "pk-charizard-vmax",
+      "game": "ptcg",
+      "name": "Charizard VMAX",
+      "printing": "Shining Fates · SV107/SV122 · English",
+      "finish": "Textured Holofoil",
+      "image": "assets/charizard-vmax.png",
+      "profile": "textured-holo",
+      "source": "https://api.tcgdex.net/v2/en/cards/swsh4.5sv-SV107",
+      "note": "Directional relief is stylized, not a recovered physical emboss map.",
+      "before": {
+        "key": "detail:jr7oetx1mqug9",
+        "label": "Holofoil",
+        "effect": "ptcg-full-art",
+        "layers": [
+          {
+            "mask": "card",
+            "material": "rainbow"
+          },
+          {
+            "mask": "card",
+            "material": "micro"
+          }
+        ],
+        "source": "https://www.pokemon.com/us/pokemon-news/pokemon-tcg-scarlet-and-violet-revamps-pokemon-tcg-card-aesthetic",
+        "status": "approximate",
+        "reason": "Simulated finish · approximate coverage",
+        "coverage": "full",
+        "texture": "micro-ridges",
+        "game": "ptcg",
+        "printingId": "swsh4.5sv-SV107",
+        "face": 0
+      },
+      "after": {
+        "key": "detail:jr7oetx1mqug9",
+        "label": "Holofoil",
+        "effect": "ptcg-full-art",
+        "layers": [
+          {
+            "mask": "card",
+            "material": "rainbow"
+          },
+          {
+            "mask": "card",
+            "material": "micro"
+          }
+        ],
+        "source": "https://www.pokemon.com/us/pokemon-news/pokemon-tcg-scarlet-and-violet-revamps-pokemon-tcg-card-aesthetic",
+        "status": "approximate",
+        "reason": "Simulated finish · approximate coverage",
+        "coverage": "full",
+        "texture": "micro-ridges",
+        "game": "ptcg",
+        "printingId": "swsh4.5sv-SV107",
+        "face": 0
+      },
+      "identity": {
+        "cardId": "swsh4.5sv-SV107",
+        "context": {
+          "priceFinish": "detail:jr7oetx1mqug9"
+        }
+      }
+    },
+    {
+      "key": "ygo-abyss-ultra",
+      "game": "ygo",
+      "name": "Hot Red Dragon Archfiend Abyss",
+      "printing": "HSRD-EN041 · English",
+      "finish": "Ultra Rare",
+      "image": "assets/hot-red-dragon-abyss.jpg",
+      "profile": "ygo-ultra",
+      "source": "https://db.ygoprodeck.com/api/v7/cardinfo.php?id=9753964",
+      "titleMask": "assets/abyss-title.svg",
+      "note": "Set code and rarity are exact; edition is unselected. Provider master art is not an edition-specific scan.",
+      "before": {
+        "key": "Ultra Rare",
+        "label": "Ultra Rare",
+        "effect": "ygo-ultra",
+        "layers": [
+          {
+            "mask": "ygo-art",
+            "material": "holo"
+          },
+          {
+            "mask": "ygo-name",
+            "material": "gold"
+          }
+        ],
+        "source": "https://www.yugioh-card.com/en/about/new-to-ygo/",
+        "status": "approximate",
+        "reason": "Simulated finish · approximate coverage",
+        "game": "ygo",
+        "printingId": "9753964",
+        "face": 0
+      },
+      "after": {
+        "key": "Ultra Rare",
+        "label": "Ultra Rare",
+        "effect": "ygo-ultra",
+        "layers": [
+          {
+            "mask": "ygo-art",
+            "material": "holo"
+          },
+          {
+            "mask": "ygo-name",
+            "material": "gold"
+          }
+        ],
+        "source": "https://www.yugioh-card.com/en/about/new-to-ygo/",
+        "status": "approximate",
+        "reason": "Simulated finish · approximate coverage",
+        "game": "ygo",
+        "printingId": "9753964",
+        "face": 0
+      },
+      "identity": {
+        "cardId": "9753964",
+        "context": {
+          "priceEdition": "HSRD-EN041::Ultra Rare"
+        }
+      }
+    },
+    {
+      "key": "ygo-gamma-super",
+      "game": "ygo",
+      "name": "PSY-Framegear Gamma",
+      "printing": "EXFO-ENSE3 · English",
+      "finish": "Super Rare",
+      "image": "assets/psy-framegear-gamma.jpg",
+      "profile": "ygo-super",
+      "source": "https://db.ygoprodeck.com/api/v7/cardinfo.php?id=38814750",
+      "note": "Set code and rarity are exact; edition is unselected. Provider master art is not an edition-specific scan.",
+      "before": {
+        "key": "Super Rare",
+        "label": "Super Rare",
+        "effect": "ygo-super",
+        "layers": [
+          {
+            "mask": "ygo-art",
+            "material": "holo"
+          }
+        ],
+        "source": "https://www.yugioh-card.com/en/about/new-to-ygo/",
+        "status": "approximate",
+        "reason": "Simulated finish · approximate coverage",
+        "game": "ygo",
+        "printingId": "38814750",
+        "face": 0
+      },
+      "after": {
+        "key": "Super Rare",
+        "label": "Super Rare",
+        "effect": "ygo-super",
+        "layers": [
+          {
+            "mask": "ygo-art",
+            "material": "holo"
+          }
+        ],
+        "source": "https://www.yugioh-card.com/en/about/new-to-ygo/",
+        "status": "approximate",
+        "reason": "Simulated finish · approximate coverage",
+        "game": "ygo",
+        "printingId": "38814750",
+        "face": 0
+      },
+      "identity": {
+        "cardId": "38814750",
+        "context": {
+          "priceEdition": "EXFO-ENSE3::Super Rare"
+        }
+      }
+    },
+    {
+      "key": "ygo-omega-secret",
+      "game": "ygo",
+      "name": "PSY-Framelord Omega",
+      "printing": "HSRD-EN035 · English",
+      "finish": "Secret Rare",
+      "image": "assets/psy-framelord-omega.jpg",
+      "profile": "ygo-secret",
+      "source": "https://db.ygoprodeck.com/api/v7/cardinfo.php?id=74586817",
+      "titleMask": "assets/omega-title.svg",
+      "note": "Set code and rarity are exact; edition is unselected. Provider master art is not an edition-specific scan.",
+      "before": {
+        "key": "Secret Rare",
+        "label": "Secret Rare",
+        "effect": "ygo-secret",
+        "layers": [
+          {
+            "mask": "ygo-art",
+            "material": "secret"
+          },
+          {
+            "mask": "ygo-name",
+            "material": "rainbow"
+          }
+        ],
+        "source": "https://www.yugioh-card.com/en/about/new-to-ygo/",
+        "status": "approximate",
+        "reason": "Simulated finish · approximate coverage",
+        "game": "ygo",
+        "printingId": "74586817",
+        "face": 0
+      },
+      "after": {
+        "key": "Secret Rare",
+        "label": "Secret Rare",
+        "effect": "ygo-secret",
+        "layers": [
+          {
+            "mask": "ygo-art",
+            "material": "secret"
+          },
+          {
+            "mask": "ygo-name",
+            "material": "rainbow"
+          }
+        ],
+        "source": "https://www.yugioh-card.com/en/about/new-to-ygo/",
+        "status": "approximate",
+        "reason": "Simulated finish · approximate coverage",
+        "game": "ygo",
+        "printingId": "74586817",
+        "face": 0
+      },
+      "identity": {
+        "cardId": "74586817",
+        "context": {
+          "priceEdition": "HSRD-EN035::Secret Rare"
+        }
+      }
+    },
+    {
+      "key": "ygo-gamma-rare",
+      "game": "ygo",
+      "name": "PSY-Framegear Gamma",
+      "printing": "TOCH-EN036 · English",
+      "finish": "Rare",
+      "image": "assets/psy-framegear-gamma.jpg",
+      "profile": "ygo-rare",
+      "source": "https://db.ygoprodeck.com/api/v7/cardinfo.php?id=38814750",
+      "titleMask": "assets/gamma-title.svg",
+      "note": "Set code and rarity are exact; edition is unselected. Provider master art is not an edition-specific scan.",
+      "before": {
+        "key": "Rare",
+        "label": "Rare",
+        "effect": "ygo-rare",
+        "layers": [
+          {
+            "mask": "ygo-name",
+            "material": "silver"
+          }
+        ],
+        "source": "https://www.yugioh-card.com/en/about/new-to-ygo/",
+        "status": "approximate",
+        "reason": "Simulated finish · approximate coverage",
+        "game": "ygo",
+        "printingId": "38814750",
+        "face": 0
+      },
+      "after": {
+        "key": "Rare",
+        "label": "Rare",
+        "effect": "ygo-rare",
+        "layers": [
+          {
+            "mask": "ygo-name",
+            "material": "silver"
+          }
+        ],
+        "source": "https://www.yugioh-card.com/en/about/new-to-ygo/",
+        "status": "approximate",
+        "reason": "Simulated finish · approximate coverage",
+        "game": "ygo",
+        "printingId": "38814750",
+        "face": 0
+      },
+      "identity": {
+        "cardId": "38814750",
+        "context": {
+          "priceEdition": "TOCH-EN036::Rare"
+        }
+      }
+    },
+    {
+      "key": "ygo-lukias-starlight",
+      "game": "ygo",
+      "name": "Dracotail Lukias",
+      "printing": "JUSH-EN001 · English",
+      "finish": "Starlight Rare",
+      "image": "assets/dracotail-lukias.jpg",
+      "profile": "starlight",
+      "source": "https://db.ygoprodeck.com/api/v7/cardinfo.php?id=75003700",
+      "note": "Set code and rarity are exact; edition is unselected. Provider master art is not an edition-specific scan.",
+      "before": {
+        "key": "Starlight Rare",
+        "label": "Starlight Rare",
+        "effect": "ygo-starlight",
+        "layers": [
+          {
+            "mask": "ygo-broad",
+            "material": "starlight"
+          }
+        ],
+        "source": "https://www.yugioh-card.com/en/about/new-to-ygo/",
+        "status": "approximate",
+        "reason": "Simulated finish · approximate coverage",
+        "game": "ygo",
+        "printingId": "75003700",
+        "face": 0
+      },
+      "after": {
+        "key": "Starlight Rare",
+        "label": "Starlight Rare",
+        "effect": "ygo-starlight",
+        "layers": [
+          {
+            "mask": "ygo-broad",
+            "material": "starlight"
+          }
+        ],
+        "source": "https://www.yugioh-card.com/en/about/new-to-ygo/",
+        "status": "approximate",
+        "reason": "Simulated finish · approximate coverage",
+        "game": "ygo",
+        "printingId": "75003700",
+        "face": 0
+      },
+      "identity": {
+        "cardId": "75003700",
+        "context": {
+          "priceEdition": "JUSH-EN001::Starlight Rare"
+        }
+      }
+    },
+    {
+      "key": "mtg-miara-normal",
+      "game": "mtg",
+      "name": "Miara, Thorn of the Glade",
+      "printing": "Commander Legends · 133 · English",
+      "finish": "Nonfoil",
+      "image": "assets/miara-133.jpg",
+      "profile": "plain",
+      "source": "https://api.scryfall.com/cards/41a76adc-42e1-4f65-940c-d0a5555c0633",
+      "note": "Nonfoil and traditional foil are available for printing #133.",
+      "before": {
+        "key": "nonfoil",
+        "label": "Nonfoil",
+        "effect": "plain",
+        "layers": [],
+        "source": "catalog",
+        "status": "verified",
+        "reason": "",
+        "game": "mtg",
+        "printingId": "41a76adc-42e1-4f65-940c-d0a5555c0633",
+        "face": 0
+      },
+      "after": {
+        "key": "nonfoil",
+        "label": "Nonfoil",
+        "effect": "plain",
+        "layers": [],
+        "source": "catalog",
+        "status": "verified",
+        "reason": "",
+        "game": "mtg",
+        "printingId": "41a76adc-42e1-4f65-940c-d0a5555c0633",
+        "face": 0
+      },
+      "identity": {
+        "cardId": "41a76adc-42e1-4f65-940c-d0a5555c0633",
+        "context": {
+          "priceFinish": "nonfoil"
+        }
+      }
+    },
+    {
+      "key": "mtg-miara-foil",
+      "game": "mtg",
+      "name": "Miara, Thorn of the Glade",
+      "printing": "Commander Legends · 133 · English",
+      "finish": "Traditional foil",
+      "image": "assets/miara-133.jpg",
+      "profile": "traditional",
+      "source": "https://api.scryfall.com/cards/41a76adc-42e1-4f65-940c-d0a5555c0633",
+      "note": "Nonfoil and traditional foil are available for printing #133.",
+      "before": {
+        "key": "foil",
+        "label": "Traditional foil",
+        "effect": "mtg-foil",
+        "layers": [
+          {
+            "mask": "card",
+            "material": "rainbow"
+          }
+        ],
+        "source": "https://scryfall.com/docs/api/cards",
+        "status": "approximate",
+        "reason": "Simulated finish · approximate coverage",
+        "game": "mtg",
+        "printingId": "41a76adc-42e1-4f65-940c-d0a5555c0633",
+        "face": 0
+      },
+      "after": {
+        "key": "foil",
+        "label": "Traditional foil",
+        "effect": "mtg-foil",
+        "layers": [
+          {
+            "mask": "card",
+            "material": "rainbow"
+          }
+        ],
+        "source": "https://scryfall.com/docs/api/cards",
+        "status": "approximate",
+        "reason": "Simulated finish · approximate coverage",
+        "game": "mtg",
+        "printingId": "41a76adc-42e1-4f65-940c-d0a5555c0633",
+        "face": 0
+      },
+      "identity": {
+        "cardId": "41a76adc-42e1-4f65-940c-d0a5555c0633",
+        "context": {
+          "priceFinish": "foil"
+        }
+      }
+    },
+    {
+      "key": "mtg-miara-etched",
+      "game": "mtg",
+      "name": "Miara, Thorn of the Glade",
+      "printing": "Commander Legends · 566 · English",
+      "finish": "Etched foil",
+      "image": "assets/miara-566.jpg",
+      "profile": "etched",
+      "source": "https://api.scryfall.com/cards/006d1cf4-bdf2-4ed3-8583-38309807ce93",
+      "note": "Etched is a different printing (#566); its original artwork and identity are retained.",
+      "before": {
+        "key": "etched",
+        "label": "Etched foil",
+        "effect": "mtg-etched",
+        "layers": [
+          {
+            "mask": "mtg-frame",
+            "material": "metal"
+          }
+        ],
+        "source": "https://magic.wizards.com/en/news/feature/collecting-commander-legends-battle-for-baldurs-gate",
+        "status": "approximate",
+        "reason": "Simulated finish · approximate coverage",
+        "game": "mtg",
+        "printingId": "006d1cf4-bdf2-4ed3-8583-38309807ce93",
+        "face": 0
+      },
+      "after": {
+        "key": "etched",
+        "label": "Etched foil",
+        "effect": "mtg-etched",
+        "layers": [
+          {
+            "mask": "mtg-frame",
+            "material": "metal"
+          }
+        ],
+        "source": "https://magic.wizards.com/en/news/feature/collecting-commander-legends-battle-for-baldurs-gate",
+        "status": "approximate",
+        "reason": "Simulated finish · approximate coverage",
+        "game": "mtg",
+        "printingId": "006d1cf4-bdf2-4ed3-8583-38309807ce93",
+        "face": 0
+      },
+      "identity": {
+        "cardId": "006d1cf4-bdf2-4ed3-8583-38309807ce93",
+        "context": {
+          "priceFinish": "etched"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "id": "006d1cf4-bdf2-4ed3-8583-38309807ce93",
+  "name": "Miara, Thorn of the Glade",
+  "set": "cmr",
+  "collector_number": "566",
+  "finishes": [
+    "etched"
+  ],
+  "layout": "normal",
+  "frame_effects": [
+    "inverted",
+    "etched",
+    "legendary"
+  ],
+  "image_uris": {
+    "small": "https://cards.scryfall.io/small/front/0/0/006d1cf4-bdf2-4ed3-8583-38309807ce93.jpg?1783928651",
+    "normal": "https://cards.scryfall.io/normal/front/0/0/006d1cf4-bdf2-4ed3-8583-38309807ce93.jpg?1783928651",
+    "large": "https://cards.scryfall.io/large/front/0/0/006d1cf4-bdf2-4ed3-8583-38309807ce93.jpg?1783928651",
+    "png": "https://cards.scryfall.io/png/front/0/0/006d1cf4-bdf2-4ed3-8583-38309807ce93.png?1783928651",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/0/0/006d1cf4-bdf2-4ed3-8583-38309807ce93.jpg?1783928651",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/0/0/006d1cf4-bdf2-4ed3-8583-38309807ce93.jpg?1783928651",
+    "thumb": "https://cards.scryfall.io/thumb/front/0/0/006d1cf4-bdf2-4ed3-8583-38309807ce93.webp?1783928651",
+    "grid": "https://cards.scryfall.io/grid/front/0/0/006d1cf4-bdf2-4ed3-8583-38309807ce93.webp?1783928651",
+    "display": "https://cards.scryfall.io/display/front/0/0/006d1cf4-bdf2-4ed3-8583-38309807ce93.webp?1783928651",
+    "art": "https://cards.scryfall.io/art/front/0/0/006d1cf4-bdf2-4ed3-8583-38309807ce93.webp?1783928651",
+    "crop": "https://cards.scryfall.io/crop/front/0/0/006d1cf4-bdf2-4ed3-8583-38309807ce93.webp?1783928651",
+    "jpeg": "https://cards.scryfall.io/normal/front/0/0/006d1cf4-bdf2-4ed3-8583-38309807ce93.jpg?1783928651"
+  },
+  "rarity": "uncommon"
+}

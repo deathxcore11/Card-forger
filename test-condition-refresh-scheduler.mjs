@@ -62,6 +62,16 @@ try{
   hold.resolve({changed:true,status:'available',rawQuotes:[]});assert.equal((await a).changed,true);assert.equal((await b).reused,true);
   assert.equal((await scheduler.request('same-product',()=>{throw Error('Repeated completed request');})).changed,false);
  }
+ {
+  const time=clock(),scheduler=createConditionRefreshScheduler({...time,intervalMs:0});let calls=0;
+  const first=scheduler.request('deadline',()=>{calls++;return {status:'rate_limited',reason:'provider_shared_limit',retryAfterMs:60000,nextRetryAt:1000};});
+  await time.tick();assert.equal((await first).nextRetryAt,1000);
+  await time.tick(500);
+  const reused=await scheduler.request('deadline',()=>{throw Error('Duplicate blocked lookup');});assert.equal(reused.nextRetryAt,1000);
+  const queued=await scheduler.request('other',()=>{throw Error('Provider cooldown was bypassed');});assert.equal(queued.nextRetryAt,1000);assert.equal(queued.retryAfterMs,500);
+  await time.tick(501);assert.equal(calls,1,'Deadline expiry never starts a background provider request');
+  const recovered=scheduler.request('deadline',()=>{calls++;return {status:'available'};});await time.tick();assert.equal((await recovered).status,'available');assert.equal(calls,2,'Absolute deadline, not stale relative duration, controls explicit recovery');
+ }
  for(const status of ['not_configured','rate_limited']){
   const time=clock(),scheduler=createConditionRefreshScheduler({...time,retryMs:1000,intervalMs:0});let calls=0;
   const first=scheduler.request('blocked',()=>{calls++;return {changed:false,status};});

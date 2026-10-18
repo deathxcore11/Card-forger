@@ -14,7 +14,7 @@ export async function conditionProviderFailure(response,now=Date.now()){
  const advised=Number.isFinite(seconds)?seconds*1000:header?Date.parse(header)-now:NaN;
  const fallback=reason==='provider_daily'?DAY-now%DAY:reason==='provider_monthly'?3600000:60000;
  const retryAfterMs=Math.max(1000,Number.isFinite(advised)&&advised>0?advised:fallback);
- return {status:limited?'rate_limited':'unavailable',reason,providerCode,retryAfterMs};
+ return {status:limited?'rate_limited':'unavailable',reason,providerCode,retryAfterMs,nextRetryAt:now+retryAfterMs,providerObservedAt:now,retrySource:Number.isFinite(advised)&&advised>0?'provider-header':'fallback'};
 }
 export class ConditionPriceCache {
  constructor(ctx,env){this.storage=ctx.storage;this.env=env;this.pending=new Map();}
@@ -39,17 +39,18 @@ export class ConditionPriceCache {
   const cap=(key,fallback)=>{const n=Number(this.env[key]??fallback);return Number.isFinite(n)?Math.max(0,Math.floor(n)):fallback;};
   const allowed=await this.storage.transaction(async tx=>{
    let s=await tx.get('usage')||{};
-   if(s.month!==month)s={month,monthly:0};
+   // App budget rollover must never clear an independent provider cooldown.
+   if(s.month!==month)Object.assign(s,{month,monthly:0});
    if(s.day!==day)Object.assign(s,{day,daily:0});
    if(s.minute!==minute)Object.assign(s,{minute,perMinute:0});
-   if(s.blockedUntil>now)return {status:'rate_limited',reason:s.blockedReason||'provider_rate',providerCode:s.providerCode||'',retryAfterMs:s.blockedUntil-now};
+   if(s.blockedUntil>now)return {status:'rate_limited',reason:s.blockedReason||'provider_rate',providerCode:s.providerCode||'',retryAfterMs:s.blockedUntil-now,nextRetryAt:s.blockedUntil,...(s.providerObservedAt?{providerObservedAt:s.providerObservedAt}:{}),...(s.retrySource?{retrySource:s.retrySource}:{})};
    if(!owner&&(s.daily>=cap('CONDITION_DAILY_LIMIT',30)||s.monthly>=cap('CONDITION_MONTHLY_LIMIT',900)||s.perMinute>=cap('CONDITION_MINUTE_LIMIT',8)))return {status:'rate_limited',reason:'app_budget',retryAfterMs:60000};
    s.daily++;s.monthly++;s.perMinute++;await tx.put('usage',s);return true;
   });
   if(allowed!==true)return allowed;
   try{
    const r=await fetch('https://api.justtcg.com/v1/cards?tcgplayerId='+product,{headers:{Accept:'application/json','x-api-key':this.env.JUSTTCG_API_KEY,'User-Agent':'CardStashy/3.73.13 (condition pricing)'},signal:AbortSignal.timeout(12000)});
-   if(!r.ok){const failure=await conditionProviderFailure(r);if(failure.status==='rate_limited')await this.storage.transaction(async tx=>{const s=await tx.get('usage')||{};Object.assign(s,{blockedUntil:Date.now()+failure.retryAfterMs,blockedReason:failure.reason,providerCode:failure.providerCode});await tx.put('usage',s);});return failure;}
+   if(!r.ok){const failure=await conditionProviderFailure(r);if(failure.status==='rate_limited')await this.storage.transaction(async tx=>{const s=await tx.get('usage')||{};Object.assign(s,{blockedUntil:failure.nextRetryAt,blockedReason:failure.reason,providerCode:failure.providerCode,providerObservedAt:failure.providerObservedAt,retrySource:failure.retrySource});await tx.put('usage',s);});return failure;}
    const data=compactConditionData(await r.json(),product);await this.storage.put(key,data);
    // Expired entries are periodically removed so storage does not grow with the catalogue.
    if(!await this.storage.getAlarm())await this.storage.setAlarm(now+DAY);
