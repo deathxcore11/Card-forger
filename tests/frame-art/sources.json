@@ -1,0 +1,14 @@
+{
+  "ptcg": [
+    "https://assets.tcgdex.net/en/base/base4/20/high.webp",
+    "webp"
+  ],
+  "mtg": [
+    "https://cards.scryfall.io/normal/front/4/1/41a76adc-42e1-4f65-940c-d0a5555c0633.jpg?1783928835",
+    "jpg"
+  ],
+  "ygo": [
+    "https://images.ygoprodeck.com/images/cards/89631139.jpg",
+    "jpg"
+  ]
+}

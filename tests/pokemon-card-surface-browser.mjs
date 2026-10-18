@@ -1,5 +1,6 @@
 // Real Collection DOM, synthetic 600x825 art: geometry evidence, not physical-foil fidelity.
 import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
 import {startServer,openApp,closeSheet,capture,saveReport,noOverflow,RESULTS} from './detail-rules-fixtures.mjs';
 if(process.env.GITHUB_ACTIONS!=='true')throw Error('Browser QA runs only in hosted GitHub Actions.');
 const {chromium}=await import('playwright');
@@ -72,14 +73,12 @@ const realArt = {
  ygo: {url:'https://images.ygoprodeck.com/images/cards/89631139.jpg',type:'image/jpeg',name:'Blue-Eyes White Dragon'},
  mtg: {url:'https://api.scryfall.com/cards/cmr/133',metadata:true,type:'image/jpeg',name:'Miara, Thorn of the Glade'}
 };
-async function loadRealArt(art){
- if(art.metadata){const metadata=await fetch(art.url,{headers:{'User-Agent':'CardStashy-Frame-QA/3.85.10','Accept':'application/json,image/*;q=0.9,*/*;q=0.8'},signal:AbortSignal.timeout(30000)});assert(metadata.ok,'Exact Magic printing metadata must load: '+metadata.status);const card=await metadata.json();assert.equal(card.set,'cmr');assert.equal(card.collector_number,'133');art.name=card.name;art.url=card.image_uris.normal;}
- const response=await fetch(art.url,{headers:{'User-Agent':'CardStashy-Frame-QA/3.85.10','Accept':'application/json,image/*;q=0.9,*/*;q=0.8'},signal:AbortSignal.timeout(30000)});
- assert(response.ok,'Actual comparison art must load: '+art.url);
- art.bytes=Buffer.from(await response.arrayBuffer());assert(art.bytes.length>5000,'Real card artwork is nonempty');
+async function loadRealArt(art,game){
+ const sources=JSON.parse(await readFile(new URL('./frame-art/sources.json',import.meta.url)));
+ art.url=sources[game][0];art.bytes=await readFile(new URL('./frame-art/'+game+'.'+sources[game][1],import.meta.url));assert(art.bytes.length>5000);
 }
 for(const game of ['ptcg','mtg','ygo']){
- await loadRealArt(realArt[game]);
+ await loadRealArt(realArt[game],game);
  const app=await openApp(browser,server.base,{game,width:390,isMobile:true}),{page}=app;
  try{
   const art=realArt[game],url=server.base+'/tests/actual-frame-'+game;
@@ -90,9 +89,14 @@ for(const game of ['ptcg','mtg','ygo']){
    else for(const c of [...Object.values(S.catalog),...Object.values(S.state.printings||{})]){c.image_uris={...(c.image_uris||{}),normal:url,large:url,small:url};}
   },{game,url});
   const galleryButton=page.locator('#content [data-act="viewSave"][data-mode="gallery"]');await galleryButton.focus();await galleryButton.press('Enter');
+  await page.waitForFunction(()=>document.querySelector('#content.view-gallery .lot-art[data-entry]'));
+  await page.waitForFunction(url=>{const img=document.querySelector('#content .lot-art[data-entry] img.card-img');return img?.complete&&img.naturalWidth>300&&img.currentSrc===url;},url);
+  await noOverflow(page,'#content','Actual '+game+' initial gallery settled',true);
   const tile=page.locator('#content .lot-art[data-entry]').first();
   for(const width of [390,320,768,1440,390]){
-   await page.setViewportSize({width,height:1000});await tile.scrollIntoViewIfNeeded();
+   await page.setViewportSize({width,height:1000});
+   await noOverflow(page,'#content','Actual '+game+' resized gallery settled',true);
+   await tile.waitFor({state:'visible'});
    await page.waitForFunction(url=>{const img=document.querySelector('#content .lot-art[data-entry] img.card-img');return img?.complete&&img.naturalWidth>300&&img.currentSrc===url;},url);
    // Use the same public price-band color for a like-for-like visual comparison.
    await tile.evaluate(n=>n.closest('.lot').dataset.tier='t2');
