@@ -1,3 +1,4 @@
+import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {finishAttrs,containedImageBox} from './finish-preview.js';
@@ -22,3 +23,15 @@ for(const width of [150,240,390]){
 assert.match(style,/@media\(prefers-reduced-motion:no-preference\)\{\s*\.cs-banner:not\(\.no-art\) \.cs-art,\.deck-hero > \.hero-art \{animation:header-breathe 20s/);
 assert.match(style,/@media\(prefers-reduced-motion:reduce\)\{[^\n]*\.cs-banner \.cs-art[^\n]*animation:none!important/);
 console.log('PASS: Pokémon natural-ratio collection geometry, scoped quiet Celebrations texture, unchanged mask and accessible header motion policy. Browser screenshots still required.');
+
+// Installed-shell upgrade: precache the corrected CSS, retire only old shell
+// caches, and keep the network-first stylesheet path for already-open clients.
+const sw=readFileSync('sw.js','utf8'),events={},added=[],removed=[],put=[];
+const cached={addAll:async paths=>added.push(...paths),put:async(...args)=>put.push(args)};
+const waits=[];let claimed=false;
+vm.runInNewContext(sw,{self:{location:{origin:'https://fixture.test'},clients:{claim:async()=>{claimed=true;}},addEventListener:(name,fn)=>events[name]=fn},caches:{open:async key=>{assert.equal(key,'cardforge-shell-v227');return cached;},keys:async()=>['cardforge-shell-v226','cardforge-shell-v227','personal-data'],delete:async key=>removed.push(key),match:async()=>new Response('old-css')},fetch:async()=>new Response('corrected-five-pixel-css'),URL,Response,setTimeout:()=>0,Promise});
+events.install({waitUntil:p=>waits.push(p)});await Promise.all(waits);assert(added.includes('./style.css'));
+events.activate({waitUntil:p=>waits.push(p)});await Promise.all(waits);assert.deepEqual(removed,['cardforge-shell-v226']);assert(claimed);
+let response;events.fetch({request:{url:'https://fixture.test/style.css',method:'GET',mode:'cors'},respondWith:p=>response=p});
+assert.equal(await (await response).text(),'corrected-five-pixel-css');assert.equal(put.length,1);
+console.log('PASS: installed shell v227 precaches corrected stylesheet, retires only obsolete shell cache, and serves fresh network CSS.');
