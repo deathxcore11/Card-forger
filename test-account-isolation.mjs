@@ -97,3 +97,13 @@ const button={dataset:{field:'pw',label:'password'},setAttribute(k,v){attributes
 togglePassword(button,{querySelector:()=>field});assert.equal(field.type,'text');assert.equal(attributes['aria-label'],'Hide password');assert.ok(focused);
 togglePassword(button,{querySelector:()=>field});assert.equal(field.type,'password');assert.equal(attributes['aria-pressed'],'false');
 console.log('PASS: account A → sign-out → B → edit/reload → A, legacy preservation, private artwork/scans/recovery, guest separation, paused/manual/offline sync, stale responses, cross-tab write fence and password controls.');
+
+// An explicit guest owner is authoritative even if another tab left old sync metadata.
+{
+ const records=new Map([[ACCOUNT_OWNER,{owner:null,revision:8}],['workspace',guest],[accountRecord('A'),{state:A,meta:legacyMeta}]]);
+ const v=createAccountWorkspaces({read:async k=>structuredClone(records.get(k)||null),write:async rows=>{for(const[k,x]of rows)records.set(k,structuredClone(x));},getState:()=>guest,blank:empty,normalize:x=>x,storage:'workspace',recovery:'recovery'});
+ const opened=await v.switchTo('A',legacyMeta);
+ assert.deepEqual(opened.state,A,'stale metadata cannot relabel guest cards as the account');
+ assert.deepEqual(records.get(accountRecord(null)).state,guest);
+ assert.deepEqual(records.get(accountRecord('A')).state,A);
+}

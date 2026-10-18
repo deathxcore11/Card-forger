@@ -5657,7 +5657,6 @@ async function boot() {
   if(restored)S.state.settings.game=restored.game;
   activeEntry=restored || makeEntry(T.game(),normalizeRoute(location.hash),0);
   replaceEntry(activeEntry);
-  trackValue();
   // Durable writes start only after the owner/revision boundary is opened.
   // No navigation may write the blank workspace while boot is reading storage.
   // Re-read history after the await: a Back/Forward during startup owns this visit.
@@ -5691,6 +5690,9 @@ async function boot() {
     canSync:()=>accountWorkspaces.current(),
     accountOpened:()=>{
       accountLocked=false;clearGameContext();queueMicrotask(()=>community.refresh());
+      // Device price histories are private records too; never touch a previous
+      // owner's legacy keys while the current account is still being resolved.
+      for(const g of ['ptcg','ygo'])T.trackTcgValue?.(g);
       const game=GAMES[S.state.settings.game]?S.state.settings.game:'mtg';
       const hash=accountOpenedOnce?'#home':normalizeRoute(location.hash);accountOpenedOnce=true;
       installNavigation({game,hash,mode:'workspace',entry:makeEntry(game,hash,activeEntry?.index||0)});

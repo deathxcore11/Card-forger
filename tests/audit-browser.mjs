@@ -19,12 +19,14 @@ try{
   console.log('PASS: real same-origin IndexedDB tabs reject stale same-account writes and reload the newest cards/decks.');
  }finally{await context.close();}
  const original=makeSearchFixtures().state;
- const fixture={sdkFailure:true,user:{id:'A',email:'A@example.invalid'},art:{A:{}},people:{A:[]},rows:{A:{data:original,revision:1}},profiles:{A:{display_name:'Private A',username:'private_a'}},items:{},requests:[],writes:[],storage:{'cardforge-v2':original,'cardstashy-workspace-owner-v1':{owner:'A',revision:1}}};
+ const oldHistory=[{date:'2026-01-01',total:789,copies:4}];
+ const fixture={sdkFailure:true,user:{id:'A',email:'A@example.invalid'},art:{A:{}},people:{A:[]},rows:{A:{data:original,revision:1}},profiles:{A:{display_name:'Private A',username:'private_a'}},items:{},requests:[],writes:[],storage:{'cardforge-v2':original,'cardstashy-workspace-owner-v1':{owner:'A',revision:1},'cardstashy-value-hist-ptcg':oldHistory}};
  const app=await openSearchApp(browser,server.base,{accountFixture:fixture}),{page}=app;
  try{
   await page.waitForFunction(async()=>{const c=(await import('/cloud.js')).cloudInfo();return !c.switching&&!!c.authNotice;});
   assert.equal(await page.locator('.account-opening').count(),0);
   assert.equal(await page.evaluate(()=>window.__uiTestState.state.collection.length),0,'SDK failure opens the separate guest workspace, never the prior owner');
+  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('cardstashy-value-hist-ptcg'))),oldHistory,'Guest startup cannot rewrite the previous owner’s legacy price history');
   assert.equal(await page.evaluate(async()=> (await (await import('/storage.js')).readRecord('cardstashy-workspace-v1:A'))?.state?.collection?.length),original.collection.length,'SDK failure preserves the owner archive before retry');
   await capture(page,'synthetic-search-sdk-failure-guest');
   fixture.sdkFailure=false;await page.reload();await page.locator('#app.ready').waitFor();

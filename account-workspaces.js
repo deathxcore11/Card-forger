@@ -14,7 +14,7 @@ export function createAccountWorkspaces({read,write,getState,blank,normalize,sto
    const marker=await read(ACCOUNT_OWNER);
    // Older releases have only a sync baseline. It is ownership evidence, never
    // permission to copy that workspace into whichever account next signs in.
-   const previous=initialized?owner:(marker?.owner || meta?.userId || null);
+   const previous=initialized?owner:(marker ? marker.owner || null : meta?.userId || null);
    if(initialized && JSON.stringify(marker)!==JSON.stringify(baseline))throw Error('The account changed in another tab. Reload CardStashy to continue.');
    const current={state:structuredClone(initialized?getState():await read(storage)||getState()),recovery:await read(recovery),meta:marker&&meta?.userId===previous?meta:null};
    const archive=!marker && !await read(LEGACY_ARCHIVE)?{...current,previousSyncOwner:meta?.userId||null,at:new Date().toISOString()}:null;
