@@ -2,6 +2,27 @@
 // these turn that text into things worth looking up — exact-printing codes first, names second.
 import {pokemonPrintedName} from './pokemon-identity.js';
 
+// Structural labels are alternate title readings, not permission to discard words.
+// Keep the original too: e.g. Energy Stadium is itself a real card name.
+export const pokemonTitleLabel = value => /^(?:TRAINER|SUPPORTER|ITEM|STADIUM|POK[EÉ]MON TOOL|TOOL|ENERGY|POK[EÉ]MON|WEAKNESS|RESISTANCE|RETREAT|ABILITY)\W*$/i.test(String(value||'').trim());
+export function pokemonTitleReadings(value) {
+  const raw=String(value||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').trim();
+  const withoutTrainer=raw.replace(/^TRAINER\s+/i,'').trim();
+  const withoutType=withoutTrainer!==raw?withoutTrainer.replace(/^(?:SUPPORTER|ITEM|STADIUM|POKEMON TOOL)\s+/i,'').trim():withoutTrainer;
+  const stripTail=s=>s.replace(/\s+(?:SUPPORTER|ITEM|STADIUM|POKEMON TOOL)$/i,'').trim();
+  return [...new Set([stripTail(withoutTrainer),withoutTrainer,stripTail(withoutType),withoutType,raw])].filter(Boolean);
+}
+// A one/two-letter OCR fragment is not generally a title. Only these known
+// Trainer names may enter lookup, and only alongside one independent number.
+export function shortTrainerNames(read={}) {
+  const ids=[...new Set([String(read.code||''),String(read.full||'')].flatMap(ptcgNumbers).map(n=>ptcgIdentifierKey(n.num,n.total)))].filter(Boolean);
+  if(ids.length!==1)return [];
+  return [...new Set(String(read.name||read.full||'').split(/\r?\n/).flatMap(pokemonTitleReadings).filter(n=>/^(?:N|AZ)$/.test(n)))];
+}
+export function scanLookupNames(game,read={}) {
+  return [...new Set([...(game==='ptcg'?shortTrainerNames(read):[]),...nameCandidates(game,read.name||read.full||'')])];
+}
+
 const clean = (s) =>
   s
     // Suffix glued on with a misread hyphen: "MewtwolGX" / "Mewtwo-GX" → "Mewtwo GX".
@@ -26,7 +47,7 @@ const clean = (s) =>
 const IGNORE = {
   mtg: /^(?:creature|legendary|artifact|enchantment|instant|sorcery|land|planeswalker|battle|token|flying|haste|trample|vigilance|copyright|illustration|illus|wizards|the gathering)\b/i,
   ygo: /^(?:effect|normal|ritual|fusion|synchro|xyz|link|pendulum|tuner|flip|spell card|trap card|quick-play|continuous|equip|field|counter|atk|def|level|rank|konami|limited edition|1st edition|this card|you can|once per turn|when|if|during|target|special summon|send|spellcaster|dragon|warrior|machine|fiend|zombie|beast|fairy|aqua|pyro|rock|plant|insect|thunder|reptile|psychic|wyrm|cyberse|dinosaur|winged beast|sea serpent|beast-warrior|divine-beast|illusion|fish)\b/i,
-  ptcg: /^(?:basic|stage ?[12]|evolves|weakness|resistance|retreat|illus|pokemon|pokémon|trainer|item|supporter|stadium|tool|energy|ability|rule|ex rule|vstar|vmax|hp|nintendo|creatures|game freak|put|search|attach|discard|draw|flip|this attack|your opponent|once during)\b/i,
+  ptcg: /^(?:basic|stage ?[12]|evolves|illus|rule|ex rule|vstar|vmax|hp|nintendo|creatures|game freak|put|search|attach|discard|draw|flip|this attack|your opponent|once during)\b/i,
 };
 
 export function scanNamesFor(g, text) {
@@ -39,8 +60,9 @@ export function scanNamesFor(g, text) {
         // Keep suffixes (ex/GX/V) but remove mixed digit/text OCR fragments
         // before a title: "snce1 Eldegoss". Do not strip legitimate words.
         .map((s) => s.replace(/^(?:\s*[A-Za-z]*\d+[A-Za-z]*\s+)+(?=[A-Za-z])/g, ""))
+        .flatMap(s=>g==="ptcg"?pokemonTitleReadings(s):[s])
         .map(clean)
-        .filter((s) => s.length >= 3 && s.length <= 60 && /[a-z]/i.test(s) && !ignore.test(s) && (s.match(/[A-Za-z]/g) || []).length >= 3),
+        .filter((s) => s.length >= 3 && s.length <= 60 && /[a-z]/i.test(s) && !ignore.test(s) && !(g==="ptcg"&&pokemonTitleLabel(s)) && (s.match(/[A-Za-z]/g) || []).length >= 3),
     ),
   ].slice(0, 5);
 }

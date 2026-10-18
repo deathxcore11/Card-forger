@@ -14,7 +14,7 @@ import { S } from "./store.js";
 import {catalogState,catalogManifest,initCatalog,invalidateCatalogRead,downloadCatalog,removeCatalog,localScanMatch,localIndexCandidate} from "./scan-catalog.js";
 import { esc } from "./ui.js";
 import {conditionRetryFeedback} from './condition-value.js';
-import { nameCandidates, detectGame, anchoredNames, scanNameKey, scanCandidateMatches, ptcgNumbers, ygoSetCodes, mtgCollector } from "./scan.js";
+import { scanLookupNames, shortTrainerNames, pokemonTitleLabel, nameCandidates, detectGame, anchoredNames, scanNameKey, scanCandidateMatches, ptcgNumbers, ygoSetCodes, mtgCollector } from "./scan.js";
 import { hashCanvas, nearest } from "./scanart.js";
 import { artworkHTML, artworkSources } from "./artwork.js";
 import { openZoom } from "./zoom.js";
@@ -165,7 +165,7 @@ export function createScanBudget(now=clockNow){
   checkpoint(result){this.latest={...result,read:{...result.read,titles:result.read?.titles?.map(t=>({...t}))},cands:[...(result.cands||[])]};return result;}
  };
 }
-export const scanQueryKey=(g,read={})=>JSON.stringify([g,[...new Set(nameCandidates(g,read.name||read.full).map(scanNameKey))],scanIdentifierEvidence(g,read).observations,scanIdentifierEvidence(g,read).passcodes||[]]);
+export const scanQueryKey=(g,read={})=>JSON.stringify([g,[...new Set(scanLookupNames(g,read).map(scanNameKey))],scanIdentifierEvidence(g,read).observations,scanIdentifierEvidence(g,read).passcodes||[]]);
 function retireWorker(w){if(worker===w){worker=null;workerLang='';}try{Promise.resolve(w?.terminate?.()).catch(()=>{});}catch{}}
 // The non-whitespace record separator prevents an orphan identifier in one
 // image region from being completed by unrelated pixels in the next region.
@@ -610,7 +610,8 @@ export function fullCardNameHints(g,full) {
       }
       if(/^(?:HP\s*\d{2,3}|\d{2,3}\s*HP)\W*$/i.test(lines[i]))anchored.push(...lines.slice(Math.max(0,i-1),i),...lines.slice(i+1,i+2));
     }
-    const title=lines.slice(0,3).find(line=>(line.match(/[A-Za-z]/g)||[]).length>=4&&
+    const shortTitles=g==='ptcg'?shortTrainerNames({name:lines.slice(0,3).join('\n'),full:observation}):[];
+    const title=lines.slice(0,3).find(line=>!(g==='ptcg'&&pokemonTitleLabel(line))&&((line.match(/[A-Za-z]/g)||[]).length>=4||shortTitles.includes(line))&&
       !/©|copyright|studio\s+dice|shueisha|konami|nintendo|creatures|game\s*freak|\b(?:ATK|DEF)\s*[/:]|\b(?:replica|tournaments)\b/i.test(line)&&
       !/^\W*(?:BASIC|STAGE\s*[12]|(?:SPELLCASTER|DRAGON|WARRIOR)\s*[/]\s*(?:NORMAL|EFFECT)|HP\s*\d+|\d+\s*HP)\W*$/i.test(line));
     // Keep one primary hypothesis per observation before expanding name words.
@@ -851,7 +852,7 @@ export function registerScanner(ctx) {
     progress(`Reading ${GAME_LABEL[G]} printing…`);
     // Preserve the fast two-band path when both a name and identifier are read.
     // Otherwise collect useful local evidence before making one remote lookup.
-    let r=await lookup(!!hasIdentifier()&&nameCandidates(G,read.name).length>0);
+    let r=await lookup(!!hasIdentifier()&&scanLookupNames(G,read).length>0);
     if(!r.cands.some(c=>textVerifiedMatch(G,c,read))){
       const roi=G==='ygo'?[.30,.82,.70,.15]:G==='mtg'?[.02,.37,.96,.59]:[.04,.46,.92,.40];
       read.stats=await stage('ocrDetails',async()=>recog(await getWorker(lang,progress),regionCanvas(card,roi,2),6,budget));
@@ -887,10 +888,10 @@ export function registerScanner(ctx) {
     // A loose original has no reliable title band. A single top-of-frame hint
     // may support a suggestion; with an independent footer it retains the
     // existing full-frame recovery path, but cannot erase earlier contradictions.
-    if(!read.titles.some(t=>(t.source==='title'||t.source==='full-anchor')&&nameCandidates(G,t.text).length)&&hints.length===1)read.titles[read.titles.length-1]={...read.titles.at(-1),source:'original-title'};
+    if(!read.titles.some(t=>(t.source==='title'||t.source==='full-anchor')&&scanLookupNames(G,{...read,name:t.text}).length)&&hints.length===1)read.titles[read.titles.length-1]={...read.titles.at(-1),source:'original-title'};
     let r=await trace.stage('localOriginal',()=>scanDeadline(()=>localScanMatch(G,read),SCAN_DEADLINES.local,'Local catalogue',()=>invalidateCatalogRead(G)));check();
     budget.checkpoint({...r,g:G,read,cands:rankScanCandidates(G,r.cands||[],read)});
-    if(!r.cands.some(c=>textVerifiedMatch(G,c,read))&&nameCandidates(G,read.name).length){
+    if(!r.cands.some(c=>textVerifiedMatch(G,c,read))&&scanLookupNames(G,read).length){
       try{const remote=await budget.lookup(scanQueryKey(G,read),()=>trace.stage('remoteOriginal',()=>boundedMatch(G,read,lang,progress,entry.defaultsByGame?.[G]||{},active,budget)));r={...r,cands:uniquePrintings([...r.cands,...remote.cands].sort((a,b)=>Number(!!b.exact)-Number(!!a.exact))),tried:[...(r.tried||[]),...(remote.tried||[])]};}
       catch(e){if(e.code==='SCAN_TIMEOUT'||e.code==='SCAN_BUDGET'||e.code==='SCAN_CANCELED')throw e;}
     }
@@ -916,7 +917,7 @@ export function registerScanner(ctx) {
       const pass=L.pass?await trace.stage('ocrOrientationPasscode',()=>recog(w,regionCanvas(view,L.pass,3),6,budget)):'';
       reads.push({g:G,name,code:joinReads(code,pass)});
     }
-    const plausible=reads.filter(r=>nameCandidates(r.g,r.name).length&&(r.g==='ptcg'?ptcgNumbers(r.code).length:r.g==='ygo'?ygoSetCodes(r.code).length:mtgCollector(r.code)));
+    const plausible=reads.filter(r=>scanLookupNames(r.g,r).length&&(r.g==='ptcg'?ptcgNumbers(r.code).length:r.g==='ygo'?ygoSetCodes(r.code).length:mtgCollector(r.code)));
     if(!plausible.length)return prior;
     const G=plausible[0].g;
     // Different plausible games/orientations are not a license to pick one.

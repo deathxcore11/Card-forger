@@ -1,4 +1,4 @@
-import {scanNameKey,scanCardNameKey,ptcgNumbers,ptcgNumberMatches,ptcgIdentifierKey,scanCollectorKey,mtgCollectors,ygoSetCodes,ygoPasscodes} from './scan.js';
+import {pokemonTitleReadings,shortTrainerNames,pokemonTitleLabel,scanNameKey,scanCardNameKey,ptcgNumbers,ptcgNumberMatches,ptcgIdentifierKey,scanCollectorKey,mtgCollectors,ygoSetCodes,ygoPasscodes} from './scan.js';
 import {pokemonTrainerSubtitle} from './pokemon-identity.js';
 export const collectorKey=value=>String(value??'').trim().replace(/^0+(?=\d)/,'').toLowerCase();
 // Evidence is independent of which observations happen to exist in the local
@@ -25,14 +25,14 @@ export function scanTitleEvidence(g,card,read={}){
  const primary=[],weak=[];
  // Recognition already caps observations; never discard a later contradictory title.
  for(const observation of observations){
-  const lines=String(observation.text||'').split(/\r?\n/).map(line=>line.replace(/\{[^}]*\}/g,'').replace(g==='ptcg'?/^\s*(?:BASIC|STAGE\s*[12])\s+/i:/^$/,'').replace(g==='ptcg'?/\bH\s?P\s*\d+.*$/i:/^$/,'').trim()).filter(line=>!subtitle||scanNameKey(line)!==subtitle)
+  const lines=String(observation.text||'').split(/\r?\n/).map(line=>line.replace(/\{[^}]*\}/g,'').replace(g==='ptcg'?/^\s*(?:BASIC|STAGE\s*[12])\s+/i:/^$/,'').replace(g==='ptcg'?/\bH\s?P\s*\d+.*$/i:/^$/,'').trim()).map(line=>g==='ptcg'?(pokemonTitleReadings(line).find(n=>faces.includes(nameKey(n)))||line):line).filter(line=>!(g==='ptcg'&&pokemonTitleLabel(line))).filter(line=>!subtitle||scanNameKey(line)!==subtitle)
    .filter(line=>line&&!/^(?:BASIC|STAGE\s*[12]|HP\s*\d+|\d+\s*HP|TRAINER|ITEM|SUPPORTER|STADIUM|INSTANT|SORCERY|LAND|SPELL CARD|TRAP CARD)\W*$/i.test(line)&&!/^evolves from\b|^©|^copyright|^illus\b|^ATK\b|^DEF\b|^\[/i.test(line)&&(faces.includes(scanNameKey(line))||!(g==='mtg'?/^(?:legendary|creature|artifact|enchantment|planeswalker|battle)\b/i:g==='ygo'?/^(?:DARK|LIGHT|EARTH|FIRE|WATER|WIND|DIVINE|LEVEL\s*\d+)$/i:/^(?:weakness|resistance|retreat|ability)$/i).test(line)));
   const combined=nameKey(lines.join(' ')),strong=observation.source!=='full-hint'&&observation.source!=='orientation'&&(observation.confidence==null||observation.confidence>=70);
   // Wrapped titles and split-card faces are one observation. Keep meaningful
   // digits, slashes, qualifiers and suffixes; fuzzy search fragments never count.
-  if(lines.length&&faces.includes(combined)){(strong?primary:weak).push(combined);continue;}
+  if(lines.length&&faces.includes(combined)&&(g!=='ptcg'||combined.length>=3||shortTrainerNames(read).some(n=>nameKey(n)===combined))){(strong?primary:weak).push(combined);continue;}
   for(const line of lines){
-   const clean=/^[A-Za-zÀ-ž][A-Za-zÀ-ž0-9 ,'’.:!&/–—-]*$/.test(line)&&(!/[A-Za-z]\d|\d[A-Za-z]/.test(line)||faces.includes(nameKey(line))),key=nameKey(line);if(!key||key.length<3)continue;
+   const clean=/^[A-Za-zÀ-ž][A-Za-zÀ-ž0-9 ,'’.:!&/–—-]*$/.test(line)&&(!/[A-Za-z]\d|\d[A-Za-z]/.test(line)||faces.includes(nameKey(line))),key=nameKey(line);if(!key||(key.length<3&&!(g==='ptcg'&&(/^(?:n|az)$/.test(nameKey(canonical))||shortTrainerNames({...read,name:line}).some(n=>nameKey(n)===key)))))continue;
    (strong&&clean?primary:weak).push(key);
   }
  }

@@ -62,7 +62,7 @@ import { loadMeta, metaState, ptcgIcon, allCachedMeta, cleanName } from "./meta.
 import { tcgPower, powerPanel, powerChip, shownPower, asShown, powerReadiness } from "./power.js";
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
 import { rankPairs, ygoTags, ptcgTags } from "./pairing.js";
-import { nameCandidates, scanCandidateMatches, ygoSetCodes, ygoPasscodes, ptcgNumbers, similarity, scanNameKey, textPhrases, attackNames } from "./scan.js";
+import { scanLookupNames, nameCandidates, scanCandidateMatches, ygoSetCodes, ygoPasscodes, ptcgNumbers, similarity, scanNameKey, textPhrases, attackNames } from "./scan.js";
 import {rankScanCandidates,scanIdentifierEvidence} from './scan-signals.js';
 import { adaptList, ownedDraft, engineOf, similarLists, swapPool, costToFinish, unpricedCopies } from "./adapt.js";
 export { metaState, similarLists };
@@ -2358,7 +2358,7 @@ export function registerTcg(c) {
         out.push(candidate);
       };
     const all = `${read.code}\n${read.full}`,
-      names = manual ? [read.name] : nameCandidates(G, read.name || read.full);
+      names = manual ? [read.name] : scanLookupNames(G, read);
     let limited=false;
     try {
     if (G === "ygo") {

@@ -58,8 +58,12 @@ async function seed(app,game){
   await app.page.evaluate(()=>{window.__uiTestState.ui.scan.auto=false;});
   if(game==='mtg')for(const viewport of [{width:320,height:568},{width:390,height:844}]){
     await app.page.setViewportSize(viewport);await frame(app.page);
-    const reachable=await app.page.getByRole('button',{name:'Start camera',exact:true}).evaluate(n=>{const r=n.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return r.top>=0&&r.bottom<=innerHeight&&(hit===n||n.contains(hit));});
-    assert(reachable,'Start camera remains reachable on the compact idle screen');
+    // Judge settled layout rather than the first two frames of page entrance.
+    // No scrolling, forced click, hidden overlay or changed production styles.
+    await app.page.evaluate(()=>document.fonts.ready);
+    await app.page.waitForFunction(()=>!document.querySelector('#content').getAnimations({subtree:true}).some(a=>a.animationName==='page-in'&&a.playState==='running'),null,{timeout:2000});
+    const reach=await app.page.getByRole('button',{name:'Start camera',exact:true}).evaluate(n=>{const r=n.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return {top:r.top,bottom:r.bottom,height:innerHeight,hit:hit?.tagName+'.'+hit?.className,reachable:r.top>=0&&r.bottom<=innerHeight&&(hit===n||n.contains(hit))};});
+    assert(reach.reachable,'Start camera remains reachable on the compact idle screen: '+JSON.stringify(reach));
     await capture(app.page,`synthetic-search-scanner-idle-${viewport.width}`);
     if(viewport.width===320){
       await app.page.evaluate(()=>{window.__scannerReviewTest.media=navigator.mediaDevices.getUserMedia;navigator.mediaDevices.getUserMedia=async()=>{throw new DOMException('Synthetic permission denial','NotAllowedError');};});

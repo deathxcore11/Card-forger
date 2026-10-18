@@ -358,6 +358,12 @@ async function scenario(game){
    for(const item of geometry.controls){assert(item.rect.height>=44&&item.rect.left>=geometry.meta.left-2&&item.rect.right<=geometry.meta.right+2&&item.scroll<=item.client+2,`${game}: complete readable quick action fits at ${width}: ${JSON.stringify(geometry)}`);}
    if(width<=375)assert.notEqual(geometry.areas,'"buy market manual add"',`${game}: narrow meta uses its own responsive container`);
    await page.locator('#sheetBody .cs-meta').scrollIntoViewIfNeeded();await frame(page);await capture(page,`card-responsive-${game}-meta-${width}`);
+   if(width===320||width===1440){
+    await page.locator('#sheetBody').evaluate(n=>{n.scrollTop=0;});await frame(page);
+    const visibility=await page.locator('#sheetBody .card-set-summary').evaluate(n=>{const r=n.getBoundingClientRect(),tabs=document.querySelector('#sheet .cs-tabs').getBoundingClientRect(),sheet=document.querySelector('#sheetBody').getBoundingClientRect();return {top:r.top,bottom:r.bottom,tabsBottom:tabs.bottom,sheetBottom:Math.min(sheet.bottom,innerHeight)};});
+    assert(visibility.top>=visibility.tabsBottom-2&&visibility.bottom<=visibility.sheetBottom+2,`${game}: merged summary can be fully seen below navigation ${JSON.stringify(visibility)}`);
+    await capture(page,`card-responsive-${game}-detail-top-${width}`);
+   }
    report.push(`${game} quick actions ${width}: ${JSON.stringify(geometry)}`);
   }
   await page.setViewportSize({width:320,height:1000});await frame(page);
