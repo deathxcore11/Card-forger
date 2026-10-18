@@ -1,3 +1,4 @@
+import {mergeValueHistory} from './value-history.js';
 import {addScannedEntry} from './collection-stack.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -128,7 +129,7 @@ function replacementHarness() {
     afterLocalSave(){events.push('save-notify');},saveCatalogSoon(){},render(){},refreshSheet(){},haptic(){},flyToCollection(){},toast(text){events.push(text);},autoEnrich(){},setTimeout(){},lastActTarget:null,
     ask:async()=>true,askText:async()=> 'DELETE',busy:()=>()=>{},deleteAccount:async()=>{c.owner=null;},
     cloudInfo:()=>({user:c.owner}),signOut:async()=>{events.push('sign-out');if(c.signOutError)throw Error('sign-out failed');c.owner=null;},detachDeviceSync(){events.push('detach');},clearAskConversations(){},clearRulesConversations(){},rulesGuideOrigin:null,go(){},owner:null};
-  Object.assign(c,{refreshProfileAvatar(){},createAccountWorkspaces:()=>({guard:null})});
+  Object.assign(c,{mergeValueHistory,T:{readLegacyTcgValueHistory:()=>[]},refreshProfileAvatar(){},createAccountWorkspaces:()=>({guard:null})});
   vm.createContext(c);
   vm.runInContext(segment('let lastUndo = null;','\nconst safely =')+'\n'+segment('A.undo = async','\nA.nextFact =')+'\n'+segment('C.restoreBackup = async','\nA.loadExample =')+'\n'+segment('A.deleteAccount = async','\nA.signOut ='),c);
   vm.runInContext('cloudHooks = ({'+segment('    apply: async (data,{owner,current}={}) => {','    backup: async')+'});',c);

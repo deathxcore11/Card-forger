@@ -5803,10 +5803,11 @@ async function boot() {
     getState: () => stripCache(S.state),
     // Replace this device's workspace with the account copy.
     apply: async (data,{owner,current}={}) => {
-      const cloudBaseline=stripCache(normalize(data));
+      let cloudBaseline;
       owner ||= cloudInfo().user?.id;
       const applied = await replaceWorkspace(() => {
         const incoming=normalize(data);
+        cloudBaseline=stripCache(structuredClone(incoming));
         // Same-account observations from this device remain useful on cloud
         // adoption. Incoming workspace wins duplicate dates; holdings are not merged.
         incoming.valueHistory=mergeValueHistory(S.state.valueHistory,incoming.valueHistory);

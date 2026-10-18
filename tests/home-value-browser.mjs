@@ -23,7 +23,9 @@ async function run(game, mode) {
     const { page } = app;
     await page.evaluate(async game => {
       const S=window.__uiTestState, row={date:'2026-10-16',total:8.33,copies:5,unpriced:0,currency:'USD',basis:'exact-owned-v1'};
-      if(game==='mtg')S.state.valueHistory=[row];else localStorage.setItem((await import('/account-scope.js')).privateKey(`cardstashy-value-hist-${game}`),JSON.stringify([row]));
+      // History now lives in each game’s account workspace; legacy import is
+      // intentionally a one-time ready-account transition, not a render read.
+      (game==='mtg'?S.state:S.state.tcg[game]).valueHistory=[row];
     },game);
     await navigate(page,'home');
     assert.equal(await page.locator('[data-value-amount]').innerText(),'$8.75');
