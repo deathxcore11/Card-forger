@@ -38,7 +38,7 @@ function render(){
  $('#counter').textContent=String(cases.indexOf(selected)+1).padStart(2,'0')+' / 14';
  $('#beforeStage').replaceChildren(surface(selected,false));$('#afterStage').replaceChildren(surface(selected,true));
  $('#beforeNote').textContent=selected.before.status==='unknown'?'No supported finish preview in the baseline.':'Current masks and material styling.';
- $('#afterNote').textContent=selected.profile==='plain'?'Plain control. No simulated foil.':selected.titleMask?'Foil art and individually masked title lettering.':'Proposed material · approximate simulation.';
+ $('#afterNote').textContent=selected.profile==='plain'?'Plain control. No simulated foil.':selected.profile==='ygo-rare'?'Individually masked title lettering. Artwork stays plain.':selected.titleMask?'Foil art and individually masked title lettering.':'Proposed material · approximate simulation.';
  $('#sourceNote').textContent=selected.note;$('#source').href=selected.source;
  paint();setPlaying(playing);origin=null;
  const hash=new URLSearchParams(location.hash.slice(1));hash.set('case',selected.key);history.replaceState(null,'','#'+hash);

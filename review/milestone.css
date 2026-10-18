@@ -17,7 +17,7 @@
 .candidate [data-profile=textured-holo] .review-pattern{background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#d1e7ff33,transparent 45%);opacity:.4}
 .candidate [data-profile=ygo-secret] .finish-secret{background-image:repeating-linear-gradient(135deg,transparent 0 4px,#92d8e0 4px 4.5px,#e9cbe8 4.5px 5px,transparent 5px 9px),linear-gradient(120deg,transparent 15%,#9abae9 35%,#c093cc 48%,#efce8e 60%,transparent 85%);background-size:120% 120%;opacity:.46}
 .candidate [data-profile=ygo-secret] .review-pattern{background-image:repeating-linear-gradient(135deg,transparent 0 13px,#fff8 13px 13.6px,transparent 13.6px 21px);opacity:.2}
-.candidate [data-profile=starlight] .finish-starlight{background-image:repeating-linear-gradient(0deg,transparent 0 3.2px,#cfb4e9 3.2px 3.65px),repeating-linear-gradient(90deg,transparent 0 3.2px,#a7d5d9 3.2px 3.65px);background-size:100% 100%;opacity:.38}
+.candidate [data-profile=starlight] .finish-starlight{background-image:repeating-linear-gradient(0deg,transparent 0 1.5px,#cfb4e980 1.5px 1.7px),repeating-linear-gradient(90deg,transparent 0 1.5px,#a7d5d980 1.5px 1.7px);background-size:100% 100%;opacity:.25}
 .candidate [data-profile=starlight] .review-pattern{background-image:url('assets/starlight.svg');background-size:100% 100%;opacity:.4}
 .candidate [data-profile=etched] .finish-metal{background-image:url('assets/metal-grain.svg'),radial-gradient(ellipse at var(--finish-x) var(--finish-y),#fff4cba6,transparent 50%);background-size:100% 100%;mix-blend-mode:soft-light;opacity:.7}
 .candidate [data-profile=etched] .review-pattern{background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#cde1d555,transparent 44%);mix-blend-mode:soft-light;opacity:.4}
