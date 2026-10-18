@@ -40,7 +40,7 @@ for(const extra of [{key:'normal',finish:'normal'},{key:'reverse',finish:'revers
  assert.equal(resolveFinish('ptcg',{...card,variants:[...card.variants,extra]}).effect,'unknown','Mixed/unknown finish must not inherit shared holo');
 }
 assert.equal(resolveFinish('ptcg',{...card,variants:[]}).effect,'unknown');
-const unproven={...card,id:'base4-20',set:{id:'base4'}};
+const unproven={...card,id:'base4-19',set:{id:'base4'}};
 assert.equal(resolveFinish('ptcg',unproven).effect,'unknown','Same finish is insufficient without supported presentation');
 assert.equal(resolveFinish('ptcg',unproven,{priceFinish:first}).effect,'unknown');
 const exact={...card,finishPresentations:[{game:'ptcg',printingId:card.id,finish:first,face:0,status:'approximate',source:'https://example.test/evidence',effectPreset:'specific-holo',layers:[{mask:'card',material:'holo'}]}]};

@@ -21,7 +21,7 @@ function link(game,card,ctx={}){
  assert.equal(href(html),sellerModels(game,card,ctx).find(r=>r.key==='tcgplayer').url,'Top Buy and lower TCGplayer seller share one resolver');
  return {html,anchor,url};
 }
-function exact(game,card,ctx,id){const result=link(game,card,ctx);assert.equal(result.url.href,'https://www.tcgplayer.com/product/'+id);assert.match(result.anchor,/<span>Buy<\/span>/);assert.doesNotMatch(result.anchor,/\$|€|in stock|exact edition|Near Mint/);return result;}
+function exact(game,card,ctx,id){const result=link(game,card,ctx);assert.equal(result.url.origin+result.url.pathname,'https://www.tcgplayer.com/product/'+id);assert.match(result.anchor,/<span>Buy<\/span>/);assert.doesNotMatch(result.anchor,/\$|€|in stock|exact edition|Near Mint/);return result;}
 function search(game,card,ctx={}){const result=link(game,card,ctx);assert.equal(result.url.pathname,`/search/${{mtg:'magic',ptcg:'pokemon',ygo:'yugioh'}[game]}/product`);assert.deepEqual([...result.url.searchParams.keys()],['q']);assert.match(result.anchor,/<span>Search TCGplayer<\/span>/);assert.match(result.anchor,/exact product not verified/);return result;}
 const mtg=CARDS.mtg[0],pk=CARDS.ptcg[0],ygo=CARDS.ygo[0];
 exact('mtg',mtg,{priceFinish:'nonfoil'},42);exact('mtg',mtg,{priceFinish:'foil'},42);exact('mtg',mtg,{priceFinish:'etched'},43);
@@ -81,16 +81,16 @@ for(const [card,ctx] of [[pk,{type:'tcard',game:'ptcg',id:pk.id,setId:pk.set.id,
 globalThis.fetch=undefined;
 const selected={...mtg,id:'shown-printing',tcgplayer_id:84,tcgplayer_etched_id:85};
 const mtgCtx={type:'card',name:mtg.name,entryId:'lot-mtg-0',print:selected,priceFinish:'etched',tab:'overview'};
-let html=cardSheet(mtg,mtgCtx);assert.equal(href(html),'https://www.tcgplayer.com/product/85','Current shown printing wins over name-wide default and old saved lot');
-mtgCtx.print=mtg;mtgCtx.priceFinish='nonfoil';html=cardSheet(mtg,mtgCtx);assert.equal(href(html),'https://www.tcgplayer.com/product/42');assert.match(html,/data-detail-key="owned-lot"/);
+let html=cardSheet(mtg,mtgCtx);assert.equal(href(html),'https://www.tcgplayer.com/product/85?Language=English&Printing=Etched+Foil','Current shown printing wins over name-wide default and old saved lot');
+mtgCtx.print=mtg;mtgCtx.priceFinish='nonfoil';html=cardSheet(mtg,mtgCtx);assert.equal(href(html),'https://www.tcgplayer.com/product/42?Language=English&Printing=Normal&Condition=Lightly+Played');assert.match(html,/data-detail-key="owned-lot"/);
 for(const [game,card] of [['ptcg',pk],['ygo',ygo]]){
  const lot=S.state.tcg[game].collection[0],ctx={type:'tcard',game,id:card.id,entryId:lot.id,priceFinish:lot.variant||'',priceEdition:game==='ygo'?lot.printing+'::'+lot.rarity:'',priceYgoEdition:lot.edition||'',tab:'overview'};
- html=tcgCardSheet(card,ctx);assert.equal(href(html),`https://www.tcgplayer.com/product/${game==='ptcg'?111:555}`);assert.match(html,/data-detail-key="owned-lot"/);
+ html=tcgCardSheet(card,ctx);assert.equal(href(html),`https://www.tcgplayer.com/product/${game==='ptcg'?111:555}?Language=English&Printing=${game==='ptcg'?'Normal':'Unlimited'}&Condition=Lightly+Played`);assert.match(html,/data-detail-key="owned-lot"/);
  if(game==='ptcg')ctx.priceFinish='holofoil';else ctx.priceEdition='SET-001::Super Rare';
- html=tcgCardSheet(card,ctx);assert.equal(href(html),`https://www.tcgplayer.com/product/${game==='ptcg'?222:557}`);assert.doesNotMatch(html,/data-detail-key="owned-lot"/,'A new selection must not claim the old saved lot');
+ html=tcgCardSheet(card,ctx);assert.equal(href(html),`https://www.tcgplayer.com/product/${game==='ptcg'?222:557}?Language=English&Printing=${game==='ptcg'?'Holofoil':'Unlimited'}`);assert.doesNotMatch(html,/data-detail-key="owned-lot"/,'A new selection must not claim the old saved lot');
  assert.match(html,/id="card-sellers"/);assert.match(html,/Cardmarket/);
 }
-assert.match(buySheet({type:'buy',name:mtg.name,print:mtg,finish:'etched'}),/href="https:\/\/www.tcgplayer.com\/product\/43"/);
+assert.match(buySheet({type:'buy',name:mtg.name,print:mtg,finish:'etched'}),/href="https:\/\/www.tcgplayer.com\/product\/43\?Language=English&amp;Printing=Etched\+Foil"/);
 assert.equal(JSON.stringify(S.state),before,'Rendering outbound links cannot change private saved data');
 const css=fs.readFileSync('style.css','utf8');assert(Number(css.match(/\.card-price-actions \.btn \{min-height:(\d+)px/)?.[1])>=44,'Price actions meet the minimum touch size');assert.match(css,/\.card-price-actions :is\(button,a\)[^}]*:focus-visible/);
 assert(fixtureRequests.every(url=>url.startsWith('api/prices/recent?game=ptcg&')),'Unexpected mocked renderer request: '+JSON.stringify(fixtureRequests));

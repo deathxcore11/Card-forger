@@ -8,7 +8,7 @@ import {detailOwnedGroups} from './quick-quantity.js';
 import {addCollectionEntry,addScannedEntry} from './collection-stack.js';
 import {homeSearchMarkup} from './home-search.js';
 import {applyYgoSetPrices,ygoSetReference} from './ygo-set-prices.js';
-import {compactPriceSummary,detailTabs,detailPanel,presentationQuote,quoteForContext} from "./pricing-presentation.js";
+import {buyContext,compactPriceSummary,detailTabs,detailPanel,presentationQuote,quoteForContext} from "./pricing-presentation.js";
 import { homeValue, homeEdition, homeMetaCarousel, homeValueCoverage, homeMetaSnapshot, homeResume } from "./home-ui.js";
 import {interactiveRules} from './rule-learning.js';
 import {referenceQuote,referenceLabel} from './price-reference.js';
@@ -766,7 +766,7 @@ export function tcgCardSheet(c, sctx = {}) {
     ${g === "ygo" ? ygoSetRow(c,sctx) : ""}
     ${c.set ? `<button class="cd-set" data-act="tSet" data-id="${esc(c.set.id)}">${pkSetSymbol(c.set, "pks big")}<div><b>${esc(c.set.name)} <span class="set-go">›</span></b><small>#${esc(c.set.number || "")}${c.set.total ? "/" + c.set.total : ""}${c.rarity ? ` · ${pkRarity(c.rarity)} ${esc(c.rarity)}` : ""}</small></div></button>` : c.archetype ? `<button class="cd-set" data-act="tArchetype" data-name="${esc(c.archetype)}"><div><b>${esc(c.archetype)} <span class="set-go">›</span></b><small>Archetype · ${c.sets?.length || 0} printings</small></div></button>` : ""}
     ${(()=>{const catalogue=g==='ygo'?currentYgoCatalogue():ui(g).sets.list,first=g==='ygo'&&!c.setContext?((c.sets||[]).map(p=>ygoSetIndex().get(p.name)).filter(Boolean).sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'))[0]):null,id=c.setContext?.releaseId||c.set?.id||first?.id,st=ui(g).set,info=catalogue.find(s=>s.id===id)||(st.info?.id===id?st.info:null),release=info||(id?{id}:null),cards=[...new Map(gs(g).collection.filter(e=>Number(e.qty)>0).map(e=>[e.cardId,cardOf(g,e.cardId)]).filter(([,v])=>v)).values()],count=release?cards.filter(card=>ownedInSet(g,card,release,gs(g).collection,catalogue)>0).length:0;return detailSetProgress({key:g+':'+(id||'unknown'),owned:id?count:null,total:g==='ygo'?info?.expectedUniqueCards:info?.count,loaded:st.info?.id===id?st.cards.length:count,complete:st.info?.id===id&&st.contents?.completeness==='complete'});})()}
-    ${compactPriceSummary(g,c,sctx,p.usd==null?lastQuote(g,c):null)}
+    ${compactPriceSummary(g,c,buyContext(g,c,sctx,S.state),p.usd==null?lastQuote(g,c):null)}
   </div>
   ${panel("overview", tab, overview)}
   ${panel("meta", tab, tcgCardMeta(g, c))}

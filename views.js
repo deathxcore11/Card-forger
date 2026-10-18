@@ -6,7 +6,7 @@ import {passwordField} from './auth-form.js';
 import {detailOwnedGroups} from './quick-quantity.js';
 import {profileAvatar,profilePhotoControl} from './profile-art.js';
 import {infoPanel} from './app-info.js';
-import {compactPriceSummary,selectedFinish,detailTabs,detailPanel} from "./pricing-presentation.js";
+import {buyContext,compactPriceSummary,selectedFinish,detailTabs,detailPanel} from "./pricing-presentation.js";
 import { homeValue, homeEdition, homeValueCoverage, homeResume } from "./home-ui.js";
 import {interactiveRules} from './rule-learning.js';
 import {brandMark} from './brand.js';
@@ -400,7 +400,7 @@ export function cardSheet(c, ctx = {}) {
   <div class="cs-meta">
     <button class="cd-set" data-act="set" data-code="${esc(shown.set || "")}" ${shown.set ? "" : "disabled"} aria-label="See every card in ${esc(shown.set_name || "this set")}">${setIcon(shown.set, shown.rarity, 24)}<div><b>${esc(shown.set_name || (shown.set || "").toUpperCase())} <span class="set-go">›</span></b><small>${esc((shown.set || "").toUpperCase())} #${esc(shown.collector_number || "?")} · ${esc(RARITY[shown.rarity] || shown.rarity || "")}${shown.released_at ? " · " + esc(shown.released_at.slice(0, 4)) : ""}</small></div></button>
     ${(()=>{const st=S.ui.set,info=S.ui.sets.list.find(s=>s.code===shown.set)||(st.code===shown.set?st.info:null),owned=ownedPrintings(),prints=Object.values(S.state.printings||{}).filter(p=>p.set===shown.set),count=new Set(prints.filter(p=>owned.has(String(p.id))).map(p=>p.id)).size;return detailSetProgress({key:'mtg:'+shown.set,owned:count,total:st.code===shown.set&&st.complete?st.cards.length:info?.card_count||null,loaded:st.code===shown.set?st.cards.length:prints.length,complete:st.code===shown.set&&!!st.complete});})()}
-    ${compactPriceSummary("mtg",shown,{...ctx,priceFinish})}
+    ${compactPriceSummary("mtg",shown,buyContext("mtg",shown,{...ctx,priceFinish},S.state))}
   </div>
   ${cardPanel("overview", tab, overview)}
   ${cardPanel("meta", tab, mtgCardMeta(c))}

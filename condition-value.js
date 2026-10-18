@@ -4,6 +4,11 @@ import {esc,usd} from './ui.js';
 const aliases={nm:'Near Mint',nearmint:'Near Mint',lp:'Lightly Played',lightlyplayed:'Lightly Played',mp:'Moderately Played',moderatelyplayed:'Moderately Played',hp:'Heavily Played',heavilyplayed:'Heavily Played',dmg:'Damaged',damaged:'Damaged'};
 export const conditionName=v=>v==null||v===''?'Near Mint':aliases[String(v).toLowerCase().replace(/[^a-z]/g,'')]||'Unknown condition';
 const amount=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v))&&Number(v)>=0?Number(v):null;
+export function lastKnownConditionQuote(entry={},quotes=[],now=Date.now()){
+ return quotes.filter(q=>['current','last_known'].includes(q.priceStatus)&&q.currency==='USD'&&amount(q.price)!==null&&conditionName(q.condition)===conditionName(entry.condition)&&
+  (q.priceStatus==='last_known'||Date.parse(q.validUntil)<=now)&&Date.parse(q.observedAt)>now-30*86400000&&Date.parse(q.observedAt)<=now+300000&&
+  ['cardId','printingId','printing','rarity','variant','edition','finish','language'].every(k=>String(q[k]||'')===String(entry[k]||''))).sort((a,b)=>Date.parse(b.observedAt)-Date.parse(a.observedAt))[0]||null;
+}
 export function conditionValue(reference,entry={},quotes=[]){
  const condition=conditionName(entry.condition),manual=amount(entry.manualValue);
  if(manual!==null&&entry.manualValueCondition&&conditionName(entry.manualValueCondition)===condition)return {price:manual,kind:'manual',condition};
@@ -13,7 +18,8 @@ export function conditionValue(reference,entry={},quotes=[]){
 }
 export const conditionValueNote=(e,quotes=[])=>{
  const result=conditionValue(null,e,quotes);
- return result.kind==='manual'?'Your value for this condition':result.kind==='condition-quote'?'Condition estimate · '+(result.quote.source||'provider'):conditionName(e?.condition)==='Near Mint'?'Reference price':'Condition quote unavailable · excluded from value';
+ const old=lastKnownConditionQuote(e,quotes);
+ return result.kind==='manual'?'Your value for this condition':result.kind==='condition-quote'?'Condition estimate · '+(result.quote.source||'provider'):old?`Last known ${usd(old.price)} · observed ${old.observedAt.slice(0,10)} · not a current condition value`:conditionName(e?.condition)==='Near Mint'?'Reference price':'Condition quote unavailable · excluded from value';
 };
 export function conditionBadge(entry,quotes=[]){
  const condition=conditionName(entry?.condition),code={'Near Mint':'NM','Lightly Played':'LP','Moderately Played':'MP','Heavily Played':'HP',Damaged:'DMG'}[condition]||'?';
@@ -60,12 +66,15 @@ export function conditionPriceHtml(price,entry={},quotes=[],lookup={}){
  const title=titles[reason]||message[0];
 
  const result=conditionValue(price,entry,quotes),condition=conditionName(entry.condition);
- const description=result.kind==='manual'?'Your recorded value for this version and condition.':result.kind==='condition-quote'?`Provider estimate for this exact condition and version · ${result.quote.source||'provider'} · checked ${String(result.quote.observedAt||'').slice(0,10)}.`:price==null?(reason==='provider_shared_limit'?'JustTCG’s Free-tier hosting limit is active, even with requests left. Saved quotes remain available.':lookup.notice||message[1])+' This copy is excluded from your total until it has a value.':condition==='Near Mint'?'Reference price for this version; it may be a market price or listing estimate, not a verified Near Mint quote.':'Provider estimate for this condition and version.';
+ const description=result.kind==='manual'?'Your recorded value for this version and condition.':result.kind==='condition-quote'?`Provider estimate for this exact condition and version · ${result.quote.source||'provider'} · last observed ${String(result.quote.observedAt||'').slice(0,10)}.`:price==null?(reason==='provider_shared_limit'?'JustTCG’s Free-tier hosting limit is active, even with requests left. Saved quotes remain available.':lookup.notice||message[1])+' This copy is excluded from your total until it has a value.':condition==='Near Mint'?'Reference price for this version; it may be a market price or listing estimate, not a verified Near Mint quote.':'Provider estimate for this condition and version.';
+ const old=!['manual','condition-quote'].includes(result.kind)&&lastKnownConditionQuote(entry,quotes);
+ const lastKnownHtml=old?`<small class="condition-reference"><b>${usd(old.price)} · Last known condition price</b><br>${esc(old.source||'Provider')} · last observed ${esc(old.observedAt.slice(0,10))}. Not included as a current condition value.</small>`:'';
+ const buy=lookup.buyLink?.direct?`<a class="btn ghost small" href="${esc(lookup.buyLink.url)}" target="_blank" rel="noopener noreferrer">Find this condition on TCGplayer ↗</a>`:'';
  const reference=amount(lookup.reference),showReference=price==null&&reference!==null;
  const referenceHtml=showReference?`<small class="condition-reference"><b>${usd(reference)} · ${esc(lookup.referenceLabel||'Reference price')}</b><br>This is a general market reference, not a verified ${esc(condition)} price for this copy.</small>`:'';
  const {timing,retryLabel}=conditionRetryFeedback(lookup);
  const retry=price==null&&lookup.retryAction&&['unavailable','rate_limited','deferred','unpriced','unmapped'].includes(status)?`<button type="button" class="btn ghost small condition-retry" data-act="${esc(lookup.retryAction)}">${retryLabel}</button>`:'';
- return `<small>${esc(condition)} · per copy</small><strong>${price==null?esc(title):usd(price)}</strong><p class="muted small">${esc(description+(price==null?timing:''))}</p>${referenceHtml}${retry}`;
+ return `<small>${esc(condition)} · per copy</small><strong>${price==null?esc(title):usd(price)}</strong><p class="muted small">${esc(description+(price==null?timing:''))}</p>${lastKnownHtml}${referenceHtml}${retry}${buy}`;
 }
 
 export function conditionRetryTime(ms){const minutes=Math.max(1,Math.ceil(ms/60000));if(minutes<60)return `${minutes} minute${minutes===1?'':'s'}`;const hours=Math.ceil(minutes/60);if(hours<48)return `${hours} hour${hours===1?'':'s'}`;const days=Math.ceil(hours/24);return `${days} days`;}

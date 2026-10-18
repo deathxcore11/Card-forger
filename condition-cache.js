@@ -1,6 +1,7 @@
 // A single durable coordinator shares paid product responses across users and edge regions.
 // Limits are requests, not cards; provider failures count too. No browser can change the caps.
 const DAY=86400000;
+const RETAIN=30*DAY;
 export const compactConditionData=(raw,product)=>({data:(raw?.data||[]).filter(c=>String(c.tcgplayerId)===String(product)).map(c=>({tcgplayerId:c.tcgplayerId,variants:(c.variants||[]).map(v=>({condition:v.condition,printing:v.printing,language:v.language,price:v.price,priceStatus:v.priceStatus,lastUpdated:v.lastUpdated,tcgplayerSkuId:v.tcgplayerSkuId}))})),cachedAt:Date.now()});
 const reply=(body,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'no-store'}});
 // Preserve the provider's public error code, never its raw response or API key.
@@ -35,6 +36,9 @@ export class ConditionPriceCache {
  async load(product,owner=false){
   const now=Date.now(),key='product:'+product,old=await this.storage.get(key);
   if(old&&now-old.cachedAt<DAY)return {status:'available',...old};
+  // Keep the original observation/cache times. An outage never makes an old
+  // quote current again, but every visitor can still read its last known value.
+  const withSaved=result=>old&&now-old.cachedAt<RETAIN?{...result,...old,stale:true}:result;
   const day=new Date(now).toISOString().slice(0,10),month=day.slice(0,7),minute=Math.floor(now/60000);
   const cap=(key,fallback)=>{const n=Number(this.env[key]??fallback);return Number.isFinite(n)?Math.max(0,Math.floor(n)):fallback;};
   const allowed=await this.storage.transaction(async tx=>{
@@ -47,15 +51,15 @@ export class ConditionPriceCache {
    if(!owner&&(s.daily>=cap('CONDITION_DAILY_LIMIT',30)||s.monthly>=cap('CONDITION_MONTHLY_LIMIT',900)||s.perMinute>=cap('CONDITION_MINUTE_LIMIT',8)))return {status:'rate_limited',reason:'app_budget',retryAfterMs:60000};
    s.daily++;s.monthly++;s.perMinute++;await tx.put('usage',s);return true;
   });
-  if(allowed!==true)return allowed;
+  if(allowed!==true)return withSaved(allowed);
   try{
    const r=await fetch('https://api.justtcg.com/v1/cards?tcgplayerId='+product,{headers:{Accept:'application/json','x-api-key':this.env.JUSTTCG_API_KEY,'User-Agent':'CardStashy/3.73.13 (condition pricing)'},signal:AbortSignal.timeout(12000)});
-   if(!r.ok){const failure=await conditionProviderFailure(r);if(failure.status==='rate_limited')await this.storage.transaction(async tx=>{const s=await tx.get('usage')||{};Object.assign(s,{blockedUntil:failure.nextRetryAt,blockedReason:failure.reason,providerCode:failure.providerCode,providerObservedAt:failure.providerObservedAt,retrySource:failure.retrySource});await tx.put('usage',s);});return failure;}
+   if(!r.ok){const failure=await conditionProviderFailure(r);if(failure.status==='rate_limited')await this.storage.transaction(async tx=>{const s=await tx.get('usage')||{};Object.assign(s,{blockedUntil:failure.nextRetryAt,blockedReason:failure.reason,providerCode:failure.providerCode,providerObservedAt:failure.providerObservedAt,retrySource:failure.retrySource});await tx.put('usage',s);});return withSaved(failure);}
    const data=compactConditionData(await r.json(),product);await this.storage.put(key,data);
    // Expired entries are periodically removed so storage does not grow with the catalogue.
    if(!await this.storage.getAlarm())await this.storage.setAlarm(now+DAY);
    return {status:'available',...data};
-  }catch{return {status:'unavailable'};}
+  }catch{return withSaved({status:'unavailable'});}
  }
- async alarm(){const rows=await this.storage.list({prefix:'product:'});for(const [key,value] of rows)if(Date.now()-value.cachedAt>=DAY)await this.storage.delete(key);if(rows.size)await this.storage.setAlarm(Date.now()+DAY);}
+ async alarm(){const rows=await this.storage.list({prefix:'product:'});for(const [key,value] of rows)if(Date.now()-value.cachedAt>=RETAIN)await this.storage.delete(key);if(rows.size)await this.storage.setAlarm(Date.now()+DAY);}
 }

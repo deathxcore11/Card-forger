@@ -3,6 +3,7 @@ import {esc,usd} from './ui.js';
 import {tcgFallback,myPrice} from './mtg-tcgprice.js';
 import {referenceQuote,referenceLabel} from './price-reference.js';
 import {editionPrice} from './ygo-prices.js';
+import {conditionName} from './condition-value.js';
 
 export const priceAmount=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v))&&Number(v)>=0?Number(v):null;
 export const finishLabel=f=>({nonfoil:'Regular',foil:'Foil',etched:'Etched foil',reference:'Reference quote'}[f]||f);
@@ -98,6 +99,10 @@ export function quoteTiming(q){
  const observed=dateText(q.observedAt),updated=dateText(q.sourceUpdatedAt),checked=dateText(q.checkedAt);
  return [observed?'Last observed '+observed:updated?'Source updated '+updated:'Source date unavailable',checked?'Checked '+checked:'',quoteIsStale(q)?'Stale reference':''].filter(Boolean).join(' · ');
 }
+export function buyContext(game,card,ctx,state){
+ const lot=matchingLot(game,card,ctx,state);
+ return lot?{...ctx,condition:lot.condition,language:lot.language}:ctx;
+}
 const currencyValue=(value,currency)=>value===null?'Check price':currency==='EUR'?'€'+value.toFixed(2):currency==='TIX'?value.toFixed(2)+' tix':usd(value);
 const safeURL=url=>{try{const u=new URL(url);return u.protocol==='https:'&&!u.username&&!u.password?u.href:'';}catch{return '';}};
 const sellerNames={tcgplayer:'TCGplayer',cardmarket:'Cardmarket',cardhoarder:'Cardhoarder',cardkingdom:'Card Kingdom',ebay:'eBay'};
@@ -117,6 +122,28 @@ const magicSellerProduct=(c,finish)=>{
  return url&&vendorKey('',url)==='tcgplayer'?new URL(url).pathname.match(/^\/product\/([1-9]\d*)(?:\/|$)/)?.[1]:null;
 };
 const searchURL=(game,c)=>`https://www.tcgplayer.com/search/${{mtg:'magic',ptcg:'pokemon',ygo:'yugioh'}[game]}/product?q=${encodeURIComponent([c.name,c.collector_number||c.set?.number||''].filter(Boolean).join(' '))}`;
+function filteredProductURL(url,game,c,ctx,q,finish){
+ const u=new URL(url),lang=ctx.language||c.lang||c.language||'en';
+ const languages={en:'English',ja:'Japanese',de:'German',fr:'French',es:'Spanish',it:'Italian',pt:'Portuguese',ko:'Korean',zh:'Chinese'};
+ const language=languages[String(lang).toLowerCase()]||Object.values(languages).find(v=>v.toLowerCase()===String(lang).toLowerCase());
+ let printing=game==='mtg'?{nonfoil:'Normal',foil:'Foil',etched:'Etched Foil'}[finish]:game==='ygo'?editionNames[q.selectedEdition]:'';
+ if(game==='ptcg'){
+  const v=q.variant,physical=v?.key?.startsWith('detail:')?v.finish:v?.key;
+  printing={normal:'Normal',nonfoil:'Normal',holo:'Holofoil',holofoil:'Holofoil',reverse:'Reverse Holofoil','reverse-holofoil':'Reverse Holofoil','1st-edition':'1st Edition','1st-edition-holofoil':'1st Edition Holofoil',unlimited:'Unlimited','unlimited-holofoil':'Unlimited Holofoil'}[physical]||'';
+  if(!printing&&v?.productFallback&&/^(?:1st Edition|Unlimited) (?:Holofoil|Normal)$/.test(v.label||''))printing=v.label;
+  if(v?.key?.startsWith('detail:')&&v.stamps?.includes('1st-edition')&&printing)printing='1st Edition '+printing;
+  else if(v?.key?.startsWith('detail:')&&['unlimited','shadowless'].includes(v.subtype)&&printing)printing='Unlimited '+printing;
+ }
+ if(language)u.searchParams.set('Language',language);
+ if(printing)u.searchParams.set('Printing',printing);
+ if(ctx.condition&&conditionName(ctx.condition)!=='Unknown condition')u.searchParams.set('Condition',conditionName(ctx.condition));
+ return u.href;
+}
+export function conditionBuyLink(game,c,entry={}){
+ if(!c)return null;
+ if(game==='mtg'&&entry.printingId&&entry.printingId!==c.id)return null;
+ return sellerModels(game,c,{priceFinish:game==='ptcg'?entry.variant:entry.finish,priceEdition:game==='ygo'?[entry.printing,entry.rarity].join('::'):'',priceYgoEdition:entry.edition,condition:entry.condition,language:entry.language}).find(r=>r.key==='tcgplayer');
+}
 export function sellerModels(game,c,ctx={},links=[]){
  const wanted=ctx.priceFinish||ctx.finish||c.setContext?.variantKey,finish=selectedFinish(game,c,wanted),q=quoteForContext(game,c,ctx);
  const candidates=[...links];if(!candidates.some(([n,u])=>vendorKey(n,u)==='tcgplayer'))candidates.unshift(['TCGplayer',searchURL(game,c)]);
@@ -133,7 +160,7 @@ export function sellerModels(game,c,ctx={},links=[]){
    const pid=!q?.selectionVerified||!supported||!uniqueVariant?null:game==='mtg'?magicSellerProduct(c,finish):game==='ptcg'?q.variant.productId:q?.printing?.productId;
    // A finish change must not retain another variant's product link.
    url=productURL(pid)||searchURL(game,c);direct=!!productURL(pid);
-   if(direct){value=q?.value??null;kind=q?.kind||'market';scope=q?.label||'';source=q?.source||'';observedAt=q?.observedAt||'';}
+   if(direct){url=filteredProductURL(url,game,c,ctx,q,finish);value=q?.value??null;kind=q?.kind||'market';scope=q?.label||'';source=q?.source||'';observedAt=q?.observedAt||'';}
   }else if(key==='cardmarket'){
    currency='EUR';source='Cardmarket';
    if(q?.selectionVerified&&game==='mtg'&&finish!=='etched'){

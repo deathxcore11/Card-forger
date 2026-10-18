@@ -1,5 +1,5 @@
 // Rebuild the finite review data from retained provider records. No network or
-// account access. These proposed materials are not enabled in the application.
+// account access. The approved materials are also verified through the application renderer.
 import {readFile,writeFile} from 'node:fs/promises';
 import {normalizePtcg} from '../ptcg.js';
 import {normalizeYgo} from '../ygo.js';
@@ -47,5 +47,5 @@ for(const [n,finish,key,profile] of [['133','nonfoil','mtg-miara-normal','plain'
  add({key,game:'mtg',card,ctx:{priceFinish:finish},image:'assets/miara-'+n+'.jpg',printing:'Commander Legends · '+n+' · English',finish:{nonfoil:'Nonfoil',foil:'Traditional foil',etched:'Etched foil'}[finish],profile,source:'https://api.scryfall.com/cards/'+card.id,note:n==='566'?'Etched is a different printing (#566); its original artwork and identity are retained.':'Nonfoil and traditional foil are available for printing #133.'});
 }
 if(cases.length!==14)throw Error('Milestone must contain exactly 14 named cases');
-await writeFile(new URL('review/cases.json',root),JSON.stringify({baseline:'0896479cbb5b0d103a46907e057354fe9bebf57a',scope:'approval-preview-only',cases},null,2)+'\n');
-console.log('Built 14 exact review cases; application-wide rollout remains off.');
+await writeFile(new URL('review/cases.json',root),JSON.stringify({baseline:'0896479cbb5b0d103a46907e057354fe9bebf57a',scope:'approved-material-rollout',cases},null,2)+'\n');
+console.log('Built 14 exact review cases; approved materials are integrated into the application.');

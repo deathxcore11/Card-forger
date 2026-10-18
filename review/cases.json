@@ -1,6 +1,6 @@
 {
   "baseline": "0896479cbb5b0d103a46907e057354fe9bebf57a",
-  "scope": "approval-preview-only",
+  "scope": "approved-material-rollout",
   "cases": [
     {
       "key": "pk-charizard-base-holo",
@@ -36,7 +36,7 @@
         "effect": "ptcg-holo",
         "layers": [
           {
-            "mask": "pk-base-art",
+            "mask": "pk-base1-4-art",
             "material": "holo"
           }
         ],
@@ -80,11 +80,16 @@
       "after": {
         "key": "holofoil",
         "label": "Holofoil",
-        "effect": "unknown",
-        "status": "unknown",
-        "layers": [],
-        "source": "",
-        "reason": "Finish preview unavailable for this printing.",
+        "effect": "ptcg-holo",
+        "layers": [
+          {
+            "mask": "pk-base4-20-art",
+            "material": "holo"
+          }
+        ],
+        "source": "https://api.tcgdex.net/v2/en/cards/base4-20",
+        "status": "approximate",
+        "reason": "Simulated finish · approximate coverage",
         "game": "ptcg",
         "printingId": "base4-20",
         "face": 0

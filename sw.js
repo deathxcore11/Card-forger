@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-v216";
+const CACHE = "cardforge-shell-v217";
 const ASSETS = [
   "./",
   "./index.html",
@@ -17,6 +17,15 @@ const ASSETS = [
   "./shared-deck-view.js",
   "./finish-preview.js",
   "./finish-effects.js",
+  "./finish-materials.js",
+  "./assets/finishes/abyss-title.svg",
+  "./assets/finishes/cosmos.svg",
+  "./assets/finishes/gamma-title.svg",
+  "./assets/finishes/metal-grain.svg",
+  "./assets/finishes/omega-title.svg",
+  "./assets/finishes/relief-flow.svg",
+  "./assets/finishes/starlight.svg",
+  "./assets/finishes/water-pattern.svg",
   "./card-detail-extras.js",
   "./community-profile.js", "./account-workspaces.js", "./account-scope.js",
   "./printing-carousel.js",

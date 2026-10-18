@@ -45,7 +45,7 @@ import { createPrintingPicker } from "./printing-picker.js";
 import { createScannerPrintingPicker } from "./scanner-printing.js";
 import {SheetHistory,BROWSE_TYPES,sheetKey} from "./sheet-history.js";
 import {handleArtworkError} from "./artwork.js";
-import {selectedFinish,detailIdentity,captureDetailState,restoreDetailState,rememberDetailViewport,restoreDetailViewport,detailTabKey,createDetailJump} from "./pricing-presentation.js";
+import {selectedFinish,detailIdentity,captureDetailState,restoreDetailState,rememberDetailViewport,restoreDetailViewport,detailTabKey,createDetailJump,conditionBuyLink} from "./pricing-presentation.js";
 import {modeFor,registerWorkbench,quoteModel,recordQuote} from "./workbench-ui.js";
 import { locationPicker, rememberLocation, chooseLocation } from "./collection-locations.js";
 import { captureAuthFields, restoreAuthFields, authFeedback, togglePassword } from "./auth-form.js";
@@ -1633,7 +1633,7 @@ function fetchConditionValue(card,entry,game,done,options={}){
   if(workspaceRevision!==conditionWorkspaceRevision)return {changed:false,status:'deferred',reason:'workspace-changed'};
   if(!conditionSelectionAllowed(card,selected,game))return {changed:false,status:'deferred',reason:'unverified-selection'};
   let changed=false;
-  if(['available','unpriced','unmapped'].includes(result.status)){
+  if(['available','unpriced','unmapped'].includes(result.status)||result.rawQuotes?.length){
    // A shared request returns unbound response rows. Bind each caller separately,
    // including another serialized capture or a saved lot created while it ran.
    const rawQuotes=result.rawQuotes||result.quotes||[];
@@ -1642,13 +1642,13 @@ function fetchConditionValue(card,entry,game,done,options={}){
     if(workspaceRevision!==conditionWorkspaceRevision||!conditionSelectionAllowed(card,selected,game))return;
     const canonical=conditionCardFor(selected,game);
     if(canonical&&canonical.id===card.id)changed=applyConditionQuotes(canonical,selected,rawQuotes).changed||changed;
-    const quotes=applyConditionQuotes({conditionQuotes:[]},selected,rawQuotes).quotes;
     const lots=game==='mtg'?S.state.collection:T.gs(game).collection;
     let saved=false;
     for(const lot of lots)if((game==='mtg'?key(lot.name)===key(card.name):lot.cardId===card.id)&&
      !lot.setReleaseUnverified&&(!selected.setReleaseId||lot.setReleaseId===selected.setReleaseId)&&identityMatches(lot)&&
-     conditionSelectionAllowed(card,lot,game)&&JSON.stringify(lot.conditionQuotes||[])!==JSON.stringify(quotes)){
-      lot.conditionQuotes=quotes;saved=true;
+     conditionSelectionAllowed(card,lot,game)){
+      const holder={conditionQuotes:lot.conditionQuotes||[]};
+      if(applyConditionQuotes(holder,selected,rawQuotes).changed){lot.conditionQuotes=holder.conditionQuotes;saved=true;}
     }
     if(changed){if(game==='mtg'){S.catalogDirty=true;saveCatalogSoon();}else T.persistQuoteCache();}
     if(saved){changed=true;await save({queued:true});}
@@ -1748,12 +1748,12 @@ function refreshConditionPrice(retry=false){
   if((set&&set!==String(card?.set||'').toLowerCase())||(number&&number!==String(card?.collector_number||'')))price=null;
   else {sourceCard=card;sourceGame='mtg';reference=cardPrice(card,entry.finish);}
  }else return;
- const referenceInfo={reference,referenceLabel,retryAction:sourceCard?'retryConditionPrice':''};
+ const referenceInfo={reference,referenceLabel,retryAction:sourceCard?'retryConditionPrice':'',buyLink:sourceCard?conditionBuyLink(sourceGame,sourceCard,entry):null};
  node.innerHTML=conditionPriceHtml(price,entry,[...(sourceCard?.conditionQuotes||[]),...(entry.conditionQuotes||[])],referenceInfo);
  const selectionKey=JSON.stringify([...CONDITION_IDENTITY.map(k=>entry[k]||''),entry.condition||'',manualValue]);node.conditionSelectionKey=selectionKey;
  const current=()=>node.isConnected&&S.ui.sheetCtx===ctx&&node.conditionSelectionKey===selectionKey;
  if(sourceCard){
-  if(price==null)node.innerHTML=conditionPriceHtml(price,entry,[],{...referenceInfo,status:'loading'});
+  if(price==null)node.innerHTML=conditionPriceHtml(price,entry,[...(sourceCard.conditionQuotes||[]),...(entry.conditionQuotes||[])],{...referenceInfo,status:'loading'});
   Promise.resolve(fetchConditionValue(sourceCard,entry,sourceGame,null,{source:'search',current,retry})).then(result=>{
    if(!current()||!result)return;
    const quotes=[...(sourceCard.conditionQuotes||[]),...(entry.conditionQuotes||[])],fresh=conditionValue(price,entry,quotes).price;

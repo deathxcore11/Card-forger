@@ -40,6 +40,28 @@ try{
  await page.locator('#playBox').click();assert.equal(await page.locator('#sampleBox').evaluate(n=>n.classList.contains('open')),true);
  assert.deepEqual(errors,[]);result.browserErrors=errors;result.reducedMotion=true;result.deckNavigationImmediate=true;
  await page.setViewportSize({width:1440,height:1200});await page.screenshot({path:out+'/studio-overview.png',fullPage:true});
+ // Use the actual application resolver, mount lifecycle and stylesheet with
+ // retained artwork. The studio alone is insufficient rollout evidence.
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ result.applicationCases=[];
+ for(const c of data.cases){
+  await page.goto(base+'/tests/finish-materials.html#'+c.key);await page.waitForFunction(key=>document.documentElement.dataset.case===key,c.key);
+  await page.waitForFunction(()=>document.querySelector('.card img')?.naturalWidth>0);
+  if(c.profile!=='plain')await page.locator('.finish-overlay[data-material-profile]').waitFor();
+  if(c.titleMask)await page.locator('.finish-title-glyphs').waitFor();
+  if(c.profile==='plain')assert.equal(await page.locator('.finish-layer').count(),0);
+  for(const width of [390,1440]){
+   await page.setViewportSize({width,height:1100});
+   await page.locator('.card').screenshot({path:`${out}/app-${c.key}-${width}.png`});
+   const aligned=await page.locator('.card').evaluate(n=>{const a=n.querySelector('img').getBoundingClientRect(),o=n.querySelector('.finish-overlay')?.getBoundingClientRect();return !o||Math.abs(a.x-o.x)<1&&Math.abs(a.y-o.y)<1&&Math.abs(a.width-o.width)<1&&Math.abs(a.height-o.height)<1;});assert(aligned);
+  }
+  result.applicationCases.push(c.key);
+ }
+ const buy=new URL(await page.locator('#conditionPricePreview a').getAttribute('href'));assert.equal(buy.pathname,'/product/89828');assert.equal(buy.searchParams.get('Condition'),'Moderately Played');assert.equal(buy.searchParams.get('Printing'),'Holofoil');assert.equal(buy.searchParams.get('Language'),'English');
+ assert.match(await page.locator('#conditionPricePreview').innerText(),/\$93.45 · Last known condition price/);
+ await page.locator('#conditionPricePreview').screenshot({path:out+'/last-known-condition.png'});
+ await page.emulateMedia({reducedMotion:'reduce'});await page.waitForFunction(()=>!document.querySelector('.finish-overlay'));
+ assert.deepEqual(errors,[]);
  await writeFile(out+'/results.json',JSON.stringify(result,null,2));
  console.log('PASS: 14 cases, 3 viewport widths, aligned overlays, plain controls, title masks, motion controls and immediate deck navigation. Physical-phone approval remains pending.');
 }finally{await browser.close();await new Promise(r=>server.close(r));}

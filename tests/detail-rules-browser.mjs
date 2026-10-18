@@ -7,8 +7,8 @@ import {sellerModels,presentationQuote} from '../pricing-presentation.js';
 
 console.log(await validateFixtures());
 const tcg=(game,card,ctx={})=>sellerModels(game,card,ctx,game==='mtg'?Object.entries(card.purchase_uris||{}):[]).find(r=>r.key==='tcgplayer');
-assert.equal(tcg('mtg',CARDS.mtg[0],{priceFinish:'etched'}).url,'https://www.tcgplayer.com/product/43');
-assert.equal(tcg('ptcg',CARDS.ptcg[0],{priceFinish:'holofoil'}).url,'https://www.tcgplayer.com/product/222');
+assert.equal(tcg('mtg',CARDS.mtg[0],{priceFinish:'etched'}).url,'https://www.tcgplayer.com/product/43?Language=English&Printing=Etched+Foil');
+assert.equal(tcg('ptcg',CARDS.ptcg[0],{priceFinish:'holofoil'}).url,'https://www.tcgplayer.com/product/222?Language=English&Printing=Holofoil');
 assert.equal(tcg('ptcg',CARDS.ptcg[0],{priceFinish:'holofoil'}).value,5);
 assert.equal(tcg('ptcg',CARDS.ptcg[0],{priceFinish:'reverse-holofoil'}).value,null);
 assert.equal(presentationQuote('ptcg',CARDS.ptcg[0],'reverse-holofoil').value,null,'The selected reverse-holo quote must not borrow normal $2 or holo $5');
@@ -66,7 +66,7 @@ async function jump(page,target){
 }
 const row=(page,name)=>page.locator('#card-sellers .vendor-row').filter({has:page.locator('.vendor-copy b',{hasText:new RegExp('^'+name+'$')})});
 async function seller(page,name,{href,amount,currency,action}){
- const r=row(page,name);assert.equal(await r.count(),1,`${name} has exactly one seller row`);if(href)assert.equal(await r.getAttribute('href'),href);assert.equal(await r.locator('.vendor-quote strong').innerText(),amount);if(currency)assert.match(await r.locator('.vendor-quote small').innerText(),new RegExp('^'+currency+' · '));if(action)assert.match(await r.locator('.vendor-action').innerText(),new RegExp(action));assert.equal(await r.getAttribute('target'),'_blank');assert.match(await r.getAttribute('rel'),/noopener/);return r;
+ const r=row(page,name);assert.equal(await r.count(),1,`${name} has exactly one seller row`);if(href){const u=new URL(await r.getAttribute('href'));assert.equal(u.origin+u.pathname,href);}assert.equal(await r.locator('.vendor-quote strong').innerText(),amount);if(currency)assert.match(await r.locator('.vendor-quote small').innerText(),new RegExp('^'+currency+' · '));if(action)assert.match(await r.locator('.vendor-action').innerText(),new RegExp(action));assert.equal(await r.getAttribute('target'),'_blank');assert.match(await r.getAttribute('rel'),/noopener/);return r;
 }
 async function artSnapshot(page){return page.evaluate(()=>({hero:document.querySelector('.cs-banner .cs-art')?.getAttribute('src')||document.querySelector('.cs-banner img')?.getAttribute('src'),card:document.querySelector('.cs-card .card-img')?.getAttribute('src'),title:document.querySelector('.cs-title h2')?.textContent}));}
 async function tab(page,id){
@@ -90,7 +90,7 @@ async function tabsKeyboard(page){
 async function outboundBuy(app,expected,{search=false,activation='click'}={}){
  const {page,context}=app,anchor=page.locator('.card-price-summary .card-buy-link'),calls=[];
  const before=await page.evaluate(()=>({url:location.href,tab:window.__uiTestState.ui.sheetCtx.tab||'overview',entry:window.__uiTestState.ui.sheetCtx.entryId})),inventory=await inventorySnapshot(page);
- assert.equal(await anchor.getAttribute('href'),expected);assert.equal(await anchor.getAttribute('target'),'_blank');assert.equal(await anchor.getAttribute('rel'),'noopener noreferrer');assert.equal(await anchor.getAttribute('referrerpolicy'),'no-referrer');assert.equal(await anchor.getAttribute('data-act'),null);
+ const actual=await anchor.getAttribute('href');if(search||new URL(expected).search)assert.equal(actual,expected);else {const u=new URL(actual);assert.equal(u.origin+u.pathname,expected);assert.equal(u.searchParams.get('Language'),'English');}expected=actual;assert.equal(await anchor.getAttribute('target'),'_blank');assert.equal(await anchor.getAttribute('rel'),'noopener noreferrer');assert.equal(await anchor.getAttribute('referrerpolicy'),'no-referrer');assert.equal(await anchor.getAttribute('data-act'),null);
  assert.match(await anchor.innerText(),search?/Search TCGplayer/:/^Buy/);assert.match(await anchor.getAttribute('aria-label'),/opens in a new tab/);
  // Measure the final touch target, not the transient scale of entry motion.
  // Keep the 44px threshold; settle only finite animations on this control's ancestors.

@@ -12,7 +12,7 @@ export function normalizeConditionVariants(body,product,printings,language='Engl
  for(const v of cards[0].variants||[]){
   if(!CONDITIONS.includes(v.condition)||v.priceStatus!=='current'||v.price===null||typeof v.price!=='number'||!Number.isFinite(v.price)||v.price<0||!printings.some(p=>norm(p)===norm(v.printing))||norm(v.language||'English')!==norm(language))continue;
   const time=Number(v.lastUpdated)*1000;if(!Number.isFinite(time)||time<=0||time>now+300000)continue;
-  const q={condition:v.condition,price:v.price,currency:'USD',source:'JustTCG',kind:'provider-estimate',sku:String(v.tcgplayerSkuId||v.uuid||v.id||''),observedAt:new Date(time).toISOString(),validUntil:new Date(now+86400000).toISOString(),priceStatus:'current'};
+  const q={condition:v.condition,price:v.price,currency:'USD',source:'JustTCG',kind:'provider-estimate',sku:String(v.tcgplayerSkuId||v.uuid||v.id||''),observedAt:new Date(time).toISOString(),validUntil:new Date(now+86400000).toISOString(),priceStatus:body.stale||now+86400000<=Date.now()?'last_known':'current'};
   const list=buckets.get(v.condition)||[];list.push(q);buckets.set(v.condition,list);
  }
  // Ambiguous parallel variants are unavailable, not whichever came first.
@@ -74,6 +74,11 @@ export async function conditionFeedRoute(url,env,ctx,fetchImpl=fetch,{request}={
    }else{
     const v=c.pricing?.tcgplayer?.[variant];product=v?.productId;
     printings=({'normal':['Normal'],'holofoil':['Holofoil'],'reverse-holofoil':['Reverse Holofoil'],'1st-edition':['1st Edition'],'1st-edition-holofoil':['1st Edition Holofoil','1st Edition'],'unlimited':['Unlimited'],'unlimited-holofoil':['Unlimited Holofoil','Unlimited']})[variant]||[];
+    // Legacy selections can have a quote without a product ID at card level.
+    // Recover only one exact detailed variant; conflicting editions stay unmapped.
+    const candidates=(c.variants_detailed||[]).filter(d=>d.pricing?.tcgplayer?.[variant]);
+    if(!product&&candidates.length>1)return empty('unmapped','Choose an exact detailed version; this legacy finish matches multiple variants.');
+    if(!product&&candidates.length===1)product=candidates[0].pricing.tcgplayer[variant].productId||candidates[0].thirdParty?.tcgplayer;
     const details=(c.variants_detailed||[]).filter(d=>d.pricing?.tcgplayer?.[variant]&&String(d.pricing.tcgplayer[variant].productId||d.thirdParty?.tcgplayer)===String(product));
     if(details.length===1){const d=details[0],siblings=(c.variants_detailed||[]).filter(x=>String(x.thirdParty?.tcgplayer)===String(product));printings=pokemonConditionPrintings(d,{bare:siblings.length<=1});}
 
@@ -93,11 +98,11 @@ export async function conditionFeedRoute(url,env,ctx,fetchImpl=fetch,{request}={
   const owner=await conditionOwner(request,env,fetchImpl);
   const response=await stub.fetch('https://condition-cache/?product='+product,{headers:owner?{'X-Condition-Owner':'verified'}:{}});
   const data=await response.json();
+  const quotes=normalizeConditionVariants(data,product,printings,language,data.cachedAt||Date.now());
   if(data.status!=='available'){
    const messages={provider_rate:'JustTCG is temporarily limiting requests. Saved quotes remain available.',provider_daily:'JustTCG reports its daily request allowance is used. It resets at midnight UTC.',provider_monthly:'JustTCG reports its monthly request allowance is used. Check the provider plan and billing reset.',provider_shared_limit:'JustTCG blocked this request under its shared-hosting Free tier protection. This can happen even when your own lookup allowance remains.',provider_auth:'JustTCG rejected the connected API key or subscription. Check the provider connection.',app_budget:owner?'Condition pricing is temporarily busy. Try again shortly.':'The app’s shared lookup allowance has been reached. Sign in to the owner account for owner access.'};
-   return empty(data.status||'unavailable',messages[data.reason]||'Condition pricing is temporarily unavailable.',{reason:data.reason||'',providerCode:data.providerCode||'',retryAfterMs:data.retryAfterMs||60000,...(Number.isFinite(data.nextRetryAt)&&data.nextRetryAt>0?{nextRetryAt:data.nextRetryAt}:{}),ownerVerified:owner,...(Number.isFinite(data.providerObservedAt)&&data.providerObservedAt>0?{providerObservedAt:data.providerObservedAt}:{}),...(['provider-header','fallback'].includes(data.retrySource)?{retrySource:data.retrySource}:{})});
+   return empty(data.status||'unavailable',messages[data.reason]||'Condition pricing is temporarily unavailable.',{quotes,reason:data.reason||'',providerCode:data.providerCode||'',retryAfterMs:data.retryAfterMs||60000,...(Number.isFinite(data.nextRetryAt)&&data.nextRetryAt>0?{nextRetryAt:data.nextRetryAt}:{}),ownerVerified:owner,...(Number.isFinite(data.providerObservedAt)&&data.providerObservedAt>0?{providerObservedAt:data.providerObservedAt}:{}),...(['provider-header','fallback'].includes(data.retrySource)?{retrySource:data.retrySource}:{})});
   }
-  const quotes=normalizeConditionVariants(data,product,printings,language,data.cachedAt||Date.now());
   return Response.json({status:quotes.length?'available':'unpriced',quotes,productId:product,source:'JustTCG',notice:quotes.length?'':'No current quote matches this version, language and condition.'},{headers:{'Cache-Control':'public,max-age=3600'}});
  }catch{return empty('unavailable','Condition pricing is temporarily unavailable.');}
 }

@@ -1,25 +1,25 @@
 # Finish milestone 01 — review gate
 
-Scope: 14 named comparisons. New material CSS is isolated to `/review/index.html`; the application does not import it. Base: `0896479cbb5b0d103a46907e057354fe9bebf57a` (3.84.3). The before panel reuses that commit’s finish model and CSS in a comparison layout, not a screenshot of the entire old app.
+Scope: 14 named comparisons. The material direction was approved on 2026-10-18 and is integrated into application version 3.85.0. The retained studio remains a comparison record. Base: `0896479cbb5b0d103a46907e057354fe9bebf57a` (3.84.3). The before panel reuses that commit’s finish model and CSS in a comparison layout, not a screenshot of the entire old app.
 
 ## Fixed checklist
 
-| Case | Exact printing | Finish | Visual approval | Physical phone |
+| Case | Exact printing | Finish | Visual direction | Physical phone |
 |---|---|---|---|---|
-| Charizard | Base Set · 4/102 · Unlimited | Holofoil | Pending | Pending |
-| Zapdos | Base Set 2 · 20/130 · English | Holofoil | Pending | Pending |
-| Mantine | Sword & Shield · 052/202 · English | Normal | Pending | Pending |
-| Mantine | Sword & Shield · 052/202 · English | Reverse Holofoil | Pending | Pending |
-| Zekrom | Celebrations · 010/025 · English | Holofoil | Pending | Pending |
-| Charizard VMAX | Shining Fates · SV107/SV122 · English | Textured Holofoil | Pending | Pending |
-| Hot Red Dragon Archfiend Abyss | HSRD-EN041 · English | Ultra Rare | Pending | Pending |
-| PSY-Framegear Gamma | EXFO-ENSE3 · English | Super Rare | Pending | Pending |
-| PSY-Framelord Omega | HSRD-EN035 · English | Secret Rare | Pending | Pending |
-| PSY-Framegear Gamma | TOCH-EN036 · English | Rare | Pending | Pending |
-| Dracotail Lukias | JUSH-EN001 · English | Starlight Rare | Pending | Pending |
-| Miara, Thorn of the Glade | Commander Legends · 133 · English | Nonfoil | Pending | Pending |
-| Miara, Thorn of the Glade | Commander Legends · 133 · English | Traditional foil | Pending | Pending |
-| Miara, Thorn of the Glade | Commander Legends · 566 · English | Etched foil | Pending | Pending |
+| Charizard | Base Set · 4/102 · Unlimited | Holofoil | Approved | Pending |
+| Zapdos | Base Set 2 · 20/130 · English | Holofoil | Approved | Pending |
+| Mantine | Sword & Shield · 052/202 · English | Normal | Approved | Pending |
+| Mantine | Sword & Shield · 052/202 · English | Reverse Holofoil | Approved | Pending |
+| Zekrom | Celebrations · 010/025 · English | Holofoil | Approved | Pending |
+| Charizard VMAX | Shining Fates · SV107/SV122 · English | Textured Holofoil | Approved | Pending |
+| Hot Red Dragon Archfiend Abyss | HSRD-EN041 · English | Ultra Rare | Approved | Pending |
+| PSY-Framegear Gamma | EXFO-ENSE3 · English | Super Rare | Approved | Pending |
+| PSY-Framelord Omega | HSRD-EN035 · English | Secret Rare | Approved | Pending |
+| PSY-Framegear Gamma | TOCH-EN036 · English | Rare | Approved | Pending |
+| Dracotail Lukias | JUSH-EN001 · English | Starlight Rare | Approved | Pending |
+| Miara, Thorn of the Glade | Commander Legends · 133 · English | Nonfoil | Approved | Pending |
+| Miara, Thorn of the Glade | Commander Legends · 133 · English | Traditional foil | Approved | Pending |
+| Miara, Thorn of the Glade | Commander Legends · 566 · English | Etched foil | Approved | Pending |
 
 Provider identities are checked by `scripts/build-finish-review.mjs`. Pokémon Mantine availability was refreshed from TCGdex `/cards/swsh1-52`; it is no longer based on the geometry fixture’s synthetic flags. Yu-Gi-Oh set code and rarity are exact, but edition remains unselected and the provider master image is not a scan of each edition. Miara etched is printing 566; nonfoil and traditional foil are printing 133. All shaders remain approximate simulations. Title masks are tied to source image hashes in `assets/mask-provenance.json`. Do not reuse them for another image revision.
 
@@ -48,3 +48,12 @@ Still required: after the actual stored cooldown expires, one controlled lookup 
 No schema, collection, ownership, edition, price selection, or storage migration is included. The review page has no account connection. The small application patch and new material review are on the review branch until the gate is approved.
 
 Run `npm test` for Node regressions. Hosted workflow `finish-milestone.yml` renders the before/after evidence; the browser script intentionally requires actual GitHub Actions. Its results explicitly record physical-phone testing as not performed. Existing app browser gates also run on branch pushes.
+
+
+## Approved rollout · 3.85.0
+
+The user approved the material direction on 2026-10-18. The application now uses the approved patterns through its existing printing-aware renderer. The retained studio remains a before/after record. The application rendering test covers the same 14 cases, verifies image-byte-bound title masks, and captures phone-sized and desktop views. Physical-phone tilt remains unverified.
+
+Condition prices continue to use the shared, demand-driven 24-hour product cache within existing caps. Expired product data is retained for 30 days and can be read by guests during provider cooldown; original observation timestamps are preserved. Last known quotes are labeled and do not enter current condition totals. An exact legacy Pokémon detailed-variant product ID can now be recovered without an unnecessary catalogue fallback. Ambiguous variants remain unmapped. Buy links carry selected condition, language, and known printing filters; saved-copy filters are included only while the viewed printing matches that saved copy. No TCGplayer scraper or provider-key change is introduced.
+
+The existing provider restriction remains unresolved; the release does not claim live condition-price recovery.

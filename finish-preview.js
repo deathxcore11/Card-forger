@@ -1,5 +1,6 @@
 import {esc} from './ui.js';
 import {finishChoices,resolveFinish,FINISH_MASKS} from './finish-effects.js';
+import {finishMaterialProfile,hasFinishPattern,verifiedTitleMask} from './finish-materials.js';
 export {finishChoices,finishEffect,resolveFinish,selectPreviewFinish,finishArtworkCard} from './finish-effects.js';
 const KEY='cardstashy-finish-effects';
 export const finishEffectsOn=()=>{try{return localStorage.getItem(KEY)!=='off';}catch{return true;}};
@@ -7,6 +8,7 @@ export function setFinishEffects(enabled){try{localStorage.setItem(KEY,enabled?'
 const reduced=()=>!!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 export function finishAttrs(game,c,ctx={},view='large'){
  const p=resolveFinish(game,c,ctx);
+ p.materialProfile=finishMaterialProfile(game,c,p);
  return `data-finish-surface="${view}" data-finish-effect="${esc(p.effect)}" data-finish-model="${esc(JSON.stringify(p))}"`;
 }
 export function finishPreview(game,c,ctx={}){
@@ -48,15 +50,21 @@ export function attachFinishPreview(root){
  const mount=el=>{
   if(!allowed(el)||!visible(el))return unmount(el);
   const p=modelOf(el),detail=['detail','zoom'].includes(el.dataset.finishSurface);if(!p.layers?.length&&!detail)return unmount(el);
-  if(mounted.has(el)){const old=mounted.get(el);if(old.model===el.dataset.finishModel&&old.overlay.isConnected)return size(el);unmount(el);}
+  if(mounted.has(el)){const old=mounted.get(el);if(old.model===el.dataset.finishModel&&old.src===old.img.currentSrc&&old.overlay.isConnected)return size(el);unmount(el);}
   const img=el.querySelector?.('img'),host=el.dataset.finishSurface==='detail'?(el.querySelector('.cd-zoom')||el):el;
   if(!img||!img.complete||!img.naturalWidth||img.hidden)return;
   const overlay=img.ownerDocument.createElement('span');overlay.className='finish-overlay'+(el.dataset.finishSurface==='large'?' finish-auto':'');
+  if(p.materialProfile)overlay.dataset.materialProfile=p.materialProfile;
   if(el.dataset.finishSurface==='large'){const phase=String(p.printingId||'').split('').reduce((n,c)=>n+c.charCodeAt(0),0)%80;overlay.style.animationDelay=`-${phase/10}s`;}
   overlay.setAttribute('aria-hidden','true');
   if(detail){const light=img.ownerDocument.createElement('span');light.className='finish-spotlight';overlay.append(light);}
   for(const l of p.layers||[]){if(!FINISH_MASKS[l.mask])continue;const part=img.ownerDocument.createElement('span');part.className=`finish-layer finish-${l.material}${l.mask==='ygo-name'?' finish-name-region':''}`;part.style.clipPath=FINISH_MASKS[l.mask];overlay.append(part);}
-  host.append(overlay);mounted.set(el,{img,host,overlay,model:el.dataset.finishModel});ro?.observe(img);size(el);
+  if(hasFinishPattern(p.materialProfile)&&FINISH_MASKS[p.layers?.[0]?.mask]){const pattern=img.ownerDocument.createElement('span');pattern.className='finish-pattern';pattern.style.clipPath=FINISH_MASKS[p.layers[0].mask];overlay.append(pattern);}
+  host.append(overlay);mounted.set(el,{img,host,overlay,model:el.dataset.finishModel,src:img.currentSrc});ro?.observe(img);size(el);
+  if(p.game==='ygo'&&overlay.querySelector('.finish-name-region')){
+   const src=img.currentSrc;
+   void verifiedTitleMask(p.printingId,src).then(mask=>{if(!mask||mounted.get(el)?.overlay!==overlay||img.currentSrc!==src)return;for(const n of overlay.querySelectorAll('.finish-name-region')){n.style.clipPath='none';n.style.maskImage=`url("${mask}")`;n.classList.add('finish-title-glyphs');}});
+  }
  };
  const io=typeof IntersectionObserver==='undefined'?null:new IntersectionObserver(entries=>{for(const x of entries){if(!x.isIntersecting)unmount(x.target);else mount(x.target);}}, {threshold:0});
  let pending=false;

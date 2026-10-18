@@ -1,0 +1,22 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Production finish renderer verification</title><link rel="stylesheet" href="../finish-effects.css"><style>body{margin:0;padding:24px;background:#161b20;color:#eee;font:15px system-ui}h1{font-size:18px}.card{width:min(286px,82vw);margin:20px auto}.cd-zoom{position:relative;line-height:0}.card img{display:block;width:100%;height:auto;border-radius:4%}.card .finish-spotlight{display:none}#conditionPricePreview{max-width:400px;margin:auto;padding:16px;border:1px solid #aaa;line-height:1.5}#conditionPricePreview>*{display:block;margin:12px 0}a{color:#adc9ff}</style></head><body><h1 id="name"></h1><main id="stage"></main><div id="conditionPricePreview"></div><script type="module">
+import {finishAttrs,attachFinishPreview} from '../finish-preview.js';
+import {normalizePtcg} from '../ptcg.js';
+import {normalizeYgo} from '../ygo.js';
+import {conditionPriceHtml} from '../condition-value.js';
+import {conditionBuyLink} from '../pricing-presentation.js';
+const cases=(await (await fetch('../review/cases.json')).json()).cases;
+const files={'base1-4':'../test-fixtures/finish-effects/base1-4.json','base4-20':'../review/assets/base4-20.json','swsh1-52':'../review/assets/mantine-swsh1.json','cel25-10':'../test-fixtures/finish-effects/cel25-10.json','swsh4.5sv-SV107':'../test-fixtures/finish-effects/swsh4.5sv-SV107.json','9753964':'../test-fixtures/finish-effects/hot-red-dragon-abyss.json','38814750':'../test-fixtures/finish-effects/psy-framegear-gamma.json','74586817':'../test-fixtures/finish-effects/psy-framelord-omega.json'};
+let dispose;
+async function render(){
+ dispose?.();const c=cases.find(c=>c.key===location.hash.slice(1))||cases[0];
+ const file=files[c.identity.cardId]||(c.game==='mtg'?'../review/assets/miara-'+(c.profile==='etched'?'566':'133')+'.json':'../test-fixtures/finish-effects/dracotail-lukias.json');
+ const raw=await (await fetch(file)).json(),card=c.game==='ptcg'?normalizePtcg(raw):c.game==='ygo'?normalizeYgo(raw):raw;
+ document.querySelector('#name').textContent=c.name+' · '+c.finish;
+ document.querySelector('#stage').innerHTML=`<div class="card" ${finishAttrs(c.game,card,c.identity.context,'detail')} style="--mx:35%;--my:40%"><div class="cd-zoom"><img src="../review/${c.image}" alt="Retained exact reference image"></div></div>`;
+ dispose=attachFinishPreview(document.querySelector('#stage'));document.documentElement.dataset.case=c.key;
+}
+window.addEventListener('hashchange',render);await render();
+const entry={cardId:'ex4-10',variant:'holofoil',condition:'Moderately Played',language:'en'},card={id:entry.cardId,game:'ptcg',name:"Team Magma's Houndoom",variants:[{key:'holofoil',label:'Holofoil',productId:89828}]};
+const q={...entry,currency:'USD',price:93.45,priceStatus:'last_known',source:'JustTCG',observedAt:new Date(Date.now()-2*86400000).toISOString(),validUntil:new Date(Date.now()-86400000).toISOString()};
+document.querySelector('#conditionPricePreview').innerHTML=conditionPriceHtml(null,entry,[q],{status:'rate_limited',reason:'provider_shared_limit',nextRetryAt:Date.now()+3600000,buyLink:conditionBuyLink('ptcg',card,entry),retryAction:'retryConditionPrice'});
+</script></body></html>

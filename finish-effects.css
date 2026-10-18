@@ -78,3 +78,27 @@
  background-image:repeating-linear-gradient(32deg,transparent 0 1.4px,#d4e7ff77 1.4px 1.8px,transparent 1.8px 3px),repeating-linear-gradient(122deg,transparent 0 7px,#fff2 7px 7.4px,transparent 7.4px 10px);
  background-size:100% 100%;
 }
+
+/* Material direction approved in the 14-printing visual review. */
+.finish-overlay[data-material-profile] .finish-spotlight{opacity:.2;background:radial-gradient(ellipse at var(--mx) var(--my),#fff8,transparent 42%)}
+.finish-overlay[data-material-profile] .finish-layer{opacity:.4;background-size:210% 210%;background-position:var(--finish-x) var(--finish-y)}
+.finish-overlay[data-material-profile] .finish-holo{background-image:linear-gradient(120deg,transparent 25%,#20c8c6 39%,#eb7eca 48%,#f5db80 55%,#87ceec 64%,transparent 75%);mix-blend-mode:screen}
+.finish-overlay[data-material-profile] .finish-rainbow{background-image:linear-gradient(115deg,transparent 22%,#2ca7da 37%,#9f6ed5 44%,#dc859b 50%,#f4cf5f 57%,#76cd9f 64%,transparent 77%)}
+.finish-overlay[data-material-profile] .finish-title-glyphs{opacity:.9;mix-blend-mode:screen;background-size:230% 100%;background-position:var(--finish-x) 50%}
+.finish-overlay[data-material-profile] .finish-title-glyphs.finish-gold{background-image:linear-gradient(110deg,#79501a 16%,#d8a53a 35%,#fff2ad 48%,#f9cb56 55%,#9d6a1b 77%)}
+.finish-overlay[data-material-profile] .finish-title-glyphs.finish-silver{background-image:linear-gradient(110deg,#6c7e93 16%,#d6e4f0 37%,#fff 49%,#b4ccd8 59%,#647586 78%)}
+.finish-overlay[data-material-profile] .finish-title-glyphs.finish-rainbow{background-image:linear-gradient(110deg,#8295c8 15%,#9ae1e8 33%,#f8c5e5 48%,#eee1a0 60%,#b5c8ec 80%)}
+.finish-overlay[data-material-profile] .finish-pattern{position:absolute;inset:0;pointer-events:none;background-position:var(--finish-x) var(--finish-y);mix-blend-mode:screen;opacity:.46}
+[data-material-profile=classic-holo] .finish-pattern,[data-material-profile=cosmos-holo] .finish-pattern{background-image:url('assets/finishes/cosmos.svg'),radial-gradient(ellipse at var(--finish-x) var(--finish-y),#b9e3ff55,transparent 45%);background-size:100% 100%;}
+[data-material-profile=classic-holo] .finish-pattern{opacity:.3}
+[data-material-profile=reverse-water] .finish-pattern{background-image:url('assets/finishes/water-pattern.svg');background-size:100% 100%;mix-blend-mode:soft-light;opacity:.65}
+[data-material-profile=line-holo] .finish-pattern{background-image:repeating-linear-gradient(92deg,transparent 0 2px,#b5e7ff60 2px 2.7px,transparent 2.7px 8px);opacity:.35}
+[data-material-profile=textured-holo] .finish-micro{background-image:url('assets/finishes/relief-flow.svg');background-size:100% 100%;mix-blend-mode:soft-light;opacity:.65}
+[data-material-profile=textured-holo] .finish-pattern{background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#d1e7ff33,transparent 45%);opacity:.4}
+[data-material-profile=ygo-secret] .finish-secret{background-image:repeating-linear-gradient(135deg,transparent 0 4px,#92d8e0 4px 4.5px,#e9cbe8 4.5px 5px,transparent 5px 9px),linear-gradient(120deg,transparent 15%,#9abae9 35%,#c093cc 48%,#efce8e 60%,transparent 85%);background-size:120% 120%;opacity:.46}
+[data-material-profile=ygo-secret] .finish-pattern{background-image:repeating-linear-gradient(135deg,transparent 0 13px,#fff8 13px 13.6px,transparent 13.6px 21px);opacity:.2}
+[data-material-profile=starlight] .finish-starlight{background-image:repeating-linear-gradient(0deg,transparent 0 1.5px,#cfb4e980 1.5px 1.7px),repeating-linear-gradient(90deg,transparent 0 1.5px,#a7d5d980 1.5px 1.7px);background-size:100% 100%;opacity:.25}
+[data-material-profile=starlight] .finish-pattern{background-image:url('assets/finishes/starlight.svg');background-size:100% 100%;opacity:.4}
+[data-material-profile=etched] .finish-metal{background-image:url('assets/finishes/metal-grain.svg'),radial-gradient(ellipse at var(--finish-x) var(--finish-y),#fff4cba6,transparent 50%);background-size:100% 100%;mix-blend-mode:soft-light;opacity:.7}
+[data-material-profile=etched] .finish-pattern{background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#cde1d555,transparent 44%);mix-blend-mode:soft-light;opacity:.4}
+.finish-overlay[data-material-profile] :is(.finish-layer,.finish-pattern){mask-size:100% 100%;mask-repeat:no-repeat}

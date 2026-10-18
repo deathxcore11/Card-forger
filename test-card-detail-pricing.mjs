@@ -10,7 +10,7 @@ setTcgPrices('tst',{42:{Normal:{market:12.5},Foil:{market:3}},99:{Foil:{market:8
 assert.equal(presentationQuote('mtg',mtg,'nonfoil').value,12.5,'Magic graph/top/vendor share exact cached fallback');
 assert.equal(presentationQuote('mtg',mtg,'nonfoil').source,'TCGplayer via TCGCSV');
 let rows=sellerModels('mtg',mtg,{priceFinish:'etched'},Object.entries(mtg.purchase_uris));
-assert.equal(rows.find(r=>r.key==='tcgplayer').url,'https://www.tcgplayer.com/product/99');
+assert.equal(rows.find(r=>r.key==='tcgplayer').url,'https://www.tcgplayer.com/product/99?Language=Japanese&Printing=Etched+Foil');
 assert.equal(rows.find(r=>r.key==='tcgplayer').value,8);
 assert.equal(rows.find(r=>r.key==='cardmarket').value,null,'no invented etched EUR quote');
 assert.equal(rows.find(r=>r.key==='cardhoarder').value,null,'no paper-etched quote mapped to tickets');
@@ -21,7 +21,7 @@ const unsafe=[['Cardmarket','https://not-cardmarket.example/Products/Singles/Fak
 rows=sellerModels('mtg',mtg,{},unsafe);
 assert.ok(rows.every(r=>r.url.startsWith('https://')&&!new URL(r.url).username&&!new URL(r.url).password));
 assert.ok(rows.filter(r=>new URL(r.url).hostname.includes('example')).every(r=>r.value===null&&!r.direct&&!['Cardmarket','TCGplayer','Cardhoarder'].includes(r.name)),'trusted label cannot authenticate an unrelated host');
-assert.equal(rows.find(r=>r.key==='tcgplayer').url,'https://www.tcgplayer.com/product/42','unsafe supplied link is replaced only by canonical exact product mapping');
+assert.equal(rows.find(r=>r.key==='tcgplayer').url,'https://www.tcgplayer.com/product/42?Language=Japanese&Printing=Normal','unsafe supplied link is replaced only by canonical exact product mapping');
 assert.equal(sellerModels('mtg',{...mtg,purchase_uris:{cardmarket:'https://www.cardmarket.com/en/Magic/Products/Search?searchString=Fixture'}},{},[['Cardmarket','https://www.cardmarket.com/en/Magic/Products/Search?searchString=Fixture']]).find(r=>r.key==='cardmarket').value,null,'a store search is not an exact listing');
 
 for(const value of [null,undefined,'',NaN,Infinity,-1])assert.equal(priceAmount(value),null);
@@ -38,10 +38,10 @@ assert.doesNotMatch(sellerRows('mtg',personal,{},Object.entries(personal.purchas
 const pk={id:'pk-123',game:'ptcg',name:'Pikachu',set:{name:'Test set',number:'123'},prices:{usd:2,eur:9},variants:[{key:'normal',label:'Normal',usd:2,market:2,productId:111,cmProduct:444},{key:'holofoil',label:'Holofoil',usd:5,market:5,productId:222},{key:'reverse-holofoil',label:'Reverse holo',usd:null,productId:333}],cardmarket:{trend:9},cmProduct:444};
 const pkLinks=[['TCGplayer (this card)','https://www.tcgplayer.com/product/111'],['Cardmarket','https://www.cardmarket.com/en/Pokemon/Products?idProduct=444'],['eBay','https://www.ebay.com/sch/i.html?_nkw=Pikachu']];
 rows=sellerModels('ptcg',pk,{priceFinish:'holofoil'},pkLinks);
-assert.equal(rows[0].url,'https://www.tcgplayer.com/product/222');assert.equal(rows[0].value,5);assert.equal(rows[1].value,null);assert.equal(rows[2].value,null);assert.equal(rows[2].direct,false);
+assert.equal(rows[0].url,'https://www.tcgplayer.com/product/222?Language=English&Printing=Holofoil');assert.equal(rows[0].value,5);assert.equal(rows[1].value,null);assert.equal(rows[2].value,null);assert.equal(rows[2].direct,false);
 assert.equal(sellerModels('ptcg',pk,{priceFinish:'reverse-holofoil'},pkLinks)[0].value,null);
 assert.equal(sellerModels('ptcg',{...pk,variants:[{key:'holofoil',label:'Holo',usd:5}]},{priceFinish:'holofoil'},pkLinks)[0].direct,false,'unmatched first-product link must become a search');
-assert.equal(sellerModels('ptcg',pk,{},pkLinks)[0].url,'https://www.tcgplayer.com/product/111','reference resolves the actual reference variant');
+assert.equal(sellerModels('ptcg',pk,{},pkLinks)[0].url,'https://www.tcgplayer.com/product/111?Language=English&Printing=Normal','reference resolves the actual reference variant');
 // Real adapter output: a detailed Normal variant can have a different Cardmarket product.
 const cardmarketFixture=(baseId,variantId)=>normalizePtcg({
  id:'sv1-55',name:'Exact EUR fixture',localId:'55',set:{id:'sv1',name:'Scarlet & Violet'},

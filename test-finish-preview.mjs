@@ -20,7 +20,7 @@ assert.equal(finishEffect('mtg',{...dfc,card_faces:[{}]},{face:1,priceFinish:'fo
 const variants=[{key:'normal',label:'Normal',usd:2},{key:'holofoil',label:'Holofoil',usd:null},{key:'reverse-holofoil',label:'Reverse holo',usd:null},{key:'firstEdition',label:'First Edition · finish unconfirmed'}];
 const base={id:'base1-4',game:'ptcg',set:{id:'base1'},category:'Pokemon',rarity:'Rare',variants:[variants[1]]};
 assert.equal(finishEffect('ptcg',base,{priceFinish:'holofoil'}),'ptcg-holo');
-assert.equal(resolveFinish('ptcg',base,{priceFinish:'holofoil'}).layers[0].mask,'pk-base-art');
+assert.equal(resolveFinish('ptcg',base,{priceFinish:'holofoil'}).layers[0].mask,'pk-base1-4-art');
 assert.equal(finishEffect('ptcg',{...base,id:'other-4',set:{id:'other'}},{priceFinish:'holofoil'}),'unknown');
 const sv={id:'sv01-001',game:'ptcg',set:{id:'sv01'},category:'Pokemon',rarity:'Common',variants};
 assert.equal(finishEffect('ptcg',sv,{priceFinish:'reverse-holofoil'}),'ptcg-reverse');
