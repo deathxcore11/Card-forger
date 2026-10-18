@@ -67,7 +67,7 @@ export function makeFixtures(game='mtg'){
  }
  state.printings=Object.fromEntries(CARDS.mtg.map(c=>[c.id,c]));state.activeDeck='saved-mtg';
  const meta=Object.fromEntries(GAMES.map(g=>[g==='mtg'?'mtg:Standard':g,{at:NOW,data:metaFeed(g)}]));meta['mtg:EDH']={at:NOW,data:metaFeed('mtg')};
- return {state,catalog,cache,storage:{'cardforge-v2':state,'cardforge-catalog-v1':catalog,'cardforge-tcg-cache-v1':cache,'cardforge-meta-v1':meta,'cardforge-community-v1':Object.fromEntries(GAMES.map(g=>[g,{at:NOW,data:{game:g,status:'unavailable',items:[],fetchedAt:ISO}}])),'cardforge-sets-v1':{at:NOW,sets:[{code:'fdn',name:'Foundations',released_at:'2024-11-15',set_type:'core',icon:`${IMAGE}/set-symbol.png`}]},'cardstashy-watch-sent-v1':Object.fromEntries(GAMES.flatMap(g=>CARDS[g].map(c=>[g+':'+c.id,NOW]))),'cardforge-hero-v1':{date:'2026-10-17',...Object.fromEntries(GAMES.map(g=>[g,{name:CARDS[g][0].name,id:CARDS[g][0].id,art:g==='mtg'?CARDS[g][0].image_uris.art_crop:CARDS[g][0].image}]))},'cf-mtg-tcg-v1':{fdn:{t:NOW,prices:{}}}}};
+ return {state,catalog,cache,storage:{'cardforge-v2':state,'cardforge-catalog-v1':catalog,'cardforge-tcg-cache-v1':cache,'cardforge-meta-v1':meta,'cardforge-community-v1':Object.fromEntries(GAMES.map(g=>[g,{at:NOW,data:{game:g,status:'unavailable',items:[],fetchedAt:ISO}}])),'cardforge-sets-v1':{at:NOW,sets:[{code:'fdn',name:'Foundations',released_at:'2024-11-15',set_type:'core',icon:`${IMAGE}/set-symbol.png`}]},'cardstashy-watch-sent-v1':Object.fromEntries(GAMES.flatMap(g=>CARDS[g].map(c=>[g+':'+c.id,NOW]))),'cardforge-hero-v2':{date:'2026-10-17',...Object.fromEntries(GAMES.map(g=>[g,{name:CARDS[g][0].name,id:CARDS[g][0].id,art:g==='mtg'?CARDS[g][0].image_uris.art_crop:CARDS[g][0].image}]))},'cf-mtg-tcg-v1':{fdn:{t:NOW,prices:{}}}}};
 }
 export function historyFixture(url){
  const game=url.searchParams.get('game'),cardId=url.searchParams.get('id'),finish=url.searchParams.get('finish');
@@ -122,6 +122,7 @@ export async function openApp(browser,base,{game='mtg',width=390,height=1000,red
   if(req.resourceType()==='image'&&(artURLs.has(url.href)||url.hostname==='detail-fixtures.invalid'||url.origin===base&&/^\/img\/pks\/(s|r)\//.test(url.pathname)||url.href==='https://images.ygoprodeck.com/images/sets/SET.jpg'||url.hostname==='r2.limitlesstcg.net'||url.hostname==='svgs.scryfall.io'&&/^\/(card-symbols|sets)\//.test(url.pathname)||url.hostname==='images.pokemontcg.io'&&/\/(logo|symbol)\.png$/.test(url.pathname))){images.push(url.href);return route.fulfill({status:200,contentType:'image/svg+xml',body:SVG});}
   if(url.origin===base){
    if(url.pathname==='/catalog.json')return json({cards:[],snapshot_date:'2000-01-01'});
+   if(url.pathname==='/api/daily-card'){const g=url.searchParams.get('game'),c=CARDS[g]?.[0];return json({game:g,date:'2026-10-17',card:{id:c?.id,name:c?.name,art:''}});}
    if(url.pathname==='/api/community')return json({game:url.searchParams.get('game'),status:'unavailable',items:[],fetchedAt:ISO});
    if(url.pathname==='/api/meta/mtg')return json(metaFeed('mtg'));
    if(url.pathname==='/api/prices/archive'||url.pathname==='/api/prices/recent')return json(historyFixture(url));

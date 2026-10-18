@@ -79,7 +79,7 @@ export function makeFixtures(game='ygo'){
   'cardforge-community-v2':Object.fromEntries(GAMES.map(g=>[g,{at:NOW,data:{game:g,status:'unavailable',items:[],fetchedAt:ISO}}])),
   'cardforge-meta-v1':Object.fromEntries(['mtg:Standard','mtg:EDH','ptcg','ygo'].map(g=>[g,{at:NOW,data:{events:[],decks:[],archetypes:[],top:[]}}])),
   'cardstashy-watch-sent-v1':Object.fromEntries(GAMES.flatMap(g=>CARDS[g].map(c=>[g+':'+c.id,NOW]))),
-  'cardforge-hero-v1':{date:'2026-10-17',...Object.fromEntries(GAMES.map(g=>[g,{game:g,date:'2026-10-17',name:CARDS[g][0].name,id:CARDS[g][0].id,art:IMAGE+'/hero-'+g+'.svg'}]))},
+  'cardforge-hero-v2':{date:'2026-10-17',...Object.fromEntries(GAMES.map(g=>[g,{game:g,date:'2026-10-17',name:CARDS[g][0].name,id:CARDS[g][0].id,art:IMAGE+'/hero-'+g+'.svg'}]))},
   'cf-mtg-tcg-v1':{fdn:{t:NOW,prices:{}}}}};
 }
 export function providerFixture(url){

@@ -77,7 +77,7 @@ async function searchPath(app,game,{recovery=false}={}){
  await manual.fill('75.50');await frames(page);
  assert.equal(await preview.locator('.condition-price-amount').innerText(),'$75.50');assert.equal(await preview.locator('.condition-price-kind').innerText(),'Custom');assert.match(await preview.locator('.condition-market-secondary').innerText(),/\$3\.50/);
  for(const width of [320,390,768]){await page.setViewportSize({width,height:950});await frames(page);await noOverflow(page,'#sheet',`${game} custom price ${width}px`);}
- await page.setViewportSize({width:390,height:950});await capture(page,`synthetic-condition-${game}-custom-comparison`);
+ await page.setViewportSize({width:390,height:950});await capture(page,`synthetic-search-condition-${game}-custom-comparison`);
  await manual.fill('');await frames(page);assert.equal(await preview.locator('.condition-price-amount').innerText(),'$3.50');assert.equal(await preview.locator('.condition-market-secondary').count(),0);assert.equal(app.condition.records.length,count,'Typing and clearing a custom value reuses the condition bundle');
  await capture(page,`synthetic-search-condition-${game}-search-parity`);
 }
