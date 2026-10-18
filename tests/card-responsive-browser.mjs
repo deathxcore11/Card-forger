@@ -1,7 +1,7 @@
 // Actual app/dialog checks, authorized hosted CI only. No private reference media.
 // The local path validates data without importing Playwright or starting a server.
 import assert from 'node:assert/strict';
-import {GAMES,CARDS,validateFixtures,startServer,openApp,navigate,closeSheet,inventorySnapshot,detailHistoryContext,detailHistoryReady,collectionControlGeometry,collectionRowGeometry,detailMotionState,noOverflow,capture,saveReport} from './detail-rules-fixtures.mjs';
+import {GAMES,CARDS,RAW,validateFixtures,startServer,openApp,navigate,closeSheet,inventorySnapshot,detailHistoryContext,detailHistoryReady,collectionControlGeometry,collectionRowGeometry,detailMotionState,noOverflow,capture,saveReport} from './detail-rules-fixtures.mjs';
 console.log(await validateFixtures());
 if(process.argv.includes('--validate-fixtures'))process.exit(0);
 if(process.env.GITHUB_ACTIONS!=='true')throw Error('Responsive browser execution is restricted to hosted GitHub Actions. Use --validate-fixtures locally.');
@@ -21,20 +21,21 @@ async function settledScroll(page){
 async function focusedSuggestions(game){
  const app=await openApp(browser,server.base,{game,width:1024,height:1000,hash:'#search'}),{page,context}=app,calls=[];
  try{
-  // Intercept only this lookup using each real provider's autocomplete shape.
+  // Intercept the rich lookup using each real provider's card shape.
   // The mounted Search input and production suggestion lifecycle are unchanged.
-  await context.route(url=>game==='mtg'?url.hostname==='api.scryfall.com'&&url.pathname==='/cards/autocomplete':game==='ptcg'?url.hostname==='api.tcgdex.net'&&url.pathname==='/v2/en/cards'&&url.searchParams.has('name'):url.hostname==='db.ygoprodeck.com'&&url.pathname.endsWith('/cardinfo.php')&&url.searchParams.has('fname'),async route=>{
-   const request=route.request(),url=new URL(request.url()),query=url.searchParams.get(game==='mtg'?'q':game==='ptcg'?'name':'fname');calls.push({method:request.method(),url:request.url(),query});
-   const names=['Fold query first','Fold query second'],body=game==='mtg'?{data:names}:game==='ptcg'?names.map((name,i)=>({id:'fold-'+i,name})):{data:names.map(name=>({name}))};
+  await context.route(url=>game==='mtg'?url.hostname==='api.scryfall.com'&&url.pathname==='/cards/search':game==='ptcg'?url.hostname==='api.tcgdex.net'&&url.pathname==='/v2/en/cards'&&url.searchParams.has('name'):url.hostname==='db.ygoprodeck.com'&&url.pathname.endsWith('/cardinfo.php')&&url.searchParams.has('fname'),async route=>{
+   const request=route.request(),url=new URL(request.url()),query=url.searchParams.get(game==='mtg'?'q':game==='ptcg'?'name':'fname')?.replace(/ game:paper$/,'');calls.push({method:request.method(),url:request.url(),query});
+   const names=['Fold query first','Fold query second'],body=game==='mtg'?{data:names.map((name,i)=>({...CARDS.mtg[i],name})),has_more:false}:game==='ptcg'?names.map((name,i)=>({...RAW.ptcg[i],name})):{data:names.map((name,i)=>({...RAW.ygo[i],name}))};
    await route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(body)});
   });
+  const ask=page.locator('#content .ask-launch');assert.equal(await ask.evaluate(n=>getComputedStyle(n).animationName),'ask-shimmer');assert.equal(await ask.evaluate(n=>getComputedStyle(n).getPropertyValue('--ask-a').trim()),{mtg:'#d7a443',ptcg:'#ff9479',ygo:'#b697ef'}[game]);
   const search=page.locator('#content .search-query input[data-suggest]');await search.fill('Fold query');await page.locator('#suggestBox [role=option]').first().waitFor();await page.locator('#suggestBox').evaluate(n=>Promise.all(n.getAnimations().map(a=>a.finished)));await search.press('ArrowDown');
   await page.evaluate(()=>{const input=document.querySelector('#content .search-query input[data-suggest]'),box=document.querySelector('#suggestBox');window.__focusedSuggestion={input,box,options:[...box.children],value:input.value,active:input.getAttribute('aria-activedescendant')};});
   for(const [width,height] of [[320,1000],[768,1000],[844,390],[1024,1000]]){
    await page.setViewportSize({width,height});await frame(page);
    const state=await page.evaluate(()=>{
-    const old=window.__focusedSuggestion,input=document.querySelector('#content .search-query input[data-suggest]'),box=document.querySelector('#suggestBox'),a=input.getBoundingClientRect(),b=box?.getBoundingClientRect(),viewport=document.documentElement.clientWidth,w=Math.min(a.width,viewport);
-    return {same:input===old.input&&box===old.box&&old.options.every((n,i)=>n===box?.children[i]),focused:document.activeElement===input,value:input.value===old.value,active:input.getAttribute('aria-activedescendant')===old.active&&!!box?.querySelector('#'+old.active+'.on'),input:a.toJSON(),box:b?.toJSON(),viewport,documentWidth:document.documentElement.scrollWidth,expected:{left:Math.max(0,Math.min(a.left,viewport-w)),top:a.bottom+6,width:w}};
+    const old=window.__focusedSuggestion,input=document.querySelector('#content .search-query input[data-suggest]'),box=document.querySelector('#suggestBox'),a=input.getBoundingClientRect(),b=box?.getBoundingClientRect(),viewport=document.documentElement.clientWidth,anchor=input.closest('.search-query').getBoundingClientRect(),w=Math.min(Math.max(anchor.width,320),viewport-20);
+    return {same:input===old.input&&box===old.box&&old.options.every((n,i)=>n===box?.children[i]),focused:document.activeElement===input,value:input.value===old.value,active:input.getAttribute('aria-activedescendant')===old.active&&!!box?.querySelector('#'+old.active+'.on'),input:a.toJSON(),box:b?.toJSON(),viewport,documentWidth:document.documentElement.scrollWidth,expected:{left:Math.max(10,Math.min(anchor.left,viewport-w-10)),top:a.bottom+6,width:w}};
    });
    assert(state.same&&state.focused&&state.value&&state.active,`${game} ${width}x${height}: same focused input, popup, options, query and selected option ${JSON.stringify(state)}`);
    assert(state.box&&Math.abs(state.box.left-state.expected.left)<=1&&Math.abs(state.box.top-state.expected.top)<=1&&Math.abs(state.box.width-state.expected.width)<=1,`${game}: popup reanchors to current input ${JSON.stringify(state)}`);
@@ -42,6 +43,7 @@ async function focusedSuggestions(game){
    assert.deepEqual(calls.map(({method,query})=>({method,query})),[{method:'GET',query:'Fold query'}],'Fold/rotation keeps exactly one read-only lookup for the unchanged query, never a write or duplicate request');
    await capture(page,`card-responsive-${game}-focused-popup-${width}x${height}`);
   }
+  assert.equal(await page.locator('#suggestBox .home-result img').count(),2,'Suggestions use illustrated card rows');
   await search.blur();await page.locator('#suggestBox').waitFor({state:'detached'});assert.equal(await search.inputValue(),'Fold query');assert.deepEqual(calls.map(({method,query})=>({method,query})),[{method:'GET',query:'Fold query'}]);
   report.push(`${game}: same focused autocomplete input/listbox/options/keyboard selection through 1024→320→768→844 landscape→1024, strict input/viewport geometry, ordinary blur cleanup and exactly one provider lookup.`);
   await app.close();

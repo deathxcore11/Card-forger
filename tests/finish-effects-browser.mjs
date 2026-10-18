@@ -11,6 +11,18 @@ try{for(const game of ['mtg','ptcg','ygo']){
   // Deliberately seed a foil-owned fixture before the user-flow snapshot.
   if(game==='mtg')await page.evaluate(()=>{window.__uiTestState.state.collection[0].finish='foil';});
   await page.locator('#content [data-act="viewSave"][data-mode="gallery"]').click();
+  if(game==='ptcg'){
+   await page.evaluate(()=>{const S=window.__uiTestState,T=window.__uiTestTcg,c=Object.values(T.cache.ptcg).find(c=>c.id==='sv08-002'),base=S.state.tcg.ptcg.collection.find(e=>e.cardId===c.id);for(const variant of ['normal','holofoil','reverse-holofoil'])S.state.tcg.ptcg.collection.push({...base,id:'owned-'+variant,variant});});
+   await page.locator('#content [data-act="viewSave"][data-mode="compact"]').click();await page.locator('#content [data-act="viewSave"][data-mode="gallery"]').click();
+   const snapshot=await inventorySnapshot(page);
+   for(const [variant,effect,mask] of [['normal','plain',null],['holofoil','ptcg-holo','pk-sv-art'],['reverse-holofoil','ptcg-reverse','pk-sv-surround']]){
+    const tile=page.locator(`#content .lot-art[data-entry="owned-${variant}"]`);await tile.evaluate(n=>n.scrollIntoView({block:'center',behavior:'instant'}));const model=await tile.evaluate(n=>JSON.parse(n.dataset.finishModel));assert.equal(model.key,variant);assert.equal(model.effect,effect);
+    if(mask){assert(model.layers.some(l=>l.mask===mask));await tile.locator('.finish-auto').waitFor();assert.equal(await tile.locator('.finish-auto').evaluate(n=>getComputedStyle(n).animationName),'finish-gallery-light');}else assert.equal(await tile.locator('.finish-overlay').count(),0,'Owned nonfoil has no automatic foil shine');
+    await tile.click();await page.waitForFunction(()=>window.__uiTestState.ui.sheetCtx.previewBusy===false);assert.equal(await page.locator('#sheet .cd-img').evaluate(n=>JSON.parse(n.dataset.finishModel).key),variant,'Detail opens with this copy’s saved finish');await page.locator('#sheet [data-finish="'+(variant==='normal'?'holofoil':'normal')+'"]').click();await closeSheet(page);assert.equal(await inventorySnapshot(page),snapshot,'Preview choice never edits any saved copy');
+   }
+   await page.locator('[data-act="menu"]').click();await page.locator('#settingsTab-app').click();const setting=page.locator('#settings-app [data-change="setFinishEffects"]');await setting.uncheck();await page.waitForFunction(()=>!document.querySelector('.finish-overlay'));await setting.check();await page.locator('[data-act="closeSettings"]').click();
+   await page.locator('#content .lot-art[data-entry="owned-holofoil"]').evaluate(n=>n.scrollIntoView({block:'center',behavior:'instant'}));await page.locator('#content .lot-art[data-entry="owned-holofoil"] .finish-auto').waitFor();await page.screenshot({path:'test-results/finish-effects-ptcg-owned-variants.png',fullPage:false});
+  }
   const opener=page.locator(`#content .lot-art[data-entry="lot-${game}-0"]`);
   if(game!=='ptcg'){
    await opener.locator('.finish-auto').waitFor();

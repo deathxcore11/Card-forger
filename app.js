@@ -1,4 +1,4 @@
-import {sharedBinderRows} from './community-profile.js';
+import {sharedBinderRows,sharedBinderValue} from './community-profile.js';
 import {setFinishEffects} from './finish-preview.js';
 import {createScryfallClient} from './scryfall-client.js';
 import {selectPreviewFinish} from './finish-preview.js';
@@ -1823,7 +1823,7 @@ function binderRows(game, location = null) {
 }
 const binderById = id => (S.state.settings.binders || []).find(b=>b.id===id);
 function showBinder(data,direction="next",keepScroll=false) {
-  if(data.sharedItem){const item=data.sharedItem,rows=sharedBinderRows(item);data.page=Math.max(0,Math.min(Math.max(0,Math.ceil(rows.length/9)-1),data.page));openSheet(binderPage(rows,item.title,data.page,direction,{color:item.appearance?.color},{readOnly:true,cardAttrs:r=>`data-act="sharedCard" data-index="${r.index}"`}),data,keepScroll?$("#sheetBody").scrollTop:0);return;}
+  if(data.sharedItem){const item=data.sharedItem,rows=sharedBinderRows(item);data.page=Math.max(0,Math.min(Math.max(0,Math.ceil(rows.length/9)-1),data.page));openSheet(binderPage(rows,item.title,data.page,direction,{color:item.appearance?.color},{readOnly:true,cardAttrs:r=>`data-act="sharedCard" data-index="${r.index}"`})+sharedBinderValue(item),data,keepScroll?$("#sheetBody").scrollTop:0);return;}
   const b=binderById(data.binder), rows=b?binderRows(b.game).filter(r=>binderMatches(r,b)):binderRows(data.game,data.location);
   data.page=Math.max(0,Math.min(Math.max(0,Math.ceil(rows.length/9)-1),data.page));
   openSheet(binderPage(rows,b?.title || data.location || "Unsorted cards",data.page,direction,b),data,keepScroll?$("#sheetBody").scrollTop:0);
