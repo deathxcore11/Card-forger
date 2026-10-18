@@ -1149,7 +1149,7 @@ function metaView(g) {
 //         load(keys, status) → fills prices/owned, save(rows, label), cardAttrs(row) }
 export const proven = { spec: null, mode: "original", budget: 0, busy: false, msg: "" };
 // Back navigation restores selection snapshots, not obsolete network state.
-const provenLoads = new WeakMap();
+const provenLoads = new WeakMap(), provenSaves = new WeakSet(), provenSaveErrors = new WeakMap();
 let provenBuildSequence = 0, activeProvenBuild = null;
 // Only the active inspector may finish seed resolution. Dismiss/replacement
 // retires this one transient request, including close-and-reopen of the same spec.
@@ -1177,7 +1177,7 @@ export function provenSheetHtml() {
   const base = proven.spec;
   if (!base) return "";
   if(base.sharedItem){proven.current=base;return sharedDeckSheet(base);}
-  const loading = provenLoads.get(base);
+  const loading = provenLoads.get(base), saving = provenSaves.has(base), saveError = provenSaveErrors.get(base);
   if (loading) Object.assign(proven, { busy: loading.busy, msg: loading.msg });
   const spec = { ...base, rows: base.rowsFn ? base.rowsFn() : base.rows, lists: base.listsFn ? base.listsFn() : base.lists };
   proven.current = spec;
@@ -1195,7 +1195,7 @@ export function provenSheetHtml() {
       return u ? `<img class="row-thumb" src="${esc(u)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'row-thumb img-missing'}))">` : `<span class="row-thumb img-missing" aria-hidden="true"></span>`;
     },
     row = (r, extra = "") =>
-      `<button class="mini-row art-row" ${spec.cardAttrs ? spec.cardAttrs(r) : ""}>${thumb(r)}<span class="ellip">${r.qty}× ${esc(r.name)}${r.swappedIn ? ` <span class="tag">swap</span>` : ""}${M.engine.has(r.key) && mode !== "draft" ? ` <span class="tag ok">engine</span>` : ""}${rowEmblem(spec.g, { name: r.name, id: r.key })}</span><span class="small ${r.owned >= r.qty ? "ok-text" : "muted"}">${extra || (r.owned >= r.qty ? "✓ owned" : r.owned ? `${r.owned}/${r.qty} · ${r.price != null ? usd((r.qty - r.owned) * r.price) : "Price unavailable"}` : r.price != null ? usd(r.qty * r.price) : "Price unavailable")}</span></button>`;
+      `<button class="mini-row art-row" ${spec.cardAttrs ? spec.cardAttrs(r) : ""}>${thumb(r)}<span class="ellip">${r.qty}× ${esc(r.name)}${r.swappedIn ? ` <span class="tag">swap</span>` : ""}${M.engine.has(r.key) && mode !== "draft" ? ` <span class="tag ok">engine</span>` : ""}${rowEmblem(spec.g, { name: r.name, id: r.key })}</span><span class="small ${r.matchPending?"warn-text":r.assumedOwned?"muted":r.owned >= r.qty ? "ok-text" : "muted"}">${r.matchPending ? "Printing not matched" : r.assumedOwned ? "Basic Energy · assumed" : extra || (r.owned >= r.qty ? "✓ owned" : r.owned ? `${r.owned}/${r.qty} · ${r.price != null ? usd((r.qty - r.owned) * r.price) : "Price unavailable"}` : r.price != null ? usd(r.qty * r.price) : "Price unavailable")}</span></button>`;
   let body = "";
   if (mode === "original") {
     body = `<div class="list compact">${spec.rows.map((r) => row(r)).join("")}</div>`;
@@ -1225,8 +1225,8 @@ export function provenSheetHtml() {
       <p class="list-head">Adapted list</p><div class="list compact">${a.rows.map((r) => row(r)).join("")}</div>`;
   } else {
     const d = ownedDraft(spec.rows);
-    body = `<div class="note ${d.open ? "warn" : ""}"><b>${d.open ? `Draft — ${d.open} slot${d.open === 1 ? "" : "s"} open` : side.some(r => r.qty > (r.owned || 0)) ? "Main deck ready — sideboard still needs cards" : "Ready — you own every card"}</b>${d.open ? ` · you own ${total - d.open} of ${total}` : ""}</div>
-      ${d.rows.length ? `<p class="list-head">Cards you own <span class="muted">${total - d.open}</span></p><div class="list compact">${d.rows.map((r) => row(r, "✓ owned")).join("")}</div>` : `<p class="muted small">You don’t own any cards from this list yet.</p>`}
+    body = `<div class="note ${d.open ? "warn" : ""}"><b>${d.open ? `Draft — ${d.open} slot${d.open === 1 ? "" : "s"} open` : side.some(r => r.qty > (r.owned || 0)) ? "Main deck ready — sideboard still needs cards" : spec.rows.some(r=>r.assumedOwned) ? "Ready — all card slots covered" : "Ready — you own every card"}</b>${d.open ? ` · you own ${total - d.open} of ${total}` : ""}</div>
+      ${d.rows.length ? `<p class="list-head">${spec.rows.some(r=>r.assumedOwned)?"Cards covered":"Cards you own"} <span class="muted">${total - d.open}</span></p><div class="list compact">${d.rows.map((r) => row(r, "✓ owned")).join("")}</div>` : `<p class="muted small">You don’t own any cards from this list yet.</p>`}
       ${d.open ? `<p class="list-head">To finish · cheapest first <span class="muted">${usd(d.cost, 0)}${d.unpriced ? ` known subtotal · ${d.unpriced} unpriced · Incomplete total` : ""}</span></p><div class="list compact">${d.missing.map((r) => row({ ...r, owned: 0 })).join("")}</div>` : ""}`;
   }
   // Magic tournament lists keep their sideboard: shown in every mode and saved with every version.
@@ -1240,13 +1240,14 @@ export function provenSheetHtml() {
   <div class="cs-hero compact ${spec.g}">${hero ? `<img class="cs-art" src="${esc(hero)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<div class="cs-shade"></div></div>
   <div class="cs-title"><div><h2>${esc(spec.title)}</h2><p class="type-line">🏆 ${spec.sub}</p></div></div>
   <p class="evidence small">${spec.evidence}</p>
-  <div class="proven-sum"><span>${side.length ? "Main deck · " : ""}<b>You own ${have} of ${total}</b> · ${have >= total ? "complete ✓" : `<b>${usd(M.full, 0)}</b> ${unpriced ? `known subtotal · ${unpriced} unpriced · Incomplete total` : "to finish"}`}</span>${have < total && mode !== "budget" ? `<button class="btn small" data-act="provenMode" data-id="budget">Cheapest way in ›</button>` : ""}</div>
+  <div class="proven-sum"><span>${side.length ? "Main deck · " : ""}<b>${spec.rows.some(r=>r.assumedOwned)?"Covered":"You own"} ${have} of ${total}</b> · ${have >= total ? "complete ✓" : `<b>${usd(M.full, 0)}</b> ${unpriced ? `known subtotal · ${unpriced} unpriced · Incomplete total` : "to finish"}`}</span>${have < total && mode !== "budget" ? `<button class="btn small" data-act="provenMode" data-id="budget">Cheapest way in ›</button>` : ""}</div>
   ${bar(total ? have / total : 0)}
   ${segmented("provenMode", mode, [["original", "Original"], ["budget", "Budget adaptation"], ["draft", "My cards draft"]])}
   ${proven.busy ? buildOverlay(proven.msg, { title: "Fitting the tournament deck", note: "Matching the winning list to your cards and budget, card by card. This can take up to a minute." }) : proven.msg ? `<p class="small warn-text" role="status">${esc(proven.msg)}</p>` : ""}
-  ${!proven.busy && spec.load && (proven.msg || incomplete) ? `<div class="actions"><button class="btn small" data-act="provenRetry">Retry prices</button></div>` : ""}
+  ${saveError?`<p class="note warn" role="alert">${esc(saveError)}</p>`:""}
+  ${!proven.busy && spec.load && (proven.msg || incomplete || saveError) ? `<div class="actions"><button class="btn small" data-act="provenRetry">${spec.rows.some(r=>r.matchPending)?"Retry card matching":"Retry prices"}</button></div>` : ""}
   ${body}
-  <div class="actions wrap sheet-actions"><button class="btn" data-act="provenSave" ${mode === "budget" && incomplete ? "disabled" : ""}>${mode === "original" ? "Save original list" : mode === "budget" ? "Save adaptation" : "Save draft"}</button>${spec.sourceUrl ? `<a class="btn ghost" href="${esc(safeHref(spec.sourceUrl))}" target="_blank" rel="noopener noreferrer">${esc(spec.sourceLabel || "Source")} ↗</a>` : ""}${spec.extraActions || ""}</div>
+  <div class="actions wrap sheet-actions"><button class="btn" data-act="provenSave" ${saving || mode === "budget" && incomplete ? "disabled" : ""}>${saving?"Saving…":mode === "original" ? "Save original list" : mode === "budget" ? "Save adaptation" : "Save draft"}</button>${spec.sourceUrl ? `<a class="btn ghost" href="${esc(safeHref(spec.sourceUrl))}" target="_blank" rel="noopener noreferrer">${esc(spec.sourceLabel || "Source")} ↗</a>` : ""}${spec.extraActions || ""}</div>
   ${spec.attribution ? `<p class="foot">${spec.attribution}</p>` : ""}`;
 }
 
@@ -3498,6 +3499,7 @@ export function registerTcg(c) {
   A.provenRetry = async () => {
 
     if (proven.busy || !proven.spec || S.ui.sheetCtx?.type !== "proven" || S.ui.sheetCtx.key !== proven.spec.key) return;
+    provenSaveErrors.delete(proven.spec);
     await loadProven(proven.spec, S.ui.sheetCtx);
   };
   A.provenMode = (t) => {
@@ -3510,19 +3512,22 @@ export function registerTcg(c) {
   };
   A.provenSave = async (t) => {
     const commit=captureCommit(),mutate=scopedMutate(commit);
-    const spec = proven.current;
-    if (!spec) return;
+    const spec = proven.current, owner = proven.spec || spec;
+    if (!spec || provenSaves.has(owner)) return;
     if (proven.mode === "budget" && unpricedCopies([...(spec.rowsFn ? spec.rowsFn() : spec.rows), ...(spec.sideRowsFn?.() || [])])) return toast("Retry prices before saving a budget adaptation. The total is incomplete.");
     const rows = proven.mode === "budget" ? proven.last?.rows || spec.rows : proven.mode === "draft" ? ownedDraft(spec.rows).rows : spec.rows,
       label = proven.mode === "budget" ? "budget adaptation" : proven.mode === "draft" ? "my cards draft" : "original";
     if (!rows.length) return toast("Nothing to save yet — you don’t own any of these cards.");
+    provenSaves.add(owner);provenSaveErrors.delete(owner);
     const done = busy(t, "Saving…");
     try {
       await spec.save(rows, label);
     } catch (e) {
-      toast(e.message);
+      provenSaveErrors.set(owner,e.message || "The deck could not save. Please retry.");
+      if(proven.spec!==owner || S.ui.sheetCtx?.type!=="proven")toast(e.message);
     } finally {
-      done();
+      provenSaves.delete(owner);done();
+      if(proven.spec===owner && S.ui.sheetCtx?.type==="proven")refreshProven();
     }
   };
 
@@ -3578,7 +3583,7 @@ export function registerTcg(c) {
             ownKey = card ? keyOf("ptcg", card) : request.key,
             owned = basic ? r.qty : Math.max(0, (card ? ownedOf("ptcg", card, inventory) : 0) - (used.get(ownKey) || 0));
           used.set(ownKey, (used.get(ownKey) || 0) + Math.min(r.qty, owned));
-          return { ...request, qty: r.qty, kind: r.kind, price: basic ? 0 : card ? price(card) : null, owned, core: r.kind === "Pokemon" };
+          return { ...request, qty: r.qty, kind: r.kind, price: basic ? 0 : card ? price(card) : null, owned, assumedOwned:basic, matchPending:!card, core: r.kind === "Pokemon" };
         });
       };
       const resolve = async (rows, status, {prices=true}={}) => {
@@ -3630,14 +3635,14 @@ export function registerTcg(c) {
         if (missed.length) throw Error(`Nothing saved: ${missed.length} unmatched printings. Retry matching ${missed.slice(0, 5).join(", ")}.`);
         if (!zones.main.length) throw Error("No cards matched. Nothing saved.");
         const deck = { id: uid(), name: `${d.name} · ${label}`.slice(0, 100), format: "standard", zones, createdAt: new Date().toISOString(), source: { kind: label === "original" ? "Tournament list" : "Adapted tournament list", author: d.player, url: d.url } };
-        await commit((state) => { state.tcg ||= {}; (state.tcg[G] ||= blankGame()).decks.push(deck); }, { msg: `Saved “${deck.name}”.` });
+        await mutate((state) => state.decks.push(deck), { msg: `Saved “${deck.name}”.` }, G);
         if (g() === G && S.ui.sheetCtx === savingSheet) {
           closeSheet();
           go("#tdeck/" + deck.id);
         }
       };
       evidence = `Tournament-backed · Standard · ${esc(d.place)} at ${esc(cleanName(d.event))} (${d.players} players) · compared with ${meta.decks.length} Top 8 lists from ${meta.events?.length || "recent"} events in the last 21 days`;
-      attribution = `Decklists from <a href="https://play.limitlesstcg.com" target="_blank" rel="noopener">Limitless</a>. Prices are TCGplayer market estimates; basic Energy counts as owned.`;
+      attribution = `Decklists from <a href="https://play.limitlesstcg.com" target="_blank" rel="noopener">Limitless</a>. Prices are TCGplayer market estimates. Basic Energy is assumed available for building, not verified in your collection.`;
     }
     return {
       g: G,

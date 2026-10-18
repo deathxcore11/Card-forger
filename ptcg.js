@@ -333,10 +333,13 @@ const firstPerName = (list) => {
   return list.filter((c) => !seen.has(c.name) && seen.add(c.name));
 };
 const collectorKey = (number) => String(number ?? "").trim().toLowerCase().replace(/^0+(?=\d+$)/, "");
+// Tournament exports sometimes omit "Basic" from the nine basic Energy types.
+// Normalize only that prefix: Special Energy and every set/number stay distinct.
+const printingName = value => String(value ?? '').normalize('NFC').trim().toLowerCase().replace(/^basic (?=(?:grass|fire|water|lightning|psychic|fighting|darkness|metal|fairy) energy$)/,'');
 // A name is not a printing identity. Keep this check shared by imports and
 // tournament matching, including when only one provider candidate is returned.
 export function ptcgPrintingMatches(card, row, set = card?.set) {
-  if (!card || !row?.set || !row?.number || String(card.name).toLowerCase() !== String(row.name).toLowerCase()) return false;
+  if (!card || !row?.set || !row?.number || printingName(card.name) !== printingName(row.name)) return false;
   const split = String(card.id || "").lastIndexOf("-"),
     setId = card.set?.id || String(card.id || "").slice(0, split),
     number = card.set?.number ?? card.localId ?? String(card.id || "").slice(split + 1),
@@ -411,8 +414,8 @@ export const ptcgSource = {
   },
   async tournamentCard(row) {
     if(!row.set || !row.number)return null;
-    const candidates=await this.byNameNumber(row.name,String(row.number));
-    for(const brief of candidates.filter(c=>c.name.toLowerCase()===row.name.toLowerCase())){
+    const candidates=await this.byNameNumber(printingName(row.name),String(row.number));
+    for(const brief of candidates.filter(c=>printingName(c.name)===printingName(row.name))){
       const setId=brief.id.slice(0,brief.id.lastIndexOf('-'));
       const set=String(setId).toLowerCase()===String(row.set).toLowerCase()?{id:setId}:await get('/sets/'+encodeURIComponent(setId)).catch(()=>null);
       // TCGdex keeps the printed set code under abbreviation.official ("TWM" for sv06).

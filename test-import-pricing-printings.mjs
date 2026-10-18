@@ -5,6 +5,12 @@ import { normalizePtcg, ptcgSource, ptcgPrintingMatches } from './ptcg.js';
 
 const pk = (id, name = 'Pikachu', attack = id) => normalizePtcg({id, name, localId:id.split('-').at(-1), category:'Pokemon', stage:'Basic', attacks:[{name:attack,damage:10}], set:{id:id.slice(0,id.lastIndexOf('-')),name:'Fixture set'}, pricing:{tcgplayer:{normal:{marketPrice:1}}}});
 const a=pk('base1-58'), b=pk('sv04-027');
+// TCGdex's MEE 013 uses the printed "Basic" prefix; tournament exports omit it.
+const psychic=normalizePtcg({id:'mee-013',localId:'013',name:'Basic Psychic Energy',category:'Energy',energyType:'Normal',set:{id:'mee',name:'Mega Evolution Energy'}});
+assert(ptcgPrintingMatches(psychic,{name:'Psychic Energy',set:'MEE',number:'13'}),'Tournament Basic Energy aliases still match the exact set and number');
+assert(!ptcgPrintingMatches(psychic,{name:'Telepathic Psychic Energy',set:'MEE',number:'13'}));
+assert(!ptcgPrintingMatches(psychic,{name:'Psychic Energy',set:'SVE',number:'13'}));
+assert(!ptcgPrintingMatches(psychic,{name:'Psychic Energy',set:'MEE',number:'5'}));
 assert.deepEqual(ptcglIdentity('Pikachu SV04 027/182'),{name:'Pikachu',set:'SV04',number:'027'});
 assert.deepEqual(ptcglIdentity('Pikachu sv04.5 TG01'),{name:'Pikachu',set:'sv04.5',number:'TG01'});
 assert.deepEqual(ptcglIdentity('Professor’s Research'),{name:'Professor’s Research'});
@@ -75,6 +81,10 @@ try {
   assert.deepEqual(await ptcgSource.byNameNumber('Charizard','TG01'),[]);
   globalThis.fetch=async()=>Response.json([{id:'swsh1-TG01',name:'Charizard'}]);
   assert.equal((await ptcgSource.byNameNumber('Charizard','tg01'))[0]?.id,'swsh1-TG01','case-insensitive alphanumeric identity');
+  globalThis.fetch=async value=>{const u=new URL(value);assert.equal(u.searchParams.get('name'),'psychic energy');return Response.json([{id:'mee-013',name:'Basic Psychic Energy'},{id:'mee-005',name:'Psychic Energy'}]);};
+  ptcgSource.get=async id=>id===psychic.id?psychic:null;
+  assert.equal((await ptcgSource.tournamentCard({name:'Psychic Energy',set:'MEE',number:'13'}))?.id,'mee-013');
+  assert.equal((await ptcgSource.tournamentCard({name:'Basic Psychic Energy',set:'MEE',number:'013'}))?.id,'mee-013');
 } finally {
   Object.assign(ptcgSource,{get:original.get,byName:original.byName,tournamentCard:original.tournamentCard});globalThis.fetch=original.fetch;
 }
