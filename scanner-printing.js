@@ -108,13 +108,13 @@ export function createScannerPrintingPicker({openPicker,requestMagic,sources={},
           note:unresolved.size?`${unresolved.size} card details could not be loaded. Reload to retry; no version is assumed.`:'Exact printed names only; differently named Pokémon are excluded.'};
       };
       check();
-      await openPicker({game,card:source,parentContext:config.parentContext,catalogue,purpose:'scan',
+      await (config.openInline||openPicker)({game,card:source,parentContext:config.parentContext,catalogue,purpose:'scan',
         ...(game==='mtg'?{}:{projectCard:project}),loadPage,
         onSelect:selection=>{
           if(!active(session))return false;
           const result=scannerPrintingSelection(selection,{game,source,catalogue,...(game==='mtg'?{}:{projectCard:project})});
           if(!result)return false;
-          current=null;session.abort.abort();
+          if(!config.openInline){current=null;session.abort.abort();}
           return config.onSelect?.(result,session.identity);
         },
         onCancel:()=>{

@@ -43,6 +43,7 @@ import {artworkHTML} from './artwork.js';
 import {attachAutomaticBrowse} from './auto-browse.js';
 import { createPrintingPicker } from "./printing-picker.js";
 import { createScannerPrintingPicker } from "./scanner-printing.js";
+import { createScannerLookup } from "./scanner-lookup.js";
 import {SheetHistory,BROWSE_TYPES,sheetKey} from "./sheet-history.js";
 import {handleArtworkError} from "./artwork.js";
 import {selectedFinish,detailIdentity,captureDetailState,restoreDetailState,rememberDetailViewport,restoreDetailViewport,detailTabKey,createDetailJump,conditionBuyLink} from "./pricing-presentation.js";
@@ -5459,6 +5460,7 @@ const scanCtx = {
     return fetchConditionValue(card,entry,g,done,{source:'review',current,retry:!!options.retry});
   },
   openPrintingPicker: config => scannerPrintingPicker.open(config),
+  inlinePrinting: true,
   setOf: (g, cand) => (g === "mtg" ? cand.card?.set || "" : g === "ygo" ? String(cand.print || "").split("|")[0].split("-")[0] : cand.card?.set?.id || ""),
   numberOf: (g, cand) => (g === "mtg" ? cand.card?.collector_number || "" : g === "ygo" ? String(cand.print || "").split("|")[0] : cand.card?.set?.number || ""),
   render: () => render(),
@@ -5472,6 +5474,7 @@ const scanCtx = {
   candOf: async (g, p, why, exact) => (g === "mtg" ? (p.card ? mtgScanCand(p.card, why, exact) : null) : tcgCtx.scanCandById?.(g, p.id, why, exact) ?? null),
   details: (g, c) => (g === "mtg" ? A.card({ dataset: { name: c.name } }) : A.tCard({ dataset: { id: c.id } })),
 };
+scanCtx.lookupCandidates=createScannerLookup({requestMagic:api,sources:T.SOURCES,candById:scanCtx.candById,match:scanCtx.match});
 registerScanner(scanCtx);
 
 /* =========================================================

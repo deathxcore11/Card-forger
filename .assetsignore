@@ -24,6 +24,7 @@ mtg-tcg-route.js
 ai-review-route.js
 ai-ask-route.js
 ai-rules-route.js
+scan-identify-route.js
 rules-retrieval.js
 AI_SETUP.md
 

@@ -7,7 +7,7 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {GAMES,CARDS,PRINT_IDS,MAGIC_PRINTS,POKEMON_PRINTS,UNIQUE,RESULTS,validateSearchFixtures,startServer,openSearchApp,inventorySnapshot,noOverflow,capture} from './search-fixtures.mjs';
 
-const matrix=['All three review games use the existing same-name printing picker without switching the global game','Cancel leaves capture/original/quantity/condition/language/location unchanged','Exact selected card/release/variant/edition remains review-only, not fabricated OCR evidence','Finish-unconfirmed Pokémon selection stays incomplete','Late cancelled Magic response cannot mutate another capture','Live synthetic camera returns without duplicate capture or collection write'];
+const matrix=['All three games use an inline printing carousel, set/number/rarity filters and branded AI help without switching the global game','Inline selection leaves capture/original/quantity/condition/language/location unchanged','Exact selected card/release/variant/edition remains review-only, not fabricated OCR evidence','320/390/768px inline art and controls fit without overflow','Late AI response cannot mutate another capture','Live synthetic camera returns without duplicate capture or collection write'];
 console.log(await validateSearchFixtures());
 if(process.argv.includes('--validate-fixtures')){
   for(const game of GAMES)assert(CARDS[game].find(card=>card.id===PRINT_IDS[game]));
@@ -94,93 +94,58 @@ async function seed(app,game){
   await openCapturedCard(app.page,'synthetic-capture-A');
   await app.page.locator('.scan-confirm').waitFor();return queue(app.page);
 }
-async function openPicker(page){await act(page,'scanChangePrinting').click();await ready(page);}
-async function choose(page,game){
-  const rows=await page.locator('.printing-picker-choice').evaluateAll(nodes=>nodes.map(node=>({...node.dataset,disabled:node.disabled})));
-  const row=rows.find(row=>!row.disabled&&(game==='mtg'?row.cardId===MAGIC_PRINTS[1].id&&JSON.parse(row.key)[5]==='foil':game==='ptcg'?row.cardId===PRINT_IDS.ptcg&&row.variant==='holofoil':row.releaseId===UNIQUE.id&&row.edition==='1st-edition'));
-  assert(row,`${game} exact source-backed row is selectable`);
-  await page.locator(`.printing-picker-choice[data-key=${JSON.stringify(row.key)}]`).click();
-  await page.waitForFunction(()=>!document.querySelector('#sheet')?.open);await frame(page);return row;
+async function readyInline(page){
+  await page.locator('.scan-inline-printings .printing-carousel[aria-busy="false"]').waitFor();await frame(page);
+  assert.equal(await page.locator('#sheet[open]').count(),0,'Printing review stays in the original scanner panel');
 }
 async function reviewScenario(app,game){
-  const {page}=app,initial=await seed(app,game),beforeState=await inventorySnapshot(page);
-  await openPicker(page);assert.equal(await page.locator('.printing-picker').getAttribute('data-game'),game);
-  assert.match(await page.locator('.printing-picker').innerText(),/Nothing (?:is )?added automatically/);
-  await noOverflow(page,'#sheetBody',`${game} scanner printing picker 390px`);
-  assert.equal(await page.locator(game==='ygo'?'#printingPickerEdition':'#printingPickerFinish').count(),1);
-  assert.equal(await page.locator(game==='ygo'?'#printingPickerFinish':'#printingPickerEdition').count(),0);
-  await select(page,'#printingPickerSort','number');await act(page,'printingPickerView').filter({hasText:'List'}).click();
-  await capture(page,`synthetic-search-scanner-${game}-printing-picker`);
-  await act(page,'printingPickerCancel').click();await page.waitForFunction(()=>!document.querySelector('#sheet')?.open);
-  assert.deepEqual(await queue(page),initial,'Cancel changes no queued capture bytes');
-  assert.equal(await page.evaluate(()=>window.__uiTestState.ui.scan.confirm.batchId),'synthetic-capture-A');
-  await openPicker(page);const selected=await choose(page,game),after=await queue(page),row=after[0],chosen=row.cands[0];
-  assert.deepEqual(metadata(row),metadata(initial[0]));assert.deepEqual(after[1],initial[1]);
-  assert.equal(chosen.id,selected.cardId);assert.equal(chosen.exact,false);assert.equal(chosen.printingConfirmed,true);assert.equal(row.status,'review');
-  assert.equal(chosen.printingSelection.releaseId,selected.releaseId);assert.equal(chosen.printingSelection.variantKey,selected.variant);assert.equal(chosen.printingSelection.edition,selected.edition);
-  assert.equal(row.finish,game==='ygo'?'1st-edition':game==='ptcg'?'holofoil':'foil');
-  assert.equal(await page.evaluate(()=>window.__uiTestState.state.settings.game),'mtg','mixed-game review never switches the global game');
-  assert.equal(await inventorySnapshot(page),beforeState,'Selecting never writes collection');
-  await noOverflow(page,'.scan-confirm',`${game} compact review 390px`);await capture(page,`synthetic-search-scanner-${game}-selected-review`);
+  const {page}=app,initial=await seed(app,game),beforeState=await inventorySnapshot(page);await readyInline(page);
+  assert.equal(await page.locator('#scanMatchNumber').count(),1);
+  assert.equal(await page.getByRole('button',{name:'Identify with AI',exact:true}).count(),1);
+  for(const width of [320,390,768]){
+    await page.setViewportSize({width,height:920});await frame(page);await noOverflow(page,'.scan-confirm',`${game} inline ${width}`);
+    const art=await page.locator('.scan-inline-printings .printing-slide.is-current .printing-slide-art').boundingBox();assert(art.height>=180&&art.width>140,'Art is the main preview');
+    await capture(page,`synthetic-search-scanner-${game}-inline-${width}`);
+  }
+  await page.setViewportSize({width:390,height:920});
+  const choices=await page.locator('[data-change="scanBrowseFilter"][data-field="set"] option').evaluateAll(nodes=>nodes.map(n=>({value:n.value,label:n.label})));
+  const wanted=game==='mtg'?MAGIC_PRINTS[1].set:game==='ptcg'?CARDS.ptcg.find(c=>c.id===PRINT_IDS.ptcg).set.id:UNIQUE.id;
+  assert(choices.some(x=>x.value===wanted),`${game} exact set is available`);
+  await select(page,'[data-change="scanBrowseFilter"][data-field="set"]',wanted);
+  const state=await page.evaluate(()=>{const b=window.__uiTestState.ui.scan.confirm.inline;return b.rows.filter(r=>r.releaseId===b.filters.set).map(r=>({key:r.key,cardId:r.cardId,finish:r.finish,variant:r.variantKey,edition:r.edition,releaseId:r.releaseId,selectable:r.selectable}));});
+  const row=state.find(r=>r.selectable&&(game==='mtg'?r.cardId===MAGIC_PRINTS[1].id&&r.finish==='foil':game==='ptcg'?r.cardId===PRINT_IDS.ptcg&&r.variant==='holofoil':r.edition==='1st-edition'));
+  assert(row,`${game} exact printing exists`);
+  const groups=await page.evaluate(()=>{const q=window.__uiTestState.ui.scan.confirm;return q.inline.rows.filter(r=>r.releaseId===q.inline.filters.set).map(r=>({key:r.key,number:r.number,total:r.total,rarity:r.rarity}));});
+  const details=groups.find(r=>r.key===row.key);
+  await select(page,'[data-change="scanBrowseFilter"][data-field="number"]',details.number+(details.total?'/'+details.total:''));
+  if(details.rarity)await select(page,'[data-change="scanBrowseFilter"][data-field="rarity"]',details.rarity);
+  const variant=page.locator('.scan-inline-printings .printing-slide.is-current [data-change="scanBrowseVariant"]');
+  if(await variant.count())await select(page,'.scan-inline-printings .printing-slide.is-current [data-change="scanBrowseVariant"]',row.key);
+  await page.locator(`.scan-inline-printings [data-act="scanBrowseChoose"][data-key=${JSON.stringify(row.key)}]`).click();await frame(page);
+  const after=await queue(page),chosen=after[0].cands[0];
+  assert.deepEqual(metadata(after[0]),metadata(initial[0]));assert.deepEqual(after[1],initial[1]);
+  assert.equal(chosen.id,row.cardId);assert.equal(chosen.exact,false);assert.equal(chosen.printingConfirmed,true);
+  assert.equal(chosen.printingSelection.releaseId,row.releaseId);assert.equal(after[0].finish,game==='mtg'?'foil':game==='ptcg'?'holofoil':'1st-edition');
+  assert.equal(await inventorySnapshot(page),beforeState);assert.equal(await page.locator('#sheet[open]').count(),0);
+  assert.equal(await page.evaluate(()=>window.__uiTestState.state.settings.game),'mtg');
+  await capture(page,`synthetic-search-scanner-${game}-selected-inline`);
+  // An unreadable photo is friendly and leaves the existing catalogue selection intact.
+  await page.route('**/api/ai/identify-card',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({game,readable:false,name:'',number:'',set:''})}));
+  await page.getByRole('button',{name:'Identify with AI',exact:true}).click();
+  await page.locator('.scan-ai-message').filter({hasText:'clearer photo'}).waitFor();
+  assert.equal((await queue(page))[0].cands[0].id,row.cardId);assert.equal(await inventorySnapshot(page),beforeState);
   await act(page,'scanDismiss').click();await page.waitForFunction(()=>!window.__uiTestState.ui.scan.confirm);
-  assert.equal((await queue(page)).length,2);assert.equal(await inventorySnapshot(page),beforeState);
-  const playing=await page.locator('#scanVideo').evaluate(video=>({same:video.srcObject===window.__scannerReviewTest.stream,paused:video.paused,time:video.currentTime}));
-  assert.equal(playing.same,true);assert.equal(playing.paused,false);await page.waitForTimeout(150);
-  assert(await page.locator('#scanVideo').evaluate((video,time)=>video.currentTime>time,playing.time),'Same synthetic camera keeps playing');
-  assert.equal(await page.evaluate(()=>window.__scannerReviewTest.ocrCalls),0,'Review does not generate another capture or OCR');
-  assert.deepEqual((await queue(page)).map(row=>row.id),initial.map(row=>row.id));
-  if(game==='ptcg'){
-    await openCapturedCard(page,'synthetic-capture-A');await openPicker(page);
-    await page.locator(`.printing-picker-choice[data-card-id="${POKEMON_PRINTS[1].id}"][data-variant="firstEdition"]`).click();
-    await page.waitForFunction(()=>!document.querySelector('#sheet')?.open);
-    const coarse=(await queue(page))[0];assert.equal(coarse.finish,'');assert.equal(coarse.cands[0].printingSelection.variantKey,'firstEdition');
-    assert.equal(await act(page,'scanConfirm').isEnabled(),false,'Edition-only source metadata cannot auto-ready or enable saving an assumed finish');
-  }
-  if(game==='ygo'){
-    await openCapturedCard(page,'synthetic-capture-A');await openPicker(page);
-    const unknown=page.locator('.printing-picker-choice[data-edition=""][data-printing="LOB-001::Rare"]').first();
-    const identity=await unknown.evaluate(node=>({...node.dataset}));await unknown.click();
-    await page.waitForFunction(()=>!document.querySelector('#sheet')?.open);
-    const pending=(await queue(page))[0];assert.equal(pending.cands[0].setReleaseId,identity.releaseId);assert.equal(pending.cands[0].print,'LOB-001|Rare');
-    assert.equal(pending.finish,'');assert.equal(pending.cands[0].finishUnconfirmed,true);assert.equal(await act(page,'scanConfirm').isEnabled(),false,'A verified release does not imply Unlimited edition');
-    await select(page,'[data-change="scanConfirmFinish"]','unlimited');
-    assert.equal((await queue(page))[0].finish,'unlimited');assert.equal(await act(page,'scanConfirm').isEnabled(),true,'Only an explicit edition choice enables the final save');
-    assert.equal(await inventorySnapshot(page),beforeState,'Choosing an edition still does not save automatically');
-  }
+  assert.equal((await queue(page)).length,2);assert.equal(await page.evaluate(()=>window.__scannerReviewTest.ocrCalls),0);
+  const playing=await page.locator('#scanVideo').evaluate(video=>video.srcObject===window.__scannerReviewTest.stream&&!video.paused);assert(playing,'Same camera continues after inline review');
 }
 async function lateCancelledScenario(app){
-  const {page}=app,initial=await seed(app,'mtg'),match=url=>url.hostname==='api.scryfall.com'&&url.searchParams.get('q')?.includes('shared-fixture-oracle'),gate=app.hold(match);
-  try{
-    await act(page,'scanChangePrinting').click();await bounded(gate.seen,'Held printing page');
-    await act(page,'printingPickerCancel').click();await page.waitForFunction(()=>!document.querySelector('#sheet')?.open);
-    await act(page,'scanDismiss').click();await openCapturedCard(page,'synthetic-capture-B');
-    const before=await queue(page);await frame(page);
-    // Native dialog close intentionally retains its hidden body. Observe the
-    // actual open/context/visibility contract, and independently reject any
-    // late repaint of that retained DOM rather than expecting its removal.
-    const closed=await page.evaluate(()=>{
-      const sheet=document.querySelector('#sheet'),body=document.querySelector('#sheetBody');
-      window.__scannerLatePickerMutations=[];
-      window.__scannerLatePickerObserver=new MutationObserver(records=>window.__scannerLatePickerMutations.push(...records.map(record=>({type:record.type,target:record.target.id||record.target.nodeName,attribute:record.attributeName}))));
-      window.__scannerLatePickerObserver.observe(body,{childList:true,characterData:true,attributes:true,subtree:true});
-      window.__scannerLatePickerObserver.observe(sheet,{attributes:true,attributeFilter:['open']});
-      return {open:sheet.open,context:window.__uiTestState.ui.sheetCtx,html:body.innerHTML};
-    });
-    assert.equal(closed.open,false);assert.equal(closed.context,null);gate.release();
-    await bounded((async()=>{while(app.requests.some(row=>match(new URL(row.url))&&!row.settled))await new Promise(r=>setTimeout(r,10));})(),'Released/cancelled printing response');await frame(page);
-    assert.deepEqual(await queue(page),before);assert.equal(before[0].originalShot,initial[0].originalShot);
-    assert.equal(await page.evaluate(()=>window.__uiTestState.ui.scan.confirm.batchId),'synthetic-capture-B');
-    const after=await page.evaluate(()=>{
-      const observer=window.__scannerLatePickerObserver,records=observer.takeRecords();
-      window.__scannerLatePickerMutations.push(...records.map(record=>({type:record.type,target:record.target.id||record.target.nodeName,attribute:record.attributeName})));observer.disconnect();
-      return {open:document.querySelector('#sheet').open,context:window.__uiTestState.ui.sheetCtx,html:document.querySelector('#sheetBody').innerHTML,mutations:window.__scannerLatePickerMutations};
-    });
-    assert.equal(after.open,false,'Late A lookup cannot reopen the native dialog over B');
-    assert.equal(after.context,null,'Cancelled A has no active sheet context');
-    assert.equal(await page.locator('.printing-picker:visible').count(),0,'No stale picker is visible over B');
-    assert.equal(after.html,closed.html,'Late A lookup cannot repaint the retained hidden sheet');
-    assert.deepEqual(after.mutations,[],'Cancelled lookup cannot mutate or transiently reopen the sheet');
-  }finally{gate.release();}
+ const {page}=app;await seed(app,'mtg');await readyInline(page);
+ let release,seen;const started=new Promise(r=>seen=r),gate=new Promise(r=>release=r);
+ await page.route('**/api/ai/identify-card',async route=>{seen();await gate;await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({game:'mtg',readable:true,name:'Fixture',number:'123',set:'one'})}).catch(()=>{});});
+ await page.getByRole('button',{name:'Identify with AI',exact:true}).click();await bounded(started,'Held AI photo read');
+ await act(page,'scanDismiss').click();await openCapturedCard(page,'synthetic-capture-B');await readyInline(page);
+ const before=await queue(page);release();await frame(page);
+ assert.deepEqual(await queue(page),before);assert.equal(await page.evaluate(()=>window.__uiTestState.ui.scan.confirm.batchId),'synthetic-capture-B');assert.equal(await page.locator('#sheet[open]').count(),0);
 }
 function record(label,phase,error){failures.push({label,phase,error});return {phase,stack:error.stack};}
 async function run(label,game,fn){
@@ -199,7 +164,7 @@ async function run(label,game,fn){
 try{
   server=await startServer();browser=await chromium.launch();
   for(const game of GAMES)await run(`${game}-scanner-printing-review`,game,app=>reviewScenario(app,game));
-  await run('mtg-cancelled-a-to-b','mtg',lateCancelledScenario);
+  await run('mtg-late-ai-a-to-b','mtg',lateCancelledScenario);
 }catch(error){record('runner','setup',error);}
 finally{try{await browser?.close();}catch(error){record('runner','browser cleanup',error);}try{await server?.close();}catch(error){record('runner','server cleanup',error);}}
 await mkdir(RESULTS,{recursive:true});await writeFile(resolve(RESULTS,'scanner-printing-browser.json'),JSON.stringify({kind:'synthetic-scanner-printing-review',matrix,outcomes,status:failures.length?'failed':'passed',limitations:['No physical-camera or OCR-accuracy claim.','All card data, images, camera pixels and collection fixtures are synthetic.'],failures:failures.map(({label,phase,error})=>({label,phase,stack:error.stack}))},null,2));

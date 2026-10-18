@@ -163,7 +163,7 @@ try {
       priceOf:()=>null,openPrintingPicker:config=>h.helper.open(config),addMany:async(g,items)=>saved.push({game:g,items})});
     assert.equal(typeof A.scanChangePrinting,'function','registered scanner exposes the real printing action');
     A.scanBatchReview({dataset:{id:'capture-A'}});
-    assert.match(scanConfirmation(game,S.ui.scan,{}),/Change printing/);
+    assert.match(scanConfirmation(game,S.ui.scan,{}),/Browse set, number and rarity/);
     const original=loadBatch(),q=S.ui.scan.confirm;
     await A.scanChangePrinting();h.picker.cancel();
     assert.deepEqual(loadBatch(),original,'cancel does not persist any candidate or metadata change');

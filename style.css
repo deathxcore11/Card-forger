@@ -3303,6 +3303,31 @@ body[data-view="collection"] #content:is(.view-compact,.view-symbols) .display-l
 .condition-price-preview p {margin:0;}
 .condition-price-preview {grid-template-columns:minmax(0,1fr);}
 .condition-price-preview > .btn {min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;}
+/* One scanner review surface: art first, precise lookup directly below. */
+.scan-inline-printings,.scan-candidate-carousel{container-type:inline-size;min-width:0}
+.scan-confirm .printing-carousel{--slide:76cqw}
+.scan-confirm .printing-slide-art{height:clamp(190px,32dvh,330px);background:radial-gradient(ellipse at center,color-mix(in srgb,var(--game-color,var(--gold)) 13%,transparent),transparent 70%)}
+.scan-confirm .printing-slide-art .card-artwork{width:100%;height:100%;display:block}
+.scan-confirm .printing-slide-copy strong{font-size:21px;line-height:1.2}
+.scan-confirm .printing-slide-copy>b{font-size:13px;color:var(--muted)}
+.scan-confirm .printing-slide-copy .btn{white-space:normal;min-width:0;min-height:44px}
+.scan-confirm .printing-slide-copy select{width:100%;min-width:0;max-width:100%}
+.scan-lookup{display:grid;gap:10px;margin:16px 0;padding-top:16px;border-top:1px solid var(--line)}
+.scan-lookup .field,.scan-browse-filters .field{display:grid;gap:5px;margin:0;font-size:12px;min-width:0;color:var(--muted)}
+.scan-lookup :is(input,select),.scan-browse-filters select{min-width:0;width:100%;max-width:100%;min-height:44px;font-size:14px}
+.scan-lookup-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end}
+.scan-lookup-row .btn{min-width:0;min-height:44px;white-space:normal;font-size:14px;padding:10px 12px}
+.scan-ai-help{display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px;background:linear-gradient(110deg,#62d7ed0c,#b597ed12);border-color:#b597ed45}
+.scan-ai-help .stashy-logo{width:34px;height:34px;flex:none}
+.scan-lookup>small{font-size:10px;line-height:1.45;text-align:center}
+.scan-ai-message{margin:0;font-size:13px;line-height:1.5;color:var(--text)}
+.scan-browse-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}
+.scan-browse-status{margin:6px 0;text-align:center}
+.scan-unknown-art{display:grid;justify-items:center;gap:10px;text-align:center;margin:14px 0}
+.scan-unknown-art img{max-width:75%;height:clamp(180px,30dvh,300px);object-fit:contain;border-radius:14px}
+.scan-unknown-art .stashy-logo{width:100px;height:100px}
+.scan-unknown-art p{font-size:13px;color:var(--muted);max-width:38ch;margin:0}
+@media(min-width:700px){.scan-confirm .printing-carousel{--slide:56cqw}.scan-confirm .printing-slide-art{height:320px}}
 .condition-price-preview strong {font-size:1.1rem;}
 .condition-price-hero {display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin:4px 0;min-width:0;}
 .condition-price-preview .condition-price-amount {font-size:clamp(1.75rem,5vw,2.2rem);line-height:1.15;font-variant-numeric:tabular-nums;letter-spacing:-.025em;}
@@ -4590,3 +4615,5 @@ body[data-game="ygo"] .ask-launch{--ask-a:#b697ef;--ask-b:#697db5;--ask-c:#dbb26
 .shared-deck-title{align-items:center;gap:20px}.shared-deck-title>.deck-box{margin:14px 8px 0}
 .shared-deck-section .list-head{display:flex;justify-content:space-between}
 .community-profile-header{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 16%,var(--surface)),var(--surface-2))}
+
+.scan-selected-finish{display:grid;gap:3px;font-size:11px;color:var(--muted);flex:1}.scan-selected-finish b{font-size:14px;color:var(--text)}

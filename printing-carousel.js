@@ -46,17 +46,17 @@ export function printingCarouselHTML(state,visible,facets) {
 
 // Native horizontal scrolling gives touch momentum, trackpad support and scroll
 // snapping without intercepting vertical page gestures or writing inventory.
-export function attachPrintingCarousel(root,state,{step,nearEnd}={}) {
+export function attachPrintingCarousel(root,state,{step,nearEnd,onChange}={}) {
  const rail=root?.querySelector?.('.printing-carousel');if(!rail)return;
  const slides=[...rail.querySelectorAll('.printing-slide')];if(!slides.length)return;
  const position=root.querySelector('[data-printing-position]'),prev=root.querySelector('[data-d="-1"]'),next=root.querySelector('[data-d="1"]');
  const center=(slide,behavior='instant')=>rail.scrollTo({left:slide.offsetLeft-(rail.clientWidth-slide.offsetWidth)/2,behavior});
  let index=Math.max(0,slides.findIndex(s=>s.dataset.group===state.activeGroup)),timer;
- const select=i=>{index=i;state.activeGroup=slides[i].dataset.group;slides.forEach((s,n)=>{s.classList.toggle('is-current',n===i);s.inert=n!==i;});if(position)position.textContent=`${i+1} / ${slides.length}`;if(prev)prev.disabled=i===0;if(next)next.disabled=i===slides.length-1;};
+ const select=(i,notify=false)=>{const changed=i!==index;index=i;state.activeGroup=slides[i].dataset.group;slides.forEach((s,n)=>{s.classList.toggle('is-current',n===i);s.inert=n!==i;});if(position)position.textContent=`${i+1} / ${slides.length}`;if(prev)prev.disabled=i===0;if(next)next.disabled=i===slides.length-1;if(changed&&notify)onChange?.(i);};
  select(index);center(slides[index]);
- rail.addEventListener('scroll',()=>{clearTimeout(timer);timer=setTimeout(()=>{if(!rail.isConnected)return;const midpoint=rail.scrollLeft+rail.clientWidth/2;let best=0;slides.forEach((s,i)=>{if(Math.abs(s.offsetLeft+s.offsetWidth/2-midpoint)<Math.abs(slides[best].offsetLeft+slides[best].offsetWidth/2-midpoint))best=i;});select(best);if(best>=slides.length-3)nearEnd?.();},100);},{passive:true});
+ rail.addEventListener('scroll',()=>{clearTimeout(timer);timer=setTimeout(()=>{if(!rail.isConnected)return;const midpoint=rail.scrollLeft+rail.clientWidth/2;let best=0;slides.forEach((s,i)=>{if(Math.abs(s.offsetLeft+s.offsetWidth/2-midpoint)<Math.abs(slides[best].offsetLeft+slides[best].offsetWidth/2-midpoint))best=i;});select(best,true);if(best>=slides.length-3)nearEnd?.();},100);},{passive:true});
  rail.addEventListener('keydown',e=>{if(e.target!==rail||!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();step?.(e.key==='Home'?-slides.length:e.key==='End'?slides.length:e.key==='ArrowLeft'?-1:1);});
  // Recenter the same printing after unfolding or rotating, without moving focus.
  if(globalThis.ResizeObserver){const observer=new ResizeObserver(()=>{if(!rail.isConnected)return observer.disconnect();center(slides[index]);});observer.observe(rail);state.carouselObserver=observer;}
- state.moveCarousel=delta=>{const i=Math.max(0,Math.min(slides.length-1,index+delta));select(i);center(slides[i],globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'instant':'smooth');if(i>=slides.length-3)nearEnd?.();};
+ state.moveCarousel=delta=>{const i=Math.max(0,Math.min(slides.length-1,index+delta));center(slides[i],globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'instant':'smooth');select(i,true);if(i>=slides.length-3)nearEnd?.();};
 }

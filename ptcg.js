@@ -425,7 +425,7 @@ export const ptcgSource = {
     num = String(num).trim();
     const tries = [...new Set(/^\d+$/.test(num) ? [num, String(Number(num)), String(Number(num)).padStart(3, "0")] : [num, num.toUpperCase()])];
     for (const n of tries) {
-      const d = (await get("/cards", { name, localId: n })) || [];
+      const d = (await get("/cards", { ...(name?{name}:{}), localId: n })) || [];
       // TCGdex matches localId loosely ("053" also finds "SWSH153"); keep exact numbers only.
       const hits = d.map(brief).filter((c) => !c.pocket && collectorKey(c.id.slice(c.id.lastIndexOf("-") + 1)) === collectorKey(num));
       if (hits.length) return hits;
