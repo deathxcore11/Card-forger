@@ -204,7 +204,7 @@ root.dialogs.pop();mutation();flush();assert.notEqual(replacement.values['--tx']
 win.emit('orientationchange');flush();assert.equal(replacement.values['--tx'],'0deg','rotation recalibrates rather than throwing the card to an extreme');
 replacement.bounds={...replacement.bounds,top:1100,bottom:1300};assert.equal(motionCard(root),null);replacement.bounds={...replacement.bounds,top:100,bottom:300};root.emit('scroll');flush();assert(replacement.classes.has('gyro'),'scrolling into view schedules motion with no extra touch');
 let permissionCalls=0;DeviceOrientationEvent.requestPermission=()=>{permissionCalls++;return Promise.resolve('granted');};const permittedRoot=new Node();permittedRoot.querySelector=()=>null;attachTilt(permittedRoot);assert.equal(win.handlers.deviceorientation.length,2,'Platforms with an existing permission also listen immediately');assert.equal(permissionCalls,0,'Registering for existing motion never prompts for new permission');delete DeviceOrientationEvent.requestPermission;
-reduce=true;const reducedRoot=new Node();attachTilt(reducedRoot);assert.deepEqual(reducedRoot.handlers,{});reduce=false;
+reduce=true;const reducedRoot=new Node();attachTilt(reducedRoot);assert.deepEqual(Object.keys(reducedRoot.handlers),['click'],'Reduced motion keeps finish controls usable without tilt listeners');reduce=false;
 console.log('PASS: first-open sensor activation, active-touch/late-observer race, release-timer race, cancellation, foreground ownership, replacement calibration, scrolling, rotation and reduced motion.');
 // Isolated scheduler regression for the hosted printing-replacement ordering.
 // Keep the preceding touch/mouse/overlay lifecycle and its input history intact.

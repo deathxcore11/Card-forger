@@ -1,15 +1,19 @@
-const CACHE = "cardforge-shell-v213";
+const CACHE = "cardforge-shell-v214";
 const ASSETS = [
   "./",
   "./index.html",
   "./style.css",
+  "./finish-effects.css",
   "./sets-ui.css",
   "./printing-picker.css",
   "./printing-picker.js",
   "./scanner-printing.js",
   "./app.js",
+  "./scryfall-client.js",
   "./feedback-layer.js",
   "./deck-box.js",
+  "./finish-preview.js",
+  "./finish-effects.js",
   "./card-detail-extras.js",
   "./community-profile.js", "./account-workspaces.js", "./account-scope.js",
   "./printing-carousel.js",

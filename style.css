@@ -4529,3 +4529,6 @@ body.glass .cs-tabs button:not(.on):not([aria-selected="true"]) {background:tran
 /* AI entry points share one quiet shell; motion belongs to the card emblem. */
 .ask-launch{background:var(--surface);color:var(--text);border:1px solid var(--line);box-shadow:none;animation:none}
 .ask-launch .brand-backplate{fill:transparent}
+
+/* Finish previews follow verified printing availability, independently of ownership. */
+/* Printing-aware finish styling is in finish-effects.css. */

@@ -359,3 +359,23 @@ jobs:
         with:
           name: deck-box-browser-evidence
           path: test-results/synthetic-search-deck-box-*
+
+  finish-effects-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - name: Check finish controls across phone, foldable, tablet and desktop widths
+        run: node tests/finish-effects-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: finish-effects-browser-evidence
+          path: test-results/finish-effects-*

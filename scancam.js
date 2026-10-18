@@ -648,6 +648,14 @@ function showScanSaved(item) {
   setTimeout(()=>removeFeedback(receipt),4800);
 }
 
+export function scanConditionNotice(q) {
+ if(q.price!=null||!q.finish||q.i<0)return '';
+ const messages={loading:'Checking this printing, finish, language and condition…',unpriced:'No current quote matches this condition and version.',available:'No current quote matches this condition and version.',unmapped:'This exact version could not be matched to a price product.',unavailable:'The price service could not complete this lookup.',deferred:q.priceReason==='offline'?'Reconnect to check this condition.':'This price lookup is waiting for another attempt.',not_configured:'Condition pricing is not connected on this deployment.',rate_limited:'The price service paused this lookup.'};
+ const notice=q.priceNotice||messages[q.priceStatus]||'';
+ const retry=['unavailable','deferred','rate_limited','unpriced','unmapped','available'].includes(q.priceStatus);
+ return notice?`<p class="foot scan-price-notice" role="status">${esc(notice)}</p>${retry?'<button class="link small" data-act="scanRetryConditionPrice">Retry condition price</button>':''}`:'';
+}
+
 export function scanConfirmation(g, st, prefs) {
   const q=st.confirm;if(!q)return "";
   const c=st.cands?.[q.i??0],isBatch=!!q.batchId,options=st.cands||[],chosen=q.i>=0;
@@ -664,7 +672,7 @@ export function scanConfirmation(g, st, prefs) {
   ${g==='ptcg'&&!fs.length?'<p class="scan-confirm-error">Exact finish unavailable for this source version. Choose another verified printing before adding.</p>':''}
   <details class="scan-review-more" ${q.detailsOpen?'open':''}><summary>${esc(label(CONDITIONS,q.condition))} · ${esc(label(LANGS,q.lang))} · ${q.price==null?(q.priceStatus==='deferred'?'Price lookup deferred':'Price unavailable'):'Estimated price '+money(q.price)}</summary><div class="scan-confirm-conditions" role="group" aria-label="Card condition">${CONDITIONS.map(([v,l])=>`<button data-act="scanConfirmCondition" data-condition="${esc(v)}" aria-label="${esc(v)}" aria-pressed="${q.condition===v}">${l}</button>`).join('')}</div><label>Language<select data-change="scanConfirmLanguage" aria-label="Scanned card language">${LANGS.map(([v,l])=>`<option value="${esc(v)}" ${q.lang===v?'selected':''}>${esc(LANG_NAME[v]||l)}</option>`).join('')}</select></label></details>
   <div class="scan-condition-value" role="status"><span>${esc(q.condition)} · ${q.qty} ${q.qty===1?'copy':'copies'}</span><strong>${!chosen||!q.finish?'Choose printing and finish':q.price==null?(q.priceStatus==='deferred'?'Price lookup deferred':'Condition price unavailable'):money(q.price*q.qty)+' estimated value'}</strong></div>
-  ${q.error?`<p class="scan-confirm-error" role="alert">${esc(q.error)}</p>`:''}<div class="scan-confirm-actions"><button class="btn ghost" data-act="scanRetry" ${q.saving?'disabled':''}>Scan again</button><button class="btn" data-act="scanConfirm" ${q.saving||!chosen||!q.finish?'disabled':''}>${q.saving?'Saving…':'Add to collection'}</button></div>${isBatch?`<button class="link small" data-act="scanBatchDiscard">Remove this capture</button>`:''}</section>`;
+  ${scanConditionNotice(q)}${q.error?`<p class="scan-confirm-error" role="alert">${esc(q.error)}</p>`:''}<div class="scan-confirm-actions"><button class="btn ghost" data-act="scanRetry" ${q.saving?'disabled':''}>Scan again</button><button class="btn" data-act="scanConfirm" ${q.saving||!chosen||!q.finish?'disabled':''}>${q.saving?'Saving…':'Add to collection'}</button></div>${isBatch?`<button class="link small" data-act="scanBatchDiscard">Remove this capture</button>`:''}</section>`;
 }
 
 export function registerScanner(ctx) {
@@ -686,7 +694,7 @@ export function registerScanner(ctx) {
   // Only explicit review actions request a quote. Camera frames, OCR and ordinary
   // renders remain cache-only. A replacement capture or changed selection retires
   // this callback without reopening a review or touching the next card.
-  const requestReviewPrice=()=>{
+  const requestReviewPrice=({retry=false}={})=>{
     const st=s(),q=st.confirm,c=st.cands?.[q?.i??0];
     if(!q||q.saving||q.i<0||!c||!q.finish||typeof ctx.requestConditionPrice!=='function')return;
     q.priceReviewRequested=true;
@@ -698,12 +706,14 @@ export function registerScanner(ctx) {
       (!captureId||loadBatch().some(row=>row.id===captureId&&String(row.captureRevision||'')===revision));
     q.priceRequest=token;
     const selection={condition:q.condition||'Near Mint',language:String(q.lang||'en').toLowerCase().replace('_','-')};
-    Promise.resolve(ctx.requestConditionPrice(G,c,q.finish,selection,result=>{
-      if(!current())return;
-      const price=priceFor(G,c,q.finish,q),status=result.status,reason=result.reason||'';
-      const changed=q.price!==price||q.priceStatus!==status||q.priceReason!==reason;
-      Object.assign(q,{price,priceStatus:status,priceReason:reason});if(changed)render();
-    },current)).catch(()=>{});
+    const apply=result=>{
+      if(!result||!current())return;
+      const price=priceFor(G,c,q.finish,q),status=result.status,reason=result.limitReason||result.reason||'',notice=result.notice||'';
+      const changed=q.price!==price||q.priceStatus!==status||q.priceReason!==reason||q.priceNotice!==notice;
+      Object.assign(q,{price,priceStatus:status,priceReason:reason,priceNotice:notice,priceOwnerVerified:result.ownerVerified});if(changed)render();
+    };
+    Object.assign(q,{priceStatus:'loading',priceReason:'',priceNotice:''});render();
+    Promise.resolve(ctx.requestConditionPrice(G,c,q.finish,selection,apply,current,{retry})).then(apply).catch(()=>apply({status:'unavailable'}));
   };
 
   // A reload cannot resume an in-memory OCR promise, but the image is retained for retry.
@@ -1333,8 +1343,8 @@ export function registerScanner(ctx) {
     const key=JSON.stringify([G,c.id,c.print||'',c.setReleaseId||c.releaseName||'',!!c.setReleaseUnverified,identityOnly]);
     if(!hydration.has(key))hydration.set(key,(async()=>{
       for(let attempt=0;attempt<2;attempt++)try{
-        control?.check();const load=()=>ctx.candById?.(G,c.id,c.why,c.exact,{identityOnly,print:c.print||'',releaseName:c.releaseName||'',setReleaseId:c.setReleaseId||'',setReleaseUnverified:!!c.setReleaseUnverified,printingAmbiguous:!!c.printingAmbiguous});
-        const full=await scanDeadline(()=>control?control.run(JSON.stringify(['hydration',key]),load):load(),identityOnly?SCAN_DEADLINES.hydration:SCAN_DEADLINES.ocr,'Card details',()=>control?.cancel());control?.check();
+        control?.check();const abort=new AbortController();const load=()=>ctx.candById?.(G,c.id,c.why,c.exact,{identityOnly,signal:abort.signal,print:c.print||'',releaseName:c.releaseName||'',setReleaseId:c.setReleaseId||'',setReleaseUnverified:!!c.setReleaseUnverified,printingAmbiguous:!!c.printingAmbiguous});
+        const full=await scanDeadline(()=>control?control.run(JSON.stringify(['hydration',key]),load):load(),identityOnly?SCAN_DEADLINES.hydration:SCAN_DEADLINES.ocr,'Card details',()=>{abort.abort();control?.cancel();});control?.check();
         if(!full?.card || String(full.card.id)!==String(c.card?.id||c.id) || scanNameKey(full.name)!==scanNameKey(c.name))throw Error("Card details are unavailable. Connect and try again.");
         return {...full,...(c.identitySource?{identitySource:c.identitySource}:{}),...(c.identityConflict?{identityConflict:true}:{}),...(c.identifierConflict?{identifierConflict:true}:{}),...(c.signalConflict?{signalConflict:true}:{}),exact:c.exact===true&&full.exact!==false,print:c.print||full.print,sub:full.sub||c.sub,releaseName:c.releaseName||full.releaseName||'',setReleaseId:Object.hasOwn(full,'setReleaseId')?full.setReleaseId:c.setReleaseId||'',setReleaseUnverified:Object.hasOwn(full,'setReleaseUnverified')?full.setReleaseUnverified:!!c.setReleaseUnverified,printingAmbiguous:!!(c.printingAmbiguous||full.printingAmbiguous),localReference:false};
       }catch(e){if(attempt===1||/^SCAN_/.test(e.code||''))throw e;await new Promise(resolve=>setTimeout(resolve,250));}
@@ -1366,6 +1376,7 @@ export function registerScanner(ctx) {
   };
   A.scanBatchReview=t=>{if(!s().batchSaving&&!s().confirm?.saving)openBatchReview(t?.dataset?.id||'');};
   A.scanConfirmQty=t=>{const q=s().confirm;if(q&&!q.saving){q.qty=Math.min(999,Math.max(1,q.qty+Number(t.dataset.d)));persistReview();render();}};
+  A.scanRetryConditionPrice=()=>{const q=s().confirm;if(q&&!q.saving&&q.priceStatus!=='loading')requestReviewPrice({retry:true});};
   A.scanConfirmCondition=t=>{const q=s().confirm;if(q&&!q.saving&&CONDITIONS.some(([v])=>v===t.dataset.condition)){q.condition=t.dataset.condition;q.detailsOpen=true;refreshReviewPrice();persistReview();render();requestReviewPrice();}};
   C.scanConfirmLanguage=t=>{const q=s().confirm;if(q&&!q.saving&&LANGS.some(([v])=>v===t.value)){q.lang=t.value;q.detailsOpen=true;refreshReviewPrice();persistReview();render();requestReviewPrice();}};
   C.scanConfirmFinish=t=>{const q=s().confirm,c=s().cands?.[q?.i??0],G=q?.game||game();if(q&&!q.saving&&c&&finishesFor(G,c).includes(t.value)){q.finish=t.value;q.price=priceFor(G,c,q.finish,q);persistReview();render();requestReviewPrice();}};

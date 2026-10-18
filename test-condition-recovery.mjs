@@ -57,3 +57,12 @@ try{
 console.log('PASS: provider error diagnostics, exact Retry-After, queued notice retention, explicit retry recovery, reference/condition separation, cache availability and concurrent owner exemption.');
 
 const {conditionRetryTime}=await import('./condition-value.js');assert.equal(conditionRetryTime(1334*60000),'23 hours');assert.equal(conditionRetryTime(60000),'1 minute');assert.equal(conditionRetryTime(49*3600000),'3 days');
+
+const {scanConditionNotice}=await import('./scancam.js');
+const review={i:0,finish:'normal',condition:'Lightly Played',price:null,priceStatus:'rate_limited',priceReason:'provider_shared_limit',priceNotice:response.notice};
+assert.match(scanConditionNotice(review),/even when your own lookup allowance remains/);
+assert.match(scanConditionNotice(review),/data-act="scanRetryConditionPrice"/);
+assert.doesNotMatch(scanConditionNotice({...review,price:.12}),/Retry/);
+assert.doesNotMatch(scanConditionNotice({...review,i:-1}),/Retry/);
+assert.match(scanConditionNotice({...review,priceNotice:'<img onerror=alert(1)>'}),/&lt;img/);
+console.log('PASS: scanner exposes exact provider reason and deliberate retry without mislabeling an owner quota or rendering untrusted markup.');

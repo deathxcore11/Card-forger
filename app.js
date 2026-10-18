@@ -1,3 +1,5 @@
+import {createScryfallClient} from './scryfall-client.js';
+import {selectPreviewFinish} from './finish-preview.js';
 import {deckBoxFields,readDeckBox,createDeckBoxTransitions} from './deck-box.js';
 import {setAccountScope} from './account-scope.js';
 import {createAccountWorkspaces} from './account-workspaces.js';
@@ -314,48 +316,8 @@ const safely = (p) => Promise.resolve(p).catch((e) => toast(e.message || String(
    Card data (Scryfall)
    ========================================================= */
 
-let apiChain = Promise.resolve(),
-  lastActTarget = null;
-function api(path, options = {}) {
-  const op = async () => {
-    if (options.signal?.aborted) throw Error("Card lookup cancelled.");
-    await new Promise((r) => setTimeout(r, 110));
-    if (options.signal?.aborted) throw Error("Card lookup cancelled.");
-    const ctl = new AbortController(),
-      cancel = () => ctl.abort(),
-      timer = setTimeout(() => ctl.abort(), 16000);
-    options.signal?.addEventListener?.("abort", cancel, {once:true});
-    try {
-      // Busy (429) or a dropped connection: wait a moment and try again, twice, before giving up.
-      let r, d;
-      for (let attempt = 0; ; attempt++) {
-        try {
-          r = await fetch("https://api.scryfall.com" + path, {
-            ...options,
-            headers: { Accept: "application/json", ...options.headers },
-            signal: ctl.signal,
-          });
-          if ((r.status === 429 || r.status >= 500) && attempt < 2) throw Object.assign(Error("busy"), { retry: true });
-          d = await r.json();
-          break;
-        } catch (e) {
-          if (e.name === "AbortError" || attempt >= 2) throw e.retry ? Error("The card database is busy. Try again in a moment.") : e;
-          await new Promise((ok) => setTimeout(ok, attempt ? 1500 : 600));
-        }
-      }
-      if (!r.ok) throw Object.assign(Error(d.details || "Card database unavailable."),{status:r.status});
-      return d;
-    } catch (e) {
-      throw Object.assign(Error(e.name === "AbortError" ? options.signal?.aborted ? "Card lookup cancelled." : "Card lookup timed out. Check your connection and try again." : e.message),{status:e.status});
-    } finally {
-      clearTimeout(timer);
-      options.signal?.removeEventListener?.("abort", cancel);
-    }
-  };
-  const result = apiChain.then(op, op);
-  apiChain = result.catch(() => {});
-  return result;
-}
+const api = createScryfallClient();
+let lastActTarget = null;
 
 async function resolve(name, fuzzy = false, refresh = false) {
   if (!String(name || "").trim()) throw Error("No card name given.");
@@ -3137,6 +3099,18 @@ const jumpToCardPrices = createDetailJump({
   showPrices:()=>A.cardTab({dataset:{tab:"prices"}}),refreshOffsets:sheetScrolled,
   reducedMotion:()=>!!globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches,
 });
+A.cardFinishPreview = t => {
+  const ctx=S.ui.sheetCtx;
+  if(!["card","tcard"].includes(ctx?.type))return;
+  const game=ctx.type==="card"?"mtg":ctx.game;
+  const card=game==="mtg"?ctx.print||meta(ctx.name):contextTcgCard(game,ctx.id,ctx);
+  if(game!==t.dataset.game||String(card?.id)!==String(t.dataset.cardId))return;
+  if(!selectPreviewFinish(game,card,ctx,t.dataset.finish))return;
+  // Reuse this same context for prices, enlargement and the explicit Add form.
+  refreshSheet();
+  const buttons=$$("#sheetBody [data-act=cardFinishPreview]");
+  buttons.find(b=>b.dataset.finish===ctx.priceFinish)?.focus({preventScroll:true});
+};
 A.cardPriceJump = t => {
   const ctx = S.ui.sheetCtx;
   if (!["card","tcard"].includes(ctx?.type)) return;
@@ -5293,13 +5267,13 @@ const scanCtx = {
   closeSheet: () => closeSheet(),
   addMany: (g, items) => (g === "mtg" ? mtgScanAddMany(items) : tcgCtx.scanAddMany(items, g)),
   priceOf: (g, cand, finish, selection = {}) => (g === "mtg" ? mtgScanPrice(cand, finish, selection) : tcgCtx.scanPrice?.(cand, finish, selection) ?? null),
-  requestConditionPrice: (g,cand,finish,selection,done,current) => {
+  requestConditionPrice: (g,cand,finish,selection,done,current,options={}) => {
     const card=cand.card;
-    if(!card||!finish||cand.localReference||cand.detailsOnly||!(cand.exact||cand.printingConfirmed))return;
+    if(!card||!finish||cand.localReference||cand.detailsOnly||!(cand.exact||cand.printingConfirmed))return {status:'deferred',reason:'unverified-selection',notice:'Confirm the exact printing before checking its condition price.'};
     const [printing,rarity]=String(cand.print||'').split('|');
     const entry=g==='mtg'?{...selection,printingId:card.id,printingVerified:true,finish}:
       {...selection,cardId:card.id,...(g==='ptcg'?{variant:finish}:{printing:printing||'',rarity:rarity||'',edition:finish,setReleaseId:cand.setReleaseId||'',setReleaseUnverified:!!cand.setReleaseUnverified})};
-    return fetchConditionValue(card,entry,g,done,{source:'review',current});
+    return fetchConditionValue(card,entry,g,done,{source:'review',current,retry:!!options.retry});
   },
   openPrintingPicker: config => scannerPrintingPicker.open(config),
   setOf: (g, cand) => (g === "mtg" ? cand.card?.set || "" : g === "ygo" ? String(cand.print || "").split("|")[0].split("-")[0] : cand.card?.set?.id || ""),
@@ -5311,7 +5285,7 @@ const scanCtx = {
   add: (g, c) => (g === "mtg" ? mtgScanAdd(c) : tcgCtx.scanAdd(c)),
   byText: (g, full) => (g === "mtg" ? mtgScanByText(textPhrases(full, 12), full) : tcgCtx.scanByText?.(g, full) ?? []),
   printings: (g, cand) => (g === "mtg" ? mtgScanPrintings(cand) : tcgCtx.scanPrintings?.(g, cand) ?? []),
-  candById: async (g, id, why, exact, options = {}) => (g === "mtg" ? api("/cards/" + encodeURIComponent(id)).then((c) => mtgScanCand(c, why, exact)).catch(() => null) : tcgCtx.scanCandById?.(g, id, why, exact, options) ?? null),
+  candById: async (g, id, why, exact, options = {}) => (g === "mtg" ? api("/cards/" + encodeURIComponent(id), {signal:options.signal}).then((c) => mtgScanCand(c, why, exact)).catch(() => null) : tcgCtx.scanCandById?.(g, id, why, exact, options) ?? null),
   candOf: async (g, p, why, exact) => (g === "mtg" ? (p.card ? mtgScanCand(p.card, why, exact) : null) : tcgCtx.scanCandById?.(g, p.id, why, exact) ?? null),
   details: (g, c) => (g === "mtg" ? A.card({ dataset: { name: c.name } }) : A.tCard({ dataset: { id: c.id } })),
 };

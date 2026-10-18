@@ -2,6 +2,7 @@
 // or the art. Pinch or double-tap to zoom, drag to pan, swipe down / ✕ / Esc to close.
 // Shows the image already on screen at once and swaps in the high-resolution one when it loads.
 
+import {esc} from './ui.js';
 const MAX = 6;
 
 // Reuse the picture that actually loaded, not a button's stale first URL.
@@ -10,21 +11,22 @@ export function zoomCardOptions(target) {
   let sources = [];
   try { const parsed = JSON.parse(image?.dataset?.artSources || "[]"); if (Array.isArray(parsed)) sources = parsed; } catch {}
   const src = image?.complete && image.naturalWidth > 0 && !image.hidden ? image.currentSrc || image.src : data.src;
-  return { src, sources, hi:data.hi || (/scryfall\.io/.test(src || "") ? scryfallHi(src) : ""), art:data.art, alt:data.name || "Card", fallback:data.fallback || "", holdCard:{holdCard:"true",id:data.id || "",name:data.name || "",entry:data.entry || ""} };
+  let finishModel=null;try{finishModel=JSON.parse(target.closest?.('[data-finish-model]')?.dataset.finishModel||'null');}catch{}
+  return { src, sources, finishModel, hi:data.hi || (/scryfall\.io/.test(src || "") ? scryfallHi(src) : ""), art:data.art, alt:data.name || "Card", fallback:data.fallback || "", holdCard:{holdCard:"true",id:data.id || "",name:data.name || "",entry:data.entry || ""} };
 }
 export function zoomSources(values, base) {
   return [...new Set(values.filter(value => typeof value === "string" && value).flatMap(value => {
     try { const url = new URL(value, base); return ["https:", "http:", "blob:"].includes(url.protocol) || /^data:image\//i.test(value) ? [url.href] : []; } catch { return []; }
   }))];
 }
-export function openZoom({ src, hi, sources = [], alt = "Card", art = "", artHi = "", fallback = "", holdCard=null }) {
+export function openZoom({ src, hi, sources = [], alt = "Card", art = "", artHi = "", fallback = "", holdCard=null, finishModel=null }) {
   const base = document.baseURI;
   const views = [{ id: "card", label: "Card", sources:zoomSources([src, ...sources, fallback, hi], base), hi:zoomSources([hi], base)[0] }];
   if (art) views.push({ id: "art", label: "Art", sources:zoomSources([art, artHi], base), hi:zoomSources([artHi], base)[0] });
   const dlg = document.createElement("dialog");
   dlg.className = "zoom";
   dlg.setAttribute("aria-label", `${alt} — enlarged`);
-  dlg.innerHTML = `<div class="zoom-stage"><img class="zoom-img" alt="${alt.replace(/"/g, "&quot;")}" draggable="false"></div>
+  dlg.innerHTML = `<div class="zoom-stage"><div class="zoom-card-surface" data-finish-surface="zoom" data-finish-model="${esc(JSON.stringify(finishModel||{}))}"><img class="zoom-img" alt="${alt.replace(/"/g, "&quot;")}" draggable="false"></div></div>
     <div class="zoom-top"><span class="zoom-res" aria-live="polite"></span><button class="zoom-btn" data-z="close" aria-label="Close">✕</button></div>
     <div class="zoom-bar">${views.length > 1 ? `<div class="zoom-seg" role="tablist">${views.map((v, i) => `<button role="tab" data-z="view" data-i="${i}" aria-selected="${i === 0}">${v.label}</button>`).join("")}</div>` : ""}
       <button class="zoom-btn" data-z="out" aria-label="Zoom out">−</button><button class="zoom-btn" data-z="fit" aria-label="Fit to screen">Fit</button><button class="zoom-btn" data-z="in" aria-label="Zoom in">+</button></div>
@@ -36,14 +38,15 @@ export function openZoom({ src, hi, sources = [], alt = "Card", art = "", artHi 
   if(holdCard)Object.assign(dlg.querySelector(".zoom-img").dataset,holdCard);
   const stage = dlg.querySelector(".zoom-stage"),
     im = dlg.querySelector(".zoom-img"),
+    surface = dlg.querySelector(".zoom-card-surface"),
     res = dlg.querySelector(".zoom-res");
   let s = 1, tx = 0, ty = 0, view = 0, loadId = 0;
   const pts = new Map();
   let pinch = null, pan = null, lastTap = 0, swipe = null;
 
   const apply = (anim = false) => {
-    im.style.transition = anim ? "transform 0.22s cubic-bezier(.2,.8,.2,1)" : "none";
-    im.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+    surface.style.transition = anim ? "transform 0.22s cubic-bezier(.2,.8,.2,1)" : "none";
+    surface.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
     dlg.classList.toggle("zoomed", s > 1.02);
   };
   // Keep the image from being dragged entirely off screen.
@@ -73,6 +76,9 @@ export function openZoom({ src, hi, sources = [], alt = "Card", art = "", artHi 
 
   const load = (i) => {
     view = i;
+    // Art crops have a different coordinate system. Preserve identity without misplacing a mask.
+    surface.dataset.finishModel=JSON.stringify(i===0?(finishModel||{}):{});
+    surface.querySelector?.('.finish-overlay')?.remove();
     const v = views[i], current = ++loadId, tried = new Set();
     const active = () => loadId === current && dlg.isConnected;
     const show = url => { tried.add(url); im.hidden = false; im.src = url; };
@@ -156,6 +162,10 @@ export function openZoom({ src, hi, sources = [], alt = "Card", art = "", artHi 
     }
   });
   stage.addEventListener("pointermove", (e) => {
+    if(!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches){
+      const r=surface.getBoundingClientRect();
+      if(r.width&&r.height){surface.style.setProperty('--mx',`${Math.max(0,Math.min(100,(e.clientX-r.left)/r.width*100))}%`);surface.style.setProperty('--my',`${Math.max(0,Math.min(100,(e.clientY-r.top)/r.height*100))}%`);}
+    }
     if (!pts.has(e.pointerId)) return;
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pinch && pts.size >= 2) {
@@ -176,8 +186,8 @@ export function openZoom({ src, hi, sources = [], alt = "Card", art = "", artHi 
       apply();
     } else if (swipe) {
       const dy = Math.max(0, e.clientY - swipe.y);
-      im.style.transition = "none";
-      im.style.transform = `translate(0, ${dy}px) scale(${1 - Math.min(0.15, dy / 2000)})`;
+      surface.style.transition = "none";
+      surface.style.transform = `translate(0, ${dy}px) scale(${1 - Math.min(0.15, dy / 2000)})`;
       dlg.style.setProperty("--fade", String(Math.max(0.35, 1 - dy / 400)));
     }
   });

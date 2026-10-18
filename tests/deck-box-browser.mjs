@@ -4,7 +4,7 @@ if(process.env.GITHUB_ACTIONS!=='true')throw Error('Browser execution is restric
 const {chromium}=await import('playwright'),server=await startServer(),browser=await chromium.launch();
 try{for(const game of ['mtg','ptcg','ygo']){const app=await openSearchApp(browser,server.base,{game,width:390}),{page}=app;
  try{
-  const cards=CARDS[game].slice(0,6),deck={id:'box-fixture',name:'My card box',format:game==='mtg'?'Standard':game==='ygo'?'tcg':'standard',...(game==='mtg'?{cards:cards.map(c=>({name:c.name,qty:1})),side:[]}:{zones:{main:cards.map(c=>({cardId:c.id,qty:1})),extra:[],side:[]}})};
+  const cards=CARDS[game].slice(0,6),deck={id:'box-fixture',name:'My card box',format:game==='mtg'?'Standard':game==='ygo'?'tcg':'standard',...(game==='mtg'?{cards:cards.map(c=>({name:c.name,qty:1})),side:[]}:{zones:{main:cards.map(c=>({cardId:c.id,name:c.name,qty:1})),extra:[],side:[]}})};
   await page.evaluate(({game,deck})=>{const s=window.__uiTestState.state;(game==='mtg'?s:s.tcg[game]).decks.push(deck);},{game,deck});
   const collection=await page.evaluate(()=>JSON.stringify([window.__uiTestState.state.collection,window.__uiTestState.state.tcg]));
   await page.locator('[data-nav="decks"]:visible').first().click();const tile=page.locator('.deck-tile').filter({has:page.locator('[data-deck-box="'+game+':box-fixture"]')});await tile.waitFor();const boxRect=await tile.locator('.deck-box').boundingBox(),formatRect=await tile.locator('.deck-format-stack .chip').boundingBox();assert(boxRect.y>=formatRect.y+formatRect.height,'small deck box sits below the format');await capture(page,`synthetic-search-deck-box-tile-${game}`);

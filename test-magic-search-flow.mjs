@@ -79,12 +79,12 @@ let html=search();assert.match(html,/id="magic-search-filters"/);assert.match(ht
 store.ui.db.results=[card('not-owned')];store.ui.db.filters={own:'owned'};html=search();assert.match(html,/None of the loaded cards/);assert.match(html,/data-act="dbMore"/);
 assert.throws(()=>scryfallSearchPath('https://other.example/cards/search?page=2'),/Unexpected/);assert.throws(()=>scryfallSearchPath('https://api.scryfall.com/cards/random'),/Unexpected/);
 console.log('PASS: actual Magic query/filter/Clear/saved/page actions resist stale success/failure, fallback and game changes; valid price-only/legendary queries, honest invalid filters, retries/dedup, stable disclosures and draft focus.');
-// Exercise the actual serialized API boundary: cancellation releases A and skips queued C.
+// Exercise the production API client: cancellation releases A and skips queued C.
 const apiCalls=[],apiCtx={AbortController,setTimeout,clearTimeout,fetch:(url,init)=>new Promise((resolve,reject)=>{
  const call={url,resolve,reject,signal:init.signal};apiCalls.push(call);
  init.signal.addEventListener('abort',()=>{const error=Error('aborted');error.name='AbortError';reject(error);},{once:true});
 })};
-vm.createContext(apiCtx);vm.runInContext(source.slice(source.indexOf('let apiChain ='),source.indexOf('\nasync function resolve(name')),apiCtx);
+apiCtx.api=(await import('./scryfall-client.js')).createScryfallClient({fetcher:apiCtx.fetch});
 const aAbort=new AbortController(),cAbort=new AbortController();
 const apiA=apiCtx.api('/cards/search?q=A',{signal:aAbort.signal});const aRejected=assert.rejects(apiA,/cancelled/);
 while(!apiCalls.length)await new Promise(r=>setTimeout(r,5));

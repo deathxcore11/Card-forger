@@ -36,3 +36,12 @@ const binder={...shared,kind:'binder',cards:[{id:'1',qty:2,referenceUSD:3.5},{id
 console.log('PASS: independent deck copies preserve sections, legacy snapshots cannot silently lose sections, binder values exclude private amounts, and friend previews have no edit actions');
 
 const {brandMark}=await import('./brand.js');for(const mode of ['brand-idle','brand-loading','assistant-button-mark']){const logo=brandMark(mode);assert.match(logo,/brand-breathing/);assert.match(logo,/brand-cycle-left/);assert.match(logo,/brand-cycle-right/);assert.match(logo,/aria-hidden="true"/);}
+
+// A cached/imported row may contain only cardId; rendering must recover its name.
+const {S,blank}=await import('./store.js'),{tcgDeck,cache}=await import('./tcg.js'),{CARDS}=await import('./tests/search-fixtures.mjs');
+for(const game of ['ptcg','ygo']){
+ S.state=blank();S.state.settings.game=game;S.state.tcg={ptcg:{collection:[],decks:[],wishlist:[]},ygo:{collection:[],decks:[],wishlist:[]}};S.state.tcg[game].decks=[{id:'nameless',name:'Recovered deck',format:game==='ptcg'?'standard':'tcg',zones:{main:CARDS[game].slice(0,3).map(c=>({cardId:c.id,qty:1})),extra:[],side:[]}}];
+ for(const c of CARDS[game])cache[game][c.id]=c;
+ assert.match(tcgDeck('nameless'),/deck-box-control/);
+}
+console.log('PASS: production Pokémon/Yu-Gi-Oh! deck render survives cached rows without names.');
