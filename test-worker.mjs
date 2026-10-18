@@ -8,7 +8,7 @@ import {readFileSync} from "node:fs";
 {
   const config=JSON.parse(readFileSync(new URL('./wrangler.jsonc',import.meta.url),'utf8').replace(/^\s*\/\/.*$/gm,''));
   assert.equal(config.name,'cardforge2');
-  assert.deepEqual(config.vars,{AI_LIMITS_ENABLED:'false',CONDITION_OWNER_ID:'94ea20a0-f250-4815-8391-de48dd14df98',CONDITION_DAILY_LIMIT:'30',CONDITION_MONTHLY_LIMIT:'900',CONDITION_MINUTE_LIMIT:'8'});
+  assert.deepEqual(config.vars,{TCGPLAYER_WEB_TEST:'true',AI_LIMITS_ENABLED:'false',CONDITION_OWNER_ID:'94ea20a0-f250-4815-8391-de48dd14df98',CONDITION_DAILY_LIMIT:'30',CONDITION_MONTHLY_LIMIT:'900',CONDITION_MINUTE_LIMIT:'8'});
   assert.deepEqual(Object.keys(config.previews).sort(),['durable_objects','vars']);
   const {CONDITION_OWNER_ID,...publicCaps}=config.vars;
   assert.deepEqual(config.previews.vars,publicCaps,'Preview does not gain the production owner exemption');

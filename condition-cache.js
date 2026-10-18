@@ -1,4 +1,5 @@
 import {TcgplayerConditionSource,tcgplayerConfigured,mergeConditionSources} from './tcgplayer-condition-source.js';
+import {TcgplayerWebSource,tcgplayerWebConfigured} from './tcgplayer-web-source.js';
 // A single durable coordinator shares product responses across users and edge regions.
 // Limits are requests, not cards; provider failures count too. No browser can change the caps.
 const DAY=86400000;
@@ -19,11 +20,11 @@ export async function conditionProviderFailure(response,now=Date.now()){
  return {status:limited?'rate_limited':'unavailable',reason,providerCode,retryAfterMs,nextRetryAt:now+retryAfterMs,providerObservedAt:now,retrySource:Number.isFinite(advised)&&advised>0?'provider-header':'fallback'};
 }
 export class ConditionPriceCache {
- constructor(ctx,env){this.storage=ctx.storage;this.env=env;this.pending=new Map();this.primary=new TcgplayerConditionSource(ctx.storage,env);}
+ constructor(ctx,env){this.storage=ctx.storage;this.env=env;this.pending=new Map();this.primary=tcgplayerWebConfigured(env)?new TcgplayerWebSource(ctx.storage,env):new TcgplayerConditionSource(ctx.storage,env);}
  async fetch(request){
   const product=new URL(request.url).searchParams.get('product');
   if(!/^\d{1,12}$/.test(product||''))return reply({status:'unmapped'},400);
-  if(!this.env.JUSTTCG_API_KEY&&!tcgplayerConfigured(this.env))return reply({status:'not_configured'});
+  if(!this.env.JUSTTCG_API_KEY&&!tcgplayerConfigured(this.env)&&!tcgplayerWebConfigured(this.env))return reply({status:'not_configured'});
   const owner=request.headers.get('X-Condition-Owner')==='verified';
   const params=new URL(request.url).searchParams,category=params.get('category'),forceBackup=params.get('fallback')==='1',pendingKey=product+':'+(category||'')+':'+forceBackup;
   if(this.pending.has(pendingKey)){
@@ -36,7 +37,7 @@ export class ConditionPriceCache {
   try{return reply(await job);}finally{this.pending.delete(pendingKey);}
  }
  async load(product,owner=false,category,forceBackup=false){
-  if(!tcgplayerConfigured(this.env))return {...await this.loadBackup(product,owner),providers:{tcgplayer:'not_configured',justtcg:'configured'}};
+  if(!tcgplayerConfigured(this.env)&&!tcgplayerWebConfigured(this.env))return {...await this.loadBackup(product,owner),providers:{tcgplayer:'not_configured',justtcg:'configured'}};
   const primary=await this.primary.load(product,category,owner);
   if(primary.status==='unmapped'||primary.status==='available'&&primary.complete&&!forceBackup)return {...primary,providers:{tcgplayer:primary.status,justtcg:this.env.JUSTTCG_API_KEY?'standby':'not_configured'}};
   const backup=this.env.JUSTTCG_API_KEY?await this.loadBackup(product,owner):null;
@@ -70,5 +71,5 @@ export class ConditionPriceCache {
    return {status:'available',...data};
   }catch{return withSaved({status:'unavailable'});}
  }
- async alarm(){let count=0;for(const prefix of ['product:','tcg-product:','tcg-catalog:']){const rows=await this.storage.list({prefix});for(const [key,value] of rows){if(Date.now()-value.cachedAt>=(prefix==='tcg-catalog:'?7*DAY:RETAIN))await this.storage.delete(key);else count++;}}if(count)await this.storage.setAlarm(Date.now()+DAY);}
+ async alarm(){let count=0;for(const prefix of ['product:','tcg-product:','tcg-catalog:','tcg-web-product:','tcg-web-catalog:']){const rows=await this.storage.list({prefix});for(const [key,value] of rows){if(Date.now()-value.cachedAt>=(prefix.includes('catalog:')?7*DAY:RETAIN))await this.storage.delete(key);else count++;}}if(count)await this.storage.setAlarm(Date.now()+DAY);}
 }

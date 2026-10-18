@@ -46,4 +46,5 @@ RELEASE-*.md
 condition-cache.js
 condition-feed-route.js
 tcgplayer-condition-source.js
+tcgplayer-web-source.js
 CONDITION_PRICING.md

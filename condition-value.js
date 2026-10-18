@@ -5,7 +5,7 @@ const aliases={nm:'Near Mint',nearmint:'Near Mint',lp:'Lightly Played',lightlypl
 export const conditionName=v=>v==null||v===''?'Near Mint':aliases[String(v).toLowerCase().replace(/[^a-z]/g,'')]||'Unknown condition';
 const amount=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v))&&Number(v)>=0?Number(v):null;
 const quoteTime=q=>Date.parse(q.observedAt||q.checkedAt);
-export const conditionQuoteTiming=q=>q?.observedAt?'last observed '+String(q.observedAt).slice(0,10):q?.checkedAt?'checked '+String(q.checkedAt).slice(0,10)+' · source observation date unavailable':'source observation date unavailable';
+export const conditionQuoteTiming=q=>q?.calculatedAt?'calculated '+String(q.calculatedAt).slice(0,10)+(q.checkedAt?' · checked '+String(q.checkedAt).slice(0,10):''):q?.observedAt?'last observed '+String(q.observedAt).slice(0,10):q?.checkedAt?'checked '+String(q.checkedAt).slice(0,10)+' · source observation date unavailable':'source observation date unavailable';
 export function lastKnownConditionQuote(entry={},quotes=[],now=Date.now()){
  return quotes.filter(q=>['current','last_known'].includes(q.priceStatus)&&q.currency==='USD'&&amount(q.price)!==null&&conditionName(q.condition)===conditionName(entry.condition)&&
   (q.priceStatus==='last_known'||Date.parse(q.validUntil)<=now)&&quoteTime(q)>now-30*86400000&&quoteTime(q)<=now+300000&&
