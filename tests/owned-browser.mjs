@@ -8,6 +8,9 @@ import {magicArtworkSources} from '../ui.js';
 import {entryPrice,needsCardRefresh} from '../tcg.js';
 import {lotPrice} from '../insights.js';
 import {cardKey} from '../core.js';
+import {valueHistoryModel,valueHistoryChart} from '../value-page.js';
+import {recordValueObservation} from '../value-history.js';
+import {homeValueCoverage} from '../home-ui.js';
 import {adoptOwnedGame,validateOwnedGameAdoption} from './owned-navigation-fixture.mjs';
 const GAMES=['mtg','ptcg','ygo'];
 const SVG='<svg xmlns="http://www.w3.org/2000/svg" width="630" height="880"><rect width="630" height="880" rx="25" fill="#547ca0"/><text x="30" y="110" fill="white" font-size="36">SYNTHETIC OWNERSHIP FIXTURE</text><text x="60" y="180" fill="white" font-size="40">Owned test card</text></svg>';
@@ -16,11 +19,12 @@ function ownedFixture(g){
  const common={id:'test-owned',name:'Owned test card',image:img,imageLarge:img,prices:{usd:100},fetchedAt:now,checkedAt:now,brief:false};
  const card=g==='mtg'?{...common,set:'tst',set_name:'Test',collector_number:'1',type_line:'Creature',oracle_text:'Draw a card.',legalities:{},finishes:['nonfoil'],image_uris:{normal:img,small:img,art_crop:img}}:{...common,game:g,category:g==='ptcg'?'Pokemon':undefined,typeLine:g==='ptcg'?'Pokémon · Basic':'Normal Monster',type:g==='ygo'?'Normal Monster':undefined,stage:'Basic',hp:120,prize:1,set:{id:'tst',name:'Test',number:'1',total:100},stats:[],variants:[{key:'normal',label:'Normal',usd:100}],attacks:[],abilities:[],variantSchema:11,priceFallbackSchema:3,artSchema:1,printPriceSchema:1,sets:[]};
  const lots=[{id:'owned-nm',name:card.name,cardId:card.id,key:'id:'+card.id,qty:2,condition:'Near Mint',finish:'nonfoil',variant:g==='ptcg'?'normal':'',addedAt:now},{id:'owned-damaged',name:card.name,cardId:card.id,key:'id:'+card.id,qty:1,condition:'Damaged',finish:'nonfoil',variant:g==='ptcg'?'normal':'',addedAt:now}];
- return {card,lots};
+ const valueHistory=[{date:new Date(Date.now()-86400000).toISOString().slice(0,10),total:300,copies:3,unpriced:0,currency:'USD',basis:'exact-owned-v1'}];
+ return {card,lots,valueHistory};
 }
 const lotIdentity=lots=>lots.map(({id,name,cardId,key,qty,condition,finish,variant,addedAt})=>({id,name,cardId,key,qty,condition,finish,variant,addedAt}));
 for(const g of GAMES){
- const {card,lots}=ownedFixture(g),before=structuredClone(card);
+ const {card,lots,valueHistory}=ownedFixture(g),before=structuredClone(card);
  for(const large of [false,true])assert.equal(artworkSources(card,large)[0],card.image,`${g}: the supplied exact HTTPS source must reach the card and zoom`);
  const old='data:image/svg+xml,'+encodeURIComponent(SVG),invalid={...card,image:old,imageLarge:old,image_uris:{normal:old,small:old,art_crop:old}};
  assert.ok(!artworkSources(invalid,true).includes(old),`${g}: do not re-enable the invalid data-URL fixture`);
@@ -30,11 +34,15 @@ for(const g of GAMES){
  assert.deepEqual(lots.map(price),[100,null],`${g}: reference price cannot price the damaged lot`);
  const saved=[lots[0],{...lots[1],manualValue:15,manualValueCondition:'Damaged'}];
  assert.deepEqual(saved.map(price),[100,15]);
- assert.equal(saved.reduce((total,lot)=>total+price(lot)*lot.qty,0),215);
+ const total=saved.reduce((total,lot)=>total+price(lot)*lot.qty,0);assert.equal(total,215);
+ const coverage=homeValueCoverage({total,copies:3,unpriced:0});assert.deepEqual(coverage,{unpriced:0,currency:'USD',basis:'exact-owned-v1'});
+ const current=recordValueObservation(valueHistory,total,3,coverage),model=valueHistoryModel(current);
+ assert.deepEqual(model.points.map(point=>point.status),['complete','complete'],`${g}: synthetic yesterday and current values are explicitly comparable`);assert.equal(model.change.delta,-85);assert.equal(model.change.direction,'down');
+ const first=recordValueObservation([],total,3,{unpriced:0,currency:'USD',basis:'exact-owned-v1'});assert.equal(first.length,1);assert.equal(valueHistoryModel(first).change,null);assert.match(valueHistoryChart(first),/Your first saved snapshot\. No earlier values have been estimated\./);
  assert.deepEqual(card,before,`${g}: artwork/valuation cannot mutate the fixture's printing or prices`);
 }
 await validateOwnedGameAdoption(ownedFixture,lotIdentity);
-if(process.argv.includes('--validate-fixtures')){console.log('PASS: all three exact HTTPS ownership artwork fixtures, current card schemas, real-controller fixture adoption, unchanged identities and condition-bound $215 value; no server/browser/provider request.');process.exit(0);}
+if(process.argv.includes('--validate-fixtures')){console.log('PASS: all three exact HTTPS ownership artwork fixtures, current card schemas, real-controller fixture adoption, unchanged identities and condition-bound $215 value, comparable −$85 history and truthful first snapshot; no server/browser/provider request.');process.exit(0);}
 assert.equal(process.env.GITHUB_ACTIONS,'true','Ownership browser tests are hosted-only. Use --validate-fixtures for local pure validation.');
 const {createServer}=await import('node:http');
 const {chromium,devices}=await import('playwright');
@@ -50,11 +58,13 @@ try{for(const g of GAMES){
  });
  await page.addInitScript(()=>localStorage.setItem('cardstashy-tour-v1','done'));
  await page.goto(base+'/#home');await page.locator('#app.ready').waitFor();
- await page.evaluate(async({g,card,lots})=>{
+ await page.evaluate(async({g,card,lots,valueHistory})=>{
   const {S,blank,STORAGE,CATALOG_RECORD}=await import('/store.js'),{cache,TCG_CACHE}=await import('/tcg.js'),{cardKey}=await import('/core.js'),{writeRecord}=await import('/storage.js');
   // Keep one stable reference to the live store for the later adoption checks.
   window.__ownedTestState=S;
-  S.state=blank();const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);S.state.valueHistory=[{date:yesterday,total:300,copies:3}];localStorage.setItem((await import('/account-scope.js')).privateKey('cardstashy-value-hist-'+g),JSON.stringify([{date:yesterday,total:300,copies:3}]));S.state.tcg={ptcg:{collection:[],decks:[],wishlist:[]},ygo:{collection:[],decks:[],wishlist:[]}};
+  S.state=blank();S.state.tcg={ptcg:{collection:[],decks:[],wishlist:[],valueHistory:[]},ygo:{collection:[],decks:[],wishlist:[],valueHistory:[]}};
+  // This is explicit synthetic comparable coverage, not unverifiable legacy history.
+  (g==='mtg'?S.state:S.state.tcg[g]).valueHistory=valueHistory;
   if(g==='mtg')S.catalog[cardKey(card.name)]=card;else cache[g][card.id]=card;
   (g==='mtg'?S.state:S.state.tcg[g]).collection=lots;await writeRecord(STORAGE,S.state);await writeRecord(CATALOG_RECORD,S.catalog);await writeRecord(TCG_CACHE,cache);
  },{g,...fixture});
@@ -103,8 +113,11 @@ try{for(const g of GAMES){
  await page.locator('dialog.zoom .zoom-img').click({button:'right'});await owned.waitFor();assert.equal(await page.locator('dialog.zoom[open]').count(),0,'full image hold brings its ownership menu forward');assert.equal(await page.locator('[data-act="quickOwn"]').count(),1);
  const afterZoom=await page.evaluate(async g=>{const {S}=await import('/store.js'),{cache}=await import('/tcg.js'),{cardKey}=await import('/core.js');return{lots:(g==='mtg'?S.state:S.state.tcg[g]).collection,card:g==='mtg'?S.catalog[cardKey('Owned test card')]:cache[g]['test-owned']};},g);
  assert.deepEqual(afterZoom.lots,saved,'Opening/holding the decoded image never mutates saved lots');assert.equal(afterZoom.card.id,fixture.card.id);assert.equal(afterZoom.card.name,fixture.card.name);assert.deepEqual(afterZoom.card.set,fixture.card.set,'Artwork never substitutes another set/printing');assert.equal(afterZoom.card.collector_number,fixture.card.collector_number);assert.deepEqual(afterZoom.card.variants,fixture.card.variants);assert.deepEqual(afterZoom.card.prices,fixture.card.prices,'Artwork and ownership do not alter source prices');
- await page.reload();await page.getByRole('heading',{name:'Collection',exact:true}).waitFor();const reloaded=await page.evaluate(async g=>{const {S}=await import('/store.js');return(g==='mtg'?S.state:S.state.tcg[g]).collection;},g);assert.equal(reloaded[1].manualValue,15);assert.equal(reloaded[0].qty,2);assert.deepEqual(lotIdentity(reloaded),lotIdentity(fixture.lots),'Reload preserves every original lot identity');await page.getByRole('tab',{name:'Value',exact:true}).click();await page.locator('.value-change.down').waitFor();assert.match(await page.locator('.value-change').innerText(),/−\$85.00/);assert(await page.getByRole('img',{name:'Collection value over time',exact:true}).isVisible());await page.evaluate(async g=>{const {S}=await import('/store.js');S.state.valueHistory=[];localStorage.setItem((await import('/account-scope.js')).privateKey('cardstashy-value-hist-'+g),'[]');},g);
- await page.getByRole('tab',{name:'Cards',exact:true}).click();await page.getByRole('tab',{name:'Value',exact:true}).click();await page.getByText('Starting value',{exact:false}).waitFor();assert(await page.getByRole('img',{name:'Collection value over time',exact:true}).isVisible(),'a first-day collection still has its own graph');
+ await page.reload();await page.getByRole('heading',{name:'Collection',exact:true}).waitFor();const reloaded=await page.evaluate(async g=>{const {S}=await import('/store.js');return(g==='mtg'?S.state:S.state.tcg[g]).collection;},g);assert.equal(reloaded[1].manualValue,15);assert.equal(reloaded[0].qty,2);assert.deepEqual(lotIdentity(reloaded),lotIdentity(fixture.lots),'Reload preserves every original lot identity');await page.getByRole('tab',{name:'Value',exact:true}).click();await page.locator('.value-chart-change.down').waitFor();assert.match(await page.locator('.value-chart-change').innerText(),/−\$85\.00/);assert.equal(await page.locator('[data-value-amount]').innerText(),'$215.00');
+ const observed=await page.evaluate(async g=>{const {S}=await import('/store.js');return {history:(g==='mtg'?S.state:S.state.tcg[g]).valueHistory,today:new Date().toISOString().slice(0,10)};},g);
+ assert.deepEqual(observed.history.find(point=>point.date===fixture.valueHistory[0].date),fixture.valueHistory[0],'explicit previous $300 observation is preserved');assert.deepEqual(observed.history.find(point=>point.date===observed.today),{date:observed.today,total:215,copies:3,unpriced:0,currency:'USD',basis:'exact-owned-v1'},'actual current $215 observation uses the same verified coverage basis');
+ assert(await page.getByRole('img',{name:'Collection value over time, recorded USD snapshots',exact:true}).isVisible());await page.evaluate(async g=>{const {S}=await import('/store.js');(g==='mtg'?S.state:S.state.tcg[g]).valueHistory=[];},g);
+ await page.getByRole('tab',{name:'Cards',exact:true}).click();await page.getByRole('tab',{name:'Value',exact:true}).click();await page.getByText('Your first saved snapshot. No earlier values have been estimated.',{exact:false}).waitFor();assert.equal(await page.locator('.value-chart-point').count(),1,'first-day graph has exactly one recorded observation');assert.equal(await page.locator('.value-chart-line').count(),0,'first-day graph has no invented past segment');assert.equal(await page.locator('.value-chart-change').count(),0,'first-day graph makes no comparison claim');assert(await page.getByRole('img',{name:'Collection value over time, recorded USD snapshots',exact:true}).isVisible(),'a first-day collection still has its own graph');
  await page.getByRole('tab',{name:'Cards',exact:true}).click();await tile.click();
  // Background card/history refresh replaces the sheet DOM. Re-query its current
  // connected tabs and check visibility, sticky position and one row atomically.
