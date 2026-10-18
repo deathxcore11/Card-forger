@@ -3745,11 +3745,10 @@ export function registerTcg(c) {
     );
   };
   A.tDeckSave = async (t) => {
-    const appearance=readDeckBox();
+    const appearance=readDeckBox(),name=document.querySelector("#tDmName").value.trim().slice(0,100),format=document.querySelector("#tDmFormat").value,id=t.dataset.id;
     await mutate((st) => {
-      const d = st.decks.find((x) => x.id === t.dataset.id);
-      d.name = document.querySelector("#tDmName").value.trim().slice(0, 100) || d.name;
-      d.format = document.querySelector("#tDmFormat").value;d.boxAppearance=appearance;
+      const d = st.decks.find((x) => x.id === id);if(!d)throw Error('This deck is no longer available.');
+      d.name = name || d.name;d.format = format;d.boxAppearance=appearance;
     }, { msg: "Saved." });
     closeSheet();
   };

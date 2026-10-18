@@ -2000,7 +2000,7 @@ A.muUndo = async (t) => {
   await commit((s) => { const x = s.decks.find((y) => y.id === d.id); x.results = (x.results || []).filter((g) => g.at !== t.dataset.at); }, { msg: "Game removed." });
 };
 let settingsBaseState=null;
-const settingsPopup=createSettingsDialog({beforeOpen:()=>{settingsBaseState=S.state;},dialog:$("#settingsDialog"),markup:()=>`<header class="settings-dialog-head"><div><p class="eyebrow">ALL THREE GAMES</p><h2 id="settingsDialogTitle">Settings</h2></div><button class="icon" data-act="closeSettings" aria-label="Close settings">${ICON.close||'✕'}</button></header>${V.settings({popup:true})}`,afterPaint:()=>{if(S.ui.settingsTab==='backup')storageDetail();},afterClose:scroll=>{profilePicker.close();if(settingsBaseState!==S.state)render();window.scrollTo({top:scroll,behavior:'instant'});setTimeout(safeIntro,50);}});
+const settingsPopup=createSettingsDialog({beforeOpen:()=>{settingsBaseState=S.state;},dialog:$("#settingsDialog"),markup:()=>`<header class="settings-dialog-head"><div><p class="eyebrow">ALL THREE GAMES</p><h2 id="settingsDialogTitle">Settings</h2></div><button class="icon" data-act="closeSettings" aria-label="Close settings">${ICON.close||'✕'}</button></header>${V.settings({popup:true})}`,afterPaint:()=>{if(S.ui.settingsTab==='backup')storageDetail();},afterClose:scroll=>{profilePicker.close();if(settingsBaseState!==S.state||S.ui.view==='community')render();window.scrollTo({top:scroll,behavior:'instant'});setTimeout(safeIntro,50);}});
 A.menu = () => settingsPopup.open();
 A.addFriend=()=>community.add();
 A.friendRequests=()=>community.requests();
