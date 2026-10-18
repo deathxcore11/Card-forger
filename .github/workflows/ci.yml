@@ -67,6 +67,12 @@ jobs:
       - name: Test app-wide Settings modal and preserved search drafts
         if: ${{ !cancelled() }}
         run: node tests/settings-browser.mjs
+      - name: Test responsive Community and the default printing carousel
+        if: ${{ !cancelled() }}
+        run: node tests/community-carousel-browser.mjs
+      - name: Test account isolation, paused sync and responsive profile UI
+        if: ${{ !cancelled() }}
+        run: node tests/account-browser.mjs
       - name: Test ownership controls and condition values in the real app
         if: ${{ !cancelled() }}
         run: node tests/owned-browser.mjs

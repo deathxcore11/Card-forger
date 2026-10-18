@@ -1,5 +1,6 @@
 // A read-only, context-local printing browser. Providers and selection callbacks are
 // injected: this module never writes collection, default-price or Search state.
+import {printingCarouselHTML,attachPrintingCarousel} from './printing-carousel.js';
 import {esc,options,usd} from './ui.js';
 import {artworkSources} from './artwork.js';
 import {catalogueText,setCardFields} from './set-list-ui.js';
@@ -27,11 +28,11 @@ export function samePrintingFamily(game,source,card) {
  return game==='ptcg'&&!card.pocket&&pokemonPrintedNameKey(source.name)===pokemonPrintedNameKey(card.name);
 }
 
-const emptyFilters = () => ({set:'',number:'',rarity:'',finish:'',edition:'',price:'',sort:'new'});
+const emptyFilters = () => ({set:'',number:'',rarity:'',finish:'',edition:'',price:'',sort:'best'});
 const isExactProjection = (game,card,release) => card?.setContext?.status==='resolved'&&card.setContext.releaseId===release?.id&&(!card.setContext.game||card.setContext.game===game)&&(!card.setContext.cardId||String(card.setContext.cardId)===String(card.id));
 const rowBase = (game,card,release,projected=card) => {
  const fields=setCardFields(projected,game);
- return {game,card,projectedCard:projected,cardId:String(card.id),name:card.name,releaseId:release?.id||'',setName:catalogueText(release?.name||fields.set||'Set unavailable'),date:game==='ygo'?release?.date||'':release?.date||card.released_at||card.released||'',number:String(fields.number||''),rarity:card.rarity||'',finish:'',variantKey:'',productId:null,printingKey:'',printing:null,edition:'',price:null,priceKind:'market',selectable:true,warning:'',artLabel:'Reference art',image:artworkSources(card)[0]||''};
+ return {game,card,projectedCard:projected,cardId:String(card.id),name:card.name,releaseId:release?.id||'',setName:catalogueText(release?.name||fields.set||'Set unavailable'),date:game==='ygo'?release?.date||'':release?.date||card.released_at||card.released||'',number:String(fields.number||''),total:game==='ptcg'?String(card.set?.total||''):'',best:0,rarity:card.rarity||'',finish:'',variantKey:'',productId:null,printingKey:'',printing:null,edition:'',price:null,priceKind:'market',selectable:true,warning:'',artLabel:'Reference art',image:artworkSources(card)[0]||''};
 };
 const withKey = row => ({...row,key:asKey([row.game,row.cardId,row.releaseId||row.setName,row.number,row.rarity,row.finish,row.variantKey,row.productId,row.printingKey,row.edition])});
 function quoteRow(row) {
@@ -97,7 +98,7 @@ export function printingRows(game,cards,{source,catalogue=[],projectCard}={}) {
  }
  // Duplicate page rows cannot duplicate a selectable printing. Identity includes
  // variant/product/release/edition, so these are never merged merely by name/code.
- return [...new Map(out.map(row=>[row.key,row])).values()];
+ return [...new Map(out.map(row=>[row.key,{...row,best:String(row.cardId)===String(source?.id)?0:1}])).values()];
 }
 
 export function printingFacets(rows) {
@@ -106,12 +107,22 @@ export function printingFacets(rows) {
  const labels=new Map();for(const [,label] of sets)labels.set(label,(labels.get(label)||0)+1);
  return {sets:sets.map(([id,label])=>[id,labels.get(label)>1?`${label} · ${rows.find(r=>r.releaseId===id)?.date||'date unavailable'}`:label]),rarities:pairs('rarity'),finishes:pairs('finish','finishName').filter(([id])=>id!=='reference'),editions:unique(rows.map(r=>r.edition||'unknown')).map(id=>[id,editionLabels[id]||id])};
 }
+// Match a leading collector-number prefix, normalizing numeric padding only.
+// Meaningful letters remain intact; 88 must not match 188 or TG88.
+const normalizedNumber=value=>String(value||'').trim().toLowerCase().replace(/\s/g,'').replace(/\d+/g,n=>String(Number(n)));
+export function printingNumberMatches(row,query){
+ const parts=String(query||'').trim().split('/');if(!parts[0])return !query;
+ const numerator=normalizedNumber(row.number),wanted=normalizedNumber(parts[0]);
+ if(parts.length===1)return numerator.startsWith(wanted);
+ return parts.length===2&&numerator===wanted&&!!parts[1]&&normalizedNumber(row.total)===normalizedNumber(parts[1]);
+}
 export function filterPrintingRows(rows,filters={}) {
  const f={...emptyFilters(),...filters},number=text(f.number).toLocaleLowerCase();
- const visible=rows.filter(r=>(!f.set||r.releaseId===f.set)&&(!number||String(r.number).toLocaleLowerCase().includes(number))&&(!f.rarity||r.rarity===f.rarity)&&(!f.finish||r.finish===f.finish)&&(!f.edition||(r.edition||'unknown')===f.edition)&&(!f.price||(f.price==='known'?r.price!==null:r.price===null)));
+ const visible=rows.filter(r=>(!f.set||r.releaseId===f.set)&&(!number||printingNumberMatches(r,number))&&(!f.rarity||r.rarity===f.rarity)&&(!f.finish||r.finish===f.finish)&&(!f.edition||(r.edition||'unknown')===f.edition)&&(!f.price||(f.price==='known'?r.price!==null:r.price===null)));
  return visible.sort((a,b)=>{
   let diff=0;
   switch(f.sort) {
+   case 'best':diff=(a.best||0)-(b.best||0);break;
    case 'price-low':case 'price-high':diff=a.price===null&&b.price===null?0:a.price===null?1:b.price===null?-1:(a.price-b.price)*(f.sort==='price-high'?-1:1);break;
    case 'set':diff=knownFirst(a.setName,b.setName);break;
    case 'number':diff=knownFirst(a.number,b.number);break;
@@ -131,7 +142,9 @@ export function printingSelection(row) {
 const control=(id,label,field,items,current)=>`<label class="field" for="${id}">${label}<select id="${id}" data-change="printingPickerFilter" data-field="${field}">${options(items,current)}</select></label>`;
 export function printingPickerHTML(state) {
  const {game,card,rows,filters,busy,error,nextCursor,complete,loaded,note,view}=state;
- const visible=filterPrintingRows(rows,filters),facets=printingFacets(rows),active=Object.entries(filters).filter(([key,value])=>key!=='sort'&&value).length;
+ const visible=filterPrintingRows(rows,filters),facets=printingFacets(rows);
+ if(view==='carousel')return printingCarouselHTML(state,visible,facets);
+ const active=Object.entries(filters).filter(([key,value])=>key!=='sort'&&value).length;
  const priceNote=filters.sort.startsWith('price')?'Prices are source reference quotes, not condition-adjusted values. Unknown prices stay last.':'Filters and sorting apply to loaded versions only.';
  const coverage=busy?'Loading matching printings…':!loaded?'No results loaded yet.':nextCursor!==null?'More source results are available.':complete?'All matching results returned by the source are loaded.':'Source coverage is incomplete or unverified.';
  return `<section class="printing-picker" data-game="${game}" aria-labelledby="printingPickerTitle"><div class="sheet-head"><button class="icon" data-act="printingPickerBack" data-history-back="1" aria-label="Back to previous card">←</button><h2 id="printingPickerTitle" tabindex="-1">Find a printing</h2><button class="btn ghost small" data-act="printingPickerCancel">Cancel</button></div>
@@ -143,7 +156,7 @@ export function printingPickerHTML(state) {
  ${game==='ygo'?control('printingPickerEdition','Edition','edition',[['','All editions'],...facets.editions],filters.edition):control('printingPickerFinish',game==='mtg'?'Finish':'Version / finish','finish',[['','All supported versions'],...facets.finishes],filters.finish)}
  ${control('printingPickerPrice','Price availability','price',[['','Include unknown prices'],['known','With a reference price'],['unknown','Price unavailable']],filters.price)}
  <button class="btn ghost small" data-act="printingPickerClear" ${active?'':'disabled'}>Clear filters</button></div></details>
- <div class="printing-picker-toolbar">${control('printingPickerSort','Sort loaded versions','sort',[['new','Newest release'],['old','Oldest release'],['set','Set / release'],['number',game==='ygo'?'Printed code':'Collector number'],['rarity','Rarity · A to Z'],...(game==='ygo'?[]:[['finish',game==='mtg'?'Finish':'Version']]),['price-low','Price: low to high · loaded'],['price-high','Price: high to low · loaded']],filters.sort)}<div class="seg printing-picker-view" role="group" aria-label="Printing layout"><button data-act="printingPickerView" data-id="grid" aria-pressed="${view==='grid'}" class="${view==='grid'?'on':''}">Grid</button><button data-act="printingPickerView" data-id="list" aria-pressed="${view==='list'}" class="${view==='list'?'on':''}">List</button></div></div>
+ <div class="printing-picker-toolbar">${control('printingPickerSort','Sort loaded versions','sort',[['best','Best match'],['new','Newest release'],['old','Oldest release'],['set','Set / release'],['number',game==='ygo'?'Printed code':'Collector number'],['rarity','Rarity · A to Z'],...(game==='ygo'?[]:[['finish',game==='mtg'?'Finish':'Version']]),['price-low','Price: low to high · loaded'],['price-high','Price: high to low · loaded']],filters.sort)}<div class="seg printing-picker-view" role="group" aria-label="Printing layout"><button data-act="printingPickerView" data-id="carousel">Carousel</button><button data-act="printingPickerView" data-id="grid" aria-pressed="${view==='grid'}" class="${view==='grid'?'on':''}">Grid</button><button data-act="printingPickerView" data-id="list" aria-pressed="${view==='list'}" class="${view==='list'?'on':''}">List</button></div></div>
  <div class="printing-picker-status" tabindex="-1" role="status" aria-live="polite"><p>${visible.length} versions shown · ${rows.length} loaded${rows.length?` · ${rows.filter(r=>r.price===null).length} without prices`:''}</p><p class="muted small">${coverage}${note?' '+esc(note):''}</p></div><p class="foot">${priceNote}</p>
  ${error?`<div class="note warn" role="alert">${esc(error)} <button class="link" data-act="printingPickerRetry">Retry</button></div>`:''}
  <div class="printing-picker-results printing-picker-${view}" aria-label="Matching printings" aria-busy="${busy}">${visible.map(row=>`<button class="printing-picker-choice" data-act="printingPickerChoose" data-key="${esc(row.key)}" data-card-id="${esc(row.cardId)}" data-release-id="${esc(row.releaseId)}" data-variant="${esc(row.variantKey)}" data-printing="${esc(row.printingKey)}" data-edition="${esc(row.edition)}" ${row.selectable?'':'disabled'} aria-label="${esc([row.setName,row.number,row.rarity,row.finishName,game==='ygo'?editionLabels[row.edition||'unknown']:'',row.price===null?'Price unavailable':usd(row.price),row.warning].filter(Boolean).join(' · '))}"><span class="printing-picker-art">${safeImage(row.image)?`<img src="${esc(row.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:'<span class="muted small">Image unavailable</span>'}<small>${esc(row.artLabel)}</small></span><span class="printing-picker-copy"><b>${esc(row.setName)}</b><span>${esc([row.number&&'#'+row.number,row.rarity].filter(Boolean).join(' · '))}</span><span>${esc(game==='ygo'?editionLabels[row.edition||'unknown']:row.finishName)}</span><small class="muted">${esc(row.date||'Release date unavailable')}</small><strong>${row.price===null?'Price unavailable':usd(row.price)+(row.priceKind==='market'?' reference':' '+esc(row.priceKind)+' reference')}</strong>${row.warning?`<small class="printing-picker-warning">${esc(row.warning)}</small>`:''}<small>${row.selectable?(state.purpose==='scan'?'Use this printing':'View this printing'):'Selection unavailable'}</small></span></button>`).join('')}</div>
@@ -165,7 +178,9 @@ export function createPrintingPicker({A={},C={},I={},openSheet,getContext,getBod
  const draw=(s,initial=false)=>{
   if(!initial&&!current(s))return;
   const saved=initial?{scroll:0}:capture();if(saved.filtersOpen!==undefined)s.filtersOpen=saved.filtersOpen;
+  s.carouselObserver?.disconnect();
   openSheet(printingPickerHTML(s),s.context,saved.scroll);
+  attachPrintingCarousel(getBody(),s,{step:delta=>s.moveCarousel?.(delta),nearEnd:()=>{if(current(s)&&!s.busy&&!s.error&&s.nextCursor!==null)void load(s);}});
   const body=getBody();let focus=initial?body?.querySelector?.('#printingPickerTitle'):saved.id?body?.querySelector?.('#'+saved.id):null;
   if(!focus&&(saved.key||saved.act))focus=[...(body?.querySelectorAll?.('[data-act]')||[])].find(node=>saved.key?node.dataset.key===saved.key:node.dataset.act===saved.act&&(saved.actionId===undefined||node.dataset.id===saved.actionId));
   if(!initial&&(focus?.disabled||!focus&&(saved.id||saved.key||saved.act)))focus=body?.querySelector?.('.printing-picker-status');
@@ -189,31 +204,34 @@ export function createPrintingPicker({A={},C={},I={},openSheet,getContext,getBod
   } catch(error) {
    if(!current(s)||request!==s.request||s.abort.signal.aborted)return;
    s.error=error?.message||'Could not load matching printings.';s.complete=false;
-  } finally {if(current(s)&&request===s.request){s.busy=false;draw(s);}}
+  } finally {if(current(s)&&request===s.request){s.busy=false;draw(s);if(s.view==='carousel'&&s.nextCursor!==null&&!s.error)queueMicrotask(()=>load(s));}}
  }
- function abandon() {if(!state)return false;state.abort.abort();state.request++;state=null;return true;}
+ function abandon() {if(!state)return false;state.carouselObserver?.disconnect();state.abort.abort();state.request++;state=null;return true;}
  function cancel() {
   const s=state;if(!s||!current(s))return false;
-  s.abort.abort();s.request++;state=null;back?.();s.onCancel?.(s.parentContext);return true;
+  s.carouselObserver?.disconnect();s.abort.abort();s.request++;state=null;back?.();s.onCancel?.(s.parentContext);return true;
  }
  function choose(key) {
   const s=state;if(!s||!current(s))return false;
   const selection=printingSelection(s.rows.find(row=>row.key===key));if(!selection)return false;
-  s.abort.abort();s.request++;state=null;back?.();const result=s.onSelect?.(selection,s.parentContext);return result&&typeof result.then==='function'?result.then(()=>true):true;
+  s.carouselObserver?.disconnect();s.abort.abort();s.request++;state=null;back?.();const result=s.onSelect?.(selection,s.parentContext);return result&&typeof result.then==='function'?result.then(()=>true):true;
  }
  function open(config) {
   if(!['mtg','ptcg','ygo'].includes(config?.game)||!config.card?.id||typeof config.loadPage!=='function')throw Error('A verified card and printing loader are required.');
   state?.abort.abort();
-  state={...config,catalogue:[...(config.catalogue||[])],context:{type:'printing-picker',game:config.game,id:'picker-'+(++serial)},cards:[],rows:[],filters:emptyFilters(),filtersOpen:true,view:'grid',busy:false,error:'',loaded:false,nextCursor:null,complete:false,note:'',abort:new AbortController(),visited:new Set(),request:0,restartRequired:false};
+  state={...config,catalogue:[...(config.catalogue||[])],context:{type:'printing-picker',game:config.game,id:'picker-'+(++serial)},cards:[],rows:[],filters:emptyFilters(),filtersOpen:true,view:config.view||'carousel',activeGroup:'',versions:{},busy:false,error:'',loaded:false,nextCursor:null,complete:false,note:'',abort:new AbortController(),visited:new Set(),request:0,restartRequired:false};
   draw(state,true);return load(state);
  }
  A.printingPickerBack=A.printingPickerCancel=cancel;
  A.printingPickerChoose=t=>choose(t?.dataset?.key);
  A.printingPickerMore=()=>load();
+ A.printingPickerStep=t=>state?.moveCarousel?.(Number(t.dataset.d)||0);
+ A.printingPickerRemoveFilter=t=>{if(!state||!current(state)||!Object.hasOwn(state.filters,t.dataset.field))return;state.filters[t.dataset.field]='';draw(state);};
+ C.printingPickerVariant=t=>{if(!state||!current(state))return;state.versions[t.dataset.group]=t.value;draw(state);};
  A.printingPickerRetry=()=>{if(state&&(state.restartRequired||state.loaded&&!state.complete&&state.nextCursor===null)){state.abort.abort();state.abort=new AbortController();state.cards=[];state.rows=[];state.loaded=false;state.nextCursor=null;state.visited.clear();state.restartRequired=false;}return load();};
  A.printingPickerClear=()=>{if(!state||!current(state))return;state.filters={...emptyFilters(),sort:state.filters.sort};draw(state);};
- A.printingPickerView=t=>{if(!state||!current(state))return;state.view=t?.dataset?.id==='list'?'list':'grid';draw(state);};
- C.printingPickerFilter=t=>{if(!state||!current(state)||!Object.hasOwn(state.filters,t?.dataset?.field))return;state.filters[t.dataset.field]=String(t.value||'');draw(state);};
- I.printingPickerNumber=t=>{if(!state||!current(state))return;state.filters.number=String(t.value||'');draw(state);};
+ A.printingPickerView=t=>{if(!state||!current(state))return;state.view=['list','carousel'].includes(t?.dataset?.id)?t.dataset.id:'grid';draw(state);};
+ C.printingPickerFilter=t=>{if(!state||!current(state)||!Object.hasOwn(state.filters,t?.dataset?.field))return;state.filters[t.dataset.field]=String(t.value||'');state.activeGroup='';draw(state);if(state.view==='carousel'&&state.nextCursor!==null&&!state.busy&&!state.error)void load(state);};
+ I.printingPickerNumber=t=>{if(!state||!current(state))return;state.filters.number=String(t.value||'');state.activeGroup='';draw(state);};
  return {open,cancel,abandon,choose,load,get state(){return state;}};
 }

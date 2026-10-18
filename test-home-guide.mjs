@@ -40,3 +40,19 @@ const setHtml=T.tcgSet();assert.match(setHtml,/\$12\.34/);assert.doesNotMatch(se
  history.state={route:'collection'};assert(popup.historyChanged());assert.equal(dialog.open,false,'A real traversal away still closes Settings');
 }
 console.log('PASS: rapid Settings close/reopen preserves a single modal history entry.');
+
+// A player's presentation choice survives reload without touching another seat.
+const {TABLE_THEMES,tableTheme,createTableArtResolver}=await import('./tabletop-themes.js');
+for(const game of ['mtg','ptcg','ygo']){
+ const table=newTable(game),before=structuredClone(table.players[1]);table.players[0].theme=TABLE_THEMES[game][2][0];saveTable(table,storage);
+ assert.equal(loadTable(game,storage).players[0].theme,table.players[0].theme);assert.deepEqual(table.players[1],before);
+ const old=structuredClone(table);delete old.players[0].theme;saved.set('cardstashy-tabletop-v1:'+game,JSON.stringify(old));assert.equal(loadTable(game,storage).players[0].theme,tableTheme(game,'',0).id,'older sessions get a safe game-specific default');
+}
+let artSearches=0;const resolveArt=createTableArtResolver({ptcg:{search:async()=>{artSearches++;return {cards:[{id:'wrong',brief:true},{id:'right',brief:true}]};},get:async id=>({id,game:'ptcg',name:id,category:'Pokemon',types:[id==='right'?'Water':'Fire'],image:'https://assets.tcgdex.net/fixture/high.webp'})}});
+const art=await Promise.all([resolveArt('ptcg','Water'),resolveArt('ptcg','Water')]);assert.equal(artSearches,1);assert(art.every(c=>c.id==='right'),'art must actually match the selected type');assert.equal((await resolveArt('mtg','U')).name,'Island');
+for(const game of ['ptcg','ygo']){
+ S.state.settings.game=game;S.ui.decksTab='inspiration';T.ui(game).metaFormat=game==='ptcg'?'expanded':'goat';
+ const html=T.tcgDecks();assert.match(html,/Tournament format/);assert.match(html,/aren’t available from the connected feed/);assert.doesNotMatch(html,/class="arch-grid"|Most played cards/,'unsupported formats never relabel current tournament lists');
+ assert.match(T.tcgNewDeckSheet(T.ui(game).metaFormat),new RegExp('value="'+T.ui(game).metaFormat+'" selected'));
+}
+console.log('PASS: saved independent tabletop themes, exact type artwork, bounded shared requests, and format-specific tournament availability.');

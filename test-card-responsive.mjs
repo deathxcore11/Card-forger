@@ -235,14 +235,14 @@ const batchLayout=css.slice(css.indexOf('/* Narrow Collection batch rows'),css.i
 assert.match(batchLayout,/@media\(max-width:480px\)/);assert.equal((batchLayout.match(/body\[data-view="collection"\]/g)||[]).length,3);assert.equal((batchLayout.match(/\.display-list > \.lot:has\(> \.batch-mark\)/g)||[]).length,3);
 for(const declaration of ['grid-template-columns:30px 58px minmax(0,1fr)','grid-template-columns:auto minmax(0,1fr)','grid-column:1/-1;grid-row:2','display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center'])assert(batchLayout.includes(declaration),declaration);
 assert.doesNotMatch(batchLayout,/view-gallery|font-size|overflow|word-break|white-space|display:none|grid-column:3\/5/);assert(!css.includes('grid-column:3/5'),'The legacy implicit symbols track cannot return');
-assert(css.indexOf('/* Narrow Collection batch rows')<css.indexOf('/* A condition explanation'),'Later, more-specific condition footer retains its independent layout');
+assert(css.indexOf('/* Narrow Collection batch rows')<css.indexOf('/* Condition badges and prices'),'Later, more-specific condition footer retains its independent layout');
 console.log('PASS: narrow direct Collection batch rows only, explicit art/batch tracks and aligned full-row actions; ordinary/gallery/wide styles unchanged.');
-const conditionLayout=css.slice(css.indexOf('/* A condition explanation'),css.indexOf('/* A tablet/desktop list',css.indexOf('/* A condition explanation')));
-assert.match(conditionLayout,/@media \(max-width:480px\)/);assert.equal((conditionLayout.match(/body\[data-view="collection"\]/g)||[]).length,7);assert.equal((conditionLayout.match(/:has\(> \.lot-side > \.condition-value-note\)/g)||[]).length,7);
+const conditionLayout=css.slice(css.indexOf('/* Condition badges and prices'),css.indexOf('/* A tablet/desktop list',css.indexOf('/* Condition badges and prices')));
+assert.match(conditionLayout,/@media \(max-width:480px\)/);assert.equal((conditionLayout.match(/body\[data-view="collection"\]/g)||[]).length,7);assert.equal((conditionLayout.match(/:has\(> \.lot-side > \.lot-value\)/g)||[]).length,7);
 for(const declaration of ['grid-template-columns:58px minmax(0,1fr)','grid-template-columns:30px 58px minmax(0,1fr)','grid-template-columns:minmax(0,1fr)','grid-template-columns:auto minmax(0,1fr)','grid-column:1/-1;grid-row:2','max-width:none'])assert(conditionLayout.includes(declaration),declaration);
 assert.doesNotMatch(conditionLayout,/view-gallery|font-size|overflow|word-break|white-space|display:none/,'Only real space changes; gallery, fonts, wrapping and visible content remain intact');
 assert.equal((conditionLayout.match(/:has\(> \.batch-mark\)/g)||[]).length,2,'Compact and symbols explicitly preserve the independent batch column');
-console.log('PASS: narrow Collection condition-only grid reflow, explicit art/batch columns, full-width note and no ordinary/gallery/wide/font/clipping changes.');
+console.log('PASS: narrow Collection condition badge grid reflow, explicit art/batch columns, full-width note and no ordinary/gallery/wide/font/clipping changes.');
 const rowContainer=css.slice(css.indexOf('/* A tablet/desktop list'),css.indexOf('@media(prefers-reduced-motion:reduce){.brand-idle',css.indexOf('/* A tablet/desktop list')));
 assert.equal((rowContainer.match(/body\[data-view="collection"\]/g)||[]).length,7);assert.equal((rowContainer.match(/\.display-list > \.lot:has\(> \.batch-mark\)/g)||[]).length,7);
 assert.match(rowContainer,/container:collection-batch \/ inline-size/);assert.match(rowContainer,/@container collection-batch \(max-width:480px\)/);
@@ -259,9 +259,9 @@ assert.match(extreme[2],/\.cs-card \{ grid-template-columns:minmax\(0,1fr\); \}/
 assert.match(extreme[2],/\.cs-card \.cd-art-stack \{ width:min\(100%,220px\); justify-self:center; grid-template-columns:minmax\(0,1fr\); \}/);
 assert.match(extreme[2],/\.cs-card-side \.stat-grid > div \{ grid-template-columns:minmax\(0,1fr\); \}/);
 assert.doesNotMatch(extreme[2],/overflow|font-size|word-break|overflow-wrap|display:none/,'No clipping, smaller text or forced word splitting hides intrinsic overflow');
-assert(222.4<=Number(extreme[1])&&286>Number(extreme[1]),'Hosted 320px/125% container activates reflow; ordinary 320px container keeps existing two-column design');
+assert(222.4<=Number(extreme[1])&&286>Number(extreme[1]),'Extreme zoom uses the smaller centered card cap');assert.match(css,/@container \(max-width:600px\) \{\s*\.cs-card \{ grid-template-columns:minmax\(0,1fr\)/,'Phones stack the full card and actions');
 assert.equal((css.match(/width:min\(100%,220px\)/g)||[]).length,1,'Finite centered art width is extreme-container only');
-console.log('PASS: isolated extreme-width stacking/zero-minimum tracks, finite centered art, unchanged ordinary phone/wide layout and no clipping/font/word-wrap shortcut.');
+console.log('PASS: isolated extreme-width stacking/zero-minimum tracks, finite centered art, stacked phone and side-by-side wide layout and no clipping/font/word-wrap shortcut.');
 assert.match(app,/\.detailMountGeneration = \(\$\("#sheetBody"\)\.detailMountGeneration \|\| 0\) \+ 1;\s*\$\("#sheetBody"\)\.innerHTML = html/,'Every actual open/mount creates a new viewport lifetime');
 assert.match(app,/body\.detailMountGeneration = \(body\.detailMountGeneration \|\| 0\) \+ 1;\s*body\.innerHTML = ctx\.type/,'A refreshed mount cannot inherit clamp intent from replaced content');
 

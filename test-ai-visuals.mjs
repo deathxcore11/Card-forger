@@ -26,3 +26,10 @@ tools.reset();await tools.meta_decks({game:'ptcg'});assert.match(tools.preview(t
 data.archetypes.push({name:'Dhelmise',best:null,share:.04,count:2,icons:['dhelmise']});
 tools.reset();await tools.meta_decks({game:'ptcg'});assert.match(tools.preview(tools.suggestedItems()[1],0),/dhelmise.png/);
 console.log('PASS: Slowking uses Slowking art instead of a support attacker; an archetype without a placing list uses its supplied icon.');
+
+// A partner tile resolves individual commanders and keeps its format snapshot.
+let chosen,looked=[];
+const partner={decks:[{key:'partners',name:'First / Second',commanders:['First','Second'],list:[]}],archetypes:[{name:'First / Second',best:'partners',share:.1}]};
+const partnerTools=makeAskTools({S:{state:{decks:[],settings:{}},ui:{mtgMeta:{format:'Modern'}}},T:{...T,game:()=> 'mtg'},esc,meta:()=>null,resolve:async name=>{looked.push(name);return name==='Second'?card:null;},inv:()=>({owned:0}),priceOf:()=>1,loadMetaData:async()=>partner,MTG_META_FORMATS:[['Modern','Modern'],['EDH','Commander']],A:{mtgProven:t=>{chosen=t;}}});
+await partnerTools.meta_decks({game:'mtg',format:'Commander'});const tile=partnerTools.suggestedItems()[0];assert.deepEqual(looked,['First','Second']);assert.match(partnerTools.preview(tile,0),/magic-art.png/);await partnerTools.open(tile);assert.equal(chosen.metaSnapshot.deck.key,'partners');assert.match(chosen.dataset.format,/Commander|EDH/);
+console.log('PASS: partner commander art fallback and exact clickable meta deck format');

@@ -92,7 +92,7 @@ try{
  S.ui.sheetCtx={type:'tcard',game:'ygo',id:card.id,setId:original.id,priceEdition:'LOB-118::Common',priceYgoEdition:'1st-edition'};A.tOwn({dataset:{id:card.id}});assert.match(sheets.at(-1),/value="LOB-118\|Common" selected/);assert.match(sheets.at(-1),/value="1st-edition" selected>First Edition/,'only an explicitly selected edition carries into Add');
  // Reopening a newly scoped saved lot must retain its release or explicit uncertainty.
  nodes['#sheetBody']={scrollTop:0};await A.tCard({dataset:{id:card.id,entry:saved.id}});assert.equal(S.ui.sheetCtx.setId,original.id);assert.equal(S.ui.sheetCtx.priceEdition,'LOB-118::Common');assert.doesNotMatch(sheets.at(-1),/KC01|\$999/);
- const unknownSaved=S.state.tcg.ygo.collection.find(e=>e.setReleaseUnverified);await A.tCard({dataset:{id:card.id,entry:unknownSaved.id}});assert.equal(S.ui.sheetCtx.setReleaseUnverified,true);assert.equal(S.ui.sheetCtx.setId,'');assert.doesNotMatch(sheets.at(-1),/KC01|\$999/);assert.match(sheets.at(-1),/Owned copy<\/b> <span class="muted">· printing unverified/);assert.doesNotMatch(sheets.at(-1),/Not in your collection/);assert.equal(ownedInSet('ygo',card,original,[unknownSaved],catalogue),0,'the saved-copy explanation grants no verified set credit');
+ const unknownSaved=S.state.tcg.ygo.collection.find(e=>e.setReleaseUnverified);await A.tCard({dataset:{id:card.id,entry:unknownSaved.id}});assert.equal(S.ui.sheetCtx.setReleaseUnverified,true);assert.equal(S.ui.sheetCtx.setId,'');assert.doesNotMatch(sheets.at(-1),/KC01|\$999/);assert.match(sheets.at(-1),/class="small own-line">Printing unverified/);assert.match(sheets.at(-1),/aria-label="Your saved copies"/);assert.doesNotMatch(sheets.at(-1),/Not in your collection/);assert.equal(ownedInSet('ygo',card,original,[unknownSaved],catalogue),0,'the saved-copy explanation grants no verified set credit');
  A.tOwn({dataset:{id:card.id}});assert.equal(S.ui.sheetCtx.setReleaseUnverified,true);assert.doesNotMatch(sheets.at(-1),/KC01|\$999/);
  const unverifiedProjection=setContextCard('ygo',card,'',catalogue,{unverifiedRelease:true});assert.equal(unverifiedProjection.setContext.status,'missing');assert.equal(unverifiedProjection.prices.usd,null);assert.deepEqual(unverifiedProjection.sets,[]);
 
@@ -128,7 +128,7 @@ S.state.tcg.ygo.collection=[scopedSaved];
 try{
  const detailContext={type:'tcard',game:'ygo',id:card.id,entryId:scopedSaved.id,setId:original.id};
  const missingCopy=tcgCardSheet(card,detailContext);
- assert.match(missingCopy,/Owned copy<\/b> <span class="muted">· printing unverified/);
+ assert.match(missingCopy,/class="small own-line">Printing unverified/);
  assert.doesNotMatch(missingCopy,/Not in your collection|KC01|\$999/);
  const missingCard=setContextCard('ygo',card,original.id,[]);
  assert.equal(missingCard.setContext.status,'missing');assert.equal(missingCard.prices.usd,null);
@@ -137,11 +137,11 @@ try{
  assert.equal(ownedBySet('ygo').size,0);
  for(const mismatch of [{entryId:'different-entry'},{id:'different-card-context'},{game:'ptcg'},{setId:anniversary.id}]){
   const html=tcgCardSheet(card,{...detailContext,...mismatch});
-  assert.doesNotMatch(html,/Owned copy<\/b>/,'a mismatched saved context cannot claim this copy');
+  assert.doesNotMatch(html,/aria-label="Your saved copies"/,'a mismatched saved context cannot claim this copy');
   assert.match(html,/Not in your collection/);
  }
  const differentCard=tcgCardSheet({...card,id:'different-card'},detailContext);
- assert.doesNotMatch(differentCard,/Owned copy<\/b>/,'the entry must match the displayed card ID');
+ assert.doesNotMatch(differentCard,/aria-label="Your saved copies"/,'the entry must match the displayed card ID');
 }finally{ui('ygo').sets.list=copyCatalogue;records.clear();for(const [key,value] of copyRecords)records.set(key,value);S.state.tcg.ygo.collection=copyCollection;}
 
 console.log('PASS: exact release copies, no generic price/ownership leakage, unique progress/coverage/motion, data-driven facets, year grids, stale request isolation, same-route retry, legacy chooser, contextual add and recoverable v3 migration.');

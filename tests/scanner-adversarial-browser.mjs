@@ -143,7 +143,7 @@ const server=createServer(async(req,res)=>{try{
  const u=new URL(req.url,'http://localhost'),ref=refs.find(x=>u.pathname===`/__scanner_reference/${x.g}`);
  if(ref){res.setHeader('Content-Type',ref.mime);return res.end(ref.bytes);}
  const file=resolve(root,'.'+(u.pathname==='/'?'/index.html':u.pathname));if(!file.startsWith(root+'/')){res.writeHead(403);return res.end();}
- res.setHeader('Content-Type',({'.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.html':'text/html','.json':'application/json','.webp':'image/webp','.png':'image/png','.jpg':'image/jpeg'})[extname(file)]||'application/octet-stream');res.end(await readFile(file));
+ res.setHeader('Content-Type',({'.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.html':'text/html','.json':'application/json','.webp':'image/webp','.png':'image/png','.jpg':'image/jpeg'})[extname(file)]||'application/octet-stream');let body=await readFile(file);if(file.endsWith("/config.js"))body=Buffer.from(body.toString().replace(/key:\s*"[^"]*"/,'key: ""'));res.end(body);
  }catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const base=`http://127.0.0.1:${server.address().port}`,browser=await chromium.launch();

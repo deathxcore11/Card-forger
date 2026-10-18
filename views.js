@@ -1,10 +1,12 @@
+import {passwordField} from './auth-form.js';
+import {detailOwnedGroups} from './quick-quantity.js';
 import {profileAvatar,profilePhotoControl} from './profile-art.js';
 import {infoPanel} from './app-info.js';
 import {compactPriceSummary,selectedFinish,detailTabs,detailPanel} from "./pricing-presentation.js";
 import { homeValue, homeEdition, homeValueCoverage, homeResume } from "./home-ui.js";
 import {interactiveRules} from './rule-learning.js';
 import {brandMark} from './brand.js';
-import {conditionValueNote} from './condition-value.js';
+import {conditionBadge} from './condition-value.js';
 import { aiReviewPanel } from './ai-review.js';
 import { rankPairs } from "./pairing.js";
 import { APP_VERSION } from "./config.js";
@@ -36,7 +38,7 @@ import { binderShelf } from "./binders.js";
 // data-act / data-change / data-input attributes handled centrally in app.js.
 import { metaState, MTG_META_FORMATS, DEFAULT_MTG_META_FORMAT, allCachedMeta } from "./meta.js";
 import { mtgPower, powerPanel, powerChip, shownPower, powerReadiness } from "./power.js";
-import { factBox, factsFor } from "./facts.js";
+import { factBox, overviewFacts } from "./facts.js";
 import { ensureTcgPrices } from "./mtg-tcgprice.js";
 import { S, meta, inv, deckById, currentDeck, priceOf } from "./store.js";
 import {
@@ -205,7 +207,7 @@ export function search() {
     chips = mtgFilterChips(f),
     shown = db.results.filter((c) => (f.own === "owned" ? inv(c.name).owned > 0 : f.own === "missing" ? !inv(c.name).owned : true));
   return `<div class="page-head"><h1>Search cards</h1>${viewControl("mtg","search")}<div class="search-tools"><button class="chip tool-chip" data-act="compareOpen" aria-label="Compare cards">${actionIcon("compare")}<span>Compare</span></button><button class="chip tool-chip" data-act="go" data-to="#sets" aria-label="Browse sets">◈ Sets</button><button class="chip tool-chip" data-act="dbRandom" aria-label="Random card">🎲 Random</button></div></div>
-  <div class="searchbar search-query"><input id="dbTerm" type="search" data-suggest="mtg" value="${esc(db.term)}" placeholder="Card name, or words like “draw a card”" data-input="dbTerm" data-enter="dbSearch" aria-label="Search all cards" autocomplete="off"><button class="btn" data-act="dbSearch">${db.busy ? "Search again" : "Search"}</button><button class="ask-launch" data-act="askOpen" aria-label="Ask AI"><span aria-hidden="true">✦</span>Ask</button></div>
+  <div class="searchbar search-query"><input id="dbTerm" type="search" data-suggest="mtg" value="${esc(db.term)}" placeholder="Card name, or words like “draw a card”" data-input="dbTerm" data-enter="dbSearch" aria-label="Search all cards" autocomplete="off"><button class="btn" data-act="dbSearch">${db.busy ? "Search again" : "Search"}</button><button class="ask-launch" data-act="askOpen" aria-label="Ask AI">${brandMark("assistant-button-mark")}<span>Ask</span></button></div>
   ${chipRow(chips, "dbChip", "dbClear")}
   ${savedRow(savedSearches("mtg"), "dbSaved", "dbSavedDel")}
   <details class="filters" id="magic-search-filters"><summary>Filters${chips.length ? ` · ${chips.length} on` : ""}</summary>
@@ -316,7 +318,7 @@ function mtgCardMeta(c) {
 export function cardSheet(c, ctx = {}) {
   const name = c.name,
     shown = ctx.print || c, // the printing currently being looked at
-    tab = ctx.tab && ctx.tab !== "trade" ? ctx.tab : "overview", // Trade tab retired for now
+    tab = ctx.tab === "legal" ? "rulings" : ctx.tab && ctx.tab !== "trade" ? ctx.tab : "overview", // Trade tab retired for now
     i = inv(name),
     inDecks = S.state.decks.filter((d) => d.cards.some((x) => key(x.name) === key(name))),
     deck = ctx.deckId ? deckById(ctx.deckId) : null,
@@ -336,27 +338,39 @@ export function cardSheet(c, ctx = {}) {
     src = MTG_SOURCES.find((x) => x[0] === (ctx.source || "tcgplayer")) || MTG_SOURCES[0];
   ensureTcgPrices([shown]);
   const priceFinish = selectedFinish("mtg", shown, ctx.priceFinish);
+  const readableText = `<div class="cs-readable">
+  ${faces
+    .map(
+      (f, n) => `<section class="cd-text effect-card mtg" data-rule-card-context="${esc(JSON.stringify(ruleCardContext('mtg',shown)))}">
+      <p class="eyebrow effect-label">Spellcraft · Rules text</p>${faces.length > 1 ? `<div class="row between"><b>${esc(f.name)}</b>${manaCost(f)}</div><p class="type-line">${esc(f.type_line || "")}</p>` : ""}
+      ${f.oracle_text ? `<div class="oracle">${effectText("mtg",f.oracle_text)}</div>` : ""}
+      ${f.flavor_text ? `<blockquote class="flavor"><small class="eyebrow">Flavour</small>${esc(f.flavor_text)}</blockquote>` : ""}
+      <div class="row between small muted">${f.power !== undefined && f.power !== null ? `<span class="pt">${esc(f.power)}/${esc(f.toughness)}</span>` : shown.loyalty && !n ? `<span class="pt">Loyalty ${esc(shown.loyalty)}</span>` : "<span></span>"}${f.artist || shown.artist ? `<span>🖌 ${esc(f.artist || shown.artist)}</span>` : ""}</div>
+    </section>`,
+    )
+    .join("")}
+  ${!c.full ? `<p class="muted small center" id="cardLoading">${ctx.detailsError ? esc(ctx.detailsError) : "Loading flavor text and printings…"}</p>` : ""}
+  <div class="card-rules-entry"><button type="button" class="chip" data-act="learnGame" data-game="mtg">Interactive rules · how to play →</button></div>
+  </div>`;
   const overview = `
     <div class="cs-card">
       <div class="cd-art-stack"><div class="cd-img"><button class="cd-zoom" data-hold-card="true" data-entry="${esc(ctx.entryId||ctx.entry||'')}" data-act="zoomCard" data-src="${esc(image || "")}" data-hi="${esc(imgFaces?.length > 1 ? imgFaces[face]?.image_uris?.png || "" : shown.image_uris?.png || "")}" data-art="${esc(heroArt || "")}" data-name="${esc(name)}" aria-label="Enlarge ${esc(name)}">${img(image, name, "card-img")}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}</span></button></div>${imgFaces?.length > 1 ? `<button class="btn ghost small block" data-act="flipFace">↻ Flip to ${esc(imgFaces[face ? 0 : 1].name)}</button>` : ""}<button class="btn ghost small card-profile-photo" data-act="cardProfilePhoto" data-name="${esc(name)}">Use as profile photo</button></div>
-      <div class="cs-card-side">${alertStatus("mtg",trackedQuote("mtg",shown)?.id,name)}
-        <p class="small own-line">${i.owned ? `<b class="ok-text">You own ${i.owned}</b> · ${i.available} free${i.reserved ? ` · ${i.reserved} reserved` : ""}` : "Not in your collection"}${inDecks.length ? ` · in ${inDecks.map((d) => esc(d.name)).join(", ")}` : ""}</p>
-        <div class="chips">${roles.map((r) => `<span class="chip role-${r.toLowerCase()}">${r}</span>`).join("")}${c.edhrec_rank ? `<span class="chip">EDHREC #${Number(c.edhrec_rank).toLocaleString()}</span>` : ""}${c.reserved ? `<span class="chip">Reserved List</span>` : ""}${c.game_changer ? `<span class="chip warn">Game Changer</span>` : ""}</div>
+      <div class="cs-card-side">${readableText}${alertStatus("mtg",trackedQuote("mtg",shown)?.id,name)}
+        ${detailOwnedGroups('mtg',S.state.collection,c)}
+        ${inDecks.length ? `<p class="small own-line">In ${inDecks.map((d) => esc(d.name)).join(", ")}</p>` : ""}
         ${deck ? deckLegalLine(c, deck) : ""}
-      </div>
-    </div>
     ${row ? `<div class="panel tight"><div class="row between"><b>In ${esc(deck.name)}</b><span class="stepper"><button data-act="deckQty" data-name="${esc(name)}" data-delta="-1" aria-label="One fewer">−</button><b>${row.qty}</b><button data-act="deckQty" data-name="${esc(name)}" data-delta="1" aria-label="One more">＋</button></span></div>${key(name) !== key(deck.commander) ? `<button class="link danger small" data-act="deckRemove" data-name="${esc(name)}">Remove from deck</button>` : ""}</div>` : ""}
     <div class="card-actions">
-      <div class="ca-main"><button class="btn" data-act="own" data-name="${esc(name)}">＋ Add to collection</button><button class="btn ghost" data-act="wish" data-name="${esc(name)}">♡ Wishlist</button></div>
-      <div class="ca-more">${isLand(c) ? "" : `<button class="btn ghost small" data-act="buildFrom" data-name="${esc(name)}">⚒ Build decks</button>`}<button class="btn ghost small" data-act="compareFrom" data-name="${esc(name)}">⇄ Compare</button>${ctx.random ? `<button class="btn ghost small" data-act="dbRandom">🎲 Another</button>` : ""}</div>
+      <div class="ca-main"><button class="btn" data-act="own" data-name="${esc(name)}">＋ Add to collection</button><button class="btn ghost wishlist-toggle" data-act="cardWishlist" data-game="mtg" data-name="${esc(name)}" aria-pressed="${S.state.wishlist.some(w=>key(w.name)===key(name))}">${S.state.wishlist.some(w=>key(w.name)===key(name))?'♥':'♡'} Wishlist</button></div>
+      <div class="ca-more"><button class="btn ghost small" data-act="cardDeckPicker" data-game="mtg" data-name="${esc(name)}">Add to deck</button><button class="btn ghost small" data-act="compareFrom" data-name="${esc(name)}">⇄ Compare</button>${isLand(c) ? "" : `<button class="btn ghost small" data-act="buildFrom" data-name="${esc(name)}">⚒ Build decks</button>`}${ctx.random ? `<button class="btn ghost small" data-act="dbRandom">🎲 Another</button>` : ""}</div>
     </div>
-    ${S.state.decks.length ? `<div class="inline-pick"><select id="toDeck" aria-label="Deck to add to">${options(S.state.decks.map((d) => [d.id, d.name]), deck?.id || S.state.activeDeck)}</select><button class="btn ghost" data-act="addToDeck" data-name="${esc(name)}">Add to deck</button></div>` : ""}
-    ${factBox(factsFor(c, prints), c.oracle_id || name)}
+    <div class="cs-secondary"><div class="chips">${roles.map((r) => `<span class="chip role-${r.toLowerCase()}">${r}</span>`).join("")}${c.edhrec_rank ? `<span class="chip">EDHREC #${Number(c.edhrec_rank).toLocaleString()}</span>` : ""}${c.reserved ? `<span class="chip">Reserved List</span>` : ""}${c.game_changer ? `<span class="chip warn">Game Changer</span>` : ""}</div>
+    ${factBox(overviewFacts(c, prints), c.oracle_id || name)}
     <div class="links research"><span class="muted small">Research</span>
       <a href="${esc(safeHref(c.scryfall_uri || "https://scryfall.com/search?q=" + encodeURIComponent(name)))}" target="_blank" rel="noopener">Scryfall ↗</a>
       <a href="https://edhrec.com/cards/${esc(name.toLowerCase().split(" // ")[0].replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""))}" target="_blank" rel="noopener">EDHREC ↗</a>
       <button class="link" data-act="cardPriceJump" data-target="sellers">Where to buy ›</button>
-    </div>`;
+    </div></div></div></div>`;
   const pricesTab = `${priceOverview("mtg",shown,ctx,Object.entries(shown.purchase_uris||{}))}<details class="market-details"><summary>Market details · sources & finishes</summary>
     <div class="src-row" role="group" aria-label="Price source">${MTG_SOURCES.map(([id, label]) => `<button class="chip pick ${id === src[0] ? "on" : ""}" aria-pressed="${id === src[0]}" data-act="priceSource" data-src="${id}">${esc(label)}</button>`).join("")}</div>
     <div class="price-table" style="--cols:${Object.keys(src[3]).length}"><div class="pt-head"><span></span>${Object.keys(src[3]).map((f) => `<b class="${f}">${FINISH[f]}</b>`).join("")}</div>
@@ -377,32 +391,19 @@ export function cardSheet(c, ctx = {}) {
   return `<div class="sheet-head overlay">${S.ui.sheetBack ? `<button class="icon" data-act="sheetBack" aria-label="Back to deck idea">←</button>` : "<span></span>"}<button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   <div class="cs-banner"><div class="cs-hero mtg">${img(heroArt, name, "cs-art")}<div class="cs-shade"></div></div>
   <div class="cs-title"><div><h2>${esc(name)}</h2><p class="type-line">${esc(faces[face]?.type_line || typeText(shown))}</p></div>${manaCost(faces[face] || shown)}</div></div>
+  ${cardTabs(tab, [["overview", "Overview"], ["meta", "Meta"], ["guide", "Play guide"], ["versions", `Versions${prints ? " · " + prints.length + (ctx.printsNext ? "+" : "") : ""}`], ["prices", "Prices"], ["rulings", "Rules & legality"]])}
   ${emblemChips("mtg", c)}
   <div class="cs-meta">
     <button class="cd-set" data-act="set" data-code="${esc(shown.set || "")}" ${shown.set ? "" : "disabled"} aria-label="See every card in ${esc(shown.set_name || "this set")}">${setIcon(shown.set, shown.rarity, 24)}<div><b>${esc(shown.set_name || (shown.set || "").toUpperCase())} <span class="set-go">›</span></b><small>${esc((shown.set || "").toUpperCase())} #${esc(shown.collector_number || "?")} · ${esc(RARITY[shown.rarity] || shown.rarity || "")}${shown.released_at ? " · " + esc(shown.released_at.slice(0, 4)) : ""}</small></div></button>
     ${compactPriceSummary("mtg",shown,{...ctx,priceFinish})}
   </div>
-  ${faces
-    .map(
-      (f, n) => `<section class="cd-text effect-card mtg" data-rule-card-context="${esc(JSON.stringify(ruleCardContext('mtg',shown)))}">
-      <p class="eyebrow effect-label">Spellcraft · Rules text</p>${faces.length > 1 ? `<div class="row between"><b>${esc(f.name)}</b>${manaCost(f)}</div><p class="type-line">${esc(f.type_line || "")}</p>` : ""}
-      ${f.oracle_text ? `<div class="oracle">${effectText("mtg",f.oracle_text)}</div>` : ""}
-      ${f.flavor_text ? `<blockquote class="flavor"><small class="eyebrow">Flavour</small>${esc(f.flavor_text)}</blockquote>` : ""}
-      <div class="row between small muted">${f.power !== undefined && f.power !== null ? `<span class="pt">${esc(f.power)}/${esc(f.toughness)}</span>` : shown.loyalty && !n ? `<span class="pt">Loyalty ${esc(shown.loyalty)}</span>` : "<span></span>"}${f.artist || shown.artist ? `<span>🖌 ${esc(f.artist || shown.artist)}</span>` : ""}</div>
-    </section>`,
-    )
-    .join("")}
-  ${!c.full ? `<p class="muted small center" id="cardLoading">${ctx.detailsError ? esc(ctx.detailsError) : "Loading flavor text and printings…"}</p>` : ""}
-  <div class="card-rules-entry"><button type="button" class="chip" data-act="learnGame" data-game="mtg">Interactive rules · how to play →</button></div>
-  ${cardTabs(tab, [["overview", "Overview"], ["meta", "Meta"], ["guide", "Play guide"], ["versions", `Versions${prints ? " · " + prints.length + (ctx.printsNext ? "+" : "") : ""}`], ["prices", "Prices"], ["rulings", "Rulings"], ["legal", "Legality"]])}
   ${cardPanel("overview", tab, overview)}
   ${cardPanel("meta", tab, mtgCardMeta(c))}
   ${cardPanel("guide", tab, mtgCardGuide(c))}
   ${cardPanel("versions", tab, `<section class="prints"><button class="btn ghost block" data-act="magicPrintings">Browse all printings · sort &amp; filter</button>${ctx.printsError ? `<p class="note warn" role="status">${esc(ctx.printsError)}</p>` : ""}${prints ? printList(prints, shown, name, chosen) : `<p class="muted small">${ctx.printsError ? "Printings could not be loaded." : "Loading printings…"}</p>`}${ctx.printsNext || ctx.printsError ? `<button class="btn ghost block" data-act="magicVersionsMore" ${ctx.printsBusy || ctx.detailsBusy ? "disabled" : ""}>${ctx.printsBusy || ctx.detailsBusy ? "Loading…" : ctx.printsError ? "Retry printings" : "Load more printings"}</button>` : ""}${prints && !ctx.printsComplete ? `<p class="foot">${prints.length} verified printings loaded${ctx.printsTotal ? ` of ${ctx.printsTotal}` : ""}. Prices and sorting cover loaded printings only.</p>` : ""}</section>`)}
   ${cardPanel("prices", tab, pricesTab)}
   ${tab === "trade" ? cardPanel("trade", tab, mtgTradePanel(name, shown, ctx)) : ""}
-  ${cardPanel("rulings", tab, rulings)}
-  ${cardPanel("legal", tab, legality)}`;
+  ${cardPanel("rulings", tab, `<section class="card-legality-section"><h3>Format legality</h3>${legality}</section><section class="card-rulings-section"><h3>Official rulings</h3>${rulings}</section>`)}`;
 }
 
 // Trade tab: fair swaps from your collection and wishlist (trade.js).
@@ -736,10 +737,10 @@ export function collectionList() {
       return `<div class="lot" data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}">${selectionMark("mtg",e.id)}
         <button class="lot-art" data-act="card" data-name="${esc(e.name)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${img(cardImage(c), e.name)}${c ? tileChrome("mtg", c) : ""}${tierGem(t)}</button>
         <div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(e.name)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem("mtg", c)} ${setBadge(e.printingVerified ? c : {set:e.set,set_name:e.setName,collector_number:e.collectorNumber}, {physical:true,unspecified:!e.set&&!e.printingVerified})}</button>
-          <span class="lot-sub">${manaCost(c)}<span>${esc((e.set || e.setName || "Any printing").toUpperCase())}${e.collectorNumber ? " #" + esc(e.collectorNumber) : ""}${e.finish !== "nonfoil" ? ` · <b class="foil">${esc(e.finish)}</b>` : ""}${e.condition && e.condition !== "Near Mint" ? " · " + esc(e.condition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></span>
+          <span class="lot-sub">${manaCost(c)}<span>${esc((e.set || e.setName || "Any printing").toUpperCase())}${e.collectorNumber ? " #" + esc(e.collectorNumber) : ""}${e.finish !== "nonfoil" ? ` · <b class="foil">${esc(e.finish)}</b>` : ""}${e.location ? " · " + esc(e.location) : ""}</span></span>
           ${e.lookupFailed ? `<button class="tag warn" data-act="editLot" data-id="${esc(e.id)}">Not found — tap to fix name</button>` : !c ? `<span class="tag muted">Looking up…</span>` : ""}
         </div>
-        <div class="lot-side"><button class="price link" data-act="buyCard" data-name="${esc(e.name)}" data-lot="${esc(e.id)}" data-finish="${esc(e.finish||"nonfoil")}" aria-label="Price history and sellers for ${esc(e.name)}">${usd(unit === null ? null : unit * e.qty)}</button>${e.condition&&e.condition!=="Near Mint"?`<small class="condition-value-note">${esc(conditionValueNote(e,e.conditionQuotes||[]))}</small>`:""}
+        <div class="lot-side"><span class="lot-value"><button class="price link" data-act="buyCard" data-name="${esc(e.name)}" data-lot="${esc(e.id)}" data-finish="${esc(e.finish||"nonfoil")}" aria-label="Price history and sellers for ${esc(e.name)}">${usd(unit === null ? null : unit * e.qty)}</button>${conditionBadge(e,e.conditionQuotes||[])}</span>
           <span class="stepper"><button data-act="qty" data-id="${esc(e.id)}" data-delta="-1" aria-label="Remove one">−</button><b>${e.qty}</b><button data-act="qty" data-id="${esc(e.id)}" data-delta="1" aria-label="Add one">＋</button></span>
           <button class="link small" data-act="editLot" data-id="${esc(e.id)}">Edit</button>
         </div>
@@ -852,7 +853,7 @@ function tournamentPanel() {
     data = M.data,
     edh = fmt === "EDH",
     label = (MTG_META_FORMATS.find((f) => f[0] === fmt) || [fmt, fmt])[1],
-    chips = `<div class="fmt-chips">${MTG_META_FORMATS.map(([id, name]) => `<button class="chip pick ${id === fmt ? "on" : ""}" data-act="mtgMetaFormat" data-id="${esc(id)}">${esc(name)}</button>`).join("")}</div>`;
+    chips = `<div class="fmt-chips" role="group" aria-label="Tournament format">${MTG_META_FORMATS.map(([id, name]) => `<button class="chip pick ${id === fmt ? "on" : ""}" data-act="mtgMetaFormat" data-id="${esc(id)}" aria-pressed="${id===fmt}">${esc(name)}</button>`).join("")}</div>`;
   let body;
   if (!data && M.busy) body = `<p class="muted small">Loading recent ${esc(label)} results…</p>`;
   else if (!data && M.error) body = `<div class="note warn">${esc(M.error)} <button class="link" data-act="mtgMetaReload">Try again</button></div>`;
@@ -1717,7 +1718,7 @@ export function signedOutAccount(a, mode = "login") {
   <div id="auth-login" class="auth-pane" role="tabpanel" aria-labelledby="authTab-login" ${selected === "login" ? "" : "hidden"}>
     <form data-auth-action="signPassword">
     <label class="field">Email address<input id="signEmail" name="email" required type="email" autocomplete="username" placeholder="you@example.com" aria-label="Login email address"></label>
-    <label class="field">Password<input id="signPassword" name="password" required type="password" autocomplete="current-password" placeholder="Your password"></label>
+    <label class="field">Password${passwordField('<input id="signPassword" name="password" required type="password" autocomplete="current-password" placeholder="Your password">','password')}</label>
     <button class="btn block" type="submit">Log in</button></form>
     <button class="link auth-secondary" data-act="authTab" data-mode="reset">Forgot password?</button>
     <details class="settings-disclosure"><summary>Email me a link instead</summary><p class="foot">Use the login email above. Open the link in this browser.</p><button class="btn ghost block" data-act="signEmail">Send sign-in link</button></details>
@@ -1725,8 +1726,8 @@ export function signedOutAccount(a, mode = "login") {
   <div id="auth-signup" class="auth-pane" role="tabpanel" aria-labelledby="authTab-signup" ${selected === "signup" ? "" : "hidden"}>
     <form data-auth-action="createAccount">
     <label class="field">Email address<input id="signupEmail" name="email" required type="email" autocomplete="email" placeholder="you@example.com" aria-label="Account email address"></label>
-    <label class="field">Password<input id="signupPassword" name="password" required type="password" autocomplete="new-password" minlength="8" placeholder="At least 8 characters"></label>
-    <label class="field">Confirm password<input id="signupConfirm" name="password_confirmation" required type="password" autocomplete="new-password" placeholder="Enter it again"></label>
+    <label class="field">Password${passwordField('<input id="signupPassword" name="password" required type="password" autocomplete="new-password" minlength="8" placeholder="At least 8 characters">','password')}</label>
+    <label class="field">Confirm password${passwordField('<input id="signupConfirm" name="password_confirmation" required type="password" autocomplete="new-password" placeholder="Enter it again">','confirmation password')}</label>
     <button class="btn block" type="submit">Create account</button></form><p class="foot">${a.providers.confirmationRequired===false ? "Create your account, then start syncing." : "Confirm your email to finish registering. Your browser saving a password does not mean registration succeeded."}</p>${a.providers.confirmationRequired===false ? "" : `<button class="link small" type="button" data-act="resendConfirm">Didn’t get the email? Resend confirmation email</button>`}
   </div>
   <div id="auth-reset" class="auth-pane" ${selected === "reset" ? "" : "hidden"}><h3>Reset your password</h3><p class="muted small">Enter your account email to request a reset link.</p><label class="field">Email address<input id="resetEmail" type="email" autocomplete="email" placeholder="you@example.com" data-enter="forgotPassword"></label><button class="btn block" data-act="forgotPassword">Send reset link</button><button class="link auth-secondary" data-act="authTab" data-mode="login">Back to log in</button></div>` : `<p class="muted small">Email sign-in is disabled for this site.</p>`}
@@ -1735,30 +1736,30 @@ export function signedOutAccount(a, mode = "login") {
 }
 
 export function accountPanel() {
-  const a = cloudInfo(),photo=profilePhotoControl(S.state.settings.cardAvatar,a.profile||{}),localProfile=`<section class="panel account"><h3>Profile</h3>${photo}</section>`;
+  const a = cloudInfo(),photo=profilePhotoControl(a.art?.avatar||S.state.settings.cardAvatar,a.profile||{}),localProfile=`<section class="panel account"><h3>Profile</h3>${photo}</section>`;
   if (!a.configured)
     return `<section class="panel account"><h3>Account</h3><p class="muted small">Accounts aren’t switched on for this site yet, so everything is saved on this device. Export a backup to move it to another phone or computer.</p>${photo}</section>`;
   if (!a.ready)
     return `<section class="panel account"><h3>Account</h3><p class="muted small">${a.status.state === "error" ? esc(a.status.msg) : "Connecting…"}</p></section>`;
   if (a.recoveringPassword && a.user)
-    return `<section class="panel account"><h3>Choose a new password</h3><p class="muted small">Your reset link was accepted. Set a password for your CardStashy account.</p><label class="field">New password<input id="resetPassword" type="password" autocomplete="new-password" minlength="8"></label><label class="field">Confirm password<input id="resetConfirm" type="password" autocomplete="new-password" data-enter="finishPasswordReset"></label><button class="btn block" data-act="finishPasswordReset">Save new password</button><button class="link small" data-act="signOut">Cancel and sign out</button></section>`;
+    return `<section class="panel account"><h3>Choose a new password</h3><p class="muted small">Your reset link was accepted. Set a password for your CardStashy account.</p><label class="field">New password${passwordField('<input id="resetPassword" type="password" autocomplete="new-password" minlength="8">','new password')}</label><label class="field">Confirm password${passwordField('<input id="resetConfirm" type="password" autocomplete="new-password" data-enter="finishPasswordReset">','confirmation password')}</label><button class="btn block" data-act="finishPasswordReset">Save new password</button><button class="link small" data-act="signOut">Cancel and sign out</button></section>`;
   if (!a.user) return signedOutAccount(a, S.ui.authMode || "login")+localProfile;
   const pr = a.profile || {},
     st = a.status,
     label = { synced: "Synced", syncing: "Syncing…", error: "Sync paused", decide: "Needs your decision", offline: "Offline — will sync when you’re back online", local: "Account sync not confirmed" }[st.state] || "Account sync not confirmed";
-  return `<section class="panel account"><div class="account-head">${profileAvatar(S.state.settings.cardAvatar,pr)}<div><b>${esc(pr.display_name || a.user.email)}</b><small class="muted">${esc(a.user.email || "")}${pr.username ? " · @" + esc(pr.username) : ""}</small></div></div>
-    <div class="sync-line ${st.state}"><span><b>${label}</b>${st.state === "synced" && st.at ? ` · ${esc(when(st.at))}` : ""}</span><button class="btn ghost small" data-act="syncNow">Sync now</button></div>
+  return `<section class="panel account"><div class="account-head">${profileAvatar(a.art?.avatar||S.state.settings.cardAvatar,pr)}<div><b>${esc(pr.display_name || a.user.email)}</b><small class="muted">${esc(a.user.email || "")}${pr.username ? " · @" + esc(pr.username) : ""}</small></div></div>
+    <div class="actions wrap"><button class="btn small" data-act="myCommunity">My profile</button><button class="btn ghost small" data-act="addFriend">Add friend</button></div><div class="sync-line ${st.state}"><span><b>${label}</b>${st.state === "synced" && st.at ? ` · ${esc(when(st.at))}` : ""}</span><button class="btn ghost small" data-act="syncNow">Sync now</button></div>
     ${st.state === "error" && st.msg ? `<p class="small bad-text">${esc(st.msg)} Your cards are still saved on this device.</p>` : ""}
     ${a.pending ? `<button class="btn block" data-act="syncDecide">Choose which copy to keep</button>` : ""}
-    <details><summary class="small"><b>Profile</b></summary>${photo}
+    <details><summary class="small"><b>Profile</b></summary>${photo}<button class="btn ghost small" data-act="profileHeader">Choose profile header</button>
       <label class="field">Display name<input id="pfName" maxlength="60" value="${esc(pr.display_name || "")}"></label>
-      <label class="field">Username <span class="muted small">(for sharing later)</span><input id="pfUser" maxlength="30" value="${esc(pr.username || "")}" placeholder="letters, numbers, _"></label>
+      <label class="field">Username <span class="muted small">(friends can find you with this)</span><input id="pfUser" maxlength="30" value="${esc(pr.username || "")}" placeholder="letters, numbers, _"></label>
       <label class="field">Bio<textarea id="pfBio" rows="2" maxlength="500">${esc(pr.bio || "")}</textarea></label>
       <button class="btn small" data-act="saveProfile">Save profile</button>
     </details>
     <p class="foot">Your collection and decks are private. Saved here first, then synced to your account.</p>
-    <button class="link small" data-act="accountResetPassword">Reset / set password</button> · <button class="link small" data-act="signOut">Sign out</button> <span class="muted small">— your data stays on this device.</span>
-    <details class="settings-disclosure settings-danger"><summary>Delete account</summary><p class="foot">Permanently deletes your CardStashy account and the collection, decks and profile synced to it. You can keep or erase this device's copy afterwards. <a href="delete-account.html" target="_blank" rel="noopener">How account deletion works</a></p><button class="btn ghost danger" data-act="deleteAccount">Delete my account</button></details></section>`;
+    <div class="account-actions"><button class="btn ghost small" data-act="accountResetPassword">Reset password</button><button class="btn ghost small" data-act="signOut">Sign out</button></div><p class="foot">Signing out hides this account’s cards and profile on this device.</p>
+    <details class="settings-disclosure settings-danger account-delete"><summary>Delete account</summary><p class="foot">Permanently deletes your CardStashy account and the collection, decks and profile synced to it. You can keep or erase this device's copy afterwards. <a href="delete-account.html" target="_blank" rel="noopener">How account deletion works</a></p><button class="btn ghost danger" data-act="deleteAccount">Delete my account</button></details></section>`;
 }
 
 // Shown when both this device and the account have data, or when they changed separately.
@@ -1787,7 +1788,7 @@ export function settings({popup=false}={}) {
   <div id="settings-account" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-account" ${tab === "account" ? "" : "hidden"}><div class="settings-account-layout">${accountPanel()}<aside class="settings-aside"><span class="settings-status-dot"></span><b>Saved on this device</b><p class="muted small">${cloudInfo().user ? "Your account adds a private cloud copy." : "You can keep building without signing in."}</p><span class="small muted">Last saved<br>${saved}</span><button class="link" data-act="settingsTab" data-id="backup">Manage backups →</button></aside></div></div>
   <div id="settings-backup" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-account" ${tab === "backup" ? "" : "hidden"}><button class="link" data-act="settingsTab" data-id="account">← Account</button><section class="panel settings-card"><div class="settings-card-heading"><span class="settings-icon" aria-hidden="true">↓</span><div><p class="eyebrow">YOUR DATA</p><h2>Keep a backup</h2></div></div><p class="muted small">Download a copy of your collection, decks and settings.</p><button class="btn" data-act="exportBackup">Download backup</button><p class="foot">Last saved: ${saved}</p><details class="settings-disclosure"><summary>Restore or check a backup</summary><div class="actions wrap"><label class="btn ghost">Restore file<input type="file" accept=".json" data-change="restoreBackup" hidden></label><label class="btn ghost">Check file<input type="file" accept=".json" data-change="checkBackup" hidden></label></div><p id="backupCheck" class="muted small" role="status"></p><button class="link" data-act="undoRestore">Use the automatic recovery copy</button></details></section>
   <section class="panel settings-card"><h3>Device storage</h3><p id="storageDetail" class="muted small">Checking…</p><button class="btn ghost" data-act="persist">Keep data on this device</button></section>
-  <details class="settings-disclosure settings-danger"><summary>Start over or load examples</summary><p class="foot">Export a backup first. One recovery copy is kept on this device.</p><div class="actions wrap"><button class="btn ghost danger" data-act="reset">Clear this device</button><button class="btn ghost" data-act="loadExample">Load example data</button></div></details></div>
+  <details class="settings-disclosure settings-danger account-delete"><summary>Start over or load examples</summary><p class="foot">Export a backup first. One recovery copy is kept on this device.</p><div class="actions wrap"><button class="btn ghost danger" data-act="reset">Clear this device</button><button class="btn ghost" data-act="loadExample">Load example data</button></div></details></div>
   <div id="settings-app" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-app" ${tab === "app" ? "" : "hidden"}><section class="panel settings-card"><div class="settings-card-heading"><div><p class="eyebrow">APPEARANCE</p><h2>Glass &amp; art backdrop</h2></div></div><label class="check"><input type="checkbox" data-change="setGlass" ${(() => { try { return localStorage.getItem("cardstashy-glass") !== "off"; } catch { return true; } })() ? "checked" : ""}> Frosted glass panels over a blurred copy of the game's featured art</label><p class="foot">Turn it off for plain solid panels (a little lighter on older phones).</p><label class="check"><input type="checkbox" data-change="setHaptics" ${hapticsOn() ? "checked" : ""}> Vibration when you tap, add or remove cards</label><p class="foot">On iPhone this uses the system tap (iOS 18 or later). Animations follow your phone’s “Reduce motion” setting.</p></section><section class="panel settings-card"><div class="settings-card-heading"><span class="settings-icon" aria-hidden="true">＋</span><div><p class="eyebrow">TAKE IT WITH YOU</p><h2>Install CardStashy</h2></div></div><p class="muted small">Open it from your home screen. Saved collections and decks work offline.</p><button class="btn" data-act="install">Install app</button><details class="settings-disclosure"><summary>Android installation help</summary><p class="foot">In Chrome, open ⋮ → Add to Home screen or Install app. Searches and updated prices need internet.</p></details></section>
   <details class="settings-disclosure settings-source"><summary>Card databases & prices</summary><ul class="sources"><li><b>Magic:</b> Scryfall card data, images and reference prices; MTGJSON precon lists.</li><li><b>Pokémon:</b> TCGdex card data and images, with supplied TCGplayer and Cardmarket prices.</li><li><b>Yu-Gi-Oh!:</b> YGOPRODeck card data, alternate art, printings and reference prices.</li><li><b>Imports:</b> Supported text and CSV exports from deck and collection tools.</li></ul><p class="foot">Prices are estimates; check edition, condition and shipping with the seller.</p></details>
   <button class="btn ghost small settings-tour" data-act="replayTour">▶ Replay tutorials</button><button class="link settings-tour" data-act="resetOnboarding">Reset onboarding</button><details class="settings-disclosure settings-source"><summary>About CardStashy</summary><p class="foot">Scores and test games are estimates, not win rates. CardStashy is an independent fan app, not affiliated with or endorsed by the publishers. Magic: The Gathering is a trademark of Wizards of the Coast; Yu-Gi-Oh! of Konami; Pokémon of Nintendo, Creatures and GAME FREAK. Cards and art belong to their owners.</p><span class="settings-version">Version ${APP_VERSION}</span></details></div><div id="settings-info" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-info" ${tab === "info" ? "" : "hidden"}>${infoPanel()}</div></div>`;

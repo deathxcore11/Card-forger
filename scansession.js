@@ -1,3 +1,4 @@
+import {privateKey} from './account-scope.js';
 // Scan sessions: defaults you set once (finish, condition, language, quantity), a running list of
 // everything scanned with prices, and one tap to save it all to the collection. Kept per game on
 // this device, so a long sorting session survives a reload.
@@ -15,14 +16,14 @@ const PREFS_KEY = "cardstashy-scan-prefs-v1";
 const SESSION_KEY = (g) => "cardstashy-scan-session-v1-" + g;
 const read = (k, d) => {
   try {
-    return JSON.parse(localStorage.getItem(k) || "null") ?? d;
+    return JSON.parse(localStorage.getItem(privateKey(k)) || "null") ?? d;
   } catch {
     return d;
   }
 };
 const write = (k, v) => {
   try {
-    localStorage.setItem(k, JSON.stringify(v));
+    localStorage.setItem(privateKey(k), JSON.stringify(v));
   } catch {}
 };
 

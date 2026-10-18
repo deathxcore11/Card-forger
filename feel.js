@@ -1,3 +1,4 @@
+import {mountFeedback,removeFeedback} from './feedback-layer.js';
 // How the app feels: haptics and motion.
 // Haptics: vibration patterns on Android; on iPhone (no web vibration) a hidden system switch is
 // toggled, which iOS 18+ answers with its own light tap. Motion: a card flies into Collection when
@@ -63,26 +64,34 @@ export function hapticFor(act = "", el = null) {
 /* ---------- motion ---------- */
 
 // A copy of the card picture arcs from where you tapped into the Collection tab, which then pops.
+export function captureCollectionFlight(fromEl) {
+  const img=fromEl?.closest?.('.sheet, #sheet, .tile, .lot, article, section, .scan-cand2')?.querySelector?.('img.cs-art, .cd-img img, img.card-img, img.sc-img, img');
+  if(!img?.getBoundingClientRect||reduced())return null;
+  const a=img.getBoundingClientRect();
+  return a.width?{img:img.cloneNode(),a:{left:a.left,top:a.top,width:a.width,height:a.height}}:null;
+}
 export function flyToCollection(fromEl) {
-  const nav = [...document.querySelectorAll('[data-nav="collection"]')].find((n) => n.offsetParent !== null);
-  if (!nav) return;
+  const nav = [...document.querySelectorAll('[data-nav="collection"]')].find((n) => {const r=n.getBoundingClientRect();return n.offsetParent!==null&&r.width>0&&r.top>=0&&r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight;});
+
   const pop = () => {
+    if(!nav)return;
     nav.classList.remove("nav-pop");
     void nav.offsetWidth;
     nav.classList.add("nav-pop");
   };
-  const img = fromEl?.closest?.(".sheet, #sheet, .tile, .lot, article, section, .scan-cand2")?.querySelector?.("img.cs-art, .cd-img img, img.card-img, img.sc-img, img") || null;
-  if (!img || reduced() || !img.getBoundingClientRect) return pop();
-  const a = img.getBoundingClientRect(),
-    b = nav.getBoundingClientRect();
-  if (!a.width || !b.width) return pop();
+  const snapshot=fromEl?.img?fromEl:captureCollectionFlight(fromEl),img=snapshot?.img;
+  if (!img || reduced()) return pop();
+  const a = snapshot.a,
+    b = nav?.getBoundingClientRect();
+  if (!a.width) return pop();
   const ghost = img.cloneNode();
   ghost.removeAttribute("loading");
   ghost.className = "fly-card";
   const w = Math.min(a.width, 140),
     h = w * (a.height / a.width || 1.4);
   Object.assign(ghost.style, { left: `${a.left + (a.width - w) / 2}px`, top: `${a.top + (a.height - h) / 2}px`, width: `${w}px`, height: `${h}px` });
-  document.body.append(ghost);
+  mountFeedback(ghost);
+  if(!b){ghost.animate([{transform:"scale(1)",opacity:1},{transform:"scale(.8)",opacity:0}],{duration:300}).finished.catch(()=>{}).finally(()=>removeFeedback(ghost));return;}
   const dx = b.left + b.width / 2 - (a.left + a.width / 2),
     dy = b.top + b.height / 2 - (a.top + a.height / 2);
   ghost
@@ -96,7 +105,7 @@ export function flyToCollection(fromEl) {
     )
     .finished.catch(() => {})
     .finally(() => {
-      ghost.remove();
+      removeFeedback(ghost);
       pop();
     });
 }

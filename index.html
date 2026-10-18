@@ -24,7 +24,7 @@
     <div id="gameTabs" class="game-tabs" role="tablist" aria-label="Choose your card game"></div>
     <div id="desktopSearch" hidden><button class="header-sets btn ghost" data-act="go" data-to="#sets" data-nav="sets" aria-label="Browse sets"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="7" y="4" width="13" height="17" rx="2"/><path d="M4 17V5a3 3 0 0 1 3-3h9M10 9h7M10 13h7M10 17h4"/></svg><span>Sets</span></button></div>
     <nav class="top-nav" aria-label="Main">
-      <button data-nav="community" disabled aria-label="Community, coming soon" title="Community is coming soon">Community</button>
+      <button data-nav="community" aria-label="Community" title="Profile & friends">Community</button>
       <button data-act="go" data-to="#collection" data-nav="collection">Collection</button>
       <button data-act="go" data-to="#decks" data-nav="decks">Decks</button>
       <button data-act="go" data-to="#scan" data-nav="scan">Scan</button>
@@ -35,7 +35,7 @@
   <main id="content" role="tabpanel" aria-labelledby="game-tab-mtg"><p class="muted center pad">Loading your cards…</p></main>
   <div id="toast" role="status" aria-live="polite"></div>
   <nav class="bottom-nav" aria-label="Main">
-    <button data-nav="community" disabled aria-label="Community, coming soon" title="Community is coming soon"><span aria-hidden="true">♧</span>Community</button>
+    <button data-nav="community" aria-label="Community" title="Profile & friends"><span aria-hidden="true">♧</span>Community</button>
     <button data-act="go" data-to="#collection" data-nav="collection"><span aria-hidden="true">▦</span>Collection</button>
     <button class="nav-search" data-act="go" data-to="#search" data-nav="search"><span aria-hidden="true">⌕</span>Search</button>
     <button data-act="go" data-to="#decks" data-nav="decks"><span aria-hidden="true">▣</span>Decks</button>
@@ -45,6 +45,8 @@
 <dialog id="sheet" class="sheet" aria-label="Details"><div id="sheetBody"></div></dialog>
 <dialog id="settingsDialog" class="settings-dialog" aria-labelledby="settingsDialogTitle"></dialog>
 <!-- modulepreload:start -->
+<link rel="modulepreload" href="account-scope.js">
+<link rel="modulepreload" href="account-workspaces.js">
 <link rel="modulepreload" href="adapt.js">
 <link rel="modulepreload" href="ai-ask.js">
 <link rel="modulepreload" href="ai-review.js">
@@ -69,6 +71,7 @@
 <link rel="modulepreload" href="collection-stack.js">
 <link rel="modulepreload" href="community-art.js">
 <link rel="modulepreload" href="community-feed.js">
+<link rel="modulepreload" href="community-profile.js">
 <link rel="modulepreload" href="community-sources.js">
 <link rel="modulepreload" href="condition-feed.js">
 <link rel="modulepreload" href="condition-refresh-scheduler.js">
@@ -86,6 +89,7 @@
 <link rel="modulepreload" href="engine-map.js">
 <link rel="modulepreload" href="extras.js">
 <link rel="modulepreload" href="facts.js">
+<link rel="modulepreload" href="feedback-layer.js">
 <link rel="modulepreload" href="feel.js">
 <link rel="modulepreload" href="format-upgrades.js">
 <link rel="modulepreload" href="formats.js">
@@ -120,6 +124,7 @@
 <link rel="modulepreload" href="price-reference.js">
 <link rel="modulepreload" href="pricehist.js">
 <link rel="modulepreload" href="pricing-presentation.js">
+<link rel="modulepreload" href="printing-carousel.js">
 <link rel="modulepreload" href="printing-picker.js">
 <link rel="modulepreload" href="profile-art.js">
 <link rel="modulepreload" href="ptcg-product.js">
@@ -152,6 +157,7 @@
 <link rel="modulepreload" href="strategy-risk.js">
 <link rel="modulepreload" href="strategy.js">
 <link rel="modulepreload" href="suggest.js">
+<link rel="modulepreload" href="tabletop-themes.js">
 <link rel="modulepreload" href="tabletop.js">
 <link rel="modulepreload" href="tcg.js">
 <link rel="modulepreload" href="tcgbuild.js">

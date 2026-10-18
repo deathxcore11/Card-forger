@@ -30,7 +30,7 @@ const server=createServer(async(req,res)=>{try{
   return res.end('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>#scanVideo{display:block;width:378px;height:416px;object-fit:cover}</style><div id="camSlot"></div><div id="camStatus"></div><div id="scanStatus"></div>');
  }
  const file=resolve(root,'.'+(url.pathname==='/'?'/index.html':url.pathname));if(!file.startsWith(root+'/')){res.writeHead(403);return res.end();}
- res.setHeader('Content-Type',({'.js':'text/javascript','.css':'text/css','.html':'text/html','.json':'application/json'})[extname(file)]||'application/octet-stream');res.end(await readFile(file));
+ res.setHeader('Content-Type',({'.js':'text/javascript','.css':'text/css','.html':'text/html','.json':'application/json'})[extname(file)]||'application/octet-stream');let body=await readFile(file);if(file.endsWith("/config.js"))body=Buffer.from(body.toString().replace(/key:\s*"[^"]*"/,'key: ""'));res.end(body);
 }catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const base=`http://127.0.0.1:${server.address().port}`,browser=await chromium.launch();

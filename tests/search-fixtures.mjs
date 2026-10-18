@@ -139,7 +139,7 @@ export async function startServer(){
  await new Promise(r=>server.listen(0,'127.0.0.1',r));return {base:`http://127.0.0.1:${server.address().port}`,close:()=>new Promise(r=>server.close(r))};
 }
 const historyEndpoint=new URL('/functions/v1/market-history',SUPABASE.url);
-export async function openSearchApp(browser,base,{game='mtg',width=390,height=1000,pendingDetails=false,evidenceLabel=game,sandboxPreviews=false}={}){
+export async function openSearchApp(browser,base,{game='mtg',width=390,height=1000,pendingDetails=false,evidenceLabel=game,sandboxPreviews=false,accountFixture=null}={}){
  assert.equal(process.env.GITHUB_ACTIONS,'true','Browser fixture execution is hosted-CI only');assert.match(base,/^http:\/\/127\.0\.0\.1:\d+$/);
  const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:1,hasTouch:true,reducedMotion:'reduce',locale:'en-US',timezoneId:'UTC',serviceWorkers:sandboxPreviews?'allow':'block'}),page=await context.newPage();page.setDefaultTimeout(15000);
  const errors=[],writes=[],unexpected=[],requests=[],gates=[],rules=[],fixtures=makeSearchFixtures(game,{pendingDetails});
@@ -157,6 +157,9 @@ export async function openSearchApp(browser,base,{game='mtg',width=390,height=10
  await context.route('**/*',async route=>{
   const req=route.request(),url=new URL(req.url()),record={method:req.method(),url:url.href,settled:false};requests.push(record);
   const fulfill=async(body,status=200,type='application/json')=>{try{await route.fulfill({status,contentType:type,headers:{'access-control-allow-origin':'*'},body:type==='application/json'?JSON.stringify(body):body});}catch(error){if(/abort|closed|cancel/i.test(req.failure()?.errorText||''))record.cancelled=true;else{errors.push(error.stack||error.message);}}finally{record.settled=true;}};
+  if(accountFixture&&url.origin===base&&url.pathname==='/config.js'){const source=await readFile(resolve(ROOT,'config.js'),'utf8');return fulfill(source,200,'text/javascript');}
+  if(accountFixture&&url.hostname==='cdn.jsdelivr.net'&&url.pathname.includes('@supabase/supabase-js@'))return fulfill(await readFile(resolve(ROOT,'tests/account-fixture-client.js'),'utf8'),200,'text/javascript');
+  if(accountFixture&&url.origin===new URL(SUPABASE.url).origin&&url.pathname==='/auth/v1/settings')return fulfill({external:{email:true,google:true},mailer_autoconfirm:false});
   if(!['GET','HEAD','OPTIONS'].includes(req.method())){writes.push(`${req.method()} ${url.href}`);return fulfill({error:'All mutations and paid/AI calls are forbidden.'},403);}
   if(req.method()==='OPTIONS')return fulfill('',204,'text/plain');
   for(const gate of gates)if(!gate.used&&gate.match(url,req)){gate.used=true;gate.started();await gate.wait;}
@@ -176,6 +179,7 @@ export async function openSearchApp(browser,base,{game='mtg',width=390,height=10
   unexpected.push(`${req.method()} ${url.href}`);return fulfill({error:'Unmapped request blocked; no external request forwarded.'},451);
  });
  await page.addInitScript(({storage,now})=>{if(window!==window.top)return;const NativeDate=Date,offset=now-NativeDate.now();globalThis.Date=class extends NativeDate{constructor(...args){super(...(args.length?args:[NativeDate.now()+offset]));}static now(){return NativeDate.now()+offset;}};Math.random=()=>0;for(const[k,v]of Object.entries(storage))localStorage.setItem(k,JSON.stringify(v));localStorage.setItem('cardstashy-tour-v1','done');localStorage.setItem('cardstashy-glass','off');},{storage:fixtures.storage,now:NOW});
+ if(accountFixture)await page.addInitScript(fixture=>{if(!localStorage.getItem('qa-account-seeded')){localStorage.setItem('qa-account-seeded','1');for(const[k,v]of Object.entries(fixture.storage||{}))localStorage.setItem(k,JSON.stringify(v));localStorage.setItem('qa-account-model',JSON.stringify(fixture));}},accountFixture);
  await page.goto(base+'/#search');await page.locator('#app.ready').waitFor();await page.evaluate(async()=>{window.__uiTestState=(await import('/store.js')).S;window.__uiTestTcg=await import('/tcg.js');});await page.waitForFunction(g=>document.body.dataset.game===g&&window.__uiTestState.state.settings.game===g,game);
  // Observe durable writes as well as final in-memory snapshots. Cache writes and
  // game settings are allowed; lot/deck/private-price mutations are never allowed.

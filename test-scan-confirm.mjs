@@ -69,7 +69,7 @@ for(const g of ['mtg','ptcg','ygo']){
  assert.equal(r.cands.length,1,'noisy OCR cannot erase an available visual suggestion');assert.equal(r.cands[0].exact,false,'visual recovery still requires confirmation');
  assert.equal(textVerifiedMatch(g,r.cands[0],{name:'Nonsensical OCR'}),false);
  const empty=scanConfirmation(g,{cands:[],shot:'data:image/png;base64,AA',confirm:{unresolved:true}},{});
- assert.match(empty,/Your captured card/);assert.doesNotMatch(empty,/Find card|scanMatchName/,'failed reads do not demand catalogue hunting');assert.match(empty,/Saved for later/);assert.match(empty,/Scan again/);assert.doesNotMatch(empty,/data-act="scanConfirm"/,'unidentified card cannot be saved as a fabricated match');
+ assert.match(empty,/Your captured card/);assert.match(empty,/scanMatchName/,'failed reads allow an optional name correction without losing the capture');assert.match(empty,/Saved for later/);assert.match(empty,/Scan again/);assert.doesNotMatch(empty,/data-act="scanConfirm"/,'unidentified card cannot be saved as a fabricated match');
 }
 console.log('PASS: noisy-title visual recovery and nonblocking retry review in all games; unverified artwork never becomes an exact printing.');
 

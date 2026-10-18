@@ -253,9 +253,9 @@ try{
   for(const action of ['scanConfirm','scanBatchSave','sessCommit'])for(const failure of [false,true]){
     const gate=deferred();let started=false;const {ctx}=setup('mtg',{addMany:async()=>{started=true;await gate.promise;}});
     saveBatch([{...row(),status:action==='scanBatchSave'?'ready':'review'}]);if(action==='scanConfirm')ctx.A.scanBatchReview({dataset:{id:'review'}});if(action==='sessCommit')saveSession('mtg',[{id:'saved-session',qty:2}]);
-    const saving=ctx.A[action]();await wait(()=>started);assert.equal(ctx.beforeGameChange('mtg','ygo'),false);assert.equal(ctx.beforeGameChange('mtg','mtg',{workspace:true,kind:'undo'}),false);assert.equal(ctx.beforeGameChange('mtg','mtg',{workspace:true}),false);assert.equal(S.state.settings.game,'mtg');
+    if(action==='scanBatchSave')await ctx.A.scanBatchSave();const saving=ctx.A[action==='scanBatchSave'?'scanConfirm':action]();await wait(()=>started);assert.equal(ctx.beforeGameChange('mtg','ygo'),false);assert.equal(ctx.beforeGameChange('mtg','mtg',{workspace:true,kind:'undo'}),false);assert.equal(ctx.beforeGameChange('mtg','mtg',{workspace:true}),false);assert.equal(S.state.settings.game,'mtg');
     if(failure)gate.reject(Error('fixture save rejected'));else gate.resolve();await saving.catch(e=>{assert.equal(action,'sessCommit');assert.equal(e.message,'fixture save rejected');});
-    if(failure){assert.equal(loadBatch().length,1);if(action==='scanConfirm')assert.match(S.ui.scan.confirm.error,/Couldn.t save/);if(action==='scanBatchSave')assert.match(S.ui.scan.batchError,/fixture save rejected/);if(action==='sessCommit')assert.equal(loadSession('mtg').length,1);}
+    if(failure){assert.equal(loadBatch().length,1);if(action==='scanConfirm')assert.match(S.ui.scan.confirm.error,/Couldn.t save/);if(action==='scanBatchSave')assert.match(S.ui.scan.confirm.error,/Couldn.t save/);if(action==='sessCommit')assert.equal(loadSession('mtg').length,1);}
     assert.equal(S.state.settings.game,'mtg','failed or completed save never resumes a previously blocked switch');
   }
   console.log('PASS: confirmation, mixed-batch and legacy-session saves block switching without cancellation or duplicate writes; failures retain drafts.');

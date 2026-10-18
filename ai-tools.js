@@ -26,6 +26,7 @@ export function completionSummary(rows,owned,unit){
 
 export function makeAskTools(x) {
   const { S, T } = x;
+  const metaTargets = new Map();
   const visuals = new Map(), exactCards = new Map(), exactAliases = new Map();
   let exactCardSequence = 0;
   function exactCardResult(game,card,releaseId,result) {
@@ -54,9 +55,12 @@ export function makeAskTools(x) {
     try {
       if (g === 'ygo' && d.cover) image = `img/ygo/a/${encodeURIComponent(d.cover)}.jpg`;
       else if (g === 'mtg') {
-        const lead = d.commander || rows.find(r => x.meta(r.name)?.type_line && !/Land/.test(x.meta(r.name).type_line))?.name || rows.find(r=>!BASICS.test(r.name))?.name;
-        card = lead ? x.meta(lead) || await x.resolve?.(lead).catch(()=>null) : null;
-        image = card?.image_uris?.art_crop || card?.card_faces?.[0]?.image_uris?.art_crop || mtgImg(card);
+        const leads=[...(d.commanders||[]).map(c=>typeof c==='string'?c:c.name),...String(d.commander||'').split(/\s+\/\s+/),...rows.filter(r=>!BASICS.test(r.name)).map(r=>r.name)].filter(Boolean);
+        for(const lead of [...new Set(leads)].slice(0,3)){
+          card=x.meta(lead)||await x.resolve?.(lead).catch(()=>null);
+          image=card?.image_uris?.art_crop||card?.card_faces?.[0]?.image_uris?.art_crop||mtgImg(card);
+          if(image)break;
+        }
       } else {
         const words = String(item.label || d.name).toLowerCase().split(/[^a-z0-9]+/).filter(w=>w.length>3 && !['basic','mega','deck'].includes(w));
         const pokemon = rows.filter(r=>r.kind === 'Pokemon').sort((a,b)=>(b.qty||0)-(a.qty||0));
@@ -72,7 +76,7 @@ export function makeAskTools(x) {
     suggestions = items;
     await Promise.all(items.map(async (item,i)=> {
       const d=(data.decks || []).find(d=>d.key===item.ref) || (data.decks || []).find(d=>d.name===item.ref);
-      if (d) return deckVisual(g,d,item,result.decks[i].share);
+      if (d) {metaTargets.set(visualKey(item),{deck:d,data,format:result.format});return deckVisual(g,d,item,result.decks[i].share);}
       const a=(data.archetypes || []).find(a=>(a.name || a.id)===item.label);
       const icon=a?.icons?.[0];
       visuals.set(visualKey(item), { image:g==='ptcg' && icon?ptcgIcon(icon):'', sprite:!!icon, share:result.decks[i].share, label:item.label });
@@ -238,11 +242,12 @@ export function makeAskTools(x) {
       const rows=await tcgSets(s.game),matches=s.game==='ygo'?resolveYgoSet(rows,s.ref).candidates:rows.filter(y=>String(y.id)===s.ref||y.name.toLowerCase()===s.ref.toLowerCase()); const st=matches.length===1?matches[0]:null; return current() && x.go(s.game!=='ygo'&&!st?'#sets':'#set/' + encodeURIComponent(st?.id || s.ref));
     }
     if (s.kind === 'meta') {
-      const data = s.game === 'mtg' ? Object.values(x.allMeta?.() || {}) : [T.metaState(s.game).data];
-      const deck = data.flatMap((d) => [...(d?.decks||[]),...(d?.archetypes||[]).map(a=>a.representative).filter(Boolean)]).find((d) => d.key === s.ref) || data.flatMap((d) => (d?.archetypes || []).map((a) => ({ a, d }))).filter(({ a }) => (a.name || a.id) === s.ref).map(({ a, d }) => d.decks.find((y) => y.key === a.best))[0];
-      if (!deck) return x.go('#decks/inspiration');
+      const target=metaTargets.get(visualKey(s));
+      const sources=s.game==='mtg'?Object.entries(x.allMeta?.()||{}).map(([key,data])=>({data,format:key.replace(/^mtg:/,'')})):[{data:T.metaState(s.game).data}];
+      const found=target||sources.map(({data,format})=>({data,format,deck:data?.decks?.find(d=>d.key===s.ref)})).find(x=>x.deck);
+      if(!found?.deck){x.toast?.('This deck is no longer available. Choose another list.');return x.go('#decks/inspiration');}
       if(!current())return;
-      return s.game === 'mtg' ? x.A.mtgProven({ dataset: { key: deck.key } }) : x.A.tMetaDeck({ dataset: { key: deck.key } });
+      return s.game==='mtg'?x.A.mtgProven({dataset:{key:found.deck.key,format:found.format},metaSnapshot:found}):x.A.tMetaDeck({dataset:{key:found.deck.key}});
     }
     const exact=s.kind==='card'?exactCardFor(s):null;
     if(exact)return s.game==='mtg'?x.A.card({dataset:{name:exact.card.name},printing:exact.card}):x.A.tCard({dataset:{id:String(exact.card.id),setId:exact.releaseId},setMembership:exact.card.setContext});
@@ -273,7 +278,7 @@ export function makeAskTools(x) {
       }
     }
     const kind = { card:'Card', set:'Set', meta:'Meta deck', deck:'Your deck', build:'Deck builder', help:'App guide' }[s.kind] || '';
-    const media = img ? (deck && s.game==='ptcg' && !visual?.sprite ? pokemonArtCrop(card,'ask-deck-art',img) : `<img class="${deck?'ask-deck-art':''}" src="${x.esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer">`) : deck ? '<span class="ask-deck-art img-missing" aria-hidden="true">◇</span>' : '';
+    const media = img ? (deck && s.game==='ptcg' && !visual?.sprite ? pokemonArtCrop(card,'ask-deck-art',img) : `<img class="${deck?'ask-deck-art':''}" src="${x.esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.parentElement.classList.add('ask-art-unavailable')">`) : deck ? '<span class="ask-deck-art img-missing" aria-hidden="true">Artwork unavailable</span>' : '';
     return `<button class="ask-item ${deck?'ask-deck':img?'':'wide'}" style="--i:${i}" data-ask-show='${x.esc(JSON.stringify(s))}'>${media}<b>${x.esc(s.label || s.ref)}</b><small>${kind}${visual?.share!=null?' · '+Number(visual.share).toFixed(1)+'% of the field':''}</small>${price!=null?`<em>$${Number(price).toFixed(2)}</em>`:''}</button>`;
   };
   return tools;

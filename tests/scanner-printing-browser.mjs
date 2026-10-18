@@ -24,7 +24,7 @@ const frame=page=>page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>req
 const bounded=async(promise,label,timeout=30000)=>{let timer;try{return await Promise.race([promise,new Promise((_,reject)=>timer=setTimeout(()=>reject(Error(`${label} timed out`)),timeout))]);}finally{clearTimeout(timer);}};
 const queue=page=>page.evaluate(()=>window.__scannerReviewTest.batch.loadBatch());
 const metadata=row=>Object.fromEntries(['id','captureRevision','originalShot','shot','game','selectedGame','at','qty','condition','lang','location','read'].map(field=>[field,row[field]]));
-const ready=async page=>{await page.locator('.printing-picker').waitFor();await page.locator('.printing-picker-results[aria-busy="false"]').waitFor();await frame(page);};
+const ready=async page=>{await page.locator('.printing-picker').waitFor();if(await page.locator('.printing-picker-modern').count())await page.locator('[data-act="printingPickerView"][data-id="grid"]').click();await page.locator('.printing-picker-results[aria-busy="false"]').waitFor();await frame(page);};
 async function select(page,selector,value){
   const control=page.locator(selector),label=await control.locator('option').evaluateAll((nodes,v)=>nodes.find(node=>node.value===v)?.label,value);
   assert(label,`A real ${selector} option exists for ${value}`);await control.click();

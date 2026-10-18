@@ -107,6 +107,10 @@ Database migrations are applied to the current project. For a fresh project, run
 
 Google OAuth must allow `https://noxfmbwuytnbvfgukpiv.supabase.co/auth/v1/callback` as an authorized redirect URI. Google is currently disabled in this project; it needs credentials before the app can offer it. Do not put the Google client secret in frontend code.
 
+Account isolation: the active workspace and recovery copy are switched atomically using the immutable Supabase user ID. Each account retains its own device archive; guest data is separate and is never imported merely by signing in. A legacy workspace is preserved before its first migration. The old profile, dialogs and drafts are hidden immediately while the next account opens. Pending sync decisions carry their owner and session generation; “Later” blocks manual and automatic uploads until an explicit choice. Storage writes reject a mismatched active owner, and delayed cloud responses cannot adopt another account’s data.
+
+Production Auth configuration uses `https://cardstashy.com/` as Site URL and exact callbacks for that URL and `https://cardforge2.deathxcore11.workers.dev/`. Keep preview URLs separate and avoid broad callback wildcards. `supabase/tests/workspace_isolation.sql` tests the deployed policies with synthetic identities inside a rolled-back transaction. `tests/account-browser.mjs` tests actual app code with two independent synthetic backend accounts; it never sends credentials or writes real users’ workspaces.
+
 Account UI: Settings offers email/password login, Create account, Forgot password, Google when enabled, and optional magic links. Email confirmation and password recovery require SMTP. Recovery links must be opened in the requesting browser for PKCE verification. A Supabase PASSWORD_RECOVERY event opens the new-password screen; no password is written into workspace storage.
 
 How sync behaves: the app always saves on the device first, then pushes to the account a few

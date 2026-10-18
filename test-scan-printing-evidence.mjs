@@ -84,7 +84,7 @@ saveBatch([entryFor('ptcg',actual('ptcg',conflictRead),conflictRead,'conflict')]
 await A.scanBatchSave();assert.equal(S.state.tcg?.ptcg?.collection?.length||0,0);assert.equal(loadBatch().length,1,'review entry is not removed by save-ready');
 const legacyRead={name:'Blue-Eyes White Dragon',code:'LOB-001'};
 saveBatch([entryFor('ygo',actual('ygo',legacyRead),legacyRead,'legacy')]);
-await A.scanBatchSave();assert.equal(S.state.tcg.ygo.collection.at(-1).printing,'LOB-001','production save retains the observed regional identity');assert.equal(S.state.settings.game,'mtg');
+await A.scanBatchSave();await A.scanConfirm();assert.equal(S.state.tcg.ygo.collection.at(-1).printing,'LOB-001','production save retains the observed regional identity');assert.equal(S.state.settings.game,'mtg');
 
 // The endpoint fixture intentionally returns just the first row, mirroring its
 // single-result contract. The production adapter must inspect the card's full rows.

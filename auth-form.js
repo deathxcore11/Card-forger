@@ -1,5 +1,17 @@
 // Form values live only in the DOM and this render-local snapshot, never in saved state.
-const IDS=['signEmail','signPassword','signupEmail','signupPassword','signupConfirm','resetEmail'];
+const IDS=['signEmail','signPassword','signupEmail','signupPassword','signupConfirm','resetEmail','resetPassword','resetConfirm'];
+const eye='<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path class="password-eye-slash" d="m4 3 16 18"/></svg>';
+export function passwordField(input,label='password'){
+ const id=input.match(/id="([^"]+)"/)?.[1];
+ return `<span class="password-field">${input}<button type="button" class="password-toggle" data-act="togglePassword" data-field="${id}" aria-controls="${id}" aria-label="Show ${label}" data-label="${label}" aria-pressed="false">${eye}</button></span>`;
+}
+export function togglePassword(button,root){
+ const field=root.querySelector('#'+button.dataset.field);if(!field)return;
+ const reveal=field.type==='password',start=field.selectionStart,end=field.selectionEnd;
+ field.type=reveal?'text':'password';button.setAttribute('aria-pressed',String(reveal));
+ button.setAttribute('aria-label',(reveal?'Hide ':'Show ')+(button.dataset.label||'password'));
+ field.focus({preventScroll:true});try{field.setSelectionRange(start,end);}catch{}
+}
 export function captureAuthFields(root){return IDS.flatMap(id=>{const e=root.querySelector('#'+id);return e?[{id,value:e.value}]:[];});}
 export function restoreAuthFields(root,fields){for(const {id,value} of fields){const e=root.querySelector('#'+id);if(e)e.value=value;}}
 export function authFeedback(root,message,tone='error') {

@@ -1,3 +1,4 @@
+import {mountFeedback,removeFeedback} from './feedback-layer.js';
 import {detectCardQuad,analysisRegions,selectSensorProposal,warpPixels,normalizedQuality} from './scan-vision.js';
 import {BATCH_LIMIT,CAPTURE_BUFFER_LIMIT,CAPTURE_STORAGE_LIMIT,captureCapacity,batchStorageSummary,loadBatch,saveBatch,updateBatch,removeBatch,batchStorageHealthy,captureEntry,uniquePrintings,actualFinishes,resolveScanFinish,resolvedEntry,batchCounts} from './scan-batch.js';
 import {rankScanCandidates,signalEvidence,scanIdentifierEvidence,scanTitleEvidence,collectorKey} from './scan-signals.js';
@@ -382,7 +383,7 @@ function catalogControl(g, st) {
 
 export function batchTray(st) {
   const rows=loadBatch(),counts=batchCounts(rows),busy=!!st.busy||counts.reading>0,photoSpace=Math.min(100,Math.round(batchStorageSummary().chars/CAPTURE_STORAGE_LIMIT*100));
-  return `<section class="scan-batch-tray" aria-label="Captured batch"><div class="scan-batch-summary"><span><b>${rows.length} captured</b><small>${counts.ready} ready${photoSpace?` · ${photoSpace}% photo space`:''}${counts.review?` · ${counts.review} to check`:""}${busy?" · reading…":""}</small></span><button class="btn ghost small" data-act="scanBatchReview" ${!rows.length||st.batchSaving?"disabled":""}>Review${counts.review?` ${counts.review}`:""}</button>${counts.ready?`<button class="btn small" data-act="scanBatchSave" ${st.batchSaving?"disabled":""}>${st.batchSaving?"Saving…":`Save ${counts.ready}`}</button>`:""}</div>${rows.length?`<div class="scan-batch-strip">${rows.slice(-8).map(row=>`<button class="scan-batch-thumb ${row.status}" data-act="scanBatchReview" data-id="${esc(row.id)}" aria-label="${esc(row.cands?.[0]?.name||'Captured card')}: ${esc(row.reason||row.status)}">${row.shot?`<img src="${esc(row.shot)}" alt="">`:""}<span>${row.status==='ready'?'✓':['captured','reading'].includes(row.status)?'…':'?'}</span></button>`).join("")}</div>`:`<p>Swap cards after each capture. Check any uncertain printings when you’re done.</p>`}${!batchStorageHealthy()?`<p role="alert">Device storage is full. Keep this page open and save or review this batch.</p>`:""}${st.batchError?`<p role="alert">${esc(st.batchError)}</p>`:""}</section>`;
+  return `<section class="scan-batch-tray" aria-label="Captured batch"><div class="scan-batch-summary"><span><b>${rows.length} captured</b><small>${counts.ready} ready${photoSpace?` · ${photoSpace}% photo space`:''}${counts.review?` · ${counts.review} to check`:""}${busy?" · reading…":""}</small></span><button class="btn ghost small" data-act="scanBatchReview" ${!rows.length||st.batchSaving?"disabled":""}>Review${counts.review?` ${counts.review}`:""}</button>${counts.ready?`<button class="btn small" data-act="scanBatchSave" ${st.batchSaving?"disabled":""}>${st.batchSaving?"Saving…":`Review ${counts.ready} matches`}</button>`:""}</div>${rows.length?`<div class="scan-batch-strip">${rows.slice(-8).map(row=>`<button class="scan-batch-thumb ${row.status}" data-act="scanBatchReview" data-id="${esc(row.id)}" aria-label="${esc(row.cands?.[0]?.name||'Captured card')}: ${esc(row.reason||row.status)}">${row.shot?`<img src="${esc(row.shot)}" alt="">`:""}<span>${row.status==='ready'?'✓':['captured','reading'].includes(row.status)?'…':'?'}</span></button>`).join("")}</div>`:`<p>Swap cards after each capture. Check any uncertain printings when you’re done.</p>`}${!batchStorageHealthy()?`<p role="alert">Device storage is full. Keep this page open and save or review this batch.</p>`:""}${st.batchError?`<p role="alert">${esc(st.batchError)}</p>`:""}</section>`;
 }
 export function scanView(g, gameName) {
   const s=S.ui.scan,p=loadPrefs(g),live=(s.mode||"live")==="live",list=loadSession(g);
@@ -631,32 +632,34 @@ export function scanSavedMarkup(item) {
 
 function showScanSaved(item) {
   if(!globalThis.document?.body)return;
-  document.querySelector('.scan-saved-receipt')?.remove();
-  const receipt=document.createElement('div');receipt.className='scan-saved-receipt';receipt.setAttribute('role','status');receipt.setAttribute('aria-live','polite');receipt.innerHTML=scanSavedMarkup(item);document.body.append(receipt);
-  const target=[...document.querySelectorAll('[data-nav="collection"]')].find(n=>{const r=n.getBoundingClientRect();return r.width>0&&r.height>0;});
+  removeFeedback(document.querySelector('.scan-saved-receipt'));
+  const receipt=document.createElement('div');receipt.className='scan-saved-receipt';receipt.setAttribute('role','status');receipt.setAttribute('aria-live','polite');receipt.innerHTML=scanSavedMarkup(item);mountFeedback(receipt);
+  const target=[...document.querySelectorAll('[data-nav="collection"]')].find(n=>{const r=n.getBoundingClientRect();return r.width>0&&r.height>0&&r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth;});
   const art=receipt.querySelector('.scan-saved-art');
   // Animate a decorative copy only after persistence succeeds; never move the
   // camera, hide the receipt price, or delay the next capture.
   if(target&&art?.animate&&!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches){
     const a=art.getBoundingClientRect(),b=target.getBoundingClientRect(),fly=art.cloneNode(true);
-    fly.className='scan-saved-fly';Object.assign(fly.style,{left:a.left+'px',top:a.top+'px',width:a.width+'px',height:a.height+'px'});document.body.append(fly);
+    fly.className='scan-saved-fly';Object.assign(fly.style,{left:a.left+'px',top:a.top+'px',width:a.width+'px',height:a.height+'px'});mountFeedback(fly);
     const animation=fly.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:`translate(${b.left+b.width/2-a.left-a.width/2}px,${b.top+b.height/2-a.top-a.height/2}px) scale(.18)`,opacity:0}],{duration:780,delay:500,easing:'cubic-bezier(.35,0,.2,1)',fill:'forwards'});
-    animation.finished.catch(()=>{}).finally(()=>fly.remove());
+    animation.finished.catch(()=>{}).finally(()=>removeFeedback(fly));
   }
-  setTimeout(()=>receipt.remove(),4800);
+  if(!target&&art?.animate&&!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches)art.animate([{transform:'scale(1)',opacity:1},{transform:'scale(.85)',opacity:0}],{duration:350,delay:800});
+  setTimeout(()=>removeFeedback(receipt),4800);
 }
 
 export function scanConfirmation(g, st, prefs) {
   const q=st.confirm;if(!q)return "";
   const c=st.cands?.[q.i??0],isBatch=!!q.batchId,options=st.cands||[],chosen=q.i>=0;
   const observations=st.supplement?`<details class="scan-review-more"><summary>Compare original and clearer frame</summary><figure><img class="scan-confirm-art" src="${esc(st.supplement.original)}" alt="First accepted original" width="96" height="134"><figcaption>First accepted original</figcaption></figure><figure><img class="scan-confirm-art" src="${esc(st.supplement.clearer)}" alt="Clearer supplemental frame" width="96" height="134"><figcaption>Clearer frame · review only</figcaption></figure></details>`:'';
+  const correction=`<div class="scan-name-correction"><label class="field" for="scanMatchName">Wrong card? Search its name<input id="scanMatchName" data-input="scanNameDraft" type="search" value="${esc(q.nameDraft||'')}" autocomplete="off" data-enter="scanFind" placeholder="Card name" ${q.saving?'disabled':''}></label><button class="btn ghost small" data-act="scanFind" ${q.saving||st.lookup?'disabled':''}>${st.lookup?'Searching…':'Find card'}</button></div>`;
   const close=`<button class="icon" data-act="scanDismiss" aria-label="Keep for later and continue scanning" ${q.saving?'disabled':''}>✕</button>`;
-  if(!options.length)return `<section class="scan-confirm scan-batch-review" role="region" aria-label="Review captured card"><header><b>Needs a clearer scan</b>${close}</header><div class="scan-confirm-card">${st.shot?`<img class="scan-confirm-art" src="${esc(st.shot)}" alt="Your captured card">`:''}<div><strong>Saved for later</strong><small>Show the name and bottom code with less glare. You can keep scanning other cards.</small></div></div>${observations}<div class="scan-confirm-actions"><button class="btn ghost" data-act="scanDismiss">Keep scanning</button><button class="btn" data-act="scanRetry">Scan again</button></div>${isBatch?`<button class="link small" data-act="scanBatchDiscard">Remove this capture</button>`:''}</section>`;
+  if(!options.length)return `<section class="scan-confirm scan-batch-review" role="region" aria-label="Review captured card"><header><b>Needs a clearer scan</b>${close}</header><div class="scan-confirm-card">${st.shot?`<img class="scan-confirm-art" src="${esc(st.shot)}" alt="Your captured card">`:''}<div><strong>Saved for later</strong><small>Show the name and bottom code with less glare. You can keep scanning other cards.</small></div></div>${observations}${correction}${q.error?`<p class="scan-confirm-error" role="alert">${esc(q.error)}</p>`:''}<div class="scan-confirm-actions"><button class="btn ghost" data-act="scanDismiss">Keep scanning</button><button class="btn" data-act="scanRetry">Scan again</button></div>${isBatch?`<button class="link small" data-act="scanBatchDiscard">Remove this capture</button>`:''}</section>`;
   const candidate=c||options[0],fs=finishesFor(g,candidate),image=candidate.card?artworkHTML(candidate.card,"scan-confirm-art",true):candidate.image?`<img class="scan-confirm-art" src="${esc(candidate.image)}" alt="${esc(candidate.name)}">`:'';
   return `<section class="scan-confirm scan-batch-review" role="region" aria-label="Confirm scanned card" aria-busy="${!!q.saving}"><header><b>${GAME_LABEL[g]} · ${chosen?'Check finish':'Check printing'}</b>${close}</header>
   <div class="scan-confirm-card">${image}<div><strong>${esc(candidate.name)}</strong><small>${esc(candidate.sub||'')}</small><small>${candidate.reviewSource==='printing-picker'?'Printing selected by you':candidate.identityConflict?'Title evidence disagrees · check card identity':chosen&&textVerifiedMatch(g,candidate,st.read)?'Printed identifier matched':'Possible match · check name and printing'}</small></div></div>
   ${options.length>1||!chosen?`<div class="scan-confirm-options" role="group" aria-label="${options.some(x=>x.identityConflict)||new Set(options.map(x=>scanNameKey(x.name))).size>1?'Possible card identities':'Possible printings'}">${options.slice(0,3).map((x,i)=>`<button class="btn ghost small" data-act="scanChoose" data-i="${i}" aria-pressed="${chosen&&i===q.i}">${esc(x.name)}<small>${esc(x.sub||'')}</small></button>`).join('')}</div>`:''}
-  ${observations}<button class="btn ghost small" data-act="scanChangePrinting" ${q.saving||q.pickerOpening||!chosen?'disabled':''}>${q.pickerOpening?'Loading printings…':'Change printing'}</button>
+  ${observations}${correction}<button class="btn ghost small" data-act="scanChangePrinting" ${q.saving||q.pickerOpening||!chosen?'disabled':''}>${q.pickerOpening?'Loading printings…':'Change printing'}</button>
   <div class="scan-confirm-controls"><label>Finish / edition<select data-change="scanConfirmFinish" aria-label="Scanned card finish" ${q.saving||!chosen?'disabled':''}><option value="" ${!q.finish?'selected':''}>Choose finish</option>${fs.map(f=>`<option value="${esc(f)}" ${q.finish===f?'selected':''}>${esc(finishLabel(g,candidate,f))}</option>`).join('')}</select></label><span class="ss-qty"><button data-act="scanConfirmQty" data-d="-1" aria-label="Fewer copies" ${q.saving||q.qty<=1?'disabled':''}>−</button><output aria-label="Copies to save">${q.qty}</output><button data-act="scanConfirmQty" data-d="1" aria-label="More copies" ${q.saving?'disabled':''}>＋</button></span></div>
   ${g==='ptcg'&&!fs.length?'<p class="scan-confirm-error">Exact finish unavailable for this source version. Choose another verified printing before adding.</p>':''}
   <details class="scan-review-more" ${q.detailsOpen?'open':''}><summary>${esc(label(CONDITIONS,q.condition))} · ${esc(label(LANGS,q.lang))} · ${q.price==null?(q.priceStatus==='deferred'?'Price lookup deferred':'Price unavailable'):'Estimated price '+money(q.price)}</summary><div class="scan-confirm-conditions" role="group" aria-label="Card condition">${CONDITIONS.map(([v,l])=>`<button data-act="scanConfirmCondition" data-condition="${esc(v)}" aria-label="${esc(v)}" aria-pressed="${q.condition===v}">${l}</button>`).join('')}</div><label>Language<select data-change="scanConfirmLanguage" aria-label="Scanned card language">${LANGS.map(([v,l])=>`<option value="${esc(v)}" ${q.lang===v?'selected':''}>${esc(LANG_NAME[v]||l)}</option>`).join('')}</select></label></details>
@@ -767,6 +770,12 @@ export function registerScanner(ctx) {
   };
   const stopCamera = () => suspendCamera();
   ctx.stopCamera = stopCamera;
+  ctx.accountChanged=()=>{
+    lifecycleGeneration++;stopCamera();closePop();
+    for(const draft of photoDrafts.values())if(draft?.url)URL.revokeObjectURL(draft.url);
+    photoDrafts.clear();switchSource=null;suspended=false;
+    S.ui.scan=idleScan();
+  };
 
   // Only an unusually close, separated local fingerprint may precede OCR. It is
   // still a reviewable suggestion, never a verified printing or an automatic add.
@@ -1290,27 +1299,33 @@ export function registerScanner(ctx) {
     };
   };
 
+  if(ctx.I)ctx.I.scanNameDraft=t=>{if(s().confirm)s().confirm.nameDraft=t.value;};
   // Confirm & add
   A.scanFind = async () => {
     if(suspended || s().busy || s().confirm?.saving || s().lookup)return;
     const q = (document.getElementById(s().confirm ? "scanMatchName" : "scanName")?.value || "").trim();
     if (!q) return toast("Type the card name.");
-    const st = s(),G=game(),current=scanCurrent();
-    st.lookup=true;st.supplement=null;
-    setStatus("Looking it up…");
+    const st=s(),review=st.confirm,G=review?.game||game(),visitCurrent=scanCurrent(),request=Symbol('name-correction');
+    const captureId=review?.batchId,revision=review?.captureRevision;
+    const current=()=>visitCurrent()&&st.confirm===review&&st.lookupRequest===request&&(!captureId||loadBatch().some(e=>e.id===captureId&&e.captureRevision===revision));
+    st.lookup=true;st.lookupRequest=request;if(review)review.nameDraft=q;else st.read=null;
+    setStatus('Looking it up…');
     let r;
-    try {r=await match(G, { name: q, code: q, full: "" }, scanLang(), true, m=>{if(current())setStatus(m);});}
-    catch {if(current()){st.lookup=false;if(st.confirm)st.confirm.error="Couldn’t look up this card. Try again.";render();}return;}
+    try{r=await match(G,{name:q,code:'',full:''},review?.lang||scanLang(),true,m=>{if(current())setStatus(m);});}
+    catch{if(current()){st.lookup=false;if(review)review.error='Couldn’t look up this card. Try again.';render();}return;}
     if(!current())return;
     st.lookup=false;
-    if(st.confirm && !r.cands.length){st.confirm.error="No matching cards. Try another name or skip this scan.";render();return;}
-    st.cands = r.cands;
-    st.read={name:q,code:"",full:""};
-    if(r.cands.length){const p=prefs(),fs=finishesFor(game(),r.cands[0]),finish=resolveScanFinish(game(),r.cands[0],p,st.read);st.confirm={i:0,qty:st.confirm?.qty||p.qty||1,condition:st.confirm?.condition||p.condition,lang:st.confirm?.lang||p.lang||"en",finish,price:priceFor(game(),r.cands[0],finish,{condition:st.confirm?.condition||p.condition,lang:st.confirm?.lang||p.lang}),saving:false,error:"",editing:true};}
-    else if(st.confirm)st.confirm.error="No matching cards. Try another name or skip this scan.";
+    if(!r.cands.length){if(review)review.error='No matching cards. Try another name.';render();return;}
+    st.cands=r.cands.map(c=>({...c,exact:false,printingConfirmed:false,reviewSource:'name-search'}));
+    // Keep original OCR and captured pixels for review. A typed name is not OCR evidence.
+    const p=loadPrefs(G);
+    st.confirm=review||{game:G,qty:p.qty||1,condition:p.condition,lang:p.lang||'en',saving:false};
+    Object.assign(st.confirm,{i:0,finish:'',price:null,priceStatus:'',priceRequest:null,pickerRequest:null,error:'',editing:false,unresolved:false,nameDraft:q});
+    if(captureId)updatePending(captureId,{cands:st.cands,selectedIndex:0,finish:'',status:'review',printingVerified:false,printingConfirmed:false,reason:'Name corrected · choose the printing'});
     st.tried = r.tried;
     st.status = r.cands.length ? "Check the picture matches your card, then tap Add." : "No card found with that name.";
     render();
+    if(r.cands.length===1)void A.scanChangePrinting();
   };
   const hydration=new Map();
   const hydrateCandidate=(G,c,{identityOnly=false,control=null}={})=>{
@@ -1421,25 +1436,9 @@ export function registerScanner(ctx) {
   };
   A.scanBatchSave=async()=>{
     const st=s();if(st.batchSaving||st.confirm?.saving)return;
-    const ready=loadBatch().filter(x=>x.status==='ready'&&x.finish&&x.cands?.length===1);
-    if(!ready.length)return;
-    st.batchSaving=true;st.batchError='';render();let saved=0,queueSaved=true;
-    try{
-      for(const entry of ready){
-        const c=await hydrateCandidate(entry.game,entry.cands[0]);
-        if(!textVerifiedMatch(entry.game,c,entry.read||{})){updatePending(entry.id,{status:'review',finish:'',cands:[c],reason:'Check updated printing details'});continue;}
-        if(!finishesFor(entry.game,c).includes(entry.finish)){
-          updatePending(entry.id,{status:'review',finish:'',reason:'Choose finish / edition'});continue;
-        }
-        const item=makeItem(c,{...entry,captureId:entry.id},entry.game);
-        // captureId makes collection retries safe if queue removal cannot persist.
-        await ctx.addMany(entry.game,[{...item,location:entry.location||''}]);
-        if(!removeBatch(entry.id))queueSaved=false;saved+=item.qty;
-      }
-      st.status=`Saved ${saved} card${saved===1?'':'s'} to the matching collections.${queueSaved?'':' Queue update failed; retrying is safe.'}`;
-      if(saved)feedback('ok',prefs());
-    }catch(e){st.batchError=`Saved ${saved}. The remaining captures are still here. ${e.message||'Please try again.'}`;}
-    finally{st.batchSaving=false;render();void drainCaptures();}
+    // A confident match is not permission to save. Every capture is reviewed.
+    const next=loadBatch().find(x=>x.status==='ready'&&x.cands?.length);
+    if(next)openBatchReview(next.id);
   };
 
   ctx.confirmKey = e => {

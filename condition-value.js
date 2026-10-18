@@ -15,6 +15,32 @@ export const conditionValueNote=(e,quotes=[])=>{
  const result=conditionValue(null,e,quotes);
  return result.kind==='manual'?'Your value for this condition':result.kind==='condition-quote'?'Condition estimate · '+(result.quote.source||'provider'):conditionName(e?.condition)==='Near Mint'?'Reference price':'Condition quote unavailable · excluded from value';
 };
+export function conditionBadge(entry,quotes=[]){
+ const condition=conditionName(entry?.condition),code={'Near Mint':'NM','Lightly Played':'LP','Moderately Played':'MP','Heavily Played':'HP',Damaged:'DMG'}[condition]||'?';
+ const note=conditionValueNote(entry,quotes);
+ return `<button type="button" class="condition-badge" data-condition="${esc(condition)}" data-condition-info="${esc(condition+' · '+note)}" aria-label="${esc(condition+'. '+note+'. Show condition details')}">${code}</button>`;
+}
+
+// A single lightweight tooltip serves lists and galleries. Hover/focus previews
+// it; tapping pins it until an outside tap or Escape. No hidden row-height cost.
+export function attachConditionInfo(root=document){
+ let tip=null,anchor=null,pinned=false;
+ const close=()=>{anchor?.removeAttribute('aria-describedby');tip?.remove();tip=null;anchor=null;pinned=false;};
+ const show=(button,pin=false)=>{
+  if(anchor!==button){close();anchor=button;tip=root.createElement('div');tip.id='condition-info-tip';tip.className='condition-info-tip';tip.setAttribute('role','tooltip');tip.setAttribute('popover','manual');tip.textContent=button.dataset.conditionInfo;(button.closest('dialog')||root.body).append(tip);anchor.setAttribute('aria-describedby',tip.id);tip.showPopover?.();}
+  pinned=pin||pinned;
+  const r=button.getBoundingClientRect(),w=tip.offsetWidth,h=tip.offsetHeight,vw=root.documentElement.clientWidth,vh=innerHeight;
+  tip.style.left=Math.max(8,Math.min(vw-w-8,r.left+r.width/2-w/2))+'px';
+  tip.style.top=Math.max(8,Math.min(vh-h-8,r.top>=h+14?r.top-h-8:r.bottom+8))+'px';
+ };
+ root.addEventListener('pointerover',e=>{const b=e.target.closest?.('[data-condition-info]');if(b?.dataset?.conditionInfo&&e.pointerType!=='touch')show(b);});
+ root.addEventListener('pointerout',e=>{if(!pinned&&anchor&&!anchor.contains(e.relatedTarget)&&!tip?.contains(e.relatedTarget))close();});
+ root.addEventListener('focusin',e=>{const b=e.target.closest?.('[data-condition-info]');if(b?.dataset?.conditionInfo)show(b);else if(!pinned)close();});
+ root.addEventListener('click',e=>{const b=e.target.closest?.('[data-condition-info]');if(b?.dataset?.conditionInfo){if(anchor===b&&pinned)close();else show(b,true);}else if(!tip?.contains(e.target))close();});
+ root.addEventListener('keydown',e=>{if(e.key==='Escape'&&tip){e.preventDefault();e.stopPropagation();close();}},true);
+ root.addEventListener('scroll',close,true);window.addEventListener('resize',close);
+ return close;
+}
 export function conditionPriceHtml(price,entry={},quotes=[],lookup={}){
  const status=lookup.status==='deferred'&&['not_configured','rate_limited'].includes(lookup.reason)?lookup.reason:lookup.status;
  const states={loading:['Checking condition price…','Looking up this exact version and condition. You can continue filling out the card.'],not_configured:['Condition feed not connected','This deployment has no condition provider connected. You can record a per-copy value.'],unmapped:['Version not matched','The provider could not match this exact printing. Check the version or record a per-copy value.'],unpriced:['No quote for this condition','The provider has no current quote for this exact condition and version. You can record a per-copy value.'],available:['No quote for this condition','Other conditions may have quotes, but this selected condition does not. You can record a per-copy value.'],rate_limited:['Condition lookup paused','The configured lookup allowance or provider rate limit has been reached. Saved valid quotes are retained; try later or record a per-copy value.'],unavailable:['Condition lookup unavailable','The price service could not complete this lookup. Try later or record a per-copy value.'],deferred:['Condition lookup deferred',lookup.reason==='offline'?'You are offline. Saved quotes remain available; reconnect to check this condition.':'This lookup is waiting for a verified selection or a later attempt. You can record a per-copy value.']};

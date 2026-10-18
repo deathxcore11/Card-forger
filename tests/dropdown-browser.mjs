@@ -13,7 +13,7 @@ const server=createServer(async(req,res)=>{
   if(u.pathname==='/__fixture'){res.setHeader('Content-Type','text/html');return res.end(fixture(u.searchParams.has('baseline')));}
   if(u.pathname==='/__baseline-glass-select.js'){res.setHeader('Content-Type','text/javascript');return res.end(execFileSync('git',['show','a570fb034b61f508b48427200bb3d69aab5323a6:glass-select.js']));}
   const file=resolve(root,'.'+(u.pathname==='/'?'/index.html':u.pathname));if(!file.startsWith(root+'/')){res.writeHead(403);return res.end();}
-  res.setHeader('Content-Type',({'.js':'text/javascript','.css':'text/css','.html':'text/html','.json':'application/json'})[extname(file)]||'application/octet-stream');res.end(await readFile(file));
+  res.setHeader('Content-Type',({'.js':'text/javascript','.css':'text/css','.html':'text/html','.json':'application/json'})[extname(file)]||'application/octet-stream');let body=await readFile(file);if(file.endsWith("/config.js"))body=Buffer.from(body.toString().replace(/key:\s*"[^"]*"/,'key: ""'));res.end(body);
  }catch{res.writeHead(404);res.end();}
 });
 await new Promise(r=>server.listen(0,'127.0.0.1',r));

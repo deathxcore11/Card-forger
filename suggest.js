@@ -1,9 +1,10 @@
+import {privateKey} from './account-scope.js';
 // Search suggestions: card names as you type (all three games) and your recent searches when
 // the box is empty. Works on any input with data-suggest="mtg|ptcg|ygo"; picking a suggestion
 // fills the box and runs the search the box already runs on Enter.
 import { esc } from "./ui.js";
 
-const RECENT = (g) => `cardstashy-recent-${g}`;
+const RECENT = (g) => privateKey(`cardstashy-recent-${g}`);
 export function recentSearches(g) {
   try {
     return JSON.parse(localStorage.getItem(RECENT(g)) || "[]");

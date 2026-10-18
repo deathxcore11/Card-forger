@@ -1,3 +1,4 @@
+import {privateKey} from './account-scope.js';
 // Price history and price alerts, kept on this device for all three games.
 // History: one point per card when its price moves (2% or more) or once a week, so a year of
 // prices for a big collection still fits comfortably. Alerts: "below $X" (buy) or "above $X"
@@ -12,14 +13,14 @@ const HIST_KEY = "cardstashy-price-hist-v1",
 
 const load = (k, d) => {
   try {
-    return JSON.parse(localStorage.getItem(k) || "null") ?? d;
+    return JSON.parse(localStorage.getItem(k===ALERT_KEY?privateKey(k):k) || "null") ?? d;
   } catch {
     return d;
   }
 };
 const save = (k, v) => {
   try {
-    localStorage.setItem(k, JSON.stringify(v));
+    localStorage.setItem(k===ALERT_KEY?privateKey(k):k, JSON.stringify(v));
   } catch {}
 };
 let hist = null;

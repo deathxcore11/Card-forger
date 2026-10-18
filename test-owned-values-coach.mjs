@@ -1,7 +1,7 @@
 import {cardKey} from './core.js';
 import assert from 'node:assert/strict';
 import {conditionValue,conditionName} from './condition-value.js';
-import {ownedCardLots,quickQuantity} from './quick-quantity.js';
+import {ownedCardLots,quickQuantity,detailOwnedGroups,adjustOwnedLot} from './quick-quantity.js';
 import {cardActionButtons} from './card-actions.js';
 import {pokemonRole,matchupCutIsExplained} from './pokemon-role.js';
 import {lotPrice,collectionValue} from './insights.js';
@@ -18,7 +18,7 @@ assert.equal(conditionValue(100,{...damaged,manualValue:0}).price,0);
 const quote={condition:'Lightly Played',currency:'USD',price:70,cardId:'a',variant:'holo'};
 assert.equal(conditionValue(100,{condition:'LP',cardId:'a',variant:'holo'},[quote]).price,70);assert.equal(conditionValue(100,{condition:'LP',cardId:'a',variant:'reverse'},[quote]).price,null);
 const v=collectionValue([{name:'Test card',condition:'Near Mint',qty:1},damaged,{name:'Test card',condition:'LP',qty:1}],{[cardKey('Test card')]:{prices:{usd:'100'}}});assert.equal(v.total,124);assert.equal(v.unpriced,1);assert.equal(v.spareValue,0,'unpriced mixed-condition spares cannot borrow a NM reference');
-const lots=[{...damaged,id:'d'},{id:'n',name:'Test card',qty:3,condition:'Near Mint'}];const html=cardActionButtons({game:'ptcg',existing:true,quantityHtml:quickQuantity(lots,'d')});assert.doesNotMatch(html,/data-act="quickOwn"/);assert.match(html,/quickWish/);assert.match(html,/One more owned copy/);assert.match(html,/Owned copies in selected lot">2/);assert.equal(ownedCardLots(lots,{name:'Test card'}).length,2);
+const lots=[{...damaged,id:'d'},{id:'n',name:'Test card',qty:3,condition:'Near Mint'}];const html=cardActionButtons({game:'ptcg',existing:true,quantityHtml:quickQuantity(lots,'d')});assert.match(html,/data-act="quickOwn"/);assert.match(html,/quickWish/);assert.match(html,/One more owned copy/);assert.match(html,/Owned copies in selected lot">2/);assert.equal(ownedCardLots(lots,{name:'Test card'}).length,2);
 const moltres={name:'Moltres',category:'Pokemon',stage:'Basic',prize:1,hp:120,attacks:[{name:'Fighting Wings',cost:['Fire'],damage:'20+',effect:"If your opponent’s Active Pokémon is a Pokémon ex, this attack does 90 more damage."}]};
 const role=pokemonRole(moltres);assert.equal(role.attacks[0].conditionalDamage,110);assert.deepEqual(role.attacks[0].targets,['ex']);assert.equal(role.attacks[0].cost.length,1);
 const record={id:'c0',name:'Moltres',qty:1,zone:'main',text:moltres.attacks[0].effect,details:JSON.stringify(moltres),known:true};
@@ -52,3 +52,10 @@ const {conditionPriceHtml}=await import('./condition-value.js');
 assert.match(conditionPriceHtml(null,{condition:'LP'}),/Lightly Played[\s\S]*Condition price unavailable/);
 assert.match(conditionPriceHtml(60,{condition:'Damaged',manualValue:60}),/\$60.00/);
 console.log('PASS: first-day graph remains visible and selected condition price is explicit.');
+
+for(const game of ['mtg','ptcg','ygo']){
+ const card={id:'card',name:'Test card'},st={collection:conditions.map((condition,i)=>({id:'lot-'+i,cardId:card.id,name:card.name,condition,qty:1,finish:i===2?'foil':'nonfoil',language:i===3?'ja':'en'}))};
+ const html=detailOwnedGroups(game,st.collection,card);assert.equal((html.match(/class="owned-group"/g)||[]).length,5);assert.match(html,/Lightly Played/);assert.match(html,/JA/);assert.match(html,/foil/);
+ assert(adjustOwnedLot(st,'lot-1',1));assert.deepEqual(st.collection.map(e=>e.qty),[1,2,1,1,1]);assert(adjustOwnedLot(st,'lot-0',-1));assert.equal(st.collection.length,4);assert.equal(adjustOwnedLot(st,'lot-0',-1),false);assert.equal(adjustOwnedLot(st,'lot-1',-99),false);assert.equal(st.collection[0].qty,2);
+}
+console.log('PASS: all-game condition groups preserve printing/finish/language identity, exact-lot increments, zero removal and invalid-delta rejection.');

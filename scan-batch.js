@@ -1,3 +1,4 @@
+import {privateKey} from './account-scope.js';
 // Captures are staged, never collection writes. Mixed-game review survives reloads.
 // A failed storage write keeps the batch in memory and is surfaced by the UI.
 export const BATCH_LIMIT = 48;
@@ -13,19 +14,21 @@ export function captureCapacity(rows, originalShot = '') {
   return {ok:true,chars,remaining:CAPTURE_STORAGE_LIMIT-chars};
 }
 const KEY = 'cardstashy-scan-batch-v1';
-let fallback = null,summary=null;
-globalThis.addEventListener?.('storage',event=>{if(event.key===KEY)summary=null;});
+let fallback = null,summary=null,lastKey=null;
+function currentKey(){const k=privateKey(KEY);if(k!==lastKey){fallback=null;summary=null;lastKey=k;}return k;}
+globalThis.addEventListener?.('storage',event=>{if(event.key===currentKey())summary=null;});
 export function loadBatch() {
+  currentKey();
   if (fallback) return fallback;
-  try { const value=JSON.parse(localStorage.getItem(KEY)||'[]'); return Array.isArray(value)?value.filter(x=>x&&typeof x.id==='string'):[]; } catch { return []; }
+  try { const value=JSON.parse(localStorage.getItem(currentKey())||'[]'); return Array.isArray(value)?value.filter(x=>x&&typeof x.id==='string'):[]; } catch { return []; }
 }
 export function saveBatch(rows) {
-  try { const raw=JSON.stringify(rows);localStorage.setItem(KEY,raw);fallback=null;summary={count:rows.length,chars:raw.length};return true; }
+  try { const raw=JSON.stringify(rows);localStorage.setItem(currentKey(),raw);fallback=null;summary={count:rows.length,chars:raw.length};return true; }
   catch { fallback=rows;summary=null;return false; }
 }
 // Camera ticks need only capacity, not another parse of every retained image.
-export function batchStorageSummary(){if(!summary){const rows=loadBatch();summary={count:rows.length,chars:JSON.stringify(rows).length};}return summary;}
-export const batchStorageHealthy=()=>fallback===null;
+export function batchStorageSummary(){currentKey();if(!summary){const rows=loadBatch();summary={count:rows.length,chars:JSON.stringify(rows).length};}return summary;}
+export const batchStorageHealthy=()=>{currentKey();return fallback===null;};
 export function updateBatch(id, patch) { const rows=loadBatch().map(x=>x.id===id?{...x,...patch}:x);saveBatch(rows);return rows.find(x=>x.id===id); }
 export function removeBatch(id) { return saveBatch(loadBatch().filter(x=>x.id!==id)); }
 export function captureEntry(game,shot,prefs={},capture={}) {

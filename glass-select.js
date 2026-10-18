@@ -62,7 +62,7 @@ export function attachGlassSelects(doc=document) {
       if(o.hidden)continue;
       if(o.group && o.group!==group){const label=doc.createElement('div');label.className='gp-title';label.textContent=o.group;list.append(label);}group=o.group;
       const b=doc.createElement('button');b.type='button';b.setAttribute('role','option');b.setAttribute('aria-selected',String(o.selected));b.disabled=o.disabled;b.tabIndex=-1;
-      const name=doc.createElement('span'),check=doc.createElement('span');name.textContent=o.label;check.textContent=o.selected?'✓':'';check.setAttribute('aria-hidden','true');b.append(name,check);
+      const name=doc.createElement('span'),check=doc.createElement('span');name.textContent=o.label;check.textContent=o.selected?'✓':'';check.setAttribute('aria-hidden','true');const icon=select.options[o.index]?.dataset.icon;if(icon&&/^(https?:\/\/|img\/)/.test(icon)){const img=doc.createElement('img');img.src=icon;img.alt='';img.className='glass-option-icon';img.onerror=()=>img.remove();b.append(img);}b.append(name,check);
       const choose=()=>{if(active?.dialog!==dialog)return;if(!select.isConnected){close(false);return;}close();chooseOption(select,o.index);};
       b.onclick=choose;
       // Chromium can suppress the synthetic click after a touch scroll settles,
@@ -74,7 +74,7 @@ export function attachGlassSelects(doc=document) {
       b.addEventListener('pointerup',e=>{const p=press;press=null;if(p&&p.id===e.pointerId&&Math.hypot(e.clientX-p.x,e.clientY-p.y)<=8){e.preventDefault();e.stopPropagation();suppressTouchClick=true;setTimeout(()=>{suppressTouchClick=false;},700);choose();}});
       list.append(b);buttons.push(b);
     }
-    if(options.filter(o=>!o.hidden).length>12){
+    if(select.dataset.search==='true'||options.filter(o=>!o.hidden).length>12){
       const search=doc.createElement('input');search.type='search';search.placeholder='Filter options';search.setAttribute('aria-label','Filter '+title);search.className='glass-select-filter';
       search.oninput=()=>{for(const b of buttons)b.hidden=!b.textContent.toLocaleLowerCase().includes(search.value.toLocaleLowerCase());for(const h of list.querySelectorAll('.gp-title'))h.hidden=!!search.value;};
       search.onkeydown=e=>{if(e.key==='ArrowDown'){e.preventDefault();buttons.find(b=>!b.disabled&&!b.hidden)?.focus();}e.stopPropagation();if(e.key==='Escape'){e.preventDefault();close();}};

@@ -136,7 +136,7 @@ function workspaceHarness(game='mtg',hash='#collection/cards',{real=false}={}) {
  clean.decks=[{id:'same-id',name:'Magic source',format:'Standard',cards:[]}];h.S.state=validateWorkspace(clean);h.S.catalog={};
  if(real){realStore.state=h.S.state;realStore.ui=h.S.ui;Object.defineProperty(h.S,'state',{get:()=>realStore.state,set:value=>{realStore.state=value;},configurable:true});}
  const io={writes:[],reject:false,gate:null};
- Object.assign(c,{A:{},C:{},structuredClone,recordHomeDeckWork,normalize:validateWorkspace,blank,stripCache:s=>s,STORAGE:'workspace',RECOVERY:'recovery',
+ Object.assign(c,{refreshProfileAvatar(){},createAccountWorkspaces:()=>({guard:null}),A:{},C:{},structuredClone,recordHomeDeckWork,normalize:validateWorkspace,blank,stripCache:s=>s,STORAGE:'workspace',RECOVERY:'recovery',
   changedConditionLots:()=>[],refreshChangedConditions(){},afterLocalSave(){},refreshSheet(){},saveCatalogSoon(){},haptic(){},flyToCollection(){},autoEnrich(){},setTimeout(){},lastActTarget:null,
   ask:async()=>true,readBackup:async()=>({next:c.imported,cache:{}}),sumQty:rows=>rows.reduce((n,r)=>n+r.qty,0),slim:x=>x,
   readRecord:async key=>structuredClone(disk.get(key)),
@@ -144,7 +144,7 @@ function workspaceHarness(game='mtg',hash='#collection/cards',{real=false}={}) {
   clearAskConversations(){},clearRulesConversations(){},rulesGuideOrigin:null,cloudInfo:()=>({user:{id:'fixture-owner'}}),isEmptyWorkspace:()=>false});
  vm.runInContext(app.slice(app.indexOf('let lastUndo = null;'),app.indexOf('\nconst safely ='))+'\n'+app.slice(app.indexOf('A.undo = async'),app.indexOf('\nA.nextFact ='))+'\n'+app.slice(app.indexOf('C.restoreBackup = async'),app.indexOf('\nA.reset =')),c);
  c.adoptionHook=hook;h.run('workspaceTransition=adoptionHook');
- vm.runInContext('cloudHooks = ({'+app.slice(app.indexOf('    apply: async (data) => {'),app.indexOf('    backup: async'))+'});',c);
+ vm.runInContext('cloudHooks = ({'+app.slice(app.indexOf('    apply: async (data,{owner,current}={}) => {'),app.indexOf('    backup: async'))+'});',c);
  h.location.href='https://fixture.invalid/'+hash;
  return {...h,c,io,disk};
 }

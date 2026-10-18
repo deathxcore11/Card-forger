@@ -80,6 +80,10 @@ export function ptcgFacts(c) {
 
 export const factsFor = (c, prints) => (c?.game === "ygo" ? ygoFacts(c) : c?.game === "ptcg" ? ptcgFacts(c) : mtgFacts(c, prints));
 
+// Overview already shows the printing, artist, rules, legality and secondary
+// stats. Keep only additional context; an empty fact slot needs no filler.
+export const overviewFacts = (c, prints) => factsFor(c, prints).filter(f => !/^(This version comes from |This is its first printing:|Illustrated by |It’s on the |One of the most played Commander cards:|Ranks #|Banned in |Restricted to |Keywords:|Card .+ in |Evolves from |Regulation mark |Older than the Expanded format|This card also exists as |It also comes in |It has a Rule Box|ACE SPEC:|Its priciest printing is |Currently |Part of the )/.test(f));
+
 // One fact at a time; "Another" cycles through the rest in place.
 export function factBox(facts, seed = "") {
   if (!facts.length) return "";

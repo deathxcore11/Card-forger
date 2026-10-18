@@ -50,7 +50,7 @@ export async function readRecord(key) {
   const raw = localStorage.getItem(key);
   return raw ? JSON.parse(raw) : null;
 }
-export function writeRecords(records) {
+export function writeRecords(records, {guardRecord = null} = {}) {
   const snapshots = records.map(([key, value]) => [
     key,
     structuredClone(value),
@@ -60,14 +60,25 @@ export function writeRecords(records) {
     if (db) {
       await new Promise((resolve, reject) => {
         const tx = db.transaction("records", "readwrite");
-        for (const [key, value] of snapshots)
-          tx.objectStore("records").put(value, key);
+        const store=tx.objectStore('records');
+        const put=()=>{for(const [key,value] of snapshots)store.put(value,key);};
+        let guardError;
+        if(guardRecord){
+          const check=store.get(guardRecord.key);
+          check.onsuccess=()=>{
+            const actual=check.result??JSON.parse(localStorage.getItem(guardRecord.key)||'null');
+            if(JSON.stringify(actual)!==JSON.stringify(guardRecord.value??null)){
+              guardError=Error('The account changed in another tab. Reload CardStashy before saving.');tx.abort();
+            }else put();
+          };
+        }else put();
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error || Error("Local save failed."));
-        tx.onabort = () => reject(tx.error || Error("Local save aborted."));
+        tx.onabort = () => reject(guardError || tx.error || Error("Local save aborted."));
       });
       return;
     }
+    if(guardRecord && JSON.stringify(JSON.parse(localStorage.getItem(guardRecord.key)||'null'))!==JSON.stringify(guardRecord.value??null))throw Error('The account changed in another tab. Reload CardStashy before saving.');
     const before = snapshots.map(([k]) => [k, localStorage.getItem(k)]);
     try {
       for (const [k, v] of snapshots)
@@ -86,7 +97,7 @@ export function writeRecords(records) {
   writeQueue = result.catch(() => {});
   return result;
 }
-export const writeRecord = (key, value) => writeRecords([[key, value]]);
+export const writeRecord = (key, value, options) => writeRecords([[key, value]], options);
 export const storageBackend = () => backend;
 export async function persistenceStatus() {
   let persistent = null,

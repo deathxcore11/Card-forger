@@ -38,7 +38,7 @@ if(process.argv.includes('--validate-fixtures')){console.log('PASS: all three ex
 assert.equal(process.env.GITHUB_ACTIONS,'true','Ownership browser tests are hosted-only. Use --validate-fixtures for local pure validation.');
 const {createServer}=await import('node:http');
 const {chromium,devices}=await import('playwright');
-const root=process.cwd(),server=createServer(async(req,res)=>{try{const u=new URL(req.url,'http://localhost');const f=resolve(root,'.'+(u.pathname==='/'?'/index.html':u.pathname));if(!f.startsWith(root+'/'))throw Error();res.setHeader('Content-Type',({'.js':'text/javascript','.css':'text/css','.html':'text/html','.json':'application/json','.svg':'image/svg+xml'})[extname(f)]||'application/octet-stream');res.end(await readFile(f));}catch{res.writeHead(404);res.end();}});await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.1:${server.address().port}`,browser=await chromium.launch();
+const root=process.cwd(),server=createServer(async(req,res)=>{try{const u=new URL(req.url,'http://localhost');const f=resolve(root,'.'+(u.pathname==='/'?'/index.html':u.pathname));if(!f.startsWith(root+'/'))throw Error();res.setHeader('Content-Type',({'.js':'text/javascript','.css':'text/css','.html':'text/html','.json':'application/json','.svg':'image/svg+xml'})[extname(f)]||'application/octet-stream');let body=await readFile(f);if(f.endsWith("/config.js"))body=Buffer.from(body.toString().replace(/key:\s*"[^"]*"/,'key: ""'));res.end(body);}catch{res.writeHead(404);res.end();}});await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.1:${server.address().port}`,browser=await chromium.launch();
 try{for(const g of GAMES){
  const fixture=ownedFixture(g);
  const context=await browser.newContext({...devices['Pixel 7']}),page=await context.newPage();page.setDefaultTimeout(12000);const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.route('**/*',r=>{
@@ -64,7 +64,7 @@ try{for(const g of GAMES){
  const tile=page.locator('[data-entry="owned-nm"].lot-art').first();await tile.waitFor();
  await tile.click({button:'right'});const owned=page.getByRole('region',{name:'Owned copies',exact:true});
  // section has an accessible label; Chromium exposes it as a region.
- await owned.waitFor();assert.equal(await page.locator('[data-act="quickOwn"]').count(),0);assert(await page.locator('[data-act="quickWish"]').isVisible());
+ await owned.waitFor();assert.equal(await page.locator('[data-act="quickOwn"]').count(),1);assert(await page.locator('[data-act="quickWish"]').isVisible());
  await page.getByRole('button',{name:'One more owned copy',exact:true}).click();await page.waitForFunction(g=>{const S=window.__ownedTestState;return(g==='mtg'?S.state:S.state.tcg[g]).collection.find(e=>e.id==='owned-nm').qty===3;},g);
  await page.getByRole('button',{name:'One fewer owned copy',exact:true}).click();await page.waitForFunction(g=>{const S=window.__ownedTestState;return(g==='mtg'?S.state:S.state.tcg[g]).collection.find(e=>e.id==='owned-nm').qty===2;},g);
  await page.getByRole('combobox',{name:'Saved lot to change',exact:true}).click();await page.locator('.glass-select-menu[open]').getByRole('option',{name:/Damaged/}).click();
@@ -72,7 +72,15 @@ try{for(const g of GAMES){
  await page.waitForFunction(g=>{const S=window.__ownedTestState;return(g==='mtg'?S.state:S.state.tcg[g]).collection.find(e=>e.id==='owned-damaged').manualValue===15;},g);
  assert.equal(await page.locator('.brand .mark .stashy-logo').count(),1,'save status cannot replace app logo');
  const saved=await page.evaluate(async g=>{const {S}=await import('/store.js');return(g==='mtg'?S.state:S.state.tcg[g]).collection;},g);assert.equal(saved.length,2);assert.equal(saved[0].qty,2);assert.equal(saved[1].qty,1);assert.equal(saved[1].condition,'Damaged');assert.equal(saved[1].manualValueCondition,'Damaged');assert.deepEqual(lotIdentity(saved),lotIdentity(fixture.lots),'Artwork and menu interactions preserve exact lot identity, quantities and conditions');
- await page.locator('#sheet').getByRole('button',{name:'Close',exact:true}).click();await tile.click();await page.locator('#sheet .cd-zoom[data-hold-card]').waitFor();
+ await page.locator('#sheet').getByRole('button',{name:'Close',exact:true}).click();await tile.click();
+ await page.locator('[data-owned-group="owned-nm"]').waitFor();assert.equal(await page.locator('.owned-group').count(),2,'Saved conditions get separate controls');
+ assert.equal(await page.locator('#sheet [data-act="'+(g==='mtg'?'own':'tOwn')+'"]').count(),1,'Add another condition or printing is always available');
+ const qty=async id=>page.evaluate(({g,id})=>{const S=window.__ownedTestState;return(g==='mtg'?S.state:S.state.tcg[g]).collection.find(e=>e.id===id)?.qty||0;},{g,id});
+ await page.locator('[data-act="cardOwnedQty"][data-lot="owned-nm"][data-delta="1"]').click();await page.waitForFunction(g=>{const S=window.__ownedTestState;return(g==='mtg'?S.state:S.state.tcg[g]).collection.find(e=>e.id==='owned-nm').qty===3;},g);assert.equal(await qty('owned-damaged'),1);
+ await page.locator('[data-act="cardOwnedQty"][data-lot="owned-nm"][data-delta="-1"]').click();await page.waitForFunction(g=>{const S=window.__ownedTestState;return(g==='mtg'?S.state:S.state.tcg[g]).collection.find(e=>e.id==='owned-nm').qty===2;},g);
+ await page.locator('[data-act="cardOwnedQty"][data-lot="owned-damaged"][data-delta="-1"]').click();await page.locator('[data-owned-group="owned-damaged"]').waitFor({state:'detached'});assert.equal(await qty('owned-nm'),2);
+ await page.locator('#toast [data-act="undo"]').click();await page.locator('[data-owned-group="owned-damaged"]').waitFor();assert.equal(await qty('owned-damaged'),1);assert.equal(await qty('owned-nm'),2);
+await page.locator('#sheet .cd-zoom[data-hold-card]').waitFor();
  // Do not mistake an available button or placeholder for the actual card scan.
  // Query the current sheet each time because its background refresh replaces DOM.
  for(const selector of ['#sheet .cd-zoom img.card-img','dialog.zoom .zoom-img[data-hold-card]']){
@@ -83,7 +91,7 @@ try{for(const g of GAMES){
  }
  assert.equal(await page.locator('dialog.zoom .zoom-img').getAttribute('data-entry'),'owned-nm','Zoom retains the selected saved lot');
  assert.equal(await page.locator('dialog.zoom .zoom-img').getAttribute('data-name'),fixture.card.name,'Zoom retains the card identity');
- await page.locator('dialog.zoom .zoom-img').click({button:'right'});await owned.waitFor();assert.equal(await page.locator('dialog.zoom[open]').count(),0,'full image hold brings its ownership menu forward');assert.equal(await page.locator('[data-act="quickOwn"]').count(),0);
+ await page.locator('dialog.zoom .zoom-img').click({button:'right'});await owned.waitFor();assert.equal(await page.locator('dialog.zoom[open]').count(),0,'full image hold brings its ownership menu forward');assert.equal(await page.locator('[data-act="quickOwn"]').count(),1);
  const afterZoom=await page.evaluate(async g=>{const {S}=await import('/store.js'),{cache}=await import('/tcg.js'),{cardKey}=await import('/core.js');return{lots:(g==='mtg'?S.state:S.state.tcg[g]).collection,card:g==='mtg'?S.catalog[cardKey('Owned test card')]:cache[g]['test-owned']};},g);
  assert.deepEqual(afterZoom.lots,saved,'Opening/holding the decoded image never mutates saved lots');assert.equal(afterZoom.card.id,fixture.card.id);assert.equal(afterZoom.card.name,fixture.card.name);assert.deepEqual(afterZoom.card.set,fixture.card.set,'Artwork never substitutes another set/printing');assert.equal(afterZoom.card.collector_number,fixture.card.collector_number);assert.deepEqual(afterZoom.card.variants,fixture.card.variants);assert.deepEqual(afterZoom.card.prices,fixture.card.prices,'Artwork and ownership do not alter source prices');
  await page.reload();await page.getByRole('heading',{name:'Collection',exact:true}).waitFor();const reloaded=await page.evaluate(async g=>{const {S}=await import('/store.js');return(g==='mtg'?S.state:S.state.tcg[g]).collection;},g);assert.equal(reloaded[1].manualValue,15);assert.equal(reloaded[0].qty,2);assert.deepEqual(lotIdentity(reloaded),lotIdentity(fixture.lots),'Reload preserves every original lot identity');await page.getByRole('tab',{name:'Value',exact:true}).click();await page.locator('.value-change.down').waitFor();assert.match(await page.locator('.value-change').innerText(),/−\$85.00/);assert(await page.getByRole('img',{name:'Collection value over time',exact:true}).isVisible());await page.evaluate(async g=>{const {S}=await import('/store.js');S.state.valueHistory=[];localStorage.removeItem('cardstashy-value-hist-'+g);},g);

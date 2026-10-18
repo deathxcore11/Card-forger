@@ -1,6 +1,22 @@
 import {esc} from './ui.js';
+import {conditionName} from './condition-value.js';
 export function ownedCardLots(entries,card){return entries.filter(e=>Number(e.qty)>0&&String(e.name||'').normalize('NFKC').toLowerCase()===String(card?.name||'').normalize('NFKC').toLowerCase());}
+export function detailOwnedLots(game,entries,card){return game==='mtg'?ownedCardLots(entries,card):entries.filter(e=>e.qty>0&&String(e.cardId)===String(card?.id));}
+export function adjustOwnedLot(workspace,id,delta){
+ if(![-1,1].includes(delta))return false;
+ const lot=workspace.collection.find(e=>e.id===id);if(!lot||lot.qty+delta>100000)return false;
+ lot.qty=Math.max(0,lot.qty+delta);lot.reserved=Math.min(lot.reserved||0,lot.qty);
+ workspace.collection=workspace.collection.filter(e=>e.qty>0);return true;
+}
+export function detailOwnedGroups(game,entries,card){
+ const lots=detailOwnedLots(game,entries,card);if(!lots.length)return '';
+ return `<section class="owned-groups" aria-label="Your saved copies"><small class="muted">${lots.reduce((n,e)=>n+e.qty,0)} owned total</small>${lots.map(e=>{
+  const label=[conditionName(e.condition),e.setName||e.set||e.printing||e.cardId,e.collectorNumber||e.number?`#${e.collectorNumber||e.number}`:'',e.variantLabel||e.variant||e.finish,e.rarity,e.edition,(e.language||'en').toUpperCase(),e.signed?'Signed':'',e.altered?'Altered':'',e.misprint?'Misprint':'',e.proxy?'Proxy':'',e.graded?[e.gradingCompany,e.grade].filter(Boolean).join(' ')||'Graded':'',e.location].filter(Boolean).join(' · ');
+  return `<div class="owned-group" data-owned-group="${esc(e.id)}"><span class="owned-group-label">${esc(label)}</span><div class="owned-pill"><button type="button" data-act="cardOwnedQty" data-game="${game}" data-lot="${esc(e.id)}" data-delta="-1" aria-label="Remove one ${esc(label)}">−</button><button type="button" class="owned-copy-details" data-act="cardOwnedDetails" data-game="${game}" data-lot="${esc(e.id)}" data-id="${esc(card.id)}" data-name="${esc(card.name)}" aria-label="Copy details: ${esc(label)}"><span>Owned:</span> <b>${e.qty}</b></button><button type="button" data-act="cardOwnedQty" data-game="${game}" data-lot="${esc(e.id)}" data-delta="1" aria-label="Add one ${esc(label)}">＋</button></div></div>`;
+ }).join('')}</section>`;
+}
 export function quickQuantity(lots,selected,busy=false){
- const lot=lots.find(e=>e.id===selected)||lots[0];if(!lot)return '';
+ if(!lots.length)return '';const lot=lots.find(e=>e.id===selected)||(lots.length===1?lots[0]:null);
+ if(!lot)return `<section class="quick-owned"><b>Choose the saved version to change</b><label>Saved version<select data-change="quickLot" aria-label="Saved lot to change"><option value="">Choose a version</option>${lots.map(e=>`<option value="${esc(e.id)}">${esc([e.set||e.cardId,e.variantLabel||e.variant||e.finish,e.edition,e.condition||'Near Mint',e.location].filter(Boolean).join(' · '))} · ×${e.qty}</option>`).join('')}</select></label><p class="muted small">Each condition and printing keeps its own quantity.</p></section>`;
  return `<section class="quick-owned" aria-label="Owned copies"><div><b>In your collection</b><small>${lots.reduce((n,e)=>n+e.qty,0)} owned across ${lots.length} saved lot${lots.length===1?'':'s'}</small></div>${lots.length>1?`<label>Saved version<select data-change="quickLot" aria-label="Saved lot to change">${lots.map(e=>`<option value="${esc(e.id)}" ${e.id===lot.id?'selected':''}>${esc([e.set||e.printing||e.cardId,e.variantLabel||e.variant||e.finish,e.edition,e.condition||'Near Mint',e.location].filter(Boolean).join(' · '))} · ×${e.qty}</option>`).join('')}</select></label>`:`<small>${esc([lot.condition||'Near Mint',lot.variantLabel||lot.variant||lot.finish,lot.edition,lot.location].filter(Boolean).join(' · '))}</small>`}<div class="stepper"><button data-act="quickQty" data-delta="-1" aria-label="One fewer owned copy" ${busy?'disabled':''}>−</button><output aria-label="Owned copies in selected lot">${lot.qty}</output><button data-act="quickQty" data-delta="1" aria-label="One more owned copy" ${busy?'disabled':''}>＋</button></div><details><summary>Value for this copy</summary><label>Your value per copy (USD)<input id="quickLotValue" type="number" min="0" step="0.01" value="${Number.isFinite(lot.manualValue)?lot.manualValue:''}" placeholder="Unknown"></label><p class="foot">Applies to this saved version and condition. Leave blank to use an available quote.</p><button class="btn ghost small" data-act="quickValueSave" ${busy?'disabled':''}>Save value</button></details></section>`;
 }

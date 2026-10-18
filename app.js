@@ -1,6 +1,11 @@
+import {setAccountScope} from './account-scope.js';
+import {createAccountWorkspaces} from './account-workspaces.js';
+import {mountFeedback} from './feedback-layer.js';
+import {createCommunity} from './community-profile.js';
 import {addScannedEntry} from './collection-stack.js';
 import {profileAvatar,profileArt,createProfileArtPicker} from './profile-art.js';
 import {openTabletop} from './tabletop.js';
+import {createTableArtResolver} from './tabletop-themes.js';
 import {INFO_TOPICS,findInfo} from './app-info.js';
 import {attachHomeSearch,homeIntent,rankHomeCards,homeQueries,placeGlobalSearch,searchEmblem} from './home-search.js';
 import {catalogState,catalogCandidate} from './scan-catalog.js';
@@ -11,8 +16,8 @@ import {attachRuleLearning} from './rule-learning.js';
 import {configureConditionAuth,clearConditionAttempts,forgetConditionAttempt,loadConditionQuotes,applyConditionQuotes,conditionRequest,CONDITION_IDENTITY} from './condition-feed.js';
 import {createConditionRefreshScheduler,conditionCursorKey,selectConditionLots,changedConditionLots,conditionLotIdentity} from './condition-refresh-scheduler.js';
 import {brandMark} from './brand.js';
-import {ownedCardLots,quickQuantity} from './quick-quantity.js';
-import {conditionName,conditionValue,conditionPriceHtml} from './condition-value.js';
+import {ownedCardLots,quickQuantity,adjustOwnedLot} from './quick-quantity.js';
+import {conditionName,conditionValue,conditionPriceHtml,attachConditionInfo} from './condition-value.js';
 import { showAiReview } from './ai-review.js';
 import { openAsk, clearAskConversations } from './ai-ask.js';
 import { openRulesAsk, closeRulesAsk, clearRulesConversations } from './ai-rules.js';
@@ -38,7 +43,7 @@ import {handleArtworkError} from "./artwork.js";
 import {selectedFinish,detailIdentity,captureDetailState,restoreDetailState,rememberDetailViewport,restoreDetailViewport,detailTabKey,createDetailJump} from "./pricing-presentation.js";
 import {modeFor,registerWorkbench,quoteModel,recordQuote} from "./workbench-ui.js";
 import { locationPicker, rememberLocation, chooseLocation } from "./collection-locations.js";
-import { captureAuthFields, restoreAuthFields, authFeedback } from "./auth-form.js";
+import { captureAuthFields, restoreAuthFields, authFeedback, togglePassword } from "./auth-form.js";
 import { formatUpgrades, applyFormatSwap } from "./format-upgrades.js";
 import { cutToTarget } from "./deck-safety.js";
 import { binderPage, binderMatches, BINDER_COLORS, attachBinderDrag, animateTurn, binderFavorites, MAX_FAVORITES } from "./binders.js";
@@ -75,7 +80,7 @@ import { attachGlassSelects } from "./glass-select.js";
 import { attachSuggest } from "./suggest.js";
 import { shouldTour, openTour, resetOnboarding, markGuide, guidePrompt } from "./tour.js";
 import { tourScenes } from "./tour-scenes.js";
-import { haptic, hapticFor, flyToCollection, countUp, ripple, setHaptics, attachGestures, attachTilt } from "./feel.js";
+import { haptic, hapticFor, flyToCollection, captureCollectionFlight, countUp, ripple, setHaptics, attachGestures, attachTilt } from "./feel.js";
 import { alertSheet, setAlert, onAlert, alertText, priceSeries } from "./pricehist.js";
 import { onSharedPrices, watchCards } from "./sharedprices.js";
 import { mtgCollector, nameCandidates, textPhrases } from "./scan.js";
@@ -89,7 +94,7 @@ import { rulesPage, learnSheet } from "./rules.js";
 import { GAMES, GAME_ICON, GAME_COLOR } from "./games.js";
 import { ICON, actionIcon, decorateGlyphs } from "./icons.js";
 import { openZoom, zoomCardOptions } from "./zoom.js";
-import { initCloud, cloudAccessToken, cloudInfo, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
+import { initCloud, communityRequest, cloudAccessToken, cloudInfo, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact, lotPrice } from "./insights.js";
 
 /* =========================================================
@@ -171,11 +176,13 @@ function decorateShell() {
     else if (span && ICON[b.dataset.nav]) span.innerHTML = ICON[b.dataset.nav];
   }
   const gear = $('.topbar [data-act="menu"]');
-  if (gear) {gear.classList.add("profile-menu");gear.innerHTML = profileAvatar(S.state.settings.cardAvatar,cloudInfo().profile||{});gear.title="Profile & settings";}
+  if (gear) {gear.classList.add("profile-menu");gear.innerHTML = accountLocked ? profileAvatar(null,{}) : profileAvatar(cloudInfo().art?.avatar||S.state.settings.cardAvatar,cloudInfo().profile||{});gear.title="Profile & settings";}
   const mark = $(".brand .mark");
   if (mark) mark.innerHTML = brandMark("brand-idle");
   glyphObserver?.observe(document.body, { childList: true, subtree: true });
 }
+
+const accountUiDefaults = structuredClone(S.ui);
 
 // Saved locally; when signed in, the account copy follows a few seconds later.
 function refreshHomeValueGlance() {
@@ -204,10 +211,11 @@ function saveCatalogSoon() {
 }
 
 function save() {
+  if(accountLocked && navigationReady)return Promise.resolve(false);
   S.state.lastSavedAt = new Date().toISOString();
   setSaveStatus("Saving…");
   saveCatalogSoon();
-  return writeRecord(STORAGE, stripCache(S.state))
+  return writeRecord(STORAGE, stripCache(S.state),accountStorageOptions())
     .then(() => (afterLocalSave(), true))
     .catch(() => {
       setSaveStatus("Not saved", "bad");
@@ -222,6 +230,9 @@ let lastUndo = null;
 let commitQueue = Promise.resolve();
 let conditionWorkspaceRevision = 0;
 let workspaceTransition = null;
+let accountLocked=cloudInfo().configured,accountGeneration=0;
+const accountWorkspaces=createAccountWorkspaces({read:readRecord,write:writeRecords,getState:()=>stripCache(S.state),blank,normalize,storage:STORAGE,recovery:RECOVERY});
+const accountStorageOptions=()=>({guardRecord:accountWorkspaces.guard});
 function queueWorkspaceWrite(transaction) {
   const result = commitQueue.then(transaction, transaction);
   commitQueue = result.catch(() => {});
@@ -240,7 +251,7 @@ function replaceWorkspace(next, { recovery = false, clearRecovery = false, stamp
     if (clearRecovery) records.unshift([RECOVERY, blank()]);
     else if (typeof recovery === "function" ? recovery(S.state) : recovery) records.unshift([RECOVERY, stripCache(S.state)]);
     const transition = workspaceTransition?.begin(valid, {kind});
-    try { await writeRecords(records); }
+    try { await writeRecords(records,accountStorageOptions()); }
     catch (error) { workspaceTransition?.failed(transition); throw error; }
     S.state = valid;
     conditionWorkspaceRevision++;
@@ -251,7 +262,10 @@ function replaceWorkspace(next, { recovery = false, clearRecovery = false, stamp
   });
 }
 async function commit(fn, { msg = "", recovery = false, rerender = true, enrich = true, undo = "", guard = null, navigationWrite = false, recordDeckWork = true } = {}) {
+  const accountTicket=accountGeneration;
+  const flight=typeof captureCollectionFlight==='function'&&/^Added\b/.test(msg||undo)?captureCollectionFlight(lastActTarget):null;
   const transaction = async () => {
+    if(accountLocked || accountTicket!==accountGeneration)throw Error('Your account changed. Please try again in the current account.');
     // Confirm against the latest committed state, without allowing another queued edit to pass.
     if (guard && !await guard(S.state)) return;
     const before = undo ? structuredClone(stripCache(S.state)) : null;
@@ -264,7 +278,7 @@ async function commit(fn, { msg = "", recovery = false, rerender = true, enrich 
     const records = [[STORAGE, valid]];
     if (recovery) records.unshift([RECOVERY, stripCache(S.state)]);
     const transition = !navigationWrite && valid.settings.game !== previous.settings.game ? workspaceTransition?.begin(valid) : null;
-    try { await writeRecords(records); }
+    try { await writeRecords(records,accountStorageOptions()); }
     catch (error) { workspaceTransition?.failed(transition); throw error; }
     S.state = valid;
     workspaceTransition?.finished(transition);
@@ -282,7 +296,7 @@ async function commit(fn, { msg = "", recovery = false, rerender = true, enrich 
     if (said) {
       const removed = /^(−|-|Removed|Deleted|Cleared|Undid)/.test(said);
       haptic(removed ? "warn" : "success");
-      if (/^Added\b/.test(said)) flyToCollection(lastActTarget);
+      if (/^Added\b/.test(said)) flyToCollection(flight||lastActTarget);
     }
     if (undo) {
       lastUndo = { state: before, label: undo };
@@ -591,11 +605,12 @@ async function loadPreconCache() {
    Toast, sheet, download
    ========================================================= */
 
-let toastTimer;
+let toastTimer,toastNode;
 const TOAST_OK = `<svg class="toast-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m7.5 12.5 3 3 6-6.5"/></svg>`;
 function toast(text, { undo = false } = {}) {
-  const t = $("#toast"),
+  const t = mountFeedback(toastNode||=( $("#toast") || Object.assign(document.createElement("div"),{id:"toast"}))),
     ok = /^(Added|Saved|On the list|Alert saved|Copied|List copied|Switched|Moved|Updated|\+)/.test(text);
+  t.setAttribute("role","status");t.setAttribute("aria-live","polite");
   t.innerHTML = `${ok ? TOAST_OK : ""}<span>${esc(text)}</span>${undo ? `<button class="toast-undo" data-act="undo">Undo</button>` : ""}`;
   t.classList.toggle("ok", ok);
   t.classList.remove("show");
@@ -732,6 +747,8 @@ function sheetScrolled() {
   }
   head.classList.toggle("scrolled", on);
   body.style?.setProperty?.("--card-tabs-top",Math.max(0,on?head.getBoundingClientRect().bottom-body.getBoundingClientRect().top:0)+"px");
+  const rail=body.querySelector('.cs-tabs'),selected=rail?.querySelector('[aria-selected="true"]'),indicator=rail?.querySelector('.cs-tab-indicator');
+  if(indicator&&selected){indicator.style.left=selected.offsetLeft+'px';indicator.style.width=selected.offsetWidth+'px';indicator.style.top=selected.offsetTop+'px';indicator.style.height=selected.offsetHeight+'px';rail.dataset.indicatorReady='true';}
 }
 function closeSheet(rememberRoute=true) {
   T.cancelProvenBuild();
@@ -807,7 +824,7 @@ const fileSafe = (s) => String(s).replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g,
    Routing
    ========================================================= */
 
-const VIEWS = ["home", "search", "collection", "decks", "deck", "scan", "settings", "sets", "set", "shared", "tdeck", "rules"];
+const VIEWS = ["community", "home", "search", "collection", "decks", "deck", "scan", "settings", "sets", "set", "shared", "tdeck", "rules"];
 
 function parseHash() {
   const segments = routeSegments(location.hash);
@@ -883,6 +900,11 @@ function currentRulesOrigin() {
 }
 function dismissRulesGuide() { closeRulesAsk(); dismissRuleHint(); rulesGuideOrigin = null; }
 function render() {
+  if(accountLocked){
+    const content=$('#content'),failed=cloudInfo().status.state==='error';if(content)content.innerHTML=failed?'<section class="empty account-opening" role="alert"><h2>Your saved data is protected</h2><p>'+esc(cloudInfo().status.msg)+'</p><button class="btn" onclick="location.reload()">Retry opening account</button></section>':'<section class="empty account-opening" role="status"><h2>Opening your account…</h2><p>Your cards and profile will appear here.</p></section>';
+    const avatar=document.querySelector('.topbar [data-act="menu"]');if(avatar)avatar.innerHTML=profileAvatar(null,{});
+    return;
+  }
   if(settingsPopup?.isOpen){settingsPopup.refresh();return;}
   if (navigationPending && !navigationInstalling) return;
   const screen = navigationStamp();
@@ -923,7 +945,7 @@ function render() {
   $(".brand-home")?.setAttribute?.("aria-current",ui.view==="home"?"page":"false");
   content?.setAttribute?.("aria-labelledby", `game-tab-${g}`);
   const views = {
-    home: V.home, search: V.search, collection: V.collection, decks: V.decks,
+    community:()=>community.page(), home: V.home, search: V.search, collection: V.collection, decks: V.decks,
     deck: V.deckPage, scan: () => scanView("mtg", "Magic"), settings: V.settings, sets: V.setsPage, set: V.setPage, shared: V.sharedPage,
   };
   // Yu-Gi-Oh! and Pokémon share their own screens; Magic keeps its full set.
@@ -1302,6 +1324,7 @@ document.addEventListener("click", (e) => {
   if (heldTarget && heldTarget === t) { heldTarget = null; e.preventDefault(); return; }
   heldTarget = null;
   if (!t || t.disabled) return;
+  if(accountLocked && !['closeSettings','signOut','syncNow'].includes(t.dataset.act))return;
   const fn = A[t.dataset.act];
   if (!fn) return;
   if (t.tagName === "A" && t.getAttribute("href")) return;
@@ -1380,10 +1403,10 @@ async function cardQuickMenu(t) {
   const ref = t?.quickRef || await resolveActionCard(t); if (!ref) return;
   quickCard = ref; haptic("tap");
   const st = ref.game === "mtg" ? S.state : T.gs(ref.game);
-  const lots=quickCardLots(ref,st.collection);ref.selectedLot=lots.some(e=>e.id===ref.selectedLot)?ref.selectedLot:lots.some(e=>e.id===ref.dataset.entry)?ref.dataset.entry:lots[0]?.id;
+  const lots=quickCardLots(ref,st.collection);ref.selectedLot=lots.some(e=>e.id===ref.selectedLot)?ref.selectedLot:lots.some(e=>e.id===ref.dataset.entry)?ref.dataset.entry:lots.length===1?lots[0].id:null;
   if(ref.selectedLot)ref.dataset.entry=ref.selectedLot;
   const wished = st.wishlist.some(w => ref.game === "mtg" ? key(w.name) === key(ref.card.name) : w.cardId === ref.card.id);
-  openSheet(`<div class="sheet-head"><h2>Card actions</h2><button class="icon" data-act="closeSheet" aria-label="Close">${actionIcon("close")}</button></div><div class="quick-card-heading">${artworkHTML(ref.card,"quick-card-thumb")}<div><b>${esc(ref.card.name)}</b><small>${esc(ref.card.set_name || ref.card.set?.name || ref.card.typeLine || "")}</small></div></div>${cardActionButtons({game:ref.game,wished,existing:lots.length>0,quantityHtml:quickQuantity(lots,ref.selectedLot,ref.qtyBusy),second:comparison.active && comparison.cards.length>0})}`,{type:"card-actions",game:ref.game,id:ref.card.id,setId:ref.setId||"",setMembership:ref.setMembership,setVariant:ref.setVariant,priceEdition:ref.priceEdition,priceYgoEdition:ref.priceYgoEdition});
+  openSheet(`<div class="sheet-head"><h2>Card actions</h2><button class="icon" data-act="closeSheet" aria-label="Close">${actionIcon("close")}</button></div><div class="quick-card-heading">${artworkHTML(ref.card,"quick-card-thumb")}<div><b>${esc(ref.card.name)}</b><small>${esc(ref.card.set_name || ref.card.set?.name || ref.card.typeLine || "")}</small></div></div>${cardActionButtons({game:ref.game,wished,existing:lots.length>0,quantityHtml:quickQuantity(lots,ref.selectedLot,ref.qtyBusy),second:comparison.active && comparison.cards.length>0})}<div class="quick-art-actions"><button class="btn ghost" data-act="quickArtwork">Use artwork as…</button></div>`,{type:"card-actions",game:ref.game,id:ref.card.id,setId:ref.setId||"",setMembership:ref.setMembership,setVariant:ref.setVariant,priceEdition:ref.priceEdition,priceYgoEdition:ref.priceYgoEdition});
 }
 // Hold a deck or binder tile for its quick actions, the same gesture as holding a card.
 // Every action is also reachable inside the deck or binder; this is a shortcut, not a hiding place.
@@ -1449,7 +1472,7 @@ function registerCardMenus() {
   C.quickLot=t=>{if(quickCard){quickCard.selectedLot=t.value;cardQuickMenu({quickRef:quickCard});}};
   A.quickQty=async t=>{
     const ref=quickCard;if(!ref||ref.qtyBusy||ref.game!==T.game()||![-1,1].includes(Number(t.dataset.delta)))return;
-    const lots=quickCardLots(ref,(ref.game==='mtg'?S.state:T.gs(ref.game)).collection),lot=lots.find(e=>e.id===ref.selectedLot)||lots[0];if(!lot)return;
+    const lots=quickCardLots(ref,(ref.game==='mtg'?S.state:T.gs(ref.game)).collection),lot=lots.find(e=>e.id===ref.selectedLot)||(lots.length===1?lots[0]:null);if(!lot)return toast('Choose the saved version to change.');
     ref.qtyBusy=true;await cardQuickMenu({quickRef:ref});
     try{await A[ref.game==='mtg'?'qty':'tEntryQty']({dataset:{id:lot.id,delta:t.dataset.delta}});}finally{ref.qtyBusy=false;if(quickCard===ref&&S.ui.sheetCtx?.type==='card-actions')await cardQuickMenu({quickRef:ref});}
   };
@@ -1580,6 +1603,7 @@ const tierSync = () => {
 };
 if (typeof MutationObserver !== "undefined") new MutationObserver(() => { if (!tierQueued) { tierQueued = true; requestAnimationFrame(tierSync); } }).observe(document.body, { childList: true, subtree: true });
 attachRuleLearning();
+const dismissConditionInfo=attachConditionInfo();
 attachSuggest();
 attachGlassSelects();
 configureConditionAuth(cloudAccessToken);
@@ -1974,6 +1998,8 @@ A.muUndo = async (t) => {
 let settingsBaseState=null;
 const settingsPopup=createSettingsDialog({beforeOpen:()=>{settingsBaseState=S.state;},dialog:$("#settingsDialog"),markup:()=>`<header class="settings-dialog-head"><div><p class="eyebrow">ALL THREE GAMES</p><h2 id="settingsDialogTitle">Settings</h2></div><button class="icon" data-act="closeSettings" aria-label="Close settings">${ICON.close||'✕'}</button></header>${V.settings({popup:true})}`,afterPaint:()=>{if(S.ui.settingsTab==='backup')storageDetail();},afterClose:scroll=>{profilePicker.close();if(settingsBaseState!==S.state)render();window.scrollTo({top:scroll,behavior:'instant'});setTimeout(safeIntro,50);}});
 A.menu = () => settingsPopup.open();
+A.addFriend=()=>{settingsPopup.close();community.add();};
+A.myCommunity=()=>{settingsPopup.close();go("#community");};
 A.closeSettings = () => settingsPopup.close();
 
 /* =========================================================
@@ -2256,7 +2282,8 @@ A.replayTour = (t) => openTour({...tourArt(),lesson:t?.dataset?.lesson||'',choos
  settingsPopup.close();
  if(key==='tabletop')A.tabletop();else go(({find:'#home',save:'#collection',scan:'#scan',build:'#decks/inspiration'})[key]||'#home');
 }});
-A.tabletop=()=>openTabletop({game:T.game(),confirm:ask,judge:game=>A.askRules({dataset:{game}})});
+const tableArtFor=createTableArtResolver(T.SOURCES);
+A.tabletop=()=>openTabletop({game:T.game(),confirm:ask,judge:game=>A.askRules({dataset:{game}}),artFor:tableArtFor});
 A.dismissGuide=t=>{markGuide(t.dataset.id);t.closest('[data-guide]')?.remove();};
 A.resetOnboarding=async()=>{if(!await ask('Reset guide history? Only tutorials will reset. Your cards, decks, account and preferences stay saved.'))return;resetOnboarding();introPending=true;toast('Guides reset. The introduction will return on Home when you finish your current task.');};
 A.helpOpen=t=>{const id=t?.dataset?.id||'start';if(!INFO_TOPICS.some(x=>x.id===id))return;S.ui.settingsTab='info';settingsPopup.open();A.settingsTab({dataset:{id:'info'}});const topic=document.getElementById('info-'+id);if(topic){topic.hidden=false;topic.open=true;topic.querySelector('summary')?.focus();topic.scrollIntoView({block:'nearest'});}};
@@ -2278,7 +2305,7 @@ A.askRules = (button) => {
   rulesGuideOrigin = origin;
 };
 A.askOpen = (options={}) => {
-  askTools ||= makeAskTools({ S, T, A, go, navigationStamp, navigationCurrent, esc, api, resolve, cacheCard, loadSetIndex, loadMetaData, metaState, MTG_META_FORMATS, allMeta: () => Object.fromEntries(Object.entries(allCachedMeta()).map(([k, v]) => [k, v.data])), priceOf, inv, meta, collectionValue, lotPrice, mtgPower, shownPower, tcgCtx,
+  askTools ||= makeAskTools({ S, T, A, go, navigationStamp, navigationCurrent, toast, esc, api, resolve, cacheCard, loadSetIndex, loadMetaData, metaState, MTG_META_FORMATS, allMeta: () => Object.fromEntries(Object.entries(allCachedMeta()).map(([k, v]) => [k, v.data])), priceOf, inv, meta, collectionValue, lotPrice, mtgPower, shownPower, tcgCtx,
     openMtgBuild: (seed, fmt, budget) => { Object.assign(S.ui.build, { baseDeck: null, seed, results: {}, msg: "", openTier: null, format: formatOf(fmt).name, custom: budget ? String(budget) : "" }); openSheet(V.buildSheet(), { type: "build" }); runBuild(); },
     openTcgBuild: async (g, id, budget, format) => { await A.tBuild({ dataset: { id, format } }); if (budget) C.tBuildCustom({ value: String(budget) }); } });
   openAsk({ game: T.game(), prefill:typeof options.query==='string'?options.query:'', tools: askTools, show: (s) => safely(askTools.open(s)) });
@@ -2541,6 +2568,7 @@ async function runAuth(t,loading,action) {
  catch(e){const message=e.message || "Couldn’t connect. Please try again.";S.ui.authFeedback={message,tone:"error"};authFeedback(document,message,"error");}
  finally{authSubmitting=false;done();}
 }
+A.togglePassword=t=>togglePassword(t,document);
 A.signPassword = t => runAuth(t,"Logging in…",async()=>{
  const email=$("#signEmail")?.value.trim() || "",password=$("#signPassword")?.value || "";
  await signInPassword(email,password);return "Signed in. Your private account is ready.";
@@ -2573,25 +2601,26 @@ A.finishPasswordReset = async (t) => {
 // Delete the account and everything synced to it (Google Play requires this in the app). Typed
 // confirmation; then the player chooses whether this device's copy goes too.
 A.deleteAccount = async (t) => {
-  const email = cloudInfo().user?.email || "your account";
+  const owner = cloudInfo().user?.id, email = cloudInfo().user?.email || "your account";
   const v = await askText(`This permanently deletes ${email} and the collection, decks and profile synced to it. It can't be undone. Type DELETE to confirm.`, "", { title: "Delete account", ok: "Delete account", danger: true });
   if (v === null) return;
   if (v.trim() !== "DELETE") return toast("Account not deleted. Type DELETE in capitals to confirm.");
+  if(owner!==cloudInfo().user?.id)return;
   const done = busy(t, "Deleting…");
   try { await deleteAccount(); }
   catch (e) { done(); return toast(e.message || "Couldn't delete the account. Try again."); }
   done();
-  if (await ask("Your account is deleted. Also erase the collection and decks saved on this device?", { ok: "Erase this device", cancel: "Keep on this device", danger: true })) {
-    await replaceWorkspace(blank(), { clearRecovery: true });
+  if (await ask("Your account is deleted. Also erase this account’s saved workspace on this device? Your guest workspace stays separate.", { ok: "Erase this device", cancel: "Keep on this device", danger: true })) {
+    await accountWorkspaces.eraseArchived(owner);
   }
   go("#home");
   toast("Your account and its synced data were deleted.");
 };
 A.signOut = async () => {
-  if (!await ask("Sign out? Your cards stay on this device; they just stop syncing.")) return;
+  if (!await ask("Sign out? Your account’s cards and profile will be hidden. They’ll be here when you sign back in.")) return;
   const result = await signOut();
   render();
-  toast(result?.synced ? "Signed out. Your cards are saved on this device and your account." : "Signed out. Account sync was not confirmed. Keep this device copy or export a backup.");
+  toast(result?.synced ? "Signed out. Your account data is saved." : "Signed out. Unsynced changes are kept for this account on this device.");
 };
 A.syncNow = () => syncNow();
 A.syncDecide = () => {
@@ -2599,10 +2628,11 @@ A.syncDecide = () => {
   if (p) openSheet(V.syncDecideSheet(p, stripCache(S.state)), { type: "sync" });
 };
 A.syncChoice = async (t) => {
-  const c = t.dataset.choice;
-  if (c === "device" && cloudInfo().pending?.cloud && !await ask("Replace your account copy with this device’s? The account copy is downloaded as a backup first.")) return;
+  const c = t.dataset.choice, pending = cloudInfo().pending;
+  if (c === "device" && pending?.cloud && !await ask("Replace your account copy with this device’s? The account copy is downloaded as a backup first.")) return;
+  if (pending !== cloudInfo().pending) return;
   closeSheet();
-  await resolvePending(c);
+  await resolvePending(c,pending);
   render();
   if (c === "account") toast("Loaded your account copy. This device’s previous data was downloaded as a backup.");
 };
@@ -2844,21 +2874,83 @@ async function submitHome(q,mode){
  if(T.isTcg()){T.ui().search.q=q;await go('#search');if(T.game()===g)A.tSearch();}
  else{S.ui.db.term=q;dbInvalidate();await go('#search');if(T.game()===g)A.dbSearch();}
 }
-A.homeSearch=()=>submitHome($('#homeQ')?.value);
+A.homeSearch=()=>submitHome($('#homeQ')?.value,'cards');
+A.homeAsk=()=>{const q=$('#homeQ')?.value||'';homeSearchController.close();A.askOpen();const input=document.querySelector('.ask-dialog .ask-input');if(input){input.value=q;input.focus();}};
 window.matchMedia?.("(min-width:1200px)").addEventListener?.("change",()=>placeGlobalSearch(T.game(),S.ui.view));
 function refreshProfileAvatar(){
  const button=document.querySelector('.topbar [data-act="menu"]');if(!button)return;
- const html=profileAvatar(S.state.settings.cardAvatar,cloudInfo().profile||{});
+ const html=accountLocked ? profileAvatar(null,{}) : profileAvatar(cloudInfo().art?.avatar||S.state.settings.cardAvatar,cloudInfo().profile||{});
  if(button.innerHTML!==html)button.innerHTML=html;
  button.classList.add('profile-menu');button.title='Profile & settings';
 }
-const profilePicker=createProfileArtPicker({lookup:homeLookup,currentGame:T.game,read:()=>S.state.settings.cardAvatar,
- save:async value=>{const crop=profileArt(value);if(!crop)throw Error('Invalid artwork');await commit(s=>{s.settings.cardAvatar=crop;},{rerender:false,enrich:false,recordDeckWork:false});},
- onSaved:()=>{refreshProfileAvatar();settingsPopup.refresh();toast('Profile photo saved.');}});
+async function saveProfileArtwork(kind,value){
+ const next=profileArt(value);if(!next)throw Error('Invalid artwork');
+ const previous={avatar:cloudInfo().art?.avatar||community.data?.art?.avatar||S.state.settings.cardAvatar||null,header:cloudInfo().art?.header||community.data?.art?.header||S.state.settings.profileHeader||null};
+ const updated={...previous,[kind]:next},owner=cloudInfo().user?.id,generation=accountGeneration;
+ if(owner)await communityRequest('save_art',updated);
+ if(accountLocked||generation!==accountGeneration||cloudInfo().user?.id!==owner)throw Error('Your account changed. The artwork was not applied to this account.');
+ try{await commit(s=>{s.settings[kind==='header'?'profileHeader':'cardAvatar']=next;},{rerender:false,enrich:false,recordDeckWork:false,guard:()=>{if(generation!==accountGeneration||cloudInfo().user?.id!==owner)throw Error('Your account changed.');return true;}});}
+ catch(error){if(owner&&cloudInfo().user?.id===owner)await communityRequest('save_art',previous).catch(()=>{});throw error;}
+}
+const artworkSaved=()=>{refreshProfileAvatar();settingsPopup.refresh();void community.refresh();toast('Profile artwork saved.');};
+const profilePicker=createProfileArtPicker({lookup:homeLookup,currentGame:T.game,read:()=>cloudInfo().art?.avatar||community.data?.art?.avatar||S.state.settings.cardAvatar,save:value=>saveProfileArtwork('avatar',value),onSaved:artworkSaved});
+const headerPicker=createProfileArtPicker({purpose:'header',lookup:homeLookup,currentGame:T.game,read:()=>cloudInfo().art?.header||community.data?.art?.header||S.state.settings.profileHeader,save:value=>saveProfileArtwork('header',value),onSaved:artworkSaved});
+const community=createCommunity({account:cloudInfo,request:communityRequest,rerender:render,active:()=>S.ui.view==='community',localArt:()=>({avatar:S.state.settings.cardAvatar,header:S.state.settings.profileHeader}),toast,
+ chooseArt:kind=>(kind==='header'?headerPicker:profilePicker).open(),editProfile:()=>{S.ui.settingsTab='account';settingsPopup.open();},signIn:()=>{S.ui.settingsTab='account';settingsPopup.open();},
+ openArt:a=>openZoom({src:a.image,alt:a.name}),
+ showcaseChoices:()=>{
+  const result=[];
+  for(const b of S.state.settings.binders||[])result.push({key:'binder:'+b.id,kind:'binder',game:b.game,title:b.title,cards:binderRows(b.game).filter(r=>binderMatches(r,b)).map(r=>({id:r.card?.id||r.entry.cardId||r.entry.printingId,name:r.entry.name,qty:r.entry.qty,image:r.image,set:r.card?.set_name||r.card?.set?.name,number:r.card?.collector_number||r.card?.set?.number,version:r.version}))});
+  for(const game of ['mtg','ptcg','ygo'])for(const d of (game==='mtg'?S.state:T.gs(game)).decks){
+   const rows=game==='mtg'?[...(d.cards||[]),...(d.side||[])]:['main','extra','side'].flatMap(z=>d.zones?.[z]||[]);
+   result.push({key:'deck:'+game+':'+d.id,kind:'deck',game,title:d.name,cards:rows.map(r=>{const c=game==='mtg'?meta(r.name):T.cardOf(game,r.cardId);return {id:c?.id||r.cardId,name:c?.name||r.name,qty:r.qty,image:cardImage(c)||c?.image,set:c?.set_name||c?.set?.name,number:c?.collector_number||c?.set?.number};})});
+  }
+  return result;
+ }});
+A.profileSource=()=>{const a=profileArt(cloudInfo().art?.avatar||community.data?.art?.avatar||S.state.settings.cardAvatar);if(a)openZoom({src:a.image,alt:a.name});else profilePicker.open();};
+A.profileHeader=()=>headerPicker.open();
+A.quickArtwork=()=>{if(!quickCard)return;const ref=quickCard;openSheet(`<div class="sheet-head"><h2>Use artwork as…</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="actions"><button class="btn" data-act="quickArtworkAvatar">Avatar</button><button class="btn ghost" data-act="quickArtworkHeader">Profile header</button></div>`,{type:"artwork-actions"});A.quickArtworkAvatar=()=>profilePicker.open({card:ref.card,game:ref.game});A.quickArtworkHeader=()=>headerPicker.open({card:ref.card,game:ref.game});};
+A.cardProfileHeader=async t=>{const ref=await resolveActionCard(t);if(ref)headerPicker.open({card:ref.card,game:ref.game});};
 A.profilePhoto=()=>profilePicker.open();
 A.cardProfilePhoto=async t=>{
  const image=zoomCardOptions(t.closest?.('.cd-art-stack')?.querySelector('[data-act="zoomCard"]')||t).src;
  const ref=await resolveActionCard(t);if(ref)profilePicker.open({card:ref.card,game:ref.game,image});
+};
+const ownedQuantityBusy=new Set();
+A.cardOwnedQty=async t=>{
+ const game=t.dataset.game,id=t.dataset.lot,delta=Number(t.dataset.delta),generation=accountGeneration;
+ if(game!==T.game()||![-1,1].includes(delta)||ownedQuantityBusy.has(id))return;
+ const workspace=game==='mtg'?S.state:S.state.tcg[game],lot=workspace?.collection.find(e=>e.id===id);if(!lot)return;
+ ownedQuantityBusy.add(id);t.disabled=true;
+ try{
+  await commit(state=>adjustOwnedLot(game==='mtg'?state:state.tcg[game],id,delta),{undo:delta<0?`−1 ${lot.name}`:'',guard:state=>!!(game==='mtg'?state:state.tcg[game])?.collection.find(e=>e.id===id)});
+  if(generation!==accountGeneration)return;
+  const group=[...document.querySelectorAll('[data-owned-group]')].find(n=>n.dataset.ownedGroup===id);
+  if(group&&!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches)group.querySelector('.owned-pill')?.animate?.([{transform:'scale(1)'},{transform:'scale(1.035)'},{transform:'scale(1)'}],{duration:240,easing:'ease-out'});
+ }finally{ownedQuantityBusy.delete(id);if(t.isConnected)t.disabled=false;}
+};
+A.cardOwnedDetails=async t=>{
+ const game=t.dataset.game,id=t.dataset.lot,generation=accountGeneration;
+ if(game!==T.game())return;const ref=await resolveActionCard(t);
+ if(ref&&generation===accountGeneration)await cardQuickMenu({quickRef:{...ref,selectedLot:id,dataset:{...ref.dataset,entry:id}}});
+};
+A.cardWishlist=async t=>{
+ const game=t.dataset.game,name=t.dataset.name,id=t.dataset.id;if(game!==T.game())return;
+ let added=false;
+ await commit(state=>{const st=game==='mtg'?state:state.tcg[game],matches=w=>game==='mtg'?key(w.name)===key(name):String(w.cardId)===String(id);
+  if(st.wishlist.some(matches))st.wishlist=st.wishlist.filter(w=>!matches(w));
+  else{st.wishlist.push({id:uid(),name,...(game==='mtg'?{finish:'nonfoil'}:{cardId:id}),qty:1,addedAt:new Date().toISOString()});added=true;}
+ },{enrich:false});toast(added?'Added to wishlist.':'Removed from wishlist.');
+};
+A.cardDeckPicker=t=>{
+ const game=t.dataset.game;if(game!==T.game())return;
+ const decks=(game==='mtg'?S.state:T.gs(game)).decks,ctx={type:'card-deck-picker',game,id:t.dataset.id,name:t.dataset.name};
+ openSheet(`<div class="sheet-head"><h2>Add to deck</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p>${esc(ctx.name)}</p>${decks.length?`<label>Deck<select id="${game==='mtg'?'toDeck':'tToDeck'}">${options(decks.map(d=>[d.id,d.name]),game==='mtg'?S.state.activeDeck:decks.at(-1).id)}</select></label><button class="btn block" data-act="cardDeckAdd">Add to deck</button>`:`<p class="muted">Create a deck first to add this card.</p><button class="btn" data-act="go" data-to="${game==='mtg'?'#decks':'#tdecks'}">Open Decks</button>`}`,ctx);
+};
+A.cardDeckAdd=async()=>{
+ const ctx=S.ui.sheetCtx;if(ctx?.type!=='card-deck-picker'||ctx.game!==T.game())return;
+ await A[ctx.game==='mtg'?'addToDeck':'tAddToDeck']({dataset:{id:ctx.id,name:ctx.name}});
+ if(S.ui.sheetCtx===ctx)A.sheetHistoryBack();
 };
 const homeSearchController=attachHomeSearch({game:T.game,lookup:homeLookup,submit:submitHome,open:async(g,c)=>{
  if(T.game()!==g)return;
@@ -2988,7 +3080,7 @@ A.ruleHint = showRuleHint;
 A.cardTab = async (t) => {
   const ctx = S.ui.sheetCtx;
   if (!["card","tcard"].includes(ctx?.type) || !["overview","meta","guide","versions","prices","rulings","legal","trade"].includes(t.dataset.tab)) return;
-  ctx.tab = t.dataset.tab;
+  ctx.tab = t.dataset.tab === "legal" ? "rulings" : t.dataset.tab;
   for (const b of $$("#sheetBody .cs-tabs [data-tab]")) {
     const on = b.dataset.tab === ctx.tab;
     b.classList.toggle("on", on);
@@ -4032,9 +4124,7 @@ C.setGlass = (t) => {
   updateAmbient();
 };
 // Tap a card image: full-screen, high-resolution, zoomable.
-A.zoomCard = (t) => openZoom({...zoomCardOptions(t),onProfilePhoto:async image=>{
- const ref=await resolveActionCard(t);if(ref)profilePicker.open({card:ref.card,game:ref.game,image});
-}});
+A.zoomCard = (t) => openZoom(zoomCardOptions(t));
 // Card sheet Meta tab: fetch tournament results, then redraw the open sheet.
 A.deckMetaLoad = (t) => {
   const p = loadMetaData(t.dataset.key).catch(() => toast("Couldn’t load tournament results right now."));
@@ -4644,8 +4734,8 @@ A.mtgProven = (t) => {
   if (t.dataset.homeMetaOpen !== undefined && !captured) return toast("This Home list has changed. Choose the current visible list.");
   // From a card's Meta tab, the deck may be from another format than the one on Meta decks.
   if (t.dataset.format && metaState("mtg:" + t.dataset.format).data) (S.ui.mtgMeta ||= {}).format = t.dataset.format;
-  const fmt = captured ? captured.metaKey.slice(4) : mtgMetaFormat(),
-    data = captured?.data || metaState("mtg:" + fmt).data,
+  const fmt = captured ? captured.metaKey.slice(4) : t.metaSnapshot?.format || mtgMetaFormat(),
+    data = captured?.data || t.metaSnapshot?.data || metaState("mtg:" + fmt).data,
     d = captured?.deck || data?.decks.find((x) => x.key === t.dataset.key);
   if (!d) return;
   const appFormat = fmt === "EDH" ? "Commander" : fmt,
@@ -5183,6 +5273,7 @@ const scannerPrintingPicker = createScannerPrintingPicker({
 const scanCtx = {
   A,
   C,
+  I,
   openSheet: (...x) => openSheet(...x),
   closeSheet: () => closeSheet(),
   addMany: (g, items) => (g === "mtg" ? mtgScanAddMany(items) : tcgCtx.scanAddMany(items, g)),
@@ -5242,12 +5333,15 @@ C.checkBackup = async (t) => {
   }
 };
 C.restoreBackup = async (t) => {
+  const owner=cloudInfo().user?.id,generation=accountGeneration;
+  const current=()=>!accountLocked&&cloudInfo().user?.id===owner&&accountGeneration===generation;
   try {
     const { next, cache } = await readBackup(t.files[0]);
     if (!await ask(`Replace everything here with ${sumQty(next.collection)} cards and ${next.decks.length} decks from the backup? The current data is kept as a recovery copy.`)) return;
+    if(!current())return;
     for (const [k, c] of Object.entries(cache)) if (!S.catalog[k]) S.catalog[k] = slim(c);
     S.catalogDirty = true;
-    await replaceWorkspace(next, { recovery: true });
+    if(await replaceWorkspace(next, { recovery: true, guard:current })===false)return;
     saveCatalogSoon();
     render();
     toast("Backup restored.");
@@ -5256,11 +5350,14 @@ C.restoreBackup = async (t) => {
   }
 };
 A.undoRestore = async () => {
+  const owner=cloudInfo().user?.id,generation=accountGeneration;
+  const current=()=>!accountLocked&&cloudInfo().user?.id===owner&&accountGeneration===generation;
   const raw = await readRecord(RECOVERY);
+  if(!current())return;
   if (!raw) return toast("No recovery copy yet.");
   const next = normalize(raw);
   if (!await ask(`Switch to the recovery copy (${sumQty(next.collection)} cards, ${next.decks.length} decks)? What you have now becomes the recovery copy.`)) return;
-  await replaceWorkspace(next, { recovery: true });
+  if(await replaceWorkspace(next, { recovery: true, guard:current })===false)return;
   render();
   toast("Recovery copy restored.");
 };
@@ -5421,28 +5518,54 @@ async function boot() {
   observeShellHeader();
   $("#app").classList.add("ready");
   initCloud({
-    accountChanged: () => { clearConditionAttempts(); conditionScheduler=createConditionRefreshScheduler(); clearAskConversations(); clearRulesConversations(); rulesGuideOrigin = null; },
+    accountChanged: () => {
+      dismissConditionInfo();
+      accountLocked=true;accountGeneration++;workspaceVisitRevision++;lastUndo=null;
+      community.reset();clearConditionAttempts();conditionScheduler=createConditionRefreshScheduler();
+      clearAskConversations();clearRulesConversations();rulesGuideOrigin=null;
+      scanCtx.accountChanged?.();profilePicker.close(true);headerPicker.close(true);
+      settingsPopup.close(false);clearGameContext();disclosureStates.clear();
+      endHold();heldTarget=null;lastActTarget=null;
+      S.ui=structuredClone(accountUiDefaults);T.resetPersonalUi();
+      for(const dialog of document.querySelectorAll('dialog[open]'))dialog.close();
+      render();
+    },
+    switchWorkspace:(owner,meta)=>queueWorkspaceWrite(async()=>{
+      const result=await accountWorkspaces.switchTo(owner,meta);
+      if(result.migrationBackup&&!isEmptyWorkspace(result.migrationBackup))download('CardStashy_Device_Before_Account_Isolation.json',JSON.stringify(backupEnvelope(result.migrationBackup)),'application/json');
+      setAccountScope(owner,result.previous);
+      S.state=result.state;conditionWorkspaceRevision++;lastUndo=null;
+      return result;
+    }),
+    accountOpened:()=>{
+      accountLocked=false;clearGameContext();
+      const game=GAMES[S.state.settings.game]?S.state.settings.game:'mtg';
+      installNavigation({game,hash:'#home',mode:'workspace',entry:makeEntry(game,'#home',activeEntry?.index||0)});
+      render();
+    },
     passwordRecovery: () => { S.ui.settingsTab = "account"; go("#settings"); },
     getState: () => stripCache(S.state),
     // Replace this device's workspace with the account copy.
-    apply: async (data) => {
-      const owner = cloudInfo().user?.id;
+    apply: async (data,{owner,current}={}) => {
+      owner ||= cloudInfo().user?.id;
       const applied = await replaceWorkspace(data, {
         recovery: (state) => !isEmptyWorkspace(state),
         // Account changes while this operation waits must not load the old account.
-        guard: () => !!owner && cloudInfo().user?.id === owner,
+        guard: () => !accountLocked && !!owner && cloudInfo().user?.id === owner && (!current || current()),
       });
-      if (!applied) return;
-      render();
+      if (!applied) return false;
+      render();refreshProfileAvatar();
       setTimeout(autoEnrich, 200);
+      return true;
     },
     backup: async (state, label, file) => {
-      await writeRecord(RECOVERY, state).catch(() => {});
+      await writeRecord(RECOVERY, state,accountStorageOptions());
       if (file) download(`CardStashy_Backup_${fileSafe(label)}_${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(backupEnvelope(state)), "application/json");
     },
     status: ([text, cls]) => setSaveStatus(text, cls),
     changed: () => {
-      if (S.ui.view === "settings") render();
+      refreshProfileAvatar();
+      if (["settings","community"].includes(S.ui.view)||settingsPopup.isOpen) render();
     },
     decide: (p) => openSheet(V.syncDecideSheet(p, stripCache(S.state)), { type: "sync" }),
   }).catch(() => {});

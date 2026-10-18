@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-v211";
+const CACHE = "cardforge-shell-v212";
 const ASSETS = [
   "./",
   "./index.html",
@@ -8,6 +8,9 @@ const ASSETS = [
   "./printing-picker.js",
   "./scanner-printing.js",
   "./app.js",
+  "./feedback-layer.js",
+  "./community-profile.js", "./account-workspaces.js", "./account-scope.js",
+  "./printing-carousel.js",
   "./settings-dialog.js",
   "./profile-art.js",
   "./pokemon-identity.js",
@@ -94,7 +97,7 @@ const ASSETS = [
   "./tour.js",
   "./home-search.js",
   "./app-info.js",
-  "./tabletop.js",
+  "./tabletop.js", "./tabletop-themes.js",
   "./tour-scenes.js",
   "./trade.js",
   "./tier.js",

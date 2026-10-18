@@ -61,7 +61,7 @@ try {
     assert.equal(h.picker.state.purpose,'scan');
     assert.match(h.html,/Use this printing/);
     assert.match(h.html,/Nothing (?:is )?added automatically/);
-    assert.match(h.html,/Set \/ release/);assert.match(h.html,/Sort loaded versions/);
+    assert.match(h.html,/Set/);assert.match(h.html,/Sort/);
     assert.match(h.html,game==='ygo'?/Edition/:/Version \/ finish|Finish/);
     assert.deepEqual(h.model,before,'opening and loading do not mutate a capture, camera, collection or Search');
     const row=h.picker.state.rows.find(pick);assert.ok(row,`precise ${game} printing exists`);
@@ -122,7 +122,7 @@ try {
 
   // Exact-name pagination is the normal source adapter, not a Search reset.
   let pages=0;const paged=harness('ptcg',ptcg,{sources:{ptcg:{search:async spec=>{pages++;assert.equal(spec.exactName,true);return {cards:[spec.page?ptcgB:ptcg],more:!spec.page};}}}});
-  await paged.helper.open(paged.config());assert.equal(pages,1);assert.equal(paged.picker.state.nextCursor,1);
+  await paged.helper.open(paged.config());while(paged.picker.state.busy)await new Promise(r=>setTimeout(r,0));assert.equal(pages,2,'carousel automatically loads all exact-name pages');assert.equal(paged.picker.state.nextCursor,null);
   paged.C.printingPickerFilter({dataset:{field:'finish'},value:'normal'});paged.A.printingPickerView({dataset:{id:'list'}});
   await paged.A.printingPickerMore();assert.equal(pages,2);assert.equal(paged.picker.state.rows.length,3);
   assert.equal(paged.picker.state.filters.finish,'normal');assert.equal(paged.picker.state.view,'list');

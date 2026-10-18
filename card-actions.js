@@ -68,7 +68,7 @@ export function attachCardGestures({ onHold, onPick, choosing, onSelect=()=>fals
 export function cardActionButtons({game, wished=false, existing=false, second=false, quantityHtml=""}={}) {
   const actions = [
     ['quickCompare','compare','Compare',second ? 'Use as the second card' : 'Choose another card while browsing'],
-    ...(!quantityHtml ? [['quickOwn','cardStack','Add to collection']] : []),
+    ['quickOwn','cardStack','Add to collection'],
     ['quickDeck','decks','Add to deck'],
     ['quickWish','heart',wished && game !== 'mtg' ? 'Remove from wishlist' : 'Add to wishlist'],
     ['quickBinder','binder',existing ? 'Move to binder' : 'Add to binder'],

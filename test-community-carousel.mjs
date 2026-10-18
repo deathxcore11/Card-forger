@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {printingNumberMatches,printingRows,printingFacets} from './printing-picker.js';
+import {printingGroups,printingCarouselHTML} from './printing-carousel.js';
+import {showcaseItem,communityPage} from './community-profile.js';
+const card={game:'ptcg',id:'cel25-23',name:"Professor's Research",set:{id:'cel25',name:'Celebrations',number:'023',total:25},rarity:'Rare',variants:[{key:'normal',label:'Normal',productId:1},{key:'holofoil',label:'Holo',productId:2}]};
+const rows=printingRows('ptcg',[card],{source:card});
+assert.equal(rows.length,2);assert.equal(printingGroups(rows).length,1,'finishes share one artwork slide but retain separate identities');
+for(const q of ['023/025','23/25','023','23'])assert(printingNumberMatches(rows[0],q),q);
+for(const q of ['023/026','123','TG23'])assert(!printingNumberMatches(rows[0],q),q);
+assert(printingNumberMatches({number:'088',total:100},'88'));assert(!printingNumberMatches({number:'188',total:100},'88'));
+const html=printingCarouselHTML({game:'ptcg',card,rows,filters:{},loaded:true,complete:true,nextCursor:null,versions:{}},rows,printingFacets(rows));
+assert.match(html,/Celebrations/);assert.match(html,/023\/25/);assert.match(html,/Choose finish/);assert.match(html,/disabled>Use this printing/,'multiple finishes require deliberate selection');assert.match(html,/data-search="true"/);
+const clean=showcaseItem({key:'deck:x',kind:'deck',game:'ptcg',title:'Friends',notes:'PRIVATE',cards:[{id:'x',name:'Card',qty:2,image:'https://example.invalid/art.jpg',manualValue:100,notes:'PRIVATE',email:'PRIVATE'}]});
+assert(!JSON.stringify(clean).includes('PRIVATE'));assert(!JSON.stringify(clean).includes('manualValue'));
+const page=communityPage({account:{user:{id:'A'},profile:{display_name:'A'}},data:{people:[{id:'B',display_name:'Pending',relationship:'pending'},{id:'C',display_name:'Friend',relationship:'accepted'}],items:[]}});
+assert.match(page,/Showcase<\/span><small>Coming soon/);assert.match(page,/Deck discussions<\/span><small>Coming soon/);assert.match(page,/data-community-person="C"/);assert.doesNotMatch(page,/data-community-person="B"/);
+console.log('PASS: normalized collector fractions, exact number prefixes, grouped finish identities, explicit finish choice, private showcase fields and accepted-friend-only profiles');

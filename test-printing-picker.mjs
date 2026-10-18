@@ -87,7 +87,7 @@ try {
  const parent=context,search={q:'unchanged',f:{owned:'only',max:7},page:4,sort:'name'},searchBefore=structuredClone(search);
  const A={},C={},I={},body={scrollTop:0,contains:()=>false,querySelector:()=>null,querySelectorAll:()=>[]};
  const controller=createPrintingPicker({A,C,I,getContext:()=>context,getBody:()=>body,openSheet:(next,ctx,scroll)=>{html=next;context=ctx;body.scrollTop=scroll;},back:()=>{backCalls++;context=parent;}});
- const base={game:'mtg',card:mtg,parentContext:parent,onSelect:(selection,ctx)=>{assert.equal(context,parent,'restore parent before applying exact selection');selected=selection;callbackCtx=ctx;},onCancel:()=>cancelCalls++};
+ const base={view:'grid',game:'mtg',card:mtg,parentContext:parent,onSelect:(selection,ctx)=>{assert.equal(context,parent,'restore parent before applying exact selection');selected=selection;callbackCtx=ctx;},onCancel:()=>cancelCalls++};
  let resolveFirst,resolveSecond;
  const pending=controller.open({...base,loadPage:({cursor})=>new Promise(resolve=>{if(cursor===null)resolveFirst=resolve;else resolveSecond=resolve;})});
  assert.equal(context.type,'printing-picker');assert.equal(controller.state.busy,true);assert.match(html,/aria-busy="true"/);
