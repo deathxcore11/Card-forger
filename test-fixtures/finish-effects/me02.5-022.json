@@ -1,0 +1,71 @@
+{
+  "category": "Pokemon",
+  "id": "me02.5-022",
+  "illustrator": "aky CG Works",
+  "image": "https://assets.tcgdex.net/en/me/me02.5/022",
+  "localId": "022",
+  "name": "Mega Charizard Y ex",
+  "rarity": "Double rare",
+  "set": {
+    "cardCount": {
+      "official": 217,
+      "total": 295
+    },
+    "id": "me02.5",
+    "logo": "https://assets.tcgdex.net/en/me/me02.5/logo",
+    "name": "Ascended Heroes",
+    "symbol": "https://assets.tcgdex.net/univ/me/me02.5/symbol"
+  },
+  "variants": {
+    "firstEdition": false,
+    "holo": true,
+    "normal": false,
+    "reverse": false,
+    "wPromo": false
+  },
+  "variants_detailed": [
+    {
+      "type": "holo",
+      "size": "standard",
+      "thirdParty": {
+        "cardmarket": 869633,
+        "tcgplayer": 675834
+      },
+      "variantId": "jr7oetx1mqug9"
+    }
+  ],
+  "dexId": [
+    6
+  ],
+  "hp": 360,
+  "types": [
+    "Fire"
+  ],
+  "evolveFrom": "Charmeleon",
+  "stage": "Stage2",
+  "suffix": "ex",
+  "attacks": [
+    {
+      "cost": [
+        "Fire",
+        "Fire",
+        "Colorless"
+      ],
+      "name": "Explosion Y",
+      "effect": "Discard 3 Energy from this Pok\u00e9mon, and this attack does 280 damage to 1 of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)"
+    }
+  ],
+  "weaknesses": [
+    {
+      "type": "Water",
+      "value": "\u00d72"
+    }
+  ],
+  "retreat": 1,
+  "regulationMark": "J",
+  "legal": {
+    "standard": true,
+    "expanded": true
+  },
+  "updated": "2026-07-24T18:21:48+01:00"
+}

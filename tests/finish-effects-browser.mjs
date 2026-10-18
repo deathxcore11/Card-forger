@@ -54,9 +54,9 @@ try{for(const game of ['mtg','ptcg','ygo']){
    await capture(page,'finish-effects-mtg-gyro-light');
   }
   // Controls alter preview state only; a deliberate toggle never changes ownership.
-  await preview.locator('[data-finish-toggle]').click();assert.equal(await page.locator('#sheet .finish-overlay').count(),0);
+  await page.evaluate(async()=>{const f=await import('/finish-preview.js');f.setFinishEffects(!f.finishEffectsOn());});assert.equal(await page.locator('#sheet .finish-overlay').count(),0);
   assert.equal(await page.evaluate(()=>JSON.stringify((c=>[c.type,c.game,c.id,c.print?.id,c.priceFinish,c.setVariant,c.priceEdition,c.priceYgoEdition])(window.__uiTestState.ui.sheetCtx))),selection);
-  await preview.locator('[data-finish-toggle]').click();
+  await page.evaluate(async()=>{const f=await import('/finish-preview.js');f.setFinishEffects(!f.finishEffectsOn());});
   await page.emulateMedia({reducedMotion:'reduce'});await page.waitForFunction(()=>!document.querySelector('#sheet .finish-overlay'));
   await page.emulateMedia({reducedMotion:'no-preference'});
   assert.equal(await inventorySnapshot(page),before,'Finish preview does not edit collection, private prices or decks');

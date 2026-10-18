@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-v214";
+const CACHE = "cardforge-shell-v215";
 const ASSETS = [
   "./",
   "./index.html",
@@ -12,6 +12,7 @@ const ASSETS = [
   "./scryfall-client.js",
   "./feedback-layer.js",
   "./deck-box.js",
+  "./shared-deck-view.js",
   "./finish-preview.js",
   "./finish-effects.js",
   "./card-detail-extras.js",

@@ -1,3 +1,5 @@
+import {sharedBinderRows} from './community-profile.js';
+import {setFinishEffects} from './finish-preview.js';
 import {createScryfallClient} from './scryfall-client.js';
 import {selectPreviewFinish} from './finish-preview.js';
 import {deckBoxFields,readDeckBox,createDeckBoxTransitions} from './deck-box.js';
@@ -49,7 +51,7 @@ import { locationPicker, rememberLocation, chooseLocation } from "./collection-l
 import { captureAuthFields, restoreAuthFields, authFeedback, togglePassword } from "./auth-form.js";
 import { formatUpgrades, applyFormatSwap } from "./format-upgrades.js";
 import { cutToTarget } from "./deck-safety.js";
-import { binderPage, binderMatches, BINDER_COLORS, attachBinderDrag, animateTurn, binderFavorites, MAX_FAVORITES } from "./binders.js";
+import { binderPage, binderMatches, BINDER_COLORS, attachBinderDrag, animateTurn, binderFavorites, coverImages, MAX_FAVORITES } from "./binders.js";
 // CardStashy controller: persistence, routing, sheets and every user action.
 // Screens live in views.js; deck/collection math in core.js, planner.js,
 // strategy.js, deck-flow.js and insights.js.
@@ -170,7 +172,7 @@ function decorateShell() {
   for (const b of $$(".bottom-nav [data-nav]")) {
     const span = b.querySelector("span");
     if(span&&b.dataset.nav==="search")span.innerHTML=searchEmblem();
-    else if(span&&b.dataset.nav==="community")span.innerHTML='<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 5v1"/></svg>';
+    else if(span&&b.dataset.nav==="community")span.innerHTML='<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 5v1"/></svg>';
     else if (span && ICON[b.dataset.nav]) span.innerHTML = ICON[b.dataset.nav];
   }
   const gear = $('.topbar [data-act="menu"]');
@@ -1565,7 +1567,7 @@ const tierSync = () => {
 if (typeof MutationObserver !== "undefined") new MutationObserver(() => { if (!tierQueued) { tierQueued = true; requestAnimationFrame(tierSync); } }).observe(document.body, { childList: true, subtree: true });
 attachRuleLearning();
 const dismissConditionInfo=attachConditionInfo();
-attachSuggest();
+attachSuggest({lookup:homeLookup});
 attachGlassSelects();
 configureConditionAuth(cloudAccessToken);
 let conditionScheduler=createConditionRefreshScheduler();
@@ -1821,6 +1823,7 @@ function binderRows(game, location = null) {
 }
 const binderById = id => (S.state.settings.binders || []).find(b=>b.id===id);
 function showBinder(data,direction="next",keepScroll=false) {
+  if(data.sharedItem){const item=data.sharedItem,rows=sharedBinderRows(item);data.page=Math.max(0,Math.min(Math.max(0,Math.ceil(rows.length/9)-1),data.page));openSheet(binderPage(rows,item.title,data.page,direction,{color:item.appearance?.color},{readOnly:true,cardAttrs:r=>`data-act="sharedCard" data-index="${r.index}"`}),data,keepScroll?$("#sheetBody").scrollTop:0);return;}
   const b=binderById(data.binder), rows=b?binderRows(b.game).filter(r=>binderMatches(r,b)):binderRows(data.game,data.location);
   data.page=Math.max(0,Math.min(Math.max(0,Math.ceil(rows.length/9)-1),data.page));
   openSheet(binderPage(rows,b?.title || data.location || "Unsorted cards",data.page,direction,b),data,keepScroll?$("#sheetBody").scrollTop:0);
@@ -2868,15 +2871,37 @@ const community=createCommunity({account:cloudInfo,request:communityRequest,rere
  editItem:async item=>{const generation=accountGeneration;if(accountLocked)return;await navigate({game:item.game,hash:item.kind==='binder'?'#collection':item.game==='mtg'?'#deck/'+item.key.slice(('deck:'+item.game+':').length)+'/cards':'#tdeck/'+item.key.slice(('deck:'+item.game+':').length),mode:'push'});if(generation!==accountGeneration||T.game()!==item.game)return;if(item.kind==='binder')A.editBinder({dataset:{binder:item.key.slice(7)}});},
  chooseArt:kind=>(kind==='header'?headerPicker:profilePicker).open(),editProfile:()=>{community.close();S.ui.settingsTab='account';settingsPopup.open();},signIn:()=>{S.ui.settingsTab='account';settingsPopup.open();},
  openArt:a=>openZoom({src:a.image,alt:a.name}),
+ openShared:openSharedShowcase,
  showcaseChoices:()=>{
   const result=[];
-  for(const b of S.state.settings.binders||[])result.push({key:'binder:'+b.id,kind:'binder',game:b.game,title:b.title,cards:binderRows(b.game).filter(r=>binderMatches(r,b)).map(r=>({id:r.card?.id||r.entry.cardId||r.entry.printingId,name:r.entry.name,qty:r.entry.qty,image:r.image,set:r.card?.set_name||r.card?.set?.name,number:r.card?.collector_number||r.card?.set?.number,version:r.version,referenceUSD:r.card?.prices?.usd??null}))});
+  for(const b of S.state.settings.binders||[])result.push({key:'binder:'+b.id,kind:'binder',game:b.game,title:b.title,appearance:{color:b.color,background:b.background,cover:coverImages(binderRows(b.game).filter(r=>binderMatches(r,b)),binderFavorites(b)).map(c=>c.image)},cards:binderRows(b.game).filter(r=>binderMatches(r,b)).map(r=>({id:r.card?.id||r.entry.cardId||r.entry.printingId,name:r.entry.name,qty:r.entry.qty,image:r.image,set:r.card?.set_name||r.card?.set?.name,number:r.card?.collector_number||r.card?.set?.number,version:r.version,referenceUSD:r.card?.prices?.usd??null}))});
   for(const game of ['mtg','ptcg','ygo'])for(const d of (game==='mtg'?S.state:T.gs(game)).decks){
    const rows=game==='mtg'?[...(d.cards||[]).map(r=>({...r,zone:'main'})),...(d.side||[]).map(r=>({...r,zone:'side'}))]:['main','extra','side'].flatMap(z=>(d.zones?.[z]||[]).map(r=>({...r,zone:z})));
-   result.push({key:'deck:'+game+':'+d.id,kind:'deck',game,title:d.name,format:d.format,commander:d.commander,deckSchema:1,cards:rows.map(r=>{const c=game==='mtg'?meta(r.name):T.cardOf(game,r.cardId);return {id:c?.id||r.cardId,name:c?.name||r.name,qty:r.qty,image:cardImage(c)||c?.image,set:c?.set_name||c?.set?.name,number:c?.collector_number||c?.set?.number,zone:r.zone};})});
+   result.push({key:'deck:'+game+':'+d.id,kind:'deck',game,title:d.name,format:d.format,commander:d.commander,deckSchema:1,appearance:d.boxAppearance,cards:rows.map(r=>{const c=game==='mtg'?meta(r.name):T.cardOf(game,r.cardId);return {id:c?.id||r.cardId,name:c?.name||r.name,qty:r.qty,image:cardImage(c)||c?.image,set:c?.set_name||c?.set?.name,number:c?.collector_number||c?.set?.number,zone:r.zone};})});
   }
   return result;
  }});
+async function openSharedShowcase(item,profileDialog){
+ const who=cloudInfo().user?.id,generation=accountGeneration;
+ if(T.game()!==item.game){profileDialog?.close();if(settingsPopup.isOpen){settingsPopup.close(false);const state={...history.state};delete state.cardstashySettings;history.replaceState(state,'',location.href);}if(BROWSE_TYPES.has(S.ui.sheetCtx?.type))closeSheet(false);try{await navigate({game:item.game,hash:'#community',mode:'push'});}finally{if(profileDialog?.isConnected&&who===cloudInfo().user?.id&&!profileDialog.open)profileDialog.showModal();}}
+ if(generation!==accountGeneration||who!==cloudInfo().user?.id||T.game()!==item.game)return;
+ if(item.kind==='binder'){showBinder({type:'binder',game:item.game,binder:item.key,sharedItem:item,page:0});return;}
+ await tcgCtx.openProven({g:item.game,key:item.key,title:item.title,sharedItem:item,rows:item.cards.map((c,i)=>({key:String(i),name:c.name,qty:c.qty,owned:0,price:c.referenceUSD})),save:async()=>{
+  if(!who||accountLocked||generation!==accountGeneration||who!==cloudInfo().user?.id)throw Error('Your account changed. Please try again.');
+  const deck=sharedDeckCopy(item,uid());await commit(state=>{(item.game==='mtg'?state:state.tcg[item.game]).decks.push(deck);},{enrich:false,guard:()=>{if(!who||accountLocked||generation!==accountGeneration||who!==cloudInfo().user?.id)throw Error('Your account changed.');return true;}});toast('Saved to My decks. Your copy is ready to edit.');
+ }});
+}
+A.sharedCard=async t=>{
+ const ctx=S.ui.sheetCtx,item=ctx?.sharedItem||(ctx?.type==='proven'?T.proven.spec?.sharedItem:null),c=item?.cards[Number(t.dataset.index)];
+ if(!c||item.game!==T.game())return;
+ const generation=accountGeneration;
+ if(item.game==='mtg'){
+  let printing=Object.values(S.state.printings||{}).find(p=>p.id===c.id)||Object.values(S.catalog||{}).find(p=>p.id===c.id);
+  if(!printing&&c.id)try{printing=slim(await api('/cards/'+encodeURIComponent(c.id)));}catch{}
+  if(generation!==accountGeneration||S.ui.sheetCtx!==ctx||!$('#sheet').open)return;
+  await A.card({dataset:{name:c.name},printing});
+ }else await A.tCard({dataset:{id:c.id}});
+};
 let communityNoticeChecked=0;
 const checkCommunityNotices=()=>{if(document.hidden||accountLocked||!cloudInfo().user||Date.now()-communityNoticeChecked<30000)return;communityNoticeChecked=Date.now();void community.refresh();};
 window.addEventListener('focus',checkCommunityNotices);document.addEventListener('visibilitychange',checkCommunityNotices);
@@ -5408,6 +5433,7 @@ onAlert((f) => {
     if (globalThis.Notification?.permission === "granted") new Notification("CardStashy price alert", { body: alertText(f), icon: "icon-192.png", tag: `${f.game}:${f.id}` });
   } catch {}
 });
+C.setFinishEffects = t => setFinishEffects(t.checked);
 C.setHaptics = (t) => {
   setHaptics(t.checked);
   if (t.checked) haptic("success");

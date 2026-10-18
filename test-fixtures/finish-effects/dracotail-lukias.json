@@ -1,0 +1,60 @@
+{
+  "id": 75003700,
+  "name": "Dracotail Lukias",
+  "typeline": [
+    "Spellcaster",
+    "Effect"
+  ],
+  "type": "Effect Monster",
+  "humanReadableCardType": "Effect Monster",
+  "frameType": "effect",
+  "desc": "If this card is Normal or Special Summoned: You can add 1 \"Dracotail\" monster from your Deck to your hand, except \"Dracotail Lukias\". If this card is sent to the GY as material for a Fusion Summon: You can Set 1 \"Dracotail\" Spell/Trap from your Deck. You can only use each effect of \"Dracotail Lukias\" once per turn.",
+  "race": "Spellcaster",
+  "atk": 1800,
+  "def": 700,
+  "level": 4,
+  "attribute": "EARTH",
+  "archetype": "Dracotail",
+  "ygoprodeck_url": "https://ygoprodeck.com/card/dracotail-lukias-14992",
+  "card_sets": [
+    {
+      "set_name": "Justice Hunters",
+      "set_code": "JUSH-EN001",
+      "set_rarity": "Collector's Rare",
+      "set_rarity_code": "(CR)",
+      "set_price": "0"
+    },
+    {
+      "set_name": "Justice Hunters",
+      "set_code": "JUSH-EN001",
+      "set_rarity": "Starlight Rare",
+      "set_rarity_code": "(StR)",
+      "set_price": "0"
+    },
+    {
+      "set_name": "Justice Hunters",
+      "set_code": "JUSH-EN001",
+      "set_rarity": "Ultra Rare",
+      "set_rarity_code": "(UR)",
+      "set_price": "0"
+    },
+    {
+      "set_name": "Magnificent Monsters",
+      "set_code": "MAMO-EN061",
+      "set_rarity": "Ultra Rare",
+      "set_rarity_code": "(UR)",
+      "set_price": "0"
+    }
+  ],
+  "banlist_info": {
+    "ban_tcg": "Semi-Limited"
+  },
+  "card_images": [
+    {
+      "id": 75003700,
+      "image_url": "https://images.ygoprodeck.com/images/cards/75003700.jpg",
+      "image_url_small": "https://images.ygoprodeck.com/images/cards_small/75003700.jpg",
+      "image_url_cropped": "https://images.ygoprodeck.com/images/cards_cropped/75003700.jpg"
+    }
+  ]
+}

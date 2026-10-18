@@ -4551,3 +4551,32 @@ body.glass .cs-tabs button:not(.on):not([aria-selected="true"]) {background:tran
 
 /* Finish previews follow verified printing availability, independently of ownership. */
 /* Printing-aware finish styling is in finish-effects.css. */
+
+/* Flowing deck headers reserve space for the opening box, even with wrapped stats. */
+.deck-tile,.deck-tile.wide{height:auto;min-height:210px;display:flex;flex-direction:column;justify-content:space-between;padding:16px 12px 12px;gap:20px}
+.deck-tile .tile-top,.deck-tile .tile-body{position:relative;inset:auto;width:100%;z-index:1}
+.deck-tile .tile-top{min-height:66px;align-items:flex-start}
+.deck-format-stack{flex-direction:row;align-items:center;gap:12px;min-width:0}
+.deck-format-stack .deck-box{order:-1;margin-top:10px}
+.deck-tile .tile-art{position:absolute;inset:0;overflow:hidden}
+.deck-tile .tile-body{margin-top:auto}
+.deck-tile .tile-body>b{white-space:normal;line-height:1.25;overflow-wrap:anywhere}
+.deck-box-case{overflow:hidden}.deck-box-lid{transform-origin:50% 10%;backface-visibility:visible}
+.suggest.home-suggestions{border-radius:22px;padding:8px;max-height:min(450px,55dvh);}
+.suggest .suggest-name{display:block;width:100%;min-height:44px;border:0;background:transparent;color:var(--text);text-align:left;padding:10px;border-radius:12px}
+.suggest .on,.suggest [aria-selected="true"]{background:color-mix(in srgb,var(--accent) 16%,var(--surface));border-color:var(--accent)}
+/* Restore the assistant's moving color field, with a palette for each game. */
+.ask-launch{--ask-a:#d7a443;--ask-b:#d07762;--ask-c:#8d67aa;background:linear-gradient(115deg,var(--ask-a),var(--ask-b),var(--ask-c),var(--ask-a));background-size:300% 100%;animation:ask-shimmer 6s ease-in-out infinite;color:#11141a;border-color:color-mix(in srgb,var(--ask-a) 60%,transparent);box-shadow:0 4px 18px color-mix(in srgb,var(--ask-a) 22%,transparent)}
+body[data-game="ptcg"] .ask-launch{--ask-a:#ff9479;--ask-b:#e6bd55;--ask-c:#82c7c1}
+body[data-game="ygo"] .ask-launch{--ask-a:#b697ef;--ask-b:#697db5;--ask-c:#dbb269}
+@media(prefers-reduced-motion:reduce){.ask-launch{animation:none}}
+
+.community-native-item{background:transparent;border:0;padding:0;text-align:left;overflow:visible}
+.community-native-item>.stash-binder{width:100%;margin:0}
+.community-native-item .community-item-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-start;padding:12px 0}
+.community-showcase-grid:has(.deck-tile){grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))}
+.community-dialog footer{flex-wrap:wrap;align-items:center;gap:12px}
+.community-dialog footer .btn{flex:none;min-height:44px;align-self:center}
+.shared-deck-title{align-items:center;gap:20px}.shared-deck-title>.deck-box{margin:14px 8px 0}
+.shared-deck-section .list-head{display:flex;justify-content:space-between}
+.community-profile-header{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 16%,var(--surface)),var(--surface-2))}

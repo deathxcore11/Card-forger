@@ -16,14 +16,18 @@ export const FINISH_MASKS = Object.freeze({
  // Conservative known reverse-foil field. E-reader strips/frame are deliberately excluded.
  'pk-expedition-field':'inset(51.5% 4% 14% 12%)',
  'pk-base-art':'polygon(24% 11.8%,89.8% 11.8%,89.8% 51.6%,10.8% 51.6%,10.8% 18%,19% 18%,24% 14%)',
+ 'pk-cel-art':'inset(9.5% 6.6% 51.3% 6.6%)',
+ 'pk-standard-art':'inset(12.3% 8.2% 47.5% 8.2%)',
+ 'pk-standard-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,8.2% 12.3%,8.2% 52.5%,91.8% 52.5%,91.8% 12.3%,8.2% 12.3%)',
+ 'pk-trainer-art':'inset(18% 8.2% 40% 8.2%)',
  'pk-sv-art':'inset(9.8% 7.8% 52.5% 7.8%)',
  'pk-sv-surround':'polygon(evenodd, 5.5% 3%,94.5% 3%,94.5% 97%,5.5% 97%,5.5% 3%,7% 9.2%,7% 50.5%,93% 50.5%,93% 9.2%,7% 9.2%)',
  'mtg-frame':'polygon(evenodd, 3% 2%,97% 2%,97% 98%,3% 98%,3% 2%,9% 12%,9% 54%,91% 54%,91% 12%,9% 12%,9% 60%,9% 90%,91% 90%,91% 60%,9% 60%)',
- 'ygo-art':'inset(22% 12% 31% 12%)',
+ 'ygo-art':'inset(18.5% 11.8% 29.7% 11.8%)',
  'ygo-name':'inset(5.5% 18% 88.4% 8%)',
- 'ygo-broad':'polygon(evenodd, 2% 1.5%,98% 1.5%,98% 98.5%,2% 98.5%,2% 1.5%,8% 73%,8% 92%,92% 92%,92% 73%,8% 73%)',
+ 'ygo-broad':'inset(2.3% 3.2% round 1%)',
 });
-export const FINISH_MATERIALS = Object.freeze(['holo','rainbow','metal','silver','gold','secret','prismatic','starlight','tiles']);
+export const FINISH_MATERIALS = Object.freeze(['holo','rainbow','metal','silver','gold','secret','prismatic','starlight','tiles','micro']);
 const layer=(mask,material)=>({mask,material});
 const unknown=(key='',label='')=>({key,label,effect:'unknown',status:'unknown',layers:[],source:'',reason:'Finish preview unavailable for this printing.'});
 const preset=(key,label,effect,layers,source,status='approximate')=>({key,label,effect,layers,source,status,reason:status==='approximate'?'Simulated finish · approximate coverage':''});
@@ -68,9 +72,21 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
   // Base Set standard holo Pokemon have this illustration-only layout. Exclude promos/reprints.
   if(set==='base1'&&/^base1-(?:[1-9]|1[0-6])$/.test(c.id)&&physicalFinish==='holofoil')return preset(key,label,'ptcg-holo',[layer('pk-base-art','holo')],FINISH_SOURCES.base);
   // Deliberately bounded to the base Scarlet & Violet expansion, whose publisher guide is cited.
-  if(['sv01','sv1'].includes(set)&&physicalFinish==='holofoil'&&['illustrationrare','specialillustrationrare','ultrarare','hyperrare'].includes(rarity))return preset(key,label,'ptcg-full-art',[layer('card','rainbow')],FINISH_SOURCES.pokemon);
   if(['sv01','sv1'].includes(set)&&category==='pokemon'&&physicalFinish==='reverse-holofoil'&&['common','uncommon','rare'].includes(rarity))return preset(key,label,'ptcg-reverse',[layer('pk-sv-surround','tiles')],FINISH_SOURCES.pokemon);
-  // Other eras, ex/Tera, stamped variants and unknown layouts stay readable until calibrated.
+  // Finish availability is still source-supplied. Layout identifies where that
+  // known finish catches the light; it never adds a variant or a price.
+  const fullArt=/fullart|illustration|rainbow|shinyvmax|shinyv|secret|hyperrare|ultrarare/.test(rarity)||/^(vmax|vstar)$/i.test(c.stage||'')||/\s(?:V|GX|EX|ex|VMAX|VSTAR|V-UNION)$/.test(c.name||'');
+  if(physicalFinish==='holofoil'&&fullArt){
+   const textured=/specialillustration|shiny.*vmax|rainbow|fullart|ultrarare|rareultra|hyperrare/.test(rarity)||/^vmax$/i.test(c.stage||'');
+   const gold=/^(sv|me)/i.test(set)&&rarity==='hyperrare';
+   return {...preset(key,label,'ptcg-full-art',[layer('card',gold?'gold':'rainbow'),...(textured?[layer('card','micro')]:[])],FINISH_SOURCES.pokemon),coverage:'full',texture:textured?'micro-ridges':'smooth'};
+  }
+  const modern=/^(?:swsh|sm|xy|bw|dp|pl|hgss|sv)/i.test(set)||set==='cel25';
+  if(modern&&category==='pokemon'){
+   if(physicalFinish==='holofoil')return preset(key,label,'ptcg-holo',[layer(set==='cel25'?'pk-cel-art':/^sv/i.test(set)?'pk-sv-art':'pk-standard-art','holo')],FINISH_SOURCES.pokemon);
+   if(physicalFinish==='reverse-holofoil')return preset(key,label,'ptcg-reverse',[layer(/^sv/i.test(set)?'pk-sv-surround':'pk-standard-surround',/^sv/i.test(set)?'tiles':'rainbow')],FINISH_SOURCES.pokemon);
+  }
+  // Trainer and unusual layouts remain unmasked until their geometry is known.
   return unknown(key,label);
  }
  const rarity=norm(key);
@@ -78,7 +94,7 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
  if(/quartercentury|ghost|ultimate|collector|gold|parallel/.test(rarity))return unknown(key,label);
  if(/pendulum|rush|token|skill/i.test(`${c.typeLine||''} ${c.type||''} ${c.frame||''}`))return unknown(key,label);
  const name=material=>layer('ygo-name',material),art=material=>layer('ygo-art',material);
- const specs={rare:['ygo-rare',[name('silver')]],superrare:['ygo-super',[art('holo')]],ultrarare:['ygo-ultra',[art('holo'),name('gold')]],secretrare:['ygo-secret',[art('secret'),name('rainbow')]],prismaticsecretrare:['ygo-prismatic',[art('prismatic'),name('rainbow')]],starlightrare:['ygo-starlight',[layer('ygo-broad','starlight'),name('rainbow')]]};
+ const specs={rare:['ygo-rare',[name('silver')]],superrare:['ygo-super',[art('holo')]],ultrarare:['ygo-ultra',[art('holo'),name('gold')]],secretrare:['ygo-secret',[art('secret'),name('rainbow')]],prismaticsecretrare:['ygo-prismatic',[art('prismatic'),name('rainbow')]],starlightrare:['ygo-starlight',[layer('ygo-broad','starlight')]]};
  const spec=specs[rarity];
  return spec?preset(key,label,...spec,FINISH_SOURCES.ygo):unknown(key,label);
 }

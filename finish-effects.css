@@ -34,3 +34,20 @@
 :is(.view-compact,.view-symbols) .finish-overlay{display:none!important}
 :is(.view-compact,.view-symbols) .lot-art::after{background:none!important;animation:none!important}
 @media(prefers-reduced-motion:reduce){.finish-overlay{display:none!important}.zoom-card-surface{transition:none!important}}
+
+/* A neutral, soft lamp travels with the existing pointer/gyro coordinates.
+   It is available on every enlarged card, independently of finish metadata. */
+.finish-spotlight{position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:radial-gradient(ellipse at var(--mx,50%) var(--my,50%),rgba(255,255,255,.46) 0%,rgba(245,249,255,.18) 18%,transparent 55%);mix-blend-mode:screen;opacity:.65}
+.shine-once .finish-spotlight{animation:finish-catch 1.1s ease-out}
+@keyframes finish-catch{0%{opacity:0;transform:translateX(-35%)}55%{opacity:.9}100%{opacity:.65;transform:translateX(0)}}
+[data-finish-effect^="ptcg-"] .finish-layer{opacity:.32}
+[data-finish-effect^="ptcg-"] .finish-auto .finish-layer{opacity:.3}
+[data-finish-effect^="ptcg-"].tilting .finish-layer{opacity:.44}
+/* Fine starlight travels across the whole face, without a rectangular cutout. */
+.finish-starlight{opacity:.29;background-size:100% 100%;}
+.tilting .finish-starlight{opacity:.38}
+/* Feather the name glint; never paint an opaque rectangle over lettering. */
+.finish-silver,.finish-gold{mask-image:linear-gradient(transparent,#000 30%,#000 65%,transparent);opacity:.18}
+@media(prefers-reduced-motion:reduce){.finish-spotlight{animation:none}}
+
+.finish-micro{background-image:repeating-linear-gradient(32deg,transparent 0 1.4px,#d4e7ff99 1.4px 1.8px,transparent 1.8px 3px);background-size:100% 100%;mask-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#000 0%,#0005 28%,transparent 66%);mix-blend-mode:soft-light;opacity:.25}

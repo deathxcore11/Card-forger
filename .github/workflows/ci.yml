@@ -370,7 +370,9 @@ jobs:
       - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
       - run: npx playwright install --with-deps chromium
       - name: Check finish controls across phone, foldable, tablet and desktop widths
-        run: node tests/finish-effects-browser.mjs
+        run: |
+          node tests/finish-effects-browser.mjs
+          node tests/visual-repair-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

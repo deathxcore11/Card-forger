@@ -1,3 +1,4 @@
+import {sharedDeckSheet} from './shared-deck-view.js';
 import {finishAttrs,finishPreview,finishArtworkCard} from './finish-preview.js';
 import {deckBoxMarkup,deckBoxFields,readDeckBox} from './deck-box.js';
 import {detailSetProgress,miniPrintingMarkup} from './card-detail-extras.js';
@@ -1191,6 +1192,7 @@ export function provenModel(spec) {
 export function provenSheetHtml() {
   const base = proven.spec;
   if (!base) return "";
+  if(base.sharedItem){proven.current=base;return sharedDeckSheet(base);}
   const loading = provenLoads.get(base);
   if (loading) Object.assign(proven, { busy: loading.busy, msg: loading.msg });
   const spec = { ...base, rows: base.rowsFn ? base.rowsFn() : base.rows, lists: base.listsFn ? base.listsFn() : base.lists };

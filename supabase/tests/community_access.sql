@@ -56,6 +56,11 @@ select pg_temp.assert_true(jsonb_array_length(public.community_action('overview'
 select set_config('request.jwt.claim.sub',a::text,true) from community_test_ids;
 do $$declare target uuid;begin select b into target from community_test_ids;begin perform public.community_action('request',jsonb_build_object('target',target));raise exception 'FAILED: blocked request allowed';exception when insufficient_privilege then null;end;begin perform public.community_action('profile',jsonb_build_object('target',target));raise exception 'FAILED: blocked profile opened';exception when insufficient_privilege then null;end;end$$;
 select pg_temp.assert_true(public.community_action('lookup',jsonb_build_object('query','qa-b-'||b||'@example.invalid'))->'person'='null'::jsonb,'block removes lookup') from community_test_ids;
+select public.community_action('share','{"item":{"key":"binder:appearance","kind":"binder","game":"ptcg","title":"Public cover","presentationSchema":1,"appearance":{"color":"#123abc","image":"javascript:alert(1)","background":"https://example.invalid/back.png","cover":["https://example.invalid/card.png","javascript:alert(1)"],"notes":"PRIVATE_APPEARANCE"},"cards":[]}}');
+select pg_temp.assert_true((public.community_action('overview')->'items'->0->'appearance'->>'color')='#123abc','public cover color preserved');
+select pg_temp.assert_true((public.community_action('overview')->'items'->0->'appearance'->>'image')='','unsafe cover image rejected');
+select pg_temp.assert_true(jsonb_array_length(public.community_action('overview')->'items'->0->'appearance'->'cover')=1,'only public image URLs shared');
+select pg_temp.assert_true(position('PRIVATE_APPEARANCE' in public.community_action('overview')::text)=0,'appearance private fields stripped');
 reset role;
 select pg_temp.assert_true(not has_function_privilege('anon','public.community_action(text,jsonb)','EXECUTE'),'anonymous RPC denied');
 select pg_temp.assert_true(not has_table_privilege('anon','public.workspaces','SELECT'),'anonymous workspace access denied');

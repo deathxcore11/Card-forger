@@ -26,7 +26,7 @@ const sv={id:'sv01-001',game:'ptcg',set:{id:'sv01'},category:'Pokemon',rarity:'C
 assert.equal(finishEffect('ptcg',sv,{priceFinish:'reverse-holofoil'}),'ptcg-reverse');
 assert.equal(finishEffect('ptcg',{...sv,category:'Trainer'},{priceFinish:'reverse-holofoil'}),'unknown');
 assert.equal(finishEffect('ptcg',{...sv,id:'sv01-199',rarity:'Illustration Rare'},{priceFinish:'holofoil'}),'ptcg-full-art');
-assert.equal(finishEffect('ptcg',{...sv,rarity:'Full Art'},{priceFinish:'holofoil'}),'unknown','Full art alone cannot manufacture foil/texture');
+assert.equal(finishEffect('ptcg',{...sv,rarity:'Full Art'},{priceFinish:'holofoil'}),'ptcg-full-art','Full art layout applies only after explicit holo availability');
 assert(finishChoices('ptcg',sv).some(x=>x.key==='firstEdition'&&x.status==='unknown'));
 assert.deepEqual(finishChoices('ptcg',sv,{setId:'wrong'}),[]);
 assert.equal(finishEffect('ptcg',sv,{priceFinish:'reference'}),'unknown');
@@ -67,13 +67,13 @@ assert.equal(containedImageBox(0,0,0,0),null);
 const el=(view,mode)=>({dataset:{finishSurface:view},closest:s=>s==='[hidden]'?null:s==='.view-gallery'&&mode==='gallery'?{}:s==='.view-compact,.view-symbols'&&mode!=='gallery'?{}:null});
 for(const mode of ['compact','symbols'])assert.equal(finishEligible(el('large',mode)),false);
 assert(finishEligible(el('large','gallery')));assert(finishEligible(el('detail','compact')));assert(finishEligible(el('zoom','compact')));
-const html=finishPreview('ptcg',sv,ctx);assert.match(html,/data-act="cardFinishPreview"/);assert.match(html,/data-finish="reverse-holofoil" aria-pressed="true"/);assert.match(html,/data-finish-toggle/);assert(!html.includes('data-act="tOwnSave"'));
+const html=finishPreview('ptcg',sv,ctx);assert.match(html,/data-act="cardFinishPreview"/);assert.match(html,/data-finish="reverse-holofoil" aria-pressed="true"/);assert.doesNotMatch(html,/data-finish-toggle/);assert(!html.includes('data-act="tOwnSave"'));
 assert.match(finishPreview('ptcg',{id:'unknown',game:'ptcg'}),/preview unavailable/);
 const attrs=finishAttrs('mtg',magic,{priceFinish:'etched'},'detail');assert.match(attrs,/data-finish-surface="detail"/);
 const model=resolveFinish('mtg',magic,{priceFinish:'etched'}),target={dataset:{src:'https://example.test/card.png'},closest:()=>({dataset:{finishModel:JSON.stringify(model)}})};
 assert.deepEqual(zoomCardOptions(target).finishModel,model);
 const callbacks=new Map(),root={addEventListener:(k,fn)=>callbacks.set(k,fn),removeEventListener:(k)=>callbacks.delete(k)};
-const dispose=attachFinishPreview(root);assert.equal(attachFinishPreview(root),dispose);assert.equal(callbacks.size,1);dispose();assert.equal(callbacks.size,0);
+const dispose=attachFinishPreview(root);assert.equal(attachFinishPreview(root),dispose);assert.equal(callbacks.size,0);dispose();assert.equal(callbacks.size,0);
 // Execute the production UI action, not a reimplementation of it.
 const app=await readFile(new URL('./app.js',import.meta.url),'utf8');
 const action=app.slice(app.indexOf('A.cardFinishPreview ='),app.indexOf('A.cardPriceJump ='));
@@ -106,5 +106,21 @@ assert.deepEqual(finishChoices('ptcg',gengar30).map(v=>v.key),['normal'],'Incomp
 // Only an exact source-supplied Holofoil variant unlocks the calibrated region.
 const gengarFoil={...gengar30,variants:[{key:'holofoil',label:'Holofoil',usd:null}]};
 assert.equal(finishEffect('ptcg',gengarFoil,{priceFinish:'holofoil'}),'ptcg-full-art');
-assert.equal(finishEffect('ptcg',{...gengarFoil,id:'30th-090'},{priceFinish:'holofoil'}),'unknown','Do not copy the special illustration region to another Gengar printing');
+assert.equal(finishEffect('ptcg',{...gengarFoil,id:'30th-090'},{priceFinish:'holofoil'}),'ptcg-full-art','Source-confirmed special-illustration ex layout supports full-card coverage on other printings too');
 console.log('PASS: exact Gengar 154/128 full-art region is supported only with explicit Holofoil availability; generated catalogue data and another printing do not inherit it.');
+
+const charizard=normalizePtcg(await fixture('swsh4.5sv-SV107'));
+assert.equal(charizard.rarity,'Shiny rare VMAX');
+assert.equal(finishChoices('ptcg',charizard).length,1);assert.equal(charizard.variants[0].finish,'holofoil');
+assert.equal(resolveFinish('ptcg',charizard,{priceFinish:charizard.variants[0].key}).effect,'ptcg-full-art');
+assert.equal(finishEffect('ptcg',{...charizard,variants:[]},{priceFinish:'holofoil'}),'unknown','Rarity never creates a finish option');
+assert.deepEqual(yp('Starlight Rare').layers,[{mask:'ygo-broad',material:'starlight'}],'No rectangular name paint or textbox cutout on Starlight');
+console.log('PASS: actual Charizard VMAX source Holofoil, no invented variants, full-face Starlight and settings-only controls.');
+
+const zekrom=normalizePtcg(await fixture('cel25-10')),mega=normalizePtcg(await fixture('me02.5-022'));
+const zk=resolveFinish('ptcg',zekrom,{priceFinish:zekrom.variants[0].key}),mc=resolveFinish('ptcg',mega,{priceFinish:mega.variants[0].key}),vc=resolveFinish('ptcg',charizard,{priceFinish:charizard.variants[0].key});
+assert.equal(zekrom.variants[0].finish,mega.variants[0].finish);
+assert.deepEqual(zk.layers,[{mask:'pk-cel-art',material:'holo'}]);
+assert.deepEqual(mc.layers,[{mask:'card',material:'rainbow'}]);assert.equal(mc.texture,'smooth');
+assert(vc.layers.some(l=>l.material==='micro'));assert.equal(vc.texture,'micro-ridges');
+console.log('PASS: same Holofoil label maps to Zekrom illustration-only, Mega Charizard smooth full-face and shiny VMAX textured full-face.');

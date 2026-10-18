@@ -1,0 +1,79 @@
+{
+  "category": "Pokemon",
+  "id": "swsh4.5sv-SV107",
+  "illustrator": "aky CG Works",
+  "localId": "SV107",
+  "name": "Charizard VMAX",
+  "rarity": "Shiny rare VMAX",
+  "set": {
+    "cardCount": {
+      "official": 122,
+      "total": 122
+    },
+    "id": "swsh4.5sv",
+    "name": "Shining Fates Shiny Vault"
+  },
+  "variants": {
+    "firstEdition": false,
+    "holo": true,
+    "normal": false,
+    "reverse": false,
+    "wPromo": false
+  },
+  "variants_detailed": [
+    {
+      "type": "holo",
+      "size": "standard",
+      "thirdParty": {
+        "cardmarket": 539923,
+        "tcgplayer": 232496
+      },
+      "variantId": "jr7oetx1mqug9"
+    }
+  ],
+  "dexId": [
+    6
+  ],
+  "hp": 330,
+  "types": [
+    "Fire"
+  ],
+  "evolveFrom": "Charizard V",
+  "stage": "VMAX",
+  "attacks": [
+    {
+      "cost": [
+        "Colorless",
+        "Colorless",
+        "Colorless"
+      ],
+      "name": "Claw Slash",
+      "damage": 100
+    },
+    {
+      "cost": [
+        "Fire",
+        "Fire",
+        "Fire",
+        "Colorless",
+        "Colorless"
+      ],
+      "name": "G-Max Wildfire",
+      "effect": "Discard 2 Energy from this Pok\u00e9mon.",
+      "damage": 300
+    }
+  ],
+  "weaknesses": [
+    {
+      "type": "Water",
+      "value": "\u00d72"
+    }
+  ],
+  "retreat": 3,
+  "regulationMark": "D",
+  "legal": {
+    "standard": false,
+    "expanded": true
+  },
+  "updated": "2026-08-16T00:44:00+01:00"
+}

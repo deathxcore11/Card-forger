@@ -3,6 +3,8 @@ import {privateKey} from './account-scope.js';
 // the box is empty. Works on any input with data-suggest="mtg|ptcg|ygo"; picking a suggestion
 // fills the box and runs the search the box already runs on Enter.
 import { esc } from "./ui.js";
+import {homeResultRow} from "./home-search.js";
+let cardLookup=null;
 
 const RECENT = (g) => privateKey(`cardstashy-recent-${g}`);
 export function recentSearches(g) {
@@ -63,14 +65,15 @@ function position() {
   if (!box) return;
   if (!input?.isConnected || document.activeElement !== input) return close();
   const r = input.getBoundingClientRect(), viewport = document.documentElement.clientWidth || window.innerWidth;
-  const width = Math.min(r.width, viewport), left = Math.max(0, Math.min(r.left, viewport - width));
+  const anchor=input.closest(".search-query")?.getBoundingClientRect()||r;
+  const width = Math.min(cardLookup?Math.max(anchor.width,320):r.width, cardLookup?viewport-20:viewport), left = Math.max(cardLookup?10:0, Math.min(anchor.left, viewport - width - (cardLookup?10:0)));
   Object.assign(box.style, { left: `${left + window.scrollX}px`, top: `${r.bottom + window.scrollY + 6}px`, width: `${width}px` });
 }
 function show(items, recent) {
   if (!input?.isConnected || document.activeElement !== input || !items.length) return close();
   if (!box) {
     box = document.createElement("div");
-    box.className = "suggest";
+    box.className = "suggest home-suggestions view-compact";
     box.id = "suggestBox";
     box.setAttribute("role", "listbox");
     document.body.append(box);
@@ -87,7 +90,7 @@ function show(items, recent) {
     });
   }
   position();
-  box.innerHTML = `${recent ? `<p class="suggest-head">Recent</p>` : ""}${items.map((n, i) => `<button type="button" role="option" id="sg${i}" class="${i === active ? "on" : ""}" data-pick="${esc(n)}">${recent ? `<svg class="sg-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9"/><path d="M4.5 4.8V9h4.2M12 8v4.3l2.8 1.7"/></svg>` : ""}${esc(n)}</button>`).join("")}`;
+  box.innerHTML = `${recent ? `<p class="suggest-head">Recent</p>` : ""}<div class="display-list">${items.map((item,i)=>typeof item==='object'?homeResultRow(input.dataset.suggest,item,i).replace(`data-home-pick="${i}"`,`data-pick="${esc(item.name)}"`).replace(`id="home-result-${i}"`,`id="sg${i}"`):`<button type="button" role="option" id="sg${i}" class="suggest-name ${i===active?'on':''}" data-pick="${esc(item)}">${esc(item)}</button>`).join('')}</div>`;
   input.setAttribute("aria-expanded", "true");
   input.setAttribute("aria-controls", "suggestBox");
 }
@@ -105,11 +108,13 @@ async function update() {
   if (!g) return;
   const my = ++ticket;
   if (!q.trim()) return show(recentSearches(g), true);
-  const names = await suggestNames(g, q);
-  if (my === ticket && document.activeElement === input && input.dataset.suggest === g && input.value === q) show(names.filter((n) => n.toLowerCase() !== q.trim().toLowerCase() || names.length > 1), false);
+  let items;
+  try{items=cardLookup?(await cardLookup(g,q)).cards:await suggestNames(g,q);}catch{items=[];}
+  if (my === ticket && document.activeElement === input && input.dataset.suggest === g && input.value === q) show(items||[], false);
 }
 
-export function attachSuggest() {
+export function attachSuggest({lookup}={}) {
+  cardLookup=lookup||null;
   if (typeof document === "undefined") return;
   document.addEventListener("focusin", (e) => {
     const el = e.target.closest?.("input[data-suggest]");
