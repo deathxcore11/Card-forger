@@ -1,7 +1,8 @@
+import {deckBoxFields,readDeckBox,createDeckBoxTransitions} from './deck-box.js';
 import {setAccountScope} from './account-scope.js';
 import {createAccountWorkspaces} from './account-workspaces.js';
 import {mountFeedback} from './feedback-layer.js';
-import {createCommunity,incomingRequestCount} from './community-profile.js';
+import {createCommunity,incomingRequestCount,sharedDeckCopy} from './community-profile.js';
 import {addScannedEntry} from './collection-stack.js';
 import {profileAvatar,profileArt,createProfileArtPicker} from './profile-art.js';
 import {openTabletop} from './tabletop.js';
@@ -967,7 +968,9 @@ function render() {
     restoreDisclosures(content,disclosureStates.get(disclosureKey));
     return;
   }
+  deckBoxTransitions.beforeRender();
   $("#content").innerHTML = (g !== "mtg" && tcgViews[ui.view] ? tcgViews[ui.view] : views[ui.view] || V.home)();
+  deckBoxTransitions.afterRender();
   restoreDisclosures(content,disclosureStates.get(disclosureKey));
   content.dataset.disclosureKey=disclosureKey;
   restoreSearchFocus(content,searchFocus);
@@ -2879,6 +2882,7 @@ async function submitHome(q,mode){
 A.homeSearch=()=>submitHome($('#homeQ')?.value,'cards');
 A.homeAsk=()=>{const q=$('#homeQ')?.value||'';homeSearchController.close();A.askOpen();const input=document.querySelector('.ask-dialog .ask-input');if(input){input.value=q;input.focus();}};
 window.matchMedia?.("(min-width:1200px)").addEventListener?.("change",()=>placeGlobalSearch(T.game(),S.ui.view));
+const deckBoxTransitions=createDeckBoxTransitions();
 function refreshProfileAvatar(){
  const button=document.querySelector('.topbar [data-act="menu"]');if(!button)return;
  const a=cloudInfo(),requests=accountLocked?0:(S.ui.communityRequests||0),important=!accountLocked&&a.user&&(a.pending||a.status.state==='error')?1:0,count=requests+important;
@@ -2901,15 +2905,16 @@ const profilePicker=createProfileArtPicker({lookup:homeLookup,currentGame:T.game
 const headerPicker=createProfileArtPicker({purpose:'header',lookup:homeLookup,currentGame:T.game,read:()=>cloudInfo().art?.header||community.data?.art?.header||S.state.settings.profileHeader,save:value=>saveProfileArtwork('header',value),onSaved:artworkSaved});
 const community=createCommunity({account:cloudInfo,request:communityRequest,rerender:render,active:()=>S.ui.view==='community',localArt:()=>({avatar:S.state.settings.cardAvatar,header:S.state.settings.profileHeader}),toast,
  onChange:data=>{S.ui.communityRequests=incomingRequestCount(data);refreshProfileAvatar();if(settingsPopup.isOpen)settingsPopup.refresh();},
+ copyDeck:async item=>{const generation=accountGeneration,owner=cloudInfo().user?.id;if(accountLocked||!owner)throw Error('Sign in before saving a deck.');const d=sharedDeckCopy(item,uid());await commit(state=>{(item.game==='mtg'?state:state.tcg[item.game]).decks.push(d);},{enrich:false,guard:()=>{if(accountLocked||generation!==accountGeneration||cloudInfo().user?.id!==owner)throw Error('Your account changed. Please try again.');return true;}});},
  editItem:async item=>{const generation=accountGeneration;if(accountLocked)return;await navigate({game:item.game,hash:item.kind==='binder'?'#collection':item.game==='mtg'?'#deck/'+item.key.slice(('deck:'+item.game+':').length)+'/cards':'#tdeck/'+item.key.slice(('deck:'+item.game+':').length),mode:'push'});if(generation!==accountGeneration||T.game()!==item.game)return;if(item.kind==='binder')A.editBinder({dataset:{binder:item.key.slice(7)}});},
  chooseArt:kind=>(kind==='header'?headerPicker:profilePicker).open(),editProfile:()=>{S.ui.settingsTab='account';settingsPopup.open();},signIn:()=>{S.ui.settingsTab='account';settingsPopup.open();},
  openArt:a=>openZoom({src:a.image,alt:a.name}),
  showcaseChoices:()=>{
   const result=[];
-  for(const b of S.state.settings.binders||[])result.push({key:'binder:'+b.id,kind:'binder',game:b.game,title:b.title,cards:binderRows(b.game).filter(r=>binderMatches(r,b)).map(r=>({id:r.card?.id||r.entry.cardId||r.entry.printingId,name:r.entry.name,qty:r.entry.qty,image:r.image,set:r.card?.set_name||r.card?.set?.name,number:r.card?.collector_number||r.card?.set?.number,version:r.version}))});
+  for(const b of S.state.settings.binders||[])result.push({key:'binder:'+b.id,kind:'binder',game:b.game,title:b.title,cards:binderRows(b.game).filter(r=>binderMatches(r,b)).map(r=>({id:r.card?.id||r.entry.cardId||r.entry.printingId,name:r.entry.name,qty:r.entry.qty,image:r.image,set:r.card?.set_name||r.card?.set?.name,number:r.card?.collector_number||r.card?.set?.number,version:r.version,referenceUSD:r.card?.prices?.usd??null}))});
   for(const game of ['mtg','ptcg','ygo'])for(const d of (game==='mtg'?S.state:T.gs(game)).decks){
-   const rows=game==='mtg'?[...(d.cards||[]),...(d.side||[])]:['main','extra','side'].flatMap(z=>d.zones?.[z]||[]);
-   result.push({key:'deck:'+game+':'+d.id,kind:'deck',game,title:d.name,cards:rows.map(r=>{const c=game==='mtg'?meta(r.name):T.cardOf(game,r.cardId);return {id:c?.id||r.cardId,name:c?.name||r.name,qty:r.qty,image:cardImage(c)||c?.image,set:c?.set_name||c?.set?.name,number:c?.collector_number||c?.set?.number};})});
+   const rows=game==='mtg'?[...(d.cards||[]).map(r=>({...r,zone:'main'})),...(d.side||[]).map(r=>({...r,zone:'side'}))]:['main','extra','side'].flatMap(z=>(d.zones?.[z]||[]).map(r=>({...r,zone:z})));
+   result.push({key:'deck:'+game+':'+d.id,kind:'deck',game,title:d.name,format:d.format,commander:d.commander,deckSchema:1,cards:rows.map(r=>{const c=game==='mtg'?meta(r.name):T.cardOf(game,r.cardId);return {id:c?.id||r.cardId,name:c?.name||r.name,qty:r.qty,image:cardImage(c)||c?.image,set:c?.set_name||c?.set?.name,number:c?.collector_number||c?.set?.number,zone:r.zone};})});
   }
   return result;
  }});
@@ -4057,6 +4062,7 @@ A.deckMenu = () => {
   openSheet(
     `<div class="sheet-head"><h2>Deck options</h2><button class="icon" data-act="closeSheet">✕</button></div>
     <div class="grid2"><label class="span2">Name<input id="dmName" maxlength="100" value="${esc(d.name)}"></label><label class="span2">Format${formatSelect("dmFormat", d.format)}</label><label>Budget $<input id="dmBudget" type="number" min="0" value="${d.budget ?? 25}"></label><label>Focus<select id="dmStrategy">${options(["Auto", "Tokens", "Dragons", "Graveyard", "Spells", "Artifacts", "Lifegain", "Landfall", "Creature"].map((x) => [x, x]), d.strategy || "Auto")}</select></label></div>
+    ${deckBoxFields(d,(d.cards||[]).map(r=>({name:r.name,image:cardImage(meta(r.name))})))}
     <button class="btn block" data-act="deckSaveInfo">Save</button>
     <label class="check toggle"><input type="checkbox" data-change="deckLock" ${d.locked ? "checked" : ""}> <span><b>Assembled</b> — reserve these copies so other decks don’t count them as free</span></label>
     <div class="menu-list">
@@ -4085,8 +4091,8 @@ A.deckSaveInfo = async () => {
   const format = formatOf($("#dmFormat")?.value).name,
     name = $("#dmName").value.trim(),
     budget = Math.max(0, Number($("#dmBudget").value) || 0),
-    strategy = $("#dmStrategy").value;
-  await editDeck((d) => ({ ...d, name: name || d.name, budget, strategy, format, commander: hasCommander(format) ? d.commander : "" }), { msg: "Saved." });
+    strategy = $("#dmStrategy").value,boxAppearance=readDeckBox();
+  await editDeck((d) => ({ ...d, name: name || d.name, budget, strategy, format, boxAppearance, commander: hasCommander(format) ? d.commander : "" }), { msg: "Saved." });
   closeSheet();
 };
 // Play guide (Magic): rank cards that pair well — synergy searches on Scryfall plus the cards
@@ -5530,7 +5536,7 @@ async function boot() {
     accountChanged: () => {
       dismissConditionInfo();
       accountLocked=true;accountGeneration++;workspaceVisitRevision++;lastUndo=null;
-      community.reset();clearConditionAttempts();conditionScheduler=createConditionRefreshScheduler();
+      community.reset();deckBoxTransitions.reset();clearConditionAttempts();conditionScheduler=createConditionRefreshScheduler();
       clearAskConversations();clearRulesConversations();rulesGuideOrigin=null;
       scanCtx.accountChanged?.();profilePicker.close(true);headerPicker.close(true);
       settingsPopup.close(false);clearGameContext();disclosureStates.clear();

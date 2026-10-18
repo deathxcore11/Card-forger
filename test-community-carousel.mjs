@@ -22,3 +22,17 @@ assert.equal(incomingRequestCount({people:[{relationship:'pending',incoming:true
 const {miniPrintingMarkup,detailSetProgress}=await import('./card-detail-extras.js');
 const mini=miniPrintingMarkup({game:'ptcg',card,cards:[card]});assert.equal((mini.match(/class="card-printing-mini"/g)||[]).length,1);assert.match(mini,/data-id="cel25-23"/);assert.doesNotMatch(mini,/data-act="tOwn"/);
 assert.match(detailSetProgress({key:'ptcg:cel25',owned:9,total:25}),/aria-valuenow="9"/);assert.doesNotMatch(detailSetProgress({key:'ygo:unknown',owned:1,total:null}),/role="progressbar"/);assert.doesNotMatch(detailSetProgress({key:'ygo:unknown',owned:null,total:null}),/0 verified/);
+
+const {deckBoxMarkup,boxAppearance,deckBoxFields}=await import('./deck-box.js');
+assert.deepEqual(boxAppearance({color:'red;position:fixed',image:'javascript:alert(1)'}),{color:'#7664a0',image:''});
+for(const game of ['mtg','ptcg','ygo']){const box=deckBoxMarkup({id:'one',name:'Deck',boxAppearance:{color:'#337799'}},{game,button:true,open:true});assert.match(box,new RegExp('data-act="'+(game==='mtg'?'deckMenu':'tDeckMenu')+'"'));assert.match(box,/is-open/);assert.match(box,/#337799/);}
+assert.match(deckBoxFields({boxAppearance:{}},[]),/Automatic card artwork/);
+
+const {sharedDeckCopy,showcaseValue,showcaseDetail}=await import('./community-profile.js');
+const shared={key:'deck:owner',kind:'deck',game:'ygo',title:'Friend deck',format:'tcg',deckSchema:1,cards:[{id:'1',name:'Main',qty:2,zone:'main'},{id:'2',name:'Extra',qty:1,zone:'extra'},{id:'3',name:'Side',qty:3,zone:'side'}],collection:['PRIVATE']};
+const copied=sharedDeckCopy(shared,'my-new-id');assert.equal(copied.id,'my-new-id');assert.equal(copied.zones.extra[0].cardId,'2');assert.equal(copied.zones.side[0].qty,3);copied.zones.main[0].qty=9;assert.equal(shared.cards[0].qty,2);assert(!JSON.stringify(copied).includes('PRIVATE'));
+assert.throws(()=>sharedDeckCopy({...shared,deckSchema:0},'id'),/update/);
+const binder={...shared,kind:'binder',cards:[{id:'1',qty:2,referenceUSD:3.5},{id:'2',qty:1,manualValue:900}]};assert.deepEqual(showcaseValue(binder),{total:7,priced:2,unpriced:1});assert.match(showcaseDetail(binder),/\$7.00/);assert.doesNotMatch(showcaseDetail(binder),/data-community-(source|copy|hide)|data-act=/);assert.match(showcaseDetail(shared),/Save to my decks/);assert.doesNotMatch(showcaseDetail(shared),/data-community-source/);
+console.log('PASS: independent deck copies preserve sections, legacy snapshots cannot silently lose sections, binder values exclude private amounts, and friend previews have no edit actions');
+
+const {brandMark}=await import('./brand.js');for(const mode of ['brand-idle','brand-loading','assistant-button-mark']){const logo=brandMark(mode);assert.match(logo,/brand-breathing/);assert.match(logo,/brand-cycle-left/);assert.match(logo,/brand-cycle-right/);assert.match(logo,/aria-hidden="true"/);}

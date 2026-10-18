@@ -73,6 +73,9 @@ jobs:
       - name: Test account isolation, paused sync and responsive profile UI
         if: ${{ !cancelled() }}
         run: node tests/account-browser.mjs
+      - name: Test editable deck boxes and navigation animation
+        if: ${{ !cancelled() }}
+        run: node tests/deck-box-browser.mjs
       - name: Test ownership controls and condition values in the real app
         if: ${{ !cancelled() }}
         run: node tests/owned-browser.mjs
@@ -310,6 +313,9 @@ jobs:
         run: npm install --no-save --package-lock=false --ignore-scripts @electric-sql/pglite@0.5.10
       - name: Exercise actual quota SQL without contacting production
         run: CARDSTASHY_PGLITE_MODULE="$PWD/node_modules/@electric-sql/pglite/dist/index.js" node test-server-safety-history-sql.mjs
+
+      - name: Exercise community snapshot and account ownership SQL in isolation
+        run: CARDSTASHY_PGLITE_MODULE="$PWD/node_modules/@electric-sql/pglite/dist/index.js" node test-community-sql.mjs
 
   responsive-card-browser:
     runs-on: ubuntu-latest

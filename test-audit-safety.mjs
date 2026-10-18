@@ -88,7 +88,7 @@ ctx.S.state={...blank(),decks:[{id:'d',name:'Deck',format:'Modern',cards:[]}]};
 let release,writeCount=0;const gate=new Promise(r=>{release=r;});
 ctx.writeRecords=async()=>{if(++writeCount===1)await gate;};
 const fields={'#logResult':{value:'Loss'},'#logTurn':{value:'7'},'#logNote':{value:'Important typed game notes'},'#dmFormat':{value:'Modern'},'#dmName':{value:'Edited deck'},'#dmBudget':{value:'42'},'#dmStrategy':{value:'Tokens'}};
-ctx.$=q=>fields[q];ctx.currentDeck=()=>ctx.S.state.decks[0];ctx.cardSig=()=>'';ctx.uid=()=> 'note';ctx.closeSheet=()=>{};ctx.formatOf=formatOf;ctx.hasCommander=hasCommander;
+ctx.deckBoxFields=()=>'';ctx.readDeckBox=()=>({color:'#337799',image:''});ctx.$=q=>fields[q];ctx.currentDeck=()=>ctx.S.state.decks[0];ctx.cardSig=()=>'';ctx.uid=()=> 'note';ctx.closeSheet=()=>{};ctx.formatOf=formatOf;ctx.hasCommander=hasCommander;
 ctx.render=()=>{for(const field of Object.values(fields))field.value='';fields['#logResult'].value='Win';};
 vm.runInContext(segment('A.logGame = async','\n\n/* ---------- life tracker')+'\n'+segment('const editDeck =','\n// Play guide (Magic)'),ctx);
 const prior=ctx.commit(()=>{});await Promise.resolve();const logSave=ctx.A.logGame(),infoSave=ctx.A.deckSaveInfo();release();await Promise.all([prior,logSave,infoSave]);
@@ -109,7 +109,7 @@ navigation.restoreSheet(navigation.sheetTrail.pop());assert(body.innerHTML.inclu
 navigation.restoreSheet(navigation.sheetTrail.pop());assert(body.innerHTML.includes('Fresh A'));assert.equal(head.buttons.length,0,'root has no stale Back button');assert.equal(navigation.restoringSheet,false);
 
 // A backup source URL remains inert in the deck options, not only Inspiration.
-let menuHtml='';const menu={A:{},currentDeck:()=>({name:'Deck',format:'Modern',source:{url:'javascript:alert(1)'}}),openSheet:html=>{menuHtml=html;},esc,safeHref,formatSelect:()=>'',options:()=>''};
+let menuHtml='';const menu={A:{},deckBoxFields:()=>'',meta:()=>null,cardImage:()=>'',currentDeck:()=>({name:'Deck',format:'Modern',source:{url:'javascript:alert(1)'}}),openSheet:html=>{menuHtml=html;},esc,safeHref,formatSelect:()=>'',options:()=>''};
 vm.createContext(menu);vm.runInContext(segment('A.deckMenu =','\nconst editDeck ='),menu);menu.A.deckMenu();assert(menuHtml.includes('href="#"'));assert(!menuHtml.includes('href="javascript:'));
 console.log('PASS: queued deletion confirmation, safe sideboard backups, queued form snapshots, multi-level Back refresh and safe deck source links.');
 

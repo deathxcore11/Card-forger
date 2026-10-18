@@ -1,3 +1,4 @@
+import {deckBoxMarkup,deckBoxFields,readDeckBox} from './deck-box.js';
 import {detailSetProgress,miniPrintingMarkup} from './card-detail-extras.js';
 import {privateKey} from './account-scope.js';
 import {detailOwnedGroups} from './quick-quantity.js';
@@ -565,7 +566,7 @@ function deckTile(g, d) {
   return `<button class="deck-tile tcg-tile tile-${g}" data-act="go" data-to="#tdeck/${esc(d.id)}">
     <span class="tile-art">${g === "ygo" && cover ? ygoCropArt(cover) : g === "ptcg" && cover ? pokemonArtCrop(cover, "tile-pk") : imgTag(cover, "tile-card-art", true)}</span>
     <span class="tile-shade"></span>
-    <span class="tile-top"><span class="chip dark">${esc(f.name)}</span>${issues.length ? `<span class="chip dark bad-chip">${issues.length} to fix</span>` : s.total ? `<span class="chip dark ok-chip">Legal</span>` : ""}</span>
+    <span class="tile-top"><span class="deck-format-stack"><span class="chip dark">${esc(f.name)}</span>${deckBoxMarkup(d,{game:g,images:(d.zones.main||[]).slice(0,3).map(r=>artworkSources(cardOf(g,r.cardId))[0])})}</span>${issues.length ? `<span class="chip dark bad-chip">${issues.length} to fix</span>` : s.total ? `<span class="chip dark ok-chip">Legal</span>` : ""}</span>
     <span class="tile-body">
       <b>${esc(d.name)}</b>
       <small>${esc(pw?.plan || GAMES[g].short)} · ${main}${g === "ygo" ? " main" : "/60"}</small>
@@ -1289,7 +1290,7 @@ export function tcgDeck(id) {
     cover = cardOf(g, (d.zones.main || [])[0]?.cardId);
   const tab = S.ui.tdeckTab?.[g+":"+d.id] || "cards";
   return `<section class="deck-hero">${g === "ptcg" && cover ? pokemonArtCrop(cover, "hero-art") : imgTag(cover, "hero-art", true)}<div class="hero-shade"></div><div class="hero-body">
-    <div class="row between"><button class="icon light" data-act="go" data-to="#decks" aria-label="Back">←</button><button class="icon light" data-act="tDeckMenu" data-id="${esc(d.id)}" aria-label="Deck options">⋯</button></div>
+    <div class="row between"><button class="icon light" data-act="go" data-to="#decks" aria-label="Back">←</button>${deckBoxMarkup(d,{game:g,images:(d.zones.main||[]).slice(0,3).map(r=>artworkSources(cardOf(g,r.cardId))[0]),open:true,button:true})}</div>
     <h1>${esc(d.name)}</h1><p><button class="chip dark fmt-chip" data-act="tDeckMenu" data-id="${esc(d.id)}">${esc(GAMES[g].short)} · ${esc(f.name)}</button></p>
     <button class="review-badge ${issues.length ? "bad" : "ok"}" data-act="tIssues" data-deck="${esc(d.id)}">${issues.length ? `● ${issues.length} to fix` : s.total ? "✓ Legal in " + esc(f.name) : "Add cards to check legality"}</button>
     <div class="hero-stats"><span><b>${zoneCount("main")}</b>${g === "ygo" ? "main" : "/60 cards"}</span><span><b>${s.total ? Math.round((s.owned / s.total) * 100) : 0}%</b>owned</span><span><b>${usd(s.buy, 0)}${s.unknown ? "+" : ""}</b>to finish${s.unknown ? " · some unpriced" : ""}</span>${s.total ? `<button data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="insights"><b>${shownPower(tcgPower(g, d, f, (x) => cardOf(g, x)))}</b>power</button>` : ""}</div>
@@ -3737,16 +3738,18 @@ export function registerTcg(c) {
     openSheet(
       `<div class="sheet-head"><h2>Deck options</h2><button class="icon" data-act="closeSheet">✕</button></div>
       <div class="grid2"><label class="span2">Name<input id="tDmName" maxlength="100" value="${esc(d.name)}"></label><label class="span2">Format<select id="tDmFormat">${options(formatsOf(G).map((f) => [f.id, f.name]), d.format)}</select></label></div>
+      ${deckBoxFields(d,(d.zones.main||[]).map(r=>{const c=cardOf(G,r.cardId);return {name:c?.name||r.cardId,image:artworkSources(c)[0]};}))}
       <button class="btn block" data-act="tDeckSave" data-id="${esc(d.id)}">Save</button>
       <div class="menu-list"><button data-act="tShare" data-id="${esc(d.id)}">🔗 Share this deck (link)</button><button data-act="tDeckExport" data-id="${esc(d.id)}">↓ Export ${SOURCES[G].exportExt === "ydk" ? ".ydk" : "list"}</button><button data-act="tDeckCopy" data-id="${esc(d.id)}">⧉ Copy list</button><button data-act="tDeckDup" data-id="${esc(d.id)}">⧉ Duplicate</button><button class="danger" data-act="tDeckDelete" data-id="${esc(d.id)}">✕ Delete deck</button></div>`,
       { type: "tdeckmenu" },
     );
   };
   A.tDeckSave = async (t) => {
+    const appearance=readDeckBox();
     await mutate((st) => {
       const d = st.decks.find((x) => x.id === t.dataset.id);
       d.name = document.querySelector("#tDmName").value.trim().slice(0, 100) || d.name;
-      d.format = document.querySelector("#tDmFormat").value;
+      d.format = document.querySelector("#tDmFormat").value;d.boxAppearance=appearance;
     }, { msg: "Saved." });
     closeSheet();
   };

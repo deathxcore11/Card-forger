@@ -25,7 +25,7 @@ end$$;
 select pg_temp.assert_true((public.community_action('lookup',jsonb_build_object('query','qa_'||substr(replace(b::text,'-',''),1,20)))->'person'->>'id')=b::text,'exact username lookup') from community_test_ids;
 select pg_temp.assert_true((public.community_action('lookup','{"query":"qa_"}')->'person')='null'::jsonb,'no partial directory search');
 select pg_temp.assert_true(not(public.community_action('lookup',jsonb_build_object('query','qa-b-'||b||'@example.invalid'))->'person' ? 'email'),'lookup never returns email') from community_test_ids;
-select public.community_action('share','{"item":{"key":"deck:test","kind":"deck","game":"mtg","title":"Shared fixture","secret":"PRIVATE","cards":[{"id":"one","name":"Fixture","qty":2,"manualValue":999,"notes":"PRIVATE"}]}}');
+select public.community_action('share','{"item":{"key":"deck:test","kind":"deck","game":"mtg","title":"Shared fixture","format":"Modern","deckSchema":1,"secret":"PRIVATE","cards":[{"id":"one","name":"Fixture","qty":2,"zone":"side","referenceUSD":3.5,"manualValue":999,"notes":"PRIVATE"}]}}');
 do $$declare target uuid;begin select b into target from community_test_ids;begin perform public.community_action('profile',jsonb_build_object('target',target));raise exception 'FAILED: stranger profile opened';exception when insufficient_privilege then null;end;end$$;
 select public.community_action('request',jsonb_build_object('target',b)) from community_test_ids;
 select public.community_action('request',jsonb_build_object('target',b)) from community_test_ids;
@@ -41,6 +41,12 @@ select public.community_action('accept',jsonb_build_object('target',a)) from com
 select pg_temp.assert_true((public.community_action('profile',jsonb_build_object('target',a))->'items'->0->>'title')='Shared fixture','accepted friend sees shared snapshot') from community_test_ids;
 select pg_temp.assert_true(position('PRIVATE' in public.community_action('profile',jsonb_build_object('target',a))::text)=0,'private fields stripped on server') from community_test_ids;
 select pg_temp.assert_true((select count(*)=1 from public.profiles),'friendship does not expose private account profiles');
+select pg_temp.assert_true((public.community_action('profile',jsonb_build_object('target',a))->'items'->0->>'format')='Modern','deck format preserved') from community_test_ids;
+select pg_temp.assert_true((public.community_action('profile',jsonb_build_object('target',a))->'items'->0->'cards'->0->>'zone')='side','deck section preserved') from community_test_ids;
+select pg_temp.assert_true((public.community_action('profile',jsonb_build_object('target',a))->'items'->0->'cards'->0->>'referenceUSD')='3.5','only public reference price preserved') from community_test_ids;
+select public.community_action('unshare','{"key":"deck:test"}');
+select pg_temp.assert_true(jsonb_array_length(public.community_action('profile',jsonb_build_object('target',a))->'items')=1,'friend cannot remove owner snapshot') from community_test_ids;
+
 select set_config('request.jwt.claim.sub',a::text,true) from community_test_ids;
 select public.community_action('unshare','{"key":"deck:test"}');
 select set_config('request.jwt.claim.sub',b::text,true) from community_test_ids;

@@ -9,6 +9,7 @@ const ASSETS = [
   "./scanner-printing.js",
   "./app.js",
   "./feedback-layer.js",
+  "./deck-box.js",
   "./card-detail-extras.js",
   "./community-profile.js", "./account-workspaces.js", "./account-scope.js",
   "./printing-carousel.js",

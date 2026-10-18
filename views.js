@@ -1,3 +1,4 @@
+import {deckBoxMarkup} from './deck-box.js';
 import {detailSetProgress,miniPrintingMarkup} from './card-detail-extras.js';
 import {passwordField} from './auth-form.js';
 import {detailOwnedGroups} from './quick-quantity.js';
@@ -165,7 +166,7 @@ export function deckTile(d, wide = false) {
   return `<button class="deck-tile ${wide ? "wide" : ""}" data-act="go" data-to="#deck/${esc(d.id)}">
     <span class="tile-art">${img(cover, d.name)}</span>
     <span class="tile-shade"></span>
-    <span class="tile-top"><span class="chip dark">${esc(formatOf(d).name)}</span>${colorDots(meta(d.commander))}</span>
+    <span class="tile-top"><span class="deck-format-stack"><span class="chip dark">${esc(formatOf(d).name)}</span>${deckBoxMarkup(d,{images:d.cards.slice(0,3).map(r=>cardImage(meta(r.name)))})}</span>${colorDots(meta(d.commander))}</span>
     <span class="tile-body">
       <b>${esc(d.name)}</b>
       <small>${esc(formatOf(d).commander ? d.commander || "No commander yet" : mtgPower(d).plan)} · ${t.copies}/${target}</small>
@@ -1073,7 +1074,7 @@ export function deckPage() {
     tabs = [["cards", "Cards"], ["rules", "Rules"], ["engine", "Power"], ["matchups", "Matchups"], ["upgrade", "Upgrade lab"], ["versions", "Versions"], ["playtest", "Playtest"], ["shop", t.missing ? `Shop · ${t.missing}` : "Shop"]];
   return `<section class="deck-hero">${img(coverOf(d), d.name, "hero-art")}<div class="hero-shade"></div>
     <div class="hero-body">
-      <div class="row between"><button class="icon light" data-act="go" data-to="#decks" aria-label="Back to decks">←</button><button class="icon light" data-act="deckMenu" aria-label="Deck options">⋯</button></div>
+      <div class="row between"><button class="icon light" data-act="go" data-to="#decks" aria-label="Back to decks">←</button>${deckBoxMarkup(d,{images:d.cards.slice(0,3).map(r=>cardImage(meta(r.name))),open:true,button:true})}</div>
       <h1>${esc(d.name)}</h1>
       <p>${fm.commander ? colorDots(meta(d.commander)) + " " + esc(d.commander || "No commander yet") + " · " : ""}<button class="chip dark fmt-chip" data-act="deckMenu" title="${esc(sizeLabel(fm))}${fm.note ? " · " + esc(fm.note) : ""}">${esc(fm.name)}</button>${d.locked ? ' · <span class="chip dark">Assembled</span>' : ""}</p>
       ${reviewBadge(d)}
