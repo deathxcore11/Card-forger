@@ -168,7 +168,7 @@ assert.equal(process.env.GITHUB_ACTIONS,'true','Power browser QA is hosted-only 
 
 const {chromium}=await import('playwright');
 const server=await startServer(),browser=await chromium.launch({headless:true}),out=new URL('../test-results/',import.meta.url);
-const checks=[],screenshots=[],coachPayloads=[],askPayloads=[],timings=[],formatResults=[],builderResults=[],failures=[];
+const checks=[],screenshots=[],coachPayloads=[],askPayloads=[],timings=[],layoutEvidence=[],formatResults=[],builderResults=[],failures=[];
 let magicPersistence=null;
 let app,formatApp,builderApp,askHold=null,coachCalls=0,askCalls=0,ideaMode=null;
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve};};
@@ -252,6 +252,21 @@ async function configureBuilderProviders(page,x){
    randomArchetype:async()=>{log('randomArchetype','local');return {cards:[get(x.seedId)]};}
   });
  },x);
+}
+async function readableBuildSeed(page,x,label){
+ const seed=page.locator('#sheetBody .build-seed:not(.multi)'),name=seed.locator(':scope > div > b'),action=seed.locator(':scope > [data-act="tRandomDeck"]');
+ assert.equal(await seed.count(),1);assert.equal((await name.innerText()).trim(),x.cards[x.seedId].name,'full build-around identity remains visible');assert.equal((await action.innerText()).trim(),'Random card');
+ await page.locator('#sheetBody').evaluate(n=>{n.scrollTop=0;});await action.click({trial:true});
+ const geometry=await seed.evaluate(n=>{const box=e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom};},title=n.querySelector(':scope > div > b'),node=title.firstChild,words=[];
+  for(const m of title.textContent.matchAll(/\S+/g)){const r=document.createRange();r.setStart(node,m.index);r.setEnd(node,m.index+m[0].length);words.push({word:m[0],rects:[...r.getClientRects()].map(q=>({width:q.width,left:q.left,right:q.right}))});}
+  return {seed:box(n),text:box(n.querySelector(':scope > div')),button:box(n.querySelector(':scope > button')),words};
+ });
+ const v=page.viewportSize(),g=geometry;assert(g.text.width>=160,label+': card name has a readable column, not a narrow vertical stack '+JSON.stringify(g));
+ assert(g.button.width>=120&&g.button.height>=(v.width<=480?44:34),label+': full random action and touch target are retained');
+ assert(g.button.x>=-.5&&g.button.right<=v.width+.5&&g.button.y>=-.5&&g.button.bottom<=v.height+.5,label+': random action is reachable in the viewport');
+ if(v.width<=480)assert(g.button.y>=g.text.bottom-.5,label+': narrow random action uses a separate row');
+ for(const w of g.words){assert.equal(w.rects.length,1,label+': normal identity word is not split mid-word: '+w.word);assert(w.rects[0].left>=g.text.x-.5&&w.rects[0].right<=g.text.right+.5,label+': each identity word fits the text column');}
+ return {viewport:v,geometry:g};
 }
 async function settleBuilder(page,format){
  await page.waitForFunction(format=>{const B=window.__uiTestState.ui.tbuild;return B?.format===format&&!B.busy&&(B.error||Array.isArray(B.results?.[format]));},format);
@@ -341,7 +356,12 @@ try{
  await page.locator('#sheet[open] .tier').waitFor();const preview=await page.locator('#sheetBody').innerText();
  assert.match(preview,/60\/60/);assert.match(preview,/budget: unlimited/i);assert.match(preview,/fun is subjective/);assert.match(preview,/Includes basic lands/);assert.doesNotMatch(preview,/Requested whole-deck budget: \$25/);
  const draft=await page.evaluate(()=>window.__uiTestState.ui.build.results.Standard[0]);assert.equal(draft.goal,'fun');assert.equal(draft.goalVerified,false);assert(draft.cost>0);
- for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'#sheetBody .tier','Standard goal review '+width);await capture(page,'goal-preview-'+width);}
+ for(const width of [320,390,768,1440]){
+  await page.setViewportSize({width,height:1000});await noOverflow(page,'#sheetBody .tier','Standard goal review '+width);
+  const grids=await page.locator('#sheetBody .tier-tiles').evaluateAll(ns=>ns.map(n=>({columns:getComputedStyle(n).gridTemplateColumns.split(/\s+/).length,width:n.getBoundingClientRect().width,rows:[...n.querySelectorAll('.lot')].map(r=>({width:r.getBoundingClientRect().width,name:r.querySelector('.lot-name')?.textContent.trim(),nameWidth:r.querySelector('.lot-name')?.getBoundingClientRect().width}))})));
+  assert(grids.length>0);for(const g of grids){assert.equal(g.columns,width>=600?2:1,'sheet cards follow their bounded container, not the full-page desktop grid');assert(g.rows.length>0);if(width>=600)for(const row of g.rows){assert(row.width>=300,'desktop sheet keeps a full readable card row');assert(row.nameWidth>=140,'card identity is not reduced to a few letters by a third column');}}
+  layoutEvidence.push({scenario:'goal-preview',viewport:{width,height:1000},grids});await capture(page,'goal-preview-'+width);
+ }
  assert.equal(await inventorySnapshot(page),initial,'reviewing a built list never saves it');await page.locator('#sheetBody [data-act="closeSheet"]').first().click();
  checks.push('Actual Ask tool to existing deck-preview sheet: fun goal, unlimited cap, 60-card review, real synthetic basic prices, four widths, no autosave.');
  await openAsk(page);await page.locator('[data-ask-new]').click();askHold={started:deferred(),release:deferred(),settled:deferred()};
@@ -531,7 +551,8 @@ try{
   }else{assert.equal(chosen.tier.total,40);assert.equal(d.ready,true);assert.equal(d.purchaseEstimate,40);assert.equal(d.purchaseEstimateVerified,true);}
   if(x.game==='ygo'&&x.kind!=='unknown')for(const row of chosen.tier.zones.main){assert.equal(row.ygoPurchaseSelection.edition,'unlimited');assert(row.ygoPurchaseSelection.productId>0);assert.match(row.ygoPurchaseSelection.printingKey,/^FXQ-EN\d+::Common$/);}
   assert.match(await target.locator('[data-act="tTierSave"]').innerText(),d.ready?/Save as deck|cost unverified/:/Save draft/);
-  for(const width of [320,390,768,1440]){await bp.setViewportSize({width,height:1000});await noOverflow(bp,'#sheetBody','actual '+x.game+' '+x.kind+' builder '+width);await capture(bp,'build-'+x.game+'-'+x.kind+'-'+width,'#sheetBody');}
+  const builderLayouts=[];
+  for(const viewport of [{width:320,height:1000},{width:360,height:1000},{width:390,height:1000},{width:768,height:1000},{width:1440,height:1000},{width:844,height:390}]){await bp.setViewportSize(viewport);const label='actual '+x.game+' '+x.kind+' builder '+viewport.width+'x'+viewport.height;builderLayouts.push(await readableBuildSeed(bp,x,label));await noOverflow(bp,'#sheetBody',label);await capture(bp,'build-'+x.game+'-'+x.kind+'-'+(viewport.height===1000?viewport.width:viewport.width+'x'+viewport.height),'#sheetBody');}
   // Inspect the real expanded card rows, not just a hidden preview count.
   await target.locator('[data-act="tTier"]').click();await bp.waitForFunction(i=>window.__uiTestState.ui.tbuild.openTier===i,chosen.i);target=bp.locator('#sheetBody .tier').nth(chosen.i);
   if(x.game==='ptcg'&&x.kind==='complete')assert.match(await target.innerText(),/Basic Fire Energy/);
@@ -560,7 +581,7 @@ try{
   assert.equal(metaFixtureReads,x.game==='ptcg'?1:0,'only the known saved Standard field refresh uses the exact empty-event fixture');
   const metaFallback=x.game==='ptcg'?await bp.evaluate(()=>{const m=window.__uiTestTcg.metaState('ptcg');return {busy:m.busy,error:m.error,decks:m.data.decks,top:m.data.top};}):null;
   if(metaFallback){assert.equal(metaFallback.busy,false);assert.equal(metaFallback.error,'No recent Standard events found.');assert.deepEqual(metaFallback.decks,[],'empty source does not invent a tournament match');assert.deepEqual(metaFallback.top,x.trainerIds.map(id=>({kind:'Trainer',name:x.cards[id].name,pct:100,avg:4})),'existing cached synthetic build inputs survive source unavailability');}
-  Object.assign(builderResults.at(-1),{metaFixture:{url:x.game==='ptcg'?metaFixtureUrl:null,reads:metaFixtureReads,fallback:metaFallback},watchedPrerequisite});builderApp.health();
+  Object.assign(builderResults.at(-1),{metaFixture:{url:x.game==='ptcg'?metaFixtureUrl:null,reads:metaFixtureReads,fallback:metaFallback},watchedPrerequisite,builderLayouts});builderApp.health();
   }catch(error){builderResults.splice(resultStart);await recordScenarioFailure('builder-'+x.game+'-'+x.kind,error,builderApp);}
   finally{try{await closeScenarioContext('builder-'+x.game+'-'+x.kind,builderApp);}finally{builderApp=null;}}
  }
@@ -595,14 +616,14 @@ try{
  }catch(error){await recordScenarioFailure('builder-mtg-checked-basics',error,builderApp);}
  finally{try{await closeScenarioContext('builder-mtg-checked-basics',builderApp);}finally{builderApp=null;}}
  if(failures.length)throw new AggregateError(failures.map(f=>new Error(f.scenario+': '+f.error)),failures.length+' isolated Power browser scenario(s) failed; see failures and screenshots.');
- await mkdir(out,{recursive:true});await writeFile(new URL('power-release-browser.json',out),JSON.stringify({status:'passed',evidence:EVIDENCE,checks,screenshots,timings,formatResults,builderResults,coachCalls,askCalls,failures,persistence:magicPersistence},null,2));console.log('PASS: '+checks.join(' '));
-}catch(error){await mkdir(out,{recursive:true});if(builderApp||formatApp||app)try{await capture((builderApp||formatApp||app).page,'failure');}catch{}await writeFile(new URL('power-release-browser.json',out),JSON.stringify({status:'failed',evidence:EVIDENCE,checks,screenshots,timings,formatResults,builderResults,coachCalls,askCalls,failures,persistence:magicPersistence,error:String(error.stack||error),diagnostics:(builderApp||formatApp||app)?.diagnostics()},null,2));throw error;}
+ await mkdir(out,{recursive:true});await writeFile(new URL('power-release-browser.json',out),JSON.stringify({status:'passed',evidence:EVIDENCE,checks,screenshots,timings,layoutEvidence,formatResults,builderResults,coachCalls,askCalls,failures,persistence:magicPersistence},null,2));console.log('PASS: '+checks.join(' '));
+}catch(error){await mkdir(out,{recursive:true});if(builderApp||formatApp||app)try{await capture((builderApp||formatApp||app).page,'failure');}catch{}await writeFile(new URL('power-release-browser.json',out),JSON.stringify({status:'failed',evidence:EVIDENCE,checks,screenshots,timings,layoutEvidence,formatResults,builderResults,coachCalls,askCalls,failures,persistence:magicPersistence,error:String(error.stack||error),diagnostics:(builderApp||formatApp||app)?.diagnostics()},null,2));throw error;}
 finally{
  askHold?.release.resolve();const cleanupErrors=[];
  for(const [name,resource]of [['builder context',builderApp?.context],['format context',formatApp?.context],['initial context',app?.context],['browser',browser],['server',server]])if(resource)try{await resource.close();}catch(error){cleanupErrors.push({resource:name,error:String(error.stack||error)});}
  if(cleanupErrors.length){
   await mkdir(out,{recursive:true});const file=new URL('power-release-browser.json',out);let prior={};try{prior=JSON.parse(await readFile(file,'utf8'));}catch{}
-  await writeFile(file,JSON.stringify({...prior,status:'failed',evidence:EVIDENCE,checks,screenshots,timings,formatResults,builderResults,coachCalls,askCalls,failures,persistence:magicPersistence,cleanupErrors},null,2));
+  await writeFile(file,JSON.stringify({...prior,status:'failed',evidence:EVIDENCE,checks,screenshots,timings,layoutEvidence,formatResults,builderResults,coachCalls,askCalls,failures,persistence:magicPersistence,cleanupErrors},null,2));
   throw new AggregateError(cleanupErrors.map(x=>new Error(x.resource+': '+x.error)),'Power browser cleanup failed; every remaining resource was attempted.');
  }
 }

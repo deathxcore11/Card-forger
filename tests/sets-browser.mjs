@@ -2,7 +2,7 @@
 // only. This guard is intentional: --validate-fixtures never imports Playwright,
 // starts a server, launches a browser or contacts a provider.
 import assert from 'node:assert/strict';
-import {GAMES,WIDTHS,SETS,LOB,ANNIVERSARY,PAGED,EXPECTED,ART_EVIDENCE,BROKEN_SET_SYMBOL_SOURCES,validateSetsFixtures,startServer,openSetsApp,navigate,inventorySnapshot,noOverflow,capture,saveReport} from './sets-fixtures.mjs';
+import {GAMES,WIDTHS,SETS,LOB,ANNIVERSARY,PAGED,EXPECTED,ISO,ART_EVIDENCE,BROKEN_SET_SYMBOL_SOURCES,validateSetsFixtures,startServer,openSetsApp,navigate,inventorySnapshot,noOverflow,capture,saveReport} from './sets-fixtures.mjs';
 
 // Scroll the current continuation atomically. Its IntersectionObserver may
 // immediately replace/remove the sentinel after successful pagination; waiting
@@ -199,8 +199,33 @@ try{
   for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'#content','YGO set reference '+width);await capture(page,'sets-ygo-priced-'+width);}
   await select(page,'[data-change="tSetEdition"]','1st-edition');assert.match(await tile.innerText(),/\$15\.00/);assert.doesNotMatch(await tile.innerText(),/\$12\.34/);
   await select(page,'[data-change="tSetEdition"]','limited');assert.match(await tile.innerText(),/No quote yet/);assert.equal(await tile.getAttribute('data-tier'),'tn');
-  await select(page,'[data-change="tSetEdition"]','');await tile.click();await page.locator('.card-price-summary').waitFor();assert.match(await page.locator('.card-price-summary').innerText(),/No quote yet/,'Browse range never pretends an exact edition was selected');
-  assert.equal(await inventorySnapshot(page),before);report.push('YGO set reference ranges and animated price frames work before edition selection, respect edition filters and leave exact card/collection values unchanged.');
+  await select(page,'[data-change="tSetEdition"]','');assert.match(await tile.innerText(),/\$12\.34–\$15\.00/);assert.match(await tile.innerText(),/Market range/);assert.equal(await tile.getAttribute('data-edition'),'','The browse range does not itself select a physical edition');
+  const exactPriceRequest=url=>url.origin===server.base&&url.pathname==='/api/prices/yugioh'&&url.searchParams.get('id')==='4614116'&&[...url.searchParams].length===1;
+  assert.equal(app.requests.filter(r=>exactPriceRequest(new URL(r.url))).length,0);
+  const gate=app.hold(exactPriceRequest);
+  const selection=()=>page.evaluate(async()=>{
+   const ctx=window.__uiTestState.ui.sheetCtx,T=window.__uiTestTcg,card=T.cardOf('ygo','4614116'),scoped=T.setContextCard('ygo',card,ctx.setId,T.ui('ygo').sets.list),{quoteForContext}=await import('/pricing-presentation.js');
+   return {id:ctx.id,game:ctx.game,setId:ctx.setId,printing:ctx.priceEdition,edition:ctx.priceYgoEdition,automatic:ctx.ygoPriceDefault,explicit:!!ctx.ygoEditionExplicit,entryId:ctx.entryId,printPriceSchema:card.printPriceSchema,quote:quoteForContext('ygo',scoped,ctx)};
+  });
+  try{
+   // Set references supply a supported preview before the existing per-card
+   // refresh. Hold that exact refresh, never race the first footer mount.
+   await tile.click();await bounded(gate.seen,'Exact YGO detail price request');await page.locator('[data-change="ygoPreviewEdition"]').waitFor();
+   const initial=await selection();assert.equal(initial.id,'4614116');assert.equal(initial.game,'ygo');assert.equal(initial.setId,LOB.id);assert.equal(initial.printing,'LOB-118::Common');assert.equal(initial.edition,'1st-edition');assert.equal(initial.automatic,'1st-edition');assert.equal(initial.explicit,false);assert.equal(initial.entryId,'');assert.equal(initial.printPriceSchema,undefined);
+   const expected={game:'ygo',cardId:'4614116',releaseId:LOB.id,edition:'LOB-118',rarity:'Common',editionKey:'LOB-118::Common',selectedEdition:'1st-edition',selectionVerified:true,currency:'USD',source:'Synthetic set price fixture',value:15};
+   for(const [key,value]of Object.entries(expected))assert.equal(initial.quote[key],value,'Supported preview identity '+key);
+   assert.equal(initial.quote.printing.productId,100001);assert.equal(initial.quote.checkedAt,ISO);assert.equal(await page.locator('[data-change="ygoPreviewEdition"]').inputValue(),'1st-edition');assert.equal(await page.locator('.card-price-reference strong').innerText(),'$15.00');
+   assert.match(await page.locator('.ygo-price-preview').innerText(),/1st Edition selected for this preview/);assert.match(await page.locator('.ygo-price-preview').innerText(),/USD references are not condition values/);assert.match(await page.locator('.card-price-summary').innerText(),/LOB-118 · Common · 1st Edition/);assert.doesNotMatch(await page.locator('.card-price-summary').innerText(),/Market range|\$12\.34|\$999|\$987\.65/);
+   const seller=new URL(await page.locator('.card-buy-link').getAttribute('href'));assert.equal(seller.origin,'https://www.tcgplayer.com');assert.equal(seller.pathname,'/product/100001');assert.equal(seller.searchParams.get('Printing'),'1st Edition');assert.equal(await inventorySnapshot(page),before,'A supported preview does not select or modify an owned edition');await capture(page,'sets-ygo-supported-preview-before-refresh');
+   // The unchanged fixture deliberately returns NO per-card printing quotes.
+   // Wait for the completed source schema AND the matching rerender, then
+   // require unknown again. A transient $15 preview cannot satisfy this gate.
+   gate.release();await page.waitForFunction(setId=>{const T=window.__uiTestTcg,ctx=window.__uiTestState.ui.sheetCtx,c=T.cache.ygo['4614116'],p=c?.sets?.find(p=>p.name===T.ui('ygo').set.info?.name&&p.code==='LOB-118'&&p.rarity==='Common');return document.querySelector('#sheet')?.open&&ctx?.id==='4614116'&&ctx.setId===setId&&c?.printPriceSchema===1&&p&&!p.quotes?.length&&ctx.priceEdition==='LOB-118::Common'&&ctx.priceYgoEdition===''&&ctx.ygoPriceDefault===''&&document.querySelector('[data-change="ygoPreviewEdition"]')?.value==='';},LOB.id);
+   const settled=await selection();assert.equal(settled.quote.releaseId,LOB.id);assert.equal(settled.quote.editionKey,'LOB-118::Common');assert.equal(settled.quote.selectedEdition,'');assert.equal(settled.quote.value,null);assert.equal(settled.quote.currency,'USD');assert.equal(settled.quote.printing.productId,undefined);assert.equal(settled.automatic,'');assert.equal(settled.explicit,false);
+   assert.equal(await page.locator('.card-price-reference strong').innerText(),'No quote yet','Completed empty detail refresh must not borrow the browse range or stale edition quote');assert.match(await page.locator('.card-price-summary').innerText(),/LOB-118 · Common · Edition not specified/);assert.doesNotMatch(await page.locator('.card-price-summary').innerText(),/\$15\.00|\$12\.34|\$999|\$987\.65|1st Edition/);assert.doesNotMatch(await page.locator('.ygo-price-preview').innerText(),/selected for this preview/);
+   assert.doesNotMatch(await page.locator('.card-buy-link').getAttribute('href'),/\/product\/100001|Printing=1st/);assert.deepEqual(app.requests.filter(r=>new URL(r.url).pathname==='/api/prices/yugioh').map(r=>({exact:exactPriceRequest(new URL(r.url)),method:r.method,settled:r.settled})),[{exact:true,method:'GET',settled:true}],'Only the exact held detail-price read completes');await capture(page,'sets-ygo-empty-detail-after-refresh');
+  }finally{gate.release();}
+  assert.equal(await inventorySnapshot(page),before);report.push('YGO set ranges and Limited-without-quote remain honest. The exact supported $15 First Edition preview is labeled, then the deliberately empty detail refresh clears it to unknown; no range, stale quote, private amount or physical ownership is substituted.');
  });
  await withApp('legacy-chooser',{game:'ygo',legacy:true},releaseChooser);
  for(const game of ['mtg','ygo'])await withApp(`${game}-pagination`,{game},app=>paginatedFailure(app,game));
