@@ -135,6 +135,7 @@ function fixtures(options = {}) {
       { id: `owned-${g}-nm`, cardId: c.id, name: c.name, key: g === 'ygo' ? `name:${c.name}` : `id:${c.id}`, qty: 2, condition: unpriced ? 'Damaged' : 'Near Mint', finish: 'nonfoil', variant: g === 'ptcg' ? 'normal' : '', language: 'en' },
       { id: `owned-${g}-damaged`, cardId: c.id, name: c.name, key: g === 'ygo' ? `name:${c.name}` : `id:${c.id}`, qty: 1, condition: 'Damaged', finish: 'nonfoil', variant: g === 'ptcg' ? 'normal' : '', language: 'en' },
     ];
+    if(g==='mtg'){state.printings[c.id]=structuredClone(c);for(const lot of st.collection)Object.assign(lot,{printingVerified:true,printingId:c.id,set:c.set,collectorNumber:c.collector_number});}
     st.decks = decks ? [{ id: `saved-${g}`, name: `${g.toUpperCase()} saved fixture deck`, locked: false, versions: [],
       ...(g === 'mtg' ? { format: 'Standard', commander: '', cards: [{ name: saved.name, qty: 4 }], side: [] } : { format: g === 'ygo' ? 'tcg' : 'standard', zones: { main: [{ name: saved.name, cardId: saved.id, qty: 3 }], extra: [], side: [] } }) }] : [];
   }
@@ -169,7 +170,7 @@ function fixtures(options = {}) {
 for (const unpriced of [false, true]) {
   const f = fixtures({ unpriced });
   assert.doesNotThrow(() => validateWorkspace(structuredClone(f.state)));
-  const value = collectionValue(f.state.collection, catalog, {}, f.state.decks);
+  const value = collectionValue(f.state.collection, catalog, f.state.printings, f.state.decks);
   assert.equal(value.total, unpriced ? 0 : 25);
   assert.equal(value.unpriced, unpriced ? 3 : 1);
   for (const game of ['ygo', 'ptcg']) assert.equal(f.cache[game][heroes[game].id].prices.usd, 12.5);

@@ -1,0 +1,45 @@
+// Hosted proof of shared rendering, not live source/provider or device proof.
+import assert from 'node:assert/strict';
+import {createServer} from 'node:http';
+import {readFile,mkdir,writeFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {resolve,extname} from 'node:path';
+import {COMMUNITY_ILLUSTRATIONS} from '../community-art.js';
+const root=process.cwd(),sources=JSON.parse(await readFile(new URL('./frame-art/sources.json',import.meta.url)));
+const pinned=Object.fromEntries(await Promise.all(['mtg','ptcg','ygo'].map(async game=>{const [source,ext]=sources[game],file=`tests/frame-art/${game}.${ext}`,bytes=await readFile(file);assert(bytes.length>5000);assert.match(source,/^https:\/\//);return [game,{source,file,bytes,type:ext==='webp'?'image/webp':'image/jpeg',sha256:createHash('sha256').update(bytes).digest('hex')}];})));
+const evidence={note:'Synthetic News copy/dates and unchanged pinned same-game public card artwork test layout, loading, labels and failure behavior only. The fixed production illustration endpoints are intercepted with existing public fixtures; screenshots do not establish exact card identity, publisher image identity, live news freshness or provider availability. No user images or paid AI calls.',art:Object.fromEntries(Object.entries(pinned).map(([game,{bytes,...row}])=>[game,row])),checks:[]};
+if(process.argv.includes('--validate-fixtures')){console.log('PASS: three pinned public same-game News artwork fixtures with source URLs and SHA-256; no browser or network started.');process.exit(0);}
+if(process.env.GITHUB_ACTIONS!=='true')throw Error('Run this browser fixture only in hosted GitHub Actions.');
+const {chromium}=await import('playwright');await mkdir('test-results',{recursive:true});
+const publisher='https://www.yugioh-card.com/en/wp-content/uploads/2026/10/news-fixture.jpg';
+const fixture=`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shared weekly News fixture</title><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/community-curation.css"><body style="margin:0;padding:12px;background:#11151d"><main id="fixture"></main><script type="module">
+import {featureArticle} from '/home-ui.js';import {handleCommunityArtwork} from '/community-art.js';
+const params=new URL(location.href).searchParams,game=params.get('game')||'ygo',mode=params.get('mode')||'illustration';document.body.dataset.game=game;
+const definitions={ygo:{sourceId:'ygorganization',source:'YGOrganization',url:'https://ygorganization.com/itstimeforavalentineonetwopunch',title:'Take Flight with A Brand New “Mai Valentine” Strategy! [IMPH]',scope:'OCG · Japan'},mtg:{sourceId:'wizards',source:'Wizards of the Coast',url:'https://magic.wizards.com/en/news/announcements/test-release',title:'Magic preview: discover the cards in the next release',scope:'Magic · paper'},ptcg:{sourceId:'pokeguardian',source:'PokéGuardian',url:'https://www.pokeguardian.com/3412574_tcg-preview',title:'New Pokémon TCG cards revealed in the latest preview',scope:'Physical Pokémon TCG'}};
+const news={id:'fixture-news',kind:'news',game,...definitions[game],category:'Cards',summary:'Fixture source details. Original dates and publisher links are preserved.',whyItMatters:game==='ygo'?'New OCG card coverage from Japan. TCG release dates and legality may differ.':'See the featured cards and release details in the original announcement.',publishedAt:'2026-10-16',fetchedAt:'2026-10-19T06:17:00Z',image:''};
+if(mode!=='illustration')Object.assign(news,{sourceId:'konami',source:'Konami',url:'https://www.yugioh-card.com/en/news/fixture-release/',image:${JSON.stringify(publisher)}});
+const items=[news,{...news,id:'fixture-second',title:news.title+' — a second source-backed story',category:'Release'}];
+document.addEventListener('load',handleCommunityArtwork,true);document.addEventListener('error',handleCommunityArtwork,true);
+document.querySelector('#fixture').innerHTML='<section class="home-community"><div class="section-head"><h2>News</h2><span class="community-heading-note">'+game.toUpperCase()+'</span></div><div class="community-stage">'+items.map((x,i)=>featureArticle(game,x,i,items.length)).join('')+'</div><div class="community-footer"><span class="community-status">Shared weekly edition · Oct 19, 2026</span></div></section>';window.fixtureReady=true;
+</script>`;
+const server=createServer(async(req,res)=>{try{const pathname=new URL(req.url,'http://localhost').pathname;if(pathname==='/fixture'){res.setHeader('Content-Type','text/html');return res.end(fixture);}const file=resolve(root,'.'+pathname);if(!file.startsWith(root+'/'))throw Error();res.setHeader('Content-Type',({'.js':'text/javascript','.css':'text/css','.json':'application/json'})[extname(file)]||'application/octet-stream');res.end(await readFile(file));}catch{res.writeHead(404);res.end();}});
+await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.1:${server.address().port}`,browser=await chromium.launch();
+async function exercise(game,width,mode='illustration'){
+ const page=await browser.newPage({viewport:{width,height:950},reducedMotion:'reduce'}),errors=[],hits=[];
+ page.on('pageerror',e=>errors.push(e.message));const artUrl=new URL(COMMUNITY_ILLUSTRATIONS[game].url,base+'/fixture').href;
+ // Block every unrecognized external request; no runtime provider dependency.
+ await page.route('**/*',async route=>{const url=route.request().url();if(url===artUrl||url===publisher){hits.push(url);if(mode==='both-fail'||url===publisher&&mode==='publisher-fail')return route.fulfill({status:404,body:''});return route.fulfill({contentType:pinned[game].type,body:pinned[game].bytes});}if(new URL(url).origin===base)return route.continue();throw Error('Unexpected external fixture request: '+url);});
+ await page.goto(`${base}/fixture?game=${game}&mode=${mode}`);await page.waitForFunction(()=>window.fixtureReady);
+ for(const img of await page.locator('[data-community-image]').all())await img.scrollIntoViewIfNeeded();
+ if(mode==='both-fail')await page.waitForFunction(()=>[...document.querySelectorAll('[data-community-art]')].every(n=>n.dataset.artState==='missing'&&n.querySelector('img').hidden));
+ else await page.waitForFunction(()=>[...document.querySelectorAll('[data-community-image]')].every(img=>img.complete&&img.naturalWidth>0&&img.naturalHeight>0&&!img.hidden&&img.closest('[data-community-art]').dataset.artState==='ready'));
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,game+' has no horizontal overflow at '+width);
+ assert.equal(await page.locator('.community-feature').count(),2);assert.equal(await page.locator('.community-summary').count(),2);assert.equal(await page.locator('.community-pills .chip').count(),4);
+ const expectedKind=mode==='publisher'?'publisher':'illustrative';assert.equal(await page.locator(`[data-art-kind="${expectedKind}"]`).count(),2);
+ const actual=await page.locator('[data-community-art]').evaluateAll(nodes=>nodes.map(n=>{const i=n.querySelector('img');return{src:i.currentSrc,width:i.naturalWidth,height:i.naturalHeight,hidden:i.hidden,state:n.dataset.artState,kind:n.dataset.artKind,source:n.dataset.artSource||'',credit:n.querySelector('.community-art-credit').textContent,fallback:n.querySelector('.community-art-fallback').textContent};}));
+ for(const row of actual){assert.equal(row.src,mode==='publisher'?publisher:artUrl);if(mode==='both-fail'){assert.equal(row.width,0);assert(row.hidden);assert.match(row.fallback,/Illustrative game theme/);}else{assert(row.width>0&&row.height>0);assert.match(row.credit,mode==='publisher'?/Source image/:/Illustrative/);}assert.equal(row.source,mode==='publisher'?'https://www.yugioh-card.com/en/news/fixture-release/':'');}
+ assert(hits.includes(mode==='publisher'?publisher:artUrl));if(mode==='publisher-fail'||mode==='both-fail')assert(hits.includes(publisher));
+ await page.locator('.community-context summary').first().click();assert(await page.locator('.community-context').first().evaluate(e=>e.open));assert.match(await page.locator('.community-context').first().textContent(),/Checked Oct 19, 2026/);assert.deepEqual(errors,[]);
+ await page.screenshot({path:`test-results/news-${game}-${width}-${mode}.png`,fullPage:true});evidence.checks.push({game,width,mode,actual,requested:[...new Set(hits)]});await page.close();
+}
+try{for(const game of ['mtg','ptcg','ygo'])for(const width of [320,390,1280])await exercise(game,width);for(const mode of ['publisher','publisher-fail','both-fail'])await exercise('ygo',390,mode);console.log('PASS: all-game News at 320/390/1280px, strict decoded images/source provenance, publisher preference, one-step fallback, failed-art theme, disclosure and no overflow.');}finally{await writeFile('test-results/news-curation-evidence.json',JSON.stringify(evidence,null,2));await browser.close();await new Promise(r=>server.close(r));}

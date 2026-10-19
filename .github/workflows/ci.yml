@@ -605,3 +605,42 @@ jobs:
         with:
           name: magic-owned-detail-browser-evidence
           path: test-results/magic-owned-detail-*
+
+  ai-deck-build-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - name: Test grounded AI draft preview and explicit existing save handoff
+        run: node tests/ai-deck-build-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ai-deck-build-browser-evidence
+          path: test-results/ai-deck-build-*
+  news-curation-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - name: Test shared source-backed News cards and provenance
+        run: node tests/news-curation-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: news-curation-browser-evidence
+          path: test-results/news-*

@@ -52,3 +52,44 @@
 .set-grid .ygo-set-meta .set-price{display:flex;flex-wrap:wrap;gap:3px 7px;min-width:0;white-space:normal;overflow-wrap:anywhere;font-weight:700}
 .set-grid .set-price>small{font-size:11px;font-weight:400;color:var(--muted)}
 .set-grid>.grid-card[data-tier="tn"]>.card-img{border:3px solid var(--rarity-edge,var(--line));border-radius:12px}
+
+/* One calm catalogue shell for all three games. Native selects use the existing glass menu. */
+.set-browser-controls{display:grid;gap:14px;min-width:0;padding:18px;border:1px solid var(--line);border-radius:20px;background:color-mix(in srgb,var(--surface) 94%,transparent)}
+.set-browser-controls>.searchbar{margin:0;min-width:0}
+.set-browser-controls .searchbar input{width:100%;min-width:0;min-height:44px}
+.set-browser-quick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:4px;border-radius:13px;background:var(--surface-2)}
+.set-browser-quick>button{min-width:0;min-height:42px;border:1px solid transparent;border-radius:10px;background:transparent;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;padding:8px 7px;overflow-wrap:anywhere}
+.set-browser-quick>button.on{color:var(--text);border-color:color-mix(in srgb,var(--gold) 42%,var(--line));background:var(--surface)}
+.set-browser-quick>button:focus-visible,.set-browser-summary button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.set-browser-facets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;min-width:0}
+.set-browser-facets>label{display:grid;gap:6px;min-width:0;color:var(--muted);font-size:11px}
+.set-browser-facets select,.set-browser-facets .glass-select{width:100%;min-width:0;max-width:100%;min-height:44px}
+.set-browser-summary{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;min-width:0}
+.set-browser-summary>p{flex:1 1 240px;margin:0;color:var(--muted);font-size:12px;line-height:1.5;font-variant-numeric:tabular-nums}
+.set-browser-summary>button{min-height:38px;padding:6px 0}
+.set-browser-hint{margin:0;color:var(--muted);font-size:11px;line-height:1.65}
+.set-browser-hint>span{opacity:.85}
+.set-browser-flat{margin:24px 0 28px}
+.set-year-grid>.set-browser-tile{display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;gap:15px;min-width:0}
+.set-tile-body{display:grid;grid-template-columns:76px minmax(0,1fr) auto;align-items:center;gap:14px;min-width:0;width:100%}
+.set-year-grid .set-tile-body>.set-media{width:76px;height:76px;min-width:0}
+.set-year-grid .set-tile-body>.set-row-count{min-width:0;max-width:78px}
+.set-tile-body .set-row-main{align-self:center}
+.set-tile-body .set-row-detail{font-size:11px;line-height:1.5}
+.set-tile-progress{display:block;min-width:0;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:11px;line-height:1.5}
+.set-tile-progress-label{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font-variant-numeric:tabular-nums}
+.set-tile-progress-label>b{flex:none;color:var(--text);font-size:11px;font-weight:600}
+.set-tile-progress>.set-progress-track{display:block;height:5px;margin:7px 0 5px}
+.set-tile-progress>small{display:block;font-size:10px}
+/* The provider supplies representative YGO art, not authenticated set logos.
+   A restrained code medallion remains the primary identity on every tile. */
+.set-year-grid .set-media-ygo{position:relative;isolation:isolate;background:radial-gradient(circle at 35% 25%,color-mix(in srgb,var(--game-color) 15%,var(--surface)),var(--surface-2));border:1px solid var(--line)}
+.set-year-grid .set-media-ygo>img{position:absolute;inset:0;padding:0;object-fit:cover;opacity:.2;filter:saturate(.45);z-index:-1}
+.set-ygo-emblem{display:grid;place-items:center;width:58px;min-height:48px;border:1px solid color-mix(in srgb,var(--gold) 50%,var(--line));border-radius:10px;background:color-mix(in srgb,var(--surface) 82%,transparent);padding:5px;box-sizing:border-box;box-shadow:0 2px 10px #0002}
+.set-ygo-emblem>span{color:var(--text);font-size:12px;font-weight:650;letter-spacing:.03em;overflow-wrap:anywhere;text-align:center}
+@media(min-width:1100px){.set-tile-body{grid-template-columns:96px minmax(0,1fr) auto;gap:18px}.set-year-grid .set-tile-body>.set-media{width:96px;height:82px}}
+@media(min-width:700px) and (max-width:999px){.set-tile-body{grid-template-columns:60px minmax(0,1fr) auto;gap:10px}.set-year-grid .set-tile-body>.set-media{width:60px;height:66px}.set-year-grid .set-tile-body>.set-row-count{max-width:62px}.set-year-grid .set-tile-body .set-row-main>b{font-size:13px}.set-year-grid .set-tile-body .set-row-count>b{font-size:18px}}
+@media(max-width:699px){.set-browser-controls{padding:14px;border-radius:16px;gap:12px}.set-browser-facets{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}.set-browser-quick>button{font-size:11px}.set-year-grid>.set-browser-tile{gap:12px}.set-tile-body{gap:12px}.set-browser-summary{gap:2px 16px}.set-browser-summary>p{flex-basis:100%}.set-browser-hint{font-size:10.5px}}
+@media(max-width:380px){.set-browser-controls{padding:11px}.set-browser-quick>button{padding:7px 4px;font-size:10px}.set-tile-body{grid-template-columns:60px minmax(0,1fr) auto;gap:9px}.set-year-grid .set-tile-body>.set-media{width:60px;height:62px}.set-year-grid .set-tile-body>.set-row-count{max-width:62px}.set-ygo-emblem{width:48px}.set-tile-progress-label{font-size:10px}}
+
+.set-browser-freshness{margin:0;color:var(--muted);font-size:10px;line-height:1.5;font-variant-numeric:tabular-nums}

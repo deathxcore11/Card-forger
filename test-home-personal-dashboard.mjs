@@ -88,7 +88,7 @@ try {
 
 const story={kind:'news',game:'ygo',sourceId:'ygorganization',id:'private-fixture',source:'YGOrganization',url:'https://ygorganization.com/synthetic-ocg-story',title:'Actual publisher headline [OCG]',scope:'OCG · Japan',summary:'OCG announcements do not establish TCG release dates or legality.',publishedAt:new Date(now-86400000).toISOString().slice(0,10),fetchedAt:iso,image:'https://ygorganization.com/fake-photo.jpg'};
 const html=featureArticle('ygo',story,0,4);
-assert.match(html,/feature-text-only/);assert.doesNotMatch(html,/<img|community-art-theme|community-signal/);
+assert.match(html,/data-art-kind="illustrative"/);assert.match(html,/Illustrative Yu-Gi-Oh! card art/);assert.doesNotMatch(html,/src="https:\/\/ygorganization.com\/fake-photo.jpg/);
 assert.match(html,/Actual publisher headline \[OCG\]/);assert.match(html,/OCG · Japan/);assert.match(html,/community-context/);assert.match(html,/OCG announcements do not establish TCG release dates or legality/);
 assert.match(html,/href="https:\/\/ygorganization.com\/synthetic-ocg-story"/);
 assert.equal((html.match(/<a /g)||[]).length,1,'headline is the single direct source action');

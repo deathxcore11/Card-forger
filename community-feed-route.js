@@ -65,7 +65,7 @@ function news(game, sourceId, row, now) {
   if (!url || !title || !publishedAt || age < 0 || age > COMMUNITY_RETENTION || digital(title + ' ' + (row.categories || ''))) return null;
   if (sourceId === 'wizards' && /\bArena\b|Competitive Brawl/i.test(title)) return null;
   const source = NEWS_SOURCES[sourceId], scope = storyScope(sourceId, row);
-  return { id: sourceId === 'serebii' ? `${url}#${encodeURIComponent(title)}` : url, sourceId, game, kind: 'news', title, scope, summary: summary(sourceId, scope), url, source: source.name, sourceUrl: source.url, publishedAt, dateLabel: 'Published', fetchedAt: iso(now), image: safeNewsImage(row.image, game, sourceId, url), important: /bann|restrict|rules|policy|errata|championship|replacement/i.test(title), stale: false };
+  return { id: sourceId === 'serebii' ? `${url}#${encodeURIComponent(title)}` : url, sourceId, game, kind: 'news', title, scope, summary: summary(sourceId, scope), evidence: communityText(row.evidence || row.description, 480), url, source: source.name, sourceUrl: source.url, publishedAt, dateLabel: 'Published', fetchedAt: iso(now), image: safeNewsImage(row.image, game, sourceId, url), important: /bann|restrict|rules|policy|errata|championship|replacement/i.test(title), stale: false };
 }
 function anchors(html, sourceId, game) {
   return elements(html, 'a').map(a => ({ ...a, url: safeNewsArticle(absolute(a.attrs.href || '', sourceId), game, sourceId), title: communityText(a.inner) })).filter(a => a.url && a.title);
@@ -98,7 +98,7 @@ export function parseSerebiiIndex(html) {
       const previous = sections[i - 1];
       // Whitespace/comments are the only allowed gap between the paired siblings.
       const adjacent = previous && hasClass(previous, 'pics') && !post.inner.slice(previous.end, section.start).replace(/<!--[\s\S]*?-->/g, '').trim();
-      out.push({ sourceId: 'serebii', url, title, publishedAt, image: adjacent ? firstImage(previous.inner, 'serebii') : '', scope: championship ? 'TCG and other games' : 'Physical Pokémon TCG' });
+      out.push({ sourceId: 'serebii', url, title, publishedAt, image: adjacent ? firstImage(previous.inner, 'serebii') : '', evidence: text.replace(label, '').replace(title, '').trim().slice(0, 480), scope: championship ? 'TCG and other games' : 'Physical Pokémon TCG' });
     }
   }
   return out.slice(0, 18);
@@ -111,7 +111,7 @@ export function parseNewsIndex(game, html, sourceId = GAME_NEWS_SOURCES[game]?.[
     for (const item of elements(input, 'li').filter(node => hasClass(node, 'clear'))) {
       const copy = elements(item.inner, 'section').find(node => hasClass(node, 'copy'));
       const link = copy && anchors(copy.inner, sourceId, game)[0], d = copy && elements(copy.inner, 'p').find(node => hasClass(node, 'date'));
-      if (link && d) out.push({ sourceId, url: link.url, title: link.title, publishedAt: date(d.inner), image: firstImage(item.inner, sourceId) });
+      if (link && d) out.push({ sourceId, url: link.url, title: link.title, publishedAt: date(d.inner), evidence: communityText(elements(copy.inner, 'section').find(node => hasClass(node, 'preview'))?.inner, 480), image: firstImage(item.inner, sourceId) });
     }
   } else if (['pokeguardian', 'ygorganization'].includes(sourceId)) {
     for (const item of elements(input, 'article')) {
@@ -174,7 +174,7 @@ export function parseNewsArticle(game, html, candidate, now = Date.now(), source
   const images = [article?.image, metadata['og:image'], metadata['og:image:url'], metadata['og:image:secure_url'], candidate.image];
   const image = images.map(value => safeNewsImage(value, game, sourceId, candidate.url)).find(Boolean) || '';
   const markup = cleanMarkup(input), body = elements(markup, 'article')[0]?.inner || elements(markup, 'div').find(node => hasClass(node, 'post-content') && hasClass(node, 'prose'))?.inner || '';
-  return news(game, sourceId, { ...candidate, title, publishedAt, image, categories, region: communityText(body, 12000) }, now);
+  return news(game, sourceId, { ...candidate, title, publishedAt, image, categories, evidence: article?.description || metadata['og:description'] || metadata.description || communityText(body, 480) || candidate.evidence, region: communityText(body, 12000) }, now);
 }
 export function parseYgoEvents(html, now = Date.now()) {
   const input = cleanMarkup(html), at = input.indexOf('Upcoming Events'); if (at < 0) return [];
@@ -188,13 +188,13 @@ export function parseYgoEvents(html, now = Date.now()) {
   }
   return out.sort((a, b) => a.startsAt.localeCompare(b.startsAt)).slice(0, 3);
 }
-export function retainCommunityItems(items, now = Date.now()) {
+export function retainCommunityItems(items, now = Date.now(), maxAge = COMMUNITY_RETENTION) {
   const seen = new Set();
   return (Array.isArray(items) ? items : []).slice(0, 100).filter(x => {
     if (!x?.id || seen.has(x.sourceId === 'serebii' ? x.url + ':' + x.title : x.url) || !['news', 'event'].includes(x.kind) || !safeNewsArticle(x.url, x.game, x.sourceId, x.kind) || !Number.isFinite(Date.parse(x.fetchedAt)) || Date.parse(x.fetchedAt) > now + 60000) return false;
     const n = Date.parse(date(x.kind === 'event' ? x.endsAt : x.publishedAt));
     if (x.kind === 'event' && (!date(x.startsAt) || date(x.startsAt) > date(x.endsAt))) return false;
-    if (!Number.isFinite(n) || now - Date.parse(x.fetchedAt) > COMMUNITY_RETENTION || (x.kind === 'event' ? n + COMMUNITY_DAY <= now : n > now || now - n > COMMUNITY_RETENTION)) return false;
+    if (!Number.isFinite(n) || now - Date.parse(x.fetchedAt) > maxAge || (x.kind === 'event' ? n + COMMUNITY_DAY <= now : n > now || now - n > maxAge)) return false;
     seen.add(x.sourceId === 'serebii' ? x.url + ':' + x.title : x.url); return true;
   }).map(x => ({ ...x, id: x.sourceId === 'serebii' ? `${x.url}#${encodeURIComponent(communityText(x.title))}` : x.url, source: NEWS_SOURCES[x.sourceId].name, sourceUrl: NEWS_SOURCES[x.sourceId].url, image: safeNewsImage(x.image, x.game, x.sourceId, x.url, x.kind) })).sort((a, b) => (Number(b.important) || 0) - (Number(a.important) || 0) || String(b.publishedAt || b.startsAt).localeCompare(String(a.publishedAt || a.startsAt))).slice(0, MAX_ITEMS);
 }
@@ -215,7 +215,8 @@ async function boundedHtml(url, fetchImpl, budget, sourceId) {
     return text + decoder.decode();
   } finally { clearTimeout(timer); }
 }
-async function refresh(game, previous, cache, key, fetchImpl, now) {
+export async function collectCommunity(game, previous = null, { fetchImpl = fetch, now = Date.now() } = {}) {
+  if (!Object.hasOwn(COMMUNITY_SOURCES, game || '')) throw Error('Unknown community game');
   const items = [], errors = [], sources = [], budget = { remaining: COMMUNITY_FETCH_LIMIT }, articleCandidates = [];
   const ids = [...GAME_NEWS_SOURCES[game], ...(game === 'ygo' ? ['konami-events'] : [])];
   // All indexes reserve their share first. Article slots are shared game-wide,
@@ -260,6 +261,10 @@ async function refresh(game, previous, cache, key, fetchImpl, now) {
   const good = sources.some(source => source.status === 'checked');
   const retained = (Array.isArray(previous?.items) ? previous.items : []).map(x => ({ ...x, stale: true }));
   const body = { game, items: retainCommunityItems([...items, ...retained], now), sources: sources.sort((a, b) => ids.indexOf(a.sourceId) - ids.indexOf(b.sourceId)), checkedAt: iso(now), fetchedAt: good ? iso(now) : previous?.fetchedAt || '', nextCheckAt: iso(now + COMMUNITY_DAY), stale: errors.length > 0, error: [...new Set(errors)].join('. ').slice(0, 600), status: good ? errors.length ? 'partial' : 'ready' : 'unavailable' };
+  return body;
+}
+async function refresh(game, previous, cache, key, fetchImpl, now) {
+  const body = await collectCommunity(game, previous, { fetchImpl, now });
   snapshots.set(game, body);
   if (cache) { try { await cache.put(key, json(body, 200, COMMUNITY_RETENTION / 1000)); } catch {} }
   return body;

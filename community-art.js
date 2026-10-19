@@ -1,14 +1,14 @@
-// Source-bound artwork for Home. No random illustrations, provider search, or
-// archetype-wide cover substitution: a featured card must belong to this list.
+// Source-bound artwork for Home. Deck art must belong to the exact list;
+// News may use a fixed, explicitly labelled game illustration, never random art.
 import { pokemonDeckCover } from './artwork.js';
 import { GAMES, GAME_ICON } from './games.js';
 import { esc } from './ui.js';
-import { safeNewsImage } from './community-sources.js';
+import { safeNewsImage, safeNewsArticle } from './community-sources.js';
 
 const SOURCE_HOSTS = {
   mtg: ['magic.wizards.com', 'www.magic.wizards.com', 'www.mtgo.com', 'mtgo.com', 'edhtop16.com', 'topdeck.gg', 'magic.gg', 'www.magic.gg', 'locator.wizards.com'],
-  ptcg: ['www.pokemon.com', 'pokemon.com', 'events.pokemon.com', 'play.limitlesstcg.com', 'limitlesstcg.com'],
-  ygo: ['www.yugioh-card.com', 'yugioh-card.com', 'ygoprodeck.com'],
+  ptcg: ['www.pokemon.com', 'pokemon.com', 'events.pokemon.com', 'www.serebii.net', 'www.pokeguardian.com', 'play.limitlesstcg.com', 'limitlesstcg.com'],
+  ygo: ['www.yugioh-card.com', 'yugioh-card.com', 'ygorganization.com', 'ygoprodeck.com'],
 };
 function allowedUrl(value, hosts) {
   if (typeof value !== 'string' || value.length > 2048 || /[\u0000-\u001f\u007f]/.test(value)) return '';
@@ -18,6 +18,12 @@ function allowedUrl(value, hosts) {
   } catch { return ''; }
 }
 export const safeCommunityImage = safeNewsImage;
+// Fixed, existing card providers only. These are illustrations, never presented as event photographs.
+export const COMMUNITY_ILLUSTRATIONS = Object.freeze({
+  mtg: { url: 'https://api.scryfall.com/cards/named?exact=Black%20Lotus&format=image&version=art_crop', name: 'Black Lotus', label: 'Illustrative Magic card art' },
+  ptcg: { url: 'https://images.pokemontcg.io/base1/58_hires.png', name: 'Pikachu', label: 'Illustrative Pokémon card art' },
+  ygo: { url: 'img/ygo/a/89631139.jpg', name: 'Blue-Eyes White Dragon', label: 'Illustrative Yu-Gi-Oh! card art' },
+});
 const sourceUrl = (value, game) => allowedUrl(value, SOURCE_HOSTS[game]);
 const cleanName = value => typeof value === 'string' && value.length <= 180 && !/[<>\u0000-\u001f\u007f]/.test(value) ? value.trim() : '';
 const numericId = value => /^(?:[1-9]\d{0,9})$/.test(String(value)) ? String(value) : '';
@@ -62,17 +68,19 @@ export function communityArtwork(game, slide = {}, { compact = false } = {}) {
   const deckImage = slide.kind === 'deck' ? cardImage(slide.artwork, game, slide) : '';
   const publisherImage = ['news', 'event'].includes(slide.kind) ? safeCommunityImage(slide.image, game, slide.sourceId, slide.url, slide.kind) : '';
   const deckContext = slide.kind === 'deck' || compact && !slide.url && (!slide.kind || slide.kind === 'link');
-  if (!deckContext && !publisherImage) return ''; // News/source cards are honestly text-only.
-  const src = deckImage || publisherImage, kind = deckImage ? 'card' : publisherImage ? 'publisher' : 'theme';
-  const fallback = compact ? 'Game theme' : deckContext ? 'Game theme · deck art unavailable' : 'Article image unavailable';
-  const credit = deckImage ? `Featured card: ${slide.artwork.cardId}` : 'Source image';
+  const verifiedStory = ['news','event'].includes(slide.kind) && slide.sourceId ? safeNewsArticle(slide.url, game, slide.sourceId, slide.kind) : slide.kind !== 'news' ? sourceUrl(slide.url, game) : '';
+  const illustrated = !deckContext && !!verifiedStory && ['news', 'event', 'link'].includes(slide.kind), illustration = illustrated ? COMMUNITY_ILLUSTRATIONS[game] : null;
+  if (!deckContext && !publisherImage && !illustration) return '';
+  const src = deckImage || publisherImage || illustration?.url || '', kind = deckImage ? 'card' : publisherImage ? 'publisher' : illustration ? 'illustrative' : 'theme';
+  const fallback = compact ? 'Game theme' : deckContext ? 'Game theme · deck art unavailable' : 'Illustrative game theme';
+  const credit = deckImage ? `Featured card: ${slide.artwork.cardId}` : publisherImage ? 'Source image' : illustration?.label || 'Game theme';
   const image = src ? `<img class="community-art-image" data-community-image src="${esc(src)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : '';
-  const visual = deckImage && game === 'ptcg' ? `<span class="community-art-scan"><span class="community-art-window">${image}</span></span>` : image;
-  return `<span class="community-art${compact ? ' community-art-compact' : ''}" data-community-art data-art-game="${game}" data-art-kind="${kind}" data-art-state="${src ? 'pending' : 'missing'}"${deckImage ? ` data-art-card="${esc(slide.artwork.cardId)}" data-art-deck="${esc(slide.deckKey)}"` : ''}${src ? ` data-art-source="${esc(slide.url)}"` : ''} aria-hidden="true">${deckContext ? `<span class="community-art-theme"><span class="community-art-orbit"></span><span class="community-art-emblem">${GAME_ICON[game]}</span><span class="community-art-lines"></span></span>` : ''}${visual}<span class="community-art-shade"></span><span class="community-art-caption community-art-fallback">${fallback}</span>${src ? `<span class="community-art-caption community-art-credit">${esc(credit)}</span>` : ''}</span>`;
+  const visual = (deckImage || kind === 'illustrative') && game === 'ptcg' ? `<span class="community-art-scan"><span class="community-art-window">${image}</span></span>` : image;
+  return `<span class="community-art${compact ? ' community-art-compact' : ''}" data-community-art data-art-game="${game}" data-art-kind="${kind}" data-art-state="${src ? 'pending' : 'missing'}"${illustration ? ` data-art-fallback="${esc(illustration.url)}" data-art-fallback-label="${esc(illustration.label)}"` : ''}${deckImage ? ` data-art-card="${esc(slide.artwork.cardId)}" data-art-deck="${esc(slide.deckKey)}"` : ''}${deckImage || publisherImage ? ` data-art-source="${esc(slide.url)}"` : ''} aria-hidden="true">${deckContext || illustrated ? `<span class="community-art-theme"><span class="community-art-orbit"></span><span class="community-art-emblem">${GAME_ICON[game]}</span><span class="community-art-lines"></span></span>` : ''}${visual}<span class="community-art-shade"></span><span class="community-art-caption community-art-fallback">${fallback}</span>${src ? `<span class="community-art-caption community-art-credit">${esc(credit)}</span>` : ''}</span>`;
 }
 
-// One request per exact image. Failed publisher art becomes a clean text card; no broken-image
-// icon, retries, network discovery, or insertion of remotely supplied markup.
+// One request per exact image. Publisher failure gets one fixed illustration,
+// then a labelled theme; no retries, discovery or remotely supplied markup.
 export function handleCommunityArtwork(event) {
   const image = event.target;
   if (!image?.matches?.('img[data-community-image]')) return;
@@ -80,8 +88,13 @@ export function handleCommunityArtwork(event) {
   if (!wrapper || wrapper.dataset.artState === 'missing') return;
   if (event.type === 'load' && image.naturalWidth > 0) wrapper.dataset.artState = 'ready';
   else if (event.type === 'error' || event.type === 'load') {
+    if (wrapper.dataset.artKind === 'publisher' && wrapper.dataset.artFallback) {
+      wrapper.dataset.artKind = 'illustrative'; wrapper.dataset.artState = 'pending'; delete wrapper.dataset.artSource;
+      const credit = wrapper.querySelector?.('.community-art-credit'); if (credit) credit.textContent = wrapper.dataset.artFallbackLabel || 'Illustrative card art';
+      image.src = wrapper.dataset.artFallback; image.hidden = false; return;
+    }
     image.hidden = true;
     wrapper.dataset.artState = 'missing';
-    if (wrapper.dataset.artKind === 'publisher') { wrapper.hidden = true; wrapper.closest?.('.community-feature')?.classList?.add('feature-text-only'); }
+    if (wrapper.dataset.artKind === 'publisher' && !wrapper.dataset.artFallback) { wrapper.hidden = true; wrapper.closest?.('.community-feature')?.classList?.add('feature-text-only'); }
   }
 }

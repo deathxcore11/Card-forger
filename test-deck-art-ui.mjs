@@ -6,6 +6,8 @@ import { blankGame } from './games.js';
 import { cache, collectionGroups, metaState, tcgDecks } from './tcg.js';
 
 // Supplied-list fixtures, NOT a capture of the current provider's tournament feed.
+// Freeze the clock so an async fixture cannot accidentally manufacture a future event.
+const realNow = Date.now, fixtureNow = realNow(); Date.now = () => fixtureNow;
 const pokemon = (name, set, number, qty = 2) => ({ name, set, number, qty, kind: 'Pokemon' });
 const dhelmise = pokemon('Dhelmise V', 'SSH', '009');
 const support = pokemon('Dedenne GX', 'UNB', '057', 4);
@@ -36,8 +38,9 @@ const standings = [
   null,
 ];
 const fixtureFetch = async url => {
+  if (String(url).includes('api/meta/curation?')) return Response.json({ game: 'ptcg', format: 'Standard', status: 'unavailable', selections: [] });
   if (String(url).includes('/standings')) return Response.json(standings);
-  if (String(url).includes('/tournaments?')) return Response.json([{ id: 'fixture-event', name: 'Synthetic fixture event', date: new Date().toISOString(), players: 24 }]);
+  if (String(url).includes('/tournaments?')) return Response.json([{ id: 'fixture-event', name: 'Synthetic fixture event', date: new Date(fixtureNow - 3600e3).toISOString(), players: 24 }]);
   throw Error('Unexpected fixture request: ' + url);
 };
 globalThis.fetch = fixtureFetch;
@@ -95,7 +98,7 @@ const migrate = await import('./meta.js?deck-art-success');
 const [freshA, freshB] = await Promise.all([migrate.loadMeta('ptcg'), migrate.loadMeta('ptcg')]);
 assert.deepEqual(freshA, data);
 assert.equal(freshA, freshB, 'simultaneous view loads share one request');
-assert.equal(migrationRequests, 2, 'one tournaments request and one standings request');
+assert.equal(migrationRequests, 3, 'one tournaments request, one standings request and one read-only shared curation request');
 assert.equal(migrate.metaNeedsRefresh('ptcg'), false);
 const saved = JSON.parse(storage.get('cardforge-meta-v1')).ptcg;
 assert.equal(saved.data.artSchema, 2);
@@ -179,3 +182,5 @@ assert.match(css,/@keyframes page-fwd \{ from \{[^}]*translateX\(min\(22px, var\
 assert.match(css,/@keyframes page-back \{ from \{[^}]*translateX\(calc\(-1 \* min\(22px, var\(--gutter\)\)\)\)/);
 for(const width of [320,390,768,1440])for(const gutter of [16,24]){const shift=Math.min(22,gutter),content=width-2*gutter;assert(gutter+content+shift<=width);assert(gutter-shift>=0);}
 console.log('PASS: forward/back page movement stays within the gutter instead of overflowing narrow deck controls.');
+
+Date.now = realNow;

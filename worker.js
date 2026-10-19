@@ -3,7 +3,7 @@ export {DailyCards} from './daily-card-route.js';
 import {dailyCardRoute} from './daily-card-route.js';
 export {ConditionPriceCache} from './condition-cache.js';
 import {conditionFeedRoute} from './condition-feed-route.js';
-import {communityFeedRoute} from './community-feed-route.js';
+import {weeklyCurationRoute,scheduledWeeklyCuration} from './weekly-curation-route.js';
 import { aiReviewRoute } from './ai-review-route.js';
 import { aiAskRoute } from './ai-ask-route.js';
 import { scanIdentifyRoute } from './scan-identify-route.js';
@@ -179,11 +179,15 @@ export default {
         await mtgMeta(env, f, 30, null, { force: true });
       } catch {}
     }
+    if (event?.cron === '17 6 * * *') {
+      try { const result=await scheduledWeeklyCuration(env, {loadMtg:format=>mtgMeta(env,format,30,null)}); if(['deadline','unavailable'].includes(result.status))console.warn('Shared weekly curation paused; unclaimed feeds remain due and existing snapshots remain available.'); }
+      catch { console.warn('Shared weekly curation could not complete; existing snapshots remain available.'); }
+    }
   },
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (url.pathname === '/api/daily-card') return dailyCardRoute(request, env);
-    if (url.pathname === '/api/community') return communityFeedRoute(request, url, ctx);
+    if (url.pathname === '/api/community' || url.pathname === '/api/meta/curation') return weeklyCurationRoute(request, url, env);
     if (url.pathname === "/api/ai/matchup") return aiMatchupRoute(request, env);
     if (url.pathname === "/api/ai/deck-review") return aiReviewRoute(request, env);
     if (url.pathname === "/api/ai/ask") return aiAskRoute(request, env);

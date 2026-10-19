@@ -1,0 +1,81 @@
+// Synthetic app catalog and mocked provider only. No API key, live account,
+// private collection, paid model invocation, or external card fetch is used.
+import assert from 'node:assert/strict';
+import {prepareMtgDeck,deckPriceCoverage} from './ai-deck-builder.js';
+import {makeAskTools} from './ai-tools.js';
+import {runAskLoop,ASK_LIMITS,partialAnswer} from './ai-ask-loop.js';
+import {aiAskRoute} from './ai-ask-route.js';
+import {cardKey,validateDeck,sumQty} from './core.js';
+const card=(name,type='Artifact',ci=[],usd='.25',more={})=>({name,type_line:type,color_identity:ci,colors:ci,mana_cost:ci.length?'{1}{'+ci[0]+'}':'{2}',cmc:2,oracle_text:'An artifact test fixture.',legalities:{commander:'legal',modern:'legal'},prices:{usd},...more});
+const kci=card('Krark-Clan Ironworks','Artifact',[],'20',{oracle_text:'Sacrifice an artifact: Add {C}{C}.'}),sai=card('Sai, Master Thopterist','Legendary Creature — Human Artificer',['U'],'2',{oracle_text:'Whenever you cast an artifact spell, create a 1/1 colorless Thopter artifact creature token with flying.'}),island=card('Island','Basic Land — Island',['U'],'.10',{mana_cost:'',cmc:0,produced_mana:['U']}),wrong=card('Reckless Fireweaver','Creature — Human Artificer',['R']),banned=card('Banned Fixture','Artifact',[],'.01',{legalities:{commander:'banned'}});
+const pool=Array.from({length:90},(_,i)=>card('Artifact Fixture '+i,'Artifact',[],'.25',{edhrec_rank:i+100,oracle_text:i%3===0?'Draw a card.':i%3===1?'Add {C}.':'Destroy target artifact.'}));
+function context({quotes=true,small=false,owned={},extra=[]}={}){
+ const all=[kci,sai,{...island,prices:{usd:quotes?'.10':null}},...(small?pool.slice(0,4):pool),wrong,banned,...extra],catalog=Object.fromEntries(all.map(c=>[cardKey(c.name),structuredClone(c)]));let searches=0,active=0,maxActive=0,opened=null;
+ const x={S:{state:{decks:[],collection:[],settings:{}},catalog,ui:{}},T:{game:()=> 'mtg'},meta:n=>catalog[cardKey(n)],resolve:async n=>catalog[cardKey(n)]||null,inv:n=>({owned:owned[n]||0,available:owned[n]||0}),cacheCard:c=>{catalog[cardKey(c.name)]=c;return c;},priceOf:n=>Number(catalog[cardKey(n)]?.prices?.usd)||null,openMtgDraft:d=>{opened=d;},api:async path=>{searches++;active++;maxActive=Math.max(maxActive,active);await Promise.resolve();active--;const q=new URL(path,'https://fixture.invalid').searchParams.get('q');return {data:q.includes('is:commander')?[sai]:all};}};
+ return {x,get searches(){return searches;},get maxActive(){return maxActive;},get opened(){return opened;}};
+}
+const args={game:'mtg',style:'artifacts',seed:kci.name,commander:'',format:'Commander',budget:200,budget_basis:'total'};
+let c=context(),built=await prepareMtgDeck(args,c.x),d=built.draft;
+assert.equal(d.total,100);assert.equal(sumQty(d.cards),100);assert.equal(d.commander,sai.name);assert.equal(d.cards.find(r=>r.name===kci.name).qty,1);assert.equal(d.cards.find(r=>r.name===sai.name).qty,1);assert.equal(d.cards.find(r=>r.name==='Island').qty,36);assert.ok(d.cards.every(r=>r.qty===1||r.name==='Island'));assert.ok(!d.cards.some(r=>[wrong.name,banned.name].includes(r.name)));assert.equal(d.legalChecked,true);assert.equal(d.withinBudget,true);assert.equal(d.totalEstimate,41.1);assert.equal(d.purchaseEstimate,41.1);assert.ok(c.searches<=7);assert.ok(c.maxActive<=3);assert.deepEqual(validateDeck(d,c.x.S.catalog,[]).issues,[]);assert.deepEqual(c.x.S.state.decks,[]);
+console.log('PASS: one bounded build operation yields a real checked 100-card Commander draft, KCI in the 99, legal separate commander, 36 priced lands, singleton/color/banned filters and exact full-budget accounting.');
+c=context({owned:{[kci.name]:1,[sai.name]:1,Island:36}});d=(await prepareMtgDeck(args,c.x)).draft;assert.equal(d.totalEstimate,41.1);assert.equal(d.purchaseEstimate,15.5);assert.equal(d.ownedCopies,38);
+c=context({quotes:false});d=(await prepareMtgDeck(args,c.x)).draft;assert.equal(d.totalEstimate,null);assert.equal(d.unpricedCopies,36);assert.equal(d.withinBudget,false);assert.match(d.warnings.join(' '),/not verified/);
+c=context();d=(await prepareMtgDeck({...args,budget:10},c.x)).draft;assert.equal(d.withinBudget,false);assert.ok(d.totalEstimate>10);assert.ok(d.cards.some(r=>r.name===kci.name));
+c=context({small:true});d=(await prepareMtgDeck(args,c.x)).draft;assert.equal(d.complete,false);assert.equal(d.legalChecked,false);assert.match(d.note,/Partial draft/);assert.ok(d.issues.some(i=>i.kind==='count'));
+c=context();assert.match((await prepareMtgDeck({...args,commander:kci.name},c.x)).note,/cannot be used/);assert.match((await prepareMtgDeck({...args,seed:wrong.name,commander:sai.name},c.x)).note,/outside/);assert.match((await prepareMtgDeck({...args,seed:banned.name},c.x)).note,/not confirmed legal/);assert.equal((await prepareMtgDeck({...args,seed:'Unresolved Card'},c.x)).requiresChoice,true);
+d=(await prepareMtgDeck({...args,budget_basis:'owned',commander:sai.name},c.x)).draft;assert.equal(d.withinBudget,false);assert.ok(d.issues.some(i=>i.kind==='ownership'));
+assert.equal(deckPriceCoverage([{name:'Unknown',qty:1}],{},()=>0).totalEstimate,null);
+console.log('PASS: total vs available-owned purchase estimates are distinct; unknown basic quotes, insufficient pool/budget, unowned-only requests, invalid commander, off-color and banned seeds fail honestly.');
+
+const functionCall=(name,args,id='1')=>({type:'function_call',name,arguments:JSON.stringify(args),call_id:id});
+let providerCalls=0,toolCalls=0;
+let answer=await runAskLoop({game:'mtg',items:[{type:'message',role:'user',content:'Look up a card'}],tools:{card_details:async()=>{toolCalls++;return {game:'mtg',card:{name:kci.name}};}},fetcher:async()=>{providerCalls++;return Response.json({calls:[functionCall('card_details',{name:kci.name},String(providerCalls))]});}});
+assert.equal(providerCalls,2);assert.equal(toolCalls,1);assert.match(answer.text,/repeated/);assert.equal(answer.show[0].ref,kci.name);
+providerCalls=0;let finalFlag=false;
+answer=await runAskLoop({game:'mtg',items:[{type:'message',role:'user',content:'Compare'}],tools:{search_cards:async a=>({game:'mtg',cards:[{name:a.query}]})},fetcher:async(_,init)=>{providerCalls++;const body=JSON.parse(init.body);if(body.finish){finalFlag=true;return Response.json({answer:{text:'Verified partial result',source:'app',show:[],suggestions:[]}});}return Response.json({calls:[functionCall('search_cards',{query:'Fixture '+providerCalls},String(providerCalls))]});}});
+assert.equal(providerCalls,ASK_LIMITS.rounds);assert.equal(finalFlag,true);assert.equal(answer.text,'Verified partial result');
+let readActive=0,maxRead=0;await runAskLoop({game:'mtg',items:[],tools:{search_cards:async()=>{readActive++;maxRead=Math.max(maxRead,readActive);await Promise.resolve();readActive--;return {cards:[]};}},fetcher:async()=>Response.json({calls:Array.from({length:6},(_,i)=>functionCall('search_cards',{query:String(i)},String(i)))})});assert.equal(maxRead,3);
+console.log('PASS: unchanged calls are deduplicated, read batches use bounded concurrency, terminal/last-turn recovery stays within unchanged 8-round / 12-tool caps.');
+
+// Actual route -> actual tool registry -> actual builder -> loop, with only the
+// external provider and card catalog replaced by deterministic fixtures.
+c=context();const tools=makeAskTools(c.x);providerCalls=0;const sent=[];
+const origin='https://site.test',userText='Krark-CKrark-Clan Ironworks in a good commander deck under 200$lan Ironworks';
+answer=await runAskLoop({game:'mtg',items:[{type:'message',role:'user',content:userText}],tools,fetcher:async(_,init)=>aiAskRoute(new Request(origin+'/api/ai/ask',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:init.body}),{OPENAI_API_KEY:'mock-only',AI_LIMITS_ENABLED:'false'},{fetcher:async(_,init)=>{providerCalls++;sent.push(JSON.parse(init.body));return Response.json({output:[functionCall('build_deck',args)]});}})});
+assert.equal(providerCalls,1);assert.match(answer.text,/100\/100/);assert.match(answer.text,/\$41.10/);assert.match(sent[0].instructions,/repeated\/typo/);assert.match(sent[0].instructions,/untrusted data/);const item=tools.pendingItem();assert.equal(item.label,'Review the deck draft');assert.equal(c.opened,null);await tools.open(item);assert.equal(c.opened.total,100);assert.deepEqual(c.x.S.state.decks,[]);assert.equal(c.opened.cards.find(r=>r.name===kci.name).qty,1);
+let finishPayload;await aiAskRoute(new Request(origin+'/api/ai/ask',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({items:[{type:'message',role:'user',content:'Done'}],finish:true})}),{OPENAI_API_KEY:'mock-only',AI_LIMITS_ENABLED:'false'},{fetcher:async(_,init)=>{finishPayload=JSON.parse(init.body);return Response.json({output:[functionCall('answer',{text:'Done',show:[],suggestions:[],source:'app'})]});}});assert.deepEqual(finishPayload.tools.map(t=>t.name),['answer']);assert.deepEqual(finishPayload.tool_choice,{type:'function',name:'answer'});
+console.log('PASS: mocked end-to-end Ask route/tool/draft trajectory stops after one provider call, exposes the exact checked preview action, never saves, and forces answer-only on finalization.');
+
+// Late work cannot replace a new question's action; old ready draft buttons keep
+// their exact immutable snapshot, while a changed workspace rejects opening.
+let release,started;const waiting=new Promise(r=>started=r),hold=new Promise(r=>release=r),old=c.x.api;let first=true;c.x.api=async p=>{if(first){first=false;started();await hold;}return old(p);};
+const delayed=tools.build_deck(args);await waiting;tools.cancel();release();await delayed;assert.equal(tools.pendingItem(),null);
+console.log('PASS: cancelled preparation cannot attach a late draft.');
+// Intentional game switching is a valid action handoff, not a navigation race.
+c=context();let activeGame='ptcg',revision=0,identity=1,blocked=0;c.x.T.game=()=>activeGame;c.x.A={setGame:async t=>{activeGame=t.dataset.game;revision++;}};c.x.navigationStamp=()=>({revision});c.x.navigationCurrent=s=>s.revision===revision;c.x.captureAskScope=()=>{const ticket=identity;return ()=>ticket===identity;};c.x.toast=()=>blocked++;
+const crossTools=makeAskTools(c.x);await crossTools.build_deck(args);let crossItem=crossTools.pendingItem();await crossTools.open(crossItem);assert.equal(activeGame,'mtg');assert.equal(c.opened.total,100);
+identity++;await crossTools.open(crossItem);assert.equal(blocked,1,'a snapshot cannot be opened after the initiating account changes');
+let finishTcg,startedTcg;const tcgStarted=new Promise(r=>startedTcg=r);let tcgGame='ptcg';const tcgContext={S:{state:{},ui:{}},T:{game:()=>tcgGame,SOURCES:{ptcg:{formats:[{id:'standard',name:'Standard'}],search:async()=>{startedTcg();return new Promise(r=>finishTcg=r);}}}},openTcgBuild:()=>{throw Error('Must not open a cancelled builder');}};
+const tcgTools=makeAskTools(tcgContext),tcgPending=tcgTools.build_deck({game:'ptcg',style:'Fire',format:'Standard',budget:50});await tcgStarted;tcgTools.cancel();finishTcg({cards:[{id:'fixture',name:'Fixture Pokémon'}]});assert.equal((await tcgPending).cancelled,true);assert.equal(tcgTools.pendingItem(),null);
+console.log('PASS: explicit cross-game opening preserves the draft, account changes block old drafts, and late cancelled Pokémon setup never installs an action.');
+// The schema promises an exact seed for every game; a TCG handoff cannot quietly
+// substitute an unrelated higher-evolution card, or relabel purchase as total.
+let tcgOpened;const namedTcg={S:{state:{},ui:{}},T:{game:()=> 'ptcg',SOURCES:{ptcg:{formats:[{id:'standard',name:'Standard'}],byName:async()=>({id:'pikachu',name:'Pikachu ex'}),search:async()=>({cards:[{id:'other',name:'Other VMAX'}]})}}},openTcgBuild:(...a)=>tcgOpened=a};
+const namedTools=makeAskTools(namedTcg);let named=await namedTools.build_deck({game:'ptcg',style:'Lightning',seed:'Pikachu ex',format:'Standard',budget:80,budget_basis:'total'});assert.equal(named.seed,'Pikachu ex');assert.equal(named.complete,false);assert.equal(named.budgetBasis,'purchase');assert.equal(named.requestedBudgetBasis,'total');assert.match(named.note,/not a verified whole-deck total/);await namedTools.open(namedTools.pendingItem());assert.deepEqual(tcgOpened.slice(0,4),['ptcg','pikachu',80,'standard']);assert.equal(tcgOpened[4](),true);named=await namedTools.build_deck({game:'ptcg',seed:'Unknown ex',format:'Standard',budget:80});assert.equal(named.requiresChoice,true);assert.match(named.note,/exact build-around/);
+assert.equal((await namedTools.build_deck({game:'ptcg',seed:'Pikachu ex',format:'Standard',budget_basis:'owned'})).requiresChoice,true);
+const pw=card('Fixture Oathbreaker','Legendary Planeswalker — Fixture',['U'],'1',{legalities:{oathbreaker:'legal',commander:'legal'}});c=context({extra:[pw]});const normalApi=c.x.api;c.x.api=async p=>{const r=await normalApi(p);return {data:r.data.map(c=>({...c,legalities:{...c.legalities,oathbreaker:'legal'}}))};};c.x.S.catalog[cardKey(pw.name)]=pw;d=(await prepareMtgDeck({...args,seed:pw.name,commander:pw.name,format:'Oathbreaker'},c.x)).draft;assert.equal(d.legalChecked,false);assert.match(d.warnings.join(' '),/signature spell/);assert.equal((await prepareMtgDeck({...args,format:'Pauper Commander'},c.x)).requiresChoice,true);
+console.log('PASS: exact TCG seed and budget-basis handoffs are honest; unsupported special command-zone requirements cannot receive a checked-legal label.');
+
+// Actual existing renderer, not a parallel mock UI. The player sees card actions,
+// checks and separate price coverage, with exact Save/Copy hooks and no rebuild.
+const {S,blank}=await import('./store.js'),{buildSheet}=await import('./views.js');const previous={state:S.state,catalog:S.catalog,build:S.ui.build};
+try{c=context();d=(await prepareMtgDeck(args,c.x)).draft;S.state=blank();S.catalog=c.x.S.catalog;S.ui.build={seed:d.commander,format:d.format,results:{[d.format]:[d]},openTier:0,avail:()=>0,msg:d.note};const before=JSON.stringify(S.state),html=buildSheet();assert.match(html,/100\/100 cards/);assert.match(html,/Legality checked/);assert.match(html,/Whole-deck estimate: \$41\.10/);assert.match(html,/data-act="tierSave"/);assert.match(html,/data-act="tierCopy"/);assert.match(html,/data-name="Krark-Clan Ironworks"/);assert.match(html,/Need 36/);assert.doesNotMatch(html,/data-change="buildCustom"|data-act="buildRandom"|data-act="buildFormat"/);assert.equal(JSON.stringify(S.state),before);d.legalChecked=false;d.issues=[{kind:'color',text:'Unverified identity'}];d.warnings=['Unverified identity'];assert.match(buildSheet(),/Needs review/);assert.doesNotMatch(buildSheet(),/>Legal<|>Legality checked</);}finally{S.state=previous.state;S.catalog=previous.catalog;S.ui.build=previous.build;}
+console.log('PASS: existing full-list renderer preserves card, Save and Copy actions, shows actual budget/legality/ownership, and cannot silently rebuild or save.');
+let jsonRelease,jsonStarted,current=true,lateCalls=0;const jsonSeen=new Promise(r=>jsonStarted=r);
+const lateJson=runAskLoop({game:'mtg',items:[],current:()=>current,tools:{build_deck:()=>{lateCalls++;return {terminal:true};}},fetcher:async()=>({ok:true,json:async()=>{jsonStarted();return new Promise(r=>jsonRelease=r);}})});await jsonSeen;current=false;jsonRelease({calls:[functionCall('build_deck',args)]});assert.equal(await lateJson,null);assert.equal(lateCalls,0);
+console.log('PASS: a response whose JSON arrives after Close/New never starts an old tool.');
+let forbidden=0;answer=await runAskLoop({game:'mtg',items:[],tools:{open:()=>forbidden++,reset:()=>forbidden++,constructor:()=>forbidden++},fetcher:async()=>Response.json({calls:['open','reset','constructor'].map((name,i)=>functionCall(name,{},String(i)))})});assert.equal(forbidden,0);assert.match(answer.text,/not an allowed assistant tool/);
+console.log('PASS: client execution independently allowlists app-data tools, not internal navigation, reset, prototype or arbitrary actions.');
+
+assert.deepEqual(partialAnswer([{out:{game:'mtg',card:{name:'Black Lotus'}}},{out:{game:'ptcg',card:{name:'Pikachu',id:'pk-1'}}}]).show.map(x=>[x.game,x.ref]),[['mtg','Black Lotus'],['ptcg','pk-1']]);
+console.log('PASS: partial mixed-game results retain each card’s own game and exact reference.');

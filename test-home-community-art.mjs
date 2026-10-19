@@ -72,14 +72,14 @@ for (const [g, [image, url]] of Object.entries(publisher)) {
   assert.match(html, /data-art-kind="publisher"/);
   assert.match(html, /Published <time datetime="2026-10-16"/);
   assert.match(html, /Source image/);
-  assert.doesNotMatch(html, /community-art-theme|community-art-emblem|Game theme/);
+  assert.match(html, /data-art-fallback=/, 'verified publisher artwork carries a labelled game-art fallback');
   assert.equal(safeCommunityImage(image, g, sourceId, url), image);
   for (const bad of ['http:' + image.slice(6), 'https://attacker.test/a.jpg', 'https://assets.pokemon.com.attacker.test/a.jpg', 'https://x:y@assets.pokemon.com/a.jpg', 'https://assets.pokemon.com:8080/a.jpg', 'javascript:alert(1)', 'data:image/svg+xml,<svg onload=alert(1)>', '//assets.pokemon.com/a.jpg', image + '\n']) {
     assert.equal(safeCommunityImage(bad, g, sourceId, url), '');
-    assert.doesNotMatch(featureArticle(g, { ...story, image: bad }, 0, 1), /<img/);
+    assert.match(featureArticle(g, { ...story, image: bad }, 0, 1), /data-art-kind="illustrative"/, 'unsafe publisher image is never used; a fixed labelled illustration is safe');
   }
-  assert.doesNotMatch(featureArticle(g, { ...story, kind: 'link' }, 0, 1), /<img/, 'a source-link fallback never invents article imagery');
-  assert.doesNotMatch(featureArticle(g, { ...story, kind: 'link' }, 0, 1), /community-art|Game theme/);
+  assert.match(featureArticle(g, { ...story, kind: 'link' }, 0, 1), /Illustrative/, 'source links may have explicitly illustrative game art, never an invented article image');
+  assert.doesNotMatch(featureArticle(g, { ...story, kind: 'link' }, 0, 1), /data-art-kind="publisher"/);
 }
 assert.equal(safeCommunityImage(publisher.ptcg[0], 'mtg'), '', 'publisher images cannot silently cross games');
 assert.doesNotMatch(featureArticle('ygo', { kind: 'news', title: '<img src=x>', url: publisher.ygo[1], image: 'https://attacker.test/" onload="alert(1)' }, 0, 1), /<img|onload=/);

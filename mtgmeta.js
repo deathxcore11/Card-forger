@@ -22,7 +22,8 @@ export function mtgoEventSlugs(html, format, { days = 14, now = Date.now(), chal
     // "challenge-32-2026-10-1112856172" or "league-2026-10-1211161"; never "pauper-commander" for "pauper".
     if (!/^(challenge|league|championship|showcase|qualifier|super-qualifier|last-chance)/.test(rest)) continue;
     const date = rest.match(/(\d{4})-(\d{2})-(\d{2})/);
-    if (!date || now - Date.parse(`${date[1]}-${date[2]}-${date[3]}`) > days * 864e5) continue;
+    const published = date ? `${date[1]}-${date[2]}-${date[3]}` : '', timestamp = Date.parse(published);
+    if (!date || !Number.isFinite(timestamp) || new Date(timestamp).toISOString().slice(0,10) !== published || timestamp > now || now - timestamp > days * 864e5) continue;
     out.push({ slug: s, kind: /^league/.test(rest) ? "league" : "challenge", date: `${date[1]}-${date[2]}-${date[3]}` });
   }
   const pick = (k, n) => out.filter((x) => x.kind === k).sort((a, b) => b.date.localeCompare(a.date)).slice(0, n);

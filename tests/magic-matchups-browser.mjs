@@ -18,13 +18,13 @@ let app,hold=null,calls=0,heroArtEvidence=null;const artSubstitutions=[];
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve};};
 const frames=page=>page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
 async function matchupLayout(page,label){
- const x=await page.locator('.am-root').evaluate(root=>({width:innerWidth,doc:document.documentElement.scrollWidth,scroll:root.scrollWidth,client:root.clientWidth,rails:[...root.querySelectorAll('.am-pill-row')].map(n=>({left:n.getBoundingClientRect().left,right:n.getBoundingClientRect().right,overflow:getComputedStyle(n).overflowX})),bad:[...root.querySelectorAll('button,input,summary,a')].filter(n=>n.getClientRects().length&&!n.closest('.am-pill-row')).filter(n=>{const r=n.getBoundingClientRect();return r.left<-.5||r.right>innerWidth+.5;}).map(n=>n.textContent)}));
- assert(x.doc<=x.width+2&&x.scroll<=x.client+2,label+' no page overflow '+JSON.stringify(x));assert.deepEqual(x.bad,[],label+' controls fit');
- for(const rail of x.rails){assert(rail.left>=-.5&&rail.right<=x.width+.5,label+' rail contained');assert.equal(rail.overflow,'auto');}
+ const root=await page.locator('#sheet[open] .am-sheet').count()?page.locator('#sheet .am-sheet'):page.locator('.am-root');
+ const x=await root.evaluate(root=>({width:innerWidth,doc:document.documentElement.scrollWidth,scroll:root.scrollWidth,client:root.clientWidth,bad:[...root.querySelectorAll('button,input,summary,a')].filter(n=>n.getClientRects().length&&!n.closest('.am-scenario-choice,.cs-tabs')).filter(n=>{const r=n.getBoundingClientRect();return r.left<-.5||r.right>innerWidth+.5;}).map(n=>n.textContent)}));
+ assert(x.doc<=x.width+2&&x.scroll<=x.client+2,label+' no page/sheet overflow '+JSON.stringify(x));assert.deepEqual(x.bad,[],label+' controls fit');
 }
 async function reachable(page,locator,label){
  await locator.evaluate(node=>node.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'}));await frames(page);
- const hit=await locator.evaluate(node=>{const r=node.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2,target=document.elementFromPoint(x,y),nav=document.querySelector('.bottom-nav'),nr=nav?.getBoundingClientRect();return {reachable:!!target&&(target===node||node.contains(target)),bounds:{left:r.left,right:r.right,top:r.top,bottom:r.bottom},viewport:{width:innerWidth,height:innerHeight},coveredBy:target?.className||target?.tagName,bottomLimit:nav&&getComputedStyle(nav).display!=='none'?nr.top:innerHeight};});
+ const hit=await locator.evaluate(node=>{const r=node.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2,target=document.elementFromPoint(x,y),nav=document.querySelector('.bottom-nav'),nr=nav?.getBoundingClientRect();return {reachable:!!target&&(target===node||node.contains(target)),bounds:{left:r.left,right:r.right,top:r.top,bottom:r.bottom},viewport:{width:innerWidth,height:innerHeight},coveredBy:target?.className||target?.tagName,bottomLimit:node.closest('dialog[open]')?innerHeight:nav&&getComputedStyle(nav).display!=='none'?nr.top:innerHeight};});
  assert(hit.reachable&&hit.bounds.left>=0&&hit.bounds.right<=hit.viewport.width&&hit.bounds.top>=0&&hit.bounds.bottom<=hit.bottomLimit,label+' fully reachable without sticky/bottom-navigation obstruction: '+JSON.stringify(hit));
 }
 async function capture(page,name,{fullPage=true}={}){await mkdir(out,{recursive:true});await frames(page);await page.screenshot({path:new URL(`magic-matchups-${name}.png`,out).pathname,fullPage,animations:'disabled'});}
@@ -47,33 +47,57 @@ try{
  });
  await page.evaluate(async({player,field})=>{const {metaState}=await import('/meta.js');Object.assign(metaState('mtg:Standard'),{data:field,at:Date.now(),busy:false,error:''});Object.defineProperty(navigator.clipboard,'readText',{configurable:true,value:async()=>''});location.hash='#deck/'+player.id+'/matchups';},{player,field});
  await page.locator('.am-root').waitFor();const original=await inventorySnapshot(page);assert.equal(calls,0,'opening Matchups is not an AI request');
- await page.locator('[data-act="amColor"][data-id="G"]').click();await page.locator('[data-act="amSelect"]').click();await page.locator('.am-preview').waitFor();
- assert.match(await page.locator('.am-source').innerText(),/Synthetic hosted matchup source/);assert.equal(calls,0,'finding and previewing an opponent is not paid analysis');
+ await page.locator('.am-root [data-act="amOpen"]').click();
+ await page.locator('#sheetBody [data-act="amColor"][data-id="G"]').click();await page.locator('#sheetBody [data-act="amSelect"]').click();
+ await page.locator('#matchup-panel-decks:not([hidden])').waitFor();
+ assert.match(await page.locator('#matchup-panel-decks .am-source').innerText(),/Synthetic hosted matchup source/);assert.equal(calls,0,'finding and previewing an opponent is not paid analysis');
  assert.equal(await inventorySnapshot(page),original);
- await page.waitForFunction(()=>{const img=document.querySelector('.deck-hero>.hero-art');return img?.complete&&img.naturalWidth>0;});heroArtEvidence=await page.locator('.deck-hero>.hero-art').evaluate(img=>({src:img.currentSrc,width:img.naturalWidth,height:img.naturalHeight}));assert.equal(heroArtEvidence.src,CARDS.mtg[0].image_uris.art_crop);assert(artSubstitutions.includes(heroArtEvidence.src),'hero uses intercepted pinned artwork, not generic synthetic SVG');await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));await capture(page,'sample-art-hero-390',{fullPage:false});
- await page.locator('[data-act="amAnalyze"]').click();await page.locator('.am-result').waitFor();assert.equal(calls,1);assert.equal(await page.locator('.am-scenario').count(),3);assert.match(await page.locator('.am-result').innerText(),/illustrative|hypothetical/);assert.equal(await inventorySnapshot(page),original);
+ const panel=()=>page.locator('#sheetBody .cs-panel:not([hidden])');
+ for(const mode of ['gallery','compact','symbols']){
+  await panel().locator(`[data-act="amView"][data-mode="${mode}"]`).click();
+  assert.equal(await panel().locator('.am-card-browser.view-'+mode).count(),1);
+  assert.equal(await panel().locator('[data-act="deckQty"],[data-deck]').count(),0,'shared opponent rows are genuinely read-only');
+  await panel().locator('[data-act="amCard"]').first().click();await page.locator('#sheetBody [data-act="sheetHistoryBack"]').waitFor();
+  await page.locator('#sheetBody [data-act="sheetHistoryBack"]').first().click();
+  await page.locator('#matchup-panel-decks:not([hidden])').waitFor();assert.equal(await panel().locator('.am-card-browser.view-'+mode).count(),1,'Back preserves view mode');
+ }
+ await capture(page,'shared-deck-preview-390',{fullPage:false});
+ await page.locator('#sheetBody [data-act="amTab"][data-tab="analysis"]').click();await page.locator('#matchup-panel-analysis:not([hidden]) [data-act="amAnalyze"]').click();
+ await page.locator('#matchup-panel-analysis .am-result').waitFor();assert.equal(calls,1);assert.equal(await page.locator('#matchup-panel-analysis .am-scenario').count(),1);assert.match(await panel().innerText(),/hypothetical/);assert.equal(await inventorySnapshot(page),original);
  for(const width of [320,390,768,1440]){
-  await page.setViewportSize({width,height:1000});await matchupLayout(page,'Magic Matchups '+width);await page.locator('.am-scenario summary').first().click();await matchupLayout(page,'expanded scenario '+width);await capture(page,'result-'+width);await page.locator('.am-scenario summary').first().click();
+  await page.setViewportSize({width,height:1000});await matchupLayout(page,'Magic Matchups sheet '+width);
+  for(let scenario=0;scenario<3;scenario++){
+   await page.locator(`#sheetBody [data-act="amScenario"][data-id="${scenario}"]`).click();
+   assert.match(await panel().locator('.am-scenario h3').innerText(),new RegExp(response().scenarios[scenario].title));
+   await matchupLayout(page,'selected scenario '+scenario+' at '+width);
+  }
+  await capture(page,'analysis-'+width,{fullPage:false});
   if(width===320){
-   assert.equal(await page.locator('.bottom-nav').count(),1,'one real bottom-navigation instance');assert.equal(await page.locator('nav.tabs[role=tablist]').count(),1,'one real deck-navigation instance');
-   await reachable(page,page.locator('[data-act="amAnalyze"]'),'320px Analyze');await capture(page,'analyze-viewport-320',{fullPage:false});
-   for(let i=0;i<3;i++)await reachable(page,page.locator('.am-scenario summary').nth(i),'320px scenario '+(i+1));
-   await capture(page,'third-scenario-viewport-320',{fullPage:false});
-   await reachable(page,page.locator('.am-coaching summary').last(),'320px final limitations control');
+   await reachable(page,panel().locator('.am-scenario h3'),'320px third scenario');await capture(page,'third-scenario-viewport-320',{fullPage:false});
+   await panel().locator('.am-references>summary').first().click();
+   await panel().locator('.am-references [data-act="amCard"]').first().scrollIntoViewIfNeeded();await frames(page);
+   const scrollBefore=await page.locator('#sheetBody').evaluate(n=>n.scrollTop);
+   await panel().locator('.am-references [data-act="amCard"]').first().click();await page.locator('#sheetBody [data-act="sheetHistoryBack"]').first().click();
+   await page.locator('#matchup-panel-analysis:not([hidden])').waitFor();assert.match(await panel().locator('.am-scenario h3').innerText(),/After disruption/);
+   const scrollAfter=await page.locator('#sheetBody').evaluate(n=>n.scrollTop);assert(Math.abs(scrollAfter-scrollBefore)<100,'Back restores analysis scroll near its previous position');
   }
  }
- checks.push('Explicit opponent selection and Analyze, three grounded synthetic scenarios, four responsive widths and no saved mutations.');
+ await page.locator('#sheetBody [data-act="closeSheet"]').first().click();await page.waitForFunction(()=>!document.querySelector('#sheet').open);
+ await page.waitForFunction(()=>{const img=document.querySelector('.deck-hero>.hero-art');return img?.complete&&img.naturalWidth>0;});heroArtEvidence=await page.locator('.deck-hero>.hero-art').evaluate(img=>({src:img.currentSrc,width:img.naturalWidth,height:img.naturalHeight}));assert.equal(heroArtEvidence.src,CARDS.mtg[0].image_uris.art_crop);assert(artSubstitutions.includes(heroArtEvidence.src));
+ await page.setViewportSize({width:390,height:1000});await page.locator('.am-root').scrollIntoViewIfNeeded();await matchupLayout(page,'compact main');assert.equal(await page.locator('.am-root .am-result,.am-root .am-controls,.am-root .display-list').count(),0,'main never expands into long setup/deck/analysis content');await capture(page,'compact-main-390',{fullPage:false});
+ checks.push('Shared Setup/Decks/Analysis sheet, actual Gallery/Compact/List rows, read-only card drill-in/Back, three scenario tabs, four responsive widths and no saved mutations.');
  // Paste is a preview only. Edits invalidate a formerly usable preview.
- await page.setViewportSize({width:390,height:1000});await page.locator('[data-act="amPaste"]').click();await page.locator('#amImportText').fill(`60 ${CARDS.mtg[1].name}`);await page.locator('#amImportName').fill('Synthetic pasted opponent');
+ await page.locator('.am-root [data-act="amOpen"][data-tab="setup"]').click();await page.locator('#sheetBody [data-act="amPaste"]').click();await page.locator('#amImportText').fill(`60 ${CARDS.mtg[1].name}`);await page.locator('#amImportName').fill('Synthetic pasted opponent');
  assert(await page.locator('#amImportUse').isDisabled());await page.locator('[data-act="amImportPreview"]').click();await page.waitForFunction(()=>!document.querySelector('#amImportUse').disabled);assert.equal(await inventorySnapshot(page),original);assert.equal(calls,1);
  await page.locator('#amImportName').fill('Revised synthetic opponent');assert(await page.locator('#amImportUse').isDisabled());await page.locator('[data-act="amImportPreview"]').click();await page.waitForFunction(()=>!document.querySelector('#amImportUse').disabled);
- await capture(page,'paste-preview-390');await page.locator('#amImportUse').click();await page.locator('.am-preview').waitFor();assert.match(await page.locator('.am-source').innerText(),/Imported opponent/);assert.equal(await inventorySnapshot(page),original);assert.equal(calls,1,'using a pasted opponent never starts AI or saves a deck');
- checks.push('Paste matching and re-edit invalidate the preview; using opponent changes no deck or collection.');
+ await capture(page,'paste-preview-390',{fullPage:false});await page.locator('#amImportUse').click();await page.locator('#matchup-panel-decks:not([hidden])').waitFor();assert.match(await page.locator('#matchup-panel-decks .am-source').innerText(),/Imported opponent/);assert.equal(await inventorySnapshot(page),original);assert.equal(calls,1,'using a pasted opponent never starts AI or saves a deck');
+ checks.push('Paste matching and re-edit invalidate preview; Use returns to the shared deck sheet and changes no saved data.');
+ await page.locator('#sheetBody [data-act="amTab"][data-tab="analysis"]').click();
  // Cancel an in-flight mocked request, then discard a response after navigation.
- hold={started:deferred(),release:deferred(),settled:deferred()};await page.locator('[data-act="amAnalyze"]').click();await hold.started.promise;assert(await page.locator('[data-act="amAnalyze"]').isDisabled());await page.locator('[data-act="amCancel"]').click();hold.release.resolve();await hold.settled.promise;hold=null;await frames(page);assert.equal(await page.locator('.am-result').count(),0);assert.equal(await inventorySnapshot(page),original);
- hold={started:deferred(),release:deferred(),settled:deferred()};await page.locator('[data-act="amAnalyze"]').click();await hold.started.promise;await page.evaluate(()=>{location.hash='#collection';});await page.waitForFunction(()=>document.body.dataset.view==='collection');hold.release.resolve();await hold.settled.promise;hold=null;await frames(page);
- await page.evaluate(id=>{location.hash='#deck/'+id+'/matchups';},player.id);await page.locator('.am-root').waitFor();assert.equal(await page.locator('.am-result').count(),0,'navigation invalidates late response');assert.equal(await inventorySnapshot(page),original);
- await page.locator('[data-act="amAnalyze"]').click();await page.locator('.am-result').waitFor();assert.equal(await inventorySnapshot(page),original,'a fresh request still works after cancellation and navigation');
+ hold={started:deferred(),release:deferred(),settled:deferred()};await panel().locator('[data-act="amAnalyze"]').click();await hold.started.promise;assert(await panel().locator('[data-act="amAnalyze"]').isDisabled());await page.locator('#sheetBody [data-act="amCancel"]').click();hold.release.resolve();await hold.settled.promise;hold=null;await frames(page);assert.equal(await panel().locator('.am-result').count(),0);assert.equal(await inventorySnapshot(page),original);
+ hold={started:deferred(),release:deferred(),settled:deferred()};await panel().locator('[data-act="amAnalyze"]').click();await hold.started.promise;await page.evaluate(()=>{location.hash='#collection';});await page.waitForFunction(()=>document.body.dataset.view==='collection');hold.release.resolve();await hold.settled.promise;hold=null;await frames(page);
+ await page.evaluate(id=>{location.hash='#deck/'+id+'/matchups';},player.id);await page.locator('.am-root').waitFor();await page.locator('.am-root [data-act="amOpen"][data-tab="analysis"]').click();assert.equal(await panel().locator('.am-result').count(),0,'navigation invalidates late response');assert.equal(await inventorySnapshot(page),original);
+ await panel().locator('[data-act="amAnalyze"]').click();await panel().locator('.am-result').waitFor();assert.equal(await inventorySnapshot(page),original,'fresh request works after cancellation and navigation');
  checks.push('Cancel, disabled duplicate Analyze, navigation-stale response ignored and subsequent fresh Analyze succeeds.');
  assert.deepEqual(await page.evaluate(()=>window.__fixtureSensitiveWrites),[],'no persisted inventory writes');app.health();
  await writeFile(new URL('magic-matchups-browser.json',out),JSON.stringify({status:'passed',evidence:EVIDENCE,artEvidence,heroArtEvidence,artSubstitutions,checks,mockedAnalysisRequests:calls,persistence:await page.evaluate(()=>window.__matchupPersistence)},null,2));console.log('PASS: '+checks.join(' '));

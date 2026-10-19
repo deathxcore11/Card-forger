@@ -17,7 +17,27 @@ const inventorySnapshot=page=>page.evaluate(()=>{const s=window.__uiTestState.st
 const frames=page=>page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
 const shot=(page,name)=>page.screenshot({path:resolve(RESULTS,'pokemon-promos-'+name+'.png'),animations:'disabled',fullPage:false});
 const rowId=id=>'promo-owned-'+id;
-let server,browser,app,error;
+let server,browser,app,error,scannerTrace=false;
+// Scanner diagnostics are observational only: no handler invocation, state
+// mutation, forced click, animation suppression, or additional provider request.
+async function scannerDiagnostic(page,phase){
+ const sample=await page.evaluate(phase=>{
+  const S=window.__uiTestState,s=S?.ui.scan,shape=n=>{if(!n)return null;const r=n.getBoundingClientRect(),c=getComputedStyle(n);return {tag:n.tagName,cls:n.className,act:n.dataset?.act||'',connected:n.isConnected,rect:r.toJSON(),display:c.display,position:c.position,visibility:c.visibility,opacity:c.opacity,transform:c.transform,animation:c.animation,overflow:c.overflow,pointerEvents:c.pointerEvents,disabled:!!n.disabled,text:n.textContent?.trim().slice(0,120)};};
+  const selectors=['#app','#content','.scan-workspace','.scan-toolbar','.scan-panel','.scan-pile-tray','.scan-pile','.scan-pile-cards','.scan-confirm','.bottom-nav','#toast'];
+  const pile=document.querySelector('.scan-pile'),r=pile?.getBoundingClientRect(),x=r?r.x+r.width/2:0,y=r?r.y+r.height/2:0;
+  return {phase,at:Date.now(),view:S?.ui.view,bodyView:document.body.dataset.view,hash:location.hash,ready:document.readyState,viewport:{width:innerWidth,height:innerHeight,scrollX,scrollY,visual:visualViewport?{width:visualViewport.width,height:visualViewport.height,offsetTop:visualViewport.offsetTop,scale:visualViewport.scale}:null},scan:{mode:s?.mode||'live',camOn:!!s?.camOn,busy:!!s?.busy,batchSaving:!!s?.batchSaving,catalogInitGame:s?.catalogInitGame||'',catalogMeta:!!s?.catalogMeta,ocrWarm:!!s?.ocrWarm,status:s?.status||'',confirm:s?.confirm?{batchId:s.confirm.batchId,game:s.confirm.game,presented:s.confirm.presented,saving:s.confirm.saving}:null},batch:window.__conditionReview?.batch.loadBatch().map(e=>({id:e.id,game:e.game,status:e.status})),nodes:Object.fromEntries(selectors.map(key=>[key,shape(document.querySelector(key))])),hit:r?document.elementsFromPoint(x,y).slice(0,8).map(shape):[],animations:document.getAnimations().filter(a=>a.effect?.target?.closest?.('.scan-workspace')).map(a=>({state:a.playState,currentTime:a.currentTime,target:a.effect.target.className,timing:a.effect.getComputedTiming()})),mutations:window.__promoScannerDiagnostics?.mutations||[],events:window.__promoScannerDiagnostics?.events||[]};
+ },phase);
+ (report.scannerDiagnostics||=[]).push(sample);return sample;
+}
+async function observeScanner(page){
+ await page.evaluate(()=>{
+  const diagnostics=window.__promoScannerDiagnostics={mutations:[],events:[]},content=document.querySelector('#content');
+  const describe=n=>({tag:n?.nodeName,cls:typeof n?.className==='string'?n.className:'',act:n?.dataset?.act||''});
+  const observer=new MutationObserver(records=>{diagnostics.mutations.push(...records.slice(-100).map(r=>({at:Date.now(),target:describe(r.target),added:[...r.addedNodes].slice(0,4).map(describe),removed:[...r.removedNodes].slice(0,4).map(describe)})));if(diagnostics.mutations.length>100)diagnostics.mutations.splice(0,diagnostics.mutations.length-100);});
+  observer.observe(content,{childList:true,subtree:true});
+  for(const type of ['pointerdown','pointerup','click'])document.addEventListener(type,e=>{const button=e.target.closest?.('[data-act=scanBatchReview]');if(button&&diagnostics.events.length<30)diagnostics.events.push({at:Date.now(),type,target:describe(button),id:button.dataset.id||'',trusted:e.isTrusted});},true);
+ });
+}
 async function settleDetail(page,id){
  await page.waitForFunction(id=>document.querySelector('#sheet')?.open&&window.__uiTestState.ui.sheetCtx?.id===id&&!window.__uiTestState.ui.sheetCtx?.previewBusy,id);
  await frames(page);assert.equal(await page.locator('#sheet .cs-title h2').innerText(),data.cards.find(c=>c.id===id).name);
@@ -179,9 +199,13 @@ try{
  for(const id of ['swshp-SWSH074','swshp-SWSH251']){await openOwned(page,id);const state=await selected(page);assert.equal(state.model.status,'unknown');assert.deepEqual(state.model.layers,[]);await closeSheet(page);report.checks.push({id,phase:'unsupported-control',state});}
  // Real scanner pile/inline printing UI, without camera, OCR, or Save.
  const scannerCards=data.cards.filter(c=>STAMPED_IDS.includes(c.id)||['swshp-SWSH013','swshp-SWSH220','swsh3-161'].includes(c.id));
+ await mkdir(RESULTS,{recursive:true});await app.context.tracing.start({screenshots:true,snapshots:true,sources:true});scannerTrace=true;
+ await observeScanner(page);await scannerDiagnostic(page,'before-seed');
  await seedReviews(page,'ptcg',{cards:scannerCards,condition:'Near Mint',selectedFinish:''});
+ await scannerDiagnostic(page,'after-seed-navigation');
  for(const [i,card]of scannerCards.entries()){
-  await openReview(page,i);await page.locator('.scan-inline-printings .printing-carousel[aria-busy="false"]').waitFor();
+  await scannerDiagnostic(page,'before-review-'+i);
+  await openReview(page,i);await scannerDiagnostic(page,'after-review-'+i);await page.locator('.scan-inline-printings .printing-carousel[aria-busy="false"]').waitFor();
   const rows=await page.evaluate(id=>window.__uiTestState.ui.scan.confirm.inline.rows.filter(r=>r.cardId===id).map(r=>({key:r.key,variant:r.variantKey,productId:r.productId,selectable:r.selectable})),card.id);
   const expected=card.variants.filter(v=>!v.aliasOf).map(v=>v.key).sort();assert.deepEqual(rows.map(r=>r.variant).sort(),expected,'Scanner shows one row per physical version');assert.equal(new Set(rows.map(r=>r.key)).size,rows.length);assert(rows.every(r=>r.selectable));
   const actual=await page.evaluate(async card=>(await import('/scan-batch.js')).actualFinishes('ptcg',{card}),card);assert.deepEqual(actual.sort(),expected);
@@ -195,6 +219,7 @@ try{
  await assertNoInventoryChange(page,baseline,'Complete promo suite');app.health();
  // Fresh isolated other-game instances prove the bounded Pokémon repair has
  // not changed ordinary Magic/YGO detail finish selection or owned payloads.
+ if(scannerTrace){await app.context.tracing.stop({path:resolve(RESULTS,'pokemon-promos-scanner-trace.zip')});scannerTrace=false;}
  await app.context.close();app=null;
  for(const game of ['mtg','ygo']){
   const other=await openApp(browser,server.base,{game,width:390,isMobile:true});try{
@@ -204,5 +229,5 @@ try{
   }finally{await other.context.close();}
  }
  report.status='passed';console.log('PASS: exact promo art/detail/zoom, seven bounded Cosmos masks, partial Trainer reverse, all17 choice matrices, saved aliases, null quote isolation and no inventory mutation.');
-}catch(caught){error=caught;report.status='failed';report.error=String(caught.stack||caught);if(app)await shot(app.page,'failure').catch(()=>{});throw caught;}
-finally{await mkdir(RESULTS,{recursive:true});await writeFile(resolve(RESULTS,'pokemon-promos-browser.json'),JSON.stringify(report,null,2));if(app)await app.context.close();await browser?.close();await server?.close();}
+}catch(caught){error=caught;report.status='failed';report.error=String(caught.stack||caught);if(app){await scannerDiagnostic(app.page,'failure').catch(()=>{});await shot(app.page,'failure').catch(()=>{});}throw caught;}
+finally{if(scannerTrace&&app){await app.context.tracing.stop({path:resolve(RESULTS,'pokemon-promos-scanner-trace.zip')}).catch(()=>{});scannerTrace=false;}await mkdir(RESULTS,{recursive:true});await writeFile(resolve(RESULTS,'pokemon-promos-browser.json'),JSON.stringify(report,null,2));if(app)await app.context.close();await browser?.close();await server?.close();}

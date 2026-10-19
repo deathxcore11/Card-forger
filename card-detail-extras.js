@@ -2,8 +2,8 @@ import {esc} from './ui.js';
 import {artworkHTML} from './artwork.js';
 import {printingRows} from './printing-picker.js';
 import {setProgressMarkup} from './set-list-ui.js';
-export function detailSetProgress({key,owned,total,loaded=0,complete=false},compact=false){
- const html=owned===null?'<div class="card-set-progress"><p class="muted small">Choose a verified release to see your set progress.</p></div>':`<div class="card-set-progress">${setProgressMarkup({key,owned,total,loaded,complete}).html}</div>`;
+export function detailSetProgress({key,owned,total,loaded=0,complete=false,known=loaded},compact=false){
+ const html=owned===null?'<div class="card-set-progress"><p class="muted small">Choose a verified release to see your set progress.</p></div>':`<div class="card-set-progress">${setProgressMarkup({key,owned,total,loaded,complete,known}).html}</div>`;
  // Button contents must stay phrasing-only, while retaining shared progress truth and ARIA.
  return compact?html.replace(/<(\/?)(?:div|section|p)(?=[ >])/g,'<$1span'):html;
 }

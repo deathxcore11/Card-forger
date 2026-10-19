@@ -38,8 +38,10 @@ try {
  assert.equal(repaired.schema,2);assert.equal(repaired.custom,saved.custom);
  assert.deepEqual(repaired.list[1],other,'unrelated releases remain byte-equivalent as data');
  assert.equal(repaired.list[0].count,16);assert.equal(storage.get('unrelated-cache'),'keep-me');
+ // Energy companion sets remain in the full catalogue, not the default booster view.
+ ui('ptcg').sets.family='all';
  const catalogueHTML=tcgSets();
- const meeRow=catalogueHTML.match(/<button class="set-row"[^>]*data-id="mee"[\s\S]*?<\/button>/)?.[0];
+ const meeRow=catalogueHTML.match(/<button class="set-row[^\"]*"[^>]*data-id="mee"[\s\S]*?<\/button>/)?.[0];
  assert(meeRow);assert.match(meeRow,/<b>16<\/b><small>cards<\/small>/);assert.doesNotMatch(meeRow,/<b>8<\/b>/);
  S.ui.view='set';S.ui.tsetId='mee';await c.openSet('mee');
  assert.equal(setRequests,1);assert.equal(catalogueRequests,0);

@@ -1,4 +1,4 @@
-const ACTIONS=['dbMore','tMore','setMore','tSetMore','tSetsMore','collMore','tCollMore'];
+const ACTIONS=['dbMore','tMore','setMore','tSetMore','tSetsMore', 'setsMore','collMore','tCollMore'];
 export const AUTO_BROWSE_SELECTOR=ACTIONS.map(a=>`[data-act="${a}"]`).join(',');
 // Keep the ordinary button as a fallback, but use a separate, quiet scroll sentinel.
 export function attachAutomaticBrowse(root,{Observer,dispatch,errorFor=()=>false,blocked=()=>false}={}){

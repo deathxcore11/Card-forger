@@ -52,3 +52,6 @@ CONDITION_PRICING.md
 
 # Shared daily selection is server-owned.
 daily-card-route.js
+
+weekly-curation.js
+weekly-curation-route.js

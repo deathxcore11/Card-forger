@@ -1,9 +1,10 @@
+import { curatedMetaDecks } from './meta-curation.js';
 import { metaState as readMetaState } from './meta.js';
 import { communityDeckArtwork, safeCommunityImage } from './community-art.js';
 import { NEWS_SOURCES, newsSource, safeNewsArticle, safeNewsSourceUrl } from './community-sources.js';
 
 // Home is a view of the existing tournament cache, not a second deck provider.
-// Only the small publisher feed has its own daily cache. All dates retain their
+// The shared weekly publisher feed has a daily read-only browser cache. Dates retain their
 // original meaning: publication, event, or YGOPRODeck submission date.
 export const COMMUNITY_TTL = 864e5;
 const RETENTION = 7 * COMMUNITY_TTL, KEY = 'cardforge-community-v3', LEGACY_KEY = 'cardforge-community-v2';
@@ -49,11 +50,12 @@ function validItems(items, game, now) {
   const seen = new Set();
   return (Array.isArray(items) ? items : []).slice(0, 36).map(x => {
     if (x?.game !== game || !['news', 'event'].includes(x.kind)) return null;
+    const weekly = x.cadence === 'weekly', retention = weekly ? 14 * COMMUNITY_TTL : RETENTION;
     const source = newsSource(x.sourceId, game), url = safeNewsArticle(x.url, game, x.sourceId, x.kind), title = text(x.title), fetchedAt = stamp(x.fetchedAt), publishedAt = stamp(x.publishedAt), startsAt = stamp(x.startsAt), endsAt = stamp(x.endsAt);
-    if (!url || !title || !fetchedAt || seen.has(x.sourceId === 'serebii' ? url + ':' + title : url) || now - Date.parse(fetchedAt) > RETENTION || Date.parse(fetchedAt) > now + 60000) return null;
-    if (x.kind === 'news' ? !publishedAt || Date.parse(publishedAt) > now || now - Date.parse(publishedAt) > RETENTION : !startsAt || !endsAt || startsAt > endsAt || Date.parse(endsAt) + COMMUNITY_TTL <= now || Date.parse(startsAt) > now + 90 * COMMUNITY_TTL) return null;
+    if (!url || !title || !fetchedAt || seen.has(x.sourceId === 'serebii' ? url + ':' + title : url) || now - Date.parse(fetchedAt) > retention || Date.parse(fetchedAt) > now + 60000) return null;
+    if (x.kind === 'news' ? !publishedAt || Date.parse(publishedAt) > now || now - Date.parse(publishedAt) > retention : !startsAt || !endsAt || startsAt > endsAt || Date.parse(endsAt) + COMMUNITY_TTL <= now || Date.parse(startsAt) > now + 90 * COMMUNITY_TTL) return null;
     seen.add(x.sourceId === 'serebii' ? url + ':' + title : url);
-    return { id: x.sourceId === 'serebii' ? `${url}#${encodeURIComponent(title)}` : url, sourceId: x.sourceId, scope: text(x.scope, 80), game, kind: x.kind, title, summary: text(x.summary), url, source: source.name, sourceUrl: source.url, publishedAt, startsAt, endsAt, dateLabel: x.kind === 'news' ? 'Published' : 'Event dates', fetchedAt, stale: !!x.stale || now - Date.parse(fetchedAt) >= COMMUNITY_TTL, image: safeCommunityImage(x.image, game, x.sourceId, url, x.kind), important: !!x.important };
+    return { id: x.sourceId === 'serebii' ? `${url}#${encodeURIComponent(title)}` : url, sourceId: x.sourceId, scope: text(x.scope, 80), game, kind: x.kind, title, summary: text(x.summary), whyItMatters: text(x.whyItMatters, 180), category: ['Release','Rules','Tournament','Cards','Community'].includes(x.category) ? x.category : '', editorial: x.editorial === 'ai-assisted' ? 'ai-assisted' : 'source-ranked', url, source: source.name, sourceUrl: source.url, publishedAt, startsAt, endsAt, dateLabel: x.kind === 'news' ? 'Published' : 'Event dates', fetchedAt, cadence: weekly ? 'weekly' : 'daily', stale: !!x.stale || now - Date.parse(fetchedAt) >= (weekly ? 7 : 1) * COMMUNITY_TTL || weekly && x.kind === 'news' && now - Date.parse(publishedAt) > 7 * COMMUNITY_TTL, image: safeCommunityImage(x.image, game, x.sourceId, url, x.kind), important: !!x.important };
   }).filter(Boolean).slice(0, 18);
 }
 export function communityState(game) {
@@ -63,13 +65,13 @@ export function communityState(game) {
     // Browser storage is an untrusted boundary. A malformed cache must not
     // crash Home, impersonate a checked source, or block a valid next response.
     const data = record(raw) && raw.game === game && Array.isArray(raw.items) ? {
-      game, items: raw.items.slice(0, 36).filter(x => record(x) && !!stamp(x.fetchedAt)), sources: validSources(raw.sources, game),
+      game, cadence: raw.cadence === 'weekly' ? 'weekly' : 'daily', aiStatus: text(raw.aiStatus, 40), curatedAt: stamp(raw.curatedAt), items: raw.items.slice(0, 36).filter(x => record(x) && !!stamp(x.fetchedAt)), sources: validSources(raw.sources, game),
       fetchedAt: stamp(raw.fetchedAt), checkedAt: stamp(raw.checkedAt), nextCheckAt: stamp(raw.nextCheckAt), stale: !!raw.stale,
       status: ['ready', 'partial', 'unavailable'].includes(raw.status) ? raw.status : 'unavailable', error: text(raw.error, 250),
     } : null;
-    // Keep only provenance-valid legacy items and give each game one corrected request. v3 even
-    // on failure restores the daily backoff across reloads without a cache purge.
-    const at = !legacy && data && typeof old?.at === 'number' && stamp(old.at) ? old.at : 0;
+    // Adopt the weekly endpoint once per game, preserving valid old rows. The
+    // migration marker also backs off after failure, so reloads never retry-loop.
+    const at = !legacy && data && (old?.weeklySchema === 1 || data.cadence === 'weekly') && typeof old?.at === 'number' && stamp(old.at) ? old.at : 0;
     states[game] = { data, at, busy: false, error: data?.error || '' };
   }
   return states[game];
@@ -81,7 +83,11 @@ export function loadCommunity(game, { fetchImpl = globalThis.fetch, now = Date.n
   if (!games.includes(game)) return Promise.resolve(null);
   const state = communityState(game);
   if (state.busy) return state.promise;
-  if (state.at && now >= state.at && now - state.at < COMMUNITY_TTL) return Promise.resolve(state.data);
+  const scheduled=Date.parse(state.data?.nextCheckAt), ordinaryExpiry=state.at+COMMUNITY_TTL;
+  // Recheck shortly after the shared cron, not a full day after a pre-cron visit.
+  // A 15-minute floor and five-minute publication grace prevent visitor retry loops.
+  const expires=Number.isFinite(scheduled)&&scheduled>state.at?Math.min(ordinaryExpiry,Math.max(state.at+15*60000,scheduled+5*60000)):ordinaryExpiry;
+  if (state.at && now >= state.at && now < expires) return Promise.resolve(state.data);
   state.busy = true; state.error = '';
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 16000);
   state.promise = Promise.resolve().then(() => fetchImpl(`api/community?game=${game}`, { cache: 'no-store', signal: controller.signal, headers: { Accept: 'application/json' } })).then(async response => {
@@ -90,7 +96,7 @@ export function loadCommunity(game, { fetchImpl = globalThis.fetch, now = Date.n
     if (payload.length > 100000) throw Error('Community headline response was too large.');
     const raw = JSON.parse(payload);
     if (!raw || raw.game !== game || !Array.isArray(raw.items)) throw Error('Community headlines are unavailable on this connection.');
-    state.data = { game, sources: validSources(raw.sources, game), items: validItems([...raw.items, ...(Array.isArray(state.data?.items) ? state.data.items : []).map(x => ({ ...x, stale: true }))], game, now), fetchedAt: stamp(raw.fetchedAt), checkedAt: stamp(raw.checkedAt), nextCheckAt: stamp(raw.nextCheckAt), stale: !!raw.stale, status: ['ready', 'partial', 'unavailable'].includes(raw.status) ? raw.status : 'unavailable', error: text(raw.error, 250) };
+    state.data = { game, cadence: raw.cadence === 'weekly' ? 'weekly' : 'daily', aiStatus: text(raw.aiStatus, 40), curatedAt: stamp(raw.curatedAt), sources: validSources(raw.sources, game), items: validItems([...raw.items, ...(raw.cadence === 'weekly' && raw.status !== 'unavailable' ? [] : Array.isArray(state.data?.items) ? state.data.items : []).map(x => ({ ...x, stale: true }))], game, now), fetchedAt: stamp(raw.fetchedAt), checkedAt: stamp(raw.checkedAt), nextCheckAt: stamp(raw.nextCheckAt), stale: !!raw.stale, status: ['ready', 'partial', 'unavailable'].includes(raw.status) ? raw.status : 'unavailable', error: text(raw.error, 250) };
     state.error = state.data.error;
     return state.data;
   }).catch(error => {
@@ -99,7 +105,7 @@ export function loadCommunity(game, { fetchImpl = globalThis.fetch, now = Date.n
     return state.data;
   }).finally(() => {
     clearTimeout(timer); state.busy = false; state.at = now;
-    try { const all = saved(); all[game] = { at: now, data: state.data }; storage()?.setItem(KEY, JSON.stringify(Object.fromEntries(games.filter(g => all[g]).map(g => [g, all[g]])))); } catch {}
+    try { const all = saved(); all[game] = { at: now, data: state.data, weeklySchema: 1 }; storage()?.setItem(KEY, JSON.stringify(Object.fromEntries(games.filter(g => all[g]).map(g => [g, all[g]])))); } catch {}
   });
   return state.promise;
 }
@@ -109,10 +115,10 @@ export function metaDeckSlides(game, M, metaKey, now = Date.now(), limit = 3) {
   const fetchedAt = stamp(data.fetchedAt) || stamp(M.at), stale = !!M.error || !!data.stale || !fetchedAt || now - Date.parse(fetchedAt) >= 12 * 3600e3;
   const methodology = game === 'ptcg' ? 'Top 8 lists from recent Standard events on Limitless.' : game === 'ygo' ? 'Lists curated as Tournament Meta Decks by YGOPRODeck.' : /Magic Online|MTGO/i.test(data.source || '') ? 'Published Magic Online Challenge and 5–0 League lists; not a global popularity ranking.' : /EDHTop16/i.test(data.source || '') ? 'Competitive Commander tournament results from EDHTop16.' : 'Published tournament lists; not a global popularity ranking.';
   const seen = new Set();
-  return data.decks.slice(0, 100).filter(d => {
+  return curatedMetaDecks(data).slice(0, 100).filter(d => {
     if (!d?.key || seen.has(d.key)) return false; seen.add(d.key); return !!(safeCommunityUrl(d.url, game) || safeCommunityUrl(d.eventUrl, game));
   }).slice(0, Math.min(6, Math.max(1, limit))).map(d => ({
-    id: `deck:${game}:${d.key}`, game, kind: 'deck', title: text(d.name || 'Tournament deck'), summary: [text(d.place, 35), text(d.event, 110)].filter(Boolean).join(' · '), url: safeCommunityUrl(d.url, game) || safeCommunityUrl(d.eventUrl, game), artwork: communityDeckArtwork(game, d), source: text(data.source, 160), publishedAt: stamp(d.date), dateLabel: game === 'ygo' ? 'List submitted' : 'Event date', fetchedAt, stale, deckKey: d.key, metaKey, methodology,
+    id: `deck:${game}:${d.key}`, game, kind: 'deck', title: text(d.name || 'Tournament deck'), summary: [text(d.place, 35), text(d.event, 110)].filter(Boolean).join(' · '), url: safeCommunityUrl(d.url, game) || safeCommunityUrl(d.eventUrl, game), artwork: communityDeckArtwork(game, d), source: text(data.source, 160), publishedAt: stamp(d.date), dateLabel: game === 'ygo' ? 'List submitted' : 'Event date', fetchedAt, stale, deckKey: d.key, metaKey, methodology, curation: data.curation?.selections?.find(row => row.id === d.key)?.explanation || '',
   }));
 }
 function resultSlide(game, M, now) {

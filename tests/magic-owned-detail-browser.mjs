@@ -51,17 +51,17 @@ try{
   await page.locator('[data-act="buyCard"][data-lot="owned-77"]').click();await page.waitForFunction(()=>window.__uiTestState.ui.sheetCtx?.type==='buy');assert.equal((await page.evaluate(()=>window.__uiTestState.ui.sheetCtx)).print.id,etched.id);await page.locator('[data-act="buyBack"]').click();await verify(page,lots[0]);await closeSheet(page);
   await navigate(page,'#collection/binders');await page.locator('[data-act="openBinder"][data-binder="exact-owned"]').click();await page.locator('.pocket-open[data-entry="owned-77"]').click();await verify(page,lots[0]);await page.locator('#sheet [data-history-back]').click();await page.locator('.pocket-open[data-entry="owned-77"]').waitFor();await closeSheet(page);
   await navigate(page,'#collection/value');await page.locator('.value-lot[data-entry="owned-77"]').click();await verify(page,lots[0]);await closeSheet(page);
-  await navigate(page,'#collection');await page.locator('.lot-art[data-entry="owned-legacy"]').click();assert.match(await page.locator('#sheetBody').innerText(),/exact printing.*needs review/i);assert.equal(await page.locator('#sheet .cd-zoom img').count(),0);assert.equal(await page.locator('#sheet .card-price-summary').count(),0);await capture(page,`magic-owned-detail-${width}-legacy-unresolved`);await closeSheet(page);
+  await navigate(page,'#collection/cards');await page.locator('.lot-art[data-entry="owned-legacy"]').click();assert.match(await page.locator('#sheetBody').innerText(),/exact printing.*needs review/i);assert.equal(await page.locator('#sheet .cd-zoom img').count(),0);assert.equal(await page.locator('#sheet .card-price-summary').count(),0);await capture(page,`magic-owned-detail-${width}-legacy-unresolved`);await closeSheet(page);
   assert.equal(await protectedState(page),before,'all read-only detail routes preserve owned data and manual values');
   // Absent/conflicting exact cache never borrows #001's tile, Binder, Value art or quote.
   for(const conflict of [false,true]){
    await page.evaluate(({id,wrong,conflict})=>{const s=window.__uiTestState.state;if(conflict)s.printings[id]=wrong;else delete s.printings[id];dispatchEvent(new Event('cardstashy-rerender'));},{id:etched.id,wrong:regular,conflict});
-   await navigate(page,'#collection');assert.equal(await page.locator('.lot-art[data-entry="owned-77"] img').count(),0);
+   await navigate(page,'#collection/cards');assert.equal(await page.locator('.lot-art[data-entry="owned-77"] img').count(),0);
    assert.equal(await page.locator('[data-act="buyCard"][data-lot="owned-77"]').innerText(),'—');
    await navigate(page,'#collection/binders');await page.locator('[data-act="openBinder"][data-binder="exact-owned"]').click();assert.equal(await page.locator('.pocket-open[data-entry="owned-77"] img').count(),0);await closeSheet(page);
    await navigate(page,'#collection/value');assert.equal(await page.locator('.value-lot[data-entry="owned-77"]').count(),0);assert.equal(await page.locator('.value-lot[data-entry="owned-77-worn"] img').count(),0);assert.match(await page.locator('.value-lot[data-entry="owned-77-worn"]').innerText(),/0\.20/);
   }
-  await navigate(page,'#collection');
+  await navigate(page,'#collection/cards');
   // A delayed exact fetch must not replace a different detail opened in the meantime.
   let start,release;const seen=new Promise(r=>start=r),wait=new Promise(r=>release=r);held={started:start,wait};
   await page.evaluate(id=>{delete window.__uiTestState.state.printings[id];dispatchEvent(new Event('cardstashy-rerender'));},etched.id);

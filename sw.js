@@ -1,5 +1,11 @@
 const CACHE = "cardforge-shell-v230";
 const ASSETS = [
+  "./ai-ask-loop.js",
+  "./ai-deck-builder.js",
+  "./meta-curation.js",
+  "./set-browser.js",
+  "./set-release-metadata.js",
+  "./community-curation.css",
   "./magic-owned-detail.js",
   "./pokemon-variant-options.js",
   "./pokemon-promo-evidence.js",

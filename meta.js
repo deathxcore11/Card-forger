@@ -1,3 +1,4 @@
+import { sourceDate, applyMetaOverlay } from './meta-curation.js';
 import { tallyResults } from "./matchup.js";
 import { pokemonDeckCover } from "./artwork.js";
 // Live "what's winning right now" data for Yu-Gi-Oh! and Pokémon.
@@ -75,7 +76,8 @@ export async function loadMeta(g, force = false) {
   M.error = "";
   M.code = "";
   M.promise = (g.startsWith("mtg:") ? mtgMeta(g.slice(4)) : g === "ygo" ? ygoMeta() : ptcgMeta())
-    .then((data) => {
+    .then(async (data) => {
+      try { const game = g.startsWith('mtg:') ? 'mtg' : g, format = g.startsWith('mtg:') ? g.slice(4) : game === 'ptcg' ? 'Standard' : 'TCG'; const response = await fetch(`api/meta/curation?${new URLSearchParams({game,format})}`, { headers: { Accept:'application/json' }, signal: AbortSignal.timeout(4000) }); if (response.ok) data = applyMetaOverlay(data, await response.json()); } catch {}
       M.data = data;
       M.at = Date.now();
       M.artRefreshAttempted = false;
@@ -139,16 +141,23 @@ const ids = (s) => {
 };
 const PLACE = { Winner: 1, "Runner-Up": 2, "Top 4": 4, "Top 8": 8, "Top 16": 16, "Top 32": 32, "Top 64": 64 };
 
-export async function ygoMeta() {
-  const since = new Date(Date.now() - 90 * 864e5).toISOString().slice(0, 10);
+export async function ygoMeta({ fetchImpl = globalThis.fetch, now = Date.now(), server = false } = {}) {
+  const get = async (path, upstream) => {
+    if (!server && fetchImpl === globalThis.fetch) return ygoGet(path, upstream);
+    const r = await fetchImpl(server ? upstream : path, { redirect: 'error', signal: AbortSignal.timeout(12000), headers: { Accept: 'application/json' } });
+    if (!r.ok) throw Error('Yu-Gi-Oh! tournament source unavailable');
+    return r.json();
+  };
+  const since = new Date(now - 90 * 864e5).toISOString().slice(0, 10);
   const [p0, p1, p2, top] = await Promise.all([
-    ygoGet("api/meta/ygo/decks?offset=0", YGO_UP.decks(0)),
-    ygoGet("api/meta/ygo/decks?offset=20", YGO_UP.decks(20)).catch(() => []),
-    ygoGet("api/meta/ygo/decks?offset=40", YGO_UP.decks(40)).catch(() => []),
-    ygoGet("api/meta/ygo/top?since=" + since, YGO_UP.top(since)).catch(() => ({ results: [] })),
+    get("api/meta/ygo/decks?offset=0", YGO_UP.decks(0)),
+    get("api/meta/ygo/decks?offset=20", YGO_UP.decks(20)).catch(() => []),
+    get("api/meta/ygo/decks?offset=40", YGO_UP.decks(40)).catch(() => []),
+    server ? { results: [] } : get("api/meta/ygo/top?since=" + since, YGO_UP.top(since)).catch(() => ({ results: [] })),
   ]);
-  const decks = [...(p0 || []), ...(p1 || []), ...(p2 || [])]
-    .filter((d) => d?.main_deck)
+  const seenDecks = new Set();
+  const decks = [...(Array.isArray(p0) ? p0 : []), ...(Array.isArray(p1) ? p1 : []), ...(Array.isArray(p2) ? p2 : [])]
+    .filter((d) => { if (!d?.main_deck || !d.deckNum || seenDecks.has(String(d.deckNum))) return false; seenDecks.add(String(d.deckNum)); const date = sourceDate(d.submit_date); return !date || Date.parse(date) <= now && now - Date.parse(date) <= 90 * 864e5; })
     .map((d) => ({
       key: "ygo:" + d.deckNum,
       name: d.deck_name || "Tournament deck",
@@ -157,7 +166,9 @@ export async function ygoMeta() {
       rank: PLACE[d.tournamentPlacement] || 99,
       players: Number(d.tournamentPlayerCount) || 0,
       player: d.tournamentPlayerName || "",
-      date: d.submit_date || "",
+      date: sourceDate(d.submit_date),
+      dateMeaning: "List submitted",
+      region: /\bOCG\b/i.test(String(d.deck_format || d.format || "")) ? "OCG" : "Region unverified",
       main: ids(d.main_deck),
       extra: ids(d.extra_deck),
       side: ids(d.side_deck),
@@ -175,6 +186,7 @@ export async function ygoMeta() {
   }
   return {
     game: "ygo",
+    fetchedAt: new Date(now).toISOString(),
     source: "YGOPRODeck Tournament Meta Decks",
     decks,
     archetypes: [...groups.values()].sort((a, b) => b.count - a.count).map((x) => ({ ...x, share: x.count / Math.max(1, decks.length), best: x.best.key })),
@@ -188,28 +200,25 @@ export async function ygoMeta() {
 export const cleanName = (s) => String(s || "").replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, "").replace(/\s{2,}/g, " ").trim();
 
 const LIMITLESS = "https://play.limitlesstcg.com/api";
-const lim = async (path) => {
-  const r = await fetch(LIMITLESS + path, { headers: { Accept: "application/json" } });
-  if (!r.ok) throw Error("Limitless is unavailable right now (" + r.status + ").");
-  return r.json();
-};
-
-export async function ptcgMeta() {
-  const list = await lim("/tournaments?game=PTCG&format=STANDARD&limit=100");
-  const cutoff = Date.now() - 21 * 864e5;
-  const events = (list || [])
-    .filter((t) => Date.parse(t.date) >= cutoff && t.players >= 24)
+export async function ptcgMeta({ fetchImpl = globalThis.fetch, now = Date.now(), server = false } = {}) {
+  const source = async path => { const r = await fetchImpl(LIMITLESS + path, { redirect: 'error', signal: AbortSignal.timeout(12000), headers: { Accept: 'application/json' } }); if (!r.ok) throw Error('Limitless is unavailable right now (' + r.status + ').'); return r.json(); };
+  const list = await source("/tournaments?game=PTCG&format=STANDARD&limit=100");
+  const cutoff = now - 21 * 864e5;
+  const validEvents = (Array.isArray(list) ? list : []).filter(t => t && /^[a-zA-Z0-9_-]{1,80}$/.test(t.id || '') && (!t.game || t.game === 'PTCG') && (!t.format || t.format === 'STANDARD'));
+  const events = validEvents
+    .filter((t) => Date.parse(sourceDate(t.date)) >= cutoff && Date.parse(sourceDate(t.date)) <= now && (!t.game || t.game === "PTCG") && (!t.format || t.format === "STANDARD") && t.players >= 24)
     .sort((a, b) => b.players - a.players)
     .slice(0, 6);
   if (!events.length) throw Error("No recent Standard events found.");
-  const standings = await Promise.all(events.map((t) => lim(`/tournaments/${t.id}/standings`).then((s) => ({ t, s })).catch(() => ({ t, s: [] }))));
+  const standings = await Promise.all(events.map((t) => source(`/tournaments/${t.id}/standings`).then((s) => ({ t, s })).catch(() => ({ t, s: [] }))));
   // Real results for the Matchups tab: every round of the biggest recent events (up to 12),
   // tallied by archetype and head to head (realMatchup in matchup.js).
-  const resultEvents = (list || []).filter((t) => Date.parse(t.date) >= cutoff && Date.parse(t.date) < Date.now() - 864e5 && t.players >= 32).sort((a, b) => b.players - a.players).slice(0, 12);
+  // Weekly editorial curation needs lists, not a second download of matchup rounds.
+  const resultEvents = server ? [] : validEvents.filter((t) => Date.parse(sourceDate(t.date)) >= cutoff && Date.parse(sourceDate(t.date)) < now - 864e5 && t.players >= 32).sort((a, b) => b.players - a.players).slice(0, 12);
   const games = [];
   await Promise.all(resultEvents.map(async (t) => {
     try {
-      const [s, pairs] = await Promise.all([standings.find((x) => x.t.id === t.id)?.s || lim(`/tournaments/${t.id}/standings`), lim(`/tournaments/${t.id}/pairings`)]);
+      const [s, pairs] = await Promise.all([standings.find((x) => x.t.id === t.id)?.s || source(`/tournaments/${t.id}/standings`), source(`/tournaments/${t.id}/pairings`)]);
       const deckOf = new Map((s || []).filter((p) => p.deck?.name).map((p) => [p.player, p.deck.name]));
       for (const m of pairs || []) {
         const a = deckOf.get(m.player1), b = deckOf.get(m.player2);
@@ -256,6 +265,8 @@ export async function ptcgMeta() {
     }
   return {
     game: "ptcg",
+    format: "Standard",
+    fetchedAt: new Date(now).toISOString(),
     artSchema: PTCG_ART_SCHEMA,
     results: games.length ? { ...tallyResults(games), events: resultEvents.length } : null,
     source: "Limitless — " + events.length + " recent Standard events, " + players + " players",

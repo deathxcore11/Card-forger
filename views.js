@@ -1,3 +1,4 @@
+import {browseSets,setBrowserControls,setBrowserRows,setBrowserDetail} from './set-browser.js';
 import {magicOwnedCard} from './magic-owned-detail.js';
 import {myPrintingPrice} from './mtg-tcgprice.js';
 import {renderMagicMatchups} from './magic-matchups-ui.js';
@@ -35,7 +36,7 @@ import { tradePanel } from "./trade.js";
 import { skeletonGrid } from "./ui.js";
 import { trackedQuote, priceHistoryHtml, alertsPanel, alertStatus } from "./pricehist.js";
 import { installNudge } from "./install.js";
-import {setRowContent,setYearSections,setProgressMarkup,setCardFacets,filterSortSetCards} from './set-list-ui.js';
+import {knownSetCount,setRowContent,setYearSections,setProgressMarkup,setCardFacets,filterSortSetCards} from './set-list-ui.js';
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
 import { ICON, actionIcon } from "./icons.js";
 import { tierOf, tierAttrs, tierStyle, tierGem } from "./tier.js";
@@ -406,7 +407,7 @@ export function cardSheet(c, ctx = {}) {
   ${cardTabs(tab, [["overview", "Overview"], ["meta", "Meta"], ["guide", "Play guide"], ["versions", `Versions${prints ? " · " + prints.length + (ctx.printsNext ? "+" : "") : ""}`], ["prices", "Prices"], ["rulings", "Rules & legality"]])}
   ${emblemChips("mtg", c)}
   <div class="cs-meta">
-    ${(()=>{const st=S.ui.set,info=S.ui.sets.list.find(s=>s.code===shown.set)||(st.code===shown.set?st.info:null),owned=ownedPrintings(),prints=Object.values(S.state.printings||{}).filter(p=>p.set===shown.set),count=new Set(prints.filter(p=>owned.has(String(p.id))).map(p=>p.id)).size;return detailSetSummary({action:shown.set?`data-act="set" data-code="${esc(shown.set)}"`:'',identity:`${setIcon(shown.set, shown.rarity, 24)}<span><b>${esc(shown.set_name || (shown.set || "").toUpperCase())}${shown.set?' <span class="set-go">›</span>':''}</b><small>${esc((shown.set || "").toUpperCase())} #${esc(shown.collector_number || "?")} · ${esc(RARITY[shown.rarity] || shown.rarity || "")}${shown.released_at ? " · " + esc(shown.released_at.slice(0, 4)) : ""}</small></span>`,progress:{key:'mtg:'+shown.set,owned:shown.set?count:null,total:st.code===shown.set&&st.complete?st.cards.length:info?.card_count||null,loaded:st.code===shown.set?st.cards.length:prints.length,complete:st.code===shown.set&&!!st.complete}});})()}
+    ${(()=>{const st=S.ui.set,info=S.ui.sets.list.find(s=>s.code===shown.set)||(st.code===shown.set?st.info:null);return detailSetSummary({action:shown.set?`data-act="set" data-code="${esc(shown.set)}"`:'',identity:`${setIcon(shown.set, shown.rarity, 24)}<span><b>${esc(shown.set_name || (shown.set || "").toUpperCase())}${shown.set?' <span class="set-go">›</span>':''}</b><small>${esc((shown.set || "").toUpperCase())} #${esc(shown.collector_number || "?")} · ${esc(RARITY[shown.rarity] || shown.rarity || "")}${shown.released_at ? " · " + esc(shown.released_at.slice(0, 4)) : ""}</small></span>`,progress:magicSetProgress(shown.set,info)});})()}
     ${compactPriceSummary("mtg",shown,buyContext("mtg",shown,{...ctx,priceFinish},S.state))}
   </div>
   ${cardPanel("overview", tab, overview)}
@@ -468,7 +469,7 @@ const SET_TYPES = {
   spellbook: "Spellbook", premium_deck: "Premium deck", arsenal: "Arsenal", planechase: "Planechase", archenemy: "Archenemy",
   masterpiece: "Masterpiece", promo: "Promo", token: "Tokens", memorabilia: "Memorabilia", alchemy: "Alchemy", minigame: "Minigame", treasure_chest: "Treasure chest", vanguard: "Vanguard",
 };
-const MAIN_TYPES = new Set(["expansion", "core", "masters", "commander", "draft_innovation", "funny", "starter", "box", "duel_deck", "from_the_vault", "spellbook", "premium_deck", "arsenal", "planechase", "archenemy"]);
+
 
 // Sets count verified printing slots, not names, quantities or unresolved imports.
 function ownedPrintings() {
@@ -480,17 +481,31 @@ function ownedPrintings() {
   return m;
 }
 
+// A single verified progress snapshot feeds the tile, card popup and set page.
+// A partial request does not erase already-known owned slots in the same set.
+function magicSetProgressIndex() {
+  const st=S.ui.set,owned=ownedPrintings(),known=new Map();
+  // Build once for a catalogue render, not once for every visible tile.
+  for(const card of [...Object.values(S.state.printings||{}),...(st.cards||[]).filter(p=>p?.set===st.code)]){
+    if(!card?.id||!card.set)continue;if(!known.has(card.set))known.set(card.set,new Set());known.get(card.set).add(String(card.id));
+  }
+  return {owned,known};
+}
+export function magicSetProgress(code,info=null,index=null) {
+  index ||= magicSetProgressIndex();
+  const st=S.ui.set,active=st.code===code,loaded=active?new Set((st.cards||[]).filter(p=>p?.id&&p.set===code).map(p=>String(p.id))).size:0,known=index.known.get(code)||new Set(),total=active?knownSetCount(st.total)||knownSetCount(info?.card_count)||(st.complete?knownSetCount(loaded):null):knownSetCount(info?.card_count);
+  return {key:'mtg:'+code,owned:code?[...known].filter(id=>index.owned.has(id)).length:null,total,known:known.size,loaded:active?loaded:known.size,complete:active&&!!st.complete&&total!==null&&loaded===total};
+}
+
 export function setsPage() {
-  const st = S.ui.sets,
-    q = st.q.trim().toLowerCase(),
-    list = st.list.filter((x) => !x.digital && (st.all || MAIN_TYPES.has(x.set_type)) && (!q || x.name.toLowerCase().includes(q) || x.code.includes(q)));
-  return `<div class="page-head"><h1>Magic sets</h1></div>
-  <div class="searchbar"><input type="search" value="${esc(st.q)}" placeholder="Find a set by name or code" data-input="setsSearch" aria-label="Find a set" autocomplete="off"></div>
-  <div class="set-catalog-toolbar"><span class="muted small">${st.list.length ? `${list.length.toLocaleString()} sets · Scryfall` : ""}</span><button class="link small" data-act="setsReload" ${st.busy?"disabled":""}>${st.busy?"Refreshing…":"Refresh sets"}</button><label class="check small"><input type="checkbox" data-change="setsAll" ${st.all ? "checked" : ""}> Promos, tokens & extras</label></div>
-  ${st.error ? `<div class="note warn">${esc(st.error)} <button class="link" data-act="setsReload">Try again</button></div>` : ""}
-  ${!st.list.length && st.busy ? `<p class="muted center pad">Loading every set…</p>` : ""}
-  ${setYearSections(list,x => `<button class="set-row" data-act="set" data-code="${esc(x.code)}">${setRowContent({name:x.name,code:x.code.toUpperCase(),image:x.icon || setIconUrl(x.code),symbol:`<span class="set-icon" style="--icon:url('${esc(x.icon || setIconUrl(x.code))}')" aria-hidden="true"></span>`,detail:[SET_TYPES[x.set_type]||x.set_type,x.released_at].filter(Boolean).join(' · '),count:x.card_count})}</button>`,x=>x.released_at)}
-  ${st.list.length && !list.length ? empty("No sets match", "Try another name, or include promos and extras.") : ""}`;
+  const st=S.ui.sets,result=browseSets(st.list,'mtg',st),progressIndex=magicSetProgressIndex();
+  return `<div class="page-head"><div><p class="eyebrow">Explore the releases</p><h1>Magic sets</h1></div></div>
+  ${setBrowserControls(result,{game:'mtg',state:st,prefix:'sets',source:'Scryfall'})}
+  ${st.error?`<div class="note warn">${esc(st.error)} <button class="link" data-act="setsReload">Try again</button></div>`:''}
+  ${!st.list.length&&st.busy?'<p class="muted center pad">Loading every set…</p>':''}
+  ${setBrowserRows(result,x=>`<button class="set-row set-browser-tile" data-act="set" data-code="${esc(x.code)}">${setRowContent({name:x.name,code:x.code.toUpperCase(),image:x.icon||setIconUrl(x.code),symbol:`<span class="set-icon" style="--icon:url('${esc(x.icon||setIconUrl(x.code))}')" aria-hidden="true"></span>`,detail:setBrowserDetail('mtg',x,result.today),count:x.card_count,progress:magicSetProgress(x.code,x,progressIndex)})}</button>`)}
+  ${st.list.length&&!result.rows.length?empty('No sets match','Change a filter or choose All sets. No releases have been removed.'):''}
+  ${result.rows.length>result.visible.length?`<button class="btn ghost block" data-act="setsMore">Show more · ${result.rows.length-result.visible.length} left</button>`:''}`;
 }
 
 export function setPage() {
@@ -500,9 +515,8 @@ export function setPage() {
     q = st.q.trim().toLowerCase(),
     ownedOf = (c) => owned.get(String(c.id)) || 0,
     price = (c) => { const value=st.finish && st.finish!=="all" ? cardPrice(c,st.finish) : ["nonfoil","foil","etched"].map(f=>cardPrice(c,f)).find(v=>v!=null); return value==null?NaN:Number(value); },
-    all = [...new Map(st.cards.filter(c=>c.id && c.set===st.code).map(c=>[c.id,c])).values()],
-    ownedCount = all.filter((c) => ownedOf(c)).length;
-  const progress = setProgressMarkup({key:"mtg:"+st.code,owned:ownedCount,total:st.complete?all.length:st.total || null,loaded:all.length,complete:!!st.complete,previous:st.progressSnapshot});
+    all = [...new Map(st.cards.filter(c=>c.id && c.set===st.code).map(c=>[c.id,c])).values()];
+  const progress = setProgressMarkup({...magicSetProgress(st.code,info),previous:st.progressSnapshot});
   st.progressSnapshot = progress.snapshot;
   const facets = setCardFacets(all,"mtg");
   let list = filterSortSetCards(all,"mtg",{q,rarity:st.rarity,finish:st.finish,sort:st.sort}).filter(c=>st.filter === "all" || (st.filter === "owned" ? ownedOf(c) : !ownedOf(c)));
@@ -545,22 +559,23 @@ function tierCard(t, i, mode, tierList = null) {
   for (const r of t.cards) {
     const c = meta(r.name),
       g = !c ? "Other" : isLand(c) ? "Lands" : /\bCreature\b/.test(typeText(c)) ? "Creatures" : "Spells",
-      free = Math.min(r.qty, S.ui.build.avail?.(r.name) ?? 0),
+      free = Math.min(r.qty, t.preparedByAsk ? t.availableCopies?.[key(r.name)] ?? 0 : S.ui.build.avail?.(r.name) ?? 0),
+      referencePrice = t.preparedByAsk ? t.referencePrices?.[key(r.name)] ?? null : priceOf(r.name),
       basic = isBasic(c) || /^(Plains|Island|Swamp|Mountain|Forest|Wastes)$/.test(r.name);
-    const need = basic ? 0 : Math.max(0, r.qty - free), tt = tierOf("mtg", c?.rarity || "", priceOf(r.name)), why = r.why === "Already in your list" ? "Kept in this version" : r.why || "";
+    const need = basic && !t.preparedByAsk ? 0 : Math.max(0, r.qty - free), tt = tierOf("mtg", c?.rarity || "", referencePrice), why = r.why === "Already in your list" ? "Kept in this version" : r.why || "";
     // The same card tile as the deck page: art with price, set and mana, owned or needed.
-    const tile = `<div class="lot deck-row tier-row ${need ? "short" : ""}" data-tier="${tt.key}" style="${tierStyle(tt)}"><button class="lot-art" ${finishAttrs('mtg',c,{})} data-act="card" data-name="${esc(r.name)}" aria-label="Open ${esc(r.name)}">${img(cardImage(c), r.name)}${c ? tileChrome("mtg", c) : ""}<span class="art-price">${usd(priceOf(r.name))}</span></button><div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(r.name)}">${esc(r.name)}</button><span class="lot-sub">${manaCost(c)}${why ? `<small class="muted">${esc(why)}</small>` : ""}</span><span class="own ${need ? "no" : "yes"}">${need ? "Need " + need : basic && !free ? "Basic land" : "Owned"}</span></div><div class="lot-side"><span class="tier-qty">×${r.qty}</span></div></div>`;
-    groups[g].push({ qty: r.qty, name: r.name, tile, need, art: img(art(c), r.name, "mini-art"), act: `data-act="card" data-name="${esc(r.name)}"`, why, status: basic ? "basic" : free >= r.qty ? "✓ Owned" : `Need ${r.qty - free}`, ok: basic || free >= r.qty });
+    const tile = `<div class="lot deck-row tier-row ${need ? "short" : ""}" data-tier="${tt.key}" style="${tierStyle(tt)}"><button class="lot-art" ${finishAttrs('mtg',c,{})} data-act="card" data-name="${esc(r.name)}" aria-label="Open ${esc(r.name)}">${img(cardImage(c), r.name)}${c ? tileChrome("mtg", c) : ""}<span class="art-price">${usd(referencePrice)}</span></button><div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(r.name)}">${esc(r.name)}</button><span class="lot-sub">${manaCost(c)}${why ? `<small class="muted">${esc(why)}</small>` : ""}</span><span class="own ${need ? "no" : "yes"}">${need ? "Need " + need : basic && !free && !t.preparedByAsk ? "Basic land" : "Owned"}</span></div><div class="lot-side"><span class="tier-qty">×${r.qty}</span></div></div>`;
+    groups[g].push({ qty: r.qty, name: r.name, tile, need, art: img(art(c), r.name, "mini-art"), act: `data-act="card" data-name="${esc(r.name)}"`, why, status: basic && !t.preparedByAsk ? "basic" : free >= r.qty ? "✓ Owned" : `Need ${r.qty - free}`, ok: (basic && !t.preparedByAsk) || free >= r.qty });
   }
   for (const k of Object.keys(groups)) groups[k].sort((a, b) => b.qty - a.qty || a.name.localeCompare(b.name));
   return tierCardHtml({
-    title: `${t.total < t.size ? `Draft — ${t.size - t.total} slot${t.size - t.total === 1 ? "" : "s"} open · ` : ""}${esc(tierLabel(t))}`,
+    title: `${t.total < t.size ? `Draft — ${t.size - t.total} slot${t.size - t.total === 1 ? "" : "s"} open · ` : ""}${esc(t.preparedByAsk ? (t.budgetBasis === "owned" ? "Owned-cards draft" : `Requested ${t.budgetBasis === "total" ? "whole-deck" : "purchase"} budget: ${t.budget===Infinity?"unlimited":usd(t.budget)}`) : tierLabel(t))}`,
     format: t.format,
-    legal: t.total < t.size ? { ok: false, text: "Incomplete" } : { ok: true, text: "Legal" },
+    legal: t.preparedByAsk ? {ok:t.legalChecked,text:t.legalChecked?"Legality checked":t.total<t.size?"Incomplete":"Needs review"} : t.total < t.size ? { ok: false, text: "Incomplete" } : { ok: true, text: "Legal" },
     cost: t.cost, unknown: t.unknown, difficulty: t.difficulty, power: t.power ?? shownPower(p), powerKind: t.powerKind, engine: t.engine,
     sizeText: `${t.total}/${t.size} cards`, owned: t.total ? t.owned / t.total : 0,
     evidence: t.proven ? `Tournament candidate · ${t.label}` : "", warnings: t.warnings.filter((w) => !/slots? still open/.test(w)),
-    notes: budgetComparisonHtml(t, i, "tierAlternative") + (tierList ? draftPath(tierList, i, tierLabel) : ""),
+    notes: (t.preparedByAsk ? `<p class="small muted">${esc(t.buildAround)}${t.commander ? ` · Commander: ${esc(t.commander)}` : ""} · ${t.lands} lands. ${esc(t.commanderReason || "")}. ${t.budgetBasis === "total" ? "Whole-deck budget" : t.budgetBasis === "owned" ? "Owned cards only" : "Purchase budget"}: ${t.budget===Infinity?"unlimited":usd(t.budget)}.</p><p class="small ${t.withinBudget?"muted":"warn-text"}">Whole-deck estimate: ${t.totalEstimate===null?`${usd(t.pricedSubtotal)} priced subtotal + ${t.unpricedCopies} unpriced copies`:usd(t.totalEstimate)}. To buy: ${t.purchaseEstimate===null?`${usd(t.pricedPurchaseSubtotal)} priced subtotal + ${t.unpricedPurchaseCopies} unpriced copies`:usd(t.purchaseEstimate)}. Includes basic lands; excludes tax and shipping. Estimates, not checkout totals. Prices and owned counts are a snapshot${t.preparedAt?` from ${esc(t.preparedAt.slice(0,16).replace("T"," "))} UTC`:""}; ask again to refresh.</p>` : "") + budgetComparisonHtml(t, i, "tierAlternative") + (tierList ? draftPath(tierList, i, tierLabel) : ""),
     open: shown,
     groups: ["Creatures", "Spells", "Lands", "Other"].map((name) => ({ name, rows: groups[name] })),
     toggle: `data-act="tierToggle" data-i="${i}"`,
@@ -577,17 +592,19 @@ function tierCard(t, i, mode, tierList = null) {
 
 export function buildSheet() {
   const B = S.ui.build,
-    seed = meta(B.seed),
-    fmts = seed ? formatsFor(seed, ALL_FORMATS) : [],
-    tiers = B.results[B.format] || null;
+    tiers = B.results[B.format] || null,
+    prepared = tiers?.length === 1 && tiers[0].preparedByAsk,
+    seed = meta(prepared ? tiers[0].buildAround : B.seed),
+    fmts = seed ? formatsFor(seed, ALL_FORMATS) : [];
   return `<div class="sheet-head"><h2 class="build-heading">${brandMark("brand-idle")}<span>Build decks</span></h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
-  <div class="build-seed">${img(art(seed), B.seed, "mini-art")}<div><small class="muted">Built around</small><b>${esc(B.seed)}</b>${seed ? colorDots(seed) : ""}</div><button class="btn ghost small" data-act="buildRandom" data-format="${esc(B.format)}">🎲 Random card</button></div>
-  <p class="muted small">Pick a format for a complete, legal deck at each budget, using your cards first. Basic lands count as owned.</p>
+  <div class="build-seed">${img(art(seed), prepared ? tiers[0].buildAround : B.seed, "mini-art")}<div><small class="muted">Built around</small><b>${esc(prepared ? tiers[0].buildAround : B.seed)}</b>${seed ? colorDots(seed) : ""}</div>${prepared ? "" : `<button class="btn ghost small" data-act="buildRandom" data-format="${esc(B.format)}">🎲 Random card</button>`}</div>
+  ${prepared ? `<p class="muted small">An unsaved draft prepared from your request and checked against app card data. Review every card and warning below. Save as deck keeps this exact list; nothing is changed until you choose it.</p>` : `  <p class="muted small">Pick a format for a complete, legal deck at each budget, using your cards first. Basic lands count as owned.</p>
   <div class="fmt-chips">${fmts.map((f) => `<button class="chip pick ${f.name === B.format ? "on" : ""}" ${B.busy?"disabled":""} data-act="buildFormat" data-format="${esc(f.name)}">${esc(f.name)}</button>`).join("") || '<span class="muted small">This card isn’t legal in any constructed format.</span>'}</div>
   <label class="custom-budget">Purchase budget $<input id="buildCustom" type="number" min="0" max="100000" step="1" value="${esc(B.custom ?? "")}" placeholder="Blank = unlimited" ${B.busy?"disabled":""} data-change="buildCustom"></label>
+`}
   ${B.busy ? buildOverlay(B.msg) : B.msg ? `<p class="small ${B.error ? "warn-text" : "muted"}" role="status">${esc(B.msg)}</p>` : ""}
   ${tiers ? `<div class="tiers">${tiers.map((t, i) => tierCard(t, i, "build", tiers)).join("")}</div>${tiers.length > 1 ? `<button class="btn ghost block" data-act="tierSaveAll">Save all ${tiers.length} versions</button>` : ""}` : ""}
-  <p class="foot">Built from your cards first, then what today's tournament decks play. A strong start, not a tuned tournament list. Prices are daily estimates.</p>`;
+  <p class="foot">${prepared ? "AI chose the request parameters; the app assembled and checked this draft. It is a starting point, not a tournament-tested list or a verified combo explanation." : "Built from your cards first, then what today's tournament decks play. A strong start, not a tuned tournament list. Prices are daily estimates."}</p>`;
 }
 
 function fillAnyPanel(d, fm, count) {
@@ -1209,12 +1226,21 @@ function mtgSideboard(d) {
     <div class="list compact">${rows.sort((a, b) => b.qty - a.qty || a.name.localeCompare(b.name)).map((r) => `<button class="mini-row art-row" data-act="card" data-name="${esc(r.name)}">${img(art(r.c), r.name, "mini-art")}<span class="ellip">${r.qty}× ${esc(r.name)}</span><span class="small ${r.own >= r.qty ? "ok-text" : "warn-text"}">${r.own >= r.qty ? "✓ Owned" : `Need ${r.qty - r.own}`}</span></button>`).join("")}</div></details>`;
 }
 
-export function deckList(d = currentDeck()) {
-  const q = S.ui.q.deck.toLowerCase();
-  let rows = rowsFor(d).filter(
+export function deckList(d = currentDeck(), opts = {}) {
+  // Read-only previews use the same card rows without inheriting unrelated deck
+  // filters, writable actions, or mixing sideboard copies into the main list.
+  const readOnly = opts.readOnly === true, unfiltered = opts.unfiltered === true;
+  const leaders = readOnly ? [...new Set([d.commander, ...(d.commanders || [])].map(x => typeof x === 'string' ? x : x?.name).filter(Boolean))] : [];
+  if (readOnly) {
+    const cards = [...(d.cards || d.main || [])];
+    for (const name of leaders) if (!cards.some(r => key(r.name) === key(name))) cards.push({name, qty: 1});
+    d = {...d, cards, commander: d.commander || leaders[0] || ''};
+  }
+  const q = unfiltered ? '' : S.ui.q.deck.toLowerCase();
+  let rows = rowsFor(readOnly ? {...d, side: []} : d).map(r => readOnly && leaders.some(n => key(n) === key(r.name)) ? {...r, category: 'Commander'} : r).filter(
     (r) =>
       (!q || r.name.toLowerCase().includes(q)) &&
-      (S.ui.deckFilter === "all" ||
+      (unfiltered || S.ui.deckFilter === "all" ||
         (S.ui.deckFilter === "missing" && r.missing > 0) ||
         (S.ui.deckFilter === "owned" && r.missing === 0) ||
         (S.ui.deckFilter === "unresolved" && !meta(r.name))),
@@ -1246,10 +1272,12 @@ export function deckList(d = currentDeck()) {
     .filter(([, list]) => list.length)
     .map(([g, list]) => {
       const val = list.reduce((a, r) => a + (r.price ?? 0) * r.qty, 0);
-      return `<details class="group" open><summary><span>${esc(g)} <em>${sumQty(list)}</em></span><span class="muted small">${usd(val)}</span></summary><div class="list display-list">${list.map((r) => deckRow(r,d)).join("")}</div></details>`;
+      return `<details class="group" open><summary><span>${esc(g)} <em>${sumQty(list)}</em></span><span class="muted small">${usd(val)}</span></summary><div class="list display-list">${list.map((r) => deckRow(r,d,opts)).join("")}</div></details>`;
     })
     .join("");
-  return html || `<p class="muted center pad">No cards match.</p>`;
+  const sideRows = readOnly && d.side?.length ? rowsFor({...d, cards: d.side, side: [], commander: '', commanders: []}) : [];
+  const sideHtml = sideRows.length ? `<details class="group side-group" open><summary><span>Sideboard <em>${sumQty(sideRows)}</em></span></summary><div class="list display-list">${sideRows.map(r => deckRow(r,d,opts)).join('')}</div></details>` : '';
+  return html + sideHtml || `<p class="muted center pad">No cards match.</p>`;
 }
 
 // Flags a card that breaks the deck's format: banned, not legal, or restricted.
@@ -1258,17 +1286,18 @@ function legalTag(c, d) {
   return l === "banned" ? '<span class="tag bad">Banned</span>' : l === "not_legal" ? '<span class="tag bad">Not legal</span>' : l === "restricted" ? '<span class="tag warn">Restricted</span>' : "";
 }
 
-function deckRow(r, d) {
+function deckRow(r, d, opts = {}) {
+  const readOnly = opts.readOnly === true, action = opts.cardAction || "card", deckAttr = readOnly ? '' : ` data-deck="${esc(d.id)}"`;
   const c = meta(r.name),
     ok = r.missing === 0,
     t = tierOf("mtg", c?.rarity, r.price ?? c?.prices?.usd ?? c?.prices?.usd_foil);
-  return `<div class="lot deck-row ${ok ? "" : "short"}" data-tier="${t.key}" style="${tierStyle(t)}">
-    <button class="lot-art" ${finishAttrs('mtg',c,{})} data-act="card" data-name="${esc(r.name)}" data-deck="${esc(d.id)}">${img(cardImage(c), r.name)}${c ? tileChrome("mtg", c) : ""}<span class="art-price">${usd(r.price)}</span></button>
-    <div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(d.id)}">${esc(r.name)} ${setBadge(c)}</button>
+  return `<div class="lot deck-row ${readOnly || ok ? "" : "short"}" data-tier="${t.key}" style="${tierStyle(t)}">
+    <button class="lot-art" ${finishAttrs('mtg',c,{})} data-act="${esc(action)}" data-name="${esc(r.name)}"${deckAttr}>${img(cardImage(c), r.name)}${c ? tileChrome("mtg", c) : ""}<span class="art-price">${usd(r.price)}</span></button>
+    <div class="lot-info"><button class="lot-name" data-act="${esc(action)}" data-name="${esc(r.name)}"${deckAttr}>${esc(r.name)} ${setBadge(c)}</button>
       <span class="lot-sub">${manaCost(c) || (c ? "" : '<span class="tag warn">Unresolved</span>')}${legalTag(c, d)}</span>
-      <span class="own ${ok ? "yes" : "no"}">${ok ? "Owned" : r.covered ? `${r.covered}/${r.qty} owned · need ${r.missing}` : "Need " + r.missing}${r.reserved ? ` · ${r.reserved} in other decks` : ""}</span>
+      ${readOnly ? '' : `<span class="own ${ok ? "yes" : "no"}">${ok ? "Owned" : r.covered ? `${r.covered}/${r.qty} owned · need ${r.missing}` : "Need " + r.missing}${r.reserved ? ` · ${r.reserved} in other decks` : ""}</span>`}
     </div>
-    <div class="lot-side">${r.category === "Commander" ? `<span class="chip">Commander</span>` : `<span class="stepper"><button data-act="deckQty" data-name="${esc(r.name)}" data-delta="-1" aria-label="One fewer ${esc(r.name)}">−</button><b>${r.qty}</b><button data-act="deckQty" data-name="${esc(r.name)}" data-delta="1" aria-label="One more ${esc(r.name)}">＋</button></span>`}</div>
+    <div class="lot-side">${readOnly ? `<span class="chip">${r.qty}×${r.category === "Commander" ? " · Commander" : ""}</span>` : r.category === "Commander" ? `<span class="chip">Commander</span>` : `<span class="stepper"><button data-act="deckQty" data-name="${esc(r.name)}" data-delta="-1" aria-label="One fewer ${esc(r.name)}">−</button><b>${r.qty}</b><button data-act="deckQty" data-name="${esc(r.name)}" data-delta="1" aria-label="One more ${esc(r.name)}">＋</button></span>`}</div>
   </div>`;
 }
 

@@ -1,5 +1,6 @@
 import {findInfo,INFO_TOPICS} from './app-info.js';
 import {FORMATS} from './formats.js';
+import {prepareMtgDeck} from './ai-deck-builder.js';
 import {cardPrice} from './core.js';
 import {resolveYgoSet} from './ygo.js';
 import { pokemonArtCrop } from './artwork.js';
@@ -45,7 +46,7 @@ export function makeAskTools(x) {
     const matches=exactAliases.get(item.game+':'+item.ref)||[];
     return matches.length===1?matches[0]:null;
   }
-  let suggestions = [], buildId = 0;
+  let suggestions = [], buildId = 0, buildEpoch = 0;
   const builders = new Map();
   const visualKey = s => [s.game,s.kind,s.ref].join(':');
   async function deckVisual(g, d, item, share = null) {
@@ -201,38 +202,55 @@ export function makeAskTools(x) {
       if (g === 'mtg') return { game: g, decks: S.state.decks.slice(0, 15).map((d) => { let power = null; try { power = x.shownPower(x.mtgPower(d)); } catch {} return { id: d.id, name: d.name, format: d.format, commander: d.commander || '', cards: d.cards.reduce((s, r) => s + r.qty, 0), power }; }) };
       return { game: g, decks: T.gs(g).decks.slice(0, 15).map((d) => ({ id: d.id, name: d.name, format: d.format, cards: (d.zones?.main || []).reduce((s, r) => s + r.qty, 0), power: T.deckPowerScore?.(g, d) ?? null })) };
     },
-    async build_deck({ game, style, budget, format }) {
+    async build_deck({ game, style, budget, format, seed, commander, budget_basis }) {
       const g = g0(game), want = clip(style, 80), $ = Math.max(0, Math.min(10000, Number(budget) || 0));
+      const epoch=buildEpoch, origin=x.navigationStamp?.(), scopeCurrent=x.captureAskScope?.()||(()=>true);
+      const preparingCurrent=()=>epoch===buildEpoch && scopeCurrent() && (!origin || x.navigationCurrent?.(origin)!==false);
       const formats=g==='mtg'?FORMATS.map(f=>({id:f.name,name:f.name})):T.SOURCES[g].formats;
       const selected=formats.find(f=>[f.id,f.name].some(n=>n.toLowerCase()===String(format||'').toLowerCase()));
       if(!selected)return {game:g,requiresChoice:true,formats:formats.map(f=>({id:f.id,name:f.name})),note:'Choose a format before preparing a deck. No deck has been changed.'};
       if (g === 'mtg') {
-        const fmt = selected.name, commander = /commander|edh/i.test(fmt);
-        const colors = { white: 'w', blue: 'u', black: 'b', red: 'r', green: 'g', mono: '' }, cs = Object.entries(colors).filter(([k]) => new RegExp('\\b' + k).test(want.toLowerCase())).map(([, v]) => v).join('');
-        const q = commander ? `is:commander ${cs ? `id=${cs}` : ''} ${cs ? '' : want}` : `${cs ? `c=${cs}` : ''} ${cs ? '' : want} f:${fmt.toLowerCase()} (t:creature or t:planeswalker)`;
-        const seed = (await mtgSearch(q.replace(/\s+/g, ' ').trim(), 1))[0] || (await mtgSearch(want, 1))[0];
-        if (!seed) return { error: `No ${fmt} build-around card found for "${want}".` };
-        x.pending = () => x.openMtgBuild(seed.name, fmt, $); x.pendingGame = g;
-        return { game: g, ready: true, seed: seed.name, format: fmt, budget: $ || 'no limit', note: 'The builder opens when the player taps it, and previews budget tiers with deck checks; incomplete drafts and missing prices remain visible from that card.' };
+        const built = await prepareMtgDeck({ style:want, budget:$, format:selected.name, seed, commander, budget_basis, current:preparingCurrent },x);
+        if (!preparingCurrent()) return {cancelled:true,note:'This question was closed or replaced. Nothing was saved.'};
+        if (!built.draft) return {game:g,...built};
+        const draft = structuredClone(built.draft);
+        if (x.openMtgDraft) {
+          x.pending = () => { if(!scopeCurrent()){x.toast?.('Your workspace changed. Ask again in the current workspace.');return;} return x.openMtgDraft(structuredClone(draft),scopeCurrent); };
+          x.pending.current=scopeCurrent; x.pendingGame=g;
+        }
+        return {...built.result,reviewAvailable:!!x.openMtgDraft,terminal:true};
       }
-      const src = T.SOURCES[g];
-      let r = g === 'ptcg' && /^(fire|water|grass|lightning|psychic|fighting|darkness|metal|dragon|colorless|fairy)\b/i.test(want) ? await src.search({ q: '', type: want.split(/\s/)[0][0].toUpperCase() + want.split(/\s/)[0].slice(1).toLowerCase(), category: 'Pokemon', format: selected.id, page: 0, size: 12 }).catch(() => null) : null;
-      if (!r?.cards?.length) r = await src.search({ q: want, format:selected.id, page: 0, size: 12 }).catch(() => ({ cards: [] }));
-      const pick = (r.cards || []).find((c) => /ex|VSTAR|VMAX|Stage 2/i.test(`${c.name} ${c.stage || ''}`)) || r.cards?.[0];
+      const src = T.SOURCES[g], required = clip(seed,120);
+      if(budget_basis==='owned')return {game:g,requiresChoice:true,note:'This builder handoff cannot guarantee an owned-only list. Choose a purchase budget, or use your saved deck to review the missing cards.'};
+      if(commander)return {game:g,requiresChoice:true,note:'A commander is a Magic deck role. For this game, give the main card or archetype as the build-around instead.'};
+      let r = null;
+      if(required){
+        const exact=await src.byName?.(required).catch(()=>null);
+        if(!preparingCurrent())return {cancelled:true,note:'This question was closed or replaced. Nothing was saved.'};
+        r=exact?{cards:[exact]}:await src.search({q:required,format:selected.id,page:0,size:12}).catch(()=>({cards:[]}));
+      } else if(g==='ptcg' && /^(fire|water|grass|lightning|psychic|fighting|darkness|metal|dragon|colorless|fairy)\b/i.test(want))r=await src.search({q:'',type:want.split(/\s/)[0][0].toUpperCase()+want.split(/\s/)[0].slice(1).toLowerCase(),category:'Pokemon',format:selected.id,page:0,size:12}).catch(()=>null);
+      if (!preparingCurrent()) return {cancelled:true,note:'This question was closed or replaced. Nothing was saved.'};
+      if (!r?.cards?.length && !required) r = await src.search({ q: want, format:selected.id, page: 0, size: 12 }).catch(() => ({ cards: [] }));
+      if (!preparingCurrent()) return {cancelled:true,note:'This question was closed or replaced. Nothing was saved.'};
+      const named=c=>clip(c?.name,120).toLowerCase()===required.toLowerCase();
+      const pick = required ? (r?.cards||[]).find(named) : (r?.cards||[]).find(c=>/ex|VSTAR|VMAX|Stage 2/i.test(`${c.name} ${c.stage||''}`)) || r?.cards?.[0];
+      if(required&&!pick)return {game:g,requiresChoice:true,note:`I could not verify the exact build-around “${required}”. Which card or printing should the builder use?`};
       if (!pick) return { error: `No ${g === 'ygo' ? 'Yu-Gi-Oh!' : 'Pokémon'} card found for "${want}".` };
-      x.pending = () => x.openTcgBuild(g, pick.id, $,selected.id); x.pendingGame = g;
-      return { game: g, ready: true, seed: pick.name, format:selected.name, budget: $ || 'no limit', note: 'The builder opens when the player taps it, and previews budget tiers with deck checks; incomplete drafts and missing prices remain visible around that card.' };
+      x.pending = () => {if(!scopeCurrent()){x.toast?.('Your workspace changed. Ask again in the current workspace.');return;}return x.openTcgBuild(g,pick.id,$,selected.id,scopeCurrent);}; x.pending.current=scopeCurrent; x.pendingGame=g;
+      return { game:g, prepared:true, complete:false, terminal:true, reviewAvailable:true, actionLabel:'Open the deck builder', seed:pick.name, format:selected.name, budget:$||'no limit', budgetBasis:'purchase', requestedBudgetBasis:budget_basis||'total', note:'The '+selected.name+' builder is prepared around '+pick.name+'. Its budget is purchases after owned cards, not a verified whole-deck total. Open it to generate and check the actual list and price coverage. No complete deck or under-budget result has been verified yet; nothing was saved.' };
     },
   };
   // A builder prepared during this question appears as one more tappable item.
-  tools.reset = () => { x.pending = null; suggestions = []; exactAliases.clear(); };
+  tools.reset = () => { buildEpoch++; x.pending = null; suggestions = []; exactAliases.clear(); };
+  tools.cancel = () => { buildEpoch++; x.pending = null; };
   tools.suggestedItems = () => suggestions;
   tools.canonicalItem = s => { const exact=s.kind==='card'?exactCardFor(s):null; return exact?{...s,ref:exact.ref,label:s.label||exact.card.name}:s.kind==='meta'?suggestions.find(x=>x.game===s.game&&(x.ref===s.ref||x.label===s.ref||x.label===s.label))||s:s; };
-  tools.pendingItem = () => { if (!x.pending) return null; const ref = 'builder-' + (++buildId); builders.set(ref,x.pending); return {kind:'build',game:x.pendingGame,ref,label:'Open the deck builder'}; };
+  tools.pendingItem = () => { if (!x.pending) return null; const ref = 'builder-' + (++buildId); builders.set(ref,x.pending); return {kind:'build',game:x.pendingGame,ref,label:x.pendingGame==='mtg'?'Review the deck draft':'Open the deck builder'}; };
   // What a tapped answer item opens, in the right game.
   tools.open = async (s) => {
     s=tools.canonicalItem(s);
     if(s.kind==='help')return INFO_TOPICS.some(t=>t.id===s.ref)?x.A.helpOpen({dataset:{id:s.ref}}):undefined;
+    if (s.kind==='build' && builders.get(s.ref)?.current?.()===false){x.toast?.('Your workspace changed. Ask again in the current workspace.');return;}
     if (s.game !== T.game() && await x.A.setGame({ dataset: { game: s.game } }) === false) return;
     const screen=x.navigationStamp?.(),current=()=>!screen || x.navigationCurrent?.(screen)!==false;
     if (s.kind === 'build') return builders.get(s.ref)?.();

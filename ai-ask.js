@@ -4,6 +4,8 @@ import {brandMark} from './brand.js';
 // the real cards, sets or decks to tap. Voice uses the phone's speech recognition when available.
 import { esc } from './ui.js';
 import { aiOrb } from './ai-ui.js';
+import { runAskLoop } from './ai-ask-loop.js';
+export { boundedToolOutput } from './ai-ask-loop.js';
 
 const STEP = { search_cards: 'Searching cards', card_details: 'Reading the card', my_collection: 'Checking your collection', list_sets: 'Looking through sets', set_cards: 'Pricing the set', meta_decks: 'Checking tournament results', my_decks: 'Opening your decks', build_deck: 'Setting up the deck builder', answer: 'Writing the answer' };
 const EXAMPLES = {
@@ -59,6 +61,7 @@ export function closeAsk() {
   closed.scrollTop = closed.log.scrollTop;
   closed.controller.abort();
   if (closed.busy) {
+    closed.tools?.cancel?.();
     closed.log.querySelectorAll?.('.ask-msg.pending, .ask-msg.thinking').forEach(el => el.remove());
     closed.input.value = closed.pendingText || closed.input.value;
   }
@@ -101,23 +104,10 @@ export async function ask(text, fetcher = fetch) {
   state.node.classList.add('thinking');
   const items = [...state.history, { type: 'message', role: 'user', content: text }];
   try {
-    for (let round = 0; round < 8; round++) {
-      const r = await fetcher('/api/ai/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ game: state.game, items }), signal: AbortSignal.any([session.controller.signal, AbortSignal.timeout(70000)]) });
-      if (state !== session) return;
-      let data; try { data = await r.json(); } catch { throw Error('Ask AI is unavailable. Check your connection.'); }
-      if (state !== session) return;
-      if (!r.ok) throw Error(data.message || 'Ask AI is unavailable right now.');
-      if (data.answer) { question.classList.remove('pending'); state.pendingText = ''; think.remove(); answer(data.answer); state.history = [...items.filter(x => x.type === 'message'), { type: 'message', role: 'assistant', content: data.answer.text }].slice(-8); return; }
-      think.querySelector('.ask-step').textContent = say(data.calls) + '…';
-      for (const call of data.calls) {
-        let out;
-        try { const args = JSON.parse(call.arguments || '{}'); out = await (state?.tools?.[call.name]?.(args) ?? { error: 'Not available in this app.' }); } catch (e) { out = { error: String(e.message || e).slice(0, 200) }; }
-        if (state !== session) return;
-        items.push(call, { type: 'function_call_output', call_id: call.call_id, output: boundedToolOutput(out) });
-        if (!state) return;
-      }
-    }
-    throw Error('That took too many steps. Try asking more specifically.');
+    const result = await runAskLoop({ game:session.game, items, tools:session.tools, fetcher, signal:session.controller.signal, current:()=>state===session, onCalls:calls=>{think.querySelector('.ask-step').textContent=say(calls)+'…';} });
+    if (!result || state !== session) return;
+    question.classList.remove('pending'); session.pendingText=''; think.remove(); answer(result);
+    session.history=[...items.filter(x=>x.type==='message'),{type:'message',role:'assistant',content:result.text}].slice(-8);
   } catch (e) {
     if (state !== session) return;
     question.classList.remove('pending'); state.pendingText = ''; think.remove();
@@ -132,10 +122,4 @@ function answer(a) {
   const extra = state.tools?.pendingItem?.(), seen = new Set(), list = [...((a.show || []).length ? a.show : (state.tools?.suggestedItems?.() || [])), ...(extra ? [extra] : [])].map(s => state.tools?.canonicalItem?.(s) || s).filter(s => { const k = [s.game,s.kind,s.ref].join(':'); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 8);
   const items = list.map((s, i) => state.tools?.preview?.(s, i) || `<button class="ask-item" style="--i:${i}" data-ask-show='${esc(JSON.stringify(s))}'><b>${esc(s.label || s.ref)}</b><small>${esc({ card: 'Card', set: 'Set', meta: 'Meta deck', deck: 'Your deck' }[s.kind])} · ${esc(GAME_NAME[s.game])}</small></button>`).join('');
   bubble('ai', `<p class="ask-source ${cls}">${label}</p><p>${esc(a.text)}</p>${items ? `<div class="ask-items">${items}</div>` : ''}${a.suggestions?.length ? `<div class="ask-examples follow">${a.suggestions.map((q, i) => `<button type="button" style="--i:${i}" data-ask-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : ''}`);
-}
-
-// Never cut a JSON object in the middle and present it as complete tool data.
-export function boundedToolOutput(out) {
-  const json = JSON.stringify(out) ?? 'null';
-  return json.length <= 12000 ? json : JSON.stringify({ error: 'Result too large. Narrow the request to fewer cards or sets.' });
 }

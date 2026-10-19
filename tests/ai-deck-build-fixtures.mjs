@@ -1,0 +1,9 @@
+// Synthetic prices, rules text and artwork for bounded local/hosted QA only.
+export const ASK_BUILD_PROMPT='Krark-CKrark-Clan Ironworks in a good commander deck under 200$lan Ironworks';
+const card=(id,name,type,colors=[],usd='.25',text='An artifact fixture.')=>({id,oracle_id:'oracle-'+id,name,type_line:type,oracle_text:text,color_identity:colors,colors,mana_cost:colors.length?'{1}{'+colors[0]+'}':'{2}',cmc:2,legalities:{commander:'legal',modern:'legal'},prices:{usd},set:'tst',set_name:'Synthetic build fixtures',collector_number:id.replace(/\D/g,'')||'1',lang:'en',finishes:['nonfoil'],rarity:'common',layout:'normal',full:true,image_uris:{normal:`https://detail-fixtures.invalid/${id}.svg`,small:`https://detail-fixtures.invalid/${id}.svg`,art_crop:`https://detail-fixtures.invalid/${id}.svg`}});
+export const KCI=card('ask-kci','Krark-Clan Ironworks','Artifact',[],'20','Sacrifice an artifact: Add {C}{C}.');
+export const SAI=card('ask-sai','Sai, Master Thopterist','Legendary Creature — Human Artificer',['U'],'2','Whenever you cast an artifact spell, create a 1/1 colorless Thopter artifact creature token with flying.');
+export const ISLAND={...card('ask-island','Island','Basic Land — Island',['U'],'.10','{T}: Add {U}.'),mana_cost:'',cmc:0,produced_mana:['U']};
+export const ASK_BUILD_CARDS=[KCI,SAI,ISLAND,...Array.from({length:90},(_,i)=>card('ask-artifact-'+i,'Artifact Fixture '+i,'Artifact',[],'.25',i%3===0?'Draw a card.':i%3===1?'Add {C}.':'Destroy target artifact.')),card('ask-off-color','Reckless Fireweaver','Creature — Human Artificer',['R']),{...card('ask-banned','Banned Fixture','Artifact'),legalities:{commander:'banned'}}];
+export const ASK_BUILD_ARGS={game:'mtg',style:'artifacts',seed:KCI.name,commander:'',format:'Commander',budget:200,budget_basis:'total'};
+export const ASK_TCG_ARGS={game:'ptcg',style:'Grass',seed:'Dhelmise V',commander:'',format:'Standard',budget:73,budget_basis:'purchase'};

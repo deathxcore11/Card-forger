@@ -130,9 +130,9 @@ try {
   await refreshHomeCommunity('mtg', fixture.root, { ...options, now: started + 4 * 60000 }); assert.equal(providerCalls, 1);
   await refreshHomeCommunity('mtg', fixture.root, { ...options, now: started + 6 * 60000 }); assert.equal(providerCalls, 2, 'cached failure becomes retryable after the existing five-minute backoff');
   succeeds = true;
-  await refreshHomeCommunity('mtg', fixture.root, { ...options, now: started + 12 * 60000 }); assert.equal(providerCalls, 3);
+  await refreshHomeCommunity('mtg', fixture.root, { ...options, now: started + 12 * 60000 }); assert.equal(providerCalls, 4, 'recovery also reads the shared curation overlay; it does not generate AI');
   assert.equal(M.error, ''); assert.match(fixture.stage.innerHTML, /data-meta-deck="mtg:recovered"/);
-  await refreshHomeCommunity('mtg', fixture.root, { ...options, now: started + 18 * 60000 }); assert.equal(providerCalls, 3, 'success still uses the daily Home gate');
+  await refreshHomeCommunity('mtg', fixture.root, { ...options, now: started + 18 * 60000 }); assert.equal(providerCalls, 4, 'success still uses the daily Home gate');
   assert.equal(unexpectedNetwork, 0);
 } finally {
   S.ui.mtgMeta = savedFormat;

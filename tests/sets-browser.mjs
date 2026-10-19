@@ -34,12 +34,12 @@ const bounded=async(promise,label)=>{let timer;try{return await Promise.race([pr
 const route=id=>'#set/'+encodeURIComponent(id);
 const frame=page=>page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
 const sourceRequest=(game,id,pageNumber=1)=>url=>game==='mtg'?url.hostname==='api.scryfall.com'&&url.pathname==='/cards/search'&&url.searchParams.get('q')?.includes('e:'+id)&&Number(url.searchParams.get('page')||1)===pageNumber:game==='ptcg'?url.hostname==='api.tcgdex.net'&&url.pathname==='/v2/en/sets/'+id:url.hostname==='db.ygoprodeck.com'&&url.pathname.endsWith('/cardinfo.php')&&url.searchParams.get('cardset')===SETS.ygo.find(s=>s.id===id)?.name&&Number(url.searchParams.get('offset')||0)===(pageNumber-1)*100;
-async function readyIndex(page){await page.locator('.set-year-section .set-row').first().waitFor();await page.waitForFunction(()=>{const g=window.__uiTestState.state.settings.game;return !(g==='mtg'?window.__uiTestState.ui.sets:window.__uiTestTcg.ui(g).sets).busy;});}
+async function readyIndex(page){await page.waitForFunction(()=>{const g=window.__uiTestState.state.settings.game,s=g==='mtg'?window.__uiTestState.ui.sets:window.__uiTestTcg.ui(g).sets;return !s.busy&&s.list.length>0;});const all=page.locator('.set-browser-quick [data-value="all"]');if(await all.count())await all.click();await page.locator('.set-year-section .set-row').first().waitFor();}
 async function readySet(page,game,id){await page.waitForFunction(({game,id})=>{const s=game==='mtg'?window.__uiTestState.ui.set:window.__uiTestTcg.ui(game).set;return window.__uiTestState.ui.view==='set'&&(game==='mtg'?s.code===id:s.id===id)&&!s.busy&&s.cards.length>0;},{game,id});await tiles(page).first().waitFor();}
 async function openSet(page,game,id){await navigate(page,route(id));await readySet(page,game,id);}
 async function tileIds(page,game){return tiles(page).evaluateAll((nodes,g)=>nodes.map(n=>g==='mtg'?window.__uiTestState.ui.set.cards[Number(n.dataset.setI)]?.id:n.dataset.id),game);}
 async function cardTile(page,game,id){const ids=await tileIds(page,game),index=ids.indexOf(id);assert(index>=0,`Exact tile ID ${id} exists, not just a same-name card`);const tile=tiles(page).nth(index);await tile.scrollIntoViewIfNeeded();await frame(page);return tile;}
-async function browseMore(app,action,selector,total){
+async function browseMore(app,action,selector,total,pageSize=120){
  const {page}=app;
  // The real app intentionally hides its fallback button when native automatic
  // browsing is available. Reach its visible sentinel instead of force-clicking
@@ -48,7 +48,7 @@ async function browseMore(app,action,selector,total){
  const identities=()=>page.locator(selector).evaluateAll(ns=>ns.map(n=>n.dataset.id||n.dataset.code||n.dataset.setI));
  const sourceReads=()=>app.requests.filter(r=>{const u=new URL(r.url);return u.hostname==='api.scryfall.com'&&['/sets','/cards/search'].includes(u.pathname)||u.hostname==='api.tcgdex.net'&&u.pathname.startsWith('/v2/en/sets')||u.hostname==='db.ygoprodeck.com'&&/\/(?:cardsets|cardinfo)\.php$/.test(u.pathname);}).map(r=>r.method+' '+r.url);
  const before=await identities(),hash=await page.evaluate(()=>location.hash),requests=sourceReads();
- assert.equal(before.length,120,'The first page stays bounded until its sentinel is reached');
+ assert.equal(before.length,pageSize,'The first page stays bounded until its sentinel is reached');
  assert(before.every(Boolean),'Every row has an exact release/card identity');
  assert.equal(await button.textContent(),`Show more · ${total-before.length} left`,'Continuation belongs to the exact remaining result count');
  assert.equal(await button.count(),1,'A bounded page exposes exactly one continuation');
@@ -71,7 +71,7 @@ async function progress(page,total,owned){const p=page.locator('.set-collection-
 async function keyboardRelease(page,game,id){
  // An old release may be beyond the catalogue's first 80 rows. Reach it through
  // the actual search control, then activate its exact identity with the keyboard.
- await page.getByRole('searchbox',{name:'Find a set',exact:true}).fill(game==='ygo'?LOB.code:id);
+ await page.getByRole('searchbox',{name:'Search all sets',exact:true}).fill(game==='ygo'?LOB.code:id);
  await frame(page);
  const selector=game==='mtg'?'.set-row[data-code='+JSON.stringify(id)+']':'.set-row[data-id='+JSON.stringify(id)+']';
  const target=page.locator(selector);assert.equal(await target.count(),1,'Keyboard target is one exact release, not a name collision');
@@ -86,17 +86,29 @@ async function layout(page,game,kind){
 }
 async function catalogue(app,game){
  const {page}=app,before=await inventorySnapshot(page);await readyIndex(page);const cache=await cacheSnapshot(page);await layout(page,game,'catalogue');
- const search=page.getByRole('searchbox',{name:'Find a set',exact:true});await search.fill(game==='ygo'?'LOB':game==='ptcg'?'fixturea':'fxa');await frame(page);assert.equal(await page.locator('.set-row').count(),game==='ygo'?2:1);
+ const search=page.getByRole('searchbox',{name:'Search all sets',exact:true});await search.fill(game==='ygo'?'LOB':game==='ptcg'?'fixturea':'fxa');await frame(page);assert.equal(await page.locator('.set-row').count(),game==='ygo'?2:1);
  if(game==='ygo'){const ids=await page.locator('.set-row').evaluateAll(ns=>ns.map(n=>n.dataset.id));assert.deepEqual(new Set(ids),new Set([LOB.id,ANNIVERSARY.id]));assert.notEqual(ids[0],ids[1],'Original and anniversary never share their route identity');}
  await search.fill('no-matching-fixture-xyz');await page.getByText('No sets match',{exact:true}).waitFor();assert.equal(await page.locator('.set-row').count(),0);
  await search.fill('');await frame(page);
- if(game!=='mtg'){const expected=SETS[game].length;assert.equal(await page.locator('.set-row').count(),120,'Search resets the catalogue boundary to 120');await browseMore(app,'tSetsMore','.set-row',expected);}
- if(game==='ygo'){await select(page,'[data-change="tSetKind"]','decks');assert(await page.locator('.set-row').count()>0);assert((await page.locator('.set-row').allTextContents()).every(t=>/Starter Deck/.test(t)));await select(page,'[data-change="tSetKind"]','all');await browseMore(app,'tSetsMore','.set-row',SETS[game].length);}
- if(game==='mtg'){assert.equal(await page.locator('.set-row[data-code="fxpromo"]').count(),0);await page.locator('[data-change="setsAll"]').check();assert.equal(await page.locator('.set-row[data-code="fxpromo"]').count(),1);await page.locator('[data-change="setsAll"]').uncheck();}
+ if(game!=='mtg'){const expected=SETS[game].length;assert.equal(await page.locator('.set-row').count(),80,'Search resets the catalogue boundary to 80');await browseMore(app,'tSetsMore','.set-row',expected,80);}
+ if(game==='ygo'){await select(page,'[data-change="tSetsType"]','decks');assert(await page.locator('.set-row').count()>0);assert((await page.locator('.set-row').allTextContents()).every(t=>/Starter Deck/.test(t)));await select(page,'[data-change="tSetsType"]','all');await browseMore(app,'tSetsMore','.set-row',SETS[game].length,80);}
+ if(game==='mtg'){await page.locator('[data-act="setsFamily"][data-value="main"]').click();assert.equal(await page.locator('.set-row[data-code="fxpromo"]').count(),0);await page.locator('[data-act="setsFamily"][data-value="all"]').click();assert.equal(await page.locator('.set-row[data-code="fxpromo"]').count(),1);}
  const unknown=game==='mtg'?page.locator('.set-row[data-code="fxu"]'):game==='ptcg'?page.locator('.set-row[data-id="fixtureunknown"]'):page.locator('.set-row').filter({hasText:'Synthetic undated release'});await unknown.scrollIntoViewIfNeeded();assert.match(await unknown.locator('.set-row-count').innerText(),/Unknown/i);assert.doesNotMatch(await unknown.locator('.set-row-count').innerText(),/^0\s*cards/i);
- const broken=game==='mtg'?page.locator('.set-row[data-code="fxb"]'):game==='ptcg'?page.locator('.set-row[data-id="fixtureb"]'):page.locator('.set-row').filter({hasText:PAGED.name});await broken.scrollIntoViewIfNeeded();await broken.locator('.set-media.no-art').waitFor();const fallback=broken.locator('.set-media-fallback'),fallbackCode=fallback.locator('.set-art-code');assert(await fallback.isVisible(),'Failed source image leaves a visible fallback');assert(await fallbackCode.isVisible(),'The fallback paints independent set-code text, not an empty image wrapper');assert.equal(await fallbackCode.innerText(),game==='mtg'?'FXB':game==='ptcg'?'FIXTUREB':PAGED.code);assert.equal(await fallback.locator('img,svg,.set-icon').count(),0,'Fallback cannot reuse the failed artwork or remote symbol');
+ const broken=game==='mtg'?page.locator('.set-row[data-code="fxb"]'):game==='ptcg'?page.locator('.set-row[data-id="fixtureb"]'):page.locator('.set-row').filter({hasText:PAGED.name});await broken.scrollIntoViewIfNeeded();if(game!=='ygo')await broken.locator('.set-media.no-art').waitFor();const fallback=broken.locator(game==='ygo'?'.set-ygo-emblem':'.set-media-fallback'),fallbackCode=fallback.locator(game==='ygo'?'span':'.set-art-code');assert(await fallback.isVisible(),'Failed source image leaves a visible fallback');assert(await fallbackCode.isVisible(),'The fallback paints independent set-code text, not an empty image wrapper');assert.equal(await fallbackCode.innerText(),game==='mtg'?'FXB':game==='ptcg'?'FIXTUREB':PAGED.code);assert.equal(await fallback.locator('img,svg,.set-icon').count(),0,'Fallback cannot reuse the failed artwork or remote symbol');
  if(game==='ptcg'){await page.waitForFunction(()=>document.querySelector('.set-row[data-id="fixtureb"] .set-catalogue-symbol')?.hidden===true);const sources=BROKEN_SET_SYMBOL_SOURCES.map(source=>new URL(source,page.url()).href);assert.deepEqual([...new Set(app.images.filter(url=>sources.includes(url)))],sources,'Every exact symbol source fails before the final set-code fallback');assert(await fallbackCode.isVisible(),'The code remains visible after the entire symbol chain is exhausted');}
+ const releaseTile=page.locator(game==='mtg'?'.set-row[data-code="fxa"]':'.set-row[data-id='+JSON.stringify(EXPECTED[game].a)+']');const tileProgress=releaseTile.locator('.set-tile-progress');assert(await tileProgress.isVisible());assert.equal(await tileProgress.getByRole('progressbar').getAttribute('aria-valuenow'),game==='ygo'?'1':'0');assert.equal(await unknown.locator('.set-tile-progress [role="progressbar"]').count(),0,'unknown unique totals never become a false completion percentage');
  await keyboardRelease(page,game,EXPECTED[game].a);await setIdentity(page,game,EXPECTED[game].a);assert.equal(await inventorySnapshot(page),before);assert.equal(await cacheSnapshot(page),cache,'Loading a selected release never changes shared card printings, art, generic prices or identity');report.push(`${game}: separate responsive year sections, keyboard release navigation, exact IDs, unknown count/image fallback, catalogue search/category/scroll-pagination boundaries.`);
+}
+async function releaseFamilies(app){
+ const {page}=app;await readyIndex(page);const before=await inventorySnapshot(page);const reset=()=>page.locator('[data-act="setsReset"]').click(),family=value=>page.locator(`[data-act="setsFamily"][data-value="${value}"]`).click(),ids=()=>page.locator('.set-browser-tile').evaluateAll(ns=>ns.map(n=>n.dataset.code));
+ await reset();assert.deepEqual(new Set(await ids()),new Set(['fxa','fxb']),'Default shows released main boosters, not future or promo rows');
+ const search=page.getByRole('searchbox',{name:'Search all sets',exact:true});await search.fill('Star Trek');await frame(page);assert.deepEqual(new Set(await ids()),new Set(['trk','trc']),'Untouched default search reaches upcoming main and Commander families');
+ await family('main');assert.deepEqual(await ids(),['trk']);await select(page,'[data-change="setsRelease"]','upcoming');await select(page,'[data-change="setsYear"]','2026');await search.fill('Reality');await frame(page);assert.deepEqual(await ids(),['fra']);
+ await family('companion');assert.deepEqual(await ids(),['frc']);await search.fill('');await frame(page);assert.deepEqual(new Set(await ids()),new Set(['trc','frc','mbc']),"Commander-name draft innovation stays with the user's companion family");
+ await family('all');assert.equal((await ids()).length,5,'Choosing All never silently clears explicit upcoming/year filters');await reset();await family('all');assert.equal((await ids()).length,SETS.mtg.length,'Reset then All includes future, unknown-date and promo rows');
+ await select(page,'[data-change="setsSort"]','name');assert.equal(await page.locator('.set-year-section').count(),0,'Global alphabetical sort is not regrouped by year');
+ for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'#content','Set filter controls '+width);const buttons=page.locator('.set-browser-quick button');assert.equal(await buttons.count(),4);for(const button of await buttons.all())assert(await button.isVisible());await capture(page,'sets-family-controls-'+width);}
+ assert.equal(await inventorySnapshot(page),before,'Filtering, sorting and resizing never changes collection state');report.push('Exact TRK/FRA/TRC/FRC/MBC user classification, default released main view, global search, explicit filter preservation, All completeness and responsive controls.');
 }
 async function filterCards(app,game){
  const {page}=app;await readyIndex(page);const before=await inventorySnapshot(page),cache=await cacheSnapshot(page),id=EXPECTED[game].a;await openSet(page,game,id);await layout(page,game,'cards');await setIdentity(page,game,id);
@@ -170,6 +182,7 @@ try{
   await withApp(`${game}-retry`,{game},app=>retrySameRoute(app,game));
   await withApp(`${game}-save`,{game},app=>exactSave(app,game));
  }
+ await withApp('mtg-release-families',{game:'mtg'},releaseFamilies);
  await withApp('ygo-set-reference-prices',{game:'ygo',setPrices:true},async app=>{
   const {page}=app;await readyIndex(page);const before=await inventorySnapshot(page);await openSet(page,'ygo',LOB.id);
   const tile=await cardTile(page,'ygo','4614116');assert.match(await tile.innerText(),/\$12\.34–\$15\.00/);assert.match(await tile.innerText(),/Market range/);assert.equal(await tile.getAttribute('data-tier'),'t2');

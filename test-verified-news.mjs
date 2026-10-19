@@ -87,10 +87,10 @@ for (const image of tenantAttacks) {
 }
 for (const patch of [{ sourceId: 'serebii' }, { url: URLs.serebii }, { image: IMAGES.wizards }, { image: IMAGES.pokeguardian.replace('temp-zjpebgcobmaxydcmrfwb', 'evil') }]) {
   const bad = { ...pg, ...patch };
-  assert.doesNotMatch(communityArtwork('ptcg', bad), /<img|community-art-theme|community-art-emblem/);
+  assert.doesNotMatch(communityArtwork('ptcg', bad), /data-art-kind="publisher"/, 'forged publisher art never renders as source art; a verified story may use labelled game illustration');
 }
-for (const kind of ['news', 'event', 'link']) for (const compact of [false, true]) assert.equal(communityArtwork('ptcg', { ...pg, kind, image: '' }, { compact }), '', 'missing publisher art is an honest no-image state even in compact views');
-assert.doesNotMatch(featureArticle('ygo', { ...ygo, image: IMAGES.ygorganization }, 0, 1), /<img|community-art-theme|community-art-emblem/);
+for (const kind of ['news', 'event', 'link']) for (const compact of [false, true]) assert.doesNotMatch(communityArtwork('ptcg', { ...pg, kind, image: '' }, { compact }), /data-art-kind="publisher"/, 'missing source art can only become a labelled illustration');
+assert.match(featureArticle('ygo', { ...ygo, image: IMAGES.ygorganization }, 0, 1), /data-art-kind="illustrative"/);
 assert.match(featureArticle('ygo', ygo, 0, 1), /OCG · Japan/);
 const wrapper = { dataset: { artState: 'pending', artKind: 'publisher' } }, image = { matches: () => true, closest: () => wrapper, naturalWidth: 0 };
 handleCommunityArtwork({ type: 'error', target: image }); assert.equal(wrapper.hidden, true); assert.equal(image.hidden, true);
@@ -104,7 +104,7 @@ const clientRows = client.communityState('ptcg').data.items;
 assert.equal(clientRows.length, 2, 'client discards missing, cross-source or malformed source identities');
 assert.equal(clientRows[1].image, '', 'client strips an image from another source/game');
 assert.equal(clientRows[1].source, 'PokéGuardian'); assert.equal(clientRows[1].sourceUrl, NEWS_SOURCES.pokeguardian.url);
-assert.doesNotMatch(featureArticle('ptcg', clientRows[1], 0, 1), /<img|community-art-theme/);
+assert.match(featureArticle('ptcg', clientRows[1], 0, 1), /data-art-kind="illustrative"/);
 
 // Client timestamps must reject Date.parse calendar rollover, while retaining
 // real leap days and offsets whose UTC date differs from the source date.

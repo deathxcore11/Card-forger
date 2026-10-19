@@ -92,3 +92,9 @@ assert.match(css,/body\.glass #ambient \.amb-art \{[^}]+opacity:\.8/,'the real a
 assert.match(css,/prefers-reduced-motion:reduce/);assert.match(css,/background:var\(--surface\);backdrop-filter:none/,'reduced transparency remains solid');
 assert.doesNotMatch(css,/mask-image\s*:/,'Light fade must not change artwork/foil masks');
 console.log('PASS: four accessible Settings tabs, recovery hooks, all-game action preservation, theme persistence/storage failure, cross-tab sync, first-paint boot and AA light ink.');
+// The same intrinsic header applies in both themes. No truncated title or font shrink.
+const sharedHeaderCSS=readFileSync('style.css','utf8');
+assert.match(sharedHeaderCSS,/--banner-art-height:clamp\(280px,74vw,420px\); display:grid; grid-template-columns:minmax\(0,1fr\); min-height:var\(--banner-art-height\)/);
+assert.match(sharedHeaderCSS,/\.cs-banner > \.cs-hero:not\(\.compact\) \{ position:absolute; inset:0; width:100%; height:100%/);
+assert.match(sharedHeaderCSS,/\.cs-banner.no-art \{ --banner-art-height:150px/);
+assert.match(sharedHeaderCSS,/\.cs-banner > \.cs-title \{ grid-area:1 \/ 1; position:relative; inset:auto; align-self:end; margin:56px var\(--gutter\) 0; min-width:0; \}/);

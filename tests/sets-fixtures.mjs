@@ -34,6 +34,10 @@ export const SETS={
  ptcg:[{id:'fixturea',name:'Synthetic Pokémon A',releaseDate:'2025-01-01',cardCount:{total:123,official:123},logo:`${IMAGE}/ptcg-a`},{id:'fixtureb',name:'Synthetic Pokémon B',releaseDate:'2024-01-01',cardCount:{total:3,official:3},logo:`${IMAGE}/broken-set`},{id:'fixtureunknown',name:'Synthetic unknown Pokémon',releaseDate:'',cardCount:{},logo:`${IMAGE}/unknown`},...Array.from({length:121},(_,i)=>({id:`fixture${digits(i)}`,name:`Synthetic Pokémon set ${digits(i)}`,releaseDate:`${2023-i%3}-01-01`,cardCount:{total:10}}))],
  ygo:RELEASES
 };
+// Exact user screenshot families; source metadata checked against Scryfall on
+// 2026-10-19. Counts and artwork remain synthetic and do not represent live cards.
+export const SET_BROWSER_FAMILY_CASES=[['trk','Star Trek','expansion'],['fra','Reality Fracture','expansion'],['trc','Star Trek Commander','commander'],['frc','Reality Fracture Commander','commander'],['mbc','Mystery Booster Commander Edition','draft_innovation']].map(([code,name,set_type])=>({code,name,set_type,released_at:'2026-11-13',card_count:100,icon_svg_uri:`${IMAGE}/screenshot-${code}.svg`}));
+SETS.mtg.push(...SET_BROWSER_FAMILY_CASES);
 // The catalogue now tries symbols, not the supplied logo. Fail every exact
 // source for this one release without permitting a wildcard external host.
 export const BROKEN_SET_SYMBOL_SOURCES=Object.freeze(pkCatalogueSymbolSources(SETS.ptcg.find(s=>s.id==='fixtureb')));

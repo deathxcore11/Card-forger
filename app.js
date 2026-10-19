@@ -1,5 +1,5 @@
 import {createMagicMatchups,matchupFingerprint} from './magic-matchups-controller.js';
-import {matchupState,resetMatchups} from './magic-matchups-ui.js';
+import {matchupState,resetMatchups,renderMagicMatchupSheet} from './magic-matchups-ui.js';
 import {buildMatchupRequest} from './ai-matchup-core.js';
 import {initTheme,applyTheme,normalizeSettingsTab,activateSettingsTab} from './settings-theme.js';
 import {recoveryKey,syncBaselineKey,createRecoverySnapshot,appendRecoverySnapshot,readRecoverySnapshots,createSyncBaseline,recoverySummary} from './recovery-store.js';
@@ -478,22 +478,32 @@ async function loadSetIndex(force = false) {
   } catch {}
   if (cached?.sets?.length) {
     ui.list = cached.sets;
+    ui.checkedAt = Number(cached.at) || 0;
     registerSetIcons(Object.fromEntries(cached.sets.map((x) => [x.code, x.icon])));
   }
-  const fresh = cached && Date.now() - cached.at < 3 * 864e5;
-  if ((fresh && !force) || (fresh && ui.list.length) || !navigator.onLine || ui.busy) return;
+  const fresh = cached?.sets?.length && Number(cached.at)>0 && Date.now()>=cached.at && Date.now() - cached.at < 864e5;
+  if (ui.busy) return;
+  if (fresh && !force) { ui.error=""; setTimeout(() => navigationCurrent(screen) && render(),0); return; }
+  if (!navigator.onLine) {
+    ui.error="You’re offline. Connect to refresh sets."+(ui.list.length?" Showing the last checked catalogue.":"");
+    if(navigationCurrent(screen))render();
+    return;
+  }
   ui.busy = true;
   ui.error = "";
+  if(navigationCurrent(screen))render();
   try {
-    const r = await api("/sets"),
-      sets = (r.data || []).map((x) => ({ code: x.code, name: x.name, released_at: x.released_at || "", set_type: x.set_type, card_count: x.card_count, digital: !!x.digital, icon: x.icon_svg_uri }));
+    const r = await api("/sets");
+    if(!Array.isArray(r.data)||!r.data.length||r.data.some(x=>!x?.code||!x?.name))throw Error('The source returned an empty or invalid set catalogue. Try again.');
+    const sets = r.data.map((x) => ({ code: x.code, parent_set_code: x.parent_set_code || "", name: x.name, released_at: x.released_at || "", set_type: x.set_type, card_count: x.card_count, digital: !!x.digital, icon: x.icon_svg_uri }));
     ui.list = sets;
+    ui.checkedAt = Date.now();
     registerSetIcons(Object.fromEntries(sets.map((x) => [x.code, x.icon])));
     try {
-      localStorage.setItem(SET_INDEX, JSON.stringify({ at: Date.now(), sets }));
+      localStorage.setItem(SET_INDEX, JSON.stringify({ at: ui.checkedAt, sets }));
     } catch {}
   } catch (e) {
-    if (!ui.list.length) ui.error = e.message;
+    ui.error = e.message + (ui.list.length ? " Showing the last checked catalogue." : "");
   } finally {
     ui.busy = false;
     // Redraw with the official set symbols, unless the user is typing somewhere.
@@ -748,6 +758,7 @@ function sheetScrolled() {
 }
 function closeSheet(rememberRoute=true) {
   T.cancelProvenBuild();
+  if (['matchup','matchup-import'].includes(S.ui.sheetCtx?.type) || sheetTrail.items?.some(item=>item.ctx?.type==='matchup')) aiMatchups.cancel();
   if (S.ui.sheetCtx?.type === "printing-picker") printingPicker.abandon();
   dismissRulesGuide();
   pendingRoute=rememberRoute && $("#sheet").open ? sheetSnapshot() : null;
@@ -761,6 +772,11 @@ function closeSheet(rememberRoute=true) {
 function refreshSheet() {
   const ctx = S.ui.sheetCtx;
   if (!ctx || !$("#sheet").open) return;
+  if (ctx.type === "matchup") {
+    const body=$("#sheetBody"),top=body.scrollTop,deck=matchupContextDeck(ctx);
+    body.innerHTML=deck?renderMagicMatchupSheet(deck,{...ctx,renderCards:cards=>V.deckList(cards,{readOnly:true,unfiltered:true,cardAction:'amCard'})}):'<div class="sheet-head"><h2>Matchup changed</h2><p>Reopen Matchups from the current deck. Nothing was saved.</p></div>';
+    body.scrollTop=top;wireSheetBack();sheetScrolled();return;
+  }
   if (["card","tcard","buy"].includes(ctx.type)) {
     if((ctx.type==='card'||ctx.type==='buy')&&ctx.ownedDetail){
       if(!magicOwnedCurrent(S.state,ctx.ownedDetail)){ctx.print=null;ctx.ownedNotice='This saved copy changed. Reopen it from your collection.';}
@@ -1042,7 +1058,7 @@ function render() {
   if (ui.view === "settings") storageDetail();
   if (g !== "mtg") {
     const SU = T.ui(g).sets;
-    if (["sets","collection"].includes(ui.view) && !SU.list.length && !SU.busy && !SU.error) setTimeout(() => navigationCurrent(screen) && tcgCtx.loadSets?.(g), 0);
+    if (["sets","collection"].includes(ui.view) && (!SU.list.length || !SU.checkedAt || Date.now()<SU.checkedAt || Date.now()-SU.checkedAt>=864e5) && !SU.busy && !SU.error) setTimeout(() => navigationCurrent(screen) && tcgCtx.loadSets?.(g), 0);
     if (ui.view === "set" && ui.tsetId && T.ui(g).set.id !== ui.tsetId) { const id=ui.tsetId; setTimeout(() => navigationCurrent(screen) && tcgCtx.openSet?.(id, false, g), 0); }
     // Ideas, Meta decks and Deck Power need the current tournament meta.
     const MS = T.metaState(g);
@@ -1078,7 +1094,7 @@ function render() {
   }
   if (ui.view === "decks" && ui.decksTab === "inspiration" && !ui.finder.cacheLoaded) loadPreconCache();
   if (ui.view === "decks" && ui.decksTab === "inspiration") loadMtgMeta();
-  if (["sets","collection"].includes(ui.view) && !ui.sets.list.length && !ui.sets.busy && !ui.sets.error) loadSetIndex(true);
+  if (["sets","collection"].includes(ui.view) && (!ui.sets.list.length || !ui.sets.checkedAt || Date.now()<ui.sets.checkedAt || Date.now()-ui.sets.checkedAt>=864e5) && !ui.sets.busy && !ui.sets.error) loadSetIndex();
   if (ui.view === "set" && !ui.set.loaded && !ui.set.busy && !ui.set.error) loadSet(ui.set.code);
   if (ui.view === "decks" && ui.decksTab === "ideas" && !ui.ideas.cache.length && !ui.ideas.busy && !ui.ideas.ran) {
     ui.ideas.ran = true;
@@ -1887,6 +1903,7 @@ $("#sheet").addEventListener("close", () => {
   // by the time it arrives; that older event must not clear the new session.
   if ($("#sheet").open) return;
   T.cancelProvenBuild();
+  if (['matchup','matchup-import'].includes(S.ui.sheetCtx?.type) || sheetTrail.items?.some(item=>item.ctx?.type==='matchup')) aiMatchups.cancel();
   printingPicker.abandon();
   sheetTrail.clear();
   binderDragCleanup?.(); binderDragCleanup=null;
@@ -2037,21 +2054,37 @@ A.deckTab = (t) => {
   closeSheet();
   go("#deck/" + currentDeck().id + "/" + t.dataset.id);
 };
-const aiMatchups=createMagicMatchups({getDeck:()=>T.game()==='mtg'?currentDeck():null,state:matchupState,lookup:meta,loadMeta:async key=>{const data=await loadMetaData(key),cached=metaState(key);return {...data,stale:!!cached.error||Date.now()-cached.at>12*3600000,fetchedAt:cached.at?new Date(cached.at).toISOString():''};},metaKey:mtgMetaKey,resolveNames,capture:()=>({scope:mutationScope(),visit:navigationStamp()}),current:ticket=>mutationCurrent(ticket.scope)&&navigationCurrent(ticket.visit)&&T.game()==='mtg',render});
-A.amSelect=()=>aiMatchups.select();
-A.amAnalyze=()=>aiMatchups.analyze();
-A.amCancel=()=>{aiMatchups.cancel();render();};
-const amChange=fn=>{const deck=currentDeck();if(T.game()!=='mtg'||!deck)return;aiMatchups.cancel();const state=matchupState(deck);fn(state);state.result=null;state.request=null;render();};
+function matchupContextDeck(ctx=S.ui.sheetCtx){
+ const deck=currentDeck();return ctx?.type==='matchup'&&T.game()==='mtg'&&deck?.id===ctx.deckId&&mutationCurrent(ctx.scope)&&matchupFingerprint(deck)===ctx.fingerprint?deck:null;
+}
+function renderMatchups(){render();if(S.ui.sheetCtx?.type==='matchup')refreshSheet();}
+function openMatchup(tab='setup',side='player'){
+ const deck=currentDeck();if(T.game()!=='mtg'||!deck)return;
+ const ctx={type:'matchup',deckId:deck.id,fingerprint:matchupFingerprint(deck),scope:mutationScope(),tab:['setup','decks','analysis'].includes(tab)?tab:'setup',side:side==='opponent'?'opponent':'player',view:'compact',scenario:0};
+ openSheet(renderMagicMatchupSheet(deck,{...ctx,renderCards:cards=>V.deckList(cards,{readOnly:true,unfiltered:true,cardAction:'amCard'})}),ctx);
+}
+const aiMatchups=createMagicMatchups({getDeck:()=>T.game()==='mtg'?currentDeck():null,state:matchupState,lookup:meta,loadMeta:async key=>{const data=await loadMetaData(key),cached=metaState(key);return {...data,stale:!!cached.error||Date.now()-cached.at>12*3600000,fetchedAt:cached.at?new Date(cached.at).toISOString():''};},metaKey:mtgMetaKey,resolveNames,capture:()=>({scope:mutationScope(),visit:navigationStamp()}),current:ticket=>mutationCurrent(ticket.scope)&&navigationCurrent(ticket.visit)&&T.game()==='mtg',render:renderMatchups});
+A.amOpen=t=>openMatchup(t.dataset.tab,t.dataset.side);
+const amPresent=(key,allowed)=>t=>{const ctx=S.ui.sheetCtx;if(!matchupContextDeck(ctx))return;const value=t.dataset.id||t.dataset.mode||t.dataset.tab;if(!allowed.includes(value))return;ctx[key]=key==='scenario'?Number(value):value;refreshSheet();};
+A.amTab=amPresent('tab',['setup','decks','analysis']);
+A.amDeck=amPresent('side',['player','opponent']);
+A.amView=amPresent('view',['gallery','compact','symbols']);
+A.amScenario=amPresent('scenario',['0','1','2']);
+A.amSelect=async()=>{const ctx=S.ui.sheetCtx;if(!matchupContextDeck(ctx))return;await aiMatchups.select();if(S.ui.sheetCtx===ctx&&matchupContextDeck(ctx)&&matchupState(currentDeck()).opponent){ctx.tab='decks';ctx.side='opponent';refreshSheet();}};
+A.amAnalyze=()=>{const ctx=S.ui.sheetCtx;if(!matchupContextDeck(ctx))return;ctx.tab='analysis';refreshSheet();return aiMatchups.analyze();};
+A.amCancel=()=>{aiMatchups.cancel();renderMatchups();};
+A.amCard=t=>{const ctx=S.ui.sheetCtx,deck=matchupContextDeck(ctx);if(!deck)return;const state=matchupState(deck),opponent=state.opponent;const names=[...([deck,opponent].filter(Boolean).flatMap(d=>[...(d.cards||d.main||[]),...(d.side||[]),...(d.commanders||[]),...(d.commander?[d.commander]:[])])),...(state.request?.candidates||[])].map(r=>typeof r==='string'?r:r.name);if(!names.includes(t.dataset.name))return;return A.card({dataset:{name:t.dataset.name,readOnly:'1'}});};
+const amChange=fn=>{const deck=matchupContextDeck();if(!deck)return;aiMatchups.cancel();const state=matchupState(deck);fn(state);state.result=null;state.request=null;renderMatchups();};
 A.amColor=t=>amChange(state=>{const color=t.dataset.id;if(!'WUBRG'.includes(color)||color.length!==1)return;state.colors=state.colors.includes(color)?state.colors.filter(c=>c!==color):[...state.colors,color];state.opponent=null;});
 A.amSelection=t=>amChange(state=>{state.selectionMode=t.dataset.id==='random'?'random':'top';state.opponent=null;});
 A.amMode=t=>amChange(state=>{state.mode=t.dataset.id==='bo3'?'bo3':'bo1';});
-I.amQuestion=t=>{const deck=currentDeck();if(!deck||T.game()!=='mtg')return;aiMatchups.cancel();const state=matchupState(deck);state.question=t.value.slice(0,500);state.result=null;state.request=null;if(state.opponent?.provenance?.kind==='meta')state.opponent=null;const position=t.selectionStart;render();const input=document.querySelector('[data-input=amQuestion]');input?.focus();input?.setSelectionRange(position,position);};
+I.amQuestion=t=>{const deck=matchupContextDeck();if(!deck)return;aiMatchups.cancel();const state=matchupState(deck);state.question=t.value.slice(0,500);state.result=null;state.request=null;if(state.opponent?.provenance?.kind==='meta')state.opponent=null;const position=t.selectionStart;renderMatchups();const input=document.querySelector('#sheetBody [data-input=amQuestion]');input?.focus();input?.setSelectionRange(position,position);};
 let matchupImport=null;
 A.amPaste=async()=>{
- const deck=currentDeck();if(!deck||T.game()!=='mtg')return;
+ const origin=S.ui.sheetCtx,deck=matchupContextDeck(origin);if(!deck)return;
  aiMatchups.cancel();const scope=mutationScope(),visit=navigationStamp(),fingerprint=matchupFingerprint(deck);let text='';
  try{text=await navigator.clipboard.readText();}catch{}
- if(!mutationCurrent(scope)||!navigationCurrent(visit)||matchupFingerprint(currentDeck())!==fingerprint)return;
+ if(S.ui.sheetCtx!==origin||!$('#sheet')?.open||!mutationCurrent(scope)||!navigationCurrent(visit)||matchupFingerprint(currentDeck())!==fingerprint)return;
  matchupImport={scope,visit,fingerprint,deckId:deck.id,format:deck.format,opponent:null};
  openSheet(`<div class="sheet-head"><h2>Preview an opponent</h2><p>Paste a Magic deck list. This will not save a deck or change your collection.</p></div><label>Opponent name<input id="amImportName" data-input="amImportEdit" maxlength="180" value="Pasted opponent"></label><label>Deck list<textarea id="amImportText" data-input="amImportEdit" rows="8" maxlength="40000" placeholder="4 Lightning Bolt&#10;20 Mountain">${esc(text.slice(0,40000))}</textarea></label><p class="muted">Format: ${esc(deck.format)}. The same format as your deck is required.</p><div id="amImportStatus" role="status"></div><div id="amImportPreview"></div><div class="actions wrap"><button class="btn" data-act="amImportPreview">Preview & match</button><button class="btn" id="amImportUse" data-act="amImportUse" disabled>Use opponent</button></div>`,{type:'matchup-import'});
 };
@@ -2075,7 +2108,7 @@ A.amImportPreview=async()=>{
   $('#amImportStatus').textContent='Names matched. Review the list, then use it as your opponent. Format legality and incomplete lists will be disclosed in the analysis.';$('#amImportUse').disabled=false;
  }catch(error){if(matchupImportCurrent(token))$('#amImportStatus').textContent=error.message;}finally{token.busy=false;}
 };
-A.amImportUse=()=>{const token=matchupImport;if(!token?.opponent||!matchupImportCurrent(token))return;const state=matchupState(currentDeck());state.opponent=token.opponent;state.sampleCount=0;state.result=null;state.request=buildMatchupRequest({deck:currentDeck(),opponent:token.opponent,lookup:meta,mode:state.mode,question:state.question});matchupImport=null;closeSheet();render();};
+A.amImportUse=()=>{const token=matchupImport;if(!token?.opponent||!matchupImportCurrent(token))return;const state=matchupState(currentDeck());state.opponent=token.opponent;state.sampleCount=0;state.result=null;state.request=buildMatchupRequest({deck:currentDeck(),opponent:token.opponent,lookup:meta,mode:state.mode,question:state.question});matchupImport=null;const previous=sheetTrail.items.at(-1);if(previous?.ctx?.type==='matchup'){const saved=sheetTrail.pop();saved.ctx.tab='decks';saved.ctx.side='opponent';saved.scrollTop=0;restoreSheet(saved);}else openMatchup('decks','opponent');render();};
 
 /* ---------- Legacy match logging (not the AI renderer) ---------- */
 const muState = (d) => ((S.ui.mu ||= {})[d.id] ||= { first: true });
@@ -2165,7 +2198,7 @@ A.card = async (t) => {
   const screen=navigationStamp();
   S.ui.sheetBack = S.ui.sheetCtx?.type === "idea" && $("#sheet").open ? { type: "idea", i: S.ui.sheetCtx.i } : null;
   const name = t.dataset.name,
-    ctx = { type: "card", name, entryId:t.dataset.entry||"", deckId: t.dataset.deck || (S.ui.view === "deck" ? currentDeck()?.id : null), random: !!t.dataset.random };
+    ctx = { type: "card", name, entryId:t.dataset.entry||"", deckId: t.dataset.readOnly ? null : t.dataset.deck || (S.ui.view === "deck" ? currentDeck()?.id : null), random: !!t.dataset.random };
   if(ctx.entryId){
     let owned=magicOwnedDetail(S.state,ctx.entryId,name);
     if(!owned.identity)return toast(owned.reason);
@@ -2491,8 +2524,19 @@ A.askRules = (button) => {
 };
 A.askOpen = (options={}) => {
   askTools ||= makeAskTools({ S, T, A, go, navigationStamp, navigationCurrent, toast, esc, api, resolve, cacheCard, loadSetIndex, loadMetaData, metaState, MTG_META_FORMATS, allMeta: () => Object.fromEntries(Object.entries(allCachedMeta()).map(([k, v]) => [k, v.data])), priceOf, inv, meta, collectionValue, lotPrice, mtgPower, shownPower, tcgCtx,
-    openMtgBuild: (seed, fmt, budget) => { Object.assign(S.ui.build, { baseDeck: null, seed, results: {}, msg: "", openTier: null, format: formatOf(fmt).name, custom: budget ? String(budget) : "" }); openSheet(V.buildSheet(), { type: "build" }); runBuild(); },
-    openTcgBuild: async (g, id, budget, format) => { await A.tBuild({ dataset: { id, format } }); if (budget) C.tBuildCustom({ value: String(budget) }); } });
+    captureAskScope: () => { const scope=mutationScope(); return () => mutationCurrent(scope); },
+    openMtgDraft: (draft, current) => {
+      if (!current?.() || T.game() !== 'mtg') return toast("Your account or workspace changed. Ask again in the current workspace.");
+      if (S.ui.build.busy) return toast("Your current Magic build is still running. Try this draft again when it finishes.");
+      if (!draft?.preparedByAsk || !Array.isArray(draft.cards)) return toast("This draft is no longer available. Ask again.");
+      const snapshot=structuredClone(draft);
+      Object.assign(S.ui.build,{baseDeck:null,seed:snapshot.buildAround,format:snapshot.format,results:{[snapshot.format]:[snapshot]},msg:snapshot.note,openTier:0,custom:snapshot.budget===Infinity?"":String(snapshot.budget),busy:false,error:false,avail:name=>snapshot.availableCopies?.[key(name)]??0});
+      openSheet(V.buildSheet(),{type:"build"});
+    },
+    openTcgBuild: async (g, id, budget, format, current) => {
+      if (!current?.() || T.game() !== g) return toast("Your account or workspace changed. Ask again in the current workspace.");
+      return A.tBuild({dataset:{id,format},initialBudget:budget>0?budget:"",buildCurrent:current});
+    } });
   openAsk({ game: T.game(), prefill:typeof options.query==='string'?options.query:'', tools: askTools, show: (s) => safely(askTools.open(s)) });
 };
 A.buildFrom = async (t) => {
@@ -2639,7 +2683,7 @@ A.tierBuy = async (t) => {
 
   const B = S.ui.build, tier = B.results[B.format]?.[Number(t.dataset.i)];
   if (!tier) return;
-  const rows = tier.cards.filter((r) => !/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(r.name)).map((r) => ({ qty: r.qty - Math.min(r.qty, B.avail?.(r.name) ?? 0), name: r.name })).filter((r) => r.qty > 0);
+  const rows = tier.cards.filter((r) => tier.preparedByAsk || !/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(r.name)).map((r) => ({ qty: r.qty - Math.min(r.qty, tier.preparedByAsk ? tier.availableCopies?.[key(r.name)] ?? 0 : B.avail?.(r.name) ?? 0), name: r.name })).filter((r) => r.qty > 0);
   if (!(await buyMtg(rows))) toast("You own every card in this version.");
 };
 A.tierSaveAll = async () => {
@@ -2997,13 +3041,17 @@ A.set = (t) => {
   go("#set/" + encodeURIComponent(code.toLowerCase()));
 };
 I.setsSearch = (t) => {
-  S.ui.sets.q = t.value;
-  rerenderKeepingFocus();
+  S.ui.sets.q=t.value;S.ui.sets.limit=80;rerenderKeepingFocus();
 };
-C.setsAll = (t) => {
-  S.ui.sets.all = t.checked;
-  render();
-};
+const updateSetBrowser=(key,value)=>{S.ui.sets[key]=value;S.ui.sets.limit=80;render();};
+A.setsFamily=t=>updateSetBrowser('family',t.dataset.value);
+C.setsType=t=>updateSetBrowser('family',t.value);
+C.setsRelease=t=>updateSetBrowser('release',t.value);
+C.setsYear=t=>updateSetBrowser('year',t.value);
+C.setsSort=t=>updateSetBrowser('sort',t.value);
+C.setsAll=t=>updateSetBrowser('family',t.checked?'all':'main');
+A.setsMore=()=>{S.ui.sets.limit=(S.ui.sets.limit||80)+80;render();};
+A.setsReset=()=>{const st=S.ui.sets;for(const key of ['family','release','year','sort'])delete st[key];st.q='';st.all=false;st.limit=80;render();};
 A.setsReload = () => {
   S.ui.sets.error = "";
   loadSetIndex(true);
@@ -3411,7 +3459,9 @@ document.addEventListener("keydown", e => {
   const tabs=$$("#sheetBody .cs-tabs [role=tab]"), index=detailTabKey(e.key,tabs.indexOf(tab),tabs.length);
   if (index===null) return;
   e.preventDefault();tabs[index].focus({preventScroll:true});tabs[index].scrollIntoView?.({block:"nearest",inline:"nearest",behavior:"auto"});
-  safely(A.cardTab(tabs[index]));
+  const next=tabs[index],action=next.dataset.act;
+  if(action==='amTab'){A.amTab(next);$("#sheetBody").querySelector(`[data-act="amTab"][data-tab="${next.dataset.tab}"]`)?.focus({preventScroll:true});}
+  else safely(A.cardTab(next));
 });
 const resizeCardSheet=()=>{if(["card","tcard","buy","market"].includes(S.ui.sheetCtx?.type))sheetScrolled();};
 globalThis.addEventListener?.("resize",resizeCardSheet,{passive:true});

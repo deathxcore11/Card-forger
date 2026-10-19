@@ -4632,6 +4632,15 @@ body[data-game="ygo"] .ask-launch{--ask-a:#b697ef;--ask-b:#697db5;--ask-c:#dbb26
 /* Keep exact-printing artwork exhaustion from collapsing the mini rail. */
 .card-printing-mini .printing-mini-art.img-missing{display:flex;width:88px;height:123px;align-items:center;justify-content:center;flex-direction:column;border-radius:5px;background:var(--surface-2);color:var(--muted)}
 
+/* Long card names must contribute height instead of escaping the art banner.
+   Normal titles retain the existing hero height and bottom alignment. */
+.cs-banner { --banner-art-height:clamp(280px,74vw,420px); display:grid; grid-template-columns:minmax(0,1fr); min-height:var(--banner-art-height); }
+@media(min-width:700px){.cs-banner{--banner-art-height:300px}}
+.cs-banner.no-art { --banner-art-height:150px; }
+.cs-banner > .cs-hero:not(.compact) { position:absolute; inset:0; width:100%; height:100%; min-width:0; }
+.cs-banner > .cs-title { grid-area:1 / 1; position:relative; inset:auto; align-self:end; margin:56px var(--gutter) 0; min-width:0; }
+.cs-banner.no-art > .cs-hero:not(.compact) { height:100%; }
+
 /* Card detail polish: one selected-set surface, then a deliberate quick-action grid.
    The illustrated banner, navigation, artwork and finish rail keep their geometry. */
 .card-owned-summary{display:inline-block;margin-inline-start:8px;padding:3px 8px;border:1px solid #ffffff38;border-radius:999px;background:#11151c88;font-size:11px;font-weight:600;line-height:1.4;white-space:nowrap;vertical-align:middle}

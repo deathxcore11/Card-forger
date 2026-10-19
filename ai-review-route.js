@@ -1,4 +1,5 @@
 import {matchupCutIsExplained} from './pokemon-role.js';
+import {WeeklyCuration} from './weekly-curation.js';
 // Server-only OpenAI adapter. No deck, prompt, response or API key is logged/stored here.
 const reply = (body, status = 200, headers = {}) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...headers } });
 const fail = (message, status = 400) => Object.assign(new Error(message), { status });
@@ -247,8 +248,9 @@ export async function aiReviewRoute(request, env, { fetcher = fetch } = {}) {
 // One durable counter for the whole app: concurrent requests cannot overspend the daily cap.
 // Only counters and day-salted IP hashes are stored, never decks or reviews.
 export class AiReviewLimits {
-  constructor(ctx, env) { this.storage = ctx.storage; this.env = env; }
+  constructor(ctx, env) { this.storage = ctx.storage; this.env = env; this.weekly = new WeeklyCuration(this.storage,env); }
   async fetch(request) {
+    if (new URL(request.url).pathname.startsWith('/weekly/')) return this.weekly.fetch(request);
     const { hash } = await request.json();
     if (!/^[a-f0-9]{64}$/.test(hash || '')) return reply({}, 400);
     const now = Date.now(), day = new Date(now).toISOString().slice(0, 10), hour = Math.floor(now / 3600000);
