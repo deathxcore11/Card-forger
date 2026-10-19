@@ -28,8 +28,8 @@ function setPart(game, c) {
   return tcgSetBadge(c, true);
 }
 
-export function tileChrome(game, c) {
+export function tileChrome(game, c, {setBadge} = {}) {
   if (!c || c.brief) return "";
-  const set = setPart(game, c);
+  const set = setBadge === undefined ? setPart(game, c) : setBadge;
   return `<span class="tile-chrome ${esc(game)}" aria-hidden="true"><span class="tile-emb">${typePart(game, c)}</span>${set ? `<span class="tile-set">${set}</span>` : ""}${tileEmblem(game, c)}</span>`;
 }

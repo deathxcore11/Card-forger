@@ -31,6 +31,7 @@ import {ownedCardLots,quickQuantity,adjustOwnedLot} from './quick-quantity.js';
 import {conditionName,conditionValue,conditionPriceHtml,conditionManualPlaceholder,attachConditionInfo} from './condition-value.js';
 import { showAiReview } from './ai-review.js';
 import { openAsk, clearAskConversations } from './ai-ask.js';
+import { isDeckBuildRequest } from './ai-deck-goal.js';
 import { openRulesAsk, closeRulesAsk, clearRulesConversations } from './ai-rules.js';
 import { makeAskTools } from './ai-tools.js';
 import { ask, askText } from "./dialog.js";
@@ -3159,7 +3160,7 @@ async function homeLookup(g,q){
 async function submitHome(q,mode){
  q=String(q||'').trim();if(!q)return;const g=T.game();homeQueries[g]=q;
  if((mode||homeIntent(q))==='ask'){
-  if(/\b(?:rules?|ruling|resolve|stack|trigger|can i (?:cast|summon|attack|activate)|when can)\b/i.test(q)){
+  if(!isDeckBuildRequest(q)&&/\b(?:rules?|ruling|resolve|stack|trigger|can i (?:cast|summon|attack|activate)|when can)\b/i.test(q)){
    A.askRules({dataset:{game:g}});const input=document.querySelector('.rules-ask-dialog .ask-input');if(input){input.value=q;input.focus();}return;
   }
   return A.askOpen({query:q});
@@ -3167,7 +3168,7 @@ async function submitHome(q,mode){
  if(T.isTcg()){T.ui().search.q=q;await go('#search');if(T.game()===g)A.tSearch();}
  else{S.ui.db.term=q;dbInvalidate();await go('#search');if(T.game()===g)A.dbSearch();}
 }
-A.homeSearch=()=>submitHome($('#homeQ')?.value,'cards');
+A.homeSearch=()=>submitHome($('#homeQ')?.value);
 A.homeAsk=()=>{const q=$('#homeQ')?.value||'';homeSearchController.close();A.askOpen();const input=document.querySelector('.ask-dialog .ask-input');if(input){input.value=q;input.focus();}};
 window.matchMedia?.("(min-width:1200px)").addEventListener?.("change",()=>placeGlobalSearch(T.game(),S.ui.view));
 const deckBoxTransitions=createDeckBoxTransitions();

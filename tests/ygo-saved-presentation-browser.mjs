@@ -23,7 +23,7 @@ async function checkIdentity(page){
   assert.equal(await row.getAttribute('data-rarity-flair'),flair,key+' exact rim');assert.equal(await row.getAttribute('data-tier'),'t0',key+' $1.40 frame is independent of rarity');
   assert.equal(await art.getAttribute('data-finish-effect'),effect,key+' supported exact finish');
   const actualBadges=await row.locator('.tset small').allTextContents();assert.deepEqual(actualBadges,badge?[badge,badge]:[],key+' both tile/row badges use owned identity');
-  if(!badge){assert.match(await row.innerText(),/Printing not verified/);assert.equal(await row.locator('.finish-overlay').count(),0,key+' no borrowed shine');}
+  if(!badge){const uncertainty=art.locator('.tile-set .tset');assert.equal(await uncertainty.innerText(),'Printing not verified');if(await page.locator('#content.view-gallery').count())assert.equal(await uncertainty.isVisible(),true,key+' uncertainty is visibly present on gallery art');else assert.equal(await row.locator('.lot-sub .muted').isVisible(),true,key+' uncertainty is visibly present in compact row text');assert.match(await row.innerText(),/Printing not verified/);assert.equal(await row.locator('.finish-overlay').count(),0,key+' no borrowed shine');}
  }
 }
 async function measure(page,mode,width){
@@ -38,6 +38,7 @@ async function measure(page,mode,width){
  assert(data.documentWidth<=width+2,JSON.stringify(data));assert(data.imageReady,'Synthetic image decoded');assert(inside(data.art,data.row),'Art stays within row');assert(inside(data.image,data.art),'Image is contained by art bounds');
  assert.equal(data.border,'rgb(227, 185, 88)','Thin Ultra rim stays gold');assert.equal(data.borderWidth,'2px');assert.equal(data.priceTier,'#9aa3ad','Thick low-price frame stays grey');assert.equal(data.overflow,'hidden');assert.notEqual(data.radius,'0px');assert(data.tap.width>=24&&data.tap.height>=24,'Quantity tap target >=24px');
  if(mode==='gallery'){assert(inside(data.overlay,data.image,3),'Finish overlay remains inside exact displayed art');assert.equal(data.overlayOverflow,'hidden');assert.notEqual(data.overlayRadius,'0px');assert.equal(data.masks.length,2);assert(data.masks.every(p=>p&&p!=='none'),'Art/title masks are applied');}
+ if(mode==='gallery'){const unknown=page.locator(selector('saved-missing')),bounds=await unknown.locator('.lot-art').boundingBox(),chip=await unknown.locator('.tile-set').boundingBox();assert(bounds&&chip&&chip.x>=bounds.x-2&&chip.x+chip.width<=bounds.x+bounds.width+2,'Visible uncertainty badge fits inside gallery art without clipping');data.uncertainty={art:bounds,chip};}
  report.push(data);await capture(page,`synthetic-ygo-saved-${mode}-${width}`);
 }
 try{
