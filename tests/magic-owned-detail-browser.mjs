@@ -49,7 +49,11 @@ try{
    return route.fallback();
   });
   // openApp already awaits app.ready and active game/account adoption; no pending viewSave is triggered before seeding.
-  await page.evaluate(async({cards,lots})=>{const {validateWorkspace}=await import('/confidence.js');const S=window.__uiTestState;S.state.collection=structuredClone(lots);S.state.printings=Object.fromEntries(cards.map(c=>[c.id,c]));for(const c of cards)S.catalog[c.name.toLowerCase()]=c;S.state.settings.binders=[{id:'exact-owned',game:'mtg',title:'Exact saved copies',rule:'location',value:'Exact fixture'}];S.state=validateWorkspace(S.state);S.ui.q.coll='';S.ui.collFilter='all';dispatchEvent(new Event('cardstashy-rerender'));},{cards,lots});
+  // These exact fixture-only identities are already treated as tracked, just
+  // like openApp's base CARDS. Otherwise the unchanged 1.5s watch debounce
+  // registers them while this read-only test runs. Never permit the POST.
+  await page.evaluate(async({cards,lots})=>{const {validateWorkspace}=await import('/confidence.js');const sent=JSON.parse(localStorage.getItem('cardstashy-watch-sent-v1')||'{}');for(const card of cards)sent['mtg:'+card.id]=Date.now();localStorage.setItem('cardstashy-watch-sent-v1',JSON.stringify(sent));const S=window.__uiTestState;S.state.collection=structuredClone(lots);S.state.printings=Object.fromEntries(cards.map(c=>[c.id,c]));for(const c of cards)S.catalog[c.name.toLowerCase()]=c;S.state.settings.binders=[{id:'exact-owned',game:'mtg',title:'Exact saved copies',rule:'location',value:'Exact fixture'}];S.state=validateWorkspace(S.state);S.ui.q.coll='';S.ui.collFilter='all';dispatchEvent(new Event('cardstashy-rerender'));},{cards,lots});
+  const tracked=await page.evaluate(ids=>{const sent=JSON.parse(localStorage.getItem('cardstashy-watch-sent-v1')||'{}');return ids.every(id=>Number.isFinite(sent['mtg:'+id])&&Date.now()-sent['mtg:'+id]>=0&&Date.now()-sent['mtg:'+id]<20*864e5);},cards.map(c=>c.id));assert(tracked,'Only exact local fixture IDs suppress background registration; network POST guard remains active');
   const before=await protectedState(page);
   for(const entry of lots.slice(0,-1)){await page.locator(`.lot-art[data-entry="${entry.id}"]`).click();await verify(page,entry);await closeSheet(page);}
   await page.locator('.lot-art[data-entry="owned-77"]').click();await verify(page,lots[0]);await capture(page,`magic-owned-detail-${width}-etched`);

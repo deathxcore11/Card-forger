@@ -19,11 +19,18 @@ assert.equal((tcgSet().match(/data-act="tCard"/g)||[]).length,25);for(const [i,c
 if(process.argv.includes('--validate-fixtures')){console.log('PASS: synthetic25 actual-app inputs, source-backed identities, distinct printed numbering/count, single Holofoil facet, wrong two product/quotes quarantined. Browser not started.');process.exit(0);}
 assert.equal(process.env.GITHUB_ACTIONS,'true','Run browser QA only in approved hosted CI; --validate-fixtures is offline.');
 const {chromium}=await import('playwright'),out=resolve('test-results/classic-collection');await mkdir(out,{recursive:true});
-const result={commit:process.env.GITHUB_SHA||null,evidence:CLASSIC_EVIDENCE,checks:[],screenshots:[],viewports:[390,1440],matrix:{detail:0,zoom:0,gallery:0},physicalFoilAccuracy:'not-verified',productionDeployment:false};
+const result={commit:process.env.GITHUB_SHA||null,evidence:CLASSIC_EVIDENCE,checks:[],screenshots:[],captures:[],viewports:[390,1440],matrix:{detail:0,zoom:0,gallery:0},physicalFoilAccuracy:'not-verified',productionDeployment:false};
 let server,browser,current;
 const frames=page=>page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
 const saved=page=>page.evaluate(()=>JSON.stringify({collection:window.__uiTestState.state.tcg.ptcg.collection,history:window.__uiTestState.state.tcg.ptcg.valueHistory}));
-async function capture(page,name){const file=name+'.png';await page.screenshot({path:resolve(out,file),fullPage:true,animations:'disabled'});result.screenshots.push(file);}
+async function capture(page,name){const file=name+'.png';await frames(page);await page.screenshot({path:resolve(out,file),fullPage:false,animations:'disabled'});result.screenshots.push(file);result.captures.push({file,kind:'viewport',viewport:page.viewportSize()});}
+async function captureRegion(page,selector,name){
+ const region=page.locator(selector);assert.equal(await region.count(),1);await region.scrollIntoViewIfNeeded();await frames(page);
+ const box=await region.evaluate(n=>{const r=n.getBoundingClientRect(),s=getComputedStyle(n);return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height,viewportWidth:innerWidth,viewportHeight:innerHeight,visible:!!n.getClientRects().length&&s.display!=='none'&&s.visibility!=='hidden'&&s.opacity!=='0'};});
+ assert(box.visible&&box.width>0&&box.height>0&&box.left>=-1&&box.right<=box.viewportWidth+1&&box.top>=-1&&box.bottom<=box.viewportHeight+1,name+' target must be visible inside actual viewport: '+JSON.stringify(box));
+ await capture(page,name);result.captures.at(-1).region={selector,...box};
+}
+async function captureTile(page,tile,name){const file=name+'.png';await tile.scrollIntoViewIfNeeded();await frames(page);await tile.screenshot({path:resolve(out,file),animations:'disabled'});result.screenshots.push(file);result.captures.push({file,kind:'actual-gallery-tile',viewport:page.viewportSize()});}
 async function waitCard(page,id){await page.waitForFunction(id=>{const s=window.__uiTestState.ui.sheetCtx,b=document.querySelector('#sheetBody');return document.querySelector('#sheet')?.open&&s?.id===id&&!s.previewBusy&&b?.querySelector('.cd-img img')?.naturalWidth>0;},id);await frames(page);}
 async function cardProof(page,e,motion){
  await page.locator('#sheetBody .cd-img').scrollIntoViewIfNeeded();
@@ -68,13 +75,13 @@ try{
   await page.locator('[data-change=tSetFinish]').selectOption('holofoil');await page.waitForFunction(()=>window.__uiTestTcg.ui('ptcg').set.finish==='holofoil'&&[...document.querySelectorAll('#content .set-grid>[data-act=tCard]')].every(n=>n.dataset.setVariant?.startsWith('detail:')));assert.equal(await tiles.count(),25);assert.match(await page.locator('.list-bar').innerText(),/25 shown/);
   assert.deepEqual((await tiles.evaluateAll(ns=>ns.map(n=>n.dataset.id))).sort(),CLASSIC_EXPECTED.map(e=>e.id).sort());
   assert.equal(await page.locator('[data-act=viewSave][data-area=set][data-mode=gallery]').getAttribute('aria-checked'),'true');
-  for(const e of CLASSIC_EXPECTED){const tile=page.locator(`#content .set-grid>[data-id="${e.id}"]`);await tile.scrollIntoViewIfNeeded();await page.waitForFunction(id=>{const n=document.querySelector(`#content .set-grid>[data-id="${id}"]`),i=n?.querySelector('img');return i?.complete&&i.naturalWidth>0;},e.id);const row=await tile.evaluate(n=>({id:n.dataset.id,effect:n.dataset.finishEffect,surface:n.dataset.finishSurface,overlays:n.querySelectorAll('.finish-overlay').length,layers:n.querySelectorAll('.finish-layer,.finish-pattern').length,number:n.querySelector('.grid-meta').textContent}));assert.equal(row.id,e.id);assert.equal(row.effect,'unknown');assert.equal(row.surface,'large');assert.equal(row.overlays,0);assert.equal(row.layers,0);assert(row.number.includes('#'+e.number));result.matrix.gallery++;result.checks.push({phase:'all25-gallery',motion,viewport:390,...row});}
+  for(const e of CLASSIC_EXPECTED){const tile=page.locator(`#content .set-grid>[data-id="${e.id}"]`);await tile.scrollIntoViewIfNeeded();await page.waitForFunction(id=>{const n=document.querySelector(`#content .set-grid>[data-id="${id}"]`),i=n?.querySelector('img');return i?.complete&&i.naturalWidth>0;},e.id);const row=await tile.evaluate(n=>({id:n.dataset.id,effect:n.dataset.finishEffect,surface:n.dataset.finishSurface,overlays:n.querySelectorAll('.finish-overlay').length,layers:n.querySelectorAll('.finish-layer,.finish-pattern').length,number:n.querySelector('.grid-meta').textContent}));assert.equal(row.id,e.id);assert.equal(row.effect,'unknown');assert.equal(row.surface,'large');assert.equal(row.overlays,0);assert.equal(row.layers,0);assert(row.number.includes('#'+e.number));result.matrix.gallery++;result.checks.push({phase:'all25-gallery',motion,viewport:390,...row});await captureTile(page,tile,e.id+'-'+motion+'-gallery');}
   await page.evaluate(()=>scrollTo(0,0));
   for(const width of [390,1440]){await page.setViewportSize({width,height:1050});await noOverflow(page,'#content','Classic set '+motion+' '+width,true);await capture(page,'set-'+motion+'-'+width);}
   await page.setViewportSize({width:390,height:1050});
   for(const [i,e] of CLASSIC_EXPECTED.entries()){
    await page.locator(`#content .set-grid>[data-id="${e.id}"]`).click();await waitCard(page,e.id);
-   const proof=await cardProof(page,e,motion);result.matrix.detail++;await capture(page,e.id+'-'+motion+'-detail');
+   const proof=await cardProof(page,e,motion);result.matrix.detail++;await capture(page,e.id+'-'+motion+'-detail');await captureRegion(page,'#sheetBody .finish-preview',e.id+'-'+motion+'-finish-status');
    // Finish click is the real app handler. Require a new mount, not old success.
    const gen=proof.generation;await page.locator('#sheetBody .finish-preview [data-finish]').click();await page.waitForFunction(gen=>document.querySelector('#sheetBody').detailMountGeneration>gen,gen);await waitCard(page,e.id);await cardProof(page,e,motion);
    await page.locator('#sheetBody [data-act=zoomCard]').click();await page.waitForFunction(()=>document.querySelector('dialog.zoom img')?.naturalWidth>0);await page.waitForFunction(reduce=>document.querySelectorAll('dialog.zoom .finish-overlay').length===(reduce?0:1),motion==='reduce');
@@ -86,7 +93,7 @@ try{
    if([19,20].includes(i)){assert(!((await page.locator('#sheetBody').innerText()).includes('987.65')),'wrong upstream quote never displayed');assert.match(await page.locator('#sheetBody .cs-meta').innerText(),/withheld|unavailable|No quote/i);}
    else {assert.match(await page.locator('#sheetBody .cs-meta').innerText(),/stale/i);assert.match(await page.locator('#sheetBody .market-sellers').innerText(),/Source updated 2020-01-01/);}
    result.checks.push({phase:'all25-actual-detail',motion,viewport:390,id:e.id,printed:e.display,exactProduct:e.productId,unsupportedPreview:true,savedStateUnchanged:before===await saved(page)});assert.equal(await saved(page),before);
-   if([0,7,19,20,24].includes(i))await capture(page,e.id+'-'+motion+'-prices');
+   if([0,7,19,20,24].includes(i)){await captureRegion(page,'#sheetBody .cs-meta',e.id+'-'+motion+'-quote-status');await captureRegion(page,'#sheetBody .market-sellers',e.id+'-'+motion+'-prices');await captureRegion(page,'#sheetBody .market-details',e.id+'-'+motion+'-market-details');}
    await closeSheet(page);assert.equal(await tiles.count(),25);
   }
   // Real search/filter events, held legacy facet, and repeat open/close.
