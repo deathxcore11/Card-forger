@@ -553,11 +553,19 @@ try{
   assert.match(await target.locator('[data-act="tTierSave"]').innerText(),d.ready?/Save as deck|cost unverified/:/Save draft/);
   const builderLayouts=[];
   for(const viewport of [{width:320,height:1000},{width:360,height:1000},{width:390,height:1000},{width:768,height:1000},{width:1440,height:1000},{width:844,height:390}]){await bp.setViewportSize(viewport);const label='actual '+x.game+' '+x.kind+' builder '+viewport.width+'x'+viewport.height;builderLayouts.push(await readableBuildSeed(bp,x,label));await noOverflow(bp,'#sheetBody',label);await capture(bp,'build-'+x.game+'-'+x.kind+'-'+(viewport.height===1000?viewport.width:viewport.width+'x'+viewport.height),'#sheetBody');}
-  // Inspect the real expanded card rows, not just a hidden preview count.
+  // Restore the reading viewport after landscape. content-visibility:auto
+  // deliberately skips offscreen card text, so inspect the actual scrolled row.
+  await bp.setViewportSize({width:320,height:1000});
   await target.locator('[data-act="tTier"]').click();await bp.waitForFunction(i=>window.__uiTestState.ui.tbuild.openTier===i,chosen.i);target=bp.locator('#sheetBody .tier').nth(chosen.i);
-  if(x.game==='ptcg'&&x.kind==='complete')assert.match(await target.innerText(),/Basic Fire Energy/);
-  if(x.game==='ygo'&&x.kind!=='unknown')assert.match(await target.innerText(),/Unlimited/);
-  await bp.setViewportSize({width:320,height:1000});await noOverflow(bp,'#sheetBody .tier.on','expanded actual builder');await capture(bp,'build-'+x.game+'-'+x.kind+'-expanded','#sheetBody .tier.on');
+  const inspectId=x.game==='ptcg'&&x.kind==='complete'?x.energyId:x.game==='ygo'&&x.kind!=='unknown'?chosen.tier.zones.main[0].cardId:null;
+  if(inspectId){
+   const row=target.locator('.lot.tier-row').filter({has:bp.locator('.lot-name[data-id="'+inspectId+'"]')});assert.equal(await row.count(),1);
+   await row.scrollIntoViewIfNeeded();await frames(bp);assert.equal(await row.isVisible(),true);assert.equal((await row.locator('.lot-name').innerText()).trim(),x.cards[inspectId].name);
+   const box=await row.boundingBox(),body=await bp.locator('#sheetBody').boundingBox();assert(box&&body&&box.y>=body.y-.5&&box.y+box.height<=Math.min(body.y+body.height,1000)+.5,'inspected card row is visibly inside the sheet, not only in hidden DOM');
+   if(x.game==='ptcg')assert.match(await row.innerText(),/Basic Fire Energy/);else{assert.match(await row.innerText(),/Unlimited/);assert.match(await row.innerText(),/purchase reference/);}
+   await capture(bp,'build-'+x.game+'-'+x.kind+'-visible-row','#sheetBody .tier.on .lot.tier-row:has(.lot-name[data-id="'+inspectId+'"])');
+  }
+  await noOverflow(bp,'#sheetBody .tier.on','expanded actual builder');await capture(bp,'build-'+x.game+'-'+x.kind+'-expanded','#sheetBody .tier.on');
   await target.locator('[data-act="tTier"]').click();await bp.waitForFunction(()=>window.__uiTestState.ui.tbuild.openTier===null);
   if(x.kind==='unknown'){
    await bp.locator('[data-change="tBuildCustom"]').fill('50');await bp.locator('[data-change="tBuildCustom"]').press('Tab');await bp.waitForFunction(()=>window.__uiTestState.ui.tbuild.custom==='50');await settleBuilder(bp,x.format);
