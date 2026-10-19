@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { buildMatchupRequest, cleanMatchupRequest, parseMatchupIntent, selectMatchupOpponent, validateMatchupAnalysis, matchupFormat } from './ai-matchup-core.js';
+import { buildMatchupRequest, cleanMatchupRequest, parseMatchupIntent, selectMatchupOpponent, validateMatchupAnalysis, matchupAnalysisSchema, matchupFormat } from './ai-matchup-core.js';
 const card={name:'Test creature',type_line:'Creature',oracle_text:'Haste',mana_cost:'{R}',color_identity:['R'],legalities:{standard:'legal'}};
 const lookup=()=>card;
 const request=buildMatchupRequest({deck:{name:'Player',format:'Standard',cards:[{name:card.name,qty:4}]},opponent:{name:'Opponent',format:'standard',main:[{name:card.name,qty:4}],provenance:{kind:'import'}},lookup});
@@ -46,3 +46,12 @@ assert.throws(()=>validateMatchupAnalysis({...analysis,limitations:Array.from({l
 assert.throws(()=>validateMatchupAnalysis({...analysis,limitations:['Not a measured win rate: 60%.']},request),'negative prefix does not mask numeric estimates');
 assert.ok(leaders.warnings.some(x=>x.includes('not a full multiplayer pod')));
 console.log('Magic Matchups core: selection, format boundaries, grounding and output validation passed.');
+
+const schema=matchupAnalysisSchema(withSide);
+assert.deepEqual(schema.properties.scenarios.items.properties.cardIds.items.enum,['p0','o0']);
+assert.deepEqual(schema.properties.coaching.items.properties.cardIds.items.enum,['p0','side','o0']);
+assert.deepEqual(schema.properties.recommendation,{type:'null'},'no candidates means no model-invented recommendation');
+assert.ok(matchupAnalysisSchema({...withSide,mode:'bo3'}).properties.scenarios.items.properties.cardIds.items.enum.includes('side'));
+assert.deepEqual(matchupAnalysisSchema(withAdd).properties.recommendation.anyOf[1].properties.addId.enum,['add']);
+assert.throws(()=>validateMatchupAnalysis({...analysis,scenarios:[{...scenario,cardIds:['invented']},...analysis.scenarios.slice(1)]},request),/referenced a card outside/);
+assert.throws(()=>validateMatchupAnalysis({...analysis,summary:'A 65% estimate.'},request),/claimed measured outcomes/);

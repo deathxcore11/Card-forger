@@ -1,5 +1,5 @@
 // Server-only, one bounded paid call through the existing shared AI allowance.
-import { cleanMatchupRequest, validateMatchupAnalysis, MATCHUP_SCHEMA, MATCHUP_INSTRUCTIONS } from './ai-matchup-core.js';
+import { cleanMatchupRequest, validateMatchupAnalysis, matchupAnalysisSchema, MATCHUP_INSTRUCTIONS } from './ai-matchup-core.js';
 import { loadServerRulePack, retrieveRules, sourceCoverage } from './rules-retrieval.js';
 const reply = (body,status=200,headers={}) => new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json','Cache-Control':'no-store',...headers}});
 const fail = (message,status=400) => Object.assign(new Error(message),{status});
@@ -35,7 +35,7 @@ export async function aiMatchupRoute(request,env,{fetcher=fetch}={}) {
       const gate=env.AI_REVIEW_LIMITS.get(env.AI_REVIEW_LIMITS.idFromName('global'));
       if(!(await gate.fetch('https://limit/reserve',{method:'POST',body:JSON.stringify({hash})})).ok)return reply({code:'app_limit',message:'AI allowance reached. Try later; your decks and Power checks are unchanged.'},429,{'Retry-After':'3600'});
     }
-    const upstream=await fetcher('https://api.openai.com/v1/responses',{method:'POST',signal:AbortSignal.timeout(90000),headers:{Authorization:`Bearer ${env.OPENAI_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({model:env.OPENAI_MODEL||'gpt-4.1-mini',store:false,max_output_tokens:6000,instructions:MATCHUP_INSTRUCTIONS+'\nUse the provided integrity-checked official rule excerpts for precise interactions. They are dated and incomplete. When they do not establish an interaction, explain a conditional strategic plan and disclose the gap. Card records come from the app and are not independently re-fetched by this endpoint.',input:JSON.stringify({...context,rules,rulesCoverage:sourceCoverage('mtg')}),text:{format:{type:'json_schema',name:'magic_matchup',strict:true,schema:MATCHUP_SCHEMA}}})});
+    const upstream=await fetcher('https://api.openai.com/v1/responses',{method:'POST',signal:AbortSignal.timeout(90000),headers:{Authorization:`Bearer ${env.OPENAI_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({model:env.OPENAI_MODEL||'gpt-4.1-mini',store:false,max_output_tokens:6000,instructions:MATCHUP_INSTRUCTIONS+'\nUse the provided integrity-checked official rule excerpts for precise interactions. They are dated and incomplete. When they do not establish an interaction, explain a conditional strategic plan and disclose the gap. Card records come from the app and are not independently re-fetched by this endpoint.',input:JSON.stringify({...context,rules,rulesCoverage:sourceCoverage('mtg')}),text:{format:{type:'json_schema',name:'magic_matchup',strict:true,schema:matchupAnalysisSchema(context)}}})});
     if(!upstream.ok){
       let error={};try{error=(await upstream.json()).error||{};}catch{}
       if(['credit_balance_exhausted','insufficient_quota'].includes(error.code)||error.type==='insufficient_quota')return reply({code:'billing',message:'OpenAI API credits need attention before AI Matchups can run. No deck changes were made.'},503);

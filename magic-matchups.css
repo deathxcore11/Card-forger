@@ -1,3 +1,27 @@
 /* Matchups adds layout only. Cards, glass panels, tabs, deck boxes, buttons,
    mana symbols and modal behavior are the app's shared production components. */
 .am-root,.am-sheet{min-width:0;overflow-wrap:anywhere}.am-main{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}.am-main>*{min-width:0}.am-main p{margin:0}.am-header,.am-working{display:flex;align-items:center;gap:12px}.am-header h3{margin:3px 0 5px}.am-header .ask-orb,.am-working .ask-orb{width:38px;height:38px;flex:0 0 38px}.am-header .ask-orb svg,.am-working .ask-orb svg{width:100%;height:100%}.am-header>div:last-child,.am-working>div:not(.ask-orb){min-width:0}.am-deck-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.am-deck-link{min-width:0;align-items:center;padding:8px;gap:12px;text-align:left}.am-deck-link>span:last-child{min-width:0;display:grid;gap:3px}.am-deck-link b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.am-deck-link .deck-box{flex:none;transform:scale(.8);transform-origin:center}.am-working{flex-wrap:wrap}.am-working .btn{margin-left:auto}.am-working p{margin:4px 0 0}.am-controls{min-width:0;margin:0;padding:16px 0 0;border:0}.am-question{display:grid;gap:7px}.am-question input{min-width:0;width:100%}.am-color-choices{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}.am-color-choices .chip{display:inline-flex;align-items:center;gap:6px;min-height:44px}.am-color-choices .mana{display:inline-flex}.am-setting{display:grid;gap:7px;margin:14px 0}.am-controls>.actions{margin:18px 0}.am-sheet .cs-tabs{position:sticky;top:0;z-index:2}.am-sheet .cs-panel{padding-top:12px}.am-sheet .group{margin-block:12px}.am-sheet .group>summary{min-height:44px;align-content:center;cursor:pointer}.am-sheet .group p,.am-sheet .group li{line-height:1.6;overflow-wrap:anywhere}.am-source{overflow-wrap:anywhere;line-height:1.5}.am-card-browser{min-width:0}.am-card-browser>.row{gap:8px;flex-wrap:wrap;margin:12px 0}.am-card-browser .display-list{min-width:0}.am-run{display:grid;gap:10px;margin:16px 0}.am-run .foot{margin:0}.am-run>.btn{justify-self:start;min-height:44px}.am-scenario-choice{overflow-x:auto;overscroll-behavior-x:contain;max-width:100%;scrollbar-width:thin;padding:4px 0 10px}.am-scenario-choice .seg{width:max-content;min-width:100%}.am-scenario-choice .seg button{white-space:nowrap;min-height:44px}.am-scenario h3{font-size:18px;margin:10px 0}.am-coaching section+section{border-top:1px solid var(--line);padding-top:10px}.am-coaching h4{margin:14px 0 6px}.am-result>header{gap:10px;flex-wrap:wrap}.am-result>header h3{margin:8px 0}.am-error{margin-block:12px}@media(max-width:480px){.am-deck-links{grid-template-columns:minmax(0,1fr)}.am-controls>.actions>.btn{flex:1}.am-run>.btn{width:100%}.am-deck-link .deck-box{transform:scale(.7)}}
+
+/* Matchup sheets use the same art-led surfaces and compact controls as decks. */
+.am-sheet{--am-surface:var(--panel,#191c24)}
+.am-sheet .cs-tabs{background:var(--am-surface);margin-bottom:16px}
+.am-sheet-decks{margin:16px 0}
+.am-sheet .am-deck-link{border:1px solid var(--line);border-radius:18px;background:var(--am-surface)}
+.am-sheet .am-deck-link b{white-space:normal;overflow-wrap:anywhere}
+.am-sheet .group{border:1px solid var(--line);border-radius:16px;background:var(--am-surface);padding:0 16px;overflow:hidden}
+.am-sheet .group>summary{display:flex;align-items:center;gap:12px;min-height:52px;padding:12px 0;font-size:13px;letter-spacing:.025em;text-transform:none;color:var(--text);list-style:none}
+.am-sheet .group>summary::after{content:'+';margin-left:auto;color:var(--muted);font-size:20px;flex:none}
+.am-sheet .group[open]>summary::after{content:'−'}
+.am-sheet .group>summary::-webkit-details-marker{display:none}
+.am-sheet .group>p,.am-sheet .group>ul{margin:0 0 16px}
+.am-sheet .group li+li{margin-top:8px}
+.am-sheet .am-scenario-choice{overflow:visible;padding:4px 0 12px}
+.am-sheet .am-scenario-choice .seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;min-width:0;border-radius:16px;padding:4px;gap:4px}
+.am-sheet .am-scenario-choice .seg button{min-width:0;white-space:normal;overflow-wrap:anywhere;padding:10px 8px;line-height:1.4;border-radius:12px}
+.am-sheet .am-scenario>h3{font-size:20px;line-height:1.4;margin:8px 0 16px}
+.am-sheet .am-result>header{padding-top:8px}
+.am-sheet .am-result>header .chip{align-self:center}
+.am-sheet .am-result>p{line-height:1.6}
+.am-sheet .am-setting{padding:12px 14px;background:var(--am-surface);border:1px solid var(--line);border-radius:16px}
+.am-sheet .am-controls .seg{flex-wrap:wrap}
+@media(max-width:480px){.am-sheet .group{padding-inline:12px}.am-sheet .am-scenario-choice .seg button{font-size:12px;padding:10px 4px}.am-sheet .am-scenario>h3{font-size:18px}}

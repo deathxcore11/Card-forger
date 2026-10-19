@@ -72,6 +72,8 @@ try{
    await page.locator(`#sheetBody [data-act="amScenario"][data-id="${scenario}"]`).click();
    assert.match(await panel().locator('.am-scenario h3').innerText(),new RegExp(response().scenarios[scenario].title));
    await matchupLayout(page,'selected scenario '+scenario+' at '+width);
+   const choiceFit=await panel().locator('.am-scenario-choice').evaluate(n=>({scroll:n.scrollWidth,client:n.clientWidth,buttons:[...n.querySelectorAll('button')].map(b=>({scroll:b.scrollWidth,client:b.clientWidth}))}));
+   assert(choiceFit.scroll<=choiceFit.client+2&&choiceFit.buttons.every(b=>b.scroll<=b.client+2),'all three scenario labels fit without horizontal scrolling');
   }
   await capture(page,'analysis-'+width,{fullPage:false});
   if(width===320){

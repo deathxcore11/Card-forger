@@ -24,3 +24,9 @@ assert.equal((await aiMatchupRoute(request(),{...env(),ASSETS:null},{fetcher})).
 for(const result of [{status:'incomplete',output:[]},{status:'completed',output:[{type:'message',content:[{type:'output_text',text:'{}'}]}]}])assert.equal((await aiMatchupRoute(request(),env(),{fetcher:async()=>Response.json(result)})).status,502);
 const billing=await aiMatchupRoute(request(),env(),{fetcher:async()=>Response.json({error:{code:'insufficient_quota',message:'secret raw upstream'}},{status:429})});assert.equal(billing.status,503);assert.equal((await billing.json()).code,'billing');
 console.log('Magic Matchups route: origin, limits, bounded input, pinned rules, schema and provider failures passed.');
+
+assert.deepEqual(last.text.format.schema.properties.scenarios.items.properties.cardIds.items.enum,['p0','o0']);
+assert.deepEqual(last.text.format.schema.properties.recommendation,{type:'null'});
+const badReferences={...analysis,scenarios:[{...scenario,title:'Bad reference',cardIds:['not-in-list']},...analysis.scenarios.slice(1)]};
+const rejected=await aiMatchupRoute(request(),env(),{fetcher:async()=>Response.json({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify(badReferences)}]}]})});
+assert.equal(rejected.status,502);assert.match((await rejected.json()).message,/referenced a card outside/);
