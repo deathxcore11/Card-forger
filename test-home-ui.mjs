@@ -164,3 +164,16 @@ console.log('PASS: hosted overflow helper awaits actual finite descendant/replac
 
 // Personal dashboard and activity regressions run in the normal pure test suite.
 await import("./test-home-personal-dashboard.mjs");
+
+// Legacy/pre-cron source summaries remain useful without fabricated curation.
+for(const game of ['mtg','ptcg','ygo']){
+ const story={kind:'news',title:'Original source headline',source:'Original publisher',publishedAt:'2026-10-16',summary:'Existing source brief <script>not markup</script>'};
+ const html=featureArticle(game,story,0,1);
+ assert.match(html,/<p class="community-summary">Existing source brief &lt;script&gt;not markup&lt;\/script&gt;<\/p>/);
+ assert.match(html,/Original source headline/);assert.match(html,/Original publisher/);assert.match(html,/2026-10-16/);
+ assert.match(featureArticle(game,{...story,whyItMatters:'Current curated brief'},0,1),/<p class="community-summary">Current curated brief<\/p>/);
+ const long='Public source fact '.repeat(30),capped=featureArticle(game,{...story,summary:long},0,1);
+ assert(capped.match(/<p class="community-summary">([^<]*)<\/p>/)[1].length<=180);
+ assert(capped.includes(long),'full source details are retained');
+ for(const summary of [undefined,'','   '])assert(!featureArticle(game,{...story,summary},0,1).includes('class="community-summary"'),'missing source text never creates invented brief');
+}
