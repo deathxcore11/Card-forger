@@ -71,4 +71,9 @@ for(const ink of ['172337','47566b','536278','79520a','ae3029','6738ad','176b43'
 const css=readFileSync(new URL('./settings-theme.css',import.meta.url),'utf8');
 assert.match(css,/overflow-x:auto/);assert.match(css,/min-width:max-content/);assert.match(css,/prefers-reduced-transparency/);
 assert.doesNotMatch(css,/filter\s*:\s*invert|img\s*\{[^}]*filter/,'artwork pixels must not be inverted');
+const titleBacking=css.match(/:root\[data-theme="light"\] \.cs-banner > \.cs-title::before \{([^}]+)\}/)?.[1];
+assert(titleBacking,'title backing is scoped to Light mode only');assert.match(titleBacking,/background:rgba\(23,35,55,\.84\)/);assert.match(titleBacking,/position:absolute/);assert.match(titleBacking,/pointer-events:none/);
+const worstBacking=[23,35,55].map(v=>Math.round(v*.84+255*.16).toString(16).padStart(2,'0')).join('');
+for(const ink of ['ffffff','f4f6fb'])assert(contrast(ink,worstBacking)>=4.5,'title/subtitle/HP retain AA contrast even on pure-white art');
+assert.doesNotMatch(css,/mask-image\s*:/,'Light title repair must not change artwork masks');
 console.log('PASS: four accessible Settings tabs, recovery hooks, all-game action preservation, theme persistence/storage failure, cross-tab sync, first-paint boot and AA light ink.');

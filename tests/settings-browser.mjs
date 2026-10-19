@@ -1,12 +1,23 @@
 import assert from 'node:assert/strict';
-import {startServer,openSearchApp,noOverflow,capture,inventorySnapshot} from './search-fixtures.mjs';
+import {readFile,mkdir,writeFile} from 'node:fs/promises';
+import {artworkSources} from '../artwork.js';
+import {startServer,openSearchApp,noOverflow,capture,inventorySnapshot,CARDS} from './search-fixtures.mjs';
 if(process.env.GITHUB_ACTIONS!=='true')throw Error('Browser execution is restricted to hosted GitHub Actions.');
 const {chromium}=await import('playwright');
+const sources=JSON.parse(await readFile(new URL('./frame-art/sources.json',import.meta.url)));
+const pinned=Object.fromEntries(await Promise.all(['mtg','ptcg','ygo'].map(async game=>[game,{source:sources[game][0],file:`tests/frame-art/${game}.${sources[game][1]}`,type:game==='ptcg'?'image/webp':'image/jpeg',bytes:await readFile(new URL(`./frame-art/${game}.${sources[game][1]}`,import.meta.url))}])));
+const evidence='Synthetic cards, prices, inventory and provider responses. Pinned publisher artwork from tests/frame-art is substituted only for visual-fit/Light-header contrast checks; it does not match or prove synthetic card identity, live prices, provider availability or real-device behavior.';
+const headerChecks=[];let failure;
+const rgb=value=>{const n=String(value).match(/[\d.]+/g)?.map(Number);assert(n&&n.length>=3,'computed RGB color: '+value);return n;};
+const lum=c=>c.slice(0,3).map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4).reduce((v,n,i)=>v+n*[.2126,.7152,.0722][i],0);
+const contrast=(a,b)=>(Math.max(lum(a),lum(b))+.05)/(Math.min(lum(a),lum(b))+.05);
 const server=await startServer(),browser=await chromium.launch({headless:true});
 try{
  for(const game of ['mtg','ptcg','ygo']){
   const app=await openSearchApp(browser,server.base,{game,width:390}),{page}=app;
   try{
+   const artHits=new Set(),artURLs=new Set(CARDS[game].filter(c=>c.name.startsWith('Alpha fixture')).flatMap(c=>[...artworkSources(c,true),...artworkSources(c,false),c.art,c.artDirect,c.image,c.imageLarge,...Object.values(c.image_uris||{})].filter(Boolean)).map(url=>new URL(url,server.base).href));
+   for(const url of artURLs)await page.route(url,async route=>{await route.fulfill({contentType:pinned[game].type,body:pinned[game].bytes});artHits.add(route.request().url());});
    const field=page.locator(game==='mtg'?'#dbTerm':'[data-input="tQ"]');await field.fill('Keep my search');
    const original=await inventorySnapshot(page),url=page.url();
    await page.evaluate(()=>window.__settingsBackground=document.querySelector('#content').firstElementChild);
@@ -62,7 +73,23 @@ try{
    await page.locator('#content .card-grid > .grid-card').first().waitFor();
    await capture(page,`synthetic-search-theme-light-${game}-search-390`);
    await page.locator('#content .card-grid > .grid-card').first().click();await page.locator('#sheet[open] .cs-title').waitFor();
-   for(const width of [390,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'#sheetBody',`${game} light card ${width}`);await capture(page,`synthetic-search-theme-light-${game}-card-${width}`);}
+   for(const width of [390,1440]){
+    await page.setViewportSize({width,height:1000});await noOverflow(page,'#sheetBody',`${game} light card ${width}`);
+    await page.waitForFunction(()=>{const img=document.querySelector('.cs-banner .cs-hero img');return img?.complete&&img.naturalWidth>0;});
+    const header=await page.locator('.cs-banner > .cs-title').evaluate(async title=>{
+     const {applyTheme}=await import('/settings-theme.js'),hero=title.parentElement.querySelector('.cs-hero'),box=node=>{const r=node.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};};
+     const geometry=()=>({title:box(title),hero:box(hero),mask:getComputedStyle(hero).maskImage});
+     const light=geometry(),backing=getComputedStyle(title,'::before'),img=hero.querySelector('img');
+     const result={geometry:light,backing:{color:backing.backgroundColor,content:backing.content,pointerEvents:backing.pointerEvents},ink:[...title.querySelectorAll('h2,.type-line,.hp,.lvl')].map(n=>({tag:n.className||n.tagName,color:getComputedStyle(n).color})),owned:[...title.querySelectorAll('.card-owned-summary')].map(n=>({ink:getComputedStyle(n).color,background:getComputedStyle(n).backgroundColor})),image:{src:img.currentSrc,width:img.naturalWidth,height:img.naturalHeight}};
+     applyTheme('dark',{persist:false});result.dark={geometry:geometry(),backing:getComputedStyle(title,'::before').content};applyTheme('light',{persist:false});return result;
+    });
+    assert(artHits.has(header.image.src),'header must display intercepted pinned artwork');assert.deepEqual(header.geometry,header.dark.geometry,'Light backing changes no hero/title geometry or art mask');assert.equal(header.dark.backing,'none','Dark title remains unchanged');assert.equal(header.backing.content,'""');assert.equal(header.backing.pointerEvents,'none');
+    const backing=rgb(header.backing.color),alpha=backing[3]??1,worst=backing.slice(0,3).map(v=>v*alpha+255*(1-alpha));assert(alpha>=.84);
+    for(const ink of header.ink)assert(contrast(rgb(ink.color),worst)>=4.5,`${game} ${width} ${ink.tag} contrast on worst-case pure-white art`);
+    for(const badge of header.owned)assert(contrast(rgb(badge.ink),rgb(badge.background))>=4.5,'Owned badge keeps contrasting dark ink');
+    headerChecks.push({game,width,source:pinned[game].source,file:pinned[game].file,...header});
+    await capture(page,`synthetic-search-theme-light-${game}-card-${width}`);
+   }
    await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('#sheet').open);assert.equal(await inventorySnapshot(page),original,'light-mode card inspection does not change saved lots');
    await page.setViewportSize({width:390,height:900});
    await page.reload();await page.locator('#app.ready').waitFor();
@@ -73,4 +100,4 @@ try{
    app.health();console.log(`PASS: ${game} four Settings tabs, light/dark reload, glass parity, keyboard, Back, fold resize, draft and inventory preservation`);
   }finally{await app.context.close();}
  }
-}finally{await browser.close();await server.close();}
+}catch(error){failure=String(error.stack||error);throw error;}finally{const out=new URL('../test-results/',import.meta.url);await mkdir(out,{recursive:true});await writeFile(new URL('synthetic-search-settings-theme-evidence.json',out),JSON.stringify({status:failure?'failed':'passed',evidence,headerChecks,...(failure?{error:failure}:{})},null,2));await browser.close();await server.close();}

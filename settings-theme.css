@@ -82,6 +82,10 @@
 :root[data-theme="light"] #toast .toast-undo {background:#dfe7f0;}
 :root[data-theme="light"] .cf-dialog.danger .btn.danger {color:#fff;}
 :root[data-theme="light"] .cf-dialog-check svg {stroke:#fff;}
+/* The hero mask fades its shade as well as art. Keep the white title readable
+   over the light sheet without changing the artwork, mask or title geometry. */
+:root[data-theme="light"] .cs-banner > .cs-title {isolation:isolate;color:#f4f6fb;}
+:root[data-theme="light"] .cs-banner > .cs-title::before {content:"";position:absolute;inset:0 -8px 6px;z-index:-1;border-radius:14px;background:rgba(23,35,55,.84);pointer-events:none;}
 /* Art overlays remain dark-backed with light ink; card images and foil pixels never invert. */
 :root[data-theme="light"] :is(.tile-chrome,.chip.dark,.icon.light,.hh-credit,.hero-body,.deck-hero,.community-art,.home-meta-card,.tabletop-dialog,.community-profile-header,.stash-open-book,.tv-phone,.air-fan,.scan-defaults,.cam-rail,.img-missing) {--text:#f4f6fb;--muted:#d0d8e6;--faint:#bac5d7;--gold:#edc777;--gold-ink:#201808;--good:#8bdfaf;--bad:#ffb4a8;color:var(--text);}
 :root[data-theme="light"] .home-overview .home-daily .hh-credit {--text:#172337;--muted:#47566b;--faint:#536278;--gold:inherit;color:var(--text);}

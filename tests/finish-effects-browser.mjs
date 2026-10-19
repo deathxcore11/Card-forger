@@ -22,7 +22,9 @@ try{for(const game of ['ygo','ptcg','mtg']){
   // Deliberately seed a foil-owned fixture before the user-flow snapshot.
   if(game==='mtg')await page.evaluate(()=>{window.__uiTestState.state.collection[0].finish='foil';});
   if(game==='ptcg')await page.evaluate(()=>{const S=window.__uiTestState,T=window.__uiTestTcg,c=Object.values(T.cache.ptcg).find(c=>c.id==='sv08-002'),base=S.state.tcg.ptcg.collection.find(e=>e.cardId===c.id);S.state.tcg.ptcg.collection=S.state.tcg.ptcg.collection.filter(e=>e.cardId!==c.id);for(const variant of ['normal','holofoil','reverse-holofoil'])S.state.tcg.ptcg.collection.push({...base,id:'owned-'+variant,variant});});
+  await page.evaluate(()=>{window.__finishBeforeModeState=window.__uiTestState.state;});
   await page.locator('#content [data-act="viewSave"][data-mode="gallery"]').click();
+  await page.waitForFunction(game=>window.__uiTestState.state!==window.__finishBeforeModeState&&window.__uiTestState.state.settings.displayModes?.[game]?.collection==='gallery',game);
   if(game==='ptcg'){
 
    // The fixture deliberately changed owned quantities outside an app commit.
