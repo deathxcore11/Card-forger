@@ -297,6 +297,7 @@ export function makeAskTools(x) {
   };
   // A builder prepared during this question appears as one more tappable item.
   tools.reset = () => { buildEpoch++; x.pending = null; suggestions = []; exactAliases.clear(); buildReads.clear(); buildReadVersion=null; bestBuild=null; };
+  tools.buildFormats=()=>Object.fromEntries(GAMES.map(g=>[g,(g==='mtg'?FORMATS:T.SOURCES?.[g]?.formats||[]).map(f=>({id:f.id,name:f.name}))]));
   tools.cancel = () => { buildEpoch++; x.pending = null; buildReads.clear(); buildReadVersion=null; bestBuild=null; };
   tools.suggestedItems = () => suggestions;
   tools.canonicalItem = s => { const exact=s.kind==='card'?exactCardFor(s):null; return exact?{...s,ref:exact.ref,label:s.label||exact.card.name}:s.kind==='meta'?suggestions.find(x=>x.game===s.game&&(x.ref===s.ref||x.label===s.ref||x.label===s.label))||s:s; };

@@ -1,32 +1,26 @@
-# CardStashy 3.85.15 candidate
+# CardStashy 3.85.15
 
-Baseline: d6db27b42aaab7313a8820150156d11d3a97874e (3.85.14 / shell231).
+Baseline: 3.85.14 / shell231.
 
-## Focused changes
+## Changes
 
-- Homepage make/create-deck intent uses Ask rather than a card-name search.
-- User-authored constraints, with source provenance, override model-supplied combo defaults. A plain red/Goblin request cannot acquire an infinite-combo ban from a required schema boolean.
-- Actual no-infinite-combo requests retain the restriction and offer app-owned unverified-draft, revision and cancellation choices. Consent is bound to the captured request and workspace. It never comes from model arguments.
-- Explicit budget/format choices preserve the other request fields and run existing tools without another model invocation. Vague affordability does not silently become $25 or unlimited. Unknown prices remain unverified.
-- Fun/theme preferences and a required card that repeats the exact seed can use existing Pokemon/YGO builders. Multiple hard requirements and unsupported guarantees remain explicit limitations.
-- Reviewed unverified drafts remain labeled after explicit saving. No automatic saves or collection changes.
-- Saved YGO rarity badge, thin rim and supported finish resolve from the same saved printing. Unresolved identity borrows no cached variation; independent price frames remain intact.
+- Homepage deck requests use the existing in-app assistant and deck builders.
+- User-authored constraints retain provenance; model defaults cannot add an unrequested infinite-combo restriction or invent a spending cap.
+- Genuine unverified restrictions offer explicit review, revision and cancellation actions. Drafts remain unsaved until the normal save action is chosen.
+- Budget and format choices retain the rest of the request. Pokémon and Yu-Gi-Oh! use their own supported formats in buttons, guidance and typed follow-ups. Pokémon Unlimited does not remove a dollar budget.
+- TCG build-around handoffs check format compatibility before offering the builder action. Exact requested names remain required.
+- Failed revisions preserve an earlier reviewable draft with a clear explanation. Theme-matching resolved candidates can supplement a failed search while retaining legality, color, exclusion and price checks.
+- AI result cards use existing artwork, game colors and the canonical animated logo. Commander and tournament previews use compact portrait rows with readable names and reference-printing pills.
+- Saved Yu-Gi-Oh! badges, thin rarity rims and supported finish effects refer to the same resolved printing. Unresolved identity does not borrow a different printing. Price frames remain separate.
 
-## Root-cause evidence
+## Validation and limits
 
-The released validator accepted a model-supplied avoid_infinite=true without requiring player intent, and the builder returned a terminal refusal with no implemented continuation. Controlled production-loop tests reproduce this. The user's actual provider arguments were not captured, so the exact runtime arguments remain unknown. Screenshots additionally show an invented-budget validation/repetition loop and a blanket TCG restriction refusal. These paths have targeted regressions.
+Automated coverage includes request recovery, game-specific formats, budget preservation, draft handoffs, explicit saves, saved-printing presentation and responsive layouts. Passing mocked tests alone does not establish live model interpretation or catalogue availability. A release requires applicable checks and inspection of the actual preview.
 
-## Test evidence categories
+Missing quotes are unknown, never zero. A generated list is a draft for human review, not a tournament-tested deck. Unverified restrictions and incomplete totals remain visible.
 
-1. Deterministic/unit: production contract, loop, tools, builders, renderer and explicit save callbacks; synthetic catalogue/model responses. Local focused checks pass; complete suite and exact-commit hosted jobs are tracked separately.
-2. Actual app with mocked dependencies: hosted AI recovery and YGO printing suites capture screenshots and geometry reports. These do not prove real model interpretation or real catalogue availability.
-3. Real configured services: Randall approved bounded paid tests and configured a new key directly in the isolated preview; no key was read by the editor. The first real Goblin UI conversation reproduced a theme clarification. A separate real route call captured aggressive style plus a bare Goblin seed/requirement, rather than the requested tribe. This exact response is now a deterministic regression. All 30 hosted checks passed before these real-service discoveries, but that did not establish model interpretation.
-4. Follow-up repair under validation: preserve trusted player fields/themes before the first build; treat only demonstrably generic Magic requests as automatic card selection, keeping model-picked identities optional. Unknown words, quoted names and named-card follow-ups preserve exact requirements. AI catalogue discovery strips subjective adjectives without changing exact-name resolution or the manual builder. New application bytes require hosted and real-service rechecks; not ready merely because earlier mocks passed.
+## Deployment and rollback
 
-## Release / rollback
+No database migration or collection rewrite is included. Preserve existing saved cards and decks.
 
-No database migration, data rewrite, or destructive persistence operation. Production remains on baseline until real-service testing and applicable release requirements are met. The user's current request authorizes publishing after tests; it does not make an unexecuted core journey a pass.
-
-Rollback: create a new production commit restoring the baseline application files while using a newer service-worker cache key, then verify served bytes and reopen smoke checks. Avoid a destructive history reset; leave saved cards/decks intact. New draft disclosure fields are additive and do not require migration.
-
-Status: NOT READY while real-provider journey remains unverified. This is a review candidate, not a release declaration.
+For rollback, restore the baseline application files in a new commit and use a newer service-worker cache key. Verify served assets and reopen smoke checks; do not reset repository history or erase saved data.

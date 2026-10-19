@@ -34,7 +34,7 @@ export function applyUserBuildIntent(input,contract={}) {
  return args;
 }
 
-export function readBuildContract(items=[],retained=null) {
+export function readBuildContract(items=[],retained=null,options={}) {
  const latestIndex=items.findLastIndex(x=>x?.type==='message'&&x.role==='user'&&typeof x.content==='string');
  const request=items[latestIndex]?.content||'';
  if(/^\s*(?:cancel|stop)(?: this| the)?(?: deck| build| request)?[.!]?\s*$/i.test(request))return {request,required_cards:[],excluded_cards:[],colors:[],themes:[],avoid_infinite:false,cancelled:true,provenance:{}};
@@ -42,7 +42,7 @@ export function readBuildContract(items=[],retained=null) {
  const follow=/^\s*(?:same|keep|instead|make (?:it|that)|change|also|and|with|without|now|but|yes|ok(?:ay)?|allow|remove|drop|exclude|include|use|don't|do not|no|cancel|stop)\b/i.test(request);
  const newBuild=/\b(?:build|make|create)\b[^.!?]*\bdeck\b/i.test(request)&&!/^\s*(?:build|make|create)\s+(?:it|that|the same)\b/i.test(request);
  const continuation=!fresh&&(follow||!newBuild);
- const previous=continuation?(retained||(latestIndex>0?readBuildContract(items.slice(0,latestIndex)):null)):null;
+ const previous=continuation?(retained||(latestIndex>0?readBuildContract(items.slice(0,latestIndex),null,options):null)):null;
  const prior=previous?.cancelled?null:previous;
  const out={request:request.slice(0,600),required_cards:[],excluded_cards:[],colors:[],themes:[]};
  if(genericBuildRequest(request))out.autoSelectSeed=true;
@@ -53,7 +53,8 @@ export function readBuildContract(items=[],retained=null) {
  else if(/\b(?:magic|mtg|edh|commander)\b/i.test(request))out.game='mtg';
  const goal=inferDeckGoal(request);if(goal)out.goal=goal;
  const unquoted=request.replace(/["“][^"”]*["”]/g,'');
- const formats=FORMATS.filter(f=>{const re=new RegExp('\\b'+f.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','gi');return [...unquoted.matchAll(re)].some(m=>! /\b(?:not|without|rather than)(?: an?)?\s*$/i.test(unquoted.slice(Math.max(0,m.index-24),m.index)));}).sort((a,b)=>b.name.length-a.name.length);
+ const unlimitedBudget=/\b(?:unlimited\s+(?:budget|spending)|(?:budget|spending)(?:\s+(?:is|of))?\s*[:=]?\s*unlimited)\b/i.test(request);
+ const formats=(options.formats?.[out.game||prior?.game||options.game]||FORMATS).filter(f=>f.name!=='Unlimited'||!unlimitedBudget).filter(f=>{const re=new RegExp('\\b'+f.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?=$|\\W)','gi');return [...unquoted.matchAll(re)].some(m=>! /\b(?:not|without|rather than)(?: an?)?\s*$/i.test(unquoted.slice(Math.max(0,m.index-24),m.index)));}).sort((a,b)=>b.name.length-a.name.length);
  if(formats.length)out.format=formats[0].name;else if(/\b(?:edh|cedh)\b/i.test(request))out.format='Commander';
  // Only unambiguous whole-deck/purchase amounts are a contract. A per-card cap
  // must not accidentally become the entire deck budget.
@@ -67,7 +68,7 @@ export function readBuildContract(items=[],retained=null) {
  const bareBudget=new RegExp('\\b(?:budget\\s*(?:of|is|:|=)?|under|below|at most|up to)\\s*('+moneyNumber+')','gi');
  for(const m of request.matchAll(bareBudget))if(!negated(m)&&!/^(?:\s*)(?:cards?|copies|lands?|creatures?|spells?|mana|minutes?|hours?|days?|percent|%|per card)\b/i.test(afterAmount(m))&&(/budget/i.test(m[0])||/\b(?:budget|spend|cost|price|dollars?|usd|deck)\b/i.test(request)))amounts.push(Number(m[1].replaceAll(',','')));
  if(new Set(amounts).size===1)out.budget=amounts[0];
- const uncapped=/\b(?:unlimited|no (?:spending |budget )?(?:limit|cap)|without (?:a )?(?:budget |spending )?(?:limit|cap))\b/i.test(request);
+ const uncapped=/\b(?:no (?:spending |budget )?(?:limit|cap)|without (?:a )?(?:budget |spending )?(?:limit|cap))\b/i.test(request)||/\bunlimited\b/i.test(request)&&(out.format!=='Unlimited'||unlimitedBudget);
  if(uncapped)out.budget=0;
  // A vague "budget deck" is a cost-conscious preference, not consent to an
  // invented $25 (or any other numeric) cap. Follow-ups can retain a prior cap.

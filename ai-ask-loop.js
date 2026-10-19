@@ -18,7 +18,7 @@ export function partialAnswer(records,reason='I reached the search limit.') {
 export function buildChoices(result) {
  if(result?.choice==='infinite')return [{id:'unverified',label:'Review an unverified draft'},{id:'revise',label:'Revise restriction / exclusions'},{id:'cancel',label:'Cancel this build'}];
  if(result?.choice==='budget')return [25,50,100].map(n=>({id:'budget:'+n,label:'$'+n})).concat({id:'budget:0',label:'No spending cap'},{id:'cancel',label:'Cancel this build'});
- if(result?.requiresChoice&&result.formats?.length){const preferred=result.formats.filter(f=>['Commander','Standard','Modern'].includes(f.name));return [...(preferred.length?preferred:result.formats.slice(0,3)).map(f=>({id:'format:'+f.name,label:f.name})),{id:'revise',label:'Choose another format'},{id:'cancel',label:'Cancel this build'}];}
+ if(result?.requiresChoice&&result.formats?.length){const preferred=result.game==='mtg'?result.formats.filter(f=>['Commander','Standard','Modern'].includes(f.name)):result.formats.slice(0,3);return [...(preferred.length?preferred:result.formats.slice(0,3)).map(f=>({id:'format:'+f.name,label:f.name})),{id:'revise',label:'Choose another format'},{id:'cancel',label:'Cancel this build'}];}
  return [];
 }
 // These operations are app-owned buttons tied to one captured request, never
@@ -29,7 +29,13 @@ export async function resumeBuildChoice({choice,context,tools,signal,current=()=
  if(!context||!context.choices?.some(c=>c.id===choice))return reply('That choice has expired. Ask again to prepare a current draft.');
  if(context.scope?.(context.args.game)===false){tools?.cancel?.();onBuildContext(null);return reply('Your workspace, decks, or collection changed. Ask again before preparing a draft. Nothing was saved.');}
  if(choice==='cancel'){tools?.cancel?.();onBuildContext(null);return reply('Build cancelled. Nothing was saved. Start a new deck request whenever you are ready.');}
- if(choice==='revise')return reply(context.choice==='infinite'?'Tell me which restriction to change, or give exact names such as Exclude "Sol Ring". The no-infinite-combos requirement stays in place until you explicitly change it.':'Tell me the format you want, such as Commander, Standard, or Modern. Your budget and theme are retained.');
+ if(choice==='revise'){
+  if(context.choice==='infinite')return reply('Tell me which restriction to change, or give exact card names to exclude. The no-infinite-combos requirement stays in place until you explicitly change it.');
+  const gameName={mtg:'Magic',ptcg:'Pokémon',ygo:'Yu-Gi-Oh!'}[context.args.game]||'current game',formats=(context.formats||context.choices.filter(c=>c.id.startsWith('format:')).map(c=>({name:c.label}))).map(f=>f.name).slice(0,8);
+  const choices=[...formats.map(name=>({id:'format:'+name,label:name})),{id:'cancel',label:'Cancel this build'}];
+  onBuildContext({...context,choices});
+  return {...reply('Choose a '+gameName+' format'+(formats.length?': '+formats.join(', ')+'.':'.')+' Your budget and theme are retained.'),choices};
+ }
  const args={...context.args},contract=structuredClone(context.contract);
  const allowUnverifiedInfinite=choice==='unverified'&&context.choice==='infinite'&&contract.avoid_infinite===true;
  if(choice.startsWith('format:')){args.format=choice.slice(7);contract.format=args.format;contract.provenance={...contract.provenance,format:{source:'user-choice',value:args.format}};}
@@ -39,14 +45,14 @@ export async function resumeBuildChoice({choice,context,tools,signal,current=()=
  const live=()=>current()&&!signal?.aborted&&context.scope?.(args.game)!==false;
  const out=await tools.build_deck(check.args,{allowCorrection:false,allowUnverifiedInfinite,current:live,signal});
  if(!live())return current()&&!signal?.aborted?reply('Your workspace changed while preparing the draft. Nothing was saved.'):null;
- onBuildContext({...context,args:check.args,contract,choice:out.choice,choices:buildChoices(out)});
+ onBuildContext({...context,args:check.args,contract,choice:out.choice,formats:out.formats,choices:buildChoices(out)});
  return partialAnswer([{name:'build_deck',out:{...out,terminal:true}}],'');
 }
 export async function runAskLoop({game,items,tools,fetcher=fetch,signal,current=()=>true,onCalls=()=>{},buildContext=null,onBuildContext=()=>{}}) {
  const seen=new Map(),records=[],userCurrent=current,requestScope=tools?.captureRequestScope?.();
  current=()=>userCurrent()&&requestScope?.(game)!==false;
  const interrupted=()=>{if(!userCurrent()||signal?.aborted)return null;tools?.cancel?.();return {text:'Your account, decks, or collection changed while I was preparing the answer. Ask again using the current data. Nothing was saved.',source:'app',show:[],suggestions:[]};};
- let contract=readBuildContract(items,buildContext?.contract),buildAttempts=0,acceptedBuilds=0;
+ let contract=readBuildContract(items,buildContext?.contract,{game,formats:tools?.buildFormats?.()}),buildAttempts=0,acceptedBuilds=0;
  if(!contract.game){contract.game=game;contract.provenance.game={source:'game-tab',value:game};}
  const userContract=structuredClone(contract);
  if(contract.cancelled){tools?.cancel?.();onBuildContext(null);return {text:'Build cancelled. Nothing was saved.',source:'app',show:[],suggestions:[]};}
@@ -84,7 +90,7 @@ export async function runAskLoop({game,items,tools,fetcher=fetch,signal,current=
     // when the player has not selected one, retaining the rest of this request.
     if(!contract.format&&!acceptedBuilds)args.format='';
     const check=validateBuildProposal(args,contract);
-    if(!check.ok){out=proposalFeedback(check,{terminal:check.requiresChoice||buildAttempts>=ASK_LIMITS.buildProposals});if(out.requiresChoice)onBuildContext({args:{...check.args},contract:userContract,scope:requestScope,choice:out.choice,choices:buildChoices(out)});seen.set(key,Promise.resolve(out));return {call,out};}
+    if(!check.ok){out=proposalFeedback(check,{terminal:check.requiresChoice||buildAttempts>=ASK_LIMITS.buildProposals});if(out.requiresChoice)onBuildContext({args:{...check.args},contract:userContract,scope:requestScope,choice:out.choice,formats:out.formats,choices:buildChoices(out)});seen.set(key,Promise.resolve(out));return {call,out};}
     args=check.args;
     if(!acceptedBuilds)contract=lockBuildContract(args,contract);
     handshake={allowCorrection:buildAttempts<ASK_LIMITS.buildProposals,revision:acceptedBuilds>0,current:()=>current()&&requestScope?.(args.game||game)!==false,signal};
@@ -92,7 +98,7 @@ export async function runAskLoop({game,items,tools,fetcher=fetch,signal,current=
    }
    const pending=Promise.resolve().then(()=>!current()||signal?.aborted?{cancelled:true}:tools?.[call.name]?.(args,handshake)??{error:'Not available in this app.'}).catch(e=>({error:String(e.message||e).slice(0,200)}));seen.set(key,pending);
    out=await pending;
-   if(call.name==='build_deck')onBuildContext({args:{...args},contract:userContract,scope:requestScope,choice:out?.choice,choices:buildChoices(out)});
+   if(call.name==='build_deck')onBuildContext({args:{...args},contract:userContract,scope:requestScope,choice:out?.choice,formats:out?.formats,choices:buildChoices(out)});
    if(call.name==='build_deck'&&(out?.requiresChoice||buildAttempts>=ASK_LIMITS.buildProposals))out={...out,terminal:true,requiresCorrection:false};
    return {call,out};
   };

@@ -132,6 +132,26 @@ const extra=await tcgTools.build_deck({game:'ptcg',format:'Standard',seed:'Chari
 assert.equal(tcgContext.S.state.decks.length,0);assert.equal(tcgContext.S.state.collection.length,0);
 console.log('PASS: Charizard ex fun/theme requests use the exact existing Pokémon builder, matching seed requirement is retained, unsupported extra requirements stay explicit, budget remains exact and nothing autosaves.');
 
+// Game-format choices come from actual adapters, including typed follow-ups.
+const {PTCG_FORMATS}=await import('./ptcg.js'),{YGO_FORMATS}=await import('./ygo.js');
+const formatTools=makeAskTools({S:{state:{},ui:{}},T:{game:()=> 'ptcg',SOURCES:{ptcg:{formats:PTCG_FORMATS},ygo:{formats:YGO_FORMATS}}}});
+for(const [game,formats,next,labels,wrong] of [['ptcg',PTCG_FORMATS,'Expanded',['Standard','Expanded','Unlimited'],/Commander|Modern/],['ygo',YGO_FORMATS,'OCG',['Advanced (TCG)','Traditional (TCG)','OCG'],/Commander|Modern|Pokémon/]]){
+ let ctx=null,received;
+ const bridge={buildFormats:formatTools.buildFormats,build_deck:async a=>{received=a;return a.format?{game,terminal:true,note:'Existing builder '+a.format}:{game,requiresChoice:true,formats,note:'Choose a format.'};}};
+ const prompt='Build me a deck';const initialAnswer=await runAskLoop({game,items:[u(prompt)],tools:bridge,onBuildContext:v=>ctx=v,fetcher:async()=>Response.json({calls:[call({...args,game,format:'Commander',budget:0,seed:'',commander:''})]})});
+ assert.deepEqual(initialAnswer.choices.filter(c=>c.id.startsWith('format:')).map(c=>c.label),labels);
+ const guidance=await resumeBuildChoice({choice:'revise',context:ctx,tools:bridge,onBuildContext:v=>ctx=v});assert.ok(guidance.choices.some(c=>c.id==='format:'+next));const clicked=await resumeBuildChoice({choice:'format:'+next,context:ctx,tools:bridge});assert.match(clicked.text,new RegExp('Existing builder '+next));assert.doesNotMatch(guidance.text,wrong);for(const label of labels)assert.ok(guidance.text.includes(label));
+ const typed=await runAskLoop({game,items:[u(prompt),u(next)],buildContext:ctx,tools:bridge,fetcher:async()=>Response.json({calls:[call({...args,game,format:'Commander',budget:0,seed:'',commander:''})]})});assert.equal(received.format,next);assert.equal(received.game,game);assert.match(typed.text,new RegExp('Existing builder '+next));
+}
+for(const [game,format] of [['ptcg','Expanded'],['ygo','OCG'],['ygo','Advanced (TCG)'],['ygo','Traditional (TCG)']]){
+ const options={game,formats:formatTools.buildFormats()},direct=readBuildContract([u('Build a deck in '+format)],null,options),history=readBuildContract([u('Build a deck in '+format+' for $50'),u('Make it easy')],null,options);
+ assert.equal(direct.format,format);assert.equal(history.format,format);assert.equal(history.budget,50);
+}
+const formatOptions={game:'ptcg',formats:formatTools.buildFormats()},cappedPokemon=readBuildContract([u('Build a Pokémon Standard deck for $50')],null,formatOptions);
+const unlimitedFormat=readBuildContract([u('Unlimited')],cappedPokemon,formatOptions);assert.equal(unlimitedFormat.format,'Unlimited');assert.equal(unlimitedFormat.budget,50,'Unlimited format does not mean unlimited spending');
+const noCapPokemon=readBuildContract([u('Use an unlimited budget')],cappedPokemon,formatOptions);assert.equal(noCapPokemon.format,'Standard');assert.equal(noCapPokemon.budget,0);
+console.log('PASS: actual Pokémon/YGO adapter formats drive buttons, revision guidance and typed follow-ups without Magic format leakage.');
+
 // Exercise the real Worker route with a mocked provider boundary: direct deck
 // requests must request build_deck, while information questions remain tools.
 for(const prompt of ['can you make a red deck using a goblin Commander','Build me a mono-red deck for $50',"make me a fun Yu-Gi-Oh deck that doesn't cost that much is good for beginners",'make me a deck that stars Charizard ex']){
