@@ -6,6 +6,7 @@ import {applyProductPrices} from "./pokemon-prices.js";
 import {POKEMON_SET_ART} from './pokemon-set-art.js';
 import {pokemonFallback} from "./artwork.js";
 import {pokemonCatalogueFallback,pokemonCatalogueOverlay,pokemonCatalogueSet} from './pokemon-catalogue-supplement.js';
+import {GLC_RULES,GLC_BANS,GLC_SHARED_NAMES} from './ptcg-glc-rules.js';
 // Pokémon TCG adapter. Data: TCGdex (api.tcgdex.net) — every physical card and set,
 // Standard/Expanded legality, regulation marks, and daily TCGplayer (USD) and
 // Cardmarket (EUR) prices per variant. Pokémon TCG Pocket (digital) cards are excluded.
@@ -15,7 +16,10 @@ const isPocket = (c) => /\/tcgp\//.test(c?.image || "") || c?.set?.id?.startsWit
 const n = (v) => (typeof v === "number" && v > 0 ? v : null);
 export const ptcgImage = (base, size = "low") => (base ? /\.(webp|png|jpe?g)(?:\?|$)/i.test(base) ? base : `${base}/${size}.webp` : "");
 
-const RULE_BOX = /\b(ex|EX|GX|V|VMAX|VSTAR|V-UNION|BREAK|LV\.X|Prism Star|◇|Tera)\b/;
+const RULE_BOX = /\b(ex|EX|GX|V|VMAX|VSTAR|V-UNION|BREAK|LV\.X|Tera)\b/;
+const hasAceSpec = c => c?.aceSpec === true || /ACE SPEC/i.test([c?.rarity,...(c?.subtypes || [])].join(' ')) || /You (?:can(?:not|['’]t)|may not) have more than (?:1|one) ACE SPEC card/i.test(c?.effect || '');
+const hasRuleBox = c => c?.ruleBox === true || hasAceSpec(c) || /Prism Star|[◇♢]/i.test([c?.name,c?.rarity,...(c?.subtypes || [])].join(' ')) ||
+  (c?.category === 'Pokemon' && (RULE_BOX.test(c?.name || '') || /^Radiant /i.test(c?.name || '') || c?.radiant === true));
 const VARIANT_LABEL = { normal: "Normal", holofoil: "Holofoil", "reverse-holofoil": "Reverse holo", "1st-edition": "1st Edition", "1st-edition-holofoil": "1st Ed. holo", unlimited: "Unlimited", "unlimited-holofoil": "Unlimited holo" };
 
 // Availability is independent of price. Detailed records include Shadowless,
@@ -244,7 +248,7 @@ export function normalizePtcg(c) {
     prices: { usd: best?.usd ?? null, referenceKind:best?.priceKind||"market", eur: n(cm.trend) ?? n(cm.avg), others: [], source: "TCGplayer market (USD) · Cardmarket trend (EUR)", updated: tp.updated || cm.updated || null },
     cardmarket: { low: n(cm.low), avg: n(cm.avg), trend: n(cm.trend), avg30: n(cm.avg30), holoLow: n(cm["low-holo"]), holoAvg: n(cm["avg-holo"]), holoTrend: n(cm["trend-holo"]) },
     cmProduct: cm.idProduct || null,
-    legal: { standard: !!c.legal?.standard, expanded: !!c.legal?.expanded },
+    legal: { standard: typeof c.legal?.standard === 'boolean' ? c.legal.standard : null, expanded: typeof c.legal?.expanded === 'boolean' ? c.legal.expanded : null },
     regulationMark: c.regulationMark || "",
     stage: c.stage || "",
     hp: c.hp || null,
@@ -266,9 +270,9 @@ export function normalizePtcg(c) {
     // Energy (Telepathic Psychic Energy, Growing Grass Energy) "Normal" too.
     basicEnergy: c.category === "Energy" && c.energyType === "Normal" && /^(?:Basic )?(?:Grass|Fire|Water|Lightning|Psychic|Fighting|Darkness|Metal|Fairy) Energy$/.test(c.name || ""),
     basicPokemon: c.category === "Pokemon" && c.stage === "Basic",
-    aceSpec: /ACE SPEC/i.test(c.rarity || ""),
+    aceSpec: hasAceSpec(c),
     radiant: /^Radiant /.test(c.name),
-    ruleBox: c.category === "Pokemon" && RULE_BOX.test(c.name),
+    ruleBox: hasRuleBox(c),
     prize: prizeValue(c),
     image: ptcgImage(c.image, "low") || pokemonFallback(c),
     imageLarge: ptcgImage(c.image, "high") || pokemonFallback(c),
@@ -293,14 +297,53 @@ export const PTCG_FORMATS = [
   { id: "standard", name: "Standard", legal: "standard", copies: 4 },
   { id: "expanded", name: "Expanded", legal: "expanded", copies: 4 },
   { id: "unlimited", name: "Unlimited", copies: 4 },
-  { id: "glc", name: "Gym Leader Challenge", legal: "expanded", copies: 1, noRuleBox: true, note: "Singleton, Expanded-legal, no Rule Box Pokémon. All Pokémon should share one type (not checked)." },
+  { id: "glc", name: "Gym Leader Challenge", copies: 1, noRuleBox: true, noAceSpec: true, sharedType: true, rules: GLC_RULES },
 ];
 
+const glcCollectorKey = value => String(value || '').split('/')[0].trim().toUpperCase().replace(/^([A-Z]*)0+(?=\d)/,'$1');
+const glcName = value => pokemonPrintedNameKey(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const glcSetKey = value => POKEMON_SET_ART[String(value || '').toLowerCase()]?.id || String(value || '').toLowerCase();
+const glcCopyName = value => pokemonPrintedName(value).replace(/^(Boss's Orders)\s+\([^()]+\)$/i,'$1');
+function glcPrinting(c) {
+  const parsed = String(c.id || '').match(/^([A-Za-z0-9][A-Za-z0-9.-]*)-([A-Za-z]*\d+[A-Za-z]?)$/);
+  const set = String(c.set?.id || parsed?.[1] || '').toLowerCase(), number = glcCollectorKey(c.set?.number || c.localId || parsed?.[2]);
+  const conflict = parsed && (c.set?.id && glcSetKey(c.set.id) !== glcSetKey(parsed[1]) || (c.set?.number || c.localId) && number !== glcCollectorKey(parsed[2]));
+  return { set, number, conflict };
+}
+// Unknown is intentionally not legal: missing identity, an old-print erratum or
+// a modern commemorative reprint must not be certified from its release date.
+export function glcCardEligibility(c) {
+  if (!c || c.brief || !c.name || !['Pokemon','Trainer','Energy'].includes(c.category)) return {status:'unknown',reason:'card identity and complete rules data need verification'};
+  if (c.pocket) return {status:'not_legal',reason:'Pokémon TCG Pocket cards are not part of this format'};
+  if (hasAceSpec(c)) return {status:'not_legal',reason:'ACE SPEC cards are not allowed'};
+  if (hasRuleBox(c)) return {status:'not_legal',reason:'Rule Box cards of any category are not allowed'};
+  if (/cannot be used in (?:official )?tournaments/i.test([c.text,c.effect].join(' '))) return {status:'not_legal',reason:'this card is not permitted in tournament play'};
+  if (c.basicEnergy) return {status:'legal',reason:'Basic Energy exception'};
+  const printing = glcPrinting(c), name = glcName(c.name), ban = GLC_BANS.find(b => glcName(b.name) === name);
+  if (printing.conflict) return {status:'unknown',reason:'card ID and set/collector identity conflict; verify the exact printing'};
+  const release = c.released || c.set?.releaseDate;
+  if (/^\d{4}-\d{2}-\d{2}/.test(release || '') && release.slice(0,10) > GLC_RULES.checkedAt) return {status:'unknown',reason:'release is later than the verified GLC rules snapshot; regional availability needs verification'};
+  if (ban?.allVersions || ban?.printings?.some(([set,num]) => printing.set === set && printing.number === glcCollectorKey(num))) return {status:'not_legal',reason:`on the GLC ban list (effective ${ban.effectiveAt})`};
+  if (ban && (!printing.set || !printing.number)) return {status:'unknown',reason:'exact set and collector number are required for GLC’s printing-specific ban list'};
+  const classic = /^(?:cel25cc|cel25c)$/.test(printing.set) || /Celebrations.*Classic Collection/i.test(c.set?.name || '');
+  if (classic) return ['reshiram','zekrom'].includes(name) ? {status:'legal',reason:'GLC FAQ permits these Black & White Classic Collection reprints'} : {status:'not_legal',reason:'the GLC FAQ excludes this Celebrations Classic Collection card'};
+  if (/^(?:cl[bfv]|p-tcg-classic)/i.test(printing.set) || /Trading Card Game Classic|Pokémon TCG Classic/i.test(c.set?.name || '')) return {status:'unknown',reason:'TCG Classic functional reprint eligibility needs verification'};
+  // A positive Expanded membership is usable as pool/reprint evidence only.
+  // A negative is NOT a GLC ban; Delinquent and Hex Maniac are explicit examples.
+  if (c.legal?.expanded === true) return {status:'legal',reason:'Black & White-onward pool or eligible reprint, with GLC’s own restrictions'};
+  const known = POKEMON_SET_ART[printing.set] || Object.values(POKEMON_SET_ART).find(s => s.id === printing.set);
+  if (known && ['Black & White','XY','Sun & Moon','Sword & Shield','Scarlet & Violet','Mega Evolution'].includes(known.series) && known.date <= GLC_RULES.checkedAt) return {status:'legal',reason:'identified Black & White-onward printing, with GLC’s own restrictions'};
+  if (known && known.date < '2011-03-01' && c.category === 'Pokemon') return {status:'not_legal',reason:'Pokémon printing predates the Black & White card pool'};
+  return {status:'unknown',reason:'Black & White-onward pool, regional release or older-print reprint eligibility needs verification'};
+}
+
 export function ptcgLegality(c, f) {
+  if (f.id === 'glc') return glcCardEligibility(c).status;
   if (c.pocket) return "not_legal";
   // Basic Energy is legal in every format, whatever set it was printed in.
   if (c.basicEnergy) return "legal";
-  if (f.legal && c.legal && !c.legal[f.legal]) return "not_legal";
+  if (f.legal && typeof c.legal?.[f.legal] !== 'boolean') return 'unknown';
+  if (f.legal && !c.legal[f.legal]) return "not_legal";
   if (f.noRuleBox && c.ruleBox) return "not_legal";
   return "legal";
 }
@@ -311,24 +354,35 @@ export function validatePtcg(deck, cardOf, f) {
     total = rows.reduce((a, r) => a + r.qty, 0);
   if (total !== 60) issues.push({ level: "bad", text: `${total}/60 cards. Pokémon decks are exactly 60.` });
   const byName = new Map();
+  let commonTypes = null, missingBasicData = false;
   let ace = 0,
     radiant = 0,
     basics = 0;
   for (const r of rows) {
     const c = cardOf(r.cardId);
-    if (!c) {issues.push({level:"pending",text:`${r.qty}× ${r.name||r.cardId}: card details not loaded.`});continue;}
+    if (!c) {missingBasicData = true;issues.push({level:"pending",text:`${r.qty}× ${r.name||r.cardId}: card details not loaded.`});continue;}
+    if(c.brief || !c.category)missingBasicData = true;
     if(!c.basicEnergy&&f.legal&&typeof c.legal?.[f.legal]!=="boolean")issues.push({level:"pending",text:`${c.name}: format legality not loaded.`});
-    if (!c.basicEnergy) byName.set(c.name, (byName.get(c.name) || 0) + r.qty);
-    if (c.aceSpec) ace += r.qty;
+    const shared = f.id === 'glc' && GLC_SHARED_NAMES.find(group => group.some(n => pokemonPrintedNameKey(n) === pokemonPrintedNameKey(glcCopyName(c.name))));
+    const name = shared ? shared.join(' / ') : pokemonPrintedName(c.name);
+    if (!c.basicEnergy) byName.set(name, (byName.get(name) || 0) + r.qty);
+    if (hasAceSpec(c)) ace += r.qty;
     if (c.radiant) radiant += r.qty;
-    if (c.basicPokemon) basics += r.qty;
+    if (c.basicPokemon || c.category === 'Pokemon' && c.stage === 'Basic') basics += r.qty;
+    if (f.sharedType && c.category === 'Pokemon') {
+      const types = (Array.isArray(c.types) ? c.types : []).filter(t => ENERGY_WORDS.includes(t));
+      if (!types.length) issues.push({level:'pending',text:`${c.name}: printed Pokémon type needs verification for GLC.`});
+      else commonTypes = commonTypes === null ? new Set(types) : new Set(types.filter(t => commonTypes.has(t)));
+    }
     const leg = ptcgLegality(c, f);
-    if (leg !== "legal") issues.push({ level: "bad", text: `${c.name} (${c.set?.name || c.id}) isn’t legal in ${f.name}${f.noRuleBox && c.ruleBox ? " — Rule Box Pokémon aren’t allowed" : ""}.` });
+    if (f.id === 'glc' && leg !== 'legal') issues.push({level:leg === 'unknown' ? 'pending' : 'bad',text:`${c.name} (${c.set?.name || c.id}): ${glcCardEligibility(c).reason}.`});
+    else if (leg === 'not_legal') issues.push({ level: "bad", text: `${c.name} (${c.set?.name || c.id}) isn’t legal in ${f.name}${f.noRuleBox && c.ruleBox ? " — Rule Box Pokémon aren’t allowed" : ""}.` });
   }
+  if (commonTypes?.size === 0) issues.push({level:'bad',text:'GLC Pokémon must all share one printed type; these Pokémon have no common type (dual-type cards may match either printed type).'});
   for (const [name, q] of byName) if (q > f.copies) issues.push({ level: "bad", text: `${q}× ${name}: ${f.name} allows ${f.copies} with the same name (basic Energy excepted).` });
-  if (ace > 1) issues.push({ level: "bad", text: `${ace} ACE SPEC cards; only 1 is allowed.` });
-  if (radiant > 1) issues.push({ level: "bad", text: `${radiant} Radiant Pokémon; only 1 is allowed.` });
-  if (total && !basics) issues.push({ level: "bad", text: "No Basic Pokémon — a deck needs at least one to start the game." });
+  if (ace > (f.noAceSpec ? 0 : 1)) issues.push({ level: "bad", text: f.noAceSpec ? `${ace} ACE SPEC cards; ${f.name} allows none.` : `${ace} ACE SPEC cards; only 1 is allowed.` });
+  if (radiant > 1 && !f.noRuleBox) issues.push({ level: "bad", text: `${radiant} Radiant Pokémon; only 1 is allowed.` });
+  if (total && !basics) issues.push({ level: missingBasicData ? 'pending' : "bad", text: missingBasicData ? 'A Basic Pokémon has not been verified in the unresolved card data.' : "No Basic Pokémon — a deck needs at least one to start the game." });
   return issues;
 }
 

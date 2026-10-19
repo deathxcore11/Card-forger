@@ -217,3 +217,15 @@ console.log('PASS: Paraphrased card quotes are replaced by the card\'s own sente
   assert.ok(out.notes.some(n => /not in its lists/.test(n)) && out.notes.some(n => /not in the meta data/.test(n)));
   console.log('PASS: Meta matchups only use decks and cards from the app\'s tournament data, and answers from the list.');
 }
+
+// No live requests: verify the actual server adapter sends the canonical hand
+// rules and initial sample together to the intercepted upstream call.
+for (const [format,initial,firstDraw] of [['tcg',5,0],['speed',4,0],['goat',5,1]]) {
+  const cards=Array.from({length:7},(_,i)=>({...card,id:'c'+i,name:'Public server hand '+i,qty:1}));
+  const hand=cards.slice(0,initial).map(c=>c.id);
+  const body={...payload,game:'ygo',format,cards,hand,handProfile:{initialHandCards:99,firstTurnDraw:99}};
+  const result=await aiReviewRoute(request(body),setup(),{fetcher});assert.equal(result.status,200);
+  const sent=JSON.parse(last.input);assert.equal(sent.hand.length,initial);assert.equal(sent.handProfile.initialHandCards,initial);assert.equal(sent.handProfile.firstTurnDraw,firstDraw);
+  assert.match(last.instructions,new RegExp(`Initial opening hand: ${initial}`));assert.match(last.instructions,new RegExp(`first player draws ${firstDraw}`));
+}
+console.log('PASS: mocked coach server uses canonical format-specific initial-hand and first-turn draw rules, not spoofed payload values.');

@@ -429,6 +429,27 @@ const Y = {
   garnet: /(?:if|when) this card is (?:sent|banished|special summoned|excavated) from (?:the|your) deck|(?:can only|you can) special summon this card from your deck|cannot be normal summoned\/set/,
 };
 
+// PSCT conditions precede a colon; activation costs/targets precede a semicolon.
+// Recognize only cheap independent opening modes here, not every search effect.
+// Source: Konami Understanding Card Text parts3/4, checked2026-10-19.
+export function ygoStarterPrerequisites(c){
+ const text=String(c?.text||''),matches=[...text.matchAll(/(?:add (?:1|one|2|two|up to \w+)[^.]*?from your deck(?: or gy| or graveyard)? to your hand|search your deck)/gi)];
+ const modes=matches.map(m=>{const before=text.slice(0,m.index),prefix=before.slice(Math.max(before.lastIndexOf('.'),before.lastIndexOf('\n'))+1).trim(),condition=prefix.includes(':')?prefix.split(':')[0].trim():'',activation=prefix.includes(';')?prefix.slice(prefix.lastIndexOf(':')+1,prefix.lastIndexOf(';')).trim():'',requirements=[condition,activation].filter(Boolean);let status='supported',reason='No additional setup requirement recognized for this search mode.';
+  if(condition){
+   const t=lc(condition),count=Number(t.match(/control (\d+) monsters?/)?.[1]||0);
+   if(count>7){status='unsupported';reason='Printed prerequisite exceeds the available monster zones; not an opening starter.';}
+   else if(/^(?:if|when) this card is (?:normal|normal or special|normal or flip) summoned$/.test(t)&&Number(c.level)<=4&&!/cannot be normal summoned/i.test(text)){status='conditional';reason='Requires this independently Normal Summonable low-level monster to resolve its summon.';}
+   else if(/^if you control no monsters$/.test(t)){status='conditional';reason='Usable in the stated empty-own-board opening scenario, not after deploying another monster.';}
+   else {status='unverified';reason='Printed activation/event prerequisite is not established by the opening-hand model.';}
+  }
+  if(activation&&/^(?:you can )?discard (?:1|one|a) card$/i.test(activation)&&status==='supported'){status='conditional';reason='Requires discarding another card from the opening hand; not a free activation.';}
+  if(activation&&!/^(?:you can )?discard (?:1|one|a) card$/i.test(activation)){status=status==='unsupported'?status:'unverified';reason='Specific activation cost or target requires separate support/board verification.';}
+  return {status,condition,activation,requirements,reason,evidence:[prefix,m[0]].filter(Boolean).join(' ')};
+ });
+ const best=modes.find(m=>m.status==='supported')||modes.find(m=>m.status==='conditional')||modes.find(m=>m.status==='unverified')||modes[0];
+ return {status:best?.status||'unverified',openingCandidate:!!best&&['supported','conditional'].includes(best.status),modes,limitations:['A candidate is not a completed combo or guaranteed resolution; target availability, shared Normal Summon use and interruption remain separate.']};
+}
+
 export function ygoPower(rows, f = {}) {
   // rows: [{ c, qty, zone, id? }]
   const main = rows.filter((r) => r.zone === "main" && r.c),
@@ -466,12 +487,14 @@ export function ygoPower(rows, f = {}) {
     return main.some((x) => x !== r && x.c.name !== r.c.name && Y.milled.test(t(x)) && (!/monster/.test(what) || x.c.category === "Monster") &&
       (!race || lc(x.c.race) === race) && (!attr || lc(x.c.attribute) === attr) && (!quoted.length || quoted.some((qn) => nm(x).includes(qn) || lc(x.c.archetype) === qn)));
   };
-  const deadSearch = [];
+  const deadSearch = [],conditionalSearch=[],starterEvidence=[];
   for (const r of main) {
     tag.set(r, new Set());
     const txt = t(r);
     if (Y.search.test(txt)) {
-      if (finds(r)) give(r, "starter");
+      const prerequisite=ygoStarterPrerequisites(r.c);starterEvidence.push({name:r.c.name,qty:r.qty,...prerequisite});
+      if (finds(r)&&prerequisite.openingCandidate) give(r, "starter");
+      else if(finds(r))conditionalSearch.push(r);
       else deadSearch.push(r);
     } else if (feeds(r)) give(r, "starter");
     if (r.c.category === "Monster" && Y.extend.test(txt)) give(r, "extender");
@@ -493,11 +516,11 @@ export function ygoPower(rows, f = {}) {
     focus = lead ? lead[1] / Math.max(1, N) : 0,
     engine = main.filter((r) => (lead && r.c.archetype === lead[0]) || tag.get(r).has("starter") || tag.get(r).has("extender")),
     nonEngine = main.filter((r) => !engine.includes(r)),
-    minMain = f.main?.[0] || 40;
-  // Shuffled games of this exact list: 5 cards going first, 6 going second.
+    minMain = f.main?.[0] || 40, firstTurnCards=f.firstTurnCards||5, secondTurnCards=f.secondTurnCards||6;
+  // Versioned first-turn hand scenarios; historical/Speed rules need different windows.
   const pool = poolOf(main.map((r) => ({ qty: r.qty, tags: tag.get(r), name: r.c.name })));
   const sim = simulate(pool, (a) => {
-    const h5 = a.slice(0, 5), h6 = a.slice(0, 6),
+    const h5 = a.slice(0, firstTurnCards), h6 = a.slice(0, secondTurnCards),
       st = hasTag(h5, "starter"), it5 = hasTag(h5, "handtrap") || hasTag(h5, "negate");
     return {
       open: st,
@@ -511,20 +534,20 @@ export function ygoPower(rows, f = {}) {
   const supported = main.filter(r => tag.get(r).size || r.c.archetype || (r.c.category === "Monster" && Number(r.c.atk)>=1800 && Number(r.c.level)<=4));
   const parts = [
     { ...part("Function", "Supported Main Deck functions", q(supported), N, q(supported)/Math.max(1,N), 12, "Copies with a recognized role, archetype connection or standalone low-level attacker. Unsupported effects need review."), cards:evidence(main.filter(r=>!supported.includes(r))), why:`${N-q(supported)} Main Deck copies have no recognized engine role or standalone attacker function. Adding these dilutes access even when the remaining starter and interaction counts still meet their targets. This is a supported-role estimate, not a solved combo line.` },
-    { ...part("Size", "Main Deck size", N, minMain, N < minMain ? 0 : 1 - (N - minMain) / 15, 12, "Every card over 40 lowers the odds of opening your best cards.", "Trim to 40 by cutting your weakest 1-ofs."),
-      why: N < minMain ? `${N} cards is under the ${minMain}-card minimum, so the deck isn't legal yet.` : `${N} cards: each of your ${q(starters)} starters shows up less often than at 40. Cutting ${N - minMain} card${N - minMain === 1 ? "" : "s"} raises your starter odds to ${P(atLeastOne(minMain, q(starters), 5))}.` },
-    { ...part("Starters", "Opens a starter", P(S("open")), "88%+", S("open") / 0.88, 16, `Share of 5-card hands with a card that searches or starts your combo (${q(starters)} starters in ${N}).`),
-      cards: evidence(starters), why: deadSearch.length ? `${P(S("open"))} of hands open a starter. ${deadSearch.map((r) => r.c.name).slice(0, 3).join(", ")} ${deadSearch.length > 1 ? "search" : "searches"} for cards the deck doesn't run, so ${deadSearch.length > 1 ? "they don't" : "it doesn't"} count.` : q(starters) ? `Only ${P(S("open"))} of hands going first have a starter. Competitive lists sit at 85–90%; that usually means 12–15 one-card starters at 40.` : "No card searches or starts a combo, so most hands just play whatever they drew." },
+    { ...part("Size", "Main Deck size", N, minMain, N < minMain ? 0 : 1 - (N - minMain) / 15, 12, `Additional cards dilute access to unchanged key cards; ${minMain} is this format's minimum, not a required deck size.`, `Review optional cards against the ${minMain}-card baseline; do not discard a supported plan merely to hit a count.`),
+      why: N < minMain ? `${N} cards is under the ${minMain}-card minimum, so the deck isn't legal yet.` : `${N} cards: each of your ${q(starters)} starters shows up less often than at ${minMain}. Cutting ${N - minMain} card${N - minMain === 1 ? "" : "s"} raises your starter odds to ${P(atLeastOne(minMain, q(starters), firstTurnCards))}.` },
+    { ...part("Starters", "Opens a starter", P(S("open")), "88%+", S("open") / 0.88, 16, `Share of ${firstTurnCards}-card first-turn scenarios with a supported opening search mode (${q(starters)} candidates in ${N}); not a completed combo.`),
+      cards: evidence(starters), why: conditionalSearch.length ? `${q(conditionalSearch)} search copies have unsupported or unverified activation prerequisites and are not counted as independent opening starters: ${conditionalSearch.map(r=>r.c.name).slice(0,4).join(", ")}. This is a capability check, not a claim that conditional cards are useless.` : deadSearch.length ? `${P(S("open"))} of hands open a starter. ${deadSearch.map((r) => r.c.name).slice(0, 3).join(", ")} ${deadSearch.length > 1 ? "search" : "searches"} for cards the deck doesn't run, so ${deadSearch.length > 1 ? "they don't" : "it doesn't"} count.` : q(starters) ? `Only ${P(S("open"))} of hands going first have a starter. The 88% target is an existing model heuristic, not a calibrated requirement for every format or archetype.` : "No independent opening search mode is recognized. This does not rule out unmodeled starters or non-combo plans." },
     { ...part("Extenders", "Extenders", q(extenders), 6, q(extenders) / 6, 8, "Monsters that Special Summon themselves keep the combo going after a hand trap."),
-      cards: evidence(extenders), why: `${q(extenders)} extender${q(extenders) === 1 ? "" : "s"}. One Ash Blossom or Nibiru on your starter ends the turn unless you have a second line.` },
+      cards: evidence(extenders), why: `${q(extenders)} extender${q(extenders) === 1 ? "" : "s"}. A separate continuation can help after interruption, but its costs, summon conditions and shared resources still require validation.` },
     { ...part("Interaction", "Hand traps & negates", q(inter), 9, q(inter) / 9, 12, "Cards that stop the opponent's combo from your hand or field."),
-      cards: evidence(inter), why: `${q(inter)} interaction card${q(inter) === 1 ? "" : "s"}. Going second against a combo deck you need about 9 (Ash Blossom, Infinite Impermanence, Maxx "C"…) to stop them before they finish.` },
-    { ...part("Second", "Going-second hand", P(S("second")), "85%+", S("second") / 0.85, 10, "Share of 6-card hands with a hand trap, negate or board breaker."),
+      cards: evidence(inter), why: `${q(inter)} interaction card${q(inter) === 1 ? "" : "s"}. The shared target is a provisional role-model assumption, not a requirement calibrated for this format or a guarantee of stopping a combo.` },
+    { ...part("Second", "Going-second hand", P(S("second")), "85%+", S("second") / 0.85, 10, `Share of ${secondTurnCards}-card scenarios with a hand trap, negate or board breaker.`),
       why: `${P(S("second"))} of hands going second can interact at all; the other ${P(1 - S("second"))} just watch the opponent build a board.` },
-    { ...part("Ideal", "Starter + interaction", P(S("full")), "60%+", S("full") / 0.6, 8, "Going first: a starter and a card to protect or disrupt, in the same 5."),
-      why: `Only ${P(S("full"))} of 5-card hands have both a starter and interaction, the hand top players want going first.` },
+    { ...part("Ideal", "Starter + interaction", P(S("full")), "60%+", S("full") / 0.6, 8, `Going first: an opening candidate and interaction in the same ${firstTurnCards}-card scenario.`),
+      why: `Only ${P(S("full"))} of ${firstTurnCards}-card scenarios have both an opening candidate and interaction, the hand top players want going first.` },
     { ...part("Removal", "Board breakers", q(breakers), 4, q(breakers) / 4, 8, "Ways to clear an established board when going second."),
-      cards: evidence(breakers), why: `${q(breakers)} board breaker${q(breakers) === 1 ? "" : "s"}. Against a full board with negates you want 3–5: Harpie's Feather Duster, Lightning Storm, Evenly Matched, Kaijus, Dark Ruler No More.` },
+      cards: evidence(breakers), why: `${q(breakers)} board breaker${q(breakers) === 1 ? "" : "s"}. Whether these answer an established board depends on their targets, costs and the opponent; the shared count target is not format-calibrated.` },
     { ...part("Consistency", "3-of consistency", Math.round((q(triples) / Math.max(1, N)) * 100) + "%", "55%", q(triples) / Math.max(1, N) / 0.55, 8, "Maxed copies of key cards make every hand look the same."),
       cards: evidence(main.filter((r) => r.qty < 3 && (tag.get(r).has("starter") || tag.get(r).has("handtrap")))), why: "Key cards are run at 1–2 copies, so many games you never see them. The cards listed are starters or hand traps under 3 copies." },
     { ...part("Focus", lead ? "Focus · " + lead[0] : "Archetype focus", Math.round(focus * 100) + "%", "35%+", focus / 0.35, 6, "Most competitive decks are built around one archetype's engine."),
@@ -560,10 +583,10 @@ export function ygoPower(rows, f = {}) {
     },
     dead = extra.filter((r) => !usable(r.c)),
     Eok = E - q(dead);
-  if (f.extra) parts.push({ ...part("Extra", "Extra Deck", dead.length ? `${Eok} usable of ${E}` : E, f.extra, (Eok / f.extra) ** (needsExtra ? 1.5 : 1), needsExtra ? 16 : 6, needsExtra ? "This deck's engine summons from the Extra Deck, so a full one is the deck." : "A full Extra Deck gives you more lines and answers."), cards: evidence(dead.length ? dead : extra), why: dead.length ? `${q(dead)} Extra Deck card${q(dead) === 1 ? "" : "s"} can't be summoned with this Main Deck (no monsters of the right Level, no Tuner, or named materials it doesn't run): ${dead.slice(0, 4).map((r) => r.c.name).join(", ")}${dead.length > 4 ? "…" : ""}.` : needsExtra ? `Only ${E} of ${f.extra} Extra Deck cards, but the main deck is built to summon from it (Xyz, Rank-Up, Fusion, Synchro or Link). Without backups and generic Extra Deck tools, one negate or a missing piece ends the turn.` : `${f.extra - E} Extra Deck slot${f.extra - E === 1 ? "" : "s"} empty: free lines and outs you aren't using.` });
-  if (f.side) parts.push({ ...part("Side", "Side Deck", sideN, f.side, Math.min(1, sideN / f.side), 4, "Fifteen cards to swap in for games 2 and 3 against the decks you expect."), why: sideN ? `${sideN} of ${f.side} Side Deck cards: fewer answers to bring in after game 1.` : "No Side Deck. Tournament matches are best of three; without one you can't adapt for games 2 and 3." });
-  const gold = ygoGoldfish(main.map((r) => ({ qty: r.qty, c: r.c, tags: tag.get(r) })), extra.map((r) => ({ qty: r.qty, c: r.c })));
-  if (gold) parts.push({ ...part("Goldfish", "Plays through interruption", Math.round(gold.metrics[0].value * 100) + "%", "65%+", gold.speed, 0, "1,000 opening hands read like a player would: can it start, and keep going after a hand trap?"), why: gold.headline });
+  if (Number.isFinite(f.extra)&&f.extra>0) parts.push({ ...part("Extra", "Extra Deck", dead.length ? `${Eok} usable of ${E}` : E, f.extra, (Eok / f.extra) ** (needsExtra ? 1.5 : 1), needsExtra ? 16 : 6, needsExtra ? "This deck's engine summons from the Extra Deck, so a full one is the deck." : "A full Extra Deck gives you more lines and answers."), cards: evidence(dead.length ? dead : extra), why: dead.length ? `${q(dead)} Extra Deck card${q(dead) === 1 ? "" : "s"} can't be summoned with this Main Deck (no monsters of the right Level, no Tuner, or named materials it doesn't run): ${dead.slice(0, 4).map((r) => r.c.name).join(", ")}${dead.length > 4 ? "…" : ""}.` : needsExtra ? `Only ${E} of ${f.extra} Extra Deck cards, but the main deck is built to summon from it (Xyz, Rank-Up, Fusion, Synchro or Link). Without backups and generic Extra Deck tools, one negate or a missing piece ends the turn.` : `${f.extra - E} Extra Deck slot${f.extra - E === 1 ? "" : "s"} empty: free lines and outs you aren't using.` });
+  if (f.side) parts.push({ ...part("Side", "Side Deck", sideN, f.side, Math.min(1, sideN / f.side), 4, `Up to ${f.side} Side Deck cards for between-game changes in the selected profile; event rules may differ.`), why: sideN ? `${sideN} of ${f.side} Side Deck cards: fewer answers to bring in after game 1.` : "No Side Deck is listed. Between-game changes apply only when the selected event uses sideboarding; this is not a universal best-of-three claim." });
+  const gold = ygoGoldfish(main.map((r) => ({ qty: r.qty, c: r.c, tags: tag.get(r) })), extra.map((r) => ({ qty: r.qty, c: r.c })), {handSize:firstTurnCards});
+  if (gold) parts.push({ ...part("Goldfish", "Opening capability sample", Math.round(gold.metrics[0].value * 100) + "%", "65%+", gold.speed, 0, `${firstTurnCards}-card first-turn samples classified by recognized roles; not solved combos or proof of playing through interruption.`), why: gold.headline });
   const roles = new Map(),
     LABEL = { starter: "Starter", extender: "Extender", handtrap: "Hand trap", negate: "Negate", breaker: "Breaker", draw: "Draw", brick: "Brick", garnet: "Dead draw" };
   for (const r of main) roles.set(String(r.id ?? r.c.id ?? r.c.name), [...tag.get(r)].map((k) => LABEL[k]));
@@ -581,17 +604,18 @@ export function ygoPower(rows, f = {}) {
     goldfish: gold,
     plan: lead ? lead[0] + " engine" : "Unfocused",
     unknown,
+    starterEvidence,
     stats: { N, E, starters: q(starters), extenders: q(extenders), handtraps: q(hts), negates: q(negs), breakers: q(breakers), startOdds: S("open"), second: S("second"), engine: q(engine), nonEngine: q(nonEngine) },
-    profile: [["Engine", `${q(engine)} cards`], ["Non-engine", `${q(nonEngine)} cards`], ["Starters", q(starters)], ["Hand traps", q(hts)], ["Extra Deck", `${E}/${f.extra || 15}`]],
+    profile: [["Engine", `${q(engine)} cards`], ["Non-engine", `${q(nonEngine)} cards`], ["Starters", q(starters)], ["Unverified search", q(conditionalSearch)], ["Hand traps", q(hts)], ["Extra Deck", Number.isFinite(f.extra)?`${E}/${f.extra||0}`:`${E} · no size cap`]],
     sims: [
-      { label: "Going first: opens a starter", p: S("open"), target: 0.88, note: "5 cards" },
-      { label: "Going first: starter + interaction", p: S("full"), target: 0.6, note: "5 cards" },
-      { label: "Going second: can interact", p: S("second"), target: 0.85, note: "6 cards · hand trap, negate or breaker" },
+      { label: "Going first: opens a starter", p: S("open"), target: 0.88, note: `${firstTurnCards} cards; format-specific first-turn scenario` },
+      { label: "Going first: starter + interaction", p: S("full"), target: 0.6, note: `${firstTurnCards} cards; format-specific first-turn scenario` },
+      { label: "Going second: can interact", p: S("second"), target: 0.85, note: `${secondTurnCards} cards · hand trap, negate or breaker` },
       { label: "Bricked hand", p: S("brick"), target: 0.05, lower: true, note: "no starter, 2+ dead cards" },
       { label: "Nothing to do", p: S("dead"), target: 0.05, lower: true, note: "no starter, extender or interaction" },
     ],
     roles,
-    lens: `${f.name || "Yu-Gi-Oh!"} lens: 40-card combo consistency and interaction.`,
+    lens: `${f.name || "Yu-Gi-Oh!"} lens: ${minMain}-card minimum and ${firstTurnCards}/${secondTurnCards}-card first/second-turn capability scenarios. Role weights remain provisional, not format-calibrated battle strength.`,
   };
 }
 
@@ -609,6 +633,34 @@ const P = {
 const SUPPORTER = /^(?:iono|professor's research|boss's orders|lillie's determination|arven|judge|carmine|crispin|briar|jacq|penny|irida|cyllene|colress's tenacity|peonia|raihan|kieran|black belt's training|lana's aid|janine's secret art|morty's conviction|eri|clavell|giacomo|ciphermaniac's codebreaking|grand tree|hilda|dawn|lacey|brock's scouting|team rocket's (?:petrel|ariana|proton|archer|giovanni)|cynthia|marnie|n|sada's vitality|turo's scenario|professor turo's scenario)$/i;
 
 const ETYPE = { G: "Grass", R: "Fire", W: "Water", L: "Lightning", P: "Psychic", F: "Fighting", D: "Darkness", M: "Metal" };
+const ENERGY_TYPES=['Grass','Fire','Water','Lightning','Psychic','Fighting','Darkness','Metal','Fairy','Colorless'];
+// Printed capability, not an attachment/draw simulation. Special is a card class,
+// never an Energy type. Unknown production/attachment restrictions stay unknown.
+export function pokemonEnergyCapability(c,recipient=null){
+ const text=String(c?.effect||c?.text||''),requirements=[];
+ if(c?.category!=='Energy')return {status:'unsupported',types:[],units:0,requirements,evidence:text};
+ if(c.basicEnergy){const type=ENERGY_TYPES.find(t=>new RegExp(`\\b${t} Energy$`,'i').test(c.name||''));return {status:type?'supported':'unverified',types:type?[type]:[],units:1,requirements,evidence:c.name};}
+ const production=text.match(/provides? ([^.]+)/i)?.[1]||'',types=new Set();
+ if(/every type|any type|all types/i.test(production))for(const t of ENERGY_TYPES)types.add(t);
+ for(const [symbol,type]of Object.entries({...ETYPE,C:'Colorless',Y:'Fairy'}))if(new RegExp(`\\{${symbol}\\}`,'i').test(production))types.add(type);
+ for(const type of ENERGY_TYPES)if(new RegExp(`\\b${type}\\b`,'i').test(production))types.add(type);
+ let status=types.size?'supported':'unverified';
+ const team=/only (?:be )?attached to (?:a )?(Team Rocket(?:'s|’s)?)[^.]*Pok[eé]mon/i.exec(text);
+ if(team){requirements.push('May attach only to a Team Rocket Pokémon.');if(!recipient)status='unverified';else if(!/^Team Rocket(?:'s|’s) /i.test(recipient.name||''))status='unsupported';}
+ const basicOnly=/only (?:be )?attached to (?:a )?Basic Pok[eé]mon|while[^.]*attached to (?:a )?Basic Pok[eé]mon/i.test(text),evolvedOnly=/only (?:be )?attached to (?:an? )?(?:Evolution|Stage [12]) Pok[eé]mon/i.test(text);
+ if(basicOnly){requirements.push('Requires a Basic Pokémon recipient.');if(!recipient)status='unverified';else if(!recipient.basicPokemon)status='unsupported';}
+ if(evolvedOnly){requirements.push('Requires an evolved Pokémon recipient.');if(!recipient)status='unverified';else if(!/Stage ?[12]/i.test(recipient.stage||''))status='unsupported';}
+ const remaining=(text.split(/[.\n]/).find(line=>/provides? /i.test(line))||'').replace(/as long as this card is attached to a pok[eé]mon/gi,'').replace(/while[^.]*attached to (?:a )?Basic Pok[eé]mon/gi,'');
+ const unknownAttach=/only (?:be )?attached/i.test(text)&&!team&&!basicOnly&&!evolvedOnly;
+ if((unknownAttach||/\bif\b|as long as|only (?:be )?attached|except|other special energy|isn't a|is not a/i.test(remaining))&&status!=='unsupported'){status='unverified';requirements.push('Additional production or recipient condition is not resolved by this capability parser.');}
+ const units=Number(production.match(/\b(\d+)\b/)?.[1]||1);
+ return {status,types:status==='unsupported'?[]:[...types],units,requirements,evidence:text,limitation:'Compatible type presence does not prove enough Energy is drawn, attached or simultaneously usable.'};
+}
+
+export function pokemonAttackEvidence(a){
+ const text=String(a?.damage??''),effect=String(a?.effect||''),base=parseInt(text.replace(/\D/g,''))||0,conditional=/\bif\b/i.test(effect),bonus=Number(effect.match(/(\d+) more damage/i)?.[1]||0);
+ return {base,conditional,conditionalBonus:conditional&&/\+/.test(text)?bonus:null,status:conditional?'conditional':'printed-or-scaling',requirements:conditional?[effect]:[],limitation:conditional?'Conditional extra damage is not assigned an invented activation probability. Opponent and board conditions require review.':null};
+}
 // Damage an attack can reasonably deal: "30×" and "60+" scale, so count them above their printed number.
 // Damage an attack can reasonably deal in a real game. Printed numbers undersell scaling attacks:
 // "30×" for each Energy or card in hand, "60+" with a bonus, attacks that place damage counters
@@ -619,8 +671,8 @@ export const attackDamage = (a) => {
   if (/[×x]/.test(t)) return Math.min(n * MULT(eff), 340);
   if (/\+/.test(t)) {
     const bonus = Number(eff.match(/(\d+) more damage/)?.[1] || n / 2);
-    // "For each" scales; a one-off "if …" bonus only applies some of the time.
-    return Math.min(n + (/for each/.test(eff) ? bonus * (MULT(eff) - 1) : /\bif\b/.test(eff) ? bonus * 0.5 : bonus), 340);
+    // Unknown conditions do not receive a fabricated activation probability.
+    return Math.min(n + (/\bif\b/.test(eff) ? 0 : /for each/.test(eff) ? bonus * (MULT(eff) - 1) : bonus), 340);
   }
   if (n) return n;
   const fixed = Number(eff.match(/does (\d+) damage to (?:1|one|each|2|two)/)?.[1] || 0),
@@ -704,12 +756,14 @@ export function ptcgPower(rows, f = {}) {
     candy = q(by("candy")),
     aces = main.filter((r) => r.c.aceSpec),
     radiants = main.filter((r) => r.c.radiant),
-    needTypes = [...new Set(main.flatMap((r) => r.c.attackCosts || []))],
-    energyTypes = new Set(main.filter((r) => r.c.category === "Energy").map((r) => (r.c.basicEnergy ? r.c.name.replace(/^Basic | Energy$/g, "") : "Special"))),
-    missingTypes = needTypes.filter((tp) => !energyTypes.has(tp)),
-    // Abilities that only work with a type of Energy attached (Munkidori needs Darkness).
-    deadAbility = energyTypes.has("Special") ? [] : main.filter((r) => abilityEnergy(r.c).some((tp) => !energyTypes.has(tp))),
-    energyFit = !missingTypes.length || energyTypes.has("Special") ? 1 : 0.4,
+    needTypes = [...new Set(main.flatMap(r => r.c.attackCosts || (r.c.attacks||[]).flatMap(a=>a.cost||[])))].filter(t=>t!=='Colorless'),
+    energyRows=main.filter(r=>r.c.category==='Energy'),
+    energyEvidence=energyRows.map(r=>({name:r.c.name,qty:r.qty,...pokemonEnergyCapability(r.c)})),
+    supportsType=(recipient,tp)=>energyRows.some(r=>{const p=pokemonEnergyCapability(r.c,recipient);return p.status==='supported'&&(tp==='Colorless'||p.types.includes(tp));}),
+    uncertainType=(recipient,tp)=>energyRows.some(r=>{const p=pokemonEnergyCapability(r.c,recipient);return p.status==='unverified'&&(!p.types.length||p.types.includes(tp)||tp==='Colorless');}),
+    missingTypes=[...new Set(main.filter(r=>r.c.category==='Pokemon').flatMap(r=>(r.c.attackCosts||(r.c.attacks||[]).flatMap(a=>a.cost||[])).filter(tp=>tp!=='Colorless'&&!supportsType(r.c,tp))))],
+    deadAbility=main.filter(r=>abilityEnergy(r.c).some(tp=>!supportsType(r.c,tp)&&!uncertainType(r.c,tp))),
+    energyFit=missingTypes.length?.4:1,
     mull = 1 - atLeastOne(N, basics, 7),
     ruleBox = main.filter((r) => r.c.ruleBox);
   // Evolution lines: Basic-Stage 1-Stage 2 counts for each evolved Pokémon.
@@ -721,7 +775,7 @@ export function ptcgPower(rows, f = {}) {
         mid = two ? top.c.evolveFrom : null,
         base = two ? byName.get(mid)?.c.evolveFrom || "" : top.c.evolveFrom;
       const nb = named(base), nm = mid ? named(mid) : 0, nt = top.qty;
-      const thin = two ? nb < 4 || nt < 3 || nm + Math.min(candy, 4) < nt + 2 : nb < 3 || nt < 2;
+      const maxCopies=f.copies||4,thin = two ? nb < Math.min(4,maxCopies) || nt < Math.min(3,maxCopies) || nm + Math.min(candy,maxCopies) < Math.min(nt + 2,maxCopies) : nb < Math.min(3,maxCopies) || nt < Math.min(2,maxCopies);
       return { top: top.c.name, base, mid, two, counts: two ? [nb, nm, nt] : [nb, nt], thin, text: (two ? [nb, nm, nt] : [nb, nt]).join("-") };
     });
   // Attackers that copy another Pokémon's attack (N's Zoroark ex, Mew ex) hit as hard as the best
@@ -731,9 +785,9 @@ export function ptcgPower(rows, f = {}) {
     ownReach = new Map(main.map((r) => [r, attackReach(r.c, deckNames)])),
     copyReach = Math.max(0, ...main.filter((r) => r.c.category === "Pokemon" && !copies(r.c)).map((r) => ownReach.get(r)));
   const dmg = (r) => (copies(r.c) ? Math.max(ownReach.get(r), Math.min(copyReach, 340)) : ownReach.get(r)),
-    // The deck can only attack with what its Energy pays for (Special Energy may provide any type).
-    costOf = (r) => [...new Set((r.c.attacks || []).filter((a) => attackDamage(a) === attackReach(r.c) || attackDamage(a) * 2 === attackReach(r.c)).flatMap((a) => a.cost || []).filter((x) => x !== "Colorless"))],
-    payable = (r) => energy > 0 && (energyTypes.has("Special") || costOf(r).every((tp) => energyTypes.has(tp))) || (r.c.attacks || []).some(a => !(a.cost || []).length && attackDamage(a)>0),
+    // A Special Energy must explicitly provide the required type to this recipient.
+    costOf = (r) => [...new Set((r.c.attacks || []).filter((a) => attackDamage(a) === attackReach(r.c) || attackDamage(a) * 2 === attackReach(r.c)).flatMap((a) => a.cost || []))],
+    payable = (r) => energy > 0 && costOf(r).every((tp) => supportsType(r.c,tp)) || (r.c.attacks || []).some(a => !(a.cost || []).length && attackDamage(a)>0),
     attackers = main.filter((r) => r.c.category === "Pokemon").sort((a, b) => payable(b) - payable(a) || dmg(b) - dmg(a) || (b.c.ruleBox ? 1 : 0) - (a.c.ruleBox ? 1 : 0) || /2/.test(b.c.stage || "") - /2/.test(a.c.stage || "") || b.qty - a.qty),
     mainAtk = attackers[0],
     line = mainAtk ? lines.find((l) => l.top === mainAtk.c.name) : null;
@@ -774,9 +828,9 @@ export function ptcgPower(rows, f = {}) {
     { ...part("Setup", line ? `Setup · ${line.top}` : mainAtk ? `Setup · ${mainAtk.c.name}` : "Setup", Pc(S("setup")), line?.two ? "55%+" : "75%+", S("setup") / (line?.two ? 0.55 : 0.75), 10,
       line ? `Chance to have every piece of ${line.top} (or Rare Candy and search to cover it) by your second turn.` : "Chance to find your main attacker by turn 1."),
       why: `Only ${Pc(S("setup"))} of games have your ${line?.top || mainAtk?.c.name || "main attacker"} line ready by turn 2${line?.two ? " (Basic, Stage 2, and Stage 1 or Rare Candy)" : ""}. More search, a thicker line or more Rare Candy fixes this.` },
-    { ...part("Lines", "Evolution lines", broken.length ? broken.length + " broken" : thin.length ? thin.map((l) => l.text).join(", ") : lines.length ? lines.map((l) => l.text).join(", ") : "none", "4-3-3 or 4-2-3 + Candy", broken.length ? 0.2 : Math.max(0.35, 1 - 0.2 * thin.length), 8, "Every Stage 1/2 needs the card it evolves from, in enough copies to survive a Prize or a knockout."),
+    { ...part("Lines", "Evolution lines", broken.length ? broken.length + " broken" : thin.length ? thin.map((l) => l.text).join(", ") : lines.length ? lines.map((l) => l.text).join(", ") : "none", f.copies===1?"complete singleton line":"4-3-3 or 4-2-3 + Candy", broken.length ? 0.2 : Math.max(0.35, 1 - 0.2 * thin.length), 8, "Every Stage 1/2 needs the card it evolves from, in enough copies to survive a Prize or a knockout."),
       cards: [...broken.map((r) => ({ name: `${r.c.name} (no ${r.c.evolveFrom})`, qty: r.qty })), ...thin.map((l) => ({ name: `${l.top} line ${l.text}`, qty: l.counts.at(-1) }))],
-      why: broken.length ? `${broken.map((r) => r.c.name).join(", ")} can't be played: the card ${broken.length > 1 ? "they evolve" : "it evolves"} from isn't in the deck.` : `Thin line${thin.length > 1 ? "s" : ""}: ${thin.map((l) => `${l.top} ${l.text}`).join(", ")}. One prized or knocked-out Basic and the line is gone. Standard shapes are 4-3-3 (or 4-2-3 with 4 Rare Candy) and 4-3.` },
+      why: broken.length ? `${broken.map((r) => r.c.name).join(", ")} can't be played: the card ${broken.length > 1 ? "they evolve" : "it evolves"} from isn't in the deck.` : f.copies===1 ? `Singleton line check: ${thin.map(l=>l.top+" "+l.text).join(", ")||"all listed stages present"}. This checks required evolution names, not a four-copy target or calibrated setup probability.` : `Thin line${thin.length > 1 ? "s" : ""}: ${thin.map((l) => `${l.top} ${l.text}`).join(", ")}. One prized or knocked-out Basic and the line is gone. Standard shapes are 4-3-3 (or 4-2-3 with 4 Rare Candy) and 4-3.` },
     { ...part("Gust", "Gust", q(gusts), 3, q(gusts) / 3, 8, "Pulling up a Benched Pokémon wins prize races (Boss's Orders, Counter Catcher, Prime Catcher)."),
       cards: evidence(gusts), why: `${q(gusts)} gust card${q(gusts) === 1 ? "" : "s"}. You can only take the Prize your opponent offers you; most lists play 3–4.` },
     { ...part("Switch", "Switching", q(switches), 2, switches.length ? q(switches) / 2 : 0.3, 5, "Switch, Escape Rope or a free-retreat Pokémon to get out of the Active Spot."),
@@ -784,12 +838,14 @@ export function ptcgPower(rows, f = {}) {
     { ...part("Recovery", "Recovery", q(recs), 2, q(recs) / 2, 5, "Night Stretcher, Super Rod and friends bring back knocked-out attackers."),
       cards: evidence(recs), why: `${q(recs)} recovery card${q(recs) === 1 ? "" : "s"}. Once your attackers are knocked out, they're gone for good.` },
     { ...part("Energy", "Energy", energy, needTypes.length ? needTypes.join("/") : "any", energyFit * (deadAbility.length ? 0.6 : 1) * (energy >= 6 || !needTypes.length ? 1 : energy / 6) * (S("energy") >= 0.75 || !needTypes.length ? 1 : S("energy") / 0.75) * (energy > 16 ? Math.max(0.2, 1 - (energy - 16) / 12) : 1), 8, `Enough of the right Energy for your attacks. ${Pc(S("energy"))} of games have Energy or acceleration by turn 1.`),
-      cards: evidence([...by("energy"), ...accel, ...deadAbility]), why: missingTypes.length ? `Attacks need ${missingTypes.join(", ")} Energy, which the deck doesn't run.` : deadAbility.length ? `${deadAbility.map((r) => `${r.c.name}'s Ability needs ${abilityEnergy(r.c).join("/")} Energy attached`).join("; ")}, and the deck runs none, so ${deadAbility.length > 1 ? "those cards do" : "it does"} nothing.` : energy > 16 ? `${energy} Energy leaves fewer slots for setup and interaction. High-Energy strategies can justify this; verify the attack and Ability requirements rather than treating a fixed count as universal.` : `${energy} Energy: ${Pc(1 - S("energy"))} of games have none (and no acceleration) on turn 1.` },
+      cards: evidence([...by("energy"), ...accel, ...deadAbility]), why: missingTypes.length ? `Attacks need ${missingTypes.join(", ")} Energy with verified recipient-compatible production. Special Energy is not automatically every type; unresolved production or attachment restrictions need review.` : deadAbility.length ? `${deadAbility.map((r) => `${r.c.name}'s Ability needs ${abilityEnergy(r.c).join("/")} Energy attached`).join("; ")}, and the deck runs none, so ${deadAbility.length > 1 ? "those cards do" : "it does"} nothing.` : energy > 16 ? `${energy} Energy leaves fewer slots for setup and interaction. High-Energy strategies can justify this; verify the attack and Ability requirements rather than treating a fixed count as universal.` : `${energy} Energy: ${Pc(1 - S("energy"))} of games have none (and no acceleration) on turn 1.` },
     { ...part("Consistency", "4-of consistency", Math.round((q(quads) / Math.max(1, N)) * 100) + "%", "55%", q(quads) / Math.max(1, N) / 0.55, 6, "Key Trainers and Basics as 3–4-ofs."),
       cards: evidence(main.filter((r) => r.qty <= 2 && (tag.get(r).has("draw") || tag.get(r).has("search")))), why: "Draw and search cards run as 1–2-ofs. Those are the cards every competitive list maxes out." },
     { ...part("Ace", "ACE SPEC", aces.length ? aces.map((r) => r.c.name).join(", ") : "none", "1", q(aces) > 1 ? 0 : aces.length ? 1 : 0.6, 3, "One ACE SPEC (Prime Catcher, Master Ball, Unfair Stamp…) is a free power boost."),
       why: q(aces) > 1 ? `${q(aces)} ACE SPEC cards: only 1 is allowed.` : "No ACE SPEC. Every deck may play one, and most play one." },
   ];
+  if(f.copies===1){const consistency=parts.find(p=>p.key==='Consistency');Object.assign(consistency,{label:'Singleton consistency',count:'format rule',target:'distinct functional options',ratio:1,weight:0,lost:0,hint:'Singleton uses distinct compatible functions, not repeated copies.',why:'Repeated-copy targets do not apply to this singleton format. Access to different cards with compatible functions still matters; no four-of bonus or penalty is used.'});}
+  if(f.noAceSpec){const ace=parts.find(p=>p.key==='Ace');Object.assign(ace,{count:q(aces)?q(aces):'not allowed',target:0,ratio:q(aces)?0:1,weight:0,lost:0,hint:'ACE SPEC cards are not allowed in this format.',why:'This format bans ACE SPEC cards. Their absence is not a weakness; legality is checked separately.'});}
   // Win plan: a deck needs an attacker that can take Prizes against today's 200-330 HP ex Pokémon,
   // in enough copies to keep attacking after one is Knocked Out. Consistency can't make up for it.
   // Every Pokémon that hits close to as hard as the main attacker counts: decks often share the
@@ -808,6 +864,10 @@ export function ptcgPower(rows, f = {}) {
   if (atkKnown) parts.push({ ...part("Attacker", mainAtk ? `Attacker · ${mainAtk.c.name}` : "Attacker", mainAtk ? `${reach} dmg · ${atkQty} attacker${atkQty === 1 ? "" : "s"}` : "none", "200+ dmg · 3+", atkRatio, 16, "The Pokémon that takes your Prizes: how hard it hits, how many copies, how much Energy it needs."),
     cards: mainAtk ? evidence([mainAtk]) : [],
     why: !mainAtk ? "No Pokémon in the list attacks for real damage." : swarm && reach < 160 ? `A single-Prize swarm: ${q(attackers.filter((r) => payable(r) && !r.c.ruleBox && dmg(r) >= 30))} small attackers, so the opponent needs six Knock Outs. ${mainAtk.c.name} hits hardest at ${reach}; against 200+ HP ex Pokémon it needs two hits or more each.` : reach < 120 ? `Your hardest hitter is ${mainAtk.c.name} for ${reach}. Most competitive decks Knock Out a 200+ HP ex in one or two attacks; at ${reach} a game takes ${Math.ceil(240 / Math.max(10, reach))}+ attacks per ex, and the deck has no other way to win.` : `${mainAtk.c.name} hits for ${reach}${team.length > 1 ? ` (with ${team.filter((r) => r !== mainAtk).map((r) => r.c.name).slice(0, 2).join(", ")})` : ""}${atkQty < 3 ? ` but only ${atkQty} attacker${atkQty === 1 ? "" : "s"} in the deck, so one Knock Out leaves ${atkQty === 1 ? "none" : "one"}` : ""}${cost > 3 ? `, and needs ${cost} Energy` : ""}.` });
+  const prizeLiability=main.filter(r=>r.c.category==='Pokemon'&&Number(r.c.prize)>1);
+  if(prizeLiability.length)parts.push({...part('PrizeLiability','Prizes conceded per Knock Out',prizeLiability.map(r=>`${r.c.name}: ${r.c.prize}`).join('; '),'context',1,0,'Printed prize liability, not a fixed Power penalty.'),cards:evidence(prizeLiability),why:'Two- and three-Prize Pokémon concede different rewards when Knocked Out. Ability value, HP, recovery and the opponent determine the trade; no survival odds or fixed penalty is assumed.'});
+  const conditionalAttacks=main.filter(r=>(r.c.attacks||[]).some(a=>pokemonAttackEvidence(a).conditional));
+  if(conditionalAttacks.length)parts.push({...part('AttackConditions','Conditional attack output',q(conditionalAttacks),'review',1,0,'Printed conditions are not invented probabilities.'),cards:evidence(conditionalAttacks),why:'The attack baseline excludes if-conditional extra damage. Opponent, Prize and board requirements are retained for review; this is not proof the conditional plan is weak.'});
   if (q(radiants) > 1) parts.push({ ...part("Radiant", "Radiant limit", q(radiants), "≤ 1", 0, 6, "Only one Radiant Pokémon per deck."), why: `${q(radiants)} Radiant Pokémon: only 1 is allowed.` });
   const gold = ptcgGoldfish(main.map((r) => ({ qty: r.qty, c: r.c })), { attacker: mainAtk?.c.name, line });
   if (gold) parts.push({ ...part("Goldfish", "Goldfish speed", gold.headline.match(/turn (\d+)/)?.[1] ? `turn ${gold.headline.match(/turn (\d+)/)[1]}` : "6+", "turn 2", gold.speed, 0, "1,000 games played out: draw, search, bench, evolve, attach, attack, until the main attacker swings."), why: gold.headline });
@@ -819,12 +879,12 @@ export function ptcgPower(rows, f = {}) {
   // The hardest hitter the list is built around, whether or not the Energy can pay for it.
   const star = main.filter((r) => r.c.category === "Pokemon").sort((a, b) => dmg(b) - dmg(a))[0],
     stranded = star && !payable(star) && dmg(star) >= 120 && (!mainAtk || !payable(mainAtk) || reach < dmg(star) * 0.6) ? star : null,
-    cantPay = stranded ? costOf(stranded).filter((tp) => !energyTypes.has(tp)) : [];
+    cantPay = stranded ? costOf(stranded).filter((tp) => !supportsType(stranded.c,tp)&&!uncertainType(stranded.c,tp)) : [];
   const caps = [
     atkKnown && !energy && attackers.some(r=>(r.c.attacks || []).some(a=>(a.cost || []).length)) && !attackers.some(r=>(r.c.attacks || []).some(a=>!(a.cost || []).length && attackDamage(a)>0)) ? { key:"Energy",max:45,label:"No Energy for attacks",why:"The listed attacks require Energy, but the deck has none. Colorless costs still require Energy; they do not mean a free attack." } : null,
     atkKnown && atkRatio < 1 && !swarm ? { key: "Attacker", max: Math.round(55 + 40 * atkRatio), label: reach < 120 ? "No real attacker" : "Attacker too thin", why: parts.find((x) => x.key === "Attacker")?.why } : null,
     cantPay.length ? { key: "Energy", max: 45, label: "Main attacker can't attack", why: `${stranded?.c.name}'s attack needs ${cantPay.join(" and ")} Energy and the deck runs none, so its best attacker never attacks.` } : null,
-    line && !swarm && q(team.filter((r) => r.c.name !== line.top)) < 2 && (line.counts[0] < 3 || line.counts.at(-1) < 2 || (line.two && line.counts[1] + Math.min(candy, 4) < 3)) ? { key: "Lines", max: 62, label: "Main line too thin", why: `${line.top} is on a ${line.text} line${line.two && !candy ? " with no Rare Candy" : ""}. One prized or Knocked Out piece and the deck has no attacker; lists run 4-3-3, or 4-2-3 with Rare Candy.` } : null,
+    line && !swarm && q(team.filter((r) => r.c.name !== line.top)) < 2 && (line.counts[0] < Math.min(3,f.copies||4) || line.counts.at(-1) < Math.min(2,f.copies||4) || (line.two && line.counts[1] + Math.min(candy, f.copies||4) < Math.min(3,f.copies||4))) ? { key: "Lines", max: 62, label: "Main line too thin", why: `${line.top} is on a ${line.text} line${line.two && !candy ? " with no Rare Candy" : ""}. One prized or Knocked Out piece and the deck has no attacker; lists run 4-3-3, or 4-2-3 with Rare Candy.` } : null,
     deadAbility.length ? { key: "Energy", max: 85, label: "Abilities that can't work", why: `${deadAbility.map((r) => r.c.name).join(", ")} need${deadAbility.length > 1 ? "" : "s"} Energy the deck doesn't run.` } : null,
   ];
   const capped = capScore(finish(parts), caps);
@@ -839,7 +899,8 @@ export function ptcgPower(rows, f = {}) {
     plan: mainAtk ? mainAtk.c.name + (line ? ` · ${line.text} line` : "") : "Pokémon deck",
     stats: { N, basics, pokemon, trainers, energy, mull },
     unknown,
-    profile: [["Pokémon", pokemon], ["Trainers", trainers], ["Energy", energy], ["Supporters", q(sups)], ["Prize plan", main.some(r=>r.c.prize===3) ? "Includes three-prize Pokémon" : multi >= 4 ? "Two-prize attackers" : ruleBox.length ? "Mixed" : "Single-prize"]],
+    capabilityEvidence:{version:'tcg-capabilities-v1',energy:energyEvidence,attacks:main.filter(r=>r.c.category==='Pokemon').map(r=>({name:r.c.name,qty:r.qty,attacks:(r.c.attacks||[]).map(a=>({name:a.name,...pokemonAttackEvidence(a)}))})),prizeLiability:main.filter(r=>r.c.category==='Pokemon').map(r=>({name:r.c.name,qty:r.qty,prizes:Number.isFinite(r.c.prize)?r.c.prize:null})),limitations:['Energy compatibility is a printed-capability check, not attachment sequencing or draw probability.','Conditional attack bonuses are not assigned a fabricated 50% chance. Other scaling assumptions remain heuristic.','Prize liability is stated per Knock Out, not a fixed score penalty or predicted prize race.']},
+    profile: [["Pokémon", pokemon], ["Trainers", trainers], ["Energy", energy], ["Supporters", q(sups)], ["Conditional attacks", main.filter(r=>(r.c.attacks||[]).some(a=>pokemonAttackEvidence(a).conditional)).reduce((n,r)=>n+r.qty,0)], ["Prize plan", main.some(r=>r.c.prize===3) ? "Includes three-prize Pokémon" : multi >= 4 ? "Two-prize attackers" : ruleBox.length ? "Mixed" : "Single-prize"]],
     sims: [
       { label: "Mulligan", p: mull, target: 0.15, lower: true, note: "no Basic in opening 7 (exact)" },
       { label: "Draw or search on turn 1", p: S("out"), target: 0.9, note: "first 8 cards, after Prizes" },

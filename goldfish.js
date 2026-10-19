@@ -69,6 +69,41 @@ export function mtgCastDraw(c) {
   return draw;
 }
 
+// A bounded casting check, not an attachment/effect simulator. Unknown enchant
+// restrictions must not become unconditional permission to spend mana on an Aura.
+export function mtgAuraTargetProfile(c) {
+  const face=c?.card_faces?.[0]||c||{}, type=face.type_line||c?.type_line||"";
+  if(!/\bAura\b/.test(type))return {aura:false,status:"not-aura"};
+  const lines=lc(face.oracle_text||c?.oracle_text).replace(/\([^)]*\)/g,"").split("\n").map(s=>s.trim()).filter(s=>/^enchant\b/.test(s));
+  if(lines.length!==1)return {aura:true,status:"unmodeled",reason:"Aura enchant restriction is missing or not uniquely recognized."};
+  const evidence=lines[0], text=evidence.replace(/^enchant\s+/,"").replace(/\.$/,""),
+    control=text.endsWith(" you control")?"self":text.endsWith(" an opponent controls")?"opponent":"any",
+    target=text.replace(/ (?:you control|an opponent controls)$/,""),
+    terms=target.split(" or ").map(s=>s.match(/^(?:(nonlegendary|legendary|nonland|noncreature|nonartifact|nonenchantment) )?(artifact|creature|enchantment|land|planeswalker|battle|permanent)$/));
+  if(terms.some(t=>!t))return {aura:true,status:"unmodeled",evidence,reason:"Aura target qualifiers are outside the supported permanent-type/controller check."};
+  return {aura:true,status:"supported",evidence,control,terms:terms.map(t=>({qualifier:t[1]||"",type:t[2]}))};
+}
+const auraTargetStatus=(profile,permanents=[])=>{
+  if(!profile.aura)return {status:"not-aura",castable:true};
+  if(profile.status!=="supported")return {status:"unmodeled",castable:false,reason:profile.reason};
+  let unresolved=false;
+  for(let i=0;i<permanents.length;i++){
+    const entry=permanents[i],card=entry.card||entry,controller=entry.controller||"self",face=card.card_faces?.[0]||card,
+      type=lc(face.type_line||card.type_line).split(/—| -- /)[0],text=lc(face.oracle_text||card.oracle_text).replace(/\([^)]*\)/g,"");
+    if(profile.control!=="any"&&profile.control!==controller)continue;
+    if(!/\b(?:artifact|creature|enchantment|land|planeswalker|battle)\b/.test(type))continue;
+    const has=t=>new RegExp("\\b"+t+"\\b").test(type);
+    if(!profile.terms.some(t=>(t.type==="permanent"||has(t.type))&&(!t.qualifier||(t.qualifier.startsWith("non")?!has(t.qualifier.slice(3)):has(t.qualifier)))))continue;
+    // Own hexproof/ward do not stop one's own Aura. Conditional/granted target
+    // restrictions and protection need a fuller state model, so omit that host.
+    if(/(?:^|\n)\s*shroud\s*(?:\n|$)/.test(text)||/(?:^|\n)this (?:creature|permanent) (?:can't|cannot) be enchanted\.?(?:\n|$)/.test(text))continue;
+    if(entry.targetingUnmodeled||/\bshroud\b|\bprotection from\b|can't be (?:the target|enchanted)|cannot be (?:the target|enchanted)/.test(text)||(controller!=="self"&&/\bhexproof\b|\bward\b/.test(text))){unresolved=true;continue;}
+    return {status:"eligible",castable:true,targetIndex:i};
+  }
+  return unresolved?{status:"unmodeled",castable:false,reason:"A matching host has targetability/protection conditions not resolved by this model."}:{status:"no-target",castable:false,reason:"No modeled permanent satisfies this Aura's enchant restriction."};
+};
+export const mtgAuraTargetStatus=(c,permanents=[])=>auraTargetStatus(mtgAuraTargetProfile(c),permanents);
+
 // rows: [{ qty, c }] with Scryfall card objects. opts: { size, commander (card), plan }
 export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrange", runs = 1000, seed = 11 } = {}) {
   const boundedConstructed = !commander && size < 99;
@@ -82,6 +117,10 @@ export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrang
       pw = parseInt(c.power, 10);
     return {
       name: c.name,
+      card:c,
+      aura:mtgAuraTargetProfile(c),
+      changesAuraTargeting:/enchanted [^.\n]*(?:(?:has|gains) [^.\n]*(?:shroud|protection)|(?:can't|cannot) be (?:the target|enchanted)|loses all abilities|becomes? (?:an? |a |the )?)/.test(text),
+      permanent:/\b(?:Artifact|Creature|Enchantment|Land|Planeswalker|Battle)\b/.test(type.split(" // ")[0]),
       cmc: Number(c.cmc) || 0,
       pips: [...String(c.mana_cost || c.card_faces?.[0]?.mana_cost || "").matchAll(/\{([WUBRGC])\}/g)].map(m=>m[1]),
       colors: c.produced_mana?.length ? c.produced_mana : /add [^.]*mana of any (?:one )?colou?r/.test(text) ? [..."WUBRG"] : [...new Set([
@@ -109,16 +148,23 @@ export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrang
     maxT = 10,
     r = rng(seed),
     kills = [], cmdrTurn = [], spent4 = [], curveOuts = [], dmg6 = [], topEnd = [], flood = [], screw = [],
-    dealtBy = new Map(),
+    dealtBy = new Map(), unmodeledAuras = new Map(),
     samples = [];
   if (deck.length < 20) return null;
-  const hasTop = deck.some((c) => c.cmc >= 5);
+  const hasTop = deck.some((c) => c.cmc >= 5), hasAura=deck.some(c=>c.aura.aura),
+    auraLimits=["Aura casts require a modeled host matching supported printed permanent-type/controller restrictions. Unknown qualifiers or host protection are not assumed legal.","No opposing permanents are present in this solitaire model. Aura attachment effects, granted target restrictions, created hosts and full state-based actions remain unmodeled."];
+  for(const c of deck)if(c.aura.status==="unmodeled")unmodeledAuras.set(c.name,{name:c.name,reason:c.aura.reason});
   for (let run = 0; run < runs; run++) {
     const lib = shuffle(deck.slice(), r),
       hand = lib.splice(0, 7),
       log = run < 400 ? [] : null;
     let lands = 0, extra = 0, nextExtra = 0, board = [], damage = 0, kill = null, cmdrCast = null, spent = 0, avail = 0, castEach = 0, bigCast = false;
-    const landMana=[],extraMana=[],nextMana=[];
+    const landMana=[],extraMana=[],nextMana=[],permanents=[];
+    const canCastAura=c=>{
+      const status=auraTargetStatus(c.aura,permanents);
+      if(status.status==="unmodeled")unmodeledAuras.set(c.name,{name:c.name,reason:status.reason});
+      return status.castable;
+    };
     for (let t = 1; t <= maxT; t++) {
       if (t > 1 && lib.length) hand.push(lib.shift());
       extra += nextExtra;
@@ -129,43 +175,49 @@ export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrang
       if (li >= 0) {
         lands++;
         landMana.push(hand[li].colors);
+        permanents.push({card:hand[li].card,controller:"self"});
         did.push(hand.splice(li, 1)[0].name);
       }
       let pool=[...landMana,...extraMana],mana = pool.length;
       const startMana = mana;
       let castAny = false;
       // Commander first when it fits, then the biggest spells that fit (greedy, like a goldfish).
-      if (cmdr && cmdrCast == null && spendMana(pool,cmdr.pips,cmdr.cmc)) {
+      if (cmdr && cmdrCast == null && spendMana(pool,cmdr.pips,cmdr.cmc) && canCastAura(cmdr)) {
         pool=spendMana(pool,cmdr.pips,cmdr.cmc);
         mana -= cmdr.cmc;
         cmdrCast = t;
         board.push({ ...cmdr, summoned: t });
+        if(cmdr.permanent)permanents.push({card:cmdr.card,controller:"self"});
         did.push(cmdr.name + " (commander)");
         castAny = true;
       }
       for (let again = true; again; ) {
         again = false;
-        const order = hand.map((c, i) => [c, i]).filter(([c]) => !c.land && spendMana(pool,c.pips,c.cmc)).sort((a, b) => b[0].cmc - a[0].cmc || (b[0].dork || b[0].rock) - (a[0].dork || a[0].rock));
+        const order = hand.map((c, i) => [c, i]).filter(([c]) => !c.land && spendMana(pool,c.pips,c.cmc) && canCastAura(c)).sort((a, b) => b[0].cmc - a[0].cmc || (b[0].dork || b[0].rock) - (a[0].dork || a[0].rock));
         if (!order.length) break;
         const [c, i] = order[0];
+        const auraTarget=c.aura.aura?auraTargetStatus(c.aura,permanents):null;
         hand.splice(i, 1);
         pool=spendMana(pool,c.pips,c.cmc);
         mana -= c.cmc;
         castAny = true;
         if (c.cmc >= 5) bigCast = true;
         did.push(c.name);
+        // Do not invent later legal targets after an Aura changes a host's
+        // targetability/type in ways this bounded model does not execute.
+        if(c.changesAuraTargeting&&auraTarget?.targetIndex!=null)permanents[auraTarget.targetIndex].targetingUnmodeled=true;
         if (c.rock) { extra++; mana++; extraMana.push(c.colors);pool.push(c.colors); }
         if (c.dork) { nextExtra++;nextMana.push(c.colors); }
         if (c.rampLand) {
           const li2 = lib.findIndex((x) => x.land);
-          if (li2 >= 0) { lands++;landMana.push(lib.splice(li2,1)[0].colors); }
+          if (li2 >= 0) { const land=lib.splice(li2,1)[0];lands++;landMana.push(land.colors);permanents.push({card:land.card,controller:"self"}); }
         }
         for (let k = 0; k < c.draw && lib.length; k++) hand.push(lib.shift());
         if (c.creature || c.walker) {
           // Recasting a legend still resolves its ETB, but does not leave two
           // same-name legends attacking. Keep the established identical body.
-          if (!boundedConstructed || !c.legendary || !board.some(b => b.legendary && b.name === c.name)) board.push({ ...c, summoned: t });
-        }
+          if (!boundedConstructed || !c.legendary || !board.some(b => b.legendary && b.name === c.name)) {board.push({ ...c, summoned: t });permanents.push({card:c.card,controller:"self"});}
+        }else if(c.permanent)permanents.push({card:c.card,controller:"self"});
         if (c.burn) {
           damage += c.burn;
           dealtBy.set(c.name, (dealtBy.get(c.name) || 0) + c.burn);
@@ -211,7 +263,8 @@ export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrang
   return {
     game: "mtg",
     runs,
-    ...(boundedConstructed ? {limitations:["Simplified printed-power combat and recognized direct damage against no blockers, not a measured win rate.", "Does not execute cycling/channel, activated abilities, conditional token production, copy triggers, combat support, or full attack restrictions.", "Same-name legendary bodies do not stack; recast ETBs still resolve. Other state-based rules are not fully simulated."], modeledDraw:rows.filter(r => r.c && !/\bLand\b/.test(r.c.type_line || "")).map(r => ({name:r.c.name, qty:r.qty, castDraw:mtgCastDraw(r.c)}))} : {}),
+    ...(hasAura?{auraCasting:{status:unmodeledAuras.size?"partial":"bounded",unmodeled:[...unmodeledAuras.values()],limitations:auraLimits},...(!boundedConstructed?{limitations:auraLimits}:{})}:{}),
+    ...(boundedConstructed ? {limitations:["Simplified printed-power combat and recognized direct damage against no blockers, not a measured win rate.", "Does not execute cycling/channel, activated abilities, conditional token production, copy triggers, combat support, or full attack restrictions.", "Same-name legendary bodies do not stack; recast ETBs still resolve. Other state-based rules are not fully simulated.",...(hasAura?auraLimits:[])], modeledDraw:rows.filter(r => r.c && !/\bLand\b/.test(r.c.type_line || "")).map(r => ({name:r.c.name, qty:r.qty, castDraw:mtgCastDraw(r.c)}))} : {}),
     headline: cmdr
       ? `Commander lands on turn ${median(cmdrTurn) ?? "—"} in a typical game; ${Math.round(avg(dmg6))} damage to one opponent by turn 6.`
       : boundedConstructed ? (killT ? `Among simplified damage-model trials reaching 20 damage, the median is turn ${killT}; this is not a forecast of a real winning turn.` : "The simplified damage model does not reach 20 damage by turn 10 in these trials. Unmodeled abilities and routes are not evaluated here.") : killT
@@ -433,7 +486,7 @@ export function ptcgGoldfish(main, { attacker = null, line = null, runs = 1000, 
 // Yu-Gi-Oh! can't be played out without an opponent's interruptions, so the goldfish reads each
 // opening hand the way a player would: can it start, can it play through a hand trap, what does
 // it hold for the opponent's turn, and what is dead. tagged: [{ qty, c, tags:Set }]; extra: [{ qty, c }]
-export function ygoGoldfish(tagged, extra = [], { runs = 1000, seed = 17 } = {}) {
+export function ygoGoldfish(tagged, extra = [], { runs = 1000, seed = 17, handSize = 5 } = {}) {
   const deck = expand(tagged.filter((r) => r.c).map((r) => ({ qty: r.qty, card: {
     name: r.c.name, tags: r.tags, atk: r.c.atk,
     sharedLimit: /you can only (?:use|activate)[^.]*"[^"]+"[^.]*once per turn|you can only activate 1 "[^"]+" per turn/i.test(r.c.text || ""),
@@ -443,7 +496,7 @@ export function ygoGoldfish(tagged, extra = [], { runs = 1000, seed = 17 } = {})
     out = { full: 0, through1: 0, fragile: 0, interOnly: 0, brick: 0 },
     samples = [];
   for (let run = 0; run < runs; run++) {
-    const h = shuffle(deck.slice(), r).slice(0, 5),
+    const h = shuffle(deck.slice(), r).slice(0, handSize),
       n = (k) => h.filter((c) => c.tags.has(k)).length,
       starters = n("starter"),
       ext = n("extender"),
@@ -486,7 +539,7 @@ export function ygoGoldfish(tagged, extra = [], { runs = 1000, seed = 17 } = {})
   return {
     game: "ygo",
     runs,
-    headline: `${Math.round((P("full") + P("through1")) * 100)}% of 5-card hands contain a starter and a separate potential continuation after supported shared-use limits; ${Math.round(P("brick") * 100)}% have no recognized starter and little interaction. This does not prove a legal combo through an interruption.`,
+    headline: `${Math.round((P("full") + P("through1")) * 100)}% of ${handSize}-card first-turn hands contain a starter and a separate potential continuation after supported shared-use limits; ${Math.round(P("brick") * 100)}% have no recognized starter and little interaction. This does not prove a legal combo through an interruption.`,
     outcomes: Object.keys(LABEL).map((k) => ({ label: LABEL[k], p: P(k), kind: k })),
     metrics: [
       { label: "Starter + separate potential continuation", value: P("full") + P("through1"), pct: true, good: 0.65 },
@@ -494,7 +547,7 @@ export function ygoGoldfish(tagged, extra = [], { runs = 1000, seed = 17 } = {})
       { label: "Bricks", value: P("brick"), pct: true, bad: true, good: 0.08 },
     ],
     winCon: bosses.length ? `Ends on its Extra Deck: ${bosses.map((b) => `${b.name}${b.atk ? ` (${b.atk} ATK)` : ""}`).join(", ")}.` : beaters.length ? `Wins through big Main Deck monsters: ${names(beaters)}.` : "No Extra Deck boss and no big beaters: it's unclear how this list closes a game.",
-    endgame: extra.length < 8 ? "Too few Extra Deck options to keep making plays after the first combo is answered." : "A full Extra Deck gives it follow-up plays once the first board is broken.",
+    endgame: extra.length ? "Listed Extra Deck options need their actual materials and summon conditions; size alone does not establish follow-up plays." : "No Extra Deck options are listed; a Main Deck plan may still be valid.",
     samples: show.map((s) => ({ title: LABEL[s.kind], hand: s.h.map((c) => c.name), log: plan(s).map((text, i) => ({ t: i + 1, text })) })),
     speed: Math.max(0, Math.min(1, (P("full") + P("through1")) / 0.65)),
   };

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {reviewPayload, aiReviewDialogContent} from './ai-review.js';
 import {cleanDeck, cleanCriteria, validateReview, instructionsFor} from './ai-review-route.js';
+import {coachHandProfile} from './coach-evidence.js';
 
 // Public Scryfall data frozen from the audit. This is not the user's 100-card deck.
 const fixture = JSON.parse(readFileSync(new URL('./test-fixtures/coach-dion-evidence.json', import.meta.url)));
@@ -221,4 +222,46 @@ console.log('PASS: Compact strategic route metrics/limitations and null score ro
  assert.equal(out.primaryRouteCoverage.label,gap.label);assert.deepEqual(out.primaryRouteCoverage.missingCapabilities,gap.missingCapabilities);assert.equal(out.primaryRouteCoverage.evidence[0].name,'Brain Freeze');assert.match(out.primaryRouteCoverage.meaning,/diagnostic only/);assert.ok(!JSON.stringify(out).includes('DO_NOT_TRANSMIT'));
  assert.deepEqual(cleanCriteria(cleaned.criteria),cleaned.criteria,'primary-route uncertainty round-trips without promoting the partial score');
  console.log('PASS: named important conversion gap and partial-only diagnostics survive coach cleaning, while overall/competitive remain null.');
+}
+
+// Opening cards are not the same as cards seen after the first turn's draw.
+{
+ const catalog=Array.from({length:20},(_,i)=>({id:String(i),name:`Public hand fixture ${i}`,category:'Monster',typeLine:'Normal Monster',text:'A plain test monster.',level:4}));
+ const make=format=>({id:'coach-format-cache',format,zones:{main:catalog.map(c=>({cardId:c.id,name:c.name,qty:2})),extra:[],side:[]}});
+ const p={score:50,heuristic:50,formatName:'Wrong stale display name',parts:[],readiness:{eligible:true,issues:[]}};
+ const lookup=id=>catalog.find(c=>c.id===id);
+ for(const [format,initial,first,second,draw]of[['tcg',5,5,6,0],['Advanced (TCG)',5,5,6,0],['traditional',5,5,6,0],['speed',4,4,5,0],['Speed Duel',4,4,5,0],['goat',5,6,6,1],['GOAT',5,6,6,1]]){
+  const prepared=reviewPayload('ygo',make(format),lookup,p),cleaned=cleanDeck(prepared),profile=prepared.handProfile;
+  assert.equal(prepared.format,format,'deck format wins over stale Power display text');
+  assert.equal(profile.initialHandCards,initial);assert.equal(profile.firstTurnCards,first);assert.equal(profile.secondTurnCards,second);assert.equal(profile.firstTurnDraw,draw);
+  assert.equal(profile.sample,'initial-opening-hand-before-draw');assert.equal(prepared.hand.length,initial);assert.deepEqual(cleaned.hand,prepared.hand);assert.deepEqual(cleaned.handProfile,profile);
+  assert.deepEqual(reviewPayload('ygo',make(format),lookup,p).hand,prepared.hand,'unchanged profile is deterministic');
+  assert.match(instructionsFor('ygo',format),new RegExp(`Initial opening hand: ${initial}`));
+  assert.match(instructionsFor('ygo',format),new RegExp(`first player draws ${draw}`));
+  assert.deepEqual(cleanDeck({...prepared,handProfile:{initialHandCards:99,firstTurnDraw:99}}).handProfile,profile,'server derives profile, never trusts supplied counts');
+  assert.deepEqual(cleanDeck({...prepared,hand:[...prepared.hand,'c0']}).hand,[],'post-draw totals are not accepted as the initial sample');
+  assert.deepEqual(cleanDeck({...prepared,hand:Array(initial).fill('c0')}).hand,[],'sample cannot exceed physical copies');
+  const out=validateReview({...model,headline:'Review the initial options.',pilot:{hand:{verdict:'mulligan',reason:'Mulligan this weak hand. A normal summon is available.',firstTurns:'Redraw the whole hand.',lookFor:'A playable monster.',preserve:'Keep your hand.',evidence:[]},lines:[]}},cleaned);
+  assert.equal(out.pilot.hand.verdict,'none');assert.match(out.pilot.hand.reason,/No normal mulligan/);assert.doesNotMatch(out.pilot.hand.reason,/Mulligan this weak/);assert.equal(out.pilot.hand.firstTurns,'');
+  const rows=catalog.map((c,i)=>({id:'c'+i,c,zone:'main',row:{cardId:c.id,name:c.name,qty:2}}));
+  const html=aiReviewDialogContent({game:'ygo',tab:'pilot',rows,payload:prepared,result:out});assert.match(html,/>Assessment</);assert.doesNotMatch(html,/>Mulligan</);assert.match(html,new RegExp(`Initial opening hand: ${initial}`));
+ }
+ for(const format of ['unknown-custom','Casual','Edison','Duel Links','Master Duel','OCG']){
+  const prepared=reviewPayload('ygo',make(format),lookup,p);
+  assert.equal(prepared.handProfile.status,'unknown');assert.equal(prepared.handProfile.initialHandCards,null);assert.deepEqual(prepared.hand,[]);assert.deepEqual(cleanDeck({...prepared,hand:['c0','c1','c2','c3','c4']}).hand,[]);
+ }
+ assert.notDeepEqual(reviewPayload('ygo',make('speed'),lookup,p),reviewPayload('ygo',make('goat'),lookup,p),'same deck ID with changed format produces a different full-payload cache signature');
+ assert.equal(coachHandProfile('mtg','Commander').initialHandCards,7);assert.equal(coachHandProfile('ptcg','standard').mulligan,'mandatory-if-no-basic');
+ const setupCards=Array.from({length:7},(_,i)=>({id:'c'+i,name:'Setup fixture '+i,qty:1,zone:'main',type:'Trainer',text:'Draw a card.',details:JSON.stringify({category:'Trainer'}),known:true}));
+ const hand=setupCards.map(c=>c.id),raw={...model,headline:'Review setup.',pilot:{hand:{verdict:'mulligan',reason:'Mulligan this weak hand.',firstTurns:'Redraw for a stronger hand.',evidence:[]},lines:[]}};
+ const setup=cards=>cleanDeck({game:'ptcg',format:'standard',cards,hand});
+ const basic=structuredClone(setupCards);basic[0].details=JSON.stringify({category:'Pokemon',stage:'Basic'});
+ assert.equal(validateReview(raw,setup(basic)).pilot.hand.verdict,'keep','a weak hand with a Basic has no discretionary redraw');
+ assert.equal(validateReview(raw,setup(basic)).pilot.hand.firstTurns,'');
+ assert.match(validateReview(raw,setup(setupCards)).pilot.hand.reason,/required no-Basic redraw/);
+ const unknown=structuredClone(setupCards);unknown[0].details='{}';assert.equal(validateReview(raw,setup(unknown)).pilot.hand.verdict,'none','unknown setup cannot establish absence of a Basic');
+ for(const stage of ['', 'Unknown', null]){const unresolved=structuredClone(setupCards);unresolved[0].details=JSON.stringify({category:'Pokemon',stage});assert.equal(validateReview(raw,setup(unresolved)).pilot.hand.verdict,'none','missing or unrecognized stage does not prove no Basic');}
+ const evolved=structuredClone(setupCards);evolved[0].details=JSON.stringify({category:'Pokemon',stage:'Stage 1'});assert.equal(validateReview(raw,setup(evolved)).pilot.hand.verdict,'mulligan','a recognized evolution does not satisfy Basic setup');
+ const mtg=cleanDeck({game:'mtg',format:'Modern',cards:setupCards,hand});assert.equal(validateReview(raw,mtg).pilot.hand.verdict,'mulligan','Magic plan mulligans are not removed');
+ console.log('PASS: initial versus post-draw coach profiles, deterministic client/server agreement, main/copy-safe samples, unknown formats, and game-specific no-mulligan/no-Basic setup rules.');
 }

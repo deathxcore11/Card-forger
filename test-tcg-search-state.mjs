@@ -95,7 +95,7 @@ try {
  }
  const lowerLimited=ygo('lower-limited',{pools:['tcg'],banlist_info:{ban_tcg:'Limited'}}),lowerSemi=ygo('lower-semi',{pools:['ocg'],banlist_info:{ban_ocg:'Semi-Limited'}}),lowerBanned=ygo('lower-banned',{pools:['tcg'],banlist_info:{ban_tcg:'Forbidden'}});
  assert.equal(ygoSearchEligibility(lowerLimited,YGO_FORMATS.find(f=>f.id==='tcg')),'limited');assert.equal(ygoSearchEligibility(lowerSemi,YGO_FORMATS.find(f=>f.id==='ocg')),'semi');assert.equal(ygoSearchEligibility(lowerBanned,YGO_FORMATS.find(f=>f.id==='traditional')),'limited');
- assert.equal(ygoLegality(lowerLimited,YGO_FORMATS.find(f=>f.id==='tcg')),'not_legal','existing deck helper is unchanged by Search normalization');
+ assert.equal(ygoLegality(lowerLimited,YGO_FORMATS.find(f=>f.id==='tcg')),'limited','deck and Search helpers share case-insensitive provider pool identity');
  U.f={format:'tcg'};U.results=[lowerLimited,lowerBanned];html=tcgSearch();assert.match(html,/data-id="lower-limited"/);assert.doesNotMatch(html,/data-id="lower-banned"/);
  assert.equal(ygoSearchFormatSupported(YGO_FORMATS.find(f=>f.id==='edison')),false);assert.equal(ygoSearchEligibility(ygo('not-verified',{pools:['edison']}),YGO_FORMATS.find(f=>f.id==='edison')),'unknown');
  assert.equal(ygoSearchEligibility(ygo('unknown',{pools:[]}),YGO_FORMATS.find(f=>f.id==='ocg')),'unknown');

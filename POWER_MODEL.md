@@ -15,7 +15,7 @@ A supported placing-list reference is not capped by an unrelated, incomplete str
 
 ## Versioned strategic model
 
-`mtg-routes-v1` evaluates recognized combat/token, control, nonland-mana commander output and repeated creature-output routes. It does not simulate all Magic rules.
+`mtg-routes-v1` evaluates recognized combat/token, bounded one-carrier Equipment, control, nonland-mana commander output and repeated creature-output routes. It does not simulate all Magic rules.
 
 - Natural access uses exact finite-library probabilities at 11 drawn cards, or 18 for control-finisher access. These are versioned analysis windows, not predicted winning turns. Command-zone cards are not library draws.
 - Expected-best available output preserves optionality: adding a useful optional body or expensive optional activation cannot dilute an unchanged stronger mode.
@@ -38,9 +38,11 @@ Strongest, theme, fun, chaos and intentionally weak are distinct goals. Legality
 
 The existing AI tool loop permits at most two proposals. The app validates the first and returns specific repair failures, caches unchanged reads, guards cancellation/account/deck/collection versions, and exposes a reviewable preview. No autosave and no AI request on ordinary clicks. Unknown prices remain unverified; no implicit $25 cap and no fabricated free basic lands.
 
+Optional coaching samples the initial hand, not the post-draw window used by some Power diagnostics. The shared client/server hand profile distinguishes Speed Duel's initial4 and first-turn4/5 from GOAT's initial5 and first-turn6/6. TCG/Traditional use initial5 and first-turn5/6; other YGO coaching profiles remain unresolved until their draw rules are explicitly sourced, rather than inheriting a modern default. The server derives these values from the selected format, checks sample size/zone/copies, and does not trust supplied profile numbers. YGO has no normal mulligan. Pokémon setup distinguishes a mandatory no-Basic redraw from a weak but Basic-containing hand, with unknown setup remaining unresolved; Magic retains its own keep/mulligan assessment. These are bounded context checks, not complete setup or gameplay validation.
+
 ## Validation scope
 
-Public tests use public card text and independent synthetic scenarios. Controlled damage/restoration checks cover compatible creature tokens, Kinnan hit eligibility, output prerequisites, costs/colors, optionality, missing details and incomplete preview/save/reopen flows. Existing frozen all-game reference benchmarks remain regression checks, not proof of broad metagame calibration. Pokémon and Yu-Gi-Oh! retain their existing strategic models; shared eligibility and unavailable-score presentation apply across games.
+Public tests use public card text and independent synthetic scenarios. Controlled damage/restoration checks cover compatible creature tokens, Kinnan hit eligibility, output prerequisites, costs/colors, optionality, missing details and incomplete preview/save/reopen flows. Existing frozen all-game reference benchmarks remain regression checks, not proof of broad metagame calibration. Pokémon and Yu-Gi-Oh! retain their existing broad strategic models with the bounded capability corrections below; shared eligibility and unavailable-score presentation apply across games. These are not newly calibrated all-game battle models.
 
 ## Commander availability and recast scenarios
 
@@ -59,3 +61,28 @@ The new goal-aware proposal, deterministic validation and one-correction path is
 A numeric combat/control component is not an overall verdict when an explicitly evidenced central spell engine is outside the model. The bounded guard requires an explicit Spells commander plan supported by a majority of nonland library copies, a non-answer storm output, and mass spell recursion. A storm answer such as Flusterstorm, recursion alone, or an optional unmapped commander does not trigger it. Only a selected, independently modeled resource-output plan can exempt the guard; one weak optional outlet cannot claim coverage of the central spell engine. This is a coverage detector, not proof of a winning combo and not a storm power estimate.
 
 When this conjunction is present, overall strategic Power is unavailable. Named card evidence and missing storm-copy output, graveyard fuel/recasting and spell-cost sequencing remain visible, along with clearly labeled partial-route diagnostics. Loaded competitive placing-list evidence remains a separate source; the parser does not invent a replacement numeric score. The guard is deliberately bounded and does not establish coverage for every unmodeled archetype or format.
+
+
+## Bounded Equipment and known-no-output coverage
+
+Equipment uses actual fixed equipped-creature stats and direct keywords, a compatible distinct physical carrier, casting colors/costs and an explicit equip/attach mode. Printed full-cost equip remains available when an optional reduction is unmodeled. Granted activated/triggered text cannot donate free stats or keywords. Metalcraft checks actual accessible artifacts, including artifact lands with a land-play/sequencing caveat. One best coherent arrangement is assessed; overlapping alternatives are not summed. Tutors, stacking, reconfigure, cloak, variable bonuses and full sequencing remain unresolved.
+
+A no-route result is not automatically unknown or zero. Only a fail-closed full-text classifier can identify a loaded list made entirely of conservative nonclosing primitives: basic/mana-only production, land-only search, own card draw, creature-only answers and carrierless support Equipment. Unconsumed text, alternate faces, player damage, mill, non-land tutoring, recursion or alternate wins remain unknown. A fully covered nonclosing list has execution0 and only the existing feasible interaction/recovery contributions, with “No closing plan found.” This is not a prediction of zero wins. Adding an actual carrier/finisher restores a route; adding unknown conversion restores unavailable status.
+
+## Important Aura coverage and solitaire legality
+
+A bounded coverage guard recognizes a central positive creature-Aura package with compatible carriers and explicit enchantment-count scaling or enchantment-entry counter output. It requires multiple positive Aura names, a majority of nonland copies in the linked package, and positive Auras making up at least half that package. One optional Aura, generic enchantment density, opponent-only Auras, a payoff without providers or a Role-heavy body plan with two incidental Auras is insufficient. These are disclosed coverage-detector choices, not calibrated strength thresholds. Its attachment, scaling, entry-counter, Role and layered combat output remain unmodeled; overall strategic Power is unavailable while supported printed-body components remain diagnostic. Conditional flying is not intrinsic evasion.
+
+The simplified goldfish cannot cast a creature Aura without a legal modeled target. Unsupported target restrictions are skipped and disclosed. This legality guard does not implement Aura stat scaling, Role replacement, every granted ability or realistic combat. The model is still not a winning-turn forecast.
+
+## Format eligibility and cross-game capability scope
+
+All35 exposed profiles remain visible. The frozen reference population covers only five formats: Magic Standard, Modern and Commander; Pokémon Standard; and Yu-Gi-Oh! Advanced TCG. The other30 do not acquire reference calibration by reusing generic tests. None of these regression checks establishes empirical Power-scale or win-rate calibration.
+
+- Magic: Limited uses the unused pool rather than a15-card cap. Oathbreaker remains unavailable until a Signature Spell can be represented and verified. Commander-family outside-deck roles remain unresolved rather than blanket-banning Companions. Standard Brawl's colorless-commander exception permits one basic land type under CR903.12e; this is not blindly transferred to Arena100 Brawl. Duel Commander uses its own declared reference feed.
+- GLC: independently versioned organizer rules/bans replace Expanded substitution. Common-type intersection, singleton/shared-name rules, Rule Box and ACE SPEC exclusions, printing-specific bans and unresolved reprints are checked. Inapplicable four-of and ACE SPEC checklist weights are omitted; evolution copy targets respect singleton. This is rule-consistent structure, not a calibrated GLC strategy model.
+- Speed Duel: six Extra/Side cards and optional initial Skills follow the sourced baseline. Declared unsupported Skill state remains unresolved; physical logos and event-specific lists are not certified by provider pool membership. GOAT uses uncapped original Main/Fusion size and six-card first-turn scenarios; intermediate Side sizes retain variant uncertainty. Edison, Master Duel and Duel Links still lack required ban-list coverage.
+- Pokémon: Special Energy is not automatically every type. Printed production and known recipient restrictions are checked; unknown conditions remain explicit. Conditional attack bonuses no longer receive a fabricated50% chance. Printed two-/three-Prize liability is visible, not an arbitrary penalty or predicted prize race. Other scaling, sequencing and matchup assumptions remain provisional.
+- Yu-Gi-Oh!: search effects require a recognized opening activation mode and a matching target. Impossible or unresolved prerequisites do not count as independent opening starters. This does not solve complete combos, shared Normal Summons, all costs or interruption. Format hand windows do not calibrate the existing role weights.
+
+The benchmark reports executed, asserted, skipped and failed cases separately. Held-out-reference cases are actually asserted, null cannot satisfy a numeric band as zero, and unchanged/source-invalid cases have explicit reasons. Thresholds were not retuned to make the new model pass. Rule/coverage regressions, reference overlap and empirical battle calibration remain distinct.

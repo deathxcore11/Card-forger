@@ -256,18 +256,25 @@ export function normalizeYgo(c) {
 }
 
 // Deck formats. `pool` is the card pool name YGOPRODeck reports; `ban` the banlist.
+// Rules authority is distinct from provider card-pool / ban-status data.
+export const YGO_FORMAT_RULES = Object.freeze({
+  goat: Object.freeze({version:'goat-organizer.checked-2026-10-19',checkedAt:'2026-10-19',source:'https://www.goatformat.com/basics.html',scope:'Original organizer Main/Fusion sizes. Intermediate Side sizes and online-platform caps are variant-dependent; provider GOAT pool/ban status is not an independently refreshed historical list.'}),
+  speed: Object.freeze({version:'KDE-US-Speed-Duel-Addendum-1.2',effectiveAt:'2022-03-11',checkedAt:'2026-10-19',source:'https://www.yugioh-card.com/en/downloads/penalty_guide/Speed_Duel_Addendum_1.2_KDE-US.pdf',drawSource:'https://img.yugioh-card.com/eu/wp-content/uploads/2022/07/Speed_Duel_Guide_EN.pdf',scope:'KDE-US constructed baseline: Main 20–30, Extra/Side at most 6, optional initial Skill. Printing logo and event-specific restrictions are not certified by provider pool membership.'}),
+});
 export const YGO_FORMATS = [
   { id: "tcg", name: "Advanced (TCG)", main: [40, 60], extra: 15, side: 15, pool: "TCG", ban: "tcg" },
   { id: "traditional", name: "Traditional (TCG)", main: [40, 60], extra: 15, side: 15, pool: "TCG", ban: "tcg", traditional: true },
   { id: "ocg", name: "OCG", main: [40, 60], extra: 15, side: 15, pool: "OCG", ban: "ocg" },
-  { id: "goat", name: "GOAT", main: [40, 60], extra: 15, side: 15, pool: "GOAT", ban: "goat" },
+  { id: "goat", name: "GOAT", main: [40, Infinity], extra: Infinity, side: 15, firstTurnCards:6, secondTurnCards:6, pool: "GOAT", ban: "goat", rules:YGO_FORMAT_RULES.goat },
   { id: "edison", name: "Edison", main: [40, 60], extra: 15, side: 15, pool: "Edison", note: "Edison's own list isn't in the data; card pool only." },
   { id: "md", name: "Master Duel", main: [40, 60], extra: 15, side: 15, pool: "Master Duel", note: "Master Duel's banlist isn't in the data; card pool only." },
-  { id: "speed", name: "Speed Duel", main: [20, 30], extra: 5, side: 5, pool: "Speed Duel" },
+  { id: "speed", name: "Speed Duel", main: [20, 30], extra: 6, side: 6, firstTurnCards:4, secondTurnCards:5, pool: "Speed Duel", rules:YGO_FORMAT_RULES.speed },
   { id: "dl", name: "Duel Links", main: [20, 30], extra: 8, side: 8, pool: "Duel Links", note: "Duel Links' limited list isn't in the data; card pool only." },
   { id: "casual", name: "Casual", main: [40, 60], extra: 15, side: 15 },
 ];
 
+export const ygoZoneRange = (f, zone) => zone === 'main' ? (Number.isFinite(f.main[1]) ? `${f.main[0]}–${f.main[1]}` : `${f.main[0]}+ (no maximum)`) : Number.isFinite(f[zone]) ? `0–${f[zone]}` : 'No maximum';
+const poolKey = value => String(value || '').trim().toLowerCase().replace(/\s+/g,' ');
 // How many copies a format allows.
 export function ygoLimit(card, f) {
   if (!f.ban) return 3;
@@ -276,7 +283,9 @@ export function ygoLimit(card, f) {
   return s === "limited" ? 1 : s === "semi" ? 2 : 3;
 }
 export function ygoLegality(card, f) {
-  if (f.pool && card.pools?.length && !card.pools.includes(f.pool)) return "not_legal";
+  if (f.pool && (!Array.isArray(card.pools) || !card.pools.length)) return 'unknown';
+  if (f.pool && !card.pools.some(pool => poolKey(pool) === poolKey(f.pool))) return "not_legal";
+  if (f.ban && (!card.ban || !Object.hasOwn(card.ban, f.ban) || ![null,'banned','limited','semi'].includes(card.ban[f.ban]))) return 'unknown';
   const s = f.ban ? card.ban?.[f.ban] : null;
   if (s === "banned") return f.traditional ? "limited" : "banned";
   return s || "legal";
@@ -289,17 +298,31 @@ export function validateYgo(deck, cardOf, f) {
     main = count("main"),
     extra = count("extra"),
     side = count("side");
-  if (main < f.main[0] || main > f.main[1]) issues.push({ level: "bad", text: `Main Deck has ${main} cards; ${f.name} needs ${f.main[0]}–${f.main[1]}.` });
+  if (main < f.main[0] || main > f.main[1]) issues.push({ level: "bad", text: `Main Deck has ${main} cards; ${f.name} needs ${ygoZoneRange(f,'main')}.` });
   if (extra > f.extra) issues.push({ level: "bad", text: `Extra Deck has ${extra}; the limit is ${f.extra}.` });
   if (side > f.side) issues.push({ level: "bad", text: `Side Deck has ${side}; the limit is ${f.side}.` });
   if(f.note)issues.push({level:"pending",text:f.note});
+  if (f.id === 'goat') {
+    if (side > 0 && side < 15) issues.push({level:'pending',text:`GOAT Side Deck has ${side} cards: original rules use 0 or 15, while many events relax this. The intended Side Deck variant has not been verified.`});
+    issues.push({level:'warn',text:'GOAT uses original organizer rules with no Main/Fusion maximum; online-platform caps and event variants are not assumed. Historical pool and ban status come from the card provider.'});
+  }
+  if (f.id === 'speed') {
+    issues.push({level:'warn',text:'Speed Duel checks cover constructed sizes and provider card-pool membership only. The physical Speed Duel logo and any event-specific Forbidden & Limited list still need verification; no universal list is assumed.'});
+    const declared = [deck.skill,deck.skillCard,deck.skillCards,deck.skills,deck.sideSkills,z.skill,z.skills].some(v => Array.isArray(v) ? v.length > 0 : Boolean(v));
+    if (declared) issues.push({level:'pending',text:'A Speed Duel Skill is declared, but the initial Skill designation and complete Skill rules are not represented by this deck editor. Skills are optional; a Skill-free deck does not need one.'});
+  }
   const totals = new Map();
   for (const zone of ["main", "extra", "side"])
     for (const r of z[zone] || []) {
       totals.set(r.cardId, (totals.get(r.cardId) || 0) + r.qty);
       const c = cardOf(r.cardId);
       if (!c) {issues.push({level:"pending",text:`${r.qty}× ${r.name||r.cardId}: card details not loaded.`});continue;}
-      if(f.pool&&(!c.pools?.length||!c.ban&&f.ban))issues.push({level:"pending",text:`${c.name}: format data not verified.`});
+      if (c.brief || !c.name || !c.category) issues.push({level:'pending',text:`${r.name || r.cardId}: complete card identity and rules data need verification.`});
+      if(ygoLegality(c,f)==='unknown')issues.push({level:"pending",text:`${c.name}: format pool or ban-status data not verified.`});
+      if (f.id === 'speed' && c.category === 'Skill') {
+        issues.push({level:'pending',text:`${c.name}: Skill selection/rules are not fully represented. Side Deck Skills count toward the six-card Side Deck limit.`});
+        if (zone !== 'side') issues.push({level:'bad',text:`${c.name}: the initial Skill must be separate from the Main and Extra Decks.`});
+      }
       if (zone === "main" && c.extra) issues.push({ level: "bad", text: `${c.name} is an Extra Deck monster — move it to the Extra Deck.` });
       if (zone === "extra" && !c.extra) issues.push({ level: "bad", text: `${c.name} can’t go in the Extra Deck.` });
     }

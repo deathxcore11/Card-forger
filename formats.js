@@ -3,6 +3,8 @@
 // Scryfall's card data, so they stay current without app updates).
 //   size     – required deck size; `exact` means exactly that many, otherwise a minimum
 //   copies   – max copies of a non-basic card (1 = singleton)
+//   sideboard – ordinary sideboard cap; Infinity means unused Limited pool.
+//               Commander-family outside-deck roles still require verification.
 //   commander – null, or what may lead the deck: "legend" (legendary creature or
 //               "can be your commander"), "planeswalker" (Oathbreaker), "creature" (Pauper Commander)
 //   life     – starting life total
@@ -22,9 +24,9 @@ export const FORMATS = [
   { id: "duel", name: "Duel Commander", legality: "duel", size: 100, exact: true, copies: 1, commander: "legend", life: 20, group: "Commander" },
   { id: "predh", name: "PreDH", legality: "predh", size: 100, exact: true, copies: 1, commander: "legend", life: 40, group: "Commander" },
   { id: "paupercommander", name: "Pauper Commander", legality: "paupercommander", size: 100, exact: true, copies: 1, commander: "creature", life: 30, group: "Commander", note: "Commander: an uncommon creature. Other cards: commons." },
-  { id: "oathbreaker", name: "Oathbreaker", legality: "oathbreaker", size: 60, exact: true, copies: 1, commander: "planeswalker", life: 20, group: "Commander", note: "Leader: a planeswalker (your Oathbreaker). Add its signature spell to the list." },
+  { id: "oathbreaker", name: "Oathbreaker", legality: "oathbreaker", size: 60, exact: true, copies: 1, commander: "planeswalker", life: 20, group: "Commander", note: "60 cards including a planeswalker and its designated Signature Spell. Signature Spell selection is not yet supported; readiness and Power remain unavailable." },
   // MTG Arena / digital
-  { id: "brawl", name: "Brawl", legality: "brawl", size: 100, exact: true, copies: 1, commander: "brawl", life: 25, group: "Arena", note: "Arena's 100-card Brawl. A planeswalker can lead too." },
+  { id: "brawl", name: "Brawl", legality: "brawl", size: 100, exact: true, copies: 1, commander: "brawl", sideboard: 0, life: 25, group: "Arena", note: "Arena's 100-card Brawl. A planeswalker can lead too. No ordinary sideboard; Companion declarations need separate verification." },
   { id: "standardbrawl", name: "Standard Brawl", legality: "standardbrawl", size: 60, exact: true, copies: 1, commander: "brawl", life: 25, group: "Arena" },
   { id: "historic", name: "Historic", legality: "historic", size: 60, copies: 4, sideboard: 15, life: 20, group: "Arena" },
   { id: "timeless", name: "Timeless", legality: "timeless", size: 60, copies: 4, sideboard: 15, life: 20, group: "Arena" },
@@ -32,8 +34,19 @@ export const FORMATS = [
   { id: "gladiator", name: "Gladiator", legality: "gladiator", size: 100, exact: true, copies: 1, life: 30, group: "Arena" },
   // Casual
   { id: "casual60", name: "60-card casual", legality: null, size: 60, copies: 4, life: 20, group: "Casual" },
-  { id: "limited", name: "Limited (40-card)", legality: null, size: 40, copies: Infinity, life: 20, group: "Casual", note: "Draft or sealed: any number of copies of cards you opened." },
+  { id: "limited", name: "Limited (40-card)", legality: null, size: 40, copies: Infinity, sideboard: Infinity, life: 20, group: "Casual", note: "Draft or sealed: unused cards from your pool form the sideboard, without a 15-card cap. Pool membership is not verified." },
 ];
+
+// Bounded construction evidence, not a claim that every format is fully validated.
+// Arena Brawl (100) is not the 60-card Brawl option in CR 903.12. No independent
+// Standard Brawl / PreDH / Duel / PDH sideboard policy is inferred from this page.
+export const MTG_CONSTRUCTION_EVIDENCE = {
+  checkedAt: "2026-10-19",
+  comprehensiveRules: { effectiveAt: "2026-09-25", url: "https://media.wizards.com/2026/downloads/MagicCompRules%2020260925.pdf", sections: ["100.4a", "100.4b", "903.12e", "903.11", "702.139d"] },
+  arenaBrawl: "https://magic.wizards.com/en/formats/brawl",
+  limited: "https://magic.wizards.com/en/formats/sealed-deck",
+  oathbreaker: ["https://oathbreakermtg.org/quick-rules/", "https://oathbreakermtg.org/faq/"],
+};
 
 const BY_NAME = new Map(FORMATS.map((f) => [f.name.toLowerCase(), f]));
 const BY_ID = new Map(FORMATS.map((f) => [f.id, f]));
@@ -45,6 +58,26 @@ export const formatOf = (deckOrName) => {
 };
 export const FORMAT_NAMES = FORMATS.map((f) => f.name);
 export const isFormatName = (v) => BY_NAME.has(String(v || "").toLowerCase());
+
+// Shared by saved-deck validation and Power. Imported Companion headings currently
+// collapse into `side`, so a row there proves neither an ordinary sideboard nor a
+// valid Companion declaration. Never guess the role from its card name/keyword.
+export function formatReadinessIssues(deck, format = formatOf(deck)) {
+  const issues = [], sideN = (deck.side || []).filter(r => r.qty > 0).reduce((n, r) => n + r.qty, 0);
+  if (format.id === "oathbreaker") issues.push({
+    kind: "unverified", code: "signature-spell-unrepresented",
+    text: "Oathbreaker readiness is unresolved: a designated instant or sorcery Signature Spell within the Oathbreaker's color identity is required. This app does not yet record or verify that selection; merely including a spell in the 60 cards is not enough.",
+  });
+  if (sideN > 0 && format.commander) issues.push({
+    kind: "unverified", code: "outside-deck-role-unverified",
+    text: (format.id === "brawl" ? "Brawl has no ordinary sideboard. " : `${format.name} outside-deck rules need verification. `) + "This list does not separately identify or validate a Companion or other permitted outside-deck role, so side-entry eligibility is unresolved.",
+  });
+  else if (sideN > (format.sideboard ?? 15)) issues.push({
+    kind: "sideboard", code: "sideboard-limit",
+    text: `Sideboard has ${sideN} cards; the limit is ${format.sideboard ?? 15}.`,
+  });
+  return issues;
+}
 
 // Formats where one card leads the deck from the command zone.
 export const hasCommander = (d) => !!formatOf(d).commander;

@@ -39,7 +39,17 @@ jobs:
       - name: Syntax check
         run: for f in *.js *.mjs; do node --check "$f"; done
       - name: Unit and action tests
-        run: npm test
+        run: |
+          mkdir -p test-results
+          npm test
+        env:
+          POWER_BENCH_REPORT: test-results/power-benchmark.json
+      - name: Retain explicit Power benchmark assertion accounting
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: power-benchmark-accounting
+          path: test-results/power-benchmark.json
   dropdown-browser:
     runs-on: ubuntu-latest
     steps:

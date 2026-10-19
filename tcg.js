@@ -60,7 +60,7 @@ import { sharePayloadTcg, encodeShare } from "./share.js";
 import { factBox, overviewFacts } from "./facts.js";
 import { ygoEmblems, energyIcon, attackLine, tcgSetBadge, ygoPrintBadge, pkRarity, pkSetSymbol } from "./emblems.js";
 import { buildYgo, buildPtcg, YGO_STAPLES, PTCG_STAPLES, PTCG_SUPPORT_BASICS, energyName } from "./tcgbuild.js";
-import { ygoSource, ygoImageDirect, YGO_SET_CACHE_KEY, YGO_SET_LEGACY_CACHE_KEY, normalizeYgoSets, migrateYgoSetCache, resolveYgoSet, ygoSetPrintings, normalizeYgoSearch, ygoSearchFormatLabel, ygoSearchFormatSupported, ygoSearchEligibility, YGO_TYPES, YGO_ATTRIBUTES, YGO_RACES, YGO_SPELL_KINDS, YGO_TRAP_KINDS } from "./ygo.js";
+import { ygoSource, ygoZoneRange, ygoImageDirect, YGO_SET_CACHE_KEY, YGO_SET_LEGACY_CACHE_KEY, normalizeYgoSets, migrateYgoSetCache, resolveYgoSet, ygoSetPrintings, normalizeYgoSearch, ygoSearchFormatLabel, ygoSearchFormatSupported, ygoSearchEligibility, YGO_TYPES, YGO_ATTRIBUTES, YGO_RACES, YGO_SPELL_KINDS, YGO_TRAP_KINDS } from "./ygo.js";
 import { ptcgSource, ptcgImage, ptcgPrintingMatches, normalizePtcgSearch, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES, plainText } from "./ptcg.js";
 import { loadMeta, metaState, ptcgIcon, allCachedMeta, cleanName } from "./meta.js";
 import { tcgPower, powerPanel, powerChip, shownPower, asShown, powerReadiness } from "./power.js";
@@ -1326,7 +1326,7 @@ export function tcgDeck(id) {
     s = deckStats(g, d),
     issues = SOURCES[g].validate(d, (x) => cardOf(g, x), f),
     A = ui(g).deckAdd,
-    zones = g === "ygo" ? [["main", "Main Deck", `${f.main[0]}–${f.main[1]}`], ["extra", "Extra Deck", `0–${f.extra}`], ["side", "Side Deck", `0–${f.side}`]] : [["main", "Deck", "60"]],
+    zones = g === "ygo" ? [["main", "Main Deck", ygoZoneRange(f,"main")], ["extra", "Extra Deck", ygoZoneRange(f,"extra")], ["side", "Side Deck", ygoZoneRange(f,"side")]] : [["main", "Deck", "60"]],
     zoneCount = (z) => (d.zones[z] || []).reduce((a, r) => a + r.qty, 0),
     cover = cardOf(g, (d.zones.main || [])[0]?.cardId),
     shown = shownPower(tcgPower(g, d, f, x => cardOf(g, x)));
@@ -1370,7 +1370,7 @@ function tcgDeckEmblems(g, d) {
 }
 function deckCardsTab(g, d, f, s, issues) {
   const A = ui(g).deckAdd,
-    zones = g === "ygo" ? [["main", "Main Deck", `${f.main[0]}–${f.main[1]}`], ["extra", "Extra Deck", `0–${f.extra}`], ["side", "Side Deck", `0–${f.side}`]] : [["main", "Deck", "60"]],
+    zones = g === "ygo" ? [["main", "Main Deck", ygoZoneRange(f,"main")], ["extra", "Extra Deck", ygoZoneRange(f,"extra")], ["side", "Side Deck", ygoZoneRange(f,"side")]] : [["main", "Deck", "60"]],
     zoneCount = (z) => (d.zones[z] || []).reduce((a, r) => a + r.qty, 0);
   return `${viewControl(g,"deck")}<div class="searchbar deck-add"><input type="search" value="${esc(A.q)}" placeholder="Add a card by name" data-input="tDeckQ" data-enter="tDeckFind" aria-label="Add a card" autocomplete="off"><button class="btn" data-act="tDeckFind" ${A.busy ? "disabled" : ""}>${A.busy ? "…" : "Find"}</button></div>
   ${A.results.length ? `<div class="add-results">${A.results.map((c) => `<div class="mini-row">${imgTag(c, "mini-art")}<span class="ellip">${esc(c.name)}<small class="muted"> ${esc(c.set?.name || c.typeLine || "")}</small></span><button class="btn small" data-act="tDeckAdd" data-id="${esc(c.id)}" data-deck="${esc(d.id)}">＋</button></div>`).join("")}<button class="link small" data-act="tDeckAddClose">Close results</button></div>` : ""}
@@ -1482,7 +1482,7 @@ function deckInsights(g, d, f, s) {
     oddsRow = (x, hands) => `<tr><td><button class="link odds-name" data-act="tCard" data-id="${esc(x.r.cardId)}">${esc(x.r.name)}</button><span class="role-chips">${roleChips(x.r.cardId)}</span></td><td class="num">${x.r.qty}</td>${hands.map((n) => `<td class="num">${pctTxt(atLeastOne(N, x.r.qty, n))}</td>`).join("")}</tr>`;
   const valuePanel = `<section class="panel"><h3>Most valuable cards</h3><div class="list compact">${top.map((x) => `<button class="mini-row" data-act="tCard" data-id="${esc(x.r.cardId)}"><span class="ellip">${x.r.qty}× ${esc(x.r.name)}</span><span class="small">${usd(price(x.c) * x.r.qty)}</span></button>`).join("") || '<p class="muted small">No prices yet.</p>'}</div><p class="foot">Deck value ${usd(s.value)} · ${usd(s.buy)} still to buy.</p></section>`;
   if (g === "ygo") {
-    const kind = (c) => c?.category || "Monster",
+    const firstTurnCards=f.firstTurnCards||5,secondTurnCards=f.secondTurnCards||6,kind = (c) => c?.category || "Monster",
       count = (k) => main.filter((x) => kind(x.c) === k).reduce((a, x) => a + x.r.qty, 0),
       levels = Array(12).fill(0);
     for (const x of main) if (x.c?.category === "Monster" && x.c.level) levels[Math.min(12, x.c.level) - 1] += x.r.qty;
@@ -1495,8 +1495,8 @@ function deckInsights(g, d, f, s) {
       ${Object.keys(extraKinds).length ? `<p class="small">Extra Deck: ${Object.entries(extraKinds).map(([k, n]) => `${n} ${esc(k[0].toUpperCase() + k.slice(1))}`).join(" · ")}</p>` : ""}</section>
     <section class="panel"><h3>Monster levels</h3>${levelChart(levels)}<p class="foot">Level 5–6 monsters need 1 Tribute, 7+ need 2, unless their text says otherwise.</p></section>
     <section class="panel"><h3>Card by card</h3>
-      <p class="muted small">Chance to draw at least one copy (exact odds). Going first you draw 5; going second, 6. Labels show each card's job in the deck; the hand simulation above combines them.</p>
-      <table class="metrics"><thead><tr><th>Card</th><th class="num">Qty</th><th class="num" title="Going first: 5 cards">1st (5)</th><th class="num" title="Going second: 6 cards">2nd (6)</th></tr></thead><tbody>${main.sort((a, b) => b.r.qty - a.r.qty || String(a.r.name||a.c?.name||a.r.cardId||"").localeCompare(String(b.r.name||b.c?.name||b.r.cardId||""))).map((x) => oddsRow(x, [5, 6])).join("")}</tbody></table>
+      <p class="muted small">Chance to draw at least one copy (exact odds). First-turn scenarios use ${firstTurnCards} cards going first and ${secondTurnCards} going second under this format profile; these are not extra draw effects. Labels show each card's job in the deck; the hand simulation above combines them.</p>
+      <table class="metrics"><thead><tr><th>Card</th><th class="num">Qty</th><th class="num" title="Going first: ${firstTurnCards} cards">1st (${firstTurnCards})</th><th class="num" title="Going second: ${secondTurnCards} cards">2nd (${secondTurnCards})</th></tr></thead><tbody>${main.sort((a, b) => b.r.qty - a.r.qty || String(a.r.name||a.c?.name||a.r.cardId||"").localeCompare(String(b.r.name||b.c?.name||b.r.cardId||""))).map((x) => oddsRow(x, [firstTurnCards, secondTurnCards])).join("")}</tbody></table>
     </section>${valuePanel}`;
   }
   // Pokémon
@@ -2782,7 +2782,7 @@ export function registerTcg(c) {
       if(issues.length)return null;const after=tcgPower(G,next,f,id=>cardOf(G,id));const afterPower=shownPower(after);return {r,after,afterPower,delta:afterPower == null || beforePower == null ? null : afterPower-beforePower};
     }).filter(Boolean).sort((a,b)=>comparePower(b.after,a.after));
     const actions=ranked.map(({r,after,afterPower,delta})=>`<button class="btn ghost" data-act="tUpgradeSwap" data-deck="${esc(d.id)}" data-in="${esc(card.id)}" data-out="${esc(r.cardId)}" data-zone="${zone}">Cut 1× ${esc(r.name)} → ${esc(card.name)} <span class="small ${delta>0?"ok-text":delta<0?"warn-text":"muted"}">Power ${beforePower ?? "Unavailable"} → ${afterPower ?? "Unavailable"}${delta == null ? "" : ` · ${delta>0?"+":""}${delta.toFixed(1)}`}${after.engine?.unmappedNeeds?` · ${after.engine.unmappedNeeds} unrecognized requirements`:""}</span></button>`).join('');
-    openSheet(`<div class="sheet-head"><h2>Review upgrade</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p>Add 1× <b>${esc(card.name)}</b> to ${esc(d.name)}.</p><p class="muted small">${total} cards in ${zone}. Ranked with the same Power and engine checks as your deck. A neutral or lower estimate is a trade-off, not a claimed upgrade. Choose one copy to cut. Each swap preserves the count and saves a version you can restore.</p><div class="card-action-list">${actions}</div>${total<target?`<button class="btn" data-act="tDeckAdd" data-deck="${esc(d.id)}" data-id="${esc(card.id)}">Fill one open slot (${target-total} open)</button>`:''}`,{type:'upgrade',id:card.id});
+    openSheet(`<div class="sheet-head"><h2>Review upgrade</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><p>Add 1× <b>${esc(card.name)}</b> to ${esc(d.name)}.</p><p class="muted small">${total} cards in ${zone}. Ranked with the same Power and engine checks as your deck. A neutral or lower estimate is a trade-off, not a claimed upgrade. Choose one copy to cut. Each swap preserves the count and saves a version you can restore.</p><div class="card-action-list">${actions}</div>${Number.isFinite(target)&&total<target?`<button class="btn" data-act="tDeckAdd" data-deck="${esc(d.id)}" data-id="${esc(card.id)}">Fill one open slot (${target-total} open)</button>`:''}`,{type:'upgrade',id:card.id});
   };
   A.tUpgradeSwap = async t => {
     const commit=captureCommit(),mutate=scopedMutate(commit);
@@ -3402,14 +3402,14 @@ export function registerTcg(c) {
         const up = await spendUp(t2, budgets[i], { pool: upPool, quality: tquality, rows: trows, swap: tswap, cost, evaluate, accept: accept2, protect: tprotect, tolerance:0, maxCopies: (card) => SOURCES[G].limit(card, f), status });
         if (up.swaps.length) results[i] = { ...t2, ...up.deck, cost: up.cost, assessment: up.power, power: up.power.score, upgrades: up.swaps };
         // Yu-Gi-Oh!: a fuller Extra Deck is the next best use of the money (more lines and outs).
-        if (G === "ygo" && budgets[i]) {
+        if (G === "ygo" && budgets[i] && Number.isFinite(f.extra)) {
           let d = results[i];
           const cap = budgets[i],
             ext = upPool.filter((x) => x?.extra && SOURCES.ygo.legality(x, f) !== "not_legal").sort((a, b) => tquality(b) - tquality(a)),
             added = [];
           for (const x of ext) {
             const extra = d.zones.extra || [], n = extra.reduce((a, r) => a + r.qty, 0);
-            if (n >= (f.extra || 15)) break;
+            if (Number.isFinite(f.extra) && n >= f.extra) break;
             const have = extra.filter((r) => r.cardId === x.id).reduce((a, r) => a + r.qty, 0);
             if (have >= SOURCES.ygo.limit(x, f)) continue;
             const next = { ...d, zones: { ...d.zones, extra: have ? extra.map((r) => (r.cardId === x.id ? { ...r, qty: r.qty + 1 } : r)) : [...extra, { cardId: x.id, name: x.name, qty: 1 }] } },

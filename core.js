@@ -1,4 +1,4 @@
-import { formatOf, canLead, legalityIn } from "./formats.js";
+import { formatOf, canLead, legalityIn, formatReadinessIssues } from "./formats.js";
 import { tcgFallback, myPrice } from "./mtg-tcgprice.js";
 
 // Called millions of times while building and scoring decks: normalised names are remembered.
@@ -156,6 +156,14 @@ export function namePrice(card, quote = (finish) => cardPrice(card, finish)) {
   }
   return null;
 }
+// CR903.12e: the 60-card Brawl profile permits one chosen basic land type
+// with a known colorless commander. Do not transfer this exception to other
+// Commander variants or the independently documented Arena100 profile.
+export function brawlBasicIdentityException(deck,c,cardOf,f= formatOf(deck),configuration=commanderConfiguration(deck,cardOf,f)) {
+ if(f.id!=='standardbrawl'||!configuration.identityKnown||configuration.identity.length||!/^Basic(?: Snow)? Land\b/.test(c?.type_line||''))return false;
+ const types=new Set((deck.cards||[]).flatMap(r=>{const x=cardOf(r.name);return /^Basic(?: Snow)? Land\b/.test(x?.type_line||'')?[...(x.type_line||'').matchAll(/\b(Plains|Island|Swamp|Mountain|Forest)\b/g)].map(m=>m[1]):[];}));
+ return types.size===1&&[...types].some(t=>new RegExp('\\b'+t+'\\b').test(c.type_line));
+}
 export function validateDeck(deck, catalog, entries, decks = []) {
   const f = formatOf(deck),
     issues = [],
@@ -193,7 +201,7 @@ export function validateDeck(deck, catalog, entries, decks = []) {
       });
       continue;
     }
-    if (f.commander && comm && configuration.identityKnown && (m.color_identity||[]).some(x=>!configuration.identity.includes(x)))
+    if (f.commander && comm && configuration.identityKnown && (m.color_identity||[]).some(x=>!configuration.identity.includes(x))&&!brawlBasicIdentityException(deck,m,n=>catalog[cardKey(n)],f,configuration))
       issues.push({
         kind: "color",
         text: c.name + ": outside commander color identity.",
@@ -212,11 +220,9 @@ export function validateDeck(deck, catalog, entries, decks = []) {
       text: c.name + (legal === "restricted" ? ": restricted in " + f.name + " — one copy only." : `: more than ${limit} copies.`),
     });
   }
-  // Sideboard: at most 15 cards, legal in the format, and the copy limit counts main + side.
-  const side = aggregateCards(deck.side || []).filter((r) => r.qty > 0),
-    sideN = side.reduce((a, r) => a + r.qty, 0);
-  if (sideN > 15)
-    issues.push({ kind: "sideboard", text: `Sideboard has ${sideN} cards; the limit is 15.` });
+  // Format-specific zone/declaration checks are identical on the deck and Power pages.
+  issues.push(...formatReadinessIssues(deck, f));
+  const side = aggregateCards(deck.side || []).filter((r) => r.qty > 0);
   for (const r of side) {
     const m = catalog[cardKey(r.name)];
     if (!m) { issues.push({ kind: "unverified", text: r.name + " (sideboard): card data not resolved." }); continue; }

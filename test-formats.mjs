@@ -43,9 +43,10 @@ assert.ok(canLead(legend, formatOf("Commander")) && !canLead(pw, formatOf("Comma
 assert.ok(canLead(pw, formatOf("Oathbreaker")) && !canLead(legend, formatOf("Oathbreaker")));
 assert.ok(!canLead(elf, formatOf("Pauper Commander")) && !canLead(elf, formatOf("Commander")));
 assert.ok(canLead(pw, formatOf("Brawl")));
-// Oathbreaker: exactly 60, singleton, planeswalker leads.
+// Oathbreaker: exactly 60, singleton, planeswalker leads. A spell in the list is
+// not a designated Signature Spell; the current app cannot represent selection.
 const oath = cat(pw, bolt, mountain);
-assert.deepEqual(issues(deck("Oathbreaker", [{ name: pw.name, qty: 1 }, { name: "Lightning Bolt", qty: 1 }, { name: "Mountain", qty: 58 }], pw.name), oath), []);
+assert.match(issues(deck("Oathbreaker", [{ name: pw.name, qty: 1 }, { name: "Lightning Bolt", qty: 1 }, { name: "Mountain", qty: 58 }], pw.name), oath).join(), /unverified:Oathbreaker readiness is unresolved.*Signature Spell/);
 assert.match(issues(deck("Oathbreaker", [{ name: pw.name, qty: 1 }, { name: "Lightning Bolt", qty: 2 }, { name: "Mountain", qty: 57 }], pw.name), oath).join(), /singleton/);
 assert.match(issues(deck("Oathbreaker", [{ name: legend.name, qty: 1 }, { name: "Mountain", qty: 59 }], legend.name), cat(legend, mountain)).join(), /planeswalker as your Oathbreaker/);
 // Format-specific ban: legal in Commander, banned in Duel.

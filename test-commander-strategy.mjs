@@ -69,7 +69,7 @@ const sideIdentity={...catalog,[cardKey('Fixture side identity')]:{...catalog[ca
 
 // Commander-unavailable context is a diagnostic, not a new dependence penalty.
 const soleCloser={...leader,name:'Fixture sole commander closer',power:'8',cmc:4,mana_cost:'{4}',oracle_text:'Flying'};
-const soleScenario=score(make([],soleCloser));assert.ok(soleScenario.dependence.withCommander.execution>0);assert.equal(soleScenario.dependence.withoutCommander.score,null,'no mapped library closer is unknown, not zero or a guaranteed loss');
+const soleScenario=score(make([],soleCloser));assert.ok(soleScenario.dependence.withCommander.execution>0);assert.equal(soleScenario.dependence.withoutCommander.score,0,'fully covered mana/blank library has no supported output contribution, not a guaranteed loss');assert.equal(soleScenario.dependence.withoutCommander.status,'no-closing-plan');
 const optionalCommander={...leader,name:'Fixture optional expensive leader',cmc:15,mana_cost:'{15}'};
 const optionalScenario=score(make([[threat,20]],optionalCommander));assert.equal(optionalScenario.dependence.withCommander.score,optionalScenario.dependence.withoutCommander.score,'optional expensive commander never penalizes unchanged independent library route');assert.equal(optionalScenario.score,baseline.score);
 assert.deepEqual(optionalScenario.dependence.recast[0].scenarios.map(r=>r.genericTax),[0,2,4]);assert.deepEqual(optionalScenario.dependence.recast[0].scenarios.map(r=>r.normalMana),[15,17,19]);

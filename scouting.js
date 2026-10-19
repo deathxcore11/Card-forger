@@ -22,7 +22,7 @@ export function competitiveScore(p) {
   return null;
 }
 // The headline label: eligibility first, then how it compares with the field.
-export const verdictTier = (p, score) => (p?.caps?.some((c) => c.key === "Legal") ? { label: "Not tournament-legal yet", tone: "bad" } : competitiveTier(score));
+export const verdictTier = (p, score) => (p?.caps?.some((c) => c.key === "Legal") ? (p?.readiness?.issues?.some(i=>i.level==='bad') ? { label: "Not tournament-legal yet", tone: "bad" } : { label: "Format checks unresolved", tone: "warn" }) : competitiveTier(score));
 export function competitiveTier(score) {
   if (score == null) return { label: "Not compared with the field yet", tone: "" };
   return score >= 88 ? { label: "Tier 1 reference estimate", tone: "ok" } : score >= 75 ? { label: "Competitive reference estimate", tone: "ok" } : score >= 62 ? { label: "Developing competitive estimate", tone: "warn" } : score >= 50 ? { label: "Limited tournament evidence", tone: "warn" } : { label: "Low competitive estimate", tone: "bad" };

@@ -86,6 +86,7 @@ const ASSETS = [
   "./commander-criteria.js",
   "./commander-strategy.js",
   "./mtg-effects.js",
+  "./mtg-route-coverage.js",
 
   "./ai-ask.js",
   "./ai-rules.js",
@@ -173,6 +174,7 @@ const ASSETS = [
   "./games.js",
   "./tcg.js",
   "./ygo.js",
+  "./ptcg-glc-rules.js",
   "./ptcg.js",
   "./pokemon-catalogue-supplement.js",
   "./tcgbuild.js",
