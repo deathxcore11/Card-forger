@@ -24,6 +24,11 @@ export function attachCardGestures({ onHold, onPick, choosing, onSelect=()=>fals
     clear();
     if (e.button !== 0 || e.isPrimary === false) { press = null; return; }
     const card = e.target.closest?.('[data-act="card"], [data-act="tCard"], [data-hold-card]');
+    // Only card gestures own scroll/cancel suppression. Keep selectable lot
+    // backgrounds protected too, without intercepting unrelated controls.
+    const lot = e.target.closest?.('.lot'), button = e.target.closest?.('button');
+    const selectableLot = lot?.querySelector?.('.batch-mark input') && !e.target.closest?.('label,input,select,.stepper,.lot-side') && (!button || ['card', 'tCard'].includes(button.dataset.act));
+    if (!card && !selectableLot) { press = null; return; }
     press = { x: e.clientX, y: e.clientY, id: e.pointerId, card, moved: false, held: false };
     if (!card) return;
     const original = press, art = card.matches?.('.lot-art, .grid-card, .deck-tile, .tile') ? card : null;

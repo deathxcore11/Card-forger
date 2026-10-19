@@ -21,6 +21,27 @@ fire('keydown',{key:'F10',shiftKey:true});assert.equal(held,2,'keyboard action m
 globalThis.setTimeout=oldSet;globalThis.clearTimeout=oldClear;
 console.log('PASS: hold menu, movement/cancellation guard, keyboard access, distinct same-game comparison.');
 
+// A normal control must not inherit card gesture suppression from a rail scroll.
+// Selectable lot backgrounds still need drag/cancel protection before onSelect.
+const scopeEvents={},scopeRoot={addEventListener:(type,fn)=>{(scopeEvents[type] ||= []).push(fn);}},batchLot={querySelector:()=>({})};
+const ordinary={closest:()=>null},batchTarget={closest:s=>s==='.lot'?batchLot:null},excludedInput={closest:s=>s==='.lot'?batchLot:s==='label,input,select,.stepper,.lot-side'?{}:null},otherButton={closest:s=>s==='.lot'?batchLot:s==='button'?{dataset:{act:'qty'}}:null};
+let scopeBlocked=0,scopeStopped=0,batchSelected=0;
+attachCardGestures({root:scopeRoot,onHold:()=>assert.fail('non-card background must not hold'),onPick:()=>assert.fail('non-card background must not compare'),choosing:()=>false,onSelect:t=>t===batchTarget?(batchSelected++,true):false});
+const scopedFire=(type,target,extra={})=>{const e={target,clientX:20,clientY:20,pointerId:1,button:0,isPrimary:true,detail:1,preventDefault:()=>scopeBlocked++,stopImmediatePropagation:()=>scopeStopped++,...extra};for(const f of scopeEvents[type]||[])f(e);};
+for(const control of [ordinary,excludedInput,otherButton])for(const interrupt of ['scroll','pointermove','pointercancel']){
+ const before=[scopeBlocked,scopeStopped,batchSelected];scopedFire('pointerdown',control);scopedFire(interrupt,control,{clientY:50});scopedFire('pointerup',control);scopedFire('click',control);
+ assert.deepEqual([scopeBlocked,scopeStopped,batchSelected],before,'non-card control retains its single click after '+interrupt);
+}
+for(const interrupt of ['scroll','pointermove','pointercancel']){
+ const before=[scopeBlocked,scopeStopped,batchSelected];scopedFire('pointerdown',batchTarget);scopedFire(interrupt,batchTarget,{clientY:50});scopedFire('pointerup',batchTarget);scopedFire('click',batchTarget);
+ assert.deepEqual([scopeBlocked,scopeStopped,batchSelected],[before[0]+1,before[1]+1,before[2]],'selectable lot '+interrupt+' cannot select');
+}
+scopedFire('pointerdown',batchTarget);scopedFire('pointerup',batchTarget);scopedFire('click',batchTarget);assert.equal(batchSelected,1,'normal lot-background selection remains supported');
+scopedFire('pointerdown',batchTarget);scopedFire('scroll',batchTarget);scopedFire('pointerup',batchTarget);scopedFire('click',batchTarget,{detail:0});assert.equal(batchSelected,2,'keyboard selection is not suppressed by stale pointer movement');
+scopedFire('pointerdown',batchTarget);scopedFire('scroll',batchTarget);const beforeOrdinary=[scopeBlocked,scopeStopped];scopedFire('pointerdown',ordinary);scopedFire('pointerup',ordinary);scopedFire('click',ordinary);assert.deepEqual([scopeBlocked,scopeStopped],beforeOrdinary,'a new ordinary press clears stale card-domain movement');
+console.log('PASS: ordinary controls propagate after scroll/move/cancel; selectable lot drag/cancel and normal/keyboard selection stay protected.');
+
+
 for (const game of ['mtg','ptcg','ygo']) {
  const html=cardActionButtons({game});
  assert.equal((html.match(/<svg /g)||[]).length,5,'every action has a real SVG');

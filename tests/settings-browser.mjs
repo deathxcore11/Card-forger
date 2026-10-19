@@ -16,7 +16,7 @@ const samples={
 const longNames={mtg:'Alpha fixture • The Archivist of Forgotten Worlds, Keeper of the Unwritten Chronicles',ptcg:'Alpha fixture • Professor’s Research (Professor Oak’s Celebrations Research Archive)',ygo:'Alpha fixture • The Celestial Dragon of Ancient Worlds and the Endless Twilight'};
 for(const game of ['mtg','ptcg','ygo'])for(const card of [...CARDS[game],...RAW[game]])if(card.name.startsWith('Alpha fixture'))card.name=longNames[game]+' '+card.id;
 const evidence='Synthetic long card names, prices, inventory and provider responses. Unchanged pinned public artwork is substituted into the same-game header/card/daily ambient only for visual-fit, contrast and translucency stress checks, not card identity, live prices, provider availability or real-device proof. No art filters or text opacity are injected by the harness; the temporary ambient visibility A/B is diagnostic only.';
-const headerChecks=[];let failure,failureDiagnostics;
+const headerChecks=[],gestureChecks=[];let failure,failureDiagnostics;
 const rgb=value=>{const n=String(value).match(/[\d.]+/g)?.map(Number);assert(n&&n.length>=3,'computed RGB color: '+value);return n;};
 const lum=c=>c.slice(0,3).map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4).reduce((v,n,i)=>v+n*[.2126,.7152,.0722][i],0);
 const contrast=(a,b)=>(Math.max(lum(a),lum(b))+.05)/(Math.min(lum(a),lum(b))+.05);
@@ -55,11 +55,12 @@ try{
     const record=(type,target,extra={})=>{
      const dialog=document.querySelector('#settingsDialog');
      if(!dialog?.open&&!target?.closest?.('#settingsDialog'))return;
-     trace.push({type,at:performance.now(),step:window.__settingsTraceStep||null,target:target?.id||target?.closest?.('[data-act]')?.dataset.act||target?.nodeName,pressed:pressed?.id||null,pressedConnected:pressed?.isConnected??null,stateTab:window.__uiTestState?.ui.settingsTab,pane:dialog.querySelector('.settings-pane:not([hidden])')?.id,selected:dialog.querySelector('.settings-tabs [aria-selected="true"]')?.id,focus:document.activeElement?.id,viewport:innerWidth,navigationBusy:document.querySelector('#content')?.getAttribute('aria-busy'),...extra});
+     trace.push({type,at:performance.now(),step:window.__settingsTraceStep||null,target:target?.id||target?.closest?.('[data-act]')?.dataset.act||target?.nodeName,pressed:pressed?.id||null,pressedConnected:pressed?.isConnected??null,stateTab:window.__uiTestState?.ui.settingsTab,pane:dialog.querySelector('.settings-pane:not([hidden])')?.id,selected:dialog.querySelector('.settings-tabs [aria-selected="true"]')?.id,focus:document.activeElement?.id,viewport:innerWidth,navigationBusy:document.querySelector('#content')?.getAttribute('aria-busy'),railLeft:dialog.querySelector('.settings-tabs')?.scrollLeft,dialogTop:dialog.scrollTop,...extra});
      if(trace.length>600)trace.splice(0,trace.length-600);
     };
-    for(const type of ['pointerdown','pointerup','click'])window.addEventListener(type,e=>{if(type==='pointerdown')pressed=e.target;record(type+'-capture',e.target,{x:e.clientX,y:e.clientY,defaultPrevented:e.defaultPrevented});},true);
-    document.addEventListener('click',e=>record('click-bubble',e.target,{defaultPrevented:e.defaultPrevented}));
+    for(const type of ['pointerdown','pointerup','click'])window.addEventListener(type,e=>{if(type==='pointerdown')pressed=e.target;record(type+'-capture',e.target,{x:e.clientX,y:e.clientY,pointerType:e.pointerType,detail:e.detail,trusted:e.isTrusted,defaultPrevented:e.defaultPrevented});},true);
+    document.addEventListener('click',e=>record('click-bubble',e.target,{defaultPrevented:e.defaultPrevented,trusted:e.isTrusted}));
+    document.addEventListener('scroll',e=>record('scroll-capture',e.target,{scrollLeft:e.target.scrollLeft,scrollTop:e.target.scrollTop,trusted:e.isTrusted}),true);
     const dialog=document.querySelector('#settingsDialog');
     new MutationObserver(rows=>{for(const row of rows)if(row.type==='childList'||row.target.matches?.('.settings-pane,.settings-tabs [role="tab"]'))record('mutation',row.target,{attribute:row.attributeName,removed:row.removedNodes?.length||0,added:row.addedNodes?.length||0});}).observe(dialog,{subtree:true,childList:true,attributes:true,attributeFilter:['hidden','aria-selected','tabindex']});
    });
@@ -72,6 +73,20 @@ try{
    assert(await page.locator('#settingsDialog').evaluate(n=>n.matches(':modal')));
    assert.equal(page.url(),url);assert.equal(await page.locator('#settingsDialog [data-act="setGame"]').count(),0);
    assert.deepEqual(await page.locator('.settings-tabs [role=tab]').allTextContents(),['Account','Recovery','App Help & Info','App Settings']);
+   // Deterministic real-control regression: a rail scroll between trusted mouse
+   // down/up must not be mistaken for a card drag. No click retry or dispatch.
+   await page.setViewportSize({width:320,height:900});await page.locator('#settingsTab-app').click();
+   await page.locator('.settings-tabs').evaluate(async n=>{n.scrollLeft=0;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
+   const account=page.locator('#settingsTab-account'),accountBox=await account.boundingBox();assert(accountBox&&accountBox.width>0);
+   const traceStart=await page.evaluate(game=>{window.__settingsTraceStep={game,width:320,tab:'account',probe:'non-card-rail-scroll'};return window.__settingsInteractionTrace.length;},game);
+   await page.mouse.move(accountBox.x+accountBox.width/2,accountBox.y+accountBox.height/2);await page.mouse.down();
+   try{await page.locator('.settings-tabs').evaluate(async n=>{n.scrollLeft=8;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});assert.equal(await page.locator('.settings-tabs').evaluate(n=>n.scrollLeft),8);}finally{await page.mouse.up();}
+   assert.equal(await page.locator('.settings-pane:not([hidden])').getAttribute('id'),'settings-account','one actual Account click survives an intervening rail scroll');
+   assert.equal(await page.locator('.settings-tabs [aria-selected="true"]').getAttribute('id'),'settingsTab-account');assert.equal(await page.locator('.settings-tabs [tabindex="0"]').getAttribute('id'),'settingsTab-account');
+   const gesture=await page.evaluate(start=>window.__settingsInteractionTrace.slice(start),traceStart),down=gesture.findIndex(e=>e.type==='pointerdown-capture'),scroll=gesture.findIndex(e=>e.type==='scroll-capture'&&e.scrollLeft===8),up=gesture.findIndex(e=>e.type==='pointerup-capture');
+   assert(down>=0&&scroll>down&&up>scroll,'actual rail scroll occurs within the one pointer gesture');
+   for(const type of ['pointerdown-capture','pointerup-capture','click-capture','click-bubble']){const events=gesture.filter(e=>e.type===type);assert.equal(events.length,1,type+' occurs once');assert.equal(events[0].target,'settingsTab-account');assert.equal(events[0].trusted,true);}
+   gestureChecks.push({game,viewport:320,trace:gesture});assert.equal(await inventorySnapshot(page),original);await capture(page,`synthetic-search-settings-${game}-rail-scroll-single-click`);
    for(const theme of ['dark','light']) {
    await page.locator('#settingsTab-app').click();await page.locator('#settingsTheme-'+theme).check();
    assert.equal(await page.locator('html').getAttribute('data-theme'),theme);
@@ -193,4 +208,4 @@ try{
    app.health();console.log(`PASS: ${game} four Settings tabs, light/dark reload, glass parity, keyboard, Back, fold resize, draft and inventory preservation`);
   }catch(error){failureDiagnostics=await page.evaluate(()=>({step:window.__settingsTraceStep||null,trace:window.__settingsInteractionTrace||[]})).catch(()=>null);await capture(page,`synthetic-search-settings-${game}-failure`,{settle:false}).catch(()=>{});throw error;}finally{await app.context.close();}
  }
-}catch(error){failure=String(error.stack||error);throw error;}finally{const out=new URL('../test-results/',import.meta.url);await mkdir(out,{recursive:true});await writeFile(new URL('synthetic-search-settings-theme-evidence.json',out),JSON.stringify({status:failure?'failed':'passed',evidence,headerChecks,...(failure?{error:failure,diagnostics:failureDiagnostics}:{})},null,2));await browser.close();await server.close();}
+}catch(error){failure=String(error.stack||error);throw error;}finally{const out=new URL('../test-results/',import.meta.url);await mkdir(out,{recursive:true});await writeFile(new URL('synthetic-search-settings-theme-evidence.json',out),JSON.stringify({status:failure?'failed':'passed',evidence,headerChecks,gestureChecks,...(failure?{error:failure,diagnostics:failureDiagnostics}:{})},null,2));await browser.close();await server.close();}
