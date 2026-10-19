@@ -15,9 +15,10 @@ const cardsOf = (p, key, n = 3) => (p.parts?.find((x) => x.key === key)?.cards |
 
 // Competitive score: the field's verdict when tournament data exists, else unknown.
 export function competitiveScore(p) {
+  if(p?.readiness?.provisional || p?.readiness?.eligible===false)return null;
   const c = p?.ctx || {};
   if (c.from === "meta" || c.from === "mixed") return c.score;
-  if (c.from === "rogue") return c.fieldEstimate ?? null;
+  if (c.from === "rogue") return p?.game === "mtg" && p?.strategic ? null : c.fieldEstimate ?? null;
   return null;
 }
 // The headline label: eligibility first, then how it compares with the field.
@@ -57,21 +58,21 @@ function gameText(p) {
   const bad = (p.sims || []).find((s) => s.lower && s.p > s.target);
   const log = g.samples?.[0]?.log?.slice(0, 3) || [],
     t = p.game === "ygo" ? log.map((l) => l.text).join(" ") : log.map((l) => `turn ${l.t}: ${l.text}`).join("; ");
-  return `${esc(g.headline)}${t ? ` Example from the simplified model: ${esc(t)}.` : ""}${bad ? ` A probability to review: ${esc(bad.label.toLowerCase())} happens ${pc(bad.p)} of the time (reference target under ${pc(bad.target)}). This is not necessarily a required piece.` : ""}`;
+  return `${esc(g.headline)}${g.limitations?.length ? ` ${esc(g.limitations.join(" "))}` : ""}${t ? ` Example from the simplified model: ${esc(t)}.` : ""}${bad ? ` A probability to review: ${esc(bad.label.toLowerCase())} happens ${pc(bad.p)} of the time (reference target under ${pc(bad.target)}). This is not necessarily a required piece.` : ""}`;
 }
 
 function synergyText(p) {
   const links = p.engine?.links || [];
-  if (!links.length) return "No card in the list clearly depends on another one, so its cards mostly work on their own. Decks that win usually have pieces that multiply each other.";
+  if (!links.length) return "No supported dependency was mapped here. This does not prove the cards work independently or that an unrecognized engine is missing.";
   return links
     .slice(0, 3)
-    .map((x) => `<b>${esc(x.payoff)}</b> wants ${esc(String(x.need).replace(/^type:(\w+)/i, (m, t) => t[0].toUpperCase() + t.slice(1) + " Energy").replace(/^(?!.*Energy$)(.*)$/, (m) => m.toLowerCase()))}: ${esc(x.providers.slice(0, 3).map((q) => `${q.qty}× ${q.name}`).join(", "))}${x.openingBoth != null ? ` (you open both ${pc(x.openingBoth)} of the time)` : ""}.`)
+    .map((x) => `<b>${esc(x.payoff)}</b> wants ${esc(String(x.need).replace(/^type:(\w+)/i, (m, t) => t[0].toUpperCase() + t.slice(1) + " Energy").replace(/^(?!.*Energy$)(.*)$/, (m) => m.toLowerCase()))}: ${esc(x.providers.slice(0, 3).map((q) => `${q.qty}× ${q.name}`).join(", "))}${x.providers.length>3 ? ` and ${x.providers.length-3} other linked card name(s)` : ""}${x.openingBoth != null ? ` (${pc(x.openingBoth)} natural opening access across all ${x.supportCopies ?? x.providers.reduce((n,q)=>n+q.qty,0)} linked support copies)` : x.openingAccess != null ? ` (${pc(x.openingAccess)} natural library access; command-zone casting still required)` : ""}. Availability is not execution; printed costs, triggers and limits still apply.`)
     .join(" ");
 }
 
 function fieldText(p) {
   const c = p.ctx || {}, m = p.match;
-  if (c.from === "commander") return "Casual Commander isn't measured against a tournament field here; the Bracket estimate is the better guide for who it's fair to play against.";
+  if (c.from === "commander") return "There is no supported tournament-field estimate here. The provisional strategic estimate, its coverage and your pod’s expectations are separate; none establishes a matchup win rate.";
   if (!c.lists && c.from === "build") return c.reason === "format" ? `There are no recent tournament results for ${esc(p.formatName || "this format")} in the data, so it can't be compared with what's winning.` : "Not compared with recent tournament decks yet. Open this tab with an internet connection to load them.";
   const field = (c.field || []).slice(0, 3).map((a) => `${a.name}${a.share ? ` (${pc(a.share)})` : ""}`);
   const threats = (p.strategicRisk?.axes || []).flatMap((a) => a.threats.map((t) => `${t.rival} plays ${t.card}, which hits its ${a.label.toLowerCase()}`)).slice(0, 2);
@@ -98,9 +99,9 @@ export function scoutingReport(p) {
   const comp = competitiveScore(p);
   const rows = [
     ["The plan", planText(p)],
-    ["How a game goes", gameText(p)],
+    [p.goldfish?.limitations?.length ? "Simplified sequence" : "How a game goes", gameText(p)],
     ["What makes it work", synergyText(p)],
-    ["How it wins", p.goldfish ? `${esc(p.goldfish.winCon)} ${esc(p.goldfish.endgame)}` : ""],
+    [p.goldfish?.limitations?.length ? "Modeled output" : "How it wins", p.goldfish ? `${esc(p.goldfish.winCon)} ${esc(p.goldfish.endgame)}` : ""],
     ["Against the field", fieldText(p)],
     ["Verdict", verdictText(p, comp)],
   ].filter(([, t]) => t);

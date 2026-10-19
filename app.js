@@ -71,7 +71,7 @@ import { nextFact } from "./facts.js";
 import { S, STORAGE, CATALOG_RECORD, RECOVERY, blank, uid, meta, inv, deckById, currentDeck, priceOf, cacheCard, slim } from "./store.js";
 import { $, $$, esc, safeHref, usd, img, art, cardImage, options, segmented, customBudget, registerSetIcons, captureDisclosures, restoreDisclosures } from "./ui.js";
 import * as V from "./views.js";
-import { refreshCheapest, cheapestKnown } from "./mtg-cheap.js";
+import { refreshCheapest, cheapestKnown, cheapestQuery } from "./mtg-cheap.js";
 import { readRecord, writeRecord, writeRecords, persistenceStatus, requestPersistence } from "./storage.js";
 import {
   cardKey as key, sumQty, typeText, rulesText, isLand, commanderEligible, mergeDeckCard,
@@ -101,7 +101,7 @@ import { registerScanner, scanView } from "./scancam.js";
 import { newGame, proxyList, proxySheetHTML, podSpeed } from "./extras.js";
 import { sharePayload, encodeShare, decodeShare } from "./share.js";
 import { FORMATS, formatOf, hasCommander, canLead, verifyLeader, sizeLabel } from "./formats.js";
-import { buildTiers, formatsFor, themeQuery, BUDGET_TIERS, upgradePool, copyLimit, fitFor } from "./builder.js";
+import { buildTiers, formatsFor, themeQueries, BUDGET_TIERS, upgradePool, copyLimit, fitFor } from "./builder.js";
 import * as T from "./tcg.js";
 import { rulesPage, learnSheet } from "./rules.js";
 import { GAMES, GAME_ICON, GAME_COLOR } from "./games.js";
@@ -2393,13 +2393,14 @@ const poolCache = new Set();
 async function loadFormatPool(f, colors, seed, progress) {
   const ci = colors.filter((c) => c !== "C").join("").toLowerCase() || "c",
     fq = f.legality ? "f:" + f.legality : "game:paper",
-    theme = seed ? themeQuery(seed) : "",
+    themes = seed ? themeQueries(seed) : [],
+    theme = themes.join("|"),
     key = f.id + "|" + ci + "|" + theme;
   const basics = (colors.length ? colors : ["C"]).map(c=>({W:"Plains",U:"Island",B:"Swamp",R:"Mountain",G:"Forest",C:"Wastes"})[c]).filter(Boolean);
   for (const name of basics) await resolve(name).catch(()=>{});
   if (poolCache.has(key)) return;
   const queries = [
-    ...(theme ? [["cards for its theme", `${fq} id<=${ci} -t:land ${theme}`]] : []),
+    ...themes.map(query => ["cards for its plan", `${fq} id<=${ci} -t:land ${query}`]),
     ["the format’s staples", `${fq} id<=${ci} -t:land`],
     ["budget picks", `${fq} id<=${ci} -t:land usd<=0.5`],
     ["efficient interaction", `${fq} id<=${ci} -t:land cmc<=3 (o:destroy or o:exile or o:counter)`],
@@ -2449,7 +2450,7 @@ async function runBuild() {
       const cards=aggregateCards([...commanders,...(d.main||[])]);await resolveNames(cards.map(r=>r.name));
       candidates.push({proven:d.key,source:sourceCredit({kind:'Tournament list',url:d.url,description:d.event}),label:d.event || d.name,format:f.name,commander:commanders[0]?.name || '',cards,total:sumQty(cards),size:f.size,warnings:[]});
     }
-    const cost=d=>purchaseCost(d.cards,{key:r=>key(r.name),owned:r=>/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(r.name)?r.qty:B.avail(r.name),price:r=>priceOf(r.name)});
+    const cost=d=>purchaseCost(d.cards,{key:r=>key(r.name),owned:r=>B.avail(r.name),price:r=>priceOf(r.name)});
     const evaluate=d=>mtgPower({...d,id:'builder:mtg'}),targets=[...candidates.filter(d=>d.proven),...candidates.slice(-1)],protectedKeys=new Set([seed.name]);
     candidates=await refineCandidates(candidates,{evaluate,cost,status:buildMsg,rounds:2,maxNeighbors:12,
       accept:d=>!evaluate(d).readiness?.provisional,
@@ -2476,7 +2477,7 @@ async function runBuild() {
       if(up.swaps.length)tiers[i]={...t,...up.deck,cost:up.cost,assessment:up.power,power:up.power.score,upgrades:up.swaps};
     }
     tiers=variantsFrom(budgetNotes(tiers.map(t=>t&&asShown(t)),budgets),budgets,d=>difficultyOf(d.cards.map(r=>{const c=meta(r.name);return {qty:r.qty,text:!c || /\bLand\b/.test(c.type_line || '')?null:c.oracle_text || (c.card_faces || []).map(x=>x.oracle_text || '').join(' ')};})));
-    B.results[f.name]=tiers.filter(Boolean).map((winner,i)=>{const d=winner;return {...d,owned:d.cards.reduce((n,r)=>n+Math.min(r.qty,/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(r.name)?r.qty:B.avail(r.name)),0)};});
+    B.results[f.name]=tiers.filter(Boolean).map((winner,i)=>{const d=winner;return {...d,owned:d.cards.reduce((n,r)=>n+Math.min(r.qty,B.avail(r.name)),0)};});
     B.msg = `${B.results[f.name].length} budget versions · compared ${candidates.length} decks using Power, legality and purchase cost.`;
   } catch (e) {
     B.msg = e.message;
@@ -2559,7 +2560,7 @@ A.optimizeMtgDeck = async () => {
 };
 A.tierAlternative = t => {
  const B=S.ui.build,n=B.results[B.format]?.[Number(t.dataset.i)]?.nextUpgrade;if(!n)return;
- B.results[B.format].push({...n,owned:n.cards.reduce((sum,r)=>sum+Math.min(r.qty,/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(r.name)?r.qty:B.avail(r.name)),0),nextUpgrade:null,explanation:'Outside the original budget. Review the actual purchase total before saving.',warnings:[...(n.warnings || [])]});
+ B.results[B.format].push({...n,owned:n.cards.reduce((sum,r)=>sum+Math.min(r.qty,B.avail(r.name)),0),nextUpgrade:null,explanation:'Outside the original budget. Review the actual purchase total before saving.',warnings:[...(n.warnings || [])]});
  B.openTier=B.results[B.format].length-1;refreshSheet();
 };
 A.buildFormat = (t) => {
@@ -2645,7 +2646,7 @@ A.tierToggle = (t) => {
   else render();
 };
 function generatedDeck(t, seedName) {
-  return withSnapshot({ id: uid(), name: `${seedName.split(",")[0]} · ${t.format} · ${t.budget===Infinity?"unlimited":t.budget ? "$" + t.budget : "my cards"}`, format: t.format, commander: t.commander, strategy: "Auto", budget: t.budget===Infinity?null:t.budget, locked: false, cards: t.cards.map((r) => ({ name: r.name, qty: r.qty })), versions: [], source: t.source || sourceCredit({ kind: "Generated", description: `Generated by CardStashy around ${seedName} with ${t.budget===Infinity?"an unlimited":`a $${t.budget}`} budget.` }) }, "Generated");
+  return withSnapshot({ id: uid(), name: `${seedName.split(",")[0]} · ${t.format} · ${t.budget===Infinity?"unlimited":t.budget ? "$" + t.budget : "my cards"}`, format: t.format, commander: t.commander, goal:t.goal || "strongest", requestedStyle:t.requestedStyle || "", goalVerified:t.goalVerified === true, requiredCards:[...(t.requiredCards||[])], excludedCards:[...(t.excludedCards||[])], requestedColors:[...(t.requestedColors||[])], strategy: "Auto", budget: t.budget===Infinity?null:t.budget, locked: false, cards: t.cards.map((r) => ({ name: r.name, qty: r.qty })), versions: [], source: t.source || sourceCredit({ kind: "Generated", description: `Generated by CardStashy around ${seedName} with ${t.budget===Infinity?"an unlimited":`a $${t.budget}`} budget.` }) }, "Generated");
 }
 A.tierSave = async (t) => {
   const commit=scopedCommit();
@@ -4823,7 +4824,7 @@ A.randomDeck=async()=>{
     else{
       const c=cacheCard(await api("/cards/random?"+new URLSearchParams({q:"game:paper legal:commander is:commander"})));
       if(!commanderEligible(c))throw Error("This random card is not a supported single commander. Try again.");
-      const own=inv(c.name),deck={id:"random:"+c.id,name:c.name+" · random idea",format:"Commander",commander:c.name,strategy:"Auto",budget:25,locked:false,cards:[{name:c.name,qty:1}]};
+      const own=inv(c.name),deck={id:"random:"+c.id,name:c.name+" · random idea",format:"Commander",commander:c.name,strategy:"Auto",budget:null,locked:false,cards:[{name:c.name,qty:1}]};
       S.ui.ideas.cache.push({commander:c,deck,plan:"Random",owned:own.owned,available:Math.min(1,own.available),slots:1,open:99,themeCards:0,reason:"Random legal commander; review the generated plan",difficulty:"Review sequencing"});index=S.ui.ideas.cache.length-1;
     }
     if(!navigationCurrent(screen))return;
@@ -4958,7 +4959,7 @@ function ideaDeck() {
 }
 function openIdea(i) {
   const I2 = S.ui.ideas;
-  if (I2.open?.i !== i) I2.open = { i, budget: I2.defaultBudget ?? S.state.settings.budget ?? 25, custom: null, busy: false, initialized: false, msg: "Loading a complete proposed deck, including lands…" };
+  if (I2.open?.i !== i) I2.open = { i, budget: I2.defaultBudget ?? Infinity, custom: null, diagnostics: null, busy: false, initialized: false, msg: "Loading a complete proposed deck, including lands…" };
   I2.sel = I2.sel && I2.open.i === i ? I2.sel : new Set();
   openSheet(V.ideaSheet(I2.cache[i], ideaDeck(), I2.open, I2.sel), { type: "idea", i });
   if (!I2.open.initialized) {
@@ -4977,7 +4978,7 @@ A.sheetBack = () => {
 };
 A.ideaCustomBudget = async () => {
 
- const value=customBudget($("#ideaCustomBudget").value);
+ const raw=$("#ideaCustomBudget").value, value=String(raw).trim() ? customBudget(raw) : Infinity;
  S.ui.ideas.defaultBudget=value;
  await A.ideaBudget({dataset:{v:String(value)}});
 };
@@ -4989,28 +4990,36 @@ A.ideaBudget = async (t) => {
     o = I2.open,
     idea = I2.cache[o.i],
     budget = Number(t.dataset.v);
-  o.budget = budget;
-  I2.sel = new Set();
   if (o.busy) return;
+  if ((budget !== Infinity && !Number.isFinite(budget)) || budget < 0 || (budget !== Infinity && budget > 100000)) return toast("Choose a purchase budget from $0 to $100,000, or No cap.");
+  o.budget = budget;
+  I2.defaultBudget = budget;
+  o.diagnostics = null;
+  o.error = "";
+  I2.sel = new Set();
   if (!budget) {
     o.custom = null;
     return openIdea(o.i);
   }
   o.busy = true;
+  o.custom = null;
   o.msg = "Finding cards to buy…";
   openIdea(o.i);
   try {
     const base = { ...idea.deck, budget, id: "idea-preview", cards: [{ name: idea.commander.name, qty: 1 }] };
-    await loadCandidates(base, budget, (m) => {
+    const loaded = await loadCandidates(base, budget, (m) => {
       o.msg = m;
       const el = $("#ideaMsg");
       if (el) el.textContent = m;
     });
     const plan = completionPlan(base, S.state.collection, S.state.decks, S.catalog, { budget, landTarget: 36, preferOwned: true, simple: false });
-    o.custom = { ...idea.deck, budget, cards: plan.deck.cards };
-    o.msg = `${usd(plan.cost)} of new cards picked${plan.open ? ` · ${plan.open} slots still open` : ""}.`;
+    o.diagnostics = { ...plan.diagnostics, candidateLoads: loaded, warnings: plan.warnings.filter(w => !/heuristic|measured win rates/i.test(w)) };
+    if (loaded.failed) o.diagnostics.warnings.push(`${loaded.failed} card-data lookups failed. Retry data before assuming the budget is the problem.`);
+    o.custom = { ...idea.deck, budget: budget === Infinity ? null : budget, budgetBasis: "purchase", cards: plan.deck.cards, buildDiagnostics: o.diagnostics };
+    o.msg = `${plan.open ? "Incomplete draft" : "Complete 100-card list"}: ${plan.cost == null ? "purchase cost unverified" : `${usd(plan.cost)} for new copies currently listed`}${plan.open ? `; ${plan.open} slots still open` : ""}. Purchase budget: ${budget === Infinity ? "no cap" : usd(budget)}.`;
   } catch (e) {
-    o.msg = e.message;
+    o.error = e.message || "The deck could not be built.";
+    o.msg = `Build failed: ${o.error} No completed list is available to save.`;
   } finally {
     o.busy = false;
     saveCatalogSoon();
@@ -5037,13 +5046,15 @@ const ideaPicked = () => {
 };
 A.ideaSaveAll = async () => {
   const commit=scopedCommit();
-  if(S.ui.ideas.open?.busy)return toast("Wait for the full deck preview.");
+  if(S.ui.ideas.open?.busy)return toast("Wait for the deck preview.");
+  if(S.ui.ideas.open?.error)return toast("The build failed. Retry before saving a draft.");
   const idea = S.ui.ideas.cache[S.ui.ideas.open.i],
-    d = withSnapshot({ ...structuredClone(ideaDeck()), id: uid(), name: idea.commander.name.split(",")[0] + " · " + idea.plan, versions: [] }, "Started from a deck idea");
+    preview = structuredClone(ideaDeck()), count = sumQty(preview.cards), incomplete = count !== 100, needsReview = !!mtgPower(preview).readiness?.provisional,
+    d = withSnapshot({ ...preview, id: uid(), name: idea.commander.name.split(",")[0] + " · " + idea.plan, versions: [] }, incomplete ? "Started incomplete draft from a deck idea" : needsReview ? "Started draft needing deck checks" : "Started from a deck idea");
   await commit((s) => {
     s.decks.push(d);
     s.activeDeck = d.id;
-  }, { msg: "Saved as a new deck." });
+  }, { msg: incomplete ? `Saved incomplete draft (${count}/100 cards).` : needsReview ? "Saved draft (100/100 cards; deck checks need review)." : "Saved complete 100-card list as a new deck." });
   closeSheet();
   go(`#deck/${d.id}/cards`);
 };
@@ -5092,7 +5103,7 @@ A.ideaBuy = () => {
 A.saveIdea = (t) => {
   S.ui.ideas.sel = new Set();
   openIdea(Number(t.dataset.i));
-  toast("Review the full list, then save the entire deck including lands.");
+  toast("Review the card count and warnings before saving this list. Incomplete lists are saved only as drafts.");
 };
 
 I.refSearch = (t) => {
@@ -5259,7 +5270,7 @@ async function loadCandidates(d, cap, progress) {
   if (!commanderEligible(comm)) throw Error("Pick a valid single commander first (⋯ → re-import, or start a new deck).");
   const ci = (comm.color_identity || []).join("").toLowerCase() || "c",
     theme = commanderTheme(comm),
-    base = `game:paper legal:commander id<=${ci} usd<=${Math.max(0.25, cap)}`,
+    base = `game:paper legal:commander id<=${ci}${cap === Infinity ? "" : ` usd<=${Math.max(0.25, cap)}`}`,
     queries = [
       ["ramp", '-t:land (o:"add {" or o:"search your library for a basic land" or o:"treasure token")'],
       ["card draw", '-t:land (o:"draw a card" or o:"draw two" or o:"draws a card")'],
@@ -5284,9 +5295,24 @@ async function loadCandidates(d, cap, progress) {
       failed++;
     }
   }
-  for (const b of (comm.color_identity?.length ? comm.color_identity : ["C"]).map((c) => ({ W: "Plains", U: "Island", B: "Swamp", R: "Mountain", G: "Forest", C: "Wastes" })[c]))
-    await resolve(b).catch(() => failed++);
-  return { loaded, failed };
+  const basics = [];
+  for (const name of (comm.color_identity?.length ? comm.color_identity : ["C"]).map(c => ({ W: "Plains", U: "Island", B: "Swamp", R: "Mountain", G: "Forest", C: "Wastes" })[c])) {
+    let card = null, lookupFailed = false;
+    progress(`Checking ${name} data and price…`);
+    try { card = await resolve(name); } catch { lookupFailed = true; }
+    // A named lookup may select an unpriced new printing. Find a real, priced
+    // paper basic instead of inventing a free land or blaming the spending cap.
+    if (!card || cardPrice(card) === null || card.legalities?.commander !== "legal") {
+      try {
+        const result = await api("/cards/search?" + new URLSearchParams({ q: `${cheapestQuery(name)} legal:commander t:basic`, order: "usd", dir: "asc" }));
+        const priced = (result.data || []).find(c => key(c.name) === key(name) && /^Basic\b/.test(typeText(c)) && c.legalities?.commander === "legal" && cardPrice(c) !== null);
+        if (priced) { card = cacheCard(priced); loaded++; lookupFailed = false; }
+      } catch { lookupFailed = true; }
+    }
+    if (lookupFailed) failed++;
+    basics.push({ name, loaded: !!card, priced: cardPrice(card) !== null, price: cardPrice(card), lookupFailed });
+  }
+  return { loaded, failed, basics };
 }
 
 A.fillBudget = (t) => {

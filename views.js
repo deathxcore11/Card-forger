@@ -167,7 +167,7 @@ export function deckTile(d, wide = false) {
     valueAmount = v.unpriced && v.unpriced === t.copies ? "—" : usd(v.total, 0),
     valueLabel = v.unpriced ? `${v.unpriced === t.copies ? "value unavailable" : "known deck subtotal"} · ${v.unpriced} unpriced` : "value",
     gapAmount = t.unpriced && t.unpriced === t.missing ? "—" : usd(t.pricedGap, 0),
-    gapLabel = t.unpriced ? `${t.unpriced === t.missing ? "cost unavailable" : "known subtotal to finish"} · ${t.unpriced} unpriced` : "to finish",
+    gapLabel = t.unpriced ? `${t.unpriced === t.missing ? "cost unavailable" : "known purchase subtotal"} · ${t.unpriced} unpriced` : t.copies < formatOf(d).size ? "for listed cards" : "to finish",
     cover = coverOf(d),
     target = formatOf(d).size,
     owned = t.copies ? t.covered / t.copies : 0;
@@ -553,7 +553,10 @@ export function setPage() {
 const tierLabel = (t) => (t.variant ? `${t.variant}${t.coversText ? ` · ${t.coversText}` : ""}` : t.budget===Infinity ? "No budget limit" : t.budget ? `Up to $${t.budget}${t.upTo ? "–" + t.upTo : ""}` : "Your cards only");
 
 function tierCard(t, i, mode, tierList = null) {
-  const p = t.power == null ? engineProfile({ format: t.format, commander: t.commander, cards: t.cards }, S.catalog) : null,
+  const p = mtgPower({ ...t, id: `tier-preview-${i}` }),
+    sizeComplete = t.total >= t.size && (!formatOf(t.format).exact || t.total === t.size),
+    complete = sizeComplete && !p.readiness?.provisional && (!t.preparedByAsk || t.legalChecked === true),
+    power = complete ? shownPower(p) : null,
     shown = S.ui.build.openTier === i,
     groups = { Creatures: [], Spells: [], Lands: [], Other: [] };
   for (const r of t.cards) {
@@ -562,17 +565,17 @@ function tierCard(t, i, mode, tierList = null) {
       free = Math.min(r.qty, t.preparedByAsk ? t.availableCopies?.[key(r.name)] ?? 0 : S.ui.build.avail?.(r.name) ?? 0),
       referencePrice = t.preparedByAsk ? t.referencePrices?.[key(r.name)] ?? null : priceOf(r.name),
       basic = isBasic(c) || /^(Plains|Island|Swamp|Mountain|Forest|Wastes)$/.test(r.name);
-    const need = basic && !t.preparedByAsk ? 0 : Math.max(0, r.qty - free), tt = tierOf("mtg", c?.rarity || "", referencePrice), why = r.why === "Already in your list" ? "Kept in this version" : r.why || "";
+    const need = Math.max(0, r.qty - free), tt = tierOf("mtg", c?.rarity || "", referencePrice), why = r.why === "Already in your list" ? "Kept in this version" : r.why || "";
     // The same card tile as the deck page: art with price, set and mana, owned or needed.
-    const tile = `<div class="lot deck-row tier-row ${need ? "short" : ""}" data-tier="${tt.key}" style="${tierStyle(tt)}"><button class="lot-art" ${finishAttrs('mtg',c,{})} data-act="card" data-name="${esc(r.name)}" aria-label="Open ${esc(r.name)}">${img(cardImage(c), r.name)}${c ? tileChrome("mtg", c) : ""}<span class="art-price">${usd(referencePrice)}</span></button><div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(r.name)}">${esc(r.name)}</button><span class="lot-sub">${manaCost(c)}${why ? `<small class="muted">${esc(why)}</small>` : ""}</span><span class="own ${need ? "no" : "yes"}">${need ? "Need " + need : basic && !free && !t.preparedByAsk ? "Basic land" : "Owned"}</span></div><div class="lot-side"><span class="tier-qty">×${r.qty}</span></div></div>`;
-    groups[g].push({ qty: r.qty, name: r.name, tile, need, art: img(art(c), r.name, "mini-art"), act: `data-act="card" data-name="${esc(r.name)}"`, why, status: basic && !t.preparedByAsk ? "basic" : free >= r.qty ? "✓ Owned" : `Need ${r.qty - free}`, ok: (basic && !t.preparedByAsk) || free >= r.qty });
+    const tile = `<div class="lot deck-row tier-row ${need ? "short" : ""}" data-tier="${tt.key}" style="${tierStyle(tt)}"><button class="lot-art" ${finishAttrs('mtg',c,{})} data-act="card" data-name="${esc(r.name)}" aria-label="Open ${esc(r.name)}">${img(cardImage(c), r.name)}${c ? tileChrome("mtg", c) : ""}<span class="art-price">${usd(referencePrice)}</span></button><div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(r.name)}">${esc(r.name)}</button><span class="lot-sub">${manaCost(c)}${why ? `<small class="muted">${esc(why)}</small>` : ""}</span><span class="own ${need ? "no" : "yes"}">${need ? "Need " + need : "Owned"}</span></div><div class="lot-side"><span class="tier-qty">×${r.qty}</span></div></div>`;
+    groups[g].push({ qty: r.qty, name: r.name, tile, need, art: img(art(c), r.name, "mini-art"), act: `data-act="card" data-name="${esc(r.name)}"`, why, status: free >= r.qty ? "✓ Owned" : `Need ${r.qty - free}`, ok: free >= r.qty });
   }
   for (const k of Object.keys(groups)) groups[k].sort((a, b) => b.qty - a.qty || a.name.localeCompare(b.name));
   return tierCardHtml({
     title: `${t.total < t.size ? `Draft — ${t.size - t.total} slot${t.size - t.total === 1 ? "" : "s"} open · ` : ""}${esc(t.preparedByAsk ? (t.budgetBasis === "owned" ? "Owned-cards draft" : `Requested ${t.budgetBasis === "total" ? "whole-deck" : "purchase"} budget: ${t.budget===Infinity?"unlimited":usd(t.budget)}`) : tierLabel(t))}`,
     format: t.format,
-    legal: t.preparedByAsk ? {ok:t.legalChecked,text:t.legalChecked?"Legality checked":t.total<t.size?"Incomplete":"Needs review"} : t.total < t.size ? { ok: false, text: "Incomplete" } : { ok: true, text: "Legal" },
-    cost: t.cost, unknown: t.unknown, difficulty: t.difficulty, power: t.power ?? shownPower(p), powerKind: t.powerKind, engine: t.engine,
+    legal: !sizeComplete ? { ok: false, text: t.total < t.size ? "Incomplete" : "Wrong deck size" } : !complete ? { ok: false, text: "Needs review" } : { ok: true, text: t.preparedByAsk ? "Legality checked" : "Legal" },
+    cost: t.cost, unknown: t.unknown, difficulty: t.difficulty, power, powerUnavailable: power == null, powerKind: t.powerKind, engine: power == null ? null : t.engine, complete,
     sizeText: `${t.total}/${t.size} cards`, owned: t.total ? t.owned / t.total : 0,
     evidence: t.proven ? `Tournament candidate · ${t.label}` : "", warnings: t.warnings.filter((w) => !/slots? still open/.test(w)),
     notes: (t.preparedByAsk ? `<p class="small muted">${esc(t.buildAround)}${t.commander ? ` · Commander: ${esc(t.commander)}` : ""} · ${t.lands} lands. ${esc(t.commanderReason || "")}. ${t.budgetBasis === "total" ? "Whole-deck budget" : t.budgetBasis === "owned" ? "Owned cards only" : "Purchase budget"}: ${t.budget===Infinity?"unlimited":usd(t.budget)}.</p><p class="small ${t.withinBudget?"muted":"warn-text"}">Whole-deck estimate: ${t.totalEstimate===null?`${usd(t.pricedSubtotal)} priced subtotal + ${t.unpricedCopies} unpriced copies`:usd(t.totalEstimate)}. To buy: ${t.purchaseEstimate===null?`${usd(t.pricedPurchaseSubtotal)} priced subtotal + ${t.unpricedPurchaseCopies} unpriced copies`:usd(t.purchaseEstimate)}. Includes basic lands; excludes tax and shipping. Estimates, not checkout totals. Prices and owned counts are a snapshot${t.preparedAt?` from ${esc(t.preparedAt.slice(0,16).replace("T"," "))} UTC`:""}; ask again to refresh.</p>` : "") + budgetComparisonHtml(t, i, "tierAlternative") + (tierList ? draftPath(tierList, i, tierLabel) : ""),
@@ -580,11 +583,11 @@ function tierCard(t, i, mode, tierList = null) {
     groups: ["Creatures", "Spells", "Lands", "Other"].map((name) => ({ name, rows: groups[name] })),
     toggle: `data-act="tierToggle" data-i="${i}"`,
     save: mode === "fill" ? `data-act="tierApply" data-i="${i}"` : `data-act="tierSave" data-i="${i}"`,
-    saveLabel: mode === "fill" ? "Use this version" : "Save as deck",
+    saveLabel: mode === "fill" ? (complete ? "Use this version" : "Use this draft") : (complete ? "Save as deck" : "Save draft"),
     buy: `data-act="tierBuy" data-i="${i}"`, need: Object.values(groups).flat().reduce((a, r) => a + r.need, 0),
     more: mode === "fill" ? [{ icon: "copy", label: "Copy deck list", note: "Paste into any deck site", attrs: `data-act="tierCopy" data-i="${i}"` }] : [
-      { icon: "sword", label: "Save and see matchups", note: "How it does against the decks winning now", attrs: `data-act="tierSaveGo" data-i="${i}" data-to="matchups"` },
-      { icon: "cardStack", label: "Save and playtest", note: "Draw opening hands", attrs: `data-act="tierSaveGo" data-i="${i}" data-to="playtest"` },
+      { icon: "sword", label: complete ? "Save and see matchups" : "Save draft and see matchups", note: "How it does against the decks winning now", attrs: `data-act="tierSaveGo" data-i="${i}" data-to="matchups"` },
+      { icon: "cardStack", label: complete ? "Save and playtest" : "Save draft and playtest", note: "Draw opening hands", attrs: `data-act="tierSaveGo" data-i="${i}" data-to="playtest"` },
       { icon: "copy", label: "Copy deck list", note: "Arena / MTGO text", attrs: `data-act="tierCopy" data-i="${i}"` },
     ],
   });
@@ -598,7 +601,7 @@ export function buildSheet() {
     fmts = seed ? formatsFor(seed, ALL_FORMATS) : [];
   return `<div class="sheet-head"><h2 class="build-heading">${brandMark("brand-idle")}<span>Build decks</span></h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   <div class="build-seed">${img(art(seed), prepared ? tiers[0].buildAround : B.seed, "mini-art")}<div><small class="muted">Built around</small><b>${esc(prepared ? tiers[0].buildAround : B.seed)}</b>${seed ? colorDots(seed) : ""}</div>${prepared ? "" : `<button class="btn ghost small" data-act="buildRandom" data-format="${esc(B.format)}">🎲 Random card</button>`}</div>
-  ${prepared ? `<p class="muted small">An unsaved draft prepared from your request and checked against app card data. Review every card and warning below. Save as deck keeps this exact list; nothing is changed until you choose it.</p>` : `  <p class="muted small">Pick a format for a complete, legal deck at each budget, using your cards first. Basic lands count as owned.</p>
+  ${prepared ? `<p class="muted small">An unsaved draft prepared from your request and checked against app card data. Review every card and warning below. Save as deck keeps this exact list; nothing is changed until you choose it.</p>` : `  <p class="muted small">Pick a format for a complete, legal deck at each budget, using your cards first. Basic lands are included; missing copies count toward the purchase estimate.</p>
   <div class="fmt-chips">${fmts.map((f) => `<button class="chip pick ${f.name === B.format ? "on" : ""}" ${B.busy?"disabled":""} data-act="buildFormat" data-format="${esc(f.name)}">${esc(f.name)}</button>`).join("") || '<span class="muted small">This card isn’t legal in any constructed format.</span>'}</div>
   <label class="custom-budget">Purchase budget $<input id="buildCustom" type="number" min="0" max="100000" step="1" value="${esc(B.custom ?? "")}" placeholder="Blank = unlimited" ${B.busy?"disabled":""} data-change="buildCustom"></label>
 `}
@@ -1020,7 +1023,7 @@ export function sharedPage() {
     <div class="hero-body"><div class="row between"><button class="icon light" data-act="go" data-to="#home" aria-label="Home">←</button><span class="chip dark">Shared deck</span></div>
       <h1>${esc(d.name)}</h1>
       <p>${fm.commander ? colorDots(meta(d.commander)) + " " + esc(d.commander || "") + " · " : ""}<span class="chip dark">${esc(fm.name)}</span>${d.author ? ` · by <b>${esc(d.author)}</b>` : ""}</p>
-      <div class="hero-stats"><span><b class="${(fm.exact ? sumQty(d.cards) === target : sumQty(d.cards) >= target) ? "" : "warn-text"}">${sumQty(d.cards)}/${target}</b>cards</span><span><b>${shownPower(mtgPower(d))}</b>power</span>${br ? `<span><b>${br.bracket}</b>bracket est.</span>` : ""}<span><b>${d.budget !== null ? usd(d.budget, 0) : "—"}</b>budget</span></div>
+      <div class="hero-stats"><span><b class="${(fm.exact ? sumQty(d.cards) === target : sumQty(d.cards) >= target) ? "" : "warn-text"}">${sumQty(d.cards)}/${target}</b>cards</span><span><b>${shownPower(mtgPower(d)) ?? "—"}</b>${shownPower(mtgPower(d)) == null ? "power unavailable" : "power"}</span>${br ? `<span><b>${br.bracket}</b>bracket est.</span>` : ""}<span><b>${d.budget !== null ? usd(d.budget, 0) : "—"}</b>budget</span></div>
     </div></section>
   <div class="actions wrap share-actions"><button class="btn" data-act="sharedBuild">Make my version</button><button class="btn ghost" data-act="sharedSave">Save to Inspiration</button><button class="btn ghost" data-act="sharedCopy">Copy list</button></div>
   ${d.about ? `<section class="panel"><h3>About this deck</h3><p class="about">${esc(d.about)}</p><p class="foot">Written by ${esc(d.author || "the person who shared it")}.</p></section>` : ""}
@@ -1090,11 +1093,12 @@ export function deckPage() {
       <div class="hero-stats">
         <span><b class="${(fm.exact ? t.copies === target : t.copies >= target) ? "" : "warn-text"}">${t.copies}/${target}</b>cards</span>
         <span><b>${t.copies ? Math.round((t.covered / t.copies) * 100) : 0}%</b>owned</span>
-        <span><b>${usd(t.pricedGap, 0)}${t.unpriced ? "+" : ""}</b>to finish${t.unpriced ? " · some unpriced" : ""}</span>
-        <button data-act="deckTab" data-id="engine"><b>${shownPower(mtgPower(d))}</b>power</button>
+        <span><b>${usd(t.pricedGap, 0)}${t.unpriced ? "+" : ""}</b>${t.copies < target ? "for listed cards" : "to finish"}${t.unpriced ? " · some unpriced" : ""}</span>
+        <button data-act="deckTab" data-id="engine"><b>${shownPower(mtgPower(d)) ?? "—"}</b>${shownPower(mtgPower(d)) == null ? "power unavailable" : "power"}</button>
       </div>
     </div>
   </section>
+  ${t.copies < target ? `<div class="note warn">Incomplete draft: ${target - t.copies} slots remain. Power is unavailable. The listed-card price does not include empty slots.${(d.buildDiagnostics?.warnings || []).slice(0, 2).map(w => `<p class="small">${esc(w)}</p>`).join("")}</div>` : ""}
   <nav class="tabs" role="tablist">${tabs.map(([id, l]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="deckTab" data-id="${id}">${l}</button>`).join("")}</nav>
   ${fm.commander && !canLead(meta(d.commander), fm) && tab !== "upgrade" ? `<button class="note warn block-note" data-act="deckTab" data-id="upgrade">⚠ No ${fm.commander === "planeswalker" ? "Oathbreaker" : "commander"} set — tap to choose one so colors and synergy are checked.</button>` : ""}
   <div class="deck-body" data-tab="${tab}">${{ rules: ()=>interactiveRules("mtg", {format:d.format}), cards: deckCards, engine: deckEngine, matchups: deckMatchups, upgrade: deckUpgrade, versions: deckVersions, playtest: deckPlaytest, shop: deckShop }[tab](d, t)}</div>`;
@@ -1161,7 +1165,7 @@ function mtgDeckEmblems(d) {
 function deckCards(d, t) {
   const target = formatOf(d).size;
   return `${viewControl("mtg","deck")}<div class="add-row"><input id="deckAddName" placeholder="Add a card by name" data-enter="deckAdd" aria-label="Card name to add" autocomplete="off"><button class="btn" data-act="deckAdd">Add</button></div>
-  <div class="cover-line"><span><b>${t.covered}</b>/${t.copies} owned${t.missing ? ` · <b>${t.missing}</b> missing · <b>${usd(t.pricedGap)}</b>${t.unpriced ? "+" : ""} to finish` : " · everything owned ✓"}</span>${t.copies < target ? (d.format === "Commander" ? `<button class="link" data-act="deckTab" data-id="upgrade">Fill ${target - t.copies} slots →</button>` : `<button class="link" data-act="formatSearch">Find ${esc(formatOf(d).name)} cards →</button>`) : ""}</div>
+  <div class="cover-line"><span><b>${t.covered}</b>/${t.copies} owned${t.missing ? ` · <b>${t.missing}</b> missing · <b>${usd(t.pricedGap)}</b>${t.unpriced ? "+" : ""} ${t.copies < target ? "for listed cards" : "to finish"}` : " · listed cards owned ✓"}</span>${t.copies < target ? (d.format === "Commander" ? `<button class="link" data-act="deckTab" data-id="upgrade">Fill ${target - t.copies} slots →</button>` : `<button class="link" data-act="formatSearch">Find ${esc(formatOf(d).name)} cards →</button>`) : ""}</div>
   ${bar(t.copies ? t.covered / t.copies : 0)}
   <div class="toolbar"><input type="search" value="${esc(S.ui.q.deck)}" placeholder="Search this deck" data-input="deckSearch" aria-label="Search deck"><select data-change="deckFilter" aria-label="Show">${options([["all", "All"], ["missing", "Missing"], ["owned", "Owned"], ["unresolved", "Unresolved"]], S.ui.deckFilter)}</select><select data-change="deckSort" aria-label="Group by">${options([["type", "By type"], ["mv", "By mana value"], ["role", "By role"], ["price", "By price"]], S.ui.deckSort)}</select></div>
   ${mtgDeckEmblems(d)}
@@ -1479,8 +1483,8 @@ function fillPanel(d, open) {
 }
 
 function fillResults(d, plan) {
-  const before = engineProfile(d, S.catalog),
-    after = engineProfile(plan.deck, S.catalog);
+  const before = { ...engineProfile(d, S.catalog), score: shownPower(mtgPower(d)) },
+    after = { ...engineProfile(plan.deck, S.catalog), score: shownPower(mtgPower(plan.deck)) };
   return `<div class="impact">${impactCells(before, after, { cost: plan.cost })}</div>
   <div class="list compact">${plan.additions
     .map((a) => `<button class="mini-row" data-act="card" data-name="${esc(a.name)}"><span class="ellip">${a.qty > 1 ? a.qty + "× " : ""}${esc(a.name)} <span class="muted small">· ${esc(a.reason)}</span></span><b>${a.available > 0 ? "owned" : usd(a.price)}</b></button>`)
@@ -1496,7 +1500,7 @@ function impactCells(a, b, { cost = null, trade = null } = {}) {
     return `<div class="imp"><small>${label}</small><b>${fmt(y)}</b>${delta ? `<em class="${cls}">${signed(Number(delta.toFixed(2)))}</em>` : ""}</div>`;
   };
   return [
-    cell("Engine", a.score, b.score),
+    cell("Power", a.score, b.score, true, n => n ?? "Unavailable"),
     cell("Ramp", a.counts.Ramp, b.counts.Ramp),
     cell("Draw", a.counts.Draw, b.counts.Draw),
     cell("Removal", a.counts.Removal, b.counts.Removal),
@@ -1523,14 +1527,14 @@ function swapPanel(d) {
 }
 
 function budgetLadder(d, plans) {
-  const base = mtgPower(d).score;
+  const base = shownPower(mtgPower(d));
   return `<table class="metrics ladder"><thead><tr><th>Budget</th><th class="num">Swaps</th><th class="num">Spend</th><th class="num">Power</th><th class="num">Per $</th></tr></thead><tbody>${Object.keys(plans).map(Number).sort((a,b)=>a-b)
     .filter((b) => plans[b])
     .map((b) => {
       const p = plans[b],
-        after = p.powerAfter ?? mtgPower({ ...d, cards: applySwapsToCards(d.cards, p.swaps) }).score,
-        gain = after - base;
-      return `<tr class="${b === S.ui.upgrade.budget ? "on" : ""}" data-act="upBudget" data-v="${b}"><td>${b ? "$" + b : "$0"}</td><td class="num">${p.swaps.length}</td><td class="num">${usd(p.spent)}</td><td class="num">${after} <em class="${gain > 0 ? "up" : ""}">${signed(gain)}</em></td><td class="num">${p.spent > 0 ? (gain / p.spent).toFixed(2) : gain > 0 ? "free" : "—"}</td></tr>`;
+        after = shownPower(mtgPower({ ...d, cards: applySwapsToCards(d.cards, p.swaps) })),
+        gain = after == null || base == null ? null : after - base;
+      return `<tr class="${b === S.ui.upgrade.budget ? "on" : ""}" data-act="upBudget" data-v="${b}"><td>${b ? "$" + b : "$0"}</td><td class="num">${p.swaps.length}</td><td class="num">${usd(p.spent)}</td><td class="num">${after ?? "Unavailable"}${gain == null ? "" : ` <em class="${gain > 0 ? "up" : ""}">${signed(gain)}</em>`}</td><td class="num">${gain == null ? "—" : p.spent > 0 ? (gain / p.spent).toFixed(2) : gain > 0 ? "free" : "—"}</td></tr>`;
     })
     .join("")}</tbody></table>`;
 }
@@ -1538,6 +1542,7 @@ function budgetLadder(d, plans) {
 function swapResults(d, plan) {
   const p = engineProfile(d, S.catalog),
     base = p.score,
+    shownBefore = shownPower(mtgPower(d)),
     targets = Object.fromEntries(p.parts.map((x) => [x.key, x.target])),
     sel = S.ui.upgrade.selected,
     showTrade = S.ui.upgrade.tradeIn,
@@ -1550,6 +1555,7 @@ function swapResults(d, plan) {
       const add = meta(s.add),
         cut = meta(s.cut),
         imp = swapImpact(d, s, S.catalog, base),
+        shownAfter = shownPower(mtgPower({ ...d, cards: applySwapsToCards(d.cards, [s]) })),
         why = explainSwap(cut, add, comm, p.counts, targets);
       return `<article class="swap ${sel.has(i) ? "on" : ""}">
         <label class="swap-check"><input type="checkbox" data-change="upPick" data-i="${i}" ${sel.has(i) ? "checked" : ""}> Use this swap</label>
@@ -1560,7 +1566,7 @@ function swapResults(d, plan) {
         </div>
         <ul class="swap-why">${why.lines.map((l) => `<li class="${l.kind}"><span aria-hidden="true">${sign[l.kind]}</span>${esc(l.text)}</li>`).join("")}</ul>
         <p class="swap-choose small">${esc(why.choose)}</p>
-        <div class="swap-facts"><span>Power <b class="${(s.powerAfter-s.powerBefore) > 0 ? "up" : ""}">${s.powerBefore ?? base} → ${s.powerAfter ?? base + imp.delta}</b></span><span>${s.owned ? "Cost <b>$0</b>" : `Cost <b>${usd(s.cost)}</b>`}</span><span class="chip">${esc(s.complexity === "Straightforward" ? "Simple to play" : s.complexity)}</span></div>
+        <div class="swap-facts"><span>Power <b class="${shownBefore != null && shownAfter != null && shownAfter > shownBefore ? "up" : ""}">${shownBefore ?? "Unavailable"} → ${shownAfter ?? "Unavailable"}</b></span><span>${s.owned ? "Cost <b>$0</b>" : `Cost <b>${usd(s.cost)}</b>`}</span><span class="chip">${esc(s.complexity === "Straightforward" ? "Simple to play" : s.complexity)}</span></div>
       </article>`;
     })
     .join("")}</div>
@@ -1569,8 +1575,8 @@ function swapResults(d, plan) {
 
 export function upgradeSummary(d, plan) {
   const sel = [...S.ui.upgrade.selected].map((i) => plan.swaps[i]).filter(Boolean),
-    before = {...engineProfile(d,S.catalog),score:mtgPower(d).score},
-    after = {...engineProfile({ ...d, cards: applySwapsToCards(d.cards, sel) }, S.catalog),score:mtgPower({...d,cards:applySwapsToCards(d.cards,sel)}).score},
+    before = {...engineProfile(d,S.catalog),score:shownPower(mtgPower(d))},
+    after = {...engineProfile({ ...d, cards: applySwapsToCards(d.cards, sel) }, S.catalog),score:shownPower(mtgPower({...d,cards:applySwapsToCards(d.cards,sel)}))},
     spend = sel.reduce((a, s) => a + (s.cost || 0), 0),
     trade = sel.reduce((a, s) => a + (priceOf(s.cut) ?? 0), 0);
   if (!sel.length) return `<p class="small center">Tick the swaps you like to see before → after.</p>`;
@@ -1611,7 +1617,7 @@ function deckVersions(d) {
     };
   return `<section class="panel"><div class="grid2"><label>Before<select data-change="verA">${options(choices, A.id)}</select></label><label>After<select data-change="verB">${options(choices, B.id)}</select></label></div></section>
   <section class="panel"><h3>Side by side</h3><table class="metrics"><thead><tr><th></th><th class="num">Before</th><th class="num">After</th><th class="num">Δ</th></tr></thead><tbody>
-    ${row("Engine score", pa.score, pb.score)}
+    ${row("Power", shownPower(mtgPower({ ...d, cards: A.cards })), shownPower(mtgPower({ ...d, cards: B.cards })), true, n => n ?? "Unavailable")}
     ${row("Cards", sumQty(A.cards), sumQty(B.cards), null)}
     ${row("Lands", pa.counts.Lands, pb.counts.Lands, null)}
     ${row("Ramp", pa.counts.Ramp, pb.counts.Ramp)}
@@ -1802,19 +1808,25 @@ export function ideaSheet(idea, deck, open, sel) {
   const d = { ...deck, id: "idea-preview" },
     rows = rowsFor(d),
     t = comparisonTotals(rows),
-    p = engineProfile(d, S.catalog),
+    p = mtgPower(d),
+    sizeComplete = t.copies === 100,
+    complete = sizeComplete && !p.readiness?.provisional,
+    landCount = d.cards.reduce((n, r) => n + (isLand(meta(r.name)) ? r.qty : 0), 0),
+    saveLabel = complete ? "Save 100-card list" : `Save ${t.copies}-card draft`,
     v = deckValue(d.cards, S.catalog, S.state.priceChoices),
     byCat = new Map(CATS.map((c) => [c, rows.filter((r) => r.category === c)]));
   return `<div class="sheet-head"><h2>${esc(idea.commander.name)}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   <div class="idea-hero">${img(art(idea.commander), idea.commander.name)}<span class="chip dark">${esc(idea.plan)}</span></div>
-  <div class="impact"><div class="imp"><small>Cards</small><b>${t.copies}/100</b></div><div class="imp"><small>You own</small><b>${t.covered}</b></div><div class="imp"><small>To buy</small><b>${usd(t.pricedGap, 0)}</b></div><div class="imp"><small>Engine</small><b>${p.score}</b></div></div>
+  <div class="impact"><div class="imp"><small>Cards</small><b>${t.copies}/100</b></div><div class="imp"><small>You own</small><b>${t.covered}</b></div><div class="imp"><small>${t.unpriced ? "Known purchase subtotal" : "Listed cards to buy"}</small><b>${usd(t.pricedGap, 0)}${t.unpriced ? "+" : ""}</b></div><div class="imp"><small>${shownPower(p) == null ? "Power unavailable" : "Power"}</small><b>${shownPower(p) ?? "—"}</b></div></div>
+  ${t.unpriced ? `<p class="small warn-text">${t.unpriced} missing card copies have no purchase price. Total purchase cost is unverified, not free.</p>` : ""}
   <p class="eyebrow">Build it with</p>
-  <button class="btn block" data-act="ideaSaveAll" ${open.busy ? "disabled" : ""}>Save entire ${t.copies}-card deck, including lands</button>
-  ${t.copies < 100 ? `<div class="note warn">${100-t.copies} slots remain. Increase the budget or retry card data; this is not a complete 100-card list yet.</div>` : ""}
-  <div class="chips">${[0, 25, 50, 100].map((n) => `<button class="chip pick ${open.budget === n ? "on" : ""}" data-act="ideaBudget" data-v="${n}" ${open.busy ? "disabled" : ""}>${n ? "+ $" + n + " of new cards" : "Only my cards"}</button>`).join("")}</div>
-  <div class="custom-budget-row"><label>Custom purchase budget ($)<input id="ideaCustomBudget" type="number" min="0" max="100000" step="0.01" value="${open.budget}" ${open.busy?"disabled":""}></label><button class="btn ghost" data-act="ideaCustomBudget" ${open.busy?"disabled":""}>Build with this budget</button></div>
-  <p class="foot">Dollar budget and deck size are different: lands are included in the 100-card deck. Shipping and tax are separate.</p>
-  ${open.busy ? buildOverlay(open.msg, { title: "Building this deck", note: "Finding cards in your commander's colors at your budget, then filling all 100 slots, lands included. This can take up to a minute.", id: "ideaMsg" }) : `<p class="muted small" id="ideaMsg" role="status">${esc(open.msg || (open.budget ? "" : "Owned-only starters can be incomplete. Choose a purchase budget to build the full deck, including lands."))}</p>`}
+  <button class="btn block" data-act="ideaSaveAll" ${open.busy || open.error ? "disabled" : ""}>${saveLabel}</button>
+  ${!complete ? `<div class="note warn">${!sizeComplete ? t.copies < 100 ? `${100-t.copies} slots remain` : `${t.copies-100} cards over the limit` : "Deck legality or card-data checks need review"}. This is ${sizeComplete ? "an unchecked" : "an incomplete"} draft, not a finished deck. Power is unavailable until the list is complete and checked. ${landCount} lands are currently listed.</div>` : ""}
+  ${(open.diagnostics?.warnings || []).map(w => `<p class="small warn-text">${esc(w)}</p>`).join("")}
+  <div class="chips">${[Infinity, 0, 25, 50, 100].map((n) => `<button class="chip pick ${open.budget === n ? "on" : ""}" data-act="ideaBudget" data-v="${n}" ${open.busy ? "disabled" : ""}>${n === Infinity ? "No purchase cap" : n ? "+ $" + n + " of new cards" : "Only my cards"}</button>`).join("")}</div>
+  <div class="custom-budget-row"><label>Custom purchase budget ($)<input id="ideaCustomBudget" type="number" min="0" max="100000" step="0.01" value="${open.budget === Infinity ? "" : open.budget}" placeholder="Blank = no cap" ${open.busy?"disabled":""}></label><button class="btn ghost" data-act="ideaCustomBudget" ${open.busy?"disabled":""}>Build with this budget</button></div>
+  <p class="foot">Prices cover only the cards currently listed, not empty slots. A complete Commander deck needs 100 cards including its lands and commander. Shipping and tax are separate.</p>
+  ${open.busy ? buildOverlay(open.msg, { title: "Building this deck", note: "Finding legal cards and priced or owned lands within your budget, then checking whether all 100 slots can be filled. This can take up to a minute.", id: "ideaMsg" }) : `<p class="muted small" id="ideaMsg" role="status">${esc(open.msg || (open.budget ? "" : "Owned-only starters can be incomplete. Choose a purchase budget or No purchase cap to attempt completion; missing data still needs to be resolved."))}</p>`}
   <div class="row between sel-bar"><span class="small" id="ideaSelCount">${sel.size ? sel.size + " selected" : "Tick cards to act on them"}</span><span class="row"><button class="link small" data-act="ideaSelect" data-mode="missing">Missing</button><button class="link small" data-act="ideaSelect" data-mode="all">All</button><button class="link small" data-act="ideaSelect" data-mode="none">None</button></span></div>
   ${[...byCat]
     .filter(([, l]) => l.length)
@@ -1828,7 +1840,7 @@ export function ideaSheet(idea, deck, open, sel) {
   ${S.state.decks.length ? `<div class="inline-pick"><select id="ideaDeckPick" aria-label="Deck">${options(S.state.decks.map((x) => [x.id, x.name]), S.state.activeDeck)}</select><button class="btn ghost" data-act="ideaToDeck">Add ticked to deck</button></div>` : ""}
   <p class="foot">Nothing changes until you tap a button. Buy sends only the cards you don't own to TCGplayer.</p>
   <div class="idea-actions">
-    <button class="btn small" data-act="ideaSaveAll">Save as deck</button>
+    <button class="btn small" data-act="ideaSaveAll" ${open.busy || open.error ? "disabled" : ""}>${complete ? "Save as deck" : "Save draft"}</button>
     <span class="row"><button class="btn ghost small" data-act="ideaBuy" title="Copy buy list">🛒 Buy</button><button class="btn ghost small" data-act="ideaWish" title="Add ticked to wishlist">♡</button><button class="btn ghost small" data-act="ideaOwn" title="I own the ticked cards">＋ Own</button></span>
   </div>`;
 }

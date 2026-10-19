@@ -15,6 +15,8 @@ import {pokemonRole} from './pokemon-role.js';
 import { simulate, poolOf, has as hasTag, countTag, atLeastOne, allIn, evidence } from "./deckaudit.js";
 import { mtgGoldfish, ptcgGoldfish, ygoGoldfish } from "./goldfish.js";
 import { mtgTagged } from "./mtg-tags.js";
+import { mtgResourceProfile, manaCostValue } from "./mtg-effects.js";
+import { inCommandZone } from "./core.js";
 
 const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
 const lc = (s) => String(s || "").toLowerCase();
@@ -53,7 +55,10 @@ const M = {
 };
 export const MTG_ROLE_RX = M;
 // A card has a role when its text matches the pattern or Scryfall's community tags say so.
-const role = (c, k) => M[k].test(text(c)) || mtgTagged(c, k),
+const role = (c, k) => {
+  if (k === "ramp") { const r = mtgResourceProfile(c); return r.acceleration || (!r.effects.some(e=>["mana-filter","land-exchange"].includes(e.kind) || e.controller && e.controller !== "self") && (mtgTagged(c,k) || r.status === "unsupported" && M[k].test(text(c)))); }
+  return M[k].test(text(c)) || mtgTagged(c, k);
+},
   interacts = (c) => role(c, "removal") || role(c, "counter") || role(c, "discard") || role(c, "wipe");
 export const mtgRulesText = (c) => text(c);
 const text = (c) => lc(c?.oracle_text || (c?.card_faces || []).map((f) => f.oracle_text || "").join("\n"));
@@ -69,7 +74,106 @@ const missingSacrifice = (c, rows) => {
   return !rows.some(r => (r.c !== c || r.qty>1) && (new RegExp(need, "i").test(type(r.c)) || new RegExp(`create [^.]*${need}[^.]*token`).test(text(r.c)) || need === "artifact" && /create [^.]*treasure/.test(text(r.c))));
 };
 
+// A small constructed evidence layer, not a card tier list or a full rules engine.
+// Costs belong to the ability that produces an effect, not automatically to the
+// printed spell. Text length, rarity, price and the card's name confer no credit.
+export function mtgConstructedCardProfile(c, rows = []) {
+  const tx = text(c), mv = c?.cmc != null && Number.isFinite(Number(c.cmc)) ? Number(c.cmc) : null,
+    lines = tx.split("\n").map(s => s.replace(/\([^)]*\)/g, "").trim()).filter(Boolean),
+    effects = [], requirements = [], positive = [], unsupported = [];
+  const support = (predicate, excludeSelf = false) => rows.filter(r => predicate(r.c)).map(r => ({ name: r.name || r.c.name, qty: r.qty - (excludeSelf && r.c === c ? 1 : 0) })).filter(r => r.qty > 0);
+  const requires = (kind, evidence, status, cards = [], extra = {}) => requirements.push({kind, evidence, status, cards, ...extra});
+  const hasLifePayoff = rows.some(r => /whenever you gain life|if you gained life/.test(text(r.c)));
+  const lifeSource = x => text(x).split("\n").some(line => {
+    if (!/\bgain (?:\d+|x|that much) life|\blifelink\b|create [^.]*food token/.test(line)) return false;
+    const typed = line.match(/cast (?:a|an) (\w+) spell|control another (\w+)/);
+    return !typed || rows.some(r => new RegExp(`\\b${typed[1] || typed[2]}\\b`,"i").test(type(r.c)) && (!typed[2] || r.c !== x || r.qty > 1));
+  });
+  for (const line of lines) {
+    const spellType = line.match(/(?:cast (?:a|an) (\w+) spell|control another (\w+)|if it's (?:a|an) (\w+))/);
+    if (spellType) {
+      const subtype = spellType[1] || spellType[2] || spellType[3], re = new RegExp(`\\b${subtype}\\b`, "i"), color = {white:"W", blue:"U", black:"B", red:"R", green:"G"}[subtype],
+        cards = support(x => subtype === "noncreature" ? !isLandC(x) && !/Creature/.test(type(x)) : color ? (x.colors || []).includes(color) : re.test(type(x)) || /changeling/.test(text(x)) || !spellType[1] && new RegExp(`create [^.]*\\b${subtype}\\b[^.]*creature token`).test(text(x)), !!spellType[2]);
+      requires("typed-support", line, cards.length ? "conditional" : "unsupported", cards, {subtype});
+    }
+    if (/cast another spell this turn/.test(line)) {
+      const cards = support(x => !isLandC(x) && Number.isFinite(Number(x.cmc)), true),
+        costs = rows.filter(r => !isLandC(r.c) && (r.c !== c || r.qty > 1) && Number.isFinite(Number(r.c.cmc))).map(r => Number(r.c.cmc)),
+        minimumMana = costs.length && mv !== null ? mv + Math.min(...costs) : null;
+      requires("prior-spell", line, cards.length ? "conditional" : "unsupported", cards, {minimumMana, note:"Printed-cost lower bound for casting two spells; alternate costs and sequencing are not simulated."});
+    }
+    if (/attacking alone/.test(line)) requires("solo-attacker", line, "conditional", [], {note:"Requires exactly one attacking creature; a tapped support creature cannot also attack."});
+    if (/whenever you gain life/.test(line)) {
+      const cards = support(lifeSource);
+      requires("life-gain", line, cards.length ? "conditional" : "unsupported", cards, {note:/first time.*each of your turns/.test(line) ? "At most one trigger on each of your turns, not every life-gain event." : "Requires a separate life-gain event."});
+    }
+    const tribalProtection = line.match(/(?:when you cycle this card, )?(\w+) you control gain (?:hexproof|indestructible)/);
+    if (tribalProtection && !/^(?:creatures|permanents)$/.test(tribalProtection[1])) {
+      const subtype = tribalProtection[1].replace(/s$/, ""), re = new RegExp(`\\b${subtype}\\b`, "i"),
+        cards = support(x => re.test(type(x)) || /changeling/.test(text(x)) || new RegExp(`create [^.]*\\b${subtype}\\b[^.]*creature token`).test(text(x)));
+      requires("tribal-protection", line, cards.length ? "conditional" : "unsupported", cards, {subtype, note:"Requires eligible creatures already on the battlefield; a cycling trigger uses the alternative discard cost."});
+    }
+    if (line.includes(":")) {
+      const cost = line.split(":")[0], activationMana = manaCostValue(cost);
+      requires("activation", line, "conditional", [], {activationMana, tap:/\{t\}/.test(cost), discard:/discard this card/.test(cost), exert:/\bexert\b/.test(cost),
+        note:[/\{t\}/.test(cost) && /Creature/.test(type(c)) ? "Creature tap ability needs haste or control since the turn began." : "", /\bexert\b/.test(cost) ? "Exert skips its next untap; this is not free output every turn." : ""].filter(Boolean).join(" ")});
+    }
+    const cycling = line.match(/^cycling ((?:\{[^}]+\})+)/), alternative = !!cycling || /^channel\b/.test(line),
+      activated = alternative || line.includes(":"),
+      activationMana = cycling ? manaCostValue(cycling[1]) : activated ? manaCostValue(line.split(":")[0]) : 0,
+      effect = cycling ? "draw a card" : activated ? line.slice(line.indexOf(":") + 1) : line.replace(/^(?:whenever|when|at the beginning)[^,]*,\s*/, ""),
+      output = effect.split(".").filter(s => M.draw.test(s));
+    if (!cycling && !M.draw.test(line)) continue;
+    if (/\bwould draw\b|instead of drawing/.test(line)) { unsupported.push({kind:"flow", evidence:line, reason:"Draw replacement needs a separate draw event."}); continue; }
+    const own = output.filter(s => !/(?:each|target|an?|that|your) opponents?(?: each)?(?: may)? draws?/.test(s) || /\byou(?: and [^,.]+)?(?: each)?(?: may)? draw/.test(s));
+    if (!own.length && !cycling) { unsupported.push({kind:"flow", evidence:line, reason:"No independent own draw/selection effect identified."}); continue; }
+    const conditional = /^(?:whenever|at the beginning)|\bif\b/.test(line.split(":").pop().split(".")[0]) || /^when[^,]+(?:dies|attacks|leaves)/.test(line),
+      selection = !/\bdraws?\b|into your hand|you may (?:play|cast)/.test(own.join(" ")) && !cycling,
+      clue = /\binvestigate\b/.test(effect), cost = alternative ? activationMana : mv === null || activationMana === null ? null : mv + activationMana + (clue ? 2 : 0),
+      blocked = missingSacrifice(c, rows), unit = (alternative || selection ? .5 : 1) * (cost === null ? .5 : Math.min(1, 2 / Math.max(2, cost))) * (conditional ? .65 : 1),
+      why = [alternative ? "Discard this card instead of casting its creature face." : "", activated ? `Ability costs ${activationMana ?? "an unquantified amount of"} mana${clue ? ", then 2 for the Clue" : ""}.` : "", conditional ? "Printed trigger/condition must occur." : "", blocked ? "Mandatory sacrifice fodder is absent." : ""].filter(Boolean);
+    effects.push({kind:"flow", mode:alternative ? "alternative" : activated ? "activated" : /enters/.test(line) ? "etb" : conditional ? "trigger" : "spell", evidence:line, castManaValue:mv, activationMana, effectMana:cost, effective:blocked ? 0 : unit, cheap:!blocked && !conditional && cost !== null && cost <= 2, status:blocked ? "unsupported" : activated || conditional ? "conditional" : "supported", requirements:why});
+  }
+  const temporary = lines.filter(line => /\bairbend (?:up to (?:one|two|\d+) )?(?:other )?target (?:nonland )?permanent|\btap (?:up to (?:one|two|\d+) )?target (?:creature|permanent)(?! you control)|return target (?:nonland permanent|creature)[^.]*to (?:its|their) owner'?s? hand/.test(line)),
+    hardText = lines.join("\n").replace(/return target (?:nonland permanent|creature)[^.]*to (?:its|their) owner'?s? hand/g,""),
+    hard = M.removal.test(hardText) || role(c,"counter") || role(c,"discard") || role(c,"wipe") || interacts(c) && !temporary.length,
+    interaction = {kind:hard ? "answer" : temporary.length ? "tempo" : "none", effective:hard ? 1 : temporary.length ? .5 : 0, evidence:temporary.length ? temporary : lines.filter(line => Object.entries(M).some(([k,re]) => ["removal","counter","discard","wipe"].includes(k) && re.test(line))), limitations:temporary.length ? ["Temporary interaction, not permanent removal; airbent cards may be recast for {2}, and tapped creatures normally untap."] : []};
+  const flow = {raw:role(c,"draw") || effects.length > 0, effective:Math.max(0,...effects.map(e => e.effective)), cheap:effects.some(e => e.cheap), effects,
+    status:effects.some(e => e.effective > 0) ? effects.some(e => e.status === "supported") ? "supported" : "conditional" : role(c,"draw") ? "unsupported" : "none"};
+  if (flow.raw && !effects.length && !unsupported.length) unsupported.push({kind:"flow", evidence:tx, reason:"Role tag has no mapped timing, ownership or cost; not treated as cheap help."});
+  let quality = null, body = null;
+  if (/Creature/.test(type(c))) {
+    const pw = Number(c.power), tg = Number(c.toughness), numeric = c.power != null && c.toughness != null && Number.isFinite(pw) && Number.isFinite(tg) && mv !== null;
+    body = numeric ? clamp(.75 * (pw + tg) / (2 * mv + 1.5) + .25 * pw / Math.max(1, mv + .5)) : null;
+    // Only intrinsic keywords earn unconditional combat credit. "Gains lifelink
+    // when you cast a Lesson" is not the same as printed unconditional lifelink.
+    const intrinsic = lines.map(s => s.split(/[.]|\b(?:when|whenever|if|at the beginning)\b/)[0]).filter(s => /^(?:flying|first strike|double strike|deathtouch|haste|hexproof|indestructible|lifelink|menace|reach|trample|vigilance|ward|flash)\b/.test(s)).join(" ");
+    let bonus = 0;
+    if (/\bflying\b|\bdouble strike\b|\bhaste\b/.test(intrinsic)) { bonus += .12; positive.push("Intrinsic evasion or immediate combat pressure"); }
+    if (/first strike|deathtouch|hexproof|indestructible|lifelink|menace|trample|ward|flash/.test(intrinsic)) { bonus += .08; positive.push("Intrinsic combat/protection ability"); }
+    if (/vigilance|reach/.test(intrinsic)) { bonus += .04; positive.push("Intrinsic defensive utility"); }
+    const immediateFlow = effects.some(e => e.effective > 0 && ["etb","spell"].includes(e.mode));
+    if (immediateFlow) { bonus += .2; positive.push("Own draw/selection on deployment"); }
+    if (interaction.effective) { bonus += hard ? .2 : .12; positive.push(hard ? "Interaction carried by a body" : "Temporary interaction carried by a body"); }
+    const tokens = lines.filter(s => /create [^.]*creature token/.test(s));
+    if (tokens.length) {
+      const supported = !requirements.some(r => r.kind === "life-gain" && r.status === "unsupported");
+      if (supported) { bonus += tokens.some(s => /^when[^,]*enters[^,]*,/.test(s)) ? .2 : .12; positive.push("Creature-token production with printed setup/costs"); }
+    }
+    if (/create [^.]*food token/.test(tx)) { bonus += .04; positive.push("Food is a paid life-gain resource, not an extra attacker"); }
+    if (hasLifePayoff && lifeSource(c) && /\bgain \d+ life/.test(tx)) { bonus += .08; positive.push("Life-gain text has a payoff in this list"); }
+    if (/copy this spell/.test(tx) && requirements.some(r => r.kind === "prior-spell" && r.status === "conditional")) { bonus += .1; positive.push("Conditional second body after another spell"); }
+    if (requirements.some(r => r.kind === "typed-support" && r.status === "conditional") && /\+1\/\+1 counter|gain[^.]*life/.test(tx)) { bonus += .04; positive.push("Typed payoff has eligible support, but must still trigger"); }
+    if (flow.effects.some(e => e.mode === "alternative")) { bonus += .04; positive.push("Paid alternative use; not simultaneous creature and draw value"); }
+    quality = clamp((body ?? .5) + Math.min(.4, bonus));
+    if (!numeric) unsupported.push({kind:"body", evidence:`${c.power ?? "?"}/${c.toughness ?? "?"}`, reason:"Variable or missing body/cost is not quantified; neutral partial estimate only."});
+    if (lines.length && !positive.length && !requirements.length && !effects.length) unsupported.push({kind:"ability", evidence:tx, reason:"Rules text is not mapped by the bounded impact model; no automatic full-quality credit."});
+  }
+  return {flow, interaction, threat:{quality, body, power:c.power ?? null, toughness:c.toughness ?? null, manaValue:mv, positive, status:unsupported.length || requirements.some(r => r.status === "unsupported") ? "partial" : requirements.length ? "conditional" : "supported"}, requirements, unsupported};
+}
+
 export function mtgConstructedPower(deck, catalog, key, size = 60) {
+  const boundedConstructed = !deck.commander && !(deck.commanders || []).length && size < 99;
   const rows = [];
   let unknown = 0;
   const agg = new Map();
@@ -80,6 +184,8 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     rows.push({ ...r, c });
   }
   const known = rows.filter((r) => r.c),
+    cardProfiles = new Map(known.map(r => [r.c, mtgConstructedCardProfile(r.c, known)])),
+    cardProfile = c => cardProfiles.get(c),
     lands = known.filter((r) => isLandC(r.c)),
     spells = known.filter((r) => !isLandC(r.c)),
     nLand = lands.reduce((a, r) => a + r.qty, 0),
@@ -89,22 +195,26 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     qty = (list) => list.reduce((a, r) => a + r.qty, 0),
     creatures = qty(spells.filter((r) => /Creature/.test(type(r.c)))),
     walkers = qty(spells.filter((r) => /Planeswalker/.test(type(r.c)))),
-    interaction = qty(spells.filter((r) => interacts(r.c))),
-    flow = qty(has("draw").filter((r) => !missingSacrifice(r.c, known))),
+    hardInteraction = qty(spells.filter(r => boundedConstructed ? cardProfile(r.c).interaction.kind === "answer" : interacts(r.c))),
+    tempoInteraction = boundedConstructed ? qty(spells.filter(r => cardProfile(r.c).interaction.kind === "tempo")) : 0,
+    interaction = hardInteraction + tempoInteraction * .5,
+    flowRows = boundedConstructed ? spells.filter(r => cardProfile(r.c).flow.effective > 0) : has("draw").filter(r => !missingSacrifice(r.c, known)),
+    flow = qty(flowRows),
+    effectiveFlow = boundedConstructed ? flowRows.reduce((n,r) => n + r.qty * cardProfile(r.c).flow.effective, 0) : flow,
     ramp = qty(has("ramp")),
     big = qty(spells.filter((r) => Number(r.c.cmc) >= 5)),
     scale = size / 60,
     // Damage straight to the opponent wins games too (Burn): it counts toward the ways to win.
     burn = qty(spells.filter((r) => !/Creature/.test(type(r.c)) && /deals? (?:\d+|x) damage to (?:any target|each opponent|target player|target opponent|each player)/.test(text(r.c)))),
-    // Threat quality: a creature with rules text does something; a vanilla body is judged on its
-    // stats for its cost (a 2/1 for 2 is filler, a 3/3 for 2 is fine).
-    quality = (c) => {
-      if (!/Creature/.test(type(c))) return 1;
-      const pw = parseInt(c.power, 10) || 0, tg = parseInt(c.toughness, 10) || 0, mv = Number(c.cmc) || 0,
-        stat = clamp((pw + tg) / (2 * mv + 1.5)), words = text(c).replace(/\([^)]*\)/g, "").trim();
+    quality = c => {
+      if (boundedConstructed) return cardProfile(c).threat.quality ?? 1;
+      // Commander consumes this function's hand checks and historical hard caps,
+      // not the constructed impact model. Keep that separate lens unchanged.
+      const stat = clamp(((parseInt(c.power,10)||0) + (parseInt(c.toughness,10)||0)) / (2 * (Number(c.cmc)||0) + 1.5)), words = text(c).replace(/\([^)]*\)/g, "").trim();
       return words.length > 24 ? 1 : words ? clamp(stat * 1.2) : stat;
     },
     creatureRows = spells.filter((r) => /Creature/.test(type(r.c))),
+    quantifiedCreatures = qty(creatureRows.filter(r => cardProfile(r.c).threat.body !== null)),
     threatQ = creatureRows.length ? creatureRows.reduce((a, r) => a + quality(r.c) * r.qty, 0) / Math.max(1, creatures) : 1;
   // Plan detection
   const themes = Object.entries({ Landfall: M.landfall, Tokens: M.tokens, Spells: M.spells, Sacrifice: M.sac, Graveyard: M.gy })
@@ -123,7 +233,7 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     Ramp: { inter: 5, threats: 10, flow: 3, curve: 3.6 },
   }[plan];
   // Karsten: lands ≈ 19.59 + 1.90·avgMV − 0.28·(cheap draw/ramp) for 60 cards.
-  const cheapHelp = qty(spells.filter((r) => Number(r.c.cmc) <= 2 && ((role(r.c, "draw") && !missingSacrifice(r.c, known)) || role(r.c, "ramp")))),
+  const cheapHelp = qty(spells.filter(r => boundedConstructed ? cardProfile(r.c).flow.cheap || Number(r.c.cmc) <= 2 && mtgResourceProfile(r.c).effects.some(e => e.acceleration && e.status !== "unsupported" && e.activationMana !== null && Number(r.c.cmc) + e.activationMana + (e.equipMana || 0) <= 2) : Number(r.c.cmc) <= 2 && ((role(r.c,"draw") && !missingSacrifice(r.c,known)) || role(r.c,"ramp")))),
     // Landfall decks play extra lands on purpose: every land is a trigger.
     idealLands = Math.round((19.59 + 1.9 * avg - 0.28 * Math.min(cheapHelp, 12) + (theme === "Landfall" ? 3.5 : 0)) * scale),
     nonLegendSpells = spells.filter((r) => !legendary(r.c)),
@@ -156,10 +266,13 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     part("Mana", "Mana base", nLand, idealLands, 1 - Math.abs(nLand - idealLands) / 5, 18, `With an average spell cost of ${avg.toFixed(2)}, about ${idealLands} lands hit your drops on time.`),
     part("Curve", "Curve for the plan", avg.toFixed(2), "≤ " + T.curve, 1 - Math.max(0, avg - T.curve) / 1.2, 14, `${plan} decks want their spells to average ${T.curve} or less.`),
     part("Consistency", "Consistency (3–4 copies)", Math.round(redundancy * 100) + "%", "70%", redundancy / 0.7, 16, "Competitive lists run their key cards as 4-ofs so they show up every game.", "Cut 1-of and 2-of cards and play more copies of your best ones."),
-    part("Interaction", "Interaction", interaction, Math.round(T.inter * scale), interaction / Math.max(1, T.inter * scale), 14, "Removal, counters and discard that stop your opponent’s plan.", "Removal"),
+    part("Interaction", "Interaction (effective)", interaction, Math.round(T.inter * scale), interaction / Math.max(1, T.inter * scale), 14, "Answers count fully; temporary tap, bounce and airbend effects count as half an answer, not permanent removal.", "Removal"),
     part("Threats", plan === "Control" ? "Win conditions" : "Threat density", threats, Math.round(T.threats * scale), threats / Math.max(1, T.threats * scale), 14, plan === "Control" ? "Control needs a few ways to actually win." : "Enough threats that removal can’t answer them all."),
-    part("Flow", "Card flow", flow, Math.round(T.flow * scale), flow / Math.max(1, T.flow * scale), 8, "Draw, scry, surveil and explore keep you hitting what you need.", "Draw"),
+    part("Flow", "Card flow", flow, Math.round(T.flow * scale), effectiveFlow / Math.max(1, T.flow * scale), 8, "Card copies are distinct from effective flow: paid, conditional and discard-to-draw effects keep their printed costs.", "Draw"),
   ];
+  if (boundedConstructed && quantifiedCreatures) parts.push({...part("Impact", "Creature impact evidence", Math.round(threatQ * 100) + "%", "body + usable effects", threatQ, 12, "Bounded body-rate and recognized ability evidence; text length is not quality, and unknown mechanics are not a verdict."),
+    cards:creatureRows.map(r => ({name:r.name, qty:r.qty, ...cardProfile(r.c).threat, requirements:cardProfile(r.c).requirements})),
+    why:`Recognized body/effect evidence averages ${Math.round(threatQ * 100)}%. ${qty(creatureRows.filter(r => cardProfile(r.c).requirements.some(x => x.status === "unsupported")))} creature copies have an absent recognized ability prerequisite; other abilities remain useful. Conditional token production, paid alternatives and setup are not free simultaneous output.`});
   // Lands with no listed colors (fetches, utility lands) count as half a source of every color.
   const flexLands = qty(lands.filter((r) => !isBasicC(r.c) && !(r.c.produced_mana || []).length)),
     starved = colors.filter((k) => share(k) >= 0.25 && (src[k] || 0) + flexLands / 2 < 1),
@@ -171,7 +284,7 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     starved.length ? { key: "Colors", max: 35, label: "Can't cast its spells", why: `The spells need ${starved.map((k) => ({ W: "white", U: "blue", B: "black", R: "red", G: "green" })[k]).join(" and ")} mana and no land makes it. Most games this deck does nothing.` } : null,
     !starved.length && thin.length ? { key: "Colors", max: 62, label: "Color sources far short", why: `Fewer than half the ${thin.map((k) => ({ W: "white", U: "blue", B: "black", R: "red", G: "green" })[k]).join("/")} sources the spells need: many hands can't cast what they draw.` } : null,
     !creatures && !walkers && !wincons && burn < 8 && !qty(spells.filter((r) => /create [^.]*creature token|\bvehicle\b|becomes? an? (?:\d+\/\d+ )?[^.]*creature/i.test(text(r.c) + " " + type(r.c)))) ? { key: "Threats", max: 45, label: "No way to win", why: "No creatures, planeswalkers, burn or alternate win conditions: the deck can stop the opponent but never finish a game." } : null,
-    creatures >= 8 && threatQ < 0.7 ? { key: "Threats", max: Math.round(40 + 30 * threatQ), label: "Filler threats", why: `Most creatures are bodies with no abilities and weak stats for their cost (${Math.round(threatQ * 100)}% of a fair rate). Any deck with real cards outclasses them.` } : null,
+    (boundedConstructed ? quantifiedCreatures >= Math.max(8, creatures * .8) : creatures >= 8) && threatQ < 0.7 ? { key: "Threats", max: Math.round(40 + 30 * threatQ), label: boundedConstructed ? "Low supported threat impact" : "Filler threats", why: boundedConstructed ? `Known body rates and recognized useful effects average ${Math.round(threatQ * 100)}% in this bounded model. Check the named weak bodies and prerequisites; unmapped mechanics may still matter.` : `Most creatures are bodies with no abilities and weak stats for their cost (${Math.round(threatQ * 100)}% of a fair rate). Any deck with real cards outclasses them.` } : null,
   ];
   // Plan coherence (Gavin Verhey's rule: build a deck with a mission, not a pile). Every card
   // should serve the plan; cards that pull the other way are named, linear strategies need a
@@ -217,10 +330,10 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
   if (artPay >= 4) linear.push({ name: "Artifacts", payoffs: artPay, enablers: arts, target: Math.round(16 * scale), unit: "artifacts" });
   const lin = linear.sort((a, b) => a.enablers / a.target - b.enablers / b.target)[0],
     // Midrange "good stuff": wins by trading 1-for-1 then pulling ahead with 2-for-1s.
-    value = qty(spells.filter((r) => (role(r.c, "draw") && !missingSacrifice(r.c, known)) || walkers && /Planeswalker/.test(type(r.c)) || /Creature/.test(type(r.c)) && /when (?:this creature|.{0,40}) enters[^.]*(?:draw|destroy|exile|create|return|deals?|search|counter)/.test(text(r.c))));
+    value = qty(spells.filter((r) => (boundedConstructed ? cardProfile(r.c).flow.effects.some(e => e.effective > 0 && e.mode !== "alternative") : role(r.c, "draw") && !missingSacrifice(r.c, known)) || walkers && /Planeswalker/.test(type(r.c)) || /Creature/.test(type(r.c)) && /when (?:this creature|.{0,40}) enters[^.]*(?:draw|destroy|exile|create|return|deals?|search|counter)/.test(text(r.c))));
   parts.push({ ...part("Plan", `Plan · ${plan}`, offN ? `${offN} off-plan` : "on plan", "0 off-plan", 1 - offN / Math.max(4, nSpell * 0.2), 12, `Every card should serve the ${plan.toLowerCase()} plan. Cards that pull the other way slow your clock or waste slots.`),
     cards: offPlan.slice(0, 8).map((x) => ({ name: `${x.r.name} — ${x.why}`, qty: x.r.qty })),
-    why: offN ? `${offN} card${offN === 1 ? "" : "s"} work against a ${plan.toLowerCase()} plan: ${offPlan.slice(0, 3).map((x) => `${x.r.name} (${x.why})`).join("; ")}. Swap them for cards that do what the deck is trying to do.` : `Every spell serves the ${plan.toLowerCase()} plan.` });
+    why: offN ? `${offN} card${offN === 1 ? "" : "s"} work against a ${plan.toLowerCase()} plan: ${offPlan.slice(0, 3).map((x) => `${x.r.name} (${x.why})`).join("; ")}. Swap them for cards that do what the deck is trying to do.` : `No recognized conflicts with a ${plan.toLowerCase()} plan. This does not establish that every ability is supported or that the deck executes competitively.` });
   if (lin) parts.push({ ...part("Critical", `Critical mass · ${lin.name}`, `${lin.enablers} ${lin.unit}`, `${lin.target}+`, lin.enablers / lin.target, 10, "Linear decks get better with every matching card and fall apart below a threshold."),
     why: lin.enablers >= lin.target ? `${lin.enablers} ${lin.unit} feed ${lin.payoffs} payoffs: dense enough that the payoffs work most games.` : `${lin.payoffs} cards pay off ${lin.unit}, but only ${lin.enablers} are in the deck. Linear decks need about ${lin.target}; below that the payoffs are blank cards half the time.` });
   else if (plan === "Midrange" && !theme) parts.push({ ...part("Value", "Card advantage", value, Math.round(10 * scale), value / (10 * scale), 8, "Good-stuff midrange wins by out-valuing: cards that replace themselves or answer something while adding a body."),
@@ -235,13 +348,15 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     if (isLandC(r.c)) s.add("land");
     else {
       if (Number(r.c.cmc) <= 2) s.add("cheap");
-      if (interacts(r.c)) s.add("inter");
-      if (role(r.c, "draw") && !missingSacrifice(r.c, known)) s.add("draw");
+      if (boundedConstructed ? cardProfile(r.c).interaction.effective : interacts(r.c)) s.add("inter");
+      if (boundedConstructed ? cardProfile(r.c).flow.effective : role(r.c,"draw") && !missingSacrifice(r.c,known)) s.add("draw");
       if (role(r.c, "ramp")) s.add("ramp");
     }
     return s;
   };
-  const tagged = known.map((r) => ({ ...r, tags: tagOf(r) })),
+  const commandKeys = new Set([deck.commander,...(deck.commanders || [])].map(c=>typeof c === "string" ? c : c?.name).filter(Boolean).map(key)),
+    simulationRows = known.filter(r=>!inCommandZone(deck,r.name)),
+    tagged = simulationRows.map((r) => ({ ...r, tags: tagOf(r) })),
     lo = size >= 99 ? 3 : 2, hi = size >= 99 ? 5 : 5;
   const sim = simulate(poolOf(tagged), (a) => {
     const h7 = a.slice(0, 7), l7 = countTag(h7, "land"), d9 = a.slice(0, 9), d10 = a.slice(0, 10), d12 = a.slice(0, 12);
@@ -250,20 +365,20 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
   const Sx = (k) => sim[k] || 0, Pc = (x) => Math.round(x * 100) + "%";
   parts.push({ ...part("Keep", "Keepable opening hands", Pc(Sx("keep")), "85%+", Sx("keep") / 0.85, 10, `Share of opening 7s with ${lo}–${hi} lands.`), why: `${Pc(1 - Sx("keep"))} of opening hands have too few or too many lands and should be mulliganed.` });
   // Goldfish: play it out turn by turn; aggro and midrange are judged on speed, control on mana use.
-  const gold = mtgGoldfish(known.map((r) => ({ qty: r.qty, c: r.c })), { size, plan });
+  const gold = mtgGoldfish(simulationRows.map((r) => ({ qty: r.qty, c: r.c })), { size, plan, commander: deck.commander ? catalog[key(deck.commander)] : null });
   if (gold) {
     const ctl = plan === "Control";
-    parts.push({ ...part("Goldfish", ctl ? "Goldfish: mana use" : "Goldfish speed", ctl ? Math.round(gold.metrics[0].value * 100) + "%" : gold.turnDist && gold.speed != null ? `turn ${gold.headline.match(/turn (\d+)/)?.[1] || "10+"}` : "—", ctl ? "75%+" : `turn ${{ Aggro: 5, Midrange: 6, Ramp: 6 }[plan] || 6}`, ctl ? gold.metrics[0].value / 0.75 : gold.speed, 8, "1,000 games played out against an empty board: how fast the deck actually closes."), why: gold.headline });
+    parts.push({ ...part("Goldfish", ctl ? "Goldfish: mana use" : "Simplified goldfish speed", ctl ? Math.round(gold.metrics[0].value * 100) + "%" : gold.turnDist && gold.speed != null ? `turn ${gold.headline.match(/turn (\d+)/)?.[1] || "10+"}` : "—", ctl ? "75%+" : `turn ${{ Aggro: 5, Midrange: 6, Ramp: 6 }[plan] || 6}`, ctl ? gold.metrics[0].value / 0.75 : gold.speed, 8, "1,000 simplified empty-board draws, not competitive results. Activated abilities, conditional tokens, combat restrictions and opposing interaction are not fully simulated."), why: gold.headline });
   }
   const names = (re) => evidence(spells.filter((r) => re.test(text(r.c))));
-  const ev = { Mana: evidence(lands), Interaction: evidence(spells.filter((r) => interacts(r.c))), Flow: evidence(has("draw").filter(r=>!missingSacrifice(r.c,known))), Threats: evidence(spells.filter((r) => /Creature|Planeswalker/.test(type(r.c)))), Consistency: evidence(spells.filter((r) => r.qty <= 2 && !legendary(r.c))), Curve: evidence(spells.filter((r) => Number(r.c.cmc) >= 5)) };
+  const ev = { Mana: evidence(lands), Interaction: evidence(spells.filter(r => cardProfile(r.c).interaction.effective)), Flow: evidence(flowRows), Threats: evidence(spells.filter((r) => /Creature|Planeswalker/.test(type(r.c)))), Consistency: evidence(spells.filter((r) => r.qty <= 2 && !legendary(r.c))), Curve: evidence(spells.filter((r) => Number(r.c.cmc) >= 5)) };
   const whyOf = {
-    Mana: theme === "Landfall" && Math.abs(nLand - idealLands) <= 2 ? `${nLand} lands: right for a landfall deck, where extra lands are triggers rather than flood.` : nLand < idealLands ? `${nLand} lands for an average spell cost of ${avg.toFixed(2)}: you'll miss land drops. Karsten's numbers say about ${idealLands}.` : `${nLand} lands where about ${idealLands} is right: you'll draw extra lands instead of spells.`,
+    Mana: Math.abs(nLand - idealLands) <= 1 ? `${nLand} lands is close to the rough ${idealLands}-land estimate for this curve${theme === "Landfall" ? "; landfall also rewards additional lands" : ""}. Only ${cheapHelp} copies provide mapped help at two mana or less; paid alternatives are costed separately.` : nLand < idealLands ? `${nLand} lands for an average spell cost of ${avg.toFixed(2)}: the rough curve estimate is ${idealLands}, suggesting a risk of missed land drops.` : `${nLand} lands against a rough ${idealLands}-land curve estimate. Check mana sinks and actual games before cutting lands; this is not a validated optimum.`,
     Curve: `Spells average ${avg.toFixed(2)} mana; a ${plan.toLowerCase()} deck wants ${T.curve} or less. The 5+ drops listed are the first to look at.`,
     Consistency: `Only ${Math.round(redundancy * 100)}% of spells are 3–4-ofs. The 1–2-ofs listed show up in a minority of games.`,
-    Interaction: `${interaction} cards that interact. ${plan} decks want about ${Math.round(T.inter * scale)} so the opponent's best threats don't just win.`,
+    Interaction: `${hardInteraction} answer copies and ${tempoInteraction} temporary-interaction copies (${interaction} effective units). ${plan} uses a rough target of ${Math.round(T.inter * scale)}; tap and airbend buy time but do not permanently remove a threat.`,
     Threats: `${threats} ${plan === "Control" ? "win conditions" : "threats"}${threatQ < 0.95 ? ` (creatures counted by quality: ${Math.round(threatQ * 100)}% of a fair rate)` : ""}${burn ? `, with ${burn} burn spells counted as half a threat each` : ""}; about ${Math.round(T.threats * scale)} keeps pressure on after removal.`,
-    Flow: `${flow} supported draw/selection cards (effects with absent mandatory sacrifice fodder are excluded); ${plan} wants about ${Math.round(T.flow * scale)} to find what it needs.`,
+    Flow: `${flow} supported draw/selection copies, about ${effectiveFlow.toFixed(1)} effective units after mapped costs and conditions. Cycling/channel require discarding the card and paying their own cost, not its creature casting cost; absent mandatory sacrifice fodder is excluded.`,
     Colors: `Color sources: ${colors.map((k) => `${k} ${Math.round(src[k] || 0)}`).join(", ")}. A main color wants about 14 sources in 60 and a splash about 9.`,
     Synergy: `${themeCount} cards feed the ${theme?.toLowerCase()} plan; about ${Math.round(10 * scale)} makes it reliable.`,
   };
@@ -279,6 +394,7 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     caps: capped.caps,
     parts,
     goldfish: gold,
+    simulationLibrary: qty(simulationRows),
     sims: [
       { label: "Keepable opening 7", p: Sx("keep"), target: 0.85, note: `${lo}–${hi} lands` },
       { label: "3rd land drop on time", p: Sx("t3"), target: 0.8, note: "3+ lands in 9 cards (on the draw)" },
@@ -290,7 +406,8 @@ export function mtgConstructedPower(deck, catalog, key, size = 60) {
     roles,
     profile: [["Lands", nLand], ["Creatures", creatures], ["Interaction", interaction], ["Card flow", flow], ["Avg cost", avg.toFixed(2)]],
     plan: plan + (theme ? " · " + theme : ""),
-    stats: { lands: nLand, idealLands, avg, interaction, threats, flow, ramp, redundancy, creatures },
+    stats: { lands: nLand, idealLands, cheapHelp, avg, interaction, hardInteraction, tempoInteraction, threats, threatQ, flow, effectiveFlow, ramp, redundancy, creatures },
+    ...(boundedConstructed ? {constructedCriteria:{version:"constructed-evidence-v1", scoreMeaning:"Bounded structure and recognized impact heuristic, not measured win rate or tournament readiness", cards:spells.map(r => ({name:r.name, qty:r.qty, ...cardProfile(r.c)})), coverage:{status:unknown ? "incomplete" : "partial", unknownCopies:unknown, quantifiedCreatures, creatureCopies:creatures, limitations:["Only recognized costs, ability prerequisites and useful effects are evaluated; unrecognized text receives no automatic full-quality credit.", "Opponent interaction, sideboarding, matchup results, and complete turn sequencing are not modeled.", "No penalty is applied merely for playing all creatures, four copies of a legend, or 24 lands."]}}} : {}),
     unknown,
     lens: `${plan} lens for a ${size}-card constructed deck — no Commander targets.`,
   };

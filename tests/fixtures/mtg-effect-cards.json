@@ -1,0 +1,357 @@
+{
+  "note": "Exact public Oracle text retrieved 2026-10-19 and retained repository benchmark cards for focused parser regression, not the user deck. URLs or fixture_source identify the public sources.",
+  "cards": [
+    {
+      "name": "Dion, Bahamut's Dominant // Bahamut, Warden of Light",
+      "oracle_id": "4a0cc2a2-3711-473a-b2c5-b1e52b34e4fb",
+      "scryfall_uri": "https://scryfall.com/card/fin/16/dion-bahamuts-dominant-bahamut-warden-of-light?utm_source=api",
+      "type_line": "Legendary Creature — Human Noble Knight // Legendary Enchantment Creature — Saga Dragon",
+      "cmc": 4,
+      "color_identity": [
+        "W"
+      ],
+      "keywords": [
+        "Dragonfire Dive",
+        "Flying",
+        "Transform"
+      ],
+      "card_faces": [
+        {
+          "name": "Dion, Bahamut's Dominant",
+          "type_line": "Legendary Creature — Human Noble Knight",
+          "oracle_text": "Dragonfire Dive — During your turn, Dion and other Knights you control have flying.\nWhen Dion enters, create a 2/2 white Knight creature token.\n{4}{W}{W}, {T}: Exile Dion, then return it to the battlefield transformed under its owner's control. Activate only as a sorcery.",
+          "mana_cost": "{3}{W}"
+        },
+        {
+          "name": "Bahamut, Warden of Light",
+          "type_line": "Legendary Enchantment Creature — Saga Dragon",
+          "oracle_text": "(As this Saga enters and after your draw step, add a lore counter.)\nI, II — Wings of Light — Put a +1/+1 counter on each other creature you control. Those creatures gain flying until end of turn.\nIII — Gigaflare — Destroy target permanent. Exile Bahamut, then return it to the battlefield (front face up).\nFlying",
+          "mana_cost": ""
+        }
+      ]
+    },
+    {
+      "name": "Wickersmith's Tools",
+      "oracle_id": "c89cd328-b4cc-4760-8b6c-59e82eed8dac",
+      "scryfall_uri": "https://scryfall.com/card/ecc/41/wickersmiths-tools?utm_source=api",
+      "type_line": "Artifact",
+      "oracle_text": "Whenever one or more -1/-1 counters are put on a creature, put a charge counter on this artifact.\n{T}: Add one mana of any color.\n{5}, {T}, Sacrifice this artifact: Create X tapped 2/2 colorless Scarecrow artifact creature tokens, where X is the number of charge counters on this artifact.",
+      "mana_cost": "{3}",
+      "cmc": 3,
+      "color_identity": [],
+      "keywords": []
+    },
+    {
+      "name": "Intangible Virtue",
+      "oracle_id": "d21c3c8f-d105-4ba9-bf69-e5f26f0f8ec5",
+      "scryfall_uri": "https://scryfall.com/card/inr/29/intangible-virtue?utm_source=api",
+      "type_line": "Enchantment",
+      "oracle_text": "Creature tokens you control get +1/+1 and have vigilance.",
+      "mana_cost": "{1}{W}",
+      "cmc": 2,
+      "color_identity": [
+        "W"
+      ],
+      "keywords": []
+    },
+    {
+      "name": "Prophetic Prism",
+      "oracle_id": "134a9877-5cfb-4a2a-a0f0-930dce45f58b",
+      "scryfall_uri": "https://scryfall.com/card/woe/249/prophetic-prism?utm_source=api",
+      "type_line": "Artifact",
+      "oracle_text": "When this artifact enters, draw a card.\n{1}, {T}: Add one mana of any color.",
+      "mana_cost": "{2}",
+      "cmc": 2,
+      "color_identity": [],
+      "keywords": []
+    },
+    {
+      "name": "Spectral Searchlight",
+      "oracle_id": "511b1174-8ef7-4d17-93de-01b9b81bda6a",
+      "scryfall_uri": "https://scryfall.com/card/cmm/411/spectral-searchlight?utm_source=api",
+      "type_line": "Artifact",
+      "oracle_text": "{T}: Choose a player. That player adds one mana of any color they choose.",
+      "mana_cost": "{3}",
+      "cmc": 3,
+      "color_identity": [],
+      "keywords": []
+    },
+    {
+      "name": "Inspiring Statuary",
+      "oracle_id": "78b2b68d-6e27-49f3-8373-6e19faf6f679",
+      "scryfall_uri": "https://scryfall.com/card/mkc/230/inspiring-statuary?utm_source=api",
+      "type_line": "Artifact",
+      "oracle_text": "Nonartifact spells you cast have improvise. (Your artifacts can help cast those spells. Each artifact you tap after you're done activating mana abilities pays for {1}.)",
+      "mana_cost": "{3}",
+      "cmc": 3,
+      "color_identity": [],
+      "keywords": []
+    },
+    {
+      "name": "Knight of the White Orchid",
+      "oracle_id": "7d0efc64-151f-45b4-8c0b-c32609f9d862",
+      "scryfall_uri": "https://scryfall.com/card/moc/193/knight-of-the-white-orchid?utm_source=api",
+      "type_line": "Creature — Human Knight",
+      "oracle_text": "First strike\nWhen this creature enters, if an opponent controls more lands than you, you may search your library for a Plains card, put it onto the battlefield, then shuffle.",
+      "mana_cost": "{W}{W}",
+      "cmc": 2,
+      "color_identity": [
+        "W"
+      ],
+      "keywords": [
+        "First strike"
+      ]
+    },
+    {
+      "name": "Rootborn Defenses",
+      "oracle_id": "04046ae4-5c51-434b-930c-f3b1d348bf4b",
+      "scryfall_uri": "https://scryfall.com/card/plst/RVR-26/rootborn-defenses?utm_source=api",
+      "type_line": "Instant",
+      "oracle_text": "Populate. Creatures you control gain indestructible until end of turn. (To populate, create a token that's a copy of a creature token you control.)",
+      "mana_cost": "{2}{W}",
+      "cmc": 3,
+      "color_identity": [
+        "W"
+      ],
+      "keywords": [
+        "Populate"
+      ]
+    },
+    {
+      "name": "Crib Swap",
+      "oracle_id": "2987c385-011a-4032-a516-a46d1e9dc9e8",
+      "scryfall_uri": "https://scryfall.com/card/ecl/11/crib-swap?utm_source=api",
+      "type_line": "Kindred Instant — Shapeshifter",
+      "oracle_text": "Changeling (This card is every creature type.)\nExile target creature. Its controller creates a 1/1 colorless Shapeshifter creature token with changeling.",
+      "mana_cost": "{2}{W}",
+      "cmc": 3,
+      "color_identity": [
+        "W"
+      ],
+      "keywords": [
+        "Changeling"
+      ]
+    },
+    {
+      "name": "Magnifying Glass",
+      "oracle_id": "f2ce9e55-07c0-4f36-a59e-127693fc0f62",
+      "scryfall_uri": "https://scryfall.com/card/mkm/255/magnifying-glass?utm_source=api",
+      "type_line": "Artifact",
+      "oracle_text": "{T}: Add {C}.\n{4}, {T}: Investigate. (Create a Clue token. It's an artifact with \"{2}, Sacrifice this token: Draw a card.\")",
+      "mana_cost": "{3}",
+      "cmc": 3,
+      "color_identity": [],
+      "keywords": [
+        "Investigate"
+      ]
+    },
+    {
+      "name": "Meteor Golem",
+      "oracle_id": "d9f11aa1-9219-42a8-85a9-a8f204160706",
+      "scryfall_uri": "https://scryfall.com/card/msc/205/meteor-golem?utm_source=api",
+      "type_line": "Artifact Creature — Golem",
+      "oracle_text": "When this creature enters, destroy target nonland permanent an opponent controls.",
+      "mana_cost": "{7}",
+      "cmc": 7,
+      "color_identity": [],
+      "keywords": []
+    },
+    {
+      "name": "White Orchid Phantom",
+      "type_line": "Creature — Spirit Knight",
+      "oracle_text": "Flying, first strike\nWhen this creature enters, destroy up to one target nonbasic land. Its controller may search their library for a basic land card, put it onto the battlefield tapped, then shuffle.",
+      "mana_cost": "{W}{W}",
+      "cmc": 2,
+      "color_identity": [
+        "W"
+      ],
+      "keywords": [
+        "Flying",
+        "First strike"
+      ],
+      "fixture_source": "Repository frozen public-card power-bench.json.gz"
+    },
+    {
+      "name": "Path to Exile",
+      "type_line": "Instant",
+      "oracle_text": "Exile target creature. Its controller may search their library for a basic land card, put that card onto the battlefield tapped, then shuffle.",
+      "mana_cost": "{W}",
+      "cmc": 1,
+      "color_identity": [
+        "W"
+      ],
+      "keywords": [],
+      "fixture_source": "Repository frozen public-card power-bench.json.gz"
+    },
+    {
+      "name": "Cultivate",
+      "type_line": "Sorcery",
+      "oracle_text": "Search your library for up to two basic land cards, reveal those cards, put one onto the battlefield tapped and the other into your hand, then shuffle.",
+      "mana_cost": "{2}{G}",
+      "cmc": 3,
+      "color_identity": [
+        "G"
+      ],
+      "keywords": [],
+      "fixture_source": "Repository frozen public-card power-bench.json.gz"
+    },
+    {
+      "name": "Blasphemous Act",
+      "type_line": "Sorcery",
+      "oracle_text": "This spell costs {1} less to cast for each creature on the battlefield.\nBlasphemous Act deals 13 damage to each creature.",
+      "mana_cost": "{8}{R}",
+      "cmc": 9,
+      "color_identity": [
+        "R"
+      ],
+      "keywords": [],
+      "fixture_source": "Repository frozen public-card power-bench.json.gz"
+    },
+    {
+      "name": "Razorgrass Ambush // Razorgrass Field",
+      "type_line": "Instant // Land",
+      "cmc": 2,
+      "color_identity": [
+        "W"
+      ],
+      "keywords": [],
+      "card_faces": [
+        {
+          "name": "Razorgrass Ambush",
+          "type_line": "Instant",
+          "oracle_text": "Razorgrass Ambush deals 3 damage to target attacking or blocking creature.",
+          "mana_cost": "{1}{W}"
+        },
+        {
+          "name": "Razorgrass Field",
+          "type_line": "Land",
+          "oracle_text": "As this land enters, you may pay 3 life. If you don't, it enters tapped.\n{T}: Add {W}.",
+          "mana_cost": ""
+        }
+      ],
+      "fixture_source": "Repository frozen public-card power-bench.json.gz"
+    },
+    {
+      "name": "Witch Enchanter // Witch-Blessed Meadow",
+      "type_line": "Creature — Human Warlock // Land",
+      "cmc": 4,
+      "color_identity": [
+        "W"
+      ],
+      "keywords": [],
+      "card_faces": [
+        {
+          "name": "Witch Enchanter",
+          "type_line": "Creature — Human Warlock",
+          "oracle_text": "When this creature enters, destroy target artifact or enchantment an opponent controls.",
+          "mana_cost": "{3}{W}"
+        },
+        {
+          "name": "Witch-Blessed Meadow",
+          "type_line": "Land",
+          "oracle_text": "As this land enters, you may pay 3 life. If you don't, it enters tapped.\n{T}: Add {W}.",
+          "mana_cost": ""
+        }
+      ],
+      "fixture_source": "Repository frozen public-card power-bench.json.gz"
+    },
+    {
+      "name": "Grim Monolith",
+      "type_line": "Artifact",
+      "oracle_text": "This artifact doesn't untap during your untap step.\n{T}: Add {C}{C}{C}.\n{4}: Untap this artifact.",
+      "mana_cost": "{2}",
+      "cmc": 2,
+      "color_identity": [],
+      "keywords": [],
+      "fixture_source": "Repository frozen public-card power-bench.json.gz"
+    },
+    {
+      "name": "Mana Vault",
+      "type_line": "Artifact",
+      "oracle_text": "This artifact doesn't untap during your untap step.\nAt the beginning of your upkeep, you may pay {4}. If you do, untap this artifact.\nAt the beginning of your draw step, if this artifact is tapped, it deals 1 damage to you.\n{T}: Add {C}{C}{C}.",
+      "mana_cost": "{1}",
+      "cmc": 1,
+      "color_identity": [],
+      "keywords": [],
+      "fixture_source": "Repository frozen public-card power-bench.json.gz"
+    },
+    {
+      "name": "Mox Diamond",
+      "type_line": "Artifact",
+      "oracle_text": "If this artifact would enter, you may discard a land card instead. If you do, put this artifact onto the battlefield. If you don't, put it into its owner's graveyard.\n{T}: Add one mana of any color.",
+      "mana_cost": "{0}",
+      "cmc": 0,
+      "color_identity": [],
+      "keywords": [],
+      "fixture_source": "Repository frozen public-card power-bench.json.gz"
+    },
+    {
+      "name": "Scapeshift",
+      "type_line": "Sorcery",
+      "oracle_text": "Sacrifice any number of lands. Search your library for up to that many land cards, put them onto the battlefield tapped, then shuffle.",
+      "mana_cost": "{2}{G}{G}",
+      "cmc": 4,
+      "color_identity": [
+        "G"
+      ],
+      "keywords": [],
+      "fixture_source": "Repository frozen public-card power-bench.json.gz"
+    },
+    {
+      "name": "Llanowar Loamspeaker",
+      "type_line": "Creature — Elf Druid",
+      "oracle_text": "{T}: Add one mana of any color.\n{T}: Target land you control becomes a 3/3 Elemental creature with haste until end of turn. It's still a land. Activate only as a sorcery.",
+      "mana_cost": "{1}{G}",
+      "cmc": 2,
+      "color_identity": [
+        "G"
+      ],
+      "keywords": [],
+      "fixture_source": "Repository frozen public-card power-bench.json.gz"
+    },
+    {
+      "name": "Elvish Spirit Guide",
+      "type_line": "Creature — Elf Spirit",
+      "oracle_text": "Exile this card from your hand: Add {G}.",
+      "mana_cost": "{2}{G}",
+      "cmc": 3,
+      "color_identity": [
+        "G"
+      ],
+      "keywords": [],
+      "fixture_source": "Repository frozen public-card power-bench.json.gz"
+    },
+    {
+      "name": "Springleaf Drum",
+      "type_line": "Artifact",
+      "oracle_text": "{T}, Tap an untapped creature you control: Add one mana of any color.",
+      "mana_cost": "{1}",
+      "cmc": 1,
+      "color_identity": [],
+      "keywords": [],
+      "fixture_source": "Repository frozen public-card power-bench.json.gz"
+    },
+    {
+      "name": "Mox Amber",
+      "type_line": "Legendary Artifact",
+      "oracle_text": "{T}: Add one mana of any color among legendary creatures and planeswalkers you control.",
+      "mana_cost": "{0}",
+      "cmc": 0,
+      "color_identity": [],
+      "keywords": [],
+      "fixture_source": "Repository frozen public-card power-bench.json.gz"
+    },
+    {
+      "name": "Paradise Mantle",
+      "type_line": "Artifact — Equipment",
+      "oracle_text": "Equipped creature has \"{T}: Add one mana of any color.\"\nEquip {1}",
+      "mana_cost": "{0}",
+      "cmc": 0,
+      "color_identity": [],
+      "keywords": [
+        "Equip"
+      ],
+      "fixture_source": "Repository frozen public-card power-bench.json.gz"
+    }
+  ]
+}

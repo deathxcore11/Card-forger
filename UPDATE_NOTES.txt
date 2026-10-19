@@ -1,3 +1,8 @@
+3.85.14 - Power with explicit evidence and build goals
+Power separates format eligibility, structural health and a provisional strategic estimate. Incomplete, illegal or unresolved lists keep Power unavailable instead of receiving a misleading overall score. Commander context distinguishes compatible creatures, tokens, costs and resource requirements; Standard analysis separates printed bodies, conditional effects and alternate activation costs. Coverage limits remain visible, and the estimate is not a measured win rate.
+AI deck previews preserve strongest, theme, fun, chaos and intentionally weak goals without inventing a subjective score. Builds have no implicit $25 cap, account for priced basic lands, and keep unknown prices unverified. Deterministic validation and a bounded repair loop retain explicit review/save and cancellation safeguards. Repeated unchanged Power reads reuse cached analysis. The public POWER_MODEL.md explains the model and limitations.
+Existing Pokemon and Yu-Gi-Oh! strategic models remain unchanged; shared eligibility and unavailable-score presentation stay consistent. Regression evidence uses public card text and synthetic scenarios.
+
 3.73.5 — Match AI artwork to the deck
 Deck tiles prefer the Pokémon named by the archetype over a support attacker. Archetypes without a placing list can use their supplied Pokémon icon. Explicit AI recommendations are shown without adding unrelated extra decks.
 

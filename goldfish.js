@@ -1,8 +1,6 @@
-// Goldfish: play the exact list out 1,000 times against an empty board, turn by turn, with each
-// game's real turn structure. It shows what the hands actually do: how fast the deck develops,
-// where its damage comes from, how it closes the game, and what goes wrong. Sample games are
-// narrated with real card names. Seeded, so the same list always plays the same games.
-// It is a solitaire test: no opponent, no interaction. It measures raw speed and consistency.
+// Seeded, simplified solitaire models using the supplied list and recognized
+// printed effects. These do not implement every card or full game rules and
+// cannot establish real winning turns, matchup strength or win probabilities.
 import { rng } from "./deckaudit.js";
 
 const lc = (s) => String(s || "").toLowerCase();
@@ -47,8 +45,33 @@ export function spendMana(pool, pips, cost) {
   return left;
 }
 
+// Count only unconditional own draw on resolving this spell / its own ETB.
+// Cycling, channel and other activations are alternative actions, not cast
+// bonuses. A later upkeep, death or attack trigger is not simulated as an ETB.
+export function mtgCastDraw(c) {
+  const tx = lc(c?.oracle_text || (c?.card_faces || []).map(f => f.oracle_text || "").join("\n")),
+    spell = /\b(?:Instant|Sorcery)\b/.test(c?.type_line || ""),
+    name = lc(c?.name).split(",")[0].replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),
+    ownEntry = new RegExp(`^when (?:this (?:creature|artifact|enchantment|permanent)|${name || "~"}) enters(?: the battlefield)?\\b`);
+  let draw = 0;
+  for (const line of tx.split("\n").map(s => s.replace(/\([^)]*\)/g, "").trim())) {
+    if (/^cycling\b|^channel\b|:|\bwould draw\b|instead of drawing|choose one/.test(line)) continue;
+    if (!spell && !ownEntry.test(line) && !/^when you cast this spell,/.test(line)) continue;
+    if (/^whenever|^at the beginning|^when (?!you cast this spell,)/.test(line) && !ownEntry.test(line)) continue;
+    const effect = line.replace(/^when[^,]*,\s*/, "");
+    for (const clause of effect.split(".")) {
+      if (/\bif\b|\bunless\b|\bwhen\b|\bwhenever\b|\bmay\b/.test(clause)) continue;
+      if (/(?:opponent|player|controller)(?: each)? draws?/.test(clause) && !/\byou(?: and [^,.]+)?(?: each)? draw/.test(clause)) continue;
+      const n = clause.match(/\bdraw (a|an|one|two|three|\d+) cards?\b/);
+      if (n) draw += ({a:1, an:1, one:1, two:2, three:3}[n[1]] ?? Number(n[1]));
+    }
+  }
+  return draw;
+}
+
 // rows: [{ qty, c }] with Scryfall card objects. opts: { size, commander (card), plan }
 export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrange", runs = 1000, seed = 11 } = {}) {
+  const boundedConstructed = !commander && size < 99;
   const basics={Plains:"W",Island:"U",Swamp:"B",Mountain:"R",Forest:"G",Wastes:"C"};
   const basicColors=[...new Set(rows.filter(r=>/^Basic/.test(r.c?.type_line || "")).flatMap(r=>Object.entries(basics).filter(([n])=>String(r.c.type_line).includes(n)).map(([,color])=>color)))];
   const model = (c) => {
@@ -68,13 +91,14 @@ export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrang
       ])],
       land,
       creature,
+      legendary: /\bLegendary\b/.test(type),
       walker: /Planeswalker/.test(type),
       power: creature ? (Number.isFinite(pw) ? pw : 2) : 0,
       haste: /\bhaste\b/.test(text),
       dork: !land && creature && /\{t\}(?:,[^:]*)?: add /.test(text),
       rock: !land && !creature && /Artifact/.test(type) && /\{t\}(?:,[^:]*)?: add /.test(text),
       rampLand: !land && /search your library for (?:a|an|up to \w+|two) (?:basic )?(?:land|plains|island|swamp|mountain|forest)[^.]*onto the battlefield|put (?:a|up to \w+) land cards? [^.]*onto the battlefield/.test(text),
-      draw: !land ? (/draws? (two|2) cards/.test(text) ? 2 : /draws? (three|3) cards/.test(text) ? 3 : /\bdraws? a card/.test(text) ? 1 : 0) : 0,
+      draw: !land ? boundedConstructed ? mtgCastDraw(c) : (/draws? (two|2) cards/.test(text) ? 2 : /draws? (three|3) cards/.test(text) ? 3 : /\bdraws? a card/.test(text) ? 1 : 0) : 0,
       burn: !land && !creature ? Number((text.match(/deals? (\d+) damage to (?:any target|each opponent|target player|target opponent)/) || [])[1] || 0) : 0,
       inter: !land && /(?:destroy|exile) target|counter target|deals? \d+ damage to (?:any target|target creature)|fights? target/.test(text),
     };
@@ -137,7 +161,11 @@ export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrang
           if (li2 >= 0) { lands++;landMana.push(lib.splice(li2,1)[0].colors); }
         }
         for (let k = 0; k < c.draw && lib.length; k++) hand.push(lib.shift());
-        if (c.creature || c.walker) board.push({ ...c, summoned: t });
+        if (c.creature || c.walker) {
+          // Recasting a legend still resolves its ETB, but does not leave two
+          // same-name legends attacking. Keep the established identical body.
+          if (!boundedConstructed || !c.legendary || !board.some(b => b.legendary && b.name === c.name)) board.push({ ...c, summoned: t });
+        }
         if (c.burn) {
           damage += c.burn;
           dealtBy.set(c.name, (dealtBy.get(c.name) || 0) + c.burn);
@@ -183,12 +211,13 @@ export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrang
   return {
     game: "mtg",
     runs,
+    ...(boundedConstructed ? {limitations:["Simplified printed-power combat and recognized direct damage against no blockers, not a measured win rate.", "Does not execute cycling/channel, activated abilities, conditional token production, copy triggers, combat support, or full attack restrictions.", "Same-name legendary bodies do not stack; recast ETBs still resolve. Other state-based rules are not fully simulated."], modeledDraw:rows.filter(r => r.c && !/\bLand\b/.test(r.c.type_line || "")).map(r => ({name:r.c.name, qty:r.qty, castDraw:mtgCastDraw(r.c)}))} : {}),
     headline: cmdr
       ? `Commander lands on turn ${median(cmdrTurn) ?? "—"} in a typical game; ${Math.round(avg(dmg6))} damage to one opponent by turn 6.`
-      : killT
+      : boundedConstructed ? (killT ? `Among simplified damage-model trials reaching 20 damage, the median is turn ${killT}; this is not a forecast of a real winning turn.` : "The simplified damage model does not reach 20 damage by turn 10 in these trials. Unmodeled abilities and routes are not evaluated here.") : killT
         ? `A typical goldfish kill is turn ${killT}${target ? ` (a ${String(plan).split(" ")[0].toLowerCase()} deck wants turn ${target} or sooner)` : ""}.`
         : "Most games don't deal 20 damage by turn 10: this list wins slowly, through something other than combat.",
-    turnDist: cmdr ? null : { label: "Turn the goldfish dies (20 damage, no blockers)", d, maxT },
+    turnDist: cmdr ? null : { label: boundedConstructed ? "Modeled turn reaching 20 damage, no blockers" : "Turn the goldfish dies (20 damage, no blockers)", d, maxT },
     metrics: [
       { label: "Mana used, turns 1–4", value: avg(spent4), pct: true, note: "of the mana you had", good: 0.75 },
       { label: "A play on turns 2, 3 and 4", value: curveOuts.filter(Boolean).length / runs, pct: true, good: 0.5 },
@@ -197,11 +226,11 @@ export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrang
       { label: "Screwed (3 or fewer lands by turn 10)", value: screw.filter(Boolean).length / runs, pct: true, bad: true, good: 0.08 },
       ...(cmdr ? [{ label: "Commander cast by turn 4", value: cmdrTurn.filter((t) => t && t <= 4).length / runs, pct: true, good: 0.6 }] : []),
     ],
-    winCon: winners.length
+    winCon: boundedConstructed ? (winners.length ? `Modeled combat/direct damage comes from ${winners.map((w) => `${w.name} (${Math.round(w.share * 100)}%)`).join(", ")}.` : "No damage output was executed by this simplified model; unmodeled routes remain unverified.") : winners.length
       ? `Damage comes from ${winners.map((w) => `${w.name} (${Math.round(w.share * 100)}%)`).join(", ")}.`
       : "No card deals damage on its own; this list needs a combo, alternate win or a long game.",
-    endgame: hasTop ? `Its late game: ${names(deck.filter((c) => c.cmc >= 5).filter((c, i, a) => a.findIndex((x) => x.name === c.name) === i).slice(0, 5))}.` : "No 5+ mana cards: it has to win before the opponent's late game arrives.",
-    samples: [typical && { title: `Typical game${typical.kill ? ` · wins turn ${typical.kill}` : ""}`, log: typical.log }, worst && worst !== typical && { title: `A bad draw${worst.kill ? ` · wins turn ${worst.kill}` : " · no kill by turn 10"}`, log: worst.log }].filter(Boolean),
+    endgame: boundedConstructed ? (hasTop ? `Printed mana-value 5+ cards: ${names(deck.filter((c) => c.cmc >= 5).filter((c, i, a) => a.findIndex((x) => x.name === c.name) === i).slice(0, 5))}. Paid abilities and long-game engines still need separate review.` : "No printed mana-value 5+ cards. This does not rule out expensive activated/alternative abilities or repeatable long-game engines.") : hasTop ? `Its late game: ${names(deck.filter((c) => c.cmc >= 5).filter((c, i, a) => a.findIndex((x) => x.name === c.name) === i).slice(0, 5))}.` : "No 5+ mana cards: it has to win before the opponent's late game arrives.",
+    samples: boundedConstructed ? [typical && {title:`Model sample${typical.kill ? ` · 20 damage at turn ${typical.kill}` : ""}`,log:typical.log},worst && worst!==typical && {title:`Slower model sample${worst.kill ? ` · 20 damage at turn ${worst.kill}` : " · below 20 damage by turn 10"}`,log:worst.log}].filter(Boolean) : [typical && { title: `Typical game${typical.kill ? ` · wins turn ${typical.kill}` : ""}`, log: typical.log }, worst && worst !== typical && { title: `A bad draw${worst.kill ? ` · wins turn ${worst.kill}` : " · no kill by turn 10"}`, log: worst.log }].filter(Boolean),
     speed: cmdr ? null : killT == null ? 0.2 : Math.max(0, Math.min(1, 1 - (killT - (target || 6)) / 4)),
   };
 }

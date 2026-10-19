@@ -11,11 +11,49 @@ export function purchaseCost(rows,{key=r=>r.cardId || r.name,owned=()=>0,price=(
 export function comparePower(a,b){
  const valid=p=>!p?.readiness?.provisional;
  if(valid(a)!==valid(b))return valid(a)?1:-1;
+ const goalA=a?.goal||a?.criteria?.goal||'strongest',goalB=b?.goal||b?.criteria?.goal||'strongest';
+ if(goalA!==goalB || ['fun','chaos','weak'].includes(goalA))return 0;
+ // Theme is an admissibility constraint, not a reward per filler creature. A
+ // strength upgrade may vary density, but cannot erase the only recognized route
+ // serving the requested theme. Unmapped subjective themes need user review.
+ if(goalA==='theme'){
+  const ap=a?.criteria?.plan,bp=b?.criteria?.plan;
+  if(!ap||!bp||a?.criteria?.requestedStyle!==b?.criteria?.requestedStyle)return 0;
+  const ar=new Set((ap.routes||[]).filter(r=>r.status!=='unsupported').map(r=>r.kind)),br=new Set((bp.routes||[]).filter(r=>r.status!=='unsupported').map(r=>r.kind));
+  if(!ar.size&&!br.size)return 0;
+  if(!ar.size||!br.size)return ar.size?1:-1;
+  if(![...ar].some(r=>br.has(r)))return 0;
+ }
+
  // A high generic role score cannot displace a complete, closely matched placing engine.
  if(valid(a) && (a?.from==='meta')!==(b?.from==='meta'))return a?.from==='meta'?1:-1;
  const unresolved=p=>(p?.readiness?.unknown || 0)+(p?.readiness?.issues?.length || 0);
  if(!valid(a)&&unresolved(a)!==unresolved(b))return unresolved(b)-unresolved(a);
- const delta=(a?.score||0)-(b?.score||0);if(delta)return delta;
+ // Commander role saturation is not proof of a supported plan. Preserve known
+ // support before optimizing a structural subscore; subjective goals must not be
+ // silently turned into strongest-deck searches. No arbitrary tribal/ramp caps.
+ const ac=a?.criteria,bc=b?.criteria;
+ if(ac&&bc&&!a?.strategic&&!b?.strategic){
+  const goal=a?.goal||ac.goal||'strongest',other=b?.goal||bc.goal||'strongest';
+  if(goal!==other)return 0;
+  if(['fun','chaos','weak'].includes(goal))return 0;
+  const known=p=>p.plan?.status==='supported',support=p=>p.plan?.supportedCopies||0;
+  if(known(ac)!==known(bc))return known(ac)?1:-1;
+  if(known(ac)&&known(bc)){
+   const routeSet=p=>new Set((p.plan?.routes||[]).filter(r=>r.status!=='unsupported').map(r=>r.kind));
+   const ar=routeSet(ac),br=routeSet(bc),lost=[...br].filter(r=>!ar.has(r)),gained=[...ar].filter(r=>!br.has(r));
+   if(lost.length&&!gained.length)return -1;if(gained.length&&!lost.length)return 1;
+   if(goal==='theme'&&support(ac)!==support(bc))return support(ac)-support(bc);
+   // A proposed replacement cannot call itself an improvement solely by trading
+   // away demonstrated support to fill more generic role checkboxes.
+   if(support(ac)<support(bc)&&(a.score||0)>(b.score||0))return -1;
+   if(support(bc)<support(ac)&&(b.score||0)>(a.score||0))return 1;
+  }
+ }
+ if((a?.strategic?.score===null)||(b?.strategic?.score===null))return 0;
+ const value=p=>p?.strategic&&p.from!=='meta'?p.strategic.rankingValue??p.score:p?.score;
+ const delta=(value(a)||0)-(value(b)||0);if(delta)return delta;
+ if(a?.strategic||b?.strategic)return 0;
  const engine=(a?.heuristic ?? a?.score ?? 0)-(b?.heuristic ?? b?.score ?? 0);if(engine)return engine;
  return (b?.engine?.unmappedNeeds || 0)-(a?.engine?.unmappedNeeds || 0);
 }
@@ -35,7 +73,7 @@ export function bestBudgetDecks(candidates,budgets,{evaluate,cost,accept=()=>tru
   const winner=feasible[0];if(!winner)return null;
   const stronger=evaluated.filter(d=>!d.unknown && (ready(d)||!ready(winner)) && comparePower(d.assessment,winner.assessment)>0 && d.cost>budget).sort((a,b)=>a.cost-b.cost);
   const next=stronger[0],same=previous && signature(previous)===signature(winner);
-  const explanation=same?'Same strongest assessed list as the lower budget. Extra spending did not improve the supported checks in this candidate pool.':winner.cost<budget-10 && budget!==Infinity?'The strongest assessed candidate costs less than this budget. Unspent money is kept; price alone does not improve the engine.':'';
+  const explanation=winner.assessment?.score==null?'Power is unavailable for this candidate. This is a reviewable budget-fit draft, not a verified strongest list.':same?'Same strongest assessed list as the lower budget. Extra spending did not improve the supported checks in this candidate pool.':winner.cost<budget-10 && budget!==Infinity?'The strongest assessed candidate costs less than this budget. Unspent money is kept; price alone does not improve the engine.':'';
   previous=winner;
   return {...winner,budget,explanation,nextUpgrade:next?{...next,budget:next.cost,overBy:next.cost-budget,withinTolerance:budget>0 && next.cost-budget<=10,power:next.assessment.score}:null,warnings:[...(winner.warnings || []),...(winner.unknown?[`${winner.unknown} missing copies have no verified price; purchase total is incomplete.`]:[])],power:winner.assessment.score};
  });
@@ -125,6 +163,10 @@ export async function spendUp(deck, budget, { pool, quality, rows, swap, cost, e
     curPower = evaluate(cur),
     evals = 0;
   if (curCost.unknown) return { deck, swaps };
+  const goal = deck.goal || curPower?.goal || curPower?.criteria?.goal || 'strongest';
+  // Price/popularity-based spending is a strength search, not a way to validate
+  // subjective intent. Keep the requested experience instead of spending it away.
+  if (['fun', 'chaos', 'weak'].includes(goal)) return { deck, swaps, cost: curCost.cost, power: curPower };
   for (let step = 0; step < maxSwaps && evals < 90; step++) {
     if (budget !== Infinity && curCost.cost >= budget - 1) break;
     const have = rows(cur),
@@ -149,7 +191,7 @@ export async function spendUp(deck, budget, { pool, quality, rows, swap, cost, e
         await breathe();
         const power = evaluate(next);
         const issues = (x) => (x?.readiness?.issues?.length || 0) + (x?.readiness?.unknown || 0);
-        if ((power?.score ?? 0) < (curPower?.score ?? 0) - 1 || (power?.readiness?.provisional && !curPower?.readiness?.provisional) || issues(power) > issues(curPower)) continue;
+        if (comparePower(power, curPower) < 0 || (power?.score ?? 0) < (curPower?.score ?? 0) - 1 || (power?.readiness?.provisional && !curPower?.readiness?.provisional) || issues(power) > issues(curPower)) continue;
         swaps.push({ out: w.card?.name || w.key, in: c.name, n, from: w.q, to: q, cost: quote.cost - curCost.cost });
         cur = next;
         curCost = quote;

@@ -15,7 +15,7 @@ assert.ok(!up.cuts.length || up.cuts.every((x) => x.key !== "a"));
 
 S.state = blank();
 S.state.tcg = { ygo: blankGame(), ptcg: blankGame() };
-// Yu-Gi-Oh! fixture: a focused 40-card list and a placing list of the same archetype.
+// Yu-Gi-Oh! fixture: an intentionally invalid 40-card list (34 copies of Filler) and a reference list of the same archetype.
 const mk = (id, name, extra = {}) => (cache.ygo[id] = { game: "ygo", id, name, category: "Monster", text: "", level: 4, artSchema: 1, fetchedAt: new Date().toISOString(), prices: { usd: 1.5 }, image: "", ...extra });
 mk("1", "Mitsurugi Starter", { text: "Add 1 monster from your Deck to your hand.", archetype: "Mitsurugi" });
 mk("2", "Mitsurugi Extender", { text: "You can Special Summon this card from your hand.", archetype: "Mitsurugi" });
@@ -37,15 +37,15 @@ S.ui.tdeckTab = { "ygo:y1": "insights" };
 html = tcgDeck("y1");
 assert.match(html, /Deck Power/);
 assert.match(html, /Matches: Mitsurugi/);
-assert.match(html, /power<\/button>/);
+assert.match(html, /power unavailable<\/button>/);assert.doesNotMatch(html, /<b>null<\/b>/);
 S.ui.tdeckTab = { "ygo:y1": "upgrade" };
 html = tcgDeck("y1");
 assert.match(html, /Make it play like Mitsurugi/);
 assert.match(html, /Ash Blossom/);
 assert.match(html, /data-act="tDeckAdd" data-id="3"/);
 S.ui.tdeckTab = { "ygo:y1": "versions" };
-assert.match(tcgDeck("y1"), /Power then <b>\d+<\/b> → now/);
-console.log("PASS: Yu-Gi-Oh! art tiles, Power tab with tournament match, Upgrade lab adds and version power.");
+const versions=tcgDeck("y1");assert.match(versions, /Power then <b>Unavailable<\/b> → now <b class="">Unavailable<\/b>/);assert.doesNotMatch(versions, /<b(?: class="[^"]*")?>null<\/b>/);
+console.log("PASS: Yu-Gi-Oh! art tiles, Power tab with tournament match, Upgrade lab adds and unavailable version Power for illegal copy counts.");
 
 // Pokémon renders without card data or meta (no crash, prompts to load).
 S.state.settings.game = "ptcg";

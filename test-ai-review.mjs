@@ -64,7 +64,7 @@ assert.equal(checked.pressure.scenarios[3].backupCards.length, 0, 'backup cards 
 assert.ok(checked.notes.some(n => /quote not found/.test(n)));
 // Quotes match despite curly quotes, dashes, case and "…" gaps; prose shows names, not ids.
 const loose = validateReview({ ...review, headline: 'Protect Test Engine (c0) first; c0 wins.', beyond: [{ area: 'Draw', note: 'x', evidence: [{ cardId: 'c0', quote: 'sacrifice an artifact… two cards' }] }] }, cleanDeck(payload));
-assert.equal(loose.beyond.length, 1); assert.equal(loose.headline, 'Protect Test Engine first; Test Engine wins.');
+assert.equal(loose.beyond.length, 1); assert.equal(loose.headline, 'Protect Test Engine first;', 'card-name resolution does not turn an unsupported winning assertion into a fact');
 // A step citing one card while describing another is dropped.
 const two = cleanDeck({ ...payload, cards: [card, { ...card, id: 'c1', name: 'Other Engine' }] });
 const mixed = validateReview({ ...review, pilot: { hand: null, lines: [{ ...review.pilot.lines[0], steps: [{ turn: 1, cardId: 'c0', kind: 'play', action: 'Cast Other Engine', quote: '' }, review.pilot.lines[0].steps[1]] }] } }, two);
@@ -126,7 +126,7 @@ assert.deepEqual(tied.identity.engineCards.map(x => x.name), ['Test Engine']);
 assert.deepEqual(cleanDeck(payload).power.priority, ['Draw'], 'priority keys must be Power areas');
 // Cards cited by name instead of id still resolve.
 const named = validateReview({ ...review, identity: { ...review.identity, winCards: ['Test Engine'] }, improve: [{ ...swap, cut: 'Test Engine', add: 'Owned Bauble' }] }, withOwned);
-assert.deepEqual(named.identity.winCards.map(x => x.cardId), ['c0']); assert.deepEqual(named.improve.map(x => [x.cut, x.add]), [['c0', 'o0']]);
+assert.deepEqual(named.identity.proposedCards.map(x => x.cardId), ['c0']); assert.deepEqual(named.improve.map(x => [x.cut, x.add]), [['c0', 'o0']]);
 console.log('PASS: AI review all three games, secret isolation, bounded input, quota burst/restart, fail-closed setup, failure handling, citation rejection, explicit opt-in, escaping and stale-review invalidation. No paid API requests made.');
 
 for (const [status, error, expected] of [

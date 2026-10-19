@@ -22,6 +22,8 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 HOSTS = ("https://cardstashy.com/", "https://cardforge2.deathxcore11.workers.dev/")
 KEY_ASSETS = ("index.html", "config.js", "sw.js")
 MODULES = (
+    "power.js", "deckpower.js", "insights.js", "builder.js", "planner.js", "deck-optimizer.js", "engine-map.js", "pairing.js", "scouting.js", "formats.js", "goldfish.js", "tier-card.js", "ai-review.js",
+    "ai-build-contract.js", "ai-deck-goal.js", "coach-evidence.js", "commander-criteria.js", "commander-strategy.js", "mtg-effects.js",
     "ai-ask-loop.js", "ai-deck-builder.js", "meta-curation.js", "community-curation.css", "set-browser.js", "set-release-metadata.js",
     "magic-owned-detail.js",
     "pokemon-variant-options.js", "pokemon-promo-evidence.js",

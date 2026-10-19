@@ -1,0 +1,37 @@
+// Deterministic purchase-accounting fixtures; no API, account or model calls.
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {buildDeck,candidateRampWeight} from './builder.js';
+import {purchaseCost} from './deck-optimizer.js';
+import {cardKey} from './core.js';
+const legal={modern:'legal',commander:'legal'},spells=Array.from({length:9},(_,i)=>({name:'Accounting Spell '+i,type_line:'Creature — Goblin',oracle_text:'',cmc:2,mana_cost:'{1}{R}',color_identity:['R'],legalities:legal,prices:{usd:'1'}}));
+const mountain={name:'Mountain',type_line:'Basic Land — Mountain',oracle_text:'{T}: Add {R}.',cmc:0,mana_cost:'',color_identity:['R'],produced_mana:['R'],legalities:legal,prices:{usd:'.10'}};
+const catalog=Object.fromEntries([...spells,mountain].map(c=>[cardKey(c.name),c])),price=c=>c.prices?.usd==null?null:Number(c.prices.usd),opts={format:'Modern',seeds:[spells[0]],catalog,price};
+let d=buildDeck({...opts,budget:40});
+assert.equal(d.total,60);assert.equal(d.lands,24);assert.equal(d.cost,38.4);assert.equal(d.owned,0);assert.equal(d.priceVerified,true);assert.equal(d.withinBudget,true);
+assert.equal(purchaseCost(d.cards,{key:r=>cardKey(r.name),owned:()=>0,price:r=>price(catalog[cardKey(r.name)])}).cost,38.4);
+const owned=name=>name==='Mountain'?10:0;
+d=buildDeck({...opts,budget:40,available:owned});assert.equal(d.cost,37.4);assert.equal(d.owned,10);
+assert.equal(purchaseCost(d.cards,{key:r=>cardKey(r.name),owned:r=>owned(r.name),price:r=>price(catalog[cardKey(r.name)])}).cost,37.4);
+d=buildDeck({...opts,budget:0});assert.equal(d.total,0);assert.equal(d.lands,0);assert.equal(d.owned,0);
+d=buildDeck({...opts,budget:0,available:name=>name==='Mountain'?24:4});assert.equal(d.total,60);assert.equal(d.cost,0);assert.equal(d.owned,60);
+const unknownBasic={...mountain,prices:{}},unknownCatalog={...catalog,[cardKey(mountain.name)]:unknownBasic};
+d=buildDeck({...opts,catalog:unknownCatalog,budget:40});assert.equal(d.lands,0);assert.equal(d.total,36);assert(!d.cards.some(r=>r.name==='Mountain'));assert.match(d.warnings.join(' '),/verified purchase budget/);
+d=buildDeck({...opts,catalog:unknownCatalog});assert.equal(d.budget,Infinity);assert.equal(d.total,60);assert.equal(d.cost,null);assert.equal(d.knownSubtotal,36);assert.equal(d.unknown,24);assert.equal(d.priceVerified,false);assert.equal(d.withinBudget,false);assert.equal(d.owned,0);
+d=buildDeck({...opts,catalog:unknownCatalog,budget:40,available:name=>name==='Mountain'?24:0});assert.equal(d.total,60);assert.equal(d.cost,36);assert.equal(d.owned,24);assert.equal(d.unknown,0,'owned unknown-price copies do not create a purchase requirement');
+const missing={...catalog};delete missing[cardKey('Mountain')];
+d=buildDeck({...opts,catalog:missing});assert.equal(d.lands,0);assert(!d.cards.some(r=>r.name==='Mountain'));assert.match(d.warnings.join(' '),/verified legal basic-land details are missing/);
+for(const bad of [{...mountain,type_line:'Artifact'},{...mountain,legalities:{modern:'banned'}},{...mountain,color_identity:['U']}]){d=buildDeck({...opts,catalog:{...catalog,[cardKey('Mountain')]:bad}});assert.equal(d.lands,0);assert(!d.cards.some(r=>r.name==='Mountain'));}
+d=buildDeck({...opts,base:[{name:spells[0].name,qty:4}],budget:40});assert.equal(d.total,60);assert.equal(d.cost,38.4,'required/base rows are charged exactly once');
+const unknownSpell={...spells[0],prices:{}};
+d=buildDeck({...opts,catalog:{...catalog,[cardKey(unknownSpell.name)]:unknownSpell},base:[{name:unknownSpell.name,qty:1}],budget:40});assert.equal(d.cost,null);assert.equal(d.withinBudget,false);assert.equal(d.total,1,'unknown mandatory purchase is retained as unverified, not treated as free spending capacity');
+const expensiveCatalog=Object.fromEntries(Object.values(catalog).map(c=>[cardKey(c.name),{...c,prices:{usd:'2'}}]));
+d=buildDeck({...opts,catalog:expensiveCatalog});assert.equal(d.total,60);assert.equal(d.cost,120,'omitted budget does not silently impose $25');
+const app=fs.readFileSync(new URL('./app.js',import.meta.url),'utf8');
+assert.match(app,/purchaseCost\(d\.cards,\{key:r=>key\(r\.name\),owned:r=>B\.avail\(r\.name\),price:r=>priceOf\(r\.name\)\}\)/,'actual optimizer path uses actual ownership for every card, including basics');
+assert.doesNotMatch(app,/owned:r=>\/\^.*Plains.*\?r\.qty:B\.avail/);
+assert.doesNotMatch(app,/Math\.min\(r\.qty,\/\^.*Plains.*\?r\.qty:B\.avail/,'tier and stretch-upgrade ownership never fabricate owned basic lands');
+console.log('PASS: generic builder and optimizer charge verified basics, honor actual owned copies, preserve unknown costs, reject missing/illegal basics, charge base once, and never impose an unrequested $25 cap.');
+const fixture=JSON.parse(fs.readFileSync(new URL('./test-fixtures/commander-intent-cards.json',import.meta.url))).cards,byName=Object.fromEntries(fixture.map(c=>[c.name,c]));
+assert.equal(candidateRampWeight(byName['Prophetic Prism']),0);assert(candidateRampWeight(byName['Sol Ring'])>candidateRampWeight(byName['Magnifying Glass']));assert(candidateRampWeight(byName['Knight of the White Orchid'])>0);assert(candidateRampWeight(byName['Knight of the White Orchid'])<1);
+console.log('PASS: candidate ramp preference uses proven net acceleration, setup and conditions rather than raw full-credit tags; not a complete Power optimizer.');

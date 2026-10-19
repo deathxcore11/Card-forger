@@ -73,6 +73,7 @@ for(const game of ['mtg','ptcg','ygo']){
 const {buildDeck}=await import('./builder.js'),{cardKey}=await import('./core.js'),{buildYgo,buildPtcg}=await import('./tcgbuild.js');
 const mtg=(name,usd,type='Creature — Soldier',rank=10000)=>({name,type_line:type,oracle_text:'',cmc:2,mana_cost:'{1}{R}',color_identity:['R'],legalities:{commander:'legal'},edhrec_rank:rank,prices:{usd:String(usd)}});
 const seed=mtg('Budget leader',1,'Legendary Creature — Dragon',1),pool=[seed,...Array.from({length:10},(_,i)=>mtg('Premium dragon '+i,8,'Creature — Dragon',1)),...Array.from({length:20},(_,i)=>mtg('Cheap '+i,.05)),...Array.from({length:60},(_,i)=>mtg('Fallback '+i,.6))];
+pool.push({...mtg('Mountain',.05,'Basic Land — Mountain'),cmc:0,mana_cost:'',produced_mana:['R']});
 const built=buildDeck({format:'Commander',seeds:[seed],catalog:Object.fromEntries(pool.map(c=>[cardKey(c.name),c])),available:()=>0,price:c=>Number(c.prices?.usd)||null,budget:50});
 assert.equal(built.total,100);assert.equal(built.open,0);assert(built.cost<=50);assert(built.cards.some(r=>r.name===seed.name));
 const ys={id:1,name:'Budget seed',category:'Monster',level:4,usd:5},staples=Array.from({length:15},(_,i)=>({id:10+i,name:'Support '+i,category:'Spell',usd:.3}));

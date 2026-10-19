@@ -61,13 +61,15 @@ const text = (c) => [c?.oracle_text, ...(c?.card_faces || []).map((x) => x.oracl
 export function canLead(c, f) {
   if (!c || !f.commander) return false;
   if(f.id==="paupercommander")return c.pdhCommander===true;
-  const t = type(c),
+  const t = c.card_faces?.[0]?.type_line || type(c),
     legendCreature = /\bLegendary\b/.test(t) && /\bCreature\b/.test(t),
-    says = /can be your commander/i.test(text(c));
-  if (f.commander === "legend") return legendCreature || says;
+    // CR903.3 (2026-09-25): legendary Vehicle/Spacecraft with printed P/T boxes.
+    printed=c.card_faces?.[0]||c,legendVehicle=/\bLegendary\b/.test(t)&&/\b(?:Vehicle|Spacecraft)\b/.test(t)&&printed.power!=null&&printed.toughness!=null,
+    says = /can be your commander/i.test(c.card_faces?.[0]?.oracle_text || c.oracle_text || "");
+  if (f.commander === "legend") return legendCreature || legendVehicle || says;
   if (f.commander === "planeswalker") return /\bPlaneswalker\b/.test(t);
   if (f.commander === "creature") return /\bCreature\b/.test(t) || says;
-  if (f.commander === "brawl") return legendCreature || says || (/\bLegendary\b/.test(t) && /\bPlaneswalker\b/.test(t));
+  if (f.commander === "brawl") return legendCreature || legendVehicle || says || (/\bLegendary\b/.test(t) && /\bPlaneswalker\b/.test(t));
   return false;
 }
 

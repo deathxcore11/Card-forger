@@ -1,3 +1,6 @@
+import {powerEligibility, shownPower} from './power.js';
+import {mtgResourceProfile} from './mtg-effects.js';
+import {cleanCriteria, cleanConstructed} from './coach-evidence.js';
 import {pokemonRole} from './pokemon-role.js';
 import {brandMark} from './brand.js';
 // On-demand AI coaching. Selected deck data leaves the device only after the user taps Review.
@@ -17,6 +20,7 @@ const names = (xs, n = 8) => (xs || []).slice(0, n).map(nm).filter(Boolean).join
 const textOf = c => plain([c?.oracle_text, ...(c?.card_faces || []).map(f => f.oracle_text), c?.text, c?.desc, ...(c?.abilities || []).map(a => a.effect), ...(c?.attacks || []).map(a => a.effect)].filter(Boolean).join('\n'));
 // The app's own card art: Scryfall images for Magic, the cached image for Yu-Gi-Oh!/Pokémon.
 export const artOf = c => c?.image_uris?.normal || c?.image_uris?.small || c?.card_faces?.[0]?.image_uris?.normal || c?.image || c?.imageLarge || '';
+const compOf = p => { const score = competitiveScore(p); return Number.isFinite(score) ? score : null; };
 const typeOf = c => c?.type_line || c?.typeLine || c?.card_faces?.[0]?.type_line || c?.type || '';
 
 /* ---------- What the app sends ---------- */
@@ -74,16 +78,41 @@ function composition(game, rows) {
 export function deckFacts(game, rows, p) {
   const f = [...composition(game, rows)];
   if (!p) return f;
-  f.push(`App scores: engine ${p.heuristic ?? p.score ?? '—'}/100${p.ctx?.score != null ? `, competitive ${p.ctx.score}/100` : ''}. Plan the app detected: ${p.plan || 'unknown'}.`);
+  const eligibility = powerEligibility(p), comp = eligibility.eligible ? compOf(p) : null;
+  if (!eligibility.eligible) f.push(`Overall Power unavailable: ${eligibility.reason}. Component scores and role counts below are diagnostics, not an overall rating.`);
+  if (p.strategic) {
+    f.push(`Strategic route estimate: ${p.strategic.score == null ? 'unknown' : p.strategic.score + '/100'} (${p.strategic.confidence || 'insufficient'} coverage; ${eligibility.eligible ? 'provisional estimate' : 'diagnostic only'}). Not competitive strength or win odds.`);
+    for (const r of (p.strategic.routes || []).slice(0, 3)) f.push(`Strategic route ${r.label || r.kind}: access ${Number.isFinite(r.access) ? pct(r.access) : 'unknown'}, deployment ${Number.isFinite(r.deployment) ? r.deployment : 'unknown'}, conversion ${Number.isFinite(r.conversion) ? r.conversion : 'unknown'}. Conditional component evidence, not execution or win odds.`);
+    for (const limit of (p.strategic.limitations || []).slice(0, 4)) f.push('Strategic limitation: ' + limit);
+  }
+  f.push(`App scores: structural engine heuristic ${p.heuristic ?? p.score ?? '—'}/100, competitive ${comp == null ? 'unknown (no supported field estimate)' : comp + '/100'}. Not a win rate or proof of plan quality. Plan the app detected: ${p.plan || 'unknown'}.`);
+  f.push('Power role counts are tagged or heuristic contributions, not necessarily effective copies. Targets are starting points, not mandatory quotas. Judge costs, conditions and actual plan support separately.');
+  if (p.constructedCriteria) {
+    const constructed = cleanConstructed(p.constructedCriteria);
+    f.push(`Constructed evidence (${constructed.version}): ${constructed.scoreMeaning}. Coverage ${constructed.coverage.status}.`);
+    f.push('Printed text, quantities and arithmetic under stated inputs are distinct from heuristic judgments. Effective flow, interaction weights and threat quality may be challenged with explained card-text or sequencing evidence; never fabricate replacement scores or win rates.');
+    for (const c of constructed.cards.slice(0, 14)) {
+      for (const e of c.flow.effects.slice(0, 2)) f.push(`Constructed flow · ${c.name}: ${e.mode}, activation ${e.activationMana ?? 'unknown'} mana, modeled total effect cost ${e.effectMana ?? 'unknown'}; ${e.status}. ${e.requirements.join(' ')}`);
+      if (c.interaction.kind !== 'none') f.push(`Constructed interaction · ${c.name}: ${c.interaction.kind}, ${c.interaction.effective ?? 'unknown'} heuristic units. ${c.interaction.limitations.join(' ')}`);
+      for (const r of c.requirements.slice(0, 3)) f.push(`Printed prerequisite · ${c.name}: ${r.kind}${r.subtype ? ' (' + r.subtype + ')' : ''}, ${r.status}${r.minimumMana != null ? ', printed-cost lower bound ' + r.minimumMana + ' mana' : ''}${r.activationMana != null ? ', activation ' + r.activationMana + ' mana' : ''}. ${r.note || r.evidence}`);
+      for (const u of c.unsupported.slice(0, 1)) f.push(`Unmapped constructed effect · ${c.name}: ${u.reason}`);
+    }
+    for (const limit of constructed.coverage.limitations.slice(0, 3)) f.push('Constructed limitation: ' + limit);
+  }
+  if (p.criteria) f.push(`Contextual plan support: ${p.criteria.plan?.status || 'unknown'}. ${p.criteria.scoreMeaning || 'Structural checks do not verify a winning route.'}`);
   for (const s of p.sims || []) if (Number.isFinite(s.p)) f.push(`Hand odds · ${s.label}: ${pct(s.p)}${s.target != null ? ` (aim ${s.lower ? 'under' : 'over'} ${pct(s.target)})` : ''}${s.note ? ' — ' + s.note : ''}`);
   const g = p.goldfish;
   if (g) {
-    if (g.headline) f.push('Played-out goldfish games: ' + g.headline);
+    if (g.headline) f.push('Simplified goldfish output (not a validated game result): ' + g.headline);
     for (const m of g.metrics || []) if (m.value != null) f.push(`Goldfish · ${m.label}: ${m.pct ? pct(m.value) : typeof m.value === 'number' ? +m.value.toFixed(2) : m.value}${m.note ? ' ' + m.note : ''}`);
-    if (g.winCon) f.push('How the goldfish wins: ' + g.winCon);
+    if (g.winCon) f.push('Goldfish damage/plan contributors (not verified win conditions): ' + g.winCon);
     if (g.endgame) f.push('Goldfish late game: ' + g.endgame);
   }
-  for (const l of p.engine?.links || []) f.push(`Rules-text link: ${l.payoff} needs ${l.need}; provided by ${names(l.providers, 6)}${l.openingBoth != null ? `; opens both ${pct(l.openingBoth)}` : ''}`);
+  for (const l of p.engine?.links || []) {
+    const providers = (l.providers || []).slice(0, 6).map(c => typeof c === 'string' ? c : `${c.name} (${c.status || 'unverified'}${c.requirements?.length ? '; ' + c.requirements.slice(0, 3).join('; ') : ''})`).join(', ');
+    f.push(`Inferred rules-text link (${l.status || 'unverified'}): ${l.payoff} needs ${l.need}; candidate providers ${providers}${l.openingBoth != null ? `; model opening availability ${pct(l.openingBoth)}` : l.openingAccess != null ? `; ${pct(l.openingAccess)} library-card access with command-zone support, not cards already in play` : ''}. Not a verified interaction.`);
+  }
+  for (const u of (p.engine?.unsupported || []).slice(0, 8)) f.push(`Unsupported effect/link: ${u.card || u.payoff || 'unknown'}${u.provider ? ' / ' + u.provider : ''}: ${(u.requirements || []).join('; ') || 'Requirements not established'}. No automatic support credit.`);
   if (p.engine?.unmappedNeeds) f.push(`${p.engine.unmappedNeeds} card requirements have no recognized provider in the list.`);
   const m = p.match;
   if (m?.deck) f.push(`Closest tournament list: ${m.archetype || m.deck.name}, ${pct(m.sim || 0)} similar, ${m.deck.place || ''} at ${m.deck.event || 'an event'}${m.missing?.length ? '. That list plays these you don\'t: ' + names(m.missing, 10) : ''}${m.extra?.length ? '. You play these it doesn\'t: ' + names(m.extra, 10) : ''}`);
@@ -96,15 +125,16 @@ export function deckFacts(game, rows, p) {
 }
 // A shuffled opening hand, the same for the same list (so reopening shows the same hand).
 // Deck Power's analysis as the coach sees it: every area with Power's own status, points lost and
-// ranking (score limits first, then weak areas by points lost). The coach explains these; it
-// never sets a status itself.
+// ranking (score limits first, then weak areas by points lost). These remain app measurements;
+// the coach may challenge their effective relevance without replacing the measured score.
 export function powerSummary(p) {
   if (!p) return { areas: [], priority: [] };
+  const eligibility = powerEligibility(p), overall = shownPower(p);
   const R = review(p.parts || []), weak = new Set(R.weak.map(x => x.key)), strong = new Set(R.strong.map(x => x.key));
-  const caps = (p.caps || []).map(c => ({ key: 'cap:' + c.key, label: c.label, count: '', target: '', status: 'cap', lost: 100 - (c.max ?? 100), max: c.max, why: c.why || '', cards: [] }));
-  const parts = R.scored.map(x => ({ key: x.key, label: x.label || x.key, count: Number.isFinite(x.count) ? x.count : String(x.count ?? ''), target: Number.isFinite(x.target) ? x.target : String(x.target ?? ''), ratio: x.ratio, status: weak.has(x.key) ? 'weak' : strong.has(x.key) ? 'strong' : 'ok', lost: Math.round(x.lost * 10) / 10, why: x.why || x.hint || '', cards: (x.cards || []).map(nm).filter(Boolean).slice(0, 12) }));
-  const comp = competitiveScore(p);
-  return { score: comp ?? p.score, engine: p.heuristic ?? p.score, competitive: comp ?? null, verdict: p.caps?.[0] ? `Held to ${p.caps[0].max} by ${p.caps[0].label}` : '', plan: p.plan || '', areas: [...caps, ...parts], priority: [...caps.map(c => c.key), ...R.weak.map(x => x.key)] };
+  const caps = (p.caps || []).map(c => ({ key: 'cap:' + c.key, label: c.label, count: '', target: '', status: eligibility.eligible ? 'cap' : 'weak', lost: eligibility.eligible ? 100 - (c.max ?? 100) : 0, max: eligibility.eligible ? c.max : null, why: `${!eligibility.eligible ? 'Overall Power unavailable. ' : ''}${c.why || ''}`, cards: [] }));
+  const parts = R.scored.map(x => ({ key: x.key, label: x.label || x.key, count: Number.isFinite(x.count) ? x.count : String(x.count ?? ''), target: Number.isFinite(x.target) ? x.target : String(x.target ?? ''), ratio: x.ratio, status: weak.has(x.key) ? 'weak' : strong.has(x.key) ? 'strong' : 'ok', lost: Math.round(x.lost * 10) / 10, why: x.why || x.hint || '', cards: (x.cards || []).map(nm).filter(Boolean).slice(0, 12), countBasis: x.countBasis || 'App structure/role heuristic, not necessarily effective copies', rawCount: Number.isFinite(x.rawCount) ? x.rawCount : null, effectiveCount: Number.isFinite(x.effectiveCount) ? x.effectiveCount : null }));
+  const comp = eligibility.eligible ? compOf(p) : null;
+  return { score: overall, eligible: eligibility.eligible, availabilityReason: eligibility.reason, scoreSource: p.ctx?.from || 'heuristic', scoreMeaning: !eligibility.eligible ? 'Overall Power unavailable; component diagnostics are not a rating' : p.strategic ? 'Provisional strategic route heuristic, not measured win rate or competitive strength' : p.criteria?.scoreMeaning || 'Structural build heuristic, not plan quality or win rate', engine: p.heuristic ?? p.score, competitive: comp ?? null, verdict: !eligibility.eligible ? `Overall Power unavailable: ${eligibility.reason}. Component diagnostics only.` : p.caps?.[0] ? `Held to ${p.caps[0].max} by ${p.caps[0].label}` : '', plan: p.plan || '', areas: [...caps, ...parts], priority: [...caps.map(c => c.key), ...R.weak.map(x => x.key)] };
 }
 export function sampleHand(game, rows, seed) {
   const lib = rows.filter(r => r.zone === 'main' && r.c).flatMap(r => Array(r.row.qty).fill(r.id)), n = game === 'ygo' ? 5 : 7;
@@ -115,13 +145,13 @@ export function sampleHand(game, rows, seed) {
   return lib.slice(0, n);
 }
 export function reviewPayload(game, deck, lookup, p) {
-  const rows = deckRows(game, deck, lookup);
+  const rows = deckRows(game, deck, lookup), eligibility = powerEligibility(p);
   // Which Power areas each card counts toward, from Power's own card lists.
   const areasOf = new Map();
   for (const x of p?.parts || []) for (const c of x.cards || []) { const k = String(nm(c)).toLowerCase(); if (k) (areasOf.get(k) || areasOf.set(k, new Set()).get(k)).add(x.label || x.key); }
   const cards = rows.map(r => { const e = cardEntry(game, r.id, r.row.name || String(r.row.cardId), r.row.qty, r.zone, r.c), a = areasOf.get(String(e.name).toLowerCase()); return a?.size ? { ...e, power: [...a].join(', ') } : e; });
   const base = { game, format: p.formatName || deck.format || '', commander: game === 'mtg' ? deck.commander || '' : '', cards };
-  return { ...base, power: powerSummary(p), facts: deckFacts(game, rows, p), hand: sampleHand(game, rows, JSON.stringify(cards.map(c => [c.name, c.qty, c.zone]))), checks: { engine: p.heuristic ?? p.score, competitive: p.ctx?.score ?? null, provisional: !!p.readiness?.provisional, issues: [...(p.readiness?.issues || []), ...(p.caps || []).map(c => `${c.label}: ${c.why || ''}`)] } };
+  return { ...base, power: powerSummary(p), criteria: cleanCriteria(p.criteria || p.strategic || p.constructedCriteria ? { ...p.criteria, constructed: p.constructedCriteria, strategic: p.strategic ? { ...p.strategic, ratingStatus: eligibility.eligible ? 'provisional-estimate' : 'diagnostic-only' } : null } : null), facts: deckFacts(game, rows, p), hand: sampleHand(game, rows, JSON.stringify(cards.map(c => [c.name, c.qty, c.zone]))), checks: { engine: p.heuristic ?? p.score, competitive: eligibility.eligible ? compOf(p) : null, scoreSource: p.ctx?.from || 'heuristic', provisional: !!p.readiness?.provisional, issues: [...(p.readiness?.issues || []), ...(p.caps || []).map(c => `${c.label}: ${c.why || ''}`)] } };
 }
 
 /* ---------- What the app checks ---------- */
@@ -166,7 +196,7 @@ function cardInfo(game, rows) {
   const info = new Map();
   for (const r of rows) {
     const c = r.c, t = typeOf(c);
-    info.set(r.id, { img: artOf(c), name: c?.name || r.row.name, qty: r.row.qty, zone: r.zone, text: textOf(c), mv: c?.cmc || 0, land: /\bLand\b/.test(t), mana: !!c?.produced_mana?.length, supporter: /Supporter/.test(t), energy: c?.category === 'Energy', evolvesFrom: c?.evolveFrom || '', cost: costOf(game, c) });
+    info.set(r.id, { img: artOf(c), name: c?.name || r.row.name, qty: r.row.qty, zone: r.zone, text: textOf(c), mv: c?.cmc || 0, land: /\bLand\b/.test(t), mana: !!c?.produced_mana?.length && (game !== 'mtg' || mtgResourceProfile(c).acceleration), supporter: /Supporter/.test(t), energy: c?.category === 'Energy', evolvesFrom: c?.evolveFrom || '', cost: costOf(game, c) });
     if (c?.name) info.set('name:' + c.name, true);
   }
   return info;
@@ -197,7 +227,7 @@ export function aiReviewPanel(game, deck, lookup, p, hooks = {}) {
     if (activeDialog?.key === key) { activeDialog.stale = true; updateDialog(); }
   } else entry.hooks = hooks;
   const result = entry.result, ready = result ? `${plural(result.pilot?.lines?.length || 0, 'line')} · ${plural(result.pressure?.scenarios?.length || 0, 'stress test')} · ${plural(result.improve?.length || 0, 'swap')}` : '';
-  return `<section class="panel ai-review ai-review-launch" aria-label="AI deck coach"><div class="ai-launch-top"><span class="ai-sigil" aria-hidden="true">${brandMark("brand-idle")}</span><div><p class="eyebrow">AI coach · all three games</p><h3>Pilot, pressure-test and improve this deck</h3></div><span class="chip">AI</span></div><p class="small muted">Winning lines from your own cards, what to do when your key piece is answered, and swaps from cards you own. The app checks each one before you see it.</p><div class="ai-launch-actions"><button class="btn small" data-act="aiDeckReview" data-ai="${esc(key)}">${entry.busy ? 'View coaching progress' : result ? 'Open coaching' : 'Coach this deck'} <span aria-hidden="true">↗</span></button><span class="small muted">${entry.busy ? 'Coaching in progress' : result ? ready : 'Optional · your score stays unchanged'}</span></div><p class="foot">Tapping it sends this deck's card text, the app's checks and the names and text of up to 25 cards you own to OpenAI. Your account details and prices stay out of the request.</p><div role="status" aria-live="polite">${entry.error ? `<p class="warn-text small">${esc(entry.error)}</p>` : ''}</div></section>`;
+  return `<section class="panel ai-review ai-review-launch" aria-label="AI deck coach"><div class="ai-launch-top"><span class="ai-sigil" aria-hidden="true">${brandMark("brand-idle")}</span><div><p class="eyebrow">AI coach · all three games</p><h3>Pilot, pressure-test and improve this deck</h3></div><span class="chip">AI</span></div><p class="small muted">Possible lines from your own cards, recovery plans and owned swaps. Basic card, quote and turn checks catch some mistakes; they do not verify the full advice or a winning route.</p><div class="ai-launch-actions"><button class="btn small" data-act="aiDeckReview" data-ai="${esc(key)}">${entry.busy ? 'View coaching progress' : result ? 'Open coaching' : 'Coach this deck'} <span aria-hidden="true">↗</span></button><span class="small muted">${entry.busy ? 'Coaching in progress' : result ? ready : 'Optional · your score stays unchanged'}</span></div><p class="foot">Tapping it sends this deck's card text, the app's checks and the names and text of up to 25 cards you own to OpenAI. Your account details and prices stay out of the request.</p><div role="status" aria-live="polite">${entry.error ? `<p class="warn-text small">${esc(entry.error)}</p>` : ''}</div></section>`;
 }
 
 const ev = list => list?.length ? `<details class="air-ev"><summary>Card text</summary>${list.map(e => `<p><b>${esc(e.name)}</b><q>${esc(e.quote)}</q></p>`).join('')}</details>` : '';
@@ -207,15 +237,15 @@ function pilotTab(r, v, entry) {
   const handHtml = h && hand.length ? `<article class="air-card air-hand" style="--i:1"><div class="air-card-head"><span class="air-label">Opening hand coach</span><span class="air-verdict ${h.verdict}">${h.verdict === 'keep' ? 'Keep' : 'Mulligan'}</span></div><div class="air-fan">${hand.map((c, i) => `<span class="${c.img ? 'art' : ''}" style="--k:${i - (hand.length - 1) / 2}" title="${esc(c.name)}">${c.img ? `<img src="${esc(c.img)}" alt="${esc(c.name)}" loading="lazy">` : `<b>${esc(c.name)}</b><small>${esc(c.cost)}</small>`}</span>`).join('')}</div><p class="air-hand-names">${hand.map(c => esc(c.name)).join(' · ')}</p><p class="air-lead">${esc(h.reason)}</p><dl class="air-dl">${h.firstTurns ? `<dt>First turns</dt><dd>${esc(h.firstTurns)}</dd>` : ''}${h.lookFor ? `<dt>Dig for</dt><dd>${esc(h.lookFor)}</dd>` : ''}${h.preserve ? `<dt>Hold back</dt><dd>${esc(h.preserve)}</dd>` : ''}</dl>${ev(h.evidence)}<p class="air-note">A random hand the app dealt from your list.</p></article>` : '';
   const lines = (r.pilot?.lines || []).map((l, i) => {
     const flags = v.lines[i] || [];
-    return `<article class="air-card air-line" style="--i:${i + 2}"><div class="air-card-head"><span class="air-label">Winning line ${i + 1}</span><span class="air-check ${flags.length ? 'warn' : 'ok'}">${flags.length ? '⚠ Check' : '✓ App-checked'}</span></div><h4>${esc(l.name)}</h4>${l.goal ? `<p class="air-lead">${esc(l.goal)}</p>` : ''}<ol class="air-steps">${l.steps.map(s => `<li><span class="air-turn">T${s.turn}</span>${v.info.get(s.cardId)?.img ? `<img class="air-thumb" src="${esc(v.info.get(s.cardId).img)}" alt="" loading="lazy">` : ''}<div><b>${esc(s.name)}</b>${v.info.get(s.cardId)?.cost ? `<small class="air-cost">${esc(v.info.get(s.cardId).cost)}</small>` : ''}<p>${esc(s.action)}</p>${s.quote ? `<q>${esc(s.quote)}</q>` : ''}</div></li>`).join('')}</ol>${l.payoff ? `<p class="air-row good"><b>Payoff</b>${esc(l.payoff)}</p>` : ''}${l.interrupt ? `<p class="air-row bad"><b>Can be stopped</b>${esc(l.interrupt)}</p>` : ''}${flags.length ? `<ul class="air-flags">${flags.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : `<p class="air-note">The app confirmed every card is in your list, copies and once-per-turn limits${entry.game === 'mtg' ? ', and mana by turn' : entry.game === 'ptcg' ? ', Supporter, attachment and evolution rules' : ' and Normal Summon limits'}.</p>`}</article>`;
+    return `<article class="air-card air-line" style="--i:${i + 2}"><div class="air-card-head"><span class="air-label">Candidate line ${i + 1}</span><span class="air-check ${flags.length ? 'warn' : 'ok'}">${flags.length ? '⚠ Check' : 'Basic checks only'}</span></div><h4>${esc(l.name)}</h4>${l.goal ? `<p class="air-lead">${esc(l.goal)}</p>` : ''}<ol class="air-steps">${l.steps.map(s => `<li><span class="air-turn">T${s.turn}</span>${v.info.get(s.cardId)?.img ? `<img class="air-thumb" src="${esc(v.info.get(s.cardId).img)}" alt="" loading="lazy">` : ''}<div><b>${esc(s.name)}</b>${v.info.get(s.cardId)?.cost ? `<small class="air-cost">${esc(v.info.get(s.cardId).cost)}</small>` : ''}<p>${esc(s.action)}</p>${s.quote ? `<q>${esc(s.quote)}</q>` : ''}</div></li>`).join('')}</ol>${l.payoff ? `<p class="air-row good"><b>Payoff</b>${esc(l.payoff)}</p>` : ''}${l.interrupt ? `<p class="air-row bad"><b>Can be stopped</b>${esc(l.interrupt)}</p>` : ''}${flags.length ? `<ul class="air-flags">${flags.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : `<p class="air-note">No issue was found by the limited checks for listed cards, copies and once-per-turn text${entry.game === 'mtg' ? ', and approximate mana by turn' : entry.game === 'ptcg' ? ', Supporter, attachment and evolution rules' : ' and Normal Summon limits'}. Costs, prerequisites, full interactions and the claimed outcome are not verified.</p>`}</article>`;
   }).join('');
   return handHtml + lines || '<p class="air-empty">No line held up to the app\'s checks for this list. Try the Goldfish tab to see how it plays out.</p>';
 }
 const STATUS = { cap: ['Holds the score back', 'bad'], weak: ['Needs work', 'warn'], ok: ['Fine', 'ok'], strong: ['Strength', 'good'] };
 function deckTab(r, entry) {
   const P = entry.payload.power || { areas: [], priority: [] }, areaOf = new Map(P.areas.map(a => [a.key, a]));
-  const id = r.identity || {}, chipList = (label, cards) => cards?.length ? `<div class="air-idrow"><span class="air-label">${label}</span>${chips(cards)}</div>` : '';
-  const who = `<article class="air-card air-identity" style="--i:1"><span class="air-label">What this deck does</span><p class="air-lead">${esc(id.plan || P.plan)}</p>${id.howItWins ? `<p class="air-row good"><b>Wins by</b>${esc(id.howItWins)}</p>` : ''}${chipList('Wins with', id.winCards)}${chipList('Runs on', id.engineCards)}</article>`;
+  const id = r.identity || {}, context = entry.payload.criteria, chipList = (label, cards) => cards?.length ? `<div class="air-idrow"><span class="air-label">${label}</span>${chips(cards)}</div>` : '';
+  const who = `<article class="air-card air-identity" style="--i:1"><span class="air-label">What this deck does</span><p class="air-lead">${esc(id.plan || P.plan)}</p>${id.howItWins ? `<p class="air-row"><b>Route to test</b>${esc(id.howItWins)}</p>` : ''}${chipList('Proposed route cards', id.proposedCards || id.winCards)}<p class="air-note">${id.evidenceStatus === 'source-text-matched' ? 'Source text matched; the winning route is still unverified.' : 'Winning route not established by the app checks.'}</p>${ev(id.winEvidence)}${chipList('Runs on', id.engineCards)}${context?.version && context?.plan ? `<p class="air-note">App plan support: ${esc(context.plan.status || 'unknown')}${context.plan.label ? ' · ' + esc(context.plan.label) : ''}. Structural support is not a verified winning route.</p>` : ''}</article>`;
   // Rows in Power's own order (what to fix first), each with Power's number and status; the coach
   // only adds what it means for this deck and what the count can't show.
   const said = new Map((r.explain || []).map(x => [x.area, x])), more = new Map(); for (const b of r.beyond || []) (more.get(b.area) || more.set(b.area, []).get(b.area)).push(b);
@@ -223,11 +253,11 @@ function deckTab(r, entry) {
   const order = [...new Set([...P.priority, ...P.areas.filter(a => a.status === 'strong').map(a => a.key), ...said.keys()])].filter(k => areaOf.has(k) && (said.has(k) || more.has(k) || P.priority.includes(k)));
   const rows = order.map((k, i) => {
     const a = areaOf.get(k), [word, tone] = STATUS[a.status] || STATUS.ok, x = said.get(k);
-    const meter = a.status === 'cap' ? `<span class="air-max">max ${esc(String(a.max ?? ''))}</span>` : Number.isFinite(a.ratio) ? `<div class="air-meter ${tone}"><span style="width:${Math.round(Math.min(1, a.ratio) * 100)}%"></span></div>` : '';
-    return `<div class="air-area ${tone}" style="--i:${i + 3}"><div class="air-area-top"><b>${esc(a.label)}</b>${a.count !== '' && a.count != null ? `<span class="air-num">${esc(String(a.count))}${a.target !== '' && a.target != null ? `<small> / ${esc(String(a.target))}</small>` : ''}</span>` : ''}<span class="air-status ${tone}">${word}</span></div>${meter}${x ? `<p>${esc(x.says)}</p>${chips(x.cards)}` : a.why ? `<p class="air-note">${esc(a.why)}</p>` : ''}${(more.get(k) || []).map(b => `<div class="air-beyond"><span class="air-label">What the count doesn't show</span><p>${esc(b.note)}</p>${ev(b.evidence)}</div>`).join('')}${fixes.has(k) ? `<button class="link air-jump" data-ai-tab="improve">See the swap that fixes this →</button>` : ''}</div>`;
+    const meter = a.status === 'cap' && Number.isFinite(a.max) ? `<span class="air-max">max ${esc(String(a.max ?? ''))}</span>` : Number.isFinite(a.ratio) ? `<div class="air-meter ${tone}"><span style="width:${Math.round(Math.min(1, a.ratio) * 100)}%"></span></div>` : '';
+    return `<div class="air-area ${tone}" style="--i:${i + 3}"><div class="air-area-top"><b>${esc(a.label)}</b>${a.count !== '' && a.count != null ? `<span class="air-num">${esc(String(a.count))}${a.target !== '' && a.target != null ? `<small> / ${esc(String(a.target))}</small>` : ''}</span>` : ''}<span class="air-status ${tone}">${word}</span></div>${meter}${Number.isFinite(a.rawCount) || Number.isFinite(a.effectiveCount) ? `<p class="air-note">${esc(a.countBasis || 'Heuristic contribution')}${Number.isFinite(a.rawCount) ? ' · raw tags ' + a.rawCount : ''}${Number.isFinite(a.effectiveCount) ? ' · effective units ' + a.effectiveCount : ''}</p>` : ''}${x ? `<p>${esc(x.says)}</p>${chips(x.cards)}` : a.why ? `<p class="air-note">${esc(a.why)}</p>` : ''}${(more.get(k) || []).map(b => `<div class="air-beyond"><span class="air-label">${b.countScope === 'effective-estimate' ? 'Effective estimate, not a verified count' : "What the count doesn't show"}</span><p>${esc(b.note)}</p>${ev(b.evidence)}</div>`).join('')}${fixes.has(k) ? `<button class="link air-jump" data-ai-tab="improve">See the swap that fixes this →</button>` : ''}</div>`;
   }).join('');
-  const nums = `<div class="air-power-nums">${P.competitive != null ? `<span><b>${P.competitive}</b>Competitive</span>` : ''}<span><b>${P.engine ?? '—'}</b>Engine</span></div>`;
-  return who + (rows ? `<article class="air-card air-power" style="--i:2"><div class="air-card-head"><span class="air-label">Deck Power, explained</span>${nums}</div><p class="air-note">Numbers and verdicts are Power's own; the coach explains them.</p>${rows}</article>` : '');
+  const nums = `<div class="air-power-nums">${P.eligible === false || P.score === null ? '<span><b>—</b>Power unavailable</span>' : context?.strategic && P.competitive == null ? `<span><b>${P.score ?? '—'}</b>Power estimate</span>` : ''}${P.competitive != null ? `<span><b>${P.competitive}</b>Competitive</span>` : ''}<span><b>${P.engine ?? '—'}</b>Structure diagnostic</span></div>`;
+  return who + (P.eligible === false || P.score === null ? `<p class="air-note">${esc(P.verdict || 'Overall Power unavailable. Component diagnostics only.')}</p>` : '') + (rows ? `<article class="air-card air-power" style="--i:2"><div class="air-card-head"><span class="air-label">Deck Power, explained</span>${nums}</div><p class="air-note">Power reports heuristic counts and targets. The coach can question their effectiveness using card text; neither is a verified win rate.</p>${rows}</article>` : '');
 }
 const EDGE = { 'they are favoured': ['Tough matchup', 'bad'], close: ['Close', 'warn'], 'you are favoured': ['Good for you', 'good'] };
 function metaTab(r, entry) {
@@ -273,14 +303,15 @@ function reviewReport(entry) {
   const checked = v.lines.filter(f => !f.length).length, scored = v.swaps.filter(Boolean).length;
   const tabs = [['deck', '◆', 'Deck'], ['pilot', '▶', 'Pilot'], ['meta', '⚔', 'Meta'], ['improve', '↑', 'Improve']];
   const body = tabBody(entry, v);
-  return `<section class="air-hero" style="--i:0"><span class="air-kicker"><span aria-hidden="true">✦</span> The decision${focus ? ` · <em>${esc(focus.label)}</em>` : ''}</span><p class="air-headline">${esc(r.headline)}</p><div class="air-stats"><span>${plural(r.pilot?.lines?.length || 0, 'line')} · ${checked} passed app checks</span><span>${plural(r.meta?.length || 0, 'meta matchup')} · ${plural(r.pressure?.scenarios?.length || 0, 'stress test')}</span><span>${plural(counts.improve, 'swap')} · ${scored} re-scored</span></div></section>
+  return `<section class="air-hero" style="--i:0"><span class="air-kicker"><span aria-hidden="true">✦</span> The decision${focus ? ` · <em>${esc(focus.label)}</em>` : ''}</span><p class="air-headline">${esc(r.headline)}</p><div class="air-stats"><span>${plural(r.pilot?.lines?.length || 0, 'line')} · ${checked} without basic flags</span><span>${plural(r.meta?.length || 0, 'meta matchup')} · ${plural(r.pressure?.scenarios?.length || 0, 'stress test')}</span><span>${plural(counts.improve, 'swap')} · ${scored} re-scored</span></div></section>
+  <p class="air-note">Basic checks cover card references and selected turn limits, not the headline, full prose or winning route.</p>
   <div class="air-tabs" role="tablist" aria-label="Coaching sections">${tabs.map(([k, icon, label]) => `<button role="tab" aria-selected="${tab === k}" class="${tab === k ? 'on' : ''}" data-ai-tab="${k}"><span aria-hidden="true">${icon}</span>${label}<em>${counts[k]}</em></button>`).join('')}</div>
   <div class="air-panel" role="tabpanel">${body}</div>
-  ${r.omitted ? `<p class="foot">${r.omitted} suggestion${r.omitted === 1 ? ' was' : 's were'} dropped because ${r.omitted === 1 ? 'it' : 'they'} cited cards or text that aren't in this list.</p>` : ''}<p class="foot">AI coaching · card quotes are matched to real card text and the app checks cards, copies and turn limits, but full rules interactions aren't verified. Your score is unchanged. Clears when you change the deck or reload.</p>`;
+  ${r.omitted ? `<p class="foot">${r.omitted} suggestion${r.omitted === 1 ? ' was' : 's were'} dropped because ${r.omitted === 1 ? 'it' : 'they'} exceeded the available card or context evidence.</p>` : ''}<p class="foot">AI coaching · matched quotes verify their source, not the interpretation. Limited card, copy and turn checks do not verify full prose, rules interactions or a winning route. Your score is unchanged. Clears when you change the deck or reload.</p>`;
 }
 export function aiReviewDialogContent(entry, stale = false) {
   if (stale) return '<div class="ai-state"><span class="ai-state-symbol" aria-hidden="true">↻</span><h3>The deck changed</h3><p>Close this window and ask for fresh coaching on your updated list. The earlier answer won\'t be applied to it.</p></div>';
-  if (entry.busy) return `<div class="ai-state"><div class="ai-brand-loader" aria-hidden="true">${brandMark("brand-loading")}</div><p class="eyebrow">Your deck, another perspective</p><h3>Coaching your deck</h3><p>OpenAI is reading your cards and the app's numbers. The app then checks every line and swap before showing it.</p><div class="ai-review-steps"><span>Deck sent</span><span class="current">Finding lines</span><span>Power checks next</span></div><p class="foot">You can close this window and keep browsing. Reopening it won't start another request. No automatic retries.</p></div>`;
+  if (entry.busy) return `<div class="ai-state"><div class="ai-brand-loader" aria-hidden="true">${brandMark("brand-loading")}</div><p class="eyebrow">Your deck, another perspective</p><h3>Coaching your deck</h3><p>OpenAI is reading your cards and the app's numbers. Limited card, turn and swap checks follow; they cannot verify every claim.</p><div class="ai-review-steps"><span>Deck sent</span><span class="current">Finding lines</span><span>Power checks next</span></div><p class="foot">You can close this window and keep browsing. Reopening it won't start another request. No automatic retries.</p></div>`;
   if (entry.error) {
     const title = ['billing', 'credits', 'spend_limit', 'usage_limit'].includes(entry.errorCode) ? 'API billing needs attention' : entry.errorCode === 'rate_limit' ? 'OpenAI needs a breather' : entry.errorCode === 'app_limit' ? 'App review allowance reached' : entry.errorCode === 'authentication' ? 'API connection needs attention' : 'Coaching couldn\'t finish';
     return `<div class="ai-state ai-error"><span class="ai-state-symbol" aria-hidden="true">!</span><h3>${title}</h3><p>${esc(entry.error)}</p><p class="foot">Your deck and score are unchanged. No automatic retry was made. Resolve the issue before trying again.</p><button class="btn small" data-ai-retry>Try again</button></div>`;

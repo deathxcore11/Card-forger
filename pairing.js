@@ -1,3 +1,4 @@
+import { mtgEffectProfile, mtgLinkEvidence } from './mtg-effects.js';
 // Pairing: which cards go well with a card, and why.
 //
 // 1. Tags — every card *provides* things (an artifact, a token, a Tuner, a Fire Pokémon, an
@@ -14,7 +15,7 @@
 //    Every point comes with a reason, so the list explains itself.
 
 export const TAG_LABEL = {
-  artifact: "artifacts", enchantment: "enchantments", token: "tokens", counters: "+1/+1 counters", spell: "cheap instants & sorceries",
+  artifact: "artifacts", enchantment: "enchantments", token: "tokens", creature_token: "creature tokens", noncreature_token: "noncreature tokens", counters: "+1/+1 counters", spell: "cheap instants & sorceries",
   discard: "discarding", mill: "a stocked graveyard", lifegain: "life gain", sac_outlet: "a sacrifice outlet", fodder: "creatures to sacrifice",
   etb: "enters effects", blink: "flicker", extra_land: "extra land drops", evasive: "evasive creatures", ramp: "extra mana", big: "big spells",
   tuner: "Tuner", evolution: "Evolution Pokémon", basic: "Basic Pokémon", stage2: "Stage 2 Pokémon", supporter: "Supporters", rulebox: "Pokémon ex / V",
@@ -27,8 +28,8 @@ const words = (s) => String(s || "").toLowerCase();
 /* ---------- Magic ---------- */
 
 // Creature subtypes after the dash: "Creature — Human Artificer" → Human, Artificer.
-const creatureTypes = (type) => (/Creature|Tribal|Kindred/.test(type) ? (type.split("—")[1] || "").trim().split(/\s+/).filter(Boolean) : []);
-const NOT_TYPES = new Set(["Each", "Other", "Target", "Nontoken", "Token", "Legendary", "Attacking", "Blocking", "Creature", "Noncreature", "Artifact", "Enchantment", "Instant", "Sorcery", "Land", "Planeswalker", "Return", "Exile", "Destroy", "When", "Whenever", "All", "Tapped", "Untapped", "Your", "Their", "Choose", "Put", "Copy", "Cast", "Search", "Draw", "Discard", "Create", "Sacrifice", "This", "That", "Those", "These", "Another", "Up", "Any", "Basic", "Snow", "Equipped", "Enchanted", "Commander", "Historic", "Permanent", "Spell", "Card", "Colorless", "White", "Blue", "Black", "Red", "Green", "Multicolored", "Monocolored"]);
+const creatureTypes = (type) => (/Creature|Tribal|Kindred/.test(type) ? (type.split("—")[1] || "").trim().split(/\s+/).filter(s => s && !NOT_TYPES.has(s)) : []);
+const NOT_TYPES = new Set(["Each", "Other", "Target", "Nontoken", "Token", "Legendary", "Attacking", "Blocking", "Creature", "Noncreature", "Nonartifact", "Saga", "Plains", "Island", "Swamp", "Mountain", "Forest", "Artifact", "Enchantment", "Instant", "Sorcery", "Land", "Planeswalker", "Return", "Exile", "Destroy", "When", "Whenever", "All", "Tapped", "Untapped", "Your", "Their", "Choose", "Put", "Copy", "Cast", "Search", "Draw", "Discard", "Create", "Sacrifice", "This", "That", "Those", "These", "Another", "Up", "Any", "Basic", "Snow", "Equipped", "Enchanted", "Commander", "Historic", "Permanent", "Spell", "Card", "Colorless", "White", "Blue", "Black", "Red", "Green", "Multicolored", "Monocolored"]);
 export function mtgTags(c) {
   const faces = c?.card_faces?.length ? c.card_faces : [c || {}],
     t = words(faces.map((f) => f.oracle_text || "").join("\n")),
@@ -52,7 +53,7 @@ export function mtgTags(c) {
     creature && ["Flying", "Hexproof", "Menace", "Shroud"].some((k) => kw.has(k)) && "evasive",
     /add \{/.test(t) && !/Land/.test(type) && "ramp",
     (Number(c?.cmc) >= 6 || /\{x\}/.test(words(c?.mana_cost))) && "big",
-    ...creatureTypes(type).map((s) => "sub:" + s),
+    ...faces.flatMap(f => creatureTypes(f.type_line || c?.type_line || "")).map((s) => "sub:" + s),
   );
   const needs = set(
     /whenever (an|another) artifact[^.]*enters|for each artifact|artifacts? you control|affinity for artifacts|improvise|metalcraft/.test(t) && "artifact",
@@ -70,14 +71,21 @@ export function mtgTags(c) {
     /equipped creature|enchant creature/.test(t) && "evasive",
     Number(c?.cmc) >= 6 && "ramp",
     // Tribal payoffs: "other Elves you control", "Human spells".
-    ...[...new Set([...(faces.map((f) => f.oracle_text || "").join(" ").matchAll(/\b([A-Z][a-z]+?)s? (?:you control|creatures?|spells?|cards?)\b/g))].map((m) => m[1]))].filter((s) => s.length > 2 && !NOT_TYPES.has(s)).map((s) => "sub:" + s),
+    ...[...new Set([...(faces.map((f) => f.oracle_text || "").join(" ").matchAll(/\b([A-Z][a-z]+) (?:you control|creatures? you control|spells?(?: you cast)?|cards? (?:in|from) your)\b/g))].map((m) => m[1]).filter((s) => s.length > 2 && !NOT_TYPES.has(s)))].map((s) => "sub:" + ({Elves:"Elf",Dwarves:"Dwarf",Werewolves:"Werewolf",Wolves:"Wolf"}[s] || s.replace(/s$/, ""))).filter((s) => !NOT_TYPES.has(s.slice(4))),
   );
-  return { provides, needs };
+  // Replace broad token/blink/mana guesses with effect-compatible evidence. The
+  // remaining tags are deliberately still heuristic; consumers can see the status.
+  const effects = mtgEffectProfile(c);
+  for (const tag of ["artifact", "token", "fodder", "etb", "blink", "ramp", "extra_land"]) provides.delete(tag);
+  for (const tag of ["token", "etb"]) needs.delete(tag);
+  for (const effect of effects.provides) provides.add(effect.tag);
+  for (const effect of effects.needs) needs.add(effect.tag);
+  return { provides, needs, effects };
 }
 
 export const MTG_PROVIDE_Q = {
   artifact: '(o:"create a treasure" or o:"create a clue" or o:"create a food" or (t:artifact cmc<=2))',
-  enchantment: "t:enchantment cmc<=2", token: 'o:create o:"creature token"', fodder: 'o:create o:"creature token"',
+  enchantment: "t:enchantment cmc<=2", creature_token: 'o:create o:"creature token"', token: 'o:create o:"creature token"', fodder: 'o:create o:"creature token"',
   counters: 'o:put o:"+1/+1 counter"', spell: "(t:instant or t:sorcery) cmc<=2 (o:draw or o:damage)", discard: 'o:"discard a card" o:draw',
   mill: "(o:mill or o:surveil)", lifegain: '(keyword:lifelink or o:"gain 3 life")', sac_outlet: 'o:"sacrifice a creature:"',
   etb: 't:creature o:"when" o:"enters"', blink: 'o:exile o:return o:"to the battlefield"', extra_land: '(o:"play an additional land" or (o:"search your library for a basic land" o:battlefield))',
@@ -85,7 +93,7 @@ export const MTG_PROVIDE_Q = {
 };
 export const MTG_NEED_Q = {
   artifact: '(o:"whenever an artifact you control enters" or o:"for each artifact you control")', enchantment: 'o:"whenever you cast an enchantment"',
-  token: 'o:"creatures you control get +1/+1"', fodder: 'o:"sacrifice a creature"', counters: '(o:"for each +1/+1 counter" or keyword:proliferate)',
+  creature_token: '(o:"creature tokens you control" or o:"creatures you control get +1/+1")', token: 'o:"tokens you control"', fodder: 'o:"sacrifice a creature"', counters: '(o:"for each +1/+1 counter" or keyword:proliferate)',
   spell: '(o:"whenever you cast an instant or sorcery" or keyword:prowess or keyword:magecraft)', discard: '(keyword:madness or keyword:flashback or o:"whenever you discard")',
   mill: "(o:delirium or o:threshold or keyword:escape)", lifegain: 'o:"whenever you gain life"', sac_outlet: 'o:"whenever another creature you control dies"',
   etb: 'o:exile o:return o:"to the battlefield"', extra_land: '(keyword:landfall or o:"whenever a land you control enters")', evasive: "(t:equipment or (t:aura o:\"enchant creature\"))",
@@ -234,15 +242,15 @@ export function rankPairs(game, target, cands, { max = 9, tagsFn = tagsFor } = {
     const C = tagsFn(game, c),
       reasons = [];
     let score = 0;
-    const gives = [...T.needs].filter((n) => C.provides.has(n) || (n.startsWith("named:") && (c.name.includes(n.slice(6)) || c.archetype === n.slice(6))));
-    const uses = [...C.needs].filter((n) => T.provides.has(n) || (n.startsWith("named:") && (tName.includes(n.slice(6)) || target.archetype === n.slice(6))));
+    const gives = [...T.needs].filter((n) => (C.provides.has(n) && (game !== "mtg" || mtgLinkEvidence(n, C, T).status !== "unsupported")) || (n.startsWith("named:") && (c.name.includes(n.slice(6)) || c.archetype === n.slice(6))));
+    const uses = [...C.needs].filter((n) => (T.provides.has(n) && (game !== "mtg" || mtgLinkEvidence(n, T, C).status !== "unsupported")) || (n.startsWith("named:") && (tName.includes(n.slice(6)) || target.archetype === n.slice(6))));
     for (const n of gives) {
       score += WEAK(n) ? 1 : n.startsWith("named:") ? 2 + 3 : n.startsWith("name:") ? 4 + 3 : 3;
-      reasons.push(n.startsWith("name:") ? `evolution line — it evolves from ${n.slice(5)}` : n.startsWith("named:") ? `named in its text` : n.startsWith("type:") ? `${n.slice(5)} Energy for its attacks` : `gives it ${label(n)}`);
+      reasons.push(n.startsWith("name:") ? `evolution line — it evolves from ${n.slice(5)}` : n.startsWith("named:") ? `named in its text` : n.startsWith("type:") ? `${n.slice(5)} Energy for its attacks` : `gives it ${label(n)}${game === "mtg" && mtgLinkEvidence(n,C,T).status === "conditional" ? " (conditional; check requirements)" : ""}`);
     }
     for (const n of uses) {
       score += WEAK(n) ? 1 : n.startsWith("name:") ? 4 + 2 : n.startsWith("named:") ? 2 + 2 : 2;
-      reasons.push(n.startsWith("name:") ? `evolution line — evolves from it` : n.startsWith("named:") ? `its text names this card` : `uses its ${label(n)}`);
+      reasons.push(n.startsWith("name:") ? `evolution line — evolves from it` : n.startsWith("named:") ? `its text names this card` : `uses its ${label(n)}${game === "mtg" && mtgLinkEvidence(n,T,C).status === "conditional" ? " (conditional; check requirements)" : ""}`);
     }
     // Cards that name each other in their rules text belong together.
     if (game !== "ygo") {
@@ -289,7 +297,7 @@ export function rankPairs(game, target, cands, { max = 9, tagsFn = tagsFor } = {
       weakOnly = !strong && (gives.length || uses.length);
     const linked = strong || weakOnly || x.line || x.fallback || reasons.some((r) => /names|named|^both /.test(r)) || (game === "ygo" && target.archetype && c.archetype === target.archetype) || x.lift >= 5;
     if (!linked || (score < 2 && !x.fallback && !weakOnly)) continue;
-    out.push({ card: c, score: Math.round(score * 10) / 10, reasons, source: x.source || "", fallback: !strong && !x.line && !(x.lift >= 5) && !reasons.some((r) => /names|named|archetype|^both /.test(r)) && (!!x.fallback || !!weakOnly), loose: !!weakOnly && !x.fallback });
+    out.push({ card: c, ...(game === "mtg" ? { evidence: [...gives.map(n=>({need:n,direction:"gives",...mtgLinkEvidence(n,C,T)})), ...uses.map(n=>({need:n,direction:"uses",...mtgLinkEvidence(n,T,C)}))] } : {}), score: Math.round(score * 10) / 10, reasons, source: x.source || "", fallback: !strong && !x.line && !(x.lift >= 5) && !reasons.some((r) => /names|named|archetype|^both /.test(r)) && (!!x.fallback || !!weakOnly), loose: !!weakOnly && !x.fallback });
   }
   // Real links first, then labeled fallbacks.
   // At most five loose links, so labeled staples still get room.

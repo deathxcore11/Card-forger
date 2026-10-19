@@ -20,6 +20,10 @@ const cardKeyRaw = (s) =>
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
+// One normalization for command-zone availability across roles, odds and goldfish.
+// It identifies declared command-zone cards; it does not validate a partner pair.
+export const commandZoneKeys = (deck) => new Set([deck?.commander,...(deck?.commanders||[])].map(c=>typeof c==='string'?c:c?.name).filter(Boolean).flatMap(n=>[cardKey(n),cardKey(n).split(' // ')[0]]));
+export const inCommandZone = (deck, name) => {const keys=commandZoneKeys(deck),k=cardKey(name);return keys.has(k)||keys.has(k.split(' // ')[0]);};
 export const sumQty = (items) =>
   items.reduce((a, c) => a + (Number(c.qty) || 0), 0);
 export const rulesText = (c) =>
@@ -60,7 +64,9 @@ export function roles(c) {
     out.push("Protection");
   if (/create .*token|populate/.test(text)) out.push("Tokens");
   if (/graveyard|dies|sacrifice/.test(text)) out.push("Graveyard");
-  if (/instant|sorcery/.test(text) && !isLand(c)) out.push("Spells");
+  // Timing permission (equip, transform, etc.) is not a spells-matter payoff.
+  const spellEffects = text.replace(/\([^)]*\)/g, " ").replace(/(?:activate|cast)[^.\n]*(?:as a sorcery|any time you could cast a sorcery)[^.\n]*\.?/g, " ");
+  if (/instant|sorcery|magecraft|prowess/.test(spellEffects) && !isLand(c)) out.push("Spells");
   if (/Dragon/.test(t) || /dragon/.test(text)) out.push("Dragons");
   if (/artifact/.test(text) || /Artifact/.test(t)) out.push("Artifacts");
   if (/gain .*life|lifelink/.test(text)) out.push("Lifegain");
@@ -155,7 +161,8 @@ export function validateDeck(deck, catalog, entries, decks = []) {
     issues = [],
     target = f.size,
     count = sumQty(deck.cards),
-    comm = f.commander ? catalog[cardKey(deck.commander)] : null;
+    comm = f.commander ? catalog[cardKey(deck.commander)] : null,
+    configuration=commanderConfiguration(deck,n=>catalog[cardKey(n)],f);
   if (f.exact ? count !== target : count < target)
     issues.push({
       kind: "count",
@@ -165,7 +172,7 @@ export function validateDeck(deck, catalog, entries, decks = []) {
     });
   if (f.commander) {
     if(f.id==="paupercommander"&&comm&&typeof comm.pdhCommander!=="boolean")issues.push({kind:"unverified",text:"Commander eligibility has not been verified for Pauper Commander."});
-    else if (!canLead(comm, f))
+    else if (!canLead(comm, f) && !(configuration.cards.length===2&&!configuration.issues.length))
       issues.push({
         kind: "commander",
         text: f.commander === "planeswalker" ? "Choose a planeswalker as your Oathbreaker." : `Choose a card that can lead a ${f.name} deck.`,
@@ -176,6 +183,7 @@ export function validateDeck(deck, catalog, entries, decks = []) {
         text: "Commander is not included in deck count.",
       });
   }
+  if(f.commander)for(const text of configuration.issues)if(!issues.some(i=>i.text===text))issues.push({kind:"commander",text});
   for (const c of aggregateCards(deck.cards)) {
     const m = catalog[cardKey(c.name)];
     if (!m) {
@@ -185,7 +193,7 @@ export function validateDeck(deck, catalog, entries, decks = []) {
       });
       continue;
     }
-    if (f.commander && comm && !identityFits(m, comm))
+    if (f.commander && comm && configuration.identityKnown && (m.color_identity||[]).some(x=>!configuration.identity.includes(x)))
       issues.push({
         kind: "color",
         text: c.name + ": outside commander color identity.",
@@ -212,7 +220,7 @@ export function validateDeck(deck, catalog, entries, decks = []) {
   for (const r of side) {
     const m = catalog[cardKey(r.name)];
     if (!m) { issues.push({ kind: "unverified", text: r.name + " (sideboard): card data not resolved." }); continue; }
-    const leader=f.id==="paupercommander"&&cardKey(c.name)===cardKey(deck.commander);
+    const leader=f.id==="paupercommander"&&cardKey(r.name)===cardKey(deck.commander);
     const legal = leader?(m.pdhCommander===true?"legal":m.pdhCommander===false?"not_legal":null):legalityIn(m, f);
     if(f.legality&&legal===null)issues.push({kind:"unverified",text:`${r.name}: legality data not loaded.`});
     if (legal === "banned" || legal === "not_legal")
@@ -412,3 +420,20 @@ export const exportDeck = (cards) =>
 // sites read.
 export const exportDeckText = (d) => exportDeck(d.cards || []) + ((d.side || []).some((r) => r.qty > 0) ? "\n\nSideboard\n" + exportDeck(d.side) : "");
 
+
+// Shared declaration checks. Supported pairs combine identities, but never add
+// a second commander outside the format total or assume it starts in play.
+export function commanderConfiguration(deck,cardOf,format=formatOf(deck)){
+ const issues=[];
+ const leaders=[...new Map([deck.commander,...(deck.commanders||[])].map(c=>typeof c==='string'?c:c?.name).filter(Boolean).map(n=>[cardKey(n).split(' // ')[0],n])).values()],leaderCards=leaders.map(cardOf),identity=[...new Set(leaderCards.flatMap(c=>Array.isArray(c?.color_identity)?c.color_identity:[]))],identityKnown=leaderCards.every(c=>Array.isArray(c?.color_identity));
+ if(format.commander){
+   // Missing identity is unresolved data, never proof that a card is colorless.
+   const names=[...new Set([...leaders,...(deck.cards||[]).map(r=>r.name),...(deck.side||[]).map(r=>r.name)])];
+   for(const name of names){const c=cardOf(name);if(c&&!Array.isArray(c.color_identity))issues.push(`Color identity data unavailable: ${name}`);}
+   for(const name of leaders){const c=cardOf(name);if(!c)issues.push(`Commander details unavailable: ${name}`);else if(!canLead(c,format)&&!(/Background/.test(c.type_line||'')&&leaders.length===2))issues.push(`${name} cannot lead ${format.name}`);
+    if(!(deck.cards||[]).some(r=>cardKey(r.name).split(' // ')[0]===cardKey(name).split(' // ')[0]&&r.qty===1))issues.push(`Commander must be present exactly once: ${name}`);}
+   if(leaders.length>1){const texts=leaderCards.map(c=>rulesText(c).toLowerCase()),types=leaderCards.map(c=>c?.type_line||''),genericPartner=texts.every(t=>/(?:^|\n)partner(?:\s*\([^)]*\))?(?:\n|$)/.test(t)),friends=texts.every(t=>/friends forever/.test(t)),namedPartner=texts.every((t,i)=>t.includes('partner with '+String(leaderCards[1-i]?.name||'').toLowerCase())),background=texts.some((t,i)=>/choose a background/.test(t)&&/Background/.test(types[1-i]||'')),doctor=texts.some((t,i)=>/doctor's companion/.test(t)&&/—\s*Time Lord Doctor\s*$/.test(types[1-i]||''));
+    if(leaders.length!==2||!['commander','duel','predh'].includes(format.id)||!(genericPartner||friends||namedPartner||background||doctor))issues.push('Multiple-commander pairing requires rules verification');}
+  }
+ return {names:leaders,cards:leaderCards,identity,identityKnown,issues};
+}

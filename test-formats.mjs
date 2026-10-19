@@ -53,3 +53,12 @@ const dual = card("Sol Ring", "Artifact", { duel: "banned" });
 assert.equal(legalityIn(dual, formatOf("Commander")), "legal");
 assert.equal(legalityIn(dual, formatOf("Duel Commander")), "banned");
 console.log("PASS: 22 formats — sizes, copy limits, banned/restricted/not-legal, commanders, Oathbreaker, Limited.");
+
+// Current Commander eligibility is not limited to legendary creatures.
+const vehicle=card('Fixture legendary vehicle','Legendary Artifact — Vehicle',{}, {power:'4',toughness:'4'});
+assert.equal(canLead(vehicle,formatOf('Commander')),true);
+assert.equal(canLead({...vehicle,type_line:'Legendary Artifact — Spacecraft'},formatOf('Commander')),true);
+assert.equal(canLead({...vehicle,power:undefined,toughness:undefined},formatOf('Commander')),false);
+assert.equal(canLead({...vehicle,type_line:'Legendary Artifact'},formatOf('Commander')),false);
+assert.equal(canLead(vehicle,formatOf('Brawl')),true);
+assert.equal(canLead({...vehicle,card_faces:[{type_line:'Artifact',oracle_text:''},{type_line:'Legendary Creature — Human',power:'4',toughness:'4'}]},formatOf('Commander')),false,'back face alone does not establish commander eligibility');

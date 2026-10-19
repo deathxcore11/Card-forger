@@ -12,7 +12,7 @@ const goblins = Array.from({ length: 20 }, (_, i) => card("Goblin " + i, "Creatu
 const burn = Array.from({ length: 10 }, (_, i) => card("Burn " + i, "Instant", { text: "Deal 3 damage to any target.", cmc: 1, usd: "0.2" }));
 const blue = card("Blue Thing", "Creature — Wizard", { ci: ["U"] });
 const banned = card("Banned Goblin", "Creature — Goblin", { legal: { modern: "banned" }, usd: "0.1", rank: 1 });
-const mountain = { name: "Mountain", type_line: "Basic Land — Mountain", color_identity: [], legalities: legal(), prices: {} };
+const mountain = { name: "Mountain", type_line: "Basic Land — Mountain", color_identity: [], legalities: legal(), prices: {usd:"0.05"} };
 const pw = card("Chandra Test", "Legendary Planeswalker — Chandra", { cmc: 4 });
 const catalog = Object.fromEntries([seed, ...goblins, ...burn, blue, banned, mountain, pw].map((c) => [cardKey(c.name), c]));
 const owned = { "Goblin Chieftain": 4, "Goblin 5": 4 };
@@ -28,10 +28,11 @@ assert.ok(d.cost <= 25);
 assert.equal(d.lands, 24);
 assert.ok(d.cards.every((r) => r.qty <= 4 || r.name === "Mountain"));
 assert.deepEqual(validateDeck({ format: "Modern", cards: d.cards }, { ...catalog }, []).issues, []);
-// $0 = only owned cards (plus basics); open slots reported, never invented.
+// $0 means only actual owned copies, including basic lands; open slots stay open.
 const free = buildDeck({ ...opts, budget: 0 });
 assert.equal(free.cost, 0);
-assert.ok(free.cards.filter((r) => r.name !== "Mountain").every((r) => (owned[r.name] || 0) >= r.qty));
+assert.ok(free.cards.every((r) => (owned[r.name] || 0) >= r.qty));
+assert(!free.cards.some(r=>r.name==="Mountain"),"Unowned basic lands are not fabricated for free");
 assert.ok(free.open > 0 && free.warnings.length);
 // Tiers: more budget never costs more than its tier, and buys more of the expensive goblins.
 const tiers = buildTiers(opts);

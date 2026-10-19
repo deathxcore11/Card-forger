@@ -1,0 +1,87 @@
+// Deterministic frozen public Oracle text; no network, account or paid calls.
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {cardKey,roles,rulesText} from './core.js';
+import {commanderTheme,tribalSupport} from './planner.js';
+import {synergyTest} from './insights.js';
+import {themeQuery,themeQueries,requestedIntent,buildDeck,scoreCard} from './builder.js';
+import {prepareMtgDeck} from './ai-deck-builder.js';
+const cards=JSON.parse(fs.readFileSync(new URL('./test-fixtures/commander-intent-cards.json',import.meta.url))).cards;
+const byName=Object.fromEntries(cards.map(c=>[c.name,c])),dion=cards.find(c=>c.name.startsWith('Dion,')),knight=byName['Knight of the White Orchid'],apparition=byName['Grateful Apparition'],glass=byName['Magnifying Glass'];
+const theme=commanderTheme(dion),syn=synergyTest(dion);
+assert.deepEqual(theme.tribes,['Knight']);
+assert(!roles(dion).includes('Spells'),'as-a-sorcery timing is not a raw spells role');
+assert(!theme.roles.includes('Spells'));
+assert(!theme.roles.includes('Dragons'),'own back-face type is not a dragon-tribal payoff');
+assert(theme.roles.includes('Tokens')&&theme.roles.includes('Counters'));
+assert.match(syn.label,/Knight support/);
+assert(syn.test(knight));
+assert(syn.test(byName['Universal Automaton']),'creature changeling participates');
+assert(syn.test(byName['Maskwood Nexus']),'explicit own type-conversion support participates');
+for(const name of ['Holy Day','Disenchant','Magnifying Glass','Meteor Golem','Prophetic Prism','Grateful Apparition','Rootborn Defenses','Crib Swap','Intangible Virtue',"Wickersmith's Tools"]){assert.equal(syn.test(byName[name]),false,name+' is not counted in Knight support');}
+assert.deepEqual(syn.classify(apparition),{primary:false,support:['Counter support']});
+assert(syn.supportTest(byName['Intangible Virtue']));
+assert(syn.supportTest(byName['Rootborn Defenses']));
+assert(syn.supportTest(byName["Wickersmith's Tools"]));
+assert(!syn.classify(byName["Wickersmith's Tools"]).support.includes('Counter support'),'unrelated charge/-1 counters are not Dion +1-counter support');
+assert(!syn.supportTest(glass),'Clues are not creature-token support');
+assert(!syn.supportTest(byName['Crib Swap']),'opponent-controller token is not guaranteed own support');
+assert(!syn.test(dion)&&!syn.supportTest(dion),'command-zone card excluded from library support counts');
+const flat={...dion,oracle_text:rulesText(dion)};delete flat.card_faces;
+const faces={...dion};delete faces.type_line;
+assert.deepEqual(commanderTheme(flat).tribes,theme.tribes);
+assert.deepEqual(commanderTheme(faces).tribes,theme.tribes);
+assert.deepEqual(commanderTheme(flat).roles,theme.roles);
+const talrand=byName['Talrand, Sky Summoner'];
+assert(commanderTheme(talrand).roles.includes('Spells'));
+assert.equal(commanderTheme(talrand).tribe,null,'making Drakes does not require Drake-tribal payoff support');
+assert(synergyTest(talrand).test(byName.Disenchant),'real spells-matter commander keeps actual instants');
+console.log('PASS: exact Dion clauses distinguish Knight support, creature tokens, counters, opponents’ tokens, timing text and back-face type; Talrand spells theme survives.');
+
+assert(themeQueries(dion).includes('(t:knight or o:knight)'));
+assert.doesNotMatch(themeQuery(dion),/t:human|t:noble|t:dragon|t:instant|t:sorcery/);
+assert.match(themeQuery(dion),/proliferate/);
+assert.deepEqual(requestedIntent('a mono white Knights tribal deck with counters').tribes,['Knight']);
+assert(themeQueries(glass,'Knights').includes('(t:knight or o:knight)'),'explicit style survives unrelated seed');
+assert(themeQueries(glass,'Knights').some(q=>q.includes('artifact')),'seed support retained separately');
+const context=({pool=cards,overrides={}}={})=>{
+ const catalog=Object.fromEntries(cards.map(c=>[cardKey(c.name),structuredClone({...c,prices:{usd:'.25'},...overrides[cardKey(c.name)]})]));
+ const queries=[];let running=0,maxRunning=0;
+ return {queries,catalog,get maxRunning(){return maxRunning;},x:{meta:n=>catalog[cardKey(n)],resolve:async n=>catalog[cardKey(n)]||null,cacheCard:()=>{},inv:()=>({available:0}),api:async path=>{running++;maxRunning=Math.max(maxRunning,running);await Promise.resolve();running--;const q=new URL(path,'https://fixture.invalid').searchParams.get('q');queries.push(q);return {data:(q.includes('(t:knight or o:knight)')?[knight]:pool.filter(c=>c.name!==knight.name)).map(c=>catalog[cardKey(c.name)])};}}};
+};
+let ctx=context(),args={format:'Commander',seed:dion.name,commander:dion.name,style:'Knights',budget:100,budget_basis:'total'};
+let result=await prepareMtgDeck(args,ctx.x);
+assert.equal(result.draft.requestedStyle,'Knights');
+assert(result.draft.cards.some(r=>r.name===knight.name),'Knight candidate survives even when generic pages omit it');
+assert(ctx.queries.some(q=>q.endsWith('(t:knight or o:knight) prefer:usd-low')),'dedicated payoff request cannot be drowned by generic popular candidates');
+assert(ctx.maxRunning<=3,'retrieval concurrency remains bounded');
+assert(result.draft.cards.every(r=>r.name==='Plains'||r.qty===1));
+ctx=context();result=await prepareMtgDeck({...args,seed:glass.name,style:''},ctx.x);
+assert(ctx.queries.some(q=>q.endsWith('(t:knight or o:knight) prefer:usd-low')),'separate commander payoff retrieved even when build-around is unrelated');
+console.log('PASS: AI and normal builder share dedicated payoff queries; explicit style survives seeded builds and real retrieval produces the otherwise-missing Knight.');
+
+ctx=context();result=await prepareMtgDeck({...args,required_cards:[apparition.name],excluded_cards:[glass.name],colors:['W'],candidate_cards:['Sol Ring']},ctx.x);
+assert(result.draft.cards.some(r=>r.name===apparition.name));
+assert(!result.draft.cards.some(r=>r.name===glass.name));
+assert.deepEqual(result.draft.requiredCards,[apparition.name]);
+assert.deepEqual(result.draft.excludedCards,[glass.name]);
+assert.deepEqual(result.draft.requestedColors,['W']);
+assert.equal(result.draft.goalVerified,false);
+assert((await prepareMtgDeck({...args,required_cards:[apparition.name],excluded_cards:[apparition.name]},ctx.x)).requiresChoice);
+assert((await prepareMtgDeck({...args,excluded_cards:[dion.name]},ctx.x)).requiresChoice);
+assert((await prepareMtgDeck({...args,required_cards:[talrand.name]},ctx.x)).requiresChoice);
+assert((await prepareMtgDeck({...args,colors:['U']},ctx.x)).requiresChoice);
+const widerColors=await prepareMtgDeck({...args,colors:['W','U']},ctx.x);assert.deepEqual(widerColors.draft.colors,['W'],'allowed colors never expand the commander’s actual identity');assert(!widerColors.draft.cards.some(r=>r.name===talrand.name));
+assert((await prepareMtgDeck({...args,required_cards:['No Such Required Card']},ctx.x)).requiresChoice);
+assert((await prepareMtgDeck({...args,excluded_cards:['No Such Excluded Card']},ctx.x)).requiresChoice);
+assert((await prepareMtgDeck({...args,avoid_infinite:true},ctx.x)).requiresChoice);
+const noPlains=await prepareMtgDeck({...args,excluded_cards:['Plains']},ctx.x);assert(!noPlains.draft.cards.some(r=>r.name==='Plains'),'basic-land fallback also honors exclusions');assert.equal(noPlains.draft.complete,false);
+ctx=context({overrides:{[cardKey(apparition.name)]:{prices:{usd:null,usd_foil:null,usd_etched:null}}}});
+result=await prepareMtgDeck({...args,required_cards:[apparition.name]},ctx.x);
+assert.equal(result.draft.withinBudget,false);assert(result.draft.unpricedCopies>0,'unknown required-card quote stays unknown');
+for(const goal of ['weak','chaos','fun','theme']){
+ ctx=context();result=await prepareMtgDeck({...args,goal,candidate_cards:[apparition.name]},ctx.x);
+ assert(result.draft,'subjective goal does not refuse or silently fall back');assert.equal(result.draft.goal,goal);assert.equal(result.draft.goalVerified,false);assert.match(result.draft.warnings.join(' '),/judgment to review/);
+}
+assert(scoreCard(byName['Sol Ring'],[],[],{size:100,goal:'weak'})<scoreCard(byName['Sol Ring'],[],[],{size:100,goal:'strongest'}),'weak mode removes efficiency/popularity incentives while legal role structure remains');
+console.log('PASS: exact required/excluded/color constraints, unknown quotes, bounded suggestions and subjective goal metadata remain honest and enforced.');

@@ -1,0 +1,151 @@
+{
+  "scope": "Exact public card data captured for the read-only Dion audit. A minimal contract fixture, not the user deck or a proposed legal deck.",
+  "cards": [
+    {
+      "name": "Dion, Bahamut's Dominant // Bahamut, Warden of Light",
+      "type_line": "Legendary Creature \u2014 Human Noble Knight // Legendary Enchantment Creature \u2014 Saga Dragon",
+      "cmc": 4.0,
+      "color_identity": [
+        "W"
+      ],
+      "card_faces": [
+        {
+          "object": "card_face",
+          "name": "Dion, Bahamut's Dominant",
+          "mana_cost": "{3}{W}",
+          "type_line": "Legendary Creature \u2014 Human Noble Knight",
+          "oracle_text": "Dragonfire Dive \u2014 During your turn, Dion and other Knights you control have flying.\nWhen Dion enters, create a 2/2 white Knight creature token.\n{4}{W}{W}, {T}: Exile Dion, then return it to the battlefield transformed under its owner's control. Activate only as a sorcery.",
+          "colors": [
+            "W"
+          ],
+          "power": "3",
+          "toughness": "3",
+          "artist": "Kevin Glint",
+          "artist_id": "1d9ddf35-c50d-4fc7-987c-4e2bf909f75a",
+          "illustration_id": "206560a4-65d9-4296-b9a4-992e94b6fad8",
+          "image_uris": {
+            "small": "https://cards.scryfall.io/small/front/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.jpg?1783906656",
+            "normal": "https://cards.scryfall.io/normal/front/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.jpg?1783906656",
+            "large": "https://cards.scryfall.io/large/front/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.jpg?1783906656",
+            "png": "https://cards.scryfall.io/png/front/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.png?1783906656",
+            "art_crop": "https://cards.scryfall.io/art_crop/front/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.jpg?1783906656",
+            "border_crop": "https://cards.scryfall.io/border_crop/front/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.jpg?1783906656",
+            "thumb": "https://cards.scryfall.io/thumb/front/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.webp?1783906656",
+            "grid": "https://cards.scryfall.io/grid/front/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.webp?1783906656",
+            "display": "https://cards.scryfall.io/display/front/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.webp?1783906656",
+            "art": "https://cards.scryfall.io/art/front/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.webp?1783906656",
+            "crop": "https://cards.scryfall.io/crop/front/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.webp?1783906656",
+            "jpeg": "https://cards.scryfall.io/normal/front/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.jpg?1783906656"
+          }
+        },
+        {
+          "object": "card_face",
+          "name": "Bahamut, Warden of Light",
+          "mana_cost": "",
+          "type_line": "Legendary Enchantment Creature \u2014 Saga Dragon",
+          "oracle_text": "(As this Saga enters and after your draw step, add a lore counter.)\nI, II \u2014 Wings of Light \u2014 Put a +1/+1 counter on each other creature you control. Those creatures gain flying until end of turn.\nIII \u2014 Gigaflare \u2014 Destroy target permanent. Exile Bahamut, then return it to the battlefield (front face up).\nFlying",
+          "colors": [
+            "W"
+          ],
+          "color_indicator": [
+            "W"
+          ],
+          "power": "5",
+          "toughness": "5",
+          "artist": "Kevin Glint",
+          "artist_id": "1d9ddf35-c50d-4fc7-987c-4e2bf909f75a",
+          "illustration_id": "a210a931-354a-439b-b25c-174f783e300f",
+          "image_uris": {
+            "small": "https://cards.scryfall.io/small/back/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.jpg?1783906656",
+            "normal": "https://cards.scryfall.io/normal/back/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.jpg?1783906656",
+            "large": "https://cards.scryfall.io/large/back/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.jpg?1783906656",
+            "png": "https://cards.scryfall.io/png/back/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.png?1783906656",
+            "art_crop": "https://cards.scryfall.io/art_crop/back/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.jpg?1783906656",
+            "border_crop": "https://cards.scryfall.io/border_crop/back/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.jpg?1783906656",
+            "thumb": "https://cards.scryfall.io/thumb/back/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.webp?1783906656",
+            "grid": "https://cards.scryfall.io/grid/back/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.webp?1783906656",
+            "display": "https://cards.scryfall.io/display/back/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.webp?1783906656",
+            "art": "https://cards.scryfall.io/art/back/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.webp?1783906656",
+            "crop": "https://cards.scryfall.io/crop/back/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.webp?1783906656",
+            "jpeg": "https://cards.scryfall.io/normal/back/8/c/8c0f9306-2058-476d-a711-bd37a6e15e42.jpg?1783906656"
+          }
+        }
+      ],
+      "oracle_id": "4a0cc2a2-3711-473a-b2c5-b1e52b34e4fb",
+      "scryfall_uri": "https://scryfall.com/card/fin/16/dion-bahamuts-dominant-bahamut-warden-of-light?utm_source=api"
+    },
+    {
+      "name": "Meteor Golem",
+      "type_line": "Artifact Creature \u2014 Golem",
+      "oracle_text": "When this creature enters, destroy target nonland permanent an opponent controls.",
+      "cmc": 7.0,
+      "mana_cost": "{7}",
+      "color_identity": [],
+      "power": "3",
+      "toughness": "3",
+      "oracle_id": "d9f11aa1-9219-42a8-85a9-a8f204160706",
+      "scryfall_uri": "https://scryfall.com/card/msc/205/meteor-golem?utm_source=api"
+    },
+    {
+      "name": "Prophetic Prism",
+      "type_line": "Artifact",
+      "oracle_text": "When this artifact enters, draw a card.\n{1}, {T}: Add one mana of any color.",
+      "cmc": 2.0,
+      "mana_cost": "{2}",
+      "color_identity": [],
+      "produced_mana": [
+        "B",
+        "G",
+        "R",
+        "U",
+        "W"
+      ],
+      "oracle_id": "134a9877-5cfb-4a2a-a0f0-930dce45f58b",
+      "scryfall_uri": "https://scryfall.com/card/woe/249/prophetic-prism?utm_source=api"
+    },
+    {
+      "name": "Magnifying Glass",
+      "type_line": "Artifact",
+      "oracle_text": "{T}: Add {C}.\n{4}, {T}: Investigate. (Create a Clue token. It's an artifact with \"{2}, Sacrifice this token: Draw a card.\")",
+      "cmc": 3.0,
+      "mana_cost": "{3}",
+      "color_identity": [],
+      "produced_mana": [
+        "C"
+      ],
+      "oracle_id": "f2ce9e55-07c0-4f36-a59e-127693fc0f62",
+      "scryfall_uri": "https://scryfall.com/card/mkm/255/magnifying-glass?utm_source=api"
+    },
+    {
+      "name": "Spectral Searchlight",
+      "type_line": "Artifact",
+      "oracle_text": "{T}: Choose a player. That player adds one mana of any color they choose.",
+      "cmc": 3.0,
+      "mana_cost": "{3}",
+      "color_identity": [],
+      "produced_mana": [
+        "B",
+        "G",
+        "R",
+        "U",
+        "W"
+      ],
+      "oracle_id": "511b1174-8ef7-4d17-93de-01b9b81bda6a",
+      "scryfall_uri": "https://scryfall.com/card/cmm/411/spectral-searchlight?utm_source=api"
+    },
+    {
+      "name": "Knight of the White Orchid",
+      "type_line": "Creature \u2014 Human Knight",
+      "oracle_text": "First strike\nWhen this creature enters, if an opponent controls more lands than you, you may search your library for a Plains card, put it onto the battlefield, then shuffle.",
+      "cmc": 2.0,
+      "mana_cost": "{W}{W}",
+      "color_identity": [
+        "W"
+      ],
+      "power": "2",
+      "toughness": "2",
+      "oracle_id": "7d0efc64-151f-45b4-8c0b-c32609f9d862",
+      "scryfall_uri": "https://scryfall.com/card/moc/193/knight-of-the-white-orchid?utm_source=api"
+    }
+  ]
+}

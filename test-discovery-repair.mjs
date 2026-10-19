@@ -31,7 +31,9 @@ for(const game of ['mtg','ptcg','ygo']){const h=learnSheet(game);assert.match(h,
 console.log('PASS: effect coverage, partial-printing dates, reserved Commander mana, basic land counts, exact edition market quotes, bounded supplemental pricing, organized sets and all-game learning sheets.');
 
 assert(atLeastOne(60,12,7)<.85,'12 one-drops in 60 do not guarantee an 85% opening chance');
-const built=buildDeck({format:'Commander',seeds:[leader],catalog:cat,price:()=>.01,budget:100});assert.equal(built.lands,36,'generated basics count as lands even before metadata hydration');
+const missingBasics=buildDeck({format:'Commander',seeds:[leader],catalog:cat,price:()=>.01,budget:100});assert.equal(missingBasics.lands,0,'missing basic metadata cannot be fabricated');assert(!missingBasics.cards.some(r=>r.name==='Wastes'));
+const wastes={name:'Wastes',type_line:'Basic Land',oracle_text:'{T}: Add {C}.',color_identity:[],legalities:{commander:'legal'},prices:{usd:'.01'}};
+const built=buildDeck({format:'Commander',seeds:[leader],catalog:{...cat,[cardKey(wastes.name)]:wastes},price:()=>.01,budget:100});assert.equal(built.lands,36,'verified legal basic identities are selected and priced');assert.equal(built.cost,1);
 
 const details=(label,open)=>({open,querySelector:()=>({textContent:label})});
 const before=[details('Filters',true),details('Advanced',false),details('Advanced',true)];

@@ -16,9 +16,12 @@ import {
   isBasic,
   cardPrice,
   aggregateCards,
+  inCommandZone,
 } from "./core.js";
-import { commanderTheme } from "./planner.js";
+import { commanderTheme, tribalSupport, themeSupport } from "./planner.js";
 import { mtgTagged, mtgTagsReady } from "./mtg-tags.js";
+import { mtgResourceProfile } from "./mtg-effects.js";
+import { commanderCriteria } from "./commander-criteria.js";
 
 const lower = (c) => rulesText(c).toLowerCase();
 
@@ -78,7 +81,9 @@ function engineRolesRaw(c) {
     out = [];
   if (isLand(c)) return ["Land"];
   // Scryfall's community tags add what the text patterns miss (mtg-tags.js).
-  if (RAMP.some((r) => r.test(text)) || mtgTagged(c, "ramp")) out.push("Ramp");
+  const resource = mtgResourceProfile(c);
+  // Explicit filtering is not net acceleration, even if a community tag is broad.
+  if (resource.acceleration || (!resource.effects.some(e=>["mana-filter","land-exchange"].includes(e.kind) || e.controller && e.controller !== "self") && (mtgTagged(c, "ramp") || resource.status === "unsupported" && RAMP.some((r) => r.test(text))))) out.push("Ramp");
   if (DRAW.some((r) => r.test(text)) || mtgTagged(c, "draw")) out.push("Draw");
   if (REMOVAL.some((r) => r.test(text)) || mtgTagged(c, "removal") || mtgTagged(c, "counter")) out.push("Removal");
   if (WIPE.some((r) => r.test(text)) || mtgTagged(c, "wipe")) out.push("Wipe");
@@ -106,38 +111,21 @@ export function synergyTest(commander) {
     test:c=>!!c&&!isLand(c)&&cardKey(c.name)!==cardKey(commander.name)&&(/(?:add \{|add (?:one|two|three|an amount)|untap (?:target|this)|activated abilities)/i.test(rulesText(c)) || /non-human creature/i.test(rulesText(c)))
   };
   const theme = commanderTheme(commander),
-    tribe = theme.tribe
-      ? new RegExp("\\b" + theme.tribe + "s?\\b", "i")
-      : null,
-    focus = theme.roles.filter((r) =>
-      [
-        "Tokens",
-        "Graveyard",
-        "Spells",
-        "Artifacts",
-        "Lifegain",
-        "Landfall",
-        "Dragons",
-      ].includes(r),
-    );
-  if (!tribe && !focus.length) return null;
-  const roleTests = {
-    Tokens: /create .*token|populate|tokens? you control/i,
-    Graveyard: /graveyard|dies|mill|sacrifice/i,
-    Spells: /instant|sorcery|magecraft|prowess/i,
-    Artifacts: /artifact/i,
-    Lifegain: /gain .*life|lifelink|whenever you gain life/i,
-    Landfall: /landfall|land enters|lands? you control/i,
-    Dragons: /dragon/i,
-  };
+    focus = theme.roles.filter(r => ["Tokens","Counters","Graveyard","Spells","Artifacts","Lifegain","Landfall","Dragons"].includes(r)),
+    eligible = c => !!c && !isLand(c) && cardKey(c.name) !== cardKey(commander.name),
+    primary = c => eligible(c) && (theme.tribe ? tribalSupport(c,theme.tribe) : themeSupport(c,theme).length > 0),
+    support = c => eligible(c) ? themeSupport(c,theme) : [];
+  if (!theme.tribe && !focus.length) return null;
   return {
-    label: theme.tribe ? theme.tribe + "s" : focus.join(" / "),
-    test(c) {
-      if (!c || isLand(c) || cardKey(c.name) === cardKey(commander.name))
-        return false;
-      if (tribe && (tribe.test(typeText(c)) || tribe.test(rulesText(c))))
-        return true;
-      return focus.some((f) => roleTests[f]?.test(rulesText(c) + " " + typeText(c)));
+    // These are supported tribal participants/payoffs, not a printed-creature count.
+    label: theme.tribe ? theme.tribe + " support" : focus.join(" / "),
+    tribe: theme.tribe,
+    theme,
+    test: primary,
+    supportLabels: focus,
+    supportTest: c => support(c).length > 0,
+    classify(c) {
+      return {primary:primary(c), support:support(c)};
     },
   };
 }
@@ -245,7 +233,7 @@ export function engineProfile(deck, catalog) {
       }
       continue;
     }
-    const isCommander = cardKey(c.name) === cardKey(deck.commander);
+    const isCommander = inCommandZone(deck,c.name);
     if (!isCommander) {
       nonland += row.qty;
       mvTotal += (Number(c.cmc) || 0) * row.qty;
@@ -266,11 +254,18 @@ export function engineProfile(deck, catalog) {
     }
   }
   const avg = nonland ? mvTotal / nonland : null,
+    criteria = fmt === "Commander" ? commanderCriteria(deck,catalog,{roles:engineRoles,synergy:syn}) : null,
     parts = [];
+  if (criteria) {
+    // Demand follows curve and the commander, not a universal ten-ramp quota.
+    // Mana engines/outlets are kept explicit; no high-ramp hard cap is applied.
+    targets.Ramp = criteria.resources.demand;
+    targets.Lands = Math.max(30,Math.min(40,Math.round(31 + (avg ?? 3)*1.5 - Math.min(3,criteria.resources.efficientRamp/8))));
+  }
   for (const k of Object.keys(targets)) {
-    if ((k === "Synergy" && !syn) || targets[k]===0) continue;
+    if ((k === "Synergy" && (!syn || criteria)) || targets[k]===0) continue;
     const target = targets[k],
-      count = counts[k],
+      count = criteria && k === "Ramp" ? criteria.resources.effectiveRamp : criteria && k === "Draw" ? criteria.resources.draw.effective : counts[k],
       ratio =
         k === "Lands"
           ? Math.max(0, 1 - Math.abs(count - target) / 8)
@@ -282,7 +277,8 @@ export function engineProfile(deck, catalog) {
       target,
       ratio,
       weight: WEIGHTS[k],
-      hint: HINTS[k],
+      hint: criteria && ["Ramp","Draw"].includes(k) ? HINTS[k] + " Effective units account for recognized costs and conditions; they are heuristic contributions, not physical copies." : HINTS[k],
+      ...(criteria && ["Ramp","Draw"].includes(k) ? {rawCount:counts[k],effectiveCount:count,countBasis:"Effective resource units; see printed costs and prerequisites"} : {}),
     });
   }
   const curveRatio =
@@ -300,8 +296,10 @@ export function engineProfile(deck, catalog) {
     score = Math.round(
       (parts.reduce((a, p) => a + p.ratio * p.weight, 0) / weight) * 100,
     );
+  if (criteria) criteria.structure.score = score;
   return {
     score,
+    criteria,
     parts,
     counts,
     byRole,
@@ -314,7 +312,7 @@ export function engineProfile(deck, catalog) {
     nonland,
     synergyLabel: syn?.label || null,
     archetype: archetype?.label || (fmt === "Commander" ? "Commander role balance" : "General constructed role balance"),
-    scoreKind: "Build-health heuristic; not a win rate",
+    scoreKind: criteria ? "Structural build heuristic; plan support is separate; not a win rate" : "Build-health heuristic; not a win rate",
   };
 }
 
@@ -348,7 +346,7 @@ export function goldfish(deck, catalog, { games = 1000, turns = 6, seed = 7 } = 
       hasCommander(deck) ? catalog[cardKey(deck.commander)] : null,
     library = [];
   for (const row of aggregateCards(deck.cards)) {
-    if (commanderCard && cardKey(row.name) === cardKey(commanderCard.name))
+    if (commanderCard && inCommandZone(deck,row.name))
       continue;
     const c = catalog[cardKey(row.name)],
       roles = c ? engineRoles(c) : [],

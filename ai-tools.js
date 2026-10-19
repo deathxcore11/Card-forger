@@ -1,7 +1,9 @@
 import {findInfo,INFO_TOPICS} from './app-info.js';
 import {FORMATS} from './formats.js';
 import {prepareMtgDeck} from './ai-deck-builder.js';
-import {cardPrice} from './core.js';
+import {cardPrice,cardKey} from './core.js';
+import {validateBuildProposal,proposalFeedback} from './ai-build-contract.js';
+import {goalDescription} from './ai-deck-goal.js';
 import {resolveYgoSet} from './ygo.js';
 import { pokemonArtCrop } from './artwork.js';
 import { ptcgIcon } from './meta.js';
@@ -48,6 +50,14 @@ export function makeAskTools(x) {
   }
   let suggestions = [], buildId = 0, buildEpoch = 0;
   const builders = new Map();
+  let buildReads=new Map(),buildReadVersion=null,bestBuild=null;
+  const stateVersion = g => {const st=g==='mtg'?S.state:T.gs?.(g)||S.state;return JSON.stringify([st?.collection||[],st?.decks||[]]);};
+  const cachedBuildRead = (key,fn) => {
+    if(!buildReads.has(key))buildReads.set(key,Promise.resolve().then(fn));
+    return buildReads.get(key).then(value=>value===undefined?value:structuredClone(value));
+  };
+  const buildRank = d => [d.legalChecked?1:0,d.withinBudget?1:0,d.complete?1:0,d.total||0,-(d.unpricedCopies||0)];
+  const noWorse = (a,b) => {const aa=buildRank(a),bb=buildRank(b);for(let i=0;i<aa.length;i++)if(aa[i]!==bb[i])return aa[i]>bb[i];return true;};
   const visualKey = s => [s.game,s.kind,s.ref].join(':');
   async function deckVisual(g, d, item, share = null) {
     if (!d) return;
@@ -202,25 +212,40 @@ export function makeAskTools(x) {
       if (g === 'mtg') return { game: g, decks: S.state.decks.slice(0, 15).map((d) => { let power = null; try { power = x.shownPower(x.mtgPower(d)); } catch {} return { id: d.id, name: d.name, format: d.format, commander: d.commander || '', cards: d.cards.reduce((s, r) => s + r.qty, 0), power }; }) };
       return { game: g, decks: T.gs(g).decks.slice(0, 15).map((d) => ({ id: d.id, name: d.name, format: d.format, cards: (d.zones?.main || []).reduce((s, r) => s + r.qty, 0), power: T.deckPowerScore?.(g, d) ?? null })) };
     },
-    async build_deck({ game, style, budget, format, seed, commander, budget_basis }) {
-      const g = g0(game), want = clip(style, 80), $ = Math.max(0, Math.min(10000, Number(budget) || 0));
-      const epoch=buildEpoch, origin=x.navigationStamp?.(), scopeCurrent=x.captureAskScope?.()||(()=>true);
-      const preparingCurrent=()=>epoch===buildEpoch && scopeCurrent() && (!origin || x.navigationCurrent?.(origin)!==false);
+    async build_deck(input, handshake={}) {
+      const checked=validateBuildProposal(input);
+      if(!checked.ok)return proposalFeedback(checked,{terminal:true});
+      const { game, style, budget, format, seed, commander, budget_basis,goal,required_cards,excluded_cards,colors,avoid_infinite,candidate_cards }=checked.args;
+      const g = g0(game), want = clip(style, 120), $ = budget;
+      const epoch=buildEpoch, origin=x.navigationStamp?.(), identityCurrent=x.captureAskScope?.()||(()=>true),version=stateVersion(g);
+      const scopeCurrent=()=>identityCurrent()&&stateVersion(g)===version;
+      const preparingCurrent=()=>epoch===buildEpoch && scopeCurrent() && handshake.current?.()!==false && !handshake.signal?.aborted && (!origin || x.navigationCurrent?.(origin)!==false);
+      if(buildReadVersion!==version || !handshake.revision){buildReads=new Map();bestBuild=null;buildReadVersion=version;}
       const formats=g==='mtg'?FORMATS.map(f=>({id:f.name,name:f.name})):T.SOURCES[g].formats;
       const selected=formats.find(f=>[f.id,f.name].some(n=>n.toLowerCase()===String(format||'').toLowerCase()));
       if(!selected)return {game:g,requiresChoice:true,formats:formats.map(f=>({id:f.id,name:f.name})),note:'Choose a format before preparing a deck. No deck has been changed.'};
       if (g === 'mtg') {
-        const built = await prepareMtgDeck({ style:want, budget:$, format:selected.name, seed, commander, budget_basis, current:preparingCurrent },x);
-        if (!preparingCurrent()) return {cancelled:true,note:'This question was closed or replaced. Nothing was saved.'};
-        if (!built.draft) return {game:g,...built};
-        const draft = structuredClone(built.draft);
+        const buildContext={...x,api:(...a)=>cachedBuildRead('api:'+JSON.stringify(a),()=>x.api(...a)),resolve:(...a)=>cachedBuildRead('resolve:'+JSON.stringify(a),()=>x.resolve(...a))};
+        const built = await prepareMtgDeck({ style:want, budget:$, format:selected.name, seed, commander, budget_basis,goal,required_cards,excluded_cards,colors,avoid_infinite,candidate_cards,current:preparingCurrent },buildContext);
+        if (!preparingCurrent()){if(epoch===buildEpoch)x.pending=null;return {cancelled:true,terminal:true,note:'This question, workspace, or deck/collection version changed. Nothing was saved.'};}
+        if (!built.draft) return {game:g,...built,terminal:true};
+        if(!bestBuild || noWorse(built.draft,bestBuild.draft))bestBuild=structuredClone(built);
+        const draft = structuredClone(bestBuild.draft),result=bestBuild.result;
+        const validation={authority:'app',status:result.ready?'ready':'needs_review',issues:(draft.issues||[]).slice(0,12),goal,goalVerified:false,
+          budget:{basis:budget_basis,limit:draft.budget===Infinity?'no limit':draft.budget,withinBudget:!!draft.withinBudget,estimate:budget_basis==='total'?draft.totalEstimate:draft.purchaseEstimate,unpricedCopies:budget_basis==='total'?draft.unpricedCopies:draft.unpricedPurchaseCopies}};
+        const mayCorrect=handshake.allowCorrection===true&&!result.ready;
+        const correction=mayCorrect?{candidateLimit:6,remaining:1,feedback:[...(draft.issues||[]).map(i=>i.text),...(draft.warnings||[])].slice(0,10),
+          expensiveOrUnpricedCards:[...draft.cards].sort((a,b)=>{const pa=draft.referencePrices?.[cardKey(a.name)],pb=draft.referencePrices?.[cardKey(b.name)];return (pb==null?Infinity:pb*b.qty)-(pa==null?Infinity:pa*a.qty);}).slice(0,8).map(r=>({name:r.name,qty:r.qty,each:draft.referencePrices?.[cardKey(r.name)]??null})),
+          instruction:'Suggest up to six exact candidate_cards once. Preserve every other request field. App checks decide what fits; unknown prices are not free.'}:null;
+        draft.validation=validation;draft.goal=goal;draft.goalVerified=false;
         if (x.openMtgDraft) {
-          x.pending = () => { if(!scopeCurrent()){x.toast?.('Your workspace changed. Ask again in the current workspace.');return;} return x.openMtgDraft(structuredClone(draft),scopeCurrent); };
+          x.pending = () => { if(!scopeCurrent()){x.toast?.('Your workspace, decks, or collection changed. Ask again before reviewing this draft.');return;} return x.openMtgDraft(structuredClone(draft),scopeCurrent); };
           x.pending.current=scopeCurrent; x.pendingGame=g;
         }
-        return {...built.result,reviewAvailable:!!x.openMtgDraft,terminal:true};
+        return {...result,goal,goalVerified:false,goalDescription:goalDescription(goal),validation,correction,requiresCorrection:mayCorrect,reviewAvailable:!!x.openMtgDraft,terminal:!mayCorrect};
       }
       const src = T.SOURCES[g], required = clip(seed,120);
+      if(goal!=='strongest'||required_cards.length||excluded_cards.length||colors.length||avoid_infinite)return {game:g,requiresChoice:true,terminal:true,goal,note:'This game’s builder handoff cannot yet enforce those goal or card restrictions. They have not been discarded or checked. Use the manual builder to review them; nothing was saved.'};
       if(budget_basis==='owned')return {game:g,requiresChoice:true,note:'This builder handoff cannot guarantee an owned-only list. Choose a purchase budget, or use your saved deck to review the missing cards.'};
       if(commander)return {game:g,requiresChoice:true,note:'A commander is a Magic deck role. For this game, give the main card or archetype as the build-around instead.'};
       let r = null;
@@ -240,9 +265,15 @@ export function makeAskTools(x) {
       return { game:g, prepared:true, complete:false, terminal:true, reviewAvailable:true, actionLabel:'Open the deck builder', seed:pick.name, format:selected.name, budget:$||'no limit', budgetBasis:'purchase', requestedBudgetBasis:budget_basis||'total', note:'The '+selected.name+' builder is prepared around '+pick.name+'. Its budget is purchases after owned cards, not a verified whole-deck total. Open it to generate and check the actual list and price coverage. No complete deck or under-budget result has been verified yet; nothing was saved.' };
     },
   };
+  // Snapshot request ownership before a provider wait, not only when its reply
+  // eventually starts a tool. Cross-game actions keep their own version ticket.
+  tools.captureRequestScope = () => {
+    const identity=x.captureAskScope?.()||(()=>true),versions=new Map(GAMES.map(g=>[g,stateVersion(g)]));
+    return g=>identity()&&stateVersion(g)===versions.get(g);
+  };
   // A builder prepared during this question appears as one more tappable item.
-  tools.reset = () => { buildEpoch++; x.pending = null; suggestions = []; exactAliases.clear(); };
-  tools.cancel = () => { buildEpoch++; x.pending = null; };
+  tools.reset = () => { buildEpoch++; x.pending = null; suggestions = []; exactAliases.clear(); buildReads.clear(); buildReadVersion=null; bestBuild=null; };
+  tools.cancel = () => { buildEpoch++; x.pending = null; buildReads.clear(); buildReadVersion=null; bestBuild=null; };
   tools.suggestedItems = () => suggestions;
   tools.canonicalItem = s => { const exact=s.kind==='card'?exactCardFor(s):null; return exact?{...s,ref:exact.ref,label:s.label||exact.card.name}:s.kind==='meta'?suggestions.find(x=>x.game===s.game&&(x.ref===s.ref||x.label===s.ref||x.label===s.label))||s:s; };
   tools.pendingItem = () => { if (!x.pending) return null; const ref = 'builder-' + (++buildId); builders.set(ref,x.pending); return {kind:'build',game:x.pendingGame,ref,label:x.pendingGame==='mtg'?'Review the deck draft':'Open the deck builder'}; };
