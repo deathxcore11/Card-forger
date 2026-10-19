@@ -80,7 +80,7 @@ async function assertTarget(page, pair, row) {
     assert((await page.locator('#content .card-grid > .grid-card').count()) > 0, 'Saved target result cards render');
   }
   if (row.sets || row.set) {
-    const actual = await page.getByRole('searchbox', {name: 'Find a set', exact: true}).inputValue();
+    const actual = await page.getByRole('searchbox', {name: 'Search all sets', exact: true}).inputValue();
     assert.equal(actual, pair.to === 'ygo' ? 'Legend' : pair.to === 'ptcg' ? 'Search B' : 'Search A', 'Target catalogue keeps its own filter');
   }
   if (row.scan) {

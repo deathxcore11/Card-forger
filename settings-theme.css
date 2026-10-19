@@ -59,6 +59,9 @@
    the separate, unchanged 78% light floor preserves text contrast. */
 :root[data-theme="light"] body.glass dialog.sheet {isolation:isolate;}
 :root[data-theme="light"] body.glass dialog.sheet::before {content:"";position:absolute;inset:-50px;z-index:-2;pointer-events:none;background-image:var(--ambient-art-image, none);background-size:cover;background-position:center 30%;filter:blur(42px) saturate(1.5) contrast(1.2);}
+/* Pokémon daily sources are full cards, not art crops. Enlarge only the
+   decorative ambient field so pale rules panels do not erase the glass. */
+:root[data-theme="light"] body.glass[data-game="ptcg"] dialog.sheet::before {background-size:auto 220%;background-position:center 24%;}
 :root[data-theme="light"] body.glass dialog.sheet::after {content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:rgba(246,249,253,.78);}
 :root[data-theme="light"] body.glass dialog.sheet::backdrop {background:rgba(38,50,70,.18);}
 :root[data-theme="light"] body.glass .cs-tabs {background:rgba(250,252,255,.62);border-color:var(--glass-line);}

@@ -176,7 +176,16 @@ async function pokemonSymbols(app){
  await layout(page,'#content','pokemon-white-symbols',['.set-row','[data-change="tSetsSort"]']);
  // Terminal DOM state, not a timed quiet period, proves fallback cannot loop.
  for(const id of ['sv03','synthetic-missing','base1'])await failedSymbol(page,id);assert.deepEqual(symbolIdentity(await Promise.all([symbolAttempts(app,'normal',{failed:false}),symbolAttempts(app,'broken'),symbolAttempts(app,'missing')])),symbolBefore,'Resizing preserves the SAME terminal image nodes and creates no retry loop');
- const dimensions=await page.locator('.set-media-pokemon-symbol').evaluateAll(ns=>ns.map(n=>({w:n.getBoundingClientRect().width,h:n.getBoundingClientRect().height})));assert(dimensions.every(d=>d.w===dimensions[0].w&&d.h===dimensions[0].h),'All symbol/code slots have uniform dimensions');
+ // layout() has just restored 390px from the widest viewport. Settle only
+ // finite live motion before ONE geometry measurement, never retry inequality.
+ // Hover translates a row; it does not scale it. Keep the real pointer state.
+ await frame(page);const settled=await noOverflow(page,'#content','Settled Pokemon symbol slots',true);
+ assert.deepEqual(symbolIdentity(await Promise.all([symbolAttempts(app,'normal',{failed:false}),symbolAttempts(app,'broken'),symbolAttempts(app,'missing')])),symbolBefore,'Finite-motion settlement cannot replace the terminal image nodes or restart their sources');
+ const dimensions=await page.locator('.set-media-pokemon-symbol').evaluateAll(ns=>ns.map(n=>{const r=n.getBoundingClientRect(),row=n.closest('.set-row'),css=getComputedStyle(n),rowCss=getComputedStyle(row);return {id:n.dataset.setSymbolId,connected:n.isConnected,w:r.width,h:r.height,layoutWidth:n.offsetWidth,layoutHeight:n.offsetHeight,cssWidth:css.width,cssHeight:css.height,transform:css.transform,rowTransform:rowCss.transform,hovered:row.matches(':hover'),active:row.matches(':active')};}));
+ const dimensionEvidence={width:settled.width,settlement:settled.settlement,slots:dimensions};
+ assert.equal(dimensions.length,SETS.ptcg.length,'Every source fixture has a current symbol/code slot: '+JSON.stringify(dimensionEvidence));
+ assert(dimensions.every(d=>d.connected&&d.w>0&&d.h>0&&d.w===dimensions[0].w&&d.h===dimensions[0].h),'All symbol/code slots have uniform dimensions: '+JSON.stringify(dimensionEvidence));
+ report.push('Settled Pokemon symbol/code dimensions: '+JSON.stringify(dimensionEvidence));
  await openSet(page,'ptcg');await page.waitForFunction(()=>{const n=document.querySelector('.set-hero img.set-logo');return n?.complete&&n.naturalWidth>0;});const logoInfo=await page.locator('.set-hero img').evaluateAll(ns=>ns.map(n=>({src:n.getAttribute('src'),filter:getComputedStyle(n).filter,complete:n.complete,width:n.naturalWidth,class:n.className})));const colored=logoInfo.find(x=>x.src==='https://assets.tcgdex.net/en/sv/sv08/logo.webp');assert(colored,'Inside-set detail retains authentic provider colored-logo URL');assert.equal(colored.filter,'none','Catalogue whitening cannot affect set-detail logo');assert(colored.complete&&colored.width>0,'The exact colored logo really decoded');
  await capture(page,'card-polish-pokemon-colored-set-logo');assert.equal(await inventorySnapshot(page),before);report.push('Pokemon catalogue uses a single uniform source-backed white symbol; exact-provider and missing-metadata fallback chains end in readable codes, Base Set creates no expansion-symbol image, and the in-set colored logo is unchanged.');
 }

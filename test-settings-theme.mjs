@@ -104,3 +104,5 @@ assert.match(css,/prefers-reduced-transparency:reduce\) \{\s*:root\[data-theme="
 
 assert.match(css,/dialog\.sheet::before \{[^}]+filter:blur\(42px\) saturate\(1\.5\) contrast\(1\.2\)/,"only the ambient layer receives bounded enrichment");
 assert.match(css,/dialog\.sheet::after \{[^}]+pointer-events:none;background:rgba\(246,249,253,\.78\)/,"separate unfiltered safety wash keeps the proven contrast floor");
+
+assert.match(css,/body\.glass\[data-game="ptcg"\] dialog\.sheet::before \{background-size:auto 220%;background-position:center 24%;\}/,"full-card Pokémon ambient focuses decorative art without changing card images");

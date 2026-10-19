@@ -32,3 +32,14 @@ vm.runInContext('matchupImport={opponent:{name:"Pasted",cards:[{name:"Opponent",
 const useStart=source.indexOf('A.amImportUse=');vm.runInContext(source.slice(useStart,source.indexOf('\n',useStart)),context);
 A.amImportUse();assert.equal(restored,saved);assert.equal(restored.ctx.tab,'decks');assert.equal(restored.ctx.side,'opponent');assert.equal(trail.length,0,'using an import returns to its original matchup rather than leaving a dead import in Back history');
 console.log('PASS: pasted opponent returns to the existing shared matchup with no dead import history.');
+// Execute the real navigation handler through its sheet-lifecycle phase.
+const navStart=source.indexOf('function installNavigation('),navEnd=source.indexOf('\nconst navigation =',navStart);
+const stop=Symbol('navigation phase complete');let closed=[];
+const navContext=vm.createContext({S:{ui:{sheetCtx:null}},sheetTrail:{items:[]},activeEntry:{game:'mtg',route:'#deck/deck/matchups'},entryOrigins:new Map(),aiMatchups:{cancel(){}},clearGameContext(){},closeSheet:remember=>closed.push(remember),dismissRulesGuide(){throw stop;}});
+vm.runInContext(source.slice(navStart,navEnd),navContext);
+for(const [type,nested,route,want] of [['matchup',false,'#collection',true],['matchup-import',false,'#collection',true],['card',true,'#collection',true],['card',false,'#collection',false],['matchup',false,'#deck/deck/matchups',false],['printing-picker',false,'#collection',true]]){
+ navContext.S.ui.sheetCtx={type};navContext.sheetTrail.items=nested?[{ctx:{type:'matchup'}}]:[];closed=[];
+ try{navContext.installNavigation({game:'mtg',hash:route,mode:'pop'});}catch(error){if(error!==stop)throw error;}
+ assert.deepEqual(closed,want?[false]:[],`${type}, nested=${nested}: close only departed matchup-origin sheets, without retaining stale return history`);
+}
+console.log('PASS: real navigation closes departed matchup/import/nested sheets while preserving unrelated and same-route sheets.');

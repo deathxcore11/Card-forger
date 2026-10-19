@@ -509,7 +509,7 @@ async function assertIllustrativeNewsArtwork(page, selector, game) {
   assert(await feature.locator('h3').isVisible(), 'headline remains readable with illustrative fallback');
 }
 async function assertCommunityArtwork(page, selector, game, { kind = 'card', state = 'ready', second = false, source = null } = {}) {
-  const art = page.locator(selector).locator('[data-community-art]');
+  const art = page.locator(selector).first().locator('[data-community-art]');
   await art.scrollIntoViewIfNeeded();
   await page.waitForFunction(({ selector, state }) => document.querySelector(`${selector} [data-community-art]`)?.dataset.artState === state, { selector, state });
   assert.equal(await art.count(), 1, `${game}: one source-bound art treatment in ${selector}`);
@@ -557,12 +557,15 @@ async function assertReadableArtwork(page, game) {
   const geometry = await page.locator('.community-feature').first().evaluate(node => {
     const copy = node.querySelector('.community-feature-copy'), art = node.querySelector('[data-community-art]');
     const a=art.getBoundingClientRect(),c=copy.getBoundingClientRect(),row=node.getBoundingClientRect();
-    return { art:{left:a.left,right:a.right,width:a.width,height:a.height},copy:{left:c.left,right:c.right},rowHeight:row.height,
-      text: [...copy.querySelectorAll(':scope > h3,:scope > .eyebrow,:scope > .community-source,:scope > .community-context > summary')].map(n => { const c = getComputedStyle(n), r = n.getBoundingClientRect(); return { tag:n.tagName,width:r.width,height:r.height,clipped:n.scrollWidth>n.clientWidth+2,color:c.color,opacity:Number(c.opacity),fontSize:parseFloat(c.fontSize) }; }) };
+    const shade=node.querySelector('.community-art-shade'), summary=node.querySelector('.community-summary');
+    return { art:{left:a.left,right:a.right,width:a.width,height:a.height},copy:{left:c.left,right:c.right},row:{left:row.left,right:row.right,width:row.width,height:row.height},shade:shade?getComputedStyle(shade).backgroundImage:'none',summary:summary?.textContent||'',
+      text: [...copy.querySelectorAll(':scope > h3,:scope > .eyebrow,:scope > .community-summary,:scope > .community-source,:scope > .community-context > summary')].map(n => { const c = getComputedStyle(n), r = n.getBoundingClientRect(); return { tag:n.tagName,width:r.width,height:r.height,clipped:n.scrollWidth>n.clientWidth+2,color:c.color,opacity:Number(c.opacity),fontSize:parseFloat(c.fontSize) }; }) };
   });
-  assert(geometry.art.right+7<=geometry.copy.left,`${game}: publisher image sits beside, never behind the real headline`);
-  assert(geometry.art.width<=115 && geometry.art.height<=90,`${game}: matched publisher image is a restrained thumbnail`);
-  assert(geometry.rowHeight<240,`${game}: one news item is a compact editorial row, not a 390px hero`);
+  assert(geometry.art.width>=geometry.row.width-3 && geometry.art.height>=geometry.row.height-3,`${game}: source art fills the approved shared News card`);
+  assert(geometry.copy.left>=geometry.row.left && geometry.copy.right<=geometry.row.right,`${game}: readable copy stays inside the art card`);
+  assert(geometry.row.height>=260 && geometry.row.height<=600,`${game}: summary card stays bounded rather than expanding into a text wall`);
+  assert.notEqual(geometry.shade,'none',`${game}: source art has its readable safety shade`);
+  assert.match(geometry.summary,/dated story from a verified fixture source/,`${game}: source-backed brief remains visible`);
   for(const text of geometry.text)assert(text.width>0 && text.height>0 && !text.clipped && text.opacity===1 && text.fontSize>=10,`${game}: readable naturally wrapping editorial text: ${JSON.stringify(text)}`);
 }
 async function assertDailyIdentity(page, game, card = heroes[game], date = TODAY, { compact = true, allowOversizeWord = false } = {}) {

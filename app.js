@@ -1166,7 +1166,7 @@ function installNavigation(intent) {
     const old=activeEntry, changedGame=old && old.game!==intent.game;
     const origin=entryOrigins.get(old?.entryId), returningParent=!changedGame && origin?.game===intent.game && origin.route===intent.hash ? origin : null;
     if(changedGame)clearGameContext();
-    else if(S.ui.sheetCtx?.type === "printing-picker")closeSheet(false);
+    else if(S.ui.sheetCtx?.type === "printing-picker" || (old?.route!==intent.hash && (["matchup","matchup-import"].includes(S.ui.sheetCtx?.type) || sheetTrail.items?.some(item=>item.ctx?.type==="matchup"))))closeSheet(false);
     dismissRulesGuide();
     if(intent.mode === "push") {
       rememberScroll();

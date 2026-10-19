@@ -10,7 +10,7 @@ const cases=Array.isArray(review)?review:review.cases;
 const extra=async(file,source,label)=>({file,source,label,type:file.endsWith('.png')?'image/png':file.endsWith('.webp')?'image/webp':'image/jpeg',bytes:await readFile(new URL('../'+file,import.meta.url))});
 const samples={
  mtg:[{...pinned.mtg,label:'miara-dark'},await extra('review/assets/miara-566.jpg',cases.find(c=>c.key==='mtg-miara-etched').source,'miara-detailed'),await extra('test-fixtures/finish-effects/chishiro-nec77.png','https://media.wizards.com/2021/neo/en_3yF31xnXEM.png','chishiro-complex')],
- ptcg:[await extra('tests/fixtures/pokemon-promos/SWSH032.webp','https://assets.tcgdex.net/en/swsh/swshp/SWSH032/high.webp','wooloo-bright'),{...pinned.ptcg,label:'zapdos-dark'},await extra('tests/fixtures/pokemon-promos/SWSH220.webp','https://assets.tcgdex.net/en/swsh/swshp/SWSH220/high.webp','rowlet-detailed')],
+ ptcg:[await extra('tests/fixtures/pokemon-promos/SWSH032.webp','https://assets.tcgdex.net/en/swsh/swshp/SWSH032/high.webp','wooloo-bright'),{...pinned.ptcg,label:'zapdos-dark'},await extra('tests/fixtures/pokemon-promos/SWSH220.webp','https://assets.tcgdex.net/en/swsh/swshp/SWSH220/high.webp','rowlet-detailed'),await extra('review/assets/charizard-vmax.png',cases.find(c=>c.key==='pk-charizard-vmax').source,'charizard-full-art')],
  ygo:[{...pinned.ygo,label:'blue-eyes-complex'},await extra('test-fixtures/finish-effects/psy-framelord-omega.jpg','https://images.ygoprodeck.com/images/cards/74586817.jpg','omega-dark'),await extra('test-fixtures/finish-effects/dracotail-lukias.jpg','https://images.ygoprodeck.com/images/cards/75003700.jpg','lukias-detailed')]
 };
 const longNames={mtg:'Alpha fixture • The Archivist of Forgotten Worlds, Keeper of the Unwritten Chronicles',ptcg:'Alpha fixture • Professor’s Research (Professor Oak’s Celebrations Research Archive)',ygo:'Alpha fixture • The Celestial Dragon of Ancient Worlds and the Endless Twilight'};
@@ -40,7 +40,7 @@ async function ambientDifference(page){
  },{a:before.toString('base64'),b:after.toString('base64'),r:region});
 }
 for(const [game,rows] of Object.entries(samples))for(const sample of rows){assert(sample.bytes.length>5000,game+' pinned art bytes');assert.match(sample.source,/^https:\/\//);sample.sha256=createHash('sha256').update(sample.bytes).digest('hex');}
-if(process.argv.includes('--validate-fixtures')){console.log('PASS: nine pinned same-game public-art fixtures, synthetic long title data and hosted-only Light glass matrix. No browser or network started.');process.exit(0);}
+if(process.argv.includes('--validate-fixtures')){console.log('PASS: ten pinned same-game public-art fixtures, synthetic long title data and hosted-only Light glass matrix. No browser or network started.');process.exit(0);}
 if(process.env.GITHUB_ACTIONS!=='true')throw Error('Browser execution is restricted to hosted GitHub Actions.');
 const {chromium}=await import('playwright');
 const server=await startServer(),browser=await chromium.launch({headless:true});
@@ -151,7 +151,7 @@ try{
      assert.equal(header.motion,'none','reduced motion disables banner animation');if(glass)assert.equal(header.ambient.transition,'0s','reduced motion disables ambient transitions');
      if(width!==320||sampleIndex===0)await capture(page,`synthetic-search-theme-light-${game}-${sample.label}-${glass?'glass':'solid'}-${width}`);
      if([390,1440].includes(width)&&sampleIndex===0){await page.evaluate(async()=>(await import('/settings-theme.js')).applyTheme('dark',{persist:false}));await capture(page,`synthetic-search-theme-dark-${game}-${glass?'glass':'solid'}-${width}`);await page.evaluate(async()=>(await import('/settings-theme.js')).applyTheme('light',{persist:false}));}
-     if(width===390&&sampleIndex===0){const pixels=await ambientDifference(page);headerChecks.push({game,glass,pixels});if(glass)assert(pixels.meanDifference>=1&&pixels.changedFraction>=.05,'real daily-card art measurably shows through lower content: '+JSON.stringify(pixels));else assert(pixels.meanDifference<.01,'solid mode blocks the ambient layer');}
+     if(width===390&&(sampleIndex===0||game==='ptcg')){const pixels=await ambientDifference(page);headerChecks.push({game,glass,pixels});if(glass)assert(pixels.meanDifference>=1&&pixels.changedFraction>=.05,'real daily-card art measurably shows through lower content: '+JSON.stringify(pixels));else assert(pixels.meanDifference<.01,'solid mode blocks the ambient layer');}
     }
    }
    // OS reduced transparency must win over the user's enabled glass setting.
