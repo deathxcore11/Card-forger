@@ -1,6 +1,7 @@
 // Real Collection DOM, synthetic 600x825 art: geometry evidence, not physical-foil fidelity.
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
+import {CELEBRATIONS_RAW} from './celebrations-fixtures.mjs';
 import {startServer,openApp,closeSheet,capture,saveReport,noOverflow,RESULTS} from './detail-rules-fixtures.mjs';
 if(process.env.GITHUB_ACTIONS!=='true')throw Error('Browser QA runs only in hosted GitHub Actions.');
 const {chromium}=await import('playwright');
@@ -9,7 +10,7 @@ try{for(const width of [320,390,768,1440]){
  const app=await openApp(browser,server.base,{game:'ptcg',width,isMobile:true}),{page}=app;
  try{
   await page.route(server.base+'/tests/shape-600x825.svg',r=>r.fulfill({status:200,contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="600" height="825"><rect width="600" height="825" rx="24" fill="#ffe14d"/><rect x="48" y="81" width="504" height="310" fill="#315876"/><circle cx="300" cy="225" r="95" fill="#bb9274"/><text x="48" y="480" font-size="24">SYNTHETIC GEOMETRY FIXTURE</text></svg>'}));
-  await page.evaluate(async url=>{const T=window.__uiTestTcg,S=window.__uiTestState,{CELEBRATIONS_RAW}=await import('/tests/celebrations-fixtures.mjs'),{normalizePtcg}=await import('/ptcg.js'),c={...normalizePtcg(CELEBRATIONS_RAW[9]),printPriceSchema:1};c.image=url;c.imageLarge=url;T.cache.ptcg[c.id]=c;const watched=JSON.parse(localStorage.getItem('cardstashy-watch-sent-v1')||'{}');watched['ptcg:'+c.id]=Date.now();localStorage.setItem('cardstashy-watch-sent-v1',JSON.stringify(watched));Object.assign(S.state.tcg.ptcg.collection.find(e=>e.id==='lot-ptcg-0'),{cardId:c.id,name:c.name,key:'id:'+c.id,printing:'cel25',number:'10',variant:'holofoil',productId:250308});},server.base+'/tests/shape-600x825.svg');
+  await page.evaluate(async ({url,raw})=>{const T=window.__uiTestTcg,S=window.__uiTestState,{normalizePtcg}=await import('/ptcg.js'),c={...normalizePtcg(raw),printPriceSchema:1};c.image=url;c.imageLarge=url;T.cache.ptcg[c.id]=c;const watched=JSON.parse(localStorage.getItem('cardstashy-watch-sent-v1')||'{}');watched['ptcg:'+c.id]=Date.now();localStorage.setItem('cardstashy-watch-sent-v1',JSON.stringify(watched));Object.assign(S.state.tcg.ptcg.collection.find(e=>e.id==='lot-ptcg-0'),{cardId:c.id,name:c.name,key:'id:'+c.id,printing:'cel25',number:'10',variant:'holofoil',productId:250308});},{url:server.base+'/tests/shape-600x825.svg',raw:CELEBRATIONS_RAW[9]});
   const galleryButton=page.locator('#content [data-act="viewSave"][data-mode="gallery"]');await galleryButton.focus();await galleryButton.press('Enter');
   await page.waitForFunction(()=>document.querySelector('#content.view-gallery .lot-art[data-entry="lot-ptcg-0"]'));
   await noOverflow(page,'#content','Pokémon surface gallery settled',true);
