@@ -49,9 +49,51 @@ async function seed(page,game,artUrl){
  return f.expected;
 },{game,artUrl,f});}
 async function layout(page,label){await noOverflow(page,'#content',label,true);return page.evaluate(()=>{
- const box=n=>{const r=n.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom};},page=document.querySelector('.collection-value-page'),chart=page.querySelector('.value-chart svg'),amount=page.querySelector('[data-value-amount]'),refresh=page.querySelector('[data-value-refresh]');
+ const box=n=>{const r=n.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom};},page=document.querySelector('.collection-value-page'),chart=page.querySelector('.value-chart > svg[role="img"]'),amount=page.querySelector('[data-value-amount]'),refresh=page.querySelector('[data-value-refresh]');
  return {viewport:innerWidth,root:box(page),chart:box(chart),amount:box(amount),refresh:box(refresh),groups:[...page.querySelectorAll('[data-value-group]')].map(n=>({key:n.dataset.valueGroup,text:n.textContent,box:box(n)})),lots:[...page.querySelectorAll('.value-lot')].map(n=>{const img=n.querySelector('img'),css=img&&getComputedStyle(img),buttonCSS=getComputedStyle(n);return {entry:n.dataset.entry,text:n.innerText,box:box(n),buttonStyle:{appearance:buttonCSS.appearance,background:buttonCSS.backgroundColor,borderLeft:buttonCSS.borderLeftStyle,borderRight:buttonCSS.borderRightStyle},image:img?{complete:img.complete,naturalWidth:img.naturalWidth,src:img.currentSrc,fit:css.objectFit,...box(img)}:null};})};
  });}
+async function trendRegression(page,game){
+ const checks=[];
+ for(const [direction,totals,text] of [['down',[.04,.04,.04,0],'↓ −$0.04 (−100.0%)'],['up',[0,0,.02,.04],'↑ +$0.04'],['flat',[0,0,0,0],'↔ $0.00']]){
+  // Only this isolated synthetic fixture is changed. The current collection
+  // agrees with the last observation; down/flat reproduce zero owned copies.
+  await page.evaluate(({game,totals})=>{
+   const S=window.__uiTestState,side=game==='mtg'?S.state:S.state.tcg[game],current=totals.at(-1),today=new Date().toISOString().slice(0,10),day=Date.parse(today+'T00:00:00Z');
+   side.collection=current?[{...structuredClone(window.__valueFixture.collection.at(-1)),qty:1,manualValue:current,condition:'Near Mint',manualValueCondition:'Near Mint'}]:[];
+   side.valueHistory=totals.map((total,i)=>({date:new Date(day-(3-i)*86400000).toISOString().slice(0,10),total,copies:total>0?1:0,unpriced:0,currency:'USD',basis:'exact-owned-v1'}));
+  },{game,totals});
+  await render(page);const before=await snapshot(page);
+  assert.equal(await page.locator('[data-value-amount]').innerText(),totals.at(-1)?'$0.04':'$0.00');
+  assert.match(await page.locator('.value-overview').innerText(),totals.at(-1)?/1 copy\b/:/0 copies/);
+  assert.match(await page.locator('.value-section-head').first().innerText(),/4 saved snapshots/);
+  assert.equal(await page.locator('.value-chart-point.complete').count(),4);
+  // Exercise the real decorator explicitly, including its repeated-call path.
+  // A raw renderer string alone would miss the original down-arrow regression.
+  const decorated=await page.evaluate(async game=>{
+   const {decorateGlyphs}=await import('/icons.js'),root=document.querySelector('.collection-value-page');
+   decorateGlyphs(root,game);const once=root.innerHTML;decorateGlyphs(root,game);return {stable:root.innerHTML===once};
+  },game);assert(decorated.stable,'real icon decoration is idempotent');
+  assert.equal(await page.locator(`.value-chart-change.${direction} strong.no-ic`).innerText(),text);
+  assert.equal(await page.locator('.value-chart-change svg, .value-chart-change .gl').count(),0,'financial arrows never become download/action icons');
+  for(const theme of ['dark','light']){
+   await page.evaluate(async theme=>(await import('/settings-theme.js')).applyTheme(theme,{persist:false}),theme);
+   for(const width of [320,390,1440]){
+    await page.setViewportSize({width,height:1000});await frames(page);const geometry=await layout(page,`${game} ${direction} ${theme} ${width}`);
+    const trend=await page.locator('.value-chart-change').evaluate(n=>{const r=n.getBoundingClientRect(),strong=n.querySelector('strong'),s=strong.getBoundingClientRect();return {height:r.height,width:r.width,fontSize:parseFloat(getComputedStyle(strong).fontSize),labelHeight:s.height,labelWidth:s.width,text:n.innerText};});
+    assert(trend.height<=56,`trend stays compact: ${JSON.stringify({game,direction,theme,width,trend})}`);
+    assert(trend.labelHeight<=trend.fontSize*2,'trend label stays text-sized, not a giant replacement icon');
+    assert(geometry.chart.width>200&&geometry.chart.height>50,'the actual chart retains its responsive size');
+    assert(Math.abs(geometry.chart.width-trend.width)<2,'plot remains panel-wide independently of trend text');
+    assert.equal(await snapshot(page),before,'decoration, theme and viewport changes preserve owned data and every recorded observation');
+    checks.push({direction,theme,width,trend,chart:geometry.chart,trendSVGs:0,snapshots:4,ownedDataUnchanged:true});
+    if(width!==390)await capture(page,`value-page-${game}-trend-${direction}-${theme}-${width}`);
+   }
+  }
+ }
+ await page.evaluate(async()=>(await import('/settings-theme.js')).applyTheme('dark',{persist:false}));
+ await page.setViewportSize({width:390,height:1000});await frames(page);
+ return checks;
+}
 try{
  for(const game of GAMES){
   let app;
@@ -89,6 +131,7 @@ try{
    assert.equal(await page.locator('[data-value-amount]').innerText(),'$0.00');assert.match(await page.locator('.value-overview').innerText(),/1 copy\b/);assert.equal(await page.locator('.value-lot').count(),1);await capture(page,`value-page-${game}-custom-zero`);
    await page.evaluate(game=>{const S=window.__uiTestState;(game==='mtg'?S.state:S.state.tcg[game]).collection=[];},game);await seedObservation(page,game);await render(page);await waitCurrent(page,game,0,0,0);
    assert.equal(await page.locator('.value-chart').count(),1);assert.equal(await page.locator('[data-value-amount]').innerText(),'$0.00');assert.match(await page.locator('.value-overview').innerText(),/0 copies/);assert.doesNotMatch(await page.locator('#content').innerText(),/No value to track yet/);await capture(page,`value-page-${game}-empty-history`);
+   report.push({game,phase:'decorated-negative-positive-flat-trends',checks:await trendRegression(page,game)});
    // First-day display has exactly the recorded current observation, no backfill.
    await page.evaluate(game=>{const S=window.__uiTestState,side=game==='mtg'?S.state:S.state.tcg[game];side.collection=[structuredClone(window.__valueFixture.collection[1])];side.valueHistory=[];},game);await seedObservation(page,game);await render(page);await waitCurrent(page,game,1,0,12.34);
    assert.equal(await page.locator('.value-chart-point').count(),1);assert.equal(await page.locator('.value-chart-line').count(),0);assert.match(await page.locator('.value-chart').innerText(),/No earlier values have been estimated/);assert.equal((await todaySnapshot(page,game)).total,12.34);await capture(page,`value-page-${game}-first-day`);

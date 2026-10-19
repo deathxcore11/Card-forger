@@ -39,6 +39,15 @@ try {
   const free=valuePageOverview({game,value:{total:0,copies:1,unpriced:0},rows:[],history:[valueSnapshot('2026-10-18',0,{copies:1})],now:VALUE_NOW});assert.match(free,/data-value-amount>\$0\.00</);assert.match(free,/1 copy</);assert.doesNotMatch(free,/1 copies/);
   // Removing all holdings leaves the historical graph available, not a blank-start screen.
   S.state=structuredClone(state);const emptySide=game==='mtg'?S.state:S.state.tcg[game];emptySide.collection=[];const empty=game==='mtg'?magicCollection():tcgCollection();assert.match(empty,/value-chart/);assert.match(empty,/0 copies/);assert.doesNotMatch(empty,/No value to track yet/);
+  // All three actual collection renderers retain four real observations and
+  // exclude financial arrows from the action-icon/download decorator.
+  for(const [direction,totals,label] of [['down',[.04,.04,.04,0],'↓ −$0.04 (−100.0%)'],['up',[0,0,.02,.04],'↑ +$0.04'],['flat',[0,0,0,0],'↔ $0.00']]){
+   emptySide.valueHistory=totals.map((total,i)=>valueSnapshot(`2026-10-${15+i}`,total,{copies:total>0?1:0}));
+   const trendBefore=JSON.stringify(S.state),trend=game==='mtg'?magicCollection():tcgCollection();
+   assert(trend.includes(`<p class="value-chart-change ${direction}"><strong class="no-ic">${label}</strong>`),`${game} ${direction}: plain trend arrow, not an action icon`);
+   assert.match(trend,/4 saved snapshots/);assert.equal((trend.match(/class="value-chart-point complete"/g)||[]).length,4);assert.doesNotMatch(trend,/NaN|Infinity/);
+   assert.equal(JSON.stringify(S.state),trendBefore,`${game} ${direction}: rendering preserves holdings and all four snapshots`);assert.equal(writes,0);
+  }
  }
  const colorRow=(card,unit=1,qty=1)=>({entry:{qty},card,unit});
  const eirdu={name:'Eirdu, Carrier of Dawn // Isilu, Carrier of Twilight',layout:'transform',color_identity:['W','B'],card_faces:[{colors:['W']},{colors:['B']}]};
@@ -65,6 +74,10 @@ try {
  const escaped=valueTopLots({game:'mtg',rows:[{entry:{id:'bad"<id',name:'<script>unsafe</script>',qty:1},card:null,unit:1.23}]});assert.doesNotMatch(escaped,/<script>/);assert.match(escaped,/&lt;script&gt;/);assert.match(escaped,/data-entry="bad&quot;&lt;id"/);assert.match(escaped,/Artwork unavailable/);
  assert.notEqual(valuePageAttrs('mtg'),valuePageAttrs('ptcg'));
  const style=fs.readFileSync('style.css','utf8');assert(style.startsWith('@import url("./value-page.css");'));
+ const valueStyle=fs.readFileSync('value-page.css','utf8');
+ assert.match(valueStyle,/\.value-chart\s*>\s*svg\[role="img"\]\s*\{[^}]*width:100%;[^}]*height:auto;/,'only the plot receives panel-wide SVG sizing');
+ assert.doesNotMatch(valueStyle,/\.value-chart\s+svg\s*\{/,'nested trend icons must not inherit plot dimensions');
+ assert.match(valueStyle,/\.value-chart-change\s+svg\s*\{[^}]*width:1\.2em;[^}]*height:1\.2em;/,'future nested trend icons retain compact square fallback sizing');
  console.log('PASS: actual all-game Value render purity; exact owned-lot actions/art, cents, custom zero vs unknown; single-bucket composition; future/legacy/coverage-safe real history with dated gaps, first point, preserved empty-collection history and game identity.');
 } finally {
  S.state=saved.state;S.catalog=saved.catalog;S.ui.collTab=saved.collTab;

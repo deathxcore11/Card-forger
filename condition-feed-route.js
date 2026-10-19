@@ -1,4 +1,6 @@
 // Optional server-only condition feed. No key is shipped with the static app.
+import {pokemonDetailedVariant} from './pokemon-variant-options.js';
+import {pokemonPromoEvidence} from './pokemon-promo-evidence.js';
 import {pokemonPriceRoute} from './pokemon-prices.js';
 import {rarityKey,ygoPriceRoute} from './ygo-prices.js';
 import {SUPABASE} from './config.js';
@@ -41,8 +43,9 @@ export function normalizeConditionVariants(body,product,printings,language='Engl
 // Some Pokémon products encode the edition in the printing label (for example
 // Unlimited Holofoil), while TCGdex calls that same finish simply holofoil.
 // Derive aliases from the exact provider variant, never from the card name.
-export function pokemonConditionPrintings(v,{bare=false}={}){
+export function pokemonConditionPrintings(v,{bare=false,cardId=''}={}){
  const patternQuote=v?.pricing?.tcgplayer?.holofoil;
+ if(v?.foil==='cosmos'&&v.type==='holo'&&!v.stamp?.length&&!v.subtype&&(!v.size||v.size==='standard')&&v.thirdParty?.tcgplayer&&(String(patternQuote?.productId)===String(v.thirdParty.tcgplayer)||pokemonPromoEvidence(cardId,v.thirdParty.tcgplayer)?.foil==='cosmos'))return ['Holofoil'];
  if(v?.foil)return v.type==='reverse'&&['pokeball','masterball'].includes(v.foil)&&v.thirdParty?.tcgplayer&&String(patternQuote?.productId)===String(v.thirdParty.tcgplayer)?['Holofoil']:[];
  const finish={normal:'Normal',holo:'Holofoil',reverse:'Reverse Holofoil'}[v?.type];if(!finish)return [];
  const stamps=Array.isArray(v.stamp)?v.stamp:[v.stamp],edition=stamps.includes('1st-edition')?'1st Edition':['unlimited','shadowless'].includes(v.subtype)?'Unlimited':'';
@@ -90,9 +93,9 @@ export async function conditionFeedRoute(url,env,ctx,fetchImpl=fetch,{request}={
     const response=await pokemonPriceRoute(new URL(url.origin+'/api/prices/pokemon?id='+encodeURIComponent(id)),ctx,fetchImpl),d=await response.json();
     const exact=(d.quotes||[]).filter(q=>'product:'+q.productId+':'+q.subTypeName.toLowerCase().replace(/ /g,'-')===variant);
     if(exact.length===1){product=exact[0].productId;printings=[exact[0].subTypeName];if(/^1st Edition /.test(exact[0].subTypeName))printings.push('1st Edition');}
-   }else if(variant.startsWith('detail:')){
-    const v=c.variants_detailed?.find(v=>'detail:'+v.variantId===variant);product=v?.thirdParty?.tcgplayer;
-    if(v)printings=pokemonConditionPrintings(v,{bare:(c.variants_detailed||[]).filter(d=>String(d.thirdParty?.tcgplayer)===String(product)).length===1});
+   }else if(pokemonDetailedVariant(c,variant)||variant.startsWith('detail:')){
+    const v=pokemonDetailedVariant(c,variant);product=v?.thirdParty?.tcgplayer||v?.pricing?.tcgplayer?.[variant]?.productId||v&&!v.foil&&!v.subtype&&!v.stamp?.length&&(!v.size||v.size==='standard')&&c.pricing?.tcgplayer?.[variant]?.productId;
+    if(v)printings=pokemonConditionPrintings(v,{cardId:id,bare:(c.variants_detailed||[]).filter(d=>String(d.thirdParty?.tcgplayer)===String(product)).length===1});
    }else{
     const v=c.pricing?.tcgplayer?.[variant];product=v?.productId;
     printings=({'normal':['Normal'],'holofoil':['Holofoil'],'reverse-holofoil':['Reverse Holofoil'],'1st-edition':['1st Edition'],'1st-edition-holofoil':['1st Edition Holofoil','1st Edition'],'unlimited':['Unlimited'],'unlimited-holofoil':['Unlimited Holofoil','Unlimited']})[variant]||[];
@@ -102,7 +105,7 @@ export async function conditionFeedRoute(url,env,ctx,fetchImpl=fetch,{request}={
     if(!product&&candidates.length>1)return empty('unmapped','Choose an exact detailed version; this legacy finish matches multiple variants.');
     if(!product&&candidates.length===1)product=candidates[0].pricing.tcgplayer[variant].productId||candidates[0].thirdParty?.tcgplayer;
     const details=(c.variants_detailed||[]).filter(d=>d.pricing?.tcgplayer?.[variant]&&String(d.pricing.tcgplayer[variant].productId||d.thirdParty?.tcgplayer)===String(product));
-    if(details.length===1){const d=details[0],siblings=(c.variants_detailed||[]).filter(x=>String(x.thirdParty?.tcgplayer)===String(product));printings=pokemonConditionPrintings(d,{bare:siblings.length<=1});}
+    if(details.length===1){const d=details[0],siblings=(c.variants_detailed||[]).filter(x=>String(x.thirdParty?.tcgplayer)===String(product));printings=pokemonConditionPrintings(d,{cardId:id,bare:siblings.length<=1});}
 
    }
    // Recover exact legacy finishes when TCGdex has no product, but the daily catalogue does.
@@ -112,6 +115,7 @@ export async function conditionFeedRoute(url,env,ctx,fetchImpl=fetch,{request}={
     const ids=[...new Set(hits.map(q=>Number(q.productId)))];if(ids.length===1)product=ids[0];
    }
   }
+  if(game==='ptcg'&&url.searchParams.has('productId')&&String(product)!==url.searchParams.get('productId'))return empty('unmapped','Saved product does not match this finish.');
   if(!Number.isInteger(Number(product))||Number(product)<=0||!printings.length)return empty('unmapped','No exact condition product mapping for this version.');
   const lang=url.searchParams.get('language')||'English',language={en:'English',ja:'Japanese',de:'German',fr:'French',es:'Spanish',it:'Italian',pt:'Portuguese',ko:'Korean',zh:'Chinese'}[lang.toLowerCase()]||lang;
   if(!/^[A-Za-z ]{2,30}$/.test(language))return empty('unmapped','Language is not supported.');

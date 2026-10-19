@@ -1,0 +1,94 @@
+{
+  "customListings": 0.0,
+  "shippingCategoryId": 1.0,
+  "duplicate": false,
+  "productLineUrlName": "Pokemon",
+  "productTypeName": "Cards",
+  "productUrlName": "Galarian Ponyta SWSH013",
+  "productTypeId": 1.0,
+  "rarityName": "Promo",
+  "sealed": false,
+  "marketPrice": 13.42,
+  "customAttributes": {
+    "description": "",
+    "attack2": "[1P] Flop (20)",
+    "stage": "Basic",
+    "energyType": [
+      "Psychic"
+    ],
+    "releaseDate": "2019-11-15T00:00:00Z",
+    "number": "SWSH013",
+    "cardType": [
+      "Pokemon"
+    ],
+    "retreatCost": "1",
+    "cardTypeB": "Psychic",
+    "resistance": "F-30",
+    "rarityDbName": "Promo",
+    "weakness": "Dx2",
+    "flavorText": "",
+    "attack1": "[1] Heal Pulse\r\n<br>Heal 30 damage from 1 of your Pokemon.",
+    "hp": "70",
+    "attack3": null,
+    "attack4": null
+  },
+  "lowestPriceWithShipping": 7.0,
+  "productName": "Galarian Ponyta - SWSH013",
+  "setId": 2545.0,
+  "setCode": "SWSD",
+  "productId": 206430.0,
+  "imageCount": 1.0,
+  "score": 2.269513,
+  "setName": "SWSH: Sword & Shield Promo Cards",
+  "sellers": 42.0,
+  "foilOnly": true,
+  "setUrlName": "SWSH Sword and Shield Promo Cards",
+  "sellerListable": true,
+  "productLineId": 3.0,
+  "productStatusId": 1.0,
+  "productLineName": "Pokemon",
+  "maxFulfillableQuantity": 255.0,
+  "normalOnly": false,
+  "listings": 46.0,
+  "lowestPrice": 7.0,
+  "medianPrice": null,
+  "formattedAttributes": {
+    "Card Number / Rarity": "SWSH013 / Promo",
+    "Card Type / HP / Stage": "Psychic / 70 / Basic",
+    "Attack 1": "[1] Heal Pulse\r\n<br>Heal 30 damage from 1 of your Pokemon.",
+    "Attack 2": "[1P] Flop (20)",
+    "Weakness / Resistance / Retreat Cost": "Dx2 / F-30 / 1"
+  },
+  "skus": [
+    {
+      "sku": 4286816,
+      "condition": "Near Mint",
+      "variant": "Holofoil",
+      "language": "English"
+    },
+    {
+      "sku": 4286817,
+      "condition": "Lightly Played",
+      "variant": "Holofoil",
+      "language": "English"
+    },
+    {
+      "sku": 4286818,
+      "condition": "Moderately Played",
+      "variant": "Holofoil",
+      "language": "English"
+    },
+    {
+      "sku": 4286819,
+      "condition": "Heavily Played",
+      "variant": "Holofoil",
+      "language": "English"
+    },
+    {
+      "sku": 4286820,
+      "condition": "Damaged",
+      "variant": "Holofoil",
+      "language": "English"
+    }
+  ]
+}

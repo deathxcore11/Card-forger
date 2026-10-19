@@ -58,7 +58,7 @@ import { locationPicker, rememberLocation, chooseLocation } from "./collection-l
 import { captureAuthFields, restoreAuthFields, authFeedback, togglePassword } from "./auth-form.js";
 import { formatUpgrades, applyFormatSwap } from "./format-upgrades.js";
 import { cutToTarget } from "./deck-safety.js";
-import { binderPage, binderMatches, BINDER_COLORS, attachBinderDrag, animateTurn, binderFavorites, coverImages, MAX_FAVORITES } from "./binders.js";
+import { binderPage, binderMatches, BINDER_COLORS, attachBinderDrag, animateTurn, binderFavorites, binderCoverState, coverImages, MAX_FAVORITES } from "./binders.js";
 // CardStashy controller: persistence, routing, sheets and every user action.
 // Screens live in views.js; deck/collection math in core.js, planner.js,
 // strategy.js, deck-flow.js and insights.js.
@@ -1928,9 +1928,9 @@ function binderRows(game, location = null) {
 const binderById = id => (S.state.settings.binders || []).find(b=>b.id===id);
 function showBinder(data,direction="next",keepScroll=false) {
   if(data.sharedItem){const item=data.sharedItem,rows=sharedBinderRows(item);data.page=Math.max(0,Math.min(Math.max(0,Math.ceil(rows.length/9)-1),data.page));openSheet(binderPage(rows,item.title,data.page,direction,{color:item.appearance?.color},{readOnly:true,cardAttrs:r=>`data-act="sharedCard" data-index="${r.index}"`})+sharedBinderValue(item),data,keepScroll?$("#sheetBody").scrollTop:0);return;}
-  const b=binderById(data.binder), rows=b?binderRows(b.game).filter(r=>binderMatches(r,b)):binderRows(data.game,data.location);
+  const b=binderById(data.binder), allRows=b?binderRows(b.game):binderRows(data.game,data.location),rows=b?allRows.filter(r=>binderMatches(r,b)):allRows;
   data.page=Math.max(0,Math.min(Math.max(0,Math.ceil(rows.length/9)-1),data.page));
-  openSheet(binderPage(rows,b?.title || data.location || "Unsorted cards",data.page,direction,b),data,keepScroll?$("#sheetBody").scrollTop:0);
+  openSheet(binderPage(rows,b?.title || data.location || "Unsorted cards",data.page,direction,b,{collectionRows:allRows}),data,keepScroll?$("#sheetBody").scrollTop:0);
 }
 A.openBinder = t => {
   const game=t.dataset.game, b=binderById(t.dataset.binder);
@@ -1984,14 +1984,40 @@ A.removeBinder = async t => {
  closeSheet();render();
 };
 A.featureBinderCard = async t => {
-  const commit=scopedCommit();
-  const data=S.ui.sheetCtx,b=binderById(data?.binder);if(!b)return;
-  const rows=binderRows(b.game).filter(r=>binderMatches(r,b)),id=t.dataset.entry;if(!rows.some(r=>r.entry.id===id))return;
-  const fav=binderFavorites(b),on=fav.includes(id);
-  if(!on&&fav.length>=MAX_FAVORITES)return toast(`A cover shows up to ${MAX_FAVORITES} cards. Unstar one first.`);
-  await commit(st=>{const target=st.settings.binders.find(x=>x.id===b.id);target.favorites=on?fav.filter(x=>x!==id):[...fav,id];target.featured=target.favorites[0]||"";},{rerender:false});
+  const commit=scopedCommit(),screen=navigationStamp();
+  const data=S.ui.sheetCtx,b=binderById(data?.binder);if(data?.type!=="binder"||!b||b.game!==T.game())return;
+  const current=()=>navigationCurrent(screen)&&S.ui.sheetCtx===data;
+  const allRows=binderRows(b.game),rows=allRows.filter(r=>binderMatches(r,b)),id=t.dataset.entry;if(!rows.some(r=>r.entry.id===id))return;
+  const remove=binderCoverState(b,rows,allRows).favorites.includes(id);
+  let plan;
+  const saved=await commit(st=>{const target=st.settings.binders.find(x=>x.id===b.id);target.favorites=plan.next;target.featured=target.favorites[0]||"";return true;},{rerender:false,enrich:false,observeValue:false,guard:st=>{
+    if(!current())return false;
+    const target=st.settings.binders?.find(x=>x.id===b.id&&x.game===b.game);if(!target)return false;
+    const all=binderRows(target.game),matched=all.filter(r=>binderMatches(r,target));if(!matched.some(r=>r.entry.id===id))return false;
+    const {favorites,unavailable,references}=binderCoverState(target,matched,all),on=favorites.includes(id);
+    if(remove!==on)return false; // An earlier queued click already fulfilled this intent.
+    if(!remove&&references.length>=MAX_FAVORITES){toast(unavailable.length?`All ${MAX_FAVORITES} saved cover slots are used, including ${unavailable.length} unavailable. Unstar a card or remove unavailable cover selections first.`:`A cover shows up to ${MAX_FAVORITES} cards. Unstar one first.`);return false;}
+    plan={next:remove?references.filter(x=>x!==id):[...references,id],count:favorites.length+(remove?-1:1)};return true;
+  }});
+  if(!saved||!current())return;
   render();showBinder({...data},"next",true);
-  toast(on?"Removed from the cover.":`On the cover · ${fav.length+1}/${MAX_FAVORITES}`);
+  toast(remove?"Removed from the cover.":`On the cover · ${plan.count}/${MAX_FAVORITES}`);
+};
+A.clearUnavailableBinderFavorites = async t => {
+  const commit=scopedCommit(),screen=navigationStamp(),data=S.ui.sheetCtx,b=binderById(data?.binder);
+  if(data?.type!=="binder"||!b||b.game!==T.game()||t.dataset.binder!==b.id)return;
+  const current=()=>navigationCurrent(screen)&&S.ui.sheetCtx===data;
+  const allRows=binderRows(b.game),rows=allRows.filter(r=>binderMatches(r,b)),{unavailable}=binderCoverState(b,rows,allRows);
+  if(!unavailable.length)return;
+  let remove;
+  const saved=await commit(st=>{const target=st.settings.binders.find(x=>x.id===b.id);target.favorites=binderFavorites(target).filter(id=>!remove.includes(id));target.featured=target.favorites[0]||"";return true;},{rerender:false,enrich:false,observeValue:false,undo:"Removed unavailable cover selections. Your collection is unchanged.",guard:st=>{
+    if(!current())return false;
+    const target=st.settings.binders?.find(x=>x.id===b.id&&x.game===b.game);if(!target)return false;
+    const all=binderRows(target.game),stillUnavailable=binderCoverState(target,all.filter(r=>binderMatches(r,target)),all).unavailable;
+    remove=unavailable.filter(id=>stillUnavailable.includes(id));return remove.length>0;
+  }});
+  if(!saved||!current())return;
+  render();showBinder({...data},"next",true);
 };
 A.collTab = (t) => go("#collection/" + t.dataset.id);
 A.decksTab = (t) => go("#decks/" + t.dataset.id);
@@ -3059,7 +3085,7 @@ const community=createCommunity({account:cloudInfo,request:communityRequest,rere
  openShared:openSharedShowcase,
  showcaseChoices:()=>{
   const result=[];
-  for(const b of S.state.settings.binders||[])result.push({key:'binder:'+b.id,kind:'binder',game:b.game,title:b.title,appearance:{color:b.color,background:b.background,cover:coverImages(binderRows(b.game).filter(r=>binderMatches(r,b)),binderFavorites(b)).map(c=>c.image)},cards:binderRows(b.game).filter(r=>binderMatches(r,b)).map(r=>({id:r.card?.id||r.entry.cardId||r.entry.printingId,name:r.entry.name,qty:r.entry.qty,image:r.image,set:r.card?.set_name||r.card?.set?.name,number:r.card?.collector_number||r.card?.set?.number,version:r.version,referenceUSD:r.card?.prices?.usd??null}))});
+  for(const b of S.state.settings.binders||[])result.push({key:'binder:'+b.id,kind:'binder',game:b.game,title:b.title,appearance:{color:b.color,background:b.background,cover:coverImages(binderRows(b.game).filter(r=>binderMatches(r,b)),binderFavorites(b),binderRows(b.game)).map(c=>c.image)},cards:binderRows(b.game).filter(r=>binderMatches(r,b)).map(r=>({id:r.card?.id||r.entry.cardId||r.entry.printingId,name:r.entry.name,qty:r.entry.qty,image:r.image,set:r.card?.set_name||r.card?.set?.name,number:r.card?.collector_number||r.card?.set?.number,version:r.version,referenceUSD:r.card?.prices?.usd??null}))});
   for(const game of ['mtg','ptcg','ygo'])for(const d of (game==='mtg'?S.state:T.gs(game)).decks){
    const rows=game==='mtg'?[...(d.cards||[]).map(r=>({...r,zone:'main'})),...(d.side||[]).map(r=>({...r,zone:'side'}))]:['main','extra','side'].flatMap(z=>(d.zones?.[z]||[]).map(r=>({...r,zone:z})));
    result.push({key:'deck:'+game+':'+d.id,kind:'deck',game,title:d.name,format:d.format,commander:d.commander,deckSchema:1,appearance:d.boxAppearance,cards:rows.map(r=>{const c=game==='mtg'?meta(r.name):T.cardOf(game,r.cardId);return {id:c?.id||r.cardId,name:c?.name||r.name,qty:r.qty,image:cardImage(c)||c?.image,set:c?.set_name||c?.set?.name,number:c?.collector_number||c?.set?.number,zone:r.zone};})});

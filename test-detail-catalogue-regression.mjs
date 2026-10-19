@@ -74,7 +74,7 @@ assert(collection.indexOf(`data-entry="${saved.id}"`)<collection.indexOf('data-e
 
 // Pokémon edition rows must share the selected Buy resolver, including exact filters.
 S.state.settings.game='ptcg';
-const lugia={...normalizePtcg({id:'neo1-9',name:'Lugia',category:'Pokemon',rarity:'Rare',image:'https://example.invalid/lugia',localId:'9',set:{id:'neo1',name:'Neo Genesis',cardCount:{official:111}},variants:{holo:true},legal:{expanded:false}}),variantSchema:11,priceFallbackSchema:3,fetchedAt:new Date().toISOString(),prices:{usd:20},variants:[{key:'holofoil',label:'Holofoil',usd:20,productId:86903},{key:'1st-edition-holofoil',label:'First Edition Holofoil',usd:100,productId:86903}]};
+const lugia={...normalizePtcg({id:'neo1-9',name:'Lugia',category:'Pokemon',rarity:'Rare',image:'https://example.invalid/lugia',localId:'9',set:{id:'neo1',name:'Neo Genesis',cardCount:{official:111}},variants:{holo:true},legal:{expanded:false}}),variantSchema:12,priceFallbackSchema:3,fetchedAt:new Date().toISOString(),prices:{usd:20},variants:[{key:'holofoil',label:'Holofoil',usd:20,productId:86903},{key:'1st-edition-holofoil',label:'First Edition Holofoil',usd:100,productId:86903}]};
 ui('ptcg').sets.list=[{id:'neo1',name:'Neo Genesis',count:111},{id:'cel25',name:'Celebrations',count:25}];cache.ptcg[lugia.id]=lugia;
 for(const scopedFinish of ['', 'holofoil','1st-edition-holofoil']){
  const ctx={type:'tcard',game:'ptcg',id:lugia.id,...(scopedFinish?{setId:'neo1',setVariant:scopedFinish,priceFinish:scopedFinish}:{})};

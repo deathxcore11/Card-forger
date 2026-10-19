@@ -1,3 +1,4 @@
+import {pokemonVariantChoices} from './pokemon-variant-options.js';
 import {ygoRarity} from './ygo-identity.js';
 import {esc} from './ui.js';
 import {pkCatalogueSymbolSources} from './emblems.js';
@@ -38,7 +39,7 @@ export function pokemonSetFinish(variant){
  const label=String(variant.label||'').trim();return label&&!label.startsWith('detail:')?'label:'+label:'';
 }
 export function setVariantKey(card,finish){
- if(!finish)return '';const matches=(card.variants||[]).filter(v=>pokemonSetFinish(v)===finish);
+ if(!finish)return '';const matches=pokemonVariantChoices(card).filter(v=>pokemonSetFinish(v)===finish);
  return matches.length===1?matches[0].key:'';
 }
 export function setCardFields(card, game) {
@@ -47,7 +48,7 @@ export function setCardFields(card, game) {
   number:game==='mtg'?card.collector_number||'':game==='ptcg'?card.set?.number||'':values(printings.map(p=>String(p.code||'').split('-').slice(1).join('-'))).length===1?String(printings[0]?.code||'').split('-').slice(1).join('-'):'',
   numbers:values(game==='ygo'?printings.map(p=>p.code):[game==='mtg'?card.collector_number:card.set?.number]),
   rarities:values(game==='ygo'?(single?[single.rarity]:printings.map(p=>p.rarity)).map(ygoRarity):[card.rarity]),
-  finishes:values(game==='mtg'?card.finishes||[]:game==='ptcg'?(card.variants||[]).map(pokemonSetFinish):printings.map(p=>p.finish)),
+  finishes:values(game==='mtg'?card.finishes||[]:game==='ptcg'?pokemonVariantChoices(card).map(pokemonSetFinish):printings.map(p=>p.finish)),
   price:game==='ygo'&&card.setBrowseReference?card.setBrowseReference.low:context?context.price:card.prices?.usd??null };
 }
 // Only offer facets that the actual returned cards can substantiate.

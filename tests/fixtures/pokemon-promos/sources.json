@@ -1,0 +1,242 @@
+[
+  {
+    "file": "fixtures/SWSH001.json",
+    "source": "https://api.tcgdex.net/v2/en/cards/swshp-SWSH001",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "45c4b32992cadf9248965da0bf1a939a631d30f129949899f283ac7ecad2c334",
+    "public": true
+  },
+  {
+    "file": "fixtures/SWSH004.json",
+    "source": "https://api.tcgdex.net/v2/en/cards/swshp-SWSH004",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "437be5dcafddd3552025444d1f819c38ed155b5d5754360626eb6faecd94446a",
+    "public": true
+  },
+  {
+    "file": "fixtures/SWSH005.json",
+    "source": "https://api.tcgdex.net/v2/en/cards/swshp-SWSH005",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "d123fcada48d630f230a62c367529647c9eef0e56c8c2520fc690a7008a47ba9",
+    "public": true
+  },
+  {
+    "file": "fixtures/SWSH012.json",
+    "source": "https://api.tcgdex.net/v2/en/cards/swshp-SWSH012",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "839b4b7fd6474ecffe2b29784fe9a589899604152261f1a9700001023fcf34a2",
+    "public": true
+  },
+  {
+    "file": "fixtures/SWSH012.webp",
+    "source": "https://assets.tcgdex.net/en/swsh/swshp/SWSH012/high.webp",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "6f7b1cd0c6387d8838e3705959c6a0b861e52db573b737ed7f2bc282fa68e014",
+    "public": true
+  },
+  {
+    "file": "fixtures/SWSH013.json",
+    "source": "https://api.tcgdex.net/v2/en/cards/swshp-SWSH013",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "43c87b30b162f86ec70cab6de48dee3e61226f6dc4041099bc7ae1eb4eda0499",
+    "public": true
+  },
+  {
+    "file": "fixtures/SWSH013.webp",
+    "source": "https://assets.tcgdex.net/en/swsh/swshp/SWSH013/high.webp",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "d30ff8652c8639a7caaca1e5a286cd2af4ab3d99977942973869b668e1d4fa2e",
+    "public": true
+  },
+  {
+    "file": "fixtures/SWSH023.json",
+    "source": "https://api.tcgdex.net/v2/en/cards/swshp-SWSH023",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "846e3c3224273e88916a082da18868b6fcb6b2120d7e108377ef3311bea10074",
+    "public": true
+  },
+  {
+    "file": "fixtures/SWSH032.json",
+    "source": "https://api.tcgdex.net/v2/en/cards/swshp-SWSH032",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "c9164b220175bef771fa8e418e9fdbbf9000e6ac6f39fc7a9710985e30b5db6e",
+    "public": true
+  },
+  {
+    "file": "fixtures/SWSH032.webp",
+    "source": "https://assets.tcgdex.net/en/swsh/swshp/SWSH032/high.webp",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "a6525ade5b152cea940e78982b20f44de2eeb0af02d7e5c473f6fe7682084532",
+    "public": true
+  },
+  {
+    "file": "fixtures/SWSH034.json",
+    "source": "https://api.tcgdex.net/v2/en/cards/swshp-SWSH034",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "553dcabc8a5e87cf5ea6d19ce44a21db742002d0c967abccfeb384fc4f83735d",
+    "public": true
+  },
+  {
+    "file": "fixtures/SWSH034.webp",
+    "source": "https://assets.tcgdex.net/en/swsh/swshp/SWSH034/high.webp",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "f57cf6a80dd11999532fb2f950ef8a1102891172034bdb45fce08215c20c2881",
+    "public": true
+  },
+  {
+    "file": "fixtures/SWSH040.json",
+    "source": "https://api.tcgdex.net/v2/en/cards/swshp-SWSH040",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "3b477f1af05faab26c5eeb14914595eec3646b62638298ebb840e954f0571b4f",
+    "public": true
+  },
+  {
+    "file": "fixtures/SWSH040.webp",
+    "source": "https://assets.tcgdex.net/en/swsh/swshp/SWSH040/high.webp",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "1cf2b384d8e82e6e61372d076337949df6f635ac21aa000563ed3595c2180bbf",
+    "public": true
+  },
+  {
+    "file": "fixtures/SWSH044.json",
+    "source": "https://api.tcgdex.net/v2/en/cards/swshp-SWSH044",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "f10f07ad87b44e6e9eead1b6795cdea342abdfb8d059b14dde22b4e5013d49dd",
+    "public": true
+  },
+  {
+    "file": "fixtures/SWSH060.json",
+    "source": "https://api.tcgdex.net/v2/en/cards/swshp-SWSH060",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "8fb8e1722994ad83e33fee80081f1241413df28a37f22afa3e948baeab88ac52",
+    "public": true
+  },
+  {
+    "file": "fixtures/SWSH060.webp",
+    "source": "https://assets.tcgdex.net/en/swsh/swshp/SWSH060/high.webp",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "4bf1a348e7db5a4dff7c7d04ad0b41e8287c52de1cc67504b88059c6d20e1c75",
+    "public": true
+  },
+  {
+    "file": "fixtures/SWSH074.json",
+    "source": "https://api.tcgdex.net/v2/en/cards/swshp-SWSH074",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "38da2087fe5698a5b5b157d7f3dfac8e5a459476ec8eba612b97ba9ff16c25dd",
+    "public": true
+  },
+  {
+    "file": "fixtures/SWSH132.json",
+    "source": "https://api.tcgdex.net/v2/en/cards/swshp-SWSH132",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "0e1590174bf7b06748d297f91b4e91346036a338bba396b32b21219d4f196690",
+    "public": true
+  },
+  {
+    "file": "fixtures/SWSH206.json",
+    "source": "https://api.tcgdex.net/v2/en/cards/swshp-SWSH206",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "03b24fb18c8ab4e47cb058b3f53f7ed70937092474402f85590a6664a04a3962",
+    "public": true
+  },
+  {
+    "file": "fixtures/SWSH220.json",
+    "source": "https://api.tcgdex.net/v2/en/cards/swshp-SWSH220",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "1047fd1f216b0ada21c4743bde6338e3ec9f5229c0770520946dd682a419a3c1",
+    "public": true
+  },
+  {
+    "file": "fixtures/SWSH220.webp",
+    "source": "https://assets.tcgdex.net/en/swsh/swshp/SWSH220/high.webp",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "8cc95bd523caedb3bb8e35a5842a4dfc85d0d4f503877002d9d8f88bd19d7180",
+    "public": true
+  },
+  {
+    "file": "fixtures/SWSH251.json",
+    "source": "https://api.tcgdex.net/v2/en/cards/swshp-SWSH251",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "e44751ce124b412e097dc833df2e5e7adda0301fe819ed6a6c0acf31c27c2aaa",
+    "public": true
+  },
+  {
+    "file": "fixtures/product-206430.json",
+    "source": "https://mp-search-api.tcgplayer.com/v2/product/206430/details",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "2ecb6923f56b6b84eaf274bfb7b9b639f5f2865b5a3abdd595b68f13b3d7da33",
+    "public": true
+  },
+  {
+    "file": "fixtures/product-232766.json",
+    "source": "https://mp-search-api.tcgplayer.com/v2/product/232766/details",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "a78d992a8768a17f20ced231264c5b782deef94b55bf0d255ccabd540e702282",
+    "public": true
+  },
+  {
+    "file": "fixtures/product-232767.json",
+    "source": "https://mp-search-api.tcgplayer.com/v2/product/232767/details",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "11400a5c753dcb08c5030c786ea1b5cfe7c5416a8c8a472be986bffc4aba46cf",
+    "public": true
+  },
+  {
+    "file": "fixtures/product-232768.json",
+    "source": "https://mp-search-api.tcgplayer.com/v2/product/232768/details",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "5733a35aab30e5206131a251ef379acbe55b82a484b4c8b6c2fd61ec202177e1",
+    "public": true
+  },
+  {
+    "file": "fixtures/product-490300.json",
+    "source": "https://mp-search-api.tcgplayer.com/v2/product/490300/details",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "f036694d818958f731b5703a6ee208469a263c936987fffcfa75b83201363df0",
+    "public": true
+  },
+  {
+    "file": "fixtures/swsh3-161.json",
+    "source": "https://api.tcgdex.net/v2/en/cards/swsh3-161",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "1b79187a6f0bc62dce76fcaf47bed7948abde8ea457274e9bc7d043ca90adbcb",
+    "public": true
+  },
+  {
+    "file": "fixtures/swsh3-161.webp",
+    "source": "https://assets.tcgdex.net/en/swsh/swsh3/161/high.webp",
+    "retrieved": "2026-10-19T00:33:00Z",
+    "retrieved_note": "Audit window 00:33-00:36 UTC; timestamp is approximate",
+    "sha256": "0f43edeb1cbb64b8301f9206546fa67c94f8f93f796a2f6c70be850988026572",
+    "public": true
+  }
+]

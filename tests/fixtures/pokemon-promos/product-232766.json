@@ -1,0 +1,94 @@
+{
+  "customListings": 0.0,
+  "shippingCategoryId": 1.0,
+  "duplicate": false,
+  "productLineUrlName": "Pokemon",
+  "productTypeName": "Cards",
+  "productUrlName": "Morpeko SWSH012 General Mills Promo",
+  "productTypeId": 1.0,
+  "rarityName": "Promo",
+  "sealed": false,
+  "marketPrice": 9.64,
+  "customAttributes": {
+    "description": "",
+    "attack2": null,
+    "stage": "Basic",
+    "energyType": [
+      "Lightning"
+    ],
+    "releaseDate": null,
+    "number": "SWSH012",
+    "cardType": [
+      "Pokemon"
+    ],
+    "retreatCost": "1",
+    "cardTypeB": "Lightning",
+    "resistance": null,
+    "rarityDbName": "Promo",
+    "weakness": "Fx2",
+    "flavorText": "NO. 877 Two-Sided Pok\u00e9mon HT: 1' WT: 6.6 lbs.\r\n<br>\r\nAs it eats the seeds stored up in its pocket-like pouches, this Pok\u00e9mon is not just satisfying its constant hunger. It's also generating electricity.",
+    "attack1": "[2L] Thunder Shock (60)\r\n<br>Flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Paralyzed.",
+    "hp": "80",
+    "attack3": null,
+    "attack4": null
+  },
+  "lowestPriceWithShipping": 3.84,
+  "productName": "Morpeko - SWSH012 (General Mills Promo)",
+  "setId": 2374.0,
+  "setCode": "MCAP",
+  "productId": 232766.0,
+  "imageCount": 1.0,
+  "score": 2.3222194,
+  "setName": "Miscellaneous Cards & Products",
+  "sellers": 19.0,
+  "foilOnly": true,
+  "setUrlName": "Miscellaneous Cards and Products",
+  "sellerListable": true,
+  "productLineId": 3.0,
+  "productStatusId": 1.0,
+  "productLineName": "Pokemon",
+  "maxFulfillableQuantity": 255.0,
+  "normalOnly": false,
+  "listings": 19.0,
+  "lowestPrice": 2.99,
+  "medianPrice": null,
+  "formattedAttributes": {
+    "Card Number / Rarity": "SWSH012 / Promo",
+    "Card Type / HP / Stage": "Lightning / 80 / Basic",
+    "Attack 1": "[2L] Thunder Shock (60)\r\n<br>Flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Paralyzed.",
+    "Weakness / Resistance / Retreat Cost": "Fx2 /  / 1",
+    "Artist": "Kagemaru Himeno"
+  },
+  "skus": [
+    {
+      "sku": 4781869,
+      "condition": "Near Mint",
+      "variant": "Holofoil",
+      "language": "English"
+    },
+    {
+      "sku": 4781870,
+      "condition": "Lightly Played",
+      "variant": "Holofoil",
+      "language": "English"
+    },
+    {
+      "sku": 4781871,
+      "condition": "Moderately Played",
+      "variant": "Holofoil",
+      "language": "English"
+    },
+    {
+      "sku": 4781872,
+      "condition": "Heavily Played",
+      "variant": "Holofoil",
+      "language": "English"
+    },
+    {
+      "sku": 4781873,
+      "condition": "Damaged",
+      "variant": "Holofoil",
+      "language": "English"
+    }
+  ]
+}

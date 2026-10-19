@@ -1,0 +1,95 @@
+{
+  "customListings": 0.0,
+  "shippingCategoryId": 1.0,
+  "duplicate": false,
+  "productLineUrlName": "Pokemon",
+  "productTypeName": "Cards",
+  "productUrlName": "Hatenna SWSH040 General Mills Promo",
+  "productTypeId": 1.0,
+  "rarityName": "Promo",
+  "sealed": false,
+  "marketPrice": 1.58,
+  "customAttributes": {
+    "description": "",
+    "attack2": "[2] Psyshot (20)",
+    "stage": "Basic",
+    "energyType": [
+      "Psychic"
+    ],
+    "releaseDate": null,
+    "number": "SWSH040",
+    "cardType": [
+      "Pokemon"
+    ],
+    "retreatCost": "1",
+    "cardTypeB": "Psychic",
+    "resistance": "F-30",
+    "rarityDbName": "Promo",
+    "weakness": "Dx2",
+    "flavorText": "NO. 856 Calm Pok\u00e9mon HT: 1'4\" WT: 7.5 lbs.\r\n<br>\r\nVia the protrusion on its head, it senses other creatures' emotions. If you don't have a calm disposition, it will never warm up to you.",
+    "attack1": "[1] Find a Friend\r\n<br>Search your deck for a Pok\u00e9mon, reveal it, and put it into your hand. Then, shuffle your deck.",
+    "hp": "60",
+    "attack3": null,
+    "attack4": null
+  },
+  "lowestPriceWithShipping": 1.25,
+  "productName": "Hatenna - SWSH040 (General Mills Promo)",
+  "setId": 2374.0,
+  "setCode": "MCAP",
+  "productId": 232768.0,
+  "imageCount": 1.0,
+  "score": 1.9542425,
+  "setName": "Miscellaneous Cards & Products",
+  "sellers": 38.0,
+  "foilOnly": true,
+  "setUrlName": "Miscellaneous Cards and Products",
+  "sellerListable": true,
+  "productLineId": 3.0,
+  "productStatusId": 1.0,
+  "productLineName": "Pokemon",
+  "maxFulfillableQuantity": 255.0,
+  "normalOnly": false,
+  "listings": 41.0,
+  "lowestPrice": 0.5,
+  "medianPrice": null,
+  "formattedAttributes": {
+    "Card Number / Rarity": "SWSH040 / Promo",
+    "Card Type / HP / Stage": "Psychic / 60 / Basic",
+    "Attack 1": "[1] Find a Friend\r\n<br>Search your deck for a Pok\u00e9mon, reveal it, and put it into your hand. Then, shuffle your deck.",
+    "Attack 2": "[2] Psyshot (20)",
+    "Weakness / Resistance / Retreat Cost": "Dx2 / F-30 / 1",
+    "Artist": "Misa Tsutsui"
+  },
+  "skus": [
+    {
+      "sku": 4781879,
+      "condition": "Near Mint",
+      "variant": "Holofoil",
+      "language": "English"
+    },
+    {
+      "sku": 4781880,
+      "condition": "Lightly Played",
+      "variant": "Holofoil",
+      "language": "English"
+    },
+    {
+      "sku": 4781881,
+      "condition": "Moderately Played",
+      "variant": "Holofoil",
+      "language": "English"
+    },
+    {
+      "sku": 4781882,
+      "condition": "Heavily Played",
+      "variant": "Holofoil",
+      "language": "English"
+    },
+    {
+      "sku": 4781883,
+      "condition": "Damaged",
+      "variant": "Holofoil",
+      "language": "English"
+    }
+  ]
+}

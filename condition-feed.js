@@ -1,3 +1,4 @@
+import {pokemonVariantProductConflict} from './pokemon-variant-options.js';
 // Read-only condition lookup, shared by forms and collection valuation. Each exact
 // version is requested once per hour, never once per camera frame.
 export const CONDITION_IDENTITY=['cardId','printingId','printing','rarity','variant','edition','finish','language'];
@@ -19,9 +20,16 @@ async function limitedFetch(fetcher,...args){
  try{const [url,options]=args;return await fetcher(url,{...options,signal:AbortSignal.timeout(15000)});}finally{active--;waiting.shift()?.();}
 }
 export function conditionRequest(card,entry,game){
+ if(game==='ptcg'&&pokemonVariantProductConflict(card,entry))return null;
  if(!card?.id||entry.graded)return null;
  if(game==='mtg' && entry.printingVerified && entry.printingId!==card.id)return null;
  const params=new URLSearchParams({game,id:String(card.id)});
+ if(game==='ptcg'){
+  const variants=Array.isArray(card.variants)?card.variants.filter(v=>v.key===entry.variant):null;
+  if(variants&&variants.length!==1)return null;
+  const productId=entry.productId||(variants?.length===1?variants[0].productId:null);
+  if(productId)params.set('productId',String(productId));
+ }
  for(const key of ['variant','printing','rarity','edition','finish','language'])if(entry[key])params.set(key,entry[key]);
  return '/api/prices/conditions?'+params;
 }

@@ -525,3 +525,43 @@ jobs:
         with:
           name: recovery-browser-evidence
           path: test-results/recovery-*
+
+  binder-cover-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - name: Test exact binder cover selections in the actual app
+        run: node tests/binder-cover-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: binder-cover-browser-evidence
+          path: test-results/binder-cover-*
+
+  pokemon-promos-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - name: Test exact promo identities and Trainer finish coverage
+        run: node tests/pokemon-promos-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pokemon-promos-browser-evidence
+          path: test-results/pokemon-promos-*

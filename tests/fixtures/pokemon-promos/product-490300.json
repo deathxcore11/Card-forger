@@ -1,0 +1,93 @@
+{
+  "customListings": 0.0,
+  "shippingCategoryId": 1.0,
+  "duplicate": false,
+  "productLineUrlName": "Pokemon",
+  "productTypeName": "Cards",
+  "productUrlName": "Rowlet SWSH220 Cosmos Holo",
+  "productTypeId": 1.0,
+  "rarityName": "Promo",
+  "sealed": false,
+  "marketPrice": 2.5,
+  "customAttributes": {
+    "description": "",
+    "attack2": null,
+    "stage": "Basic",
+    "energyType": [
+      "Grass"
+    ],
+    "releaseDate": null,
+    "number": "SWSH220",
+    "cardType": [
+      "Pokemon"
+    ],
+    "retreatCost": "1",
+    "cardTypeB": "Grass",
+    "resistance": "None",
+    "rarityDbName": "Promo",
+    "weakness": "Rx2",
+    "flavorText": "",
+    "attack1": "[1] Jump On (10+)\r\n<br>Flip a coin. If heads, This attack does 10 more damage.",
+    "hp": "60",
+    "attack3": null,
+    "attack4": null
+  },
+  "lowestPriceWithShipping": 0.25,
+  "productName": "Rowlet - SWSH220 (Cosmos Holo)",
+  "setId": 2374.0,
+  "setCode": "MCAP",
+  "productId": 490300.0,
+  "imageCount": 1.0,
+  "score": 3.1392493,
+  "setName": "Miscellaneous Cards & Products",
+  "sellers": 39.0,
+  "foilOnly": true,
+  "setUrlName": "Miscellaneous Cards and Products",
+  "sellerListable": true,
+  "productLineId": 3.0,
+  "productStatusId": 1.0,
+  "productLineName": "Pokemon",
+  "maxFulfillableQuantity": 255.0,
+  "normalOnly": false,
+  "listings": 45.0,
+  "lowestPrice": 0.2,
+  "medianPrice": null,
+  "formattedAttributes": {
+    "Card Number / Rarity": "SWSH220 / Promo",
+    "Card Type / HP / Stage": "Grass / 60 / Basic",
+    "Attack 1": "[1] Jump On (10+)\r\n<br>Flip a coin. If heads, This attack does 10 more damage.",
+    "Weakness / Resistance / Retreat Cost": "Rx2 / None / 1"
+  },
+  "skus": [
+    {
+      "sku": 7042697,
+      "condition": "Near Mint",
+      "variant": "Holofoil",
+      "language": "English"
+    },
+    {
+      "sku": 7042698,
+      "condition": "Lightly Played",
+      "variant": "Holofoil",
+      "language": "English"
+    },
+    {
+      "sku": 7042699,
+      "condition": "Moderately Played",
+      "variant": "Holofoil",
+      "language": "English"
+    },
+    {
+      "sku": 7042700,
+      "condition": "Heavily Played",
+      "variant": "Holofoil",
+      "language": "English"
+    },
+    {
+      "sku": 7042701,
+      "condition": "Damaged",
+      "variant": "Holofoil",
+      "language": "English"
+    }
+  ]
+}

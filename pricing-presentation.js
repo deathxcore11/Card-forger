@@ -1,3 +1,4 @@
+import {pokemonVariantChoices,pokemonVariantProductConflict,samePokemonVariant} from './pokemon-variant-options.js';
 // Presentation only: keep provider/condition resolution in the existing pricing modules.
 import {esc,usd} from './ui.js';
 import {tcgFallback,myPrice} from './mtg-tcgprice.js';
@@ -15,11 +16,11 @@ export function supportedFinishes(game,c){
  return game==='ptcg'?['reference',...(c.variants||[]).map(v=>v.key)]:['reference'];
 }
 export function selectedFinish(game,c,wanted){
- const choices=supportedFinishes(game,c||{});wanted ||= c?.setContext?.variantKey;return choices.includes(wanted)?wanted:choices[0]||'reference';
+ const choices=supportedFinishes(game,c||{});wanted ||= c?.setContext?.variantKey;if(game==='ptcg'&&wanted)return wanted;return choices.includes(wanted)?wanted:choices[0]||'reference';
 }
 const referenceValue=c=>Object.prototype.hasOwnProperty.call(c?.setContext||{},'referencePrice')?c.setContext.referencePrice:c?.prices?.usd;
 function referenceVariant(c){
- const priced=(c.variants||[]).filter(v=>priceAmount(v.usd??v.market)!==null);
+ const priced=pokemonVariantChoices(c).filter(v=>priceAmount(v.usd??v.market)!==null);
  const chosen=priced.find(v=>v.key==='normal')||priced[0];
  return chosen&&priceAmount(chosen.usd??chosen.market)===priceAmount(referenceValue(c))?chosen:null;
 }
@@ -64,15 +65,17 @@ export function presentationQuote(game,c,finish='reference',printingKey='',editi
   }
  }
  if(!verified){value=null;variant=null;printing=null;label='Selected release is not verified';}
+ const finishVerified=game!=='ptcg'||finish==='reference'||!!variant&&!/unconfirmed/i.test(variant.label||'');
  const editions=game==='ygo'&&verified?[...new Map((context?.printings||c.sets||[]).map(s=>[s.code+'::'+s.rarity,{code:s.code,rarity:s.rarity,key:s.code+'::'+s.rarity,label:[s.code,s.rarity,s.name].filter(Boolean).join(' · ')}])).values()]:[];
  const fallbackMtg=game==='mtg'&&source==='TCGplayer via TCGCSV';
  const checkedAt=fallbackMtg?null:printing?.checkedAt||c.checkedAt||c.fetchedAt||null,sourceUpdatedAt=fallbackMtg?null:printing?null:c.prices?.updated||null;
  const key=[game,c.id,...(context?[context.releaseId]:[]),source,'USD',finish,...(printing?[printing.code,printing.rarity,edition]:[])].join('|');
- return {releaseId:context?.releaseId||'',selectionVerified:verified,edition:printing?.code||'',rarity:printing?.rarity||'',editionKey:printing?printing.code+'::'+printing.rarity:'',selectedEdition:edition,editions,key,name:c.name,game,cardId:c.id,source,currency:'USD',finish,label,value,kind,scope,variant,printing,checkedAt,sourceUpdatedAt,observedAt,asOf:observedAt||sourceUpdatedAt||checkedAt,cardReferenceValue:context?null:priceAmount(c.prices?.usd)};
+ return {releaseId:context?.releaseId||'',selectionVerified:verified&&finishVerified,edition:printing?.code||'',rarity:printing?.rarity||'',editionKey:printing?printing.code+'::'+printing.rarity:'',selectedEdition:edition,editions,key,name:c.name,game,cardId:c.id,source,currency:'USD',finish,label,value,kind,scope,variant,printing,checkedAt,sourceUpdatedAt,observedAt,asOf:observedAt||sourceUpdatedAt||checkedAt,cardReferenceValue:context||!finishVerified?null:priceAmount(c.prices?.usd)};
 }
 // UI selectors and the projected card must refer to the same release.
 export function quoteForContext(game,card,ctx={}) {
  const quote=presentationQuote(game,card,selectedFinish(game,card,ctx.priceFinish||ctx.finish),ctx.priceEdition||ctx.edition||card.displayPrintingKey,ctx.priceYgoEdition||ctx.ygoEdition||card.displayEdition);
+ if(quote&&game==='ptcg'&&ctx.savedProductId&&quote.finish===ctx.savedVariant&&pokemonVariantProductConflict(card,{variant:ctx.savedVariant,productId:ctx.savedProductId}))return {...quote,value:null,variant:null,selectionVerified:false,label:'Saved product does not match this finish',cardReferenceValue:null};
  return !quote || validSetContext(game,card,ctx) ? quote : {...quote,value:null,printing:null,variant:null,selectionVerified:false,label:'Selected release does not match this card'};
 }
 export function priceSelectionState(quote){
@@ -90,7 +93,7 @@ export function matchingLot(game,card,ctx,state){
  const finish=selectedFinish(game,card,ctx.priceFinish||ctx.finish);
  if(game==='mtg')return lot.printingVerified&&lot.printingId===card.id&&(lot.finish||'nonfoil')===finish?lot:null;
  if(String(lot.cardId)!==String(card.id))return null;
- if(game==='ptcg'){const variant=finish==='reference'?referenceVariant(card)?.key:finish;return (lot.variant||'reference')===(variant||'reference')?lot:null;}
+ if(game==='ptcg'){const variant=finish==='reference'?referenceVariant(card)?.key:finish;return !pokemonVariantProductConflict(card,lot)&&samePokemonVariant(card,lot.variant||'reference',variant||'reference')?lot:null;}
  const print=selectedPrinting(card,ctx.priceEdition||ctx.edition||contextPrintingKey(card));
  return print&&lot.printing===print.code&&lot.rarity===print.rarity&&(lot.edition||'')===(ctx.priceYgoEdition||ctx.ygoEdition||'')?lot:null;
 }
@@ -145,7 +148,7 @@ export function conditionBuyLink(game,c,entry={}){
  if(game==='ptcg'&&(!entry.variant||entry.variant==='reference'))return null;
  if(game==='ygo'&&(!entry.printing||!entry.rarity||!editionNames[entry.edition]))return null;
  if(game==='mtg'&&entry.printingId&&entry.printingId!==c.id)return null;
- return sellerModels(game,c,{priceFinish:game==='ptcg'?entry.variant:entry.finish,priceEdition:game==='ygo'?[entry.printing,entry.rarity].join('::'):'',priceYgoEdition:entry.edition,condition:entry.condition,language:entry.language}).find(r=>r.key==='tcgplayer');
+ return sellerModels(game,c,{savedProductId:game==='ptcg'?entry.productId:'',savedVariant:entry.variant,priceFinish:game==='ptcg'?entry.variant:entry.finish,priceEdition:game==='ygo'?[entry.printing,entry.rarity].join('::'):'',priceYgoEdition:entry.edition,condition:entry.condition,language:entry.language}).find(r=>r.key==='tcgplayer');
 }
 export function sellerModels(game,c,ctx={},links=[]){
  const wanted=ctx.priceFinish||ctx.finish||c.setContext?.variantKey,finish=selectedFinish(game,c,wanted),q=quoteForContext(game,c,ctx);
@@ -156,7 +159,7 @@ export function sellerModels(game,c,ctx={},links=[]){
   let url=safeURL(rawURL);if(!url)continue;seen.add(key);
   let value=null,currency='USD',kind='market',scope='',direct=false,source='',observedAt='',sourceUpdatedAt=q?.sourceUpdatedAt,checkedAt=q?.checkedAt;
   if(key==='tcgplayer'){
-   const supported=!wanted||supportedFinishes(game,c).includes(wanted),variants=c.variants||[],contextVariant=c.setContext?.variantKey;
+   const supported=!wanted||supportedFinishes(game,c).includes(wanted),variants=pokemonVariantChoices(c,finish),contextVariant=c.setContext?.variantKey;
    // A projected invalid/ambiguous finish must not silently become Reference/Normal.
    // A reference price is not a product identity when multiple variants share it.
    const uniqueVariant=game!=='ptcg'||!!q?.variant&&!c.setContext?.printingAmbiguous&&(!contextVariant||contextVariant===finish)&&variants.filter(v=>v.key===q.variant.key).length===1&&(finish!=='reference'||variants.filter(v=>priceAmount(v.usd??v.market)!==null&&priceAmount(v.usd??v.market)===q.value).length===1);

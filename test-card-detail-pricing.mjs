@@ -27,7 +27,7 @@ assert.equal(sellerModels('mtg',{...mtg,purchase_uris:{cardmarket:'https://www.c
 for(const value of [null,undefined,'',NaN,Infinity,-1])assert.equal(priceAmount(value),null);
 assert.equal(priceAmount(0),0);assert.equal(priceAmount('0'),0);
 assert.equal(selectedFinish('mtg',{finishes:['foil']},'etched'),'foil');
-assert.equal(selectedFinish('ptcg',{variants:[{key:'holofoil'}]},'old-printing-finish'),'reference');
+assert.equal(selectedFinish('ptcg',{variants:[{key:'holofoil'}]},'old-printing-finish'),'old-printing-finish');
 const eurOnly={...mtg,id:'eur-only',set:'no-cached-prices',tcgplayer_id:50,prices:{eur:'19.50'}};
 useMyPrices({[myPriceKey(eurOnly)]:{price:100}});
 assert.match(compactPriceSummary('mtg',eurOnly),/€19\.50/);assert.equal(presentationQuote('mtg',eurOnly,'nonfoil').value,null);

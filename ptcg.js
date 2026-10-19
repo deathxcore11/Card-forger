@@ -1,3 +1,5 @@
+import {POKEMON_VARIANT_SCHEMA,pokemonDetailedRecords,pokemonPhysicalFinish,syncPokemonVariantAliases} from './pokemon-variant-options.js';
+import {pokemonPromoEvidence,pokemonPromoAliasMatches,pokemonPromoRootProduct} from './pokemon-promo-evidence.js';
 import {referenceQuote} from './price-reference.js';
 import {pokemonPrintedName,pokemonPrintedNameKey} from './pokemon-identity.js';
 import {applyProductPrices} from "./pokemon-prices.js";
@@ -23,7 +25,8 @@ export function pokemonVariants(c) {
     .map(([key,v]) => ({ key, label: VARIANT_LABEL[key] || key, usd: referenceQuote(v)?.value??null, priceKind:referenceQuote(v)?.kind, low:n(v.lowPrice), mid:n(v.midPrice), market:n(v.marketPrice), productId:v.productId }));
   const out = new Map();
   const title = value => String(value).split("-").map(x => x.charAt(0).toUpperCase()+x.slice(1)).join(" ");
-  for (const d of c.variants_detailed || []) {
+  for (const record of pokemonDetailedRecords(c)) {
+    const d=record.detail;
     const first = d.stamp?.includes("1st-edition"), finish = { holo:"holofoil", reverse:"reverse-holofoil", normal:"normal" }[d.type];
     const foil = typeof d.foil === "string" ? d.foil.trim() : "";
     const special = d.subtype && d.subtype !== "unlimited" || (d.stamp || []).some(x => x !== "1st-edition") || d.size && d.size !== "standard";
@@ -35,24 +38,31 @@ export function pokemonVariants(c) {
     const patternQuote = patterned ? d.pricing?.tcgplayer?.holofoil : null;
     const exactPatternQuote = patternQuote && d.thirdParty?.tcgplayer && String(patternQuote.productId) === String(d.thirdParty.tcgplayer) ? patternQuote : null;
     const bucketQuote = bucket ? d.pricing.tcgplayer[bucket] : null;
-    const exactBucketQuote = !foil || bucketQuote && d.thirdParty?.tcgplayer && String(bucketQuote.productId) === String(d.thirdParty.tcgplayer) ? bucketQuote : null;
+    const exactBucketQuote = bucketQuote&&(!d.thirdParty?.tcgplayer&&!foil||String(bucketQuote.productId)===String(d.thirdParty?.tcgplayer))?bucketQuote:null;
     const q = exactBucketQuote || exactPatternQuote || {};
     // A plain finish TCGdex knows nothing more about (no price, no product) is the same version
     // as the per-finish price below: key it by finish so the two merge instead of listing twice.
     const bare = !special && !bucket && !d.pricing && !d.thirdParty?.tcgplayer;
-    const key = !special && bucket ? bucket : bare ? wanted[0] : "detail:" + (d.variantId || JSON.stringify([d.type,d.subtype,d.stamp,d.size]));
+    const key = record.key;
     const foilLabel = {pokeball:"Poké Ball",masterball:"Master Ball"}[foil] || (foil ? title(foil) : "");
-    const label = [first ? "First Edition" : "", d.subtype ? title(d.subtype) : "", ...(d.stamp || []).filter(x => x !== "1st-edition").map(x => x === "set-logo" ? "Set-logo stamped" : title(x)), d.size && d.size !== "standard" ? title(d.size) : "", {holo:"Holofoil",reverse:"Reverse Holo",normal:"Normal"}[d.type] || title(d.type || "Version"), foilLabel].filter(Boolean).join(" · ");
+    const evidence=pokemonPromoEvidence(c.id,d.thirdParty?.tcgplayer);
+    const label = [evidence?.label||"", first ? "First Edition" : "", d.subtype ? title(d.subtype) : "", ...(d.stamp || []).filter(x => x !== "1st-edition").map(x => x === "set-logo" ? "Set-logo stamped" : title(x)), d.size && d.size !== "standard" ? title(d.size) : "", {holo:"Holofoil",reverse:"Reverse Holo",normal:"Normal"}[d.type] || title(d.type || "Version"), foilLabel].filter(Boolean).join(" · ");
+    if(out.has(key)){out.set(key,{key,label:"Version identity unconfirmed",finish:"",usd:null});continue;}
     out.set(key, { key, label, finish, foil, ...(exactPatternQuote && q === exactPatternQuote ? {pricePrinting:"Holofoil"} : {}), size:d.size||"standard", subtype:d.subtype||"", stamps:[...(d.stamp||[])], usd:referenceQuote(q)?.value??null, priceKind:referenceQuote(q)?.kind, low:n(q.lowPrice), mid:n(q.midPrice), market:n(q.marketPrice), productId:q.productId || d.thirdParty?.tcgplayer, cmProduct:d.thirdParty?.cardmarket, detailed:true, image: typeof d.image === "string" ? (/[.](?:webp|png|jpe?g)(?:[?]|$)/i.test(d.image) ? d.image : ptcgImage(d.image)) : "", imageLarge: typeof d.image === "string" ? (/[.](?:webp|png|jpe?g)(?:[?]|$)/i.test(d.image) ? d.image : ptcgImage(d.image,"high")) : "" });
   }
   for (const v of legacy) {
     const have = out.get(v.key);
-    if (!have) out.set(v.key,v);
-    else if (have.usd == null && !have.productId) out.set(v.key,{ ...have, ...v, label: have.label, finish: have.finish, image: have.image, imageLarge: have.imageLarge });
+    if (!have) {
+      if(v.key==='holofoil'&&pokemonPromoRootProduct(c.id)&&String(v.productId)!==String(pokemonPromoRootProduct(c.id))){out.set(v.key,{key:v.key,label:'Version identity unconfirmed',usd:null});continue;}
+      const candidates=[...out.values()].filter(x=>x.detailed&&x.productId&&String(x.productId)===String(v.productId)&&x.finish===pokemonPhysicalFinish(v)&&pokemonPromoAliasMatches(c.id,v,x));
+      if(candidates.length===1){const canonical=candidates[0];if(canonical.usd==null)Object.assign(canonical,{usd:v.usd,priceKind:v.priceKind,low:v.low,mid:v.mid,market:v.market});out.set(v.key,{...canonical,key:v.key,aliasOf:canonical.key});}
+      else out.set(v.key,v);
+    }
+    else if (have.usd == null && !have.productId && !/identity unconfirmed/i.test(have.label)) out.set(v.key,{ ...have, ...v, label: have.label, finish: have.finish, image: have.image, imageLarge: have.imageLarge });
   }
   // Older/incomplete responses still expose version availability flags.
   for (const [flag,key,label] of [["normal","normal","Normal"],["holo","holofoil","Holofoil"],["reverse","reverse-holofoil","Reverse Holo"]]) {
-    if (c.variants?.[flag] && ![...out.values()].some(v => v.key === key || v.label.endsWith(label))) out.set(key,{key,label,usd:null});
+    if (c.variants?.[flag] && ![...out.values()].some(v => v.key === key || pokemonPhysicalFinish(v) === key || v.label.endsWith(label))) out.set(key,{key,label,usd:null});
   }
   if (c.variants?.firstEdition && ![...out.values()].some(v => /First Edition|1st Ed/i.test(v.label))) out.set("firstEdition",{key:"firstEdition",label:"First Edition · finish unconfirmed",usd:null});
   if (c.variants?.wPromo && ![...out.values()].some(v => /W Promo/i.test(v.label))) out.set("wPromo",{key:"wPromo",label:"W Promo",usd:null});
@@ -65,7 +75,7 @@ const PTCG_API_KEYS = { normal: "normal", holofoil: "holofoil", reverseHolofoil:
 const setKey = (x) => String(x || "").toLowerCase().replace(/pok[eé]mon|[^a-z0-9]/g, "");
 export function applyFallbackPrices(c, hit) {
   const tp = hit?.tcgplayer?.prices || {};
-  let filled = false;
+  let filled = false;const updatedKeys=[];
   for (const [k, v] of Object.entries(tp)) {
     const ref=referenceQuote(v),usd=ref?.value;
     if (usd == null) continue;
@@ -73,7 +83,7 @@ export function applyFallbackPrices(c, hit) {
       variant = c.variants?.find((x) => x.key === key);
     if (variant && variant.usd == null) {
       Object.assign(variant,{usd,market:n(v.market),mid:n(v.mid),low:n(v.low),priceKind:ref.kind});
-      variant.fallback = true;
+      variant.fallback = true;updatedKeys.push(variant.key);
       filled = true;
     } else if (!variant && !c.variants?.some((x) => x.usd != null)) {
       (c.variants ||= []).push({ key, label: VARIANT_LABEL[key] || key, usd, priceKind:ref.kind, fallback: true });
@@ -81,6 +91,7 @@ export function applyFallbackPrices(c, hit) {
     }
   }
   if (!filled) return false;
+  syncPokemonVariantAliases(c,updatedKeys);
   const best = c.variants.find((v) => v.key === "normal" && v.usd) || c.variants.find((v) => v.usd);
   c.prices.usd = best?.usd ?? null;
   c.prices.referenceKind=best?.priceKind||"market";
@@ -125,6 +136,7 @@ async function fillPricesNow(c) {
     if (!v || !(last?.value > 0) || Date.now() - Date.parse(last.date) > 21 * 864e5) continue;
     Object.assign(v, { usd: last.value, market: last.value, historyQuote: last.date });
   }
+  syncPokemonVariantAliases(c);
   const best = c.variants.find((v) => v.key === "normal" && v.usd != null) || c.variants.find((v) => v.usd != null);
   if (best && c.prices.usd == null) {
     c.prices.usd = best.usd;
@@ -214,7 +226,7 @@ export function normalizePtcg(c) {
   ].filter(Boolean).join("\n\n");
   return {
     game: "ptcg",
-    variantSchema: 11,
+    variantSchema: POKEMON_VARIANT_SCHEMA,
     priceFallbackSchema: 3,
     ...(c.catalogueProvenance?{catalogueProvenance:{...c.catalogueProvenance}}:{}),
     released:set?.releaseDate || "",

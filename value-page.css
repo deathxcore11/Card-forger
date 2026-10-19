@@ -16,7 +16,9 @@
 .collection-value-page .value-section-head { display:flex; justify-content:space-between; gap:8px 16px; align-items:baseline; flex-wrap:wrap; margin-bottom:12px; }
 .collection-value-page .value-section-head h3,.collection-value-page .value-chart-empty h3 { margin:0; font-size:14px; }
 .collection-value-page .value-section-head > span { font-size:11px; }
-.collection-value-page .value-chart svg { display:block; width:100%; height:auto; overflow:visible; }
+/* Only the plot fills the panel; decorated trend glyphs are nested SVG icons. */
+.collection-value-page .value-chart > svg[role="img"] { display:block; width:100%; height:auto; overflow:visible; }
+.collection-value-page .value-chart-change svg { display:inline-block; width:1.2em; height:1.2em; flex:none; vertical-align:-.2em; }
 .collection-value-page .value-chart-grid { stroke:var(--line); stroke-dasharray:3 5; stroke-width:1; }
 .collection-value-page .value-chart-axis { fill:var(--muted); font:11px 'DM Sans',sans-serif; }
 .collection-value-page .value-chart-line { stroke:var(--value-accent); stroke-width:2.5; fill:none; stroke-linecap:round; }

@@ -1,3 +1,4 @@
+import {pokemonVariantChoices} from './pokemon-variant-options.js';
 import {isYgoEdition} from './ygo-identity.js';
 import {privateKey} from './account-scope.js';
 // Captures are staged, never collection writes. Mixed-game review survives reloads.
@@ -42,12 +43,12 @@ export function uniquePrintings(cands=[]) { const seen=new Set();return cands.fi
 export function actualFinishes(g,c) {
   const card=c?.card||{};
   if(g==='mtg')return [...new Set((card.finishes||[]).filter(x=>['nonfoil','foil','etched'].includes(x)))];
-  if(g==='ptcg')return [...new Set((card.variants||[]).filter(v=>!/unconfirmed/i.test(v.label||'')).map(v=>v.key).filter(Boolean))];
+  if(g==='ptcg')return [...new Set(pokemonVariantChoices(card).filter(v=>!/unconfirmed/i.test(v.label||'')).map(v=>v.key).filter(Boolean))];
   return []; // A set code/rarity does not establish 1st vs unlimited edition.
 }
 export function resolveScanFinish(g,c,prefs={},read={}) {
   const valid=actualFinishes(g,c);
-  if(prefs.finishConfirmed && (valid.includes(prefs.finish)||(g==='ygo'&&isYgoEdition(prefs.finish))))return prefs.finish;
+  if(prefs.finishConfirmed && (valid.includes(prefs.finish)||(g==='ptcg'&&pokemonVariantChoices(c?.card,prefs.finish).some(v=>v.key===prefs.finish&&!/unconfirmed/i.test(v.label||'')))||(g==='ygo'&&isYgoEdition(prefs.finish))))return prefs.finish;
   if(g==='ygo'&&/\blimited\s+edition\b/i.test(`${read.code||''}\n${read.full||''}\n${read.stats||''}`))return 'limited';
   if(g==='ygo'&&/\b1st\s+edition\b/i.test(`${read.code||''}\n${read.full||''}\n${read.stats||''}`))return '1st-edition';
   // A coarse 'First Edition · finish unconfirmed' bucket is not an exact finish.

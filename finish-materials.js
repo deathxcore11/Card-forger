@@ -4,6 +4,7 @@ export function finishMaterialProfile(game,card,model){
  if(!model.layers?.length)return '';
  if(game==='mtg')return model.effect==='mtg-etched'?'etched':model.effect==='mtg-foil'?'traditional':'';
  if(game==='ygo')return model.effect==='ygo-starlight'?'starlight':model.effect;
+ if(model.pattern==='cosmos'&&model.effect==='ptcg-holo')return 'cosmos-holo';
  if(card.id==='base1-4'&&model.effect==='ptcg-holo')return 'classic-holo';
  if(['base4-20','neo1-9'].includes(card.id)&&model.effect==='ptcg-holo')return 'cosmos-holo';
  if(card.set?.id==='cel25'&&model.effect==='ptcg-holo')return 'line-holo';

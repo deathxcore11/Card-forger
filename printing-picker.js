@@ -1,3 +1,4 @@
+import {pokemonVariantChoices} from './pokemon-variant-options.js';
 // A read-only, context-local printing browser. Providers and selection callbacks are
 // injected: this module never writes collection, default-price or Search state.
 import {printingCarouselHTML,attachPrintingCarousel} from './printing-carousel.js';
@@ -57,7 +58,7 @@ export function printingRows(game,cards,{source,catalogue=[],projectCard}={}) {
    }
   } else if(game==='ptcg') {
    const release=catalogue.find(s=>s.id===card.set?.id)||{id:card.set?.id||'',name:card.set?.name||'',date:card.released||''};
-   const variants=(card.variants||[]).filter(v=>text(v.key));
+   const variants=pokemonVariantChoices(card).filter(v=>text(v.key));
    const counts=new Map();for(const v of variants)counts.set(v.key,(counts.get(v.key)||0)+1);
    for(const variant of variants.length?variants:[null]) {
     const finish=variant?.key||'reference',projected=projectCard?projectCard(card,release,{variantKey:finish}):card;

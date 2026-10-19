@@ -1,3 +1,4 @@
+import {POKEMON_VARIANT_SCHEMA,pokemonVariantChoices,pokemonVariantProductConflict,samePokemonVariant} from './pokemon-variant-options.js';
 import {valuePageOverview,valueTopLots,valuePageAttrs} from './value-page.js';
 import {recordValueObservation} from './value-history.js';
 import {dailyDate, nextDailyReset} from './daily-clock.js';
@@ -140,7 +141,7 @@ const remember = (card) => {
 export function needsCardRefresh(g,c,printings=false){
  const time=Date.parse(c?.fetchedAt);
  return !c||c.brief||!Number.isFinite(time)||time>Date.now()+300000||Date.now()-time>=PRICE_TTL||
- (g==='ptcg'&&(c.variantSchema!==11||c.priceFallbackSchema!==3))||
+ (g==='ptcg'&&(c.variantSchema!==POKEMON_VARIANT_SCHEMA||c.priceFallbackSchema!==3))||
  (g==='ygo'&&(c.artSchema!==1||(printings&&c.printPriceSchema!==1)));
 }
 // Full card with prices no older than a day.
@@ -269,7 +270,7 @@ function regulationHelp(c) {
 }
 
 // Already in the collection: − count + right there. Not yet: an Add button.
-const variantEntries = (g, c, v) => gs(g).collection.filter((e) => e.cardId === c.id && e.variant === v.key && !!v.key);
+const variantEntries = (g, c, v) => gs(g).collection.filter((e) => e.cardId === c.id && samePokemonVariant(c,e.variant,v.key) && !pokemonVariantProductConflict(c,e) && !!v.key);
 function variantOwnControl(g,c,v){
   const lots=variantEntries(g,c,v);
   return `${detailOwnedGroups(g,lots,c)}<button class="btn ghost small" data-act="tOwn" data-id="${esc(c.id)}" data-print="${esc(v.key)}">Add ${esc(v.label||v.key)}</button>`;
@@ -320,7 +321,7 @@ export function collectionValue(g, s = S.state) {
 export const persistQuoteCache=()=>saveCacheSoon();
 export function entryPrice(c,e){
   const scoped=c?.game==='ygo'&&e.setReleaseId?setContextCard('ygo',c,e.setReleaseId,currentYgoCatalogue()):c;
-  const verified=!e.setReleaseUnverified&&(!e.setReleaseId||scoped?.setContext?.status==='resolved');
+  const verified=!(c?.game==='ptcg'&&pokemonVariantProductConflict(c,e))&&!e.setReleaseUnverified&&(!e.setReleaseId||scoped?.setContext?.status==='resolved');
   const allQuotes=[...(scoped?.conditionQuotes||[]),...(e.conditionQuotes||[])];
   const collision=c?.game==='ygo'&&e.setReleaseId&&(c.sets||[]).filter(p=>p.code===e.printing&&(!e.rarity||rarityKey(p.rarity)===rarityKey(e.rarity))).length>1;
   const quotes=!verified?[]:collision?allQuotes.filter(q=>q.setReleaseId===e.setReleaseId):allQuotes;
@@ -328,6 +329,7 @@ export function entryPrice(c,e){
 }
 export function referenceEntryPrice(c, e) {
   if (!c) return null;
+  if(c.game==='ptcg'&&pokemonVariantProductConflict(c,e))return null;
   if(c.game==='ygo'){
     if(e.setReleaseUnverified||(e.setReleaseId&&c.setContext?.status!=='resolved'))return null;
     if(e.printing){
@@ -780,11 +782,11 @@ export function tcgCardSheet(c, sctx = {}) {
         ? `<div class="print-list"><div class="print on">
         <button class="print-main" data-act="tSet" data-id="${esc(c.set.id)}">${thumb}<span class="print-name">${pkSetSymbol(c.set)}<span class="ellip"><b>${esc(c.set.name)}</b><small>${esc((c.set.id || "").toUpperCase())} #${esc(c.set.number || "")}${c.set.total ? "/" + c.set.total : ""} · ${pkRarity(c.rarity)} ${esc(c.rarity || "")}</small></span></span></button>
         <span class="print-prices"><button class="pp buy" data-act="cardPriceJump" data-target="sellers">Buy</button><span class="pp"><small>reference</small>${usd(p.usd)}</span></span>
-      </div></div><div class="list compact">${(c.variants || []).map(v => {const seller=versionSeller(v);return `<div class="variant-row">${variantArtThumb(c,v,`data-variant="${esc(v.key)}"`)}<div class="variant-copy"><b>${esc(v.label)}</b><small class="muted">${esc(variantArtwork(c,v).label)}</small><span>${v.usd == null ? "Price unavailable" : usd(v.usd)}</span></div><span class="variant-actions">${v.productId ? `<a class="link small" href="${esc(seller.url)}" target="_blank" rel="noopener noreferrer">${seller.direct?'Seller':'Search seller'} ↗</a>` : ""}${variantOwnControl(g, c, v)}</span></div>`;}).join("")}</div><p class="foot">Check the edition and finish on the seller's page before buying.</p><p class="foot">Pokémon reprints are separate cards with their own number. <button class="link small" data-act="tOtherPrintings" data-name="${esc(c.name)}">See every “${esc(c.name)}” →</button></p>`
+      </div></div><div class="list compact">${pokemonVariantChoices(c,sctx.priceFinish).map(v => {const seller=versionSeller(v);return `<div class="variant-row">${variantArtThumb(c,v,`data-variant="${esc(v.key)}"`)}<div class="variant-copy"><b>${esc(v.label)}</b><small class="muted">${esc(variantArtwork(c,v).label)}</small><span>${v.usd == null ? "Price unavailable" : usd(v.usd)}</span></div><span class="variant-actions">${v.productId ? `<a class="link small" href="${esc(seller.url)}" target="_blank" rel="noopener noreferrer">${seller.direct?'Seller':'Search seller'} ↗</a>` : ""}${variantOwnControl(g, c, v)}</span></div>`;}).join("")}</div><p class="foot">Check the edition and finish on the seller's page before buying.</p><p class="foot">Pokémon reprints are separate cards with their own number. <button class="link small" data-act="tOtherPrintings" data-name="${esc(c.name)}">See every “${esc(c.name)}” →</button></p>`
         : "";
   const prices =
     g === "ptcg"
-      ? `${c.variants?.length ? `<div class="price-table"><div class="pt-head"><span>TCGplayer (USD)</span><b>Low</b><b>Mid</b><b>Market</b></div>${c.variants.map((v) => `<div class="pt-row"><span class="pt-label">${esc(v.label)}</span><span>${usd(v.low)}</span><span>${usd(v.mid)}</span><span><b>${usd(v.market)}</b></span></div>`).join("")}</div>` : `<p class="muted small">No TCGplayer price yet.</p>`}
+      ? `${c.variants?.length ? `<div class="price-table"><div class="pt-head"><span>TCGplayer (USD)</span><b>Low</b><b>Mid</b><b>Market</b></div>${pokemonVariantChoices(c,sctx.priceFinish).map((v) => `<div class="pt-row"><span class="pt-label">${esc(v.label)}</span><span>${usd(v.low)}</span><span>${usd(v.mid)}</span><span><b>${usd(v.market)}</b></span></div>`).join("")}</div>` : `<p class="muted small">No TCGplayer price yet.</p>`}
         ${c.cardmarket && (c.cardmarket.trend || c.cardmarket.avg) ? `<div class="price-table"><div class="pt-head"><span>Cardmarket (EUR)</span><b>Low</b><b>Average</b><b>Trend</b></div><div class="pt-row"><span class="pt-label">Normal</span><span>${eur(c.cardmarket.low)}</span><span>${eur(c.cardmarket.avg)}</span><span><b>${eur(c.cardmarket.trend)}</b></span></div>${c.cardmarket.holoTrend ? `<div class="pt-row"><span class="pt-label">Holo / reverse</span><span>${eur(c.cardmarket.holoLow)}</span><span>${eur(c.cardmarket.holoAvg)}</span><span><b>${eur(c.cardmarket.holoTrend)}</b></span></div>` : ""}</div>` : ""}`
       : `<div class="price-table" style="--cols:1"><div class="pt-head"><span>Store</span><b>Price</b></div>
         <div class="pt-row"><span class="pt-label">TCGplayer market</span><span><b>${usd(p.usd)}</b></span></div>
@@ -862,7 +864,7 @@ const panel = detailPanel;
 export function tcgAddSheet(c, preset = "", presetEdition = "") {
   if(!preset&&c.setContext?.printing)preset=c.setContext.printing.code+"|"+c.setContext.printing.rarity;
   const g = c.game,
-    opts = g === "ygo" ? c.sets?.map((s) => [s.code + "|" + s.rarity, `${s.code} · ${s.rarity}`]) || [] : c.variants?.map((v) => [v.key, v.label]) || [];
+    opts = g === "ygo" ? c.sets?.map((s) => [s.code + "|" + s.rarity, `${s.code} · ${s.rarity}`]) || [] : pokemonVariantChoices(c,preset).map((v) => [v.key, v.label]);
   return `<div class="sheet-head"><h2>Add to collection</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   <div class="build-seed">${imgTag(c, "mini-art")}<div><b>${esc(c.name)}</b><small class="muted">${esc(c.typeLine || "")}</small></div><span></span></div>
   <div class="grid2">
@@ -973,7 +975,7 @@ export function tcgCollection() {
       if (w) return wantedLot(g, w, c, i);
       const p = entryPrice(c, e);
       const t = tcgTier(c, e, p);
-      return `<div class="lot" ${tcgRarityAttrs(c,e)} data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}">${selectionMark(g,e.id)}<button class="lot-art" ${finishAttrs(g,c,{priceFinish:e.variant,priceEdition:e.printing&&e.rarity?e.printing+'::'+e.rarity:'',priceYgoEdition:e.edition})}  data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${imgTag(c,"card-img",false,g==="ygo"?p:undefined)}${tileBadges(c)}${tierGem(t)}</button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem(g, c)}</button><span class="lot-sub">${rowBadges(c)}${esc(setLabel({ e, c }) || "")}${e.printing ? " · " + esc(e.printing) : ""}${e.rarity ? " · " + esc(e.rarity) : ""}${e.variant ? " · " + esc(c?.variants?.find((v) => v.key === e.variant)?.label || e.variantLabel || e.variant) : ""}${e.edition ? " · " + esc({"1st-edition":"First Edition",unlimited:"Unlimited",limited:"Limited Edition"}[e.edition] || e.edition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></div><div class="lot-side"><span class="lot-value"><button class="price link" data-act="marketOpen" data-game="${g}" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" data-finish="${esc(e.variant||"reference")}" aria-label="Price history and sellers for ${esc(e.name)}">${p === null ? "—" : usd(p * e.qty)}</button>${conditionBadge(e,[...(c?.conditionQuotes||[]),...(e.conditionQuotes||[])])}</span><span class="stepper"><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="-1" aria-label="One fewer">−</button><b>${e.qty}</b><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="1" aria-label="One more">＋</button></span></div></div>`;
+      return `<div class="lot" ${tcgRarityAttrs(c,e)} data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}">${selectionMark(g,e.id)}<button class="lot-art" ${finishAttrs(g,c,{priceFinish:e.variant,savedVariant:e.variant,savedProductId:e.productId,priceEdition:e.printing&&e.rarity?e.printing+'::'+e.rarity:'',priceYgoEdition:e.edition})}  data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${imgTag(c,"card-img",false,g==="ygo"?p:undefined)}${tileBadges(c)}${tierGem(t)}</button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem(g, c)}</button><span class="lot-sub">${rowBadges(c)}${esc(setLabel({ e, c }) || "")}${e.printing ? " · " + esc(e.printing) : ""}${e.rarity ? " · " + esc(e.rarity) : ""}${e.variant ? " · " + esc(pokemonVariantProductConflict(c,e)?'Saved product identity mismatch':c?.variants?.find((v) => v.key === e.variant)?.label || e.variantLabel || e.variant) : ""}${e.edition ? " · " + esc({"1st-edition":"First Edition",unlimited:"Unlimited",limited:"Limited Edition"}[e.edition] || e.edition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></div><div class="lot-side"><span class="lot-value"><button class="price link" data-act="marketOpen" data-game="${g}" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" data-finish="${esc(e.variant||"reference")}" aria-label="Price history and sellers for ${esc(e.name)}">${p === null ? "—" : usd(p * e.qty)}</button>${conditionBadge(e,g==='ptcg'&&pokemonVariantProductConflict(c,e)?[]:[...(c?.conditionQuotes||[]),...(e.conditionQuotes||[])])}</span><span class="stepper"><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="-1" aria-label="One fewer">−</button><b>${e.qty}</b><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="1" aria-label="One more">＋</button></span></div></div>`;
     })
     .join("")}</div>${selectionTray(g)}${!rows.length ? empty("No matching cards", "Try a different search or filter.") : ""}${rows.length > (U.limit || 120) ? `<button class="btn ghost block" data-act="tCollMore">Load more · ${rows.length-(U.limit || 120)} remaining</button>` : ""}`
   : empty(`No ${esc(GAMES[g].short)} cards yet`, "Search for a card and tap “Add to collection”, or import a list.", `<button class="btn" data-act="go" data-to="#search">Find cards</button><button class="btn ghost" data-act="tImportColl">Paste a list</button>`)}
@@ -2091,7 +2093,7 @@ export function registerTcg(c) {
       id = t.dataset.id,
       lot=t.dataset.entry?gs(G).collection.find(e=>e.id===t.dataset.entry&&String(e.cardId)===String(id)):null,
       setId=t.dataset.setId||(G==="ygo"?lot?.setReleaseId:"")||"",setReleaseUnverified=!!(G==="ygo"&&lot?.setReleaseUnverified),
-      sctx = { type: "tcard", game: G, id, setId, setReleaseUnverified, previewBusy:G==='ptcg', previewMore:null, previewError:'', setVariant:t.dataset.setVariant || lot?.variant || "", priceFinish:t.dataset.setVariant || lot?.variant || "", priceEdition:G==="ygo"?(t.dataset.printing||(lot?.printing&&lot?.rarity?lot.printing+"::"+lot.rarity:"")):"",priceYgoEdition:G==="ygo"?(t.dataset.edition||lot?.edition||""):"", entryId:lot?.id || "",random: !!t.dataset.random, deckId: t.dataset.deck || (S.ui.view === "tdeck" ? S.ui.tdeckId : null) };
+      sctx = { type: "tcard", game: G, id, setId, setReleaseUnverified, previewBusy:G==='ptcg', previewMore:null, previewError:'', setVariant:t.dataset.setVariant || lot?.variant || "", priceFinish:t.dataset.setVariant || lot?.variant || "", priceEdition:G==="ygo"?(t.dataset.printing||(lot?.printing&&lot?.rarity?lot.printing+"::"+lot.rarity:"")):"",priceYgoEdition:G==="ygo"?(t.dataset.edition||lot?.edition||""):"", entryId:lot?.id || "",savedVariant:lot?.variant||'',savedProductId:lot?.productId||'',random: !!t.dataset.random, deckId: t.dataset.deck || (S.ui.view === "tdeck" ? S.ui.tdeckId : null) };
     const sourceMembership=t.setMembership||(ui(G).set.info?.id===sctx.setId?ui(G).set.cards.find(card=>card.id===id)?.setContext:null);
     if(sourceMembership?.membership==='set-response'&&sourceMembership.game===G&&sourceMembership.cardId===id&&sourceMembership.releaseId===sctx.setId)sctx.setMembership={...sourceMembership};
     const still = () => navigationCurrent(screen) && S.ui.sheetCtx === sctx && g() === G && document.querySelector("#sheet")?.open;

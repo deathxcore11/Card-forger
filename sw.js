@@ -1,5 +1,8 @@
-const CACHE = "cardforge-shell-v229";
+const CACHE = "cardforge-shell-v230";
 const ASSETS = [
+  "./pokemon-variant-options.js",
+  "./pokemon-promo-evidence.js",
+
   "./settings-theme.css",
   "./theme-init.js",
   "./magic-matchups.css",

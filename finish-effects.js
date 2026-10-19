@@ -1,5 +1,7 @@
 // Printing-aware presentation only. Never infer availability from a quote, value or frame.
 import {quoteForContext,validSetContext} from './pricing-presentation.js';
+import {pokemonVariantChoices,pokemonVariantProductConflict} from './pokemon-variant-options.js';
+import {reviewedCosmosPreview} from './pokemon-promo-evidence.js';
 export const FINISH_SOURCES = Object.freeze({
  pokemon:'https://www.pokemon.com/us/pokemon-news/pokemon-tcg-scarlet-and-violet-revamps-pokemon-tcg-card-aesthetic',
  base:'https://images.pokemontcg.io/base1/4_hires.png',
@@ -23,6 +25,7 @@ export const FINISH_MASKS = Object.freeze({
  'pk-neo1-9-art':'inset(12.1% 11.4% 48.8% 11.1%)',
  'pk-cel-art':'inset(9.5% 6.6% 51.3% 6.6%)',
  // Sword & Shield art window (734 × 1024 reference); reverse excludes its silver frame/caption too.
+ 'pk-swsh-trainer-field':'inset(53% 8.5% 13% 8.5%)',
  'pk-swsh-art':'inset(9.8% 8% 52.5% 8%)',
  'pk-swsh-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,7% 9.1%,7% 50.7%,93% 50.7%,93% 9.1%,7% 9.1%)',
  'pk-standard-art':'inset(12.3% 8.2% 47.5% 8.2%)',
@@ -96,6 +99,7 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
    if(physicalFinish==='holofoil')return preset(key,label,'ptcg-holo',[layer(set==='cel25'?'pk-cel-art':/^swsh/i.test(set)?'pk-swsh-art':/^sv/i.test(set)?'pk-sv-art':'pk-standard-art','holo')],FINISH_SOURCES.pokemon);
    if(physicalFinish==='reverse-holofoil')return preset(key,label,'ptcg-reverse',[layer(/^swsh/i.test(set)?'pk-swsh-surround':/^sv/i.test(set)?'pk-sv-surround':'pk-standard-surround',/^sv/i.test(set)?'tiles':'rainbow')],FINISH_SOURCES.pokemon);
   }
+  if(c.id==='swsh3-161'&&set==='swsh3'&&category==='trainer'&&physicalFinish==='reverse-holofoil')return {...preset(key,label,'ptcg-reverse',[layer('pk-swsh-trainer-field','rainbow')],'https://api.tcgdex.net/v2/en/cards/swsh3-161'),reason:'Simulated reverse holo · partial coverage',coverage:'partial'};
   // Trainer and unusual layouts remain unmasked until their geometry is known.
   return unknown(key,label);
  }
@@ -111,10 +115,11 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
 export function finishChoices(game,c,ctx={}){
  if(!c?.id||!validSetContext(game,c,ctx))return [];
  if(game==='mtg')return ['nonfoil','foil','etched'].filter(key=>c.finishes?.includes(key)).map(key=>effectFor(game,c,key,{nonfoil:'Nonfoil',foil:'Traditional foil',etched:'Etched foil'}[key],ctx,key));
- if(game==='ptcg')return [...new Map((c.variants||[]).filter(v=>v.key).map(v=>[v.key,v])).values()].map(v=>{
+ if(game==='ptcg')return pokemonVariantChoices(c,requestedVariant(c,ctx)).filter(v=>v.key).map(v=>{
   const finish=variantFinish(v);
   // Pattern metadata is real identity, not permission to fake a generic texture.
   // Keep the selectable variant while its distinct physical pattern is unsupported.
+  if(reviewedCosmosPreview(c,v))return {...preset(v.key,v.label,'ptcg-holo',[layer('pk-swsh-art','holo')],'https://api.tcgdex.net/v2/en/cards/'+c.id),pattern:'cosmos',materialProfile:'cosmos-holo'};
   if(v.foil)return {...unknown(v.key,v.label||v.key),reason:'Patterned finish preview unavailable for this printing.'};
   // Preserve a known variant even when its finish cannot be previewed.
   return finish?effectFor(game,c,v.key,v.label||v.key,ctx,finish):unknown(v.key,v.label||v.key);
@@ -133,7 +138,7 @@ function commonPokemonPresentation(c,choices){
  const variants=new Map((c.variants||[]).map(v=>[v.key,v]));
  const physical=choices.map(p=>variantFinish(variants.get(p.key)||{}));
  if(!physical[0]||physical.some(f=>f!==physical[0]))return null;
- const signature=p=>JSON.stringify([p.effect,p.layers,p.coverage||'',p.texture||'']);
+ const signature=p=>JSON.stringify([p.effect,p.layers,p.coverage||'',p.texture||'',p.materialProfile||'',p.pattern||'']);
  if(choices.some(p=>signature(p)!==signature(choices[0])))return null;
  // Share only presentation. A blank key must not mark a commercial edition
  // selected, substitute its image, or leak into owned lots and price quotes.
@@ -143,6 +148,7 @@ function commonPokemonPresentation(c,choices){
   reason:physical[0]==='nonfoil'?'Nonfoil · no simulated shine':`${label} · shared finish preview; edition not selected${status==='approximate'?' · approximate coverage':''}`};
 }
 export function resolveFinish(game,c,ctx={}){
+ if(game==='ptcg'&&ctx.savedProductId&&requestedVariant(c,ctx)===ctx.savedVariant&&pokemonVariantProductConflict(c,{variant:ctx.savedVariant,productId:ctx.savedProductId}))return {...unknown(ctx.savedVariant,'Saved product identity mismatch'),game,printingId:c?.id||'',face:Number(ctx.face||0),reason:'Saved product does not match this finish. Choose a verified version to browse.'};
  const choices=finishChoices(game,c,ctx),wanted=game==='ptcg'?requestedVariant(c,ctx):(ctx.priceFinish||ctx.finish||c?.setContext?.variantKey);
  // Invalid/unsupported explicit selections must never borrow another variant.
  let selected=choices.find(x=>x.key===wanted);
