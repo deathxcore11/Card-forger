@@ -89,7 +89,7 @@ import { fieldStore, celebrate, calibrateField } from "./matchups-ui.js";
 import { completionPlan, commanderTheme } from "./planner.js";
 import { sourceCredit, mtgjsonDeck, collectionIdeas, upgradeSuggestions, applyUpgradeSwaps } from "./strategy.js";
 import { searchQuery, rankByName, magicFilterError, hasMagicSearchQuery, magicSearchSpec, scryfallSearchPath, mergeMagicCards, loadMagicPrintingPage, captureSearchFocus, restoreSearchFocus } from "./catalog-tools.js";
-import { promptInstall, dismissInstall, onInstallable, isIOS } from "./install.js";
+import { promptInstall, dismissInstall, onInstallable, installGuide, installHelpMarkup } from "./install.js";
 import { attachGlassSelects } from "./glass-select.js";
 import { attachSuggest } from "./suggest.js";
 import { shouldTour, openTour, resetOnboarding, markGuide, guidePrompt } from "./tour.js";
@@ -5897,7 +5897,10 @@ A.persist = async () => {
 };
 A.install = async () => {
 
-  if (!(await promptInstall())) toast(isIOS() ? "In Safari, tap Share, then Add to Home Screen." : "Use your browser menu, then Add to Home screen.");
+  if (!(await promptInstall())) {
+    const guide = installGuide();
+    openSheet(`<div class="sheet-head"><h2>${esc(guide.title)}</h2><button class="icon" data-act="closeSheet" aria-label="Close installation help">✕</button></div>${installHelpMarkup(guide)}`, {type:"install-help"});
+  }
   if (S.ui.view === "home") render();
 };
 // Price alerts (all games).

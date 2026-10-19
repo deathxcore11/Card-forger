@@ -39,11 +39,27 @@ write({ visits: (read().visits || 0) + 1 });
 
 export async function promptInstall() {
   if (!deferred) return false;
-  deferred.prompt();
-  const r = await deferred.userChoice.catch(() => null);
+  // Browser install events are single-use, including rejected/stale prompts.
+  const event = deferred;
   deferred = null;
-  if (r?.outcome === "accepted") write({ installed: true });
-  return true;
+  try {
+    await event.prompt();
+    const r = await event.userChoice;
+    if (r?.outcome === "accepted") write({ installed: true });
+    return true;
+  } catch { return false; }
+}
+
+export function installGuide(ua = globalThis.navigator?.userAgent || "", installed = isInstalled()) {
+  if (installed) return { title:"CardStashy is running as an app", steps:["You already opened the installed app. Use its shortcut in your Start menu, Dock or home screen."] };
+  if (isIOS(ua)) return { title:"Install on iPhone or iPad", steps:["Open CardStashy in Safari.","Tap Share, then Add to Home Screen, and confirm Add."] };
+  if (/Android/i.test(ua)) return { title:"Install on Android", steps:["Open CardStashy in Chrome.","Open the ⋮ menu, then Install app or Add to Home screen."] };
+  if (/Edg\//.test(ua)) return { title:"Install on your computer with Edge", steps:["Open the … menu in the upper-right corner of Edge.","Choose More tools → Apps → Install this site as an app. Some Edge versions put Apps directly in the main menu.","Confirm Install. You can then pin CardStashy to Start or the taskbar.","If Edge offers Open in CardStashy instead, it is already installed in this browser profile."] };
+  if (/Chrome\/|Chromium\//.test(ua)) return { title:"Install on your computer with Chrome", steps:["Open the ⋮ menu in the upper-right corner of Chrome.","Choose Cast, save and share → Install page as app…, then confirm Install.","If Chrome offers Open in CardStashy instead, it is already installed in this browser profile."] };
+  return { title:"Install on your computer", steps:["Open CardStashy in Microsoft Edge or Google Chrome.","In Edge, choose … → More tools → Apps → Install this site as an app.","In Chrome, choose ⋮ → Cast, save and share → Install page as app…."] };
+}
+export function installHelpMarkup(guide = installGuide()) {
+  return `<ol class="foot">${guide.steps.map(step=>`<li>${esc(step)}</li>`).join('')}</ol><p class="foot">If an install prompt is unavailable, use the browser menu above. Searches and updated prices need internet.</p>`;
 }
 export const dismissInstall = () => write({ dismissedAt: Date.now() });
 
