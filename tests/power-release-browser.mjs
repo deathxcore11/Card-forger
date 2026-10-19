@@ -388,7 +388,7 @@ try{
     await fp.setViewportSize({width,height:1000});
     const hero=fp.locator('.deck-hero'),panel=fp.locator('.score-panel.power'),header=await hero.innerText(),text=await panel.innerText();
     assert.match(header,new RegExp(profile.name));assert.equal((await hero.locator('[data-act="tDeckTab"][data-id="insights"] b').innerText()).trim(),x.eligible?String(result.shown):'—','header and shared Power availability agree');
-    if(x.eligible){assert.doesNotMatch(header,/power unavailable/);assert.doesNotMatch(text,/Power estimate unavailable|Finish the deck before rating Power/);assert.match(text,/Deck Power · engine estimate/);}
+    if(x.eligible){assert.doesNotMatch(header,/power unavailable/);assert.doesNotMatch(text,/Power estimate unavailable|Finish the deck before rating Power/);assert.equal((await panel.locator('p.eyebrow').innerText()).trim().toLowerCase(),'deck power · engine estimate','visible label retains the exact engine-estimate meaning despite CSS capitalization');}
     else{assert.match(header,/power unavailable/);assert.match(text,result.incomplete?/Finish the deck before rating Power/:/Power estimate unavailable/);assert.match(text,/Component diagnostics below are not an overall Power rating/);assert.match((await fp.locator('.deck-body').innerText()),x.issue);}
     if(group.id==='glc'){assert.match(await fp.locator('.deck-body').innerText(),/Singleton consistency/);assert.doesNotMatch(await fp.locator('.deck-body').innerText(),/No ACE SPEC\. Every deck may play one|One ACE SPEC .*free power boost/);}
     else{
@@ -404,7 +404,7 @@ try{
   await fp.setViewportSize({width:390,height:1000});await openProbe(group.cases[0].deck.id);
   if(group.game==='ygo'){
    assert.equal(coachHandoffs.length,0,'ordinary format Power navigation never calls AI');await fp.locator('[data-act="aiDeckReview"]').click();await fp.locator('.ai-review-dialog .air-tabs').waitFor();assert.equal(coachHandoffs.length,1);await fp.locator('.air-tabs [data-ai-tab="pilot"]').click();
-   assert.equal(await fp.locator('.air-hand .air-verdict').innerText(),'Assessment');assert.equal(await fp.locator('.air-hand .air-fan > span').count(),expectedHand(group.id)[0]);assert.equal(await fp.locator('.air-hand .air-note').innerText(),coachHandoffs[0].handProfile.note);assert.match(await fp.locator('.air-hand').innerText(),/No normal mulligan/);
+   assert.equal((await fp.locator('.air-hand .air-verdict').innerText()).trim().toLowerCase(),'assessment','YGO hand verdict remains Assessment, never Keep/Mulligan');assert.equal(await fp.locator('.air-hand .air-fan > span').count(),expectedHand(group.id)[0]);assert.equal(await fp.locator('.air-hand .air-note').innerText(),coachHandoffs[0].handProfile.note);assert.match(await fp.locator('.air-hand').innerText(),/No normal mulligan/);
    for(const width of [320,390,768,1440]){await fp.setViewportSize({width,height:1000});await noOverflow(fp,'.ai-review-dialog',group.id+' initial-hand coach '+width);await capture(fp,group.id+'-initial-hand-coach-'+width,'.ai-review-dialog');}
    await fp.locator('[data-ai-close]').click();assert.equal(await fp.locator('.ai-review-dialog').count(),0);await fp.setViewportSize({width:390,height:1000});
   }
