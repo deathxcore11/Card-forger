@@ -1,0 +1,16 @@
+/* Aura has one fixed, legible glass palette. Only the atmosphere follows art. */
+:root[data-theme="aura"] { color-scheme:dark; --muted:#b5bdcb; --faint:#a5afbf; }
+:root[data-theme="aura"] body #ambient { display:block; position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:0; background:#272a33; }
+:root[data-theme="aura"] body #app { position:relative; z-index:1; }
+:root[data-theme="aura"] body #ambient .amb-art { display:block; visibility:hidden; opacity:1; filter:blur(38px) saturate(.62); transition:none; }
+:root[data-theme="aura"] body #ambient.aura-fallback .amb-art { visibility:visible; }
+:root[data-theme="aura"] body #ambient::after { content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(180deg,rgba(15,17,21,.80),rgba(15,17,21,.86) 65%,rgba(15,17,21,.9)); }
+:root[data-theme="aura"] .aura-art { position:absolute; inset:-12%; width:124%; height:124%; max-width:none; filter:blur(38px) saturate(.62); opacity:0; transition:opacity 1000ms ease; animation:aura-drift 22s ease-in-out infinite alternate; transform:translate(-.4%,.3%) scale(1.015); }
+:root[data-theme="aura"] .aura-art.on { opacity:1; }
+:root[data-theme="aura"] .aura-paused .aura-art { animation-play-state:paused; }
+@keyframes aura-drift { to { transform:translate(.4%,-.3%) scale(1.025); } }
+.settings-theme-options { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.settings-theme-swatch-aura { background:linear-gradient(135deg,#505967,#434056,#665348); }.settings-theme-swatch-aura i { background:#8792a680; }.settings-theme-swatch-aura i:last-child { background:#252b36b8; }
+@media(max-width:480px) { .settings-theme-options { grid-template-columns:1fr; }.settings-theme-choice { grid-template-columns:18px 64px minmax(0,1fr); align-items:center; }.settings-theme-choice > span:last-child { grid-column:auto; } }
+@media(prefers-reduced-motion:reduce) { :root[data-theme="aura"] .aura-art { animation:none; transition:none; transform:scale(1.02); } }
+@media(prefers-reduced-transparency:reduce) { :root[data-theme="aura"] body #ambient { display:none; } }

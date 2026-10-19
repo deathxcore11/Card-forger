@@ -1,6 +1,7 @@
 import {createMagicMatchups,matchupFingerprint} from './magic-matchups-controller.js';
 import {matchupState,resetMatchups,renderMagicMatchupSheet} from './magic-matchups-ui.js';
 import {buildMatchupRequest,matchupImportNotice} from './ai-matchup-core.js';
+import {initAura} from './aura.js';
 import {initTheme,applyTheme,normalizeSettingsTab,activateSettingsTab} from './settings-theme.js';
 import {recoveryKey,syncBaselineKey,createRecoverySnapshot,appendRecoverySnapshot,readRecoverySnapshots,createSyncBaseline,recoverySummary} from './recovery-store.js';
 import {mergeLegacyGameHistories,mergeValueHistory} from './value-history.js';
@@ -133,6 +134,7 @@ function setSaveStatus(text, cls = "") {
 // Glass look: frosted surfaces over a blurred copy of the game's daily-card art.
 // The art is remembered per game so every screen shares the same backdrop.
 initTheme();
+initAura();
 const AMBIENT_KEY = "cardstashy-ambient-v1",
   GLASS_KEY = "cardstashy-glass";
 const glassOn = () => {
@@ -161,6 +163,7 @@ function updateAmbient() {
     } catch {}
   }
   const url = saved[g] || "";
+  art.dataset.game = g;
   document.body.style.setProperty("--ambient-art-image", url ? `url("${url.replace(/"/g, "%22")}")` : "none");
   if (art.dataset.src !== url) {
     art.dataset.src = url;

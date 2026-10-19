@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import {THEME_KEY,SETTINGS_TABS,normalizeTheme,readTheme,applyTheme,initTheme,themeSettings,normalizeSettingsTab,settingsTabs,activateSettingsTab} from './settings-theme.js';
 
 const memory = new Map(), storage = {getItem:key=>memory.get(key) ?? null,setItem:(key,value)=>memory.set(key,value)};
-const controls = ['light','dark'].map(value=>({value,checked:false}));
+const controls = ['light','dark','aura'].map(value=>({value,checked:false}));
 const meta = {setAttribute(name,value){this[name]=value;}};
 const document = {documentElement:{dataset:{},style:{}},querySelector:()=>meta,querySelectorAll:()=>controls};
 assert.equal(readTheme(storage),'dark','existing users retain the dark appearance');
@@ -12,7 +12,7 @@ assert.equal(normalizeTheme('system'),'dark');assert.equal(normalizeTheme('<scri
 assert.deepEqual(applyTheme('light',{document,storage}),{theme:'light',saved:true});
 assert.deepEqual([...memory],[[THEME_KEY,'light']],'appearance never touches an account or collection key');
 assert.equal(document.documentElement.dataset.theme,'light');assert.equal(document.documentElement.style.colorScheme,'light');
-assert.equal(meta.content,'#f3f5f8');assert.deepEqual(controls.map(x=>x.checked),[true,false]);
+assert.equal(meta.content,'#f3f5f8');assert.deepEqual(controls.map(x=>x.checked),[true,false,false]);
 assert.equal(readTheme(storage),'light');assert.match(themeSettings({document,storage}),/value="light" data-change="setTheme" checked/);
 const denied = {getItem(){throw Error('denied');},setItem(){throw Error('quota');}};
 assert.equal(readTheme(denied),'dark');
@@ -45,7 +45,7 @@ activateSettingsTab(root,'account');assert.equal(rail.scrollLeft,0);
 activateSettingsTab(root,'backup');assert.equal(panes[1].hidden,false);assert.equal(buttons[1]['aria-selected'],'true');
 
 const boot=readFileSync(new URL('./theme-init.js',import.meta.url),'utf8');
-for(const value of ['light','dark','unexpected',null]) {
+for(const value of ['light','dark','aura','unexpected',null]) {
   memory.clear();if(value)memory.set(THEME_KEY,value);
   vm.runInNewContext(boot,{document,localStorage:storage});assert.equal(document.documentElement.dataset.theme,readTheme(storage));
 }

@@ -22,6 +22,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 HOSTS = ("https://cardstashy.com/", "https://cardforge2.deathxcore11.workers.dev/")
 KEY_ASSETS = ("index.html", "config.js", "sw.js")
 MODULES = (
+    "aura.js", "aura.css",
     "brand-motion.css",
     "game-tabs.css", "game-tab-mtg.jpg", "game-tab-ygo.png", "game-tab-ptcg.jpg",
     "power.js", "deckpower.js", "insights.js", "builder.js", "planner.js", "deck-optimizer.js", "engine-map.js", "pairing.js", "scouting.js", "formats.js", "goldfish.js", "tier-card.js", "ai-review.js",

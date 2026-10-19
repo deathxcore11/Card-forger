@@ -702,3 +702,23 @@ jobs:
         with:
           name: ygo-saved-presentation-browser-evidence
           path: test-results/synthetic-ygo-saved-*
+
+  aura-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - name: Test Aura and existing themes in the actual app
+        run: node tests/aura-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aura-browser-evidence
+          path: test-results/

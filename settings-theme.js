@@ -6,7 +6,7 @@ export const SETTINGS_TABS = Object.freeze([
   ['info', 'App Help & Info'], ['app', 'App Settings']
 ]);
 const storageDefault = () => { try { return globalThis.localStorage; } catch { return null; } };
-export const normalizeTheme = value => value === 'light' ? 'light' : 'dark';
+export const normalizeTheme = value => ['light','dark','aura'].includes(value) ? value : 'dark';
 export function readTheme(storage = storageDefault()) {
   try { return normalizeTheme(storage?.getItem(THEME_KEY)); } catch { return 'dark'; }
 }
@@ -15,7 +15,7 @@ export function applyTheme(value, {document = globalThis.document, storage = sto
   let saved = !persist;
   if (persist) try { if (storage) { storage.setItem(THEME_KEY, theme); saved = true; } } catch {}
   const root = document?.documentElement;
-  if (root) { root.dataset.theme = theme; root.style.colorScheme = theme; }
+  if (root) { root.dataset.theme = theme; root.style.colorScheme = theme === 'light' ? 'light' : 'dark'; }
   document?.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#f3f5f8' : '#0f1115');
   for (const control of document?.querySelectorAll('[data-change="setTheme"]') || []) control.checked = control.value === theme;
   return {theme, saved};
@@ -32,7 +32,7 @@ export function initTheme({document = globalThis.document, storage = storageDefa
 }
 export function themeSettings({document = globalThis.document, storage = storageDefault()} = {}) {
   const theme = normalizeTheme(document?.documentElement?.dataset.theme || readTheme(storage));
-  return `<section class="panel settings-card settings-appearance"><div class="settings-card-heading"><div><p class="eyebrow">APPEARANCE</p><h2>Make it feel like you</h2></div></div><fieldset class="settings-theme"><legend>Color mode</legend><div class="settings-theme-options">${[['light','Light','Bright, soft surfaces'],['dark','Dark','The familiar night view']].map(([id,label,description]) => `<label class="settings-theme-choice"><input id="settingsTheme-${id}" name="settingsTheme" type="radio" value="${id}" data-change="setTheme" ${theme === id ? 'checked' : ''}><span class="settings-theme-swatch settings-theme-swatch-${id}" aria-hidden="true"><i></i><i></i><i></i></span><span><b>${label}</b><small>${description}</small></span></label>`).join('')}</div></fieldset><p class="foot">Applies to all three games on this device. Your cards, artwork and account sync stay unchanged.</p></section>`;
+  return `<section class="panel settings-card settings-appearance"><div class="settings-card-heading"><div><p class="eyebrow">APPEARANCE</p><h2>Make it feel like you</h2></div></div><fieldset class="settings-theme"><legend>Color mode</legend><div class="settings-theme-options">${[['light','Light','Bright, soft surfaces'],['dark','Dark','The familiar night view'],['aura','Aura','Soft color from the art you explore']].map(([id,label,description]) => `<label class="settings-theme-choice"><input id="settingsTheme-${id}" name="settingsTheme" type="radio" value="${id}" data-change="setTheme" ${theme === id ? 'checked' : ''}><span class="settings-theme-swatch settings-theme-swatch-${id}" aria-hidden="true"><i></i><i></i><i></i></span><span><b>${label}</b><small>${description}</small></span></label>`).join('')}</div></fieldset><p class="foot">Applies to all three games on this device. Your cards, artwork and account sync stay unchanged.</p></section>`;
 }
 export const normalizeSettingsTab = tab => tab === 'backup' ? 'recovery' : SETTINGS_TABS.some(([id]) => id === tab) ? tab : 'account';
 export function settingsTabs(tab) {
