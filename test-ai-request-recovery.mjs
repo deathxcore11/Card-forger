@@ -42,6 +42,15 @@ for(const [style,wantTribe] of [['mono-red aggressive beginner-friendly easy to 
  const queries=[];await prepareMtgDeck({...args,style,format:'Standard',seed:'',commander:'',colors:['R'],required_cards:[]},{api:async p=>{queries.push(new URL(p,'https://fixture.invalid').searchParams.get('q'));return {data:[]};}});
  assert.ok(queries[0].includes('f:standard'));assert.ok(queries[0].includes('id=r'));assert.doesNotMatch(queries[0],/aggressive|aggro|beginner|friendly|easy|play/);assert.equal(/t:goblin/.test(queries[0]),wantTribe);
 }
+// Search transport failure must not erase a separately resolved, theme-matching
+// legal candidate, or present network failure as evidence that no leader exists.
+const zombieLeader={...structuredClone(SAI),id:'zombie-leader',name:'Zombie Leader Fixture',type_line:'Legendary Creature — Zombie',oracle_text:'Other Zombies you control get +1/+1.',color_identity:['B'],colors:['B'],mana_cost:'{2}{B}'};
+const zombieArgs={...args,style:'black zombie',format:'Commander',seed:'',commander:'',colors:['B'],candidate_cards:[zombieLeader.name]};
+const outage={meta:n=>n===zombieLeader.name?zombieLeader:null,resolve:async n=>n===zombieLeader.name?zombieLeader:null,inv:()=>({available:0}),api:async()=>{throw Error('Synthetic catalogue outage');}};
+const zombieDraft=await prepareMtgDeck(zombieArgs,outage);assert.equal(zombieDraft.result.commander,zombieLeader.name);assert.equal(zombieDraft.result.ready,false,'a recovered leader does not pretend the full list is complete');
+const expensiveZombie={...zombieLeader,prices:{usd:'100'}},cheapZombie={...zombieLeader,id:'cheaper-zombie-print',prices:{usd:'5'}};
+const pricedZombie=await prepareMtgDeck({...zombieArgs,budget:50},{...outage,meta:n=>n===zombieLeader.name?expensiveZombie:null,resolve:async n=>n===zombieLeader.name?expensiveZombie:null,api:async()=>({data:[cheapZombie]})});assert.equal(pricedZombie.result.commander,zombieLeader.name,'verified affordable search printing must win over expensive same-name suggestion');assert.equal(pricedZombie.draft.referencePrices[cardKey(zombieLeader.name)],5);
+const unavailableZombie=await prepareMtgDeck({...zombieArgs,candidate_cards:[]},outage);assert.match(unavailableZombie.note,/card search could not finish/);
 console.log('PASS: actual AI seed discovery searches current format/color legality without literal subjective adjectives; real Goblin mechanics remain in the search.');
 
 for(const prompt of ['can you make a red deck using a goblin Commander','Build me a mono-red deck for $50',"make me a mono red deck it's easy"]){
@@ -111,6 +120,14 @@ for(const goal of ['fun','theme']){
  const out=await tcgTools.build_deck({game:'ptcg',format:'Standard',seed:'Charizard ex',required_cards:['Charizard ex'],goal,style:'Fire beginner',budget:50});
  assert.equal(out.reviewAvailable,true);assert.equal(out.seed,'Charizard ex');assert.equal(out.complete,false);assert.equal(out.goal,goal);assert.match(out.note,/not a verified playability/);await tcgTools.open(tcgTools.pendingItem());assert.deepEqual(tcgOpened.slice(0,4),['ptcg',charizard.id,50,'standard']);
 }
+// A name lookup can return a rotated printing. Resolve a same-name legal printing
+// using the chosen format, then hydrate the search hit before offering the action.
+let searched=0;
+const oldCharizard={...charizard,id:'rotated-charizard',legal:false},legalCharizard={...charizard,id:'legal-charizard',legal:true};
+const ps=tcgContext.T.SOURCES.ptcg;
+Object.assign(ps,{byName:async()=>oldCharizard,legality:c=>c.legal===false?'not_legal':c.legal===true?'legal':'unknown',limit:()=>4,get:async id=>id===legalCharizard.id?legalCharizard:oldCharizard,search:async spec=>{searched++;assert.equal(spec.format,'standard');assert.equal(spec.exactName,true);return {cards:[{id:legalCharizard.id,name:charizard.name}]};}});
+let compatible=await tcgTools.build_deck({game:'ptcg',format:'Standard',seed:'Charizard ex',required_cards:['Charizard ex'],goal:'fun',budget:50});assert.equal(compatible.reviewAvailable,true);await tcgTools.open(tcgTools.pendingItem());assert.equal(tcgOpened[1],legalCharizard.id);assert.equal(searched,1);
+ps.get=async()=>oldCharizard;tcgTools.reset();compatible=await tcgTools.build_deck({game:'ptcg',format:'Standard',seed:'Charizard ex',required_cards:['Charizard ex'],budget:50});assert.equal(compatible.reviewAvailable,undefined);assert.match(compatible.note,/Standard-compatible printing/);assert.equal(tcgTools.pendingItem(),null);
 const extra=await tcgTools.build_deck({game:'ptcg',format:'Standard',seed:'Charizard ex',required_cards:['Other ex'],goal:'theme',budget:50});assert.equal(extra.requiresChoice,true);assert.match(extra.note,/multiple required cards/);
 assert.equal(tcgContext.S.state.decks.length,0);assert.equal(tcgContext.S.state.collection.length,0);
 console.log('PASS: Charizard ex fun/theme requests use the exact existing Pokémon builder, matching seed requirement is retained, unsupported extra requirements stay explicit, budget remains exact and nothing autosaves.');

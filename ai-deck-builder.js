@@ -1,10 +1,10 @@
 // One bounded app-data operation, not one AI call per card. Recommendations stay
 // unsaved until the player reviews the exact list and uses the normal save action.
-import { buildDeck, themeQuery, themeQueries, fitsColors } from './builder.js';
+import { buildDeck, themeQuery, themeQueries, fitsColors, requestedIntent } from './builder.js';
 import { cardKey, cardPrice, sumQty, validateDeck } from './core.js';
 import { formatOf, canLead, legalityIn, verifyLeader } from './formats.js';
 import { normalizeDeckGoal, goalDescription } from './ai-deck-goal.js';
-import { commanderTheme } from './planner.js';
+import { commanderTheme, tribalSupport, themeSupport } from './planner.js';
 import { functionalIn } from './deck-safety.js';
 import { findCheapestPrinting } from './mtg-cheap.js';
 const BASIC = { W:'Plains', U:'Island', B:'Swamp', R:'Mountain', G:'Forest', C:'Wastes' };
@@ -69,9 +69,14 @@ export async function prepareMtgDeck(args,x) {
   const leadQuery=f.commander?(f.id==='paupercommander'?'is:paupercommander':f.commander==='planeswalker'?'t:planeswalker':'is:commander'):'-t:land';
   const neededColors=[...new Set([seed,...requiredCards].filter(Boolean).flatMap(c=>c.color_identity || []))],identity=requestedColors.length?`id=${allowedColors.join('').toLowerCase()||'c'}`:cs?`id=${cs}`:neededColors.length?`id>=${neededColors.join('').toLowerCase()}`:'';
   const choices=await search(`${fq} ${leadQuery} ${identity} ${theme}`);
-  const usable=choices.filter(c=>!excludedKeys.has(cardKey(c.name))&&(!requestedColors.length||fitsColors(c,allowedColors))&&requiredCards.every(r=>!f.commander||fitsColors(r,c.color_identity||[]))&&isLegal(c,f)&&(!f.commander||canLead(c,f)||f.id==='paupercommander')&&(!seed||!f.commander||fitsColors(seed,c.color_identity||[]))).filter(c=>basis==='owned'?available(x,c.name)>0:limit===Infinity||quote(c)!==null&&quote(c)<=limit);
+  // Keep already-resolved suggestions available if the catalogue search misses
+  // or fails. They must demonstrably fit the same requested theme and checks.
+  const intent=requestedIntent(discoveryStyle);
+  const fallback=suggested.filter(c=>c&&intent.other.length===0&&intent.tribes.every(t=>tribalSupport(c,t))&&intent.roles.every(r=>themeSupport(c,{roles:[r]}).length>0));
+  const candidates=[...choices,...fallback.filter(c=>!choices.some(found=>cardKey(found.name)===cardKey(c.name)))];
+  const usable=candidates.filter(c=>!excludedKeys.has(cardKey(c.name))&&(!requestedColors.length||fitsColors(c,allowedColors))&&requiredCards.every(r=>!f.commander||fitsColors(r,c.color_identity||[]))&&isLegal(c,f)&&(!f.commander||canLead(c,f)||f.id==='paupercommander')&&(!seed||!f.commander||fitsColors(seed,c.color_identity||[]))).filter(c=>basis==='owned'?available(x,c.name)>0:limit===Infinity||quote(c)!==null&&quote(c)<=limit);
   const chosen=usable[0];
-  if(!chosen)return {requiresChoice:true,note:seed?`I found ${seed.name}, but no compatible priced commander in this search. Name a commander to use with it.`:`I could not find a verified ${f.name} build-around for that theme. Name a card to build around.`,warnings:[...new Set(warnings)]};
+  if(!chosen)return {requiresChoice:true,note:seed?`I found ${seed.name}, but no compatible priced commander in this search. Name a commander to use with it.`:warnings.some(w=>w.startsWith('Some card lookups'))?`The card search could not finish, so I cannot verify a ${f.name} build-around yet. Try again, or name a card to build around.`:`I could not find a verified ${f.name} build-around for that theme in this search. Name a card to build around.`,warnings:[...new Set(warnings)]};
   if(f.commander){lead=chosen;if(f.id==='paupercommander'){lead.pdhCommander=true;remember(lead);}}else seed=chosen;
   if(!seed)seed=chosen;
  }

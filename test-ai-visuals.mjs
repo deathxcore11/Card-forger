@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {makeAskTools} from './ai-tools.js';
 import {esc} from './ui.js';
-const card={name:'Lead card',id:'lead',image:'https://art.test/card.png',imageLarge:'https://art.test/card-large.png',image_uris:{normal:'https://art.test/magic.png',art_crop:'https://art.test/magic-art.png'}};
+const card={category:'Pokemon',name:'Lead card',id:'lead',image:'https://art.test/card.png',imageLarge:'https://art.test/card-large.png',image_uris:{normal:'https://art.test/magic.png',art_crop:'https://art.test/magic-art.png'}};
 const data={source:'Fixture tournament',decks:[{key:'winner',name:'Winning deck',cover:'123',list:[{name:card.name,qty:4,kind:'Pokemon'}],main:[{name:card.name,qty:4}]}],archetypes:[{name:'Winning deck',best:'winner',share:.25,count:3}]};
 const T={game:()=> 'ptcg',cache:{ptcg:{lead:card},ygo:{lead:card}},cardOf:()=>card,gs:()=>({decks:[],collection:[]}),ownedMap:()=>new Map(),metaState:()=>({data}),metaOwned:()=>({pct:.5,cost:12}),SOURCES:{ptcg:{formats:[{id:'standard',name:'Standard'}],search:async()=>({cards:[card]})},ygo:{}},ui:()=>({})};
 let opened=0;

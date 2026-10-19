@@ -255,16 +255,18 @@ export function makeAskTools(x) {
       if(['chaos','weak'].includes(goal)||extraRequirements.length||excluded_cards.length||colors.length||avoid_infinite)return {game:g,requiresChoice:true,terminal:true,goal,note:'I can open this game’s existing builder around one main card or archetype. It cannot enforce extra card exclusions, multiple required cards, Magic color constraints, or a no-infinite-combos guarantee. Tell me which main card to keep and which restriction to revise. Nothing was saved.'};
       if(budget_basis==='owned')return {game:g,requiresChoice:true,note:'This builder handoff cannot guarantee an owned-only list. Choose a purchase budget, or use your saved deck to review the missing cards.'};
       if(commander)return {game:g,requiresChoice:true,note:'A commander is a Magic deck role. For this game, give the main card or archetype as the build-around instead.'};
+      const canSeed=c=>!!c && (g!=='ptcg'||c.category==='Pokemon') && (!src.legality||src.legality(c,selected)!=='not_legal') && (!src.limit||src.limit(c,selected)>0);
+      const hydrate=async c=>c?.id&&src.get?await src.get(c.id).catch(()=>null):c;
       let r = null;
       if(required){
         const exact=await src.byName?.(required).catch(()=>null);
         if(!preparingCurrent())return {cancelled:true,note:'This question was closed or replaced. Nothing was saved.'};
-        r=exact?{cards:[exact]}:await src.search({q:required,format:selected.id,page:0,size:12}).catch(()=>({cards:[]}));
+        r=canSeed(exact)?{cards:[exact],hydrated:true}:await src.search({q:required,exactName:true,category:g==='ptcg'?'Pokemon':'',format:selected.id,page:0,size:12}).catch(()=>({cards:[]}));
       } else {
         for(const name of candidate_cards.slice(0,3)){
           const card=await src.byName?.(name).catch(()=>null);
           if(!preparingCurrent())return {cancelled:true,note:'This question was closed or replaced. Nothing was saved.'};
-          if(card&&cardKey(card.name)===cardKey(name)){r={cards:[card]};break;}
+          if(canSeed(card)&&cardKey(card.name)===cardKey(name)){r={cards:[card],hydrated:true};break;}
         }
         if(!r&&g==='ptcg' && /^(fire|water|grass|lightning|psychic|fighting|darkness|metal|dragon|colorless|fairy)\b/i.test(want))r=await src.search({q:'',type:want.split(/\s/)[0][0].toUpperCase()+want.split(/\s/)[0].slice(1).toLowerCase(),category:'Pokemon',format:selected.id,page:0,size:12}).catch(()=>null);
       }
@@ -272,8 +274,15 @@ export function makeAskTools(x) {
       if (!r?.cards?.length && !required) r = await src.search({ q: want, format:selected.id, page: 0, size: 12 }).catch(() => ({ cards: [] }));
       if (!preparingCurrent()) return {cancelled:true,note:'This question was closed or replaced. Nothing was saved.'};
       const named=c=>clip(c?.name,120).toLowerCase()===required.toLowerCase();
-      const pick = required ? (r?.cards||[]).find(named) : (r?.cards||[]).find(c=>/ex|VSTAR|VMAX|Stage 2/i.test(`${c.name} ${c.stage||''}`)) || r?.cards?.[0];
-      if(required&&!pick)return {game:g,requiresChoice:true,note:`I could not verify the exact build-around “${required}”. Which card or printing should the builder use?`};
+      const candidates=(r?.cards||[]).filter(c=>!required||named(c));
+      if(!required)candidates.sort((a,b)=>Number(/ex|VSTAR|VMAX|Stage 2/i.test(`${b.name} ${b.stage||''}`))-Number(/ex|VSTAR|VMAX|Stage 2/i.test(`${a.name} ${a.stage||''}`)));
+      let pick=null;
+      for(const candidate of candidates.slice(0,6)){
+        const full=r.hydrated?candidate:await hydrate(candidate);
+        if(!preparingCurrent())return {cancelled:true,note:'This question was closed or replaced. Nothing was saved.'};
+        if(canSeed(full)&&(!required||named(full))){pick=full;break;}
+      }
+      if(required&&!pick)return {game:g,requiresChoice:true,note:`I could not verify a ${selected.name}-compatible printing of “${required}”. Which card or format should the builder use?`};
       if (!pick) return { error: `No ${g === 'ygo' ? 'Yu-Gi-Oh!' : 'Pokémon'} card found for "${want}".` };
       x.pending = () => {if(!scopeCurrent()){x.toast?.('Your workspace changed. Ask again in the current workspace.');return;}return x.openTcgBuild(g,pick.id,$,selected.id,scopeCurrent);}; x.pending.current=scopeCurrent; x.pendingGame=g;
       x.pending.visual={card:pick,image:pick.art||pick.imageLarge||pick.image||'',name:pick.name,format:selected.name,summary:'Generate and review the list',status:'Builder setup',ready:false,estimate:null};

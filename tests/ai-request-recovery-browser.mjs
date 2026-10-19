@@ -64,7 +64,7 @@ try{
    assert.equal(await page.locator('.deck-compact-row').count(),4);assert.equal(await page.locator('.deck-printing').count(),4);
    const geometry=await page.locator('.deck-compact-row').evaluateAll(rows=>rows.map(n=>{const r=n.getBoundingClientRect(),name=n.querySelector('.deck-compact-copy>b'),a=n.querySelector('img'),nr=name.getBoundingClientRect(),ar=a?.getBoundingClientRect();return {width:r.width,nameWidth:nr.width,artWidth:ar?.width,artHeight:ar?.height,overflow:n.scrollWidth>n.clientWidth+1};}));
    for(const g of geometry){assert(g.width>200&&g.nameWidth>65&&g.artHeight>g.artWidth&&!g.overflow,`${kind} readable portrait tile at ${width}: ${JSON.stringify(g)}`);}
-   await noOverflow(page,'#sheetBody',`${kind} compact rows ${width}`,true);await capture(page,`ai-request-recovery-${width}-${kind}-compact`);await page.evaluate(()=>document.querySelector('#sheet').close());
+   await noOverflow(page,'#sheetBody',`${kind} compact rows ${width}`,true);await page.locator('.deck-compact-row').first().scrollIntoViewIfNeeded();await capture(page,`ai-request-recovery-${width}-${kind}-compact`);await page.evaluate(()=>document.querySelector('#sheet').close());
   }
   app.health();checks.push({width,plainHomepagePrompt:true,actualBuiltInSuggestion:true,formatChoiceNoExtraModel:true,unverifiedConsentNoExtraModel:true,freshChatClearsRestriction:true,exact100:true,noAutosave:true,syntheticModel:true});
  }catch(error){if(app){console.error('Synthetic app failure context:',JSON.stringify({url:app.page.url(),text:(await app.page.locator('body').innerText()).slice(-4000)}));await capture(app.page,`ai-request-recovery-${width}-failure`).catch(()=>{});}throw error;}finally{await app?.context.close();}}
