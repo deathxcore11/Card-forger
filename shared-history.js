@@ -1,3 +1,4 @@
+import {classicEvidence,classicProductMatches} from './pokemon-classic-evidence.js';
 import {SUPABASE} from './config.js';
 import {canRequestExactYgoHistory,exactYgoHistoryIdentity,sameExactYgoHistoryIdentity,ygoHistorySubtype,YGO_HISTORY_SCHEMA} from './ygo-history-identity.js';
 export {canRequestExactYgoHistory} from './ygo-history-identity.js';
@@ -7,11 +8,13 @@ const CACHE='cardstashy-public-market-history-v4';
 function cached(k){try{return JSON.parse(localStorage.getItem(CACHE)||'{}')[k];}catch{return null;}}
 function remember(k,d){try{const all=JSON.parse(localStorage.getItem(CACHE)||'{}');all[k]=d;const keys=Object.keys(all).sort((a,b)=>(all[b].checked||0)-(all[a].checked||0));for(const key of keys.slice(60))delete all[key];localStorage.setItem(CACHE,JSON.stringify(all));}catch{}}
 
+const classicHistory=q=>q?.game==='ptcg'&&classicEvidence(q.cardId);
 const contextualYgo=q=>q?.game==='ygo'&&!!q.releaseId;
-export const historyKey=q=>contextualYgo(q)?JSON.stringify([YGO_HISTORY_SCHEMA,q.game,q.cardId,q.finish,q.releaseId,q.edition||'',q.rarity||'',q.selectedEdition||'',q.currency||'']):[q.game,q.cardId,q.finish,...(q.edition?[q.edition,q.rarity || '']:[])].join('|');
+export const historyKey=q=>classicHistory(q)?[q.game,q.cardId,q.finish,'product:'+classicHistory(q).productId].join('|'):contextualYgo(q)?JSON.stringify([YGO_HISTORY_SCHEMA,q.game,q.cardId,q.finish,q.releaseId,q.edition||'',q.rarity||'',q.selectedEdition||'',q.currency||'']):[q.game,q.cardId,q.finish,...(q.edition?[q.edition,q.rarity || '']:[])].join('|');
 export const setHistoryRefresh=fn=>{refresh=fn;};
 export function validateHistory(data,q){
  if(data?.game!==q.game || data.cardId!==q.cardId || data.finish!==q.finish)throw Error('History printing mismatch');
+ if(classicHistory(q)&&(!Array.isArray(data.series)||data.series.some(s=>!classicProductMatches(q.cardId,s.productId))))throw Error('Classic product history mismatch');
  if(contextualYgo(q)){
   if(!sameExactYgoHistoryIdentity(data,q)||!Array.isArray(data.series)||!['ready','empty','unsupported','unavailable'].includes(data.status))throw Error('Exact history identity mismatch');
   if(data.series.some(s=>!sameExactYgoHistoryIdentity(s,q)||ygoHistorySubtype(s.subtype)!==q.selectedEdition||!Number.isSafeInteger(s.productId)||s.productId<=0||typeof s.source!=='string'||!Array.isArray(s.points)))throw Error('Exact history series mismatch');
@@ -20,7 +23,7 @@ export function validateHistory(data,q){
 }
 function savedHistory(q){
  const key=historyKey(q),old=sharedHistory.get(key)||cached(key);
- if(!old||!contextualYgo(q))return old;
+ if(!old||!contextualYgo(q)&&!classicHistory(q))return old;
  try{return validateHistory(old,q);}catch{return null;}
 }
 // Older routes can report a provider/mapping failure in a successful HTTP
@@ -43,7 +46,7 @@ function exactHistoryProvider(series){
  return '';
 }
 export async function loadSharedHistory(q){
- if(!q)return;
+ if(!q||classicHistory(q)&&q.selectionVerified===false)return;
  const exact=contextualYgo(q);
  if(exact&&!canRequestExactYgoHistory(q))return;
  if(!exact&&!SUPABASE.url)return;
@@ -55,7 +58,7 @@ export async function loadSharedHistory(q){
   const params=new URLSearchParams({game:q.game,id:q.cardId,finish:q.finish,edition:q.edition || '',rarity:q.rarity || '',...(exact?{releaseId:q.releaseId,selectedEdition:q.selectedEdition,currency:q.currency}: {})});
   // Supabase is card/finish scoped, never release/printing/physical-edition
   // scoped. A selected release must not query or fall back to that dataset.
-  const jobs=exact?[]:[fetch(SUPABASE.url+'/functions/v1/market-history?'+new URLSearchParams({game:q.game,id:q.cardId,finish:q.finish}),{headers:{apikey:SUPABASE.key},signal:AbortSignal.timeout(20000)})];
+  const jobs=exact||classicHistory(q)?[]:[fetch(SUPABASE.url+'/functions/v1/market-history?'+new URLSearchParams({game:q.game,id:q.cardId,finish:q.finish}),{headers:{apikey:SUPABASE.key},signal:AbortSignal.timeout(20000)})];
   jobs.push(fetch('api/prices/archive?'+params,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(25000)}));
   if(q.game!=='mtg')jobs.push(fetch('api/prices/recent?'+params,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(25000)}));
   const results=await Promise.allSettled(jobs.map(async job=>{const r=await job;if(!r.ok)throw Error('History unavailable');return validateHistory(await r.json(),q);}));

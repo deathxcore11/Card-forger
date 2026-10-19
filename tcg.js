@@ -1,3 +1,4 @@
+import {CLASSIC_SCHEMA,classicEvidence,classicCatalogueCard,classicProductMatches} from './pokemon-classic-evidence.js';
 import {browseSets,setBrowserControls,setBrowserRows,setBrowserDetail} from './set-browser.js';
 import {POKEMON_VARIANT_SCHEMA,pokemonVariantChoices,pokemonVariantProductConflict,samePokemonVariant} from './pokemon-variant-options.js';
 import {valuePageOverview,valueTopLots,valuePageAttrs} from './value-page.js';
@@ -35,7 +36,7 @@ import { recordCardPrice, trackedQuote, priceHistoryHtml, alertsPanel, alertStat
 import { skeletonGrid } from "./ui.js";
 import { installNudge } from "./install.js";
 import { rankByName } from "./catalog-tools.js";
-import {setRowContent,knownSetCount,setYearSections,setCardFields,setCardFacets,setFinishLabel,setVariantKey,filterSortSetCards,setProgressMarkup} from './set-list-ui.js';
+import {setRowContent,knownSetCount,setYearSections,setCardFields,setCardFacets,setFinishLabel,setVariantKey,canonicalPokemonFinish,filterSortSetCards,setProgressMarkup} from './set-list-ui.js';
 import {artworkHTML,artworkSources,pokemonArtCrop,pokemonDeckCover} from "./artwork.js";
 import { tierOf, tierAttrs, tierStyle, tierGem, ygoRarityFlair } from "./tier.js";
 import {viewControl,selectionControl,selectionMark,selectionTray,historyPanel,quoteModel,priceOverview,quoteWarning} from "./workbench-ui.js";
@@ -82,7 +83,7 @@ const PRICE_TTL = 24 * 3600 * 1000;
 export const game = () => (GAMES[S.state.settings?.game] ? S.state.settings.game : "mtg");
 export const isTcg = () => game() !== "mtg";
 export const gs = (g = game(), s = S.state) => s.tcg?.[g] || blankGame();
-export const cardOf = (g, id) => cache[g][id] || null;
+export const cardOf = (g, id) => g==='ptcg'?classicCatalogueCard(cache[g][id])||null:cache[g][id]||null;
 
 // Per-game screen state (never saved).
 const UI = {};
@@ -132,6 +133,7 @@ export async function loadCache(readRecord) {
   } catch {}
 }
 const remember = (card) => {
+  if(card.game==='ptcg')card=classicCatalogueCard(card);
   const prev = cache[card.game][card.id];
   if (card.brief && prev && !prev.brief) return prev;
   if (!card.brief) recordCardPrice(card.game, card);
@@ -142,12 +144,12 @@ const remember = (card) => {
 export function needsCardRefresh(g,c,printings=false){
  const time=Date.parse(c?.fetchedAt);
  return !c||c.brief||!Number.isFinite(time)||time>Date.now()+300000||Date.now()-time>=PRICE_TTL||
- (g==='ptcg'&&(c.variantSchema!==POKEMON_VARIANT_SCHEMA||c.priceFallbackSchema!==3))||
+ (g==='ptcg'&&(c.variantSchema!==POKEMON_VARIANT_SCHEMA||c.priceFallbackSchema!==3||classicEvidence(c)&&c.classicSchema!==CLASSIC_SCHEMA))||
  (g==='ygo'&&(c.artSchema!==1||(printings&&c.printPriceSchema!==1)));
 }
 // Full card with prices no older than a day.
 export async function ensureCard(g, id, force = false,printings=true) {
-  const c = cache[g][id];
+  const c = cardOf(g,id);
   if (!force&&!needsCardRefresh(g,c,printings)) return c;
   try {
     return remember(await SOURCES[g].get(id,{printings}));
@@ -321,14 +323,16 @@ export function collectionValue(g, s = S.state) {
 // Price for the exact printing/variant when known (Yu-Gi-Oh! set price, Pokémon variant).
 export const persistQuoteCache=()=>saveCacheSoon();
 export function entryPrice(c,e){
+  if(c?.game==='ptcg')c=classicCatalogueCard(c);
   const scoped=c?.game==='ygo'&&e.setReleaseId?setContextCard('ygo',c,e.setReleaseId,currentYgoCatalogue()):c;
   const verified=!(c?.game==='ptcg'&&pokemonVariantProductConflict(c,e))&&!e.setReleaseUnverified&&(!e.setReleaseId||scoped?.setContext?.status==='resolved');
-  const allQuotes=[...(scoped?.conditionQuotes||[]),...(e.conditionQuotes||[])];
+  const allQuotes=[...(scoped?.conditionQuotes||[]),...(e.conditionQuotes||[])].filter(q=>!classicEvidence(c)||classicProductMatches(c,q.productId));
   const collision=c?.game==='ygo'&&e.setReleaseId&&(c.sets||[]).filter(p=>p.code===e.printing&&(!e.rarity||rarityKey(p.rarity)===rarityKey(e.rarity))).length>1;
   const quotes=!verified?[]:collision?allQuotes.filter(q=>q.setReleaseId===e.setReleaseId):allQuotes;
   return conditionValue(verified?referenceEntryPrice(scoped,e):null,e,quotes).price;
 }
 export function referenceEntryPrice(c, e) {
+  if(c?.game==='ptcg')c=classicCatalogueCard(c);
   if (!c) return null;
   if(c.game==='ptcg'&&pokemonVariantProductConflict(c,e))return null;
   if(c.game==='ygo'){
@@ -788,7 +792,7 @@ export function tcgCardSheet(c, sctx = {}) {
   const prices =
     g === "ptcg"
       ? `${c.variants?.length ? `<div class="price-table"><div class="pt-head"><span>TCGplayer (USD)</span><b>Low</b><b>Mid</b><b>Market</b></div>${pokemonVariantChoices(c,sctx.priceFinish).map((v) => `<div class="pt-row"><span class="pt-label">${esc(v.label)}</span><span>${usd(v.low)}</span><span>${usd(v.mid)}</span><span><b>${usd(v.market)}</b></span></div>`).join("")}</div>` : `<p class="muted small">No TCGplayer price yet.</p>`}
-        ${c.cardmarket && (c.cardmarket.trend || c.cardmarket.avg) ? `<div class="price-table"><div class="pt-head"><span>Cardmarket (EUR)</span><b>Low</b><b>Average</b><b>Trend</b></div><div class="pt-row"><span class="pt-label">Normal</span><span>${eur(c.cardmarket.low)}</span><span>${eur(c.cardmarket.avg)}</span><span><b>${eur(c.cardmarket.trend)}</b></span></div>${c.cardmarket.holoTrend ? `<div class="pt-row"><span class="pt-label">Holo / reverse</span><span>${eur(c.cardmarket.holoLow)}</span><span>${eur(c.cardmarket.holoAvg)}</span><span><b>${eur(c.cardmarket.holoTrend)}</b></span></div>` : ""}</div>` : ""}`
+        ${c.cardmarket && (c.cardmarket.trend || c.cardmarket.avg) ? `<div class="price-table"><div class="pt-head"><span>Cardmarket (EUR)</span><b>Low</b><b>Average</b><b>Trend</b></div><div class="pt-row"><span class="pt-label">${classicEvidence(c) ? "Holofoil" : "Normal"}</span><span>${eur(c.cardmarket.low)}</span><span>${eur(c.cardmarket.avg)}</span><span><b>${eur(c.cardmarket.trend)}</b></span></div>${c.cardmarket.holoTrend ? `<div class="pt-row"><span class="pt-label">Holo / reverse</span><span>${eur(c.cardmarket.holoLow)}</span><span>${eur(c.cardmarket.holoAvg)}</span><span><b>${eur(c.cardmarket.holoTrend)}</b></span></div>` : ""}</div>` : ""}`
       : `<div class="price-table" style="--cols:1"><div class="pt-head"><span>Store</span><b>Price</b></div>
         <div class="pt-row"><span class="pt-label">TCGplayer market</span><span><b>${usd(p.usd)}</b></span></div>
         <div class="pt-row"><span class="pt-label">Cardmarket</span><span><b>${eur(p.eur)}</b></span></div>
@@ -902,7 +906,7 @@ function tcgDetailSetSummary(c,ctx={}) {
   const g=c.game,catalogue=g==='ygo'?currentYgoCatalogue():ui(g).sets.list,
     context=g==='ygo'?(c.displayRelease||c.setContext):c.setContext,
     id=g==='ygo'?(context?.status==='resolved'?context.releaseId:''):(c.setContext?.releaseId||c.set?.id),
-    st=ui(g).set,info=catalogue.find(s=>s.id===id)||(st.info?.id===id?st.info:null),release=info||(id?{id,count:c.set?.total}:null);
+    st=ui(g).set,info=catalogue.find(s=>s.id===id)||(st.info?.id===id?st.info:null),release=info||(id?{id,count:c.set?.count??c.set?.total}:null);
   let identity;
   if(g==='ygo'){
     const printing=context?.printing,quote=quoteForContext(g,c,ctx),edition=printing&&new Map([['1st-edition','1st Edition'],['unlimited','Unlimited'],['limited','Limited']]).get(quote?.selectedEdition),title=context?.name||context?.code||context?.releaseId||'Choose a printing';
@@ -1643,6 +1647,7 @@ function resolveSetRelease(list,value){
 // condition quotes or identity-wide prices. Never infer an edition from a reused code.
 export function setContextCard(g, card, release, catalogue = ui(g).sets.list, {variantKey,unverifiedRelease=false} = {}) {
   if (!card) return card;
+  if(g==='ptcg')card=classicCatalogueCard(card);
   if(unverifiedRelease)return {...card,sets:g==="ygo"?[]:card.sets,conditionQuotes:[],setContext:{game:g,cardId:card.id,releaseId:"",name:"Release not verified",status:"missing",unverifiedRelease:true,printings:[],printingAmbiguous:true,edition:"unknown",price:null},prices:{usd:null,eur:null,others:[],source:"Release not verified"}};
   if (!release) return card;
   if(card.game&&card.game!==g)return {...card,setContext:{game:g,cardId:card.id,releaseId:typeof release==='string'?release:release.id,status:'missing',printings:[],printingAmbiguous:true,edition:'unknown',price:null},prices:{usd:null,eur:null,others:[],source:'Game does not match release'}};
@@ -1659,7 +1664,10 @@ export function setContextCard(g, card, release, catalogue = ui(g).sets.list, {v
     const referencePrice=!membership?null:previousContext&&Object.hasOwn(previousContext,'referencePrice')?previousContext.referencePrice:wasSelected?null:card.prices?.usd??null;
     const selectedPrice=membership?(chosen?variant?.usd??null:referencePrice):null;
     const context={game:g,cardId:card.id,releaseId:resolved.id,name:resolved.name,code:resolved.code,date:resolved.date,status:membership?"resolved":"missing",membership:membership?'set-response':'unverified',sourceSet,referencePrice,printingAmbiguous:!!chosen&&!variant,variantKey:chosen,variant,edition:"unknown",price:selectedPrice};
-    return {...card,setContext:context,...(membership?{set:{...sourceSet,id:resolved.id,name:resolved.name||sourceSet.name,symbol:resolved.symbol||sourceSet.symbol},setCode:resolved.code||String(resolved.id).toUpperCase()}:{}),...(!membership||chosen||wasSelected?{prices:{usd:selectedPrice,eur:null,others:[],source:membership?'Selected version reference':'Release not verified'}}:{})};
+    // Selecting a version changes the displayed amount, not when its source was
+    // published. Keep provenance separate from fetchedAt so a known stale quote
+    // cannot look newly checked/fresh after selection or returning to reference.
+    return {...card,setContext:context,...(membership?{set:{...sourceSet,id:resolved.id,name:resolved.name||sourceSet.name,symbol:resolved.symbol||sourceSet.symbol},setCode:resolved.code||String(resolved.id).toUpperCase()}:{}),...(!membership||chosen||wasSelected?{prices:{...(membership?card.prices:{}),usd:selectedPrice,eur:null,others:[],source:membership?card.prices?.source||'Selected version reference':'Release not verified'}}:{})};
   }
   const printingNames=new Map();
   for(const p of card.sets||[]){const key=p.code+'|'+rarityKey(p.rarity);if(!printingNames.has(key))printingNames.set(key,new Set());printingNames.get(key).add(releaseText(p.name));}
@@ -1837,7 +1845,7 @@ export function tcgSet() {
   ${all.length?progress.html:""}
   ${contents.completeness!=="complete"&&all.length?`<p class="set-coverage-note" role="status">${esc(setCoverageText(contents,total,all.length,source))} <button class="link small" data-act="tSetRetry" ${U.busy?'disabled':''}>${U.busy?'Refreshing…':'Refresh card list'}</button></p>`:""}
   <div class="searchbar"><input type="search" value="${esc(U.q||'')}" placeholder="Search this set by name or number" data-input="tSetQ" aria-label="Search this set" autocomplete="off"></div>
-  <div class="set-controls">${segmented("tSetFilter",U.filter,[["all","All"],["owned","Owned"],["missing","Missing"]])}${facets.rarities.length?`<select data-change="tSetRarity" aria-label="Rarity">${options([["","All rarities"],...facets.rarities.map(x=>[x,x])],U.rarity||"")}</select>`:""}${g==="ygo"?`<select data-change="tSetEdition" aria-label="Edition">${options([["","All editions"],["1st-edition","First Edition"],["unlimited","Unlimited"],["limited","Limited"]],U.edition||"")}</select>`:""}${facets.finishes.length?`<select data-change="tSetFinish" aria-label="${g==="ptcg"?'Version':'Finish'}">${options([["",g==="ptcg"?"All versions":"All finishes"],...facets.finishes.map(x=>[x,setFinishLabel(x)])],U.finish||"")}</select>`:""}<select data-change="tSetSort" aria-label="Sort">${options(sortOptions,sortOptions.some(([key])=>key===U.sort)?U.sort:"name")}</select></div>
+  <div class="set-controls">${segmented("tSetFilter",U.filter,[["all","All"],["owned","Owned"],["missing","Missing"]])}${facets.rarities.length?`<select data-change="tSetRarity" aria-label="Rarity">${options([["","All rarities"],...facets.rarities.map(x=>[x,x])],U.rarity||"")}</select>`:""}${g==="ygo"?`<select data-change="tSetEdition" aria-label="Edition">${options([["","All editions"],["1st-edition","First Edition"],["unlimited","Unlimited"],["limited","Limited"]],U.edition||"")}</select>`:""}${facets.finishes.length?`<select data-change="tSetFinish" aria-label="${g==="ptcg"?'Version':'Finish'}">${options([["",g==="ptcg"?"All versions":"All finishes"],...facets.finishes.map(x=>[x,setFinishLabel(x)])],g==="ptcg"?canonicalPokemonFinish(U.finish):U.finish||"")}</select>`:""}<select data-change="tSetSort" aria-label="Sort">${options(sortOptions,sortOptions.some(([key])=>key===U.sort)?U.sort:"name")}</select></div>
   ${!U.busy&&!U.error&&!all.length?`<section class="panel mu-empty"><div class="mu-empty-mark" aria-hidden="true">◇</div><h3>No card list for this release yet</h3><p class="muted">${source} has not returned cards for ${esc(info?.name||"this release")}. This does not mean the release contains zero cards.</p><button class="btn ghost" data-act="tSetRetry">Try again</button></section>`:`<div class="list-bar"><p class="muted small">${U.busy?"Loading cards and prices…":`${list.length} shown · ${g==="ygo"?"set price references · filter rarity or edition to narrow":"daily market references"}`}</p>${viewControl(g,"set")}</div>`}
   ${g==='ygo'&&all.length?`<p class="set-coverage-note">Ranges cover the available printings in this release. Borders follow the lowest displayed reference; saved cards use their own condition and edition.${U.priceStatus==='unavailable'?' <span role="status">The price source is unavailable. Existing references are shown where available.</span>':''}</p>`:''}
   ${remainingDetails?`<p class="set-coverage-note">Rarity and version filters use loaded card details. ${remainingDetails} ${remainingDetails===1?'card is':'cards are'} still waiting for details. <button class="link small" data-act="tSetDetails" ${U.busy||U.detailsBusy?'disabled':''}>${U.busy||U.detailsBusy?'Loading details…':'Load remaining details'}</button></p>`:''}

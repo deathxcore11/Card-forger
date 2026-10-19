@@ -1,3 +1,4 @@
+import {classicEvidence,classicProviderCard} from './pokemon-classic-evidence.js';
 // Optional server-only condition feed. No key is shipped with the static app.
 import {pokemonDetailedVariant} from './pokemon-variant-options.js';
 import {pokemonPromoEvidence} from './pokemon-promo-evidence.js';
@@ -87,9 +88,11 @@ export async function conditionFeedRoute(url,env,ctx,fetchImpl=fetch,{request}={
    product=exact[0].productId;const edition=url.searchParams.get('edition');
    printings={'1st-edition':['1st Edition'],unlimited:['Unlimited'],limited:['Limited','Limited Edition']}[edition]||[];
   }else{
-   const c=await get('https://api.tcgdex.net/v2/en/cards/'+encodeURIComponent(id)),variant=url.searchParams.get('variant')||'';
+   const c=classicProviderCard(await get('https://api.tcgdex.net/v2/en/cards/'+encodeURIComponent(id))),variant=url.searchParams.get('variant')||'';
    if(c.id!==id)return empty('unmapped','Card identity does not match.');
-   if(variant.startsWith('product:')){
+   if(classicEvidence(c)&&c.classicIntegrity?.identityVerified&&variant==='holofoil'){
+    product=classicEvidence(c).productId;printings=['Holofoil'];
+   }else if(variant.startsWith('product:')){
     const response=await pokemonPriceRoute(new URL(url.origin+'/api/prices/pokemon?id='+encodeURIComponent(id)),ctx,fetchImpl),d=await response.json();
     const exact=(d.quotes||[]).filter(q=>'product:'+q.productId+':'+q.subTypeName.toLowerCase().replace(/ /g,'-')===variant);
     if(exact.length===1){product=exact[0].productId;printings=[exact[0].subTypeName];if(/^1st Edition /.test(exact[0].subTypeName))printings.push('1st Edition');}
@@ -124,12 +127,13 @@ export async function conditionFeedRoute(url,env,ctx,fetchImpl=fetch,{request}={
   const owner=await conditionOwner(request,env,fetchImpl);
   const cacheUrl='https://condition-cache/?product='+product+'&category='+{mtg:1,ygo:2,ptcg:3}[game],cacheOptions={headers:owner?{'X-Condition-Owner':'verified'}:{}};
   let data=await (await stub.fetch(cacheUrl,cacheOptions)).json();
-  let quotes=normalizeConditionVariants(data,product,printings,language,data.cachedAt||Date.now());
+  const stampQuotes=quotes=>game==='ptcg'&&classicEvidence(id)?quotes.map(q=>({...q,productId:Number(product)})):quotes;
+  let quotes=stampQuotes(normalizeConditionVariants(data,product,printings,language,data.cachedAt||Date.now()));
   // A complete product response may not cover this language/finish. Ask the
   // backup once for all conditions; the primary result is already cached.
   if(data.status==='available'&&data.providers?.justtcg==='standby'&&quotes.length<CONDITIONS.length){
    data=await (await stub.fetch(cacheUrl+'&fallback=1',cacheOptions)).json();
-   quotes=normalizeConditionVariants(data,product,printings,language,data.cachedAt||Date.now());
+   quotes=stampQuotes(normalizeConditionVariants(data,product,printings,language,data.cachedAt||Date.now()));
   }
   if(data.status!=='available'){
    const messages={provider_rate:'JustTCG is temporarily limiting requests. Saved quotes remain available.',provider_daily:'JustTCG reports its daily request allowance is used. It resets at midnight UTC.',provider_monthly:'JustTCG reports its monthly request allowance is used. Check the provider plan and billing reset.',provider_shared_limit:'JustTCG blocked this request under its shared-hosting Free tier protection. This can happen even when your own lookup allowance remains.',provider_auth:'JustTCG rejected the connected API key or subscription. Check the provider connection.',app_budget:owner?'Condition pricing is temporarily busy. Try again shortly.':'The app’s shared lookup allowance has been reached. Sign in to the owner account for owner access.'};

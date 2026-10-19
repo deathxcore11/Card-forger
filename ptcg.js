@@ -1,3 +1,4 @@
+import {CLASSIC_SCHEMA,classicEvidence,classicProviderCard,classicSetIdentity,classicVariantAliases,classicCatalogueCard,classicProductMatches,classicNumberEntries} from './pokemon-classic-evidence.js';
 import {POKEMON_VARIANT_SCHEMA,pokemonDetailedRecords,pokemonPhysicalFinish,syncPokemonVariantAliases} from './pokemon-variant-options.js';
 import {pokemonPromoEvidence,pokemonPromoAliasMatches,pokemonPromoRootProduct} from './pokemon-promo-evidence.js';
 import {referenceQuote} from './price-reference.js';
@@ -21,6 +22,7 @@ const VARIANT_LABEL = { normal: "Normal", holofoil: "Holofoil", "reverse-holofoi
 // Availability is independent of price. Detailed records include Shadowless,
 // stamped promos, copyright runs and other versions omitted by pricing alone.
 export function pokemonVariants(c) {
+  c=classicProviderCard(c);
   const legacy = Object.entries(c.pricing?.tcgplayer || {}).filter(([,v]) => v && typeof v === "object" && "marketPrice" in v)
     .map(([key,v]) => ({ key, label: VARIANT_LABEL[key] || key, usd: referenceQuote(v)?.value??null, priceKind:referenceQuote(v)?.kind, low:n(v.lowPrice), mid:n(v.midPrice), market:n(v.marketPrice), productId:v.productId }));
   const out = new Map();
@@ -43,7 +45,7 @@ export function pokemonVariants(c) {
     // A plain finish TCGdex knows nothing more about (no price, no product) is the same version
     // as the per-finish price below: key it by finish so the two merge instead of listing twice.
     const bare = !special && !bucket && !d.pricing && !d.thirdParty?.tcgplayer;
-    const key = record.key;
+    const key = classicEvidence(c)&&d.variantId?'detail:'+d.variantId:record.key;
     const foilLabel = {pokeball:"Poké Ball",masterball:"Master Ball"}[foil] || (foil ? title(foil) : "");
     const evidence=pokemonPromoEvidence(c.id,d.thirdParty?.tcgplayer);
     const label = [evidence?.label||"", first ? "First Edition" : "", d.subtype ? title(d.subtype) : "", ...(d.stamp || []).filter(x => x !== "1st-edition").map(x => x === "set-logo" ? "Set-logo stamped" : title(x)), d.size && d.size !== "standard" ? title(d.size) : "", {holo:"Holofoil",reverse:"Reverse Holo",normal:"Normal"}[d.type] || title(d.type || "Version"), foilLabel].filter(Boolean).join(" · ");
@@ -66,7 +68,7 @@ export function pokemonVariants(c) {
   }
   if (c.variants?.firstEdition && ![...out.values()].some(v => /First Edition|1st Ed/i.test(v.label))) out.set("firstEdition",{key:"firstEdition",label:"First Edition · finish unconfirmed",usd:null});
   if (c.variants?.wPromo && ![...out.values()].some(v => /W Promo/i.test(v.label))) out.set("wPromo",{key:"wPromo",label:"W Promo",usd:null});
-  return [...out.values()];
+  return classicVariantAliases(c,[...out.values()]);
 }
 
 // Second price source: the Pokémon TCG API's TCGplayer prices for the same card — same name,
@@ -74,9 +76,12 @@ export function pokemonVariants(c) {
 const PTCG_API_KEYS = { normal: "normal", holofoil: "holofoil", reverseHolofoil: "reverse-holofoil", "1stEditionHolofoil": "1st-edition-holofoil", "1stEditionNormal": "1st-edition", unlimitedHolofoil: "unlimited-holofoil", unlimitedNormal: "unlimited" };
 const setKey = (x) => String(x || "").toLowerCase().replace(/pok[eé]mon|[^a-z0-9]/g, "");
 export function applyFallbackPrices(c, hit) {
+  const e=classicEvidence(c);
+  if(e&&(String(hit?.number)!==e.number||pokemonPrintedNameKey(hit?.name)!==pokemonPrintedNameKey(c.name)||setKey(hit?.set?.name)!==setKey(c.set?.name)))return false;
   const tp = hit?.tcgplayer?.prices || {};
   let filled = false;const updatedKeys=[];
   for (const [k, v] of Object.entries(tp)) {
+    if(e&&k!=='holofoil')continue;
     const ref=referenceQuote(v),usd=ref?.value;
     if (usd == null) continue;
     const key = PTCG_API_KEYS[k] || k,
@@ -188,10 +193,11 @@ function cardSet(c) {
   const id = c.set?.id || parsed?.[1];
   if (!id) return null;
   const known = catalogueSets.get(id) || {}, set = pokemonCatalogueSet({...known,...c.set,id});
-  return {id, name:set.name || '', number:String(c.localId ?? c.set?.number ?? parsed?.[2] ?? ''),
-    total:set.cardCount?.official ?? set.total ?? set.count, symbol:set.symbol || '', releaseDate:set.releaseDate || set.date || ''};
+  return classicSetIdentity(c,{id, name:set.name || '', number:String(c.localId ?? c.set?.number ?? parsed?.[2] ?? ''),
+    total:set.cardCount?.official ?? set.total ?? set.count, symbol:set.symbol || '', releaseDate:set.releaseDate || set.date || ''});
 }
 export function normalizePtcg(c) {
+  c=classicProviderCard(c);
   // TCGdex has no stage for many older EX/GX cards (Celebi-EX, Palkia GX). A Pokémon that
   // evolves from nothing is a Basic Pokémon.
   // V-UNION pieces and LEGEND halves aren't Basic Pokémon.
@@ -227,6 +233,7 @@ export function normalizePtcg(c) {
   return {
     game: "ptcg",
     variantSchema: POKEMON_VARIANT_SCHEMA,
+    ...(classicEvidence(c)?{classicSchema:CLASSIC_SCHEMA,classicIntegrity:c.classicIntegrity}:{}),
     priceFallbackSchema: 3,
     ...(c.catalogueProvenance?{catalogueProvenance:{...c.catalogueProvenance}}:{}),
     released:set?.releaseDate || "",
@@ -241,9 +248,9 @@ export function normalizePtcg(c) {
     set,
     sets: set ? [{ code: set.id + " " + set.number, name: set.name, rarity: c.rarity, price: best?.usd ?? null }] : [],
     variants,
-    prices: { usd: best?.usd ?? null, referenceKind:best?.priceKind||"market", eur: n(cm.trend) ?? n(cm.avg), others: [], source: "TCGplayer market (USD) · Cardmarket trend (EUR)", updated: tp.updated || cm.updated || null },
+    prices: { usd: best?.usd ?? null, referenceKind:best?.priceKind||"market", eur: n(cm.trend) ?? n(cm.avg), others: [], source: "TCGplayer market (USD) · Cardmarket trend (EUR)", updated: tp.updated || cm.updated || null, ...(c.classicIntegrity?.notice?{integrityNotice:c.classicIntegrity.notice}:{}) },
     cardmarket: { low: n(cm.low), avg: n(cm.avg), trend: n(cm.trend), avg30: n(cm.avg30), holoLow: n(cm["low-holo"]), holoAvg: n(cm["avg-holo"]), holoTrend: n(cm["trend-holo"]) },
-    cmProduct: cm.idProduct || null,
+    cmProduct: classicEvidence(c)?.cmProduct || cm.idProduct || null,
     legal: { standard: !!c.legal?.standard, expanded: !!c.legal?.expanded },
     regulationMark: c.regulationMark || "",
     stage: c.stage || "",
@@ -519,7 +526,7 @@ export const ptcgSource = {
   async byNameNumber(name, num) {
     name=pokemonPrintedName(name);
     num = String(num).trim();
-    const merged=hits=>pokemonCatalogueOverlay(hits,c=>supplementMatches(c,{q:name,number:num})).map(brief);
+    const merged=hits=>pokemonCatalogueOverlay([...new Map([...hits,...classicNumberEntries(name,num)].map(c=>[c.id,c])).values()],c=>supplementMatches(c,{q:name,number:num})).map(brief);
     const tries = [...new Set(/^\d+$/.test(num) ? [num, String(Number(num)), String(Number(num)).padStart(3, "0")] : [num, num.toUpperCase()])];
     for (const n of tries) {
       const d = (await get("/cards", { ...(name?{name}:{}), localId: n })) || [];

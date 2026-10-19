@@ -76,6 +76,12 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
  }
  if(game==='ptcg'){
   const set=c.set?.id||'',rarity=norm(c.rarity),category=norm(c.category||'Pokemon');
+  // Celebrations Classic Collection reprints have their own foil regions and
+  // surface treatment. An ex/EX/GX name is not evidence of a smooth full-face
+  // rainbow here, and the main Celebrations line-holo is not interchangeable.
+  // Keep the known physical finish selectable, but fail closed until an exact
+  // printing presentation is reviewed. Evidence-backed overrides above still win.
+  if(set==='cel25cc')return unknown(key,label);
   // Exact full-card illustration shown in the user's Holofoil detail screenshot.
   // The source currently has generated availability; this never creates a foil option.
   if(set==='30th'&&c.id==='30th-154'&&physicalFinish==='holofoil')return preset(key,label,'ptcg-full-art',[layer('card','rainbow')],FINISH_SOURCES.gengar30);

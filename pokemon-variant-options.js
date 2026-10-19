@@ -1,3 +1,4 @@
+import {classicEvidence,classicProductMatches} from './pokemon-classic-evidence.js';
 import {pokemonPromoRootProduct} from './pokemon-promo-evidence.js';
 // Pure Pokémon identity helpers. Prices never distinguish physical variants.
 export const POKEMON_VARIANT_SCHEMA=12;
@@ -53,6 +54,7 @@ export function samePokemonVariant(card,a,b){
  return !!left&&!!right&&(pokemonVariantAliasTarget(card,left)||left)===(pokemonVariantAliasTarget(card,right)||right);
 }
 export function pokemonVariantProductConflict(card,entry={}){
+ if(classicEvidence(card)&&entry.productId&&!classicProductMatches(card,entry.productId))return true;
  if(!entry.productId||!entry.variant)return false;
  const matches=(card?.variants||[]).filter(v=>v.key===entry.variant);
  return matches.length!==1||!matches[0].productId||String(matches[0].productId)!==String(entry.productId);

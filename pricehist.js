@@ -1,3 +1,4 @@
+import {classicHistoryKey,classicCatalogueCard} from './pokemon-classic-evidence.js';
 import {privateKey} from './account-scope.js';
 // Price history and price alerts, kept on this device for all three games.
 // History: one point per card when its price moves (2% or more) or once a week, so a year of
@@ -35,6 +36,7 @@ const day = (t = Date.now()) => new Date(t).toISOString().slice(0, 10);
 // A series never crosses a printing, finish, source or currency boundary.
 export function trackedQuote(game, card) {
   if (!card?.id) return null;
+  if(game==='ptcg')card=classicCatalogueCard(card);
   let finish = "reference", source = game === "mtg" ? "Scryfall / TCGplayer" : "TCGplayer reference", value = card.prices?.usd;
   if (game === "mtg") {
     finish = ["nonfoil","foil","etched"].find(f => Number(card.prices?.[f === "nonfoil" ? "usd" : "usd_"+f]) > 0) || "nonfoil";
@@ -44,7 +46,7 @@ export function trackedQuote(game, card) {
     const v = variants.find(v => v.key === "normal" && Number(v.usd ?? v.market) > 0) || variants.find(v => Number(v.usd ?? v.market) > 0);
     if (v) { finish = v.key; value = v.usd ?? v.market; source = v.productFallback ? "TCGplayer market via TCGCSV" : v.fallback ? "TCGplayer / Pokémon TCG API" : "TCGplayer / TCGdex"; }
   }
-  return { id: [card.id,finish,source,"USD"].join("|"), finish, source, value, label: `${finish} · ${source} · USD` };
+  return { id: classicHistoryKey(card,finish,source)||[card.id,finish,source,"USD"].join("|"), finish, source, value, label: `${finish} · ${source} · USD` };
 }
 export function recordCardPrice(game,card) {
   const q = trackedQuote(game,card);

@@ -33,14 +33,38 @@ export function setYearSections(sets, renderRow, dateOf = set => set.date) {
 }
 const values = xs => [...new Set(xs.filter(x=>x!==null&&x!==undefined&&x!==''))].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
 // Detailed provider IDs identify products, not labels a collector can understand.
-const finishNames={normal:'Normal',holofoil:'Holofoil','reverse-holofoil':'Reverse Holofoil',reverse:'Reverse Holofoil','1st-edition':'First Edition','1st-edition-holofoil':'First Edition · Holofoil'};
-export function setFinishLabel(key){return finishNames[key]||String(key).replace(/^label:/,'').replaceAll('-',' ');}
+const finishNames={normal:'Normal',holofoil:'Holofoil','reverse-holofoil':'Reverse Holofoil',reverse:'Reverse Holofoil','1st-edition':'First Edition · Normal','1st-edition-holofoil':'First Edition · Holofoil',unlimited:'Unlimited · Normal','unlimited-holofoil':'Unlimited · Holofoil'};
+// Facets describe physical versions, not provider product IDs. Canonicalize only
+// known equivalent labels; stamped/patterned/copyright treatments remain distinct.
+const finishToken=value=>String(value||'').normalize('NFC').trim().toLowerCase().replace(/[\s·._-]+/g,'');
+const pokemonFinishAliases={normal:'normal',nonfoil:'normal',holo:'holofoil',holofoil:'holofoil',reverse:'reverse-holofoil',reverseholo:'reverse-holofoil',reverseholofoil:'reverse-holofoil',firsteditionnormal:'1st-edition','1steditionnormal':'1st-edition',firsteditionholofoil:'1st-edition-holofoil','1steditionholofoil':'1st-edition-holofoil','1stedholo':'1st-edition-holofoil',unlimitednormal:'unlimited',unlimitedholo:'unlimited-holofoil',unlimitedholofoil:'unlimited-holofoil'};
+export const canonicalPokemonFinish=key=>{const raw=String(key||'').trim();return pokemonFinishAliases[finishToken(raw.replace(/^label:/,''))]||raw;};
+export function setFinishLabel(key){if(String(key).startsWith('label:'))key=canonicalPokemonFinish(key);return finishNames[key]||String(key).replace(/^label:/,'').replaceAll('-',' ');}
 export function pokemonSetFinish(variant){
- const k=String(variant.key||'');if(!k.startsWith('detail:'))return k;
- const label=String(variant.label||'').trim();return label&&!label.startsWith('detail:')?'label:'+label:'';
+ // An adapter may group a catalogue-wide treatment only with independent
+ // source evidence. This does not merge product keys or authorize a quote.
+ if(variant.setFacet&&variant.setFacetSource){const facet=canonicalPokemonFinish(variant.setFacet);if(Object.hasOwn(finishNames,facet))return facet;}
+ const k=String(variant.key||'').trim(),provided=String(variant.label||'').trim();
+ let label=provided||finishNames[k]||'';
+ if(!label)return k.startsWith('detail:')?'':k==='firstEdition'?k:canonicalPokemonFinish(k);
+ if(label.startsWith('detail:'))return '';
+ // A bare edition label alone does not prove a finish. Only these established
+ // legacy keys already mean Normal (firstEdition is availability-only).
+ if(k==='1st-edition'&&['firstedition','1stedition'].includes(finishToken(label)))label='First Edition · Normal';
+ if(k==='unlimited'&&finishToken(label)==='unlimited')label='Unlimited · Normal';
+ label=label.split(/\s*·\s*/).map(part=>{const key=canonicalPokemonFinish('label:'+part);return ['normal','holofoil','reverse-holofoil'].includes(key)?finishNames[key]:part;}).join(' · ');
+ // Some older detailed rows retained a plain label beside structured treatment
+ // metadata. Do not flatten those versions just because their label is generic.
+ const base=canonicalPokemonFinish('label:'+label);
+ if(finishNames[base]){
+  const title=value=>({'1st-edition':'First Edition','set-logo':'Set-logo stamped',pokeball:'Poké Ball',masterball:'Master Ball'}[value]||String(value).split('-').map(x=>x.charAt(0).toUpperCase()+x.slice(1)).join(' '));
+  const stamps=variant.stamps||[],first=base.startsWith('1st-edition')||stamps.includes('1st-edition'),subtype=variant.subtype||(base.startsWith('unlimited')?'unlimited':''),physical=base==='reverse-holofoil'?base:base.endsWith('holofoil')?'holofoil':'normal';
+  label=[first?'First Edition':'',subtype?title(subtype):'',...stamps.filter(x=>x!=='1st-edition').sort().map(title),variant.size&&variant.size!=='standard'?title(variant.size):'',finishNames[physical],variant.foil?title(variant.foil):''].filter(Boolean).join(' · ');
+ }
+ return canonicalPokemonFinish('label:'+label);
 }
 export function setVariantKey(card,finish){
- if(!finish)return '';const matches=pokemonVariantChoices(card).filter(v=>pokemonSetFinish(v)===finish);
+ if(!finish)return '';finish=canonicalPokemonFinish(finish);const matches=pokemonVariantChoices(card).filter(v=>pokemonSetFinish(v)===finish);
  return matches.length===1?matches[0].key:'';
 }
 export function setCardFields(card, game) {
@@ -58,6 +82,7 @@ export function setCardFacets(cards, game) {
  return {sets:values(rows.map(r=>r.set)),numbers:values(rows.flatMap(r=>r.numbers)),rarities:values(rows.flatMap(r=>r.rarities)),finishes:values(rows.flatMap(r=>r.finishes))};
 }
 export function filterSortSetCards(cards, game, {q='',set='',rarity='',finish='',sort='number'}={}) {
+ if(game==='ptcg')finish=canonicalPokemonFinish(finish);
  const query=String(q).trim().toLocaleLowerCase(),rows=cards.map(card=>({card,fields:setCardFields(card,game)})).filter(({card,fields:f})=>(!query||[card.name,f.number,...f.numbers].some(x=>String(x||'').toLocaleLowerCase().includes(query)))&&(!set||f.set===set)&&(!rarity||rarity==='all'||f.rarities.includes(rarity))&&(!finish||finish==='all'||f.finishes.includes(finish)));
  const text=(a,b)=>String(a||'').localeCompare(String(b||''),undefined,{numeric:true,sensitivity:'base'});
  const knownFirst=(a,b)=>!a&&!b?0:!a?1:!b?-1:text(a,b);

@@ -55,3 +55,6 @@ daily-card-route.js
 
 weekly-curation.js
 weekly-curation-route.js
+
+# Local-only Classic Collection audit evidence and fixtures, not website assets.
+review/classic-collection-20261019

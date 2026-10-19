@@ -1,3 +1,4 @@
+import {classicEvidence} from './pokemon-classic-evidence.js';
 import {rankScanCandidates,nameDistance,collectorKey,scanIdentifierEvidence} from './scan-signals.js';
 // Compact identification metadata. Full descriptions/prices stay in the normal card adapters.
 import {readRecord,writeRecord} from './storage.js';
@@ -7,6 +8,8 @@ const key=g=>'cardstashy-scan-catalog-v1-'+g;
 export function compileCatalog(pack){
  if(pack?.schema!==1||!['mtg','ptcg','ygo'].includes(pack.game)||!Array.isArray(pack.rows)||!pack.rows.length)throw Error('Invalid recognition catalogue.');
  const names=new Map(),codes=new Map(),ids=new Map(),g=pack.game;let indexedCount=0;
+ // A read-time projection keeps downloaded source rows and all saved lots intact.
+ if(g==='ptcg')pack={...pack,rows:pack.rows.map(r=>{const e=classicEvidence(r?.[0]);return e?[r[0],r[1],r[2],e.number,e.total,r[5],...r.slice(6)]:r;})};
  const push=(map,k,i)=>{if(!k)return;const a=map.get(k);if(a)a.push(i);else map.set(k,[i]);};
  pack.rows.forEach((r,i)=>{if(!Array.isArray(r)||typeof r[0]!=='string'||typeof r[1]!=='string')throw Error('Invalid recognition record.');
   // TCGdex's image series proves Pocket membership. Keep raw rows for download
@@ -22,7 +25,7 @@ export function catalogCandidate(pack,i,exact=false){
   const image=`https://cards.scryfall.io/normal/front/${r[0][0]}/${r[0][1]}/${r[0]}.jpg`;
   card={id:r[0],name:r[1],set:r[2],collector_number:r[3],set_name:r[4],finishes:r[5],oracle_id:r[6],lang:r[7]||'en',image_uris:{normal:image}};sub=`${r[4]} · ${r[2].toUpperCase()} #${r[3]}`;
  }else if(g==='ptcg'){
-  card={id:r[0],name:r[1],game:g,set:{id:r[2],number:r[3],total:r[4],name:r[5]},image:r[6]?`https://assets.tcgdex.net/en/${r[6]}/low.webp`:'',imageLarge:r[6]?`https://assets.tcgdex.net/en/${r[6]}/high.webp`:''};sub=`${r[5]} · #${r[3]}${r[4]?'/'+r[4]:''}`;
+  card={id:r[0],name:r[1],game:g,set:{id:r[2],number:r[3],total:r[4],name:r[5],...(classicEvidence(r[0])?{count:25}:{} )},image:r[6]?`https://assets.tcgdex.net/en/${r[6]}/low.webp`:'',imageLarge:r[6]?`https://assets.tcgdex.net/en/${r[6]}/high.webp`:''};sub=`${r[5]} · #${r[3]}${r[4]?'/'+r[4]:''}`;
  }else{
   print=r[2]?r[2]+'|'+r[3]:'';card={id:r[0],name:r[1],game:g,typeLine:r[5],image:`https://images.ygoprodeck.com/images/cards_small/${r[0]}.jpg`,imageLarge:`https://images.ygoprodeck.com/images/cards/${r[0]}.jpg`,sets:r[2]?[{code:r[2],rarity:r[3],name:r[4]}]:[]};sub=print?`${r[4]} · ${r[2]} · ${r[3]}`:r[5];
  }

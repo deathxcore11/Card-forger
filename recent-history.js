@@ -1,3 +1,4 @@
+import {classicEvidence} from './pokemon-classic-evidence.js';
 // Exact product histories, displayed with provider attribution. No interpolated dates.
 import {ygoProductMatches} from './ygo-prices.js';
 import {ptcgProduct,sameSubtype} from './ptcg-product.js';
@@ -18,7 +19,7 @@ export async function recentHistoryRoute(url,ctx,fetchImpl=fetch,now=Date.now())
  const game=url.searchParams.get('game'),id=url.searchParams.get('id') || '',finish=url.searchParams.get('finish') || 'reference',edition=url.searchParams.get('edition') || '',rarity=url.searchParams.get('rarity') || '';
  let exact;try{exact=readExactYgoHistoryRequest(url);}catch{return Response.json({error:'Invalid exact history request'},{status:400});}
  if(!['ptcg','ygo'].includes(game)||!/^[A-Za-z0-9.!%?_:-]{1,89}$/.test(id)||!/^[A-Za-z0-9:_-]{1,99}$/.test(finish)||!/^[-A-Za-z0-9]{0,60}$/.test(edition)||rarity.length>100)return Response.json({error:'Invalid history request'},{status:400});
- const cache=globalThis.caches?.default,k=exact?exactYgoHistoryCacheKey(url,exact):new Request(url.href),saved=await cache?.match(k);if(saved)return saved;
+ const cache=globalThis.caches?.default,k=exact?exactYgoHistoryCacheKey(url,exact):new Request(classicEvidence(id)?url.href+(url.search?'&':'?')+'classicSchema=1':url.href),saved=await cache?.match(k);if(saved)return saved;
  const empty=(notice,status='unsupported')=>Response.json({game,cardId:id,finish,...exact,...(exact?{status}:{}),series:[],notice});
  const get=async u=>{const key=new Request(u),old=await cache?.match(key);if(old){const d=await old.json();return exact?validateExactYgoProvider(d,u):d;}const r=await fetchImpl(u,{headers:{Accept:'application/json','User-Agent':'CardStashy/3.38 (cached printing history; github.com/deathxcore11/Card-forger)'},signal:AbortSignal.timeout(18000)});if(!r.ok)throw Error(`History provider ${new URL(u).hostname} returned ${r.status}`);const d=await r.json();if(exact)validateExactYgoProvider(d,u);ctx?.waitUntil?.(cache?.put(key,Response.json(d,{headers:{'Cache-Control':'public,max-age=3600'}})));return d;};
  try{
@@ -26,7 +27,7 @@ export async function recentHistoryRoute(url,ctx,fetchImpl=fetch,now=Date.now())
   if(game==='ptcg'){
    const c=await get('https://api.tcgdex.net/v2/en/cards/'+encodeURIComponent(id));if(c.id!==id)return empty('Printing identity mismatch.');
    const hit=ptcgProduct(c,finish);if(!hit)return empty('Choose an exact finish to load recent history.');
-   productId=hit.productId;subtype=hit.subtype;label=`${c.set?.name} #${c.localId}`;
+   productId=hit.productId;subtype=hit.subtype;label=`${c.set?.name} #${classicEvidence(c)?[classicEvidence(c).number,classicEvidence(c).total].filter(Boolean).join('/'):c.localId}`;
   }else{
    const c=(await get('https://db.ygoprodeck.com/api/v7/cardinfo.php?id='+encodeURIComponent(id))).data?.[0];if(String(c?.id)!==id)return empty('Card identity mismatch.');
    const resolved=exact?await resolveExactYgoHistoryPrinting(c,exact,get):null;

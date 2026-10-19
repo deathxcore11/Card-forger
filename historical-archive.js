@@ -1,3 +1,4 @@
+import {classicEvidence} from './pokemon-classic-evidence.js';
 import {ptcgProduct,sameSubtype} from './ptcg-product.js';
 import {pickGroup} from './pokemon-art.js';
 import {ygoProductMatches} from './ygo-prices.js';
@@ -19,7 +20,7 @@ export async function archivePriceRoute(url,ctx,fetchImpl=fetch,now=Date.now()){
  const game=url.searchParams.get('game'),id=url.searchParams.get('id')||'',finish=url.searchParams.get('finish')||'reference',edition=url.searchParams.get('edition')||'',rarity=url.searchParams.get('rarity')||'';
  let exact;try{exact=readExactYgoHistoryRequest(url);}catch{return Response.json({error:'Invalid exact history request'},{status:400});}
  if(!['mtg','ptcg','ygo'].includes(game)||!/^[A-Za-z0-9.!%?_:-]{1,89}$/.test(id)||!/^[A-Za-z0-9:_-]{1,99}$/.test(finish)||!/^[-A-Za-z0-9]{0,60}$/.test(edition))return Response.json({error:'Invalid history request'},{status:400});
- const cache=globalThis.caches?.default,cacheKey=exact?exactYgoHistoryCacheKey(url,exact):new Request(url.href),saved=await cache?.match(cacheKey);if(saved)return saved;
+ const cache=globalThis.caches?.default,cacheKey=exact?exactYgoHistoryCacheKey(url,exact):new Request(classicEvidence(id)?url.href+(url.search?'&':'?')+'classicSchema=1':url.href),saved=await cache?.match(cacheKey);if(saved)return saved;
  const get=async u=>{
   const k=new Request(u),old=await cache?.match(k);if(old){const d=await old.json();return exact?validateExactYgoProvider(d,u):d;}
   const r=await fetchImpl(u,{headers:{Accept:'application/json','User-Agent':'CardStashy/3.36 (exact historical printing lookup)'},signal:AbortSignal.timeout(18000)});if(!r.ok)throw Error('Archive source unavailable');const d=await r.json();if(exact)validateExactYgoProvider(d,u);
@@ -38,7 +39,7 @@ export async function archivePriceRoute(url,ctx,fetchImpl=fetch,now=Date.now()){
    if(game==='ptcg'){
     const hit=ptcgProduct(provider,finish);
     if(!hit)return empty('Choose an exact finish to load archived prices.');
-    productId=hit.productId;subtype=hit.subtype.toLowerCase();setName=provider.set?.name;label=`${setName} #${provider.localId}`;
+    productId=hit.productId;subtype=hit.subtype.toLowerCase();setName=provider.set?.name;label=`${setName} #${classicEvidence(provider)?[classicEvidence(provider).number,classicEvidence(provider).total].filter(Boolean).join('/'):provider.localId}`;
    }else{
     const resolved=exact?await resolveExactYgoHistoryPrinting(provider,exact,get):null;release=resolved?.release;
     const versions=resolved?[resolved.set]:(provider.card_sets || []).filter(s=>s.set_code===edition && (!rarity || s.set_rarity===rarity));

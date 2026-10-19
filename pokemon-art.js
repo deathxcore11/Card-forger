@@ -1,3 +1,4 @@
+import {classicEvidence,classicProviderCard} from './pokemon-classic-evidence.js';
 import { ptcgProduct } from "./ptcg-product.js";
 // Last-resort Pokémon card art: the TCGplayer product image for the exact card, for printings
 // TCGdex has no scan of (promos, McDonald's sets, Shiny Vault, gallery subsets…). The card's own
@@ -53,7 +54,7 @@ export function pickProduct(products, card) {
 }
 
 export async function pokemonProductId(id, get) {
-  const card = await get("https://api.tcgdex.net/v2/en/cards/" + encodeURIComponent(id));
+  const card = classicProviderCard(await get("https://api.tcgdex.net/v2/en/cards/" + encodeURIComponent(id)));
   if (card?.id !== id) return null;
   // Use the same conservative reference product as price history: older sets
   // often have this exact ID only under pricing.tcgplayer.<finish>.productId.
@@ -79,7 +80,7 @@ export async function pokemonArtRoute(request, url, ctx, fetchImpl = fetch) {
   let id = "";
   try { id = decodeURIComponent(m?.[2] || ""); } catch {}
   if (!m || !/^[A-Za-z0-9.!?_-]{1,80}$/.test(id)) return new Response("Invalid card", { status: 400 });
-  const cache = caches.default, hit = await cache.match(request);
+  const cache = caches.default, cacheRequest=classicEvidence(id)?new Request(request.url+(request.url.includes('?')?'&':'?')+'classicSchema=1'):request, hit = await cache.match(cacheRequest);
   if (hit) return hit;
   const get = async (u) => {
     const saved = await cache.match(u);
@@ -92,12 +93,12 @@ export async function pokemonArtRoute(request, url, ctx, fetchImpl = fetch) {
   };
   try {
     const pid = await pokemonProductId(id, get);
-    const miss = () => { const r = new Response("No artwork", { status: 404, headers: { "Cache-Control": "public, max-age=86400" } }); ctx?.waitUntil?.(cache.put(request, r.clone())); return r; };
+    const miss = () => { const r = new Response("No artwork", { status: 404, headers: { "Cache-Control": "public, max-age=86400" } }); ctx?.waitUntil?.(cache.put(cacheRequest, r.clone())); return r; };
     if (!pid) return miss();
     const upstream = await fetchImpl(`https://tcgplayer-cdn.tcgplayer.com/product/${pid}_${m[1] === "s" ? "400w" : "in_1000x1000"}.jpg`, { signal: AbortSignal.timeout(15000) });
     if (!upstream.ok) return miss();
     const res = new Response(upstream.body, { headers: { "Content-Type": upstream.headers.get("Content-Type") || "image/jpeg", "Cache-Control": `public, max-age=${MONTH}`, "X-Art-Source": "TCGplayer" } });
-    ctx?.waitUntil?.(cache.put(request, res.clone()));
+    ctx?.waitUntil?.(cache.put(cacheRequest, res.clone()));
     return res;
   } catch {
     return new Response("Artwork unavailable", { status: 503 });

@@ -57,7 +57,7 @@ const ASSETS = [
   "./printing-carousel.js",
   "./settings-dialog.js",
   "./profile-art.js",
-  "./pokemon-identity.js",
+  "./pokemon-identity.js", "./pokemon-classic-evidence.js",
   "./collection-stack.js",
   "./condition-feed.js",
   "./condition-refresh-scheduler.js",
