@@ -24,8 +24,10 @@ export async function ygoSetPriceRoute(url,ctx,fetchImpl=fetch){
    if(sourcePending.has(source))return sourcePending.get(source);
    const read=(async()=>{
     // The provider requires an app identity and updates only once daily.
-    const r=await fetchImpl(source,{headers:{'User-Agent':'CardStashy/3.82.0 (+https://cardstashy.com)','Accept':'application/json'},signal:AbortSignal.timeout(12000),redirect:'error'});
-    if(!r.ok)throw Error('Price source unavailable');const d=await r.json();
+    // Workers rejects redirect:'error' before any network call. Manual keeps
+    // redirects untrusted while allowing the original provider request to run.
+    const r=await fetchImpl(source,{headers:{'User-Agent':'CardStashy/3.82.0 (+https://cardstashy.com)','Accept':'application/json'},signal:AbortSignal.timeout(12000),redirect:'manual'});
+    if(!r.ok)throw Error('Price source returned HTTP '+r.status);const d=await r.json();
     if(!Array.isArray(d.results)||d.results.length>20000)throw Error('Invalid source response');
     if(cache)await cache.put(key,Response.json(d,{headers:{'Cache-Control':'public,max-age=86400'}}));
     return d.results;
@@ -46,7 +48,7 @@ export async function ygoSetPriceRoute(url,ctx,fetchImpl=fetch){
   }).filter(p=>p.code.startsWith(code+'-')&&p.rarity);
   const response=Response.json({name,code,status:'ready',source:'TCGplayer via TCGCSV',updatedAt:new Date().toISOString(),products:rows},{headers:{'Cache-Control':'public,max-age=86400'}});
   ctx?.waitUntil?.(cache?.put(key,response.clone()));return response;
- }catch{return Response.json({name,code,status:'unavailable',products:[]},{status:503});}})();
+ }catch(error){const notice=/^Price source returned HTTP \d{3}$/.test(error?.message||'')?error.message:'Price source could not be reached or returned invalid data';return Response.json({name,code,status:'unavailable',notice,products:[]},{status:503});}})();
  pending.set(key.url,work);try{return (await work).clone();}finally{pending.delete(key.url);}
 }
 export function applyYgoSetPrices(card,release,body){

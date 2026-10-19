@@ -4,10 +4,10 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import { S, blank, meta, cacheCard } from './store.js';
+import { S, blank, meta, cacheCard, priceOf } from './store.js';
 import { cardKey, cardPrice, commanderEligible, sumQty, typeText } from './core.js';
 import { completionPlan, commanderTheme } from './planner.js';
-import { cheapestQuery } from './mtg-cheap.js';
+import { findCheapestPrinting } from './mtg-cheap.js';
 import { ideaSheet, deckPage, buildSheet } from './views.js';
 import { mtgPower, shownPower, powerPanel } from './power.js';
 import { formatOf } from './formats.js';
@@ -20,16 +20,18 @@ const storage=new Map();globalThis.localStorage={getItem:k=>storage.get(k)||null
 const app=fs.readFileSync('app.js','utf8');
 const leader={name:'The Master, Multiplied',type_line:'Legendary Creature — Time Lord Rogue',oracle_text:'Myriad. The legend rule does not apply to creature tokens you control.',mana_cost:'{4}{B}{R}',cmc:6,color_identity:['B','R'],legalities:{commander:'legal'},prices:{usd:'1'}};
 const spells=Array.from({length:80},(_,i)=>({name:`Fixture support ${i}`,type_line:'Creature — Rogue',oracle_text:i%3===0?'When this creature enters, draw a card.':i%3===1?'When this creature enters, destroy target artifact.':'',mana_cost:'{1}{R}',cmc:2,color_identity:['R'],legalities:{commander:'legal'},prices:{usd:'.25'}}));
-const basic=(name,price=null)=>({name,type_line:`Basic Land — ${name}`,oracle_text:`{T}: Add {${name==='Swamp'?'B':'R'}}.`,produced_mana:[name==='Swamp'?'B':'R'],mana_cost:'',cmc:0,color_identity:[name==='Swamp'?'B':'R'],legalities:{commander:'legal'},prices:{usd:price}});
+const basic=(name,price=null)=>({name,games:["paper"],type_line:`Basic Land — ${name}`,oracle_text:`{T}: Add {${name==='Swamp'?'B':'R'}}.`,produced_mana:[name==='Swamp'?'B':'R'],mana_cost:'',cmc:0,color_identity:[name==='Swamp'?'B':'R'],legalities:{commander:'legal'},prices:{usd:price}});
 
 async function scenario({budget=25,landMode='missing',fallback=false,auto=false}={}) {
+ // Isolate each synthetic scenario from the prior one's week-long checked quotes.
+ for (const name of ['Swamp','Mountain']) await findCheapestPrinting(name,{api:async()=>({data:[]})});
  S.state=blank();S.state.settings.game='mtg';S.state.settings.budget=25;S.catalog={};
  for(const c of [leader,...spells,...(landMode==='unpriced'?[basic('Swamp'),basic('Mountain')]:landMode==='priced'?[basic('Swamp','.05'),basic('Mountain','.05')]:[])])cacheCard(c);
  const seed={id:'idea',format:'Commander',commander:leader.name,strategy:'Auto',budget:null,cards:[{name:leader.name,qty:1}],versions:[]};
  const idea={commander:leader,plan:'Random',deck:seed};
  S.ui.ideas={cache:[idea],open:null,sel:new Set()};S.ui.deckTab='cards';S.ui.deckId=null;
  const A={},C={},queue=[],pending=[],previews=[],commits=[],routes=[],requests=[];
- const context={A,C,S,URLSearchParams,structuredClone,key:cardKey,cardPrice,typeText,commanderEligible,commanderTheme,completionPlan,cheapestQuery,sumQty,usd,customBudget,
+ const context={A,C,S,URLSearchParams,structuredClone,key:cardKey,cardPrice,typeText,commanderEligible,commanderTheme,completionPlan,findCheapestPrinting,priceOf,sumQty,usd,customBudget,
   meta,cacheCard,formatOf,mtgPower,resolve:async name=>{const c=meta(name);if(c)return c;throw Error('Fixture basic lookup unavailable');},
   api:async path=>{requests.push(path);const q=new URL(path,'https://fixture.invalid').searchParams.get('q');if(q.includes('t:basic')){if(!fallback)throw Error('Fixture fallback unavailable');return {data:[basic(q.includes('Swamp')?'Swamp':'Mountain','.05')]};}return{data:spells};},
   V:{ideaSheet},openSheet:(html,ctx)=>{previews.push(html);S.ui.sheetCtx=ctx;},$:()=>null,queueMicrotask:fn=>queue.push(fn),safely:p=>pending.push(p),saveCatalogSoon:()=>{},render:()=>{},

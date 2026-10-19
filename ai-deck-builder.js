@@ -6,6 +6,7 @@ import { formatOf, canLead, legalityIn, verifyLeader } from './formats.js';
 import { normalizeDeckGoal, goalDescription } from './ai-deck-goal.js';
 import { commanderTheme } from './planner.js';
 import { functionalIn } from './deck-safety.js';
+import { findCheapestPrinting } from './mtg-cheap.js';
 const BASIC = { W:'Plains', U:'Island', B:'Swamp', R:'Mountain', G:'Forest', C:'Wastes' };
 const money = n => Math.round(n * 100) / 100;
 const quote = c => { const p = cardPrice(c); return Number.isFinite(p) && p >= 0 ? p : null; };
@@ -13,12 +14,16 @@ const clean = s => String(s || '').replace(/["\\\u0000-\u001f]/g,'').trim().slic
 const isLegal = (c,f) => !!c && (!f.legality || ['legal','restricted'].includes(legalityIn(c,f)));
 const available = (x,name) => Math.max(0, Number(x.inv?.(name)?.available ?? x.inv?.(name)?.owned) || 0);
 async function batches(rows,fn,width=3) { const out=[]; for(let i=0;i<rows.length;i+=width)out.push(...await Promise.all(rows.slice(i,i+width).map(fn))); return out; }
-export function deckPriceCoverage(cards,catalog,owned=()=>0) {
+export function deckPriceCoverage(cards,catalog,owned=()=>0,price=quote) {
  let total=0,purchase=0,unknown=0,purchaseUnknown=0,ownedCopies=0;
- for(const row of cards){const p=quote(catalog[cardKey(row.name)]),have=Math.min(row.qty,Math.max(0,owned(row.name)||0)),need=row.qty-have;ownedCopies+=have;if(p===null){unknown+=row.qty;purchaseUnknown+=need;}else{total+=p*row.qty;purchase+=p*need;}}
- return {totalEstimate:unknown?null:money(total),pricedSubtotal:money(total),unpricedCopies:unknown,purchaseEstimate:purchaseUnknown?null:money(purchase),pricedPurchaseSubtotal:money(purchase),unpricedPurchaseCopies:purchaseUnknown,ownedCopies,priceBasis:'Available app USD reference quotes, including basic lands; excludes tax and shipping. Estimates, not a checkout quote.'};
+ for(const row of cards){const p=price(catalog[cardKey(row.name)]),have=Math.min(row.qty,Math.max(0,owned(row.name)||0)),need=row.qty-have;ownedCopies+=have;if(p===null){unknown+=row.qty;purchaseUnknown+=need;}else{total+=p*row.qty;purchase+=p*need;}}
+ return {totalEstimate:unknown?null:money(total),pricedSubtotal:money(total),unpricedCopies:unknown,purchaseEstimate:purchaseUnknown?null:money(purchase),pricedPurchaseSubtotal:money(purchase),unpricedPurchaseCopies:purchaseUnknown,ownedCopies,priceBasis:'Available app USD reference quotes, including basic lands and selected printings; lower-price checks cover bounded Scryfall results, not the whole market. Excludes tax and shipping; not a checkout quote.'};
 }
 export async function prepareMtgDeck(args,x) {
+ const quote = c => {
+  const choice = x.S?.state?.priceChoices?.[cardKey(c?.name)], value = choice ? choice.price : typeof x.priceOf === 'function' ? x.priceOf(c?.name) : cardPrice(c);
+  return value !== null && value !== undefined && (typeof value !== 'string' || value.trim() !== '') && Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : null;
+ };
  const f=formatOf(args.format),budget=Number(args.budget)>0?Math.min(10000,Number(args.budget)):Infinity,basis=['purchase','owned'].includes(args.budget_basis)?args.budget_basis:'total',limit=basis==='owned'?0:budget;
  if(f.id==='limited')return {requiresChoice:true,note:'Limited needs the cards from your draft or sealed pool. Choose a constructed format or provide that pool.'};
  if(f.id==='paupercommander')return {requiresChoice:true,note:'This AI draft path does not yet verify Pauper Commander’s separate commander-rarity rule. Choose Commander, or use the existing Pauper Commander builder and review its commander eligibility check.'};
@@ -72,12 +77,19 @@ export async function prepareMtgDeck(args,x) {
  await batches([...new Set(queries)],search);
  // Basics are real catalog cards with actual quote coverage, never fabricated $0 rows.
  const basicNames=(colors.length?colors:['C']).map(c=>BASIC[c]).filter(Boolean);
- await batches(basicNames,resolve);
+ await batches(basicNames,async name => {
+  const current = await resolve(name);
+  if (!active()) return;
+  try {
+   const { card } = await findCheapestPrinting(name,{api:x.api,reference:current,format:f.legality,basicOnly:true});
+   if(active() && card && (!current || cardPrice(current)===null || cardPrice(card)<cardPrice(current) || !isLegal(current,f))) remember(card);
+  } catch { warnings.push('Some basic-land printing lookups were unavailable; only existing verified card data and known quotes were used.'); }
+ });
  if(!active())return {cancelled:true,note:'The question was closed or replaced. Nothing was saved.'};
  const own=n=>available(x,n),required=[...new Map([seed,...requiredCards].filter(c=>c&&cardKey(c.name)!==cardKey(lead?.name)).map(c=>[cardKey(c.name),{name:c.name,qty:1}])).values()];
  const buildCatalog=Object.fromEntries(Object.entries(catalog).filter(([,c])=>!excludedKeys.has(cardKey(c.name))));
  const draft=buildDeck({format:f.name,seeds:[seed],commander:lead,requestedStyle:style,goal,suggestedCards:suggested.filter(Boolean).map(c=>c.name),excludedCards:excludedCards.map(c=>c.name),catalog:buildCatalog,base:required,colors:colors.length?colors:['C'],available:basis==='total'?()=>0:own,price:quote,budget:limit});
- const pricing=deckPriceCoverage(draft.cards,catalog,own),validation=validateDeck(draft,catalog,[],[]),issues=[...validation.issues];
+ const pricing=deckPriceCoverage(draft.cards,catalog,own,quote),validation=validateDeck(draft,catalog,[],[]),issues=[...validation.issues];
  if(f.id==='oathbreaker')issues.push({kind:'unverified',text:'Oathbreaker requires a signature spell. This draft path has not selected or checked that special command-zone requirement.'});
  for(const row of draft.cards){const c=catalog[cardKey(row.name)];if(c&&!Array.isArray(c.color_identity))issues.push({kind:'unverified',text:`${row.name}: color identity data is missing.`});}
  if(!draft.cards.some(r=>cardKey(r.name)===cardKey(seed.name)))issues.push({kind:'build-around',text:`Required build-around ${seed.name} is missing.`});

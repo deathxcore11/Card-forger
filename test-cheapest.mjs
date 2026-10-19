@@ -6,7 +6,7 @@ const { playSig } = await import("./ptcg.js");
 const q = cheapestQuery("Fire // Ice");
 assert.ok(q.startsWith('!"Fire"') && /-border:gold/.test(q) && /-is:oversized/.test(q) && /unique:prints/.test(q));
 let calls = 0;
-const api = async (path) => { calls++; return { data: [{ set: "fca", collector_number: "12", prices: { usd: path.includes("Bolt") ? "0.74" : null } }] }; };
+const api = async (path) => { calls++; return { data: [{ name: path.includes("Bolt") ? "Lightning Bolt" : "Mystery", games: ["paper"], legalities: { modern: "legal" }, set: "fca", collector_number: "12", prices: { usd: path.includes("Bolt") ? "0.74" : null } }] }; };
 await refreshCheapest(["Lightning Bolt", "Lightning Bolt", "Mystery"], { api, key: (n) => n.toLowerCase() });
 assert.equal(calls, 2, "one lookup per card");
 assert.equal(cheapestKnown("lightning bolt").usd, 0.74);

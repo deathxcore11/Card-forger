@@ -220,7 +220,7 @@ console.log('PASS: Paraphrased card quotes are replaced by the card\'s own sente
 
 // No live requests: verify the actual server adapter sends the canonical hand
 // rules and initial sample together to the intercepted upstream call.
-for (const [format,initial,firstDraw] of [['tcg',5,0],['speed',4,0],['goat',5,1]]) {
+for (const [format,initial,firstDraw] of [['tcg',5,0],['speed',4,0],['goat',5,1],['edison',5,1]]) {
   const cards=Array.from({length:7},(_,i)=>({...card,id:'c'+i,name:'Public server hand '+i,qty:1}));
   const hand=cards.slice(0,initial).map(c=>c.id);
   const body={...payload,game:'ygo',format,cards,hand,handProfile:{initialHandCards:99,firstTurnDraw:99}};

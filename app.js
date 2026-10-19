@@ -71,7 +71,7 @@ import { nextFact } from "./facts.js";
 import { S, STORAGE, CATALOG_RECORD, RECOVERY, blank, uid, meta, inv, deckById, currentDeck, priceOf, cacheCard, slim } from "./store.js";
 import { $, $$, esc, safeHref, usd, img, art, cardImage, options, segmented, customBudget, registerSetIcons, captureDisclosures, restoreDisclosures } from "./ui.js";
 import * as V from "./views.js";
-import { refreshCheapest, cheapestKnown, cheapestQuery } from "./mtg-cheap.js";
+import { refreshCheapest, cheapestKnown, findCheapestPrinting } from "./mtg-cheap.js";
 import { readRecord, writeRecord, writeRecords, persistenceStatus, requestPersistence } from "./storage.js";
 import {
   cardKey as key, sumQty, typeText, rulesText, isLand, commanderEligible, mergeDeckCard,
@@ -1012,11 +1012,11 @@ function render() {
     setTimeout(() => countUp($("#content")), 60);
   }
   attachBrowseObserver();
-  // A Magic deck's costs use each card's cheapest legal printing: check them once per session.
+  // Check eligible lower-price quotes once per session, including basic lands.
   if (ui.view === "deck" && g === "mtg" && currentDeck() && !cheapChecked.has(currentDeck().id)) {
     const d = currentDeck();
     cheapChecked.add(d.id);
-    refreshCheapest([...d.cards, ...(d.side || [])].map((r) => r.name).filter((n) => !/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(n)), { api, key, limit: 80 }).then((n) => n && navigationCurrent(screen) && render()).catch(() => {});
+    refreshCheapest([...d.cards, ...(d.side || [])].map((r) => r.name), { api, key, limit: 80, format: formatOf(d).legality, reference: meta }).then((n) => n && navigationCurrent(screen) && render()).catch(() => {});
   }
   // Deck Power needs the field: load tournament results once per format, the first time a
   // Power tab opens without them.
@@ -1400,7 +1400,7 @@ async function resolveActionCard(t) {
   if(ownedIdentity&&!magicOwnedCurrent(S.state,ownedIdentity))return null;
   if(setId)dataset.setId=setId;
   if(setVariant)dataset.setVariant=setVariant;
-  return {game,card,dataset,setId,setMembership,setVariant,priceEdition:matchingSheet?origin.priceEdition||origin.edition||"":"",priceYgoEdition:matchingSheet?origin.priceYgoEdition||origin.ygoEdition||"":""};
+  return {game,card,dataset,setId,setMembership,setVariant,priceEdition:matchingSheet?origin.priceEdition||origin.edition||"":"",priceYgoEdition:matchingSheet?origin.priceYgoEdition||origin.ygoEdition||"":"",ygoPriceDefault:matchingSheet?origin.ygoPriceDefault||"":""};
 }
 // Keep quick +/- and manual values on the exact set slot that opened the menu.
 // Other screens retain their existing gameplay/name-equivalent ownership behavior.
@@ -1408,7 +1408,7 @@ function quickCardLots(ref,entries) {
   if(!ref.setId)return ownedCardLots(entries,ref.card);
   if(ref.game==='mtg')return entries.filter(e=>Number(e.qty)>0&&e.printingVerified&&e.printingId===ref.card.id&&(!ref.setVariant||(e.finish||'nonfoil')===ref.setVariant));
   const release={...ref.card.setContext,id:ref.setId};
-  return entries.filter(e=>T.ownedInSet(ref.game,ref.card,release,[e],T.ui(ref.game).sets.list)>0&&(!ref.setVariant||ref.setVariant==='reference'||ref.game!=='ptcg'||e.variant===ref.setVariant)&&(!ref.priceEdition||ref.game!=='ygo'||e.printing+'::'+e.rarity===ref.priceEdition)&&(!ref.priceYgoEdition||ref.game!=='ygo'||e.edition===ref.priceYgoEdition));
+  return entries.filter(e=>T.ownedInSet(ref.game,ref.card,release,[e],T.ui(ref.game).sets.list)>0&&(!ref.setVariant||ref.setVariant==='reference'||ref.game!=='ptcg'||e.variant===ref.setVariant)&&(!ref.priceEdition||ref.game!=='ygo'||e.printing+'::'+e.rarity===ref.priceEdition)&&(!ref.priceYgoEdition||ref.game!=='ygo'||ref.ygoPriceDefault===ref.priceYgoEdition||e.edition===ref.priceYgoEdition));
 }
 
 function startCardCompare(game, first = null) {
@@ -1437,7 +1437,7 @@ async function cardQuickMenu(t) {
   const lots=quickCardLots(ref,st.collection);ref.selectedLot=lots.some(e=>e.id===ref.selectedLot)?ref.selectedLot:lots.some(e=>e.id===ref.dataset.entry)?ref.dataset.entry:lots.length===1?lots[0].id:null;
   if(ref.selectedLot)ref.dataset.entry=ref.selectedLot;
   const wished = st.wishlist.some(w => ref.game === "mtg" ? key(w.name) === key(ref.card.name) : w.cardId === ref.card.id);
-  openSheet(`<div class="sheet-head"><h2>Card actions</h2><button class="icon" data-act="closeSheet" aria-label="Close">${actionIcon("close")}</button></div><div class="quick-card-heading">${artworkHTML(ref.card,"quick-card-thumb")}<div><b>${esc(ref.card.name)}</b><small>${esc(ref.card.set_name || ref.card.set?.name || ref.card.typeLine || "")}</small></div></div>${cardActionButtons({game:ref.game,wished,existing:lots.length>0,quantityHtml:quickQuantity(lots,ref.selectedLot,ref.qtyBusy),second:comparison.active && comparison.cards.length>0})}<div class="quick-art-actions">${lots.length?`<button class="btn ghost" data-act="quickPriceRefresh" ${!ref.selectedLot||ref.priceBusy?'disabled':''}>${ref.priceBusy?'Checking price…':'Refresh price'}</button>`:''}<button class="btn ghost" data-act="quickArtwork">Use artwork as…</button></div>`,{type:"card-actions",game:ref.game,id:ref.card.id,setId:ref.setId||"",setMembership:ref.setMembership,setVariant:ref.setVariant,priceEdition:ref.priceEdition,priceYgoEdition:ref.priceYgoEdition});
+  openSheet(`<div class="sheet-head"><h2>Card actions</h2><button class="icon" data-act="closeSheet" aria-label="Close">${actionIcon("close")}</button></div><div class="quick-card-heading">${artworkHTML(ref.card,"quick-card-thumb")}<div><b>${esc(ref.card.name)}</b><small>${esc(ref.card.set_name || ref.card.set?.name || ref.card.typeLine || "")}</small></div></div>${cardActionButtons({game:ref.game,wished,existing:lots.length>0,quantityHtml:quickQuantity(lots,ref.selectedLot,ref.qtyBusy),second:comparison.active && comparison.cards.length>0})}<div class="quick-art-actions">${lots.length?`<button class="btn ghost" data-act="quickPriceRefresh" ${!ref.selectedLot||ref.priceBusy?'disabled':''}>${ref.priceBusy?'Checking price…':'Refresh price'}</button>`:''}<button class="btn ghost" data-act="quickArtwork">Use artwork as…</button></div>`,{type:"card-actions",game:ref.game,id:ref.card.id,setId:ref.setId||"",setMembership:ref.setMembership,setVariant:ref.setVariant,priceEdition:ref.priceEdition,priceYgoEdition:ref.priceYgoEdition,ygoPriceDefault:ref.ygoPriceDefault});
 }
 // Hold a deck or binder tile for its quick actions, the same gesture as holding a card.
 // Every action is also reachable inside the deck or binder; this is a shortcut, not a hiding place.
@@ -1534,7 +1534,7 @@ function registerCardMenus() {
     if (!quickCard || quickCard.game !== T.game()) return;
     const {game,card} = quickCard;
     if (game === "mtg") addSheet(null,{card,name:card.name,set:card.set,number:card.collector_number,finish:quickCard.setVariant||undefined});
-    else A.tOwn({dataset:{id:card.id,setId:quickCard.setId||"",setVariant:quickCard.setVariant||"",print:(quickCard.priceEdition||"").replace("::","|"),edition:quickCard.priceYgoEdition||""},setMembership:quickCard.setMembership});
+    else A.tOwn({dataset:{id:card.id,setId:quickCard.setId||"",setVariant:quickCard.setVariant||"",print:(quickCard.priceEdition||"").replace("::","|"),edition:quickCard.ygoPriceDefault===quickCard.priceYgoEdition?"":quickCard.priceYgoEdition||""},setMembership:quickCard.setMembership});
   };
   A.quickWish = async () => {
 
@@ -2397,7 +2397,14 @@ async function loadFormatPool(f, colors, seed, progress) {
     theme = themes.join("|"),
     key = f.id + "|" + ci + "|" + theme;
   const basics = (colors.length ? colors : ["C"]).map(c=>({W:"Plains",U:"Island",B:"Swamp",R:"Mountain",G:"Forest",C:"Wastes"})[c]).filter(Boolean);
-  for (const name of basics) await resolve(name).catch(()=>{});
+  for (const name of basics) {
+    progress(`Checking ${name} printing quotes…`);
+    const current = await resolve(name).catch(() => null);
+    try {
+      const { card } = await findCheapestPrinting(name, { api, format: f.legality, reference: current, basicOnly: true });
+      if (card && (!current || cardPrice(current) === null || cardPrice(card) < cardPrice(current) || (f.legality && !["legal", "restricted"].includes(current.legalities?.[f.legality])))) cacheCard(card);
+    } catch {}
+  }
   if (poolCache.has(key)) return;
   const queries = [
     ...themes.map(query => ["cards for its plan", `${fq} id<=${ci} -t:land ${query}`]),
@@ -2410,7 +2417,8 @@ async function loadFormatPool(f, colors, seed, progress) {
   for (const [label, q] of queries) {
     progress(`Finding ${label}…`);
     try {
-      // One printing per card, the cheapest (any printing plays the same in a deck).
+      // Ask the provider for a lower-priced printing of each legal card;
+      // this bounded candidate query is not complete market coverage.
       const r = await api("/cards/search?" + new URLSearchParams({ q: q + " prefer:usd-low", unique: "cards", order: "edhrec" }));
       for (const c of r.data || []) cacheCard(c);
     } catch {}
@@ -2478,7 +2486,7 @@ async function runBuild() {
     }
     tiers=variantsFrom(budgetNotes(tiers.map(t=>t&&asShown(t)),budgets),budgets,d=>difficultyOf(d.cards.map(r=>{const c=meta(r.name);return {qty:r.qty,text:!c || /\bLand\b/.test(c.type_line || '')?null:c.oracle_text || (c.card_faces || []).map(x=>x.oracle_text || '').join(' ')};})));
     B.results[f.name]=tiers.filter(Boolean).map((winner,i)=>{const d=winner;return {...d,owned:d.cards.reduce((n,r)=>n+Math.min(r.qty,B.avail(r.name)),0)};});
-    B.msg = `${B.results[f.name].length} budget versions · compared ${candidates.length} decks using Power, legality and purchase cost.`;
+    B.msg = `${B.results[f.name].length} budget versions · compared ${candidates.length} decks using Power, legality and purchase cost. Prices are known eligible quotes from checked printings, not a complete market search.`;
   } catch (e) {
     B.msg = e.message;
     B.error = true;
@@ -2486,10 +2494,10 @@ async function runBuild() {
     B.busy = false;
     refreshSheet();
   }
-  // After the versions are on screen: check the cheapest legal printing of the priciest cards they
-  // use (it can only lower what they cost), then refresh the prices shown.
-  const names = [...new Set((B.results[f.name] || []).flatMap((t) => t.cards.map((r) => r.name)))].filter((n) => !/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(n)).sort((a, b) => (priceOf(b) ?? 0) - (priceOf(a) ?? 0));
-  if (names.length) refreshCheapest(names, { api, key, limit: 40 }).then((n) => n && S.ui.sheetCtx?.type === "build" && refreshSheet()).catch(() => {});
+  // After the versions are on screen, check bounded eligible printing quotes
+  // for their priciest cards, including basics, then refresh the estimate.
+  const names = [...new Set((B.results[f.name] || []).flatMap((t) => t.cards.map((r) => r.name)))].sort((a, b) => (priceOf(b) ?? 0) - (priceOf(a) ?? 0));
+  if (names.length) refreshCheapest(names, { api, key, limit: 40, format: f.legality, reference: meta }).then((n) => n && S.ui.sheetCtx?.type === "build" && refreshSheet()).catch(() => {});
 }
 // Tutorials run in a separate modal with disposable example data. Existing
 // card forms and the camera screen stay mounted underneath it.
@@ -2657,13 +2665,32 @@ A.tierSave = async (t) => {
   const d = generatedDeck(tier, B.seed);
   await commit((s) => s.decks.push(d), { msg: `Saved “${d.name}”. Find it in My decks.` });
 };
-// Magic shopping lines name the printing the deck is priced at (the cheapest legal one when known).
+// Shopping follows the quote's exact printing, with user choices taking priority.
 async function buyMtg(items) {
-  const rows = aggregateCards(items).filter((r) => r.qty > 0).map((r) => {
-    const low = cheapestKnown(key(r.name)), c = meta(r.name);
-    const priced = low?.usd != null && low.set;
-    return { qty: r.qty, name: r.name.split(" // ")[0], set: priced ? low.setName : c?.set_name, code: priced ? low.set : c?.set, num: priced ? low.cn : c?.collector_number };
-  });
+  const rows = [];
+  for (const r of aggregateCards(items).filter(r => r.qty > 0)) {
+    const choice = S.state.priceChoices?.[key(r.name)], c = meta(r.name);
+    if (choice) {
+      let chosen = choice.set && choice.cn ? { id: choice.id, name: r.name, set: choice.set, set_name: choice.setName, collector_number: choice.cn } : S.state.printings?.[choice.id] || (c?.id === choice.id ? c : null);
+      if (!chosen && choice.id) {
+        try { chosen = await api("/cards/" + encodeURIComponent(choice.id)); } catch {}
+      }
+      if (!chosen?.set || !chosen.collector_number || key(chosen.name) !== key(r.name) || chosen.id !== choice.id) {
+        toast(`The selected printing for ${r.name} needs verification. Choose it again before creating its shopping list; no other printing was substituted.`);
+        return true;
+      }
+      rows.push({ qty: r.qty, name: r.name.split(" // ")[0], set: chosen.set_name, code: chosen.set, num: chosen.collector_number, finish: choice.finish || "nonfoil" });
+    } else {
+      const low = cheapestKnown(key(r.name)), priced = low?.usd != null && low.set && (cardPrice(c) === null || low.usd <= cardPrice(c));
+      rows.push({ qty: r.qty, name: r.name.split(" // ")[0], set: priced ? low.setName : c?.set_name, code: priced ? low.set : c?.set, num: priced ? low.cn : c?.collector_number, finish: "nonfoil" });
+    }
+  }
+  // This app's Mass Entry serializer cannot transmit foil/etched finishes.
+  // Preserve the requested finish in a checklist instead of silently losing it.
+  if (rows.some(r => r.finish !== "nonfoil")) {
+    await copyText(rows.map(r => `${r.qty} ${r.name}${r.code ? ` [${r.code.toUpperCase()}]${r.num ? " " + r.num : ""}` : ""} · ${r.finish}`).join("\n"), "Exact printing/finish checklist copied. Match these finishes at the seller; no cart was opened or purchase made.");
+    return true;
+  }
   return buyOnTcgplayer("mtg", await massLines("mtg", rows));
 }
 A.tierSaveGo = async (t) => {
@@ -2680,12 +2707,12 @@ A.tierCopy = (t) => {
   const B = S.ui.build, tier = B.results[B.format]?.[Number(t.dataset.i)];
   if (tier) copyText(exportDeckText({ cards: tier.cards, side: tier.side || [] }), "Deck list copied.");
 };
-// The cards this version needs that you don't own (basic lands aside), for TCGplayer's Mass Entry.
+// Every missing copy, including basic lands, belongs in the purchase checklist.
 A.tierBuy = async (t) => {
 
   const B = S.ui.build, tier = B.results[B.format]?.[Number(t.dataset.i)];
   if (!tier) return;
-  const rows = tier.cards.filter((r) => tier.preparedByAsk || !/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(r.name)).map((r) => ({ qty: r.qty - Math.min(r.qty, tier.preparedByAsk ? tier.availableCopies?.[key(r.name)] ?? 0 : B.avail?.(r.name) ?? 0), name: r.name })).filter((r) => r.qty > 0);
+  const rows = tier.cards.map((r) => ({ qty: r.qty - Math.min(r.qty, tier.preparedByAsk ? tier.availableCopies?.[key(r.name)] ?? 0 : B.avail?.(r.name) ?? 0), name: r.name })).filter((r) => r.qty > 0);
   if (!(await buyMtg(rows))) toast("You own every card in this version.");
 };
 A.tierSaveAll = async () => {
@@ -3665,7 +3692,7 @@ A.choosePrint = async (t) => {
   if (!p) return;
   await commit((s) => {
     s.priceChoices = s.priceChoices || {};
-    s.priceChoices[key(name)] = { price: cardPrice(p, f), finish: f, label: `${p.set.toUpperCase()} #${p.collector_number} · ${f}`, id: p.id, checkedAt: new Date().toISOString() };
+    s.priceChoices[key(name)] = { price: cardPrice(p, f), finish: f, set: p.set, setName: p.set_name, cn: p.collector_number, label: `${p.set.toUpperCase()} #${p.collector_number} · ${f}`, id: p.id, checkedAt: new Date().toISOString() };
   }, { msg: "Using that printing’s price. Ownership unchanged." });
 };
 A.clearPrint = async (t) => {
@@ -5012,7 +5039,7 @@ A.ideaBudget = async (t) => {
       const el = $("#ideaMsg");
       if (el) el.textContent = m;
     });
-    const plan = completionPlan(base, S.state.collection, S.state.decks, S.catalog, { budget, landTarget: 36, preferOwned: true, simple: false });
+    const plan = completionPlan(base, S.state.collection, S.state.decks, S.catalog, { budget, landTarget: 36, preferOwned: true, simple: false, price: c => priceOf(c.name) });
     o.diagnostics = { ...plan.diagnostics, candidateLoads: loaded, warnings: plan.warnings.filter(w => !/heuristic|measured win rates/i.test(w)) };
     if (loaded.failed) o.diagnostics.warnings.push(`${loaded.failed} card-data lookups failed. Retry data before assuming the budget is the problem.`);
     o.custom = { ...idea.deck, budget: budget === Infinity ? null : budget, budgetBasis: "purchase", cards: plan.deck.cards, buildDiagnostics: o.diagnostics };
@@ -5286,7 +5313,7 @@ async function loadCandidates(d, cap, progress) {
   for (const [label, q] of queries) {
     progress(`Finding ${label}…`);
     try {
-      const r = await api("/cards/search?" + new URLSearchParams({ q: `${base} ${q}`, unique: "cards", order: label.startsWith("budget") ? "usd" : "edhrec", dir:"asc" }));
+      const r = await api("/cards/search?" + new URLSearchParams({ q: `${base} ${q} prefer:usd-low`, unique: "cards", order: label.startsWith("budget") ? "usd" : "edhrec", dir:"asc" }));
       for (const c of r.data.slice(0, label.startsWith("budget") ? 140 : 60)) {
         cacheCard(c);
         loaded++;
@@ -5300,17 +5327,15 @@ async function loadCandidates(d, cap, progress) {
     let card = null, lookupFailed = false;
     progress(`Checking ${name} data and price…`);
     try { card = await resolve(name); } catch { lookupFailed = true; }
-    // A named lookup may select an unpriced new printing. Find a real, priced
-    // paper basic instead of inventing a free land or blaming the spending cap.
-    if (!card || cardPrice(card) === null || card.legalities?.commander !== "legal") {
-      try {
-        const result = await api("/cards/search?" + new URLSearchParams({ q: `${cheapestQuery(name)} legal:commander t:basic`, order: "usd", dir: "asc" }));
-        const priced = (result.data || []).find(c => key(c.name) === key(name) && /^Basic\b/.test(typeText(c)) && c.legalities?.commander === "legal" && cardPrice(c) !== null);
-        if (priced) { card = cacheCard(priced); loaded++; lookupFailed = false; }
-      } catch { lookupFailed = true; }
-    }
+    // Even an already-priced basic can be an expensive art printing. Check a
+    // bounded set of equivalent, legal paper printings before applying budgets.
+    try {
+      const { card: priced } = await findCheapestPrinting(name, { api, reference: card, format: "commander", basicOnly: true });
+      if (priced && (!card || cardPrice(card) === null || cardPrice(priced) < cardPrice(card) || card.legalities?.commander !== "legal")) { card = cacheCard(priced); loaded++; }
+      lookupFailed = false;
+    } catch { lookupFailed = true; }
     if (lookupFailed) failed++;
-    basics.push({ name, loaded: !!card, priced: cardPrice(card) !== null, price: cardPrice(card), lookupFailed });
+    basics.push({ name, loaded: !!card, priced: priceOf(name) !== null, price: priceOf(name), lookupFailed });
   }
   return { loaded, failed, basics };
 }
@@ -5342,7 +5367,7 @@ A.fillRun = async () => {
   try {
     await resolveNames([...d.cards.map((c) => c.name), ...S.state.collection.map((c) => c.name)], msg);
     const c = await loadCandidates(d, F.budget || 0.5, msg);
-    F.plan = completionPlan(d, S.state.collection, S.state.decks, S.catalog, { budget: F.budget, landTarget: F.lands, preferOwned: true, simple: F.simple });
+    F.plan = completionPlan(d, S.state.collection, S.state.decks, S.catalog, { budget: F.budget, landTarget: F.lands, preferOwned: true, simple: F.simple, price: c => priceOf(c.name) });
     F.plan.base = JSON.stringify(d.cards);
     F.msg = `${c.loaded} candidates checked. ${F.plan.open ? F.plan.open + " slots still open — try a bigger budget." : "Review, then add."}`;
   } catch (e) {

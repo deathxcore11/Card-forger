@@ -88,6 +88,8 @@ const missing=clone(glcGood);delete missing.cards[missing.deck.zones.main[0].car
 
 assert.deepEqual([speed.extra,speed.side,speed.firstTurnCards,speed.secondTurnCards],[6,6,4,5]);
 assert.deepEqual([goat.main[0],goat.main[1],goat.extra,goat.firstTurnCards,goat.secondTurnCards],[40,Infinity,Infinity,6,6]);
+assert.deepEqual([format('ygo','edison').firstTurnCards,format('ygo','edison').secondTurnCards],[6,6]);
+assert.match(YGO_FORMAT_RULES.edison.source,/edison-rule-differences/);
 assert.match(YGO_FORMAT_RULES.speed.source,/Addendum_1.2_KDE-US.pdf$/);assert.equal(YGO_FORMAT_RULES.speed.effectiveAt,'2022-03-11');
 assert.match(ygoZoneRange(goat,'main'),/40.*no maximum/i);assert.match(ygoZoneRange(goat,'extra'),/No maximum/);assert.doesNotMatch(ygoZoneRange(goat,'main')+ygoZoneRange(goat,'extra'),/Infinity/);
 const speedGood=ygoFixture('speed',{extra:6,side:6});const speedIssues=check('ygo',speedGood,true);
@@ -110,6 +112,9 @@ const noBan=clone(goatGood);delete noBan.cards[noBan.deck.zones.main[0].cardId].
 const malformedBan=clone(goatGood);malformedBan.cards[malformedBan.deck.zones.main[0].cardId].ban.goat='unknown';check('ygo',malformedBan,false,/ban-status data not verified/);
 const badCopy=clone(goatGood);badCopy.deck.zones.main[0].qty=4;check('ygo',badCopy,false,/4 copies.*allows 3/);
 for(const id of ['edison','md','dl'])check('ygo',ygoFixture(id),false,/isn't in the data/);
+const edisonProbe=ygoFixture('edison'),edisonPower=tcgPower('ygo',edisonProbe.deck,format('ygo','edison'),id=>edisonProbe.cards[id]);
+assert.equal(shownPower(edisonPower),null,'sourced hand diagnostics cannot supply a missing banlist');
+assert.match(edisonPower.sims[0].note,/6 cards/,'unavailable overall still uses the correct first-turn diagnostic window');
 // Passed custom profile must be in memo evidence, not just the format ID.
 const custom=ygoFixture('speed',{extra:6});
 assert.equal(tcgPower('ygo',custom.deck,speed,id=>custom.cards[id]).readiness.eligible,true);

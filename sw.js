@@ -100,6 +100,7 @@ const ASSETS = [
   "./deck-optimizer.js",
   "./rule-dex.js",
   "./rule-hover.js",
+  "./ygo-price-selection.js",
   "./ygo-prices.js",
   "./ygo-set-prices.js",
   "./engine-map.js",

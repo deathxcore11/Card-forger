@@ -132,8 +132,9 @@ export function completionPlan(
   collection,
   decks,
   catalog,
-  { budget = 25, landTarget = 36, preferOwned = true, simple = true } = {},
+  { budget = 25, landTarget = 36, preferOwned = true, simple = true, price = cardPrice } = {},
 ) {
+  const quote = c => { const value = price(c); return value !== null && value !== undefined && (typeof value !== "string" || value.trim() !== "") && Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : null; };
   const commander = catalog[cardKey(deck.commander)];
   if (deck.format !== "Commander" || !commanderEligible(commander))
     throw Error("Choose a verified single commander before filling slots.");
@@ -176,7 +177,7 @@ export function completionPlan(
     };
   const cardCost = (c, qty) => {
     const missing = Math.max(0, qty - stock(c)),
-      price = cardPrice(c);
+      price = quote(c);
     return {
       cost: missing ? (price === null ? Infinity : missing * price) : 0,
       unknown: missing && price === null,
@@ -202,7 +203,7 @@ export function completionPlan(
       extra = nextCost - currentCost;
     // No cap is not a $0 price claim: verified cards may be proposed with an
     // unknown quote, while the resulting purchase estimate remains unverified.
-    return (budget === Infinity && cardPrice(c) === null) || (
+    return (budget === Infinity && quote(c) === null) || (
       Number.isFinite(extra) &&
       (extra === 0 || totalCost() + extra <= budget + 0.000001)
     );
@@ -225,7 +226,7 @@ export function completionPlan(
         qty: 1,
         reason,
         complexity: cachedComplexity(c).level,
-        price: cardPrice(c),
+        price: quote(c),
         available: stock(c),
       });
   }
@@ -285,7 +286,7 @@ export function completionPlan(
               wanted[role] && (current.counts[role] || 0) < wanted[role],
           );
         const owned = stock(c) > 0,
-          price = cardPrice(c),
+          price = quote(c),
           popular = c.edhrec_rank
             ? Math.max(0, 3 - Math.log10(c.edhrec_rank + 1) * 0.6)
             : 0;
@@ -320,11 +321,11 @@ export function completionPlan(
     if (!ranked.length) break;
     // Reserve enough money for the cheapest remaining unique spells instead
     // of spending the entire budget on the first high-scoring card.
-    const need = 100 - count(), costs = ranked.map(x => ({name: x.c.name, cost: stock(x.c) > 0 ? 0 : cardPrice(x.c)})).sort((a,b) => a.cost - b.cost);
+    const need = 100 - count(), costs = ranked.map(x => ({name: x.c.name, cost: stock(x.c) > 0 ? 0 : quote(x.c)})).sort((a,b) => a.cost - b.cost);
     if (costs.length >= need && Number.isFinite(totalCost())) {
       const cheapest = costs.slice(0, need), sum = cheapest.reduce((n,x) => n + x.cost, 0), included = new Set(cheapest.map(x => x.name));
       const affordable = ranked.filter(x => {
-        const price = stock(x.c) > 0 ? 0 : cardPrice(x.c);
+        const price = stock(x.c) > 0 ? 0 : quote(x.c);
         const reserve = included.has(x.c.name) ? sum - price : sum - cheapest.at(-1).cost;
         return totalCost() + price + reserve <= budget + .000001;
       });
@@ -333,10 +334,10 @@ export function completionPlan(
     add(ranked[0].c, ranked[0].reason);
   }
   const cost = totalCost(), landCount = stats().lands,
-    unpricedPurchaseCopies = cards.reduce((n, r) => { const c = catalog[cardKey(r.name)]; return n + (cardPrice(c) === null ? Math.max(0, r.qty - stock(c)) : 0); }, 0),
+    unpricedPurchaseCopies = cards.reduce((n, r) => { const c = catalog[cardKey(r.name)]; return n + (quote(c) === null ? Math.max(0, r.qty - stock(c)) : 0); }, 0),
     basicCandidates = basicNames.map(name => {
       const card = catalog[cardKey(name)];
-      return { name, loaded: !!card, legal: !!card && pool.includes(card), price: card ? cardPrice(card) : null, available: card ? stock(card) : 0, listed: quantityByName.get(cardKey(name)) || 0 };
+      return { name, loaded: !!card, legal: !!card && pool.includes(card), price: card ? quote(card) : null, available: card ? stock(card) : 0, listed: quantityByName.get(cardKey(name)) || 0 };
     }),
     missingBasics = basicCandidates.filter(c => !c.loaded).map(c => c.name),
     unpricedBasics = basicCandidates.filter(c => c.loaded && c.price === null && c.available <= c.listed).map(c => c.name),
@@ -373,6 +374,7 @@ export function completionPlan(
             "The existing draft already exceeds the missing-card budget; only free owned additions were allowed.",
           ]
         : []),
+      "Prices are available reference quotes, not a complete market search; missing quotes remain unverified.",
       "Recommendations use text heuristics and broad EDHREC popularity ranks when available. They are not measured win rates or verified combos.",
     ],
   };

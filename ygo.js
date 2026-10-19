@@ -258,6 +258,7 @@ export function normalizeYgo(c) {
 // Deck formats. `pool` is the card pool name YGOPRODeck reports; `ban` the banlist.
 // Rules authority is distinct from provider card-pool / ban-status data.
 export const YGO_FORMAT_RULES = Object.freeze({
+  edison: Object.freeze({version:'edison-organizer-hand.checked-2026-10-19',checkedAt:'2026-10-19',source:'https://www.edisonformat.com/edison-rule-differences.html',initialHandSource:'https://www.edisonformat.com/uploads/1/3/4/1/134149181/yugioh5dsofficialrulebook.pdf',scope:'Initial hand 5; the first player draws in their first Draw Phase. This hand-rule evidence does not supply the missing Edison banlist.'}),
   goat: Object.freeze({version:'goat-organizer.checked-2026-10-19',checkedAt:'2026-10-19',source:'https://www.goatformat.com/basics.html',scope:'Original organizer Main/Fusion sizes. Intermediate Side sizes and online-platform caps are variant-dependent; provider GOAT pool/ban status is not an independently refreshed historical list.'}),
   speed: Object.freeze({version:'KDE-US-Speed-Duel-Addendum-1.2',effectiveAt:'2022-03-11',checkedAt:'2026-10-19',source:'https://www.yugioh-card.com/en/downloads/penalty_guide/Speed_Duel_Addendum_1.2_KDE-US.pdf',drawSource:'https://img.yugioh-card.com/eu/wp-content/uploads/2022/07/Speed_Duel_Guide_EN.pdf',scope:'KDE-US constructed baseline: Main 20–30, Extra/Side at most 6, optional initial Skill. Printing logo and event-specific restrictions are not certified by provider pool membership.'}),
 });
@@ -266,7 +267,7 @@ export const YGO_FORMATS = [
   { id: "traditional", name: "Traditional (TCG)", main: [40, 60], extra: 15, side: 15, pool: "TCG", ban: "tcg", traditional: true },
   { id: "ocg", name: "OCG", main: [40, 60], extra: 15, side: 15, pool: "OCG", ban: "ocg" },
   { id: "goat", name: "GOAT", main: [40, Infinity], extra: Infinity, side: 15, firstTurnCards:6, secondTurnCards:6, pool: "GOAT", ban: "goat", rules:YGO_FORMAT_RULES.goat },
-  { id: "edison", name: "Edison", main: [40, 60], extra: 15, side: 15, pool: "Edison", note: "Edison's own list isn't in the data; card pool only." },
+  { id: "edison", name: "Edison", main: [40, 60], extra: 15, side: 15, firstTurnCards:6, secondTurnCards:6, pool: "Edison", rules:YGO_FORMAT_RULES.edison, note: "Edison's own list isn't in the data; card pool only." },
   { id: "md", name: "Master Duel", main: [40, 60], extra: 15, side: 15, pool: "Master Duel", note: "Master Duel's banlist isn't in the data; card pool only." },
   { id: "speed", name: "Speed Duel", main: [20, 30], extra: 6, side: 6, firstTurnCards:4, secondTurnCards:5, pool: "Speed Duel", rules:YGO_FORMAT_RULES.speed },
   { id: "dl", name: "Duel Links", main: [20, 30], extra: 8, side: 8, pool: "Duel Links", note: "Duel Links' limited list isn't in the data; card pool only." },

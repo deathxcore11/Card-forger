@@ -648,37 +648,38 @@ export const ptcgSource = {
   },
   // The same card at the lowest cost: reprints and alternate arts with the same name and the same
   // game text (HP, attacks, abilities, retreat, rules) play identically, so a deck only needs the
-  // cheapest one that is legal in the format, or one you already own. Basic Energy: any printing.
-  async cheapestPrint(card, { legal = () => true, owned = () => 0 } = {}) {
-    if (!card?.name) return card;
-    const key = card.id + "|" + legal.key;
-    if (cheapMemo.has(key)) return cheapMemo.get(key);
-    const run = (async () => {
+  // lowest verified quote among checked legal equivalents, or an owned printing.
+  // The provider detail budget is bounded; incomplete coverage remains explicit.
+  async cheapestPrint(card, { legal = () => true, owned = () => 0, known = [] } = {}) {
+    if (!card?.name || card.setContext) return card; // An explicit set/finish selection is not a cheapest-print request.
+    // Cache discovery, not the chosen printing: ownership, legality and cached
+    // prices can change between requests without changing the original card ID.
+    const key = printingName(card.name) + "|" + Boolean(card.basicEnergy);
+    if (!cheapMemo.has(key)) cheapMemo.set(key, (async () => {
+      let lookupFailed = false;
       // Basic Energy is named both "Water Energy" and "Basic Water Energy" depending on the set.
       const names = card.basicEnergy ? [card.name.replace(/^Basic /, ""), "Basic " + card.name.replace(/^Basic /, "")] : [card.name];
-      const upstream = (await Promise.all(names.map((n) => get("/cards", { name: "eq:" + n }).catch(() => [])))).flat(),
-        briefs = pokemonCatalogueOverlay(upstream,c => names.some(q => supplementMatches(c,{q,exactName:true}))).filter((c) => c && !isPocket(c) && c.id !== card.id),
+      const upstream = (await Promise.all(names.map((n) => get("/cards", { name: "eq:" + n }).catch(() => { lookupFailed = true; return []; })))).flat(),
+        briefs = [...new Map(pokemonCatalogueOverlay(upstream,c => names.some(q => supplementMatches(c,{q,exactName:true}))).filter((c) => c && !isPocket(c)).map(c=>[c.id,c])).values()],
         rank = await setRank(),
         setOf = (id) => id.slice(0, id.lastIndexOf("-"));
       briefs.sort((a, b) => (rank.get(setOf(b.id)) ?? -1) - (rank.get(setOf(a.id)) ?? -1));
-      const full = [];
-      for (let i = 0; i < Math.min(briefs.length, card.basicEnergy ? 16 : 12); i += 6)
-        full.push(...(await Promise.all(briefs.slice(i, i + 6).map((b) => getCard(b.id).catch(() => null)))));
-      const sig = playSig(card),
-        same = [card, ...full].filter((c) => c && legal(c) && (card.basicEnergy ? c.basicEnergy : playSig(c) === sig)),
-        // Owned printings first, except Basic Energy: owning any one covers them all, so the deck
-        // shows the plain cheap printing rather than a gold one you happen to have.
-        mine = card.basicEnergy ? [] : same.filter((c) => owned(c) > 0),
-        rare = (c) => { const i = PTCG_RARITIES.indexOf(c.rarity); return i < 0 ? 50 : i; },
-        cost = (c) => c.prices?.usd ?? Infinity;
-      // Prefer printings with a picture (some trainer-kit and promo scans are missing).
-      const pool = mine.length ? mine : same.filter((c) => c.image).length ? same.filter((c) => c.image) : same;
-      // Never trade a legal card for an illegal one: the original stays when nothing else qualifies.
-      const best = pool.sort((a, b) => cost(a) - cost(b) || rare(a) - rare(b))[0] || card;
-      return best;
-    })().catch(() => card);
-    cheapMemo.set(key, run);
-    return run;
+      const full = [], pending = briefs.filter(c=>c.id!==card.id), limit = Math.min(pending.length,card.basicEnergy ? 16 : 12);
+      for (let i = 0; i < limit; i += 6)
+        full.push(...await Promise.all(pending.slice(i,Math.min(i+6,limit)).map(b=>getCard(b.id).catch(()=>null))));
+      if(full.some(c=>!c))lookupFailed=true;
+      return {full:full.filter(Boolean),ids:briefs.map(c=>c.id),lookupFailed};
+    })().catch(()=>({full:[],ids:[],lookupFailed:true})));
+    const found = await cheapMemo.get(key), sig = playSig(card),
+      checked = [...new Map([...found.full, ...known, card].filter(c=>c && !c.brief && printingName(c.name)===printingName(card.name)).map(c=>[c.id,c])).values()],
+      same = checked.filter(c=>legal(c) && (card.basicEnergy ? c.basicEnergy : playSig(c)===sig)),
+      mine = card.basicEnergy ? [] : same.filter(c=>owned(c)>0),
+      rare = c => {const i=PTCG_RARITIES.indexOf(c.rarity);return i<0?50:i;},
+      cost = c => {const p=c.prices?.usd;return p==null||typeof p==="boolean"||String(p).trim()===""||!Number.isFinite(Number(p))||Number(p)<0?Infinity:Number(p);},
+      pool = mine.length ? mine : same,
+      best = [...pool].sort((a,b)=>cost(a)-cost(b)||Number(!!b.image)-Number(!!a.image)||rare(a)-rare(b))[0] || card,
+      checkedIds = new Set(checked.map(c=>c.id)), unchecked = found.ids.filter(id=>!checkedIds.has(id)).length;
+    return {...best,printingComparison:{scope:'lowest-known-eligible-checked',checked:checked.length,eligible:same.length,unchecked,partial:found.lookupFailed||unchecked>0,ownedPreferred:mine.length>0,source:'TCGdex catalogue and available cached equivalents'}};
   },
   validate: validatePtcg,
   legality: ptcgLegality,

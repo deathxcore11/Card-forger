@@ -69,7 +69,8 @@ ui('ygo').sets.list=[...releases,mp25];
 const darkGolem={...card,id:'99020009',name:'Ancient Gear Dark Golem',sets:[{name:mp25.name,code:'MP25-EN003',rarity:'Starlight Rare',price:null,quotes:[{edition:'1st Edition',market:.54},{edition:'Unlimited',market:.31}]}]};
 cache.ygo[darkGolem.id]=darkGolem;const unchanged=JSON.stringify(darkGolem),stateBefore=JSON.stringify(S.state);
 for(const [edition,label,amount]of [['','edition unspecified',null],['1st-edition','1st Edition',.54],['unlimited','Unlimited',.31],['limited','Limited',null],['','edition unspecified',null]]){
- const ctx={type:'tcard',game:'ygo',id:darkGolem.id,setId:mp25.id,priceEdition:'MP25-EN003::Starlight Rare',priceYgoEdition:edition,tab:'overview'};
+ // These are explicit selector choices, including clearing a preview default.
+ const ctx={type:'tcard',game:'ygo',id:darkGolem.id,setId:mp25.id,priceEdition:'MP25-EN003::Starlight Rare',priceYgoEdition:edition,ygoEditionExplicit:true,tab:'overview'};
  const projected=setContextCard('ygo',darkGolem,mp25,ui('ygo').sets.list),quote=presentationQuote('ygo',projected,'reference',ctx.priceEdition,edition),sheet=tcgCardSheet(darkGolem,ctx);
  assert.equal(quote.value,amount);assert.equal(quote.selectedEdition,edition);
  const badge=sheet.match(/<button class="cd-set card-set-summary"[\s\S]*?<\/button>/)?.[0],summary=sheet.match(/<button type="button" class="card-price-reference"[^>]*>([\s\S]*?)<\/button>/)?.[1];

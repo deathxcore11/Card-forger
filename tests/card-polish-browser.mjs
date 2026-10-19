@@ -130,8 +130,12 @@ async function ygoSelection(app){
  assert.equal(await (await cardTile(page,'ygo',EXPECTED.ygo.edition,MP25.id)).getAttribute('data-rarity-flair'),'yr4','Printed rarity survives a low market-price band');
  await capture(page,'card-polish-ygo-set-edition');
  await select(page,'[data-change="tSetEdition"]','');
- await openCard(page,'ygo',EXPECTED.ygo.edition,{setId:MP25.id});await page.waitForFunction(id=>window.__uiTestTcg.cache.ygo[id]?.sets?.find(p=>p.code==='MP25-EN003'&&p.rarity==='Starlight Rare')?.quotes?.length===2,EXPECTED.ygo.edition);await tab(page,'prices');
- const requestedEditions=[];
+ await openCard(page,'ygo',EXPECTED.ygo.edition,{setId:MP25.id});await page.waitForFunction(id=>window.__uiTestTcg.cache.ygo[id]?.sets?.find(p=>p.code==='MP25-EN003'&&p.rarity==='Starlight Rare')?.quotes?.length===2,EXPECTED.ygo.edition);
+ // A provider-supported preview, not a claim about the owner's physical copy.
+ assert(await page.locator('[data-change="ygoPreviewEdition"]').isVisible());assert.equal(await page.locator('[data-change="ygoPreviewEdition"]').inputValue(),'1st-edition');assert.match(await page.locator('.ygo-price-preview').innerText(),/1st Edition selected for this preview/);assert.match(await page.locator('.ygo-price-preview').innerText(),/USD references are not condition values/);assert.equal(await page.locator('.card-price-reference strong').innerText(),'$0.54');await historyState(page,'empty');
+ await layout(page,'#sheetBody','ygo-supported-preview',['[data-change="ygoPreviewPrinting"]','[data-change="ygoPreviewEdition"]']);
+ await select(page,'[data-change="ygoPreviewEdition"]','unlimited');assert.equal(await page.locator('.card-price-reference strong').innerText(),'$0.31');assert.match(await page.locator('.card-buy-link').getAttribute('href'),/Printing=Unlimited/);assert.doesNotMatch(await page.locator('.ygo-price-preview').innerText(),/selected for this preview/);await historyState(page,'empty');
+ const requestedEditions=['1st-edition','unlimited'];await tab(page,'prices');
  for(const [edition,label,value]of [['','edition unspecified',null],['1st-edition','1st Edition',.54],['unlimited','Unlimited',.31],['limited','Limited',null],['','edition unspecified',null]]){
   if(await page.locator('[data-change="historyYgoEdition"]').inputValue()!==edition)await select(page,'[data-change="historyYgoEdition"]',edition);
   const quote=await activeQuote(page);assert.equal(quote.releaseId,MP25.id);assert.equal(quote.editionKey,'MP25-EN003::Starlight Rare');assert.equal(quote.selectedEdition,edition);assert.equal(quote.value,value);assert.equal(quote.currency,'USD');
@@ -140,7 +144,7 @@ async function ygoSelection(app){
   assert.equal(await page.locator('#sheet .cd-img').first().getAttribute('data-rarity-flair'),'yr4','Starlight flair survives missing quote and clearing edition');
   const history=await historyState(page,edition?'empty':'edition-required');
   if(edition){
-   requestedEditions.push(edition);
+   if(!requestedEditions.includes(edition))requestedEditions.push(edition);
    assert.equal(await history.getAttribute('data-history-source-state'),'empty','Both exact providers completed with matching empty history');
    assert.equal(await history.locator('.history-empty').innerText(),'No recorded quotes for this selection.');
    assert.equal(await history.locator('[data-act="historyChoosePrinting"]').count(),0,'A verified empty result is not unresolved printing selection');

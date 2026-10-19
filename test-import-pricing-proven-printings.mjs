@@ -28,8 +28,16 @@ try {
  const energy=normalizePtcg({id:'mee-013',name:'Basic Psychic Energy',localId:'013',category:'Energy',energyType:'Normal',set:{id:'mee',name:'Mega Evolution Energy'}});
  const energyDeck=setup(false);energyDeck.key='dhelmise-energy-regression';energyDeck.list=[{name:'Psychic Energy',set:'MEE',number:'13',qty:2,kind:'Energy'}];cache.ptcg[energy.id]=energy;metaState('ptcg').data={decks:[energyDeck],top:[]};A.tMetaDeck({dataset:{key:energyDeck.key}});
  await spec.load(()=>{});Object.assign(proven,{spec,mode:'original',busy:false,msg:''});
- const energyHTML=provenSheetHtml();assert.match(energyHTML,/Basic Energy · assumed/);assert.doesNotMatch(energyHTML,/✓ owned/);assert.equal(spec.rowsFn()[0].matchPending,false);
- await spec.save(spec.rowsFn(),'original');assert.deepEqual(S.state.tcg.ptcg.decks[0].zones.main.map(r=>[r.cardId,r.qty]),[['mee-013',2]]);assert.equal(S.state.tcg.ptcg.collection.length,1,'saving the deck never inserts Energy into the collection');
+ const energyRows=spec.rowsFn(),energyHTML=provenSheetHtml();
+ assert.equal(energyRows[0].owned,0,'unowned Basic Energy must not acquire fabricated collection quantities');
+ assert.equal(energyRows[0].price,null,'an exact printing without a quote remains unpriced, not free');
+ assert.equal(energyRows[0].matchPending,false,'printing identity can be resolved independently of its price');
+ assert.match(energyHTML,/You own 0 of 2/);assert.match(energyHTML,/2 unpriced · Incomplete total/);assert.match(energyHTML,/Price unavailable/);
+ assert.doesNotMatch(energyHTML,/Basic Energy · assumed|✓ owned/);
+ await spec.save(energyRows,'original');const savedEnergy=S.state.tcg.ptcg.decks[0];
+ assert.deepEqual(savedEnergy.zones.main.map(r=>[r.cardId,r.qty]),[['mee-013',2]]);
+ assert.equal(savedEnergy.buildDiagnostics.ownedCopies,0);assert.equal(savedEnergy.buildDiagnostics.unpricedPurchaseCopies,2);assert.equal(savedEnergy.buildDiagnostics.purchaseEstimate,null);
+ assert.equal(S.state.tcg.ptcg.collection.length,1,'saving the deck never inserts Energy into the collection');
  // A slow exact-card lookup must not write into another account after sign-out.
  const scopedDeck=setup(false);scopedDeck.key='scoped-save';scopedDeck.list=[{key:'scoped-energy-request',name:'Psychic Energy',set:'MEE',number:'13',qty:2,kind:'Energy'}];metaState('ptcg').data={decks:[scopedDeck],top:[]};A.tMetaDeck({dataset:{key:scopedDeck.key}});
  let releaseEnergy,session='a';SOURCES.ptcg.tournamentCard=()=>new Promise(r=>releaseEnergy=r);c.commit.scoped=()=>{const captured=session;return async fn=>{if(session!==captured)throw Error('Account changed');return fn(S.state);};};

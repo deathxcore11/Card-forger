@@ -41,7 +41,7 @@ assert.equal(ptcgPower(rows(mysterious,colorlessAttacker)).capabilityEvidence.en
 const glcModel=ptcgPower(rows(basic('Grass')),PTCG_FORMATS.find(f=>f.id==='glc'));
 assert.equal(part(glcModel,'Consistency').weight,0,'singleton does not ask for illegal four-ofs');assert.equal(part(glcModel,'Ace').weight,0);assert.match(part(glcModel,'Ace').why,/bans ACE SPEC/);
 
-for(const [format,size] of [['goat',6],['speed',4],['tcg',5]]){
+for(const [format,size] of [['goat',6],['edison',6],['speed',4],['tcg',5]]){
  const f=YGO_FORMATS.find(f=>f.id===format),model=ygoPower(yrows(plain),f);
  assert.match(model.goldfish.headline,new RegExp(size+'-card first-turn'));
  assert.ok(model.goldfish.samples.every(sample=>sample.hand.length===size));

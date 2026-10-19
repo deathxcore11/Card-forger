@@ -9,18 +9,19 @@ import {cardKey,sumQty} from '../core.js';
 import {S,blank} from '../store.js';
 import {mtgPower,tcgPower,shownPower} from '../power.js';
 import {normalizePtcg,PTCG_FORMATS,validatePtcg} from '../ptcg.js';
-import {normalizeYgo,YGO_FORMATS,validateYgo,ygoZoneRange} from '../ygo.js';
+import {normalizeYgo,YGO_FORMATS,validateYgo,ygoZoneRange,ygoLegality,ygoLimit} from '../ygo.js';
 import {prepareMtgDeck} from '../ai-deck-builder.js';
 import {reviewPayload} from '../ai-review.js';
 import {cleanDeck,validateReview} from '../ai-review-route.js';
 import {completionPlan} from '../planner.js';
+import {buildPtcg,buildYgo,PTCG_SUPPORT_BASICS} from '../tcgbuild.js';
 
 const commanderSource=JSON.parse(await readFile(new URL('../test-fixtures/commander-context.json',import.meta.url)));
 const standardSource=JSON.parse(await readFile(new URL('../test-fixtures/standard-effect-cards.json',import.meta.url)));
 const publicBench=JSON.parse(gunzipSync(await readFile(new URL('../test-fixtures/power-bench.json.gz',import.meta.url))));
 const publicRal=publicBench.mtg.meta.EDH.decks.find(d=>d.name.startsWith('Ral,'));
 const ralRows=[...publicRal.main,...publicRal.commanders].map(({name,qty})=>({name,qty}));
-const EVIDENCE='Actual app with independent synthetic deck arrangements, frozen public card text, and the pre-existing public Ral tournament reference projected to card names/quantities only (no player/event/account metadata). The added GLC/Speed Duel/GOAT cards and arrangements are entirely invented normalized rule probes, not real legal lists. Prices, IDs, set metadata, artwork and AI responses are synthetic. No real account, collection, saved user deck, private photo or provider credential is used. External requests fail closed. This checks UI integration and deterministic contracts, not live AI quality or calibrated competitive strength.';
+const EVIDENCE='Actual app with independent synthetic deck arrangements, frozen public card text, and the pre-existing public Ral tournament reference projected to card names/quantities only (no player/event/account metadata). The added GLC/Speed Duel/GOAT cards and arrangements are entirely invented normalized rule probes, not real legal lists. Builder probes use synthetic normalized text, quotes and arrangements; Pokémon support names come from the public built-in list, not private data. Prices, IDs, set metadata, artwork and AI responses are synthetic. No real account, collection, saved user deck, private photo or provider credential is used. External requests fail closed. This checks UI integration and deterministic contracts, not live AI quality or calibrated competitive strength.';
 const syntheticCard=(c,i)=>({...structuredClone(c),id:`power-fixture-${i}`,oracle_id:`power-fixture-oracle-${i}`,set:'fxa',set_name:'Synthetic Power QA',collector_number:String(i+1),full:true,checkedAt:ISO,prices:{usd:'.25',usd_foil:null,usd_etched:null},image_uris:{normal:`https://search-fixtures.invalid/power-${i}.svg`,small:`https://search-fixtures.invalid/power-${i}.svg`,art_crop:`https://search-fixtures.invalid/power-${i}.svg`},card_faces:c.card_faces?.map((f,j)=>({...f,image_uris:{normal:`https://search-fixtures.invalid/power-${i}-${j}.svg`,art_crop:`https://search-fixtures.invalid/power-${i}-${j}.svg`}}))});
 // These source entries intentionally retain only effect evidence. Their white
 // identity and prices here are explicit synthetic normalization, not live data.
@@ -84,6 +85,53 @@ function validateFormatFixtures(){
  assert.match(ygoZoneRange(goat,'main'),/40.*no maximum/i);assert.match(ygoZoneRange(goat,'extra'),/No maximum/);assert.doesNotMatch(ygoZoneRange(goat,'main')+ygoZoneRange(goat,'extra'),/Infinity/);
 }
 
+// Builder probes seed only normalized cards and a one-card input deck. The real
+// production handlers assemble every preview and persist every explicit save.
+function builderFixture(game,kind){
+ const cards={},format=game==='ptcg'?'standard':'tcg',prefix=`build-${game}-${kind}`;
+ const add=c=>{cards[c.id]=c;return c;};let n=0;
+ const pk=(name,category='Pokemon',value=.1)=>add({...probeArt(normalizePtcg({id:`${prefix}-${++n}`,name,category,stage:category==='Pokemon'?'Basic':null,types:category==='Pokemon'?['Fire']:[],hp:category==='Pokemon'?70:null,trainerType:category==='Trainer'?'Item':null,energyType:category==='Energy'?'Normal':null,rarity:'Common',legal:{standard:true,expanded:true},set:{id:'energy-fixture',name:'Verified synthetic printing'},attacks:category==='Pokemon'?[{name:'Fixture Ember',cost:['Fire'],damage:'20',effect:''}]:[]})),prices:{usd:value},priceFallbackSchema:3});
+ const yg=(name,type='Normal Monster',value=1)=>{
+  const id=String(91000000+(++n)),c={...probeArt(normalizeYgo({id,name,type,frameType:type==='Spell Card'?'spell':'normal',level:4,atk:1000,def:1000,race:type==='Spell Card'?'Normal':'Warrior',attribute:'FIRE',archetype:type==='Spell Card'?'':'Synthetic Fixture',desc:'Synthetic builder rule probe only.',misc_info:[{formats:['tcg']}],card_prices:[]})),printPriceSchema:1,prices:{usd:1}};
+  c.sets=[{name:'Synthetic checked release',code:`FXQ-EN${String(n).padStart(3,'0')}`,rarity:'Common',productId:910000+n,priceSource:'Synthetic provider',checkedAt:ISO,...(value===null?{}:{quotes:[{edition:'Unlimited',market:value}]})}];return add(c);
+ };
+ let seed,support=[],trainers=[],archetype=[],staples=[],energy;
+ if(game==='ptcg'){
+  seed=pk('Synthetic Fire build seed');support=PTCG_SUPPORT_BASICS.map(name=>pk(name));
+  trainers=Array.from({length:15},(_,i)=>pk('Synthetic Trainer '+(i+1),'Trainer'));energy=pk('Basic Fire Energy','Energy',2);
+ }else{
+  const quote=kind==='unknown'?null:1;seed=yg('Synthetic YGO build seed','Normal Monster',kind==='constraint'?1000:quote);
+  archetype=Array.from({length:16},(_,i)=>yg('Synthetic engine '+(i+1),'Normal Monster',quote));staples=Array.from({length:15},(_,i)=>yg('Synthetic spell '+(i+1),'Spell Card',quote));
+ }
+ const input={id:prefix+'-input',name:'Synthetic one-card build input',format,zones:{main:[probeRow(seed)],extra:[],side:[]}};
+ return {game,kind,format,cards,seedId:seed.id,supportIds:support.map(c=>c.id),trainerIds:trainers.map(c=>c.id),archetypeIds:archetype.map(c=>c.id),stapleIds:staples.map(c=>c.id),energyId:energy?.id,input,budget:game==='ptcg'?(kind==='constraint'?10:null):(kind==='unknown'?null:50)};
+}
+const builderProbes=[builderFixture('ptcg','complete'),builderFixture('ptcg','constraint'),builderFixture('ygo','complete'),builderFixture('ygo','constraint'),builderFixture('ygo','unknown')];
+const checkedBasicCatalog=()=>{const cat=ideaCatalog('priced');cat.plains={...cat.plains,id:'basic-art-expensive',games:['paper'],digital:false,oversized:false,border_color:'black',set_type:'core',full_art:true,prices:{usd:'25'}};return cat;};
+const checkedBasicCandidates=()=>{
+ const expensive=checkedBasicCatalog().plains,make=(id,usd,more={})=>({...structuredClone(expensive),id,full_art:false,prices:{usd},...more});
+ return [expensive,make('basic-illegal','.001',{legalities:{commander:'banned'}}),make('basic-wrong-oracle','.001',{oracle_id:'not-the-same-basic'}),make('basic-no-quote',null),make('basic-legal-cheap','.05',{set:'low',set_name:'Synthetic low checked set',collector_number:'22'})];
+};
+async function validateBuilderFixtures(){
+ const {ygoPurchaseReference}=await import('../ygo-price-selection.js');
+ for(const x of builderProbes){
+  const seed=x.cards[x.seedId],f=formatOfProbe(x.game,x.format),price=c=>x.game==='ygo'?ygoPurchaseReference(c).value:c.prices.usd;
+  let result;
+  if(x.game==='ptcg')result=buildPtcg({line:[{card:seed,want:4},...x.supportIds.slice(0,3).map(id=>({card:x.cards[id],want:2}))],trainers:x.trainerIds.map(id=>({card:x.cards[id],want:4})),energy:[x.cards[x.energyId]],owned:()=>0,price,budget:x.budget??Infinity});
+  else result=buildYgo({f,seed,archetype:x.archetypeIds.map(id=>x.cards[id]),staples:x.stapleIds.map(id=>x.cards[id]),owned:()=>0,price,budget:x.budget??Infinity,legal:ygoLegality,limit:ygoLimit});
+  if(x.game==='ptcg'&&x.kind==='constraint')assert(result.total<60,'finite Energy probe cannot complete');
+  else{assert.equal(result.total,x.game==='ptcg'?60:40);assert.equal((x.game==='ptcg'?validatePtcg:validateYgo)(result,id=>x.cards[id],f).filter(i=>i.level==='bad'||i.level==='pending').length,0);}
+  if(x.game==='ptcg'&&x.kind==='complete')assert(result.cost>25,'unowned Energy is charged');
+  if(x.game==='ygo'&&x.kind==='constraint')assert(!result.zones.main.some(r=>r.cardId===seed.id),'finite full-count fallback really omits the unaffordable required seed');
+  if(x.game==='ygo'&&x.kind==='unknown'){assert.equal(result.unknown,40);assert(Object.values(x.cards).every(c=>c.prices.usd===1&&ygoPurchaseReference(c).value===null),'generic references cannot certify an exact purchase');}
+  if(x.game==='ygo'&&x.kind==='complete')assert(Object.values(x.cards).every(c=>ygoPurchaseReference(c).selection.edition==='unlimited'));
+ }
+ const {findCheapestPrinting}=await import('../mtg-cheap.js'),cat=checkedBasicCatalog(),result=await findCheapestPrinting('Plains',{api:async()=>({data:checkedBasicCandidates(),has_more:true}),reference:cat.plains,format:'commander',basicOnly:true});
+ assert.equal(result.card.id,'basic-legal-cheap');assert.equal(result.coverage.marketComplete,false);assert.equal(result.coverage.hasMore,true);
+ cat.plains=result.card;const plan=completionPlan(ideaSeed,[],[],cat,{budget:25,landTarget:36,preferOwned:true,simple:false});assert.equal(sumQty(plan.deck.cards),100);assert.equal(plan.diagnostics.lands,36);assert.equal(plan.cost,17.8);
+ console.log('PASS: builder inputs form complete or explicit constraint-shortfall lists using real pure builders; exact YGO quotes and bounded legal Magic basic selection are independently checked. No finished browser result is injected.');
+}
+
 async function validateFixtures(){
  assert.match(commanderSource.scope,/not the user deck/);assert.match(standardSource.source,/not a user deck/);
  assert.equal(sumQty(complete.cards),100);assert.equal(sumQty(incomplete.cards),64);assert.equal(sumQty(standard.cards),60);
@@ -112,6 +160,7 @@ async function validateFixtures(){
  console.log('PASS: public/synthetic Power hosted fixtures; 100/64 Commander eligibility, Standard printed costs, fun/no-cap build and nonzero basic prices. No browser/server/live request started.');
 }
 await validateFixtures();
+await validateBuilderFixtures();
 validateFormatFixtures();
 console.log('PASS: nine synthetic GLC/Speed Duel/GOAT profile probes, including ACE SPEC/singleton, bounded Skills and historical size/side-policy gates. Not strength calibration.');
 if(process.argv.includes('--validate-fixtures'))process.exit(0);
@@ -119,13 +168,50 @@ assert.equal(process.env.GITHUB_ACTIONS,'true','Power browser QA is hosted-only 
 
 const {chromium}=await import('playwright');
 const server=await startServer(),browser=await chromium.launch({headless:true}),out=new URL('../test-results/',import.meta.url);
-const checks=[],screenshots=[],coachPayloads=[],askPayloads=[],timings=[],formatResults=[];
-let app,formatApp,askHold=null,coachCalls=0,askCalls=0,ideaMode=null;
+const checks=[],screenshots=[],coachPayloads=[],askPayloads=[],timings=[],formatResults=[],builderResults=[];
+let app,formatApp,builderApp,askHold=null,coachCalls=0,askCalls=0,ideaMode=null;
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve};};
 const frames=page=>page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
 async function capture(page,name,scope){await mkdir(out,{recursive:true});await frames(page);const file=`power-release-${name}.png`,options={path:new URL(file,out).pathname,animations:'disabled'};if(scope)await page.locator(scope).screenshot(options);else await page.screenshot({...options,fullPage:true});screenshots.push(file);}
 async function gotoDeck(page,id){await page.evaluate(id=>{location.hash='#deck/'+id+'/engine';},id);await page.locator('.score-panel.power').waitFor();await page.waitForFunction(id=>window.__uiTestState.ui.deckId===id,id);}
 async function openAsk(page){await page.evaluate(()=>{location.hash='#search';});await page.locator('[data-act="askOpen"]').first().click();await page.locator('.ask-dialog[open]').waitFor();}
+async function installBuilderSaveAudit(page){
+ await page.evaluate(()=>{
+  const pick=s=>({collection:s.collection,decks:s.decks,printings:s.printings,wishlist:s.wishlist,tcg:s.tcg,myPrices:s.myPrices,priceChoices:s.priceChoices});
+  window.__powerBuilderSave={baseline:structuredClone(pick(window.__uiTestState.state)),writes:[]};
+  const record=(raw,key)=>{if(key!=='cardforge-v2')return;const state=typeof raw==='string'?JSON.parse(raw):raw;if(JSON.stringify(pick(state))!==JSON.stringify(window.__powerBuilderSave.baseline))window.__powerBuilderSave.writes.push(structuredClone(pick(state)));};
+  const put=IDBObjectStore.prototype.put;IDBObjectStore.prototype.put=function(v,k){record(v,k);return put.call(this,v,k);};const set=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){record(v,k);return set.call(this,k,v);};
+ });
+}
+async function configureBuilderProviders(page,x){
+ await page.evaluate(async x=>{
+  const T=window.__uiTestTcg,{sameCardLogic}=await import('/deck-optimizer.js'),cards=x.cards,all=Object.values(cards),get=id=>{const c=cards[id];if(!c)throw Error('Unmapped synthetic builder identity: '+id);return c;},reads=window.__powerBuilderReads=[];
+  const log=(kind,value)=>reads.push({kind,value});
+  if(x.game==='ptcg')Object.assign(T.SOURCES.ptcg,{
+   get:async id=>{log('get',id);return get(id);},
+   search:async({q})=>{log('search',q);return {cards:all.filter(c=>c.name.toLowerCase()===String(q).toLowerCase()),more:false};},
+   byName:async name=>{log('byName',name);return all.find(c=>c.name===name)||null;},
+   evolutions:async name=>{log('evolutions',name);return [];},
+   cheapestPrint:async(card,{legal,owned,known})=>{log('cheapestPrint',card.id);const options=known.filter(c=>legal(c)&&sameCardLogic('ptcg',card,c)),mine=options.filter(c=>owned(c)>0),price=c=>c.prices.usd==null||String(c.prices.usd).trim()===''?Infinity:Number(c.prices.usd);return (mine.length?mine:options).sort((a,b)=>price(a)-price(b))[0]||card;}
+  });
+  else Object.assign(T.SOURCES.ygo,{
+   get:async id=>{log('get',id);return get(id);},
+   search:async args=>{log('search',args.archetype||args.q||'');if(args.archetype!=='Synthetic Fixture')throw Error('Unexpected synthetic archetype search');return {cards:x.archetypeIds.map(get),more:false};},
+   byNames:async names=>{log('byNames',names.length);return x.stapleIds.map(get);},
+   byName:async name=>{log('byName',name);return all.find(c=>c.name===name)||null;},
+   byIds:async ids=>{log('byIds',ids.length);return ids.map(get);},
+   randomArchetype:async()=>{log('randomArchetype','local');return {cards:[get(x.seedId)]};}
+  });
+ },x);
+}
+async function settleBuilder(page,format){
+ await page.waitForFunction(format=>{const B=window.__uiTestState.ui.tbuild;return B?.format===format&&!B.busy&&(B.error||Array.isArray(B.results?.[format]));},format);
+ const state=await page.evaluate(()=>({error:window.__uiTestState.ui.tbuild.error,message:window.__uiTestState.ui.tbuild.msg}));assert.equal(state.error,false,state.message);
+}
+async function builderTier(page,cap){
+ return page.evaluate(cap=>{const B=window.__uiTestState.ui.tbuild,tiers=B.results[B.format],i=tiers.findIndex(t=>t.covers.includes(cap===null?Infinity:cap));if(i<0)throw Error('Expected budget tier absent');return {i,tier:tiers[i],custom:B.custom};},cap);
+}
+
 try{
  app=await openSearchApp(browser,server.base,{game:'mtg',width:390,height:1000,evidenceLabel:'power-release',prepareFixtures:f=>{
   f.state.decks=structuredClone(decks);f.state.activeDeck=incomplete.id;f.state.collection=[];
@@ -234,7 +320,7 @@ try{
    Object.assign(S.ui.ideas,{cache:[{commander,deck:seed,plan:'Synthetic QA',available:0,themeCards:0,slots:1,reason:'Independent synthetic hosted fixture'}],filter:'all',limit:12,ran:true,busy:false,open:null,defaultBudget:undefined,sel:new Set()});
    location.hash='#decks/ideas';
   },{seed:ideaSeed,cat:ideaCatalog(mode)});
-  await page.locator('[data-act="openIdea"]').first().click();await page.locator('#sheet[open] [data-act="ideaSaveAll"]').waitFor();
+  await page.locator('[data-act="openIdea"]').first().click();await page.locator('#sheet[open] .btn.block[data-act="ideaSaveAll"]').waitFor();
   await page.waitForFunction(()=>window.__uiTestState.ui.ideas.open?.initialized&&!window.__uiTestState.ui.ideas.open?.busy&&!!window.__uiTestState.ui.ideas.open?.custom);
   return page.evaluate(()=>({deck:window.__uiTestState.ui.ideas.open.custom,diagnostics:window.__uiTestState.ui.ideas.open.diagnostics,budget:window.__uiTestState.ui.ideas.open.budget}));
  }
@@ -341,6 +427,89 @@ try{
   checks.push(profile.name+': isolated synthetic actual-app eligibility/header/Power, four widths, actual format bounds'+(group.game==='ygo'?', mocked initial-hand coach context':'')+' and exact explicit save/reopen remain honest; not numerical calibration.');
   await formatApp.context.close();formatApp=null;
  }
- await mkdir(out,{recursive:true});await writeFile(new URL('power-release-browser.json',out),JSON.stringify({status:'passed',evidence:EVIDENCE,checks,screenshots,timings,formatResults,coachCalls,askCalls,persistence:{explicitSyntheticSaves:1,durableWrites:persistence.writes.length,unchangedPriorDecks:true,unchangedOtherInventory:true,savedCardCount:64,reopenedPower:savedPower}},null,2));console.log('PASS: '+checks.join(' '));
-}catch(error){await mkdir(out,{recursive:true});if(formatApp||app)try{await capture((formatApp||app).page,'failure');}catch{}await writeFile(new URL('power-release-browser.json',out),JSON.stringify({status:'failed',evidence:EVIDENCE,checks,screenshots,timings,formatResults,coachCalls,askCalls,error:String(error.stack||error),diagnostics:(formatApp||app)?.diagnostics()},null,2));throw error;}
-finally{askHold?.release.resolve();await formatApp?.context.close();await app?.context.close();await browser.close();await server.close();}
+ // Fresh contexts test real card-detail Build actions. Only provider adapters
+ // receive local card catalogs; no generated result, optimizer or save handler
+ // is stubbed. The shared deny-all network and durable-write guards stay intact.
+ for(const x of builderProbes){
+  builderApp=await openSearchApp(browser,server.base,{game:x.game,width:390,height:1000,evidenceLabel:'power-build-'+x.game+'-'+x.kind,prepareFixtures:f=>{
+   f.state.decks=[];f.state.collection=[];for(const game of ['ptcg','ygo']){f.state.tcg[game].decks=[];f.state.tcg[game].collection=[];}
+   f.state.tcg[x.game].decks=[structuredClone(x.input)];Object.assign(f.cache[x.game],structuredClone(x.cards));
+   const meta=f.storage['cardforge-meta-v1'][x.game].data;meta.decks=[];meta.top=x.trainerIds.map(id=>({kind:'Trainer',name:x.cards[id].name,pct:100,avg:4}));
+  }});
+  const bp=builderApp.page,before=await inventorySnapshot(bp);await configureBuilderProviders(bp,x);
+  await bp.evaluate(id=>{location.hash='#tdeck/'+id+'/cards';},x.input.id);await bp.waitForFunction(id=>window.__uiTestState.ui.tdeckId===id,x.input.id);
+  await bp.locator('.deck-body .lot-name[data-act="tCard"][data-id="'+x.seedId+'"]').first().click();
+  await bp.waitForFunction(()=>window.__uiTestState.ui.sheetCtx?.type==='tcard'&&!window.__uiTestState.ui.sheetCtx.previewBusy);
+  await bp.locator('#sheetBody [data-act="tBuild"][data-id="'+x.seedId+'"]').first().click();await settleBuilder(bp,x.format);
+  assert.equal(await bp.locator('[data-change="tBuildCustom"]').inputValue(),'','actual Build starts unlimited, not an implicit25');
+  if(x.budget!==null){await bp.locator('[data-change="tBuildCustom"]').fill(String(x.budget));await bp.locator('[data-change="tBuildCustom"]').press('Tab');await bp.waitForFunction(v=>window.__uiTestState.ui.tbuild.custom===v,String(x.budget));await settleBuilder(bp,x.format);}
+  let chosen=await builderTier(bp,x.budget),d=chosen.tier.buildDiagnostics,target=bp.locator('#sheetBody .tier').nth(chosen.i);
+  assert.equal(d.ownedCopies,0);assert.equal(await inventorySnapshot(bp),before,'actual building never saves or changes ownership');
+  if(x.game==='ptcg'){
+   if(x.kind==='complete'){assert.equal(chosen.tier.total,60);assert.equal(d.ready,true);assert(d.purchaseEstimate>25);assert(d.purchaseEstimateVerified);assert(chosen.tier.zones.main.find(r=>r.cardId===x.energyId)?.qty>=11);}
+   else{assert(chosen.tier.total<60);assert(d.missingEnergy>0);assert.equal(d.ready,false);assert(d.purchaseEstimate<=10);assert.match(await target.innerText(),/intended Energy copies are still missing/);assert.match(await target.innerText(),/power unavailable/);}
+  }else if(x.kind==='constraint'){
+   assert.equal(chosen.tier.total,40);assert.equal(d.ready,false);assert.equal(d.missingRequiredSeeds[0].id,x.seedId);assert(!chosen.tier.zones.main.some(r=>r.cardId===x.seedId));assert.match(await target.innerText(),/Draft.*constraint shortfall/i);assert.match(await target.innerText(),/required build-around card missing/);
+  }else if(x.kind==='unknown'){
+   assert.equal(chosen.tier.total,40);assert.equal(d.ready,true);assert.equal(d.unpricedPurchaseCopies,40);assert.equal(d.purchaseEstimate,null);assert.match(await target.innerText(),/Total purchase cost is unverified, not free/);assert.match(await target.locator('[data-act="tTierSave"]').innerText(),/cost unverified/);
+  }else{assert.equal(chosen.tier.total,40);assert.equal(d.ready,true);assert.equal(d.purchaseEstimate,40);assert.equal(d.purchaseEstimateVerified,true);}
+  if(x.game==='ygo'&&x.kind!=='unknown')for(const row of chosen.tier.zones.main){assert.equal(row.ygoPurchaseSelection.edition,'unlimited');assert(row.ygoPurchaseSelection.productId>0);assert.match(row.ygoPurchaseSelection.printingKey,/^FXQ-EN\d+::Common$/);}
+  assert.match(await target.locator('[data-act="tTierSave"]').innerText(),d.ready?/Save as deck|cost unverified/:/Save draft/);
+  for(const width of [320,390,768,1440]){await bp.setViewportSize({width,height:1000});await noOverflow(bp,'#sheetBody','actual '+x.game+' '+x.kind+' builder '+width);await capture(bp,'build-'+x.game+'-'+x.kind+'-'+width,'#sheetBody');}
+  // Inspect the real expanded card rows, not just a hidden preview count.
+  await target.locator('[data-act="tTier"]').click();await bp.waitForFunction(i=>window.__uiTestState.ui.tbuild.openTier===i,chosen.i);target=bp.locator('#sheetBody .tier').nth(chosen.i);
+  if(x.game==='ptcg'&&x.kind==='complete')assert.match(await target.innerText(),/Basic Fire Energy/);
+  if(x.game==='ygo'&&x.kind!=='unknown')assert.match(await target.innerText(),/Unlimited/);
+  await bp.setViewportSize({width:320,height:1000});await noOverflow(bp,'#sheetBody .tier.on','expanded actual builder');await capture(bp,'build-'+x.game+'-'+x.kind+'-expanded','#sheetBody .tier.on');
+  await target.locator('[data-act="tTier"]').click();await bp.waitForFunction(()=>window.__uiTestState.ui.tbuild.openTier===null);
+  if(x.kind==='unknown'){
+   await bp.locator('[data-change="tBuildCustom"]').fill('50');await bp.locator('[data-change="tBuildCustom"]').press('Tab');await bp.waitForFunction(()=>window.__uiTestState.ui.tbuild.custom==='50');await settleBuilder(bp,x.format);
+   const finite=await builderTier(bp,50);assert.equal(finite.tier.total,0);assert.equal(finite.tier.buildDiagnostics.ready,false);assert.equal(finite.tier.buildDiagnostics.unpricedPurchaseCopies,0);assert.match(await bp.locator('#sheetBody .tier').nth(finite.i).locator('[data-act="tTierSave"]').innerText(),/Save draft/);
+   await capture(bp,'build-ygo-generic-price-finite-draft','#sheetBody');assert.equal(await inventorySnapshot(bp),before);assert.deepEqual(await bp.evaluate(()=>window.__fixtureSensitiveWrites),[]);
+   builderResults.push({game:x.game,kind:x.kind,uncapped:d,finite:finite.tier.buildDiagnostics,saved:false,providerReads:await bp.evaluate(()=>window.__powerBuilderReads),diagnostics:builderApp.diagnostics()});
+  }else{
+   assert.deepEqual(await bp.evaluate(()=>window.__fixtureSensitiveWrites),[]);await installBuilderSaveAudit(bp);
+   await target.locator('[data-act="tTierSave"]').click();await bp.waitForFunction(game=>window.__uiTestState.state.tcg[game].decks.length===2,x.game);
+   const saved=await bp.evaluate(game=>structuredClone(window.__uiTestState.state.tcg[game].decks.at(-1)),x.game);assert.deepEqual(saved.zones,chosen.tier.zones);assert.equal(saved.buildDiagnostics.ready,d.ready);assert.equal(saved.buildDiagnostics.purchaseBudget,d.purchaseBudget);
+   await bp.locator('#sheetBody .sheet-head [data-act="closeSheet"]').click();await bp.evaluate(()=>{location.hash='#decks';});await bp.waitForFunction(()=>window.__uiTestState.ui.view==='decks');
+   await bp.evaluate(id=>{location.hash='#tdeck/'+id+'/insights';},saved.id);await bp.waitForFunction(id=>window.__uiTestState.ui.tdeckId===id,saved.id);await bp.locator('.score-panel.power').waitFor();
+   const reopened=await bp.evaluate(async({game,format,id})=>{const T=window.__uiTestTcg,formats=(await import(game==='ptcg'?'/ptcg.js':'/ygo.js'))[game==='ptcg'?'PTCG_FORMATS':'YGO_FORMATS'],d=window.__uiTestState.state.tcg[game].decks.find(d=>d.id===id);return T.tcgBuildDiagnostics(game,d,formats.find(f=>f.id===format));},{game:x.game,format:x.format,id:saved.id});
+   assert.equal(reopened.ready,d.ready);assert.equal(reopened.purchaseEstimate,d.purchaseEstimate);assert.equal(reopened.ownedCopies,0);assert.match(await bp.locator('.deck-hero').innerText(),/0%\s*owned/);
+   if(x.game==='ptcg'&&x.kind==='constraint'){assert.match(await bp.locator('.deck-hero').innerText(),/Incomplete draft/);assert.match(await bp.locator('.deck-hero').innerText(),/power unavailable/);assert.match(await bp.locator('.score-panel.power').innerText(),/Finish the deck before rating Power/);}
+   if(x.game==='ygo'&&x.kind==='constraint')assert.match(await bp.locator('.deck-hero').innerText(),/Draft: required build-around card missing: Synthetic YGO build seed/);
+   for(const width of [320,390,768,1440]){await bp.setViewportSize({width,height:1000});await noOverflow(bp,'.deck-hero','saved '+x.game+' '+x.kind+' '+width);await noOverflow(bp,'.score-panel.power','saved builder Power '+width);await capture(bp,'build-'+x.game+'-'+x.kind+'-reopened-'+width);}
+   const audit=await bp.evaluate(()=>window.__powerBuilderSave),expected=structuredClone(audit.baseline);expected.tcg[x.game].decks.push(saved);assert(audit.writes.length>0);for(const state of audit.writes)assert.deepEqual(state,expected,'every durable builder write appends exactly the requested synthetic deck');assert.equal((await bp.evaluate(()=>window.__fixtureSensitiveWrites)).length,audit.writes.length);
+   builderResults.push({game:x.game,kind:x.kind,preview:d,reopened,saved:{id:saved.id,unchangedZones:true,durableWrites:audit.writes.length},providerReads:await bp.evaluate(()=>window.__powerBuilderReads),diagnostics:builderApp.diagnostics()});
+  }
+  builderApp.health();await builderApp.context.close();builderApp=null;
+ }
+ checks.push('Actual card-detail Build handlers, real optimizers, previews and explicit save/reopen: Pokémon60 charges unowned Energy while finite10 is a draft; exact-quote YGO40 fits50 while a missing1000 seed remains a constraint-shortfall draft despite40 cards. Generic YGO card references stay unknown: uncapped40, finite50 empty draft. No ownership, private-price or unrelated deck mutation.');
+ // A separate Magic context begins with expensive basic art. Only the actual
+ // bounded Scryfall adapter supplies a cheaper legal equivalent; rejected rows
+ // and has_more demonstrate that the result is not a market-wide minimum.
+ builderApp=await openSearchApp(browser,server.base,{game:'mtg',width:390,height:1000,evidenceLabel:'power-build-checked-basics',prepareFixtures:f=>{
+  f.state.decks=[];f.state.collection=[];for(const game of ['ptcg','ygo']){f.state.tcg[game].decks=[];f.state.tcg[game].collection=[];}
+  f.catalog={...f.catalog,...checkedBasicCatalog()};f.storage['cardforge-catalog-v1']=f.catalog;
+ }});
+ const mp=builderApp.page,magicBefore=await inventorySnapshot(mp);let basicQueries=0;
+ await mp.route('https://api.scryfall.com/**',async route=>{
+  const u=new URL(route.request().url()),pool=checkedBasicCatalog();if(route.request().method()!=='GET')return route.fallback();
+  if(u.pathname==='/cards/search'){
+   const isBasic=/\bt:basic\b/.test(u.searchParams.get('q')||'');if(isBasic)basicQueries++;
+   const data=isBasic?checkedBasicCandidates():Object.values(pool).filter(c=>!/^Basic\b/.test(c.type_line||''));return route.fulfill({contentType:'application/json',body:JSON.stringify({object:'list',data,has_more:isBasic,total_cards:data.length})});
+  }
+  if(u.pathname==='/cards/named'){const c=pool[cardKey(u.searchParams.get('exact')||u.searchParams.get('fuzzy')||'')];if(c)return route.fulfill({contentType:'application/json',body:JSON.stringify(c)});}
+  return route.fallback();
+ });
+ await mp.evaluate(({seed,cat})=>{const S=window.__uiTestState;S.catalog=cat;Object.assign(S.ui.ideas,{cache:[{commander:cat[seed.commander.toLowerCase()],deck:seed,plan:'Synthetic checked-basic QA',available:0,themeCards:0,slots:1,reason:'Synthetic input, not a generated preview'}],filter:'all',limit:12,ran:true,busy:false,open:null,defaultBudget:undefined,sel:new Set()});location.hash='#decks/ideas';},{seed:ideaSeed,cat:checkedBasicCatalog()});
+ await mp.locator('[data-act="openIdea"]').first().click();await mp.waitForFunction(()=>window.__uiTestState.ui.ideas.open?.initialized&&!window.__uiTestState.ui.ideas.open.busy&&!!window.__uiTestState.ui.ideas.open.custom);
+ await mp.locator('#sheetBody [data-act="ideaBudget"][data-v="25"]').click();await mp.waitForFunction(()=>!window.__uiTestState.ui.ideas.open.busy&&window.__uiTestState.ui.ideas.open.budget===25);
+ const basicResult=await mp.evaluate(async()=>{const S=window.__uiTestState,{cheapestKnown}=await import('/mtg-cheap.js'),{priceOf}=await import('/store.js');return {deck:S.ui.ideas.open.custom,diagnostics:S.ui.ideas.open.diagnostics,message:S.ui.ideas.open.msg,purchaseEstimate:Math.round(S.ui.ideas.open.custom.cards.reduce((n,r)=>n+r.qty*priceOf(r.name),0)*100)/100,basic:S.catalog.plains,price:priceOf('Plains'),quote:cheapestKnown('plains')};});
+ assert(basicQueries>0);assert.equal(basicResult.basic.id,'basic-legal-cheap');assert.equal(basicResult.price,.05);assert.equal(basicResult.quote.coverage.hasMore,true);assert.equal(basicResult.quote.coverage.marketComplete,false);assert.equal(sumQty(basicResult.deck.cards),100);assert.equal(basicResult.deck.cards.find(r=>r.name==='Plains').qty,36);assert.equal(basicResult.purchaseEstimate,17.8);assert.match(basicResult.message,/\$17\.80 for new copies currently listed/);assert.equal(basicResult.diagnostics.purchaseEstimateVerified,true);assert.match(await mp.locator('#sheetBody').innerText(),/Complete 100-card list/);
+ for(const width of [320,390,768,1440]){await mp.setViewportSize({width,height:1000});await noOverflow(mp,'#sheetBody','checked basic build '+width);await capture(mp,'build-magic-checked-basics-'+width);}
+ assert.equal(await inventorySnapshot(mp),magicBefore);assert.deepEqual(await mp.evaluate(()=>window.__fixtureSensitiveWrites),[]);builderApp.health();builderResults.push({game:'mtg',kind:'checked-basics',queries:basicQueries,selectedId:basicResult.basic.id,price:basicResult.price,coverage:basicResult.quote.coverage,diagnostics:basicResult.diagnostics,saved:false,network:builderApp.diagnostics()});await builderApp.context.close();builderApp=null;
+ checks.push('Actual Magic Ideas loading replaces a25 basic-art reference with the lowest eligible checked0.05 equivalent, rejects illegal/wrong-identity/unpriced rows, budgets all36 purchased basics, and completes100 under25. Bounded one-page coverage is recorded, never market-complete; no save or ownership mutation.');
+
+ await mkdir(out,{recursive:true});await writeFile(new URL('power-release-browser.json',out),JSON.stringify({status:'passed',evidence:EVIDENCE,checks,screenshots,timings,formatResults,builderResults,coachCalls,askCalls,persistence:{explicitSyntheticSaves:1,durableWrites:persistence.writes.length,unchangedPriorDecks:true,unchangedOtherInventory:true,savedCardCount:64,reopenedPower:savedPower}},null,2));console.log('PASS: '+checks.join(' '));
+}catch(error){await mkdir(out,{recursive:true});if(builderApp||formatApp||app)try{await capture((builderApp||formatApp||app).page,'failure');}catch{}await writeFile(new URL('power-release-browser.json',out),JSON.stringify({status:'failed',evidence:EVIDENCE,checks,screenshots,timings,formatResults,builderResults,coachCalls,askCalls,error:String(error.stack||error),diagnostics:(builderApp||formatApp||app)?.diagnostics()},null,2));throw error;}
+finally{askHold?.release.resolve();await builderApp?.context.close();await formatApp?.context.close();await app?.context.close();await browser.close();await server.close();}

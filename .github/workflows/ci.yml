@@ -18,6 +18,8 @@ jobs:
         run: npm install --no-save --package-lock=false miniflare@4.20260730.0
       - name: Reproduce and guard condition pricing in the actual runtime
         run: node tests/condition-worker-runtime.mjs
+      - name: Guard exact Yu-Gi-Oh set prices in the actual runtime
+        run: node tests/ygo-price-worker-runtime.mjs
   deployment-verifier:
     runs-on: ubuntu-latest
     steps:

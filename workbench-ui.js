@@ -11,6 +11,7 @@ import {buyContext,presentationQuote,quoteForContext,selectedFinish,finishLabel,
 import {conditionValue,conditionName,conditionValueNote,conditionQuoteTiming} from './condition-value.js';
 import {myPrice,myPriceKey} from './mtg-tcgprice.js';
 import {ygoRarityFlair} from './tier.js';
+import {YGO_EDITION_NAMES,supportedYgoEditions} from './ygo-price-selection.js';
 export const MODES=['gallery','compact','symbols'];
 export const modeFor=(game,area)=>S.state.settings.displayModes?.[game]?.[area] || (['search','set'].includes(area)?'gallery':'compact');
 // One-tap view switch: three drawn icons, the current one highlighted.
@@ -87,6 +88,12 @@ export function quoteDiscrepancy(card) {
 export function quoteWarning(card) {
  return quoteDiscrepancy(card) ? '<details class="quote-warning"><summary>Price sources differ sharply · verify version</summary><p class="foot">These reference amounts may cover different finishes, languages, conditions, or source mappings. They are not a verified like-for-like deal. Check the set, collector number and finish on each seller page.</p></details>' : '';
 }
+export function ygoPreviewSelectors(card,ctx={}){
+ const quote=quoteForContext('ygo',card,ctx);
+ if(!quote?.selectionVerified||!quote.editions.length)return '';
+ const supported=supportedYgoEditions(quote.printing),defaulted=ctx.ygoPriceDefault&&ctx.ygoPriceDefault===quote.selectedEdition;
+ return `<div class="ygo-price-preview"><div class="price-selectors"><label>Printing & rarity<select data-change="ygoPreviewPrinting" aria-label="Preview printing and rarity">${options([...(card.setContext&&quote.editions.length===1?[]:[['','Choose a printing']]),...quote.editions.map(e=>[e.key,e.label])],quote.editionKey)}</select></label><label>Edition<select data-change="ygoPreviewEdition" aria-label="Preview edition" ${quote.printing?'':'disabled'}>${options([['','Edition not specified'],...Object.entries(YGO_EDITION_NAMES).map(([key,label])=>[key,label+(quote.printing&&!supported.includes(key)?' · no quote':'')])],quote.selectedEdition)}</select></label></div><p class="foot">${defaulted?esc(YGO_EDITION_NAMES[ctx.ygoPriceDefault])+' selected for this preview from available quotes. ':''}Match your card’s rarity and edition. USD references are not condition values.${quote.printing?' '+esc(quote.source)+' · '+esc(quoteTiming(quote))+'.':''}</p></div>`;
+}
 export function priceOverview(game,card,ctx={},sellerLinks=[]){
  const finish=selectedFinish(game,card,ctx.priceFinish||ctx.finish),quote=quoteForContext(game,card,ctx);
  const choices=game==='mtg'?['nonfoil','foil','etched'].filter(f=>(card.finishes||['nonfoil']).includes(f)).map(f=>[f,finishLabel(f)]):game==='ptcg'?[['reference','Reference quote'],...variantChoices(card,finish)]:[];
@@ -132,7 +139,8 @@ export function registerWorkbench({A,C,commit,render,openSheet,closeSheet,refres
   const body=globalThis.document?.querySelector?.('#sheetBody'),selector=body?.querySelector?.(t.dataset.selection==='edition'?'[data-change="historyYgoEdition"]':'[data-change="historyEdition"]');
   if(selector)scrollDetailTarget(body,selector,true);
  };
- C.historyEdition=t=>{const ctx=S.ui.sheetCtx;if(ctx?.type==='market'){ctx.edition=t.value;ctx.ygoEdition='';refreshMarket(ctx);}else if(['card','tcard'].includes(ctx?.type)){ctx.priceEdition=t.value;ctx.priceYgoEdition='';refreshSheet();}globalThis.document?.querySelector?.('[data-change=historyEdition]')?.focus?.({preventScroll:true});};
+ C.historyEdition=t=>{const ctx=S.ui.sheetCtx;if(ctx?.type==='market'){ctx.edition=t.value;ctx.ygoEdition='';refreshMarket(ctx);}else if(['card','tcard'].includes(ctx?.type)){ctx.priceEdition=t.value;ctx.priceYgoEdition='';ctx.ygoPrintingExplicit=true;ctx.ygoEditionExplicit=false;delete ctx.ygoPriceDefault;refreshSheet();}globalThis.document?.querySelector?.('[data-change='+ (t.dataset?.change==='ygoPreviewPrinting'?'ygoPreviewPrinting':'historyEdition') +']')?.focus?.({preventScroll:true});};
+ C.ygoPreviewPrinting=t=>{const ctx=S.ui.sheetCtx;if(ctx?.type==='tcard'&&ctx.game==='ygo'&&getGame()==='ygo')return C.historyEdition(t);};
  C.marketSource=t=>{S.ui.historySource ||= {};S.ui.historySource[t.dataset.key]=t.value;const ctx=S.ui.sheetCtx;if(ctx?.type==='market')refreshMarket(ctx);else refreshSheet();};
  let marketOpenToken=0;
  A.marketOpen=async t=>{
@@ -149,7 +157,8 @@ export function registerWorkbench({A,C,commit,render,openSheet,closeSheet,refres
   const ctx={type:'market',game:g,card:c,setId:c.setContext?.releaseId||(sameCard?token.setId:'')||'',setReleaseUnverified:!!c.setContext?.unverifiedRelease,setMembership:c.setContext?.membership==='set-response'?{...c.setContext}:null,finish,edition,ygoEdition,entryId:lot?.id,savedVariant:lot?.variant,savedProductId:lot?.productId,range:'365',back:['card','tcard'].includes(token?.type)?token:null};openSheet(marketSheet(ctx),ctx);
  };
  function marketSheet(ctx){const c=ctx.card,g=ctx.game;return `<div class="sheet-head">${ctx.back?'<button class="icon" data-act="marketBack" aria-label="Back to card details">←</button>':''}<h2>${esc(c.name)}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><div class="market-card">${artworkHTML(c,'',true)}<p>${esc(c.set?.name||c.set_name||'Reference card')}<br><small>${esc(c.set?.number||c.collector_number||'')}</small></p></div>${priceOverview(g,c,ctx,links(g,c))}`;}
- C.historyYgoEdition=t=>{const ctx=S.ui.sheetCtx;if(ctx?.type==='market'){ctx.ygoEdition=t.value;refreshMarket(ctx);}else if(ctx?.type==='tcard'){ctx.priceYgoEdition=t.value;refreshSheet();}};
+ C.historyYgoEdition=t=>{const ctx=S.ui.sheetCtx;if(ctx?.type==='market'){ctx.ygoEdition=t.value;refreshMarket(ctx);}else if(ctx?.type==='tcard'){ctx.priceYgoEdition=t.value;ctx.ygoEditionExplicit=true;delete ctx.ygoPriceDefault;refreshSheet();}};
+ C.ygoPreviewEdition=t=>{const ctx=S.ui.sheetCtx;if(ctx?.type==='tcard'&&ctx.game==='ygo'&&getGame()==='ygo')return C.historyYgoEdition(t);};
  C.buyPriceFinish=t=>A.buyFinish?.({dataset:{finish:t.value}});
  A.marketBack=()=>{const ctx=S.ui.sheetCtx;if(ctx?.type !== 'market' || !ctx.back)return;openSheet('',ctx.back);refreshSheet();};
  A.marketRange=t=>{const ctx=S.ui.sheetCtx;if(!HISTORY_RANGES.some(([r])=>r===t.dataset.range))return;if(ctx?.type==='market'){ctx.range=t.dataset.range;refreshMarket(ctx);}else if(ctx?.type==='buy'){ctx.range=t.dataset.range;refreshSheet();}else if(['card','tcard'].includes(ctx?.type)){ctx.priceRange=t.dataset.range;refreshSheet();}};

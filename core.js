@@ -142,7 +142,7 @@ export function cardPrice(c, finish = "nonfoil") {
           ? "usd_etched"
           : "usd"
     ];
-  if (p !== null && p !== undefined && p !== "" && Number.isFinite(Number(p))) return Number(p);
+  if (p !== null && p !== undefined && !(typeof p === "string" && !p.trim()) && Number.isFinite(Number(p))) return Number(p);
   // Unpriced on Scryfall: TCGplayer's price for the same product, then the player's own price.
   return tcgFallback(c, finish)?.value ?? myPrice(c, finish);
 }
@@ -152,7 +152,7 @@ export function namePrice(card, quote = (finish) => cardPrice(card, finish)) {
   for (const finish of ["nonfoil", "foil", "etched"]) {
     if (finish !== "nonfoil" && Array.isArray(card?.finishes) && !card.finishes.includes(finish)) continue;
     const value = quote(finish);
-    if (value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value)) && Number(value) >= 0) return Number(value);
+    if (value !== null && value !== undefined && !(typeof value === "string" && !value.trim()) && Number.isFinite(Number(value)) && Number(value) >= 0) return Number(value);
   }
   return null;
 }

@@ -1,8 +1,9 @@
 // Actual Magic shelf renderer, offline synthetic reference-price fixtures only.
 import assert from 'node:assert/strict';
+// Only eligibility-checked quotes participate; legacy entries are covered in test-cheapest.mjs.
 const cache={
-  'cache-only card':{usd:12976,at:Date.now()},
-  'cheaper card':{usd:2,at:Date.now()},
+  'cache-only card':{usd:12976,verified:true,coverage:{provider:'Scryfall',pages:1,marketComplete:false},at:Date.now()},
+  'cheaper card':{usd:2,verified:true,coverage:{provider:'Scryfall',pages:1,marketComplete:false},at:Date.now()},
 };
 const storage=new Map([['cardstashy-mtg-cheapest',JSON.stringify(cache)]]);
 globalThis.localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v)};

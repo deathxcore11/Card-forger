@@ -22,24 +22,27 @@ const TYPE_ENERGY = { Grass: "Grass", Fire: "Fire", Water: "Water", Lightning: "
 export const energyName = (t) => `Basic ${TYPE_ENERGY[t] || t} Energy`;
 
 // Shared budget-aware picker: take up to `want` copies, fewer if money runs out.
-function picker({ owned, price, budget, filler = 0.15 }) {
+function picker({ owned, price, budget = Infinity, filler = 0.15 }) {
   // With no budget there's nothing to save for: just use the cards you own.
   if (!budget) filler = 0;
-  let spent = 0;
+  let spent = 0, unknown = 0;
   const used = new Map();
   return {
     get spent() {
       return spent;
     },
+    get unknown() { return unknown; },
     take(card, want, slotsAfter = 0, min = 1) {
       const have = used.get(card.id) || 0,
         free = Math.max(0, owned(card) - have),
-        p = price(card);
+        quote = price(card),
+        p = quote == null || typeof quote === "boolean" || String(quote).trim() === "" || !Number.isFinite(Number(quote)) || Number(quote) < 0 ? null : Number(quote);
       for (let n = want; n >= min; n--) {
         const buy = Math.max(0, n - free),
-          cost = buy ? (p === null ? Infinity : buy * p) : 0;
-        if (cost !== Infinity && spent + cost + slotsAfter * filler <= budget + 1e-6) {
+          cost = buy && p !== null ? buy * p : 0;
+        if ((!buy || p !== null || budget === Infinity) && spent + cost + slotsAfter * filler <= budget + 1e-6) {
           spent += cost;
+          if (buy && p === null) unknown += buy;
           used.set(card.id, have + n);
           return n;
         }
@@ -80,7 +83,7 @@ export function buildYgo({ f, seed, seeds = [], archetype = [], staples = [], li
       const next=choices[0];if(!next)break;add(main,next.c,pick.take(next.c,1),'Budget completion');
     }
     if(count(main)>=target)for(const c of pool.filter(c=>c.extra&&!extra.has(c.id))){if(count(extra)>=f.extra)break;add(extra,c,pick.take(c,1),'Affordable Extra Deck');}
-    const total=count(main);return {zones:{main:rowsOf(main),extra:rowsOf(extra),side:[]},cost:pick.spent,total,size:target,warnings:total<target?[`${target-total} Main Deck slots still open; no complete list fits this pool and budget.`]:[]};
+    const total=count(main);return {zones:{main:rowsOf(main),extra:rowsOf(extra),side:[]},cost:pick.spent,unknown:pick.unknown,total,size:target,warnings:[...(total<target?[`${target-total} Main Deck slots still open; no complete list fits this pool and budget.`]:[]),...(pick.unknown?[`${pick.unknown} missing copies have no verified price; purchase total is incomplete, not free.`]:[])]};
   }
   // Balanced core: archetype monsters first, then the archetype's own Spells and Traps, then staples.
   const core = archetype.filter((c) => ok(c) && !c.extra && !isSeed(c)).sort((a, b) => order(a) - order(b) || (b.atk || 0) - (a.atk || 0));
@@ -115,7 +118,8 @@ export function buildYgo({ f, seed, seeds = [], archetype = [], staples = [], li
   }
   if (total < target) warnings.push(`${target - total} Main Deck slots still open — raise the budget or add cards you own.`);
   if (monsters.length + support.length < 6) warnings.push("Small archetype: most of the deck is general-purpose cards. Add your own engine cards.");
-  return { zones: { main: rowsOf(main), extra: rowsOf(extra), side: [] }, cost: pick.spent, total, size: target, warnings };
+  if (pick.unknown) warnings.push(`${pick.unknown} missing copies have no verified price; purchase total is incomplete, not free.`);
+  return { zones: { main: rowsOf(main), extra: rowsOf(extra), side: [] }, cost: pick.spent, unknown: pick.unknown, total, size: target, warnings };
 }
 
 /**
@@ -126,18 +130,18 @@ export function buildPtcg({ line = [], trainers = [], energy = [], owned, price,
   const pick = picker({ owned, price, budget, filler: completionFirst?0:0.1 }),
     deck = new Map(),
     count = () => rowsOf(deck).reduce((a, r) => a + r.qty, 0),
-    energyTarget = energy.length ? (line.some((x) => x.card.stage === "Stage2") ? 9 : 11) : 0;
+    energyTarget = line.length ? (line.some((x) => x.card.stage === "Stage2") ? 9 : 11) : 0;
   if(completionFirst){
     const all=new Map([...line,...trainers].map(x=>[x.card.id,x.card]));
     for(const {card,want} of line)add(deck,card,pick.take(card,want,0,want),'Evolution line');
-    const trainerTarget=60-(energy.length?14:0);
+    const trainerTarget=60-Math.max(energyTarget,14);
     while(count()<trainerTarget){
       const aceUsed=rowsOf(deck).some(r=>all.get(r.cardId)?.aceSpec);
       const choices=trainers.filter(({card,want})=>(deck.get(card.id)?.qty||0)<Math.min(4,want)&&(!card.aceSpec||!aceUsed)).map(x=>({...x,p:owned(x.card)>(deck.get(x.card.id)?.qty||0)?0:price(x.card)})).filter(x=>x.p!=null&&Number.isFinite(x.p)&&x.p>=0&&pick.spent+x.p<=budget+1e-6).sort((a,b)=>a.p-b.p);
       const next=choices[0];if(!next)break;add(deck,next.card,pick.take(next.card,1),'Budget Trainer');
     }
-    let left=Math.min(14,60-count());energy.forEach((e,i)=>{const n=Math.round(left/(energy.length-i));add(deck,e,n,'Basic Energy');left-=n;});
-    const total=count();return {zones:{main:rowsOf(deck),extra:[],side:[]},cost:pick.spent,total,size:60,warnings:total<60?[`${60-total} slots still open; no complete list fits this pool and budget.`]:[]};
+    let left=Math.min(14,60-count());energy.forEach((e,i)=>{const n=Math.round(left/(energy.length-i));add(deck,e,pick.take(e,n),'Basic Energy');left-=n;});
+    const total=count();return {zones:{main:rowsOf(deck),extra:[],side:[]},cost:pick.spent,unknown:pick.unknown,total,size:60,energyTarget,warnings:[...(total<60?[`${60-total} slots still open; no complete list fits this pool and verified purchase budget, including Basic Energy.`]:[]),...(pick.unknown?[`${pick.unknown} missing copies have no verified price; purchase total is incomplete, not free.`]:[])]};
   }
   for (const { card, want } of line) add(deck, card, pick.take(card, want, 60 - count() - want), card.stage === "Basic" ? "Basic Pokémon" : "Evolution");
   for (const { card, want } of trainers) {
@@ -146,11 +150,12 @@ export function buildPtcg({ line = [], trainers = [], energy = [], owned, price,
     const n = Math.min(want, room);
     add(deck, card, pick.take(card, n, 60 - count() - n), "Trainer staple");
   }
-  // Basic Energy is cheap and unlimited: fill toward 60 (at most 14), split across the types the attacks need.
+  // Basic Energy has no copy limit, but only actual owned copies are free.
+  // Every purchased copy needs a quote under a finite cap, just like Trainers.
   let left = Math.min(60 - count(), Math.max(energyTarget, 14));
   energy.forEach((e, i) => {
     const n = Math.round(left / (energy.length - i));
-    add(deck, e, n, "Basic Energy");
+    add(deck, e, pick.take(e, n), "Basic Energy");
     left -= n;
   });
   const total = count(),
@@ -160,7 +165,8 @@ export function buildPtcg({ line = [], trainers = [], energy = [], owned, price,
     const kept=line.every(({card,want})=>(cheap.zones.main.find(r=>r.cardId===card.id)?.qty||0)>=want);
     if(kept&&cheap.total>total)return cheap;
   }
-  if (total < 60) warnings.push(`${60 - total} slots still open.`);
+  if (total < 60) warnings.push(`${60 - total} slots still open; no complete list fits this pool and verified purchase budget, including Basic Energy.`);
   if (!line.length) warnings.push("No Pokémon line found for this card.");
-  return { zones: { main: rowsOf(deck), extra: [], side: [] }, cost: pick.spent, total, size: 60, warnings };
+  if (pick.unknown) warnings.push(`${pick.unknown} missing copies have no verified price; purchase total is incomplete, not free.`);
+  return { zones: { main: rowsOf(deck), extra: [], side: [] }, cost: pick.spent, unknown: pick.unknown, total, size: 60, energyTarget, warnings };
 }

@@ -230,7 +230,7 @@ console.log('PASS: Compact strategic route metrics/limitations and null score ro
  const make=format=>({id:'coach-format-cache',format,zones:{main:catalog.map(c=>({cardId:c.id,name:c.name,qty:2})),extra:[],side:[]}});
  const p={score:50,heuristic:50,formatName:'Wrong stale display name',parts:[],readiness:{eligible:true,issues:[]}};
  const lookup=id=>catalog.find(c=>c.id===id);
- for(const [format,initial,first,second,draw]of[['tcg',5,5,6,0],['Advanced (TCG)',5,5,6,0],['traditional',5,5,6,0],['speed',4,4,5,0],['Speed Duel',4,4,5,0],['goat',5,6,6,1],['GOAT',5,6,6,1]]){
+ for(const [format,initial,first,second,draw]of[['tcg',5,5,6,0],['Advanced (TCG)',5,5,6,0],['traditional',5,5,6,0],['speed',4,4,5,0],['Speed Duel',4,4,5,0],['goat',5,6,6,1],['GOAT',5,6,6,1],['edison',5,6,6,1],['Edison',5,6,6,1]]){
   const prepared=reviewPayload('ygo',make(format),lookup,p),cleaned=cleanDeck(prepared),profile=prepared.handProfile;
   assert.equal(prepared.format,format,'deck format wins over stale Power display text');
   assert.equal(profile.initialHandCards,initial);assert.equal(profile.firstTurnCards,first);assert.equal(profile.secondTurnCards,second);assert.equal(profile.firstTurnDraw,draw);
@@ -246,7 +246,7 @@ console.log('PASS: Compact strategic route metrics/limitations and null score ro
   const rows=catalog.map((c,i)=>({id:'c'+i,c,zone:'main',row:{cardId:c.id,name:c.name,qty:2}}));
   const html=aiReviewDialogContent({game:'ygo',tab:'pilot',rows,payload:prepared,result:out});assert.match(html,/>Assessment</);assert.doesNotMatch(html,/>Mulligan</);assert.match(html,new RegExp(`Initial opening hand: ${initial}`));
  }
- for(const format of ['unknown-custom','Casual','Edison','Duel Links','Master Duel','OCG']){
+ for(const format of ['unknown-custom','Casual','Duel Links','Master Duel','OCG']){
   const prepared=reviewPayload('ygo',make(format),lookup,p);
   assert.equal(prepared.handProfile.status,'unknown');assert.equal(prepared.handProfile.initialHandCards,null);assert.deepEqual(prepared.hand,[]);assert.deepEqual(cleanDeck({...prepared,hand:['c0','c1','c2','c3','c4']}).hand,[]);
  }
