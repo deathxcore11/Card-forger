@@ -4,13 +4,15 @@ import {startServer,openSearchApp,inventorySnapshot,capture,noOverflow} from './
 import {AURA_CARD} from '../aura.js';
 assert.equal(process.env.GITHUB_ACTIONS,'true','Actual app browser QA runs only on hosted CI');
 const {chromium}=await import('playwright'),server=await startServer(),browser=await chromium.launch();
+const daily={mtg:{id:'41a76adc-42e1-4f65-940c-d0a5555c0633',art:'https://cards.scryfall.io/art_crop/front/4/1/41a76adc-42e1-4f65-940c-d0a5555c0633.jpg?1783928835'},ptcg:{id:'base4-20',art:'https://assets.tcgdex.net/en/base/base4/20/high.webp'},ygo:{id:'89631139',art:'https://images.ygoprodeck.com/images/cards_cropped/89631139.jpg'}};
+const withDaily=fixtures=>{fixtures.storage['cardforge-hero-v2']={date:'2026-10-17',...Object.fromEntries(Object.entries(daily).map(([g,card])=>[g,{...card,name:'Pinned daily artwork fixture'}]))};};
 const results=[];let failure;
 const source=page=>page.locator('#ambient .aura-art.on').getAttribute('data-src');
 const waitArt=page=>page.waitForFunction(()=>document.querySelector('#ambient .aura-art.on')?.dataset.src);
 const theme=async(page,value)=>page.evaluate(async value=>(await import('/settings-theme.js')).applyTheme(value),value);
 try {
  for(const game of ['mtg','ptcg','ygo']) {
-  const app=await openSearchApp(browser,server.base,{game,width:1440,height:1000,hasTouch:false,evidenceLabel:'aura-'+game});const {page}=app;
+  const app=await openSearchApp(browser,server.base,{game,width:1440,height:1000,hasTouch:false,prepareFixtures:withDaily,evidenceLabel:'aura-'+game});const {page}=app;
   try {
    const ext=game==='ptcg'?'webp':'jpg',body=await readFile(new URL(`./frame-art/${game}.${ext}`,import.meta.url));
    const colorful=await readFile(new URL(game==='mtg'?'../test-fixtures/finish-effects/chishiro-nec77.png':game==='ptcg'?'../review/assets/charizard-vmax.png':'../test-fixtures/finish-effects/dracotail-lukias.jpg',import.meta.url));
@@ -52,6 +54,7 @@ try {
     await page.setViewportSize({width,height:1000});await noOverflow(page,'#content',`Aura ${game} ${width}`,true);
     const geometry=await page.locator('#ambient').evaluate(n=>({pointer:getComputedStyle(n).pointerEvents,width:n.getBoundingClientRect().width,screen:innerWidth}));assert.equal(geometry.pointer,'none');assert.equal(geometry.width,geometry.screen);
    }
+   await page.setViewportSize({width:390,height:844});
    await page.emulateMedia({reducedMotion:'reduce'});
    const motion=await page.locator('.aura-art').first().evaluate(n=>({animation:getComputedStyle(n).animationName,transition:getComputedStyle(n).transitionDuration}));assert.deepEqual(motion,{animation:'none',transition:'0s'});
    await capture(page,`synthetic-search-aura-${game}-mobile-reduced-motion`);
