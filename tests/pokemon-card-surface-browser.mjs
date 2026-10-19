@@ -5,7 +5,7 @@ import {CELEBRATIONS_RAW} from './celebrations-fixtures.mjs';
 import {startServer,openApp,closeSheet,capture,saveReport,noOverflow,RESULTS} from './detail-rules-fixtures.mjs';
 if(process.env.GITHUB_ACTIONS!=='true')throw Error('Browser QA runs only in hosted GitHub Actions.');
 const {chromium}=await import('playwright');
-const server=await startServer(),browser=await chromium.launch(),report=[];
+const server=await startServer(),browser=await chromium.launch(),report=[],diagnostics=[];
 try{for(const width of [320,390,768,1440]){
  const app=await openApp(browser,server.base,{game:'ptcg',width,isMobile:true}),{page}=app;
  try{
@@ -14,7 +14,20 @@ try{for(const width of [320,390,768,1440]){
   const galleryButton=page.locator('#content [data-act="viewSave"][data-mode="gallery"]');await galleryButton.focus();await galleryButton.press('Enter');
   await page.waitForFunction(()=>document.querySelector('#content.view-gallery .lot-art[data-entry="lot-ptcg-0"]'));
   await noOverflow(page,'#content','Pokémon surface gallery settled',true);
-  const tile=page.locator('#content .lot-art[data-entry="lot-ptcg-0"]');await tile.scrollIntoViewIfNeeded();
+  const tile=page.locator('#content .lot-art[data-entry="lot-ptcg-0"]');
+  const inspectStage=async stage=>{
+   const state=await page.evaluate(()=>{const c=window.__uiTestTcg.cache.ptcg['cel25-10'],el=document.querySelector('#content .lot-art[data-entry="lot-ptcg-0"]'),r=el?.getBoundingClientRect(),img=el?.querySelector('img.card-img');return {card:c?{id:c.id,name:c.name,set:c.set,fetchedAt:c.fetchedAt,variantSchema:c.variantSchema,priceFallbackSchema:c.priceFallbackSchema,variants:c.variants}:null,model:el?JSON.parse(el.dataset.finishModel||'{}'):null,rect:r?{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height}:null,viewport:{width:innerWidth,height:innerHeight,scrollY},image:img?{src:img.currentSrc,complete:img.complete,naturalWidth:img.naturalWidth,naturalHeight:img.naturalHeight}:null,reduced:matchMedia('(prefers-reduced-motion:reduce)').matches,openDialogs:document.querySelectorAll('dialog[open]').length,overlayCount:el?.querySelectorAll('.finish-overlay').length||0};});
+   diagnostics.push({width,stage,...state,requests:[...app.requests]});assert.equal(state.card?.id,'cel25-10');assert.equal(state.card?.name,'Zekrom');assert.equal(state.card?.set?.id,'cel25');assert.equal(String(state.card?.set?.number),'10');assert.equal(state.card?.variants.find(v=>v.key==='holofoil')?.productId,250308);assert.equal(state.model?.printingId,'cel25-10');assert.deepEqual(state.model?.layers,[{mask:'pk-cel-art',material:'holo'}]);return state;
+  };
+  const centerVisible=async stage=>{
+   await inspectStage(stage+'-before-scroll');await page.screenshot({path:RESULTS+'/pokemon-surface-'+width+'-'+stage+'-before-scroll.png',fullPage:false});
+   await tile.evaluate(n=>n.scrollIntoView({block:'center',inline:'center',behavior:'instant'}));await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+   const state=await inspectStage(stage+'-after-scroll');assert.equal(state.reduced,false);assert.equal(state.openDialogs,0);
+   const probes=await tile.evaluate(n=>{const r=n.getBoundingClientRect();return [[.2,.2],[.8,.2],[.5,.5],[.2,.8],[.8,.8]].map(([x,y])=>{const px=r.left+r.width*x,py=r.top+r.height*y,hit=document.elementFromPoint(px,py);return {x:px,y:py,visible:px>=0&&py>=0&&px<innerWidth&&py<innerHeight,owned:hit===n||n.contains(hit)};});});
+   diagnostics.at(-1).probes=probes;assert(probes.every(p=>p.visible&&p.owned),'Gallery tile must be onscreen and unobstructed before requiring its viewport-dependent overlay: '+JSON.stringify(probes));
+   await page.screenshot({path:RESULTS+'/pokemon-surface-'+width+'-'+stage+'-after-scroll.png',fullPage:false});
+  };
+  await centerVisible('initial');
   await tile.locator('.finish-overlay').waitFor();
   await page.waitForFunction(()=>{const n=document.querySelector('#content .lot-art[data-entry="lot-ptcg-0"] img.card-img');return n.complete&&n.naturalWidth===600;});
   const measureGeometry=n=>{const img=n.querySelector('img.card-img'),o=n.querySelector('.finish-overlay'),s=getComputedStyle(n),i=getComputedStyle(img),r=n.getBoundingClientRect(),ir=img.getBoundingClientRect(),or=o.getBoundingClientRect();return {padding:parseFloat(s.paddingTop),ratio:ir.width/ir.height,natural:img.naturalWidth/img.naturalHeight,fit:i.objectFit,top:ir.top-r.top,left:ir.left-r.left,right:r.right-ir.right,bottom:r.bottom-ir.bottom,frameRadius:s.borderTopLeftRadius,imageRadius:i.borderTopLeftRadius,glitterInset:getComputedStyle(n,'::after').inset,overlay:{x:or.left-ir.left,y:or.top-ir.top,w:or.width-ir.width,h:or.height-ir.height},opacity:getComputedStyle(o.querySelector('.finish-pattern')).opacity};};
@@ -34,13 +47,13 @@ try{for(const width of [320,390,768,1440]){
   await hero.evaluate(n=>{const a=n.getAnimations().find(a=>a.animationName==='header-breathe');a.pause();a.currentTime=10000;});
   const midway=await hero.evaluate(n=>getComputedStyle(n).scale);assert(Number(midway)>1);
   await page.emulateMedia({reducedMotion:'reduce'});assert.equal(await hero.evaluate(n=>getComputedStyle(n).animationName),'none');
-  await page.emulateMedia({reducedMotion:'no-preference'});await closeSheet(page);
+  await page.emulateMedia({reducedMotion:'no-preference'});await closeSheet(page);await inspectStage('after-detail-close');
   const resizeChecks=[];
   if(width===320){
    for(const resizedWidth of [768,1024,1440,390,320]){
     await page.setViewportSize({width:resizedWidth,height:1000});
     await noOverflow(page,'#content','Pokémon live resize '+resizedWidth,true);
-    await tile.waitFor({state:'visible'});
+    await tile.waitFor({state:'visible'});await centerVisible('resize-'+resizedWidth);
     await page.waitForFunction(()=>{const n=document.querySelector('#content .lot-art[data-entry="lot-ptcg-0"] img.card-img');return n?.complete&&n.naturalWidth===600;});
     await tile.locator('.finish-overlay').waitFor();
     // ResizeObserver publishes overlay dimensions during the rendering cycle.
@@ -119,5 +132,5 @@ for(const game of ['ptcg','mtg','ygo']){
   }
  }finally{await app.close();}
 }
-await saveReport('pokemon-card-surface',report);
-}catch(error){await saveReport('pokemon-card-surface',report,error);throw error;}finally{await browser.close();await server.close();}
+await saveReport('pokemon-card-surface',report);await saveReport('pokemon-card-surface-diagnostics',diagnostics);
+}catch(error){await saveReport('pokemon-card-surface',report,error);await saveReport('pokemon-card-surface-diagnostics',diagnostics,error);throw error;}finally{await browser.close();await server.close();}
