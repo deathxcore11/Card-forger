@@ -10,6 +10,7 @@ import {sharePayload, sharePayloadTcg, decodeShare} from '../share.js';
 import {SUPABASE} from '../config.js';
 import {communityState, communitySlides} from '../community-feed.js';
 import {communityPage} from '../home-ui.js';
+import {COMMUNITY_ILLUSTRATIONS} from '../community-art.js';
 import {
   ROOT, RESULTS, NOW, ISO, CARDS, RAW, SETS, RELEASES, LOB, UNIQUE, GROUP_IDS,
   makeSearchFixtures, providerFixture as searchProvider, startServer,
@@ -222,7 +223,7 @@ export async function openGameSwitchApp(browser, base, {game = 'mtg', width = 39
   const staticPaths = new Set((await readdir(ROOT, {withFileTypes: true})).filter(d => d.isFile() && /\.(?:js|css|html|json|svg|png|ico|webmanifest)$/.test(d.name)).map(d => '/' + d.name));
   for (const dir of ['rulebooks', 'scanidx']) for (const d of await readdir(resolve(ROOT, dir), {withFileTypes: true})) if (d.isFile()) staticPaths.add('/' + dir + '/' + d.name);
   staticPaths.add('/');
-  const images = new Set(pokemonSymbolFixtureUrls(base));
+  const images = new Set([...pokemonSymbolFixtureUrls(base),...Object.values(COMMUNITY_ILLUSTRATIONS).map(x=>new URL(x.url,base+'/').href)]);
   for (const c of Object.values(CARDS).flat()) {
     const urls = [...artworkSources(c, false), ...artworkSources(c, true), ...Object.values(c.image_uris || {}), c.image, c.imageLarge, c.art, c.artDirect];
     for (const u of urls.filter(u => typeof u === 'string' && u)) images.add(new URL(u, base + '/').href);
@@ -255,6 +256,7 @@ export async function openGameSwitchApp(browser, base, {game = 'mtg', width = 39
       if (u.origin === history.origin && u.pathname === history.pathname) return fulfill(historyBody(u));
       if (u.origin === base) {
         if (u.pathname === '/catalog.json') return fulfill({cards: [], snapshot_date: '2000-01-01'});
+        if (u.pathname === '/api/meta/curation') return fulfill({game:u.searchParams.get('game'),format:u.searchParams.get('format'),status:'unavailable',rankedIds:[],annotations:[]});
         if (u.pathname === '/api/community') return fulfill(fixtures.storage['cardforge-community-v2'][u.searchParams.get('game')]?.data || {items: [], status: 'unavailable'});
         if (['/api/prices/recent', '/api/prices/archive'].includes(u.pathname)) return fulfill(historyBody(u));
         if (['/api/prices/pokemon', '/api/prices/yugioh', '/api/prices/yugioh-set', '/api/prices/conditions', '/api/prices/mtg'].includes(u.pathname)) return fulfill({status: 'unavailable', quotes: [], cards: [], products: [], variants: [], prices: {}, printings: [], partial: false});

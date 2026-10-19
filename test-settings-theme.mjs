@@ -98,3 +98,6 @@ assert.match(sharedHeaderCSS,/--banner-art-height:clamp\(280px,74vw,420px\); dis
 assert.match(sharedHeaderCSS,/\.cs-banner > \.cs-hero:not\(\.compact\) \{ position:absolute; inset:0; width:100%; height:100%/);
 assert.match(sharedHeaderCSS,/\.cs-banner.no-art \{ --banner-art-height:150px/);
 assert.match(sharedHeaderCSS,/\.cs-banner > \.cs-title \{ grid-area:1 \/ 1; position:relative; inset:auto; align-self:end; margin:56px var\(--gutter\) 0; min-width:0; \}/);
+
+assert.match(css,/body\.glass dialog\.sheet::before \{[^}]+pointer-events:none;[^}]+var\(--ambient-art-image, none\)/, "Light modal reuses the same daily art beneath its contrast wash");
+assert.match(css,/prefers-reduced-transparency:reduce\) \{\s*:root\[data-theme="light"\] body\.glass dialog\.sheet::before \{display:none;/);

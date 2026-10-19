@@ -15,6 +15,7 @@ import {normalizeYgo} from '../ygo.js';
 import {pokemonDeckCover, artworkSources} from '../artwork.js';
 import {validateHistory} from '../shared-history.js';
 import {SUPABASE} from '../config.js';
+import {COMMUNITY_ILLUSTRATIONS} from '../community-art.js';
 
 export const ROOT=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 export const RESULTS=resolve(ROOT,'test-results');
@@ -119,11 +120,12 @@ export async function openApp(browser,base,{game='mtg',width=390,height=1000,red
   if(url.origin===base&&url.pathname.startsWith('/rulebooks/')&&failRulebook)return route.fulfill({status:503,body:'Deterministic offline rulebook fixture'});
   if(url.origin===historyEndpoint.origin&&url.pathname===historyEndpoint.pathname)return json(historyFixture(url));
   if(url.hostname==='fonts.googleapis.com')return route.fulfill({status:200,contentType:'text/css',body:'/* deterministic system fonts */'});
-  if(req.resourceType()==='image'&&(artURLs.has(url.href)||url.hostname==='detail-fixtures.invalid'||url.origin===base&&/^\/img\/pks\/(s|r)\//.test(url.pathname)||url.href==='https://images.ygoprodeck.com/images/sets/SET.jpg'||url.hostname==='r2.limitlesstcg.net'||url.hostname==='svgs.scryfall.io'&&/^\/(card-symbols|sets)\//.test(url.pathname)||url.hostname==='images.pokemontcg.io'&&/\/(logo|symbol)\.png$/.test(url.pathname))){images.push(url.href);return route.fulfill({status:200,contentType:'image/svg+xml',body:SVG});}
+  if(req.resourceType()==='image'&&(Object.values(COMMUNITY_ILLUSTRATIONS).some(x=>new URL(x.url,base+'/').href===url.href)||artURLs.has(url.href)||url.hostname==='detail-fixtures.invalid'||url.origin===base&&/^\/img\/pks\/(s|r)\//.test(url.pathname)||url.href==='https://images.ygoprodeck.com/images/sets/SET.jpg'||url.hostname==='r2.limitlesstcg.net'||url.hostname==='svgs.scryfall.io'&&/^\/(card-symbols|sets)\//.test(url.pathname)||url.hostname==='images.pokemontcg.io'&&/\/(logo|symbol)\.png$/.test(url.pathname))){images.push(url.href);return route.fulfill({status:200,contentType:'image/svg+xml',body:SVG});}
   if(url.origin===base){
    if(url.pathname==='/catalog.json')return json({cards:[],snapshot_date:'2000-01-01'});
    if(url.pathname==='/api/daily-card'){const g=url.searchParams.get('game'),c=CARDS[g]?.[0];return json({game:g,date:'2026-10-17',card:{id:c?.id,name:c?.name,art:''}});}
    if(url.pathname==='/api/community')return json({game:url.searchParams.get('game'),status:'unavailable',items:[],fetchedAt:ISO});
+   if(url.pathname==='/api/meta/curation')return json({game:url.searchParams.get('game'),format:url.searchParams.get('format'),status:'unavailable',rankedIds:[],annotations:[]});
    if(url.pathname==='/api/meta/mtg')return json(metaFeed('mtg'));
    if(url.pathname==='/api/prices/archive'||url.pathname==='/api/prices/recent')return json(historyFixture(url));
    if(url.pathname.startsWith('/api/prices/'))return json({points:[],series:[],cards:[],products:[],variants:[],prices:{},partial:false});
@@ -270,6 +272,15 @@ export function auditedFinishChoiceControl(control){
   /^(auto|scroll)$/.test(r.overflow)&&r.display==='flex'&&r.wrap==='nowrap'&&r.left>=-.5&&r.right<=control.viewport+.5&&r.right>r.left&&r.client>0&&r.scroll>r.client+1&&r.scale>0&&r.position>=-1&&r.position<=r.scroll-r.client+2&&
   Number.isFinite(r.scroll)&&control.width>0&&control.width<=r.scroll+2&&Math.abs(control.right-control.left-control.width)<.5&&control.height>=44*r.scale-.5&&control.left+r.position>=r.contentLeft-2&&control.right+r.position<=r.contentLeft+r.scroll+2&&control.top>=r.top-2&&control.bottom<=r.bottom+2;
 }
+// Exact set-family presets may scroll inside their own bounded native rail.
+// Reject arbitrary buttons, hidden content, invalid actions and page overflow.
+export function auditedSetFamilyControl(control){
+ const r=control.familyRail;
+ return control.root==='content'&&control.view==='sets'&&['mtg','ptcg','ygo'].includes(control.game)&&control.tag==='BUTTON'&&r?.known&&r.direct&&r.connected&&r.visible&&r.focusable&&!r.inForm&&r.buttons===4&&['true','false'].includes(r.pressed)&&
+  r.action===(control.game==='mtg'?'setsFamily':'tSetsFamily')&&['main','companion','promos','all'].includes(r.value)&&r.whiteSpace==='nowrap'&&
+  /^(auto|scroll)$/.test(r.overflow)&&r.display==='flex'&&r.wrap==='nowrap'&&r.left>=-.5&&r.right<=control.viewport+.5&&r.right>r.left&&r.client>0&&r.scroll>r.client+1&&r.scale>0&&r.position>=-1&&r.position<=r.scroll-r.client+2&&
+  Number.isFinite(r.scroll)&&control.width>0&&control.width<=r.client+2&&Math.abs(control.right-control.left-control.width)<.5&&control.height>=42*r.scale-.5&&control.left+r.position>=r.contentLeft-2&&control.right+r.position<=r.contentLeft+r.scroll+2&&control.top>=r.top-2&&control.bottom<=r.bottom+2;
+}
 export async function noOverflow(page,scope,label,settleFinite=false,collectionAudit=null){
  const result=await page.evaluate(async({scope,settleFinite})=>{
   // Resolve current scopes in this page task, not remote handles. Finite motion
@@ -292,9 +303,15 @@ export async function noOverflow(page,scope,label,settleFinite=false,collectionA
     let visible=true;for(let ancestor=n;ancestor&&ancestor!==root;ancestor=ancestor.parentElement){const s=getComputedStyle(ancestor);if(s.visibility!=='visible'||s.opacity==='0'||s.display==='none')visible=false;}
     finishRail={known:finish.matches('.finish-preview > .finish-choice-rail')&&finish.parentElement?.parentElement?.matches('.cd-art-stack'),direct:n.parentElement===finish,connected:finish.isConnected&&n.isConnected,visible,focusable:n.tabIndex>=0&&!n.disabled,chip:n.matches('.chip'),type:n.type,pressed:n.getAttribute('aria-pressed'),action:n.dataset.act||'',game:n.dataset.game||'',cardId:n.dataset.cardId||'',finish:n.dataset.finish||'',left:r.left,right:r.right,top:r.top,bottom:r.bottom,scale,contentLeft:r.left+finish.clientLeft*scale,client:finish.clientWidth*scale,scroll:finish.scrollWidth*scale,position:finish.scrollLeft*scale,overflow:css.overflowX,display:css.display,wrap:css.flexWrap};
    }
-   return {text:n.tagName==='SELECT'?n.selectedOptions[0]?.label:n.textContent.slice(0,90),class:n.className,tag:n.tagName,change:n.dataset.change,field:n.dataset.field||'',value:n.value,root:root.id,view:document.body.dataset.view,game:document.body.dataset.game,viewport:innerWidth,left:b.left,right:b.right,top:b.top,bottom:b.bottom,width:b.width,height:b.height,rail:rail&&{known:rail.matches('.coll-tools > .filter-pills'),direct:n.parentElement===rail,left:a.left,right:a.right,client:rail.clientWidth,scroll:rail.scrollWidth,position:rail.scrollLeft,overflow:getComputedStyle(rail).overflowX},finishRail};
+   const family=n.closest('.set-browser-quick');let familyRail=null;
+   if(family){
+    const r=family.getBoundingClientRect(),css=getComputedStyle(family),scale=r.width/family.offsetWidth;
+    let visible=true;for(let ancestor=n;ancestor&&ancestor!==root;ancestor=ancestor.parentElement){const s=getComputedStyle(ancestor);if(s.visibility!=='visible'||s.opacity==='0'||s.display==='none'||s.pointerEvents==='none')visible=false;}
+    familyRail={known:family.matches('.set-browser-controls > .set-browser-quick')&&family.getAttribute('role')==='group',direct:n.parentElement===family,connected:family.isConnected&&n.isConnected,visible,focusable:n.tabIndex>=0&&!n.disabled,inForm:!!n.form,buttons:family.querySelectorAll(':scope > button').length,pressed:n.getAttribute('aria-pressed'),action:n.dataset.act||'',value:n.dataset.value||'',whiteSpace:getComputedStyle(n).whiteSpace,left:r.left,right:r.right,top:r.top,bottom:r.bottom,scale,contentLeft:r.left+family.clientLeft*scale,client:family.clientWidth*scale,scroll:family.scrollWidth*scale,position:family.scrollLeft*scale,overflow:css.overflowX,display:css.display,wrap:css.flexWrap};
+   }
+   return {text:n.tagName==='SELECT'?n.selectedOptions[0]?.label:n.textContent.slice(0,90),class:n.className,tag:n.tagName,change:n.dataset.change,field:n.dataset.field||'',value:n.value,root:root.id,view:document.body.dataset.view,game:document.body.dataset.game,viewport:innerWidth,left:b.left,right:b.right,top:b.top,bottom:b.bottom,width:b.width,height:b.height,rail:rail&&{known:rail.matches('.coll-tools > .filter-pills'),direct:n.parentElement===rail,left:a.left,right:a.right,client:rail.clientWidth,scroll:rail.scrollWidth,position:rail.scrollLeft,overflow:getComputedStyle(rail).overflowX},finishRail,familyRail};
   })};},{scope,settleFinite});
- assert(result.connected&&result.current,`${label}: current connected overflow scope`);assert(result.root<=result.width+2&&result.scope<=result.client+2,`${label}: no horizontal overflow ${JSON.stringify(result)}`);assert.deepEqual(result.bad.filter(n=>!auditedCollectionControl(n,collectionAudit)&&!auditedFinishChoiceControl(n)),[],`${label}: all visible controls fit the viewport or a specifically verified clipped rail`);return result;
+ assert(result.connected&&result.current,`${label}: current connected overflow scope`);assert(result.root<=result.width+2&&result.scope<=result.client+2,`${label}: no horizontal overflow ${JSON.stringify(result)}`);assert.deepEqual(result.bad.filter(n=>!auditedCollectionControl(n,collectionAudit)&&!auditedFinishChoiceControl(n)&&!auditedSetFamilyControl(n)),[],`${label}: all visible controls fit the viewport or a specifically verified clipped rail`);return result;
 }
 export async function capture(page,name){await page.screenshot({path:resolve(RESULTS,name+'.png'),fullPage:true,animations:'disabled'});}
 export async function saveReport(name,report,error){await mkdir(RESULTS,{recursive:true});await writeFile(resolve(RESULTS,name+'.json'),JSON.stringify({generatedAt:new Date().toISOString(),artEvidence,status:error?'failed':'passed',checks:report,...(error?{error:String(error.stack||error)}:{})},null,2));}

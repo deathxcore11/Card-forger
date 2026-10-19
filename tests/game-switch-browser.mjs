@@ -88,7 +88,7 @@ async function assertTarget(page, pair, row) {
     const scan = await page.evaluate(async g => ({prefs: (await import('/scansession.js')).loadPrefs(g), camera: window.__gameSwitchAudit.cameraCalls, ocr: window.__gameSwitchAudit.ocrCalls, confirm: !!window.__uiTestState.ui.scan.confirm, camOn: !!window.__uiTestState.ui.scan.camOn}), pair.to);
     assert.equal(scan.prefs.finish, finishFor(pair.to)); assert.equal(scan.prefs.lockSet, 'synthetic-lock-' + pair.to);
     assert.equal(scan.camera, 0); assert.equal(scan.ocr, 0); assert.equal(scan.confirm, false); assert.equal(scan.camOn, false);
-    assert.equal(await page.locator('.scan-batch-tray').getAttribute('data-count'), '3', 'The pile retains all original mixed-game captures for review');
+    assert.equal(await page.locator('.scan-batch-tray').getAttribute('data-batch-count'), '3', 'The pile retains all original mixed-game captures for review');
   }
   if (row.settings) assert.equal(await page.locator('#settingsTab-recovery').getAttribute('aria-selected'), 'true', 'Settings subsection survives');
   if (view === 'rules') assert.equal(await page.locator('[data-learning-root]').getAttribute('data-game'), pair.to, 'Rules use target-game context');

@@ -115,6 +115,8 @@ export function flyToCollection(fromEl) {
 export function countUp(root = document) {
   if (reduced()) return;
   for (const el of root.querySelectorAll?.("[data-count]:not([data-counted])") || []) {
+    // Counters are text leaves, never containers with buttons or other UI.
+    if (el.childElementCount) continue;
     el.dataset.counted = "1";
     const target = Number(el.dataset.count),
       money = el.dataset.money === "1",
@@ -124,6 +126,7 @@ export function countUp(root = document) {
     const t0 = performance.now(),
       dur = 700;
     const step = (t) => {
+      if (el.childElementCount) return;
       const k = Math.min(1, (t - t0) / dur),
         e = 1 - Math.pow(1 - k, 3);
       el.textContent = fmt(target * e);

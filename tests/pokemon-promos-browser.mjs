@@ -203,6 +203,14 @@ try{
  await observeScanner(page);await scannerDiagnostic(page,'before-seed');
  await seedReviews(page,'ptcg',{cards:scannerCards,condition:'Near Mint',selectedFinish:''});
  await scannerDiagnostic(page,'after-seed-navigation');
+ assert.equal(await page.evaluate(()=>matchMedia('(prefers-reduced-motion: reduce)').matches),false,'Scanner regression runs with normal motion');
+ // Observe past the ordinary 60 ms navigation count-up delay and 700 ms
+ // animation, which used to replace this entire tray with its numeric count.
+ await page.waitForTimeout(850);
+ assert.equal(await page.locator('.scan-pile-tray').getAttribute('data-batch-count'),String(scannerCards.length));
+ assert.equal(await page.locator('.scan-pile-tray[data-count]').count(),0);
+ assert.equal(await page.locator('.scan-pile').count(),1,'Normal-motion animation must preserve the actual review button');
+ assert.equal(await page.locator('.scan-pile').isEnabled(),true);
  for(const [i,card]of scannerCards.entries()){
   await scannerDiagnostic(page,'before-review-'+i);
   await openReview(page,i);await scannerDiagnostic(page,'after-review-'+i);await page.locator('.scan-inline-printings .printing-carousel[aria-busy="false"]').waitFor();

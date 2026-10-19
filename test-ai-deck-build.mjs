@@ -1,6 +1,7 @@
 // Synthetic app catalog and mocked provider only. No API key, live account,
 // private collection, paid model invocation, or external card fetch is used.
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {prepareMtgDeck,deckPriceCoverage} from './ai-deck-builder.js';
 import {makeAskTools} from './ai-tools.js';
 import {runAskLoop,ASK_LIMITS,partialAnswer} from './ai-ask-loop.js';
@@ -71,6 +72,15 @@ console.log('PASS: exact TCG seed and budget-basis handoffs are honest; unsuppor
 const {S,blank}=await import('./store.js'),{buildSheet}=await import('./views.js');const previous={state:S.state,catalog:S.catalog,build:S.ui.build};
 try{c=context();d=(await prepareMtgDeck(args,c.x)).draft;S.state=blank();S.catalog=c.x.S.catalog;S.ui.build={seed:d.commander,format:d.format,results:{[d.format]:[d]},openTier:0,avail:()=>0,msg:d.note};const before=JSON.stringify(S.state),html=buildSheet();assert.match(html,/100\/100 cards/);assert.match(html,/Legality checked/);assert.match(html,/Whole-deck estimate: \$41\.10/);assert.match(html,/data-act="tierSave"/);assert.match(html,/data-act="tierCopy"/);assert.match(html,/data-name="Krark-Clan Ironworks"/);assert.match(html,/Need 36/);assert.doesNotMatch(html,/data-change="buildCustom"|data-act="buildRandom"|data-act="buildFormat"/);assert.equal(JSON.stringify(S.state),before);d.legalChecked=false;d.issues=[{kind:'color',text:'Unverified identity'}];d.warnings=['Unverified identity'];assert.match(buildSheet(),/Needs review/);assert.doesNotMatch(buildSheet(),/>Legal<|>Legality checked</);}finally{S.state=previous.state;S.catalog=previous.catalog;S.ui.build=previous.build;}
 console.log('PASS: existing full-list renderer preserves card, Save and Copy actions, shows actual budget/legality/ownership, and cannot silently rebuild or save.');
+// Keep the popup anchored to the full responsive action row, including when
+// the summary wraps. Actual open/reopen/focus/hit testing runs in hosted QA.
+const tierCss=readFileSync(new URL('./style.css',import.meta.url),'utf8');
+assert.match(tierCss,/\.tier-actions\s*\{[^}]*position:\s*relative/);
+assert.match(tierCss,/\.tier-more\s*\{\s*position:\s*static/);
+assert.match(tierCss,/\.tier-more:not\(\[open\]\)\s*>\s*\.tier-more-menu\s*\{\s*display:\s*none/);
+assert.match(tierCss,/\.tier-more-menu\s*\{[^}]*width:\s*min\(280px,\s*100%\);\s*min-width:\s*0/);
+assert.doesNotMatch(tierCss,/\.tier-more-menu\s*\{[^}]*min-width:\s*(?:[1-9]|min\()/);
+console.log('PASS: tier More menu is constrained to the action row; closed actions expose no layout targets. Hosted coverage still checks open-menu geometry and actions.');
 let jsonRelease,jsonStarted,current=true,lateCalls=0;const jsonSeen=new Promise(r=>jsonStarted=r);
 const lateJson=runAskLoop({game:'mtg',items:[],current:()=>current,tools:{build_deck:()=>{lateCalls++;return {terminal:true};}},fetcher:async()=>({ok:true,json:async()=>{jsonStarted();return new Promise(r=>jsonRelease=r);}})});await jsonSeen;current=false;jsonRelease({calls:[functionCall('build_deck',args)]});assert.equal(await lateJson,null);assert.equal(lateCalls,0);
 console.log('PASS: a response whose JSON arrives after Close/New never starts an old tool.');

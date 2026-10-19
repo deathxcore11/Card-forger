@@ -20,6 +20,17 @@ async function readyCatalogues(page){
  const state=await page.evaluate(()=>{const S=window.__uiTestState,g=S.state.settings.game;return {shared:S.ui.sets.error,active:(g==='mtg'?S.ui.sets:window.__uiTestTcg.ui(g).sets).error};});assert.deepEqual(state,{shared:'',active:''},'Both real catalogue loads completed without a provider/schema error');
 }
 async function readyIndex(page){await readyCatalogues(page);await page.waitForFunction(()=>window.__uiTestState.ui.view==='sets');await page.locator('.set-year-section .set-row').first().waitFor();}
+async function readySymbolIndex(page){
+ await readyIndex(page);
+ // The symbol-less synthetic release is intentionally unclassified, not a
+ // released main booster. Exercise the real All sets control before checking
+ // every fallback; do not promote invented fixture metadata into production.
+ assert.equal(await page.locator('.set-row[data-id="synthetic-missing"]').count(),0,'Unknown synthetic release is not a default main booster');
+ const all=page.locator('[data-act="tSetsFamily"][data-value="all"]');await all.click();
+ await page.locator('.set-row[data-id="synthetic-missing"]').waitFor();
+ assert.equal(await all.getAttribute('aria-pressed'),'true','Symbol coverage explicitly browses All sets');
+ assert.equal(await page.locator('.set-row').count(),SETS.ptcg.length,'All source fixtures remain available for symbol coverage');
+}
 async function readySet(page,game,id=EXPECTED[game].set){await readyCatalogues(page);await page.waitForFunction(({game,id})=>{const S=window.__uiTestState,s=game==='mtg'?S.ui.set:window.__uiTestTcg.ui(game).set;return S.state.settings.game===game&&S.ui.view==='set'&&(game==='mtg'?s.code===id:s.id===id)&&s.loaded&&!s.busy&&!s.detailsBusy&&s.cards.length>0;},{game,id});assert.equal(await page.evaluate(g=>(g==='mtg'?window.__uiTestState.ui.set:window.__uiTestTcg.ui(g).set).error,game),'','Exact set finished loading without an error');await tiles(page).first().waitFor();}
 async function openSet(page,game,id=EXPECTED[game].set){await navigate(page,'#set/'+encodeURIComponent(id));await readySet(page,game,id);}
 async function cardTile(page,game,id,setId=EXPECTED[game].set){
@@ -154,7 +165,7 @@ async function knownPrice(app,game){
 }
 
 async function pokemonSymbols(app){
- const {page}=app;await readyIndex(page);const before=await inventorySnapshot(page),normal=page.locator('.set-row[data-id="sv08"]'),broken=page.locator('.set-row[data-id="sv03"]'),missing=page.locator('.set-row[data-id="synthetic-missing"]'),symbolLess=page.locator('.set-row[data-id="base1"]');
+ const {page}=app;await readySymbolIndex(page);const before=await inventorySnapshot(page),normal=page.locator('.set-row[data-id="sv08"]'),broken=page.locator('.set-row[data-id="sv03"]'),missing=page.locator('.set-row[data-id="synthetic-missing"]'),symbolLess=page.locator('.set-row[data-id="base1"]');
  for(const row of [normal,broken,missing,symbolLess]){await row.scrollIntoViewIfNeeded();assert.equal(await row.locator('.set-media-pokemon-symbol').count(),1);assert.equal(await row.locator('.set-row-main .pks').count(),0,'No duplicate tiny title symbol');}
  const img=normal.locator('img.set-catalogue-symbol');await page.waitForFunction(()=>{const n=document.querySelector('[data-set-symbol-id="sv08"] img.set-catalogue-symbol');return n?.complete&&n.naturalWidth>0&&!n.parentElement.classList.contains('no-art');});assert.equal(await img.getAttribute('src'),'img/pks/s/surging-sparks.png');
  const normalStyle=await img.evaluate(n=>({filter:getComputedStyle(n).filter,fit:getComputedStyle(n).objectFit,opacity:getComputedStyle(n).opacity}));assert.match(normalStyle.filter,/grayscale\(1\).*invert\(1\)/);assert.equal(normalStyle.fit,'contain');assert.equal(normalStyle.opacity,'1');
@@ -170,7 +181,7 @@ async function pokemonSymbols(app){
  await capture(page,'card-polish-pokemon-colored-set-logo');assert.equal(await inventorySnapshot(page),before);report.push('Pokemon catalogue uses a single uniform source-backed white symbol; exact-provider and missing-metadata fallback chains end in readable codes, Base Set creates no expansion-symbol image, and the in-set colored logo is unchanged.');
 }
 async function pokemonAllSymbolsFail(app){
- const {page}=app;await readyIndex(page);for(const id of ['sv08','sv03','synthetic-missing','base1']){const row=page.locator('.set-row[data-id="'+id+'"]');await row.scrollIntoViewIfNeeded();await failedSymbol(page,id);}
+ const {page}=app;await readySymbolIndex(page);for(const id of ['sv08','sv03','synthetic-missing','base1']){const row=page.locator('.set-row[data-id="'+id+'"]');await row.scrollIntoViewIfNeeded();await failedSymbol(page,id);}
  const before=await Promise.all(Object.keys(SYMBOLS).map(key=>symbolAttempts(app,key)));assert.equal(before.flat().filter(r=>r.connected).reduce((n,r)=>n+r.events.length,0),8,'The three CURRENT images exhaust exactly eight sources and disable handlers');assert.equal(await page.locator('[data-set-symbol-id="base1"] img').count(),0);await noOverflow(page,'#content','all symbols failed');await capture(page,'card-polish-pokemon-all-symbols-failed');assert.deepEqual(symbolIdentity(await Promise.all(Object.keys(SYMBOLS).map(key=>symbolAttempts(app,key)))),symbolIdentity(before),'Terminal images cannot restart or remount during layout');
 }
 async function magicCatalogue(app){

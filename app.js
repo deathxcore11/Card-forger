@@ -158,9 +158,10 @@ function updateAmbient() {
     } catch {}
   }
   const url = saved[g] || "";
+  document.body.style.setProperty("--ambient-art-image", url ? `url("${url.replace(/"/g, "%22")}")` : "none");
   if (art.dataset.src !== url) {
     art.dataset.src = url;
-    art.style.backgroundImage = url ? `url("${url.replace(/"/g, "%22")}")` : "none";
+    art.style.backgroundImage = "var(--ambient-art-image, none)";
   }
   document.body.classList.toggle("glass", glassOn());
 }

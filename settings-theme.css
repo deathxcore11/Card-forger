@@ -54,6 +54,10 @@
 :root[data-theme="light"] .game-tab:hover {color:var(--text);background:#f8faff;}
 :root[data-theme="light"] .set-media > img[src*="svgs.scryfall.io"],:root[data-theme="light"] .set-media > img[src*="/sets/"][src$=".svg"],:root[data-theme="light"] .set-year-grid .set-media-pokemon-symbol > .set-catalogue-symbol {filter:none;}
 :root[data-theme="light"] body.glass dialog.sheet {background:linear-gradient(180deg,#ffffff24,transparent 180px),rgba(246,249,253,.78);border-color:var(--glass-line);box-shadow:var(--glass-hi),0 -12px 55px #23334d26;}
+/* Reuse the daily artwork inside the modal: opaque content behind a top-layer
+   dialog must not erase its glass. The same 78% light floor preserves contrast. */
+:root[data-theme="light"] body.glass dialog.sheet {isolation:isolate;}
+:root[data-theme="light"] body.glass dialog.sheet::before {content:"";position:absolute;inset:-50px;z-index:-1;pointer-events:none;background-image:linear-gradient(rgba(246,249,253,.78),rgba(246,249,253,.78)),var(--ambient-art-image, none);background-size:cover;background-position:center 30%;filter:blur(42px);}
 :root[data-theme="light"] body.glass dialog.sheet::backdrop {background:rgba(38,50,70,.18);}
 :root[data-theme="light"] body.glass .cs-tabs {background:rgba(250,252,255,.62);border-color:var(--glass-line);}
 :root[data-theme="light"] body.glass .sheet-head:not(.overlay),:root[data-theme="light"] body.glass .sheet-head.overlay.scrolled {background:rgba(250,252,255,.97);border-color:var(--line);}
@@ -100,5 +104,6 @@
 :root[data-theme="light"] .tabletop-dialog {--surface:#17202d;--surface-2:#243144;--panel:#17202d;--line:#5c6d86;--picker-bg:#17202df7;--picker-border:#5c6d86;color-scheme:dark;}
 :root[data-theme="light"] .card-owned-summary {background:var(--surface-2);border-color:var(--line);color:var(--text);}
 @media(prefers-reduced-transparency:reduce) {
+ :root[data-theme="light"] body.glass dialog.sheet::before {display:none;}
  :root[data-theme="light"] body.glass :is(.panel,.kpi,.game-choice,.lot,.meta-row,.print,.cd-text,.price-pill,.advice,.deck-emb,.pair-row,.proven-sum,.settings-card,dialog.sheet,.topbar,.bottom-nav) {background:var(--surface);backdrop-filter:none;}
 }

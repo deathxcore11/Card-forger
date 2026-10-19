@@ -57,7 +57,9 @@ try{
   await panel().locator(`[data-act="amView"][data-mode="${mode}"]`).click();
   assert.equal(await panel().locator('.am-card-browser.view-'+mode).count(),1);
   assert.equal(await panel().locator('[data-act="deckQty"],[data-deck]').count(),0,'shared opponent rows are genuinely read-only');
-  await panel().locator('[data-act="amCard"]').first().click();await page.locator('#sheetBody [data-act="sheetHistoryBack"]').waitFor();
+  const visibleCard=panel().locator('[data-act="amCard"]:visible').first();
+  assert(await visibleCard.count(),mode+' has a visible card drill-in action');
+  await visibleCard.click();await page.locator('#sheetBody [data-act="sheetHistoryBack"]').waitFor();
   await page.locator('#sheetBody [data-act="sheetHistoryBack"]').first().click();
   await page.locator('#matchup-panel-decks:not([hidden])').waitFor();assert.equal(await panel().locator('.am-card-browser.view-'+mode).count(),1,'Back preserves view mode');
  }

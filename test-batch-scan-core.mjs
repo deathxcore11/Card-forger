@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {captureEntry,resolvedEntry,actualFinishes,resolveScanFinish,loadBatch,saveBatch,batchStorageHealthy,batchCounts,uniquePrintings} from './scan-batch.js';
-import {textVerifiedMatch,finishesFor,scanConfirmation,scanView,registerScanner} from './scancam.js';
+import {textVerifiedMatch,finishesFor,scanConfirmation,scanView,registerScanner,batchTray} from './scancam.js';
 import {signalEvidence,readScanSignals} from './scan-signals.js';
 import {savePrefs,loadPrefs,itemKey} from './scansession.js';
 import {S,blank} from './store.js';
@@ -33,6 +33,13 @@ assert.equal(uniquePrintings([{id:'y',print:'LOB-EN005|Rare'},{id:'y',print:'LOB
 assert.notEqual(itemKey({id:'y',print:'LOB-EN005|Rare',finish:'unlimited'}),itemKey({id:'y',print:'LOB-EN005|Ultra Rare',finish:'unlimited'}));
 savePrefs('ptcg',{finish:'reverse-holofoil'});assert.equal(loadPrefs('ptcg').finishConfirmed,true);
 saveBatch([resolved]);assert.equal(loadBatch()[0].shot,entry.shot);assert.deepEqual(batchCounts(loadBatch()),{ready:0,review:1,reading:0});
+for(const mode of ['live','photo']){
+ const tray=batchTray({mode,camOn:false});
+ assert.match(tray,/data-batch-count="1"/,'Scanner capture metadata does not opt the container into number animation');
+ assert.doesNotMatch(tray,/\sdata-count=/);
+ assert.match(tray,/data-act="scanBatchReview"/,'Review remains available with the camera off');
+ assert.match(tray,mode==='live'?/class="scan-pile"/:/class="scan-batch-thumb review"/);
+}
 S.state=blank();S.state.settings.game='mtg';S.ui.view='scan';S.ui.scan={camOn:true};
 let saved=[],fail=false;const ctx={A:{},C:{},render(){},toast(){},game:()=>S.state.settings.game,setOf:(g,c)=>c.card.set?.id||'',numberOf:(g,c)=>c.card.set?.number||'',priceOf:()=>null,async addMany(g,rows){if(fail)throw Error('storage failure');saved.push({g,rows});}};
 registerScanner(ctx);ctx.A.scanBatchReview({dataset:{id:resolved.id}});

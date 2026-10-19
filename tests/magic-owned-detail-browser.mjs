@@ -1,14 +1,14 @@
 // Hosted actual-app identity regression. Public printing identifiers plus
 // synthetic prices/ownership/art URLs; no real user data or external requests.
 import assert from 'node:assert/strict';
-import {startServer,openApp,closeSheet,navigate,capture,saveReport} from './detail-rules-fixtures.mjs';
+import {startServer,openApp,closeSheet,navigate,capture,saveReport,CARDS} from './detail-rules-fixtures.mjs';
 import {magicOwnedDetail} from '../magic-owned-detail.js';
 import {blank} from '../store.js';
 const NAME='Chishiro, the Shattered Blade',ORACLE='c98a4af3-3e58-4927-9a60-d2664cf0b139';
 const card=(id,number,finishes,prices,name=NAME,set='nec')=>({id,name,oracle_id:name===NAME?ORACLE:'fixture-other-oracle',set,set_name:'Neon Dynasty Commander',collector_number:number,lang:'en',finishes,prices,full:true,layout:'normal',rarity:'mythic',type_line:'Legendary Creature — Snake Samurai',oracle_text:'A deterministic identity fixture.',mana_cost:'{2}{R}{G}',cmc:4,colors:['R','G'],color_identity:['R','G'],power:'4',toughness:'4',legalities:{commander:'legal'},released_at:'2022-02-18',image_uris:Object.fromEntries(['normal','small','art_crop'].map(k=>[k,`https://detail-fixtures.invalid/owned-${id}.svg`]))});
 const etched=card('3305c70f-188a-4c01-b605-d583ded84e18','77',['etched'],{usd_etched:'.44'}),extended=card('eaacd338-1040-4d61-977e-7c97d0f26724','73',['nonfoil'],{usd:'2.25'}),regular=card('bffa36ac-137d-481c-b1b7-76a88ef15d54','1',['nonfoil','foil'],{usd:'.92',usd_foil:'3.15'}),other=card('owned-other-foil','456',['foil'],{usd_foil:'8.25'},'Different printed family','tst');
 etched.frame_effects=['legendary','inverted','etched'];
-const cards=[etched,extended,regular,other],lot=(id,c,finish,more={})=>({id,name:c.name,printingId:c.id,printingVerified:true,set:c.set,collectorNumber:c.collector_number,finish,condition:'Near Mint',language:'en',qty:1,location:'Exact fixture',addedAt:'2026-10-17T12:00:00Z',...more});
+const cards=[etched,extended,regular,other],batchFixtures=[...cards,...CARDS.mtg],batchReads=[],lot=(id,c,finish,more={})=>({id,name:c.name,printingId:c.id,printingVerified:true,set:c.set,collectorNumber:c.collector_number,finish,condition:'Near Mint',language:'en',qty:1,location:'Exact fixture',addedAt:'2026-10-17T12:00:00Z',...more});
 const lots=[lot('owned-77',etched,'etched'),lot('owned-77-worn',etched,'etched',{condition:'Damaged',manualValue:.2,manualValueCondition:'Damaged'}),lot('owned-73',extended,'nonfoil'),lot('owned-1-foil',regular,'foil'),lot('owned-1-regular',regular,'nonfoil'),lot('owned-other',other,'foil'),{id:'owned-legacy',name:NAME,qty:1,finish:'foil',condition:'Near Mint',printingVerified:false,location:'Exact fixture'}];
 const state=blank();state.collection=lots;state.printings=Object.fromEntries(cards.map(c=>[c.id,c]));
 for(const entry of lots.slice(0,-1)){const resolved=magicOwnedDetail(state,entry.id);assert.equal(resolved.status,'ready');assert.equal(resolved.card.id,entry.printingId);assert.equal(resolved.finish,entry.finish);}
@@ -33,7 +33,17 @@ try{
   app=await openApp(browser,server.base,{game:'mtg',width,height:1000,reducedMotion:'reduce'});const {page,context}=app;
   let held=null;
   await context.route('https://api.scryfall.com/**',async route=>{
-   const u=new URL(route.request().url());if(route.request().method()!=='GET')return route.fallback();
+   const req=route.request(),u=new URL(req.url());
+   // This test isolates exact single-printing reads from background batch
+   // enrichment. Known fixture identities receive an explicit batch outage;
+   // unknown identifiers still reach the shared deny-all guard.
+   if(req.method()==='POST'&&u.pathname==='/cards/collection'&&!u.search){
+    let body;try{body=req.postDataJSON();}catch{}
+    const ids=body?.identifiers,known=x=>x&&batchFixtures.some(c=>Object.keys(x).length===1&&(x.id===c.id||x.name===c.name)||Object.keys(x).length===2&&x.set===c.set&&String(x.collector_number)===String(c.collector_number));
+    batchReads.push({width,body,known:Array.isArray(ids)&&ids.length>0&&ids.length<=75&&ids.every(known)});
+    if(batchReads.at(-1).known)return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({object:'error',details:'Synthetic background batch unavailable; exact printing endpoint remains available.'})});
+   }
+   if(req.method()!=='GET')return route.fallback();
    const exact=cards.find(c=>u.pathname==='/cards/'+c.id);if(exact){if(held&&exact.id===etched.id){const h=held;held=null;h.started();await h.wait;}return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(exact)});}
    if(u.pathname==='/cards/search'&&(u.searchParams.get('q')||'').includes(ORACLE))return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({data:cards.filter(c=>c.oracle_id===ORACLE),has_more:false,total_cards:3})});
    return route.fallback();
@@ -73,5 +83,5 @@ try{
   await page.waitForFunction(()=>window.__uiTestState.ui.sheetCtx?.print?.collector_number==='1');assert.equal((await shown(page)).finish,'foil');await closeSheet(page);
   app.health();checks.push({width,collectionSixLots:true,exactArtFinishSetAndPrice:true,zoom:true,copyDetailsCrossPrinting:true,longPressCondition:true,buyReturn:true,binderBack:true,value:true,legacyFailClosed:true,missingConflictingCacheArtAndPrice:true,lateFetchIsolated:true,readOnlyStatePreserved:true});
  }catch(error){if(app)await capture(app.page,`magic-owned-detail-${width}-failure`).catch(()=>{});throw error;}finally{if(app)await app.context.close();}}
- await saveReport('magic-owned-detail-browser',checks);
-}catch(error){await saveReport('magic-owned-detail-browser',checks,error);throw error;}finally{await browser.close();await server.close();}
+ checks.push({batchReads});await saveReport('magic-owned-detail-browser',checks);
+}catch(error){checks.push({batchReads});await saveReport('magic-owned-detail-browser',checks,error);throw error;}finally{await browser.close();await server.close();}

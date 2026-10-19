@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {startServer,openApp,navigate,closeSheet,capture,saveReport,noOverflow} from './detail-rules-fixtures.mjs';
 import {ASK_BUILD_CARDS,ASK_BUILD_ARGS,ASK_TCG_ARGS,ASK_BUILD_PROMPT,KCI,SAI} from './ai-deck-build-fixtures.mjs';
 import {prepareMtgDeck} from '../ai-deck-builder.js';
-import {cardKey,validateDeck} from '../core.js';
+import {cardKey,validateDeck,exportDeckText} from '../core.js';
 const fixtureCatalog=Object.fromEntries(ASK_BUILD_CARDS.map(c=>[cardKey(c.name),c]));
 const fixture=await prepareMtgDeck(ASK_BUILD_ARGS,{meta:n=>fixtureCatalog[cardKey(n)],resolve:async n=>fixtureCatalog[cardKey(n)],inv:()=>({owned:0,available:0}),api:async p=>({data:new URL(p,'https://fixture.invalid').searchParams.get('q').includes('is:commander')?[SAI]:ASK_BUILD_CARDS})});
 assert.equal(fixture.draft.total,100);assert.equal(fixture.draft.totalEstimate,41.1);assert.deepEqual(validateDeck(fixture.draft,fixtureCatalog,[]).issues,[]);
@@ -19,11 +19,37 @@ async function installFixture(app,args){let asks=0;const {context,page}=app;
  return ()=>asks;
 }
 async function ask(page,text){await page.locator('[data-act="askOpen"]').click();await page.locator('.ask-dialog .ask-input').fill(text);await page.locator('.ask-dialog .ask-send').click();await page.locator('.ask-dialog [data-ask-show]').waitFor();}
+async function verifyDraftMenu(page,width,draft){
+ const disclosure=page.locator('#sheet .tier-more'),summary=disclosure.locator('summary'),actions=disclosure.locator('[role="menuitem"]');
+ assert.equal(await disclosure.getAttribute('open'),null);
+ assert.deepEqual(await actions.evaluateAll(nodes=>nodes.map(n=>n.getClientRects().length)),[0,0,0],'closed More actions expose no layout or pointer targets');
+ await summary.scrollIntoViewIfNeeded();await summary.focus();await summary.press('Enter');
+ assert.notEqual(await disclosure.getAttribute('open'),null);
+ await noOverflow(page,'#sheetBody',`AI open More menu ${width}`,true);
+ for(let i=0;i<3;i++){
+  const action=actions.nth(i);await action.scrollIntoViewIfNeeded();
+  assert(await action.evaluate(n=>{const r=n.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return r.width>0&&r.height>=44&&(hit===n||n.contains(hit));}),`More action ${i} is an unobscured touch target at ${width}`);
+ }
+ await summary.focus();await summary.press('Tab');assert(await actions.first().evaluate(n=>n===document.activeElement),'keyboard reaches the first More action');
+ await capture(page,`ai-deck-build-${width}-more-open`);
+ await summary.focus();await summary.press('Enter');assert.equal(await disclosure.getAttribute('open'),null);
+ assert.deepEqual(await actions.evaluateAll(nodes=>nodes.map(n=>n.getClientRects().length)),[0,0,0]);
+ await noOverflow(page,'#sheetBody',`AI closed More menu ${width}`,true);
+ await summary.press('Space');assert.notEqual(await disclosure.getAttribute('open'),null);
+ await noOverflow(page,'#sheetBody',`AI reopened More menu ${width}`,true);
+ // The actual Copy handler runs against the exact prepared draft. Only the
+ // platform clipboard is replaced so the fixture never accesses a real clipboard.
+ await page.evaluate(()=>{window.__askCopied=null;Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__askCopied=text;}}});});
+ await disclosure.locator('[data-act="tierCopy"]').click();await page.waitForFunction(()=>typeof window.__askCopied==='string');
+ assert.equal(await page.evaluate(()=>window.__askCopied),exportDeckText(draft));
+ await summary.focus();await summary.press('Enter');assert.equal(await disclosure.getAttribute('open'),null);
+}
 try{
  for(const width of [320,390,1440]){let app;try{app=await openApp(browser,server.base,{game:'mtg',width,height:1000,hash:'#search',reducedMotion:'reduce'});const {page}=app,asks=await installFixture(app,ASK_BUILD_ARGS),before=await protectedState(page);
   await ask(page,ASK_BUILD_PROMPT);assert.equal(asks(),1);assert.match(await page.locator('.ask-log').innerText(),/100\/100|100 cards/);assert.equal(await protectedState(page),before);await capture(page,`ai-deck-build-${width}-answer`);
   await page.getByRole('button',{name:/Review the deck draft/}).click();await page.waitForFunction(()=>window.__uiTestState.ui.build.results.Commander?.[0]?.preparedByAsk&&document.querySelector('#sheet').open);
   const draft=await page.evaluate(()=>window.__uiTestState.ui.build.results.Commander[0]);assert.equal(draft.total,100);assert.equal(draft.commander,SAI.name);assert.equal(draft.cards.find(c=>c.name===KCI.name).qty,1);assert.equal(draft.cards.find(c=>c.name==='Island').qty,36);assert.equal(draft.withinBudget,true);assert.equal(draft.totalEstimate,41.1);assert.match(await page.locator('#sheetBody').innerText(),/Legality checked/);assert.equal(await page.locator('#sheet [data-change="buildCustom"]').count(),0);assert.equal(await protectedState(page),before);await noOverflow(page,'#sheetBody',`AI exact draft ${width}`,true);await capture(page,`ai-deck-build-${width}-preview`);
+  await verifyDraftMenu(page,width,draft);assert.equal(await protectedState(page),before);
   await page.locator('#sheet .lot-name[data-name="Krark-Clan Ironworks"]').click();await page.waitForFunction(()=>window.__uiTestState.ui.sheetCtx?.name==='Krark-Clan Ironworks');await page.locator('#sheet [data-history-back]').click();await page.waitForFunction(()=>window.__uiTestState.ui.sheetCtx?.type==='build');assert.deepEqual(await page.evaluate(()=>window.__uiTestState.ui.build.results.Commander[0].cards),draft.cards);assert.equal(await protectedState(page),before);
   const count=await page.evaluate(()=>window.__uiTestState.state.decks.length);page.on('dialog',d=>d.accept());await page.locator('#sheet [data-act="tierSave"]').click();await page.waitForFunction(n=>window.__uiTestState.state.decks.length===n+1,count);const saved=await page.evaluate(()=>window.__uiTestState.state.decks.at(-1));assert.equal(saved.commander,SAI.name);assert.deepEqual(saved.cards,draft.cards.map(({name,qty})=>({name,qty})));assert.equal(asks(),1);app.health();checks.push({width,oneMockedModelCall:true,exact100:true,legalCommanderAndKci:true,allLandsPriced:true,existingCardAndBack:true,noAutosave:true,explicitSaveExact:true,noRebuild:true});
  }catch(error){if(app)await capture(app.page,`ai-deck-build-${width}-failure`).catch(()=>{});throw error;}finally{await app?.context.close();}}

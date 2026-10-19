@@ -107,7 +107,16 @@ async function releaseFamilies(app){
  await family('companion');assert.deepEqual(await ids(),['frc']);await search.fill('');await frame(page);assert.deepEqual(new Set(await ids()),new Set(['trc','frc','mbc']),"Commander-name draft innovation stays with the user's companion family");
  await family('all');assert.equal((await ids()).length,5,'Choosing All never silently clears explicit upcoming/year filters');await reset();await family('all');assert.equal((await ids()).length,SETS.mtg.length,'Reset then All includes future, unknown-date and promo rows');
  await select(page,'[data-change="setsSort"]','name');assert.equal(await page.locator('.set-year-section').count(),0,'Global alphabetical sort is not regrouped by year');
- for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'#content','Set filter controls '+width);const buttons=page.locator('.set-browser-quick button');assert.equal(await buttons.count(),4);for(const button of await buttons.all())assert(await button.isVisible());await capture(page,'sets-family-controls-'+width);}
+ for(const width of [320,390,768,1440]){
+  await page.setViewportSize({width,height:1000});await noOverflow(page,'#content','Set filter controls '+width);const rail=page.locator('.set-browser-quick'),buttons=rail.locator('button');assert.equal(await buttons.count(),4);
+  for(const button of await buttons.all()){
+   assert(await button.isVisible());const label=await button.evaluate(n=>{const range=document.createRange();range.selectNodeContents(n);const style=getComputedStyle(n);return {text:n.textContent,lines:range.getClientRects().length,whiteSpace:style.whiteSpace,overflowWrap:style.overflowWrap,client:n.clientWidth,scroll:n.scrollWidth};});
+   assert.equal(label.whiteSpace,'nowrap',label.text+' stays on one line at '+width);assert.equal(label.overflowWrap,'normal');assert.equal(label.lines,1,label.text+' cannot split midword');assert(label.scroll<=label.client+1,label.text+' is not clipped inside its button');
+  }
+  const bounds=await rail.evaluate(n=>({client:n.clientWidth,scroll:n.scrollWidth,overflow:getComputedStyle(n).overflowX}));assert.equal(bounds.overflow,'auto','Narrow family controls retain native horizontal scrolling');
+  if(bounds.scroll>bounds.client+1){await buttons.last().focus();await frame(page);assert(await rail.evaluate(n=>n.scrollLeft>0),'Keyboard focus reaches the last preset through the narrow rail');await buttons.first().focus();await frame(page);}
+  await noOverflow(page,'#content','Nonwrapping family rail '+width);await capture(page,'sets-family-controls-'+width);
+ }
  assert.equal(await inventorySnapshot(page),before,'Filtering, sorting and resizing never changes collection state');report.push('Exact TRK/FRA/TRC/FRC/MBC user classification, default released main view, global search, explicit filter preservation, All completeness and responsive controls.');
 }
 async function filterCards(app,game){
