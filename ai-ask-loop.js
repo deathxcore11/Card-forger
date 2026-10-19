@@ -1,4 +1,4 @@
-import {readBuildContract,validateBuildProposal,lockBuildContract,proposalFeedback} from './ai-build-contract.js';
+import {readBuildContract,applyUserBuildIntent,validateBuildProposal,lockBuildContract,proposalFeedback} from './ai-build-contract.js';
 import {isDeckBuildRequest} from './ai-deck-goal.js';
 // Shared, bounded orchestration. Repeated calls never spend another lookup and a
 // completed builder draft is returned immediately rather than repeatedly planned.
@@ -75,6 +75,7 @@ export async function runAskLoop({game,items,tools,fetcher=fetch,signal,current=
    let handshake;
    if(call.name==='build_deck'){
     args.game??=game;
+    if(!acceptedBuilds)args=applyUserBuildIntent(args,contract);
     buildAttempts++;
     if(buildAttempts>ASK_LIMITS.buildProposals)return {call,out:{terminal:true,note:'The bounded correction limit was reached. Review the last verified draft; nothing was saved.'}};
     // A model-chosen format is an assumption. The app offers actual formats

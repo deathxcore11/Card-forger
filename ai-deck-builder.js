@@ -61,7 +61,10 @@ export async function prepareMtgDeck(args,x) {
  if(f.commander&&lead){await verifyLeader(lead,f,x.api);if(!canLead(lead,f)||!isLegal(lead,f))return {requiresChoice:true,note:`${lead.name} cannot be used as a verified ${f.name} commander. Choose another commander.`};}
  if(f.commander&&seed&&lead&&!fitsColors(seed,lead.color_identity||[]))return {requiresChoice:true,note:`${seed.name} is outside ${lead.name}'s color identity. Choose a commander that can include it.`};
  const colorWords={white:'w',blue:'u',black:'b',red:'r',green:'g'},cs=Object.keys(colorWords).filter(k=>new RegExp('\\b'+k+'\\b','i').test(style)).map(k=>colorWords[k]).join('');
- const theme=themeQuery(seed,style),fq=f.legality?'f:'+f.legality:'game:paper';
+ // Subjective playstyle words are preferences, not literal card-text filters.
+ // Exact seed names and actual theme/mechanic words still use their own paths.
+ const discoveryStyle=style.replace(/\bbeginner[- ]friendly\b|\beasy to play\b|\b(?:aggressive|aggro|beginner|beginners|easy|friendly)\b/gi,' ').trim();
+ const theme=themeQuery(seed,discoveryStyle),fq=f.legality?'f:'+f.legality:'game:paper';
  if(!seed||f.commander&&!lead){
   const leadQuery=f.commander?(f.id==='paupercommander'?'is:paupercommander':f.commander==='planeswalker'?'t:planeswalker':'is:commander'):'-t:land';
   const neededColors=[...new Set([seed,...requiredCards].filter(Boolean).flatMap(c=>c.color_identity || []))],identity=requestedColors.length?`id=${allowedColors.join('').toLowerCase()||'c'}`:cs?`id=${cs}`:neededColors.length?`id>=${neededColors.join('').toLowerCase()}`:'';

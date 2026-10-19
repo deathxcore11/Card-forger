@@ -20,6 +20,7 @@ async function setup(app){let calls=0;const payloads=[];
   if(route.request().method()==='GET')return route.fulfill({json:{available:true}});
   calls++;const body=route.request().postDataJSON(),request=body.items.filter(i=>i.role==='user').at(-1)?.content||'';payloads.push(body);
   const args={...baseArgs,budget:/\$50|no infinite|more interactive/i.test(request)?50:0};
+  if(/can you make.*goblin Commander/i.test(request))Object.assign(args,{style:'aggressive',format:'',seed:'Goblin',commander:'',required_cards:['Goblin'],budget:0,avoid_infinite:false});
   if(/beginner|Yu-Gi-Oh/i.test(request))Object.assign(args,{game:'ygo',style:'fun beginner Blue-Eyes',goal:'fun',budget:25,format:'Advanced (TCG)',seed:'Blue-Eyes White Dragon',colors:[]});
   if(/Charizard/i.test(request))Object.assign(args,{game:'ptcg',style:'Fire',goal:'theme',budget:0,format:'Standard',seed:'Charizard ex',required_cards:['Charizard ex'],colors:[]});
   return route.fulfill({json:{calls:[{type:'function_call',call_id:'fixture-'+calls,name:'build_deck',arguments:JSON.stringify(args)}]}});

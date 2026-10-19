@@ -20,8 +20,8 @@ The released validator accepted a model-supplied avoid_infinite=true without req
 
 1. Deterministic/unit: production contract, loop, tools, builders, renderer and explicit save callbacks; synthetic catalogue/model responses. Local focused checks pass; complete suite and exact-commit hosted jobs are tracked separately.
 2. Actual app with mocked dependencies: hosted AI recovery and YGO printing suites capture screenshots and geometry reports. These do not prove real model interpretation or real catalogue availability.
-3. Real configured services: not yet executed on changed candidate. Preview has been reported unconfigured for AI; production availability is not candidate validation. No production secrets were copied, permissions changed, or paid model calls made by these tests.
-4. Not executed/blocked: genuine provider conversations and actual-card semantic/coherence checks until an authorized real-provider test route is available. Do not call the candidate ready from mock tests alone.
+3. Real configured services: Randall approved bounded paid tests and configured a new key directly in the isolated preview; no key was read by the editor. The first real Goblin UI conversation reproduced a theme clarification. A separate real route call captured aggressive style plus a bare Goblin seed/requirement, rather than the requested tribe. This exact response is now a deterministic regression. All 30 hosted checks passed before these real-service discoveries, but that did not establish model interpretation.
+4. Follow-up repair under validation: preserve trusted player fields/themes before the first build; treat only demonstrably generic Magic requests as automatic card selection, keeping model-picked identities optional. Unknown words, quoted names and named-card follow-ups preserve exact requirements. AI catalogue discovery strips subjective adjectives without changing exact-name resolution or the manual builder. New application bytes require hosted and real-service rechecks; not ready merely because earlier mocks passed.
 
 ## Release / rollback
 

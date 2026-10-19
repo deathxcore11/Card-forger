@@ -10,6 +10,29 @@ const COLORS={white:'W',blue:'U',black:'B',red:'R',green:'G',colorless:'C'};
 const THEMES=/\b(?:dragons?|goblins?|zombies?|elves|elf|slivers?|artifacts?|tokens?|lifegain|landfall|graveyard|spellslinger|vampires?|angels?|dinosaurs?|merfolk)\b/gi;
 const themeKey=s=>s.toLowerCase().replace(/elves|elf/,'elf').replace(/s$/,'');
 const violations = (code,field,message) => ({code,field,message});
+// Only an entirely generic request authorizes automatic card selection. Unknown
+// words, quoted names and card directives keep exact-name handling intact.
+const GENERIC_BUILD_WORDS=new Set('can could would will you please build make create me us a an the deck decks using with that is its it s i want good easy to play fun casual beginner beginners friendly aggressive aggro mono white blue black red green colorless colourless standard modern pioneer commander edh magic mtg gathering themed theme tribal kindred for under below at most up dollars dollar bucks buck usd budget of total whole no spending cap limit unlimited affordable cheap and idk pick choose select random one be'.split(' '));
+const genericBuildLanguage=request=>!/["“”]/.test(request)&&(request.match(/[\p{L}]+/gu)||[]).every(w=>GENERIC_BUILD_WORDS.has(w.toLowerCase())||new RegExp('^(?:'+THEMES.source.replace(/\\b/g,'')+')$','i').test(w));
+const genericBuildRequest=request=>/\b(?:build|make|create)\b[^.!?]*\bdeck\b/i.test(request)&&/\b(?:white|blue|black|red|green|colou?rless)\b/i.test(request)&&genericBuildLanguage(request);
+
+export function applyUserBuildIntent(input,contract={}) {
+ if(!input||typeof input!=='object'||Array.isArray(input))return input;
+ const args={...input};
+ // Copy trusted, retained player selections rather than paying the model to
+ // repeat them. Budget ambiguity and missing-amount choices remain validation.
+ for(const field of ['game','format','goal','seed','commander','budget','budget_basis'])if(contract[field]!==undefined)args[field]=contract[field];
+ if(contract.colors?.length)args.colors=[...contract.colors];
+ if(typeof args.style==='string'&&contract.themes?.length){const missing=contract.themes.filter(t=>!(args.style.match(THEMES)||[]).map(themeKey).includes(t));if(missing.length)args.style=[...missing,args.style].join(' ').slice(0,120);}
+ const explicit=names([contract.seed,contract.commander,...(contract.required_cards||[])]);
+ const bareTheme=n=>typeof n==='string'&&contract.themes?.includes(themeKey(n.trim()))&&!explicit.some(e=>same(e,n))&&!/["“”]/.test(contract.request||'');
+ const automatic=contract.autoSelectSeed===true&&args.game==='mtg';
+ const optional=[];
+ for(const field of ['seed','commander'])if(typeof args[field]==='string'&&args[field]&&(automatic&&!explicit.some(n=>same(n,args[field]))||bareTheme(args[field]))){if(!bareTheme(args[field]))optional.push(args[field]);args[field]='';}
+ if(Array.isArray(args.required_cards))args.required_cards=args.required_cards.filter(n=>{if(explicit.some(e=>same(e,n)))return true;if(automatic||bareTheme(n)){if(!bareTheme(n))optional.push(n);return false;}return true;});
+ if(optional.length)args.candidate_cards=names([...(Array.isArray(args.candidate_cards)?args.candidate_cards:[]),...optional]).slice(0,6);
+ return args;
+}
 
 export function readBuildContract(items=[],retained=null) {
  const latestIndex=items.findLastIndex(x=>x?.type==='message'&&x.role==='user'&&typeof x.content==='string');
@@ -22,6 +45,8 @@ export function readBuildContract(items=[],retained=null) {
  const previous=continuation?(retained||(latestIndex>0?readBuildContract(items.slice(0,latestIndex)):null)):null;
  const prior=previous?.cancelled?null:previous;
  const out={request:request.slice(0,600),required_cards:[],excluded_cards:[],colors:[],themes:[]};
+ if(genericBuildRequest(request))out.autoSelectSeed=true;
+ else if(newBuild||prior?.autoSelectSeed&&!genericBuildLanguage(request)||/["“”]|\b(?:build around|include|must have|must use|stars|featuring|led by)\b/i.test(request))out.autoSelectSeed=false;
  if(/\b(?:affordable|cheap|budget[- ]friendly|low[- ]cost|inexpensive|budget deck|doesn['’]t cost (?:that|too) much)\b/i.test(request))out.costConscious=true;
  if(/\b(?:yu[- ]?gi[- ]?oh!?|ygo)\b/i.test(request))out.game='ygo';
  else if(/\b(?:pok[eé]mon|ptcg)\b/i.test(request))out.game='ptcg';

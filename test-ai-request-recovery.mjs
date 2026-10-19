@@ -1,10 +1,11 @@
 // User-intent and recovery regression: production loop, tools, builder and UI
 // renderer with synthetic catalogue/model responses. No paid provider is used.
 import assert from 'node:assert/strict';
-import {readBuildContract,validateBuildProposal} from './ai-build-contract.js';
+import {readBuildContract,applyUserBuildIntent,validateBuildProposal} from './ai-build-contract.js';
 import {runAskLoop,resumeBuildChoice} from './ai-ask-loop.js';
 import {makeAskTools} from './ai-tools.js';
 import {aiAskRoute} from './ai-ask-route.js';
+import {prepareMtgDeck} from './ai-deck-builder.js';
 import {isDeckBuildRequest} from './ai-deck-goal.js';
 import {cardKey} from './core.js';
 import {ASK_BUILD_ARGS,ASK_BUILD_CARDS,SAI} from './tests/ai-deck-build-fixtures.mjs';
@@ -17,6 +18,31 @@ const context=()=>{
  const x={S:{state:{collection:[],decks:[]},catalog,ui:{}},T:{game:()=> 'mtg'},meta:n=>catalog[cardKey(n)],resolve:async n=>catalog[cardKey(n)],cacheCard:c=>(catalog[cardKey(c.name)]=c),inv:()=>({owned:0,available:0}),api:async p=>({data:new URL(p,'https://fixture.invalid').searchParams.get('q').includes('is:commander')?[SAI]:cards}),openMtgDraft:d=>{opened=d;}};
  return {x,tools:makeAskTools(x),get opened(){return opened;}};
 };
+
+// Real provider arguments captured on the configured review preview, 2026-10-19.
+// Replaying them is deterministic; this test makes no paid provider call.
+const recordedGoblin={game:'mtg',style:'aggressive',budget:0,format:'',seed:'Goblin',commander:'',budget_basis:'total',goal:'strongest',required_cards:['Goblin'],excluded_cards:[],colors:['R'],avoid_infinite:false,candidate_cards:['Goblin Chieftain','Goblin Guide','Goblin Piledriver','Goblin Warchief','Siege-Gang Commander']};
+const recordedPrompt='can you make a red deck using a goblin Commander',recordedContract=readBuildContract([u(recordedPrompt)]);
+const normalizedGoblin=applyUserBuildIntent(recordedGoblin,recordedContract);
+assert.equal(normalizedGoblin.format,'Commander');assert.equal(normalizedGoblin.seed,'');assert.deepEqual(normalizedGoblin.required_cards,[]);assert.match(normalizedGoblin.style,/goblin/);assert.equal(validateBuildProposal(normalizedGoblin,recordedContract).ok,true);
+let replayCalls=0,replayBuilds=0;
+const replay=await runAskLoop({game:'mtg',items:[u(recordedPrompt)],fetcher:async()=>{replayCalls++;return Response.json({calls:[call(recordedGoblin)]});},tools:{build_deck:async p=>{replayBuilds++;assert.deepEqual(p,normalizedGoblin);return {terminal:true,note:'Existing builder reached.'};}}});
+assert.equal(replayCalls,1);assert.equal(replayBuilds,1);assert.match(replay.text,/Existing builder reached/);
+const genericContract=readBuildContract([u('Build me a mono-red deck for $50')]);
+const automatic=applyUserBuildIntent({...recordedGoblin,seed:'Rotated Fixture',required_cards:['Rotated Fixture'],budget:900},genericContract);assert.equal(automatic.seed,'');assert.deepEqual(automatic.required_cards,[]);assert.equal(automatic.budget,50);assert.ok(automatic.candidate_cards.includes('Rotated Fixture'));
+for(const name of ['Goblin','Goblin Guide','Angel of Destiny']){
+ const exact=readBuildContract([u(`Build a red Commander deck; include "${name}"`)]),p=applyUserBuildIntent({...recordedGoblin,seed:name,required_cards:[name]},exact);assert.equal(p.seed,name);assert.ok(p.required_cards.includes(name));
+}
+const unquoted=readBuildContract([u('Build a mono-red deck around Lightning Bolt')]);assert.equal(unquoted.autoSelectSeed,false);assert.equal(applyUserBuildIntent({...recordedGoblin,seed:'Lightning Bolt',required_cards:['Lightning Bolt']},unquoted).seed,'Lightning Bolt');
+const continued=readBuildContract([u('Build me a mono-red deck for $50'),u('idk pick a random one that would be fun and easy to play')]);assert.equal(continued.autoSelectSeed,true);assert.equal(continued.budget,50);assert.deepEqual(applyUserBuildIntent({...recordedGoblin,required_cards:['Rotated Fixture']},continued).required_cards,[]);
+const protectedFollowup=readBuildContract([u('Build me a mono-red deck for $50'),u('Build around Lightning Bolt')]);assert.equal(protectedFollowup.autoSelectSeed,false);
+for(const followup of ['Use Lightning Bolt','Keep Lightning Bolt','With Lightning Bolt','I want Lightning Bolt in it','Make it use Lightning Bolt','稲妻']){const c=readBuildContract([u('Build me a mono-red deck for $50'),u(followup)]);assert.equal(c.autoSelectSeed,false,followup);const p=applyUserBuildIntent({...recordedGoblin,seed:'Lightning Bolt',required_cards:['Lightning Bolt']},c);assert.equal(p.seed,'Lightning Bolt');assert.ok(p.required_cards.includes('Lightning Bolt'));}
+console.log('PASS: captured real Goblin proposal restores the player theme and format in one model round; generic choices cannot invent required identities; quoted and unquoted named cards remain required.');
+for(const [style,wantTribe] of [['mono-red aggressive beginner-friendly easy to play',false],['goblin aggressive',true]]){
+ const queries=[];await prepareMtgDeck({...args,style,format:'Standard',seed:'',commander:'',colors:['R'],required_cards:[]},{api:async p=>{queries.push(new URL(p,'https://fixture.invalid').searchParams.get('q'));return {data:[]};}});
+ assert.ok(queries[0].includes('f:standard'));assert.ok(queries[0].includes('id=r'));assert.doesNotMatch(queries[0],/aggressive|aggro|beginner|friendly|easy|play/);assert.equal(/t:goblin/.test(queries[0]),wantTribe);
+}
+console.log('PASS: actual AI seed discovery searches current format/color legality without literal subjective adjectives; real Goblin mechanics remain in the search.');
 
 for(const prompt of ['can you make a red deck using a goblin Commander','Build me a mono-red deck for $50',"make me a mono red deck it's easy"]){
  const contract=readBuildContract([a('Always avoid infinite combos and use a $25 budget.'),u(prompt)]);
