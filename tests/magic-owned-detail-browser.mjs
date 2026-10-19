@@ -49,7 +49,13 @@ try{
    return route.fallback();
   });
   // openApp already awaits app.ready and active game/account adoption; no pending viewSave is triggered before seeding.
-  await page.evaluate(async({cards,lots})=>{const {validateWorkspace}=await import('/confidence.js');const S=window.__uiTestState;S.state.collection=structuredClone(lots);S.state.printings=Object.fromEntries(cards.map(c=>[c.id,c]));for(const c of cards)S.catalog[c.name.toLowerCase()]=c;S.state.settings.binders=[{id:'exact-owned',game:'mtg',title:'Exact saved copies',rule:'location',value:'Exact fixture'}];S.state=validateWorkspace(S.state);S.ui.q.coll='';S.ui.collFilter='all';dispatchEvent(new Event('cardstashy-rerender'));},{cards,lots});
+  await page.evaluate(async({cards,lots})=>{const {validateWorkspace}=await import('/confidence.js');const S=window.__uiTestState;S.state.collection=structuredClone(lots);S.state.printings=Object.fromEntries(cards.map(c=>[c.id,c]));for(const c of cards)S.catalog[c.name.toLowerCase()]=c;
+   // The shared fixture seeds a recent watch cache for its original cards. These
+   // replacement printing IDs need the same deterministic state, otherwise the
+   // normal eight-second collection watcher attempts an unrelated registration.
+   // Do not allow/mock that POST: the shared deny-all-writes guard remains intact.
+   const watched=JSON.parse(localStorage.getItem('cardstashy-watch-sent-v1')||'{}');for(const c of cards)watched['mtg:'+c.id]=Date.now();localStorage.setItem('cardstashy-watch-sent-v1',JSON.stringify(watched));
+   S.state.settings.binders=[{id:'exact-owned',game:'mtg',title:'Exact saved copies',rule:'location',value:'Exact fixture'}];S.state=validateWorkspace(S.state);S.ui.q.coll='';S.ui.collFilter='all';dispatchEvent(new Event('cardstashy-rerender'));},{cards,lots});
   const before=await protectedState(page);
   for(const entry of lots.slice(0,-1)){await page.locator(`.lot-art[data-entry="${entry.id}"]`).click();await verify(page,entry);await closeSheet(page);}
   await page.locator('.lot-art[data-entry="owned-77"]').click();await verify(page,lots[0]);await capture(page,`magic-owned-detail-${width}-etched`);

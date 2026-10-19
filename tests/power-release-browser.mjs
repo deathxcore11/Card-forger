@@ -127,8 +127,11 @@ try{
   await noOverflow(page,'.score-panel.power','expanded Commander availability '+width);await capture(page,'commander-availability-'+width,'.score-panel.power');
   await gotoDeck(page,unmodeled.id);const header=await page.locator('.deck-hero').innerText(),unmodeledPanel=await page.locator('.score-panel.power').innerText();
   assert.match(header,/100\/100/);assert.match(header,/power unavailable/i);assert.doesNotMatch(header,/Incomplete draft/);assert.match(unmodeledPanel,/Power estimate unavailable/);assert.doesNotMatch(unmodeledPanel,/Finish the deck/);
-  const routePanel=await page.locator('.pw-weak').innerText();assert.match(routePanel,/Important storm \/ recursion route not assessed/);assert.match(routePanel,/Supported-route diagnostic \d+\/100 only, not overall Power/);
-  await noOverflow(page,'.score-panel.power','complete unmodeled Power '+width);await noOverflow(page,'.pw-weak','unmodeled route warning '+width);await capture(page,'public-unmodeled-'+width);await gotoDeck(page,incomplete.id);
+  const routeScope='.pw-weak:has(h3:text-is("What drives the Power estimate"))';assert.equal(await page.locator(routeScope).count(),1,'select the strategic route panel, not the separate structural section');
+  const routePanel=await page.locator(routeScope).innerText();assert.match(routePanel,/Important storm \/ recursion route not assessed/);assert.match(routePanel,/Supported-route diagnostic \d+\/100 only, not overall Power/);
+  await noOverflow(page,'.score-panel.power','complete unmodeled Power '+width);await noOverflow(page,routeScope,'unmodeled route warning '+width);
+  assert.match(await page.locator('.mb-table').innerText(),/Mountain/);await noOverflow(page,'.mb-table','Power mana comparison '+width);await capture(page,'mana-comparison-'+width,'.panel:has(.mb-table)');
+  await capture(page,'public-unmodeled-'+width);await gotoDeck(page,incomplete.id);
  }
  checks.push('Existing Power panel and deck header: 64/100 stays unavailable; complete Commander has explicitly provisional estimate; four responsive widths.');
  checks.push('Optional Commander availability opens in the existing Power panel at all four widths, with independent/mixed support and normal first/+2/+4 casting costs; no automatic score penalty, survival odds or winning-turn forecast.');

@@ -4717,3 +4717,8 @@ body[data-game="ygo"] .ask-launch{--ask-a:#b697ef;--ask-b:#697db5;--ask-c:#dbb26
 .score-panel.power > .pw-plan-context { flex: 1 1 100%; min-width: 0; }
 /* Evidence labels are sentences, not single-line navigation chips. */
 .score-panel.power .pw-chips > .chip { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+/* Keep the existing Power mana comparison readable on small phones. */
+@media (max-width: 420px) {
+  .mb-row { grid-template-columns: 20px minmax(0, 1fr) 3ch 12px 72px 3ch; gap: 4px; }
+  .mb-row > span { min-width: 0; }
+}
