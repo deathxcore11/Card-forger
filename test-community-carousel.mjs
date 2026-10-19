@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {printingNumberMatches,printingRows,printingFacets} from './printing-picker.js';
 import {printingGroups,printingCarouselHTML} from './printing-carousel.js';
 import {showcaseItem,communityPage,showcaseSections,incomingRequestCount} from './community-profile.js';
-const card={game:'ptcg',id:'cel25-23',name:"Professor's Research",set:{id:'cel25',name:'Celebrations',number:'023',total:25},rarity:'Rare',variants:[{key:'normal',label:'Normal',productId:1},{key:'holofoil',label:'Holo',productId:2}]};
+const card={game:'ptcg',id:'fixture-research-23',name:"Professor's Research",set:{id:'cel25',name:'Celebrations',number:'023',total:25},rarity:'Rare',variants:[{key:'normal',label:'Normal',productId:1},{key:'holofoil',label:'Holo',productId:2}]};
 const rows=printingRows('ptcg',[card],{source:card});
 assert.equal(rows.length,2);assert.equal(printingGroups(rows).length,1,'finishes share one artwork slide but retain separate identities');
 for(const q of ['023/025','23/25','023','23'])assert(printingNumberMatches(rows[0],q),q);
@@ -21,7 +21,7 @@ const grouped=showcaseSections([clean,{...clean,key:'binder:z',kind:'binder'}],t
 assert.match(grouped,/aria-label="Binders"/);assert.match(grouped,/aria-label="Decks"/);assert.match(grouped,/data-community-source="deck:x"/);assert.match(grouped,/deck-box/);assert.doesNotMatch(page,/data-community-requests/);
 assert.equal(incomingRequestCount({people:[{relationship:'pending',incoming:true},{relationship:'pending',incoming:false},{relationship:'accepted',incoming:true}]}),1);
 const {miniPrintingMarkup,detailSetProgress}=await import('./card-detail-extras.js');
-const mini=miniPrintingMarkup({game:'ptcg',card,cards:[card]});assert.equal((mini.match(/class="card-printing-mini"/g)||[]).length,1);assert.match(mini,/data-id="cel25-23"/);assert.doesNotMatch(mini,/data-act="tOwn"/);
+const mini=miniPrintingMarkup({game:'ptcg',card,cards:[card]});assert.equal((mini.match(/class="card-printing-mini"/g)||[]).length,1);assert.match(mini,/data-id="fixture-research-23"/);assert.doesNotMatch(mini,/data-act="tOwn"/);
 assert.match(detailSetProgress({key:'ptcg:cel25',owned:9,total:25}),/aria-valuenow="9"/);assert.doesNotMatch(detailSetProgress({key:'ygo:unknown',owned:1,total:null}),/role="progressbar"/);assert.doesNotMatch(detailSetProgress({key:'ygo:unknown',owned:null,total:null}),/0 verified/);
 
 const {deckBoxMarkup,boxAppearance,deckBoxFields}=await import('./deck-box.js');

@@ -82,6 +82,19 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
   // Keep the known physical finish selectable, but fail closed until an exact
   // printing presentation is reviewed. Evidence-backed overrides above still win.
   if(set==='cel25cc')return unknown(key,label);
+  // Publisher artwork establishes these exact layouts, not their physical
+  // light response. Preserve plausible, explicitly labeled approximations.
+  // Pikachu #005 is full-card art, not the ordinary illustration window;
+  // Mew #025 gets a gold-toned approximation, not a recovered material map.
+  if(set==='cel25'){
+   if(face!==0||physicalFinish!=='holofoil')return unknown(key,label);
+   const n=Number(String(c.id).replace(/^cel25-/,''));
+   if(!Number.isInteger(n)||n<1||n>25||c.id!=='cel25-'+n||n===23)return unknown(key,label);
+   const source=`https://assets.pokemon.com/assets/cms2/img/cards/web/CEL25/CEL25_EN_${n}.png`;
+   if([1,2,3,4,10,11,12,13,14,15,17,19,20,21,22].includes(n))return {...preset(key,label,'ptcg-holo',[layer('pk-cel-art','holo')],source),reason:'Simulated illustration-window holo · approximate light response'};
+   const textured=[7,9,24].includes(n),gold=n===25;
+   return {...preset(key,label,'ptcg-full-art',[layer('card',gold?'gold':'rainbow'),...(textured?[layer('card','micro')]:[])],source),coverage:'full',texture:textured?'micro-ridges':'smooth',reason:gold?'Simulated gold-toned finish · approximate coverage and light response':'Simulated full-card finish · approximate coverage and light response'};
+  }
   // Exact full-card illustration shown in the user's Holofoil detail screenshot.
   // The source currently has generated availability; this never creates a foil option.
   if(set==='30th'&&c.id==='30th-154'&&physicalFinish==='holofoil')return preset(key,label,'ptcg-full-art',[layer('card','rainbow')],FINISH_SOURCES.gengar30);
@@ -104,9 +117,9 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
    const gold=/^(sv|me)/i.test(set)&&rarity==='hyperrare';
    return {...preset(key,label,'ptcg-full-art',[layer('card',gold?'gold':'rainbow'),...(textured?[layer('card','micro')]:[])],FINISH_SOURCES.pokemon),coverage:'full',texture:textured?'micro-ridges':'smooth'};
   }
-  const modern=/^(?:swsh|sm|xy|bw|dp|pl|hgss|sv)/i.test(set)||set==='cel25';
+  const modern=/^(?:swsh|sm|xy|bw|dp|pl|hgss|sv)/i.test(set);
   if(modern&&category==='pokemon'){
-   if(physicalFinish==='holofoil')return preset(key,label,'ptcg-holo',[layer(set==='cel25'?'pk-cel-art':/^swsh/i.test(set)?'pk-swsh-art':/^sv/i.test(set)?'pk-sv-art':'pk-standard-art','holo')],FINISH_SOURCES.pokemon);
+   if(physicalFinish==='holofoil')return preset(key,label,'ptcg-holo',[layer(/^swsh/i.test(set)?'pk-swsh-art':/^sv/i.test(set)?'pk-sv-art':'pk-standard-art','holo')],FINISH_SOURCES.pokemon);
    if(physicalFinish==='reverse-holofoil')return preset(key,label,'ptcg-reverse',[layer(/^swsh/i.test(set)?'pk-swsh-surround':/^sv/i.test(set)?'pk-sv-surround':'pk-standard-surround',/^sv/i.test(set)?'tiles':'rainbow')],FINISH_SOURCES.pokemon);
   }
   if(c.id==='swsh3-161'&&set==='swsh3'&&category==='trainer'&&physicalFinish==='reverse-holofoil')return {...preset(key,label,'ptcg-reverse',[layer('pk-swsh-trainer-field','rainbow')],'https://api.tcgdex.net/v2/en/cards/swsh3-161'),reason:'Simulated reverse holo · partial coverage',coverage:'partial'};

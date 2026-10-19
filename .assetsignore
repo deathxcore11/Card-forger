@@ -58,3 +58,6 @@ weekly-curation-route.js
 
 # Local-only Classic Collection audit evidence and fixtures, not website assets.
 review/classic-collection-20261019
+
+# Local-only regular Celebrations audit evidence.
+review/celebrations-20261019

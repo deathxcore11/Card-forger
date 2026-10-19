@@ -7,7 +7,7 @@ export function finishMaterialProfile(game,card,model){
  if(model.pattern==='cosmos'&&model.effect==='ptcg-holo')return 'cosmos-holo';
  if(card.id==='base1-4'&&model.effect==='ptcg-holo')return 'classic-holo';
  if(['base4-20','neo1-9'].includes(card.id)&&model.effect==='ptcg-holo')return 'cosmos-holo';
- if(card.set?.id==='cel25'&&model.effect==='ptcg-holo')return 'line-holo';
+ if(card.set?.id==='cel25'&&['cel25-1','cel25-2','cel25-3','cel25-4','cel25-10','cel25-11','cel25-12','cel25-13','cel25-14','cel25-15','cel25-17','cel25-19','cel25-20','cel25-21','cel25-22'].includes(card.id)&&model.effect==='ptcg-holo')return 'line-holo';
  if(model.texture==='micro-ridges')return 'textured-holo';
  // The reviewed water pattern is confined to this known Sword & Shield layout.
  if(card.id==='swsh1-52'&&model.effect==='ptcg-reverse')return 'reverse-water';

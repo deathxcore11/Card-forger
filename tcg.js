@@ -1,4 +1,6 @@
-import {CLASSIC_SCHEMA,classicEvidence,classicCatalogueCard,classicProductMatches} from './pokemon-classic-evidence.js';
+import {reviewedLastObservedQuote} from './shared-history.js';
+import {pokemonReviewedHoloOnly,pokemonReviewedEvidence,pokemonReviewedProductMatches,pokemonCatalogueCard} from './pokemon-set-evidence.js';
+import {CLASSIC_SCHEMA,classicEvidence} from './pokemon-classic-evidence.js';
 import {browseSets,setBrowserControls,setBrowserRows,setBrowserDetail} from './set-browser.js';
 import {POKEMON_VARIANT_SCHEMA,pokemonVariantChoices,pokemonVariantProductConflict,samePokemonVariant} from './pokemon-variant-options.js';
 import {valuePageOverview,valueTopLots,valuePageAttrs} from './value-page.js';
@@ -83,7 +85,7 @@ const PRICE_TTL = 24 * 3600 * 1000;
 export const game = () => (GAMES[S.state.settings?.game] ? S.state.settings.game : "mtg");
 export const isTcg = () => game() !== "mtg";
 export const gs = (g = game(), s = S.state) => s.tcg?.[g] || blankGame();
-export const cardOf = (g, id) => g==='ptcg'?classicCatalogueCard(cache[g][id])||null:cache[g][id]||null;
+export const cardOf = (g, id) => g==='ptcg'?pokemonCatalogueCard(cache[g][id])||null:cache[g][id]||null;
 
 // Per-game screen state (never saved).
 const UI = {};
@@ -133,7 +135,7 @@ export async function loadCache(readRecord) {
   } catch {}
 }
 const remember = (card) => {
-  if(card.game==='ptcg')card=classicCatalogueCard(card);
+  if(card.game==='ptcg')card=pokemonCatalogueCard(card);
   const prev = cache[card.game][card.id];
   if (card.brief && prev && !prev.brief) return prev;
   if (!card.brief) recordCardPrice(card.game, card);
@@ -323,16 +325,16 @@ export function collectionValue(g, s = S.state) {
 // Price for the exact printing/variant when known (Yu-Gi-Oh! set price, Pokémon variant).
 export const persistQuoteCache=()=>saveCacheSoon();
 export function entryPrice(c,e){
-  if(c?.game==='ptcg')c=classicCatalogueCard(c);
+  if(c?.game==='ptcg')c=pokemonCatalogueCard(c);
   const scoped=c?.game==='ygo'&&e.setReleaseId?setContextCard('ygo',c,e.setReleaseId,currentYgoCatalogue()):c;
   const verified=!(c?.game==='ptcg'&&pokemonVariantProductConflict(c,e))&&!e.setReleaseUnverified&&(!e.setReleaseId||scoped?.setContext?.status==='resolved');
-  const allQuotes=[...(scoped?.conditionQuotes||[]),...(e.conditionQuotes||[])].filter(q=>!classicEvidence(c)||classicProductMatches(c,q.productId));
+  const allQuotes=[...(scoped?.conditionQuotes||[]),...(e.conditionQuotes||[])].filter(q=>!pokemonReviewedEvidence(c)||pokemonReviewedProductMatches(c,q.productId));
   const collision=c?.game==='ygo'&&e.setReleaseId&&(c.sets||[]).filter(p=>p.code===e.printing&&(!e.rarity||rarityKey(p.rarity)===rarityKey(e.rarity))).length>1;
   const quotes=!verified?[]:collision?allQuotes.filter(q=>q.setReleaseId===e.setReleaseId):allQuotes;
   return conditionValue(verified?referenceEntryPrice(scoped,e):null,e,quotes).price;
 }
 export function referenceEntryPrice(c, e) {
-  if(c?.game==='ptcg')c=classicCatalogueCard(c);
+  if(c?.game==='ptcg')c=pokemonCatalogueCard(c);
   if (!c) return null;
   if(c.game==='ptcg'&&pokemonVariantProductConflict(c,e))return null;
   if(c.game==='ygo'){
@@ -721,6 +723,7 @@ const RULES_LINKS = {
 const eur = (v) => (v ? "€" + Number(v).toFixed(2) : "—");
 
 export function tcgCardSheet(c, sctx = {}) {
+  if(c.game==='ptcg')c=pokemonCatalogueCard(c);
   if(sctx.setId||sctx.setReleaseUnverified){
     const membership=sctx.setMembership;
     if(membership?.game===c.game&&membership.cardId===c.id&&membership.releaseId===sctx.setId&&membership.membership==='set-response')c={...c,setContext:membership};
@@ -792,7 +795,7 @@ export function tcgCardSheet(c, sctx = {}) {
   const prices =
     g === "ptcg"
       ? `${c.variants?.length ? `<div class="price-table"><div class="pt-head"><span>TCGplayer (USD)</span><b>Low</b><b>Mid</b><b>Market</b></div>${pokemonVariantChoices(c,sctx.priceFinish).map((v) => `<div class="pt-row"><span class="pt-label">${esc(v.label)}</span><span>${usd(v.low)}</span><span>${usd(v.mid)}</span><span><b>${usd(v.market)}</b></span></div>`).join("")}</div>` : `<p class="muted small">No TCGplayer price yet.</p>`}
-        ${c.cardmarket && (c.cardmarket.trend || c.cardmarket.avg) ? `<div class="price-table"><div class="pt-head"><span>Cardmarket (EUR)</span><b>Low</b><b>Average</b><b>Trend</b></div><div class="pt-row"><span class="pt-label">${classicEvidence(c) ? "Holofoil" : "Normal"}</span><span>${eur(c.cardmarket.low)}</span><span>${eur(c.cardmarket.avg)}</span><span><b>${eur(c.cardmarket.trend)}</b></span></div>${c.cardmarket.holoTrend ? `<div class="pt-row"><span class="pt-label">Holo / reverse</span><span>${eur(c.cardmarket.holoLow)}</span><span>${eur(c.cardmarket.holoAvg)}</span><span><b>${eur(c.cardmarket.holoTrend)}</b></span></div>` : ""}</div>` : ""}`
+        ${c.cardmarket && (c.cardmarket.trend || c.cardmarket.avg) ? `<div class="price-table"><div class="pt-head"><span>Cardmarket (EUR)</span><b>Low</b><b>Average</b><b>Trend</b></div><div class="pt-row"><span class="pt-label">${pokemonReviewedHoloOnly(c) ? "Holofoil" : "Normal"}</span><span>${eur(c.cardmarket.low)}</span><span>${eur(c.cardmarket.avg)}</span><span><b>${eur(c.cardmarket.trend)}</b></span></div>${c.cardmarket.holoTrend&&!pokemonReviewedHoloOnly(c) ? `<div class="pt-row"><span class="pt-label">Holo / reverse</span><span>${eur(c.cardmarket.holoLow)}</span><span>${eur(c.cardmarket.holoAvg)}</span><span><b>${eur(c.cardmarket.holoTrend)}</b></span></div>` : ""}</div>` : ""}`
       : `<div class="price-table" style="--cols:1"><div class="pt-head"><span>Store</span><b>Price</b></div>
         <div class="pt-row"><span class="pt-label">TCGplayer market</span><span><b>${usd(p.usd)}</b></span></div>
         <div class="pt-row"><span class="pt-label">Cardmarket</span><span><b>${eur(p.eur)}</b></span></div>
@@ -1647,7 +1650,7 @@ function resolveSetRelease(list,value){
 // condition quotes or identity-wide prices. Never infer an edition from a reused code.
 export function setContextCard(g, card, release, catalogue = ui(g).sets.list, {variantKey,unverifiedRelease=false} = {}) {
   if (!card) return card;
-  if(g==='ptcg')card=classicCatalogueCard(card);
+  if(g==='ptcg')card=pokemonCatalogueCard(card);
   if(unverifiedRelease)return {...card,sets:g==="ygo"?[]:card.sets,conditionQuotes:[],setContext:{game:g,cardId:card.id,releaseId:"",name:"Release not verified",status:"missing",unverifiedRelease:true,printings:[],printingAmbiguous:true,edition:"unknown",price:null},prices:{usd:null,eur:null,others:[],source:"Release not verified"}};
   if (!release) return card;
   if(card.game&&card.game!==g)return {...card,setContext:{game:g,cardId:card.id,releaseId:typeof release==='string'?release:release.id,status:'missing',printings:[],printingAmbiguous:true,edition:'unknown',price:null},prices:{usd:null,eur:null,others:[],source:'Game does not match release'}};
@@ -1997,6 +2000,7 @@ function lastQuote(g, c) {
   fetch(`api/prices/recent?game=ptcg&id=${encodeURIComponent(c.id)}&finish=reference`, { headers: { Accept: "application/json" } })
     .then((r) => (r.ok ? r.json() : null))
     .then((d) => {
+      if(pokemonReviewedEvidence(c)){const observed=reviewedLastObservedQuote(c,d);if(!observed)return;QUOTES.set(c.id,observed);if(globalThis.document?.querySelector("#sheet[open]"))ctx?.refreshSheet?.();return;}
       const s = (d?.series || []).map((x) => ({ x, last: x.points?.at(-1) })).filter((x) => x.last).sort((a, b) => b.last.date.localeCompare(a.last.date))[0];
       if (!s) return;
       QUOTES.set(c.id, { value: s.last.value, date: s.last.date, finish: String(s.x.label || "").split(" · ").at(-1) });

@@ -1,4 +1,4 @@
-import {classicEvidence,classicProviderCard} from './pokemon-classic-evidence.js';
+import {pokemonProviderCard,pokemonReviewedEvidence} from './pokemon-set-evidence.js';
 // Optional server-only condition feed. No key is shipped with the static app.
 import {pokemonDetailedVariant} from './pokemon-variant-options.js';
 import {pokemonPromoEvidence} from './pokemon-promo-evidence.js';
@@ -88,10 +88,10 @@ export async function conditionFeedRoute(url,env,ctx,fetchImpl=fetch,{request}={
    product=exact[0].productId;const edition=url.searchParams.get('edition');
    printings={'1st-edition':['1st Edition'],unlimited:['Unlimited'],limited:['Limited','Limited Edition']}[edition]||[];
   }else{
-   const c=classicProviderCard(await get('https://api.tcgdex.net/v2/en/cards/'+encodeURIComponent(id))),variant=url.searchParams.get('variant')||'';
+   const c=pokemonProviderCard(await get('https://api.tcgdex.net/v2/en/cards/'+encodeURIComponent(id))),variant=url.searchParams.get('variant')||'';
    if(c.id!==id)return empty('unmapped','Card identity does not match.');
-   if(classicEvidence(c)&&c.classicIntegrity?.identityVerified&&variant==='holofoil'){
-    product=classicEvidence(c).productId;printings=['Holofoil'];
+   if(pokemonReviewedEvidence(c)&&(c.classicIntegrity?.identityVerified||c.reviewedIntegrity?.identityVerified)&&variant==='holofoil'){
+    product=pokemonReviewedEvidence(c).productId;printings=['Holofoil'];
    }else if(variant.startsWith('product:')){
     const response=await pokemonPriceRoute(new URL(url.origin+'/api/prices/pokemon?id='+encodeURIComponent(id)),ctx,fetchImpl),d=await response.json();
     const exact=(d.quotes||[]).filter(q=>'product:'+q.productId+':'+q.subTypeName.toLowerCase().replace(/ /g,'-')===variant);
@@ -127,7 +127,7 @@ export async function conditionFeedRoute(url,env,ctx,fetchImpl=fetch,{request}={
   const owner=await conditionOwner(request,env,fetchImpl);
   const cacheUrl='https://condition-cache/?product='+product+'&category='+{mtg:1,ygo:2,ptcg:3}[game],cacheOptions={headers:owner?{'X-Condition-Owner':'verified'}:{}};
   let data=await (await stub.fetch(cacheUrl,cacheOptions)).json();
-  const stampQuotes=quotes=>game==='ptcg'&&classicEvidence(id)?quotes.map(q=>({...q,productId:Number(product)})):quotes;
+  const stampQuotes=quotes=>game==='ptcg'&&pokemonReviewedEvidence(id)?quotes.map(q=>({...q,productId:Number(product)})):quotes;
   let quotes=stampQuotes(normalizeConditionVariants(data,product,printings,language,data.cachedAt||Date.now()));
   // A complete product response may not cover this language/finish. Ask the
   // backup once for all conditions; the primary result is already cached.

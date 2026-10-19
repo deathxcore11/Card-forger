@@ -1,4 +1,5 @@
-import {classicEvidence,classicProviderCard} from './pokemon-classic-evidence.js';
+import {pokemonSetEvidence,pokemonSetProductMatches,pokemonProviderCard} from './pokemon-set-evidence.js';
+import {classicEvidence} from './pokemon-classic-evidence.js';
 import {pokemonDetailedVariant} from './pokemon-variant-options.js';
 // Which TCGplayer product (and finish within it) a Pokémon card + finish is, for the price
 // history routes. TCGdex lists the product on its detailed variants for newer cards; for many
@@ -9,8 +10,9 @@ const SUBTYPE = { normal: "Normal", holofoil: "Holofoil", "reverse-holofoil": "R
 const REFERENCE_ORDER = ["normal", "holofoil", "unlimited-holofoil", "unlimited", "reverse-holofoil", "1st-edition-holofoil", "1st-edition"];
 
 export function ptcgProduct(card, finish = "reference", expectedProductId = '') {
-  card=classicProviderCard(card);
+  card=pokemonProviderCard(card);
   const classic=classicEvidence(card);
+  if(pokemonSetEvidence(card)&&(!card.reviewedIntegrity?.identityVerified||expectedProductId&&!pokemonSetProductMatches(card,expectedProductId)))return null;
   if(classic&&(!card.classicIntegrity?.identityVerified||expectedProductId&&String(expectedProductId)!==String(classic.productId)))return null;
   if(finish!=='reference'){
     const detail=pokemonDetailedVariant(card,finish),root=card?.pricing?.tcgplayer?.[finish];
@@ -44,6 +46,7 @@ export function ptcgProduct(card, finish = "reference", expectedProductId = '') 
     }
   }
   if (products.length > 1 || finish.startsWith("detail:")) return null;
+  if(pokemonSetEvidence(card)&&['reference','holofoil'].includes(finish))return {productId:pokemonSetEvidence(card).productId,finishKey:'holofoil',subtype:'Holofoil'};
   if(classic&&['reference','holofoil'].includes(finish))return {productId:classic.productId,finishKey:'holofoil',subtype:'Holofoil'};
   const legacy = Object.entries(card?.pricing?.tcgplayer || {}).filter(([, v]) => v && typeof v === "object" && Number(v.productId) > 0);
   const pick = finish === "reference" ? REFERENCE_ORDER.map((k) => legacy.find(([key]) => key === k)).find(Boolean) || (legacy.length === 1 ? legacy[0] : null) : legacy.find(([key]) => key === finish);

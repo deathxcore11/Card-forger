@@ -1,3 +1,4 @@
+import {pokemonReviewedEvidence} from './pokemon-set-evidence.js';
 import {classicEvidence} from './pokemon-classic-evidence.js';
 import {ptcgProduct,sameSubtype} from './ptcg-product.js';
 import {pickGroup} from './pokemon-art.js';
@@ -20,7 +21,7 @@ export async function archivePriceRoute(url,ctx,fetchImpl=fetch,now=Date.now()){
  const game=url.searchParams.get('game'),id=url.searchParams.get('id')||'',finish=url.searchParams.get('finish')||'reference',edition=url.searchParams.get('edition')||'',rarity=url.searchParams.get('rarity')||'';
  let exact;try{exact=readExactYgoHistoryRequest(url);}catch{return Response.json({error:'Invalid exact history request'},{status:400});}
  if(!['mtg','ptcg','ygo'].includes(game)||!/^[A-Za-z0-9.!%?_:-]{1,89}$/.test(id)||!/^[A-Za-z0-9:_-]{1,99}$/.test(finish)||!/^[-A-Za-z0-9]{0,60}$/.test(edition))return Response.json({error:'Invalid history request'},{status:400});
- const cache=globalThis.caches?.default,cacheKey=exact?exactYgoHistoryCacheKey(url,exact):new Request(classicEvidence(id)?url.href+(url.search?'&':'?')+'classicSchema=1':url.href),saved=await cache?.match(cacheKey);if(saved)return saved;
+ const cache=globalThis.caches?.default,cacheKey=exact?exactYgoHistoryCacheKey(url,exact):new Request(pokemonReviewedEvidence(id)?url.href+(url.search?'&':'?')+'reviewedSetSchema=1':url.href),saved=await cache?.match(cacheKey);if(saved)return saved;
  const get=async u=>{
   const k=new Request(u),old=await cache?.match(k);if(old){const d=await old.json();return exact?validateExactYgoProvider(d,u):d;}
   const r=await fetchImpl(u,{headers:{Accept:'application/json','User-Agent':'CardStashy/3.36 (exact historical printing lookup)'},signal:AbortSignal.timeout(18000)});if(!r.ok)throw Error('Archive source unavailable');const d=await r.json();if(exact)validateExactYgoProvider(d,u);
@@ -64,7 +65,7 @@ export async function archivePriceRoute(url,ctx,fetchImpl=fetch,now=Date.now()){
   if(!rows)return empty('No separate archived history for this physical edition.');
   for(const [sub,raw] of rows){
    if(game==='mtg'&&sub!==subtype||game==='ptcg'&&!sameSubtype(sub,subtype))continue;const points=archivePoints(raw,now);if(!points.length)continue;
-   series.push({source:`${SOURCE} · ${productId} · ${sub}`,currency:'USD',finish,...exact,...(exact?{subtype:sub}:{}),archived:true,label:`${label} · ${sub}`,productId:Number(productId),archiveCommit:ARCHIVE_COMMIT,archiveUpdated:data.updated,provenance:`${ROOT}/data/${archiveGame}/${setKey}.json`,points});
+   series.push({source:`${SOURCE} · ${productId} · ${sub}`,currency:'USD',finish,...exact,...(exact||game==='ptcg'&&pokemonReviewedEvidence(id)?{subtype:sub}:{}),archived:true,label:`${label} · ${sub}`,productId:Number(productId),archiveCommit:ARCHIVE_COMMIT,archiveUpdated:data.updated,provenance:`${ROOT}/data/${archiveGame}/${setKey}.json`,points});
   }
   const response=Response.json({game,cardId:id,finish,...exact,...(exact?{status:series.length?'ready':'empty'}:{}),series,notice:series.length?'':'No dated archived quotes for this exact version.'},{headers:{'Cache-Control':'public,max-age=43200'}});
   ctx?.waitUntil?.(cache?.put(cacheKey,response.clone()));return response;

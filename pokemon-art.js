@@ -1,4 +1,5 @@
-import {classicEvidence,classicProviderCard} from './pokemon-classic-evidence.js';
+import {pokemonProviderCard} from './pokemon-set-evidence.js';
+import {classicEvidence} from './pokemon-classic-evidence.js';
 import { ptcgProduct } from "./ptcg-product.js";
 // Last-resort Pokémon card art: the TCGplayer product image for the exact card, for printings
 // TCGdex has no scan of (promos, McDonald's sets, Shiny Vault, gallery subsets…). The card's own
@@ -54,7 +55,7 @@ export function pickProduct(products, card) {
 }
 
 export async function pokemonProductId(id, get) {
-  const card = classicProviderCard(await get("https://api.tcgdex.net/v2/en/cards/" + encodeURIComponent(id)));
+  const card = pokemonProviderCard(await get("https://api.tcgdex.net/v2/en/cards/" + encodeURIComponent(id)));
   if (card?.id !== id) return null;
   // Use the same conservative reference product as price history: older sets
   // often have this exact ID only under pricing.tcgplayer.<finish>.productId.

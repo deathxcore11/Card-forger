@@ -1,4 +1,5 @@
-import {classicEvidence,classicCatalogueCard,classicProductMatches} from './pokemon-classic-evidence.js';
+import {pokemonSetEvidence,pokemonReviewedEvidence,pokemonReviewedProductMatches,pokemonCatalogueCard} from './pokemon-set-evidence.js';
+import {classicEvidence} from './pokemon-classic-evidence.js';
 import {pokemonVariantChoices,pokemonVariantProductConflict,samePokemonVariant} from './pokemon-variant-options.js';
 // Presentation only: keep provider/condition resolution in the existing pricing modules.
 import {esc,usd} from './ui.js';
@@ -32,14 +33,14 @@ export function selectedPrinting(c,key){
 }
 export function validSetContext(game,c,ctx={}) {
  const set=c?.setContext;
- if(game==='ptcg'&&classicEvidence(c)&&c?.classicIntegrity?.identityVerified===false)return false;
+ if(game==='ptcg'&&(classicEvidence(c)&&c?.classicIntegrity?.identityVerified===false||pokemonSetEvidence(c)&&c?.reviewedIntegrity?.identityVerified===false))return false;
  if(c?.game && c.game!==game)return false;
  return (!set && !ctx.setReleaseUnverified && (!ctx.setId || game==='mtg' && String(c?.set||'').toLowerCase()===String(ctx.setId).toLowerCase())) || !!(set?.releaseId && set.status==='resolved' && (!set.game || set.game===game) && (!set.cardId || String(set.cardId)===String(c.id)) && (!ctx.setId || ctx.setId===set.releaseId));
 }
 const contextPrintingKey=c=>!c?.setContext?.printingAmbiguous&&c?.setContext?.printing?c.setContext.printing.code+'::'+c.setContext.printing.rarity:'';
 // No personal prices, currency conversion or condition multipliers belong in a market quote.
 export function presentationQuote(game,c,finish='reference',printingKey='',edition=''){
- if(game==='ptcg')c=classicCatalogueCard(c);
+ if(game==='ptcg')c=pokemonCatalogueCard(c);
  if(!c?.id)return null;
  const context=c.setContext,verified=validSetContext(game,c);
  if(context && !printingKey)printingKey=contextPrintingKey(c);
@@ -154,7 +155,7 @@ export function conditionBuyLink(game,c,entry={}){
  return sellerModels(game,c,{savedProductId:game==='ptcg'?entry.productId:'',savedVariant:entry.variant,priceFinish:game==='ptcg'?entry.variant:entry.finish,priceEdition:game==='ygo'?[entry.printing,entry.rarity].join('::'):'',priceYgoEdition:entry.edition,condition:entry.condition,language:entry.language}).find(r=>r.key==='tcgplayer');
 }
 export function sellerModels(game,c,ctx={},links=[]){
- if(game==='ptcg')c=classicCatalogueCard(c);
+ if(game==='ptcg')c=pokemonCatalogueCard(c);
  const wanted=ctx.priceFinish||ctx.finish||c.setContext?.variantKey,finish=selectedFinish(game,c,wanted),q=quoteForContext(game,c,ctx);
  const candidates=[...links];if(!candidates.some(([n,u])=>vendorKey(n,u)==='tcgplayer'))candidates.unshift(['TCGplayer',searchURL(game,c)]);
  const seen=new Set(),rows=[];
@@ -198,11 +199,11 @@ export function sellerRows(game,c,ctx={},links=[]){
  return `<section class="market-sellers" id="card-sellers" tabindex="-1" aria-labelledby="card-sellers-title"><div class="market-section-head"><h3 id="card-sellers-title">Find sellers</h3><span class="small muted">Prices & buying</span></div><p class="foot">Provider references, not live stock offers. Confirm finish, condition and shipping at the store.</p><div class="vendor-list">${rows.map(r=>`<a class="vendor-row" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(r.name+' · '+currencyValue(r.value,r.currency)+' · '+(r.direct?'View listing':'Search store'))}"><span class="vendor-copy"><b>${esc(r.name)}</b><small>${esc(r.direct?r.scope||'Product listing · check exact finish':'Search · choose your printing and finish')}</small>${r.value!==null?`<small class="vendor-provenance">${esc(r.source)} · ${esc(quoteTiming(r))}</small>`:''}</span><span class="vendor-quote"><strong>${currencyValue(r.value,r.currency)}</strong>${r.value!==null?`<small>${esc(r.currency)} · ${esc(referenceLabel(r.kind))}${r.observedAt?' · last observed':''}</small>`:''}<span class="vendor-action">${r.direct?'View listing':'Search store'} <span aria-hidden="true">↗</span></span></span></a>`).join('')||'<p class="muted small">Seller links are unavailable for this card.</p>'}</div></section>`;
 }
 export function compactPriceSummary(game,c,ctx={},lastObserved=null){
- if(game==='ptcg')c=classicCatalogueCard(c);
+ if(game==='ptcg')c=pokemonCatalogueCard(c);
  const finish=selectedFinish(game,c,ctx.priceFinish),q=quoteForContext(game,c,ctx);
  let value=q?.value??null,currency='USD',label=q?.label||finishLabel(finish),note=referenceLabel(q?.kind);
  if(value===null&&q?.selectionVerified&&game==='mtg'&&finish!=='etched') {const eur=priceAmount(c.prices?.[finish==='foil'?'eur_foil':'eur']);if(eur!==null){value=eur;currency='EUR';note='Cardmarket reference';}}
- if(value===null&&!c.setContext&&!ctx.priceEdition&&finish==='reference'&&lastObserved&&(!classicEvidence(c)||classicProductMatches(c,lastObserved.productId))){value=priceAmount(lastObserved.value);note='Last observed '+lastObserved.date;label=lastObserved.finish||label;}
+ if(value===null&&q?.selectionVerified&&!c.setContext&&!ctx.priceEdition&&finish==='reference'&&lastObserved&&(!pokemonReviewedEvidence(c)||pokemonReviewedProductMatches(c,lastObserved.productId)&&lastObserved.cardId===c.id&&lastObserved.currency==='USD'&&String(lastObserved.finish||'').toLowerCase()==='holofoil')){value=priceAmount(lastObserved.value);note='Last observed '+lastObserved.date;label=lastObserved.finish||label;}
  if(value===null&&q?.selectionVerified){const mine=myPrice(c,game==='mtg'?finish:'nonfoil',ctx);if(mine!==null){value=mine;note='Your private value · not a seller quote';}}
  if(q?.observedAt&&q.value!==null)note='Last observed '+dateText(q.observedAt);
  if(q?.value!==null&&quoteIsStale(q))note+=' · stale';

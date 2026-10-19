@@ -1,0 +1,18 @@
+// Public deterministic inputs. Real card/product identities only; all values,
+// owned lots, rule text, histories and SVG art are handcrafted synthetic tests.
+import {CELEBRATIONS_CARDS} from '../pokemon-set-evidence.js';
+export const CELEBRATIONS_RELEASE={id:'cel25',name:'Celebrations',count:25,date:'2021-10-08'};
+export const CELEBRATIONS_SOURCE_DATE='2020-01-01T00:00:00.000Z';
+export const CELEBRATIONS_SVG='<svg xmlns="http://www.w3.org/2000/svg" width="630" height="880"><rect width="630" height="880" fill="#29445c"/><rect x="35" y="110" width="560" height="350" fill="#627789"/><text x="315" y="240" text-anchor="middle" font-family="sans-serif" font-size="27" fill="white">SYNTHETIC CELEBRATIONS</text><text x="315" y="550" text-anchor="middle" font-family="sans-serif" font-size="30" fill="white">NOT CARD ARTWORK</text></svg>';
+export const CELEBRATIONS_RAW=CELEBRATIONS_CARDS.map((e,i)=>{
+ const pricing={tcgplayer:{unit:'USD',updated:CELEBRATIONS_SOURCE_DATE,holofoil:{productId:e.productId,marketPrice:20+i,lowPrice:19+i,midPrice:21+i}},cardmarket:{unit:'EUR',updated:CELEBRATIONS_SOURCE_DATE,idProduct:e.cmProduct,low:e.cardmarketVerified?10+i:987.65,avg:e.cardmarketVerified?11+i:987.65,trend:e.cardmarketVerified?12+i:987.65}};
+ return {id:e.id,name:e.name,localId:e.number,category:i===22||i===23?'Trainer':'Pokemon',rarity:'Rare',types:['Water'],hp:100,...(i===22||i===23?{effect:'Synthetic Trainer effect, not printed rules.'}:{attacks:[{name:'Synthetic attack',cost:['Water'],damage:10,effect:'Synthetic text, not printed rules.'}]}),set:{id:'cel25',name:'Celebrations',cardCount:{official:25,total:25}},variants:{holo:true,normal:false,reverse:false,firstEdition:false,wPromo:false},image:'https://detail-fixtures.invalid/celebrations/'+e.id+'.png',variants_detailed:[{type:'holo',size:'standard',variantId:'synthetic-'+e.id,thirdParty:{tcgplayer:e.productId,cardmarket:e.cmProduct},pricing:structuredClone(pricing)}],pricing};
+});
+export const CELEBRATIONS_LOTS=[
+ {id:'celebrations-wrong-saved-manual',cardId:'cel25-5',name:'Pikachu',key:'id:cel25-5',variant:'normal',productId:250319,qty:2,condition:'Near Mint',language:'en',manualValue:12.34,manualValueCondition:'Near Mint',manualValueCurrency:'USD',addedAt:'2020-01-01'},
+ {id:'celebrations-correct-saved',cardId:'cel25-2',name:'Reshiram',key:'id:cel25-2',variant:'holofoil',productId:250301,qty:1,condition:'Near Mint',language:'en',addedAt:'2020-01-01'},
+];
+export const CELEBRATIONS_HISTORY=[{date:'2020-01-01',total:24.68,copies:2,unpriced:0,currency:'USD',basis:'exact-owned-v1'}];
+const windows=[1,2,3,4,10,11,12,13,14,15,17,19,20,21,22];
+export const CELEBRATIONS_EXPECTED=CELEBRATIONS_CARDS.map(e=>{const n=Number(e.number),unknown=n===23,window=windows.includes(n),textured=[7,9,24].includes(n);return {...e,display:'#'+e.number+'/25',effect:unknown?'unknown':window?'ptcg-holo':'ptcg-full-art',mask:unknown?null:window?'pk-cel-art':'card',material:unknown?null:window?'holo':n===25?'gold':'rainbow',layerCount:unknown?0:textured?2:1,pattern:window||textured};});
+export const CELEBRATIONS_EVIDENCE='Actual index.html/app.js UI with all 25 source-backed regular Celebrations identities. Provider payloads, quotes, histories, owned lots and SVG images are deterministic synthetic fixtures. Effects are labeled approximations, not physically certified materials. No real accounts, external provider traffic, paid calls or live deployment.';

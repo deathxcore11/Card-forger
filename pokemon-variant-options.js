@@ -1,3 +1,4 @@
+import {pokemonSetEvidence,pokemonSetProductMatches,pokemonCatalogueCard} from './pokemon-set-evidence.js';
 import {classicEvidence,classicProductMatches} from './pokemon-classic-evidence.js';
 import {pokemonPromoRootProduct} from './pokemon-promo-evidence.js';
 // Pure Pokémon identity helpers. Prices never distinguish physical variants.
@@ -45,6 +46,7 @@ export function pokemonVariantAliasTarget(card,v){
  return matches.length===1?matches[0]:null;
 }
 export function pokemonVariantChoices(card,requestedKey=''){
+ if(pokemonSetEvidence(card))card=pokemonCatalogueCard(card);
  const variants=card?.variants||[],requested=variants.find(v=>v.key===requestedKey),target=pokemonVariantAliasTarget(card,requested);
  return variants.filter(v=>!pokemonVariantAliasTarget(card,v)).map(v=>target===v?requested:v);
 }
@@ -54,6 +56,7 @@ export function samePokemonVariant(card,a,b){
  return !!left&&!!right&&(pokemonVariantAliasTarget(card,left)||left)===(pokemonVariantAliasTarget(card,right)||right);
 }
 export function pokemonVariantProductConflict(card,entry={}){
+ if(pokemonSetEvidence(card)){card=pokemonCatalogueCard(card);if(card.reviewedIntegrity?.identityVerified===false)return true;if(entry.productId&&!pokemonSetProductMatches(card,entry.productId)||entry.variant&&entry.variant!=='reference'&&!card.variants.some(v=>v.key===entry.variant))return true;}
  if(classicEvidence(card)&&entry.productId&&!classicProductMatches(card,entry.productId))return true;
  if(!entry.productId||!entry.variant)return false;
  const matches=(card?.variants||[]).filter(v=>v.key===entry.variant);

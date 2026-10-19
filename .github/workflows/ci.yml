@@ -667,3 +667,26 @@ jobs:
           name: classic-collection-browser-evidence
           path: test-results/classic-collection/
           if-no-files-found: warn
+
+  celebrations-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate public and synthetic regular Celebrations fixtures
+        run: node tests/celebrations-browser.mjs --validate-fixtures
+      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - name: Inspect every regular Celebrations card in the actual app
+        run: node tests/celebrations-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: celebrations-browser-evidence
+          path: test-results/celebrations/
+          if-no-files-found: warn

@@ -1,4 +1,5 @@
-import {classicEvidence,classicProviderCard,classicProductMatches,classicCatalogueCard} from './pokemon-classic-evidence.js';
+import {pokemonSetEvidence,pokemonSetProductMatches,pokemonReviewedHoloOnly,pokemonCatalogueCard,pokemonProviderCard} from './pokemon-set-evidence.js';
+import {classicEvidence,classicProductMatches} from './pokemon-classic-evidence.js';
 import {syncPokemonVariantAliases} from './pokemon-variant-options.js';
 import {referenceQuote} from './price-reference.js';
 import {pickGroup,pickProduct} from './pokemon-art.js';
@@ -6,7 +7,8 @@ import {pickGroup,pickProduct} from './pokemon-art.js';
 export function applyProductPrices(card,body){
  if(body?.cardId!==card.id)return false;
  const classic=classicEvidence(card);
- if(classic){Object.assign(card,classicCatalogueCard(card));body={...body,matchedProduct:classicProductMatches(card,body.matchedProduct)?body.matchedProduct:null,quotes:(body.quotes||[]).filter(q=>classicProductMatches(card,q.productId)&&q.subTypeName==='Holofoil')};}
+ if(pokemonSetEvidence(card)){Object.assign(card,pokemonCatalogueCard(card));if(!card.reviewedIntegrity?.identityVerified)return false;body={...body,matchedProduct:pokemonSetProductMatches(card,body.matchedProduct)?body.matchedProduct:null,quotes:(body.quotes||[]).filter(q=>pokemonSetProductMatches(card,q.productId)&&q.subTypeName==='Holofoil')};}
+ if(classic){Object.assign(card,pokemonCatalogueCard(card));body={...body,matchedProduct:classicProductMatches(card,body.matchedProduct)?body.matchedProduct:null,quotes:(body.quotes||[]).filter(q=>classicProductMatches(card,q.productId)&&q.subTypeName==='Holofoil')};}
  let changed=false;const updatedKeys=[];
  card.variants ||= [];
  // Edition-specific provider quotes must never fill an Unlimited or Shadowless slot.
@@ -36,14 +38,16 @@ const setKey=s=>String(s || '').toLowerCase().replace(/[^a-z0-9]/g,'');
 export async function pokemonPriceRoute(url,ctx,fetchImpl=fetch){
  const id=url.searchParams.get('id') || '';
  if(!/^[A-Za-z0-9.!?_-]{1,80}$/.test(id))return Response.json({error:'Invalid card'},{status:400});
- const cacheKey=new URL(url);cacheKey.searchParams.set('schema','5');
+ const cacheKey=new URL(url);cacheKey.searchParams.set('schema','6');
  const cached=await caches.default.match(cacheKey.href);if(cached)return cached;
  const get=async u=>{const saved=await caches.default.match(u);if(saved)return saved.json();const r=await fetchImpl(u,{headers:{Accept:'application/json','User-Agent':'CardStashy/3.34 (exact product pricing)'},signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error('Price source unavailable');const d=await r.json();ctx?.waitUntil?.(caches.default.put(u,Response.json(d,{headers:{'Cache-Control':'public,max-age=86400'}})));return d;};
  try{
-  const c=classicProviderCard(await get('https://api.tcgdex.net/v2/en/cards/'+encodeURIComponent(id)));if(c.id!==id)throw Error('Wrong printing');
+  const c=pokemonProviderCard(await get('https://api.tcgdex.net/v2/en/cards/'+encodeURIComponent(id)));if(c.id!==id)throw Error('Wrong printing');
   // The card's TCGplayer product: from TCGdex's variants or its per-finish prices, else found in
   // the set's TCGplayer group by collector number and name (older sets TCGdex never mapped).
   const products=new Set([...(c.variants_detailed || []).map(v=>Number(v.thirdParty?.tcgplayer)),...Object.values(c.pricing?.tcgplayer || {}).map(v=>Number(v?.productId))].filter(Boolean));
+  const reviewed=pokemonReviewedHoloOnly(c);if(pokemonSetEvidence(c)&&!c.reviewedIntegrity?.identityVerified)return Response.json({cardId:id,quotes:[],notice:'Card identity mismatch'});
+  if(pokemonSetEvidence(c))products.add(pokemonSetEvidence(c).productId);
   const classic=classicEvidence(c);if(classic){if(!c.classicIntegrity?.identityVerified)return Response.json({cardId:id,quotes:[],notice:'Card identity mismatch'});products.add(classic.productId);}
   const groups=await get('https://tcgcsv.com/tcgplayer/3/groups'),group=groups.results?.find(g=>setKey(g.name)===setKey(c.set?.name))||pickGroup(groups.results,c.set?.name);
   if(!group)return Response.json({cardId:id,quotes:[],notice:'No exact set mapping'});
@@ -51,7 +55,7 @@ export async function pokemonPriceRoute(url,ctx,fetchImpl=fetch){
   if(!products.size){const found=pickProduct((await get('https://tcgcsv.com/tcgplayer/3/'+group.groupId+'/products')).results,c);if(found){matchedProduct=found.productId;products.add(Number(found.productId));}}
   if(!products.size)return Response.json({cardId:id,quotes:[],notice:'No exact product mapping'});
   const prices=await get('https://tcgcsv.com/tcgplayer/3/'+group.groupId+'/prices');
-  let quotes=(prices.results || []).filter(q=>products.has(Number(q.productId))&&(!classic||q.subTypeName==='Holofoil')&&referenceQuote(q));
+  let quotes=(prices.results || []).filter(q=>products.has(Number(q.productId))&&(!reviewed||q.subTypeName==='Holofoil')&&referenceQuote(q));
   // A primary set can have only some of this card's exact product IDs. These
   // two named groups are bounded supplements, never a name/number price guess.
   for(const name of ['deckexclusives','miscellaneouscardsproducts']){
@@ -61,11 +65,11 @@ export async function pokemonPriceRoute(url,ctx,fetchImpl=fetch){
    if(!supplemental||supplemental.groupId===group.groupId)continue;
    try{
     const extra=await get('https://tcgcsv.com/tcgplayer/3/'+supplemental.groupId+'/prices');
-    quotes.push(...(extra.results||[]).filter(q=>missing.has(Number(q.productId))&&referenceQuote(q)));
+    quotes.push(...(extra.results||[]).filter(q=>missing.has(Number(q.productId))&&(!reviewed||q.subTypeName==='Holofoil')&&referenceQuote(q)));
    }catch{/* An optional catalogue outage must not discard the primary quotes. */}
   }
   // A retrieval time does not prove when the source calculated these quotes.
-  const checkedAt=new Date().toISOString(),published=prices.updatedAt||prices.updated||null,updatedAt=classic?(published&&Number.isFinite(Date.parse(published))&&Date.parse(published)<=Date.now()+300000?published:null):checkedAt;
+  const checkedAt=new Date().toISOString(),published=prices.updatedAt||prices.updated||null,updatedAt=reviewed?(published&&Number.isFinite(Date.parse(published))&&Date.parse(published)<=Date.now()+300000?published:null):checkedAt;
   const response=Response.json({cardId:id,quotes,matchedProduct,updatedAt,checkedAt,source:'TCGplayer via TCGCSV'},{headers:{'Cache-Control':'public,max-age=86400'}});
   ctx?.waitUntil?.(caches.default.put(cacheKey.href,response.clone()));return response;
  }catch{return Response.json({error:'Price source temporarily unavailable'},{status:503});}

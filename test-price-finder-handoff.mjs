@@ -10,7 +10,7 @@ const originalDocument=globalThis.document;
 try{
  for(const game of ['ptcg','ygo']){
   S.state=blank();S.state.settings.game=game;
-  const card={id:game==='ptcg'?'cel25-22':'123',name:'Language save fixture',game,variants:[{key:'holofoil',label:'Holofoil'}],sets:[{code:'SET-EN001',rarity:'Super Rare'}]};cache[game][card.id]=card;
+  const card={id:game==='ptcg'?'fixture-language-pokemon':'123',name:'Language save fixture',game,variants:[{key:'holofoil',label:'Holofoil'}],sets:[{code:'SET-EN001',rarity:'Super Rare'}]};cache[game][card.id]=card;
   assert.match(tcgAddSheet(card),/id="tLanguage"/);
   const values={'#tQty':'2','#tPrint':game==='ptcg'?'holofoil':'SET-EN001|Super Rare','#tEdition':'1st-edition','#tCond':'Lightly Played','#tLanguage':'ja','#lotManualValue':'3.25'};
   globalThis.document={querySelector:s=>s in values?{value:values[s]}:null};
