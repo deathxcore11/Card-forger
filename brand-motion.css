@@ -18,16 +18,16 @@
 :is(.ask-launch,.home-ai-submit):hover { color:#29243a; border-color:#fff1ce; }
 :is(.ask-launch,.home-ai-submit):focus-visible { outline:2px solid var(--gold); outline-offset:3px; }
 @media (prefers-reduced-motion:no-preference) {
-  :is(.ask-launch,.home-ai-submit) { animation:brand-ai-aurora 7s ease-in-out infinite; }
-  .stashy-logo.brand-breathing { animation:brand-compact-breathe 4.8s ease-in-out infinite; }
+  :is(.ask-launch,.home-ai-submit) { animation:ask-shimmer 7s ease-in-out infinite; }
+  .stashy-logo.brand-breathing { animation:stashy-breathe 4.8s ease-in-out infinite; }
   .stashy-logo.brand-breathing .brand-left { animation:brand-left-rest 18s linear infinite; }
   .stashy-logo.brand-breathing .brand-right { animation:brand-right-rest 18s linear infinite; }
   .stashy-logo.brand-breathing .brand-cycle { display:block; transform-origin:64px 98px; transform-box:view-box; opacity:0; }
   .stashy-logo.brand-breathing .brand-cycle-left { animation:brand-left-front 18s ease-in-out infinite; }
   .stashy-logo.brand-breathing .brand-cycle-right { animation:brand-right-front 18s ease-in-out infinite; }
 }
-@keyframes brand-ai-aurora { 0%,100% {background-position:0% 50%} 50% {background-position:100% 50%} }
-@keyframes brand-compact-breathe {
+@keyframes ask-shimmer { 0%,100% {background-position:0% 50%} 50% {background-position:100% 50%} }
+@keyframes stashy-breathe {
   0%,100% { transform:translateY(0) scale(.98); }
   50% { transform:translateY(-1px) scale(1.025); }
 }
