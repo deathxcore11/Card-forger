@@ -1,16 +1,48 @@
 import assert from 'node:assert/strict';
 import {readFile,mkdir,writeFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
 import {artworkSources} from '../artwork.js';
-import {startServer,openSearchApp,noOverflow,capture,inventorySnapshot,CARDS} from './search-fixtures.mjs';
-if(process.env.GITHUB_ACTIONS!=='true')throw Error('Browser execution is restricted to hosted GitHub Actions.');
-const {chromium}=await import('playwright');
+import {startServer,openSearchApp,noOverflow,capture,inventorySnapshot,CARDS,RAW} from './search-fixtures.mjs';
 const sources=JSON.parse(await readFile(new URL('./frame-art/sources.json',import.meta.url)));
 const pinned=Object.fromEntries(await Promise.all(['mtg','ptcg','ygo'].map(async game=>[game,{source:sources[game][0],file:`tests/frame-art/${game}.${sources[game][1]}`,type:game==='ptcg'?'image/webp':'image/jpeg',bytes:await readFile(new URL(`./frame-art/${game}.${sources[game][1]}`,import.meta.url))}])));
-const evidence='Synthetic cards, prices, inventory and provider responses. Pinned publisher artwork from tests/frame-art is substituted only for visual-fit/Light-header contrast checks; it does not match or prove synthetic card identity, live prices, provider availability or real-device behavior.';
+const review=JSON.parse(await readFile(new URL('../review/cases.json',import.meta.url)));
+const cases=Array.isArray(review)?review:review.cases;
+const extra=async(file,source,label)=>({file,source,label,type:file.endsWith('.png')?'image/png':file.endsWith('.webp')?'image/webp':'image/jpeg',bytes:await readFile(new URL('../'+file,import.meta.url))});
+const samples={
+ mtg:[{...pinned.mtg,label:'miara-dark'},await extra('review/assets/miara-566.jpg',cases.find(c=>c.key==='mtg-miara-etched').source,'miara-detailed'),await extra('test-fixtures/finish-effects/chishiro-nec77.png','https://media.wizards.com/2021/neo/en_3yF31xnXEM.png','chishiro-complex')],
+ ptcg:[await extra('tests/fixtures/pokemon-promos/SWSH032.webp','https://assets.tcgdex.net/en/swsh/swshp/SWSH032/high.webp','wooloo-bright'),{...pinned.ptcg,label:'zapdos-dark'},await extra('tests/fixtures/pokemon-promos/SWSH220.webp','https://assets.tcgdex.net/en/swsh/swshp/SWSH220/high.webp','rowlet-detailed')],
+ ygo:[{...pinned.ygo,label:'blue-eyes-complex'},await extra('test-fixtures/finish-effects/psy-framelord-omega.jpg','https://images.ygoprodeck.com/images/cards/74586817.jpg','omega-dark'),await extra('test-fixtures/finish-effects/dracotail-lukias.jpg','https://images.ygoprodeck.com/images/cards/75003700.jpg','lukias-detailed')]
+};
+const longNames={mtg:'Alpha fixture • The Archivist of Forgotten Worlds, Keeper of the Unwritten Chronicles',ptcg:'Alpha fixture • Professor’s Research (Professor Oak’s Celebrations Research Archive)',ygo:'Alpha fixture • The Celestial Dragon of Ancient Worlds and the Endless Twilight'};
+for(const game of ['mtg','ptcg','ygo'])for(const card of [...CARDS[game],...RAW[game]])if(card.name.startsWith('Alpha fixture'))card.name=longNames[game]+' '+card.id;
+const evidence='Synthetic long card names, prices, inventory and provider responses. Unchanged pinned public artwork is substituted into the same-game header/card/daily ambient only for visual-fit, contrast and translucency stress checks, not card identity, live prices, provider availability or real-device proof. No art filters or text opacity are injected by the harness; the temporary ambient visibility A/B is diagnostic only.';
 const headerChecks=[];let failure;
 const rgb=value=>{const n=String(value).match(/[\d.]+/g)?.map(Number);assert(n&&n.length>=3,'computed RGB color: '+value);return n;};
 const lum=c=>c.slice(0,3).map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4).reduce((v,n,i)=>v+n*[.2126,.7152,.0722][i],0);
 const contrast=(a,b)=>(Math.max(lum(a),lum(b))+.05)/(Math.min(lum(a),lum(b))+.05);
+async function readHeader(page){return page.locator('.cs-banner > .cs-title').evaluate(async title=>{
+ const {applyTheme}=await import('/settings-theme.js'),hero=title.parentElement.querySelector('.cs-hero'),box=n=>{const r=n.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};},style=n=>getComputedStyle(n),ambient=document.querySelector('#ambient'),art=ambient.querySelector('.amb-art'),sheet=document.querySelector('#sheet'),panel=document.querySelector('#sheetBody .cd-text');
+ const geometry=()=>({title:box(title),hero:box(hero),mask:style(hero).maskImage,card:[...document.querySelectorAll('#sheetBody .card-img')].map(n=>({box:box(n),filter:style(n).filter,mask:style(n).maskImage})),foil:[...document.querySelectorAll('#sheetBody .finish-layer')].map(n=>({box:box(n),mask:style(n).clipPath}))});
+ const light=geometry(),img=hero.querySelector('img');
+ const walker=document.createTreeWalker(title,NodeFilter.SHOW_TEXT),lines=[];let node;while(node=walker.nextNode())if(node.textContent.trim()){const range=document.createRange();range.selectNodeContents(node);for(const r of range.getClientRects())if(r.width&&r.height)lines.push({x:r.left+r.width/2,y:r.top+r.height/2,top:r.top,bottom:r.bottom});}
+ const lastLine=lines.sort((a,b)=>b.bottom-a.bottom)[0];lastLine.reachable=lastLine.x>=0&&lastLine.x<=innerWidth&&lastLine.y>=0&&lastLine.y<=innerHeight&&title.contains(document.elementFromPoint(lastLine.x,lastLine.y));
+ // getComputedStyle needs its second argument for a pseudo-element.
+ const b=getComputedStyle(title,'::before'),result={geometry:light,lastLine,banner:box(title.parentElement),backing:{color:b.backgroundColor,image:b.backgroundImage,content:b.content,pointerEvents:b.pointerEvents,radius:b.borderRadius,top:parseFloat(b.top),bottom:parseFloat(b.bottom),width:parseFloat(b.width)},ink:[...title.querySelectorAll('h2,.type-line,.hp,.lvl')].map(n=>({tag:n.className||n.tagName,color:style(n).color,shadow:style(n).textShadow,top:n.getBoundingClientRect().top,bottom:n.getBoundingClientRect().bottom})),owned:[...title.querySelectorAll('.card-owned-summary')].map(n=>({ink:style(n).color,background:style(n).backgroundColor})),image:{src:img.currentSrc,width:img.naturalWidth,height:img.naturalHeight},ambient:{display:style(ambient).display,background:style(art).backgroundImage,source:art.dataset.src,opacity:Number(style(art).opacity),transition:style(art).transitionDuration},sheet:{color:style(sheet).backgroundColor,blur:style(sheet).backdropFilter},panel:{color:style(panel).backgroundColor,opacity:Number(style(panel).opacity)},motion:style(hero.querySelector('.cs-art')).animationName};
+ applyTheme('dark',{persist:false});result.dark={geometry:geometry(),backing:getComputedStyle(title,'::before').content};applyTheme('light',{persist:false});return result;
+ });}
+async function ambientDifference(page){
+ const region=await page.locator('#sheet').evaluate(sheet=>{const r=sheet.getBoundingClientRect(),tabs=document.querySelector('.cs-tabs').getBoundingClientRect();return {x:Math.ceil(r.left+20),y:Math.ceil(tabs.bottom+10),width:Math.floor(r.width-40),height:Math.floor(Math.min(r.bottom-20,innerHeight-20)-tabs.bottom-10)};});assert(region.height>50,'lower content remains in viewport for art visibility proof');
+ const before=await page.screenshot({animations:'disabled'});await page.locator('#ambient .amb-art').evaluate(n=>n.style.visibility='hidden');
+ let after;try{after=await page.screenshot({animations:'disabled'});}finally{await page.locator('#ambient .amb-art').evaluate(n=>n.style.removeProperty('visibility'));}
+ return page.evaluate(async({a,b,r})=>{
+  const pixels=async data=>{const image=new Image();image.src='data:image/png;base64,'+data;await image.decode();const c=document.createElement('canvas');c.width=r.width;c.height=r.height;const x=c.getContext('2d');x.drawImage(image,r.x,r.y,r.width,r.height,0,0,r.width,r.height);return x.getImageData(0,0,r.width,r.height).data;};
+  const x=await pixels(a),y=await pixels(b);let diff=0,changed=0;for(let i=0;i<x.length;i+=4){let d=0;for(let c=0;c<3;c++)d+=Math.abs(x[i+c]-y[i+c]);diff+=d;if(d>=6)changed++;}return {region:r,meanDifference:diff/(x.length/4*3),changedFraction:changed/(x.length/4)};
+ },{a:before.toString('base64'),b:after.toString('base64'),r:region});
+}
+for(const [game,rows] of Object.entries(samples))for(const sample of rows){assert(sample.bytes.length>5000,game+' pinned art bytes');assert.match(sample.source,/^https:\/\//);sample.sha256=createHash('sha256').update(sample.bytes).digest('hex');}
+if(process.argv.includes('--validate-fixtures')){console.log('PASS: nine pinned same-game public-art fixtures, synthetic long title data and hosted-only Light glass matrix. No browser or network started.');process.exit(0);}
+if(process.env.GITHUB_ACTIONS!=='true')throw Error('Browser execution is restricted to hosted GitHub Actions.');
+const {chromium}=await import('playwright');
 const server=await startServer(),browser=await chromium.launch({headless:true});
 try{
  for(const game of ['mtg','ptcg','ygo']){
@@ -73,23 +105,68 @@ try{
    await page.locator('#content .card-grid > .grid-card').first().waitFor();
    await capture(page,`synthetic-search-theme-light-${game}-search-390`);
    await page.locator('#content .card-grid > .grid-card').first().click();await page.locator('#sheet[open] .cs-title').waitFor();
-   for(const width of [390,1440]){
-    await page.setViewportSize({width,height:1000});await noOverflow(page,'#sheetBody',`${game} light card ${width}`);
-    await page.waitForFunction(()=>{const img=document.querySelector('.cs-banner .cs-hero img');return img?.complete&&img.naturalWidth>0;});
-    const header=await page.locator('.cs-banner > .cs-title').evaluate(async title=>{
-     const {applyTheme}=await import('/settings-theme.js'),hero=title.parentElement.querySelector('.cs-hero'),box=node=>{const r=node.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};};
-     const geometry=()=>({title:box(title),hero:box(hero),mask:getComputedStyle(hero).maskImage});
-     const light=geometry(),backing=getComputedStyle(title,'::before'),img=hero.querySelector('img');
-     const result={geometry:light,backing:{color:backing.backgroundColor,content:backing.content,pointerEvents:backing.pointerEvents},ink:[...title.querySelectorAll('h2,.type-line,.hp,.lvl')].map(n=>({tag:n.className||n.tagName,color:getComputedStyle(n).color})),owned:[...title.querySelectorAll('.card-owned-summary')].map(n=>({ink:getComputedStyle(n).color,background:getComputedStyle(n).backgroundColor})),image:{src:img.currentSrc,width:img.naturalWidth,height:img.naturalHeight}};
-     applyTheme('dark',{persist:false});result.dark={geometry:geometry(),backing:getComputedStyle(title,'::before').content};applyTheme('light',{persist:false});return result;
-    });
-    assert(artHits.has(header.image.src),'header must display intercepted pinned artwork');assert.deepEqual(header.geometry,header.dark.geometry,'Light backing changes no hero/title geometry or art mask');assert.equal(header.dark.backing,'none','Dark title remains unchanged');assert.equal(header.backing.content,'""');assert.equal(header.backing.pointerEvents,'none');
-    const backing=rgb(header.backing.color),alpha=backing[3]??1,worst=backing.slice(0,3).map(v=>v*alpha+255*(1-alpha));assert(alpha>=.84);
-    for(const ink of header.ink)assert(contrast(rgb(ink.color),worst)>=4.5,`${game} ${width} ${ink.tag} contrast on worst-case pure-white art`);
-    for(const badge of header.owned)assert(contrast(rgb(badge.ink),rgb(badge.background))>=4.5,'Owned badge keeps contrasting dark ink');
-    headerChecks.push({game,width,source:pinned[game].source,file:pinned[game].file,...header});
-    await capture(page,`synthetic-search-theme-light-${game}-card-${width}`);
+   // Actual card layout with intentionally long synthetic names and pinned,
+   // unchanged public art. The art substitution is visual stress, not identity evidence.
+   const longTitle=await page.locator('.cs-title h2').textContent();assert(longTitle.length>65,'long title reaches the production renderer');
+   const heroImages=await page.locator('.cs-banner .cs-hero img').evaluateAll(nodes=>nodes.map(n=>n.currentSrc||n.src));
+   const cardImages=await page.locator('.cs-card .card-img').evaluateAll(nodes=>nodes.map(n=>n.currentSrc||n.src));
+   for(const [sampleIndex,sample] of samples[game].entries()) {
+    const ambientURL=server.base+`/theme-ambient-${game}-${sampleIndex}.jpg`;
+    await page.route(ambientURL,route=>route.fulfill({contentType:sample.type,body:sample.bytes}));
+    const urls=[...new Set([...heroImages,...cardImages])].map(src=>{const u=new URL(src);u.searchParams.set('theme-art',String(sampleIndex));return u.href;});
+    for(const src of urls)await page.route(src,async route=>{await route.fulfill({contentType:sample.type,body:sample.bytes});artHits.add(route.request().url());});
+    await page.evaluate(({urls,ambientURL,game})=>{
+     const nodes=[...document.querySelectorAll('.cs-banner .cs-hero img,.cs-card .card-img')];for(const img of nodes){const u=new URL(img.currentSrc||img.src);const target=urls.find(s=>{const v=new URL(s);v.searchParams.delete('theme-art');return v.href===u.href;})||urls[0];img.src=target;}
+     localStorage.setItem('cardstashy-ambient-v1',JSON.stringify({[game]:ambientURL}));
+    },{urls,ambientURL,game});
+    for(const width of [320,390,768,1440]) for(const glass of [true,false]) {
+     await page.setViewportSize({width,height:1000});
+     // Use the real setting so saved daily art and the actual glass class update.
+     await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('#sheet').open);
+     await page.locator('[data-act="menu"]').click();await page.locator('#settingsTab-app').click();
+     await page.locator('[data-change="setGlass"]').setChecked(!glass);await page.locator('[data-change="setGlass"]').setChecked(glass);
+     await page.locator('[data-act="closeSettings"]').click();
+     await page.locator('#content .card-grid > .grid-card').first().click();await page.locator('#sheet[open] .cs-title').waitFor();
+     await page.waitForFunction(()=>!window.__uiTestState.ui.sheetCtx?.previewBusy);
+     await page.evaluate(urls=>{for(const img of document.querySelectorAll('.cs-banner .cs-hero img,.cs-card .card-img')){const src=img.currentSrc||img.src;const target=urls.find(s=>{const u=new URL(s);u.searchParams.delete('theme-art');return u.href===src;})||urls[0];img.src=target;}},urls);
+     await page.locator('#sheetBody').evaluate(n=>n.scrollTop=0);
+     await page.waitForFunction(()=>[...document.querySelectorAll('.cs-banner .cs-hero img')].every(img=>img.complete&&img.naturalWidth>0));
+     await page.evaluate(async src=>{const image=new Image();image.src=src;await image.decode();await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));},ambientURL);
+     await noOverflow(page,'#sheetBody',`${game} light ${sample.label} glass=${glass} ${width}`);
+     const header=await readHeader(page);
+     headerChecks.push({game,width,glass,sample:sample.label,source:sample.source,file:sample.file,sha256:sample.sha256,...header});
+     assert(artHits.has(header.image.src),'header displays the exact intercepted public artwork');
+     assert.deepEqual(header.geometry,header.dark.geometry,'Light changes no title/hero/card geometry, foil or art masks');assert.equal(header.dark.backing,'none','Dark stays unchanged');
+     assert.equal(header.backing.content,'""');assert.equal(header.backing.pointerEvents,'none');assert.equal(header.backing.radius,'0px');
+     assert(header.geometry.title.y>=header.banner.y-.5&&header.geometry.title.y+header.geometry.title.height<=header.banner.y+header.banner.height+.5,'the complete long-title block fits inside the visible banner');
+     assert(header.lastLine.reachable,'the final text line is visible and not covered: '+JSON.stringify(header.lastLine));
+     assert.equal(header.backing.top,-80);assert.equal(header.backing.bottom,0);assert(Math.abs(header.backing.width-header.banner.width)<1,'fade spans the complete banner, not a rounded title box');
+     assert.match(header.backing.image,/linear-gradient/);assert.match(header.backing.image,/0\.92/);assert.equal(header.backing.color,'rgba(0, 0, 0, 0)');
+     const worst=[243,245,248].map(v=>v*.92);
+     for(const ink of header.ink){assert(contrast(rgb(ink.color),worst)>=4.5,`${game} ${width} ${ink.tag} AA on pure-black art`);assert.equal(ink.shadow,'none');assert(ink.top>=header.geometry.title.y&&ink.bottom<=header.geometry.title.y+header.geometry.title.height-18+.5,'every title line stays inside the opaque part of the soft fade');}
+     for(const badge of header.owned)assert(contrast(rgb(badge.ink),rgb(badge.background))>=4.5,'owned badge remains readable');
+     assert.equal(header.ambient.display,glass?'block':'none');assert.equal(header.ambient.source,ambientURL);
+     if(glass){assert.match(header.ambient.background,/theme-ambient/);assert.equal(header.ambient.opacity,.8);assert.equal(header.sheet.color,'rgba(246, 249, 253, 0.78)');assert.notEqual(header.sheet.blur,'none');assert.equal(header.panel.opacity,1,'glass changes background alpha, never text opacity');assert(rgb(header.panel.color)[3]<.7,'body panel remains transparent');}
+     else{assert.equal(rgb(header.sheet.color)[3]??1,1,'solid mode is opaque');assert.equal(header.sheet.blur,'none');}
+     assert.equal(header.motion,'none','reduced motion disables banner animation');if(glass)assert.equal(header.ambient.transition,'0s','reduced motion disables ambient transitions');
+     if(width!==320||sampleIndex===0)await capture(page,`synthetic-search-theme-light-${game}-${sample.label}-${glass?'glass':'solid'}-${width}`);
+     if([390,1440].includes(width)&&sampleIndex===0){await page.evaluate(async()=>(await import('/settings-theme.js')).applyTheme('dark',{persist:false}));await capture(page,`synthetic-search-theme-dark-${game}-${glass?'glass':'solid'}-${width}`);await page.evaluate(async()=>(await import('/settings-theme.js')).applyTheme('light',{persist:false}));}
+     if(width===390&&sampleIndex===0){const pixels=await ambientDifference(page);headerChecks.push({game,glass,pixels});if(glass)assert(pixels.meanDifference>=1&&pixels.changedFraction>=.05,'real daily-card art measurably shows through lower content: '+JSON.stringify(pixels));else assert(pixels.meanDifference<.01,'solid mode blocks the ambient layer');}
+    }
    }
+   // OS reduced transparency must win over the user's enabled glass setting.
+   await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('#sheet').open);
+   await page.locator('[data-act="menu"]').click();await page.locator('#settingsTab-app').click();await page.locator('[data-change="setGlass"]').setChecked(true);await page.locator('[data-act="closeSettings"]').click();
+   await page.locator('#content .card-grid > .grid-card').first().click();await page.locator('#sheet[open] .cs-title').waitFor();
+   const media=await app.context.newCDPSession(page);await media.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'},{name:'prefers-reduced-transparency',value:'reduce'}]});
+   const reduced=await page.evaluate(()=>({matches:matchMedia('(prefers-reduced-transparency: reduce)').matches,ambient:getComputedStyle(document.querySelector('#ambient')).display,color:getComputedStyle(document.querySelector('#sheet')).backgroundColor,blur:getComputedStyle(document.querySelector('#sheet')).backdropFilter}));
+   assert(reduced.matches);assert.equal(reduced.ambient,'none');assert.equal(reduced.blur,'none');assert.equal(rgb(reduced.color)[3]??1,1);headerChecks.push({game,reducedTransparency:reduced});
+   await page.setViewportSize({width:390,height:1000});await capture(page,`synthetic-search-theme-light-${game}-reduced-transparency-390`);
+   await media.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'},{name:'prefers-reduced-transparency',value:'no-preference'}]});await media.detach();
+   await app.context.setOffline(true);await page.setViewportSize({width:390,height:1000});
+   await page.locator('#sheetBody').evaluate(n=>n.scrollTop=n.scrollHeight);await page.locator('#sheetBody').evaluate(n=>n.scrollTop=0);await noOverflow(page,'#sheetBody',game+' cached offline card');
+   assert(await page.locator('.cs-title h2').isVisible());await capture(page,`synthetic-search-theme-light-${game}-cached-offline-390`);await app.context.setOffline(false);
+   assert.deepEqual(await page.evaluate(()=>window.__fixtureSensitiveWrites),[],'theme/art inspection never persists inventory or private values');
    await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('#sheet').open);assert.equal(await inventorySnapshot(page),original,'light-mode card inspection does not change saved lots');
    await page.setViewportSize({width:390,height:900});
    await page.reload();await page.locator('#app.ready').waitFor();
@@ -98,6 +175,6 @@ try{
    await page.locator('#settingsTheme-dark').check();assert.equal(await page.locator('html').getAttribute('data-theme'),'dark');
    await page.locator('[data-act="closeSettings"]').click();
    app.health();console.log(`PASS: ${game} four Settings tabs, light/dark reload, glass parity, keyboard, Back, fold resize, draft and inventory preservation`);
-  }finally{await app.context.close();}
+  }catch(error){await capture(page,`synthetic-search-settings-${game}-failure`,{settle:false}).catch(()=>{});throw error;}finally{await app.context.close();}
  }
 }catch(error){failure=String(error.stack||error);throw error;}finally{const out=new URL('../test-results/',import.meta.url);await mkdir(out,{recursive:true});await writeFile(new URL('synthetic-search-settings-theme-evidence.json',out),JSON.stringify({status:failure?'failed':'passed',evidence,headerChecks,...(failure?{error:failure}:{})},null,2));await browser.close();await server.close();}

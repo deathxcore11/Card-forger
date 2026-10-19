@@ -9,15 +9,16 @@ import {entryPrice} from './tcg.js';
 import {reviewPayload} from './ai-review.js';
 import {cleanDeck,validateReview,instructionsFor} from './ai-review-route.js';
 import {gamePlan} from './matchup.js';
+const exactCard={id:'test-print',name:'Test card',finishes:['nonfoil'],prices:{usd:'100'}},exactEntry={printingVerified:true,printingId:exactCard.id,finish:'nonfoil'};
 const conditions=['Near Mint','Lightly Played','Moderately Played','Heavily Played','Damaged'];
-for(const condition of conditions){const e={name:'Test card',qty:1,condition};assert.equal(conditionValue(100,e).price,condition==='Near Mint'?100:null);assert.equal(lotPrice(e,{[cardKey('Test card')]:{prices:{usd:'100'}}}),condition==='Near Mint'?100:null);for(const game of ['ptcg','ygo'])assert.equal(entryPrice({game,prices:{usd:100}},e),condition==='Near Mint'?100:null);}
+for(const condition of conditions){const e={...exactEntry,name:'Test card',qty:1,condition};assert.equal(conditionValue(100,e).price,condition==='Near Mint'?100:null);assert.equal(lotPrice(e,{}, {[exactCard.id]:exactCard}),condition==='Near Mint'?100:null);for(const game of ['ptcg','ygo'])assert.equal(entryPrice({game,prices:{usd:100}},e),condition==='Near Mint'?100:null);}
 assert.equal(conditionName('MP'),'Moderately Played');assert.equal(conditionValue(100,{condition:'unknown'}).price,null);
 const damaged={name:'Test card',qty:2,condition:'Damaged',manualValue:12,manualValueCondition:'Damaged'};
 assert.equal(conditionValue(100,damaged).price,12);assert.equal(conditionValue(100,{...damaged,condition:'Lightly Played'}).price,null);
 assert.equal(conditionValue(100,{...damaged,manualValue:0}).price,0);
 const quote={condition:'Lightly Played',currency:'USD',price:70,cardId:'a',variant:'holo'};
 assert.equal(conditionValue(100,{condition:'LP',cardId:'a',variant:'holo'},[quote]).price,70);assert.equal(conditionValue(100,{condition:'LP',cardId:'a',variant:'reverse'},[quote]).price,null);
-const v=collectionValue([{name:'Test card',condition:'Near Mint',qty:1},damaged,{name:'Test card',condition:'LP',qty:1}],{[cardKey('Test card')]:{prices:{usd:'100'}}});assert.equal(v.total,124);assert.equal(v.unpriced,1);assert.equal(v.spareValue,0,'unpriced mixed-condition spares cannot borrow a NM reference');
+const v=collectionValue([{...exactEntry,name:'Test card',condition:'Near Mint',qty:1},damaged,{...exactEntry,name:'Test card',condition:'LP',qty:1}],{}, {[exactCard.id]:exactCard});assert.equal(v.total,124);assert.equal(v.unpriced,1);assert.equal(v.spareValue,0,'unpriced mixed-condition spares cannot borrow a NM reference');
 const lots=[{...damaged,id:'d'},{id:'n',name:'Test card',qty:3,condition:'Near Mint'}];const html=cardActionButtons({game:'ptcg',existing:true,quantityHtml:quickQuantity(lots,'d')});assert.match(html,/data-act="quickOwn"/);assert.match(html,/quickWish/);assert.match(html,/One more owned copy/);assert.match(html,/Owned copies in selected lot">2/);assert.equal(ownedCardLots(lots,{name:'Test card'}).length,2);
 const moltres={name:'Moltres',category:'Pokemon',stage:'Basic',prize:1,hp:120,attacks:[{name:'Fighting Wings',cost:['Fire'],damage:'20+',effect:"If your opponent’s Active Pokémon is a Pokémon ex, this attack does 90 more damage."}]};
 const role=pokemonRole(moltres);assert.equal(role.attacks[0].conditionalDamage,110);assert.deepEqual(role.attacks[0].targets,['ex']);assert.equal(role.attacks[0].cost.length,1);

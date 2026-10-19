@@ -585,7 +585,7 @@ export const indexCardId = (g, id) => (g === "ygo" ? id.split(":")[1] : id);
 export function textVerifiedMatch(g, cand, read = {}) {
   if (!cand?.exact || !cand.card || cand.printingAmbiguous || (g==='ygo'&&cand.setReleaseUnverified)) return false;
   const evidence=signalEvidence(g,{...cand.card,name:cand.card.name||cand.name},read);
-  if(evidence.conflicts.length||evidence.identifierConflict||evidence.signalConflict||evidence.nameConflict||cand.identityConflict||!evidence.exactMatch)return false;
+  if(evidence.conflicts.length||evidence.identifierConflict||evidence.identifierUncertain||evidence.signalConflict||evidence.nameConflict||cand.identityConflict||!evidence.exactMatch)return false;
   const names = [cand.name];
   const identifiers=scanIdentifierEvidence(g,read).observations;
   if (g === "ptcg") return names.some(n => scanCandidateMatches(cand.card, n, identifiers)) && identifiers.length > 0;

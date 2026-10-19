@@ -1,14 +1,14 @@
-import {pokemonTitleReadings,shortTrainerNames,pokemonTitleLabel,scanNameKey,scanCardNameKey,ptcgNumbers,ptcgNumberMatches,ptcgIdentifierKey,scanCollectorKey,mtgCollectors,ygoSetCodes,ygoPasscodes} from './scan.js';
+import {pokemonTitleReadings,shortTrainerNames,pokemonTitleLabel,scanNameKey,scanCardNameKey,ptcgNumbers,ptcgNumberMatches,ptcgIdentifierKey,scanCollectorKey,mtgIdentifierEvidence,ygoCodeReadings,ygoPasscodes} from './scan.js';
 import {pokemonTrainerSubtitle} from './pokemon-identity.js';
 export const collectorKey=value=>String(value??'').trim().replace(/^0+(?=\d)/,'').toLowerCase();
 // Evidence is independent of which observations happen to exist in the local
 // catalogue. One known reading plus a different unknown reading is still a conflict.
 export function scanIdentifierEvidence(g,read={}){
  const sources=[String(read.code||''),String(read.full||'')];
- if(g==='mtg'){const observations=mtgCollectors(read.code,read.full);return {observations,identifierConflict:observations.length>1};}
+ if(g==='mtg'){const evidence=mtgIdentifierEvidence(read.code,read.full);return {...evidence,identifierConflict:evidence.observations.length>1};}
  if(g==='ptcg'){const observations=[...new Map(sources.flatMap(ptcgNumbers).map(n=>[ptcgIdentifierKey(n.num,n.total)||scanCollectorKey(n.num)+'/'+scanCollectorKey(n.total),n])).values()];return {observations,identifierConflict:observations.length>1};}
- const observations=[...new Set(sources.flatMap(ygoSetCodes))],passcodes=[...new Set(sources.flatMap(ygoPasscodes))];
- return {observations,passcodes,identifierConflict:observations.length>1||passcodes.length>1};
+ const readings=[...new Map(sources.flatMap(ygoCodeReadings).map(r=>[r.raw,r])).values()],observations=[...new Set(readings.map(r=>r.code))],passcodes=[...new Set(sources.flatMap(ygoPasscodes))];
+ return {observations,readings,passcodes,identifierUncertain:readings.some(r=>r.corrected),identifierConflict:readings.length>1||passcodes.length>1};
 }
 export function readScanSignals(g,read={}){
  const header=String(read.name||''),stats=String(read.stats||''),text=header+'\n'+stats+'\n'+String(read.full||'');
@@ -45,7 +45,7 @@ export function signalEvidence(g,card,read={}){
  if(s.pt&&numeric(card?.power)&&numeric(card?.toughness)){if(s.pt[0]!==Number(card.power)||s.pt[1]!==Number(card.toughness))conflicts.push('power/toughness');else agrees.push('power/toughness');}
  if(s.stage&&card?.stage){if(!stages.includes(String(card.stage).replace(/\s/g,'').toLowerCase()))conflicts.push('stage');else agrees.push('stage');}
  if(s.mana&&card?.mana_cost){if(s.mana!==String(card.mana_cost).toUpperCase())conflicts.push('mana cost');else agrees.push('mana cost');}
- const {observations,passcodes=[],identifierConflict}=scanIdentifierEvidence(g,read);
+ const {observations,passcodes=[],identifierConflict,identifierUncertain=false}=scanIdentifierEvidence(g,read);
  if(g==='ptcg'){if(observations.length&&card?.set?.number&&card?.set?.total){if(!observations.some(n=>ptcgNumberMatches(card,n)))conflicts.push('collector number');else agrees.push('collector number');}}
  if(g==='mtg'){if(observations.length&&card?.set&&card?.collector_number){if(!observations.some(c=>c.set===String(card.set).toLowerCase()&&collectorKey(c.number)===collectorKey(card.collector_number)))conflicts.push('set / collector number');else agrees.push('set / collector number');}}
  if(g==='ygo'){
@@ -55,15 +55,15 @@ export function signalEvidence(g,card,read={}){
  const attacks=[...new Set([...(card?.attackNames||[]),...(card?.attacks||[]).map(x=>x.name)])];
  for(const name of attacks)if(scanNameKey(name).length>=5&&scanNameKey(s.text).includes(scanNameKey(name)))agrees.push('attack '+name);
  const title=scanTitleEvidence(g,card,read);
- return {conflicts,agrees,score:agrees.length*20+(title.exactMatch?30:0),identifierConflict,signalConflict,...title};
+ return {conflicts,agrees,score:agrees.length*20+(title.exactMatch?30:0),identifierConflict,identifierUncertain,signalConflict,...title};
 }
 export function rankScanCandidates(g,cands,read={}){
  const ranked=cands.map(c=>{const e=signalEvidence(g,{...c.card,name:c.card?.name||c.name},read),codes=g==='ygo'?scanIdentifierEvidence(g,read).observations:[];if(codes.length&&c.print&&!codes.includes(c.print.split('|')[0]))e.conflicts.push('set code');return {c,e};});
  const supported=ranked.some(({e})=>e.exactMatch&&!e.conflicts.length);
  return ranked.filter(({c,e})=>!e.conflicts.length&&(!supported||!e.nameConflict||e.exactMatch||c.identitySource==='artwork'))
  .sort((a,b)=>b.e.score-a.e.score).map(({c,e})=>{
-  const identityConflict=e.nameConflict||c.identityConflict===true,conflict=e.identifierConflict||identityConflict||e.signalConflict;
-  return {...c,exact:conflict?false:c.exact,...(e.identifierConflict?{identifierConflict:true}:{}),...(e.signalConflict?{signalConflict:true}:{}),...(identityConflict?{identityConflict:true}:{}),why:e.signalConflict?'Conflicting printed stats · check card identity':e.identifierConflict?'Conflicting printed identifiers · check printing'+(identityConflict?' and card identity':''):identityConflict?'Conflicting title evidence · check card identity':e.agrees.length?`${e.agrees.join(' + ')} agree · ${c.exact?'check finish and edition':'check printing'}`:c.why,signalMatches:e.agrees};
+  const identityConflict=e.nameConflict||c.identityConflict===true,conflict=e.identifierConflict||e.identifierUncertain||identityConflict||e.signalConflict;
+  return {...c,exact:conflict?false:c.exact,...(e.identifierConflict?{identifierConflict:true}:{}),...(e.identifierUncertain?{identifierUncertain:true}:{}),...(e.signalConflict?{signalConflict:true}:{}),...(identityConflict?{identityConflict:true}:{}),why:e.signalConflict?'Conflicting printed stats · check card identity':e.identifierConflict?'Conflicting printed identifiers · check printing'+(identityConflict?' and card identity':''):e.identifierUncertain?'Uncertain printed characters · check the full code':identityConflict?'Conflicting title evidence · check card identity':e.agrees.length?`${e.agrees.join(' + ')} agree · ${c.exact?'check finish and edition':'check printing'}`:c.why,signalMatches:e.agrees};
  });
 }
 // Bounded edit distance is a suggestion tool; fuzzy names alone never verify a printing.

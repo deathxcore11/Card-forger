@@ -64,11 +64,11 @@ S.catalog = { bolt: { id: 'exact-mtg', name: 'Bolt', prices: { usd: '10' }, cond
 for (const game of ['mtg','ygo','ptcg']) {
   const card = game === 'mtg' ? S.catalog.bolt : { game, id: `exact-${game}`, name: 'Fixture', prices: { usd: 10 }, variants: [{ key: 'normal', usd: 10 }], conditionQuotes: [] };
   if (game !== 'mtg') T.cache[game][card.id] = card;
-  const entry = { id: `lot-${game}`, cardId: card.id, name: card.name, qty: 2, condition: 'Lightly Played', ...(game === 'ptcg' ? { variant: 'normal' } : {}) };
+  const entry = { id: `lot-${game}`, cardId: card.id, name: card.name, qty: 2, condition: 'Lightly Played', ...(game === 'ptcg' ? { variant: 'normal' } : game === 'mtg' ? {printingId:card.id,printingVerified:true,finish:'nonfoil'} : {}) };
   const state = game === 'mtg' ? S.state : S.state.tcg[game]; state.collection = [entry];
   const value = () => game === 'mtg' ? magicValue(state.collection, S.catalog) : T.collectionValue(game);
   assert.equal(value().total, 0); assert.equal(value().unpriced, 2);
-  const quote = { cardId: card.id, condition: 'Lightly Played', currency: 'USD', price: 7.25, priceStatus: 'current', validUntil: '2099-01-01', ...(game === 'ptcg' ? { variant: 'normal' } : {}) };
+  const quote = { cardId: card.id, condition: 'Lightly Played', currency: 'USD', price: 7.25, priceStatus: 'current', validUntil: '2099-01-01', ...(game === 'ptcg' ? { variant: 'normal' } : game === 'mtg' ? {printingId:card.id,finish:'nonfoil'} : {}) };
   entry.conditionQuotes = [{ ...quote, currency: 'EUR' }]; assert.equal(value().unpriced, 2, 'wrong currency is never converted or substituted');
   entry.conditionQuotes = [quote]; assert.equal(value().total, 14.5); assert.equal(value().unpriced, 0);
   entry.qty = 3; assert.equal(value().total, 21.75, 'local lot edits immediately affect the same resolver');

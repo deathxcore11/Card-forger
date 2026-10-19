@@ -65,7 +65,7 @@ import { loadMeta, metaState, ptcgIcon, allCachedMeta, cleanName } from "./meta.
 import { tcgPower, powerPanel, powerChip, shownPower, asShown, powerReadiness } from "./power.js";
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
 import { rankPairs, ygoTags, ptcgTags } from "./pairing.js";
-import { scanLookupNames, nameCandidates, scanCandidateMatches, ygoSetCodes, ygoPasscodes, ptcgNumbers, similarity, scanNameKey, textPhrases, attackNames } from "./scan.js";
+import { scanLookupNames, nameCandidates, scanCandidateMatches, parseYgoSetCode, ygoSetCodes, ygoPasscodes, ptcgNumbers, similarity, scanNameKey, textPhrases, attackNames } from "./scan.js";
 import {rankScanCandidates,scanIdentifierEvidence} from './scan-signals.js';
 import { adaptList, ownedDraft, engineOf, similarLists, swapPool, costToFinish, unpricedCopies } from "./adapt.js";
 export { metaState, similarLists };
@@ -2349,13 +2349,13 @@ export function registerTcg(c) {
         out.push(candidate);
       };
     const all = `${read.code}\n${read.full}`,
-      names = manual ? [read.name] : scanLookupNames(G, read);
+      names = manual ? (G==='ygo'&&parseYgoSetCode(read.name)?[]:[read.name].filter(Boolean)) : scanLookupNames(G, read);
     let limited=false;
     try {
     if (G === "ygo") {
       // The printed region is identity, not a preference. A JP or legacy
       // regionless code must never turn into an English printing.
-      const codes = manual?ygoSetCodes(read.name):scanIdentifierEvidence(G,read).observations;
+      const codes = manual?[...new Set([...ygoSetCodes(read.code||''),...ygoSetCodes(read.name||'')])]:scanIdentifierEvidence(G,read).observations;
       for (const code of codes.slice(0, 4)) {
         tried.push(code);
         const info = await lookup(["setcode",code],()=>fetch("https://db.ygoprodeck.com/api/v7/cardsetsinfo.php?setcode=" + encodeURIComponent(code)).then((r) => (r.ok ? r.json() : null)));

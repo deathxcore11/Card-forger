@@ -1,3 +1,4 @@
+import {magicOwnedCard} from './magic-owned-detail.js';
 import {printedCardColors} from './magic-card-color.js';
 // Read-only Collection Value presentation shared by all three games. The caller
 // supplies resolved owned-lot prices; this module never fetches or records value.
@@ -116,7 +117,7 @@ export function valuePageOverview({ game='mtg', value, history=[], rows=[], now=
 
 function lotDetails(game, entry, card) {
   const condition=entry.condition||'Near Mint', variant=card?.variants?.find(v=>v.key===entry.variant)?.label||entry.variantLabel||entry.variant;
-  if(game==='mtg') return [entry.printingVerified?(card?.set_name||card?.set):entry.setName||entry.set, entry.printingVerified?card?.collector_number:entry.collectorNumber, entry.finish||'nonfoil', condition].filter(Boolean).join(' · ');
+  if(game==='mtg') return [card?.set_name||card?.set||entry.setName||entry.set, card?.collector_number||entry.collectorNumber, entry.finish||'nonfoil', condition, !card?'Exact printing unavailable':''].filter(Boolean).join(' · ');
   if(game==='ptcg') return [card?.set?.name||entry.setName,card?.set?.number?`#${card.set.number}`:'',variant,condition].filter(Boolean).join(' · ');
   return [entry.printing,entry.rarity,{'1st-edition':'First Edition',unlimited:'Unlimited',limited:'Limited Edition'}[entry.edition]||entry.edition,condition].filter(Boolean).join(' · ');
 }
@@ -131,6 +132,7 @@ function valueLotArtwork(game, card, entry, shown) {
 export function valueTopLots({ game='mtg', rows=[] }) {
   const top=rows.filter(r=>finiteValue(r.unit)&&Number(r.entry?.qty)>0).map(r=>({...r,total:r.unit*Number(r.entry.qty)})).sort((a,b)=>b.total-a.total||String(a.entry.name).localeCompare(String(b.entry.name))||String(a.entry.id).localeCompare(String(b.entry.id))).slice(0,12);
   return `<section class="panel value-panel value-top"><div class="value-section-head"><h3>Most valuable</h3><span class="small muted">Owned lots</span></div><div class="value-lots">${top.map(({entry,card,unit,total})=>{
+    if(game==='mtg')card=magicOwnedCard(entry,card);
     const action=game==='mtg'?`data-act="card" data-name="${esc(entry.name)}"`:`data-act="tCard" data-id="${esc(entry.cardId)}"`, ctx={priceFinish:game==='mtg'?entry.finish||'nonfoil':game==='ptcg'?entry.variant||'unresolved-owned-variant':entry.variant,priceEdition:entry.printing&&entry.rarity?entry.printing+'::'+entry.rarity:'',priceYgoEdition:entry.edition},
       source=finishArtworkCard(game,card,ctx), shown=source?{...source,prices:{...source.prices,usd:unit},...(source.setContext?{setContext:{...source.setContext,price:unit}}:{})}:source;
     return `<button type="button" class="value-lot" ${action} data-entry="${esc(entry.id)}" aria-label="Open ${esc(entry.name)}, ${esc(lotDetails(game,entry,card))}, ${copies(entry.qty)}"><span class="value-lot-art" ${finishAttrs(game,game==='mtg'&&!entry.printingVerified?null:card,ctx,'small')}>${valueLotArtwork(game,card,entry,shown)}</span><span class="value-lot-info"><strong>${esc(entry.name)}</strong><span class="value-lot-details">${esc(lotDetails(game,entry,card))}</span><span class="value-lot-copies">${copies(entry.qty)} · ${usd(unit)} each</span></span><span class="value-lot-total">${usd(total)}</span></button>`;

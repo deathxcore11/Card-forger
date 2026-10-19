@@ -33,6 +33,9 @@ export const FINISH_MASKS = Object.freeze({
  'pk-trainer-art':'inset(18% 8.2% 40% 8.2%)',
  'pk-sv-art':'inset(9.8% 7.8% 52.5% 7.8%)',
  'pk-sv-surround':'polygon(evenodd, 5.5% 3%,94.5% 3%,94.5% 97%,5.5% 97%,5.5% 3%,7% 9.2%,7% 50.5%,93% 50.5%,93% 9.2%,7% 9.2%)',
+ // NEC #077 inverted display commander only. Traced from Wizards' 265x370 image.
+ // Artwork, outer black border, footer and the security oval are deliberately outside.
+ 'mtg-nec77-metal':'polygon(evenodd, 4.2% 5.5%,6.8% 3.3%,10% 4.5%,19% 4.5%,22% 3.6%,35% 4.5%,48% 2.6%,57% 3.2%,63% 4.8%,80% 4.5%,84% 3.2%,88% 4.7%,93% 4.7%,96% 7%,95% 57%,96% 59%,94% 62%,94% 89%,95% 91%,94% 94.5%,78% 94.5%,77% 92.8%,56% 92.8%,55% 91.5%,52% 90.7%,48% 90.7%,45% 91.5%,44% 92.8%,8% 92.8%,5% 91%,4.5% 62%,4% 59%,5.5% 57%,5.5% 11%,4.2% 5.5%,7.5% 11.1%,7.5% 56.3%,92.5% 56.3%,92.5% 11.1%,7.5% 11.1%)',
  'mtg-frame':'polygon(evenodd, 3% 2%,97% 2%,97% 98%,3% 98%,3% 2%,9% 12%,9% 54%,91% 54%,91% 12%,9% 12%,9% 60%,9% 90%,91% 90%,91% 60%,9% 60%)',
  'ygo-art':'inset(18.3% 11.7% 29.4% 11.7%)',
  'ygo-name':'inset(5.5% 18% 89.7% 7.2%)',
@@ -67,6 +70,7 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
   if(!['normal','transform','modal_dfc','adventure','leveler','saga','class','token','double_faced_token','planar'].includes(layout)||layout==='planar')return unknown(key,label);
   if(face && !c.card_faces?.[face]?.image_uris)return unknown(key,label);
   if(physicalFinish==='foil')return preset(key,label,'mtg-foil',[layer('card','rainbow')],FINISH_SOURCES.scryfall);
+  if(physicalFinish==='etched'&&c.id==='3305c70f-188a-4c01-b605-d583ded84e18'&&c.set==='nec'&&String(c.collector_number)==='77'&&c.layout==='normal'&&face===0&&['legendary','inverted','etched'].every(x=>c.frame_effects?.includes(x))&&!c.full_art&&!c.borderless)return {...preset(key,label,'mtg-nec77-etched',[layer('mtg-nec77-metal','metal')],'https://magic.wizards.com/en/news/feature/kamigawa-neon-dynasty-product-overview-2022-01-27'),reason:'Simulated foil-etched finish · approximate metallic coverage'};
   if(physicalFinish==='etched'&&['cmr','clb'].includes(c.set)&&layout==='normal'&&!c.borderless&&!c.full_art&&!c.frame_effects?.some(x=>['showcase','extendedart'].includes(x)))return preset(key,label,'mtg-etched',[layer('mtg-frame','metal')],FINISH_SOURCES.etched);
   return unknown(key,label);
  }

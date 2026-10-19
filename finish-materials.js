@@ -2,7 +2,7 @@
 // the selected finish. These textures approximate light; they do not certify a card.
 export function finishMaterialProfile(game,card,model){
  if(!model.layers?.length)return '';
- if(game==='mtg')return model.effect==='mtg-etched'?'etched':model.effect==='mtg-foil'?'traditional':'';
+ if(game==='mtg')return model.effect==='mtg-nec77-etched'?'nec77-etched':model.effect==='mtg-etched'?'etched':model.effect==='mtg-foil'?'traditional':'';
  if(game==='ygo')return model.effect==='ygo-starlight'?'starlight':model.effect;
  if(model.pattern==='cosmos'&&model.effect==='ptcg-holo')return 'cosmos-holo';
  if(card.id==='base1-4'&&model.effect==='ptcg-holo')return 'classic-holo';
@@ -13,7 +13,7 @@ export function finishMaterialProfile(game,card,model){
  if(card.id==='swsh1-52'&&model.effect==='ptcg-reverse')return 'reverse-water';
  return 'standard';
 }
-export const hasFinishPattern=profile=>['classic-holo','cosmos-holo','line-holo','textured-holo','reverse-water','ygo-secret','starlight','etched'].includes(profile);
+export const hasFinishPattern=profile=>['classic-holo','cosmos-holo','line-holo','textured-holo','reverse-water','ygo-secret','starlight','etched','nec77-etched'].includes(profile);
 const titleMasks={
  '9753964':{sha:'4dcd41511873cd9fab6128b6a5a99df8aec85c5068df93bdf6ab41a406d0ca69',file:'abyss-title.svg'},
  '38814750':{sha:'aabad1d0da6e913f705f61bda15736e87f9821acbb98dda9a13b8116c9e52936',file:'gamma-title.svg'},

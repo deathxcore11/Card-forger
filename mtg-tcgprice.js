@@ -61,6 +61,13 @@ export async function ensureTcgPrices(cards, { retry = false } = {}) {
 // Used only where no store prices the printing at all.
 let mine = {};
 export const useMyPrices = (map) => { mine = map || {}; };
+// Read a private override by saved printing identity when its public card cache
+// is unavailable. This is not a provider quote and never consults name keys.
+export function myPrintingPrice(printingId,finish){
+ if(typeof printingId!=='string'||!printingId||!['nonfoil','foil','etched'].includes(finish))return null;
+ const value=mine[printingId+':'+finish]?.price;
+ return value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value))&&Number(value)>=0?Number(value):null;
+}
 // Existing unscoped keys remain readable only in the old generic-reference context.
 // A selected release never inherits a card-wide personal value or another variant/edition.
 export function myPriceKey(c, finish = "nonfoil", ctx = {}) {

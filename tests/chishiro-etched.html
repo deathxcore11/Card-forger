@@ -1,0 +1,11 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NEC #077 exact printing finish study</title><link rel="stylesheet" href="../finish-effects.css"><style>
+*{box-sizing:border-box}body{margin:0;padding:18px;background:#151a20;color:#f4eee4;font:15px system-ui}html[data-theme=light] body{background:#f3f0e9;color:#202329}h1{font-size:20px}main{display:flex;flex-wrap:wrap;gap:24px}.study{width:min(265px,100%)}.surface,.cd-zoom{position:relative;width:100%;line-height:0}.surface img{display:block;width:100%;height:auto}.surface{--mx:35%;--my:70%}.finish-auto{animation-play-state:paused}button{min-height:44px}p{line-height:1.5}
+</style></head><body><h1>Chishiro NEC #077 · foil-etched approximation</h1><p>Exact public Wizards reference. Fine metallic reflection is simulated, not a measured reproduction.</p><main></main><script type="module">
+import {finishAttrs,finishPreview,attachFinishPreview,setFinishEffects} from '../finish-preview.js';
+const card=await (await fetch('../test-fixtures/finish-effects/chishiro-nec77.json')).json();
+const root=document.querySelector('main');
+for(const [key,view,container] of [['detail','detail',''],['zoom','zoom',''],['gallery','large','view-gallery'],['grid','large','view-grid']]){
+ root.insertAdjacentHTML('beforeend',`<section class="study ${container}" id="${key}"><h2>${key}</h2><div class="surface" ${finishAttrs('mtg',card,{priceFinish:'etched'},view)}><div class="cd-zoom"><img src="../test-fixtures/finish-effects/chishiro-nec77.png" alt="Public Wizards image of NEC 077"></div></div>${finishPreview('mtg',card,{priceFinish:'etched'})}</section>`);
+}
+window.setEffects=setFinishEffects;attachFinishPreview(root);document.documentElement.dataset.ready='true';
+</script></body></html>

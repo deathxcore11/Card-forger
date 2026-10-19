@@ -1,5 +1,6 @@
 import {initCatalog,catalogCandidate,catalogManifest,compileCatalog} from './scan-catalog.js';
 import {collectorKey} from './scan-signals.js';
+import {parseYgoSetCode} from './scan.js';
 const text=v=>String(v||'').trim();
 const nameKey=v=>text(v).toLocaleLowerCase().replace(/\s+/g,' ');
 const lookupPacks=new Map();
@@ -27,7 +28,7 @@ export async function reviewLookupCatalog(game,{number=''}={}){
 export function scannerNumberParts(game,value) {
  const v=text(value).replace(/^#/,'');
  if(!v)return {number:'',total:'',set:''};
- if(game==='ygo')return /^[a-z0-9]{2,10}-[a-z0-9]{1,12}$/i.test(v)?{number:v.toUpperCase(),total:'',set:''}:null;
+ if(game==='ygo'){const code=parseYgoSetCode(v);return code?{number:code,total:'',set:''}:null;}
  const match=game==='mtg'?v.match(/^(?:([a-z0-9]{2,8})\s+(?:#\s*)?)?([a-z]*\d+[a-z★☆†]*)(?:\/(\d+))?$/i):v.match(/^([a-z]*\d+[a-z★☆†]*)(?:\/(\d+))?$/i);
  if(!match)return null;
  return game==='mtg'?{set:(match[1]||'').toLowerCase(),number:match[2],total:match[3]||''}:{set:'',number:match[1],total:match[2]||''};
@@ -67,7 +68,7 @@ export function createScannerLookup({requestMagic,sources,candById,match,local=r
     const q=`game:paper cn:"${parts.number.replace(/["\\]/g,'')}"${name?' name:"'+name.replace(/["\\]/g,'')+'"':''}`;
     const page=await requestMagic('/cards/search?'+new URLSearchParams({q,unique:'prints'}));found=(page?.data||[]).slice(0,24).map(card=>({id:card.id,name:card.name,card}));
    }else if(game==='ptcg'&&number){found=(await sources.ptcg.byNameNumber(name,parts.number)).slice(0,24).map(card=>({id:card.id,name:card.name,card,localReference:true}));}
-   else {found=(await match(game,{name:game==='ygo'&&number?parts.number:name,code:'',full:''},'en',true)).cands||[];}
+   else {found=(await match(game,{name,code:game==='ygo'?parts.number:'',full:''},'en',true)).cands||[];}
   }
   if(!isCurrent())return [];
   const out=new Array(found.length);let index=0;

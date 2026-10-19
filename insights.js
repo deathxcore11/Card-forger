@@ -1,3 +1,5 @@
+import {myPrintingPrice} from './mtg-tcgprice.js';
+import {magicOwnedCard} from './magic-owned-detail.js';
 import {printedCardColors} from './magic-card-color.js';
 import {recordValueObservation} from './value-history.js';
 import {conditionValue} from './condition-value.js';
@@ -569,10 +571,13 @@ export function deckValue(cards, catalog, choices = {}) {
 }
 
 export function lotPrice(e, catalog, printings = {}) {
-  const c =
-    (e.printingVerified && printings[e.printingId]) ||
-    catalog[cardKey(e.name)];
-  return conditionValue(cardPrice(c, e.finish || "nonfoil") ?? cardPrice(c),e,[...(c?.conditionQuotes||[]),...(e.conditionQuotes||[])]).price;
+  const c = magicOwnedCard(e,printings[e.printingId]),
+    bound = e.printingVerified===true && !!e.printingId && ['nonfoil','foil','etched'].includes(e.finish||'nonfoil'),
+    quotes = bound?[...(c?.conditionQuotes||[]),...(e.conditionQuotes||[])]:[],
+    reference=c?cardPrice(c,e.finish||'nonfoil'):bound&&!printings[e.printingId]?myPrintingPrice(e.printingId,e.finish||'nonfoil'):null;
+  // Saved physical lots never inherit a same-name sibling or a different finish.
+  // A compatible private value survives; provider quotes need saved exact identity.
+  return conditionValue(reference,e,quotes).price;
 }
 
 export function collectionValue(entries, catalog, printings = {}, decks = []) {
@@ -584,7 +589,7 @@ export function collectionValue(entries, catalog, printings = {}, decks = []) {
     used = new Map();
   for (const e of entries) {
     const p = lotPrice(e, catalog, printings),
-      c = (e.printingVerified && printings[e.printingId]) || catalog[cardKey(e.name)];
+      c = magicOwnedCard(e,printings[e.printingId]);
     owned.set(cardKey(e.name), (owned.get(cardKey(e.name)) || 0) + e.qty);
     if (p === null || p === undefined) {
       unpriced += e.qty;

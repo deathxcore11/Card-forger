@@ -25,9 +25,9 @@ export const conditionValueNote=(e,quotes=[])=>{
  const old=lastKnownConditionQuote(e,quotes);
  return result.kind==='manual'?'Your value for this condition':result.kind==='condition-quote'?'Condition estimate · '+(result.quote.source||'provider'):old?`Last known ${usd(old.price)} · ${conditionQuoteTiming(old)} · not a current condition value`:conditionName(e?.condition)==='Near Mint'?'Reference price':'Condition quote unavailable · excluded from value';
 };
-export function conditionBadge(entry,quotes=[]){
+export function conditionBadge(entry,quotes=[],noteOverride=""){
  const condition=conditionName(entry?.condition),code={'Near Mint':'NM','Lightly Played':'LP','Moderately Played':'MP','Heavily Played':'HP',Damaged:'DMG'}[condition]||'?';
- const note=conditionValueNote(entry,quotes);
+ const note=noteOverride||conditionValueNote(entry,quotes);
  return `<button type="button" class="condition-badge" data-condition="${esc(condition)}" data-condition-info="${esc(condition+' · '+note)}" aria-label="${esc(condition+'. '+note+'. Show condition details')}">${code}</button>`;
 }
 

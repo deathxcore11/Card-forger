@@ -565,3 +565,43 @@ jobs:
         with:
           name: pokemon-promos-browser-evidence
           path: test-results/pokemon-promos-*
+
+  chishiro-etched-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - name: Inspect exact NEC etched profile and motion controls
+        run: node tests/chishiro-etched-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chishiro-etched-browser-evidence
+          path: test-results/chishiro-etched/
+
+  magic-owned-detail-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - name: Test saved Magic printing identity through every detail entry path
+        run: node tests/magic-owned-detail-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: magic-owned-detail-browser-evidence
+          path: test-results/magic-owned-detail-*

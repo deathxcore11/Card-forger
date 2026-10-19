@@ -147,3 +147,8 @@ for(const game of ['mtg','ptcg','ygo']){
  }
 }
 console.log('PASS: all-game cover count/star/art parity, filtered and missing references, unique exact stack provenance, safe unstar, nine-slot cap, explicit undoable cleanup, reload and stale-UI guards.');
+
+// The long cover-only cleanup label must wrap without reducing its touch target.
+const binderCSS=readFileSync(new URL('./style.css',import.meta.url),'utf8'),noticeCSS=binderCSS.match(/\.binder-cover-notice > \.btn \{([^}]+)\}/)?.[1]||'';
+for(const declaration of [/max-width:100%/,/min-width:0/,/min-height:44px/,/height:auto/,/white-space:normal/,/padding-block:9px/,/line-height:1\.35/])assert.match(noticeCSS,declaration);
+assert.doesNotMatch(noticeCSS,/overflow:hidden|text-overflow:ellipsis|font-size:/,'the full label stays readable rather than being clipped or shrunk');

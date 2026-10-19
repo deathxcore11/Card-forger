@@ -107,3 +107,9 @@
 [data-material-profile=etched] .finish-metal{background-image:url('assets/finishes/metal-grain.svg'),radial-gradient(ellipse at var(--finish-x) var(--finish-y),#fff4cba6,transparent 50%);background-size:100% 100%;mix-blend-mode:soft-light;opacity:.7}
 [data-material-profile=etched] .finish-pattern{background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#cde1d555,transparent 44%);mix-blend-mode:soft-light;opacity:.4}
 .finish-overlay[data-material-profile] :is(.finish-layer,.finish-pattern){mask-size:100% 100%;mask-repeat:no-repeat}
+/* Exact NEC #077 inverted display commander. A restrained approximation of
+   metallic grain, not rainbow foil. Soft-light preserves the printed white text.
+   Coverage is supplied by its exact-printing mask, including the rules field. */
+.finish-overlay[data-material-profile="nec77-etched"] .finish-metal{background-image:url('assets/finishes/metal-grain.svg'),radial-gradient(ellipse at var(--finish-x) var(--finish-y),#f1dfb8b3 0%,#b79c7044 30%,transparent 64%);background-size:100% 100%;mix-blend-mode:soft-light;opacity:.62}
+.finish-overlay[data-material-profile="nec77-etched"] .finish-metal::after{background:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#f6eee055,transparent 56%);opacity:.3}
+.finish-overlay[data-material-profile="nec77-etched"] .finish-pattern{background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#eee5d177,transparent 56%);background-size:100% 100%;mix-blend-mode:soft-light;opacity:.34}

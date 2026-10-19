@@ -1,3 +1,4 @@
+import {magicOwnedCard} from './magic-owned-detail.js';
 import {artworkHTML,artworkSources} from './artwork.js';
 // Visual binders are views of collection locations, never extra owned copies.
 import { esc } from './ui.js';
@@ -11,8 +12,9 @@ export function binderGroups(rows) {
   return [...groups.values()].sort((a,b)=>a.title.localeCompare(b.title));
 }
 export function binderArtCard(row){
- const c=row.card || {}, variant=c.variants?.find(v=>v.key===row.entry?.variant);
- return {...c,image_uris:{...c.image_uris,normal:c.image_uris?.normal || ((row.game==='mtg'||!row.game)?row.image:'')},game:row.game,id:c.id || row.entry?.cardId || '',name:row.entry?.name || c.name || '',image:variant?.image || c.image || row.image || '',imageLarge:variant?.imageLarge || variant?.image || c.imageLarge || row.image || c.image || ''};
+ const ownedMagic=row.owned&&(row.game==='mtg'||!row.game);
+ const c=(ownedMagic?magicOwnedCard(row.entry,row.card):row.card) || {}, fallback=ownedMagic?'':row.image, variant=c.variants?.find(v=>v.key===row.entry?.variant);
+ return {...c,image_uris:{...c.image_uris,normal:c.image_uris?.normal || ((row.game==='mtg'||!row.game)?fallback:'')},game:row.game,id:c.id || row.entry?.cardId || '',name:row.entry?.name || c.name || '',image:variant?.image || c.image || fallback || '',imageLarge:variant?.imageLarge || variant?.image || c.imageLarge || fallback || c.image || ''};
 }
 // Up to nine starred cards show through the clear cover, like the first page of a real binder.
 export const MAX_FAVORITES = 9;

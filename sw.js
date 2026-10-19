@@ -1,5 +1,6 @@
 const CACHE = "cardforge-shell-v230";
 const ASSETS = [
+  "./magic-owned-detail.js",
   "./pokemon-variant-options.js",
   "./pokemon-promo-evidence.js",
 

@@ -44,7 +44,8 @@ function merge(game,target,entry){
  target.sourceQuantities=sourceQuantities({qty:target.qty,sourceQuantities:sources});
  target.sourceKey=target.sourceQuantities.length===1?target.sourceQuantities[0].sourceKey:'';
  target.reserved=(target.reserved||0)+(entry.reserved||0);
- // Product IDs are optional enrichment, never a reason to lose an exact variant.
+ // Only compatible identities can reach this point. Pokémon records with an
+ // unknown product remain separate from explicit products without catalog proof.
  if(!target.productId&&entry.productId)target.productId=entry.productId;
  if(!target.conditionQuotes?.length&&entry.conditionQuotes?.length)target.conditionQuotes=entry.conditionQuotes;
  if(!target.scanCaptureId&&entry.scanCaptureId)target.scanCaptureId=entry.scanCaptureId;
@@ -52,9 +53,15 @@ function merge(game,target,entry){
  target.stackOrigins=[...(target.stackOrigins||[]),...(entry.stackOrigins||[]),{id:entry.id,qty:entry.qty,addedAt:entry.addedAt,source:entry.source,raw:entry.raw,rawRows:entry.rawRows,importHash:entry.importHash}];
  return target;
 }
-const compatible=(a,b)=>!(a.productId&&b.productId&&String(a.productId)!==String(b.productId));
+const compatible=(game,a,b)=>{
+ const left=text(a.productId),right=text(b.productId);
+ // A legacy Pokémon finish key can refer to several real products. At this
+ // catalog-free boundary, missing product evidence is not proof of equivalence.
+ if(game==='ptcg'&&!!left!==!!right)return false;
+ return !(left&&right&&left!==right);
+};
 export function addCollectionEntry(collection,game,entry){
- const key=collectionStackKey(game,entry),same=collection.find(e=>collectionStackKey(game,e)===key&&compatible(e,entry)&&e.qty+entry.qty<=100000);
+ const key=collectionStackKey(game,entry),same=collection.find(e=>collectionStackKey(game,e)===key&&compatible(game,e,entry)&&e.qty+entry.qty<=100000);
  if(same)return merge(game,same,entry);
  collection.push(entry);return entry;
 }
@@ -66,7 +73,7 @@ export function stackWorkspaceCollections(state){
   const byKey=new Map(),rows=[],aliases=new Map();
   for(const e of workspace.collection||[]){
    if(e.sourceQuantities)e.sourceQuantities=sourceQuantities(e);
-   const key=collectionStackKey(game,e),candidates=byKey.get(key)||[],same=candidates.find(x=>compatible(x,e)&&x.qty+e.qty<=100000);
+   const key=collectionStackKey(game,e),candidates=byKey.get(key)||[],same=candidates.find(x=>compatible(game,x,e)&&x.qty+e.qty<=100000);
    if(same){merge(game,same,e);aliases.set(e.id,same.id);}
    else{rows.push(e);candidates.push(e);byKey.set(key,candidates);}
   }
@@ -86,7 +93,7 @@ export function addScannedEntry(state,game,entry){
   for(const [g,workspace] of [['mtg',state],...Object.entries(state.tcg||{})])for(const lot of workspace.collection||[]){
    const prior=receipts(g,lot).find(r=>r.id===id);
    if(!prior)continue;
-   if(prior.qty!==entry.qty||prior.identity!==identity)throw Error('This capture is already saved with different details. Check its collection entry before trying again.');
+   if(g!==game||!compatible(game,lot,entry)||prior.qty!==entry.qty||prior.identity!==identity)throw Error('This capture is already saved with different details. Check its collection entry before trying again.');
    return lot;
   }
   entry.scanReceipts=[{id,qty:entry.qty,identity}];

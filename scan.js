@@ -72,7 +72,7 @@ export function scanNamesFor(g, text) {
 // [pattern, weight]: weight 2 is something only that game prints (an HP line, ATK/DEF, a type line).
 const GAME_SIGNS = {
   ptcg: [[/\bH\s?P\s?\d{2,3}\b/i, 2], [/\bweakness\b/i, 2], [/\bresistance\b/i, 1], [/\bretreat\b/i, 2], [/\bevolves from\b/i, 2], [/\bstage\s?[12]\b/i, 1], [/\b(?:GX|VMAX|VSTAR)\b/, 2], [/pok[eé]mon/i, 1], [/\bTrainer\b/, 1], [/\bSupporter\b/, 1], [/\bdamage counters?\b/i, 1], [/\bEnergy\b/, 1]],
-  ygo: [[/\bATK\s*[\/|l1]?\s*\d/i, 2], [/\bDEF\s*[\/|l1]?\s*\d/i, 2], [/effect monster|spell card|trap card/i, 2], [/\bspecial summon/i, 2], [/\b[A-Z0-9]{3,4}-[A-Z]{2}\d{3}\b/, 2], [/\bkonami\b|shu\w{0,3}sha|takahashi|t\w{0,2}okyo/i, 2], [/\bATK\b|\bDEF\b/, 1], [/\bonce per turn\b/i, 1], [/\b(?:Spellcaster|Warrior|Dragon|Fiend|Machine|Cyberse)\s*\//i, 2], [/\bgraveyard\b|\bGY\b/, 1]],
+  ygo: [[/\bATK\s*[\/|l1]?\s*\d/i, 2], [/\bDEF\s*[\/|l1]?\s*\d/i, 2], [/effect monster|spell card|trap card/i, 2], [/\bspecial summon/i, 2], [{test:text=>ygoSetCodes(text).length>0}, 2], [/\bkonami\b|shu\w{0,3}sha|takahashi|t\w{0,2}okyo/i, 2], [/\bATK\b|\bDEF\b/, 1], [/\bonce per turn\b/i, 1], [/\b(?:Spellcaster|Warrior|Dragon|Fiend|Machine|Cyberse)\s*\//i, 2], [/\bgraveyard\b|\bGY\b/, 1]],
   mtg: [[/\b(?:Creature|Instant|Sorcery|Enchantment|Artifact|Planeswalker)\b/, 2], [/\bLegendary\b/, 1], [/wizards of the coast|\bTM\s*&|™\s*&/i, 2], [/\bbattlefield\b/i, 2], [/\bmana\b/i, 1], [/\b(?:flying|trample|haste|lifelink|deathtouch|vigilance|flash)\b/i, 1], [/\{T\}|\b(?:untap|tap)\b/i, 1], [/\billus\b/i, 1], [/\b[A-Z0-9]{3}\s*\W?\s*EN\b/, 1], [/\bAdd \{?[WUBRGC]\b/, 2]],
 };
 export function detectGame(text) {
@@ -171,17 +171,37 @@ export function guideQuality({ data, width, height }, box) {
   return { state: "green", text: "Image checks passed. Confirm the card after capture." };
 }
 
-// Yu-Gi-Oh! set codes: LOB-EN001, MP23-EN125, RA03-EN016 (OCR often reads O for 0 in the number).
-export function ygoSetCodes(text) {
-  const out = [];
-  for (const m of String(text).toUpperCase().matchAll(/\b([A-Z0-9]{2,4})\s?-\s?([A-Z]{1,2})?\s?([0-9OIL]{3})\b/g)) {
-    const num = m[3].replace(/O/g, "0").replace(/[IL]/g, "1");
-    if (!/^\d{3}$/.test(num) || !/[A-Z]/.test(m[1])) continue;
-    // No region is itself a real printed identity (LOB-001). Never manufacture EN.
-    out.push(`${m[1]}-${m[2] || ""}${num}`);
-  }
-  return [...new Set(out)];
+// Full printed identities include subset letters (LEHD-ENB38), special promos
+// (PHSW-ENSP1), old DB numbers and tokens. A bare suffix is not a set code.
+export function parseYgoSetCode(value) {
+  const text=String(value||'').trim().toUpperCase();
+  if(/^DB\d{1,2}$/.test(text))return text;
+  const m=text.match(/^([A-Z0-9]{2,4})[ \t]*-[ \t]*((?:[A-Z]{1,2}[ \t]+)?[A-Z0-9?]{1,12})$/);
+  if(!m)return '';
+  const prefix=m[1],right=m[2].replace(/[ \t]/g,'');
+  if(/^(?:ATK|DEF|HP|LINK|RANK|LV|LVL)$/.test(prefix))return '';
+  // Year-named promos are real; ordinary dates and numeric ranges are not.
+  if(!/[A-Z]/.test(prefix)&&!(/^20\d{2}$/.test(prefix)&&/^[A-Z]{2}\d[0-9OIL]{2}$/.test(right)))return '';
+  // Preserve the literal token before considering OCR repair: ENI27, ENO34
+  // and ENL02 contain real subset letters, not 127, 034 or 102.
+  if(/^(?:[A-Z]{1,4}\d{1,3}[A-Z]?|\d{3}[A-Z]?|[A-Z]{2}TKN)$/.test(right))return `${prefix}-${right}`;
+  // Only a numeric field that starts with a real digit is unambiguous enough
+  // for this correction (EN0O1 -> EN001). Never rewrite a leading subset letter.
+  const numeric=right.match(/^([A-Z]{0,2})(\d[0-9OIL]{2})$/);
+  return numeric?`${prefix}-${numeric[1]}${numeric[2].replace(/O/g,'0').replace(/[IL]/g,'1')}`:'';
 }
+export function ygoCodeReadings(text) {
+  const out=[];
+  // Consume complete tokens, including unsupported characters such as the ??
+  // placeholder. Never accept a valid-looking prefix of a longer identifier,
+  // or join orphan pieces across OCR lines/observations.
+  const tokens=String(text).toUpperCase().matchAll(/(?<![A-Z0-9_\/-])(?:[A-Z0-9]{2,4}[ \t]*-[ \t]*(?:[A-Z]{1,2}[ \t]+)?[A-Z0-9?]{1,12}|DB\d{1,2})(?![A-Z0-9_\/?*\-])/g);
+  for(const [token] of tokens){const code=parseYgoSetCode(token);if(code){const raw=token.replace(/[ \t]/g,'');out.push({raw,code,corrected:raw!==code});}}
+  return [...new Map(out.map(reading=>[reading.raw,reading])).values()];
+}
+// Candidate keys can contain an OCR repair. The original reading and correction
+// flag above must survive in evidence; a repaired key never verifies a printing.
+export const ygoSetCodes=text=>[...new Set(ygoCodeReadings(text).map(reading=>reading.code))];
 // The 8-digit passcode printed bottom-left identifies the card itself.
 export const ygoPasscodes = (text) => [...new Set([...String(text).matchAll(/(?<!\d)(\d{8})(?!\d)/g)].map((m) => String(Number(m[1]))))].slice(0, 2);
 
@@ -220,59 +240,89 @@ export function ptcgNumbers(text) {
 // Magic footer observations must keep a number beside its own set/language line.
 // OCR retries can disagree. Keep every distinct pair; never splice the first number
 // in one read to an unrelated set elsewhere, or treat a majority as verification.
-export function mtgCollectors(...texts) {
+export function mtgIdentifierEvidence(...texts) {
   const observations = new Map();
+  let identifierUncertain=false;
   const token = '(?:[A-Z0-9]{1,8}-)?[A-Z]{0,5}0*\\d{1,4}(?:[A-Z]|[★†][A-Z]?)?';
   const add = (set, number) => {
     const pair = { set: set.toLowerCase(), number: number.replace(/^0+(?=\d)/, '').toLowerCase() };
     observations.set(pair.set + ':' + pair.number, pair);
   };
   for (const text of texts) {
-    let pending = [], copyrightBridge = false;
+    let pending = [], copyrightBridge = false,partialAfterSet=false;
     for (const line of String(text || '').toUpperCase().split(/\r?\n/).map(s => s.trim()).filter(Boolean)) {
       // A complete alphanumeric collector token is indivisible: 123a is not 123.
       const fractions = [...line.matchAll(new RegExp('(?<![A-Z0-9/★†-])(' + token + ')[ \t]?/[ \t]?\\d{2,4}(?![A-Z0-9/★†-])', 'g'))];
       const marked = [...line.matchAll(new RegExp('\\b[CURMLST][ \t]+(' + token + ')(?![A-Z0-9/★†-])', 'g'))];
       const sets = [...line.matchAll(/\b([A-Z0-9]{3,5})(?:[ \t]+|[ \t]*[^A-Z0-9\s]{1,2}[ \t]*)(?:EN|ES|FR|DE|IT|PT|JA|JP)\b/g)];
+      // Some physical footers print "077 M", not "M 077". Require the whole
+      // segment beside its set/language marker (or a standalone footer line),
+      // so a number in rules text or an edition line cannot become a collector.
+      const starts=[0,...sets.map(s=>s.index+s[0].length)];
+      const trailing=starts.flatMap((start,i)=>{
+        const segment=line.slice(start,sets[i]?.index??line.length),unit='(?:'+token+'[ \\t]+[CURMLST]|[CURMLST][ \\t]+'+token+')';
+        if(!new RegExp('^[ \\t]*'+unit+'(?:[ \\t]+'+unit+')*[ \\t]*$').test(segment))return [];
+        // Repeated footers may be merged onto one OCR line. Keep every number
+        // rather than letting a following rarity be mistaken for a new prefix.
+        return [...segment.matchAll(new RegExp('(?<![A-Z0-9/★†-])('+token+')[ \\t]+[CURMLST](?![A-Z0-9])','g'))].map(m=>Object.assign([m[0],m[1]],{index:start+m.index}));
+      });
       // On old footers the rarity follows the fraction, sometimes with OCR noise
       // ("162/274 R 2"). Prefer that fraction within its own footer, not over a
       // separate numbered footer that happens to share the same OCR line.
       const group = m => sets.findIndex(s => s.index >= m.index + m[0].length);
-      const numbers = [...fractions, ...marked.filter(m => !fractions.some(f => group(f) === group(m)))]
+      const numbers = [...fractions, ...[...marked,...trailing].filter(m => !fractions.some(f => group(f) === group(m)))]
         .sort((a, b) => a.index - b.index).map(m => ({ value: m[1], start: m.index, end: m.index + m[0].length }));
       if (sets.length) {
+        // A self-contained line may be set→number instead of number→set.
+        // Establish that direction once, then keep every pair beside its own
+        // marker. Reusing the forward loop here would shift numbers to the
+        // next set and drop the last (possibly contradictory) printing.
+        if(!pending.length&&numbers.length&&numbers[0].start>=sets[0].index+sets[0][0].length){
+          for(const [i,set] of sets.entries()){
+            const adjacent=numbers.filter(n=>n.start>=set.index+set[0].length&&n.end<=(sets[i+1]?.index??line.length));
+            if(!adjacent.length)identifierUncertain=true;
+            for(const n of adjacent)add(set[1],n.value);
+          }
+          pending=[];copyrightBridge=false;partialAfterSet=false;continue;
+        }
         let afterSet = 0;
         for (const [i, set] of sets.entries()) {
           const nearby = numbers.filter(n => n.start >= afterSet && n.end <= set.index);
-          for (const n of nearby.length ? nearby : i === 0 ? pending : []) add(set[1], n.value);
+          const adjacent=nearby.length ? nearby : i === 0 ? pending : [];
+          if(!adjacent.length&&(numbers.length||pending.length))identifierUncertain=true;
+          for (const n of adjacent) add(set[1], n.value);
           afterSet = set.index + set[0].length;
         }
         pending = numbers.filter(n => n.start >= afterSet);
-        // Also accept a self-contained reversed footer on one line, not across
-        // separate lines/reads where its number could belong to another footer.
-        if (sets.length === 1 && numbers.length && pending.length === numbers.length) {
-          for (const n of pending) add(sets[0][1], n.value);
-          pending = [];
-        }
+        partialAfterSet=pending.length>0;
         copyrightBridge = false;
       } else if (numbers.length) {
+        if(partialAfterSet)identifierUncertain=true;
         pending = numbers;
+        partialAfterSet=false;
         copyrightBridge = false;
       } else if (pending.length && !copyrightBridge && /^(?:©|\(C\))[ \t]*[A-Z][A-Z \t.]*$/.test(line)) {
         copyrightBridge = true;
       } else {
+        if(partialAfterSet)identifierUncertain=true;
         pending = [];
+        partialAfterSet=false;
         copyrightBridge = false;
       }
     }
+    // A pending number after a set marker can be either a reversed footer or
+    // the start of another forward footer. With no closing marker, retain the
+    // supported suggestions but do not infer exactness from one orientation.
+    if(partialAfterSet)identifierUncertain=true;
   }
-  return [...observations.values()];
+  return {observations:[...observations.values()],identifierUncertain};
 }
+export function mtgCollectors(...texts){return mtgIdentifierEvidence(...texts).observations;}
 
 // Existing exact-identifier consumers need one unambiguous tuple, not a winner.
 export function mtgCollector(...texts) {
-  const observations = mtgCollectors(...texts);
-  return observations.length === 1 ? observations[0] : null;
+  const {observations,identifierUncertain} = mtgIdentifierEvidence(...texts);
+  return !identifierUncertain&&observations.length === 1 ? observations[0] : null;
 }
 
 // Plausible card names in a noisy name strip, best first: the cleaned line, then the line without

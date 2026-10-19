@@ -67,13 +67,28 @@ for (const game of ['mtg','ptcg','ygo']) for (const [tab] of SETTINGS_TABS) {
 // on the light mode's darkest standard surface. Photo overlays keep white ink.
 const luminance=hex=>hex.match(/\w\w/g).map(x=>parseInt(x,16)/255).map(x=>x<=.04045?x/12.92:((x+.055)/1.055)**2.4).reduce((sum,x,i)=>sum+x*[.2126,.7152,.0722][i],0);
 const contrast=(a,b)=>{const values=[luminance(a),luminance(b)].sort((x,y)=>y-x);return (values[0]+.05)/(values[1]+.05);};
-for(const ink of ['172337','47566b','536278','79520a','ae3029','6738ad','176b43','ad322b'])assert(contrast(ink,'e7ecf3')>=4.5,ink+' light mode contrast');
+for(const ink of ['172337','33445a','3e5068','674407','922a24','603199','125334'])assert(contrast(ink,'e7ecf3')>=4.5,ink+' light mode contrast');
 const css=readFileSync(new URL('./settings-theme.css',import.meta.url),'utf8');
 assert.match(css,/overflow-x:auto/);assert.match(css,/min-width:max-content/);assert.match(css,/prefers-reduced-transparency/);
 assert.doesNotMatch(css,/filter\s*:\s*invert|img\s*\{[^}]*filter/,'artwork pixels must not be inverted');
-const titleBacking=css.match(/:root\[data-theme="light"\] \.cs-banner > \.cs-title::before \{([^}]+)\}/)?.[1];
-assert(titleBacking,'title backing is scoped to Light mode only');assert.match(titleBacking,/background:rgba\(23,35,55,\.84\)/);assert.match(titleBacking,/position:absolute/);assert.match(titleBacking,/pointer-events:none/);
-const worstBacking=[23,35,55].map(v=>Math.round(v*.84+255*.16).toString(16).padStart(2,'0')).join('');
-for(const ink of ['ffffff','f4f6fb'])assert(contrast(ink,worstBacking)>=4.5,'title/subtitle/HP retain AA contrast even on pure-white art');
-assert.doesNotMatch(css,/mask-image\s*:/,'Light title repair must not change artwork masks');
+const titleFade=css.match(/:root\[data-theme="light"\] \.cs-banner > \.cs-title::before \{([^}]+)\}/)?.[1];
+assert(titleFade,'title fade is scoped to Light mode only');
+for(const rule of ['inset:-80px calc(var(--gutter) * -1) 0','border-radius:0','linear-gradient','rgba(243,245,248,.92) 80px','rgba(243,245,248,.92) calc(100% - 18px)','pointer-events:none'])assert(titleFade.includes(rule),rule+' keeps the fade full-bleed and covers every wrapped text line');
+assert.doesNotMatch(titleFade,/rgba\(23,35,55|border-radius:14px/,'no detached dark title rectangle');
+assert.match(css,/\.cs-title :is\(h2,\.type-line,\.hp,\.lvl\) \{color:var\(--text\);text-shadow:none;/,'light title uses readable dark ink, not white text over a pale fade');
+const hex=rgb=>rgb.map(v=>Math.floor(v).toString(16).padStart(2,'0')).join('');
+const worstTitle=hex([243,245,248].map(v=>v*.92));
+for(const ink of ['172337','33445a','3e5068'])assert(contrast(ink,worstTitle)>=4.5,'title/subtitle dark ink retains AA even over pure-black artwork');
+// The ambient floor is the original light backdrop behind 80% black artwork,
+// followed by the least-opaque 74% light wash. All small/status ink is checked
+// here, not just against an opaque white panel. Glass panels only lighten it.
+const worstAmbient=hex([243,245,248].map(v=>v*(1-.8)* (1-.74)+v*.74));
+for(const ink of ['172337','33445a','3e5068','674407','922a24','603199','125334'])assert(contrast(ink,worstAmbient)>=4.5,ink+' AA on worst-case Light ambient art');
+const worstSheet=hex([246,249,253].map(v=>v*.78));
+for(const ink of ['172337','33445a','3e5068','674407','922a24','603199','125334'])assert(contrast(ink,worstSheet)>=4.5,ink+' AA even when the translucent sheet covers pure-black content');
+assert.match(css,/--glass:rgba\(255,255,255,\.58\);--glass-2:rgba\(241,245,251,\.68\)/,'Light panels transmit the artwork instead of repainting it white');
+assert.match(css,/body\.glass dialog\.sheet \{background:[^}]+rgba\(246,249,253,\.78\)/,'glass sheet remains genuinely translucent');
+assert.match(css,/body\.glass #ambient \.amb-art \{[^}]+opacity:\.8/,'the real ambient art is not reduced to invisibility');
+assert.match(css,/prefers-reduced-motion:reduce/);assert.match(css,/background:var\(--surface\);backdrop-filter:none/,'reduced transparency remains solid');
+assert.doesNotMatch(css,/mask-image\s*:/,'Light fade must not change artwork/foil masks');
 console.log('PASS: four accessible Settings tabs, recovery hooks, all-game action preservation, theme persistence/storage failure, cross-tab sync, first-paint boot and AA light ink.');

@@ -182,7 +182,7 @@ S.state.settings.game='mtg';
 const extras=app.slice(app.indexOf('async function loadCardExtras('),app.indexOf('\nA.viewPrint'));
 const exactMagic={type:'card',name:m1.name,print:{...m1,full:false},setId:'fxa'};
 S.ui.sheetCtx=exactMagic;let cacheWrites=0;
-const extraHarness={navigationStamp:()=>({}),navigationCurrent:()=>true,S,meta:()=>m2,$:q=>q==='#sheet'?{open:true}:{innerHTML:''},api:async path=>path.startsWith('/cards/search')?{data:[],has_more:false}:{...m1,oracle_id:'same-oracle'},cacheCard:c=>{cacheWrites++;return c;},slim:c=>c,saveCatalogSoon(){},V:{cardSheet:()=>''},ensureTcgPrices(){},refreshSheet(){},URLSearchParams,URL};
+const extraHarness={navigationStamp:()=>({}),navigationCurrent:()=>true,S,T:{game:()=> 'mtg'},meta:()=>m2,$:q=>q==='#sheet'?{open:true}:{innerHTML:''},api:async path=>path.startsWith('/cards/search')?{data:[],has_more:false}:{...m1,oracle_id:'same-oracle'},cacheCard:c=>{cacheWrites++;return c;},slim:c=>c,saveCatalogSoon(){},V:{cardSheet:()=>''},ensureTcgPrices(){},refreshSheet(){},URLSearchParams,URL};
 vm.createContext(extraHarness);vm.runInContext(extras,extraHarness);await extraHarness.loadCardExtras(exactMagic);
 assert.equal(cacheWrites,0);assert.equal(exactMagic.print.id,m1.id);assert.equal(exactMagic.print.full,true);
 const foilCard={...m1,finishes:['nonfoil','foil'],prices:{usd:'1',usd_foil:'100'}};

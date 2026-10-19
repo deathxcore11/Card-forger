@@ -48,6 +48,7 @@ import {tcgCompareSheet} from './tcgcompare.js';
 import {artworkHTML} from './artwork.js';
 import {attachAutomaticBrowse} from './auto-browse.js';
 import { createPrintingPicker } from "./printing-picker.js";
+import {magicOwnedDetail,magicOwnedCard,magicOwnedCurrent,magicOwnedContext,magicOwnedNotice} from './magic-owned-detail.js';
 import { createScannerPrintingPicker } from "./scanner-printing.js";
 import { createScannerLookup } from "./scanner-lookup.js";
 import {SheetHistory,BROWSE_TYPES,sheetKey} from "./sheet-history.js";
@@ -761,6 +762,11 @@ function refreshSheet() {
   const ctx = S.ui.sheetCtx;
   if (!ctx || !$("#sheet").open) return;
   if (["card","tcard","buy"].includes(ctx.type)) {
+    if((ctx.type==='card'||ctx.type==='buy')&&ctx.ownedDetail){
+      if(!magicOwnedCurrent(S.state,ctx.ownedDetail)){ctx.print=null;ctx.ownedNotice='This saved copy changed. Reopen it from your collection.';}
+      else if(ctx.print){const exact=magicOwnedDetail(S.state,ctx.entryId,ctx.name,ctx.print);if(exact.status!=='ready'){ctx.print=null;ctx.ownedNotice=exact.reason;}}
+      if(!ctx.print){$("#sheetBody").innerHTML=magicOwnedNotice(ctx);wireSheetBack();return;}
+    }
     const c = ctx.type === "card" ? ctx.print || meta(ctx.name) : ctx.type === "tcard" ? contextTcgCard(ctx.game,ctx.id,ctx) : ctx.print;
     if (!c && ctx.type !== "buy") return;
     const body = $("#sheetBody"), saved = body.dataset.detailIdentity === detailContextIdentity(ctx) ? captureDetailState(body) : null;
@@ -1348,17 +1354,22 @@ function updateCompareTray() {
 async function resolveActionCard(t) {
   const game = T.game(), dataset = {...t.dataset}, origin = S.ui.sheetCtx, route = location.hash, screen=navigationStamp();
   const matchingSheet = game === "mtg" ? origin?.type === "card" && key(origin.name) === key(dataset.name) : origin?.game === game && String(origin.id) === String(dataset.id);
-  let card, setId=dataset.setId || (matchingSheet ? origin.setId : "") || "",setMembership=matchingSheet?origin.setMembership:null,setVariant=dataset.setVariant || dataset.setFinish || (matchingSheet ? origin.setVariant || origin.priceFinish : "") || "";
+  let card,ownedIdentity, setId=dataset.setId || (matchingSheet ? origin.setId : "") || "",setMembership=matchingSheet?origin.setMembership:null,setVariant=dataset.setVariant || dataset.setFinish || (matchingSheet ? origin.setVariant || origin.priceFinish : "") || "";
   if (game === "mtg") {
-    const entry = S.state.collection.find(e => e.id === dataset.entry);
-    card = entry?.printingVerified ? S.state.printings?.[entry.printingId] : null;
-    if(dataset.setI !== undefined){
+    if(dataset.entry){
+      let owned=magicOwnedDetail(S.state,dataset.entry,dataset.name);ownedIdentity=owned.identity;
+      if(owned.status==='loading'){
+        try{owned=magicOwnedDetail(S.state,dataset.entry,dataset.name,await api('/cards/'+encodeURIComponent(owned.identity.printingId)));}
+        catch(e){if(navigationCurrent(screen)&&T.game()===game&&location.hash===route&&S.ui.sheetCtx===origin)toast(e.message||'Could not load your exact saved printing. Try again.');return null;}
+      }
+      if(owned.status!=='ready'){toast(owned.reason);return null;}
+      card=owned.card;setId=card.set;setVariant=owned.finish;
+    }else if(dataset.setI !== undefined){
       const selected=S.ui.set.cards[Number(dataset.setI)];
       if(!selected || key(selected.name)!==key(dataset.name) || selected.set!==S.ui.set.code)return null;
       card=selected;setId=selected.set;
     }
-    card ||= matchingSheet && origin.print ? origin.print : meta(dataset.name);
-    card ||= await resolve(dataset.name, true);
+    if(!dataset.entry){card ||= matchingSheet && origin.print ? origin.print : meta(dataset.name);card ||= await resolve(dataset.name, true);}
   } else {
     if(!setMembership && setId && T.ui(game).set.info?.id===setId){
       const membership=T.ui(game).set.cards.find(c=>String(c.id)===String(dataset.id))?.setContext;
@@ -1369,6 +1380,7 @@ async function resolveActionCard(t) {
     if(card?.setContext?.membership==='set-response')setMembership={...card.setContext};
   }
   if (!navigationCurrent(screen) || T.game() !== game || location.hash !== route || S.ui.sheetCtx !== origin) return null;
+  if(ownedIdentity&&!magicOwnedCurrent(S.state,ownedIdentity))return null;
   if(setId)dataset.setId=setId;
   if(setVariant)dataset.setVariant=setVariant;
   return {game,card,dataset,setId,setMembership,setVariant,priceEdition:matchingSheet?origin.priceEdition||origin.edition||"":"",priceYgoEdition:matchingSheet?origin.priceYgoEdition||origin.ygoEdition||"":""};
@@ -1920,9 +1932,9 @@ if(typeof MutationObserver !== "undefined"){
 function binderRows(game, location = null) {
   const collection = game === "mtg" ? S.state.collection : T.gs(game).collection;
   return collection.filter(entry=>location === null || String(entry.location || "").trim()===location).map(entry=>{
-    const c = game === "mtg" ? (entry.printingVerified && S.state.printings?.[entry.printingId]) || meta(entry.name) : T.cardOf(game,entry.cardId);
+    const c = game === "mtg" ? magicOwnedCard(entry,S.state.printings?.[entry.printingId]) : T.cardOf(game,entry.cardId);
     const variant = c?.variants?.find(v=>v.key===entry.variant);
-    return {entry,card:c,game,image:game === "mtg" ? cardImage(c) : variant?.image || c?.image || "",version:variant?.label || entry.variantLabel || [entry.set || c?.set?.id,entry.finish,entry.edition].filter(Boolean).join(" · ")};
+    return {entry,card:c,game,owned:true,image:game === "mtg" ? cardImage(c) : variant?.image || c?.image || "",version:variant?.label || entry.variantLabel || [entry.set || c?.set?.id,entry.finish,entry.edition].filter(Boolean).join(" · ")};
   });
 }
 const binderById = id => (S.state.settings.binders || []).find(b=>b.id===id);
@@ -2154,6 +2166,29 @@ A.card = async (t) => {
   S.ui.sheetBack = S.ui.sheetCtx?.type === "idea" && $("#sheet").open ? { type: "idea", i: S.ui.sheetCtx.i } : null;
   const name = t.dataset.name,
     ctx = { type: "card", name, entryId:t.dataset.entry||"", deckId: t.dataset.deck || (S.ui.view === "deck" ? currentDeck()?.id : null), random: !!t.dataset.random };
+  if(ctx.entryId){
+    let owned=magicOwnedDetail(S.state,ctx.entryId,name);
+    if(!owned.identity)return toast(owned.reason);
+    Object.assign(ctx,magicOwnedContext(owned));
+    if(owned.status!=='ready'){
+      openSheet(magicOwnedNotice(ctx),ctx);
+      if(owned.status!=='loading')return;
+      try{
+        const full=await api('/cards/'+encodeURIComponent(owned.identity.printingId));
+        if(!navigationCurrent(screen)||S.ui.sheetCtx!==ctx||T.game()!=='mtg'||!$("#sheet").open)return;
+        if(!magicOwnedCurrent(S.state,owned.identity)){ctx.ownedNotice='This saved copy changed. Reopen it from your collection.';refreshSheet();return;}
+        owned=magicOwnedDetail(S.state,ctx.entryId,name,full);
+        if(owned.status!=='ready')throw Error(owned.reason);
+        Object.assign(ctx,magicOwnedContext({...owned,card:slim({...full,full:true,checkedAt:new Date().toISOString()})}));
+      }catch(e){
+        if(navigationCurrent(screen)&&S.ui.sheetCtx===ctx&&T.game()==='mtg'&&$("#sheet").open){ctx.ownedNotice=e.message;refreshSheet();}
+        return;
+      }
+    }
+    openSheet(V.cardSheet(ctx.print,ctx),ctx);
+    loadCardExtras(ctx);
+    return;
+  }
   const print = t.printing || (t.dataset.setI !== undefined ? S.ui.set.cards[Number(t.dataset.setI)] : null);
   if (print?.id && key(print.name) === key(name) && (t.printing ? typeof print.set === "string" : print.set === S.ui.set.code)) {
     ctx.print = print;
@@ -2182,7 +2217,7 @@ A.card = async (t) => {
 async function loadCardExtras(ctx) {
   if (ctx.detailsBusy) return;
   let c = ctx.print || meta(ctx.name);
-  const screen=navigationStamp(), still = () => navigationCurrent(screen) && S.ui.sheetCtx === ctx && $("#sheet").open;
+  const owned=ctx.ownedDetail,requestedPrint=ctx.print?.id,screen=navigationStamp(), still = () => navigationCurrent(screen) && S.ui.sheetCtx === ctx && $("#sheet").open && T.game()==='mtg' && (!requestedPrint||ctx.print?.id===requestedPrint) && (!owned||ctx.ownedDetail===owned&&magicOwnedCurrent(S.state,owned));
   ctx.detailsBusy = true;
   const oldDetailsError = ctx.detailsError;
   ctx.detailsError = "";
@@ -2195,6 +2230,7 @@ async function loadCardExtras(ctx) {
         return;
       }
       if (full.id !== c.id) throw Error("The card database returned a different printing. Retry this card’s details.");
+      if(owned){const exact=magicOwnedDetail(S.state,owned.entryId,ctx.name,full);if(exact.status!=='ready')throw Error(exact.reason);}
       if(ctx.print){
         // Exact-printing enrichment stays in this sheet. It cannot replace the
         // name-wide default used by decks and the rest of the collection.
@@ -2260,6 +2296,7 @@ A.viewPrint = (t) => {
   ctx.setId = print.set || "";
   ctx.priceFinish = selectedFinish("mtg",print,ctx.priceFinish);
   ctx.entryId = ""; delete ctx.entry;
+  delete ctx.ownedDetail; delete ctx.condition; delete ctx.language;
   ctx.setVariant = ctx.priceFinish;
   ctx.face = 0;
   refreshSheet();
@@ -2285,6 +2322,7 @@ A.magicPrintings = () => {
       // Viewing another printing/finish is not editing the lot that opened it.
       // Do not let artwork long-press or quantity actions inherit that old lot.
       parent.entryId = ""; delete parent.entry;
+      delete parent.ownedDetail; delete parent.condition; delete parent.language;
       parent.setVariant = selection.finish;
       parent.face = 0;
       refreshSheet();
@@ -3145,7 +3183,7 @@ A.cardOwnedQty=async t=>{
 A.cardOwnedDetails=async t=>{
 
  const game=t.dataset.game,id=t.dataset.lot,generation=accountGeneration;
- if(game!==T.game())return;const ref=await resolveActionCard(t);
+ if(game!==T.game())return;const ref=await resolveActionCard(game==='mtg'?{dataset:{...t.dataset,entry:id}}:t);
  if(ref&&generation===accountGeneration)await cardQuickMenu({quickRef:{...ref,selectedLot:id,dataset:{...ref.dataset,entry:id}}});
 };
 A.cardWishlist=async t=>{
@@ -3349,6 +3387,7 @@ A.cardFinishPreview = t => {
   const card=game==="mtg"?ctx.print||meta(ctx.name):contextTcgCard(game,ctx.id,ctx);
   if(game!==t.dataset.game||String(card?.id)!==String(t.dataset.cardId))return;
   if(!selectPreviewFinish(game,card,ctx,t.dataset.finish))return;
+  if(game==='mtg'&&ctx.ownedDetail&&ctx.priceFinish!==magicOwnedDetail(S.state,ctx.entryId).finish){ctx.entryId='';delete ctx.entry;delete ctx.ownedDetail;delete ctx.condition;delete ctx.language;}
   // Reuse this same context for prices, enlargement and the explicit Add form.
   refreshSheet();
   const buttons=$$("#sheetBody [data-act=cardFinishPreview]");
@@ -3360,6 +3399,7 @@ A.cardPriceJump = t => {
   if (t.dataset.finish) {
     const g=ctx.type==="card"?"mtg":ctx.game,c=ctx.type==="card"?ctx.print||meta(ctx.name):contextTcgCard(g,ctx.id,ctx);
     ctx.priceFinish=selectedFinish(g,c,t.dataset.finish);
+    if(g==='mtg'&&ctx.ownedDetail&&ctx.priceFinish!==magicOwnedDetail(S.state,ctx.entryId).finish){ctx.entryId='';delete ctx.entry;delete ctx.ownedDetail;delete ctx.condition;delete ctx.language;}
     if(ctx.setId && g === "ptcg")ctx.setVariant=ctx.priceFinish;
   }
   return jumpToCardPrices(t.dataset.target);
@@ -3387,11 +3427,20 @@ A.priceSource = (t) => {
 let buyRequestToken = 0;
 A.buyCard = async (t) => {
   const commit=scopedCommit();
-  const request=++buyRequestToken,origin=S.ui.sheetCtx,originGame=T.game(),originRoute=location.hash;
+  const screen=navigationStamp(),request=++buyRequestToken,origin=S.ui.sheetCtx,originGame=T.game(),originRoute=location.hash;
   let back = S.ui.sheetCtx?.type === "card" && $("#sheet").open ? S.ui.sheetCtx : null;
   const backScroll = back ? $("#sheetBody").scrollTop : 0;
   let print;
-  if(t.dataset.lot){const lot=S.state.collection.find(e=>e.id === t.dataset.lot); if(!lot)return; print=(lot.printingVerified && S.state.printings?.[lot.printingId]) || meta(lot.name); back={type:"card",name:lot.name,entryId:lot.id};}
+  if(t.dataset.lot){
+    let owned=magicOwnedDetail(S.state,t.dataset.lot,t.dataset.name),identity=owned.identity;
+    if(owned.status==='loading'){
+      try{owned=magicOwnedDetail(S.state,t.dataset.lot,t.dataset.name,await api('/cards/'+encodeURIComponent(owned.identity.printingId)));}
+      catch(e){if(navigationCurrent(screen)&&request===buyRequestToken&&S.ui.sheetCtx===origin&&T.game()===originGame&&location.hash===originRoute)toast(e.message||'Could not load your exact saved printing. Try again.');return;}
+    }
+    if(!navigationCurrent(screen)||request!==buyRequestToken||S.ui.sheetCtx!==origin||T.game()!==originGame||location.hash!==originRoute)return;
+    if(owned.status!=='ready'||!magicOwnedCurrent(S.state,identity)){toast(owned.reason||'This saved copy changed. Reopen it from your collection.');return;}
+    print=owned.card;back=magicOwnedContext(owned);
+  }
   else if (back) {
     print = t.dataset.i !== undefined && back.prints ? back.prints[Number(t.dataset.i)] : back.print || meta(back.name);
   } else {
@@ -3400,9 +3449,11 @@ A.buyCard = async (t) => {
     print = c;
   }
   const fromPrints = back.prints && back.prints.includes(print);
-  const ctx = { type: "buy", entryId: back.entryId, name: back.name, deckId: back.deckId, print, finish: selectedFinish("mtg",print,t.dataset.finish || back.priceFinish), asOf: fromPrints ? back.pricesAt : print?.checkedAt, back, backScroll };
-  await commit(s=>recordQuote(s,quoteModel("mtg",print,ctx.finish)),{rerender:false,enrich:false});
-  if(request!==buyRequestToken||S.ui.sheetCtx!==origin||T.game()!==originGame||location.hash!==originRoute)return;
+  const ctx = { type: "buy", entryId: back.entryId, ownedDetail:back.ownedDetail, name: back.name, deckId: back.deckId, print, finish: selectedFinish("mtg",print,t.dataset.lot?back.priceFinish:t.dataset.finish || back.priceFinish), condition:back.condition,language:back.language, asOf: fromPrints ? back.pricesAt : print?.checkedAt, back, backScroll };
+  const still=()=>navigationCurrent(screen)&&request===buyRequestToken&&S.ui.sheetCtx===origin&&T.game()===originGame&&location.hash===originRoute&&(!back.ownedDetail||magicOwnedCurrent(S.state,back.ownedDetail));
+  if(!still())return;
+  const saved=await commit(s=>recordQuote(s,quoteModel("mtg",print,ctx.finish)),{rerender:false,enrich:false,observeValue:false,recordDeckWork:false,guard:still});
+  if(saved===false||!still())return;
   openSheet(V.buySheet(ctx), ctx);
 };
 // Card sheet purchase actions reveal the matched sellers without opening a store.
@@ -3463,6 +3514,7 @@ A.buyFinish = async (t) => {
   const ctx = S.ui.sheetCtx;
   if (ctx?.type !== "buy") return;
   ctx.finish = selectedFinish("mtg",ctx.print,t.dataset.finish);
+  if(ctx.entryId){const owned=magicOwnedDetail(S.state,ctx.entryId);if(owned.status!=='ready'||ctx.finish!==owned.finish){ctx.entryId='';delete ctx.ownedDetail;delete ctx.condition;delete ctx.language;}}
   await commit(s=>recordQuote(s,quoteModel("mtg",ctx.print,ctx.finish)),{rerender:false,enrich:false});
   if(S.ui.sheetCtx === ctx) refreshSheet();
 };
@@ -3470,7 +3522,8 @@ function backToCard(scrollTo) {
   const ctx = S.ui.sheetCtx;
   if (ctx?.type !== "buy") return;
   const back = ctx.back,
-    c = meta(back.name);
+    c = back.print || (back.ownedDetail ? null : meta(back.name));
+  if(back.ownedDetail&&(!c||!magicOwnedCurrent(S.state,back.ownedDetail))){back.print=null;openSheet(magicOwnedNotice(back),back,ctx.backScroll);return;}
   if (!c) return closeSheet();
   openSheet(V.cardSheet(c, back), back, ctx.backScroll);
   if (!back.prints) loadCardExtras(back);

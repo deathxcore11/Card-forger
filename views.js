@@ -1,3 +1,5 @@
+import {magicOwnedCard} from './magic-owned-detail.js';
+import {myPrintingPrice} from './mtg-tcgprice.js';
 import {renderMagicMatchups} from './magic-matchups-ui.js';
 import {themeSettings,settingsTabs,normalizeSettingsTab} from './settings-theme.js';
 import {valuePageOverview,valueTopLots,valuePageAttrs} from './value-page.js';
@@ -13,7 +15,7 @@ import {buyContext,compactPriceSummary,selectedFinish,detailTabs,detailPanel} fr
 import { homeValue, homeEdition, homeResume } from "./home-ui.js";
 import {interactiveRules} from './rule-learning.js';
 import {brandMark} from './brand.js';
-import {conditionBadge} from './condition-value.js';
+import {conditionBadge,conditionValue} from './condition-value.js';
 import { aiReviewPanel } from './ai-review.js';
 import { rankPairs } from "./pairing.js";
 import { APP_VERSION } from "./config.js";
@@ -425,10 +427,10 @@ function mtgTradePanel(name, shown, ctx={}) {
   for (const e of st.collection) {
     if (!(e.qty > 0) || key(e.name) === key(name)) continue;
     const p = lotPrice(e, S.catalog, st.printings),
-      pr = e.printingVerified ? st.printings?.[e.printingId] : null,
+      pr = magicOwnedCard(e,st.printings?.[e.printingId]),
       label = [pr?.set_name || pr?.set?.toUpperCase?.() || "", e.finish && e.finish !== "nonfoil" ? e.finish : "", e.condition && e.condition !== "NM" ? e.condition : ""].filter(Boolean).join(" · "),
       k = [key(e.name), e.printingId || "", e.finish || "nonfoil", e.condition || ""].join("|"),
-      x = byName.get(k) || { key: k, name: e.name + (label ? ` (${label})` : ""), price: p, qty: 0, art: img(cardImage(pr || meta(e.name)), e.name, "mini-art"), open: `data-act="card" data-name="${esc(e.name)}"` };
+      x = byName.get(k) || { key: k, name: e.name + (label ? ` (${label})` : ""), price: p, qty: 0, art: img(cardImage(pr), e.name, "mini-art"), open: `data-act="card" data-name="${esc(e.name)}" data-entry="${esc(e.id)}"` };
     x.qty += e.qty;
     byName.set(k, x);
   }
@@ -661,7 +663,7 @@ export function collection() {
   const tab = S.ui.collTab;
   return `<div class="page-head"><h1>Collection</h1><div class="head-actions">${S.ui.collTab === "cards" ? viewControl("mtg","collection")+selectionControl("mtg") : ""}<button class="btn small" data-act="addCard">＋ Add</button><button class="icon" data-act="collMenu" aria-label="More collection actions">⋯</button></div></div>
   ${segmented("collTab", tab === "wishlist" ? "cards" : tab, [["cards", "Cards"], ["binders", "Binders"], ["value", "Value"]])}
-  ${tab === "binders" ? binderShelf(S.state.collection.map(entry => { const c=(entry.printingVerified && S.state.printings?.[entry.printingId]) || meta(entry.name); return {entry,card:c,image:cardImage(c),game:"mtg"}; }),"mtg",S.state.settings.binders || []) : tab === "value" ? collectionValueView() : collectionCards(tab === "wishlist")}`;
+  ${tab === "binders" ? binderShelf(S.state.collection.map(entry => { const c=magicOwnedCard(entry,S.state.printings?.[entry.printingId]); return {entry,card:c,image:cardImage(c),game:"mtg",owned:true}; }),"mtg",S.state.settings.binders || []) : tab === "value" ? collectionValueView() : collectionCards(tab === "wishlist")}`;
 }
 
 function collectionCards(wantedOnly = false) {
@@ -716,7 +718,7 @@ export function collectionList() {
   if (f === "all" || f === "wanted" || !f)
     list = list.concat(wishlistItems().filter((w) => !q || w.name.toLowerCase().includes(q)).map((w, i) => ({ id: "w:" + w.id, name: w.name, qty: 0, wanted: w })));
   const val = e => {const unit=e.wanted?priceOf(e.name,e.wanted.finish):lotPrice(e,S.catalog,st.printings);return unit==null?null:unit*(e.wanted?1:e.qty);};
-  const descriptor=e=>{const c=(e.printingVerified&&st.printings?.[e.printingId])||meta(e.name),colors=c?.color_identity;
+  const descriptor=e=>{const c=e.wanted?meta(e.name):magicOwnedCard(e,st.printings?.[e.printingId]),colors=c?.color_identity;
    return {id:e.id,name:e.name,set:e.setName||c?.set_name||e.set||'',number:e.collectorNumber||c?.collector_number,
     date:e.set?S.ui.sets.list.find(s=>s.code===e.set)?.released_at||(c?.set===e.set?c.released_at:''):c?.released_at||'',
     value:val(e),impact:c?impactScore('mtg',c):null,rarity:c?.rarity||e.rarity||'',recent:Number.isFinite(Date.parse(e.addedAt))?Date.parse(e.addedAt):order.get(e.id),
@@ -733,16 +735,17 @@ export function collectionList() {
         const t = tierOf("mtg", c?.rarity, p);
         return `<div class="lot wanted" data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}"><button class="lot-art" ${finishAttrs('mtg',c,{priceFinish:e.wanted.finish})} data-act="card" data-name="${esc(e.name)}" aria-label="Open ${esc(e.name)} (wanted, not owned)">${img(cardImage(c), e.name)}${c ? tileChrome("mtg", c) : ""}<span class="want-tag" aria-hidden="true">${actionIcon("heart")}Wanted</span></button><div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(e.name)}">${esc(e.name)}</button><span class="lot-sub"><span class="want-chip">${e.wanted.need > 1 ? `Need ${e.wanted.need}` : "Not owned"}</span>${manaCost(c)}${S.state.decks.some((d) => d.cards.some((x) => key(x.name) === key(e.name))) ? "<span>In a deck</span>" : ""}</span></div><div class="lot-side"><span class="price">${usd(p === null ? null : p * e.wanted.need)}</span><span class="want-actions"><button class="btn small want-got" data-act="own" data-name="${esc(e.name)}">＋ Got it</button><button class="want-x" data-act="wishRemove" data-id="${esc(e.wanted.id)}" aria-label="Remove ${esc(e.name)} from wishlist">×</button></span></div></div>`;
       }
-      const c = (e.printingVerified && st.printings?.[e.printingId]) || meta(e.name),
-        unit = lotPrice(e, S.catalog, st.printings);
+      const c = magicOwnedCard(e,st.printings?.[e.printingId]),
+        unit = lotPrice(e, S.catalog, st.printings),
+        privateNote=!st.printings?.[e.printingId]&&e.printingVerified&&e.printingId&&myPrintingPrice(e.printingId,e.finish||'nonfoil')!==null&&conditionValue(null,e,e.conditionQuotes||[]).kind==='reference'?'Your private printing value':'';
       const t = tierOf("mtg", c?.rarity, unit);
       return `<div class="lot" data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}">${selectionMark("mtg",e.id)}
         <button class="lot-art" ${finishAttrs('mtg',e.printingVerified?c:null,{priceFinish:e.finish||'nonfoil'})} data-act="card" data-name="${esc(e.name)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${img(cardImage(c), e.name)}${c ? tileChrome("mtg", c) : ""}${tierGem(t)}</button>
-        <div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(e.name)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem("mtg", c)} ${setBadge(e.printingVerified ? c : {set:e.set,set_name:e.setName,collector_number:e.collectorNumber}, {physical:true,unspecified:!e.set&&!e.printingVerified})}</button>
+        <div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(e.name)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem("mtg", c)} ${setBadge(c || {set:e.set,set_name:e.setName,collector_number:e.collectorNumber}, {physical:true,unspecified:!e.set&&!e.printingVerified})}</button>
           <span class="lot-sub">${manaCost(c)}<span>${esc((e.set || e.setName || "Any printing").toUpperCase())}${e.collectorNumber ? " #" + esc(e.collectorNumber) : ""}${e.finish !== "nonfoil" ? ` · <b class="foil">${esc(e.finish)}</b>` : ""}${e.location ? " · " + esc(e.location) : ""}</span></span>
-          ${e.lookupFailed ? `<button class="tag warn" data-act="editLot" data-id="${esc(e.id)}">Not found — tap to fix name</button>` : !c ? `<span class="tag muted">Looking up…</span>` : ""}
+          ${e.lookupFailed ? `<button class="tag warn" data-act="editLot" data-id="${esc(e.id)}">Not found — tap to fix name</button>` : !c ? `<span class="tag muted">Exact printing unavailable</span>` : ""}
         </div>
-        <div class="lot-side"><span class="lot-value"><button class="price link" data-act="buyCard" data-name="${esc(e.name)}" data-lot="${esc(e.id)}" data-finish="${esc(e.finish||"nonfoil")}" aria-label="Price history and sellers for ${esc(e.name)}">${usd(unit === null ? null : unit * e.qty)}</button>${conditionBadge(e,e.conditionQuotes||[])}</span>
+        <div class="lot-side"><span class="lot-value"><button class="price link" data-act="buyCard" data-name="${esc(e.name)}" data-lot="${esc(e.id)}" data-finish="${esc(e.finish||"nonfoil")}" aria-label="Price history and sellers for ${esc(e.name)}">${usd(unit === null ? null : unit * e.qty)}</button>${conditionBadge(e,e.conditionQuotes||[],privateNote)}</span>
           <span class="stepper"><button data-act="qty" data-id="${esc(e.id)}" data-delta="-1" aria-label="Remove one">−</button><b>${e.qty}</b><button data-act="qty" data-id="${esc(e.id)}" data-delta="1" aria-label="Add one">＋</button></span>
           <button class="link small" data-act="editLot" data-id="${esc(e.id)}">Edit</button>
         </div>
@@ -755,7 +758,7 @@ function collectionValueView() {
   const st = S.state,
     v = collectionValue(st.collection, S.catalog, st.printings, st.decks),
     spareCopies = sumQty(v.spare), spareUnpriced = sumQty(v.spare.filter(t=>t.value===null)),
-    rows = st.collection.map(entry => ({entry, card:(entry.printingVerified && st.printings?.[entry.printingId]) || meta(entry.name), unit:lotPrice(entry,S.catalog,st.printings)}));
+    rows = st.collection.map(entry => ({entry, card:magicOwnedCard(entry,st.printings?.[entry.printingId]), unit:lotPrice(entry,S.catalog,st.printings)}));
   if (!st.collection.length && !st.valueHistory?.length) return empty("No value to track yet", "Add cards to start recording your collection’s value over time.");
   return `<div ${valuePageAttrs("mtg")}>
   ${valuePageOverview({game:"mtg",value:v,history:st.valueHistory || [],rows})}

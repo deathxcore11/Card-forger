@@ -7,13 +7,48 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {GAMES,CARDS,PRINT_IDS,MAGIC_PRINTS,POKEMON_PRINTS,UNIQUE,RESULTS,validateSearchFixtures,startServer,openSearchApp,inventorySnapshot,noOverflow,capture} from './search-fixtures.mjs';
 
-const matrix=['All three games use an inline printing carousel, set/number/rarity filters and branded AI help without switching the global game','Inline selection leaves capture/original/quantity/condition/language/location unchanged','Exact selected card/release/variant/edition remains review-only, not fabricated OCR evidence','320/390/768px inline art and controls fit without overflow','Late AI response cannot mutate another capture','Live synthetic camera returns without duplicate capture or collection write'];
+// Public identity tokens, synthetic metadata/art only. This pack is compiled for
+// evidence checks, never installed, so the manual UI must use the real cold-pack
+// createScannerLookup -> tcg.scanMatch -> exact-code adapter path.
+const YGO_CODE_FIXTURE={schema:1,game:'ygo',rows:[
+  ['42566602','Coral Dragon','LEHD-ENB38','Ultra Rare','Legendary Hero Decks','Synchro Tuner Effect Monster'],
+  ['89631139','Blue-Eyes White Dragon','LOB-EN001','Ultra Rare','Legend of Blue Eyes White Dragon','Normal Monster']
+]};
+// The same pure production boundary is exercised by Node fixture validation and
+// hosted Chromium. No Tesseract/OCR accuracy is implied by injecting these reads.
+async function ygoCodeGuardSnapshot(raw){
+  const {ygoCodeReadings}=await import('../scan.js'),{compileCatalog,lookupCatalog}=await import('../scan-catalog.js');
+  const {scannerNumberParts}=await import('../scanner-lookup.js'),{scanIdentifierEvidence}=await import('../scan-signals.js');
+  const {textVerifiedMatch}=await import('../scancam.js'),{resolvedEntry}=await import('../scan-batch.js');
+  const pack=compileCatalog(raw);
+  return ['LEHD-ENB38','LOB-EN0O1','38','B38'].map(code=>{
+    const read={name:code==='LOB-EN0O1'?'Blue-Eyes White Dragon':'Coral Dragon',code},cands=lookupCatalog(pack,read).cands;
+    return {code,read,readings:ygoCodeReadings(code),parts:scannerNumberParts('ygo',code),evidence:scanIdentifierEvidence('ygo',read),
+      forcedVerified:cands.map(c=>textVerifiedMatch('ygo',{...c,exact:true},read)),
+      entry:resolvedEntry({id:'synthetic-code-'+code,qty:3},'ygo',cands,read,c=>textVerifiedMatch('ygo',c,read),{finish:'unlimited',finishConfirmed:true})};
+  });
+}
+function assertYgoCodeGuards(rows){
+  assert.deepEqual(rows.map(x=>x.code),['LEHD-ENB38','LOB-EN0O1','38','B38']);
+  const [literal,corrected,...suffixes]=rows;
+  assert.equal(literal.entry.cands.length,1);assert.equal(literal.entry.cands[0].name,'Coral Dragon');assert.equal(literal.entry.cands[0].id,'42566602');assert.equal(literal.entry.cands[0].print,'LEHD-ENB38|Ultra Rare');
+  assert.deepEqual(literal.forcedVerified,[true]);assert.equal(literal.entry.status,'ready');
+  assert.deepEqual(corrected.readings,[{raw:'LOB-EN0O1',code:'LOB-EN001',corrected:true}]);assert.equal(corrected.evidence.identifierUncertain,true);assert.equal(corrected.entry.cands[0].print,'LOB-EN001|Ultra Rare');
+  for(const row of [corrected,...suffixes]){
+    assert(row.entry.cands.length,`${row.code} retains review candidates`);assert(row.entry.cands.every(c=>c.exact===false),`${row.code} is not exact`);
+    assert(row.forcedVerified.every(value=>value===false),`${row.code} cannot verify even with an adversarial exact flag`);
+    assert.equal(row.entry.read.code,row.code);assert.equal(row.entry.status,'review');assert.equal(row.entry.printingVerified,false);assert.equal(row.entry.finish,'');
+  }
+  for(const row of suffixes){assert.equal(row.parts,null);assert.deepEqual(row.evidence.observations,[]);}
+}
+const matrix=['All three games use an inline printing carousel, set/number/rarity filters and branded AI help without switching the global game','Inline selection leaves capture/original/quantity/condition/language/location unchanged','Exact selected card/release/variant/edition remains review-only, not fabricated OCR evidence','320/390/768px inline art and controls fit without overflow','Late AI response cannot mutate another capture','Live synthetic camera returns without duplicate capture or collection write','Production manual full-code UI lookup resolves LEHD-ENB38 to Coral Dragon without replacing the lookup adapter','Corrected LOB-EN0O1 and suffix-only 38/B38 retain raw evidence and remain review-only; suffix manual lookup is rejected'];
 console.log(await validateSearchFixtures());
+assertYgoCodeGuards(await ygoCodeGuardSnapshot(YGO_CODE_FIXTURE));
 if(process.argv.includes('--validate-fixtures')){
   for(const game of GAMES)assert(CARDS[game].find(card=>card.id===PRINT_IDS[game]));
   assert.equal(CARDS.ptcg.find(card=>card.id===POKEMON_PRINTS[1].id).variants[0].key,'firstEdition');
   assert(UNIQUE.id);assert.equal(MAGIC_PRINTS[0].oracle_id,MAGIC_PRINTS[1].oracle_id);
-  console.log(JSON.stringify({kind:'hosted-only-synthetic-scanner-printing-review',matrix,limitations:['No real OCR or photographed-card accuracy claim.','No local browser, provider request, screenshot or server started.','No private/user photographs.']},null,2));
+  console.log(JSON.stringify({kind:'hosted-only-synthetic-scanner-printing-review',matrix,limitations:['No real OCR or photographed-card accuracy claim.','No local browser, provider request, screenshot or server started.','No private/user photographs.','Manual UI and browser persistence assertions require hosted CI; local validation checks production parser/evidence/queue guards only.','Public catalogue identity metadata and exact-code HTTP responses are synthetic fixtures; the production manual lookup adapter is not replaced.']},null,2));
   process.exit(0);
 }
 assert.equal(process.env.GITHUB_ACTIONS,'true','Hosted-only scanner printing QA. Use --validate-fixtures locally; never launch a local browser.');
@@ -151,6 +186,78 @@ async function lateCancelledScenario(app){
  const before=await queue(page);release();await frame(page);
  assert.deepEqual(await queue(page),before);assert.equal(await page.evaluate(()=>window.__uiTestState.ui.scan.confirm.batchId),'synthetic-capture-B');assert.equal(await page.locator('#sheet[open]').count(),0);
 }
+async function seedYgoCodeMetadata(page){
+  const guards=await page.evaluate(ygoCodeGuardSnapshot,YGO_CODE_FIXTURE);assertYgoCodeGuards(guards);
+  const installed=await page.evaluate(async({raw,guards})=>{
+    const T=window.__uiTestTcg,{normalizeYgoSets}=await import('/ygo.js'),{initCatalog}=await import('/scan-catalog.js');
+    // Only public catalogue data is seeded. App handlers, parser, lookup adapter,
+    // candidate hydration, printing picker and persistence guards stay intact.
+    for(const row of guards.slice(0,2)){
+      const card=row.entry.cands[0].card,previous=T.cache.ygo[card.id];
+      T.cache.ygo[card.id]={...previous,...card,sets:[...(previous?.sets||[]).filter(p=>p.code!==card.sets[0].code),...card.sets],artSchema:1,printPriceSchema:1,fetchedAt:new Date().toISOString()};
+    }
+    const release=normalizeYgoSets([{set_code:'LEHD',set_name:raw.rows[0][4],tcg_date:'2018-10-05',num_of_cards:1}])[0];
+    T.ui('ygo').sets.list=[...T.currentYgoCatalogue().filter(s=>s.id!==release.id),release];
+    return !!await initCatalog('ygo');
+  },{raw:YGO_CODE_FIXTURE,guards});
+  assert.equal(installed,false,'The real manual adapter must take the no-installed-pack route');
+  return guards;
+}
+async function ygoManualFullCodeScenario(app){
+  const {page}=app,initial=await seed(app,'ygo');await readyInline(page);await seedYgoCodeMetadata(page);
+  const before=await inventorySnapshot(page),codeRequests=[];
+  await page.route('https://db.ygoprodeck.com/api/v7/cardsetsinfo.php?*',async route=>{
+    const req=route.request(),url=new URL(req.url()),record={method:req.method(),url:url.href,settled:false,fixture:'synthetic-full-code-identity'};
+    codeRequests.push(record);app.requests.push(record);
+    const allowed=req.method()==='GET'&&url.searchParams.toString()==='setcode=LEHD-ENB38';
+    try{await route.fulfill({status:allowed?200:451,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(allowed?{id:42566602,set_code:'LEHD-ENB38',set_rarity:'Ultra Rare'}:{error:'Unmapped code blocked; no provider call forwarded.'})});}finally{record.settled=true;}
+  });
+  await page.locator('#scanMatchName').fill('Coral Dragon');await page.locator('#scanMatchNumber').fill('LEHD-ENB38');
+  await page.locator('.scan-confirm [data-act="scanFind"]').click();
+  await page.waitForFunction(()=>{const s=window.__uiTestState.ui.scan;return !s.lookup&&(s.confirm?.error||s.cands?.some(c=>c.id==='42566602'));});
+  const state=await page.evaluate(()=>({error:window.__uiTestState.ui.scan.confirm.error,cands:window.__uiTestState.ui.scan.cands,finish:window.__uiTestState.ui.scan.confirm.finish}));
+  assert.equal(state.error,'');assert.equal(state.cands.length,1);assert.equal(state.cands[0].id,'42566602');assert.equal(state.cands[0].name,'Coral Dragon');assert.equal(state.cands[0].print,'LEHD-ENB38|Ultra Rare');
+  assert.equal(state.cands[0].exact,false);assert.equal(state.cands[0].printingConfirmed,false);assert.equal(state.finish,'');
+  assert.deepEqual(codeRequests.map(r=>[r.method,r.url]),[['GET','https://db.ygoprodeck.com/api/v7/cardsetsinfo.php?setcode=LEHD-ENB38']]);
+  await readyInline(page);
+  assert.match(await page.locator('.scan-inline-printings .printing-slide.is-current').innerText(),/Coral Dragon/);
+  assert.match(await page.locator('.scan-inline-printings .printing-slide.is-current').innerText(),/LEHD-ENB38/);
+  const after=await queue(page);assert.deepEqual(metadata(after[0]),metadata(initial[0]));assert.deepEqual(after[1],initial[1]);
+  assert.equal(after[0].status,'review');assert.equal(after[0].printingVerified,false);assert.equal(after[0].finish,'');assert.equal(after[0].cands[0].print,'LEHD-ENB38|Ultra Rare');
+  assert(await act(page,'scanConfirm').isDisabled(),'Manual lookup cannot auto-enable saving without printing/edition review');
+  await capture(page,'synthetic-search-scanner-ygo-manual-full-code');
+  for(const suffix of ['38','B38']){
+    const previous=await queue(page);await page.locator('#scanMatchNumber').fill(suffix);await page.locator('.scan-confirm [data-act="scanFind"]').click();
+    await page.locator('.scan-confirm-error').filter({hasText:'Enter the full bottom code'}).waitFor();
+    assert.deepEqual(await queue(page),previous,`${suffix} cannot mutate or verify the queued capture`);assert(await act(page,'scanConfirm').isDisabled());
+  }
+  assert.equal(codeRequests.length,1,'Suffix-only attempts never reach the exact-code provider endpoint');
+  assert.equal(await inventorySnapshot(page),before);assert.equal(await page.evaluate(()=>window.__uiTestState.state.settings.game),'mtg');
+  assert.equal(await page.evaluate(()=>window.__scannerReviewTest.ocrCalls),0);
+}
+async function ygoUncertainCodeScenario(app){
+  const {page}=app;await seed(app,'ygo');await readyInline(page);const guards=await seedYgoCodeMetadata(page),before=await inventorySnapshot(page);
+  await act(page,'scanDismiss').click();await page.waitForFunction(()=>!window.__uiTestState.ui.scan.confirm);
+  await page.evaluate(rows=>{
+    const batch=window.__scannerReviewTest.batch,template=batch.loadBatch()[0];
+    batch.saveBatch(rows.map(({entry},i)=>({...template,...entry,captureRevision:'synthetic-code-revision-'+i,defaults:{finish:'unlimited',finishConfirmed:true},selectedIndex:-1})));
+  },guards.slice(1));
+  const initial=await queue(page);
+  for(const [i,guard] of guards.slice(1).entries()){
+    await openCapturedCard(page,guard.entry.id);await readyInline(page);
+    const current=(await queue(page))[i];assert.deepEqual(metadata(current),metadata(initial[i]));
+    assert.equal(current.status,'review');assert.equal(current.printingVerified,false);assert.equal(current.finish,'');assert(current.cands.every(c=>c.exact===false));
+    const evidence=await page.evaluate(async()=>{const s=window.__uiTestState.ui.scan,{textVerifiedMatch}=await import('/scancam.js');return {read:s.read,finish:s.confirm.finish,verified:s.cands.map(c=>textVerifiedMatch('ygo',{...c,exact:true},s.read))};});
+    assert.equal(evidence.read.code,guard.code);assert.equal(evidence.finish,'');assert(evidence.verified.length&&evidence.verified.every(v=>v===false));
+    assert(await act(page,'scanConfirm').isDisabled(),'Uncertain OCR/suffix input cannot enable Add to collection');
+    assert.equal(await act(page,'scanBatchSave').count(),0,'Uncertain entries are not exposed as ready matches');
+    await capture(page,`synthetic-search-scanner-ygo-review-${i===0?'corrected-ocr':i===1?'suffix-38':'suffix-b38'}`);
+    await act(page,'scanDismiss').click();await page.waitForFunction(()=>!window.__uiTestState.ui.scan.confirm);
+    assert.equal(await inventorySnapshot(page),before);
+  }
+  const final=await queue(page);assert.equal(final.length,3);assert(final.every(row=>row.status==='review'&&!row.printingVerified&&!row.finish));
+  assert.equal(await page.evaluate(()=>window.__scannerReviewTest.ocrCalls),0,'Synthetic OCR strings are injected only at the production evidence boundary');
+}
 function record(label,phase,error){failures.push({label,phase,error});return {phase,stack:error.stack};}
 async function run(label,game,fn){
   let app,before;const result={scenario:label,game,status:'passed',errors:[]};
@@ -169,7 +276,9 @@ try{
   server=await startServer();browser=await chromium.launch();
   for(const game of GAMES)await run(`${game}-scanner-printing-review`,game,app=>reviewScenario(app,game));
   await run('mtg-late-ai-a-to-b','mtg',lateCancelledScenario);
+  await run('ygo-manual-full-code','ygo',ygoManualFullCodeScenario);
+  await run('ygo-uncertain-code-review','ygo',ygoUncertainCodeScenario);
 }catch(error){record('runner','setup',error);}
 finally{try{await browser?.close();}catch(error){record('runner','browser cleanup',error);}try{await server?.close();}catch(error){record('runner','server cleanup',error);}}
-await mkdir(RESULTS,{recursive:true});await writeFile(resolve(RESULTS,'scanner-printing-browser.json'),JSON.stringify({kind:'synthetic-scanner-printing-review',matrix,outcomes,status:failures.length?'failed':'passed',limitations:['No physical-camera or OCR-accuracy claim.','All card data, images, camera pixels and collection fixtures are synthetic.'],failures:failures.map(({label,phase,error})=>({label,phase,stack:error.stack}))},null,2));
+await mkdir(RESULTS,{recursive:true});await writeFile(resolve(RESULTS,'scanner-printing-browser.json'),JSON.stringify({kind:'synthetic-scanner-printing-review',matrix,outcomes,status:failures.length?'failed':'passed',limitations:['No physical-camera or OCR-accuracy claim.','All card data, images, camera pixels and collection fixtures are synthetic.','Code evidence uses injected text and production parsing/verification; manual full-code lookup uses real UI/app adapters with an intercepted public identity response, not a live provider.'],failures:failures.map(({label,phase,error})=>({label,phase,stack:error.stack}))},null,2));
 if(failures.length){const error=new AggregateError(failures.map(f=>f.error),`${failures.length} scanner-printing UI regression error(s)`);error.stack+='\n'+failures.map(f=>`${f.label}/${f.phase}: ${f.error.stack}`).join('\n');throw error;}

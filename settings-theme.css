@@ -35,17 +35,17 @@
 /* Light mode uses the same art and layouts, with readable, game-colored ink. */
 :root[data-theme="light"] {
  --bg:#f3f5f8;--surface:#ffffff;--surface-2:#e7ecf3;--panel:#ffffff;
- --line:#c2cbd8;--text:#172337;--muted:#47566b;--faint:#536278;
- --gold:#79520a;--gold-ink:#ffffff;--accent:var(--gold);
- --good:#176b43;--bad:#ad322b;--warn:#79520a;
+ --line:#c2cbd8;--text:#172337;--muted:#33445a;--faint:#3e5068;
+ --gold:#674407;--gold-ink:#ffffff;--accent:var(--gold);
+ --good:#125334;--bad:#922a24;--warn:#674407;
  --picker-bg:rgba(250,252,255,.98);--picker-border:#b6c1d1;color-scheme:light;
 }
-:root[data-theme="light"] body[data-game="ptcg"] {--gold:#ae3029;--gold-ink:#fff;}
-:root[data-theme="light"] body[data-game="ygo"] {--gold:#6738ad;--gold-ink:#fff;}
+:root[data-theme="light"] body[data-game="ptcg"] {--gold:#922a24;--gold-ink:#fff;}
+:root[data-theme="light"] body[data-game="ygo"] {--gold:#603199;--gold-ink:#fff;}
 :root[data-theme="light"] body {--accent:var(--gold);}
-:root[data-theme="light"] body.glass {--glass:rgba(255,255,255,.88);--glass-2:rgba(235,240,247,.94);--glass-line:rgba(85,105,135,.26);--glass-hi:inset 0 1px 0 #fff,inset 0 0 0 1px #ffffff70;}
-:root[data-theme="light"] body.glass #ambient .amb-art {filter:blur(42px) saturate(.9) brightness(1.15);opacity:.26;}
-:root[data-theme="light"] body.glass #ambient::after {background:radial-gradient(80% 55% at 85% 0%,color-mix(in srgb,var(--game-color) 10%,transparent),transparent 70%),linear-gradient(180deg,#f3f5f8bd,#f3f5f8eb 60%,#f3f5f8fa);}
+:root[data-theme="light"] body.glass {--glass:rgba(255,255,255,.58);--glass-2:rgba(241,245,251,.68);--glass-line:rgba(85,105,135,.26);--glass-hi:inset 0 1px 0 #fff,inset 0 0 0 1px #ffffff70;}
+:root[data-theme="light"] body.glass #ambient .amb-art {filter:blur(42px) saturate(1.15) brightness(1.08);opacity:.8;}
+:root[data-theme="light"] body.glass #ambient::after {background:linear-gradient(180deg,rgba(243,245,248,.74),rgba(243,245,248,.78) 65%,rgba(243,245,248,.82));}
 :root[data-theme="light"] body :is(.topbar,.bottom-nav) {background:rgba(246,249,253,.94);border-color:var(--line);}
 :root[data-theme="light"] :is(.tabs,.sticky-bar,.sticky-summary,.scan-confirm,.scan-confirm-actions) {background:rgba(246,249,253,.97);border-color:var(--line);}
 :root[data-theme="light"] .game-tabs {background:#e7ecf3;border-color:var(--line);}
@@ -53,7 +53,9 @@
 :root[data-theme="light"] .game-tab[aria-selected="true"] {background:#fff;color:var(--text);border-color:var(--gold);box-shadow:0 2px 8px #24364b14;}
 :root[data-theme="light"] .game-tab:hover {color:var(--text);background:#f8faff;}
 :root[data-theme="light"] .set-media > img[src*="svgs.scryfall.io"],:root[data-theme="light"] .set-media > img[src*="/sets/"][src$=".svg"],:root[data-theme="light"] .set-year-grid .set-media-pokemon-symbol > .set-catalogue-symbol {filter:none;}
-:root[data-theme="light"] body.glass dialog.sheet {background:linear-gradient(180deg,#ffffffef,#f6f8fbed);border-color:var(--line);box-shadow:0 -12px 55px #23334d26;}
+:root[data-theme="light"] body.glass dialog.sheet {background:linear-gradient(180deg,#ffffff24,transparent 180px),rgba(246,249,253,.78);border-color:var(--glass-line);box-shadow:var(--glass-hi),0 -12px 55px #23334d26;}
+:root[data-theme="light"] body.glass dialog.sheet::backdrop {background:rgba(38,50,70,.18);}
+:root[data-theme="light"] body.glass .cs-tabs {background:rgba(250,252,255,.62);border-color:var(--glass-line);}
 :root[data-theme="light"] body.glass .sheet-head:not(.overlay),:root[data-theme="light"] body.glass .sheet-head.overlay.scrolled {background:rgba(250,252,255,.97);border-color:var(--line);}
 :root[data-theme="light"] body.glass :is(.panel,.kpi,.game-choice,.lot,.meta-row,.print,.cd-text,.price-pill,.advice,.deck-emb,.pair-row,.guide-limits span,.imp-chip,.proven-sum,.settings-card) {box-shadow:var(--glass-hi),0 8px 25px #23334d0d;}
 :root[data-theme="light"] body.glass .seg :is(button.on,[aria-selected="true"]) {background:#fff;box-shadow:inset 0 1px #fff,0 1px 4px #24364b1a;}
@@ -82,10 +84,16 @@
 :root[data-theme="light"] #toast .toast-undo {background:#dfe7f0;}
 :root[data-theme="light"] .cf-dialog.danger .btn.danger {color:#fff;}
 :root[data-theme="light"] .cf-dialog-check svg {stroke:#fff;}
-/* The hero mask fades its shade as well as art. Keep the white title readable
-   over the light sheet without changing the artwork, mask or title geometry. */
-:root[data-theme="light"] .cs-banner > .cs-title {isolation:isolate;color:#f4f6fb;}
-:root[data-theme="light"] .cs-banner > .cs-title::before {content:"";position:absolute;inset:0 -8px 6px;z-index:-1;border-radius:14px;background:rgba(23,35,55,.84);pointer-events:none;}
+/* One continuous art-to-light fade, not a separate title card. The scrim is
+   full-bleed and follows the entire title block, including wrapped long names.
+   Its 92% light floor covers every line of ink even over pure-black artwork;
+   only the empty padding above/below feathers back into the existing art mask.
+   Artwork, foil, title geometry and the Dark theme are deliberately untouched. */
+:root[data-theme="light"] .cs-banner > .cs-hero:not(.compact) .cs-shade {background:linear-gradient(180deg,rgba(23,35,55,.08),transparent 45%);}
+:root[data-theme="light"] .cs-banner > .cs-title {isolation:isolate;color:var(--text);}
+:root[data-theme="light"] .cs-banner > .cs-title::before {content:"";position:absolute;inset:-80px calc(var(--gutter) * -1) 0;z-index:-1;border-radius:0;background:linear-gradient(180deg,rgba(243,245,248,0),rgba(243,245,248,.92) 80px,rgba(243,245,248,.92) calc(100% - 18px),rgba(243,245,248,0));pointer-events:none;}
+:root[data-theme="light"] .cs-banner > .cs-title :is(h2,.type-line,.hp,.lvl) {color:var(--text);text-shadow:none;}
+@media(prefers-reduced-motion:reduce) {:root[data-theme="light"] body.glass #ambient .amb-art {transition:none;}}
 /* Art overlays remain dark-backed with light ink; card images and foil pixels never invert. */
 :root[data-theme="light"] :is(.tile-chrome,.chip.dark,.icon.light,.hh-credit,.hero-body,.deck-hero,.community-art,.home-meta-card,.tabletop-dialog,.community-profile-header,.stash-open-book,.tv-phone,.air-fan,.scan-defaults,.cam-rail,.img-missing) {--text:#f4f6fb;--muted:#d0d8e6;--faint:#bac5d7;--gold:#edc777;--gold-ink:#201808;--good:#8bdfaf;--bad:#ffb4a8;color:var(--text);}
 :root[data-theme="light"] .home-overview .home-daily .hh-credit {--text:#172337;--muted:#47566b;--faint:#536278;--gold:inherit;color:var(--text);}
