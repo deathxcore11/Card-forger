@@ -48,6 +48,24 @@ try{
   const comboCalls=model.calls;await page.locator('[data-ask-choice="unverified"]').click();await page.locator('.ask-msg.thinking').waitFor({state:'detached'});assert.equal(model.calls,comboCalls);assert.match(await page.locator('.ask-log').innerText(),/Unverified draft: 100\/100/);assert.match(await page.locator('.ask-log').innerText(),/Infinite combos have not been verified/);
   await page.getByRole('button',{name:/Review the deck draft/}).click();await page.waitForFunction(()=>document.querySelector('#sheet').open&&window.__uiTestState.ui.build.results.Commander?.[0]?.unverifiedConstraints?.length===1);assert.match(await page.locator('#sheetBody').innerText(),/Needs review/);assert.match(await page.locator('#sheetBody').innerText(),/Save draft/);await noMutation(page,before);await capture(page,`ai-request-recovery-${width}-unverified-preview`);await closeSheet(page);
   await page.locator('[data-act="homeAsk"]').click();await newChat(page);await submit(page,'Build a red Goblin Commander deck under $50');assert.match(await page.locator('.ask-log').innerText(),/Checked draft: 100\/100/);assert.equal(await page.locator('[data-ask-choice="unverified"]').count(),0,'New chat has no leaked constraint');await noMutation(page,before);
+  const draftTile=page.locator('.ask-build');await draftTile.waitFor();
+  assert.equal(await draftTile.locator('.stashy-logo').count(),1);assert.equal(await draftTile.locator('.ask-build-art img').count(),1);await noOverflow(page,'.ask-dialog',`Artwork draft card ${width}`,true);await capture(page,`ai-request-recovery-${width}-artwork-draft`);
+  await page.getByRole('button',{name:'Close Ask AI',exact:true}).click();
+  // Renderer-only fixtures exercise both deck row views at the real sheet width.
+  for(const kind of ['idea','proven']){
+   await page.evaluate(async ({kind,cards})=>{
+    const S=window.__uiTestState,V=await import('/views.js'),T=await import('/tcg.js');
+    const cs=cards.slice(0,4).map((c,i)=>({...c,set:'TST',collector_number:String(i+1),rarity:'rare'}));for(const c of cs)S.catalog[c.name.toLowerCase()]=c;
+    const rows=cs.map(c=>({name:c.name,qty:1,key:c.name.toLowerCase(),kind:'creature',price:.1,owned:0}));let html;
+    if(kind==='idea')html=V.ideaSheet({commander:cs[0],plan:'Goblin fixture'}, {id:'render-only',name:'Render fixture',format:'Commander',commander:cs[0].name,cards:rows,side:[]},{budget:50,busy:false,msg:''},new Set([cs[0].name]));
+    else{Object.assign(T.proven,{spec:{g:'mtg',title:'Render fixture',sub:'',evidence:'Synthetic layout fixture',rows,lists:[],printingFor:r=>cs.find(c=>c.name===r.name),imageFor:r=>cs.find(c=>c.name===r.name).image_uris.normal},mode:'original',busy:false,msg:''});html=T.provenSheetHtml();}
+    const sheet=document.querySelector('#sheet');document.querySelector('#sheetBody').innerHTML=html;if(!sheet.open)sheet.showModal();
+   },{kind,cards});
+   assert.equal(await page.locator('.deck-compact-row').count(),4);assert.equal(await page.locator('.deck-printing').count(),4);
+   const geometry=await page.locator('.deck-compact-row').evaluateAll(rows=>rows.map(n=>{const r=n.getBoundingClientRect(),name=n.querySelector('.deck-compact-copy>b'),a=n.querySelector('img'),nr=name.getBoundingClientRect(),ar=a?.getBoundingClientRect();return {width:r.width,nameWidth:nr.width,artWidth:ar?.width,artHeight:ar?.height,overflow:n.scrollWidth>n.clientWidth+1};}));
+   for(const g of geometry){assert(g.width>200&&g.nameWidth>65&&g.artHeight>g.artWidth&&!g.overflow,`${kind} readable portrait tile at ${width}: ${JSON.stringify(g)}`);}
+   await noOverflow(page,'#sheetBody',`${kind} compact rows ${width}`,true);await capture(page,`ai-request-recovery-${width}-${kind}-compact`);await page.evaluate(()=>document.querySelector('#sheet').close());
+  }
   app.health();checks.push({width,plainHomepagePrompt:true,actualBuiltInSuggestion:true,formatChoiceNoExtraModel:true,unverifiedConsentNoExtraModel:true,freshChatClearsRestriction:true,exact100:true,noAutosave:true,syntheticModel:true});
  }catch(error){if(app){console.error('Synthetic app failure context:',JSON.stringify({url:app.page.url(),text:(await app.page.locator('body').innerText()).slice(-4000)}));await capture(app.page,`ai-request-recovery-${width}-failure`).catch(()=>{});}throw error;}finally{await app?.context.close();}}
  let app;try{

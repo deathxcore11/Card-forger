@@ -187,6 +187,13 @@ export function setBadge(c, {physical=false, unspecified=false} = {}) {
   return `<span class="set-badge r-${esc(c.rarity||'common')}" data-act="set" data-code="${esc(code.toLowerCase())}" role="link" title="${esc(title)} — tap to see the whole set" aria-label="${esc(title)}"><span class="set-icon" style="--icon:url('${esc(setIconUrl(code))}')" aria-hidden="true"></span><span>${esc(code)}</span></span>`;
 }
 
+// Deck suggestions show the catalogue's reference printing, never an owned copy.
+export function referencePrintingPills(c) {
+  if (!c) return '';
+  const code = String(c.set || '').toUpperCase();
+  return `<span class="deck-printing" title="Reference printing"><span class="set-badge r-${esc(c.rarity || 'common')}">${esc(code || 'Set unknown')}${c.collector_number ? ' · #' + esc(c.collector_number) : ''}</span>${c.rarity ? `<span class="tag">${esc(c.rarity.replaceAll('_', ' '))}</span>` : ''}</span>`;
+}
+
 export function customBudget(value) {
  const text=String(value??'').trim(), amount=Number(text);
  if(!text || !Number.isFinite(amount) || amount<0 || amount>100000)throw Error('Enter a dollar budget from $0 to $100,000.');

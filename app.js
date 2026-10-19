@@ -5216,6 +5216,7 @@ A.mtgProven = (t) => {
       go(`#deck/${deck.id}/cards`);
     },
     cardAttrs: (r) => `data-act="card" data-name="${esc(r.name)}"`,
+    printingFor: (r) => meta(r.name),
     imageFor: (r) => meta(r.name)?.image_uris?.small || meta(r.name)?.card_faces?.[0]?.image_uris?.small || "",
     heroFor: (rows) => {
       if (d.art) return d.art;

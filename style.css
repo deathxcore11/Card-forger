@@ -2990,6 +2990,7 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .ask-item{display:flex;flex-direction:column;gap:4px;text-align:left;font:inherit;color:var(--text);padding:8px;border-radius:14px;background:#0000002a;border:1px solid #ffffff1c;cursor:pointer;animation:ask-deal .5s cubic-bezier(.2,.9,.2,1.2) both;animation-delay:calc(var(--i) * 110ms + 120ms);transition:transform .2s,border-color .2s}
 .ask-item:hover,.ask-item:focus-visible{transform:translateY(-2px);border-color:color-mix(in srgb,var(--game-color,var(--gold)) 60%,transparent)}
 .ask-item img{width:100%;aspect-ratio:5/7;object-fit:cover;border-radius:9px;background:#ffffff0a}.ask-item.wide img{aspect-ratio:16/9}.ask-item b{font-size:13px;line-height:1.25}.ask-item small{color:var(--muted);font-size:11.5px}.ask-item em{font-style:normal;font-weight:800;color:var(--game-color,var(--gold));font-size:13px}
+.ask-items:has(.ask-build){grid-template-columns:1fr}.ask-item.ask-build{min-width:0;width:100%;padding:0;gap:0;overflow:hidden;background:var(--surface);border-color:var(--line);border-radius:18px}.ask-build-art{display:block;position:relative;height:156px;width:100%;overflow:hidden;background:radial-gradient(ellipse at top,#42455e,#181b24)}.ask-build-art>img{width:100%;height:100%;aspect-ratio:auto;object-fit:cover;object-position:center 35%;border-radius:0}.ask-build-art::after{content:'';position:absolute;inset:50% 0 0;background:linear-gradient(transparent,#0b0d1277);pointer-events:none}.ask-build-brand,.ask-build-format{position:absolute;top:10px;z-index:1;display:flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;background:#10131cdb;color:#fff;font-size:11px;font-weight:700}.ask-build-brand{left:10px}.ask-build-brand .stashy-logo{width:26px;height:26px}.ask-build-format{right:10px;max-width:55%;white-space:normal;overflow-wrap:anywhere}.ask-build-body{display:grid;gap:7px;padding:14px;min-width:0}.ask-item .ask-build-title{font-size:18px;line-height:1.25;overflow-wrap:anywhere}.ask-build-status{font-size:12px;font-weight:750;color:var(--gold)}.ask-build-status.ready{color:var(--good)}.ask-build-action{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:10px 13px;margin-top:3px;border-radius:11px;background:var(--gold);color:#15120b;font-size:13px;font-weight:800;box-sizing:border-box}.ask-build-no-art{display:grid;height:100%;place-items:center;color:#d4dae4;font-size:12px}.ask-build-image.pk-crop{position:absolute;inset:0;width:100%;height:100%;border-radius:0}@media(max-width:420px){.ask-build-art{height:132px}.ask-build-body{padding:12px}.ask-item .ask-build-title{font-size:16px}}
 .ask-bar{display:flex;align-items:center;gap:8px;padding:12px 14px max(12px,env(safe-area-inset-bottom));border-top:1px solid var(--line);background:#00000022}
 .ask-input{flex:1;min-width:0;font:inherit;font-size:16px;color:var(--text);padding:13px 16px;border-radius:999px;border:1px solid #ffffff22;background:#ffffff0a}.ask-input:focus{outline:none;border-color:color-mix(in srgb,var(--game-color,var(--gold)) 70%,transparent)}
 .ask-send,.ask-mic{flex:none;display:grid;place-items:center;width:46px;height:46px;border-radius:50%;border:0;font-size:20px;font-weight:900;cursor:pointer}
@@ -4738,3 +4739,20 @@ body[data-game="ygo"] .ask-launch{--ask-a:#b697ef;--ask-b:#697db5;--ask-c:#dbb26
 
 /* A 720px sheet must not inherit the full-page three-column card list. */
 #sheetBody .tier-tiles { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+
+/* Shared compact catalogue rows in deck previews: keep card identity readable. */
+.list.compact.deck-compact-list{grid-template-columns:minmax(0,1fr);gap:8px}
+.deck-compact-row{display:flex;align-items:center;gap:10px;min-width:0;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--surface);text-align:left}
+.deck-compact-row .deck-compact-art,.deck-compact-row .row-thumb{display:block;width:60px;height:84px;flex:0 0 60px;object-fit:contain;border-radius:6px;background:var(--surface-2)}
+.deck-compact-row .pick-main{gap:10px;align-self:stretch}
+.deck-compact-copy{display:flex;flex:1;flex-direction:column;gap:6px;min-width:0}
+.deck-compact-row .deck-compact-copy>b{font-size:14px;line-height:1.3;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:break-word}
+.deck-printing{display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-width:0}
+.deck-printing .set-badge{margin:0;white-space:normal}.deck-printing .tag{text-transform:capitalize;font-size:10px}
+.deck-compact-row>.small{max-width:95px;white-space:normal;text-align:right;overflow-wrap:break-word}
+.deck-compact-row .pick-side{max-width:80px;white-space:normal}.deck-compact-row .pick-side .mana{flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:420px){.deck-compact-row{gap:7px;padding:8px}.deck-compact-row .deck-compact-art,.deck-compact-row .row-thumb{width:48px;height:67px;flex-basis:48px}.deck-compact-row>.small{max-width:72px;font-size:11px}.deck-compact-row .pick-main{gap:7px}.deck-compact-row .pick-side{max-width:58px;font-size:11px}}
+
+.ask-build-badges{position:absolute;inset:10px 10px auto;z-index:1;display:flex;align-items:flex-start;justify-content:space-between;gap:6px}
+.ask-build-badges .ask-build-brand,.ask-build-badges .ask-build-format{position:static;min-width:0;font-size:10px}.ask-build-badges .ask-build-brand{flex-shrink:0}.ask-build-badges .ask-build-format{max-width:55%;overflow-wrap:normal}
+.ask-build-art-fallback{display:none}.ask-art-unavailable .ask-build-art-fallback{display:grid;position:absolute;inset:50px 0 0;place-items:center;color:#d4dae4;font-size:12px}

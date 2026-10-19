@@ -7,6 +7,7 @@ import {goalDescription} from './ai-deck-goal.js';
 import {resolveYgoSet} from './ygo.js';
 import { pokemonArtCrop } from './artwork.js';
 import { ptcgIcon } from './meta.js';
+import { brandMark } from './brand.js';
 // The app functions Ask AI may use. Each runs on this device against the app's own data and
 // returns compact JSON for the model; nothing here reaches outside the app's own data sources.
 // app.js passes in its internals (ctx) because its actions are module-scoped.
@@ -241,6 +242,8 @@ export function makeAskTools(x) {
         if (x.openMtgDraft) {
           x.pending = () => { if(!scopeCurrent()){x.toast?.('Your workspace, decks, or collection changed. Ask again before reviewing this draft.');return;} return x.openMtgDraft(structuredClone(draft),scopeCurrent); };
           x.pending.current=scopeCurrent; x.pendingGame=g;
+          const cover=x.meta?.(draft.commander||draft.buildAround);
+          x.pending.visual={card:cover,image:cover?.image_uris?.art_crop||cover?.card_faces?.[0]?.image_uris?.art_crop||mtgImg(cover),name:draft.commander||draft.buildAround,format:draft.format,summary:`${draft.total}/${result.target} cards · ${draft.lands} lands`,status:result.ready?'Checked draft':'Needs review',ready:result.ready,estimate:draft.totalEstimate};
         }
         return {...result,goal,goalVerified:false,goalDescription:goalDescription(goal),validation,correction,requiresCorrection:mayCorrect,reviewAvailable:!!x.openMtgDraft,terminal:!mayCorrect};
       }
@@ -273,6 +276,7 @@ export function makeAskTools(x) {
       if(required&&!pick)return {game:g,requiresChoice:true,note:`I could not verify the exact build-around “${required}”. Which card or printing should the builder use?`};
       if (!pick) return { error: `No ${g === 'ygo' ? 'Yu-Gi-Oh!' : 'Pokémon'} card found for "${want}".` };
       x.pending = () => {if(!scopeCurrent()){x.toast?.('Your workspace changed. Ask again in the current workspace.');return;}return x.openTcgBuild(g,pick.id,$,selected.id,scopeCurrent);}; x.pending.current=scopeCurrent; x.pendingGame=g;
+      x.pending.visual={card:pick,image:pick.art||pick.imageLarge||pick.image||'',name:pick.name,format:selected.name,summary:'Generate and review the list',status:'Builder setup',ready:false,estimate:null};
       return { game:g, prepared:true, complete:false, terminal:true, reviewAvailable:true, actionLabel:'Open the deck builder', seed:pick.name, format:selected.name, goal,goalVerified:false,budget:$||'no limit', budgetBasis:'purchase', requestedBudgetBasis:budget_basis||'total', note:'The '+selected.name+' builder is prepared around '+pick.name+'. '+(goal!=='strongest'?'Your '+goal+' preference is for you to review; it is not a verified playability or strength rating. ':'')+'Its budget is purchases after owned cards, not a verified whole-deck total. Open it to generate and check the actual list and price coverage. No complete deck or under-budget result has been verified yet; nothing was saved.' };
     },
   };
@@ -287,7 +291,7 @@ export function makeAskTools(x) {
   tools.cancel = () => { buildEpoch++; x.pending = null; buildReads.clear(); buildReadVersion=null; bestBuild=null; };
   tools.suggestedItems = () => suggestions;
   tools.canonicalItem = s => { const exact=s.kind==='card'?exactCardFor(s):null; return exact?{...s,ref:exact.ref,label:s.label||exact.card.name}:s.kind==='meta'?suggestions.find(x=>x.game===s.game&&(x.ref===s.ref||x.label===s.ref||x.label===s.label))||s:s; };
-  tools.pendingItem = () => { if (!x.pending) return null; const ref = 'builder-' + (++buildId); builders.set(ref,x.pending); return {kind:'build',game:x.pendingGame,ref,label:x.pendingGame==='mtg'?'Review the deck draft':'Open the deck builder'}; };
+  tools.pendingItem = () => { if (!x.pending) return null; const ref = 'builder-' + (++buildId); builders.set(ref,x.pending); const item={kind:'build',game:x.pendingGame,ref,label:x.pendingGame==='mtg'?'Review the deck draft':'Open the deck builder'};if(x.pending.visual)visuals.set(visualKey(item),structuredClone(x.pending.visual));return item; };
   // What a tapped answer item opens, in the right game.
   tools.open = async (s) => {
     s=tools.canonicalItem(s);
@@ -322,6 +326,11 @@ export function makeAskTools(x) {
     s=tools.canonicalItem(s);
     let img = '', price = null, card = null;
     const deck = s.kind === 'meta' || s.kind === 'deck', visual = visuals.get(visualKey(s));
+    if(s.kind==='build'&&visual){
+      const art=visual.image?(s.game==='ptcg'?pokemonArtCrop(visual.card,'ask-build-image',visual.image):`<img src="${x.esc(visual.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.parentElement.classList.add('ask-art-unavailable')"><span class="ask-build-art-fallback">Artwork unavailable</span>`):'<span class="ask-build-no-art">Artwork unavailable</span>';
+      const estimate=typeof visual.estimate==='number'&&Number.isFinite(visual.estimate)?`$${visual.estimate.toFixed(2)} reference estimate`:s.game==='mtg'?'Price estimate incomplete':'Review list and prices in the builder';
+      return `<button type="button" class="ask-item ask-build" style="--i:${i}" aria-label="${x.esc(s.label+': '+visual.name)}" data-ask-show='${x.esc(JSON.stringify(s))}'><span class="ask-build-art">${art}<span class="ask-build-badges"><span class="ask-build-brand">${brandMark()}<span>AI draft</span></span><span class="ask-build-format">${x.esc(visual.format)}</span></span></span><span class="ask-build-body"><b class="ask-build-title">${x.esc(visual.name)}</b><small>${x.esc(visual.summary)}</small><span class="ask-build-status ${visual.ready?'ready':''}">${x.esc(visual.status)}</span><small>${x.esc(estimate)}</small><span class="ask-build-action">${x.esc(s.label)} <span aria-hidden="true">→</span></span></span></button>`;
+    }
     if (s.kind === 'card') {
       const exact=exactCardFor(s),ambiguous=String(s.ref).startsWith('set-card-')||exactAliases.has(s.game+':'+s.ref);
       if(exact){card=exact.card;img=s.game==='mtg'?mtgImg(card):card.imageLarge||card.image||'';price=s.game==='mtg'?cardPrice(card):card.setContext?.price??null;}
@@ -338,7 +347,7 @@ export function makeAskTools(x) {
       }
     }
     const kind = { card:'Card', set:'Set', meta:'Meta deck', deck:'Your deck', build:'Deck builder', help:'App guide' }[s.kind] || '';
-    const media = img ? (deck && s.game==='ptcg' && !visual?.sprite ? pokemonArtCrop(card,'ask-deck-art',img) : `<img class="${deck?'ask-deck-art':''}" src="${x.esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.parentElement.classList.add('ask-art-unavailable')">`) : deck ? '<span class="ask-deck-art img-missing" aria-hidden="true">Artwork unavailable</span>' : '';
+    const media = img ? (deck && s.game==='ptcg' && !visual?.sprite ? pokemonArtCrop(card,'ask-deck-art',img) : `<img class="${deck?'ask-deck-art':''}" src="${x.esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.parentElement.classList.add('ask-art-unavailable')"><span class="ask-build-art-fallback">Artwork unavailable</span>`) : deck ? '<span class="ask-deck-art img-missing" aria-hidden="true">Artwork unavailable</span>' : '';
     return `<button class="ask-item ${deck?'ask-deck':img?'':'wide'}" style="--i:${i}" data-ask-show='${x.esc(JSON.stringify(s))}'>${media}<b>${x.esc(s.label || s.ref)}</b><small>${kind}${visual?.share!=null?' · '+Number(visual.share).toFixed(1)+'% of the field':''}</small>${price!=null?`<em>$${Number(price).toFixed(2)}</em>`:''}</button>`;
   };
   return tools;

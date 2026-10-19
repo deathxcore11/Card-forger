@@ -52,7 +52,7 @@ import { tileChrome } from "./tiles.js";
 // Yu-Gi-Oh! and Pokémon: collection, search, sets and deck building, sharing one
 // set of screens. Each game's data, rules and formats come from its adapter.
 import { S, uid, slim } from "./store.js";
-import { esc, safeHref, usd, empty, bar, options, segmented } from "./ui.js";
+import { esc, safeHref, usd, empty, bar, options, segmented, referencePrintingPills } from "./ui.js";
 import { GAMES, GAME_ICON, GAME_COLOR, GAME_IDS, blankGame, gameOf } from "./games.js";
 import { ICON, actionIcon } from "./icons.js";
 import { tcgCompareSheet } from "./tcgcompare.js";
@@ -1264,13 +1264,13 @@ export function provenSheetHtml() {
       return u ? `<img class="row-thumb" src="${esc(u)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'row-thumb img-missing'}))">` : `<span class="row-thumb img-missing" aria-hidden="true"></span>`;
     },
     row = (r, extra = "") =>
-      `<button class="mini-row art-row" ${spec.cardAttrs ? spec.cardAttrs(r) : ""}>${thumb(r)}<span class="ellip">${r.qty}× ${esc(r.name)}${r.swappedIn ? ` <span class="tag">swap</span>` : ""}${M.engine.has(r.key) && mode !== "draft" ? ` <span class="tag ok">engine</span>` : ""}${rowEmblem(spec.g, { name: r.name, id: r.key })}</span><span class="small ${r.matchPending?"warn-text":r.assumedOwned?"muted":r.owned >= r.qty ? "ok-text" : "muted"}">${r.matchPending ? "Printing not matched" : r.assumedOwned ? "Basic Energy · assumed" : extra || (r.owned >= r.qty ? "✓ owned" : r.owned ? `${r.owned}/${r.qty} · ${r.price != null ? usd((r.qty - r.owned) * r.price) : "Price unavailable"}` : r.price != null ? usd(r.qty * r.price) : "Price unavailable")}</span></button>`;
+      `<button class="mini-row art-row deck-compact-row" ${spec.cardAttrs ? spec.cardAttrs(r) : ""}>${thumb(r)}<span class="deck-compact-copy"><b>${r.qty}× ${esc(r.name)}</b>${referencePrintingPills(spec.printingFor?.(r))}${r.swappedIn ? ` <span class="tag">swap</span>` : ""}${M.engine.has(r.key) && mode !== "draft" ? ` <span class="tag ok">engine</span>` : ""}${rowEmblem(spec.g, { name: r.name, id: r.key })}</span><span class="small ${r.matchPending?"warn-text":r.assumedOwned?"muted":r.owned >= r.qty ? "ok-text" : "muted"}">${r.matchPending ? "Printing not matched" : r.assumedOwned ? "Basic Energy · assumed" : extra || (r.owned >= r.qty ? "✓ owned" : r.owned ? `${r.owned}/${r.qty} · ${r.price != null ? usd((r.qty - r.owned) * r.price) : "Price unavailable"}` : r.price != null ? usd(r.qty * r.price) : "Price unavailable")}</span></button>`;
   let body = "";
   if (mode === "original") {
-    body = `<div class="list compact">${spec.rows.map((r) => row(r)).join("")}</div>`;
+    body = `<div class="list compact deck-compact-list">${spec.rows.map((r) => row(r)).join("")}</div>`;
   } else if (mode === "budget" && incomplete) {
     proven.last = null;
-    body = `<div class="note warn"><b>Price check incomplete</b><p>${incomplete} missing cop${incomplete === 1 ? "y has" : "ies have"} no price${sideUnpriced ? " across the main deck and sideboard" : ""}. Retry prices before choosing a budget; the known subtotal is not the complete purchase cost.</p></div><div class="list compact">${spec.rows.map((r) => row(r)).join("")}</div>`;
+    body = `<div class="note warn"><b>Price check incomplete</b><p>${incomplete} missing cop${incomplete === 1 ? "y has" : "ies have"} no price${sideUnpriced ? " across the main deck and sideboard" : ""}. Retry prices before choosing a budget; the known subtotal is not the complete purchase cost.</p></div><div class="list compact deck-compact-list">${spec.rows.map((r) => row(r)).join("")}</div>`;
   } else if (mode === "budget") {
     const a = adaptList({ rows: spec.rows, pool: M.pool, engine: M.engine, budget, similarCount: M.similar.length });
     proven.last = { ...a, budget };
@@ -1291,18 +1291,18 @@ export function provenSheetHtml() {
       })()}
       ${a.swaps.length ? `<p class="list-head">Changes</p><ul class="swaps">${a.swaps.map((s) => `<li><span class="bad-text">−${s.qty} ${esc(s.out)}</span> ${s.in ? `→ <span class="ok-text">+${s.qty} ${esc(s.in)}</span>` : "→ <b>open slot</b>"} <small class="muted">saves ${usd(s.saved, 0)} · ${esc(s.why)}</small></li>`).join("")}</ul>` : ""}
       ${M.engine.size ? `<p class="small muted">Kept the engine: ${esc(spec.rows.filter((r) => M.engine.has(r.key)).map((r) => r.name).slice(0, 8).join(", "))}${M.engine.size > 8 ? "…" : ""}</p>` : ""}
-      <p class="list-head">Adapted list</p><div class="list compact">${a.rows.map((r) => row(r)).join("")}</div>`;
+      <p class="list-head">Adapted list</p><div class="list compact deck-compact-list">${a.rows.map((r) => row(r)).join("")}</div>`;
   } else {
     const d = ownedDraft(spec.rows);
     body = `<div class="note ${d.open ? "warn" : ""}"><b>${d.open ? `Draft — ${d.open} slot${d.open === 1 ? "" : "s"} open` : side.some(r => r.qty > (r.owned || 0)) ? "Main deck ready — sideboard still needs cards" : spec.rows.some(r=>r.assumedOwned) ? "Ready — all card slots covered" : "Ready — you own every card"}</b>${d.open ? ` · you own ${total - d.open} of ${total}` : ""}</div>
-      ${d.rows.length ? `<p class="list-head">${spec.rows.some(r=>r.assumedOwned)?"Cards covered":"Cards you own"} <span class="muted">${total - d.open}</span></p><div class="list compact">${d.rows.map((r) => row(r, "✓ owned")).join("")}</div>` : `<p class="muted small">You don’t own any cards from this list yet.</p>`}
-      ${d.open ? `<p class="list-head">To finish · cheapest first <span class="muted">${usd(d.cost, 0)}${d.unpriced ? ` known subtotal · ${d.unpriced} unpriced · Incomplete total` : ""}</span></p><div class="list compact">${d.missing.map((r) => row({ ...r, owned: 0 })).join("")}</div>` : ""}`;
+      ${d.rows.length ? `<p class="list-head">${spec.rows.some(r=>r.assumedOwned)?"Cards covered":"Cards you own"} <span class="muted">${total - d.open}</span></p><div class="list compact deck-compact-list">${d.rows.map((r) => row(r, "✓ owned")).join("")}</div>` : `<p class="muted small">You don’t own any cards from this list yet.</p>`}
+      ${d.open ? `<p class="list-head">To finish · cheapest first <span class="muted">${usd(d.cost, 0)}${d.unpriced ? ` known subtotal · ${d.unpriced} unpriced · Incomplete total` : ""}</span></p><div class="list compact deck-compact-list">${d.missing.map((r) => row({ ...r, owned: 0 })).join("")}</div>` : ""}`;
   }
   // Magic tournament lists keep their sideboard: shown in every mode and saved with every version.
   if (side.length) {
     const sn = side.reduce((a, r) => a + r.qty, 0),
       sc = costToFinish(side);
-    body += `<details class="group side-group" ${mode === "original" ? "open" : ""}><summary><span>Sideboard <em>${sn}</em></span><span class="muted small">${usd(sc, 0)} ${sideUnpriced ? `known subtotal · ${sideUnpriced} unpriced · Incomplete total` : "to finish"}</span></summary><p class="small muted">Saved with ${mode === "original" ? "the deck" : "every version"} as the tournament player ran it. Swap these in between games.</p><div class="list compact">${side.map((r) => row(r)).join("")}</div></details>`;
+    body += `<details class="group side-group" ${mode === "original" ? "open" : ""}><summary><span>Sideboard <em>${sn}</em></span><span class="muted small">${usd(sc, 0)} ${sideUnpriced ? `known subtotal · ${sideUnpriced} unpriced · Incomplete total` : "to finish"}</span></summary><p class="small muted">Saved with ${mode === "original" ? "the deck" : "every version"} as the tournament player ran it. Swap these in between games.</p><div class="list compact deck-compact-list">${side.map((r) => row(r)).join("")}</div></details>`;
   }
   const hero = spec.heroFor?.(spec.rows);
   return `<div class="sheet-head overlay"><span></span><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>

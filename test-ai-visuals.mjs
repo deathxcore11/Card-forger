@@ -16,7 +16,7 @@ for(const game of ['mtg','ptcg','ygo']){
 // Old builder cards remain attached to their own action after another question.
 await tools.build_deck({game:'ptcg',style:'Fire',format:'standard',budget:40});const first=tools.pendingItem();tools.reset();
 await tools.build_deck({game:'ptcg',style:'Water',format:'standard',budget:60});const second=tools.pendingItem();
-assert.notEqual(first.ref,second.ref);await tools.open(first);assert.equal(opened,1);
+assert.match(tools.preview(first,0),/ask-build-art/);assert.match(tools.preview(first,0),/stashy-logo/);assert.match(tools.preview(first,0),/card-large.png/);assert.match(tools.preview(first,0),/Review list and prices in the builder/);assert.notEqual(first.ref,second.ref);await tools.open(first);assert.equal(opened,1);
 console.log('PASS: art-backed meta tiles across all three games, automatic recommendation cards, canonical references and persistent builder-card actions.');
 // The archetype's namesake must beat a more plentiful support attacker for the cover.
 const slow={...card,id:'slow',name:'Slowking',imageLarge:'https://art.test/slowking.png'};

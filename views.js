@@ -53,7 +53,7 @@ import { ensureTcgPrices } from "./mtg-tcgprice.js";
 import { S, meta, inv, deckById, currentDeck, priceOf } from "./store.js";
 import {
   esc, safeHref, usd, pct, signed, art, cardImage, img, manaCost, colorDots, segmented,
-  options, bar, ring, curveChart, empty, setBadge, sym, symbolText, setIconUrl,
+  options, bar, ring, curveChart, empty, setBadge, referencePrintingPills, sym, symbolText, setIconUrl,
 } from "./ui.js";
 import {
   cardKey as key, sumQty, rulesText, typeText, isLand, validateDeck,
@@ -1831,9 +1831,9 @@ export function ideaSheet(idea, deck, open, sel) {
   ${[...byCat]
     .filter(([, l]) => l.length)
     .map(
-      ([cat, list]) => `<details class="group" open><summary><span>${esc(cat)} <em>${sumQty(list)}</em></span><span class="muted small">${usd(list.reduce((a, r) => a + (r.price ?? 0) * r.qty, 0))}</span></summary><div class="list compact">${list
+      ([cat, list]) => `<details class="group" open><summary><span>${esc(cat)} <em>${sumQty(list)}</em></span><span class="muted small">${usd(list.reduce((a, r) => a + (r.price ?? 0) * r.qty, 0))}</span></summary><div class="list compact deck-compact-list">${list
         .sort((a, b) => (meta(a.name)?.cmc ?? 99) - (meta(b.name)?.cmc ?? 99) || a.name.localeCompare(b.name))
-        .map((r) => `<div class="pick-row ${r.missing ? "short" : ""}"><input type="checkbox" data-change="ideaPick" data-name="${esc(r.name)}" ${sel.has(r.name) ? "checked" : ""} aria-label="Select ${esc(r.name)}"><button class="pick-main" data-act="card" data-name="${esc(r.name)}">${img(art(meta(r.name)), r.name, "mini-art")}<span class="ellip"><b>${r.qty > 1 ? r.qty + "× " : ""}${esc(r.name)} ${setBadge(meta(r.name))}</b><small class="${r.missing ? "warn-text" : "ok-text"}">${r.missing ? "Need " + r.missing : "Owned"}</small></span></button><span class="pick-side">${manaCost(meta(r.name))}<b>${usd(r.price)}</b></span></div>`)
+        .map((r) => `<div class="pick-row deck-compact-row ${r.missing ? "short" : ""}"><input type="checkbox" data-change="ideaPick" data-name="${esc(r.name)}" ${sel.has(r.name) ? "checked" : ""} aria-label="Select ${esc(r.name)}"><button class="pick-main" data-act="card" data-name="${esc(r.name)}">${img(cardImage(meta(r.name)), r.name, "deck-compact-art")}<span class="deck-compact-copy"><b>${r.qty > 1 ? r.qty + "× " : ""}${esc(r.name)}</b>${referencePrintingPills(meta(r.name))}<small class="${r.missing ? "warn-text" : "ok-text"}">${r.missing ? "Need " + r.missing : "Owned"}</small></span></button><span class="pick-side">${manaCost(meta(r.name))}<b>${usd(r.price)}</b></span></div>`)
         .join("")}</div></details>`,
     )
     .join("")}

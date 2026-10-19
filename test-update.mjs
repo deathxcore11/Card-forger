@@ -19,7 +19,7 @@ console.log('PASS: full 100-card plans with 36 lands, custom budgets above $100,
 // Strategic-model coverage must not masquerade as an incomplete deck.
 const assessment=mtgPower(larger.deck), preview=V.ideaSheet({commander:leader,plan:'Artifacts'},larger.deck,{budget:200,busy:false,msg:''},new Set());
 assert.equal(assessment.readiness.eligible,true);assert.equal(assessment.readiness.incomplete,false);assert.equal(shownPower(assessment),null);
-assert.match(preview,/Power unavailable/);assert.match(preview,/>Save as deck<\/button>/);assert.doesNotMatch(preview,/>Save draft<\/button>/);
+assert.match(preview,/deck-compact-list/);assert.match(preview,/deck-compact-art/);assert.match(preview,/Reference printing/);assert.match(preview,/TST · #1/);assert.match(preview,/Power unavailable/);assert.match(preview,/>Save as deck<\/button>/);assert.doesNotMatch(preview,/>Save draft<\/button>/);
 const invalid={...larger.deck,cards:larger.deck.cards.map(r=>r.name===leader.name?{...r,qty:2}:r.name==='Wastes'?{...r,qty:r.qty-1}:r)};
 const invalidPreview=V.ideaSheet({commander:leader,plan:'Artifacts'},invalid,{budget:200,busy:false,msg:''},new Set());
 assert.equal(sumQty(invalid.cards),100);assert.equal(mtgPower(invalid).readiness.eligible,false);
