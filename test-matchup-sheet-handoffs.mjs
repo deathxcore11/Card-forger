@@ -43,3 +43,14 @@ for(const [type,nested,route,want] of [['matchup',false,'#collection',true],['ma
  assert.deepEqual(closed,want?[false]:[],`${type}, nested=${nested}: close only departed matchup-origin sheets, without retaining stale return history`);
 }
 console.log('PASS: real navigation closes departed matchup/import/nested sheets while preserving unrelated and same-route sheets.');
+
+// Actual paste-preview action: own exported rows round-trip, missing names are
+// actionable, and a 60-card/Commander mismatch remains visible during failure.
+const {parseDeckImport}=await import('./deck-flow.js'),{exportDeckText,sumQty}=await import('./core.js'),{matchupImportNotice}=await import('./ai-matchup-core.js');
+const fields={'#amImportText':{value:exportDeckText({cards:[{name:'Missing Alpha',qty:4},{name:'Missing Beta',qty:4},{name:'Plains',qty:52}]})},'#amImportName':{value:'Own exported list'},'#amImportUse':{disabled:false},'#amImportStatus':{textContent:''},'#amImportPreview':{innerHTML:''}};
+Object.assign(context,{$:s=>fields[s],parseDeckImport,sumQty,matchupImportNotice,resolveNames:async()=>{},meta:n=>n==='Plains'?{name:n,type_line:'Basic Land — Plains'}:null,esc:x=>String(x).replaceAll('<','&lt;')});
+vm.runInContext('matchupImport={format:"Commander",revision:0};',context);
+const previewStart=source.indexOf('A.amImportPreview=');vm.runInContext(source.slice(previewStart,source.indexOf('A.amImportUse=',previewStart)),context);
+const deckBefore=JSON.stringify(deck);await A.amImportPreview();assert.equal(JSON.stringify(deck),deckBefore);assert.equal(fields['#amImportUse'].disabled,true);assert.match(fields['#amImportStatus'].textContent,/Missing Alpha; Missing Beta/);assert.match(fields['#amImportPreview'].innerHTML,/60 main-deck cards; Commander expects exactly 100/);assert.match(fields['#amImportPreview'].innerHTML,/No commander is designated/);
+assert.equal(parseDeckImport(fields['#amImportText'].value).cards.length,3);assert.equal(matchupImportNotice(parseDeckImport(fields['#amImportText'].value),'Standard'),'');
+console.log('PASS: own export/import rows preserve counts; actual matchup preview names missing records, discloses Commander/60-card mismatch and never mutates a deck or permits an unresolved opponent.');

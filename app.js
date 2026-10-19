@@ -1,6 +1,6 @@
 import {createMagicMatchups,matchupFingerprint} from './magic-matchups-controller.js';
 import {matchupState,resetMatchups,renderMagicMatchupSheet} from './magic-matchups-ui.js';
-import {buildMatchupRequest} from './ai-matchup-core.js';
+import {buildMatchupRequest,matchupImportNotice} from './ai-matchup-core.js';
 import {initTheme,applyTheme,normalizeSettingsTab,activateSettingsTab} from './settings-theme.js';
 import {recoveryKey,syncBaselineKey,createRecoverySnapshot,appendRecoverySnapshot,readRecoverySnapshots,createSyncBaseline,recoverySummary} from './recovery-store.js';
 import {mergeLegacyGameHistories,mergeValueHistory} from './value-history.js';
@@ -2100,14 +2100,16 @@ A.amImportPreview=async()=>{
   const parsed=parseDeckImport(inputText);if(!parsed.cards?.length)throw Error('Paste at least one recognizable card entry.');
   if(parsed.cards.length+(parsed.side?.length||0)>150)throw Error('Use no more than 150 distinct card entries.');
   if(parsed.multipleCommanders)throw Error('Paired commander text is not supported by this importer yet. Use a source list with explicit commander metadata.');
+  const formatNotice=matchupImportNotice(parsed,token.format),noticeHtml=formatNotice?`<p class="note warn">${esc(formatNotice)}</p>`:'';
+  $('#amImportPreview').innerHTML=noticeHtml;
   const names=[...parsed.cards,...(parsed.side||[])].map(row=>row.name);if(parsed.commander)names.push(parsed.commander);
   $('#amImportStatus').textContent='Matching card names…';await resolveNames(names);if(!matchupImportCurrent(token)||(token.revision||0)!==inputRevision||$('#amImportText').value!==inputText||$('#amImportName').value!==inputName)return;
-  const missing=names.filter(name=>!meta(name)?.type_line);if(missing.length)throw Error(`${missing.length} card names could not be verified. Correct them before using this opponent.`);
+  const missing=names.filter(name=>!meta(name)?.type_line);if(missing.length){const distinct=[...new Set(missing)];throw Error(`Could not verify complete card data for ${distinct.length} names: ${distinct.slice(0,12).join('; ')}${distinct.length>12?'; and '+(distinct.length-12)+' more':''}. Check the names or try Preview & match again. No opponent was selected.`);}
   const opponent={...parsed,name:inputName.trim()||'Pasted opponent',format:token.format,provenance:{kind:'import',source:'Your pasted list'}};
   buildMatchupRequest({deck:currentDeck(),opponent,lookup:meta,mode:matchupState(currentDeck()).mode});
   token.opponent=opponent;
-  $('#amImportPreview').innerHTML=`<p>${sumQty(parsed.cards)} main-deck cards · ${sumQty(parsed.side||[])} sideboard cards</p><div class="list compact">${parsed.cards.map(row=>`<div class="mini-row">${row.qty} × ${esc(row.name)}</div>`).join('')}</div>`;
-  $('#amImportStatus').textContent='Names matched. Review the list, then use it as your opponent. Format legality and incomplete lists will be disclosed in the analysis.';$('#amImportUse').disabled=false;
+  $('#amImportPreview').innerHTML=noticeHtml+`<p>${sumQty(parsed.cards)} main-deck cards · ${sumQty(parsed.side||[])} sideboard cards</p><div class="list compact">${parsed.cards.map(row=>`<div class="mini-row">${row.qty} × ${esc(row.name)}</div>`).join('')}</div>`;
+  $('#amImportStatus').textContent='Names matched. Review the list and any format warnings before using it. Matching names does not verify format legality.';$('#amImportUse').disabled=false;
  }catch(error){if(matchupImportCurrent(token))$('#amImportStatus').textContent=error.message;}finally{token.busy=false;}
 };
 A.amImportUse=()=>{const token=matchupImport;if(!token?.opponent||!matchupImportCurrent(token))return;const state=matchupState(currentDeck());state.opponent=token.opponent;state.sampleCount=0;state.result=null;state.request=buildMatchupRequest({deck:currentDeck(),opponent:token.opponent,lookup:meta,mode:state.mode,question:state.question});matchupImport=null;const previous=sheetTrail.items.at(-1);if(previous?.ctx?.type==='matchup'){const saved=sheetTrail.pop();saved.ctx.tab='decks';saved.ctx.side='opponent';saved.scrollTop=0;restoreSheet(saved);}else openMatchup('decks','opponent');render();};

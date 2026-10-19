@@ -16,7 +16,7 @@ export function createMagicMatchups({getDeck,state,lookup,loadMeta,metaKey,resol
    const seen=new Set(),pool=[];
    for(const a of [...(data.archetypes||[])].sort((a,b)=>(b.share||0)-(a.share||0))){const d=a.best;if(d?.main?.length&&!seen.has(d.key||d.name)){seen.add(d.key||d.name);pool.push({...d,name:d.archetype||d.name||a.name,share:a.share});}}
    for(const d of data.decks||[])if(d.main?.length&&!seen.has(d.key||d.name)){seen.add(d.key||d.name);pool.push(d);}
-   const sample=pool.filter(d=>{try{return !d.format||matchupFormat(d.format).id===matchupFormat(format).id;}catch{return false;}}).slice(0,16);if(!sample.length)throw Error('This source has no complete opponent lists. Paste a list instead.');
+   const sample=pool.filter(d=>{try{return !d.format||matchupFormat(d.format).id===matchupFormat(format).id;}catch{return false;}}).slice(0,16);if(!sample.length)throw Error('This source has no complete opponent lists for '+format+'. Paste an opponent list in that format instead.');
    const names=[...new Set(sample.flatMap(d=>[...(d.main||[]),...(d.side||[]),...(d.commanders||[])].map(r=>typeof r==='string'?r:r.name)).filter(Boolean))];
    if(names.length>600)throw Error('The loaded field is too large to resolve safely. Paste one opponent list instead.');
    await resolveNames(names);if(!valid(op))return;

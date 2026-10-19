@@ -15,6 +15,13 @@ export function matchupFormat(value) {
   if (!f) throw fail('Choose a recognized Magic format before comparing decks.');
   return f;
 }
+// Structural import guidance is available even when card data cannot load.
+export function matchupImportNotice(parsed, format) {
+ const f=matchupFormat(format),count=(parsed.cards||[]).reduce((n,r)=>n+r.qty,0),notes=[];
+ if(count<f.size||f.exact&&count!==f.size)notes.push(`This list has ${count} main-deck cards; ${f.name} expects ${f.exact?'exactly':'at least'} ${f.size}${f.commander?' including the commander':''}. Check that both decks use the intended format.`);
+ if(f.commander&&!parsed.commander)notes.push('No commander is designated in the pasted text. Include a Commander section to identify its role.');
+ return notes.join(' ');
+}
 export function parseMatchupIntent(question) {
   const q = text(question, 500).toLowerCase();
   const names = { white:'W', blue:'U', black:'B', red:'R', green:'G' };
