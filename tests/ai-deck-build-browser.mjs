@@ -42,7 +42,12 @@ async function verifyDraftMenu(page,width,draft){
  await page.evaluate(()=>{window.__askCopied=null;Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__askCopied=text;}}});});
  await disclosure.locator('[data-act="tierCopy"]').click();await page.waitForFunction(()=>typeof window.__askCopied==='string');
  assert.equal(await page.evaluate(()=>window.__askCopied),exportDeckText(draft));
- await summary.focus();await summary.press('Enter');assert.equal(await disclosure.getAttribute('open'),null);
+ // The app's capture-phase menu handler already dismisses the disclosure on
+ // action selection. An extra Enter here would reopen it, not close it.
+ assert.equal(await disclosure.getAttribute('open'),null,'choosing Copy automatically dismisses More');
+ assert.deepEqual(await actions.evaluateAll(nodes=>nodes.map(n=>n.getClientRects().length)),[0,0,0]);
+ await noOverflow(page,'#sheetBody',`AI More dismissed after Copy ${width}`,true);
+ await summary.focus();await capture(page,`ai-deck-build-${width}-more-copied`);
 }
 try{
  for(const width of [320,390,1440]){let app;try{app=await openApp(browser,server.base,{game:'mtg',width,height:1000,hash:'#search',reducedMotion:'reduce'});const {page}=app,asks=await installFixture(app,ASK_BUILD_ARGS),before=await protectedState(page);

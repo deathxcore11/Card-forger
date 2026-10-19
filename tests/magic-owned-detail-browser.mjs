@@ -67,7 +67,14 @@ try{
   for(const conflict of [false,true]){
    await page.evaluate(({id,wrong,conflict})=>{const s=window.__uiTestState.state;if(conflict)s.printings[id]=wrong;else delete s.printings[id];dispatchEvent(new Event('cardstashy-rerender'));},{id:etched.id,wrong:regular,conflict});
    await navigate(page,'#collection/cards');assert.equal(await page.locator('.lot-art[data-entry="owned-77"] img').count(),0);
-   assert.equal(await page.locator('[data-act="buyCard"][data-lot="owned-77"]').innerText(),'—');
+   // Same-view hash navigation can resolve before the Cards DOM replacement.
+   // Wait for the exact unknown quote to be painted, not merely ui.view=collection.
+   const quoteSelector='[data-act="buyCard"][data-lot="owned-77"]';
+   const quoteState=()=>page.locator(quoteSelector).evaluate(n=>({text:n.textContent,rendered:n.innerText,html:n.innerHTML,visible:!!n.getClientRects().length,view:document.querySelector('#content')?.className}));
+   try{await page.waitForFunction(selector=>{const n=document.querySelector(selector);return n&&n.getClientRects().length&&n.innerText==='—';},quoteSelector,{timeout:5000});}
+   catch(error){checks.push({width,conflict,unknownQuoteFailure:await quoteState()});throw error;}
+   assert.equal(await page.locator(quoteSelector).innerText(),'—');
+   assert.equal(await page.locator(quoteSelector).textContent(),'—','unknown quote must remain text, not an unrelated decorated icon');
    await navigate(page,'#collection/binders');await page.locator('[data-act="openBinder"][data-binder="exact-owned"]').click();assert.equal(await page.locator('.pocket-open[data-entry="owned-77"] img').count(),0);await closeSheet(page);
    await navigate(page,'#collection/value');assert.equal(await page.locator('.value-lot[data-entry="owned-77"]').count(),0);assert.equal(await page.locator('.value-lot[data-entry="owned-77-worn"] img').count(),0);assert.match(await page.locator('.value-lot[data-entry="owned-77-worn"]').innerText(),/0\.20/);
   }

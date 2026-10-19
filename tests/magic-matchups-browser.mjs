@@ -77,9 +77,11 @@ try{
   if(width===320){
    await reachable(page,panel().locator('.am-scenario h3'),'320px third scenario');await capture(page,'third-scenario-viewport-320',{fullPage:false});
    await panel().locator('.am-references>summary').first().click();
-   await panel().locator('.am-references [data-act="amCard"]').first().scrollIntoViewIfNeeded();await frames(page);
+   const referencedCard=panel().locator('.am-references[open] [data-act="amCard"]:visible').first();
+   assert(await referencedCard.count(),'expanded references expose a visible card action in the retained view');
+   await referencedCard.scrollIntoViewIfNeeded();await frames(page);
    const scrollBefore=await page.locator('#sheetBody').evaluate(n=>n.scrollTop);
-   await panel().locator('.am-references [data-act="amCard"]').first().click();await page.locator('#sheetBody [data-act="sheetHistoryBack"]').first().click();
+   await referencedCard.click();await page.locator('#sheetBody [data-act="sheetHistoryBack"]').first().click();
    await page.locator('#matchup-panel-analysis:not([hidden])').waitFor();assert.match(await panel().locator('.am-scenario h3').innerText(),/After disruption/);
    const scrollAfter=await page.locator('#sheetBody').evaluate(n=>n.scrollTop);assert(Math.abs(scrollAfter-scrollBefore)<100,'Back restores analysis scroll near its previous position');
   }

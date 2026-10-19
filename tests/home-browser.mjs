@@ -18,7 +18,7 @@ import { normalizePtcg, ptcgPrintingMatches, ptcgSource } from '../ptcg.js';
 import { GAME_IDS } from '../games.js';
 import { SUPABASE } from '../config.js';
 import { validateHistory } from '../shared-history.js';
-import { communityDeckArtwork, safeCommunityImage } from '../community-art.js';
+import { communityDeckArtwork, safeCommunityImage, COMMUNITY_ILLUSTRATIONS } from '../community-art.js';
 import { DEFAULT_MTG_META_FORMAT } from '../meta.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -324,7 +324,8 @@ async function openApp(options = {}) {
       const communityImage = Object.values(NEWS_IMAGES).includes(url.href)
         || url.href.includes(mtgSeed.id) || /Llanowar(?:%20|\+)Elves/i.test(url.href)
         || url.href.includes(seeds.ygo.id) || /SSP_057_R_EN/.test(url.href);
-      return route.fulfill({ status: 200, contentType: 'image/svg+xml', body: options.failCommunityImages && communityImage ? '<svg invalid-image-fixture' : SVG });
+      const fixedIllustration = Object.values(COMMUNITY_ILLUSTRATIONS).some(x => new URL(x.url, BASE + '/').href === url.href);
+      return route.fulfill({ status: 200, contentType: 'image/svg+xml', body: options.failCommunityImages && communityImage && !fixedIllustration ? '<svg invalid-image-fixture' : SVG });
     }
     if (url.hostname === 'fonts.googleapis.com') return route.fulfill({ status: 200, contentType: 'text/css', body: '/* deterministic system fonts */' });
     if (url.origin === BASE) {
@@ -335,6 +336,7 @@ async function openApp(options = {}) {
         const c = seeds[g];
         return json({game:g,date,card:{game:g,date,id:c.id,name:c.name,art:g==='mtg'?c.image_uris.art_crop:g==='ygo'?c.art:c.imageLarge,artDirect:g==='ygo'?c.artDirect:''}});
       }
+      if (url.pathname === '/api/meta/curation') return json({ status: 'unavailable', rankedIds: [], annotations: [] });
       if (url.pathname === '/api/community') return json(feed(url.searchParams.get('game'), options.emptyFeed, options));
       if (url.pathname === '/api/meta/mtg') {
         if (emblemsWait && url.searchParams.get('format') === DEFAULT_MTG_META_FORMAT) { seenEmblems(); await emblemsWait; }
@@ -494,14 +496,17 @@ async function visibleHeaderArt(page) {
 const deckIdentity = (game, second = false) => game === 'mtg' ? (second ? heroes : seeds)[game].name
   : game === 'ygo' ? (second ? heroes : seeds)[game].id
     : second ? `${heroes.ptcg.name} · OBF 125` : `${seeds.ptcg.name} · SSP 57`;
-async function assertNoNewsArtwork(page, selector, { failed = false } = {}) {
-  const feature = page.locator(selector).first();
-  assert.equal(await feature.locator('.community-art-theme, .community-art-emblem').count(), 0, 'news never substitutes unrelated game artwork');
-  if (failed) {
-    await page.waitForFunction(selector => document.querySelector(`${selector} [data-community-art]`)?.hidden === true, selector);
-    assert.equal(await feature.locator('[data-community-art]').isVisible(), false, 'failed publisher image yields a clean text-only card');
-  } else assert.equal(await feature.locator('[data-community-art], img[data-community-image]').count(), 0, 'missing or unsafe publisher image creates no visual/request');
-  assert(await feature.locator('h3').isVisible(), 'headline remains readable without art');
+async function assertIllustrativeNewsArtwork(page, selector, game) {
+  const feature = page.locator(selector).first(), art = feature.locator('[data-community-art]');
+  await feature.scrollIntoViewIfNeeded();
+  await page.waitForFunction(selector => {
+    const n = document.querySelector(`${selector} [data-community-art]`), image = n?.querySelector('img');
+    return n?.dataset.artKind === 'illustrative' && n.dataset.artState === 'ready' && image?.complete && image.naturalWidth > 0;
+  }, selector);
+  assert.equal(await art.locator('img').getAttribute('src'), COMMUNITY_ILLUSTRATIONS[game].url, 'only the fixed same-game illustration replaces missing, unsafe or failed publisher art');
+  assert.equal(await art.getAttribute('data-art-source'), null, 'illustration never claims to be a publisher photograph');
+  assert.equal(await art.locator('.community-art-credit').innerText(), COMMUNITY_ILLUSTRATIONS[game].label, 'illustrative provenance stays explicit');
+  assert(await feature.locator('h3').isVisible(), 'headline remains readable with illustrative fallback');
 }
 async function assertCommunityArtwork(page, selector, game, { kind = 'card', state = 'ready', second = false, source = null } = {}) {
   const art = page.locator(selector).locator('[data-community-art]');
@@ -691,6 +696,14 @@ try {
   for (const selector of ['[data-community-step="-1"]', '.community-open']) {
     const focused = await openApp({ holdEmblems: true, width: 1440, clock: true });
     await Promise.race([focused.emblems.seen, new Promise((_, reject) => setTimeout(() => reject(Error('Delayed emblem request was not observed')), 15000))]);
+    // The weekly-cache migration may refresh news during boot. Settle that
+    // independent response before capturing the node whose identity the held
+    // tournament response must preserve; never refocus after releasing it.
+    await focused.page.evaluate(async () => {
+      const { communityState } = await import('/community-feed.js');
+      await communityState('mtg').promise;
+      await Promise.resolve();
+    });
     const control = focused.page.locator(selector).first();
     await control.scrollIntoViewIfNeeded();
     await control.focus();
@@ -1000,7 +1013,7 @@ try {
     for (const game of GAME_IDS) {
       await selectGame(fallback.page, game);
       await assertDailyIdentity(fallback.page, game);
-      await assertNoNewsArtwork(fallback.page, '.community-feature', { failed });
+      await assertIllustrativeNewsArtwork(fallback.page, '.community-feature', game);
       await assertCommunityArtwork(fallback.page, `[data-home-meta="${game}"]`, game, { kind: failed ? 'card' : 'theme', state: 'missing' });
       assert.match(await fallback.page.locator('[data-home-discovery] .community-art-fallback').innerText(), /Game theme · deck art unavailable/);
       await noOverflow(fallback.page, `${game}: ${scenario.name} art fallback`);

@@ -100,4 +100,7 @@ assert.match(sharedHeaderCSS,/\.cs-banner.no-art \{ --banner-art-height:150px/);
 assert.match(sharedHeaderCSS,/\.cs-banner > \.cs-title \{ grid-area:1 \/ 1; position:relative; inset:auto; align-self:end; margin:56px var\(--gutter\) 0; min-width:0; \}/);
 
 assert.match(css,/body\.glass dialog\.sheet::before \{[^}]+pointer-events:none;[^}]+var\(--ambient-art-image, none\)/, "Light modal reuses the same daily art beneath its contrast wash");
-assert.match(css,/prefers-reduced-transparency:reduce\) \{\s*:root\[data-theme="light"\] body\.glass dialog\.sheet::before \{display:none;/);
+assert.match(css,/prefers-reduced-transparency:reduce\) \{\s*:root\[data-theme="light"\] body\.glass dialog\.sheet::before,:root\[data-theme="light"\] body\.glass dialog\.sheet::after \{display:none;/);
+
+assert.match(css,/dialog\.sheet::before \{[^}]+filter:blur\(42px\) saturate\(1\.5\) contrast\(1\.2\)/,"only the ambient layer receives bounded enrichment");
+assert.match(css,/dialog\.sheet::after \{[^}]+pointer-events:none;background:rgba\(246,249,253,\.78\)/,"separate unfiltered safety wash keeps the proven contrast floor");
