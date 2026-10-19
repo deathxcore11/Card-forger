@@ -4723,3 +4723,6 @@ body[data-game="ygo"] .ask-launch{--ask-a:#b697ef;--ask-b:#697db5;--ask-c:#dbb26
   .mb-row { grid-template-columns: 20px minmax(0, 1fr) 3ch 12px 72px 3ch; gap: 4px; }
   .mb-row > span { min-width: 0; }
 }
+
+/* Keep every coach section and its full touch target on narrow phones. */
+@media (max-width: 360px) { .air-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

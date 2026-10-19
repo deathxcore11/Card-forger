@@ -10,7 +10,7 @@ import {GLC_RULES,GLC_BANS} from './ptcg-glc-rules.js';
 import {powerReadiness,tcgPower,shownPower} from './power.js';
 import {S,blank,STORAGE} from './store.js';
 import {blankGame} from './games.js';
-import {registerTcg,cache,tcgDeck} from './tcg.js';
+import {registerTcg,cache,tcgDeck,tcgDecks,tcgSharedPage} from './tcg.js';
 import {writeRecord,readRecord} from './storage.js';
 
 const format=(game,id)=>(game==='ptcg'?PTCG_FORMATS:YGO_FORMATS).find(f=>f.id===id);
@@ -138,8 +138,24 @@ async function savedCheck(game,fixture,eligible) {
   assert.equal(reopened.name,x.deck.name+' saved');assert.deepEqual(reopened.zones,x.deck.zones);
   assert.deepEqual(reopened.skill,x.deck.skill,'unsupported Skill declaration cannot disappear on save');
   const p=tcgPower(game,reopened,format(game,reopened.format),cardId=>cache[game][cardId]);assert.equal(p.readiness.eligible,eligible);
+  const checked=issues(game,{deck:reopened,cards:cache[game]}),bad=checked.filter(i=>i.level==='bad').length,pending=checked.some(i=>i.level!=='warn'),
+    label=bad?`${bad} to fix`:pending?'Unverified · checks pending':checked.length?'Profile checked · caveats':'',tone=bad?'bad':checked.length?'warn':'ok';
   S.ui.tdeckTab={[game+':'+id]:'insights'};const html=tcgDeck(id);
   assert.match(html,/Deck Power/);assert.doesNotMatch(html,/<b>null<\/b>|NaN/);
+  assert(html.includes(`class="review-badge ${tone}"`),'badge severity follows issue kind, not issue count');
+  if(label)assert(html.includes(`>${label}</button>`));
+  assert.doesNotMatch(html,/Unverified · card data pending/,'profile and unresolved-rule caveats are not all missing card data');
+  S.ui.tdeckTab[game+':'+id]='cards';const cardsHtml=tcgDeck(id);
+  if(label)assert(cardsHtml.includes(`<summary>Rules review · ${label}</summary>`));
+  S.ui.decksTab='mine';const tiles=tcgDecks();if(label)assert(tiles.includes(label));
+  if(checked.length&&!bad&&!pending){
+    assert(eligible,'informational profile caveats do not change eligibility');
+    assert.match(cardsHtml,game==='ygo'&&reopened.format==='speed'?/Speed Duel checks cover constructed sizes/:/GOAT uses original organizer rules/,'exact profile limitation stays visible');
+    assert.doesNotMatch(cardsHtml,/Rules review · \d+ to fix/);assert.match(tiles,/chip dark warn/);
+    assert.match(tcgSharedPage({...reopened,game}),/Profile checked · caveats/);
+  }
+  assert.deepEqual(issues(game,{deck:reopened,cards:cache[game]}),checked,'rendering never changes diagnostic issues');
+  assert.equal(shownPower(tcgPower(game,reopened,format(game,reopened.format),cardId=>cache[game][cardId])),shownPower(p),'presentation changes never alter the Power estimate');
   if(game==='ygo'){const f=format(game,reopened.format);assert.ok(html.includes(`1st (${f.firstTurnCards||5})`));assert.ok(html.includes(`2nd (${f.secondTurnCards||6})`));assert.doesNotMatch(html,/Infinity/);}
 
   if(!eligible){assert.equal(shownPower(p),null);assert.match(html,/power unavailable<\/button>/);}
@@ -148,5 +164,6 @@ async function savedCheck(game,fixture,eligible) {
 for(const [game,good,bad] of [['ptcg',glcGood,pokemonFixture([bannedRaikou])],['ygo',speedGood,skill],['ygo',goatGood,ygoFixture('goat',{side:1})]]) {
   await savedCheck(game,good,true);await savedCheck(game,bad,false);
 }
-assert.equal(saves,6);
-console.log('PASS: source-versioned GLC independent bans/type/Rule Box/ACE SPEC/shared names; Speed 6-card zones and optional unresolved Skills; unlimited GOAT sizes with explicit side-policy uncertainty; missing-data gates; same-ID Power memo; six registered save/storage/reopen/Power UI cases. Directional eligibility regressions, not calibrated strength.');
+await savedCheck('ygo',noBan,false);await savedCheck('ygo',ygoFixture('speed',{main:19}),false);
+assert.equal(saves,8);
+console.log('PASS: source-versioned GLC independent bans/type/Rule Box/ACE SPEC/shared names; Speed 6-card zones and optional unresolved Skills; unlimited GOAT sizes with explicit side-policy uncertainty; missing-data gates; same-ID Power memo; eight registered save/storage/reopen/Power UI cases with distinct bad/pending/profile-caveat labels. Directional eligibility regressions, not calibrated strength.');

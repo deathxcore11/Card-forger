@@ -603,7 +603,7 @@ function deckTile(g, d) {
   return `<button class="deck-tile tcg-tile tile-${g}" data-act="go" data-to="#tdeck/${esc(d.id)}">
     <span class="tile-art">${g === "ygo" && cover ? ygoCropArt(cover) : g === "ptcg" && cover ? pokemonArtCrop(cover, "tile-pk") : imgTag(cover, "tile-card-art", true)}</span>
     <span class="tile-shade"></span>
-    <span class="tile-top"><span class="deck-format-stack"><span class="chip dark">${esc(f.name)}</span>${deckBoxMarkup(d,{game:g,images:(d.zones.main||[]).slice(0,3).map(r=>artworkSources(cardOf(g,r.cardId)).find(u=>u.startsWith("https://")))})}</span>${issues.length ? `<span class="chip dark bad-chip">${esc(deckCheckLabel(issues))}</span>` : s.total ? `<span class="chip dark ok-chip">Legal</span>` : ""}</span>
+    <span class="tile-top"><span class="deck-format-stack"><span class="chip dark">${esc(f.name)}</span>${deckBoxMarkup(d,{game:g,images:(d.zones.main||[]).slice(0,3).map(r=>artworkSources(cardOf(g,r.cardId)).find(u=>u.startsWith("https://")))})}</span>${issues.length ? `<span class="chip dark ${deckCheckTone(issues) === "bad" ? "bad-chip" : "warn"}">${esc(deckCheckLabel(issues))}</span>` : s.total ? `<span class="chip dark ok-chip">Legal</span>` : ""}</span>
     <span class="tile-body">
       <b>${esc(d.name)}</b>
       <small>${esc(pw?.plan || GAMES[g].short)} · ${main}${g === "ygo" ? " main" : "/60"}</small>
@@ -1322,7 +1322,9 @@ export function tcgPickSheet() {
   <div class="sheet-foot"><button class="btn block" id="seedGo" data-act="tSeedGo" data-ids="" disabled>Pick cards to build around</button></div>`;
 }
 
-const deckCheckLabel=issues=>issues.some(x=>x.level==='bad')?`${issues.filter(x=>x.level==='bad').length} to fix`:issues.length?'Unverified · card data pending':'Legal';
+// Presentation only: informational profile caveats are not missing card data.
+const deckCheckTone=issues=>issues.some(x=>x.level==='bad')?'bad':issues.length?'warn':'ok';
+const deckCheckLabel=issues=>issues.some(x=>x.level==='bad')?`${issues.filter(x=>x.level==='bad').length} to fix`:issues.some(x=>x.level!=='warn')?'Unverified · checks pending':issues.length?'Profile checked · caveats':'Legal';
 export function tcgDeck(id) {
   const g = game(),
     d = gs(g).decks.find((x) => x.id === id);
@@ -1340,7 +1342,7 @@ export function tcgDeck(id) {
   return `<section class="deck-hero">${g === "ptcg" && cover ? pokemonArtCrop(cover, "hero-art") : imgTag(cover, "hero-art", true)}<div class="hero-shade"></div><div class="hero-body">
     <div class="row between"><button class="icon light" data-act="go" data-to="#decks" aria-label="Back">←</button>${deckBoxMarkup(d,{game:g,images:(d.zones.main||[]).slice(0,3).map(r=>artworkSources(cardOf(g,r.cardId)).find(u=>u.startsWith("https://"))),open:true,button:true})}</div>
     <h1>${esc(d.name)}</h1><p><button class="chip dark fmt-chip" data-act="tDeckMenu" data-id="${esc(d.id)}">${esc(GAMES[g].short)} · ${esc(f.name)}</button></p>
-    <button class="review-badge ${issues.length ? "bad" : "ok"}" data-act="tIssues" data-deck="${esc(d.id)}">${issues.length ? esc(deckCheckLabel(issues)) : s.total ? "✓ Legal in " + esc(f.name) : "Add cards to check legality"}</button>
+    <button class="review-badge ${deckCheckTone(issues)}" data-act="tIssues" data-deck="${esc(d.id)}">${issues.length ? esc(deckCheckLabel(issues)) : s.total ? "✓ Legal in " + esc(f.name) : "Add cards to check legality"}</button>
     <div class="hero-stats"><span><b>${zoneCount("main")}</b>${g === "ygo" ? "main" : "/60 cards"}</span><span><b>${s.total ? Math.round((s.owned / s.total) * 100) : 0}%</b>owned</span><span><b>${usd(s.buy, 0)}${s.unknown ? "+" : ""}</b>to finish${s.unknown ? " · some unpriced" : ""}</span>${s.total ? `<button data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="insights"><b>${shown ?? "—"}</b>${shown == null ? "power unavailable" : "power"}</button>` : ""}</div>
     ${buildCheck && (!buildCheck.ready || !buildCheck.purchaseEstimateVerified || buildCheck.summoningReview.length) ? `<p class="small warn-text">${buildCheck.open ? `Incomplete draft: ${buildCheck.open} slots remain. ` : !buildCheck.legalChecked ? "Draft: deck checks still need review. " : buildCheck.missingRequiredSeeds.length ? `Draft: required build-around card missing: ${esc(buildCheck.missingRequiredSeeds.map(s => s.name).join(", "))}. ` : buildCheck.missingEnergy ? `Draft: ${buildCheck.missingEnergy} intended Energy copies are still missing. ` : !buildCheck.ready ? "Draft: the requested purchase budget is not verified. " : ""}${buildCheck.summoningReview.length ? `${buildCheck.coreRouteUnverified ? `${buildCheck.ready ? "Complete list" : "Draft"}, core route unverified` : `${buildCheck.ready ? "Complete list" : "Draft"} · Extra Deck summoning needs review`}. ${esc(buildCheck.summoningReview.map(x => x.explanation).join(" "))} ` : ""}${buildCheck.unpricedPurchaseCopies ? `Known purchase subtotal only; ${buildCheck.unpricedPurchaseCopies} missing copies are unpriced. Total purchase cost is unverified, not free.` : ""}</p>` : ""}
   </div></section>
@@ -1383,7 +1385,7 @@ function deckCardsTab(g, d, f, s, issues) {
   ${A.results.length ? `<div class="add-results">${A.results.map((c) => `<div class="mini-row">${imgTag(c, "mini-art")}<span class="ellip">${esc(c.name)}<small class="muted"> ${esc(c.set?.name || c.typeLine || "")}</small></span><button class="btn small" data-act="tDeckAdd" data-id="${esc(c.id)}" data-deck="${esc(d.id)}">＋</button></div>`).join("")}<button class="link small" data-act="tDeckAddClose">Close results</button></div>` : ""}
   ${f.note ? `<p class="small muted">${esc(f.note)}</p>` : ""}
   ${tcgDeckEmblems(g, d)}
-  <div id="tIssuesPanel">${issues.length ? `<details class="panel issues-panel"><summary>Rules review · ${issues.length} to fix</summary><ul class="issues">${issues.map((i) => `<li>${esc(i.text)}</li>`).join("")}</ul></details>` : ""}</div>
+  <div id="tIssuesPanel">${issues.length ? `<details class="panel issues-panel"><summary>Rules review · ${esc(deckCheckLabel(issues))}</summary><ul class="issues">${issues.map((i) => `<li>${esc(i.text)}</li>`).join("")}</ul></details>` : ""}</div>
   ${zones
     .map(([z, label, rule]) => {
       const rows = s.rows.filter((x) => x.zone === z);

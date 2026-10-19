@@ -168,11 +168,50 @@ assert.equal(process.env.GITHUB_ACTIONS,'true','Power browser QA is hosted-only 
 
 const {chromium}=await import('playwright');
 const server=await startServer(),browser=await chromium.launch({headless:true}),out=new URL('../test-results/',import.meta.url);
-const checks=[],screenshots=[],coachPayloads=[],askPayloads=[],timings=[],formatResults=[],builderResults=[];
+const checks=[],screenshots=[],coachPayloads=[],askPayloads=[],timings=[],formatResults=[],builderResults=[],failures=[];
+let magicPersistence=null;
 let app,formatApp,builderApp,askHold=null,coachCalls=0,askCalls=0,ideaMode=null;
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve};};
 const frames=page=>page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
 async function capture(page,name,scope){await mkdir(out,{recursive:true});await frames(page);const file=`power-release-${name}.png`,options={path:new URL(file,out).pathname,animations:'disabled'};if(scope)await page.locator(scope).screenshot(options);else await page.screenshot({...options,fullPage:true});screenshots.push(file);}
+async function recordScenarioFailure(scenario,error,context){
+ const failure={scenario,error:String(error.stack||error),diagnostics:context?.diagnostics()||error.fixtureDiagnostics||null};failures.push(failure);
+ // A failed prerequisite ends this context, never its assertions or the job.
+ // Preserve any safety failure too, then the caller closes the context before
+ // the next independent scenario creates its own fresh app and fixtures.
+ if(context){try{context.health();}catch(health){failure.healthError=String(health.stack||health);}try{await capture(context.page,'failure-'+scenario);}catch(captureError){failure.captureError=String(captureError.stack||captureError);}}
+ console.error('FAIL ['+scenario+']: '+failure.error);
+ if(!context&&(!error.fixtureDiagnostics||error.fixtureDiagnostics.cleanupError))throw new Error('Could not confirm '+scenario+' bootstrap context closed; remaining scenarios stopped.',{cause:error});
+}
+async function closeScenarioContext(scenario,context){
+ if(!context)return;
+ try{await context.context.close();}catch(error){
+  await recordScenarioFailure(scenario+'-cleanup',error,context);
+  // Failure to close is an infrastructure prerequisite failure. Do not start
+  // another scenario while this context may still be live; outer cleanup still
+  // attempts browser and server termination, without masking the failed job.
+  throw new Error('Could not confirm '+scenario+' context closed; remaining scenarios stopped.',{cause:error});
+ }
+}
+async function coachTabNavigation(page,label){
+ const tabs=page.locator('.air-tabs [data-ai-tab]');assert.equal(await tabs.count(),4,label+': all four coach sections remain');
+ for(const [key,name,count]of [['deck','Deck','0'],['meta','Meta','0'],['improve','Improve','0'],['pilot','Pilot','1']]){
+  const tab=page.locator('.air-tabs [data-ai-tab="'+key+'"]');assert.equal(await tab.evaluate(n=>[...n.childNodes].filter(x=>x.nodeType===Node.TEXT_NODE).map(x=>x.textContent).join('').trim()),name,label+': full section label is retained');assert.equal(await tab.locator('em').innerText(),count,label+': section count is retained');
+  await tab.click();await page.waitForFunction(key=>document.querySelector('.air-tabs [data-ai-tab="'+key+'"]')?.getAttribute('aria-selected')==='true',key);
+  assert.equal(await page.locator('.air-tabs [aria-selected="true"]').count(),1);
+  const panel=page.locator('.air-panel');
+  if(key==='deck')assert.equal(await panel.locator('.air-identity').count(),1,'Deck navigation renders its actual identity panel');
+  else if(key==='pilot')assert.equal(await panel.locator('.air-hand').count(),1,'Pilot navigation renders its actual initial-hand panel');
+  else assert.equal((await panel.locator('.air-empty').innerText()).trim(),key==='meta'?'No tournament data for this format is loaded yet. Open Power and tap "Compare with tournament decks", then ask again.':"No swap held up to the app's checks.",'Actual tab navigation replaces the prior panel with the fixture-specific section');
+  // Wait for the real click's pressed transition to settle without a second action.
+  await tab.click({trial:true});
+  const r=await tab.boundingBox(),body=await page.locator('.ai-dialog-body').boundingBox(),v=page.viewportSize();
+  assert(r&&body&&r.width>=44&&r.height>=44&&r.x>=-.5&&r.x+r.width<=v.width+.5&&r.y>=Math.max(0,body.y)-.5&&r.y+r.height<=Math.min(v.height,body.y+body.height)+.5,label+': full44px tab remains visible and reachable '+JSON.stringify({r,body}));
+  const parts=await tab.evaluate(n=>{const ranges=[...n.childNodes].filter(x=>x.nodeType===Node.TEXT_NODE&&x.textContent.trim()).flatMap(x=>{const range=document.createRange();range.selectNodeContents(x);return [...range.getClientRects()].map(r=>r.toJSON());});return [...ranges,n.querySelector('em').getBoundingClientRect().toJSON()];});
+  assert(parts.length>=2,label+': full label and count have visible geometry');for(const part of parts)assert(part.width>0&&part.height>0&&part.left>=r.x-.5&&part.right<=r.x+r.width+.5&&part.top>=r.y-.5&&part.bottom<=r.y+r.height+.5,label+': full label/count fit their own target '+JSON.stringify(part));
+ }
+ assert.equal((await page.locator('.air-hand .air-verdict').innerText()).trim().toLowerCase(),'assessment','actual navigation returns to the same honest YGO initial-hand assessment');
+}
 async function reachableIdeaActions(page,label){
  const actions=page.locator('.idea-actions [data-act]');assert.equal(await actions.count(),4,label+': all Save/Buy/Wish/Own actions remain present');
  for(const action of await actions.all()){
@@ -358,11 +397,13 @@ try{
  const persistence=await page.evaluate(()=>window.__powerSaveEvidence);assert(persistence.writes.length>0,'explicit save reached durable storage');
  for(const {state} of persistence.writes){assert.deepEqual({...state,decks:[]},{...persistence.baseline,decks:[]},'only the exact synthetic deck may change');assert.deepEqual(state.decks.slice(0,-1),persistence.baseline.decks);assert.deepEqual(state.decks.at(-1),saved);}
  assert.equal((await page.evaluate(()=>window.__fixtureSensitiveWrites)).length,persistence.writes.length,'every shared-guard write has an audited exact synthetic save');
+ magicPersistence={explicitSyntheticSaves:1,durableWrites:persistence.writes.length,unchangedPriorDecks:true,unchangedOtherInventory:true,savedCardCount:64,reopenedPower:savedPower};
  checks.push('Actual Ideas handlers build64 with missing basics at four widths and844x390 landscape with every action retained, save exactly one synthetic draft and reopen with null Power; priced basics complete100; no cap allows100 with explicitly unknown36 basic prices while finite25 remains64. No other durable mutation.');
  app.health();await app.context.close();app=null;
  // Separate real-app contexts keep format probes independent of the Magic
  // catalog replacement, mock AI handlers, explicit save and disclosure state.
  for(const group of formatProbes){
+  try{
   formatApp=await openSearchApp(browser,server.base,{game:group.game,width:390,height:1000,evidenceLabel:'power-format-'+group.id,prepareFixtures:f=>{
    f.state.decks=[];f.state.collection=[];
    for(const game of ['ptcg','ygo']){f.state.tcg[game].decks=[];f.state.tcg[game].collection=[];}
@@ -384,10 +425,12 @@ try{
   for(const x of group.cases){
    await openProbe(x.deck.id);const result=await stateOf();assert.equal(result.eligible,x.eligible);
    if(x.eligible)assert(Number.isFinite(result.shown));else assert.equal(result.shown,null);
+   const expectedBadge=x.eligible?(group.game==='ygo'?['Profile checked · caveats','warn']:['✓ Legal in '+profile.name,'ok']):['power-speed-skill','power-goat-side'].includes(x.deck.id)?['Unverified · checks pending','warn']:[x.deck.id==='power-glc-ace'?'2 to fix':'1 to fix','bad'];
    for(const width of [320,390,768,1440]){
     await fp.setViewportSize({width,height:1000});
     const hero=fp.locator('.deck-hero'),panel=fp.locator('.score-panel.power'),header=await hero.innerText(),text=await panel.innerText();
     assert.match(header,new RegExp(profile.name));assert.equal((await hero.locator('[data-act="tDeckTab"][data-id="insights"] b').innerText()).trim(),x.eligible?String(result.shown):'—','header and shared Power availability agree');
+    const badge=hero.locator('.review-badge');assert.equal((await badge.innerText()).trim(),expectedBadge[0],'header distinguishes informational caveats from unresolved checks and explicit errors');assert((await badge.getAttribute('class')).split(/\s+/).includes(expectedBadge[1]),'badge tone matches its actual issue category');
     if(x.eligible){assert.doesNotMatch(header,/power unavailable/);assert.doesNotMatch(text,/Power estimate unavailable|Finish the deck before rating Power/);assert.equal((await panel.locator('p.eyebrow').innerText()).trim().toLowerCase(),'deck power · engine estimate','visible label retains the exact engine-estimate meaning despite CSS capitalization');}
     else{assert.match(header,/power unavailable/);assert.match(text,result.incomplete?/Finish the deck before rating Power/:/Power estimate unavailable/);assert.match(text,/Component diagnostics below are not an overall Power rating/);assert.match((await fp.locator('.deck-body').innerText()),x.issue);}
     if(group.id==='glc'){assert.match(await fp.locator('.deck-body').innerText(),/Singleton consistency/);assert.doesNotMatch(await fp.locator('.deck-body').innerText(),/No ACE SPEC\. Every deck may play one|One ACE SPEC .*free power boost/);}
@@ -405,7 +448,10 @@ try{
   if(group.game==='ygo'){
    assert.equal(coachHandoffs.length,0,'ordinary format Power navigation never calls AI');await fp.locator('[data-act="aiDeckReview"]').click();await fp.locator('.ai-review-dialog .air-tabs').waitFor();assert.equal(coachHandoffs.length,1);await fp.locator('.air-tabs [data-ai-tab="pilot"]').click();
    assert.equal((await fp.locator('.air-hand .air-verdict').innerText()).trim().toLowerCase(),'assessment','YGO hand verdict remains Assessment, never Keep/Mulligan');assert.equal(await fp.locator('.air-hand .air-fan > span').count(),expectedHand(group.id)[0]);assert.equal(await fp.locator('.air-hand .air-note').innerText(),coachHandoffs[0].handProfile.note);assert.match(await fp.locator('.air-hand').innerText(),/No normal mulligan/);
-   for(const width of [320,390,768,1440]){await fp.setViewportSize({width,height:1000});await noOverflow(fp,'.ai-review-dialog',group.id+' initial-hand coach '+width);await capture(fp,group.id+'-initial-hand-coach-'+width,'.ai-review-dialog');}
+   for(const viewport of [{width:320,height:1000},{width:360,height:1000},{width:390,height:1000},{width:768,height:1000},{width:1440,height:1000},{width:844,height:390}]){
+    await fp.setViewportSize(viewport);const label=group.id+' initial-hand coach '+viewport.width+'x'+viewport.height;await noOverflow(fp,'.ai-review-dialog',label);await coachTabNavigation(fp,label);await noOverflow(fp,'.ai-review-dialog',label+' after actual tabs');await capture(fp,group.id+'-initial-hand-coach-'+viewport.width+'x'+viewport.height,'.ai-review-dialog');await capture(fp,group.id+'-coach-tabs-'+viewport.width+'x'+viewport.height,'.air-tabs');
+   }
+   assert.equal(coachHandoffs.length,1,'tab navigation and responsive layouts never make another AI request');
    await fp.locator('[data-ai-close]').click();assert.equal(await fp.locator('.ai-review-dialog').count(),0);await fp.setViewportSize({width:390,height:1000});
   }
   await fp.locator('nav[role="tablist"] [data-act="tDeckTab"][data-id="cards"]').click();await fp.locator('.deck-add').waitFor();
@@ -431,17 +477,21 @@ try{
   await fp.locator('.deck-hero [data-act="go"][data-to="#decks"]').click();await fp.waitForFunction(()=>window.__uiTestState.ui.view==='decks');await openProbe(original.id);
   const saved=await fp.evaluate(({game,id})=>JSON.parse(JSON.stringify(window.__uiTestState.state.tcg[game].decks.find(x=>x.id===id))),{game:group.game,id:original.id}),reopened=await stateOf();
   assert.deepEqual(saved.zones,original.zones);assert.equal(saved.skill,original.skill);assert.equal(saved.format,original.format);assert.equal(saved.name,newName);assert.equal(reopened.eligible,false);assert.equal(reopened.shown,null);assert.match(reopened.issues.join(' | '),group.cases.find(x=>x.deck.id===group.save).issue);assert.match(await fp.locator('.deck-hero').innerText(),/power unavailable/);assert.match(await fp.locator('.score-panel.power').innerText(),/Power estimate unavailable/);
+  assert.equal((await fp.locator('.deck-hero .review-badge').innerText()).trim(),group.game==='ptcg'?'2 to fix':'Unverified · checks pending','exact saved invalid declaration retains its honest issue category');
   const audit=await fp.evaluate(()=>window.__powerFormatSave),expected=structuredClone(audit.baseline),index=expected.tcg[group.game].decks.findIndex(x=>x.id===original.id),prior=expected.tcg[group.game].decks[index];
   const {name:savedName,boxAppearance:savedBox,...savedRest}=saved,{name:priorName,boxAppearance:priorBox,...priorRest}=prior;assert.deepEqual(savedRest,priorRest,'options Save changes only name and existing box-appearance fields');assert.deepEqual(savedBox,{color:priorBox?.color||'#7664a0',image:priorBox?.image||''},'untouched appearance is the existing default, not arbitrary mutation');expected.tcg[group.game].decks[index]=saved;
   assert(audit.writes.length>0);for(const state of audit.writes)assert.deepEqual(state,expected,'every durable write is exactly the requested synthetic options Save');assert.equal((await fp.evaluate(()=>window.__fixtureSensitiveWrites)).length,audit.writes.length);
   await capture(fp,group.id+'-saved-unavailable');formatApp.health();formatResults.push({format:profile.name,cases,coachHandoffs,save:{id:saved.id,unavailableAfterReopen:true,unchangedCardsAndDeclarations:true,durableWrites:audit.writes.length},diagnostics:formatApp.diagnostics()});
   checks.push(profile.name+': isolated synthetic actual-app eligibility/header/Power, four widths, actual format bounds'+(group.game==='ygo'?', mocked initial-hand coach context':'')+' and exact explicit save/reopen remain honest; not numerical calibration.');
-  await formatApp.context.close();formatApp=null;
+  }catch(error){await recordScenarioFailure('format-'+group.id,error,formatApp);}
+  finally{try{await closeScenarioContext('format-'+group.id,formatApp);}finally{formatApp=null;}}
  }
  // Fresh contexts test real card-detail Build actions. Only provider adapters
  // receive local card catalogs; no generated result, optimizer or save handler
  // is stubbed. The shared deny-all network and durable-write guards stay intact.
  for(const x of builderProbes){
+  const resultStart=builderResults.length;
+  try{
   builderApp=await openSearchApp(browser,server.base,{game:x.game,width:390,height:1000,evidenceLabel:'power-build-'+x.game+'-'+x.kind,prepareFixtures:f=>{
    f.state.decks=[];f.state.collection=[];for(const game of ['ptcg','ygo']){f.state.tcg[game].decks=[];f.state.tcg[game].collection=[];}
    f.state.tcg[x.game].decks=[structuredClone(x.input)];Object.assign(f.cache[x.game],structuredClone(x.cards));
@@ -492,12 +542,15 @@ try{
    const audit=await bp.evaluate(()=>window.__powerBuilderSave),expected=structuredClone(audit.baseline);expected.tcg[x.game].decks.push(saved);assert(audit.writes.length>0);for(const state of audit.writes)assert.deepEqual(state,expected,'every durable builder write appends exactly the requested synthetic deck');assert.equal((await bp.evaluate(()=>window.__fixtureSensitiveWrites)).length,audit.writes.length);
    builderResults.push({game:x.game,kind:x.kind,preview:d,reopened,saved:{id:saved.id,unchangedZones:true,durableWrites:audit.writes.length},providerReads:await bp.evaluate(()=>window.__powerBuilderReads),diagnostics:builderApp.diagnostics()});
   }
-  builderApp.health();await builderApp.context.close();builderApp=null;
+  builderApp.health();
+  }catch(error){builderResults.splice(resultStart);await recordScenarioFailure('builder-'+x.game+'-'+x.kind,error,builderApp);}
+  finally{try{await closeScenarioContext('builder-'+x.game+'-'+x.kind,builderApp);}finally{builderApp=null;}}
  }
- checks.push('Actual card-detail Build handlers, real optimizers, previews and explicit save/reopen: Pokémon60 charges unowned Energy while finite10 is a draft; exact-quote YGO40 fits50 while a missing1000 seed remains a constraint-shortfall draft despite40 cards. Generic YGO card references stay unknown: uncapped40, finite50 empty draft. No ownership, private-price or unrelated deck mutation.');
+ if(builderResults.length===builderProbes.length)checks.push('Actual card-detail Build handlers, real optimizers, previews and explicit save/reopen: Pokémon60 charges unowned Energy while finite10 is a draft; exact-quote YGO40 fits50 while a missing1000 seed remains a constraint-shortfall draft despite40 cards. Generic YGO card references stay unknown: uncapped40, finite50 empty draft. No ownership, private-price or unrelated deck mutation.');
  // A separate Magic context begins with expensive basic art. Only the actual
  // bounded Scryfall adapter supplies a cheaper legal equivalent; rejected rows
  // and has_more demonstrate that the result is not a market-wide minimum.
+ try{
  builderApp=await openSearchApp(browser,server.base,{game:'mtg',width:390,height:1000,evidenceLabel:'power-build-checked-basics',prepareFixtures:f=>{
   f.state.decks=[];f.state.collection=[];for(const game of ['ptcg','ygo']){f.state.tcg[game].decks=[];f.state.tcg[game].collection=[];}
   f.catalog={...f.catalog,...checkedBasicCatalog()};f.storage['cardforge-catalog-v1']=f.catalog;
@@ -518,9 +571,20 @@ try{
  const basicResult=await mp.evaluate(async()=>{const S=window.__uiTestState,{cheapestKnown}=await import('/mtg-cheap.js'),{priceOf}=await import('/store.js');return {deck:S.ui.ideas.open.custom,diagnostics:S.ui.ideas.open.diagnostics,message:S.ui.ideas.open.msg,purchaseEstimate:Math.round(S.ui.ideas.open.custom.cards.reduce((n,r)=>n+r.qty*priceOf(r.name),0)*100)/100,basic:S.catalog.plains,price:priceOf('Plains'),quote:cheapestKnown('plains')};});
  assert(basicQueries>0);assert.equal(basicResult.basic.id,'basic-legal-cheap');assert.equal(basicResult.price,.05);assert.equal(basicResult.quote.coverage.hasMore,true);assert.equal(basicResult.quote.coverage.marketComplete,false);assert.equal(sumQty(basicResult.deck.cards),100);assert.equal(basicResult.deck.cards.find(r=>r.name==='Plains').qty,36);assert.equal(basicResult.purchaseEstimate,17.8);assert.match(basicResult.message,/\$17\.80 for new copies currently listed/);assert.equal(basicResult.diagnostics.purchaseEstimateVerified,true);assert.match(await mp.locator('#sheetBody').innerText(),/Complete 100-card list/);
  for(const width of [320,390,768,1440]){await mp.setViewportSize({width,height:1000});await noOverflow(mp,'#sheetBody','checked basic build '+width);await capture(mp,'build-magic-checked-basics-'+width);}
- assert.equal(await inventorySnapshot(mp),magicBefore);assert.deepEqual(await mp.evaluate(()=>window.__fixtureSensitiveWrites),[]);builderApp.health();builderResults.push({game:'mtg',kind:'checked-basics',queries:basicQueries,selectedId:basicResult.basic.id,price:basicResult.price,coverage:basicResult.quote.coverage,diagnostics:basicResult.diagnostics,saved:false,network:builderApp.diagnostics()});await builderApp.context.close();builderApp=null;
+ assert.equal(await inventorySnapshot(mp),magicBefore);assert.deepEqual(await mp.evaluate(()=>window.__fixtureSensitiveWrites),[]);builderApp.health();builderResults.push({game:'mtg',kind:'checked-basics',queries:basicQueries,selectedId:basicResult.basic.id,price:basicResult.price,coverage:basicResult.quote.coverage,diagnostics:basicResult.diagnostics,saved:false,network:builderApp.diagnostics()});
  checks.push('Actual Magic Ideas loading replaces a25 basic-art reference with the lowest eligible checked0.05 equivalent, rejects illegal/wrong-identity/unpriced rows, budgets all36 purchased basics, and completes100 under25. Bounded one-page coverage is recorded, never market-complete; no save or ownership mutation.');
 
- await mkdir(out,{recursive:true});await writeFile(new URL('power-release-browser.json',out),JSON.stringify({status:'passed',evidence:EVIDENCE,checks,screenshots,timings,formatResults,builderResults,coachCalls,askCalls,persistence:{explicitSyntheticSaves:1,durableWrites:persistence.writes.length,unchangedPriorDecks:true,unchangedOtherInventory:true,savedCardCount:64,reopenedPower:savedPower}},null,2));console.log('PASS: '+checks.join(' '));
-}catch(error){await mkdir(out,{recursive:true});if(builderApp||formatApp||app)try{await capture((builderApp||formatApp||app).page,'failure');}catch{}await writeFile(new URL('power-release-browser.json',out),JSON.stringify({status:'failed',evidence:EVIDENCE,checks,screenshots,timings,formatResults,builderResults,coachCalls,askCalls,error:String(error.stack||error),diagnostics:(builderApp||formatApp||app)?.diagnostics()},null,2));throw error;}
-finally{askHold?.release.resolve();await builderApp?.context.close();await formatApp?.context.close();await app?.context.close();await browser.close();await server.close();}
+ }catch(error){await recordScenarioFailure('builder-mtg-checked-basics',error,builderApp);}
+ finally{try{await closeScenarioContext('builder-mtg-checked-basics',builderApp);}finally{builderApp=null;}}
+ if(failures.length)throw new AggregateError(failures.map(f=>new Error(f.scenario+': '+f.error)),failures.length+' isolated Power browser scenario(s) failed; see failures and screenshots.');
+ await mkdir(out,{recursive:true});await writeFile(new URL('power-release-browser.json',out),JSON.stringify({status:'passed',evidence:EVIDENCE,checks,screenshots,timings,formatResults,builderResults,coachCalls,askCalls,failures,persistence:magicPersistence},null,2));console.log('PASS: '+checks.join(' '));
+}catch(error){await mkdir(out,{recursive:true});if(builderApp||formatApp||app)try{await capture((builderApp||formatApp||app).page,'failure');}catch{}await writeFile(new URL('power-release-browser.json',out),JSON.stringify({status:'failed',evidence:EVIDENCE,checks,screenshots,timings,formatResults,builderResults,coachCalls,askCalls,failures,persistence:magicPersistence,error:String(error.stack||error),diagnostics:(builderApp||formatApp||app)?.diagnostics()},null,2));throw error;}
+finally{
+ askHold?.release.resolve();const cleanupErrors=[];
+ for(const [name,resource]of [['builder context',builderApp?.context],['format context',formatApp?.context],['initial context',app?.context],['browser',browser],['server',server]])if(resource)try{await resource.close();}catch(error){cleanupErrors.push({resource:name,error:String(error.stack||error)});}
+ if(cleanupErrors.length){
+  await mkdir(out,{recursive:true});const file=new URL('power-release-browser.json',out);let prior={};try{prior=JSON.parse(await readFile(file,'utf8'));}catch{}
+  await writeFile(file,JSON.stringify({...prior,status:'failed',evidence:EVIDENCE,checks,screenshots,timings,formatResults,builderResults,coachCalls,askCalls,failures,persistence:magicPersistence,cleanupErrors},null,2));
+  throw new AggregateError(cleanupErrors.map(x=>new Error(x.resource+': '+x.error)),'Power browser cleanup failed; every remaining resource was attempted.');
+ }
+}
