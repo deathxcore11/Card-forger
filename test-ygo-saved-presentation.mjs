@@ -30,7 +30,7 @@ for(const missing of [{printing:'',rarity:''},{printing:'MISSING-EN001',rarity:'
  const row={...lot,...missing},projected=savedYgoPresentation(card,row);
  assert.equal(projected.savedPrintingUnresolved,true);assert.doesNotMatch(tcgSetBadge(projected),/>CR<|>UR<|>C</);
  assert.equal(tcgRarityAttrs(projected,row),'');assert.equal(resolveFinish('ygo',projected,{priceEdition:row.printing&&row.rarity?row.printing+'::'+row.rarity:''}).status,'unknown');
- S.state.tcg.ygo.collection=[row];html=tcgCollection();assert.match(html,/class="tile-set"><span class="tset" title="Saved printing identity has not been verified"><b>Printing not verified<\/b>/,'gallery has a visible neutral uncertainty badge outside hidden lot-sub');assert.doesNotMatch(html,/data-rarity-flair=|data-finish-effect="ygo-ultra"/);
+ S.state.tcg.ygo.collection=[row];html=tcgCollection();assert.match(html,/class="tile-set"><span class="tset printing-unverified" title="Saved printing identity has not been verified"><b>Printing not verified<\/b>/,'gallery has a visible neutral uncertainty badge outside hidden lot-sub');assert.doesNotMatch(html,/data-rarity-flair=|data-finish-effect="ygo-ultra"/);
 }
 const duplicate={...card,sets:[...card.sets,{...card.sets[1]}]};assert.equal(savedYgoPresentation(duplicate,lot).savedPrintingUnresolved,true,'ambiguous rows cannot be treated as verified');
 S.state.tcg.ygo.collection=[lot];assert.equal(JSON.stringify({state:S.state,card}),before,'rendering never mutates ownership or cached identity');

@@ -201,7 +201,7 @@ const price = (c) => c?.setContext ? c.setContext.price ?? null : c?.prices?.usd
 // Emblems shown on a card: Yu-Gi-Oh! Level/Attribute or Spell/Trap property; Pokémon energy type.
 export const gameEmblems = (c) => (!c || c.brief ? "" : c.game === "ygo" ? ygoEmblems(c) : `<span class="emblems">${(c.types || []).map((t) => energyIcon(t)).join("")}${c.hp ? `<span class="hp">HP ${esc(c.hp)}</span>` : ""}</span>`);
 // Search tiles stay light: the type emblem plus set/rarity symbols. HP and codes are on the card page.
-const tileBadges = (c) => tileChrome(c?.game, c, c?.savedPrintingUnresolved?{setBadge:'<span class="tset" title="Saved printing identity has not been verified"><b>Printing not verified</b></span>'}:{});
+const tileBadges = (c) => tileChrome(c?.game, c, c?.savedPrintingUnresolved?{setBadge:'<span class="tset printing-unverified" title="Saved printing identity has not been verified"><b>Printing not verified</b></span>'}:{});
 // Rarity/price tier (tier.js). Yu-Gi-Oh! rarity lives on the printing you own, when known.
 const tcgTier = (c, e = null, p = undefined) => tierOf(c?.game, e?.rarity || c?.rarity || "", p === undefined ? price(c) : p);
 // Resolve an owned lot's physical printing once for its badge, rim and finish.

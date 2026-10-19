@@ -1384,6 +1384,9 @@ details.trouble code { word-break: break-word; }
 .tile-chrome .more { font-size: 10px; font-weight: 700; color: #fff; opacity: 0.85; }
 .tile-chrome .tset { padding: 0; border: 0; background: none; font-size: 10.5px; color: #fff; gap: 3px; }
 .tile-chrome .tset small { font-size: 9.5px; }
+/* An unresolved saved printing uses words rather than a short rarity code. */
+.tile-chrome .tile-set:has(> .printing-unverified) { height:auto; min-height:22px; max-width:calc(100% - 10px); box-sizing:border-box; padding-block:3px; }
+.tile-chrome .tset.printing-unverified { min-width:0; white-space:normal; line-height:1.15; text-align:left; }
 .tile-chrome img.pks { width: 15px; height: 15px; }
 .tile-chrome img.pkr { height: 10px; }
 .tile-chrome .imp-tile { top: auto; left: auto; bottom: 3px; right: 3px; }
