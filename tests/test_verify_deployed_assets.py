@@ -1,12 +1,14 @@
 """Offline tests: no production URLs are requested by this suite."""
 
 import importlib.util
+from html.parser import HTMLParser
 import json
 from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
 from urllib.error import HTTPError
+from urllib.parse import urlsplit
 
 REPO = Path(__file__).resolve().parent.parent
 SPEC = importlib.util.spec_from_file_location("deployed_assets", REPO / "scripts/verify-deployed-assets.py")
@@ -15,6 +17,38 @@ SPEC.loader.exec_module(verifier)
 
 
 class DeployedAssetsTests(unittest.TestCase):
+    def test_all_first_party_entry_dependencies_are_verified(self):
+        class EntryDependencies(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.urls = []
+                self.modulepreloads = []
+
+            def handle_starttag(self, tag, attributes):
+                attrs = dict(attributes)
+                if tag == "script" and attrs.get("src"):
+                    self.urls.append(attrs["src"])
+                if tag == "link" and attrs.get("rel") in ("modulepreload", "stylesheet") and attrs.get("href"):
+                    self.urls.append(attrs["href"])
+                    if attrs["rel"] == "modulepreload":
+                        self.modulepreloads.append(attrs["href"])
+
+        parser = EntryDependencies()
+        parser.feed((REPO / "index.html").read_text())
+        self.assertTrue(parser.modulepreloads, "The public runtime module inventory must not be empty")
+        covered = set(verifier.KEY_ASSETS + verifier.MODULES)
+        self.assertEqual(len(verifier.MODULES), len(set(verifier.MODULES)), "Duplicate verifier asset")
+        for url in parser.urls:
+            parsed = urlsplit(url)
+            if parsed.scheme or parsed.netloc:
+                continue  # Remote fonts/providers are not static release assets.
+            self.assertFalse(parsed.query or parsed.fragment, url)
+            asset = parsed.path.removeprefix("./").removeprefix("/")
+            self.assertIn(asset, covered, f"Public entry dependency lacks exact deployment verification: {asset}")
+            self.assertTrue((REPO / asset).is_file(), asset)
+            for host in verifier.HOSTS:
+                self.assertTrue(verifier.allowed_url(host + asset), asset)
+
     def test_expected_hashes_are_exact_checkout_bytes(self):
         expected = verifier.load_expected(REPO)
         for asset, info in expected.items():
@@ -76,6 +110,8 @@ class DeployedAssetsTests(unittest.TestCase):
         ignored = set((REPO / ".assetsignore").read_text().splitlines())
         self.assertFalse(set(verifier.MODULES) & ignored)
         self.assertNotIn("pricefeed.js", verifier.MODULES)
+        self.assertNotIn("ai-ask-route.js", verifier.MODULES)
+        self.assertNotIn("ai-review-route.js", verifier.MODULES)
 
     def test_full_coherence_report_and_failure_evidence(self):
         def exact(jobs):

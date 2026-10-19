@@ -425,12 +425,13 @@ try{
   for(const x of group.cases){
    await openProbe(x.deck.id);const result=await stateOf();assert.equal(result.eligible,x.eligible);
    if(x.eligible)assert(Number.isFinite(result.shown));else assert.equal(result.shown,null);
-   const expectedBadge=x.eligible?(group.game==='ygo'?['Profile checked · caveats','warn']:['✓ Legal in '+profile.name,'ok']):['power-speed-skill','power-goat-side'].includes(x.deck.id)?['Unverified · checks pending','warn']:[x.deck.id==='power-glc-ace'?'2 to fix':'1 to fix','bad'];
+   const expectedBadge=x.eligible?(group.game==='ygo'?['Profile checked · caveats','warn']:['Legal in '+profile.name,'ok']):['power-speed-skill','power-goat-side'].includes(x.deck.id)?['Unverified · checks pending','warn']:[x.deck.id==='power-glc-ace'?'2 to fix':'1 to fix','bad'];
    for(const width of [320,390,768,1440]){
     await fp.setViewportSize({width,height:1000});
     const hero=fp.locator('.deck-hero'),panel=fp.locator('.score-panel.power'),header=await hero.innerText(),text=await panel.innerText();
     assert.match(header,new RegExp(profile.name));assert.equal((await hero.locator('[data-act="tDeckTab"][data-id="insights"] b').innerText()).trim(),x.eligible?String(result.shown):'—','header and shared Power availability agree');
     const badge=hero.locator('.review-badge');assert.equal((await badge.innerText()).trim(),expectedBadge[0],'header distinguishes informational caveats from unresolved checks and explicit errors');assert((await badge.getAttribute('class')).split(/\s+/).includes(expectedBadge[1]),'badge tone matches its actual issue category');
+    if(x.eligible&&group.game==='ptcg'){const icon=badge.locator('.gl > svg.ico.check[aria-hidden="true"]');assert.equal(await icon.count(),1,'the legal checkmark is the actual decorated SVG, not accessible text');assert(await icon.isVisible(),'legal checkmark remains visible');}
     if(x.eligible){assert.doesNotMatch(header,/power unavailable/);assert.doesNotMatch(text,/Power estimate unavailable|Finish the deck before rating Power/);assert.equal((await panel.locator('p.eyebrow').innerText()).trim().toLowerCase(),'deck power · engine estimate','visible label retains the exact engine-estimate meaning despite CSS capitalization');}
     else{assert.match(header,/power unavailable/);assert.match(text,result.incomplete?/Finish the deck before rating Power/:/Power estimate unavailable/);assert.match(text,/Component diagnostics below are not an overall Power rating/);assert.match((await fp.locator('.deck-body').innerText()),x.issue);}
     if(group.id==='glc'){assert.match(await fp.locator('.deck-body').innerText(),/Singleton consistency/);assert.doesNotMatch(await fp.locator('.deck-body').innerText(),/No ACE SPEC\. Every deck may play one|One ACE SPEC .*free power boost/);}
@@ -495,9 +496,23 @@ try{
   builderApp=await openSearchApp(browser,server.base,{game:x.game,width:390,height:1000,evidenceLabel:'power-build-'+x.game+'-'+x.kind,prepareFixtures:f=>{
    f.state.decks=[];f.state.collection=[];for(const game of ['ptcg','ygo']){f.state.tcg[game].decks=[];f.state.tcg[game].collection=[];}
    f.state.tcg[x.game].decks=[structuredClone(x.input)];Object.assign(f.cache[x.game],structuredClone(x.cards));
+   // Card-detail history may schedule existing daily tracking. These invented
+   // identities are already watched locally, never enrolled through a POST.
+   if(x.game==='ygo')for(const c of Object.values(x.cards))f.storage['cardstashy-watch-sent-v1']['ygo:'+c.id]=Date.parse(ISO);
    const meta=f.storage['cardforge-meta-v1'][x.game].data;meta.decks=[];meta.top=x.trainerIds.map(id=>({kind:'Trainer',name:x.cards[id].name,pct:100,avg:4}));
   }});
-  const bp=builderApp.page,before=await inventorySnapshot(bp);await configureBuilderProviders(bp,x);
+  const bp=builderApp.page,before=await inventorySnapshot(bp),metaFixtureUrl='https://play.limitlesstcg.com/api/tournaments?game=PTCG&format=STANDARD&limit=100';let metaFixtureReads=0;
+  const watchedPrerequisite=x.game==='ygo'?await bp.evaluate(ids=>{const watched=JSON.parse(localStorage.getItem('cardstashy-watch-sent-v1')||'{}'),now=Date.now();return ids.map(id=>({id,at:watched['ygo:'+id],registrationNeeded:now-(watched['ygo:'+id]||0)>20*864e5}));},Object.keys(x.cards)):[];
+  for(const w of watchedPrerequisite){assert.equal(w.at,Date.parse(ISO),'only the declared prior synthetic tracking timestamp is seeded');assert.equal(w.registrationNeeded,false,'this scenario starts already tracked, so no duplicate daily-watch registration is needed');}
+  // Reopened Standard Power auto-refreshes an empty tournament field, even
+  // when its cache is fresh. Supply only this exact read-only empty event list;
+  // the real loader retains our cached synthetic Trainer inputs on no events.
+  // Every other provider path and every mutation still reaches the deny guard.
+  if(x.game==='ptcg')await bp.route(url=>url.href===metaFixtureUrl,async route=>{
+   if(route.request().method()!=='GET'||metaFixtureReads)return route.fallback();metaFixtureReads++;
+   return route.fulfill({contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:'[]'});
+  });
+  await configureBuilderProviders(bp,x);
   await bp.evaluate(id=>{location.hash='#tdeck/'+id+'/cards';},x.input.id);await bp.waitForFunction(id=>window.__uiTestState.ui.tdeckId===id,x.input.id);
   await bp.locator('.deck-body .lot-name[data-act="tCard"][data-id="'+x.seedId+'"]').first().click();
   await bp.waitForFunction(()=>window.__uiTestState.ui.sheetCtx?.type==='tcard'&&!window.__uiTestState.ui.sheetCtx.previewBusy);
@@ -542,7 +557,10 @@ try{
    const audit=await bp.evaluate(()=>window.__powerBuilderSave),expected=structuredClone(audit.baseline);expected.tcg[x.game].decks.push(saved);assert(audit.writes.length>0);for(const state of audit.writes)assert.deepEqual(state,expected,'every durable builder write appends exactly the requested synthetic deck');assert.equal((await bp.evaluate(()=>window.__fixtureSensitiveWrites)).length,audit.writes.length);
    builderResults.push({game:x.game,kind:x.kind,preview:d,reopened,saved:{id:saved.id,unchangedZones:true,durableWrites:audit.writes.length},providerReads:await bp.evaluate(()=>window.__powerBuilderReads),diagnostics:builderApp.diagnostics()});
   }
-  builderApp.health();
+  assert.equal(metaFixtureReads,x.game==='ptcg'?1:0,'only the known saved Standard field refresh uses the exact empty-event fixture');
+  const metaFallback=x.game==='ptcg'?await bp.evaluate(()=>{const m=window.__uiTestTcg.metaState('ptcg');return {busy:m.busy,error:m.error,decks:m.data.decks,top:m.data.top};}):null;
+  if(metaFallback){assert.equal(metaFallback.busy,false);assert.equal(metaFallback.error,'No recent Standard events found.');assert.deepEqual(metaFallback.decks,[],'empty source does not invent a tournament match');assert.deepEqual(metaFallback.top,x.trainerIds.map(id=>({kind:'Trainer',name:x.cards[id].name,pct:100,avg:4})),'existing cached synthetic build inputs survive source unavailability');}
+  Object.assign(builderResults.at(-1),{metaFixture:{url:x.game==='ptcg'?metaFixtureUrl:null,reads:metaFixtureReads,fallback:metaFallback},watchedPrerequisite});builderApp.health();
   }catch(error){builderResults.splice(resultStart);await recordScenarioFailure('builder-'+x.game+'-'+x.kind,error,builderApp);}
   finally{try{await closeScenarioContext('builder-'+x.game+'-'+x.kind,builderApp);}finally{builderApp=null;}}
  }

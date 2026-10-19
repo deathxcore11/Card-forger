@@ -44,6 +44,18 @@ MODULES = (
     "pricing-presentation.js", "workbench-ui.js", "artwork.js", "zoom.js", "pokemon-art.js", "meta.js",
     "historical-archive.js", "recent-history.js", "shared-history.js", "ygo-history-identity.js",
     "rules.js", "rule-learning.js", "rule-lessons.js", "rule-dex.js", "rule-reference.js", "rule-corpus.js",
+    # Keep the full first-party entry-page dependency inventory covered. The
+    # offline regression checks modulepreloads, scripts and stylesheets against
+    # this fixed allowlist; it never follows arbitrary URLs from page content.
+    "adapt.js", "ai-ask.js", "ai-ui.js", "auth-form.js", "auto-browse.js", "build-overlay.js", "buy.js", "card-actions.js",
+    "collection-locations.js", "collection-sort.js", "daily-clock.js", "deck-flow.js", "deck-safety.js", "deckaudit.js",
+    "dialog.js", "extras.js", "facts.js", "feedback-layer.js", "format-upgrades.js", "games.js", "glass-select.js", "guide.js",
+    "icons.js", "importance.js", "install.js", "matchup.js", "matchups-ui.js", "mtg-cheap.js", "mtg-route-coverage.js", "mtg-tags.js",
+    "password-auth.js", "pokemon-catalogue-supplement.js", "pokemon-prices.js", "pokemon-role.js", "pokemon-set-art.js",
+    "price-reference.js", "pricehist.js", "printing-carousel.js", "ptcg-glc-rules.js", "ptcg-product.js", "quick-quantity.js",
+    "rule-hover.js", "scanart.js", "scanner-lookup.js", "scanner-review.js", "share.js", "sharedprices.js", "store.js",
+    "strategy-risk.js", "strategy.js", "tabletop-themes.js", "tcgbuild.js", "tcgcompare.js", "tier.js", "tiles.js", "trade.js",
+    "ygo-price-selection.js", "ygo-prices.js",
 )
 MAX_BYTES = 8 * 1024 * 1024
 REQUEST_TIMEOUT = 15
