@@ -4,7 +4,7 @@ import {brandMark} from './brand.js';
 // the real cards, sets or decks to tap. Voice uses the phone's speech recognition when available.
 import { esc } from './ui.js';
 import { aiOrb } from './ai-ui.js';
-import { runAskLoop } from './ai-ask-loop.js';
+import { runAskLoop, resumeBuildChoice } from './ai-ask-loop.js';
 export { boundedToolOutput } from './ai-ask-loop.js';
 
 const STEP = { search_cards: 'Searching cards', card_details: 'Reading the card', my_collection: 'Checking your collection', list_sets: 'Looking through sets', set_cards: 'Pricing the set', meta_decks: 'Checking tournament results', my_decks: 'Opening your decks', build_deck: 'Setting up the deck builder', answer: 'Writing the answer' };
@@ -43,6 +43,7 @@ export function openAsk({ game = 'mtg', tools, show, prefill = '' } = {}) {
   node.addEventListener('click', (e) => {
     if (e.target === node || e.target.closest('[data-ask-close]')) return closeAsk();
     if (e.target.closest('[data-ask-new]')) return restartAsk();
+    const choice=e.target.closest('[data-ask-choice]');if(choice){if(Number(choice.dataset.askTurn)!==state.turnId||state.busy)return;return ask(choice.textContent,fetch,{id:choice.dataset.askChoice});}
     const q = e.target.closest('[data-ask-q]'); if (q) return ask(q.dataset.askQ);
     if (e.target.closest('[data-ask-mic]')) return listen();
     const item = e.target.closest('[data-ask-show]'); if (item) { const s = JSON.parse(item.dataset.askShow); const open = state.show; closeAsk(); return open?.(s); }
@@ -92,10 +93,11 @@ function listen() {
   try { rec.start(); } catch { rec.onerror(); }
 }
 const say = (calls) => [...new Set(calls.map(c => STEP[c.name] || 'Working'))].join(' · ');
-export async function ask(text, fetcher = fetch) {
+export async function ask(text, fetcher = fetch, choice = null) {
   text = String(text || '').trim();
   if (!state || state.busy || !text) return;
   const session = state;
+  session.turnId=(session.turnId||0)+1;
   state.busy = true; state.input.value = ''; state.tools?.reset?.();
   state.log.querySelector('.ask-empty')?.remove();
   state.pendingText = text;
@@ -104,7 +106,8 @@ export async function ask(text, fetcher = fetch) {
   state.node.classList.add('thinking');
   const items = [...state.history, { type: 'message', role: 'user', content: text }];
   try {
-    const result = await runAskLoop({ game:session.game, items, tools:session.tools, fetcher, signal:session.controller.signal, current:()=>state===session, onCalls:calls=>{think.querySelector('.ask-step').textContent=say(calls)+'…';} });
+    const common={tools:session.tools,signal:session.controller.signal,current:()=>state===session,onBuildContext:context=>{if(state===session)session.buildContext=context;}};
+    const result = choice?await resumeBuildChoice({...common,choice:choice.id,context:session.buildContext}):await runAskLoop({ ...common,game:session.game, items,buildContext:session.buildContext,fetcher, onCalls:calls=>{think.querySelector('.ask-step').textContent=say(calls)+'…';} });
     if (!result || state !== session) return;
     question.classList.remove('pending'); session.pendingText=''; think.remove(); answer(result);
     session.history=[...items.filter(x=>x.type==='message'),{type:'message',role:'assistant',content:result.text}].slice(-8);
@@ -121,5 +124,6 @@ function answer(a) {
   const [label, cls] = SOURCE[a.source] || SOURCE.mixed;
   const extra = state.tools?.pendingItem?.(), seen = new Set(), list = [...((a.show || []).length ? a.show : (state.tools?.suggestedItems?.() || [])), ...(extra ? [extra] : [])].map(s => state.tools?.canonicalItem?.(s) || s).filter(s => { const k = [s.game,s.kind,s.ref].join(':'); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 8);
   const items = list.map((s, i) => state.tools?.preview?.(s, i) || `<button class="ask-item" style="--i:${i}" data-ask-show='${esc(JSON.stringify(s))}'><b>${esc(s.label || s.ref)}</b><small>${esc({ card: 'Card', set: 'Set', meta: 'Meta deck', deck: 'Your deck' }[s.kind])} · ${esc(GAME_NAME[s.game])}</small></button>`).join('');
-  bubble('ai', `<p class="ask-source ${cls}">${label}</p><p>${esc(a.text)}</p>${items ? `<div class="ask-items">${items}</div>` : ''}${a.suggestions?.length ? `<div class="ask-examples follow">${a.suggestions.map((q, i) => `<button type="button" style="--i:${i}" data-ask-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : ''}`);
+  const choices=(a.choices||[]).map(c=>`<button type="button" data-ask-choice="${esc(c.id)}" data-ask-turn="${state.turnId}">${esc(c.label)}</button>`).join('');
+  bubble('ai', `<p class="ask-source ${cls}">${label}</p><p>${esc(a.text)}</p>${items ? `<div class="ask-items">${items}</div>` : ''}${choices?`<div class="ask-examples follow" aria-label="Deck choices">${choices}</div>`:''}${a.suggestions?.length ? `<div class="ask-examples follow">${a.suggestions.map((q, i) => `<button type="button" style="--i:${i}" data-ask-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : ''}`);
 }

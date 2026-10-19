@@ -33,3 +33,7 @@ pending=TA.tBuild({dataset:{id:'stale-navigation'},initialBudget:73,buildCurrent
 pending=TA.tBuild({dataset:{id:'stale-sheet'},initialBudget:73,buildCurrent:()=>scope});TS.ui.sheetCtx={type:'different'};finishers.shift()();await pending;assert.equal(starts.length,1);
 const old=TA.tBuild({dataset:{id:'old'},initialBudget:11,buildCurrent:()=>scope}),fresh=TA.tBuild({dataset:{id:'fresh'},initialBudget:44,buildCurrent:()=>scope});finishers.shift()();await old;assert.equal(starts.length,1);finishers.shift()();await fresh;assert.deepEqual(starts[1],{budget:'44',seed:'fresh'});
 console.log('PASS: actual TCG callbacks set budget before the first run, refuse busy replacement, discard stale identity/navigation/sheet results, and keep the newest pending handoff.');
+
+// Explicitly permitted unverified drafts retain their disclosure after saving.
+game='mtg';S.ui.build.busy=false;contextArgs.openMtgDraft({...built.draft,unverifiedConstraints:['infinite_combos']},contextArgs.captureAskScope());await A.tierSave({dataset:{i:'0'}});const unverifiedSaved=S.state.decks.at(-1);assert.match(unverifiedSaved.name,/^Draft/);assert.deepEqual(Array.from(unverifiedSaved.unverifiedConstraints),['infinite_combos']);assert.match(unverifiedSaved.source.description,/Unverified draft: infinite combos were not checked/);
+console.log('PASS: explicit Save draft persists its unverified restriction and disclosure, without changing its exact cards.');

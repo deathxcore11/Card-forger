@@ -1,6 +1,9 @@
 // Goals are preferences, not measured power or win-rate guarantees. Hard rules,
 // identity, ownership and quote coverage always remain the app's responsibility.
 export const DECK_GOALS = Object.freeze(['strongest','theme','fun','chaos','weak']);
+// Direct player requests must reach the existing builder, rather than letting
+// a model answer with an unexecuted deck or a generic refusal. How-to stays help.
+export const isDeckBuildRequest = value => /^\s*(?:(?:can|could|would|will)\s+you\s+)?(?:please\s+)?(?:build|make|create)(?:\s+me|\s+us)?\b[^.!?]*\bdeck\b/i.test(String(value||''));
 const DESCRIPTIONS = Object.freeze({
  strongest:'Strongest practical draft within the requested constraints, not a guaranteed optimal deck.',
  theme:'Keep the requested theme ahead of generic upgrades while preserving legal deck construction.',

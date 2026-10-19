@@ -226,14 +226,14 @@ export function makeAskTools(x) {
       if(!selected)return {game:g,requiresChoice:true,formats:formats.map(f=>({id:f.id,name:f.name})),note:'Choose a format before preparing a deck. No deck has been changed.'};
       if (g === 'mtg') {
         const buildContext={...x,api:(...a)=>cachedBuildRead('api:'+JSON.stringify(a),()=>x.api(...a)),resolve:(...a)=>cachedBuildRead('resolve:'+JSON.stringify(a),()=>x.resolve(...a))};
-        const built = await prepareMtgDeck({ style:want, budget:$, format:selected.name, seed, commander, budget_basis,goal,required_cards,excluded_cards,colors,avoid_infinite,candidate_cards,current:preparingCurrent },buildContext);
+        const built = await prepareMtgDeck({ style:want, budget:$, format:selected.name, seed, commander, budget_basis,goal,required_cards,excluded_cards,colors,avoid_infinite,candidate_cards,allowUnverifiedInfinite:handshake.allowUnverifiedInfinite===true,current:preparingCurrent },buildContext);
         if (!preparingCurrent()){if(epoch===buildEpoch)x.pending=null;return {cancelled:true,terminal:true,note:'This question, workspace, or deck/collection version changed. Nothing was saved.'};}
         if (!built.draft) return {game:g,...built,terminal:true};
         if(!bestBuild || noWorse(built.draft,bestBuild.draft))bestBuild=structuredClone(built);
         const draft = structuredClone(bestBuild.draft),result=bestBuild.result;
         const validation={authority:'app',status:result.ready?'ready':'needs_review',issues:(draft.issues||[]).slice(0,12),goal,goalVerified:false,
           budget:{basis:budget_basis,limit:draft.budget===Infinity?'no limit':draft.budget,withinBudget:!!draft.withinBudget,estimate:budget_basis==='total'?draft.totalEstimate:draft.purchaseEstimate,unpricedCopies:budget_basis==='total'?draft.unpricedCopies:draft.unpricedPurchaseCopies}};
-        const mayCorrect=handshake.allowCorrection===true&&!result.ready;
+        const mayCorrect=handshake.allowCorrection===true&&!result.ready&&!result.unverifiedConstraints?.length;
         const correction=mayCorrect?{candidateLimit:6,remaining:1,feedback:[...(draft.issues||[]).map(i=>i.text),...(draft.warnings||[])].slice(0,10),
           expensiveOrUnpricedCards:[...draft.cards].sort((a,b)=>{const pa=draft.referencePrices?.[cardKey(a.name)],pb=draft.referencePrices?.[cardKey(b.name)];return (pb==null?Infinity:pb*b.qty)-(pa==null?Infinity:pa*a.qty);}).slice(0,8).map(r=>({name:r.name,qty:r.qty,each:draft.referencePrices?.[cardKey(r.name)]??null})),
           instruction:'Suggest up to six exact candidate_cards once. Preserve every other request field. App checks decide what fits; unknown prices are not free.'}:null;
@@ -244,8 +244,12 @@ export function makeAskTools(x) {
         }
         return {...result,goal,goalVerified:false,goalDescription:goalDescription(goal),validation,correction,requiresCorrection:mayCorrect,reviewAvailable:!!x.openMtgDraft,terminal:!mayCorrect};
       }
-      const src = T.SOURCES[g], required = clip(seed,120);
-      if(goal!=='strongest'||required_cards.length||excluded_cards.length||colors.length||avoid_infinite)return {game:g,requiresChoice:true,terminal:true,goal,note:'This game’s builder handoff cannot yet enforce those goal or card restrictions. They have not been discarded or checked. Use the manual builder to review them; nothing was saved.'};
+      const src = T.SOURCES[g], required = clip(seed||required_cards[0],120);
+      const extraRequirements=required_cards.filter(n=>cardKey(n)!==cardKey(required));
+      // A named build-around is already the existing TCG builder's seed, and
+      // fun/theme are reviewable preferences rather than unsupported hard rules.
+      // Do not reject Charizard just because the model repeated it in required_cards.
+      if(['chaos','weak'].includes(goal)||extraRequirements.length||excluded_cards.length||colors.length||avoid_infinite)return {game:g,requiresChoice:true,terminal:true,goal,note:'I can open this game’s existing builder around one main card or archetype. It cannot enforce extra card exclusions, multiple required cards, Magic color constraints, or a no-infinite-combos guarantee. Tell me which main card to keep and which restriction to revise. Nothing was saved.'};
       if(budget_basis==='owned')return {game:g,requiresChoice:true,note:'This builder handoff cannot guarantee an owned-only list. Choose a purchase budget, or use your saved deck to review the missing cards.'};
       if(commander)return {game:g,requiresChoice:true,note:'A commander is a Magic deck role. For this game, give the main card or archetype as the build-around instead.'};
       let r = null;
@@ -253,7 +257,14 @@ export function makeAskTools(x) {
         const exact=await src.byName?.(required).catch(()=>null);
         if(!preparingCurrent())return {cancelled:true,note:'This question was closed or replaced. Nothing was saved.'};
         r=exact?{cards:[exact]}:await src.search({q:required,format:selected.id,page:0,size:12}).catch(()=>({cards:[]}));
-      } else if(g==='ptcg' && /^(fire|water|grass|lightning|psychic|fighting|darkness|metal|dragon|colorless|fairy)\b/i.test(want))r=await src.search({q:'',type:want.split(/\s/)[0][0].toUpperCase()+want.split(/\s/)[0].slice(1).toLowerCase(),category:'Pokemon',format:selected.id,page:0,size:12}).catch(()=>null);
+      } else {
+        for(const name of candidate_cards.slice(0,3)){
+          const card=await src.byName?.(name).catch(()=>null);
+          if(!preparingCurrent())return {cancelled:true,note:'This question was closed or replaced. Nothing was saved.'};
+          if(card&&cardKey(card.name)===cardKey(name)){r={cards:[card]};break;}
+        }
+        if(!r&&g==='ptcg' && /^(fire|water|grass|lightning|psychic|fighting|darkness|metal|dragon|colorless|fairy)\b/i.test(want))r=await src.search({q:'',type:want.split(/\s/)[0][0].toUpperCase()+want.split(/\s/)[0].slice(1).toLowerCase(),category:'Pokemon',format:selected.id,page:0,size:12}).catch(()=>null);
+      }
       if (!preparingCurrent()) return {cancelled:true,note:'This question was closed or replaced. Nothing was saved.'};
       if (!r?.cards?.length && !required) r = await src.search({ q: want, format:selected.id, page: 0, size: 12 }).catch(() => ({ cards: [] }));
       if (!preparingCurrent()) return {cancelled:true,note:'This question was closed or replaced. Nothing was saved.'};
@@ -262,7 +273,7 @@ export function makeAskTools(x) {
       if(required&&!pick)return {game:g,requiresChoice:true,note:`I could not verify the exact build-around “${required}”. Which card or printing should the builder use?`};
       if (!pick) return { error: `No ${g === 'ygo' ? 'Yu-Gi-Oh!' : 'Pokémon'} card found for "${want}".` };
       x.pending = () => {if(!scopeCurrent()){x.toast?.('Your workspace changed. Ask again in the current workspace.');return;}return x.openTcgBuild(g,pick.id,$,selected.id,scopeCurrent);}; x.pending.current=scopeCurrent; x.pendingGame=g;
-      return { game:g, prepared:true, complete:false, terminal:true, reviewAvailable:true, actionLabel:'Open the deck builder', seed:pick.name, format:selected.name, budget:$||'no limit', budgetBasis:'purchase', requestedBudgetBasis:budget_basis||'total', note:'The '+selected.name+' builder is prepared around '+pick.name+'. Its budget is purchases after owned cards, not a verified whole-deck total. Open it to generate and check the actual list and price coverage. No complete deck or under-budget result has been verified yet; nothing was saved.' };
+      return { game:g, prepared:true, complete:false, terminal:true, reviewAvailable:true, actionLabel:'Open the deck builder', seed:pick.name, format:selected.name, goal,goalVerified:false,budget:$||'no limit', budgetBasis:'purchase', requestedBudgetBasis:budget_basis||'total', note:'The '+selected.name+' builder is prepared around '+pick.name+'. '+(goal!=='strongest'?'Your '+goal+' preference is for you to review; it is not a verified playability or strength rating. ':'')+'Its budget is purchases after owned cards, not a verified whole-deck total. Open it to generate and check the actual list and price coverage. No complete deck or under-budget result has been verified yet; nothing was saved.' };
     },
   };
   // Snapshot request ownership before a provider wait, not only when its reply

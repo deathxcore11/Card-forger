@@ -43,7 +43,7 @@ assert.deepEqual(JSON.parse(boundedToolOutput({cards:[]})),{cards:[]});
 // Repeated cancellation must never surface stale errors or leave a new dialog busy.
 for(let i=0;i<100;i++){
  openAsk();let reject;
- const p=ask('cancel',()=>new Promise((r,j)=>reject=j));closeAsk();openAsk();
+ const p=ask('pending network question',()=>new Promise((r,j)=>reject=j));closeAsk();openAsk();
  reject(Error('stale failure'));await p;closeAsk();
 }
 console.log('PASS: one Ask on Search, no Search/Ask prompts on personal Home in all three games; duplicate-submit guard, close/reopen network and tool races, 100 cancellation cycles, valid bounded tool JSON.');

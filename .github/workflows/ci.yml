@@ -632,11 +632,15 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Test grounded AI draft preview and explicit existing save handoff
         run: node tests/ai-deck-build-browser.mjs
+      - name: Test homepage requests, constraint recovery and explicit choices
+        run: node tests/ai-request-recovery-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: ai-deck-build-browser-evidence
-          path: test-results/ai-deck-build-*
+          path: |
+            test-results/ai-deck-build-*
+            test-results/ai-request-recovery-*
   news-curation-browser:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -678,3 +682,23 @@ jobs:
         with:
           name: power-release-browser-evidence
           path: test-results/power-release-*
+
+  ygo-saved-presentation-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - name: Test exact saved YGO printing and measured card bounds
+        run: node tests/ygo-saved-presentation-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ygo-saved-presentation-browser-evidence
+          path: test-results/synthetic-ygo-saved-*

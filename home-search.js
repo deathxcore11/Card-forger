@@ -6,6 +6,7 @@ import {nameDistance} from './scan-signals.js';
 export const homeQueries={};
 const key=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
 export function homeIntent(q){
+ if(/\b(?:make|create)\b[^.!?]*\bdeck\b/i.test(q))return 'ask';
  if(/^(?:how|why|when|can|could|should|which|what|where|does|do|is|are)\b/i.test(q)||/\b(?:build|explain|compare|recommend|help|finish my|my collection|my deck|ruling)\b/i.test(q))return 'ask';
  return 'cards';
 }

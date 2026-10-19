@@ -555,7 +555,7 @@ const tierLabel = (t) => (t.variant ? `${t.variant}${t.coversText ? ` · ${t.cov
 function tierCard(t, i, mode, tierList = null) {
   const p = mtgPower({ ...t, id: `tier-preview-${i}` }),
     sizeComplete = t.total >= t.size && (!formatOf(t.format).exact || t.total === t.size),
-    complete = sizeComplete && !p.readiness?.provisional && (!t.preparedByAsk || t.legalChecked === true),
+    complete = sizeComplete && !p.readiness?.provisional && (!t.preparedByAsk || t.legalChecked === true && !t.unverifiedConstraints?.length),
     power = complete ? shownPower(p) : null,
     shown = S.ui.build.openTier === i,
     groups = { Creatures: [], Spells: [], Lands: [], Other: [] };
