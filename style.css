@@ -538,7 +538,8 @@ button.idea-art { display: block; width: 100%; border: 0; padding: 0; background
 .pick-main b { display: block; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pick-main small { font-size: 12px; font-weight: 600; }
 .pick-side { display: grid; justify-items: end; gap: 2px; font-size: 13px; flex: none; }
-.idea-actions { position: sticky; bottom: calc(-22px - env(safe-area-inset-bottom)); display: flex; justify-content: space-between; gap: 6px; background: var(--bg); border-top: 1px solid var(--line); padding: 10px 0 calc(10px + env(safe-area-inset-bottom)); margin-top: 10px; }
+.idea-actions { position: sticky; bottom: calc(-22px - env(safe-area-inset-bottom)); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; background: var(--bg); border-top: 1px solid var(--line); padding: 10px 0 calc(10px + env(safe-area-inset-bottom)); margin-top: 10px; }
+.idea-actions > .row { min-width: 0; flex-wrap: wrap; }
 .idea-actions .grid2 { margin: 6px 0; }
 .idea-actions .grid2 span:empty { display: none; }
 .tag.muted { color: var(--muted); background: var(--surface-2); }

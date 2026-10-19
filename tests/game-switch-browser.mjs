@@ -6,6 +6,7 @@ import {openCapturedCard} from './scanner-review-controls.mjs';
 // Representative synthetic screenshots are captured only by approved hosted CI.
 import assert from 'node:assert/strict';
 import {cheapestQuery} from '../mtg-cheap.js';
+import {formatOf} from '../formats.js';
 import {
   GAMES, PAIRS, METHODS, BASE_ROWS, WIDTHS, EVIDENCE, SEARCH, SET_IDS, CARDS, SWIPE_BLOCKED_SELECTOR, captureNavigation,
   sourceHash, targetHash, finishFor, carouselPages, validateGameSwitchFixtures, makeScannerLifecycleFixture, makeManualReviewFixture, COLLISION_ID,
@@ -175,8 +176,13 @@ async function semanticCase(app, pair, row, method) {
   // Keep the existing R13 identity and route assertions. Delay only its exact
   // synthetic price response, then allow the real app's background render to
   // replace the original touch target between trusted move1 and touchend.
-  const refresh=row.id==='R13'&&pair.from==='mtg'&&pair.to==='ygo'&&method==='touch'?
-    app.hold(url=>url.hostname==='api.scryfall.com'&&url.pathname==='/cards/search'&&url.searchParams.get('q')===cheapestQuery(CARDS.mtg[0].name)):null;
+  let refresh=null;
+  if(row.id==='R13'&&pair.from==='mtg'&&pair.to==='ygo'&&method==='touch'){
+    const id=sourceHash(row,pair.from,app.fixtures).split('/')[1],deck=app.fixtures.state.decks.find(d=>d.id===id);
+    assert(deck,'The held printing refresh belongs to the exact source fixture deck');
+    const query=`${cheapestQuery(deck.cards[0].name)} legal:${formatOf(deck).legality}`;
+    refresh=app.hold(url=>url.hostname==='api.scryfall.com'&&url.pathname==='/cards/search'&&url.searchParams.get('q')===query&&url.searchParams.get('order')==='usd'&&url.searchParams.get('dir')==='asc');
+  }
   await prepare(app, pair, row);
   if(refresh)await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(Error('Expected exact synthetic cheapest-printing request was not issued')),8000);refresh.seen.then(()=>{clearTimeout(timeout);resolve();},reject);});
   const bottomNavigation=row.id==='R01'&&pair.from==='mtg'&&pair.to==='ygo'&&method==='header'&&[320,390].includes(app.page.viewportSize().width)?await bottomNavEvidence(app.page):undefined;

@@ -173,6 +173,16 @@ let app,formatApp,builderApp,askHold=null,coachCalls=0,askCalls=0,ideaMode=null;
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve};};
 const frames=page=>page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
 async function capture(page,name,scope){await mkdir(out,{recursive:true});await frames(page);const file=`power-release-${name}.png`,options={path:new URL(file,out).pathname,animations:'disabled'};if(scope)await page.locator(scope).screenshot(options);else await page.screenshot({...options,fullPage:true});screenshots.push(file);}
+async function reachableIdeaActions(page,label){
+ const actions=page.locator('.idea-actions [data-act]');assert.equal(await actions.count(),4,label+': all Save/Buy/Wish/Own actions remain present');
+ for(const action of await actions.all()){
+  assert(await action.isVisible(),label+': action is visible');assert(await action.isEnabled(),label+': action is enabled');
+  // Trial checks stability, scrolling and hit testing without firing a click.
+  // Never activate Buy/Wish/Own or preempt the later explicit Save assertion.
+  await action.click({trial:true});const r=await action.boundingBox(),v=page.viewportSize();
+  assert(r&&r.width>=24&&r.height>=24&&r.x>=-.5&&r.y>=-.5&&r.x+r.width<=v.width+.5&&r.y+r.height<=v.height+.5,label+': usable action fits the visible viewport '+JSON.stringify(r));
+ }
+}
 async function gotoDeck(page,id){await page.evaluate(id=>{location.hash='#deck/'+id+'/engine';},id);await page.locator('.score-panel.power').waitFor();await page.waitForFunction(id=>window.__uiTestState.ui.deckId===id,id);}
 async function openAsk(page){await page.evaluate(()=>{location.hash='#search';});await page.locator('[data-act="askOpen"]').first().click();await page.locator('.ask-dialog[open]').waitFor();}
 async function installBuilderSaveAudit(page){
@@ -326,7 +336,8 @@ try{
  }
  const missing=await openIdeaScenario('missing');assert.equal(sumQty(missing.deck.cards),64);assert.equal(missing.diagnostics.missingLands,36);
  assert.match(await page.locator('#sheetBody').innerText(),/Save 64-card draft/);assert.match(await page.locator('#sheetBody').innerText(),/Power unavailable/);assert.match(await page.locator('#sheetBody').innerText(),/Basic land details are unavailable/);
- for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'#sheetBody','64-card idea preview '+width);await capture(page,'idea64-preview-'+width);}
+ for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});await noOverflow(page,'#sheetBody','64-card idea preview '+width);await reachableIdeaActions(page,'64-card idea preview '+width);await capture(page,'idea64-preview-'+width);}
+ await page.setViewportSize({width:844,height:390});await noOverflow(page,'#sheetBody','64-card idea landscape844x390');await reachableIdeaActions(page,'64-card idea landscape844x390');await capture(page,'idea64-preview-landscape-844x390');await capture(page,'idea64-landscape-actions','.idea-actions');await page.setViewportSize({width:390,height:1000});
  const saveBefore=await page.evaluate(()=>window.__uiTestState.state.decks.length);await page.locator('#sheetBody [data-act="ideaSaveAll"]').first().click();
  await page.waitForFunction(n=>window.__uiTestState.state.decks.length===n+1,saveBefore);await page.waitForFunction(()=>!document.querySelector('#sheet').open);
  const saved=await page.evaluate(()=>window.__uiTestState.state.decks.at(-1));assert.equal(sumQty(saved.cards),64);assert.deepEqual(saved.cards,missing.deck.cards);
@@ -347,7 +358,7 @@ try{
  const persistence=await page.evaluate(()=>window.__powerSaveEvidence);assert(persistence.writes.length>0,'explicit save reached durable storage');
  for(const {state} of persistence.writes){assert.deepEqual({...state,decks:[]},{...persistence.baseline,decks:[]},'only the exact synthetic deck may change');assert.deepEqual(state.decks.slice(0,-1),persistence.baseline.decks);assert.deepEqual(state.decks.at(-1),saved);}
  assert.equal((await page.evaluate(()=>window.__fixtureSensitiveWrites)).length,persistence.writes.length,'every shared-guard write has an audited exact synthetic save');
- checks.push('Actual Ideas handlers build64 with missing basics, save exactly one synthetic draft and reopen with null Power; priced basics complete100; no cap allows100 with explicitly unknown36 basic prices while finite25 remains64. No other durable mutation.');
+ checks.push('Actual Ideas handlers build64 with missing basics at four widths and844x390 landscape with every action retained, save exactly one synthetic draft and reopen with null Power; priced basics complete100; no cap allows100 with explicitly unknown36 basic prices while finite25 remains64. No other durable mutation.');
  app.health();await app.context.close();app=null;
  // Separate real-app contexts keep format probes independent of the Magic
  // catalog replacement, mock AI handlers, explicit save and disclosure state.

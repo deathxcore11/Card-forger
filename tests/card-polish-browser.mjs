@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import {writeFile,mkdir} from 'node:fs/promises';
 import {resolve} from 'node:path';
-import {WIDTHS,GAMES,SETS,VASM,MP25,CARDS,EXPECTED,SYMBOLS,ART_EVIDENCE,RESULTS,validateFixtures,startServer,openApp,navigate,closeSheet,noOverflow,capture,inventorySnapshot,isHistoryURL,assertSymbolMounts} from './card-polish-fixtures.mjs';
+import {WIDTHS,GAMES,SETS,VASM,MP25,CARDS,EXPECTED,SYMBOLS,ISO,ART_EVIDENCE,RESULTS,validateFixtures,startServer,openApp,navigate,closeSheet,noOverflow,capture,inventorySnapshot,isHistoryURL,assertSymbolMounts} from './card-polish-fixtures.mjs';
 
 console.log(await validateFixtures());
 if(process.argv.includes('--validate-fixtures'))process.exit(0);
@@ -69,6 +69,30 @@ async function jump(page,target='history'){
  await page.locator(`.card-price-summary [data-act="cardPriceJump"][data-target="${target}"]`).click();await page.waitForFunction(id=>document.activeElement===document.querySelector('#card-'+id)&&document.querySelector('#card-tab-prices')?.getAttribute('aria-selected')==='true',target);await clearance(page,'#card-'+target);
 }
 async function historyState(page,state){await page.waitForFunction(state=>document.querySelector('#card-history')?.dataset.historyState===state,state);const history=page.locator('#card-history');assert.equal(await history.locator('.market-chart').count(),0,'Missing matching history never produces an invented graph');assert.equal(await history.locator('.history-empty').count(),1,'One concise empty-state paragraph');assert.equal(await history.locator('.history-coverage').count(),0,'No duplicated empty-state summary');return history;}
+async function unobservedYgoHistory(page){
+ const history=await historyState(page,'empty'),quote=await activeQuote(page);
+ assert.equal(await history.getAttribute('data-history-source-state'),'empty','Both exact providers completed with matching empty history');
+ assert.equal(await history.locator('.history-empty').innerText(),'No recorded quotes for this selection.');
+ assert.equal(await history.locator('[data-act="historyChoosePrinting"]').count(),0,'A verified empty result is not unresolved printing selection');
+ assert.equal(await page.evaluate(key=>window.__uiTestState.state.settings.marketHistory?.[key]??null,quote.key),null,'This exact selection has never been recorded locally');
+ return history;
+}
+async function singleYgoObservation(page,edition,value){
+ await page.waitForFunction(()=>{const n=document.querySelector('#card-history');return n?.dataset.historyState==='ready'&&n.dataset.historySourceState==='empty';});
+ const history=page.locator('#card-history'),quote=await activeQuote(page),date=ISO.slice(0,10),price='$'+value.toFixed(2),summary=`One recorded price: ${price} on ${date}.`;
+ const expected={game:'ygo',cardId:EXPECTED.ygo.edition,releaseId:MP25.id,edition:'MP25-EN003',rarity:'Starlight Rare',editionKey:'MP25-EN003::Starlight Rare',selectedEdition:edition,selectionVerified:true,currency:'USD',finish:'reference',source:'Synthetic exact-edition fixture',label:'MP25-EN003 · Starlight Rare · '+{'1st-edition':'1st Edition',unlimited:'Unlimited'}[edition],value};
+ const stored=await page.evaluate(key=>window.__uiTestState.state.settings.marketHistory?.[key],quote.key);
+ for(const [key,want]of Object.entries(expected)){assert.equal(quote[key],want,'Active observation identity '+key);assert.equal(stored?.[key],want,'Saved observation identity '+key);}
+ assert.equal(stored.points.length,1,'Repeated checks on the same date cannot invent earlier observations');
+ assert.equal(stored.points[0].date,date);assert.equal(stored.points[0].value,value);assert.equal(stored.points[0].observedAt.slice(0,10),date);assert.equal(stored.points[0].sourceAsOf,ISO);
+ assert.equal(await history.locator('.market-chart').count(),1);assert.equal(await history.locator('.history-single-chart').count(),1);assert.equal(await history.locator('.market-chart:not(.history-single-chart),.market-chart path,.market-chart polyline').count(),0,'One real observation cannot become a historical trend');
+ assert.equal(await history.locator('.market-chart circle').count(),1);assert.equal(await history.locator('.market-chart').getAttribute('aria-label'),summary+' No earlier history available');
+ assert.equal(await history.locator('.history-empty').count(),0);assert.equal(await history.locator('.history-coverage').innerText(),'1 verified observation. '+summary);
+ assert.equal(await history.locator('.history-identity').innerText(),quote.source+' · selected printing / device · USD\n'+quote.label);
+ assert.equal(await history.locator('.history-values [data-change="marketPoint"] option').count(),1);assert.equal(await history.locator('.history-values [data-change="marketPoint"] option').textContent(),date+' · '+price);
+ assert.equal(await history.locator('[data-act="historyChoosePrinting"]').count(),0);
+ return history;
+}
 async function historySafety(app,editions=[]){
  const requests=app.requests.filter(r=>isHistoryURL(new URL(r.url)));
  const signature=req=>{const u=new URL(req.url);return JSON.stringify([req.method,u.origin+u.pathname,[...u.searchParams].sort(),req.settled]);};
@@ -136,24 +160,31 @@ async function ygoSelection(app){
  await layout(page,'#sheetBody','ygo-supported-preview',['[data-change="ygoPreviewPrinting"]','[data-change="ygoPreviewEdition"]']);
  await select(page,'[data-change="ygoPreviewEdition"]','unlimited');assert.equal(await page.locator('.card-price-reference strong').innerText(),'$0.31');assert.match(await page.locator('.card-buy-link').getAttribute('href'),/Printing=Unlimited/);assert.doesNotMatch(await page.locator('.ygo-price-preview').innerText(),/selected for this preview/);await historyState(page,'empty');
  const requestedEditions=['1st-edition','unlimited'];await tab(page,'prices');
+ // Opening Prices records the selected current quote. The providers are still
+ // empty: only this exact Unlimited observation now exists on this device.
+ const observedEditions=new Set(['unlimited']);await singleYgoObservation(page,'unlimited',.31);await capture(page,'card-polish-mp25-history-single-unlimited-open');
  for(const [edition,label,value]of [['','edition unspecified',null],['1st-edition','1st Edition',.54],['unlimited','Unlimited',.31],['limited','Limited',null],['','edition unspecified',null]]){
   if(await page.locator('[data-change="historyYgoEdition"]').inputValue()!==edition)await select(page,'[data-change="historyYgoEdition"]',edition);
   const quote=await activeQuote(page);assert.equal(quote.releaseId,MP25.id);assert.equal(quote.editionKey,'MP25-EN003::Starlight Rare');assert.equal(quote.selectedEdition,edition);assert.equal(quote.value,value);assert.equal(quote.currency,'USD');
   const badge=page.locator('#sheet .cd-set[data-act="tSet"]').first();assert.equal(await badge.getAttribute('data-id'),MP25.id);assert.match(await badge.innerText(),/MP25-EN003/);assert((await badge.innerText()).includes('Selected release · '+label),'Release badge and selected quote name the same explicit physical edition');
   assert.equal(await page.locator('.card-price-reference strong').innerText(),value===null?'No quote yet':'$'+value.toFixed(2));assert((await page.locator('.card-price-reference').innerText()).includes('MP25-EN003 · Starlight Rare · '+(edition?label:'Edition not specified')));
   assert.equal(await page.locator('#sheet .cd-img').first().getAttribute('data-rarity-flair'),'yr4','Starlight flair survives missing quote and clearing edition');
-  const history=await historyState(page,edition?'empty':'edition-required');
+  if(!edition)await historyState(page,'edition-required');
   if(edition){
    if(!requestedEditions.includes(edition))requestedEditions.push(edition);
-   assert.equal(await history.getAttribute('data-history-source-state'),'empty','Both exact providers completed with matching empty history');
-   assert.equal(await history.locator('.history-empty').innerText(),'No recorded quotes for this selection.');
-   assert.equal(await history.locator('[data-act="historyChoosePrinting"]').count(),0,'A verified empty result is not unresolved printing selection');
-   await jump(page);await capture(page,'card-polish-mp25-history-empty-'+edition);
+   if(observedEditions.has(edition))await singleYgoObservation(page,edition,value);
+   else{await unobservedYgoHistory(page);await capture(page,'card-polish-mp25-history-empty-'+edition);}
+   await jump(page);
+   // A real Prices jump records a known quote, never an unavailable edition.
+   if(value!==null){observedEditions.add(edition);await singleYgoObservation(page,edition,value);await capture(page,'card-polish-mp25-history-single-'+edition);}
+   else{await unobservedYgoHistory(page);await capture(page,'card-polish-mp25-history-empty-after-jump-'+edition);}
   }
   await historySafety(app,requestedEditions);
  }
  await capture(page,'card-polish-mp25-edition-cleared');await historySafety(app,requestedEditions);assert.equal(await inventorySnapshot(page),before,'Browsing editions cannot alter saved copies');
+ assert.deepEqual(await page.evaluate(({id,releaseId})=>Object.values(window.__uiTestState.state.settings.marketHistory||{}).filter(q=>q.game==='ygo'&&q.cardId===id&&q.releaseId===releaseId).map(q=>q.selectedEdition).sort(),{id:EXPECTED.ygo.edition,releaseId:MP25.id}),['1st-edition','unlimited'],'Only the two explicitly observed editions have device history; no Limited or unspecified-edition observations');
  report.push('Unresolved printing and physical edition are distinct, each has one empty message, Select printing focuses the real selector, and headings clear sticky chrome at all six widths.');
+ report.push('Prices records exactly one dated device observation per selected available edition ($0.31 Unlimited, $0.54 First Edition); both exact remote histories remain empty, unobserved/unsupported selections remain empty, and no historical trend or owned copy is invented.');
 }
 
 async function knownPrice(app,game){
