@@ -3,6 +3,7 @@
 // browser, HTTP listener, provider call, paid AI request, or remote upload.
 import assert from 'node:assert/strict';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {gunzipSync} from 'node:zlib';
 import {startServer,openSearchApp,inventorySnapshot,noOverflow,ISO} from './search-fixtures.mjs';
 import {cardKey,sumQty} from '../core.js';
 import {S,blank} from '../store.js';
@@ -14,16 +15,23 @@ import {completionPlan} from '../planner.js';
 
 const commanderSource=JSON.parse(await readFile(new URL('../test-fixtures/commander-context.json',import.meta.url)));
 const standardSource=JSON.parse(await readFile(new URL('../test-fixtures/standard-effect-cards.json',import.meta.url)));
-const EVIDENCE='Actual app with independent synthetic deck arrangements and frozen public card text. Prices, IDs, set metadata, artwork and AI responses are synthetic. No real account, collection, saved user deck, private photo or provider credential is used. External requests fail closed. This checks UI integration and deterministic contracts, not live AI quality or calibrated competitive strength.';
+const publicBench=JSON.parse(gunzipSync(await readFile(new URL('../test-fixtures/power-bench.json.gz',import.meta.url))));
+const publicRal=publicBench.mtg.meta.EDH.decks.find(d=>d.name.startsWith('Ral,'));
+const ralRows=[...publicRal.main,...publicRal.commanders].map(({name,qty})=>({name,qty}));
+const EVIDENCE='Actual app with independent synthetic deck arrangements, frozen public card text, and the pre-existing public Ral tournament reference projected to card names/quantities only (no player/event/account metadata). Prices, IDs, set metadata, artwork and AI responses are synthetic. No real account, collection, saved user deck, private photo or provider credential is used. External requests fail closed. This checks UI integration and deterministic contracts, not live AI quality or calibrated competitive strength.';
 const syntheticCard=(c,i)=>({...structuredClone(c),id:`power-fixture-${i}`,oracle_id:`power-fixture-oracle-${i}`,set:'fxa',set_name:'Synthetic Power QA',collector_number:String(i+1),full:true,checkedAt:ISO,prices:{usd:'.25',usd_foil:null,usd_etched:null},image_uris:{normal:`https://search-fixtures.invalid/power-${i}.svg`,small:`https://search-fixtures.invalid/power-${i}.svg`,art_crop:`https://search-fixtures.invalid/power-${i}.svg`},card_faces:c.card_faces?.map((f,j)=>({...f,image_uris:{normal:`https://search-fixtures.invalid/power-${i}-${j}.svg`,art_crop:`https://search-fixtures.invalid/power-${i}-${j}.svg`}}))});
 // These source entries intentionally retain only effect evidence. Their white
 // identity and prices here are explicit synthetic normalization, not live data.
 const standardCards=standardSource.cards.map((c,i)=>syntheticCard({...c,color_identity:['W'],colors:/Land/.test(c.type_line)?[]:['W']},1000+i));
-const catalog=Object.fromEntries([...Object.values(commanderSource.catalog).map(syntheticCard),...standardCards].map(c=>[cardKey(c.name),c]));
+const ralCards=ralRows.map((r,i)=>syntheticCard(publicBench.mtg.cards[cardKey(r.name)],2000+i));
+const catalog=Object.fromEntries([...ralCards,...Object.values(commanderSource.catalog).map(syntheticCard),...standardCards].map(c=>[cardKey(c.name),c]));
 const complete={...structuredClone(commanderSource.decks.knights),id:'power-complete-fixture',name:'Synthetic complete Commander',budget:null};
 const incomplete={...structuredClone(complete),id:'power-incomplete-fixture',name:'Synthetic 64-card Commander draft',cards:complete.cards.filter(r=>r.name!=='Plains')};
 const standard={...structuredClone(standardSource.syntheticDeck),id:'power-standard-fixture',name:'Synthetic Standard cost evidence',goal:'fun',requestedStyle:'white fun',budget:null,side:[]};
-const decks=[complete,incomplete,standard];
+// Public source is already frozen in the benchmark, not a user-supplied deck.
+// Do not load its meta context: this tests analysis without reference support.
+const unmodeled={id:'power-public-unmodeled-fixture',name:'Public Ral reference · route review',format:'Commander',commander:publicRal.commanders[0].name,cards:ralRows,budget:null};
+const decks=[complete,incomplete,standard,unmodeled];
 const ideaSeed={id:'power-idea-fixture',name:'Synthetic generated Commander',format:'Commander',commander:complete.commander,strategy:'Auto',budget:null,cards:[{name:complete.commander,qty:1}],versions:[]};
 const ideaCatalog=mode=>Object.fromEntries(complete.cards.filter(r=>mode!=='missing'||r.name!=='Plains').map(r=>{
  const c=structuredClone(catalog[cardKey(r.name)]);if(mode==='unpriced'&&r.name==='Plains')c.prices={usd:null,usd_foil:null,usd_etched:null};return [cardKey(c.name),c];
@@ -39,6 +47,11 @@ async function validateFixtures(){
  try{
   for(const deck of [complete,standard])assert.equal(mtgPower(deck).readiness.eligible,true,deck.name+' is eligible in frozen fixture');
   const partial=mtgPower(incomplete);assert.equal(partial.readiness.missingCards,36);assert.equal(shownPower(partial),null);
+  const availability=mtgPower(complete).strategic.dependence;
+  assert.equal(availability.withCommander.library,99);assert.equal(availability.withoutCommander.library,99,'commander absence retains the same declared library');
+  assert.deepEqual(availability.recast[0].scenarios.map(x=>x.genericTax),[0,2,4]);assert.deepEqual(availability.recast[0].scenarios.map(x=>x.normalMana),[4,6,8]);
+  assert(availability.support.independent.some(x=>x.name==='Barkform Harvester'));assert(availability.support.mixed.some(x=>x.name==='Flawless Maneuver'));
+  const unknownRoute=mtgPower(unmodeled);assert.equal(sumQty(unmodeled.cards),100);assert.equal(unknownRoute.readiness.eligible,true);assert.equal(unknownRoute.strategic.status,'primary-route-unmapped');assert.equal(shownPower(unknownRoute),null);assert(unknownRoute.strategic.primaryRouteCoverage.missingCapabilities.length);
   const payload=cleanDeck(reviewPayload('mtg',standard,n=>catalog[cardKey(n)],mtgPower(standard)));
   const news=payload.criteria.constructed.cards.find(c=>c.name==='Action News Crew');assert.equal(news.flow.effects[0].activationMana,6);assert.equal(news.flow.effects[0].mode,'alternative');
   validateReview(response(),payload);
@@ -64,7 +77,7 @@ const checks=[],screenshots=[],coachPayloads=[],askPayloads=[],timings=[];
 let app,askHold=null,coachCalls=0,askCalls=0,ideaMode=null;
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve};};
 const frames=page=>page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
-async function capture(page,name){await mkdir(out,{recursive:true});await frames(page);const file=`power-release-${name}.png`;await page.screenshot({path:new URL(file,out).pathname,fullPage:true,animations:'disabled'});screenshots.push(file);}
+async function capture(page,name,scope){await mkdir(out,{recursive:true});await frames(page);const file=`power-release-${name}.png`,options={path:new URL(file,out).pathname,animations:'disabled'};if(scope)await page.locator(scope).screenshot(options);else await page.screenshot({...options,fullPage:true});screenshots.push(file);}
 async function gotoDeck(page,id){await page.evaluate(id=>{location.hash='#deck/'+id+'/engine';},id);await page.locator('.score-panel.power').waitFor();await page.waitForFunction(id=>window.__uiTestState.ui.deckId===id,id);}
 async function openAsk(page){await page.evaluate(()=>{location.hash='#search';});await page.locator('[data-act="askOpen"]').first().click();await page.locator('.ask-dialog[open]').waitFor();}
 try{
@@ -106,9 +119,20 @@ try{
  for(const width of [320,390,768,1440]){
   await page.setViewportSize({width,height:1000});await noOverflow(page,'.score-panel.power','incomplete Power '+width);await capture(page,'incomplete-'+width);
   await gotoDeck(page,complete.id);assert.match(await page.locator('.score-panel.power').innerText(),/Commander Power estimate/);
-  await noOverflow(page,'.score-panel.power','complete Power '+width);await capture(page,'complete-'+width);await gotoDeck(page,incomplete.id);
+  await noOverflow(page,'.score-panel.power','complete Power '+width);await capture(page,'complete-'+width);
+  const availability=page.locator('.score-panel.power details.pw-plan-context');assert.equal(await availability.getAttribute('open'),null,'Commander availability is optional collapsed context');
+  await availability.locator('summary').click();const text=await availability.innerText();
+  assert.match(text,/first command-zone cast \{3\}\{W\}/);assert.match(text,/after one previous command-zone cast \{3\}\{W\} \+ \{2\}/);assert.match(text,/after two \{3\}\{W\} \+ \{4\}/);
+  assert.match(text,/What still works without it/);assert.match(text,/Recognized independent functions/);assert.match(text,/Independent function plus commander-linked benefit/);assert.match(text,/not automatically penalized/);assert.match(text,/no automatic Power penalty, survival odds, removal frequency or winning-turn prediction/);
+  await noOverflow(page,'.score-panel.power','expanded Commander availability '+width);await capture(page,'commander-availability-'+width,'.score-panel.power');
+  await gotoDeck(page,unmodeled.id);const header=await page.locator('.deck-hero').innerText(),unmodeledPanel=await page.locator('.score-panel.power').innerText();
+  assert.match(header,/100\/100/);assert.match(header,/power unavailable/i);assert.doesNotMatch(header,/Incomplete draft/);assert.match(unmodeledPanel,/Power estimate unavailable/);assert.doesNotMatch(unmodeledPanel,/Finish the deck/);
+  const routePanel=await page.locator('.pw-weak').innerText();assert.match(routePanel,/Important storm \/ recursion route not assessed/);assert.match(routePanel,/Supported-route diagnostic \d+\/100 only, not overall Power/);
+  await noOverflow(page,'.score-panel.power','complete unmodeled Power '+width);await noOverflow(page,'.pw-weak','unmodeled route warning '+width);await capture(page,'public-unmodeled-'+width);await gotoDeck(page,incomplete.id);
  }
  checks.push('Existing Power panel and deck header: 64/100 stays unavailable; complete Commander has explicitly provisional estimate; four responsive widths.');
+ checks.push('Optional Commander availability opens in the existing Power panel at all four widths, with independent/mixed support and normal first/+2/+4 casting costs; no automatic score penalty, survival odds or winning-turn forecast.');
+ checks.push('Pre-existing public Ral reference without meta support is complete/legal100 but overall Power unavailable; named storm/recursion model gap and diagnostic-only number are visible, with no incomplete-deck label.');
  await page.locator('[data-act="aiDeckReview"]').click();await page.locator('.ai-review-dialog .air-tabs').waitFor();
  assert.equal(coachPayloads.at(-1).power.score,null);assert.match(await page.locator('.ai-review-dialog').innerText(),/Power unavailable/);
  await page.locator('[data-ai-close]').click();assert.equal(await page.locator('.ai-review-dialog').count(),0);

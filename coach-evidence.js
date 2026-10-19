@@ -11,7 +11,7 @@ const evidence = value => {
   // The plan classifier distinguishes primary participation from secondary themes.
   return value && typeof value === 'object' ? {primary:value.primary === true,support:list(value.support,8,100)} : [];
 };
-const omitted = (rows, max, prior = 0) => Math.max(Number.isInteger(prior) ? Math.max(0, Math.min(250, prior)) : 0, (Array.isArray(rows) ? rows.length : 0) - max);
+const omitted = (rows, max, prior = 0) => Math.max(Number.isSafeInteger(prior) ? Math.max(0, prior) : 0, (Array.isArray(rows) ? rows.length : 0) - max);
 const support = rows => (Array.isArray(rows) ? rows : []).slice(0,25).flatMap(c => c && typeof c.name === 'string' ? [{name:str(c.name,180),qty:finite(c.qty),evidence:evidence(c.evidence),...(c.status ? {status:status(c.status)} : {})}] : []);
 const effect = e => ({kind:str(e?.kind,60),face:str(e?.face,180),evidence:str(e?.evidence),status:status(e?.status),requirements:list(e?.requirements,6),activationMana:finite(e?.activationMana),outputMana:finite(e?.outputMana),netMana:finite(e?.netMana),oneShot:e?.oneShot===true,tap:e?.tap===true,summoningSickness:e?.summoningSickness===true});
 const resources = rows => (Array.isArray(rows) ? rows : []).slice(0,20).flatMap(c => c && typeof c.name === 'string' ? [{name:str(c.name,180),qty:finite(c.qty),effective:finite(c.effective),status:status(c.status),castManaValue:finite(c.castManaValue),activationMana:finite(c.activationMana),requirements:list(c.requirements,6),evidence:evidence(c.evidence),effects:(Array.isArray(c.effects)?c.effects:[]).slice(0,4).map(effect),cantrip:c.cantrip===true,paid:c.paid===true,repeatable:c.repeatable===true}] : []);
@@ -31,10 +31,41 @@ export function cleanStrategic(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const ratio = v => Number.isFinite(v) ? Math.max(0,Math.min(1,v)) : null;
   const metric = (source,keys) => Object.fromEntries(keys.map(k=>[k,finite(source?.[k])]));
-  return {version:str(raw.version,60),score:finite(raw.score),status:str(raw.status,60)||'unknown',confidence:str(raw.confidence,60)||'insufficient',ratingStatus:['provisional-estimate','diagnostic-only'].includes(raw.ratingStatus)?raw.ratingStatus:'unknown',bestRoute:str(raw.bestRoute,60)||null,backupRoute:str(raw.backupRoute,60)||null,
+  return {version:str(raw.version,60),score:finite(raw.score),partialScore:finite(raw.partialScore),primaryRouteCoverage:cleanRouteCoverage(raw.primaryRouteCoverage),status:str(raw.status,60)||'unknown',confidence:str(raw.confidence,60)||'insufficient',ratingStatus:['provisional-estimate','diagnostic-only'].includes(raw.ratingStatus)?raw.ratingStatus:'unknown',bestRoute:str(raw.bestRoute,60)||null,backupRoute:str(raw.backupRoute,60)||null,dependence:cleanCommanderDependence(raw.dependence),
     routes:(Array.isArray(raw.routes)?raw.routes:[]).slice(0,4).map(r=>({kind:str(r?.kind,60),label:str(r?.label,180),status:status(r?.status),access:ratio(r?.access),deployment:ratio(r?.deployment),conversion:ratio(r?.conversion),execution:ratio(r?.execution),cards:named(r?.cards,12),cardsOmitted:omitted(r?.cards,12,r?.cardsOmitted),evidence:list(r?.evidence,6),requirements:list(r?.requirements,8)})),
     dimensions:(Array.isArray(raw.dimensions)?raw.dimensions:[]).slice(0,8).map(d=>({key:str(d?.key,60),label:str(d?.label,180),ratio:ratio(d?.ratio),weight:finite(d?.weight),why:str(d?.why,500)})),
     coverage:metric(raw.coverage,['mappedPressureCopies','unmappedPressureCopies','knownLibrary','library']),scenario:metric(raw.scenario,['library','developmentDraws','controlDraws','expectedResourceUnits','effectiveRamp']),limitations:list(raw.limitations,10,500),meaning:'Provisional, uncalibrated route heuristic. Access, deployment and conversion are component evidence, not win probability or competitive strength. Null score means unavailable, not zero.'};
+}
+
+function cleanRouteCoverage(raw){
+ if(!raw||typeof raw!=='object'||Array.isArray(raw))return null;
+ return {status:status(raw.status),label:str(raw.label,180),primaryCopies:finite(raw.primaryCopies),eligibleCopies:finite(raw.eligibleCopies),reason:str(raw.reason,500),missingCapabilities:list(raw.missingCapabilities,8,300),evidence:(Array.isArray(raw.evidence)?raw.evidence:[]).slice(0,12).map(e=>({name:str(e?.name,180),kind:str(e?.kind,60),text:str(e?.text,700)})),evidenceOmitted:omitted(raw.evidence,12,raw.evidenceOmitted),meaning:'Coverage gap, not a low-strength verdict or proof of a winning combo. Partial score is a supported-component diagnostic only; do not promote it to overall Power or invent a numeric correction.'};
+}
+
+// Counterfactual availability is context for coaching, not a score correction.
+// Totals describe the assessed deck, while bounded support lists are only samples.
+export function cleanCommanderDependence(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const groups=['independent','mixed','requiresCommander','unmapped'];
+  const ratio=v=>Number.isFinite(v)?Math.max(0,Math.min(1,v)):null;
+  const scenario=s=>!s||typeof s!=='object'||Array.isArray(s)?null:{
+    status:str(s.status,60)||'unknown',confidence:str(s.confidence,60)||'insufficient',score:finite(s.score),partialScore:finite(s.partialScore),bestRoute:str(s.bestRoute,60)||null,execution:ratio(s.execution),library:finite(s.library),
+    routes:(Array.isArray(s.routes)?s.routes:[]).slice(0,4).map(r=>({kind:str(r?.kind,60),label:str(r?.label,180),execution:ratio(r?.execution)})),routesOmitted:omitted(s.routes,4,s.routesOmitted)
+  };
+  const sample=rows=>(Array.isArray(rows)?rows:[]).slice(0,8).flatMap(c=>c&&typeof c.name==='string'?[{
+    name:str(c.name,180),qty:finite(c.qty),reasons:list(c.reasons,4,200),reasonsOmitted:omitted(c.reasons,4,c.reasonsOmitted),evidence:list(c.evidence,3,350),evidenceOmitted:omitted(c.evidence,3,c.evidenceOmitted)
+  }]:[]);
+  return {
+    version:str(raw.version,60),diagnosticOnly:true,ratingStatus:'diagnostic-only',withCommander:scenario(raw.withCommander),withoutCommander:scenario(raw.withoutCommander),
+    support:Object.fromEntries(groups.map(k=>[k,sample(raw.support?.[k])])),supportOmitted:Object.fromEntries(groups.map(k=>[k,omitted(raw.support?.[k],8,raw.supportOmitted?.[k])])),counts:Object.fromEntries(groups.map(k=>[k,finite(raw.counts?.[k])])),
+    recast:(Array.isArray(raw.recast)?raw.recast:[]).slice(0,2).flatMap(c=>c&&typeof c.name==='string'?[{
+      name:str(c.name,180),printedCost:str(c.printedCost,120),normalCastMana:finite(c.normalCastMana),missingColors:Array.isArray(c.missingColors)?[...new Set(c.missingColors.filter(v=>['W','U','B','R','G'].includes(v)))]:null,
+      scenarios:(Array.isArray(c.scenarios)?c.scenarios:[]).slice(0,4).map(s=>({priorCommandZoneCasts:finite(s?.priorCommandZoneCasts),genericTax:finite(s?.genericTax),normalCost:str(s?.normalCost,160),normalMana:finite(s?.normalMana)})),scenariosOmitted:omitted(c.scenarios,4,c.scenariosOmitted),
+      status:['conditional','printed-cost-scenario'].includes(c.status)?c.status:'unknown',exceptions:list(c.exceptions,6,400),exceptionsOmitted:omitted(c.exceptions,6,c.exceptionsOmitted)
+    }]:[]),recastOmitted:omitted(raw.recast,2,raw.recastOmitted),modifierCards:list(raw.modifierCards,12,180),modifierCardsOmitted:omitted(raw.modifierCards,12,raw.modifierCardsOmitted),
+    assumptions:list(raw.assumptions,6,500),assumptionsOmitted:omitted(raw.assumptions,6,raw.assumptionsOmitted),limitations:list(raw.limitations,8,500),limitationsOmitted:omitted(raw.limitations,8,raw.limitationsOmitted),sources:list(raw.sources,4,500).filter(s=>/^https:\/\//i.test(s)),sourcesOmitted:omitted(raw.sources,4,raw.sourcesOmitted),
+    meaning:'Diagnostic-only commander-availability counterfactual, not survival odds, removal frequency or a win-rate estimate. No automatic Power penalty or numeric AI score correction. Scenario scores are uncalibrated component diagnostics, not competitive ratings. Independent support still has printed costs and conditions; unmapped means unknown, not dead. Support lists are bounded samples; counts are supplied deck totals, not sample sizes. Null scores, costs and missing-color evidence remain unknown, not zero.'
+  };
 }
 
 // Printed facts and arithmetic stay distinguishable from the app's strategic

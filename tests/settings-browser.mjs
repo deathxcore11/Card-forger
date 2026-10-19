@@ -16,7 +16,7 @@ const samples={
 const longNames={mtg:'Alpha fixture • The Archivist of Forgotten Worlds, Keeper of the Unwritten Chronicles',ptcg:'Alpha fixture • Professor’s Research (Professor Oak’s Celebrations Research Archive)',ygo:'Alpha fixture • The Celestial Dragon of Ancient Worlds and the Endless Twilight'};
 for(const game of ['mtg','ptcg','ygo'])for(const card of [...CARDS[game],...RAW[game]])if(card.name.startsWith('Alpha fixture'))card.name=longNames[game]+' '+card.id;
 const evidence='Synthetic long card names, prices, inventory and provider responses. Unchanged pinned public artwork is substituted into the same-game header/card/daily ambient only for visual-fit, contrast and translucency stress checks, not card identity, live prices, provider availability or real-device proof. No art filters or text opacity are injected by the harness; the temporary ambient visibility A/B is diagnostic only.';
-const headerChecks=[];let failure;
+const headerChecks=[];let failure,failureDiagnostics;
 const rgb=value=>{const n=String(value).match(/[\d.]+/g)?.map(Number);assert(n&&n.length>=3,'computed RGB color: '+value);return n;};
 const lum=c=>c.slice(0,3).map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4).reduce((v,n,i)=>v+n*[.2126,.7152,.0722][i],0);
 const contrast=(a,b)=>(Math.max(lum(a),lum(b))+.05)/(Math.min(lum(a),lum(b))+.05);
@@ -48,6 +48,21 @@ try{
  for(const game of ['mtg','ptcg','ygo']){
   const app=await openSearchApp(browser,server.base,{game,width:390}),{page}=app;
   try{
+   // Read-only event evidence for intermittent missed Settings tab activation.
+   // Keep the original one-click assertions: never retry the click or relax it.
+   await page.evaluate(()=>{
+    const trace=window.__settingsInteractionTrace=[];let pressed=null;
+    const record=(type,target,extra={})=>{
+     const dialog=document.querySelector('#settingsDialog');
+     if(!dialog?.open&&!target?.closest?.('#settingsDialog'))return;
+     trace.push({type,at:performance.now(),step:window.__settingsTraceStep||null,target:target?.id||target?.closest?.('[data-act]')?.dataset.act||target?.nodeName,pressed:pressed?.id||null,pressedConnected:pressed?.isConnected??null,stateTab:window.__uiTestState?.ui.settingsTab,pane:dialog.querySelector('.settings-pane:not([hidden])')?.id,selected:dialog.querySelector('.settings-tabs [aria-selected="true"]')?.id,focus:document.activeElement?.id,viewport:innerWidth,navigationBusy:document.querySelector('#content')?.getAttribute('aria-busy'),...extra});
+     if(trace.length>600)trace.splice(0,trace.length-600);
+    };
+    for(const type of ['pointerdown','pointerup','click'])window.addEventListener(type,e=>{if(type==='pointerdown')pressed=e.target;record(type+'-capture',e.target,{x:e.clientX,y:e.clientY,defaultPrevented:e.defaultPrevented});},true);
+    document.addEventListener('click',e=>record('click-bubble',e.target,{defaultPrevented:e.defaultPrevented}));
+    const dialog=document.querySelector('#settingsDialog');
+    new MutationObserver(rows=>{for(const row of rows)if(row.type==='childList'||row.target.matches?.('.settings-pane,.settings-tabs [role="tab"]'))record('mutation',row.target,{attribute:row.attributeName,removed:row.removedNodes?.length||0,added:row.addedNodes?.length||0});}).observe(dialog,{subtree:true,childList:true,attributes:true,attributeFilter:['hidden','aria-selected','tabindex']});
+   });
    const artHits=new Set(),artURLs=new Set(CARDS[game].filter(c=>c.name.startsWith('Alpha fixture')).flatMap(c=>[...artworkSources(c,true),...artworkSources(c,false),c.art,c.artDirect,c.image,c.imageLarge,...Object.values(c.image_uris||{})].filter(Boolean)).map(url=>new URL(url,server.base).href));
    for(const url of artURLs)await page.route(url,async route=>{await route.fulfill({contentType:pinned[game].type,body:pinned[game].bytes});artHits.add(route.request().url());});
    const field=page.locator(game==='mtg'?'#dbTerm':'[data-input="tQ"]');await field.fill('Keep my search');
@@ -71,6 +86,7 @@ try{
    for(const width of [320,390,768,1024,1440,390]){
     await page.setViewportSize({width,height:900});
     for(const tab of ['account','recovery','info','app']){
+     await page.evaluate(step=>{window.__settingsTraceStep=step;},{game,theme,width,tab});
      await page.locator('#settingsTab-'+tab).click();
      assert.equal(await page.locator('.settings-pane:not([hidden])').getAttribute('id'),'settings-'+tab);
      assert.equal(await page.locator('.settings-tabs [tabindex="0"]').getAttribute('id'),'settingsTab-'+tab);
@@ -175,6 +191,6 @@ try{
    await page.locator('#settingsTheme-dark').check();assert.equal(await page.locator('html').getAttribute('data-theme'),'dark');
    await page.locator('[data-act="closeSettings"]').click();
    app.health();console.log(`PASS: ${game} four Settings tabs, light/dark reload, glass parity, keyboard, Back, fold resize, draft and inventory preservation`);
-  }catch(error){await capture(page,`synthetic-search-settings-${game}-failure`,{settle:false}).catch(()=>{});throw error;}finally{await app.context.close();}
+  }catch(error){failureDiagnostics=await page.evaluate(()=>({step:window.__settingsTraceStep||null,trace:window.__settingsInteractionTrace||[]})).catch(()=>null);await capture(page,`synthetic-search-settings-${game}-failure`,{settle:false}).catch(()=>{});throw error;}finally{await app.context.close();}
  }
-}catch(error){failure=String(error.stack||error);throw error;}finally{const out=new URL('../test-results/',import.meta.url);await mkdir(out,{recursive:true});await writeFile(new URL('synthetic-search-settings-theme-evidence.json',out),JSON.stringify({status:failure?'failed':'passed',evidence,headerChecks,...(failure?{error:failure}:{})},null,2));await browser.close();await server.close();}
+}catch(error){failure=String(error.stack||error);throw error;}finally{const out=new URL('../test-results/',import.meta.url);await mkdir(out,{recursive:true});await writeFile(new URL('synthetic-search-settings-theme-evidence.json',out),JSON.stringify({status:failure?'failed':'passed',evidence,headerChecks,...(failure?{error:failure,diagnostics:failureDiagnostics}:{})},null,2));await browser.close();await server.close();}

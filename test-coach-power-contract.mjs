@@ -115,6 +115,63 @@ for (const readiness of [{eligible:false,provisional:true,incomplete:true,missin
 }
 console.log('PASS: Compact strategic route metrics/limitations and null score round-trip; incomplete or illegal decks show unavailable overall Power while retaining diagnostics, never a Legal-cap rating.');
 
+// Commander availability compares declared scenarios, not survival odds or a
+// correction to overall Power. Support totals must not collapse to sample sizes.
+{
+ const supportRow={name:knight.name,qty:1,reasons:['Printed body independent of commander','Other conditions still apply'],evidence:['If you control a commander, draw a card.'],privateNotes:'PRIVATE_DEPENDENCE_SENTINEL'};
+ const dependence={version:'commander-availability-v1',withCommander:{status:'provisional',confidence:'limited',score:63,bestRoute:'combat',execution:.6,library:99,routes:[{kind:'combat',label:'Combat pressure',execution:.6}]},withoutCommander:{status:'unmapped',confidence:'insufficient',score:null,bestRoute:null,execution:null,library:null,routes:[]},support:{independent:[supportRow],mixed:[supportRow],requiresCommander:[supportRow],unmapped:[{...supportRow,reasons:[],evidence:[]}]},counts:{independent:22,mixed:3,requiresCommander:2,unmapped:7},recast:[{name:dion.name,printedCost:'{3}{W}{W}',normalCastMana:5,missingColors:null,scenarios:[{priorCommandZoneCasts:0,genericTax:0,normalCost:'{3}{W}{W}',normalMana:5},{priorCommandZoneCasts:1,genericTax:2,normalCost:'{3}{W}{W} + {2}',normalMana:7},{priorCommandZoneCasts:2,genericTax:4,normalCost:'{3}{W}{W} + {4}',normalMana:9}],status:'conditional',exceptions:['Alternative costs and reductions remain unresolved.']}],modifierCards:['Possible cost modifier'],assumptions:['Same library; all commanders unavailable for battlefield/casting benefits.','Tax counts previous command-zone casts, not removals.'],limitations:['Diagnostic only; no automatic Power penalty, survival odds or winning-turn prediction.'],sources:['https://magic.wizards.com/en/formats/commander'],privateNotes:'PRIVATE_DEPENDENCE_SENTINEL',survivalProbability:.9,automaticPowerPenalty:20,diagnosticOnly:false};
+ const prepared=reviewPayload('mtg',deck,lookup,{...ready,strategic:{...strategic,dependence}}),cleaned=cleanDeck(prepared),out=cleaned.criteria.strategic.dependence;
+ assert.equal(prepared.power.score,63);assert.equal(cleaned.power.score,63,'counterfactual does not change overall Power');
+ assert.equal(cleaned.criteria.strategic.score,63);assert.equal(cleaned.power.competitive,null);assert.equal(cleaned.checks.competitive,null);
+ assert.equal(out.version,dependence.version);assert.equal(out.diagnosticOnly,true);assert.equal(out.ratingStatus,'diagnostic-only');
+ assert.equal(out.withCommander.score,63);assert.equal(out.withCommander.execution,.6);assert.equal(out.withCommander.library,99);
+ assert.equal(out.withoutCommander.score,null);assert.equal(out.withoutCommander.execution,null);assert.equal(out.withoutCommander.library,null);
+ assert.equal(out.withoutCommander.status,'unmapped');assert.equal(out.withoutCommander.confidence,'insufficient');
+ assert.deepEqual(out.counts,dependence.counts);assert.deepEqual(out.support.mixed[0].reasons,supportRow.reasons);assert.deepEqual(out.support.requiresCommander[0].evidence,supportRow.evidence);
+ assert.equal(out.recast[0].printedCost,'{3}{W}{W}');assert.equal(out.recast[0].normalCastMana,5);assert.equal(out.recast[0].missingColors,null);
+ assert.deepEqual(out.recast[0].scenarios,dependence.recast[0].scenarios);assert.deepEqual(out.recast[0].exceptions,dependence.recast[0].exceptions);
+ assert.deepEqual(out.modifierCards,dependence.modifierCards);assert.deepEqual(out.assumptions,dependence.assumptions);assert.deepEqual(out.limitations,dependence.limitations);assert.deepEqual(out.sources,dependence.sources);
+ assert.match(out.meaning,/not survival odds/);assert.match(out.meaning,/No automatic Power penalty or numeric AI score correction/);assert.match(out.meaning,/unmapped means unknown/);
+ assert.ok(!JSON.stringify(out).includes('PRIVATE_DEPENDENCE_SENTINEL'));assert.ok(!('survivalProbability' in out));assert.ok(!('automaticPowerPenalty' in out));
+ assert.deepEqual(cleanCriteria(cleaned.criteria),cleaned.criteria);
+ const zero=cleanCriteria({strategic:{dependence:{...dependence,withoutCommander:{...dependence.withoutCommander,score:0,execution:0,library:0},recast:[{...dependence.recast[0],normalCastMana:0,missingColors:[],scenarios:[{priorCommandZoneCasts:0,genericTax:0,normalCost:'{0}',normalMana:0}]},{...dependence.recast[0],normalCastMana:null,missingColors:['W','W','U','invalid'],scenarios:[{priorCommandZoneCasts:1,genericTax:2,normalCost:'{X}{W} + {2}',normalMana:null}]}]}}}).strategic.dependence;
+ assert.equal(zero.withoutCommander.score,0);assert.equal(zero.withoutCommander.execution,0);assert.equal(zero.withoutCommander.library,0);
+ assert.deepEqual(zero.recast[0].missingColors,[],'known no missing color differs from unknown colors');assert.equal(zero.recast[0].normalCastMana,0);assert.equal(zero.recast[0].scenarios[0].normalMana,0);
+ assert.deepEqual(zero.recast[1].missingColors,['W','U']);assert.equal(zero.recast[1].normalCastMana,null);assert.equal(zero.recast[1].scenarios[0].normalMana,null);
+ const repeated=(n,item)=>Array.from({length:n},()=>item);
+ const bounded=cleanCriteria({strategic:{dependence:{...dependence,support:{independent:repeated(300,{...supportRow,reasons:repeated(8,'A'.repeat(1000)),evidence:repeated(7,'B'.repeat(1000))}),mixed:[],requiresCommander:[],unmapped:[]},counts:{independent:500,mixed:0,requiresCommander:0,unmapped:null},withCommander:{...dependence.withCommander,routes:repeated(7,dependence.withCommander.routes[0])},recast:repeated(5,{...dependence.recast[0],scenarios:repeated(6,dependence.recast[0].scenarios[0]),exceptions:repeated(8,'Unresolved exception')}),modifierCards:repeated(20,'Modifier'),assumptions:repeated(9,'Assumption'),limitations:repeated(12,'Limitation'),sources:repeated(6,dependence.sources[0])}}});
+ const sample=bounded.strategic.dependence;
+ assert.equal(sample.support.independent.length,8);assert.equal(sample.supportOmitted.independent,292);assert.equal(sample.counts.independent,500);assert.equal(sample.counts.unmapped,null);
+ assert.equal(sample.support.independent[0].reasons.length,4);assert.equal(sample.support.independent[0].reasons[0].length,200);assert.equal(sample.support.independent[0].reasonsOmitted,4);
+ assert.equal(sample.support.independent[0].evidence.length,3);assert.equal(sample.support.independent[0].evidence[0].length,350);assert.equal(sample.support.independent[0].evidenceOmitted,4);
+ assert.equal(sample.withCommander.routes.length,4);assert.equal(sample.withCommander.routesOmitted,3);
+ assert.equal(sample.recast.length,2);assert.equal(sample.recastOmitted,3);assert.equal(sample.recast[0].scenarios.length,4);assert.equal(sample.recast[0].scenariosOmitted,2);assert.equal(sample.recast[0].exceptionsOmitted,2);
+ assert.equal(sample.modifierCardsOmitted,8);assert.equal(sample.assumptionsOmitted,3);assert.equal(sample.limitationsOmitted,4);assert.equal(sample.sourcesOmitted,2);
+ assert.deepEqual(cleanCriteria(bounded),bounded,'bounded samples and omission counts survive repeated transport, including more than 250 omissions');
+ assert.ok(Buffer.byteLength(JSON.stringify(bounded))<30000,'dependence evidence remains a compact sample rather than the full repeated input');
+ assert.equal(cleanCriteria({strategic:{}}).strategic.dependence,null);
+ assert.equal(cleanCriteria({strategic:{dependence:[]}}).strategic.dependence,null);
+ const unknown=cleanCriteria({strategic:{dependence:{}}}).strategic.dependence;
+ assert.equal(unknown.withCommander,null);assert.equal(unknown.withoutCommander,null);assert.ok(Object.values(unknown.counts).every(n=>n===null));
+ const urls=cleanCriteria({strategic:{dependence:{sources:['javascript:alert(1)','data:text/plain,private',dependence.sources[0]]}}}).strategic.dependence.sources;
+ assert.deepEqual(urls,dependence.sources);
+ // Exercise actual public card text and the current producer, not just the schema.
+ const {commanderStrategicEstimate}=await import('./commander-strategy.js');
+ const {engineProfile,engineRoles}=await import('./insights.js');
+ const {cardKey}=await import('./core.js');
+ const source=JSON.parse(readFileSync(new URL('./test-fixtures/commander-context.json',import.meta.url)));
+ for(const actualDeck of [source.decks.knights,source.decks.highRamp]) {
+  const context=engineProfile(actualDeck,source.catalog).criteria,actual=commanderStrategicEstimate(actualDeck,source.catalog,context,{roles:engineRoles}),before=JSON.stringify(actual);
+  const request=reviewPayload('mtg',actualDeck,n=>source.catalog[cardKey(n)],{...ready,score:actual.score,criteria:context,strategic:actual}),response=cleanDeck(request),dep=response.criteria.strategic.dependence;
+  assert.ok(dep);assert.equal(dep.withCommander.score,actual.dependence.withCommander.score);assert.equal(dep.withoutCommander.score,actual.dependence.withoutCommander.score);assert.deepEqual(dep.counts,actual.dependence.counts);
+  assert.deepEqual(dep.recast[0].scenarios,actual.dependence.recast[0].scenarios);assert.deepEqual(dep.recast[0].missingColors,actual.dependence.recast[0].missingColors);
+  assert.equal(response.power.score,actual.score);assert.equal(response.power.competitive,null);assert.equal(response.checks.competitive,null);
+  assert.deepEqual(cleanCriteria(response.criteria),response.criteria);assert.equal(JSON.stringify(actual),before,'transport cannot mutate scoring evidence');
+  assert.ok(Buffer.byteLength(JSON.stringify(request))<200000);
+ }
+ console.log('PASS: Diagnostic-only commander availability, null/zero scenario scores and recast costs, tax scenarios, per-group totals, bounded evidence/omissions and source links round-trip without a Power penalty or competitive fabrication; actual Dion/Kinnan producer covered.');
+}
+
 // Public-card constructed fixture, with no target score or tournament conclusion.
 {
  const {mtgConstructedPower,mtgConstructedCardProfile}=await import('./deckpower.js');
@@ -154,4 +211,14 @@ console.log('PASS: Compact strategic route metrics/limitations and null score ro
  assert.equal(withUnknown.cards[0].flow.effects[0].activationMana,null);assert.equal(withUnknown.cards[0].flow.effects[0].effectMana,null);assert.ok(!JSON.stringify(withUnknown).includes('privateNotes'));
  assert.ok(Buffer.byteLength(JSON.stringify(prepared))<200000);
  console.log('PASS: Constructed printed costs/alternative modes, temporary interaction, typed/solo/activation/life-gain/prior-spell requirements and uncertainty reach coaching; explained heuristic disagreement survives.');
+}
+
+{
+ const gap={status:'unsupported',label:'Important storm / recursion route not assessed',primaryCopies:64,eligibleCopies:81,reason:'Explicit spell conversion remains unmodeled.',missingCapabilities:['Storm-copy output','Graveyard recasting costs and fuel'],evidence:[{name:'Brain Freeze',kind:'storm-output',text:'Target player mills three cards. Storm'}],privateNotes:'DO_NOT_TRANSMIT'};
+ const p={...ready,score:null,ctx:{from:'commander',score:null},strategic:{...strategic,score:null,status:'primary-route-unmapped',partialScore:41,primaryRouteCoverage:gap}};
+ const prepared=reviewPayload('mtg',deck,lookup,p),cleaned=cleanDeck(prepared),out=cleaned.criteria.strategic;
+ assert.equal(out.score,null);assert.equal(out.partialScore,41);assert.equal(out.ratingStatus,'diagnostic-only');assert.equal(prepared.power.competitive,null);assert.equal(cleaned.checks.competitive,null);
+ assert.equal(out.primaryRouteCoverage.label,gap.label);assert.deepEqual(out.primaryRouteCoverage.missingCapabilities,gap.missingCapabilities);assert.equal(out.primaryRouteCoverage.evidence[0].name,'Brain Freeze');assert.match(out.primaryRouteCoverage.meaning,/diagnostic only/);assert.ok(!JSON.stringify(out).includes('DO_NOT_TRANSMIT'));
+ assert.deepEqual(cleanCriteria(cleaned.criteria),cleaned.criteria,'primary-route uncertainty round-trips without promoting the partial score');
+ console.log('PASS: named important conversion gap and partial-only diagnostics survive coach cleaning, while overall/competitive remain null.');
 }

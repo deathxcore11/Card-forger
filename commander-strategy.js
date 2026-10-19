@@ -6,6 +6,7 @@ import {cardKey,rulesText,typeText,isLand,aggregateCards,inCommandZone} from './
 import {formatOf} from './formats.js';
 import {atLeastOne} from './deckaudit.js';
 import {mtgResourceProfile,mtgEffectProfile,manaCostValue} from './mtg-effects.js';
+import {commanderCriteria,commanderDrawProfile} from './commander-criteria.js';
 
 export const COMMANDER_STRATEGY_MODEL=Object.freeze({version:'mtg-routes-v1',developmentDraws:11,controlDraws:18,executionWeight:.8,interactionWeight:.12,recoveryWeight:.08,pressureScale:3,backupWeight:.08});
 const tx=c=>rulesText(c).toLowerCase(), sum=xs=>xs.reduce((n,r)=>n+r.qty,0), clamp=x=>Math.max(0,Math.min(1,x)), round=x=>Math.round(x*1000)/1000;
@@ -54,11 +55,11 @@ export function routeJointAccess(N,a,b,n){
 }
 const geometric=xs=>xs.some(x=>x===0)?0:Math.exp(xs.reduce((n,x)=>n+Math.log(Math.max(.000001,x)),0)/xs.length);
 
-export function mtgStrategicEstimate(deck,catalog,criteria,{roles=()=>[],cardEvidence=[]}={}){
+function strategicEstimate(deck,catalog,criteria,{roles=()=>[],cardEvidence=[],commanderAvailable=true}={}){
  const M=COMMANDER_STRATEGY_MODEL,rows=aggregateCards(deck.cards||[]).map(r=>({...r,c:catalog[cardKey(r.name)]})),commandKeys=new Set([deck.commander,...(deck.commanders||[])].map(x=>typeof x==='string'?x:x?.name).filter(Boolean).map(cardKey));
- const library=rows.filter(r=>!inCommandZone(deck,r.name)),N=sum(library),known=library.filter(r=>r.c),spells=known.filter(r=>!isLand(r.c)),commander=catalog[cardKey(deck.commander)],unknown=sum(library.filter(r=>!r.c));
+ const library=rows.filter(r=>!inCommandZone(deck,r.name)),N=sum(library),known=library.filter(r=>r.c),spells=known.filter(r=>!isLand(r.c)),declaredCommander=catalog[cardKey(deck.commander)],commander=commanderAvailable?declaredCommander:null,unknown=sum(library.filter(r=>!r.c));
  const limitations=['Uncalibrated strategic heuristic, direction-tested on controlled fixtures; not measured win rate or a metagame rank.','Natural-access scenarios exclude tutors, mulligans, extra draws and opponent decisions. Deployment uses expected resources, not a full turn/stack simulation.','Colored-source absence is checked; exact color-pip probability, cost reductions and fetch sequencing remain partial. Unknown combos, alternate winning conditions and card-specific restrictions can change the estimate.'];
- if((formatOf(deck).commander&&!commander)||unknown||!N)return {version:M.version,score:null,confidence:'insufficient',status:'unknown',routes:[],dimensions:[],limitations:[...limitations,formatOf(deck).commander&&!commander?'Commander details unavailable.':`${unknown} library copies have missing details.`]};
+ if((formatOf(deck).commander&&!declaredCommander)||unknown||!N)return {version:M.version,score:null,confidence:'insufficient',status:'unknown',routes:[],dimensions:[],limitations:[...limitations,formatOf(deck).commander&&!declaredCommander?'Commander details unavailable.':`${unknown} library copies have missing details.`]};
  const landCount=sum(known.filter(r=>isLand(r.c))),rampRows=spells.filter(r=>mtgResourceProfile(r.c).acceleration),rawPressure=spells.map(r=>({...r,combat:combatContribution(r.c)})),unmapped=rawPressure.filter(r=>!r.combat.known||/you win the game|\{x\}|affinity|improvise|reconfigure|equip|reanimate|without paying|costs?[^.]*less to cast/.test(tx(r.c)+' '+(r.c.mana_cost||'')));
  let pressure=rawPressure.filter(r=>r.combat.pressure>0),cmdCombat=combatContribution(commander);
  const cmdText=tx(commander),manaEngine=/tap a nonland permanent for mana|whenever you tap[^.]*for mana/.test(cmdText),kinnan=/look at the top (?:five|5) cards[\s\S]{0,180}non-human creature card[^.]*onto the battlefield/.test(cmdText);
@@ -79,7 +80,7 @@ export function mtgStrategicEstimate(deck,catalog,criteria,{roles=()=>[],cardEvi
   for(const effect of effects){const output=effect.evidence.split(/adds? /i)[1]||'';
    if(/among legendary/i.test(output)){for(const r of known.filter(r=>r.c!==c&&/Legendary.*(?:Creature|Planeswalker)/.test(typeText(r.c))&&colorReady(firstFace(r.c).mana_cost||r.c.mana_cost)))for(const x of r.c.colors||firstFace(r.c).colors||[])colors.add(x);continue;}
    if(/could produce|opponent/i.test(output))continue;
-   if(/commander.*color identity/i.test(output)){for(const x of commander?.color_identity||[])colors.add(x);continue;}
+   if(/commander.*color identity/i.test(output)){for(const name of commandKeys)for(const x of catalog[name]?.color_identity||[])colors.add(x);continue;}
    if(/any colo[u]?r/i.test(output))for(const x of 'WUBRG')colors.add(x);else for(const m of output.matchAll(/\{([WUBRG])\}/gi))colors.add(m[1].toUpperCase());
   }};
  const colorReady=cost=>colorUnknown||[...String(cost||'').matchAll(/\{([^}]+)\}/g)].every(m=>{const options=m[1].toUpperCase().split('/');return !options.some(x=>'WUBRG'.includes(x)&&x.length===1)||options.some(x=>colors.has(x)||/^\d+$/.test(x)||x==='P');});
@@ -127,6 +128,71 @@ export function mtgStrategicEstimate(deck,catalog,criteria,{roles=()=>[],cardEvi
  const ranked=routes.sort((a,b)=>b.execution-a.execution),best=ranked[0],backup=ranked.find(r=>r.kind!==best.kind&&((r.kind==='mana-engine'||r.kind==='resource-output')!==(best.kind==='mana-engine'||best.kind==='resource-output'))),execution=clamp(best.execution+(backup?M.backupWeight*(1-best.execution)*backup.execution:0)),interaction=expectedBest(earlyAnswers,M.developmentDraws,r=>ready(r)*interactionUnit(r)),resilience=expectedBest(recovery,M.developmentDraws,r=>ready(r,Number(r.c.cmc)||0,true)),raw=100*(M.executionWeight*execution+M.interactionWeight*interaction+M.recoveryWeight*resilience);
  const dimensions=[{key:'Execution',label:best.label,ratio:round(execution),weight:80,why:'Geometric mean of natural access, deployment resources and actual output: missing conversion cannot be filled by generic role counts. A small distinct backup-route benefit is bounded and never summed per edge.'},{key:'Interaction',label:'Early answer access',ratio:round(interaction),weight:12,why:`Feasible-cost access to a recognized answer costing 3 or less within ${M.developmentDraws} library cards; Temporary tap/airbend effects have partial weight; cast colors and expected resources are checked; timing, exact pips and matchup still matter.`},{key:'Recovery',label:'Protection / recovery access',ratio:round(resilience),weight:8,why:`Feasible-cost access to protection or recursion within ${M.developmentDraws} library cards; this does not simulate surviving disruption.`}];
  return {version:M.version,score:Math.round(raw),rankingValue:raw,confidence:unmapped.length||colorUnknown||cardEvidence.some(c=>(c.unsupported||[]).length||(c.requirements||[]).some(r=>r.status==='unsupported'))?'limited':'partial',status:'provisional',bestRoute:best.kind,backupRoute:backup?.kind||null,routes:ranked.slice(0,3),dimensions,coverage:{colors:[...colors].sort(),colorSourcesUnmapped:colorUnknown,mappedPressureCopies:sum(pressure),unmappedPressureCopies:sum(unmapped),knownLibrary:N,library:N,unresolvedMechanics:[...new Set([...unmapped.map(r=>r.c.name),...cardEvidence.filter(c=>(c.unsupported||[]).length||(c.requirements||[]).some(r=>r.status==='unsupported')).map(c=>c.name)])],conditionalCapabilities:cardEvidence.filter(c=>c.requirements?.length).map(c=>({name:c.name,requirements:c.requirements.map(r=>({kind:r.kind,status:r.status,note:r.note||r.evidence}))}))},scenario:{library:N,developmentDraws:Math.min(M.developmentDraws,N),controlDraws:Math.min(M.controlDraws,N),expectedResourceUnits:round(manaCapacity),effectiveRamp},limitations};
+}
+
+// Only explicit battlefield/casting dependencies are removed. Commander identity
+// remains a deck property, so Command Tower is not disabled with the commander.
+const needsCommanderLine=line=>!/commander.*color identity/i.test(line)&&/\b(?:if|as long as) you control (?:a|your) commander|\byou control your commander|\btarget commander|\bcommander creatures? you (?:own|control)|\bwhenever you cast (?:a|your) commander|\b(?:when|whenever) (?:a|your) commander[^.]*\b(?:enters|attacks|deals|dies)\b/i.test(line);
+function withoutCommanderBenefits(c,noLibraryLegend=false){
+ const removed=[],clean=f=>{const keep=String(f.oracle_text||'').split('\n').filter(line=>{if(needsCommanderLine(line)||(noLibraryLegend&&/among legendary/i.test(line))){removed.push(line);return false;}return true;});return {...f,oracle_text:keep.join('\n'),keywords:[]};};
+ if(!c)return {card:c,removed};
+ const faces=c.card_faces?.map(clean),card=clean(c);
+ if(faces)card.card_faces=faces;
+ return {card:removed.length?card:c,removed:[...new Set(removed)]};
+}
+// An explicit, important conversion outside this model cannot inherit the score
+// of its incidental bodies. This is a bounded coverage detector, not a storm
+// strength estimate or a declaration that these cards form a winning combo.
+export function strategicRouteCoverage(deck,catalog,criteria,estimate){
+ const commander=catalog[cardKey(deck.commander)],plan=criteria?.plan,primaryCopies=sum(plan?.primarySupport||[]),eligibleCopies=plan?.eligibleCopies||0;
+ const spellsPlan=plan?.primaryLabel==='Spells'&&/instant (?:and|or) sorcery/.test(tx(commander))&&eligibleCopies>0&&primaryCopies>eligibleCopies/2;
+ if(!spellsPlan)return estimate;
+ const rows=aggregateCards(deck.cards||[]).filter(r=>!inCommandZone(deck,r.name)).map(r=>({...r,c:catalog[cardKey(r.name)]})).filter(r=>r.c);
+ const storm=rows.filter(r=>{const t=strip(tx(r.c));return /\bstorm\b/.test(t)&&!/^counter target/.test(t.trim())&&(/\bmills?\b|loses?[^.]*life|deals?[^.]*damage|create[^.]*creature tokens?/.test(t)||/exile the top[\s\S]*without paying/.test(t));});
+ const recursion=rows.filter(r=>/\b(?:each|all) (?:instant and sorcery|nonland) cards? in your graveyard (?:has|have|gains?|gain) (?:escape|flashback)/.test(tx(r.c)));
+ if(!storm.length||!recursion.length)return estimate;
+ // A separate explicitly modeled resource conversion remains available. Generic
+ // combat/control diagnostics alone do not establish this spell engine's output.
+ if(['mana-engine','resource-output'].includes(estimate.bestRoute)&&(estimate.routes||[]).some(r=>r.kind===estimate.bestRoute&&r.execution>0))return estimate;
+ const label='Important storm / recursion route not assessed',missingCapabilities=['Repeated spell casts and storm-copy output','Graveyard recasting costs, fuel and sequencing','Spell-cost reduction and conversion into a closing route'];
+ const evidence=[{name:commander.name,kind:'spells-plan',text:`${primaryCopies} of ${eligibleCopies} nonland library copies match the explicit Spells plan.`},...storm.map(r=>({name:r.name,kind:'storm-output',text:rulesText(r.c)})),...recursion.map(r=>({name:r.name,kind:'mass-spell-recursion',text:rulesText(r.c)}))];
+ return {...estimate,partialScore:estimate.score,partialRankingValue:estimate.rankingValue??null,score:null,rankingValue:null,status:'primary-route-unmapped',confidence:'limited',primaryRouteCoverage:{status:'unsupported',label,primaryCopies,eligibleCopies,evidence,missingCapabilities,reason:'The supported combat/control components do not assess this explicitly evidenced spell engine. This is a coverage gap, not a low-strength verdict or proof of a winning combination.'},limitations:[...estimate.limitations,`${label}. ${missingCapabilities.join('; ')} remain unmodeled; any partial score is diagnostic only.`]};
+}
+const summarizeScenario=p=>({status:p.status,confidence:p.confidence,score:p.score,partialScore:p.partialScore??null,bestRoute:p.bestRoute||null,execution:p.dimensions?.find(d=>d.key==='Execution')?.ratio??null,routes:(p.routes||[]).map(r=>({kind:r.kind,label:r.label,execution:r.execution})),library:p.scenario?.library??null});
+export function commanderDependence(deck,catalog,criteria,full,{roles=()=>[],cardEvidence=[]}={}){
+ const leaders=[...new Map([deck.commander,...(deck.commanders||[])].map(c=>typeof c==='string'?c:c?.name).filter(Boolean).map(n=>[cardKey(n),n])).values()];
+ if(!formatOf(deck).commander||!leaders.length||leaders.some(n=>!catalog[cardKey(n)]))return null;
+ const transformed={...catalog},changed=new Set(),records=[],libraryRows=aggregateCards(deck.cards||[]).filter(r=>!inCommandZone(deck,r.name)),noLibraryLegend=!libraryRows.some(r=>/Legendary.*(?:Creature|Planeswalker)/.test(typeText(catalog[cardKey(r.name)])));
+ for(const row of libraryRows){const c=catalog[cardKey(row.name)];if(!c)continue;const {card,removed}=withoutCommanderBenefits(c,noLibraryLegend);transformed[cardKey(row.name)]=card;if(removed.length)changed.add(cardKey(row.name));records.push({...row,c,independentCard:card,removed});}
+ // Community tags describe the original card. Re-run text patterns without its
+ // name only when removing a conditional ability, so those tags cannot restore it.
+ const scenarioRoles=c=>roles(changed.has(cardKey(c?.name))?{...c,name:'Commander-unavailable effect view'}:c);
+ const independentCriteria=commanderCriteria(deck,transformed,{roles:scenarioRoles,commanderAvailable:false}),without=strategicRouteCoverage(deck,transformed,criteria,strategicEstimate(deck,transformed,independentCriteria,{roles:scenarioRoles,cardEvidence,commanderAvailable:false}));
+ const support={independent:[],mixed:[],requiresCommander:[],unmapped:[]};
+ for(const r of records.filter(r=>!isLand(r.c))){const c=r.independentCard,body=combatContribution(c),resource=mtgResourceProfile(c),draw=commanderDrawProfile(c,records.map(x=>({c:x.independentCard,qty:x.qty}))),role=scenarioRoles(c),reasons=[];
+  if(body.pressure>0)reasons.push('Printed body or recognized owned-creature output');
+  if(resource.acceleration)reasons.push('Recognized net resource acceleration');
+  if(resource.fixing&&!resource.acceleration)reasons.push('Mana fixing/filtering, not acceleration');
+  if(draw.effective>0)reasons.push('Recognized own card flow');
+  if(role.some(x=>['Removal','Wipe'].includes(x)))reasons.push('Recognized interaction');
+  if(role.includes('Protection')||/return[^.]*from your graveyard/.test(tx(c)))reasons.push('Recognized protection/recursion');
+  const optionalCostOnly=r.removed.length&&r.removed.every(line=>/you may cast this spell without paying|this spell costs?[^.]*less/i.test(line));
+  const kind=reasons.length?(r.removed.length?'mixed':'independent'):r.removed.length&&!optionalCostOnly?'requiresCommander':'unmapped';
+  if(!reasons.length&&optionalCostOnly)reasons.push('Printed-cost casting remains available; the independent effect is not mapped.');
+  support[kind].push({name:r.name,qty:r.qty,reasons,evidence:r.removed});
+ }
+ const colors=full.coverage?.colors||[],unknownColors=full.coverage?.colorSourcesUnmapped!==false,modifiers=records.filter(r=>/(?:spells?|commanders?)[^.]*costs?[^.]*less|from the command zone[^.]*to your hand|put[^.]*from the command zone[^.]*battlefield/i.test(tx(r.c))).map(r=>r.name);
+ const recast=leaders.map(name=>{const c=catalog[cardKey(name)],f=firstFace(c),cost=f.mana_cost??c.mana_cost??'',base=cost?manaCostValue(cost):null,ownModifiers=/affinity|convoke|improvise|delve|costs?[^.]*less|without paying|rather than pay|commander ninjutsu|from the command zone.*(?:hand|battlefield)/i.test(tx(c)),pips=[...new Set([...cost.matchAll(/\{([WUBRG])\}/g)].map(m=>m[1]))];
+  return {name,printedCost:cost,normalCastMana:base,missingColors:unknownColors?null:pips.filter(x=>!colors.includes(x)),scenarios:[0,1,2].map(prior=>({priorCommandZoneCasts:prior,genericTax:prior*2,normalCost:cost+(prior?' + {'+(prior*2)+'}':''),normalMana:base==null?null:base+prior*2})),status:base===null||ownModifiers||modifiers.length?'conditional':'printed-cost-scenario',exceptions:[...(base===null?['Variable or missing printed mana cost is not quantified.']:[]),...(ownModifiers||modifiers.length?['Alternative costs, reductions or ways to enter without casting are not resolved here.']:[])]};});
+ return {version:'commander-availability-v1',withCommander:summarizeScenario(full),withoutCommander:summarizeScenario(without),support,counts:Object.fromEntries(Object.entries(support).map(([k,rs])=>[k,sum(rs)])),recast,modifierCards:modifiers,
+  assumptions:['Same declared library and commander identities; all commanders are unavailable for battlefield/casting benefits in the comparison. Library cards are not removed.', 'Independent means a recognized function does not require the commander; other printed costs, triggers, timing and targets still apply.', 'Recast examples assume an initial command-zone cast, then return to that zone and cast again. Tax counts previous command-zone casts, not removals; each commander is tracked separately.', 'Generic tax also applies to alternative command-zone casting costs. Putting a card onto the battlefield without casting, or casting from another zone, is a different action.'],
+  limitations:['Diagnostic counterfactual only; no automatic Power penalty, survival odds, removal frequency or winning-turn prediction.', 'Only modeled commander routes/body and explicit commander-required library clauses are disabled. Unmapped static bonuses, named synergies, secondary commander abilities and complex conditions remain unresolved.', 'No shared-mana sequencing, protection-target matching, exact colored-pip probability or post-wipe recovery simulation. Unmapped support is unknown, not dead.'],
+  sources:['https://magic.wizards.com/en/formats/commander','https://magic.wizards.com/en/news/feature/commander-masters-release-notes']};
+}
+export function mtgStrategicEstimate(deck,catalog,criteria,options={}){
+ const full=strategicRouteCoverage(deck,catalog,criteria,strategicEstimate(deck,catalog,criteria,options));
+ const dependence=commanderDependence(deck,catalog,criteria,full,options);
+ return dependence?{...full,dependence}:full;
 }
 
 // Compatibility export for existing Commander-only callers.

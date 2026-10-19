@@ -41,3 +41,21 @@ The existing AI tool loop permits at most two proposals. The app validates the f
 ## Validation scope
 
 Public tests use public card text and independent synthetic scenarios. Controlled damage/restoration checks cover compatible creature tokens, Kinnan hit eligibility, output prerequisites, costs/colors, optionality, missing details and incomplete preview/save/reopen flows. Existing frozen all-game reference benchmarks remain regression checks, not proof of broad metagame calibration. Pokémon and Yu-Gi-Oh! retain their existing strategic models; shared eligibility and unavailable-score presentation apply across games.
+
+## Commander availability and recast scenarios
+
+The existing Power panel includes a collapsed Commander availability check. It reruns the same supported library-route model with commander battlefield/casting benefits unavailable while retaining the original library size and all declared commander color identities. Command Tower does not lose identity-based colors merely because a commander is absent. Explicit commander-required library clauses are disabled; printed bodies and other independent abilities remain. A card can have both independent usefulness and a commander-linked benefit. Unmapped support is not labeled dead.
+
+This diagnostic does not impose an automatic dependency penalty or predict survival. It lists normal printed casting-cost scenarios with zero, one or two previous command-zone casts, adding generic {0}, {2}, or {4}. Prior casts, not the number of removals, determine tax. Partners are tracked separately. Alternative command-zone casting costs still incur tax, but reductions, variable costs, noncasting entry methods and casting from other zones need separate review. See [Wizards Commander format rules](https://magic.wizards.com/en/formats/commander) and [Commander Masters release notes](https://magic.wizards.com/en/news/feature/commander-masters-release-notes).
+
+This is not a turn sequence, protection-target check, post-wipe recovery simulation or removal-frequency model. Unmapped static commander bonuses, named synergies and secondary commander abilities remain partial. The main estimate is unchanged by the counterfactual; it is inspectable context, not a second win-probability number.
+
+## Cross-game goal scope
+
+The new goal-aware proposal, deterministic validation and one-correction path is implemented for Magic. Pokémon and Yu-Gi-Oh! retain existing strongest/default seed or type handoffs into their manual builders; non-strongest goals and unsupported explicit constraints require review rather than silently becoming strongest. This release does not claim automatic fun Fire Pokémon construction, combined Blue-Eyes/Dark Magician goal validation, or new all-game strategic understanding. Verified basic-land purchase accounting is Magic-specific; existing other-game accounting is not newly validated by this patch.
+
+## Important unmodeled conversion guard
+
+A numeric combat/control component is not an overall verdict when an explicitly evidenced central spell engine is outside the model. The bounded guard requires an explicit Spells commander plan supported by a majority of nonland library copies, a non-answer storm output, and mass spell recursion. A storm answer such as Flusterstorm, recursion alone, or an optional unmapped commander does not trigger it. Only a selected, independently modeled resource-output plan can exempt the guard; one weak optional outlet cannot claim coverage of the central spell engine. This is a coverage detector, not proof of a winning combo and not a storm power estimate.
+
+When this conjunction is present, overall strategic Power is unavailable. Named card evidence and missing storm-copy output, graveyard fuel/recasting and spell-cost sequencing remain visible, along with clearly labeled partial-route diagnostics. Loaded competitive placing-list evidence remains a separate source; the parser does not invent a replacement numeric score. The guard is deliberately bounded and does not establish coverage for every unmodeled archetype or format.
