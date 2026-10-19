@@ -19,12 +19,12 @@ try {
    let hits=0;
    await page.route('**/*',async route=>{
     const req=route.request(),url=new URL(req.url());
-    if(req.resourceType()==='image'&&!url.pathname.endsWith('.svg')&&(url.origin!==server.base||url.pathname.startsWith('/img/'))){hits++;const color=/002|alpha-2|99010001/.test(url.href);return route.fulfill({contentType:color?(game==='ygo'?'image/jpeg':'image/png'):(ext==='webp'?'image/webp':'image/jpeg'),body:color?colorful:body});}
+    if(req.resourceType()==='image'&&(url.hostname==='search-fixtures.invalid'||!url.pathname.endsWith('.svg')&&(url.origin!==server.base||url.pathname.startsWith('/img/')))){hits++;const color=/002|alpha-2|99010001/i.test(url.href);return route.fulfill({contentType:color?(game==='ygo'?'image/jpeg':'image/png'):(ext==='webp'?'image/webp':'image/jpeg'),body:color?colorful:body});}
     return route.fallback();
    });
    await page.emulateMedia({reducedMotion:'no-preference'});
    const before=await inventorySnapshot(page);
-   await page.locator('[data-act="menu"]').click();await page.locator('#settingsTab-app').click();
+   await page.locator('[data-act="menu"]').click();await page.locator('#settingsTab-app').click();await page.locator('[data-change="setGlass"]').check();
    await page.locator('label:has(#settingsTheme-aura)').click();
    await page.waitForFunction(()=>document.documentElement.dataset.theme==='aura');
    assert.equal(await page.evaluate(()=>localStorage.getItem('cardstashy-theme')),'aura');
@@ -32,7 +32,7 @@ try {
    await page.keyboard.press('Escape');
    const field=page.locator(game==='mtg'?'#dbTerm':'[data-input="tQ"]');await field.fill('Alpha');await field.press('Enter');
    const cards=page.locator('#content').locator(AURA_CARD);await cards.first().waitFor();assert(await cards.count()>=2);
-   await cards.first().locator('img').evaluate(img=>img.decode());
+   await cards.first().locator('img').first().evaluate(img=>img.decode());
    await cards.first().hover();await page.waitForTimeout(350);await waitArt(page);
    const quiet=await source(page),count=await page.locator('.aura-art').count();assert.equal(count,2);
    await capture(page,`synthetic-search-aura-${game}-quiet`);
