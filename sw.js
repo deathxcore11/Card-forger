@@ -1,5 +1,10 @@
-const CACHE = "cardforge-shell-v240";
+const CACHE = "cardforge-shell-v241";
 const ASSETS = [
+  "./brand-motion.css",
+  "./game-tabs.css",
+  "./game-tab-mtg.jpg",
+  "./game-tab-ygo.png",
+  "./game-tab-ptcg.jpg",
   "./ai-ask-loop.js",
   "./ai-deck-builder.js",
   "./meta-curation.js",

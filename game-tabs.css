@@ -1,0 +1,68 @@
+/* Shared game navigation: original card-back artwork, cropped away from titles.
+   Keep all sizing in style.css so phone, fold, tablet and scanner layouts agree. */
+.game-tab-mtg { --tab-color:#e1b774; --tab-art:url('./game-tab-mtg.jpg'); --tab-position:50% 65%; --tab-size:115% auto; }
+.game-tab-ygo { --tab-color:#f7ad61; --tab-art:url('./game-tab-ygo.png'); --tab-position:50% 48%; --tab-size:115% auto; }
+.game-tab-ptcg { --tab-color:#ffdc62; --tab-art:url('./game-tab-ptcg.jpg'); --tab-position:50% 53%; --tab-size:155% auto; }
+.game-tabs .game-tab {
+  color:#f1f3f7;
+  background:#151a23;
+  border-color:#ffffff20;
+  box-shadow:inset 0 1px 0 #ffffff0a;
+  text-shadow:0 1px 3px #000,0 0 8px #0009;
+  -webkit-tap-highlight-color:transparent;
+}
+.game-tabs .game-tab::before {
+  background-image:linear-gradient(90deg,#070b12a8,#070b12c7),var(--tab-art);
+  background-size:100% 100%,var(--tab-size);
+  background-position:center,var(--tab-position);
+  background-repeat:no-repeat;
+  opacity:.65;
+  pointer-events:none;
+}
+.game-tabs .game-tab[aria-selected="true"] {
+  color:#fff;
+  background:#151a23;
+  border-color:var(--tab-color);
+  box-shadow:inset 0 1px 0 #ffffff30,inset 0 -1px 0 #0005,0 2px 9px #0003;
+}
+.game-tabs .game-tab[aria-selected="true"]::before {
+  background-image:linear-gradient(90deg,#070b1270,#070b1299),var(--tab-art);
+  opacity:1;
+}
+.game-tabs .game-tab::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  opacity:0;
+  background:linear-gradient(110deg,transparent 25%,#ffffff24 48%,transparent 70%);
+  transform:translateX(-110%);
+}
+.game-tabs .game-tab[aria-selected="true"]::after { animation:game-tab-reveal .55s ease-out both; }
+.game-tabs .game-tab-mark { opacity:.9; }
+.game-tabs .game-tab[aria-selected="true"] .game-tab-mark { opacity:1; }
+.game-tabs .game-tab-light { pointer-events:none; }
+.game-tabs .game-tab:focus-visible { outline:2px solid var(--tab-color); outline-offset:-3px; }
+@media (hover:hover) {
+  .game-tabs .game-tab:hover { color:#fff; border-color:var(--tab-color); background:#151a23; }
+  .game-tabs .game-tab:hover::before { opacity:1; }
+}
+/* Artwork stays dark in light mode, like the physical cards, for white labels. */
+:root[data-theme="light"] .game-tabs .game-tab { color:#f1f3f7; background:#151a23; border-color:#566278; }
+:root[data-theme="light"] .game-tabs .game-tab[aria-selected="true"],
+:root[data-theme="light"] .game-tabs .game-tab:hover { color:#fff; background:#151a23; border-color:var(--tab-color); }
+@keyframes game-tab-reveal {
+  0% { opacity:0; transform:translateX(-110%); }
+  25% { opacity:.8; }
+  100% { opacity:0; transform:translateX(110%); }
+}
+@media (prefers-reduced-motion:reduce) {
+  .game-tabs .game-tab,.game-tabs .game-tab::before { transition:none; }
+  .game-tabs .game-tab[aria-selected="true"]::after { animation:none; }
+}
+@media (forced-colors:active) {
+  .game-tabs .game-tab::before,.game-tabs .game-tab::after { display:none; }
+  :root .game-tabs .game-tab { color:ButtonText!important; background:ButtonFace!important; border-color:ButtonText!important; text-shadow:none; }
+  :root .game-tabs .game-tab[aria-selected="true"] { color:HighlightText!important; background:Highlight!important; border-color:Highlight!important; }
+}

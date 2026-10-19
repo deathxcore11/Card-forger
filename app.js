@@ -151,7 +151,9 @@ function updateAmbient() {
     saved = JSON.parse(localStorage.getItem(AMBIENT_KEY) || "{}") || {};
   } catch {}
   const hero = $("#homeHero .hh-art");
-  const src = hero && !hero.hidden && hero.currentSrc ? hero.currentSrc : hero?.getAttribute("src");
+  // Pokémon's artwork surface is a crop wrapper, with the real image inside.
+  const image = hero?.querySelector?.("img") || hero;
+  const src = hero && !hero.hidden && image && !image.hidden ? image.currentSrc || image.getAttribute?.("src") : "";
   if (src && saved[g] !== src) {
     saved[g] = src;
     try {
@@ -1944,6 +1946,8 @@ A.closeSheet = () => S.ui.sheetCtx?.type === "printing-picker" ? printingPicker.
 A.sheetHistoryBack = () => S.ui.sheetCtx?.type === "printing-picker" ? printingPicker.cancel() : restoreSheetHistory();
 A.routeHistoryBack=()=>{const saved=routeTrail.pop();if(!saved || saved.game!==T.game())return;closeSheet(false);go(saved.route);setTimeout(()=>{if(location.hash!==saved.route)return;restoreSheet(saved);window.scrollTo(0,saved.pageScroll);},0);};
 document.addEventListener?.("error",handleArtworkError,true);
+// Refresh after the exact image (or its fallback) loads, without another render.
+document.addEventListener?.("load",e=>{if(e.target?.closest?.("#homeHero"))updateAmbient();},true);
 if(typeof MutationObserver !== "undefined"){
  new MutationObserver(()=>wireSheetBack()).observe($("#sheetBody"),{childList:true,subtree:true});
  new MutationObserver(()=>wireRouteBack()).observe($("#content"),{childList:true});

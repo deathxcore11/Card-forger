@@ -1,0 +1,56 @@
+/* One compact emblem in the header, Ask, scanner and progress surfaces.
+   Mode classes may size the SVG, but never change its card arrangement. */
+.stashy-logo.brand-breathing { overflow:visible; transform-origin:center; }
+.stashy-logo.brand-breathing .brand-backplate { fill:#12161e; stroke:#edd18c; stroke-opacity:.18; stroke-width:1; }
+.stashy-logo.brand-breathing .brand-card { animation:none; transform-origin:64px 98px; transform-box:view-box; }
+.stashy-logo.brand-breathing .brand-left { transform:translate(8px,0) rotate(-12deg); }
+.stashy-logo.brand-breathing .brand-right { transform:translate(-8px,0) rotate(12deg); }
+.stashy-logo.brand-breathing .brand-center { transform:none; }
+.stashy-logo.brand-breathing .brand-cycle { display:none; pointer-events:none; }
+/* The assistant has an aurora shell; ordinary app navigation keeps its dark plate. */
+:is(.ask-launch,.home-ai-submit),:root[data-theme="light"] :is(.ask-launch,.home-ai-submit) {
+  color:#29243a;
+  background:linear-gradient(115deg,#dfF3ff,#ede4ff,#fff1ce,#dff3ff);
+  background-size:300% 100%;
+  border:1px solid #e4c78e;
+  box-shadow:inset 0 1px 0 #fff9,0 0 12px #c4b2ef30;
+}
+:is(.ask-launch,.home-ai-submit):hover { color:#29243a; border-color:#fff1ce; }
+:is(.ask-launch,.home-ai-submit):focus-visible { outline:2px solid var(--gold); outline-offset:3px; }
+@media (prefers-reduced-motion:no-preference) {
+  :is(.ask-launch,.home-ai-submit) { animation:brand-ai-aurora 7s ease-in-out infinite; }
+  .stashy-logo.brand-breathing { animation:brand-compact-breathe 4.8s ease-in-out infinite; }
+  .stashy-logo.brand-breathing .brand-left { animation:brand-left-rest 18s linear infinite; }
+  .stashy-logo.brand-breathing .brand-right { animation:brand-right-rest 18s linear infinite; }
+  .stashy-logo.brand-breathing .brand-cycle { display:block; transform-origin:64px 98px; transform-box:view-box; opacity:0; }
+  .stashy-logo.brand-breathing .brand-cycle-left { animation:brand-left-front 18s ease-in-out infinite; }
+  .stashy-logo.brand-breathing .brand-cycle-right { animation:brand-right-front 18s ease-in-out infinite; }
+}
+@keyframes brand-ai-aurora { 0%,100% {background-position:0% 50%} 50% {background-position:100% 50%} }
+@keyframes brand-compact-breathe {
+  0%,100% { transform:translateY(0) scale(.98); }
+  50% { transform:translateY(-1px) scale(1.025); }
+}
+/* Hide the matching rear card while its front copy moves: three cards,
+   rather than the old five-card fan with duplicate cards spread out. */
+@keyframes brand-left-rest { 0%,24%,49%,100% {opacity:1} 25%,48% {opacity:0} }
+@keyframes brand-right-rest { 0%,57%,84%,100% {opacity:1} 58%,83% {opacity:0} }
+@keyframes brand-left-front {
+  0%,24%,49%,100% {opacity:0;transform:translate(8px,0) rotate(-12deg)}
+  25%,48% {opacity:1;transform:translate(8px,0) rotate(-12deg)}
+  32%,43% {opacity:1;transform:translate(15px,-4px) rotate(0deg)}
+}
+@keyframes brand-right-front {
+  0%,57%,84%,100% {opacity:0;transform:translate(-8px,0) rotate(12deg)}
+  58%,83% {opacity:1;transform:translate(-8px,0) rotate(12deg)}
+  65%,77% {opacity:1;transform:translate(-17px,-4px) rotate(0deg)}
+}
+@media (prefers-reduced-motion:reduce) {
+  :is(.ask-launch,.home-ai-submit) {animation:none!important;}
+  .stashy-logo.brand-breathing,.stashy-logo.brand-breathing .brand-card,.stashy-logo.brand-breathing .brand-cycle {animation:none!important;}
+  .stashy-logo.brand-breathing .brand-card {opacity:1;}
+  .stashy-logo.brand-breathing .brand-cycle {display:none;}
+}
+@media (forced-colors:active) {
+  :is(.ask-launch,.home-ai-submit) {color:ButtonText!important;background:ButtonFace!important;border-color:ButtonText!important;animation:none!important;}
+}

@@ -30,7 +30,7 @@ jobs:
       - name: Collect site files
         run: |
           mkdir _site
-          cp -r *.html *.js *.css *.json *.webmanifest *.svg *.png vendor _site/
+          cp -r *.html *.js *.css *.json *.webmanifest *.svg *.png *.jpg vendor _site/
           rm -f _site/package.json
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
