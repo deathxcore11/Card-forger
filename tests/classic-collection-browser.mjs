@@ -30,7 +30,15 @@ async function captureRegion(page,selector,name){
  assert(box.visible&&box.width>0&&box.height>0&&box.left>=-1&&box.right<=box.viewportWidth+1&&box.top>=-1&&box.bottom<=box.viewportHeight+1,name+' target must be visible inside actual viewport: '+JSON.stringify(box));
  await capture(page,name);result.captures.at(-1).region={selector,...box};
 }
-async function captureTile(page,tile,name){const file=name+'.png';await tile.scrollIntoViewIfNeeded();await frames(page);await tile.screenshot({path:resolve(out,file),animations:'disabled'});result.screenshots.push(file);result.captures.push({file,kind:'actual-gallery-tile',viewport:page.viewportSize()});}
+async function captureTile(page,tile,name){
+ const file=name+'.png';
+ // Browser 'if needed' scrolling ignores persistent chrome. A real centered
+ // scroll must expose the tile and its number/price label without hiding nav.
+ await tile.evaluate(n=>n.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'}));await frames(page);
+ const visible=await tile.evaluate(n=>{const r=n.getBoundingClientRect(),points=[[.5,.04],[.5,.5],[.5,.96],[.12,.88],[.88,.88]].map(([x,y])=>{const px=r.left+r.width*x,py=r.top+r.height*y,hit=document.elementFromPoint(px,py);return {x:px,y:py,clear:!!hit&&n.contains(hit),hit:hit?hit.tagName+'.'+hit.className:null};});return {id:n.dataset.id,top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height,viewportWidth:innerWidth,viewportHeight:innerHeight,points};});
+ assert(visible.width>0&&visible.height>0&&visible.top>=0&&visible.bottom<=visible.viewportHeight&&visible.left>=0&&visible.right<=visible.viewportWidth&&visible.points.every(p=>p.clear),name+' must be genuinely visible, not behind fixed navigation: '+JSON.stringify(visible));
+ await tile.screenshot({path:resolve(out,file),animations:'disabled'});result.screenshots.push(file);result.captures.push({file,kind:'actual-gallery-tile',viewport:page.viewportSize(),visibility:visible});
+}
 async function waitCard(page,id){await page.waitForFunction(id=>{const s=window.__uiTestState.ui.sheetCtx,b=document.querySelector('#sheetBody');return document.querySelector('#sheet')?.open&&s?.id===id&&!s.previewBusy&&b?.querySelector('.cd-img img')?.naturalWidth>0;},id);await frames(page);}
 async function cardProof(page,e,motion){
  await page.locator('#sheetBody .cd-img').scrollIntoViewIfNeeded();
