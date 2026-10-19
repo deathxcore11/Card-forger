@@ -54,7 +54,7 @@ async function prepare(app, pair, row) {
     assert.equal(await control.getAttribute('aria-selected'), 'true', 'The real source deck subtab is active');
   }
   if (row.settings) {
-    await page.locator('[data-act="settingsTab"][data-id="recovery"]').click();
+    await page.locator('#settingsTab-recovery').click();
     assert.equal(await page.locator('#settingsTab-recovery').getAttribute('aria-selected'), 'true');
   }
   // Normalize and persist only the synthetic setup, before observing transitions.
@@ -435,7 +435,7 @@ async function workspaceReplacementCase(app, game) {
   await page.goBack();await waitRoute(page,other,'#collection/cards');
   assert.equal(await page.evaluate(()=>window.__uiTestState.state.settings.authorName),marker,'Back changes the visit, never revives pre-import workspace data');
   await page.goForward();await waitRoute(page,importGame,'#settings');
-  await page.locator('#settingsTab-account').click();await page.locator('[data-act="settingsTab"][data-id="recovery"]').click();await page.locator('#settings-recovery .settings-disclosure > summary').filter({hasText:/^Restore or check a backup$/}).click();
+  await page.locator('#settingsTab-account').click();await page.locator('#settingsTab-recovery').click();await page.locator('#settings-recovery .settings-disclosure > summary').filter({hasText:/^Restore or check a backup$/}).click();
   await page.locator('[data-act="undoRestore"]').click();await page.locator('dialog.cf-dialog[open] [value="ok"]').click();
   await waitRoute(page,other,'#settings');assert.deepEqual(await collections(page),original);
   assert.notEqual(await page.evaluate(()=>window.__uiTestState.state.settings.authorName),marker);

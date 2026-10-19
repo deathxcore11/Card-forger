@@ -25,8 +25,9 @@ try{for(const game of ['ygo','ptcg','mtg']){
   await page.locator('#content [data-act="viewSave"][data-mode="gallery"]').click();
   if(game==='ptcg'){
 
-   // The test deliberately changed owned quantities above. Wait for the real
-   // observation transaction before taking the immutable preview baseline.
+   // The fixture deliberately changed owned quantities outside an app commit.
+   // Seed its observation explicitly; view-mode changes must not create history.
+   await page.evaluate(()=>{const T=window.__uiTestTcg;T.trackTcgValue("ptcg",T.collectionValue("ptcg"),window.__uiTestState.state);});
    await page.waitForFunction(()=>{const side=window.__uiTestState.state.tcg.ptcg,point=side.valueHistory?.find(p=>p.date===new Date().toISOString().slice(0,10));return point?.copies===side.collection.reduce((n,e)=>n+e.qty,0);});
    const snapshot=await inventorySnapshot(page);
    for(const [variant,effect,mask] of [['normal','plain',null],['holofoil','ptcg-holo','pk-sv-art'],['reverse-holofoil','ptcg-reverse','pk-sv-surround']]){

@@ -36,18 +36,25 @@ try{
    const tour=page.locator('.action-tour');await tour.waitFor();const guideHistory=await page.evaluate(()=>history.length);assert.equal(await tour.getAttribute('data-frame'),'0');
    for(let n=1;n<5;n++){
     await tour.locator('[data-tour="frame"]').click();assert.equal(await tour.getAttribute('data-frame'),String(n));
-    const preview=page.frameLocator('.action-tour iframe').locator('.demo-main');await preview.waitFor();
-    // Every step replaces the sandbox iframe. Visible HTML can precede its
-    // external stylesheet, image and font layout; measure the loaded frame.
-    const fit=await preview.evaluate(async node=>{
-     const doc=node.ownerDocument,win=doc.defaultView;let timer,loaded;
-     const ready=await Promise.race([
-      (async()=>{if(doc.readyState!=='complete')await new Promise(resolve=>{loaded=resolve;win.addEventListener('load',loaded,{once:true});});await doc.fonts.ready;await new Promise(resolve=>win.requestAnimationFrame(()=>win.requestAnimationFrame(resolve)));return true;})(),
-      new Promise(resolve=>{timer=win.setTimeout(()=>resolve(false),5000);})
-     ]);
-     win.clearTimeout(timer);if(loaded)win.removeEventListener('load',loaded);
-     return {ready,state:doc.readyState,fonts:doc.fonts.status,scrollHeight:node.scrollHeight,clientHeight:node.clientHeight,scrollWidth:node.scrollWidth,clientWidth:node.clientWidth};
-    });
+    // The iframe is replaced on every action. Keep the bounded wait in Node,
+    // reacquiring the current frame and reading only synchronous values inside it.
+    // An iframe-owned load/fonts/rAF promise can disappear with its old window.
+    const deadline=Date.now()+5000;let fit={ready:false},last='',stable=0;
+    while(Date.now()<deadline){
+     try{
+      const measured=await page.frameLocator('.action-tour iframe').locator('.demo-main').evaluate(node=>{
+       const doc=node.ownerDocument;
+       return {state:doc.readyState,fonts:doc.fonts.status,scrollHeight:node.scrollHeight,clientHeight:node.clientHeight,scrollWidth:node.scrollWidth,clientWidth:node.clientWidth};
+      },undefined,{timeout:Math.max(1,Math.min(500,deadline-Date.now()))});
+      const key=JSON.stringify(measured);stable=measured.state==='complete'&&measured.fonts==='loaded'?(key===last?stable+1:1):0;last=key;
+      fit={...measured,ready:stable>=2};if(fit.ready)break;
+     }catch(error){
+      if(!/Execution context was destroyed|frame.*detached|Failed to find frame|Cannot find context|Resulting promise was garbage collected|Timeout/i.test(String(error)))throw error;
+      fit={ready:false,lastFrameError:String(error)};stable=0;last='';
+     }
+     await new Promise(resolve=>setTimeout(resolve,Math.min(50,Math.max(0,deadline-Date.now()))));
+    }
+    assert.equal(await tour.getAttribute('data-frame'),String(n),'the measured scene must remain the requested action');
     assert(fit.ready,game+' sample action '+n+' preview resources must load: '+JSON.stringify(fit));
     assert(fit.scrollHeight<=fit.clientHeight+2&&fit.scrollWidth<=fit.clientWidth+2,game+' sample action '+n+' must fit the preview: '+JSON.stringify(fit));
    }

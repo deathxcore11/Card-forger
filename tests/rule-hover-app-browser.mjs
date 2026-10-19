@@ -9,14 +9,15 @@ const {chromium}=await import('playwright');const server=await startServer();let
 try{
  browser=await chromium.launch();
  for(const method of ['keyboard','locator']){
- app=await openApp(browser,server.base,{game:'ptcg',width:1440,height:1000});const {page}=app;
+ app=await openApp(browser,server.base,{game:'ptcg',width:1440,height:1000,hasTouch:false});const {page}=app;
+ assert(await page.evaluate(()=>matchMedia('(any-hover: hover) and (any-pointer: fine)').matches),'Desktop pointer regression requires a real fine-hover browser context');
  await page.locator('#content .lot-art[data-entry="lot-ptcg-0"]').click();
  await page.waitForFunction(()=>document.querySelector('#sheet')?.open&&document.querySelector('#sheet [data-act="ruleHint"][data-rule="Ability"]'));
  // Observe the real handler chain without replacing any application handler.
  await page.evaluate(()=>{
   window.__escapeTrace=[];
-  const log=(at,e)=>window.__escapeTrace.push({at,time:performance.now(),target:e.target?.id||e.target?.tagName||'window',type:e.type,key:e.key||'',tip:!!document.querySelector('#rule-hover-tip'),open:document.querySelector('#sheet').open,prevented:e.defaultPrevented,active:document.activeElement?.dataset.rule||document.activeElement?.tagName});
-  for(const [at,node,capture]of [['window',window,true],['document',document,true],['sheet',document.querySelector('#sheet'),true]])for(const type of ['keydown','keyup','cancel','close','focusin','focusout','blur','scroll'])node.addEventListener(type,e=>{if(type!=='keydown'&&type!=='keyup'||e.key==='Escape')log(at,e);},capture);
+  const log=(at,e)=>window.__escapeTrace.push({at,time:performance.now(),pointerType:e.pointerType||'',target:e.target?.id||e.target?.tagName||'window',type:e.type,key:e.key||'',tip:!!document.querySelector('#rule-hover-tip'),open:document.querySelector('#sheet').open,prevented:e.defaultPrevented,active:document.activeElement?.dataset.rule||document.activeElement?.tagName});
+  for(const [at,node,capture]of [['window',window,true],['document',document,true],['sheet',document.querySelector('#sheet'),true]])for(const type of ['keydown','keyup','cancel','close','focusin','focusout','blur','scroll','pointerover','pointerout','pointerdown'])node.addEventListener(type,e=>{if(type!=='keydown'&&type!=='keyup'||e.key==='Escape')log(at,e);},capture);
  });
  // Trusted Tab traversal through the actual sheet controls, never locator.focus().
  let found=false;for(let i=0;i<150;i++){await page.keyboard.press('Tab');if(await page.evaluate(()=>document.activeElement?.matches('#sheet [data-act="ruleHint"][data-rule="Ability"]'))){found=true;break;}}
@@ -55,7 +56,7 @@ try{
  }
 }finally{
  if(app){
-  const state=await app.page.evaluate(()=>({open:document.querySelector('#sheet')?.open,tip:!!document.querySelector('#rule-hover-tip'),active:document.activeElement?.outerHTML,trace:window.__escapeTrace||[]})).catch(error=>({error:String(error)}));
+  const state=await app.page.evaluate(()=>({fineHover:matchMedia('(any-hover: hover) and (any-pointer: fine)').matches,open:document.querySelector('#sheet')?.open,tip:!!document.querySelector('#rule-hover-tip'),active:document.activeElement?.outerHTML,trace:window.__escapeTrace||[]})).catch(error=>({error:String(error)}));
   await writeFile(RESULTS+'/rule-hover-app-final-state.json',JSON.stringify(state,null,2));
   await app.page.screenshot({path:RESULTS+'/rule-hover-app-final.png'}).catch(()=>{});
  }

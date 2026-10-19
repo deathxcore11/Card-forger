@@ -147,10 +147,12 @@ export async function startServer(){
  await new Promise(r=>server.listen(0,'127.0.0.1',r));return {base:`http://127.0.0.1:${server.address().port}`,close:()=>new Promise(r=>server.close(r))};
 }
 const historyEndpoint=new URL('/functions/v1/market-history',SUPABASE.url);
-export async function openSearchApp(browser,base,{game='mtg',width=390,height=1000,pendingDetails=false,evidenceLabel=game,sandboxPreviews=false,accountFixture=null}={}){
+export async function openSearchApp(browser,base,{game='mtg',width=390,height=1000,pendingDetails=false,evidenceLabel=game,sandboxPreviews=false,accountFixture=null,prepareFixtures=null}={}){
  assert.equal(process.env.GITHUB_ACTIONS,'true','Browser fixture execution is hosted-CI only');assert.match(base,/^http:\/\/127\.0\.0\.1:\d+$/);
  const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:1,hasTouch:true,reducedMotion:'reduce',locale:'en-US',timezoneId:'UTC',serviceWorkers:sandboxPreviews?'allow':'block'}),page=await context.newPage();page.setDefaultTimeout(15000);
  const errors=[],writes=[],unexpected=[],requests=[],gates=[],rules=[],fixtures=makeSearchFixtures(game,{pendingDetails});
+ // Optional synthetic setup runs before boot and before durable-write baselines.
+ if(prepareFixtures)prepareFixtures(fixtures);
  const diagnostics=()=>({errors:[...errors],writes:[...writes],unexpected:[...unexpected],requests:requests.map(r=>({...r}))});
  try{
  page.on('pageerror',e=>errors.push(e.stack||e.message));
