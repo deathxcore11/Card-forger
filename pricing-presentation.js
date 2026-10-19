@@ -187,6 +187,8 @@ export function sellerModels(game,c,ctx={},links=[]){
     else {url=`https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=${encodeURIComponent(c.name)}`;}
    }
    if(!direct&&game==='mtg')url=`https://www.cardmarket.com/en/Magic/Products/Search?searchString=${encodeURIComponent(c.name)}`;
+   // An unverified selection must not retain a stale clickable product URL.
+   if(!direct&&game==='ptcg')url=`https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=${encodeURIComponent(c.name)}`;
   }else if(key==='cardhoarder'&&game==='mtg'&&q?.selectionVerified){
    currency='TIX';direct=safeURL(c.purchase_uris?.cardhoarder)===url&&/\/cards\/\d+(?:[/?#]|$)/.test(url);source='Scryfall / Cardhoarder';scope='Magic Online · not a paper card';if(finish==='nonfoil'&&direct)value=priceAmount(c.prices?.tix);
   }

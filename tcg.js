@@ -1,5 +1,5 @@
 import {reviewedLastObservedQuote} from './shared-history.js';
-import {pokemonReviewedHoloOnly,pokemonReviewedEvidence,pokemonReviewedProductMatches,pokemonCatalogueCard} from './pokemon-set-evidence.js';
+import {pokemonConditionQuoteMatches,pokemonReviewedHoloOnly,pokemonReviewedEvidence,pokemonReviewedProductMatches,pokemonCatalogueCard} from './pokemon-set-evidence.js';
 import {CLASSIC_SCHEMA,classicEvidence} from './pokemon-classic-evidence.js';
 import {browseSets,setBrowserControls,setBrowserRows,setBrowserDetail} from './set-browser.js';
 import {POKEMON_VARIANT_SCHEMA,pokemonVariantChoices,pokemonVariantProductConflict,samePokemonVariant} from './pokemon-variant-options.js';
@@ -328,7 +328,7 @@ export function entryPrice(c,e){
   if(c?.game==='ptcg')c=pokemonCatalogueCard(c);
   const scoped=c?.game==='ygo'&&e.setReleaseId?setContextCard('ygo',c,e.setReleaseId,currentYgoCatalogue()):c;
   const verified=!(c?.game==='ptcg'&&pokemonVariantProductConflict(c,e))&&!e.setReleaseUnverified&&(!e.setReleaseId||scoped?.setContext?.status==='resolved');
-  const allQuotes=[...(scoped?.conditionQuotes||[]),...(e.conditionQuotes||[])].filter(q=>!pokemonReviewedEvidence(c)||pokemonReviewedProductMatches(c,q.productId));
+  const allQuotes=[...(scoped?.conditionQuotes||[]),...(e.conditionQuotes||[])].filter(q=>pokemonConditionQuoteMatches(e,q,c?.game==='ptcg'?c.id:e.cardId));
   const collision=c?.game==='ygo'&&e.setReleaseId&&(c.sets||[]).filter(p=>p.code===e.printing&&(!e.rarity||rarityKey(p.rarity)===rarityKey(e.rarity))).length>1;
   const quotes=!verified?[]:collision?allQuotes.filter(q=>q.setReleaseId===e.setReleaseId):allQuotes;
   return conditionValue(verified?referenceEntryPrice(scoped,e):null,e,quotes).price;

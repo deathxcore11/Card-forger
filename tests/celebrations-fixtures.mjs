@@ -10,6 +10,7 @@ export const CELEBRATIONS_RAW=CELEBRATIONS_CARDS.map((e,i)=>{
 });
 export const CELEBRATIONS_LOTS=[
  {id:'celebrations-wrong-saved-manual',cardId:'cel25-5',name:'Pikachu',key:'id:cel25-5',variant:'normal',productId:250319,qty:2,condition:'Near Mint',language:'en',manualValue:12.34,manualValueCondition:'Near Mint',manualValueCurrency:'USD',addedAt:'2020-01-01'},
+ {id:'celebrations-wrong-condition',cardId:'cel25-1',name:'Ho-Oh',key:'id:cel25-1',variant:'holofoil',productId:250300,qty:1,condition:'Lightly Played',language:'en',addedAt:'2020-01-01',conditionQuotes:[{cardId:'cel25-1',variant:'holofoil',productId:999999,condition:'Lightly Played',language:'en',price:999,currency:'USD',source:'Synthetic wrong product',priceStatus:'current',observedAt:'2026-10-01',validUntil:'2040-01-01'}]},
  {id:'celebrations-correct-saved',cardId:'cel25-2',name:'Reshiram',key:'id:cel25-2',variant:'holofoil',productId:250301,qty:1,condition:'Near Mint',language:'en',addedAt:'2020-01-01'},
 ];
 export const CELEBRATIONS_HISTORY=[{date:'2020-01-01',total:24.68,copies:2,unpriced:0,currency:'USD',basis:'exact-owned-v1'}];

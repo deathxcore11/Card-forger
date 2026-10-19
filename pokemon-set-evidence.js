@@ -65,3 +65,12 @@ export function pokemonCatalogueCard(card){
  const cmOK=valid&&e.cardmarketVerified&&String(card.cmProduct||'')===String(e.cmProduct),message=!valid?'Catalogue identity mismatch; provider prices withheld.':notice(e);
  return {...card,reviewedSchema:POKEMON_SET_EVIDENCE_SCHEMA,reviewedIntegrity:{...card.reviewedIntegrity,schema:POKEMON_SET_EVIDENCE_SCHEMA,identityVerified:valid,cardmarketVerified:cmOK,providerCardmarketId:card.reviewedIntegrity?.providerCardmarketId||card.cmProduct||null,productSource:e.productSource,...(message?{notice:message}:{})},variants,prices:{...card.prices,usd:best?.usd??null,...(!cmOK?{eur:null}:{}),...(message?{integrityNotice:message}:{})},cmProduct:cmOK?e.cmProduct:null,...(!cmOK?{cardmarket:{}}:{}),...(card.setContext?{setContext:{...card.setContext,...(!valid?{status:'missing'}:{}),referencePrice:best?.usd??null,price:card.setContext.variantKey?selected?.usd??null:best?.usd??null,variant:selected?{...selected}:null}}:{}),conditionQuotes:(card.conditionQuotes||[]).filter(q=>valid&&pokemonSetProductMatches(card,q.productId)&&(!q.variant||variants.some(v=>v.key===q.variant))),...(card.sets?{sets:card.sets.map(s=>({...s,price:best?.usd??null}))}:{})};
 }
+
+// Condition estimates and last-known displays must share product provenance
+// with totals. Missing quote identity is unknown, never inferred from its value.
+export function pokemonConditionQuoteMatches(entry={},quote={},cardId=entry.cardId){
+ const reviewed=pokemonReviewedEvidence(cardId);
+ if(reviewed)return (!entry.cardId||entry.cardId===cardId)&&(!entry.productId||String(entry.productId)===String(reviewed.productId))&&String(quote.productId||'')===String(reviewed.productId)&&(!entry.variant||['reference','holofoil'].includes(entry.variant)||/^detail:[A-Za-z0-9:_-]+$/.test(entry.variant));
+
+ return true;
+}
