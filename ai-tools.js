@@ -5,7 +5,9 @@ import {cardPrice,cardKey} from './core.js';
 import {validateBuildProposal,proposalFeedback} from './ai-build-contract.js';
 import {goalDescription} from './ai-deck-goal.js';
 import {resolveYgoSet} from './ygo.js';
-import { pokemonArtCrop } from './artwork.js';
+import { pokemonArtCrop, artworkHTML } from './artwork.js';
+import { manaCost } from './ui.js';
+import { tierOf, tierStyle } from './tier.js';
 import { ptcgIcon } from './meta.js';
 import { brandMark } from './brand.js';
 // The app functions Ask AI may use. Each runs on this device against the app's own data and
@@ -332,7 +334,7 @@ export function makeAskTools(x) {
     return id ? x.A.tCard({ dataset: { id: String(id), game:s.game } }) : x.go('#search');
   };
   // Answer items as small cards: art from the app's card data when it has it.
-  tools.preview = (s, i) => {
+  tools.preview = (s, i, {compact = false} = {}) => {
     s=tools.canonicalItem(s);
     let img = '', price = null, card = null;
     const deck = s.kind === 'meta' || s.kind === 'deck', visual = visuals.get(visualKey(s));
@@ -355,6 +357,15 @@ export function makeAskTools(x) {
         card=s.game==='mtg'?x.meta(d?.commander || d?.cards?.[0]?.name):T.cardOf(s.game,d?.zones?.main?.[0]?.cardId);
         img=s.game==='mtg'?(card?.image_uris?.art_crop || mtgImg(card)):(card?.art || card?.imageLarge || card?.image || '');
       }
+    }
+    if (compact && s.kind === 'card') {
+      const name = card?.name || s.label || s.ref;
+      const set = s.game === 'mtg' ? card?.set?.toUpperCase() || card?.set_name : tcgSet(card);
+      const number = s.game === 'mtg' ? card?.collector_number : card?.set?.number || card?.localId;
+      const printing = [set, number ? '#'+number : ''].filter(Boolean).join(' · ');
+      const quote = num(price), tier = tierOf(s.game,card?.rarity,quote);
+      const art = card ? artworkHTML({...card,game:s.game},'ask-card-thumb') : '<span class="ask-card-thumb img-missing" aria-hidden="true">◇</span>';
+      return `<button type="button" class="ask-item deck-compact-row ask-card-row" data-tier="${tier.key}" style="--i:${i};${tierStyle(tier)}" aria-label="${x.esc('Open '+name)}" data-ask-show='${x.esc(JSON.stringify(s))}'><span class="ask-card-row-art">${art}${quote!==null?`<span class="art-price">$${quote.toFixed(2)}</span>`:''}</span><span class="deck-compact-copy ask-card-copy"><b>${x.esc(name)}</b>${s.game==='mtg'&&card?manaCost(card):''}${printing?`<small>${x.esc(printing)}</small>`:''}${quote===null?'<small>Price unavailable</small>':''}</span><span class="ask-card-arrow" aria-hidden="true">›</span></button>`;
     }
     const kind = { card:'Card', set:'Set', meta:'Meta deck', deck:'Your deck', build:'Deck builder', help:'App guide' }[s.kind] || '';
     const media = img ? (deck && s.game==='ptcg' && !visual?.sprite ? pokemonArtCrop(card,'ask-deck-art',img) : `<img class="${deck?'ask-deck-art':''}" src="${x.esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.parentElement.classList.add('ask-art-unavailable')"><span class="ask-build-art-fallback">Artwork unavailable</span>`) : deck ? '<span class="ask-deck-art img-missing" aria-hidden="true">Artwork unavailable</span>' : '';

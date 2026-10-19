@@ -19,6 +19,7 @@ async function setup(app){let calls=0;const payloads=[];
  await app.context.route('**/api/ai/ask',route=>{
   if(route.request().method()==='GET')return route.fulfill({json:{available:true}});
   calls++;const body=route.request().postDataJSON(),request=body.items.filter(i=>i.role==='user').at(-1)?.content||'';payloads.push(body);
+  if(request==='Show one fixture card')return route.fulfill({json:{answer:{text:'This is the verified fixture card.',source:'app',show:[{kind:'card',game:'mtg',ref:leader.name,label:leader.name}],suggestions:[]}}});
   const args={...baseArgs,budget:/\$50|no infinite|more interactive/i.test(request)?50:0};
   if(/can you make.*goblin Commander/i.test(request))Object.assign(args,{style:'aggressive',format:'',seed:'Goblin',commander:'',required_cards:['Goblin'],budget:0,avoid_infinite:false});
   if(/beginner|Yu-Gi-Oh/i.test(request))Object.assign(args,{game:'ygo',style:'fun beginner Blue-Eyes',goal:'fun',budget:25,format:'Advanced (TCG)',seed:'Blue-Eyes White Dragon',colors:[]});
@@ -65,6 +66,18 @@ try{
    const geometry=await page.locator('.deck-compact-row').evaluateAll(rows=>rows.map(n=>{const r=n.getBoundingClientRect(),name=n.querySelector('.deck-compact-copy>b'),a=n.querySelector('img'),nr=name.getBoundingClientRect(),ar=a?.getBoundingClientRect();return {width:r.width,nameWidth:nr.width,artWidth:ar?.width,artHeight:ar?.height,overflow:n.scrollWidth>n.clientWidth+1};}));
    for(const g of geometry){assert(g.width>200&&g.nameWidth>65&&g.artHeight>g.artWidth&&!g.overflow,`${kind} readable portrait tile at ${width}: ${JSON.stringify(g)}`);}
    await noOverflow(page,'#sheetBody',`${kind} compact rows ${width}`,true);await page.locator('.deck-compact-row').first().scrollIntoViewIfNeeded();await capture(page,`ai-request-recovery-${width}-${kind}-compact`);await page.evaluate(()=>document.querySelector('#sheet').close());
+  }
+  // Lone card answers reuse the row shell and open the existing card sheet in both themes.
+  for(const theme of ['dark','light']){
+   await page.evaluate(async theme=>(await import('/settings-theme.js')).applyTheme(theme),theme);
+   await page.locator('[data-act="homeAsk"]').click();await newChat(page);await submit(page,'Show one fixture card');
+   const row=page.locator('.ask-dialog .ask-card-row');await row.waitFor();assert.equal(await row.count(),1);
+   const geometry=await row.evaluate(n=>{const r=n.getBoundingClientRect(),art=n.querySelector('.ask-card-thumb').getBoundingClientRect(),style=getComputedStyle(n);return {height:r.height,artHeight:art.height,artWidth:art.width,background:style.backgroundColor,color:style.color,overflow:n.scrollWidth>n.clientWidth+1};});
+   assert(geometry.height<180&&geometry.artHeight<=90&&geometry.artHeight>geometry.artWidth&&!geometry.overflow,JSON.stringify({theme,width,geometry}));
+   const expected=await row.evaluate(()=>{const sample=document.createElement('span');sample.style.cssText='background:var(--surface);color:var(--text)';document.body.append(sample);const style=getComputedStyle(sample),result={background:style.backgroundColor,color:style.color};sample.remove();return result;});assert.equal(geometry.background,expected.background,theme+' shared surface');assert.equal(geometry.color,expected.color,theme+' shared text');
+   assert.equal(await row.locator('[data-change],input,[data-act]').count(),0,'preview has no editing controls');
+   await noOverflow(page,'.ask-dialog',`single card ${theme} ${width}`,true);await capture(page,`ai-request-recovery-${width}-single-card-${theme}`);
+   await row.click();await page.locator('#sheet[open]').waitFor();assert.match(await page.locator('#sheetBody').innerText(),new RegExp(leader.name));await noMutation(page,before);await closeSheet(page);
   }
   app.health();checks.push({width,plainHomepagePrompt:true,actualBuiltInSuggestion:true,formatChoiceNoExtraModel:true,unverifiedConsentNoExtraModel:true,freshChatClearsRestriction:true,exact100:true,noAutosave:true,syntheticModel:true});
  }catch(error){if(app){console.error('Synthetic app failure context:',JSON.stringify({url:app.page.url(),text:(await app.page.locator('body').innerText()).slice(-4000)}));await capture(app.page,`ai-request-recovery-${width}-failure`).catch(()=>{});}throw error;}finally{await app?.context.close();}}

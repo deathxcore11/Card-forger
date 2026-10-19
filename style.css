@@ -3256,6 +3256,20 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 @keyframes header-breathe {from{scale:1}to{scale:1.035}}
 @media(prefers-reduced-motion:reduce){.cs-tab-indicator{transition:none!important}.cs-banner .cs-art,.deck-hero > .hero-art{animation:none!important;scale:1}}
 
+/* A lone Ask card reuses the collection list rhythm and existing detail action. */
+.ask-item.ask-card-row{grid-column:1/-1;display:grid;grid-template-columns:56px minmax(0,1fr) 16px;align-items:center;gap:12px;min-width:0;width:100%;padding:10px;border-radius:14px;background:var(--surface);border-color:var(--line)}
+.ask-card-row-art{position:relative;display:grid;place-items:center;width:56px;height:80px;overflow:hidden;border-radius:6px;background:var(--surface-2)}
+.ask-card-row .ask-card-thumb{display:block;width:100%;height:100%;aspect-ratio:auto;object-fit:contain;border-radius:6px}
+.ask-card-row .ask-card-copy{display:grid;gap:5px;min-width:0;overflow-wrap:anywhere}
+.ask-card-row .ask-card-copy>b{font-size:14.5px;line-height:1.35}
+.ask-card-row .mana{display:flex;flex-wrap:wrap;gap:3px}
+.ask-card-row .mana img.ms{width:18px;height:18px;aspect-ratio:1;object-fit:contain;background:none;border-radius:50%}
+.ask-card-row .ask-card-arrow{font-size:24px;color:var(--muted);text-align:center}
+
+.ask-item.ask-card-row:not([data-tier="tn"]){border-color:color-mix(in srgb,var(--tier) 65%,var(--line));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tier) 30%,transparent)}
+
+.ask-item.ask-card-row:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
 /* One card-fan mark for app identity and AI progress. */
 .brand .mark {width:40px;height:40px;padding:0;background:none;border:0;overflow:visible;}
 .stashy-logo {display:block;width:100%;height:100%;overflow:visible;}
