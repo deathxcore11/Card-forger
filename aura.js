@@ -102,7 +102,7 @@ export function initAura({document = globalThis.document, window = globalThis.wi
     else if (event.target?.closest?.('#homeHero, .deck-hero, .cs-banner')) schedule();
   };
   const onOver = event => {
-    if (!active() || event.pointerType !== 'mouse' || !mouse.matches || document.querySelector('dialog[open]')) return;
+    if (!active() || suspendedFocus || event.pointerType !== 'mouse' || !mouse.matches || document.querySelector('dialog[open]')) return;
     const node = event.target.closest?.(AURA_CARD);
     if (!node || node === hoverNode || node.contains(event.relatedTarget)) return;
     stopHover(); hoverNode = node;
@@ -116,13 +116,17 @@ export function initAura({document = globalThis.document, window = globalThis.wi
     if (!node?.matches(':focus-visible')) return;
     stopHover(); timer = window.setTimeout(() => { timer = 0; if (node === document.activeElement) choose(imageIn(node),true); },280);
   };
-  const onClose = () => { stopHover(); suspendedFocus = true; window.queueMicrotask(() => { suspendedFocus = false; }); schedule(); };
+  // Dialog focus restoration can be asynchronous. Keep the guard until an
+  // actual mouse movement or keyboard navigation, rather than one microtask.
+  const onMove = event => { if (event.pointerType === 'mouse' && event.isTrusted) { suspendedFocus = false; onOver(event); } };
+  const onKey = event => { if (['Tab','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)) suspendedFocus = false; };
+  const onClose = () => { stopHover(); suspendedFocus = true; schedule(); };
   const onVisibility = () => {
     host.classList.toggle('aura-paused',document.hidden);
-    if (document.hidden) { stopHover(); selection.cancel(); } else schedule();
+    if (document.hidden) { stopHover(); window.clearTimeout(fadeTimer); fadeResolve?.(); fadeResolve = null; selection.cancel(); } else schedule();
   };
   const listen = (method) => {
-    for (const [name,fn,capture] of [['load',onLoad,true],['pointerover',onOver,false],['pointerout',onOut,false],['focusin',onFocus,false],['close',onClose,true],['visibilitychange',onVisibility,false]]) document[method](name,fn,capture);
+    for (const [name,fn,capture] of [['load',onLoad,true],['pointerover',onOver,false],['pointerout',onOut,false],['pointermove',onMove,false],['keydown',onKey,false],['focusin',onFocus,false],['close',onClose,true],['visibilitychange',onVisibility,false]]) document[method](name,fn,capture);
     window[method]('hashchange',schedule);
   };
   const themeChanged = () => {
