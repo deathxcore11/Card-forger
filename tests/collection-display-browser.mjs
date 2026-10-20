@@ -4,6 +4,26 @@ import {startServer,openSearchApp,CARDS,ISO,capture,noOverflow} from './search-f
 assert.equal(process.env.GITHUB_ACTIONS,'true','Real UI and touch checks are hosted-CI only');
 const {chromium}=await import('playwright'),server=await startServer(),browser=await chromium.launch();
 const results=[],failures=[];let failure;
+async function priceLotState(lot){
+ return lot.evaluate(n=>{
+  const box=e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,top:r.top,bottom:r.bottom,left:r.left,right:r.right};};
+  const style=getComputedStyle(n),price=n.querySelector('.lot-value .price');
+  return {innerText:n.innerText,textContent:n.textContent,connected:n.isConnected,contentVisibility:style.contentVisibility,display:style.display,visibility:style.visibility,rendered:n.checkVisibility({contentVisibilityAuto:true,visibilityProperty:true,opacityProperty:true}),rect:box(n),price:price?{innerText:price.innerText,textContent:price.textContent,rect:box(price),rendered:price.checkVisibility({contentVisibilityAuto:true,visibilityProperty:true,opacityProperty:true})}:null,scrollX,scrollY,viewport:{width:innerWidth,height:innerHeight}};
+ });
+}
+async function revealPriceLot(page,lot,label,observations){
+ // Preserve the original unscrolled read before any geometry probe can render
+ // a content-visibility:auto lot. Price assertions still use visible innerText.
+ const originalInnerText=await lot.innerText(),observation={label,originalInnerText};
+ observations.push(observation);observation.before=await priceLotState(lot);
+ await lot.scrollIntoViewIfNeeded();
+ const price=lot.locator('.lot-value .price');assert.equal(await price.count(),1);
+ await price.scrollIntoViewIfNeeded();observation.after=await priceLotState(lot);
+ assert.equal(await price.isVisible(),true,`${label}: the actual price control is visible`);
+ const {rect,rendered}=observation.after.price,{width,height}=observation.after.viewport;
+ assert(rendered&&rect.width>0&&rect.height>0&&rect.left>=-.5&&rect.right<=width+.5&&rect.top>=-.5&&rect.bottom<=height+.5,`${label}: the exact price is rendered inside the viewport ${JSON.stringify(observation.after)}`);
+ return observation;
+}
 function seed(fixtures){
  fixtures.state.settings.displayModes=Object.fromEntries(['mtg','ptcg','ygo'].map(game=>[game,{collection:'gallery',search:'gallery',set:'gallery',deck:'gallery'}]));
  for(const game of ['mtg','ptcg','ygo']){
@@ -32,7 +52,7 @@ async function gesture(page,session,{ratio=1.8,cancel=false,hold=0}={}){
 }
 try{
  for(const game of ['mtg','ptcg','ygo']){
-  const app=await openSearchApp(browser,server.base,{game,width:390,height:844,prepareFixtures:seed,evidenceLabel:'display-'+game});const {page}=app;
+  const app=await openSearchApp(browser,server.base,{game,width:390,height:844,prepareFixtures:seed,evidenceLabel:'display-'+game});const {page}=app;const priceLotObservations=[];
   try{
    const body=await readFile(new URL(`./frame-art/${game}.${game==='ptcg'?'webp':'jpg'}`,import.meta.url));
    await page.route('**/*',async route=>{const r=route.request(),u=new URL(r.url());if(r.resourceType()==='image'&&(u.hostname==='search-fixtures.invalid'||u.origin===server.base&&u.pathname.startsWith('/img/')))return route.fulfill({contentType:game==='ptcg'?'image/webp':'image/jpeg',body});return route.fallback();});
@@ -40,8 +60,8 @@ try{
    await page.locator('.bottom-nav [data-nav="collection"]').tap();await page.locator('#content .display-list .lot').first().waitFor();
    const before=await protectedState(page);
    assert.equal(await page.locator('#content [data-price-origin="personal"]').count(),1,'only the manually entered lot gets a badge');
-   const custom=page.locator('.lot').filter({has:page.locator('[data-price-origin="personal"]')});assert.match(await custom.innerText(),/\$50\.00/);
-   const condition=page.locator('.lot').filter({has:page.locator('[data-entry="display-'+game+'-1"]')});assert.equal(await condition.locator('[data-price-origin]').count(),0);assert.match(await condition.innerText(),/\$5\.67/);
+   const custom=page.locator('.lot').filter({has:page.locator('[data-price-origin="personal"]')});await revealPriceLot(page,custom,game+' personal price',priceLotObservations);assert.match(await custom.innerText(),/\$50\.00/);assert.equal((await custom.locator('.lot-value .price').innerText()).trim(),'$50.00');await capture(page,`synthetic-search-collection-price-${game}-personal`);
+   const condition=page.locator('.lot').filter({has:page.locator('[data-entry="display-'+game+'-1"]')});assert.equal(await condition.locator('[data-price-origin]').count(),0);await revealPriceLot(page,condition,game+' condition quote',priceLotObservations);assert.match(await condition.innerText(),/\$5\.67/);assert.equal((await condition.locator('.lot-value .price').innerText()).trim(),'$5.67');await capture(page,`synthetic-search-collection-price-${game}-condition`);
    assert.match(await condition.locator('.condition-badge').getAttribute('data-condition-info'),/Condition quote.*included/);
    // Settings uses actual controls; grid changes cannot change the underlying view.
    await page.locator('[data-act="menu"]').tap();await page.locator('#settingsTab-app').tap();await page.locator('[data-change="setGlass"]').check();
@@ -92,8 +112,8 @@ try{
    await page.locator('#content .card-grid .grid-card').first().waitFor();
    for(const width of [320,360,390,599,600,768,1440]){await page.setViewportSize({width,height:844});for(const size of ['small','medium','large']){await apply(page,size);await noOverflow(page,'#content .card-grid',`${game} Search ${width} ${size}`,true);if(width<=599)assert.equal(await page.locator('#content .card-grid').first().evaluate(n=>getComputedStyle(n).gridTemplateColumns.split(' ').length),{small:3,medium:2,large:1}[size],`${game} Search phone ${width} ${size}`);}}
    assert.equal(await page.locator('#content .card-grid [data-price-origin="personal"]').count(),0);
-   assert.equal(await protectedState(page),before);app.health();results.push({game,modes:['light','dark','aura'],widths:[320,360,390,599,600,768,1440],customCopies:2,customTotal:50,conditionQuote:5.67,touch:'native CDP multi-touch, long-hold cancellation, spread/pinch, canceled gesture, click suppression, persistence',browserZoom:'default pinch path and single-finger scrolling are not prevented'});
-  }catch(error){error.fixtureDiagnostics=app.diagnostics();failures.push(error);results.push({game,status:'failed',error:error.stack,diagnostics:error.fixtureDiagnostics});}finally{await app.context.close();}
+   assert.equal(await protectedState(page),before);app.health();results.push({game,priceLotObservations,modes:['light','dark','aura'],widths:[320,360,390,599,600,768,1440],customCopies:2,customTotal:50,conditionQuote:5.67,touch:'native CDP multi-touch, long-hold cancellation, spread/pinch, canceled gesture, click suppression, persistence',browserZoom:'default pinch path and single-finger scrolling are not prevented'});
+  }catch(error){error.fixtureDiagnostics=app.diagnostics();const failureEvidence={};try{failureEvidence.page=await page.evaluate(()=>({url:location.href,scrollX,scrollY,viewport:{width:innerWidth,height:innerHeight},game:document.body.dataset.game}));failureEvidence.lots=[];for(const lot of await page.locator('#content .display-list .lot').all())failureEvidence.lots.push(await priceLotState(lot));}catch(diagnosticError){failureEvidence.diagnosticError=diagnosticError.stack;}try{await capture(page,`synthetic-search-collection-display-${game}-failure`,{settle:false});}catch(captureError){failureEvidence.captureError=captureError.stack;}failures.push(error);results.push({game,status:'failed',error:error.stack,diagnostics:error.fixtureDiagnostics,priceLotObservations,failureEvidence});}finally{await app.context.close();}
  }
  if(failures.length)throw new AggregateError(failures,failures.map(e=>e.message).join(' | '));
 }catch(error){failure=error;throw error;}finally{await mkdir('test-results',{recursive:true});await writeFile('test-results/collection-display-browser.json',JSON.stringify({status:failure?'failed':'passed',results,error:failure?.stack,diagnostics:failure?.fixtureDiagnostics,evidence:'Hosted Chromium touch emulation; synthetic lots/prices and pinned unchanged real artwork. No physical-device or live-price accuracy claim.'},null,2));await browser.close();await server.close();}
