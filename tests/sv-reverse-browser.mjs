@@ -15,14 +15,14 @@ try{
   if(r.resourceType()==='image')for(const s of sources)if(u.href.startsWith(s.image)||u.pathname.includes('/'+s.id+'.'))return {body:fs.readFileSync(`tests/frame-art/${s.id}.webp`),contentType:'image/webp'};
   if(u.hostname==='api.tcgdex.net'&&u.pathname==='/v2/en/cards')return sources.filter(s=>u.searchParams.get('name')?.includes(s.name));
   if(u.hostname==='api.tcgdex.net'&&u.pathname.startsWith('/v2/en/cards/'))return sources.find(s=>u.pathname.endsWith('/'+s.id));
- }});const {page}=app;await page.emulateMedia({reducedMotion:'no-preference'});await page.evaluate(()=>document.body.classList.add('glass'));const before=await inventorySnapshot(page);
+ }});const {page}=app;await app.context.addInitScript(()=>localStorage.setItem('cardstashy-glass','on'));await page.emulateMedia({reducedMotion:'no-preference'});const before=await inventorySnapshot(page);
  fs.mkdirSync('test-results',{recursive:true});
  for(const source of sources){
   await page.goto(server.base+'/#search');const q=page.locator('[data-input="tQ"]');await q.fill(source.name);await q.press('Enter');await page.locator(`#content [data-act="tCard"][data-id="${source.id}"]`).click();
-  await page.waitForFunction(()=>window.__uiTestState.ui.sheetCtx?.previewBusy===false);const reverse=page.locator('#sheetBody [data-act="cardFinishPreview"][data-finish="reverse-holofoil"]');await reverse.click();
+  await page.waitForFunction(()=>window.__uiTestState.ui.sheetCtx?.previewBusy===false);assert(await page.evaluate(()=>document.body.classList.contains('glass')),'Real persisted glass mode is active');const reverse=page.locator('#sheetBody [data-act="cardFinishPreview"][data-finish="reverse-holofoil"]');await reverse.click();
   await page.waitForFunction(()=>document.querySelector('#sheetBody [data-finish="reverse-holofoil"]')?.getAttribute('aria-pressed')==='true');
   const selected=page.locator('#sheetBody [data-finish="reverse-holofoil"]');assert(await selected.evaluate(n=>n.classList.contains('on')),'Selected finish survives glass styling');
-  const colors=await page.locator('#sheetBody .finish-choice-rail button').evaluateAll(ns=>ns.map(n=>({selected:n.getAttribute('aria-pressed')==='true',border:getComputedStyle(n).borderColor})));assert.notEqual(colors.find(c=>c.selected).border,colors.find(c=>!c.selected).border,'Selected finish visibly distinguished in glass mode');
+  const colors=await page.locator('#sheetBody .finish-choice-rail button').evaluateAll(ns=>ns.map(n=>({selected:n.getAttribute('aria-pressed')==='true',border:getComputedStyle(n).borderColor})));assert.notEqual(colors.find(c=>c.selected).border,colors.find(c=>!c.selected).border,'Selected finish visibly distinguished in glass mode');await selected.evaluate(n=>n.classList.remove('on'));assert.equal(await selected.evaluate(n=>getComputedStyle(n).borderColor),colors.find(c=>!c.selected).border,'Negative control reproduces the old glass override');await selected.evaluate(n=>n.classList.add('on'));
   assert.match(await page.locator('#sheetBody .finish-preview [role="status"]').innerText(),/^Reverse Holo ·/);
   const surface=page.locator('#sheetBody [data-finish-surface="detail"]');await surface.scrollIntoViewIfNeeded();await surface.locator('.finish-layer').waitFor();const layer=surface.locator('.finish-layer');
   assert.equal(await surface.getAttribute('data-finish-effect'),'ptcg-reverse');assert.equal(await layer.evaluate(n=>CSS.supports('clip-path',n.style.clipPath)),true);
