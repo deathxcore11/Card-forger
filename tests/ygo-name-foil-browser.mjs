@@ -30,11 +30,21 @@ try{
   for(const k of ['x','y','w','h'])assert(Math.abs(geo.canvas[k]-geo.expect[k])<1,`${key}: canvas sits on the name bar (${k})`);
   await page.waitForLoadState('networkidle');
   await page.screenshot({path:`${out}/${key}-complete.png`,animations:'disabled'});
-  // Assert art exists above, then isolate name pixels from independently blended art.
-  // Toggling a WebGL compositing layer can otherwise re-rasterize the art's edges.
-  await card.locator('.finish-layer:not(.finish-name-region)').evaluateAll(nodes=>nodes.forEach(n=>n.style.visibility='hidden'));
   const clip={x:geo.img.x,y:geo.img.y,width:geo.img.w,height:geo.img.h};
-  const shot=async(visible,mx)=>{await page.evaluate(([v,mx])=>{const s=document.querySelector('.card');s.style.setProperty('--mx',mx);document.querySelector('canvas.finish-name-foil').style.visibility=v?'':'hidden';},[visible,mx]);await page.waitForTimeout(120);return page.screenshot({clip,animations:'disabled'});};
+  // Keep the WebGL surface composited in both captures. Visibility toggles can
+  // re-rasterize the underlying scaled card and create unrelated seam pixels.
+  // Clear/redraw its existing shader instead; the real art foil stays visible.
+  const shot=async(visible,mx)=>{
+   await page.evaluate(async([visible,mx])=>{
+    document.querySelector('.card').style.setProperty('--mx',mx);
+    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+    const gl=document.querySelector('canvas.finish-name-foil').getContext('webgl');
+    gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
+    if(visible)gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+    gl.finish();
+   },[visible,mx]);
+   return page.screenshot({clip,animations:'disabled'});
+  };
   // Same light position for with/without, so only the lit name can differ; then move the light.
   await shot(true,'15%');
   const without=await shot(false,'15%'),left=await shot(true,'15%'),right=await shot(true,'85%');
