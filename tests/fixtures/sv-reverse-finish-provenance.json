@@ -1,0 +1,22 @@
+{
+  "retrievedAt": "2026-10-20T16:01:39.664920+00:00",
+  "purpose": "Retained public source records and card artwork for bounded visual regression; no physical foil claim.",
+  "sources": [
+    {
+      "id": "sv03-001",
+      "url": "https://assets.tcgdex.net/en/sv/sv03/001/high.webp",
+      "sha256": "a8aee87cad36f404646f2893cfef87d2099cd5259a863468bb7731fdd55607ed",
+      "bytes": 56088,
+      "recordUrl": "https://api.tcgdex.net/v2/en/cards/sv03-001",
+      "recordSha256": "516c234e8f941ccc480f0ab5b7ca1c44f073b2add8f40b41123c6faecbab6a69"
+    },
+    {
+      "id": "sv09-003",
+      "url": "https://assets.tcgdex.net/en/sv/sv09/003/high.webp",
+      "sha256": "1200acdcf634281be4ff72dd0ffb7771b3c43c395cf3a1f1a5fe01e1fceb7df0",
+      "bytes": 65536,
+      "recordUrl": "https://api.tcgdex.net/v2/en/cards/sv09-003",
+      "recordSha256": "9d3f65682c4ce96b977b85e3e9d3bf9053facf80a799de7fdd77cccb60750de8"
+    }
+  ]
+}
