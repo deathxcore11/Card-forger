@@ -1,0 +1,176 @@
+{
+  "cardCount": {
+    "firstEd": 0,
+    "holo": 0,
+    "normal": 0,
+    "official": 0,
+    "reverse": 0,
+    "total": 30
+  },
+  "cards": [
+    {
+      "id": "30th-c-001",
+      "localId": "001",
+      "name": "Charizard"
+    },
+    {
+      "id": "30th-c-002",
+      "localId": "002",
+      "name": "Delcatty"
+    },
+    {
+      "id": "30th-c-003",
+      "localId": "003",
+      "name": "Metagross"
+    },
+    {
+      "id": "30th-c-004",
+      "localId": "004",
+      "name": "Genesect EX"
+    },
+    {
+      "id": "30th-c-005",
+      "localId": "005",
+      "name": "Misty"
+    },
+    {
+      "id": "30th-c-006",
+      "localId": "006",
+      "name": "Dark Tyranitar"
+    },
+    {
+      "id": "30th-c-007",
+      "localId": "007",
+      "name": "Sneasel"
+    },
+    {
+      "id": "30th-c-008",
+      "localId": "008",
+      "name": "Pikachu & Zekrom GX"
+    },
+    {
+      "id": "30th-c-009",
+      "localId": "009",
+      "name": "Greninja BREAK"
+    },
+    {
+      "id": "30th-c-010",
+      "localId": "010",
+      "name": "Uxie"
+    },
+    {
+      "id": "30th-c-011",
+      "localId": "011",
+      "name": "Crobat G"
+    },
+    {
+      "id": "30th-c-012",
+      "localId": "012",
+      "name": "Raikou"
+    },
+    {
+      "id": "30th-c-013",
+      "localId": "013",
+      "name": "Buzzwole GX"
+    },
+    {
+      "id": "30th-c-014",
+      "localId": "014",
+      "name": "Pikachu"
+    },
+    {
+      "id": "30th-c-015",
+      "localId": "015",
+      "name": "Erika's Jigglypuff"
+    },
+    {
+      "id": "30th-c-016",
+      "localId": "016",
+      "name": "Rayquaza EX"
+    },
+    {
+      "id": "30th-c-017",
+      "localId": "017",
+      "name": "Solgaleo GX"
+    },
+    {
+      "id": "30th-c-018",
+      "localId": "018",
+      "name": "Gengar"
+    },
+    {
+      "id": "30th-c-019",
+      "localId": "019",
+      "name": "Darkrai & Cresselia LEGEND"
+    },
+    {
+      "id": "30th-c-020",
+      "localId": "020",
+      "name": "Darkrai & Cresselia LEGEND"
+    },
+    {
+      "id": "30th-c-021",
+      "localId": "021",
+      "name": "N"
+    },
+    {
+      "id": "30th-c-022",
+      "localId": "022",
+      "name": "Palkia"
+    },
+    {
+      "id": "30th-c-023",
+      "localId": "023",
+      "name": "M Gardevoir EX"
+    },
+    {
+      "id": "30th-c-024",
+      "localId": "024",
+      "name": "Shining Celebi"
+    },
+    {
+      "id": "30th-c-025",
+      "localId": "025",
+      "name": "Scizor ex"
+    },
+    {
+      "id": "30th-c-026",
+      "localId": "026",
+      "name": "Mew VMAX"
+    },
+    {
+      "id": "30th-c-027",
+      "localId": "027",
+      "name": "Arceus VSTAR"
+    },
+    {
+      "id": "30th-c-028",
+      "localId": "028",
+      "name": "Zacian V"
+    },
+    {
+      "id": "30th-c-029",
+      "localId": "029",
+      "name": "Lugia"
+    },
+    {
+      "id": "30th-c-030",
+      "localId": "030",
+      "name": "Magikarp"
+    }
+  ],
+  "id": "30th-c",
+  "legal": {
+    "expanded": true,
+    "standard": false
+  },
+  "name": "30th Classic Collection",
+  "releaseDate": "2026-09-16",
+  "serie": {
+    "id": "me",
+    "name": "Mega Evolution"
+  },
+  "abbreviation": {
+    "official": "30C"
+  }
+}

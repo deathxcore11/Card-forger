@@ -1,0 +1,1135 @@
+{
+  "retrieved": "2026-10-20",
+  "method": "Individual TCGdex source scans. Straight edges: strongest mean RGB transition along each artwork edge, inset one native source pixel. Evolution badges: individually hand-traced inner contours, visually reviewed. Percent coordinates derive from these native pixels. This is a fitted simulated-foil window, not a physical foil scan or proof of edition-specific images.",
+  "limits": "Provider supplies one shared reference image for four edition choices per card. These maps fit that displayed image. Separate edition scans and other providers require their own measurements. Browser rendering, image resampling, and soft source edges prevent a claim of universally exact pixel coverage.",
+  "cards": [
+    {
+      "id": "base1-1",
+      "name": "Alakazam",
+      "stage": "Stage2",
+      "source": "https://assets.tcgdex.net/en/base/base1/1/high.webp",
+      "sourceLow": "https://assets.tcgdex.net/en/base/base1/1/low.webp",
+      "sha256": "aacc56f3eec4aa94ce19d23827a8a67fc63caba4487f9c11f961152ae70e4145",
+      "width": 600,
+      "height": 825,
+      "points": [
+        [
+          65,
+          141
+        ],
+        [
+          70,
+          141
+        ],
+        [
+          74,
+          139
+        ],
+        [
+          78,
+          140
+        ],
+        [
+          83,
+          145
+        ],
+        [
+          87,
+          143
+        ],
+        [
+          91,
+          139
+        ],
+        [
+          96,
+          140
+        ],
+        [
+          100,
+          141
+        ],
+        [
+          104,
+          133
+        ],
+        [
+          109,
+          129
+        ],
+        [
+          115,
+          125
+        ],
+        [
+          120,
+          123
+        ],
+        [
+          124,
+          113
+        ],
+        [
+          130,
+          106
+        ],
+        [
+          138,
+          101
+        ],
+        [
+          145,
+          99
+        ],
+        [
+          538,
+          99
+        ],
+        [
+          538,
+          426
+        ],
+        [
+          65,
+          426
+        ]
+      ],
+      "mask": "pk-base1-1-tcgdex-art",
+      "editionSpecificImages": false,
+      "variantCount": 4
+    },
+    {
+      "id": "base1-2",
+      "name": "Blastoise",
+      "stage": "Stage2",
+      "source": "https://assets.tcgdex.net/en/base/base1/2/high.webp",
+      "sourceLow": "https://assets.tcgdex.net/en/base/base1/2/low.webp",
+      "sha256": "fbbca6fe68777fb7a2f4b5335bd932ed5d6d363c8cab0a9ed30046adc4f4bfb3",
+      "width": 600,
+      "height": 825,
+      "points": [
+        [
+          65,
+          140
+        ],
+        [
+          70,
+          138
+        ],
+        [
+          74,
+          140
+        ],
+        [
+          80,
+          145
+        ],
+        [
+          84,
+          143
+        ],
+        [
+          89,
+          137
+        ],
+        [
+          94,
+          140
+        ],
+        [
+          99,
+          138
+        ],
+        [
+          104,
+          129
+        ],
+        [
+          111,
+          124
+        ],
+        [
+          119,
+          121
+        ],
+        [
+          122,
+          112
+        ],
+        [
+          127,
+          106
+        ],
+        [
+          136,
+          101
+        ],
+        [
+          144,
+          97
+        ],
+        [
+          537,
+          97
+        ],
+        [
+          537,
+          425
+        ],
+        [
+          65,
+          425
+        ]
+      ],
+      "mask": "pk-base1-2-tcgdex-art",
+      "editionSpecificImages": false,
+      "variantCount": 4
+    },
+    {
+      "id": "base1-3",
+      "name": "Chansey",
+      "stage": "Basic",
+      "source": "https://assets.tcgdex.net/en/base/base1/3/high.webp",
+      "sourceLow": "https://assets.tcgdex.net/en/base/base1/3/low.webp",
+      "sha256": "d87dd8f51e4e61785fef24d5e903032ca4427679a1634758f8efb3060991d76f",
+      "width": 600,
+      "height": 825,
+      "points": [
+        [
+          64,
+          100
+        ],
+        [
+          535,
+          100
+        ],
+        [
+          535,
+          426
+        ],
+        [
+          64,
+          426
+        ]
+      ],
+      "mask": "pk-base1-3-tcgdex-art",
+      "editionSpecificImages": false,
+      "variantCount": 4
+    },
+    {
+      "id": "base1-4",
+      "name": "Charizard",
+      "stage": "Stage2",
+      "source": "https://assets.tcgdex.net/en/base/base1/4/high.webp",
+      "sourceLow": "https://assets.tcgdex.net/en/base/base1/4/low.webp",
+      "sha256": "0a1e077b13319e2e50c63d54b3afdecabe57f6dfdd07377a6979efbea48fe254",
+      "width": 600,
+      "height": 825,
+      "points": [
+        [
+          66,
+          141
+        ],
+        [
+          70,
+          141
+        ],
+        [
+          74,
+          139
+        ],
+        [
+          78,
+          141
+        ],
+        [
+          83,
+          145
+        ],
+        [
+          87,
+          143
+        ],
+        [
+          92,
+          139
+        ],
+        [
+          97,
+          141
+        ],
+        [
+          100,
+          140
+        ],
+        [
+          103,
+          134
+        ],
+        [
+          109,
+          128
+        ],
+        [
+          115,
+          124
+        ],
+        [
+          121,
+          120
+        ],
+        [
+          124,
+          112
+        ],
+        [
+          130,
+          106
+        ],
+        [
+          140,
+          100
+        ],
+        [
+          146,
+          98
+        ],
+        [
+          537,
+          98
+        ],
+        [
+          537,
+          425
+        ],
+        [
+          66,
+          425
+        ]
+      ],
+      "mask": "pk-base1-4-tcgdex-art",
+      "editionSpecificImages": false,
+      "variantCount": 4
+    },
+    {
+      "id": "base1-5",
+      "name": "Clefairy",
+      "stage": "Basic",
+      "source": "https://assets.tcgdex.net/en/base/base1/5/high.webp",
+      "sourceLow": "https://assets.tcgdex.net/en/base/base1/5/low.webp",
+      "sha256": "0ee4e3738f74b696947eb65719d8f235f8abb07c30d52615200c17c9255bcea1",
+      "width": 600,
+      "height": 825,
+      "points": [
+        [
+          65,
+          99
+        ],
+        [
+          536,
+          99
+        ],
+        [
+          536,
+          427
+        ],
+        [
+          65,
+          427
+        ]
+      ],
+      "mask": "pk-base1-5-tcgdex-art",
+      "editionSpecificImages": false,
+      "variantCount": 4
+    },
+    {
+      "id": "base1-6",
+      "name": "Gyarados",
+      "stage": "Stage1",
+      "source": "https://assets.tcgdex.net/en/base/base1/6/high.webp",
+      "sourceLow": "https://assets.tcgdex.net/en/base/base1/6/low.webp",
+      "sha256": "06d682c8f72f1d51951ad4035211ab7a202e3e50fbdad091918b69a1e685f460",
+      "width": 600,
+      "height": 825,
+      "points": [
+        [
+          67,
+          141
+        ],
+        [
+          72,
+          138
+        ],
+        [
+          75,
+          140
+        ],
+        [
+          81,
+          146
+        ],
+        [
+          86,
+          143
+        ],
+        [
+          90,
+          138
+        ],
+        [
+          95,
+          140
+        ],
+        [
+          99,
+          142
+        ],
+        [
+          104,
+          134
+        ],
+        [
+          110,
+          128
+        ],
+        [
+          119,
+          123
+        ],
+        [
+          123,
+          116
+        ],
+        [
+          129,
+          109
+        ],
+        [
+          138,
+          102
+        ],
+        [
+          146,
+          99
+        ],
+        [
+          536,
+          99
+        ],
+        [
+          536,
+          425
+        ],
+        [
+          67,
+          425
+        ]
+      ],
+      "mask": "pk-base1-6-tcgdex-art",
+      "editionSpecificImages": false,
+      "variantCount": 4
+    },
+    {
+      "id": "base1-7",
+      "name": "Hitmonchan",
+      "stage": "Basic",
+      "source": "https://assets.tcgdex.net/en/base/base1/7/high.webp",
+      "sourceLow": "https://assets.tcgdex.net/en/base/base1/7/low.webp",
+      "sha256": "8f1c13f945785d700dcfbec3d19e78ab21f2abf8a49e81a2da7c9566619b25d5",
+      "width": 600,
+      "height": 825,
+      "points": [
+        [
+          65,
+          99
+        ],
+        [
+          535,
+          99
+        ],
+        [
+          535,
+          426
+        ],
+        [
+          65,
+          426
+        ]
+      ],
+      "mask": "pk-base1-7-tcgdex-art",
+      "editionSpecificImages": false,
+      "variantCount": 4
+    },
+    {
+      "id": "base1-8",
+      "name": "Machamp",
+      "stage": "Stage2",
+      "source": "https://assets.tcgdex.net/en/base/base1/8/high.webp",
+      "sourceLow": "https://assets.tcgdex.net/en/base/base1/8/low.webp",
+      "sha256": "3104c69eb8ba533c2ce9fecdc24839dad9dd1a473ba021e6b30838a911d2233c",
+      "width": 600,
+      "height": 825,
+      "points": [
+        [
+          65,
+          142
+        ],
+        [
+          70,
+          139
+        ],
+        [
+          74,
+          139
+        ],
+        [
+          80,
+          145
+        ],
+        [
+          85,
+          144
+        ],
+        [
+          90,
+          139
+        ],
+        [
+          94,
+          140
+        ],
+        [
+          98,
+          141
+        ],
+        [
+          103,
+          131
+        ],
+        [
+          110,
+          126
+        ],
+        [
+          119,
+          121
+        ],
+        [
+          123,
+          112
+        ],
+        [
+          128,
+          106
+        ],
+        [
+          138,
+          101
+        ],
+        [
+          146,
+          98
+        ],
+        [
+          537,
+          98
+        ],
+        [
+          537,
+          425
+        ],
+        [
+          65,
+          425
+        ]
+      ],
+      "mask": "pk-base1-8-tcgdex-art",
+      "editionSpecificImages": false,
+      "variantCount": 4
+    },
+    {
+      "id": "base1-9",
+      "name": "Magneton",
+      "stage": "Stage1",
+      "source": "https://assets.tcgdex.net/en/base/base1/9/high.webp",
+      "sourceLow": "https://assets.tcgdex.net/en/base/base1/9/low.webp",
+      "sha256": "7e42d0fd9009bca50f6890bad7ec9496b18d482296874809d43df2e5d1c69fd2",
+      "width": 600,
+      "height": 825,
+      "points": [
+        [
+          63,
+          141
+        ],
+        [
+          68,
+          140
+        ],
+        [
+          73,
+          138
+        ],
+        [
+          81,
+          145
+        ],
+        [
+          85,
+          143
+        ],
+        [
+          90,
+          138
+        ],
+        [
+          95,
+          140
+        ],
+        [
+          99,
+          140
+        ],
+        [
+          104,
+          131
+        ],
+        [
+          111,
+          126
+        ],
+        [
+          118,
+          122
+        ],
+        [
+          122,
+          112
+        ],
+        [
+          129,
+          105
+        ],
+        [
+          139,
+          100
+        ],
+        [
+          146,
+          99
+        ],
+        [
+          535,
+          99
+        ],
+        [
+          535,
+          425
+        ],
+        [
+          63,
+          425
+        ]
+      ],
+      "mask": "pk-base1-9-tcgdex-art",
+      "editionSpecificImages": false,
+      "variantCount": 4
+    },
+    {
+      "id": "base1-10",
+      "name": "Mewtwo",
+      "stage": "Basic",
+      "source": "https://assets.tcgdex.net/en/base/base1/10/high.webp",
+      "sourceLow": "https://assets.tcgdex.net/en/base/base1/10/low.webp",
+      "sha256": "b264c56b77d55bb2826ef2b1a95de3fcf608685bfc3eddbfadef8197c968a5e3",
+      "width": 600,
+      "height": 825,
+      "points": [
+        [
+          67,
+          97
+        ],
+        [
+          536,
+          97
+        ],
+        [
+          536,
+          424
+        ],
+        [
+          67,
+          424
+        ]
+      ],
+      "mask": "pk-base1-10-tcgdex-art",
+      "editionSpecificImages": false,
+      "variantCount": 4
+    },
+    {
+      "id": "base1-11",
+      "name": "Nidoking",
+      "stage": "Stage2",
+      "source": "https://assets.tcgdex.net/en/base/base1/11/high.webp",
+      "sourceLow": "https://assets.tcgdex.net/en/base/base1/11/low.webp",
+      "sha256": "7654062742480de9805124e9dde9b3c389fb05db37278e1f89596b40f57d2b0b",
+      "width": 600,
+      "height": 825,
+      "points": [
+        [
+          67,
+          143
+        ],
+        [
+          71,
+          142
+        ],
+        [
+          76,
+          140
+        ],
+        [
+          83,
+          147
+        ],
+        [
+          87,
+          145
+        ],
+        [
+          92,
+          141
+        ],
+        [
+          97,
+          143
+        ],
+        [
+          100,
+          142
+        ],
+        [
+          105,
+          133
+        ],
+        [
+          111,
+          127
+        ],
+        [
+          121,
+          123
+        ],
+        [
+          124,
+          115
+        ],
+        [
+          131,
+          109
+        ],
+        [
+          140,
+          103
+        ],
+        [
+          148,
+          101
+        ],
+        [
+          538,
+          101
+        ],
+        [
+          538,
+          428
+        ],
+        [
+          67,
+          428
+        ]
+      ],
+      "mask": "pk-base1-11-tcgdex-art",
+      "editionSpecificImages": false,
+      "variantCount": 4
+    },
+    {
+      "id": "base1-12",
+      "name": "Ninetales",
+      "stage": "Stage1",
+      "source": "https://assets.tcgdex.net/en/base/base1/12/high.webp",
+      "sourceLow": "https://assets.tcgdex.net/en/base/base1/12/low.webp",
+      "sha256": "430e8a8275726cd8bca20e83fcf8977174a36b0da979d41ade759a0b5e8959ed",
+      "width": 600,
+      "height": 825,
+      "points": [
+        [
+          64,
+          142
+        ],
+        [
+          70,
+          140
+        ],
+        [
+          74,
+          140
+        ],
+        [
+          80,
+          145
+        ],
+        [
+          85,
+          144
+        ],
+        [
+          90,
+          139
+        ],
+        [
+          95,
+          140
+        ],
+        [
+          99,
+          141
+        ],
+        [
+          104,
+          132
+        ],
+        [
+          111,
+          126
+        ],
+        [
+          119,
+          122
+        ],
+        [
+          123,
+          113
+        ],
+        [
+          129,
+          107
+        ],
+        [
+          139,
+          102
+        ],
+        [
+          147,
+          100
+        ],
+        [
+          534,
+          100
+        ],
+        [
+          534,
+          426
+        ],
+        [
+          64,
+          426
+        ]
+      ],
+      "mask": "pk-base1-12-tcgdex-art",
+      "editionSpecificImages": false,
+      "variantCount": 4
+    },
+    {
+      "id": "base1-13",
+      "name": "Poliwrath",
+      "stage": "Stage2",
+      "source": "https://assets.tcgdex.net/en/base/base1/13/high.webp",
+      "sourceLow": "https://assets.tcgdex.net/en/base/base1/13/low.webp",
+      "sha256": "c01cb3f0dc9c7fa1d2efb3b3744d1ff431b673097af7ffcf8198bf71b55e1721",
+      "width": 600,
+      "height": 825,
+      "points": [
+        [
+          65,
+          143
+        ],
+        [
+          71,
+          142
+        ],
+        [
+          75,
+          141
+        ],
+        [
+          83,
+          148
+        ],
+        [
+          87,
+          146
+        ],
+        [
+          92,
+          141
+        ],
+        [
+          97,
+          143
+        ],
+        [
+          101,
+          143
+        ],
+        [
+          105,
+          133
+        ],
+        [
+          112,
+          128
+        ],
+        [
+          120,
+          124
+        ],
+        [
+          124,
+          115
+        ],
+        [
+          131,
+          109
+        ],
+        [
+          140,
+          104
+        ],
+        [
+          148,
+          101
+        ],
+        [
+          538,
+          101
+        ],
+        [
+          538,
+          428
+        ],
+        [
+          65,
+          428
+        ]
+      ],
+      "mask": "pk-base1-13-tcgdex-art",
+      "editionSpecificImages": false,
+      "variantCount": 4
+    },
+    {
+      "id": "base1-14",
+      "name": "Raichu",
+      "stage": "Stage1",
+      "source": "https://assets.tcgdex.net/en/base/base1/14/high.webp",
+      "sourceLow": "https://assets.tcgdex.net/en/base/base1/14/low.webp",
+      "sha256": "58e5ce01f52b51c2a82ab583040ca68505a6c0e94704c670a47d0243575cea94",
+      "width": 600,
+      "height": 825,
+      "points": [
+        [
+          63,
+          141
+        ],
+        [
+          68,
+          138
+        ],
+        [
+          74,
+          140
+        ],
+        [
+          81,
+          146
+        ],
+        [
+          85,
+          143
+        ],
+        [
+          90,
+          139
+        ],
+        [
+          95,
+          142
+        ],
+        [
+          99,
+          139
+        ],
+        [
+          104,
+          131
+        ],
+        [
+          111,
+          126
+        ],
+        [
+          120,
+          123
+        ],
+        [
+          123,
+          113
+        ],
+        [
+          129,
+          107
+        ],
+        [
+          139,
+          102
+        ],
+        [
+          147,
+          100
+        ],
+        [
+          536,
+          100
+        ],
+        [
+          536,
+          427
+        ],
+        [
+          63,
+          427
+        ]
+      ],
+      "mask": "pk-base1-14-tcgdex-art",
+      "editionSpecificImages": false,
+      "variantCount": 4
+    },
+    {
+      "id": "base1-15",
+      "name": "Venusaur",
+      "stage": "Stage2",
+      "source": "https://assets.tcgdex.net/en/base/base1/15/high.webp",
+      "sourceLow": "https://assets.tcgdex.net/en/base/base1/15/low.webp",
+      "sha256": "21dd830f76f5f6332405bd02a038480420efdcb08939c0a0b17a423962d46e1b",
+      "width": 600,
+      "height": 825,
+      "points": [
+        [
+          65,
+          141
+        ],
+        [
+          71,
+          139
+        ],
+        [
+          75,
+          139
+        ],
+        [
+          81,
+          145
+        ],
+        [
+          86,
+          143
+        ],
+        [
+          91,
+          138
+        ],
+        [
+          95,
+          141
+        ],
+        [
+          100,
+          139
+        ],
+        [
+          105,
+          130
+        ],
+        [
+          112,
+          125
+        ],
+        [
+          120,
+          122
+        ],
+        [
+          124,
+          112
+        ],
+        [
+          130,
+          106
+        ],
+        [
+          139,
+          101
+        ],
+        [
+          147,
+          99
+        ],
+        [
+          536,
+          99
+        ],
+        [
+          536,
+          425
+        ],
+        [
+          65,
+          425
+        ]
+      ],
+      "mask": "pk-base1-15-tcgdex-art",
+      "editionSpecificImages": false,
+      "variantCount": 4
+    },
+    {
+      "id": "base1-16",
+      "name": "Zapdos",
+      "stage": "Basic",
+      "source": "https://assets.tcgdex.net/en/base/base1/16/high.webp",
+      "sourceLow": "https://assets.tcgdex.net/en/base/base1/16/low.webp",
+      "sha256": "612a9cf191a1a023d0aa30ea1ddbcc219126452e596c5ec8b56cd8d3a8a6c250",
+      "width": 600,
+      "height": 825,
+      "points": [
+        [
+          65,
+          97
+        ],
+        [
+          536,
+          97
+        ],
+        [
+          536,
+          423
+        ],
+        [
+          65,
+          423
+        ]
+      ],
+      "mask": "pk-base1-16-tcgdex-art",
+      "editionSpecificImages": false,
+      "variantCount": 4
+    }
+  ]
+}

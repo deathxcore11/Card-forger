@@ -763,3 +763,29 @@ jobs:
         with:
           name: aura-browser-evidence
           path: test-results/
+
+  context-and-anniversary-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/context-menu-browser.mjs
+      - run: node tests/anniversary-frame-browser.mjs
+        if: ${{ !cancelled() }}
+      - run: node tests/pokemon-frame-browser.mjs
+        if: ${{ !cancelled() }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: context-and-anniversary-evidence
+          path: |
+            test-results/context-menu-*
+            test-results/anniversary-frame-*
+            test-results/pokemon-frame-*

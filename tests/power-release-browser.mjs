@@ -508,7 +508,7 @@ try{
    const put=IDBObjectStore.prototype.put;IDBObjectStore.prototype.put=function(v,k){record(v,k);return put.call(this,v,k);};const set=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){record(v,k);return set.call(this,k,v);};
   });
   const original=group.cases.find(x=>x.deck.id===group.save).deck,newName=original.name+' saved';
-  await openProbe(original.id);await fp.locator('.deck-hero .fmt-chip[data-act="tDeckMenu"]').click();await fp.locator('#sheet[open] #tDmName').fill(newName);await fp.locator('#sheet[open] [data-act="tDeckSave"]').click();
+  await openProbe(original.id);await fp.locator('.deck-hero .fmt-chip[data-act="tDeckMenu"]').click();await fp.locator('#sheet .context-edit > summary').first().click();await fp.locator('#sheet[open] #tDmName').fill(newName);await fp.locator('#sheet[open] [data-act="tDeckSave"]').click();
   await fp.waitForFunction(({game,id,name})=>window.__uiTestState.state.tcg[game].decks.find(x=>x.id===id)?.name===name&&!document.querySelector('#sheet').open,{game:group.game,id:original.id,name:newName});
   await fp.locator('.deck-hero [data-act="go"][data-to="#decks"]').click();await fp.waitForFunction(()=>window.__uiTestState.ui.view==='decks');await openProbe(original.id);
   const saved=await fp.evaluate(({game,id})=>JSON.parse(JSON.stringify(window.__uiTestState.state.tcg[game].decks.find(x=>x.id===id))),{game:group.game,id:original.id}),reopened=await stateOf();

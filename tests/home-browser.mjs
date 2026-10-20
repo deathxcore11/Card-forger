@@ -945,6 +945,7 @@ try {
     await p.evaluate(route=>{location.hash=route;},route);
     await p.waitForFunction(game=>document.body.dataset.view===(game==='mtg'?'deck':'tdeck')&&window.__homeTestState.ui[game==='mtg'?'deckId':'tdeckId']===`saved-${game}`,game);
     await p.locator(`[data-act="${game==='mtg'?'deckMenu':'tDeckMenu'}"]`).first().click();
+    await p.locator('#sheet .context-edit > summary').first().click();
     await p.locator(game==='mtg'?'#dmName':'#tDmName').fill(`${game.toUpperCase()} edited older deck`);
     await p.locator(`[data-act="${game==='mtg'?'deckSaveInfo':'tDeckSave'}"]`).click();
     await p.waitForFunction(()=>!document.querySelector('#sheet').open);

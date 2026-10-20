@@ -4787,3 +4787,91 @@ body[data-game="ygo"] .ask-launch{--ask-a:#b697ef;--ask-b:#697db5;--ask-c:#dbb26
 
 /* A 720px sheet must not inherit the full-page three-column card list. */
 #sheetBody .tier-tiles { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+
+/* Unified context actions: one restrained glass surface, grouped rows, and
+   visible focus. Deck editing expands in place; it never opens a second menu. */
+dialog.sheet:has(.context-menu),body.glass dialog.sheet:has(.context-menu) {
+ width:min(520px,calc(100vw - 32px));max-width:520px;max-height:92dvh;
+ border-radius:26px;border:1px solid color-mix(in srgb,var(--text) 15%,transparent);
+ background:color-mix(in srgb,var(--bg) 94%,transparent);
+ box-shadow:inset 0 1px 0 #ffffff0d,0 28px 90px #0005;
+ backdrop-filter:blur(32px) saturate(1.25);-webkit-backdrop-filter:blur(32px) saturate(1.25);
+}
+dialog.sheet:has(.context-card),body.glass dialog.sheet:has(.context-card){max-width:480px}
+#sheetBody:has(>.context-menu){padding:0;max-height:92dvh}
+.context-menu{padding:22px;--context-fill:color-mix(in srgb,var(--text) 4.5%,transparent);--context-line:color-mix(in srgb,var(--text) 9%,transparent)}
+.context-menu .context-head,body.glass .context-menu .context-head:not(.overlay){
+ position:relative;top:auto;display:flex;align-items:center;gap:14px;margin:0 0 20px;padding:0;
+ border:0;background:none;backdrop-filter:none;-webkit-backdrop-filter:none;
+}
+.context-identity{min-width:0;flex:1}
+.context-kicker{display:block;margin-bottom:5px;font-size:10px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--muted)}
+.context-menu .context-head h2{font-size:18px;line-height:1.3;letter-spacing:-.025em;font-weight:700;overflow-wrap:anywhere}
+.context-identity p{margin:5px 0 0;font-size:12px;color:var(--muted);line-height:1.4}
+.context-menu .context-close{align-self:flex-start;flex:0 0 36px;width:36px;height:36px;min-height:36px;border:0;border-radius:50%;padding:9px;background:var(--context-fill);color:var(--muted)}
+.context-close .ico{width:18px;height:18px}
+.context-art{flex:0 0 52px;display:grid;place-items:center}
+.context-art .quick-card-thumb{display:block;width:48px;height:66px;object-fit:contain;border-radius:5px;box-shadow:0 3px 9px #0003!important;filter:none!important;animation:none!important}
+.context-art .deck-box{width:48px;height:58px;margin:0;transform:none}
+.context-menu .context-group{display:grid;gap:0;margin:12px 0;background:var(--context-fill);border:1px solid var(--context-line);border-radius:17px;overflow:hidden}
+.context-menu .context-action{
+ position:relative;display:flex;align-items:center;gap:12px;width:100%;min-width:0;min-height:49px;
+ padding:12px 15px;margin:0;border:0;border-radius:0;background:transparent;color:var(--text);
+ font:inherit;font-size:14px;font-weight:500;line-height:1.35;text-align:left;touch-action:pan-y;
+ transition:background .14s ease,color .14s ease;
+}
+.context-group>.context-action:not(:last-child)::after{content:"";position:absolute;left:49px;right:15px;bottom:0;height:1px;background:var(--context-line);pointer-events:none}
+.context-menu .context-action>.ico{width:20px;height:20px;flex:none;color:var(--muted)}
+.context-menu .context-action>span{display:grid;gap:2px;min-width:0;overflow-wrap:anywhere}
+.context-menu :is(.context-action,.context-edit summary) small{display:block;color:var(--muted);font-size:11px;font-weight:400;line-height:1.4}
+.context-menu .context-action:disabled{opacity:.45;cursor:default}
+@media(hover:hover){.context-menu .context-action:not(:disabled):hover,.context-menu .context-edit>summary:hover{background:color-mix(in srgb,var(--text) 6%,transparent)}}
+.context-menu .context-action:active{background:color-mix(in srgb,var(--text) 9%,transparent)}
+.context-menu :is(button,input,select,summary):focus-visible{outline:2px solid var(--gold);outline-offset:-3px}
+.context-menu .context-danger{margin-top:16px;background:color-mix(in srgb,var(--bad) 4%,transparent);border-color:color-mix(in srgb,var(--bad) 12%,transparent)}
+.context-menu .context-danger :is(.context-action,.ico){color:var(--bad)}
+.context-shortcuts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 16px}
+.context-menu .context-shortcuts .context-action{flex-direction:column;justify-content:center;gap:7px;min-height:74px;padding:11px 3px;font-size:11px;text-align:center;border:1px solid var(--context-line);border-radius:15px;background:var(--context-fill)}
+.context-menu .context-shortcuts .ico{width:22px;height:22px;color:var(--gold)}
+.context-edit{margin:12px 0;border:1px solid var(--context-line);border-radius:17px;background:var(--context-fill);overflow:hidden}
+.context-edit>summary{list-style:none;display:flex;align-items:center;gap:12px;padding:14px 15px;min-height:54px;cursor:pointer;font-size:14px;font-weight:500;transition:background .14s ease}
+.context-edit>summary::-webkit-details-marker{display:none}
+.context-edit>summary>.ico{width:20px;height:20px;color:var(--muted);flex:none}
+.context-edit>summary>span{flex:1;min-width:0}
+.context-edit>summary>.chev{width:15px;height:15px;transition:transform .18s ease}
+.context-edit[open]>summary>.chev{transform:rotate(180deg)}
+.context-edit-body{padding:0 15px 15px;display:grid;gap:12px;border-top:1px solid transparent}
+.context-edit-body label{font-size:12px;color:var(--muted);gap:6px}
+.context-edit-body :is(input:not([type=checkbox]):not([type=color]),select){min-height:44px;border-radius:11px;font-size:14px;color:var(--text);background:color-mix(in srgb,var(--bg) 60%,transparent);border-color:var(--context-line)}
+.context-edit-body .deck-box-settings{margin:0;font-size:13px}
+.context-menu .context-save{min-height:44px;margin:0;border:0;border-radius:11px;font-size:13px;font-weight:600;color:var(--gold);background:color-mix(in srgb,var(--gold) 13%,transparent)}
+.context-tools .context-edit-body{gap:0}
+.context-tools .toggle{padding:12px 0;font-size:13px;color:var(--text)}
+.context-tools .toggle small{display:block;font-size:11px;color:var(--muted)}
+.context-source{padding:0 4px;font-size:11px;overflow-wrap:anywhere}
+.context-menu .quick-owned{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px 12px;padding:15px;margin:0 0 16px;background:var(--context-fill);border:1px solid var(--context-line);border-radius:17px}
+.context-menu .quick-owned>div:first-child{grid-column:1;grid-row:1}
+.context-menu .quick-owned b{font-size:12px;font-weight:600}
+.context-menu .quick-owned small{font-size:11px;color:var(--muted)}
+.context-menu .quick-owned>:is(small,label,details,p){grid-column:1/-1}
+.context-menu .quick-owned .stepper{grid-column:2;grid-row:1;justify-self:end;min-height:38px;border:1px solid var(--context-line);border-radius:11px;background:color-mix(in srgb,var(--text) 4%,transparent)}
+.context-menu .quick-owned .stepper button{min-width:36px;min-height:38px;width:36px;padding:0;background:transparent;font-size:19px}
+.context-menu .quick-owned .stepper output{font-size:15px;font-weight:600;min-width:28px}
+.context-menu .quick-owned details{margin-top:4px;border-top:1px solid var(--context-line);padding-top:9px;font-size:12px}
+.context-menu .quick-owned details summary{min-height:32px;display:flex;align-items:center;cursor:pointer;color:var(--muted)}
+.context-menu .quick-owned details summary::after{content:'›';margin-left:auto;transform:rotate(90deg);font-size:19px}
+.context-menu .quick-owned details[open] summary::after{transform:rotate(-90deg)}
+.context-menu .quick-owned details label{margin-top:8px;font-size:12px}
+.context-menu .quick-owned details :is(input,select){min-height:44px;font-size:14px}
+.context-menu .quick-owned .foot{font-size:11px}
+@media(max-width:599px){
+ dialog.sheet:has(.context-menu),body.glass dialog.sheet:has(.context-menu){width:calc(100% - 16px);max-width:480px;margin:auto auto max(8px,env(safe-area-inset-bottom));border-radius:25px;max-height:92dvh}
+ .context-menu{padding:20px 16px 16px}
+ .context-menu::before{content:'';display:block;width:32px;height:4px;border-radius:4px;margin:-9px auto 17px;background:color-mix(in srgb,var(--text) 20%,transparent)}
+ .context-menu .context-head{gap:12px;margin-bottom:18px}
+ .context-menu .context-head h2{font-size:17px}
+ .context-menu .context-action{min-height:48px}
+ .context-menu .context-close{flex-basis:40px;width:40px;height:40px;min-height:40px;padding:11px}
+}
+@media(max-width:350px){.context-menu .quick-owned{grid-template-columns:1fr}.context-menu .quick-owned .stepper{grid-column:1;grid-row:auto;justify-self:start}.context-shortcuts{gap:5px}.context-art{flex-basis:40px}.context-art .quick-card-thumb{width:38px;height:53px}}
+@media(prefers-reduced-motion:reduce){.context-menu :is(.context-action,summary,.chev){transition:none}}

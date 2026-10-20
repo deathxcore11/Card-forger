@@ -1,0 +1,152 @@
+{
+  "cardCount": {
+    "firstEd": 0,
+    "holo": 25,
+    "normal": 0,
+    "official": 25,
+    "reverse": 0,
+    "total": 25
+  },
+  "cards": [
+    {
+      "id": "cel25cc-CC001",
+      "localId": "CC001",
+      "name": "Blastoise"
+    },
+    {
+      "id": "cel25cc-CC002",
+      "localId": "CC002",
+      "name": "Charizard"
+    },
+    {
+      "id": "cel25cc-CC003",
+      "localId": "CC003",
+      "name": "Venusaur"
+    },
+    {
+      "id": "cel25cc-CC004",
+      "localId": "CC004",
+      "name": "Imposter Professor Oak"
+    },
+    {
+      "id": "cel25cc-CC005",
+      "localId": "CC005",
+      "name": "Dark Gyarados"
+    },
+    {
+      "id": "cel25cc-CC006",
+      "localId": "CC006",
+      "name": "Here Comes Team Rocket!"
+    },
+    {
+      "id": "cel25cc-CC007",
+      "localId": "CC007",
+      "name": "Rocket's Zapdos"
+    },
+    {
+      "id": "cel25cc-CC008",
+      "localId": "CC008",
+      "name": "_____'s Pikachu"
+    },
+    {
+      "id": "cel25cc-CC009",
+      "localId": "CC009",
+      "name": "Cleffa"
+    },
+    {
+      "id": "cel25cc-CC010",
+      "localId": "CC010",
+      "name": "Shining Magikarp"
+    },
+    {
+      "id": "cel25cc-CC011",
+      "localId": "CC011",
+      "name": "Team Magma's Groudon"
+    },
+    {
+      "id": "cel25cc-CC012",
+      "localId": "CC012",
+      "name": "Rocket's Admin."
+    },
+    {
+      "id": "cel25cc-CC013",
+      "localId": "CC013",
+      "name": "Mew ex"
+    },
+    {
+      "id": "cel25cc-CC014",
+      "localId": "CC014",
+      "name": "Gardevoir ex"
+    },
+    {
+      "id": "cel25cc-CC015",
+      "localId": "CC015",
+      "name": "Umbreon \u2606"
+    },
+    {
+      "id": "cel25cc-CC016",
+      "localId": "CC016",
+      "name": "Claydol"
+    },
+    {
+      "id": "cel25cc-CC017",
+      "localId": "CC017",
+      "name": "Luxray GL LV.X"
+    },
+    {
+      "id": "cel25cc-CC018",
+      "localId": "CC018",
+      "name": "Garchomp C LV.X"
+    },
+    {
+      "id": "cel25cc-CC019",
+      "localId": "CC019",
+      "name": "Donphan"
+    },
+    {
+      "id": "cel25cc-CC020",
+      "localId": "CC020",
+      "name": "Reshiram"
+    },
+    {
+      "id": "cel25cc-CC021",
+      "localId": "CC021",
+      "name": "Zekrom"
+    },
+    {
+      "id": "cel25cc-CC022",
+      "localId": "CC022",
+      "name": "Mewtwo EX"
+    },
+    {
+      "id": "cel25cc-CC023",
+      "localId": "CC023",
+      "name": "Xerneas EX"
+    },
+    {
+      "id": "cel25cc-CC024",
+      "localId": "CC024",
+      "name": "M Rayquaza EX"
+    },
+    {
+      "id": "cel25cc-CC025",
+      "localId": "CC025",
+      "name": "Tapu Lele GX"
+    }
+  ],
+  "id": "cel25cc",
+  "legal": {
+    "expanded": true,
+    "standard": false
+  },
+  "name": "Celebrations Classic Collection",
+  "releaseDate": "2021-10-08",
+  "serie": {
+    "id": "swsh",
+    "name": "Sword & Shield"
+  },
+  "tcgOnline": "CEL",
+  "abbreviation": {
+    "official": "CEL:CC"
+  }
+}

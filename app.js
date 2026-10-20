@@ -10,7 +10,7 @@ import {sharedBinderRows,sharedBinderValue} from './community-profile.js';
 import {setFinishEffects} from './finish-preview.js';
 import {createScryfallClient} from './scryfall-client.js';
 import {selectPreviewFinish} from './finish-preview.js';
-import {deckBoxFields,readDeckBox,createDeckBoxTransitions} from './deck-box.js';
+import {deckBoxMarkup,deckBoxFields,readDeckBox,createDeckBoxTransitions} from './deck-box.js';
 import {setAccountScope} from './account-scope.js';
 import {createAccountWorkspaces} from './account-workspaces.js';
 import {mountFeedback} from './feedback-layer.js';
@@ -46,7 +46,7 @@ import {showRuleHint,dismissRuleHint,attachRuleHover} from './rule-dex.js';
 import {bestBudgetDecks,purchaseCost,comparePower,refineCandidates,towardDeck,spendUp,cardQuality} from './deck-optimizer.js';
 import { playRate } from './importance.js';
 import { budgetNotes, variantsFrom, difficultyOf } from './deck-optimizer.js';
-import {attachCardGestures, CompareSelection, cardActionButtons, HOLD_MS, moved as movedFrom} from './card-actions.js';
+import {attachCardGestures, CompareSelection, cardActionButtons, contextAction, contextHeader, deckContextShortcuts, HOLD_MS, moved as movedFrom} from './card-actions.js';
 import {tcgCompareSheet} from './tcgcompare.js';
 import {artworkHTML} from './artwork.js';
 import {attachAutomaticBrowse} from './auto-browse.js';
@@ -1445,7 +1445,7 @@ async function cardQuickMenu(t) {
   const lots=quickCardLots(ref,st.collection);ref.selectedLot=lots.some(e=>e.id===ref.selectedLot)?ref.selectedLot:lots.some(e=>e.id===ref.dataset.entry)?ref.dataset.entry:lots.length===1?lots[0].id:null;
   if(ref.selectedLot)ref.dataset.entry=ref.selectedLot;
   const wished = st.wishlist.some(w => ref.game === "mtg" ? key(w.name) === key(ref.card.name) : w.cardId === ref.card.id);
-  openSheet(`<div class="sheet-head"><h2>Card actions</h2><button class="icon" data-act="closeSheet" aria-label="Close">${actionIcon("close")}</button></div><div class="quick-card-heading">${artworkHTML(ref.card,"quick-card-thumb")}<div><b>${esc(ref.card.name)}</b><small>${esc(ref.card.set_name || ref.card.set?.name || ref.card.typeLine || "")}</small></div></div>${cardActionButtons({game:ref.game,wished,existing:lots.length>0,quantityHtml:quickQuantity(lots,ref.selectedLot,ref.qtyBusy),second:comparison.active && comparison.cards.length>0})}<div class="quick-art-actions">${lots.length?`<button class="btn ghost" data-act="quickPriceRefresh" ${!ref.selectedLot||ref.priceBusy?'disabled':''}>${ref.priceBusy?'Checking price…':'Refresh price'}</button>`:''}<button class="btn ghost" data-act="quickArtwork">Use artwork as…</button></div>`,{type:"card-actions",game:ref.game,id:ref.card.id,setId:ref.setId||"",setMembership:ref.setMembership,setVariant:ref.setVariant,priceEdition:ref.priceEdition,priceYgoEdition:ref.priceYgoEdition,ygoPriceDefault:ref.ygoPriceDefault});
+  openSheet(`<div class="context-menu context-card">${contextHeader({kind:'Card actions',name:ref.card.name,meta:ref.card.set_name||ref.card.set?.name||ref.card.typeLine||'',art:artworkHTML(ref.card,'quick-card-thumb')})}${cardActionButtons({game:ref.game,wished,existing:lots.length>0,quantityHtml:quickQuantity(lots,ref.selectedLot,ref.qtyBusy),second:comparison.active && comparison.cards.length>0})}<div class="context-group context-utilities">${lots.length?contextAction('quickPriceRefresh','refresh',ref.priceBusy?'Checking price…':'Refresh price',{disabled:!ref.selectedLot||ref.priceBusy}):''}${contextAction('quickArtwork','brush','Use artwork as…')}</div></div>`,{type:"card-actions",game:ref.game,id:ref.card.id,setId:ref.setId||"",setMembership:ref.setMembership,setVariant:ref.setVariant,priceEdition:ref.priceEdition,priceYgoEdition:ref.priceYgoEdition,ygoPriceDefault:ref.ygoPriceDefault});
 }
 // Hold a deck or binder tile for its quick actions, the same gesture as holding a card.
 // Every action is also reachable inside the deck or binder; this is a shortcut, not a hiding place.
@@ -1456,10 +1456,8 @@ function tileMenu(tile) {
     const tcg = m[1] === "tdeck", id = decodeURIComponent(m[2]),
       d = tcg ? T.gs(T.game()).decks.find((x) => x.id === id) : S.state.decks.find((x) => x.id === id);
     if (!d) return;
-    const tabs = tcg ? [["cards", "Cards"], ["insights", "Power"], ["matchups", "Matchups"], ["playtest", "Playtest"]] : [["cards", "Cards"], ["engine", "Power"], ["matchups", "Matchups"], ["playtest", "Playtest"]];
-    openSheet(`<div class="sheet-head"><h2>${esc(d.name)}</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
-      <div class="menu-list tile-menu">${tabs.map(([tab, label]) => `<button data-act="tileOpen" data-deck="${esc(id)}" data-tcg="${tcg ? 1 : ""}" data-tab="${tab}">${actionIcon({ cards: "cardStack", engine: "trophy", insights: "trophy", matchups: "sword", playtest: "random" }[tab] || "decks")}<span>${label}</span></button>`).join("")}
-      <button data-act="tileOptions" data-deck="${esc(id)}" data-tcg="${tcg ? 1 : ""}">${actionIcon("more")}<span>Deck options<small>Rename, format, budget, versions, export, delete</small></span></button></div>`, { type: "tileMenu" });
+    if(tcg)A.tDeckMenu({dataset:{id}});
+    else A.deckMenu({dataset:{id}});
     return;
   }
   if (tile.dataset.binder) {
@@ -1480,20 +1478,24 @@ A.tileOptions = (t) => {
 function attachTileHolds(root = document) {
   let press = null, timer = null;
   const TILE = ".deck-tile, .stash-binder[data-binder]",
-    clear = () => { clearTimeout(timer); press?.tile.classList.remove("holding"); };
+    clear = () => { clearTimeout(timer); press?.tile.classList.remove("holding"); },
+    cancel = () => { if(press)press.moved=true;clear(); },
+    tileFor = target => {const tile=target.closest?.(TILE),control=target.closest?.('input,select,textarea,a,button');return tile&&(!control||control===tile)?tile:null;};
   root.addEventListener("pointerdown", (e) => {
-    const tile = e.target.closest?.(TILE);
-    if (!tile || e.button !== 0) { press = null; return; }
-    press = { x: e.clientX, y: e.clientY, tile, held: false };
+    clear();const tile = tileFor(e.target);
+    if (!tile || e.button !== 0 || e.isPrimary === false) { press = null; return; }
+    press = { x: e.clientX, y: e.clientY, tile, held: false, pointerId:e.pointerId };
     const mine = press;
-    setTimeout(() => mine === press && !mine.moved && tile.classList.add("holding"), 140);
-    timer = setTimeout(() => { if (mine !== press || mine.moved) return; mine.held = true; tile.classList.remove("holding"); tileMenu(tile); }, HOLD_MS);
+    setTimeout(() => mine === press && !mine.moved && tile.isConnected && tile.classList.add("holding"), 140);
+    timer = setTimeout(() => { if (mine !== press || mine.moved || !tile.isConnected) return; mine.held = true; tile.classList.remove("holding"); tileMenu(tile); }, HOLD_MS);
   }, { passive: true });
-  root.addEventListener("pointermove", (e) => { if (press && movedFrom(press, e)) { press.moved = true; clear(); } }, { passive: true });
+  root.addEventListener("pointermove", (e) => { if (press && e.pointerId===press.pointerId && movedFrom(press, e))cancel(); }, { passive: true });
   root.addEventListener("pointerup", clear, { passive: true });
-  root.addEventListener("pointercancel", () => { if (press) press.moved = true; clear(); }, { passive: true });
-  root.addEventListener("click", (e) => { if (press?.held && e.target.closest?.(TILE)) { e.preventDefault(); e.stopImmediatePropagation(); } press = null; }, true);
-  root.addEventListener("contextmenu", (e) => { const tile = e.target.closest?.(TILE); if (!tile) return; e.preventDefault(); clear(); tileMenu(tile); });
+  root.addEventListener("pointercancel", cancel, { passive: true });
+  root.addEventListener("scroll",cancel,{passive:true,capture:true});
+  root.addEventListener("click", (e) => { if (e.detail!==0 && (press?.held||press?.moved) && e.target.closest?.(TILE)===press.tile) { e.preventDefault(); e.stopImmediatePropagation(); } press = null; }, true);
+  root.addEventListener("contextmenu", (e) => { const tile = tileFor(e.target); if (!tile) return; e.preventDefault(); clear(); press=null; tileMenu(tile); });
+  root.addEventListener("keydown",(e)=>{if(e.key!=='ContextMenu'&&!(e.key==='F10'&&e.shiftKey))return;const tile=tileFor(e.target);if(!tile)return;e.preventDefault();clear();press=null;tileMenu(tile);});
 }
 function registerCardMenus() {
   attachTileHolds();
@@ -4461,27 +4463,36 @@ document.addEventListener("change", (e) => {
   if (["dImpFormat", "dImpCommander", "dImpDest"].includes(e.target.id)) drawDeckImport();
 });
 
-A.deckMenu = () => {
-  const d = currentDeck();
+A.deckMenu = (t) => {
+  if(t?.dataset?.id){if(!deckById(t.dataset.id))return;S.ui.deckId=t.dataset.id;}
+  const d = currentDeck();if(!d)return;
+  const count=(d.cards||[]).reduce((n,r)=>n+(Number(r.qty)||0),0),images=(d.cards||[]).map(r=>cardImage(meta(r.name))).filter(Boolean);
   openSheet(
-    `<div class="sheet-head"><h2>Deck options</h2><button class="icon" data-act="closeSheet">✕</button></div>
+    `<div class="context-menu context-deck">${contextHeader({kind:'Magic deck',name:d.name,meta:[formatOf(d.format).name,`${count} cards`].join(' · '),art:deckBoxMarkup(d,{images})})}
+    ${deckContextShortcuts(d.id)}
+    <details class="context-edit"><summary>${ICON.settings}<span>Edit deck<small>Name, format, budget & appearance</small></span>${ICON.chevron}</summary><div class="context-edit-body">
     <div class="grid2"><label class="span2">Name<input id="dmName" maxlength="100" value="${esc(d.name)}"></label><label class="span2">Format${formatSelect("dmFormat", d.format)}</label><label>Budget $<input id="dmBudget" type="number" min="0" value="${d.budget ?? 25}"></label><label>Focus<select id="dmStrategy">${options(["Auto", "Tokens", "Dragons", "Graveyard", "Spells", "Artifacts", "Lifegain", "Landfall", "Creature"].map((x) => [x, x]), d.strategy || "Auto")}</select></label></div>
     ${deckBoxFields(d,(d.cards||[]).map(r=>({name:r.name,image:cardImage(meta(r.name))})))}
-    <button class="btn block" data-act="deckSaveInfo">Save</button>
-    <label class="check toggle"><input type="checkbox" data-change="deckLock" ${d.locked ? "checked" : ""}> <span><b>Assembled</b> — reserve these copies so other decks don’t count them as free</span></label>
-    <div class="menu-list">
-      <button data-act="snapshot">◷ Save a version now</button>
-      <button data-act="deckCopy">⧉ Copy decklist</button>
-      <button data-act="deckExport">↓ Download decklist (.txt)</button>
-      <button data-act="refreshDeck">⟳ Refresh card data & prices</button>
-      <button data-act="deckShare">🔗 Share this deck (link)</button>
-      <button data-act="proxies" data-scope="all">🖨 Print playtest proxies (whole deck)</button>
-      <button data-act="deckBought">✓ I bought this deck — add all cards to my collection</button>
-      <button data-act="deckDup">⧉ Duplicate deck</button>
-      <button data-act="importDeck">↥ Re-import / replace list</button>
-      <button data-act="deckDelete" class="danger">✕ Delete deck</button>
-    </div>${d.source ? `<p class="muted small">Source: ${esc(d.source.kind || "")} · ${esc(d.source.website || "")}${d.source.author ? " · by " + esc(d.source.author) : ""}${d.source.url ? ` · <a href="${esc(safeHref(d.source.url))}" target="_blank" rel="noopener noreferrer">original ↗</a>` : ""}</p>` : ""}`,
-    { type: "deckMenu" },
+    <button class="btn block context-save" data-act="deckSaveInfo">Save changes</button></div></details>
+    <div class="context-group" aria-label="Share and export">
+      ${contextAction('deckShare','share','Share deck',{hint:'Send a link'})}
+      ${contextAction('deckCopy','copy','Copy decklist')}
+      ${contextAction('deckExport','export','Export decklist',{hint:'Text file (.txt)'})}
+    </div>
+    <div class="context-group" aria-label="Manage deck">
+      ${contextAction('snapshot','history','Save a version')}
+      ${contextAction('deckDup','decks','Duplicate deck')}
+      ${contextAction('refreshDeck','refresh','Refresh cards & prices')}
+    </div>
+    <details class="context-edit context-tools"><summary>${actionIcon('more')}<span>More deck tools<small>Reserve copies, import & playtest printing</small></span>${ICON.chevron}</summary><div class="context-edit-body">
+      <label class="check toggle"><input type="checkbox" data-change="deckLock" ${d.locked ? "checked" : ""}><span><b>Assembled</b><small>Reserve these copies for this deck.</small></span></label>
+      ${contextAction('proxies','print','Print playtest proxies',{attrs:'data-scope="all"'})}
+      ${contextAction('deckBought','cardStack','Add deck to collection',{hint:'Add the cards you bought'})}
+      ${contextAction('importDeck','import','Re-import / replace list')}
+    </div></details>
+    <div class="context-group context-danger">${contextAction('deckDelete','close','Delete deck',{danger:true})}</div>
+    ${d.source ? `<p class="context-source muted small">Source: ${esc(d.source.kind || "")} · ${esc(d.source.website || "")}${d.source.author ? " · by " + esc(d.source.author) : ""}${d.source.url ? ` · <a href="${esc(safeHref(d.source.url))}" target="_blank" rel="noopener noreferrer">original ↗</a>` : ""}</p>` : ""}</div>`,
+    { type: "deckMenu",id:d.id },
   );
 };
 const editDeck = (fn, opts = {}) => {

@@ -120,7 +120,7 @@ assert.deepEqual(finishChoices('ptcg',gengar30).map(v=>v.key),['normal'],'Incomp
 // Only an exact source-supplied Holofoil variant unlocks the calibrated region.
 const gengarFoil={...gengar30,variants:[{key:'holofoil',label:'Holofoil',usd:null}]};
 assert.equal(finishEffect('ptcg',gengarFoil,{priceFinish:'holofoil'}),'ptcg-full-art');
-assert.equal(finishEffect('ptcg',{...gengarFoil,id:'30th-090'},{priceFinish:'holofoil'}),'ptcg-full-art','Source-confirmed special-illustration ex layout supports full-card coverage on other printings too');
+assert.equal(finishEffect('ptcg',{...gengarFoil,id:'30th-090'},{priceFinish:'holofoil'}),'unknown','Anniversary special layouts cannot inherit another printing’s full-card map');
 console.log('PASS: exact Gengar 154/128 full-art region is supported only with explicit Holofoil availability; generated catalogue data and another printing do not inherit it.');
 
 const charizard=normalizePtcg(await fixture('swsh4.5sv-SV107'));

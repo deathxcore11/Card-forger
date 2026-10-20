@@ -8,6 +8,7 @@ import {ygoRarity} from './ygo-identity.js';
 import {sharedDeckSheet} from './shared-deck-view.js';
 import {finishAttrs,finishPreview,finishArtworkCard} from './finish-preview.js';
 import {deckBoxMarkup,deckBoxFields,readDeckBox} from './deck-box.js';
+import {contextAction,contextHeader,deckContextShortcuts} from './card-actions.js';
 import {detailSetSummary,detailOwnedSummary,miniPrintingMarkup} from './card-detail-extras.js';
 import {privateKey} from './account-scope.js';
 import {detailOwnedGroups,detailOwnedLots} from './quick-quantity.js';
@@ -4042,13 +4043,24 @@ export function registerTcg(c) {
   A.tDeckMenu = (t) => {
     const G = g(),
       d = gs(G).decks.find((x) => x.id === t.dataset.id);
+    if(!d)return;
+    const cards=(d.zones.main||[]).map(r=>{const c=cardOf(G,r.cardId);return {name:c?.name||r.cardId,image:artworkSources(c).find(u=>u.startsWith('https://'))};}),
+      count=Object.values(d.zones||{}).flat().reduce((n,r)=>n+(Number(r.qty)||0),0),attrs=`data-id="${esc(d.id)}"`;
     openSheet(
-      `<div class="sheet-head"><h2>Deck options</h2><button class="icon" data-act="closeSheet">✕</button></div>
+      `<div class="context-menu context-deck">${contextHeader({kind:G==='ptcg'?'Pokémon deck':'Yu-Gi-Oh! deck',name:d.name,meta:[formatOf(G,d.format).name,`${count} cards`].join(' · '),art:deckBoxMarkup(d,{game:G,images:cards.map(c=>c.image)})})}
+      ${deckContextShortcuts(d.id,true)}
+      <details class="context-edit"><summary>${ICON.settings}<span>Edit deck<small>Name, format & appearance</small></span>${ICON.chevron}</summary><div class="context-edit-body">
       <div class="grid2"><label class="span2">Name<input id="tDmName" maxlength="100" value="${esc(d.name)}"></label><label class="span2">Format<select id="tDmFormat">${options(formatsOf(G).map((f) => [f.id, f.name]), d.format)}</select></label></div>
-      ${deckBoxFields(d,(d.zones.main||[]).map(r=>{const c=cardOf(G,r.cardId);return {name:c?.name||r.cardId,image:artworkSources(c).find(u=>u.startsWith("https://"))};}))}
-      <button class="btn block" data-act="tDeckSave" data-id="${esc(d.id)}">Save</button>
-      <div class="menu-list"><button data-act="tShare" data-id="${esc(d.id)}">🔗 Share this deck (link)</button><button data-act="tDeckExport" data-id="${esc(d.id)}">↓ Export ${SOURCES[G].exportExt === "ydk" ? ".ydk" : "list"}</button><button data-act="tDeckCopy" data-id="${esc(d.id)}">⧉ Copy list</button><button data-act="tDeckDup" data-id="${esc(d.id)}">⧉ Duplicate</button><button class="danger" data-act="tDeckDelete" data-id="${esc(d.id)}">✕ Delete deck</button></div>`,
-      { type: "tdeckmenu" },
+      ${deckBoxFields(d,cards)}
+      <button class="btn block context-save" data-act="tDeckSave" ${attrs}>Save changes</button></div></details>
+      <div class="context-group" aria-label="Share and export">
+        ${contextAction('tShare','share','Share deck',{attrs,hint:'Send a link'})}
+        ${contextAction('tDeckCopy','copy','Copy decklist',{attrs})}
+        ${contextAction('tDeckExport','export','Export decklist',{attrs,hint:SOURCES[G].exportExt==='ydk'?'Yu-Gi-Oh! file (.ydk)':'Text file (.txt)'})}
+      </div>
+      <div class="context-group" aria-label="Manage deck">${contextAction('tDeckDup','decks','Duplicate deck',{attrs})}</div>
+      <div class="context-group context-danger">${contextAction('tDeckDelete','close','Delete deck',{attrs,danger:true})}</div></div>`,
+      { type: "tdeckmenu",id:d.id,game:G },
     );
   };
   A.tDeckSave = async (t) => {

@@ -44,6 +44,11 @@ export function finishEligible(el){
  return el.dataset.finishSurface==='detail'||el.dataset.finishSurface==='zoom'||(el.dataset.finishSurface==='large'&&!!el.closest?.('.view-gallery')&&!el.closest?.('.view-compact,.view-symbols'));
 }
 function modelOf(el){try{return JSON.parse(el.dataset.finishModel||'{}');}catch{return {};}}
+// Per-image maps must never paint a later fallback or custom scan they were not measured on.
+export function finishImageMatches(model,source){
+ if(!model.imageSources)return true;
+ try{const base=globalThis.location?.href||'https://cardstashy.com/',actual=new URL(source,base);return model.imageSources.some(value=>{const expected=new URL(value,base);return actual.origin===expected.origin&&actual.pathname===expected.pathname;});}catch{return false;}
+}
 const attached=new WeakMap();
 export function attachFinishPreview(root){
  if(!root)return ()=>{};
@@ -71,6 +76,7 @@ export function attachFinishPreview(root){
   if(mounted.has(el)){const old=mounted.get(el);if(old.model===el.dataset.finishModel&&old.src===old.img.currentSrc&&old.overlay.isConnected)return size(el);unmount(el);}
   const img=el.querySelector?.('img'),host=el.dataset.finishSurface==='detail'?(el.querySelector('.cd-zoom')||el):el;
   if(!img||!img.complete||!img.naturalWidth||img.hidden)return;
+  if(!finishImageMatches(p,img.currentSrc||img.src))return unmount(el);
   const overlay=img.ownerDocument.createElement('span');overlay.className='finish-overlay'+(el.dataset.finishSurface==='large'?' finish-auto':'');
   if(p.materialProfile)overlay.dataset.materialProfile=p.materialProfile;
   if(el.dataset.finishSurface==='large'){const phase=String(p.printingId||'').split('').reduce((n,c)=>n+c.charCodeAt(0),0)%80;overlay.style.animationDelay=`-${phase/10}s`;}

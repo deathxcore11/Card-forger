@@ -1,3 +1,4 @@
+import {ANNIVERSARY_MAPS} from './pokemon-anniversary-masks.js';
 // Printing-aware presentation only. Never infer availability from a quote, value or frame.
 import {quoteForContext,validSetContext} from './pricing-presentation.js';
 import {pokemonVariantChoices,pokemonVariantProductConflict} from './pokemon-variant-options.js';
@@ -13,10 +14,30 @@ export const FINISH_SOURCES = Object.freeze({
 });
 // Normalized source-image coordinates. Geometry is an approximation, not an authentication aid.
 export const FINISH_MASKS = Object.freeze({
+ ...Object.fromEntries(Object.values(ANNIVERSARY_MAPS).map(p=>[p.mask,p.css])),
  card:'inset(0 round 4% / 3%)',
  'pk-expedition-art':'polygon(25% 12.4%,96.5% 12.4%,96.5% 48.2%,25% 48.2%,18% 47.4%,13% 44.8%,10% 40%,10% 22%,12% 17.8%,17% 14.4%)',
  // Conservative known reverse-foil field. E-reader strips/frame are deliberately excluded.
  'pk-expedition-field':'inset(51.5% 4% 14% 12%)',
+ // Individually traced TCGdex Base Set fronts. Native pixels and retained
+ // image hashes: tests/fixtures/base-set-frames/geometry.json. Edition choices
+ // share these reference images; other source images keep their existing map.
+ 'pk-base1-1-tcgdex-art':'polygon(10.833333% 17.090909%,11.666667% 17.090909%,12.333333% 16.848485%,13.000000% 16.969697%,13.833333% 17.575758%,14.500000% 17.333333%,15.166667% 16.848485%,16.000000% 16.969697%,16.666667% 17.090909%,17.333333% 16.121212%,18.166667% 15.636364%,19.166667% 15.151515%,20.000000% 14.909091%,20.666667% 13.696970%,21.666667% 12.848485%,23.000000% 12.242424%,24.166667% 12.000000%,89.666667% 12.000000%,89.666667% 51.636364%,10.833333% 51.636364%)',
+ 'pk-base1-2-tcgdex-art':'polygon(10.833333% 16.969697%,11.666667% 16.727273%,12.333333% 16.969697%,13.333333% 17.575758%,14.000000% 17.333333%,14.833333% 16.606061%,15.666667% 16.969697%,16.500000% 16.727273%,17.333333% 15.636364%,18.500000% 15.030303%,19.833333% 14.666667%,20.333333% 13.575758%,21.166667% 12.848485%,22.666667% 12.242424%,24.000000% 11.757576%,89.500000% 11.757576%,89.500000% 51.515152%,10.833333% 51.515152%)',
+ 'pk-base1-3-tcgdex-art':'polygon(10.666667% 12.121212%,89.166667% 12.121212%,89.166667% 51.636364%,10.666667% 51.636364%)',
+ 'pk-base1-4-tcgdex-art':'polygon(11.000000% 17.090909%,11.666667% 17.090909%,12.333333% 16.848485%,13.000000% 17.090909%,13.833333% 17.575758%,14.500000% 17.333333%,15.333333% 16.848485%,16.166667% 17.090909%,16.666667% 16.969697%,17.166667% 16.242424%,18.166667% 15.515152%,19.166667% 15.030303%,20.166667% 14.545455%,20.666667% 13.575758%,21.666667% 12.848485%,23.333333% 12.121212%,24.333333% 11.878788%,89.500000% 11.878788%,89.500000% 51.515152%,11.000000% 51.515152%)',
+ 'pk-base1-5-tcgdex-art':'polygon(10.833333% 12.000000%,89.333333% 12.000000%,89.333333% 51.757576%,10.833333% 51.757576%)',
+ 'pk-base1-6-tcgdex-art':'polygon(11.166667% 17.090909%,12.000000% 16.727273%,12.500000% 16.969697%,13.500000% 17.696970%,14.333333% 17.333333%,15.000000% 16.727273%,15.833333% 16.969697%,16.500000% 17.212121%,17.333333% 16.242424%,18.333333% 15.515152%,19.833333% 14.909091%,20.500000% 14.060606%,21.500000% 13.212121%,23.000000% 12.363636%,24.333333% 12.000000%,89.333333% 12.000000%,89.333333% 51.515152%,11.166667% 51.515152%)',
+ 'pk-base1-7-tcgdex-art':'polygon(10.833333% 12.000000%,89.166667% 12.000000%,89.166667% 51.636364%,10.833333% 51.636364%)',
+ 'pk-base1-8-tcgdex-art':'polygon(10.833333% 17.212121%,11.666667% 16.848485%,12.333333% 16.848485%,13.333333% 17.575758%,14.166667% 17.454545%,15.000000% 16.848485%,15.666667% 16.969697%,16.333333% 17.090909%,17.166667% 15.878788%,18.333333% 15.272727%,19.833333% 14.666667%,20.500000% 13.575758%,21.333333% 12.848485%,23.000000% 12.242424%,24.333333% 11.878788%,89.500000% 11.878788%,89.500000% 51.515152%,10.833333% 51.515152%)',
+ 'pk-base1-9-tcgdex-art':'polygon(10.500000% 17.090909%,11.333333% 16.969697%,12.166667% 16.727273%,13.500000% 17.575758%,14.166667% 17.333333%,15.000000% 16.727273%,15.833333% 16.969697%,16.500000% 16.969697%,17.333333% 15.878788%,18.500000% 15.272727%,19.666667% 14.787879%,20.333333% 13.575758%,21.500000% 12.727273%,23.166667% 12.121212%,24.333333% 12.000000%,89.166667% 12.000000%,89.166667% 51.515152%,10.500000% 51.515152%)',
+ 'pk-base1-10-tcgdex-art':'polygon(11.166667% 11.757576%,89.333333% 11.757576%,89.333333% 51.393939%,11.166667% 51.393939%)',
+ 'pk-base1-11-tcgdex-art':'polygon(11.166667% 17.333333%,11.833333% 17.212121%,12.666667% 16.969697%,13.833333% 17.818182%,14.500000% 17.575758%,15.333333% 17.090909%,16.166667% 17.333333%,16.666667% 17.212121%,17.500000% 16.121212%,18.500000% 15.393939%,20.166667% 14.909091%,20.666667% 13.939394%,21.833333% 13.212121%,23.333333% 12.484848%,24.666667% 12.242424%,89.666667% 12.242424%,89.666667% 51.878788%,11.166667% 51.878788%)',
+ 'pk-base1-12-tcgdex-art':'polygon(10.666667% 17.212121%,11.666667% 16.969697%,12.333333% 16.969697%,13.333333% 17.575758%,14.166667% 17.454545%,15.000000% 16.848485%,15.833333% 16.969697%,16.500000% 17.090909%,17.333333% 16.000000%,18.500000% 15.272727%,19.833333% 14.787879%,20.500000% 13.696970%,21.500000% 12.969697%,23.166667% 12.363636%,24.500000% 12.121212%,89.000000% 12.121212%,89.000000% 51.636364%,10.666667% 51.636364%)',
+ 'pk-base1-13-tcgdex-art':'polygon(10.833333% 17.333333%,11.833333% 17.212121%,12.500000% 17.090909%,13.833333% 17.939394%,14.500000% 17.696970%,15.333333% 17.090909%,16.166667% 17.333333%,16.833333% 17.333333%,17.500000% 16.121212%,18.666667% 15.515152%,20.000000% 15.030303%,20.666667% 13.939394%,21.833333% 13.212121%,23.333333% 12.606061%,24.666667% 12.242424%,89.666667% 12.242424%,89.666667% 51.878788%,10.833333% 51.878788%)',
+ 'pk-base1-14-tcgdex-art':'polygon(10.500000% 17.090909%,11.333333% 16.727273%,12.333333% 16.969697%,13.500000% 17.696970%,14.166667% 17.333333%,15.000000% 16.848485%,15.833333% 17.212121%,16.500000% 16.848485%,17.333333% 15.878788%,18.500000% 15.272727%,20.000000% 14.909091%,20.500000% 13.696970%,21.500000% 12.969697%,23.166667% 12.363636%,24.500000% 12.121212%,89.333333% 12.121212%,89.333333% 51.757576%,10.500000% 51.757576%)',
+ 'pk-base1-15-tcgdex-art':'polygon(10.833333% 17.090909%,11.833333% 16.848485%,12.500000% 16.848485%,13.500000% 17.575758%,14.333333% 17.333333%,15.166667% 16.727273%,15.833333% 17.090909%,16.666667% 16.848485%,17.500000% 15.757576%,18.666667% 15.151515%,20.000000% 14.787879%,20.666667% 13.575758%,21.666667% 12.848485%,23.166667% 12.242424%,24.500000% 12.000000%,89.333333% 12.000000%,89.333333% 51.515152%,10.833333% 51.515152%)',
+ 'pk-base1-16-tcgdex-art':'polygon(10.833333% 11.757576%,89.333333% 11.757576%,89.333333% 51.272727%,10.833333% 51.272727%)',
  'pk-base-art':'polygon(24% 11.8%,89.8% 11.8%,89.8% 51.6%,10.8% 51.6%,10.8% 18%,19% 18%,24% 14%)',
  'pk-base1-4-art':'inset(12% 10.3333% 48.3636% 11%)',
  'pk-base4-20-art':'inset(11.8788% 11.1667% 49.0909% 11.3333%)',
@@ -148,7 +169,7 @@ function exactOverride(game,c,key,face){
 // Measured frame family for ordinary Pokémon/Trainer fronts (see FINISH_MASKS),
 // or '' when the printed layout has no reviewed geometry. Stage picks the
 // Basic or evolved window; it never adds a finish.
-const PK_FRAME_ERAS=[[/^base[1-3]$/i,'pk-wotc'],[/^(?:base5|gym[12])$/i,'pk-gym'],[/^neo[1-4]$/i,'pk-neo'],[/^lc$/i,'pk-lc'],[/^ecard[1-3]$/i,'pk-ecard'],[/^ex[1-6]$/i,'pk-exa'],[/^ex(?:[7-9]|1[0-6])$/i,'pk-exb'],[/^(?:dp|pl)/i,'pk-dppt'],[/^(?:hgss|col)/i,'pk-hgss'],[/^(?:bw|xy|g1$|dc1|dv1)/i,'pk-bwxy'],[/^(?:sm|det1)/i,'pk-sm'],[/^(?:swsh|cel25|pgo)/i,'pk-swsh'],[/^(?:sv|me)/i,'pk-sv']];
+const PK_FRAME_ERAS=[[/^base[1-3]$/i,'pk-wotc'],[/^(?:base5|gym[12])$/i,'pk-gym'],[/^neo[1-4]$/i,'pk-neo'],[/^lc$/i,'pk-lc'],[/^ecard[1-3]$/i,'pk-ecard'],[/^ex[1-6]$/i,'pk-exa'],[/^ex(?:[7-9]|1[0-6])$/i,'pk-exb'],[/^(?:dp|pl)/i,'pk-dppt'],[/^(?:hgss|col)/i,'pk-hgss'],[/^(?:bw|xy|g1$|dc1|dv1)/i,'pk-bwxy'],[/^(?:sm|det1)/i,'pk-sm'],[/^(?:swsh|cel25$|pgo)/i,'pk-swsh'],[/^(?:sv|me)/i,'pk-sv']];
 export function pokemonFrame(c){
  const set=c?.set?.id||'',base=PK_FRAME_ERAS.find(([re])=>re.test(set))?.[1],category=norm(c?.category||'Pokemon'),stage=norm(c?.stage);
  if(!base)return '';
@@ -176,16 +197,31 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
  }
  if(game==='ptcg'){
   const set=c.set?.id||'',rarity=norm(c.rarity),category=norm(c.category||'Pokemon');
-  // Exact full-card illustration shown in the user's Holofoil detail screenshot.
-  // The source currently has generated availability; this never creates a foil option.
-  if(set==='30th'&&c.id==='30th-154'&&physicalFinish==='holofoil')return preset(key,label,'ptcg-full-art',[layer('card','rainbow')],FINISH_SOURCES.gengar30);
+  // Anniversary reprints retain several different original-era layouts. Never
+  // route them through an era prefix or a name-based full-card fallback.
+  if(/^(?:cel25cc|cel25c|30th-c|30th)$/.test(set)){
+   const entry=ANNIVERSARY_MAPS[c.id],variant=c.variants?.find(v=>v.key===key),image=variant?.imageLarge||variant?.image||c.imageLarge||c.image||'';
+   // The 30th Classic catalogue's gallery URLs are unavailable/card-back
+   // references; artworkSources already falls through to the exact product route.
+   const fallback=set==='30th-c'&&image===`https://images.pokemontcg.io/me55c/${Number(c.id.split('-').at(-1))}_hires.png`;
+   if(physicalFinish!=='holofoil'||!entry||(!fallback&&!entry.images.includes(image.split('?')[0])))return unknown(key,label);
+   return {...preset(key,label,entry.effect,[layer(entry.mask,entry.effect==='ptcg-full-art'?'rainbow':'holo')],entry.source),imageSources:entry.images,reason:'Simulated finish · measured reference-art window; anniversary mark excluded'};
+  }
   // Exact Expedition Alakazam layout shown by the user; standard and jumbo retain separate keys.
   if(set==='ecard1'&&['ecard1-1','ecard1-33'].includes(c.id)){
    if(physicalFinish==='holofoil')return preset(key,label,'ptcg-expedition-holo',[layer('pk-expedition-art','holo')],FINISH_SOURCES.expedition);
    if(physicalFinish==='reverse-holofoil')return {...preset(key,label,'ptcg-expedition-reverse',[layer('pk-expedition-field','rainbow')],FINISH_SOURCES.expedition),reason:'Simulated reverse holo · partial coverage'};
   }
   // Base Set standard holo Pokemon have this illustration-only layout. Exclude promos/reprints.
-  if(set==='base1'&&/^base1-(?:[1-9]|1[0-6])$/.test(c.id)&&physicalFinish==='holofoil')return preset(key,label,'ptcg-holo',[layer(c.id==='base1-4'?'pk-base1-4-art':'pk-base-art','holo')],FINISH_SOURCES.base);
+  if(set==='base1'&&/^base1-(?:[1-9]|1[0-6])$/.test(c.id)&&physicalFinish==='holofoil'){
+   // Fit the displayed scan, not the commercial edition label. The provider
+   // currently shares one reference image across its Base Set edition choices.
+   const variant=c.variants?.find(v=>v.key===key),image=variant?.imageLarge||variant?.image||c.imageLarge||c.image||'';
+   const number=c.id.slice(6),prefix=`https://assets.tcgdex.net/en/base/base1/${number}/`;
+   const traced=image.startsWith(prefix)&&/^(?:high|low)\.webp(?:[?#]|$)/.test(image.slice(prefix.length));
+   const mask=traced?`pk-${c.id}-tcgdex-art`:c.id==='base1-4'?'pk-base1-4-art':'pk-base-art';
+   return preset(key,label,'ptcg-holo',[layer(mask,'holo')],traced?image:FINISH_SOURCES.base);
+  }
   if(set==='base4'&&c.id==='base4-20'&&physicalFinish==='holofoil')return preset(key,label,'ptcg-holo',[layer('pk-base4-20-art','holo')],'https://api.tcgdex.net/v2/en/cards/base4-20');
   if(set==='neo1'&&c.id==='neo1-9'&&physicalFinish==='holofoil')return {...preset(key,label,'ptcg-holo',[layer('pk-neo1-9-art','holo')],'https://api.tcgdex.net/v2/en/cards/neo1-9'),reason:'Simulated illustration-window holo'};
   // Finish availability is still source-supplied. Layout identifies where that

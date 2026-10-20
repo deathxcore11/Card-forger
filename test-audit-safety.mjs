@@ -1,3 +1,5 @@
+import {contextAction,contextHeader,deckContextShortcuts} from './card-actions.js';
+import {ICON,actionIcon} from './icons.js';
 import {recoveryKey,recoverySummary,appendRecoverySnapshot,createRecoverySnapshot} from './recovery-store.js';
 import {mergeValueHistory} from './value-history.js';
 import {addScannedEntry} from './collection-stack.js';
@@ -111,7 +113,7 @@ navigation.restoreSheet(navigation.sheetTrail.pop());assert(body.innerHTML.inclu
 navigation.restoreSheet(navigation.sheetTrail.pop());assert(body.innerHTML.includes('Fresh A'));assert.equal(head.buttons.length,0,'root has no stale Back button');assert.equal(navigation.restoringSheet,false);
 
 // A backup source URL remains inert in the deck options, not only Inspiration.
-let menuHtml='';const menu={A:{},deckBoxFields:()=>'',meta:()=>null,cardImage:()=>'',currentDeck:()=>({name:'Deck',format:'Modern',source:{url:'javascript:alert(1)'}}),openSheet:html=>{menuHtml=html;},esc,safeHref,formatSelect:()=>'',options:()=>''};
+let menuHtml='';const menu={A:{},contextAction,contextHeader,deckContextShortcuts,ICON,actionIcon,formatOf,deckBoxMarkup:()=>'',deckBoxFields:()=>'',meta:()=>null,cardImage:()=>'',currentDeck:()=>({name:'Deck',format:'Modern',source:{url:'javascript:alert(1)'}}),openSheet:html=>{menuHtml=html;},esc,safeHref,formatSelect:()=>'',options:()=>''};
 vm.createContext(menu);vm.runInContext(segment('A.deckMenu =','\nconst editDeck ='),menu);menu.A.deckMenu();assert(menuHtml.includes('href="#"'));assert(!menuHtml.includes('href="javascript:'));
 console.log('PASS: queued deletion confirmation, safe sideboard backups, queued form snapshots, multi-level Back refresh and safe deck source links.');
 

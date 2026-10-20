@@ -1,4 +1,18 @@
 import {actionIcon} from './icons.js';
+import {esc} from './ui.js';
+
+// Shared visual language for touch sheets and desktop context dialogs. These
+// are ordinary buttons in a modal, not ARIA menus (they also contain forms).
+export function contextAction(act,icon,label,{hint='',attrs='',danger=false,disabled=false}={}) {
+ return `<button type="button" class="context-action${danger?' danger':''}" data-act="${esc(act)}" ${attrs}${disabled?' disabled':''}>${actionIcon(icon)}<span>${esc(label)}${hint?`<small>${esc(hint)}</small>`:''}</span></button>`;
+}
+export function contextHeader({kind,name,meta='',art=''}) {
+ return `<div class="sheet-head context-head">${art?`<div class="context-art">${art}</div>`:''}<div class="context-identity"><span class="context-kicker">${esc(kind)}</span><h2>${esc(name)}</h2>${meta?`<p>${esc(meta)}</p>`:''}</div><button type="button" class="icon context-close" data-act="closeSheet" aria-label="Close actions">${actionIcon('close')}</button></div>`;
+}
+export function deckContextShortcuts(id,tcg=false) {
+ const tabs=[['cards','cardStack','Cards'],[tcg?'insights':'engine','trophy','Power'],['matchups','sword','Matchups'],['playtest','random','Playtest']];
+ return `<div class="context-shortcuts" aria-label="Open deck section">${tabs.map(([tab,icon,label])=>contextAction('tileOpen',icon,label,{attrs:`data-deck="${esc(id)}" data-tcg="${tcg?'1':''}" data-tab="${tab}"`})).join('')}</div>`;
+}
 // A hold is deliberate; a scroll is never a card selection.
 export const HOLD_MS = 480, MOVE_PX = 10;
 export function moved(start, event) {
@@ -78,5 +92,5 @@ export function cardActionButtons({game, wished=false, existing=false, second=fa
     ['quickWish','heart',wished && game !== 'mtg' ? 'Remove from wishlist' : 'Add to wishlist'],
     ['quickBinder','binder',existing ? 'Move to binder' : 'Add to binder'],
   ];
-  return `${quantityHtml}<div class="card-action-list">${actions.map(([act,icon,label,hint])=>`<button data-act="${act}">${actionIcon(icon)}<span>${label}${hint?`<small>${hint}</small>`:''}</span></button>`).join('')}</div>`;
+  return `${quantityHtml}<div class="context-group card-action-list" aria-label="Card actions">${actions.map(([act,icon,label,hint])=>contextAction(act,icon,label,{hint})).join('')}</div>`;
 }
