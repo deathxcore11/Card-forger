@@ -5997,8 +5997,8 @@ async function storageDetail() {
     if(!el?.isConnected||generation!==accountGeneration||(cloudInfo().user?.id||null)!==owner)return;
     el.textContent=`${s.usage!==undefined?`${(s.usage/1048576).toFixed(1)} MB used by this site`:'Storage estimate unavailable'}${s.quota?` · about ${(s.quota/1048576).toFixed(0)} MB allowed`:''}. ${s.persistent?'Browser cleanup protection is enabled.':s.persistent===false?'Device data may be removed by the browser under storage pressure.':'Browser cleanup protection could not be checked.'}`;
     let text='Unavailable',batch='Unavailable';
-    try{text=`${(localStorageFootprint()/1000000).toFixed(2)} million characters`;const scan=batchStorageSummary();batch=`${scan.count} pending · ${(scan.chars/1000000).toFixed(2)} million characters`;}catch{}
-    if(breakdown?.isConnected)breakdown.innerHTML=`<div><span>Pending scan captures</span><b>${esc(batch)}</b></div><div><span>Browser text storage</span><b>${esc(text)}</b></div><div><span>Downloaded images</span><b>${images.available?images.count+' cached':'Unavailable'}</b></div><p class="foot">Scans use a separate text-storage limit. Total site space does not indicate how much scan space remains. Other accounts’ pending scans are preserved.</p>`;
+    try{text=`~${(localStorageFootprint()*2/1048576).toFixed(1)} MB`;const scan=batchStorageSummary();batch=`${scan.count} pending · ~${(scan.chars*2/1048576).toFixed(1)} MB`;}catch{}
+    if(breakdown?.isConnected)breakdown.innerHTML=`<div><span>Pending scan captures</span><b>${esc(batch)}</b></div><div><span>Local browser data</span><b>${esc(text)}</b></div><div><span>Downloaded images</span><b>${images.available?images.count+' cached':'Unavailable'}</b></div><p class="foot">Sizes are estimates. Pending scans use a separate browser limit from total site storage. Other accounts’ pending scans are preserved.</p>`;
   } catch {if(el?.isConnected)el.textContent='Storage details are unavailable. Your saved data has not been changed.';}
 }
 
