@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {CONDITION_REFRESH_LIMITS,createConditionRefreshScheduler,selectConditionLots,changedConditionLots,conditionLotIdentity,conditionCursorKey} from './condition-refresh-scheduler.js';
-import {loadConditionQuotes,applyConditionQuotes,conditionRequest,CONDITION_IDENTITY} from './condition-feed.js';
+import {loadConditionQuotes,applyConditionQuotes,conditionRequest,conditionQuoteEntry,CONDITION_IDENTITY} from './condition-feed.js';
 import {conditionValue} from './condition-value.js';
 import {registerScanner} from './scancam.js';
 import {loadBatch,saveBatch} from './scan-batch.js';
@@ -177,7 +177,7 @@ function harness(){
  const disk=new Map([['workspace',structuredClone(initial)]]),body=deferred(),firstWrite=deferred(),releaseWrite=deferred();
  let storageQueue=Promise.resolve(),writes=0,networkCalls=0,quoteCallbacks=0,homeRefreshes=0;
  const scheduled=[];
- const c={S:{state:initial,catalog:{[card.name.toLowerCase()]:card},ui:{view:'scan'}},navigator:{onLine:true},structuredClone,Date,Promise,CONDITION_IDENTITY,conditionRequest,applyConditionQuotes,conditionValue,changedConditionLots,conditionLotIdentity,
+ const c={S:{state:initial,catalog:{[card.name.toLowerCase()]:card},ui:{view:'scan'}},navigator:{onLine:true},structuredClone,Date,Promise,conditionQuoteEntry,CONDITION_IDENTITY,conditionRequest,conditionQuoteEntry,applyConditionQuotes,conditionValue,changedConditionLots,conditionLotIdentity,
   createConditionRefreshScheduler:()=>createConditionRefreshScheduler({intervalMs:0}),
   loadConditionQuotes:(card,entry,game)=>loadConditionQuotes(card,entry,game,async()=>{networkCalls++;return {ok:true,json:()=>body.promise};}),
   key:s=>String(s).toLowerCase(),meta:name=>c.S.catalog[String(name).toLowerCase()],T:{game:()=> 'mtg',gs:game=>c.S.state.tcg[game],cardOf:()=>null,persistQuoteCache(){},currentYgoCatalogue:()=>[]},
@@ -228,7 +228,7 @@ Object.assign(c,{recoveryKey,appendRecoverySnapshot,createRecoverySnapshot});vm.
 const source=app.slice(app.indexOf('let conditionScheduler='),app.indexOf('function refreshChangedConditions('));
 const card={id:'88000001',game:'ygo',name:'Synthetic reused-code card',sets:[{code:'SET-EN001',rarity:'Rare'}]};let raw=card,resolve,requests=0,callbacks=0;
 const response=new Promise(r=>resolve=r),entry={cardId:card.id,printing:'SET-EN001',rarity:'Rare',edition:'unlimited',language:'en',condition:'Lightly Played',setReleaseId:'release-A',setReleaseUnverified:false};
-const context={S:{state:{collection:[],tcg:{ygo:{collection:[]}}},ui:{}},navigator:{onLine:true},conditionWorkspaceRevision:0,CONDITION_IDENTITY,conditionRequest,applyConditionQuotes,conditionValue,createConditionRefreshScheduler:()=>createConditionRefreshScheduler({intervalMs:0}),loadConditionQuotes:(...args)=>loadConditionQuotes(...args,async()=>{requests++;return {ok:true,json:()=>response};}),queueWorkspaceWrite:fn=>fn(),key:s=>s,meta:()=>null,T:{cardOf:()=>raw,currentYgoCatalogue:()=>[],setContextCard:()=>({setContext:{status:'resolved',printings:raw.sets}}),gs:()=>({collection:[]}),persistQuoteCache(){}}};
+const context={S:{state:{collection:[],tcg:{ygo:{collection:[]}}},ui:{}},navigator:{onLine:true},conditionWorkspaceRevision:0,conditionQuoteEntry,CONDITION_IDENTITY,conditionRequest,conditionQuoteEntry,applyConditionQuotes,conditionValue,createConditionRefreshScheduler:()=>createConditionRefreshScheduler({intervalMs:0}),loadConditionQuotes:(...args)=>loadConditionQuotes(...args,async()=>{requests++;return {ok:true,json:()=>response};}),queueWorkspaceWrite:fn=>fn(),key:s=>s,meta:()=>null,T:{cardOf:()=>raw,currentYgoCatalogue:()=>[],setContextCard:()=>({setContext:{status:'resolved',printings:raw.sets}}),gs:()=>({collection:[]}),persistQuoteCache(){}}};
 Object.assign(context,{recoveryKey,appendRecoverySnapshot,createRecoverySnapshot});vm.createContext(context);vm.runInContext(source,context);
 const pending=context.fetchConditionValue(card,entry,'ygo',()=>callbacks++);
 for(let i=0;i<100&&!requests;i++)await new Promise(r=>setTimeout(r,0));assert.equal(requests,1);

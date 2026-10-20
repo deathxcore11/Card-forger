@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {S,blank} from './store.js';
 import {registerTcg,cache,tcgAddSheet} from './tcg.js';
-import {conditionRequest,applyConditionQuotes,CONDITION_IDENTITY} from './condition-feed.js';
+import {conditionRequest,applyConditionQuotes,conditionQuoteEntry,CONDITION_IDENTITY} from './condition-feed.js';
 import {conditionValue,conditionPriceHtml,conditionManualPlaceholder,conditionName} from './condition-value.js';
 import {createConditionRefreshScheduler} from './condition-refresh-scheduler.js';
 import {missingConditionNotice} from './condition-feed-route.js';
@@ -53,7 +53,7 @@ for(const game of ['mtg','ptcg','ygo']){
  const waiting=new Promise(resolve=>release=resolve);
  const fetchQuote=(_card,selection)=>{selected=selection;if(selection.manualValue!==null)return Promise.resolve({status:'manual'});requests++;return waiting;};
  const T={game:()=>game,entryPrice:(c,e)=>conditionValue(60.8,e,c.conditionQuotes).price,referenceEntryPrice:()=>60.8};
- const refresh=new Function('$','S','T','contextTcgCard','conditionValue','conditionName','conditionPriceHtml','conditionManualPlaceholder','conditionBuyLink','CONDITION_IDENTITY','fetchConditionValue','cardPrice',controllerSource+';return refreshConditionPrice;')($,state,T,()=>card,conditionValue,conditionName,conditionPriceHtml,conditionManualPlaceholder,()=>null,CONDITION_IDENTITY,fetchQuote,()=>60.8);
+ const refresh=new Function('$','S','T','contextTcgCard','conditionValue','conditionName','conditionPriceHtml','conditionManualPlaceholder','conditionBuyLink','conditionQuoteEntry','CONDITION_IDENTITY','fetchConditionValue','cardPrice',controllerSource+';return refreshConditionPrice;')($,state,T,()=>card,conditionValue,conditionName,conditionPriceHtml,conditionManualPlaceholder,()=>null,conditionQuoteEntry,CONDITION_IDENTITY,fetchQuote,()=>60.8);
  refresh();assert.equal(requests,1);assert.equal(controls.lotManualValue.placeholder,'Enter custom value (optional)');
  controls.lotManualValue.value='75.50';refresh();await tick();
  assert.match(controls.conditionPricePreview.innerHTML,/condition-price-amount">\$75\.50/);assert.match(controls.conditionPricePreview.innerHTML,/>Custom</);
