@@ -34,12 +34,12 @@ export function conditionRequest(card,entry,game){
  return '/api/prices/conditions?'+params;
 }
 // Resolve legacy lots for this lookup without editing their saved identity.
-function quoteEntry(card,entry){
+export function conditionQuoteEntry(card,entry){
  const variants=card?.variants?.filter(v=>v.key===entry.variant);
  return {...entry,...(!entry.productId&&variants?.length===1&&variants[0].productId?{productId:variants[0].productId}:{})};
 }
 export function loadConditionQuotes(card,entry,game,fetcher=fetch){
- entry=quoteEntry(card,entry);
+ entry=conditionQuoteEntry(card,entry);
  const url=conditionRequest(card,entry,game);if(!url)return null;
  const stamp=attempted.get(url);if(stamp!==undefined && Date.now()<stamp)return null;
  attempted.set(url,Date.now()+3600000);
@@ -67,7 +67,7 @@ function compatibleConditionQuote(q,entry){
   (!entry.productId||String(q.productId||'')===String(entry.productId))&&CONDITION_IDENTITY.every(k=>q[k]==null||String(q[k])===String(entry[k]||''));
 }
 export function applyConditionQuotes(card,entry,rawQuotes=[]){
- entry=quoteEntry(card,entry);
+ entry=conditionQuoteEntry(card,entry);
  const identity=Object.fromEntries(CONDITION_IDENTITY.map(k=>[k,entry[k]||'']));
  const quotes=rawQuotes.filter(q=>compatibleConditionQuote(q,entry)).map(q=>({...q,...identity}));
  const same=q=>CONDITION_IDENTITY.every(k=>String(q[k]||'')===String(identity[k]||''));

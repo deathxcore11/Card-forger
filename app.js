@@ -26,7 +26,7 @@ import {createSettingsDialog} from './settings-dialog.js';
 import { normalizeHomeDeckActivity, recordHomeDeckWork } from "./home-deck-activity.js";
 import { syncGameTabs, attachGameTabs, attachHomeCommunity, refreshHomeCommunity, isHomeRevealCurrent, homeDeckReveal, refreshHomeValue, homeValueCoverage, homeMetaSnapshot } from "./home-ui.js";
 import {attachRuleLearning} from './rule-learning.js';
-import {configureConditionAuth,clearConditionAttempts,forgetConditionAttempt,loadConditionQuotes,applyConditionQuotes,conditionRequest,CONDITION_IDENTITY} from './condition-feed.js';
+import {configureConditionAuth,clearConditionAttempts,forgetConditionAttempt,loadConditionQuotes,applyConditionQuotes,conditionRequest,conditionQuoteEntry,CONDITION_IDENTITY} from './condition-feed.js';
 import {createConditionRefreshScheduler,conditionCursorKey,selectConditionLots,changedConditionLots,conditionLotIdentity} from './condition-refresh-scheduler.js';
 import {brandMark} from './brand.js';
 import {ownedCardLots,quickQuantity,adjustOwnedLot} from './quick-quantity.js';
@@ -1534,7 +1534,7 @@ function registerCardMenus() {
     try{
       const result=await fetchConditionValue(card,lot,ref.game,null,{source:'explicit',retry:true,current:()=>quickCard===ref&&T.game()===ref.game});
       if(quickCard!==ref||T.game()!==ref.game)return;
-      const quote=conditionValue(null,{...lot,manualValue:null},[...(card.conditionQuotes||[]),...(lot.conditionQuotes||[])]);
+      const quote=conditionValue(null,conditionQuoteEntry(card,{...lot,manualValue:null}),[...(card.conditionQuotes||[]),...(lot.conditionQuotes||[])]);
       toast(result.status==='deferred'&&result.reason==='offline'?'You are offline. Saved prices are still available.':quote.kind==='condition-quote'?'Price checked. Your own value is kept if set.':'No matching price returned. Saved values are kept.');
     }finally{ref.priceBusy=false;if(quickCard===ref&&S.ui.sheetCtx?.type==='card-actions')await cardQuickMenu({quickRef:ref});}
   };
@@ -1688,11 +1688,11 @@ function conditionSelectionAllowed(card,entry,game){
  return true;
 }
 function fetchConditionValue(card,entry,game,done,options={}){
- const selected={...entry},workspaceRevision=conditionWorkspaceRevision;
+ const selected=conditionQuoteEntry(card,entry),workspaceRevision=conditionWorkspaceRevision;
  if(navigator.onLine===false)return Promise.resolve({changed:false,status:'deferred',reason:'offline'});
  if(!conditionSelectionAllowed(card,selected,game))return Promise.resolve({changed:false,status:'deferred',reason:'unverified-selection'});
  const current=()=>workspaceRevision===conditionWorkspaceRevision&&conditionSelectionAllowed(card,selected,game)&&(!options.current||options.current());
- const identityMatches=q=>CONDITION_IDENTITY.every(k=>String(q[k]||'')===String(selected[k]||''));
+ const identityMatches=q=>{const resolved=conditionQuoteEntry(card,q);return CONDITION_IDENTITY.every(k=>String(resolved[k]||'')===String(selected[k]||''));};
  const cached=[...new Map([...(card.conditionQuotes||[]),...(selected.conditionQuotes||[])].filter(identityMatches).map(q=>[JSON.stringify(q),q])).values()];
  const value=conditionValue(null,selected,cached);
  if(value.kind==='manual'&&!options.retry)return Promise.resolve({changed:false,status:'manual'});
@@ -1820,7 +1820,7 @@ function refreshCollectionConditions(){
  let cursor='';try{cursor=localStorage.getItem(conditionCursorKey(game))||'';}catch{}
  const eligible=entry=>{
   const card=conditionCardFor(entry,game);if(!conditionSelectionAllowed(card,entry,game))return false;
-  if(['manual','condition-quote'].includes(conditionValue(null,entry,[...(card.conditionQuotes||[]),...(entry.conditionQuotes||[])]).kind))return false;
+  if(['manual','condition-quote'].includes(conditionValue(null,conditionQuoteEntry(card,entry),[...(card.conditionQuotes||[]),...(entry.conditionQuotes||[])]).kind))return false;
   return !conditionScheduler.has(conditionRequest(card,entry,game));
  };
  const selected=selectConditionLots(lots,{cursor,visibleIds,eligible});
@@ -1842,6 +1842,7 @@ function refreshConditionPrice(retry=false){
  if(ctx.type==='tadd'){
   const game=ctx.game;if(!['ptcg','ygo'].includes(game)||game!==T.game())return;const card=contextTcgCard(game,ctx.id,ctx),pr=$("#tPrint")?.value||'',[printing,rarity]=game==='ygo'?pr.split('|'):['',''];
   entry={cardId:card?.id,...(ctx.setId?{setReleaseId:ctx.setId}:{}),condition:$("#tCond")?.value,language:$("#tLanguage")?.value||'en',variant:game==='ptcg'?pr:'',printing:printing||'',rarity:rarity||'',edition:$("#tEdition")?.value||'',manualValue,manualValueCondition:conditionName($("#tCond")?.value)};
+  entry=conditionQuoteEntry(card,entry);
   const exact = !ctx.setId || (card?.setContext?.status === 'resolved' && (game !== 'ygo' || card.setContext.printings.filter(p=>p.code===printing&&p.rarity===rarity&&!p.releasePriceAmbiguous).length === 1 && (T.cardOf(game,ctx.id)?.sets||[]).filter(p=>p.code===printing&&p.rarity===rarity).length === 1));
   price=exact?T.entryPrice(card,{...entry,manualValue:null}):null;
   if(exact){sourceCard=card;sourceGame=game;
