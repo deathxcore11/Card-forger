@@ -3,7 +3,7 @@ import {readFile,mkdir,writeFile} from 'node:fs/promises';
 import {startServer,openSearchApp,CARDS,ISO,capture,noOverflow} from './search-fixtures.mjs';
 assert.equal(process.env.GITHUB_ACTIONS,'true','Real UI and touch checks are hosted-CI only');
 const {chromium}=await import('playwright'),server=await startServer(),browser=await chromium.launch();
-const results=[];let failure;
+const results=[],failures=[];let failure;
 function seed(fixtures){
  fixtures.state.settings.displayModes=Object.fromEntries(['mtg','ptcg','ygo'].map(game=>[game,{collection:'gallery',search:'gallery',set:'gallery',deck:'gallery'}]));
  for(const game of ['mtg','ptcg','ygo']){
@@ -56,6 +56,15 @@ try{
    await gesture(page,session,{ratio:1.7});assert.equal(await page.evaluate(()=>document.documentElement.dataset.gridSize),'medium');
    assert.equal(await page.locator('dialog[open]').count(),0,'pinch cannot accidentally open or edit a card');
    assert.equal(await protectedState(page),before,'pinch and settings never alter copies, condition, printing or custom prices');
+   // A single-finger swipe must still scroll while grid pinch is enabled.
+   await apply(page,'large');await page.locator('#content .lot-art').first().scrollIntoViewIfNeeded();
+   const swipeBox=await page.locator('#content .lot-art').first().boundingBox(),scrollBefore=await page.evaluate(()=>scrollY);
+   const sx=swipeBox.x+swipeBox.width/2,sy=Math.max(100,Math.min(740,swipeBox.y+swipeBox.height/2));
+   await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:sx,y:sy,id:1}]});
+   for(let i=1;i<=6;i++){await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:sx,y:sy-i*22,id:1}]});await page.waitForTimeout(25);}
+   await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.waitForTimeout(200);
+   assert((await page.evaluate(()=>scrollY))>scrollBefore+20,'single-finger scrolling remains native');assert.equal(await page.locator('dialog[open]').count(),0);
+   await apply(page,'medium');
    await page.reload();await page.locator('#app.ready').waitFor();await page.locator('#content .display-list').waitFor();assert.equal(await page.evaluate(()=>document.documentElement.dataset.gridSize),'medium','size survives reload');assert.equal(await page.evaluate(()=>document.documentElement.dataset.gridPinch),'on');
    // Filter pills deliberately scroll horizontally; the grid and document
    // must fit, while that existing rail keeps its own scroll containment.
@@ -71,12 +80,20 @@ try{
    }
    // Default/off mode doesn't intercept native pinch; one-finger events remain free.
    const defaults=await page.evaluate(async()=>{const m=await import('/grid-settings.js');m.applyGridPinch(false);const grid=document.querySelector('#content .display-list'),target=grid.querySelector('.lot-art'),touch=(id,x)=>({identifier:id,target,clientX:x,clientY:300});const e=new Event('touchstart',{bubbles:true,cancelable:true});Object.defineProperty(e,'touches',{value:[touch(1,100),touch(2,160)]});target.dispatchEvent(e);m.applyGridPinch(true);const single=new Event('touchstart',{bubbles:true,cancelable:true});Object.defineProperty(single,'touches',{value:[touch(1,100)]});target.dispatchEvent(single);return {nativePinchPrevented:e.defaultPrevented,singleScrollPrevented:single.defaultPrevented};});assert.deepEqual(defaults,{nativePinchPrevented:false,singleScrollPrevented:false});
-   await page.locator('[data-act="'+(game==='mtg'?'collTab':'tCollTab')+'"][data-id="value"]').click();await page.locator('.collection-value-page').waitFor();
+   await page.getByRole('tab',{name:'Value',exact:true}).click();await page.locator('.collection-value-page').waitFor();
    await page.locator('.value-price-sources summary').click();
    assert.match(await page.locator('[data-value-source="condition"]').innerText(),/\$5\.67/);assert.match(await page.locator('[data-value-source="personal"]').innerText(),/\$50\.00/);assert.match(await page.locator('[data-value-source="unpriced"]').innerText(),/Excluded/);
    await capture(page,`synthetic-search-collection-sources-${game}`);
+   // The same size setting also fits Search galleries, with no personal
+   // owned-lot badge leaking into a public card result.
+   await page.locator('.bottom-nav [data-nav="search"]').tap();
+   const field=page.locator(game==='mtg'?'#dbTerm':'[data-input="tQ"]');await field.fill('Alpha');await field.press('Enter');
+   await page.locator('#content .card-grid .grid-card').first().waitFor();
+   for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:844});for(const size of ['small','medium','large']){await apply(page,size);await noOverflow(page,'#content .card-grid',`${game} Search ${width} ${size}`,true);}}
+   assert.equal(await page.locator('#content .card-grid [data-price-origin="personal"]').count(),0);
    assert.equal(await protectedState(page),before);app.health();results.push({game,modes:['light','dark','aura'],widths:[320,390,768,1440],customCopies:2,customTotal:50,conditionQuote:5.67,touch:'native CDP multi-touch, long-hold cancellation, spread/pinch, canceled gesture, click suppression, persistence',browserZoom:'default pinch path and single-finger scrolling are not prevented'});
-  }catch(error){error.fixtureDiagnostics=app.diagnostics();throw error;}finally{await app.context.close();}
+  }catch(error){error.fixtureDiagnostics=app.diagnostics();failures.push(error);results.push({game,status:'failed',error:error.stack,diagnostics:error.fixtureDiagnostics});}finally{await app.context.close();}
  }
+ if(failures.length)throw new AggregateError(failures,failures.map(e=>e.message).join(' | '));
 }catch(error){failure=error;throw error;}finally{await mkdir('test-results',{recursive:true});await writeFile('test-results/collection-display-browser.json',JSON.stringify({status:failure?'failed':'passed',results,error:failure?.stack,diagnostics:failure?.fixtureDiagnostics,evidence:'Hosted Chromium touch emulation; synthetic lots/prices and pinned unchanged real artwork. No physical-device or live-price accuracy claim.'},null,2));await browser.close();await server.close();}
 console.log('PASS: price source labels, exact condition quotes, Settings sizes, native multi-touch safety and all-game/theme/size regression.');
