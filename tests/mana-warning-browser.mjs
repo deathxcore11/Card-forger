@@ -108,13 +108,34 @@ async function layout(page,f,theme,width,panel){
  await page.setViewportSize({width,height:1000});await frames(page);await panel.scrollIntoViewIfNeeded();
  const geometry=await noOverflow(page,PANEL,`${f.kind} ${theme} ${width} mana panel`,true);
  const readable=await panel.evaluate(root=>{
-  const failures=[];let words=0;
+  const failures=[],headerGroups=[],headerText=[];let words=0;
+  const table=root.querySelector('.mb-table'),head=table?.querySelector('.mb-row.head'),cells=head?[...head.children]:[];
+  if(head&&(cells.length!==6||JSON.stringify(cells.map(n=>n.textContent.trim()))!==JSON.stringify(['','Basic','Now','','Suggested',''])))throw Error('Unexpected mana table header structure');
   for(const n of root.querySelectorAll('p,.mana-payment-notes li,.mb-row span,summary')){
-   if(!n.getClientRects().length)continue;const bounds=n.getBoundingClientRect(),walker=document.createTreeWalker(n,NodeFilter.SHOW_TEXT);let t;
-   while((t=walker.nextNode()))for(const match of t.textContent.matchAll(/\S+/g)){words++;const r=document.createRange();r.setStart(t,match.index);r.setEnd(t,match.index+match[0].length);for(const b of r.getClientRects())if(b.width&&(b.left<bounds.left-2||b.right>bounds.right+2))failures.push({text:match[0],left:b.left,right:b.right,bounds:{left:bounds.left,right:bounds.right}});}
+   if(!n.getClientRects().length)continue;const own=n.getBoundingClientRect();let bounds={left:own.left,right:own.right};
+   // The existing header has empty arrow/delta cells. Its full labels may use
+   // that blank space, but never another label's space or the table boundary.
+   // This is not an exemption for numeric rows, prose or arbitrary overflow.
+   if(n.parentElement===head&&[2,4].includes(cells.indexOf(n))){
+    const spacer=n.nextElementSibling,r=spacer?.getBoundingClientRect(),t=table.getBoundingClientRect();
+    if(!spacer||spacer.textContent.trim()||spacer.children.length||!r.width||r.left<own.right-2||own.left<t.left-2||r.right>t.right+2)throw Error('Mana header has no bounded immediately empty spacer');
+    bounds.right=r.right;headerGroups.push({label:n.textContent,own:{left:own.left,right:own.right},spacer:{left:r.left,right:r.right},bounds});
+   }
+   const walker=document.createTreeWalker(n,NodeFilter.SHOW_TEXT);let text;
+   while((text=walker.nextNode()))for(const match of text.textContent.matchAll(/\S+/g)){
+    words++;const range=document.createRange();range.setStart(text,match.index);range.setEnd(text,match.index+match[0].length);
+    for(const r of range.getClientRects())if(r.width){
+     if(r.left<bounds.left-2||r.right>bounds.right+2)failures.push({text:match[0],left:r.left,right:r.right,bounds});
+     if(n.parentElement===head)headerText.push({text:match[0],left:r.left,right:r.right,top:r.top,bottom:r.bottom});
+    }
+   }
   }
-  return {words,failures,table:root.querySelector('.mb-table')?.getBoundingClientRect().toJSON()||null};
- });assert(readable.words>20);assert.deepEqual(readable.failures,[],'all mana prose and table text stays readable inside its own column');
+  if(head){
+   if(headerGroups.length!==2||headerText.length!==3)throw Error('All three mana header labels must remain rendered');
+   for(let i=1;i<headerText.length;i++)if(headerText[i-1].right>headerText[i].left-2)failures.push({reason:'Neighboring mana header text collides',previous:headerText[i-1],next:headerText[i]});
+  }
+  return {words,failures,headerGroups,headerText,table:table?.getBoundingClientRect().toJSON()||null};
+ });assert(readable.words>20);assert.deepEqual(readable.failures,[],'all mana prose/cells stay readable; only exact empty header spacer groups can extend label bounds');
  await panel.screenshot({path:artifact(`${f.kind}-${theme}-${width}-panel.png`),animations:'disabled'});
  if(width===320||width===1440)await page.screenshot({path:artifact(`${f.kind}-${theme}-${width}-viewport.png`),animations:'disabled'});
  return {theme,width,geometry,readable};

@@ -6,6 +6,8 @@ import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {gunzipSync} from 'node:zlib';
 import {startServer,openSearchApp,inventorySnapshot,noOverflow,ISO} from './search-fixtures.mjs';
 import {cardKey,sumQty} from '../core.js';
+import {engineProfile} from '../insights.js';
+import {manaBase} from '../extras.js';
 import {S,blank} from '../store.js';
 import {mtgPower,tcgPower,shownPower} from '../power.js';
 import {normalizePtcg,PTCG_FORMATS,validatePtcg} from '../ptcg.js';
@@ -144,6 +146,11 @@ async function validateFixtures(){
   assert.deepEqual(availability.recast[0].scenarios.map(x=>x.genericTax),[0,2,4]);assert.deepEqual(availability.recast[0].scenarios.map(x=>x.normalMana),[4,6,8]);
   assert(availability.support.independent.some(x=>x.name==='Barkform Harvester'));assert(availability.support.mixed.some(x=>x.name==='Flawless Maneuver'));
   const unknownRoute=mtgPower(unmodeled);assert.equal(sumQty(unmodeled.cards),100);assert.equal(unknownRoute.readiness.eligible,true);assert.equal(unknownRoute.strategic.status,'primary-route-unmapped');assert.equal(shownPower(unknownRoute),null);assert(unknownRoute.strategic.primaryRouteCoverage.missingCapabilities.length);
+  const ralMana=engineProfile(unmodeled,catalog),knightsMana=engineProfile(complete,catalog);
+  assert.equal(ralMana.mana.complete,false);assert.equal(manaBase(unmodeled,catalog,ralMana.pips,ralMana.mana).canSuggest,false);
+  assert(ralMana.mana.notes.includes('Birgi, God of Storytelling // Harnfel, Horn of Bounty: alternative spell costs {2}{R} or {4}{R}; choose a casting plan before using a basic-land split.'));
+  assert(ralMana.mana.cards.some(c=>c.name==='Lightning Bolt'&&c.cost==='{R}'),'recognized costs remain available despite an unresolved alternative');
+  assert.equal(knightsMana.mana.complete,true);assert.equal(manaBase(complete,catalog,knightsMana.pips,knightsMana.mana).canSuggest,true);
   const payload=cleanDeck(reviewPayload('mtg',standard,n=>catalog[cardKey(n)],mtgPower(standard)));
   const news=payload.criteria.constructed.cards.find(c=>c.name==='Action News Crew');assert.equal(news.flow.effects[0].activationMana,6);assert.equal(news.flow.effects[0].mode,'alternative');
   validateReview(response(),payload);
@@ -316,6 +323,7 @@ try{
   await page.setViewportSize({width,height:1000});await noOverflow(page,'.score-panel.power','incomplete Power '+width);await capture(page,'incomplete-'+width);
   await gotoDeck(page,complete.id);assert.match(await page.locator('.score-panel.power').innerText(),/Commander Power estimate/);
   await noOverflow(page,'.score-panel.power','complete Power '+width);await capture(page,'complete-'+width);
+  assert.match(await page.locator('.mb-table').innerText(),/Plains/);await noOverflow(page,'.mb-table','Power mana comparison '+width);await capture(page,'mana-comparison-'+width,'.panel:has(.mb-table)');
   const availability=page.locator('.score-panel.power details.pw-plan-context');assert.equal(await availability.getAttribute('open'),null,'Commander availability is optional collapsed context');
   await availability.locator('summary').click();const text=await availability.innerText();
   assert.match(text,/first command-zone cast \{3\}\{W\}/);assert.match(text,/after one previous command-zone cast \{3\}\{W\} \+ \{2\}/);assert.match(text,/after two \{3\}\{W\} \+ \{4\}/);
@@ -329,7 +337,14 @@ try{
   const routeScope='.pw-weak:has(h3:text-is("What drives the Power estimate"))';assert.equal(await page.locator(routeScope).count(),1,'select the strategic route panel, not the separate structural section');
   const routePanel=await page.locator(routeScope).innerText();assert.match(routePanel,/Important storm \/ recursion route not assessed/);assert.match(routePanel,/Supported-route diagnostic \d+\/100 only, not overall Power/);
   await noOverflow(page,'.score-panel.power','complete unmodeled Power '+width);await noOverflow(page,routeScope,'unmodeled route warning '+width);
-  assert.match(await page.locator('.mb-table').innerText(),/Mountain/);await noOverflow(page,'.mb-table','Power mana comparison '+width);await capture(page,'mana-comparison-'+width,'.panel:has(.mb-table)');
+  const manaPanel=page.locator('.panel:has(h3:text-is("Mana base"))');assert.equal(await manaPanel.count(),1);
+  assert.equal(await manaPanel.locator('.mb-table').count(),0,'an unresolved two-spell-face choice must not invent a basic split');
+  assert.match(await manaPanel.innerText(),/No basic-land split recommended: alternative or unsupported costs need a casting plan first/);
+  assert.match(await manaPanel.locator('.mana-payment-notes').innerText(),/Birgi, God of Storytelling \/\/ Harnfel, Horn of Bounty: alternative spell costs \{2\}\{R\} or \{4\}\{R\}; choose a casting plan/);
+  assert.match(await page.locator('.panel:has(h3:text-is("Color balance"))').innerText(),/Some alternative costs are omitted; no basic split is recommended/);
+  const counted=manaPanel.locator('details:has(summary:text-is("Cards counted in this estimate"))');assert.equal(await counted.getAttribute('open'),null);await counted.locator('summary').click();
+  assert.match(await counted.innerText(),/Lightning Bolt.*\{R\}/);await counted.locator('summary').click();assert.equal(await counted.getAttribute('open'),null);
+  await noOverflow(page,'.panel:has(h3:text-is("Mana base"))','unresolved mana choices '+width);await capture(page,'mana-alternative-'+width,'.panel:has(h3:text-is("Mana base"))');
   await capture(page,'public-unmodeled-'+width);await gotoDeck(page,incomplete.id);
  }
  checks.push('Existing Power panel and deck header: 64/100 stays unavailable; complete Commander has explicitly provisional estimate; four responsive widths.');
