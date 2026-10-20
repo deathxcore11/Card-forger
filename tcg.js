@@ -1,3 +1,4 @@
+import {priceOriginBadge,priceOriginNote} from './price-origin.js';
 import {browseSets,setBrowserControls,setBrowserRows,setBrowserDetail} from './set-browser.js';
 import {POKEMON_VARIANT_SCHEMA,pokemonVariantChoices,pokemonVariantProductConflict,samePokemonVariant} from './pokemon-variant-options.js';
 import {valuePageOverview,valueTopLots,valuePageAttrs} from './value-page.js';
@@ -333,14 +334,16 @@ export function collectionValue(g, s = S.state) {
 }
 // Price for the exact printing/variant when known (Yu-Gi-Oh! set price, Pokémon variant).
 export const persistQuoteCache=()=>saveCacheSoon();
-export function entryPrice(c,e){
+export function entryValuation(c,e){
   const scoped=c?.game==='ygo'&&e.setReleaseId?setContextCard('ygo',c,e.setReleaseId,currentYgoCatalogue()):c;
   const verified=!(c?.game==='ptcg'&&pokemonVariantProductConflict(c,e))&&!e.setReleaseUnverified&&(!e.setReleaseId||scoped?.setContext?.status==='resolved');
   const allQuotes=[...(scoped?.conditionQuotes||[]),...(e.conditionQuotes||[])];
   const collision=c?.game==='ygo'&&e.setReleaseId&&(c.sets||[]).filter(p=>p.code===e.printing&&(!e.rarity||rarityKey(p.rarity)===rarityKey(e.rarity))).length>1;
   const quotes=!verified?[]:collision?allQuotes.filter(q=>q.setReleaseId===e.setReleaseId):allQuotes;
-  return conditionValue(verified?referenceEntryPrice(scoped,e):null,e,quotes).price;
+  const value=conditionValue(verified?referenceEntryPrice(scoped,e):null,e,quotes);
+  return value.kind==='reference'&&value.price!==null&&!scoped?.setContext&&!e.variant&&!e.printing&&scoped?.prices?.usd==null&&myPrice(scoped)!==null?{...value,kind:'manual-reference'}:value;
 }
+export const entryPrice=(c,e)=>entryValuation(c,e).price;
 export function referenceEntryPrice(c, e) {
   if (!c) return null;
   if(c.game==='ptcg'&&pokemonVariantProductConflict(c,e))return null;
@@ -945,7 +948,7 @@ export function trackTcgValue(g, v = collectionValue(g), s = S.state) {
 }
 function tcgValueView(g) {
   const st = gs(g), v = collectionValue(g),
-    rows = st.collection.map(entry => { const card=cardOf(g,entry.cardId); return {entry,card,unit:entryPrice(card,entry)}; }),
+    rows = st.collection.map(entry => { const card=cardOf(g,entry.cardId); return {entry,card,unit:entryPrice(card,entry),valuation:entryValuation(card,entry)}; }),
     tabs = segmented("tCollTab", "value", [["cards", "Cards"], ["binders", "Binders"], ["value", "Value"]]);
   if (!st.collection.length && !st.valueHistory?.length) return `<div class="page-head"><h1>Collection</h1></div>${tabs}<section class="empty"><h3>No value to track yet</h3><p>Add cards to start recording your collection’s value over time.</p></section>${alertsPanel(g)}`;
   return `<div class="page-head"><h1>Collection</h1></div>${tabs}<div ${valuePageAttrs(g)}>
@@ -989,10 +992,10 @@ export function tcgCollection() {
   <div class="list display-list deal">${rows.slice(0,U.limit || 120)
     .map(({ e, c, w }, i) => {
       if (w) return wantedLot(g, w, c, i);
-      const p = entryPrice(c, e);
+      const valuation=entryValuation(c,e), p = valuation.price;
       const t = tcgTier(c, e, p);
       const visual=savedYgoPresentation(c,e);
-      return `<div class="lot" ${tcgRarityAttrs(visual)} data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}">${selectionMark(g,e.id)}<button class="lot-art" ${finishAttrs(g,visual,{priceFinish:e.variant,savedVariant:e.variant,savedProductId:e.productId,priceEdition:e.printing&&e.rarity?e.printing+'::'+e.rarity:'',priceYgoEdition:e.edition})}  data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${imgTag(c,"card-img",false,g==="ygo"?p:undefined)}${tileBadges(visual)}${tierGem(t)}</button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem(g, c)}</button><span class="lot-sub">${rowBadges(visual)}${visual?.savedPrintingUnresolved?'<span class="muted">Printing not verified</span> · ':""}${esc(setLabel({ e, c }) || "")}${e.printing ? " · " + esc(e.printing) : ""}${e.rarity ? " · " + esc(e.rarity) : ""}${e.variant ? " · " + esc(pokemonVariantProductConflict(c,e)?'Saved product identity mismatch':c?.variants?.find((v) => v.key === e.variant)?.label || e.variantLabel || e.variant) : ""}${e.edition ? " · " + esc({"1st-edition":"First Edition",unlimited:"Unlimited",limited:"Limited Edition"}[e.edition] || e.edition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></div><div class="lot-side"><span class="lot-value"><button class="price link" data-act="marketOpen" data-game="${g}" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" data-finish="${esc(e.variant||"reference")}" aria-label="Price history and sellers for ${esc(e.name)}">${p === null ? "—" : usd(p * e.qty)}</button>${conditionBadge(e,g==='ptcg'&&pokemonVariantProductConflict(c,e)?[]:[...(c?.conditionQuotes||[]),...(e.conditionQuotes||[])])}</span><span class="stepper"><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="-1" aria-label="One fewer">−</button><b>${e.qty}</b><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="1" aria-label="One more">＋</button></span></div></div>`;
+      return `<div class="lot" ${tcgRarityAttrs(visual)} data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}">${selectionMark(g,e.id)}<button class="lot-art" ${finishAttrs(g,visual,{priceFinish:e.variant,savedVariant:e.variant,savedProductId:e.productId,priceEdition:e.printing&&e.rarity?e.printing+'::'+e.rarity:'',priceYgoEdition:e.edition})}  data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${imgTag(c,"card-img",false,g==="ygo"?p:undefined)}${tileBadges(visual)}${tierGem(t)}</button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem(g, c)}</button><span class="lot-sub">${rowBadges(visual)}${visual?.savedPrintingUnresolved?'<span class="muted">Printing not verified</span> · ':""}${esc(setLabel({ e, c }) || "")}${e.printing ? " · " + esc(e.printing) : ""}${e.rarity ? " · " + esc(e.rarity) : ""}${e.variant ? " · " + esc(pokemonVariantProductConflict(c,e)?'Saved product identity mismatch':c?.variants?.find((v) => v.key === e.variant)?.label || e.variantLabel || e.variant) : ""}${e.edition ? " · " + esc({"1st-edition":"First Edition",unlimited:"Unlimited",limited:"Limited Edition"}[e.edition] || e.edition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></div><div class="lot-side"><span class="lot-value"><button class="price link" data-act="marketOpen" data-game="${g}" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" data-finish="${esc(e.variant||"reference")}" aria-label="Price history and sellers for ${esc(e.name)}">${p === null ? "—" : usd(p * e.qty)}</button>${conditionBadge(e,[],priceOriginNote(valuation))}${priceOriginBadge(valuation)}</span><span class="stepper"><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="-1" aria-label="One fewer">−</button><b>${e.qty}</b><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="1" aria-label="One more">＋</button></span></div></div>`;
     })
     .join("")}</div>${selectionTray(g)}${!rows.length ? empty("No matching cards", "Try a different search or filter.") : ""}${rows.length > (U.limit || 120) ? `<button class="btn ghost block" data-act="tCollMore">Load more · ${rows.length-(U.limit || 120)} remaining</button>` : ""}`
   : empty(`No ${esc(GAMES[g].short)} cards yet`, "Search for a card and tap “Add to collection”, or import a list.", `<button class="btn" data-act="go" data-to="#search">Find cards</button><button class="btn ghost" data-act="tImportColl">Paste a list</button>`)}

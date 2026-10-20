@@ -5,6 +5,25 @@ on:
   pull_request:
 
 jobs:
+  collection-display-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - name: Test price origins and responsive native grid gestures
+        run: node tests/collection-display-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collection-display-browser-evidence
+          path: test-results/
   pricing-worker-runtime:
     runs-on: ubuntu-latest
     steps:
