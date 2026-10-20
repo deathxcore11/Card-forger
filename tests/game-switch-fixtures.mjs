@@ -18,6 +18,7 @@ import {
 
 export {ROOT, RESULTS, NOW, ISO, CARDS, GROUP_IDS, startServer};
 export const GAMES = ['mtg', 'ygo', 'ptcg'];
+const LOCAL_TAB_JPEGS = ['/game-tab-mtg.jpg', '/game-tab-ptcg.jpg'];
 export const PAIRS = GAMES.flatMap(from => GAMES.filter(to => to !== from).map(to => ({
   from, to, dx: GAMES[(GAMES.indexOf(from) + 1) % GAMES.length] === to ? -120 : 120,
 })));
@@ -158,6 +159,11 @@ export function providerFixture(url) {
   return searchProvider(url);
 }
 export async function validateGameSwitchFixtures() {
+  const tabStyle = await readFile(resolve(ROOT, 'game-tabs.css'), 'utf8');
+  for (const path of LOCAL_TAB_JPEGS) {
+    assert(tabStyle.includes(`url('.${path}')`), 'Exact local tab artwork is referenced by the current stylesheet');
+    assert.deepEqual([...(await readFile(resolve(ROOT, path.slice(1)))).subarray(0, 3)], [255, 216, 255], 'Exact local tab artwork remains a JPEG');
+  }
   const symbolBase='http://127.0.0.1:41279',symbols=pokemonSymbolFixtureUrls(symbolBase);
   assert.deepEqual(symbols.slice().sort(),[
     ...['synthetic-search-a','synthetic-search-b'].flatMap(slug=>[`${symbolBase}/img/pks/s/${slug}.png`,`https://pokesymbols.com/images/tcg/sets/symbols/${slug}.png`]),
@@ -221,6 +227,7 @@ export async function openGameSwitchApp(browser, base, {game = 'mtg', width = 39
   const page = await context.newPage(); page.setDefaultTimeout(8000); page.setDefaultNavigationTimeout(15000);
   const fixtures = makeGameSwitchFixtures(game,{carouselNews}), errors = [], unexpected = [], writes = [], requests = [], gates = [];
   const staticPaths = new Set((await readdir(ROOT, {withFileTypes: true})).filter(d => d.isFile() && /\.(?:js|css|html|json|svg|png|ico|webmanifest)$/.test(d.name)).map(d => '/' + d.name));
+  for (const path of LOCAL_TAB_JPEGS) staticPaths.add(path);
   for (const dir of ['rulebooks', 'scanidx']) for (const d of await readdir(resolve(ROOT, dir), {withFileTypes: true})) if (d.isFile()) staticPaths.add('/' + dir + '/' + d.name);
   staticPaths.add('/');
   const images = new Set([...pokemonSymbolFixtureUrls(base),...Object.values(COMMUNITY_ILLUSTRATIONS).map(x=>new URL(x.url,base+'/').href)]);

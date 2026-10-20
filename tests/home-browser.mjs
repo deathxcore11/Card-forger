@@ -1239,6 +1239,26 @@ try {
   report.push('All-game explicit format → real provider-selected card → same seed/format builder, with no inventory mutation; busy Magic build preserved/retryable; late selection cancelled');
 
   const reduced = await openApp({ reducedMotion: 'reduce', width: 390, twoDecks: true, clock: true });
+  // The legacy News fixture deliberately migrates on startup. Its completion
+  // replaces the news section, so await that existing aggregate before resolving
+  // any artwork for scrolling. A readiness check must never start a new load.
+  const reducedReady = await reduced.page.evaluate(async () => {
+    const [{ refreshHomeCommunity }, { communityState }, { metaState, DEFAULT_MTG_META_FORMAT }] = await Promise.all([
+      import('/home-ui.js'), import('/community-feed.js'), import('/meta.js'),
+    ]);
+    let restarted = false;
+    const noNewLoad = () => { restarted = true; throw Error('Reduced-motion readiness must reuse the startup refresh'); };
+    await refreshHomeCommunity('mtg', document.querySelector('#content'), { loadNews: noNewLoad, loadDecks: noNewLoad });
+    const news = communityState('mtg'), decks = metaState(`mtg:${DEFAULT_MTG_META_FORMAT}`);
+    const saved = JSON.parse(localStorage.getItem('cardforge-community-v3') || '{}').mtg;
+    return {
+      restarted,
+      migrated: saved?.weeklySchema === 1 && saved.at === news.at && news.at > 0,
+      newsReady: !news.busy && !news.error && news.data?.game === 'mtg' && news.data.status === 'ready',
+      metaReady: !decks.busy && !decks.error && decks.data?.decks?.length === 2,
+    };
+  });
+  assert.deepEqual(reducedReady, { restarted: false, migrated: true, newsReady: true, metaReady: true }, 'reduced-motion artwork waits for the real startup migration and both settled source paints without new loads');
   await visibleHeaderArt(reduced.page);
   await assertCommunityArtwork(reduced.page, '.community-feature', 'mtg', { kind: 'publisher' });
   await assertCommunityArtwork(reduced.page, '[data-home-meta="mtg"]', 'mtg');
