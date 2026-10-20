@@ -1,4 +1,4 @@
-import {myPrintingPrice} from './mtg-tcgprice.js';
+import {myPrintingPrice,myPrice,tcgFallback} from './mtg-tcgprice.js';
 import {magicOwnedCard} from './magic-owned-detail.js';
 import {printedCardColors} from './magic-card-color.js';
 import {recordValueObservation} from './value-history.js';
@@ -568,15 +568,23 @@ export function deckValue(cards, catalog, choices = {}) {
   return { total, unpriced };
 }
 
-export function lotPrice(e, catalog, printings = {}) {
+export function lotValuation(e, catalog, printings = {}) {
   const c = magicOwnedCard(e,printings[e.printingId]),
     bound = e.printingVerified===true && !!e.printingId && ['nonfoil','foil','etched'].includes(e.finish||'nonfoil'),
     quotes = bound?[...(c?.conditionQuotes||[]),...(e.conditionQuotes||[])]:[],
     reference=c?cardPrice(c,e.finish||'nonfoil'):bound&&!printings[e.printingId]?myPrintingPrice(e.printingId,e.finish||'nonfoil'):null;
   // Saved physical lots never inherit a same-name sibling or a different finish.
   // A compatible private value survives; provider quotes need saved exact identity.
-  return conditionValue(reference,e,quotes).price;
+  const value=conditionValue(reference,e,quotes);
+  if(value.kind==='reference'&&value.price!==null){
+    const raw=c?.prices?.[{nonfoil:'usd',foil:'usd_foil',etched:'usd_etched'}[e.finish||'nonfoil']];
+    const publicPrice=raw!==null&&raw!==undefined&&String(raw).trim()!==''&&Number.isFinite(Number(raw));
+    if(c?!publicPrice&&!tcgFallback(c,e.finish||'nonfoil')&&myPrice(c,e.finish||'nonfoil')!==null:bound&&myPrintingPrice(e.printingId,e.finish||'nonfoil')!==null)return {...value,kind:'manual-reference'};
+  }
+  return value;
 }
+
+export const lotPrice=(e,catalog,printings={})=>lotValuation(e,catalog,printings).price;
 
 export function collectionValue(entries, catalog, printings = {}, decks = []) {
   let total = 0,

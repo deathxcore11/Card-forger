@@ -1,3 +1,4 @@
+import {initGrid,applyGridSize,applyGridPinch} from './grid-settings.js';
 import {createMagicMatchups,matchupFingerprint} from './magic-matchups-controller.js';
 import {matchupState,resetMatchups,renderMagicMatchupSheet} from './magic-matchups-ui.js';
 import {buildMatchupRequest,matchupImportNotice} from './ai-matchup-core.js';
@@ -135,6 +136,7 @@ function setSaveStatus(text, cls = "") {
 // The art is remembered per game so every screen shares the same backdrop.
 initTheme();
 initAura();
+initGrid({onPinchStart:()=>endHold(),announce:message=>toast(message)});
 const AMBIENT_KEY = "cardstashy-ambient-v1",
   GLASS_KEY = "cardstashy-glass";
 const glassOn = () => {
@@ -2805,6 +2807,8 @@ A.settingsTab = (t) => {
   activateSettingsTab(document,tab);
   if(tab==='recovery'){storageDetail();void renderRecoverySnapshots();}
 };
+C.setGridSize=t=>{const result=applyGridSize(t.value);if(!result.saved)toast('Card size changed for this visit. Your browser could not save it.');};
+C.setGridPinch=t=>{const result=applyGridPinch(t.checked);if(!result.saved)toast('Gesture preference changed for this visit. Your browser could not save it.');};
 C.setTheme=t=>{const result=applyTheme(t.value);if(!result.saved)toast('Theme changed for this visit. Your browser could not save it.');};
 document.addEventListener('keydown',e=>{
   const tab=e.target.closest?.('[data-act="settingsTab"][role="tab"]');

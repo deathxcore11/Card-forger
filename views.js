@@ -1,3 +1,4 @@
+import {priceOriginBadge,priceOriginNote} from './price-origin.js';
 import {browseSets,setBrowserControls,setBrowserRows,setBrowserDetail} from './set-browser.js';
 import {magicOwnedCard} from './magic-owned-detail.js';
 import {myPrintingPrice} from './mtg-tcgprice.js';
@@ -64,7 +65,7 @@ import { printingState } from "./confidence.js";
 import { complexity } from "./planner.js";
 import {
   engineProfile, engineRoles, goldfish, scoreGrade, diffCards, deckValue,
-  collectionValue, lotPrice, swapImpact, applySwapsToCards, cardSig,
+  collectionValue, lotPrice, lotValuation, swapImpact, applySwapsToCards, cardSig,
 } from "./insights.js";
 import { bracketEstimate, manaBase, isOut, deckReview, explainSwap, podSpeed } from "./extras.js";
 import { buildability, rankBuildable } from "./share.js";
@@ -756,8 +757,8 @@ export function collectionList() {
         return `<div class="lot wanted" data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}"><button class="lot-art" ${finishAttrs('mtg',c,{priceFinish:e.wanted.finish})} data-act="card" data-name="${esc(e.name)}" aria-label="Open ${esc(e.name)} (wanted, not owned)">${img(cardImage(c), e.name)}${c ? tileChrome("mtg", c) : ""}<span class="want-tag" aria-hidden="true">${actionIcon("heart")}Wanted</span></button><div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(e.name)}">${esc(e.name)}</button><span class="lot-sub"><span class="want-chip">${e.wanted.need > 1 ? `Need ${e.wanted.need}` : "Not owned"}</span>${manaCost(c)}${S.state.decks.some((d) => d.cards.some((x) => key(x.name) === key(e.name))) ? "<span>In a deck</span>" : ""}</span></div><div class="lot-side"><span class="price">${usd(p === null ? null : p * e.wanted.need)}</span><span class="want-actions"><button class="btn small want-got" data-act="own" data-name="${esc(e.name)}">＋ Got it</button><button class="want-x" data-act="wishRemove" data-id="${esc(e.wanted.id)}" aria-label="Remove ${esc(e.name)} from wishlist">×</button></span></div></div>`;
       }
       const c = magicOwnedCard(e,st.printings?.[e.printingId]),
-        unit = lotPrice(e, S.catalog, st.printings),
-        privateNote=!st.printings?.[e.printingId]&&e.printingVerified&&e.printingId&&myPrintingPrice(e.printingId,e.finish||'nonfoil')!==null&&conditionValue(null,e,e.conditionQuotes||[]).kind==='reference'?'Your private printing value':'';
+        valuation=lotValuation(e,S.catalog,st.printings), unit = valuation.price;
+
       const t = tierOf("mtg", c?.rarity, unit);
       return `<div class="lot" data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}">${selectionMark("mtg",e.id)}
         <button class="lot-art" ${finishAttrs('mtg',e.printingVerified?c:null,{priceFinish:e.finish||'nonfoil'})} data-act="card" data-name="${esc(e.name)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${img(cardImage(c), e.name)}${c ? tileChrome("mtg", c) : ""}${tierGem(t)}</button>
@@ -765,7 +766,7 @@ export function collectionList() {
           <span class="lot-sub">${manaCost(c)}<span>${esc((e.set || e.setName || "Any printing").toUpperCase())}${e.collectorNumber ? " #" + esc(e.collectorNumber) : ""}${e.finish !== "nonfoil" ? ` · <b class="foil">${esc(e.finish)}</b>` : ""}${e.location ? " · " + esc(e.location) : ""}</span></span>
           ${e.lookupFailed ? `<button class="tag warn" data-act="editLot" data-id="${esc(e.id)}">Not found — tap to fix name</button>` : !c ? `<span class="tag muted">Exact printing unavailable</span>` : ""}
         </div>
-        <div class="lot-side"><span class="lot-value"><button class="price link" data-act="buyCard" data-name="${esc(e.name)}" data-lot="${esc(e.id)}" data-finish="${esc(e.finish||"nonfoil")}" aria-label="Price history and sellers for ${esc(e.name)}">${usd(unit === null ? null : unit * e.qty)}</button>${conditionBadge(e,e.conditionQuotes||[],privateNote)}</span>
+        <div class="lot-side"><span class="lot-value"><button class="price link" data-act="buyCard" data-name="${esc(e.name)}" data-lot="${esc(e.id)}" data-finish="${esc(e.finish||"nonfoil")}" aria-label="Price history and sellers for ${esc(e.name)}">${usd(unit === null ? null : unit * e.qty)}</button>${conditionBadge(e,[],priceOriginNote(valuation))}${priceOriginBadge(valuation)}</span>
           <span class="stepper"><button data-act="qty" data-id="${esc(e.id)}" data-delta="-1" aria-label="Remove one">−</button><b>${e.qty}</b><button data-act="qty" data-id="${esc(e.id)}" data-delta="1" aria-label="Add one">＋</button></span>
           <button class="link small" data-act="editLot" data-id="${esc(e.id)}">Edit</button>
         </div>
@@ -778,7 +779,7 @@ function collectionValueView() {
   const st = S.state,
     v = collectionValue(st.collection, S.catalog, st.printings, st.decks),
     spareCopies = sumQty(v.spare), spareUnpriced = sumQty(v.spare.filter(t=>t.value===null)),
-    rows = st.collection.map(entry => ({entry, card:magicOwnedCard(entry,st.printings?.[entry.printingId]), unit:lotPrice(entry,S.catalog,st.printings)}));
+    rows = st.collection.map(entry => ({entry, card:magicOwnedCard(entry,st.printings?.[entry.printingId]), unit:lotPrice(entry,S.catalog,st.printings),valuation:lotValuation(entry,S.catalog,st.printings)}));
   if (!st.collection.length && !st.valueHistory?.length) return empty("No value to track yet", "Add cards to start recording your collection’s value over time.");
   return `<div ${valuePageAttrs("mtg")}>
   ${valuePageOverview({game:"mtg",value:v,history:st.valueHistory || [],rows})}
