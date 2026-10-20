@@ -7,7 +7,7 @@ export function contextAction(act,icon,label,{hint='',attrs='',danger=false,disa
  return `<button type="button" class="context-action${danger?' danger':''}" data-act="${esc(act)}" ${attrs}${disabled?' disabled':''}>${actionIcon(icon)}<span>${esc(label)}${hint?`<small>${esc(hint)}</small>`:''}</span></button>`;
 }
 export function contextHeader({kind,name,meta='',art=''}) {
- return `<div class="sheet-head context-head">${art?`<div class="context-art">${art}</div>`:''}<div class="context-identity"><span class="context-kicker">${esc(kind)}</span><h2>${esc(name)}</h2>${meta?`<p>${esc(meta)}</p>`:''}</div><button type="button" class="icon context-close" data-act="closeSheet" aria-label="Close actions">${actionIcon('close')}</button></div>`;
+ return `<div class="sheet-head context-head">${art?`<div class="context-art">${art}</div>`:''}<div class="context-identity"><span class="context-kicker">${esc(kind)}</span><h2>${esc(name)}</h2>${meta?`<p>${esc(meta)}</p>`:''}</div><button type="button" class="icon context-close" data-act="closeSheet" aria-label="Close">${actionIcon('close')}</button></div>`;
 }
 export function deckContextShortcuts(id,tcg=false) {
  const tabs=[['cards','cardStack','Cards'],[tcg?'insights':'engine','trophy','Power'],['matchups','sword','Matchups'],['playtest','random','Playtest']];

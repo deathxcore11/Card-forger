@@ -40,6 +40,9 @@ classic30={1:[(x/734,y/1024) for x,y in badge+[[641,134],[641,523],[88,523]]],
  11:rect(.05,.104,.942,.5),14:rect(.119,.131,.877,.515),15:rect(.119,.131,.879,.515),29:rect(.258,.124,.915,.491)}
 # A lower-corner owner medallion is printed over Crobat G's illustration.
 classic30[11]=[[.05,.104],[.942,.104],[.942,.463],[.916,.453],[.886,.455],[.857,.47],[.847,.495],[.05,.5]]
+# Charizard's displayed 717x1000 scan has a slightly shifted illustration edge.
+# Preserve the traced badge contour; use this scan's own inner frame boundaries.
+classic30[1]=[(max(89/717,x),y) for x,y in classic30[1][1:-3]]+[(629/717,134/1024),(629/717,512/1000),(89/717,512/1000)]
 urls={x['id']:x['url'] for x in json.load(open(p/'art-sources.json'))}
 products=json.load(open(p/'group-24837.json'))['results'];manual={3:716157,4:716158,18:716198,19:716199,20:716200,22:716203}
 records=[];maps=[]
