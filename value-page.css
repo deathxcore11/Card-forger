@@ -22,6 +22,7 @@
 .collection-value-page .value-chart-grid { stroke:var(--line); stroke-dasharray:3 5; stroke-width:1; }
 .collection-value-page .value-chart-axis { fill:var(--muted); font:11px 'DM Sans',sans-serif; }
 .collection-value-page .value-chart-line { stroke:var(--value-accent); stroke-width:2.5; fill:none; stroke-linecap:round; }
+.collection-value-page .value-chart-line[data-value-series="partial"] { stroke-dasharray:6 5; }
 .collection-value-page .value-chart-point { stroke:var(--value-accent); stroke-width:2; fill:var(--value-accent); }
 .collection-value-page .value-chart-point.partial { fill:var(--surface); stroke:var(--warn); }
 .collection-value-page .value-chart-point.legacy { fill:var(--surface); stroke:var(--muted); }
@@ -30,6 +31,7 @@
 .collection-value-page .value-chart-change strong { font-size:14px; color:var(--text); font-variant-numeric:tabular-nums; }
 .collection-value-page .value-chart-change.up strong { color:var(--good); }
 .collection-value-page .value-chart-change.down strong { color:var(--bad); }
+.collection-value-page .value-chart-period { margin:0 0 8px; font-size:11px; line-height:1.5; color:var(--muted); overflow-wrap:anywhere; }
 .collection-value-page .value-chart-range { margin:0 0 8px; font-size:12px; line-height:1.5; color:var(--muted); overflow-wrap:anywhere; }
 .collection-value-page .value-chart-range strong { color:var(--text); font-weight:600; font-variant-numeric:tabular-nums; }
 .collection-value-page .value-chart-dates { display:flex; justify-content:space-between; gap:8px; font-size:11px; color:var(--muted); }
@@ -39,6 +41,7 @@
 .collection-value-page .value-chart-legend > span { display:inline-flex; align-items:center; gap:5px; }
 .collection-value-page .value-chart-legend i { width:8px; height:8px; border:1.5px solid var(--muted); border-radius:50%; }
 .collection-value-page .value-chart-legend .partial { border-color:var(--warn); }
+.collection-value-page .value-chart-legend .partial-line { width:18px; height:0; border:0; border-top:2px dashed var(--value-accent); border-radius:0; }
 .collection-value-page .value-chart-legend .unavailable { width:auto; height:auto; font-style:normal; border:0; }
 .collection-value-page .value-history-details { margin-top:10px; font-size:11px; color:var(--muted); }
 .collection-value-page .value-history-details summary { min-height:32px; display:flex; align-items:center; cursor:pointer; }

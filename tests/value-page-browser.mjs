@@ -54,7 +54,7 @@ async function layout(page,label){await noOverflow(page,'#content',label,true);r
  });}
 async function trendRegression(page,game){
  const checks=[];
- for(const [direction,totals,text] of [['down',[.04,.04,.04,0],'↓ −$0.04 (−100.0%)'],['up',[0,0,.02,.04],'↑ +$0.04'],['flat',[0,0,0,0],'↔ $0.00']]){
+ for(const [direction,totals,text] of [['down',[.04,.04,.04,0],'↓ −$0.04'],['up',[0,0,.02,.04],'↑ +$0.04'],['flat',[0,0,0,0],'↔ $0.00']]){
   // Only this isolated synthetic fixture is changed. The current collection
   // agrees with the last observation; down/flat reproduce zero owned copies.
   await page.evaluate(({game,totals})=>{
@@ -99,56 +99,75 @@ async function subtotalRegression(page,game){
  async function setSubtotal(first,last,patch={}){
   await page.evaluate(({game,first,last,patch})=>{
    const S=window.__uiTestState,side=game==='mtg'?S.state:S.state.tcg[game],day=Date.parse(new Date().toISOString().slice(0,10)+'T00:00:00Z'),date=offset=>new Date(day-offset*86400000).toISOString().slice(0,10);
-   const priced={...structuredClone(window.__valueFixture.collection[0]),qty:4,manualValue:last/4,condition:'Near Mint',manualValueCondition:'Near Mint',manualValueCurrency:'USD'},unknown={...structuredClone(window.__valueFixture.unpriced),qty:2};
+   const priced={...structuredClone(window.__valueFixture.collection[0]),qty:6,manualValue:last/6,condition:'Near Mint',manualValueCondition:'Near Mint',manualValueCurrency:'USD'},unknown={...structuredClone(window.__valueFixture.unpriced),qty:3};
    side.collection=[priced,unknown];
-   const point=(date,total,extra={})=>({date,total,copies:6,unpriced:2,currency:'USD',basis:'exact-owned-v1',...extra});
-   side.valueHistory=[point(date(3),10.1,{unpriced:0}),point(date(2),first),point(date(0),last,patch)];
+   const point=(date,total,extra={})=>({date,total,copies:9,unpriced:3,currency:'USD',basis:'exact-owned-v1',...extra});
+   side.valueHistory=[point(date(3),first,{copies:4,unpriced:0}),point(date(2),first,{copies:6,unpriced:2}),point(date(0),last,patch)];
   },{game,first,last,patch});
   await render(page);
  }
- for(const [kind,first,last,direction,text] of [['up',8.34,9.44,'up','↑ +$1.10 (+13.2%)'],['down',9.44,8.34,'down','↓ −$1.10 (−11.7%)'],['flat',0,0,'flat','↔ $0.00'],['zero-start',0,2,'up','↑ +$2.00'],['zero-end',2,0,'down','↓ −$2.00 (−100.0%)']]){
+ for(const [kind,first,last,direction,text] of [['up',8.34,9.44,'up','↑ +$1.10'],['down',9.44,8.34,'down','↓ −$1.10'],['flat',0,0,'flat','↔ $0.00'],['zero-start',0,2,'up','↑ +$2.00'],['zero-end',2,0,'down','↓ −$2.00']]){
   await setSubtotal(first,last);const before=await snapshot(page);
-  assert.equal(await page.locator('.value-chart-line').count(),1,'complete→partial stays a gap; only the last partial pair connects');
-  assert.equal(await page.locator('.value-chart-line[data-value-series="partial"]').count(),1);
-  assert.match(await page.locator('.value-chart-line title').textContent(),/Known subtotal/);
+  assert.equal(await page.locator('.value-chart-line').count(),2,'heterogeneous complete→partial→partial records form one recorded-amount timeline');
+  assert.equal(await page.locator('.value-chart-line[data-value-series="partial"]').count(),2);
+  for(const title of await page.locator('.value-chart-line title').allTextContents())assert.match(title,/subtotal included/);
   assert.equal(await page.locator('.value-chart-point.partial').count(),2);assert.equal(await page.locator('.value-chart-point.complete').count(),1);
   assert.equal(await page.locator('[data-value-coverage]').innerText(),'Known subtotal · USD');
-  assert.match(await page.locator('.value-chart-change span').innerText(),direction==='flat'?/Known subtotal unchanged/:/Known-subtotal change/);
-  const firstPartial=await page.locator('.value-chart-point.partial title').first().textContent();
-  assert((await page.locator('.value-chart-change span').innerText()).includes(firstPartial.split(' · ')[0]),'change starts at the first partial date, never the earlier complete point');
-  assert.match(await page.locator('.value-chart .value-chart-note').innerText(),/priced cards may differ/);
+  assert.equal(await page.locator('.value-chart-change span').innerText(),'Change in recorded value');
+  const titles=await page.locator('.value-chart-point title').allTextContents(),period=await page.locator('[data-value-period]').innerText();
+  for(const title of [titles[0],titles.at(-1)])assert(period.includes(title.split(' · ')[0]),'badge dates are the actual saved endpoints');
+  assert(period.includes('$'+first.toFixed(2))&&period.includes('$'+last.toFixed(2)),'badge amounts are the actual saved endpoints');
+  assert.match(await page.locator('.value-chart .value-chart-note').innerText(),/newly priced copies, collection quantities and custom values/);
   assert.match(await page.locator('.value-chart .value-chart-note').innerText(),/not market-only returns/);
+  assert.match(await page.locator('.value-chart-legend').innerText(),/Dashed: subtotal included/);
+  const rowText=await page.locator('.value-history-details').textContent();for(const coverage of ['4 copies total · 4 priced · 0 unpriced','6 copies total · 4 priced · 2 unpriced','9 copies total · 6 priced · 3 unpriced'])assert(rowText.includes(coverage));
   const decoration=await page.evaluate(async game=>{const {decorateGlyphs}=await import('/icons.js'),root=document.querySelector('.collection-value-page');decorateGlyphs(root,game);const once=root.innerHTML;decorateGlyphs(root,game);return root.innerHTML===once;},game);assert(decoration);
   assert.equal(await page.locator(`.value-chart-change.${direction} strong.no-ic`).innerText(),text);assert.equal(await page.locator('.value-chart-change svg, .value-chart-change .gl').count(),0);
   if(kind==='up')for(const theme of ['dark','light']){
    await page.evaluate(async theme=>(await import('/settings-theme.js')).applyTheme(theme,{persist:false}),theme);
    for(const width of WIDTHS){
-    await page.setViewportSize({width,height:1000});await frames(page);const geometry=await layout(page,`${game} known subtotal ${theme} ${width}`);
-    const trend=await page.locator('.value-chart-change').boundingBox();assert(trend.height<=56,'known-subtotal change remains compact');
-    assert.equal(await snapshot(page),before,'partial render/theme/resize preserves every owned lot and saved value');
-    await capture(page,`value-page-${game}-subtotal-${theme}-${width}`);checks.push({kind,theme,width,geometry,segments:1,partialPoints:2,changeText:text,ownedDataUnchanged:true});
+    await page.setViewportSize({width,height:1000});await page.evaluate(()=>scrollTo(0,0));await frames(page);const geometry=await layout(page,`${game} recorded subtotal ${theme} ${width}`);
+    const trend=await page.locator('.value-chart-change').boundingBox();assert(trend.height<=56,'recorded-value change remains compact');
+    assert((await page.locator('[data-value-period]').boundingBox()).height<=70,'saved endpoint amount/date line wraps without excessive height');
+    const dashed=await page.locator('.value-chart-line').evaluateAll(ns=>ns.map(n=>getComputedStyle(n).strokeDasharray));assert(dashed.every(value=>value!=='none'&&value.includes('6')),'both incomplete segments are visibly dashed');
+    assert.equal(await snapshot(page),before,'render/theme/resize preserves every owned lot and saved value');
+    await capture(page,`value-page-${game}-subtotal-${theme}-${width}`);checks.push({kind,theme,width,geometry,segments:2,dashed,partialPoints:2,changeText:text,period,ownedDataUnchanged:true,scrollReset:true});
    }
   }
-  assert.equal(await snapshot(page),before);checks.push({kind,direction,text,segments:1,ownedDataUnchanged:true});
+  assert.equal(await snapshot(page),before);checks.push({kind,direction,text,segments:2,ownedDataUnchanged:true});
  }
  await page.evaluate(async()=>(await import('/settings-theme.js')).applyTheme('dark',{persist:false}));await page.setViewportSize({width:390,height:1000});await frames(page);
- for(const [kind,patch] of [['changed-copies',{copies:7}],['same-priced-count-different-coverage',{copies:7,unpriced:3}],['changed-unpriced',{unpriced:1}],['complete-transition',{unpriced:0}],['all-unpriced',{unpriced:6}],['foreign-currency',{currency:'EUR'}],['other-basis',{basis:'other'}],['legacy',{currency:null,basis:null}]]){
+ for(const [kind,patch] of [['changed-copies',{copies:7}],['same-priced-count-different-coverage',{copies:7,unpriced:3}],['matching-counts',{copies:6,unpriced:2}],['changed-unpriced',{unpriced:1}],['complete-transition',{unpriced:0}]]){
   await setSubtotal(8.34,9.44,patch);const before=await snapshot(page);
-  assert.equal(await page.locator('.value-chart-line').count(),0,kind);assert.equal(await page.locator('.value-chart-change').count(),0,kind);
-  await layout(page,`${game} ${kind}`);assert.equal(await snapshot(page),before);checks.push({kind,segments:0,changeHidden:true});
+  assert.equal(await page.locator('.value-chart-line[data-value-series="partial"]').count(),2,kind);assert.equal(await page.locator('.value-chart-change').count(),1,kind);assert.equal(await page.locator('.value-chart-change span').innerText(),'Change in recorded value');assert.doesNotMatch(await page.locator('.value-chart-change strong').innerText(),/%/);
+  await layout(page,`${game} ${kind}`);assert.equal(await snapshot(page),before);checks.push({kind,segments:2,changeVisible:true});
  }
- // A valid-date unavailable middle observation remains a barrier, not a removed
- // row that could join earlier and later subtotal runs.
+ await setSubtotal(8.34,9.44);await page.evaluate(game=>(game==='mtg'?window.__uiTestState.state:window.__uiTestState.state.tcg[game]).valueHistory.forEach(p=>p.unpriced=0),game);await render(page);assert.equal(await page.locator('.value-chart-line[data-value-series="complete"]').count(),2);assert((await page.locator('.value-chart-line').evaluateAll(ns=>ns.map(n=>getComputedStyle(n).strokeDasharray))).every(value=>value==='none'));assert.doesNotMatch(await page.locator('.value-chart-change strong').innerText(),/%/,'changed fully priced quantities do not produce a misleading percentage');checks.push({kind:'fully-priced-changed-quantity',solidSegments:2});
+ for(const [kind,patch] of [['all-unpriced',{unpriced:9}],['foreign-currency',{currency:'EUR'}],['other-basis',{basis:'other'}],['legacy',{currency:null,basis:null}]]){
+  await setSubtotal(8.34,9.44,patch);const before=await snapshot(page);
+  assert.equal(await page.locator('.value-chart-line').count(),1,kind);assert.equal(await page.locator('.value-chart-change').count(),0,kind);
+  await layout(page,`${game} ${kind}`);assert.equal(await snapshot(page),before);checks.push({kind,segments:1,changeHidden:true});
+ }
+ // A valid-date unavailable middle observation remains a true barrier. Earlier
+ // links stay visible, but cannot supply a badge when the latest run is one point.
  await setSubtotal(8.34,9.44);await page.evaluate(game=>{const side=game==='mtg'?window.__uiTestState.state:window.__uiTestState.state.tcg[game],last=side.valueHistory.at(-1),date=new Date(Date.parse(last.date)-86400000).toISOString().slice(0,10);side.valueHistory.splice(2,0,{...last,date,total:0,unpriced:last.copies});},game);await render(page);
- assert.equal(await page.locator('.value-chart-line').count(),0);assert.equal(await page.locator('.value-chart-change').count(),0);assert.equal(await page.locator('.value-chart-gap').count(),1);checks.push({kind:'unavailable-middle-barrier',segments:0,changeHidden:true});
- // Half-cent custom values exercise the real resolver, recorder and renderer.
+ assert.equal(await page.locator('.value-chart-line').count(),1);assert.equal(await page.locator('.value-chart-change').count(),0);assert.equal(await page.locator('.value-chart-gap').count(),1);checks.push({kind:'unavailable-middle-barrier',segments:1,changeHidden:true});
+ // Current fully priced quotes may be newer than saved partial observations.
+ // Render never inserts them or calculates movement against that unsaved amount.
+ await setSubtotal(8.34,9.44);await page.evaluate(game=>{const side=game==='mtg'?window.__uiTestState.state:window.__uiTestState.state.tcg[game],entry={...side.collection[0],qty:9,manualValue:12.34/9};side.collection=[entry];},game);await render(page);const unsaved=await snapshot(page);
+ assert.equal(await page.locator('[data-value-amount]').innerText(),'$12.34');assert.equal(await page.locator('[data-value-coverage]').innerText(),'Estimated value · USD');assert.match(await page.locator('[data-value-saved-note]').innerText(),/Latest saved subtotal: \$9\.44/);assert.match(await page.locator('[data-value-period]').innerText(),/Saved \$8\.34 on .+ to \$9\.44 on/);assert.equal(await page.locator('.value-chart-change strong').innerText(),'↑ +$1.10');assert.equal(await snapshot(page),unsaved);
+ await page.evaluate(()=>scrollTo(0,0));await frames(page);await capture(page,`value-page-${game}-newer-current-complete`);checks.push({kind:'newer-current-complete',current:'$12.34',saved:'$9.44',change:'+$1.10',historyUnchanged:true});
+ await page.evaluate(game=>(game==='mtg'?window.__uiTestState.state:window.__uiTestState.state.tcg[game]).collection[0].manualValue=9.44/9,game);await render(page);const equal=await snapshot(page);assert.equal(await page.locator('[data-value-saved-note]').count(),0);assert.equal(await page.locator('.value-chart-point.partial').count(),2);assert.equal(await page.locator('.value-chart-change strong').innerText(),'↑ +$1.10');assert.equal(await snapshot(page),equal,'equal amount with new complete coverage does not rewrite saved partial coverage');
+ await seedObservation(page,game);await render(page);await waitCurrent(page,game,9,0,9.44);assert.equal(await page.locator('.value-chart-line[data-value-series="partial"]').count(),2,'a newly recorded complete endpoint still connects to the preceding partial');assert.equal(await page.locator('.value-chart-point.complete').count(),2);assert.equal(await page.locator('.value-chart-change span').innerText(),'Change in recorded value');
+ // Half-cent custom values exercise the unchanged real resolver and recorder.
  await page.evaluate(game=>{const side=game==='mtg'?window.__uiTestState.state:window.__uiTestState.state.tcg[game],entry={...structuredClone(window.__valueFixture.collection[0]),qty:1,manualValue:19.435,condition:'Near Mint',manualValueCondition:'Near Mint',manualValueCurrency:'USD'};side.collection=[entry];side.valueHistory=[];},game);await seedObservation(page,game);await render(page);await waitCurrent(page,game,1,0,19.44);
  assert.equal(await page.locator('[data-value-amount]').innerText(),'$19.44');assert.equal(await page.locator('[data-value-range]').innerText(),'Plotted values: $19.44');assert.equal(await page.locator('[data-value-saved-note]').count(),0);
  await page.evaluate(game=>(game==='mtg'?window.__uiTestState.state:window.__uiTestState.state.tcg[game]).valueHistory[0].total=19.43,game);await render(page);const oldSaved=await snapshot(page);
  assert.match(await page.locator('[data-value-saved-note]').innerText(),/Latest saved value: \$19\.43 on .+ \(UTC\)/);assert.equal(await page.locator('[data-value-amount]').innerText(),'$19.44');assert.equal(await page.locator('[data-value-range]').innerText(),'Plotted values: $19.43');assert.equal(await snapshot(page),oldSaved,'old cents are explained, never silently rewritten');
- await capture(page,`value-page-${game}-saved-rounding-notice`);checks.push({kind:'half-cent-rounding',current:'$19.44',newSnapshot:'$19.44',oldSnapshotPreserved:'$19.43'});
+ await page.evaluate(()=>scrollTo(0,0));await frames(page);await capture(page,`value-page-${game}-saved-rounding-notice`);checks.push({kind:'half-cent-rounding',current:'$19.44',newSnapshot:'$19.44',oldSnapshotPreserved:'$19.43'});
  return checks;
 }
+
 try{
  for(const game of GAMES){
   let app;
@@ -163,7 +182,7 @@ try{
    assert.equal(await page.locator('[data-value-range]').innerText(),'Plotted values: $2.50 to $19.43');assert.equal(await page.locator('.value-lot').count(),5);assert.equal(await page.locator('[data-value-refresh]').getAttribute('data-act'),game==='mtg'?'refreshPrices':'tRefreshPrices');
    assert.deepEqual(await page.locator('[data-value-group]').evaluateAll(ns=>ns.map(n=>n.dataset.valueGroup)),expected.groups);
    assert.match(await page.locator('.value-chart').innerText(),/Legacy/);assert.match(await page.locator('.value-chart').innerText(),/Known subtotal/);assert.match(await page.locator('.value-chart').innerText(),/Unavailable/);assert.doesNotMatch(await page.locator('.value-chart').innerText(),/2099|\$999/);
-   assert.match(await page.locator('.value-chart-change').innerText(),/\+\$6\.98/);assert.equal(await page.locator('.value-chart-line').count(),1,'only adjacent fully covered snapshots connect');
+   assert.match(await page.locator('.value-chart-change').innerText(),/\+\$6\.98/);assert.equal(await page.locator('.value-chart-line').count(),2,'supported subtotal connects while unavailable and legacy remain barriers');
    assert.match(await page.locator('#content').innerText(),/Price alerts/);assert.equal(await page.locator('details.advice').count(),1,'existing advice is retained');if(game==='mtg')assert.match(await page.locator('#content').innerText(),/Trade binder/);
    const immutable=await snapshot(page),geometries=[];
    for(const width of WIDTHS){await page.setViewportSize({width,height:1000});await frames(page);const measured=await layout(page,`${game} Value ${width}`);assert(measured.refresh.height>=44);assert(await page.locator('[data-value-range]').evaluate(n=>parseFloat(getComputedStyle(n).fontSize)>=12),'HTML chart values stay readable without SVG scaling');assert(measured.chart.height>50&&measured.chart.width>200,'graph remains visibly drawn');for(const lot of measured.lots){assert(lot.box.height>=44,'touch row height');assert.deepEqual(lot.buttonStyle,{appearance:'none',background:'rgba(0, 0, 0, 0)',borderLeft:'none',borderRight:'none'},'art rows keep intentional transparent glass-panel styling, not native gray button chrome');assert(lot.image?.complete&&lot.image.naturalWidth>300,'pinned art loaded');assert(lot.image.width>=36&&lot.image.height>=50,'full-card illustration remains visible');assert.equal(lot.image.fit,'contain');}geometries.push(measured);await capture(page,`value-page-${game}-${width}`);}
@@ -178,7 +197,7 @@ try{
    report.push({game,phase:'priced-layout-and-actions',evidence:EVIDENCE,artSource:art[game].url,expected,geometries});
    // Missing coverage is a subtotal, then unknown, never a synthetic zero loss.
    await page.evaluate(game=>{const S=window.__uiTestState,side=game==='mtg'?S.state:S.state.tcg[game];side.collection.push(structuredClone(window.__valueFixture.unpriced));},game);await seedObservation(page,game);await render(page);await waitCurrent(page,game,8,1,19.43);
-   assert.equal(await page.locator('[data-value-amount]').innerText(),'$19.43');assert.equal(await page.locator('[data-value-coverage]').innerText(),'Known subtotal · USD');assert.equal(await page.locator('.value-chart-change').count(),0);assert.match(await page.locator('.value-overview').innerText(),/1 copy without a price/);await layout(page,`${game} partial coverage`);await capture(page,`value-page-${game}-partial`);
+   assert.equal(await page.locator('[data-value-amount]').innerText(),'$19.43');assert.equal(await page.locator('[data-value-coverage]').innerText(),'Known subtotal · USD');assert.equal(await page.locator('.value-chart-change').count(),1);assert.match(await page.locator('.value-chart-change').innerText(),/Change in recorded value/);assert.match(await page.locator('.value-overview').innerText(),/1 copy without a price/);await layout(page,`${game} partial coverage`);await capture(page,`value-page-${game}-partial`);
    await page.evaluate(game=>{const S=window.__uiTestState,side=game==='mtg'?S.state:S.state.tcg[game];for(const e of side.collection){delete e.manualValue;delete e.manualValueCondition;delete e.manualValueCurrency;e.condition='Unknown condition';e.conditionQuotes=[];}},game);await seedObservation(page,game);await render(page);await waitCurrent(page,game,8,8,0);
    assert.equal(await page.locator('[data-value-amount]').innerText(),'—');assert.equal(await page.locator('[data-value-coverage]').innerText(),'Value unavailable');assert.equal(await page.locator('.value-chart-change').count(),0);assert.equal(await page.locator('.value-lot').count(),0);assert((await page.locator('.value-chart-gap').count())>=2);await layout(page,`${game} unavailable coverage`);await capture(page,`value-page-${game}-unavailable`);
    // A genuine user-entered zero remains $0.00, with singular copy wording.

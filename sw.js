@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-v247";
+const CACHE = "cardforge-shell-v248";
 const ASSETS = [
   "./aura.js", "./aura.css",
   "./brand-motion.css",

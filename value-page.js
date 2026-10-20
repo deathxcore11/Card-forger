@@ -56,8 +56,8 @@ export function valueComposition(game, rows = []) {
 // snapshots. An unavailable value is a gap, not a fabricated $0 point.
 // Saved coverage is aggregate counts, not a list of priced identities. Even a
 // connected subtotal is an observation comparison, never a same-card return.
-const comparableValues = (a,b) => a?.status === 'complete' && b?.status === 'complete' ||
-  a?.status === 'partial' && b?.status === 'partial' && a.copies === b.copies && a.unpriced === b.unpriced;
+const knownObservation = point => point?.status === 'complete' || point?.status === 'partial';
+const connectedValues = (a,b) => knownObservation(a) && knownObservation(b);
 
 export function valueHistoryModel(history = [], now = Date.now(), limit = Infinity) {
   const dated = new Map(), today = new Date(now).toISOString().slice(0,10);
@@ -75,17 +75,18 @@ export function valueHistoryModel(history = [], now = Date.now(), limit = Infini
   const allPoints = [...dated.values()].sort((a,b) => a.date.localeCompare(b.date)),
     points = Number.isInteger(limit) && limit > 0 ? allPoints.slice(-limit) : allPoints;
   const tail = points.length ? [points.at(-1)] : [];
-  for (let i=points.length-2; i>=0 && comparableValues(points[i],tail[0]); i--) tail.unshift(points[i]);
+  for (let i=points.length-2; i>=0 && connectedValues(points[i],tail[0]); i--) tail.unshift(points[i]);
   let change = null;
   if (tail.length > 1) {
     const first=tail[0], last=tail.at(-1), difference=last.total-first.total,
-      delta=Math.sign(difference)*roundedValueTotal(Math.abs(difference)), percent=first.total > 0 ? delta / first.total * 100 : null;
-    change={ date:first.date, delta, percent:Number.isFinite(percent) ? percent : null, direction:delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat', status:last.status };
+      hasPartial=tail.some(point=>point.status==='partial'), countsChanged=tail.some(point=>point.copies!==first.copies || point.unpriced!==first.unpriced),
+      delta=Math.sign(difference)*roundedValueTotal(Math.abs(difference)), percent=first.total > 0 && !hasPartial && !countsChanged ? delta / first.total * 100 : null;
+    change={ date:first.date, endDate:last.date, firstTotal:first.total, lastTotal:last.total, delta, percent:Number.isFinite(percent) ? percent : null, direction:delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat', hasPartial, countsChanged };
   }
   return { points, change, recordedCount:allPoints.length };
 }
 
-const statusLabel = point => point.status === 'complete' ? 'Estimated value' : point.status === 'partial' ? `Known subtotal · ${copies(point.unpriced)} unpriced` : point.status === 'legacy' ? 'Legacy snapshot · price coverage unknown' : 'Value unavailable';
+const statusLabel = point => knownObservation(point) ? `${point.status==='partial'?'Known subtotal':'Estimated value'} · ${copies(point.copies)} total · ${count(point.copies-point.unpriced)} priced · ${count(point.unpriced)} unpriced` : point.status === 'legacy' ? 'Legacy snapshot · price coverage unknown' : 'Value unavailable';
 
 export function valueHistoryChart(history = [], now = Date.now()) {
   const { points, change, recordedCount } = valueHistoryModel(history, now, 365), plotted = points.filter(p => p.total !== null);
@@ -97,18 +98,22 @@ export function valueHistoryChart(history = [], now = Date.now()) {
     x=p=>span ? left+(Date.parse(p.date)-start)/span*(right-left) : (left+right)/2,
     y=p=>bottom-(p.total-min)/Math.max(.01,max-min)*(bottom-top),
     pos=p=>`${x(p).toFixed(2)},${y(p).toFixed(2)}`;
-  let lines='';
-  for(let i=1;i<points.length;i++) if(comparableValues(points[i-1],points[i])) lines+=`<path class="value-chart-line" data-value-series="${points[i].status}" d="M${pos(points[i-1])} L${pos(points[i])}"><title>${points[i].status==='partial'?'Known subtotal · matching recorded priced and unpriced copy counts':'Estimated collection value'}</title></path>`;
+  let lines='', hasSubtotalSegment=false;
+  for(let i=1;i<points.length;i++) if(connectedValues(points[i-1],points[i])) {
+    const partial=points[i-1].status==='partial' || points[i].status==='partial';
+    hasSubtotalSegment ||= partial;
+    lines+=`<path class="value-chart-line" data-value-series="${partial?'partial':'complete'}" d="M${pos(points[i-1])} L${pos(points[i])}"><title>${partial?'Recorded value · subtotal included; price coverage may differ':'Recorded value · fully priced observations'}</title></path>`;
+  }
   const grid=plotted.length ? [max,min+(max-min)/2,min].map(n=>{const yy=bottom-(n-min)/(max-min)*(bottom-top);return `<line class="value-chart-grid" x1="${left}" x2="${right}" y1="${yy}" y2="${yy}"/><text class="value-chart-axis" x="${left-10}" y="${yy+4}" text-anchor="end">${usd(n)}</text>`;}).join('') : '';
   const dots=points.map(p=>p.total===null ? `<path class="value-chart-gap" d="M${x(p)-3},${bottom-3} l6,6 m-6,0 l6,-6"><title>${esc(dateLabel(p.date))} · Value unavailable</title></path>` : `<circle class="value-chart-point ${p.status}" cx="${x(p).toFixed(2)}" cy="${y(p).toFixed(2)}" r="4"><title>${esc(dateLabel(p.date))} · ${usd(p.total)} · ${esc(statusLabel(p))}</title></circle>`).join('');
-  const movement=change ? `<p class="value-chart-change ${change.direction}"><strong class="no-ic">${change.delta > 0 ? '↑ +' : change.delta < 0 ? '↓ −' : '↔ '}${usd(Math.abs(change.delta))}${change.percent !== null && change.delta !== 0 ? ` (${change.delta > 0 ? '+' : '−'}${Math.abs(change.percent).toFixed(1)}%)` : ''}</strong><span>${change.status==='partial' ? change.direction==='flat'?'Known subtotal unchanged':'Known-subtotal change' : change.direction === 'flat' ? 'Unchanged' : 'Total change'} since ${dateLabel(change.date)}</span></p>` : '';
+  const movement=change ? `<p class="value-chart-change ${change.direction}"><strong class="no-ic">${change.delta > 0 ? '↑ +' : change.delta < 0 ? '↓ −' : '↔ '}${usd(Math.abs(change.delta))}${change.percent !== null && change.delta !== 0 ? ` (${change.delta > 0 ? '+' : '−'}${Math.abs(change.percent).toFixed(1)}%)` : ''}</strong><span>Change in recorded value</span></p><p class="value-chart-period" data-value-period>Saved ${usd(change.firstTotal)} on ${dateLabel(change.date)} to ${usd(change.lastTotal)} on ${dateLabel(change.endDate)} (UTC).</p>${change.hasPartial?'<p class="value-chart-period" data-value-change-coverage>Includes partial price coverage, not a like-for-like gain or loss.</p>':''}` : '';
   const range=plotted.length ? `<p class="value-chart-range" data-value-range>Plotted values: <strong>${usd(low)}${high!==low?` to ${usd(high)}`:''}</strong></p>` : '';
   const special=points.some(p=>p.status!=='complete');
-  const legend=special ? `<div class="value-chart-legend">${points.some(p=>p.status==='partial')?'<span><i class="partial"></i>Known subtotal</span>':''}${points.some(p=>p.status==='legacy')?'<span><i class="legacy"></i>Legacy · coverage unknown</span>':''}${points.some(p=>p.status==='unavailable')?'<span><i class="unavailable">×</i>Unavailable</span>':''}</div>` : '';
+  const legend=special ? `<div class="value-chart-legend">${points.some(p=>p.status==='partial')?'<span><i class="partial"></i>Known subtotal</span>':''}${hasSubtotalSegment?'<span><i class="partial-line"></i>Dashed: subtotal included</span>':''}${points.some(p=>p.status==='legacy')?'<span><i class="legacy"></i>Legacy · coverage unknown</span>':''}${points.some(p=>p.status==='unavailable')?'<span><i class="unavailable">×</i>Unavailable</span>':''}</div>` : '';
   return `<div class="value-chart"><div class="value-section-head"><h3>Value over time</h3><span class="small muted">${recordedCount} saved ${recordedCount===1?'snapshot':'snapshots'}</span></div>${movement}${range}
-    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Collection value over time, recorded USD snapshots"><title>Collection value over time</title><desc>${plotted.length?'Only saved values are plotted.':'No priced snapshots available.'}${special?' Known subtotals connect only with matching recorded priced and unpriced copy counts. Lines stop at other coverage changes, legacy or unavailable values.':''}</desc>${grid}${lines}${dots}</svg>
+    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Collection value over time, recorded USD snapshots"><title>Collection value over time</title><desc>${plotted.length?'Only saved values are plotted.':'No priced snapshots available.'}${special?' Dashed segments include a known subtotal, not a forecast. Price coverage and collection contents may differ. Legacy and unavailable values stay disconnected.':''}</desc>${grid}${lines}${dots}</svg>
     <div class="value-chart-dates"><span>${esc(dateLabel(points[0].date))}</span>${points.length>1?`<span>${esc(dateLabel(points.at(-1).date))}</span>`:''}</div>${legend}
-    <p class="value-chart-note">${recordedCount>points.length?`Showing the latest ${points.length} snapshots; earlier records remain saved. `:''}${points.length===1 ? 'Your first saved snapshot. No earlier values have been estimated.' : 'Changes include copies, custom values and available prices, not market-only returns.'}${points.some(p=>p.status==='partial')?' Known subtotals connect only when priced and unpriced copy counts match; the priced cards may differ.':''}${special?' Other coverage changes, legacy and unavailable values stay disconnected.':''} Snapshot dates are UTC.</p>
+    <p class="value-chart-note">${recordedCount>points.length?`Showing the latest ${points.length} snapshots; earlier records remain saved. `:''}${points.length===1 ? 'Your first saved snapshot. No earlier values have been estimated.' : 'Changes include newly priced copies, collection quantities and custom values, not market-only returns.'}${special?' Legacy and unavailable values stay disconnected.':''} Snapshot dates are UTC.</p>
     <details class="value-history-details"><summary>View recorded values</summary><ol>${points.map(p=>`<li><time datetime="${p.date}">${esc(dateLabel(p.date))}</time><strong>${usd(p.total)}</strong><span>${esc(statusLabel(p))}</span></li>`).join('')}</ol></details>
   </div>`;
 }

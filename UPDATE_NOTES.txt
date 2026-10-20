@@ -1,3 +1,7 @@
+3.85.21 - Connected recorded Value observations
+Magic, Pokemon and Yu-Gi-Oh! now connect supported recorded USD observations even when priced coverage or copy counts change. Fully priced pairs use solid lines; segments involving a known subtotal use dashed lines and partial points remain hollow. Legacy, unavailable and unsupported-currency or value-basis observations still break the line.
+Change in recorded value uses the displayed saved endpoint amounts and UTC dates, not a newer current estimate. Partial coverage and changing counts omit percentage changes; the chart explains that quantities, newly priced copies and custom values can change the recorded amount, so this is not a like-for-like investment gain or market-only return. Existing history, ownership and prices are not rewritten.
+
 3.85.20 - Consistent collection Value history
 Magic, Pokemon and Yu-Gi-Oh! share the same Value history rules. Consecutive partial observations with matching recorded copy and unpriced counts can connect as a known-subtotal history, with an explicitly labeled subtotal change. Matching counts do not prove the same cards were held, and this is not a market-return calculation.
 Complete totals remain distinct from partial known subtotals. Changes in recorded partial-coverage counts, complete-to-partial transitions, unsupported currencies and legacy observations keep honest gaps rather than inventing missing prices or returns. New observations round consistently with the displayed collection amount; existing recorded history and ownership are not rewritten.

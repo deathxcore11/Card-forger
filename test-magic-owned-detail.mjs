@@ -82,8 +82,15 @@ assert.equal(lotPrice({...legacy,printingId:chishiro.id,finish:'etched',conditio
 const oldHistory=[{date:'2026-10-16',total:20,copies:3,unpriced:0,currency:'USD',basis:'exact-owned-v1'}],oldHistoryBytes=JSON.stringify(oldHistory),mixed=[legacy,{...legacy,id:'private',qty:2,manualValue:1,manualValueCondition:'Near Mint'}],known=collectionValue(mixed,catalog,{});
 assert.equal(known.copies,3);assert.equal(known.total,2);assert.equal(known.unpriced,1);
 const observed=recordValueObservation(oldHistory,known.total,known.copies,{unpriced:known.unpriced,currency:'USD',basis:'exact-owned-v1'},new Date('2026-10-17T12:00:00Z'));
-assert.equal(JSON.stringify(oldHistory),oldHistoryBytes);assert.deepEqual(observed[0],oldHistory[0]);assert.equal(valueHistoryModel(observed,Date.parse('2026-10-17T13:00:00Z')).change,null,'reduced known coverage is not a market crash');
-assert.match(valuePageOverview({game:'mtg',value:known,rows:[],history:observed,now:Date.parse('2026-10-17T13:00:00Z')}),/Known subtotal/);
+assert.equal(JSON.stringify(oldHistory),oldHistoryBytes);assert.deepEqual(observed[0],oldHistory[0]);
+// The timeline reports the saved amount change, not a market crash. Unknown
+// exact printings stay unpriced; the mixed-coverage delta never gains a percent.
+const recordedChange=valueHistoryModel(observed,Date.parse('2026-10-17T13:00:00Z')).change;
+assert.equal(recordedChange.delta,-18);assert.equal(recordedChange.direction,'down');assert.equal(recordedChange.hasPartial,true);assert.equal(recordedChange.countsChanged,true);assert.equal(recordedChange.percent,null);
+assert.equal(recordedChange.date,'2026-10-16');assert.equal(recordedChange.endDate,'2026-10-17');assert.equal(recordedChange.firstTotal,20);assert.equal(recordedChange.lastTotal,2);
+const recordedOverview=valuePageOverview({game:'mtg',value:known,rows:[],history:observed,now:Date.parse('2026-10-17T13:00:00Z')});
+assert.match(recordedOverview,/Known subtotal/);assert.match(recordedOverview,/Change in recorded value/);assert.match(recordedOverview,/Saved \$20\.00 on Oct 16, 2026 to \$2\.00 on Oct 17, 2026 \(UTC\)/);assert.match(recordedOverview,/data-value-series="partial"/);
+assert.match(recordedOverview,/3 copies total · 2 priced · 1 unpriced/);assert.match(recordedOverview,/not a like-for-like gain or loss/);assert.match(recordedOverview,/not market-only returns/);assert.doesNotMatch(recordedOverview,/90\.0%|Total change since/);
 assert.equal(JSON.stringify({catalog,noManual}),sourceBefore);
 // Missing exact cache fetches only the saved ID, with no name-default flash.
 delete S.state.printings[chishiro.id];const count=renders.length;let task=h.A.card({dataset:{entry:'etched',name:chishiro.name}});assert.equal(renders.length,count);assert.match(body.innerHTML,/No other printing/);assert.equal(pending.at(-1).path,'/cards/'+chishiro.id);pending.at(-1).resolve(chishiro);await task;assert.equal(renders.at(-1).c.id,chishiro.id);assert.equal(S.state.printings[chishiro.id],undefined,'hydration stays in view context, not saved collection');
