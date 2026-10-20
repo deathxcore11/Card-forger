@@ -5,8 +5,13 @@ import {readFileSync} from 'node:fs';
 import {FINISH_MASKS,resolveFinish,finishChoices,pokemonFrame} from './finish-effects.js';
 const golden=JSON.parse(readFileSync(new URL('./tests/fixtures/pokemon-frame-geometry.json',import.meta.url),'utf8')).frames;
 const points=s=>[...s.matchAll(/(-?[\d.]+)% (-?[\d.]+)%/g)].map(m=>[+m[1],+m[2]]);
-const stems={dppt:'pk-dppt',hgss:'pk-hgss',bwxy:'pk-bwxy',sm:'pk-sm',swsh:'pk-swsh',svme:'pk-sv'};
+const stems={wotc:'pk-wotc',gym:'pk-gym',neo:'pk-neo',lc:'pk-lc',ecard:'pk-ecard',exa:'pk-exa',exb:'pk-exb',dppt:'pk-dppt',hgss:'pk-hgss',bwxy:'pk-bwxy',sm:'pk-sm',swsh:'pk-swsh',svme:'pk-sv'};
+for(const [era,frames] of Object.entries(golden)){
+ // Reverse foil reaches the inner edge of the measured outer border on every surround.
+ for(const kind of ['basic','evolved','trainer'])assert.deepEqual(points(FINISH_MASKS[stems[era]+(kind==='basic'?'':'-'+kind)+'-surround']).slice(0,4),frames.outer,`${era} ${kind} reverse reaches the border`);
+}
 for(const [era,frames] of Object.entries(golden))for(const [kind,poly] of Object.entries(frames)){
+ if(kind==='outer')continue;
  const stem=stems[era]+(kind==='basic'?'':'-'+kind),art=FINISH_MASKS[stem+'-art'];
  assert(art,`${stem}-art exists`);assert.deepEqual(points(art),poly,`${stem}-art matches measured window`);
  if(era==='sm'&&kind!=='trainer')continue; // Sun & Moon Pokémon reverse keeps its sm11-checked surrounds.
@@ -33,12 +38,20 @@ for(const set of ['dp1','hgss1','bw1','xy1','sm1','swsh1','sv01','me01'])for(con
 // Trainers use their own measured frame; promo Trainers and unmeasured layouts stay unmasked.
 assert.deepEqual(mask(card('pl1-111','pl1',undefined,'Trainer'),'reverse-holofoil'),['pk-dppt-trainer-surround']);
 assert.deepEqual(mask(card('sv01-169','sv01',undefined,'Trainer'),'holofoil'),['pk-sv-trainer-art']);
-for(const c of [card('swshp-SWSH251','swshp',undefined,'Trainer'),card('xy1-133','xy1',undefined,'Energy'),card('xy3-55','xy3','BREAK'),card('base2-1','base2','Basic'),card('ex1-1','ex1','Basic')])
+for(const c of [card('swshp-SWSH251','swshp',undefined,'Trainer'),card('xy1-133','xy1',undefined,'Energy'),card('xy3-55','xy3','BREAK'),{...card('ex14-100','ex14','Basic'),name:'Blaziken ex'},card('basep-1','basep','Basic')])
  for(const finish of ['holofoil','reverse-holofoil'])assert.equal(resolveFinish('ptcg',c,{priceFinish:finish}).status,'unknown',c.id+' '+finish);
 // LV.X carries foil across the whole frame; it has no reverse window.
 const lvx=card('pl1-122','pl1','LEVEL-UP','Pokemon','Rare Holo LV.X');
 assert.deepEqual(mask(lvx,'holofoil'),['card']);assert.equal(resolveFinish('ptcg',lvx,{priceFinish:'holofoil'}).coverage,'full');
 assert.equal(resolveFinish('ptcg',lvx,{priceFinish:'reverse-holofoil'}).status,'unknown');
+// Pre-Diamond & Pearl eras: WotC, e-Card and EX frames, Basic/evolved/Trainer.
+for(const [id,set,stage,frame,cat] of [['base2-46','base2','Stage1','pk-wotc-evolved'],['base5-10','base5','Basic','pk-gym'],['gym1-38','gym1','Basic','pk-gym'],['neo4-37','neo4','Stage1','pk-neo-evolved'],['lc-97','lc','Basic','pk-lc'],['ecard1-120','ecard1','Basic','pk-ecard'],['ecard3-1','ecard3','Stage1','pk-ecard-evolved'],['ex2-69','ex2','Basic','pk-exa'],['ex14-10','ex14','Stage1','pk-exb-evolved'],['ex1-90','ex1',undefined,'pk-exa-trainer','Trainer']]){
+ const c=card(id,set,stage,cat);assert.equal(pokemonFrame(c),frame,id);assert.deepEqual(mask(c,'holofoil'),[frame+'-art'],id);assert.deepEqual(mask(c,'reverse-holofoil'),[frame+'-surround'],id);
+}
+// Exact older evidence keeps precedence over the era frames.
+assert.deepEqual(mask(card('base1-4','base1','Stage2'),'holofoil'),['pk-base1-4-art']);
+assert.deepEqual(mask(card('base1-2','base1','Stage2'),'holofoil'),['pk-base-art']);
+assert.deepEqual(mask(card('ecard1-1','ecard1','Stage2'),'reverse-holofoil'),['pk-expedition-field']);
 // Exact Celebi evidence and full-art treatment keep precedence.
 assert.deepEqual(mask(card('sm11-4','sm11','Basic'),'holofoil'),['pk-sm11-4-art']);
 assert.equal(resolveFinish('ptcg',card('sv01-199','sv01','Basic','Pokemon','Illustration Rare'),{priceFinish:'holofoil'}).effect,'ptcg-full-art');
@@ -46,4 +59,4 @@ assert.equal(resolveFinish('ptcg',card('sv01-199','sv01','Basic','Pokemon','Illu
 const cosmos={...card('pl1-28','pl1','Basic','Pokemon','Rare'),variants:[{key:'detail:c',label:'Holofoil · Cosmos',finish:'holofoil',foil:'cosmos',size:'standard',stamps:[]}]};
 const choice=finishChoices('ptcg',cosmos)[0];assert.equal(choice.materialProfile,'cosmos-holo');assert.deepEqual(choice.layers.map(l=>l.mask),['pk-dppt-art']);
 assert.equal(finishChoices('ptcg',{...cosmos,variants:[]}).length,0);
-console.log('PASS: measured Pokémon frame windows for DP/Pt, HGSS, BW/XY, SM, SWSH and SV/ME; Basic, evolved, Trainer, LV.X, Cosmos and unmeasured layouts.');
+console.log('PASS: measured Pokémon frame windows for WotC, Gym, Neo, Legendary Collection, e-Card, EX, DP/Pt, HGSS, BW/XY, SM, SWSH and SV/ME; Basic, evolved, Trainer, LV.X, Cosmos and unmeasured layouts.');
