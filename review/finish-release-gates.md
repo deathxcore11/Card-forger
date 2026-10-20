@@ -1,6 +1,22 @@
 # Finish coverage release gate — 2026-10-20
 
-Status: **BLOCKED** for the owner's requirement that every physical printing across Pokémon, Magic, and Yu-Gi-Oh! has its correct foil/nonfoil presentation. Candidate test-branch publication is allowed. Production release remains separately reviewed and is not authorized by this document.
+Scope correction from the owner, 2026-10-20: **work in small batches first**. Complete coverage of every physical printing across all three games is a longer-term goal, not a prerequisite for reviewing a tested batch. Candidate test-branch publication is allowed. Production release remains separately reviewed and is not authorized by this document.
+
+## Current batch review
+
+The current candidate contains targeted Rabsca, Oddish and Butterfree finish/selection repairs, Aquapolis identity and product-binding repairs, and Sun & Moon frame alignment plus modal gesture repairs. Review each claim against its actual evidence; this is not a claim that every card in these sets has an accurate foil preview.
+
+- Define each batch by exact card/printing IDs and the behavior being repaired. Check every item and supported finish in that batch, including nonfoil, rather than promoting a few examples to whole-set completion.
+- Verify finish choices, visible effects and boundaries, exact product/price identity, and saved collection selections for the affected paths. Preserve explicit unknowns; do not invent variants, materials or prices to close the batch.
+- Keep regression checks across all three games and affected screen sizes because shared rendering and modal code can affect cards outside the batch. Passing tests are bounded evidence, not a guarantee that no regression can exist.
+- Separate source-backed physical printing checks from synthetic geometry tests. The Sun & Moon source limitation below remains visible in review.
+- Record unresolved issues within the batch before release review. Unfinished unrelated catalogue coverage stays in the backlog and does not by itself block a completed batch.
+
+Evidence currently available: 233 local checks passed; all 33 general CI jobs passed on candidate a9cccb16335cbb7ea5d58acdc7a5cb860187852b in run 39461648495. Targeted same-head runs 39461648339 (15 artwork/viewport geometry cases and three touch viewport scenarios), 39461648491 (Oddish/Butterfree), and 39461648269 (Aquapolis/Rabsca) passed. Physical Samsung hardware behavior remains unverified. These results do not authorize or prove a production deployment.
+
+## Catalogue backlog
+
+Comprehensive all-card finish coverage remains **UNVERIFIED**. The audit's `allCardsAllGamesReleaseGate: BLOCKED` field describes that comprehensive claim; it is not a veto on the owner's smaller-batch release scope. Do not relabel missing coverage as passing.
 
 Run `node scripts/finish-coverage-audit.mjs <report.json>` to reproduce the offline evidence inventory. It processes every row of the checked-in recognition snapshots, not the entire current live market. Resolver support does not certify visual or physical accuracy. No card, price, lot or provider data is modified.
 
