@@ -26,8 +26,8 @@ export function recoveryStateSignature(state){
 export function appendRecoverySnapshot(raw,snapshot){
  if(raw!==null&&raw!==undefined&&(raw.version!==1||raw.owner!==snapshot.owner||!Array.isArray(raw.snapshots)||raw.snapshots.some(s=>s?.owner!==snapshot.owner||typeof s.id!=="string"||!s.state||typeof s.state!=="object")))throw Error("The existing recovery journal could not be verified. Nothing was replaced.");
  const snapshots=readRecoverySnapshots(raw,snapshot.owner);
- // Deduplicate only an identical full workspace. Different history or settings
- // still merits recovery; the content signature is metadata, not a loss filter.
+ // Deduplicate the full workspace except its save timestamp. Different history
+ // or settings still merits recovery; no distinct version is evicted.
  const text=recoveryStateSignature(snapshot.state);
  const duplicate=snapshots.find(s=>recoveryStateSignature(s.state)===text);
  if(!duplicate)snapshots.unshift(structuredClone(snapshot));
