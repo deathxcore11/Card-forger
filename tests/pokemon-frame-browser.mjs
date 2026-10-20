@@ -54,7 +54,9 @@ try{
    const painted=finish==='holofoil'?spec.foil:{...spec.plain,rules:[.2,.6,.8,.82]},clear=finish==='holofoil'?spec.plain:spec.foil;
    const pixels=await compare(plain,foil,{...painted,...clear});
    for(const name of Object.keys(painted))assert(pixels[name].mean>1&&pixels[name].changedFraction>.1,`${source.id} ${finish}: ${name} visibly foiled ${JSON.stringify(pixels[name])}`);
-   for(const name of Object.keys(clear))assert(pixels[name].mean<.05&&pixels[name].changedFraction<.01,`${source.id} ${finish}: ${name} stays unfoiled ${JSON.stringify(pixels[name])}`);
+   // Painted foil measures mean 20-30 with every pixel changed; hosted compositing noise has been
+   // a few pixels per thin region (e.g. 4/380, mean .055). Bound clear regions far below paint.
+   for(const name of Object.keys(clear))assert(pixels[name].mean<.5&&pixels[name].changedFraction<.05,`${source.id} ${finish}: ${name} stays unfoiled ${JSON.stringify(pixels[name])}`);
    report.cases.push({id:source.id,finish,pixels});
   }
   await page.locator('#sheetBody [data-act="closeSheet"]').first().click();

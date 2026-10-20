@@ -498,7 +498,7 @@ const deckIdentity = (game, second = false) => game === 'mtg' ? (second ? heroes
     : second ? `${heroes.ptcg.name} · OBF 125` : `${seeds.ptcg.name} · SSP 57`;
 async function assertIllustrativeNewsArtwork(page, selector, game) {
   const feature = page.locator(selector).first(), art = feature.locator('[data-community-art]');
-  await feature.scrollIntoViewIfNeeded();
+  await scrollStable(page, feature);
   await page.waitForFunction(selector => {
     const n = document.querySelector(`${selector} [data-community-art]`), image = n?.querySelector('img');
     return n?.dataset.artKind === 'illustrative' && n.dataset.artState === 'ready' && image?.complete && image.naturalWidth > 0;
@@ -508,9 +508,16 @@ async function assertIllustrativeNewsArtwork(page, selector, game) {
   assert.equal(await art.locator('.community-art-credit').innerText(), COMMUNITY_ILLUSTRATIONS[game].label, 'illustrative provenance stays explicit');
   assert(await feature.locator('h3').isVisible(), 'headline remains readable with illustrative fallback');
 }
+// A late boot render can replace a node between locating and scrolling; re-locate (bounded).
+async function scrollStable(page, locator) {
+  for (let attempt = 0; ; attempt++) {
+    try { return await locator.scrollIntoViewIfNeeded(); }
+    catch (error) { if (attempt >= 4 || !/not attached to the DOM/i.test(error.message)) throw error; await page.waitForTimeout(100); }
+  }
+}
 async function assertCommunityArtwork(page, selector, game, { kind = 'card', state = 'ready', second = false, source = null } = {}) {
   const art = page.locator(selector).first().locator('[data-community-art]');
-  await art.scrollIntoViewIfNeeded();
+  await scrollStable(page, art);
   await page.waitForFunction(({ selector, state }) => document.querySelector(`${selector} [data-community-art]`)?.dataset.artState === state, { selector, state });
   assert.equal(await art.count(), 1, `${game}: one source-bound art treatment in ${selector}`);
   assert.equal(await art.getAttribute('data-art-game'), game);
@@ -687,7 +694,7 @@ async function startReveal(page, game) {
   assert.match(await page.locator('.home-deck-reveal').innerText(), /not a finished deck/);
   const image = page.locator('.home-reveal-fan img');
   assert.equal(await image.getAttribute('alt'), seeds[game].name);
-  await image.scrollIntoViewIfNeeded();
+  await scrollStable(page, image);
   await page.waitForFunction(() => { const n = document.querySelector('.home-reveal-fan img'); return n?.complete && n.naturalWidth > 0; });
 }
 
@@ -708,12 +715,8 @@ try {
       await Promise.resolve();
     });
     const control = focused.page.locator(selector).first();
-    // A late boot render can replace the row between locating and scrolling;
-    // re-locate a detached node (bounded) before taking the focus under test.
-    for (let attempt = 0; ; attempt++) {
-      try { await control.scrollIntoViewIfNeeded(); await control.focus(); break; }
-      catch (error) { if (attempt >= 4 || !/not attached to the DOM/i.test(error.message)) throw error; await focused.page.waitForTimeout(100); }
-    }
+    await scrollStable(focused.page, control);
+    await control.focus();
     const original = await control.elementHandle();
     assert(await original.evaluate(node => node.isConnected && document.activeElement === node), 'original Home control has focus before delayed data');
     await focused.page.clock.fastForward(2600);
@@ -1074,7 +1077,7 @@ try {
     await selectGame(p, game);
     await p.clock.fastForward(3000); // finish the existing emblem warm-up first
     const rail = p.locator(`[data-home-meta="${game}"]`), stage = rail.locator('.home-meta-card');
-    await rail.scrollIntoViewIfNeeded();
+    await scrollStable(p, rail);
     assert.equal(await rail.locator('[data-home-meta-open]').getAttribute('data-act'), game === 'mtg' ? 'mtgProven' : 'tMetaDeck');
     assert.equal(await rail.locator('.home-meta-original').getAttribute('href'), sources[game].deck);
     assert.match(await rail.innerText(), game === 'ygo' ? /List submitted/ : /Event date/);

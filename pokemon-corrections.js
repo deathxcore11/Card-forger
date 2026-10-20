@@ -18,11 +18,29 @@ export const POKEMON_CORRECTIONS = Object.freeze([{
  evidence:{url:'https://mp-search-api.tcgplayer.com/v2/product/636307/details',sha256:'3578bca2b2f1d1096ebdc7415485fbb0bc2959ac369d1cc353dbce42213432b8',locator:'productId, productName, number 014/191, Triple Draw, Counterturn, English Holofoil SKUs',kind:'marketplace-product-identity'},
  rationale:'Named Cosmos product matches the provider-described Cosmos printing; no price or exact-art claim is added.',
  reviewStatus:'candidate-reviewed; owner release review pending',author:'Codex',reviewer:null,supersedes:null,
+},{
+ schemaVersion:1,correctionId:'MACHAMP-BASE1-8-FIRST-EDITION-PRODUCT',issueGroup:'DATA-001',game:'ptcg',
+ cardId:'base1-8',canonicalName:'Machamp',printingScope:'English Base Set 8/102 First Edition Shadowless Holofoil (two-player starter)',
+ fieldPath:'variants_detailed[type=holo,subtype=unlimited].thirdParty.tcgplayer -> variants_detailed[type=holo,subtype=shadowless,stamp=1st-edition].thirdParty.tcgplayer',expectedPrior:42425,replacement:42425,
+ sourcePin:'TCGdex base1-8 and tcgcsv TCGplayer group 1840 retrieved 2026-10-20',
+ evidence:{url:'https://tcgcsv.com/tcgplayer/3/1840/products',locator:'productId 42425 "Machamp - 8/102" in Deck Exclusives; prices list only subTypeName "1st Edition Holofoil"',kind:'marketplace-product'},
+ rationale:'TCGplayer prices product 42425 only as 1st Edition Holofoil, but the provider bound it to the Unlimited holo record, so no condition or market quote could ever match. Saved keys are variantId-based and unchanged; a copy saved with this product on the Unlimited version reports a product mismatch instead of borrowing a price.',
+ reviewStatus:'owner-approved 2026-10-20',author:'Claude',reviewer:'owner',supersedes:null,
 }]);
 export function applyPokemonCorrections(card) {
  let result=card;
  for(const correction of POKEMON_CORRECTIONS){
   if(card?.id!==correction.cardId||card.name!==correction.canonicalName)continue;
+  if(correction.correctionId==='MACHAMP-BASE1-8-FIRST-EDITION-PRODUCT'){
+   const rows=result.variants_detailed||[],pid=String(correction.replacement),tp=d=>String(d.thirdParty?.tcgplayer??'');
+   const from=rows.filter(d=>d.type==='holo'&&d.subtype==='unlimited'&&!d.stamp?.length),to=rows.filter(d=>d.type==='holo'&&d.subtype==='shadowless'&&Array.isArray(d.stamp)&&d.stamp.length===1&&d.stamp[0]==='1st-edition');
+   // Already corrected upstream: nothing to do.
+   if(to.length===1&&tp(to[0])===pid&&rows.filter(d=>tp(d)===pid).length===1)continue;
+   if(from.length!==1||to.length!==1||tp(from[0])!==pid||tp(to[0])||rows.filter(d=>tp(d)===pid).length!==1){result={...result,correctionConflicts:[...(result.correctionConflicts||[]),correction.correctionId]};continue;}
+   const {tcgplayer,...rest}=from[0].thirdParty;
+   result={...result,variants_detailed:rows.map(d=>d===from[0]?{...d,thirdParty:rest,productIdentityProvenance:correction.correctionId}:d===to[0]?{...d,thirdParty:{...d.thirdParty,tcgplayer:correction.replacement},productIdentityProvenance:correction.correctionId}:d),corrections:[...(result.corrections||[]),correction.correctionId]};
+   continue;
+  }
   if(correction.correctionId==='RABSCA-SV08-014-COSMOS-PRODUCT'){
    const matches=(card.variants_detailed||[]).filter(d=>d.variantId==='5zs5af49g93yryvw1ftj'&&d.type==='holo'&&d.foil==='cosmos'&&d.size==='standard'&&!d.stamp?.length&&!d.subtype);
    if(matches.length!==1)continue;

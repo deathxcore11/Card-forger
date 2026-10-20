@@ -1,5 +1,6 @@
 // Optional server-only condition feed. No key is shipped with the static app.
 import {pokemonDetailedVariant} from './pokemon-variant-options.js';
+import {applyPokemonCorrections} from './pokemon-corrections.js';
 import {pokemonPromoEvidence} from './pokemon-promo-evidence.js';
 import {pokemonPriceRoute} from './pokemon-prices.js';
 import {rarityKey,ygoPriceRoute} from './ygo-prices.js';
@@ -87,7 +88,8 @@ export async function conditionFeedRoute(url,env,ctx,fetchImpl=fetch,{request}={
    product=exact[0].productId;const edition=url.searchParams.get('edition');
    printings={'1st-edition':['1st Edition'],unlimited:['Unlimited'],limited:['Limited','Limited Edition']}[edition]||[];
   }else{
-   const c=await get('https://api.tcgdex.net/v2/en/cards/'+encodeURIComponent(id)),variant=url.searchParams.get('variant')||'';
+   // Reviewed provider corrections (pokemon-corrections.js) apply to lookups exactly as in the app.
+   const c=applyPokemonCorrections(await get('https://api.tcgdex.net/v2/en/cards/'+encodeURIComponent(id))),variant=url.searchParams.get('variant')||'';
    if(c.id!==id)return empty('unmapped','Card identity does not match.');
    if(variant.startsWith('product:')){
     const response=await pokemonPriceRoute(new URL(url.origin+'/api/prices/pokemon?id='+encodeURIComponent(id)),ctx,fetchImpl),d=await response.json();
