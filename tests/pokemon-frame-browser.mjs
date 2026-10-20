@@ -7,11 +7,11 @@ import fs from 'node:fs';
 import {normalizePtcg} from '../ptcg.js';
 import {resolveFinish} from '../finish-effects.js';
 import {startServer,openSearchApp,inventorySnapshot} from './search-fixtures.mjs';
-// Regions as [x0,y0,x1,y1] fractions of the image, chosen ≥1px inside measured edges.
+// Regions as [x0,y0,x1,y1] fractions of the image, kept ≥0.5% inside measured edges (anti-aliasing).
 const CASES={
- 'dp5-33':{frame:'pk-dppt',foil:{artBody:[.3,.2,.7,.45],besideBanner:[.3,.099,.9,.113]},plain:{banner:[.09,.098,.2,.116],dexStrip:[.3,.503,.7,.52]}},
- 'dp1-31':{frame:'pk-dppt-evolved',foil:{artBody:[.3,.2,.7,.45],besideBanner:[.66,.099,.9,.113]},plain:{banner:[.25,.099,.5,.117],badge:[.08,.09,.15,.14],dexStrip:[.3,.503,.7,.52]}},
- 'hgss3-15':{frame:'pk-hgss-evolved',foil:{artBody:[.3,.2,.7,.45],besideBanner:[.68,.094,.92,.104]},plain:{banner:[.35,.094,.55,.104],dexStrip:[.3,.525,.7,.54]}},
+ 'dp5-33':{frame:'pk-dppt',foil:{artBody:[.3,.2,.7,.45],besideBanner:[.3,.099,.9,.113]},plain:{banner:[.09,.098,.2,.113],dexStrip:[.3,.503,.7,.52]}},
+ 'dp1-31':{frame:'pk-dppt-evolved',foil:{artBody:[.3,.2,.7,.45],besideBanner:[.66,.099,.9,.113]},plain:{banner:[.25,.099,.5,.114],badge:[.08,.09,.15,.14],dexStrip:[.3,.503,.7,.52]}},
+ 'hgss3-15':{frame:'pk-hgss-evolved',foil:{artBody:[.3,.2,.7,.45],besideBanner:[.68,.094,.92,.104]},plain:{banner:[.35,.094,.55,.1015],dexStrip:[.3,.525,.7,.54]}},
  'me01-016':{frame:'pk-sv',foil:{artBody:[.3,.2,.7,.42]},plain:{nameBar:[.3,.05,.6,.09],dexStrip:[.3,.475,.7,.49]}},
 };
 const retained=Object.keys(CASES).map(id=>JSON.parse(fs.readFileSync(`tests/fixtures/${id}-finish.json`)));
