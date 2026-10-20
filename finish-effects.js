@@ -29,6 +29,9 @@ export const FINISH_MASKS = Object.freeze({
  'pk-swsh-art':'inset(9.8% 8% 52.5% 8%)',
  'pk-swsh-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,7% 9.1%,7% 50.7%,93% 50.7%,93% 9.1%,7% 9.1%)',
  'pk-standard-art':'inset(12.3% 8.2% 47.5% 8.2%)',
+ // Unified Minds Celebi 4: source art is 600x825, illustration x48..552,
+ // y81..390. The silver frame and Pokédex caption are outside this window.
+ 'pk-sm11-4-art':'inset(9.818182% 8% 52.727273% 8%)',
  'pk-standard-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,8.2% 12.3%,8.2% 52.5%,91.8% 52.5%,91.8% 12.3%,8.2% 12.3%)',
  // Ordinary Sun & Moon frames, checked against sm11-6, sm11-7 and sm11-9
  // (600x825). Exclude the silver frame/caption and protruding stage badge.
@@ -104,6 +107,7 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
   }
   const modern=/^(?:swsh|sm|xy|bw|dp|pl|hgss|sv)/i.test(set)||set==='cel25';
   if(modern&&category==='pokemon'){
+   if(set==='sm11'&&c.id==='sm11-4'&&!fullArt&&physicalFinish==='holofoil')return preset(key,label,'ptcg-holo',[layer('pk-sm11-4-art','holo')],'https://api.tcgdex.net/v2/en/cards/sm11-4');
    if(/^sm\d/i.test(set)&&!fullArt&&physicalFinish==='reverse-holofoil'&&['basic','stage1','stage2'].includes(norm(c.stage)))return preset(key,label,'ptcg-reverse',[layer(norm(c.stage)==='basic'?'pk-sm-surround':'pk-sm-evolved-surround','rainbow')],'https://api.tcgdex.net/v2/en/cards/sm11-6');
    if(physicalFinish==='holofoil')return preset(key,label,'ptcg-holo',[layer(set==='cel25'?'pk-cel-art':/^swsh/i.test(set)?'pk-swsh-art':/^sv/i.test(set)?'pk-sv-art':'pk-standard-art','holo')],FINISH_SOURCES.pokemon);
    if(physicalFinish==='reverse-holofoil')return preset(key,label,'ptcg-reverse',[layer(/^swsh/i.test(set)?'pk-swsh-surround':/^sv/i.test(set)?'pk-sv-surround':'pk-standard-surround',/^sv/i.test(set)?'tiles':'rainbow')],FINISH_SOURCES.pokemon);

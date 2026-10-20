@@ -22,6 +22,26 @@
       "recordSha256": "563943535d5464a3461ce37f16f1b6d5b905515c16ed908cf27e304756224d8a",
       "imageUrl": "https://assets.tcgdex.net/en/sm/sm11/9/high.webp",
       "imageSha256": "d77862b42f186b649ec67c06f48175b31861e3e04a9dffb759618e2c04c03838"
+    },
+    {
+      "id": "sm11-4",
+      "retrievedAt": "2026-10-20T17:48:11.487130+00:00",
+      "recordUrl": "https://api.tcgdex.net/v2/en/cards/sm11-4",
+      "recordSha256": "e6d5306f6bbb74f04c819a51745df8a1a7ac73283b12a129dd6e0524ea5d611e",
+      "imageUrl": "https://assets.tcgdex.net/en/sm/sm11/4/high.webp",
+      "imageSha256": "3a978d50ea5d9bab5eb1cb10a7afe66eb81dc8da415e7a9007e861d96990f3ee",
+      "imageSize": [
+        600,
+        825
+      ],
+      "illustrationBoundsPx": [
+        48,
+        81,
+        552,
+        390
+      ],
+      "availabilityNote": "Unchanged source record. Generated variants metadata lists normal only, while its TCGplayer pricing contains holofoil and reverse-holofoil for product 194920. The existing normalizer exposes these choices. Rendering tests do not certify that generated Normal entry or invent any new choice.",
+      "scope": "Exact sm11-4 holo geometry; source art and normal/reverse selections also checked. Approximate lighting, not physical foil authentication."
     }
   ]
 }

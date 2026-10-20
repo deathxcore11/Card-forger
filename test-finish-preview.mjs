@@ -5,6 +5,19 @@ import {finishAttrs,finishPreview,containedImageBox,finishEligible,attachFinishP
 import {presentationQuote} from './pricing-presentation.js';
 import {normalizePtcg,pokemonVariants} from './ptcg.js';
 import {zoomCardOptions} from './zoom.js';
+// User-reported Unified Minds Celebi: test the retained provider record without
+// adding variants. The rendering change must leave commercial identity intact.
+const celebiRaw=JSON.parse(await readFile(new URL('./tests/fixtures/sm11-4-finish.json',import.meta.url),'utf8'));
+const celebi=normalizePtcg(celebiRaw),celebiBefore=JSON.stringify(celebi);
+assert.equal(resolveFinish('ptcg',celebi,{priceFinish:'holofoil'}).layers[0].mask,'pk-sm11-4-art','Celebi holo follows its illustration rather than the old generic frame');
+assert.equal(resolveFinish('ptcg',celebi,{priceFinish:'reverse-holofoil'}).layers[0].mask,'pk-sm-surround');
+assert.equal(resolveFinish('ptcg',celebi,{priceFinish:'normal'}).effect,'plain');
+assert.equal(resolveFinish('ptcg',celebi,{priceFinish:'holofoil'}).status,'approximate');
+for(const key of ['holofoil','reverse-holofoil'])assert.equal(celebi.variants.find(v=>v.key===key).productId,194920);
+assert.equal(JSON.stringify(celebi),celebiBefore,'Rendering must not alter variants, source quotes or product IDs');
+const celebiNormal={...celebi,variants:celebi.variants.filter(v=>v.key==='normal')};
+assert.equal(resolveFinish('ptcg',celebiNormal,{priceFinish:'holofoil'}).effect,'unknown','Geometry must not invent an unavailable finish');
+assert.equal(resolveFinish('ptcg',{...celebi,id:'sm11-5'},{priceFinish:'holofoil'}).layers[0].mask,'pk-standard-art','Exact-card evidence is not promoted to other printings');
 const magic={id:'m',set:'clb',layout:'normal',finishes:['nonfoil','foil','etched'],prices:{usd:'1',usd_foil:null,usd_etched:'3'}};
 assert.deepEqual(finishChoices('mtg',magic).map(x=>x.key),['nonfoil','foil','etched']);
 assert.equal(finishEffect('mtg',{...magic,finishes:['nonfoil']},{priceFinish:'foil'}),'unknown');

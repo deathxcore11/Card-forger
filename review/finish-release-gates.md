@@ -4,6 +4,8 @@ Scope correction from the owner, 2026-10-20: **work in small batches first**. Co
 
 ## Current batch review
 
+Celebi follow-up (sm11-4): the ordinary holo path still used the generic rectangle, starting below the artwork top and extending across its caption. The candidate now uses an exact-card illustration mask derived from the retained 600x825 source image. The existing reverse mask, normal choice and product identities are retained. Added checks cover holo/reverse at five widths, normal without foil, zoom handoff, and an old-mask negative control. Hosted results must be reviewed before marking this follow-up passed. The source's generated Normal metadata conflicts with its Holofoil/Reverse Holofoil pricing buckets; the rendering repair does not certify or change that availability metadata.
+
 The current candidate contains targeted Rabsca, Oddish and Butterfree finish/selection repairs, Aquapolis identity and product-binding repairs, and Sun & Moon frame alignment plus modal gesture repairs. Review each claim against its actual evidence; this is not a claim that every card in these sets has an accurate foil preview.
 
 - Define each batch by exact card/printing IDs and the behavior being repaired. Check every item and supported finish in that batch, including nonfoil, rather than promoting a few examples to whole-set completion.

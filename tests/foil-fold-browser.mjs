@@ -1,25 +1,27 @@
-// Public retained art + synthetic finish selection. No physical foil claim.
+// Public retained art. Celebi uses the unchanged source record; the three
+// earlier reverse geometry witnesses have explicitly synthetic selections.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {normalizePtcg} from '../ptcg.js';
 import {resolveFinish,FINISH_MASKS} from '../finish-effects.js';
 import {startServer,openSearchApp,inventorySnapshot,noOverflow} from './search-fixtures.mjs';
-const ids=['sm11-6','sm11-7','sm11-9'];
+const ids=['sm11-6','sm11-7','sm11-9','sm11-4'];
 const originals=ids.map(id=>JSON.parse(fs.readFileSync(`tests/fixtures/${id}-finish.json`)));
 // Current sm11-6 provider snapshot lacks reverse availability. Preserve it above;
 // reproduce the user's selected reverse only in this explicitly synthetic fixture.
-const sources=originals.map(s=>({...s,variants:{normal:true,reverse:true},variants_detailed:[{type:'normal',size:'standard',variantId:'fixture-normal'},{type:'reverse',size:'standard',variantId:'fixture-reverse'}],pricing:undefined}));
+const sources=originals.map(s=>s.id==='sm11-4'?s:({...s,variants:{normal:true,reverse:true},variants_detailed:[{type:'normal',size:'standard',variantId:'fixture-normal'},{type:'reverse',size:'standard',variantId:'fixture-reverse'}],pricing:undefined}));
 for(const [i,s]of sources.entries()){
  const c=normalizePtcg(s),p=resolveFinish('ptcg',c,{priceFinish:'reverse-holofoil'});
  assert.equal(p.layers[0].mask,i===2?'pk-sm-evolved-surround':'pk-sm-surround');
  assert.equal(resolveFinish('ptcg',c,{priceFinish:'normal'}).layers.length,0);
+ if(s.id==='sm11-4')assert.equal(resolveFinish('ptcg',c,{priceFinish:'holofoil'}).layers[0].mask,'pk-sm11-4-art');
 }
 assert.equal(normalizePtcg(originals[0]).variants.some(v=>v.finish==='reverse-holofoil'),false,'Retained provider limitation stays explicit');
 if(process.argv.includes('--validate-fixtures')){console.log('PASS: SM geometry fixtures; original source availability retained separately from synthetic selected reverse.');process.exit(0);}
 assert.equal(process.env.GITHUB_ACTIONS,'true','Hosted CI only');
 const {chromium}=await import('playwright'),browser=await chromium.launch(),server=await startServer();
 fs.mkdirSync('test-results',{recursive:true});
-const report={candidateSha:process.env.GITHUB_SHA,status:'FAIL',cases:[],scroll:[],limits:'Hosted touch emulation; source artwork with synthetic reverse choices. Not physical phone/foil proof or whole-catalogue coverage.'};let app;
+const report={candidateSha:process.env.GITHUB_SHA,status:'FAIL',cases:[],scroll:[],limits:'Hosted touch emulation. Celebi uses retained source choices; Sewaddle/Leavanny reverse choices are synthetic. Source availability conflicts remain documented. Not physical phone/foil proof or whole-catalogue coverage.'};let app;
 const frame=page=>page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
 const settle=page=>page.evaluate(()=>new Promise((resolve,reject)=>{const root=document.querySelector('#sheetBody');let quiet;const timeout=setTimeout(()=>{observer.disconnect();reject(Error('Detail did not settle'));},4000);const ready=()=>{clearTimeout(quiet);quiet=setTimeout(()=>{observer.disconnect();clearTimeout(timeout);resolve();},250);};const observer=new MutationObserver(ready);observer.observe(root,{childList:true,subtree:true});ready();}));
 async function pan(page,context,x,y,dx,dy,{cancel=false}={}){
@@ -41,20 +43,40 @@ try{
  const {page,context}=app;await page.emulateMedia({reducedMotion:'no-preference'});
  await page.locator('[data-act="menu"]').tap();await page.locator('#settingsTab-app').tap();await page.locator('[data-change="setGlass"]').check();await page.locator('[data-act="closeSettings"]').click();
  const q=page.locator('[data-input="tQ"]');await q.fill('Sewaddle');await q.press('Enter');const before=await inventorySnapshot(page);
- for(const id of ids){
-  await page.locator(`#content [data-act="tCard"][data-id="${id}"]`).first().click();await page.waitForFunction(()=>window.__uiTestState.ui.sheetCtx?.previewBusy===false);await page.locator('#sheetBody [data-finish="reverse-holofoil"]').click();
+ for(const id of ids)for(const finish of id==='sm11-4'?['holofoil','reverse-holofoil']:['reverse-holofoil']){
+  await page.locator(`#content [data-act="tCard"][data-id="${id}"]`).first().click();await page.waitForFunction(()=>window.__uiTestState.ui.sheetCtx?.previewBusy===false);
+  if(id==='sm11-4'){
+   await page.locator('#sheetBody [data-finish="normal"]').click();await settle(page);
+   assert.equal(await page.locator('#sheetBody [data-finish-surface="detail"]').getAttribute('data-finish-effect'),'plain','Selected normal remains unfoiled');
+   assert.equal(await page.locator('#sheetBody .finish-layer').count(),0,'Normal has no foil layers');
+  }
+  await page.locator(`#sheetBody [data-finish="${finish}"]`).click();
   for(const width of [390,692,768,1024,1440]){
    await page.setViewportSize({width,height:1000});await settle(page);await page.evaluate(()=>document.querySelector('#sheetBody [data-finish-surface="detail"]').scrollIntoView({block:'center',behavior:'instant'}));await frame(page);await page.locator('#sheetBody .finish-layer').waitFor();await page.mouse.move(0,0);await noOverflow(page,'#sheetBody',id+' '+width);
    await page.waitForFunction(()=>!document.querySelector('#sheet').getAnimations({subtree:true}).some(a=>Number.isFinite(a.effect?.getComputedTiming().endTime)&&!['finished','idle'].includes(a.playState)));
    await page.evaluate(()=>{window.__foilSteady=null;});await page.waitForFunction(()=>{const s=document.querySelector('#sheetBody [data-finish-surface="detail"]'),light=s?.querySelector('.finish-spotlight');if(!light)return false;const r=s.getBoundingClientRect(),v=JSON.stringify([s.style.cssText,r.x,r.y,r.width,r.height,getComputedStyle(light).opacity]),old=window.__foilSteady,now=performance.now();if(!old||old.value!==v){window.__foilSteady={value:v,at:now};return false;}return now-old.at>200;});
    const geometry=await page.evaluate(()=>{const s=document.querySelector('#sheetBody [data-finish-surface="detail"]'),a=s.querySelector('img').getBoundingClientRect(),b=s.querySelector('.finish-overlay').getBoundingClientRect();return {dx:Math.abs(a.left-b.left),dy:Math.abs(a.top-b.top),dw:Math.abs(a.width-b.width),dh:Math.abs(a.height-b.height),model:JSON.parse(s.dataset.finishModel)};});assert(Math.max(geometry.dx,geometry.dy,geometry.dw,geometry.dh)<2,'Overlay follows image after fold/resize');
    const photo=hidden=>page.evaluate(hidden=>{const s=document.querySelector('#sheetBody [data-finish-surface="detail"]');for(const n of s.querySelectorAll('.finish-layer,.finish-pattern'))n.style.visibility=hidden?'hidden':'';const r=s.querySelector('img').getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height};},hidden);
-   const box=await photo(true),plain=await page.screenshot({clip:box,animations:'disabled',path:`test-results/foil-fold-${id}-${width}-plain.png`});await photo(false);const foil=await page.screenshot({clip:box,animations:'disabled',path:`test-results/foil-fold-${id}-${width}.png`}),pixels=await pixelRegions(page,plain,foil);
-   console.log('PIXEL DIAGNOSTIC',id,width,JSON.stringify({geometry,pixels}));report.cases.push({id,width,geometry,pixels});
+   const box=await photo(true),plain=await page.screenshot({clip:box,animations:'disabled',path:`test-results/foil-fold-${id}-${finish}-${width}-plain.png`});await photo(false);const foil=await page.screenshot({clip:box,animations:'disabled',path:`test-results/foil-fold-${id}-${finish}-${width}.png`}),pixels=await pixelRegions(page,plain,foil);
+   console.log('PIXEL DIAGNOSTIC',id,finish,width,JSON.stringify({geometry,pixels}));report.cases.push({id,finish,width,geometry,pixels});
    // A clipped blend layer changes raster compositing of a few image pixels:
    // retained baseline vs foil differs by mean .00455/255, not a painted region.
    // Bound both intensity and area; the old mask below must still fail clearly.
-   for(const zone of ['art','topEdge','leftEdge','caption'])assert(pixels[zone].mean<.05&&pixels[zone].changedFraction<.01,`${id} ${width}: ${zone} excluded within subpixel compositing tolerance`);assert(pixels.body.mean>1&&pixels.belowFrame.mean>1,'Foil reaches the field immediately below the frame');
+   if(finish==='holofoil'){
+    for(const zone of ['caption','belowFrame','body'])assert(pixels[zone].mean<.05&&pixels[zone].changedFraction<.01,`${id} holo ${width}: ${zone} stays unfoiled`);
+    for(const zone of ['art','topEdge'])assert(pixels[zone].mean>1&&pixels[zone].changedFraction>.1,`${id} holo ${width}: ${zone} visibly covered`);
+    if(width===768){
+     const old=await page.evaluate(mask=>{const n=document.querySelector('#sheetBody .finish-layer'),old=n.style.clipPath;n.style.clipPath=mask;return old;},FINISH_MASKS['pk-standard-art']);
+     const shot=await page.screenshot({clip:box,animations:'disabled',path:'test-results/foil-fold-celebi-old-holo-mask.png'}),negative=await pixelRegions(page,plain,shot);
+     assert(negative.caption.mean>1&&negative.belowFrame.mean>1,'Old holo mask paints across the caption and below the frame');assert(negative.topEdge.mean<.05,'Old holo mask misses the top of the art');
+     await page.evaluate(mask=>document.querySelector('#sheetBody .finish-layer').style.clipPath=mask,old);report.oldCelebiMaskControl=negative;
+     await page.locator('#sheetBody .cd-zoom').click();await page.locator('dialog.zoom[open] .finish-layer').waitFor();
+     assert.equal(await page.locator('dialog.zoom[open] [data-finish-surface="zoom"]').evaluate(n=>JSON.parse(n.dataset.finishModel).layers[0].mask),'pk-sm11-4-art','Zoom retains exact Celebi mask');
+     await page.screenshot({path:'test-results/foil-fold-celebi-holo-zoom.png'});await page.locator('dialog.zoom [data-z="close"]').click();report.celebiZoom=true;
+    }
+   }else{
+    for(const zone of ['art','topEdge','leftEdge','caption'])assert(pixels[zone].mean<.05&&pixels[zone].changedFraction<.01,`${id} ${width}: ${zone} excluded within subpixel compositing tolerance`);assert(pixels.body.mean>1&&pixels.belowFrame.mean>1,'Foil reaches the field immediately below the frame');
+   }
    if(id==='sm11-6'&&width===768){
     const old=await page.evaluate(mask=>{const n=document.querySelector('#sheetBody .finish-layer'),old=n.style.clipPath;n.style.clipPath=mask;return old;},FINISH_MASKS['pk-standard-surround']);const oldShot=await page.screenshot({clip:box,animations:'disabled',path:'test-results/foil-fold-sewaddle-old-mask.png'});const negative=await pixelRegions(page,plain,oldShot);assert(negative.topEdge.mean>1&&negative.leftEdge.mean>1,'Old mask visibly paints inside the illustration');assert(negative.belowFrame.mean<.05,'Old mask leaves an unfoiled gap below the frame');await page.evaluate(mask=>document.querySelector('#sheetBody .finish-layer').style.clipPath=mask,old);report.oldMaskControl=negative;
    }
