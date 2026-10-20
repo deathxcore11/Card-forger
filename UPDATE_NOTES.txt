@@ -1,6 +1,7 @@
 3.86.7 - Preserve Yu-Gi-Oh! foil lettering alongside the Pokémon and menu release
 Rare, Ultra Rare, Secret Rare and Prismatic names no longer show a foil band sliding across the whole name bar. The app now finds the letters in the card's own image and lights them like hot-stamped foil pressed into the card: silver for Rare, gold for Ultra Rare and rainbow for Secret and Prismatic. On the card page and zoom, the letter edges catch the light as you move your finger, mouse or phone. Collection gallery tiles show the same letter-shaped foil with the existing gentle sweep. Detection works on every name-bar colour, including dark Xyz bars.
 The art foil on Yu-Gi-Oh! cards is unchanged. If an image can't be read (for example a fallback image from another site), the previous name-bar shine stays. Turning off card effects or reduced motion removes it as before. This is an approximate simulation on reference images, not a physical-foil match. No prices, printings or saved copies are changed.
+Yu-Gi-Oh! zoom uses the site’s image copy so the letter mask remains readable there too.
 The combined release retains the Base Set and anniversary artwork maps and unified deck/card menus from 3.86.6. Both foil test suites run together before publication.
 
 3.86.6 - Fitted anniversary holo and unified context actions

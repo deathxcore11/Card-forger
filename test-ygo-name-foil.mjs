@@ -1,6 +1,7 @@
 // Hot-stamped Yu-Gi-Oh! name foil: letter detection works on light and dark name bars,
 // ignores coloured sparkles, and the CSS mask lands exactly on the measured name bar.
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {glyphCoverage,nameMaskStyle,YGO_NAME_BOX,YGO_NAME_RARITY,YGO_NAME_FRAGMENT} from './ygo-name-foil.js';
 const W=60,H=16;
 function bar(bg,ink,extra=()=>null){
@@ -32,4 +33,7 @@ assert.deepEqual(YGO_NAME_RARITY,{silver:1,gold:2,rainbow:3},'Rare silver, Ultra
 // Output is letters only: transparent wherever coverage is zero, so the art foil and bar stay untouched.
 assert.match(YGO_NAME_FRAGMENT,/if\(c<=0\.0\)\{gl_FragColor=vec4\(0\.0\);return;\}/);
 assert.match(YGO_NAME_FRAGMENT,/gl_FragColor=vec4\(toSrgb\(clamp\(foil,0\.0,1\.0\)\),c\);/);
+// The full-screen viewer must use this site's image copy: a hotlinked YGOPRODeck image cannot be
+// read, so the lettering would fall back to the old title-band shine there.
+assert.match(readFileSync(new URL('./tcg.js',import.meta.url),'utf8'),/data-hi="\$\{esc\(c\.imageLarge \|\| ""\)\}"/,'Zoom high-resolution image is the same-origin copy');
 console.log('PASS: Yu-Gi-Oh! name foil finds letters on gold, magenta and dark Xyz bars, rejects coloured sparkles, and masks exactly the measured name bar.');
