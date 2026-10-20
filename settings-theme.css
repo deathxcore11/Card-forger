@@ -163,3 +163,7 @@
 .settings-save-overview {display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:16px;background:color-mix(in srgb,var(--gold) 5%,var(--surface));padding:14px 16px;margin-bottom:18px;}
 .settings-save-overview>div {flex:1;min-width:0;}.settings-save-overview .save-status {display:block;font-size:13px;color:var(--text);overflow-wrap:anywhere;}.settings-save-overview small {display:block;font-size:11px;color:var(--muted);line-height:1.5;margin-top:4px;}
 .settings-save-symbol {color:var(--gold);font-size:26px;}.settings-save-overview>.link {flex-shrink:0;min-height:44px;font-size:12px;}
+/* Modal feedback uses viewport insets, without an off-center layout box that
+   can enlarge the dialog's scrollable width before its transform is applied. */
+.settings-dialog #toast {left:max(24px,calc((100vw - 520px)/2));right:max(24px,calc((100vw - 520px)/2));max-width:none;transform:translateY(20px);}
+.settings-dialog #toast.show {transform:translateY(0);}
