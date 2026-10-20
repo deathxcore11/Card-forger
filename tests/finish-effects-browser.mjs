@@ -16,6 +16,21 @@ async function settleSheetGeometry(page,label){
  const after=await page.evaluate(sample);console.log('Sheet geometry readiness',label,JSON.stringify({before,after}));
 }
 
+// An opaque diagnostic foil proves paint order without relying on a particular card mask.
+// Remove it before the normal screenshots; it never edits the renderer or saved data.
+async function assertBadgesAboveFoil(page,tile,label){
+ await tile.locator('.finish-overlay').waitFor();
+ await tile.evaluate(n=>{const f=n.querySelector('.finish-overlay'),probe=document.createElement('span');probe.dataset.badgeFoilProbe='';probe.style.cssText='position:absolute;inset:0;background:rgb(255,0,255);pointer-events:none';f.append(probe);});
+ try{
+  for(const kind of ['.tile-emb','.tile-set']){
+   const badge=tile.locator('.tile-chrome '+kind);if(!await badge.count()||!await badge.isVisible())continue;
+   const b=await badge.boundingBox(),png=await page.screenshot({clip:{x:b.x+b.width*.25,y:b.y+b.height*.25,width:b.width*.5,height:b.height*.5},animations:'disabled'});
+   const covered=await page.evaluate(async data=>{const img=new Image();img.src='data:image/png;base64,'+data;await img.decode();const c=document.createElement('canvas');c.width=img.width;c.height=img.height;const x=c.getContext('2d');x.drawImage(img,0,0);const d=x.getImageData(0,0,c.width,c.height).data;let covered=0;for(let i=0;i<d.length;i+=4)if(d[i]>235&&d[i+1]<20&&d[i+2]>235)covered++;return covered/(c.width*c.height);},png.toString('base64'));
+   assert(covered<.01,`${label} ${kind}: foil cannot paint over UI badges (${covered})`);
+  }
+ }finally{await tile.evaluate(n=>n.querySelector('[data-badge-foil-probe]')?.remove());}
+}
+
 try{for(const game of ['ygo','ptcg','mtg']){
  const app=await openApp(browser,server.base,{game,width:390}),{page}=app;
  try{
@@ -34,7 +49,7 @@ try{for(const game of ['ygo','ptcg','mtg']){
    const snapshot=await inventorySnapshot(page);
    for(const [variant,effect,mask] of [['normal','plain',null],['holofoil','ptcg-holo','pk-sv-art'],['reverse-holofoil','ptcg-reverse','pk-sv-surround']]){
     const tile=page.locator(`#content .lot-art[data-entry="owned-${variant}"]`);await tile.evaluate(n=>n.scrollIntoView({block:'center',behavior:'instant'}));const model=await tile.evaluate(n=>JSON.parse(n.dataset.finishModel));assert.equal(model.key,variant);assert.equal(model.effect,effect);
-    if(mask){assert(model.layers.some(l=>l.mask===mask));await tile.locator('.finish-auto').waitFor();assert.equal(await tile.locator('.finish-auto').evaluate(n=>getComputedStyle(n).animationName),'finish-gallery-light');}else assert.equal(await tile.locator('.finish-overlay').count(),0,'Owned nonfoil has no automatic foil shine');
+    if(mask){assert(model.layers.some(l=>l.mask===mask));await tile.locator('.finish-auto').waitFor();assert.equal(await tile.locator('.finish-auto').evaluate(n=>getComputedStyle(n).animationName),'finish-gallery-light');await assertBadgesAboveFoil(page,tile,game+' '+variant);}else assert.equal(await tile.locator('.finish-overlay').count(),0,'Owned nonfoil has no automatic foil shine');
     await tile.click();await page.waitForFunction(()=>window.__uiTestState.ui.sheetCtx.previewBusy===false);assert.equal(await page.locator('#sheet .cd-img').evaluate(n=>JSON.parse(n.dataset.finishModel).key),variant,'Detail opens with this copy’s saved finish');await page.locator('#sheet [data-finish="'+(variant==='normal'?'holofoil':'normal')+'"]').click();await closeSheet(page);assert.equal(await inventorySnapshot(page),snapshot,'Preview choice never edits any saved copy');
    }
    await page.locator('[data-act="menu"]').click();await page.locator('#settingsTab-app').click();const setting=page.locator('#settings-app [data-change="setFinishEffects"]');await setting.uncheck();await page.waitForFunction(()=>!document.querySelector('.finish-overlay'));await setting.check();await page.locator('[data-act="closeSettings"]').click();
@@ -43,6 +58,7 @@ try{for(const game of ['ygo','ptcg','mtg']){
   const opener=page.locator(`#content .lot-art[data-entry="lot-${game}-0"]`);
   if(game!=='ptcg'){
    await opener.locator('.finish-auto').waitFor();
+   await assertBadgesAboveFoil(page,opener,game);
    const initial=await opener.locator('.finish-auto').evaluate(n=>({position:getComputedStyle(n).getPropertyValue('--finish-x'),animation:getComputedStyle(n).animationName}));
    assert.equal(initial.animation,'finish-gallery-light','Visible foil grids animate before any hover or tilt');
    await page.waitForFunction(({selector,position})=>{const n=document.querySelector(selector);return n&&getComputedStyle(n).getPropertyValue('--finish-x')!==position;},{selector:`#content .lot-art[data-entry="lot-${game}-0"] .finish-auto`,position:initial.position});

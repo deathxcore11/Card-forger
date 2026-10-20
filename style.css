@@ -1378,7 +1378,8 @@ details.trouble code { word-break: break-word; }
 
 /* Tile emblems, same layout in every game: type top-left, set + rarity bottom-left, importance seal
    bottom-right. The overlay matches the card image (all tiles use the 488:680 card shape). */
-.tile-chrome { position: absolute; left: 0; right: 0; top: 0; aspect-ratio: 488 / 680; z-index: 2; pointer-events: none; }
+/* UI badges sit above the image-only foil (z-index 2), including its later-mounted layers. */
+.tile-chrome { position: absolute; left: 0; right: 0; top: 0; aspect-ratio: 488 / 680; z-index: 3; pointer-events: none; }
 .tile-chrome .tile-emb, .tile-chrome .tile-set { position: absolute; display: inline-flex; align-items: center; gap: 3px; height: 22px; padding: 0 6px; border-radius: 999px; background: rgba(8, 10, 14, 0.66); backdrop-filter: blur(4px); color: #fff; box-shadow: 0 1px 3px #0006; }
 .tile-chrome .tile-emb { top: 5px; left: 5px; }
 .tile-chrome .tile-set { bottom: 5px; left: 5px; top: auto; right: auto; }
