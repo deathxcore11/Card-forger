@@ -40,9 +40,19 @@ try{
    await page.locator('.bottom-nav [data-nav="collection"]').tap();await page.locator('#content .display-list .lot').first().waitFor();
    const before=await protectedState(page);
    assert.equal(await page.locator('#content [data-price-origin="personal"]').count(),1,'only the manually entered lot gets a badge');
-   const custom=page.locator('.lot').filter({has:page.locator('[data-price-origin="personal"]')});await custom.scrollIntoViewIfNeeded();await custom.locator('button.price').waitFor({state:'visible'});assert.match(await custom.innerText(),/\$50\.00/);
-   const condition=page.locator('.lot').filter({has:page.locator('[data-entry="display-'+game+'-1"]')});await condition.scrollIntoViewIfNeeded();assert.equal(await condition.locator('[data-price-origin]').count(),0);assert.match(await condition.innerText(),/\$5\.67/);
+   // These are value/style checks, so they do not need scrolling. A condition
+   // refresh can replace a row while scrollIntoViewIfNeeded waits for stability.
+   const custom=page.locator('.lot').filter({has:page.locator('[data-price-origin="personal"]')});await custom.locator('button.price').waitFor({state:'visible'});assert.match(await custom.innerText(),/\$50\.00/);
+   const condition=page.locator('.lot').filter({has:page.locator('[data-entry="display-'+game+'-1"]')});assert.equal(await condition.locator('[data-price-origin]').count(),0);assert.match(await condition.innerText(),/\$5\.67/);
    assert.match(await condition.locator('.condition-badge').getAttribute('data-condition-info'),/Condition quote.*included/);
+   assert.equal(await condition.getAttribute('data-tier'),'t1','Exact condition value selects its price frame');
+   assert.equal(await custom.getAttribute('data-tier'),'t2','Frame uses per-copy value, not the two-copy total');
+   const frame=condition.locator('.lot-art'),firstFrame=await frame.evaluate(n=>{const s=getComputedStyle(n);return {animation:s.animationName,position:s.backgroundPosition};});
+   assert.notEqual(firstFrame.animation,'none','Usable condition prices retain decorative frame animations');
+   await page.waitForTimeout(200);
+   assert.notEqual(await frame.evaluate(n=>getComputedStyle(n).backgroundPosition),firstFrame.position,'The price frame actually moves');
+   const unknown=page.locator('.lot').filter({has:page.locator('[data-entry="display-'+game+'-3"]')});
+   assert.equal(await unknown.getAttribute('data-tier'),'tn','Missing condition quote never fabricates a price tier');
    // Settings uses actual controls; grid changes cannot change the underlying view.
    await page.locator('[data-act="menu"]').tap();await page.locator('#settingsTab-app').tap();await page.locator('[data-change="setGlass"]').check();
    await page.locator('.grid-size-control label:has([value="large"])').tap();await page.waitForFunction(()=>document.documentElement.dataset.gridSize==='large');
