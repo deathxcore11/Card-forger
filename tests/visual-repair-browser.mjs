@@ -17,21 +17,25 @@ const cases=[
 try{for(const [game,id,file,mask,material,selection] of cases){
  const app=await openApp(browser,server.base,{game,width:390}),{page,context}=app;
  try{
-  const raw=JSON.parse(await readFile('test-fixtures/finish-effects/'+id+'.json','utf8')),bytes=await readFile('test-fixtures/finish-effects/'+file);
+  const raw=JSON.parse(await readFile('test-fixtures/finish-effects/'+id+'.json','utf8'));
+  // Source-bound anniversary masks require the actual measured URL and bytes.
+  const imageUrl=id==='cel25-10'?raw.image+'/high.webp':'https://visual-regression.invalid/'+file;
+  const bytes=await readFile(id==='cel25-10'?'tests/fixtures/anniversary-frames/cel25-10-high.webp':'test-fixtures/finish-effects/'+file);
+  if(id==='cel25-10')await context.route(imageUrl,route=>route.fulfill({contentType:'image/webp',body:bytes}));
   await context.route('https://visual-regression.invalid/**',route=>route.fulfill({contentType:file.endsWith('png')?'image/png':'image/jpeg',body:bytes}));
   await context.route(url=>url.hostname==='api.tcgdex.net'&&url.pathname==='/v2/en/cards',route=>route.fulfill({contentType:'application/json',body:'[]'}));
   await context.route(url=>url.hostname==='api.tcgdex.net'&&url.pathname.endsWith('/cards/'+id),route=>route.fulfill({contentType:'application/json',body:JSON.stringify(raw)}));
   await context.route('https://images.ygoprodeck.com/**',route=>route.fulfill({contentType:'image/jpeg',body:bytes}));
   const before=await inventorySnapshot(page);
-  await page.evaluate(async({game,raw,file,selection})=>{
+  await page.evaluate(async({game,raw,imageUrl,selection})=>{
    const T=await import('/tcg.js'),adapter=await import(game==='ptcg'?'/ptcg.js':'/ygo.js'),c=game==='ptcg'?adapter.normalizePtcg(raw):adapter.normalizeYgo(raw);
-   c.image=c.imageLarge='https://visual-regression.invalid/'+file;
+   c.image=c.imageLarge=imageUrl;
    c.brief=false;c.fetchedAt=new Date().toISOString();c.printPriceSchema=1;
    if(game==='ptcg')for(const v of c.variants){v.image=c.image;v.imageLarge=c.image;}
    T.cache[game][c.id]=c;
    T.ui(game).sets.list=[{id:game==='ptcg'?c.set.id:'JUSH',name:'Source printing fixture'}];
    const opener=document.createElement('button');opener.id='real-printing-opener';opener.textContent='Open source printing';Object.assign(opener.dataset,{act:'tCard',game,id:c.id,setVariant:game==='ptcg'?(selection||c.variants[0].key):'',printing:game==='ygo'?selection:''});document.querySelector('#content').prepend(opener);
-  },{game,raw,file,selection});
+  },{game,raw,imageUrl,selection});
   await page.locator('#real-printing-opener').click();
   await page.waitForFunction(game=>{const ctx=window.__uiTestState.ui.sheetCtx;return ctx?.type==='tcard'&&ctx.game===game&&(game!=='ptcg'||ctx.previewBusy===false);},game);
   const card=page.locator('#sheet .cd-img');await card.evaluate(n=>n.scrollIntoView({block:'center',behavior:'instant'}));await card.locator('.finish-overlay:not([hidden])').waitFor();

@@ -28,11 +28,17 @@ try{
   assert.equal(await card.locator('.finish-name-region.finish-title-glyphs').count()>0,true,key+': placeholder band replaced by letter-shaped mask');
   const geo=await card.evaluate((n,box)=>{const i=n.querySelector('img').getBoundingClientRect(),c=n.querySelector('canvas.finish-name-foil').getBoundingClientRect();return {img:{x:i.x,y:i.y,w:i.width,h:i.height},canvas:{x:c.x,y:c.y,w:c.width,h:c.height},expect:{x:i.x+box[0]*i.width,y:i.y+box[1]*i.height,w:(box[2]-box[0])*i.width,h:(box[3]-box[1])*i.height}};},YGO_NAME_BOX);
   for(const k of ['x','y','w','h'])assert(Math.abs(geo.canvas[k]-geo.expect[k])<1,`${key}: canvas sits on the name bar (${k})`);
+  await page.waitForLoadState('networkidle');
+  await page.screenshot({path:`${out}/${key}-complete.png`,animations:'disabled'});
+  // Assert art exists above, then isolate name pixels from independently blended art.
+  // Toggling a WebGL compositing layer can otherwise re-rasterize the art's edges.
+  await card.locator('.finish-layer:not(.finish-name-region)').evaluateAll(nodes=>nodes.forEach(n=>n.style.visibility='hidden'));
   const clip={x:geo.img.x,y:geo.img.y,width:geo.img.w,height:geo.img.h};
   const shot=async(visible,mx)=>{await page.evaluate(([v,mx])=>{const s=document.querySelector('.card');s.style.setProperty('--mx',mx);document.querySelector('canvas.finish-name-foil').style.visibility=v?'':'hidden';},[visible,mx]);await page.waitForTimeout(120);return page.screenshot({clip,animations:'disabled'});};
   // Same light position for with/without, so only the lit name can differ; then move the light.
+  await shot(true,'15%');
   const without=await shot(false,'15%'),left=await shot(true,'15%'),right=await shot(true,'85%');
-  await writeFile(`${out}/${key}-left.png`,left);await writeFile(`${out}/${key}-right.png`,right);
+  await writeFile(`${out}/${key}-without.png`,without);await writeFile(`${out}/${key}-left.png`,left);await writeFile(`${out}/${key}-right.png`,right);
   const stats=await page.evaluate(async({a,b,c,box})=>{
    const read=async s=>{const i=new Image();i.src='data:image/png;base64,'+s;await i.decode();const k=document.createElement('canvas');k.width=i.width;k.height=i.height;const x=k.getContext('2d');x.drawImage(i,0,0);return {w:k.width,h:k.height,d:x.getImageData(0,0,k.width,k.height).data};};
    const A=await read(a),B=await read(b),C=await read(c),inBox=(i,j)=>i>=box[0]*A.w-1&&i<=box[2]*A.w+1&&j>=box[1]*A.h-1&&j<=box[3]*A.h+1;
