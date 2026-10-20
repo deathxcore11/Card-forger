@@ -62,7 +62,20 @@ export function initGrid({document=globalThis.document,window=globalThis.window,
  const onClick=e=>{if(blockedGrid?.contains(e.target)&&(multiTouch||gesture||window.performance.now()<suppressUntil)){e.preventDefault();e.stopImmediatePropagation();}};
  const cancel=()=>{gesture=null;multiTouch=false;blockedGrid=null;suppressUntil=0;};
  const onStorage=e=>{if(e.storageArea&&e.storageArea!==storage)return;cancel();if(e.key===GRID_KEY||e.key===null)applyGridSize(readGridSize(storage),{...opts,persist:false});if(e.key===PINCH_KEY||e.key===null)applyGridPinch(readGridPinch(storage),{...opts,persist:false});};
- for(const [name,fn] of [['touchstart',onStart],['touchmove',onMove],['touchend',onEnd],['touchcancel',onEnd]])document.addEventListener(name,fn,{capture:true,passive:false});
- document.addEventListener('click',onClick,true);window.addEventListener('storage',onStorage);window.addEventListener('hashchange',cancel);document.addEventListener('visibilitychange',cancel);
- return ()=>{for(const [name,fn] of [['touchstart',onStart],['touchmove',onMove],['touchend',onEnd],['touchcancel',onEnd]])document.removeEventListener(name,fn,true);document.removeEventListener('click',onClick,true);window.removeEventListener('storage',onStorage);window.removeEventListener('hashchange',cancel);document.removeEventListener('visibilitychange',cancel);cancel();};
+ const touchEvents=[['touchstart',onStart],['touchmove',onMove],['touchend',onEnd],['touchcancel',onEnd]];
+ let listening=false,observer=null;
+ const listen=next=>{
+  if(next===listening)return;
+  listening=next;
+  for(const [name,fn] of touchEvents)next?document.addEventListener(name,fn,{capture:true,passive:false}):document.removeEventListener(name,fn,true);
+  next?document.addEventListener('click',onClick,true):document.removeEventListener('click',onClick,true);
+  if(!next)cancel();
+ };
+ // Non-passive gesture listeners exist only while the shortcut is enabled.
+ // The default browser-zoom path incurs no extra touch/scroll handler work.
+ const sync=()=>listen(!observer||document.documentElement.dataset.gridPinch==='on');
+ if(window.MutationObserver){observer=new window.MutationObserver(sync);observer.observe(document.documentElement,{attributes:true,attributeFilter:['data-grid-pinch']});}
+ sync();
+ window.addEventListener('storage',onStorage);window.addEventListener('hashchange',cancel);document.addEventListener('visibilitychange',cancel);
+ return ()=>{observer?.disconnect();listen(false);window.removeEventListener('storage',onStorage);window.removeEventListener('hashchange',cancel);document.removeEventListener('visibilitychange',cancel);cancel();};
 }

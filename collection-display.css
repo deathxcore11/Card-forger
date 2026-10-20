@@ -1,8 +1,8 @@
 /* Compact price provenance, using the existing glass, accent and type scale. */
 .price-origin {display:inline-block;font-size:10px;font-weight:650;line-height:1.5;white-space:nowrap;}
 .price-origin.is-personal {color:var(--gold);border:1px solid color-mix(in srgb,var(--gold) 35%,transparent);border-radius:6px;padding:0 5px;background:color-mix(in srgb,var(--gold) 7%,transparent);}
-.lot-value:has(.price-origin) {flex-wrap:wrap;}
-.lot-value>.price-origin {flex-basis:auto;}
+.lot-value:has(.price-origin) {display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px;justify-content:start;}
+.lot-value>.price-origin {grid-column:1/-1;justify-self:start;}
 .value-lot-info>.price-origin {justify-self:start;}
 .value-price-sources {margin:14px 0 2px;padding-top:12px;border-top:1px solid var(--line);font-size:13px;}
 .value-price-sources>summary {cursor:pointer;color:var(--muted);font-weight:650;}

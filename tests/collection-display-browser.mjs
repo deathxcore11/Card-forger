@@ -44,7 +44,7 @@ try{
    const condition=page.locator('.lot').filter({has:page.locator('[data-entry="display-'+game+'-1"]')});assert.equal(await condition.locator('[data-price-origin]').count(),0);assert.match(await condition.innerText(),/\$5\.67/);
    assert.match(await condition.locator('.condition-badge').getAttribute('data-condition-info'),/Condition quote.*included/);
    // Settings uses actual controls; grid changes cannot change the underlying view.
-   await page.locator('[data-act="menu"]').tap();await page.locator('#settingsTab-app').tap();
+   await page.locator('[data-act="menu"]').tap();await page.locator('#settingsTab-app').tap();await page.locator('[data-change="setGlass"]').check();
    await page.locator('.grid-size-control label:has([value="large"])').tap();await page.waitForFunction(()=>document.documentElement.dataset.gridSize==='large');
    assert.equal(await page.evaluate(()=>localStorage.getItem('cardstashy-grid-size')),'large');
    await page.locator('[data-change="setGridPinch"]').check();await noOverflow(page,'#settingsDialog',game+' grid controls',true);
@@ -57,11 +57,14 @@ try{
    assert.equal(await page.locator('dialog[open]').count(),0,'pinch cannot accidentally open or edit a card');
    assert.equal(await protectedState(page),before,'pinch and settings never alter copies, condition, printing or custom prices');
    await page.reload();await page.locator('#app.ready').waitFor();await page.locator('#content .display-list').waitFor();assert.equal(await page.evaluate(()=>document.documentElement.dataset.gridSize),'medium','size survives reload');assert.equal(await page.evaluate(()=>document.documentElement.dataset.gridPinch),'on');
+   // Filter pills deliberately scroll horizontally; the grid and document
+   // must fit, while that existing rail keeps its own scroll containment.
+   if(await page.locator('.filter-pills').count())assert.equal(await page.locator('.filter-pills').evaluate(n=>getComputedStyle(n).overflowX),'auto');
    for(const mode of ['light','dark','aura']){
     await page.evaluate(async mode=>(await import('/settings-theme.js')).applyTheme(mode),mode);
     for(const width of [320,390,768,1440]){
      await page.setViewportSize({width,height:844});
-     const sizes={};for(const size of ['small','medium','large']){await apply(page,size);await noOverflow(page,'#content',`${game} ${mode} ${width} ${size}`,true);sizes[size]=await columns(page);}
+     const sizes={};for(const size of ['small','medium','large']){await apply(page,size);await noOverflow(page,'#content .display-list',`${game} ${mode} ${width} ${size}`,true);sizes[size]=await columns(page);}
      assert(sizes.small>=sizes.medium&&sizes.medium>=sizes.large,JSON.stringify({game,mode,width,sizes}));
     }
     await page.setViewportSize({width:390,height:844});await apply(page,'medium');await capture(page,`synthetic-search-collection-display-${game}-${mode}`);
