@@ -40,8 +40,8 @@ try{
    await page.locator('.bottom-nav [data-nav="collection"]').tap();await page.locator('#content .display-list .lot').first().waitFor();
    const before=await protectedState(page);
    assert.equal(await page.locator('#content [data-price-origin="personal"]').count(),1,'only the manually entered lot gets a badge');
-   const custom=page.locator('.lot').filter({has:page.locator('[data-price-origin="personal"]')});assert.match(await custom.innerText(),/\$50\.00/);
-   const condition=page.locator('.lot').filter({has:page.locator('[data-entry="display-'+game+'-1"]')});assert.equal(await condition.locator('[data-price-origin]').count(),0);assert.match(await condition.innerText(),/\$5\.67/);
+   const custom=page.locator('.lot').filter({has:page.locator('[data-price-origin="personal"]')});await custom.scrollIntoViewIfNeeded();await custom.locator('button.price').waitFor({state:'visible'});assert.match(await custom.innerText(),/\$50\.00/);
+   const condition=page.locator('.lot').filter({has:page.locator('[data-entry="display-'+game+'-1"]')});await condition.scrollIntoViewIfNeeded();assert.equal(await condition.locator('[data-price-origin]').count(),0);assert.match(await condition.innerText(),/\$5\.67/);
    assert.match(await condition.locator('.condition-badge').getAttribute('data-condition-info'),/Condition quote.*included/);
    // Settings uses actual controls; grid changes cannot change the underlying view.
    await page.locator('[data-act="menu"]').tap();await page.locator('#settingsTab-app').tap();await page.locator('[data-change="setGlass"]').check();
@@ -93,7 +93,7 @@ try{
    for(const width of [320,360,390,599,600,768,1440]){await page.setViewportSize({width,height:844});for(const size of ['small','medium','large']){await apply(page,size);await noOverflow(page,'#content .card-grid',`${game} Search ${width} ${size}`,true);if(width<=599)assert.equal(await page.locator('#content .card-grid').first().evaluate(n=>getComputedStyle(n).gridTemplateColumns.split(' ').length),{small:3,medium:2,large:1}[size],`${game} Search phone ${width} ${size}`);}}
    assert.equal(await page.locator('#content .card-grid [data-price-origin="personal"]').count(),0);
    assert.equal(await protectedState(page),before);app.health();results.push({game,modes:['light','dark','aura'],widths:[320,360,390,599,600,768,1440],customCopies:2,customTotal:50,conditionQuote:5.67,touch:'native CDP multi-touch, long-hold cancellation, spread/pinch, canceled gesture, click suppression, persistence',browserZoom:'default pinch path and single-finger scrolling are not prevented'});
-  }catch(error){error.fixtureDiagnostics=app.diagnostics();failures.push(error);results.push({game,status:'failed',error:error.stack,diagnostics:error.fixtureDiagnostics});}finally{await app.context.close();}
+  }catch(error){try{await capture(page,'synthetic-search-collection-display-failure-'+game,{settle:false});}catch{}error.fixtureDiagnostics=app.diagnostics();failures.push(error);results.push({game,status:'failed',error:error.stack,diagnostics:error.fixtureDiagnostics});}finally{await app.context.close();}
  }
  if(failures.length)throw new AggregateError(failures,failures.map(e=>e.message).join(' | '));
 }catch(error){failure=error;throw error;}finally{await mkdir('test-results',{recursive:true});await writeFile('test-results/collection-display-browser.json',JSON.stringify({status:failure?'failed':'passed',results,error:failure?.stack,diagnostics:failure?.fixtureDiagnostics,evidence:'Hosted Chromium touch emulation; synthetic lots/prices and pinned unchanged real artwork. No physical-device or live-price accuracy claim.'},null,2));await browser.close();await server.close();}

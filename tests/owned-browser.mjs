@@ -1,3 +1,4 @@
+import {POKEMON_VARIANT_SCHEMA} from '../pokemon-variant-options.js';
 // Synthetic ownership fixtures. --validate-fixtures never imports Playwright or
 // starts a server/browser; real gesture and decoded-image checks run in hosted CI.
 import assert from 'node:assert/strict';
@@ -17,7 +18,7 @@ const SVG='<svg xmlns="http://www.w3.org/2000/svg" width="630" height="880"><rec
 function ownedFixture(g){
  const img=`https://owned-fixtures.invalid/${g}/test-owned.svg`,now=new Date().toISOString();
  const common={id:'test-owned',name:'Owned test card',image:img,imageLarge:img,prices:{usd:100},fetchedAt:now,checkedAt:now,brief:false};
- const card=g==='mtg'?{...common,set:'tst',set_name:'Test',collector_number:'1',type_line:'Creature',oracle_text:'Draw a card.',legalities:{},finishes:['nonfoil'],image_uris:{normal:img,small:img,art_crop:img}}:{...common,game:g,category:g==='ptcg'?'Pokemon':undefined,typeLine:g==='ptcg'?'Pokémon · Basic':'Normal Monster',type:g==='ygo'?'Normal Monster':undefined,stage:'Basic',hp:120,prize:1,set:{id:'tst',name:'Test',number:'1',total:100},stats:[],variants:[{key:'normal',label:'Normal',usd:100}],attacks:[],abilities:[],variantSchema:12,priceFallbackSchema:3,artSchema:1,printPriceSchema:1,sets:[]};
+ const card=g==='mtg'?{...common,set:'tst',set_name:'Test',collector_number:'1',type_line:'Creature',oracle_text:'Draw a card.',legalities:{},finishes:['nonfoil'],image_uris:{normal:img,small:img,art_crop:img}}:{...common,game:g,category:g==='ptcg'?'Pokemon':undefined,typeLine:g==='ptcg'?'Pokémon · Basic':'Normal Monster',type:g==='ygo'?'Normal Monster':undefined,stage:'Basic',hp:120,prize:1,set:{id:'tst',name:'Test',number:'1',total:100},stats:[],variants:[{key:'normal',label:'Normal',usd:100}],attacks:[],abilities:[],variantSchema:POKEMON_VARIANT_SCHEMA,priceFallbackSchema:3,artSchema:1,printPriceSchema:1,sets:[]};
  const lots=[{id:'owned-nm',name:card.name,cardId:card.id,key:'id:'+card.id,qty:2,condition:'Near Mint',finish:'nonfoil',variant:g==='ptcg'?'normal':'',addedAt:now},{id:'owned-damaged',name:card.name,cardId:card.id,key:'id:'+card.id,qty:1,condition:'Damaged',finish:'nonfoil',variant:g==='ptcg'?'normal':'',addedAt:now}];
  if(g==='mtg')for(const lot of lots)Object.assign(lot,{printingVerified:true,printingId:card.id,set:card.set,collectorNumber:card.collector_number});
  const valueHistory=[{date:new Date(Date.now()-86400000).toISOString().slice(0,10),total:300,copies:3,unpriced:0,currency:'USD',basis:'exact-owned-v1'}];

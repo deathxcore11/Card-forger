@@ -28,7 +28,7 @@ try{
  await page.goto(server.base+'/#sets');await page.locator('[data-act="tSet"][data-id="ecard2"]').click();
  await page.waitForFunction(()=>window.__uiTestTcg.ui('ptcg').set.loaded&&!window.__uiTestTcg.ui('ptcg').set.busy);
  assert.equal(await page.locator('#content .set-grid > .grid-card').count(),120);
- await page.locator('[data-act="tSetMore"]').click();await page.waitForFunction(()=>document.querySelectorAll('#content .set-grid > .grid-card').length===186);
+ const marker=page.locator('[data-auto-browse="tSetMore"]');await marker.waitFor();const markerBox=await marker.boundingBox();assert(markerBox);await page.mouse.move(2,300);await page.mouse.wheel(0,markerBox.y-500);await page.waitForFunction(()=>document.querySelectorAll('#content .set-grid > .grid-card').length===186);
  assert.deepEqual(new Set(await page.locator('#content .set-grid > .grid-card').evaluateAll(ns=>ns.map(n=>n.dataset.id))),new Set(cards.map(c=>c.id)));
  await capture(page,'synthetic-search-foundation-aquapolis-186');
  for(const source of cards){
@@ -49,5 +49,5 @@ try{
  await capture(page,'synthetic-search-foundation-rabsca-reverse');
  await page.locator('#sheetBody [data-act="cardFinishPreview"]').filter({hasText:'Holofoil · Cosmos'}).click();assert.equal(await surface.getAttribute('data-finish-effect'),'ptcg-holo');await capture(page,'synthetic-search-foundation-rabsca-cosmos');
  assert.equal(await inventorySnapshot(page),before,'Read-only pilot must not alter collections or private prices');app.health();report.status='PASS';
-}catch(error){report.error=error.stack;report.diagnostics=app?.diagnostics();throw error;}
+}catch(error){report.error=error.stack;report.diagnostics=app?.diagnostics();if(app)try{await capture(app.page,'synthetic-search-foundation-failure',{settle:false});}catch(captureError){report.captureError=captureError.message;}throw error;}
 finally{fs.mkdirSync(RESULTS,{recursive:true});fs.writeFileSync(RESULTS+'/foundation-pilot-browser.json',JSON.stringify(report,null,2));await app?.context.close();await browser.close();await server.close();}

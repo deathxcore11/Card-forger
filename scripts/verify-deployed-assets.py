@@ -36,7 +36,7 @@ MODULES = (
     "assets/finishes/cosmos.svg", "assets/finishes/metal-grain.svg", "assets/finishes/abyss-title.svg",
     "scryfall-client.js", "community-profile.js", "shared-deck-view.js", "binders.js", "suggest.js", "deck-box.js", "brand.js", "card-detail-extras.js",
     "condition-feed.js", "condition-refresh-scheduler.js", "condition-value.js",
-    "profile-art.js", "pokemon-identity.js", "collection-stack.js", "ygo-set-prices.js", "cloud.js",
+    "profile-art.js", "pokemon-identity.js", "pokemon-corrections.js", "collection-stack.js", "ygo-set-prices.js", "cloud.js",
     "printing-picker.js", "printing-picker.css", "catalog-tools.js", "scanner-printing.js",
     "ygo.js", "set-list-ui.js", "sets-ui.css", "emblems.js", "ai-tools.js", "sheet-history.js",
     "app.js", "core.js", "scancam.js", "scan-batch.js", "scan-signals.js", "scan.js", "scan-catalog.js",
