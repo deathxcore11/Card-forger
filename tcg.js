@@ -341,7 +341,7 @@ export function entryValuation(c,e){
   const collision=c?.game==='ygo'&&e.setReleaseId&&(c.sets||[]).filter(p=>p.code===e.printing&&(!e.rarity||rarityKey(p.rarity)===rarityKey(e.rarity))).length>1;
   const quotes=!verified?[]:collision?allQuotes.filter(q=>q.setReleaseId===e.setReleaseId):allQuotes;
   const value=conditionValue(verified?referenceEntryPrice(scoped,e):null,e,quotes);
-  return value.kind==='reference'&&value.price!==null&&!e.variant&&!e.printing&&scoped?.prices?.usd==null&&myPrice(scoped)!==null?{...value,kind:'manual-reference'}:value;
+  return value.kind==='reference'&&value.price!==null&&!scoped?.setContext&&!e.variant&&!e.printing&&scoped?.prices?.usd==null&&myPrice(scoped)!==null?{...value,kind:'manual-reference'}:value;
 }
 export const entryPrice=(c,e)=>entryValuation(c,e).price;
 export function referenceEntryPrice(c, e) {

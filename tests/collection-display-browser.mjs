@@ -20,7 +20,7 @@ function seed(fixtures){
 }
 const apply=async(page,size)=>page.evaluate(async size=>(await import('/grid-settings.js')).applyGridSize(size),size);
 const columns=page=>page.locator('#content .display-list').first().evaluate(n=>getComputedStyle(n).gridTemplateColumns.split(' ').length);
-const protectedState=page=>page.evaluate(()=>{const s=window.__uiTestState.state,pick=e=>({id:e.id,qty:e.qty,condition:e.condition,manualValue:e.manualValue,printingId:e.printingId,variant:e.variant,finish:e.finish});return JSON.stringify({mtg:s.collection.map(pick),ptcg:s.tcg.ptcg.collection.map(pick),ygo:s.tcg.ygo.collection.map(pick),decks:s.decks,myPrices:s.myPrices});});
+const protectedState=page=>page.evaluate(async()=>{const s=(await import('/store.js')).S.state,pick=e=>({id:e.id,qty:e.qty,condition:e.condition,manualValue:e.manualValue,printingId:e.printingId,variant:e.variant,finish:e.finish});return JSON.stringify({mtg:s.collection.map(pick),ptcg:s.tcg.ptcg.collection.map(pick),ygo:s.tcg.ygo.collection.map(pick),decks:s.decks,myPrices:s.myPrices});});
 async function gesture(page,session,{ratio=1.8,cancel=false,hold=0}={}){
  await page.evaluate(()=>window.scrollTo(0,0));
  const rect=await page.locator('#content .lot-art').first().boundingBox();assert(rect);const x=rect.x+rect.width/2,y=rect.y+Math.min(rect.height/2,150);
@@ -68,7 +68,6 @@ try{
    }
    // Default/off mode doesn't intercept native pinch; one-finger events remain free.
    const defaults=await page.evaluate(async()=>{const m=await import('/grid-settings.js');m.applyGridPinch(false);const grid=document.querySelector('#content .display-list'),target=grid.querySelector('.lot-art'),touch=(id,x)=>({identifier:id,target,clientX:x,clientY:300});const e=new Event('touchstart',{bubbles:true,cancelable:true});Object.defineProperty(e,'touches',{value:[touch(1,100),touch(2,160)]});target.dispatchEvent(e);m.applyGridPinch(true);const single=new Event('touchstart',{bubbles:true,cancelable:true});Object.defineProperty(single,'touches',{value:[touch(1,100)]});target.dispatchEvent(single);return {nativePinchPrevented:e.defaultPrevented,singleScrollPrevented:single.defaultPrevented};});assert.deepEqual(defaults,{nativePinchPrevented:false,singleScrollPrevented:false});
-   await page.locator('[data-change="tCollTab"]').count();
    await page.locator('[data-act="'+(game==='mtg'?'collTab':'tCollTab')+'"][data-id="value"]').click();await page.locator('.collection-value-page').waitFor();
    await page.locator('.value-price-sources summary').click();
    assert.match(await page.locator('[data-value-source="condition"]').innerText(),/\$5\.67/);assert.match(await page.locator('[data-value-source="personal"]').innerText(),/\$50\.00/);assert.match(await page.locator('[data-value-source="unpriced"]').innerText(),/Excluded/);

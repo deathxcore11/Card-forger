@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import {conditionName} from './condition-value.js';
 import {entryPrice,entryValuation} from './tcg.js';
 import {lotPrice,lotValuation} from './insights.js';
-import {useMyPrices} from './mtg-tcgprice.js';
+import {useMyPrices,myPriceKey} from './mtg-tcgprice.js';
 import {priceOriginBadge,priceSourceSummary,priceSourcesHtml} from './price-origin.js';
 import {valuePageOverview} from './value-page.js';
 import {GRID_KEY,PINCH_KEY,readGridSize,readGridPinch,normalizeGridSize,applyGridSize,applyGridPinch,pinchGridSize,gridSettings} from './grid-settings.js';
@@ -31,6 +31,8 @@ for(const game of ['mtg','ptcg','ygo']){
 const c={id:'private-only',name:'Private only',game:'mtg',set:'pvt',finishes:['nonfoil'],prices:{}};
 const e={id:'saved',name:c.name,printingVerified:true,printingId:c.id,finish:'nonfoil',condition:'Near Mint',qty:1};
 useMyPrices({[c.id+':nonfoil']:{price:7}});assert.equal(lotValuation(e,{}, {[c.id]:c}).kind,'manual-reference');assert.equal(lotValuation(e,{},{}).kind,'manual-reference');c.prices.usd='8';assert.equal(lotValuation(e,{}, {[c.id]:c}).kind,'reference','a saved personal fallback is not falsely marked active while a real provider reference is used');useMyPrices({});
+const scoped={id:'context-price',game:'ptcg',name:'Context price',prices:{usd:null},variants:[],setContext:{game:'ptcg',cardId:'context-price',releaseId:'sample',status:'resolved',price:9}};
+useMyPrices({[myPriceKey(scoped)]:{price:7}});assert.equal(entryValuation(scoped,{condition:'Near Mint'}).price,9);assert.equal(entryValuation(scoped,{condition:'Near Mint'}).kind,'reference','a provider release reference is not mislabeled as an inactive personal fallback');useMyPrices({});
 const memory=new Map(),storage={getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,v)},controls=['small','medium','large'].map(value=>({value,checked:false}));
 const document={documentElement:{dataset:{},style:{}},querySelector:()=>null,querySelectorAll:s=>s.includes('setGridSize')?controls:[]};
 assert.equal(readGridSize(storage),'medium');assert.equal(readGridPinch(storage),false);assert.equal(normalizeGridSize('huge'),'medium');

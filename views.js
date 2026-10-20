@@ -790,7 +790,7 @@ function collectionValueView() {
     .slice(0, 30)
     .map((t) => `<button class="mini-row" data-act="card" data-name="${esc(t.name)}"><span class="ellip">${t.qty > 1 ? t.qty + "× " : ""}${esc(t.name)}</span><b>${usd(t.value)}</b></button>`)
     .join("") || `<p class="muted small">${st.collection.length?'Every card you own is used by a deck.':'No spare cards yet.'}</p>`}</div></section>
-  <p class="foot">Scryfall reference prices for the printing and finish you recorded (or a default printing). Real offers vary by condition and seller.</p></div>`;
+  <p class="foot">Totals combine usable condition quotes, general market references and your own values. Seller offers may differ.</p></div>`;
 }
 
 export function wishlistItems() {
