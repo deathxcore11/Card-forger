@@ -16,13 +16,20 @@ export function readRecoverySnapshots(raw,owner=null){
  if(raw?.version!==1||raw.owner!==(owner||null)||!Array.isArray(raw.snapshots))return [];
  return raw.snapshots.filter(s=>s?.owner===(owner||null)&&typeof s.id==='string'&&s.state&&typeof s.state==='object').map(s=>structuredClone(s));
 }
+// Save timestamps do not change a recoverable workspace. Preserve settings,
+// selection and all histories; never use the coarser authored-content signature.
+export function recoveryStateSignature(state){
+ const stable=value=>Array.isArray(value)?value.map(stable):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,stable(value[key])])):value;
+ const {lastSavedAt,...content}=state;
+ return JSON.stringify(stable(content));
+}
 export function appendRecoverySnapshot(raw,snapshot){
  if(raw!==null&&raw!==undefined&&(raw.version!==1||raw.owner!==snapshot.owner||!Array.isArray(raw.snapshots)||raw.snapshots.some(s=>s?.owner!==snapshot.owner||typeof s.id!=="string"||!s.state||typeof s.state!=="object")))throw Error("The existing recovery journal could not be verified. Nothing was replaced.");
  const snapshots=readRecoverySnapshots(raw,snapshot.owner);
  // Deduplicate only an identical full workspace. Different history or settings
  // still merits recovery; the content signature is metadata, not a loss filter.
- const text=JSON.stringify(snapshot.state);
- const duplicate=snapshots.find(s=>JSON.stringify(s.state)===text);
+ const text=recoveryStateSignature(snapshot.state);
+ const duplicate=snapshots.find(s=>recoveryStateSignature(s.state)===text);
  if(!duplicate)snapshots.unshift(structuredClone(snapshot));
  return {version:1,owner:snapshot.owner,snapshots};
 }

@@ -21,6 +21,7 @@ const ASSETS = [
   "./theme-init.js",
   "./magic-matchups.css",
   "./settings-theme.js",
+  "./settings-storage.js",
   "./sync-merge.js",
   "./recovery-store.js",
   "./magic-card-color.js",

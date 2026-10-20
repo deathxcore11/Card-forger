@@ -1,3 +1,5 @@
+import {cachedImages,localStorageFootprint} from './settings-storage.js';
+import {batchStorageSummary} from './scan-batch.js';
 import {initGrid,applyGridSize,applyGridPinch} from './grid-settings.js';
 import {createMagicMatchups,matchupFingerprint} from './magic-matchups-controller.js';
 import {matchupState,resetMatchups,renderMagicMatchupSheet} from './magic-matchups-ui.js';
@@ -125,8 +127,7 @@ const stripCache = (s) => {
 const normalize = (s) => normalizeHomeDeckActivity(stripCache({ ...blank(), ...validateWorkspace(s) }));
 
 function setSaveStatus(text, cls = "") {
-  const el = $("#saveStatus");
-  if (el) {
+  for (const el of document.querySelectorAll("#saveStatus,[data-settings-save-status]")) {
     el.textContent = text;
     el.className = "save-status " + cls;
   }
@@ -633,7 +634,7 @@ function toast(text, { undo = false } = {}) {
   t.classList.toggle("has-action", undo);
   t.classList.add("show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove("show", "has-action"), undo ? 7000 : 3800);
+  toastTimer = setTimeout(() => t.classList.remove("show", "has-action"), undo || /^Backup prepared/.test(text) ? 7000 : 3800);
 }
 
 let binderDragCleanup = null, lastSheetStep = "";
@@ -2810,9 +2811,9 @@ A.settingsTab = (t) => {
   activateSettingsTab(document,tab);
   if(tab==='recovery'){storageDetail();void renderRecoverySnapshots();}
 };
-C.setGridSize=t=>{const result=applyGridSize(t.value);if(!result.saved)toast('Card size changed for this visit. Your browser could not save it.');};
-C.setGridPinch=t=>{const result=applyGridPinch(t.checked);if(!result.saved)toast('Gesture preference changed for this visit. Your browser could not save it.');};
-C.setTheme=t=>{const result=applyTheme(t.value);if(!result.saved)toast('Theme changed for this visit. Your browser could not save it.');};
+C.setGridSize=t=>{const result=applyGridSize(t.value);toast(result.saved?'Saved card size on this device.':'Card size changed for this visit. Your browser could not save it.');};
+C.setGridPinch=t=>{const result=applyGridPinch(t.checked);toast(result.saved?'Saved gesture preference on this device.':'Gesture preference changed for this visit. Your browser could not save it.');};
+C.setTheme=t=>{const result=applyTheme(t.value);toast(result.saved?'Saved appearance on this device.':'Theme changed for this visit. Your browser could not save it.');};
 document.addEventListener('keydown',e=>{
   const tab=e.target.closest?.('[data-act="settingsTab"][role="tab"]');
   if(!tab||!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
@@ -5804,9 +5805,19 @@ function backupPayload() {
   return JSON.stringify({ ...backupEnvelope(stripCache(S.state)), cache });
 }
 A.exportBackup = () => {
-  download("CardStashy_Backup_" + new Date().toISOString().slice(0, 10) + ".json", backupPayload(), "application/json");
-  toast("Backup downloaded. Keep it somewhere safe (Drive, email to yourself…).");
+  const status=document.getElementById('backupExportStatus');
+  try {
+    download("CardStashy_Backup_" + new Date().toISOString().slice(0, 10) + ".json", backupPayload(), "application/json");
+    const message='Backup prepared. Check your downloads to confirm the file was saved.';
+    if(status){status.textContent='✓ '+message;status.classList.add('success');}
+    toast(message);
+  } catch {
+    const message='Backup could not be prepared. Your saved data is unchanged. Try again.';
+    if(status){status.textContent=message;status.classList.remove('success');}
+    toast(message);
+  }
 };
+
 async function recoverySnapshot(id) {
   const owner=cloudInfo().user?.id||null,generation=accountGeneration;
   const raw=await readRecord(recoveryKey(owner));
@@ -5823,7 +5834,7 @@ async function renderRecoverySnapshots(){
     const status=document.getElementById("recoveryStatus");if(status)status.textContent=`${snapshots.length} saved recovery ${snapshots.length===1?"copy":"copies"} on this device for ${owner?"this account":"guest mode"}.`;
     host.innerHTML=snapshots.length?snapshots.map(item=>{
       const summary=recoverySummary(item.state);
-      return `<article class="panel recovery-snapshot"><strong>${esc(item.label)}</strong><p class="muted">${esc(new Date(item.createdAt).toLocaleString())} · ${summary.copies} copies · ${summary.decks} decks across all games</p><div class="actions wrap"><button class="btn ghost small" data-act="downloadRecovery" data-id="${esc(item.id)}">Download</button><button class="btn small" data-act="restoreRecovery" data-id="${esc(item.id)}">Review & restore</button></div></article>`;
+      return `<article class="recovery-snapshot"><strong>${esc(item.label)}</strong><p class="muted small">${esc(new Date(item.createdAt).toLocaleString())}</p><p class="small">${summary.copies} ${summary.copies===1?"card":"cards"} · ${summary.decks} ${summary.decks===1?"deck":"decks"} · All games</p><div class="actions wrap"><button class="btn ghost small" data-act="downloadRecovery" data-id="${esc(item.id)}">Download</button><button class="btn small" data-act="restoreRecovery" data-id="${esc(item.id)}">Review & restore</button></div></article>`;
     }).join(''):'<p class="muted">No automatic recovery copies yet. Copies saved before sync conflicts and restores will appear here.</p>';
   }catch{if(host.isConnected)host.textContent='Recovery copies could not be read. Your saved data has not been changed.';}
 }
@@ -5831,6 +5842,7 @@ A.recoveryRefresh=()=>renderRecoverySnapshots();
 A.downloadRecovery=async t=>{
   const item=await recoverySnapshot(t.dataset.id);if(!item)return toast('That recovery copy is not available in this account.');
   download(`CardStashy_Recovery_${fileSafe(item.label)}.json`,JSON.stringify(backupEnvelope(item.state)),'application/json');
+  toast('Backup prepared. Check your downloads to confirm the file was saved.');
 };
 A.restoreRecovery=async t=>{
   const owner=cloudInfo().user?.id||null,generation=accountGeneration;
@@ -5966,10 +5978,28 @@ A.installLater = () => {
   render();
 };
 onInstallable(() => S.ui.view === "home" && render());
+A.clearCachedImages = async t => {
+  if(t.disabled)return;
+  t.disabled=true;
+  const status=document.getElementById('storageActionStatus');
+  try {
+    const result=await cachedImages({clear:true});
+    const message=result.available?`Cleared ${result.count} cached images. Your saved data and pending scans are unchanged.`:'Image cleanup is unavailable in this browser.';
+    if(status?.isConnected)status.textContent=message;
+    toast(message);await storageDetail();
+  } catch {if(status?.isConnected)status.textContent='Image cleanup could not finish. Your saved data and pending scans are unchanged.';}
+  finally {if(t.isConnected)t.disabled=false;}
+};
 async function storageDetail() {
-  const s = await persistenceStatus(),
-    el = $("#storageDetail");
-  if (el) el.textContent = `${s.backend} · ${s.persistent ? "protected from cleanup" : "may be cleared by the browser if storage runs low"}${s.usage !== undefined ? ` · ${(s.usage / 1048576).toFixed(1)} MB used` : ""}.`;
+  const el = $("#storageDetail"),breakdown=$('#storageBreakdown'),owner=cloudInfo().user?.id||null,generation=accountGeneration;
+  try {
+    const s=await persistenceStatus(),images=await cachedImages().catch(()=>({available:false,count:0}));
+    if(!el?.isConnected||generation!==accountGeneration||(cloudInfo().user?.id||null)!==owner)return;
+    el.textContent=`${s.usage!==undefined?`${(s.usage/1048576).toFixed(1)} MB used by this site`:'Storage estimate unavailable'}${s.quota?` · about ${(s.quota/1048576).toFixed(0)} MB allowed`:''}. ${s.persistent?'Browser cleanup protection is enabled.':s.persistent===false?'Device data may be removed by the browser under storage pressure.':'Browser cleanup protection could not be checked.'}`;
+    let text='Unavailable',batch='Unavailable';
+    try{text=`${(localStorageFootprint()/1000000).toFixed(2)} million characters`;const scan=batchStorageSummary();batch=`${scan.count} pending · ${(scan.chars/1000000).toFixed(2)} million characters`;}catch{}
+    if(breakdown?.isConnected)breakdown.innerHTML=`<div><span>Pending scan captures</span><b>${esc(batch)}</b></div><div><span>Browser text storage</span><b>${esc(text)}</b></div><div><span>Downloaded images</span><b>${images.available?images.count+' cached':'Unavailable'}</b></div><p class="foot">Scans use a separate text-storage limit. Total site space does not indicate how much scan space remains. Other accounts’ pending scans are preserved.</p>`;
+  } catch {if(el?.isConnected)el.textContent='Storage details are unavailable. Your saved data has not been changed.';}
 }
 
 /* =========================================================

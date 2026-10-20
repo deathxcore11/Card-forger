@@ -112,3 +112,54 @@
  :root[data-theme="light"] body.glass dialog.sheet::before,:root[data-theme="light"] body.glass dialog.sheet::after {display:none;}
  :root[data-theme="light"] body.glass :is(.panel,.kpi,.game-choice,.lot,.meta-row,.print,.cd-text,.price-pill,.advice,.deck-emb,.pair-row,.proven-sum,.settings-card,dialog.sheet,.topbar,.bottom-nav) {background:var(--surface);backdrop-filter:none;}
 }
+
+/* Settings workspace: stable navigation, quiet detail and generous touch targets. */
+.settings-dialog {width:min(920px,calc(100vw - 24px));max-width:920px;}
+.settings-dialog-head {padding:22px 28px;background:linear-gradient(120deg,color-mix(in srgb,var(--gold) 7%,var(--surface)),var(--surface));}
+.settings-dialog .settings-page {padding:22px 28px 28px;}
+.settings-page .settings-tabs {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:100%;overflow:visible;gap:5px;padding:5px;margin-bottom:24px;scrollbar-width:none;}
+.settings-page .settings-tabs button,.settings-dialog .settings-tabs button {min-width:0;min-height:48px;padding:10px 8px;white-space:normal;font-size:12px;line-height:1.3;}
+.settings-page .settings-tabs button[aria-selected="true"] {background:color-mix(in srgb,var(--gold) 10%,var(--surface));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--gold) 40%,var(--line));color:var(--text);}
+.settings-page .panel {border-radius:20px;box-shadow:0 6px 24px #0000000a;}
+.settings-page .settings-card {padding:22px;margin-bottom:16px;}
+.settings-section-intro {margin:2px 0 24px;max-width:58ch;}
+.settings-section-intro .eyebrow {font-size:10px;letter-spacing:.14em;color:var(--gold);margin-bottom:8px;}
+.settings-section-intro h2 {font-size:clamp(23px,3vw,30px);letter-spacing:-.04em;line-height:1.15;margin:0 0 10px;}
+.settings-section-intro p:last-child {margin:0;line-height:1.6;}
+.settings-card-heading h2 {font-size:20px;letter-spacing:-.025em;line-height:1.25;}
+.settings-backup-card {background:linear-gradient(135deg,color-mix(in srgb,var(--gold) 7%,var(--surface)),var(--surface));}
+.settings-operation-status {font-size:12px;line-height:1.6;color:var(--muted);min-height:1.6em;margin:12px 0 0;overflow-wrap:anywhere;}
+.settings-operation-status:empty {display:none;}
+.settings-operation-status.success {color:var(--good);font-weight:650;}
+.settings-storage-breakdown {display:grid;margin:18px 0;gap:0;}
+.settings-storage-breakdown>div {display:flex;justify-content:space-between;gap:18px;padding:12px 0;border-top:1px solid var(--line);font-size:12px;}
+.settings-storage-breakdown span {color:var(--muted);}
+.settings-storage-breakdown b {text-align:right;font-weight:600;overflow-wrap:anywhere;}
+.settings-history>summary {display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:48px;cursor:pointer;list-style:none;}
+.settings-history>summary::-webkit-details-marker {display:none;}
+.settings-history>summary>span:first-child {display:grid;gap:5px;}
+.settings-history>summary b {font-size:16px;}
+.settings-history>summary small {font-size:12px;color:var(--muted);line-height:1.5;}
+.settings-history>summary>span:last-child {font-size:22px;color:var(--gold);transition:transform .2s;}
+.settings-history[open]>summary>span:last-child {transform:rotate(180deg);}
+.settings-history-body {border-top:1px solid var(--line);margin-top:16px;padding-top:16px;}
+.settings-history .recovery-snapshot {padding:16px;background:var(--surface-2);border-radius:12px;gap:6px;}
+.settings-history .recovery-snapshot strong {font-size:13px;line-height:1.5;}
+.settings-history .recovery-snapshot .actions {margin-top:8px;}
+.settings-page .settings-aside {background:color-mix(in srgb,var(--gold) 5%,var(--surface));}
+.settings-page .settings-aside .save-status {font-size:14px;}
+.settings-dialog #toast {bottom:18px;max-width:min(85vw,520px);font-size:13px;z-index:10;}
+@media(min-width:760px){.settings-dialog .settings-account-layout{grid-template-columns:minmax(0,1fr) 220px;gap:20px}.settings-page .settings-theme-options{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:520px){
+ .settings-dialog-head{padding:18px}.settings-dialog .settings-page{padding:16px}
+ .settings-page .settings-tabs{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin-bottom:22px}
+ .settings-dialog .settings-page .settings-card{padding:18px}.settings-page .settings-card-heading{gap:12px}
+ .settings-page .settings-storage-breakdown>div{flex-direction:column;gap:5px}.settings-storage-breakdown b{text-align:left}
+ .settings-page .settings-theme-options{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+ .settings-theme-choice{padding:10px;grid-template-columns:16px minmax(0,1fr);gap:8px 5px}.settings-theme-choice input{width:15px;height:15px}
+ .settings-theme-swatch{height:44px;padding:5px;grid-template-columns:9px 1fr;gap:3px}.settings-theme-choice b{font-size:12px}.settings-theme-choice small{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){.settings-history>summary>span:last-child{transition:none}}
+.settings-save-overview {display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:16px;background:color-mix(in srgb,var(--gold) 5%,var(--surface));padding:14px 16px;margin-bottom:18px;}
+.settings-save-overview>div {flex:1;min-width:0;}.settings-save-overview .save-status {display:block;font-size:13px;color:var(--text);overflow-wrap:anywhere;}.settings-save-overview small {display:block;font-size:11px;color:var(--muted);line-height:1.5;margin-top:4px;}
+.settings-save-symbol {color:var(--gold);font-size:26px;}.settings-save-overview>.link {flex-shrink:0;min-height:44px;font-size:12px;}

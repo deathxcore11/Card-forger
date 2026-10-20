@@ -72,7 +72,7 @@ try{
    await page.locator('[data-act="menu"]').click();
    assert(await page.locator('#settingsDialog').evaluate(n=>n.matches(':modal')));
    assert.equal(page.url(),url);assert.equal(await page.locator('#settingsDialog [data-act="setGame"]').count(),0);
-   assert.deepEqual(await page.locator('.settings-tabs [role=tab]').allTextContents(),['Account','Recovery','App Help & Info','App Settings']);
+   assert.deepEqual(await page.locator('.settings-tabs [role=tab]').allTextContents(),['Account','Storage & backup','Help & about','Appearance']);
    // Deterministic real-control regression: a rail scroll between trusted mouse
    // down/up must not be mistaken for a card drag. No click retry or dispatch.
    await page.setViewportSize({width:320,height:900});await page.locator('#settingsTab-app').click();
