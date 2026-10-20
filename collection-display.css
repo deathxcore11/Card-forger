@@ -22,3 +22,8 @@
 :root[data-grid-size="small"] #content.view-gallery .display-list .lot-side {gap:4px;}
 :root[data-grid-pinch="on"] #content.view-gallery :is(.card-grid,.display-list) {touch-action:pan-x pan-y;}
 @media(max-width:700px) { :root[data-grid-size="large"] #content.view-gallery :is(.card-grid,.display-list) {grid-template-columns:minmax(0,1fr);} }
+/* Phone galleries keep predictable Small / Medium / Large densities. */
+@media(max-width:599px) {
+ :root[data-grid-size="small"] #content.view-gallery :is(.card-grid,.display-list) {grid-template-columns:repeat(3,minmax(0,1fr));}
+ :root[data-grid-size="medium"] #content.view-gallery :is(.card-grid,.display-list) {grid-template-columns:repeat(2,minmax(0,1fr));}
+}
