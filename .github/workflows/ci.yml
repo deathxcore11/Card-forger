@@ -5,6 +5,28 @@ on:
   pull_request:
 
 jobs:
+  mana-warning-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - name: Validate synthetic mana-warning fixtures without provider calls
+        run: node tests/mana-warning-browser.mjs --validate-fixtures
+      - name: Test actual mana warning evidence and Engine payment choices
+        run: node tests/mana-warning-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mana-warning-browser-evidence
+          path: test-results/mana-warning-*
+
   collection-display-browser:
     runs-on: ubuntu-latest
     timeout-minutes: 8

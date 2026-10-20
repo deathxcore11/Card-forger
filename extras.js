@@ -1,7 +1,7 @@
 // Deck extras: Commander bracket estimate, mana base helper, proxy sheet and
 // life tracker state. Pure functions over the card catalog; no network calls.
 import { cardKey, rulesText, typeText, isLand, isBasic, aggregateCards, validateDeck } from "./core.js";
-import { engineProfile, engineRoles } from "./insights.js";
+import { engineProfile, engineRoles, manaColorName } from "./insights.js";
 import { commanderTheme } from "./planner.js";
 import { formatOf } from "./formats.js";
 
@@ -159,7 +159,7 @@ export function splitBasics(pips, n) {
   return out;
 }
 
-export function manaBase(deck, catalog, pips) {
+export function manaBase(deck, catalog, pips, payment = null) {
   const basics = { W: 0, U: 0, B: 0, R: 0, G: 0 },
     tapped = [];
   let lands = 0,
@@ -175,7 +175,9 @@ export function manaBase(deck, catalog, pips) {
     } else if (entersTapped(c)) for (let i = 0; i < row.qty; i++) tapped.push(c.name);
   }
   const basicCount = Object.values(basics).reduce((a, b) => a + b, 0),
-    suggested = splitBasics(pips, basicCount),
+    hasDemand = Object.values(pips).some(n => n > 0),
+    canSuggest = hasDemand && payment?.complete !== false,
+    suggested = canSuggest ? splitBasics(pips, basicCount) : { ...basics },
     changes = Object.keys(BASIC_OF)
       .map((k) => ({ color: k, land: BASIC_OF[k], now: basics[k], want: suggested[k] || 0 }))
       .filter((x) => x.now || x.want);
@@ -185,14 +187,29 @@ export function manaBase(deck, catalog, pips) {
     basicCount,
     snowOrOther,
     suggested,
+    canSuggest,
+    payment,
     changes,
-    off: changes.some((x) => Math.abs(x.now - x.want) >= 2),
+    off: canSuggest && changes.some((x) => Math.abs(x.now - x.want) >= 2),
     tapped,
     tooManyTapped: tapped.length > Math.max(4, Math.round(lands * 0.2)),
   };
 }
 
 export const basicName = (color) => BASIC_OF[color];
+
+// Keep the review sheet and detailed helper grounded in the same observed data.
+export function manaBaseExplanation(m) {
+  const split = key => m.changes.filter(x => x[key]).map(x => `${x[key]} ${x.land}${x[key] === 1 || x.land.endsWith("s") ? "" : "s"}`).join(", ") || "none",
+    needed = m.changes.filter(x => x.want > x.now).map(x => x.color),
+    contributors = (m.payment?.cards || []).filter(c => needed.some(k => c.required[k] || c.allocated[k])),
+    examples = contributors.slice(0, 4).map(c => `${c.qty}× ${c.name} (${c.cost})`).join("; "),
+    colors = needed.map(manaColorName).join(" / ");
+  return {
+    cards: contributors.map(c => c.name),
+    detail: `Current basics: ${split("now")}. Suggested guideline: ${split("want")}.${examples ? ` Estimated ${colors || "colored"} payment comes from ${examples}${contributors.length > 4 ? ` and ${contributors.length - 4} other cards` : ""}.` : ""} This estimates casting-cost symbols, not a requirement or a full mana-source check.`,
+  };
+}
 
 /* ---------- Proxy print sheet ---------- */
 
@@ -291,11 +308,11 @@ export function deckReview(deck, catalog, collection = [], decks = []) {
       } else if (["Ramp", "Draw", "Removal"].includes(part.key) && part.ratio < 0.75)
         out.push({ level: "warn", heuristic: true, title: `Light on ${part.key.toLowerCase()}`, detail: `${part.count} found; a common guideline is about ${part.target}. ${part.hint}`, action: { act: "findRole", role: part.key, label: `Find ${part.key.toLowerCase()} cards` } });
     }
-    const m = manaBase(deck, catalog, p.pips);
+    const m = manaBase(deck, catalog, p.pips, p.mana);
     if (m.tooManyTapped)
       out.push({ level: "warn", heuristic: true, title: `${m.tapped.length} lands always enter tapped`, detail: "Each can cost you a play in the early turns.", cards: [...new Set(m.tapped)], action: { act: "deckTab", id: "engine", label: "See mana base" } });
     else if (m.basicCount >= 6 && m.off)
-      out.push({ level: "warn", heuristic: true, title: "Basic lands don’t match your spells’ colors", detail: "The split of basics is noticeably different from the colored mana symbols in your spells.", action: { act: "deckTab", id: "engine", label: "See suggested split" } });
+      out.push({ level: "warn", heuristic: true, title: "Review your basic-land split", ...manaBaseExplanation(m), action: { act: "deckTab", id: "engine", label: "See mana details" } });
   }
   return out.sort((a, b) => (a.level === b.level ? 0 : a.level === "bad" ? -1 : 1));
 }

@@ -183,6 +183,83 @@ export function detectArchetype(deck,catalog) {
  return null;
 }
 
+const MANA_COLORS = ["W", "U", "B", "R", "G"];
+const emptyPips = () => Object.fromEntries(MANA_COLORS.map(k => [k, 0]));
+export const manaColorName = (k) => ({ W: "white", U: "blue", B: "black", R: "red", G: "green" })[k] || k;
+
+// A basic-land guideline needs a payment plan, not Commander color identity.
+// Count a hybrid symbol once. Its allocation is one possible plan, never a claim
+// that both printed colors are required (CR 107.4e). This does not change scores.
+export function manaPaymentProfile(entries, sources = {}) {
+  const required = emptyPips(), pips = emptyPips(), cards = [], flexible = [], notes = [];
+  let complete = true;
+  for (const { card: c, qty } of entries) {
+    const faces = c.card_faces || [], front = faces[0];
+    // Split halves and two spell faces are choices, not simultaneous costs.
+    // Do not guess a preferred half or quietly recommend a partial basic split.
+    const landFrontSpellBack = c.layout === "modal_dfc" && /\bLand\b/.test(front?.type_line || "") && faces.slice(1).some(f => !/\bLand\b/.test(f.type_line || "")),
+      alternateSpells = c.layout === "split" || landFrontSpellBack || (c.layout === "modal_dfc" && faces.length > 1 && faces.every(f => !/\bLand\b/.test(f.type_line || ""))),
+      cost = front ? front.mana_cost : c.mana_cost;
+    if (alternateSpells || typeof cost === "string" && cost.includes("//")) {
+      complete = false;
+      notes.push(`${c.name}: alternative spell costs ${faces.map(f => /\bLand\b/.test(f.type_line || "") ? "a land face" : f.mana_cost ?? "unknown cost").join(" or ") || cost}; choose a casting plan before using a basic-land split.`);
+      continue;
+    }
+    if (typeof cost !== "string" || cost.replace(/\{[^}]+\}/g, "").trim()) {
+      complete = false;
+      notes.push(`${c.name}: casting-cost data is missing or unsupported; load card data before using a basic-land split.`);
+      continue;
+    }
+    if (front && ["transform", "modal_dfc", "adventure"].includes(c.layout))
+      notes.push(`${c.name}: this guideline uses the front-face cost ${cost || "(no mana cost)"}, not the other face or its activated abilities.`);
+    const contribution = { name: c.name, qty, cost, required: emptyPips(), allocated: emptyPips(), flexible: [] };
+    cards.push(contribution);
+    for (const match of String(cost).matchAll(/\{([^}]+)\}/g)) {
+      const symbol = match[0], value = match[1];
+      if (MANA_COLORS.includes(value)) {
+        required[value] += qty;
+        contribution.required[value] += qty;
+      } else if (/^[WUBRG]\/[WUBRG]$/.test(value)) {
+        const colors = value.split("/");
+        flexible.push({ symbol, colors, qty, contribution });
+        contribution.flexible.push(symbol);
+      } else if (/^(?:[WUBRG](?:\/[WUBRG])?\/P|2\/[WUBRG])$/.test(value)) {
+        const colors = value.split("/").filter(k => MANA_COLORS.includes(k)).map(manaColorName);
+        const payment = value.endsWith("/P")
+          ? `${colors.join(" or ")} mana or 2 life`
+          : `${colors[0]} mana or two mana of any type`;
+        notes.push(`${c.name} ${symbol}: payable with ${payment}; its optional color is not forced into the basic-land split.`);
+      } else if (value === "C" || value === "S") {
+        notes.push(`${c.name} ${symbol}: ${value === "C" ? "colorless" : "snow"} mana needs separate sources; this colored-basic guideline does not check them.`);
+      } else if (!/^(?:\d+|X|Y|Z)$/.test(value)) {
+        complete = false;
+        notes.push(`${c.name} ${symbol}: this mana symbol is not modeled by the basic-land guideline.`);
+      }
+    }
+  }
+  Object.assign(pips, required);
+  for (const item of flexible) {
+    const { colors, qty, contribution } = item;
+    // Other required spell colors give a stable plan. For hybrid-only colors,
+    // preserve existing sources; with no evidence, show an explicitly even plan.
+    const hardTotal = colors.reduce((n, k) => n + required[k], 0),
+      sourceTotal = colors.reduce((n, k) => n + (sources[k] || 0), 0),
+      weights = hardTotal ? required : sourceTotal ? sources : Object.fromEntries(colors.map(k => [k, 1])),
+      total = colors.reduce((n, k) => n + (weights[k] || 0), 0);
+    for (const k of colors) {
+      const amount = qty * (weights[k] || 0) / total;
+      pips[k] += amount;
+      contribution.allocated[k] += amount;
+    }
+  }
+  for (const c of cards.filter(c => c.flexible.length)) {
+    const choices = [...new Set(c.flexible)].map(s => `${s} accepts ${s.slice(1, -1).split("/").map(manaColorName).join(" or ")}`).join("; "),
+      used = MANA_COLORS.filter(k => c.allocated[k] > 0).map(manaColorName).join(" / ");
+    notes.push(`${c.name} ${c.cost}: ${choices}. Each symbol is counted once; this estimate allocates it to ${used}. Other payment choices remain legal.`);
+  }
+  return { pips, required, cards, notes: [...new Set(notes)], complete };
+}
+
 export function engineProfile(deck, catalog) {
   const fmt = isCommanderLike(deck) ? "Commander" : "60-card casual",
     size = formatOf(deck).size,
@@ -201,7 +278,8 @@ export function engineProfile(deck, catalog) {
       Synergy: 0,
     },
     curve = [0, 0, 0, 0, 0, 0, 0, 0],
-    pips = { W: 0, U: 0, B: 0, R: 0, G: 0 },
+    manaEntries = [],
+    manaSourceNotes = [],
     sources = { W: 0, U: 0, B: 0, R: 0, G: 0 },
     byRole = {
       Ramp: [],
@@ -221,16 +299,22 @@ export function engineProfile(deck, catalog) {
     const c = catalog[cardKey(row.name)];
     if (!c) {
       unknown += row.qty;
+      manaEntries.push({ card: { name: row.name }, qty: row.qty });
       continue;
     }
     if (isLand(c)) {
       counts.Lands += row.qty;
-      for (const m of c.produced_mana || [])
-        if (m in sources) sources[m] += row.qty;
-      if (!c.produced_mana && isBasic(c)) {
-        const b = { Plains: "W", Island: "U", Swamp: "B", Mountain: "R", Forest: "G" }[c.name];
-        if (b) sources[b] += row.qty;
-      }
+      const produced = new Set((Array.isArray(c.produced_mana) ? c.produced_mana : []).filter(k => k in sources));
+      // Basic land subtypes intrinsically supply their color, including snow
+      // basics and older/partial records with an empty produced_mana array.
+      if (isBasic(c))
+        for (const [land, color] of Object.entries({ Plains: "W", Island: "U", Swamp: "B", Mountain: "R", Forest: "G" }))
+          if (new RegExp("\\b" + land + "\\b").test(typeText(c) + " " + c.name)) produced.add(color);
+      if (!isBasic(c) && (!Array.isArray(c.produced_mana) || !c.produced_mana.length))
+        manaSourceNotes.push(`${c.name}: no mana production is listed in the cached source data; it is not counted in the colored-source comparison.`);
+      for (const color of produced) sources[color] += row.qty;
+      if (c.layout === "modal_dfc" && c.card_faces?.slice(1).some(f => !/\bLand\b/.test(f.type_line || "")))
+        manaEntries.push({ card: c, qty: row.qty });
       continue;
     }
     const isCommander = inCommandZone(deck,c.name);
@@ -239,10 +323,7 @@ export function engineProfile(deck, catalog) {
       mvTotal += (Number(c.cmc) || 0) * row.qty;
       curve[Math.min(7, Math.floor(Number(c.cmc) || 0))] += row.qty;
     }
-    const cost = c.mana_cost || c.card_faces?.[0]?.mana_cost || "";
-    for (const m of cost.match(/\{[^}]+\}/g) || [])
-      for (const color of "WUBRG")
-        if (m.includes(color)) pips[color] += row.qty;
+    manaEntries.push({ card: c, qty: row.qty });
     if (isCommander) continue;
     for (const r of engineRoles(c)) {
       counts[r] += row.qty;
@@ -292,10 +373,13 @@ export function engineProfile(deck, catalog) {
     weight: WEIGHTS.Curve,
     hint: HINTS.Curve,
   });
-  const weight = parts.reduce((a, p) => a + p.weight, 0),
+  const mana = manaPaymentProfile(manaEntries, sources),
+    pips = mana.pips,
+    weight = parts.reduce((a, p) => a + p.weight, 0),
     score = Math.round(
       (parts.reduce((a, p) => a + p.ratio * p.weight, 0) / weight) * 100,
     );
+  mana.notes.unshift(...manaSourceNotes);
   if (criteria) criteria.structure.score = score;
   return {
     score,
@@ -306,6 +390,7 @@ export function engineProfile(deck, catalog) {
     curve,
     avg,
     pips,
+    mana,
     sources,
     unknown,
     total,

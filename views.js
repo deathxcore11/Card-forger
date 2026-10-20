@@ -67,7 +67,7 @@ import {
   engineProfile, engineRoles, goldfish, scoreGrade, diffCards, deckValue,
   collectionValue, lotPrice, lotValuation, swapImpact, applySwapsToCards, cardSig,
 } from "./insights.js";
-import { bracketEstimate, manaBase, isOut, deckReview, explainSwap, podSpeed } from "./extras.js";
+import { bracketEstimate, manaBase, manaBaseExplanation, isOut, deckReview, explainSwap, podSpeed } from "./extras.js";
 import { buildability, rankBuildable } from "./share.js";
 import { formatsFor } from "./builder.js";
 import { gameBinders, gameSwitch, homeHero, quickTiles, randomTools, draftPath, nextCard, startHidden, savedSearches } from "./tcg.js";
@@ -1380,8 +1380,8 @@ function deckEngine(d) {
   ${d.format === "Commander" ? bracketPanel(d) : ""}  <section class="panel"><div class="row between"><h3>Mana curve</h3><span class="muted small">avg ${p.avg === null ? "—" : p.avg.toFixed(2)} · ${p.counts.Lands} lands</span></div>${curveChart(p.curve)}</section>
   ${
     colors.length
-      ? `<section class="panel"><h3>Color balance</h3><p class="muted small">Share of colored mana symbols in your spells vs. share of lands that make that color.</p>${colors
-          .map((k) => `<div class="meter two"><span>${sym(k)}</span><span class="pair">${bar(colorTotal ? p.pips[k] / colorTotal : 0, "c-" + k)}${bar(srcTotal ? p.sources[k] / srcTotal : 0, "c-" + k + " faint")}</span><b class="small">${pct(colorTotal ? p.pips[k] / colorTotal : 0)} need · ${pct(srcTotal ? p.sources[k] / srcTotal : 0)} make</b></div>`)
+      ? `<section class="panel"><h3>Color balance</h3><p class="muted small">Estimated colored payment share vs. land-source share. Hybrid symbols are counted once, not as both colors. See Mana base for payment choices and limits.${p.mana.complete ? "" : " Some alternative costs are omitted; no basic split is recommended."}</p>${colors
+          .map((k) => `<div class="meter two"><span>${sym(k)}</span><span class="pair">${bar(colorTotal ? p.pips[k] / colorTotal : 0, "c-" + k)}${bar(srcTotal ? p.sources[k] / srcTotal : 0, "c-" + k + " faint")}</span><b class="small">${pct(colorTotal ? p.pips[k] / colorTotal : 0)} estimate · ${pct(srcTotal ? p.sources[k] / srcTotal : 0)} sources</b></div>`)
           .join("")}</section>`
       : ""
   }
@@ -1410,8 +1410,8 @@ function bracketPanel(d) {
   <p class="foot">A floor from card text, not a verdict. Two-card infinite combos and how you play the deck also count, so use this to start your Rule 0 talk.</p></section>`;
 }
 
-function manaBasePanel(d, p) {
-  const m = manaBase(d, S.catalog, p.pips);
+export function manaBasePanel(d, p) {
+  const m = manaBase(d, S.catalog, p.pips, p.mana);
   if (!m.lands) return "";
   const rows = m.changes
     .map((x) => {
@@ -1420,7 +1420,10 @@ function manaBasePanel(d, p) {
     })
     .join("");
   return `<section class="panel"><div class="row between"><h3>Mana base</h3><span class="muted small">${m.lands} lands · ${m.basicCount} basic</span></div>
-  ${m.basicCount && rows ? `<p class="muted small">Your ${m.basicCount} basics split by the colored mana symbols in your spells.</p><div class="mb-table"><div class="mb-row head"><span></span><span>Basic</span><span class="num">Now</span><span></span><span class="num">Suggested</span><span></span></div>${rows}</div>${m.off ? "" : '<p class="small ok-text">Your basics already match your spells.</p>'}` : '<p class="muted small">No basic lands in this list, so there is nothing to rebalance.</p>'}
+  ${m.basicCount && m.canSuggest && rows ? `<p class="muted small">${esc(manaBaseExplanation(m).detail)}</p><div class="mb-table"><div class="mb-row head"><span></span><span>Basic</span><span class="num">Now</span><span></span><span class="num">Suggested</span><span></span></div>${rows}</div>${m.off ? "" : '<p class="small ok-text">No substantial basic-land change suggested by this guideline.</p>'}` : `<p class="muted small">${m.basicCount ? "No basic-land split recommended: " + (p.mana.complete ? "the modeled costs have no required colored payment." : "alternative or unsupported costs need a casting plan first.") : "No basic lands in this list, so there is nothing to rebalance."}</p>`}
+  ${p.mana.notes.length ? `<div class="small mana-payment-notes"><b>Payment choices and limits</b><ul>${p.mana.notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul></div>` : ""}
+  ${p.mana.cards.length ? `<details class="small"><summary>Cards counted in this estimate</summary><ul>${p.mana.cards.map(c => `<li>${c.qty}× ${nameLinks([c.name], d)} · ${esc(c.cost || "no mana cost")}</li>`).join("")}</ul></details>` : ""}
+  <p class="foot">A basic-land guideline, not a casting guarantee. Nonbasic lands, mana abilities, timing, alternative costs and colorless/snow needs may change the right split. Commander color identity is checked separately.</p>
   ${m.tapped.length ? `<p class="small ${m.tooManyTapped ? "warn-text" : "muted"}">${m.tapped.length} land${m.tapped.length > 1 ? "s" : ""} always enter tapped${m.tooManyTapped ? " — that’s a lot; each one can cost you a turn-one or turn-two play" : ""}: ${nameLinks([...new Set(m.tapped)], d)}</p>` : ""}
   </section>`;
 }
