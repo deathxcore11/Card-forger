@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-v248";
+const CACHE = "cardforge-shell-v249";
 const ASSETS = [
   "./aura.js", "./aura.css",
   "./brand-motion.css",
@@ -230,6 +230,8 @@ self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET" || url.origin !== self.location.origin) return;
   // API responses (including connection status) must not enter the offline shell cache.
   if (url.pathname.startsWith("/api/")) return;
+  // Tour videos stream with range requests, which the shell cache cannot store.
+  if (/\.(mp4|webm)$/.test(url.pathname)) return;
   // The instant-scan index is large and changes rarely: serve the saved copy at once and refresh
   // it in the background.
   if (url.pathname.includes("/scanidx/")) {

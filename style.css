@@ -4681,6 +4681,17 @@ body[data-game="ygo"] .ask-launch{--ask-a:#b697ef;--ask-b:#697db5;--ask-c:#dbb26
 .ask-build-badges .ask-build-brand,.ask-build-badges .ask-build-format{position:static;min-width:0;font-size:10px}.ask-build-badges .ask-build-brand{flex-shrink:0}.ask-build-badges .ask-build-format{max-width:55%;overflow-wrap:normal}
 .ask-build-art-fallback{display:none}.ask-art-unavailable .ask-build-art-fallback{display:grid;position:absolute;inset:50px 0 0;place-items:center;color:#d4dae4;font-size:12px}
 
+/* Welcome tour: real recordings of the app. */
+.tour-video-card>p:not(.eyebrow){margin-bottom:14px}
+.tour-video{position:relative;width:min(100%,300px);aspect-ratio:540/1052;margin:0 auto 14px;border-radius:26px;overflow:hidden;background:#0b0d12;border:2px solid #ffffff24;box-shadow:0 20px 50px #000a,0 0 40px color-mix(in srgb,var(--game-color,var(--gold)) 20%,transparent);animation:tv-from-r .45s cubic-bezier(.2,.8,.2,1) both}
+.tour-video video{display:block;width:100%;height:100%;object-fit:cover;cursor:pointer}
+.tour-video-play{position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;border:0;font-size:24px;color:#0d0f14;background:#ffffffe6;box-shadow:0 8px 24px #0008;opacity:0;pointer-events:none;transition:opacity .2s}
+.tour-video.paused .tour-video-play{opacity:1;pointer-events:auto}
+.tour-vbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:#ffffff1f}.tour-vbar b{display:block;height:100%;width:0;background:var(--game-color,var(--gold));transition:width .25s linear}
+@media(max-height:760px){.tour-video{width:min(100%,230px)}}
+@media(max-height:640px){.tour-video{width:min(100%,180px)}}
+@media(prefers-reduced-motion:reduce){.tour-video{animation:none}}
+
 /* Card detail polish: one selected-set surface, then a deliberate quick-action grid.
    The illustrated banner, navigation, artwork and finish rail keep their geometry. */
 .card-owned-summary{display:inline-block;margin-inline-start:8px;padding:3px 8px;border:1px solid #ffffff38;border-radius:999px;background:#11151c88;font-size:11px;font-weight:600;line-height:1.4;white-space:nowrap;vertical-align:middle}
