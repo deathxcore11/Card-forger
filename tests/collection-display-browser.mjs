@@ -47,10 +47,13 @@ try{
    assert.match(await condition.locator('.condition-badge').getAttribute('data-condition-info'),/Condition quote.*included/);
    assert.equal(await condition.getAttribute('data-tier'),'t1','Exact condition value selects its price frame');
    assert.equal(await custom.getAttribute('data-tier'),'t2','Frame uses per-copy value, not the two-copy total');
+   await page.emulateMedia({reducedMotion:'no-preference'});
    const frame=condition.locator('.lot-art'),firstFrame=await frame.evaluate(n=>{const s=getComputedStyle(n);return {animation:s.animationName,position:s.backgroundPosition};});
    assert.notEqual(firstFrame.animation,'none','Usable condition prices retain decorative frame animations');
    await page.waitForTimeout(200);
    assert.notEqual(await frame.evaluate(n=>getComputedStyle(n).backgroundPosition),firstFrame.position,'The price frame actually moves');
+   await page.emulateMedia({reducedMotion:'reduce'});
+   assert.equal(await frame.evaluate(n=>getComputedStyle(n).animationName),'none','Reduced motion keeps the value frame without movement');
    const unknown=page.locator('.lot').filter({has:page.locator('[data-entry="display-'+game+'-3"]')});
    assert.equal(await unknown.getAttribute('data-tier'),'tn','Missing condition quote never fabricates a price tier');
    // Settings uses actual controls; grid changes cannot change the underlying view.
