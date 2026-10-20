@@ -1,0 +1,14 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Yu-Gi-Oh! rarity foil gallery verification</title>
+<link rel="stylesheet" href="../finish-effects.css"><style>body{margin:0;padding:16px;background:#161b20;color:#eee;font:15px system-ui}.display-list{display:grid;grid-template-columns:repeat(var(--cols,1),minmax(0,1fr));gap:16px;max-width:1100px;margin:auto}.lot-art{position:relative;display:block;line-height:0;border:0;padding:0;background:none;aspect-ratio:813/1185}.lot-art img{display:block;width:100%;height:100%;object-fit:contain}</style></head>
+<body><main id="content" class="view-gallery"><div class="display-list" id="list"></div></main><script type="module">
+// The real resolver, overlay lifecycle and stylesheet on retained art, laid out like a gallery.
+import {finishAttrs,attachFinishPreview} from '../finish-preview.js';
+import {normalizeYgo} from '../ygo.js';
+const cases=(await (await fetch('../review/cases.json')).json()).cases.filter(c=>c.game==='ygo'&&c.key!=='ygo-gamma-rare');
+const files={'9753964':'../test-fixtures/finish-effects/hot-red-dragon-abyss.json','38814750':'../test-fixtures/finish-effects/psy-framegear-gamma.json','74586817':'../test-fixtures/finish-effects/psy-framelord-omega.json'};
+const params=new URLSearchParams(location.hash.slice(1));document.documentElement.dataset.gridSize=params.get('size')||'large';document.querySelector('#list').style.setProperty('--cols',params.get('cols')||'1');
+let html='';
+for(const c of cases){const raw=await (await fetch(files[c.identity.cardId]||'../test-fixtures/finish-effects/dracotail-lukias.json')).json();
+ html+=`<button class="lot-art" data-key="${c.key}" ${finishAttrs('ygo',normalizeYgo(raw),c.identity.context,'large')}><img src="../review/${c.image}" alt=""></button>`;}
+document.querySelector('#list').innerHTML=html;attachFinishPreview(document);document.documentElement.dataset.ready='1';
+</script></body></html>

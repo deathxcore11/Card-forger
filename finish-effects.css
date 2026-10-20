@@ -93,6 +93,11 @@
 .finish-overlay[data-material-profile] .finish-title-glyphs.finish-rainbow{background-image:linear-gradient(110deg,#8295c8 15%,#9ae1e8 33%,#f8c5e5 48%,#eee1a0 60%,#b5c8ec 80%)}
 /* Lit hot-stamped name letters (detail and zoom only); the glyph-masked layer stays beneath as fallback. */
 .finish-name-foil{position:absolute;display:block;pointer-events:none!important}
+/* WebGL rarity foil for full-size Yu-Gi-Oh! cards: draws the lit card itself, so the CSS art layers and
+   spotlight step aside while it is active; the name lettering stays on top. */
+.finish-rarity-gl{position:absolute;inset:0;display:block;width:100%;height:100%;pointer-events:none!important}
+.finish-rarity-gl[hidden]{display:none}
+.finish-overlay.rarity-gl>.finish-layer:not(.finish-name-region),.finish-overlay.rarity-gl>.finish-spotlight,.finish-overlay.rarity-gl>.finish-pattern{display:none}
 .finish-overlay[data-material-profile] .finish-pattern{position:absolute;inset:0;pointer-events:none;background-position:var(--finish-x) var(--finish-y);mix-blend-mode:screen;opacity:.46}
 [data-material-profile=classic-holo] .finish-pattern,[data-material-profile=cosmos-holo] .finish-pattern{background-image:url('assets/finishes/cosmos.svg'),radial-gradient(ellipse at var(--finish-x) var(--finish-y),#b9e3ff55,transparent 45%);background-size:100% 100%;}
 [data-material-profile=classic-holo] .finish-pattern{opacity:.3}

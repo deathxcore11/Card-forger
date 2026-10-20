@@ -2,6 +2,7 @@ import {esc} from './ui.js';
 import {finishChoices,resolveFinish,FINISH_MASKS} from './finish-effects.js';
 import {finishMaterialProfile,hasFinishPattern,verifiedTitleMask} from './finish-materials.js';
 import {ygoNameMask,nameMaskStyle,mountYgoNameFoil} from './ygo-name-foil.js';
+import {mountYgoRarityFoil} from './ygo-rarity-foil.js';
 export {finishChoices,finishEffect,resolveFinish,selectPreviewFinish,finishArtworkCard} from './finish-effects.js';
 const KEY='cardstashy-finish-effects';
 export const finishEffectsOn=()=>{try{return localStorage.getItem(KEY)!=='off';}catch{return true;}};
@@ -63,7 +64,7 @@ export function attachFinishPreview(root){
  const visible=el=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&r.bottom>0&&r.top<(globalThis.innerHeight||Infinity)&&r.right>0&&r.left<(globalThis.innerWidth||Infinity);};
  const foreground=el=>{const top=[...(globalThis.document?.querySelectorAll?.('dialog[open]')||[])].at(-1);return !top||top.contains(el);};
  const allowed=el=>finishEffectsOn()&&!reduced()&&!globalThis.document?.hidden&&finishEligible(el)&&el.isConnected!==false&&foreground(el);
- const unmount=el=>{const m=mounted.get(el);if(m){ro?.unobserve(m.img);m.nameFoil?.dispose();m.overlay.remove();mounted.delete(el);}};
+ const unmount=el=>{const m=mounted.get(el);if(m){ro?.unobserve(m.img);m.nameFoil?.dispose();m.rarityFoil?.dispose();m.overlay.remove();mounted.delete(el);}};
  const size=el=>{
   const m=mounted.get(el);if(!m)return;
   const {img,overlay,host}=m,css=globalThis.getComputedStyle?.(img),px=v=>parseFloat(v)||0;
@@ -93,6 +94,8 @@ export function attachFinishPreview(root){
   for(const l of layers){if(!FINISH_MASKS[l.mask])continue;const part=img.ownerDocument.createElement('span');part.className=`finish-layer finish-${l.material}${l.mask==='ygo-name'?' finish-name-region':''}`;part.style.clipPath=FINISH_MASKS[l.mask];overlay.append(part);}
   if(hasFinishPattern(p.materialProfile)&&FINISH_MASKS[layers[0]?.mask]){const pattern=img.ownerDocument.createElement('span');pattern.className='finish-pattern';pattern.style.clipPath=FINISH_MASKS[layers[0].mask];overlay.append(pattern);}
   host.append(overlay);mounted.set(el,{img,host,overlay,model:el.dataset.finishModel,src:img.currentSrc});ro?.observe(img);size(el);
+  // Full-size Yu-Gi-Oh! cards get the WebGL rarity foil; the CSS layers stay beneath as the fallback.
+  if(p.game==='ygo')mounted.get(el).rarityFoil=mountYgoRarityFoil(overlay,img,p.effect,{surface:el.dataset.finishSurface});
   const nameLayer=p.game==='ygo'&&(p.layers||[]).find(l=>l.mask==='ygo-name'),nameMask=nameLayer?ygoNameMask(img):null;
   if(nameMask){
    // Letters from this exact image replace the title-band placeholder; the art foil layers are unchanged.
