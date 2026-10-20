@@ -91,6 +91,8 @@
 .finish-overlay[data-material-profile] .finish-title-glyphs.finish-gold{background-image:linear-gradient(110deg,#79501a 16%,#d8a53a 35%,#fff2ad 48%,#f9cb56 55%,#9d6a1b 77%)}
 .finish-overlay[data-material-profile] .finish-title-glyphs.finish-silver{background-image:linear-gradient(110deg,#6c7e93 16%,#d6e4f0 37%,#fff 49%,#b4ccd8 59%,#647586 78%)}
 .finish-overlay[data-material-profile] .finish-title-glyphs.finish-rainbow{background-image:linear-gradient(110deg,#8295c8 15%,#9ae1e8 33%,#f8c5e5 48%,#eee1a0 60%,#b5c8ec 80%)}
+/* Lit hot-stamped name letters (detail and zoom only); the glyph-masked layer stays beneath as fallback. */
+.finish-name-foil{position:absolute;display:block;pointer-events:none!important}
 .finish-overlay[data-material-profile] .finish-pattern{position:absolute;inset:0;pointer-events:none;background-position:var(--finish-x) var(--finish-y);mix-blend-mode:screen;opacity:.46}
 [data-material-profile=classic-holo] .finish-pattern,[data-material-profile=cosmos-holo] .finish-pattern{background-image:url('assets/finishes/cosmos.svg'),radial-gradient(ellipse at var(--finish-x) var(--finish-y),#b9e3ff55,transparent 45%);background-size:100% 100%;}
 [data-material-profile=classic-holo] .finish-pattern{opacity:.3}
