@@ -92,7 +92,7 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
   if(['sv01','sv1'].includes(set)&&category==='pokemon'&&physicalFinish==='reverse-holofoil'&&['common','uncommon','rare'].includes(rarity))return preset(key,label,'ptcg-reverse',[layer('pk-sv-surround','tiles')],FINISH_SOURCES.pokemon);
   // Finish availability is still source-supplied. Layout identifies where that
   // known finish catches the light; it never adds a variant or a price.
-  const fullArt=/fullart|illustration|rainbow|shinyvmax|shinyv|secret|hyperrare|ultrarare/.test(rarity)||/^(vmax|vstar)$/i.test(c.stage||'')||/\s(?:V|GX|EX|ex|VMAX|VSTAR|V-UNION)$/.test(c.name||'');
+  const fullArt=/fullart|illustration|rainbow|shinyvmax|shinyv|secret|hyperrare|ultrarare/.test(rarity)||/^(vmax|vstar)$/i.test(c.stage||'')||(!/^ex\d/.test(set)&&/\s(?:V|GX|EX|ex|VMAX|VSTAR|V-UNION)$/.test(c.name||''));
   if(physicalFinish==='holofoil'&&fullArt){
    const textured=/specialillustration|shiny.*vmax|rainbow|fullart|ultrarare|rareultra|hyperrare/.test(rarity)||/^vmax$/i.test(c.stage||'');
    const gold=/^(sv|me)/i.test(set)&&rarity==='hyperrare';
@@ -124,6 +124,11 @@ export function finishChoices(game,c,ctx={}){
   // Pattern metadata is real identity, not permission to fake a generic texture.
   // Keep the selectable variant while its distinct physical pattern is unsupported.
   if(reviewedCosmosPreview(c,v))return {...preset(v.key,v.label,'ptcg-holo',[layer('pk-swsh-art','holo')],'https://api.tcgdex.net/v2/en/cards/'+c.id),pattern:'cosmos',materialProfile:'cosmos-holo'};
+  // Modern ordinary Scarlet/Violet frames share a supported illustration
+  // window. This is an approximate Cosmos preview, not exact-printing art or
+  // authentication of a physical foil. Other patterns/layouts stay explicit.
+  if(v.foil==='cosmos'&&v.finish==='holofoil'&&v.size==='standard'&&!v.stamps?.length&&!v.subtype&&/^sv\d/i.test(c.set?.id||'')&&c.category==='Pokemon'&&/^(?:Holo Rare|Rare)$/i.test(c.rarity||''))
+   return {...preset(v.key,v.label,'ptcg-holo',[layer('pk-sv-art','holo')],'https://api.tcgdex.net/v2/en/cards/'+c.id),pattern:'cosmos',materialProfile:'cosmos-holo',reason:'Simulated Cosmos holo · approximate illustration-window coverage'};
   if(v.foil)return {...unknown(v.key,v.label||v.key),reason:'Patterned finish preview unavailable for this printing.'};
   // Preserve a known variant even when its finish cannot be previewed.
   return finish?effectFor(game,c,v.key,v.label||v.key,ctx,finish):unknown(v.key,v.label||v.key);

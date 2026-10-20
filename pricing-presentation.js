@@ -69,9 +69,10 @@ export function presentationQuote(game,c,finish='reference',printingKey='',editi
  const finishVerified=game!=='ptcg'||finish==='reference'||!!variant&&!/unconfirmed/i.test(variant.label||'');
  const editions=game==='ygo'&&verified?[...new Map((context?.printings||c.sets||[]).map(s=>[s.code+'::'+s.rarity,{code:s.code,rarity:s.rarity,key:s.code+'::'+s.rarity,label:[s.code,s.rarity,s.name].filter(Boolean).join(' · ')}])).values()]:[];
  const fallbackMtg=game==='mtg'&&source==='TCGplayer via TCGCSV';
- const checkedAt=fallbackMtg?null:printing?.checkedAt||c.checkedAt||c.fetchedAt||null,sourceUpdatedAt=fallbackMtg?null:printing?null:c.prices?.updated||null;
- const key=[game,c.id,...(context?[context.releaseId]:[]),source,'USD',finish,...(printing?[printing.code,printing.rarity,edition]:[])].join('|');
- return {releaseId:context?.releaseId||'',selectionVerified:verified&&finishVerified,edition:printing?.code||'',rarity:printing?.rarity||'',editionKey:printing?printing.code+'::'+printing.rarity:'',selectedEdition:edition,editions,key,name:c.name,game,cardId:c.id,source,currency:'USD',finish,label,value,kind,scope,variant,printing,checkedAt,sourceUpdatedAt,observedAt,asOf:observedAt||sourceUpdatedAt||checkedAt,cardReferenceValue:context||!finishVerified?null:priceAmount(c.prices?.usd)};
+ const checkedAt=fallbackMtg?null:printing?.checkedAt||c.checkedAt||c.fetchedAt||null,sourceUpdatedAt=fallbackMtg?null:printing?null:variant?(Object.hasOwn(variant,'sourceUpdatedAt')?variant.sourceUpdatedAt:c.prices?.updated)||null:c.prices?.updated||null;
+ const productId=game==='ptcg'?variant?.productId:printing?.productId;
+ const key=[game,c.id,...(context?[context.releaseId]:[]),source,'USD',finish,...(productId?[String(productId)]:[]),...(printing?[printing.code,printing.rarity,edition]:[])].join('|');
+ return {productId:productId||null,releaseId:context?.releaseId||'',selectionVerified:verified&&finishVerified,edition:printing?.code||'',rarity:printing?.rarity||'',editionKey:printing?printing.code+'::'+printing.rarity:'',selectedEdition:edition,editions,key,name:c.name,game,cardId:c.id,source,currency:'USD',finish,label,value,kind,scope,variant,printing,checkedAt,sourceUpdatedAt,observedAt,asOf:observedAt||sourceUpdatedAt||checkedAt,cardReferenceValue:context||!finishVerified?null:priceAmount(c.prices?.usd)};
 }
 // UI selectors and the projected card must refer to the same release.
 export function quoteForContext(game,card,ctx={}) {
@@ -85,7 +86,7 @@ export function priceSelectionState(quote){
  if(quote.game==='ygo'&&quote.printing&&!Object.hasOwn(editionNames,quote.selectedEdition))return 'edition-required';
  return 'selected';
 }
-export const quoteIsStale=(q,now=Date.now())=>{const date=q?.observedAt||q?.sourceUpdatedAt||q?.checkedAt;return !!date&&Number.isFinite(Date.parse(date))&&now-Date.parse(date)>3*864e5;};
+export const quoteIsStale=(q,now=Date.now())=>{const date=q?.observedAt||q?.sourceUpdatedAt;return !!date&&Number.isFinite(Date.parse(date))&&now-Date.parse(date)>3*864e5;};
 // A saved condition value may be shown only beside the same game/card/version.
 export function matchingLot(game,card,ctx,state){
  const id=ctx.entryId||ctx.entry,rows=game==='mtg'?state.collection:state.tcg?.[game]?.collection||[],lot=rows.find(e=>e.id===id);
@@ -101,7 +102,7 @@ export function matchingLot(game,card,ctx,state){
 export function quoteTiming(q){
  if(!q)return '';
  const observed=dateText(q.observedAt),updated=dateText(q.sourceUpdatedAt),checked=dateText(q.checkedAt);
- return [observed?'Last observed '+observed:updated?'Source updated '+updated:'Source date unavailable',checked?'Checked '+checked:'',quoteIsStale(q)?'Stale reference':''].filter(Boolean).join(' · ');
+ return [observed?'Last observed '+observed:updated?'Source updated '+updated:'Source date unavailable',checked?'Checked '+checked:'',quoteIsStale(q)?'Stale reference':!observed&&!updated&&checked&&Date.now()-Date.parse(q.checkedAt)>3*864e5?'Stale availability check; source age unknown':''].filter(Boolean).join(' · ');
 }
 export function buyContext(game,card,ctx,state){
  const lot=matchingLot(game,card,ctx,state);

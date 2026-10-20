@@ -2,10 +2,17 @@ import {rankScanCandidates,nameDistance,collectorKey,scanIdentifierEvidence} fro
 // Compact identification metadata. Full descriptions/prices stay in the normal card adapters.
 import {readRecord,writeRecord} from './storage.js';
 import {scanLookupNames,scanNameKey,scanCardNameKey,ptcgIdentifierKey} from './scan.js';
+import {pokemonIdentityNames,pokemonPrintedIdentifier} from './pokemon-identity.js';
 const states=new Map(),loads=new Map();let manifestPromise;
 const key=g=>'cardstashy-scan-catalog-v1-'+g;
 export function compileCatalog(pack){
  if(pack?.schema!==1||!['mtg','ptcg','ygo'].includes(pack.game)||!Array.isArray(pack.rows)||!pack.rows.length)throw Error('Invalid recognition catalogue.');
+ // Upgrade old on-device catalogues in memory as well as regenerated packs.
+ // Retain the catalogue total separately from the per-card printed fraction.
+ if(pack.game==='ptcg')pack={...pack,rows:pack.rows.map(r=>{
+  const printed=pokemonPrintedIdentifier(r[2],r[3],r[4]);
+  return printed.namespace==='H'?[...r.slice(0,4),printed.total,...r.slice(5,7),r[7]??r[4]]:r;
+ })};
  const names=new Map(),codes=new Map(),ids=new Map(),g=pack.game;let indexedCount=0;
  const push=(map,k,i)=>{if(!k)return;const a=map.get(k);if(a)a.push(i);else map.set(k,[i]);};
  pack.rows.forEach((r,i)=>{if(!Array.isArray(r)||typeof r[0]!=='string'||typeof r[1]!=='string')throw Error('Invalid recognition record.');
@@ -13,7 +20,7 @@ export function compileCatalog(pack){
   // integrity, but never index digital cards as physical collection candidates.
   if(g==='ptcg'&&/(?:^|\/)tcgp\//i.test(String(r[6]||'')))return;
   indexedCount++;
-  push(names,scanCardNameKey(g,r[1]),i);push(ids,r[0],i);push(codes,g==='mtg'?r[2]+':'+collectorKey(r[3]):g==='ptcg'&&r[4]?ptcgIdentifierKey(r[3],r[4]):g==='ygo'?r[2]:'',i);});
+  for(const name of g==='ptcg'?pokemonIdentityNames({id:r[0],name:r[1]}):[r[1]])push(names,scanCardNameKey(g,name),i);push(ids,r[0],i);push(codes,g==='mtg'?r[2]+':'+collectorKey(r[3]):g==='ptcg'&&r[4]?ptcgIdentifierKey(r[3],r[4]):g==='ygo'?r[2]:'',i);});
  return {...pack,names,codes,ids,indexedCount};
 }
 export function catalogCandidate(pack,i,exact=false){
@@ -22,7 +29,8 @@ export function catalogCandidate(pack,i,exact=false){
   const image=`https://cards.scryfall.io/normal/front/${r[0][0]}/${r[0][1]}/${r[0]}.jpg`;
   card={id:r[0],name:r[1],set:r[2],collector_number:r[3],set_name:r[4],finishes:r[5],oracle_id:r[6],lang:r[7]||'en',image_uris:{normal:image}};sub=`${r[4]} · ${r[2].toUpperCase()} #${r[3]}`;
  }else if(g==='ptcg'){
-  card={id:r[0],name:r[1],game:g,set:{id:r[2],number:r[3],total:r[4],name:r[5]},image:r[6]?`https://assets.tcgdex.net/en/${r[6]}/low.webp`:'',imageLarge:r[6]?`https://assets.tcgdex.net/en/${r[6]}/high.webp`:''};sub=`${r[5]} · #${r[3]}${r[4]?'/'+r[4]:''}`;
+  const printed=pokemonPrintedIdentifier(r[2],r[3],r[4]);
+  card={id:r[0],name:r[1],game:g,set:{id:r[2],number:printed.number,total:r[4],catalogueTotal:r[7]??r[4],name:r[5]},image:r[6]?`https://assets.tcgdex.net/en/${r[6]}/low.webp`:'',imageLarge:r[6]?`https://assets.tcgdex.net/en/${r[6]}/high.webp`:''};sub=`${r[5]} · #${printed.number}${r[4]?'/'+r[4]:''}`;
  }else{
   print=r[2]?r[2]+'|'+r[3]:'';card={id:r[0],name:r[1],game:g,typeLine:r[5],image:`https://images.ygoprodeck.com/images/cards_small/${r[0]}.jpg`,imageLarge:`https://images.ygoprodeck.com/images/cards/${r[0]}.jpg`,sets:r[2]?[{code:r[2],rarity:r[3],name:r[4]}]:[]};sub=print?`${r[4]} · ${r[2]} · ${r[3]}`:r[5];
  }
@@ -35,7 +43,13 @@ export function lookupCatalog(pack,read){
  const {observations,identifierConflict,identifierUncertain}=scanIdentifierEvidence(g,read);
  if(!bestName&&names[0]?.length>=5){const hits=[...pack.names.keys()].filter(n=>Math.abs(n.length-names[0].length)<=2).map(n=>[n,nameDistance(n,names[0],2)]).filter(([,d])=>d<=2).sort((a,b)=>a[1]-b[1]);if(hits[0]&&(!hits[1]||hits[0][1]<hits[1][1])){bestName=hits[0][0];fuzzy=true;}}
  if(g==='mtg'){for(const c of observations)indexes.push(...(pack.codes.get(c.set+':'+collectorKey(c.number))||[]));if(bestName&&!fuzzy)indexes=indexes.filter(i=>bestName===scanNameKey(pack.rows[i][1]));}
- if(g==='ptcg'){for(const c of observations)indexes.push(...(pack.codes.get(ptcgIdentifierKey(c.num,c.total))||[]));indexes=indexes.filter(i=>bestName===scanCardNameKey(g,pack.rows[i][1]));}
+ if(g==='ptcg'){
+  for(const c of observations)indexes.push(...(pack.codes.get(ptcgIdentifierKey(c.num,c.total))||[]));
+  // Try all intact compatible readings before a recognized lossy substring.
+  const compatible=i=>names.some(n=>(pack.names.get(n)||[]).includes(i));
+  indexes=indexes.filter(compatible);
+  if(read.setId)indexes=indexes.filter(i=>pack.rows[i][2]===read.setId);
+ }
  if(g==='ygo'){for(const c of observations)indexes.push(...(pack.codes.get(c)||[]));}
  const exact=!fuzzy&&!identifierConflict&&!identifierUncertain&&indexes.length>0&&new Set(indexes.map(i=>JSON.stringify(g==='ygo'?pack.rows[i].slice(0,5):[pack.rows[i][0]]))).size===1;
  if(!indexes.length&&bestName)indexes.push(...pack.names.get(bestName));

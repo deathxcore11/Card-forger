@@ -67,7 +67,9 @@ console.log("PASS: Pokémon Black Star promos get TCGplayer prices through the p
 const { normalizePtcg } = await import("./ptcg.js");
 const { applyProductPrices } = await import("./pokemon-prices.js");
 const celebi = normalizePtcg({ id: "bw7-9", name: "Celebi-EX", category: "Pokemon", hp: 110, types: ["Grass"], attacks: [{ name: "Shiny Leaf", cost: ["Grass"] }] });
-assert.ok(celebi.basicPokemon && celebi.stage === "Basic", "an EX that evolves from nothing is a Basic Pokémon");
+assert.equal(celebi.basicPokemon,false,"missing stage is not evidence of Basic");
+assert.equal(celebi.stage,"");
+assert.equal(normalizePtcg({id:"bw7-9",name:"Celebi-EX",category:"Pokemon",stage:"Basic"}).basicPokemon,true,"known Basic remains supported");
 assert.equal(normalizePtcg({ id: "sm12-4", name: "Vileplume GX", category: "Pokemon", evolveFrom: "Gloom" }).basicPokemon, false, "evolutions are never guessed Basic");
 assert.equal(normalizePtcg({ id: "swshp-215", name: "Morpeko V-UNION", category: "Pokemon" }).basicPokemon, false, "V-UNION pieces aren't Basic");
 assert.match(normalizePtcg({ id: "x", name: "Old Draw", category: "Trainer", effect: "Draw 3 cards. You may play only 1 Supporter card during your turn." }).typeLine, /Supporter/);

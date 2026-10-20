@@ -135,7 +135,12 @@ export async function loadCache(readRecord) {
 }
 const remember = (card) => {
   const prev = cache[card.game][card.id];
-  if (card.brief && prev && !prev.brief) return prev;
+  if (card.brief && prev && !prev.brief){
+    const set={...card.set,...prev.set};
+    if(JSON.stringify(set)!==JSON.stringify(prev.set))prev.set=set;
+    for(const key of ['image','imageLarge','released'])if(!prev[key]&&card[key])prev[key]=card[key];
+    return prev;
+  }
   if (!card.brief) recordCardPrice(card.game, card);
   cache[card.game][card.id] = card;
   saveCacheSoon();
@@ -340,7 +345,9 @@ export function entryValuation(c,e){
   const allQuotes=[...(scoped?.conditionQuotes||[]),...(e.conditionQuotes||[])];
   const collision=c?.game==='ygo'&&e.setReleaseId&&(c.sets||[]).filter(p=>p.code===e.printing&&(!e.rarity||rarityKey(p.rarity)===rarityKey(e.rarity))).length>1;
   const quotes=!verified?[]:collision?allQuotes.filter(q=>q.setReleaseId===e.setReleaseId):allQuotes;
-  const value=conditionValue(verified?referenceEntryPrice(scoped,e):null,e,quotes);
+  const products=(scoped?.game==='ptcg'?scoped.variants||[]:[]).filter(v=>v.key===e.variant);
+  const valuationEntry=!e.productId&&products.length===1&&products[0].productId?{...e,productId:products[0].productId}:e;
+  const value=conditionValue(verified?referenceEntryPrice(scoped,e):null,valuationEntry,quotes);
   return value.kind==='reference'&&value.price!==null&&!scoped?.setContext&&!e.variant&&!e.printing&&scoped?.prices?.usd==null&&myPrice(scoped)!==null?{...value,kind:'manual-reference'}:value;
 }
 export const entryPrice=(c,e)=>entryValuation(c,e).price;
@@ -1684,8 +1691,9 @@ export function setContextCard(g, card, release, catalogue = ui(g).sets.list, {v
     const previousContext=card.setContext?.game===g&&card.setContext.cardId===card.id?card.setContext:null,wasSelected=!!previousContext?.variantKey;
     const referencePrice=!membership?null:previousContext&&Object.hasOwn(previousContext,'referencePrice')?previousContext.referencePrice:wasSelected?null:card.prices?.usd??null;
     const selectedPrice=membership?(chosen?variant?.usd??null:referencePrice):null;
-    const context={game:g,cardId:card.id,releaseId:resolved.id,name:resolved.name,code:resolved.code,date:resolved.date,status:membership?"resolved":"missing",membership:membership?'set-response':'unverified',sourceSet,referencePrice,printingAmbiguous:!!chosen&&!variant,variantKey:chosen,variant,edition:"unknown",price:selectedPrice};
-    return {...card,setContext:context,...(membership?{set:{...sourceSet,id:resolved.id,name:resolved.name||sourceSet.name,symbol:resolved.symbol||sourceSet.symbol},setCode:resolved.code||String(resolved.id).toUpperCase()}:{}),...(!membership||chosen||wasSelected?{prices:{usd:selectedPrice,eur:null,others:[],source:membership?'Selected version reference':'Release not verified'}}:{})};
+    const referencePricing=previousContext?.referencePricing||{...card.prices};
+    const context={referencePricing,game:g,cardId:card.id,releaseId:resolved.id,name:resolved.name,code:resolved.code,date:resolved.date,status:membership?"resolved":"missing",membership:membership?'set-response':'unverified',sourceSet,referencePrice,printingAmbiguous:!!chosen&&!variant,variantKey:chosen,variant,edition:"unknown",price:selectedPrice};
+    return {...card,setContext:context,...(membership?{set:{...sourceSet,id:resolved.id,name:resolved.name||sourceSet.name,symbol:resolved.symbol||sourceSet.symbol},setCode:resolved.code||String(resolved.id).toUpperCase()}:{}),...(!membership||chosen||wasSelected?{prices:{...(membership?referencePricing:{}),usd:selectedPrice,eur:null,others:[],...(chosen?{updated:variant?.sourceUpdatedAt??referencePricing.updated??null}:{}),source:membership?'Selected version reference':'Release not verified'}}:{})};
   }
   const printingNames=new Map();
   for(const p of card.sets||[]){const key=p.code+'|'+rarityKey(p.rarity);if(!printingNames.has(key))printingNames.set(key,new Set());printingNames.get(key).add(releaseText(p.name));}

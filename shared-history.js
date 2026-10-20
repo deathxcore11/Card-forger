@@ -8,20 +8,22 @@ function cached(k){try{return JSON.parse(localStorage.getItem(CACHE)||'{}')[k];}
 function remember(k,d){try{const all=JSON.parse(localStorage.getItem(CACHE)||'{}');all[k]=d;const keys=Object.keys(all).sort((a,b)=>(all[b].checked||0)-(all[a].checked||0));for(const key of keys.slice(60))delete all[key];localStorage.setItem(CACHE,JSON.stringify(all));}catch{}}
 
 const contextualYgo=q=>q?.game==='ygo'&&!!q.releaseId;
-export const historyKey=q=>contextualYgo(q)?JSON.stringify([YGO_HISTORY_SCHEMA,q.game,q.cardId,q.finish,q.releaseId,q.edition||'',q.rarity||'',q.selectedEdition||'',q.currency||'']):[q.game,q.cardId,q.finish,...(q.edition?[q.edition,q.rarity || '']:[])].join('|');
+export const historyKey=q=>contextualYgo(q)?JSON.stringify([YGO_HISTORY_SCHEMA,q.game,q.cardId,q.finish,q.releaseId,q.edition||'',q.rarity||'',q.selectedEdition||'',q.currency||'']):[q.game,q.cardId,q.finish,...(q.productId?['product',String(q.productId)]:[]),...(q.edition?[q.edition,q.rarity || '']:[])].join('|');
 export const setHistoryRefresh=fn=>{refresh=fn;};
 export function validateHistory(data,q){
  if(data?.game!==q.game || data.cardId!==q.cardId || data.finish!==q.finish)throw Error('History printing mismatch');
+ if(q.productId&&data.productId&&String(q.productId)!==String(data.productId))throw Error('History product mismatch');
+ if(q.productId&&(data.series||[]).some(s=>s.productId&&String(s.productId)!==String(q.productId)))throw Error('History series product mismatch');
  if(contextualYgo(q)){
   if(!sameExactYgoHistoryIdentity(data,q)||!Array.isArray(data.series)||!['ready','empty','unsupported','unavailable'].includes(data.status))throw Error('Exact history identity mismatch');
   if(data.series.some(s=>!sameExactYgoHistoryIdentity(s,q)||ygoHistorySubtype(s.subtype)!==q.selectedEdition||!Number.isSafeInteger(s.productId)||s.productId<=0||typeof s.source!=='string'||!Array.isArray(s.points)))throw Error('Exact history series mismatch');
  }
- return {...data,series:(data.series || []).filter(s=>s.currency==='USD'&&s.finish===q.finish&&typeof s.source==='string').map(s=>({...s,points:[...new Map((s.points || []).filter(p=>/^\d{4}-\d{2}-\d{2}$/.test(p.date)&&Number.isFinite(p.value)&&p.value>=0&&p.value<=10000000&&Date.parse(p.date)<=Date.now()&&(!contextualYgo(q)||p.value>0&&new Date(p.date).toISOString().slice(0,10)===p.date)).map(p=>[p.date,p])).values()].sort((a,b)=>a.date.localeCompare(b.date)).slice(-366)}))};
+ return {...data,series:(data.series || []).filter(s=>s.currency==='USD'&&s.finish===q.finish&&typeof s.source==='string').map(s=>({...s,...(q.productId&&!s.productId&&!data.productId?{bindingStatus:'unbound-reference',source:s.source+' · product unverified reference'}:{}),points:[...new Map((s.points || []).filter(p=>/^\d{4}-\d{2}-\d{2}$/.test(p.date)&&Number.isFinite(p.value)&&p.value>=0&&p.value<=10000000&&Date.parse(p.date)<=Date.now()&&(!contextualYgo(q)||p.value>0&&new Date(p.date).toISOString().slice(0,10)===p.date)).map(p=>[p.date,p])).values()].sort((a,b)=>a.date.localeCompare(b.date)).slice(-366)}))};
 }
 function savedHistory(q){
  const key=historyKey(q),old=sharedHistory.get(key)||cached(key);
- if(!old||!contextualYgo(q))return old;
- try{return validateHistory(old,q);}catch{return null;}
+ if(!old||!contextualYgo(q)&&!q.productId)return old;
+ try{const verified=validateHistory(old,q);return contextualYgo(q)?verified:old;}catch{return null;}
 }
 // Older routes can report a provider/mapping failure in a successful HTTP
 // response. Empty history is verified only when that response really completed.
@@ -62,7 +64,7 @@ export async function loadSharedHistory(q){
   const valid=results.filter(r=>r.status==='fulfilled').map(r=>r.value),series=valid.flatMap(d=>d.series || []).filter(s=>s.points.length);
   const notices=valid.filter(d=>!d.series?.length&&d.notice).map(d=>d.notice);
   const states=valid.map(historyResponseStatus),status=series.length?'ready':results.some(r=>r.status==='rejected')||states.includes('unavailable')?'unavailable':states.includes('unsupported')?'unsupported':'empty';
-  let entry={game:q.game,cardId:q.cardId,finish:q.finish,...(exact?exactYgoHistoryIdentity(q):{}),status,series:series.length?series:old?.series || [],notice:series.length?'':notices.join(' ')||(status==='unavailable'?'Historical sources unavailable; your saved checks remain available.':''),checked:Date.now()};
+  let entry={game:q.game,cardId:q.cardId,finish:q.finish,...(q.productId?{productId:q.productId}:{}),...(exact?exactYgoHistoryIdentity(q):{}),status,series:series.length?series:old?.series || [],notice:series.length?'':notices.join(' ')||(status==='unavailable'?'Historical sources unavailable; your saved checks remain available.':''),checked:Date.now()};
   if(exact){
    const providerStates={},separate=[];
    for(const [index,provider] of ['archive','recent'].entries()){

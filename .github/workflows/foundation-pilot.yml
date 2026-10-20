@@ -1,0 +1,26 @@
+name: Foundation pilot
+on:
+  push:
+    branches: [codex/aquapolis-foundation-pilot]
+  workflow_dispatch:
+jobs:
+  aquapolis-rabsca:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: python -m unittest discover -s tests -p test_source_literals.py -v
+      - run: node tests/foundation-pilot-browser.mjs --validate-fixtures
+      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/foundation-pilot-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: foundation-pilot-evidence
+          path: test-results/

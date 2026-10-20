@@ -148,8 +148,10 @@ function ptcgGuide(c) {
     if (/\b(ex|EX|GX|V|VMAX|VSTAR)\b/.test(c.name)) tips.push("Rule Box Pokémon — your opponent takes extra Prize cards when it's Knocked Out, so protect it and don't trade it away cheaply.");
     if (c.stage === "Stage2") tips.push(`Stage 2 — evolves from ${c.evolveFrom || "a Stage 1"}. Rare Candy lets you skip the Stage 1 and evolve straight from the Basic.`);
     else if (c.stage === "Stage1") tips.push(`Stage 1 — evolves from ${c.evolveFrom || "a Basic Pokémon"}; play the Basic first and evolve next turn.`);
-    else tips.push("Basic Pokémon — you can put it straight onto your Bench or start with it.");
-    if ((c.abilities || []).length) tips.push(`Ability “${c.abilities[0].name}” — works without attacking; most abilities are used on your turn from the Bench too.`);
+    else if(c.stage==='Basic')tips.push("Basic Pokémon — you can put it straight onto your Bench or start with it.");
+    else if(c.stage==='LEVEL-UP')tips.push("LEVEL-UP — follow this card's Level-Up instructions; it is not an ordinary Basic or Evolution Pokémon.");
+    else tips.push("Placement rules incomplete — check the printed stage and setup instructions.");
+    if ((c.abilities || []).length) tips.push(`${c.abilities[0].type||'Ability'}${c.abilities[0].name?` “${c.abilities[0].name}”`:''} — check its printed activation condition and whether it requires the Active Spot, damage, or a particular timing.`);
     const big = [...(c.attacks || [])].sort((a, b) => (b.cost?.length || 0) - (a.cost?.length || 0))[0];
     if (big?.cost?.length) tips.push(`Its biggest attack “${big.name}” needs ${big.cost.length} Energy${big.damage ? ` for ${big.damage} damage` : ""} — plan your attachments a few turns ahead.`);
     if (Number(c.retreat) >= 3) tips.push(`Retreat cost ${c.retreat} — heavy; pair it with switching cards.`);
@@ -170,7 +172,8 @@ function structuralRoles(game, c) {
       ability = (c.abilities || []).length,
       rulebox = /\b(ex|EX|GX|V|VMAX|VSTAR)\b/.test(c.name || "");
     if (dmg >= 120 || (rulebox && dmg >= 90)) return [R("attacker", "Main attacker", `Hits for up to ${dmg} — built to take Knock Outs.`, "Power it up over a couple of turns (spread Energy across turns) and keep it safe on the Bench until it can attack.")];
-    if (ability && dmg < 90) return [R("support", "Support Pokémon", "Its Ability helps the rest of your deck more than its attacks do.", "Bench it early and use its Ability every turn; avoid putting it Active.")];
+    if (ability && dmg < 90) return [R("support", "Support Pokémon", "Its printed power may support your deck.", "Check the power's condition and timing before choosing the Bench or Active Spot; it may require being Active and damaged.")];
+    if(!['Basic','Stage1','Stage2'].includes(c.stage))return [];
     if (c.stage !== "Basic" || (c.stage === "Basic" && dmg < 60 && !ability && (c.retreat ?? 2) >= 1)) {
       if (c.stage === "Basic" && (c.retreat ?? 2) <= 1 && dmg < 60) return [R("pivot", "Pivot / starter", "A cheap Basic to start Active and retreat out of.", "Start with it Active, then retreat into your real attacker once it's ready.")];
       if (dmg < 90) return [R("step", "Evolution step", "Mostly a stepping stone toward its evolution.", "Bench it early so it can evolve next turn; don't spend Energy on its attacks unless you must.")];
@@ -214,7 +217,7 @@ export function playGuide(game, card) {
   // Pokémon always get their battlefield job; others only when their text gave no role.
   if (game === "ptcg" && card.category === "Pokemon") g.roles = [...structuralRoles(game, card), ...g.roles];
   else if (!g.roles.length) g.roles = structuralRoles(game, card);
-  g.rulesText = game === "mtg" ? (card.oracle_text || card.card_faces?.map(f => f.oracle_text || "").join("\n") || "") : game === "ygo" ? (/Normal Monster/.test(card.typeLine || "") ? "" : card.text || "") : [card.effect, ...(card.abilities || []).map(a => a.effect), ...(card.attacks || []).map(a => a.effect)].filter(Boolean).join("\n");
+  g.rulesText = game === "mtg" ? (card.oracle_text || card.card_faces?.map(f => f.oracle_text || "").join("\n") || "") : game === "ygo" ? (/Normal Monster/.test(card.typeLine || "") ? "" : card.text || "") : [card.effect, ...(card.heldItems||[]).map(a=>`Held item${a.name?` ${a.name}`:''}: ${a.effect||'Rules text unavailable'}`), ...(card.abilities || []).map(a => a.effect), ...(card.attacks || []).map(a => a.effect)].filter(Boolean).join("\n");
   return g;
 }
 
@@ -310,7 +313,7 @@ export function cardRules(game, c) {
     else if (kind === "Tool") turn.push("Pokémon Tool: play as many as you like, but each Pokémon can hold only one Tool.");
     else turn.push("Item: play as many as you like during your turn.");
   } else if (c.category === "Pokemon") {
-    turn.push(c.stage === "Basic" ? "Put Basic Pokémon onto your Bench any time on your turn (Bench limit: 5)." : "Evolve on your turn, but not on your first turn or on a Pokémon that came into play this turn — and once per Pokémon per turn.");
+    turn.push(c.stage === "Basic" ? "Put Basic Pokémon onto your Bench any time on your turn (Bench limit: 5)." : ['Stage1','Stage2'].includes(c.stage)?"Evolve on your turn, but not on your first turn or on a Pokémon that came into play this turn — and once per Pokémon per turn.":c.stage==='LEVEL-UP'?"Follow the printed Level-Up instructions; this is not ordinary evolution or Basic setup.":"Placement rules unavailable for this stage; check the printed card.");
     turn.push("Attach one Energy from your hand per turn. Attacking ends your turn; the player going first can't attack on their first turn.");
   } else if (c.category === "Energy") turn.push("You can attach one Energy card from your hand per turn.");
   for (const f of PTCG_FORMATS.filter((x) => x.id !== "unlimited")) {

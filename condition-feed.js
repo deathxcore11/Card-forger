@@ -1,7 +1,7 @@
 import {pokemonVariantProductConflict} from './pokemon-variant-options.js';
 // Read-only condition lookup, shared by forms and collection valuation. Each exact
 // version is requested once per hour, never once per camera frame.
-export const CONDITION_IDENTITY=['cardId','printingId','printing','rarity','variant','edition','finish','language'];
+export const CONDITION_IDENTITY=['cardId','printingId','printing','rarity','variant','edition','finish','language','productId'];
 const attempted=new Map();
 let accessToken=async()=>'';
 export function configureConditionAuth(readToken){accessToken=readToken;}

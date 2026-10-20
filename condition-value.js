@@ -10,13 +10,13 @@ export function lastKnownConditionQuote(entry={},quotes=[],now=Date.now()){
  if(entry.graded)return null;
  return quotes.filter(q=>['current','last_known'].includes(q.priceStatus)&&q.currency==='USD'&&amount(q.price)!==null&&conditionName(q.condition)===conditionName(entry.condition)&&
   (q.priceStatus==='last_known'||Date.parse(q.validUntil)<=now)&&quoteTime(q)>now-30*86400000&&quoteTime(q)<=now+300000&&
-  ['cardId','printingId','printing','rarity','variant','edition','finish','language'].every(k=>String(q[k]||'')===String(entry[k]||''))).sort((a,b)=>quoteTime(b)-quoteTime(a))[0]||null;
+  ['cardId','printingId','printing','rarity','variant','edition','finish','language','productId'].every(k=>String(q[k]||'')===String(entry[k]||''))).sort((a,b)=>quoteTime(b)-quoteTime(a))[0]||null;
 }
 export function conditionValue(reference,entry={},quotes=[]){
  const condition=conditionName(entry.condition),manual=amount(entry.manualValue);
  if(manual!==null&&entry.manualValueCondition&&conditionName(entry.manualValueCondition)===condition)return {price:manual,kind:'manual',condition};
  if(entry.graded)return {price:null,kind:'unpriced-condition',condition};
- const quote=quotes.find(q=>(!q.validUntil||Date.parse(q.validUntil)>Date.now())&&(!q.priceStatus||q.priceStatus==='current')&&conditionName(q.condition)===condition&&q.currency==='USD'&&amount(q.price)!==null&&['cardId','printingId','printing','rarity','variant','edition','finish','language'].every(k=>String(q[k]||'')===String(entry[k]||'')));
+ const quote=quotes.find(q=>(!q.validUntil||Date.parse(q.validUntil)>Date.now())&&(!q.priceStatus||q.priceStatus==='current')&&conditionName(q.condition)===condition&&q.currency==='USD'&&amount(q.price)!==null&&['cardId','printingId','printing','rarity','variant','edition','finish','language','productId'].every(k=>String(q[k]||'')===String(entry[k]||'')));
  if(quote)return {price:amount(quote.price),kind:'condition-quote',condition,quote};
  return {price:condition==='Near Mint'?amount(reference):null,kind:condition==='Near Mint'?'reference':'unpriced-condition',condition};
 }

@@ -1,3 +1,4 @@
+import {POKEMON_VARIANT_SCHEMA} from './pokemon-variant-options.js';
 import assert from 'node:assert/strict';
 import {normalizePtcg,normalizePtcgBrief,plainText} from './ptcg.js';
 import {pokemonCatalogueFallback,pokemonCatalogueOverlay,pokemonCatalogueSet} from './pokemon-catalogue-supplement.js';
@@ -20,7 +21,7 @@ const broken='Discard a Energy card, a Energy card, and a Energy card attached t
 const corrected='Discard a Fire Energy card, a Water Energy card, and a Lightning Energy card attached to Lugia in order to use this attack.';
 const lugia={id:'neo1-9',name:'Lugia',localId:'9',category:'Pokemon',set:{id:'neo1',name:'Neo Genesis',cardCount:{official:111}},attacks:[{name:'Elemental Blast',cost:['Fire','Water','Lightning'],damage:90,effect:broken}]};
 const normalized=normalizePtcg(lugia);
-assert.equal(normalized.variantSchema,12);
+assert.equal(normalized.variantSchema,POKEMON_VARIANT_SCHEMA);
 assert.equal(normalized.attacks[0].effect,corrected);
 assert.equal(normalized.attacks[0].sourceEffect,broken);
 assert.match(normalized.attacks[0].effectProvenance.url,/neo1\/9_hires\.png$/);

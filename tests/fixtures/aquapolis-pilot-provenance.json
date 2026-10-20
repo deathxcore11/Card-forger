@@ -1,0 +1,2241 @@
+{
+  "schema": 1,
+  "sourceCommit": "cbddf7e54033b1b58e44af1049c88832e55b94d0",
+  "apiDeploymentCommit": "unknown",
+  "fixture": "tests/fixtures/aquapolis-pilot-v1.json.gz",
+  "sha256": "8716c1eff500ac71c0027c945fbe563db392c257c36ffafc6ac7abe34101b4d9",
+  "sourceResponses": [
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/1.ts",
+      "sha256": "b584db9bdefc998cd778d338c15fbbccff5dff9a13b377c1c8c568c700586683",
+      "retrievedAt": "2026-10-20T14:14:48.485477+00:00",
+      "retainedFileName": "ecard2-1.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-1",
+      "sha256": "93838569c10134d59dbd1886d4a62906d1c254b6c92ccfbf8ab55202ac05f9a7",
+      "retrievedAt": "2026-10-20T14:14:47.579192+00:00",
+      "retainedFileName": "ecard2-1.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/10.ts",
+      "sha256": "488a74ec0e5c69b2aa56408513b2017a2fed7f1871b4b42966f9dd54336109b9",
+      "retrievedAt": "2026-10-20T14:14:48.659447+00:00",
+      "retainedFileName": "ecard2-10.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-10",
+      "sha256": "e397f7231859bde64248ba41b02ddfae08c7e89564e518af9e5918deee99e1e0",
+      "retrievedAt": "2026-10-20T14:14:47.535885+00:00",
+      "retainedFileName": "ecard2-10.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/100.ts",
+      "sha256": "c00f2490c1cd88dda8369f2bb83bdc7d0715eb06b927bd758beaf8995231477a",
+      "retrievedAt": "2026-10-20T14:14:48.488565+00:00",
+      "retainedFileName": "ecard2-100.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-100",
+      "sha256": "1f54895393650606344308d1f9106bf298643abe1f15ab28570d554faa88391f",
+      "retrievedAt": "2026-10-20T14:14:47.606469+00:00",
+      "retainedFileName": "ecard2-100.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/101.ts",
+      "sha256": "43cc2440de73724fca4d664c3157469c6455a1d9fc27594b94b0584b0152ce21",
+      "retrievedAt": "2026-10-20T14:14:48.541073+00:00",
+      "retainedFileName": "ecard2-101.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-101",
+      "sha256": "2cbda9730dae770673714c2961eb36271c675e9b39a2e580daf221d5cb4cfaed",
+      "retrievedAt": "2026-10-20T14:14:50.089261+00:00",
+      "retainedFileName": "ecard2-101.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/102.ts",
+      "sha256": "d555a5b719847ab01e55cc6d1e0b2d369722444f15be2c4cbfd2ac966b4c5c1f",
+      "retrievedAt": "2026-10-20T14:14:48.554402+00:00",
+      "retainedFileName": "ecard2-102.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-102",
+      "sha256": "3f2d550643603430cc2b4af0c7d6b5919ff96b59a984d63c3a47ddc278c16cc2",
+      "retrievedAt": "2026-10-20T14:14:50.130508+00:00",
+      "retainedFileName": "ecard2-102.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/103a.ts",
+      "sha256": "aaf2dab857bf643d0f920f106c90156be61e565047faca6e6f34da94159c7edf",
+      "retrievedAt": "2026-10-20T14:14:51.627541+00:00",
+      "retainedFileName": "ecard2-103a.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-103a",
+      "sha256": "79fcfe33ab5cf3067e30a7868d1c5f09151a2ca0bb5dfcc9544a03ce9df51c39",
+      "retrievedAt": "2026-10-20T14:14:50.161152+00:00",
+      "retainedFileName": "ecard2-103a.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/103b.ts",
+      "sha256": "aaf2dab857bf643d0f920f106c90156be61e565047faca6e6f34da94159c7edf",
+      "retrievedAt": "2026-10-20T14:14:51.616767+00:00",
+      "retainedFileName": "ecard2-103b.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-103b",
+      "sha256": "7de4eec102063956727d3348a74390026a1e090f6af58e65955a61aba0919fe9",
+      "retrievedAt": "2026-10-20T14:14:50.161704+00:00",
+      "retainedFileName": "ecard2-103b.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/104.ts",
+      "sha256": "cdb4dff43c8a4a63677c410cb0a0fda7956e6eaa79e46c7f48526939a776e2e8",
+      "retrievedAt": "2026-10-20T14:14:51.694054+00:00",
+      "retainedFileName": "ecard2-104.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-104",
+      "sha256": "60e0c8c8acc5acdad37c9ff09db17e9cf2ebbaf962f22cb2370965347fabfee1",
+      "retrievedAt": "2026-10-20T14:14:53.061275+00:00",
+      "retainedFileName": "ecard2-104.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/105.ts",
+      "sha256": "84aa7b51a40152ac61a1d3baa85ebfb0e9417ff8daff047f820b924b2f791d9e",
+      "retrievedAt": "2026-10-20T14:14:51.566591+00:00",
+      "retainedFileName": "ecard2-105.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-105",
+      "sha256": "3a5accf79cd4e2d223d139b4926046ce124974c52a89660b145d3d724557e118",
+      "retrievedAt": "2026-10-20T14:14:52.991388+00:00",
+      "retainedFileName": "ecard2-105.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/106.ts",
+      "sha256": "ed2f999ca786b505cc427d0c46f03be286efdeef234d1d6de3fb3b0a5ef0e8db",
+      "retrievedAt": "2026-10-20T14:14:55.571356+00:00",
+      "retainedFileName": "ecard2-106.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-106",
+      "sha256": "2e1d8d33aa743a48e3159bb6374fa7bc56653c46f7c1d907a5e30ecd6526f67d",
+      "retrievedAt": "2026-10-20T14:14:52.991719+00:00",
+      "retainedFileName": "ecard2-106.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/107.ts",
+      "sha256": "1ae12884a97846a453e5274866991e35e847311336742ff71a869cd1d5beefb7",
+      "retrievedAt": "2026-10-20T14:14:55.450439+00:00",
+      "retainedFileName": "ecard2-107.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-107",
+      "sha256": "c0f1806affa468896e86605694d9d6cd625b97c25f30b553918208def392abc7",
+      "retrievedAt": "2026-10-20T14:14:53.039969+00:00",
+      "retainedFileName": "ecard2-107.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/108.ts",
+      "sha256": "f3ee8c924c1f680ab2ef3ee3870a62b0cbdfc823d1b51f622e3a5707939a02fb",
+      "retrievedAt": "2026-10-20T14:14:55.473199+00:00",
+      "retainedFileName": "ecard2-108.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-108",
+      "sha256": "6f41bf98833e910bbb9a678d37f6eb17b44591a3b7d2f400741c5347b80b761d",
+      "retrievedAt": "2026-10-20T14:14:55.770284+00:00",
+      "retainedFileName": "ecard2-108.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/109.ts",
+      "sha256": "8fc193a6d64f53dc5b832113caf5bc8cd84e9d5ea271caea0d9c46281eb723d3",
+      "retrievedAt": "2026-10-20T14:14:55.525248+00:00",
+      "retainedFileName": "ecard2-109.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-109",
+      "sha256": "bcfdc898c2ff7bc9d8dcf470e74ac10f3f423e05bde842fbc9fb8feef20a576a",
+      "retrievedAt": "2026-10-20T14:14:55.759655+00:00",
+      "retainedFileName": "ecard2-109.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/11.ts",
+      "sha256": "951da4dbe0c67549408b6c9a9f2c96388b0bcc81633df7bab4255a59be5db8cd",
+      "retrievedAt": "2026-10-20T14:14:58.798362+00:00",
+      "retainedFileName": "ecard2-11.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-11",
+      "sha256": "78afcb3d31e6c3d0b81d352b44bb4476fae3d789a9401b65bcbc1252d25d7dc9",
+      "retrievedAt": "2026-10-20T14:14:55.688576+00:00",
+      "retainedFileName": "ecard2-11.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/110.ts",
+      "sha256": "e16a3d67dac26ec79191a1e67fcd83f29eaac76f8e62086075c78f58b584e0d4",
+      "retrievedAt": "2026-10-20T14:14:58.847575+00:00",
+      "retainedFileName": "ecard2-110.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-110",
+      "sha256": "90e02d05548c693fdc65e764d59a582ead1b1eb9a9f5cf2ecbe030951594fbbb",
+      "retrievedAt": "2026-10-20T14:15:04.800721+00:00",
+      "retainedFileName": "ecard2-110.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/111.ts",
+      "sha256": "25a384ba52e630b3b78b72200e45bb6bec1b407d00f7667d0a1ac58af4ff0b04",
+      "retrievedAt": "2026-10-20T14:14:58.882113+00:00",
+      "retainedFileName": "ecard2-111.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-111",
+      "sha256": "d15c0a558e9cdb6acba83da107c3504ea04834449da909a080e0f3474dd39997",
+      "retrievedAt": "2026-10-20T14:15:04.867155+00:00",
+      "retainedFileName": "ecard2-111.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/112.ts",
+      "sha256": "1a8b498fa7c946935fd52ab6cbc4b1f40c942c2e6e218a7b7964c255db3c7ec1",
+      "retrievedAt": "2026-10-20T14:14:58.782220+00:00",
+      "retainedFileName": "ecard2-112.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-112",
+      "sha256": "00a04706c8b8a7bacfe3a6baafcf86e417306f2af0cfb135cf6190877b157f0b",
+      "retrievedAt": "2026-10-20T14:15:04.910555+00:00",
+      "retainedFileName": "ecard2-112.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/113.ts",
+      "sha256": "adf83603f34b1ed04ace804df8e8a366ba54cef79dada349394eefe158d99ae1",
+      "retrievedAt": "2026-10-20T14:15:02.411701+00:00",
+      "retainedFileName": "ecard2-113.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-113",
+      "sha256": "13bf3a80f7822cca7ab269d2badabf44c1e60926eff1ea130f610c8abdb22197",
+      "retrievedAt": "2026-10-20T14:15:04.797827+00:00",
+      "retainedFileName": "ecard2-113.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/114.ts",
+      "sha256": "d8ada1add3c43a1cf5374640fa85261a5964034b8a528c77ab1dbedc425fb328",
+      "retrievedAt": "2026-10-20T14:15:02.410951+00:00",
+      "retainedFileName": "ecard2-114.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-114",
+      "sha256": "44d7c7bc1256fa0ab633903315397aaec1b790dee73128505ac6aa04b762ceb0",
+      "retrievedAt": "2026-10-20T14:15:04.799459+00:00",
+      "retainedFileName": "ecard2-114.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/115.ts",
+      "sha256": "cf712cfc16e9d01013e47a732e5f3ce43d06e874c42f8801175b4481edb0df60",
+      "retrievedAt": "2026-10-20T14:15:05.267825+00:00",
+      "retainedFileName": "ecard2-115.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-115",
+      "sha256": "debf2eb8c7b1a4605d9bdef58bf63d22ff5c4bf986011f6eb150a7a9ae661134",
+      "retrievedAt": "2026-10-20T14:15:08.747323+00:00",
+      "retainedFileName": "ecard2-115.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/116.ts",
+      "sha256": "719c0501c07a751c5a6f8402ffdf5bc9a3b57f2d97a9a8eb7e5cd443db2c178c",
+      "retrievedAt": "2026-10-20T14:15:05.271302+00:00",
+      "retainedFileName": "ecard2-116.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-116",
+      "sha256": "6a9e3b005d1a52a7e389960287b91d7d728945b95a7e98fe0b9f1a24c619b143",
+      "retrievedAt": "2026-10-20T14:15:08.858529+00:00",
+      "retainedFileName": "ecard2-116.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/117.ts",
+      "sha256": "4e6982e4bc70c55b836c4335e38d6a045c0126ac39e89455850d764c573b56f7",
+      "retrievedAt": "2026-10-20T14:15:05.306482+00:00",
+      "retainedFileName": "ecard2-117.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-117",
+      "sha256": "805e60173e6ec218e6d5d09a91a0e4a01bb4bff2199f73225b301889bdec7a21",
+      "retrievedAt": "2026-10-20T14:15:08.748316+00:00",
+      "retainedFileName": "ecard2-117.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/118.ts",
+      "sha256": "8da8aba3e7054551576a34f691eed6af2f591839749b9edf473c257a2c9c83e2",
+      "retrievedAt": "2026-10-20T14:15:08.754140+00:00",
+      "retainedFileName": "ecard2-118.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-118",
+      "sha256": "0bd2b710923d457e8ffdcf655c6b8476209e8161700ead08efbf1739a5536b9a",
+      "retrievedAt": "2026-10-20T14:15:08.747964+00:00",
+      "retainedFileName": "ecard2-118.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/119.ts",
+      "sha256": "79eece752c793c6163925297ce1b5bbd9ff2205301b97b7f10810ecab6ab88c4",
+      "retrievedAt": "2026-10-20T14:15:08.769641+00:00",
+      "retainedFileName": "ecard2-119.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-119",
+      "sha256": "26363a10cf6d54101479e3de08f309ecdc01a1efe5d09b23b1ddd8178dac2877",
+      "retrievedAt": "2026-10-20T14:15:11.926500+00:00",
+      "retainedFileName": "ecard2-119.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/12.ts",
+      "sha256": "f757c5fa4d647635793327847b5bd6d473aeeb83f8cb3c51d1175510fe81913e",
+      "retrievedAt": "2026-10-20T14:15:11.558650+00:00",
+      "retainedFileName": "ecard2-12.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-12",
+      "sha256": "ef9474543fac033ef2367ba48d91d6c95157eba24491887c1f46fbf53bbb1846",
+      "retrievedAt": "2026-10-20T14:15:11.953609+00:00",
+      "retainedFileName": "ecard2-12.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/120.ts",
+      "sha256": "50009bb6d0b8b6ec989cb724bb638efcd16b9974090a6700d49ad4a44f9ddfd8",
+      "retrievedAt": "2026-10-20T14:15:11.546126+00:00",
+      "retainedFileName": "ecard2-120.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-120",
+      "sha256": "963853beb62f5ffdd70829617f8cd6995d2b043ef1c9b609a06468532555e238",
+      "retrievedAt": "2026-10-20T14:15:11.954114+00:00",
+      "retainedFileName": "ecard2-120.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/121.ts",
+      "sha256": "d409d732d9a0ee506aa71a4ad87f8ac765b6cc9845bc0ca87c6e985cd0f5464d",
+      "retrievedAt": "2026-10-20T14:15:11.499814+00:00",
+      "retainedFileName": "ecard2-121.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-121",
+      "sha256": "c002dd0a94e30c267378b48f81f06357b6a51677455af3c857df5728ca280aca",
+      "retrievedAt": "2026-10-20T14:15:12.021941+00:00",
+      "retainedFileName": "ecard2-121.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/122.ts",
+      "sha256": "8b91f83d7cc23cd065f45cc623763db93059247422a6227cbdb1792c92802590",
+      "retrievedAt": "2026-10-20T14:15:14.330405+00:00",
+      "retainedFileName": "ecard2-122.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-122",
+      "sha256": "153a0efc0b1927ddd4117f2155e0a15609b3a9f3468d0852a950e85d28af8e41",
+      "retrievedAt": "2026-10-20T14:15:11.881921+00:00",
+      "retainedFileName": "ecard2-122.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/123.ts",
+      "sha256": "450cba06bbc4d3431027a520b58d7248ce3c95658d2863eff27e6717280df2d2",
+      "retrievedAt": "2026-10-20T14:15:14.333695+00:00",
+      "retainedFileName": "ecard2-123.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-123",
+      "sha256": "f84bd2c9b3fffcd17cd7f2476d938b316ffc0db0fee207af737bd1f3d5c5d3fa",
+      "retrievedAt": "2026-10-20T14:15:17.568642+00:00",
+      "retainedFileName": "ecard2-123.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/124.ts",
+      "sha256": "0fcddf2da4f8b985795ba73904ad93c0a9f69f35f213c880f86fa42ef3a02a3e",
+      "retrievedAt": "2026-10-20T14:15:14.366362+00:00",
+      "retainedFileName": "ecard2-124.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-124",
+      "sha256": "6948a890361c960fdc145087e50c772b91f107351ea254e51005cde396c59e3b",
+      "retrievedAt": "2026-10-20T14:15:17.618412+00:00",
+      "retainedFileName": "ecard2-124.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/125.ts",
+      "sha256": "16cb01eea6f35b8364fa468d08e11b33b191d3334f7e63c3524fdbb8f70d0551",
+      "retrievedAt": "2026-10-20T14:15:14.295343+00:00",
+      "retainedFileName": "ecard2-125.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-125",
+      "sha256": "6f8f13d3c9e8def17a7bcf9dab0074e1b468edcf24ede00410b0a82c2531358c",
+      "retrievedAt": "2026-10-20T14:15:17.578294+00:00",
+      "retainedFileName": "ecard2-125.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/126.ts",
+      "sha256": "3d06fb430aeb92b5b70cb30f919f7428d642964d7ff1e440a65da87ec12a2be0",
+      "retrievedAt": "2026-10-20T14:15:19.609243+00:00",
+      "retainedFileName": "ecard2-126.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-126",
+      "sha256": "04cd71faefc0c436cbdba5d34fea6dced52d1e8b1de354c82767dd52fb10ac9a",
+      "retrievedAt": "2026-10-20T14:15:17.497654+00:00",
+      "retainedFileName": "ecard2-126.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/127.ts",
+      "sha256": "ac37cc2b171eea8fa3b555cc214f2ed1de6ee971dab1ee5a217e63d57284d470",
+      "retrievedAt": "2026-10-20T14:15:19.655396+00:00",
+      "retainedFileName": "ecard2-127.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-127",
+      "sha256": "7bc0d94a6bae56d5b2065ff9d87fc88104ae72a746b5b1c0a7397e6ad3101fa6",
+      "retrievedAt": "2026-10-20T14:15:21.711275+00:00",
+      "retainedFileName": "ecard2-127.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/128.ts",
+      "sha256": "2f07c37f716dc4d64f714a8b2ec842244a85e3e841fd5c820bdd1d0ab63975e0",
+      "retrievedAt": "2026-10-20T14:15:19.612495+00:00",
+      "retainedFileName": "ecard2-128.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-128",
+      "sha256": "7f157ff939dc9366bfc8777c880ca133666b237556754b28751fd8e468beae5a",
+      "retrievedAt": "2026-10-20T14:15:21.686249+00:00",
+      "retainedFileName": "ecard2-128.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/129.ts",
+      "sha256": "da1e5c2ef459eac62239db491633cccc3d1affc4b0736f562c16b5cbc5297c80",
+      "retrievedAt": "2026-10-20T14:15:19.674383+00:00",
+      "retainedFileName": "ecard2-129.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-129",
+      "sha256": "60050186518f430c50a2b9fdb9950d7a87c77fbddc7c5aedb8d385c7eadd0c11",
+      "retrievedAt": "2026-10-20T14:15:21.646769+00:00",
+      "retainedFileName": "ecard2-129.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/13.ts",
+      "sha256": "e029a32d8890ef45ac6c59d78292701b53ba8ad7ccfd9669afafee67af701d83",
+      "retrievedAt": "2026-10-20T14:15:23.042670+00:00",
+      "retainedFileName": "ecard2-13.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-13",
+      "sha256": "032baa706376241b3b63ecd9bae8d1de56cb7a3830c6c02dd3d70a60de5bad4e",
+      "retrievedAt": "2026-10-20T14:15:21.683130+00:00",
+      "retainedFileName": "ecard2-13.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/130.ts",
+      "sha256": "b71d40ea0f4292b25e3e829647a4c02e0b9b560a6c2d1cb9ab1b12d2014ef784",
+      "retrievedAt": "2026-10-20T14:15:22.943956+00:00",
+      "retainedFileName": "ecard2-130.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-130",
+      "sha256": "af540a304938dc4940bd4c9771765f61698404b9f9f66d799f982e93fdecaa40",
+      "retrievedAt": "2026-10-20T14:15:26.069408+00:00",
+      "retainedFileName": "ecard2-130.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/131.ts",
+      "sha256": "04ea292d2ff8171731e6681511ae2e7719d3e26c86ff6cde5c61a3dd1ebf85a4",
+      "retrievedAt": "2026-10-20T14:15:22.995158+00:00",
+      "retainedFileName": "ecard2-131.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-131",
+      "sha256": "b1ba84f6fac0dadfd95818dd6ea952c70a0f425dcc18e9af4b707a774e8eb873",
+      "retrievedAt": "2026-10-20T14:15:26.086371+00:00",
+      "retainedFileName": "ecard2-131.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/132.ts",
+      "sha256": "e7139f4d533232121af4ae7dc8e61a6e0dfd7f4adb0b198577cf6a5599e42633",
+      "retrievedAt": "2026-10-20T14:15:23.012442+00:00",
+      "retainedFileName": "ecard2-132.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-132",
+      "sha256": "fd5b405dbf54bc625758062d96280f136522c504eb5c0b2e4f0cfe2d6c59dc46",
+      "retrievedAt": "2026-10-20T14:15:26.038476+00:00",
+      "retainedFileName": "ecard2-132.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/133.ts",
+      "sha256": "6aeca97ec9c71474d81951a93115e280a21a0506fa6e5181b750e3e077b23d15",
+      "retrievedAt": "2026-10-20T14:15:26.504979+00:00",
+      "retainedFileName": "ecard2-133.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-133",
+      "sha256": "ec7d091cced1c5ed5c50a1d135a6f71a10cf115ba2d8b903e7c98e7c4ba1f6a9",
+      "retrievedAt": "2026-10-20T14:15:26.069957+00:00",
+      "retainedFileName": "ecard2-133.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/134.ts",
+      "sha256": "a52282ec3b60433d64ec556de37f0bc642f77dcf56ee4f950897c34d74e96b07",
+      "retrievedAt": "2026-10-20T14:15:26.485098+00:00",
+      "retainedFileName": "ecard2-134.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-134",
+      "sha256": "ca7e81b350ce0a42773e3fb8d004540ebb5aed9d5fd66f35d2901d6824996744",
+      "retrievedAt": "2026-10-20T14:15:30.269431+00:00",
+      "retainedFileName": "ecard2-134.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/135.ts",
+      "sha256": "865db95ecca75dbafa7c4e2d707a0d0dcb17af2668b34e2d93d9d99604a1e2fe",
+      "retrievedAt": "2026-10-20T14:15:26.538509+00:00",
+      "retainedFileName": "ecard2-135.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-135",
+      "sha256": "4a071614247b3d061a7df86013f15ca6ee4271bf323b00a4c851cb37a6760e3d",
+      "retrievedAt": "2026-10-20T14:15:30.199697+00:00",
+      "retainedFileName": "ecard2-135.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/136.ts",
+      "sha256": "6f2d0881632703650aee32061fe279b59049392ddffe5b0d2f34539980ac8c54",
+      "retrievedAt": "2026-10-20T14:15:26.484245+00:00",
+      "retainedFileName": "ecard2-136.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-136",
+      "sha256": "bf520748c3e36cd7b1e5fd68262dfa6ed96060220d5152fa5fc4e72464018b45",
+      "retrievedAt": "2026-10-20T14:15:30.270437+00:00",
+      "retainedFileName": "ecard2-136.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/137.ts",
+      "sha256": "619e47ddde26185d91222c719c953ab0137f9c9cd194f6fb9fd9192e29c67ff9",
+      "retrievedAt": "2026-10-20T14:15:29.317315+00:00",
+      "retainedFileName": "ecard2-137.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-137",
+      "sha256": "62e23948ad09252d396ba7a5a3f6736d928a5f76c119829696dfae65f5c694f4",
+      "retrievedAt": "2026-10-20T14:15:30.337287+00:00",
+      "retainedFileName": "ecard2-137.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/138.ts",
+      "sha256": "1e73f1fc4dd36dfe3a10b20252b6026e3b3aa3e211f789f7623f4a3c602d6446",
+      "retrievedAt": "2026-10-20T14:15:29.328870+00:00",
+      "retainedFileName": "ecard2-138.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-138",
+      "sha256": "7452e21be93de94d2314323736d50b4a53b072e8cfa0ebd6f43b2f41d857a09f",
+      "retrievedAt": "2026-10-20T14:15:30.198563+00:00",
+      "retainedFileName": "ecard2-138.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/139.ts",
+      "sha256": "43b1f48efb23cd47928d88f2e4487384a28e67119a91006c2a569d640fbbb27d",
+      "retrievedAt": "2026-10-20T14:15:33.179052+00:00",
+      "retainedFileName": "ecard2-139.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-139",
+      "sha256": "b8b9c914afb750fe03c1b63691de7b78e8b6b73e010e4b72edd11a9222ccb126",
+      "retrievedAt": "2026-10-20T14:15:32.603854+00:00",
+      "retainedFileName": "ecard2-139.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/14.ts",
+      "sha256": "e3720bc2c0b1d070b0dff8dc1b4f131f465ef566f115714279742d26a26ee3bd",
+      "retrievedAt": "2026-10-20T14:15:33.266280+00:00",
+      "retainedFileName": "ecard2-14.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-14",
+      "sha256": "3e5e8c7e8ddb215e334af1b294e38b1c9d3f5fae9ef33bc80237c06f80559554",
+      "retrievedAt": "2026-10-20T14:15:32.671819+00:00",
+      "retainedFileName": "ecard2-14.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/140.ts",
+      "sha256": "2ce1d6ed96bf25a51d20d93b1c1d1fde01c107fc35fb96871c381543a2c34dad",
+      "retrievedAt": "2026-10-20T14:15:33.248222+00:00",
+      "retainedFileName": "ecard2-140.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-140",
+      "sha256": "a1e2fb67ffe7f5f122abf53d3640ef5c566dcc6ce4a66e03b47904254e923eb6",
+      "retrievedAt": "2026-10-20T14:15:32.603476+00:00",
+      "retainedFileName": "ecard2-140.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/141.ts",
+      "sha256": "1724df047d1ecabb382132e63b976c76d26e46125b9d67527d733f150f485899",
+      "retrievedAt": "2026-10-20T14:15:33.203327+00:00",
+      "retainedFileName": "ecard2-141.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-141",
+      "sha256": "10595c21256c6686dd7963bb8e87a16f4f713e52bef66bce4cd934e2b7de752a",
+      "retrievedAt": "2026-10-20T14:15:35.563289+00:00",
+      "retainedFileName": "ecard2-141.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/142.ts",
+      "sha256": "b09b18f29bcbb1e1aab3af2b65246f8eb55608aa91a11b0f73cb2d79e4760900",
+      "retrievedAt": "2026-10-20T14:15:33.234155+00:00",
+      "retainedFileName": "ecard2-142.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-142",
+      "sha256": "83813c3380778429cfbc629cf7de02aabfc6f1d54767710feb578fe87ed47f32",
+      "retrievedAt": "2026-10-20T14:15:35.542331+00:00",
+      "retainedFileName": "ecard2-142.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/143.ts",
+      "sha256": "8a5916a7b84888c2c280c96b486a60d646505cda67879a96406b879870c44025",
+      "retrievedAt": "2026-10-20T14:15:39.937145+00:00",
+      "retainedFileName": "ecard2-143.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-143",
+      "sha256": "e7e43ceb753932d8dcd8e20e5858953a01db8d5cfe9c791434e7ba86e29e01cd",
+      "retrievedAt": "2026-10-20T14:15:35.495352+00:00",
+      "retainedFileName": "ecard2-143.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/144.ts",
+      "sha256": "a376fb2eb66b066eb801fcbca0f0194459c12f7e41f29aebef545be524d5681a",
+      "retrievedAt": "2026-10-20T14:15:39.931651+00:00",
+      "retainedFileName": "ecard2-144.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-144",
+      "sha256": "1e2a48c35ff9573304b4f1c112b0ed8481420160fa9b999617e9be4c83f116f9",
+      "retrievedAt": "2026-10-20T14:15:35.496774+00:00",
+      "retainedFileName": "ecard2-144.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/145.ts",
+      "sha256": "5857e956e209d3e46026259abd9faa31e7b3740a299d67e4c4943ab51fcce5bb",
+      "retrievedAt": "2026-10-20T14:15:39.879431+00:00",
+      "retainedFileName": "ecard2-145.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-145",
+      "sha256": "67c596776847d62c72ace083f3b9b4977f852be133a719d4a206d28440336e24",
+      "retrievedAt": "2026-10-20T14:15:38.313827+00:00",
+      "retainedFileName": "ecard2-145.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/146.ts",
+      "sha256": "72b860ead8bac344d709a31bd00a26a23c554e00cd1719e1202e6ec52b827dcf",
+      "retrievedAt": "2026-10-20T14:15:40.022268+00:00",
+      "retainedFileName": "ecard2-146.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-146",
+      "sha256": "709a8c1a12efd63d1b49cdc06fce66d5cb3d863c0d490f940dfb3cd388b1bdd6",
+      "retrievedAt": "2026-10-20T14:15:38.384968+00:00",
+      "retainedFileName": "ecard2-146.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/147.ts",
+      "sha256": "7e713431e89f36bedf63b443d43911d8ba709b546f316fdf9ff4214f5b4029ce",
+      "retrievedAt": "2026-10-20T14:15:39.870979+00:00",
+      "retainedFileName": "ecard2-147.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-147",
+      "sha256": "1b3c12315df39b6df32e1d58a694e5b7dee06a64da9bca0bbb015ba1843ab977",
+      "retrievedAt": "2026-10-20T14:15:41.313160+00:00",
+      "retainedFileName": "ecard2-147.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/148.ts",
+      "sha256": "8b735bc6eb2b54c94826fa94375c553669ff56546081155f759ed002341cbf7e",
+      "retrievedAt": "2026-10-20T14:15:43.850557+00:00",
+      "retainedFileName": "ecard2-148.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-148",
+      "sha256": "5b168356c19d026ea93c8aebebc69ef73aace1616d1efb7e6163fce16a9e57a8",
+      "retrievedAt": "2026-10-20T14:15:41.311602+00:00",
+      "retainedFileName": "ecard2-148.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/149.ts",
+      "sha256": "09ee872ad6ba067256ae6c9412063c749bbbac4c64440086622aa9ea6327d4bd",
+      "retrievedAt": "2026-10-20T14:15:43.870693+00:00",
+      "retainedFileName": "ecard2-149.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-149",
+      "sha256": "0a03c6a46993ff5175eb3d8a717ba74602de23fb1ec7f327f6d4ef167c26d3e3",
+      "retrievedAt": "2026-10-20T14:15:41.312518+00:00",
+      "retainedFileName": "ecard2-149.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/15.ts",
+      "sha256": "699d33b4ce428ebdd8fa0d42984ce22c20f4475793299ea1a38754374545fc8f",
+      "retrievedAt": "2026-10-20T14:15:43.832098+00:00",
+      "retainedFileName": "ecard2-15.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-15",
+      "sha256": "a08132e5ad6879acaaa14ec75e6f325411ffc3aa664358a5d4381705b59bba8f",
+      "retrievedAt": "2026-10-20T14:15:45.076652+00:00",
+      "retainedFileName": "ecard2-15.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/150.ts",
+      "sha256": "98fe236278af7f872dcfee3a11f272553d1cdee5855361a399dcd8f15221bdad",
+      "retrievedAt": "2026-10-20T14:15:43.898469+00:00",
+      "retainedFileName": "ecard2-150.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-150",
+      "sha256": "470c9dace1db7304ae2c1dba4bb5e713ef571480e081bd2d2472f39665c332e3",
+      "retrievedAt": "2026-10-20T14:15:45.147925+00:00",
+      "retainedFileName": "ecard2-150.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/16.ts",
+      "sha256": "156ae76e06f919e53a2bdf9f5ecf58030a50b2c7d220c02df60d0a8e438d12d4",
+      "retrievedAt": "2026-10-20T14:15:46.695160+00:00",
+      "retainedFileName": "ecard2-16.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-16",
+      "sha256": "5213f517c9fb1a938e6123c65566b8c8690eddc5d9e0129b908917931ff8f2fd",
+      "retrievedAt": "2026-10-20T14:15:45.148302+00:00",
+      "retainedFileName": "ecard2-16.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/17.ts",
+      "sha256": "016c3df16d2c3a903a7b162e3466451291dc5492642e9724bc6c8bd2e38b1b43",
+      "retrievedAt": "2026-10-20T14:15:46.656964+00:00",
+      "retainedFileName": "ecard2-17.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-17",
+      "sha256": "eb1849de4754fd7158987fc811d5a2d2de25277870dee25cb870261c7d35f69c",
+      "retrievedAt": "2026-10-20T14:15:45.116823+00:00",
+      "retainedFileName": "ecard2-17.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/18.ts",
+      "sha256": "8d2cd59f4b16de4f81664405b5c4816d2c0f90ad20b549dd48ddf80878d3d35b",
+      "retrievedAt": "2026-10-20T14:15:46.652244+00:00",
+      "retainedFileName": "ecard2-18.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-18",
+      "sha256": "db2bd7d428d9ba5928e84c6f95da7de1a5142480fb31e1516c355b91a661f775",
+      "retrievedAt": "2026-10-20T14:15:48.190570+00:00",
+      "retainedFileName": "ecard2-18.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/19.ts",
+      "sha256": "625d70d20ddacc1f7700bb0dc9ffb1f20a2e801cb1f7b2bae4c1b04bbdbaa9de",
+      "retrievedAt": "2026-10-20T14:15:46.623093+00:00",
+      "retainedFileName": "ecard2-19.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-19",
+      "sha256": "57e4d3e861303c417d794d8c3cd8bee0200107703afec2a2bc7d70a1fa07c047",
+      "retrievedAt": "2026-10-20T14:15:48.190231+00:00",
+      "retainedFileName": "ecard2-19.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/2.ts",
+      "sha256": "b1632dffce040b9ed388fe56dcfafac75ec7deaa36d898471be260d8a6e30259",
+      "retrievedAt": "2026-10-20T14:15:49.666732+00:00",
+      "retainedFileName": "ecard2-2.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-2",
+      "sha256": "499f3d76c3d668bdb41e338de25823728ffc7f0c693a72f2fe3e2998a4088677",
+      "retrievedAt": "2026-10-20T14:15:48.302413+00:00",
+      "retainedFileName": "ecard2-2.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/20.ts",
+      "sha256": "9ed13b813ae78d418e9f799eb7d8b263df733cda4d261520af45172a3661a47f",
+      "retrievedAt": "2026-10-20T14:15:49.778585+00:00",
+      "retainedFileName": "ecard2-20.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-20",
+      "sha256": "2dc4d7fe74607e3d94fede9f6e10ddc87b4ee7a9296f3847debc354362742eab",
+      "retrievedAt": "2026-10-20T14:15:48.192829+00:00",
+      "retainedFileName": "ecard2-20.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/21.ts",
+      "sha256": "79f36c8b911a09869516f07a82361eb328926aaadb9c84ddd8ee95bc499deee7",
+      "retrievedAt": "2026-10-20T14:15:49.727149+00:00",
+      "retainedFileName": "ecard2-21.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-21",
+      "sha256": "4e7b00e54f88080ddecec762700ec82427e35e739cc3db4b400e0a132b431e23",
+      "retrievedAt": "2026-10-20T14:15:52.502164+00:00",
+      "retainedFileName": "ecard2-21.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/22.ts",
+      "sha256": "a6cb3234969b18845d16a4051a5aebe1155a406c2f75c1a53aaa7468f0725e63",
+      "retrievedAt": "2026-10-20T14:15:49.585456+00:00",
+      "retainedFileName": "ecard2-22.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-22",
+      "sha256": "1102cdb0e10a24f8786700eb72802c5d9302fcc60497121b17370d217b5aaa44",
+      "retrievedAt": "2026-10-20T14:15:52.506272+00:00",
+      "retainedFileName": "ecard2-22.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/23.ts",
+      "sha256": "5b72dab4ea5ccf6603f9643933eb0ab452d07d71460481b43502eafe0e0c495d",
+      "retrievedAt": "2026-10-20T14:15:51.999221+00:00",
+      "retainedFileName": "ecard2-23.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-23",
+      "sha256": "4d25ea669cc5696b6f370d49c1121dd5dbb4c9ea9225e6f069244c81fb28f68c",
+      "retrievedAt": "2026-10-20T14:15:52.572775+00:00",
+      "retainedFileName": "ecard2-23.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/24.ts",
+      "sha256": "58c8aedf0376a6c17339137f34039122b4f3ab88b85a3e0f6441fd083b0022c5",
+      "retrievedAt": "2026-10-20T14:15:52.289587+00:00",
+      "retainedFileName": "ecard2-24.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-24",
+      "sha256": "9a95d85f5f14287c97f15044fb6ca5ac7fb2286ab0ae63f16e708bcfb698db1b",
+      "retrievedAt": "2026-10-20T14:15:52.572365+00:00",
+      "retainedFileName": "ecard2-24.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/25.ts",
+      "sha256": "bad70542951822c618df0bc9b8110d7c90ce543d22af7571ca826ad71667e857",
+      "retrievedAt": "2026-10-20T14:15:55.032532+00:00",
+      "retainedFileName": "ecard2-25.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-25",
+      "sha256": "5f6a4c083af3b7990a1480366afadc7ed5bfadb18e068d60788052d29e3acff8",
+      "retrievedAt": "2026-10-20T14:15:52.542386+00:00",
+      "retainedFileName": "ecard2-25.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/26.ts",
+      "sha256": "05973f237ddbcd5da8c89dfacbb1cc4ad4594e330772f641f05e641bf96bfc90",
+      "retrievedAt": "2026-10-20T14:15:55.178434+00:00",
+      "retainedFileName": "ecard2-26.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-26",
+      "sha256": "043f3f7dbbe842612e80ea4d025e81f7be049c20ebbcbd0532b967272cf80159",
+      "retrievedAt": "2026-10-20T14:15:55.613598+00:00",
+      "retainedFileName": "ecard2-26.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/27.ts",
+      "sha256": "865cf4aa68405776a513e5e8e257590d8106d32361c55ac169d3b3a13be9c70f",
+      "retrievedAt": "2026-10-20T14:15:55.033833+00:00",
+      "retainedFileName": "ecard2-27.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-27",
+      "sha256": "435816bc4dfc670896566405c7ea1836bf33848dae80f4469ec839b95ae01b81",
+      "retrievedAt": "2026-10-20T14:15:55.612672+00:00",
+      "retainedFileName": "ecard2-27.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/28.ts",
+      "sha256": "8d421f6809b0ef0f99af949241747569947624ff266d66b60cba9716ac44f65f",
+      "retrievedAt": "2026-10-20T14:15:55.574543+00:00",
+      "retainedFileName": "ecard2-28.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-28",
+      "sha256": "15be568003b4bb93e6c88dd3010b8942a476f85dd0abd2653b8a3cdc3fdada88",
+      "retrievedAt": "2026-10-20T14:15:55.590192+00:00",
+      "retainedFileName": "ecard2-28.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/29.ts",
+      "sha256": "13309205b39d375665ecdf93f008283340b938c642b5d7776750ae4c2f66e2ce",
+      "retrievedAt": "2026-10-20T14:15:57.769341+00:00",
+      "retainedFileName": "ecard2-29.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-29",
+      "sha256": "09341b1533805c407f30632b4a5116edbbe369d6737804da321b939de15b8f20",
+      "retrievedAt": "2026-10-20T14:15:55.582232+00:00",
+      "retainedFileName": "ecard2-29.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/3.ts",
+      "sha256": "308328ed97b3db8f623b9c418d3eb61b563019f021d6d61a86c836969f348905",
+      "retrievedAt": "2026-10-20T14:15:57.767527+00:00",
+      "retainedFileName": "ecard2-3.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-3",
+      "sha256": "a8727c5bbda3452abcc50a0d0d3f110192653418d9a5c2f2fb07fc9b09dd50ef",
+      "retrievedAt": "2026-10-20T14:15:58.494950+00:00",
+      "retainedFileName": "ecard2-3.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/30.ts",
+      "sha256": "328a4bf8e0f7bbf1dff525f933ab82e398473a76a33fa6f0303a2de71e44e74a",
+      "retrievedAt": "2026-10-20T14:15:57.898938+00:00",
+      "retainedFileName": "ecard2-30.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-30",
+      "sha256": "c530ce6371647a86ff092d27b9ed128ad8612cced7de7c58c1a31128f8093eba",
+      "retrievedAt": "2026-10-20T14:15:58.427851+00:00",
+      "retainedFileName": "ecard2-30.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/31.ts",
+      "sha256": "cf39853a45e4f09c77f554ab05118aed3607a4c8f7989d6dd6b395fd15c64d1b",
+      "retrievedAt": "2026-10-20T14:15:57.822769+00:00",
+      "retainedFileName": "ecard2-31.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-31",
+      "sha256": "b2cc222c3c17b003d3e1909a95262a3d52008359fd2a3ef283e92d6011138fcd",
+      "retrievedAt": "2026-10-20T14:15:58.440898+00:00",
+      "retainedFileName": "ecard2-31.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/32.ts",
+      "sha256": "b3062c1fdacf68b8c9a050d3d33453b5e8db0e09ebdb033bcc099e24a066aac3",
+      "retrievedAt": "2026-10-20T14:16:00.817343+00:00",
+      "retainedFileName": "ecard2-32.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-32",
+      "sha256": "417e054a916fed4f0bfdc90496d950c80491ca676bcee499e6e42db57a857aa7",
+      "retrievedAt": "2026-10-20T14:15:58.427507+00:00",
+      "retainedFileName": "ecard2-32.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/33.ts",
+      "sha256": "e6224b76df5ee32060413e331201b5e93c9072534b3e2c5f86e7572f7a7d7d4e",
+      "retrievedAt": "2026-10-20T14:16:00.870419+00:00",
+      "retainedFileName": "ecard2-33.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-33",
+      "sha256": "450ecea7b60b64bb93e6e93a300a99271256444e554f9c5e9f2496c6045ed60b",
+      "retrievedAt": "2026-10-20T14:16:01.350078+00:00",
+      "retainedFileName": "ecard2-33.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/34.ts",
+      "sha256": "bd8f0ab8ce0acbbf6e053fecb32ff993fd22c4ac02d6ca2cbfbf98aa64fedc67",
+      "retrievedAt": "2026-10-20T14:16:00.938342+00:00",
+      "retainedFileName": "ecard2-34.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-34",
+      "sha256": "39b2c8d67bdff9b393e37ad04fa34811440b053df9ec77fa5eafacfbcdf6c8ab",
+      "retrievedAt": "2026-10-20T14:16:01.322401+00:00",
+      "retainedFileName": "ecard2-34.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/35.ts",
+      "sha256": "c53f6ae2b4942d4fbea4d6859f861da15c2258c34af21c3440a38e2de73bb59e",
+      "retrievedAt": "2026-10-20T14:16:00.860134+00:00",
+      "retainedFileName": "ecard2-35.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-35",
+      "sha256": "8e725b253522aecf033d19483b17ad4add7bd7686b71649d86f547d7c3d21f21",
+      "retrievedAt": "2026-10-20T14:16:01.282091+00:00",
+      "retainedFileName": "ecard2-35.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/36.ts",
+      "sha256": "b58d07affc98d29f23b05b36d5a67f047767d0dc3fbc509af351024f9d8e32a4",
+      "retrievedAt": "2026-10-20T14:16:04.006251+00:00",
+      "retainedFileName": "ecard2-36.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-36",
+      "sha256": "5b527ea244f052d20bf17071d7ab445bea93367fe37346d0bb7599e21524eb41",
+      "retrievedAt": "2026-10-20T14:16:01.281243+00:00",
+      "retainedFileName": "ecard2-36.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/37.ts",
+      "sha256": "faf61c6960c8ce5bcdc27e00ccadbf3f7dc12ada71b7f9a28d12f4cfa84053a1",
+      "retrievedAt": "2026-10-20T14:16:03.999974+00:00",
+      "retainedFileName": "ecard2-37.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-37",
+      "sha256": "ead17adacb55cfff1aa321af69b1b413e3ef47628e51fb3829b6d42ed1c2f498",
+      "retrievedAt": "2026-10-20T14:16:03.798592+00:00",
+      "retainedFileName": "ecard2-37.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/38.ts",
+      "sha256": "d4d7c4295099c2cf1b8eda51789f9eb49e36b484763c33b3a4adf2c817873958",
+      "retrievedAt": "2026-10-20T14:16:03.884272+00:00",
+      "retainedFileName": "ecard2-38.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-38",
+      "sha256": "06f7f44d73c875a74055b69ffc26593a7460bbb3355718059753515afeca6d72",
+      "retrievedAt": "2026-10-20T14:16:03.830360+00:00",
+      "retainedFileName": "ecard2-38.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/39.ts",
+      "sha256": "59fff4bc809e776d7249f3de7b84f7abca4854ac13e680528ecb6b9d050a7a61",
+      "retrievedAt": "2026-10-20T14:16:03.934705+00:00",
+      "retainedFileName": "ecard2-39.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-39",
+      "sha256": "24bf3ae90dadf7f9abcea561a1026d36a5d3509682366db6248f050fc789bf91",
+      "retrievedAt": "2026-10-20T14:16:10.770920+00:00",
+      "retainedFileName": "ecard2-39.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/4.ts",
+      "sha256": "3af2180fcf820915b13794f180a69f1ab76b67e3b5ba6ee6e731824c0bc2eb45",
+      "retrievedAt": "2026-10-20T14:16:06.922411+00:00",
+      "retainedFileName": "ecard2-4.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-4",
+      "sha256": "831d15b4f51c86859eb552e172499f808216a27da6b131bfb3b0adc4b9a0829b",
+      "retrievedAt": "2026-10-20T14:16:10.832508+00:00",
+      "retainedFileName": "ecard2-4.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/40.ts",
+      "sha256": "177ac8061e0b63e2ccc032c13f13ce89091963ae6b5535011b8e50deecb001c4",
+      "retrievedAt": "2026-10-20T14:16:06.970414+00:00",
+      "retainedFileName": "ecard2-40.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-40",
+      "sha256": "7681a84580b4c6ace7993522fe12b4c56af1528ef73384ce186372d2030f453c",
+      "retrievedAt": "2026-10-20T14:16:10.770398+00:00",
+      "retainedFileName": "ecard2-40.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/41.ts",
+      "sha256": "691b990dac34819e36b7ca1dd85964e4a29cda123e9d64c2d4876edadaddd079",
+      "retrievedAt": "2026-10-20T14:16:06.870571+00:00",
+      "retainedFileName": "ecard2-41.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-41",
+      "sha256": "620216bdb2ff08d0c5f89b5b964cb1a752791d8cb5ad4d5e4e9a41f8a5f43773",
+      "retrievedAt": "2026-10-20T14:16:10.769169+00:00",
+      "retainedFileName": "ecard2-41.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/42.ts",
+      "sha256": "90d84e0c46c073dee2ddda5ca01d543d13b677675547858b712d19d66cabdbc6",
+      "retrievedAt": "2026-10-20T14:16:10.799212+00:00",
+      "retainedFileName": "ecard2-42.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-42",
+      "sha256": "d82e17481fdeeb5ee04502a08cd7a206cc3b45b51d2aba317d708e73a5f6ee7c",
+      "retrievedAt": "2026-10-20T14:16:10.764441+00:00",
+      "retainedFileName": "ecard2-42.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/43.ts",
+      "sha256": "c9d05c6856df91d343e5b6f01c557bf8e434173b3622fda858e68488c53480d7",
+      "retrievedAt": "2026-10-20T14:16:15.244274+00:00",
+      "retainedFileName": "ecard2-43.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-43",
+      "sha256": "099ee7b87c90785458f91e1c074c63527235294cd58a293bc53ffc0cd5b61dd7",
+      "retrievedAt": "2026-10-20T14:16:14.854202+00:00",
+      "retainedFileName": "ecard2-43.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/44.ts",
+      "sha256": "a7ed4858a2ad5588aab351fbbb85ebfd198491f0e5dedadcaf1ffb7ce334d97a",
+      "retrievedAt": "2026-10-20T14:16:15.270882+00:00",
+      "retainedFileName": "ecard2-44.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-44",
+      "sha256": "13cdff9169df0253686b51d8a17c4eb4d15d8ddceffa0606e3ddfae6edd658ae",
+      "retrievedAt": "2026-10-20T14:16:14.850451+00:00",
+      "retainedFileName": "ecard2-44.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/45.ts",
+      "sha256": "79b5d7d4790f90b89f3cd597abbd0101d5d275dc5a824f2f8dcffde54de584f7",
+      "retrievedAt": "2026-10-20T14:16:15.247043+00:00",
+      "retainedFileName": "ecard2-45.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-45",
+      "sha256": "b825389f6893934394451af6f9fe9b0c1c6a6349dff0941246e47a06e5f42ae6",
+      "retrievedAt": "2026-10-20T14:16:14.739941+00:00",
+      "retainedFileName": "ecard2-45.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/46.ts",
+      "sha256": "4e4ebe7b668f683b94d81caf24f50c988127573a8f706c9e65c4ad06a61c15e6",
+      "retrievedAt": "2026-10-20T14:16:15.250056+00:00",
+      "retainedFileName": "ecard2-46.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-46",
+      "sha256": "dd54c9e60b937dccd852ca7cfdb7d6b2bcee10f0fad8a4feb787b4888fb0b11b",
+      "retrievedAt": "2026-10-20T14:16:18.755814+00:00",
+      "retainedFileName": "ecard2-46.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/47.ts",
+      "sha256": "cecddffca4c8d25c9715917f0477fc5e7d46f2fa15280ea071071d6d3f92729c",
+      "retrievedAt": "2026-10-20T14:16:15.327928+00:00",
+      "retainedFileName": "ecard2-47.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-47",
+      "sha256": "3598e0c83e09ee533573331e3b342ed206a75b67645568ba17d471e26783b057",
+      "retrievedAt": "2026-10-20T14:16:18.755505+00:00",
+      "retainedFileName": "ecard2-47.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/48.ts",
+      "sha256": "9b64ece66dab460ab6844a2b95b017eb245d877a2b3656e24e2a73e573e7ebc2",
+      "retrievedAt": "2026-10-20T14:16:18.894117+00:00",
+      "retainedFileName": "ecard2-48.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-48",
+      "sha256": "f2386746c4413677b6fca5a950f6ba5be116b0f0c45421a3f3348e5d8de170bd",
+      "retrievedAt": "2026-10-20T14:16:18.825408+00:00",
+      "retainedFileName": "ecard2-48.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/49.ts",
+      "sha256": "793f60e0b8b6014a54f07c7616b1215f81129bd1735fa4d30156fca5c901bf58",
+      "retrievedAt": "2026-10-20T14:16:18.974185+00:00",
+      "retainedFileName": "ecard2-49.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-49",
+      "sha256": "641cc0ce9ba5e35634f83839b1fa786c369b0d32b235c9238e482993a425d8f5",
+      "retrievedAt": "2026-10-20T14:16:18.709182+00:00",
+      "retainedFileName": "ecard2-49.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/5.ts",
+      "sha256": "8bc0b6e72a58c21d25ec1205bb991d5f6beefea7643572af760c37b1ef226084",
+      "retrievedAt": "2026-10-20T14:16:21.755454+00:00",
+      "retainedFileName": "ecard2-5.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-5",
+      "sha256": "5ca43870cda29b6f4125c6b6d284d173a0fffcea3aa0952cee1ed80f3ba2fe93",
+      "retrievedAt": "2026-10-20T14:16:22.146425+00:00",
+      "retainedFileName": "ecard2-5.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/50a.ts",
+      "sha256": "601411d482138e914c8d9b93800fcda32cc90041a8ede76cb1a539660ea39c18",
+      "retrievedAt": "2026-10-20T14:16:21.822552+00:00",
+      "retainedFileName": "ecard2-50a.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-50a",
+      "sha256": "d15ffb22f87406d8c757d935da884d94b8ef784489be709efd95e16d174c662d",
+      "retrievedAt": "2026-10-20T14:16:22.167794+00:00",
+      "retainedFileName": "ecard2-50a.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/50b.ts",
+      "sha256": "601411d482138e914c8d9b93800fcda32cc90041a8ede76cb1a539660ea39c18",
+      "retrievedAt": "2026-10-20T14:16:21.802717+00:00",
+      "retainedFileName": "ecard2-50b.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-50b",
+      "sha256": "73cdabb2873b938e16f627f3a5a747e42757c9ae472776414ab242c35bf5880d",
+      "retrievedAt": "2026-10-20T14:16:22.138462+00:00",
+      "retainedFileName": "ecard2-50b.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/51.ts",
+      "sha256": "4e934f60b83f39b3501963b047b6b4de0ec45bc4188082d821b4f2466207f22d",
+      "retrievedAt": "2026-10-20T14:16:25.334878+00:00",
+      "retainedFileName": "ecard2-51.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-51",
+      "sha256": "ba411b78ef54a8d4047831e95c618f2f28aa4ade90d1eb4a50156e65d43c65a6",
+      "retrievedAt": "2026-10-20T14:16:22.088400+00:00",
+      "retainedFileName": "ecard2-51.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/52.ts",
+      "sha256": "8aa68050466612b151d2a796ac2887da2058fc58f38309f0463f38a3ceed6ae6",
+      "retrievedAt": "2026-10-20T14:16:25.406406+00:00",
+      "retainedFileName": "ecard2-52.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-52",
+      "sha256": "a6c5657a6a6e548902835f475e3ec6966049c11565879f8c9f41203bbee4c6bb",
+      "retrievedAt": "2026-10-20T14:16:25.462483+00:00",
+      "retainedFileName": "ecard2-52.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/53.ts",
+      "sha256": "781cf08a8b6bca88d9cfa9922b43901f6f9c4371fa1c50da3af007283470f232",
+      "retrievedAt": "2026-10-20T14:16:25.387114+00:00",
+      "retainedFileName": "ecard2-53.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-53",
+      "sha256": "008d75f9b7d9168a28b69b2ef9ab9824a3c12655b04db1714cc3a267c9888d35",
+      "retrievedAt": "2026-10-20T14:16:25.463055+00:00",
+      "retainedFileName": "ecard2-53.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/54.ts",
+      "sha256": "0a8aabc808b57ea9995d946a14f96e0d203e423f2ffdce173c21537ef8a40df9",
+      "retrievedAt": "2026-10-20T14:16:25.417503+00:00",
+      "retainedFileName": "ecard2-54.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-54",
+      "sha256": "3d9f73f458fd199c35005243f97161589f90d501f304d1a63b00e46b5092b2f4",
+      "retrievedAt": "2026-10-20T14:16:29.382451+00:00",
+      "retainedFileName": "ecard2-54.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/55.ts",
+      "sha256": "94d7ca0f968a70fb9ff3612b77b14e640773f07f8edc39ed410b5b4ba440de38",
+      "retrievedAt": "2026-10-20T14:16:28.962397+00:00",
+      "retainedFileName": "ecard2-55.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-55",
+      "sha256": "64fc0f8031b139bd7beb641aa0a1ddef09e0624113b83c39791f758523cad173",
+      "retrievedAt": "2026-10-20T14:16:29.338424+00:00",
+      "retainedFileName": "ecard2-55.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/56.ts",
+      "sha256": "0b5da1d893acf0b30b019a41cd63118a3387ef98c9237813cbbe482eae257ea6",
+      "retrievedAt": "2026-10-20T14:16:28.994457+00:00",
+      "retainedFileName": "ecard2-56.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-56",
+      "sha256": "d0081fb5a83cb2c4499b76c5661a25b4726ded106b499b47c2476177e4504d75",
+      "retrievedAt": "2026-10-20T14:16:29.368579+00:00",
+      "retainedFileName": "ecard2-56.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/57.ts",
+      "sha256": "3e2effa85130a13db6b33e651cca00b805cc793def08c39276d3599edc2b5b37",
+      "retrievedAt": "2026-10-20T14:16:28.942090+00:00",
+      "retainedFileName": "ecard2-57.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-57",
+      "sha256": "2aef149bfd0f017a596c35f8c5ab6709d786e289841fea361a9104f461abef62",
+      "retrievedAt": "2026-10-20T14:16:29.298310+00:00",
+      "retainedFileName": "ecard2-57.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/58.ts",
+      "sha256": "ca78d5f99f8dfff7ffe112d8e89e384f07f9f7f6bffa403f434552bbe5dc7093",
+      "retrievedAt": "2026-10-20T14:16:30.996849+00:00",
+      "retainedFileName": "ecard2-58.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-58",
+      "sha256": "575e22ed3b1bbf6228df1eab97ffc50c3acee8fd177f9d3ab64dba11e836d864",
+      "retrievedAt": "2026-10-20T14:16:29.368896+00:00",
+      "retainedFileName": "ecard2-58.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/59.ts",
+      "sha256": "50c9e51632d7e62209ee5f11670880f4b46f51ec4426d40d5249d85238096628",
+      "retrievedAt": "2026-10-20T14:16:31.051367+00:00",
+      "retainedFileName": "ecard2-59.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-59",
+      "sha256": "0c3cffcff49d7647249c68de1610a7b325f40b6a8c4b5b7b5c59c1eebc7cd2b6",
+      "retrievedAt": "2026-10-20T14:16:33.982655+00:00",
+      "retainedFileName": "ecard2-59.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/6.ts",
+      "sha256": "e906ab0482583d922a1b3853fd2cd9101257ec1b127e0da94e13b7bcc73f418b",
+      "retrievedAt": "2026-10-20T14:16:31.010544+00:00",
+      "retainedFileName": "ecard2-6.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-6",
+      "sha256": "485a8210bf3465e03fbd8d99b8324f1ee11c55bb4b53f492808a2df9043ec3f8",
+      "retrievedAt": "2026-10-20T14:16:33.939322+00:00",
+      "retainedFileName": "ecard2-6.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/60.ts",
+      "sha256": "bf37875e4c3bea4431652478e8bc5f1d2f3a86539e1be2765b6fe0e07b5dd30f",
+      "retrievedAt": "2026-10-20T14:16:30.997321+00:00",
+      "retainedFileName": "ecard2-60.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-60",
+      "sha256": "158643038a4aa9236b248fe1f202e1944f77c9a97ca4ceab6044d27ebb7c45fb",
+      "retrievedAt": "2026-10-20T14:16:34.050327+00:00",
+      "retainedFileName": "ecard2-60.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/61.ts",
+      "sha256": "99e40073564e9a0e92a7b12452e707e5f8343c3e3499aab52cfa2989de0617e0",
+      "retrievedAt": "2026-10-20T14:16:34.073850+00:00",
+      "retainedFileName": "ecard2-61.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-61",
+      "sha256": "53932dea65db42ce5e9cbf8802052260764b07cdf3521db0ccc25155048b0184",
+      "retrievedAt": "2026-10-20T14:16:34.022600+00:00",
+      "retainedFileName": "ecard2-61.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/62.ts",
+      "sha256": "24ee950a41b69d809017ca734360eafb8343cb284f844883daab10d392f2c8cf",
+      "retrievedAt": "2026-10-20T14:16:34.054458+00:00",
+      "retainedFileName": "ecard2-62.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-62",
+      "sha256": "39aa695bbebdb1965a464212a627188b8f7e7f86459f4d3d571548a6e2c4aa0c",
+      "retrievedAt": "2026-10-20T14:16:37.766509+00:00",
+      "retainedFileName": "ecard2-62.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/63.ts",
+      "sha256": "4288893413a6b8c33e0dc49acc4b72746846449f2be8ff6b664dce6e8576842c",
+      "retrievedAt": "2026-10-20T14:16:36.921190+00:00",
+      "retainedFileName": "ecard2-63.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-63",
+      "sha256": "386ddaf7f38409b9147e77646788cea03a8f1307c58610178fb125d43fe4fb0f",
+      "retrievedAt": "2026-10-20T14:16:37.696432+00:00",
+      "retainedFileName": "ecard2-63.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/64.ts",
+      "sha256": "17edfe480d225585101d4c9f6e80c9fe07f8d9326c0e484e66ba28decab0866a",
+      "retrievedAt": "2026-10-20T14:16:36.746133+00:00",
+      "retainedFileName": "ecard2-64.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-64",
+      "sha256": "b75eabc904a2293d265bb6ec243dd35c39c04e2fecb883e2d182419977efacbd",
+      "retrievedAt": "2026-10-20T14:16:37.624519+00:00",
+      "retainedFileName": "ecard2-64.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/65.ts",
+      "sha256": "6aa0c939fe1c6c257e3f8d27afa59e0d9ddf442ac0a69f175a68ad25dafce851",
+      "retrievedAt": "2026-10-20T14:16:36.761521+00:00",
+      "retainedFileName": "ecard2-65.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-65",
+      "sha256": "74af6ecc24904e118c732942644a386558a13c17ba653086b1f96177e02a43a4",
+      "retrievedAt": "2026-10-20T14:16:37.711125+00:00",
+      "retainedFileName": "ecard2-65.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/66.ts",
+      "sha256": "b591aef4932953092b5adf7ee223ffe3f78e0b1ae553ade4f80b96d6d958081a",
+      "retrievedAt": "2026-10-20T14:16:40.830122+00:00",
+      "retainedFileName": "ecard2-66.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-66",
+      "sha256": "6ebdc297f9b8e3fa077983f6b900d8d085674548b3a793586c6c33e72cb91d67",
+      "retrievedAt": "2026-10-20T14:16:37.725370+00:00",
+      "retainedFileName": "ecard2-66.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/67.ts",
+      "sha256": "aba52201968a2ed22e82802d4c5000a6ffc7b4297ab4b6b800bf2c3dc0eae459",
+      "retrievedAt": "2026-10-20T14:16:40.720093+00:00",
+      "retainedFileName": "ecard2-67.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-67",
+      "sha256": "9976fc911b9b15799d6dd03ca3a8e485c5f07cd1a7a26453d4dbcb90366c357c",
+      "retrievedAt": "2026-10-20T14:16:40.734957+00:00",
+      "retainedFileName": "ecard2-67.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/68.ts",
+      "sha256": "e33e4ff8bc2e1a3869c42525eb49de16886418289c0d00668e5d9b60a2a07ce7",
+      "retrievedAt": "2026-10-20T14:16:40.623053+00:00",
+      "retainedFileName": "ecard2-68.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-68",
+      "sha256": "b493d07bfbeeb389b5c57de66467f214f7f02a3bc5bc1478c08fdb60c2c46a05",
+      "retrievedAt": "2026-10-20T14:16:40.734600+00:00",
+      "retainedFileName": "ecard2-68.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/69.ts",
+      "sha256": "617e578099f4ef85afeb2e2681aa369815cea54222245d929296686769441ac6",
+      "retrievedAt": "2026-10-20T14:16:40.688661+00:00",
+      "retainedFileName": "ecard2-69.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-69",
+      "sha256": "cc253ab5f6eba69a2a68e7149427c29943cb04a5389de29176bbe1cae7421091",
+      "retrievedAt": "2026-10-20T14:16:44.143022+00:00",
+      "retainedFileName": "ecard2-69.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/7.ts",
+      "sha256": "02c76a0a6273f7617b4830059932f849e74112a1a02a8fd3c09cb098740d459f",
+      "retrievedAt": "2026-10-20T14:16:44.020441+00:00",
+      "retainedFileName": "ecard2-7.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-7",
+      "sha256": "4af6153514a835e562e5fb9758f4794be2fca2fcef792bde6ac22da7af74d37d",
+      "retrievedAt": "2026-10-20T14:16:44.143748+00:00",
+      "retainedFileName": "ecard2-7.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/70.ts",
+      "sha256": "640fe64eec44f616624bdc52cd9efdbf8eb427cc96a081547a1c27aab888ad79",
+      "retrievedAt": "2026-10-20T14:16:44.074533+00:00",
+      "retainedFileName": "ecard2-70.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-70",
+      "sha256": "2537c79da629fba52bee1c5a997e0f35a86a6027f9932233355cecb78cad915e",
+      "retrievedAt": "2026-10-20T14:16:44.146340+00:00",
+      "retainedFileName": "ecard2-70.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/71.ts",
+      "sha256": "c9dc197c87aa1b15b05a58a890cc58e6641d0e10ac13a64a5047b5e7192ae2b9",
+      "retrievedAt": "2026-10-20T14:16:44.043857+00:00",
+      "retainedFileName": "ecard2-71.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-71",
+      "sha256": "f88962acee9cac489ca7bd127324f95013ee6d2d6b96c270139bdec805283d49",
+      "retrievedAt": "2026-10-20T14:16:46.924919+00:00",
+      "retainedFileName": "ecard2-71.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/72.ts",
+      "sha256": "660ee9696a6cace69557c9c5737278d82ee4bf47c9cef19b631ab61468d4220c",
+      "retrievedAt": "2026-10-20T14:16:47.919454+00:00",
+      "retainedFileName": "ecard2-72.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-72",
+      "sha256": "76599e19f8db74824ca4d5d3a178d5a3a3db92fa9260c780e649791de87fbf7f",
+      "retrievedAt": "2026-10-20T14:16:46.842928+00:00",
+      "retainedFileName": "ecard2-72.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/73.ts",
+      "sha256": "9ef53db6710b0c3757a09c49fe8010a28d481680f7d7cf89949844fc8fc49784",
+      "retrievedAt": "2026-10-20T14:16:47.944715+00:00",
+      "retainedFileName": "ecard2-73.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-73",
+      "sha256": "ac0a4a2dee57942fa214fbd9d4fbd0fd8da74a38efbb291103c17876e11deeaf",
+      "retrievedAt": "2026-10-20T14:16:46.842587+00:00",
+      "retainedFileName": "ecard2-73.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/74a.ts",
+      "sha256": "06d3a9c9cc313a4540cf79df284b0d99a8b6f94c521065f23f4b3a67ea2b7ed5",
+      "retrievedAt": "2026-10-20T14:16:47.921788+00:00",
+      "retainedFileName": "ecard2-74a.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-74a",
+      "sha256": "fd3e282377a33a4e7012406bb9f78fd0cbd308e1bd718b19d5286d4edfdbaa5c",
+      "retrievedAt": "2026-10-20T14:16:49.513780+00:00",
+      "retainedFileName": "ecard2-74a.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/74b.ts",
+      "sha256": "4717f416c74e03b18441439fb1d4ea81102cb606691e9b73cf01a5a2d67acd74",
+      "retrievedAt": "2026-10-20T14:16:47.894152+00:00",
+      "retainedFileName": "ecard2-74b.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-74b",
+      "sha256": "7dcfc1582d5d58b391b193b9dbf29a743caf24cede5b5f88adefb768204e52b6",
+      "retrievedAt": "2026-10-20T14:16:49.513371+00:00",
+      "retainedFileName": "ecard2-74b.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/75.ts",
+      "sha256": "ab935457ba557194178b50c35067d126106caa7692777d59a9468ec0877dea1e",
+      "retrievedAt": "2026-10-20T14:16:50.815049+00:00",
+      "retainedFileName": "ecard2-75.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-75",
+      "sha256": "67fe99881c90ce820b417ff61a7aa3b7e23c4d98e258c4c75413b20e82ba5e13",
+      "retrievedAt": "2026-10-20T14:16:49.558432+00:00",
+      "retainedFileName": "ecard2-75.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/76.ts",
+      "sha256": "20975b1de095e039170bd1720cfe01c5c8f0372532950bdcad02ecf9e2244e0b",
+      "retrievedAt": "2026-10-20T14:16:50.838571+00:00",
+      "retainedFileName": "ecard2-76.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-76",
+      "sha256": "836beb614790aa574122dc1e4dfb1dabd7a44b97b99a65c425bdac19dd21d0a2",
+      "retrievedAt": "2026-10-20T14:16:49.582339+00:00",
+      "retainedFileName": "ecard2-76.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/77.ts",
+      "sha256": "c47f9437be9c61a1e5eb61a1dc1933a89d149d501bfa2acdf40fff693d607436",
+      "retrievedAt": "2026-10-20T14:16:50.835022+00:00",
+      "retainedFileName": "ecard2-77.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-77",
+      "sha256": "0512a45a08bbe51d3f4d49f08e405ccca582ec040b48fa3ae2170c718cf91bd3",
+      "retrievedAt": "2026-10-20T14:16:52.734699+00:00",
+      "retainedFileName": "ecard2-77.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/78.ts",
+      "sha256": "2b9a363751877a86ae32d4f84618b5e43238ad17cc3891e27a043acd90ea2ac7",
+      "retrievedAt": "2026-10-20T14:16:50.814501+00:00",
+      "retainedFileName": "ecard2-78.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-78",
+      "sha256": "557693744fda4aef41546c830b90b4d2570af20dd405905b16fa115a1cd252a4",
+      "retrievedAt": "2026-10-20T14:16:52.687236+00:00",
+      "retainedFileName": "ecard2-78.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/79.ts",
+      "sha256": "1ac024fbf3a2085ee9f2be8616efc8f3e748d8abe6b954001c6d1cfc7387a5c2",
+      "retrievedAt": "2026-10-20T14:16:54.698129+00:00",
+      "retainedFileName": "ecard2-79.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-79",
+      "sha256": "581048719e272251d429d4afeb97d20f6c9325caf8e5fb79c9712770cc3293a5",
+      "retrievedAt": "2026-10-20T14:16:52.619119+00:00",
+      "retainedFileName": "ecard2-79.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/8.ts",
+      "sha256": "367d5f80e75d7534e8afb18546b2765132d8e17b044852f4b2f3e43c53bd1d08",
+      "retrievedAt": "2026-10-20T14:16:54.678532+00:00",
+      "retainedFileName": "ecard2-8.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-8",
+      "sha256": "4c1b245585e7d62a74a1c50e64fda714fbc58c265242d35b546ec1aae936f6f6",
+      "retrievedAt": "2026-10-20T14:16:52.658460+00:00",
+      "retainedFileName": "ecard2-8.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/80.ts",
+      "sha256": "898b62c1f919a1280b88a6b7c785d0c6bc4b2f8e17b95159ad4763ea38706c12",
+      "retrievedAt": "2026-10-20T14:16:54.688958+00:00",
+      "retainedFileName": "ecard2-80.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-80",
+      "sha256": "86a4305aa88114f1e0f71e9d752b0a504d9f273babedaf441f4de6ff71a188d6",
+      "retrievedAt": "2026-10-20T14:16:54.912932+00:00",
+      "retainedFileName": "ecard2-80.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/81.ts",
+      "sha256": "6fe31eea4f7378702215f06450502f79ad3e777584cee2fd17ea58bbc58f10b2",
+      "retrievedAt": "2026-10-20T14:16:54.783856+00:00",
+      "retainedFileName": "ecard2-81.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-81",
+      "sha256": "00eb5b525dc84c28cbafb0ce54b2b55d9df1655257cab1128e7f37baf3dbdf1a",
+      "retrievedAt": "2026-10-20T14:16:54.980539+00:00",
+      "retainedFileName": "ecard2-81.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/82.ts",
+      "sha256": "17063f9436c440e4ce50cbe674ac04abd2c40e01d7c95789567d9d97691ad3a8",
+      "retrievedAt": "2026-10-20T14:16:57.507304+00:00",
+      "retainedFileName": "ecard2-82.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-82",
+      "sha256": "01bf5b7af1cf32327dc11c759a79197e3123c59e61cd48d7a5ad2a789dadaac3",
+      "retrievedAt": "2026-10-20T14:16:54.954471+00:00",
+      "retainedFileName": "ecard2-82.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/83.ts",
+      "sha256": "e10d2e8e93576501058f0291ab4271df6647715cad8252f83e2f80973720779e",
+      "retrievedAt": "2026-10-20T14:16:57.563107+00:00",
+      "retainedFileName": "ecard2-83.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-83",
+      "sha256": "77d963e298875bf43849a99faf931cd3f23b421b1224f654329e5f50b9b594d4",
+      "retrievedAt": "2026-10-20T14:16:57.570474+00:00",
+      "retainedFileName": "ecard2-83.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/84.ts",
+      "sha256": "3decb0d594ed7bf256bfd0e1c46f8afc3844c974c6842dfd9d77260b58e06ad3",
+      "retrievedAt": "2026-10-20T14:16:57.574306+00:00",
+      "retainedFileName": "ecard2-84.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-84",
+      "sha256": "6dd088562e98e69791279ac272e5b901c12dcfddd9dcf722e4ff057222b5bb6a",
+      "retrievedAt": "2026-10-20T14:16:57.528953+00:00",
+      "retainedFileName": "ecard2-84.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/85.ts",
+      "sha256": "dde25f33c69c484f652f9d7240afe5995b7531d8300d91c6a4f58d0a35bb08ee",
+      "retrievedAt": "2026-10-20T14:16:57.504606+00:00",
+      "retainedFileName": "ecard2-85.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-85",
+      "sha256": "49c1adbbf9acb5d98ee16a63c8cfa691bbeefa78d4634201946955df5b1f02a3",
+      "retrievedAt": "2026-10-20T14:17:00.113783+00:00",
+      "retainedFileName": "ecard2-85.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/86.ts",
+      "sha256": "430f067e650e282e9a6769683ce1041f5d894f212ff0564fceb6534c7a71de41",
+      "retrievedAt": "2026-10-20T14:16:59.883461+00:00",
+      "retainedFileName": "ecard2-86.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-86",
+      "sha256": "b9dfbd627ef6347d671badca294fdbe62117e3384c2acdedfb9f9fc026c34e60",
+      "retrievedAt": "2026-10-20T14:17:00.113424+00:00",
+      "retainedFileName": "ecard2-86.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/87.ts",
+      "sha256": "deb327d4a4a788399d35df2793eb9fc257eb1700c63296da5b172419932c5d58",
+      "retrievedAt": "2026-10-20T14:16:59.967026+00:00",
+      "retainedFileName": "ecard2-87.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-87",
+      "sha256": "f38643e9201dbc98cfe39dbf85f9c9040f6af3c4f195e865a11f2f1d9d17e387",
+      "retrievedAt": "2026-10-20T14:17:00.180731+00:00",
+      "retainedFileName": "ecard2-87.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/88.ts",
+      "sha256": "ae9ac3f66f38352dce524b6cf37fc9ab94a8df891baf588c81fc1252b58d0bbf",
+      "retrievedAt": "2026-10-20T14:16:59.875589+00:00",
+      "retainedFileName": "ecard2-88.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-88",
+      "sha256": "84f8a4663b5dbf4ad7ec0568b9235ac7529f8be37dbaf083fedd6b067156c874",
+      "retrievedAt": "2026-10-20T14:17:00.069763+00:00",
+      "retainedFileName": "ecard2-88.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/89.ts",
+      "sha256": "6b11505c39cbc2edcbe290557edf71121a4660e46943850d8afbd15cb48bb854",
+      "retrievedAt": "2026-10-20T14:17:02.399683+00:00",
+      "retainedFileName": "ecard2-89.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-89",
+      "sha256": "5e4851eea42139a607d128977ad60d9e901e699e333ffaba0c6cc7154527d49d",
+      "retrievedAt": "2026-10-20T14:17:03.958447+00:00",
+      "retainedFileName": "ecard2-89.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/9.ts",
+      "sha256": "c02b2181251c3d6302655ded8b3737e1cb0eb9d000358e7f6c53c7fa4294f42f",
+      "retrievedAt": "2026-10-20T14:17:02.173547+00:00",
+      "retainedFileName": "ecard2-9.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-9",
+      "sha256": "b539f3772cf298d01b80d4c728975f1fcaf6a5b7323759059422b2cab878d2dd",
+      "retrievedAt": "2026-10-20T14:17:03.986701+00:00",
+      "retainedFileName": "ecard2-9.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/90.ts",
+      "sha256": "2daca4385ca5b4facafdee6c4185b37c7149aca9d5562b74d74fe2acc552518c",
+      "retrievedAt": "2026-10-20T14:17:02.253652+00:00",
+      "retainedFileName": "ecard2-90.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-90",
+      "sha256": "be4cc74cf13461489b95b8157308da54bb2e3eb63fe637f52523c8610a6bd054",
+      "retrievedAt": "2026-10-20T14:17:03.962372+00:00",
+      "retainedFileName": "ecard2-90.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/91.ts",
+      "sha256": "9859780a625ce94bb159c067b9c3f3eb30a11ee7374770f724965dcb6476089a",
+      "retrievedAt": "2026-10-20T14:17:05.069426+00:00",
+      "retainedFileName": "ecard2-91.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-91",
+      "sha256": "0b7cc26e8e52d82b39d15485a0b36b7604d1a29d2ee3fae46e1327553000ae96",
+      "retrievedAt": "2026-10-20T14:17:03.919277+00:00",
+      "retainedFileName": "ecard2-91.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/92.ts",
+      "sha256": "cef7b85477af9f0149667c1fd3b1d2f222154619b1e07727f0d7d6084defa0c6",
+      "retrievedAt": "2026-10-20T14:17:05.069851+00:00",
+      "retainedFileName": "ecard2-92.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-92",
+      "sha256": "8a12227e176011f53d333bd15c3b79a85873ad459be05f7867c31a651746fda5",
+      "retrievedAt": "2026-10-20T14:17:08.253541+00:00",
+      "retainedFileName": "ecard2-92.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/93.ts",
+      "sha256": "f3859b53c5b9b2c939a3713b4e24d33a596ef2ab09cf7ab9baa52e15ac313a9e",
+      "retrievedAt": "2026-10-20T14:17:05.069040+00:00",
+      "retainedFileName": "ecard2-93.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-93",
+      "sha256": "f3cef5816d5cb36cbab9f9a73e1f9e061f7ab19434c4d14b7b7aa26bb0c48e52",
+      "retrievedAt": "2026-10-20T14:17:08.335325+00:00",
+      "retainedFileName": "ecard2-93.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/94.ts",
+      "sha256": "892599f282f7847adf8bf668e584d9aa5230b6dd5162329a7eef740e1e193ddb",
+      "retrievedAt": "2026-10-20T14:17:05.239554+00:00",
+      "retainedFileName": "ecard2-94.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-94",
+      "sha256": "cd4da41fe3e60b4e9535df366a1472a47bfb2a396c4805d99a2c1cbb795f31dd",
+      "retrievedAt": "2026-10-20T14:17:08.396195+00:00",
+      "retainedFileName": "ecard2-94.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/95a.ts",
+      "sha256": "cefa5f517321c5128ec747b7ea6b4a3582ba57f500d4b1e7ca5341dd3c2b0061",
+      "retrievedAt": "2026-10-20T14:17:08.049588+00:00",
+      "retainedFileName": "ecard2-95a.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-95a",
+      "sha256": "975750faa3d1599461bcd957aa1b400aca1ce87771f03c6c82b1658cba883790",
+      "retrievedAt": "2026-10-20T14:17:08.336169+00:00",
+      "retainedFileName": "ecard2-95a.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/95b.ts",
+      "sha256": "cefa5f517321c5128ec747b7ea6b4a3582ba57f500d4b1e7ca5341dd3c2b0061",
+      "retrievedAt": "2026-10-20T14:17:08.014605+00:00",
+      "retainedFileName": "ecard2-95b.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-95b",
+      "sha256": "70f50aa81489d7a8e8dd2c5858185378811550886b982edeb3cedfc88a3ed805",
+      "retrievedAt": "2026-10-20T14:17:08.290379+00:00",
+      "retainedFileName": "ecard2-95b.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/96.ts",
+      "sha256": "e845ac89afab478b7287b359cadd1b86e9d1796def7f78355b3d373d43ba4cd3",
+      "retrievedAt": "2026-10-20T14:17:11.022388+00:00",
+      "retainedFileName": "ecard2-96.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-96",
+      "sha256": "1c6527a2f6eec1bfaef0f8556be3cced8ec1a6d7436c88a81e15096d306d7a0f",
+      "retrievedAt": "2026-10-20T14:17:10.967336+00:00",
+      "retainedFileName": "ecard2-96.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/97.ts",
+      "sha256": "521dd3d358a0cfe0921f51136fdaf1a2849747d61cf48ab1147895159eb38f40",
+      "retrievedAt": "2026-10-20T14:17:11.065534+00:00",
+      "retainedFileName": "ecard2-97.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-97",
+      "sha256": "8591fca54d16810ae7fb76e1a7d302e19cf1312765b8a1cb3dbc8cde40814b58",
+      "retrievedAt": "2026-10-20T14:17:10.966451+00:00",
+      "retainedFileName": "ecard2-97.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/98.ts",
+      "sha256": "fbe2582787703f9702c89635a2fc0535fcea8d18e5aef20178bd54dc07333309",
+      "retrievedAt": "2026-10-20T14:17:11.062838+00:00",
+      "retainedFileName": "ecard2-98.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-98",
+      "sha256": "ba9aa817fa6b0c9af45fd48d39b47347e97edb81dfa20ba63eea3817976d0d6f",
+      "retrievedAt": "2026-10-20T14:17:10.966803+00:00",
+      "retainedFileName": "ecard2-98.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/99.ts",
+      "sha256": "f8474670168befcf52ac859bd08ff54f63944dd2a007011a7fb49f685d091aef",
+      "retrievedAt": "2026-10-20T14:17:14.852982+00:00",
+      "retainedFileName": "ecard2-99.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-99",
+      "sha256": "92c8e3ae33ef8f6bfd2cb36d3323d259aa05996f11be2bf9cfafd8a61e70f8a8",
+      "retrievedAt": "2026-10-20T14:17:16.183264+00:00",
+      "retainedFileName": "ecard2-99.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H01.ts",
+      "sha256": "005fd05c7bd4728bb454ecca9b9297f6333d7409b7ac47414ae7db9f6c631e73",
+      "retrievedAt": "2026-10-20T14:17:14.693260+00:00",
+      "retainedFileName": "ecard2-H01.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H01",
+      "sha256": "097bc0c2fe47e6f0620f239ff20c18f62b03fab3ffb663216467de1fb8933616",
+      "retrievedAt": "2026-10-20T14:17:16.254191+00:00",
+      "retainedFileName": "ecard2-H01.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H02.ts",
+      "sha256": "c2a22eb25257113eea8fe1a3a1e3eb6d3e8875f37441448b69c88402c8b1dee4",
+      "retrievedAt": "2026-10-20T14:17:14.728947+00:00",
+      "retainedFileName": "ecard2-H02.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H02",
+      "sha256": "5d31a26c5f3957753ffa7c48cc743841293ee1245b05648d2321793512f9fd05",
+      "retrievedAt": "2026-10-20T14:17:16.182846+00:00",
+      "retainedFileName": "ecard2-H02.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H03.ts",
+      "sha256": "f20b4df2fea1474304548b901fdd34389bfdc4d511200f4e0858fbfe31c41ca6",
+      "retrievedAt": "2026-10-20T14:17:17.680803+00:00",
+      "retainedFileName": "ecard2-H03.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H03",
+      "sha256": "f0ba1862a71a47d4e4708b52bfdafa629e333d694e8ac33cf29716468bf51139",
+      "retrievedAt": "2026-10-20T14:17:16.263572+00:00",
+      "retainedFileName": "ecard2-H03.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H04.ts",
+      "sha256": "bbebea1c0ab15cb04e12bb2176293f941a101660a7641352e922aa2726df101b",
+      "retrievedAt": "2026-10-20T14:17:17.718219+00:00",
+      "retainedFileName": "ecard2-H04.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H04",
+      "sha256": "4081e9ee37d5d2f8f78ba2c1788a06f64e61f5ea1ce9477d87eb70a084434314",
+      "retrievedAt": "2026-10-20T14:17:19.662356+00:00",
+      "retainedFileName": "ecard2-H04.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H05.ts",
+      "sha256": "032f0617f4c6fb4913ddb00f09f07deaf58a5531e8c8f3555cf7f5e219e83235",
+      "retrievedAt": "2026-10-20T14:17:17.694780+00:00",
+      "retainedFileName": "ecard2-H05.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H05",
+      "sha256": "83baba0d4aadd5bd10ffff324ebad70d52206087bb68b5d37515d31607e914fe",
+      "retrievedAt": "2026-10-20T14:17:19.639199+00:00",
+      "retainedFileName": "ecard2-H05.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H06.ts",
+      "sha256": "40a6aaa1a84871b7da8e04cef45113c8252f1f21d736d82ecb3a827adb366db2",
+      "retrievedAt": "2026-10-20T14:17:17.690021+00:00",
+      "retainedFileName": "ecard2-H06.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H06",
+      "sha256": "e43da7aba159eba01eb9d01f42414390a274b2b42ee1d12ec034abae5f4d6318",
+      "retrievedAt": "2026-10-20T14:17:19.735033+00:00",
+      "retainedFileName": "ecard2-H06.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H07.ts",
+      "sha256": "37f29e4aeb21bdd4a0f71f247edf77813af661a39da99d5b2bc6c365aec65a05",
+      "retrievedAt": "2026-10-20T14:17:21.454310+00:00",
+      "retainedFileName": "ecard2-H07.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H07",
+      "sha256": "247b1e194836b32e3dd05bbedfad6d83cfc51cc375438b146bf6b595cea637e8",
+      "retrievedAt": "2026-10-20T14:17:19.735510+00:00",
+      "retainedFileName": "ecard2-H07.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H08.ts",
+      "sha256": "f8ee705e457e4e0d2fadec52b7473a67c0c467a1d8ee25eb9b70a3c454fed154",
+      "retrievedAt": "2026-10-20T14:17:21.490706+00:00",
+      "retainedFileName": "ecard2-H08.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H08",
+      "sha256": "237db7dbaf279fbd1ffc4a933c9d901f97047fff35f289b41cc1a507bacffebf",
+      "retrievedAt": "2026-10-20T14:17:23.371963+00:00",
+      "retainedFileName": "ecard2-H08.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H09.ts",
+      "sha256": "62ea58d593a5866894607f1fa63622d8698ef88bb1c03c28cf325cc988434ebd",
+      "retrievedAt": "2026-10-20T14:17:21.447295+00:00",
+      "retainedFileName": "ecard2-H09.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H09",
+      "sha256": "878d74477a1ebdad680b0c1575ab41a59630d581de48fba1cfc0ddf414a4d99a",
+      "retrievedAt": "2026-10-20T14:17:23.371465+00:00",
+      "retainedFileName": "ecard2-H09.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H10.ts",
+      "sha256": "009cbfefd52c5e559e34b3846477aa4a0b2dcf598454b0311d978ee6100c0407",
+      "retrievedAt": "2026-10-20T14:17:21.492896+00:00",
+      "retainedFileName": "ecard2-H10.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H10",
+      "sha256": "4d11d40800cb476bde05942c72308f6e48c389daf81e047f0a622c72deb2bc02",
+      "retrievedAt": "2026-10-20T14:17:23.371124+00:00",
+      "retainedFileName": "ecard2-H10.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H11.ts",
+      "sha256": "a71780ccf917f11203318c758777f60b0caf97324dc19bfaebbacde982ca9fec",
+      "retrievedAt": "2026-10-20T14:17:24.465464+00:00",
+      "retainedFileName": "ecard2-H11.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H11",
+      "sha256": "324d051c563b1ef8ed2d94dd2c791feaeddb45311f3ffa824d2f178efa157516",
+      "retrievedAt": "2026-10-20T14:17:23.368124+00:00",
+      "retainedFileName": "ecard2-H11.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H12.ts",
+      "sha256": "ff30515c048d132807e8c6051efac1f6834da50b45d3a8e55a7b7e85bda8ce9b",
+      "retrievedAt": "2026-10-20T14:17:24.698616+00:00",
+      "retainedFileName": "ecard2-H12.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H12",
+      "sha256": "4656a63c65e0e9736963a0381b2e772c358ec4872525ee352038a2337c21080d",
+      "retrievedAt": "2026-10-20T14:17:27.343919+00:00",
+      "retainedFileName": "ecard2-H12.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H13.ts",
+      "sha256": "2e3f13e4453857b8eea1c07057690b61238b359262c5983977b6e7e7eb2fa5e6",
+      "retrievedAt": "2026-10-20T14:17:24.544322+00:00",
+      "retainedFileName": "ecard2-H13.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H13",
+      "sha256": "ae654236e2de1a49b4f2ee105c7fb73886d442a0eb6a68a76de74d79da841705",
+      "retrievedAt": "2026-10-20T14:17:27.274864+00:00",
+      "retainedFileName": "ecard2-H13.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H14.ts",
+      "sha256": "719646544c305f5eaf854b0f87d8e1fa6f525e27685dd569f98874d3c0b555aa",
+      "retrievedAt": "2026-10-20T14:17:24.478094+00:00",
+      "retainedFileName": "ecard2-H14.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H14",
+      "sha256": "c22b6c936510673ca444b66667771909828c0381ca6664fab1792499b81c4550",
+      "retrievedAt": "2026-10-20T14:17:27.275837+00:00",
+      "retainedFileName": "ecard2-H14.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H15.ts",
+      "sha256": "847be5aa930b080a6ad29c91a2acdaeaf05dc26ad34ad8933fbff23f1784d544",
+      "retrievedAt": "2026-10-20T14:17:27.174412+00:00",
+      "retainedFileName": "ecard2-H15.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H15",
+      "sha256": "418bed4258bc57fe2e18d82caaf367b5b3bd4975de04e4cb43ad7077d5c73c51",
+      "retrievedAt": "2026-10-20T14:17:27.273656+00:00",
+      "retainedFileName": "ecard2-H15.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H16.ts",
+      "sha256": "8ae1cbe0f1ccb13763ebfcaadf00a2e8be98020a4e7d2f23a76a5b3364f9b2a1",
+      "retrievedAt": "2026-10-20T14:17:27.222556+00:00",
+      "retainedFileName": "ecard2-H16.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H16",
+      "sha256": "5ebd9eb743f66f080f1fb911f460be6000da8ce9fcf1853f9a021177525115e1",
+      "retrievedAt": "2026-10-20T14:17:30.753733+00:00",
+      "retainedFileName": "ecard2-H16.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H17.ts",
+      "sha256": "15bd884109ac41f6b090f16d6d8424635148542ad10d412d13c16f3137618657",
+      "retrievedAt": "2026-10-20T14:17:30.940081+00:00",
+      "retainedFileName": "ecard2-H17.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H17",
+      "sha256": "713735d4130a0e43fa47508b59ba26f933cb05cca52e75d2360000aca0b7f477",
+      "retrievedAt": "2026-10-20T14:17:30.684205+00:00",
+      "retainedFileName": "ecard2-H17.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H18.ts",
+      "sha256": "7e498f08d8a5b85f6584bcbe812ba860c23ec0a88bffd6ab1e5727493a539468",
+      "retrievedAt": "2026-10-20T14:17:31.027171+00:00",
+      "retainedFileName": "ecard2-H18.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H18",
+      "sha256": "7357f96b99aad1228e4fc0cee6c9eaff82af82e54219db6bc1b88cdbd12a1af4",
+      "retrievedAt": "2026-10-20T14:17:30.802542+00:00",
+      "retainedFileName": "ecard2-H18.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H19.ts",
+      "sha256": "1a4e0d4ec07b47bf2e1d5b943ed85d60e2c1d58320cb13000472dfb90b5691bf",
+      "retrievedAt": "2026-10-20T14:17:30.990564+00:00",
+      "retainedFileName": "ecard2-H19.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H19",
+      "sha256": "846cd419857c52a7083a623fbf27cb5e798d8737c8efaa87d6e6a737560ba485",
+      "retrievedAt": "2026-10-20T14:17:33.694425+00:00",
+      "retainedFileName": "ecard2-H19.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H20.ts",
+      "sha256": "93fa6b3b3edd845747549e57331445a0b7c4a20e2a605d2ef26cb81ff512bc63",
+      "retrievedAt": "2026-10-20T14:17:33.906974+00:00",
+      "retainedFileName": "ecard2-H20.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H20",
+      "sha256": "6a24aa5356b4a5d20c7c8681214dd1ac818204159638014c5eca32000586d4b8",
+      "retrievedAt": "2026-10-20T14:17:33.693948+00:00",
+      "retainedFileName": "ecard2-H20.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H21.ts",
+      "sha256": "ee3ba703e15cb962cc6e702340bc043f163696bf0b32a15b298c53bf49e51a5d",
+      "retrievedAt": "2026-10-20T14:17:33.912772+00:00",
+      "retainedFileName": "ecard2-H21.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H21",
+      "sha256": "34ca7b65d965cc6806a0442aa8a8fdfbf470f65c1d70413e5f9d7f2b8ec17bfc",
+      "retrievedAt": "2026-10-20T14:17:33.806533+00:00",
+      "retainedFileName": "ecard2-H21.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H22.ts",
+      "sha256": "e7c845e45c6512e946735a2dc35598dccc4423e903773c35baf9635b2ba3342c",
+      "retrievedAt": "2026-10-20T14:17:33.995187+00:00",
+      "retainedFileName": "ecard2-H22.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H22",
+      "sha256": "6b8bd2973f03e50038e174e43bab9633795664cf8c2380f1e717b78cbff43a10",
+      "retrievedAt": "2026-10-20T14:17:37.111806+00:00",
+      "retainedFileName": "ecard2-H22.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H23.ts",
+      "sha256": "b752284bacb4a12de8e51b869ab08a20cf0a5f6803af328ae63b287dbbdf3e0c",
+      "retrievedAt": "2026-10-20T14:17:39.728075+00:00",
+      "retainedFileName": "ecard2-H23.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H23",
+      "sha256": "14953adc17c2c3acd51ae373493b7e766f4603ccc0de36bc51159e87f7976723",
+      "retrievedAt": "2026-10-20T14:17:37.043512+00:00",
+      "retainedFileName": "ecard2-H23.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H24.ts",
+      "sha256": "3314f062430e7d280894eedae6248c07370fb5a775f86a132a3e41f7437cfc07",
+      "retrievedAt": "2026-10-20T14:17:39.645791+00:00",
+      "retainedFileName": "ecard2-H24.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H24",
+      "sha256": "1036dfb67e6baecc5671256eb26bc3f3a9167e358813d84f78492a3b06489f52",
+      "retrievedAt": "2026-10-20T14:17:37.082708+00:00",
+      "retainedFileName": "ecard2-H24.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H25.ts",
+      "sha256": "e0c8f95c95e7929f123cdcfe6da24e3b9794a93478ffaa9170a2c2c3a5780397",
+      "retrievedAt": "2026-10-20T14:17:39.675399+00:00",
+      "retainedFileName": "ecard2-H25.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H25",
+      "sha256": "d75f6a0aa5a16d0c91d313dc5b394d4f9facdb1f1f8b420678713e40882faeed",
+      "retrievedAt": "2026-10-20T14:17:40.395314+00:00",
+      "retainedFileName": "ecard2-H25.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H26.ts",
+      "sha256": "4bc548bf4821fe2673c472753df4c4acc3b3d4deee8ca0de66f3be47d4fe190b",
+      "retrievedAt": "2026-10-20T14:17:40.620659+00:00",
+      "retainedFileName": "ecard2-H26.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H26",
+      "sha256": "743b52643b804081c73f44e9a6b78d7200c5dd86b2897995a5b0f33bc93c3da6",
+      "retrievedAt": "2026-10-20T14:17:40.434332+00:00",
+      "retainedFileName": "ecard2-H26.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H27.ts",
+      "sha256": "a37a1d0faa3aa27c764bafa8740c15309927fdc1c5032eec23bf2f2a3119a053",
+      "retrievedAt": "2026-10-20T14:17:40.601891+00:00",
+      "retainedFileName": "ecard2-H27.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H27",
+      "sha256": "d4d1039c2be4fc5658fc789c187269f2259e8ecab26ad87ae7ecd88c0ea949c9",
+      "retrievedAt": "2026-10-20T14:17:40.438349+00:00",
+      "retainedFileName": "ecard2-H27.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H28.ts",
+      "sha256": "11a00b0e75b6b17aaca1be01462d56abaaed46c9cea1409e1a5a8ae573ef40ac",
+      "retrievedAt": "2026-10-20T14:17:40.607905+00:00",
+      "retainedFileName": "ecard2-H28.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H28",
+      "sha256": "6d7fd19c298b15ffb4a0755d6b08ae0dd186cb71d5c1306d95aa7dd740b910fa",
+      "retrievedAt": "2026-10-20T14:17:43.217188+00:00",
+      "retainedFileName": "ecard2-H28.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H29.ts",
+      "sha256": "dfef4bb0e867e0b848475c5a8c37d0caeb1da1c329beaf5a60436c6106167ae1",
+      "retrievedAt": "2026-10-20T14:17:43.350299+00:00",
+      "retainedFileName": "ecard2-H29.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H29",
+      "sha256": "b89e8e8e0af32baaf501fbe3c9d0e1f1affec2516b9fc30bebec524fb6473da2",
+      "retrievedAt": "2026-10-20T14:17:43.147804+00:00",
+      "retainedFileName": "ecard2-H29.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H30.ts",
+      "sha256": "d21e29c89e9892d04e626531bab3849608388a7ce75ff741f9c17f726280e7e1",
+      "retrievedAt": "2026-10-20T14:17:43.336768+00:00",
+      "retainedFileName": "ecard2-H30.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H30",
+      "sha256": "a39c3ca428d1d1d215abb208d87c89cc88f9997b2a592cc5c6d2b16522dbd69a",
+      "retrievedAt": "2026-10-20T14:17:43.217706+00:00",
+      "retainedFileName": "ecard2-H30.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H31.ts",
+      "sha256": "4dd053fc26222815eeabcabcf5a35a9e84b9b3665055496f8bb89a10a5243751",
+      "retrievedAt": "2026-10-20T14:17:43.372218+00:00",
+      "retainedFileName": "ecard2-H31.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H31",
+      "sha256": "0a7fedd2599b724e9e2f230711748311ca48a5ea646307c9a9a2942f241674ea",
+      "retrievedAt": "2026-10-20T14:17:45.947731+00:00",
+      "retainedFileName": "ecard2-H31.json"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tcgdex/cards-database/cbddf7e54033b1b58e44af1049c88832e55b94d0/data/E-Card/Aquapolis/H32.ts",
+      "sha256": "02c6099117f199e5dfd2e5d4ac74f07e6da7ec431a87c685f7a229a2a1bb2090",
+      "retrievedAt": "2026-10-20T14:17:45.658674+00:00",
+      "retainedFileName": "ecard2-H32.ts"
+    },
+    {
+      "url": "https://api.tcgdex.net/v2/en/cards/ecard2-H32",
+      "sha256": "3daeabee2492e81f041fe0adf8612fbf626e7e1641bb881b79044af36a8c79cc",
+      "retrievedAt": "2026-10-20T14:17:46.025688+00:00",
+      "retainedFileName": "ecard2-H32.json"
+    }
+  ]
+}

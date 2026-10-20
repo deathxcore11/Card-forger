@@ -2,6 +2,7 @@
 """Build extra recognition facts from canonical snapshots; never execute upstream TS."""
 import gzip,json,re,sys,tarfile,hashlib
 from pathlib import Path
+from source_literals import parse,card_signals
 src=Path(sys.argv[1]);archive=Path(sys.argv[2]);out=Path(__file__).resolve().parents[1]/'scanidx'
 manifest=json.loads((out/'catalog-manifest.json').read_text())
 def save(g,rows,kind):
@@ -24,13 +25,7 @@ with tarfile.open(archive) as tar:
   if ': Card' not in text:continue
   parent=str(Path(name).parent);sid=sets.get(parent);local=Path(name).stem
   if not sid or sid+'-'+local not in existing:continue
-  hp=re.search(r'\bhp:\s*(\d+)',text);stage=re.search(r'\bstage:\s*[\'\"]([^\'\"]+)',text)
-  attacks=text.split('attacks:',1)[-1] if 'attacks:' in text else ''
-  names=re.findall(r'name:\s*\{\s*en:\s*"([^"\n]+)"',attacks)
-  values={}
-  if hp:values['hp']=int(hp[1])
-  if stage:values['stage']=stage[1]
-  if names:values['attackNames']=names[:4]
+  values=card_signals(parse(text))
   if values:rows[sid+'-'+local]=values
  save('ptcg',rows,'id')
  (out/'TCGDEX-LICENSE.txt').write_bytes(tar.extractfile('cards-database-master/LICENSE').read())

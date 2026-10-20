@@ -1,6 +1,6 @@
 // What a card photo's text says, per game. The phone reads the text (Tesseract, offline);
 // these turn that text into things worth looking up — exact-printing codes first, names second.
-import {pokemonPrintedName} from './pokemon-identity.js';
+import {pokemonPrintedName,pokemonIdentityNames} from './pokemon-identity.js';
 
 // Structural labels are alternate title readings, not permission to discard words.
 // Keep the original too: e.g. Energy Stadium is itself a real card name.
@@ -34,14 +34,13 @@ const clean = (s) =>
     .replace(/\s*[@€©]\s*[X?x×](?![A-Za-z])|\s*@(?![A-Za-z])|\s*\beX\b/g, " ex")
     .replace(/\{[^}]*\}/g, "")
     .replace(/[|©®™]/g, " ")
-    .replace(/\s+[0-9][0-9\s]*$/, "")
     .replace(/^[^A-Za-z]+/, "")
-    .replace(/[^A-Za-z0-9 ,.'’\-&!]/g, " ")
+    .replace(/[^A-Za-z0-9 ,.'’\-&!?]/g, " ")
     .replace(/\s+/g, " ")
-    .replace(/\s+[0-9][0-9\s]*$/, "")
+    .replace(/\s+\d{5,}\s*$/, "")
     .trim()
     // Stray one- or two-letter fragments after the name (glare, set symbols): "DARK MAGICIAN HE".
-    .replace(/(\s+[A-Za-z]{1,2})+$/, (m) => (/\s(ex|EX|GX|V)$/.test(m) ? m : ""))
+    .replace(/(\s+[A-Za-z]{1,2})+$/, (m,_letters,_offset,whole) => (/^Unown [A-Z!?]$/i.test(whole)||/\s(ex|EX|GX|V|Up|UP|G|FB|C)$/.test(m) ? m : ""))
     .trim();
 
 const IGNORE = {
@@ -335,6 +334,10 @@ export function nameCandidates(g, text, max = 6) {
       if (s.length >= 3 && (s.match(/[A-Za-z]/g) || []).length >= 3 && !out.includes(s)) out.push(s);
     };
   for (const name of scanNamesFor(g, text)) {
+    // Preserve the intact title before generating lossy search alternatives.
+    // Digits, Up and short form designations can be semantic card content.
+    if(/^[a-z]{1,3} [A-Z]/.test(name))push(name.replace(/^[a-z]{1,3}\s+/,""));
+    push(name);
     const tokens = name.split(" "),
       words = tokens.filter((w) => /^[A-Za-z][A-Za-z'’,.\-&!]*$/.test(w) && (w.length > 2 || /^(of|the|a|an|to|in|on|ex|EX|GX|V)$/i.test(w)));
     // Names are capitalised: lowercase scraps ("aac") around them are noise.
@@ -376,7 +379,7 @@ export const prefixQuery = (name, n = 3) =>
 export const scanNameKey = name => String(name || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
 export const scanCardNameKey=(game,name)=>scanNameKey(game==='ptcg'?pokemonPrintedName(name):name);
 export function scanCandidateMatches(card, name, numbers = []) {
-  if (!card || scanCardNameKey('ptcg',card.name) !== scanCardNameKey('ptcg',name)) return false;
+  if (!card || !pokemonIdentityNames(card).some(n=>scanCardNameKey('ptcg',n)===scanCardNameKey('ptcg',name))) return false;
   if (!numbers.length) return true;
   return numbers.some(n => ptcgNumberMatches(card, n));
 }

@@ -148,7 +148,7 @@ export async function startServer(){
  await new Promise(r=>server.listen(0,'127.0.0.1',r));return {base:`http://127.0.0.1:${server.address().port}`,close:()=>new Promise(r=>server.close(r))};
 }
 const historyEndpoint=new URL('/functions/v1/market-history',SUPABASE.url);
-export async function openSearchApp(browser,base,{game='mtg',width=390,height=1000,hasTouch=true,pendingDetails=false,evidenceLabel=game,sandboxPreviews=false,accountFixture=null,prepareFixtures=null}={}){
+export async function openSearchApp(browser,base,{game='mtg',width=390,height=1000,hasTouch=true,pendingDetails=false,evidenceLabel=game,sandboxPreviews=false,accountFixture=null,prepareFixtures=null,providerOverride=null}={}){
  assert.equal(process.env.GITHUB_ACTIONS,'true','Browser fixture execution is hosted-CI only');assert.match(base,/^http:\/\/127\.0\.0\.1:\d+$/);
  const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:1,hasTouch,reducedMotion:'reduce',locale:'en-US',timezoneId:'UTC',serviceWorkers:sandboxPreviews?'allow':'block'}),page=await context.newPage();page.setDefaultTimeout(15000);
  const errors=[],writes=[],unexpected=[],requests=[],gates=[],rules=[],fixtures=makeSearchFixtures(game,{pendingDetails});
@@ -176,6 +176,7 @@ export async function openSearchApp(browser,base,{game='mtg',width=390,height=10
   if(req.method()==='OPTIONS')return fulfill('',204,'text/plain');
   for(const gate of gates)if(!gate.used&&gate.match(url,req)){gate.used=true;gate.started();await gate.wait;}
   const planned=rules.find(r=>r.remaining>0&&r.match(url,req));if(planned){planned.remaining--;return fulfill({error:'Synthetic source outage',message:'Synthetic source unavailable'},planned.status);}
+  if(providerOverride){const response=providerOverride(url,req);if(response!==undefined)return fulfill(response.body??response,response.status||200,response.contentType||'application/json');}
   if(url.hostname==='fonts.googleapis.com')return fulfill('/* synthetic fixture system fonts */',200,'text/css');
   if(req.resourceType()==='image'&&(Object.values(COMMUNITY_ILLUSTRATIONS).some(x=>new URL(x.url,base+'/').href===url.href)||isSupplementFixtureImage(url.href)||url.hostname==='search-fixtures.invalid'||url.hostname==='svgs.scryfall.io'||url.hostname==='images.ygoprodeck.com'||url.hostname==='images.pokemontcg.io'||url.origin===base&&/^\/img\/(ygo|pks)\//.test(url.pathname)))return fulfill(SVG,200,'image/svg+xml');
   if(url.origin===historyEndpoint.origin&&url.pathname===historyEndpoint.pathname)return fulfill({game:url.searchParams.get('game'),cardId:url.searchParams.get('id'),finish:url.searchParams.get('finish'),series:[]});

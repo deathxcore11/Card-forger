@@ -11,7 +11,7 @@ export function pokemonFallback(c){
  if(set==='smp' && /^SM\d{1,3}$/i.test(collector))return `https://images.pokemontcg.io/smp/${collector.toUpperCase()}_hires.png`;
  const matched=POKEMON_SET_ART[set];
  if(!code && matched && /^(?:[A-Za-z]{0,5})\d{1,3}$/.test(collector)){
-  const number=/^\d+$/.test(collector)?String(Number(collector)):collector.toUpperCase();
+  const number=/^\d+$/.test(collector)?String(Number(collector)):['ecard2','ecard3'].includes(set)&&/^H0[1-9]$/i.test(collector)?collector.toUpperCase().replace('H0','H'):collector.toUpperCase();
   const gallery=/^(GG|TG)\d+$/i.test(collector);
   return `https://images.pokemontcg.io/${matched.id}/${gallery?collector.toUpperCase():number}_hires.png`;
  }
@@ -24,6 +24,7 @@ export function pokemonFallback(c){
 // me55c/29 was also confirmed as a card back in the 3.85.6 live review.
 // A genuine exact-printing alternative remains eligible. Recheck before removing.
 export function knownPokemonPlaceholder(url){
+ if(/^https:\/\/images\.pokemontcg\.io\/ecard[23]\/H0[1-9](?:_hires)?\.png(?:\?.*)?$/.test(String(url||'')))return true;
  return /^https:\/\/images\.pokemontcg\.io\/me55c\/(?:[1-9]|1[0-2]|29)(?:_hires)?\.png(?:\?.*)?$/.test(String(url||''));
 }
 export function artworkSources(c,large=false){

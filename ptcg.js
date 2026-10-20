@@ -1,7 +1,8 @@
-import {POKEMON_VARIANT_SCHEMA,pokemonDetailedRecords,pokemonPhysicalFinish,syncPokemonVariantAliases} from './pokemon-variant-options.js';
+import {applyPokemonCorrections} from './pokemon-corrections.js';
+import {POKEMON_VARIANT_SCHEMA,pokemonDetailedRecords,pokemonPhysicalFinish,pokemonSourceIdentity,pokemonSourceLiteral,syncPokemonVariantAliases} from './pokemon-variant-options.js';
 import {pokemonPromoEvidence,pokemonPromoAliasMatches,pokemonPromoRootProduct} from './pokemon-promo-evidence.js';
 import {referenceQuote} from './price-reference.js';
-import {pokemonPrintedName,pokemonPrintedNameKey} from './pokemon-identity.js';
+import {pokemonPrintedName,pokemonPrintedNameKey,pokemonPrintedIdentifier} from './pokemon-identity.js';
 import {applyProductPrices} from "./pokemon-prices.js";
 import {POKEMON_SET_ART} from './pokemon-set-art.js';
 import {pokemonFallback} from "./artwork.js";
@@ -26,7 +27,7 @@ const VARIANT_LABEL = { normal: "Normal", holofoil: "Holofoil", "reverse-holofoi
 // stamped promos, copyright runs and other versions omitted by pricing alone.
 export function pokemonVariants(c) {
   const legacy = Object.entries(c.pricing?.tcgplayer || {}).filter(([,v]) => v && typeof v === "object" && "marketPrice" in v)
-    .map(([key,v]) => ({ key, label: VARIANT_LABEL[key] || key, usd: referenceQuote(v)?.value??null, priceKind:referenceQuote(v)?.kind, low:n(v.lowPrice), mid:n(v.midPrice), market:n(v.marketPrice), productId:v.productId }));
+    .map(([key,v]) => ({ key, label: VARIANT_LABEL[key] || key, usd: referenceQuote(v)?.value??null, priceKind:referenceQuote(v)?.kind, low:n(v.lowPrice), mid:n(v.midPrice), market:n(v.marketPrice), productId:v.productId, sourceUpdatedAt:c.pricing?.tcgplayer?.updated||null }));
   const out = new Map();
   const title = value => String(value).split("-").map(x => x.charAt(0).toUpperCase()+x.slice(1)).join(" ");
   for (const record of pokemonDetailedRecords(c)) {
@@ -51,16 +52,22 @@ export function pokemonVariants(c) {
     const foilLabel = {pokeball:"Poké Ball",masterball:"Master Ball"}[foil] || (foil ? title(foil) : "");
     const evidence=pokemonPromoEvidence(c.id,d.thirdParty?.tcgplayer);
     const label = [evidence?.label||"", first ? "First Edition" : "", d.subtype ? title(d.subtype) : "", ...(d.stamp || []).filter(x => x !== "1st-edition").map(x => x === "set-logo" ? "Set-logo stamped" : title(x)), d.size && d.size !== "standard" ? title(d.size) : "", {holo:"Holofoil",reverse:"Reverse Holo",normal:"Normal"}[d.type] || title(d.type || "Version"), foilLabel].filter(Boolean).join(" · ");
-    if(out.has(key)){out.set(key,{key,label:"Version identity unconfirmed",finish:"",usd:null});continue;}
-    out.set(key, { key, label, finish, foil, ...(exactPatternQuote && q === exactPatternQuote ? {pricePrinting:"Holofoil"} : {}), size:d.size||"standard", subtype:d.subtype||"", stamps:[...(d.stamp||[])], usd:referenceQuote(q)?.value??null, priceKind:referenceQuote(q)?.kind, low:n(q.lowPrice), mid:n(q.midPrice), market:n(q.marketPrice), productId:q.productId || d.thirdParty?.tcgplayer, cmProduct:d.thirdParty?.cardmarket, detailed:true, image: typeof d.image === "string" ? (/[.](?:webp|png|jpe?g)(?:[?]|$)/i.test(d.image) ? d.image : ptcgImage(d.image)) : "", imageLarge: typeof d.image === "string" ? (/[.](?:webp|png|jpe?g)(?:[?]|$)/i.test(d.image) ? d.image : ptcgImage(d.image,"high")) : "" });
+    if(out.has(key)){const previous=out.get(key);if(previous.sourceCanonicalLiteral===pokemonSourceLiteral(d)){previous.sourceRecordIndexes.push(record.sourceIndex);previous.sourceLiterals.push(JSON.stringify(d));continue;}out.set(key,{key,label:"Version identity unconfirmed",finish:"",usd:null,bindingStatus:"ambiguous",sourceRecordIndexes:[...(previous.sourceRecordIndexes||[]),record.sourceIndex]});continue;}
+    out.set(key, { key, label:record.providerIdConflict?label+" · source identity unconfirmed":label, finish, foil, sourceLiteral:JSON.stringify(d),sourceLiterals:[JSON.stringify(d)],sourceCanonicalLiteral:pokemonSourceLiteral(d),sourceIdentity:pokemonSourceIdentity(d),sourceRecordIndexes:[record.sourceIndex],legacyKey:record.legacyKey,bindingStatus:"source-record", ...(exactPatternQuote && q === exactPatternQuote ? {pricePrinting:"Holofoil"} : {}), size:d.size??null, language:d.language??null,region:d.region??null,edition:d.edition??null,artIdentity:d.artIdentity??null,subtype:d.subtype||"", stamps:[...(d.stamp||[])], usd:record.providerIdConflict?null:referenceQuote(q)?.value??null, priceKind:referenceQuote(q)?.kind, low:n(q.lowPrice), mid:n(q.midPrice), market:n(q.marketPrice), productId:q.productId || d.thirdParty?.tcgplayer, cmProduct:d.thirdParty?.cardmarket, sourceUpdatedAt:d.pricing?.tcgplayer?.updated||null, detailed:true, image: typeof d.image === "string" ? (/[.](?:webp|png|jpe?g)(?:[?]|$)/i.test(d.image) ? d.image : ptcgImage(d.image)) : "", imageLarge: typeof d.image === "string" ? (/[.](?:webp|png|jpe?g)(?:[?]|$)/i.test(d.image) ? d.image : ptcgImage(d.image,"high")) : "" });
   }
   for (const v of legacy) {
     const have = out.get(v.key);
     if (!have) {
       if(v.key==='holofoil'&&pokemonPromoRootProduct(c.id)&&String(v.productId)!==String(pokemonPromoRootProduct(c.id))){out.set(v.key,{key:v.key,label:'Version identity unconfirmed',usd:null});continue;}
       const candidates=[...out.values()].filter(x=>x.detailed&&x.productId&&String(x.productId)===String(v.productId)&&x.finish===pokemonPhysicalFinish(v)&&pokemonPromoAliasMatches(c.id,v,x));
-      if(candidates.length===1){const canonical=candidates[0];if(canonical.usd==null)Object.assign(canonical,{usd:v.usd,priceKind:v.priceKind,low:v.low,mid:v.mid,market:v.market});out.set(v.key,{...canonical,key:v.key,aliasOf:canonical.key});}
-      else out.set(v.key,v);
+      if(candidates.length===1){const canonical=candidates[0];if(canonical.usd==null)Object.assign(canonical,{usd:v.usd,priceKind:v.priceKind,low:v.low,mid:v.mid,market:v.market,sourceUpdatedAt:v.sourceUpdatedAt});out.set(v.key,{...canonical,key:v.key,aliasOf:canonical.key});}
+      else {
+        // A pricing bucket is not an additional physical printing. If source
+        // records already describe this finish, retain an unbound bucket as a
+        // reference rather than drawing a second indistinguishable button.
+        const described=[...out.values()].some(x=>x.detailed&&x.finish===pokemonPhysicalFinish(v));
+        out.set(v.key,described?{...v,referenceOnly:true,bindingStatus:'unbound-reference'}:v);
+      }
     }
     else if (have.usd == null && !have.productId && !/identity unconfirmed/i.test(have.label)) out.set(v.key,{ ...have, ...v, label: have.label, finish: have.finish, image: have.image, imageLarge: have.imageLarge });
   }
@@ -176,8 +183,8 @@ function normalizedAttack(card, attack) {
   const sourceEffect = String(attack.effect ?? ''), effect = plainText(sourceEffect);
   const corrected = card.id === 'neo1-9' && card.name === 'Lugia' && (!card.set?.id || card.set.id === 'neo1') &&
     (!card.localId || /^0*9$/.test(String(card.localId))) && attack.name === 'Elemental Blast' && effect === BROKEN_LUGIA_EFFECT;
-  return {cost:attack.cost || [], name:attack.name, damage:attack.damage ?? '', effect:corrected ? LUGIA_EFFECT : effect,
-    sourceEffect, ...(corrected ? {effectProvenance:{source:'Neo Genesis 9/111 printed card',
+  return {cost:attack.cost || [],costState:Object.hasOwn(attack,'cost')?'present':'unknown', name:attack.name, damage:attack.damage ?? '', effect:corrected ? LUGIA_EFFECT : effect,
+    sourceEffect,...(attack.sourceName?{sourceName:attack.sourceName,printedNameProvenance:attack.printedNameProvenance}:{}), ...(corrected ? {effectProvenance:{source:'Neo Genesis 9/111 printed card',
       url:'https://images.pokemontcg.io/neo1/9_hires.png',
       corroboratedBy:'https://www.tcgcollector.com/cards/979/lugia-neo-genesis-9-111',
       verified:'2026-10-18',correction:'Restored the printed Fire, Water and Lightning discard symbols.'}} : {}),
@@ -192,14 +199,12 @@ function cardSet(c) {
   const id = c.set?.id || parsed?.[1];
   if (!id) return null;
   const known = catalogueSets.get(id) || {}, set = pokemonCatalogueSet({...known,...c.set,id});
-  return {id, name:set.name || '', number:String(c.localId ?? c.set?.number ?? parsed?.[2] ?? ''),
-    total:set.cardCount?.official ?? set.total ?? set.count, symbol:set.symbol || '', releaseDate:set.releaseDate || set.date || ''};
+  return {id, name:set.name || '', number:pokemonPrintedIdentifier(id,c.localId ?? c.set?.number ?? parsed?.[2],null).number,
+    total:pokemonPrintedIdentifier(id,c.localId ?? c.set?.number ?? parsed?.[2],set.cardCount?.official ?? set.total ?? set.count).total, catalogueTotal:set.cardCount?.official ?? set.catalogueTotal ?? set.total ?? set.count, symbol:set.symbol || '', releaseDate:set.releaseDate || set.date || ''};
 }
 export function normalizePtcg(c) {
-  // TCGdex has no stage for many older EX/GX cards (Celebi-EX, Palkia GX). A Pokémon that
-  // evolves from nothing is a Basic Pokémon.
-  // V-UNION pieces and LEGEND halves aren't Basic Pokémon.
-  if (c.category === "Pokemon" && !c.stage && !c.evolveFrom && !/V-UNION|\bLEGEND$/.test(c.name || "")) c = { ...c, stage: "Basic" };
+  c=applyPokemonCorrections(c);
+  // Missing evolution metadata is unknown; absence does not establish Basic.
   // Older trainers often have no type: read it from the rules text, as the card itself says.
   if (c.category === "Trainer" && !c.trainerType) {
     const t = plainText(c.effect || c.description || "");
@@ -221,10 +226,14 @@ export function normalizePtcg(c) {
   if (c.resistances?.length) stats.push(["Resistance", c.resistances.map((w) => w.type + " " + (w.value || "")).join(", ")]);
   if (c.retreat !== undefined) stats.push(["Retreat", c.retreat]);
   if (c.regulationMark) stats.push(["Regulation", c.regulationMark]);
-  const attacks = (c.attacks || []).map(a => normalizedAttack(c,a)), set = cardSet(c);
+  const localized=value=>typeof value==='string'?value:typeof value?.en==='string'?value.en:'';
+  const abilities=(c.abilities||[]).map(a=>({type:a.type||'Ability',name:localized(a.name),effect:plainText(localized(a.effect)),nameStatus:localized(a.name)?'present':'unknown'}));
+  const heldItems=(c.heldItems||[]).map(a=>({name:localized(a.name),effect:plainText(localized(a.effect))}));
+  const attacks = (c.attacks || []).map(a => normalizedAttack(c,{...a,name:localized(a.name),effect:localized(a.effect)})), set = cardSet(c);
   const text = [
-    ...(c.abilities || []).map((a) => `${a.type || "Ability"}: ${a.name}\n${plainText(a.effect)}`),
-    ...attacks.map((a) => `[${a.cost.join(" · ") || "—"}] ${a.name}${a.damage ? " — " + a.damage : ""}${a.effect ? "\n" + a.effect : ""}${a.effectIncomplete ? '\nRules text may be incomplete; check the printed card.' : ''}`),
+    ...abilities.map(a=>`${a.type}: ${a.name||"Name unavailable"}\n${a.effect}`),
+    ...heldItems.map(a=>`Held item: ${a.name||"Name unavailable"}\n${a.effect}`),
+    ...attacks.map((a) => `[${a.cost.join(" · ") || "—"}] ${a.name}${a.damage!==''&&a.damage!=null ? " — " + a.damage : ""}${a.effect ? "\n" + a.effect : ""}${a.effectIncomplete ? '\nRules text may be incomplete; check the printed card.' : ''}`),
     plainText(c.effect),
     c.description && !c.attacks ? plainText(c.description) : "",
   ].filter(Boolean).join("\n\n");
@@ -237,6 +246,7 @@ export function normalizePtcg(c) {
     id: c.id,
     name: c.name,
     category: c.category || "Pokemon",
+    ...(c.corrections?{corrections:c.corrections}:{}),...(c.correctionConflicts?{correctionConflicts:c.correctionConflicts}:{}),
     typeLine: [c.category === "Pokemon" ? "Pokémon" : c.category, c.stage?.replace(/^Stage(\d)/, "Stage $1"), c.trainerType, c.energyType && c.energyType + " Energy", c.types?.join("/")].filter(Boolean).join(" · "),
     text,
     stats,
@@ -251,8 +261,9 @@ export function normalizePtcg(c) {
     legal: { standard: typeof c.legal?.standard === 'boolean' ? c.legal.standard : null, expanded: typeof c.legal?.expanded === 'boolean' ? c.legal.expanded : null },
     regulationMark: c.regulationMark || "",
     stage: c.stage || "",
-    hp: c.hp || null,
-    abilities: (c.abilities || []).map((a) => ({ type: a.type || "Ability", name: a.name, effect: plainText(a.effect) })),
+    hp: c.hp ?? null,
+    abilities,
+    heldItems,
     attacks,
     rulesIncomplete:attacks.some(a => a.effectIncomplete),
     effect: plainText(c.effect),

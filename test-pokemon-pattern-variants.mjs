@@ -10,7 +10,7 @@ import {needsCardRefresh} from './tcg.js';
 // not a current price promise. Source: /v2/en/cards/{fixture id}.
 const raw=JSON.parse(readFileSync('tests/fixtures/golurk-sv10.5b-043.json'));
 const c=normalizePtcg(raw),v=c.variants;
-assert.equal(c.variantSchema,12);assert.equal(v.length,4);
+assert.equal(c.variantSchema,13);assert.equal(v.length,4);
 assert.deepEqual(v.map(x=>x.label),['Normal','Reverse Holo','Reverse Holo · Poké Ball','Reverse Holo · Master Ball']);
 assert.deepEqual(v.map(x=>x.key),['normal','reverse-holofoil','detail:3739bbtj3i910y5ynn9xc6ryf','detail:2asus05yghmpd1ud1sdmlq3as4e'],'Existing collection variant keys stay stable');
 assert.deepEqual(v.map(x=>x.productId),[642495,642495,642739,642666]);

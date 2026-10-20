@@ -1,5 +1,5 @@
 import {pokemonTitleReadings,shortTrainerNames,pokemonTitleLabel,scanNameKey,scanCardNameKey,ptcgNumbers,ptcgNumberMatches,ptcgIdentifierKey,scanCollectorKey,mtgIdentifierEvidence,ygoCodeReadings,ygoPasscodes} from './scan.js';
-import {pokemonTrainerSubtitle} from './pokemon-identity.js';
+import {pokemonTrainerSubtitle,pokemonIdentityNames} from './pokemon-identity.js';
 export const collectorKey=value=>String(value??'').trim().replace(/^0+(?=\d)/,'').toLowerCase();
 // Evidence is independent of which observations happen to exist in the local
 // catalogue. One known reading plus a different unknown reading is still a conflict.
@@ -20,7 +20,7 @@ export function readScanSignals(g,read={}){
 // Keep primary title readings separate from search substrings and from rules/footer
 // hints. A fuzzy search hit is not evidence that a different printed title agrees.
 export function scanTitleEvidence(g,card,read={}){
- const canonical=String(card?.name||''),nameKey=n=>scanCardNameKey(g,n),subtitle=g==='ptcg'?scanNameKey(pokemonTrainerSubtitle(canonical)):'',faces=[canonical,...(card?.card_faces||[]).map(c=>c.name),...canonical.split(/\s+\/\/\s+/)].map(nameKey).filter(Boolean);
+ const canonical=String(card?.name||''),nameKey=n=>scanCardNameKey(g,n),subtitle=g==='ptcg'?scanNameKey(pokemonTrainerSubtitle(canonical)):'',faces=[...(g==='ptcg'?pokemonIdentityNames(card):[canonical]),...(card?.card_faces||[]).map(c=>c.name),...canonical.split(/\s+\/\/\s+/)].map(nameKey).filter(Boolean);
  const observations=Array.isArray(read.titles)&&read.titles.length?read.titles:[{text:String(read.name||''),source:'title',confidence:null}];
  const primary=[],weak=[];
  // Recognition already caps observations; never discard a later contradictory title.
@@ -46,6 +46,8 @@ export function signalEvidence(g,card,read={}){
  if(s.stage&&card?.stage){if(!stages.includes(String(card.stage).replace(/\s/g,'').toLowerCase()))conflicts.push('stage');else agrees.push('stage');}
  if(s.mana&&card?.mana_cost){if(s.mana!==String(card.mana_cost).toUpperCase())conflicts.push('mana cost');else agrees.push('mana cost');}
  const {observations,passcodes=[],identifierConflict,identifierUncertain=false}=scanIdentifierEvidence(g,read);
+ if(read.game&&read.game!==g)conflicts.push('game');
+ if(g==='ptcg'&&read.setId&&card?.set?.id&&String(read.setId)!==String(card.set.id))conflicts.push('set');
  if(g==='ptcg'){if(observations.length&&card?.set?.number&&card?.set?.total){if(!observations.some(n=>ptcgNumberMatches(card,n)))conflicts.push('collector number');else agrees.push('collector number');}}
  if(g==='mtg'){if(observations.length&&card?.set&&card?.collector_number){if(!observations.some(c=>c.set===String(card.set).toLowerCase()&&collectorKey(c.number)===collectorKey(card.collector_number)))conflicts.push('set / collector number');else agrees.push('set / collector number');}}
  if(g==='ygo'){

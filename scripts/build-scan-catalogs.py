@@ -8,7 +8,8 @@ Descriptions, prices and card images are deliberately excluded.
 import gzip,hashlib,json,sys
 from pathlib import Path
 from datetime import datetime,timezone
-src=Path(sys.argv[1]);out=Path(__file__).resolve().parents[1]/'scanidx';now=datetime.now(timezone.utc).isoformat();manifest={'schema':1,'updated':now,'games':{}}
+import os
+src=Path(sys.argv[1]);out=Path(__file__).resolve().parents[1]/'scanidx';now=datetime.fromtimestamp(int(os.environ['SOURCE_DATE_EPOCH']),timezone.utc).isoformat() if 'SOURCE_DATE_EPOCH' in os.environ else datetime.now(timezone.utc).isoformat();manifest={'schema':1,'updated':now,'games':{}}
 def save(game,rows):
  obj={'schema':1,'game':game,'updated':now,'rows':rows};raw=json.dumps(obj,separators=(',',':'),ensure_ascii=False).encode();compressed=gzip.compress(raw,compresslevel=9,mtime=0);filename=game+'-catalog-v1.json.gz';(out/filename).write_bytes(compressed)
  manifest['games'][game]={'file':'scanidx/'+filename,'count':len(rows),'bytes':len(compressed),'unpackedBytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest()};print(game,len(rows),len(compressed),'bytes',flush=True)
@@ -28,7 +29,10 @@ for c in json.loads((src/'scan-ptcg-cards.json').read_text()):
  sid=c['id'].rsplit('-',1)[0]
  if sid.startswith(('A','P-A')) or any('/tcgp/' in '/'+str(path).lower() for path in (c.get('image',''),paths.get(c['id'],''))):continue
  st=sets.get(sid,{})
- rows.append([c['id'],c['name'],sid,c.get('localId',c['id'].rsplit('-',1)[-1]),st.get('cardCount',{}).get('official'),st.get('name',sid),paths.get(c['id'],'')])
+ number=c.get('localId',c['id'].rsplit('-',1)[-1]);total=st.get('cardCount',{}).get('official')
+ row=[c['id'],c['name'],sid,number,32 if sid in ['ecard2','ecard3'] and __import__('re').fullmatch(r'H0*([1-9]|[12]\d|3[0-2])',number) else total,st.get('name',sid),paths.get(c['id'],'')]
+ if row[4]!=total:row.append(total)
+ rows.append(row)
 save('ptcg',rows)
 rows=[]
 for c in json.loads((src/'scan-ygo-cards.json').read_text())['data']:

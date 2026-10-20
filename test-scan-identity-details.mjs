@@ -1,3 +1,4 @@
+import {POKEMON_VARIANT_SCHEMA} from './pokemon-variant-options.js';
 import assert from 'node:assert/strict';
 import {ptcgSource} from './ptcg.js';
 import {registerTcg,cache,SOURCES,needsCardRefresh} from './tcg.js';
@@ -17,7 +18,7 @@ const context={A:{},C:{},I:{},render(){},openSheet(){},closeSheet(){},toast(){},
 registerTcg(context);
 for(const game of ['ptcg','ygo']){
   const original=SOURCES[game].get,id='identity-only-'+game;
-  const metadata={...detail,id,game,name:'Metadata card',fetchedAt:new Date().toISOString(),...(game==='ptcg'?{variantSchema:12,priceFallbackSchema:0}:{artSchema:1})};
+  const metadata={...detail,id,game,name:'Metadata card',fetchedAt:new Date().toISOString(),...(game==='ptcg'?{variantSchema:POKEMON_VARIANT_SCHEMA,priceFallbackSchema:0}:{artSchema:1})};
   const calls=[];SOURCES[game].get=async(key,options)=>{calls.push(options);return {...metadata,...(options.prices===false?{}:game==='ptcg'?{priceFallbackSchema:3}:{printPriceSchema:1})};};
   try{
     delete cache[game][id];
