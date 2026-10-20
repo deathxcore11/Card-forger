@@ -68,6 +68,32 @@ try {
  assert.equal(valueHistoryModel([valueSnapshot('2026-10-17',10),valueSnapshot('2026-10-18',10)],VALUE_NOW).change.direction,'flat');assert.equal(valueHistoryModel([valueSnapshot('2026-10-17',10),valueSnapshot('2026-10-18',8.75)],VALUE_NOW).change.direction,'down');
  const duplicate=valueHistoryModel([valueSnapshot('2026-10-18',10),valueSnapshot('2026-10-16',7),valueSnapshot('2026-10-18',12)],VALUE_NOW);assert.deepEqual(duplicate.points.map(p=>p.total),[7,12]);
  const one=valueHistoryChart([valueSnapshot('2026-10-18',2.12)],VALUE_NOW);assert.equal((one.match(/class="value-chart-point/g)||[]).length,1);assert.doesNotMatch(one,/class="value-chart-line/);assert.match(one,/No earlier values have been estimated/);assert.match(one,/Plotted values: <strong>\$2\.12<\/strong>/,'one value is not presented as a fake range');const flat=valueHistoryChart([valueSnapshot('2026-10-17',2.12),valueSnapshot('2026-10-18',2.12)],VALUE_NOW);assert.match(flat,/Plotted values: <strong>\$2\.12<\/strong>/);assert.doesNotMatch(valueHistoryChart([valueSnapshot('2026-10-18',0,{unpriced:4})],VALUE_NOW),/value-chart-range/,'all unavailable history has no fake range');
+ // Same shared subtotal rule for every game's actual Value renderer. Matching
+ // counts do not prove the same priced cards; collection/custom edits can count.
+ const partialPoint=(date,total,patch={})=>valueSnapshot(date,total,{copies:6,unpriced:2,...patch});
+ const partialHistory=[valueSnapshot('2026-10-14',10.1,{copies:6}),partialPoint('2026-10-16',8.34),partialPoint('2026-10-18',9.44)];
+ const partialBefore=JSON.stringify(partialHistory),partialModel=valueHistoryModel(partialHistory,VALUE_NOW);
+ assert.equal(partialModel.change.delta,1.1);assert.equal(partialModel.change.date,'2026-10-16');assert.equal(partialModel.change.status,'partial');
+ const subtotalChart=valueHistoryChart(partialHistory,VALUE_NOW);assert.equal((subtotalChart.match(/class="value-chart-line"/g)||[]).length,1);assert.match(subtotalChart,/data-value-series="partial"/);assert.match(subtotalChart,/Known-subtotal change since Oct 16, 2026/);assert.match(subtotalChart,/priced cards may differ/);assert.match(subtotalChart,/not market-only returns/);assert.match(subtotalChart,/Snapshot dates are UTC/);assert.doesNotMatch(subtotalChart,/Incomplete and legacy snapshots are not compared|Lines stop where price coverage is incomplete/);
+ for(const game of ['mtg','ptcg','ygo']) {
+  const subtotal=valuePageOverview({game,value:{total:9.44,copies:6,unpriced:2},history:partialHistory,now:VALUE_NOW});
+  assert.match(subtotal,/Known subtotal · USD/);assert.match(subtotal,/Known-subtotal change since Oct 16, 2026/);assert.equal((subtotal.match(/class="value-chart-line"/g)||[]).length,1);assert.doesNotMatch(subtotal,/data-value-saved-note/);
+  const changed=valuePageOverview({game,value:{total:9.445,copies:6,unpriced:2},history:partialHistory,now:VALUE_NOW});assert.match(changed,/Latest saved subtotal: \$9\.44 on Oct 18, 2026 \(UTC\)/);assert.match(changed,/data-value-amount>\$9\.45</);
+  assert.doesNotMatch(valuePageOverview({game,value:{total:9.44000000001,copies:7,unpriced:3},history:partialHistory,now:VALUE_NOW}),/data-value-saved-note/,'equal displayed cents and changed counts are not a numeric-difference claim');
+  assert.doesNotMatch(valuePageOverview({game,value:{total:9.45,copies:6,unpriced:6},history:partialHistory,now:VALUE_NOW}),/data-value-saved-note/,'unknown current total is not compared');
+  assert.doesNotMatch(valuePageOverview({game,value:{total:9.45,copies:6,unpriced:2},history:[{date:'2026-10-18',total:9.44}],now:VALUE_NOW}),/data-value-saved-note/,'legacy coverage is not a verified current comparison');
+ }
+ for(const patch of [{copies:7},{unpriced:1},{unpriced:0},{unpriced:6},{currency:'EUR'},{basis:'other'},{copies:undefined},{unpriced:undefined},{total:null}]) {
+  const stopped=[...partialHistory,partialPoint('2026-10-18',9.44,patch)];
+  assert.equal(valueHistoryModel(stopped,VALUE_NOW).change,null,JSON.stringify(patch));assert.equal((valueHistoryChart(stopped,VALUE_NOW).match(/class="value-chart-line"/g)||[]).length,0,'last point never falls back across a coverage gap');
+ }
+ const gap=[partialPoint('2026-10-14',1),partialPoint('2026-10-15',0,{unpriced:6}),partialPoint('2026-10-16',8.34),partialPoint('2026-10-18',9.44)];assert.equal(valueHistoryModel(gap,VALUE_NOW).change.date,'2026-10-16');assert.equal(valueHistoryModel(gap,VALUE_NOW,1).change,null);assert.equal((valueHistoryChart(gap,VALUE_NOW).match(/class="value-chart-line"/g)||[]).length,1);
+ for(const [a,b,delta,direction] of [[0,0,0,'flat'],[0,2,2,'up'],[2,0,-2,'down'],[9.44,8.34,-1.1,'down']]) {
+  const history=[partialPoint('2026-10-16',a),partialPoint('2026-10-18',b)],model=valueHistoryModel(history,VALUE_NOW),chart=valueHistoryChart(history,VALUE_NOW);
+  assert.equal(model.change.delta,delta);assert.equal(model.change.direction,direction);assert.equal(model.points.at(-1).status,'partial');assert.equal((chart.match(/class="value-chart-line"/g)||[]).length,1);if(a===0)assert.equal(model.change.percent,null);assert.doesNotMatch(chart,/NaN|Infinity/);if(!a&&!b)assert.match(chart,/Known subtotal unchanged/);
+ }
+ const huge=[partialPoint('2026-10-16',.01),partialPoint('2026-10-18',Number.MAX_VALUE)];assert.equal(valueHistoryModel(huge,VALUE_NOW).change.percent,null);assert.doesNotMatch(valueHistoryChart(huge,VALUE_NOW),/NaN|Infinity/);
+ assert.equal(JSON.stringify(partialHistory),partialBefore,'display normalization/comparisons never rewrite saved observations');
  const spacing=valueHistoryChart(['2026-10-10','2026-10-11','2026-10-18'].map(date=>valueSnapshot(date,1)),VALUE_NOW);const xs=[...spacing.matchAll(/class="value-chart-point complete" cx="([\d.]+)"/g)].map(m=>Number(m[1]));assert(Math.abs((xs[1]-xs[0])/(xs[2]-xs[0])-1/8)<.001,'x axis uses actual elapsed dates');
  const longHistory=Array.from({length:500},(_,i)=>valueSnapshot(new Date(Date.UTC(2024,0,i+1)).toISOString().slice(0,10),i));
  assert.equal(valueHistoryModel(longHistory,VALUE_NOW).points.length,500);const longHtml=valueHistoryChart(longHistory,VALUE_NOW);assert.equal((longHtml.match(/class="value-chart-point/g)||[]).length,365);assert.equal(longHistory.length,500);assert.match(longHtml,/500 saved snapshots/);assert.match(longHtml,/earlier records remain saved/);assert.match(longHtml,/Plotted values: <strong>\$135\.00 to \$499\.00<\/strong>/,'range follows the displayed 365-point window, not all saved history');

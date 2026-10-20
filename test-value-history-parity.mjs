@@ -1,13 +1,25 @@
 import assert from 'node:assert/strict';
+import {usd} from './ui.js';
 import fs from 'node:fs';
 import {blank,S} from './store.js';
 import {validateWorkspace} from './confidence.js';
 import {setAccountScope} from './account-scope.js';
-import {normalizeValueHistory,mergeValueHistory,recordValueObservation,mergeLegacyGameHistories} from './value-history.js';
+import {normalizeValueHistory,mergeValueHistory,recordValueObservation,mergeLegacyGameHistories,roundedValueTotal} from './value-history.js';
 import {readLegacyTcgValueHistory,readTcgValueHistory,trackTcgValue} from './tcg.js';
 const point={date:'2026-10-16',total:12.34,copies:2,unpriced:0,currency:'USD',basis:'exact-owned-v1'};
 assert.equal(normalizeValueHistory([{...point,date:'2026-02-30'},{...point,total:NaN},null]).length,0);
 assert.deepEqual(mergeValueHistory([point],[{...point,total:19}]),[{...point,total:19}]);
+// Observed cents match the existing display formatter without changing history.
+const preserved=[{...point,total:19.43}],preservedBytes=JSON.stringify(preserved);
+for(const total of [0,.004,.005,.015,1.005,2.675,19.435,123456789.125,1e20,Number.MAX_VALUE]) {
+ const recorded=recordValueObservation(preserved,total,2,{unpriced:1,currency:'USD',basis:'exact-owned-v1'},new Date('2026-10-19T23:59:59.999Z'));
+ assert.equal(usd(recorded.at(-1).total),usd(total));assert(Number.isFinite(recorded.at(-1).total));assert.equal(recorded[0].total,19.43);assert.equal(recorded.at(-1).date,'2026-10-19');
+}
+assert.equal(roundedValueTotal(1.005),1.01);assert.equal(roundedValueTotal(19.435),19.44);
+assert.equal(roundedValueTotal(-0),0,'negative zero is a legitimate zero, never a signed loss');
+for(const bad of [null,undefined,NaN,Infinity,-1,'1.005'])assert.equal(roundedValueTotal(bad),null);
+assert.equal(JSON.stringify(preserved),preservedBytes);
+assert.equal(recordValueObservation([],1,1,point,new Date('2026-10-19T20:30:00-04:00'))[0].date,'2026-10-20','snapshot dates deliberately use UTC across local midnight boundaries');
 const old=Array.from({length:500},(_,i)=>({...point,date:new Date(Date.UTC(2024,0,i+1)).toISOString().slice(0,10)}));
 assert.equal(recordValueObservation(old,20,3,point,new Date('2026-10-18T12:00:00Z')).length,501,'Do not truncate old observations');
 const state={...blank(),valueHistory:[point],tcg:{ptcg:{collection:[],decks:[],wishlist:[],valueHistory:[point]},ygo:{collection:[],decks:[],wishlist:[],valueHistory:[{...point,currency:'EUR',basis:'legacy'}]}}};
