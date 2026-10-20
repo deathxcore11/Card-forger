@@ -779,6 +779,8 @@ jobs:
       - run: node tests/context-menu-browser.mjs
       - run: node tests/anniversary-frame-browser.mjs
         if: ${{ !cancelled() }}
+      - run: node tests/ygo-name-foil-browser.mjs
+        if: ${{ !cancelled() }}
       - run: node tests/pokemon-frame-browser.mjs
         if: ${{ !cancelled() }}
       - uses: actions/upload-artifact@v4
@@ -788,4 +790,5 @@ jobs:
           path: |
             test-results/context-menu-*
             test-results/anniversary-frame-*
+            test-results/ygo-name-foil/
             test-results/pokemon-frame-*
