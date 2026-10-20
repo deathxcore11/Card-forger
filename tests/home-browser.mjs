@@ -708,8 +708,12 @@ try {
       await Promise.resolve();
     });
     const control = focused.page.locator(selector).first();
-    await control.scrollIntoViewIfNeeded();
-    await control.focus();
+    // A late boot render can replace the row between locating and scrolling;
+    // re-locate a detached node (bounded) before taking the focus under test.
+    for (let attempt = 0; ; attempt++) {
+      try { await control.scrollIntoViewIfNeeded(); await control.focus(); break; }
+      catch (error) { if (attempt >= 4 || !/not attached to the DOM/i.test(error.message)) throw error; await focused.page.waitForTimeout(100); }
+    }
     const original = await control.elementHandle();
     assert(await original.evaluate(node => node.isConnected && document.activeElement === node), 'original Home control has focus before delayed data');
     await focused.page.clock.fastForward(2600);

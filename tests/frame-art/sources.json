@@ -10,5 +10,21 @@
   "ygo": [
     "https://images.ygoprodeck.com/images/cards/89631139.jpg",
     "jpg"
+  ],
+  "dp1-31": [
+    "https://assets.tcgdex.net/en/dp/dp1/31/high.webp",
+    "webp"
+  ],
+  "dp5-33": [
+    "https://assets.tcgdex.net/en/dp/dp5/33/high.webp",
+    "webp"
+  ],
+  "hgss3-15": [
+    "https://assets.tcgdex.net/en/hgss/hgss3/15/high.webp",
+    "webp"
+  ],
+  "me01-016": [
+    "https://assets.tcgdex.net/en/me/me01/016/high.webp",
+    "webp"
   ]
 }

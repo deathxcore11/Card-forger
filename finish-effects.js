@@ -26,8 +26,6 @@ export const FINISH_MASKS = Object.freeze({
  'pk-cel-art':'inset(9.5% 6.6% 51.3% 6.6%)',
  // Sword & Shield art window (734 × 1024 reference); reverse excludes its silver frame/caption too.
  'pk-swsh-trainer-field':'inset(53% 8.5% 13% 8.5%)',
- 'pk-swsh-art':'inset(9.8% 8% 52.5% 8%)',
- 'pk-swsh-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,7% 9.1%,7% 50.7%,93% 50.7%,93% 9.1%,7% 9.1%)',
  'pk-standard-art':'inset(12.3% 8.2% 47.5% 8.2%)',
  // Unified Minds Celebi 4: source art is 600x825, illustration x48..552,
  // y81..390. The silver frame and Pokédex caption are outside this window.
@@ -38,8 +36,45 @@ export const FINISH_MASKS = Object.freeze({
  'pk-sm-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,6.7% 9.1%,6.7% 50.8%,93.3% 50.8%,93.3% 9.1%,6.7% 9.1%)',
  'pk-sm-evolved-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,3.3% 7.2%,3.3% 16.3%,6.7% 16.3%,6.7% 50.8%,93.3% 50.8%,93.3% 9.1%,16.3% 9.1%,16.3% 7.2%,3.3% 7.2%)',
  'pk-trainer-art':'inset(18% 8.2% 40% 8.2%)',
- 'pk-sv-art':'inset(9.8% 7.8% 52.5% 7.8%)',
- 'pk-sv-surround':'polygon(evenodd, 5.5% 3%,94.5% 3%,94.5% 97%,5.5% 97%,5.5% 3%,7% 9.2%,7% 50.5%,93% 50.5%,93% 9.2%,7% 9.2%)',
+ // Era frames measured on TCGdex 600x825 fronts: mean edge maps of 30-145
+ // regular cards per era and layout, traced to the printed frame line (see
+ // tests/fixtures/pokemon-frame-geometry.json). Illustrations rise beside the
+ // printed stage banner, so Basic and evolved windows step around it; evolved
+ // windows also curve around the pre-evolution badge. Reverse holes match.
+ 'pk-dppt-art':'polygon(7% 11.9%,21% 11.9%,23.2% 11.3%,26.7% 9.3%,92.8% 9.3%,92.8% 49.7%,7% 49.7%)',
+ 'pk-dppt-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,7% 11.9%,21% 11.9%,23.2% 11.3%,26.7% 9.3%,92.8% 9.3%,92.8% 49.7%,7% 49.7%,7% 11.9%)',
+ 'pk-dppt-evolved-art':'polygon(7.2% 16.9%,9.5% 17.3%,13% 17.3%,15.2% 16.9%,18.2% 15.3%,19.3% 13.9%,19.8% 12.1%,20.2% 12%,54.5% 12.1%,58% 11.4%,61% 9.5%,92.7% 9.5%,92.7% 49.7%,7.2% 49.7%)',
+ 'pk-dppt-evolved-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,7.2% 16.9%,9.5% 17.3%,13% 17.3%,15.2% 16.9%,18.2% 15.3%,19.3% 13.9%,19.8% 12.1%,20.2% 12%,54.5% 12.1%,58% 11.4%,61% 9.5%,92.7% 9.5%,92.7% 49.7%,7.2% 49.7%,7.2% 16.9%)',
+ 'pk-dppt-trainer-art':'polygon(8.8% 14.7%,90.5% 14.7%,90.5% 49.7%,8.8% 49.7%)',
+ 'pk-dppt-trainer-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,8.8% 14.7%,90.5% 14.7%,90.5% 49.7%,8.8% 49.7%,8.8% 14.7%)',
+ 'pk-hgss-art':'polygon(5.5% 11.2%,20.3% 11.2%,23.2% 10.7%,25.7% 9.2%,94.3% 9.1%,94.3% 52%,5.5% 52%)',
+ 'pk-hgss-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,5.5% 11.2%,20.3% 11.2%,23.2% 10.7%,25.7% 9.2%,94.3% 9.1%,94.3% 52%,5.5% 52%,5.5% 11.2%)',
+ 'pk-hgss-evolved-art':'polygon(5.6% 11.2%,22.7% 11.2%,24.5% 11.4%,30.8% 10.6%,59.3% 10.6%,61.8% 10.3%,64.5% 9.2%,94.2% 9.1%,94.2% 52%,5.6% 52%)',
+ 'pk-hgss-evolved-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,5.6% 11.2%,22.7% 11.2%,24.5% 11.4%,30.8% 10.6%,59.3% 10.6%,61.8% 10.3%,64.5% 9.2%,94.2% 9.1%,94.2% 52%,5.6% 52%,5.6% 11.2%)',
+ 'pk-hgss-trainer-art':'polygon(7.8% 14.7%,92% 14.7%,92% 53.1%,7.8% 53.1%)',
+ 'pk-hgss-trainer-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,7.8% 14.7%,92% 14.7%,92% 53.1%,7.8% 53.1%,7.8% 14.7%)',
+ 'pk-bwxy-art':'polygon(9% 10.7%,90.8% 10.7%,90.8% 49.1%,9% 49.1%)',
+ 'pk-bwxy-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,9% 10.7%,90.8% 10.7%,90.8% 49.1%,9% 49.1%,9% 10.7%)',
+ 'pk-bwxy-evolved-art':'polygon(9% 16.1%,12.7% 16.1%,15.7% 15.2%,17.8% 13.7%,19.2% 11.6%,61.3% 11.6%,64% 10.8%,90.8% 10.7%,90.8% 49.1%,9% 49.1%)',
+ 'pk-bwxy-evolved-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,9% 16.1%,12.7% 16.1%,15.7% 15.2%,17.8% 13.7%,19.2% 11.6%,61.3% 11.6%,64% 10.8%,90.8% 10.7%,90.8% 49.1%,9% 49.1%,9% 16.1%)',
+ 'pk-bwxy-trainer-art':'polygon(10.6% 16.4%,89.3% 16.4%,89.3% 50.1%,10.6% 50.1%)',
+ 'pk-bwxy-trainer-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,10.6% 16.4%,89.3% 16.4%,89.3% 50.1%,10.6% 50.1%,10.6% 16.4%)',
+ 'pk-sm-art':'polygon(6.3% 8.7%,93.5% 8.7%,93.5% 46.7%,6.3% 46.7%)',
+ 'pk-sm-evolved-art':'polygon(6.3% 15.4%,11.7% 15.2%,14.5% 13.1%,15% 10.4%,55.2% 10.5%,56.7% 10.3%,59.5% 8.7%,93.5% 8.7%,93.5% 46.7%,6.3% 46.7%)',
+ 'pk-sm-trainer-art':'polygon(6.3% 13.7%,93.3% 13.7%,93.3% 51.6%,6.3% 51.6%)',
+ 'pk-sm-trainer-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,6.3% 13.7%,93.3% 13.7%,93.3% 51.6%,6.3% 51.6%,6.3% 13.7%)',
+ 'pk-swsh-art':'polygon(8.5% 10.2%,91.5% 10.2%,91.5% 46.9%,8.5% 46.9%)',
+ 'pk-swsh-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,8.5% 10.2%,91.5% 10.2%,91.5% 46.9%,8.5% 46.9%,8.5% 10.2%)',
+ 'pk-swsh-evolved-art':'polygon(8.5% 16.4%,12.2% 16.2%,14.3% 15.5%,16.2% 13.7%,16.5% 12.2%,54.3% 12.1%,57% 10.2%,91.5% 10.2%,91.5% 46.9%,8.5% 46.9%)',
+ 'pk-swsh-evolved-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,8.5% 16.4%,12.2% 16.2%,14.3% 15.5%,16.2% 13.7%,16.5% 12.2%,54.3% 12.1%,57% 10.2%,91.5% 10.2%,91.5% 46.9%,8.5% 46.9%,8.5% 16.4%)',
+ 'pk-swsh-trainer-art':'polygon(8.3% 14.6%,91.7% 14.6%,91.7% 51.5%,8.3% 51.5%)',
+ 'pk-swsh-trainer-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,8.3% 14.6%,91.7% 14.6%,91.7% 51.5%,8.3% 51.5%,8.3% 14.6%)',
+ 'pk-sv-art':'polygon(8.5% 10.2%,91.6% 10.2%,91.6% 46.9%,8.5% 46.9%)',
+ 'pk-sv-surround':'polygon(evenodd, 5.5% 3%,94.5% 3%,94.5% 97%,5.5% 97%,5.5% 3%,8.5% 10.2%,91.6% 10.2%,91.6% 46.9%,8.5% 46.9%,8.5% 10.2%)',
+ 'pk-sv-evolved-art':'polygon(8.4% 19%,12% 18.7%,15.2% 17.5%,16.6% 15.5%,17.5% 13.5%,18.2% 11.6%,65.5% 11.6%,68% 10.2%,91.6% 10.2%,91.6% 46.9%,8.4% 46.9%)',
+ 'pk-sv-evolved-surround':'polygon(evenodd, 5.5% 3%,94.5% 3%,94.5% 97%,5.5% 97%,5.5% 3%,8.4% 19%,12% 18.7%,15.2% 17.5%,16.6% 15.5%,17.5% 13.5%,18.2% 11.6%,65.5% 11.6%,68% 10.2%,91.6% 10.2%,91.6% 46.9%,8.4% 46.9%,8.4% 19%)',
+ 'pk-sv-trainer-art':'polygon(8.3% 14.4%,91.8% 14.4%,91.8% 51.4%,8.3% 51.4%)',
+ 'pk-sv-trainer-surround':'polygon(evenodd, 5.5% 3%,94.5% 3%,94.5% 97%,5.5% 97%,5.5% 3%,8.3% 14.4%,91.8% 14.4%,91.8% 51.4%,8.3% 51.4%,8.3% 14.4%)',
  // NEC #077 inverted display commander only. Traced from Wizards' 265x370 image.
  // Artwork, outer black border, footer and the security oval are deliberately outside.
  'mtg-nec77-metal':'polygon(evenodd, 4.2% 5.5%,6.8% 3.3%,10% 4.5%,19% 4.5%,22% 3.6%,35% 4.5%,48% 2.6%,57% 3.2%,63% 4.8%,80% 4.5%,84% 3.2%,88% 4.7%,93% 4.7%,96% 7%,95% 57%,96% 59%,94% 62%,94% 89%,95% 91%,94% 94.5%,78% 94.5%,77% 92.8%,56% 92.8%,55% 91.5%,52% 90.7%,48% 90.7%,45% 91.5%,44% 92.8%,8% 92.8%,5% 91%,4.5% 62%,4% 59%,5.5% 57%,5.5% 11%,4.2% 5.5%,7.5% 11.1%,7.5% 56.3%,92.5% 56.3%,92.5% 11.1%,7.5% 11.1%)',
@@ -66,6 +101,19 @@ const variantFinish=v=>{
 function exactOverride(game,c,key,face){
  // Future catalogue additions must match the full identity and provide evidence. No name matches.
  return (c.finishPresentations||[]).find(p=>p.game===game&&String(p.printingId)===String(c.id)&&p.finish===key&&Number(p.face||0)===face&&['verified','approximate'].includes(p.status)&&/^https:\/\//.test(p.source||'')&&p.layers?.length&&p.layers.every(l=>FINISH_MASKS[l.mask]&&FINISH_MATERIALS.includes(l.material)));
+}
+// Measured frame family for ordinary Pokémon/Trainer fronts (see FINISH_MASKS),
+// or '' when the printed layout has no reviewed geometry. Stage picks the
+// Basic or evolved window; it never adds a finish.
+const PK_FRAME_ERAS=[[/^(?:dp|pl)/i,'pk-dppt'],[/^(?:hgss|col)/i,'pk-hgss'],[/^(?:bw|xy|g1$|dc1|dv1)/i,'pk-bwxy'],[/^(?:sm|det1)/i,'pk-sm'],[/^(?:swsh|cel25|pgo)/i,'pk-swsh'],[/^(?:sv|me)/i,'pk-sv']];
+export function pokemonFrame(c){
+ const set=c?.set?.id||'',base=PK_FRAME_ERAS.find(([re])=>re.test(set))?.[1],category=norm(c?.category||'Pokemon'),stage=norm(c?.stage);
+ if(!base)return '';
+ // Promo Trainers often use special layouts; only expansion Trainer frames were measured.
+ if(category==='trainer')return /p$/i.test(set)?'':base+'-trainer';
+ if(category!=='pokemon')return '';
+ // A missing stage keeps the Basic window: it never invents an evolution cut-out.
+ return ['','basic','baby'].includes(stage)?base:['stage1','stage2'].includes(stage)?base+'-evolved':'';
 }
 function effectFor(game,c,key,label,ctx,physicalFinish){
  if(physicalFinish==='nonfoil')return paper(key,label);
@@ -95,8 +143,6 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
   if(set==='base1'&&/^base1-(?:[1-9]|1[0-6])$/.test(c.id)&&physicalFinish==='holofoil')return preset(key,label,'ptcg-holo',[layer(c.id==='base1-4'?'pk-base1-4-art':'pk-base-art','holo')],FINISH_SOURCES.base);
   if(set==='base4'&&c.id==='base4-20'&&physicalFinish==='holofoil')return preset(key,label,'ptcg-holo',[layer('pk-base4-20-art','holo')],'https://api.tcgdex.net/v2/en/cards/base4-20');
   if(set==='neo1'&&c.id==='neo1-9'&&physicalFinish==='holofoil')return {...preset(key,label,'ptcg-holo',[layer('pk-neo1-9-art','holo')],'https://api.tcgdex.net/v2/en/cards/neo1-9'),reason:'Simulated illustration-window holo'};
-  // Deliberately bounded to the base Scarlet & Violet expansion, whose publisher guide is cited.
-  if(['sv01','sv1'].includes(set)&&category==='pokemon'&&physicalFinish==='reverse-holofoil'&&['common','uncommon','rare'].includes(rarity))return preset(key,label,'ptcg-reverse',[layer('pk-sv-surround','tiles')],FINISH_SOURCES.pokemon);
   // Finish availability is still source-supplied. Layout identifies where that
   // known finish catches the light; it never adds a variant or a price.
   const fullArt=/fullart|illustration|rainbow|shinyvmax|shinyv|secret|hyperrare|ultrarare/.test(rarity)||/^(vmax|vstar)$/i.test(c.stage||'')||(!/^ex\d/.test(set)&&/\s(?:V|GX|EX|ex|VMAX|VSTAR|V-UNION)$/.test(c.name||''));
@@ -105,15 +151,14 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
    const gold=/^(sv|me)/i.test(set)&&rarity==='hyperrare';
    return {...preset(key,label,'ptcg-full-art',[layer('card',gold?'gold':'rainbow'),...(textured?[layer('card','micro')]:[])],FINISH_SOURCES.pokemon),coverage:'full',texture:textured?'micro-ridges':'smooth'};
   }
-  const modern=/^(?:swsh|sm|xy|bw|dp|pl|hgss|sv)/i.test(set)||set==='cel25';
-  if(modern&&category==='pokemon'){
-   if(set==='sm11'&&c.id==='sm11-4'&&!fullArt&&physicalFinish==='holofoil')return preset(key,label,'ptcg-holo',[layer('pk-sm11-4-art','holo')],'https://api.tcgdex.net/v2/en/cards/sm11-4');
-   if(/^sm\d/i.test(set)&&!fullArt&&physicalFinish==='reverse-holofoil'&&['basic','stage1','stage2'].includes(norm(c.stage)))return preset(key,label,'ptcg-reverse',[layer(norm(c.stage)==='basic'?'pk-sm-surround':'pk-sm-evolved-surround','rainbow')],'https://api.tcgdex.net/v2/en/cards/sm11-6');
-   if(physicalFinish==='holofoil')return preset(key,label,'ptcg-holo',[layer(set==='cel25'?'pk-cel-art':/^swsh/i.test(set)?'pk-swsh-art':/^sv/i.test(set)?'pk-sv-art':'pk-standard-art','holo')],FINISH_SOURCES.pokemon);
-   if(physicalFinish==='reverse-holofoil')return preset(key,label,'ptcg-reverse',[layer(/^swsh/i.test(set)?'pk-swsh-surround':/^sv/i.test(set)?'pk-sv-surround':'pk-standard-surround',/^sv/i.test(set)?'tiles':'rainbow')],FINISH_SOURCES.pokemon);
-  }
+  if(set==='sm11'&&c.id==='sm11-4'&&!fullArt&&physicalFinish==='holofoil')return preset(key,label,'ptcg-holo',[layer('pk-sm11-4-art','holo')],'https://api.tcgdex.net/v2/en/cards/sm11-4');
+  // LV.X fronts carry their foil across the whole silver frame, not one window.
+  if(category==='pokemon'&&/^(?:dp|pl|hgss|col)/i.test(set)&&(norm(c.stage)==='levelup'||/lvx/.test(rarity))&&physicalFinish==='holofoil')return {...preset(key,label,'ptcg-holo',[layer('card','holo')],FINISH_SOURCES.pokemon),coverage:'full',reason:'Simulated LV.X holo · whole-card approximate coverage'};
   if(c.id==='swsh3-161'&&set==='swsh3'&&category==='trainer'&&physicalFinish==='reverse-holofoil')return {...preset(key,label,'ptcg-reverse',[layer('pk-swsh-trainer-field','rainbow')],'https://api.tcgdex.net/v2/en/cards/swsh3-161'),reason:'Simulated reverse holo · partial coverage',coverage:'partial'};
-  // Trainer and unusual layouts remain unmasked until their geometry is known.
+  const frame=fullArt?'':pokemonFrame(c);
+  if(frame&&physicalFinish==='holofoil')return preset(key,label,'ptcg-holo',[layer(set==='cel25'&&!frame.includes('-evolved')?'pk-cel-art':frame+'-art','holo')],FINISH_SOURCES.pokemon);
+  if(frame&&physicalFinish==='reverse-holofoil')return preset(key,label,'ptcg-reverse',[layer(frame+'-surround',/^sv/i.test(set)?'tiles':'rainbow')],/^pk-sm(?:-evolved)?$/.test(frame)?'https://api.tcgdex.net/v2/en/cards/sm11-6':FINISH_SOURCES.pokemon);
+  // Energy, BREAK, Restored and pre-Diamond & Pearl layouts stay unmasked until measured.
   return unknown(key,label);
  }
  const rarity=norm(key);
@@ -133,11 +178,12 @@ export function finishChoices(game,c,ctx={}){
   // Pattern metadata is real identity, not permission to fake a generic texture.
   // Keep the selectable variant while its distinct physical pattern is unsupported.
   if(reviewedCosmosPreview(c,v))return {...preset(v.key,v.label,'ptcg-holo',[layer('pk-swsh-art','holo')],'https://api.tcgdex.net/v2/en/cards/'+c.id),pattern:'cosmos',materialProfile:'cosmos-holo'};
-  // Modern ordinary Scarlet/Violet frames share a supported illustration
-  // window. This is an approximate Cosmos preview, not exact-printing art or
-  // authentication of a physical foil. Other patterns/layouts stay explicit.
-  if(v.foil==='cosmos'&&v.finish==='holofoil'&&v.size==='standard'&&!v.stamps?.length&&!v.subtype&&/^sv\d/i.test(c.set?.id||'')&&c.category==='Pokemon'&&/^(?:Holo Rare|Rare)$/i.test(c.rarity||''))
-   return {...preset(v.key,v.label,'ptcg-holo',[layer('pk-sv-art','holo')],'https://api.tcgdex.net/v2/en/cards/'+c.id),pattern:'cosmos',materialProfile:'cosmos-holo',reason:'Simulated Cosmos holo · approximate illustration-window coverage'};
+  // Measured ordinary frames give Cosmos an illustration window. This is an
+  // approximate preview, not exact-printing art or authentication of a
+  // physical foil. Other patterns/layouts stay explicit.
+  const cosmosFrame=c.category==='Pokemon'&&/^(?:Holo Rare|Rare)$/i.test(c.rarity||'')?pokemonFrame(c):'';
+  if(v.foil==='cosmos'&&v.finish==='holofoil'&&v.size==='standard'&&!v.stamps?.length&&!v.subtype&&cosmosFrame)
+   return {...preset(v.key,v.label,'ptcg-holo',[layer(cosmosFrame+'-art','holo')],'https://api.tcgdex.net/v2/en/cards/'+c.id),pattern:'cosmos',materialProfile:'cosmos-holo',reason:'Simulated Cosmos holo · approximate illustration-window coverage'};
   if(v.foil)return {...unknown(v.key,v.label||v.key),reason:'Patterned finish preview unavailable for this printing.'};
   // Preserve a known variant even when its finish cannot be previewed.
   return finish?effectFor(game,c,v.key,v.label||v.key,ctx,finish):unknown(v.key,v.label||v.key);

@@ -17,7 +17,7 @@ for(const key of ['holofoil','reverse-holofoil'])assert.equal(celebi.variants.fi
 assert.equal(JSON.stringify(celebi),celebiBefore,'Rendering must not alter variants, source quotes or product IDs');
 const celebiNormal={...celebi,variants:celebi.variants.filter(v=>v.key==='normal')};
 assert.equal(resolveFinish('ptcg',celebiNormal,{priceFinish:'holofoil'}).effect,'unknown','Geometry must not invent an unavailable finish');
-assert.equal(resolveFinish('ptcg',{...celebi,id:'sm11-5'},{priceFinish:'holofoil'}).layers[0].mask,'pk-standard-art','Exact-card evidence is not promoted to other printings');
+assert.equal(resolveFinish('ptcg',{...celebi,id:'sm11-5'},{priceFinish:'holofoil'}).layers[0].mask,'pk-sm-art','Exact-card evidence is not promoted to other printings; they use the measured Sun & Moon window');
 const magic={id:'m',set:'clb',layout:'normal',finishes:['nonfoil','foil','etched'],prices:{usd:'1',usd_foil:null,usd_etched:'3'}};
 assert.deepEqual(finishChoices('mtg',magic).map(x=>x.key),['nonfoil','foil','etched']);
 assert.equal(finishEffect('mtg',{...magic,finishes:['nonfoil']},{priceFinish:'foil'}),'unknown');
@@ -37,7 +37,8 @@ assert.equal(resolveFinish('ptcg',base,{priceFinish:'holofoil'}).layers[0].mask,
 assert.equal(finishEffect('ptcg',{...base,id:'other-4',set:{id:'other'}},{priceFinish:'holofoil'}),'unknown');
 const sv={id:'sv01-001',game:'ptcg',set:{id:'sv01'},category:'Pokemon',rarity:'Common',variants};
 assert.equal(finishEffect('ptcg',sv,{priceFinish:'reverse-holofoil'}),'ptcg-reverse');
-assert.equal(finishEffect('ptcg',{...sv,category:'Trainer'},{priceFinish:'reverse-holofoil'}),'unknown');
+assert.equal(resolveFinish('ptcg',{...sv,category:'Trainer'},{priceFinish:'reverse-holofoil'}).layers[0].mask,'pk-sv-trainer-surround','Measured Trainer frame, not the Pokémon window');
+assert.equal(finishEffect('ptcg',{...sv,category:'Energy'},{priceFinish:'reverse-holofoil'}),'unknown','Unmeasured Energy layouts stay unmasked');
 assert.equal(finishEffect('ptcg',{...sv,id:'sv01-199',rarity:'Illustration Rare'},{priceFinish:'holofoil'}),'ptcg-full-art');
 assert.equal(finishEffect('ptcg',{...sv,rarity:'Full Art'},{priceFinish:'holofoil'}),'ptcg-full-art','Full art layout applies only after explicit holo availability');
 assert(finishChoices('ptcg',sv).some(x=>x.key==='firstEdition'&&x.status==='unknown'));
