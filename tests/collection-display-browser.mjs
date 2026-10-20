@@ -71,9 +71,10 @@ try{
    if(await page.locator('.filter-pills').count())assert.equal(await page.locator('.filter-pills').evaluate(n=>getComputedStyle(n).overflowX),'auto');
    for(const mode of ['light','dark','aura']){
     await page.evaluate(async mode=>(await import('/settings-theme.js')).applyTheme(mode),mode);
-    for(const width of [320,390,768,1440]){
+    for(const width of [320,360,390,599,600,768,1440]){
      await page.setViewportSize({width,height:844});
      const sizes={};for(const size of ['small','medium','large']){await apply(page,size);await noOverflow(page,'#content .display-list',`${game} ${mode} ${width} ${size}`,true);sizes[size]=await columns(page);}
+     if(width<=599)assert.deepEqual(sizes,{small:3,medium:2,large:1},`${game} ${mode} phone columns at ${width}`);
      assert(sizes.small>=sizes.medium&&sizes.medium>=sizes.large,JSON.stringify({game,mode,width,sizes}));
     }
     await page.setViewportSize({width:390,height:844});await apply(page,'medium');await capture(page,`synthetic-search-collection-display-${game}-${mode}`);
@@ -89,9 +90,9 @@ try{
    await page.locator('.bottom-nav [data-nav="search"]').tap();
    const field=page.locator(game==='mtg'?'#dbTerm':'[data-input="tQ"]');await field.fill('Alpha');await field.press('Enter');
    await page.locator('#content .card-grid .grid-card').first().waitFor();
-   for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:844});for(const size of ['small','medium','large']){await apply(page,size);await noOverflow(page,'#content .card-grid',`${game} Search ${width} ${size}`,true);}}
+   for(const width of [320,360,390,599,600,768,1440]){await page.setViewportSize({width,height:844});for(const size of ['small','medium','large']){await apply(page,size);await noOverflow(page,'#content .card-grid',`${game} Search ${width} ${size}`,true);if(width<=599)assert.equal(await page.locator('#content .card-grid').first().evaluate(n=>getComputedStyle(n).gridTemplateColumns.split(' ').length),{small:3,medium:2,large:1}[size],`${game} Search phone ${width} ${size}`);}}
    assert.equal(await page.locator('#content .card-grid [data-price-origin="personal"]').count(),0);
-   assert.equal(await protectedState(page),before);app.health();results.push({game,modes:['light','dark','aura'],widths:[320,390,768,1440],customCopies:2,customTotal:50,conditionQuote:5.67,touch:'native CDP multi-touch, long-hold cancellation, spread/pinch, canceled gesture, click suppression, persistence',browserZoom:'default pinch path and single-finger scrolling are not prevented'});
+   assert.equal(await protectedState(page),before);app.health();results.push({game,modes:['light','dark','aura'],widths:[320,360,390,599,600,768,1440],customCopies:2,customTotal:50,conditionQuote:5.67,touch:'native CDP multi-touch, long-hold cancellation, spread/pinch, canceled gesture, click suppression, persistence',browserZoom:'default pinch path and single-finger scrolling are not prevented'});
   }catch(error){error.fixtureDiagnostics=app.diagnostics();failures.push(error);results.push({game,status:'failed',error:error.stack,diagnostics:error.fixtureDiagnostics});}finally{await app.context.close();}
  }
  if(failures.length)throw new AggregateError(failures,failures.map(e=>e.message).join(' | '));
