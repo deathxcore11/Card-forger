@@ -44,7 +44,7 @@ export async function openConditionApp(browser,base,{game='mtg',label='condition
   if(held){gates.push({row,release});row.held=true;}
   try{
    if(held)await wait;
-   const result=await responder(url,row),status=result.httpStatus||200;const body={...result};delete body.httpStatus;
+   const result=await responder(url,row),status=result.httpStatus||200;const body={...(url.searchParams.get('game')==='ptcg'&&url.searchParams.has('productId')?{productId:Number(url.searchParams.get('productId'))}:{}),...result};delete body.httpStatus;
    await route.fulfill({status,contentType:'application/json',body:JSON.stringify(body)});
   }catch(error){if(!/closed|cancel|abort/i.test(String(error)))errors.push(error.stack||String(error));}
   finally{active--;row.settled=true;}

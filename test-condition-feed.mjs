@@ -46,3 +46,15 @@ for(const game of ['mtg','ptcg','ygo']){
 console.log('PASS: all five actual condition tiers, game/finish/language/edition isolation, null/expired/ambiguous refusal, disabled feed without upstream calls, server-only auth, daily shared cache, lot valuation and all-game client de-duplication.');
 const retained={id:'retain',conditionQuotes:[{cardId:'retain',condition:'Damaged',currency:'USD',price:5,priceStatus:'current',validUntil:new Date(Date.now()+3600000).toISOString()}]};
 const outage=await loadConditionQuotes(retained,{cardId:'retain',condition:'Damaged'},'ptcg',async()=>Response.json({status:'unavailable',quotes:[]}));assert.equal(outage.changed,false);assert.equal(conditionValue(null,{cardId:'retain',condition:'Damaged'},retained.conditionQuotes).price,5,'temporary outage retains a still-valid dated quote');
+// A legacy Pokémon lot can resolve one exact product without mutating holdings.
+// The response must prove that product; missing/conflicting identity stays unbound.
+for(const [proof,expected] of [['quote',70],['envelope',70],['missing',null],['wrong',null],['conflicting-envelope',null]]){
+ const card={id:'product-proof-'+proof,game:'ptcg',variants:[{key:'normal',productId:42}]},lot={cardId:card.id,variant:'normal',condition:'Lightly Played',language:'en'},saved=structuredClone(lot);
+ const q={...quotes[1],...(proof==='quote'?{productId:42}:proof==='wrong'?{productId:999}: {})};
+ await loadConditionQuotes(card,lot,'ptcg',async()=>Response.json({status:'available',...(proof==='envelope'?{productId:42}:proof==='conflicting-envelope'?{productId:999}:{}),quotes:[q]}));
+ assert.equal(conditionValue(null,{...lot,productId:42},card.conditionQuotes).price,expected,proof+' product identity');assert.deepEqual(lot,saved,'No saved lot mutation');
+}
+const snapshotCard={id:'snapshot-product-proof',game:'ptcg',variants:[{key:'normal',productId:42}]},snapshotLot={cardId:'snapshot-product-proof',variant:'normal',language:'en'};
+await loadConditionQuotes(snapshotCard,snapshotLot,'ptcg',async()=>{snapshotLot.variant='reverse-holofoil';return Response.json({status:'available',productId:42,quotes:[quotes[1]]});});
+assert.equal(snapshotCard.conditionQuotes[0].variant,'normal','A late response retains the requested identity');
+console.log('PASS: legacy product resolution, response identity proof, missing/wrong product refusal and late selection isolation.');

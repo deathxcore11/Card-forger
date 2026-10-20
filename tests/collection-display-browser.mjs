@@ -9,7 +9,7 @@ function seed(fixtures){
  for(const game of ['mtg','ptcg','ygo']){
   const side=game==='mtg'?fixtures.state:fixtures.state.tcg[game];
   side.collection=CARDS[game].slice(0,4).map((c,i)=>{
-   const base=game==='mtg'?{printingId:c.id,printingVerified:true,finish:'nonfoil',set:c.set,collectorNumber:c.collector_number}:{cardId:c.id,key:'id:'+c.id,...(game==='ptcg'?{variant:c.variants[0].key}:{printing:c.sets[0].code,rarity:c.sets[0].rarity})};
+   const base=game==='mtg'?{printingId:c.id,printingVerified:true,finish:'nonfoil',set:c.set,collectorNumber:c.collector_number}:{cardId:c.id,key:'id:'+c.id,...(game==='ptcg'?{variant:c.variants[0].key,productId:c.variants[0].productId}:{printing:c.sets[0].code,rarity:c.sets[0].rarity})};
    const e={...base,id:`display-${game}-${i}`,name:c.name,qty:i===2?2:1,condition:i===3?'Damaged':i===0?'Near Mint':'Lightly Played',language:'en',addedAt:ISO};
    if(i===1)e.conditionQuotes=[{...base,condition:e.condition,language:'en',currency:'USD',price:5.67,source:'Fixture condition provider',priceType:'market-reference',priceStatus:'current',checkedAt:ISO,observedAt:ISO,validUntil:'2026-10-18T12:00:00.000Z'}];
    if(i===2)Object.assign(e,{manualValue:25,manualValueCondition:'Lightly Played'});

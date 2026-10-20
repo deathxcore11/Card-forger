@@ -33,7 +33,13 @@ export function conditionRequest(card,entry,game){
  for(const key of ['variant','printing','rarity','edition','finish','language'])if(entry[key])params.set(key,entry[key]);
  return '/api/prices/conditions?'+params;
 }
+// Resolve legacy lots for this lookup without editing their saved identity.
+function quoteEntry(card,entry){
+ const variants=card?.variants?.filter(v=>v.key===entry.variant);
+ return {...entry,...(!entry.productId&&variants?.length===1&&variants[0].productId?{productId:variants[0].productId}:{})};
+}
 export function loadConditionQuotes(card,entry,game,fetcher=fetch){
+ entry=quoteEntry(card,entry);
  const url=conditionRequest(card,entry,game);if(!url)return null;
  const stamp=attempted.get(url);if(stamp!==undefined && Date.now()<stamp)return null;
  attempted.set(url,Date.now()+3600000);
@@ -44,7 +50,10 @@ export function loadConditionQuotes(card,entry,game,fetcher=fetch){
    const r=await limitedFetch(fetcher,url,{headers:{Accept:'application/json',...(token?{Authorization:'Bearer '+token}:{})}});
    if(!r.ok)return failed({changed:false,status:r.status===429?'rate_limited':'unavailable'});
    const data=await r.json();
-   const rawQuotes=(data.quotes||[]).filter(q=>compatibleConditionQuote(q,entry));
+   // The endpoint resolves and validates the product before returning quotes.
+   // A missing product on an old cache is not proof of the selected product.
+   const productMatches=data.productId!=null&&String(data.productId)===String(entry.productId);
+   const rawQuotes=(data.productId!=null&&entry.productId&& !productMatches?[]:data.quotes||[]).map(q=>entry.productId&&q.productId==null&&productMatches?{...q,productId:data.productId}:q).filter(q=>compatibleConditionQuote(q,entry));
    if(!['available','unpriced','unmapped'].includes(data.status))return failed({...applyConditionQuotes(card,entry,rawQuotes),rawQuotes,status:data.status||'unavailable',notice:data.notice||'',reason:data.reason||'',providerCode:data.providerCode||'',retryAfterMs:data.retryAfterMs,nextRetryAt:data.nextRetryAt,ownerVerified:data.ownerVerified});
    return {...applyConditionQuotes(card,entry,rawQuotes),status:data.status||'unavailable',notice:data.notice||'',rawQuotes};
   }catch{return failed({changed:false,status:'unavailable'});}
@@ -55,9 +64,10 @@ export function loadConditionQuotes(card,entry,game,fetcher=fetch){
 // relabeled as the requested printing. Cached responses can then safely fan out.
 function compatibleConditionQuote(q,entry){
  return q&&['current','last_known'].includes(q.priceStatus)&&q.currency==='USD'&&typeof q.price==='number'&&Number.isFinite(q.price)&&q.price>=0&&(Date.parse(q.validUntil)>Date.now()||q.priceStatus==='last_known'&&Date.parse(q.observedAt||q.checkedAt)>Date.now()-30*86400000)&&
-  CONDITION_IDENTITY.every(k=>q[k]==null||String(q[k])===String(entry[k]||''));
+  (!entry.productId||String(q.productId||'')===String(entry.productId))&&CONDITION_IDENTITY.every(k=>q[k]==null||String(q[k])===String(entry[k]||''));
 }
 export function applyConditionQuotes(card,entry,rawQuotes=[]){
+ entry=quoteEntry(card,entry);
  const identity=Object.fromEntries(CONDITION_IDENTITY.map(k=>[k,entry[k]||'']));
  const quotes=rawQuotes.filter(q=>compatibleConditionQuote(q,entry)).map(q=>({...q,...identity}));
  const same=q=>CONDITION_IDENTITY.every(k=>String(q[k]||'')===String(identity[k]||''));

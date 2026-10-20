@@ -17,7 +17,7 @@ try{
  app=await openSearchApp(browser,server.base,{game:'ptcg',width:390,height:1000,evidenceLabel:'foundation',prepareFixtures:f=>{
   for(const source of all){const c={...normalizePtcg(source),fetchedAt:'2026-10-17T12:00:00.000Z'};f.cache.ptcg[c.id]=c;}
  },providerOverride:(u,r)=>{
-  if(r.resourceType()==='image'&&u.hostname==='assets.tcgdex.net')return {body:SVG,contentType:'image/svg+xml'};
+  if(r.resourceType()==='image'&&(u.hostname==='assets.tcgdex.net'||/^\/img\/ptcg\/[sl]\//.test(u.pathname)&&byId.has(u.pathname.split('/').at(-1).replace(/\.jpg$/,''))))return {body:SVG,contentType:'image/svg+xml'};
   if(u.hostname!=='api.tcgdex.net')return;
   if(u.pathname==='/v2/en/sets')return [set];
   if(u.pathname==='/v2/en/sets/ecard2')return {...set,cards};
