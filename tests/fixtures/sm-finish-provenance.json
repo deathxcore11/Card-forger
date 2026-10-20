@@ -1,0 +1,27 @@
+{
+  "retrievedAt": "2026-10-20T16:41:05.923089+00:00",
+  "purpose": "Source artwork for frame-boundary checks, not physical-foil certification. Sewaddle 6 current source lacks reverse availability. Browser fixture explicitly adds a synthetic reverse variant to reproduce the user-selected finish; production availability is not modified.",
+  "sources": [
+    {
+      "id": "sm11-6",
+      "recordUrl": "https://api.tcgdex.net/v2/en/cards/sm11-6",
+      "recordSha256": "cd6d7e422d0343554da2abcb9a1fbf81f859c90531350805ee539a6ad1100c9d",
+      "imageUrl": "https://assets.tcgdex.net/en/sm/sm11/6/high.webp",
+      "imageSha256": "1a98908851b134a27bda1b7da254c0710ce656bcc6da754c3dbdc93ebbb2dd22"
+    },
+    {
+      "id": "sm11-7",
+      "recordUrl": "https://api.tcgdex.net/v2/en/cards/sm11-7",
+      "recordSha256": "591c8202342d26a3351cc47d08a61b56dcd1137b187565a003f3a772507705af",
+      "imageUrl": "https://assets.tcgdex.net/en/sm/sm11/7/high.webp",
+      "imageSha256": "6a426895f6b36e64d8ac2a5d9ab5d94df823a8d120eac5451568972595f40b43"
+    },
+    {
+      "id": "sm11-9",
+      "recordUrl": "https://api.tcgdex.net/v2/en/cards/sm11-9",
+      "recordSha256": "563943535d5464a3461ce37f16f1b6d5b905515c16ed908cf27e304756224d8a",
+      "imageUrl": "https://assets.tcgdex.net/en/sm/sm11/9/high.webp",
+      "imageSha256": "d77862b42f186b649ec67c06f48175b31861e3e04a9dffb759618e2c04c03838"
+    }
+  ]
+}

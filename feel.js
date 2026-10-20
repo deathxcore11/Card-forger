@@ -159,11 +159,13 @@ export function attachGestures({ closeSheet }) {
     content = document.getElementById("content");
 
   // Sheet: drag down from the title bar, or anywhere when already scrolled to the top.
-  let sh = null;
+  let sh = null, shTimer = null;
+  const cancelSheetDrag=()=>{clearTimeout(shTimer);shTimer=null;sh=null;if(sheet)sheet.style.transform=sheet.style.transition="";};
   sheet?.addEventListener("touchstart", (e) => {
+    cancelSheetDrag();
     const t = e.touches[0],
       onHead = e.target.closest?.(".sheet-head");
-    if (e.touches.length !== 1 || (!onHead && body.scrollTop > 2) || e.target.closest?.("input, textarea, select, .zoom-stage")) return (sh = null);
+    if (!body.contains(e.target) || e.touches.length !== 1 || (!onHead && body.scrollTop > 2) || e.target.closest?.("input, textarea, select, .zoom-stage")) return (sh = null);
     sh = { y: t.clientY, x: t.clientX, dy: 0, live: false };
   }, { passive: true });
   sheet?.addEventListener("touchmove", (e) => {
@@ -184,13 +186,19 @@ export function attachGestures({ closeSheet }) {
     sheet.style.transform = close ? "translateY(100%)" : "";
     if (close) {
       haptic("tick");
-      setTimeout(() => {
+      shTimer=setTimeout(() => {
         closeSheet();
         sheet.style.transform = sheet.style.transition = "";
       }, 200);
-    } else setTimeout(() => (sheet.style.transition = ""), 260);
+    } else shTimer=setTimeout(() => (sheet.style.transition = ""), 260);
     sh = null;
   });
+
+  // Native scrolling or folding can cancel a touch stream without touchend.
+  // Clear both the translation and any delayed dismissal of the old gesture.
+  sheet?.addEventListener("touchcancel",cancelSheetDrag,{passive:true});
+  sheet?.addEventListener("close",cancelSheetDrag);
+  globalThis.addEventListener?.("resize",cancelSheetDrag,{passive:true});
 
   // Rows and pull-to-refresh on the page.
   let row = null,

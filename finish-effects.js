@@ -30,6 +30,10 @@ export const FINISH_MASKS = Object.freeze({
  'pk-swsh-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,7% 9.1%,7% 50.7%,93% 50.7%,93% 9.1%,7% 9.1%)',
  'pk-standard-art':'inset(12.3% 8.2% 47.5% 8.2%)',
  'pk-standard-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,8.2% 12.3%,8.2% 52.5%,91.8% 52.5%,91.8% 12.3%,8.2% 12.3%)',
+ // Ordinary Sun & Moon frames, checked against sm11-6, sm11-7 and sm11-9
+ // (600x825). Exclude the silver frame/caption and protruding stage badge.
+ 'pk-sm-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,6.7% 9.1%,6.7% 50.8%,93.3% 50.8%,93.3% 9.1%,6.7% 9.1%)',
+ 'pk-sm-evolved-surround':'polygon(evenodd, 4% 3%,96% 3%,96% 97%,4% 97%,4% 3%,3.3% 7.2%,3.3% 16.3%,6.7% 16.3%,6.7% 50.8%,93.3% 50.8%,93.3% 9.1%,16.3% 9.1%,16.3% 7.2%,3.3% 7.2%)',
  'pk-trainer-art':'inset(18% 8.2% 40% 8.2%)',
  'pk-sv-art':'inset(9.8% 7.8% 52.5% 7.8%)',
  'pk-sv-surround':'polygon(evenodd, 5.5% 3%,94.5% 3%,94.5% 97%,5.5% 97%,5.5% 3%,7% 9.2%,7% 50.5%,93% 50.5%,93% 9.2%,7% 9.2%)',
@@ -100,6 +104,7 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
   }
   const modern=/^(?:swsh|sm|xy|bw|dp|pl|hgss|sv)/i.test(set)||set==='cel25';
   if(modern&&category==='pokemon'){
+   if(/^sm\d/i.test(set)&&!fullArt&&physicalFinish==='reverse-holofoil'&&['basic','stage1','stage2'].includes(norm(c.stage)))return preset(key,label,'ptcg-reverse',[layer(norm(c.stage)==='basic'?'pk-sm-surround':'pk-sm-evolved-surround','rainbow')],'https://api.tcgdex.net/v2/en/cards/sm11-6');
    if(physicalFinish==='holofoil')return preset(key,label,'ptcg-holo',[layer(set==='cel25'?'pk-cel-art':/^swsh/i.test(set)?'pk-swsh-art':/^sv/i.test(set)?'pk-sv-art':'pk-standard-art','holo')],FINISH_SOURCES.pokemon);
    if(physicalFinish==='reverse-holofoil')return preset(key,label,'ptcg-reverse',[layer(/^swsh/i.test(set)?'pk-swsh-surround':/^sv/i.test(set)?'pk-sv-surround':'pk-standard-surround',/^sv/i.test(set)?'tiles':'rainbow')],FINISH_SOURCES.pokemon);
   }

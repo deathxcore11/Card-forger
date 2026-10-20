@@ -585,7 +585,12 @@ button.tag { border: 0; cursor: pointer; text-align: left; }
 .life-out { position: absolute; top: 8px; right: 8px; }
 
 /* ---------- 2.3: deck review, buy sheet, sheet behavior ---------- */
-html.sheet-open, html.sheet-open body { overflow: hidden; }
+html.sheet-open, html.sheet-open body { overflow: hidden; overscroll-behavior: none; }
+/* Native open state survives close/reopen handoffs and fold/rotate. Contain
+   gestures on the dialog/backdrop as well as the scrolling sheet body. */
+html:has(#sheet[open]), html:has(#sheet[open]) body { overflow: hidden; overscroll-behavior: none; }
+dialog.sheet { position: fixed; overscroll-behavior: none; max-height: 92dvh; }
+dialog.sheet::backdrop { touch-action: none; }
 #sheetBody { overscroll-behavior: contain; }
 
 .review-badge { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 6px 12px; min-height: 34px; border-radius: 999px; font-size: 13px; font-weight: 700; border: 1px solid rgba(255, 255, 255, 0.18); background: rgba(0, 0, 0, 0.5); color: #fff; backdrop-filter: blur(6px); }
@@ -1009,7 +1014,7 @@ a.pp.buy { color: var(--gold); }
 
 /* One scrolling area per sheet: the dialog never scrolls itself, and lists inside don't either. */
 dialog.sheet { overflow: hidden; }
-#sheetBody { box-sizing: border-box; max-height: 92vh; }
+#sheetBody { box-sizing: border-box; max-height: 92vh; max-height: 92dvh; }
 .print-list { max-height: none !important; overflow: visible !important; }
 /* Tournament decks: a shorter banner so the list starts sooner */
 .cs-hero.compact { height: 150px; }
