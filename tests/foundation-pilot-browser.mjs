@@ -33,9 +33,9 @@ try{
  await capture(page,'synthetic-search-foundation-aquapolis-186');
  for(const source of cards){
   await page.locator(`#content .set-grid [data-act="tCard"][data-id="${source.id}"]`).click();
-  await page.locator('#sheetBody .finish-choice-rail').waitFor();
+  await page.locator('#sheetBody .finish-choice-rail').waitFor();await page.waitForFunction(()=>window.__uiTestState.ui.sheetCtx?.previewBusy===false);
   const keys=await page.locator('#sheetBody [data-act="cardFinishPreview"]').evaluateAll(ns=>ns.map(n=>n.dataset.finish));assert.equal(keys.length,new Set(keys).size,source.id+' distinct choice keys');
-  for(const key of keys){await page.locator('#sheetBody [data-act="cardFinishPreview"]').filter({hasText:/.*/}).evaluateAll((ns,key)=>{const n=ns.find(n=>n.dataset.finish===key);n.scrollIntoView({block:'nearest'});n.click();},key);await page.waitForFunction(k=>document.querySelector(`#sheetBody [data-act="cardFinishPreview"][aria-pressed="true"]`)?.dataset.finish===k,key);}
+  for(const key of keys){await page.locator('#sheetBody [data-act="cardFinishPreview"][data-finish='+JSON.stringify(key)+']').click();await page.waitForFunction(k=>document.querySelector(`#sheetBody [data-act="cardFinishPreview"][aria-pressed="true"]`)?.dataset.finish===k,key);}
   report.cards.push({id:source.id,choices:keys,detail:true,selection:true,art:'synthetic; reference pixels not checked'});
   if(['ecard2-H01','ecard2-109','ecard2-134'].includes(source.id))await capture(page,'synthetic-search-foundation-'+source.id.toLowerCase());
   await page.locator('#sheetBody [data-act="closeSheet"]').first().click();

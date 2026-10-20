@@ -36,7 +36,7 @@ const scanLot=S.state.tcg.ptcg.collection.at(-1),searchSelection={cardId:p.id,va
 assert.equal(scanLot.condition,searchSelection.condition);assert.equal(scanLot.language,searchSelection.language);
 assert.equal(conditionRequest(p,scanLot,'ptcg'),conditionRequest(p,searchSelection,'ptcg'));
 assert.equal(entryPrice(p,scanLot),null,'unpriced played condition cannot borrow the reference quote');
-let requested;await loadConditionQuotes(p,scanLot,'ptcg',async url=>{requested=url;return {ok:true,json:async()=>({status:'available',quotes:[{condition:'Near Mint',price:7,currency:'USD',priceStatus:'current',validUntil:new Date(Date.now()+86400000).toISOString()},{condition:'Moderately Played',price:4,currency:'USD',priceStatus:'current',validUntil:new Date(Date.now()+86400000).toISOString()}]})};});
+let requested;await loadConditionQuotes(p,scanLot,'ptcg',async url=>{requested=url;return {ok:true,json:async()=>({status:'available',productId:42,quotes:[{condition:'Near Mint',price:7,currency:'USD',priceStatus:'current',validUntil:new Date(Date.now()+86400000).toISOString()},{condition:'Moderately Played',price:4,currency:'USD',priceStatus:'current',validUntil:new Date(Date.now()+86400000).toISOString()}]})};});
 assert.equal(requested,conditionRequest(p,searchSelection,'ptcg'));assert.equal(entryPrice(p,scanLot),4);assert.equal(entryPrice(p,searchSelection),4);
 assert.equal(entryPrice(p,{...scanLot,language:'en'}),null,'another language never borrows the scanner quote');
 console.log('PASS: scanned condition, exact variant and language reuse Search provider-request identity and condition valuation.');
