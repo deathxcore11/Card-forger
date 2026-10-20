@@ -1,0 +1,27 @@
+{
+  "fixtureEvidence": "Synthetic holo selection for coverage testing over the retained source images. Not provider availability or pricing metadata.",
+  "id": "cel25-23",
+  "localId": "23",
+  "name": "Professor\u2019s Research",
+  "category": "Trainer",
+  "rarity": "Coverage witness",
+  "set": {
+    "id": "cel25",
+    "name": "Celebrations",
+    "cardCount": {
+      "official": 25,
+      "total": 25
+    }
+  },
+  "image": "https://assets.tcgdex.net/en/swsh/cel25/23",
+  "variants": {
+    "holo": true
+  },
+  "variants_detailed": [
+    {
+      "type": "holo",
+      "size": "standard",
+      "variantId": "coverage-witness"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import {ANNIVERSARY_MAPS} from './pokemon-anniversary-masks.js';
+import {ANNIVERSARY_MAPS,ANNIVERSARY_STAMPS} from './pokemon-anniversary-masks.js';
 // Printing-aware presentation only. Never infer availability from a quote, value or frame.
 import {quoteForContext,validSetContext} from './pricing-presentation.js';
 import {pokemonVariantChoices,pokemonVariantProductConflict} from './pokemon-variant-options.js';
@@ -14,7 +14,8 @@ export const FINISH_SOURCES = Object.freeze({
 });
 // Normalized source-image coordinates. Geometry is an approximation, not an authentication aid.
 export const FINISH_MASKS = Object.freeze({
- ...Object.fromEntries(Object.values(ANNIVERSARY_MAPS).map(p=>[p.mask,p.css])),
+ ...Object.fromEntries(Object.values(ANNIVERSARY_MAPS).flatMap(p=>[p,...(p.alternates||[])]).map(p=>[p.mask,p.css])),
+ ...Object.fromEntries(Object.values(ANNIVERSARY_STAMPS).flat().map(p=>[p.mask,p.css])),
  card:'inset(0 round 4% / 3%)',
  'pk-expedition-art':'polygon(25% 12.4%,96.5% 12.4%,96.5% 48.2%,25% 48.2%,18% 47.4%,13% 44.8%,10% 40%,10% 22%,12% 17.8%,17% 14.4%)',
  // Conservative known reverse-foil field. E-reader strips/frame are deliberately excluded.
@@ -172,7 +173,7 @@ function exactOverride(game,c,key,face){
 const PK_FRAME_ERAS=[[/^base[1-3]$/i,'pk-wotc'],[/^(?:base5|gym[12])$/i,'pk-gym'],[/^neo[1-4]$/i,'pk-neo'],[/^lc$/i,'pk-lc'],[/^ecard[1-3]$/i,'pk-ecard'],[/^ex[1-6]$/i,'pk-exa'],[/^ex(?:[7-9]|1[0-6])$/i,'pk-exb'],[/^(?:dp|pl)/i,'pk-dppt'],[/^(?:hgss|col)/i,'pk-hgss'],[/^(?:bw|xy|g1$|dc1|dv1)/i,'pk-bwxy'],[/^(?:sm|det1)/i,'pk-sm'],[/^(?:swsh|cel25$|pgo)/i,'pk-swsh'],[/^(?:sv|me)/i,'pk-sv']];
 export function pokemonFrame(c){
  const set=c?.set?.id||'',base=PK_FRAME_ERAS.find(([re])=>re.test(set))?.[1],category=norm(c?.category||'Pokemon'),stage=norm(c?.stage);
- if(!base)return '';
+ if(!base||(set==='cel25'&&ANNIVERSARY_MAPS[c.id]))return '';
  // EX-era Pokémon-ex and Gold Star fronts have their own unmeasured layouts.
  if(/^pk-ex[ab]$/.test(base)&&/(?:\sex|☆|\sStar)$/i.test(c?.name||''))return '';
  // Promo Trainers often use special layouts; only expansion Trainer frames were measured.
@@ -199,8 +200,9 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
   const set=c.set?.id||'',rarity=norm(c.rarity),category=norm(c.category||'Pokemon');
   // Anniversary reprints retain several different original-era layouts. Never
   // route them through an era prefix or a name-based full-card fallback.
-  if(/^(?:cel25cc|cel25c|30th-c|30th)$/.test(set)){
-   const entry=ANNIVERSARY_MAPS[c.id],variant=c.variants?.find(v=>v.key===key),image=variant?.imageLarge||variant?.image||c.imageLarge||c.image||'';
+  if(/^(?:cel25cc|cel25c|30th-c|30th)$/.test(set)||(set==='cel25'&&ANNIVERSARY_MAPS[c.id])){
+   const mapped=ANNIVERSARY_MAPS[c.id],variant=c.variants?.find(v=>v.key===key),image=variant?.imageLarge||variant?.image||c.imageLarge||c.image||'';
+   const entry=[mapped,...(mapped?.alternates||[])].find(p=>p?.images.includes(image.split('?')[0]))||mapped;
    // The 30th Classic catalogue's gallery URLs are unavailable/card-back
    // references; artworkSources already falls through to the exact product route.
    const fallback=set==='30th-c'&&image===`https://images.pokemontcg.io/me55c/${Number(c.id.split('-').at(-1))}_hires.png`;
@@ -237,7 +239,7 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
   if(category==='pokemon'&&/^(?:dp|pl|hgss|col)/i.test(set)&&(norm(c.stage)==='levelup'||/lvx/.test(rarity))&&physicalFinish==='holofoil')return {...preset(key,label,'ptcg-holo',[layer('card','holo')],FINISH_SOURCES.pokemon),coverage:'full',reason:'Simulated LV.X holo · whole-card approximate coverage'};
   if(c.id==='swsh3-161'&&set==='swsh3'&&category==='trainer'&&physicalFinish==='reverse-holofoil')return {...preset(key,label,'ptcg-reverse',[layer('pk-swsh-trainer-field','rainbow')],'https://api.tcgdex.net/v2/en/cards/swsh3-161'),reason:'Simulated reverse holo · partial coverage',coverage:'partial'};
   const frame=fullArt?'':pokemonFrame(c);
-  if(frame&&physicalFinish==='holofoil')return preset(key,label,'ptcg-holo',[layer(set==='cel25'&&!frame.includes('-evolved')?'pk-cel-art':frame+'-art','holo')],FINISH_SOURCES.pokemon);
+  if(frame&&physicalFinish==='holofoil')return preset(key,label,'ptcg-holo',[layer(set==='cel25'&&frame==='pk-swsh'?'pk-cel-art':frame+'-art','holo')],FINISH_SOURCES.pokemon);
   if(frame&&physicalFinish==='reverse-holofoil')return preset(key,label,'ptcg-reverse',[layer(frame+'-surround',/^sv/i.test(set)?'tiles':'rainbow')],/^pk-sm(?:-evolved)?$/.test(frame)?'https://api.tcgdex.net/v2/en/cards/sm11-6':FINISH_SOURCES.pokemon);
   // Energy, BREAK, Restored and other special layouts stay unmasked until measured.
   return unknown(key,label);
@@ -268,7 +270,7 @@ export function finishChoices(game,c,ctx={}){
   if(v.foil)return {...unknown(v.key,v.label||v.key),reason:'Patterned finish preview unavailable for this printing.'};
   // Preserve a known variant even when its finish cannot be previewed.
   return finish?effectFor(game,c,v.key,v.label||v.key,ctx,finish):unknown(v.key,v.label||v.key);
- });
+ }).map(p=>{const profiles=ANNIVERSARY_STAMPS[c.id];return profiles?{...p,overlayProfiles:profiles,imageSources:[...new Set(profiles.flatMap(x=>x.images))]}:p;});
  if(game==='ygo'){
   const printing=quoteForContext(game,c,ctx)?.printing;
   if(!printing?.rarity)return [];
@@ -283,7 +285,7 @@ function commonPokemonPresentation(c,choices){
  const variants=new Map((c.variants||[]).map(v=>[v.key,v]));
  const physical=choices.map(p=>variantFinish(variants.get(p.key)||{}));
  if(!physical[0]||physical.some(f=>f!==physical[0]))return null;
- const signature=p=>JSON.stringify([p.effect,p.layers,p.coverage||'',p.texture||'',p.materialProfile||'',p.pattern||'']);
+ const signature=p=>JSON.stringify([p.effect,p.layers,p.coverage||'',p.texture||'',p.materialProfile||'',p.pattern||'',p.overlayProfiles||null,p.imageSources||null]);
  if(choices.some(p=>signature(p)!==signature(choices[0])))return null;
  // Share only presentation. A blank key must not mark a commercial edition
  // selected, substitute its image, or leak into owned lots and price quotes.

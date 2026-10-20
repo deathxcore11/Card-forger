@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import {createHash} from 'node:crypto';
 import {normalizePtcg} from './ptcg.js';
 import {resolveFinish,finishChoices,FINISH_MASKS,pokemonFrame} from './finish-effects.js';
-import {finishImageMatches} from './finish-preview.js';
+import {ANNIVERSARY_STAMPS,ANNIVERSARY_MAPS} from './pokemon-anniversary-masks.js';
+import {finishOverlayProfile,finishImageMatches} from './finish-preview.js';
 const read=p=>JSON.parse(fs.readFileSync(p));
 const base=read('tests/fixtures/base-set-frames/geometry.json');
 for(const entry of base.cards){
@@ -34,10 +35,32 @@ for(const e of golden.cards){
  assert.equal(JSON.stringify(c),before);assert.deepEqual(finishChoices('ptcg',c),original,'No availability or price mutation');
  if(e.id.startsWith('30th'))assert(original.every(p=>p.effect==='plain'),'Generated Normal availability is preserved; maps do not invent holo offers');
 }
-assert.deepEqual(counts,{cel25cc:25,'30th-c':30,'30th':158});
+assert.deepEqual(counts,{cel25cc:25,'30th-c':30,'30th':158,cel25:1});
 const regular=normalizePtcg(read('test-fixtures/finish-effects/cel25-10.json'));
 assert.equal(resolveFinish('ptcg',regular,{priceFinish:regular.variants[0].key}).layers[0]?.mask,'pk-cel-art','Regular Celebrations retains its current map');
 for(const set of ['cel25cc','cel25c','30th-c','30th']){
  const future={id:set+'-unknown',set:{id:set},name:'Future EX',stage:'Stage2',rarity:'Ultra Rare',variants:[{key:'holofoil',finish:'holofoil'}]};assert.equal(resolveFinish('ptcg',future,{priceFinish:'holofoil'}).status,'unknown');
 }
 console.log('PASS: 16 Base Set fronts across 64 edition choices, all 25+30 Classic and 158 main anniversary identities, source hashes, exact-image guards, unavailable special layouts and no finish/price mutations.');
+
+const stamps=read('tests/fixtures/anniversary-frames/stamp-geometry.json');
+assert.equal(new Set(stamps.profiles.filter(p=>p.id.startsWith('cel25-')).map(p=>p.id)).size,25);
+for(const e of stamps.profiles){
+ const profiles=ANNIVERSARY_STAMPS[e.id],model={overlayProfiles:profiles,imageSources:profiles.flatMap(p=>p.images)};
+ const profile=finishOverlayProfile(model,e.source+'?cache=1');
+ assert(profile,e.id+' source-specific stamp');assert.equal(FINISH_MASKS[profile.mask],e.css);
+ assert.equal(createHash('sha256').update(fs.readFileSync('tests/fixtures/anniversary-frames/'+e.file)).digest('hex'),e.sha256);
+ assert.equal(finishOverlayProfile(model,'https://example.test/other.png'),null);
+ assert(!finishImageMatches(model,'https://example.test/other.png'));
+}
+const professor=normalizePtcg(read('tests/fixtures/anniversary-frames/cel25-23.json'));
+for(const entry of [ANNIVERSARY_MAPS[professor.id],...ANNIVERSARY_MAPS[professor.id].alternates]){
+ const c={...professor,imageLarge:entry.source},p=resolveFinish('ptcg',c,{priceFinish:c.variants[0].key});
+ assert.equal(p.layers[0].mask,entry.mask);assert.equal(finishOverlayProfile(p,entry.source).artMask,entry.mask);
+}
+const full={id:'cel25-7',name:'Flying Pikachu VMAX',stage:'VMAX',rarity:'Full Art',set:{id:'cel25'},variants:[{key:'holofoil',finish:'holofoil'}]};
+const textured=resolveFinish('ptcg',full,{priceFinish:'holofoil'});
+assert.equal(textured.effect,'ptcg-full-art');assert.equal(textured.layers.length,2);assert(textured.layers.some(l=>l.material==='micro'));
+assert(finishOverlayProfile(textured,'https://assets.tcgdex.net/en/swsh/cel25/7/high.webp'));
+assert.equal(finishOverlayProfile({game:'ygo'},'https://example.test/card.jpg'),null);
+console.log('PASS: all 25 regular Celebrations marks, 202 source-bound stamp profiles, both extended Professor contours, full-art material preservation.');

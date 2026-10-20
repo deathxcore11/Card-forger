@@ -50,6 +50,10 @@ export function finishImageMatches(model,source){
  if(!model.imageSources)return true;
  try{const base=globalThis.location?.href||'https://cardstashy.com/',actual=new URL(source,base);return model.imageSources.some(value=>{const expected=new URL(value,base);return actual.origin===expected.origin&&actual.pathname===expected.pathname;});}catch{return false;}
 }
+// Select the measured profile for the decoded image, including known provider fallbacks.
+export function finishOverlayProfile(model,source){
+ return model.overlayProfiles?.find(p=>finishImageMatches({imageSources:p.images},source))||null;
+}
 const attached=new WeakMap();
 export function attachFinishPreview(root){
  if(!root)return ()=>{};
@@ -79,12 +83,15 @@ export function attachFinishPreview(root){
   if(!img||!img.complete||!img.naturalWidth||img.hidden)return;
   if(!finishImageMatches(p,img.currentSrc||img.src))return unmount(el);
   const overlay=img.ownerDocument.createElement('span');overlay.className='finish-overlay'+(el.dataset.finishSurface==='large'?' finish-auto':'');
+  const profile=finishOverlayProfile(p,img.currentSrc||img.src);
+  if(profile&&FINISH_MASKS[profile.mask])overlay.style.clipPath=FINISH_MASKS[profile.mask];
+  const layers=profile?.artMask?(p.layers||[]).map(l=>({...l,mask:profile.artMask})):(p.layers||[]);
   if(p.materialProfile)overlay.dataset.materialProfile=p.materialProfile;
   if(el.dataset.finishSurface==='large'){const phase=String(p.printingId||'').split('').reduce((n,c)=>n+c.charCodeAt(0),0)%80;overlay.style.animationDelay=`-${phase/10}s`;}
   overlay.setAttribute('aria-hidden','true');
   if(detail){const light=img.ownerDocument.createElement('span');light.className='finish-spotlight';overlay.append(light);}
-  for(const l of p.layers||[]){if(!FINISH_MASKS[l.mask])continue;const part=img.ownerDocument.createElement('span');part.className=`finish-layer finish-${l.material}${l.mask==='ygo-name'?' finish-name-region':''}`;part.style.clipPath=FINISH_MASKS[l.mask];overlay.append(part);}
-  if(hasFinishPattern(p.materialProfile)&&FINISH_MASKS[p.layers?.[0]?.mask]){const pattern=img.ownerDocument.createElement('span');pattern.className='finish-pattern';pattern.style.clipPath=FINISH_MASKS[p.layers[0].mask];overlay.append(pattern);}
+  for(const l of layers){if(!FINISH_MASKS[l.mask])continue;const part=img.ownerDocument.createElement('span');part.className=`finish-layer finish-${l.material}${l.mask==='ygo-name'?' finish-name-region':''}`;part.style.clipPath=FINISH_MASKS[l.mask];overlay.append(part);}
+  if(hasFinishPattern(p.materialProfile)&&FINISH_MASKS[layers[0]?.mask]){const pattern=img.ownerDocument.createElement('span');pattern.className='finish-pattern';pattern.style.clipPath=FINISH_MASKS[layers[0].mask];overlay.append(pattern);}
   host.append(overlay);mounted.set(el,{img,host,overlay,model:el.dataset.finishModel,src:img.currentSrc});ro?.observe(img);size(el);
   const nameLayer=p.game==='ygo'&&(p.layers||[]).find(l=>l.mask==='ygo-name'),nameMask=nameLayer?ygoNameMask(img):null;
   if(nameMask){

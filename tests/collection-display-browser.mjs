@@ -40,10 +40,11 @@ try{
    await page.locator('.bottom-nav [data-nav="collection"]').tap();await page.locator('#content .display-list .lot').first().waitFor();
    const before=await protectedState(page);
    assert.equal(await page.locator('#content [data-price-origin="personal"]').count(),1,'only the manually entered lot gets a badge');
-   // These are value/style checks, so they do not need scrolling. A condition
-   // refresh can replace a row while scrollIntoViewIfNeeded waits for stability.
-   const custom=page.locator('.lot').filter({has:page.locator('[data-price-origin="personal"]')});await custom.locator('button.price').waitFor({state:'visible'});assert.match(await custom.innerText(),/\$50\.00/);
-   const condition=page.locator('.lot').filter({has:page.locator('[data-entry="display-'+game+'-1"]')});assert.equal(await condition.locator('[data-price-origin]').count(),0);assert.match(await condition.innerText(),/\$5\.67/);
+   // Read the price button's DOM value: content-visibility:auto may deliberately
+   // leave off-screen innerText empty. Visibility and real scrolling/gestures
+   // are checked separately; a condition refresh can also replace a row.
+   const custom=page.locator('.lot').filter({has:page.locator('[data-price-origin="personal"]')});await custom.locator('button.price').waitFor({state:'visible'});assert.match(await custom.locator('button.price').textContent(),/\$50\.00/);
+   const condition=page.locator('.lot').filter({has:page.locator('[data-entry="display-'+game+'-1"]')});assert.equal(await condition.locator('[data-price-origin]').count(),0);assert.match(await condition.locator('button.price').textContent(),/\$5\.67/);
    assert.match(await condition.locator('.condition-badge').getAttribute('data-condition-info'),/Condition quote.*included/);
    assert.equal(await condition.getAttribute('data-tier'),'t1','Exact condition value selects its price frame');
    assert.equal(await custom.getAttribute('data-tier'),'t2','Frame uses per-copy value, not the two-copy total');

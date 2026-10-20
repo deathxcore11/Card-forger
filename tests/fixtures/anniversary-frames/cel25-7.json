@@ -1,0 +1,28 @@
+{
+  "fixtureEvidence": "Synthetic holo selection for coverage testing over the retained source images. Not provider availability or pricing metadata.",
+  "id": "cel25-7",
+  "localId": "7",
+  "name": "Flying Pikachu VMAX",
+  "category": "Pokemon",
+  "rarity": "Full Art",
+  "set": {
+    "id": "cel25",
+    "name": "Celebrations",
+    "cardCount": {
+      "official": 25,
+      "total": 25
+    }
+  },
+  "image": "https://assets.tcgdex.net/en/swsh/cel25/7",
+  "variants": {
+    "holo": true
+  },
+  "variants_detailed": [
+    {
+      "type": "holo",
+      "size": "standard",
+      "variantId": "coverage-witness"
+    }
+  ],
+  "stage": "VMAX"
+}

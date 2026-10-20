@@ -9,6 +9,8 @@ import {resolveFinish} from '../finish-effects.js';
 import {startServer,openSearchApp,inventorySnapshot} from './search-fixtures.mjs';
 // Regions as [x0,y0,x1,y1] fractions of the image, kept ≥0.5% inside measured edges (anti-aliasing).
 const CASES={
+ 'cel25-23':{foil:{art:[.3,.2,.7,.4],sleeve:[.34,.57,.40,.60]},plain:{title:[.2,.075,.7,.09],paper:[.4,.7,.7,.8]}},
+ 'cel25-7':{foil:{art:[.3,.3,.7,.5]},plain:{}},
  'base1-10':{foil:{topLeft:[.13,.13,.22,.17],art:[.3,.22,.7,.42]},plain:{rules:[.2,.6,.8,.8],frame:[.092,.2,.099,.4]}},
  'base1-2':{foil:{art:[.3,.22,.7,.42]},plain:{badge:[.12,.12,.17,.15],rules:[.2,.6,.8,.8]}},
  'cel25cc-CC003':{foil:{lowerArt:[.3,.49,.6,.505],art:[.3,.22,.6,.4]},plain:{badge:[.12,.12,.17,.15],stamp:[.81,.475,.9,.51],rules:[.2,.6,.8,.8]}},
@@ -20,7 +22,8 @@ const CASES={
 const read=id=>JSON.parse(fs.readFileSync(`tests/fixtures/${id.startsWith('base1')?'base-set':'anniversary'}-frames/${id}.json`));
 const retained=Object.keys(CASES).map(read),sources=retained.map(s=>({...s,variants:{holo:true},variants_detailed:[{type:'holo',size:'standard',variantId:'coverage-witness'}],pricing:undefined}));
 const measurements=JSON.parse(fs.readFileSync('tests/fixtures/anniversary-frames/geometry.json')).cards;
-const sourceImages=new Map(sources.map(s=>{const m=measurements.find(e=>e.id===s.id),file=m?`tests/fixtures/anniversary-frames/${m.file}`:`tests/fixtures/base-set-frames/${s.id}-high.webp`;return [s.id,{file,source:m?.source||s.image+'/high.webp'}];}));
+const stampMeasurements=JSON.parse(fs.readFileSync('tests/fixtures/anniversary-frames/stamp-geometry.json')).profiles;
+const sourceImages=new Map(sources.map(s=>{const m=measurements.find(e=>e.id===s.id)||stampMeasurements.find(e=>e.id===s.id),file=m?`tests/fixtures/anniversary-frames/${m.file}`:`tests/fixtures/base-set-frames/${s.id}-high.webp`;return [s.id,{file,source:m?.source||s.image+'/high.webp'}];}));
 for(const source of sources){const c=normalizePtcg(source);CASES[source.id].mask=resolveFinish('ptcg',c,{priceFinish:c.variants[0].key}).layers[0].mask;}
 if(process.argv.includes('--validate-fixtures')){console.log('PASS: Base Set and anniversary coverage witnesses use retained source art and explicitly synthetic finish selections.');process.exit(0);}
 assert.equal(process.env.GITHUB_ACTIONS,'true','Browser execution is hosted-only.');
@@ -61,7 +64,22 @@ try{
    // Painted foil measures mean 20-30 with every pixel changed; hosted compositing noise has been
    // a few pixels per thin region (e.g. 4/380, mean .055). Bound clear regions far below paint.
    for(const name of Object.keys(clear))assert(pixels[name].mean<.5&&pixels[name].changedFraction<.05,`${source.id} ${finish}: ${name} stays unfoiled ${JSON.stringify(pixels[name])}`);
-   report.cases.push({id:source.id,finish,pixels});
+   // Compare the entire overlay, including its spotlight and texture children.
+   // Hiding only material layers can falsely pass while the lamp still covers the mark.
+   const stamp=stampMeasurements.find(e=>e.id===source.id&&e.source===sourceImages.get(source.id).source);
+   let stampPixels;
+   if(stamp){
+    const overlay=surface.locator('.finish-overlay');
+    await overlay.evaluate(el=>el.style.visibility='hidden');
+    const clean=await page.screenshot({clip:box,animations:'disabled'});
+    await overlay.evaluate(el=>el.style.visibility='');
+    const painted=await page.screenshot({clip:box,animations:'disabled'});
+    stampPixels=await compare(clean,painted,{printedMark:stamp.witness});
+    assert(stampPixels.printedMark.count>0);
+    assert(stampPixels.printedMark.mean<.5&&stampPixels.printedMark.changedFraction<.05,source.id+' entire overlay excludes printed mark '+JSON.stringify(stampPixels));
+    assert(await overlay.evaluate(el=>getComputedStyle(el).clipPath!=='none'),'All effects share the root stamp exclusion');
+   }
+   report.cases.push({id:source.id,finish,pixels,stampPixels});
   }
   await page.locator('#sheetBody [data-act="closeSheet"]').first().click();
  }
