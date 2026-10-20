@@ -27,7 +27,10 @@ async function setup(app){let calls=0;const payloads=[];
   return route.fulfill({json:{calls:[{type:'function_call',call_id:'fixture-'+calls,name:'build_deck',arguments:JSON.stringify(args)}]}});
  });
  await app.context.route('https://api.scryfall.com/**',route=>{const u=new URL(route.request().url());if(u.pathname.endsWith('/rulings'))return route.fulfill({json:{data:[]}});if(u.pathname==='/cards/collection')return route.fulfill({json:{data:route.request().postDataJSON().identifiers.map(x=>catalog[cardKey(x.name)]).filter(Boolean),not_found:[]}});if(u.pathname==='/cards/search')return route.fulfill({json:{object:'list',data:(u.searchParams.get('q')||'').includes('is:commander')?[leader]:cards,has_more:false}});if(u.pathname==='/cards/named')return route.fulfill({json:catalog[cardKey(u.searchParams.get('exact')||u.searchParams.get('fuzzy'))]||leader});return route.fulfill({json:cards.find(c=>u.pathname.endsWith(c.id))||leader});});
- await app.page.evaluate(cs=>{for(const c of cs)window.__uiTestState.catalog[c.name.toLowerCase()]=c;},cards);
+ // The shared fixture marks its cards as already tracked. Extend that same
+ // snapshot to this synthetic catalogue before its card-detail views can open;
+ // otherwise the normal price-history registration trips the write guard.
+ await app.page.evaluate(cs=>{const key='cardstashy-watch-sent-v1',sent=JSON.parse(localStorage.getItem(key)||'{}');for(const c of cs){window.__uiTestState.catalog[c.name.toLowerCase()]=c;sent['mtg:'+c.id]=Date.now();}localStorage.setItem(key,JSON.stringify(sent));},cards);
  return {get calls(){return calls;},payloads};
 }
 async function submit(page,text){await page.locator('.ask-input').fill(text);await page.locator('.ask-send').click();await page.locator('.ask-msg.thinking').waitFor({state:'detached'});}
