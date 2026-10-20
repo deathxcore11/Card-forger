@@ -42,7 +42,9 @@ export function ygoNameMask(img){
 // CSS placement of a box-sized mask image inside a full-card layer.
 export function nameMaskStyle(url){
  const [x0,y0,x1,y1]=YGO_NAME_BOX,sw=x1-x0,sh=y1-y0,pos=(o,s)=>`${(o/(1-s)*100).toFixed(3)}%`;
- return {clipPath:'none',maskImage:`url("${url}")`,webkitMaskImage:`url("${url}")`,maskSize:`${(sw*100).toFixed(3)}% ${(sh*100).toFixed(3)}%`,webkitMaskSize:`${(sw*100).toFixed(3)}% ${(sh*100).toFixed(3)}%`,maskPosition:`${pos(x0,sw)} ${pos(y0,sh)}`,webkitMaskPosition:`${pos(x0,sw)} ${pos(y0,sh)}`,maskRepeat:'no-repeat',webkitMaskRepeat:'no-repeat'};
+ const pc=v=>`${(v*100).toFixed(3)}%`;
+ // Clipped to the name bar as well as masked to the letters, so nothing can paint outside it.
+ return {clipPath:`inset(${pc(y0)} ${pc(1-x1)} ${pc(1-y1)} ${pc(x0)})`,maskImage:`url("${url}")`,webkitMaskImage:`url("${url}")`,maskSize:`${(sw*100).toFixed(3)}% ${(sh*100).toFixed(3)}%`,webkitMaskSize:`${(sw*100).toFixed(3)}% ${(sh*100).toFixed(3)}%`,maskPosition:`${pos(x0,sw)} ${pos(y0,sh)}`,webkitMaskPosition:`${pos(x0,sw)} ${pos(y0,sh)}`,maskRepeat:'no-repeat',webkitMaskRepeat:'no-repeat'};
 }
 const VS='attribute vec2 a;varying vec2 v;void main(){v=(a+1.0)*.5;gl_Position=vec4(a,0.0,1.0);}';
 export const YGO_NAME_FRAGMENT=`precision highp float;

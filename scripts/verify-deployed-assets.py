@@ -59,7 +59,7 @@ MODULES = (
     "price-reference.js", "pricehist.js", "printing-carousel.js", "ptcg-glc-rules.js", "ptcg-product.js", "quick-quantity.js",
     "rule-hover.js", "scanart.js", "scanner-lookup.js", "scanner-review.js", "share.js", "sharedprices.js", "store.js",
     "strategy-risk.js", "strategy.js", "tabletop-themes.js", "tcgbuild.js", "tcgcompare.js", "tier.js", "tiles.js", "trade.js",
-    "ygo-price-selection.js", "ygo-prices.js",
+    "ygo-price-selection.js", "ygo-prices.js", "ygo-name-foil.js",
 )
 MAX_BYTES = 8 * 1024 * 1024
 REQUEST_TIMEOUT = 15

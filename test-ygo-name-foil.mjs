@@ -26,7 +26,7 @@ const style=nameMaskStyle('data:image/png;base64,AA==');
 const [px,py]=style.maskPosition.split(' ').map(parseFloat),[sw,sh]=style.maskSize.split(' ').map(parseFloat);
 assert(Math.abs(px/100*(1-sw/100)-YGO_NAME_BOX[0])<1e-4&&Math.abs(py/100*(1-sh/100)-YGO_NAME_BOX[1])<1e-4,'Mask lands on the name bar');
 assert(Math.abs(sw/100-(YGO_NAME_BOX[2]-YGO_NAME_BOX[0]))<1e-4&&Math.abs(sh/100-(YGO_NAME_BOX[3]-YGO_NAME_BOX[1]))<1e-4,'Mask spans the name bar only');
-assert.equal(style.clipPath,'none');assert.equal(style.maskRepeat,'no-repeat');
+assert.equal(style.clipPath,'inset(5.000% 17.200% 89.200% 7.200%)','Layer is also clipped to the name bar');assert.equal(style.maskRepeat,'no-repeat');
 // Name bar stops before the Attribute orb and clears letter descenders.
 assert(YGO_NAME_BOX[2]<.834&&YGO_NAME_BOX[3]>=.108,'Measured name bar bounds');
 assert.deepEqual(YGO_NAME_RARITY,{silver:1,gold:2,rainbow:3},'Rare silver, Ultra gold, Secret/Prismatic rainbow');
