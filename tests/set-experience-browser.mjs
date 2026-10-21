@@ -21,8 +21,8 @@ try{
    assert.equal(await page.locator('.set-atmosphere img').count(),1);
    await page.locator('[data-act="openSetPack"]').click();await page.locator('.pack-dialog[open]').waitFor();
    assert.match(await page.locator('.pack-explanation').textContent(),/not a real booster/);
-   // Each game's real booster size: Yu-Gi-Oh! core packs hold 9 cards, Magic and Pokémon 10.
-   const packSize=game==='ygo'?9:10;
+   // Each game's booster size: Yu-Gi-Oh! core packs hold 9 cards, Pokémon 10 and Magic's play booster 12 here.
+   const packSize={ygo:9,ptcg:10,mtg:12}[game];
    await page.locator('[data-pack="open"]').click();assert.equal(await page.locator('.pack-card').count(),packSize);
    await page.locator('.pack-card').first().click();assert.equal(await page.locator('.pack-card.revealed').count(),1);
    assert.equal(await page.locator('[data-pack="copy"]').isDisabled(),true);

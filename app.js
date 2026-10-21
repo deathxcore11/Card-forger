@@ -1,4 +1,4 @@
-import {openPackPreview} from './pack-preview.js';
+import {openPackPreview,ptcgSetRarities} from './pack-preview.js';
 import {dailyDetails,todaySetMarkup,todayPackMarkup} from './home-today.js';
 import {packEligible} from './set-experience.js';
 import {setMotionTilt} from './mobile-tilt.js';
@@ -3091,14 +3091,17 @@ A.shareNative = async () => {
 };
 
 /* ---------- sets ---------- */
-A.openSetPack = () => {
+A.openSetPack = async () => {
  const game=T.game(),screen=game==='mtg'?S.ui.set:T.ui(game).set,set=screen.info;
  if(!packEligible(game,set)||screen.busy||screen.error||!screen.loaded)return toast("Wait for this set to finish loading.");
  const scope=mutationScope(),ticket=accountGeneration,release=game==='mtg'?screen.code:screen.id;
  const isCurrent=()=>mutationCurrent(scope)&&ticket===accountGeneration&&T.game()===game&&S.ui.view==='set'&&(game==='mtg'?S.ui.set.code:T.ui(game).set.id)===release;
  const want=S.ui.packFeatured;S.ui.packFeatured=null;
- const featured=want?.game===game?screen.cards.find(c=>String(c.id)===String(want.id))||(game==='mtg'?screen.cards.find(c=>c.name===want.name):null):null;
- try{openPackPreview({game,set,cards:screen.cards,featured,complete:game==='mtg'?screen.cards.length===set.card_count:screen.contents?.completeness==='complete',isCurrent,
+ let cards=screen.cards;
+ // Pull rates need every Pokémon card's rarity; summaries without one are filled from TCGdex first.
+ if(game==='ptcg'&&cards.some(c=>!c.rarity)){toast("Shuffling the pack…");const map=await ptcgSetRarities(screen.id,set?.cardCount?.total||set?.count||cards.length).catch(()=>new Map());if(!isCurrent())return;cards=cards.map(c=>c.rarity||!map.has(String(c.id))?c:{...c,rarity:map.get(String(c.id))});}
+ const featured=want?.game===game?cards.find(c=>String(c.id)===String(want.id))||(game==='mtg'?cards.find(c=>c.name===want.name):null):null;
+ try{openPackPreview({game,set,cards,featured,complete:game==='mtg'?screen.cards.length===set.card_count:screen.contents?.completeness==='complete',isCurrent,
   onCopy:copyPlain,
   onDetails:c=>game==='mtg'?A.card({dataset:{name:c.name},printing:c}):A.tCard({dataset:{game,id:String(c.id),setId:set.id}}),
   onWishlist:async cards=>{if(!isCurrent())throw Error("Your workspace changed. Please reopen the preview.");const saved=await commit(state=>{const st=game==='mtg'?state:state.tcg[game];for(const c of cards){const exists=st.wishlist.some(w=>game==='mtg'?key(w.name)===key(c.name):String(w.cardId)===String(c.id));if(!exists)st.wishlist.push({id:uid(),name:c.name,...(game==='mtg'?{finish:'nonfoil'}:{cardId:String(c.id)}),qty:1,addedAt:new Date().toISOString()});}return true;},{enrich:false,guard:()=>isCurrent(),scope});if(saved!==true)throw Error("Your workspace changed. Reopen this preview.");},

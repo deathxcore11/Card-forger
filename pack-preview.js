@@ -14,13 +14,35 @@ export function sampleSetCards(cards,count=10,random=Math.random){
 // draws from cards of the named rarities, weighted, and falls back to any unused card in the set
 // when the set has none (all-foil sets, promos). rarity keys are normalised rarity names.
 const R=s=>String(s||'').toLowerCase().replace(/[^a-z]/g,'');
+const slot=(w,role='')=>({w,role});
+const PTCG_RARE={rare:70,rareholo:35,holorare:35,doublerare:20,ultrarare:6.5,hyperrare:.7,raresecret:.7,secretrare:.7,rarerainbow:.8,rareholoex:8,rareholov:8,rareholovmax:4,rareholovstar:4,rareultra:6.5,radiantrare:4,amazingrare:3,megahyperrare:.4,shinyrare:3,shinyultrarare:1};
+// Slots run in pack order and end with the hit, so today's pack (one card shorter) swaps the hit for the Card of the Day.
 const PACK_SLOTS={
- mtg:[...Array(6).fill({common:1}),...Array(3).fill({uncommon:1}),{rare:7,mythic:1}],
- ptcg:[...Array(4).fill({common:1}),...Array(3).fill({uncommon:1}),{common:5,uncommon:3,rare:1},
-  {common:62,uncommon:30,rare:8,illustrationrare:8.3,specialillustrationrare:1.1},
-  {rare:74,rareholo:37,holorare:37,doublerare:17,ultrarare:6.6,hyperrare:.55,raresecret:.55,secretrare:.55,rarerainbow:.8,rareholoex:8,rareholov:8,rareholovmax:4,rareholovstar:4,rareultra:6.6,radiantrare:4,amazingrare:3,acespecrare:4}],
- ygo:[...Array(7).fill({common:1}),{rare:1},{superrare:76,ultrarare:16,secretrare:8,quartercenturysecretrare:1}]
+ mtg:[...Array(6).fill(slot({common:1})),...Array(3).fill(slot({uncommon:1})),slot({common:50,uncommon:30,rare:14,mythic:2.4},'wildcard'),slot({common:60,uncommon:28,rare:10,mythic:1.6},'foil'),slot({rare:6.4,mythic:1},'hit')],
+ ptcg:[...Array(4).fill(slot({common:1})),...Array(3).fill(slot({uncommon:1})),slot({common:60,uncommon:30,rare:10},'reverse'),
+  slot({common:55,uncommon:28,rare:9,acespecrare:5,illustrationrare:7.7,specialillustrationrare:1.2},'reverse'),slot(PTCG_RARE,'hit')],
+ ygo:[...Array(7).fill(slot({common:1})),slot({rare:1}),slot({superrare:72,ultrarare:17,secretrare:8.5,quartercenturysecretrare:2.5},'hit')]
 };
+// A rare Pokémon god pack: every hit slot is an illustration or special illustration rare.
+const GOD_SLOT=slot({illustrationrare:2,specialillustrationrare:1},'hit'),GOD_PACK_ODDS=1/1000;
+export const packSize=game=>(PACK_SLOTS[game]||[]).length||10;
+// Pokémon set pages list cards before their details (and rarities) load. Pull rates need every card's
+// rarity, so the set's cards are fetched by rarity from TCGdex, most common first, until the counts
+// cover the whole set. Cached for the session; a failure just leaves rarities unknown.
+const PTCG_RARITY_ORDER=['Common','Uncommon','Rare','Rare Holo','Double rare','Holo Rare','Special illustration rare','Illustration rare','Ultra Rare','ACE SPEC Rare','Hyper rare','Rare Holo EX','Rare Holo V','Holo Rare V','Rare Holo VMAX','Holo Rare VMAX','Rare Holo VSTAR','Holo Rare VSTAR','Rare Ultra','Rare Secret','Secret Rare','Rare Rainbow','Radiant Rare','Amazing Rare','Shiny rare','Shiny Ultra Rare','Mega Hyper Rare','Rare Holo GX','Rare Holo LV.X','Rare Prime','LEGEND','Rare BREAK','Rare Prism Star','Rare Shining','Classic Collection','Full Art Trainer','Black White Rare','Crown','None'];
+const rarityMaps=new Map();
+export function ptcgSetRarities(setId,total,fetcher=fetch){
+ if(!/^[a-z0-9.-]{1,40}$/i.test(setId||''))return Promise.resolve(new Map());
+ if(rarityMaps.has(setId))return rarityMaps.get(setId);
+ const job=(async()=>{const map=new Map();
+  for(let i=0;i<PTCG_RARITY_ORDER.length&&!(total&&map.size>=total);i+=8){
+   const batch=PTCG_RARITY_ORDER.slice(i,i+8),lists=await Promise.all(batch.map(r=>fetcher(`https://api.tcgdex.net/v2/en/cards?set.id=eq:${encodeURIComponent(setId)}&rarity=eq:${encodeURIComponent(r)}`,{signal:AbortSignal.timeout(8000)}).then(x=>x.ok?x.json():[]).catch(()=>[])));
+   batch.forEach((r,k)=>{for(const c of Array.isArray(lists[k])?lists[k]:[])if(c?.id)map.set(String(c.id),r);});
+   if(!total)break;
+  }
+  return map;})();
+ job.catch(()=>rarityMaps.delete(setId));rarityMaps.set(setId,job);return job;
+}
 // A Yu-Gi-Oh! card printed in several rarities in one set (Rarity Collection, reprint sets) is pulled
 // in one of them, weighted by how rare it is. Display only: nothing is saved or priced from it.
 const YGO_RARITY_WEIGHT={common:50,shortprint:20,rare:20,superrare:12,ultrarare:6,secretrare:3,collectorsrare:1,prismaticsecretrare:1,platinumsecretrare:.5,quartercenturysecretrare:.4,ultimaterare:1,ghostrare:.3,starlightrare:.05,goldrare:3};
@@ -30,18 +52,20 @@ export function rollYgoPrinting(card,random=Math.random){
  for(const p of prints){r-=weight(p);if(r<=0){chosen=p;break;}}
  return {...card,rarity:chosen.rarity,sets:[chosen],setContext:{...card.setContext,printings:[chosen],printing:chosen,printingAmbiguous:false,pulled:true}};
 }
-export function samplePack(game,cards,count=10,random=Math.random){
- const slots=PACK_SLOTS[game]||[];if(!slots.length)return sampleSetCards(cards,count,random);
- const pool=[...new Map(cards.filter(c=>c?.id&&c.name).map(c=>[String(c.id),game==='ygo'?rollYgoPrinting(c,random):c])).values()],used=new Set(),picks=[];
- const rarityOf=c=>R(packRarity(game,c).label);
- // A shorter pack (today's pack keeps its last slot for the Card of the Day) drops the hit slot.
- for(const slot of slots.slice(0,count)){
-  const options=pool.filter(c=>!used.has(String(c.id))&&slot[rarityOf(c)]);
+export function samplePack(game,cards,count=packSize(game),random=Math.random){
+ let slots=PACK_SLOTS[game]||[];if(!slots.length)return sampleSetCards(cards,count,random);
+ const pool=[...new Map(cards.filter(c=>c?.id&&c.name).map(c=>[String(c.id),game==='ygo'?rollYgoPrinting(c,random):c])).values()],used=new Set(),picks=[],rarityOf=c=>R(packRarity(game,c).label);
+ const god=game==='ptcg'&&random()<GOD_PACK_ODDS&&pool.filter(c=>GOD_SLOT.w[rarityOf(c)]).length>=slots.filter(s=>s.role).length;
+ if(god)slots=slots.map(s=>s.role?GOD_SLOT:s);
+ for(const {w,role} of slots.slice(0,count)){
+  // Odds are per rarity, not per card: roll the rarity among those this set has, then one of its cards.
+  const groups=new Map();for(const c of pool)if(!used.has(String(c.id))&&w[rarityOf(c)]){const k=rarityOf(c);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(c);}
   let pick=null;
-  if(options.length){const total=options.reduce((n,c)=>n+slot[rarityOf(c)],0);let r=random()*total;for(const c of options){r-=slot[rarityOf(c)];if(r<=0){pick=c;break;}}pick??=options.at(-1);}
+  if(groups.size){const keys=[...groups.keys()],total=keys.reduce((n,k)=>n+w[k],0);let r=random()*total,key=keys.at(-1);for(const k of keys){r-=w[k];if(r<=0){key=k;break;}}const list=groups.get(key);pick=list[Math.floor(random()*list.length)];}
   if(!pick){const rest=pool.filter(c=>!used.has(String(c.id)));if(!rest.length)break;pick=rest[Math.floor(random()*rest.length)];}
-  used.add(String(pick.id));picks.push(pick);
+  used.add(String(pick.id));picks.push(role?{...pick,packSlot:role}:pick);
  }
+ if(god)picks.godPack=true;
  return picks;
 }
 export function packRarity(game,card){
@@ -56,23 +80,20 @@ export function packArtUrl(game,set={}){
  if(/^[a-z0-9]{1,8}$/.test(code))q.set('code',code);if(set.name)q.set('name',String(set.name).slice(0,120));
  return q.toString()?`/img/pack/${game}.jpg?${q}`:'';
 }
-// Which cards come out shiny, the way real boosters work: rares and holo rares in their foil, plus
-// one foil slot (Magic) or reverse-holo slot (Pokémon) on another card. Yu-Gi-Oh! rarity is the printing.
-export function packFinishes(game,picks,random=Math.random){
+// Which cards come out shiny, the way real boosters work: holo-only Pokémon (holo rares, full arts) in
+// their foil, Pokémon reverse slots as reverse holos, and Magic's foil slot in traditional foil.
+export function packFinishes(game,picks){
  const has=(c,k)=>finishChoices(game,c,{}).some(v=>v.key===k&&v.status!=='unknown');
- const ctx=picks.map(c=>{
-  // A Pokémon card printed only as a holo (holo rares, full arts) always comes out shiny.
+ return picks.map(c=>{
   if(game==='ptcg'&&has(c,'holofoil')&&!has(c,'normal'))return {priceFinish:'holofoil'};
+  if(game==='ptcg'&&c.packSlot==='reverse'&&has(c,'reverse-holofoil'))return {priceFinish:'reverse-holofoil'};
+  if(game==='mtg'&&c.packSlot==='foil'&&c.finishes?.includes('foil'))return {finish:'foil'};
   return {};
  });
- const slot=(want,ctxFor)=>{const open=picks.map((c,i)=>i).filter(i=>!Object.keys(ctx[i]).length&&want(picks[i]));if(open.length)ctx[open[Math.floor(random()*open.length)]]=ctxFor;};
- if(game==='mtg')slot(c=>c.finishes?.includes('foil'),{finish:'foil'});
- if(game==='ptcg')slot(c=>has(c,'reverse-holofoil'),{priceFinish:'reverse-holofoil'});
- return ctx;
 }
 // featured: a card to pull as this pack's last card (today's pack always holds the Card of the Day).
 export function openPackPreview({game,set,cards,complete=false,featured=null,onDetails,onWishlist,onCopy,onBuy,isCurrent=()=>true}){
- const size=game==='ygo'?9:10;
+ const size=packSize(game);
  let picks=samplePack(game,cards,size);
  if(featured){picks=[...samplePack(game,cards.filter(c=>String(c.id)!==String(featured.id)),size-1).slice(0,size-1),featured];}if(!picks.length)throw Error('Load this set’s cards first.');
  const dialog=document.createElement('dialog');dialog.className='pack-dialog';dialog.dataset.game=game;dialog.setAttribute('aria-label',`${set.name} pack`);
@@ -105,7 +126,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,onD
  };
  const reveal=i=>{if(!Number.isInteger(i)||!picks[i])return;if(!revealed.has(i)){revealed.add(i);const b=dialog.querySelector(`.pack-card[data-index="${i}"]`),img=b.querySelector('img[data-pack-src]');img.src=img.dataset.packSrc;b.classList.add('revealed');b.setAttribute('aria-pressed','true');b.setAttribute('aria-label',picks[i].name+' · revealed');
    if(packRarity(game,picks[i]).rank>=3)b.classList.add('pack-hit');status.textContent=`${revealed.size} of ${picks.length} revealed`;
-   if(revealed.size===picks.length){dialog.classList.add('pack-done');for(const x of dialog.querySelectorAll('.pack-actions [disabled]'))x.disabled=false;}}
+   if(revealed.size===picks.length){dialog.classList.add('pack-done');if(picks.godPack)status.textContent='God pack! Every hit is an illustration rare.';for(const x of dialog.querySelectorAll('.pack-actions [disabled]'))x.disabled=false;}}
   show(i);};
  const open=()=>{const w=dialog.querySelector('.pack-wrapper');const done=()=>{dialog.querySelector('.pack-sealed').hidden=true;dialog.querySelector('.pack-content').hidden=false;dialog.classList.add('pack-dealt');show(0);focusCard.focus({preventScroll:true});};
   if(reduce()){done();return;}w.classList.add('tearing');setTimeout(done,620);};
