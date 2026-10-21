@@ -3117,7 +3117,7 @@ A.openSetPack = async () => {
  // set's normal pull rates like any other pack.
  const dayKey=want&&`cardstashy-today-pack:${game}:${want.date}:${want.id}`;let firstToday=!!want;try{if(dayKey&&localStorage.getItem(dayKey))firstToday=false;}catch{}
  const found=firstToday&&want?.game===game?cards.find(c=>String(c.id)===String(want.id))||(game==='mtg'?cards.find(c=>c.name===want.name)||want.card||null:null):null,featured=found&&want.rarity?{...found,featuredRarity:want.rarity}:found;
- try{openPackPreview({game,set,cards,featured,hydrate:game==='ptcg'?c=>T.SOURCES.ptcg.get(String(c.id),{prices:false}):null,complete:game==='mtg'?screen.cards.length===set.card_count:screen.contents?.completeness==='complete',isCurrent,
+ try{openPackPreview({game,set,cards,featured,hydrate:game==='ptcg'?c=>T.SOURCES.ptcg.get(String(c.id),{prices:true}):null,complete:game==='mtg'?screen.cards.length===set.card_count:screen.contents?.completeness==='complete',isCurrent,
   onCopy:copyPlain,
   // A pulled card opens on its card page in the printing and finish that came out of the pack.
   onDetails:(c,pulled={})=>game==='mtg'?A.card({dataset:{name:c.name,...(pulled.finish?{setFinish:pulled.finish}:{})},printing:c}):A.tCard({dataset:{game,id:String(c.id),setId:set.id,...(pulled.priceFinish?{setVariant:pulled.priceFinish}:{}),...(game==='ygo'&&c.setContext?.printing?{printing:c.setContext.printing.code+'::'+c.setContext.printing.rarity}:{})}}),

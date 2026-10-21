@@ -4985,3 +4985,33 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 .tile-chrome .emb, .tile-chrome .energy, .tile-chrome .ms, .lot-art .tile-chrome img, .lot-art .tile-chrome .img-missing { width: 13px !important; height: 13px !important; }
 .tile-chrome .tset { font-size: 9.5px; } .tile-chrome .tset small { font-size: 8.5px; }
 .tilting .tile-chrome > *, .tilting + .tile-chrome > *, :is(.lot-art, .grid-card).tilting .tile-chrome > * { opacity: 0; }
+
+/* ===== Aura light: every card casts its price colour onto the surface behind it, like a TV's bias
+   lighting. Two colour pools from the tier gradient sit offset behind the card with a soft halo;
+   purple, gold and orange cards slowly orbit their light like the border animation. ===== */
+[data-tier="t0"], [data-tier="tn"] { --aura-1: #a7afb8; --aura-2: #6f7780; --aura-mix: 30%; }
+[data-tier="t1"] { --aura-1: #7be3a8; --aura-2: #2fae68; --aura-mix: 55%; }
+[data-tier="t2"] { --aura-1: #8cc6ff; --aura-2: #2f7fe0; --aura-mix: 60%; }
+[data-tier="t3"] { --aura-1: #b46cff; --aura-2: #6fd0ff; --aura-mix: 70%; }
+[data-tier="t4"] { --aura-1: #ffd34d; --aura-2: #ffb020; --aura-mix: 70%; }
+[data-tier="t5"] { --aura-1: #ff7a1a; --aura-2: #ffd08a; --aura-mix: 75%; }
+@keyframes aura-orbit {
+  0%, 100% { box-shadow: -12px -9px var(--aura-blur, 30px) 1px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), 12px 9px var(--aura-blur, 30px) 1px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 30px) * 1.5) 4px color-mix(in srgb, var(--aura-1) 40%, transparent), 0 10px 24px -14px #000c; }
+  25% { box-shadow: 12px -9px var(--aura-blur, 30px) 1px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), -12px 9px var(--aura-blur, 30px) 1px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 30px) * 1.5) 4px color-mix(in srgb, var(--aura-2) 40%, transparent), 0 10px 24px -14px #000c; }
+  50% { box-shadow: 12px 9px var(--aura-blur, 30px) 1px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), -12px -9px var(--aura-blur, 30px) 1px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 30px) * 1.5) 4px color-mix(in srgb, var(--aura-1) 40%, transparent), 0 10px 24px -14px #000c; }
+  75% { box-shadow: -12px 9px var(--aura-blur, 30px) 1px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), 12px -9px var(--aura-blur, 30px) 1px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 30px) * 1.5) 4px color-mix(in srgb, var(--aura-2) 40%, transparent), 0 10px 24px -14px #000c; }
+}
+/* Collection, binders' gallery, deck rows: the framed card art. */
+#content.view-gallery .display-list .lot[data-tier]:not(.wanted) .lot-art,
+/* Set and search grids, and the card page: the card image itself carries its tier. */
+.view-gallery .card-grid .grid-card img.card-img[data-tier],
+#content.view-gallery .card-grid .grid-card[data-tier] > .card-img,
+.cd-img .cd-zoom img[data-tier] {
+  box-shadow: -12px -9px var(--aura-blur, 30px) 1px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), 12px 9px var(--aura-blur, 30px) 1px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 30px) * 1.5) 4px color-mix(in srgb, var(--aura-1) 40%, transparent), 0 10px 24px -14px #000c;
+}
+.cd-img .cd-zoom img[data-tier] { --aura-blur: 52px; }
+#content.view-gallery .display-list .lot[data-tier="t3"]:not(.wanted) .lot-art { animation: tier-swirl 6s linear infinite, aura-orbit 8s linear infinite; }
+#content.view-gallery .display-list .lot[data-tier="t4"]:not(.wanted) .lot-art { animation: tier-shine 3.4s cubic-bezier(.45,.05,.3,1) infinite, aura-orbit 10s linear infinite; }
+#content.view-gallery .display-list .lot[data-tier="t5"]:not(.wanted) .lot-art { animation: tier-shine 2.6s ease-in-out infinite, aura-orbit 6s linear infinite; }
+:is(.view-gallery .card-grid .grid-card img.card-img, .cd-img .cd-zoom img):is([data-tier="t3"], [data-tier="t4"], [data-tier="t5"]) { animation: aura-orbit 9s linear infinite; }
+@media (prefers-reduced-motion: reduce) { #content.view-gallery .display-list .lot .lot-art, :is(.view-gallery .card-grid .grid-card img.card-img, .cd-img .cd-zoom img) { animation: none !important; } }

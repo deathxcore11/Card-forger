@@ -7,7 +7,7 @@
 .finish-choice-hint{float:right;font-size:.72rem}
 .finish-preview [aria-pressed="true"]{border-color:var(--accent,var(--gold));background:var(--surface2,var(--surface-2))}
 .finish-preview .foot{margin:.45rem 0}
-.cd-zoom,.zoom-card-surface,[data-finish-surface="large"]{position:relative}
+.cd-zoom,.zoom-card-surface,[data-finish-surface="large"],[data-finish-surface="card"]{position:relative}
 .zoom-card-surface{display:grid;place-items:center;width:max-content;max-width:100%;line-height:0}
 .zoom-card-surface .zoom-img{display:block}
 @property --finish-x{syntax:"<percentage>";inherits:true;initial-value:50%}

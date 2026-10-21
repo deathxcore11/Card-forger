@@ -2,6 +2,7 @@
 // matter in play, the price, and a plain summary of what you gain or give up.
 import { esc } from "./ui.js";
 import { artworkHTML } from "./artwork.js";
+import { finishAttrs } from "./finish-preview.js";
 
 const num = (v) => {
   const n = parseInt(String(v ?? "").replace(/[^\d]/g, ""), 10);
@@ -73,7 +74,7 @@ export function compareLines(g, a, b) {
 export function tcgCompareSheet(g, [a, b]) {
   const side = (c, i) =>
     c
-      ? `<div class="cmp-side"><button class="cmp-art" data-act="tCard" data-id="${esc(c.id)}" aria-label="Open ${esc(c.name)}">${artworkHTML(c, "card-img")}</button><b>${esc(c.name)}</b><span class="muted small">${esc(c.typeLine || "")}</span><span class="muted small">${esc(c.set?.name || "")}${c.set?.number ? " #"+esc(c.set.number) : ""}</span><dl class="cmp-facts">${compareFacts(g, c).map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(String(v))}</dd></div>`).join("")}</dl>${c.text ? `<details class="cmp-effects"><summary>Effects &amp; restrictions</summary><p>${esc(c.text)}</p></details>` : ""}<button class="link small" data-act="tCompareClear" data-i="${i}">Change</button></div>`
+      ? `<div class="cmp-side"><button class="cmp-art" ${finishAttrs(g,c,{},"card")} data-act="tCard" data-id="${esc(c.id)}" aria-label="Open ${esc(c.name)}">${artworkHTML(c, "card-img")}</button><b>${esc(c.name)}</b><span class="muted small">${esc(c.typeLine || "")}</span><span class="muted small">${esc(c.set?.name || "")}${c.set?.number ? " #"+esc(c.set.number) : ""}</span><dl class="cmp-facts">${compareFacts(g, c).map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(String(v))}</dd></div>`).join("")}</dl>${c.text ? `<details class="cmp-effects"><summary>Effects &amp; restrictions</summary><p>${esc(c.text)}</p></details>` : ""}<button class="link small" data-act="tCompareClear" data-i="${i}">Change</button></div>`
       : `<div class="cmp-side pick"><input id="tcmp${i}" placeholder="Card name" data-enter="tCompareLookup" data-i="${i}" aria-label="Card ${i + 1} name"><button class="btn ghost" data-act="tCompareLookup" data-i="${i}">Look up</button></div>`;
   const lines = compareLines(g, a, b);
   return `<div class="sheet-head"><h2>Compare cards</h2><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div><div class="cmp">${side(a, 0)}<div class="cmp-vs">vs</div>${side(b, 1)}</div>${a && b ? `<div class="panel tight"><p>${lines.length ? lines.map(esc).join(" ") : "Printed stats and prices are similar. Effects and summoning requirements can still differ."}</p></div>` : `<p class="foot">Pick two cards to see how they stack up.</p>`}`;

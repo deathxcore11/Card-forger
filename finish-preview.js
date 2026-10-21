@@ -12,6 +12,8 @@ const KEY='cardstashy-finish-effects';
 export const finishEffectsOn=()=>{try{return localStorage.getItem(KEY)!=='off';}catch{return true;}};
 export function setFinishEffects(enabled){let saved=false;try{localStorage.setItem(KEY,enabled?'on':'off');saved=true;}catch{}globalThis.dispatchEvent?.(new Event('cardstashy-finish-effects-change'));return saved;}
 const reduced=()=>!!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+// The finish of a saved collection entry: its Magic finish, Pokémon version, or Yu-Gi-Oh! printing and edition.
+export function entryFinishContext(game,e={}){return game==='mtg'?{priceFinish:e.finish||'nonfoil'}:{priceFinish:e.variant,savedVariant:e.variant,savedProductId:e.productId,priceEdition:e.printing&&e.rarity?e.printing+'::'+e.rarity:'',priceYgoEdition:e.edition};}
 export function finishAttrs(game,c,ctx={},view='large'){
  const p=resolveFinish(game,c,ctx);
  p.materialProfile=finishMaterialProfile(game,c,p);
@@ -78,7 +80,7 @@ export function containedImageBox(width,height,naturalWidth,naturalHeight){
 }
 export function finishEligible(el){
  if(!el?.dataset?.finishSurface||el.hidden||el.closest?.('[hidden]'))return false;
- return el.dataset.finishSurface==='detail'||el.dataset.finishSurface==='zoom'||el.dataset.finishSurface==='pack'||(el.dataset.finishSurface==='large'&&!!el.closest?.('.view-gallery')&&!el.closest?.('.view-compact,.view-symbols'));
+ return el.dataset.finishSurface==='detail'||el.dataset.finishSurface==='zoom'||el.dataset.finishSurface==='pack'||(el.dataset.finishSurface==='card'&&!el.closest?.('.view-compact,.view-symbols'))||(el.dataset.finishSurface==='large'&&!!el.closest?.('.view-gallery')&&!el.closest?.('.view-compact,.view-symbols'));
 }
 function modelOf(el){try{return JSON.parse(el.dataset.finishModel||'{}');}catch{return {};}}
 // Per-image maps must never paint a later fallback or custom scan they were not measured on.
@@ -113,17 +115,19 @@ export function attachFinishPreview(root){
  const ro=typeof ResizeObserver==='undefined'?null:new ResizeObserver(entries=>{for(const [el,m] of mounted)if(entries.some(x=>x.target===m.img))size(el);for(const entry of entries)if(choiceRails.has(entry.target))syncFinishChoiceRail(entry.target);});
  const mount=el=>{
   if(!allowed(el)||!visible(el))return unmount(el);
+  // A standalone card face only foils once it is big enough to read as a card.
+  if(el.dataset.finishSurface==='card'&&el.getBoundingClientRect().width<90)return unmount(el);
   const p=modelOf(el),detail=['detail','zoom'].includes(el.dataset.finishSurface);if(!p.layers?.length&&!detail)return unmount(el);
   if(mounted.has(el)){const old=mounted.get(el);if(old.model===el.dataset.finishModel&&old.src===old.img.currentSrc&&old.overlay.isConnected)return size(el);unmount(el);}
   const img=el.querySelector?.('img'),host=el.dataset.finishSurface==='detail'?(el.querySelector('.cd-zoom')||el):el;
   if(!img||!img.complete||!img.naturalWidth||img.hidden)return;
   if(!finishImageMatches(p,img.currentSrc||img.src))return unmount(el);
-  const overlay=img.ownerDocument.createElement('span');overlay.className='finish-overlay'+(el.dataset.finishSurface==='large'?' finish-auto':'');
+  const overlay=img.ownerDocument.createElement('span');overlay.className='finish-overlay'+(['large','card'].includes(el.dataset.finishSurface)?' finish-auto':'');
   const profile=finishOverlayProfile(p,img.currentSrc||img.src);
   if(profile&&FINISH_MASKS[profile.mask])overlay.style.clipPath=FINISH_MASKS[profile.mask];
   const layers=profile?.artMask?(p.layers||[]).map(l=>({...l,mask:profile.artMask})):(p.layers||[]);
   if(p.materialProfile)overlay.dataset.materialProfile=p.materialProfile;
-  if(el.dataset.finishSurface==='large'){const phase=String(p.printingId||'').split('').reduce((n,c)=>n+c.charCodeAt(0),0)%80;overlay.style.animationDelay=`-${phase/10}s`;}
+  if(['large','card'].includes(el.dataset.finishSurface)){const phase=String(p.printingId||'').split('').reduce((n,c)=>n+c.charCodeAt(0),0)%80;overlay.style.animationDelay=`-${phase/10}s`;}
   overlay.setAttribute('aria-hidden','true');
   if(detail){const light=img.ownerDocument.createElement('span');light.className='finish-spotlight';overlay.append(light);}
   for(const l of layers){if(!FINISH_MASKS[l.mask])continue;const part=img.ownerDocument.createElement('span');part.className=`finish-layer finish-${l.material}${l.mask==='ygo-name'?' finish-name-region':''}`;part.style.clipPath=FINISH_MASKS[l.mask];overlay.append(part);}

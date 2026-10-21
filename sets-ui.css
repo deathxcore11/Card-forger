@@ -247,3 +247,16 @@ body:not(.glass) .set-atmosphere{display:none}
 .rx-ygo:is(.rx-starlight,.rx-collector,.rx-quarter){--rx-foil:linear-gradient(100deg,#ff9de1 10%,#ffe08a 25%,#9dffb8 40%,#8ad7ff 55%,#c8a0ff 70%,#ff9de1 85%)}
 .rx-ygo:is(.rx-starlight,.rx-collector,.rx-quarter){box-shadow:inset 0 0 0 1px #ffffff40,0 0 12px -4px #b9a0ff}
 @media(prefers-reduced-motion:reduce){.rx-shine .rx-text{animation:none}}
+
+/* Aura light: the pulled card throws its price colour onto the wall behind it, like a TV's bias light.
+   Wider, softer and stronger than the frame itself; purple and above drift around the card. */
+.pack-focus-meta{position:relative;z-index:2}
+.pack-focus-card>.pack-backlight{inset:-14% -16%;border-radius:22%;filter:blur(42px) saturate(1.45);transform:translateZ(-6px)}
+.pack-focus-card[data-tier]>.pack-backlight{opacity:.55}
+.pack-focus-card:is([data-tier="t0"],[data-tier="tn"])>.pack-backlight{opacity:.32}
+.pack-focus-card:is([data-tier="t1"],[data-tier="t2"])>.pack-backlight{opacity:.7}
+.pack-focus-card:is([data-tier="t3"],[data-tier="t4"],[data-tier="t5"])>.pack-backlight{opacity:.9;inset:-18% -20%}
+.pack-card::after{inset:-6px;filter:blur(14px) saturate(1.4)}
+.pack-card[data-tier]::after{opacity:.7}
+.pack-card:is([data-tier="t0"],[data-tier="tn"])::after{opacity:.4}
+.pack-card:is([data-tier="t3"],[data-tier="t4"],[data-tier="t5"])::after{opacity:.95;inset:-9px}
