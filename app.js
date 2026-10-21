@@ -1,5 +1,5 @@
 import {openPackPreview} from './pack-preview.js';
-import {dailyDetails,homeTodayMarkup,todaySetMarkup,todayPackMarkup} from './home-today.js';
+import {dailyDetails,todayPillMarkup} from './home-today.js';
 import {packEligible} from './set-experience.js';
 import {setMotionTilt} from './mobile-tilt.js';
 import {cachedImages,localStorageFootprint} from './settings-storage.js';
@@ -3408,29 +3408,17 @@ function heroArt(g) {
     .then(() => navigationCurrent(screen) && (paintHomeHero(g), paintHomeToday(g)))
     .catch(() => {});
 }
-// Home "Today": the Card of the Day as the real card beside its own set (Set of the Day).
+// Home "Today": the set of the Card of the Day, with its real pack, beside the header's daily pill.
 function paintHomeToday(g) {
   if (S.ui.view !== "home" || T.game() !== g) return;
-  const h = T.heroFor(g);if (!h) return;
-  let el = $("#homeToday");
-  if (!el || el.dataset.dailyId !== h.id || el.dataset.dailyDate !== h.date) {
-    const at = el || $("#content .home-value-overview");if (!at) return;
-    const tpl = document.createElement("template");tpl.innerHTML = homeTodayMarkup(g, h);const next = tpl.content.firstElementChild;
-    el ? el.replaceWith(next) : at.after(next);el = next;
-  }
-  if (el.dataset.painted) return;el.dataset.painted = "pending";
+  const h = T.heroFor(g), dock = $("#homeHero .hh-credits");if (!h || !dock) return;
+  const key = [g, h.date, h.id].join("|");if (dock.dataset.today === key) return;dock.dataset.today = key;
   const screen = navigationStamp();
   dailyDetails(g, h).then(d => {
-    if (!navigationCurrent(screen) || !el.isConnected || !d) return;
-    // Without daily art from the hero, the card's own image becomes the backdrop.
-    const img = el.querySelector(".today-bg img");
-    if (!img.getAttribute("src") && d.image) { img.onload = () => el.classList.add("today-ready");img.src = d.image.startsWith("img/") ? "/" + d.image : d.image; }
-    el.querySelector(".today-set").innerHTML = todaySetMarkup(g, d.set, { rarity: d.rarity });
-    const pack = todayPackMarkup(g, d.set);el.querySelector(".today-pack-slot").innerHTML = pack;el.classList.toggle("no-pack", !pack);
-    el.dataset.painted = "done";
-  }).catch(() => { el.dataset.painted = "";el.classList.add("no-pack"); });
+    if (!navigationCurrent(screen) || !dock.isConnected || dock.dataset.today !== key || !d?.set) return;
+    dock.querySelector(".hh-today")?.remove();dock.insertAdjacentHTML("beforeend", todayPillMarkup(g, d.set, { rarity: d.rarity }));
+  }).catch(() => { if (dock.dataset.today === key) delete dock.dataset.today; });
 }
-A.homeTodayCard = () => $("#homeHero [data-act='homeDailyCard']")?.click();
 // Opening today's pack goes to the Set of the Day and opens its pack with the Card of the Day as the hit.
 A.homeTodayPack = async (t) => {
   const g = t.dataset.game, h = T.heroFor(g);if (!h || T.game() !== g) return;

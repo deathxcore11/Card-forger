@@ -73,7 +73,6 @@ import { bracketEstimate, manaBase, manaBaseExplanation, isOut, deckReview, expl
 import { buildability, rankBuildable } from "./share.js";
 import { formatsFor } from "./builder.js";
 import { gameBinders, gameSwitch, homeHero, heroFor, quickTiles, randomTools, draftPath, nextCard, startHidden, savedSearches } from "./tcg.js";
-import { homeTodayMarkup } from "./home-today.js";
 import { FORMATS as ALL_FORMATS, formatOf, hasCommander, canLead, legalityIn, LEGALITY_WORD, sizeLabel } from "./formats.js";
 import { cloudInfo, summarize, statusLabel } from "./cloud.js";
 
@@ -104,7 +103,6 @@ const coverOf = (d) =>
 export function home() {
   const st = S.state, value = collectionValue(st.collection, S.catalog, st.printings, st.decks);
   return `${homeHero("mtg")}<div class="home-overview home-value-overview">${homeValue({ game: "mtg", ...value, decks: st.decks.length, history: st.valueHistory, valueRoute: "#collection/value" })}</div>
-  ${homeTodayMarkup("mtg", heroFor("mtg"))}
   ${st.example ? `<div class="note warn">Example data is loaded. Reset it in Settings before adding real cards.</div>` : ""}
   ${homeResume("mtg", deck => formatOf(deck).name)}
   ${quickTiles("mtg")}

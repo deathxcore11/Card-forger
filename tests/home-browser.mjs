@@ -784,8 +784,7 @@ try {
     assert.equal(await page.locator('[data-home-resume] button').getAttribute('data-to'),`#${game==='mtg'?'deck':'tdeck'}/saved-${game}/cards`);
     const order=await page.locator('#content > *').evaluateAll(nodes=>nodes.filter(n=>!n.classList.contains('home-sr-only')).map(n=>n.className));
     assert(order[0].includes('home-art-header'),'approved artwork leads Home');
-    // Today (card and set of the day) sits between value and your decks; today-ready only marks its art as loaded.
-    assert.deepEqual(order.slice(1).map(c=>c.replace(/ today-ready$/,'')),['home-overview home-value-overview','home-today','home-resume','home-meta','home-editorial'],'personal information follows the restored header');
+    assert.deepEqual(order.slice(1),['home-overview home-value-overview','home-resume','home-meta','home-editorial'],'personal information follows the restored header');
     assert.equal(await page.locator('#homeQ').count(),1,'one real search entry across responsive placements');
     assert.equal(await page.locator('.home-value-main strong').innerText(), '$25.00');
     assert.match(await page.locator('.home-value-note').innerText(), /Known subtotal.*1 unpriced/);

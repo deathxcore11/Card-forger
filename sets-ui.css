@@ -108,10 +108,10 @@ body:not(.glass) .set-atmosphere{display:none}
 
 /* Pack opening: tear the real booster open, the cards deal out into a fanned hand, and the focused
    card flips up large with its real foil. Every control stays inside the dialog at any width. */
-.pack-dialog{--card-w:min(82vw,380px,calc((100dvh - 340px)*63/88));width:min(860px,calc(100% - 20px));max-height:calc(100dvh - 20px);box-sizing:border-box;padding:18px 20px 20px;border:1px solid var(--line);border-radius:26px;background:radial-gradient(120% 70% at 50% 0%,color-mix(in srgb,var(--gold) 9%,var(--bg)),var(--bg) 60%);color:var(--text);overflow:auto;overflow-x:hidden;overscroll-behavior:contain}
+.pack-dialog{--hand-w:min(19vw,112px,calc(100dvh*.12));--card-w:min(82vw,380px,calc((100dvh - 300px - var(--hand-w)*1.4)*63/88));width:min(860px,calc(100% - 20px));max-height:calc(100dvh - 16px);box-sizing:border-box;padding:14px 18px 14px;border:1px solid var(--line);border-radius:26px;background:radial-gradient(120% 70% at 50% 0%,color-mix(in srgb,var(--gold) 9%,var(--bg)),var(--bg) 60%);color:var(--text);overflow:auto;overflow-x:hidden;overscroll-behavior:contain}
 .pack-dialog:focus{outline:none}.pack-dialog::backdrop{background:#05060be6;backdrop-filter:blur(16px)}
-.pack-header{display:flex;align-items:flex-start;gap:12px}.pack-header>div{flex:1;min-width:0}.pack-header h2{margin:2px 0 0;overflow-wrap:anywhere;font-size:clamp(18px,3vw,26px);letter-spacing:.01em}
-.pack-explanation{margin:4px 0 0;font-size:11px;color:var(--muted);line-height:1.5;opacity:.8}
+.pack-header{display:flex;align-items:flex-start;gap:12px}.pack-header>div{flex:1;min-width:0}.pack-header h2{margin:2px 0 0;font-size:clamp(17px,3vw,24px);letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pack-explanation{margin:2px 0 0;font-size:10.5px;color:var(--muted);line-height:1.4;opacity:.8}
 .pack-sealed{display:grid;place-items:center;padding:18px 0 26px;perspective:1100px}.pack-sealed[hidden],.pack-content[hidden]{display:none}
 .pack-wrapper{position:relative;display:block;width:min(56vw,250px);aspect-ratio:400/734;padding:0;border:0;background:none;cursor:pointer;filter:drop-shadow(0 26px 30px #000a)}.pack-body{position:absolute;inset:0;transform-style:preserve-3d;animation:pack-float 4.5s ease-in-out infinite}
 .pack-wrap-art{position:absolute;inset:0;overflow:hidden;border-radius:6px;background:linear-gradient(160deg,#2b2836,#121218);clip-path:polygon(0 3%,4% 0,8% 3%,12% 0,16% 3%,20% 0,24% 3%,28% 0,32% 3%,36% 0,40% 3%,44% 0,48% 3%,52% 0,56% 3%,60% 0,64% 3%,68% 0,72% 3%,76% 0,80% 3%,84% 0,88% 3%,92% 0,96% 3%,100% 0,100% 97%,96% 100%,92% 97%,88% 100%,84% 97%,80% 100%,76% 97%,72% 100%,68% 97%,64% 100%,60% 97%,56% 100%,52% 97%,48% 100%,44% 97%,40% 100%,36% 97%,32% 100%,28% 97%,24% 100%,20% 97%,16% 100%,12% 97%,8% 100%,4% 97%,0 100%)}
@@ -121,19 +121,19 @@ body:not(.glass) .set-atmosphere{display:none}
 .pack-sheen{position:absolute;inset:0;pointer-events:none;border-radius:6px;background:linear-gradient(105deg,transparent 30%,#ffffff40 45%,#9fe3ff33 50%,#ffd0f233 55%,transparent 70%);background-size:250% 100%;mix-blend-mode:screen;animation:pack-sheen 3.2s ease-in-out infinite}
 .pack-wrapper:focus-visible{outline:2px solid var(--gold);outline-offset:8px}
 .pack-wrapper.tearing .pack-body{animation:pack-rip .62s cubic-bezier(.4,0,.2,1) forwards}.pack-wrapper.tearing .pack-crimp.top{animation:pack-strip .5s ease-in forwards}
-.pack-content{display:grid;gap:14px;padding-top:6px}
-.pack-focus{display:grid;justify-items:center;gap:8px;perspective:1200px;min-height:calc(var(--card-w)*88/63 + 48px)}
+.pack-content{display:grid;gap:8px;padding-top:6px}
+.pack-focus{display:grid;justify-items:center;gap:6px;perspective:1200px;min-height:calc(var(--card-w)*88/63 + 40px)}
 .pack-focus-card{--mx:50%;--my:40%;position:relative;display:grid;width:var(--card-w);aspect-ratio:63/88;padding:0;border:0;border-radius:4.6%/3.3%;background:none;cursor:pointer;transform-style:preserve-3d;transition:transform .25s ease-out,box-shadow .4s;box-shadow:0 30px 50px #000b}
 .pack-focus-card>span{grid-area:1/1;border-radius:inherit;overflow:hidden;backface-visibility:hidden;transition:transform .7s cubic-bezier(.2,.9,.25,1)}
 .pack-face{position:relative;transform:rotateY(-180deg);background:#0b0c10}.pack-face>img{display:block;width:100%;height:100%;object-fit:contain}
 .pack-focus-card.revealed>.pack-face{transform:none}.pack-focus-card.revealed>.pack-card-back{transform:rotateY(180deg)}
 .pack-focus-card.pack-hit{box-shadow:0 30px 50px #000b,0 0 0 2px color-mix(in srgb,var(--pack-glow) 70%,transparent),0 0 60px color-mix(in srgb,var(--pack-glow) 55%,transparent);animation:pack-hit-glow 2.4s ease-in-out infinite}
 .pack-focus-card:focus-visible{outline:2px solid var(--gold);outline-offset:6px}
-.pack-focus-meta{display:grid;justify-items:center;gap:2px;margin:0;min-height:2.6em;text-align:center}.pack-focus-meta>b{font-size:15px}.pack-focus-meta>span{font-size:12px;color:var(--muted)}
+.pack-focus-meta{display:grid;justify-items:center;gap:1px;margin:0;min-height:2.4em;text-align:center}.pack-focus-meta>b{font-size:14px}.pack-focus-meta>span{font-size:12px;color:var(--muted)}
 .pack-card-back{display:grid;place-items:center;background:radial-gradient(ellipse at 50% 30%,#4a4256,#16161e 72%);box-shadow:inset 0 0 0 3px #b39ae655,inset 0 0 0 7px #0006}.pack-card-back>svg{width:58%;height:auto;filter:drop-shadow(0 4px 10px #000a)}
 .pack-card-back{position:relative}.pack-back-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit}
-.pack-hand{position:relative;height:calc(min(24vw,128px)*88/63 + 26px);margin:0 18px 22px}
-.pack-card{--w:min(24vw,128px);--n:10;position:absolute;left:calc(var(--i)*(100% - var(--w))/(var(--n) - 1));bottom:0;display:grid;width:var(--w);aspect-ratio:63/88;padding:0;border:0;border-radius:6px;background:none;cursor:pointer;transform-origin:50% 100%;z-index:calc(20 - var(--i));
+.pack-hand{position:relative;height:calc(var(--hand-w)*88/63 + 18px);margin:0 14px 10px}
+.pack-card{--w:var(--hand-w);--n:var(--pack-n,10);position:absolute;left:calc(var(--i)*(100% - var(--w))/(var(--n) - 1));bottom:0;display:grid;width:var(--w);aspect-ratio:63/88;padding:0;border:0;border-radius:6px;background:none;cursor:pointer;transform-origin:50% 100%;z-index:calc(20 - var(--i));
  transform:translateY(calc(var(--d,0) * var(--d,0) * .6px)) rotate(calc((var(--i) - 4.5) * 2deg));transition:transform .45s cubic-bezier(.2,.9,.25,1),filter .3s;box-shadow:0 8px 14px #0008}
 .pack-card>span{grid-area:1/1;border-radius:inherit;overflow:hidden;backface-visibility:hidden;transition:transform .55s cubic-bezier(.2,.9,.25,1)}.pack-card .pack-card-back>svg{width:64%}
 .pack-card-front{transform:rotateY(-180deg);background:#0b0c10}.pack-card-front>img{width:100%;height:100%;object-fit:contain}.pack-card.revealed>.pack-card-back{transform:rotateY(180deg)}.pack-card.revealed>.pack-card-front{transform:none}
@@ -142,8 +142,8 @@ body:not(.glass) .set-atmosphere{display:none}
 .pack-card:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
 .pack-dialog:not(.pack-dealt) .pack-card{transform:translate(calc((9 - var(--i)) * 30%),-180%) rotate(10deg) scale(.7);opacity:0}
 .pack-dealt .pack-card{transition-delay:calc(var(--i) * 55ms),0s}
-.pack-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:4px}.pack-actions>button{min-height:44px;flex:0 1 auto}.pack-actions>[data-pack="copy"],.pack-actions>[data-pack="wish"],.pack-actions>[data-pack="buy"],.pack-actions>[data-pack="again"]{display:none}.pack-done .pack-actions>[data-pack="reveal-all"]{display:none}.pack-done .pack-actions>button{display:inline-flex}
-.pack-status{font-size:12px;min-height:1.4em;margin:6px 0 0;color:var(--gold);line-height:1.5;text-align:center}.pack-dialog>textarea{width:100%;min-height:160px;box-sizing:border-box}
+.pack-actions{display:flex;gap:6px;flex-wrap:nowrap;justify-content:center;margin-top:2px}.pack-actions>button{min-height:42px;flex:1 1 0;min-width:0;max-width:160px;padding:0 8px;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pack-actions>[data-pack="copy"],.pack-actions>[data-pack="wish"],.pack-actions>[data-pack="buy"],.pack-actions>[data-pack="again"]{display:none}.pack-done .pack-actions>[data-pack="reveal-all"]{display:none}.pack-done .pack-actions>button{display:inline-flex}
+.pack-status{font-size:11.5px;min-height:1.3em;margin:4px 0 0;color:var(--gold);line-height:1.5;text-align:center}.pack-dialog>textarea{width:100%;min-height:160px;box-sizing:border-box}
 @keyframes pack-float{50%{transform:translateY(-8px) rotateY(-6deg) rotateX(3deg)}}
 @keyframes pack-sheen{0%{background-position:120% 0}100%{background-position:-20% 0}}
 @keyframes pack-strip{to{transform:translate(30%,-180%) rotate(-14deg);opacity:0}}

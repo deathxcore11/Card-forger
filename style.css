@@ -4894,25 +4894,17 @@ dialog.sheet:has(.context-card),body.glass dialog.sheet:has(.context-card){max-w
 .card-printing-mini .printing-mini-rarity{display:inline-flex;align-items:center;gap:4px;margin-top:3px;font-size:10px;font-weight:600;line-height:1.2;color:var(--muted,#aab)}
 .card-printing-mini .printing-mini-rarity .rarity-swatch{width:11px;height:11px;border-radius:3px}
 
-/* Home "Today": a slim banner. The Card of the Day's art is the backdrop, its set's booster pack a small
-   visual on the left, and two quiet lines of text: the card, then its set and rarity. */
-.home-today{position:relative;isolation:isolate;overflow:hidden;display:grid;grid-template-columns:50px minmax(0,1fr);align-items:center;gap:14px;min-width:0;min-height:104px;margin:0 0 22px;padding:14px 18px;border:1px solid #ffffff17;border-radius:18px;background:#121218;color:#fff}
-.home-today.no-pack{grid-template-columns:minmax(0,1fr)}.home-today.no-pack .today-pack-slot{display:none}
-.today-bg{position:absolute;inset:0;z-index:-1;cursor:pointer;overflow:hidden}
-.today-bg img{width:100%;height:100%;object-fit:cover;object-position:50% 28%;opacity:0;transform:scale(1.06);transition:opacity .7s ease;animation:today-drift 24s ease-in-out infinite alternate}
-.today-ready .today-bg img{opacity:1}
-.today-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#000d 0%,#000a 45%,#0003 100%)}
-.today-pack-slot{display:block;width:50px;min-height:1px}
-.today-text{display:grid;gap:3px;min-width:0;pointer-events:none}.today-text button{pointer-events:auto}
-.today-eyebrow{margin:0;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
-.today-text h2{margin:0;font-size:clamp(18px,4.6vw,22px);line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 2px 10px #000c}
-.today-set{display:flex;align-items:baseline;gap:6px;min-width:0;min-height:18px;font-size:12.5px;color:#ffffffc4}
-.today-set-name{min-width:0;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.today-set-name:hover{color:#fff;text-decoration:underline}
-.today-dot{opacity:.6}.today-rarity{flex:none;color:color-mix(in srgb,var(--gold) 75%,#fff);text-transform:capitalize}
-.today-pack{position:relative;display:block;width:50px;aspect-ratio:400/734;padding:0;border:0;border-radius:3px;background:linear-gradient(160deg,#3a3446,#18171f);cursor:pointer;overflow:hidden;filter:drop-shadow(0 8px 12px #000c);transform:rotate(-4deg);transition:transform .3s ease}
-.today-pack>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.today-pack::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,#ffffff45 46%,transparent 62%);background-size:260% 100%;animation:today-sheen 4.2s ease-in-out infinite;pointer-events:none}
-.today-pack:hover,.today-pack:focus-visible{transform:rotate(0) translateY(-2px) scale(1.06)}.today-pack:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
-@keyframes today-drift{from{transform:scale(1.06) translate(0,0)}to{transform:scale(1.14) translate(-2%,-2%)}}
+/* Home "Today": beside the header's Card of the Day pill, a matching pill with the set's real booster
+   pack peeking out and one quiet line (set, then the card's rarity there). */
+#homeHero .hh-credits{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px}
+.hh-today{display:flex;align-items:center;gap:10px;min-height:44px;max-width:100%;padding:6px 16px 6px 8px;border:1px solid #ffffff20;border-radius:24px;background:#11151ba8;color:#fff;animation:hh-today-in .45s ease both}
+.hh-today.no-pack{padding-left:16px}
+.hh-today-pack{position:relative;flex:none;width:34px;aspect-ratio:400/734;margin:-14px 0 -12px;padding:0;border:0;border-radius:3px;background:#2a2733;cursor:pointer;overflow:hidden;filter:drop-shadow(0 6px 10px #000b);transform:rotate(-6deg);transition:transform .3s ease}
+.hh-today-pack>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.hh-today-pack::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,#ffffff50 46%,transparent 62%);background-size:260% 100%;animation:today-sheen 4.2s ease-in-out infinite;pointer-events:none}
+.hh-today-pack:hover,.hh-today-pack:focus-visible{transform:rotate(0) translateY(-3px) scale(1.08)}.hh-today-pack:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.hh-today-set{display:grid;gap:1px;min-width:0;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.hh-today-set>span{font-size:10px;line-height:1.4;color:#ffffffa8}.hh-today-set b{font-size:13px;line-height:1.3;overflow-wrap:break-word}.hh-today-set small{font-size:11px;color:color-mix(in srgb,var(--gold) 75%,#fff);text-transform:capitalize}
+.hh-today-set:focus-visible{outline:2px solid var(--gold);outline-offset:4px;border-radius:6px}
 @keyframes today-sheen{0%{background-position:130% 0}100%{background-position:-30% 0}}
-@media(min-width:900px){.home-today{grid-template-columns:58px minmax(0,1fr);min-height:116px;padding:16px 22px}.today-pack,.today-pack-slot{width:58px}}
-@media(prefers-reduced-motion:reduce){.today-bg img,.today-pack::after{animation:none}.today-bg img,.today-pack{transition:none}}
+@keyframes hh-today-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.hh-today,.hh-today-pack::after{animation:none}.hh-today-pack{transition:none}}
