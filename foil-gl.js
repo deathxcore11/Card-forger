@@ -3,7 +3,7 @@
 // Every finish surface draws the WebGL foil: the card page, zoom, gallery cards at every size and
 // cards pulled in the pack opener.
 // The lighter CSS finish is only the fallback when WebGL or the card's analysis is unavailable.
-export const FOIL_SURFACES=['detail','zoom','large','pack','today'];
+export const FOIL_SURFACES=['detail','zoom','large','pack'];
 export const foilSurface=surface=>FOIL_SURFACES.includes(surface);
 export const FOIL_VS='attribute vec2 a;varying vec2 v;void main(){v=(a+1.0)*.5;gl_Position=vec4(a,0.0,1.0);}';
 // One full-screen quad program; returns null when the context or shader is unavailable.

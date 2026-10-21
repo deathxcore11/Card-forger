@@ -15,7 +15,7 @@ import {mergeLegacyGameHistories,mergeValueHistory} from './value-history.js';
 import {sharedBinderRows,sharedBinderValue} from './community-profile.js';
 import {setFinishEffects} from './finish-preview.js';
 import {createScryfallClient} from './scryfall-client.js';
-import {selectPreviewFinish,finishAttrs} from './finish-preview.js';
+import {selectPreviewFinish} from './finish-preview.js';
 import {deckBoxMarkup,deckBoxFields,readDeckBox,createDeckBoxTransitions} from './deck-box.js';
 import {setAccountScope} from './account-scope.js';
 import {createAccountWorkspaces} from './account-workspaces.js';
@@ -3422,10 +3422,9 @@ function paintHomeToday(g) {
   const screen = navigationStamp();
   dailyDetails(g, h).then(d => {
     if (!navigationCurrent(screen) || !el.isConnected || !d) return;
-    const img = el.querySelector(".today-card img");
-    // The card wears its own foil with the gallery light sweep (Pokémon holo rares, Magic foil-only printings).
-    if (d.card) { const face = el.querySelector(".today-card-face"), probe = document.createElement("span");probe.innerHTML = `<i ${finishAttrs(g, d.card, {}, "today")}></i>`;for (const a of probe.firstChild.attributes) face.setAttribute(a.name, a.value); }
-    if (d.image) { img.src = d.image.startsWith("img/") ? "/" + d.image : d.image;img.onload = () => { img.hidden = false;el.classList.add("today-ready"); }; }
+    // Without daily art from the hero, the card's own image becomes the backdrop.
+    const img = el.querySelector(".today-bg img");
+    if (!img.getAttribute("src") && d.image) { img.onload = () => el.classList.add("today-ready");img.src = d.image.startsWith("img/") ? "/" + d.image : d.image; }
     el.querySelector(".today-set").innerHTML = todaySetMarkup(g, d.set, { rarity: d.rarity });
     el.dataset.painted = "done";
   }).catch(() => { el.dataset.painted = "";const box = el.querySelector(".today-set");if (box) box.innerHTML = ""; });
