@@ -1,21 +1,18 @@
-// Yu-Gi-Oh! rarity foil, rendered with WebGL for full-size cards (card page, zoom, and Large and
-// Medium gallery cards in collections, binders and decks). Every rarity is a recipe (ygo-foil-recipes.js) drawn by
+// Yu-Gi-Oh! rarity foil, rendered with WebGL on the card page, zoom, and gallery cards at every size
+// in collections, binders and decks. Every rarity is a recipe (ygo-foil-recipes.js) drawn by
 // one shader: foil is simulated under the ink, so unlit it reads as dark metal and colour appears
 // where a reflection grating sends light toward the viewer. One shared WebGL context draws every
 // card into ordinary 2D canvases (browsers cap live contexts at roughly 8-16). Approximate
 // simulation, not a physical-foil capture.
 import {analyzeYgoArt,YGO_LAYOUT_ART} from './ygo-foil-analysis.js';
 import {YGO_FOIL_RECIPES} from './ygo-foil-recipes.js';
-import {foilFullSize,foilProgram,foilAnalyzer,readFoilPixels,mountFoilCanvas} from './foil-gl.js';
+import {foilProgram,foilAnalyzer,readFoilPixels,mountFoilCanvas} from './foil-gl.js';
 export const YGO_TEXT_BOX=[.075,.735,.925,.955],YGO_NAME_BAR=[.072,.050,.828,.108];
 // Text that foil must leave readable: Pendulum adds the scale box, Skill has a taller rules box.
 export const YGO_LAYOUT_TEXT={standard:YGO_TEXT_BOX,pendulum:[.062,.613,.938,.955],skill:[.075,.67,.925,.955]};
 const layoutOf=v=>YGO_LAYOUT_ART[v]?v:'standard';
 // A recipe needs WebGL only when it foils something besides the name (the name has its own canvas).
 export const ygoRecipeFor=effect=>{const r=YGO_FOIL_RECIPES[effect];return r&&(r.whole||r.frame||r.art)?r:null;};
-// Same size gate as every full-size foil: card page, zoom, Large and Medium gallery cards.
-export {FOIL_FULL_SIZE_PX as YGO_FULL_SIZE_PX,FOIL_MIN_TILE_PX as YGO_MIN_TILE_PX} from './foil-gl.js';
-export const ygoFoilFullSize=foilFullSize;
 export const YGO_RARITY_FRAGMENT=`precision highp float;
 varying vec2 v;
 uniform sampler2D u_card;uniform sampler2D u_mask;uniform sampler2D u_relief;
@@ -93,10 +90,10 @@ function renderer(doc){
  return shared;
 }
 // Returns a handle, or null when this surface keeps the CSS finish (unsupported rarity, no WebGL).
-export function mountYgoRarityFoil(overlay,img,effect,{surface='detail',layout='standard',gridSize}={}){
+export function mountYgoRarityFoil(overlay,img,effect,{surface='detail',layout='standard'}={}){
  layout=layoutOf(layout);
  const recipe=ygoRecipeFor(effect);if(!recipe||!overlay||!img)return null;
  const doc=overlay.ownerDocument,src=img.currentSrc||img.src;
- return mountFoilCanvas(overlay,{source:()=>img,key:src+'|'+layout,surface,...(gridSize?{gridSize}:{}),program:()=>renderer(doc),analysis:()=>analyzeCardImage(img,layout),
+ return mountFoilCanvas(overlay,{source:()=>img,key:src+'|'+layout,surface,program:()=>renderer(doc),analysis:()=>analyzeCardImage(img,layout),
   setUniforms:({gl,U})=>{gl.uniform4f(U.u_art,...YGO_LAYOUT_ART[layout]);gl.uniform4f(U.u_text,...YGO_LAYOUT_TEXT[layout]);gl.uniform3f(U.u_whole,...(recipe.whole||[0,0,0]));gl.uniform3f(U.u_frame,...(recipe.frame||[0,0,0]));gl.uniform3f(U.u_artL,...(recipe.art||[0,0,0]));gl.uniform1f(U.u_stars,recipe.stars?1:0);}});
 }

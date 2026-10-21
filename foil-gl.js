@@ -1,12 +1,9 @@
-// Shared WebGL plumbing for the full-size foil renderers (Yu-Gi-Oh! rarity foil, Magic foil): the
-// size gate, data-map upload, texture caches and one throttled redraw loop for every mounted card.
-// Card page, zoom, and Large and Medium gallery cards; Small tiles (and any tile too narrow to read
-// the pattern) keep the lighter CSS finish.
-export const FOIL_FULL_SIZE_PX=260,FOIL_MIN_TILE_PX=120;
-export function foilFullSize(surface,width,gridSize){
- if(surface==='detail'||surface==='zoom')return true;
- return surface==='large'&&(gridSize==='large'||width>=FOIL_FULL_SIZE_PX||gridSize!=='small'&&width>=FOIL_MIN_TILE_PX);
-}
+// Shared WebGL plumbing for the foil renderers (Yu-Gi-Oh! rarity foil, Magic foil): data-map upload,
+// texture caches, analysis worker, canvas lifecycle and one throttled redraw loop for every card.
+// Every finish surface draws the WebGL foil: the card page, zoom, and gallery cards at every size.
+// The lighter CSS finish is only the fallback when WebGL or the card's analysis is unavailable.
+export const FOIL_SURFACES=['detail','zoom','large'];
+export const foilSurface=surface=>FOIL_SURFACES.includes(surface);
 export const FOIL_VS='attribute vec2 a;varying vec2 v;void main(){v=(a+1.0)*.5;gl_Position=vec4(a,0.0,1.0);}';
 // One full-screen quad program; returns null when the context or shader is unavailable.
 export function foilProgram(doc,fragment,uniforms){
@@ -49,18 +46,20 @@ export function bindFoilTextures(r,img,a,w,h,key){
  const card=foilLru(r.cards,key+'|'+w+'x'+h,()=>{const c=doc.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(img,0,0,w,h);return foilTexture(gl,c,false);},8,gl);
  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,card);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,maps[0]);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,maps[1]);
 }
-// One redraw loop for every mounted foil. Gallery light sweeps redraw at most ~30 times a second so a
-// full screen of foil cards stays smooth on phones; pointer and gyro changes draw on the next frame.
+// One redraw loop for every mounted foil. Gallery light sweeps redraw at most ~30 times a second, and
+// ~15 once more than 12 sweeping cards are on screen (Small grids), so phones stay smooth; pointer and
+// gyro changes draw on the next frame.
 const handles=new Set();let ticking=0,lastSweep=0;
-function tick(now=0){ticking=0;let again=false;const sweep=now-lastSweep>=32;if(sweep)lastSweep=now;
+function tick(now=0){ticking=0;let again=false,sweeping=0;for(const h of handles)if(h.animated())sweeping++;
+ const sweep=now-lastSweep>=(sweeping>12?64:32);if(sweep)lastSweep=now;
  for(const h of handles){const anim=h.animated();if(anim)again=true;if(!anim||sweep)h.draw();}
  if(again)ticking=requestAnimationFrame(tick);}
 export const foilLoop={
  add(h){handles.add(h);},delete(h){handles.delete(h);},
  kick(){if(!ticking&&typeof requestAnimationFrame!=='undefined')ticking=requestAnimationFrame(tick);}
 };
-// Redraw when the light moves: light coordinates are inline custom properties set on an ancestor
-// (pointer, gyro, zoom); the gallery size setting lives on the root element.
+// Redraw when the light moves (inline custom properties set on an ancestor by pointer, gyro and zoom)
+// or the card changes size (gallery size setting, rotation).
 export function watchFoilLight(overlay,draw){
  const doc=overlay.ownerDocument,mo=typeof MutationObserver==='undefined'?null:new MutationObserver(draw);
  for(let n=overlay.parentElement;n&&n!==doc.documentElement;n=n.parentElement)mo?.observe(n,{attributes:true,attributeFilter:['style','class']});
@@ -103,18 +102,20 @@ export function foilAnalyzer(workerUrl,local){
  };
 }
 // Mounts a WebGL foil canvas over a card overlay. program() returns the shared renderer (or null),
-// source() and analysis() resolve to the image to draw and its data maps, setUniforms(renderer) fills in the recipe. The CSS
-// layers stay underneath and come back automatically if the card shrinks, the context is lost or
-// analysis fails. Returns a handle, or null when this surface keeps the CSS finish.
-export function mountFoilCanvas(overlay,{source,key,surface='detail',gridSize=()=>globalThis.document?.documentElement?.dataset.gridSize,program,analysis,setUniforms}){
+// source() and analysis() resolve to the image to draw and its data maps, setUniforms(renderer) fills
+// in the recipe. While the card is analysed it shows plain (no placeholder shine); the CSS layers
+// return only if the context is lost or analysis fails. Returns a handle, or null when this surface
+// keeps the CSS finish.
+export function mountFoilCanvas(overlay,{source,key,surface='detail',program,analysis,setUniforms}){
+ if(!foilSurface(surface))return null;
  const r0=program();if(!r0)return null;
  const doc=overlay.ownerDocument,canvas=doc.createElement('canvas');canvas.className='finish-rarity-gl';canvas.setAttribute('aria-hidden','true');canvas.hidden=true;overlay.prepend(canvas);
+ overlay.classList.add('rarity-gl');
  let data=null,img=null,last='',dead=false;
- const hide=()=>{if(!canvas.hidden){canvas.hidden=true;overlay.classList.remove('rarity-gl');}};
- const active=()=>!dead&&data&&img&&!r0.lost&&foilFullSize(surface,overlay.clientWidth,gridSize());
+ const fail=()=>{canvas.hidden=true;overlay.classList.remove('rarity-gl');};
  const h={
   draw(){
-   if(!active())return hide();
+   if(dead||!data||!img)return;if(r0.lost)return fail();
    const dpr=Math.min(2,globalThis.devicePixelRatio||1),w=Math.max(1,Math.min(1600,Math.round(overlay.clientWidth*dpr))),hh=Math.max(1,Math.round(w*img.naturalHeight/img.naturalWidth));
    const [lx,ly]=foilLight(overlay),id=[lx.toFixed(4),ly.toFixed(4),w,hh,key].join();
    if(id===last&&!canvas.hidden)return;last=id;
@@ -124,15 +125,15 @@ export function mountFoilCanvas(overlay,{source,key,surface='detail',gridSize=()
    setUniforms(r0);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
    if(canvas.width!==w||canvas.height!==hh){canvas.width=w;canvas.height=hh;}
    canvas.getContext('2d').drawImage(r0.canvas,0,0);
-   if(canvas.hidden){canvas.hidden=false;overlay.classList.add('rarity-gl');}
+   canvas.hidden=false;
   },
   // Gallery cards sweep their light with a CSS animation; follow it only while one is running.
   animated:()=>!dead&&!canvas.hidden&&overlay.classList.contains('finish-auto')&&overlay.isConnected,
-  fallback:hide,
+  fallback:fail,
   dispose(){dead=true;foilLoop.delete(h);r0.handles.delete(h);unwatch();canvas.remove();overlay.classList.remove('rarity-gl');}
  };
  foilLoop.add(h);r0.handles.add(h);
  const unwatch=watchFoilLight(overlay,()=>h.draw());
- Promise.all([source(),analysis()]).then(([s,a])=>{if(dead)return;img=s;data=a;h.draw();foilLoop.kick();}).catch(()=>{});
+ Promise.all([source(),analysis()]).then(([s,a])=>{if(dead)return;img=s;data=a;h.draw();foilLoop.kick();}).catch(()=>{if(!dead)fail();});
  return h;
 }

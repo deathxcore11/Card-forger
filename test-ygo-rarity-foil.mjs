@@ -2,17 +2,14 @@
 // and the shader's coverage rules. Pixel rendering is covered by the hosted browser test.
 import assert from 'node:assert/strict';
 import {analyzeYgoArt,YGO_ART_BOX,YGO_LAYOUT_ART} from './ygo-foil-analysis.js';
-import {ygoFoilFullSize,ygoRecipeFor,YGO_RARITY_FRAGMENT,YGO_FULL_SIZE_PX,YGO_MIN_TILE_PX} from './ygo-rarity-foil.js';
+import {ygoRecipeFor,YGO_RARITY_FRAGMENT} from './ygo-rarity-foil.js';
+import {foilSurface} from './foil-gl.js';
 import {YGO_FOIL_RECIPES,ygoRarityEffect} from './ygo-foil-recipes.js';
 import {resolveFinish,FINISH_MASKS} from './finish-effects.js';
 import {ygoDeckFinishContext} from './tcg.js';
-// Size gate: card page and zoom always; gallery cards at Large and Medium, Small only when drawn wide.
-assert.equal(ygoFoilFullSize('detail',120,'small'),true);assert.equal(ygoFoilFullSize('zoom',90,'medium'),true);
-assert.equal(ygoFoilFullSize('large',150,'large'),true,'Large grid setting');
-assert.equal(ygoFoilFullSize('large',180,'medium'),true,'Medium gallery tiles get the WebGL foil');
-assert.equal(ygoFoilFullSize('large',YGO_MIN_TILE_PX-1,'medium'),false,'Tiles too narrow to read the pattern keep the CSS finish');
-assert.equal(ygoFoilFullSize('large',180,'small'),false,'Small tiles keep the CSS finish');assert.equal(ygoFoilFullSize('large',110,'small'),false);
-assert.equal(ygoFoilFullSize('large',YGO_FULL_SIZE_PX,'medium'),true,'Wide desktop tiles count as full size');
+// Surfaces: the card page, zoom and gallery cards at every size draw the WebGL foil; list rows and
+// other views keep no foil.
+for(const s of ['detail','zoom','large'])assert.equal(foilSurface(s),true,s);for(const s of ['small','list','',undefined])assert.equal(foilSurface(s),false,String(s));
 // Recipe table: every foil rarity string in the Yu-Gi-Oh! catalogue resolves to a recipe; plain and
 // unknown rarities stay honest.
 const norm=v=>String(v).toLowerCase().replace(/[^a-z0-9]/g,'');
@@ -71,4 +68,4 @@ assert.deepEqual(ygoDeckFinishContext('ygo',deckCard,{printingKey:'GLD1-EN001::G
 assert.deepEqual(ygoDeckFinishContext('ygo',deckCard,null,own(['LOB-005','Ultra Rare'],['LOB-005','Ultra Rare'])),{priceEdition:'LOB-005::Ultra Rare'});
 assert.deepEqual(ygoDeckFinishContext('ygo',deckCard,null,own(['LOB-005','Ultra Rare'],['SDY-006','Common'])),{},'Mixed owned printings never pick one');
 assert.deepEqual(ygoDeckFinishContext('ygo',deckCard,null,own()),{});assert.deepEqual(ygoDeckFinishContext('ptcg',deckCard,null,own(['LOB-005','Ultra Rare'])),{});
-console.log('PASS: every Yu-Gi-Oh! foil rarity in the catalogue resolves to a recipe; full-size gating; cropped subjects stay solid while backgrounds and glows pass foil; rules box only shared by whole-card recipes; Pendulum/Skill/Token layouts mapped.');
+console.log('PASS: every Yu-Gi-Oh! foil rarity in the catalogue resolves to a recipe; every gallery size; cropped subjects stay solid while backgrounds and glows pass foil; rules box only shared by whole-card recipes; Pendulum/Skill/Token layouts mapped.');

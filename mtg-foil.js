@@ -1,5 +1,5 @@
-// Magic foil, rendered with WebGL for full-size cards (card page, zoom, and Large and Medium gallery
-// cards in collections, binders and decks). Every treatment, from 1999 old-border foil to surge,
+// Magic foil, rendered with WebGL on the card page, zoom, and gallery cards at every size in
+// collections, binders and decks. Every treatment, from 1999 old-border foil to surge,
 // galaxy, oil slick and gilded, is a recipe (mtg-foil-recipes.js) chosen from the card's own Scryfall
 // data and drawn by one shader. Magic prints its inks straight onto the foil, so the whole card is
 // foil unless the treatment says otherwise; dark ink absorbs it and light ink lets it through.
@@ -124,11 +124,11 @@ function renderer(doc){
  return shared;
 }
 // Returns a handle, or null when this surface keeps the CSS finish (unknown treatment, no WebGL).
-export function mountMtgFoil(overlay,img,treatment,{surface='detail',frame='2015',gridSize}={}){
+export function mountMtgFoil(overlay,img,treatment,{surface='detail',frame='2015'}={}){
  const r=MTG_FOIL_RECIPES[treatment],box=MTG_FRAMES[frame]||MTG_FRAMES['2015'];if(!r||!overlay||!img)return null;
  const src=img.currentSrc||img.src;if(!src)return null;
  const copy=()=>readableCopy(src);
- return mountFoilCanvas(overlay,{source:copy,key:src,surface,...(gridSize?{gridSize}:{}),program:()=>renderer(overlay.ownerDocument),
+ return mountFoilCanvas(overlay,{source:copy,key:src,surface,program:()=>renderer(overlay.ownerDocument),
   analysis:()=>copy().then(i=>analyze(src,()=>readFoilPixels(i,372))),
   setUniforms:({gl,U})=>{gl.uniform4f(U.u_art,...box.art);gl.uniform4f(U.u_text,...box.text);gl.uniform4f(U.u_r1,r.pat,r.tint,r.cover,r.relief);gl.uniform4f(U.u_r2,r.film,r.sparkle,r.stamp,0);}});
 }
