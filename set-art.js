@@ -15,7 +15,9 @@ export async function magicSetArtwork(code,fetcher=fetch){
 // (via tcgcsv's public catalogue), never a box, bundle, sleeved pack or other sealed product.
 const PACK_CATEGORY={mtg:1,ygo:2,ptcg:3},packKey=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
 export function selectPackProduct(products,setName){
- const key=packKey(setName),packs=(products||[]).filter(p=>/booster pack/i.test(p.name)&&!/box|display|case|bundle|blister|sleeved|lot|code card|collection|tin|deck|art set/i.test(p.name)&&/^https:\/\/tcgplayer-cdn\.tcgplayer\.com\/product\/\d+_/.test(p.imageUrl||''));
+ // Exclusions read only the words after the set's own name ("Rarity Collection" is a set, not a boxed collection).
+ const key=packKey(setName),own=new RegExp('^'+String(setName||'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i'),extra=p=>String(p.name).replace(own,'');
+ const packs=(products||[]).filter(p=>/booster pack/i.test(p.name)&&!/box|display|case|bundle|blister|sleeved|lot|code card|collection|tin|deck|art set/i.test(extra(p))&&/^https:\/\/tcgplayer-cdn\.tcgplayer\.com\/product\/\d+_/.test(p.imageUrl||''));
  const rank=p=>packKey(p.name)===key+'boosterpack'?0:/play booster pack/i.test(p.name)?1:/draft booster pack/i.test(p.name)?2:/1st edition/i.test(p.name)?3:/set booster pack/i.test(p.name)?4:/collector/i.test(p.name)?6:5;
  return packs.sort((a,b)=>rank(a)-rank(b)||a.name.length-b.name.length)[0]||null;
 }

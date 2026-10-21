@@ -30,9 +30,9 @@ const setAction=(g,set)=>g==='mtg'?`data-act="set" data-code="${esc(set.code)}"`
 // Skeleton first (the hero already knows the card's name and art); the set paints in when it arrives.
 export function homeTodayMarkup(g,h){
  if(!h)return '';
- const art=h.art&&safeHref(h.art);
+ const art=h.art&&safeHref(/^img\//.test(h.art)?'/'+h.art:h.art);
  return `<section class="home-today" id="homeToday" data-game="${g}" data-daily-date="${esc(h.date)}" data-daily-id="${esc(h.id)}" aria-label="Today">
- <span class="today-bg" data-act="homeTodayCard" aria-hidden="true"><img alt="" referrerpolicy="no-referrer" decoding="async"${art?` src="${esc(art)}" onload="this.closest('.home-today').classList.add('today-ready')"`:''}></span>
+ <span class="today-bg" data-act="homeTodayCard" aria-hidden="true"><img alt="" referrerpolicy="no-referrer" decoding="async"${art&&art!=='#'?` src="${esc(art)}" onload="this.closest('.home-today').classList.add('today-ready')"`:''}></span>
  <div class="today-body"><div class="today-head"><p class="eyebrow">Today</p><h2>${esc(h.name)}</h2><p class="today-sub">Card of the Day</p></div><div class="today-set" aria-live="polite"><span class="today-shimmer" aria-hidden="true"></span></div></div></section>`;
 }
 export function todaySetMarkup(g,set,{rarity=''}={}){
