@@ -930,7 +930,7 @@ try {
         const card=scenario.oversizeDailyName?oversizeDailyPick:(scenario.longDailyNames?longDailyPicks:heroes)[game];
         await assertDailyIdentity(p,game,card,TODAY,{compact:!scenario.longDailyNames&&!scenario.oversizeDailyName,allowOversizeWord:!!scenario.oversizeDailyName});
         assert(await mounted.evaluate(s=>s.hero===document.querySelector('#homeHero')&&s.action===document.querySelector('.hh-credit')&&s.art===document.querySelector('#homeHero .hh-art')&&document.activeElement===s.action),'daily identity, crop and keyboard focus survive the same-mounted responsive sequence');
-        if(scenario.dailyArtMode==='missing')assert.equal(await p.locator('.hh-credit').evaluate(n=>getComputedStyle(n).paddingLeft),'18px','no-art identity does not reserve an empty thumbnail column');
+        if(scenario.dailyArtMode==='missing')assert.equal(await p.locator('.hh-credit').evaluate(n=>getComputedStyle(n).paddingLeft),'0px','no-art identity does not reserve an empty thumbnail column in the Today showcase');
       }
       await mounted.dispose();
     }
