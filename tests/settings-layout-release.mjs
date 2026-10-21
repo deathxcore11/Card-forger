@@ -9,7 +9,7 @@ const {chromium}=await import('playwright'),server=await startServer(),browser=a
 let failure;
 try{
  for(const game of ['mtg','ptcg','ygo'])for(const signedIn of [false,true]){
-  const state=structuredClone(makeSearchFixtures(game).state),art={game:'ptcg',cardId:'Gengar-settings',name:'Gengar settings artwork',image:'https://search-fixtures.invalid/Gengar-settings.svg',zoom:1,x:.5,y:.5,ratio:1};
+  const state=structuredClone(makeSearchFixtures(game).state),art={game:'ptcg',cardId:'Gengar-settings',name:'Pikachu ex — A collector’s favorite artwork from the Celebrations anniversary collection',image:'https://search-fixtures.invalid/Gengar-settings.svg',zoom:1,x:.5,y:.5,ratio:1};
   state.settings.cardAvatar=art;
   const fixture={user:signedIn?{id:'A',email:'collector@example.invalid'}:null,profiles:{A:{username:'collector_a',display_name:'Collector A'}},art:{A:{avatar:art}},rows:{A:{data:state,revision:1}},people:{},items:{},writes:[],storage:{'cardforge-v2':state,...(signedIn?{'cardforge-cloud-v1':{userId:'A',revision:1,sig:workspaceSig(state)}}:{})}};
   const app=await openSearchApp(browser,server.base,{game,width:390,height:1000,accountFixture:fixture,evidenceLabel:'settings-layout'}),{page}=app;
@@ -20,6 +20,14 @@ try{
    assert.equal(await page.locator('.settings-dialog-head .stashy-logo').count(),1,'reuse the actual CardStashy logo');
    assert.equal(await page.locator('.settings-aside').count(),0,'no detached status sidebar');
    if(!signedIn){assert.equal(await page.locator('.auth-card .profile-photo-row').count(),1,'guest profile belongs inside the account card');assert.equal(await page.locator('.settings-account-layout > .panel').count(),1,'one cohesive account card');}
+   const profileDetails=page.locator('.account > details').first();
+   if(signedIn)await profileDetails.locator('summary').click();
+   for(const selector of ['.profile-photo-source','.profile-photo-control']){
+    await page.locator('#settings-account '+selector).click();await page.locator('.profile-art-dialog[open]').waitFor();
+    assert.equal(await page.locator('.zoom-overlay').count(),0,'profile task opens the editor, not artwork zoom');
+    await page.locator('[data-avatar-close]').click();await page.locator('.profile-art-dialog').waitFor({state:'detached'});
+   }
+   if(signedIn)await profileDetails.locator('summary').click();
    for(const theme of modes){
     await page.locator('#settingsTab-app').click();await page.locator('#settingsTheme-'+theme).check();
     for(const width of widths){
@@ -40,6 +48,7 @@ try{
    await noOverflow(page,'#settingsDialog',`backup receipt ${game}`);
    await page.locator('#settingsTab-account').click();
    if(game==='mtg')for(const width of [320,768,1440]){await page.setViewportSize({width,height:1000});await page.locator('#settingsTab-app').click();await page.locator('#settingsTheme-dark').check();await page.locator('#settingsTab-account').click();await capture(page,`synthetic-search-settings-release-${signedIn?'account':'guest'}-${width}`);}
+   if(game==='mtg')for(const width of [320,1440]){await page.setViewportSize({width,height:1000});await page.locator('#settingsTab-app').click();await capture(page,`synthetic-search-settings-release-appearance-${signedIn?'account':'guest'}-${width}`);}
    assert.equal(await page.evaluate(()=>JSON.stringify(window.__uiTestState.state)),before,'display/exports never mutate the collection or account');
    app.health();
   }catch(error){error.diagnostics=app.diagnostics();await capture(page,`synthetic-search-settings-release-failure-${game}-${signedIn?'account':'guest'}`,{settle:false}).catch(()=>{});throw error;}finally{await app.context.close();}
