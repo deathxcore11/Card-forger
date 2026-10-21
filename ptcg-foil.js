@@ -45,7 +45,7 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 N,float spot,vec2 grad
   glint=pow(max(dot(normalize(vec3((hash2(w.xy)-.5)*.7,1.)),H),0.),160.)*.8;amp=.72;}
  else if(pat<3.5){g=normalize(vec2(1.,1.));d=1400.;lines=.5+.5*sin((px.x+px.y)*1.1);mirror=.3;amp=.8;}          // EX: fine diagonal lines
  else if(pat<4.5){}                                                                                              // broad sheen
- else if(pat<5.5){vec3 w=voro(q*170.);vec2 j=mix(hash2(w.xy*1.7),vec2(vnoise(q*22.),vnoise(q*22.+5.1)),.65);float a=j.x*PI;  // fine sparkle; neighbouring specks share their colourg=vec2(cos(a),sin(a));d=1000.+j.y*900.;mirror=.25;  // sparkle
+ else if(pat<5.5){vec3 w=voro(q*170.);vec2 j=mix(hash2(w.xy*1.7),vec2(vnoise(q*22.),vnoise(q*22.+5.1)),.65);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1000.+j.y*900.;mirror=.25;  // fine sparkle, neighbouring specks share their colour
   glint=pow(max(dot(normalize(vec3((hash2(w.xy*3.1)-.5)*.5,1.)),H),0.),300.)*.95;amp=.7;}
  else if(pat<6.5){float on=0.;for(int k=0;k<2;k++){float s=k==0?9.:17.;vec2 p=q*s,c=floor(p),f=fract(p)-.5-(hash2(c+float(k)*7.)-.5)*.4;  // cosmos circles
    float rad=.12+.26*hash(c+3.+float(k));float circ=1.-smoothstep(rad-.03,rad,length(f));if(circ>on){on=circ;float a=hash(c+9.)*PI;g=vec2(cos(a),sin(a));d=1050.+hash(c+5.)*900.;}}
@@ -79,8 +79,8 @@ void main(){
  vec2 dl=(uv-lp)*vec2(1.,u_aspect);float spot=exp(-dot(dl,dl)/.3);
  vec2 e=u_texel*2.;vec2 grad=vec2(texture2D(u_relief,v+vec2(e.x,0.)).r-texture2D(u_relief,v-vec2(e.x,0.)).r,texture2D(u_relief,v-vec2(0.,e.y)).r-texture2D(u_relief,v+vec2(0.,e.y)).r);
  float rel=u_r1.w;vec3 N=normalize(vec3(-grad*rel*9.,1.));vec2 stroke=normalize(rl.gb*2.-1.+1e-4);
- // Coverage: the measured mask; behind a holo Pokémon only where the white underbase was left out.
- // The mask is measured at analysis resolution; its edge is re-sharpened so it stays as crisp as the CSS clip.
+ // Coverage: the measured mask, and behind a holo Pokémon only where the white underbase was left out.
+ // The mask is measured at analysis resolution, and its edge is re-sharpened so it stays as crisp as the CSS clip.
  float cov=smoothstep(.35,.65,mk.a)*mix(1.,mk.r,u_r1.z)*(1.-.5*u_r2.y*smoothstep(.52,.64,uv.y));
  vec3 F=foil(u_r1.x,u_r1.y,uv,L,V,N,spot,grad,rl.r,stroke)*(1.+mk.g*u_r1.z*.6);
  // Reverse holos print their text, symbols and outlines in opaque ink over the foil: dark ink stays solid
@@ -88,7 +88,7 @@ void main(){
  float rev=(1.-step(.5,u_r1.z))*(1.-step(.5,u_r2.y)),ink=smoothstep(.03,.22,dot(base,vec3(.2126,.7152,.0722)));
  cov*=mix(1.,ink,rev);
  // Full-art cards print the illustration in heavy white-backed ink over the foil, so the art keeps half its
- // weight there; holo windows and reverse frames show the bare foil.
+ // weight there, while holo windows and reverse frames show the bare foil.
  vec3 outC=overInk(base,F,cov*mix(.92,.5,u_r2.y));
  // Illustration rares keep their painting's own colour: the foil adds its sheen on top at partial strength.
  float str=u_r2.z>0.?u_r2.z:1.;outC=mix(base,outC,str);

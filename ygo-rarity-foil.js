@@ -41,7 +41,7 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 H,float spot,float ene
  if(pat<1.5){d=1350.;lines=.5+.5*sin(px.x*2.0944);mirror=.7;ex=14.;}
  else if(pat<2.5){vec2 r=vec2(uv.x+uv.y*u_aspect,uv.x-uv.y*u_aspect);vec2 j=hash2(floor(r*vec2(90.,22.)));float a=PI*.25+(j.x-.5)*.16;g=vec2(cos(a),-sin(a));d=1250.+j.y*450.;lines=.5+.5*sin((px.x+px.y)*1.5708);mirror=.35;}
  else if(pat<3.5){vec2 c=floor(q*72.),f=fract(q*72.);g=mod(c.x+c.y,2.)<.5?vec2(1.,0.):vec2(0.,1.);d=1150.+hash(c)*600.;lines=smoothstep(0.,.12,f.x)*smoothstep(0.,.12,f.y)*smoothstep(1.,.88,f.x)*smoothstep(1.,.88,f.y);mirror=.3;}
- else if(pat<4.5){vec3 w=voro(q*210.);vec2 j=mix(hash2(w.xy*1.7),vec2(vnoise(q*24.),vnoise(q*24.+5.1)),.6);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1000.+j.y*900.;glint=pow(max(dot(normalize(vec3((hash2(w.xy*3.1)-.5)*.5,1.)),H),0.),400.)*1.8;mirror=.25;}  // fine glitter; flakes share colour regionally
+ else if(pat<4.5){vec3 w=voro(q*210.);vec2 j=mix(hash2(w.xy*1.7),vec2(vnoise(q*24.),vnoise(q*24.+5.1)),.6);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1000.+j.y*900.;glint=pow(max(dot(normalize(vec3((hash2(w.xy*3.1)-.5)*.5,1.)),H),0.),400.)*1.8;mirror=.25;}  // fine glitter, flakes share colour regionally
  else if(pat<7.5){g=normalize(vec2(-stroke.y,stroke.x)+1e-4);mirror=.45;}
  else if(pat<8.5){vec3 w=voro(q*18.);vec2 j=hash2(w.xy);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1100.+j.y*700.;seam=smoothstep(0.,.06,w.z);mirror=.4;}
  else if(pat<9.5){vec3 w=voro(q*vec2(7.,4.));vec2 j=hash2(w.xy);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1200.+j.y*800.;glint=(1.-smoothstep(0.,.035,w.z))*pow(max(dot(normalize(vec3((j-.5)*.8,1.)),H),0.),20.)*1.5;mirror=.35;}
@@ -53,7 +53,7 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 H,float spot,float ene
  vec3 col=tint<.5?dif*(1.9+energy*1.2):tint<2.5?metal*(.55*spot+.8*length(dif))*1.4:mix(metal*(.5+.9*length(dif)),dif*1.6,.35);
  return (vec3(.2)*metal+spot*(mirror*spec*metal+col)*(.7+.3*lines)+glint*metal)*seam+vec3(.06)*(1.-seam);
 }
-// Ink over foil: thin inks pass part of the foil, brightened toward the ink's own hue; soft roll-off.
+// Ink over foil: thin inks pass part of the foil, brightened toward the ink's own hue, with a soft roll-off.
 vec3 overInk(vec3 base,vec3 F,float cover){vec3 T=mix(base,base/max(max(base.r,max(base.g,base.b)),.04),.32);return mix(base,shoulder(T*F*1.35),clamp(cover,0.,1.));}
 void main(){
  vec2 uv=vec2(v.x,1.-v.y);vec3 base=toLin(texture2D(u_card,v).rgb);vec4 mk=texture2D(u_mask,v),rl=texture2D(u_relief,v);
@@ -64,7 +64,7 @@ void main(){
  vec2 e=u_texel*2.;float hx=texture2D(u_relief,v+vec2(e.x,0.)).r-texture2D(u_relief,v-vec2(e.x,0.)).r,hy=texture2D(u_relief,v-vec2(0.,e.y)).r-texture2D(u_relief,v+vec2(0.,e.y)).r;
  vec3 nRel=normalize(vec3(-hx*6.,-hy*6.,1.));vec2 stroke=normalize(rl.gb*2.-1.+1e-4);
  vec3 outC=base;
- // Whole card (Starlight, Parallel, Shatterfoil, Starfoil): the rules box only gets a share; the name bar is left to the lettering.
+ // Whole card (Starlight, Parallel, Shatterfoil, Starfoil): the rules box only gets a share and the name bar is left to the lettering.
  if(u_whole.x>.5)outC=overInk(outC,foil(u_whole.x,u_whole.y,uv,L,V,H,spot,0.,stroke),(1.-text*(1.-u_whole.z))*(1.-name)*.85);
  // Frame: the coloured frame, or only the outer border band (Gold, Platinum).
  if(u_frame.x>.5){float cov=u_frame.z>1.5?1.-inBox(uv,vec4(.045,.032,.955,.968)):frame;

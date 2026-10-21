@@ -3106,14 +3106,16 @@ A.openSetPack = async () => {
  // set's normal pull rates like any other pack.
  const dayKey=want&&`cardstashy-today-pack:${game}:${want.date}:${want.id}`;let firstToday=!!want;try{if(dayKey&&localStorage.getItem(dayKey))firstToday=false;}catch{}
  const found=firstToday&&want?.game===game?cards.find(c=>String(c.id)===String(want.id))||(game==='mtg'?cards.find(c=>c.name===want.name)||want.card||null:null):null,featured=found&&want.rarity?{...found,featuredRarity:want.rarity}:found;
- if(featured)try{localStorage.setItem(dayKey,'1');}catch{}
  try{openPackPreview({game,set,cards,featured,hydrate:game==='ptcg'?c=>T.SOURCES.ptcg.get(String(c.id),{prices:false}):null,complete:game==='mtg'?screen.cards.length===set.card_count:screen.contents?.completeness==='complete',isCurrent,
   onCopy:copyPlain,
   // A pulled card opens on its card page in the printing and finish that came out of the pack.
   onDetails:(c,pulled={})=>game==='mtg'?A.card({dataset:{name:c.name,...(pulled.finish?{setFinish:pulled.finish}:{})},printing:c}):A.tCard({dataset:{game,id:String(c.id),setId:set.id,...(pulled.priceFinish?{setVariant:pulled.priceFinish}:{}),...(game==='ygo'&&c.setContext?.printing?{printing:c.setContext.printing.code+'::'+c.setContext.printing.rarity}:{})}}),
   onWishlist:async cards=>{if(!isCurrent())throw Error("Your workspace changed. Please reopen the preview.");const saved=await commit(state=>{const st=game==='mtg'?state:state.tcg[game];for(const c of cards){const exists=st.wishlist.some(w=>game==='mtg'?key(w.name)===key(c.name):String(w.cardId)===String(c.id));if(!exists)st.wishlist.push({id:uid(),name:c.name,...(game==='mtg'?{finish:'nonfoil'}:{cardId:String(c.id)}),qty:1,addedAt:new Date().toISOString()});}return true;},{enrich:false,guard:()=>isCurrent(),scope});if(saved!==true)throw Error("Your workspace changed. Reopen this preview.");},
   onBuy:cards=>buyOnTcgplayer(game,cards.map(c=>`1 ${c.name}`),{what:'preview cards; check exact printings'})
- });}catch(e){toast(e.message||"Could not open this preview.");}
+ });
+  // Today's guaranteed pull is claimed only once the pack has actually opened.
+  if(featured)try{localStorage.setItem(dayKey,'1');}catch{}
+ }catch(e){toast(e.message||"Could not open this preview.");}
 };
 A.set = (t) => {
   const code = t.dataset.code;
@@ -3354,7 +3356,8 @@ A.homeDailyCard = async (t) => {
   const g = t.dataset.game, h = T.heroFor(g);
   if (S.ui.view !== "home" || T.game() !== g) return;
   if (!h || h.id !== t.dataset.id || h.date !== t.dataset.date) return heroArt(g);
-  if (g !== "mtg") return A.tCard({ dataset: { id: h.id, game: g } });
+  // The Card of the Day opens in the exact printing Home shows (Yu-Gi-Oh! prints one card in several rarities).
+  if (g !== "mtg") { const d = g === "ygo" ? await dailyDetails(g, h).catch(() => null) : null;if (S.ui.view !== "home" || T.game() !== g) return;return A.tCard({ dataset: { id: h.id, game: g, ...(d?.printing ? { printing: d.printing } : {}) } }); }
   if (h.printing) return A.card({ dataset: { name: h.name }, printing: h.printing });
   // Existing v1 caches retained only art; its proved ID can load the exact print.
   const ctx = { type: "card", name: h.name, dailyId: h.id };

@@ -58,4 +58,6 @@ assert.match(PTCG_FOIL_FRAGMENT,/float a=smoothstep\(0\.,\.03,cov\);gl_FragColor
  ecardStrip(px,mk,W,H);assert.equal(mk[(5*W+3)*4+3],255,'a dash in the strip is foil');assert.equal(mk[(2*W+3)*4+3],0,'yellow border stays plain');
  px.set([60,50,70,255],(5*W+40)*4);ecardStrip(px,mk,W,H);assert.equal(mk[(5*W+40)*4+3],0,'dark ink beyond the strip is untouched');
  assert.equal(PTCG_FOIL_RECIPES['ptcg-ecard-holo'].strip,1);assert.equal(PTCG_FOIL_RECIPES['ptcg-wotc-holo'].strip,0);}
+// A // comment runs to the end of its line in GLSL: shader code must never sit after one (it would be silently skipped).
+{const {YGO_RARITY_FRAGMENT}=await import('./ygo-rarity-foil.js');for(const [name,src] of [['Pokémon',PTCG_FOIL_FRAGMENT],['Yu-Gi-Oh!',YGO_RARITY_FRAGMENT]])for(const line of src.split('\n')){const k=line.indexOf('//');if(k>=0)assert(!/;/.test(line.slice(k)),`${name} shader comment swallows code: ${line.slice(k,k+90)}`);}}
 console.log('PASS: Pokémon foil follows each era (WotC, Legendary Collection, e-Card, EX, DP-SWSH, SV) and variant (cosmos, Poké Ball, Master Ball, gold); holo windows keep the Pokémon solid; full arts by rarity keep text readable; every measured mask parses; art breaking out of the window stays ink on reverse holos.');

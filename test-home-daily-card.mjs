@@ -127,7 +127,7 @@ const events = [], pending = [], state = { ui: { view: 'home', sheetCtx: null } 
 let game = 'mtg', selected = { ...daily('mtg'), id: 'shown-print', name: 'Shown exact' }, refreshes = 0;
 const A = { card: x => events.push(['mtg', x]), tCard: x => events.push(['tcg', x]) };
 const harness = { A, S: state, T: { game: () => game, heroFor: () => selected }, $: id => id === '#sheet' ? sheet : body,
-  openSheet: (_html, ctx) => { state.ui.sheetCtx = ctx; sheet.open = true; }, esc: String, key: x => String(x).toLowerCase(), slim: x => x, heroArt: () => refreshes++, api: path => new Promise((resolve, reject) => pending.push({ path, resolve, reject })) };
+  openSheet: (_html, ctx) => { state.ui.sheetCtx = ctx; sheet.open = true; }, esc: String, key: x => String(x).toLowerCase(), slim: x => x, heroArt: () => refreshes++, dailyDetails: async (g, h) => g === 'ygo' ? { printing: `RA01-EN064::Collector's Rare` } : null, api: path => new Promise((resolve, reject) => pending.push({ path, resolve, reject })) };
 vm.runInNewContext(actionSource, harness);
 const click = () => ({ dataset: { game, id: selected.id, name: selected.name, date: selected.date } });
 selected.printing = magic('shown-print', 'Shown exact');
@@ -147,6 +147,8 @@ loading = A.homeDailyCard(click()); const count = events.length;
 pending.at(-1).resolve(magic('wrong-print', 'Shown exact')); await loading;
 assert.equal(events.length, count); assert.match(body.innerHTML, /different printing/);
 for (const g of ['ygo', 'ptcg']) { game = g; selected = daily(g); await A.homeDailyCard(click()); assert.equal(events.at(-1)[1].dataset.id, selected.id); assert.equal(events.at(-1)[1].dataset.game, g); }
+assert.equal(events.at(-1)[1].dataset.printing, undefined, 'Pokémon opens without a printing key');
+game = 'ygo'; selected = daily('ygo'); await A.homeDailyCard(click()); assert.equal(events.at(-1)[1].dataset.printing, `RA01-EN064::Collector's Rare`, 'the Yu-Gi-Oh! Card of the Day opens in the exact printing Home shows');
 await A.homeDailyCard({ dataset: { ...click().dataset, date: '2000-01-01' } }); assert.equal(refreshes, 1);
 // Production rollover timer uses the shared New York boundary and resume hooks; it never rerenders all Home.
 assert.match(app, /T\.heroResetAt\(\)/);

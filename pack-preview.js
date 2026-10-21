@@ -137,7 +137,9 @@ export function trimPackArt(img){
   const cw=r-l+1,ch=b-t+1;if(cw<w*.3||ch<h*.3||cw*ch>w*h*.94)return;
   const o=document.createElement('canvas'),sx=W/w,sy=H/h;o.width=Math.round(cw*sx);o.height=Math.round(ch*sy);
   o.getContext('2d').drawImage(img,l*sx,t*sy,cw*sx,ch*sy,0,0,o.width,o.height);
-  o.toBlob(blob=>{if(blob&&img.isConnected){img.src=URL.createObjectURL(blob);img.dataset.trimmed='1';}},'image/png');
+  o.toBlob(blob=>{if(!blob||!img.isConnected)return;const url=URL.createObjectURL(blob);
+   // Once decoded the picture no longer needs its object URL; release it so long sessions don't accumulate them.
+   const done=()=>URL.revokeObjectURL(url);img.addEventListener('load',done,{once:true});img.addEventListener('error',done,{once:true});img.src=url;img.dataset.trimmed='1';},'image/png');
  }catch{}
 }
 // The real booster pack for this set (TCGplayer product art, served same-origin by the worker).
