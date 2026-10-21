@@ -104,7 +104,7 @@ try {
  try {
   S.state=blank();S.state.settings.game='ptcg';S.ui.view='sets';
   Object.assign(ui('ptcg').sets,{list:[undaunted],q:'',kind:'all',sort:'new',limit:80,error:'',busy:false});
-  const catalogue=tcgSets();assert.match(catalogue,/data-set-symbol-id="hgss3"/);assert.doesNotMatch(catalogue,/logo\.png|class="pks"/);
+  const catalogue=tcgSets();assert.match(catalogue,/data-set-symbol-id="hgss3"/);const foreground=catalogue.replace(/<span class="set-atmosphere"[^>]*>[\s\S]*?<\/span>/g,'');assert.doesNotMatch(foreground,/logo\.png|class="pks"/);assert.match(catalogue,/class="set-atmosphere" aria-hidden="true"/);
   Object.assign(ui('ptcg').set,{info:undaunted,id:undaunted.id,cards:[],candidates:null,error:'',busy:false,filter:'all',q:'',rarity:'',finish:'',sort:'number',limit:80});
   const detail=tcgSet();assert.match(detail,/<img class="set-logo big" src="https:\/\/images.pokemontcg.io\/hgss3\/logo.png"/);
   assert.ok(detail.includes(pkSetSymbol(undaunted,'pks big')),'the existing set-detail symbol markup is unchanged');

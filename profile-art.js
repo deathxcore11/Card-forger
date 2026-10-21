@@ -1,3 +1,4 @@
+import {actionIcon} from './icons.js';
 import {esc,cardImage} from './ui.js';
 import {GAMES,GAME_IDS} from './games.js';
 import {artworkSources} from './artwork.js';
@@ -28,8 +29,8 @@ export function profileAvatar(value,profile={}){
  const art=profileArt(value),photo=https(profile.avatar_url),initial=String(profile.username||profile.display_name||'').trim().slice(0,1).toUpperCase();
  return `<span class="profile-avatar" aria-hidden="true">${initial?`<span>${esc(initial)}</span>`:person}${art?`<img src="${esc(art.image)}" style="${cropStyle(art)}" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true">`:photo?`<img class="profile-avatar-photo" src="${esc(photo)}" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true">`:''}</span>`;
 }
-export function profilePhotoControl(value,profile={}){
- return `<div class="profile-photo-row"><button class="profile-photo-source" data-act="profileSource" aria-label="View profile artwork">${profileAvatar(value,profile)}</button><button class="profile-photo-control" data-act="profilePhoto"><span><b>Profile photo</b><small>${esc(profileArt(value)?.name||'Choose card art from any game')}</small></span><span aria-hidden="true">✎</span></button></div>`;
+export function profilePhotoControl(value,profile={}, {editAvatar=false}={}){
+ return `<div class="profile-photo-row"><button class="profile-photo-source" data-act="${editAvatar?'profilePhoto':'profileSource'}" aria-label="${editAvatar?'Change profile picture':'View profile artwork'}">${profileAvatar(value,profile)}</button><button class="profile-photo-control" data-act="profilePhoto"><span><b>Change profile picture</b><small>${esc(profileArt(value)?.name||'Choose card art from any game')}</small></span><span aria-hidden="true">${actionIcon("brush")}</span></button></div>`;
 }
 
 // Store the chosen source and crop, not a large image blob or a cross-origin canvas.

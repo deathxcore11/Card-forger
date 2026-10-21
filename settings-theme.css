@@ -112,3 +112,111 @@
  :root[data-theme="light"] body.glass dialog.sheet::before,:root[data-theme="light"] body.glass dialog.sheet::after {display:none;}
  :root[data-theme="light"] body.glass :is(.panel,.kpi,.game-choice,.lot,.meta-row,.print,.cd-text,.price-pill,.advice,.deck-emb,.pair-row,.proven-sum,.settings-card,dialog.sheet,.topbar,.bottom-nav) {background:var(--surface);backdrop-filter:none;}
 }
+
+/* CardStashy settings share the app's card fan, icon family and glass surfaces.
+   One content column keeps profile controls attached to the account they edit. */
+.settings-dialog {width:min(860px,calc(100vw - 24px));max-width:860px;border-radius:22px;}
+.settings-dialog-head {padding:14px 22px;gap:12px;background:var(--surface);}
+.settings-brand-lockup {display:flex;align-items:center;gap:12px;min-width:0;}
+.settings-brand-lockup .stashy-logo {width:46px;height:46px;flex:none;}
+.settings-dialog-head .eyebrow {color:var(--muted);font-size:9px;letter-spacing:.15em;}
+.settings-dialog-head h2 {font-size:22px;letter-spacing:-.035em;line-height:1.15;}
+.settings-dialog .settings-page {width:100%;max-width:none;min-width:0;padding:0 22px 22px;}
+.settings-page .settings-save-overview {display:flex;align-items:center;gap:10px;padding:13px 0;margin:0 0 12px;border:0;border-bottom:1px solid var(--line);background:transparent;border-radius:0;}
+.settings-save-overview>div {flex:1;min-width:0;}
+.settings-page .settings-save-overview .save-status {display:block;margin:0;font-size:12px;color:var(--text);max-width:none;white-space:normal;overflow:visible;text-overflow:clip;cursor:default;overflow-wrap:anywhere;line-height:1.5;}
+.settings-save-overview small {display:block;font-size:11px;color:var(--muted);line-height:1.5;margin-top:2px;}
+.settings-save-symbol {display:grid;place-items:center;color:var(--gold);flex:none;}
+.settings-save-symbol .ico {width:24px;height:24px;}
+.settings-save-overview>.link {flex:none;font-size:12px;min-height:44px;}
+.settings-page .settings-tabs {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:100%;overflow-x:auto;gap:4px;padding:4px;margin:0 0 18px;scrollbar-width:none;background:var(--surface-2);border-radius:14px;}
+.settings-page .settings-tabs button,.settings-dialog .settings-tabs button {display:flex;align-items:center;justify-content:center;gap:7px;min-width:0;min-height:46px;padding:9px 8px;white-space:normal;font-size:12px;line-height:1.3;}
+.settings-tab-icon {display:grid;place-items:center;flex:none;color:var(--gold);}
+.settings-tab-icon .ico {width:18px;height:18px;}
+.settings-page .settings-tabs button[aria-selected="true"] {background:var(--surface);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--gold) 45%,var(--line));color:var(--text);}
+.settings-dialog .settings-account-layout {display:block;min-width:0;}
+.settings-page .panel,.settings-page .settings-card {min-width:0;width:100%;margin:0 0 14px;padding:20px;border-radius:18px;box-shadow:inset 0 1px 0 #ffffff08;}
+.settings-page .account {max-width:none;}
+.settings-page .account .settings-card-heading {gap:12px;margin-bottom:10px;}
+.settings-account-mark,.settings-install-mark {width:48px;height:48px;flex:none;}
+.settings-card-heading h2 {font-size:20px;letter-spacing:-.03em;line-height:1.25;}
+.settings-page .account .auth-tabs {margin:16px 0;}
+.settings-page .auth-pane .field {margin-bottom:13px;}
+.settings-page .auth-divider {margin:16px 0;font-size:11px;}
+.settings-page .auth-secondary {margin:12px auto;font-size:12px;}
+.settings-page .auth-privacy {display:flex;align-items:flex-start;gap:8px;margin:16px 0 0;padding-top:14px;font-size:11px;}
+.auth-privacy .ico {width:18px;height:18px;flex:none;color:var(--gold);}
+.settings-profile-inline {border-top:1px solid var(--line);margin-top:14px;padding-top:14px;}
+.settings-profile-inline>.eyebrow {font-size:9px;letter-spacing:.1em;color:var(--muted);margin:0 0 8px;}
+.settings-page .profile-photo-row {display:flex;align-items:center;gap:12px;min-width:0;}
+.settings-page .profile-photo-source {flex:none;min-height:44px;}
+.settings-page .profile-photo-source .profile-avatar {width:44px;height:44px;}
+.settings-page .profile-photo-control {display:flex;align-items:center;justify-content:space-between;gap:10px;flex:1;width:auto;min-width:0;min-height:52px;padding:8px 0;margin:0;border:0;border-radius:0;background:transparent;box-shadow:none;color:var(--text);font:inherit;text-align:left;cursor:pointer;}
+.settings-page .profile-photo-control>span:first-child {display:grid;gap:4px;min-width:0;overflow-wrap:anywhere;}
+.settings-page .profile-photo-control>span:last-child {flex:0 0 24px;display:grid;place-items:center;}
+.settings-page .profile-photo-control b {font-size:13px;line-height:1.3;}
+.settings-page .profile-photo-control small {display:block;font-size:11px;color:var(--muted);line-height:1.4;}
+.settings-page .profile-photo-control .ico {width:18px;height:18px;color:var(--gold);}
+.settings-account-footer {display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:0 2px 4px;}
+.settings-account-footer>.muted {font-size:11px;}
+.settings-account-footer>.link {display:flex;align-items:center;gap:6px;font-size:12px;min-height:44px;}
+.settings-account-footer .ico {width:16px;height:16px;}
+.settings-section-intro {margin:0 0 18px;max-width:60ch;}
+.settings-section-intro .eyebrow {font-size:9px;letter-spacing:.13em;color:var(--gold);margin:0 0 5px;}
+.settings-section-intro h2 {font-size:23px;letter-spacing:-.035em;line-height:1.2;margin:0 0 7px;}
+.settings-section-intro p:last-child {margin:0;line-height:1.5;}
+.settings-icon .ico {width:23px;height:23px;}
+.settings-operation-status {font-size:12px;line-height:1.5;color:var(--muted);min-height:1.5em;margin:10px 0 0;overflow-wrap:anywhere;}
+.settings-operation-status:empty {display:none;}
+.settings-operation-status.success {color:var(--good);font-weight:650;}
+.settings-storage-breakdown {display:grid;margin:14px 0;}
+.settings-storage-breakdown>div {display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-top:1px solid var(--line);font-size:12px;}
+.settings-storage-breakdown span {color:var(--muted);}
+.settings-storage-breakdown b {text-align:right;font-weight:600;overflow-wrap:anywhere;}
+.settings-history>summary {display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;cursor:pointer;list-style:none;}
+.settings-history>summary::-webkit-details-marker {display:none;}
+.settings-history>summary>span:first-child {display:grid;gap:4px;}
+.settings-history>summary b {font-size:15px;}
+.settings-history>summary small {font-size:11px;color:var(--muted);line-height:1.5;}
+.settings-history>summary>span:last-child {color:var(--gold);transition:transform .2s;}
+.settings-history>summary .ico {width:20px;height:20px;}
+.settings-history[open]>summary>span:last-child {transform:rotate(180deg);}
+.settings-history-body {border-top:1px solid var(--line);margin-top:12px;padding-top:12px;}
+.settings-history .recovery-snapshot {padding:14px;background:var(--surface-2);border-radius:12px;gap:6px;}
+.settings-history .recovery-snapshot strong {font-size:13px;line-height:1.5;}
+.settings-history .recovery-snapshot .actions {margin-top:8px;}
+.settings-page .settings-theme-options {grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+.settings-page .settings-theme-choice {min-width:0;padding:12px;grid-template-columns:18px minmax(0,1fr);gap:10px 6px;}
+.settings-page .settings-theme-choice small {font-size:11px;}
+.settings-dialog #toast {left:24px;right:24px;bottom:18px;width:auto;max-width:520px;margin-inline:auto;transform:translateY(20px);font-size:13px;z-index:10;}
+.settings-dialog #toast.show {transform:translateY(0);}
+@media(min-width:720px){.settings-page #auth-login form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}.settings-page #auth-login form>.btn{grid-column:1/-1}.settings-page .auth-card>.muted{margin-bottom:16px}}
+@media(max-width:520px){
+ .settings-dialog{width:calc(100vw - 16px);max-height:calc(100dvh - 16px);border-radius:18px}.settings-dialog-head{padding:12px 14px}.settings-dialog .settings-page{padding:0 14px 16px}
+ .settings-brand-lockup{gap:9px}.settings-brand-lockup .stashy-logo{width:40px;height:40px}.settings-dialog-head h2{font-size:20px}
+ .settings-page .settings-tabs{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin-bottom:14px}.settings-page .settings-tabs button{min-height:44px;padding:8px;font-size:12px}
+ .settings-dialog .settings-page .panel,.settings-dialog .settings-page .settings-card{padding:16px}.settings-page .settings-card-heading{gap:10px}.settings-card-heading h2{font-size:19px}
+ .settings-page .settings-storage-breakdown>div{flex-direction:column;gap:4px}.settings-storage-breakdown b{text-align:left}
+ .settings-page .settings-theme-options{gap:6px}.settings-page .settings-theme-choice{padding:9px;grid-template-columns:15px minmax(0,1fr);gap:8px 4px}.settings-theme-choice input{width:15px;height:15px}.settings-theme-swatch{height:42px;padding:4px;grid-template-columns:8px minmax(0,1fr);gap:3px}.settings-theme-choice b{font-size:12px}.settings-page .settings-theme-choice small{font-size:10px}
+ .settings-save-overview small{font-size:10px}.settings-account-mark,.settings-install-mark{width:42px;height:42px}.settings-page .settings-disclosure{padding-block:13px;margin-top:14px}
+}
+@media(prefers-reduced-motion:reduce){.settings-history>summary>span:last-child{transition:none}}
+/* Review pass: readable helper text, one animated logo, flat narrow choices. */
+.settings-secondary-brand {display:grid;place-items:center;flex:0 0 44px;}
+.settings-secondary-brand .stashy-logo {width:44px;height:44px;}
+.settings-save-overview small,.settings-page .auth-privacy,.settings-page .profile-photo-control small,.settings-account-footer>.muted,.settings-history>summary small,.settings-page .settings-theme-choice small {font-size:12px;}
+.settings-scope {font-size:9px;color:var(--muted);white-space:nowrap;}
+@media(max-width:520px){
+ .settings-save-overview small {font-size:12px;}
+ .settings-page .settings-theme-options {grid-template-columns:1fr;gap:3px;}
+ .settings-page .settings-theme-choice {grid-template-columns:18px 52px minmax(0,1fr);align-items:center;gap:10px;padding:9px;border-color:transparent;border-radius:10px;background:transparent;}
+ .settings-page .settings-theme-choice:has(input:checked) {border-color:var(--gold);background:color-mix(in srgb,var(--gold) 6%,var(--surface));}
+ .settings-page .settings-theme-choice>span:last-child {grid-column:auto;}
+ .settings-page .settings-theme-choice .settings-theme-swatch {width:52px;height:42px;}
+ .settings-page .settings-theme-choice b {font-size:14px;}
+ .settings-page .settings-theme-choice small {font-size:12px;}
+}
+/* Keep theme titles level when one description needs another line. */
+.settings-page .settings-theme-choice {grid-template-rows:52px auto;}
+.settings-page .settings-theme-choice>span:last-child {align-self:start;}
+@media(max-width:520px){.settings-page .settings-theme-choice{grid-template-rows:auto}.settings-page .settings-theme-choice>span:last-child{align-self:center}}

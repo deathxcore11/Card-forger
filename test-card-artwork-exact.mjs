@@ -114,7 +114,7 @@ const recovered={complete:true,naturalWidth:100,currentSrc:'https://fixture.test
 const options=zoomCardOptions({dataset:{src:'https://fixture.test/back/normal.jpg',hi:'https://fixture.test/back/png.png',name:'Back'},querySelector:()=>recovered});
 assert.equal(options.src,recovered.currentSrc);assert.equal(options.sources.length,2);
 const previousDocument=globalThis.document,previousImage=globalThis.Image,prefetches=[];
-const node=()=>({dataset:{},style:{},listeners:{},classList:{add(){},remove(){},toggle(){}},setAttribute(){},addEventListener(name,fn){this.listeners[name]=fn;},getBoundingClientRect(){return {width:300,height:400,left:0,top:0};}});
+const node=()=>({dataset:{},style:{removeProperty(){}},listeners:{},classList:{add(){},remove(){},toggle(){}},dispatchEvent(){},setAttribute(){},addEventListener(name,fn){this.listeners[name]=fn;},getBoundingClientRect(){return {width:300,height:400,left:0,top:0};}});
 let fake;
 globalThis.document={baseURI:base,documentElement:node(),body:{append(d){d.isConnected=true;}},createElement(){
  const dialog=node(),stage=node(),image=node(),resolution=node(),loaded=[];
@@ -129,7 +129,7 @@ try{
  assert.deepEqual(fake.loaded,[base+'img/ygo/2.jpg',base+'img/ygo/s/2.jpg','https://images.ygoprodeck.com/images/cards_small/2.jpg','https://images.ygoprodeck.com/images/cards/2.jpg']);
  assert.equal(fake.image.hidden,true);assert.equal(fake.resolution.textContent,'Artwork unavailable');
  const oldPrefetch=prefetches[0];
- fake.dialog.listeners.click({target:{closest:()=>({dataset:{z:'view',i:'1'}})}});
+ fake.dialog.listeners.click({target:{closest:()=>({dataset:{z:'view',i:'2'}})}});
  assert.equal(fake.image.src,'https://fixture.test/crop.jpg');
  oldPrefetch.onload();assert.equal(fake.image.src,'https://fixture.test/crop.jpg','old high-res completion cannot overwrite another view');
  viewer.close();assert.equal(fake.dialog.isConnected,false);

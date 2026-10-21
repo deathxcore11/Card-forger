@@ -1,3 +1,8 @@
+import {openPackPreview} from './pack-preview.js';
+import {packEligible} from './set-experience.js';
+import {setMotionTilt} from './mobile-tilt.js';
+import {cachedImages,localStorageFootprint} from './settings-storage.js';
+import {batchStorageSummary} from './scan-batch.js';
 import {initGrid,applyGridSize,applyGridPinch} from './grid-settings.js';
 import {createMagicMatchups,matchupFingerprint} from './magic-matchups-controller.js';
 import {matchupState,resetMatchups,renderMagicMatchupSheet} from './magic-matchups-ui.js';
@@ -40,7 +45,7 @@ import { ask, askText } from "./dialog.js";
 import { attachHomeSwipe } from "./home-swipe.js";
 import { routeSegments, normalizeRoute, gameSwitchRoute, historyEntry, createNavigationQueue } from "./game-navigation.js";
 import { useMyPrices, myPriceKey, ensureTcgPrices } from "./mtg-tcgprice.js";
-import { buyOnTcgplayer, massLines } from "./buy.js";
+import { buyOnTcgplayer, massLines, copyPlain } from "./buy.js";
 import {applySwapsToCards} from './insights.js';
 import {showRuleHint,dismissRuleHint,attachRuleHover} from './rule-dex.js';
 import {bestBudgetDecks,purchaseCost,comparePower,refineCandidates,towardDeck,spendUp,cardQuality} from './deck-optimizer.js';
@@ -125,11 +130,14 @@ const stripCache = (s) => {
 const normalize = (s) => normalizeHomeDeckActivity(stripCache({ ...blank(), ...validateWorkspace(s) }));
 
 function setSaveStatus(text, cls = "") {
-  const el = $("#saveStatus");
-  if (el) {
+  // Lookup and network-presence messages are not evidence of a saved change.
+  if(!/^(?:Saving…|Not saved|Saved on this device(?: · .*)?|Synced to your account|Syncing…|Sync needs your decision)$/.test(text))return;
+  S.ui.saveFeedback={text,cls,owner:cloudInfo().user?.id||null,state:S.state};
+  for (const el of document.querySelectorAll("#saveStatus,[data-settings-save-status]")) {
     el.textContent = text;
     el.className = "save-status " + cls;
   }
+  for(const el of document.querySelectorAll("[data-settings-save-detail]"))el.textContent=V.settingsSaveCopy(cloudInfo(),S.state,S.ui.saveFeedback).detail;
   // Account saving is shown inside Settings; browsing stays quiet.
 }
 // Glass look: frosted surfaces over a blurred copy of the game's daily-card art.
@@ -213,7 +221,9 @@ function refreshHomeValueGlance() {
 function afterLocalSave() {
   refreshHomeValueGlance();
   if (cloudInfo().user) {
-    setSaveStatus(...statusLabel());
+    const phase=cloudInfo().status?.state;
+    if(["offline","error","decide"].includes(phase))setSaveStatus(...statusLabel());
+    else setSaveStatus("Saved on this device · waiting to sync");
     scheduleSync();
   } else setSaveStatus("Saved on this device", "ok");
 }
@@ -633,7 +643,7 @@ function toast(text, { undo = false } = {}) {
   t.classList.toggle("has-action", undo);
   t.classList.add("show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove("show", "has-action"), undo ? 7000 : 3800);
+  toastTimer = setTimeout(() => t.classList.remove("show", "has-action"), undo || /^Backup prepared/.test(text) ? 7000 : 3800);
 }
 
 let binderDragCleanup = null, lastSheetStep = "";
@@ -2198,7 +2208,7 @@ A.muUndo = async (t) => {
   await commit((s) => { const x = s.decks.find((y) => y.id === d.id); x.results = (x.results || []).filter((g) => g.at !== t.dataset.at); }, { msg: "Game removed." });
 };
 let settingsBaseState=null;
-const settingsPopup=createSettingsDialog({beforeOpen:()=>{settingsBaseState=S.state;},dialog:$("#settingsDialog"),markup:()=>`<header class="settings-dialog-head"><div><p class="eyebrow">ALL THREE GAMES</p><h2 id="settingsDialogTitle">Settings</h2></div><button class="icon" data-act="closeSettings" aria-label="Close settings">${ICON.close||'✕'}</button></header>${V.settings({popup:true})}`,afterPaint:()=>{if(normalizeSettingsTab(S.ui.settingsTab)==='recovery'){storageDetail();void renderRecoverySnapshots();}},afterClose:scroll=>{profilePicker.close();if(settingsBaseState!==S.state||S.ui.view==='community')render();window.scrollTo({top:scroll,behavior:'instant'});setTimeout(safeIntro,50);}});
+const settingsPopup=createSettingsDialog({beforeOpen:()=>{settingsBaseState=S.state;},dialog:$("#settingsDialog"),markup:()=>`<header class="settings-dialog-head"><div class="settings-brand-lockup">${brandMark("settings-brand-mark")}<div><p class="eyebrow">CARDSTASHY <span class="settings-scope">· ALL GAMES</span></p><h2 id="settingsDialogTitle">Settings</h2></div></div><button class="icon" data-act="closeSettings" aria-label="Close settings">${ICON.close||'✕'}</button></header>${V.settings({popup:true})}`,afterPaint:()=>{if(normalizeSettingsTab(S.ui.settingsTab)==='recovery'){storageDetail();void renderRecoverySnapshots();}},afterClose:scroll=>{profilePicker.close();if(settingsBaseState!==S.state||S.ui.view==='community')render();window.scrollTo({top:scroll,behavior:'instant'});setTimeout(safeIntro,50);}});
 A.menu = () => settingsPopup.open();
 A.addFriend=()=>community.add();
 A.friendRequests=()=>community.requests();
@@ -2810,9 +2820,9 @@ A.settingsTab = (t) => {
   activateSettingsTab(document,tab);
   if(tab==='recovery'){storageDetail();void renderRecoverySnapshots();}
 };
-C.setGridSize=t=>{const result=applyGridSize(t.value);if(!result.saved)toast('Card size changed for this visit. Your browser could not save it.');};
-C.setGridPinch=t=>{const result=applyGridPinch(t.checked);if(!result.saved)toast('Gesture preference changed for this visit. Your browser could not save it.');};
-C.setTheme=t=>{const result=applyTheme(t.value);if(!result.saved)toast('Theme changed for this visit. Your browser could not save it.');};
+C.setGridSize=t=>{const result=applyGridSize(t.value);toast(result.saved?'Saved card size on this device.':'Card size changed for this visit. Your browser could not save it.');};
+C.setGridPinch=t=>{const result=applyGridPinch(t.checked);toast(result.saved?'Saved gesture preference on this device.':'Gesture preference changed for this visit. Your browser could not save it.');};
+C.setTheme=t=>{const result=applyTheme(t.value);toast(result.saved?'Saved appearance on this device.':'Theme changed for this visit. Your browser could not save it.');};
 document.addEventListener('keydown',e=>{
   const tab=e.target.closest?.('[data-act="settingsTab"][role="tab"]');
   if(!tab||!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
@@ -3080,6 +3090,18 @@ A.shareNative = async () => {
 };
 
 /* ---------- sets ---------- */
+A.openSetPack = () => {
+ const game=T.game(),screen=game==='mtg'?S.ui.set:T.ui(game).set,set=screen.info;
+ if(!packEligible(game,set)||screen.busy||screen.error||!screen.loaded)return toast("Wait for this set to finish loading.");
+ const scope=mutationScope(),ticket=accountGeneration,release=game==='mtg'?screen.code:screen.id;
+ const isCurrent=()=>mutationCurrent(scope)&&ticket===accountGeneration&&T.game()===game&&S.ui.view==='set'&&(game==='mtg'?S.ui.set.code:T.ui(game).set.id)===release;
+ try{openPackPreview({game,set,cards:screen.cards,complete:game==='mtg'?screen.cards.length===set.card_count:screen.contents?.completeness==='complete',isCurrent,
+  onCopy:copyPlain,
+  onDetails:c=>game==='mtg'?A.card({dataset:{name:c.name},printing:c}):A.tCard({dataset:{game,id:String(c.id),setId:set.id}}),
+  onWishlist:async cards=>{if(!isCurrent())throw Error("Your workspace changed. Please reopen the preview.");const saved=await commit(state=>{const st=game==='mtg'?state:state.tcg[game];for(const c of cards){const exists=st.wishlist.some(w=>game==='mtg'?key(w.name)===key(c.name):String(w.cardId)===String(c.id));if(!exists)st.wishlist.push({id:uid(),name:c.name,...(game==='mtg'?{finish:'nonfoil'}:{cardId:String(c.id)}),qty:1,addedAt:new Date().toISOString()});}return true;},{enrich:false,guard:()=>isCurrent(),scope});if(saved!==true)throw Error("Your workspace changed. Reopen this preview.");},
+  onBuy:cards=>buyOnTcgplayer(game,cards.map(c=>`1 ${c.name}`),{what:'preview cards; check exact printings'})
+ });}catch(e){toast(e.message||"Could not open this preview.");}
+};
 A.set = (t) => {
   const code = t.dataset.code;
   if (!code) return;
@@ -3284,7 +3306,7 @@ A.cardWishlist=async t=>{
   const commit=scopedCommit();
  const game=t.dataset.game,name=t.dataset.name,id=t.dataset.id;if(game!==T.game())return;
  let added=false;
- await commit(state=>{const st=game==='mtg'?state:state.tcg[game],matches=w=>game==='mtg'?key(w.name)===key(name):String(w.cardId)===String(id);
+ const saved=await commit(state=>{const st=game==='mtg'?state:state.tcg[game],matches=w=>game==='mtg'?key(w.name)===key(name):String(w.cardId)===String(id);
   if(st.wishlist.some(matches))st.wishlist=st.wishlist.filter(w=>!matches(w));
   else{st.wishlist.push({id:uid(),name,...(game==='mtg'?{finish:'nonfoil'}:{cardId:id}),qty:1,addedAt:new Date().toISOString()});added=true;}
  },{enrich:false});toast(added?'Added to wishlist.':'Removed from wishlist.');
@@ -4559,7 +4581,8 @@ async function mtgGuideLoad(c) {
 C.setGlass = (t) => {
   try {
     localStorage.setItem(GLASS_KEY, t.checked ? "on" : "off");
-  } catch {}
+    toast("Saved glass preference on this device.");
+  } catch {t.checked=glassOn();toast("Glass preference could not be saved. Your previous setting is kept.");}
   updateAmbient();
 };
 // Tap a card image: full-screen, high-resolution, zoomable.
@@ -5812,9 +5835,19 @@ function backupPayload() {
   return JSON.stringify({ ...backupEnvelope(stripCache(S.state)), cache });
 }
 A.exportBackup = () => {
-  download("CardStashy_Backup_" + new Date().toISOString().slice(0, 10) + ".json", backupPayload(), "application/json");
-  toast("Backup downloaded. Keep it somewhere safe (Drive, email to yourself…).");
+  const status=document.getElementById('backupExportStatus');
+  try {
+    download("CardStashy_Backup_" + new Date().toISOString().slice(0, 10) + ".json", backupPayload(), "application/json");
+    const message='Backup prepared. Check your downloads to confirm the file was saved.';
+    if(status){status.textContent='✓ '+message;status.classList.add('success');}
+    toast(message);
+  } catch {
+    const message='Backup could not be prepared. Your saved data is unchanged. Try again.';
+    if(status){status.textContent=message;status.classList.remove('success');}
+    toast(message);
+  }
 };
+
 async function recoverySnapshot(id) {
   const owner=cloudInfo().user?.id||null,generation=accountGeneration;
   const raw=await readRecord(recoveryKey(owner));
@@ -5828,10 +5861,10 @@ async function renderRecoverySnapshots(){
     const raw=await readRecord(recoveryKey(owner));
     if(accountLocked||generation!==accountGeneration||(cloudInfo().user?.id||null)!==owner||!host.isConnected)return;
     const snapshots=readRecoverySnapshots(raw,owner);
-    const status=document.getElementById("recoveryStatus");if(status)status.textContent=`${snapshots.length} saved recovery ${snapshots.length===1?"copy":"copies"} on this device for ${owner?"this account":"guest mode"}.`;
+    const status=document.getElementById("recoveryStatus");if(status)status.textContent=`${snapshots.length} saved recovery ${snapshots.length===1?"copy":"copies"} on this device for ${owner?"this account":"guest mode"} · ~${(JSON.stringify(raw||{}).length*2/1048576).toFixed(1)} MB estimated.`;
     host.innerHTML=snapshots.length?snapshots.map(item=>{
       const summary=recoverySummary(item.state);
-      return `<article class="panel recovery-snapshot"><strong>${esc(item.label)}</strong><p class="muted">${esc(new Date(item.createdAt).toLocaleString())} · ${summary.copies} copies · ${summary.decks} decks across all games</p><div class="actions wrap"><button class="btn ghost small" data-act="downloadRecovery" data-id="${esc(item.id)}">Download</button><button class="btn small" data-act="restoreRecovery" data-id="${esc(item.id)}">Review & restore</button></div></article>`;
+      return `<article class="recovery-snapshot"><strong>${esc(item.label)}</strong><p class="muted small">${esc(new Date(item.createdAt).toLocaleString())}</p><p class="small">${summary.copies} ${summary.copies===1?"card":"cards"} · ${summary.decks} ${summary.decks===1?"deck":"decks"} · All games</p><div class="actions wrap"><button class="btn ghost small" data-act="downloadRecovery" data-id="${esc(item.id)}">Download</button><button class="btn small" data-act="restoreRecovery" data-id="${esc(item.id)}">Restore…</button></div></article>`;
     }).join(''):'<p class="muted">No automatic recovery copies yet. Copies saved before sync conflicts and restores will appear here.</p>';
   }catch{if(host.isConnected)host.textContent='Recovery copies could not be read. Your saved data has not been changed.';}
 }
@@ -5839,6 +5872,7 @@ A.recoveryRefresh=()=>renderRecoverySnapshots();
 A.downloadRecovery=async t=>{
   const item=await recoverySnapshot(t.dataset.id);if(!item)return toast('That recovery copy is not available in this account.');
   download(`CardStashy_Recovery_${fileSafe(item.label)}.json`,JSON.stringify(backupEnvelope(item.state)),'application/json');
+  toast('Backup prepared. Check your downloads to confirm the file was saved.');
 };
 A.restoreRecovery=async t=>{
   const owner=cloudInfo().user?.id||null,generation=accountGeneration;
@@ -5890,7 +5924,7 @@ A.undoRestore = async () => {
   if(!current())return;
   if (!raw) return toast("No recovery copy yet.");
   const next = normalize(raw);
-  if (!await ask(`Switch to the recovery copy across all games (${recoverySummary(next).copies} card copies, ${recoverySummary(next).decks} decks)? ${owner?"The restored workspace will sync to your other devices.":"This changes guest data on this device only."} What you have now is saved as another recovery copy first.`)) return;
+  if (!await ask(`Switch to the recovery copy saved ${next.lastSavedAt?new Date(next.lastSavedAt).toLocaleString():"at an unknown date"} across all games (${recoverySummary(next).copies} card copies, ${recoverySummary(next).decks} decks)? ${owner?"The restored workspace will sync to your other devices.":"This changes guest data on this device only."} What you have now is saved as another recovery copy first.`)) return;
   if(await replaceWorkspace(next, { recovery: true, guard:current, notify:true, stamp:true, kind:"restore" })===false)return;
   render();
   toast("Recovery copy restored.");
@@ -5919,7 +5953,7 @@ A.loadExample = async () => {
 };
 A.persist = async () => {
 
-  toast((await requestPersistence()) ? "The browser will keep your data. Still export backups." : "The browser declined. Export backups regularly.");
+  toast((await requestPersistence()) ? "Browser cleanup protection enabled. This is not an online backup." : "The browser did not enable cleanup protection. Keep an exported backup.");
   storageDetail();
 };
 A.install = async () => {
@@ -5964,20 +5998,41 @@ onAlert((f) => {
     if (globalThis.Notification?.permission === "granted") new Notification("CardStashy price alert", { body: alertText(f), icon: "icon-192.png", tag: `${f.game}:${f.id}` });
   } catch {}
 });
-C.setFinishEffects = t => setFinishEffects(t.checked);
+C.setFinishEffects = t => {const saved=setFinishEffects(t.checked);if(!saved)t.checked=finishEffectsOn();toast(saved?"Saved card lighting preference on this device.":"Card lighting preference could not be saved. Your previous setting is kept.");};
+C.setMotionTilt = t => {if(!setMotionTilt(t.checked)){t.checked=!t.checked;toast("Could not save tilt preference.");}else toast(t.checked?"Phone tilt on.":"Phone tilt off.");};
 C.setHaptics = (t) => {
-  setHaptics(t.checked);
-  if (t.checked) haptic("success");
+  const saved=setHaptics(t.checked);
+  if(!saved)t.checked=hapticsOn();
+  toast(saved?"Saved vibration preference on this device.":"Vibration preference could not be saved. Your previous setting is kept.");
+  if (saved&&t.checked) haptic("success");
 };
 A.installLater = () => {
   dismissInstall();
   render();
 };
 onInstallable(() => S.ui.view === "home" && render());
+A.clearCachedImages = async t => {
+  if(t.disabled)return;
+  t.disabled=true;
+  const status=document.getElementById('storageActionStatus');
+  try {
+    const result=await cachedImages({clear:true});
+    const message=result.available?`Cleared ${result.count} cached images. Your saved data and pending scans are unchanged.`:'Image cleanup is unavailable in this browser.';
+    if(status?.isConnected)status.textContent=message;
+    toast(message);await storageDetail();
+  } catch {if(status?.isConnected)status.textContent='Image cleanup could not finish. Your saved data and pending scans are unchanged.';}
+  finally {if(t.isConnected)t.disabled=false;}
+};
 async function storageDetail() {
-  const s = await persistenceStatus(),
-    el = $("#storageDetail");
-  if (el) el.textContent = `${s.backend} · ${s.persistent ? "protected from cleanup" : "may be cleared by the browser if storage runs low"}${s.usage !== undefined ? ` · ${(s.usage / 1048576).toFixed(1)} MB used` : ""}.`;
+  const el = $("#storageDetail"),breakdown=$('#storageBreakdown'),owner=cloudInfo().user?.id||null,generation=accountGeneration;
+  try {
+    const s=await persistenceStatus(),images=await cachedImages().catch(()=>({available:false,count:0}));
+    if(!el?.isConnected||generation!==accountGeneration||(cloudInfo().user?.id||null)!==owner)return;
+    el.textContent=`${s.usage!==undefined?`${(s.usage/1048576).toFixed(1)} MB used by this site`:'Storage estimate unavailable'}${s.quota?` · about ${(s.quota/1048576).toFixed(0)} MB allowed`:''}. ${s.persistent?'Browser cleanup protection is enabled.':s.persistent===false?'Device data may be removed by the browser under storage pressure.':'Browser cleanup protection could not be checked.'}`;
+    let text='Unavailable',batch='Unavailable';
+    try{text=`~${(localStorageFootprint()*2/1048576).toFixed(1)} MB`;const scan=batchStorageSummary();batch=`${scan.count} pending · ~${(scan.chars*2/1048576).toFixed(1)} MB`;}catch{}
+    if(breakdown?.isConnected)breakdown.innerHTML=`<div><span>Pending scan captures</span><b>${esc(batch)}</b></div><div><span>Local browser data</span><b>${esc(text)}</b></div><div><span>Downloaded images</span><b>${images.available?images.count+' cached':'Unavailable'}</b></div><p class="foot">Sizes are estimates. Pending scans use a separate browser limit from total site storage. Other accounts’ pending scans are preserved.</p>`;
+  } catch {if(el?.isConnected)el.textContent='Storage details are unavailable. Your saved data has not been changed.';}
 }
 
 /* =========================================================

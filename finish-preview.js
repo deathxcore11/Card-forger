@@ -9,7 +9,7 @@ import {quoteForContext} from './pricing-presentation.js';
 export {finishChoices,finishEffect,resolveFinish,selectPreviewFinish,finishArtworkCard} from './finish-effects.js';
 const KEY='cardstashy-finish-effects';
 export const finishEffectsOn=()=>{try{return localStorage.getItem(KEY)!=='off';}catch{return true;}};
-export function setFinishEffects(enabled){try{localStorage.setItem(KEY,enabled?'on':'off');}catch{}globalThis.dispatchEvent?.(new Event('cardstashy-finish-effects-change'));}
+export function setFinishEffects(enabled){let saved=false;try{localStorage.setItem(KEY,enabled?'on':'off');saved=true;}catch{}globalThis.dispatchEvent?.(new Event('cardstashy-finish-effects-change'));return saved;}
 const reduced=()=>!!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 export function finishAttrs(game,c,ctx={},view='large'){
  const p=resolveFinish(game,c,ctx);
