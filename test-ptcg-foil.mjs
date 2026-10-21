@@ -52,4 +52,10 @@ assert.match(ptcgSource,/source:copy,/,'Pokémon foil draws from the readable co
 assert.doesNotMatch(ptcgSource,/readFoilPixels\(img\)/,'Pokémon foil never reads the untainted-only <img> directly');
 assert.match(PTCG_FOIL_FRAGMENT,/overInk\(base,F,cov\*mix\(\.92,\.5,u_r2\.y\)\)/,'Full arts keep half the illustration under the foil');
 assert.match(PTCG_FOIL_FRAGMENT,/float a=smoothstep\(0\.,\.03,cov\);gl_FragColor=vec4\(toSrgb\(clamp\(outC,0\.,1\.\)\)\*a,a\);/,'Unfoiled pixels are transparent so the printed card shows through');
+// e-Card holo dashes: in the left strip, non-yellow marks get foil; the yellow border and everything beyond the strip do not.
+{const {ecardStrip}=await import('./ptcg-foil.js');const W=100,H=10,px=new Uint8ClampedArray(W*H*4),mk=new Uint8ClampedArray(W*H*4);
+ for(let k=0;k<W*H;k++){const x=k%W,y=(k-x)/W,dash=x<7&&y===5;px.set(dash?[60,50,70,255]:[245,215,40,255],k*4);}
+ ecardStrip(px,mk,W,H);assert.equal(mk[(5*W+3)*4+3],255,'a dash in the strip is foil');assert.equal(mk[(2*W+3)*4+3],0,'yellow border stays plain');
+ px.set([60,50,70,255],(5*W+40)*4);ecardStrip(px,mk,W,H);assert.equal(mk[(5*W+40)*4+3],0,'dark ink beyond the strip is untouched');
+ assert.equal(PTCG_FOIL_RECIPES['ptcg-ecard-holo'].strip,1);assert.equal(PTCG_FOIL_RECIPES['ptcg-wotc-holo'].strip,0);}
 console.log('PASS: Pokémon foil follows each era (WotC, Legendary Collection, e-Card, EX, DP-SWSH, SV) and variant (cosmos, Poké Ball, Master Ball, gold); holo windows keep the Pokémon solid; full arts by rarity keep text readable; every measured mask parses; art breaking out of the window stays ink on reverse holos.');

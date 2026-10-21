@@ -7,11 +7,11 @@ export const PTCG_PATTERN={wotc:1,crystal:2,lines:3,sheen:4,sparkle:5,cosmos:6,f
 export const PTCG_TINT={rainbow:0,gold:1,silver:2};
 const P=PTCG_PATTERN,T=PTCG_TINT;
 // soft: full-art cards keep their attack text readable, so the lower half of the card is foiled lightly.
-const r=(label,pat,o={})=>({label,pat,tint:o.tint??T.rainbow,underbase:o.underbase??0,relief:o.relief??0,sparkle:o.sparkle??0,soft:o.soft??0,note:o.note||''});
+const r=(label,pat,o={})=>({label,pat,tint:o.tint??T.rainbow,underbase:o.underbase??0,relief:o.relief??0,sparkle:o.sparkle??0,soft:o.soft??0,strip:o.strip??0,note:o.note||''});
 export const PTCG_FOIL_RECIPES={
  'ptcg-wotc-holo':r('WotC holo',P.wotc,{underbase:1,sparkle:.4,note:'1999-2001 holo: streaked starlight foil with four-point stars on three parallax depths behind the Pokémon; the Pokémon itself sits on white ink.'}),
  'ptcg-lc-holo':r('Legendary Collection holo',P.wotc,{underbase:1,sparkle:.4,note:'WotC-style starlight holo behind the Pokémon.'}),
- 'ptcg-ecard-holo':r('e-Card holo',P.crystal,{underbase:1,sparkle:.5,note:'e-Card era holo: a fine crystalline foil that breaks the light into small facets.'}),
+ 'ptcg-ecard-holo':r('e-Card holo',P.crystal,{underbase:1,sparkle:.5,strip:1,note:'e-Card era holo: a fine crystalline foil that breaks the light into small facets; the e-Reader dashes down the left border are holo too.'}),
  'ptcg-ex-holo':r('EX-era holo',P.lines,{underbase:1,note:'2003-2007 holo: fine diagonal lines sweeping behind the Pokémon.'}),
  'ptcg-classic-holo':r('Holo rare',P.sheen,{underbase:1,note:'Broad rainbow sheen behind the Pokémon (Diamond & Pearl to Sword & Shield).'}),
  'ptcg-sv-holo':r('Scarlet & Violet holo',P.sparkle,{underbase:1,sparkle:.5,note:'Scarlet & Violet holo: glittering sparkle foil behind the Pokémon.'}),

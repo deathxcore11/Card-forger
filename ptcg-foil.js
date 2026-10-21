@@ -133,6 +133,13 @@ export function artOverflow(rgba,W,H,box,{reach=.18,threshold=.16}={}){
  for(let k=0;k<N;k++)if(opened[k]){const x=k%W,y=(k-x)/W;if(!inside(x,y))out[k]=1;}
  return out;
 }
+// e-Card holo rares stamp the e-Reader dashes down the left border in holo foil. In that strip, the dashes
+// are whatever is not border yellow, so the foil follows each printed mark, softened at its edges.
+export function ecardStrip(rgba,mask,W,H){
+ const x1=Math.round(W*.085);
+ for(let y=0;y<H;y++)for(let x=0;x<x1;x++){const k=(y*W+x)*4,r=rgba[k],g=rgba[k+1],b=rgba[k+2];
+  const dash=Math.max(0,Math.min(1,(170-Math.min(r,g))/60))*(b<200?1:0);if(dash>0){mask[k+3]=Math.max(mask[k+3],Math.round(255*dash));mask[k]=255;}}
+}
 function coverage(shape,W,H){
  const c=(globalThis.document).createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d',{willReadFrequently:true});x.fillStyle='#fff';
  const path=new Path2D();for(const ring of shape.rings){ring.forEach(([px,py],i)=>i?path.lineTo(px*W,py*H):path.moveTo(px*W,py*H));path.closePath();}
@@ -157,6 +164,7 @@ export function mountPtcgFoil(overlay,img,treatment,{surface='detail',clip='',ar
   analysis:()=>copy().then(i=>analyze(src+'|'+box.join(),()=>readFoilPixels(i),{layout:'',box}).then(a=>{
    // Coverage is per mask, so it is stamped onto a copy of the cached analysis.
    const cov=coverage(shape,a.W,a.H),mask=a.mask.slice(),spill=shape.rule==='evenodd'?artOverflow(readFoilPixels(i).data,a.W,a.H,artBox(shape)):null;
-   for(let k=3;k<mask.length;k+=4)mask[k]=Math.round(cov[k-3]*(spill?1-spill[(k-3)/4]:1));return {...a,mask};})),
+   for(let k=3;k<mask.length;k+=4)mask[k]=Math.round(cov[k-3]*(spill?1-spill[(k-3)/4]:1));
+   if(r.strip)ecardStrip(readFoilPixels(i).data,mask,a.W,a.H);return {...a,mask};})),
   setUniforms:({gl,U})=>{gl.uniform4f(U.u_r1,r.pat,r.tint,r.underbase,r.relief);gl.uniform4f(U.u_r2,r.sparkle,r.soft,0,0);}});
 }
