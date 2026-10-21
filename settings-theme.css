@@ -221,5 +221,5 @@
 .settings-page .settings-theme-choice>span:last-child {align-self:start;}
 @media(max-width:520px){.settings-page .settings-theme-choice{grid-template-rows:auto}.settings-page .settings-theme-choice>span:last-child{align-self:center}}
 
-/* Tab icons are decoration: taps and clicks always land on the tab itself. */
-.settings-tab-icon{pointer-events:none}
+/* A tab's icon and label are decoration: taps and clicks always land on the tab itself. */
+.settings-tabs [role="tab"]>*{pointer-events:none}
