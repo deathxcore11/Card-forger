@@ -3109,7 +3109,8 @@ A.openSetPack = async () => {
  if(featured)try{localStorage.setItem(dayKey,'1');}catch{}
  try{openPackPreview({game,set,cards,featured,hydrate:game==='ptcg'?c=>T.SOURCES.ptcg.get(String(c.id),{prices:false}):null,complete:game==='mtg'?screen.cards.length===set.card_count:screen.contents?.completeness==='complete',isCurrent,
   onCopy:copyPlain,
-  onDetails:c=>game==='mtg'?A.card({dataset:{name:c.name},printing:c}):A.tCard({dataset:{game,id:String(c.id),setId:set.id}}),
+  // A pulled card opens on its card page in the printing and finish that came out of the pack.
+  onDetails:(c,pulled={})=>game==='mtg'?A.card({dataset:{name:c.name,...(pulled.finish?{setFinish:pulled.finish}:{})},printing:c}):A.tCard({dataset:{game,id:String(c.id),setId:set.id,...(pulled.priceFinish?{setVariant:pulled.priceFinish}:{}),...(game==='ygo'&&c.setContext?.printing?{printing:c.setContext.printing.code+'::'+c.setContext.printing.rarity}:{})}}),
   onWishlist:async cards=>{if(!isCurrent())throw Error("Your workspace changed. Please reopen the preview.");const saved=await commit(state=>{const st=game==='mtg'?state:state.tcg[game];for(const c of cards){const exists=st.wishlist.some(w=>game==='mtg'?key(w.name)===key(c.name):String(w.cardId)===String(c.id));if(!exists)st.wishlist.push({id:uid(),name:c.name,...(game==='mtg'?{finish:'nonfoil'}:{cardId:String(c.id)}),qty:1,addedAt:new Date().toISOString()});}return true;},{enrich:false,guard:()=>isCurrent(),scope});if(saved!==true)throw Error("Your workspace changed. Reopen this preview.");},
   onBuy:cards=>buyOnTcgplayer(game,cards.map(c=>`1 ${c.name}`),{what:'preview cards; check exact printings'})
  });}catch(e){toast(e.message||"Could not open this preview.");}

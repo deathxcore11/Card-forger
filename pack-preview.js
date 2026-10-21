@@ -239,7 +239,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
   if(!isCurrent()){status.textContent='Your account or game changed. Close this pack and open it again.';return;}
   if(action==='open')return open();
   if(action==='reveal')return reveal(i);
-  if(action==='focus'){if(swipe?.moved){swipe=null;return;}swipe=null;if(!revealed.has(focus))return reveal(focus);close();return onDetails(picks[focus]);}
+  if(action==='focus'){if(swipe?.moved){swipe=null;return;}swipe=null;if(!revealed.has(focus))return reveal(focus);close();return onDetails(picks[focus],ctxs[focus]||{});}
   if(action==='reveal-all'){picks.forEach((_,j)=>{if(!revealed.has(j))reveal(j);});show(Math.floor(picks.length/2));return;}
   if(action==='again'){picks=samplePack(game,cards,size,Math.random,set);ctxs=packFinishes(game,picks);fill();revealed=new Set();dialog.classList.remove('pack-done','pack-dealt');handEl.innerHTML=hand();wireHold();for(const x of dialog.querySelectorAll('[data-pack="copy"],[data-pack="wish"],[data-pack="buy"]'))x.disabled=true;status.textContent='';
    requestAnimationFrame(()=>dialog.classList.add('pack-dealt'));show(0);return;}
