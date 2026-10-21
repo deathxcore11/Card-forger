@@ -24,6 +24,8 @@ vec3 toLin(vec3 c){return mix(c/12.92,pow((c+.055)/1.055,vec3(2.4)),step(vec3(.0
 vec3 toSrgb(vec3 c){return mix(c*12.92,1.055*pow(max(c,vec3(0.)),vec3(1./2.4))-.055,step(vec3(.0031308),c));}
 float hash(vec2 p){p=fract(p*vec2(234.34,435.345));p+=dot(p,p+34.23);return fract(p.x*p.y);}
 vec2 hash2(vec2 p){return vec2(hash(p),hash(p+17.31));}
+// Smooth value noise: neighbouring flakes share their colour, so glitter reads as one printed sheet.
+float vnoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),f.x),f.y);}
 float inBox(vec2 p,vec4 b){return step(b.x,p.x)*step(p.x,b.z)*step(b.y,p.y)*step(p.y,b.w);}
 vec3 spectrum(float l){vec3 c=vec3(exp(-pow((l-600.)/70.,2.))+.35*exp(-pow((l-440.)/30.,2.)),exp(-pow((l-540.)/60.,2.)),exp(-pow((l-455.)/40.,2.)));return c*smoothstep(380.,420.,l)*(1.-smoothstep(700.,750.,l));}
 // Reflection grating: light reaching the eye satisfies (L+V)·g = mλ/d along the grating vector g.
@@ -39,7 +41,7 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 H,float spot,float ene
  if(pat<1.5){d=1350.;lines=.5+.5*sin(px.x*2.0944);mirror=.7;ex=14.;}
  else if(pat<2.5){vec2 r=vec2(uv.x+uv.y*u_aspect,uv.x-uv.y*u_aspect);vec2 j=hash2(floor(r*vec2(90.,22.)));float a=PI*.25+(j.x-.5)*.16;g=vec2(cos(a),-sin(a));d=1250.+j.y*450.;lines=.5+.5*sin((px.x+px.y)*1.5708);mirror=.35;}
  else if(pat<3.5){vec2 c=floor(q*72.),f=fract(q*72.);g=mod(c.x+c.y,2.)<.5?vec2(1.,0.):vec2(0.,1.);d=1150.+hash(c)*600.;lines=smoothstep(0.,.12,f.x)*smoothstep(0.,.12,f.y)*smoothstep(1.,.88,f.x)*smoothstep(1.,.88,f.y);mirror=.3;}
- else if(pat<4.5){vec3 w=voro(q*150.);vec2 j=hash2(w.xy*1.7);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1000.+j.y*900.;glint=pow(max(dot(normalize(vec3((hash2(w.xy*3.1)-.5)*.5,1.)),H),0.),400.)*3.;mirror=.25;}
+ else if(pat<4.5){vec3 w=voro(q*210.);vec2 j=mix(hash2(w.xy*1.7),vec2(vnoise(q*24.),vnoise(q*24.+5.1)),.6);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1000.+j.y*900.;glint=pow(max(dot(normalize(vec3((hash2(w.xy*3.1)-.5)*.5,1.)),H),0.),400.)*1.8;mirror=.25;}  // fine glitter; flakes share colour regionally
  else if(pat<7.5){g=normalize(vec2(-stroke.y,stroke.x)+1e-4);mirror=.45;}
  else if(pat<8.5){vec3 w=voro(q*18.);vec2 j=hash2(w.xy);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1100.+j.y*700.;seam=smoothstep(0.,.06,w.z);mirror=.4;}
  else if(pat<9.5){vec3 w=voro(q*vec2(7.,4.));vec2 j=hash2(w.xy);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1200.+j.y*800.;glint=(1.-smoothstep(0.,.035,w.z))*pow(max(dot(normalize(vec3((j-.5)*.8,1.)),H),0.),20.)*1.5;mirror=.35;}

@@ -75,9 +75,13 @@ export const foilLight=overlay=>{const css=globalThis.getComputedStyle?.(overlay
 // Scryfall and TCGdex serve card images with open CORS, but the app's <img> tags load them without it,
 // so their pixels are not readable. A foil loads its own CORS copy of the same image for analysis and drawing.
 const copies=new Map();
+// The page's own <img> usually loaded this picture first without CORS, and some hosts' cached copy then
+// refuses a readable request for the same URL; one retry under a distinct URL fetches a readable copy.
+const corsRetry=src=>{try{const u=new URL(src,globalThis.location?.href);if(!/^https?:$/.test(u.protocol)||u.origin===globalThis.location?.origin)return '';u.searchParams.set('cf-foil','1');return u.href;}catch{return '';}};
 export function readableCopy(src){
  if(copies.has(src))return copies.get(src);
- const job=new Promise((resolve,reject)=>{const i=new Image();i.crossOrigin='anonymous';i.decoding='async';i.onload=()=>resolve(i);i.onerror=()=>reject(Error('image unavailable'));i.src=src;});
+ const load=url=>new Promise((resolve,reject)=>{const i=new Image();i.crossOrigin='anonymous';i.decoding='async';i.onload=()=>resolve(i);i.onerror=()=>reject(Error('image unavailable'));i.src=url;});
+ const job=load(src).catch(e=>{const again=corsRetry(src);if(!again)throw e;return load(again);});
  job.catch(()=>copies.delete(src));
  if(copies.size>=24)copies.delete(copies.keys().next().value);
  copies.set(src,job);return job;

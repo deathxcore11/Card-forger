@@ -3102,7 +3102,7 @@ A.openSetPack = async () => {
  let cards=screen.cards;
  // Pull rates need every Pokémon card's rarity; summaries without one are filled from TCGdex first.
  if(game==='ptcg'&&cards.some(c=>!c.rarity)){toast("Shuffling the pack…");const map=await ptcgSetRarities(screen.id,set?.cardCount?.total||set?.count||cards.length).catch(()=>new Map());if(!isCurrent())return;cards=cards.map(c=>c.rarity||!map.has(String(c.id))?c:{...c,rarity:map.get(String(c.id))});}
- const featured=want?.game===game?cards.find(c=>String(c.id)===String(want.id))||(game==='mtg'?cards.find(c=>c.name===want.name)||want.card||null:null):null;
+ const found=want?.game===game?cards.find(c=>String(c.id)===String(want.id))||(game==='mtg'?cards.find(c=>c.name===want.name)||want.card||null:null):null,featured=found&&want.rarity?{...found,featuredRarity:want.rarity}:found;
  try{openPackPreview({game,set,cards,featured,hydrate:game==='ptcg'?c=>T.SOURCES.ptcg.get(String(c.id),{prices:false}):null,complete:game==='mtg'?screen.cards.length===set.card_count:screen.contents?.completeness==='complete',isCurrent,
   onCopy:copyPlain,
   onDetails:c=>game==='mtg'?A.card({dataset:{name:c.name},printing:c}):A.tCard({dataset:{game,id:String(c.id),setId:set.id}}),
@@ -3427,7 +3427,7 @@ A.homeTodayPack = async (t) => {
   const g = t.dataset.game, h = T.heroFor(g);if (!h || T.game() !== g) return;
   const d = await dailyDetails(g, h).catch(() => null), set = d?.set?.pack || d?.set;if (!set) return toast("Today’s set is unavailable right now.");
   // A bonus-sheet card is pulled from its main set's pack, so it travels with the request.
-  S.ui.packFeatured = { game: g, id: h.id, name: h.name, date: h.date, card: d.set.pack ? d.card : null };
+  S.ui.packFeatured = { game: g, id: h.id, name: h.name, date: h.date, rarity: d.rarity || '', card: d.set.pack ? d.card : null };
   if (g === "mtg") A.set({ dataset: { code: set.code } });else if (g === "ygo") A.tSetByName({ dataset: { name: set.name } });else A.tSet({ dataset: { id: set.id } });
   const ready = () => { const sc = g === "mtg" ? S.ui.set : T.ui(g).set;return S.ui.view === "set" && sc.loaded && !sc.busy && !sc.error && sc.cards?.length; };
   // Big sets load their card details for a while; keep waiting while the person stays on this set.

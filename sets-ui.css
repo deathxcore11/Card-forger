@@ -173,3 +173,9 @@ body:not(.glass) .set-atmosphere{display:none}
 .pack-tilt[hidden]{display:none}
 @media(prefers-reduced-motion:reduce){.pack-focus-card.pack-slide-next,.pack-focus-card.pack-slide-prev{animation:none}}
 .pack-focus{position:relative}.pack-focus>.pack-tilt{position:absolute;right:2px;bottom:4px}
+/* Tilt: a small round control beside the close button, clear of every card; its words stay for screen readers. */
+.pack-header-tools{display:flex;align-items:center;gap:8px;flex:none}
+.pack-header-tools>.pack-tilt{position:relative;width:40px;height:40px;min-height:0;padding:0;border-radius:50%;font-size:0;color:transparent;background:#ffffff0a;border:1px solid #ffffff24}
+.pack-header-tools>.pack-tilt::before{content:"";position:absolute;inset:0;margin:auto;width:20px;height:20px;background:#d9dde6;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='8' y='3' width='8' height='14' rx='2' transform='rotate(-18 12 10)'/%3E%3Cpath d='M3 15a9 9 0 0 0 7 6M21 9a9 9 0 0 0-7-6'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='8' y='3' width='8' height='14' rx='2' transform='rotate(-18 12 10)'/%3E%3Cpath d='M3 15a9 9 0 0 0 7 6M21 9a9 9 0 0 0-7-6'/%3E%3C/svg%3E") center/contain no-repeat}
+.pack-header-tools>.pack-tilt[aria-pressed="true"]{border-color:color-mix(in srgb,var(--gold) 70%,transparent)}.pack-header-tools>.pack-tilt[aria-pressed="true"]::before{background:var(--gold)}
+.pack-header-tools>.pack-tilt[hidden]{display:none}

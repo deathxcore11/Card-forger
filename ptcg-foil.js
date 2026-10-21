@@ -41,11 +41,11 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 N,float spot,vec2 grad
   // Four-point stars on three parallax depths: each layer drifts with the tilt and every star lights at its own angle.
   for(int k=0;k<3;k++){float s=10.+float(k)*9.;vec2 p=q*s+u_tilt*(.35/(1.+float(k))),cc=floor(p),f=fract(p)-.5-(hash2(cc+float(k)*13.)-.5)*.5;vec2 r=hash2(cc+float(k)*29.);
    float on=step(.72,r.y),star=on*(1.-smoothstep(0.,.012+.01*r.x,abs(f.x*f.y)*14.+length(f)*.09)),fire=pow(max(cos(dot(u_tilt,vec2(3.5))+r.x*6.28),0.),8.);glint+=star*fire*(1.6-.35*float(k));}}
- else if(pat<2.5){vec3 w=voro(q*80.);vec2 j=hash2(w.xy);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1100.+j.y*800.;mirror=.25;  // e-Card crystal facets
-  glint=pow(max(dot(normalize(vec3((j-.5)*.7,1.)),H),0.),120.)*1.4;amp=.8;}
+ else if(pat<2.5){vec3 w=voro(q*110.);vec2 sm=vec2(vnoise(q*28.),vnoise(q*28.+7.3));vec2 j=mix(hash2(w.xy),sm,.6);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1100.+j.y*800.;mirror=.25;  // e-Card crystal: fine facets whose colours blend into their neighbours
+  glint=pow(max(dot(normalize(vec3((hash2(w.xy)-.5)*.7,1.)),H),0.),160.)*.8;amp=.72;}
  else if(pat<3.5){g=normalize(vec2(1.,1.));d=1400.;lines=.5+.5*sin((px.x+px.y)*1.1);mirror=.3;amp=.8;}          // EX: fine diagonal lines
  else if(pat<4.5){}                                                                                              // broad sheen
- else if(pat<5.5){vec3 w=voro(q*170.);vec2 j=hash2(w.xy*1.7);float a=j.x*PI;g=vec2(cos(a),sin(a));d=1000.+j.y*900.;mirror=.25;  // sparkle
+ else if(pat<5.5){vec3 w=voro(q*170.);vec2 j=mix(hash2(w.xy*1.7),vec2(vnoise(q*22.),vnoise(q*22.+5.1)),.65);float a=j.x*PI;  // fine sparkle; neighbouring specks share their colourg=vec2(cos(a),sin(a));d=1000.+j.y*900.;mirror=.25;  // sparkle
   glint=pow(max(dot(normalize(vec3((hash2(w.xy*3.1)-.5)*.5,1.)),H),0.),300.)*.95;amp=.7;}
  else if(pat<6.5){float on=0.;for(int k=0;k<2;k++){float s=k==0?9.:17.;vec2 p=q*s,c=floor(p),f=fract(p)-.5-(hash2(c+float(k)*7.)-.5)*.4;  // cosmos circles
    float rad=.12+.26*hash(c+3.+float(k));float circ=1.-smoothstep(rad-.03,rad,length(f));if(circ>on){on=circ;float a=hash(c+9.)*PI;g=vec2(cos(a),sin(a));d=1050.+hash(c+5.)*900.;}}

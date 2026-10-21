@@ -84,10 +84,13 @@ export function ptcgSetRarities(setId,total,fetcher=fetch){
 // A Yu-Gi-Oh! card printed in several rarities in one set (Rarity Collection, reprint sets) is pulled
 // in one of them, weighted by how rare it is. Display only: nothing is saved or priced from it.
 const YGO_RARITY_WEIGHT={common:50,shortprint:20,rare:20,superrare:12,ultrarare:6,secretrare:3,collectorsrare:1,prismaticsecretrare:1,platinumsecretrare:.5,quartercenturysecretrare:.4,ultimaterare:1,ghostrare:.3,starlightrare:.05,goldrare:3};
-export function rollYgoPrinting(card,random=Math.random){
+// prefer: a rarity to pull when this set printed the card in it (today's pack pulls the Card of the Day
+// in the rarity shown on Home).
+export function rollYgoPrinting(card,random=Math.random,prefer=''){
  const prints=(card.setContext?.printings||[]).filter(p=>p?.rarity);if(prints.length<2||card.setContext?.printing)return card;
  const weight=p=>YGO_RARITY_WEIGHT[R(p.rarity)]??2,total=prints.reduce((n,p)=>n+weight(p),0);let r=random()*total,chosen=prints.at(-1);
- for(const p of prints){r-=weight(p);if(r<=0){chosen=p;break;}}
+ const wanted=prefer&&prints.find(p=>R(p.rarity)===R(prefer));
+ if(wanted)chosen=wanted;else for(const p of prints){r-=weight(p);if(r<=0){chosen=p;break;}}
  return {...card,rarity:chosen.rarity,sets:[chosen],setContext:{...card.setContext,printings:[chosen],printing:chosen,printingAmbiguous:false,pulled:true}};
 }
 export function samplePack(game,cards,count,random=Math.random,set={}){
@@ -165,7 +168,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  // A Yu-Gi-Oh! card in this pack was printed in this release by definition, so its release is the
  // verified one (display only), and its pulled printing's foil can show.
  const inRelease=c=>c?.setContext?.releaseId?{...c,setContext:{...c.setContext,game:'ygo',cardId:c.id,status:'resolved'}}:c;
- if(game==='ygo'){cards=cards.map(inRelease);featured=featured&&inRelease(featured);}
+ if(game==='ygo'){cards=cards.map(inRelease);featured=featured&&rollYgoPrinting(inRelease(featured),Math.random,featured.featuredRarity);}
  const size=packSize(game,set);
  let picks=samplePack(game,cards,size,Math.random,set);
  if(featured){picks=[...samplePack(game,cards.filter(c=>String(c.id)!==String(featured.id)),size-1,Math.random,set).slice(0,size-1),featured];}if(!picks.length)throw Error('Load this set’s cards first.');
@@ -179,9 +182,9 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  // Face-down cards wear the game's own card back (same-origin from the worker); the emblem stays beneath if it can't load.
  const back=`<span class="pack-card-back" data-back="${esc(game)}">${brandStaticMark()}<img class="pack-back-img" src="/img/back/${esc(game)}.jpg" alt="" decoding="async" onerror="this.remove()"></span>`;
  const hand=()=>picks.map((c,i)=>{const rarity=packRarity(game,c);return `<button class="pack-card" data-pack="reveal" data-index="${i}" data-hold-card style="--i:${i};--pack-glow:${TIERS[Math.min(rarity.rank,5)].color}" aria-label="Card ${i+1}, face down" aria-pressed="false">${back}<span class="pack-card-front"><img data-pack-src="${esc(setImageUrl(cardArt(c)))}" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true"></span></button>`;}).join('');
- dialog.innerHTML=`<header class="pack-header"><div><h2>${esc(set.name)}</h2><p class="pack-explanation">Free preview · approximate pull rates, not a real booster · nothing is added to your collection</p></div><button class="icon" data-pack="close" aria-label="Close pack">✕</button></header>
+ dialog.innerHTML=`<header class="pack-header"><div><h2>${esc(set.name)}</h2><p class="pack-explanation">Free preview · approximate pull rates, not a real booster · nothing is added to your collection</p></div><div class="pack-header-tools"><button type="button" class="pack-tilt" title="Tilt your device to move the foil light" hidden>Enable tilt</button><button class="icon" data-pack="close" aria-label="Close pack">✕</button></div></header>
 <div class="pack-sealed"><button class="pack-wrapper" data-pack="open" aria-label="Open the ${esc(set.name)} pack"><span class="pack-body"><span class="pack-wrap-art">${sources.length?`<img data-pack-art src="${esc(safeHref(setImageUrl(sources[0])))}" data-sources="${esc(JSON.stringify(sources))}" alt="" referrerpolicy="no-referrer" onerror="const s=JSON.parse(this.dataset.sources),i=(+this.dataset.i||0)+1;if(s[i]){this.dataset.i=i;this.src=s[i];this.closest('.pack-wrapper').classList.add('pack-generic');}else this.hidden=true">`:''}<span class="pack-wrap-brand">${brandStaticMark()}<b>${esc(set.name)}</b></span></span><span class="pack-crimp top"></span><span class="pack-crimp bottom"></span><span class="pack-sheen"></span></span></button></div>
-<div class="pack-content" hidden><div class="pack-focus"><button class="pack-focus-card" data-pack="focus" data-hold-card aria-label="Card 1"><span class="pack-face" data-finish-surface="pack"><img alt="" referrerpolicy="no-referrer"></span>${back}</button><p class="pack-focus-meta" aria-live="polite"><b></b><span></span></p><button type="button" class="pack-tilt" hidden>Enable tilt</button></div><div class="pack-hand" role="group" aria-label="Cards in this pack" style="--pack-n:${picks.length}">${hand()}</div>
+<div class="pack-content" hidden><div class="pack-focus"><button class="pack-focus-card" data-pack="focus" data-hold-card aria-label="Card 1"><span class="pack-face" data-finish-surface="pack"><img alt="" referrerpolicy="no-referrer"></span>${back}</button><p class="pack-focus-meta" aria-live="polite"><b></b><span></span></p></div><div class="pack-hand" role="group" aria-label="Cards in this pack" style="--pack-n:${picks.length}">${hand()}</div>
 <div class="pack-actions"><button class="btn ghost pack-reveal-all" data-pack="reveal-all">Reveal all</button><div class="pack-tools" role="group" aria-label="This pack"><button class="pack-tool" data-pack="copy" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8"/></svg><span>Copy list</span></button><button class="pack-tool" data-pack="wish" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg><span>Wishlist all</span></button><button class="pack-tool" data-pack="buy" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14l-1.4 9.2a2 2 0 0 1-2 1.8H8.4a2 2 0 0 1-2-1.8z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span>Shop list</span></button></div><button class="btn pack-again" data-pack="again">Open a new pack</button></div></div><p class="pack-status" role="status" aria-live="polite"></p>`;
  document.body.append(dialog);dialog.tabIndex=-1;dialog.showModal();dialog.focus({preventScroll:true});
  const status=dialog.querySelector('.pack-status'),focusCard=dialog.querySelector('.pack-focus-card'),face=focusCard.querySelector('.pack-face'),faceImg=face.querySelector('img'),meta=dialog.querySelector('.pack-focus-meta');
@@ -213,7 +216,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  let raf=0,t0=performance.now(),pointer=null;
  const light=now=>{raf=0;if(disposed||!dialog.isConnected)return;
   // While the phone's tilt drives the card, the resting drift steps aside.
-  if(!pointer&&/perspective/.test(focusCard.style.transform)){raf=requestAnimationFrame(light);return;}const [x,y]=pointer||[50+30*Math.sin((now-t0)/1900),40+20*Math.sin((now-t0)/2700)];focusCard.style.setProperty('--mx',x+'%');focusCard.style.setProperty('--my',y+'%');
+  if(!pointer&&/perspective/.test(focusCard.style.transform)){raf=requestAnimationFrame(light);return;}const [x,y]=pointer||[50+44*Math.sin((now-t0)/1500),42+30*Math.sin((now-t0)/2100)];focusCard.style.setProperty('--mx',x+'%');focusCard.style.setProperty('--my',y+'%');
   // Only a pointer tilts the card; at rest just the light drifts, so the card itself stays still.
   if(!reduce()){focusCard.style.transform=pointer?`rotateY(${(x-50)/6}deg) rotateX(${(50-y)/8}deg)`:'';if(!pointer)raf=requestAnimationFrame(light);}};
  focusCard.addEventListener('pointermove',e=>{const r=focusCard.getBoundingClientRect();pointer=[(e.clientX-r.left)/r.width*100,(e.clientY-r.top)/r.height*100];if(!raf)raf=requestAnimationFrame(light);});
