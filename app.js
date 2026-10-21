@@ -3101,7 +3101,7 @@ A.openSetPack = async () => {
  // Pull rates need every Pokémon card's rarity; summaries without one are filled from TCGdex first.
  if(game==='ptcg'&&cards.some(c=>!c.rarity)){toast("Shuffling the pack…");const map=await ptcgSetRarities(screen.id,set?.cardCount?.total||set?.count||cards.length).catch(()=>new Map());if(!isCurrent())return;cards=cards.map(c=>c.rarity||!map.has(String(c.id))?c:{...c,rarity:map.get(String(c.id))});}
  const featured=want?.game===game?cards.find(c=>String(c.id)===String(want.id))||(game==='mtg'?cards.find(c=>c.name===want.name):null):null;
- try{openPackPreview({game,set,cards,featured,complete:game==='mtg'?screen.cards.length===set.card_count:screen.contents?.completeness==='complete',isCurrent,
+ try{openPackPreview({game,set,cards,featured,hydrate:game==='ptcg'?c=>T.SOURCES.ptcg.get(String(c.id),{prices:false}):null,complete:game==='mtg'?screen.cards.length===set.card_count:screen.contents?.completeness==='complete',isCurrent,
   onCopy:copyPlain,
   onDetails:c=>game==='mtg'?A.card({dataset:{name:c.name},printing:c}):A.tCard({dataset:{game,id:String(c.id),setId:set.id}}),
   onWishlist:async cards=>{if(!isCurrent())throw Error("Your workspace changed. Please reopen the preview.");const saved=await commit(state=>{const st=game==='mtg'?state:state.tcg[game];for(const c of cards){const exists=st.wishlist.some(w=>game==='mtg'?key(w.name)===key(c.name):String(w.cardId)===String(c.id));if(!exists)st.wishlist.push({id:uid(),name:c.name,...(game==='mtg'?{finish:'nonfoil'}:{cardId:String(c.id)}),qty:1,addedAt:new Date().toISOString()});}return true;},{enrich:false,guard:()=>isCurrent(),scope});if(saved!==true)throw Error("Your workspace changed. Reopen this preview.");},

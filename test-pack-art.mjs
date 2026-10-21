@@ -2,7 +2,7 @@
 // and a set whose own name contains an excluded word ("Rarity Collection") still finds its pack.
 import assert from 'node:assert/strict';
 import {selectPackProduct,selectPackGroup} from './set-art.js';
-import {samplePack,rollYgoPrinting,ptcgSetRarities} from './pack-preview.js';
+import {samplePack,rollYgoPrinting,ptcgSetRarities,packEra,packSize,packFinishes} from './pack-preview.js';
 // A fixed-seed generator keeps the statistical checks deterministic.
 const seeded=(a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;})(12345);
 const img=n=>`https://tcgplayer-cdn.tcgplayer.com/product/${n}_200w.jpg`;
@@ -21,17 +21,18 @@ assert.deepEqual(mtgPack.slice(0,9).map(c=>c.rarity),[...Array(6).fill('common')
 assert.equal(mtgPack[10].packSlot,'foil');assert.equal(mtgPack[11].packSlot,'hit');
 assert.equal(new Set(mtgPack.map(c=>c.id)).size,12,'no card twice in one pack');
 assert.equal(samplePack('mtg',mtgSet,11,()=>.5).length,11,'a shorter pack (today’s pack) drops only the hit slot');
-// Modern Pokémon: 4 commons, 3 uncommons, two reverse slots and one rare-or-better.
+const SV={id:'sv08.5',name:'Prismatic Evolutions'};
+// Scarlet & Violet Pokémon: 4 commons, 3 uncommons, two reverse slots and one rare-or-better.
 const ptcgSet=[...[...Array(10)].map((_,i)=>({id:'pc'+i,name:'PC'+i,rarity:'Common'})),...[...Array(8)].map((_,i)=>({id:'pu'+i,name:'PU'+i,rarity:'Uncommon'})),...[...Array(4)].map((_,i)=>({id:'pr'+i,name:'PR'+i,rarity:'Rare'})),{id:'dr',name:'DR ex',rarity:'Double rare'},{id:'ir',name:'IR',rarity:'Illustration rare'},{id:'ir2',name:'IR2',rarity:'Illustration rare'},{id:'sir',name:'SIR',rarity:'Special illustration rare'}];
-const ptcgPack=samplePack('ptcg',ptcgSet,undefined,seq(.9,.2,.6,.4));
+const ptcgPack=samplePack('ptcg',ptcgSet,undefined,seq(.9,.2,.6,.4),SV);
 assert.equal(ptcgPack.length,10);assert.deepEqual(ptcgPack.slice(0,7).map(c=>c.rarity),[...Array(4).fill('Common'),...Array(3).fill('Uncommon')]);
 assert.deepEqual(ptcgPack.slice(7).map(c=>c.packSlot),['reverse','reverse','hit']);assert.match(ptcgPack[9].rarity,/Rare|Double rare/,'the last slot is a rare or better');
 assert.equal(ptcgPack.filter(c=>c.rarity==='Double rare').length<=1,true,'never a pile of ex cards');
-assert.equal(samplePack('ptcg',ptcgSet.filter(c=>c.id!=='ir2'),undefined,seq(0)).godPack,undefined,'no god pack when the set cannot fill every hit slot');
-const godPack=samplePack('ptcg',ptcgSet,undefined,seq(0));assert.equal(godPack.godPack,true);assert(godPack.slice(7).every(c=>/illustration rare/i.test(c.rarity)),'a god pack fills every hit slot with illustration rares');
-const spread=new Set();for(let i=0;i<40;i++)spread.add(samplePack('ptcg',ptcgSet,undefined,seeded).map(c=>c.id).join());assert(spread.size>30,'every opening is a fresh random pack');
+assert.equal(samplePack('ptcg',ptcgSet.filter(c=>c.id!=='ir2'),undefined,seq(0),SV).godPack,undefined,'no god pack when the set cannot fill every hit slot');
+const godPack=samplePack('ptcg',ptcgSet,undefined,seq(0),SV);assert.equal(godPack.godPack,true);assert(godPack.slice(7).every(c=>/illustration rare/i.test(c.rarity)),'a god pack fills every hit slot with illustration rares');
+const spread=new Set();for(let i=0;i<40;i++)spread.add(samplePack('ptcg',ptcgSet,undefined,seeded,SV).map(c=>c.id).join());assert(spread.size>30,'every opening is a fresh random pack');
 const allFoil=[...Array(12)].map((_,i)=>({id:'f'+i,name:'F'+i,rarity:'Super Rare'}));
-assert.equal(samplePack('ptcg',allFoil,10,()=>.4).length,10,'a set without commons still fills the pack');
+assert.equal(samplePack('ptcg',allFoil,10,()=>.4,SV).length,10,'a set without commons still fills the pack');
 // A Yu-Gi-Oh! card printed in several rarities in this set is pulled in exactly one of them.
 const multi={id:'y1',name:'Y1',setContext:{printings:[{code:'RA01-EN001',rarity:'Super Rare'},{code:'RA01-EN001',rarity:'Quarter Century Secret Rare'}]}};
 const low=rollYgoPrinting(multi,()=>0),high=rollYgoPrinting(multi,()=>.999);
@@ -46,6 +47,26 @@ assert.equal(await ptcgSetRarities('x',4,()=>{throw Error('cached');}),rmap,'cac
 assert.equal((await ptcgSetRarities('bad id!',4,fake)).size,0,'unsafe set ids are never requested');
 // Rates are per rarity: a set with 40 commons and 1 rare still gives the rare its own rarity's odds.
 const many=[...[...Array(40)].map((_,i)=>({id:'m'+i,name:'M'+i,rarity:'Rare'})),{id:'d1',name:'D1 ex',rarity:'Double rare'}];let doubles=0;
-for(let i=0;i<4000;i++)if(samplePack('ptcg',many,undefined,seeded).at(-1).rarity==='Double rare')doubles++;
+for(let i=0;i<4000;i++)if(samplePack('ptcg',many,undefined,seeded,SV).at(-1).rarity==='Double rare')doubles++;
 assert(doubles/4000>.17&&doubles/4000<.27,`double rare about 1 in 5 regardless of how many rares exist (${doubles/4000})`);
+// A set with no uncommons fills those slots with its plainest cards, never its ex cards.
+const noUnc=[...[...Array(12)].map((_,i)=>({id:'nc'+i,name:'NC'+i,rarity:'Common'})),...[...Array(6)].map((_,i)=>({id:'nx'+i,name:'NX'+i+' ex',rarity:'Double rare'})),{id:'nr',name:'NR',rarity:'Rare'}];
+for(let i=0;i<50;i++)assert(samplePack('ptcg',noUnc,undefined,seeded,SV).slice(0,7).every(c=>c.rarity==='Common'),'common and uncommon slots never take ex cards');
+// Each game's packs follow the era the set was printed in.
+assert.deepEqual([packEra('ptcg',{id:'base1'}),packEra('ptcg',{id:'swsh7',releaseDate:'2021-08-27'}),packEra('ptcg',{id:'sv08.5'}),packEra('ptcg',{id:'me01',releaseDate:'2025-09-26'})],['wotc','modern','sv','sv']);
+assert.deepEqual([packEra('mtg',{released_at:'2003-10-02'}),packEra('mtg',{released_at:'2018-04-27'}),packEra('mtg',{released_at:'2024-08-02'})],['classic','draft','play']);
+assert.deepEqual([packEra('ygo',{date:'2004-03-01'}),packEra('ygo',{tcg_date:'2023-02-09'})],['classic','core']);
+assert.deepEqual([packSize('ptcg',{id:'base1'}),packSize('ptcg',{id:'swsh7',releaseDate:'2021-08-27'}),packSize('ptcg',SV),packSize('mtg',{released_at:'2003-10-02'}),packSize('mtg',{released_at:'2018-04-27'}),packSize('ygo',{date:'2004-03-01'}),packSize('ygo',{date:'2023-02-09'})],[11,11,10,15,14,9,9]);
+const oldPtcg=[...[...Array(12)].map((_,i)=>({id:'oc'+i,name:'OC'+i,rarity:'Common'})),...[...Array(6)].map((_,i)=>({id:'ou'+i,name:'OU'+i,rarity:'Uncommon'})),...[...Array(4)].map((_,i)=>({id:'or'+i,name:'OR'+i,rarity:'Rare'})),{id:'gx',name:'GX',rarity:'Rare Holo GX'},{id:'lvx',name:'LVX',rarity:'Rare Holo LV.X'}];
+const swsh=samplePack('ptcg',oldPtcg,undefined,seeded,{id:'sm1',releaseDate:'2017-02-03'});assert.deepEqual(swsh.slice(9).map(c=>c.packSlot),['reverse','hit'],'e-Card to Sword & Shield: one reverse holo, then the rare');
+let gx=0;for(let i=0;i<2000;i++)if(/GX|LV/.test(samplePack('ptcg',oldPtcg,undefined,seeded,{id:'sm1',releaseDate:'2017-02-03'}).at(-1).rarity))gx++;assert(gx>0&&gx<2000*.3,`GX and LV.X rares come out at their own odds (${gx})`);
+const wotc=samplePack('ptcg',oldPtcg,undefined,seeded,{id:'base1'});assert.equal(wotc.length,11);assert.equal(wotc.filter(c=>c.packSlot==='reverse').length,0,'WotC packs had no reverse holos');
+const yc=(id,rarity)=>({id,name:id.toUpperCase(),rarity,setContext:{printings:[{rarity}]}});
+const ygoSet=[...[...Array(12)].map((_,i)=>yc('yc'+i,'Common')),...[...Array(3)].map((_,i)=>yc('yr'+i,'Rare')),...[...Array(3)].map((_,i)=>yc('ys'+i,'Super Rare')),yc('yu','Ultra Rare')];
+const core=samplePack('ygo',ygoSet,undefined,seeded,{date:'2023-02-09'});assert.deepEqual(core.map(c=>c.rarity).slice(0,8),[...Array(7).fill('Common'),'Rare']);assert.match(core[8].rarity,/Super|Ultra/,'core boosters end in a foil');
+const classicYgo=samplePack('ygo',ygoSet,undefined,seeded,{date:'2004-03-01'});assert.equal(classicYgo.slice(0,8).every(c=>c.rarity==='Common'),true);assert.match(classicYgo[8].rarity,/Rare/);
+let foils=0;for(let i=0;i<3000;i++)if(samplePack('mtg',mtgSet,undefined,seeded,{released_at:'2018-04-27'}).some(c=>c.packSlot==='foil'))foils++;assert(foils/3000>.28&&foils/3000<.39,`about 1 draft booster in 3 holds a foil (${foils/3000})`);
+const draft=samplePack('mtg',mtgSet,undefined,()=>.9,{released_at:'2018-04-27'});assert.equal(draft.length,14);assert.equal(draft.filter(c=>c.packSlot==='foil').length,0);assert.equal(draft.slice(0,10).every(c=>c.rarity==='common'),true,'a draft pack without a foil has 10 commons');
+// Shiny slots: a Magic foil slot pulls in traditional foil; a Pokémon reverse slot as a reverse holo once its variants load.
+assert.deepEqual(packFinishes('mtg',[{id:'a',packSlot:'foil',finishes:['nonfoil','foil']},{id:'b',finishes:['nonfoil','foil']}]),[{finish:'foil'},{}]);
 console.log('PASS: packs follow typical slot structure and pull rates; Yu-Gi-Oh! multi-rarity cards are pulled in one rarity; booster pack artwork picks the set’s own pack, including sets named “Collection”, and never boxes, sleeved packs or boxed collections.');

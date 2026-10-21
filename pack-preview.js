@@ -16,16 +16,46 @@ export function sampleSetCards(cards,count=10,random=Math.random){
 const R=s=>String(s||'').toLowerCase().replace(/[^a-z]/g,'');
 const slot=(w,role='')=>({w,role});
 const PTCG_RARE={rare:70,rareholo:35,holorare:35,doublerare:20,ultrarare:6.5,hyperrare:.7,raresecret:.7,secretrare:.7,rarerainbow:.8,rareholoex:8,rareholov:8,rareholovmax:4,rareholovstar:4,rareultra:6.5,radiantrare:4,amazingrare:3,megahyperrare:.4,shinyrare:3,shinyultrarare:1};
-// Slots run in pack order and end with the hit, so today's pack (one card shorter) swaps the hit for the Card of the Day.
-const PACK_SLOTS={
- mtg:[...Array(6).fill(slot({common:1})),...Array(3).fill(slot({uncommon:1})),slot({common:50,uncommon:30,rare:14,mythic:2.4},'wildcard'),slot({common:60,uncommon:28,rare:10,mythic:1.6},'foil'),slot({rare:6.4,mythic:1},'hit')],
- ptcg:[...Array(4).fill(slot({common:1})),...Array(3).fill(slot({uncommon:1})),slot({common:60,uncommon:30,rare:10},'reverse'),
-  slot({common:55,uncommon:28,rare:9,acespecrare:5,illustrationrare:7.7,specialillustrationrare:1.2},'reverse'),slot(PTCG_RARE,'hit')],
- ygo:[...Array(7).fill(slot({common:1})),slot({rare:1}),slot({superrare:72,ultrarare:17,secretrare:8.5,quartercenturysecretrare:2.5},'hit')]
+// Slots run in pack order and end with the hit, so today's pack (one card shorter) swaps the hit for the
+// Card of the Day. Each game's packs follow the era the set was printed in.
+const C=n=>Array(n).fill(slot({common:1})),U=n=>Array(n).fill(slot({uncommon:1}));
+const PACKS={
+ mtg:{
+  // Play Boosters (2024 on): 6 commons, 3 uncommons, a wildcard, a traditional foil and a rare or mythic.
+  play:[...C(6),...U(3),slot({common:50,uncommon:30,rare:14,mythic:2.4},'wildcard'),slot({common:60,uncommon:28,rare:10,mythic:1.6},'foil'),slot({rare:6.4,mythic:1},'hit')],
+  // Draft boosters (2008-2023): 10 commons (about 1 pack in 3 swaps one for a foil of any rarity), 3 uncommons, a rare or mythic.
+  draft:[...C(9),slot({common:1},'maybefoil'),...U(3),slot({rare:7,mythic:1},'hit')],
+  // Before mythics (to 2008): 11 commons, 3 uncommons, 1 rare.
+  classic:[...C(11),...U(3),slot({rare:1},'hit')]},
+ ptcg:{
+  // Scarlet & Violet and Mega Evolution: 4 commons, 3 uncommons, two reverse holos (the second can be an
+  // ACE SPEC, illustration rare or special illustration rare) and a rare or better.
+  sv:[...C(4),...U(3),slot({common:60,uncommon:30,rare:10},'reverse'),slot({common:55,uncommon:28,rare:9,acespecrare:5,illustrationrare:7.7,specialillustrationrare:1.2},'reverse'),slot(PTCG_RARE,'hit')],
+  // e-Card to Sword & Shield: 6 commons, 3 uncommons, a reverse holo and a rare (about 1 in 3 holo, plus that era's ultra rares).
+  modern:[...C(6),...U(3),slot({common:60,uncommon:30,rare:10,rareholo:4},'reverse'),slot({rare:60,rareholo:30,holorare:30,rareholoex:5,rareholov:9,holorarev:9,rareholovmax:4,holorarevmax:4,rareholovstar:4,holorarevstar:4,rarehologx:6,rarehololvx:3,rareprime:4,legend:2,rarebreak:3,rareprismstar:3,rareultra:5,raresecret:1,secretrare:1,rarerainbow:1.2,radiantrare:4,amazingrare:3,rareshining:2,shinyrare:3,shinyultrarare:1},'hit')],
+  // Wizards of the Coast (1999-2002): 7 commons, 3 uncommons and a rare, holo about 1 in 3.
+  wotc:[...C(7),...U(3),slot({rare:2,rareholo:1,holorare:1},'hit')]},
+ ygo:{
+  // Core boosters (2014 on): 7 commons, a rare and a foil (mostly Super, sometimes Ultra, Secret or Quarter Century).
+  core:[...C(7),slot({rare:1}),slot({superrare:72,ultrarare:17,secretrare:8.5,quartercenturysecretrare:2.5},'hit')],
+  // Classic boosters: 8 commons and a rare that is sometimes upgraded (Super ~1 in 5, Ultra ~1 in 12, Secret ~1 in 23).
+  classic:[...C(8),slot({rare:63,superrare:20,ultrarare:8.5,secretrare:4.5,ultimaterare:2,ghostrare:.6},'hit')]}
 };
+const releaseYear=set=>{const y=Number(String(set?.released_at||set?.releaseDate||set?.date||set?.tcg_date||'').slice(0,4));return Number.isFinite(y)&&y>1990?y:0;};
+// Which era's pack this set was printed in.
+export function packEra(game,set={}){
+ const id=String(set.id||set.code||'').toLowerCase(),y=releaseYear(set),date=String(set.released_at||'');
+ if(game==='mtg')return date&&date<'2008-10-03'?'classic':date&&date<'2024-02-09'?'draft':'play';
+ if(game==='ptcg')return /^(?:sv|me)/.test(id)||y>=2023?'sv':/^(?:base|gym|neo|lc|si)\d*/.test(id)||y&&y<2002?'wotc':'modern';
+ if(game==='ygo')return y&&y<2014?'classic':'core';
+ return '';
+}
+const slotsFor=(game,set)=>PACKS[game]?.[packEra(game,set)]||[];
 // A rare Pokémon god pack: every hit slot is an illustration or special illustration rare.
 const GOD_SLOT=slot({illustrationrare:2,specialillustrationrare:1},'hit'),GOD_PACK_ODDS=1/1000;
-export const packSize=game=>(PACK_SLOTS[game]||[]).length||10;
+// Draft boosters: about 1 pack in 3 swaps a common for a foil of any rarity.
+const DRAFT_FOIL=slot({common:200,uncommon:30,rare:7,mythic:1},'foil'),DRAFT_FOIL_ODDS=1/3;
+export const packSize=(game,set)=>slotsFor(game,set).length||10;
 // Pokémon set pages list cards before their details (and rarities) load. Pull rates need every card's
 // rarity, so the set's cards are fetched by rarity from TCGdex, most common first, until the counts
 // cover the whole set. Cached for the session; a failure just leaves rarities unknown.
@@ -52,17 +82,22 @@ export function rollYgoPrinting(card,random=Math.random){
  for(const p of prints){r-=weight(p);if(r<=0){chosen=p;break;}}
  return {...card,rarity:chosen.rarity,sets:[chosen],setContext:{...card.setContext,printings:[chosen],printing:chosen,printingAmbiguous:false,pulled:true}};
 }
-export function samplePack(game,cards,count=packSize(game),random=Math.random){
- let slots=PACK_SLOTS[game]||[];if(!slots.length)return sampleSetCards(cards,count,random);
+export function samplePack(game,cards,count,random=Math.random,set={}){
+ let slots=slotsFor(game,set);count??=slots.length||10;if(!slots.length)return sampleSetCards(cards,count,random);
  const pool=[...new Map(cards.filter(c=>c?.id&&c.name).map(c=>[String(c.id),game==='ygo'?rollYgoPrinting(c,random):c])).values()],used=new Set(),picks=[],rarityOf=c=>R(packRarity(game,c).label);
  const god=game==='ptcg'&&random()<GOD_PACK_ODDS&&pool.filter(c=>GOD_SLOT.w[rarityOf(c)]).length>=slots.filter(s=>s.role).length;
  if(god)slots=slots.map(s=>s.role?GOD_SLOT:s);
- for(const {w,role} of slots.slice(0,count)){
+ for(let {w,role} of slots.slice(0,count)){
+  if(role==='maybefoil')({w,role}=random()<DRAFT_FOIL_ODDS?DRAFT_FOIL:slot({common:1}));
   // Odds are per rarity, not per card: roll the rarity among those this set has, then one of its cards.
   const groups=new Map();for(const c of pool)if(!used.has(String(c.id))&&w[rarityOf(c)]){const k=rarityOf(c);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(c);}
   let pick=null;
   if(groups.size){const keys=[...groups.keys()],total=keys.reduce((n,k)=>n+w[k],0);let r=random()*total,key=keys.at(-1);for(const k of keys){r-=w[k];if(r<=0){key=k;break;}}const list=groups.get(key);pick=list[Math.floor(random()*list.length)];}
-  if(!pick){const rest=pool.filter(c=>!used.has(String(c.id)));if(!rest.length)break;pick=rest[Math.floor(random()*rest.length)];}
+  // A slot whose rarities this set lacks takes the plainest rarity the set has (hit and foil slots: any
+  // card), so a set without uncommons never fills them, or its reverse holos, with ex cards.
+  if(!pick){let rest=pool.filter(c=>!used.has(String(c.id)));if(!rest.length)break;
+   if(role!=='hit'&&role!=='foil'){const rank=c=>packRarity(game,c).rank||0,low=Math.min(...rest.map(rank));rest=rest.filter(c=>rank(c)===low);}
+   pick=rest[Math.floor(random()*rest.length)];}
   used.add(String(pick.id));picks.push(role?{...pick,packSlot:role}:pick);
  }
  if(god)picks.godPack=true;
@@ -92,10 +127,12 @@ export function packFinishes(game,picks){
  });
 }
 // featured: a card to pull as this pack's last card (today's pack always holds the Card of the Day).
-export function openPackPreview({game,set,cards,complete=false,featured=null,onDetails,onWishlist,onCopy,onBuy,isCurrent=()=>true}){
- const size=packSize(game);
- let picks=samplePack(game,cards,size);
- if(featured){picks=[...samplePack(game,cards.filter(c=>String(c.id)!==String(featured.id)),size-1).slice(0,size-1),featured];}if(!picks.length)throw Error('Load this set’s cards first.');
+// hydrate: loads a pulled card's full record (Pokémon set lists carry no variants), so its holo or
+// reverse holo can be drawn.
+export function openPackPreview({game,set,cards,complete=false,featured=null,hydrate=null,onDetails,onWishlist,onCopy,onBuy,isCurrent=()=>true}){
+ const size=packSize(game,set);
+ let picks=samplePack(game,cards,size,Math.random,set);
+ if(featured){picks=[...samplePack(game,cards.filter(c=>String(c.id)!==String(featured.id)),size-1,Math.random,set).slice(0,size-1),featured];}if(!picks.length)throw Error('Load this set’s cards first.');
  const dialog=document.createElement('dialog');dialog.className='pack-dialog';dialog.dataset.game=game;dialog.setAttribute('aria-label',`${set.name} pack`);
  const reduce=()=>!!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
  const cardArt=c=>game==='mtg'?cardImage(c,'normal'):c.imageLarge||c.image||'';
@@ -124,10 +161,15 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,onD
   else{face.removeAttribute('data-finish-model');faceImg.removeAttribute('src');}
   meta.querySelector('b').textContent=open?c.name:'';meta.querySelector('span').textContent=open?rarity.label:'';
  };
+ // Pulled shiny slots load their full card in the background and pick up their holo before they are seen.
+ let deal=0;const fill=()=>{if(!hydrate)return;const n=++deal,now=picks;now.forEach((c,i)=>{if(!c.packSlot||c.variants||(featured&&c===featured))return;
+  Promise.resolve().then(()=>hydrate(c)).then(full=>{if(disposed||n!==deal||!full||String(full.id)!==String(c.id))return;
+   now[i]={...c,...full,name:c.name,rarity:c.rarity||full.rarity,packSlot:c.packSlot,setContext:c.setContext};ctxs[i]=packFinishes(game,[now[i]])[0];if(focus===i&&revealed.has(i))show(i);}).catch(()=>{});});};
  const reveal=i=>{if(!Number.isInteger(i)||!picks[i])return;if(!revealed.has(i)){revealed.add(i);const b=dialog.querySelector(`.pack-card[data-index="${i}"]`),img=b.querySelector('img[data-pack-src]');img.src=img.dataset.packSrc;b.classList.add('revealed');b.setAttribute('aria-pressed','true');b.setAttribute('aria-label',picks[i].name+' · revealed');
    if(packRarity(game,picks[i]).rank>=3)b.classList.add('pack-hit');status.textContent=`${revealed.size} of ${picks.length} revealed`;
    if(revealed.size===picks.length){dialog.classList.add('pack-done');if(picks.godPack)status.textContent='God pack! Every hit is an illustration rare.';for(const x of dialog.querySelectorAll('.pack-actions [disabled]'))x.disabled=false;}}
   show(i);};
+ fill();
  const open=()=>{const w=dialog.querySelector('.pack-wrapper');const done=()=>{dialog.querySelector('.pack-sealed').hidden=true;dialog.querySelector('.pack-content').hidden=false;dialog.classList.add('pack-dealt');show(0);focusCard.focus({preventScroll:true});};
   if(reduce()){done();return;}w.classList.add('tearing');setTimeout(done,620);};
  const close=()=>{if(disposed)return;disposed=true;cancelAnimationFrame(raf);dialog.close();dialog.remove();};
@@ -152,7 +194,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,onD
   if(action==='reveal')return reveal(i);
   if(action==='focus'){if(swipe?.moved){swipe=null;return;}swipe=null;if(!revealed.has(focus))return reveal(focus);close();return onDetails(picks[focus]);}
   if(action==='reveal-all'){picks.forEach((_,j)=>{if(!revealed.has(j))reveal(j);});show(Math.floor(picks.length/2));return;}
-  if(action==='again'){picks=samplePack(game,cards,size);ctxs=packFinishes(game,picks);revealed=new Set();dialog.classList.remove('pack-done','pack-dealt');handEl.innerHTML=hand();wireHold();for(const x of dialog.querySelectorAll('[data-pack="copy"],[data-pack="wish"],[data-pack="buy"]'))x.disabled=true;status.textContent='';
+  if(action==='again'){picks=samplePack(game,cards,size,Math.random,set);ctxs=packFinishes(game,picks);fill();revealed=new Set();dialog.classList.remove('pack-done','pack-dealt');handEl.innerHTML=hand();wireHold();for(const x of dialog.querySelectorAll('[data-pack="copy"],[data-pack="wish"],[data-pack="buy"]'))x.disabled=true;status.textContent='';
    requestAnimationFrame(()=>dialog.classList.add('pack-dealt'));show(0);return;}
   if(['copy','wish','buy'].includes(action)&&revealed.size===picks.length){
    busy=true;b.disabled=true;try{if(action==='wish'){await onWishlist(picks);status.textContent='Saved to your wishlist.';b.textContent='On wishlist';}
