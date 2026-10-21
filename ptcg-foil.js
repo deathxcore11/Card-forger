@@ -62,9 +62,9 @@ vec3 foil(float pat,float tint,vec2 uv,vec3 L,vec3 V,vec3 N,float spot,vec2 grad
  else if(pat>14.5&&pat<15.5){  // Confetti (Celebrations Classic Collection): flakes of foil, each its own angle and colour, over a fine etched grain
   vec3 w=voro(q*46.);vec2 j=hash2(w.xy);float flake=step(.35,j.y)*smoothstep(0.,.05,w.z),a=j.x*PI;g=mix(vec2(1.,0.),vec2(cos(a),sin(a)),flake);d=mix(1500.,1050.+hash(w.xy+3.)*800.,flake);
   lines=.5+.5*sin((px.x-px.y)*.63);amp=mix(.45,1.3,flake);mirror=.3;glint=flake*pow(max(dot(normalize(vec3((j-.5)*.8,1.)),H),0.),90.)*.9;}
- else if(pat>15.5&&pat<16.5){  // Ancient speckle (Ancient Mew): dense prismatic flecks that each light at their own tilt
-  vec2 sc=q*340.,gc=floor(sc),f=fract(sc)-.5,rn=hash2(gc);float part=smoothstep(.2,.03,length(f-(rn-.5)*.4)),trig=pow(max(0.,cos(dot(u_tilt,vec2(4.5))+rn.x*6.28)),14.),a=rn.y*PI;
-  g=vec2(cos(a),sin(a));d=1050.+rn.x*850.;mirror=.2;amp=.6+.9*part;glint=part*trig*1.8;}
+ else if(pat>15.5&&pat<16.5){  // Ancient speckle (Ancient Mew): gold foil scattered with coloured flecks of varied sizes, each lighting at its own tilt
+  vec2 sc=q*130.,gc=floor(sc),f=fract(sc)-.5,rn=hash2(gc);float on=step(.62,rn.y),size=.1+.22*hash(gc+4.),part=on*smoothstep(size,size*.4,length(f-(rn-.5)*.4)),trig=pow(max(0.,cos(dot(u_tilt,vec2(4.5))+rn.x*6.28)),10.),a=rn.x*PI;
+  g=vec2(cos(a),sin(a));d=mix(1500.,1000.+hash(gc+9.)*900.,part);mirror=.35;amp=.55+1.6*part*(.35+.65*trig);lines=part;}
  else if(pat>16.5){}
  else if(pat>13.5){float band=pow(.5+.5*sin((q.x+q.y)*5.5-(u_tilt.x+u_tilt.y)*4.5),3.);g=normalize(vec2(1.,1.));d=1500.;  // modern smooth 45° oil-slick band
   lines=band;amp=mix(.3,1.35,band);mirror=.45;ex=8.;}
