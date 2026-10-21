@@ -1,3 +1,4 @@
+import {ICON,actionIcon} from './icons.js';
 import {gridSettings} from './grid-settings.js';
 // Appearance belongs to this browser, not the signed-in collection workspace.
 // Never save a theme through the account store or trigger an inventory sync.
@@ -33,12 +34,12 @@ export function initTheme({document = globalThis.document, storage = storageDefa
 }
 export function themeSettings({document = globalThis.document, storage = storageDefault()} = {}) {
   const theme = normalizeTheme(document?.documentElement?.dataset.theme || readTheme(storage));
-  return `<section class="panel settings-card settings-appearance"><div class="settings-card-heading"><div><p class="eyebrow">APPEARANCE</p><h2>Make it feel like you</h2></div></div><fieldset class="settings-theme"><legend>Color mode</legend><div class="settings-theme-options">${[['light','Light','Bright, soft surfaces'],['dark','Dark','The familiar night view'],['aura','Aura','Soft color from the art you explore']].map(([id,label,description]) => `<label class="settings-theme-choice"><input id="settingsTheme-${id}" name="settingsTheme" type="radio" value="${id}" data-change="setTheme" ${theme === id ? 'checked' : ''}><span class="settings-theme-swatch settings-theme-swatch-${id}" aria-hidden="true"><i></i><i></i><i></i></span><span><b>${label}</b><small>${description}</small></span></label>`).join('')}</div></fieldset><p class="foot">Applies to all three games on this device. Your cards, artwork and account sync stay unchanged.</p></section>${gridSettings({document,storage})}`;
+  return `<section class="panel settings-card settings-appearance"><div class="settings-card-heading"><div><p class="eyebrow">APPEARANCE</p><h2>Your look, your way.</h2></div></div><fieldset class="settings-theme"><legend>Color mode</legend><div class="settings-theme-options">${[['light','Light','Bright, soft surfaces'],['dark','Dark','The familiar night view'],['aura','Aura','Soft color from the art you explore']].map(([id,label,description]) => `<label class="settings-theme-choice"><input id="settingsTheme-${id}" name="settingsTheme" type="radio" value="${id}" data-change="setTheme" ${theme === id ? 'checked' : ''}><span class="settings-theme-swatch settings-theme-swatch-${id}" aria-hidden="true"><i></i><i></i><i></i></span><span><b>${label}</b><small>${description}</small></span></label>`).join('')}</div></fieldset><p class="foot">Applies to all three games on this device. Your cards, artwork and account sync stay unchanged.</p></section>${gridSettings({document,storage})}`;
 }
 export const normalizeSettingsTab = tab => tab === 'backup' ? 'recovery' : SETTINGS_TABS.some(([id]) => id === tab) ? tab : 'account';
 export function settingsTabs(tab) {
   tab = normalizeSettingsTab(tab);
-  return `<nav class="settings-tabs" role="tablist" aria-label="Settings sections" aria-orientation="horizontal">${SETTINGS_TABS.map(([id,label]) => `<button type="button" id="settingsTab-${id}" role="tab" aria-controls="settings-${id}" aria-selected="${id === tab}" tabindex="${id === tab ? 0 : -1}" data-act="settingsTab" data-id="${id}">${label}</button>`).join('')}</nav>`;
+  return `<nav class="settings-tabs" role="tablist" aria-label="Settings sections" aria-orientation="horizontal">${SETTINGS_TABS.map(([id,label]) => `<button type="button" id="settingsTab-${id}" role="tab" aria-controls="settings-${id}" aria-selected="${id === tab}" tabindex="${id === tab ? 0 : -1}" data-act="settingsTab" data-id="${id}">${`<span class="settings-tab-icon" aria-hidden="true">${({account:ICON.sync,recovery:actionIcon("history"),info:ICON.search,app:actionIcon("brush")})[id]}</span><span>${label}</span>`}</button>`).join('')}</nav>`;
 }
 export function activateSettingsTab(root, id) {
   const tab = normalizeSettingsTab(id);

@@ -38,7 +38,7 @@ for (const [tab] of SETTINGS_TABS) {
 const rail={scrollWidth:520,clientWidth:300,offsetLeft:20,scrollLeft:0};
 const buttons=SETTINGS_TABS.map(([id],i)=>({dataset:{id},parentElement:rail,offsetLeft:i*130,offsetWidth:130,setAttribute(name,value){this[name]=value;}}));
 const panes=SETTINGS_TABS.map(([id])=>({id:'settings-'+id}));
-const root={querySelectorAll:selector=>selector==='.settings-pane'?panes:buttons};
+const root={querySelectorAll:selector=>selector==='.settings-pane'?panes:selector==='.settings-save-overview [data-act="settingsTab"]'?[]:buttons};
 assert.equal(activateSettingsTab(root,'app'),'app');assert.deepEqual(panes.map(x=>x.hidden),[true,true,true,false]);
 assert.deepEqual(buttons.map(x=>x.tabIndex),[-1,-1,-1,0]);assert.equal(rail.scrollLeft,220);
 activateSettingsTab(root,'account');assert.equal(rail.scrollLeft,0);

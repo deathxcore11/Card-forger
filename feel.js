@@ -17,7 +17,8 @@ export const hapticsOn = () => {
 export const setHaptics = (on) => {
   try {
     localStorage.setItem(KEY, on ? "on" : "off");
-  } catch {}
+    return true;
+  } catch {return false;}
 };
 const reduced = () => !!globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 

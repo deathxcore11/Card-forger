@@ -127,10 +127,14 @@ const stripCache = (s) => {
 const normalize = (s) => normalizeHomeDeckActivity(stripCache({ ...blank(), ...validateWorkspace(s) }));
 
 function setSaveStatus(text, cls = "") {
+  // Lookup and network-presence messages are not evidence of a saved change.
+  if(!/^(?:Saving…|Not saved|Saved on this device(?: · .*)?|Synced to your account|Syncing…|Sync needs your decision)$/.test(text))return;
+  S.ui.saveFeedback={text,cls,owner:cloudInfo().user?.id||null,state:S.state};
   for (const el of document.querySelectorAll("#saveStatus,[data-settings-save-status]")) {
     el.textContent = text;
     el.className = "save-status " + cls;
   }
+  for(const el of document.querySelectorAll("[data-settings-save-detail]"))el.textContent=V.settingsSaveCopy(cloudInfo(),S.state,S.ui.saveFeedback).detail;
   // Account saving is shown inside Settings; browsing stays quiet.
 }
 // Glass look: frosted surfaces over a blurred copy of the game's daily-card art.
@@ -214,7 +218,9 @@ function refreshHomeValueGlance() {
 function afterLocalSave() {
   refreshHomeValueGlance();
   if (cloudInfo().user) {
-    setSaveStatus(...statusLabel());
+    const phase=cloudInfo().status?.state;
+    if(["offline","error","decide"].includes(phase))setSaveStatus(...statusLabel());
+    else setSaveStatus("Saved on this device · waiting to sync");
     scheduleSync();
   } else setSaveStatus("Saved on this device", "ok");
 }
@@ -2199,7 +2205,7 @@ A.muUndo = async (t) => {
   await commit((s) => { const x = s.decks.find((y) => y.id === d.id); x.results = (x.results || []).filter((g) => g.at !== t.dataset.at); }, { msg: "Game removed." });
 };
 let settingsBaseState=null;
-const settingsPopup=createSettingsDialog({beforeOpen:()=>{settingsBaseState=S.state;},dialog:$("#settingsDialog"),markup:()=>`<header class="settings-dialog-head"><div><p class="eyebrow">ALL THREE GAMES</p><h2 id="settingsDialogTitle">Settings</h2></div><button class="icon" data-act="closeSettings" aria-label="Close settings">${ICON.close||'✕'}</button></header>${V.settings({popup:true})}`,afterPaint:()=>{if(normalizeSettingsTab(S.ui.settingsTab)==='recovery'){storageDetail();void renderRecoverySnapshots();}},afterClose:scroll=>{profilePicker.close();if(settingsBaseState!==S.state||S.ui.view==='community')render();window.scrollTo({top:scroll,behavior:'instant'});setTimeout(safeIntro,50);}});
+const settingsPopup=createSettingsDialog({beforeOpen:()=>{settingsBaseState=S.state;},dialog:$("#settingsDialog"),markup:()=>`<header class="settings-dialog-head"><div class="settings-brand-lockup">${brandMark("settings-brand-mark")}<div><p class="eyebrow">CARDSTASHY <span class="settings-scope">· ALL GAMES</span></p><h2 id="settingsDialogTitle">Settings</h2></div></div><button class="icon" data-act="closeSettings" aria-label="Close settings">${ICON.close||'✕'}</button></header>${V.settings({popup:true})}`,afterPaint:()=>{if(normalizeSettingsTab(S.ui.settingsTab)==='recovery'){storageDetail();void renderRecoverySnapshots();}},afterClose:scroll=>{profilePicker.close();if(settingsBaseState!==S.state||S.ui.view==='community')render();window.scrollTo({top:scroll,behavior:'instant'});setTimeout(safeIntro,50);}});
 A.menu = () => settingsPopup.open();
 A.addFriend=()=>community.add();
 A.friendRequests=()=>community.requests();
@@ -4552,7 +4558,8 @@ async function mtgGuideLoad(c) {
 C.setGlass = (t) => {
   try {
     localStorage.setItem(GLASS_KEY, t.checked ? "on" : "off");
-  } catch {}
+    toast("Saved glass preference on this device.");
+  } catch {t.checked=glassOn();toast("Glass preference could not be saved. Your previous setting is kept.");}
   updateAmbient();
 };
 // Tap a card image: full-screen, high-resolution, zoomable.
@@ -5831,10 +5838,10 @@ async function renderRecoverySnapshots(){
     const raw=await readRecord(recoveryKey(owner));
     if(accountLocked||generation!==accountGeneration||(cloudInfo().user?.id||null)!==owner||!host.isConnected)return;
     const snapshots=readRecoverySnapshots(raw,owner);
-    const status=document.getElementById("recoveryStatus");if(status)status.textContent=`${snapshots.length} saved recovery ${snapshots.length===1?"copy":"copies"} on this device for ${owner?"this account":"guest mode"}.`;
+    const status=document.getElementById("recoveryStatus");if(status)status.textContent=`${snapshots.length} saved recovery ${snapshots.length===1?"copy":"copies"} on this device for ${owner?"this account":"guest mode"} · ~${(JSON.stringify(raw||{}).length*2/1048576).toFixed(1)} MB estimated.`;
     host.innerHTML=snapshots.length?snapshots.map(item=>{
       const summary=recoverySummary(item.state);
-      return `<article class="recovery-snapshot"><strong>${esc(item.label)}</strong><p class="muted small">${esc(new Date(item.createdAt).toLocaleString())}</p><p class="small">${summary.copies} ${summary.copies===1?"card":"cards"} · ${summary.decks} ${summary.decks===1?"deck":"decks"} · All games</p><div class="actions wrap"><button class="btn ghost small" data-act="downloadRecovery" data-id="${esc(item.id)}">Download</button><button class="btn small" data-act="restoreRecovery" data-id="${esc(item.id)}">Review & restore</button></div></article>`;
+      return `<article class="recovery-snapshot"><strong>${esc(item.label)}</strong><p class="muted small">${esc(new Date(item.createdAt).toLocaleString())}</p><p class="small">${summary.copies} ${summary.copies===1?"card":"cards"} · ${summary.decks} ${summary.decks===1?"deck":"decks"} · All games</p><div class="actions wrap"><button class="btn ghost small" data-act="downloadRecovery" data-id="${esc(item.id)}">Download</button><button class="btn small" data-act="restoreRecovery" data-id="${esc(item.id)}">Restore…</button></div></article>`;
     }).join(''):'<p class="muted">No automatic recovery copies yet. Copies saved before sync conflicts and restores will appear here.</p>';
   }catch{if(host.isConnected)host.textContent='Recovery copies could not be read. Your saved data has not been changed.';}
 }
@@ -5894,7 +5901,7 @@ A.undoRestore = async () => {
   if(!current())return;
   if (!raw) return toast("No recovery copy yet.");
   const next = normalize(raw);
-  if (!await ask(`Switch to the recovery copy across all games (${recoverySummary(next).copies} card copies, ${recoverySummary(next).decks} decks)? ${owner?"The restored workspace will sync to your other devices.":"This changes guest data on this device only."} What you have now is saved as another recovery copy first.`)) return;
+  if (!await ask(`Switch to the recovery copy saved ${next.lastSavedAt?new Date(next.lastSavedAt).toLocaleString():"at an unknown date"} across all games (${recoverySummary(next).copies} card copies, ${recoverySummary(next).decks} decks)? ${owner?"The restored workspace will sync to your other devices.":"This changes guest data on this device only."} What you have now is saved as another recovery copy first.`)) return;
   if(await replaceWorkspace(next, { recovery: true, guard:current, notify:true, stamp:true, kind:"restore" })===false)return;
   render();
   toast("Recovery copy restored.");
@@ -5923,7 +5930,7 @@ A.loadExample = async () => {
 };
 A.persist = async () => {
 
-  toast((await requestPersistence()) ? "The browser will keep your data. Still export backups." : "The browser declined. Export backups regularly.");
+  toast((await requestPersistence()) ? "Browser cleanup protection enabled. This is not an online backup." : "The browser did not enable cleanup protection. Keep an exported backup.");
   storageDetail();
 };
 A.install = async () => {
@@ -5968,10 +5975,12 @@ onAlert((f) => {
     if (globalThis.Notification?.permission === "granted") new Notification("CardStashy price alert", { body: alertText(f), icon: "icon-192.png", tag: `${f.game}:${f.id}` });
   } catch {}
 });
-C.setFinishEffects = t => setFinishEffects(t.checked);
+C.setFinishEffects = t => {const saved=setFinishEffects(t.checked);if(!saved)t.checked=finishEffectsOn();toast(saved?"Saved card lighting preference on this device.":"Card lighting preference could not be saved. Your previous setting is kept.");};
 C.setHaptics = (t) => {
-  setHaptics(t.checked);
-  if (t.checked) haptic("success");
+  const saved=setHaptics(t.checked);
+  if(!saved)t.checked=hapticsOn();
+  toast(saved?"Saved vibration preference on this device.":"Vibration preference could not be saved. Your previous setting is kept.");
+  if (saved&&t.checked) haptic("success");
 };
 A.installLater = () => {
   dismissInstall();

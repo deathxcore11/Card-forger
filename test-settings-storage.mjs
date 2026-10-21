@@ -34,3 +34,48 @@ for(const failed of [false,true]){
  assert.match(status.textContent,failed?/could not be prepared/:/Check your downloads/);assert.equal(messages.length,1);
 }
 console.log('PASS: actual backup handler leaves persistent honest success/failure feedback.');
+
+// Saving copy must not imply that paused/offline edits are already online.
+const {settingsSaveCopy}=await import('./views.js');
+const empty={lastSavedAt:null},stored={lastSavedAt:'2026-10-21T00:00:00Z'};
+assert.equal(settingsSaveCopy({user:null},empty).label,'On this device');
+assert.equal(settingsSaveCopy({user:null},stored).label,'Saved on this device');
+assert.equal(settingsSaveCopy({user:null},stored,{state:stored,owner:null,text:'Not saved',cls:'bad'}).label,'Not saved');
+assert.equal(settingsSaveCopy({user:{id:'B'},status:{state:'offline'}},stored,{state:stored,owner:'A',text:'Saved online',cls:'ok'}).detail,'Offline. New changes are waiting on this device.');
+for(const state of ['offline','error','decide'])assert.doesNotMatch(settingsSaveCopy({user:{id:'A'},status:{state}},stored).detail,/are online|sync automatically/);
+const {setFinishEffects}=await import('./finish-preview.js'),{setHaptics}=await import('./feel.js');
+const previousStorage=globalThis.localStorage;
+try{
+ globalThis.localStorage={setItem(){throw Error('quota');},getItem(){return null;}};
+ assert.equal(setFinishEffects(false),false);assert.equal(setHaptics(false),false);
+ globalThis.localStorage={setItem(){},getItem(){return null;}};
+ assert.equal(setFinishEffects(true),true);assert.equal(setHaptics(true),true);
+}finally{globalThis.localStorage=previousStorage;}
+console.log('PASS: current-owner save state, no false online claim, and explicit foil/haptics storage failure results.');
+
+for(const text of ['Not saved','Saving…']){
+ const copy=settingsSaveCopy({user:{id:'A'},status:{state:'synced'}},stored,{state:stored,owner:'A',text,cls:text==='Not saved'?'bad':''});
+ assert.equal(copy.label,text);assert.doesNotMatch(copy.detail,/changes are online/);
+}
+console.log('PASS: local save failure/in-progress state overrides stale cloud success.');
+
+// Exercise the actual status update path: both text lines change together and
+// catalogue lookup failures cannot poison the workspace's save feedback.
+const appSource=readFileSync('app.js','utf8'),statusAction=appSource.slice(appSource.indexOf('function setSaveStatus('),appSource.indexOf('// Glass look:'));
+const headline={textContent:'',className:''},detail={textContent:''};
+const saveState={lastSavedAt:'earlier'},ctx={S:{state:saveState,ui:{}},cloudInfo:()=>({user:{id:'A'},status:{state:'synced'}}),V:{settingsSaveCopy},document:{querySelectorAll:s=>s==='[data-settings-save-detail]'?[detail]:[headline]}};
+vm.runInNewContext(statusAction,ctx);ctx.setSaveStatus('Not saved','bad');
+assert.equal(headline.textContent,'Not saved');assert.match(detail.textContent,/could not be saved/);
+const feedback=ctx.S.ui.saveFeedback;ctx.setSaveStatus('Lookup paused','bad');assert.equal(ctx.S.ui.saveFeedback,feedback);assert.equal(headline.textContent,'Not saved');
+ctx.setSaveStatus('Saving…');assert.match(detail.textContent,/before sending/);
+console.log('PASS: actual status updates keep the subtitle truthful and ignore non-save lookup status.');
+const queued=settingsSaveCopy({user:{id:'A'},status:{state:'synced'}},stored,{state:stored,owner:'A',text:'Saved on this device · waiting to sync',cls:''});
+assert.match(queued.detail,/Waiting to save/);assert.doesNotMatch(queued.detail,/changes are online/);
+const updatedApp=readFileSync('app.js','utf8'),afterSave=updatedApp.slice(updatedApp.indexOf('function afterLocalSave()'),updatedApp.indexOf('let catalogTimer;'));
+for(const phase of ['synced','syncing','local','offline','error','decide']){
+ const labels=[],calls=[];
+ const localCtx={cloudInfo:()=>({user:{id:'A'},status:{state:phase}}),refreshHomeValueGlance(){},setSaveStatus:text=>labels.push(text),statusLabel:()=>[phase+' status'],scheduleSync:()=>calls.push('queue')};
+ vm.runInNewContext(afterSave,localCtx);localCtx.afterLocalSave();
+ assert.equal(labels[0],['offline','error','decide'].includes(phase)?phase+' status':'Saved on this device · waiting to sync');assert.deepEqual(calls,['queue']);
+}
+console.log('PASS: actual afterLocalSave reports queued upload until cloud confirmation and preserves offline/error/conflict states.');
