@@ -3438,8 +3438,11 @@ A.homeTodayPack = async (t) => {
   S.ui.packFeatured = { game: g, id: h.id, name: h.name, date: h.date };
   if (g === "mtg") A.set({ dataset: { code: set.code } });else if (g === "ygo") A.tSetByName({ dataset: { name: set.name } });else A.tSet({ dataset: { id: set.id } });
   const ready = () => { const sc = g === "mtg" ? S.ui.set : T.ui(g).set;return S.ui.view === "set" && sc.loaded && !sc.busy && !sc.error && sc.cards?.length; };
-  for (let i = 0; i < 80 && !ready(); i++) { await new Promise(r => setTimeout(r, 250));if (S.ui.packFeatured?.id !== h.id) return; }
-  if (ready()) A.openSetPack();else S.ui.packFeatured = null;
+  // Big sets load their card details for a while; keep waiting while the person stays on this set.
+  const onSet = () => S.ui.view === "set" && T.game() === g;
+  if (!ready()) toast("Opening today’s pack as soon as the set has loaded…");
+  for (let i = 0; i < 720 && !ready(); i++) { await new Promise(r => setTimeout(r, 250));if (S.ui.packFeatured?.id !== h.id) return;if (i > 8 && !onSet()) { S.ui.packFeatured = null;return; } }
+  if (ready()) A.openSetPack();else { S.ui.packFeatured = null;toast("This set is still loading. Tap Open Pack when it’s ready."); }
 };
 // Suspended/mobile tabs recheck the day when foregrounded, not only on navigation.
 document.addEventListener("visibilitychange", () => { if (!document.hidden && S.ui.view === "home") heroArt(T.game()); });
