@@ -105,7 +105,7 @@ for(const game of ['ptcg','mtg','ygo']){
    await tile.evaluate(n=>n.closest('.lot').dataset.tier='t2');
    await noOverflow(page,'#content','Actual '+game+' frame '+width,true);
    const geometry=await tile.evaluate(n=>{const img=n.querySelector('img'),r=n.getBoundingClientRect(),i=img.getBoundingClientRect();return {padding:getComputedStyle(n).paddingTop,radius:getComputedStyle(n).borderTopLeftRadius,innerRadius:getComputedStyle(img).borderTopLeftRadius,left:i.left-r.left,right:r.right-i.right,top:i.top-r.top,bottom:r.bottom-i.bottom,ratio:i.width/i.height,natural:img.naturalWidth/img.naturalHeight,fit:getComputedStyle(img).objectFit};});
-   assert.equal(geometry.padding,'5px','All games retain full shared frame weight');assert.equal(geometry.radius,'12px');assert.equal(geometry.innerRadius,'7px');
+   assert.equal(geometry.padding,'5px','All games retain full shared frame weight');assert.equal(geometry.radius,'calc(4.75% + 5px) calc(3.5% + 5px)','Outer corner is the card corner plus the band, as on the card page');assert.equal(geometry.innerRadius,'4.75% 3.5%','Inner corner is the printed card corner');
    if(game==='ptcg'){for(const side of ['left','right','top','bottom'])assert(Math.abs(geometry[side]-5)<.2,'No black internal moat '+side);assert(Math.abs(geometry.ratio-geometry.natural)<.002);assert.equal(geometry.fit,'contain');}
    await capture(page,'pokemon-actual-frame-'+game+'-'+width);
    const cornerShot=await tile.screenshot({path:RESULTS+'/pokemon-actual-corners-'+game+'-'+width+'.png'});

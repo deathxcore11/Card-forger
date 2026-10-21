@@ -51,7 +51,7 @@
 .set-grid .ygo-set-meta>.ellip{white-space:normal;overflow:visible;overflow-wrap:anywhere;line-height:1.4}
 .set-grid .ygo-set-meta .set-price{display:flex;flex-wrap:wrap;gap:3px 7px;min-width:0;white-space:normal;overflow-wrap:anywhere;font-weight:700}
 .set-grid .set-price>small{font-size:11px;font-weight:400;color:var(--muted)}
-.set-grid>.grid-card[data-tier="tn"]>.card-img{box-sizing:border-box;border:5px solid transparent;border-radius:12px;background:linear-gradient(160deg,#a7afb8,#6f7780) border-box}
+.set-grid>.grid-card[data-tier="tn"]>.card-img{box-sizing:border-box;border:5px solid transparent;border-radius:calc(4.75% + 5px) / calc(3.5% + 5px);background:linear-gradient(160deg,#a7afb8,#6f7780) border-box}
 
 /* One calm catalogue shell for all three games. Native selects use the existing glass menu. */
 .set-browser-controls{display:grid;gap:14px;min-width:0;padding:18px;border:1px solid var(--line);border-radius:20px;background:color-mix(in srgb,var(--surface) 94%,transparent)}

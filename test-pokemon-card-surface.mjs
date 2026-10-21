@@ -37,5 +37,6 @@ let response;events.fetch({request:{url:'https://fixture.test/style.css',method:
 assert.equal(await (await response).text(),'corrected-five-pixel-css');assert.equal(put.length,1);
 console.log('PASS: installed shell precaches corrected stylesheet, retires only obsolete shell cache, and serves fresh network CSS.');
 
-assert.match(style,/lot-art\[data-finish-game="ptcg"\] \{ aspect-ratio:auto; border-radius:12px;/);
-assert.match(style,/lot-art\[data-finish-game="ptcg"\] > img\.card-img \{[^}]*border-radius:7px;/);
+// One frame everywhere: the outer corner is the card's own corner plus the 5px band, as on the card page.
+assert.match(style,/lot-art\[data-finish-game="ptcg"\] \{ aspect-ratio:auto; border-radius:calc\(4\.75% \+ 5px\) \/ calc\(3\.5% \+ 5px\);/);
+assert.match(style,/lot-art\[data-finish-game="ptcg"\] > img\.card-img \{[^}]*border-radius:4\.75% \/ 3\.5%;/);

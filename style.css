@@ -2250,15 +2250,15 @@ details.ingredient[open] > summary b { color: var(--accent); }
 #content.view-gallery .display-list .lot[data-tier="t4"]:not(.wanted) .lot-art { animation: tier-gold-ring 3.4s ease-in-out infinite; }
 @keyframes tier-gold-ring { 50% { outline-color: #fff0b0; } }
 /* Tier frame: a solid 5px band of the tier colour around the card (padding, so nothing covers it). */
-#content.view-gallery .display-list .lot:not(.wanted) .lot-art { outline: 0; padding: 5px; border-radius: 12px; background: var(--tier, #8b939c); }
+#content.view-gallery .display-list .lot:not(.wanted) .lot-art { outline: 0; padding: 5px; border-radius: calc(4.75% + 5px) / calc(3.5% + 5px); background: var(--tier, #8b939c); }
 #content.view-gallery .display-list .lot[data-tier="t0"]:not(.wanted) .lot-art { background: linear-gradient(160deg, #a7afb8, #6f7780); }
 #content.view-gallery .display-list .lot[data-tier="t1"]:not(.wanted) .lot-art { background: linear-gradient(160deg, #7be3a8, #2fae68); }
 #content.view-gallery .display-list .lot[data-tier="t2"]:not(.wanted) .lot-art { background: linear-gradient(160deg, #8cc6ff, #2f7fe0); }
 #content.view-gallery .display-list .lot[data-tier="t3"]:not(.wanted) .lot-art { background: conic-gradient(from var(--swirl), #b46cff, #6fd0ff, #ff7ad9, #b46cff); animation: tier-swirl 6s linear infinite, tier-breathe 3.2s ease-in-out infinite; }
 #content.view-gallery .display-list .lot[data-tier="t4"]:not(.wanted) .lot-art { background: linear-gradient(115deg, #b8860b 0%, #ffd34d 30%, #fff6c9 45%, #ffd34d 60%, #b8860b 100%) 0 0 / 300% 100%; animation: tier-shine 3.4s cubic-bezier(.45,.05,.3,1) infinite; }
 #content.view-gallery .display-list .lot[data-tier="t5"]:not(.wanted) .lot-art { background: linear-gradient(115deg, #c2410c 0%, #ff7a1a 30%, #ffd08a 45%, #ff7a1a 60%, #c2410c 100%) 0 0 / 300% 100%; animation: tier-shine 2.6s ease-in-out infinite, tier-fire 2.4s ease-in-out infinite; }
-#content.view-gallery .display-list .lot:not(.wanted) .lot-art > img, #content.view-gallery .display-list .lot:not(.wanted) .lot-art > .img-missing { border-radius: 7px; position: relative; z-index: 1; }
-#content.view-gallery .display-list .lot:not(.wanted) .lot-art::after { inset: 5px; border-radius: 7px; }
+#content.view-gallery .display-list .lot:not(.wanted) .lot-art > img, #content.view-gallery .display-list .lot:not(.wanted) .lot-art > .img-missing { border-radius: 4.75% / 3.5%; position: relative; z-index: 1; }
+#content.view-gallery .display-list .lot:not(.wanted) .lot-art::after { inset: 5px; border-radius: 4.75% / 3.5%; }
 #content.view-gallery .display-list .lot:not(.wanted) .lot-art .tile-chrome { left: 5px; right: 5px; top: 5px; }
 
 /* ===== One look for every card thumbnail in the app: a price-tier ring drawn inside the edge ===== */
@@ -2475,9 +2475,9 @@ img[data-tier="t5"] { animation: tier-fire-ring 2.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .card-grid > .grid-card::before, .card-grid > .grid-card > img.card-img, .card-grid > .grid-card { animation: none !important; } }
 /* Pokémon collection art follows its intrinsic ratio. A fixed 63/88 host plus
    contain was adding dark letterboxing inside the decorative tier frame. */
-#content.view-gallery .display-list .lot:not(.wanted) .lot-art[data-finish-game="ptcg"] { aspect-ratio:auto; border-radius:12px; }
+#content.view-gallery .display-list .lot:not(.wanted) .lot-art[data-finish-game="ptcg"] { aspect-ratio:auto; border-radius:calc(4.75% + 5px) / calc(3.5% + 5px); }
 #content.view-gallery .display-list .lot[data-tier]:not([data-tier="tn"]):not(.wanted) .lot-art[data-finish-game="ptcg"] { padding:5px; }
-#content.view-gallery .display-list .lot:not(.wanted) .lot-art[data-finish-game="ptcg"] > img.card-img { display:block; width:100%; height:auto; aspect-ratio:auto; object-fit:contain; border-radius:7px; }
+#content.view-gallery .display-list .lot:not(.wanted) .lot-art[data-finish-game="ptcg"] > img.card-img { display:block; width:100%; height:auto; aspect-ratio:auto; object-fit:contain; border-radius:4.75% / 3.5%; }
 #content.view-gallery .display-list .lot:not(.wanted) .lot-art[data-finish-game="ptcg"]::after { inset:5px; border-radius:7px; }
 #content.view-gallery .display-list .lot:not(.wanted) .lot-art[data-finish-game="ptcg"] .tile-chrome { left:5px; right:5px; top:5px; }
 /* Selection never remounts the card or interrupts its tier animation. */
@@ -4996,17 +4996,17 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 [data-tier="t4"] { --aura-1: #ffd34d; --aura-2: #ffb020; --aura-mix: 70%; }
 [data-tier="t5"] { --aura-1: #ff7a1a; --aura-2: #ffd08a; --aura-mix: 75%; }
 @keyframes aura-orbit {
-  0%, 100% { box-shadow: -12px -9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), 12px 9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 30px) * 1.5) -6px color-mix(in srgb, var(--aura-1) 40%, transparent), 0 10px 24px -14px #000c; }
-  25% { box-shadow: 12px -9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), -12px 9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 30px) * 1.5) -6px color-mix(in srgb, var(--aura-2) 40%, transparent), 0 10px 24px -14px #000c; }
-  50% { box-shadow: 12px 9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), -12px -9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 30px) * 1.5) -6px color-mix(in srgb, var(--aura-1) 40%, transparent), 0 10px 24px -14px #000c; }
-  75% { box-shadow: -12px 9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), 12px -9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 30px) * 1.5) -6px color-mix(in srgb, var(--aura-2) 40%, transparent), 0 10px 24px -14px #000c; }
+  0%, 100% { box-shadow: -12px -9px var(--aura-blur, 34px) -6px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), 12px 9px var(--aura-blur, 34px) -6px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 34px) * 1.5) -5px color-mix(in srgb, var(--aura-1) 40%, transparent), 0 10px 24px -14px #000c; }
+  25% { box-shadow: 12px -9px var(--aura-blur, 34px) -6px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), -12px 9px var(--aura-blur, 34px) -6px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 34px) * 1.5) -5px color-mix(in srgb, var(--aura-2) 40%, transparent), 0 10px 24px -14px #000c; }
+  50% { box-shadow: 12px 9px var(--aura-blur, 34px) -6px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), -12px -9px var(--aura-blur, 34px) -6px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 34px) * 1.5) -5px color-mix(in srgb, var(--aura-1) 40%, transparent), 0 10px 24px -14px #000c; }
+  75% { box-shadow: -12px 9px var(--aura-blur, 34px) -6px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), 12px -9px var(--aura-blur, 34px) -6px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 34px) * 1.5) -5px color-mix(in srgb, var(--aura-2) 40%, transparent), 0 10px 24px -14px #000c; }
 }
 /* Collection, binders' gallery, deck rows: the framed card art. */
 #content.view-gallery .display-list .lot[data-tier]:not(.wanted) .lot-art,
 /* Set and search grids, and the card page: the card image itself carries its tier. */
 .view-gallery .card-grid .grid-card img.card-img[data-tier],
 #content.view-gallery .card-grid .grid-card[data-tier] > .card-img {
-  box-shadow: -12px -9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), 12px 9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 30px) * 1.5) -6px color-mix(in srgb, var(--aura-1) 40%, transparent), 0 10px 24px -14px #000c;
+  box-shadow: -12px -9px var(--aura-blur, 34px) -6px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), 12px 9px var(--aura-blur, 34px) -6px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 34px) * 1.5) -5px color-mix(in srgb, var(--aura-1) 40%, transparent), 0 10px 24px -14px #000c;
 }
 #content.view-gallery .display-list .lot[data-tier="t3"]:not(.wanted) .lot-art { animation: tier-swirl 6s linear infinite, aura-orbit 8s linear infinite; }
 #content.view-gallery .display-list .lot[data-tier="t4"]:not(.wanted) .lot-art { animation: tier-shine 3.4s cubic-bezier(.45,.05,.3,1) infinite, aura-orbit 10s linear infinite; }
@@ -5017,7 +5017,7 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
    the card image (5px, 12px corners). The card page draws the same band on the card's holder instead, so
    the card image (and the foil laid over it) stays exactly the printed card. ===== */
 .view-gallery .card-grid .grid-card img.card-img[data-tier] {
-  outline: 0; box-sizing: border-box; border: 5px solid transparent; border-radius: 12px; background-origin: border-box; background-clip: border-box;
+  outline: 0; box-sizing: border-box; border: 5px solid transparent; border-radius: calc(4.75% + 5px) / calc(3.5% + 5px); background-origin: border-box; background-clip: border-box;
   background-image: linear-gradient(160deg, #a7afb8, #6f7780);
 }
 .view-gallery .card-grid .grid-card img.card-img[data-tier="t1"] { background-image: linear-gradient(160deg, #7be3a8, #2fae68); }
@@ -5025,7 +5025,7 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 .view-gallery .card-grid .grid-card img.card-img[data-tier="t3"] { background-image: conic-gradient(from var(--swirl), #b46cff, #6fd0ff, #ff7ad9, #b46cff); animation: tier-swirl 6s linear infinite, aura-orbit 9s linear infinite; }
 .view-gallery .card-grid .grid-card img.card-img[data-tier="t4"] { background-image: linear-gradient(115deg, #b8860b 0%, #ffd34d 30%, #fff6c9 45%, #ffd34d 60%, #b8860b 100%); background-size: 300% 100%; animation: tier-shine 3.4s cubic-bezier(.45,.05,.3,1) infinite, aura-orbit 10s linear infinite; }
 .view-gallery .card-grid .grid-card img.card-img[data-tier="t5"] { background-image: linear-gradient(115deg, #c2410c 0%, #ff7a1a 30%, #ffd08a 45%, #ff7a1a 60%, #c2410c 100%); background-size: 300% 100%; animation: tier-shine 2.6s ease-in-out infinite, aura-orbit 6s linear infinite; }
-#content.view-gallery .set-grid > .grid-card[data-tier="tn"] > .card-img { border: 5px solid transparent; border-radius: 12px; }
+#content.view-gallery .set-grid > .grid-card[data-tier="tn"] > .card-img { border: 5px solid transparent; border-radius: calc(4.75% + 5px) / calc(3.5% + 5px); }
 /* Card page: the band and aura live on the zoom holder around the image. */
 .cd-img .cd-zoom:has(> img.card-img[data-tier]) { --frame-w: clamp(6px, 2.4vw, 10px); --aura-blur: 52px; box-sizing: border-box; padding: var(--frame-w); border-radius: calc(4.75% + var(--frame-w)) / calc(3.5% + var(--frame-w)); background: linear-gradient(160deg, #a7afb8, #6f7780); }
 .cd-img .cd-zoom > img.card-img[data-tier] { outline: 0; box-shadow: none; animation: none; }
