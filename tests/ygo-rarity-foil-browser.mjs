@@ -1,6 +1,6 @@
 // Hosted pixel regression for the WebGL Yu-Gi-Oh! rarity foil: full-size card pages light the art
 // (rules box untouched except Starlight), follow the light, and gallery tiles switch between the
-// WebGL foil (Large) and the CSS finish (Medium/Small) live.
+// WebGL foil (Large/Medium) and the CSS finish (Small) live.
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {readFile,mkdir,writeFile} from 'node:fs/promises';
@@ -40,19 +40,19 @@ try{
   assert(moved.art>.05,`${key}: foil follows the light ${JSON.stringify(moved)}`);
   report.detail.push({key,lit,moved});
  }
- // Gallery: Medium tiles keep the CSS finish; switching to Large turns the WebGL foil on live.
- await page.goto(base+'/tests/ygo-rarity-gallery.html#size=medium&cols=4');await page.waitForFunction(()=>document.documentElement.dataset.ready==='1');
+ // Gallery: Small tiles keep the CSS finish; switching to Medium turns the WebGL foil on live.
+ await page.goto(base+'/tests/ygo-rarity-gallery.html#size=small&cols=4');await page.waitForFunction(()=>document.documentElement.dataset.ready==='1');
  await page.waitForFunction(()=>document.querySelectorAll('.finish-overlay').length>=4);await page.waitForTimeout(1500);
  const state=()=>page.evaluate(()=>[...document.querySelectorAll('.lot-art')].map(t=>({key:t.dataset.key,width:Math.round(t.getBoundingClientRect().width),gl:!!t.querySelector('canvas.finish-rarity-gl:not([hidden])'),css:[...t.querySelectorAll('.finish-overlay>.finish-layer:not(.finish-name-region)')].some(n=>getComputedStyle(n).display!=='none')})));
- const medium=await state();report.gallery.medium=medium;
- assert(medium.every(t=>t.width<260&&!t.gl&&t.css),'Medium tiles keep the CSS finish: '+JSON.stringify(medium));
- await page.evaluate(()=>{document.documentElement.dataset.gridSize='large';});
+ const small=await state();report.gallery.small=small;
+ assert(small.every(t=>t.width<260&&!t.gl&&t.css),'Small tiles keep the CSS finish: '+JSON.stringify(small));
+ await page.evaluate(()=>{document.documentElement.dataset.gridSize='medium';});
  await page.waitForFunction(()=>[...document.querySelectorAll('.lot-art')].every(t=>t.querySelector('canvas.finish-rarity-gl:not([hidden])')),null,{timeout:15000});
- const large=await state();report.gallery.large=large;
- assert(large.every(t=>t.gl&&!t.css),'Large tiles switch to the WebGL foil: '+JSON.stringify(large));
- await page.screenshot({path:`${out}/gallery-large.png`});
+ const medium=await state();report.gallery.medium=medium;
+ assert(medium.every(t=>t.width<260&&t.gl&&!t.css),'Medium tiles switch to the WebGL foil: '+JSON.stringify(medium));
+ await page.screenshot({path:`${out}/gallery-medium.png`});
  // Reduced motion removes every overlay, WebGL included.
  await page.emulateMedia({reducedMotion:'reduce'});await page.waitForFunction(()=>!document.querySelector('.finish-overlay')&&!document.querySelector('canvas.finish-rarity-gl'));
  assert.deepEqual(errors,[]);report.status='PASS';
- console.log('PASS: full-size Yu-Gi-Oh! cards render the WebGL rarity foil (art lit, rules box untouched except Starlight, light-following); gallery Medium keeps CSS, Large switches live.');
+ console.log('PASS: full-size Yu-Gi-Oh! cards render the WebGL rarity foil (art lit, rules box untouched except Starlight, light-following); gallery Small keeps CSS, Medium switches live.');
 }finally{await writeFile(`${out}/report.json`,JSON.stringify(report,null,2));await browser.close();await new Promise(r=>server.close(r));}

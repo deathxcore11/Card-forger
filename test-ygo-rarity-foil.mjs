@@ -2,15 +2,16 @@
 // and the shader's coverage rules. Pixel rendering is covered by the hosted browser test.
 import assert from 'node:assert/strict';
 import {analyzeYgoArt,YGO_ART_BOX,YGO_LAYOUT_ART} from './ygo-foil-analysis.js';
-import {ygoFoilFullSize,ygoRecipeFor,YGO_RARITY_FRAGMENT,YGO_FULL_SIZE_PX} from './ygo-rarity-foil.js';
+import {ygoFoilFullSize,ygoRecipeFor,YGO_RARITY_FRAGMENT,YGO_FULL_SIZE_PX,YGO_MIN_TILE_PX} from './ygo-rarity-foil.js';
 import {YGO_FOIL_RECIPES,ygoRarityEffect} from './ygo-foil-recipes.js';
 import {resolveFinish,FINISH_MASKS} from './finish-effects.js';
 import {ygoDeckFinishContext} from './tcg.js';
-// Size gate: card page and zoom always; gallery cards only at Large or when drawn wide.
+// Size gate: card page and zoom always; gallery cards at Large and Medium, Small only when drawn wide.
 assert.equal(ygoFoilFullSize('detail',120,'small'),true);assert.equal(ygoFoilFullSize('zoom',90,'medium'),true);
 assert.equal(ygoFoilFullSize('large',150,'large'),true,'Large grid setting');
-assert.equal(ygoFoilFullSize('large',180,'medium'),false,'Medium tiles keep the CSS finish');
-assert.equal(ygoFoilFullSize('large',110,'small'),false,'Small tiles keep the CSS finish');
+assert.equal(ygoFoilFullSize('large',180,'medium'),true,'Medium gallery tiles get the WebGL foil');
+assert.equal(ygoFoilFullSize('large',YGO_MIN_TILE_PX-1,'medium'),false,'Tiles too narrow to read the pattern keep the CSS finish');
+assert.equal(ygoFoilFullSize('large',180,'small'),false,'Small tiles keep the CSS finish');assert.equal(ygoFoilFullSize('large',110,'small'),false);
 assert.equal(ygoFoilFullSize('large',YGO_FULL_SIZE_PX,'medium'),true,'Wide desktop tiles count as full size');
 // Recipe table: every foil rarity string in the Yu-Gi-Oh! catalogue resolves to a recipe; plain and
 // unknown rarities stay honest.

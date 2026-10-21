@@ -12,11 +12,12 @@ export const YGO_LAYOUT_TEXT={standard:YGO_TEXT_BOX,pendulum:[.062,.613,.938,.95
 const layoutOf=v=>YGO_LAYOUT_ART[v]?v:'standard';
 // A recipe needs WebGL only when it foils something besides the name (the name has its own canvas).
 export const ygoRecipeFor=effect=>{const r=YGO_FOIL_RECIPES[effect];return r&&(r.whole||r.frame||r.art)?r:null;};
-// Full-size only: medium and small gallery tiles keep the lighter CSS finish.
-export const YGO_FULL_SIZE_PX=260;
+// Card page, zoom, and Large and Medium gallery cards; Small tiles (and any tile too narrow to read
+// the pattern) keep the lighter CSS finish.
+export const YGO_FULL_SIZE_PX=260,YGO_MIN_TILE_PX=120;
 export function ygoFoilFullSize(surface,width,gridSize){
  if(surface==='detail'||surface==='zoom')return true;
- return surface==='large'&&(gridSize==='large'||width>=YGO_FULL_SIZE_PX);
+ return surface==='large'&&(gridSize==='large'||width>=YGO_FULL_SIZE_PX||gridSize!=='small'&&width>=YGO_MIN_TILE_PX);
 }
 const VS='attribute vec2 a;varying vec2 v;void main(){v=(a+1.0)*.5;gl_Position=vec4(a,0.0,1.0);}';
 export const YGO_RARITY_FRAGMENT=`precision highp float;
@@ -159,7 +160,11 @@ function bindTextures(r,img,a,w,h,layout){
 }
 // ---- mounted surfaces ----
 const handles=new Set();let ticking=0;
-function tick(){ticking=0;let again=false;for(const h of handles){h.draw();if(h.animated())again=true;}if(again)ticking=requestAnimationFrame(tick);}
+// Gallery sweeps redraw at most ~30 times a second: a screen of foil cards stays smooth on phones.
+let lastSweep=0;
+function tick(now=0){ticking=0;let again=false;const sweep=now-lastSweep>=32;if(sweep)lastSweep=now;
+ for(const h of handles){const anim=h.animated();if(anim)again=true;if(!anim||sweep)h.draw();}
+ if(again)ticking=requestAnimationFrame(tick);}
 const kick=()=>{if(!ticking&&typeof requestAnimationFrame!=='undefined')ticking=requestAnimationFrame(tick);};
 // Returns a handle, or null when this surface keeps the CSS finish (unsupported rarity, no WebGL).
 // The CSS layers stay underneath and come back automatically if the card shrinks or analysis fails.
