@@ -1,5 +1,5 @@
 import {esc,safeHref,cardImage} from './ui.js';
-import {rarityTier,TIERS} from './tier.js';
+import {rarityTier,TIERS,priceTier} from './tier.js';
 import {ygoRarity} from './ygo-identity.js';
 import {brandStaticMark} from './brand.js';
 import {setArtworkSources,setImageUrl,YGO_TOURNAMENT_PACK} from './set-experience.js';
@@ -161,6 +161,22 @@ export function packFinishes(game,picks){
  });
 }
 // featured: a card to pull as this pack's last card (today's pack always holds the Card of the Day).
+// The pulled card's market price for what came out of the pack (its finish or printing), or null.
+export function packPrice(game,c,pulled={}){
+ const n=v=>{const x=Number(v);return x>0?x:null;};
+ if(game==='mtg')return n(pulled.finish==='foil'?c.prices?.usd_foil:pulled.finish==='etched'?c.prices?.usd_etched:c.prices?.usd)??n(c.prices?.usd);
+ if(game==='ptcg'){const v=(c.variants||[]).find(x=>x.key===pulled.priceFinish);return n(v?.usd??v?.market)??n(c.prices?.usd);}
+ return n(c.setContext?.printing?.price)??null;
+}
+// Each game's own rarity colours for the label under the card: Magic's set-symbol colours, Pokémon's
+// and Yu-Gi-Oh!'s foil ladders. Returns [colour, glossy] where glossy rarities get a shimmering label.
+export function rarityColour(game,label){
+ const r=String(label||'').toLowerCase();
+ if(game==='mtg')return /mythic/.test(r)?['#ff7b3a',1]:/rare/.test(r)?['#e8c15a',0]:/uncommon/.test(r)?['#b9c6d3',0]:/special|bonus/.test(r)?['#c88cff',1]:['#d9d9d9',0];
+ if(game==='ygo')return /secret|ultimate|ghost|starlight|collector|platinum|quarter century|prismatic/.test(r)?['#e6d4ff',1]:/ultra/.test(r)?['#ffd34d',0]:/super/.test(r)?['#7ff6ff',0]:/rare/.test(r)?['#cfd6e8',0]:['#bfbfbf',0];
+ return /special illustration|hyper|secret|gold|rainbow|shiny/.test(r)?['#ffd54a',1]:/illustration|ultra|double|ace spec|radiant/.test(r)?['#ff9de1',1]:/holo|rare/.test(r)?['#ffd36b',0]:/uncommon/.test(r)?['#b7cdee',0]:['#c9ced6',0];
+}
+const setEmblem=(game,set)=>game==='mtg'&&/^[a-z0-9]{2,8}$/i.test(set.code||'')?`https://svgs.scryfall.io/sets/${encodeURIComponent(String(set.code).toLowerCase())}.svg`:game==='ptcg'?set.symbol||'':'';
 // hydrate: loads a pulled card's full record (Pokémon set lists carry no variants), so its holo or
 // reverse holo can be drawn.
 export function openPackPreview({game,set,cards,complete=false,featured=null,hydrate=null,onDetails,onWishlist,onCopy,onBuy,isCurrent=()=>true}){
@@ -184,9 +200,9 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  // Face-down cards wear the game's own card back (same-origin from the worker); the emblem stays beneath if it can't load.
  const back=`<span class="pack-card-back" data-back="${esc(game)}">${brandStaticMark()}<img class="pack-back-img" src="/img/back/${esc(game)}.jpg" alt="" decoding="async" onerror="this.remove()"></span>`;
  const hand=()=>picks.map((c,i)=>{const rarity=packRarity(game,c);return `<button class="pack-card" data-pack="reveal" data-index="${i}" data-hold-card style="--i:${i};--pack-glow:${TIERS[Math.min(rarity.rank,5)].color}" aria-label="Card ${i+1}, face down" aria-pressed="false">${back}<span class="pack-card-front"><img data-pack-src="${esc(setImageUrl(cardArt(c)))}" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true"></span></button>`;}).join('');
- dialog.innerHTML=`<header class="pack-header"><div><h2>${esc(set.name)}</h2><p class="pack-explanation">Free preview · approximate pull rates, not a real booster · nothing is added to your collection</p></div><div class="pack-header-tools"><button type="button" class="pack-tilt" title="Tilt your device to move the foil light" hidden>Enable tilt</button><button class="icon" data-pack="close" aria-label="Close pack">✕</button></div></header>
+ dialog.innerHTML=`<header class="pack-header"><div class="pack-title">${setEmblem(game,set)?`<img class="pack-emblem" data-game="${esc(game)}" src="${esc(safeHref(setEmblem(game,set)))}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:''}<h2>${esc(set.name)}</h2><p class="pack-explanation">Free preview with approximate pull rates, not a real booster. Nothing is added to your collection.</p></div><div class="pack-header-tools"><button type="button" class="pack-tilt" title="Tilt your device to move the foil light" hidden>Enable tilt</button><button class="icon" data-pack="close" aria-label="Close pack">✕</button></div></header>
 <div class="pack-sealed"><button class="pack-wrapper" data-pack="open" aria-label="Open the ${esc(set.name)} pack"><span class="pack-body"><span class="pack-wrap-art">${sources.length?`<img data-pack-art src="${esc(safeHref(setImageUrl(sources[0])))}" data-sources="${esc(JSON.stringify(sources))}" alt="" referrerpolicy="no-referrer" onerror="const s=JSON.parse(this.dataset.sources),i=(+this.dataset.i||0)+1;if(s[i]){this.dataset.i=i;this.src=s[i];this.closest('.pack-wrapper').classList.add('pack-generic');}else this.hidden=true">`:''}<span class="pack-wrap-brand">${brandStaticMark()}<b>${esc(set.name)}</b></span></span><span class="pack-crimp top"></span><span class="pack-crimp bottom"></span><span class="pack-sheen"></span></span></button></div>
-<div class="pack-content" hidden><div class="pack-focus"><button class="pack-focus-card" data-pack="focus" data-hold-card aria-label="Card 1"><span class="pack-face" data-finish-surface="pack"><img alt="" referrerpolicy="no-referrer"></span>${back}</button><p class="pack-focus-meta" aria-live="polite"><b></b><span></span></p></div><div class="pack-hand" role="group" aria-label="Cards in this pack" style="--pack-n:${picks.length}">${hand()}</div>
+<div class="pack-content" hidden><div class="pack-focus"><span class="pack-backlight" aria-hidden="true"></span><button class="pack-focus-card" data-pack="focus" data-hold-card aria-label="Card 1"><span class="pack-face" data-finish-surface="pack"><img alt="" referrerpolicy="no-referrer"></span>${back}</button><p class="pack-focus-meta" aria-live="polite"><b></b><span></span></p></div><div class="pack-hand" role="group" aria-label="Cards in this pack" style="--pack-n:${picks.length}">${hand()}</div>
 <div class="pack-actions"><button class="btn ghost pack-reveal-all" data-pack="reveal-all">Reveal all</button><div class="pack-tools" role="group" aria-label="This pack"><button class="pack-tool" data-pack="copy" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8"/></svg><span>Copy list</span></button><button class="pack-tool" data-pack="wish" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg><span>Wishlist all</span></button><button class="pack-tool" data-pack="buy" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14l-1.4 9.2a2 2 0 0 1-2 1.8H8.4a2 2 0 0 1-2-1.8z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span>Shop list</span></button></div><button class="btn pack-again" data-pack="again">Open a new pack</button></div></div><p class="pack-status" role="status" aria-live="polite"></p>`;
  document.body.append(dialog);dialog.tabIndex=-1;dialog.showModal();dialog.focus({preventScroll:true});
  const status=dialog.querySelector('.pack-status'),focusCard=dialog.querySelector('.pack-focus-card'),face=focusCard.querySelector('.pack-face'),faceImg=face.querySelector('img'),meta=dialog.querySelector('.pack-focus-meta');
@@ -196,11 +212,15 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  const show=i=>{
   focus=Math.max(0,Math.min(picks.length-1,i));const c=picks[focus],open=revealed.has(focus),rarity=packRarity(game,c);
   dialog.querySelectorAll('.pack-card').forEach((b,j)=>{b.classList.toggle('focused',j===focus);b.style.setProperty('--d',j-focus);});
-  focusCard.quickRef=ref(focus);focusCard.classList.toggle('revealed',open);focusCard.style.setProperty('--pack-glow',TIERS[Math.min(rarity.rank,5)].color);focusCard.classList.toggle('pack-hit',open&&rarity.rank>=3);
+  focusCard.quickRef=ref(focus);focusCard.classList.toggle('revealed',open);// The glow behind the card follows the collection's price-tier colours (rarity when no price is known).
+  const price=open?packPrice(game,c,ctxs[focus]||{}):null,tier=price?priceTier(price):Math.min(rarity.rank,5),glow=TIERS[tier].color;
+  focusCard.style.setProperty('--pack-glow',glow);focusCard.classList.toggle('pack-hit',open&&rarity.rank>=3);
+  const stage=dialog.querySelector('.pack-focus');stage.style.setProperty('--pack-glow',glow);if(open)stage.dataset.tier=`t${tier}`;else delete stage.dataset.tier;
   focusCard.setAttribute('aria-label',open?`${c.name}. Open card`:`Card ${focus+1}, face down. Reveal`);
   if(open){const src=setImageUrl(cardArt(c));if(faceImg.getAttribute('src')!==src)faceImg.src=src;const attrs=finishAttrs(game,c,ctxs[focus],'pack');const tmp=document.createElement('span');tmp.innerHTML=`<i ${attrs}></i>`;const i2=tmp.firstChild;for(const a of ['data-finish-game','data-finish-effect','data-finish-model'])face.setAttribute(a,i2.getAttribute(a));face.dataset.finishSurface='pack';}
   else{face.removeAttribute('data-finish-model');faceImg.removeAttribute('src');}
-  meta.querySelector('b').textContent=open?c.name:'';meta.querySelector('span').textContent=open?rarity.label:'';
+  meta.querySelector('b').textContent=open?c.name:'';const pill=meta.querySelector('span'),[tone,glossy]=rarityColour(game,rarity.label);
+  pill.textContent=open?rarity.label:'';pill.style.setProperty('--rarity-tone',tone);pill.classList.toggle('pack-rarity-gloss',open&&!!glossy);
  };
  // Pulled shiny slots load their full card in the background and pick up their holo before they are seen.
  let deal=0;const fill=()=>{if(!hydrate)return;const n=++deal,now=picks;now.forEach((c,i)=>{if((!c.packSlot&&packRarity(game,c).rank<2)||c.variants?.length||(featured&&c===featured))return;

@@ -108,7 +108,7 @@ body:not(.glass) .set-atmosphere{display:none}
 
 /* Pack opening: tear the real booster open, the cards deal out into a fanned hand, and the focused
    card flips up large with its real foil. Every control stays inside the dialog at any width. */
-.pack-dialog{--hand-w:min(19vw,112px,calc(100dvh*.12));--card-w:min(82vw,380px,calc((100dvh - 350px - var(--hand-w)*1.4)*63/88));width:min(860px,calc(100% - 20px));max-height:calc(100dvh - 16px);box-sizing:border-box;padding:14px 18px 14px;border:1px solid var(--line);border-radius:26px;background:radial-gradient(120% 70% at 50% 0%,color-mix(in srgb,var(--gold) 9%,var(--bg)),var(--bg) 60%);color:var(--text);overflow:auto;overflow-x:hidden;overscroll-behavior:contain}
+.pack-dialog{--hand-w:min(19vw,112px,calc(100dvh*.12));--card-w:min(84vw,400px,calc((100dvh - 300px - var(--hand-w)*1.4)*63/88));width:min(860px,calc(100% - 20px));max-height:calc(100dvh - 16px);box-sizing:border-box;padding:14px 18px 14px;border:1px solid var(--line);border-radius:26px;background:radial-gradient(120% 70% at 50% 0%,color-mix(in srgb,var(--gold) 9%,var(--bg)),var(--bg) 60%);color:var(--text);overflow:auto;overflow-x:hidden;overscroll-behavior:contain}
 .pack-dialog:focus{outline:none}.pack-dialog::backdrop{background:#05060be6;backdrop-filter:blur(16px)}
 .pack-header{display:flex;align-items:flex-start;gap:12px}.pack-header>div{flex:1;min-width:0}.pack-header h2{margin:2px 0 0;font-size:clamp(17px,3vw,24px);letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pack-explanation{margin:2px 0 0;font-size:10.5px;color:var(--muted);line-height:1.4;opacity:.8}
@@ -174,8 +174,28 @@ body:not(.glass) .set-atmosphere{display:none}
 @media(prefers-reduced-motion:reduce){.pack-focus-card.pack-slide-next,.pack-focus-card.pack-slide-prev{animation:none}}
 .pack-focus{position:relative}.pack-focus>.pack-tilt{position:absolute;right:2px;bottom:4px}
 /* Tilt: a small round control beside the close button, clear of every card; its words stay for screen readers. */
-.pack-header-tools{display:flex;align-items:center;gap:8px;flex:none}
+.pack-header>.pack-header-tools{display:flex;align-items:center;gap:8px;flex:none}
 .pack-header-tools>.pack-tilt{position:relative;width:40px;height:40px;min-height:0;padding:0;border-radius:50%;font-size:0;color:transparent;background:#ffffff0a;border:1px solid #ffffff24}
 .pack-header-tools>.pack-tilt::before{content:"";position:absolute;inset:0;margin:auto;width:20px;height:20px;background:#d9dde6;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='8' y='3' width='8' height='14' rx='2' transform='rotate(-18 12 10)'/%3E%3Cpath d='M3 15a9 9 0 0 0 7 6M21 9a9 9 0 0 0-7-6'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='8' y='3' width='8' height='14' rx='2' transform='rotate(-18 12 10)'/%3E%3Cpath d='M3 15a9 9 0 0 0 7 6M21 9a9 9 0 0 0-7-6'/%3E%3C/svg%3E") center/contain no-repeat}
 .pack-header-tools>.pack-tilt[aria-pressed="true"]{border-color:color-mix(in srgb,var(--gold) 70%,transparent)}.pack-header-tools>.pack-tilt[aria-pressed="true"]::before{background:var(--gold)}
 .pack-header-tools>.pack-tilt[hidden]{display:none}
+
+/* Pack header: set emblem and name, tilt and close. The preview note stays for screen readers. */
+.pack-title{display:flex;align-items:center;gap:10px}.pack-title>h2{flex:1;min-width:0}
+.pack-emblem{flex:none;width:30px;height:30px;object-fit:contain}.pack-emblem[data-game="mtg"]{filter:invert(1) drop-shadow(0 1px 2px #0008)}
+.pack-explanation{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+/* A soft backlight behind the pulled card, the collection's price-tier swirl blurred like a TV bias light. */
+.pack-focus-card{z-index:1}
+.pack-backlight{position:absolute;top:0;left:50%;width:var(--card-w);aspect-ratio:63/88;border-radius:8%;transform:translateX(-50%) scale(1.02);background:conic-gradient(from var(--swirl),var(--pack-glow),transparent 30%,color-mix(in srgb,var(--pack-glow) 60%,#fff) 50%,transparent 70%,var(--pack-glow));filter:blur(30px) saturate(1.3);opacity:0;transition:opacity .6s,transform .6s;pointer-events:none;animation:tier-swirl 7s linear infinite}
+.pack-focus[data-tier] .pack-backlight{opacity:.4;transform:translateX(-50%) scale(1.06)}
+.pack-focus[data-tier="t2"] .pack-backlight{opacity:.52;transform:translateX(-50%) scale(1.07)}
+.pack-focus[data-tier="t3"] .pack-backlight{opacity:.66;transform:translateX(-50%) scale(1.09);animation-duration:5.5s}
+.pack-focus[data-tier="t4"] .pack-backlight,.pack-focus[data-tier="t5"] .pack-backlight{opacity:.72;transform:translateX(-50%) scale(1.1);animation-duration:4.5s}
+.pack-focus-card.pack-hit{animation:none;box-shadow:0 30px 50px #000b}
+/* The rarity under the card, in each game's own rarity colour. */
+.pack-focus-meta>b{font-size:16px;color:var(--text)}
+.pack-focus-meta>span{--rarity-tone:var(--muted);color:var(--rarity-tone);font-size:12px;font-weight:600;letter-spacing:.02em}
+.pack-focus-meta>span:not(:empty){padding:2px 10px;border-radius:99px;background:color-mix(in srgb,var(--rarity-tone) 14%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--rarity-tone) 40%,transparent)}
+.pack-focus-meta>span.pack-rarity-gloss{background:linear-gradient(100deg,color-mix(in srgb,var(--rarity-tone) 14%,transparent) 30%,color-mix(in srgb,var(--rarity-tone) 34%,transparent) 50%,color-mix(in srgb,var(--rarity-tone) 14%,transparent) 70%) 0 0/250% 100%;animation:pack-rarity-gloss 3s linear infinite}
+@keyframes pack-rarity-gloss{to{background-position:-250% 0}}
+@media(prefers-reduced-motion:reduce){.pack-backlight,.pack-focus-meta>span.pack-rarity-gloss{animation:none}}
