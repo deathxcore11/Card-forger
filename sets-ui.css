@@ -161,3 +161,15 @@ body:not(.glass) .set-atmosphere{display:none}
 @keyframes pack-hit-glow{50%{box-shadow:0 30px 50px #000b,0 0 0 2px var(--pack-glow),0 0 90px color-mix(in srgb,var(--pack-glow) 75%,transparent)}}
 @media(max-width:699px){.pack-dialog{padding:14px 12px 16px;border-radius:20px}}
 @media(prefers-reduced-motion:reduce){.pack-body,.pack-sheen,.pack-focus-card.pack-hit,.pack-done .pack-tools,.pack-done .pack-again{animation:none}.pack-card,.pack-card>span,.pack-focus-card,.pack-focus-card>span{transition:none}.pack-dialog:not(.pack-dealt) .pack-card{transform:none;opacity:1}}
+/* Swipe the big card to the next one: it slides in from the side it came from. On touch screens the
+   card owns horizontal gestures, and the tilt button lets the phone's motion play with the foil. */
+@media(any-pointer:coarse){.pack-focus-card{touch-action:pan-y}}
+.pack-focus-card.pack-slide-next{animation:pack-slide-next .32s cubic-bezier(.2,.9,.25,1)}
+.pack-focus-card.pack-slide-prev{animation:pack-slide-prev .32s cubic-bezier(.2,.9,.25,1)}
+@keyframes pack-slide-next{from{translate:38% 0;opacity:.2}to{translate:0 0;opacity:1}}
+@keyframes pack-slide-prev{from{translate:-38% 0;opacity:.2}to{translate:0 0;opacity:1}}
+.pack-tilt{justify-self:center;min-height:32px;padding:5px 14px;border:1px solid #ffffff24;border-radius:999px;background:#ffffff0a;color:var(--muted);font:600 11.5px/1.2 inherit;cursor:pointer}
+.pack-tilt[aria-pressed="true"]{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 50%,transparent)}
+.pack-tilt[hidden]{display:none}
+@media(prefers-reduced-motion:reduce){.pack-focus-card.pack-slide-next,.pack-focus-card.pack-slide-prev{animation:none}}
+.pack-focus{position:relative}.pack-focus>.pack-tilt{position:absolute;right:2px;bottom:4px}

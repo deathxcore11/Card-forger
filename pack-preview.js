@@ -4,6 +4,7 @@ import {ygoRarity} from './ygo-identity.js';
 import {brandStaticMark} from './brand.js';
 import {setArtworkSources,setImageUrl,YGO_TOURNAMENT_PACK} from './set-experience.js';
 import {finishAttrs,finishChoices} from './finish-preview.js';
+import {attachZoomMotion} from './mobile-tilt.js';
 // A discovery sampler. No collation, print-run odds, purchases or ownership are implied.
 export function sampleSetCards(cards,count=10,random=Math.random){
  const pool=[...new Map(cards.filter(c=>c?.id&&c.name).map(c=>[String(c.id),c])).values()];
@@ -153,7 +154,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  const hand=()=>picks.map((c,i)=>{const rarity=packRarity(game,c);return `<button class="pack-card" data-pack="reveal" data-index="${i}" data-hold-card style="--i:${i};--pack-glow:${TIERS[Math.min(rarity.rank,5)].color}" aria-label="Card ${i+1}, face down" aria-pressed="false">${back}<span class="pack-card-front"><img data-pack-src="${esc(setImageUrl(cardArt(c)))}" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true"></span></button>`;}).join('');
  dialog.innerHTML=`<header class="pack-header"><div><h2>${esc(set.name)}</h2><p class="pack-explanation">Free preview · approximate pull rates, not a real booster · nothing is added to your collection</p></div><button class="icon" data-pack="close" aria-label="Close pack">✕</button></header>
 <div class="pack-sealed"><button class="pack-wrapper" data-pack="open" aria-label="Open the ${esc(set.name)} pack"><span class="pack-body"><span class="pack-wrap-art">${sources.length?`<img src="${esc(safeHref(setImageUrl(sources[0])))}" data-sources="${esc(JSON.stringify(sources))}" alt="" referrerpolicy="no-referrer" onerror="const s=JSON.parse(this.dataset.sources),i=(+this.dataset.i||0)+1;if(s[i]){this.dataset.i=i;this.src=s[i];this.closest('.pack-wrapper').classList.add('pack-generic');}else this.hidden=true">`:''}<span class="pack-wrap-brand">${brandStaticMark()}<b>${esc(set.name)}</b></span></span><span class="pack-crimp top"></span><span class="pack-crimp bottom"></span><span class="pack-sheen"></span></span></button></div>
-<div class="pack-content" hidden><div class="pack-focus"><button class="pack-focus-card" data-pack="focus" data-hold-card aria-label="Card 1"><span class="pack-face" data-finish-surface="pack"><img alt="" referrerpolicy="no-referrer"></span>${back}</button><p class="pack-focus-meta" aria-live="polite"><b></b><span></span></p></div><div class="pack-hand" role="group" aria-label="Cards in this pack" style="--pack-n:${picks.length}">${hand()}</div>
+<div class="pack-content" hidden><div class="pack-focus"><button class="pack-focus-card" data-pack="focus" data-hold-card aria-label="Card 1"><span class="pack-face" data-finish-surface="pack"><img alt="" referrerpolicy="no-referrer"></span>${back}</button><p class="pack-focus-meta" aria-live="polite"><b></b><span></span></p><button type="button" class="pack-tilt" hidden>Enable tilt</button></div><div class="pack-hand" role="group" aria-label="Cards in this pack" style="--pack-n:${picks.length}">${hand()}</div>
 <div class="pack-actions"><button class="btn ghost pack-reveal-all" data-pack="reveal-all">Reveal all</button><div class="pack-tools" role="group" aria-label="This pack"><button class="pack-tool" data-pack="copy" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8"/></svg><span>Copy list</span></button><button class="pack-tool" data-pack="wish" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg><span>Wishlist all</span></button><button class="pack-tool" data-pack="buy" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14l-1.4 9.2a2 2 0 0 1-2 1.8H8.4a2 2 0 0 1-2-1.8z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span>Shop list</span></button></div><button class="btn pack-again" data-pack="again">Open a new pack</button></div></div><p class="pack-status" role="status" aria-live="polite"></p>`;
  document.body.append(dialog);dialog.tabIndex=-1;dialog.showModal();dialog.focus({preventScroll:true});
  const status=dialog.querySelector('.pack-status'),focusCard=dialog.querySelector('.pack-focus-card'),face=focusCard.querySelector('.pack-face'),faceImg=face.querySelector('img'),meta=dialog.querySelector('.pack-focus-meta');
@@ -180,10 +181,12 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  fill();
  const open=()=>{const w=dialog.querySelector('.pack-wrapper');const done=()=>{dialog.querySelector('.pack-sealed').hidden=true;dialog.querySelector('.pack-content').hidden=false;dialog.classList.add('pack-dealt');show(0);focusCard.focus({preventScroll:true});};
   if(reduce()){done();return;}w.classList.add('tearing');setTimeout(done,620);};
- const close=()=>{if(disposed)return;disposed=true;cancelAnimationFrame(raf);dialog.close();dialog.remove();};
+ const close=()=>{if(disposed)return;disposed=true;cancelAnimationFrame(raf);stopTilt();dialog.close();dialog.remove();};
  // Light follows the pointer (or tilt) over the focused card; at rest it drifts slowly.
  let raf=0,t0=performance.now(),pointer=null;
- const light=now=>{raf=0;if(disposed||!dialog.isConnected)return;const [x,y]=pointer||[50+30*Math.sin((now-t0)/1900),40+20*Math.sin((now-t0)/2700)];focusCard.style.setProperty('--mx',x+'%');focusCard.style.setProperty('--my',y+'%');
+ const light=now=>{raf=0;if(disposed||!dialog.isConnected)return;
+  // While the phone's tilt drives the card, the resting drift steps aside.
+  if(!pointer&&/perspective/.test(focusCard.style.transform)){raf=requestAnimationFrame(light);return;}const [x,y]=pointer||[50+30*Math.sin((now-t0)/1900),40+20*Math.sin((now-t0)/2700)];focusCard.style.setProperty('--mx',x+'%');focusCard.style.setProperty('--my',y+'%');
   // Only a pointer tilts the card; at rest just the light drifts, so the card itself stays still.
   if(!reduce()){focusCard.style.transform=pointer?`rotateY(${(x-50)/6}deg) rotateX(${(50-y)/8}deg)`:'';if(!pointer)raf=requestAnimationFrame(light);}};
  focusCard.addEventListener('pointermove',e=>{const r=focusCard.getBoundingClientRect();pointer=[(e.clientX-r.left)/r.width*100,(e.clientY-r.top)/r.height*100];if(!raf)raf=requestAnimationFrame(light);});
@@ -191,9 +194,15 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  raf=requestAnimationFrame(light);
  // Swipe the big card to move through the pack; drag along the hand to scrub.
  let swipe=null;focusCard.addEventListener('pointerdown',e=>{swipe={x:e.clientX,y:e.clientY,moved:false};});
- focusCard.addEventListener('pointerup',e=>{if(!swipe)return;const dx=e.clientX-swipe.x;if(Math.abs(dx)>40&&Math.abs(dx)>Math.abs(e.clientY-swipe.y)){swipe.moved=true;show(focus+(dx<0?1:-1));}});
+ focusCard.addEventListener('pointerup',e=>{if(!swipe)return;const dx=e.clientX-swipe.x;if(Math.abs(dx)>40&&Math.abs(dx)>Math.abs(e.clientY-swipe.y)){swipe.moved=true;slide(dx<0?1:-1);}});
+ focusCard.addEventListener('pointercancel',()=>{swipe=null;});
+ // A swipe slides the big card out and the next one in from that side.
+ const slide=step=>{const next=focus+step;if(next<0||next>=picks.length)return;show(next);if(reduce())return;focusCard.classList.remove('pack-slide-next','pack-slide-prev');void focusCard.offsetWidth;focusCard.classList.add(step>0?'pack-slide-next':'pack-slide-prev');};
+ focusCard.addEventListener('animationend',e=>{if(/^pack-slide/.test(e.animationName))focusCard.classList.remove('pack-slide-next','pack-slide-prev');});
+ // Phones, tablets and foldables can tilt the revealed card to play with its foil.
+ const stopTilt=attachZoomMotion({dialog,surface:focusCard,button:dialog.querySelector('.pack-tilt'),active:()=>!disposed&&revealed.has(focus)&&!dialog.querySelector('.pack-content').hidden});
  const handEl=dialog.querySelector('.pack-hand');handEl.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'&&!e.buttons){const b=e.target.closest('.pack-card');if(b)show(+b.dataset.index);return;}if(!e.buttons)return;const r=handEl.getBoundingClientRect();show(Math.round((e.clientX-r.left)/r.width*(picks.length-1)));});
- dialog.addEventListener('keydown',e=>{if(dialog.querySelector('.pack-content').hidden)return;if(e.key==='ArrowRight'){e.preventDefault();show(focus+1);}else if(e.key==='ArrowLeft'){e.preventDefault();show(focus-1);}});
+ dialog.addEventListener('keydown',e=>{if(dialog.querySelector('.pack-content').hidden)return;if(e.key==='ArrowRight'){e.preventDefault();slide(1);}else if(e.key==='ArrowLeft'){e.preventDefault();slide(-1);}});
  dialog.addEventListener('close',close);dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
  dialog.addEventListener('click',async e=>{const b=e.target.closest('[data-pack]');if(!b||busy)return;const action=b.dataset.pack,i=Number(b.dataset.index);
   if(action==='close')return close();
