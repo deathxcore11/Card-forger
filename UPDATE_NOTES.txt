@@ -1,3 +1,7 @@
+3.90.5 - Collection cards show the same holo as the card page
+Pressing or hovering a card in your collection, a set or search no longer lays an old rainbow shine over the whole card. Foil cards now show the same realistic holo you see on the card page, staying inside the foil areas and following your finger, and plain cards get only a soft glare instead of looking holographic.
+The small type and set badges on gallery cards are slimmer and tucked into the corners, and they fade away while you press or hover a card, so the printed name, stage and weakness are never covered.
+
 3.90.4 - Illustration rares keep their painting
 Illustration rares and special illustration rares, such as Bloodmoon Ursaluna ex and Espeon ex, no longer look embossed or washed out. The brushwork texture is now a fine shimmer rather than a moulded relief, and the foil adds its sheen on top of the painting instead of bleaching its colours, so the art and text stay rich and crisp.
 Tapping a card you pulled from a pack opens its card page already set to what you pulled: the exact Yu-Gi-Oh! printing and rarity, the Pokémon holo or reverse holo, or the Magic foil, with its shine showing straight away.

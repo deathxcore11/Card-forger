@@ -4967,3 +4967,21 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 @keyframes data-loading-in{from{opacity:0;transform:scale(.96)}}
 @keyframes data-loading-out{to{opacity:0;transform:scale(.97)}}
 @media(prefers-reduced-motion:reduce){.data-loading,.data-loading.leaving{animation:none}}
+
+/* Press and entrance shine: the foil itself is the shine. A card with a finish overlay (the WebGL foil or
+   its CSS fallback) gets no extra layer; its foil light follows the finger. Plain cards get only a soft
+   white glare, never a rainbow, since a non-foil card is not holographic. */
+@media (prefers-reduced-motion: no-preference) {
+  .lot-art.tilting::before, .cd-img.tilting::before, .tile-art.tilting::before { mix-blend-mode: soft-light; opacity: .5; background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,.6), transparent 45%); background-size: 100% 100%; background-position: 0 0; }
+  :is(.lot-art, .cd-img, .tile-art).tilting:has(.finish-overlay)::before { display: none; }
+  .cd-img.shine-once::after { mix-blend-mode: soft-light; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.55) 50%, transparent 65%) no-repeat; background-size: 250% 100%; }
+  .cd-img.shine-once:has(.finish-overlay)::after { display: none; }
+}
+/* Tile badges stay small in the corners and step aside while a card is pressed or hovered, so the
+   printed name, stage and weakness are never covered when you look at the card. */
+.tile-chrome .tile-emb, .tile-chrome .tile-set { height: 18px; padding: 0 5px; gap: 2px; transition: opacity .2s; }
+.tile-chrome .tile-emb { top: 3px; left: 3px; }
+.tile-chrome .tile-set { bottom: 3px; left: 3px; }
+.tile-chrome .emb, .tile-chrome .energy, .tile-chrome .ms, .lot-art .tile-chrome img, .lot-art .tile-chrome .img-missing { width: 13px !important; height: 13px !important; }
+.tile-chrome .tset { font-size: 9.5px; } .tile-chrome .tset small { font-size: 8.5px; }
+.tilting .tile-chrome > *, .tilting + .tile-chrome > *, :is(.lot-art, .grid-card).tilting .tile-chrome > * { opacity: 0; }
