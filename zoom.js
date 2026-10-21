@@ -3,6 +3,7 @@
 // Shows the image already on screen at once and swaps in the high-resolution one when it loads.
 
 import {esc} from './ui.js';
+import {attachZoomMotion} from './mobile-tilt.js';
 const MAX = 6;
 
 // Reuse the picture that actually loaded, not a button's stale first URL.
@@ -12,22 +13,24 @@ export function zoomCardOptions(target) {
   try { const parsed = JSON.parse(image?.dataset?.artSources || "[]"); if (Array.isArray(parsed)) sources = parsed; } catch {}
   const src = image?.complete && image.naturalWidth > 0 && !image.hidden ? image.currentSrc || image.src : data.src;
   let finishModel=null;try{finishModel=JSON.parse(target.closest?.('[data-finish-model]')?.dataset.finishModel||'null');}catch{}
-  return { src, sources, finishModel, hi:data.hi || (/scryfall\.io/.test(src || "") ? scryfallHi(src) : ""), art:data.art, alt:data.name || "Card", fallback:data.fallback || "", holdCard:{holdCard:"true",id:data.id || "",name:data.name || "",entry:data.entry || ""} };
+  return { src, sources, finishModel, artCrop:data.artCrop||"", hi:data.hi || (/scryfall\.io/.test(src || "") ? scryfallHi(src) : ""), art:data.art, alt:data.name || "Card", fallback:data.fallback || "", holdCard:{holdCard:"true",id:data.id || "",name:data.name || "",entry:data.entry || ""} };
 }
 export function zoomSources(values, base) {
   return [...new Set(values.filter(value => typeof value === "string" && value).flatMap(value => {
     try { const url = new URL(value, base); return ["https:", "http:", "blob:"].includes(url.protocol) || /^data:image\//i.test(value) ? [url.href] : []; } catch { return []; }
   }))];
 }
-export function openZoom({ src, hi, sources = [], alt = "Card", art = "", artHi = "", fallback = "", holdCard=null, finishModel=null }) {
+export function openZoom({ src, hi, sources = [], alt = "Card", art = "", artHi = "", artCrop = "", fallback = "", holdCard=null, finishModel=null }) {
   const base = document.baseURI;
-  const views = [{ id: "card", label: "Card", sources:zoomSources([src, ...sources, fallback, hi], base), hi:zoomSources([hi], base)[0] }];
+  const views = [{ id: "card", label: "Effects", sources:zoomSources([src, ...sources, fallback, hi], base), hi:zoomSources([hi], base)[0] }];
+  views.push({...views[0],id:"plain",label:"Plain card"});
   if (art) views.push({ id: "art", label: "Art", sources:zoomSources([art, artHi], base), hi:zoomSources([artHi], base)[0] });
+  if(!art&&artCrop==="pokemon")views.push({...views[0],id:"art",label:"Art",crop:"pokemon"});
   const dlg = document.createElement("dialog");
   dlg.className = "zoom";
   dlg.setAttribute("aria-label", `${alt} — enlarged`);
-  dlg.innerHTML = `<div class="zoom-stage"><div class="zoom-card-surface" data-finish-surface="zoom" data-finish-model="${esc(JSON.stringify(finishModel||{}))}"><img class="zoom-img" alt="${alt.replace(/"/g, "&quot;")}" draggable="false"></div></div>
-    <div class="zoom-top"><span class="zoom-res" aria-live="polite"></span><button class="zoom-btn" data-z="close" aria-label="Close">✕</button></div>
+  dlg.innerHTML = `<div class="zoom-stage"><div class="zoom-card-surface"><div class="zoom-card-light" data-finish-surface="zoom" data-finish-model="${esc(JSON.stringify(finishModel||{}))}"><img class="zoom-img" alt="${esc(alt)}" draggable="false"></div></div></div>
+    <div class="zoom-top"><button class="zoom-btn" data-z="tilt" aria-pressed="true" hidden>Tilt on</button><span class="zoom-res" aria-live="polite"></span><button class="zoom-btn" data-z="close" aria-label="Close">✕</button></div>
     <div class="zoom-bar">${views.length > 1 ? `<div class="zoom-seg" role="tablist">${views.map((v, i) => `<button role="tab" data-z="view" data-i="${i}" aria-selected="${i === 0}">${v.label}</button>`).join("")}</div>` : ""}
       <button class="zoom-btn" data-z="out" aria-label="Zoom out">−</button><button class="zoom-btn" data-z="fit" aria-label="Fit to screen">Fit</button><button class="zoom-btn" data-z="in" aria-label="Zoom in">+</button></div>
     <p class="zoom-hint">Pinch or double-tap to zoom · drag to move · swipe down to close</p>`;
@@ -40,7 +43,9 @@ export function openZoom({ src, hi, sources = [], alt = "Card", art = "", artHi 
     im = dlg.querySelector(".zoom-img"),
     surface = dlg.querySelector(".zoom-card-surface"),
     res = dlg.querySelector(".zoom-res");
+  const light=dlg.querySelector(".zoom-card-light");
   let s = 1, tx = 0, ty = 0, view = 0, loadId = 0;
+  const disposeMotion=attachZoomMotion({dialog:dlg,surface:light,button:dlg.querySelector('[data-z="tilt"]'),active:()=>views[view].id==="card"&&s<=1.02});
   const pts = new Map();
   let pinch = null, pan = null, lastTap = 0, swipe = null;
 
@@ -48,6 +53,7 @@ export function openZoom({ src, hi, sources = [], alt = "Card", art = "", artHi 
     surface.style.transition = anim ? "transform 0.22s cubic-bezier(.2,.8,.2,1)" : "none";
     surface.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
     dlg.classList.toggle("zoomed", s > 1.02);
+    if(s>1.02)light.style.removeProperty("transform");
   };
   // Keep the image from being dragged entirely off screen.
   const clamp = () => {
@@ -77,7 +83,12 @@ export function openZoom({ src, hi, sources = [], alt = "Card", art = "", artHi 
   const load = (i) => {
     view = i;
     // Art crops have a different coordinate system. Preserve identity without misplacing a mask.
-    surface.dataset.finishModel=JSON.stringify(i===0?(finishModel||{}):{});
+    light.dataset.finishModel=JSON.stringify(i===0?(finishModel||{}):{});
+    if(i===0)light.dataset.finishSurface="zoom";else delete light.dataset.finishSurface;
+    dlg.dataset.view=views[i].id;
+    dlg.classList.toggle("zoom-art-crop",views[i].crop==="pokemon");
+    dlg.querySelector(".zoom-hint").textContent=views[i].crop==="pokemon"?"Art crop from the source card image":views[i].id==="plain"?"Original source image · no CardStashy lighting or foil effects":"Pinch or double-tap to zoom · drag to move · swipe down to close";
+    dlg.dispatchEvent(new Event("cardstashy-zoom-view"));
     surface.querySelector?.('.finish-overlay')?.remove();
     const v = views[i], current = ++loadId, tried = new Set();
     const active = () => loadId === current && dlg.isConnected;
@@ -108,6 +119,7 @@ export function openZoom({ src, hi, sources = [], alt = "Card", art = "", artHi 
   const close = () => {
     if (!dlg.isConnected) return;
     loadId++;
+    disposeMotion();
     dlg.close();
     dlg.remove();
     document.documentElement.classList.remove("zoom-open");
@@ -124,6 +136,7 @@ export function openZoom({ src, hi, sources = [], alt = "Card", art = "", artHi 
     else if (z === "view") load(Number(b.dataset.i));
   });
   dlg.addEventListener("keydown", (e) => {
+    if(e.target.matches('[role="tab"]')&&["ArrowLeft","ArrowRight","Home","End"].includes(e.key)){e.preventDefault();load(e.key==="Home"?0:e.key==="End"?views.length-1:(view+(e.key==="ArrowRight"?1:-1)+views.length)%views.length);dlg.querySelector(`[data-i="${view}"]`).focus();return;}
     if (e.key === "+" || e.key === "=") zoomAt(s * 1.4, 0, 0, true);
     else if (e.key === "-") zoomAt(s / 1.4, 0, 0, true);
     else if (e.key === "0") zoomAt(1, 0, 0, true);

@@ -4876,3 +4876,17 @@ dialog.sheet:has(.context-card),body.glass dialog.sheet:has(.context-card){max-w
 }
 @media(max-width:350px){.context-menu .quick-owned{grid-template-columns:1fr}.context-menu .quick-owned .stepper{grid-column:1;grid-row:auto;justify-self:start}.context-shortcuts{gap:5px}.context-art{flex-basis:40px}.context-art .quick-card-thumb{width:38px;height:53px}}
 @media(prefers-reduced-motion:reduce){.context-menu :is(.context-action,summary,.chev){transition:none}}
+
+/* Independent transforms keep sensor tilt separate from pinch and pan. */
+.zoom-card-light{position:relative;display:grid;place-items:center;max-width:100%;line-height:0;transition:transform .16s ease-out;transform-style:preserve-3d}
+.zoom-card-light>.zoom-img{border-radius:4.75% / 3.5%}
+.zoom-bar{max-width:calc(100vw - 24px);box-sizing:border-box;flex-wrap:wrap;justify-content:center;border-radius:26px}
+.zoom-seg{min-width:0;max-width:100%}
+.zoom-seg button{min-height:44px;height:auto;white-space:nowrap;padding:8px 12px}
+.zoom-top>[data-z="tilt"]{font-size:12px}
+.zoom-top>[hidden]{display:none}
+@media(max-width:600px){.zoom-bar{width:max-content;gap:5px;bottom:calc(env(safe-area-inset-bottom) + 46px)}.zoom-seg{flex-basis:100%;justify-content:center}.zoom-seg button{flex:1;padding:8px 10px;font-size:12px}.zoom-hint{padding:0 16px;bottom:calc(env(safe-area-inset-bottom) + 10px);font-size:10px}.zoom-stage{bottom:160px;top:66px}}
+@media(prefers-reduced-motion:reduce){.zoom-card-light{transition:none;transform:none!important}}
+.zoom.zoom-art-crop .zoom-card-light{width:min(90vw,650px);aspect-ratio:1.68;overflow:hidden;display:block;border-radius:12px}
+.zoom.zoom-art-crop .zoom-img{position:absolute;top:0;left:0;width:122%;height:auto;max-width:none;max-height:none;transform:translate(-9%,-10.8%);border-radius:0;box-shadow:none}
+@media(max-width:600px){.zoom-img{max-height:calc(100dvh - 240px)}}

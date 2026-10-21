@@ -1,3 +1,4 @@
+import {motionTiltOn} from './mobile-tilt.js';
 import {attachFinishPreview} from './finish-preview.js';
 import {mountFeedback,removeFeedback} from './feedback-layer.js';
 // How the app feels: haptics and motion.
@@ -350,7 +351,7 @@ function attachMotionTilt(root, pressed) {
   const apply = () => {
     frame = 0;
     const c = hero();
-    if (reduced() || globalThis.document?.hidden || !c || !last || pressed() === c) return;
+    if (!motionTiltOn() || reduced() || globalThis.document?.hidden || !c || !last || pressed() === c) return;
     const clamp = (v) => Math.max(-1, Math.min(1, v / 18));
     if(c!==currentCard){currentCard=c;base=null;}
     if (!base) base = { ...last };
@@ -367,7 +368,7 @@ function attachMotionTilt(root, pressed) {
     c.style.setProperty("--my", `${50 + y * 45}%`);
   };
   const onTurn = (e) => {
-    if(reduced() || globalThis.document?.hidden)return;
+    if(!motionTiltOn() || reduced() || globalThis.document?.hidden)return;
     if (!Number.isFinite(e.beta) || !Number.isFinite(e.gamma)) return;
     asked = true; // A delivered sample already proves access; do not ask again.
     last = { b: e.beta, g: e.gamma };
@@ -379,12 +380,13 @@ function attachMotionTilt(root, pressed) {
     listening = true;
     addEventListener("deviceorientation", onTurn, { passive: true });
   };
+  window.addEventListener("cardstashy-motion-tilt-change",()=>{base=null;if(currentCard&&!motionTiltOn()){currentCard.classList.remove("gyro","tilting");for(const p of ["--tx","--ty","--mx","--my"])currentCard.style.removeProperty(p);}});
   const needsAsk = typeof DeviceOrientationEvent.requestPermission === "function";
   // Attaching a listener does not request permission. It also covers an iOS
   // permission already granted before this app instance opened its first card.
   listen();
   root.addEventListener("click", (e) => {
-    if (!needsAsk || asked || !e.target.closest?.(TILT)) return;
+    if (!motionTiltOn() || !needsAsk || asked || !e.target.closest?.(TILT)) return;
     asked = true;
     DeviceOrientationEvent.requestPermission().then((r) => r === "granted" && listen()).catch(() => {});
   }, { capture: true, passive: true });

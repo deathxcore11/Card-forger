@@ -1,3 +1,6 @@
+import {openPackPreview} from './pack-preview.js';
+import {packEligible} from './set-experience.js';
+import {setMotionTilt} from './mobile-tilt.js';
 import {cachedImages,localStorageFootprint} from './settings-storage.js';
 import {batchStorageSummary} from './scan-batch.js';
 import {initGrid,applyGridSize,applyGridPinch} from './grid-settings.js';
@@ -42,7 +45,7 @@ import { ask, askText } from "./dialog.js";
 import { attachHomeSwipe } from "./home-swipe.js";
 import { routeSegments, normalizeRoute, gameSwitchRoute, historyEntry, createNavigationQueue } from "./game-navigation.js";
 import { useMyPrices, myPriceKey, ensureTcgPrices } from "./mtg-tcgprice.js";
-import { buyOnTcgplayer, massLines } from "./buy.js";
+import { buyOnTcgplayer, massLines, copyPlain } from "./buy.js";
 import {applySwapsToCards} from './insights.js';
 import {showRuleHint,dismissRuleHint,attachRuleHover} from './rule-dex.js';
 import {bestBudgetDecks,purchaseCost,comparePower,refineCandidates,towardDeck,spendUp,cardQuality} from './deck-optimizer.js';
@@ -3087,6 +3090,18 @@ A.shareNative = async () => {
 };
 
 /* ---------- sets ---------- */
+A.openSetPack = () => {
+ const game=T.game(),screen=game==='mtg'?S.ui.set:T.ui(game).set,set=screen.info;
+ if(!packEligible(game,set)||screen.busy||screen.error||!screen.loaded)return toast("Wait for this set to finish loading.");
+ const scope=mutationScope(),ticket=accountGeneration,release=game==='mtg'?screen.code:screen.id;
+ const isCurrent=()=>mutationCurrent(scope)&&ticket===accountGeneration&&T.game()===game&&S.ui.view==='set'&&(game==='mtg'?S.ui.set.code:T.ui(game).set.id)===release;
+ try{openPackPreview({game,set,cards:screen.cards,complete:game==='mtg'?screen.cards.length===set.card_count:screen.contents?.completeness==='complete',isCurrent,
+  onCopy:copyPlain,
+  onDetails:c=>game==='mtg'?A.card({dataset:{name:c.name},printing:c}):A.tCard({dataset:{game,id:String(c.id),setId:set.id}}),
+  onWishlist:async cards=>{if(!isCurrent())throw Error("Your workspace changed. Please reopen the preview.");const saved=await commit(state=>{const st=game==='mtg'?state:state.tcg[game];for(const c of cards){const exists=st.wishlist.some(w=>game==='mtg'?key(w.name)===key(c.name):String(w.cardId)===String(c.id));if(!exists)st.wishlist.push({id:uid(),name:c.name,...(game==='mtg'?{finish:'nonfoil'}:{cardId:String(c.id)}),qty:1,addedAt:new Date().toISOString()});}return true;},{enrich:false,guard:()=>isCurrent(),scope});if(saved!==true)throw Error("Your workspace changed. Reopen this preview.");},
+  onBuy:cards=>buyOnTcgplayer(game,cards.map(c=>`1 ${c.name}`),{what:'preview cards; check exact printings'})
+ });}catch(e){toast(e.message||"Could not open this preview.");}
+};
 A.set = (t) => {
   const code = t.dataset.code;
   if (!code) return;
@@ -3291,7 +3306,7 @@ A.cardWishlist=async t=>{
   const commit=scopedCommit();
  const game=t.dataset.game,name=t.dataset.name,id=t.dataset.id;if(game!==T.game())return;
  let added=false;
- await commit(state=>{const st=game==='mtg'?state:state.tcg[game],matches=w=>game==='mtg'?key(w.name)===key(name):String(w.cardId)===String(id);
+ const saved=await commit(state=>{const st=game==='mtg'?state:state.tcg[game],matches=w=>game==='mtg'?key(w.name)===key(name):String(w.cardId)===String(id);
   if(st.wishlist.some(matches))st.wishlist=st.wishlist.filter(w=>!matches(w));
   else{st.wishlist.push({id:uid(),name,...(game==='mtg'?{finish:'nonfoil'}:{cardId:id}),qty:1,addedAt:new Date().toISOString()});added=true;}
  },{enrich:false});toast(added?'Added to wishlist.':'Removed from wishlist.');
@@ -5976,6 +5991,7 @@ onAlert((f) => {
   } catch {}
 });
 C.setFinishEffects = t => {const saved=setFinishEffects(t.checked);if(!saved)t.checked=finishEffectsOn();toast(saved?"Saved card lighting preference on this device.":"Card lighting preference could not be saved. Your previous setting is kept.");};
+C.setMotionTilt = t => {if(!setMotionTilt(t.checked)){t.checked=!t.checked;toast("Could not save tilt preference.");}else toast(t.checked?"Phone tilt on.":"Phone tilt off.");};
 C.setHaptics = (t) => {
   const saved=setHaptics(t.checked);
   if(!saved)t.checked=hapticsOn();

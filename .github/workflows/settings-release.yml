@@ -19,10 +19,12 @@ jobs:
       - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
       - run: npx playwright install --with-deps chromium
       - run: node tests/settings-layout-release.mjs
+      - run: node tests/set-experience-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: settings-release-layout
           path: |
+            test-results/set-experience*
             test-results/settings-release-layout.json
             test-results/synthetic-search-settings-release-*
