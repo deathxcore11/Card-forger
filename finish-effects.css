@@ -147,3 +147,7 @@
 .rarity-strip{display:flex;align-items:center;gap:3px;margin-top:4px;min-height:12px}
 .rarity-strip .rarity-swatch{width:12px;height:12px;border-radius:3px}
 .rarity-strip small{font-size:10px;line-height:1;color:var(--muted,#aab);margin-left:2px}
+/* Foil-stamped promo logos: silver foil in the stamp's own letters, with a rainbow glint that follows the
+   light. Box 56.5%–89% x 11.5%–25.5% of the card; the traced letter mask fills that box exactly. */
+.finish-stamp-silver{opacity:.95;mix-blend-mode:screen;background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#ffffffd0,transparent 55%),linear-gradient(115deg,#9aa4b0 10%,#e9eef5 30%,#9ff0ff 42%,#ffd0f4 50%,#fff3b0 58%,#e9eef5 70%,#8d97a3 90%);background-size:100% 100%,260% 260%;background-position:0 0,var(--finish-x) var(--finish-y);-webkit-mask:url("assets/finishes/stamp-first-movie.png") 83.704% 13.372%/32.5% 14% no-repeat;mask:url("assets/finishes/stamp-first-movie.png") 83.704% 13.372%/32.5% 14% no-repeat}
+.finish-auto .finish-stamp-silver{opacity:.85}

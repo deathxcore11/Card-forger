@@ -204,6 +204,11 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  document.body.append(dialog);dialog.tabIndex=-1;dialog.showModal();dialog.focus({preventScroll:true});
  const status=dialog.querySelector('.pack-status'),focusCard=dialog.querySelector('.pack-focus-card'),face=focusCard.querySelector('.pack-face'),faceImg=face.querySelector('img'),meta=dialog.querySelector('.pack-focus-meta');
  const ref=i=>({game,card:picks[i],dataset:{}});
+ // Each card box takes its picture's own proportions (scans are not all exactly 63:88), so the price
+ // frame hugs the printed card instead of leaving a gap above and below it.
+ const fit=(box,img)=>{if(img.naturalWidth&&img.naturalHeight)box.style.aspectRatio=`${img.naturalWidth}/${img.naturalHeight}`;};
+ faceImg.addEventListener('load',()=>fit(focusCard,faceImg));
+ dialog.querySelectorAll('.pack-card img[data-pack-src]').forEach(img=>img.addEventListener('load',()=>fit(img.closest('.pack-card'),img)));
  // Long-press / right-click on any card opens the same card actions as everywhere else.
  const wireHold=()=>{dialog.querySelectorAll('.pack-card').forEach((b,i)=>{b.quickRef=ref(i);});};wireHold();
  // Price tier of a pulled card: the same colours as the collection's borders; unpriced cards stay neutral.
@@ -216,7 +221,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
   setTier(focusCard,open?tierOf(focus):'');
   focusCard.setAttribute('aria-label',open?`${c.name}. Open card`:`Card ${focus+1}, face down. Reveal`);
   if(open){const src=setImageUrl(cardArt(c));if(faceImg.getAttribute('src')!==src)faceImg.src=src;const attrs=finishAttrs(game,c,ctxs[focus],'pack');const tmp=document.createElement('span');tmp.innerHTML=`<i ${attrs}></i>`;const i2=tmp.firstChild;for(const a of ['data-finish-game','data-finish-effect','data-finish-model'])face.setAttribute(a,i2.getAttribute(a));face.dataset.finishSurface='pack';}
-  else{face.removeAttribute('data-finish-model');faceImg.removeAttribute('src');}
+  else{face.removeAttribute('data-finish-model');faceImg.removeAttribute('src');focusCard.style.removeProperty('aspect-ratio');}
   meta.querySelector('b').textContent=open?c.name:'';meta.querySelector('.pack-rarity').innerHTML=open?rarityEmblem(game,rarity.label):'';
  };
  // Pulled shiny slots load their full card in the background and pick up their holo before they are seen.

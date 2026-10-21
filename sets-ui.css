@@ -51,7 +51,7 @@
 .set-grid .ygo-set-meta>.ellip{white-space:normal;overflow:visible;overflow-wrap:anywhere;line-height:1.4}
 .set-grid .ygo-set-meta .set-price{display:flex;flex-wrap:wrap;gap:3px 7px;min-width:0;white-space:normal;overflow-wrap:anywhere;font-weight:700}
 .set-grid .set-price>small{font-size:11px;font-weight:400;color:var(--muted)}
-.set-grid>.grid-card[data-tier="tn"]>.card-img{border:3px solid var(--line);border-radius:12px}
+.set-grid>.grid-card[data-tier="tn"]>.card-img{box-sizing:border-box;border:5px solid transparent;border-radius:12px;background:linear-gradient(160deg,#a7afb8,#6f7780) border-box}
 
 /* One calm catalogue shell for all three games. Native selects use the existing glass menu. */
 .set-browser-controls{display:grid;gap:14px;min-width:0;padding:18px;border:1px solid var(--line);border-radius:20px;background:color-mix(in srgb,var(--surface) 94%,transparent)}
@@ -260,3 +260,7 @@ body:not(.glass) .set-atmosphere{display:none}
 .pack-card[data-tier]::after{opacity:.7}
 .pack-card:is([data-tier="t0"],[data-tier="tn"])::after{opacity:.4}
 .pack-card:is([data-tier="t3"],[data-tier="t4"],[data-tier="t5"])::after{opacity:.95;inset:-9px}
+/* One frame for every card: the same band as the collection, in proportion to the card (about 3% of its
+   width) and attached to its edge, with the coloured shadow behind it. */
+.pack-focus-card>.pack-frame{inset:calc(var(--card-w)*-.03);border-radius:calc(var(--card-w)*.046 + var(--card-w)*.03)}
+.pack-card::before{inset:-3px;border-radius:9px}

@@ -4996,10 +4996,10 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 [data-tier="t4"] { --aura-1: #ffd34d; --aura-2: #ffb020; --aura-mix: 70%; }
 [data-tier="t5"] { --aura-1: #ff7a1a; --aura-2: #ffd08a; --aura-mix: 75%; }
 @keyframes aura-orbit {
-  0%, 100% { box-shadow: -12px -9px var(--aura-blur, 30px) 1px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), 12px 9px var(--aura-blur, 30px) 1px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 30px) * 1.5) 4px color-mix(in srgb, var(--aura-1) 40%, transparent), 0 10px 24px -14px #000c; }
-  25% { box-shadow: 12px -9px var(--aura-blur, 30px) 1px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), -12px 9px var(--aura-blur, 30px) 1px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 30px) * 1.5) 4px color-mix(in srgb, var(--aura-2) 40%, transparent), 0 10px 24px -14px #000c; }
-  50% { box-shadow: 12px 9px var(--aura-blur, 30px) 1px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), -12px -9px var(--aura-blur, 30px) 1px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 30px) * 1.5) 4px color-mix(in srgb, var(--aura-1) 40%, transparent), 0 10px 24px -14px #000c; }
-  75% { box-shadow: -12px 9px var(--aura-blur, 30px) 1px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), 12px -9px var(--aura-blur, 30px) 1px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 30px) * 1.5) 4px color-mix(in srgb, var(--aura-2) 40%, transparent), 0 10px 24px -14px #000c; }
+  0%, 100% { box-shadow: -12px -9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), 12px 9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 30px) * 1.5) -6px color-mix(in srgb, var(--aura-1) 40%, transparent), 0 10px 24px -14px #000c; }
+  25% { box-shadow: 12px -9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), -12px 9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 30px) * 1.5) -6px color-mix(in srgb, var(--aura-2) 40%, transparent), 0 10px 24px -14px #000c; }
+  50% { box-shadow: 12px 9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), -12px -9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 30px) * 1.5) -6px color-mix(in srgb, var(--aura-1) 40%, transparent), 0 10px 24px -14px #000c; }
+  75% { box-shadow: -12px 9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), 12px -9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 30px) * 1.5) -6px color-mix(in srgb, var(--aura-2) 40%, transparent), 0 10px 24px -14px #000c; }
 }
 /* Collection, binders' gallery, deck rows: the framed card art. */
 #content.view-gallery .display-list .lot[data-tier]:not(.wanted) .lot-art,
@@ -5007,7 +5007,7 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 .view-gallery .card-grid .grid-card img.card-img[data-tier],
 #content.view-gallery .card-grid .grid-card[data-tier] > .card-img,
 .cd-img .cd-zoom img[data-tier] {
-  box-shadow: -12px -9px var(--aura-blur, 30px) 1px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), 12px 9px var(--aura-blur, 30px) 1px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 30px) * 1.5) 4px color-mix(in srgb, var(--aura-1) 40%, transparent), 0 10px 24px -14px #000c;
+  box-shadow: -12px -9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), 12px 9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 30px) * 1.5) -6px color-mix(in srgb, var(--aura-1) 40%, transparent), 0 10px 24px -14px #000c;
 }
 .cd-img .cd-zoom img[data-tier] { --aura-blur: 52px; }
 #content.view-gallery .display-list .lot[data-tier="t3"]:not(.wanted) .lot-art { animation: tier-swirl 6s linear infinite, aura-orbit 8s linear infinite; }
@@ -5015,3 +5015,19 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 #content.view-gallery .display-list .lot[data-tier="t5"]:not(.wanted) .lot-art { animation: tier-shine 2.6s ease-in-out infinite, aura-orbit 6s linear infinite; }
 :is(.view-gallery .card-grid .grid-card img.card-img, .cd-img .cd-zoom img):is([data-tier="t3"], [data-tier="t4"], [data-tier="t5"]) { animation: aura-orbit 9s linear infinite; }
 @media (prefers-reduced-motion: reduce) { #content.view-gallery .display-list .lot .lot-art, :is(.view-gallery .card-grid .grid-card img.card-img, .cd-img .cd-zoom img) { animation: none !important; } }
+
+/* ===== One frame for every card. Set and search grids, deck grids and the card page wear the collection's
+   price band: the tier colour attached to the card's edge (5px on grid cards, about 2.4% of the width on the
+   card page), the same gradients and animations, and the aura behind it. ===== */
+.view-gallery .card-grid .grid-card img.card-img[data-tier], .cd-img .cd-zoom img.card-img[data-tier] {
+  outline: 0; box-sizing: border-box; border: var(--frame-w, 5px) solid transparent; border-radius: 12px; background-origin: border-box; background-clip: border-box;
+  background-image: linear-gradient(160deg, #a7afb8, #6f7780);
+}
+.cd-img .cd-zoom img.card-img[data-tier] { --frame-w: clamp(6px, 2.4vw, 10px); border-radius: calc(4.75% + var(--frame-w)) / calc(3.5% + var(--frame-w)); }
+:is(.view-gallery .card-grid .grid-card, .cd-img .cd-zoom) img.card-img[data-tier="t1"] { background-image: linear-gradient(160deg, #7be3a8, #2fae68); }
+:is(.view-gallery .card-grid .grid-card, .cd-img .cd-zoom) img.card-img[data-tier="t2"] { background-image: linear-gradient(160deg, #8cc6ff, #2f7fe0); }
+:is(.view-gallery .card-grid .grid-card, .cd-img .cd-zoom) img.card-img[data-tier="t3"] { background-image: conic-gradient(from var(--swirl), #b46cff, #6fd0ff, #ff7ad9, #b46cff); animation: tier-swirl 6s linear infinite, aura-orbit 9s linear infinite; }
+:is(.view-gallery .card-grid .grid-card, .cd-img .cd-zoom) img.card-img[data-tier="t4"] { background-image: linear-gradient(115deg, #b8860b 0%, #ffd34d 30%, #fff6c9 45%, #ffd34d 60%, #b8860b 100%); background-size: 300% 100%; animation: tier-shine 3.4s cubic-bezier(.45,.05,.3,1) infinite, aura-orbit 10s linear infinite; }
+:is(.view-gallery .card-grid .grid-card, .cd-img .cd-zoom) img.card-img[data-tier="t5"] { background-image: linear-gradient(115deg, #c2410c 0%, #ff7a1a 30%, #ffd08a 45%, #ff7a1a 60%, #c2410c 100%); background-size: 300% 100%; animation: tier-shine 2.6s ease-in-out infinite, aura-orbit 6s linear infinite; }
+#content.view-gallery .set-grid > .grid-card[data-tier="tn"] > .card-img { border: 5px solid transparent; border-radius: 12px; }
+@media (prefers-reduced-motion: reduce) { :is(.view-gallery .card-grid .grid-card, .cd-img .cd-zoom) img.card-img[data-tier] { animation: none !important; } }

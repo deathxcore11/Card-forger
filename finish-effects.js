@@ -17,6 +17,8 @@ export const FINISH_SOURCES = Object.freeze({
 });
 // Normalized source-image coordinates. Geometry is an approximation, not an authentication aid.
 export const FINISH_MASKS = Object.freeze({
+ // The First Movie stamp's box; its letters come from the stamp mask image (see .finish-stamp-silver).
+ 'pk-stamp-first-movie':'inset(11.5% 11% 74.5% 56.5%)',
  ...Object.fromEntries(Object.values(ANNIVERSARY_MAPS).flatMap(p=>[p,...(p.alternates||[])]).map(p=>[p.mask,p.css])),
  ...Object.fromEntries(Object.values(ANNIVERSARY_STAMPS).flat().map(p=>[p.mask,p.css])),
  card:'inset(0 round 4% / 3%)',
@@ -155,6 +157,13 @@ export const FINISH_MASKS = Object.freeze({
 });
 export const FINISH_MATERIALS = Object.freeze(['holo','rainbow','metal','silver','gold','secret','prismatic','starlight','tiles','micro']);
 const layer=(mask,material)=>({mask,material});
+// Promos with a foil-stamped logo printed on them. The stamp shines in its own metal, only in its own
+// letters, on every finish of the card (the card itself can be non-holo). Masks are traced from the
+// printed card and placed where the stamp sits on it.
+//   First Movie (Wizards Black Star #2–#5, 1999 theatre promos): silver foil "Kids WB Presents Pokémon
+//   The First Movie" at the top right of the art.
+export const PRINTED_STAMPS=Object.freeze({'basep-2':'first-movie','basep-3':'first-movie','basep-4':'first-movie','basep-5':'first-movie'});
+const withPrintedStamp=(c,p)=>{const stamp=PRINTED_STAMPS[c.id];if(!stamp||p.status==='unknown')return p;return {...p,layers:[...(p.layers||[]),layer('pk-stamp-'+stamp,'stamp-silver')],stamp};};
 const unknown=(key='',label='')=>({key,label,effect:'unknown',status:'unknown',layers:[],source:'',reason:'Finish preview unavailable for this printing.'});
 const preset=(key,label,effect,layers,source,status='approximate')=>({key,label,effect,layers,source,status,reason:status==='approximate'?'Simulated finish · approximate coverage':''});
 const paper=(key,label)=>preset(key,label,'plain',[],'catalog','verified');
@@ -289,7 +298,7 @@ export function finishChoices(game,c,ctx={}){
   if(v.foil)return {...unknown(v.key,v.label||v.key),reason:'Patterned finish preview unavailable for this printing.'};
   // Preserve a known variant even when its finish cannot be previewed.
   return finish?effectFor(game,c,v.key,v.label||v.key,ctx,finish):unknown(v.key,v.label||v.key);
- }).map(p=>withPtcgTreatment(c,p)).map(p=>{const profiles=ANNIVERSARY_STAMPS[c.id];return profiles?{...p,overlayProfiles:profiles,imageSources:[...new Set(profiles.flatMap(x=>x.images))]}:p;});
+ }).map(p=>withPtcgTreatment(c,p)).map(p=>{const profiles=ANNIVERSARY_STAMPS[c.id];return profiles?{...p,overlayProfiles:profiles,imageSources:[...new Set(profiles.flatMap(x=>x.images))]}:p;}).map(p=>withPrintedStamp(c,p));
  if(game==='ygo'){
   const printing=quoteForContext(game,c,ctx)?.printing;
   if(!printing?.rarity)return [];
