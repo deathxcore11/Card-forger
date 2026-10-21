@@ -1,5 +1,7 @@
-3.91.1 - Ancient Mew
+3.91.1 - Ancient Mew, foil name bars and stronger art foil
 Ancient Mew, the 2000 movie promo, now has its card picture, and its foil is the full-card speckle of the real card: gold foil scattered edge to edge with coloured flecks that light up one by one as you tilt it.
+Yu-Gi-Oh! whole-card foils (Starlight, Parallel, Shatterfoil, Starfoil) now foil the name bar too, so the title never sits in a flat box: the bar's light ground glitters with the rest of the card and the letters stay crisp.
+Super, Ultra and Secret Rare art foil now runs under the whole art box as on the real cards: full strength in the background and a steady sheen through the subject, so busy illustrations and pack pulls no longer look plain.
 
 3.91.0 - Foils everywhere, promo foils and a polished look
 Pressing or hovering a card in your collection, a set or search no longer lays an old rainbow shine over the whole card. Foil cards now show the same realistic holo you see on the card page, staying inside the foil areas and following your finger, and plain cards get only a soft glare instead of looking holographic.

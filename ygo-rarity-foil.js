@@ -64,14 +64,17 @@ void main(){
  vec2 e=u_texel*2.;float hx=texture2D(u_relief,v+vec2(e.x,0.)).r-texture2D(u_relief,v-vec2(e.x,0.)).r,hy=texture2D(u_relief,v-vec2(0.,e.y)).r-texture2D(u_relief,v+vec2(0.,e.y)).r;
  vec3 nRel=normalize(vec3(-hx*6.,-hy*6.,1.));vec2 stroke=normalize(rl.gb*2.-1.+1e-4);
  vec3 outC=base;
- // Whole card (Starlight, Parallel, Shatterfoil, Starfoil): the rules box only gets a share and the name bar is left to the lettering.
- if(u_whole.x>.5)outC=overInk(outC,foil(u_whole.x,u_whole.y,uv,L,V,H,spot,0.,stroke),(1.-text*(1.-u_whole.z))*(1.-name)*.85);
+ // Whole card (Starlight, Parallel, Shatterfoil, Starfoil): the rules box only gets a share. The name bar is foil
+ // like the rest of the card, so it never shows as a flat box: only its light ground takes the foil, the dark
+ // letters keep their ink and the lettering canvas lights them.
+ if(u_whole.x>.5)outC=overInk(outC,foil(u_whole.x,u_whole.y,uv,L,V,H,spot,0.,stroke),(1.-text*(1.-u_whole.z))*mix(1.,smoothstep(.22,.55,dot(base,vec3(.2126,.7152,.0722))),name)*.85);
  // Frame: the coloured frame, or only the outer border band (Gold, Platinum).
  if(u_frame.x>.5){float cov=u_frame.z>1.5?1.-inBox(uv,vec4(.045,.032,.955,.968)):frame;
   if(u_frame.x>5.5&&u_frame.x<6.5){float rim=pow(max(dot(nRel,H),0.),18.)*(.35+.65*spot);outC=outC*(1.-.06*cov)+(1.-outC)*mix(vec3(.95,.88,.7),outC*2.,.6)*rim*cov*.7;}
   else outC=overInk(outC,foil(u_frame.x,u_frame.y,uv,L,V,H,spot,0.,stroke),cov);}
- // Art: foil passes where the white underbase was left out, or across the whole art.
- if(u_artL.x>.5){float cov=art*(u_artL.z>1.5?1.:mk.r);if(u_artL.x>6.5&&u_artL.x<7.5)cov=art*max(mk.r,.22*rl.a);
+ // Art: the foil sheet runs under the whole art box. It shows fully where the white underbase was left out and
+ // at a steady share through the inks of the subject, so a busy illustration never reads as plain. Some recipes cover the whole art.
+ if(u_artL.x>.5){float cov=art*(u_artL.z>1.5?1.:max(mk.r,.35));if(u_artL.x>6.5&&u_artL.x<7.5)cov=art*max(mk.r,.22*rl.a);
   if(u_artL.x>4.5&&u_artL.x<5.5){vec3 silver=vec3(dot(outC,vec3(.2126,.7152,.0722)))*vec3(.9,.95,1.04);float rim=pow(max(dot(nRel,H),0.),10.);
    outC=mix(outC,shoulder(mix(silver,outC,.2)*(.55+.9*rim*(.4+.6*spot))+grating(L,V,vec2(.7071),1600.)*.35*spot),art);}
   else if(u_artL.x>5.5&&u_artL.x<6.5){float rim=pow(max(dot(nRel,H),0.),18.)*(.35+.65*spot);outC=outC*(1.-.06*art)+(1.-outC)*mix(vec3(.95,.88,.7),outC*2.,.6)*rim*art*.7;}

@@ -57,8 +57,8 @@ assert.equal(analyzeYgoArt(pend,W,H,PB).spellTrap,false,'Pendulum frames never g
 assert.equal(analyzeYgoArt(trap,W,H,YGO_LAYOUT_ART.skill).spellTrap,false,'Skill frames never get Spell/Trap coverage');
 // Shader: text box only touched by Starlight (whole-card glitter, reduced over the rules);
 // coverage otherwise comes from the art mask.
-assert.match(YGO_RARITY_FRAGMENT,/float cov=art\*\(u_artL\.z>1\.5\?1\.:mk\.r\)/,'Art foil follows the underbase mask unless the recipe covers the whole art');
-assert.match(YGO_RARITY_FRAGMENT,/\(1\.-text\*\(1\.-u_whole\.z\)\)\*\(1\.-name\)/,'Whole-card foil only shares into the rules box and leaves the name bar to the lettering');
+assert.match(YGO_RARITY_FRAGMENT,/float cov=art\*\(u_artL\.z>1\.5\?1\.:max\(mk\.r,\.35\)\)/,'Art foil is full where the underbase was left out and a fixed 35% share through the subject, unless the recipe covers the whole art');
+assert.match(YGO_RARITY_FRAGMENT,/\(1\.-text\*\(1\.-u_whole\.z\)\)\*mix\(1\.,smoothstep\(\.22,\.55,dot\(base,vec3\(\.2126,\.7152,\.0722\)\)\),name\)/,'Whole-card foil only shares into the rules box; in the name bar it foils the light ground and leaves the dark letters to the lettering');
 assert.match(YGO_RARITY_FRAGMENT,/float art=inBox\(uv,u_art\),name=inBox\(uv,u_name\),text=inBox\(uv,u_text\),frame=\(1\.-art\)\*\(1\.-text\)\*\(1\.-name\);/,'Frame foil never touches the rules box');
 assert.match(YGO_RARITY_FRAGMENT,/return mix\(base,shoulder\(T\*F\*1\.35\),clamp\(cover,0\.,1\.\)\);/,'Zero coverage returns the exact source pixel');
 // Decks and deck builds: the row's chosen printing, else the copy you own when every owned copy is
