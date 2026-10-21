@@ -20,6 +20,9 @@ const lim = (n, d, max) => Math.max(1, Math.min(max, Number.isInteger(n) && n > 
 const BASICS = /^(?:snow-covered )?(?:plains|island|swamp|mountain|forest|wastes)$/i;
 const mtgText = (c) => [c?.oracle_text, ...(c?.card_faces || []).map((f) => f.oracle_text)].filter(Boolean).join(' // ');
 const mtgImg = (c) => c?.image_uris?.normal || c?.image_uris?.small || c?.card_faces?.[0]?.image_uris?.normal || '';
+// A deck request that only describes a vibe ("fun", "something spicy", "a random casual deck") names no card.
+const VAGUE_WORDS = new Set('a an any anything something some me my fun funny cool good great strong fast random casual silly wacky creative unique interesting janky spicy wild crazy chill fresh new nice neat sweet different surprise surprising cheap budget easy simple beginner kid friendly kids competitive meta powerful aggressive deck decks build list one please for to play with'.split(' '));
+export const vagueDeckStyle = (want) => String(want || '').toLowerCase().split(/[^a-z]+/).filter(Boolean).every(w => VAGUE_WORDS.has(w));
 const tcgSet = (c) => c?.setContext?.name || c?.set?.name || c?.setName || c?.sets?.[0]?.name || c?.sets?.[0]?.set || '';
 
 // Main-list requirements, including basic resources. Unknown quotes are not zero.
@@ -273,6 +276,14 @@ export function makeAskTools(x) {
         if(!r&&g==='ptcg' && /^(fire|water|grass|lightning|psychic|fighting|darkness|metal|dragon|colorless|fairy)\b/i.test(want))r=await src.search({q:'',type:want.split(/\s/)[0][0].toUpperCase()+want.split(/\s/)[0].slice(1).toLowerCase(),category:'Pokemon',format:selected.id,page:0,size:12}).catch(()=>null);
       }
       if (!preparingCurrent()) return {cancelled:true,note:'This question was closed or replaced. Nothing was saved.'};
+      // A vibe with no card or archetype ("a fun deck", "something spicy") is not a card name: pick a
+      // build-around the way Random deck does, a random archetype or a headline Pokémon legal in the format.
+      if(!r?.cards?.length&&!required&&vagueDeckStyle(want)){
+        const pool=g==='ygo'?((await src.randomArchetype?.().catch(()=>null))?.cards||[]).filter(c=>c.category==='Monster'&&!c.extra):((await src.search({category:'Pokemon',format:selected.id,size:100}).catch(()=>({cards:[]}))).cards||[]);
+        for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+        r={cards:pool.slice(0,24),vague:true};
+      }
+      if (!preparingCurrent()) return {cancelled:true,note:'This question was closed or replaced. Nothing was saved.'};
       if (!r?.cards?.length && !required) r = await src.search({ q: want, format:selected.id, page: 0, size: 12 }).catch(() => ({ cards: [] }));
       if (!preparingCurrent()) return {cancelled:true,note:'This question was closed or replaced. Nothing was saved.'};
       const named=c=>clip(c?.name,120).toLowerCase()===required.toLowerCase();
@@ -285,7 +296,7 @@ export function makeAskTools(x) {
         if(canSeed(full)&&(!required||named(full))){pick=full;break;}
       }
       if(required&&!pick)return {game:g,requiresChoice:true,note:`I could not verify a ${selected.name}-compatible printing of “${required}”. Which card or format should the builder use?`};
-      if (!pick) return { error: `No ${g === 'ygo' ? 'Yu-Gi-Oh!' : 'Pokémon'} card found for "${want}".` };
+      if (!pick) return r?.vague?{game:g,requiresChoice:true,note:`I couldn’t find a ${selected.name}-legal build-around just now. Name a card, archetype or type you like and I’ll build around it.`}:{ error: `No ${g === 'ygo' ? 'Yu-Gi-Oh!' : 'Pokémon'} card found for "${want}".` };
       x.pending = () => {if(!scopeCurrent()){x.toast?.('Your workspace changed. Ask again in the current workspace.');return;}return x.openTcgBuild(g,pick.id,$,selected.id,scopeCurrent);}; x.pending.current=scopeCurrent; x.pendingGame=g;
       x.pending.visual={card:pick,image:pick.art||pick.imageLarge||pick.image||'',name:pick.name,format:selected.name,summary:'Generate and review the list',status:'Builder setup',ready:false,estimate:null};
       return { game:g, prepared:true, complete:false, terminal:true, reviewAvailable:true, actionLabel:'Open the deck builder', seed:pick.name, format:selected.name, goal,goalVerified:false,budget:$||'no limit', budgetBasis:'purchase', requestedBudgetBasis:budget_basis||'total', note:'The '+selected.name+' builder is prepared around '+pick.name+'. '+(goal!=='strongest'?'Your '+goal+' preference is for you to review; it is not a verified playability or strength rating. ':'')+'Its budget is purchases after owned cards, not a verified whole-deck total. Open it to generate and check the actual list and price coverage. No complete deck or under-budget result has been verified yet; nothing was saved.' };
