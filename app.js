@@ -808,11 +808,17 @@ function refreshSheet() {
     const c = ctx.type === "card" ? ctx.print || meta(ctx.name) : ctx.type === "tcard" ? contextTcgCard(ctx.game,ctx.id,ctx) : ctx.print;
     if (!c && ctx.type !== "buy") return;
     const body = $("#sheetBody"), saved = body.dataset.detailIdentity === detailContextIdentity(ctx) ? captureDetailState(body) : null;
+    // A later redraw (prices, history arriving) keeps whatever the person is using at the same spot on screen,
+    // and the card picture keeps its height until its replacement has loaded, so nothing collapses meanwhile.
+    const artHeights=[...body.querySelectorAll('.cd-zoom')].map(el=>el.getBoundingClientRect().height);
+    const held=body.contains(document.activeElement)&&document.activeElement!==body?document.activeElement:null,heldTop=held?.getBoundingClientRect().top,heldAct=held?.dataset?.act,heldKey=held&&(held.dataset.finish||held.dataset.edition||held.getAttribute('aria-label')||held.textContent);
     body.detailMountGeneration = (body.detailMountGeneration || 0) + 1;
     body.innerHTML = ctx.type === "card" ? V.cardSheet(c,ctx) : ctx.type === "tcard" ? T.tcgCardSheet(c,ctx) : V.buySheet(ctx);
     body.dataset.detailIdentity = detailContextIdentity(ctx);
     wireSheetBack();
+    body.querySelectorAll('.cd-zoom').forEach((el,i)=>{const img=el.querySelector('img');if(!artHeights[i]||!img||img.complete)return;el.style.minHeight=artHeights[i]+'px';const free=()=>{el.style.minHeight='';};img.addEventListener('load',free,{once:true});img.addEventListener('error',free,{once:true});});
     restoreDetailState(body,saved);
+    if(held&&Number.isFinite(heldTop)){const again=[...body.querySelectorAll(heldAct?`[data-act="${heldAct}"]`:'button,select,input,summary')].find(el=>(el.dataset.finish||el.dataset.edition||el.getAttribute('aria-label')||el.textContent)===heldKey);if(again)body.scrollTop+=again.getBoundingClientRect().top-heldTop;}
     sheetScrolled();
     return;
   }
@@ -3545,17 +3551,23 @@ A.cardFinishPreview = t => {
   if(!selectPreviewFinish(game,card,ctx,t.dataset.finish))return;
   if(game==='mtg'&&ctx.ownedDetail&&ctx.priceFinish!==magicOwnedDetail(S.state,ctx.entryId).finish){ctx.entryId='';delete ctx.entry;delete ctx.ownedDetail;delete ctx.condition;delete ctx.language;}
   // Reuse this same context for prices, enlargement and the explicit Add form.
-  refreshSheet();
-  const buttons=$$("#sheetBody [data-act=cardFinishPreview]");
-  buttons.find(b=>b.dataset.finish===ctx.priceFinish)?.focus({preventScroll:true});
+  holdChipInPlace(t,()=>refreshSheet(),()=>$$("#sheetBody [data-act=cardFinishPreview]").find(b=>b.dataset.finish===ctx.priceFinish));
 };
+// A chip tapped inside the card sheet rebuilds it; keep the tapped chip at the same spot on screen so the
+// page never jumps under the finger.
+function holdChipInPlace(chip,rebuild,findAgain){
+  const before=chip?.getBoundingClientRect?.().top;
+  rebuild();
+  const again=findAgain(),body=$("#sheetBody");
+  again?.focus({preventScroll:true});
+  if(body&&again&&Number.isFinite(before))body.scrollTop+=again.getBoundingClientRect().top-before;
+}
 // Yu-Gi-Oh! rarity chip: selects a printing of that rarity through the Printing & rarity selection.
 A.ygoPickRarity = t => {
   const ctx=S.ui.sheetCtx;
   if(ctx?.type!=="tcard"||ctx.game!=="ygo"||String(ctx.id)!==String(t.dataset.cardId)||!t.dataset.edition)return;
   ctx.priceEdition=t.dataset.edition;ctx.priceYgoEdition="";ctx.ygoPrintingExplicit=true;ctx.ygoEditionExplicit=false;delete ctx.ygoPriceDefault;
-  refreshSheet();
-  $$("#sheetBody [data-act=ygoPickRarity]").find(b=>b.getAttribute("aria-pressed")==="true")?.focus({preventScroll:true});
+  holdChipInPlace(t,()=>refreshSheet(),()=>$$("#sheetBody [data-act=ygoPickRarity]").find(b=>b.getAttribute("aria-pressed")==="true"));
 };
 A.cardPriceJump = t => {
   const ctx = S.ui.sheetCtx;
