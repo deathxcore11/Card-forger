@@ -1,5 +1,5 @@
-// One original vector emblem for the app, assistant and install artwork: a coral deck box with three
-// chunky gold-rimmed card backs rising out of it, each drawn in our own way after one game's card back
+// One original vector emblem for the app, assistant and install artwork: a fan of three chunky
+// gold-rimmed card backs, each drawn in our own way after one game's card back
 // and given its own foil: a blue back with a glossy split ball under a 30° rainbow wave and twinkling
 // sparkles (Pokémon), a brown back with a metallic oval and five glass-marble gems (Magic) and an umber
 // back with gold stippling and an embossed swirl (Yu-Gi-Oh!). Nothing is copied from the games' own marks.
@@ -16,16 +16,13 @@ const SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" class
 <radialGradient id="bfM" cx=".36" cy=".3" r=".75"><stop offset="0" stop-color="#fff" stop-opacity=".85"/><stop offset=".35" stop-color="#fff" stop-opacity=".18"/><stop offset=".8" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></radialGradient>
 <radialGradient id="bfV" cx=".5" cy=".5" r=".62"><stop offset="0" stop-color="#0b0503"/><stop offset=".45" stop-color="#3a1d0b"/><stop offset="1" stop-color="#6e3c18"/></radialGradient>
 <pattern id="bfD" width="5" height="5" patternUnits="userSpaceOnUse"><circle cx=".8" cy="1.1" r=".45" fill="#f1c56d" fill-opacity=".55"/><circle cx="3.4" cy="2.2" r=".35" fill="#ffe2a0" fill-opacity=".4"/><circle cx="2.1" cy="4.1" r=".4" fill="#d79b45" fill-opacity=".5"/><circle cx="4.4" cy="4.4" r=".3" fill="#ffe9b5" fill-opacity=".35"/></pattern>
-<linearGradient id="bfB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f58a72"/><stop offset="1" stop-color="#c24f39"/></linearGradient>
 <linearGradient id="bfL" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".42" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".5"/><stop offset=".58" stop-color="#fff6dc" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
 <clipPath id="bfA"><rect x="24" y="22" width="48" height="70" rx="7"/></clipPath>
 <clipPath id="bfK"><rect x="39" y="19" width="50" height="76" rx="7"/></clipPath>
 <clipPath id="bfY"><rect x="59.5" y="25.5" width="41" height="63" rx="4.5"/></clipPath>
-<clipPath id="bfQ"><path d="M0 0h128v76H102v26a10 10 0 0 1-10 10H36a10 10 0 0 1-10-10V76H0z"/></clipPath>
 </defs>
-<path d="M27 74h74v6H27z" fill="#8e3626"/>
-<g class="brand-cards" clip-path="url(#bfQ)">
-<g class="brand-card brand-right" transform="translate(-9 0) rotate(15 64 98)">
+<g class="brand-cards" transform="translate(0 6)">
+<g class="brand-card brand-right" transform="translate(3 0) rotate(14 64 96)">
 <rect x="56" y="22" width="48" height="70" rx="7" fill="url(#bfG)" stroke="#6b4512" stroke-width="1.2"/>
 <rect x="59.5" y="25.5" width="41" height="63" rx="4.5" fill="url(#bfV)"/>
 <g clip-path="url(#bfY)"><rect x="59.5" y="25.5" width="41" height="63" fill="url(#bfD)"/>
@@ -42,7 +39,7 @@ const SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" class
 <circle cx="64" cy="46.5" r="3" fill="#f3e8c8" stroke="#1d1009" stroke-width=".7"/><circle cx="64" cy="46.5" r="3" fill="url(#bfM)"/><circle class="brand-glint" cx="63" cy="45.4" r=".85" fill="#fff"/><circle cx="55.8" cy="53.5" r="3" fill="#3c9a58" stroke="#1d1009" stroke-width=".7"/><circle cx="55.8" cy="53.5" r="3" fill="url(#bfM)"/><circle class="brand-glint" cx="54.8" cy="52.4" r=".85" fill="#fff"/><circle cx="72.2" cy="53.5" r="3" fill="#3b86d6" stroke="#1d1009" stroke-width=".7"/><circle cx="72.2" cy="53.5" r="3" fill="url(#bfM)"/><circle class="brand-glint" cx="71.2" cy="52.4" r=".85" fill="#fff"/><circle cx="58.6" cy="63.6" r="3" fill="#d4463a" stroke="#1d1009" stroke-width=".7"/><circle cx="58.6" cy="63.6" r="3" fill="url(#bfM)"/><circle class="brand-glint" cx="57.6" cy="62.5" r=".85" fill="#fff"/><circle cx="69.4" cy="63.6" r="3" fill="#2a2430" stroke="#1d1009" stroke-width=".7"/><circle cx="69.4" cy="63.6" r="3" fill="url(#bfM)"/><circle class="brand-glint" cx="68.4" cy="62.5" r=".85" fill="#fff"/>
 <g clip-path="url(#bfK)"><rect class="brand-sheen" style="--d:-.25s" x="-11" y="15" width="70" height="84" fill="url(#bfL)"/></g>
 </g>
-<g class="brand-card brand-left" transform="translate(9 0) rotate(-15 64 98)">
+<g class="brand-card brand-left" transform="translate(-3 0) rotate(-14 64 96)">
 <rect x="24" y="22" width="48" height="70" rx="7" fill="url(#bfG)" stroke="#6b4512" stroke-width="1.2"/>
 <rect x="27.5" y="25.5" width="41" height="63" rx="4.5" fill="url(#bfP)"/>
 <rect x="30.5" y="28.5" width="35" height="57" rx="3" fill="none" stroke="#a9d0ff" stroke-opacity=".55" stroke-width="1.2"/>
@@ -56,17 +53,11 @@ const SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" class
 <rect class="brand-sheen" style="--d:0s" x="-11" y="15" width="70" height="84" fill="url(#bfL)"/></g>
 </g>
 </g>
-<g class="brand-box">
-<path d="M26 76h76v26a10 10 0 0 1-10 10H36a10 10 0 0 1-10-10z" fill="url(#bfB)"/>
-<path d="M26 76h76v7H26z" fill="#ffc0b0" opacity=".45"/>
-<rect x="52" y="92" width="24" height="6" rx="3" fill="#2a1410" opacity=".45"/>
-</g>
 </svg>`;
 let seq = 0;
 // Gives one emblem its own gradient and clip ids.
 const own = svg => { const n = (++seq).toString(36); return svg.replace(/\bbf([A-Z])\b/g, `bf${n}$1`); };
 export const brandStaticMark = () => own(SVG);
-// Animated marks run the cards in one continuous arc out of the box and back (brand-motion.css); the
-// cards are clipped to the space above the box and inside it, so they only ever hide in the box.
+// Animated marks lift each card out of the fan in turn and settle it back (brand-motion.css).
 export const brandMark = (mode = '') => own(SVG.replace('class="stashy-logo"',
   `class="stashy-logo ${mode.replace(/[^a-z -]/g, '')} brand-breathing"`));

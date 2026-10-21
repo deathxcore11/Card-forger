@@ -1,10 +1,10 @@
 /* One compact emblem in the header, Ask, scanner and progress surfaces.
    Mode classes may size the SVG, but never change its card arrangement. */
 .stashy-logo.brand-breathing { overflow:visible; transform-origin:center; }
-.stashy-logo.brand-breathing .brand-card { animation:none; transform-origin:64px 98px; transform-box:view-box; }
-.stashy-logo.brand-breathing .brand-left { transform:translate(9px,0) rotate(-15deg); }
-.stashy-logo.brand-breathing .brand-right { transform:translate(-9px,0) rotate(15deg); }
-.stashy-logo.brand-breathing .brand-center { transform:none; }
+.stashy-logo.brand-breathing .brand-card { animation:none; transform-origin:64px 96px; transform-box:view-box; transform:translate(var(--tx),0) rotate(var(--r)); }
+.stashy-logo.brand-breathing .brand-left { --tx:-3px; --r:-14deg; }
+.stashy-logo.brand-breathing .brand-right { --tx:3px; --r:14deg; }
+.stashy-logo.brand-breathing .brand-center { --tx:0px; --r:0deg; }
 /* The assistant has an aurora shell; the emblem itself is transparent everywhere. */
 :is(.ask-launch,.home-ai-submit),:root[data-theme="light"] :is(.ask-launch,.home-ai-submit) {
   color:#29243a;
@@ -18,14 +18,13 @@
 @media (prefers-reduced-motion:no-preference) {
   :is(.ask-launch,.home-ai-submit) { animation:ask-shimmer 7s ease-in-out infinite; }
   .stashy-logo.brand-breathing { animation:stashy-breathe 4.8s ease-in-out infinite; }
-  /* One continuous loop at an even speed: each card rises straight out of the box on the left, arcs over
-     the top and drops straight back in on the right, a third of a cycle behind the card before it. Cards
-     are clipped to the box's own outline, so they only ever disappear into it and never pop or double up.
-     --dx lines each card's art up on the same path. */
-  .stashy-logo.brand-breathing .brand-card { transform-origin:64px 57px; animation:brand-arc 7.5s linear infinite; }
-  .stashy-logo.brand-breathing .brand-left { --dx:16px; animation-delay:-5s; }
-  .stashy-logo.brand-breathing .brand-center { --dx:0px; animation-delay:-2.5s; }
-  .stashy-logo.brand-breathing .brand-right { --dx:-16px; animation-delay:0s; }
+  /* The shuffle: each card in turn lifts out of the fan, straightens a little and settles back into its
+     own slot, a third of a cycle after the card before it. The fan's order never changes, so nothing
+     pops or doubles up. */
+  .stashy-logo.brand-breathing .brand-card { animation:brand-lift 6s cubic-bezier(.45,.05,.55,.95) infinite; }
+  .stashy-logo.brand-breathing .brand-left { animation-delay:0s; }
+  .stashy-logo.brand-breathing .brand-center { animation-delay:-4s; }
+  .stashy-logo.brand-breathing .brand-right { animation-delay:-2s; }
   /* Each card's own foil: one light moves over the fan, so a 45° sheen cascades across the three cards,
      the gems' and the ball's highlights slide with it, the Pokémon rainbow wave drifts along its 30°
      bands with sparkles lighting in turn, and the embossed swirl's raised edge catches the glint. */
@@ -45,22 +44,10 @@
   0%,100% { transform:translateY(0) scale(.98); }
   50% { transform:translateY(-1px) scale(1.025); }
 }
-@keyframes brand-arc {
-  0% { transform:translate(calc(var(--dx) - 11px),66px) rotate(0deg); }
-  8% { transform:translate(calc(var(--dx) - 11px),53.5px) rotate(-2.7deg); }
-  16% { transform:translate(calc(var(--dx) - 11px),41px) rotate(-5.4deg); }
-  24% { transform:translate(calc(var(--dx) - 11px),28.4px) rotate(-8deg); }
-  32% { transform:translate(calc(var(--dx) - 11px),15.9px) rotate(-10.7deg); }
-  38% { transform:translate(calc(var(--dx) - 10.8px),6.4px) rotate(-11.7deg); }
-  44% { transform:translate(calc(var(--dx) - 7.6px),-2.3px) rotate(-8.3deg); }
-  50% { transform:translate(calc(var(--dx) + 0px),-7px) rotate(0deg); }
-  56% { transform:translate(calc(var(--dx) + 7.7px),-2.2px) rotate(8.4deg); }
-  62% { transform:translate(calc(var(--dx) + 10.8px),6.6px) rotate(11.8deg); }
-  68% { transform:translate(calc(var(--dx) + 11px),15.9px) rotate(10.7deg); }
-  76% { transform:translate(calc(var(--dx) + 11px),28.4px) rotate(8deg); }
-  84% { transform:translate(calc(var(--dx) + 11px),41px) rotate(5.4deg); }
-  92% { transform:translate(calc(var(--dx) + 11px),53.5px) rotate(2.7deg); }
-  100% { transform:translate(calc(var(--dx) + 11px),66px) rotate(0deg); }
+@keyframes brand-lift {
+  0%,36%,100% { transform:translate(var(--tx),0) rotate(var(--r)); }
+  14% { transform:translate(calc(var(--tx) * .8),-10px) rotate(calc(var(--r) * .55)); }
+  22% { transform:translate(calc(var(--tx) * .8),-10px) rotate(calc(var(--r) * .55)); }
 }
 @media (prefers-reduced-motion:reduce) {
   :is(.ask-launch,.home-ai-submit) {animation:none!important;}

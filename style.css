@@ -3280,7 +3280,7 @@ dialog.sheet[open][data-card-popup="true"] { animation:none; transform-origin:ce
 .brand .mark {width:40px;height:40px;padding:0;background:none;border:0;overflow:visible;}
 .stashy-logo {display:block;width:100%;height:100%;overflow:visible;}
 /* Only animated marks rotate cards in CSS; the static mark keeps the rotation centres in its own SVG. */
-.stashy-logo:is(.brand-idle,.brand-loading,.brand-breathing) .brand-card,.thinking .ask-orb .brand-card {transform-origin:64px 98px;transform-box:view-box;}
+.stashy-logo:is(.brand-idle,.brand-loading,.brand-breathing) .brand-card,.thinking .ask-orb .brand-card {transform-origin:64px 96px;transform-box:view-box;}
 .brand-idle .brand-card {animation:stashy-idle 9s ease-in-out infinite alternate;}
 @keyframes stashy-idle {from{transform:rotate(var(--fan-from))}to{transform:rotate(calc(var(--fan-from) * 1.12)) translateY(-1px)}}
 .ask-orb {animation:none!important;background:none;box-shadow:none;border-radius:0;}

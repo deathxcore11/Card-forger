@@ -25,9 +25,9 @@ try{
  for(const width of [320,412,768,884,1384]){
   const page=await browser.newPage({viewport:{width,height:1000}});await page.goto(base+'/logo-test');
   const bounds=await page.evaluate(()=>{const logo=document.querySelector('.ask-orb'),title=document.querySelector('h2');return {logo:logo.getBoundingClientRect().toJSON(),title:title.getBoundingClientRect().toJSON(),animation:getComputedStyle(logo.querySelector('.brand-card')).animationName};});
-  assert(bounds.logo.right<=bounds.title.left,'logo stays clear of title');assert.equal(bounds.animation,'brand-arc');
-  await page.locator('dialog').evaluate(n=>n.classList.add('thinking'));assert.equal(await page.locator('.brand-card').first().evaluate(n=>getComputedStyle(n).animationName),'brand-arc');
-  await page.locator('dialog').evaluate(n=>n.classList.remove('thinking'));assert.equal(await page.locator('.brand-card').first().evaluate(n=>getComputedStyle(n).animationName),'brand-arc');await page.close();
+  assert(bounds.logo.right<=bounds.title.left,'logo stays clear of title');assert.equal(bounds.animation,'brand-lift');
+  await page.locator('dialog').evaluate(n=>n.classList.add('thinking'));assert.equal(await page.locator('.brand-card').first().evaluate(n=>getComputedStyle(n).animationName),'brand-lift');
+  await page.locator('dialog').evaluate(n=>n.classList.remove('thinking'));assert.equal(await page.locator('.brand-card').first().evaluate(n=>getComputedStyle(n).animationName),'brand-lift');await page.close();
  }
  for(const game of ['mtg','ptcg','ygo']){
   const page=await browser.newPage({viewport:{width:884,height:1100}});page.setDefaultTimeout(15000);const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.route('**/*',r=>r.request().url().startsWith(base+'/')?r.continue():r.abort());
