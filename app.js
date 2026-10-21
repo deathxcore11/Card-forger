@@ -810,13 +810,13 @@ function refreshSheet() {
     const body = $("#sheetBody"), saved = body.dataset.detailIdentity === detailContextIdentity(ctx) ? captureDetailState(body) : null;
     // A later redraw (prices, history arriving) keeps whatever the person is using at the same spot on screen,
     // and the card picture keeps its height until its replacement has loaded, so nothing collapses meanwhile.
-    const artHeights=[...body.querySelectorAll('.cd-zoom')].map(el=>el.getBoundingClientRect().height);
-    const held=body.contains(document.activeElement)&&document.activeElement!==body?document.activeElement:null,heldTop=held?.getBoundingClientRect().top,heldAct=held?.dataset?.act,heldKey=held&&(held.dataset.finish||held.dataset.edition||held.getAttribute('aria-label')||held.textContent);
+    const artHeights=[...(body.querySelectorAll?.('.cd-zoom')||[])].map(el=>el.getBoundingClientRect().height);
+    const held=body.contains?.(globalThis.document?.activeElement)&&globalThis.document.activeElement!==body?globalThis.document.activeElement:null,heldTop=held?.getBoundingClientRect().top,heldAct=held?.dataset?.act,heldKey=held&&(held.dataset.finish||held.dataset.edition||held.getAttribute('aria-label')||held.textContent);
     body.detailMountGeneration = (body.detailMountGeneration || 0) + 1;
     body.innerHTML = ctx.type === "card" ? V.cardSheet(c,ctx) : ctx.type === "tcard" ? T.tcgCardSheet(c,ctx) : V.buySheet(ctx);
     body.dataset.detailIdentity = detailContextIdentity(ctx);
     wireSheetBack();
-    body.querySelectorAll('.cd-zoom').forEach((el,i)=>{const img=el.querySelector('img');if(!artHeights[i]||!img||img.complete)return;el.style.minHeight=artHeights[i]+'px';const free=()=>{el.style.minHeight='';};img.addEventListener('load',free,{once:true});img.addEventListener('error',free,{once:true});});
+    (body.querySelectorAll?.('.cd-zoom')||[]).forEach((el,i)=>{const img=el.querySelector('img');if(!artHeights[i]||!img||img.complete)return;el.style.minHeight=artHeights[i]+'px';const free=()=>{el.style.minHeight='';};img.addEventListener('load',free,{once:true});img.addEventListener('error',free,{once:true});});
     restoreDetailState(body,saved);
     if(held&&Number.isFinite(heldTop)){const again=[...body.querySelectorAll(heldAct?`[data-act="${heldAct}"]`:'button,select,input,summary')].find(el=>(el.dataset.finish||el.dataset.edition||el.getAttribute('aria-label')||el.textContent)===heldKey);if(again)body.scrollTop+=again.getBoundingClientRect().top-heldTop;}
     sheetScrolled();
@@ -3558,7 +3558,7 @@ A.cardFinishPreview = t => {
 function holdChipInPlace(chip,rebuild,findAgain){
   const before=chip?.getBoundingClientRect?.().top;
   rebuild();
-  const again=findAgain(),body=$("#sheetBody");
+  const again=findAgain(),body=globalThis.document?.querySelector?.("#sheetBody");
   again?.focus({preventScroll:true});
   if(body&&again&&Number.isFinite(before))body.scrollTop+=again.getBoundingClientRect().top-before;
 }
