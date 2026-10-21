@@ -83,6 +83,10 @@ void main(){
  // The mask is measured at analysis resolution; its edge is re-sharpened so it stays as crisp as the CSS clip.
  float cov=smoothstep(.35,.65,mk.a)*mix(1.,mk.r,u_r1.z)*(1.-.5*u_r2.y*smoothstep(.52,.64,uv.y));
  vec3 F=foil(u_r1.x,u_r1.y,uv,L,V,N,spot,grad,rl.r,stroke)*(1.+mk.g*u_r1.z*.6);
+ // Reverse holos print their text, symbols and outlines in opaque ink over the foil: dark ink stays solid
+ // and the foil shows through the lighter areas only. (Holo windows and full arts keep their own rules.)
+ float rev=(1.-step(.5,u_r1.z))*(1.-step(.5,u_r2.y)),ink=smoothstep(.03,.22,dot(base,vec3(.2126,.7152,.0722)));
+ cov*=mix(1.,ink,rev);
  // Full-art cards print the illustration in heavy white-backed ink over the foil, so the art keeps half its
  // weight there; holo windows and reverse frames show the bare foil.
  vec3 outC=overInk(base,F,cov*mix(.92,.5,u_r2.y));
