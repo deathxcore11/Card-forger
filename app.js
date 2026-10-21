@@ -1,5 +1,5 @@
 import {openPackPreview} from './pack-preview.js';
-import {dailyDetails,homeTodayMarkup,todaySetMarkup} from './home-today.js';
+import {dailyDetails,homeTodayMarkup,todaySetMarkup,todayPackMarkup} from './home-today.js';
 import {packEligible} from './set-experience.js';
 import {setMotionTilt} from './mobile-tilt.js';
 import {cachedImages,localStorageFootprint} from './settings-storage.js';
@@ -3426,8 +3426,9 @@ function paintHomeToday(g) {
     const img = el.querySelector(".today-bg img");
     if (!img.getAttribute("src") && d.image) { img.onload = () => el.classList.add("today-ready");img.src = d.image.startsWith("img/") ? "/" + d.image : d.image; }
     el.querySelector(".today-set").innerHTML = todaySetMarkup(g, d.set, { rarity: d.rarity });
+    const pack = todayPackMarkup(g, d.set);el.querySelector(".today-pack-slot").innerHTML = pack;el.classList.toggle("no-pack", !pack);
     el.dataset.painted = "done";
-  }).catch(() => { el.dataset.painted = "";const box = el.querySelector(".today-set");if (box) box.innerHTML = ""; });
+  }).catch(() => { el.dataset.painted = "";el.classList.add("no-pack"); });
 }
 A.homeTodayCard = () => $("#homeHero [data-act='homeDailyCard']")?.click();
 // Opening today's pack goes to the Set of the Day and opens its pack with the Card of the Day as the hit.

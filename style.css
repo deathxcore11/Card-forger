@@ -4894,29 +4894,25 @@ dialog.sheet:has(.context-card),body.glass dialog.sheet:has(.context-card){max-w
 .card-printing-mini .printing-mini-rarity{display:inline-flex;align-items:center;gap:4px;margin-top:3px;font-size:10px;font-weight:600;line-height:1.2;color:var(--muted,#aab)}
 .card-printing-mini .printing-mini-rarity .rarity-swatch{width:11px;height:11px;border-radius:3px}
 
-/* Home "Today": the Card of the Day as the real card, beside its set (Set of the Day) with the real
-   booster pack and your progress. Matches the Home panels: soft glass, 18px radius, gold accents. */
-/* Home "Today": the Card of the Day is the panel's own backdrop; its set's booster pack sits in front. */
-.home-today{position:relative;isolation:isolate;overflow:hidden;display:grid;grid-template-rows:auto auto;align-content:space-between;gap:20px;min-width:0;min-height:230px;margin:0 0 22px;padding:20px;border:1px solid #ffffff1c;border-radius:20px;background:#121218;color:#fff}
+/* Home "Today": a slim banner. The Card of the Day's art is the backdrop, its set's booster pack a small
+   visual on the left, and two quiet lines of text: the card, then its set and rarity. */
+.home-today{position:relative;isolation:isolate;overflow:hidden;display:grid;grid-template-columns:50px minmax(0,1fr);align-items:center;gap:14px;min-width:0;min-height:104px;margin:0 0 22px;padding:14px 18px;border:1px solid #ffffff17;border-radius:18px;background:#121218;color:#fff}
+.home-today.no-pack{grid-template-columns:minmax(0,1fr)}.home-today.no-pack .today-pack-slot{display:none}
 .today-bg{position:absolute;inset:0;z-index:-1;cursor:pointer;overflow:hidden}
-.today-bg img{width:100%;height:100%;object-fit:cover;object-position:50% 24%;opacity:0;transform:scale(1.06);transition:opacity .7s ease;animation:today-drift 24s ease-in-out infinite alternate}
+.today-bg img{width:100%;height:100%;object-fit:cover;object-position:50% 28%;opacity:0;transform:scale(1.06);transition:opacity .7s ease;animation:today-drift 24s ease-in-out infinite alternate}
 .today-ready .today-bg img{opacity:1}
-.today-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#0000 0%,#0006 45%,#000d 100%),linear-gradient(90deg,#000a 0%,#0000 65%)}
-.today-body{display:contents}
-.today-head{display:grid;gap:4px;min-width:0;max-width:70%;pointer-events:none}.today-head .eyebrow{margin:0;font-size:10px;letter-spacing:.08em;color:var(--gold)}.today-head h2{margin:0;font-size:clamp(20px,5vw,28px);line-height:1.1;overflow-wrap:anywhere;text-shadow:0 2px 12px #000c}.today-sub{margin:0;font-size:12px;color:#ffffffb3}
-.today-set{min-height:0}.today-shimmer{display:block;height:40px;border-radius:12px;background:linear-gradient(90deg,#ffffff0d,#ffffff1f,#ffffff0d);background-size:200% 100%;animation:today-shimmer 1.4s linear infinite}
-.today-set-row{display:grid;grid-template-columns:76px minmax(0,1fr);gap:14px;align-items:end}.today-set-row.no-pack{grid-template-columns:minmax(0,1fr)}
-.today-pack{position:relative;display:grid;place-items:end center;width:76px;aspect-ratio:400/734;padding:0;border:0;border-radius:4px;background:linear-gradient(160deg,#3a3446,#18171f);cursor:pointer;overflow:hidden;filter:drop-shadow(0 12px 16px #000c);animation:today-pack-float 4s ease-in-out infinite}
-.today-pack>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.today-pack::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,#ffffff45 46%,transparent 62%);background-size:260% 100%;animation:today-sheen 3.6s ease-in-out infinite;pointer-events:none}
-.today-pack-label{position:relative;z-index:1;margin:0 0 6px;padding:2px 5px;border-radius:6px;background:#000b;font-size:8px;line-height:1.2;text-align:center;color:#fff}
-.today-pack:hover{animation-play-state:paused;transform:translateY(-3px) rotate(-3deg)}.today-pack:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
-.today-set-info{display:grid;gap:5px;min-width:0}.today-set-info .eyebrow{margin:0;font-size:10px;color:#ffffffa6;letter-spacing:.06em}
-.today-set-name{display:flex;align-items:center;gap:8px;min-width:0;min-height:32px;padding:0;border:0;background:none;color:#fff;text-align:left;cursor:pointer;text-shadow:0 1px 8px #000c}.today-set-name img{height:22px;max-width:70px;object-fit:contain;filter:drop-shadow(0 1px 4px #000a)}.today-set-name b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:15px}
-.today-rarity{justify-self:start;padding:3px 9px;border-radius:999px;background:#0008;border:1px solid color-mix(in srgb,var(--gold) 45%,transparent);color:color-mix(in srgb,var(--gold) 80%,#fff);font-size:11px;font-weight:650;backdrop-filter:blur(6px)}
-.home-today[data-game="mtg"] .today-set-name img{filter:invert(1) drop-shadow(0 1px 4px #000a)}.today-rarity{text-transform:capitalize}
+.today-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#000d 0%,#000a 45%,#0003 100%)}
+.today-pack-slot{display:block;width:50px;min-height:1px}
+.today-text{display:grid;gap:3px;min-width:0;pointer-events:none}.today-text button{pointer-events:auto}
+.today-eyebrow{margin:0;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+.today-text h2{margin:0;font-size:clamp(18px,4.6vw,22px);line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 2px 10px #000c}
+.today-set{display:flex;align-items:baseline;gap:6px;min-width:0;min-height:18px;font-size:12.5px;color:#ffffffc4}
+.today-set-name{min-width:0;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.today-set-name:hover{color:#fff;text-decoration:underline}
+.today-dot{opacity:.6}.today-rarity{flex:none;color:color-mix(in srgb,var(--gold) 75%,#fff);text-transform:capitalize}
+.today-pack{position:relative;display:block;width:50px;aspect-ratio:400/734;padding:0;border:0;border-radius:3px;background:linear-gradient(160deg,#3a3446,#18171f);cursor:pointer;overflow:hidden;filter:drop-shadow(0 8px 12px #000c);transform:rotate(-4deg);transition:transform .3s ease}
+.today-pack>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.today-pack::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,#ffffff45 46%,transparent 62%);background-size:260% 100%;animation:today-sheen 4.2s ease-in-out infinite;pointer-events:none}
+.today-pack:hover,.today-pack:focus-visible{transform:rotate(0) translateY(-2px) scale(1.06)}.today-pack:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
 @keyframes today-drift{from{transform:scale(1.06) translate(0,0)}to{transform:scale(1.14) translate(-2%,-2%)}}
 @keyframes today-sheen{0%{background-position:130% 0}100%{background-position:-30% 0}}
-@keyframes today-shimmer{to{background-position:-200% 0}}
-@keyframes today-pack-float{50%{transform:translateY(-4px) rotate(-2deg)}}
-@media(min-width:900px){.home-today{min-height:250px;padding:24px 26px}.today-set-row{grid-template-columns:92px minmax(0,1fr)}.today-pack{width:92px}.today-pack-label{font-size:9px}}
-@media(prefers-reduced-motion:reduce){.today-bg img,.today-pack,.today-pack::after,.today-shimmer{animation:none}.today-bg img{transition:none}}
+@media(min-width:900px){.home-today{grid-template-columns:58px minmax(0,1fr);min-height:116px;padding:16px 22px}.today-pack,.today-pack-slot{width:58px}}
+@media(prefers-reduced-motion:reduce){.today-bg img,.today-pack::after{animation:none}.today-bg img,.today-pack{transition:none}}

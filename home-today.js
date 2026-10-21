@@ -33,11 +33,15 @@ export function homeTodayMarkup(g,h){
  const art=h.art&&safeHref(/^img\//.test(h.art)?'/'+h.art:h.art);
  return `<section class="home-today" id="homeToday" data-game="${g}" data-daily-date="${esc(h.date)}" data-daily-id="${esc(h.id)}" aria-label="Today">
  <span class="today-bg" data-act="homeTodayCard" aria-hidden="true"><img alt="" referrerpolicy="no-referrer" decoding="async"${art&&art!=='#'?` src="${esc(art)}" onload="this.closest('.home-today').classList.add('today-ready')"`:''}></span>
- <div class="today-body"><div class="today-head"><p class="eyebrow">Today</p><h2>${esc(h.name)}</h2><p class="today-sub">Card of the Day</p></div><div class="today-set" aria-live="polite"><span class="today-shimmer" aria-hidden="true"></span></div></div></section>`;
+ <span class="today-pack-slot"></span><div class="today-text"><p class="today-eyebrow">Today’s card</p><h2>${esc(h.name)}</h2><div class="today-set" aria-live="polite"></div></div></section>`;
 }
+// One quiet line under the card's name: its set (tap for the set page) and the card's rarity there.
 export function todaySetMarkup(g,set,{rarity=''}={}){
- if(!set)return `<p class="today-sub muted">${esc(rarity)}</p>`;
- const pack=packEligible(g,set)?packArtUrl(g,set):'';
- return `<div class="today-set-row${pack?'':' no-pack'}">${pack?`<button class="today-pack" data-act="homeTodayPack" data-game="${g}" aria-label="Open today’s ${esc(set.name)} pack"><img src="${esc(safeHref(pack))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.today-set-row').classList.add('no-pack');this.closest('.today-pack').remove()"><span class="today-pack-label">Open today’s pack</span></button>`:''}
- <div class="today-set-info"><p class="eyebrow">Set of the Day</p><button class="today-set-name" ${setAction(g,set)}>${set.logo?`<img src="${esc(safeHref(set.logo))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`:''}<b>${esc(set.name)}</b></button>${rarity?`<span class="today-rarity">${esc(rarity)}</span>`:''}</div></div>`;
+ if(!set)return rarity?`<span class="today-rarity">${esc(rarity)}</span>`:'';
+ return `<button class="today-set-name" ${setAction(g,set)}>${esc(set.name)}</button>${rarity?`<span class="today-dot" aria-hidden="true">·</span><span class="today-rarity">${esc(rarity)}</span>`:''}`;
+}
+// The set's real booster pack as a small tappable visual (opens today's pack); nothing when it has none.
+export function todayPackMarkup(g,set){
+ const pack=set&&packEligible(g,set)?packArtUrl(g,set):'';
+ return pack?`<button class="today-pack" data-act="homeTodayPack" data-game="${g}" aria-label="Open today’s ${esc(set.name)} pack"><img src="${esc(safeHref(pack))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.home-today')?.classList.add('no-pack');this.closest('.today-pack').remove()"></button>`:'';
 }
