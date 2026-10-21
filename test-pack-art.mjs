@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {selectPackProduct,selectPackGroup} from './set-art.js';
 import {packEligible} from './set-experience.js';
 import {dailyDetails} from './home-today.js';
+import {normalizePtcg} from './ptcg.js';
 import {samplePack,rollYgoPrinting,ptcgSetRarities,packEra,packSize,packFinishes} from './pack-preview.js';
 // A fixed-seed generator keeps the statistical checks deterministic.
 const seeded=(a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;})(12345);
@@ -79,4 +80,6 @@ const sets={soa:{code:'soa',name:'Mystical Archive',set_type:'masterpiece',paren
 const daze={id:'d1',set:'soa',set_name:'Mystical Archive',set_type:'masterpiece',rarity:'rare',image_uris:{normal:'x'}};
 const dd=await dailyDetails('mtg',{id:'d1',date:'2026-10-21',printing:daze},async url=>sets[url.split('/').pop()]);
 assert.equal(dd.set.pack.code,'sos');assert.equal(dd.card,daze);
+const resh=normalizePtcg({id:'sv10-017',localId:'017',name:'Reshiram',category:'Pokemon',rarity:'Rare',set:{id:'sv10',name:'X'},variants:{normal:false,reverse:true,holo:true,firstEdition:false}});
+assert.deepEqual(packFinishes('ptcg',[{...resh,packSlot:'reverse'},{...resh,packSlot:'hit'},resh]),[{priceFinish:'reverse-holofoil'},{priceFinish:'holofoil'},{priceFinish:'holofoil'}],'a holo rare shines in its pack; in a reverse slot it is a reverse holo');
 console.log('PASS: packs follow typical slot structure and pull rates; Yu-Gi-Oh! multi-rarity cards are pulled in one rarity; booster pack artwork picks the set’s own pack, including sets named “Collection”, and never boxes, sleeved packs or boxed collections.');

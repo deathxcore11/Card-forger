@@ -122,8 +122,9 @@ export function packArtUrl(game,set={}){
 export function packFinishes(game,picks){
  const has=(c,k)=>finishChoices(game,c,{}).some(v=>v.key===k&&v.status!=='unknown');
  return picks.map(c=>{
-  if(game==='ptcg'&&has(c,'holofoil')&&!has(c,'normal'))return {priceFinish:'holofoil'};
+  // A reverse slot is a reverse holo even when the card is a rare that also comes in holo.
   if(game==='ptcg'&&c.packSlot==='reverse'&&has(c,'reverse-holofoil'))return {priceFinish:'reverse-holofoil'};
+  if(game==='ptcg'&&has(c,'holofoil')&&!has(c,'normal'))return {priceFinish:'holofoil'};
   if(game==='mtg'&&c.packSlot==='foil'&&c.finishes?.includes('foil'))return {finish:'foil'};
   return {};
  });
