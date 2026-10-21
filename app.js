@@ -3102,7 +3102,11 @@ A.openSetPack = async () => {
  let cards=screen.cards;
  // Pull rates need every Pokémon card's rarity; summaries without one are filled from TCGdex first.
  if(game==='ptcg'&&cards.some(c=>!c.rarity)){toast("Shuffling the pack…");const map=await ptcgSetRarities(screen.id,set?.cardCount?.total||set?.count||cards.length).catch(()=>new Map());if(!isCurrent())return;cards=cards.map(c=>c.rarity||!map.has(String(c.id))?c:{...c,rarity:map.get(String(c.id))});}
- const found=want?.game===game?cards.find(c=>String(c.id)===String(want.id))||(game==='mtg'?cards.find(c=>c.name===want.name)||want.card||null:null):null,featured=found&&want.rarity?{...found,featuredRarity:want.rarity}:found;
+ // Today's pack guarantees the Card of the Day on its first opening each day; after that it opens with the
+ // set's normal pull rates like any other pack.
+ const dayKey=want&&`cardstashy-today-pack:${game}:${want.date}:${want.id}`;let firstToday=!!want;try{if(dayKey&&localStorage.getItem(dayKey))firstToday=false;}catch{}
+ const found=firstToday&&want?.game===game?cards.find(c=>String(c.id)===String(want.id))||(game==='mtg'?cards.find(c=>c.name===want.name)||want.card||null:null):null,featured=found&&want.rarity?{...found,featuredRarity:want.rarity}:found;
+ if(featured)try{localStorage.setItem(dayKey,'1');}catch{}
  try{openPackPreview({game,set,cards,featured,hydrate:game==='ptcg'?c=>T.SOURCES.ptcg.get(String(c.id),{prices:false}):null,complete:game==='mtg'?screen.cards.length===set.card_count:screen.contents?.completeness==='complete',isCurrent,
   onCopy:copyPlain,
   onDetails:c=>game==='mtg'?A.card({dataset:{name:c.name},printing:c}):A.tCard({dataset:{game,id:String(c.id),setId:set.id}}),
