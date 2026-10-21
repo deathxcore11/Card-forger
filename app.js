@@ -37,6 +37,7 @@ import {attachRuleLearning} from './rule-learning.js';
 import {configureConditionAuth,clearConditionAttempts,forgetConditionAttempt,loadConditionQuotes,applyConditionQuotes,conditionRequest,conditionQuoteEntry,CONDITION_IDENTITY} from './condition-feed.js';
 import {createConditionRefreshScheduler,conditionCursorKey,selectConditionLots,changedConditionLots,conditionLotIdentity} from './condition-refresh-scheduler.js';
 import {brandMark} from './brand.js';
+import {syncDataLoading} from './data-loading.js';
 import {ownedCardLots,quickQuantity,adjustOwnedLot} from './quick-quantity.js';
 import {conditionName,conditionValue,conditionPriceHtml,conditionManualPlaceholder,attachConditionInfo} from './condition-value.js';
 import { showAiReview } from './ai-review.js';
@@ -987,6 +988,8 @@ function render() {
   document.body.dataset.game = g;
   document.body.style?.setProperty("--game-color", GAME_COLOR[g]);
   syncGameTabs($("#gameTabs"), g);
+  // Opening a set shows a small logo loading card until its cards (and Pokémon card details) are in.
+  {const U=g==="mtg"?ui.set:T.ui(g).set,waiting=ui.view==="set"&&!U.error&&!U.candidates?.length&&(U.busy||U.detailsBusy||!U.loaded||(g==="ptcg"&&U.loaded&&U.detailsTried!==U.generation+":"+U.id&&U.cards?.some(c=>(T.cardOf(g,c.id)||c).brief)));syncDataLoading(!!waiting);}
   refreshProfileAvatar();
   $(".brand-home")?.setAttribute?.("aria-current",ui.view==="home"?"page":"false");
   content?.setAttribute?.("aria-labelledby", `game-tab-${g}`);
@@ -1087,6 +1090,8 @@ function render() {
   if (g !== "mtg") {
     const SU = T.ui(g).sets;
     if (["sets","collection"].includes(ui.view) && (!SU.list.length || !SU.checkedAt || Date.now()<SU.checkedAt || Date.now()-SU.checkedAt>=864e5) && !SU.busy && !SU.error) setTimeout(() => navigationCurrent(screen) && tcgCtx.loadSets?.(g), 0);
+    // Pokémon set lists arrive without rarities and versions; fetch them straight away instead of asking.
+    if (ui.view === "set" && g === "ptcg") { const U=T.ui(g).set,k=U.generation+":"+U.id; if (U.loaded && !U.busy && !U.detailsBusy && U.detailsTried !== k && U.cards.some(c=>(T.cardOf(g,c.id)||c).brief)) { U.detailsTried=k; setTimeout(() => navigationCurrent(screen) && A.tSetDetails?.(), 0); } }
     if (ui.view === "set" && ui.tsetId && T.ui(g).set.id !== ui.tsetId) { const id=ui.tsetId; setTimeout(() => navigationCurrent(screen) && tcgCtx.openSet?.(id, false, g), 0); }
     // Ideas, Meta decks and Deck Power need the current tournament meta.
     const MS = T.metaState(g);

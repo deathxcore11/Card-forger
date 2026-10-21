@@ -153,6 +153,9 @@ const YGO_RARITY_CODE = [
   [/Ultimate/i, "UtR"], [/Secret/i, "ScR"], [/Ultra/i, "UR"], [/Super/i, "SR"], [/Gold/i, "GUR"], [/Short Print/i, "SP"], [/Rare/i, "R"], [/Common/i, "C"],
 ];
 export const ygoRarityCode = (r) => (YGO_RARITY_CODE.find(([re]) => re.test(r || "")) || [, ""])[1];
+// The foil the card name is printed in at each rarity, for foil-lettered rarity codes.
+export const YGO_RARITY_KIND = {QCR:'quarter',StR:'starlight',GR:'ghost',CR:'collector',PScR:'prismatic',PlScR:'platinum',UtR:'ultimate',ScR:'secret',UR:'ultra',GUR:'gold',SR:'super',R:'rare'};
+const rarityCode = (code) => code ? `<small class="rx-code rx-${YGO_RARITY_KIND[code] || 'common'}">${esc(code)}</small>` : "";
 const rarityTone = (code) => (/ScR|QCR|StR|GR|CR|UtR|PScR|PlScR/.test(code) ? "secret" : /UR|GUR/.test(code) ? "ultra" : /SR/.test(code) ? "super" : /^R$/.test(code) ? "rare" : "common");
 
 // One small badge: set code + rarity, colored by rarity.
@@ -170,9 +173,9 @@ export function tcgSetBadge(c, compact = false) {
   if(context&&!s)return `<span class="tset" title="${esc(context.name||'Selected release')} · ${context.status==='resolved'?'printing not selected':'release unverified'} · edition unspecified"><b>${esc(context.code||'Unverified')}</b></span>`;
   if (!s) return "";
   const code = ygoRarityCode(s.rarity);
-  return `<span class="tset ${rarityTone(code)}" title="${esc(s.name)} · ${esc(s.rarity || "")}"><b>${esc(String(s.code).split("-")[0])}</b>${code ? `<small>${esc(code)}</small>` : ""}</span>`;
+  return `<span class="tset ${rarityTone(code)}" title="${esc(s.name)} · ${esc(s.rarity || "")}"><b>${esc(String(s.code).split("-")[0])}</b>${rarityCode(code)}</span>`;
 }
 export const ygoPrintBadge = (s) => {
   const code = ygoRarityCode(s.rarity);
-  return `<span class="tset ${rarityTone(code)}"><b>${esc(String(s.code))}</b>${code ? `<small>${esc(code)}</small>` : ""}</span>`;
+  return `<span class="tset ${rarityTone(code)}"><b>${esc(String(s.code))}</b>${rarityCode(code)}</span>`;
 };

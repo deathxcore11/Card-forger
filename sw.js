@@ -22,7 +22,7 @@ const ASSETS = [
   "./magic-matchups.css",
   "./settings-theme.js",
   "./settings-storage.js",
-  "./mobile-tilt.js", "./set-experience.js", "./pack-preview.js",
+  "./mobile-tilt.js", "./set-experience.js", "./pack-preview.js", "./rarity-emblem.js", "./data-loading.js",
   "./sync-merge.js",
   "./recovery-store.js",
   "./magic-card-color.js",

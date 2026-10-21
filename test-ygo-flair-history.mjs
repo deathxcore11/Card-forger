@@ -122,5 +122,7 @@ globalThis.document={querySelector:s=>s==='#sheetBody'?body:null};S.ui.sheetCtx=
 registerWorkbench({A,C,getGame:()=> 'ygo'});A.historyChoosePrinting({dataset:{selection:'printing'}});assert.deepEqual(focus,['printing']);assert.equal(selector.value,'');assert.equal(S.ui.sheetCtx.priceEdition,undefined);assert.equal(scrolled[0].behavior,'auto');
 S.ui.sheetCtx=null;A.historyChoosePrinting({dataset:{selection:'printing'}});assert.equal(focus.length,1,'dismissed sheet cannot be refocused');
 delete globalThis.document;
-const css=fs.readFileSync('style.css','utf8');assert.match(css,/prefers-reduced-motion:reduce/);assert.match(css,/rarity-edge-glint/);assert.match(css,/\.cd-img\[data-rarity-flair\] \.card-img/);
+const css=fs.readFileSync('style.css','utf8');assert.match(css,/prefers-reduced-motion: ?reduce/);
+// Rarity is an emblem, not a second card border: the price frame is the only edge.
+assert.doesNotMatch(css,/\[data-rarity-flair[^\]]*\][^{]*\{[^}]*border(-color)?:/,'rarity flair never draws a card border');assert.match(css,/\.tset small\.rx-code/,'YGO rarity codes are foil-lettered emblems');
 console.log('PASS: YGO verified rarity separate from price, exact filter/detail propagation, ambiguous regional/release neutrality, shared-art tier isolation, edition choice, contextual history/empty/provider distinction, no false zero, no new provider calls and CTA cancellation.');

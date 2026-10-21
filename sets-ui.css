@@ -51,7 +51,7 @@
 .set-grid .ygo-set-meta>.ellip{white-space:normal;overflow:visible;overflow-wrap:anywhere;line-height:1.4}
 .set-grid .ygo-set-meta .set-price{display:flex;flex-wrap:wrap;gap:3px 7px;min-width:0;white-space:normal;overflow-wrap:anywhere;font-weight:700}
 .set-grid .set-price>small{font-size:11px;font-weight:400;color:var(--muted)}
-.set-grid>.grid-card[data-tier="tn"]>.card-img{border:3px solid var(--rarity-edge,var(--line));border-radius:12px}
+.set-grid>.grid-card[data-tier="tn"]>.card-img{border:3px solid var(--line);border-radius:12px}
 
 /* One calm catalogue shell for all three games. Native selects use the existing glass menu. */
 .set-browser-controls{display:grid;gap:14px;min-width:0;padding:18px;border:1px solid var(--line);border-radius:20px;background:color-mix(in srgb,var(--surface) 94%,transparent)}
@@ -127,7 +127,6 @@ body:not(.glass) .set-atmosphere{display:none}
 .pack-focus-card>span{grid-area:1/1;border-radius:inherit;overflow:hidden;backface-visibility:hidden;transition:transform .7s cubic-bezier(.2,.9,.25,1)}
 .pack-face{position:relative;transform:rotateY(-180deg);background:#0b0c10}.pack-face>img{display:block;width:100%;height:100%;object-fit:contain}
 .pack-focus-card.revealed>.pack-face{transform:none}.pack-focus-card.revealed>.pack-card-back{transform:rotateY(180deg)}
-.pack-focus-card.pack-hit{box-shadow:0 30px 50px #000b,0 0 0 2px color-mix(in srgb,var(--pack-glow) 70%,transparent),0 0 60px color-mix(in srgb,var(--pack-glow) 55%,transparent);animation:pack-hit-glow 2.4s ease-in-out infinite}
 .pack-focus-card:focus-visible{outline:2px solid var(--gold);outline-offset:6px}
 .pack-focus-meta{display:grid;justify-items:center;gap:1px;margin:0;min-height:2.4em;text-align:center}.pack-focus-meta>b{font-size:14px}.pack-focus-meta>span{font-size:12px;color:var(--muted)}
 .pack-card-back{display:grid;place-items:center;background:radial-gradient(ellipse at 50% 30%,#4a4256,#16161e 72%);box-shadow:inset 0 0 0 3px #b39ae655,inset 0 0 0 7px #0006}.pack-card-back>svg{width:58%;height:auto;filter:drop-shadow(0 4px 10px #000a)}
@@ -137,8 +136,7 @@ body:not(.glass) .set-atmosphere{display:none}
  transform:none;transition:transform .45s cubic-bezier(.2,.9,.25,1),filter .3s;box-shadow:0 8px 14px #0008}
 .pack-card>span{grid-area:1/1;border-radius:inherit;overflow:hidden;backface-visibility:hidden;transition:transform .55s cubic-bezier(.2,.9,.25,1)}.pack-card .pack-card-back>svg{width:64%}
 .pack-card-front{transform:rotateY(-180deg);background:#0b0c10}.pack-card-front>img{width:100%;height:100%;object-fit:contain}.pack-card.revealed>.pack-card-back{transform:rotateY(180deg)}.pack-card.revealed>.pack-card-front{transform:none}
-.pack-card.focused{transform:translateY(-12px) scale(1.06);z-index:60;filter:drop-shadow(0 0 10px color-mix(in srgb,var(--pack-glow) 60%,transparent))}
-.pack-card.pack-hit{box-shadow:0 0 0 1.5px var(--pack-glow),0 0 16px color-mix(in srgb,var(--pack-glow) 60%,transparent)}
+.pack-card.focused{transform:translateY(-12px) scale(1.06);z-index:60}
 .pack-card:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
 .pack-dialog:not(.pack-dealt) .pack-card{transform:translate(calc((9 - var(--i)) * 30%),-180%) rotate(10deg) scale(.7);opacity:0}
 .pack-dealt .pack-card{transition-delay:calc(var(--i) * 55ms),0s}
@@ -158,7 +156,6 @@ body:not(.glass) .set-atmosphere{display:none}
 @keyframes pack-sheen{0%{background-position:120% 0}100%{background-position:-20% 0}}
 @keyframes pack-strip{to{transform:translate(30%,-180%) rotate(-14deg);opacity:0}}
 @keyframes pack-rip{30%{transform:translateY(-6px) rotate(-2deg) scale(1.03)}100%{transform:translateY(55%) scale(.85);opacity:0}}
-@keyframes pack-hit-glow{50%{box-shadow:0 30px 50px #000b,0 0 0 2px var(--pack-glow),0 0 90px color-mix(in srgb,var(--pack-glow) 75%,transparent)}}
 @media(max-width:699px){.pack-dialog{padding:14px 12px 16px;border-radius:20px}}
 @media(prefers-reduced-motion:reduce){.pack-body,.pack-sheen,.pack-focus-card.pack-hit,.pack-done .pack-tools,.pack-done .pack-again{animation:none}.pack-card,.pack-card>span,.pack-focus-card,.pack-focus-card>span{transition:none}.pack-dialog:not(.pack-dealt) .pack-card{transform:none;opacity:1}}
 /* Swipe the big card to the next one: it slides in from the side it came from. On touch screens the
@@ -182,20 +179,71 @@ body:not(.glass) .set-atmosphere{display:none}
 
 /* Pack header: set emblem and name, tilt and close. The preview note stays for screen readers. */
 .pack-title{display:flex;align-items:center;gap:10px}.pack-title>h2{flex:1;min-width:0}
-.pack-emblem{flex:none;width:30px;height:30px;object-fit:contain}.pack-emblem[data-game="mtg"]{filter:invert(1) drop-shadow(0 1px 2px #0008)}
+.pack-emblem{flex:none;width:30px;height:30px;object-fit:contain}.pack-emblem[data-game="mtg"]{filter:invert(1) drop-shadow(0 1px 2px #0008)}.pack-emblem[data-game="ptcg"]{filter:invert(1) hue-rotate(180deg) drop-shadow(0 1px 2px #0008)}
 .pack-explanation{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
-/* A soft backlight behind the pulled card, the collection's price-tier swirl blurred like a TV bias light. */
-.pack-focus-card{z-index:1}
-.pack-backlight{position:absolute;top:0;left:50%;width:var(--card-w);aspect-ratio:63/88;border-radius:8%;transform:translateX(-50%) scale(1.02);background:conic-gradient(from var(--swirl),var(--pack-glow),transparent 30%,color-mix(in srgb,var(--pack-glow) 60%,#fff) 50%,transparent 70%,var(--pack-glow));filter:blur(30px) saturate(1.3);opacity:0;transition:opacity .6s,transform .6s;pointer-events:none;animation:tier-swirl 7s linear infinite}
-.pack-focus[data-tier] .pack-backlight{opacity:.4;transform:translateX(-50%) scale(1.06)}
-.pack-focus[data-tier="t2"] .pack-backlight{opacity:.52;transform:translateX(-50%) scale(1.07)}
-.pack-focus[data-tier="t3"] .pack-backlight{opacity:.66;transform:translateX(-50%) scale(1.09);animation-duration:5.5s}
-.pack-focus[data-tier="t4"] .pack-backlight,.pack-focus[data-tier="t5"] .pack-backlight{opacity:.72;transform:translateX(-50%) scale(1.1);animation-duration:4.5s}
-.pack-focus-card.pack-hit{animation:none;box-shadow:0 30px 50px #000b}
-/* The rarity under the card, in each game's own rarity colour. */
-.pack-focus-meta>b{font-size:16px;color:var(--text)}
-.pack-focus-meta>span{--rarity-tone:var(--muted);color:var(--rarity-tone);font-size:12px;font-weight:600;letter-spacing:.02em}
-.pack-focus-meta>span:not(:empty){padding:2px 10px;border-radius:99px;background:color-mix(in srgb,var(--rarity-tone) 14%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--rarity-tone) 40%,transparent)}
-.pack-focus-meta>span.pack-rarity-gloss{background:linear-gradient(100deg,color-mix(in srgb,var(--rarity-tone) 14%,transparent) 30%,color-mix(in srgb,var(--rarity-tone) 34%,transparent) 50%,color-mix(in srgb,var(--rarity-tone) 14%,transparent) 70%) 0 0/250% 100%;animation:pack-rarity-gloss 3s linear infinite}
-@keyframes pack-rarity-gloss{to{background-position:-250% 0}}
-@media(prefers-reduced-motion:reduce){.pack-backlight,.pack-focus-meta>span.pack-rarity-gloss{animation:none}}
+/* Pack header: tilt and close sit in the top-right corner, a thumb's reach on phones, tablets and foldables. */
+.pack-header{margin:-6px -10px 0 0;align-items:center}
+.pack-header>.pack-header-tools{gap:6px;margin-left:auto}
+.pack-header-tools>.pack-tilt,.pack-header-tools>[data-pack="close"]{width:44px;height:44px;min-height:0;padding:0;border-radius:50%;display:grid;place-items:center}
+.pack-header-tools>[data-pack="close"]{font-size:17px;background:#ffffff0a;border:1px solid #ffffff24}
+.pack-header-tools>:is(.pack-tilt,[data-pack="close"]):hover{background:#ffffff16}
+@media(min-width:700px){.pack-header{margin-right:-12px}}
+
+/* Pulled cards wear the collection's price frame: a lit strip of the tier colour around the edge that
+   casts its own glow on the wall behind. Face down, a card only shows a soft neutral glow when picked. */
+.pack-card{isolation:isolate}
+.pack-card::before,.pack-card::after{content:"";position:absolute;inset:-3px;border-radius:8px;pointer-events:none;opacity:0;transition:opacity .45s}
+.pack-card::before{z-index:-1}
+.pack-card::after{z-index:-2;inset:-1px;filter:blur(9px);background:#d9ccff}
+.pack-card:not(.revealed):is(:hover,.focused)::after{opacity:.4}
+.pack-card[data-tier]::before{opacity:1}
+.pack-card[data-tier]::after{opacity:.55}
+.pack-focus-card>i{position:absolute;pointer-events:none;opacity:0;transition:opacity .6s}
+.pack-focus-card>.pack-frame{inset:-5px;border-radius:5.4%/3.9%;transform:translateZ(-1px)}
+.pack-focus-card>.pack-backlight{inset:-3%;border-radius:8%;filter:blur(30px) saturate(1.2);transform:translateZ(-4px)}
+.pack-focus-card[data-tier]>.pack-frame{opacity:1}
+.pack-focus-card[data-tier]>.pack-backlight{opacity:.5}
+:is(.pack-card[data-tier="t0"],.pack-card[data-tier="tn"])::before,:is(.pack-card[data-tier="t0"],.pack-card[data-tier="tn"])::after,.pack-focus-card:is([data-tier="t0"],[data-tier="tn"])>i{background:linear-gradient(160deg,#a7afb8,#6f7780)}
+.pack-card[data-tier="t1"]::before,.pack-card[data-tier="t1"]::after,.pack-focus-card[data-tier="t1"]>i{background:linear-gradient(160deg,#7be3a8,#2fae68)}
+.pack-card[data-tier="t2"]::before,.pack-card[data-tier="t2"]::after,.pack-focus-card[data-tier="t2"]>i{background:linear-gradient(160deg,#8cc6ff,#2f7fe0)}
+.pack-card[data-tier="t3"]::before,.pack-card[data-tier="t3"]::after,.pack-focus-card[data-tier="t3"]>i{background:conic-gradient(from var(--swirl),#b46cff,#6fd0ff,#ff7ad9,#b46cff);animation:tier-swirl 6s linear infinite}
+.pack-card[data-tier="t4"]::before,.pack-card[data-tier="t4"]::after,.pack-focus-card[data-tier="t4"]>i{background:linear-gradient(115deg,#b8860b 0%,#ffd34d 30%,#fff6c9 45%,#ffd34d 60%,#b8860b 100%) 0 0/300% 100%;animation:tier-shine 3.4s cubic-bezier(.45,.05,.3,1) infinite}
+.pack-card[data-tier="t5"]::before,.pack-card[data-tier="t5"]::after,.pack-focus-card[data-tier="t5"]>i{background:linear-gradient(115deg,#c2410c 0%,#ff7a1a 30%,#ffd08a 45%,#ff7a1a 60%,#c2410c 100%) 0 0/300% 100%;animation:tier-shine 2.6s ease-in-out infinite}
+.pack-card:is([data-tier="t0"],[data-tier="tn"])::after{opacity:.3}.pack-focus-card:is([data-tier="t0"],[data-tier="tn"])>.pack-backlight{opacity:.3}
+.pack-card[data-tier="t2"]::after{opacity:.65}.pack-focus-card[data-tier="t2"]>.pack-backlight{opacity:.6}
+.pack-card:is([data-tier="t3"],[data-tier="t4"],[data-tier="t5"])::after{opacity:.85}.pack-focus-card:is([data-tier="t3"],[data-tier="t4"],[data-tier="t5"])>.pack-backlight{opacity:.8;inset:-6%}
+@media(prefers-reduced-motion:reduce){.pack-card::before,.pack-card::after,.pack-focus-card>i{animation:none!important}}
+
+/* Rarity emblems: each game's own rarity marks, with foil lettering for the top rarities. */
+.rx{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:3px 12px 3px 9px;border-radius:99px;background:#ffffff0c;box-shadow:inset 0 0 0 1px #ffffff1c;font-size:12px;font-weight:700;letter-spacing:.03em;line-height:1.4;white-space:nowrap}
+.rx-text{overflow:hidden;text-overflow:ellipsis;color:#e4e7ec}
+.rx-mark{display:inline-flex;align-items:center}.rx-mark img.pkr{height:13px;max-width:34px}.rx-mark .rar{font-size:13px;letter-spacing:0}
+.rx-gem{width:15px;height:15px;flex:none;filter:drop-shadow(0 1px 1px #0009)}.rx-gem-body{fill:var(--gem,#222)}.rx-gem-facet{fill:none;stroke:#ffffff70;stroke-width:.7}
+.rx-shine .rx-text{background:var(--rx-foil) 0 0/250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rx-sweep 3.2s linear infinite}
+@keyframes rx-sweep{to{background-position:-250% 0}}
+/* Magic: the set-symbol colours. */
+.rx-mtg.rx-common{--gem:#1d1d1f}.rx-mtg.rx-common .rx-gem-facet{stroke:#ffffffa0}
+.rx-mtg.rx-uncommon{--gem:#a9b8c6}.rx-mtg.rx-uncommon .rx-text{color:#c9d5e0}
+.rx-mtg.rx-rare{--gem:#d8b45a}.rx-mtg.rx-rare .rx-text{color:#ecca73}
+.rx-mtg.rx-mythic{--gem:#f0662a;--rx-foil:linear-gradient(100deg,#ff7b3a 20%,#ffd08a 40%,#ff7b3a 60%)}
+.rx-mtg.rx-special{--gem:#a46ae0;--rx-foil:linear-gradient(100deg,#c08cff 20%,#f2e3ff 40%,#c08cff 60%)}
+/* Pokémon: plain ink up to holo, then silver, rainbow and gold. */
+.rx-ptcg.rx-uncommon .rx-text{color:#cbd8ec}
+.rx-ptcg.rx-rare .rx-text{color:#f0f2f6}
+.rx-ptcg.rx-promo .rx-text{color:#ffd36b}
+.rx-ptcg.rx-holo{--rx-foil:linear-gradient(100deg,#e9edf3 15%,#9fe6ff 30%,#ffc6f0 45%,#fff3a8 60%,#e9edf3 75%)}
+.rx-ptcg.rx-silver{--rx-foil:linear-gradient(100deg,#c7ced8 20%,#ffffff 40%,#c7ced8 60%)}
+.rx-ptcg.rx-shine{--rx-foil:linear-gradient(100deg,#ff9de1 15%,#9fe6ff 35%,#fff3a8 55%,#ff9de1 75%)}
+.rx-ptcg.rx-gold{--rx-foil:linear-gradient(100deg,#c99a2e 15%,#ffe58a 35%,#fff8d6 45%,#ffe58a 55%,#c99a2e 75%);box-shadow:inset 0 0 0 1px #ffd54a55}
+.rx-ptcg.rx-gold .rx-mark{filter:drop-shadow(0 0 4px #ffd54a99)}
+/* Yu-Gi-Oh!: lettered like the card-name foil of each rarity. */
+.rx-ygo.rx-rare .rx-text{background:linear-gradient(180deg,#ffffff,#a9b3c2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.rx-ygo.rx-super{background:linear-gradient(100deg,#7ff6ff22,#ffc6f022,#fff3a822)}.rx-ygo.rx-super .rx-text{color:#f4f8ff}
+.rx-ygo.rx-ultra,.rx-ygo.rx-gold{--rx-foil:linear-gradient(100deg,#c99a2e 15%,#ffe58a 35%,#fff8d6 45%,#ffe58a 55%,#c99a2e 75%)}
+.rx-ygo.rx-ultimate{--rx-foil:linear-gradient(100deg,#9c7425 15%,#e9c96a 35%,#fff1c2 45%,#e9c96a 55%,#9c7425 75%)}.rx-ygo.rx-ultimate .rx-text{filter:drop-shadow(0 1px 0 #0008) drop-shadow(0 -1px 0 #fff3)}
+.rx-ygo.rx-secret,.rx-ygo.rx-prismatic{--rx-foil:linear-gradient(115deg,#dfe6ee 10%,#ffb3e6 25%,#a8f0ff 40%,#fff1a6 55%,#dfe6ee 70%)}
+.rx-ygo.rx-ghost{--rx-foil:linear-gradient(100deg,#c5ccd6 20%,#ffffff 35%,#e6f4ff 45%,#c5ccd6 60%)}.rx-ygo.rx-ghost .rx-text{opacity:.9}
+.rx-ygo.rx-platinum{--rx-foil:linear-gradient(100deg,#b7c0cc 20%,#f6f8fb 40%,#b7c0cc 60%)}
+.rx-ygo:is(.rx-starlight,.rx-collector,.rx-quarter){--rx-foil:linear-gradient(100deg,#ff9de1 10%,#ffe08a 25%,#9dffb8 40%,#8ad7ff 55%,#c8a0ff 70%,#ff9de1 85%)}
+.rx-ygo:is(.rx-starlight,.rx-collector,.rx-quarter){box-shadow:inset 0 0 0 1px #ffffff40,0 0 12px -4px #b9a0ff}
+@media(prefers-reduced-motion:reduce){.rx-shine .rx-text{animation:none}}
