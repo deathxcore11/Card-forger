@@ -265,7 +265,12 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
  // windows. Rush Duel cards are not catalogued here and stay unmasked.
  if(/rush/i.test(frameText))return unknown(key,label);
  const layout=/pendulum/i.test(frameText)?'pendulum':/skill/i.test(frameText)?'skill':'standard',artMask=layout==='standard'?'ygo-art':'ygo-art-'+layout;
- const withLayout=p=>layout==='standard'?p:{...p,layout};
+ // Level/Rank stars and the Attribute icon are foil on some rarities: holo on Super and Ultra Rares printed
+ // from July 2017, rainbow on Secret Rares, gold on Gold Rares, embossed on Ultimate (and Starlight's
+ // whole-card glitter). Older Super/Ultra printings, or an unknown print date, keep plain stars.
+ const printed=String(c.setContext?.date||ctx.releaseDate||''),modern=printed>='2017-07';
+ const starFoil=/^(ultimaterare|starlightrare)$/.test(rarity)?1:/^(superrare|ultrarare|ultrararepharaohsrare)$/.test(rarity)?(modern?2:0):/secret/.test(rarity)&&!/gold|platinum|quartercentury/.test(rarity)?3:/gold/.test(rarity)?4:0;
+ const withLayout=p0=>{const p=starFoil?{...p0,stars:starFoil}:p0;return layout==='standard'?p:{...p,layout};};
  const name=material=>layer('ygo-name',material),art=material=>layer(artMask,material);
  const specs={rare:['ygo-rare',[name('silver')]],superrare:['ygo-super',[art('holo')]],ultrarare:['ygo-ultra',[art('holo'),name('gold')]],secretrare:['ygo-secret',[art('secret'),name('rainbow')]],prismaticsecretrare:['ygo-prismatic',[art('prismatic'),name('rainbow')]],starlightrare:['ygo-starlight',[layer('ygo-broad','starlight')]]};
  if(specs[rarity])return withLayout(preset(key,label,...specs[rarity],FINISH_SOURCES.ygo));

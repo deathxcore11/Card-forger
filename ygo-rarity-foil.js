@@ -76,7 +76,10 @@ void main(){
    outC=mix(outC,shoulder(mix(silver,outC,.2)*(.55+.9*rim*(.4+.6*spot))+grating(L,V,vec2(.7071),1600.)*.35*spot),art);}
   else if(u_artL.x>5.5&&u_artL.x<6.5){float rim=pow(max(dot(nRel,H),0.),18.)*(.35+.65*spot);outC=outC*(1.-.06*art)+(1.-outC)*mix(vec3(.95,.88,.7),outC*2.,.6)*rim*art*.7;}
   else outC=overInk(outC,foil(u_artL.x,u_artL.y,uv,L,V,H,spot,mk.g,stroke),cov);}
- if(u_stars>.5&&mk.b>.3){float s=pow(max(dot(nRel,H),0.),30.)*(.3+.7*spot);outC+=(1.-outC)*vec3(1.,.9,.6)*s*.9;}
+ // Level stars and Attribute: 1 embossed glint, 2 holo, 3 rainbow (Secret), 4 gold.
+ if(u_stars>.5&&mk.b>.3){float sc=smoothstep(.3,.8,mk.b);
+  if(u_stars<1.5){float s=pow(max(dot(nRel,H),0.),30.)*(.3+.7*spot);outC+=(1.-outC)*vec3(1.,.9,.6)*s*.9*sc;}
+  else outC=overInk(outC,foil(u_stars<2.5?1.:u_stars<3.5?2.:1.,u_stars>3.5?1.:0.,uv,L,V,H,spot,0.,stroke),sc*.9);}
  gl_FragColor=vec4(toSrgb(clamp(outC,0.,1.)),1.);
 }`;
 const analyze=foilAnalyzer(new URL('./ygo-foil-worker.js',import.meta.url),(data,W,H,{layout})=>analyzeYgoArt(data,W,H,YGO_LAYOUT_ART[layout]));
@@ -92,10 +95,10 @@ function renderer(doc){
  return shared;
 }
 // Returns a handle, or null when this surface keeps the CSS finish (unsupported rarity, no WebGL).
-export function mountYgoRarityFoil(overlay,img,effect,{surface='detail',layout='standard'}={}){
+export function mountYgoRarityFoil(overlay,img,effect,{surface='detail',layout='standard',stars}={}){
  layout=layoutOf(layout);
  const recipe=ygoRecipeFor(effect);if(!recipe||!overlay||!img)return null;
  const doc=overlay.ownerDocument,src=img.currentSrc||img.src;
  return mountFoilCanvas(overlay,{source:()=>img,key:src+'|'+layout,surface,program:()=>renderer(doc),analysis:()=>analyzeCardImage(img,layout),
-  setUniforms:({gl,U})=>{gl.uniform4f(U.u_art,...YGO_LAYOUT_ART[layout]);gl.uniform4f(U.u_text,...YGO_LAYOUT_TEXT[layout]);gl.uniform3f(U.u_whole,...(recipe.whole||[0,0,0]));gl.uniform3f(U.u_frame,...(recipe.frame||[0,0,0]));gl.uniform3f(U.u_artL,...(recipe.art||[0,0,0]));gl.uniform1f(U.u_stars,recipe.stars?1:0);}});
+  setUniforms:({gl,U})=>{gl.uniform4f(U.u_art,...YGO_LAYOUT_ART[layout]);gl.uniform4f(U.u_text,...YGO_LAYOUT_TEXT[layout]);gl.uniform3f(U.u_whole,...(recipe.whole||[0,0,0]));gl.uniform3f(U.u_frame,...(recipe.frame||[0,0,0]));gl.uniform3f(U.u_artL,...(recipe.art||[0,0,0]));gl.uniform1f(U.u_stars,stars??(recipe.stars?1:0));}});
 }

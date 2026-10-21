@@ -90,9 +90,10 @@ export function analyzeYgoArt(rgba,W,H,box=YGO_ART_BOX){
  const spellTrap=box===YGO_ART_BOX&&((fg>fr+.3&&fb>fr+.25)||(fr>fg+.25&&fr>fb+.08));
  if(spellTrap)for(let j=0;j<ah;j++)for(let i=0;i<aw;i++){const k=at(i,j);pass[k]=Math.max(pass[k],.55*(1-(1-ss(.06,.2,lum[k]))*.85));}
  const passS=boxBlur(pass,W,H,1,1);
- // Level stars (saturated red/orange orbs under the name) and the attribute orb.
+ // Level stars and the attribute orb. The orbs (bright red-orange rims, yellow stars) are far brighter than
+ // any frame behind them (Effect orange stays under .78 red), and white/beige frames carry too much blue.
  const stars=new Float32Array(N);
- for(let j=Math.round(.112*H);j<Math.round(.17*H);j++)for(let i=Math.round(.08*W);i<Math.round(.92*W);i++){const k=j*W+i,mx=Math.max(r[k],g[k],b[k]),mn=Math.min(r[k],g[k],b[k]);if(r[k]>.5&&mx-mn>.3&&r[k]>=b[k])stars[k]=1;}
+ for(let j=Math.round(.112*H);j<Math.round(.17*H);j++)for(let i=Math.round(.08*W);i<Math.round(.92*W);i++){const k=j*W+i,mx=Math.max(r[k],g[k],b[k]),mn=Math.min(r[k],g[k],b[k]);if(r[k]>.84&&b[k]<.45*r[k]&&mx-mn>.35)stars[k]=1;}
  const ocx=.874*W,ocy=.081*H,orr=.042*W;
  for(let j=Math.max(0,Math.round(ocy-orr));j<ocy+orr;j++)for(let i=Math.max(0,Math.round(ocx-orr));i<Math.min(W,ocx+orr);i++)if((i-ocx)**2+(j-ocy)**2<orr*orr)stars[j*W+i]=Math.max(stars[j*W+i],.6);
  const height=boxBlur(lum,W,H,1,1);
