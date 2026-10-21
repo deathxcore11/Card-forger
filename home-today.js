@@ -25,11 +25,13 @@ export function dailyDetails(g,h,fetchJson=json){
  job.catch(()=>resolved.delete(key));resolved.set(key,job);return job;
 }
 const setAction=(g,set)=>g==='mtg'?`data-act="set" data-code="${esc(set.code)}"`:g==='ygo'?`data-act="tSetByName" data-name="${esc(set.name)}"`:`data-act="tSet" data-id="${esc(set.id)}"`;
+// The card art is a large tap target for the header's Card of the Day action, not a second button,
+// so keyboard and screen-reader users meet one control for it.
 // Skeleton first (the hero already knows the card's name and art); details paint in when they arrive.
 export function homeTodayMarkup(g,h){
  if(!h)return '';
  return `<section class="home-today" id="homeToday" data-game="${g}" data-daily-date="${esc(h.date)}" data-daily-id="${esc(h.id)}" aria-label="Today">
- <button class="today-card" data-act="homeDailyCard" data-game="${g}" data-id="${esc(h.id)}" data-name="${esc(h.name)}" data-date="${esc(h.date)}" aria-label="Open ${esc(h.name)}, Card of the Day"><span class="today-card-face"><img alt="" referrerpolicy="no-referrer" hidden></span><span class="today-card-glow" aria-hidden="true"></span></button>
+ <span class="today-card" data-act="homeTodayCard" aria-hidden="true"><span class="today-card-face"><img alt="" referrerpolicy="no-referrer" hidden></span><span class="today-card-glow"></span></span>
  <div class="today-body"><p class="eyebrow">Today</p><h2>${esc(h.name)}</h2><p class="today-sub muted">Card of the Day</p><div class="today-set" aria-live="polite"><span class="today-shimmer" aria-hidden="true"></span></div></div></section>`;
 }
 // progress(g,set) returns setProgressMarkup-ready numbers for the release (or null).

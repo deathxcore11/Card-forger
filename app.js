@@ -3430,6 +3430,7 @@ function paintHomeToday(g) {
     el.dataset.painted = "done";
   }).catch(() => { el.dataset.painted = "";const box = el.querySelector(".today-set");if (box) box.innerHTML = ""; });
 }
+A.homeTodayCard = () => $("#homeHero [data-act='homeDailyCard']")?.click();
 // Opening today's pack goes to the Set of the Day and opens its pack with the Card of the Day as the hit.
 A.homeTodayPack = async (t) => {
   const g = t.dataset.game, h = T.heroFor(g);if (!h || T.game() !== g) return;
