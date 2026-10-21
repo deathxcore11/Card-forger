@@ -133,7 +133,7 @@
 .rarity-swatch-diagonal{background:repeating-linear-gradient(135deg,#9fd8ec 0 2px,#d6b2ee 2px 4px,#f4d891 4px 6px)}
 .rarity-swatch-prism{background:conic-gradient(#9fd8ec 0 25%,#f0b0d0 0 50%,#f4d891 0 75%,#a6e4c2 0) 0 0/6px 6px}
 .rarity-swatch-gold{background:linear-gradient(135deg,#8c5f17,#f4d27d 45%,#b8862d 62%,#ffe9a8)}
-.rarity-swatch-platinum{background:linear-gradient(135deg,#8e97a9,#ffffff 45%,#b9c3d5 62%,#eef2fa)}
+.rarity-swatch-platinum{background:linear-gradient(135deg,transparent 38%,#b8e4f4aa 46%,#e6c8f4aa 52%,#f4e2b0aa 58%,transparent 66%),linear-gradient(135deg,#6f7a8e,#dfe6f2 40%,#8f9bb0 64%,#c9d2e2)}
 .rarity-swatch-glitter{background:radial-gradient(circle at 25% 30%,#fff 0 1px,transparent 2px),radial-gradient(circle at 70% 65%,#fff 0 1px,transparent 2px),radial-gradient(circle at 60% 20%,#fff 0 .8px,transparent 1.6px),linear-gradient(135deg,#5ab6e8,#c08ae8 50%,#f1c26e)}
 .rarity-swatch-ghost{background:linear-gradient(135deg,#c9d6e6,#ffffff 40%,#a9b8cc 60%,#e8eef6);filter:saturate(.3)}
 .rarity-swatch-emboss{background:linear-gradient(145deg,#f2d690,#9a6d22 55%,#f7e2a6);box-shadow:inset 1px 1px 0 #fff6,inset -1px -1px 0 #0005}
