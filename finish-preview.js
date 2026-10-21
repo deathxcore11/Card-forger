@@ -3,6 +3,8 @@ import {finishChoices,resolveFinish,FINISH_MASKS} from './finish-effects.js';
 import {finishMaterialProfile,hasFinishPattern,verifiedTitleMask} from './finish-materials.js';
 import {ygoNameMask,nameMaskStyle,mountYgoNameFoil} from './ygo-name-foil.js';
 import {mountYgoRarityFoil} from './ygo-rarity-foil.js';
+import {ygoRarityEffect,ygoRarityRank,ygoRaritySwatch} from './ygo-foil-recipes.js';
+import {quoteForContext} from './pricing-presentation.js';
 export {finishChoices,finishEffect,resolveFinish,selectPreviewFinish,finishArtworkCard} from './finish-effects.js';
 const KEY='cardstashy-finish-effects';
 export const finishEffectsOn=()=>{try{return localStorage.getItem(KEY)!=='off';}catch{return true;}};
@@ -13,8 +15,39 @@ export function finishAttrs(game,c,ctx={},view='large'){
  p.materialProfile=finishMaterialProfile(game,c,p);
  return `data-finish-game="${esc(game)}" data-finish-surface="${view}" data-finish-effect="${esc(p.effect)}" data-finish-model="${esc(JSON.stringify(p))}"`;
 }
+// Yu-Gi-Oh! reprints one card in many rarities. Instead of a printing list first, the Finish row
+// offers each rarity this card exists in (plainest first, with a swatch of its foil). A tap picks a
+// representative printing of that rarity (the cheapest, or the one already chosen) through the same
+// selection as the Printing & rarity menu, so price, edition and collection stay in step.
+const rarityKey=v=>String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+const shortRarity=r=>r==='Rare'||r==='Short Print'?r:r.replace(/ Rare$/,'');
+export function ygoRarityOptions(c,ctx={}){
+ const quote=quoteForContext('ygo',c,ctx),rows=quote?.editions||[];if(!rows.length)return {options:[],selected:''};
+ const price=key=>{const p=(c.sets||[]).find(s=>s.code+'::'+s.rarity===key)?.price;return Number.isFinite(p)&&p>0?p:Infinity;};
+ const groups=new Map();
+ for(const e of rows){if(!e.rarity)continue;const g=groups.get(e.rarity)||{rarity:e.rarity,keys:[]};g.keys.push(e.key);groups.set(e.rarity,g);}
+ const selected=quote.rarity||'';
+ const options=[...groups.values()].map(g=>{const effect=ygoRarityEffect(rarityKey(g.rarity)),key=g.rarity===selected&&g.keys.includes(quote.editionKey)?quote.editionKey:[...g.keys].sort((a,b)=>price(a)-price(b))[0];
+  return {rarity:g.rarity,label:shortRarity(g.rarity),count:g.keys.length,key,rank:ygoRarityRank(effect),swatch:ygoRaritySwatch(effect)};})
+  .sort((a,b)=>a.rank-b.rank||a.rarity.localeCompare(b.rarity));
+ return {options,selected};
+}
+// Search tiles: the card's most premium rarities as swatches, so shiny printings are visible before opening it.
+export function ygoRarityStrip(c,max=4){
+ const seen=new Map();for(const s of c?.sets||[]){if(!s.rarity||seen.has(s.rarity))continue;const effect=ygoRarityEffect(rarityKey(s.rarity));seen.set(s.rarity,{rarity:s.rarity,rank:ygoRarityRank(effect),swatch:ygoRaritySwatch(effect)});}
+ const list=[...seen.values()].filter(r=>r.rank>0).sort((a,b)=>b.rank-a.rank);if(!list.length)return '';
+ const extra=list.length-max;
+ return `<span class="rarity-strip" role="img" aria-label="${esc(`${seen.size} ${seen.size===1?'rarity':'rarities'}, up to ${list[0].rarity}`)}">${list.slice(0,max).map(r=>`<span class="rarity-swatch rarity-swatch-${r.swatch}" title="${esc(r.rarity)}"></span>`).join('')}${extra>0?`<small>+${extra}</small>`:''}</span>`;
+}
+function ygoRarityRail(c,ctx,p){
+ const {options,selected}=ygoRarityOptions(c,ctx);if(!options.length)return '';
+ const chosen=options.find(o=>o.rarity===selected),quote=chosen&&quoteForContext('ygo',c,ctx);
+ const foot=chosen?`${chosen.rarity} · ${quote?.printing?.code||''} ${quote?.printing?.name||''}${chosen.count>1?` · ${chosen.count} ${chosen.label} printings, pick the exact one in Printing & rarity`:''}`:`${options.length} ${options.length===1?'rarity':'rarities'} · tap one to see its shine`;
+ return `<div class="finish-preview ygo-rarity-preview" role="group" aria-label="Rarity"><span class="small muted">Rarity</span><span class="finish-choice-hint small muted" hidden aria-hidden="true">Scroll ↔</span><div class="finish-choice-rail" tabindex="0" aria-label="Rarities this card was printed in, scroll horizontally">${options.map(o=>`<button type="button" class="chip ygo-rarity-chip${o.rarity===selected?' on':''}" data-act="ygoPickRarity" data-card-id="${esc(c.id)}" data-edition="${esc(o.key)}" aria-pressed="${o.rarity===selected}" aria-label="${esc(o.rarity)}, ${o.count} ${o.count===1?'printing':'printings'}"><span class="rarity-swatch rarity-swatch-${o.swatch}" aria-hidden="true"></span>${esc(o.label)}${o.count>1?`<small aria-hidden="true">${o.count}</small>`:''}</button>`).join('')}</div><p class="foot" role="status">${esc(foot.trim())}${chosen&&p.effect!=='plain'&&p.status!=='unknown'?' · '+esc(p.reason||'Simulated finish'):''}</p></div>`;
+}
 export function finishPreview(game,c,ctx={}){
  const choices=finishChoices(game,c,ctx),p=resolveFinish(game,c,ctx);
+ if(game==='ygo'){const rail=ygoRarityRail(c,ctx,p);if(rail)return rail;}
  return `<div class="finish-preview" role="group" aria-label="Card finish"><span class="small muted">Finish</span><span class="finish-choice-hint small muted" hidden aria-hidden="true">Scroll ↔</span><div class="finish-choice-rail" tabindex="0" aria-label="Card finishes, scroll horizontally">${game==='ygo'&&!choices.length?'<button type="button" class="chip" data-act="cardTab" data-tab="prices">Choose printing</button>':''}${choices.map(v=>`<button type="button" class="chip${v.key===p.key?' on':''}" ${game==='ygo'?'':`data-act="cardFinishPreview" data-game="${esc(game)}" data-card-id="${esc(c.id)}" data-finish="${esc(v.key)}"`} aria-pressed="${v.key===p.key}">${esc(v.label)}</button>`).join('')}</div><p class="foot" role="status">${esc(p.effect==='plain'?'Nonfoil · no simulated shine':p.status==='unknown'?(game==='ygo'&&!choices.length?'Choose the set code and rarity to preview its finish.':'Finish preview unavailable for this printing.'):(p.key&&p.label?p.label+' · ':'')+(p.reason||'Simulated finish'))}</p></div>`;
 }
 // Reveal a newly selected finish within its own rail, never by scrollIntoView

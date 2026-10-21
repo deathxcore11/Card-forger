@@ -6,7 +6,7 @@ import {recordValueObservation} from './value-history.js';
 import {dailyDate, nextDailyReset} from './daily-clock.js';
 import {ygoRarity} from './ygo-identity.js';
 import {sharedDeckSheet} from './shared-deck-view.js';
-import {finishAttrs,finishPreview,finishArtworkCard} from './finish-preview.js';
+import {finishAttrs,finishPreview,finishArtworkCard,ygoRarityStrip} from './finish-preview.js';
 import {deckBoxMarkup,deckBoxFields,readDeckBox} from './deck-box.js';
 import {contextAction,contextHeader,deckContextShortcuts} from './card-actions.js';
 import {detailSetSummary,detailOwnedSummary,miniPrintingMarkup} from './card-detail-extras.js';
@@ -735,7 +735,7 @@ export function tcgSearch() {
   ${U.busy && !loaded.length ? skeletonGrid() : ""}
   ${list.length ? `<div class="card-grid">${list.map(c => {
     const own = ownedOf(g,c,m), p = price(c);
-    return `<button class="grid-card" ${finishAttrs(g,c,{})}  data-act="tCard" data-id="${esc(c.id)}" ${tierAttrs(tcgTier(c))}>${imgTag(c)}${tileBadges(c)}<span class="grid-meta"><span class="ellip">${esc(c.name)}</span><span>${c.brief ? "Details not loaded" : p === null ? "—" : usd(p)}</span></span>${own ? `<span class="owned-badge">×${own}</span>` : ""}</button>`;
+    return `<button class="grid-card" ${finishAttrs(g,c,{})}  data-act="tCard" data-id="${esc(c.id)}" ${tierAttrs(tcgTier(c))}>${imgTag(c)}${tileBadges(c)}<span class="grid-meta"><span class="ellip">${esc(c.name)}</span><span>${c.brief ? "Details not loaded" : p === null ? "—" : usd(p)}</span></span>${g === "ygo" && !c.brief ? ygoRarityStrip(c) : ""}${own ? `<span class="owned-badge">×${own}</span>` : ""}</button>`;
   }).join("")}</div>` : U.ran && !U.busy ? empty(loaded.length || U.more ? "No matches among loaded cards" : "No cards found", pending ? "Card details are needed to check these filters." : U.more ? "More provider results are available. Load more or clear a filter." : "Try a shorter name or clear a filter.") : U.busy ? '<p class="muted center pad">Searching…</p>' : `<p class="muted small">Search by name, or leave it blank and pick filters. ${g === "ptcg" ? "Pokémon TCG Pocket (digital) cards are left out." : ""}</p>`}
   ${U.more ? `<button class="btn ghost block" data-act="tMore" ${U.busy ? "disabled" : ""}>${U.failedPage > 0 ? "Retry load more" : U.busy ? "Loading…" : "Load more"}</button>` : ""}
   ${g === "ptcg" && loaded.some(c => c.brief) && !U.detailsBusy && !U.busy ? '<button class="btn ghost block" data-act="tSearchDetails">Retry details</button>' : ""}`;

@@ -4876,3 +4876,6 @@ dialog.sheet:has(.context-card),body.glass dialog.sheet:has(.context-card){max-w
 }
 @media(max-width:350px){.context-menu .quick-owned{grid-template-columns:1fr}.context-menu .quick-owned .stepper{grid-column:1;grid-row:auto;justify-self:start}.context-shortcuts{gap:5px}.context-art{flex-basis:40px}.context-art .quick-card-thumb{width:38px;height:53px}}
 @media(prefers-reduced-motion:reduce){.context-menu :is(.context-action,summary,.chev){transition:none}}
+/* Yu-Gi-Oh! printing tiles name their rarity with a small foil swatch. */
+.card-printing-mini .printing-mini-rarity{display:inline-flex;align-items:center;gap:4px;margin-top:3px;font-size:10px;font-weight:600;line-height:1.2;color:var(--muted,#aab)}
+.card-printing-mini .printing-mini-rarity .rarity-swatch{width:11px;height:11px;border-radius:3px}

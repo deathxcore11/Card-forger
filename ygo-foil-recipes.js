@@ -49,3 +49,18 @@ const RARITY_EFFECT={
  ultraparallelrare:'ygo-ultra-parallel',duelterminalultraparallelrare:'ygo-ultra-parallel'
 };
 export const ygoRarityEffect=normalized=>RARITY_EFFECT[normalized]||'';
+// Display order for rarity choices, plainest first (Common has no recipe and always leads).
+const ORDER=['ygo-rare','ygo-parallel','ygo-rare-parallel','ygo-super','ygo-super-parallel','ygo-shatterfoil','ygo-starfoil','ygo-ultra','ygo-ultra-parallel','ygo-mosaic','ygo-gold','ygo-premium-gold','ygo-platinum','ygo-secret','ygo-ultra-secret','ygo-gold-secret','ygo-platinum-secret','ygo-prismatic','ygo-collector','ygo-ultimate','ygo-ghost','ygo-ghost-gold','ygo-quarter-century','ygo-starlight'];
+export const ygoRarityRank=effect=>effect?ORDER.indexOf(effect)+1||ORDER.length:0;
+// A small swatch hinting at each recipe's metal and pattern (CSS class suffix).
+export function ygoRaritySwatch(effect){
+ const r=YGO_FOIL_RECIPES[effect];if(!r)return 'plain';
+ const art=r.art?.[0],whole=r.whole?.[0],tint=(r.frame||r.art||r.whole)?.[1];
+ if(whole===P.glitter||art===P.glitter)return 'glitter';
+ if(art===P.ghost)return 'ghost';if(art===P.emboss)return 'emboss';
+ if(tint===T.gold||r.frame?.[1]===T.gold)return 'gold';if(tint===T.platinum)return 'platinum';
+ if(art===P.prism)return 'prism';if(art===P.diag||art===P.qcr)return 'diagonal';
+ if(whole===P.parallel)return 'parallel';if(whole)return 'foilcard';
+ if(!r.art)return r.name==='silver'?'silver':'plain';
+ return r.name==='gold'?'ultra':'rainbow';
+}

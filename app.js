@@ -3487,6 +3487,14 @@ A.cardFinishPreview = t => {
   const buttons=$$("#sheetBody [data-act=cardFinishPreview]");
   buttons.find(b=>b.dataset.finish===ctx.priceFinish)?.focus({preventScroll:true});
 };
+// Yu-Gi-Oh! rarity chip: selects a printing of that rarity through the Printing & rarity selection.
+A.ygoPickRarity = t => {
+  const ctx=S.ui.sheetCtx;
+  if(ctx?.type!=="tcard"||ctx.game!=="ygo"||String(ctx.id)!==String(t.dataset.cardId)||!t.dataset.edition)return;
+  ctx.priceEdition=t.dataset.edition;ctx.priceYgoEdition="";ctx.ygoPrintingExplicit=true;ctx.ygoEditionExplicit=false;delete ctx.ygoPriceDefault;
+  refreshSheet();
+  $$("#sheetBody [data-act=ygoPickRarity]").find(b=>b.getAttribute("aria-pressed")==="true")?.focus({preventScroll:true});
+};
 A.cardPriceJump = t => {
   const ctx = S.ui.sheetCtx;
   if (!["card","tcard"].includes(ctx?.type)) return;
