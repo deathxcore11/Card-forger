@@ -7,7 +7,7 @@ import {recordValueObservation} from './value-history.js';
 import {dailyDate, nextDailyReset} from './daily-clock.js';
 import {ygoRarity} from './ygo-identity.js';
 import {sharedDeckSheet} from './shared-deck-view.js';
-import {finishAttrs,finishPreview,finishArtworkCard} from './finish-preview.js';
+import {finishAttrs,finishPreview,finishArtworkCard,ygoRarityStrip} from './finish-preview.js';
 import {deckBoxMarkup,deckBoxFields,readDeckBox} from './deck-box.js';
 import {contextAction,contextHeader,deckContextShortcuts} from './card-actions.js';
 import {detailSetSummary,detailOwnedSummary,miniPrintingMarkup} from './card-detail-extras.js';
@@ -373,6 +373,14 @@ export function referenceEntryPrice(c, e) {
   return price(c);
 }
 
+// Yu-Gi-Oh! foil needs an exact printing. A deck row uses the printing chosen for it; otherwise the
+// copy you own, but only when every owned copy is the same printing and rarity. Never guessed.
+export function ygoDeckFinishContext(g, card, selection, s = S.state) {
+  if (g !== "ygo" || !card) return {};
+  if (selection?.printingKey) return { priceEdition: selection.printingKey };
+  const keys = new Set(gs(g, s).collection.filter(e => String(e.cardId) === String(card.id) && e.printing && e.rarity).map(e => e.printing + "::" + e.rarity));
+  return keys.size === 1 ? { priceEdition: [...keys][0] } : {};
+}
 function deckStats(g, d) {
   const m = ownedMap(g),
     used = new Map(),
@@ -728,7 +736,7 @@ export function tcgSearch() {
   ${U.busy && !loaded.length ? skeletonGrid() : ""}
   ${list.length ? `<div class="card-grid">${list.map(c => {
     const own = ownedOf(g,c,m), p = price(c);
-    return `<button class="grid-card" ${finishAttrs(g,c,{})}  data-act="tCard" data-id="${esc(c.id)}" ${tierAttrs(tcgTier(c))}>${imgTag(c)}${tileBadges(c)}<span class="grid-meta"><span class="ellip">${esc(c.name)}</span><span>${c.brief ? "Details not loaded" : p === null ? "—" : usd(p)}</span></span>${own ? `<span class="owned-badge">×${own}</span>` : ""}</button>`;
+    return `<button class="grid-card" ${finishAttrs(g,c,{})}  data-act="tCard" data-id="${esc(c.id)}" ${tierAttrs(tcgTier(c))}>${imgTag(c)}${tileBadges(c)}<span class="grid-meta"><span class="ellip">${esc(c.name)}</span><span>${c.brief ? "Details not loaded" : p === null ? "—" : usd(p)}</span></span>${g === "ygo" && !c.brief ? ygoRarityStrip(c) : ""}${own ? `<span class="owned-badge">×${own}</span>` : ""}</button>`;
   }).join("")}</div>` : U.ran && !U.busy ? empty(loaded.length || U.more ? "No matches among loaded cards" : "No cards found", pending ? "Card details are needed to check these filters." : U.more ? "More provider results are available. Load more or clear a filter." : "Try a shorter name or clear a filter.") : U.busy ? '<p class="muted center pad">Searching…</p>' : `<p class="muted small">Search by name, or leave it blank and pick filters. ${g === "ptcg" ? "Pokémon TCG Pocket (digital) cards are left out." : ""}</p>`}
   ${U.more ? `<button class="btn ghost block" data-act="tMore" ${U.busy ? "disabled" : ""}>${U.failedPage > 0 ? "Retry load more" : U.busy ? "Loading…" : "Load more"}</button>` : ""}
   ${g === "ptcg" && loaded.some(c => c.brief) && !U.detailsBusy && !U.busy ? '<button class="btn ghost block" data-act="tSearchDetails">Retry details</button>' : ""}`;
@@ -1421,7 +1429,7 @@ function deckCardsTab(g, d, f, s, issues) {
               .map(({ r, c, need, purchaseReference }) => {
                 const lim = c ? SOURCES[g].limit(c, f) : 3;
                 const t = tcgTier(c), actionRow = g === "ygo" && r.ygoPurchaseSelection ? `data-row-index="${(d.zones[z]||[]).findIndex(x=>x.cardId===r.cardId&&x.ygoPurchaseSelection===r.ygoPurchaseSelection)}" data-purchase-identity="${esc(JSON.stringify(r.ygoPurchaseSelection))}"` : "";
-                return `<div class="lot deck-row ${need ? "short" : ""}" data-tier="${t.key}" style="${tierStyle(t)}"><button class="lot-art" ${finishAttrs(g,c,{})}  data-act="tCard" ${purchaseRowAttrs(g,r)} data-id="${esc(r.cardId)}" data-deck="${esc(d.id)}" aria-label="Open ${esc(r.name)}">${imgTag(c)}${tileBadges(c)}<span class="art-price">${usd(g === "ygo" ? purchaseReference?.value : price(c))}</span></button><div class="lot-info"><button class="lot-name" data-act="tCard" ${purchaseRowAttrs(g,r)} data-id="${esc(r.cardId)}" data-deck="${esc(d.id)}">${esc(r.name)}</button><span class="lot-sub">${rowBadges(c)}${purchaseRowNote(g,purchaseReference)}${lim === 0 ? ' <span class="tag bad">Forbidden</span>' : lim === 1 && g === "ygo" ? ' <span class="tag warn">Limited</span>' : lim === 2 ? ' <span class="tag warn">Semi-Limited</span>' : ""}${c && SOURCES[g].legality(c, f) === "not_legal" ? ' <span class="tag bad">Not legal</span>' : ""}</span><span class="own ${need ? "no" : "yes"}">${need ? "Need " + need : "Owned"}</span></div><div class="lot-side"><span class="stepper"><button data-act="tDeckQty" ${actionRow} data-deck="${esc(d.id)}" data-zone="${z}" data-id="${esc(r.cardId)}" data-delta="-1" aria-label="One fewer">−</button><b>${r.qty}</b><button data-act="tDeckQty" ${actionRow} data-deck="${esc(d.id)}" data-zone="${z}" data-id="${esc(r.cardId)}" data-delta="1" aria-label="One more">＋</button></span>${g === "ygo" ? `<button class="link small" data-act="tDeckMove" ${actionRow} data-deck="${esc(d.id)}" data-zone="${z}" data-id="${esc(r.cardId)}">${z === "side" ? "→ deck" : "→ side"}</button>` : ""}</div></div>`;
+                return `<div class="lot deck-row ${need ? "short" : ""}" data-tier="${t.key}" style="${tierStyle(t)}"><button class="lot-art" ${finishAttrs(g,c,ygoDeckFinishContext(g,c,r.ygoPurchaseSelection))}  data-act="tCard" ${purchaseRowAttrs(g,r)} data-id="${esc(r.cardId)}" data-deck="${esc(d.id)}" aria-label="Open ${esc(r.name)}">${imgTag(c)}${tileBadges(c)}<span class="art-price">${usd(g === "ygo" ? purchaseReference?.value : price(c))}</span></button><div class="lot-info"><button class="lot-name" data-act="tCard" ${purchaseRowAttrs(g,r)} data-id="${esc(r.cardId)}" data-deck="${esc(d.id)}">${esc(r.name)}</button><span class="lot-sub">${rowBadges(c)}${purchaseRowNote(g,purchaseReference)}${lim === 0 ? ' <span class="tag bad">Forbidden</span>' : lim === 1 && g === "ygo" ? ' <span class="tag warn">Limited</span>' : lim === 2 ? ' <span class="tag warn">Semi-Limited</span>' : ""}${c && SOURCES[g].legality(c, f) === "not_legal" ? ' <span class="tag bad">Not legal</span>' : ""}</span><span class="own ${need ? "no" : "yes"}">${need ? "Need " + need : "Owned"}</span></div><div class="lot-side"><span class="stepper"><button data-act="tDeckQty" ${actionRow} data-deck="${esc(d.id)}" data-zone="${z}" data-id="${esc(r.cardId)}" data-delta="-1" aria-label="One fewer">−</button><b>${r.qty}</b><button data-act="tDeckQty" ${actionRow} data-deck="${esc(d.id)}" data-zone="${z}" data-id="${esc(r.cardId)}" data-delta="1" aria-label="One more">＋</button></span>${g === "ygo" ? `<button class="link small" data-act="tDeckMove" ${actionRow} data-deck="${esc(d.id)}" data-zone="${z}" data-id="${esc(r.cardId)}">${z === "side" ? "→ deck" : "→ side"}</button>` : ""}</div></div>`;
               })
               .join("")}</div>`
           : `<p class="muted small">Empty.</p>`
@@ -1988,7 +1996,7 @@ export function tcgBuildSheet() {
         const card = cardOf(g, r.cardId), have = stats.rows.find(x => x.zone === zone && x.r.cardId === r.cardId && x.r.ygoPurchaseSelection === r.ygoPurchaseSelection)?.got || 0;
         const need = Math.max(0, r.qty - have), tt = tcgTier(card), purchaseReference = g === "ygo" ? ygoPurchaseReference(card,r.ygoPurchaseSelection) : null;
         // The same card tile as the deck page: art with price, set and type badges, owned or needed.
-        const tile = `<div class="lot deck-row tier-row ${need ? "short" : ""}" data-tier="${tt.key}" style="${tierStyle(tt)}"><button class="lot-art" ${finishAttrs(g,card,{})}  data-act="tCard" ${purchaseRowAttrs(g,r)} data-id="${esc(r.cardId)}" aria-label="Open ${esc(r.name)}">${imgTag(card)}${tileBadges(card)}<span class="art-price">${usd(g === "ygo" ? purchaseReference?.value : price(card))}</span></button><div class="lot-info"><button class="lot-name" data-act="tCard" ${purchaseRowAttrs(g,r)} data-id="${esc(r.cardId)}">${esc(r.name)}</button><span class="lot-sub">${rowBadges(card)}${purchaseRowNote(g,purchaseReference)}${r.why ? `<small class="muted">${esc(r.why)}</small>` : ""}</span><span class="own ${need ? "no" : "yes"}">${need ? "Need " + need : "Owned"}</span></div><div class="lot-side"><span class="tier-qty">×${r.qty}</span></div></div>`;
+        const tile = `<div class="lot deck-row tier-row ${need ? "short" : ""}" data-tier="${tt.key}" style="${tierStyle(tt)}"><button class="lot-art" ${finishAttrs(g,card,ygoDeckFinishContext(g,card,r.ygoPurchaseSelection))}  data-act="tCard" ${purchaseRowAttrs(g,r)} data-id="${esc(r.cardId)}" aria-label="Open ${esc(r.name)}">${imgTag(card)}${tileBadges(card)}<span class="art-price">${usd(g === "ygo" ? purchaseReference?.value : price(card))}</span></button><div class="lot-info"><button class="lot-name" data-act="tCard" ${purchaseRowAttrs(g,r)} data-id="${esc(r.cardId)}">${esc(r.name)}</button><span class="lot-sub">${rowBadges(card)}${purchaseRowNote(g,purchaseReference)}${r.why ? `<small class="muted">${esc(r.why)}</small>` : ""}</span><span class="own ${need ? "no" : "yes"}">${need ? "Need " + need : "Owned"}</span></div><div class="lot-side"><span class="tier-qty">×${r.qty}</span></div></div>`;
         groups[groupOf(card, zone)].push({ qty: r.qty, name: r.name, tile, need, art: imgTag(card, "mini-art"), act: `data-act="tCard" ${purchaseRowAttrs(g,r)} data-id="${esc(r.cardId)}"`, why: r.why || "", status: have >= r.qty ? "✓ Owned" : `Need ${r.qty - have}`, ok: have >= r.qty });
       }
     for (const k of order) groups[k].sort((x, y) => y.qty - x.qty || x.name.localeCompare(y.name));

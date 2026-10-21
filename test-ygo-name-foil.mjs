@@ -29,7 +29,7 @@ assert(Math.abs(sw/100-(YGO_NAME_BOX[2]-YGO_NAME_BOX[0]))<1e-4&&Math.abs(sh/100-
 assert.equal(style.clipPath,'inset(5.000% 17.200% 89.200% 7.200%)','Layer is also clipped to the name bar');assert.equal(style.maskRepeat,'no-repeat');
 // Name bar stops before the Attribute orb and clears letter descenders.
 assert(YGO_NAME_BOX[2]<.834&&YGO_NAME_BOX[3]>=.108,'Measured name bar bounds');
-assert.deepEqual(YGO_NAME_RARITY,{silver:1,gold:2,rainbow:3},'Rare silver, Ultra gold, Secret/Prismatic rainbow');
+assert.deepEqual(YGO_NAME_RARITY,{silver:1,gold:2,rainbow:3,platinum:4},'Rare silver, Ultra gold, Secret/Prismatic rainbow, Platinum and Quarter Century platinum');
 // Output is letters only: transparent wherever coverage is zero, so the art foil and bar stay untouched.
 assert.match(YGO_NAME_FRAGMENT,/if\(c<=0\.0\)\{gl_FragColor=vec4\(0\.0\);return;\}/);
 assert.match(YGO_NAME_FRAGMENT,/gl_FragColor=vec4\(toSrgb\(clamp\(foil,0\.0,1\.0\)\),c\);/);

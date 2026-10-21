@@ -18,7 +18,7 @@ const report=[];let app,error;
 const frame=page=>page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
 const selector=id=>`.display-list > .lot:has(> .lot-art[data-entry="${id}"])`;
 async function checkIdentity(page){
- for(const [key,badge,flair,effect]of [['saved-ultra','UR','yr3','ygo-ultra'],['saved-unlimited','UR','yr3','ygo-ultra'],['saved-common','C','yr0','plain'],['saved-collector','CR','yr4','unknown'],['saved-missing',null,null,'unknown'],['saved-ambiguous',null,null,'unknown']]){
+ for(const [key,badge,flair,effect]of [['saved-ultra','UR','yr3','ygo-ultra'],['saved-unlimited','UR','yr3','ygo-ultra'],['saved-common','C','yr0','plain'],['saved-collector','CR','yr4','ygo-collector'],['saved-missing',null,null,'unknown'],['saved-ambiguous',null,null,'unknown']]){
   const row=page.locator(selector(key)),art=row.locator('.lot-art');await row.waitFor();
   assert.equal(await row.getAttribute('data-rarity-flair'),flair,key+' exact rim');assert.equal(await row.getAttribute('data-tier'),'t0',key+' $1.40 frame is independent of rarity');
   assert.equal(await art.getAttribute('data-finish-effect'),effect,key+' supported exact finish');

@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-v264";
+const CACHE = "cardforge-shell-v269";
 const ASSETS = [
   "./grid-settings.js", "./price-origin.js", "./collection-display.css",
   "./aura.js", "./aura.css",
@@ -55,6 +55,10 @@ const ASSETS = [
   "./pokemon-anniversary-masks.js",
   "./finish-materials.js",
   "./ygo-name-foil.js",
+  "./ygo-rarity-foil.js",
+  "./ygo-foil-analysis.js",
+  "./ygo-foil-recipes.js",
+  "./ygo-foil-worker.js",
   "./assets/finishes/abyss-title.svg",
   "./assets/finishes/cosmos.svg",
   "./assets/finishes/gamma-title.svg",

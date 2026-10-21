@@ -32,7 +32,7 @@ MODULES = (
     "magic-owned-detail.js",
     "pokemon-variant-options.js", "pokemon-promo-evidence.js",
     "magic-card-color.js", "magic-matchups-ui.js", "magic-matchups-controller.js", "magic-matchups.css", "ai-matchup-core.js", "settings-theme.js", "settings-storage.js", "mobile-tilt.js", "set-experience.js", "pack-preview.js", "settings-theme.css", "theme-init.js", "recovery-store.js", "sync-merge.js", "value-page.js", "value-page.css", "value-history.js", "storage.js", "account-workspaces.js", "account-scope.js", "ygo-identity.js", "vendor/supabase-js-2.110.0.js",
-    "finish-effects.js", "pokemon-anniversary-masks.js", "ygo-name-foil.js", "finish-effects.css", "finish-preview.js", "finish-materials.js", "feel.js",
+    "finish-effects.js", "pokemon-anniversary-masks.js", "ygo-name-foil.js", "ygo-rarity-foil.js", "ygo-foil-analysis.js", "ygo-foil-recipes.js", "ygo-foil-worker.js", "finish-effects.css", "finish-preview.js", "finish-materials.js", "feel.js",
     "assets/finishes/cosmos.svg", "assets/finishes/metal-grain.svg", "assets/finishes/abyss-title.svg",
     "scryfall-client.js", "community-profile.js", "shared-deck-view.js", "binders.js", "suggest.js", "deck-box.js", "brand.js", "card-detail-extras.js",
     "condition-feed.js", "condition-refresh-scheduler.js", "condition-value.js",

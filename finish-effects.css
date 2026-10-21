@@ -23,7 +23,7 @@
 .finish-holo{background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#e2f3ffb3,transparent 62%),linear-gradient(120deg,transparent 15%,#69e3d7 38%,#c6a7fa 53%,#f5d5a0 64%,transparent 85%)}
 .finish-rainbow{background-image:linear-gradient(116deg,transparent 18%,#86c9ea 35%,#ce9bcc 46%,#e5ce91 57%,#90caaa 68%,transparent 84%)}
 .finish-metal{mix-blend-mode:soft-light;opacity:.23;background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#f0dfbb,transparent 65%),repeating-linear-gradient(33deg,#c7c7b777 0 .6px,#232b2944 .6px 1.6px);background-size:100% 100%,3px 3px}
-.finish-silver,.finish-gold{opacity:.24;background-image:linear-gradient(115deg,transparent 25%,#c6d2db 43%,#fff 50%,#8393a8 57%,transparent 72%)}
+.finish-silver,.finish-gold,.finish-platinum{opacity:.24;background-image:linear-gradient(115deg,transparent 25%,#c6d2db 43%,#fff 50%,#8393a8 57%,transparent 72%)}
 .finish-gold{background-image:linear-gradient(115deg,transparent 25%,#e3c67a 43%,#fff0b0 50%,#c2964b 57%,transparent 72%)}
 .finish-secret{background-image:repeating-linear-gradient(133deg,transparent 0 5px,#cbdcffaa 5px 6px,transparent 6px 10px);mask-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#000 5%,#0004 70%);background-size:110% 110%}
 .finish-prismatic{background-image:repeating-linear-gradient(0deg,transparent 0 5px,#e9c6fa99 5px 6px),repeating-linear-gradient(90deg,transparent 0 5px,#c2ecfa99 5px 6px);mask-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#000,#0003 70%);background-size:110% 110%}
@@ -90,9 +90,16 @@
 .finish-overlay[data-material-profile] .finish-title-glyphs{opacity:.9;mix-blend-mode:screen;background-size:230% 100%;background-position:var(--finish-x) 50%}
 .finish-overlay[data-material-profile] .finish-title-glyphs.finish-gold{background-image:linear-gradient(110deg,#79501a 16%,#d8a53a 35%,#fff2ad 48%,#f9cb56 55%,#9d6a1b 77%)}
 .finish-overlay[data-material-profile] .finish-title-glyphs.finish-silver{background-image:linear-gradient(110deg,#6c7e93 16%,#d6e4f0 37%,#fff 49%,#b4ccd8 59%,#647586 78%)}
+.finish-platinum{background-image:linear-gradient(115deg,transparent 25%,#d9e1ee 43%,#fff 50%,#a9b4c8 57%,transparent 72%)}
+.finish-overlay[data-material-profile] .finish-title-glyphs.finish-platinum{background-image:linear-gradient(110deg,#7d879b 16%,#e4ebf6 37%,#fff 49%,#c5cfe0 59%,#768096 78%)}
 .finish-overlay[data-material-profile] .finish-title-glyphs.finish-rainbow{background-image:linear-gradient(110deg,#8295c8 15%,#9ae1e8 33%,#f8c5e5 48%,#eee1a0 60%,#b5c8ec 80%)}
 /* Lit hot-stamped name letters (detail and zoom only); the glyph-masked layer stays beneath as fallback. */
 .finish-name-foil{position:absolute;display:block;pointer-events:none!important}
+/* WebGL rarity foil for full-size Yu-Gi-Oh! cards: draws the lit card itself, so the CSS art layers and
+   spotlight step aside while it is active; the name lettering stays on top. */
+.finish-rarity-gl{position:absolute;inset:0;display:block;width:100%;height:100%;pointer-events:none!important}
+.finish-rarity-gl[hidden]{display:none}
+.finish-overlay.rarity-gl>.finish-layer:not(.finish-name-region),.finish-overlay.rarity-gl>.finish-spotlight,.finish-overlay.rarity-gl>.finish-pattern{display:none}
 .finish-overlay[data-material-profile] .finish-pattern{position:absolute;inset:0;pointer-events:none;background-position:var(--finish-x) var(--finish-y);mix-blend-mode:screen;opacity:.46}
 [data-material-profile=classic-holo] .finish-pattern,[data-material-profile=cosmos-holo] .finish-pattern{background-image:url('assets/finishes/cosmos.svg'),radial-gradient(ellipse at var(--finish-x) var(--finish-y),#b9e3ff55,transparent 45%);background-size:100% 100%;}
 [data-material-profile=classic-holo] .finish-pattern{opacity:.3}
@@ -115,3 +122,28 @@
 .finish-overlay[data-material-profile="nec77-etched"] .finish-metal{background-image:url('assets/finishes/metal-grain.svg'),radial-gradient(ellipse at var(--finish-x) var(--finish-y),#f1dfb8b3 0%,#b79c7044 30%,transparent 64%);background-size:100% 100%;mix-blend-mode:soft-light;opacity:.62}
 .finish-overlay[data-material-profile="nec77-etched"] .finish-metal::after{background:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#f6eee055,transparent 56%);opacity:.3}
 .finish-overlay[data-material-profile="nec77-etched"] .finish-pattern{background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#eee5d177,transparent 56%);background-size:100% 100%;mix-blend-mode:soft-light;opacity:.34}
+/* Yu-Gi-Oh! rarity row: each chip carries a small swatch of its foil; the count shows how many printings share it. */
+/* Chips wrap rather than scroll so every rarity stays in view at any width. */
+.finish-choice-rail.ygo-rarity-chips{flex-wrap:wrap;overflow:visible}
+.ygo-rarity-chip{display:inline-flex;align-items:center;gap:.4rem;min-height:44px;max-width:100%;white-space:nowrap}
+.ygo-rarity-chip small{font-size:11px;line-height:1;padding:2px 6px;border-radius:999px;background:color-mix(in srgb,currentColor 14%,transparent);opacity:.85}
+.rarity-swatch{flex:0 0 auto;width:16px;height:16px;border-radius:5px;border:1px solid color-mix(in srgb,currentColor 30%,transparent);background:#8b8f96}
+.rarity-swatch-plain{background:linear-gradient(135deg,#6f737a,#9a9ea6)}
+.rarity-swatch-silver{background:linear-gradient(135deg,#7c8796,#eef3f8 45%,#9aa6b4 60%,#dde4ec)}
+.rarity-swatch-rainbow{background:linear-gradient(135deg,#4fb6e6,#a98be6 30%,#f0a0b8 52%,#f2d27a 72%,#7fd3a6)}
+.rarity-swatch-ultra{background:linear-gradient(135deg,#4fb6e6,#a98be6 30%,#f0a0b8 52%,#7fd3a6);box-shadow:inset 0 0 0 2px #e3b44f}
+.rarity-swatch-diagonal{background:repeating-linear-gradient(135deg,#9fd8ec 0 2px,#d6b2ee 2px 4px,#f4d891 4px 6px)}
+.rarity-swatch-prism{background:conic-gradient(#9fd8ec 0 25%,#f0b0d0 0 50%,#f4d891 0 75%,#a6e4c2 0) 0 0/6px 6px}
+.rarity-swatch-gold{background:linear-gradient(135deg,#8c5f17,#f4d27d 45%,#b8862d 62%,#ffe9a8)}
+.rarity-swatch-platinum{background:linear-gradient(135deg,transparent 38%,#b8e4f4aa 46%,#e6c8f4aa 52%,#f4e2b0aa 58%,transparent 66%),linear-gradient(135deg,#6f7a8e,#dfe6f2 40%,#8f9bb0 64%,#c9d2e2)}
+.rarity-swatch-glitter{background:radial-gradient(circle at 25% 30%,#fff 0 1px,transparent 2px),radial-gradient(circle at 70% 65%,#fff 0 1px,transparent 2px),radial-gradient(circle at 60% 20%,#fff 0 .8px,transparent 1.6px),linear-gradient(135deg,#5ab6e8,#c08ae8 50%,#f1c26e)}
+.rarity-swatch-ghost{background:linear-gradient(135deg,#c9d6e6,#ffffff 40%,#a9b8cc 60%,#e8eef6);filter:saturate(.3)}
+.rarity-swatch-emboss{background:linear-gradient(145deg,#f2d690,#9a6d22 55%,#f7e2a6);box-shadow:inset 1px 1px 0 #fff6,inset -1px -1px 0 #0005}
+.rarity-swatch-parallel{background:repeating-linear-gradient(0deg,#a5dcef 0 1.5px,#e2c2f2 1.5px 3px,#f6dda0 3px 4.5px)}
+.rarity-swatch-foilcard{background:linear-gradient(135deg,#7fd0ea,#c8a6ee 40%,#f3c6a0 70%,#9fe0bf);box-shadow:inset 0 0 0 1px #fff8}
+@media(prefers-reduced-motion:no-preference){.ygo-rarity-chip.on .rarity-swatch{animation:rarity-swatch-glint 2.4s ease-in-out infinite}}
+@keyframes rarity-swatch-glint{0%,100%{filter:brightness(1)}50%{filter:brightness(1.35)}}
+/* Search tiles: premium rarities this card exists in, best first. */
+.rarity-strip{display:flex;align-items:center;gap:3px;margin-top:4px;min-height:12px}
+.rarity-strip .rarity-swatch{width:12px;height:12px;border-radius:3px}
+.rarity-strip small{font-size:10px;line-height:1;color:var(--muted,#aab);margin-left:2px}

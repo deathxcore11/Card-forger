@@ -5,7 +5,7 @@
 // simulation over a flat image, not a physical-foil capture.
 // Name bar measured on 813x1185 YGOPRODeck renders: clears descenders, stops before the Attribute orb.
 export const YGO_NAME_BOX=[.072,.050,.828,.108];
-export const YGO_NAME_RARITY={silver:1,gold:2,rainbow:3};
+export const YGO_NAME_RARITY={silver:1,gold:2,rainbow:3,platinum:4};
 const masks=new Map();
 const smooth=(a,b,v)=>{const t=Math.min(1,Math.max(0,(v-a)/(b-a)));return t*t*(3-2*t);};
 // Coverage per pixel of the name bar (0..1). Pure so it can be tested without a browser.
@@ -67,6 +67,7 @@ void main(){
  vec3 metal;
  if(u_rarity<1.5)metal=vec3(.62,.66,.72);
  else if(u_rarity<2.5)metal=vec3(.83,.55,.13);
+ else if(u_rarity>3.5)metal=vec3(.74,.77,.84); // platinum: cooler and brighter than silver
  else{float hue=fract(uv.x*1.3+uv.y*.7+tilt.x*.35+tilt.y*.2);vec3 rain=.5+.5*cos(6.28318*(hue+vec3(0.0,.33,.67)));
   float hatch=.5+.5*sin(dot(gl_FragCoord.xy,vec2(1.0))*1.2566); // 5 px period: never finer than the screen
   metal=mix(vec3(.70,.72,.78),toLinear(rain),.55+.25*hatch);}

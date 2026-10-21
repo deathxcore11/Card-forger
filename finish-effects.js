@@ -3,6 +3,7 @@ import {ANNIVERSARY_MAPS,ANNIVERSARY_STAMPS} from './pokemon-anniversary-masks.j
 import {quoteForContext,validSetContext} from './pricing-presentation.js';
 import {pokemonVariantChoices,pokemonVariantProductConflict} from './pokemon-variant-options.js';
 import {reviewedCosmosPreview} from './pokemon-promo-evidence.js';
+import {YGO_FOIL_RECIPES,FOIL_PATTERN,ygoRarityEffect} from './ygo-foil-recipes.js';
 export const FINISH_SOURCES = Object.freeze({
  pokemon:'https://www.pokemon.com/us/pokemon-news/pokemon-tcg-scarlet-and-violet-revamps-pokemon-tcg-card-aesthetic',
  base:'https://images.pokemontcg.io/base1/4_hires.png',
@@ -145,6 +146,8 @@ export const FINISH_MASKS = Object.freeze({
  'mtg-nec77-metal':'polygon(evenodd, 4.2% 5.5%,6.8% 3.3%,10% 4.5%,19% 4.5%,22% 3.6%,35% 4.5%,48% 2.6%,57% 3.2%,63% 4.8%,80% 4.5%,84% 3.2%,88% 4.7%,93% 4.7%,96% 7%,95% 57%,96% 59%,94% 62%,94% 89%,95% 91%,94% 94.5%,78% 94.5%,77% 92.8%,56% 92.8%,55% 91.5%,52% 90.7%,48% 90.7%,45% 91.5%,44% 92.8%,8% 92.8%,5% 91%,4.5% 62%,4% 59%,5.5% 57%,5.5% 11%,4.2% 5.5%,7.5% 11.1%,7.5% 56.3%,92.5% 56.3%,92.5% 11.1%,7.5% 11.1%)',
  'mtg-frame':'polygon(evenodd, 3% 2%,97% 2%,97% 98%,3% 98%,3% 2%,9% 12%,9% 54%,91% 54%,91% 12%,9% 12%,9% 60%,9% 90%,91% 90%,91% 60%,9% 60%)',
  'ygo-art':'inset(18.3% 11.7% 29.4% 11.7%)',
+ 'ygo-art-pendulum':'inset(18.3% 6.6% 39.1% 6.6%)',
+ 'ygo-art-skill':'inset(17.4% 11.8% 33.8% 11.8%)',
  'ygo-name':'inset(5.5% 18% 89.7% 7.2%)',
  'ygo-broad':'inset(2.3% 3.2% round 1%)',
 });
@@ -244,14 +247,21 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
   // Energy, BREAK, Restored and other special layouts stay unmasked until measured.
   return unknown(key,label);
  }
- const rarity=norm(key);
- // Master YGO images are not mapped to individual edition watermarks. Never invent one.
- if(/quartercentury|ghost|ultimate|collector|gold|parallel/.test(rarity))return unknown(key,label);
- if(/pendulum|rush|token|skill/i.test(`${c.typeLine||''} ${c.type||''} ${c.frame||''}`))return unknown(key,label);
- const name=material=>layer('ygo-name',material),art=material=>layer('ygo-art',material);
+ const rarity=norm(key),frameText=`${c.typeLine||''} ${c.type||''} ${c.frame||''}`;
+ // Tokens share the standard monster layout; Pendulum and Skill cards have their own measured art
+ // windows. Rush Duel cards are not catalogued here and stay unmasked.
+ if(/rush/i.test(frameText))return unknown(key,label);
+ const layout=/pendulum/i.test(frameText)?'pendulum':/skill/i.test(frameText)?'skill':'standard',artMask=layout==='standard'?'ygo-art':'ygo-art-'+layout;
+ const withLayout=p=>layout==='standard'?p:{...p,layout};
+ const name=material=>layer('ygo-name',material),art=material=>layer(artMask,material);
  const specs={rare:['ygo-rare',[name('silver')]],superrare:['ygo-super',[art('holo')]],ultrarare:['ygo-ultra',[art('holo'),name('gold')]],secretrare:['ygo-secret',[art('secret'),name('rainbow')]],prismaticsecretrare:['ygo-prismatic',[art('prismatic'),name('rainbow')]],starlightrare:['ygo-starlight',[layer('ygo-broad','starlight')]]};
- const spec=specs[rarity];
- return spec?preset(key,label,...spec,FINISH_SOURCES.ygo):unknown(key,label);
+ if(specs[rarity])return withLayout(preset(key,label,...specs[rarity],FINISH_SOURCES.ygo));
+ // Every other foil rarity comes from the recipe table. Its CSS layers are the light version shown
+ // on small tiles; full-size cards render the recipe itself with WebGL (ygo-rarity-foil.js).
+ const effect=ygoRarityEffect(rarity),recipe=YGO_FOIL_RECIPES[effect];if(!recipe)return unknown(key,label);
+ const P=FOIL_PATTERN,material=([p,t])=>t===1?'gold':{[P.diag]:'secret',[P.qcr]:'secret',[P.prism]:'prismatic',[P.glitter]:'starlight',[P.ghost]:'silver',[P.emboss]:'gold'}[p]||'holo';
+ const layers=[...(recipe.whole?[layer('ygo-broad',recipe.whole[0]===P.glitter?'starlight':'rainbow')]:[]),...(recipe.art?[art(material(recipe.art))]:[]),...(recipe.frame&&!recipe.whole?[layer('ygo-broad',material(recipe.frame))]:[]),...(recipe.name?[name(recipe.name)]:[])];
+ return withLayout(preset(key,label,effect,layers,FINISH_SOURCES.ygo));
 }
 export function finishChoices(game,c,ctx={}){
  if(!c?.id||!validSetContext(game,c,ctx))return [];
