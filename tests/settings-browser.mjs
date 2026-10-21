@@ -111,7 +111,7 @@ try{
     }
     if([390,768].includes(width))await capture(page,`synthetic-search-settings-${game}-${theme}-${width}`);
     const rail=await page.locator('.settings-tabs').evaluate(n=>({scroll:n.scrollWidth,client:n.clientWidth,overflow:getComputedStyle(n).overflowX}));
-    assert.equal(rail.overflow,'auto');if(width===320)assert(rail.scroll>rail.client,'all four labels remain readable in a horizontal rail');
+    assert.equal(rail.overflow,'auto');if(width===320)assert(rail.scroll<=rail.client+1,'all four labels fit the mobile grid without a hidden rail');
    }
    assert.equal(await inventorySnapshot(page),original,'appearance leaves all games and saved quantities unchanged');
    }
