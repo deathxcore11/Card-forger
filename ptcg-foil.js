@@ -90,6 +90,30 @@ export function maskShape(clip){
 export function shapeBox(shape){let x0=1,y0=1,x1=0,y1=0;for(const ring of shape.rings)for(const [x,y] of ring){x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);}return [x0,y0,x1,y1];}
 // The art window is the shape's inner box: for an evenodd surround, the hole it cuts out.
 export function artBox(shape){if(shape.rule!=='evenodd')return shapeBox(shape);const pts=shape.rings[0],k=pts.findIndex((p,i)=>i>0&&p[0]===pts[0][0]&&p[1]===pts[0][1]);return k>0&&k<pts.length-3?shapeBox({rings:[pts.slice(k+1)]}):shapeBox(shape);}
+// Illustration that breaks out of its window (a head over the name bar, a tail over the attack text)
+// is printed ink, not reverse-holo frame. Learn the frame's colours away from the art, then grow from
+// the window edge through pixels that do not match them; an opening removes thin window borders,
+// which really are foil. Returns 0..1 per pixel. Pure.
+export function artOverflow(rgba,W,H,box,{reach=.18,threshold=.16}={}){
+ const N=W*H,out=new Float32Array(N),x0=Math.round(box[0]*W),y0=Math.round(box[1]*H),x1=Math.round(box[2]*W),y1=Math.round(box[3]*H);
+ const inside=(x,y)=>x>=x0&&x<x1&&y>=y0&&y<y1,gap=(x,y)=>Math.max(x0-x,x-x1+1,y0-y,y-y1+1,0),c=k=>[rgba[k*4]/255,rgba[k*4+1]/255,rgba[k*4+2]/255];
+ const samples=[];for(let y=0;y<H;y+=3)for(let x=0;x<W;x+=3)if(!inside(x,y)&&gap(x,y)>.05*W)samples.push(c(y*W+x));
+ if(samples.length<12||x1-x0<8||y1-y0<8)return out;
+ let C=Array.from({length:6},(_,k)=>samples[Math.floor((k+.5)*samples.length/6)].slice());
+ for(let it=0;it<8;it++){const sum=C.map(()=>[0,0,0,0]);for(const p of samples){let b=0,bd=9;C.forEach((q,k)=>{const d=(p[0]-q[0])**2+(p[1]-q[1])**2+(p[2]-q[2])**2;if(d<bd){bd=d;b=k;}});const t=sum[b];t[0]+=p[0];t[1]+=p[1];t[2]+=p[2];t[3]++;}
+  C=sum.map((t,k)=>t[3]?[t[0]/t[3],t[1]/t[3],t[2]/t[3]]:C[k]);if(it===7)C=C.filter((_,k)=>sum[k][3]>=samples.length*.05);}
+ const off=new Uint8Array(N);
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(inside(x,y)||gap(x,y)>reach*H)continue;const p=c(y*W+x);let bd=9;for(const q of C)bd=Math.min(bd,Math.hypot(p[0]-q[0],p[1]-q[1],p[2]-q[2]));if(bd>threshold)off[y*W+x]=1;}
+ // Grow from just outside the window edge through off-palette pixels.
+ const seen=new Uint8Array(N),queue=[];
+ for(let y=Math.max(0,y0-2);y<Math.min(H,y1+2);y++)for(let x=Math.max(0,x0-2);x<Math.min(W,x1+2);x++){const k=y*W+x;if(off[k]&&gap(x,y)<=2){seen[k]=1;queue.push(k);}}
+ for(let q=0;q<queue.length;q++){const k=queue[q],x=k%W,y=(k-x)/W;for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy,n=ny*W+nx;if(nx<0||ny<0||nx>=W||ny>=H||seen[n]||!off[n])continue;seen[n]=1;queue.push(n);}}
+ // Opening (erode 2, dilate 3): thin frame lines vanish, real overflow survives with a soft edge.
+ const morph=(src,r,keep)=>{const dst=new Uint8Array(N);for(let y=0;y<H;y++)for(let x=0;x<W;x++){let all=1,any=0;for(let j=-r;j<=r&&(keep?all:!any);j++)for(let i=-r;i<=r;i++){const v=src[Math.min(H-1,Math.max(0,y+j))*W+Math.min(W-1,Math.max(0,x+i))];if(!v)all=0;else any=1;}dst[y*W+x]=keep?all:any;}return dst;};
+ const opened=morph(morph(seen,2,true),3,false);
+ for(let k=0;k<N;k++)if(opened[k]){const x=k%W,y=(k-x)/W;if(!inside(x,y))out[k]=1;}
+ return out;
+}
 function coverage(shape,W,H){
  const c=(globalThis.document).createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d',{willReadFrequently:true});x.fillStyle='#fff';
  const path=new Path2D();for(const ring of shape.rings){ring.forEach(([px,py],i)=>i?path.lineTo(px*W,py*H):path.moveTo(px*W,py*H));path.closePath();}
@@ -112,6 +136,7 @@ export function mountPtcgFoil(overlay,img,treatment,{surface='detail',clip='',ar
  return mountFoilCanvas(overlay,{source:()=>img,key,surface,program:()=>renderer(overlay.ownerDocument),
   analysis:()=>analyze(src+'|'+box.join(),()=>readFoilPixels(img),{layout:'',box}).then(a=>{
    // Coverage is per mask, so it is stamped onto a copy of the cached analysis.
-   const cov=coverage(shape,a.W,a.H),mask=a.mask.slice();for(let k=3;k<mask.length;k+=4)mask[k]=cov[k-3];return {...a,mask};}),
+   const cov=coverage(shape,a.W,a.H),mask=a.mask.slice(),spill=shape.rule==='evenodd'?artOverflow(readFoilPixels(img).data,a.W,a.H,artBox(shape)):null;
+   for(let k=3;k<mask.length;k+=4)mask[k]=Math.round(cov[k-3]*(spill?1-spill[(k-3)/4]:1));return {...a,mask};}),
   setUniforms:({gl,U})=>{gl.uniform4f(U.u_r1,r.pat,r.tint,r.underbase,r.relief);gl.uniform4f(U.u_r2,r.sparkle,r.soft,0,0);}});
 }
