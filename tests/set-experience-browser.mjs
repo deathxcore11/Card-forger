@@ -27,17 +27,19 @@ try{
    await page.locator('[data-pack="reveal-all"]').click();assert.equal(await page.locator('.pack-card.revealed').count(),10);
    const overflow=await page.locator('.pack-dialog').evaluate(n=>({scroll:n.scrollWidth,client:n.clientWidth,outside:[...n.querySelectorAll('button')].filter(b=>{const r=b.getBoundingClientRect(),p=n.getBoundingClientRect();return r.width>0&&r.height>0&&(r.left<p.left-2||r.right>p.right+2);}).map(b=>b.textContent)}));assert(overflow.scroll<=overflow.client+2,JSON.stringify(overflow));assert.deepEqual(overflow.outside,[]);
    assert.equal(await page.evaluate(async()=>{const {S}=await import('/store.js');return JSON.stringify([S.state.collection,S.state.decks,S.state.tcg])===window.__packBefore;}),true,'preview cannot change inventory');
-   await page.screenshot({path:`test-results/set-experience-pack-${game}-${width}.png`,fullPage:true});
+   await page.screenshot({path:`test-results/set-experience-pack-${game}-${width}.png`,fullPage:true,animations:"disabled"});
    await page.locator('[data-pack="close"]').click();
    await page.evaluate(async()=>{const {openZoom}=await import('/zoom.js');window.__viewer=openZoom({src:'https://search-fixtures.invalid/zoom.svg',art:'https://search-fixtures.invalid/crop.svg',alt:'Synthetic card',finishModel:{layers:[],game:'ygo'}});});
    await page.locator('.zoom-img').waitFor();await page.waitForFunction(()=>document.querySelector('.zoom-img')?.naturalWidth>0);
    assert.equal(await page.locator('.zoom-seg [role="tab"]').count(),3);
-   if(width<1000){await page.evaluate(()=>{window.dispatchEvent(new DeviceOrientationEvent('deviceorientation',{beta:30,gamma:0}));});await page.waitForTimeout(60);await page.evaluate(()=>window.dispatchEvent(new DeviceOrientationEvent('deviceorientation',{beta:40,gamma:12})));await page.waitForFunction(()=>document.querySelector('.zoom-card-light').style.transform.includes('rotateY'));}
+   if(width<1000){await page.evaluate(()=>{window.dispatchEvent(new DeviceOrientationEvent('deviceorientation',{beta:30,gamma:0}));});await page.waitForTimeout(60);await page.evaluate(()=>window.dispatchEvent(new DeviceOrientationEvent('deviceorientation',{beta:40,gamma:12})));await page.waitForFunction(()=>{const t=document.querySelector('.zoom-card-light').style.transform;return t.includes('rotateY')&&!t.includes('rotateY(0deg)');});
+    await page.locator('[data-z="tilt"]').click();assert.equal(await page.locator('[data-z="tilt"]').getAttribute('aria-pressed'),'false');await page.evaluate(()=>window.dispatchEvent(new DeviceOrientationEvent('deviceorientation',{beta:60,gamma:30})));await page.waitForTimeout(60);assert.equal(await page.locator('.zoom-card-light').evaluate(n=>n.style.transform),'','off prevents sensor motion');
+    await page.locator('[data-z="tilt"]').click();await page.emulateMedia({reducedMotion:'reduce'});assert.equal(await page.locator('[data-z="tilt"]').isDisabled(),true);assert.equal(await page.locator('.zoom-card-light').evaluate(n=>n.style.transform),'');await page.emulateMedia({reducedMotion:'no-preference'});}
    else assert.equal(await page.locator('[data-z="tilt"]').isVisible(),false,'desktop has no sensor control');
    await page.locator('[data-i="1"]').click();await page.waitForTimeout(60);assert.equal(await page.locator('.zoom [data-finish-surface]').count(),0);assert.equal(await page.locator('.zoom .finish-overlay').count(),0);assert.equal(await page.locator('.zoom-card-light').evaluate(n=>n.style.transform),'');
    await page.locator('[data-i="2"]').click();await page.locator('[data-i="0"]').click();await page.waitForTimeout(60);
    const zoomOverflow=await page.locator('.zoom-bar').evaluate(n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right,width:innerWidth,scroll:n.scrollWidth,client:n.clientWidth};});assert(zoomOverflow.left>=-1&&zoomOverflow.right<=width+1&&zoomOverflow.scroll<=zoomOverflow.client+2,JSON.stringify(zoomOverflow));
-   await page.screenshot({path:`test-results/set-experience-viewer-${game}-${width}.png`,fullPage:true});
+   await page.screenshot({path:`test-results/set-experience-viewer-${game}-${width}.png`,fullPage:true,animations:"disabled"});
    await page.locator('[data-z="close"]').click();assert.equal(await page.locator('.zoom').count(),0);
    app.health();checks.push({game,width,result:'pass'});
   }catch(error){await page.screenshot({path:`test-results/set-experience-failure-${game}-${width}.png`,fullPage:true}).catch(()=>{});throw error;}finally{await app.context.close();}
