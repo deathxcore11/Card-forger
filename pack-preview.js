@@ -21,9 +21,18 @@ const PACK_SLOTS={
   {rare:74,rareholo:37,holorare:37,doublerare:17,ultrarare:6.6,hyperrare:.55,raresecret:.55,secretrare:.55,rarerainbow:.8,rareholoex:8,rareholov:8,rareholovmax:4,rareholovstar:4,rareultra:6.6,radiantrare:4,amazingrare:3,acespecrare:4}],
  ygo:[...Array(7).fill({common:1}),{rare:1},{superrare:76,ultrarare:16,secretrare:8,quartercenturysecretrare:1}]
 };
+// A Yu-Gi-Oh! card printed in several rarities in one set (Rarity Collection, reprint sets) is pulled
+// in one of them, weighted by how rare it is. Display only: nothing is saved or priced from it.
+const YGO_RARITY_WEIGHT={common:50,shortprint:20,rare:20,superrare:12,ultrarare:6,secretrare:3,collectorsrare:1,prismaticsecretrare:1,platinumsecretrare:.5,quartercenturysecretrare:.4,ultimaterare:1,ghostrare:.3,starlightrare:.05,goldrare:3};
+export function rollYgoPrinting(card,random=Math.random){
+ const prints=(card.setContext?.printings||[]).filter(p=>p?.rarity);if(prints.length<2||card.setContext?.printing)return card;
+ const weight=p=>YGO_RARITY_WEIGHT[R(p.rarity)]??2,total=prints.reduce((n,p)=>n+weight(p),0);let r=random()*total,chosen=prints.at(-1);
+ for(const p of prints){r-=weight(p);if(r<=0){chosen=p;break;}}
+ return {...card,rarity:chosen.rarity,sets:[chosen],setContext:{...card.setContext,printings:[chosen],printing:chosen,printingAmbiguous:false,pulled:true}};
+}
 export function samplePack(game,cards,count=10,random=Math.random){
  const slots=PACK_SLOTS[game]||[];if(!slots.length)return sampleSetCards(cards,count,random);
- const pool=[...new Map(cards.filter(c=>c?.id&&c.name).map(c=>[String(c.id),c])).values()],used=new Set(),picks=[];
+ const pool=[...new Map(cards.filter(c=>c?.id&&c.name).map(c=>[String(c.id),game==='ygo'?rollYgoPrinting(c,random):c])).values()],used=new Set(),picks=[];
  const rarityOf=c=>R(packRarity(game,c).label);
  // A shorter pack (today's pack keeps its last slot for the Card of the Day) drops the hit slot.
  for(const slot of slots.slice(0,count)){
@@ -79,7 +88,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,onD
  dialog.innerHTML=`<header class="pack-header"><div><h2>${esc(set.name)}</h2><p class="pack-explanation">Free preview · approximate pull rates, not a real booster · nothing is added to your collection</p></div><button class="icon" data-pack="close" aria-label="Close pack">✕</button></header>
 <div class="pack-sealed"><button class="pack-wrapper" data-pack="open" aria-label="Open the ${esc(set.name)} pack"><span class="pack-body"><span class="pack-wrap-art">${sources.length?`<img src="${esc(safeHref(setImageUrl(sources[0])))}" data-sources="${esc(JSON.stringify(sources))}" alt="" referrerpolicy="no-referrer" onerror="const s=JSON.parse(this.dataset.sources),i=(+this.dataset.i||0)+1;if(s[i]){this.dataset.i=i;this.src=s[i];this.closest('.pack-wrapper').classList.add('pack-generic');}else this.hidden=true">`:''}<span class="pack-wrap-brand">${brandStaticMark()}<b>${esc(set.name)}</b></span></span><span class="pack-crimp top"></span><span class="pack-crimp bottom"></span><span class="pack-sheen"></span></span></button></div>
 <div class="pack-content" hidden><div class="pack-focus"><button class="pack-focus-card" data-pack="focus" data-hold-card aria-label="Card 1"><span class="pack-face" data-finish-surface="pack"><img alt="" referrerpolicy="no-referrer"></span>${back}</button><p class="pack-focus-meta" aria-live="polite"><b></b><span></span></p></div><div class="pack-hand" role="group" aria-label="Cards in this pack" style="--pack-n:${picks.length}">${hand()}</div>
-<div class="pack-actions"><button class="btn ghost" data-pack="reveal-all">Reveal all</button><button class="btn ghost" data-pack="copy" disabled>Copy list</button><button class="btn ghost" data-pack="wish" disabled>Wishlist all</button><button class="btn ghost" data-pack="buy" disabled>Shop list</button><button class="btn" data-pack="again">Open another</button></div></div><p class="pack-status" role="status" aria-live="polite"></p>`;
+<div class="pack-actions"><button class="btn ghost" data-pack="reveal-all">Reveal all</button><button class="btn ghost" data-pack="copy" disabled>Copy list</button><button class="btn ghost" data-pack="wish" disabled>Wishlist all</button><button class="btn ghost" data-pack="buy" disabled>Shop list</button><button class="btn" data-pack="again">New pack</button></div></div><p class="pack-status" role="status" aria-live="polite"></p>`;
  document.body.append(dialog);dialog.tabIndex=-1;dialog.showModal();dialog.focus({preventScroll:true});
  const status=dialog.querySelector('.pack-status'),focusCard=dialog.querySelector('.pack-focus-card'),face=focusCard.querySelector('.pack-face'),faceImg=face.querySelector('img'),meta=dialog.querySelector('.pack-focus-meta');
  const ref=i=>({game,card:picks[i],dataset:{}});
