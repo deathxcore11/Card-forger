@@ -2,7 +2,7 @@
 // coverage rules. Pixel rendering is covered by the offline renders and hosted browser runs.
 import assert from 'node:assert/strict';
 import {ptcgFoilEffect,PTCG_FOIL_RECIPES,PTCG_PATTERN} from './ptcg-foil-recipes.js';
-import {maskShape,shapeBox,artBox,PTCG_FOIL_FRAGMENT} from './ptcg-foil.js';
+import {maskShape,shapeBox,artBox,artOverflow,PTCG_FOIL_FRAGMENT} from './ptcg-foil.js';
 import {FINISH_MASKS,withPtcgTreatment} from './finish-effects.js';
 const holo=era=>ptcgFoilEffect({finish:'holofoil',era}),rev=(era,foil)=>ptcgFoilEffect({finish:'reverse-holofoil',era,foil});
 // Each era prints its own holo sheet; the Pokémon sits on white ink (underbase) in every holo window.
@@ -27,6 +27,15 @@ assert.equal(ptcgFoilEffect({finish:'normal'}),'','Nonfoil has no treatment');
 for(const [k,v] of Object.entries(FINISH_MASKS).filter(([k])=>k.startsWith('pk-')||k==='card')){const s=maskShape(v);assert(s,k);const [x0,y0,x1,y1]=shapeBox(s);assert(x0>=0&&y0>=0&&x1<=1&&y1<=1&&x1>x0&&y1>y0,k);}
 const hole=artBox(maskShape(FINISH_MASKS['pk-sv-surround']));assert.deepEqual(hole.map(x=>+x.toFixed(3)),[.085,.102,.916,.469],'SV surround hole is the art window');
 assert.deepEqual(shapeBox(maskShape(FINISH_MASKS.card)),[0,0,1,1]);
+// Art that breaks out of its window (a head over the frame) is ink, not reverse foil; the thin window
+// border and the rest of the frame stay foil.
+{const W=120,H=168,px=new Uint8ClampedArray(W*H*4),box=[.1,.15,.9,.5],X=v=>v*W,Y=v=>v*H;
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){let c=[225,200,70];const inBox=x>=X(.1)&&x<X(.9)&&y>=Y(.15)&&y<Y(.5),edge=!inBox&&x>=X(.1)-2&&x<X(.9)+2&&y>=Y(.15)-2&&y<Y(.5)+2;
+  if(inBox)c=[60,120,200];else if(edge)c=[200,205,215];if(Math.hypot(x-60,y-24)<11)c=[190,40,40];if(y>Y(.6)&&y<Y(.62)&&x>20&&x<100)c=[20,20,20];px.set([...c,255],(y*W+x)*4);}
+ const m=artOverflow(px,W,H,box),at=(x,y)=>m[Math.round(y)*W+Math.round(x)];
+ assert(at(60,18)>.9,'The head above the window is kept as ink');
+ assert.equal(at(5,Y(.3)),0,'Frame beside the window stays foil');assert.equal(at(X(.5),Y(.5)+1),0,'The thin window border stays foil');
+ assert.equal(at(60,Y(.61)),0,'Attack text below the window is not mistaken for overflow');assert.equal(at(60,Y(.3)),0,'Inside the window is left to the window mask');}
 // Preset wiring: treatments follow the measured mask's era; unknown and plain presets stay untouched.
 const p=withPtcgTreatment({rarity:'Rare'},{effect:'ptcg-holo',status:'approximate',layers:[{mask:'pk-neo-art',material:'holo'}]});assert.equal(p.treatment,'ptcg-wotc-holo');
 assert.equal(withPtcgTreatment({},{effect:'ptcg-reverse',status:'approximate',layers:[{mask:'pk-lc-surround'}]}).treatment,'ptcg-lc-reverse');
@@ -34,4 +43,4 @@ assert.equal(withPtcgTreatment({},{effect:'unknown',status:'unknown',layers:[]})
 // Shader: coverage is the measured mask, narrowed by the underbase in holo windows, lighter on the lower half of full arts.
 assert.match(PTCG_FOIL_FRAGMENT,/float cov=mk\.a\*mix\(1\.,mk\.r,u_r1\.z\)\*\(1\.-\.5\*u_r2\.y\*smoothstep\(\.52,\.64,uv\.y\)\);/);
 assert.match(PTCG_FOIL_FRAGMENT,/return mix\(base,shoulder\(T\*F\*1\.35\),clamp\(cover,0\.,1\.\)\);/,'Zero coverage returns the exact source pixel');
-console.log('PASS: Pokémon foil follows each era (WotC, Legendary Collection, e-Card, EX, DP-SWSH, SV) and variant (cosmos, Poké Ball, Master Ball, gold); holo windows keep the Pokémon solid; full arts by rarity keep text readable; every measured mask parses.');
+console.log('PASS: Pokémon foil follows each era (WotC, Legendary Collection, e-Card, EX, DP-SWSH, SV) and variant (cosmos, Poké Ball, Master Ball, gold); holo windows keep the Pokémon solid; full arts by rarity keep text readable; every measured mask parses; art breaking out of the window stays ink on reverse holos.');
